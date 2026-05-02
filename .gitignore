@@ -1,1 +1,16 @@
+.# 環境変数（超重要）
+.env
+.env.*
+
+# Node.js系（もし使ってたら）
+node_modules/
+
+# ビルド結果
+dist/
+build/
+
+# ログ
+*.log
+
+# OS系
 .DS_Store
