@@ -27,6 +27,7 @@
 | [tech/stack.md](tech/stack.md) | 技術スタック詳細 |
 | [tech/editor-engine.md](tech/editor-engine.md) | エディタエンジン選定の調査・決定 |
 | [tech/git-implementation.md](tech/git-implementation.md) | Git実装方法の調査・決定 |
+| [ui/DESIGN.md](ui/DESIGN.md) | デザインシステム。カラーパレット・タイポグラフィ・スペーシング・コンポーネント定義 |
 | [ui/screens-macos.md](ui/screens-macos.md) | macOSの画面一覧と構成 |
 | [ui/screens-ios.md](ui/screens-ios.md) | iOSの画面一覧と構成 |
 | [ui/navigation.md](ui/navigation.md) | 画面遷移フロー |
