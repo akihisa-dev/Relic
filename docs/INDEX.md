@@ -29,7 +29,6 @@
 | [tech/git-implementation.md](tech/git-implementation.md) | Git実装方法の調査・決定 |
 | [ui/DESIGN.md](ui/DESIGN.md) | デザインシステム。カラーパレット・タイポグラフィ・スペーシング・コンポーネント定義 |
 | [ui/screens-macos.md](ui/screens-macos.md) | macOSの画面一覧と構成 |
-| [ui/screens-ios.md](ui/screens-ios.md) | iOSの画面一覧と構成 |
 | [ui/navigation.md](ui/navigation.md) | 画面遷移フロー |
 | [dev/roadmap.md](dev/roadmap.md) | 開発フェーズ・ロードマップ |
 | [dev/open-questions.md](dev/open-questions.md) | 未決定事項一覧 |
