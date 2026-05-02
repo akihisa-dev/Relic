@@ -51,4 +51,4 @@ AIはセッション終了時に必ず以下を行ってください：
 
 ## ドキュメント一覧
 
-詳細は [docs/README.md](docs/README.md) を参照してください。
+詳細は [docs/INDEX.md](docs/INDEX.md) を参照してください。
