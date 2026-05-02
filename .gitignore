@@ -1,16 +1,29 @@
-.# 環境変数（超重要）
+# 環境変数（超重要）
 .env
 .env.*
 
-# Node.js系（もし使ってたら）
+# Node.js系
 node_modules/
 
 # ビルド結果
 dist/
 build/
+out/
+
+# TypeScript
+*.tsbuildinfo
+
+# テスト
+coverage/
+
+# webpack
+.webpack/
 
 # ログ
 *.log
 
 # OS系
 .DS_Store
+
+# Obsidian
+.obsidian/
