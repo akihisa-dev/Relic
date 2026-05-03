@@ -81,8 +81,8 @@ AIがセッション開始時に読む**ドキュメント整備状況リスト*
 | ファイル | 状態 | 備考 |
 |----------|------|------|
 | [dev/roadmap.md](dev/roadmap.md) | ❌ | 凍結中（open-questions総点検が一段落するまで作成しない） |
-| [dev/open-questions.md](dev/open-questions.md) | 🔶 | P0〜P3の主要未決定事項は解消済み。古い記述整理が残存 |
-| [dev/conventions.md](dev/conventions.md) | ❌ | 凍結中（open-questions総点検が一段落するまで作成しない） |
+| [dev/open-questions.md](dev/open-questions.md) | ✅ | 未決定事項の総点検が完了。すべて解消済み |
+| [dev/conventions.md](dev/conventions.md) | ❌ | 未着手（ヘッダーのみ）。古い前提記述は整理済み |
 | [dev/testing.md](dev/testing.md) | ❌ | 凍結中（open-questions総点検が一段落するまで作成しない） |
 
 ---
