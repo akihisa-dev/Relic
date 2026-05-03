@@ -64,7 +64,12 @@
 
 ## 技術スタック
 
+詳細は [tech/stack.md](tech/stack.md) を正とする。この計画書では大枠のみを記載する。
+
 | 項目 | 決定内容 |
 |------|---------|
 | 言語 | TypeScript |
 | フレームワーク | Electron |
+| UI | React |
+| エディタエンジン | CodeMirror 6 |
+| Git実装 | isomorphic-git |
