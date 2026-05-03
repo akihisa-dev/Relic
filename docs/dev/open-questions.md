@@ -79,24 +79,21 @@
 
 ### エディタ
 
-- [ ] ツールバーの具体的なレイアウト・配置をどうするか？
+- [x] ツールバーの具体的なレイアウト・配置をどうするか？ → **全ボタンを一列に並べる**。グループ間に区切り線を入れる
   - 関連: [spec/editor.md](../spec/editor.md), [ui/screens-macos.md](../ui/screens-macos.md)
-- [ ] エディタ上部ツールバーは常時表示か、コンパクト化・非表示設定を持つか？
+- [x] エディタ上部ツールバーは常時表示か、コンパクト化・非表示設定を持つか？ → **常時表示**（非表示設定なし）
   - 関連: [spec/editor.md](../spec/editor.md)
-- [ ] 保存方式は自動保存のみか、手動保存も持つか？
-  - 関連: [architecture/overview.md](../architecture/overview.md)
-  - 備考: 現在は「一定間隔で保存（または手動保存）」と曖昧
-- [ ] 自動保存の間隔・タイミングをどうするか？
-  - 関連: [architecture/overview.md](../architecture/overview.md)
-  - 例: 入力停止後、一定秒数ごと、ファイル切り替え時
-- [ ] ライブプレビュー中、Markdown記法そのものをどの程度見せるか？
+- [x] 保存方式は自動保存のみか、手動保存も持つか？ → **自動保存のみ**
+  - 関連: [architecture/overview.md](../architecture/overview.md), [spec/editor.md](../spec/editor.md)
+- [x] 自動保存の間隔・タイミングをどうするか？ → **入力停止後1秒**で自動保存
+  - 関連: [architecture/overview.md](../architecture/overview.md), [spec/editor.md](../spec/editor.md)
+- [x] ライブプレビュー中、Markdown記法そのものをどの程度見せるか？ → **カーソル行だけ記法表示**（Obsidianスタイル）
   - 関連: [spec/editor.md](../spec/editor.md), [spec/markdown.md](../spec/markdown.md)
-  - 例: カーソル行だけ記法表示 / 常に一部表示 / 完全レンダリング
-- [ ] フォーカスモード・タイプライターモードは初期リリースに含めるか？
+- [x] フォーカスモード・タイプライターモードは初期リリースに含めるか？ → **含める**
   - 関連: [spec/editor.md](../spec/editor.md)
-- [ ] エディタフォントのプリセット内容を何にするか？
-  - 関連: [spec/navigation.md](../spec/navigation.md), [ui/screens-macos.md](../ui/screens-macos.md)
-- [ ] スペルチェックは日本語にも期待するのか、OS標準の挙動に任せるのか？
+- [x] エディタフォントのプリセット内容を何にするか？ → **System / ヒラギノ明朝 / Menlo** の3種
+  - 関連: [spec/editor.md](../spec/editor.md), [ui/screens-macos.md](../ui/screens-macos.md)
+- [x] スペルチェックは日本語にも期待するのか、OS標準の挙動に任せるのか？ → **OS標準に任せる**（macOS標準・英語のみ）
   - 関連: [spec/editor.md](../spec/editor.md)
 
 ### 検索・置換
