@@ -27,23 +27,23 @@
 
 ### ドキュメント整合性
 
-- [ ] `docs/dev/open-questions.md` は、解決済みの問いを `[x]` として残す運用にするか、`docs/_rules.md` の記述どおり決定後に削除する運用に戻すか？
+- [x] `docs/dev/open-questions.md` は、解決済みの問いを `[x]` として残す運用にするか、`docs/_rules.md` の記述どおり決定後に削除する運用に戻すか？ → **解決済みの問いも `[x]` として残す**運用に決定
   - 関連: [dev/open-questions.md](open-questions.md), [_rules.md](../_rules.md), [AI.md](../../AI.md)
-- [ ] 凍結中の `dev/roadmap.md`・`dev/conventions.md`・`dev/testing.md` は、総点検完了後もユーザーの明示指示があるまで凍結継続とするか、別の再開条件を定義するか？
+- [x] 凍結中の `dev/roadmap.md`・`dev/conventions.md`・`dev/testing.md` は、総点検完了後もユーザーの明示指示があるまで凍結継続とするか、別の再開条件を定義するか？ → **ユーザーの明示指示があるまで凍結継続**に決定
   - 関連: [dev/open-questions.md](open-questions.md), [STATUS.md](../STATUS.md)
-- [ ] `README.md` の対象ユーザー定義を、現在の `principles.md` に合わせて広いMarkdown利用者向けに更新するか？
+- [x] `README.md` の対象ユーザー定義を、現在の `principles.md` に合わせて広いMarkdown利用者向けに更新するか？ → **更新する**ことに決定
   - 関連: [README.md](../../README.md), [principles.md](../principles.md)
-- [ ] `README.md` の技術スタックを、現在の確定スタック（isomorphic-git / React / pnpm / Electron Forge / Vitest など）に合わせて更新するか？
+- [x] `README.md` の技術スタックを、現在の確定スタック（isomorphic-git / React / pnpm / Electron Forge / Vitest など）に合わせて更新するか？ → **READMEには主要技術だけを簡潔に載せ、詳細は `docs/tech/stack.md` に任せる**ことに決定
   - 関連: [README.md](../../README.md), [tech/stack.md](../tech/stack.md), [tech/git-implementation.md](../tech/git-implementation.md)
-- [ ] `PLAN.md` の技術スタック表を、現在の確定スタック全体に合わせて補完するか？
+- [x] `PLAN.md` の技術スタック表を、現在の確定スタック全体に合わせて補完するか？ → **PLAN.mdは大枠に留め、詳細は `docs/tech/stack.md` を正とする**ことに決定
   - 関連: [PLAN.md](../PLAN.md), [tech/stack.md](../tech/stack.md)
-- [ ] `STATUS.md` の古い備考（未決定事項が複数残存、ADR 8件、未選定項目あり等）を、現在の状態に合わせて更新するか？
+- [x] `STATUS.md` の古い備考（未決定事項が複数残存、ADR 8件、未選定項目あり等）を、現在の状態に合わせて更新するか？ → **更新する**ことに決定
   - 関連: [STATUS.md](../STATUS.md), [architecture/decisions.md](../architecture/decisions.md), [tech/stack.md](../tech/stack.md), [dev/open-questions.md](open-questions.md)
-- [ ] `architecture/overview.md` の `LinksPanel` 説明を、右パネル表示の現行仕様に合わせて修正するか？
+- [x] `architecture/overview.md` の `LinksPanel` 説明を、右パネル表示の現行仕様に合わせて修正するか？ → **修正する**ことに決定
   - 関連: [architecture/overview.md](../architecture/overview.md), [spec/links-and-tags.md](../spec/links-and-tags.md), [ui/screens-macos.md](../ui/screens-macos.md)
-- [ ] `spec/navigation.md` に、UI側で決定済みの縦アイコンナビ・可変幅サイドバー・右パネル切り替え・タブ履歴・ペイン別タブ管理などを反映するか？
+- [x] `spec/navigation.md` に、UI側で決定済みの縦アイコンナビ・可変幅サイドバー・右パネル切り替え・タブ履歴・ペイン別タブ管理などを反映するか？ → **反映する**ことに決定
   - 関連: [spec/navigation.md](../spec/navigation.md), [ui/navigation.md](../ui/navigation.md), [ui/screens-macos.md](../ui/screens-macos.md)
-- [ ] `docs/_rules.md` の `README.md` 参照を、現在の `docs/INDEX.md` 運用に合わせて修正するか？
+- [x] `docs/_rules.md` の `README.md` 参照を、現在の `docs/INDEX.md` 運用に合わせて修正するか？ → **修正する**ことに決定
   - 関連: [_rules.md](../_rules.md), [INDEX.md](../INDEX.md)
 - [ ] `docs/mockups/` は現行仕様に追従して更新するか、古い名称ラベル版の参考資料として残すか？
   - 関連: [mockups/](../mockups/), [ui/screens-macos.md](../ui/screens-macos.md), [spec/navigation.md](../spec/navigation.md)
