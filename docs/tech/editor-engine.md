@@ -12,7 +12,7 @@
 
 ## 選定理由
 
-- Obsidian（Lorebooksと同様のMarkdownノートアプリ）が採用しており、同用途での実績が最も豊富
+- Obsidian（Relicと同様のMarkdownノートアプリ）が採用しており、同用途での実績が最も豊富
 - ソースモード編集とライブプレビューの両立が設計の根幹に組み込まれている
 - `@codemirror/lang-markdown` による Markdown シンタックスハイライトが公式サポート
 - TypeScript ネイティブで書かれており、型安全な開発が可能
