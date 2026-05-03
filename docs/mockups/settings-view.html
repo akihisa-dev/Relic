@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Settings view mockup</title>
+  <link rel="stylesheet" href="mockups.css">
+</head>
+<body>
+  <div class="window">
+    <header class="titlebar">
+      <div class="traffic">
+        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        <span class="app-name">タイトルバー</span>
+      </div>
+      <nav class="tabs">
+        <div class="tab active">タブ</div>
+        <div class="tab">タブ</div>
+      </nav>
+      <div class="title-actions">
+        <span>ブランチ表示</span>
+        <span>同期状態</span>
+      </div>
+    </header>
+
+    <div class="body">
+      <aside class="sidebar">
+        <nav class="rail">
+          <span class="rail-label">ビュー切替レール</span>
+          <button class="rail-button" title="Files">F</button>
+          <button class="rail-button" title="Search">S</button>
+          <button class="rail-button" title="Git">G</button>
+          <button class="rail-button active" title="Settings">●</button>
+        </nav>
+
+        <section class="side-content">
+          <div class="side-header">
+            <p class="eyebrow">Sidebar view</p>
+            <div class="workspace-name">
+              <span>設定ビュー</span>
+              <span class="badge">Settings</span>
+            </div>
+          </div>
+
+          <div class="side-scroll">
+            <div class="section-title">設定カテゴリ</div>
+            <div class="list-item active">表示設定</div>
+            <div class="list-item">エディタ設定</div>
+            <div class="list-item">GitHub連携設定</div>
+            <div class="list-item">同期設定</div>
+            <div class="list-item">機能トグル</div>
+          </div>
+        </section>
+      </aside>
+
+      <main class="main">
+        <div class="toolbar">
+          <div class="tool-group">
+            <span class="mock-label">設定ヘッダー</span>
+          </div>
+          <div class="tool-group">
+            <button class="primary-button">変更を保存</button>
+          </div>
+        </div>
+
+        <div class="settings-scroll">
+          <div class="section-title">表示設定パネル</div>
+          <div class="setting-item active">テーマ選択 <span class="muted">ライト / ダーク / システム</span></div>
+          <div class="setting-item">アクセントカラー設定 <span class="muted">アクション色</span></div>
+          <div class="setting-item">エディタ最大幅 <span class="muted">数値入力</span></div>
+
+          <div class="section-title">エディタ設定パネル</div>
+          <div class="setting-item">フォント選択 <span class="muted">プリセット</span></div>
+          <div class="setting-item">フォントサイズ <span class="muted">数値入力</span></div>
+          <div class="setting-item">行間設定 <span class="muted">数値入力</span></div>
+          <div class="setting-item">行番号表示 <span class="muted">トグル</span></div>
+          <div class="setting-item">スペルチェック <span class="muted">トグル</span></div>
+
+          <div class="section-title">GitHub連携設定パネル</div>
+          <div class="setting-item">GitHubアカウント接続 <span class="muted">接続 / 切断</span></div>
+          <div class="setting-item">自動同期 <span class="muted">トグル</span></div>
+          <div class="setting-item">同期間隔 <span class="muted">選択</span></div>
+        </div>
+      </main>
+    </div>
+
+    <footer class="statusbar">
+      <div class="status-group"><span>ステータスバー</span><span>設定状態</span></div>
+      <div class="status-group"><span>保存状態</span></div>
+    </footer>
+  </div>
+</body>
+</html>

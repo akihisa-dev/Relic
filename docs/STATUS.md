@@ -40,6 +40,7 @@ AIがセッション開始時に読む**ドキュメント整備状況リスト*
 | [spec/navigation.md](spec/navigation.md) | ✅ | サイドバー・タブ・分割表示・アウトラインパネル・テーマ仕様あり |
 | [spec/search.md](spec/search.md) | ✅ | 全文・ファイル名・タグ・正規表現検索、置換まで記載 |
 | [spec/file-tools.md](spec/file-tools.md) | ✅ | マージ・分割・タイトル一覧・目次生成の仕様あり。リリース後に拡充予定 |
+| [spec/frontmatter.md](spec/frontmatter.md) | ✅ | フィールド種類・組み込み/固定/ユーザー定義/自由の4分類・上限20個・設定画面連携を定義済み |
 
 ---
 
@@ -70,6 +71,7 @@ AIがセッション開始時に読む**ドキュメント整備状況リスト*
 | [ui/DESIGN.md](ui/DESIGN.md) | ✅ | カラー・タイポ・スペーシング・モーション・ダークモード定義済み |
 | [ui/screens-macos.md](ui/screens-macos.md) | ✅ | 2カラムレイアウト・サイドバービュー・メインエリア構成を定義済み |
 | [ui/navigation.md](ui/navigation.md) | ✅ | 起動・ファイルを開く・タブ・分割・ビュー切り替えフロー定義済み |
+| [mockups/](mockups/) | 🔶 | 名称ラベル版の画面モックあり（メイン・検索・Git・設定・初回起動）。実動UIではない |
 
 ---
 

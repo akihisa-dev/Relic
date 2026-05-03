@@ -27,34 +27,8 @@
 
 ### ワークスペース・保存場所
 
-- [x] ワークスペースは「ユーザーが任意のローカルフォルダを登録する方式」で確定するか？
-  - 関連: [spec/file-management.md](../spec/file-management.md), [tech/stack.md](../tech/stack.md)
-  - 決定: 任意フォルダ方式で確定
-  - 反映先: [architecture/decisions.md](../architecture/decisions.md) の決定005を更新済み
-- [ ] iCloud連携は「必須機能」なのか、「iCloud Drive内のフォルダも普通に扱える」というOS機能利用なのか？
-  - 関連: [PLAN.md](../PLAN.md), [spec/file-management.md](../spec/file-management.md), [tech/stack.md](../tech/stack.md)
-- [ ] 複数ワークスペース間をまたいだ検索をサポートするか？
-  - 関連: [spec/file-management.md](../spec/file-management.md), [spec/search.md](../spec/search.md)
-- [ ] 複数ワークスペース間をまたいだ内部リンクをサポートするか？
-  - 関連: [spec/file-management.md](../spec/file-management.md), [spec/links-and-tags.md](../spec/links-and-tags.md)
-- [ ] ワークスペースを切り替えたとき、開いているタブ・分割表示・右パネルはどう扱うか？
-  - 関連: [ui/navigation.md](../ui/navigation.md)
-  - 例: 現在のタブを維持する / ワークスペースごとに復元する / すべて閉じる
 
 ### アプリの範囲
-
-- [ ] 「Markdown専用（画像なし）」の範囲をどこまで厳密にするか？
-  - 関連: [PLAN.md](../PLAN.md), [architecture/decisions.md](../architecture/decisions.md), [spec/markdown.md](../spec/markdown.md)
-  - 例: 画像ファイルを管理しないだけか、Markdown内の画像記法も非対応にするか
-- [ ] HTML記法はどこまで許可するか？
-  - 関連: [spec/markdown.md](../spec/markdown.md)
-  - 備考: 現在は下線に `<u>` を使う仕様がある
-- [ ] Obsidian互換をどこまで目指すか？
-  - 関連: [spec/markdown.md](../spec/markdown.md), [spec/links-and-tags.md](../spec/links-and-tags.md)
-  - 例: `[[file|alias]]`、見出しリンク、ブロック参照、埋め込み記法など
-- [ ] フロントマターは「フォームで編集する」のが標準でよいか？
-  - 関連: [spec/links-and-tags.md](../spec/links-and-tags.md), [architecture/data-model.md](../architecture/data-model.md)
-  - 備考: 生YAMLを編集したいユーザーへの逃げ道が必要か
 
 ### 技術選定
 
@@ -264,11 +238,8 @@
 
 ## 解消済みだが、古い記述の整理が必要なもの
 
-- [ ] [PLAN.md](../PLAN.md) の未決定事項に、すでに決定済みの項目が残っている
-  - 例: エディタエンジン、Git実装方法、macOS最低対応バージョン、配布方法
-- [ ] [architecture/overview.md](../architecture/overview.md) の未決定事項に、すでに決定済みのUIフレームワークが残っている
 - [ ] [architecture/decisions.md](../architecture/decisions.md) の番号順が 008・009・010 で前後している
-- [x] [architecture/decisions.md](../architecture/decisions.md) の「005 · ファイル保存先を iCloud Drive に限定する」は、現在のワークスペース仕様と矛盾している
-  - 決定: 任意フォルダ方式に統一
+  - 関連: [architecture/decisions.md](../architecture/decisions.md)
 - [ ] [docs/dev/conventions.md](conventions.md) に SwiftUI の記述が残っている
+  - 関連: [dev/conventions.md](conventions.md)
   - 備考: 凍結中のため、open questions総点検後に修正する

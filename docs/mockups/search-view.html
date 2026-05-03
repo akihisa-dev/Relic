@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Search view mockup</title>
+  <link rel="stylesheet" href="mockups.css">
+</head>
+<body>
+  <div class="window">
+    <header class="titlebar">
+      <div class="traffic">
+        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        <span class="app-name">タイトルバー</span>
+      </div>
+      <nav class="tabs">
+        <div class="tab active">タブ</div>
+        <div class="tab">タブ</div>
+      </nav>
+      <div class="title-actions">
+        <span>ブランチ表示</span>
+        <span>同期状態</span>
+      </div>
+    </header>
+
+    <div class="body">
+      <aside class="sidebar">
+        <nav class="rail">
+          <span class="rail-label">ビュー切替レール</span>
+          <button class="rail-button" title="Files">F</button>
+          <button class="rail-button active" title="Search">S</button>
+          <button class="rail-button" title="Git">G</button>
+          <button class="rail-button" title="Settings">●</button>
+        </nav>
+
+        <section class="side-content">
+          <div class="side-header">
+            <p class="eyebrow">Sidebar view</p>
+            <div class="workspace-name">
+              <span>検索ビュー</span>
+              <span class="badge">Search</span>
+            </div>
+          </div>
+
+          <div class="side-scroll">
+            <div class="field">検索入力フィールド</div>
+            <div class="segmented">
+              <div class="segment active">全文</div>
+              <div class="segment">ファイル名</div>
+              <div class="segment">タグ</div>
+              <div class="segment">正規表現</div>
+            </div>
+            <div class="field">置換入力フィールド</div>
+            <div class="section-title">検索結果一覧</div>
+            <div class="result-item active">検索結果項目 <span class="muted">一致行</span></div>
+            <div class="result-item">検索結果項目 <span class="muted">ファイル名</span></div>
+            <div class="result-item">検索結果項目 <span class="muted">タグ一致</span></div>
+            <div class="section-title">検索オプション</div>
+            <div class="list-item">大文字・小文字を区別</div>
+            <div class="list-item">現在のファイルのみ</div>
+            <div class="list-item">全ファイル一括置換</div>
+          </div>
+        </section>
+      </aside>
+
+      <main class="main">
+        <div class="toolbar">
+          <div class="tool-group">
+            <span class="mock-label">ツールバー</span>
+            <button class="icon-button active">検索</button>
+            <button class="icon-button">置換</button>
+          </div>
+          <div class="tool-group">
+            <button class="primary-button">検索実行</button>
+          </div>
+        </div>
+
+        <div class="editor-layout">
+          <article class="editor-shell">
+            <div class="editor-page">
+              <p><span class="mock-label">メインエリア</span> <span class="badge">検索ハイライト</span></p>
+              <h1>エディタ本体</h1>
+              <p>検索ビューを開いても、メインエリアはエディタのまま維持されます。</p>
+              <p>検索結果を選ぶと、該当箇所へジャンプし、本文中の一致箇所をハイライトします。</p>
+              <h2>検索対象の本文</h2>
+              <p>ここに <span class="link">検索一致箇所</span> が表示される想定です。</p>
+            </div>
+          </article>
+
+          <aside class="right-panel">
+            <div class="panel-title"><span>右パネル</span><span>Outline</span></div>
+            <div class="list-item active">アウトラインパネル</div>
+            <div class="list-item">見出し項目</div>
+            <div class="list-item">見出し項目</div>
+          </aside>
+        </div>
+      </main>
+    </div>
+
+    <footer class="statusbar">
+      <div class="status-group"><span>ステータスバー</span><span>検索件数</span></div>
+      <div class="status-group"><span>Markdown</span><span>保存状態</span></div>
+    </footer>
+  </div>
+</body>
+</html>

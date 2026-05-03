@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LoreBooks mockups</title>
+  <link rel="stylesheet" href="mockups.css">
+  <style>
+    .mockup-index {
+      width: min(720px, 100%);
+      display: grid;
+      gap: 10px;
+    }
+
+    .mockup-index a {
+      min-height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 14px;
+      border: 1px solid var(--outline-variant);
+      border-radius: 8px;
+      background: var(--surface-lowest);
+      color: var(--on-surface);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 650;
+    }
+  </style>
+</head>
+<body>
+  <main class="mockup-index">
+    <p class="eyebrow">Mockups</p>
+    <h1>画面モック一覧</h1>
+    <a href="main-screen.html"><span>メイン画面</span><span>名称ラベル版</span></a>
+    <a href="search-view.html"><span>検索ビュー</span><span>サイドバー切替</span></a>
+    <a href="git-view.html"><span>Gitビュー</span><span>同期 / Diff</span></a>
+    <a href="settings-view.html"><span>設定ビュー</span><span>表示 / エディタ / GitHub</span></a>
+    <a href="first-run.html"><span>初回起動画面</span><span>ワークスペース未登録</span></a>
+  </main>
+</body>
+</html>
