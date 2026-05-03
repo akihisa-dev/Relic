@@ -31,6 +31,18 @@
 
 ---
 
+## 添付画像
+
+Markdown本文から参照される補助ファイル。Relicは画像管理アプリではないため、画像単体の整理・タグ付け・検索対象にはしない。
+
+| フィールド | 内容 |
+|-----------|------|
+| path | ワークスペースルートからの相対パス |
+| referencedBy | 画像を参照しているMarkdownファイル |
+| alt | Markdown画像記法に書かれた代替テキスト |
+
+---
+
 ## フロントマター
 
 ファイル先頭の `---` で囲まれたYAMLブロック。フィールドの詳細仕様は [spec/frontmatter.md](../spec/frontmatter.md) を参照。
@@ -157,8 +169,21 @@ Gitのブランチ1件。
 | editorFont | エディタのフォント |
 | lineNumbers | 行番号表示のオン/オフ |
 | spellCheck | スペルチェックのオン/オフ |
+| featureToggles | GitHub連携・ファイル加工ツール・フロントマター・右パネル・フォーカス系モードのオン/オフ |
 | templateFolder | テンプレートフォルダのパス |
 | lastWorkspace | 前回開いていたワークスペース |
+
+---
+
+## ワークスペース設定
+
+ワークスペースごとに異なる設定値。アプリのユーザーデータフォルダに、ワークスペースと紐付けて保存する。
+
+| フィールド | 内容 |
+|-----------|------|
+| workspacePath | 対象ワークスペースのパス |
+| gitRepo | GitHub接続・リモートURL・ブランチなどのリポジトリ設定 |
+| autoSync | ワークスペース固有の自動同期設定 |
 
 ---
 
@@ -181,4 +206,7 @@ Workspace
         └── GitTag → Commit
 
 Template（テンプレートフォルダ内のFile）
+
+AttachmentImage
+  └── File（Markdown本文から参照）
 ```
