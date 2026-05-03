@@ -2,15 +2,16 @@
 
 このファイルはまだ決まっていない事項を一覧管理するドキュメントです。
 未決定のまま進めると実装に影響が出る問いをここに記録します。
-決定した事項は [architecture/decisions.md](../architecture/decisions.md) に移します。
+決定した事項は `[x]` として残し、必要に応じて [architecture/decisions.md](../architecture/decisions.md) にも記録します。
 
 ---
 
 ## 運用ルール
 
-- ここに書くのは「決定」ではなく「決める必要がある問い」
+- ここに書くのは「決める必要がある問い」
+- 解決済みの問いも `[x]` として残す
 - 決定したら、関連する仕様書・設計書に反映し、必要なら [architecture/decisions.md](../architecture/decisions.md) に理由つきで記録する
-- 他の `dev/roadmap.md`・`dev/conventions.md`・`dev/testing.md` は、このファイルの総点検が一段落するまで凍結する
+- `dev/roadmap.md`・`dev/conventions.md`・`dev/testing.md` は、ユーザーの明示指示があるまで凍結する
 
 ## 優先度
 
@@ -45,11 +46,11 @@
   - 関連: [spec/navigation.md](../spec/navigation.md), [ui/navigation.md](../ui/navigation.md), [ui/screens-macos.md](../ui/screens-macos.md)
 - [x] `docs/_rules.md` の `README.md` 参照を、現在の `docs/INDEX.md` 運用に合わせて修正するか？ → **修正する**ことに決定
   - 関連: [_rules.md](../_rules.md), [INDEX.md](../INDEX.md)
-- [ ] `docs/mockups/` は現行仕様に追従して更新するか、古い名称ラベル版の参考資料として残すか？
+- [x] `docs/mockups/` は現行仕様に追従して更新するか、古い名称ラベル版の参考資料として残すか？ → **現行仕様に追従して更新する**ことに決定
   - 関連: [mockups/](../mockups/), [ui/screens-macos.md](../ui/screens-macos.md), [spec/navigation.md](../spec/navigation.md)
-- [ ] `docs/mockups/settings-view.html` に残っているアクセントカラー設定を、現行仕様に合わせて削除するか？
+- [x] `docs/mockups/settings-view.html` に残っているアクセントカラー設定を、現行仕様に合わせて削除するか？ → **削除する**ことに決定
   - 関連: [mockups/settings-view.html](../mockups/settings-view.html), [spec/navigation.md](../spec/navigation.md), [ui/screens-macos.md](../ui/screens-macos.md)
-- [ ] `tech/stack.md` の連続した区切り線など、内容矛盾ではない整形漏れも整合性修正の対象に含めるか？
+- [x] `tech/stack.md` の連続した区切り線など、内容矛盾ではない整形漏れも整合性修正の対象に含めるか？ → **整合性修正の対象に含める**ことに決定
   - 関連: [tech/stack.md](../tech/stack.md)
 
 ### ワークスペース・保存場所
