@@ -136,26 +136,24 @@
 
 ### UI・ナビゲーション
 
-- [ ] サイドバーのビュー切り替えUIをどうするか？
+- [x] サイドバーのビュー切り替えUIをどうするか？ → **左端の縦アイコンナビ**に決定
   - 関連: [ui/screens-macos.md](../ui/screens-macos.md), [ui/navigation.md](../ui/navigation.md)
-  - 候補: タブ / アイコンボタン / ドロップダウン / 縦ナビ
-- [ ] サイドバーの幅は固定か、ユーザーが変更できるか？
+- [x] サイドバーの幅は固定か、ユーザーが変更できるか？ → **ユーザーがドラッグで変更できる**に決定
   - 関連: [ui/screens-macos.md](../ui/screens-macos.md)
-- [ ] サイドバーを閉じた状態で検索・Git・設定を開いた場合の挙動をどうするか？
+- [x] サイドバーを閉じた状態で検索・Git・設定を開いた場合の挙動をどうするか？ → **サイドバーを自動で開いて対象ビューを表示**に決定
   - 関連: [ui/navigation.md](../ui/navigation.md)
-- [ ] 右パネルはアウトラインとリンクを同時表示できるか、どちらか一方か？
+- [x] 右パネルはアウトラインとリンクを同時表示できるか、どちらか一方か？ → **アウトライン / リンクのどちらか一方だけ表示**に決定
   - 関連: [ui/screens-macos.md](../ui/screens-macos.md), [ui/navigation.md](../ui/navigation.md)
-- [ ] タブを閉じた後に「直前に表示していたタブ」をどう記録するか？
+- [x] タブを閉じた後に「直前に表示していたタブ」をどう記録するか？ → **表示履歴ベース**に決定
   - 関連: [ui/navigation.md](../ui/navigation.md)
-- [ ] タブが0枚のときの空状態に何を表示するか？
+- [x] タブが0枚のときの空状態に何を表示するか？ → **新規ノート作成画面**に決定
   - 関連: [ui/navigation.md](../ui/navigation.md)
-- [ ] 分割表示中のタブ管理はペインごとか、全体共通か？
+- [x] 分割表示中のタブ管理はペインごとか、全体共通か？ → **ペインごとにタブ管理**に決定
   - 関連: [ui/navigation.md](../ui/navigation.md)
-- [ ] 初回起動時に「新規ワークスペース作成」で作るフォルダの保存先をどうするか？
+- [x] 初回起動時に「新規ワークスペース作成」で作るフォルダの保存先をどうするか？ → **毎回ユーザーが保存場所を選ぶ**に決定
   - 関連: [ui/screens-macos.md](../ui/screens-macos.md), [spec/file-management.md](../spec/file-management.md)
-- [ ] コマンドパレット・クイックスイッチャーのUI仕様をどこに書くか？
-  - 関連: [PLAN.md](../PLAN.md)
-  - 備考: 機能一覧にはあるが、詳細仕様書がまだない
+- [x] コマンドパレット・クイックスイッチャーのUI仕様をどこに書くか？ → **[spec/command-palette.md](../spec/command-palette.md) を新規作成**に決定
+  - 関連: [PLAN.md](../PLAN.md), [spec/command-palette.md](../spec/command-palette.md)
 
 ---
 
