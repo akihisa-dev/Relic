@@ -11,7 +11,7 @@
 - ここに書くのは「決める必要がある問い」
 - 解決済みの問いも `[x]` として残す
 - 決定したら、関連する仕様書・設計書に反映し、必要なら [architecture/decisions.md](../architecture/decisions.md) に理由つきで記録する
-- `dev/roadmap.md`・`dev/conventions.md`・`dev/testing.md` は、ユーザーの明示指示があるまで凍結する
+- `dev/roadmap.md`・`dev/conventions.md`・`dev/testing.md` は、2026-05-04 にユーザー指示で凍結解除済み
 
 ## 優先度
 
@@ -30,7 +30,7 @@
 
 - [x] `docs/dev/open-questions.md` は、解決済みの問いを `[x]` として残す運用にするか、`docs/_rules.md` の記述どおり決定後に削除する運用に戻すか？ → **解決済みの問いも `[x]` として残す**運用に決定
   - 関連: [dev/open-questions.md](open-questions.md), [_rules.md](../_rules.md), [AI.md](../../AI.md)
-- [x] 凍結中の `dev/roadmap.md`・`dev/conventions.md`・`dev/testing.md` は、総点検完了後もユーザーの明示指示があるまで凍結継続とするか、別の再開条件を定義するか？ → **ユーザーの明示指示があるまで凍結継続**に決定
+- [x] `dev/roadmap.md`・`dev/conventions.md`・`dev/testing.md` の編集停止状態は、総点検完了後もユーザーの明示指示があるまで継続とするか、別の再開条件を定義するか？ → **2026-05-04 にユーザー指示で凍結解除**。以後は通常の開発ドキュメントとして編集可能
   - 関連: [dev/open-questions.md](open-questions.md), [STATUS.md](../STATUS.md)
 - [x] `README.md` の対象ユーザー定義を、現在の `principles.md` に合わせて広いMarkdown利用者向けに更新するか？ → **更新する**ことに決定
   - 関連: [README.md](../../README.md), [principles.md](../principles.md)
