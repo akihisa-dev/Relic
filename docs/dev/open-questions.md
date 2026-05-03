@@ -218,8 +218,7 @@
 
 ## 解消済みだが、古い記述の整理が必要なもの
 
-- [ ] [architecture/decisions.md](../architecture/decisions.md) の番号順が 008・009・010 で前後している
+- [x] [architecture/decisions.md](../architecture/decisions.md) の番号順が 008・009・010 で前後している → **008〜013を昇順に整理済み**
   - 関連: [architecture/decisions.md](../architecture/decisions.md)
-- [ ] [docs/dev/conventions.md](conventions.md) に SwiftUI の記述が残っている
+- [x] [docs/dev/conventions.md](conventions.md) に SwiftUI の記述が残っている → **Electron / React / TypeScript 前提の記述に修正済み**
   - 関連: [dev/conventions.md](conventions.md)
-  - 備考: 凍結中のため、open questions総点検後に修正する
