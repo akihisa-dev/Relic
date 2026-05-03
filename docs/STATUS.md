@@ -80,10 +80,10 @@ AIがセッション開始時に読む**ドキュメント整備状況リスト*
 
 | ファイル | 状態 | 備考 |
 |----------|------|------|
-| [dev/roadmap.md](dev/roadmap.md) | ❌ | 凍結中（ユーザーの明示指示があるまで編集しない） |
+| [dev/roadmap.md](dev/roadmap.md) | ✅ | 開発フェーズ・実装順・各フェーズの完了条件を定義済み |
 | [dev/open-questions.md](dev/open-questions.md) | ✅ | 未決定事項の総点検が完了。すべて解消済み |
-| [dev/conventions.md](dev/conventions.md) | ❌ | 未着手（ヘッダーのみ）。古い前提記述は整理済み |
-| [dev/testing.md](dev/testing.md) | ❌ | 凍結中（ユーザーの明示指示があるまで編集しない） |
+| [dev/conventions.md](dev/conventions.md) | ✅ | Electron / React / TypeScript の基本規約と責務分離を定義済み |
+| [dev/testing.md](dev/testing.md) | ✅ | Vitest中心のテスト方針・優先領域・命名規則を定義済み |
 
 ---
 
