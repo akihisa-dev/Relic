@@ -111,29 +111,27 @@
 
 ### GitHub・Git
 
-- [ ] GitHub OAuthの具体的な認証方式をどうするか？
+- [x] GitHub OAuthの具体的な認証方式をどうするか？ → **ブラウザOAuth** に決定。Personal Access Token貼り付け方式は非対応
   - 関連: [spec/github.md](../spec/github.md)
-  - 例: Device Flow / ブラウザOAuth / Personal Access Tokenは非対応にするか
-- [ ] GitHub接続なしのローカルGitリポジトリをどこまでサポートするか？
+- [x] GitHub接続なしのローカルGitリポジトリをどこまでサポートするか？ → **サポートする**。GitHubなしでもローカル履歴管理できる
   - 関連: [spec/github.md](../spec/github.md)
-- [ ] 自動プル・自動プッシュのデフォルトOFFで確定するか？
+- [x] 自動プル・自動プッシュのデフォルトOFFで確定するか？ → **デフォルトOFF** に決定
   - 関連: [spec/github.md](../spec/github.md)
-- [ ] 自動同期の間隔プリセットを何にするか？
+- [x] 自動同期の間隔プリセットを何にするか？ → **5分 / 15分 / 30分 / 60分** に決定
   - 関連: [spec/github.md](../spec/github.md)
-- [ ] 自動プッシュ時に未保存変更がある場合の扱いをどうするか？
+- [x] 自動プッシュ時に未保存変更がある場合の扱いをどうするか？ → **保存完了を待ってからプッシュ** に決定
   - 関連: [spec/github.md](../spec/github.md), [architecture/overview.md](../architecture/overview.md)
-- [ ] 自動コミットメッセージの形式をどうするか？
+- [x] 自動コミットメッセージの形式をどうするか？ → **`Update notes: YYYY-MM-DD HH:mm`** に決定
   - 関連: [spec/github.md](../spec/github.md)
-- [ ] 手動同期時に差分確認を必須にするか、任意にするか？
+- [x] 手動同期時に差分確認を必須にするか、任意にするか？ → **必ず表示** に決定
   - 関連: [spec/github.md](../spec/github.md)
-- [ ] コンフリクト解決UIは「自分/リモートの二択」だけで足りるか？
+- [x] コンフリクト解決UIは「自分/リモートの二択」だけで足りるか？ → **二択を基本にしつつ、手動編集も許可** に決定
   - 関連: [spec/github.md](../spec/github.md)
-  - 備考: 手動マージ編集を許可するかどうか
-- [ ] ブランチ切り替え時に未コミット変更がある場合の扱いをどうするか？
+- [x] ブランチ切り替え時に未コミット変更がある場合の扱いをどうするか？ → **確認画面を表示し、コミットして切り替え / 変更を残したまま切り替え / キャンセルを選べる** に決定
   - 関連: [spec/github.md](../spec/github.md)
-- [ ] Gitタグ機能は初期リリースに含めるか、後回しにするか？
+- [x] Gitタグ機能は初期リリースに含めるか、後回しにするか？ → **初期リリースに含める** に決定
   - 関連: [spec/github.md](../spec/github.md)
-- [ ] GitHubにプッシュできない状態のエラー表示・再試行方法をどうするか？
+- [x] GitHubにプッシュできない状態のエラー表示・再試行方法をどうするか？ → **原因別メッセージ＋再試行ボタン＋詳細表示** に決定
   - 関連: [spec/github.md](../spec/github.md), [principles.md](../principles.md)
 
 ### UI・ナビゲーション
