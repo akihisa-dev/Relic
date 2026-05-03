@@ -32,16 +32,13 @@
 
 ### 技術選定
 
-- [ ] パッケージマネージャを何にするか？
-  - 関連: [tech/stack.md](../tech/stack.md)
-  - 候補: npm / pnpm / yarn
-- [ ] Electronのビルド・配布ツールを何にするか？
-  - 関連: [tech/stack.md](../tech/stack.md)
-  - 候補: electron-builder / Electron Forge / Vite連携構成
-- [ ] テストフレームワークを何にするか？
-  - 関連: [tech/stack.md](../tech/stack.md)
-  - 候補: Vitest / Jest / Playwright
-- [ ] 検索インデックスはインメモリ再構築で足りるか、永続化するか？
+- [x] パッケージマネージャを何にするか？ → **pnpm** に決定
+  - 関連: [tech/stack.md](../tech/stack.md), [architecture/decisions.md](../architecture/decisions.md) #011
+- [x] Electronのビルド・配布ツールを何にするか？ → **Electron Forge** に決定
+  - 関連: [tech/stack.md](../tech/stack.md), [architecture/decisions.md](../architecture/decisions.md) #012
+- [x] テストフレームワークを何にするか？ → **Vitest** に決定
+  - 関連: [tech/stack.md](../tech/stack.md), [architecture/decisions.md](../architecture/decisions.md) #013
+- [x] 検索インデックスはインメモリ再構築で足りるか、永続化するか？ → **インメモリ再構築**（起動ごとに作り直す）に決定
   - 関連: [architecture/overview.md](../architecture/overview.md), [spec/search.md](../spec/search.md)
 
 ---
@@ -50,41 +47,34 @@
 
 ### ファイル・フォルダ管理
 
-- [ ] 削除時に確認ダイアログを出さない方針で本当に問題ないか？
+- [x] 削除時に確認ダイアログを出さない方針で本当に問題ないか？ → **確認ダイアログあり**に変更
   - 関連: [spec/file-management.md](../spec/file-management.md)
-  - 備考: OSのゴミ箱に移動するため復元可能だが、非エンジニア向けアプリとして確認の有無を決めたい
-- [ ] ファイル名の禁止文字・重複時の扱いをどうするか？
+- [x] ファイル名の禁止文字・重複時の扱いをどうするか？ → **どちらもエラー表示して別名入力を促す**に決定
   - 関連: [spec/file-management.md](../spec/file-management.md)
-  - 例: 同名ファイル、拡張子なし入力、`/` を含む名前
-- [ ] ファイル作成時、`.md` 拡張子は自動で付けるか、表示上は隠すか？
+- [x] ファイル作成時、`.md` 拡張子は自動で付けるか、表示上は隠すか？ → **自動付与・表示上は隠す**に決定。サイドバーは `.md` のみ表示（他形式は非表示）
   - 関連: [spec/file-management.md](../spec/file-management.md), [architecture/data-model.md](../architecture/data-model.md)
-- [ ] ファイル複製時の命名規則をどうするか？
+- [x] ファイル複製時の命名規則をどうするか？ → **「ファイル名 のコピー」**に決定（既存仕様と一致）
   - 関連: [spec/file-management.md](../spec/file-management.md)
-  - 例: `ファイル名 のコピー` / `ファイル名 copy` / `ファイル名 2`
-- [ ] リネーム・移動時に内部リンクを自動更新する前に確認を出すか？
+- [x] リネーム・移動時に内部リンクを自動更新する前に確認を出すか？ → **確認なしで即時自動更新**に決定
   - 関連: [spec/file-management.md](../spec/file-management.md), [spec/links-and-tags.md](../spec/links-and-tags.md)
-- [ ] 内部リンク自動更新の対象は本文だけか、フロントマターやコードブロック内も含めるか？
+- [x] 内部リンク自動更新の対象は本文だけか、フロントマターやコードブロック内も含めるか？ → **本文＋フロントマター**（コードブロック内は除外）に決定
   - 関連: [spec/file-management.md](../spec/file-management.md), [spec/links-and-tags.md](../spec/links-and-tags.md)
-- [ ] テンプレートフォルダをファイルツリーに表示するか、通常ファイルから隠すか？
+- [x] テンプレートフォルダをファイルツリーに表示するか、通常ファイルから隠すか？ → **通常フォルダとして表示**に決定
   - 関連: [spec/links-and-tags.md](../spec/links-and-tags.md), [ui/screens-macos.md](../ui/screens-macos.md)
 
 ### 内部リンク・タグ
 
-- [ ] 同じファイル名が複数フォルダに存在する場合、`[[ファイル名]]` はどう解決するか？
+- [x] 同じファイル名が複数フォルダに存在する場合、`[[ファイル名]]` はどう解決するか？ → **補完でパス付きリンクを提示、ユーザーが選択**して解決に決定
   - 関連: [spec/links-and-tags.md](../spec/links-and-tags.md), [architecture/data-model.md](../architecture/data-model.md)
-- [ ] 内部リンクにパス指定を許可するか？
+- [x] 内部リンクにパス指定を許可するか？ → **許可する**（`[[フォルダ/ファイル名]]` 記法をサポート）に決定
   - 関連: [spec/links-and-tags.md](../spec/links-and-tags.md)
-  - 例: `[[folder/file]]`
-- [ ] 未作成リンクをクリックして新規作成する場所はどこにするか？
+- [x] 未作成リンクをクリックして新規作成する場所はどこにするか？ → **リンク元ファイルと同じフォルダ**に決定
   - 関連: [spec/links-and-tags.md](../spec/links-and-tags.md), [ui/navigation.md](../ui/navigation.md)
-  - 例: 現在のファイルと同じフォルダ / ワークスペース直下 / ユーザーに選ばせる
-- [ ] バックリンク・アウトゴーイングリンクを「本文の最下部に表示」で確定するか？
+- [x] バックリンク・アウトゴーイングリンクを「本文の最下部に表示」で確定するか？ → **右パネルに表示**（ナビゲーション補助として位置づけ）に変更
   - 関連: [spec/links-and-tags.md](../spec/links-and-tags.md), [ui/screens-macos.md](../ui/screens-macos.md)
-  - 備考: UI仕様では右パネルにもリンクパネルがある
-- [ ] タグの文字種・階層タグをサポートするか？
+- [x] タグの文字種・階層タグをサポートするか？ → **階層タグ（#親/子）・日本語タグともにサポート**に決定
   - 関連: [spec/links-and-tags.md](../spec/links-and-tags.md)
-  - 例: `#親/子`、日本語タグ、スペースを含むタグ
-- [ ] 本文タグとフロントマター `tags:` が重複した場合の表示・検索結果をどう扱うか？
+- [x] 本文タグとフロントマター `tags:` が重複した場合の表示・検索結果をどう扱うか？ → **マージして1件として扱う**に決定。本文タグとフロントマタータグはどちらも有効
   - 関連: [spec/links-and-tags.md](../spec/links-and-tags.md)
 
 ### エディタ
