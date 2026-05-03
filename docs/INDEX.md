@@ -16,11 +16,10 @@
 | [spec/_template.md](spec/_template.md) | 仕様書テンプレート。spec/ 内のファイルはこの形式で書く |
 | [spec/editor.md](spec/editor.md) | エディタ機能の詳細仕様 |
 | [spec/markdown.md](spec/markdown.md) | マークダウン記法サポートの詳細仕様 |
-| [spec/file-management.md](spec/file-management.md) | ファイル・フォルダ管理の詳細仕様 |
+| [spec/file-management.md](spec/file-management.md) | ファイル・フォルダ管理の詳細仕様。クラウド同期フォルダは通常のローカルフォルダとして扱う |
 | [spec/search.md](spec/search.md) | 検索機能の詳細仕様 |
 | [spec/links-and-tags.md](spec/links-and-tags.md) | 内部リンク・バックリンク・タグの詳細仕様 |
 | [spec/github.md](spec/github.md) | GitHub連携の詳細仕様 |
-| [spec/icloud.md](spec/icloud.md) | iCloud連携の詳細仕様 |
 | [architecture/overview.md](architecture/overview.md) | アーキテクチャ全体像 |
 | [architecture/data-model.md](architecture/data-model.md) | データモデル定義 |
 | [architecture/decisions.md](architecture/decisions.md) | 設計上の意思決定記録（ADR） |

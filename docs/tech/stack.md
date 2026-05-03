@@ -12,18 +12,13 @@
 | デスクトップフレームワーク | Electron | macOSネイティブアプリを Web 技術で構築 |
 | エディタエンジン | CodeMirror 6 | 詳細は [tech/editor-engine.md](editor-engine.md) |
 | Git実装 | isomorphic-git | 詳細は [tech/git-implementation.md](git-implementation.md) |
-| iCloud連携 | ネイティブファイルシステム経由 | iCloud Drive のローカルフォルダを直接読み書き |
+| クラウド同期フォルダ対応 | ネイティブファイルシステム経由 | iCloud Drive / OneDrive / Dropbox などを、OS上のローカルフォルダとして直接読み書き。各クラウドサービスのAPI連携は持たない |
 | UIフレームワーク | React | Obsidianと同じ。AI駆動開発との相性が最良 |
+| パッケージマネージャ | pnpm | 高速・軽量。Electron × React の定番 |
+| ビルド・配布ツール | Electron Forge | Electron公式推奨。プロジェクト作成〜配布を一括管理 |
+| テストフレームワーク | Vitest | 高速・設定簡単。TypeScript との相性が最良 |
 
 ---
-
-## 未選定（今後決定が必要なもの）
-
-| カテゴリ | 候補・備考 |
-|---------|-----------|
-| パッケージマネージャ | npm / pnpm / yarn（未選定） |
-| ビルドツール | Vite / webpack / electron-builder（未選定） |
-| テストフレームワーク | Vitest / Jest（未選定） |
 
 ---
 
