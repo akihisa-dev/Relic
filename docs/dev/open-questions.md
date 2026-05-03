@@ -201,7 +201,7 @@
 
 - [ ] 料金モデルは「当面完全無料」で固定し、フリーミアム検討を凍結するか？
   - 関連: [PLAN.md](../PLAN.md), [STATUS.md](../STATUS.md), [journal/2026-05-01.md](../journal/2026-05-01.md)
-- [ ] アプリ名「Lorebooks」は現状維持でよいか？
+- [x] アプリ名を何にするか？ → **Relic** に決定
   - 関連: [journal/2026-05-01.md](../journal/2026-05-01.md)
 - [ ] 想定ユーザーを「自分用」から「一般公開」へ広げるタイミングをどう決めるか？
   - 関連: [principles.md](../principles.md), [PLAN.md](../PLAN.md)
