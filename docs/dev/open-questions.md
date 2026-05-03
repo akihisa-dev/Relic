@@ -27,9 +27,10 @@
 
 ### ワークスペース・保存場所
 
-- [ ] ワークスペースは「ユーザーが任意のローカルフォルダを登録する方式」で確定するか？
+- [x] ワークスペースは「ユーザーが任意のローカルフォルダを登録する方式」で確定するか？
   - 関連: [spec/file-management.md](../spec/file-management.md), [tech/stack.md](../tech/stack.md)
-  - 備考: [architecture/decisions.md](../architecture/decisions.md) の「005 · ファイル保存先を iCloud Drive に限定する」と矛盾しているため、どちらかを正にする必要がある
+  - 決定: 任意フォルダ方式で確定
+  - 反映先: [architecture/decisions.md](../architecture/decisions.md) の決定005を更新済み
 - [ ] iCloud連携は「必須機能」なのか、「iCloud Drive内のフォルダも普通に扱える」というOS機能利用なのか？
   - 関連: [PLAN.md](../PLAN.md), [spec/file-management.md](../spec/file-management.md), [tech/stack.md](../tech/stack.md)
 - [ ] 複数ワークスペース間をまたいだ検索をサポートするか？
@@ -267,6 +268,7 @@
   - 例: エディタエンジン、Git実装方法、macOS最低対応バージョン、配布方法
 - [ ] [architecture/overview.md](../architecture/overview.md) の未決定事項に、すでに決定済みのUIフレームワークが残っている
 - [ ] [architecture/decisions.md](../architecture/decisions.md) の番号順が 008・009・010 で前後している
-- [ ] [architecture/decisions.md](../architecture/decisions.md) の「005 · ファイル保存先を iCloud Drive に限定する」は、現在のワークスペース仕様と矛盾している
+- [x] [architecture/decisions.md](../architecture/decisions.md) の「005 · ファイル保存先を iCloud Drive に限定する」は、現在のワークスペース仕様と矛盾している
+  - 決定: 任意フォルダ方式に統一
 - [ ] [docs/dev/conventions.md](conventions.md) に SwiftUI の記述が残っている
   - 備考: 凍結中のため、open questions総点検後に修正する
