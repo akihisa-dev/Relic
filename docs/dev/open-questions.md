@@ -25,6 +25,33 @@
 
 ## P0：設計の前提に関わる問い
 
+### ドキュメント整合性
+
+- [ ] `docs/dev/open-questions.md` は、解決済みの問いを `[x]` として残す運用にするか、`docs/_rules.md` の記述どおり決定後に削除する運用に戻すか？
+  - 関連: [dev/open-questions.md](open-questions.md), [_rules.md](../_rules.md), [AI.md](../../AI.md)
+- [ ] 凍結中の `dev/roadmap.md`・`dev/conventions.md`・`dev/testing.md` は、総点検完了後もユーザーの明示指示があるまで凍結継続とするか、別の再開条件を定義するか？
+  - 関連: [dev/open-questions.md](open-questions.md), [STATUS.md](../STATUS.md)
+- [ ] `README.md` の対象ユーザー定義を、現在の `principles.md` に合わせて広いMarkdown利用者向けに更新するか？
+  - 関連: [README.md](../../README.md), [principles.md](../principles.md)
+- [ ] `README.md` の技術スタックを、現在の確定スタック（isomorphic-git / React / pnpm / Electron Forge / Vitest など）に合わせて更新するか？
+  - 関連: [README.md](../../README.md), [tech/stack.md](../tech/stack.md), [tech/git-implementation.md](../tech/git-implementation.md)
+- [ ] `PLAN.md` の技術スタック表を、現在の確定スタック全体に合わせて補完するか？
+  - 関連: [PLAN.md](../PLAN.md), [tech/stack.md](../tech/stack.md)
+- [ ] `STATUS.md` の古い備考（未決定事項が複数残存、ADR 8件、未選定項目あり等）を、現在の状態に合わせて更新するか？
+  - 関連: [STATUS.md](../STATUS.md), [architecture/decisions.md](../architecture/decisions.md), [tech/stack.md](../tech/stack.md), [dev/open-questions.md](open-questions.md)
+- [ ] `architecture/overview.md` の `LinksPanel` 説明を、右パネル表示の現行仕様に合わせて修正するか？
+  - 関連: [architecture/overview.md](../architecture/overview.md), [spec/links-and-tags.md](../spec/links-and-tags.md), [ui/screens-macos.md](../ui/screens-macos.md)
+- [ ] `spec/navigation.md` に、UI側で決定済みの縦アイコンナビ・可変幅サイドバー・右パネル切り替え・タブ履歴・ペイン別タブ管理などを反映するか？
+  - 関連: [spec/navigation.md](../spec/navigation.md), [ui/navigation.md](../ui/navigation.md), [ui/screens-macos.md](../ui/screens-macos.md)
+- [ ] `docs/_rules.md` の `README.md` 参照を、現在の `docs/INDEX.md` 運用に合わせて修正するか？
+  - 関連: [_rules.md](../_rules.md), [INDEX.md](../INDEX.md)
+- [ ] `docs/mockups/` は現行仕様に追従して更新するか、古い名称ラベル版の参考資料として残すか？
+  - 関連: [mockups/](../mockups/), [ui/screens-macos.md](../ui/screens-macos.md), [spec/navigation.md](../spec/navigation.md)
+- [ ] `docs/mockups/settings-view.html` に残っているアクセントカラー設定を、現行仕様に合わせて削除するか？
+  - 関連: [mockups/settings-view.html](../mockups/settings-view.html), [spec/navigation.md](../spec/navigation.md), [ui/screens-macos.md](../ui/screens-macos.md)
+- [ ] `tech/stack.md` の連続した区切り線など、内容矛盾ではない整形漏れも整合性修正の対象に含めるか？
+  - 関連: [tech/stack.md](../tech/stack.md)
+
 ### ワークスペース・保存場所
 
 
