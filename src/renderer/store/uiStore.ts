@@ -8,11 +8,13 @@ interface UiState {
   isFocusMode: boolean;
   isSidebarOpen: boolean;
   isRightPanelOpen: boolean;
+  isTypewriterMode: boolean;
   rightPanelView: RightPanelView;
   setSidebarView: (view: SidebarView) => void;
   toggleFocusMode: () => void;
   toggleSidebar: () => void;
   toggleRightPanel: () => void;
+  toggleTypewriterMode: () => void;
   setRightPanelView: (view: RightPanelView) => void;
 }
 
@@ -21,6 +23,7 @@ export const useUiStore = create<UiState>((set) => ({
   isFocusMode: false,
   isSidebarOpen: true,
   isRightPanelOpen: true,
+  isTypewriterMode: false,
   rightPanelView: "outline",
   setSidebarView: (view) =>
     set({
@@ -33,6 +36,7 @@ export const useUiStore = create<UiState>((set) => ({
       isSidebarOpen: state.isFocusMode,
       isRightPanelOpen: state.isFocusMode
     })),
+  toggleTypewriterMode: () => set((state) => ({ isTypewriterMode: !state.isTypewriterMode })),
   toggleSidebar: () => set((state) => ({ isSidebarOpen: !state.isSidebarOpen })),
   toggleRightPanel: () => set((state) => ({ isRightPanelOpen: !state.isRightPanelOpen })),
   setRightPanelView: (view) =>
