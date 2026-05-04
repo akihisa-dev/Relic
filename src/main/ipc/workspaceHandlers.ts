@@ -22,6 +22,8 @@ import {
   type RenameFolderInput,
   renameMarkdownFileChannel,
   type RenameMarkdownFileInput,
+  searchWorkspaceChannel,
+  type SearchWorkspaceInput,
   switchWorkspaceChannel,
   type SwitchWorkspaceInput,
   type WorkspaceState
@@ -39,6 +41,7 @@ import {
 } from "../files/markdownFiles";
 import { moveWorkspaceItemToTrash } from "../files/trash";
 import { readWorkspaceTags } from "../files/tags";
+import { searchWorkspace } from "../files/search";
 import { readAppSettings, writeAppSettings } from "../settings/appSettings";
 import {
   addOrActivateWorkspace,
@@ -77,6 +80,29 @@ export function registerWorkspaceHandlers(): void {
       return fail(
         "TAGS_READ_FAILED",
         "タグを読み込めませんでした。",
+        error instanceof Error ? error.message : String(error)
+      );
+    }
+  });
+
+  ipcMain.handle(searchWorkspaceChannel, async (_event, input: SearchWorkspaceInput) => {
+    try {
+      if (!isSearchWorkspaceInput(input)) {
+        return fail("SEARCH_INVALID_INPUT", "検索語句を入力してください。");
+      }
+
+      const settings = await readAppSettings(app.getPath("userData"));
+      const state = toWorkspaceState(settings);
+
+      if (!state.activeWorkspace) {
+        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
+      }
+
+      return searchWorkspace(state.activeWorkspace.path, input.query, input.mode);
+    } catch (error) {
+      return fail(
+        "SEARCH_FAILED",
+        "検索できませんでした。",
         error instanceof Error ? error.message : String(error)
       );
     }
@@ -503,5 +529,19 @@ function isMoveItemToTrashInput(input: unknown): input is MoveItemToTrashInput {
     "type" in input &&
     typeof (input as { path?: unknown }).path === "string" &&
     ((input as { type?: unknown }).type === "file" || (input as { type?: unknown }).type === "folder")
+  );
+}
+
+function isSearchWorkspaceInput(input: unknown): input is SearchWorkspaceInput {
+  return (
+    typeof input === "object" &&
+    input !== null &&
+    "query" in input &&
+    "mode" in input &&
+    typeof (input as { query?: unknown }).query === "string" &&
+    ((input as { mode?: unknown }).mode === "fullText" ||
+      (input as { mode?: unknown }).mode === "fileName" ||
+      (input as { mode?: unknown }).mode === "tag" ||
+      (input as { mode?: unknown }).mode === "regex")
   );
 }

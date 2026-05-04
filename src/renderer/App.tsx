@@ -6,7 +6,9 @@ import type {
   Backlink,
   EditorSettings,
   MarkdownFileContent,
+  SearchMode,
   WorkspaceState,
+  WorkspaceSearchResult,
   WorkspaceTagSummary,
   WorkspaceTreeNode
 } from "../shared/ipc";
@@ -92,17 +94,101 @@ interface FilesSidebarProps {
   workspaceState: WorkspaceState | null;
 }
 
-function SearchSidebar({ tags }: { tags: WorkspaceTagSummary[] }): ReactElement {
+function SearchSidebar({
+  error,
+  mode,
+  query,
+  results,
+  tags,
+  onModeChange,
+  onOpenFile,
+  onQueryChange,
+  onTagSelect
+}: {
+  error: string | null;
+  mode: SearchMode;
+  query: string;
+  results: WorkspaceSearchResult[];
+  tags: WorkspaceTagSummary[];
+  onModeChange: (mode: SearchMode) => void;
+  onOpenFile: (path: string) => void;
+  onQueryChange: (query: string) => void;
+  onTagSelect: (tag: string) => void;
+}): ReactElement {
   return (
     <div className="sidebar-section">
-      <input aria-label="検索" className="search-input" placeholder="検索" />
+      <input
+        aria-label="検索"
+        className={`search-input${error ? " search-input--error" : ""}`}
+        onChange={(event) => onQueryChange(event.target.value)}
+        placeholder="検索"
+        value={query}
+      />
+      <select
+        aria-label="検索モード"
+        className="search-mode-select"
+        onChange={(event) => onModeChange(event.target.value as SearchMode)}
+        value={mode}
+      >
+        <option value="fullText">全文</option>
+        <option value="fileName">ファイル名</option>
+        <option value="tag">タグ</option>
+        <option value="regex">正規表現</option>
+      </select>
+      {mode === "regex" ? (
+        <div className="search-patterns">
+          {[
+            ["行頭が見出し", "^#+ "],
+            ["URLを含む行", "https?://"],
+            ["日付形式", "\\d{4}-\\d{2}-\\d{2}"],
+            ["タグ記法", "#\\w+"]
+          ].map(([label, pattern]) => (
+            <button
+              className="search-pattern-btn"
+              key={label}
+              onClick={() => onQueryChange(pattern)}
+              type="button"
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      ) : null}
+      {error ? <div className="error-note">{error}</div> : null}
+      <div className="search-block">
+        <div className="links-panel-subheading">Results</div>
+        {results.length > 0 ? (
+          <ul className="search-results">
+            {results.map((result, index) => (
+              <li className="search-result-item" key={`${result.path}-${result.lineNumber}-${index}`}>
+                <button
+                  className="search-result-button"
+                  onClick={() => onOpenFile(result.path)}
+                  title={result.path}
+                  type="button"
+                >
+                  <span className="search-result-title">{result.fileName}</span>
+                  <span className="search-result-line">
+                    {result.lineNumber ? `${result.lineNumber}: ` : ""}
+                    {result.lineText}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : query.trim() ? (
+          <div className="empty-note">一致する結果はありません。</div>
+        ) : (
+          <div className="empty-note">検索語句を入力してください。</div>
+        )}
+      </div>
       <div className="search-block">
         <div className="links-panel-subheading">Tags</div>
         {tags.length > 0 ? (
           <ul className="tag-list">
             {tags.map((tag) => (
               <li className="tag-list-item" key={tag.tag}>
-                <button className="tag-pill" type="button">
+                <button className="tag-pill" onClick={() => onTagSelect(tag.tag)} type="button">
                   #{tag.tag}
                 </button>
                 <span className="tag-count">{tag.count}</span>
@@ -113,7 +199,6 @@ function SearchSidebar({ tags }: { tags: WorkspaceTagSummary[] }): ReactElement 
           <div className="empty-note">タグはまだありません。</div>
         )}
       </div>
-      <div className="empty-note">全文検索はフェーズ4の次の手順で追加します。</div>
     </div>
   );
 }
@@ -472,6 +557,10 @@ export function App(): ReactElement {
   const [backlinks, setBacklinks] = useState<Backlink[]>([]);
   const [isLoadingBacklinks, setIsLoadingBacklinks] = useState(false);
   const [workspaceTags, setWorkspaceTags] = useState<WorkspaceTagSummary[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchMode, setSearchMode] = useState<SearchMode>("fullText");
+  const [searchResults, setSearchResults] = useState<WorkspaceSearchResult[]>([]);
+  const [searchError, setSearchError] = useState<string | null>(null);
 
   const {
     editorSettings,
@@ -668,6 +757,32 @@ export function App(): ReactElement {
       canceled = true;
     };
   }, [workspaceState?.activeWorkspace?.id, workspaceState?.fileTree]);
+
+  useEffect(() => {
+    if (!workspaceState?.activeWorkspace || !window.relic || searchQuery.trim() === "") {
+      setSearchResults([]);
+      setSearchError(null);
+      return;
+    }
+
+    let canceled = false;
+
+    void window.relic.searchWorkspace({ mode: searchMode, query: searchQuery }).then((result) => {
+      if (canceled) return;
+
+      if (result.ok) {
+        setSearchResults(result.value);
+        setSearchError(null);
+      } else {
+        setSearchResults([]);
+        setSearchError(result.error.message);
+      }
+    });
+
+    return () => {
+      canceled = true;
+    };
+  }, [searchMode, searchQuery, workspaceState?.activeWorkspace?.id, workspaceState?.fileTree]);
 
   // ──────────────────
   // エディタ設定保存
@@ -871,7 +986,20 @@ export function App(): ReactElement {
                 workspaceState={workspaceState}
               />
             ) : activeSidebarView === "search" ? (
-              <SearchSidebar tags={workspaceTags} />
+              <SearchSidebar
+                error={searchError}
+                mode={searchMode}
+                onModeChange={setSearchMode}
+                onOpenFile={handleOpenFile}
+                onQueryChange={setSearchQuery}
+                onTagSelect={(tag) => {
+                  setSearchMode("tag");
+                  setSearchQuery(tag);
+                }}
+                query={searchQuery}
+                results={searchResults}
+                tags={workspaceTags}
+              />
             ) : activeSidebarView === "git" ? (
               <div className="sidebar-section">
                 <div className="empty-note">Git連携はフェーズ6で追加します。</div>
