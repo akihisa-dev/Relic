@@ -290,6 +290,7 @@ interface PaneViewProps {
   focusedPane: PaneId;
   pane: PaneId;
   typewriterMode: boolean;
+  workspacePath?: string | null;
   onFocus: () => void;
   onTabClose: (tabId: string) => void;
   onTabSelect: (tabId: string) => void;
@@ -300,6 +301,7 @@ function PaneView({
   focusedPane,
   pane,
   typewriterMode,
+  workspacePath,
   onFocus,
   onTabClose,
   onTabSelect
@@ -398,6 +400,7 @@ function PaneView({
                 key={`preview-${activeTab.id}`}
                 onChange={(content) => updateTabContent(activeTab.id, content)}
                 settings={editorSettings}
+                workspacePath={workspacePath}
               />
             )}
           </div>
@@ -816,6 +819,7 @@ export function App(): ReactElement {
                 onTabSelect={(tabId) => setTabActive("left", tabId)}
                 pane="left"
                 typewriterMode={isTypewriterMode}
+                workspacePath={workspaceState?.activeWorkspace?.path}
               />
               {isSplit ? (
                 <PaneView
@@ -826,6 +830,7 @@ export function App(): ReactElement {
                   onTabSelect={(tabId) => setTabActive("right", tabId)}
                   pane="right"
                   typewriterMode={isTypewriterMode}
+                  workspacePath={workspaceState?.activeWorkspace?.path}
                 />
               ) : null}
             </div>

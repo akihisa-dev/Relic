@@ -11,6 +11,7 @@ interface PreviewProps {
   content: string;
   onChange?: (content: string) => void;
   settings: EditorSettings;
+  workspacePath?: string | null;
 }
 
 const fontFamilyMap: Record<EditorSettings["font"], string> = {
@@ -101,7 +102,50 @@ const obsidianExtension = {
 marked.use(mathExtension as Parameters<typeof marked.use>[0]);
 marked.use(obsidianExtension as Parameters<typeof marked.use>[0]);
 
-function buildRenderer(): Renderer {
+const imageExtensions = new Set([".png", ".jpg", ".jpeg", ".gif", ".webp", ".avif"]);
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+export function resolveAttachmentImageSrc(
+  workspacePath: string | null | undefined,
+  href: string
+): string | null {
+  if (!workspacePath) return null;
+
+  const trimmed = href.trim();
+
+  if (
+    trimmed === "" ||
+    trimmed.startsWith("/") ||
+    trimmed.startsWith("//") ||
+    /^[a-z][a-z0-9+.-]*:/i.test(trimmed)
+  ) {
+    return null;
+  }
+
+  const normalized = trimmed.replace(/\\/g, "/");
+  const segments = normalized.split("/").filter(Boolean);
+
+  if (segments[0] !== "attachments" || segments.some((segment) => segment === "..")) {
+    return null;
+  }
+
+  const extension = normalized.match(/\.[^.?#/]+(?=$|[?#])/)?.[0].toLowerCase();
+
+  if (!extension || !imageExtensions.has(extension)) {
+    return null;
+  }
+
+  return `file://${encodeURI(`${workspacePath.replace(/\/+$/, "")}/${normalized}`)}`;
+}
+
+function buildRenderer(workspacePath: string | null | undefined, imageSources: string[]): Renderer {
   const renderer = new marked.Renderer();
 
   renderer.code = ({ lang, text }) => {
@@ -111,10 +155,22 @@ function buildRenderer(): Renderer {
     return `<pre><code class="hljs language-${language}">${highlighted}</code></pre>`;
   };
 
+  renderer.image = ({ href, title, text }) => {
+    const src = resolveAttachmentImageSrc(workspacePath, href);
+    const alt = escapeHtml(text ?? "");
+
+    if (!src) {
+      return `<span class="preview-image-placeholder">${alt || escapeHtml(href)}</span>`;
+    }
+
+    const imageId = imageSources.push(src) - 1;
+    const titleAttribute = title ? ` title="${escapeHtml(title)}"` : "";
+
+    return `<img class="preview-attachment-image" data-relic-image-id="${imageId}" alt="${alt}"${titleAttribute}>`;
+  };
+
   return renderer;
 }
-
-const renderer = buildRenderer();
 
 
 function toggleNthCheckbox(source: string, index: number): string {
@@ -131,8 +187,10 @@ function toggleNthCheckbox(source: string, index: number): string {
   });
 }
 
-export function Preview({ content, onChange, settings }: PreviewProps): ReactElement {
+export function Preview({ content, onChange, settings, workspacePath }: PreviewProps): ReactElement {
   const html = useMemo(() => {
+    const imageSources: string[] = [];
+    const renderer = buildRenderer(workspacePath, imageSources);
     const raw = marked.parse(content, { async: false, renderer }) as string;
     // チェックボックスの disabled を外して操作可能にする
     const withCheckboxes = raw.replace(
@@ -143,8 +201,14 @@ export function Preview({ content, onChange, settings }: PreviewProps): ReactEle
       '<input checked type="checkbox" class="preview-checkbox">'
     );
 
-    return DOMPurify.sanitize(withCheckboxes, { ADD_ATTR: ["checked", "class"] });
-  }, [content]);
+    const sanitized = DOMPurify.sanitize(withCheckboxes, { ADD_ATTR: ["checked", "class"] });
+
+    return imageSources.reduce(
+      (htmlWithImages, src, imageId) =>
+        htmlWithImages.replace(`data-relic-image-id="${imageId}"`, `src="${src}"`),
+      sanitized
+    );
+  }, [content, workspacePath]);
 
   const handleClick = useCallback(
     (e: MouseEvent<HTMLDivElement>) => {
