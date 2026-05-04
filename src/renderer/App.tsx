@@ -393,6 +393,7 @@ function PaneView({
               <Preview
                 content={activeTab.content}
                 key={`preview-${activeTab.id}`}
+                onChange={(content) => updateTabContent(activeTab.id, content)}
                 settings={editorSettings}
               />
             )}
