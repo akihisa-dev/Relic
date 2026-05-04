@@ -5,17 +5,21 @@ import {
   createMarkdownFileChannel,
   duplicateMarkdownFileChannel,
   getAppInfoChannel,
+  getEditorSettingsChannel,
   getWorkspaceStateChannel,
   moveItemToTrashChannel,
   openWorkspaceChannel,
   readMarkdownFileChannel,
   renameFolderChannel,
   renameMarkdownFileChannel,
+  saveEditorSettingsChannel,
   switchWorkspaceChannel,
+  writeMarkdownFileChannel,
   type AppInfo,
   type CreateFolderInput,
   type CreateMarkdownFileInput,
   type DuplicateMarkdownFileInput,
+  type EditorSettings,
   type MarkdownFileContent,
   type MoveItemToTrashInput,
   type RelicApi,
@@ -24,7 +28,8 @@ import {
   type RenameMarkdownFileInput,
   type RenameMarkdownFileResult,
   type SwitchWorkspaceInput,
-  type WorkspaceState
+  type WorkspaceState,
+  type WriteMarkdownFileInput
 } from "../shared/ipc";
 import type { RelicResult } from "../shared/result";
 
@@ -38,6 +43,8 @@ const relicApi: RelicApi = {
       RelicResult<RenameMarkdownFileResult>
     >,
   getAppInfo: () => ipcRenderer.invoke(getAppInfoChannel) as Promise<RelicResult<AppInfo>>,
+  getEditorSettings: () =>
+    ipcRenderer.invoke(getEditorSettingsChannel) as Promise<RelicResult<EditorSettings>>,
   getWorkspaceState: () =>
     ipcRenderer.invoke(getWorkspaceStateChannel) as Promise<RelicResult<WorkspaceState>>,
   moveItemToTrash: (input: MoveItemToTrashInput) =>
@@ -52,8 +59,12 @@ const relicApi: RelicApi = {
     >,
   renameFolder: (input: RenameFolderInput) =>
     ipcRenderer.invoke(renameFolderChannel, input) as Promise<RelicResult<WorkspaceState>>,
+  saveEditorSettings: (input: EditorSettings) =>
+    ipcRenderer.invoke(saveEditorSettingsChannel, input) as Promise<RelicResult<void>>,
   switchWorkspace: (input: SwitchWorkspaceInput) =>
-    ipcRenderer.invoke(switchWorkspaceChannel, input) as Promise<RelicResult<WorkspaceState>>
+    ipcRenderer.invoke(switchWorkspaceChannel, input) as Promise<RelicResult<WorkspaceState>>,
+  writeMarkdownFile: (input: WriteMarkdownFileInput) =>
+    ipcRenderer.invoke(writeMarkdownFileChannel, input) as Promise<RelicResult<void>>
 };
 
 contextBridge.exposeInMainWorld("relic", relicApi);

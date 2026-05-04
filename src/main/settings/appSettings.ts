@@ -1,14 +1,16 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-import type { WorkspaceSummary } from "../../shared/ipc";
+import { defaultEditorSettings, type EditorSettings, type WorkspaceSummary } from "../../shared/ipc";
 
 export interface AppSettings {
+  editorSettings: EditorSettings;
   lastWorkspaceId: string | null;
   workspaces: WorkspaceSummary[];
 }
 
 const defaultAppSettings: AppSettings = {
+  editorSettings: defaultEditorSettings,
   lastWorkspaceId: null,
   workspaces: []
 };
@@ -25,6 +27,7 @@ export async function readAppSettings(userDataPath: string): Promise<AppSettings
     const parsedSettings = JSON.parse(rawSettings) as Partial<AppSettings>;
 
     return {
+      editorSettings: parseEditorSettings(parsedSettings.editorSettings),
       lastWorkspaceId:
         typeof parsedSettings.lastWorkspaceId === "string" ? parsedSettings.lastWorkspaceId : null,
       workspaces: Array.isArray(parsedSettings.workspaces)
@@ -46,6 +49,23 @@ export async function writeAppSettings(
 ): Promise<void> {
   await mkdir(userDataPath, { recursive: true });
   await writeFile(getAppSettingsPath(userDataPath), `${JSON.stringify(settings, null, 2)}\n`, "utf8");
+}
+
+function parseEditorSettings(raw: unknown): EditorSettings {
+  if (typeof raw !== "object" || raw === null) {
+    return defaultEditorSettings;
+  }
+
+  const s = raw as Record<string, unknown>;
+
+  return {
+    font: s.font === "mincho" || s.font === "mono" ? s.font : "system",
+    fontSize: typeof s.fontSize === "number" && s.fontSize > 0 ? s.fontSize : defaultEditorSettings.fontSize,
+    lineHeight: typeof s.lineHeight === "number" && s.lineHeight > 0 ? s.lineHeight : defaultEditorSettings.lineHeight,
+    maxWidth: s.maxWidth === "550px" || s.maxWidth === "800px" || s.maxWidth === "none" ? s.maxWidth : "660px",
+    showLineNumbers: typeof s.showLineNumbers === "boolean" ? s.showLineNumbers : false,
+    spellCheck: typeof s.spellCheck === "boolean" ? s.spellCheck : true
+  };
 }
 
 function isWorkspaceSummary(value: unknown): value is WorkspaceSummary {
