@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactElement } from "react";
 
 import type {
+  Backlink,
   EditorSettings,
   MarkdownFileContent,
   WorkspaceState,
@@ -441,6 +442,8 @@ export function App(): ReactElement {
   const [isCreatingFile, setIsCreatingFile] = useState(false);
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
   const [isOpeningWorkspace, setIsOpeningWorkspace] = useState(false);
+  const [backlinks, setBacklinks] = useState<Backlink[]>([]);
+  const [isLoadingBacklinks, setIsLoadingBacklinks] = useState(false);
 
   const {
     editorSettings,
@@ -728,6 +731,36 @@ export function App(): ReactElement {
     ? resolveWikiLinks(activeTabInFocusedPane.content, activeTabInFocusedPane.path, existingMarkdownPaths)
     : [];
 
+  useEffect(() => {
+    if (!activeTabInFocusedPane || !window.relic) {
+      setBacklinks([]);
+      return;
+    }
+
+    let canceled = false;
+    setIsLoadingBacklinks(true);
+
+    void window.relic
+      .getBacklinks({ path: activeTabInFocusedPane.path })
+      .then((result) => {
+        if (canceled) return;
+
+        if (result.ok) {
+          setBacklinks(result.value);
+        } else {
+          setBacklinks([]);
+          setWorkspaceError(result.error.message);
+        }
+      })
+      .finally(() => {
+        if (!canceled) setIsLoadingBacklinks(false);
+      });
+
+    return () => {
+      canceled = true;
+    };
+  }, [activeTabInFocusedPane?.path, workspaceState?.fileTree]);
+
   // ──────────────────
   // レンダリング
   // ──────────────────
@@ -897,35 +930,70 @@ export function App(): ReactElement {
                   ) : (
                     <div className="empty-note">見出しがありません。</div>
                   )
-                ) : outgoingLinks.length > 0 ? (
-                  <div className="links-panel-section">
-                    <div className="links-panel-subheading">Outgoing</div>
-                    <ul className="links-list">
-                      {outgoingLinks.map((link, i) => (
-                        <li className="links-list-item" key={`${link.wikiLink.raw}-${i}`}>
-                          <span className={`links-list-kind links-list-kind--${link.wikiLink.kind}`}>
-                            {link.wikiLink.kind === "embed" ? "Embed" : "Link"}
-                          </span>
-                          <button
-                            className={`links-list-target${link.exists ? "" : " links-list-target--missing"}`}
-                            onClick={() => handleOpenWikiLink(link.wikiLink.target)}
-                            title={link.exists ? link.path : `${link.path} を作成して開く`}
-                            type="button"
-                          >
-                            {link.displayName}
-                          </button>
-                          {!link.exists ? (
-                            <span className="links-list-detail">未作成</span>
-                          ) : null}
-                          {link.wikiLink.heading ? (
-                            <span className="links-list-detail">#{link.wikiLink.heading}</span>
-                          ) : null}
-                          {link.wikiLink.blockId ? (
-                            <span className="links-list-detail">^{link.wikiLink.blockId}</span>
-                          ) : null}
-                        </li>
-                      ))}
-                    </ul>
+                ) : outgoingLinks.length > 0 || backlinks.length > 0 || isLoadingBacklinks ? (
+                  <div className="links-panel-stack">
+                    <div className="links-panel-section">
+                      <div className="links-panel-subheading">Outgoing</div>
+                      {outgoingLinks.length > 0 ? (
+                        <ul className="links-list">
+                          {outgoingLinks.map((link, i) => (
+                            <li className="links-list-item" key={`${link.wikiLink.raw}-${i}`}>
+                              <span className={`links-list-kind links-list-kind--${link.wikiLink.kind}`}>
+                                {link.wikiLink.kind === "embed" ? "Embed" : "Link"}
+                              </span>
+                              <button
+                                className={`links-list-target${link.exists ? "" : " links-list-target--missing"}`}
+                                onClick={() => handleOpenWikiLink(link.wikiLink.target)}
+                                title={link.exists ? link.path : `${link.path} を作成して開く`}
+                                type="button"
+                              >
+                                {link.displayName}
+                              </button>
+                              {!link.exists ? (
+                                <span className="links-list-detail">未作成</span>
+                              ) : null}
+                              {link.wikiLink.heading ? (
+                                <span className="links-list-detail">#{link.wikiLink.heading}</span>
+                              ) : null}
+                              {link.wikiLink.blockId ? (
+                                <span className="links-list-detail">^{link.wikiLink.blockId}</span>
+                              ) : null}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <div className="empty-note">このノートから出ているリンクはありません。</div>
+                      )}
+                    </div>
+                    <div className="links-panel-section">
+                      <div className="links-panel-subheading">Backlinks</div>
+                      {isLoadingBacklinks ? (
+                        <div className="empty-note">読み込んでいます…</div>
+                      ) : backlinks.length > 0 ? (
+                        <ul className="links-list">
+                          {backlinks.map((backlink) => (
+                            <li className="links-list-item" key={backlink.sourcePath}>
+                              <span className="links-list-kind links-list-kind--backlink">
+                                Back
+                              </span>
+                              <button
+                                className="links-list-target"
+                                onClick={() => handleOpenFile(backlink.sourcePath)}
+                                title={backlink.sourcePath}
+                                type="button"
+                              >
+                                {backlink.sourceName}
+                              </button>
+                              {backlink.count > 1 ? (
+                                <span className="links-list-detail">{backlink.count} 件</span>
+                              ) : null}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <div className="empty-note">このノートへのバックリンクはありません。</div>
+                      )}
+                    </div>
                   </div>
                 ) : (
                   <div className="empty-note">このノートから出ているリンクはありません。</div>

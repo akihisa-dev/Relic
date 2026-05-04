@@ -12,6 +12,7 @@ function makeRelicApi(overrides: Partial<typeof window.relic> = {}): typeof wind
     createLinkedMarkdownFile: vi.fn(),
     createMarkdownFile: vi.fn(),
     duplicateMarkdownFile: vi.fn(),
+    getBacklinks: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     getAppInfo: vi.fn().mockResolvedValue({ ok: true, value: { name: "Relic", platform: "darwin", version: "0.0.0" } }),
     getEditorSettings: vi.fn().mockResolvedValue({ ok: true, value: defaultEditorSettings }),
     getWorkspaceState: vi.fn().mockResolvedValue({
@@ -229,6 +230,44 @@ describe("App", () => {
     expect(screen.getAllByRole("button", { name: "表示名" }).length).toBeGreaterThan(0);
     expect(screen.getAllByText("埋め込み").length).toBeGreaterThan(0);
     expect(screen.getByText("Embed")).toBeInTheDocument();
+  });
+
+  it("右パネルにバックリンクを表示し、クリックすると参照元を開く", async () => {
+    const readMarkdownFile = vi.fn(({ path }: { path: string }) => Promise.resolve({
+      ok: true as const,
+      value:
+        path === "source.md"
+          ? { content: "参照元本文", name: "source", path: "source.md" }
+          : { content: "# Target", name: "target", path: "target.md" }
+    }));
+
+    window.relic = makeRelicApi({
+      getBacklinks: vi.fn().mockResolvedValue({
+        ok: true,
+        value: [{ count: 2, sourceName: "source", sourcePath: "source.md" }]
+      }),
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [
+            { name: "target", path: "target.md", type: "file" },
+            { name: "source", path: "source.md", type: "file" }
+          ]
+        }
+      }),
+      readMarkdownFile
+    });
+
+    render(<App />);
+
+    fireEvent.click(await screen.findByRole("button", { name: /target/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Links" }));
+
+    expect(await screen.findByText("Backlinks")).toBeInTheDocument();
+    fireEvent.click(await screen.findByRole("button", { name: "source" }));
+
+    expect(readMarkdownFile).toHaveBeenCalledWith({ path: "source.md" });
   });
 
   it("未作成リンクをクリックすると同じフォルダにファイルを作成して開く", async () => {

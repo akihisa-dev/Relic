@@ -758,6 +758,11 @@ button:disabled {
 /* Right panel links                  */
 /* ────────────────────────────────── */
 
+.links-panel-stack {
+  display: grid;
+  gap: 18px;
+}
+
 .links-panel-section {
   display: grid;
   gap: 10px;
@@ -800,6 +805,11 @@ button:disabled {
 .links-list-kind--embed {
   background: rgba(223, 104, 43, 0.12);
   color: #a14617;
+}
+
+.links-list-kind--backlink {
+  background: rgba(31, 35, 40, 0.08);
+  color: #555b62;
 }
 
 .links-list-target {
