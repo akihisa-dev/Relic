@@ -1,4 +1,4 @@
-import { readFile, writeFile } from "node:fs/promises";
+import { rename, stat, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import type { MarkdownFileContent } from "../../shared/ipc";
@@ -87,6 +87,57 @@ export async function readMarkdownFile(
   }
 }
 
+export async function renameMarkdownFile(
+  workspacePath: string,
+  relativePath: string,
+  newName: string
+): Promise<RelicResult<MarkdownFileContent>> {
+  if (path.extname(relativePath) !== ".md") {
+    return fail("FILE_TYPE_UNSUPPORTED", "Markdownファイルだけをリネームできます。");
+  }
+
+  const absoluteSourcePath = resolveWorkspaceRelativePath(workspacePath, relativePath);
+
+  if (!absoluteSourcePath.ok) {
+    return absoluteSourcePath;
+  }
+
+  const normalizedNewName = normalizeMarkdownFileName(newName);
+
+  if (!normalizedNewName.ok) {
+    return normalizedNewName;
+  }
+
+  const nextRelativePath = toWorkspaceRelativePath(
+    path.join(path.dirname(relativePath), normalizedNewName.value)
+  );
+  const absoluteDestinationPath = resolveWorkspaceRelativePath(workspacePath, nextRelativePath);
+
+  if (!absoluteDestinationPath.ok) {
+    return absoluteDestinationPath;
+  }
+
+  if (absoluteSourcePath.value === absoluteDestinationPath.value) {
+    return readMarkdownFile(workspacePath, relativePath);
+  }
+
+  if (await pathExists(absoluteDestinationPath.value)) {
+    return fail("FILE_ALREADY_EXISTS", "同じ名前のファイルがすでにあります。別名を入力してください。");
+  }
+
+  try {
+    await rename(absoluteSourcePath.value, absoluteDestinationPath.value);
+
+    return readMarkdownFile(workspacePath, nextRelativePath);
+  } catch (error) {
+    return fail(
+      "FILE_RENAME_FAILED",
+      "ファイル名を変更できませんでした。",
+      error instanceof Error ? error.message : String(error)
+    );
+  }
+}
+
 function isFileExistsError(error: unknown): boolean {
   return (
     typeof error === "object" &&
@@ -94,4 +145,26 @@ function isFileExistsError(error: unknown): boolean {
     "code" in error &&
     (error as { code?: string }).code === "EEXIST"
   );
+}
+
+async function pathExists(filePath: string): Promise<boolean> {
+  try {
+    await stat(filePath);
+    return true;
+  } catch (error) {
+    return !isMissingFileError(error);
+  }
+}
+
+function isMissingFileError(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code?: string }).code === "ENOENT"
+  );
+}
+
+function toWorkspaceRelativePath(filePath: string): string {
+  return filePath.split(path.sep).join("/");
 }

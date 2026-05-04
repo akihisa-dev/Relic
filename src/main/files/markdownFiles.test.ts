@@ -4,7 +4,12 @@ import path from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import { createMarkdownFile, normalizeMarkdownFileName, readMarkdownFile } from "./markdownFiles";
+import {
+  createMarkdownFile,
+  normalizeMarkdownFileName,
+  readMarkdownFile,
+  renameMarkdownFile
+} from "./markdownFiles";
 
 describe("normalizeMarkdownFileName", () => {
   it("拡張子なしのファイル名に .md を付与する", () => {
@@ -97,6 +102,64 @@ describe("readMarkdownFile", () => {
       ok: false
     });
     await expect(readMarkdownFile(workspacePath, "../outside.md")).resolves.toMatchObject({
+      ok: false
+    });
+  });
+});
+
+describe("renameMarkdownFile", () => {
+  const temporaryPaths: string[] = [];
+
+  afterEach(async () => {
+    await Promise.all(
+      temporaryPaths.splice(0).map((temporaryPath) =>
+        rm(temporaryPath, {
+          force: true,
+          recursive: true
+        })
+      )
+    );
+  });
+
+  it("Markdownファイル名を変更する", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-rename-file-"));
+    temporaryPaths.push(workspacePath);
+
+    await writeFile(path.join(workspacePath, "before.md"), "# Before", "utf8");
+
+    await expect(renameMarkdownFile(workspacePath, "before.md", "after")).resolves.toEqual({
+      ok: true,
+      value: {
+        content: "# Before",
+        name: "after",
+        path: "after.md"
+      }
+    });
+    await expect(readFile(path.join(workspacePath, "after.md"), "utf8")).resolves.toBe("# Before");
+  });
+
+  it("同名ファイルがある場合は上書きしない", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-rename-file-"));
+    temporaryPaths.push(workspacePath);
+
+    await writeFile(path.join(workspacePath, "before.md"), "before", "utf8");
+    await writeFile(path.join(workspacePath, "after.md"), "after", "utf8");
+
+    const result = await renameMarkdownFile(workspacePath, "before.md", "after");
+
+    expect(result.ok).toBe(false);
+    await expect(readFile(path.join(workspacePath, "before.md"), "utf8")).resolves.toBe("before");
+    await expect(readFile(path.join(workspacePath, "after.md"), "utf8")).resolves.toBe("after");
+  });
+
+  it("Markdown以外とワークスペース外への参照を拒否する", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-rename-file-"));
+    temporaryPaths.push(workspacePath);
+
+    await expect(renameMarkdownFile(workspacePath, "image.png", "image2")).resolves.toMatchObject({
+      ok: false
+    });
+    await expect(renameMarkdownFile(workspacePath, "../outside.md", "inside")).resolves.toMatchObject({
       ok: false
     });
   });

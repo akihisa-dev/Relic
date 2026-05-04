@@ -9,15 +9,20 @@ import {
   openWorkspaceChannel,
   readMarkdownFileChannel,
   type ReadMarkdownFileInput,
+  renameMarkdownFileChannel,
+  type RenameMarkdownFileInput,
+  switchWorkspaceChannel,
+  type SwitchWorkspaceInput,
   type WorkspaceState
 } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { readWorkspaceFileTree } from "../files/fileTree";
 import { createFolder } from "../files/folders";
-import { createMarkdownFile, readMarkdownFile } from "../files/markdownFiles";
+import { createMarkdownFile, readMarkdownFile, renameMarkdownFile } from "../files/markdownFiles";
 import { readAppSettings, writeAppSettings } from "../settings/appSettings";
 import {
   addOrActivateWorkspace,
+  activateWorkspace,
   createWorkspaceSummary,
   prepareWorkspace,
   toWorkspaceState
@@ -155,6 +160,79 @@ export function registerWorkspaceHandlers(): void {
       );
     }
   });
+
+  ipcMain.handle(renameMarkdownFileChannel, async (_event, input: RenameMarkdownFileInput) => {
+    try {
+      if (!isRenameMarkdownFileInput(input)) {
+        return fail("FILE_RENAME_INVALID_INPUT", "変更後のファイル名を入力してください。");
+      }
+
+      const settings = await readAppSettings(app.getPath("userData"));
+      const state = toWorkspaceState(settings);
+
+      if (!state.activeWorkspace) {
+        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
+      }
+
+      const renamedFile = await renameMarkdownFile(
+        state.activeWorkspace.path,
+        input.path,
+        input.newName
+      );
+
+      if (!renamedFile.ok) {
+        return renamedFile;
+      }
+
+      return ok({
+        file: renamedFile.value,
+        workspaceState: await buildWorkspaceState(settings)
+      });
+    } catch (error) {
+      return fail(
+        "FILE_RENAME_FAILED",
+        "ファイル名を変更できませんでした。",
+        error instanceof Error ? error.message : String(error)
+      );
+    }
+  });
+
+  ipcMain.handle(
+    switchWorkspaceChannel,
+    async (_event, input: SwitchWorkspaceInput): Promise<RelicResult<WorkspaceState>> => {
+      try {
+        if (!isSwitchWorkspaceInput(input)) {
+          return fail("WORKSPACE_SWITCH_INVALID_INPUT", "ワークスペースを選択してください。");
+        }
+
+        const settings = await readAppSettings(app.getPath("userData"));
+        const nextSettings = activateWorkspace(settings, input.workspaceId);
+
+        if (!nextSettings.ok) {
+          return nextSettings;
+        }
+
+        const activeWorkspace = nextSettings.value.workspaces.find(
+          (workspace) => workspace.id === input.workspaceId
+        );
+
+        if (!activeWorkspace) {
+          return fail("WORKSPACE_NOT_FOUND", "登録済みワークスペースが見つかりませんでした。");
+        }
+
+        await prepareWorkspace(activeWorkspace.path);
+        await writeAppSettings(app.getPath("userData"), nextSettings.value);
+
+        return ok(await buildWorkspaceState(nextSettings.value));
+      } catch (error) {
+        return fail(
+          "WORKSPACE_SWITCH_FAILED",
+          "ワークスペースを切り替えられませんでした。",
+          error instanceof Error ? error.message : String(error)
+        );
+      }
+    }
+  );
 }
 
 async function buildWorkspaceState(
@@ -188,5 +266,25 @@ function isPathInput(input: unknown): input is { path: string } {
     input !== null &&
     "path" in input &&
     typeof (input as { path?: unknown }).path === "string"
+  );
+}
+
+function isRenameMarkdownFileInput(input: unknown): input is RenameMarkdownFileInput {
+  return (
+    typeof input === "object" &&
+    input !== null &&
+    "path" in input &&
+    "newName" in input &&
+    typeof (input as { path?: unknown }).path === "string" &&
+    typeof (input as { newName?: unknown }).newName === "string"
+  );
+}
+
+function isSwitchWorkspaceInput(input: unknown): input is SwitchWorkspaceInput {
+  return (
+    typeof input === "object" &&
+    input !== null &&
+    "workspaceId" in input &&
+    typeof (input as { workspaceId?: unknown }).workspaceId === "string"
   );
 }

@@ -3,6 +3,7 @@ import path from "node:path";
 import { createHash } from "node:crypto";
 
 import type { WorkspaceState, WorkspaceSummary, WorkspaceTreeNode } from "../../shared/ipc";
+import { fail, ok, type RelicResult } from "../../shared/result";
 import { attachmentsDirectoryName, templatesDirectoryName } from "../../shared/workspace";
 import type { AppSettings } from "../settings/appSettings";
 
@@ -41,6 +42,17 @@ export function addOrActivateWorkspace(
     lastWorkspaceId: workspace.id,
     workspaces
   };
+}
+
+export function activateWorkspace(settings: AppSettings, workspaceId: string): RelicResult<AppSettings> {
+  if (!settings.workspaces.some((workspace) => workspace.id === workspaceId)) {
+    return fail("WORKSPACE_NOT_FOUND", "登録済みワークスペースが見つかりませんでした。");
+  }
+
+  return ok({
+    ...settings,
+    lastWorkspaceId: workspaceId
+  });
 }
 
 export function toWorkspaceState(
