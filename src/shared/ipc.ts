@@ -2,6 +2,7 @@ import type { RelicResult } from "./result";
 
 export const getAppInfoChannel = "app:getInfo";
 export const createFolderChannel = "workspace:createFolder";
+export const createLinkedMarkdownFileChannel = "workspace:createLinkedMarkdownFile";
 export const createMarkdownFileChannel = "workspace:createMarkdownFile";
 export const duplicateMarkdownFileChannel = "workspace:duplicateMarkdownFile";
 export const getWorkspaceStateChannel = "workspace:getState";
@@ -35,6 +36,10 @@ export interface WorkspaceState {
 
 export interface CreateMarkdownFileInput {
   name: string;
+}
+
+export interface CreateLinkedMarkdownFileInput {
+  path: string;
 }
 
 export interface CreateFolderInput {
@@ -105,6 +110,8 @@ export interface RenameMarkdownFileResult {
   workspaceState: WorkspaceState;
 }
 
+export type CreateLinkedMarkdownFileResult = RenameMarkdownFileResult;
+
 export type WorkspaceTreeNode = WorkspaceFolderNode | WorkspaceFileNode;
 
 export interface WorkspaceFolderNode {
@@ -122,6 +129,9 @@ export interface WorkspaceFileNode {
 
 export interface RelicApi {
   createFolder: (input: CreateFolderInput) => Promise<RelicResult<WorkspaceState>>;
+  createLinkedMarkdownFile: (
+    input: CreateLinkedMarkdownFileInput
+  ) => Promise<RelicResult<CreateLinkedMarkdownFileResult>>;
   createMarkdownFile: (input: CreateMarkdownFileInput) => Promise<RelicResult<WorkspaceState>>;
   duplicateMarkdownFile: (
     input: DuplicateMarkdownFileInput

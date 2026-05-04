@@ -1,4 +1,4 @@
-import { rename, stat, readFile, writeFile } from "node:fs/promises";
+import { mkdir, rename, stat, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import type { MarkdownFileContent } from "../../shared/ipc";
@@ -46,6 +46,53 @@ export async function createMarkdownFile(
   } catch (error) {
     if (isFileExistsError(error)) {
       return fail("FILE_ALREADY_EXISTS", "同じ名前のファイルがすでにあります。別名を入力してください。");
+    }
+
+    return fail(
+      "FILE_CREATE_FAILED",
+      "ファイルを作成できませんでした。",
+      error instanceof Error ? error.message : String(error)
+    );
+  }
+}
+
+export async function createMarkdownFileAtPath(
+  workspacePath: string,
+  relativePath: string
+): Promise<RelicResult<MarkdownFileContent>> {
+  const normalizedRelativePath = toWorkspaceRelativePath(relativePath.replace(/\\/g, "/"));
+
+  if (path.extname(normalizedRelativePath) !== ".md") {
+    return fail("FILE_TYPE_UNSUPPORTED", "Markdownファイルだけを作成できます。");
+  }
+
+  const normalizedName = normalizeMarkdownFileName(path.basename(normalizedRelativePath));
+
+  if (!normalizedName.ok) {
+    return normalizedName;
+  }
+
+  if (normalizedName.value !== path.basename(normalizedRelativePath)) {
+    return fail("FILE_NAME_INVALID", "Markdownファイル名を指定してください。");
+  }
+
+  const absoluteFilePath = resolveWorkspaceRelativePath(workspacePath, normalizedRelativePath);
+
+  if (!absoluteFilePath.ok) {
+    return absoluteFilePath;
+  }
+
+  try {
+    await mkdir(path.dirname(absoluteFilePath.value), { recursive: true });
+    await writeFile(absoluteFilePath.value, "", {
+      encoding: "utf8",
+      flag: "wx"
+    });
+
+    return readMarkdownFile(workspacePath, normalizedRelativePath);
+  } catch (error) {
+    if (isFileExistsError(error)) {
+      return fail("FILE_ALREADY_EXISTS", "同じ名前のファイルがすでにあります。");
     }
 
     return fail(

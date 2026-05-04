@@ -3,6 +3,8 @@ import { app, dialog, ipcMain, shell } from "electron";
 import {
   createFolderChannel,
   type CreateFolderInput,
+  createLinkedMarkdownFileChannel,
+  type CreateLinkedMarkdownFileInput,
   createMarkdownFileChannel,
   type CreateMarkdownFileInput,
   duplicateMarkdownFileChannel,
@@ -25,6 +27,7 @@ import { fail, ok, type RelicResult } from "../../shared/result";
 import { readWorkspaceFileTree } from "../files/fileTree";
 import { createFolder, renameFolder } from "../files/folders";
 import {
+  createMarkdownFileAtPath,
   createMarkdownFile,
   duplicateMarkdownFile,
   readMarkdownFile,
@@ -108,6 +111,41 @@ export function registerWorkspaceHandlers(): void {
         }
 
         return ok(await buildWorkspaceState(settings));
+      } catch (error) {
+        return fail(
+          "FILE_CREATE_FAILED",
+          "ファイルを作成できませんでした。",
+          error instanceof Error ? error.message : String(error)
+        );
+      }
+    }
+  );
+
+  ipcMain.handle(
+    createLinkedMarkdownFileChannel,
+    async (_event, input: CreateLinkedMarkdownFileInput) => {
+      try {
+        if (!isPathInput(input)) {
+          return fail("FILE_CREATE_INVALID_INPUT", "作成するファイルを指定してください。");
+        }
+
+        const settings = await readAppSettings(app.getPath("userData"));
+        const state = toWorkspaceState(settings);
+
+        if (!state.activeWorkspace) {
+          return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
+        }
+
+        const createdFile = await createMarkdownFileAtPath(state.activeWorkspace.path, input.path);
+
+        if (!createdFile.ok) {
+          return createdFile;
+        }
+
+        return ok({
+          file: createdFile.value,
+          workspaceState: await buildWorkspaceState(settings)
+        });
       } catch (error) {
         return fail(
           "FILE_CREATE_FAILED",

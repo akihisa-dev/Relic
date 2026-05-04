@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer } from "electron";
 
 import {
   createFolderChannel,
+  createLinkedMarkdownFileChannel,
   createMarkdownFileChannel,
   duplicateMarkdownFileChannel,
   getAppInfoChannel,
@@ -17,6 +18,8 @@ import {
   writeMarkdownFileChannel,
   type AppInfo,
   type CreateFolderInput,
+  type CreateLinkedMarkdownFileInput,
+  type CreateLinkedMarkdownFileResult,
   type CreateMarkdownFileInput,
   type DuplicateMarkdownFileInput,
   type EditorSettings,
@@ -36,6 +39,10 @@ import type { RelicResult } from "../shared/result";
 const relicApi: RelicApi = {
   createFolder: (input: CreateFolderInput) =>
     ipcRenderer.invoke(createFolderChannel, input) as Promise<RelicResult<WorkspaceState>>,
+  createLinkedMarkdownFile: (input: CreateLinkedMarkdownFileInput) =>
+    ipcRenderer.invoke(createLinkedMarkdownFileChannel, input) as Promise<
+      RelicResult<CreateLinkedMarkdownFileResult>
+    >,
   createMarkdownFile: (input: CreateMarkdownFileInput) =>
     ipcRenderer.invoke(createMarkdownFileChannel, input) as Promise<RelicResult<WorkspaceState>>,
   duplicateMarkdownFile: (input: DuplicateMarkdownFileInput) =>

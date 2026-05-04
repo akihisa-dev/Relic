@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import {
   createMarkdownFile,
+  createMarkdownFileAtPath,
   duplicateMarkdownFile,
   normalizeMarkdownFileName,
   readMarkdownFile,
@@ -62,6 +63,48 @@ describe("createMarkdownFile", () => {
 
     expect(result.ok).toBe(false);
     await expect(readFile(path.join(workspacePath, "読書メモ.md"), "utf8")).resolves.toBe("既存");
+  });
+});
+
+describe("createMarkdownFileAtPath", () => {
+  const temporaryPaths: string[] = [];
+
+  afterEach(async () => {
+    await Promise.all(
+      temporaryPaths.splice(0).map((temporaryPath) =>
+        rm(temporaryPath, {
+          force: true,
+          recursive: true
+        })
+      )
+    );
+  });
+
+  it("ワークスペース相対パスにMarkdownファイルを作成する", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-create-linked-file-"));
+    temporaryPaths.push(workspacePath);
+
+    await expect(createMarkdownFileAtPath(workspacePath, "folder/新規ノート.md")).resolves.toEqual({
+      ok: true,
+      value: {
+        content: "",
+        name: "新規ノート",
+        path: "folder/新規ノート.md"
+      }
+    });
+    await expect(readFile(path.join(workspacePath, "folder", "新規ノート.md"), "utf8")).resolves.toBe("");
+  });
+
+  it("ワークスペース外とMarkdown以外への作成を拒否する", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-create-linked-file-"));
+    temporaryPaths.push(workspacePath);
+
+    await expect(createMarkdownFileAtPath(workspacePath, "../outside.md")).resolves.toMatchObject({
+      ok: false
+    });
+    await expect(createMarkdownFileAtPath(workspacePath, "image.png")).resolves.toMatchObject({
+      ok: false
+    });
   });
 });
 
