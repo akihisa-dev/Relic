@@ -652,6 +652,28 @@ button:disabled {
   font-weight: 600;
 }
 
+.preview-body mark {
+  background: #fff3b0;
+  border-radius: 2px;
+  padding: 0 2px;
+}
+
+.wikilink {
+  border-bottom: 1px solid #0969da;
+  color: #0969da;
+  cursor: pointer;
+}
+
+.math-block {
+  margin: 0.8em 0;
+  overflow-x: auto;
+  text-align: center;
+}
+
+.math-inline {
+  display: inline;
+}
+
 .editor-body {
   min-height: 0;
   overflow: hidden;

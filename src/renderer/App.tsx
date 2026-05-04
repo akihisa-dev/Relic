@@ -289,6 +289,7 @@ interface PaneViewProps {
   editorSettings: EditorSettings;
   focusedPane: PaneId;
   pane: PaneId;
+  typewriterMode: boolean;
   onFocus: () => void;
   onTabClose: (tabId: string) => void;
   onTabSelect: (tabId: string) => void;
@@ -298,6 +299,7 @@ function PaneView({
   editorSettings,
   focusedPane,
   pane,
+  typewriterMode,
   onFocus,
   onTabClose,
   onTabSelect
@@ -387,6 +389,7 @@ function PaneView({
                 key={activeTab.id}
                 onChange={(content) => updateTabContent(activeTab.id, content)}
                 settings={editorSettings}
+                typewriterMode={typewriterMode}
                 viewRef={viewRef}
               />
             ) : (
@@ -454,12 +457,14 @@ export function App(): ReactElement {
     isFocusMode,
     isRightPanelOpen,
     isSidebarOpen,
+    isTypewriterMode,
     rightPanelView,
     setRightPanelView,
     setSidebarView,
     toggleFocusMode,
     toggleRightPanel,
-    toggleSidebar
+    toggleSidebar,
+    toggleTypewriterMode
   } = useUiStore();
 
   // 初期ロード
@@ -642,13 +647,16 @@ export function App(): ReactElement {
       } else if (e.key === "f" && e.shiftKey) {
         e.preventDefault();
         toggleFocusMode();
+      } else if (e.key === "t" && e.shiftKey) {
+        e.preventDefault();
+        toggleTypewriterMode();
       }
     };
 
     window.addEventListener("keydown", handler);
 
     return () => window.removeEventListener("keydown", handler);
-  }, [focusedPane, leftPane, rightPane, closeTab, toggleSidebar, toggleSplit, toggleRightPanel, toggleFocusMode]);
+  }, [focusedPane, leftPane, rightPane, closeTab, toggleSidebar, toggleSplit, toggleRightPanel, toggleFocusMode, toggleTypewriterMode]);
 
   // ──────────────────
   // アクティブなパスのセット（ファイルツリーのハイライト用）
@@ -807,6 +815,7 @@ export function App(): ReactElement {
                 onTabClose={(tabId) => closeTab("left", tabId)}
                 onTabSelect={(tabId) => setTabActive("left", tabId)}
                 pane="left"
+                typewriterMode={isTypewriterMode}
               />
               {isSplit ? (
                 <PaneView
@@ -816,6 +825,7 @@ export function App(): ReactElement {
                   onTabClose={(tabId) => closeTab("right", tabId)}
                   onTabSelect={(tabId) => setTabActive("right", tabId)}
                   pane="right"
+                  typewriterMode={isTypewriterMode}
                 />
               ) : null}
             </div>

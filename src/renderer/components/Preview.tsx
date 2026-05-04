@@ -1,7 +1,7 @@
 import DOMPurify from "dompurify";
 import hljs from "highlight.js";
 import katex from "katex";
-import { marked, type Renderer, type TokensList } from "marked";
+import { marked, type Renderer } from "marked";
 import { useCallback, useMemo } from "react";
 import type { MouseEvent, ReactElement } from "react";
 
@@ -63,7 +63,43 @@ const mathExtension = {
   ]
 };
 
+// ==ハイライト== と [[wikilink]] のObsidian互換拡張
+const obsidianExtension = {
+  extensions: [
+    {
+      name: "highlight",
+      level: "inline" as const,
+      start: (src: string) => src.indexOf("=="),
+      tokenizer(src: string) {
+        const match = /^==([^=]+)==/.exec(src);
+
+        if (match) return { type: "highlight", raw: match[0], text: match[1] };
+      },
+      renderer(token: { text: string }) {
+        return `<mark>${token.text}</mark>`;
+      }
+    },
+    {
+      name: "wikilink",
+      level: "inline" as const,
+      start: (src: string) => src.indexOf("[["),
+      tokenizer(src: string) {
+        const match = /^\[\[([^\]]+)\]\]/.exec(src);
+
+        if (match) {
+          const parts = match[1].split("|");
+          return { type: "wikilink", raw: match[0], label: parts[1] ?? parts[0], target: parts[0] };
+        }
+      },
+      renderer(token: { label: string; target: string }) {
+        return `<span class="wikilink" data-target="${token.target}">${token.label}</span>`;
+      }
+    }
+  ]
+};
+
 marked.use(mathExtension as Parameters<typeof marked.use>[0]);
+marked.use(obsidianExtension as Parameters<typeof marked.use>[0]);
 
 function buildRenderer(): Renderer {
   const renderer = new marked.Renderer();
@@ -80,7 +116,6 @@ function buildRenderer(): Renderer {
 
 const renderer = buildRenderer();
 
-void (null as unknown as TokensList);
 
 function toggleNthCheckbox(source: string, index: number): string {
   let count = -1;
