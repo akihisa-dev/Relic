@@ -4,6 +4,7 @@ import path from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
+import { defaultEditorSettings } from "../../shared/ipc";
 import { attachmentsDirectoryName, templatesDirectoryName } from "../../shared/workspace";
 import {
   addOrActivateWorkspace,
@@ -12,6 +13,8 @@ import {
   prepareWorkspace,
   toWorkspaceState
 } from "./workspaceService";
+
+const baseSettings = { editorSettings: defaultEditorSettings };
 
 describe("workspaceService", () => {
   const temporaryPaths: string[] = [];
@@ -42,10 +45,7 @@ describe("workspaceService", () => {
   it("同じパスのワークスペースを重複登録せずアクティブにする", () => {
     const workspace = createWorkspaceSummary("/tmp/relic-notes");
     const firstSettings = addOrActivateWorkspace(
-      {
-        lastWorkspaceId: null,
-        workspaces: []
-      },
+      { ...baseSettings, lastWorkspaceId: null, workspaces: [] },
       workspace
     );
     const nextSettings = addOrActivateWorkspace(firstSettings, workspace);
@@ -59,6 +59,7 @@ describe("workspaceService", () => {
     const secondWorkspace = createWorkspaceSummary("/tmp/relic-notes-2");
 
     const settings = {
+      ...baseSettings,
       lastWorkspaceId: firstWorkspace.id,
       workspaces: [firstWorkspace, secondWorkspace]
     };
@@ -67,6 +68,7 @@ describe("workspaceService", () => {
     expect(result).toEqual({
       ok: true,
       value: {
+        ...baseSettings,
         lastWorkspaceId: secondWorkspace.id,
         workspaces: [firstWorkspace, secondWorkspace]
       }
@@ -76,10 +78,7 @@ describe("workspaceService", () => {
   it("未登録ワークスペースへの切り替えを拒否する", () => {
     expect(
       activateWorkspace(
-        {
-          lastWorkspaceId: null,
-          workspaces: []
-        },
+        { ...baseSettings, lastWorkspaceId: null, workspaces: [] },
         "missing"
       ).ok
     ).toBe(false);
