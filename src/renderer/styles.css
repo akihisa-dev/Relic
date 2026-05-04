@@ -1,0 +1,245 @@
+:root {
+  color: #1f2328;
+  background: #f5f4f2;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "SF Pro Text", "Hiragino Sans", "Yu Gothic", sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+button {
+  border: 1px solid rgba(31, 35, 40, 0.13);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.72);
+  color: inherit;
+  cursor: default;
+  min-height: 28px;
+  padding: 0 10px;
+}
+
+.app-shell {
+  display: grid;
+  grid-template-rows: 40px minmax(0, 1fr) 28px;
+  height: 100vh;
+  min-width: 960px;
+}
+
+.tab-bar {
+  align-items: end;
+  background: rgba(245, 244, 242, 0.82);
+  border-bottom: 1px solid rgba(31, 35, 40, 0.1);
+  display: flex;
+  gap: 6px;
+  padding: 0 12px 0 86px;
+}
+
+.traffic-space {
+  display: none;
+}
+
+.tab {
+  align-items: center;
+  border: 1px solid rgba(31, 35, 40, 0.1);
+  border-bottom: 0;
+  border-radius: 7px 7px 0 0;
+  color: #6b6f76;
+  display: flex;
+  height: 30px;
+  max-width: 180px;
+  overflow: hidden;
+  padding: 0 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.active-tab {
+  background: rgba(255, 255, 255, 0.82);
+  color: #1f2328;
+}
+
+.workspace {
+  display: grid;
+  grid-template-columns: 48px auto minmax(0, 1fr);
+  min-height: 0;
+}
+
+.rail {
+  align-items: center;
+  background: rgba(239, 238, 235, 0.88);
+  border-right: 1px solid rgba(31, 35, 40, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 8px;
+}
+
+.rail-button {
+  align-items: center;
+  display: inline-flex;
+  height: 32px;
+  justify-content: center;
+  padding: 0;
+  width: 32px;
+}
+
+.rail-button.active {
+  background: rgba(223, 104, 43, 0.14);
+  border-color: rgba(223, 104, 43, 0.35);
+  color: #a14617;
+}
+
+.rail-separator {
+  background: rgba(31, 35, 40, 0.1);
+  height: 1px;
+  width: 24px;
+}
+
+.sidebar {
+  background: rgba(250, 249, 247, 0.86);
+  border-right: 1px solid rgba(31, 35, 40, 0.1);
+  min-width: 260px;
+  padding: 16px;
+  width: 296px;
+}
+
+.pane-heading {
+  color: #555b62;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0;
+  margin-bottom: 14px;
+  text-transform: uppercase;
+}
+
+.sidebar-section {
+  display: grid;
+  gap: 12px;
+}
+
+.workspace-name {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.primary-button {
+  background: #df682b;
+  border-color: #c85b24;
+  color: white;
+}
+
+.secondary-button {
+  color: #1264a3;
+}
+
+.search-input {
+  border: 1px solid rgba(31, 35, 40, 0.13);
+  border-radius: 6px;
+  min-height: 32px;
+  padding: 0 10px;
+  width: 100%;
+}
+
+.setting-row {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.main-area {
+  background: rgba(255, 255, 255, 0.54);
+  display: grid;
+  grid-template-rows: 44px minmax(0, 1fr);
+  min-width: 0;
+}
+
+.toolbar {
+  align-items: center;
+  border-bottom: 1px solid rgba(31, 35, 40, 0.1);
+  display: flex;
+  gap: 8px;
+  padding: 8px 14px;
+}
+
+.toolbar-spacer {
+  flex: 1;
+}
+
+.active-control {
+  background: rgba(18, 100, 163, 0.12);
+  border-color: rgba(18, 100, 163, 0.3);
+  color: #1264a3;
+}
+
+.editor-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  min-height: 0;
+}
+
+.editor-surface {
+  margin: 0 auto;
+  max-width: 760px;
+  padding: 56px 40px;
+  width: 100%;
+}
+
+.frontmatter-strip {
+  border-bottom: 1px solid rgba(31, 35, 40, 0.1);
+  color: #747981;
+  font-size: 13px;
+  margin-bottom: 32px;
+  padding-bottom: 12px;
+}
+
+.editor-surface h1 {
+  font-family: "Hiragino Mincho ProN", "Yu Mincho", serif;
+  font-size: 34px;
+  font-weight: 600;
+  letter-spacing: 0;
+  margin: 0 0 20px;
+}
+
+.editor-surface p {
+  font-size: 16px;
+  line-height: 1.82;
+}
+
+.muted,
+.empty-note {
+  color: #747981;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.right-panel {
+  background: rgba(250, 249, 247, 0.88);
+  border-left: 1px solid rgba(31, 35, 40, 0.1);
+  min-width: 260px;
+  padding: 16px;
+  width: 280px;
+}
+
+.status-bar {
+  align-items: center;
+  background: rgba(245, 244, 242, 0.88);
+  border-top: 1px solid rgba(31, 35, 40, 0.1);
+  color: #6b6f76;
+  display: flex;
+  font-size: 12px;
+  justify-content: space-between;
+  padding: 0 12px;
+}
