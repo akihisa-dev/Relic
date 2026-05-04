@@ -2,7 +2,7 @@ import DOMPurify from "dompurify";
 import hljs from "highlight.js";
 import katex from "katex";
 import { marked, type Renderer } from "marked";
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { MouseEvent, ReactElement } from "react";
 
 import type { EditorSettings } from "../../shared/ipc";
@@ -103,6 +103,13 @@ marked.use(mathExtension as Parameters<typeof marked.use>[0]);
 marked.use(obsidianExtension as Parameters<typeof marked.use>[0]);
 
 const imageExtensions = new Set([".png", ".jpg", ".jpeg", ".gif", ".webp", ".avif"]);
+const maxEmbeddedFileLength = 20_000;
+
+type EmbedState =
+  | { status: "loading" }
+  | { status: "loaded"; content: string; name: string }
+  | { status: "large"; name: string }
+  | { status: "error"; message: string };
 
 function escapeHtml(value: string): string {
   return value
@@ -143,6 +150,22 @@ export function resolveAttachmentImageSrc(
   }
 
   return `file://${encodeURI(`${workspacePath.replace(/\/+$/, "")}/${normalized}`)}`;
+}
+
+export function normalizeEmbedTarget(target: string): string | null {
+  const normalized = target.trim().split("#")[0].split("^")[0].replace(/\\/g, "/");
+
+  if (
+    normalized === "" ||
+    normalized.startsWith("/") ||
+    normalized.startsWith("//") ||
+    normalized.split("/").some((segment) => segment === "..") ||
+    /^[a-z][a-z0-9+.-]*:/i.test(normalized)
+  ) {
+    return null;
+  }
+
+  return normalized.endsWith(".md") ? normalized : `${normalized}.md`;
 }
 
 function buildRenderer(workspacePath: string | null | undefined, imageSources: string[]): Renderer {
@@ -187,28 +210,122 @@ function toggleNthCheckbox(source: string, index: number): string {
   });
 }
 
+function extractEmbedTargets(content: string): string[] {
+  const targets = new Set<string>();
+
+  for (const match of content.matchAll(/!\[\[([^\]\n]+)\]\]/g)) {
+    const target = normalizeEmbedTarget(match[1]);
+
+    if (target) targets.add(target);
+  }
+
+  return [...targets];
+}
+
+function renderMarkdown(
+  content: string,
+  workspacePath: string | null | undefined,
+  embeds: Map<string, EmbedState>,
+  renderEmbeds: boolean
+): string {
+  const imageSources: string[] = [];
+  const renderer = buildRenderer(workspacePath, imageSources);
+  const withEmbedPlaceholders = renderEmbeds
+    ? content.replace(/!\[\[([^\]\n]+)\]\]/g, (match, rawTarget: string) => {
+        const target = normalizeEmbedTarget(rawTarget);
+
+        if (!target) {
+          return `\n\n<div class="preview-file-embed preview-file-embed--error">${escapeHtml(match)}</div>\n\n`;
+        }
+
+        return `\n\n${renderFileEmbed(target, embeds, workspacePath)}\n\n`;
+      })
+    : content.replace(/!\[\[([^\]\n]+)\]\]/g, "[[$1]]");
+  const raw = marked.parse(withEmbedPlaceholders, { async: false, renderer }) as string;
+  // チェックボックスの disabled を外して操作可能にする
+  const withCheckboxes = raw.replace(
+    /<input disabled="" type="checkbox">/g,
+    '<input type="checkbox" class="preview-checkbox">'
+  ).replace(
+    /<input checked="" disabled="" type="checkbox">/g,
+    '<input checked type="checkbox" class="preview-checkbox">'
+  );
+  const sanitized = DOMPurify.sanitize(withCheckboxes, { ADD_ATTR: ["checked", "class"] });
+
+  return imageSources.reduce(
+    (htmlWithImages, src, imageId) =>
+      htmlWithImages.replace(`data-relic-image-id="${imageId}"`, `src="${src}"`),
+    sanitized
+  );
+}
+
+function renderFileEmbed(
+  target: string,
+  embeds: Map<string, EmbedState>,
+  workspacePath: string | null | undefined
+): string {
+  const state = embeds.get(target) ?? { status: "loading" };
+
+  if (state.status === "loading") {
+    return `<div class="preview-file-embed preview-file-embed--loading">${escapeHtml(target)} を読み込んでいます</div>`;
+  }
+
+  if (state.status === "error") {
+    return `<div class="preview-file-embed preview-file-embed--error">${escapeHtml(state.message)}</div>`;
+  }
+
+  if (state.status === "large") {
+    return `<div class="preview-file-embed preview-file-embed--large">${escapeHtml(state.name)} は大きいため全文表示しません</div>`;
+  }
+
+  const body = renderMarkdown(state.content, workspacePath, new Map(), false);
+
+  return `<section class="preview-file-embed"><div class="preview-file-embed-title">${escapeHtml(state.name)}</div><div class="preview-file-embed-body">${body}</div></section>`;
+}
+
 export function Preview({ content, onChange, settings, workspacePath }: PreviewProps): ReactElement {
-  const html = useMemo(() => {
-    const imageSources: string[] = [];
-    const renderer = buildRenderer(workspacePath, imageSources);
-    const raw = marked.parse(content, { async: false, renderer }) as string;
-    // チェックボックスの disabled を外して操作可能にする
-    const withCheckboxes = raw.replace(
-      /<input disabled="" type="checkbox">/g,
-      '<input type="checkbox" class="preview-checkbox">'
-    ).replace(
-      /<input checked="" disabled="" type="checkbox">/g,
-      '<input checked type="checkbox" class="preview-checkbox">'
-    );
+  const [embeds, setEmbeds] = useState<Map<string, EmbedState>>(new Map());
 
-    const sanitized = DOMPurify.sanitize(withCheckboxes, { ADD_ATTR: ["checked", "class"] });
+  useEffect(() => {
+    const targets = extractEmbedTargets(content);
 
-    return imageSources.reduce(
-      (htmlWithImages, src, imageId) =>
-        htmlWithImages.replace(`data-relic-image-id="${imageId}"`, `src="${src}"`),
-      sanitized
-    );
+    if (targets.length === 0 || !window.relic) {
+      setEmbeds(new Map());
+      return;
+    }
+
+    let canceled = false;
+    setEmbeds(new Map(targets.map((target) => [target, { status: "loading" } as EmbedState])));
+
+    void Promise.all(
+      targets.map(async (target) => {
+        const result = await window.relic!.readMarkdownFile({ path: target });
+
+        if (!result.ok) {
+          return [target, { status: "error", message: result.error.message } as EmbedState] as const;
+        }
+
+        if (result.value.content.length > maxEmbeddedFileLength) {
+          return [target, { status: "large", name: result.value.name } as EmbedState] as const;
+        }
+
+        return [
+          target,
+          { status: "loaded", content: result.value.content, name: result.value.name } as EmbedState
+        ] as const;
+      })
+    ).then((entries) => {
+      if (!canceled) setEmbeds(new Map(entries));
+    });
+
+    return () => {
+      canceled = true;
+    };
   }, [content, workspacePath]);
+
+  const html = useMemo(() => {
+    return renderMarkdown(content, workspacePath, embeds, true);
+  }, [content, embeds, workspacePath]);
 
   const handleClick = useCallback(
     (e: MouseEvent<HTMLDivElement>) => {

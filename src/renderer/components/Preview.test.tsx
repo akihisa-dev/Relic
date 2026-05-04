@@ -1,12 +1,17 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { defaultEditorSettings } from "../../shared/ipc";
-import { Preview, resolveAttachmentImageSrc } from "./Preview";
+import { Preview, normalizeEmbedTarget, resolveAttachmentImageSrc } from "./Preview";
 
 const settings = defaultEditorSettings;
 
 describe("Preview", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    window.relic = undefined;
+  });
+
   it("Markdownを見出しとしてレンダリングする", () => {
     render(<Preview content="# タイトル" settings={settings} />);
 
@@ -84,6 +89,39 @@ describe("Preview", () => {
     expect(screen.queryByRole("img")).not.toBeInTheDocument();
     expect(screen.getByText("外部")).toBeInTheDocument();
   });
+
+  it("ファイル埋め込みを一段階だけ読み込んで表示する", async () => {
+    window.relic = {
+      readMarkdownFile: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          content: "# 埋め込み先\n\n本文\n\n![[さらに奥]]",
+          name: "埋め込み先",
+          path: "埋め込み先.md"
+        }
+      })
+    } as unknown as typeof window.relic;
+
+    render(<Preview content="前\n\n![[埋め込み先]]\n\n後" settings={settings} />);
+
+    expect(window.relic!.readMarkdownFile).toHaveBeenCalledWith({ path: "埋め込み先.md" });
+    expect(await screen.findByRole("heading", { level: 1, name: "埋め込み先" })).toBeInTheDocument();
+    expect(screen.getByText("本文")).toBeInTheDocument();
+    expect(window.relic!.readMarkdownFile).toHaveBeenCalledTimes(1);
+  });
+
+  it("大きすぎる埋め込みファイルは全文表示しない", async () => {
+    window.relic = {
+      readMarkdownFile: vi.fn().mockResolvedValue({
+        ok: true,
+        value: { content: "a".repeat(20_001), name: "巨大ノート", path: "巨大ノート.md" }
+      })
+    } as unknown as typeof window.relic;
+
+    render(<Preview content="![[巨大ノート]]" settings={settings} />);
+
+    expect(await screen.findByText("巨大ノート は大きいため全文表示しません")).toBeInTheDocument();
+  });
 });
 
 describe("resolveAttachmentImageSrc", () => {
@@ -95,5 +133,14 @@ describe("resolveAttachmentImageSrc", () => {
     expect(resolveAttachmentImageSrc("/tmp/relic", "attachments/../secret.png")).toBeNull();
     expect(resolveAttachmentImageSrc("/tmp/relic", "attachments/icon.svg")).toBeNull();
     expect(resolveAttachmentImageSrc("/tmp/relic", "https://example.com/image.png")).toBeNull();
+  });
+});
+
+describe("normalizeEmbedTarget", () => {
+  it("Markdownファイルとして読める埋め込み先へ正規化する", () => {
+    expect(normalizeEmbedTarget("Folder/Note")).toBe("Folder/Note.md");
+    expect(normalizeEmbedTarget("Folder/Note.md#見出し")).toBe("Folder/Note.md");
+    expect(normalizeEmbedTarget("../secret")).toBeNull();
+    expect(normalizeEmbedTarget("https://example.com/note.md")).toBeNull();
   });
 });
