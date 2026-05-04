@@ -6,6 +6,8 @@ export const createMarkdownFileChannel = "workspace:createMarkdownFile";
 export const getWorkspaceStateChannel = "workspace:getState";
 export const openWorkspaceChannel = "workspace:open";
 export const readMarkdownFileChannel = "workspace:readMarkdownFile";
+export const renameMarkdownFileChannel = "workspace:renameMarkdownFile";
+export const switchWorkspaceChannel = "workspace:switch";
 
 export interface AppInfo {
   name: "Relic";
@@ -37,10 +39,24 @@ export interface ReadMarkdownFileInput {
   path: string;
 }
 
+export interface RenameMarkdownFileInput {
+  newName: string;
+  path: string;
+}
+
+export interface SwitchWorkspaceInput {
+  workspaceId: string;
+}
+
 export interface MarkdownFileContent {
   content: string;
   name: string;
   path: string;
+}
+
+export interface RenameMarkdownFileResult {
+  file: MarkdownFileContent;
+  workspaceState: WorkspaceState;
 }
 
 export type WorkspaceTreeNode = WorkspaceFolderNode | WorkspaceFileNode;
@@ -65,4 +81,8 @@ export interface RelicApi {
   getWorkspaceState: () => Promise<RelicResult<WorkspaceState>>;
   openWorkspace: () => Promise<RelicResult<WorkspaceState>>;
   readMarkdownFile: (input: ReadMarkdownFileInput) => Promise<RelicResult<MarkdownFileContent>>;
+  renameMarkdownFile: (
+    input: RenameMarkdownFileInput
+  ) => Promise<RelicResult<RenameMarkdownFileResult>>;
+  switchWorkspace: (input: SwitchWorkspaceInput) => Promise<RelicResult<WorkspaceState>>;
 }

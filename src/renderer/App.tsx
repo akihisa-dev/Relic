@@ -76,6 +76,7 @@ interface SidebarContentProps {
   onFolderNameDraftChange: (value: string) => void;
   onOpenFile: (path: string) => void;
   onOpenWorkspace: () => void;
+  onSwitchWorkspace: (workspaceId: string) => void;
   view: SidebarView;
   workspaceState: WorkspaceState | null;
 }
@@ -93,6 +94,7 @@ function SidebarContent({
   onFolderNameDraftChange,
   onOpenFile,
   onOpenWorkspace,
+  onSwitchWorkspace,
   view,
   workspaceState
 }: SidebarContentProps): ReactElement {
@@ -118,9 +120,17 @@ function SidebarContent({
         {workspaceState && workspaceState.workspaces.length > 1 ? (
           <div className="workspace-list" aria-label="登録済みワークスペース">
             {workspaceState.workspaces.map((workspace) => (
-              <div className="workspace-list-item" key={workspace.id} title={workspace.path}>
+              <button
+                className={`workspace-list-item ${
+                  workspace.id === activeWorkspace?.id ? "active" : ""
+                }`}
+                key={workspace.id}
+                onClick={() => onSwitchWorkspace(workspace.id)}
+                title={workspace.path}
+                type="button"
+              >
                 {workspace.name}
-              </div>
+              </button>
             ))}
           </div>
         ) : null}
@@ -217,8 +227,10 @@ export function App(): ReactElement {
   const [activeFile, setActiveFile] = useState<MarkdownFileContent | null>(null);
   const [fileNameDraft, setFileNameDraft] = useState("");
   const [folderNameDraft, setFolderNameDraft] = useState("");
+  const [renameDraft, setRenameDraft] = useState("");
   const [isCreatingFile, setIsCreatingFile] = useState(false);
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
+  const [isRenamingFile, setIsRenamingFile] = useState(false);
   const [isOpeningWorkspace, setIsOpeningWorkspace] = useState(false);
   const {
     activeSidebarView,
@@ -330,6 +342,53 @@ export function App(): ReactElement {
     void window.relic.readMarkdownFile({ path }).then((result) => {
       if (result.ok) {
         setActiveFile(result.value);
+        setRenameDraft(result.value.name);
+      } else {
+        setWorkspaceError(result.error.message);
+      }
+    });
+  };
+
+  const handleRenameFile = (): void => {
+    if (!window.relic || !activeFile) {
+      setWorkspaceError("リネームするファイルを選択してください。");
+      return;
+    }
+
+    setIsRenamingFile(true);
+    setWorkspaceError(null);
+
+    void window.relic
+      .renameMarkdownFile({
+        newName: renameDraft,
+        path: activeFile.path
+      })
+      .then((result) => {
+        if (result.ok) {
+          setActiveFile(result.value.file);
+          setRenameDraft(result.value.file.name);
+          setWorkspaceState(result.value.workspaceState);
+        } else {
+          setWorkspaceError(result.error.message);
+        }
+      })
+      .finally(() => {
+        setIsRenamingFile(false);
+      });
+  };
+
+  const handleSwitchWorkspace = (workspaceId: string): void => {
+    if (!window.relic) {
+      setWorkspaceError("アプリAPIを利用できませんでした。");
+      return;
+    }
+
+    setWorkspaceError(null);
+
+    void window.relic.switchWorkspace({ workspaceId }).then((result) => {
+      if (result.ok) {
+        setWorkspaceState(result.value);
+        setActiveFile(null);
       } else {
         setWorkspaceError(result.error.message);
       }
@@ -386,6 +445,7 @@ export function App(): ReactElement {
               onFolderNameDraftChange={setFolderNameDraft}
               onOpenFile={handleOpenFile}
               onOpenWorkspace={handleOpenWorkspace}
+              onSwitchWorkspace={handleSwitchWorkspace}
               view={activeSidebarView}
               workspaceState={workspaceState}
             />
@@ -425,7 +485,26 @@ export function App(): ReactElement {
               </div>
               <h1>{activeFile ? activeFile.name : "Relic"}</h1>
               {activeFile ? (
-                <pre className="editor-preview">{activeFile.content || "空のMarkdownファイルです。"}</pre>
+                <>
+                  <form
+                    className="rename-form"
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      handleRenameFile();
+                    }}
+                  >
+                    <input
+                      aria-label="リネーム後のノート名"
+                      className="text-input"
+                      onChange={(event) => setRenameDraft(event.target.value)}
+                      value={renameDraft}
+                    />
+                    <button disabled={isRenamingFile} type="submit">
+                      名前変更
+                    </button>
+                  </form>
+                  <pre className="editor-preview">{activeFile.content || "空のMarkdownファイルです。"}</pre>
+                </>
               ) : (
                 <p>
                   フェーズ0の仮エディタ画面です。ここからローカルMarkdownワークスペースの実装を育てます。

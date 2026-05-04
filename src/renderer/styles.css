@@ -162,11 +162,23 @@ button:disabled {
 }
 
 .workspace-list-item {
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
   color: #555b62;
   font-size: 13px;
+  min-height: 26px;
   overflow: hidden;
+  padding: 0 8px;
+  text-align: left;
   text-overflow: ellipsis;
   white-space: nowrap;
+  width: 100%;
+}
+
+.workspace-list-item.active {
+  background: rgba(223, 104, 43, 0.12);
+  color: #a14617;
 }
 
 .file-tree {
@@ -254,6 +266,13 @@ button:disabled {
   display: grid;
   gap: 8px;
   grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.rename-form {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  margin-bottom: 24px;
 }
 
 .setting-row {

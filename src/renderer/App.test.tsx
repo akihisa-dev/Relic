@@ -25,7 +25,9 @@ describe("App", () => {
       }),
       openWorkspace: vi.fn(),
       createMarkdownFile: vi.fn(),
-      readMarkdownFile: vi.fn()
+      readMarkdownFile: vi.fn(),
+      renameMarkdownFile: vi.fn(),
+      switchWorkspace: vi.fn()
     };
 
     render(<App />);
@@ -81,7 +83,9 @@ describe("App", () => {
         }
       }),
       openWorkspace: vi.fn(),
-      readMarkdownFile: vi.fn()
+      readMarkdownFile: vi.fn(),
+      renameMarkdownFile: vi.fn(),
+      switchWorkspace: vi.fn()
     };
 
     render(<App />);
@@ -142,7 +146,9 @@ describe("App", () => {
         }
       }),
       openWorkspace: vi.fn(),
-      readMarkdownFile: vi.fn()
+      readMarkdownFile: vi.fn(),
+      renameMarkdownFile: vi.fn(),
+      switchWorkspace: vi.fn()
     };
 
     render(<App />);
@@ -198,7 +204,9 @@ describe("App", () => {
         }
       }),
       openWorkspace: vi.fn(),
-      readMarkdownFile
+      readMarkdownFile,
+      renameMarkdownFile: vi.fn(),
+      switchWorkspace: vi.fn()
     };
 
     render(<App />);
@@ -208,5 +216,172 @@ describe("App", () => {
     expect(readMarkdownFile).toHaveBeenCalledWith({ path: "読書メモ.md" });
     expect(await screen.findByText((_, element) => element?.textContent === "# 読書メモ\n本文です。"))
       .toBeInTheDocument();
+  });
+
+  it("switches between registered workspaces", async () => {
+    const switchWorkspace = vi.fn().mockResolvedValue({
+      ok: true,
+      value: {
+        activeWorkspace: {
+          id: "workspace-2",
+          name: "Archive",
+          path: "/tmp/Archive"
+        },
+        fileTree: [
+          {
+            name: "old",
+            path: "old.md",
+            type: "file"
+          }
+        ],
+        workspaces: [
+          {
+            id: "workspace-1",
+            name: "Notes",
+            path: "/tmp/Notes"
+          },
+          {
+            id: "workspace-2",
+            name: "Archive",
+            path: "/tmp/Archive"
+          }
+        ]
+      }
+    });
+
+    window.relic = {
+      createFolder: vi.fn(),
+      createMarkdownFile: vi.fn(),
+      getAppInfo: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          name: "Relic",
+          platform: "darwin",
+          version: "0.0.0"
+        }
+      }),
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          activeWorkspace: {
+            id: "workspace-1",
+            name: "Notes",
+            path: "/tmp/Notes"
+          },
+          fileTree: [],
+          workspaces: [
+            {
+              id: "workspace-1",
+              name: "Notes",
+              path: "/tmp/Notes"
+            },
+            {
+              id: "workspace-2",
+              name: "Archive",
+              path: "/tmp/Archive"
+            }
+          ]
+        }
+      }),
+      openWorkspace: vi.fn(),
+      readMarkdownFile: vi.fn(),
+      renameMarkdownFile: vi.fn(),
+      switchWorkspace
+    };
+
+    render(<App />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Archive" }));
+
+    expect(switchWorkspace).toHaveBeenCalledWith({ workspaceId: "workspace-2" });
+    expect(await screen.findByText("/tmp/Archive")).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: /old/ })).toBeInTheDocument();
+  });
+
+  it("renames the active markdown file", async () => {
+    const renameMarkdownFile = vi.fn().mockResolvedValue({
+      ok: true,
+      value: {
+        file: {
+          content: "# 読書メモ",
+          name: "読書記録",
+          path: "読書記録.md"
+        },
+        workspaceState: {
+          activeWorkspace: {
+            id: "workspace-1",
+            name: "Notes",
+            path: "/tmp/Notes"
+          },
+          fileTree: [
+            {
+              name: "読書記録",
+              path: "読書記録.md",
+              type: "file"
+            }
+          ],
+          workspaces: []
+        }
+      }
+    });
+
+    window.relic = {
+      createFolder: vi.fn(),
+      createMarkdownFile: vi.fn(),
+      getAppInfo: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          name: "Relic",
+          platform: "darwin",
+          version: "0.0.0"
+        }
+      }),
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          activeWorkspace: {
+            id: "workspace-1",
+            name: "Notes",
+            path: "/tmp/Notes"
+          },
+          fileTree: [
+            {
+              name: "読書メモ",
+              path: "読書メモ.md",
+              type: "file"
+            }
+          ],
+          workspaces: []
+        }
+      }),
+      openWorkspace: vi.fn(),
+      readMarkdownFile: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          content: "# 読書メモ",
+          name: "読書メモ",
+          path: "読書メモ.md"
+        }
+      }),
+      renameMarkdownFile,
+      switchWorkspace: vi.fn()
+    };
+
+    render(<App />);
+
+    fireEvent.click(await screen.findByRole("button", { name: /読書メモ/ }));
+    fireEvent.change(await screen.findByRole("textbox", { name: "リネーム後のノート名" }), {
+      target: {
+        value: "読書記録"
+      }
+    });
+    fireEvent.click(screen.getByRole("button", { name: "名前変更" }));
+
+    expect(renameMarkdownFile).toHaveBeenCalledWith({
+      newName: "読書記録",
+      path: "読書メモ.md"
+    });
+    expect(await screen.findByText("読書記録.md")).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: /読書記録/ })).toBeInTheDocument();
   });
 });

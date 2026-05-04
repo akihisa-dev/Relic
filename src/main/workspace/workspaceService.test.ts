@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { attachmentsDirectoryName, templatesDirectoryName } from "../../shared/workspace";
 import {
   addOrActivateWorkspace,
+  activateWorkspace,
   createWorkspaceSummary,
   prepareWorkspace,
   toWorkspaceState
@@ -51,5 +52,36 @@ describe("workspaceService", () => {
 
     expect(nextSettings.workspaces).toHaveLength(1);
     expect(toWorkspaceState(nextSettings).activeWorkspace).toEqual(workspace);
+  });
+
+  it("登録済みワークスペースをアクティブに切り替える", () => {
+    const firstWorkspace = createWorkspaceSummary("/tmp/relic-notes-1");
+    const secondWorkspace = createWorkspaceSummary("/tmp/relic-notes-2");
+
+    const settings = {
+      lastWorkspaceId: firstWorkspace.id,
+      workspaces: [firstWorkspace, secondWorkspace]
+    };
+    const result = activateWorkspace(settings, secondWorkspace.id);
+
+    expect(result).toEqual({
+      ok: true,
+      value: {
+        lastWorkspaceId: secondWorkspace.id,
+        workspaces: [firstWorkspace, secondWorkspace]
+      }
+    });
+  });
+
+  it("未登録ワークスペースへの切り替えを拒否する", () => {
+    expect(
+      activateWorkspace(
+        {
+          lastWorkspaceId: null,
+          workspaces: []
+        },
+        "missing"
+      ).ok
+    ).toBe(false);
   });
 });
