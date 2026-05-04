@@ -83,9 +83,9 @@ AIがセッション開始時に読む**ドキュメント整備状況リスト*
 | ファイル | 状態 | 備考 |
 |----------|------|------|
 | [dev/roadmap.md](dev/roadmap.md) | ✅ | 開発フェーズ・実装順・各フェーズの完了条件を定義済み |
-| [dev/open-questions.md](dev/open-questions.md) | ✅ | 未決定事項の総点検が完了。すべて解消済み |
-| [dev/conventions.md](dev/conventions.md) | ✅ | Electron / React / TypeScript の基本規約と責務分離を定義済み |
-| [dev/testing.md](dev/testing.md) | ✅ | Vitest中心のテスト方針・優先領域・命名規則を定義済み |
+| [dev/open-questions.md](dev/open-questions.md) | ✅ | 実装前に解決する問いを追加。未解決項目あり |
+| [dev/conventions.md](dev/conventions.md) | ✅ | Electron / React / TypeScript の責務分離・IPC・ファイル安全性・Git・設定方針を定義済み |
+| [dev/testing.md](dev/testing.md) | ✅ | Vitest中心のテスト方針・フェーズ別テスト基準・安全な一時ファイル運用を定義済み |
 
 ---
 
@@ -95,6 +95,9 @@ AIがセッション開始時に読む**ドキュメント整備状況リスト*
 
 特に優先して確認するもの：
 
+- [x] React状態管理・設定保存・GitHub OAuth詳細・Markdownレンダリング構成・UIテスト補助ライブラリ
+- [x] ショートカット・添付画像フォルダ・テンプレートフォルダ・フォルダ操作時の確認/リンク更新・ブロック参照/埋め込み
+- [ ] フロントマター固定フィールド（`author` / `status`）と入力UI。`docs/spec/frontmatter.md` の文脈で別途検討する
 - [x] ワークスペース保存場所：任意フォルダ方式で確定。iCloud Drive固定方針との矛盾は解消済み
 - [x] クラウド同期フォルダはアプリ機能ではなく、通常のローカルフォルダとして扱う方針で確定
 - [x] 複数ワークスペース間をまたいだ検索・リンク：非対応で確定。検索・リンク対象は現在のワークスペース内のみ

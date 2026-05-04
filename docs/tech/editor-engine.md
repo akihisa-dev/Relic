@@ -8,6 +8,8 @@
 
 **CodeMirror 6** を採用する。
 
+ライブプレビューはCodeMirror 6を中心に実装する。ただし、Markdown解析・HTML安全化・KaTeX連携などは専用ライブラリを組み合わせ、CodeMirrorだけで無理に完結させない。
+
 ---
 
 ## 選定理由

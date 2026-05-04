@@ -26,6 +26,19 @@
 
 ## P0：設計の前提に関わる問い
 
+### 実装基盤
+
+- [x] Reactのアプリ状態管理は、React標準のstate/context中心で始めるか、最初から軽量な状態管理ライブラリを導入するか？ → **Zustandを採用**。ただし、タブ・ペイン・サイドバー・右パネル・アクティブワークスペース・UI設定反映などの横断的UI状態に限定し、フォーム入力・メニュー開閉・モーダル内状態はReactローカルstateで扱う。ファイル内容・Git状態・検索インデックス・LinkIndex / TagIndex・設定の永続化はZustandに入れない
+  - 関連: [dev/conventions.md](conventions.md), [dev/roadmap.md](roadmap.md), [architecture/overview.md](../architecture/overview.md), [tech/stack.md](../tech/stack.md)
+- [x] アプリ設定・ワークスペース設定の保存形式と保存ライブラリをどうするか？（例：Electron userData配下のJSON、設定保存ライブラリ利用など） → **Electronの userData 配下にJSONで保存し、自前の設定サービスで管理**する。アプリ設定は `app-settings.json`、ワークスペース設定は `workspaces/{workspaceId}.json` を基本とする
+  - 関連: [dev/conventions.md](conventions.md), [architecture/data-model.md](../architecture/data-model.md), [ui/screens-macos.md](../ui/screens-macos.md)
+- [x] GitHub OAuthの実装詳細をどうするか？（OAuth Appの扱い、callback/deep link、取得トークンの保存先、macOS Keychain等の安全な保存方法） → **ブラウザOAuthで認証し、取得した認証情報はmacOS Keychainに保存**する。Personal Access Token貼り付け方式は使わない
+  - 関連: [spec/github.md](../spec/github.md), [tech/git-implementation.md](../tech/git-implementation.md), [dev/conventions.md](conventions.md)
+- [x] Markdownライブプレビューの実装ライブラリ構成をどうするか？（CodeMirror拡張だけで寄せるか、Markdownパーサー・sanitize・KaTeX連携ライブラリを組み合わせるか） → **CodeMirror 6を中心にしつつ、Markdown解析・HTML安全化・KaTeX連携などの専用ライブラリを組み合わせる**。CodeMirrorだけで無理に完結させない
+  - 関連: [spec/markdown.md](../spec/markdown.md), [spec/editor.md](../spec/editor.md), [tech/editor-engine.md](../tech/editor-engine.md), [dev/roadmap.md](roadmap.md)
+- [x] UIテストで使うReact向け補助ライブラリをどうするか？（Vitestに加えて何を採用するか） → **React Testing Library** を採用する
+  - 関連: [dev/testing.md](testing.md), [tech/stack.md](../tech/stack.md)
+
 ### ドキュメント整合性
 
 - [x] `docs/dev/open-questions.md` は、解決済みの問いを `[x]` として残す運用にするか、`docs/_rules.md` の記述どおり決定後に削除する運用に戻すか？ → **解決済みの問いも `[x]` として残す**運用に決定
@@ -72,6 +85,27 @@
 ---
 
 ## P1：初期実装前に決めたい問い
+
+### 操作・初期値
+
+- [x] キーボードショートカットの具体的な割り当てをどうするか？（検索、コマンドパレット、クイックスイッチャー、サイドバー開閉、分割表示、右パネルなど） → **Mac標準の感覚に寄せた初期割り当て**にする。検索 `⌘F`、全体検索 `⌘⇧F`、コマンドパレット `⌘⇧P`、クイックスイッチャー `⌘P`、サイドバー開閉 `⌘B`、新規ノート `⌘N`、タブを閉じる `⌘W`、分割表示 `⌘\`、右パネル開閉 `⌘⇧B`
+  - 関連: [spec/navigation.md](../spec/navigation.md), [spec/command-palette.md](../spec/command-palette.md), [spec/search.md](../spec/search.md), [dev/roadmap.md](roadmap.md)
+- [x] 添付画像フォルダのデフォルト名と作成タイミングをどうするか？（例：`attachments/` を固定にするか、設定で変更可能にするか） → **`attachments/` 固定**。画像貼り付け時ではなく、ワークスペース作成時または既存フォルダ登録時に自動作成する。ユーザーにフォルダ名や作成有無は選ばせない
+  - 関連: [spec/markdown.md](../spec/markdown.md), [spec/file-management.md](../spec/file-management.md), [architecture/data-model.md](../architecture/data-model.md)
+- [x] テンプレートフォルダのデフォルト名をどうするか？（例：`_templates` / `templates` / ユーザーが初回設定で選ぶ、など） → **`templates/` 固定**。ワークスペース作成時または既存フォルダ登録時に自動作成する。ユーザーにフォルダ名や作成有無は選ばせない
+  - 関連: [spec/links-and-tags.md](../spec/links-and-tags.md), [spec/file-management.md](../spec/file-management.md), [ui/screens-macos.md](../ui/screens-macos.md)
+- [x] フォルダ削除時もファイル削除と同じ確認ダイアログを出すか？確認文言はどうするか？ → **確認ダイアログを出す**。「このフォルダをゴミ箱に移動しますか？フォルダ内のノートと添付ファイルも一緒に移動されます。」を基本文言にする
+  - 関連: [spec/file-management.md](../spec/file-management.md), [dev/conventions.md](conventions.md)
+- [x] フォルダのリネーム・移動時、配下ファイルへの内部リンクをどの範囲で自動更新するか？ → **配下の `.md` ファイルへの内部リンクを、本文とフロントマター内で自動更新**する。コードブロック内は更新しない。対象は現在のワークスペース内。確認は出さずに即時更新する
+  - 関連: [spec/file-management.md](../spec/file-management.md), [spec/links-and-tags.md](../spec/links-and-tags.md), [dev/testing.md](testing.md)
+- [x] ブロック参照IDは、ユーザー手入力のみとするか、アプリが自動生成して挿入できるUIを持つか？ → **Relicが自動生成して挿入できるUIを持つ**。既存の手書きIDも読み取るが、手入力を前提にしない
+  - 関連: [spec/links-and-tags.md](../spec/links-and-tags.md), [spec/markdown.md](../spec/markdown.md)
+- [x] ファイル埋め込み `![[ファイル名]]` の表示範囲と制限をどうするか？（再帰埋め込み、巨大ファイル、埋め込み内リンク操作など） → **埋め込み表示は一段階まで**。埋め込み先の中にさらに `![[...]]` があっても展開しない。大きすぎるファイルは全文表示せず、元ファイルを開く導線を出す。埋め込み内リンクは通常どおり開く。埋め込み内では直接編集しない
+  - 関連: [spec/markdown.md](../spec/markdown.md), [spec/links-and-tags.md](../spec/links-and-tags.md)
+- [ ] フロントマター固定システムフィールド `author` の型は、テキスト単体と配列のどちらを正とするか？ → **フロントマター仕様のこだわりポイントとして棚上げ**。`author` 単体では決めず、入力UI・候補選択・手入力を減らす設計とあわせて [spec/frontmatter.md](../spec/frontmatter.md) の文脈で決める
+  - 関連: [spec/frontmatter.md](../spec/frontmatter.md), [architecture/data-model.md](../architecture/data-model.md)
+- [ ] フロントマター固定システムフィールド `status` の初期選択肢を用意するか、最初からユーザー定義のみとするか？ → **フロントマター仕様のこだわりポイントとして棚上げ**。`author` と同様に、[spec/frontmatter.md](../spec/frontmatter.md) の文脈でまとめて決める
+  - 関連: [spec/frontmatter.md](../spec/frontmatter.md), [ui/screens-macos.md](../ui/screens-macos.md)
 
 ### ファイル・フォルダ管理
 
