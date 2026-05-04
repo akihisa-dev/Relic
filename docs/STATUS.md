@@ -73,6 +73,7 @@ AIがセッション開始時に読む**ドキュメント整備状況リスト*
 | [ui/screens-macos.md](ui/screens-macos.md) | ✅ | 2カラムレイアウト・サイドバービュー・メインエリア構成を定義済み |
 | [ui/navigation.md](ui/navigation.md) | ✅ | 起動・ファイルを開く・タブ・分割・ビュー切り替えフロー定義済み |
 | [mockups/](mockups/) | ✅ | 現行仕様に追従するリンク付き静的画面モックあり（主要ビュー・状態画面・操作モーダルを網羅）。実動UIではない |
+| [assets/](assets/) | ✅ | ロゴ案などの設計・検討素材 |
 
 ---
 
@@ -83,6 +84,7 @@ AIがセッション開始時に読む**ドキュメント整備状況リスト*
 | ファイル | 状態 | 備考 |
 |----------|------|------|
 | [dev/roadmap.md](dev/roadmap.md) | ✅ | 開発フェーズ・実装順・各フェーズの完了条件を定義済み |
+| [dev/implementation-list.md](dev/implementation-list.md) | ✅ | ロードマップを実装単位に分解した進捗チェックリスト |
 | [dev/open-questions.md](dev/open-questions.md) | ✅ | 実装前に確認した問いを解決済み項目として保持 |
 | [dev/conventions.md](dev/conventions.md) | ✅ | Electron / React / TypeScript の責務分離・IPC・ファイル安全性・Git・設定方針を定義済み |
 | [dev/testing.md](dev/testing.md) | ✅ | Vitest中心のテスト方針・フェーズ別テスト基準・安全な一時ファイル運用を定義済み |
