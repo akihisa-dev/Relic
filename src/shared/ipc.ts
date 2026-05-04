@@ -5,6 +5,7 @@ export const createFolderChannel = "workspace:createFolder";
 export const createLinkedMarkdownFileChannel = "workspace:createLinkedMarkdownFile";
 export const createMarkdownFileChannel = "workspace:createMarkdownFile";
 export const duplicateMarkdownFileChannel = "workspace:duplicateMarkdownFile";
+export const getBacklinksChannel = "workspace:getBacklinks";
 export const getWorkspaceStateChannel = "workspace:getState";
 export const moveItemToTrashChannel = "workspace:moveItemToTrash";
 export const openWorkspaceChannel = "workspace:open";
@@ -50,6 +51,10 @@ export interface ReadMarkdownFileInput {
   path: string;
 }
 
+export interface GetBacklinksInput {
+  path: string;
+}
+
 export interface DuplicateMarkdownFileInput {
   path: string;
 }
@@ -77,6 +82,12 @@ export interface MarkdownFileContent {
   content: string;
   name: string;
   path: string;
+}
+
+export interface Backlink {
+  count: number;
+  sourceName: string;
+  sourcePath: string;
 }
 
 export interface WriteMarkdownFileInput {
@@ -136,6 +147,7 @@ export interface RelicApi {
   duplicateMarkdownFile: (
     input: DuplicateMarkdownFileInput
   ) => Promise<RelicResult<RenameMarkdownFileResult>>;
+  getBacklinks: (input: GetBacklinksInput) => Promise<RelicResult<Backlink[]>>;
   getAppInfo: () => Promise<RelicResult<AppInfo>>;
   getEditorSettings: () => Promise<RelicResult<EditorSettings>>;
   getWorkspaceState: () => Promise<RelicResult<WorkspaceState>>;
