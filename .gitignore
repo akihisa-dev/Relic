@@ -4,6 +4,7 @@
 
 # Node.js系
 node_modules/
+.pnpm-store/
 
 # ビルド結果
 dist/

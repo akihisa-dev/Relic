@@ -25,20 +25,24 @@ AIがコードを書く際は、まずこのファイルで実装境界を確認
 
 初期実装では、以下の責務分離を基本にする。
 
+リポジトリルートでは、`docs/` を計画・仕様・設計・開発メモ、`app/` をElectron / Reactアプリ本体として分ける。
+
 | 場所 | 内容 |
 |------|------|
-| `src/main/` | Electronメインプロセス。ファイル操作・Git操作・設定保存・検索インデックス・IPCハンドラ |
-| `src/main/workspace/` | ワークスペース登録・切り替え・復元 |
-| `src/main/files/` | Markdownファイルとフォルダの作成・削除・リネーム・移動・複製 |
-| `src/main/indexes/` | LinkIndex / TagIndex / SearchEngine |
-| `src/main/git/` | isomorphic-git とGitHub連携 |
-| `src/main/settings/` | アプリ設定・ワークスペース設定 |
-| `src/preload/` | レンダラーへ公開する安全なAPI |
-| `src/renderer/` | React UI・CodeMirror・画面状態 |
-| `src/renderer/components/` | 再利用コンポーネント |
-| `src/renderer/features/` | ファイルツリー・検索・Git・設定・エディタなど機能単位のUI |
-| `src/shared/` | メイン / レンダラーで共有する型・定数・純粋関数 |
-| `src/test/` | テスト共通ユーティリティ |
+| `docs/` | 計画・仕様・設計・開発メモ |
+| `app/` | Electron / React アプリ本体 |
+| `app/src/main/` | Electronメインプロセス。ファイル操作・Git操作・設定保存・検索インデックス・IPCハンドラ |
+| `app/src/main/workspace/` | ワークスペース登録・切り替え・復元 |
+| `app/src/main/files/` | Markdownファイルとフォルダの作成・削除・リネーム・移動・複製 |
+| `app/src/main/indexes/` | LinkIndex / TagIndex / SearchEngine |
+| `app/src/main/git/` | isomorphic-git とGitHub連携 |
+| `app/src/main/settings/` | アプリ設定・ワークスペース設定 |
+| `app/src/preload/` | レンダラーへ公開する安全なAPI |
+| `app/src/renderer/` | React UI・CodeMirror・画面状態 |
+| `app/src/renderer/components/` | 再利用コンポーネント |
+| `app/src/renderer/features/` | ファイルツリー・検索・Git・設定・エディタなど機能単位のUI |
+| `app/src/shared/` | メイン / レンダラーで共有する型・定数・純粋関数 |
+| `app/src/test/` | テスト共通ユーティリティ |
 
 機能が大きくなった場合も、メインプロセスの責務とレンダラーの責務を混ぜない。
 
@@ -64,7 +68,7 @@ UIに表示する日本語文言は、後から集約できるようにコンポ
 
 - `strict` を前提に書く
 - `any` は避ける。外部ライブラリ境界などで必要な場合は範囲を狭くする
-- IPCの入力・出力は `src/shared/` の共有型で定義する
+- IPCの入力・出力は `app/src/shared/` の共有型で定義する
 - ファイルパスは、絶対パスとワークスペース相対パスを混ぜない
 - ワークスペース相対パスを保存・表示・リンク解決の基本単位にする
 - メインプロセス内でOS操作を行う直前だけ、ワークスペース相対パスから絶対パスへ解決する
@@ -187,7 +191,7 @@ UIに表示する日本語文言は、後から集約できるようにコンポ
 ## 設定
 
 - アプリ設定とワークスペース設定を分ける
-- 設定はElectronの `userData` 配下にJSONで保存し、`src/main/settings/` の自前設定サービスで読み書きする
+- 設定はElectronの `userData` 配下にJSONで保存し、`app/src/main/settings/` の自前設定サービスで読み書きする
 - アプリ設定は `app-settings.json` に保存する
 - ワークスペース設定は `workspaces/{workspaceId}.json` に保存する
 - アプリ設定にはテーマ・エディタ表示設定・機能トグル・前回ワークスペースなどを保存する
