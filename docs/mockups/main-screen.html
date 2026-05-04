@@ -564,6 +564,136 @@
         grid-template-columns: 1fr;
       }
     }
+    :root {
+      --primary: #d84f16;
+      --primary-container: #e85d24;
+      --primary-soft: #fff3ee;
+      --tertiary: #0f6f94;
+      --tertiary-fixed: #eef8fc;
+      --surface: #fbfbfa;
+      --surface-lowest: #ffffff;
+      --surface-low: #f7f7f5;
+      --surface-container: #f3f3f1;
+      --surface-high: #eeeeeb;
+      --surface-highest: #e8e8e4;
+      --outline-variant: #e8e8e4;
+      --hairline: #f0f0ed;
+      --shadow: 0 20px 80px rgb(0 0 0 / 8%);
+    }
+
+    body {
+      background: #f4f4f1;
+    }
+
+    .window {
+      border-color: #deded9;
+      border-radius: 12px;
+    }
+
+    .titlebar,
+    .toolbar,
+    .statusbar {
+      background: rgb(247 247 245 / 86%);
+      border-color: var(--hairline);
+    }
+
+    .sidebar {
+      background: var(--surface-low);
+      border-color: var(--hairline);
+    }
+
+    .rail {
+      background: var(--surface-container);
+      border-color: var(--hairline);
+    }
+
+    .workspace,
+    .right-panel,
+    .pane-tabs {
+      border-color: var(--hairline);
+    }
+
+    .tab.active,
+    .rail-button.active,
+    .icon-button.active,
+    .tree-item.active,
+    .outline-item.active {
+      background: var(--primary-soft);
+      border-color: #ffd9ca;
+      color: var(--primary);
+    }
+
+    .editor-shell {
+      background: #ffffff;
+    }
+
+    .right-panel {
+      background: #fbfbfa;
+    }
+
+    .badge {
+      background: var(--tertiary-fixed);
+      color: var(--tertiary);
+    }
+
+    .prototype-nav {
+      position: fixed;
+      left: 50%;
+      bottom: 18px;
+      z-index: 20;
+      width: min(1120px, calc(100vw - 36px));
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      overflow-x: auto;
+      padding: 7px;
+      border: 1px solid var(--hairline);
+      border-radius: 10px;
+      background: rgb(255 255 255 / 88%);
+      box-shadow: 0 12px 40px rgb(0 0 0 / 10%);
+      backdrop-filter: blur(16px);
+    }
+
+    .prototype-nav a {
+      min-height: 30px;
+      flex: 0 0 auto;
+      max-width: 104px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 10px;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      color: var(--on-surface-variant);
+      text-decoration: none;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-size: 12px;
+      font-weight: 650;
+    }
+
+    .prototype-nav a:hover,
+    .prototype-nav a.active {
+      border-color: #ffd9ca;
+      background: var(--primary-soft);
+      color: var(--primary);
+    }
+
+    .prototype-nav .prototype-spacer {
+      flex: 1;
+    }
+
+    .prototype-link-button {
+      cursor: pointer;
+    }
+
+    .prototype-link-button:hover {
+      border-color: var(--hairline);
+      background: rgb(255 255 255 / 80%);
+      color: var(--primary);
+    }
   </style>
 </head>
 <body>
@@ -590,6 +720,9 @@
       <aside class="sidebar">
         <nav class="rail" aria-label="Sidebar views">
           <span class="rail-label">ビュー切替レール</span>
+          <button class="rail-button" title="Collapse sidebar" aria-label="Collapse sidebar">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6 9 12l6 6"></path><path d="M5 4v16"></path></svg>
+          </button>
           <button class="rail-button active" title="Files" aria-label="Files">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5h6l1.7 2H20v9.5H4z"></path></svg>
           </button>
