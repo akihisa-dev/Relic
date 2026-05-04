@@ -8,6 +8,7 @@ import type {
   WorkspaceState,
   WorkspaceTreeNode
 } from "../shared/ipc";
+import { parseWikiLinks } from "../shared/links";
 import { Editor } from "./components/Editor";
 import { Preview } from "./components/Preview";
 import { Toolbar } from "./components/Toolbar";
@@ -688,6 +689,9 @@ export function App(): ReactElement {
         })
         .filter(Boolean)
     : [];
+  const outgoingLinks = activeTabInFocusedPane
+    ? parseWikiLinks(activeTabInFocusedPane.content)
+    : [];
 
   // ──────────────────
   // レンダリング
@@ -856,8 +860,30 @@ export function App(): ReactElement {
                   ) : (
                     <div className="empty-note">見出しがありません。</div>
                   )
+                ) : outgoingLinks.length > 0 ? (
+                  <div className="links-panel-section">
+                    <div className="links-panel-subheading">Outgoing</div>
+                    <ul className="links-list">
+                      {outgoingLinks.map((link, i) => (
+                        <li className="links-list-item" key={`${link.raw}-${i}`}>
+                          <span className={`links-list-kind links-list-kind--${link.kind}`}>
+                            {link.kind === "embed" ? "Embed" : "Link"}
+                          </span>
+                          <span className="links-list-target" title={link.target}>
+                            {link.alias ?? link.target.replace(/\.md$/, "")}
+                          </span>
+                          {link.heading ? (
+                            <span className="links-list-detail">#{link.heading}</span>
+                          ) : null}
+                          {link.blockId ? (
+                            <span className="links-list-detail">^{link.blockId}</span>
+                          ) : null}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 ) : (
-                  <div className="empty-note">リンク一覧はフェーズ4で追加します。</div>
+                  <div className="empty-note">このノートから出ているリンクはありません。</div>
                 )}
               </aside>
             ) : null}

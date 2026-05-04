@@ -755,6 +755,71 @@ button:disabled {
 }
 
 /* ────────────────────────────────── */
+/* Right panel links                  */
+/* ────────────────────────────────── */
+
+.links-panel-section {
+  display: grid;
+  gap: 10px;
+}
+
+.links-panel-subheading {
+  color: #747981;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.links-list {
+  display: grid;
+  gap: 6px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.links-list-item {
+  align-items: center;
+  display: grid;
+  gap: 6px;
+  grid-template-columns: auto minmax(0, 1fr);
+  min-width: 0;
+}
+
+.links-list-kind {
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 5px;
+}
+
+.links-list-kind--link {
+  background: rgba(18, 100, 163, 0.1);
+  color: #1264a3;
+}
+
+.links-list-kind--embed {
+  background: rgba(223, 104, 43, 0.12);
+  color: #a14617;
+}
+
+.links-list-target {
+  color: #1f2328;
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.links-list-detail {
+  grid-column: 2;
+  color: #747981;
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ────────────────────────────────── */
 /* Rename bar                         */
 /* ────────────────────────────────── */
 
