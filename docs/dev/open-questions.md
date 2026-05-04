@@ -102,9 +102,9 @@
   - 関連: [spec/links-and-tags.md](../spec/links-and-tags.md), [spec/markdown.md](../spec/markdown.md)
 - [x] ファイル埋め込み `![[ファイル名]]` の表示範囲と制限をどうするか？（再帰埋め込み、巨大ファイル、埋め込み内リンク操作など） → **埋め込み表示は一段階まで**。埋め込み先の中にさらに `![[...]]` があっても展開しない。大きすぎるファイルは全文表示せず、元ファイルを開く導線を出す。埋め込み内リンクは通常どおり開く。埋め込み内では直接編集しない
   - 関連: [spec/markdown.md](../spec/markdown.md), [spec/links-and-tags.md](../spec/links-and-tags.md)
-- [ ] フロントマター固定システムフィールド `author` の型は、テキスト単体と配列のどちらを正とするか？ → **フロントマター仕様のこだわりポイントとして棚上げ**。`author` 単体では決めず、入力UI・候補選択・手入力を減らす設計とあわせて [spec/frontmatter.md](../spec/frontmatter.md) の文脈で決める
+- [x] フロントマター固定システムフィールド `author` の型は、テキスト単体と配列のどちらを正とするか？ → **文字列の配列**に決定。UIは候補つきピル入力とし、単独・複数どちらにも対応する。候補はワークスペース直下の `frontmatter.md` で管理できる。`frontmatter.md` がない場合は自由入力として扱う
   - 関連: [spec/frontmatter.md](../spec/frontmatter.md), [architecture/data-model.md](../architecture/data-model.md)
-- [ ] フロントマター固定システムフィールド `status` の初期選択肢を用意するか、最初からユーザー定義のみとするか？ → **フロントマター仕様のこだわりポイントとして棚上げ**。`author` と同様に、[spec/frontmatter.md](../spec/frontmatter.md) の文脈でまとめて決める
+- [x] フロントマター固定システムフィールド `status` の初期選択肢を用意するか、最初からユーザー定義のみとするか？ → **初期選択肢は自動作成しない**。ユーザーが設定画面から `frontmatter.md` を作成した場合、そのファイルに書かれた候補をフォーム入力に連携する。`frontmatter.md` がない場合は自由入力として扱う
   - 関連: [spec/frontmatter.md](../spec/frontmatter.md), [ui/screens-macos.md](../ui/screens-macos.md)
 
 ### ファイル・フォルダ管理
