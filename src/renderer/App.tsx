@@ -1,7 +1,12 @@
 import { useEffect, useState } from "react";
 import type { ReactElement } from "react";
 
-import type { AppInfo, WorkspaceState, WorkspaceTreeNode } from "../shared/ipc";
+import type {
+  AppInfo,
+  MarkdownFileContent,
+  WorkspaceState,
+  WorkspaceTreeNode
+} from "../shared/ipc";
 import { useUiStore, type SidebarView } from "./store/uiStore";
 import "./styles.css";
 
@@ -19,7 +24,15 @@ const sidebarTitles: Record<SidebarView, string> = {
   settings: "Settings"
 };
 
-function FileTree({ nodes }: { nodes: WorkspaceTreeNode[] }): ReactElement {
+function FileTree({
+  activeFilePath,
+  nodes,
+  onOpenFile
+}: {
+  activeFilePath: string | null;
+  nodes: WorkspaceTreeNode[];
+  onOpenFile: (path: string) => void;
+}): ReactElement {
   if (nodes.length === 0) {
     return <div className="empty-note">表示できるMarkdownファイルはまだありません。</div>;
   }
@@ -28,12 +41,21 @@ function FileTree({ nodes }: { nodes: WorkspaceTreeNode[] }): ReactElement {
     <ul className="file-tree">
       {nodes.map((node) => (
         <li className="file-tree-item" key={node.path}>
-          <div className={`file-tree-row ${node.type}`}>
+          <button
+            className={`file-tree-row ${node.type} ${node.path === activeFilePath ? "active" : ""}`}
+            disabled={node.type === "folder"}
+            onClick={() => {
+              if (node.type === "file") {
+                onOpenFile(node.path);
+              }
+            }}
+            type="button"
+          >
             <span className="file-tree-icon">{node.type === "folder" ? "Folder" : "Note"}</span>
             <span className="file-tree-name">{node.name}</span>
-          </div>
+          </button>
           {node.type === "folder" && node.children.length > 0 ? (
-            <FileTree nodes={node.children} />
+            <FileTree activeFilePath={activeFilePath} nodes={node.children} onOpenFile={onOpenFile} />
           ) : null}
         </li>
       ))}
@@ -42,14 +64,34 @@ function FileTree({ nodes }: { nodes: WorkspaceTreeNode[] }): ReactElement {
 }
 
 interface SidebarContentProps {
+  activeFilePath: string | null;
+  fileNameDraft: string;
+  folderNameDraft: string;
   isOpeningWorkspace: boolean;
+  isCreatingFile: boolean;
+  isCreatingFolder: boolean;
+  onCreateFile: () => void;
+  onCreateFolder: () => void;
+  onFileNameDraftChange: (value: string) => void;
+  onFolderNameDraftChange: (value: string) => void;
+  onOpenFile: (path: string) => void;
   onOpenWorkspace: () => void;
   view: SidebarView;
   workspaceState: WorkspaceState | null;
 }
 
 function SidebarContent({
+  activeFilePath,
+  fileNameDraft,
+  folderNameDraft,
+  isCreatingFile,
+  isCreatingFolder,
   isOpeningWorkspace,
+  onCreateFile,
+  onCreateFolder,
+  onFileNameDraftChange,
+  onFolderNameDraftChange,
+  onOpenFile,
   onOpenWorkspace,
   view,
   workspaceState
@@ -83,7 +125,49 @@ function SidebarContent({
           </div>
         ) : null}
         {activeWorkspace ? (
-          <FileTree nodes={workspaceState?.fileTree ?? []} />
+          <>
+            <form
+              className="new-file-form"
+              onSubmit={(event) => {
+                event.preventDefault();
+                onCreateFile();
+              }}
+            >
+              <input
+                aria-label="新規ノート名"
+                className="text-input"
+                onChange={(event) => onFileNameDraftChange(event.target.value)}
+                placeholder="新規ノート名"
+                value={fileNameDraft}
+              />
+              <button disabled={isCreatingFile} type="submit">
+                ノート作成
+              </button>
+            </form>
+            <form
+              className="new-file-form"
+              onSubmit={(event) => {
+                event.preventDefault();
+                onCreateFolder();
+              }}
+            >
+              <input
+                aria-label="新規フォルダ名"
+                className="text-input"
+                onChange={(event) => onFolderNameDraftChange(event.target.value)}
+                placeholder="新規フォルダ名"
+                value={folderNameDraft}
+              />
+              <button disabled={isCreatingFolder} type="submit">
+                フォルダ作成
+              </button>
+            </form>
+            <FileTree
+              activeFilePath={activeFilePath}
+              nodes={workspaceState?.fileTree ?? []}
+              onOpenFile={onOpenFile}
+            />
+          </>
         ) : (
           <div className="empty-note">任意のローカルフォルダをRelicのワークスペースとして開けます。</div>
         )}
@@ -130,6 +214,11 @@ export function App(): ReactElement {
   const [appInfo, setAppInfo] = useState<AppInfo | null>(null);
   const [workspaceState, setWorkspaceState] = useState<WorkspaceState | null>(null);
   const [workspaceError, setWorkspaceError] = useState<string | null>(null);
+  const [activeFile, setActiveFile] = useState<MarkdownFileContent | null>(null);
+  const [fileNameDraft, setFileNameDraft] = useState("");
+  const [folderNameDraft, setFolderNameDraft] = useState("");
+  const [isCreatingFile, setIsCreatingFile] = useState(false);
+  const [isCreatingFolder, setIsCreatingFolder] = useState(false);
   const [isOpeningWorkspace, setIsOpeningWorkspace] = useState(false);
   const {
     activeSidebarView,
@@ -182,6 +271,71 @@ export function App(): ReactElement {
       });
   };
 
+  const handleCreateFile = (): void => {
+    if (!window.relic) {
+      setWorkspaceError("アプリAPIを利用できませんでした。");
+      return;
+    }
+
+    setIsCreatingFile(true);
+    setWorkspaceError(null);
+
+    void window.relic
+      .createMarkdownFile({ name: fileNameDraft })
+      .then((result) => {
+        if (result.ok) {
+          setWorkspaceState(result.value);
+          setFileNameDraft("");
+        } else {
+          setWorkspaceError(result.error.message);
+        }
+      })
+      .finally(() => {
+        setIsCreatingFile(false);
+      });
+  };
+
+  const handleCreateFolder = (): void => {
+    if (!window.relic) {
+      setWorkspaceError("アプリAPIを利用できませんでした。");
+      return;
+    }
+
+    setIsCreatingFolder(true);
+    setWorkspaceError(null);
+
+    void window.relic
+      .createFolder({ name: folderNameDraft })
+      .then((result) => {
+        if (result.ok) {
+          setWorkspaceState(result.value);
+          setFolderNameDraft("");
+        } else {
+          setWorkspaceError(result.error.message);
+        }
+      })
+      .finally(() => {
+        setIsCreatingFolder(false);
+      });
+  };
+
+  const handleOpenFile = (path: string): void => {
+    if (!window.relic) {
+      setWorkspaceError("アプリAPIを利用できませんでした。");
+      return;
+    }
+
+    setWorkspaceError(null);
+
+    void window.relic.readMarkdownFile({ path }).then((result) => {
+      if (result.ok) {
+        setActiveFile(result.value);
+      } else {
+        setWorkspaceError(result.error.message);
+      }
+    });
+  };
+
   return (
     <div className="app-shell">
       <header className="tab-bar">
@@ -220,7 +374,17 @@ export function App(): ReactElement {
           <aside className="sidebar">
             <div className="pane-heading">{sidebarTitles[activeSidebarView]}</div>
             <SidebarContent
+              activeFilePath={activeFile?.path ?? null}
+              fileNameDraft={fileNameDraft}
+              folderNameDraft={folderNameDraft}
+              isCreatingFile={isCreatingFile}
+              isCreatingFolder={isCreatingFolder}
               isOpeningWorkspace={isOpeningWorkspace}
+              onCreateFile={handleCreateFile}
+              onCreateFolder={handleCreateFolder}
+              onFileNameDraftChange={setFileNameDraft}
+              onFolderNameDraftChange={setFolderNameDraft}
+              onOpenFile={handleOpenFile}
               onOpenWorkspace={handleOpenWorkspace}
               view={activeSidebarView}
               workspaceState={workspaceState}
@@ -256,11 +420,17 @@ export function App(): ReactElement {
 
           <div className="editor-layout">
             <section aria-label="エディタ" className="editor-surface">
-              <div className="frontmatter-strip">status: draft / author: 未設定</div>
-              <h1>Relic</h1>
-              <p>
-                フェーズ0の仮エディタ画面です。ここからローカルMarkdownワークスペースの実装を育てます。
-              </p>
+              <div className="frontmatter-strip">
+                {activeFile ? activeFile.path : "status: draft / author: 未設定"}
+              </div>
+              <h1>{activeFile ? activeFile.name : "Relic"}</h1>
+              {activeFile ? (
+                <pre className="editor-preview">{activeFile.content || "空のMarkdownファイルです。"}</pre>
+              ) : (
+                <p>
+                  フェーズ0の仮エディタ画面です。ここからローカルMarkdownワークスペースの実装を育てます。
+                </p>
+              )}
               <p className="muted">
                 IPC: {appInfo ? `${appInfo.name} ${appInfo.version} / ${appInfo.platform}` : "確認中"}
               </p>
