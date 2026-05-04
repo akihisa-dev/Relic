@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { defaultEditorSettings } from "../../shared/ipc";
-import { Preview } from "./Preview";
+import { Preview, resolveAttachmentImageSrc } from "./Preview";
 
 const settings = defaultEditorSettings;
 
@@ -56,5 +56,44 @@ describe("Preview", () => {
     fireEvent.click(checkboxes[1]);
 
     expect(onChange).toHaveBeenCalledWith("- [ ] 一\n- [x] 二\n- [ ] 三");
+  });
+
+  it("attachments配下の画像をワークスペース内のfile URLとして表示する", () => {
+    render(
+      <Preview
+        content="![図](attachments/diagram.png)"
+        settings={settings}
+        workspacePath="/tmp/relic workspace"
+      />
+    );
+
+    const image = screen.getByRole("img", { name: "図" });
+
+    expect(image).toHaveAttribute("src", "file:///tmp/relic%20workspace/attachments/diagram.png");
+  });
+
+  it("外部URL画像は初期対象外として画像表示しない", () => {
+    render(
+      <Preview
+        content="![外部](https://example.com/image.png)"
+        settings={settings}
+        workspacePath="/tmp/relic"
+      />
+    );
+
+    expect(screen.queryByRole("img")).not.toBeInTheDocument();
+    expect(screen.getByText("外部")).toBeInTheDocument();
+  });
+});
+
+describe("resolveAttachmentImageSrc", () => {
+  it("attachments配下のラスター画像だけを許可する", () => {
+    expect(resolveAttachmentImageSrc("/tmp/relic", "attachments/image.webp")).toBe(
+      "file:///tmp/relic/attachments/image.webp"
+    );
+    expect(resolveAttachmentImageSrc("/tmp/relic", "notes/image.png")).toBeNull();
+    expect(resolveAttachmentImageSrc("/tmp/relic", "attachments/../secret.png")).toBeNull();
+    expect(resolveAttachmentImageSrc("/tmp/relic", "attachments/icon.svg")).toBeNull();
+    expect(resolveAttachmentImageSrc("/tmp/relic", "https://example.com/image.png")).toBeNull();
   });
 });
