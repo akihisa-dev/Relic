@@ -13,7 +13,16 @@ describe("App", () => {
           platform: "darwin",
           version: "0.0.0"
         }
-      })
+      }),
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          activeWorkspace: null,
+          fileTree: [],
+          workspaces: []
+        }
+      }),
+      openWorkspace: vi.fn()
     };
 
     render(<App />);
@@ -21,6 +30,7 @@ describe("App", () => {
     expect(screen.getByRole("navigation", { name: "ビュー切り替え" })).toBeInTheDocument();
     expect(screen.getByRole("main")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "ファイル" })).toBeInTheDocument();
+    expect(await screen.findByText("ワークスペース未選択")).toBeInTheDocument();
     expect(await screen.findByText("IPC: Relic 0.0.0 / darwin")).toBeInTheDocument();
   });
 });

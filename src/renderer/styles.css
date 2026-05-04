@@ -31,6 +31,10 @@ button {
   padding: 0 10px;
 }
 
+button:disabled {
+  opacity: 0.62;
+}
+
 .app-shell {
   display: grid;
   grid-template-rows: 40px minmax(0, 1fr) 28px;
@@ -135,6 +139,77 @@ button {
   font-weight: 600;
 }
 
+.workspace-card {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.workspace-path {
+  color: #747981;
+  font-size: 12px;
+  line-height: 1.45;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspace-list {
+  border-top: 1px solid rgba(31, 35, 40, 0.1);
+  display: grid;
+  gap: 4px;
+  padding-top: 10px;
+}
+
+.workspace-list-item {
+  color: #555b62;
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-tree {
+  display: grid;
+  gap: 2px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.file-tree .file-tree {
+  border-left: 1px solid rgba(31, 35, 40, 0.1);
+  margin-left: 10px;
+  padding-left: 10px;
+}
+
+.file-tree-row {
+  align-items: center;
+  border-radius: 6px;
+  color: #555b62;
+  display: grid;
+  font-size: 13px;
+  gap: 8px;
+  grid-template-columns: 42px minmax(0, 1fr);
+  min-height: 28px;
+  padding: 0 8px;
+}
+
+.file-tree-row.file {
+  color: #1f2328;
+}
+
+.file-tree-icon {
+  color: #747981;
+  font-size: 11px;
+}
+
+.file-tree-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .primary-button {
   background: #df682b;
   border-color: #c85b24;
@@ -223,6 +298,13 @@ button {
   color: #747981;
   font-size: 13px;
   line-height: 1.6;
+}
+
+.error-note {
+  color: #a14617;
+  font-size: 13px;
+  line-height: 1.6;
+  margin-top: 12px;
 }
 
 .right-panel {

@@ -3,6 +3,7 @@ import started from "electron-squirrel-startup";
 import path from "node:path";
 
 import { registerAppHandlers } from "./ipc/appHandlers";
+import { registerWorkspaceHandlers } from "./ipc/workspaceHandlers";
 
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string | undefined;
 declare const MAIN_WINDOW_VITE_NAME: string;
@@ -38,6 +39,7 @@ function createWindow(): void {
 
 app.whenReady().then(() => {
   registerAppHandlers();
+  registerWorkspaceHandlers();
   createWindow();
 
   app.on("activate", () => {
