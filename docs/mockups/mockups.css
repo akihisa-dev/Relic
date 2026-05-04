@@ -109,6 +109,8 @@ body {
   color: var(--on-surface-variant);
   font-size: 12px;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .tab.active {
@@ -123,6 +125,9 @@ body {
   gap: 8px;
   color: var(--on-surface-variant);
   font-size: 12px;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
 .body {
@@ -220,6 +225,14 @@ body {
   gap: 12px;
   font-size: 15px;
   font-weight: 650;
+  min-width: 0;
+}
+
+.workspace-name > span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .side-scroll,
@@ -260,6 +273,7 @@ body {
 
 .primary-button {
   min-height: 30px;
+  max-width: 180px;
   padding: 0 12px;
   border: 0;
   border-radius: 6px;
@@ -267,12 +281,16 @@ body {
   color: #ffffff;
   font-size: 12px;
   font-weight: 650;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .mock-label {
   display: inline-flex;
   align-items: center;
   min-height: 24px;
+  max-width: 180px;
   padding: 0 8px;
   border: 1px solid var(--outline-variant);
   border-radius: 6px;
@@ -280,6 +298,9 @@ body {
   color: var(--on-surface);
   font-size: 12px;
   font-weight: 650;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .mock-label.large {
@@ -310,6 +331,10 @@ body {
   border-radius: 6px;
   color: var(--on-surface-variant);
   font-size: 13px;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .list-item.active,
@@ -337,6 +362,8 @@ body {
   background: var(--surface-lowest);
   color: var(--on-surface-variant);
   font-size: 13px;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .field.column {
@@ -358,6 +385,10 @@ body {
   align-items: center;
   gap: 6px;
   color: var(--on-surface-variant);
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .segmented {
@@ -377,6 +408,10 @@ body {
   color: var(--on-surface-variant);
   font-size: 12px;
   font-weight: 650;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .segment.active {
@@ -452,6 +487,7 @@ body {
 .pill {
   display: inline-flex;
   align-items: center;
+  max-width: 120px;
   min-height: 24px;
   padding: 0 8px;
   border-radius: 999px;
@@ -459,6 +495,9 @@ body {
   color: var(--on-surface);
   font-size: 12px;
   font-weight: 650;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .right-panel {
@@ -622,6 +661,14 @@ body {
   border-radius: 7px;
   color: var(--on-surface-variant);
   font-size: 13px;
+  min-width: 0;
+}
+
+.modal-row span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .modal-row.active {
@@ -672,6 +719,70 @@ body {
   padding: 10px;
 }
 
+.frontmatter-strip {
+  margin: 0 0 22px;
+  padding: 8px 10px;
+  border: 1px solid var(--outline-variant);
+  border-radius: 7px;
+  background: #fbfbfb;
+  color: var(--on-surface-variant);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.frontmatter-strip-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 22px;
+  margin-bottom: 4px;
+}
+
+.frontmatter-strip-title {
+  color: var(--on-surface-variant);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.frontmatter-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px 12px;
+}
+
+.frontmatter-field {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr);
+  align-items: center;
+  gap: 6px;
+}
+
+.frontmatter-key {
+  color: var(--outline);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.frontmatter-value {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--on-surface-variant);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.frontmatter-strip .pill {
+  min-height: 20px;
+  max-width: 90px;
+  padding: 0 7px;
+  background: var(--surface-low);
+  color: var(--on-surface-variant);
+  font-size: 11px;
+}
+
 .preview-list {
   display: grid;
   gap: 8px;
@@ -688,6 +799,14 @@ body {
   background: var(--surface-low);
   color: var(--on-surface-variant);
   font-size: 12px;
+  min-width: 0;
+}
+
+.preview-row span {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .prototype-nav {
@@ -700,6 +819,7 @@ body {
   display: flex;
   align-items: center;
   gap: 6px;
+  overflow-x: auto;
   padding: 7px;
   border: 1px solid rgb(0 0 0 / 10%);
   border-radius: 9px;
@@ -710,6 +830,8 @@ body {
 
 .prototype-nav a {
   min-height: 30px;
+  flex: 0 0 auto;
+  max-width: 104px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -719,6 +841,8 @@ body {
   color: var(--on-surface-variant);
   text-decoration: none;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-size: 12px;
   font-weight: 650;
 }
