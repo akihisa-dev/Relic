@@ -63,6 +63,22 @@ describe("Preview", () => {
     expect(onChange).toHaveBeenCalledWith("- [ ] 一\n- [x] 二\n- [ ] 三");
   });
 
+  it("内部リンクをクリックするとリンク先ターゲットを通知する", () => {
+    const onOpenWikiLink = vi.fn();
+
+    render(
+      <Preview
+        content="[[参照先|表示名]]"
+        onOpenWikiLink={onOpenWikiLink}
+        settings={settings}
+      />
+    );
+
+    fireEvent.click(screen.getByText("表示名"));
+
+    expect(onOpenWikiLink).toHaveBeenCalledWith("参照先");
+  });
+
   it("attachments配下の画像をワークスペース内のfile URLとして表示する", () => {
     render(
       <Preview

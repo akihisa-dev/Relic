@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { defaultEditorSettings } from "../shared/ipc";
@@ -9,6 +9,7 @@ import { useUiStore } from "./store/uiStore";
 function makeRelicApi(overrides: Partial<typeof window.relic> = {}): typeof window.relic {
   return {
     createFolder: vi.fn(),
+    createLinkedMarkdownFile: vi.fn(),
     createMarkdownFile: vi.fn(),
     duplicateMarkdownFile: vi.fn(),
     getAppInfo: vi.fn().mockResolvedValue({ ok: true, value: { name: "Relic", platform: "darwin", version: "0.0.0" } }),
@@ -225,8 +226,72 @@ describe("App", () => {
     fireEvent.click(screen.getByRole("button", { name: "Links" }));
 
     expect(await screen.findByText("Outgoing")).toBeInTheDocument();
-    expect(screen.getAllByText("表示名").length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("button", { name: "表示名" }).length).toBeGreaterThan(0);
     expect(screen.getAllByText("埋め込み").length).toBeGreaterThan(0);
     expect(screen.getByText("Embed")).toBeInTheDocument();
+  });
+
+  it("未作成リンクをクリックすると同じフォルダにファイルを作成して開く", async () => {
+    const readMarkdownFile = vi.fn(({ path }: { path: string }) => Promise.resolve(
+      path === "folder/読書メモ.md"
+        ? {
+            ok: true as const,
+            value: { content: "[[新規ノート]]", name: "読書メモ", path: "folder/読書メモ.md" }
+          }
+        : {
+            ok: false as const,
+            error: { code: "FILE_READ_FAILED", message: "ファイルを読み込めませんでした。" }
+          }
+    ));
+    const createLinkedMarkdownFile = vi.fn().mockResolvedValue({
+      ok: true,
+      value: {
+        file: { content: "", name: "新規ノート", path: "folder/新規ノート.md" },
+        workspaceState: {
+          ...withWorkspace,
+          fileTree: [
+            {
+              children: [
+                { name: "読書メモ", path: "folder/読書メモ.md", type: "file" },
+                { name: "新規ノート", path: "folder/新規ノート.md", type: "file" }
+              ],
+              name: "folder",
+              path: "folder",
+              type: "folder"
+            }
+          ]
+        }
+      }
+    });
+
+    window.relic = makeRelicApi({
+      createLinkedMarkdownFile,
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [
+            {
+              children: [{ name: "読書メモ", path: "folder/読書メモ.md", type: "file" }],
+              name: "folder",
+              path: "folder",
+              type: "folder"
+            }
+          ]
+        }
+      }),
+      readMarkdownFile
+    });
+
+    render(<App />);
+
+    fireEvent.click(await screen.findByRole("button", { name: /読書メモ/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Links" }));
+    fireEvent.click(await screen.findByRole("button", { name: "新規ノート" }));
+
+    await waitFor(() => {
+      expect(createLinkedMarkdownFile).toHaveBeenCalledWith({ path: "folder/新規ノート.md" });
+    });
+    expect((await screen.findAllByText("新規ノート")).length).toBeGreaterThan(0);
   });
 });

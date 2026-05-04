@@ -803,11 +803,29 @@ button:disabled {
 }
 
 .links-list-target {
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
   color: #1f2328;
   font-size: 13px;
+  min-height: 24px;
   overflow: hidden;
+  padding: 0 4px;
+  text-align: left;
   text-overflow: ellipsis;
   white-space: nowrap;
+  width: 100%;
+}
+
+.links-list-target:hover {
+  background: rgba(18, 100, 163, 0.08);
+  color: #1264a3;
+}
+
+.links-list-target--missing {
+  color: #a14617;
+  text-decoration: underline;
+  text-decoration-style: dotted;
 }
 
 .links-list-detail {
