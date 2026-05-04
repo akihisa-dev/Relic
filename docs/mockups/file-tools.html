@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>File tools mockup</title>
+  <link rel="stylesheet" href="mockups.css">
+</head>
+<body>
+  <div class="window">
+    <header class="titlebar">
+      <div class="traffic">
+        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        <span class="app-name">Relic</span>
+      </div>
+      <nav class="tabs">
+        <div class="tab active">第一章.md</div>
+      </nav>
+      <div class="title-actions">
+        <span>main</span>
+        <span>保存済み</span>
+      </div>
+    </header>
+
+    <div class="body">
+      <aside class="sidebar">
+        <nav class="rail">
+          <button class="rail-button active" title="Files">F</button>
+          <button class="rail-button" title="Search">S</button>
+          <button class="rail-button" title="Git">G</button>
+          <button class="rail-button" title="Settings">●</button>
+        </nav>
+        <section class="side-content">
+          <div class="side-header">
+            <p class="eyebrow">Sidebar tool</p>
+            <div class="workspace-name"><span>ファイル加工</span><span class="badge">Tools</span></div>
+          </div>
+          <div class="side-scroll">
+            <div class="list-item active">条件指定マージ</div>
+            <div class="list-item">見出しで分割</div>
+            <div class="list-item">タイトル一覧</div>
+            <div class="list-item">目次生成</div>
+          </div>
+        </section>
+      </aside>
+
+      <main class="main">
+        <div class="toolbar">
+          <div class="tool-group"><span class="mock-label">条件指定マージ</span></div>
+          <div class="tool-group"><button class="primary-button">新規ファイルとして作成</button></div>
+        </div>
+
+        <section class="tool-surface">
+          <div class="tool-grid">
+            <div class="panel-box">
+              <div class="panel-box-header"><span>条件</span><span class="badge">Read only</span></div>
+              <div class="panel-box-body">
+                <div class="field column">
+                  <span class="field-label">タグ</span>
+                  <div class="pill-row"><span class="pill">小説</span><span class="pill">第一部</span></div>
+                </div>
+                <div class="field column">
+                  <span class="field-label">フロントマター</span>
+                  <div class="field-value">status = review</div>
+                </div>
+                <div class="field column">
+                  <span class="field-label">結合順序</span>
+                  <div class="field-value">ファイル名順</div>
+                </div>
+                <div class="field column">
+                  <span class="field-label">出力先</span>
+                  <div class="field-value">drafts/第一部まとめ.md</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="panel-box">
+              <div class="panel-box-header"><span>作成プレビュー</span><span class="muted">既存ファイルは変更しない</span></div>
+              <div class="panel-box-body">
+                <div class="preview-list">
+                  <div class="preview-row"><span>01_プロローグ.md</span><span>見出しを挿入</span></div>
+                  <div class="preview-row"><span>02_第一章.md</span><span>見出しを挿入</span></div>
+                  <div class="preview-row"><span>03_第二章.md</span><span>見出しを挿入</span></div>
+                  <div class="preview-row"><span>同名ファイルあり</span><span>第一部まとめ 2.md</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <footer class="statusbar">
+      <div class="status-group"><span>File tools</span><span>3 files matched</span></div>
+      <div class="status-group"><span>新規作成のみ</span></div>
+    </footer>
+  </div>
+  <script src="mockup-nav.js"></script>
+</body>
+</html>

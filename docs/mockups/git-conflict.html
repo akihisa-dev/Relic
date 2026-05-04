@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Git conflict mockup</title>
+  <link rel="stylesheet" href="mockups.css">
+</head>
+<body>
+  <div class="window">
+    <header class="titlebar">
+      <div class="traffic">
+        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        <span class="app-name">Relic</span>
+      </div>
+      <nav class="tabs">
+        <div class="tab active">第一章.md</div>
+      </nav>
+      <div class="title-actions">
+        <span>feature/draft</span>
+        <span>コンフリクト</span>
+      </div>
+    </header>
+
+    <div class="body">
+      <aside class="sidebar">
+        <nav class="rail">
+          <button class="rail-button" title="Files">F</button>
+          <button class="rail-button" title="Search">S</button>
+          <button class="rail-button active" title="Git">G</button>
+          <button class="rail-button" title="Settings">●</button>
+        </nav>
+        <section class="side-content">
+          <div class="side-header">
+            <p class="eyebrow">Git</p>
+            <div class="workspace-name"><span>同期の競合</span><span class="badge">Resolve</span></div>
+          </div>
+          <div class="side-scroll">
+            <div class="section-title">競合ファイル</div>
+            <div class="commit-item active">第一章.md <span class="muted">本文</span></div>
+            <div class="commit-item">世界観.md <span class="muted">frontmatter</span></div>
+            <div class="section-title">操作</div>
+            <div class="list-item">自分の変更を採用</div>
+            <div class="list-item">リモートを採用</div>
+            <div class="list-item active">手動編集で解決</div>
+          </div>
+        </section>
+      </aside>
+
+      <main class="main">
+        <div class="toolbar">
+          <div class="tool-group"><span class="mock-label">コンフリクト解決</span></div>
+          <div class="tool-group"><button class="primary-button">解決としてマーク</button></div>
+        </div>
+
+        <section class="tool-surface">
+          <div class="tool-grid">
+            <div class="panel-box">
+              <div class="panel-box-header"><span>自分の変更</span><span class="muted">local</span></div>
+              <div class="panel-box-body">
+                <div class="preview-list">
+                  <div class="preview-row"><span>駅舎で手帳を見つけた。</span><span>採用候補</span></div>
+                  <div class="preview-row"><span>古い港町の描写を追加。</span><span>local</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="panel-box">
+              <div class="panel-box-header"><span>リモートの変更</span><span class="muted">origin</span></div>
+              <div class="panel-box-body">
+                <div class="preview-list">
+                  <div class="preview-row"><span>駅舎で地図を見つけた。</span><span>採用候補</span></div>
+                  <div class="preview-row"><span>人物名の表記を修正。</span><span>remote</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <footer class="statusbar">
+      <div class="status-group"><span>Git conflict</span><span>2 files</span></div>
+      <div class="status-group"><span>手動編集可</span></div>
+    </footer>
+  </div>
+  <script src="mockup-nav.js"></script>
+</body>
+</html>
