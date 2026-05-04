@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Frontmatter editor mockup</title>
+  <link rel="stylesheet" href="mockups.css">
+</head>
+<body>
+  <div class="window">
+    <header class="titlebar">
+      <div class="traffic">
+        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        <span class="app-name">Relic</span>
+      </div>
+      <nav class="tabs">
+        <div class="tab active">公開メモ.md</div>
+        <div class="tab">frontmatter.md</div>
+      </nav>
+      <div class="title-actions">
+        <span>main</span>
+        <span>保存済み</span>
+      </div>
+    </header>
+
+    <div class="body">
+      <aside class="sidebar">
+        <nav class="rail">
+          <button class="rail-button active" title="Files">F</button>
+          <button class="rail-button" title="Search">S</button>
+          <button class="rail-button" title="Git">G</button>
+          <button class="rail-button" title="Settings">●</button>
+        </nav>
+        <section class="side-content">
+          <div class="workspace">
+            <p class="eyebrow">Workspace</p>
+            <div class="workspace-name"><span>Novel Notes</span><span class="badge">Files</span></div>
+          </div>
+          <div class="side-scroll">
+            <div class="list-item active">📄 公開メモ</div>
+            <div class="list-item">📄 frontmatter</div>
+            <div class="list-item">📄 templates/記事</div>
+          </div>
+        </section>
+      </aside>
+
+      <main class="main">
+        <div class="toolbar">
+          <div class="tool-group">
+            <button class="icon-button active">Live</button>
+            <button class="icon-button">Source</button>
+          </div>
+          <div class="tool-group">
+            <button class="icon-button">Frontmatter</button>
+          </div>
+        </div>
+
+        <section class="editor-layout">
+          <div class="editor-shell">
+            <article class="editor-page">
+              <div class="panel-box">
+                <div class="panel-box-header">
+                  <span>フロントマター</span>
+                  <span class="badge">候補あり</span>
+                </div>
+                <div class="panel-box-body">
+                  <div class="field column">
+                    <span class="field-label">tags</span>
+                    <div class="pill-row"><span class="pill">小説</span><span class="pill">公開候補</span><span class="pill">+ tag</span></div>
+                  </div>
+                  <div class="field column">
+                    <span class="field-label">status</span>
+                    <div class="field-value">review <span class="muted">frontmatter.md から候補表示</span></div>
+                  </div>
+                  <div class="field column">
+                    <span class="field-label">author</span>
+                    <div class="pill-row"><span class="pill">自分</span><span class="pill">編集者A</span><span class="pill">+ author</span></div>
+                  </div>
+                  <div class="field column">
+                    <span class="field-label">publish</span>
+                    <div class="field-value">オン</div>
+                  </div>
+                </div>
+              </div>
+
+              <h1>公開メモ</h1>
+              <p>ライブプレビューではYAMLをフォームとして扱い、ソースモードでは生のYAMLを直接編集できる。</p>
+            </article>
+          </div>
+
+          <aside class="right-panel">
+            <div class="panel-title"><span>候補定義</span><span class="badge">frontmatter.md</span></div>
+            <div class="section-title">status</div>
+            <div class="result-item active">draft</div>
+            <div class="result-item">review</div>
+            <div class="result-item">published</div>
+            <div class="section-title">author</div>
+            <div class="result-item">自分</div>
+            <div class="result-item">編集者A</div>
+          </aside>
+        </section>
+      </main>
+    </div>
+
+    <footer class="statusbar">
+      <div class="status-group"><span>Frontmatter enabled</span><span>4 fields</span></div>
+      <div class="status-group"><span>保存済み</span></div>
+    </footer>
+  </div>
+  <script src="mockup-nav.js"></script>
+</body>
+</html>
