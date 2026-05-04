@@ -13,6 +13,7 @@ export const openWorkspaceChannel = "workspace:open";
 export const readMarkdownFileChannel = "workspace:readMarkdownFile";
 export const renameMarkdownFileChannel = "workspace:renameMarkdownFile";
 export const renameFolderChannel = "workspace:renameFolder";
+export const searchWorkspaceChannel = "workspace:search";
 export const switchWorkspaceChannel = "workspace:switch";
 export const writeMarkdownFileChannel = "workspace:writeMarkdownFile";
 export const getEditorSettingsChannel = "editor:getSettings";
@@ -56,6 +57,13 @@ export interface GetBacklinksInput {
   path: string;
 }
 
+export type SearchMode = "fullText" | "fileName" | "tag" | "regex";
+
+export interface SearchWorkspaceInput {
+  mode: SearchMode;
+  query: string;
+}
+
 export interface DuplicateMarkdownFileInput {
   path: string;
 }
@@ -94,6 +102,13 @@ export interface Backlink {
 export interface WorkspaceTagSummary {
   count: number;
   tag: string;
+}
+
+export interface WorkspaceSearchResult {
+  fileName: string;
+  lineNumber: number | null;
+  lineText: string;
+  path: string;
 }
 
 export interface WriteMarkdownFileInput {
@@ -166,6 +181,7 @@ export interface RelicApi {
   ) => Promise<RelicResult<RenameMarkdownFileResult>>;
   renameFolder: (input: RenameFolderInput) => Promise<RelicResult<WorkspaceState>>;
   saveEditorSettings: (input: EditorSettings) => Promise<RelicResult<void>>;
+  searchWorkspace: (input: SearchWorkspaceInput) => Promise<RelicResult<WorkspaceSearchResult[]>>;
   switchWorkspace: (input: SwitchWorkspaceInput) => Promise<RelicResult<WorkspaceState>>;
   writeMarkdownFile: (input: WriteMarkdownFileInput) => Promise<RelicResult<void>>;
 }

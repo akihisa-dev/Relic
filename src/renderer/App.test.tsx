@@ -26,6 +26,7 @@ function makeRelicApi(overrides: Partial<typeof window.relic> = {}): typeof wind
     renameMarkdownFile: vi.fn(),
     renameFolder: vi.fn(),
     saveEditorSettings: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
+    searchWorkspace: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     switchWorkspace: vi.fn(),
     writeMarkdownFile: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
     ...overrides
@@ -216,6 +217,91 @@ describe("App", () => {
 
     expect(await screen.findByRole("button", { name: "#資料" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "#キャラ/主人公" })).toBeInTheDocument();
+  });
+
+  it("検索語句を入力すると検索結果を表示し、クリックでファイルを開く", async () => {
+    const searchWorkspace = vi.fn().mockResolvedValue({
+      ok: true,
+      value: [
+        {
+          fileName: "読書メモ",
+          lineNumber: 3,
+          lineText: "一致した行",
+          path: "読書メモ.md"
+        }
+      ]
+    });
+    const readMarkdownFile = vi.fn().mockResolvedValue({
+      ok: true,
+      value: { content: "一致した行", name: "読書メモ", path: "読書メモ.md" }
+    });
+
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace }),
+      readMarkdownFile,
+      searchWorkspace
+    });
+
+    render(<App />);
+
+    fireEvent.click(screen.getByRole("button", { name: "検索" }));
+    fireEvent.change(await screen.findByRole("textbox", { name: "検索" }), {
+      target: { value: "一致" }
+    });
+
+    expect(await screen.findByText("3: 一致した行")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /読書メモ/ }));
+
+    expect(searchWorkspace).toHaveBeenCalledWith({ mode: "fullText", query: "一致" });
+    expect(readMarkdownFile).toHaveBeenCalledWith({ path: "読書メモ.md" });
+  });
+
+  it("タグピルをクリックするとタグ検索に切り替える", async () => {
+    const searchWorkspace = vi.fn().mockResolvedValue({
+      ok: true,
+      value: [{ fileName: "資料ノート", lineNumber: null, lineText: "#資料", path: "資料ノート.md" }]
+    });
+
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace }),
+      getWorkspaceTags: vi.fn().mockResolvedValue({
+        ok: true,
+        value: [{ count: 1, tag: "資料" }]
+      }),
+      searchWorkspace
+    });
+
+    render(<App />);
+
+    fireEvent.click(screen.getByRole("button", { name: "検索" }));
+    fireEvent.click(await screen.findByRole("button", { name: "#資料" }));
+
+    await waitFor(() => {
+      expect(searchWorkspace).toHaveBeenCalledWith({ mode: "tag", query: "資料" });
+    });
+    expect((await screen.findAllByText("#資料")).length).toBeGreaterThan(0);
+  });
+
+  it("無効な正規表現の検索エラーを表示する", async () => {
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace }),
+      searchWorkspace: vi.fn().mockResolvedValue({
+        ok: false,
+        error: { code: "SEARCH_REGEX_INVALID", message: "正規表現が正しくありません。" }
+      })
+    });
+
+    render(<App />);
+
+    fireEvent.click(screen.getByRole("button", { name: "検索" }));
+    fireEvent.change(await screen.findByRole("combobox", { name: "検索モード" }), {
+      target: { value: "regex" }
+    });
+    fireEvent.change(screen.getByRole("textbox", { name: "検索" }), {
+      target: { value: "[" }
+    });
+
+    expect(await screen.findByText("正規表現が正しくありません。")).toBeInTheDocument();
   });
 
   it("右パネルにアウトゴーイングリンクを表示する", async () => {
