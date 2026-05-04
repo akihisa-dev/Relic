@@ -46,6 +46,16 @@ button:disabled {
   min-width: 960px;
 }
 
+.app-shell--focus .rail,
+.app-shell--focus .sidebar,
+.app-shell--focus .right-panel {
+  display: none;
+}
+
+.app-shell--focus .workspace {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .workspace {
   display: grid;
   grid-template-columns: 48px auto minmax(0, 1fr);

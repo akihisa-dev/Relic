@@ -1,6 +1,7 @@
 import DOMPurify from "dompurify";
 import hljs from "highlight.js";
-import { marked, type Renderer } from "marked";
+import katex from "katex";
+import { marked, type Renderer, type TokensList } from "marked";
 import { useCallback, useMemo } from "react";
 import type { MouseEvent, ReactElement } from "react";
 
@@ -18,6 +19,52 @@ const fontFamilyMap: Record<EditorSettings["font"], string> = {
   system: '-apple-system, BlinkMacSystemFont, "Hiragino Sans", sans-serif'
 };
 
+function renderMath(tex: string, displayMode: boolean): string {
+  try {
+    return katex.renderToString(tex, { displayMode, throwOnError: false });
+  } catch {
+    return `<span class="math-error">${tex}</span>`;
+  }
+}
+
+// $...$ / $$...$$ をKaTeXでレンダリングするmarked拡張
+const mathExtension = {
+  extensions: [
+    {
+      name: "mathBlock",
+      level: "block" as const,
+      start: (src: string) => src.indexOf("$$"),
+      tokenizer(src: string) {
+        const match = /^\$\$([^$]+)\$\$/.exec(src);
+
+        if (match) {
+          return { type: "mathBlock", raw: match[0], text: match[1].trim() };
+        }
+      },
+      renderer(token: { text: string }) {
+        return `<div class="math-block">${renderMath(token.text, true)}</div>`;
+      }
+    },
+    {
+      name: "mathInline",
+      level: "inline" as const,
+      start: (src: string) => src.indexOf("$"),
+      tokenizer(src: string) {
+        const match = /^\$([^$\n]+)\$/.exec(src);
+
+        if (match) {
+          return { type: "mathInline", raw: match[0], text: match[1].trim() };
+        }
+      },
+      renderer(token: { text: string }) {
+        return `<span class="math-inline">${renderMath(token.text, false)}</span>`;
+      }
+    }
+  ]
+};
+
+marked.use(mathExtension as Parameters<typeof marked.use>[0]);
+
 function buildRenderer(): Renderer {
   const renderer = new marked.Renderer();
 
@@ -32,6 +79,8 @@ function buildRenderer(): Renderer {
 }
 
 const renderer = buildRenderer();
+
+void (null as unknown as TokensList);
 
 function toggleNthCheckbox(source: string, index: number): string {
   let count = -1;
