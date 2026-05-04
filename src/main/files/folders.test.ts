@@ -1,10 +1,10 @@
-import { mkdir, mkdtemp, rm, stat, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import { createFolder } from "./folders";
+import { createFolder, renameFolder } from "./folders";
 
 describe("createFolder", () => {
   const temporaryPaths: string[] = [];
@@ -51,5 +51,68 @@ describe("createFolder", () => {
 
     await expect(createFolder(workspacePath, "資料")).resolves.toMatchObject({ ok: false });
     await expect(createFolder(workspacePath, "下書き")).resolves.toMatchObject({ ok: false });
+  });
+});
+
+describe("renameFolder", () => {
+  const temporaryPaths: string[] = [];
+
+  afterEach(async () => {
+    await Promise.all(
+      temporaryPaths.splice(0).map((temporaryPath) =>
+        rm(temporaryPath, {
+          force: true,
+          recursive: true
+        })
+      )
+    );
+  });
+
+  it("フォルダ名を変更する", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-rename-folder-"));
+    temporaryPaths.push(workspacePath);
+
+    await mkdir(path.join(workspacePath, "資料"));
+    await writeFile(path.join(workspacePath, "資料", "note.md"), "# Note", "utf8");
+
+    await expect(renameFolder(workspacePath, "資料", "Archive")).resolves.toEqual({
+      ok: true,
+      value: {
+        path: "Archive"
+      }
+    });
+    await expect(readFile(path.join(workspacePath, "Archive", "note.md"), "utf8")).resolves.toBe(
+      "# Note"
+    );
+  });
+
+  it("同名フォルダや同名ファイルがある場合は上書きしない", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-rename-folder-"));
+    temporaryPaths.push(workspacePath);
+
+    await mkdir(path.join(workspacePath, "資料"));
+    await mkdir(path.join(workspacePath, "Archive"));
+    await writeFile(path.join(workspacePath, "既存"), "", "utf8");
+
+    await expect(renameFolder(workspacePath, "資料", "Archive")).resolves.toMatchObject({
+      ok: false
+    });
+    await expect(renameFolder(workspacePath, "資料", "既存")).resolves.toMatchObject({
+      ok: false
+    });
+  });
+
+  it("ワークスペース外への参照とフォルダ以外を拒否する", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-rename-folder-"));
+    temporaryPaths.push(workspacePath);
+
+    await writeFile(path.join(workspacePath, "note.md"), "", "utf8");
+
+    await expect(renameFolder(workspacePath, "../outside", "inside")).resolves.toMatchObject({
+      ok: false
+    });
+    await expect(renameFolder(workspacePath, "note.md", "note2")).resolves.toMatchObject({
+      ok: false
+    });
   });
 });

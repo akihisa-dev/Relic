@@ -272,6 +272,12 @@ button:disabled {
   display: grid;
   gap: 8px;
   grid-template-columns: minmax(0, 1fr) auto;
+  margin-bottom: 12px;
+}
+
+.editor-actions {
+  display: flex;
+  gap: 8px;
   margin-bottom: 24px;
 }
 

@@ -26,12 +26,16 @@ const sidebarTitles: Record<SidebarView, string> = {
 
 function FileTree({
   activeFilePath,
+  activeFolderPath,
   nodes,
-  onOpenFile
+  onOpenFile,
+  onSelectFolder
 }: {
   activeFilePath: string | null;
+  activeFolderPath: string | null;
   nodes: WorkspaceTreeNode[];
   onOpenFile: (path: string) => void;
+  onSelectFolder: (node: Extract<WorkspaceTreeNode, { type: "folder" }>) => void;
 }): ReactElement {
   if (nodes.length === 0) {
     return <div className="empty-note">表示できるMarkdownファイルはまだありません。</div>;
@@ -42,11 +46,14 @@ function FileTree({
       {nodes.map((node) => (
         <li className="file-tree-item" key={node.path}>
           <button
-            className={`file-tree-row ${node.type} ${node.path === activeFilePath ? "active" : ""}`}
-            disabled={node.type === "folder"}
+            className={`file-tree-row ${node.type} ${
+              node.path === activeFilePath || node.path === activeFolderPath ? "active" : ""
+            }`}
             onClick={() => {
               if (node.type === "file") {
                 onOpenFile(node.path);
+              } else {
+                onSelectFolder(node);
               }
             }}
             type="button"
@@ -55,7 +62,13 @@ function FileTree({
             <span className="file-tree-name">{node.name}</span>
           </button>
           {node.type === "folder" && node.children.length > 0 ? (
-            <FileTree activeFilePath={activeFilePath} nodes={node.children} onOpenFile={onOpenFile} />
+            <FileTree
+              activeFilePath={activeFilePath}
+              activeFolderPath={activeFolderPath}
+              nodes={node.children}
+              onOpenFile={onOpenFile}
+              onSelectFolder={onSelectFolder}
+            />
           ) : null}
         </li>
       ))}
@@ -65,6 +78,7 @@ function FileTree({
 
 interface SidebarContentProps {
   activeFilePath: string | null;
+  activeFolderPath: string | null;
   fileNameDraft: string;
   folderNameDraft: string;
   isOpeningWorkspace: boolean;
@@ -76,6 +90,7 @@ interface SidebarContentProps {
   onFolderNameDraftChange: (value: string) => void;
   onOpenFile: (path: string) => void;
   onOpenWorkspace: () => void;
+  onSelectFolder: (node: Extract<WorkspaceTreeNode, { type: "folder" }>) => void;
   onSwitchWorkspace: (workspaceId: string) => void;
   view: SidebarView;
   workspaceState: WorkspaceState | null;
@@ -83,6 +98,7 @@ interface SidebarContentProps {
 
 function SidebarContent({
   activeFilePath,
+  activeFolderPath,
   fileNameDraft,
   folderNameDraft,
   isCreatingFile,
@@ -94,6 +110,7 @@ function SidebarContent({
   onFolderNameDraftChange,
   onOpenFile,
   onOpenWorkspace,
+  onSelectFolder,
   onSwitchWorkspace,
   view,
   workspaceState
@@ -174,8 +191,10 @@ function SidebarContent({
             </form>
             <FileTree
               activeFilePath={activeFilePath}
+              activeFolderPath={activeFolderPath}
               nodes={workspaceState?.fileTree ?? []}
               onOpenFile={onOpenFile}
+              onSelectFolder={onSelectFolder}
             />
           </>
         ) : (
@@ -225,12 +244,19 @@ export function App(): ReactElement {
   const [workspaceState, setWorkspaceState] = useState<WorkspaceState | null>(null);
   const [workspaceError, setWorkspaceError] = useState<string | null>(null);
   const [activeFile, setActiveFile] = useState<MarkdownFileContent | null>(null);
+  const [activeFolder, setActiveFolder] = useState<Extract<WorkspaceTreeNode, { type: "folder" }> | null>(
+    null
+  );
   const [fileNameDraft, setFileNameDraft] = useState("");
   const [folderNameDraft, setFolderNameDraft] = useState("");
   const [renameDraft, setRenameDraft] = useState("");
+  const [folderRenameDraft, setFolderRenameDraft] = useState("");
   const [isCreatingFile, setIsCreatingFile] = useState(false);
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
+  const [isDuplicatingFile, setIsDuplicatingFile] = useState(false);
+  const [isMovingItemToTrash, setIsMovingItemToTrash] = useState(false);
   const [isRenamingFile, setIsRenamingFile] = useState(false);
+  const [isRenamingFolder, setIsRenamingFolder] = useState(false);
   const [isOpeningWorkspace, setIsOpeningWorkspace] = useState(false);
   const {
     activeSidebarView,
@@ -343,10 +369,18 @@ export function App(): ReactElement {
       if (result.ok) {
         setActiveFile(result.value);
         setRenameDraft(result.value.name);
+        setActiveFolder(null);
       } else {
         setWorkspaceError(result.error.message);
       }
     });
+  };
+
+  const handleSelectFolder = (folder: Extract<WorkspaceTreeNode, { type: "folder" }>): void => {
+    setActiveFolder(folder);
+    setFolderRenameDraft(folder.name);
+    setActiveFile(null);
+    setWorkspaceError(null);
   };
 
   const handleRenameFile = (): void => {
@@ -377,6 +411,63 @@ export function App(): ReactElement {
       });
   };
 
+  const handleDuplicateFile = (): void => {
+    if (!window.relic || !activeFile) {
+      setWorkspaceError("複製するファイルを選択してください。");
+      return;
+    }
+
+    setIsDuplicatingFile(true);
+    setWorkspaceError(null);
+
+    void window.relic
+      .duplicateMarkdownFile({ path: activeFile.path })
+      .then((result) => {
+        if (result.ok) {
+          setActiveFile(result.value.file);
+          setRenameDraft(result.value.file.name);
+          setWorkspaceState(result.value.workspaceState);
+        } else {
+          setWorkspaceError(result.error.message);
+        }
+      })
+      .finally(() => {
+        setIsDuplicatingFile(false);
+      });
+  };
+
+  const handleMoveActiveFileToTrash = (): void => {
+    if (!window.relic || !activeFile) {
+      setWorkspaceError("ゴミ箱に移動するファイルを選択してください。");
+      return;
+    }
+
+    if (!window.confirm(`${activeFile.name} をゴミ箱に移動しますか？`)) {
+      return;
+    }
+
+    setIsMovingItemToTrash(true);
+    setWorkspaceError(null);
+
+    void window.relic
+      .moveItemToTrash({
+        path: activeFile.path,
+        type: "file"
+      })
+      .then((result) => {
+        if (result.ok) {
+          setWorkspaceState(result.value);
+          setActiveFile(null);
+          setRenameDraft("");
+        } else {
+          setWorkspaceError(result.error.message);
+        }
+      })
+      .finally(() => {
+        setIsMovingItemToTrash(false);
+      });
+  };
+
   const handleSwitchWorkspace = (workspaceId: string): void => {
     if (!window.relic) {
       setWorkspaceError("アプリAPIを利用できませんでした。");
@@ -389,10 +480,75 @@ export function App(): ReactElement {
       if (result.ok) {
         setWorkspaceState(result.value);
         setActiveFile(null);
+        setActiveFolder(null);
       } else {
         setWorkspaceError(result.error.message);
       }
     });
+  };
+
+  const handleRenameFolder = (): void => {
+    if (!window.relic || !activeFolder) {
+      setWorkspaceError("リネームするフォルダを選択してください。");
+      return;
+    }
+
+    setIsRenamingFolder(true);
+    setWorkspaceError(null);
+
+    void window.relic
+      .renameFolder({
+        newName: folderRenameDraft,
+        path: activeFolder.path
+      })
+      .then((result) => {
+        if (result.ok) {
+          setWorkspaceState(result.value);
+          setActiveFolder(null);
+          setFolderRenameDraft("");
+        } else {
+          setWorkspaceError(result.error.message);
+        }
+      })
+      .finally(() => {
+        setIsRenamingFolder(false);
+      });
+  };
+
+  const handleMoveActiveFolderToTrash = (): void => {
+    if (!window.relic || !activeFolder) {
+      setWorkspaceError("ゴミ箱に移動するフォルダを選択してください。");
+      return;
+    }
+
+    if (
+      !window.confirm(
+        "このフォルダをゴミ箱に移動しますか？フォルダ内のノートと添付ファイルも一緒に移動されます。"
+      )
+    ) {
+      return;
+    }
+
+    setIsMovingItemToTrash(true);
+    setWorkspaceError(null);
+
+    void window.relic
+      .moveItemToTrash({
+        path: activeFolder.path,
+        type: "folder"
+      })
+      .then((result) => {
+        if (result.ok) {
+          setWorkspaceState(result.value);
+          setActiveFolder(null);
+          setFolderRenameDraft("");
+        } else {
+          setWorkspaceError(result.error.message);
+        }
+      })
+      .finally(() => {
+        setIsMovingItemToTrash(false);
+      });
   };
 
   return (
@@ -434,6 +590,7 @@ export function App(): ReactElement {
             <div className="pane-heading">{sidebarTitles[activeSidebarView]}</div>
             <SidebarContent
               activeFilePath={activeFile?.path ?? null}
+              activeFolderPath={activeFolder?.path ?? null}
               fileNameDraft={fileNameDraft}
               folderNameDraft={folderNameDraft}
               isCreatingFile={isCreatingFile}
@@ -445,6 +602,7 @@ export function App(): ReactElement {
               onFolderNameDraftChange={setFolderNameDraft}
               onOpenFile={handleOpenFile}
               onOpenWorkspace={handleOpenWorkspace}
+              onSelectFolder={handleSelectFolder}
               onSwitchWorkspace={handleSwitchWorkspace}
               view={activeSidebarView}
               workspaceState={workspaceState}
@@ -481,9 +639,13 @@ export function App(): ReactElement {
           <div className="editor-layout">
             <section aria-label="エディタ" className="editor-surface">
               <div className="frontmatter-strip">
-                {activeFile ? activeFile.path : "status: draft / author: 未設定"}
+                {activeFile
+                  ? activeFile.path
+                  : activeFolder
+                    ? activeFolder.path
+                    : "status: draft / author: 未設定"}
               </div>
-              <h1>{activeFile ? activeFile.name : "Relic"}</h1>
+              <h1>{activeFile ? activeFile.name : activeFolder ? activeFolder.name : "Relic"}</h1>
               {activeFile ? (
                 <>
                   <form
@@ -503,7 +665,48 @@ export function App(): ReactElement {
                       名前変更
                     </button>
                   </form>
+                  <div className="editor-actions">
+                    <button disabled={isDuplicatingFile} onClick={handleDuplicateFile} type="button">
+                      複製
+                    </button>
+                    <button
+                      disabled={isMovingItemToTrash}
+                      onClick={handleMoveActiveFileToTrash}
+                      type="button"
+                    >
+                      ゴミ箱へ
+                    </button>
+                  </div>
                   <pre className="editor-preview">{activeFile.content || "空のMarkdownファイルです。"}</pre>
+                </>
+              ) : activeFolder ? (
+                <>
+                  <form
+                    className="rename-form"
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      handleRenameFolder();
+                    }}
+                  >
+                    <input
+                      aria-label="リネーム後のフォルダ名"
+                      className="text-input"
+                      onChange={(event) => setFolderRenameDraft(event.target.value)}
+                      value={folderRenameDraft}
+                    />
+                    <button disabled={isRenamingFolder} type="submit">
+                      フォルダ名変更
+                    </button>
+                  </form>
+                  <div className="editor-actions">
+                    <button
+                      disabled={isMovingItemToTrash}
+                      onClick={handleMoveActiveFolderToTrash}
+                      type="button"
+                    >
+                      ゴミ箱へ
+                    </button>
+                  </div>
                 </>
               ) : (
                 <p>
