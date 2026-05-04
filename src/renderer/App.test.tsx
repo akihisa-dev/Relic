@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { defaultEditorSettings } from "../shared/ipc";
 import { App } from "./App";
 import { useEditorStore } from "./store/editorStore";
+import { useUiStore } from "./store/uiStore";
 
 function makeRelicApi(overrides: Partial<typeof window.relic> = {}): typeof window.relic {
   return {
@@ -38,6 +39,7 @@ describe("App", () => {
   afterEach(() => {
     vi.restoreAllMocks();
     useEditorStore.setState({ tabs: {}, leftPane: { activeTabId: null, history: [], tabIds: [] }, rightPane: { activeTabId: null, history: [], tabIds: [] }, isSplit: false, focusedPane: "left" });
+    useUiStore.setState({ activeSidebarView: "files", isFocusMode: false, isRightPanelOpen: true, isSidebarOpen: true, isTypewriterMode: false, rightPanelView: "outline" });
   });
 
   it("ビュー切り替えナビとメインエリアが表示される", async () => {
@@ -191,5 +193,40 @@ describe("App", () => {
     expect(saveEditorSettings).toHaveBeenCalledWith(
       expect.objectContaining({ fontSize: 18 })
     );
+  });
+
+  it("右パネルにアウトゴーイングリンクを表示する", async () => {
+    const readMarkdownFile = vi.fn(({ path }: { path: string }) => Promise.resolve({
+      ok: true as const,
+      value:
+        path === "埋め込み.md"
+          ? { content: "埋め込み本文", name: "埋め込み", path: "埋め込み.md" }
+          : {
+              content: "[[参照先|表示名]]\n![[埋め込み]]",
+              name: "読書メモ",
+              path: "読書メモ.md"
+            }
+    }));
+
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [{ name: "読書メモ", path: "読書メモ.md", type: "file" }]
+        }
+      }),
+      readMarkdownFile
+    });
+
+    render(<App />);
+
+    fireEvent.click(await screen.findByRole("button", { name: /読書メモ/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Links" }));
+
+    expect(await screen.findByText("Outgoing")).toBeInTheDocument();
+    expect(screen.getAllByText("表示名").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("埋め込み").length).toBeGreaterThan(0);
+    expect(screen.getByText("Embed")).toBeInTheDocument();
   });
 });
