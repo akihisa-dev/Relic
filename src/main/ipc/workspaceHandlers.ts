@@ -11,6 +11,7 @@ import {
   type DuplicateMarkdownFileInput,
   getBacklinksChannel,
   type GetBacklinksInput,
+  getWorkspaceTagsChannel,
   getWorkspaceStateChannel,
   moveItemToTrashChannel,
   type MoveItemToTrashInput,
@@ -37,6 +38,7 @@ import {
   renameMarkdownFile
 } from "../files/markdownFiles";
 import { moveWorkspaceItemToTrash } from "../files/trash";
+import { readWorkspaceTags } from "../files/tags";
 import { readAppSettings, writeAppSettings } from "../settings/appSettings";
 import {
   addOrActivateWorkspace,
@@ -56,6 +58,25 @@ export function registerWorkspaceHandlers(): void {
       return fail(
         "WORKSPACE_STATE_FAILED",
         "ワークスペース情報を読み込めませんでした。",
+        error instanceof Error ? error.message : String(error)
+      );
+    }
+  });
+
+  ipcMain.handle(getWorkspaceTagsChannel, async () => {
+    try {
+      const settings = await readAppSettings(app.getPath("userData"));
+      const state = toWorkspaceState(settings);
+
+      if (!state.activeWorkspace) {
+        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
+      }
+
+      return readWorkspaceTags(state.activeWorkspace.path);
+    } catch (error) {
+      return fail(
+        "TAGS_READ_FAILED",
+        "タグを読み込めませんでした。",
         error instanceof Error ? error.message : String(error)
       );
     }

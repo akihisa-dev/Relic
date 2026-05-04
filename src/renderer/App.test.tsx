@@ -15,6 +15,7 @@ function makeRelicApi(overrides: Partial<typeof window.relic> = {}): typeof wind
     getBacklinks: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     getAppInfo: vi.fn().mockResolvedValue({ ok: true, value: { name: "Relic", platform: "darwin", version: "0.0.0" } }),
     getEditorSettings: vi.fn().mockResolvedValue({ ok: true, value: defaultEditorSettings }),
+    getWorkspaceTags: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     getWorkspaceState: vi.fn().mockResolvedValue({
       ok: true,
       value: { activeWorkspace: null, fileTree: [], workspaces: [] }
@@ -195,6 +196,26 @@ describe("App", () => {
     expect(saveEditorSettings).toHaveBeenCalledWith(
       expect.objectContaining({ fontSize: 18 })
     );
+  });
+
+  it("検索サイドバーにワークスペースタグを表示する", async () => {
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace }),
+      getWorkspaceTags: vi.fn().mockResolvedValue({
+        ok: true,
+        value: [
+          { count: 2, tag: "資料" },
+          { count: 1, tag: "キャラ/主人公" }
+        ]
+      })
+    });
+
+    render(<App />);
+
+    fireEvent.click(screen.getByRole("button", { name: "検索" }));
+
+    expect(await screen.findByRole("button", { name: "#資料" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "#キャラ/主人公" })).toBeInTheDocument();
   });
 
   it("右パネルにアウトゴーイングリンクを表示する", async () => {
