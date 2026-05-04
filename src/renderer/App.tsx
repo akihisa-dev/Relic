@@ -451,11 +451,13 @@ export function App(): ReactElement {
 
   const {
     activeSidebarView,
+    isFocusMode,
     isRightPanelOpen,
     isSidebarOpen,
     rightPanelView,
     setRightPanelView,
     setSidebarView,
+    toggleFocusMode,
     toggleRightPanel,
     toggleSidebar
   } = useUiStore();
@@ -637,13 +639,16 @@ export function App(): ReactElement {
         if (paneState.activeTabId) {
           closeTab(focusedPane, paneState.activeTabId);
         }
+      } else if (e.key === "f" && e.shiftKey) {
+        e.preventDefault();
+        toggleFocusMode();
       }
     };
 
     window.addEventListener("keydown", handler);
 
     return () => window.removeEventListener("keydown", handler);
-  }, [focusedPane, leftPane, rightPane, closeTab, toggleSidebar, toggleSplit, toggleRightPanel]);
+  }, [focusedPane, leftPane, rightPane, closeTab, toggleSidebar, toggleSplit, toggleRightPanel, toggleFocusMode]);
 
   // ──────────────────
   // アクティブなパスのセット（ファイルツリーのハイライト用）
@@ -678,7 +683,7 @@ export function App(): ReactElement {
   // ──────────────────
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell${isFocusMode ? " app-shell--focus" : ""}`}>
       <div className="workspace">
         {/* 縦アイコンナビ（レール） */}
         <nav aria-label="ビュー切り替え" className="rail">
