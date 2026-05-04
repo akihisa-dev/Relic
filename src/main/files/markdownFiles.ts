@@ -138,6 +138,44 @@ export async function renameMarkdownFile(
   }
 }
 
+export async function duplicateMarkdownFile(
+  workspacePath: string,
+  relativePath: string
+): Promise<RelicResult<MarkdownFileContent>> {
+  if (path.extname(relativePath) !== ".md") {
+    return fail("FILE_TYPE_UNSUPPORTED", "Markdownファイルだけを複製できます。");
+  }
+
+  const sourcePath = resolveWorkspaceRelativePath(workspacePath, relativePath);
+
+  if (!sourcePath.ok) {
+    return sourcePath;
+  }
+
+  try {
+    const content = await readFile(sourcePath.value, "utf8");
+    const destinationRelativePath = await createCopyRelativePath(workspacePath, relativePath);
+    const destinationPath = resolveWorkspaceRelativePath(workspacePath, destinationRelativePath);
+
+    if (!destinationPath.ok) {
+      return destinationPath;
+    }
+
+    await writeFile(destinationPath.value, content, {
+      encoding: "utf8",
+      flag: "wx"
+    });
+
+    return readMarkdownFile(workspacePath, destinationRelativePath);
+  } catch (error) {
+    return fail(
+      "FILE_DUPLICATE_FAILED",
+      "ファイルを複製できませんでした。",
+      error instanceof Error ? error.message : String(error)
+    );
+  }
+}
+
 function isFileExistsError(error: unknown): boolean {
   return (
     typeof error === "object" &&
@@ -167,4 +205,31 @@ function isMissingFileError(error: unknown): boolean {
 
 function toWorkspaceRelativePath(filePath: string): string {
   return filePath.split(path.sep).join("/");
+}
+
+async function createCopyRelativePath(
+  workspacePath: string,
+  sourceRelativePath: string
+): Promise<string> {
+  const directory = path.dirname(sourceRelativePath);
+  const extension = path.extname(sourceRelativePath);
+  const baseName = path.basename(sourceRelativePath, extension);
+  let copyIndex = 1;
+
+  while (true) {
+    const copyName =
+      copyIndex === 1 ? `${baseName} のコピー${extension}` : `${baseName} のコピー ${copyIndex}${extension}`;
+    const candidateRelativePath = toWorkspaceRelativePath(path.join(directory, copyName));
+    const candidatePath = resolveWorkspaceRelativePath(workspacePath, candidateRelativePath);
+
+    if (!candidatePath.ok) {
+      throw new Error(candidatePath.error.message);
+    }
+
+    if (!(await pathExists(candidatePath.value))) {
+      return candidateRelativePath;
+    }
+
+    copyIndex += 1;
+  }
 }

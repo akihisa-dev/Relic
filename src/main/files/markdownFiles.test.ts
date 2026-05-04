@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import {
   createMarkdownFile,
+  duplicateMarkdownFile,
   normalizeMarkdownFileName,
   readMarkdownFile,
   renameMarkdownFile
@@ -160,6 +161,67 @@ describe("renameMarkdownFile", () => {
       ok: false
     });
     await expect(renameMarkdownFile(workspacePath, "../outside.md", "inside")).resolves.toMatchObject({
+      ok: false
+    });
+  });
+});
+
+describe("duplicateMarkdownFile", () => {
+  const temporaryPaths: string[] = [];
+
+  afterEach(async () => {
+    await Promise.all(
+      temporaryPaths.splice(0).map((temporaryPath) =>
+        rm(temporaryPath, {
+          force: true,
+          recursive: true
+        })
+      )
+    );
+  });
+
+  it("同じフォルダにMarkdownファイルを複製する", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-duplicate-file-"));
+    temporaryPaths.push(workspacePath);
+
+    await writeFile(path.join(workspacePath, "読書メモ.md"), "# 読書メモ", "utf8");
+
+    await expect(duplicateMarkdownFile(workspacePath, "読書メモ.md")).resolves.toEqual({
+      ok: true,
+      value: {
+        content: "# 読書メモ",
+        name: "読書メモ のコピー",
+        path: "読書メモ のコピー.md"
+      }
+    });
+    await expect(readFile(path.join(workspacePath, "読書メモ のコピー.md"), "utf8")).resolves.toBe(
+      "# 読書メモ"
+    );
+  });
+
+  it("コピー名が既にある場合は連番で複製する", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-duplicate-file-"));
+    temporaryPaths.push(workspacePath);
+
+    await writeFile(path.join(workspacePath, "読書メモ.md"), "original", "utf8");
+    await writeFile(path.join(workspacePath, "読書メモ のコピー.md"), "copy", "utf8");
+
+    await expect(duplicateMarkdownFile(workspacePath, "読書メモ.md")).resolves.toMatchObject({
+      ok: true,
+      value: {
+        path: "読書メモ のコピー 2.md"
+      }
+    });
+  });
+
+  it("Markdown以外とワークスペース外への参照を拒否する", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-duplicate-file-"));
+    temporaryPaths.push(workspacePath);
+
+    await expect(duplicateMarkdownFile(workspacePath, "image.png")).resolves.toMatchObject({
+      ok: false
+    });
+    await expect(duplicateMarkdownFile(workspacePath, "../outside.md")).resolves.toMatchObject({
       ok: false
     });
   });

@@ -1,14 +1,20 @@
-import { app, dialog, ipcMain } from "electron";
+import { app, dialog, ipcMain, shell } from "electron";
 
 import {
   createFolderChannel,
   type CreateFolderInput,
   createMarkdownFileChannel,
   type CreateMarkdownFileInput,
+  duplicateMarkdownFileChannel,
+  type DuplicateMarkdownFileInput,
   getWorkspaceStateChannel,
+  moveItemToTrashChannel,
+  type MoveItemToTrashInput,
   openWorkspaceChannel,
   readMarkdownFileChannel,
   type ReadMarkdownFileInput,
+  renameFolderChannel,
+  type RenameFolderInput,
   renameMarkdownFileChannel,
   type RenameMarkdownFileInput,
   switchWorkspaceChannel,
@@ -17,8 +23,14 @@ import {
 } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { readWorkspaceFileTree } from "../files/fileTree";
-import { createFolder } from "../files/folders";
-import { createMarkdownFile, readMarkdownFile, renameMarkdownFile } from "../files/markdownFiles";
+import { createFolder, renameFolder } from "../files/folders";
+import {
+  createMarkdownFile,
+  duplicateMarkdownFile,
+  readMarkdownFile,
+  renameMarkdownFile
+} from "../files/markdownFiles";
+import { moveWorkspaceItemToTrash } from "../files/trash";
 import { readAppSettings, writeAppSettings } from "../settings/appSettings";
 import {
   addOrActivateWorkspace,
@@ -161,6 +173,38 @@ export function registerWorkspaceHandlers(): void {
     }
   });
 
+  ipcMain.handle(duplicateMarkdownFileChannel, async (_event, input: DuplicateMarkdownFileInput) => {
+    try {
+      if (!isPathInput(input)) {
+        return fail("FILE_DUPLICATE_INVALID_INPUT", "複製するファイルを選択してください。");
+      }
+
+      const settings = await readAppSettings(app.getPath("userData"));
+      const state = toWorkspaceState(settings);
+
+      if (!state.activeWorkspace) {
+        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
+      }
+
+      const duplicatedFile = await duplicateMarkdownFile(state.activeWorkspace.path, input.path);
+
+      if (!duplicatedFile.ok) {
+        return duplicatedFile;
+      }
+
+      return ok({
+        file: duplicatedFile.value,
+        workspaceState: await buildWorkspaceState(settings)
+      });
+    } catch (error) {
+      return fail(
+        "FILE_DUPLICATE_FAILED",
+        "ファイルを複製できませんでした。",
+        error instanceof Error ? error.message : String(error)
+      );
+    }
+  });
+
   ipcMain.handle(renameMarkdownFileChannel, async (_event, input: RenameMarkdownFileInput) => {
     try {
       if (!isRenameMarkdownFileInput(input)) {
@@ -196,6 +240,72 @@ export function registerWorkspaceHandlers(): void {
       );
     }
   });
+
+  ipcMain.handle(renameFolderChannel, async (_event, input: RenameFolderInput) => {
+    try {
+      if (!isRenameFolderInput(input)) {
+        return fail("FOLDER_RENAME_INVALID_INPUT", "変更後のフォルダ名を入力してください。");
+      }
+
+      const settings = await readAppSettings(app.getPath("userData"));
+      const state = toWorkspaceState(settings);
+
+      if (!state.activeWorkspace) {
+        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
+      }
+
+      const renamedFolder = await renameFolder(state.activeWorkspace.path, input.path, input.newName);
+
+      if (!renamedFolder.ok) {
+        return renamedFolder;
+      }
+
+      return ok(await buildWorkspaceState(settings));
+    } catch (error) {
+      return fail(
+        "FOLDER_RENAME_FAILED",
+        "フォルダ名を変更できませんでした。",
+        error instanceof Error ? error.message : String(error)
+      );
+    }
+  });
+
+  ipcMain.handle(
+    moveItemToTrashChannel,
+    async (_event, input: MoveItemToTrashInput): Promise<RelicResult<WorkspaceState>> => {
+      try {
+        if (!isMoveItemToTrashInput(input)) {
+          return fail("TRASH_MOVE_INVALID_INPUT", "ゴミ箱に移動する項目を選択してください。");
+        }
+
+        const settings = await readAppSettings(app.getPath("userData"));
+        const state = toWorkspaceState(settings);
+
+        if (!state.activeWorkspace) {
+          return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
+        }
+
+        const movedItem = await moveWorkspaceItemToTrash(
+          state.activeWorkspace.path,
+          input.path,
+          input.type,
+          shell.trashItem
+        );
+
+        if (!movedItem.ok) {
+          return movedItem;
+        }
+
+        return ok(await buildWorkspaceState(settings));
+      } catch (error) {
+        return fail(
+          "TRASH_MOVE_FAILED",
+          "ゴミ箱に移動できませんでした。",
+          error instanceof Error ? error.message : String(error)
+        );
+      }
+    }
+  );
 
   ipcMain.handle(
     switchWorkspaceChannel,
@@ -280,11 +390,33 @@ function isRenameMarkdownFileInput(input: unknown): input is RenameMarkdownFileI
   );
 }
 
+function isRenameFolderInput(input: unknown): input is RenameFolderInput {
+  return (
+    typeof input === "object" &&
+    input !== null &&
+    "path" in input &&
+    "newName" in input &&
+    typeof (input as { path?: unknown }).path === "string" &&
+    typeof (input as { newName?: unknown }).newName === "string"
+  );
+}
+
 function isSwitchWorkspaceInput(input: unknown): input is SwitchWorkspaceInput {
   return (
     typeof input === "object" &&
     input !== null &&
     "workspaceId" in input &&
     typeof (input as { workspaceId?: unknown }).workspaceId === "string"
+  );
+}
+
+function isMoveItemToTrashInput(input: unknown): input is MoveItemToTrashInput {
+  return (
+    typeof input === "object" &&
+    input !== null &&
+    "path" in input &&
+    "type" in input &&
+    typeof (input as { path?: unknown }).path === "string" &&
+    ((input as { type?: unknown }).type === "file" || (input as { type?: unknown }).type === "folder")
   );
 }
