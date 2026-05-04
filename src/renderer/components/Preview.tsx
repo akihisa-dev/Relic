@@ -10,6 +10,7 @@ import type { EditorSettings } from "../../shared/ipc";
 interface PreviewProps {
   content: string;
   onChange?: (content: string) => void;
+  onOpenWikiLink?: (target: string) => void;
   settings: EditorSettings;
   workspacePath?: string | null;
 }
@@ -250,7 +251,9 @@ function renderMarkdown(
     /<input checked="" disabled="" type="checkbox">/g,
     '<input checked type="checkbox" class="preview-checkbox">'
   );
-  const sanitized = DOMPurify.sanitize(withCheckboxes, { ADD_ATTR: ["checked", "class"] });
+  const sanitized = DOMPurify.sanitize(withCheckboxes, {
+    ADD_ATTR: ["checked", "class", "data-target"]
+  });
 
   return imageSources.reduce(
     (htmlWithImages, src, imageId) =>
@@ -283,7 +286,13 @@ function renderFileEmbed(
   return `<section class="preview-file-embed"><div class="preview-file-embed-title">${escapeHtml(state.name)}</div><div class="preview-file-embed-body">${body}</div></section>`;
 }
 
-export function Preview({ content, onChange, settings, workspacePath }: PreviewProps): ReactElement {
+export function Preview({
+  content,
+  onChange,
+  onOpenWikiLink,
+  settings,
+  workspacePath
+}: PreviewProps): ReactElement {
   const [embeds, setEmbeds] = useState<Map<string, EmbedState>>(new Map());
 
   useEffect(() => {
@@ -330,6 +339,13 @@ export function Preview({ content, onChange, settings, workspacePath }: PreviewP
   const handleClick = useCallback(
     (e: MouseEvent<HTMLDivElement>) => {
       const target = e.target as HTMLElement;
+      const wikiLink = target.closest<HTMLElement>(".wikilink");
+
+      if (wikiLink?.dataset.target && onOpenWikiLink) {
+        e.preventDefault();
+        onOpenWikiLink(wikiLink.dataset.target);
+        return;
+      }
 
       if (target.tagName !== "INPUT" || (target as HTMLInputElement).type !== "checkbox") return;
 
@@ -346,7 +362,7 @@ export function Preview({ content, onChange, settings, workspacePath }: PreviewP
 
       onChange(toggleNthCheckbox(content, index));
     },
-    [content, onChange]
+    [content, onChange, onOpenWikiLink]
   );
 
   const style: React.CSSProperties = {

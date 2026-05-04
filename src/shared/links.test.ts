@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { normalizeWikiLinkTarget, parseWikiLinks } from "./links";
+import {
+  normalizeWikiLinkTarget,
+  parseWikiLinks,
+  resolveWikiLinkPath,
+  resolveWikiLinks
+} from "./links";
 
 describe("parseWikiLinks", () => {
   it("内部リンクを解析する", () => {
@@ -55,5 +60,32 @@ describe("normalizeWikiLinkTarget", () => {
   it(".md拡張子を補完し、区切り文字を正規化する", () => {
     expect(normalizeWikiLinkTarget("folder\\note")).toBe("folder/note.md");
     expect(normalizeWikiLinkTarget("note.md")).toBe("note.md");
+  });
+});
+
+describe("resolveWikiLinkPath", () => {
+  it("パスなしリンクはリンク元と同じフォルダに解決する", () => {
+    expect(resolveWikiLinkPath("参照先", "folder/source.md")).toBe("folder/参照先.md");
+  });
+
+  it("パス付きリンクはワークスペース相対として解決する", () => {
+    expect(resolveWikiLinkPath("archive/参照先", "folder/source.md")).toBe("archive/参照先.md");
+  });
+});
+
+describe("resolveWikiLinks", () => {
+  it("リンク先の存在状態と表示名を付与する", () => {
+    expect(resolveWikiLinks("[[既存|読む]] [[未作成]]", "notes/source.md", ["notes/既存.md"])).toEqual([
+      expect.objectContaining({
+        displayName: "読む",
+        exists: true,
+        path: "notes/既存.md"
+      }),
+      expect.objectContaining({
+        displayName: "未作成",
+        exists: false,
+        path: "notes/未作成.md"
+      })
+    ]);
   });
 });

@@ -1,5 +1,5 @@
 import type { EditorView } from "@codemirror/view";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactElement } from "react";
 
 import type {
@@ -8,7 +8,7 @@ import type {
   WorkspaceState,
   WorkspaceTreeNode
 } from "../shared/ipc";
-import { parseWikiLinks } from "../shared/links";
+import { resolveWikiLinkPath, resolveWikiLinks } from "../shared/links";
 import { Editor } from "./components/Editor";
 import { Preview } from "./components/Preview";
 import { Toolbar } from "./components/Toolbar";
@@ -293,6 +293,7 @@ interface PaneViewProps {
   typewriterMode: boolean;
   workspacePath?: string | null;
   onFocus: () => void;
+  onOpenWikiLink: (target: string) => void;
   onTabClose: (tabId: string) => void;
   onTabSelect: (tabId: string) => void;
 }
@@ -304,6 +305,7 @@ function PaneView({
   typewriterMode,
   workspacePath,
   onFocus,
+  onOpenWikiLink,
   onTabClose,
   onTabSelect
 }: PaneViewProps): ReactElement {
@@ -400,6 +402,7 @@ function PaneView({
                 content={activeTab.content}
                 key={`preview-${activeTab.id}`}
                 onChange={(content) => updateTabContent(activeTab.id, content)}
+                onOpenWikiLink={onOpenWikiLink}
                 settings={editorSettings}
                 workspacePath={workspacePath}
               />
@@ -563,6 +566,34 @@ export function App(): ReactElement {
     [focusedPane, openFileInPane]
   );
 
+  const handleOpenWikiLink = useCallback(
+    (target: string): void => {
+      const paneState = focusedPane === "left" ? leftPane : rightPane;
+      const activeTab = paneState.activeTabId ? tabs[paneState.activeTabId] : null;
+
+      if (!activeTab || !window.relic) return;
+
+      const path = resolveWikiLinkPath(target, activeTab.path);
+
+      void window.relic.readMarkdownFile({ path }).then((readResult) => {
+        if (readResult.ok) {
+          openFileInPane(focusedPane, readResult.value);
+          return;
+        }
+
+        void window.relic!.createLinkedMarkdownFile({ path }).then((createResult) => {
+          if (createResult.ok) {
+            setWorkspaceState(createResult.value.workspaceState);
+            openFileInPane(focusedPane, createResult.value.file);
+          } else {
+            setWorkspaceError(createResult.error.message);
+          }
+        });
+      });
+    },
+    [focusedPane, leftPane, openFileInPane, rightPane, tabs]
+  );
+
   const handleSelectFolder = useCallback(
     (node: Extract<WorkspaceTreeNode, { type: "folder" }>): void => {
       void node; // フェーズ2ではフォルダ選択は何もしない
@@ -667,6 +698,10 @@ export function App(): ReactElement {
   // ──────────────────
 
   const activePaths = new Set(Object.values(tabs).map((t) => t.path));
+  const existingMarkdownPaths = useMemo(
+    () => collectMarkdownPaths(workspaceState?.fileTree ?? []),
+    [workspaceState?.fileTree]
+  );
 
   // ──────────────────
   // アウトライン（右パネル）
@@ -690,7 +725,7 @@ export function App(): ReactElement {
         .filter(Boolean)
     : [];
   const outgoingLinks = activeTabInFocusedPane
-    ? parseWikiLinks(activeTabInFocusedPane.content)
+    ? resolveWikiLinks(activeTabInFocusedPane.content, activeTabInFocusedPane.path, existingMarkdownPaths)
     : [];
 
   // ──────────────────
@@ -819,6 +854,7 @@ export function App(): ReactElement {
                 editorSettings={editorSettings}
                 focusedPane={focusedPane}
                 onFocus={() => setFocusedPane("left")}
+                onOpenWikiLink={handleOpenWikiLink}
                 onTabClose={(tabId) => closeTab("left", tabId)}
                 onTabSelect={(tabId) => setTabActive("left", tabId)}
                 pane="left"
@@ -830,6 +866,7 @@ export function App(): ReactElement {
                   editorSettings={editorSettings}
                   focusedPane={focusedPane}
                   onFocus={() => setFocusedPane("right")}
+                  onOpenWikiLink={handleOpenWikiLink}
                   onTabClose={(tabId) => closeTab("right", tabId)}
                   onTabSelect={(tabId) => setTabActive("right", tabId)}
                   pane="right"
@@ -865,18 +902,26 @@ export function App(): ReactElement {
                     <div className="links-panel-subheading">Outgoing</div>
                     <ul className="links-list">
                       {outgoingLinks.map((link, i) => (
-                        <li className="links-list-item" key={`${link.raw}-${i}`}>
-                          <span className={`links-list-kind links-list-kind--${link.kind}`}>
-                            {link.kind === "embed" ? "Embed" : "Link"}
+                        <li className="links-list-item" key={`${link.wikiLink.raw}-${i}`}>
+                          <span className={`links-list-kind links-list-kind--${link.wikiLink.kind}`}>
+                            {link.wikiLink.kind === "embed" ? "Embed" : "Link"}
                           </span>
-                          <span className="links-list-target" title={link.target}>
-                            {link.alias ?? link.target.replace(/\.md$/, "")}
-                          </span>
-                          {link.heading ? (
-                            <span className="links-list-detail">#{link.heading}</span>
+                          <button
+                            className={`links-list-target${link.exists ? "" : " links-list-target--missing"}`}
+                            onClick={() => handleOpenWikiLink(link.wikiLink.target)}
+                            title={link.exists ? link.path : `${link.path} を作成して開く`}
+                            type="button"
+                          >
+                            {link.displayName}
+                          </button>
+                          {!link.exists ? (
+                            <span className="links-list-detail">未作成</span>
                           ) : null}
-                          {link.blockId ? (
-                            <span className="links-list-detail">^{link.blockId}</span>
+                          {link.wikiLink.heading ? (
+                            <span className="links-list-detail">#{link.wikiLink.heading}</span>
+                          ) : null}
+                          {link.wikiLink.blockId ? (
+                            <span className="links-list-detail">^{link.wikiLink.blockId}</span>
                           ) : null}
                         </li>
                       ))}
@@ -960,5 +1005,11 @@ function RenameBar({ name, onRename }: { name: string; onRename: (v: string) => 
         value={draft}
       />
     </form>
+  );
+}
+
+function collectMarkdownPaths(nodes: WorkspaceTreeNode[]): string[] {
+  return nodes.flatMap((node) =>
+    node.type === "file" ? [node.path] : collectMarkdownPaths(node.children)
   );
 }

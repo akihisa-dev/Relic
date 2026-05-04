@@ -9,6 +9,13 @@ export interface WikiLink {
   target: string;
 }
 
+export interface ResolvedWikiLink {
+  displayName: string;
+  exists: boolean;
+  path: string;
+  wikiLink: WikiLink;
+}
+
 export function parseWikiLinks(markdown: string): WikiLink[] {
   const links: WikiLink[] = [];
   const source = maskFencedCodeBlocks(markdown);
@@ -32,6 +39,41 @@ export function normalizeWikiLinkTarget(target: string): string {
   const trimmed = target.trim().replace(/\\/g, "/");
 
   return trimmed.endsWith(".md") ? trimmed : `${trimmed}.md`;
+}
+
+export function resolveWikiLinkPath(target: string, sourcePath: string): string {
+  const normalizedTarget = normalizeWikiLinkTarget(target);
+
+  if (normalizedTarget.includes("/")) {
+    return normalizePathSegments(normalizedTarget);
+  }
+
+  const sourceDirectory = sourcePath.includes("/")
+    ? sourcePath.split("/").slice(0, -1).join("/")
+    : "";
+
+  return normalizePathSegments(
+    sourceDirectory === "" ? normalizedTarget : `${sourceDirectory}/${normalizedTarget}`
+  );
+}
+
+export function resolveWikiLinks(
+  markdown: string,
+  sourcePath: string,
+  existingMarkdownPaths: Iterable<string>
+): ResolvedWikiLink[] {
+  const existingPaths = new Set([...existingMarkdownPaths].map(normalizePathSegments));
+
+  return parseWikiLinks(markdown).map((wikiLink) => {
+    const resolvedPath = resolveWikiLinkPath(wikiLink.target, sourcePath);
+
+    return {
+      displayName: wikiLink.alias ?? resolvedPath.split("/").at(-1)!.replace(/\.md$/, ""),
+      exists: existingPaths.has(resolvedPath),
+      path: resolvedPath,
+      wikiLink
+    };
+  });
 }
 
 function parseWikiLinkBody(
@@ -60,4 +102,20 @@ function parseWikiLinkBody(
 
 function maskFencedCodeBlocks(markdown: string): string {
   return markdown.replace(/^```[\s\S]*?^```/gm, (block) => " ".repeat(block.length));
+}
+
+function normalizePathSegments(value: string): string {
+  const output: string[] = [];
+
+  for (const segment of value.replace(/\\/g, "/").split("/")) {
+    if (segment === "" || segment === ".") continue;
+    if (segment === "..") {
+      output.pop();
+      continue;
+    }
+
+    output.push(segment);
+  }
+
+  return output.join("/");
 }
