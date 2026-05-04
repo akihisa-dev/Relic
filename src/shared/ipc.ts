@@ -6,6 +6,7 @@ export const createLinkedMarkdownFileChannel = "workspace:createLinkedMarkdownFi
 export const createMarkdownFileChannel = "workspace:createMarkdownFile";
 export const duplicateMarkdownFileChannel = "workspace:duplicateMarkdownFile";
 export const getBacklinksChannel = "workspace:getBacklinks";
+export const getWorkspaceTagsChannel = "workspace:getTags";
 export const getWorkspaceStateChannel = "workspace:getState";
 export const moveItemToTrashChannel = "workspace:moveItemToTrash";
 export const openWorkspaceChannel = "workspace:open";
@@ -90,6 +91,11 @@ export interface Backlink {
   sourcePath: string;
 }
 
+export interface WorkspaceTagSummary {
+  count: number;
+  tag: string;
+}
+
 export interface WriteMarkdownFileInput {
   content: string;
   path: string;
@@ -150,6 +156,7 @@ export interface RelicApi {
   getBacklinks: (input: GetBacklinksInput) => Promise<RelicResult<Backlink[]>>;
   getAppInfo: () => Promise<RelicResult<AppInfo>>;
   getEditorSettings: () => Promise<RelicResult<EditorSettings>>;
+  getWorkspaceTags: () => Promise<RelicResult<WorkspaceTagSummary[]>>;
   getWorkspaceState: () => Promise<RelicResult<WorkspaceState>>;
   moveItemToTrash: (input: MoveItemToTrashInput) => Promise<RelicResult<WorkspaceState>>;
   openWorkspace: () => Promise<RelicResult<WorkspaceState>>;

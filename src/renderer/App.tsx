@@ -7,6 +7,7 @@ import type {
   EditorSettings,
   MarkdownFileContent,
   WorkspaceState,
+  WorkspaceTagSummary,
   WorkspaceTreeNode
 } from "../shared/ipc";
 import { resolveWikiLinkPath, resolveWikiLinks } from "../shared/links";
@@ -89,6 +90,32 @@ interface FilesSidebarProps {
   onSelectFolder: (node: Extract<WorkspaceTreeNode, { type: "folder" }>) => void;
   onSwitchWorkspace: (id: string) => void;
   workspaceState: WorkspaceState | null;
+}
+
+function SearchSidebar({ tags }: { tags: WorkspaceTagSummary[] }): ReactElement {
+  return (
+    <div className="sidebar-section">
+      <input aria-label="検索" className="search-input" placeholder="検索" />
+      <div className="search-block">
+        <div className="links-panel-subheading">Tags</div>
+        {tags.length > 0 ? (
+          <ul className="tag-list">
+            {tags.map((tag) => (
+              <li className="tag-list-item" key={tag.tag}>
+                <button className="tag-pill" type="button">
+                  #{tag.tag}
+                </button>
+                <span className="tag-count">{tag.count}</span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <div className="empty-note">タグはまだありません。</div>
+        )}
+      </div>
+      <div className="empty-note">全文検索はフェーズ4の次の手順で追加します。</div>
+    </div>
+  );
 }
 
 function FilesSidebar({
@@ -444,6 +471,7 @@ export function App(): ReactElement {
   const [isOpeningWorkspace, setIsOpeningWorkspace] = useState(false);
   const [backlinks, setBacklinks] = useState<Backlink[]>([]);
   const [isLoadingBacklinks, setIsLoadingBacklinks] = useState(false);
+  const [workspaceTags, setWorkspaceTags] = useState<WorkspaceTagSummary[]>([]);
 
   const {
     editorSettings,
@@ -616,6 +644,30 @@ export function App(): ReactElement {
       }
     });
   }, [closeAllTabs]);
+
+  useEffect(() => {
+    if (!workspaceState?.activeWorkspace || !window.relic) {
+      setWorkspaceTags([]);
+      return;
+    }
+
+    let canceled = false;
+
+    void window.relic.getWorkspaceTags().then((result) => {
+      if (canceled) return;
+
+      if (result.ok) {
+        setWorkspaceTags(result.value);
+      } else {
+        setWorkspaceTags([]);
+        setWorkspaceError(result.error.message);
+      }
+    });
+
+    return () => {
+      canceled = true;
+    };
+  }, [workspaceState?.activeWorkspace?.id, workspaceState?.fileTree]);
 
   // ──────────────────
   // エディタ設定保存
@@ -819,10 +871,7 @@ export function App(): ReactElement {
                 workspaceState={workspaceState}
               />
             ) : activeSidebarView === "search" ? (
-              <div className="sidebar-section">
-                <input aria-label="検索" className="search-input" placeholder="検索" />
-                <div className="empty-note">検索インデックスはフェーズ4で追加します。</div>
-              </div>
+              <SearchSidebar tags={workspaceTags} />
             ) : activeSidebarView === "git" ? (
               <div className="sidebar-section">
                 <div className="empty-note">Git連携はフェーズ6で追加します。</div>

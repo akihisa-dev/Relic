@@ -8,6 +8,7 @@ import {
   getBacklinksChannel,
   getAppInfoChannel,
   getEditorSettingsChannel,
+  getWorkspaceTagsChannel,
   getWorkspaceStateChannel,
   moveItemToTrashChannel,
   openWorkspaceChannel,
@@ -35,6 +36,7 @@ import {
   type RenameMarkdownFileResult,
   type SwitchWorkspaceInput,
   type WorkspaceState,
+  type WorkspaceTagSummary,
   type WriteMarkdownFileInput
 } from "../shared/ipc";
 import type { RelicResult } from "../shared/result";
@@ -57,6 +59,8 @@ const relicApi: RelicApi = {
   getAppInfo: () => ipcRenderer.invoke(getAppInfoChannel) as Promise<RelicResult<AppInfo>>,
   getEditorSettings: () =>
     ipcRenderer.invoke(getEditorSettingsChannel) as Promise<RelicResult<EditorSettings>>,
+  getWorkspaceTags: () =>
+    ipcRenderer.invoke(getWorkspaceTagsChannel) as Promise<RelicResult<WorkspaceTagSummary[]>>,
   getWorkspaceState: () =>
     ipcRenderer.invoke(getWorkspaceStateChannel) as Promise<RelicResult<WorkspaceState>>,
   moveItemToTrash: (input: MoveItemToTrashInput) =>
