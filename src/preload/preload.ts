@@ -5,6 +5,7 @@ import {
   createLinkedMarkdownFileChannel,
   createMarkdownFileChannel,
   duplicateMarkdownFileChannel,
+  getBacklinksChannel,
   getAppInfoChannel,
   getEditorSettingsChannel,
   getWorkspaceStateChannel,
@@ -23,6 +24,8 @@ import {
   type CreateMarkdownFileInput,
   type DuplicateMarkdownFileInput,
   type EditorSettings,
+  type Backlink,
+  type GetBacklinksInput,
   type MarkdownFileContent,
   type MoveItemToTrashInput,
   type RelicApi,
@@ -49,6 +52,8 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(duplicateMarkdownFileChannel, input) as Promise<
       RelicResult<RenameMarkdownFileResult>
     >,
+  getBacklinks: (input: GetBacklinksInput) =>
+    ipcRenderer.invoke(getBacklinksChannel, input) as Promise<RelicResult<Backlink[]>>,
   getAppInfo: () => ipcRenderer.invoke(getAppInfoChannel) as Promise<RelicResult<AppInfo>>,
   getEditorSettings: () =>
     ipcRenderer.invoke(getEditorSettingsChannel) as Promise<RelicResult<EditorSettings>>,

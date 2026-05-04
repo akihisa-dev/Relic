@@ -9,6 +9,8 @@ import {
   type CreateMarkdownFileInput,
   duplicateMarkdownFileChannel,
   type DuplicateMarkdownFileInput,
+  getBacklinksChannel,
+  type GetBacklinksInput,
   getWorkspaceStateChannel,
   moveItemToTrashChannel,
   type MoveItemToTrashInput,
@@ -24,6 +26,7 @@ import {
   type WorkspaceState
 } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
+import { readBacklinks } from "../files/backlinks";
 import { readWorkspaceFileTree } from "../files/fileTree";
 import { createFolder, renameFolder } from "../files/folders";
 import {
@@ -206,6 +209,29 @@ export function registerWorkspaceHandlers(): void {
       return fail(
         "FILE_READ_FAILED",
         "ファイルを読み込めませんでした。",
+        error instanceof Error ? error.message : String(error)
+      );
+    }
+  });
+
+  ipcMain.handle(getBacklinksChannel, async (_event, input: GetBacklinksInput) => {
+    try {
+      if (!isPathInput(input)) {
+        return fail("BACKLINKS_INVALID_INPUT", "バックリンクを確認するファイルを指定してください。");
+      }
+
+      const settings = await readAppSettings(app.getPath("userData"));
+      const state = toWorkspaceState(settings);
+
+      if (!state.activeWorkspace) {
+        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
+      }
+
+      return readBacklinks(state.activeWorkspace.path, input.path);
+    } catch (error) {
+      return fail(
+        "BACKLINKS_READ_FAILED",
+        "バックリンクを読み込めませんでした。",
         error instanceof Error ? error.message : String(error)
       );
     }
