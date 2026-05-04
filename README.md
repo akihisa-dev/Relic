@@ -40,6 +40,35 @@ GitHubは強力だが、技術者向けに作られている。Obsidianは高機
 
 ---
 
+## リポジトリ構成
+
+- `docs/`: 計画・仕様・設計・開発メモ
+- `app/`: Electron / React アプリ本体
+- `AI.md`: AIエージェント向けの共通ルール
+
+---
+
+## 開発
+
+アプリ本体のコマンドは `app/` で実行する。
+
+```sh
+cd app
+pnpm install
+pnpm start
+```
+
+テスト:
+
+```sh
+cd app
+pnpm test
+```
+
+ダブルクリックで起動する場合は `app/Relicを起動.command` を使う。
+
+---
+
 ## プラットフォーム
 
 macOS（Sequoia 以降）

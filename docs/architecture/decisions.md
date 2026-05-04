@@ -195,7 +195,7 @@
 
 ## 017 · 設定と認証情報の保存場所を分ける
 
-**決定**：アプリ設定とワークスペース設定はElectronの `userData` 配下にJSONで保存し、`src/main/settings/` の自前設定サービスで読み書きする。GitHub OAuthで取得した認証情報はmacOS Keychainに保存し、設定JSONには保存しない。
+**決定**：アプリ設定とワークスペース設定はElectronの `userData` 配下にJSONで保存し、`app/src/main/settings/` の自前設定サービスで読み書きする。GitHub OAuthで取得した認証情報はmacOS Keychainに保存し、設定JSONには保存しない。
 
 **理由**：
 - 設定構造はRelic固有であり、自前サービスのほうが仕様との対応関係を保ちやすい

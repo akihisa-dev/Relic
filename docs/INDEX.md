@@ -35,7 +35,9 @@
 | [ui/screens-macos.md](ui/screens-macos.md) | macOSの画面一覧と構成 |
 | [ui/navigation.md](ui/navigation.md) | 画面遷移フロー |
 | [mockups/index.html](mockups/index.html) | 現行仕様に追従する静的画面モック一覧 |
+| [assets/](assets/) | ロゴ案などの設計・検討素材 |
 | [dev/roadmap.md](dev/roadmap.md) | 開発フェーズ・ロードマップ |
+| [dev/implementation-list.md](dev/implementation-list.md) | ロードマップを実装単位に分解した進捗チェックリスト |
 | [dev/open-questions.md](dev/open-questions.md) | 未決定事項一覧 |
 | [dev/conventions.md](dev/conventions.md) | コーディング規約 |
 | [dev/testing.md](dev/testing.md) | テスト方針 |
