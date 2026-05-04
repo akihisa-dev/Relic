@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import type { ReactElement } from "react";
 
-import type { AppInfo } from "../shared/ipc";
+import type { AppInfo, WorkspaceState, WorkspaceTreeNode } from "../shared/ipc";
 import { useUiStore, type SidebarView } from "./store/uiStore";
 import "./styles.css";
 
@@ -19,15 +19,74 @@ const sidebarTitles: Record<SidebarView, string> = {
   settings: "Settings"
 };
 
-function SidebarContent({ view }: { view: SidebarView }): ReactElement {
+function FileTree({ nodes }: { nodes: WorkspaceTreeNode[] }): ReactElement {
+  if (nodes.length === 0) {
+    return <div className="empty-note">表示できるMarkdownファイルはまだありません。</div>;
+  }
+
+  return (
+    <ul className="file-tree">
+      {nodes.map((node) => (
+        <li className="file-tree-item" key={node.path}>
+          <div className={`file-tree-row ${node.type}`}>
+            <span className="file-tree-icon">{node.type === "folder" ? "Folder" : "Note"}</span>
+            <span className="file-tree-name">{node.name}</span>
+          </div>
+          {node.type === "folder" && node.children.length > 0 ? (
+            <FileTree nodes={node.children} />
+          ) : null}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+interface SidebarContentProps {
+  isOpeningWorkspace: boolean;
+  onOpenWorkspace: () => void;
+  view: SidebarView;
+  workspaceState: WorkspaceState | null;
+}
+
+function SidebarContent({
+  isOpeningWorkspace,
+  onOpenWorkspace,
+  view,
+  workspaceState
+}: SidebarContentProps): ReactElement {
   if (view === "files") {
+    const activeWorkspace = workspaceState?.activeWorkspace ?? null;
+
     return (
       <div className="sidebar-section">
-        <div className="workspace-name">ワークスペース未選択</div>
-        <button className="primary-button" type="button">
-          フォルダを開く
+        <div className="workspace-card">
+          <div className="workspace-name">
+            {activeWorkspace ? activeWorkspace.name : "ワークスペース未選択"}
+          </div>
+          {activeWorkspace ? <div className="workspace-path">{activeWorkspace.path}</div> : null}
+        </div>
+        <button
+          className="primary-button"
+          disabled={isOpeningWorkspace}
+          onClick={onOpenWorkspace}
+          type="button"
+        >
+          {isOpeningWorkspace ? "開いています" : "フォルダを開く"}
         </button>
-        <div className="empty-note">フェーズ1でMarkdownファイルツリーを実装します。</div>
+        {workspaceState && workspaceState.workspaces.length > 1 ? (
+          <div className="workspace-list" aria-label="登録済みワークスペース">
+            {workspaceState.workspaces.map((workspace) => (
+              <div className="workspace-list-item" key={workspace.id} title={workspace.path}>
+                {workspace.name}
+              </div>
+            ))}
+          </div>
+        ) : null}
+        {activeWorkspace ? (
+          <FileTree nodes={workspaceState?.fileTree ?? []} />
+        ) : (
+          <div className="empty-note">任意のローカルフォルダをRelicのワークスペースとして開けます。</div>
+        )}
       </div>
     );
   }
@@ -69,6 +128,9 @@ function SidebarContent({ view }: { view: SidebarView }): ReactElement {
 
 export function App(): ReactElement {
   const [appInfo, setAppInfo] = useState<AppInfo | null>(null);
+  const [workspaceState, setWorkspaceState] = useState<WorkspaceState | null>(null);
+  const [workspaceError, setWorkspaceError] = useState<string | null>(null);
+  const [isOpeningWorkspace, setIsOpeningWorkspace] = useState(false);
   const {
     activeSidebarView,
     isRightPanelOpen,
@@ -86,7 +148,39 @@ export function App(): ReactElement {
         setAppInfo(result.value);
       }
     });
+
+    void window.relic?.getWorkspaceState().then((result) => {
+      if (result.ok) {
+        setWorkspaceState(result.value);
+        setWorkspaceError(null);
+      } else {
+        setWorkspaceError(result.error.message);
+      }
+    });
   }, []);
+
+  const handleOpenWorkspace = (): void => {
+    if (!window.relic) {
+      setWorkspaceError("アプリAPIを利用できませんでした。");
+      return;
+    }
+
+    setIsOpeningWorkspace(true);
+    setWorkspaceError(null);
+
+    void window.relic
+      .openWorkspace()
+      .then((result) => {
+        if (result.ok) {
+          setWorkspaceState(result.value);
+        } else {
+          setWorkspaceError(result.error.message);
+        }
+      })
+      .finally(() => {
+        setIsOpeningWorkspace(false);
+      });
+  };
 
   return (
     <div className="app-shell">
@@ -125,7 +219,13 @@ export function App(): ReactElement {
         {isSidebarOpen ? (
           <aside className="sidebar">
             <div className="pane-heading">{sidebarTitles[activeSidebarView]}</div>
-            <SidebarContent view={activeSidebarView} />
+            <SidebarContent
+              isOpeningWorkspace={isOpeningWorkspace}
+              onOpenWorkspace={handleOpenWorkspace}
+              view={activeSidebarView}
+              workspaceState={workspaceState}
+            />
+            {workspaceError ? <div className="error-note">{workspaceError}</div> : null}
           </aside>
         ) : null}
 
