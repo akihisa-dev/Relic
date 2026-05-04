@@ -16,6 +16,7 @@ import {
   renameFolderChannel,
   renameMarkdownFileChannel,
   saveEditorSettingsChannel,
+  searchWorkspaceChannel,
   switchWorkspaceChannel,
   writeMarkdownFileChannel,
   type AppInfo,
@@ -34,8 +35,10 @@ import {
   type RenameFolderInput,
   type RenameMarkdownFileInput,
   type RenameMarkdownFileResult,
+  type SearchWorkspaceInput,
   type SwitchWorkspaceInput,
   type WorkspaceState,
+  type WorkspaceSearchResult,
   type WorkspaceTagSummary,
   type WriteMarkdownFileInput
 } from "../shared/ipc";
@@ -77,6 +80,10 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(renameFolderChannel, input) as Promise<RelicResult<WorkspaceState>>,
   saveEditorSettings: (input: EditorSettings) =>
     ipcRenderer.invoke(saveEditorSettingsChannel, input) as Promise<RelicResult<void>>,
+  searchWorkspace: (input: SearchWorkspaceInput) =>
+    ipcRenderer.invoke(searchWorkspaceChannel, input) as Promise<
+      RelicResult<WorkspaceSearchResult[]>
+    >,
   switchWorkspace: (input: SwitchWorkspaceInput) =>
     ipcRenderer.invoke(switchWorkspaceChannel, input) as Promise<RelicResult<WorkspaceState>>,
   writeMarkdownFile: (input: WriteMarkdownFileInput) =>
