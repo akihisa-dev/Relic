@@ -11,6 +11,9 @@ export const readMarkdownFileChannel = "workspace:readMarkdownFile";
 export const renameMarkdownFileChannel = "workspace:renameMarkdownFile";
 export const renameFolderChannel = "workspace:renameFolder";
 export const switchWorkspaceChannel = "workspace:switch";
+export const writeMarkdownFileChannel = "workspace:writeMarkdownFile";
+export const getEditorSettingsChannel = "editor:getSettings";
+export const saveEditorSettingsChannel = "editor:saveSettings";
 
 export interface AppInfo {
   name: "Relic";
@@ -71,6 +74,32 @@ export interface MarkdownFileContent {
   path: string;
 }
 
+export interface WriteMarkdownFileInput {
+  content: string;
+  path: string;
+}
+
+export type EditorFont = "system" | "mincho" | "mono";
+export type EditorMaxWidth = "550px" | "660px" | "800px" | "none";
+
+export interface EditorSettings {
+  font: EditorFont;
+  fontSize: number;
+  lineHeight: number;
+  maxWidth: EditorMaxWidth;
+  showLineNumbers: boolean;
+  spellCheck: boolean;
+}
+
+export const defaultEditorSettings: EditorSettings = {
+  font: "system",
+  fontSize: 16,
+  lineHeight: 1.7,
+  maxWidth: "660px",
+  showLineNumbers: false,
+  spellCheck: true
+};
+
 export interface RenameMarkdownFileResult {
   file: MarkdownFileContent;
   workspaceState: WorkspaceState;
@@ -98,6 +127,7 @@ export interface RelicApi {
     input: DuplicateMarkdownFileInput
   ) => Promise<RelicResult<RenameMarkdownFileResult>>;
   getAppInfo: () => Promise<RelicResult<AppInfo>>;
+  getEditorSettings: () => Promise<RelicResult<EditorSettings>>;
   getWorkspaceState: () => Promise<RelicResult<WorkspaceState>>;
   moveItemToTrash: (input: MoveItemToTrashInput) => Promise<RelicResult<WorkspaceState>>;
   openWorkspace: () => Promise<RelicResult<WorkspaceState>>;
@@ -106,5 +136,7 @@ export interface RelicApi {
     input: RenameMarkdownFileInput
   ) => Promise<RelicResult<RenameMarkdownFileResult>>;
   renameFolder: (input: RenameFolderInput) => Promise<RelicResult<WorkspaceState>>;
+  saveEditorSettings: (input: EditorSettings) => Promise<RelicResult<void>>;
   switchWorkspace: (input: SwitchWorkspaceInput) => Promise<RelicResult<WorkspaceState>>;
+  writeMarkdownFile: (input: WriteMarkdownFileInput) => Promise<RelicResult<void>>;
 }
