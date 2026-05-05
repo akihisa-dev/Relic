@@ -2,8 +2,10 @@ import fs from "node:fs";
 import path from "node:path";
 
 import git from "isomorphic-git";
+import http from "isomorphic-git/http/node";
 
 import type {
+  ConnectGitRemoteInput,
   CreateGitBranchInput,
   CreateGitCommitInput,
   CreateGitTagInput,
@@ -11,13 +13,17 @@ import type {
   GitBranchSummary,
   GitCommitDiff,
   GitCommitDiffEntry,
+  GitRemoteSummary,
+  GitRemoteSyncResult,
   GitTagSummary,
+  PushGitTagInput,
   SwitchGitBranchInput,
   GitCommitSummary,
   GitStatus,
   GitWorkingChange
 } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
+import { readGitHubAuthFromKeychain } from "../github/keychain";
 
 export async function readGitStatus(workspacePath: string): Promise<RelicResult<GitStatus>> {
   try {
@@ -174,6 +180,200 @@ export async function readGitBranches(
     return fail(
       "GIT_BRANCHES_FAILED",
       "ブランチ一覧を取得できませんでした。",
+      error instanceof Error ? error.message : String(error)
+    );
+  }
+}
+
+export async function readGitRemotes(
+  workspacePath: string
+): Promise<RelicResult<GitRemoteSummary[]>> {
+  try {
+    const status = await readGitStatus(workspacePath);
+
+    if (!status.ok) {
+      return status;
+    }
+
+    if (!status.value.initialized) {
+      return ok([]);
+    }
+
+    const remotes = await git.listRemotes({
+      dir: workspacePath,
+      fs
+    });
+
+    return ok(
+      remotes
+        .map((remote) => ({
+          isOrigin: remote.remote === "origin",
+          name: remote.remote,
+          url: remote.url
+        }))
+        .sort((a, b) => {
+          if (a.isOrigin !== b.isOrigin) return a.isOrigin ? -1 : 1;
+          return a.name.localeCompare(b.name, "ja");
+        })
+    );
+  } catch (error) {
+    return fail(
+      "GIT_REMOTES_FAILED",
+      "GitHubリポジトリ接続を確認できませんでした。",
+      error instanceof Error ? error.message : String(error)
+    );
+  }
+}
+
+export async function connectGitRemote(
+  workspacePath: string,
+  input: ConnectGitRemoteInput
+): Promise<RelicResult<GitRemoteSummary[]>> {
+  try {
+    const status = await readGitStatus(workspacePath);
+
+    if (!status.ok) {
+      return status;
+    }
+
+    if (!status.value.initialized) {
+      return fail("GIT_NOT_INITIALIZED", "先にGitを初期化してください。");
+    }
+
+    const url = normalizeGitHubRemoteUrl(input.url);
+
+    if (!url.ok) {
+      return url;
+    }
+
+    await git.addRemote({
+      dir: workspacePath,
+      force: true,
+      fs,
+      remote: "origin",
+      url: url.value
+    });
+
+    return readGitRemotes(workspacePath);
+  } catch (error) {
+    return fail(
+      "GIT_REMOTE_CONNECT_FAILED",
+      "GitHubリポジトリを接続できませんでした。",
+      error instanceof Error ? error.message : String(error)
+    );
+  }
+}
+
+export async function pushGitBranch(
+  workspacePath: string
+): Promise<RelicResult<GitRemoteSyncResult>> {
+  try {
+    const ready = await ensureRemoteOperationReady(workspacePath);
+
+    if (!ready.ok) {
+      return ready;
+    }
+
+    const result = await git.push({
+      dir: workspacePath,
+      fs,
+      http,
+      onAuth: () => toGitAuth(ready.value.accessToken),
+      remote: "origin",
+      ref: ready.value.currentBranch,
+      remoteRef: ready.value.currentBranch
+    });
+
+    return ok({
+      errors: pushResultErrors(result),
+      message: "現在のブランチをGitHubへ送信しました。",
+      updatedRefs: pushResultUpdatedRefs(result)
+    });
+  } catch (error) {
+    return fail(
+      "GIT_PUSH_FAILED",
+      "GitHubへ送信できませんでした。接続状態と権限を確認してから再試行してください。",
+      error instanceof Error ? error.message : String(error)
+    );
+  }
+}
+
+export async function pullGitBranch(
+  workspacePath: string
+): Promise<RelicResult<GitRemoteSyncResult>> {
+  try {
+    const ready = await ensureRemoteOperationReady(workspacePath);
+
+    if (!ready.ok) {
+      return ready;
+    }
+
+    await git.pull({
+      author: {
+        email: `${ready.value.login}@users.noreply.github.com`,
+        name: ready.value.login
+      },
+      dir: workspacePath,
+      fastForwardOnly: true,
+      fs,
+      http,
+      onAuth: () => toGitAuth(ready.value.accessToken),
+      ref: ready.value.currentBranch,
+      remote: "origin",
+      remoteRef: ready.value.currentBranch,
+      singleBranch: true
+    });
+
+    return ok({
+      errors: [],
+      message: "GitHubから現在のブランチを取得しました。",
+      updatedRefs: [ready.value.currentBranch]
+    });
+  } catch (error) {
+    return fail(
+      "GIT_PULL_FAILED",
+      "GitHubから取得できませんでした。競合がある場合は手動で確認してください。",
+      error instanceof Error ? error.message : String(error)
+    );
+  }
+}
+
+export async function pushGitTag(
+  workspacePath: string,
+  input: PushGitTagInput
+): Promise<RelicResult<GitRemoteSyncResult>> {
+  try {
+    const tagName = normalizeTagName(input.name);
+
+    if (!tagName.ok) {
+      return tagName;
+    }
+
+    const ready = await ensureRemoteOperationReady(workspacePath);
+
+    if (!ready.ok) {
+      return ready;
+    }
+
+    const result = await git.push({
+      dir: workspacePath,
+      fs,
+      http,
+      onAuth: () => toGitAuth(ready.value.accessToken),
+      ref: `refs/tags/${tagName.value}`,
+      remote: "origin",
+      remoteRef: `refs/tags/${tagName.value}`
+    });
+
+    return ok({
+      errors: pushResultErrors(result),
+      message: `タグ ${tagName.value} をGitHubへ送信しました。`,
+      updatedRefs: pushResultUpdatedRefs(result)
+    });
+  } catch (error) {
+    return fail(
+      "GIT_TAG_PUSH_FAILED",
+      "GitタグをGitHubへ送信できませんでした。",
       error instanceof Error ? error.message : String(error)
     );
   }
@@ -688,6 +888,103 @@ function normalizeTagName(name: string): RelicResult<string> {
   }
 
   return ok(trimmed);
+}
+
+function normalizeGitHubRemoteUrl(url: string): RelicResult<string> {
+  const trimmed = url.trim();
+
+  if (trimmed === "") {
+    return fail("GIT_REMOTE_INVALID_INPUT", "GitHubリポジトリのURLを入力してください。");
+  }
+
+  try {
+    const parsed = new URL(trimmed);
+
+    if (parsed.protocol !== "https:" || parsed.hostname !== "github.com") {
+      return fail("GIT_REMOTE_INVALID_INPUT", "GitHubのHTTPSリポジトリURLを入力してください。");
+    }
+
+    const segments = parsed.pathname.split("/").filter(Boolean);
+
+    if (segments.length !== 2) {
+      return fail("GIT_REMOTE_INVALID_INPUT", "URLの形式が正しくありません。");
+    }
+
+    const repositoryPath = segments.join("/");
+
+    return ok(`https://github.com/${repositoryPath.endsWith(".git") ? repositoryPath : `${repositoryPath}.git`}`);
+  } catch (error) {
+    return fail(
+      "GIT_REMOTE_INVALID_INPUT",
+      "GitHubリポジトリURLを読み取れませんでした。",
+      error instanceof Error ? error.message : String(error)
+    );
+  }
+}
+
+async function ensureRemoteOperationReady(
+  workspacePath: string
+): Promise<RelicResult<{
+  accessToken: string;
+  currentBranch: string;
+  login: string;
+}>> {
+  const status = await readGitStatus(workspacePath);
+
+  if (!status.ok) {
+    return status;
+  }
+
+  if (!status.value.initialized) {
+    return fail("GIT_NOT_INITIALIZED", "先にGitを初期化してください。");
+  }
+
+  if (!status.value.currentBranch) {
+    return fail("GIT_BRANCH_NOT_SELECTED", "送受信するブランチを選択してください。");
+  }
+
+  const remotes = await readGitRemotes(workspacePath);
+
+  if (!remotes.ok) {
+    return remotes;
+  }
+
+  if (!remotes.value.some((remote) => remote.name === "origin")) {
+    return fail("GIT_REMOTE_NOT_CONNECTED", "先にGitHubリポジトリを接続してください。");
+  }
+
+  const auth = await readGitHubAuthFromKeychain();
+
+  if (!auth) {
+    return fail("GITHUB_AUTH_REQUIRED", "先にGitHubアカウントを接続してください。");
+  }
+
+  return ok({
+    accessToken: auth.accessToken,
+    currentBranch: status.value.currentBranch,
+    login: auth.login
+  });
+}
+
+function toGitAuth(accessToken: string): { password: string; username: string } {
+  return {
+    password: accessToken,
+    username: "x-access-token"
+  };
+}
+
+function pushResultUpdatedRefs(result: Awaited<ReturnType<typeof git.push>>): string[] {
+  return Object.entries(result.refs)
+    .filter(([, status]) => status.ok)
+    .map(([ref]) => ref);
+}
+
+function pushResultErrors(result: Awaited<ReturnType<typeof git.push>>): string[] {
+  const refErrors = Object.entries(result.refs)
+    .filter(([, status]) => !status.ok)
+    .map(([ref, status]) => `${ref}: ${status.error}`);
+
+  return result.error ? [result.error, ...refErrors] : refErrors;
 }
 
 function validateTagInput(

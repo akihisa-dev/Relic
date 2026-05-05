@@ -23,6 +23,11 @@ export const createGitBranchChannel = "workspace:createGitBranch";
 export const switchGitBranchChannel = "workspace:switchGitBranch";
 export const createGitTagChannel = "workspace:createGitTag";
 export const deleteGitTagChannel = "workspace:deleteGitTag";
+export const getGitRemotesChannel = "workspace:getGitRemotes";
+export const connectGitRemoteChannel = "workspace:connectGitRemote";
+export const pullGitBranchChannel = "workspace:pullGitBranch";
+export const pushGitBranchChannel = "workspace:pushGitBranch";
+export const pushGitTagChannel = "workspace:pushGitTag";
 export const moveItemToTrashChannel = "workspace:moveItemToTrash";
 export const openWorkspaceChannel = "workspace:open";
 export const readMarkdownFileChannel = "workspace:readMarkdownFile";
@@ -213,6 +218,12 @@ export interface GitHubAuthStatus {
   tokenType: string | null;
 }
 
+export interface GitRemoteSummary {
+  isOrigin: boolean;
+  name: string;
+  url: string;
+}
+
 export interface CreateGitCommitInput {
   authorEmail: string;
   authorName: string;
@@ -238,6 +249,20 @@ export interface CreateGitTagInput {
 
 export interface DeleteGitTagInput {
   name: string;
+}
+
+export interface ConnectGitRemoteInput {
+  url: string;
+}
+
+export interface PushGitTagInput {
+  name: string;
+}
+
+export interface GitRemoteSyncResult {
+  errors: string[];
+  message: string;
+  updatedRefs: string[];
 }
 
 export interface WorkspaceSearchResult {
@@ -296,6 +321,7 @@ export interface WorkspaceFileNode {
 }
 
 export interface RelicApi {
+  connectGitRemote: (input: ConnectGitRemoteInput) => Promise<RelicResult<GitRemoteSummary[]>>;
   connectGitHubAccount: () => Promise<RelicResult<GitHubAuthStatus>>;
   createFolder: (input: CreateFolderInput) => Promise<RelicResult<WorkspaceState>>;
   createGitBranch: (input: CreateGitBranchInput) => Promise<RelicResult<GitBranchSummary[]>>;
@@ -315,6 +341,7 @@ export interface RelicApi {
   getGitCommitDiff: (hash: string) => Promise<RelicResult<GitCommitDiff>>;
   getGitStatus: () => Promise<RelicResult<GitStatus>>;
   getGitWorkingChanges: () => Promise<RelicResult<GitWorkingChange[]>>;
+  getGitRemotes: () => Promise<RelicResult<GitRemoteSummary[]>>;
   getGitTags: () => Promise<RelicResult<GitTagSummary[]>>;
   getAppInfo: () => Promise<RelicResult<AppInfo>>;
   getEditorSettings: () => Promise<RelicResult<EditorSettings>>;
@@ -327,6 +354,9 @@ export interface RelicApi {
   ) => Promise<RelicResult<RenameMarkdownFileResult>>;
   initializeGitRepository: () => Promise<RelicResult<GitStatus>>;
   openWorkspace: () => Promise<RelicResult<WorkspaceState>>;
+  pullGitBranch: () => Promise<RelicResult<GitRemoteSyncResult>>;
+  pushGitBranch: () => Promise<RelicResult<GitRemoteSyncResult>>;
+  pushGitTag: (input: PushGitTagInput) => Promise<RelicResult<GitRemoteSyncResult>>;
   readMarkdownFile: (input: ReadMarkdownFileInput) => Promise<RelicResult<MarkdownFileContent>>;
   renameMarkdownFile: (
     input: RenameMarkdownFileInput

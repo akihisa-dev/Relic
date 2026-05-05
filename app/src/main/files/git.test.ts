@@ -5,6 +5,7 @@ import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
 import {
+  connectGitRemote,
   createGitBranch,
   createGitCommit,
   createGitTag,
@@ -13,6 +14,7 @@ import {
   readGitCommitDiff,
   readGitBranches,
   readGitCommitHistory,
+  readGitRemotes,
   readGitStatus,
   readGitTags,
   readGitWorkingChanges,
@@ -204,6 +206,28 @@ describe("git", () => {
         { isCurrent: true, name: "main" }
       ]
     });
+  });
+
+  it("GitHub remote を origin として接続できる", async () => {
+    const workspacePath = await createWorkspace();
+    await initializeGitRepository(workspacePath);
+
+    const connected = await connectGitRemote(workspacePath, {
+      url: "https://github.com/akihisa/relic"
+    });
+
+    expect(connected).toEqual({
+      ok: true,
+      value: [
+        {
+          isOrigin: true,
+          name: "origin",
+          url: "https://github.com/akihisa/relic.git"
+        }
+      ]
+    });
+
+    await expect(readGitRemotes(workspacePath)).resolves.toEqual(connected);
   });
 
   it("未コミット変更があると切り替え確認を要求する", async () => {
