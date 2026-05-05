@@ -10,10 +10,14 @@ import {
   type CreateGitBranchInput,
   createGitCommitChannel,
   type CreateGitCommitInput,
+  createGitTagChannel,
+  type CreateGitTagInput,
   createLinkedMarkdownFileChannel,
   type CreateLinkedMarkdownFileInput,
   createMarkdownFileChannel,
   type CreateMarkdownFileInput,
+  deleteGitTagChannel,
+  type DeleteGitTagInput,
   duplicateMarkdownFileChannel,
   type DuplicateMarkdownFileInput,
   getBacklinksChannel,
@@ -22,6 +26,7 @@ import {
   getGitCommitHistoryChannel,
   getGitCommitDiffChannel,
   getGitStatusChannel,
+  getGitTagsChannel,
   getGitWorkingChangesChannel,
   getWorkspaceTagsChannel,
   getWorkspaceStateChannel,
@@ -54,6 +59,7 @@ import {
   type GitCommitSummary,
   type GitCommitDiff,
   type GitBranchSummary,
+  type GitTagSummary,
   type GitWorkingChange,
   type WorkspaceState,
   getFrontmatterCandidatesChannel,
@@ -66,11 +72,14 @@ import { createFolder, moveFolder, renameFolder } from "../files/folders";
 import {
   createGitBranch,
   createGitCommit,
+  createGitTag,
+  deleteGitTag,
   initializeGitRepository,
   readGitBranches,
   readGitCommitDiff,
   readGitCommitHistory,
   readGitStatus,
+  readGitTags,
   readGitWorkingChanges,
   switchGitBranch
 } from "../files/git";
@@ -144,6 +153,25 @@ export function registerWorkspaceHandlers(): void {
       return fail(
         "GIT_STATUS_FAILED",
         "Git状態を取得できませんでした。",
+        error instanceof Error ? error.message : String(error)
+      );
+    }
+  });
+
+  ipcMain.handle(getGitTagsChannel, async (): Promise<RelicResult<GitTagSummary[]>> => {
+    try {
+      const settings = await readAppSettings(app.getPath("userData"));
+      const state = toWorkspaceState(settings);
+
+      if (!state.activeWorkspace) {
+        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
+      }
+
+      return readGitTags(state.activeWorkspace.path);
+    } catch (error) {
+      return fail(
+        "GIT_TAGS_FAILED",
+        "Gitタグ一覧を取得できませんでした。",
         error instanceof Error ? error.message : String(error)
       );
     }
@@ -844,6 +872,52 @@ export function registerWorkspaceHandlers(): void {
     }
   });
 
+  ipcMain.handle(createGitTagChannel, async (_event, input: CreateGitTagInput): Promise<RelicResult<GitTagSummary[]>> => {
+    try {
+      if (!isCreateGitTagInput(input)) {
+        return fail("GIT_TAG_INVALID_INPUT", "タグ名を入力してください。");
+      }
+
+      const settings = await readAppSettings(app.getPath("userData"));
+      const state = toWorkspaceState(settings);
+
+      if (!state.activeWorkspace) {
+        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
+      }
+
+      return createGitTag(state.activeWorkspace.path, input);
+    } catch (error) {
+      return fail(
+        "GIT_TAG_CREATE_FAILED",
+        "Gitタグを作成できませんでした。",
+        error instanceof Error ? error.message : String(error)
+      );
+    }
+  });
+
+  ipcMain.handle(deleteGitTagChannel, async (_event, input: DeleteGitTagInput): Promise<RelicResult<GitTagSummary[]>> => {
+    try {
+      if (!isDeleteGitTagInput(input)) {
+        return fail("GIT_TAG_INVALID_INPUT", "削除するタグを選択してください。");
+      }
+
+      const settings = await readAppSettings(app.getPath("userData"));
+      const state = toWorkspaceState(settings);
+
+      if (!state.activeWorkspace) {
+        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
+      }
+
+      return deleteGitTag(state.activeWorkspace.path, input);
+    } catch (error) {
+      return fail(
+        "GIT_TAG_DELETE_FAILED",
+        "Gitタグを削除できませんでした。",
+        error instanceof Error ? error.message : String(error)
+      );
+    }
+  });
+
   ipcMain.handle(switchGitBranchChannel, async (_event, input: SwitchGitBranchInput): Promise<RelicResult<GitBranchSummary[]>> => {
     try {
       if (!isSwitchGitBranchInput(input)) {
@@ -1077,5 +1151,27 @@ function isSwitchGitBranchInput(input: unknown): input is SwitchGitBranchInput {
     typeof (input as { name?: unknown }).name === "string" &&
     (!("allowDirty" in input) ||
       typeof (input as { allowDirty?: unknown }).allowDirty === "boolean")
+  );
+}
+
+function isCreateGitTagInput(input: unknown): input is CreateGitTagInput {
+  return (
+    typeof input === "object" &&
+    input !== null &&
+    "name" in input &&
+    typeof (input as { name?: unknown }).name === "string" &&
+    (!("hash" in input) || typeof (input as { hash?: unknown }).hash === "string") &&
+    (!("message" in input) || typeof (input as { message?: unknown }).message === "string") &&
+    (!("taggerName" in input) || typeof (input as { taggerName?: unknown }).taggerName === "string") &&
+    (!("taggerEmail" in input) || typeof (input as { taggerEmail?: unknown }).taggerEmail === "string")
+  );
+}
+
+function isDeleteGitTagInput(input: unknown): input is DeleteGitTagInput {
+  return (
+    typeof input === "object" &&
+    input !== null &&
+    "name" in input &&
+    typeof (input as { name?: unknown }).name === "string"
   );
 }

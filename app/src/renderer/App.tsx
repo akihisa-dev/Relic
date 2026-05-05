@@ -9,6 +9,7 @@ import type {
   EditorSettings,
   GitCommitSummary,
   GitStatus,
+  GitTagSummary,
   GitWorkingChange,
   MarkdownFileContent,
   SearchAndReplaceMatch,
@@ -820,16 +821,21 @@ export function App(): ReactElement {
   const [gitStatus, setGitStatus] = useState<GitStatus | null>(null);
   const [gitBranches, setGitBranches] = useState<GitBranchSummary[]>([]);
   const [gitCommitHistory, setGitCommitHistory] = useState<GitCommitSummary[]>([]);
+  const [gitTags, setGitTags] = useState<GitTagSummary[]>([]);
   const [gitWorkingChanges, setGitWorkingChanges] = useState<GitWorkingChange[]>([]);
   const [selectedGitCommitHash, setSelectedGitCommitHash] = useState<string | null>(null);
   const [selectedGitCommitDiff, setSelectedGitCommitDiff] = useState<GitCommitDiff | null>(null);
   const [newGitBranchName, setNewGitBranchName] = useState("");
+  const [newGitTagName, setNewGitTagName] = useState("");
+  const [newGitTagMessage, setNewGitTagMessage] = useState("");
   const [pendingGitBranchSwitch, setPendingGitBranchSwitch] = useState<string | null>(null);
   const [gitCommitMessage, setGitCommitMessage] = useState("");
   const [gitAuthorName, setGitAuthorName] = useState("");
   const [gitAuthorEmail, setGitAuthorEmail] = useState("");
   const [isCreatingGitBranch, setIsCreatingGitBranch] = useState(false);
   const [isCreatingGitCommit, setIsCreatingGitCommit] = useState(false);
+  const [isCreatingGitTag, setIsCreatingGitTag] = useState(false);
+  const [isDeletingGitTag, setIsDeletingGitTag] = useState(false);
   const [isSwitchingGitBranch, setIsSwitchingGitBranch] = useState(false);
   const [showCommandPalette, setShowCommandPalette] = useState(false);
   const [showQuickSwitcher, setShowQuickSwitcher] = useState(false);
@@ -1095,6 +1101,7 @@ export function App(): ReactElement {
       setGitStatus(null);
       setGitBranches([]);
       setGitCommitHistory([]);
+      setGitTags([]);
       setGitWorkingChanges([]);
       setPendingGitBranchSwitch(null);
       return;
@@ -1124,6 +1131,7 @@ export function App(): ReactElement {
     if (!workspaceState?.activeWorkspace || !window.relic || !gitStatus?.initialized) {
       setGitBranches([]);
       setGitCommitHistory([]);
+      setGitTags([]);
       setGitWorkingChanges([]);
       setSelectedGitCommitHash(null);
       setSelectedGitCommitDiff(null);
@@ -1154,6 +1162,17 @@ export function App(): ReactElement {
         }
       } else {
         setGitCommitHistory([]);
+        setWorkspaceError(result.error.message);
+      }
+    });
+
+    void window.relic.getGitTags().then((result) => {
+      if (canceled) return;
+
+      if (result.ok) {
+        setGitTags(result.value);
+      } else {
+        setGitTags([]);
         setWorkspaceError(result.error.message);
       }
     });
@@ -1271,6 +1290,19 @@ export function App(): ReactElement {
     });
   }, []);
 
+  const refreshGitTags = useCallback((): void => {
+    if (!window.relic) return;
+
+    void window.relic.getGitTags().then((result) => {
+      if (result.ok) {
+        setGitTags(result.value);
+      } else {
+        setGitTags([]);
+        setWorkspaceError(result.error.message);
+      }
+    });
+  }, []);
+
   const refreshGitBranches = useCallback((): void => {
     if (!window.relic) return;
 
@@ -1294,12 +1326,13 @@ export function App(): ReactElement {
         setWorkspaceError(null);
         refreshGitBranches();
         refreshGitCommitHistory();
+        refreshGitTags();
         refreshGitWorkingChanges();
       } else {
         setWorkspaceError(result.error.message);
       }
     });
-  }, [refreshGitBranches, refreshGitCommitHistory, refreshGitWorkingChanges]);
+  }, [refreshGitBranches, refreshGitCommitHistory, refreshGitTags, refreshGitWorkingChanges]);
 
   const handleCreateGitBranch = useCallback((): void => {
     if (!window.relic) return;
@@ -1376,6 +1409,52 @@ export function App(): ReactElement {
       })
       .finally(() => setIsCreatingGitCommit(false));
   }, [gitAuthorEmail, gitAuthorName, gitCommitMessage, refreshGitWorkingChanges]);
+
+  const handleCreateGitTag = useCallback((): void => {
+    if (!window.relic) return;
+
+    setIsCreatingGitTag(true);
+    setWorkspaceError(null);
+
+    void window.relic
+      .createGitTag({
+        hash: selectedGitCommitHash ?? undefined,
+        message: newGitTagMessage,
+        name: newGitTagName,
+        taggerEmail: gitAuthorEmail,
+        taggerName: gitAuthorName
+      })
+      .then((result) => {
+        if (!result.ok) {
+          setWorkspaceError(result.error.message);
+          return;
+        }
+
+        setGitTags(result.value);
+        setNewGitTagName("");
+        setNewGitTagMessage("");
+      })
+      .finally(() => setIsCreatingGitTag(false));
+  }, [gitAuthorEmail, gitAuthorName, newGitTagMessage, newGitTagName, selectedGitCommitHash]);
+
+  const handleDeleteGitTag = useCallback((name: string): void => {
+    if (!window.relic) return;
+
+    setIsDeletingGitTag(true);
+    setWorkspaceError(null);
+
+    void window.relic
+      .deleteGitTag({ name })
+      .then((result) => {
+        if (!result.ok) {
+          setWorkspaceError(result.error.message);
+          return;
+        }
+
+        setGitTags(result.value);
+      })
+      .finally(() => setIsDeletingGitTag(false));
+  }, []);
 
   const handleCommitAndSwitchGitBranch = useCallback((): void => {
     if (!window.relic || !pendingGitBranchSwitch) return;
@@ -1916,6 +1995,74 @@ export function App(): ReactElement {
                         </ul>
                       ) : (
                         <div className="empty-note">コミット履歴はまだありません。</div>
+                      )}
+                    </div>
+                    <div className="search-block">
+                      <div className="links-panel-subheading">Tags</div>
+                      <div className="git-tag-target">
+                        {selectedGitCommitHash
+                          ? `選択中のコミット ${selectedGitCommitHash.slice(0, 7)} にタグを付けます`
+                          : "履歴からコミットを選ぶと、そのコミットにタグを付けられます。"}
+                      </div>
+                      <input
+                        aria-label="新規Gitタグ名"
+                        className="text-input"
+                        onChange={(event) => setNewGitTagName(event.target.value)}
+                        placeholder="v1.0.0"
+                        value={newGitTagName}
+                      />
+                      <input
+                        aria-label="Gitタグメモ"
+                        className="text-input"
+                        onChange={(event) => setNewGitTagMessage(event.target.value)}
+                        placeholder="任意メモ（注釈タグ）"
+                        value={newGitTagMessage}
+                      />
+                      <button
+                        className="primary-button"
+                        disabled={isCreatingGitTag || !selectedGitCommitHash}
+                        onClick={handleCreateGitTag}
+                        type="button"
+                      >
+                        {isCreatingGitTag ? "タグ作成中..." : "タグを作成"}
+                      </button>
+                      {gitTags.length > 0 ? (
+                        <ul className="search-results git-tag-list">
+                          {gitTags.map((tag) => (
+                            <li className="search-result-item" key={tag.name}>
+                              <div className="git-tag-row">
+                                <button
+                                  className="search-result-button"
+                                  onClick={() => setSelectedGitCommitHash(tag.targetHash)}
+                                  type="button"
+                                >
+                                  <span className="search-result-title">
+                                    {tag.name}
+                                    {tag.annotated ? " (annotated)" : ""}
+                                  </span>
+                                  <span className="search-result-line">
+                                    {tag.targetHash.slice(0, 7)} · {new Date(tag.date).toLocaleString("ja-JP")}
+                                  </span>
+                                  {tag.message ? (
+                                    <span className="search-result-line">{tag.message}</span>
+                                  ) : tag.targetMessage ? (
+                                    <span className="search-result-line">{tag.targetMessage}</span>
+                                  ) : null}
+                                </button>
+                                <button
+                                  className="replace-btn"
+                                  disabled={isDeletingGitTag}
+                                  onClick={() => handleDeleteGitTag(tag.name)}
+                                  type="button"
+                                >
+                                  削除
+                                </button>
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <div className="empty-note">タグはまだありません。</div>
                       )}
                     </div>
                     <div className="search-block">

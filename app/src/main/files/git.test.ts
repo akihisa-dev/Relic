@@ -7,11 +7,14 @@ import { afterEach, describe, expect, it } from "vitest";
 import {
   createGitBranch,
   createGitCommit,
+  createGitTag,
+  deleteGitTag,
   initializeGitRepository,
   readGitCommitDiff,
   readGitBranches,
   readGitCommitHistory,
   readGitStatus,
+  readGitTags,
   readGitWorkingChanges,
   switchGitBranch
 } from "./git";
@@ -248,6 +251,94 @@ describe("git", () => {
       ok: true,
       value: expect.arrayContaining([{ isCurrent: true, name: "feature/test" }])
     });
+  });
+
+  it("軽量タグを作成して一覧できる", async () => {
+    const workspacePath = await createWorkspace();
+    await initializeGitRepository(workspacePath);
+    await writeFile(path.join(workspacePath, "note.md"), "hello", "utf8");
+
+    const commit = await createGitCommit(workspacePath, {
+      authorEmail: "test@example.com",
+      authorName: "Test User",
+      message: "Initial commit"
+    });
+
+    if (!commit.ok) {
+      throw new Error("commit failed");
+    }
+
+    const tagged = await createGitTag(workspacePath, {
+      hash: commit.value.hash,
+      name: "v0.1.0"
+    });
+
+    expect(tagged).toMatchObject({
+      ok: true,
+      value: [
+        {
+          annotated: false,
+          message: null,
+          name: "v0.1.0",
+          targetHash: commit.value.hash,
+          targetMessage: "Initial commit"
+        }
+      ]
+    });
+  });
+
+  it("メモ付きの注釈タグを作成できる", async () => {
+    const workspacePath = await createWorkspace();
+    await initializeGitRepository(workspacePath);
+    await writeFile(path.join(workspacePath, "note.md"), "hello", "utf8");
+
+    const commit = await createGitCommit(workspacePath, {
+      authorEmail: "test@example.com",
+      authorName: "Test User",
+      message: "Initial commit"
+    });
+
+    if (!commit.ok) {
+      throw new Error("commit failed");
+    }
+
+    const tagged = await createGitTag(workspacePath, {
+      hash: commit.value.hash,
+      message: "first release",
+      name: "v1.0.0",
+      taggerEmail: "test@example.com",
+      taggerName: "Test User"
+    });
+
+    expect(tagged).toMatchObject({
+      ok: true,
+      value: [
+        {
+          annotated: true,
+          message: "first release",
+          name: "v1.0.0",
+          targetHash: commit.value.hash,
+          targetMessage: "Initial commit"
+        }
+      ]
+    });
+  });
+
+  it("タグを削除できる", async () => {
+    const workspacePath = await createWorkspace();
+    await initializeGitRepository(workspacePath);
+    await writeFile(path.join(workspacePath, "note.md"), "hello", "utf8");
+    await createGitCommit(workspacePath, {
+      authorEmail: "test@example.com",
+      authorName: "Test User",
+      message: "Initial commit"
+    });
+    await createGitTag(workspacePath, { name: "v0.1.0" });
+
+    const deleted = await deleteGitTag(workspacePath, { name: "v0.1.0" });
+
+    expect(deleted).toEqual({ ok: true, value: [] });
+    await expect(readGitTags(workspacePath)).resolves.toEqual({ ok: true, value: [] });
   });
 
   async function createWorkspace(): Promise<string> {

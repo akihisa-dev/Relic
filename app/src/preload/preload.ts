@@ -5,14 +5,17 @@ import {
   createFolderChannel,
   createGitBranchChannel,
   createGitCommitChannel,
+  createGitTagChannel,
   createLinkedMarkdownFileChannel,
   createMarkdownFileChannel,
+  deleteGitTagChannel,
   duplicateMarkdownFileChannel,
   getBacklinksChannel,
   getAppInfoChannel,
   getGitBranchesChannel,
   getGitCommitHistoryChannel,
   getGitCommitDiffChannel,
+  getGitTagsChannel,
   getEditorSettingsChannel,
   getGitStatusChannel,
   getGitWorkingChangesChannel,
@@ -39,9 +42,11 @@ import {
   type CreateFolderInput,
   type CreateGitBranchInput,
   type CreateGitCommitInput,
+  type CreateGitTagInput,
   type CreateLinkedMarkdownFileInput,
   type CreateLinkedMarkdownFileResult,
   type CreateMarkdownFileInput,
+  type DeleteGitTagInput,
   type DuplicateMarkdownFileInput,
   type EditorSettings,
   type Backlink,
@@ -49,6 +54,7 @@ import {
   type GitBranchSummary,
   type GitCommitSummary,
   type GitStatus,
+  type GitTagSummary,
   type GitWorkingChange,
   type GetBacklinksInput,
   type MarkdownFileContent,
@@ -83,6 +89,8 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(createGitBranchChannel, input) as Promise<RelicResult<GitBranchSummary[]>>,
   createGitCommit: (input: CreateGitCommitInput) =>
     ipcRenderer.invoke(createGitCommitChannel, input) as Promise<RelicResult<GitCommitSummary>>,
+  createGitTag: (input: CreateGitTagInput) =>
+    ipcRenderer.invoke(createGitTagChannel, input) as Promise<RelicResult<GitTagSummary[]>>,
   createLinkedMarkdownFile: (input: CreateLinkedMarkdownFileInput) =>
     ipcRenderer.invoke(createLinkedMarkdownFileChannel, input) as Promise<
       RelicResult<CreateLinkedMarkdownFileResult>
@@ -93,6 +101,8 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(duplicateMarkdownFileChannel, input) as Promise<
       RelicResult<RenameMarkdownFileResult>
     >,
+  deleteGitTag: (input: DeleteGitTagInput) =>
+    ipcRenderer.invoke(deleteGitTagChannel, input) as Promise<RelicResult<GitTagSummary[]>>,
   getBacklinks: (input: GetBacklinksInput) =>
     ipcRenderer.invoke(getBacklinksChannel, input) as Promise<RelicResult<Backlink[]>>,
   getGitBranches: () =>
@@ -103,6 +113,8 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(getGitCommitDiffChannel, hash) as Promise<RelicResult<GitCommitDiff>>,
   getGitStatus: () =>
     ipcRenderer.invoke(getGitStatusChannel) as Promise<RelicResult<GitStatus>>,
+  getGitTags: () =>
+    ipcRenderer.invoke(getGitTagsChannel) as Promise<RelicResult<GitTagSummary[]>>,
   getGitWorkingChanges: () =>
     ipcRenderer.invoke(getGitWorkingChangesChannel) as Promise<RelicResult<GitWorkingChange[]>>,
   getAppInfo: () => ipcRenderer.invoke(getAppInfoChannel) as Promise<RelicResult<AppInfo>>,
