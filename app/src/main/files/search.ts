@@ -8,17 +8,24 @@ import type {
 } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { parseMarkdownTags } from "../../shared/tags";
+import { parseFrontmatter } from "./frontmatter";
 import { readWorkspaceFileTree } from "./fileTree";
 import { resolveWorkspaceRelativePath } from "./paths";
 
 export async function searchWorkspace(
   workspacePath: string,
   query: string,
-  mode: SearchMode
+  mode: SearchMode,
+  frontmatterField?: string
 ): Promise<RelicResult<WorkspaceSearchResult[]>> {
   const normalizedQuery = query.trim();
+  const normalizedFrontmatterField = frontmatterField?.trim() ?? "";
 
   if (normalizedQuery === "") {
+    return ok([]);
+  }
+
+  if (mode === "frontmatter" && normalizedFrontmatterField === "") {
     return ok([]);
   }
 
@@ -62,6 +69,22 @@ export async function searchWorkspace(
         continue;
       }
 
+      if (mode === "frontmatter") {
+        const { data } = parseFrontmatter(content);
+        const fieldValue = data[normalizedFrontmatterField];
+
+        if (matchesFrontmatterField(fieldValue, normalizedQuery)) {
+          results.push({
+            fileName,
+            lineNumber: null,
+            lineText: `${normalizedFrontmatterField}: ${formatFrontmatterValue(fieldValue)}`,
+            path: relativePath
+          });
+        }
+
+        continue;
+      }
+
       const lines = content.split("\n");
 
       for (let index = 0; index < lines.length; index += 1) {
@@ -90,6 +113,40 @@ export async function searchWorkspace(
       error instanceof Error ? error.message : String(error)
     );
   }
+}
+
+function matchesFrontmatterField(value: unknown, query: string): boolean {
+  if (value === undefined || value === null) {
+    return false;
+  }
+
+  if (Array.isArray(value)) {
+    return value.some((item) => String(item).toLocaleLowerCase().includes(query.toLocaleLowerCase()));
+  }
+
+  if (typeof value === "boolean") {
+    const normalizedQuery = query.toLocaleLowerCase();
+
+    if (["true", "1", "yes", "on"].includes(normalizedQuery)) {
+      return value === true;
+    }
+
+    if (["false", "0", "no", "off"].includes(normalizedQuery)) {
+      return value === false;
+    }
+
+    return String(value).toLocaleLowerCase() === normalizedQuery;
+  }
+
+  return String(value).toLocaleLowerCase().includes(query.toLocaleLowerCase());
+}
+
+function formatFrontmatterValue(value: unknown): string {
+  if (Array.isArray(value)) {
+    return value.map(String).join(", ");
+  }
+
+  return String(value);
 }
 
 function collectMarkdownPaths(nodes: WorkspaceTreeNode[]): string[] {

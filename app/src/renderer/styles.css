@@ -263,6 +263,11 @@ button:disabled {
   gap: 6px;
 }
 
+.search-frontmatter-fields {
+  display: grid;
+  gap: 8px;
+}
+
 .search-pattern-btn {
   color: #555b62;
   font-size: 12px;
