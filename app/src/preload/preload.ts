@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer } from "electron";
 
 import {
   applySearchAndReplaceChannel,
+  connectGitRemoteChannel,
   connectGitHubChannel,
   createFolderChannel,
   createGitBranchChannel,
@@ -18,6 +19,7 @@ import {
   getGitBranchesChannel,
   getGitCommitHistoryChannel,
   getGitCommitDiffChannel,
+  getGitRemotesChannel,
   getGitTagsChannel,
   getEditorSettingsChannel,
   getGitStatusChannel,
@@ -29,6 +31,9 @@ import {
   moveItemToTrashChannel,
   moveMarkdownFileChannel,
   openWorkspaceChannel,
+  pullGitBranchChannel,
+  pushGitBranchChannel,
+  pushGitTagChannel,
   readMarkdownFileChannel,
   renameFolderChannel,
   renameMarkdownFileChannel,
@@ -42,6 +47,7 @@ import {
   getFrontmatterCandidatesChannel,
   createFrontmatterTemplateChannel,
   type AppInfo,
+  type ConnectGitRemoteInput,
   type CreateFolderInput,
   type CreateGitBranchInput,
   type CreateGitCommitInput,
@@ -57,6 +63,8 @@ import {
   type GitBranchSummary,
   type GitCommitSummary,
   type GitHubAuthStatus,
+  type GitRemoteSummary,
+  type GitRemoteSyncResult,
   type GitStatus,
   type GitTagSummary,
   type GitWorkingChange,
@@ -66,6 +74,7 @@ import {
   type MoveItemToTrashInput,
   type MoveMarkdownFileInput,
   type RelicApi,
+  type PushGitTagInput,
   type ReadMarkdownFileInput,
   type RenameFolderInput,
   type RenameMarkdownFileInput,
@@ -87,6 +96,8 @@ import type { RelicResult } from "../shared/result";
 const relicApi: RelicApi = {
   applySearchAndReplace: (input: SearchAndReplaceInput) =>
     ipcRenderer.invoke(applySearchAndReplaceChannel, input) as Promise<RelicResult<ReplaceInFileResult>>,
+  connectGitRemote: (input: ConnectGitRemoteInput) =>
+    ipcRenderer.invoke(connectGitRemoteChannel, input) as Promise<RelicResult<GitRemoteSummary[]>>,
   connectGitHubAccount: () =>
     ipcRenderer.invoke(connectGitHubChannel) as Promise<RelicResult<GitHubAuthStatus>>,
   createFolder: (input: CreateFolderInput) =>
@@ -123,6 +134,8 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(getGitCommitDiffChannel, hash) as Promise<RelicResult<GitCommitDiff>>,
   getGitStatus: () =>
     ipcRenderer.invoke(getGitStatusChannel) as Promise<RelicResult<GitStatus>>,
+  getGitRemotes: () =>
+    ipcRenderer.invoke(getGitRemotesChannel) as Promise<RelicResult<GitRemoteSummary[]>>,
   getGitTags: () =>
     ipcRenderer.invoke(getGitTagsChannel) as Promise<RelicResult<GitTagSummary[]>>,
   getGitWorkingChanges: () =>
@@ -146,6 +159,12 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(initializeGitRepositoryChannel) as Promise<RelicResult<GitStatus>>,
   openWorkspace: () =>
     ipcRenderer.invoke(openWorkspaceChannel) as Promise<RelicResult<WorkspaceState>>,
+  pullGitBranch: () =>
+    ipcRenderer.invoke(pullGitBranchChannel) as Promise<RelicResult<GitRemoteSyncResult>>,
+  pushGitBranch: () =>
+    ipcRenderer.invoke(pushGitBranchChannel) as Promise<RelicResult<GitRemoteSyncResult>>,
+  pushGitTag: (input: PushGitTagInput) =>
+    ipcRenderer.invoke(pushGitTagChannel, input) as Promise<RelicResult<GitRemoteSyncResult>>,
   readMarkdownFile: (input: ReadMarkdownFileInput) =>
     ipcRenderer.invoke(readMarkdownFileChannel, input) as Promise<RelicResult<MarkdownFileContent>>,
   renameMarkdownFile: (input: RenameMarkdownFileInput) =>

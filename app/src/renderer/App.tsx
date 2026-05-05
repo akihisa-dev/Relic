@@ -9,6 +9,7 @@ import type {
   EditorSettings,
   GitCommitSummary,
   GitHubAuthStatus,
+  GitRemoteSummary,
   GitStatus,
   GitTagSummary,
   GitWorkingChange,
@@ -821,6 +822,7 @@ export function App(): ReactElement {
   const [frontmatterCandidates, setFrontmatterCandidates] = useState<Record<string, string[]>>({});
   const [gitStatus, setGitStatus] = useState<GitStatus | null>(null);
   const [gitHubAuthStatus, setGitHubAuthStatus] = useState<GitHubAuthStatus | null>(null);
+  const [gitRemotes, setGitRemotes] = useState<GitRemoteSummary[]>([]);
   const [gitBranches, setGitBranches] = useState<GitBranchSummary[]>([]);
   const [gitCommitHistory, setGitCommitHistory] = useState<GitCommitSummary[]>([]);
   const [gitTags, setGitTags] = useState<GitTagSummary[]>([]);
@@ -830,6 +832,8 @@ export function App(): ReactElement {
   const [newGitBranchName, setNewGitBranchName] = useState("");
   const [newGitTagName, setNewGitTagName] = useState("");
   const [newGitTagMessage, setNewGitTagMessage] = useState("");
+  const [gitRemoteUrl, setGitRemoteUrl] = useState("");
+  const [gitSyncMessage, setGitSyncMessage] = useState<string | null>(null);
   const [pendingGitBranchSwitch, setPendingGitBranchSwitch] = useState<string | null>(null);
   const [gitCommitMessage, setGitCommitMessage] = useState("");
   const [gitAuthorName, setGitAuthorName] = useState("");
@@ -838,8 +842,12 @@ export function App(): ReactElement {
   const [isCreatingGitCommit, setIsCreatingGitCommit] = useState(false);
   const [isCreatingGitTag, setIsCreatingGitTag] = useState(false);
   const [isConnectingGitHub, setIsConnectingGitHub] = useState(false);
+  const [isConnectingGitRemote, setIsConnectingGitRemote] = useState(false);
   const [isDeletingGitTag, setIsDeletingGitTag] = useState(false);
   const [isDisconnectingGitHub, setIsDisconnectingGitHub] = useState(false);
+  const [isPullingGitBranch, setIsPullingGitBranch] = useState(false);
+  const [isPushingGitBranch, setIsPushingGitBranch] = useState(false);
+  const [pushingGitTagName, setPushingGitTagName] = useState<string | null>(null);
   const [isSwitchingGitBranch, setIsSwitchingGitBranch] = useState(false);
   const [showCommandPalette, setShowCommandPalette] = useState(false);
   const [showQuickSwitcher, setShowQuickSwitcher] = useState(false);
@@ -1141,6 +1149,7 @@ export function App(): ReactElement {
     if (!workspaceState?.activeWorkspace || !window.relic || !gitStatus?.initialized) {
       setGitBranches([]);
       setGitCommitHistory([]);
+      setGitRemotes([]);
       setGitTags([]);
       setGitWorkingChanges([]);
       setSelectedGitCommitHash(null);
@@ -1159,6 +1168,17 @@ export function App(): ReactElement {
       } else {
         setGitBranches([]);
         setWorkspaceError(result.error.message);
+      }
+    });
+
+    void window.relic.getGitRemotes().then((result) => {
+      if (canceled) return;
+
+      if (result.ok) {
+        setGitRemotes(result.value);
+        setGitRemoteUrl(result.value.find((remote) => remote.isOrigin)?.url ?? "");
+      } else {
+        setGitRemotes([]);
       }
     });
 
@@ -1555,6 +1575,87 @@ export function App(): ReactElement {
       .finally(() => setIsDisconnectingGitHub(false));
   }, []);
 
+  const handleConnectGitRemote = useCallback((): void => {
+    if (!window.relic) return;
+
+    setIsConnectingGitRemote(true);
+    setGitSyncMessage(null);
+    setWorkspaceError(null);
+
+    void window.relic
+      .connectGitRemote({ url: gitRemoteUrl })
+      .then((result) => {
+        if (result.ok) {
+          setGitRemotes(result.value);
+          setGitRemoteUrl(result.value.find((remote) => remote.isOrigin)?.url ?? gitRemoteUrl);
+          setGitSyncMessage("GitHubリポジトリを origin として接続しました。");
+        } else {
+          setWorkspaceError(result.error.message);
+        }
+      })
+      .finally(() => setIsConnectingGitRemote(false));
+  }, [gitRemoteUrl]);
+
+  const handlePushGitBranch = useCallback((): void => {
+    if (!window.relic) return;
+
+    setIsPushingGitBranch(true);
+    setGitSyncMessage(null);
+    setWorkspaceError(null);
+
+    void window.relic
+      .pushGitBranch()
+      .then((result) => {
+        if (result.ok) {
+          setGitSyncMessage(result.value.message);
+          refreshGitWorkingChanges();
+        } else {
+          setWorkspaceError(result.error.message);
+        }
+      })
+      .finally(() => setIsPushingGitBranch(false));
+  }, [refreshGitWorkingChanges]);
+
+  const handlePullGitBranch = useCallback((): void => {
+    if (!window.relic) return;
+
+    setIsPullingGitBranch(true);
+    setGitSyncMessage(null);
+    setWorkspaceError(null);
+
+    void window.relic
+      .pullGitBranch()
+      .then((result) => {
+        if (result.ok) {
+          setGitSyncMessage(result.value.message);
+          refreshGitCommitHistory();
+          refreshGitWorkingChanges();
+        } else {
+          setWorkspaceError(result.error.message);
+        }
+      })
+      .finally(() => setIsPullingGitBranch(false));
+  }, [refreshGitCommitHistory, refreshGitWorkingChanges]);
+
+  const handlePushGitTag = useCallback((name: string): void => {
+    if (!window.relic) return;
+
+    setPushingGitTagName(name);
+    setGitSyncMessage(null);
+    setWorkspaceError(null);
+
+    void window.relic
+      .pushGitTag({ name })
+      .then((result) => {
+        if (result.ok) {
+          setGitSyncMessage(result.value.message);
+        } else {
+          setWorkspaceError(result.error.message);
+        }
+      })
+      .finally(() => setPushingGitTagName(null));
+  }, []);
+
   // ──────────────────
   // ファイル移動
   // ──────────────────
@@ -1929,6 +2030,67 @@ export function App(): ReactElement {
                       )}
                     </div>
                     <div className="search-block">
+                      <div className="links-panel-subheading">Remote</div>
+                      <form
+                        className="git-branch-form"
+                        onSubmit={(event) => {
+                          event.preventDefault();
+                          handleConnectGitRemote();
+                        }}
+                      >
+                        <input
+                          aria-label="GitHubリポジトリURL"
+                          className="text-input"
+                          onChange={(event) => setGitRemoteUrl(event.target.value)}
+                          placeholder="https://github.com/owner/repo"
+                          value={gitRemoteUrl}
+                        />
+                        <button
+                          className="primary-button"
+                          disabled={isConnectingGitRemote}
+                          type="submit"
+                        >
+                          {isConnectingGitRemote ? "接続中..." : "originに接続"}
+                        </button>
+                      </form>
+                      {gitRemotes.length > 0 ? (
+                        <ul className="search-results">
+                          {gitRemotes.map((remote) => (
+                            <li className="search-result-item" key={remote.name}>
+                              <div className="search-result-button">
+                                <span className="search-result-title">
+                                  {remote.name}
+                                  {remote.isOrigin ? " (origin)" : ""}
+                                </span>
+                                <span className="search-result-line">{remote.url}</span>
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <div className="empty-note">GitHubリポジトリはまだ接続されていません。</div>
+                      )}
+                      <div className="git-branch-warning-actions">
+                        <button
+                          className="replace-btn"
+                          disabled={isPullingGitBranch || !gitHubAuthStatus?.connected || gitRemotes.length === 0}
+                          onClick={handlePullGitBranch}
+                          type="button"
+                        >
+                          {isPullingGitBranch ? "取得中..." : "Pull"}
+                        </button>
+                        <button
+                          className="primary-button"
+                          disabled={isPushingGitBranch || !gitHubAuthStatus?.connected || gitRemotes.length === 0}
+                          onClick={handlePushGitBranch}
+                          type="button"
+                        >
+                          {isPushingGitBranch ? "送信中..." : "Push"}
+                        </button>
+                      </div>
+                      {gitSyncMessage ? <div className="search-result-line">{gitSyncMessage}</div> : null}
+                    </div>
+                    <div className="search-block">
                       <div className="links-panel-subheading">Repository</div>
                       <div className="setting-row">
                         <span>状態</span>
@@ -2152,6 +2314,18 @@ export function App(): ReactElement {
                                   type="button"
                                 >
                                   削除
+                                </button>
+                                <button
+                                  className="replace-btn"
+                                  disabled={
+                                    pushingGitTagName === tag.name ||
+                                    !gitHubAuthStatus?.connected ||
+                                    gitRemotes.length === 0
+                                  }
+                                  onClick={() => handlePushGitTag(tag.name)}
+                                  type="button"
+                                >
+                                  {pushingGitTagName === tag.name ? "送信中..." : "Push"}
                                 </button>
                               </div>
                             </li>

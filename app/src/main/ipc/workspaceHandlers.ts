@@ -4,6 +4,8 @@ import path from "node:path";
 import { app, dialog, ipcMain, shell } from "electron";
 
 import {
+  connectGitRemoteChannel,
+  type ConnectGitRemoteInput,
   createFolderChannel,
   type CreateFolderInput,
   createGitBranchChannel,
@@ -25,6 +27,7 @@ import {
   getGitBranchesChannel,
   getGitCommitHistoryChannel,
   getGitCommitDiffChannel,
+  getGitRemotesChannel,
   getGitStatusChannel,
   getGitTagsChannel,
   getGitWorkingChangesChannel,
@@ -59,8 +62,14 @@ import {
   type GitCommitSummary,
   type GitCommitDiff,
   type GitBranchSummary,
+  type GitRemoteSummary,
+  type GitRemoteSyncResult,
   type GitTagSummary,
   type GitWorkingChange,
+  pullGitBranchChannel,
+  pushGitBranchChannel,
+  pushGitTagChannel,
+  type PushGitTagInput,
   type WorkspaceState,
   getFrontmatterCandidatesChannel,
   createFrontmatterTemplateChannel
@@ -73,11 +82,16 @@ import {
   createGitBranch,
   createGitCommit,
   createGitTag,
+  connectGitRemote,
   deleteGitTag,
   initializeGitRepository,
+  pullGitBranch,
+  pushGitBranch,
+  pushGitTag,
   readGitBranches,
   readGitCommitDiff,
   readGitCommitHistory,
+  readGitRemotes,
   readGitStatus,
   readGitTags,
   readGitWorkingChanges,
@@ -191,6 +205,25 @@ export function registerWorkspaceHandlers(): void {
       return fail(
         "GIT_BRANCHES_FAILED",
         "ブランチ一覧を取得できませんでした。",
+        error instanceof Error ? error.message : String(error)
+      );
+    }
+  });
+
+  ipcMain.handle(getGitRemotesChannel, async (): Promise<RelicResult<GitRemoteSummary[]>> => {
+    try {
+      const settings = await readAppSettings(app.getPath("userData"));
+      const state = toWorkspaceState(settings);
+
+      if (!state.activeWorkspace) {
+        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
+      }
+
+      return readGitRemotes(state.activeWorkspace.path);
+    } catch (error) {
+      return fail(
+        "GIT_REMOTES_FAILED",
+        "GitHubリポジトリ接続を確認できませんでした。",
         error instanceof Error ? error.message : String(error)
       );
     }
@@ -918,6 +951,90 @@ export function registerWorkspaceHandlers(): void {
     }
   });
 
+  ipcMain.handle(connectGitRemoteChannel, async (_event, input: ConnectGitRemoteInput): Promise<RelicResult<GitRemoteSummary[]>> => {
+    try {
+      if (!isConnectGitRemoteInput(input)) {
+        return fail("GIT_REMOTE_INVALID_INPUT", "GitHubリポジトリのURLを入力してください。");
+      }
+
+      const settings = await readAppSettings(app.getPath("userData"));
+      const state = toWorkspaceState(settings);
+
+      if (!state.activeWorkspace) {
+        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
+      }
+
+      return connectGitRemote(state.activeWorkspace.path, input);
+    } catch (error) {
+      return fail(
+        "GIT_REMOTE_CONNECT_FAILED",
+        "GitHubリポジトリを接続できませんでした。",
+        error instanceof Error ? error.message : String(error)
+      );
+    }
+  });
+
+  ipcMain.handle(pushGitBranchChannel, async (): Promise<RelicResult<GitRemoteSyncResult>> => {
+    try {
+      const settings = await readAppSettings(app.getPath("userData"));
+      const state = toWorkspaceState(settings);
+
+      if (!state.activeWorkspace) {
+        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
+      }
+
+      return pushGitBranch(state.activeWorkspace.path);
+    } catch (error) {
+      return fail(
+        "GIT_PUSH_FAILED",
+        "GitHubへ送信できませんでした。",
+        error instanceof Error ? error.message : String(error)
+      );
+    }
+  });
+
+  ipcMain.handle(pullGitBranchChannel, async (): Promise<RelicResult<GitRemoteSyncResult>> => {
+    try {
+      const settings = await readAppSettings(app.getPath("userData"));
+      const state = toWorkspaceState(settings);
+
+      if (!state.activeWorkspace) {
+        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
+      }
+
+      return pullGitBranch(state.activeWorkspace.path);
+    } catch (error) {
+      return fail(
+        "GIT_PULL_FAILED",
+        "GitHubから取得できませんでした。",
+        error instanceof Error ? error.message : String(error)
+      );
+    }
+  });
+
+  ipcMain.handle(pushGitTagChannel, async (_event, input: PushGitTagInput): Promise<RelicResult<GitRemoteSyncResult>> => {
+    try {
+      if (!isPushGitTagInput(input)) {
+        return fail("GIT_TAG_INVALID_INPUT", "送信するタグを選択してください。");
+      }
+
+      const settings = await readAppSettings(app.getPath("userData"));
+      const state = toWorkspaceState(settings);
+
+      if (!state.activeWorkspace) {
+        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
+      }
+
+      return pushGitTag(state.activeWorkspace.path, input);
+    } catch (error) {
+      return fail(
+        "GIT_TAG_PUSH_FAILED",
+        "GitタグをGitHubへ送信できませんでした。",
+        error instanceof Error ? error.message : String(error)
+      );
+    }
+  });
+
   ipcMain.handle(switchGitBranchChannel, async (_event, input: SwitchGitBranchInput): Promise<RelicResult<GitBranchSummary[]>> => {
     try {
       if (!isSwitchGitBranchInput(input)) {
@@ -1168,6 +1285,24 @@ function isCreateGitTagInput(input: unknown): input is CreateGitTagInput {
 }
 
 function isDeleteGitTagInput(input: unknown): input is DeleteGitTagInput {
+  return (
+    typeof input === "object" &&
+    input !== null &&
+    "name" in input &&
+    typeof (input as { name?: unknown }).name === "string"
+  );
+}
+
+function isConnectGitRemoteInput(input: unknown): input is ConnectGitRemoteInput {
+  return (
+    typeof input === "object" &&
+    input !== null &&
+    "url" in input &&
+    typeof (input as { url?: unknown }).url === "string"
+  );
+}
+
+function isPushGitTagInput(input: unknown): input is PushGitTagInput {
   return (
     typeof input === "object" &&
     input !== null &&
