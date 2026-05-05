@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { defaultEditorSettings, type GitHubAuthStatus } from "../shared/ipc";
+import { defaultAutoSyncSettings, defaultEditorSettings, type GitHubAuthStatus } from "../shared/ipc";
 import { App } from "./App";
 import { useEditorStore } from "./store/editorStore";
 import { useUiStore } from "./store/uiStore";
@@ -94,6 +94,12 @@ function makeRelicApi(overrides: Partial<typeof window.relic> = {}): typeof wind
     applySearchAndReplace: vi.fn(),
     replaceInFile: vi.fn(),
     searchAndReplace: vi.fn(),
+    cloneGitHubRepository: vi.fn().mockResolvedValue({ ok: true, value: { activeWorkspace: null, fileTree: [], workspaces: [] } }),
+    getGitSyncPreview: vi.fn().mockResolvedValue({ ok: true, value: { incomingCommits: [], outgoingChanges: [] } }),
+    getGitConflicts: vi.fn().mockResolvedValue({ ok: true, value: [] }),
+    resolveGitConflict: vi.fn().mockResolvedValue({ ok: true, value: [] }),
+    getAutoSyncSettings: vi.fn().mockResolvedValue({ ok: true, value: defaultAutoSyncSettings }),
+    saveAutoSyncSettings: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
     ...overrides
   } as typeof window.relic;
 }

@@ -13,10 +13,13 @@ import type {
   GitBranchSummary,
   GitCommitDiff,
   GitCommitDiffEntry,
+  GitConflict,
   GitRemoteSummary,
   GitRemoteSyncResult,
+  GitSyncPreview,
   GitTagSummary,
   PushGitTagInput,
+  ResolveGitConflictInput,
   SwitchGitBranchInput,
   GitCommitSummary,
   GitStatus,
@@ -1183,4 +1186,297 @@ function buildCommitDiffEntries(
         status: before === undefined ? "added" : after === undefined ? "deleted" : "modified"
       } satisfies GitCommitDiffEntry];
     });
+}
+
+function toCommitSummary(entry: Awaited<ReturnType<typeof git.log>>[number]): GitCommitSummary {
+  return {
+    author: entry.commit.author.name,
+    changedFiles: [],
+    date: new Date(entry.commit.author.timestamp * 1000).toISOString(),
+    hash: entry.oid,
+    message: entry.commit.message.trim()
+  };
+}
+
+export async function cloneGitHubRepository(
+  url: string,
+  destinationPath: string
+): Promise<RelicResult<void>> {
+  try {
+    const normalizedUrl = normalizeGitHubRemoteUrl(url);
+
+    if (!normalizedUrl.ok) {
+      return normalizedUrl;
+    }
+
+    const auth = await readGitHubAuthFromKeychain();
+
+    if (!auth) {
+      return fail("GITHUB_AUTH_REQUIRED", "先にGitHubアカウントを接続してください。");
+    }
+
+    await git.clone({
+      dir: destinationPath,
+      fs,
+      http,
+      onAuth: () => toGitAuth(auth.accessToken),
+      singleBranch: true,
+      url: normalizedUrl.value
+    });
+
+    return ok(undefined);
+  } catch (error) {
+    return fail(
+      "GIT_CLONE_FAILED",
+      "GitHubリポジトリをクローンできませんでした。URLとGitHub接続を確認してください。",
+      error instanceof Error ? error.message : String(error)
+    );
+  }
+}
+
+export async function fetchGitRemote(workspacePath: string): Promise<RelicResult<void>> {
+  try {
+    const ready = await ensureRemoteOperationReady(workspacePath);
+
+    if (!ready.ok) {
+      return ready;
+    }
+
+    await git.fetch({
+      dir: workspacePath,
+      fs,
+      http,
+      onAuth: () => toGitAuth(ready.value.accessToken),
+      ref: ready.value.currentBranch,
+      remote: "origin",
+      singleBranch: true
+    });
+
+    return ok(undefined);
+  } catch (error) {
+    return fail(
+      "GIT_FETCH_FAILED",
+      "GitHubから変更情報を取得できませんでした。",
+      error instanceof Error ? error.message : String(error)
+    );
+  }
+}
+
+async function readGitIncomingCommits(workspacePath: string): Promise<RelicResult<GitCommitSummary[]>> {
+  try {
+    const status = await readGitStatus(workspacePath);
+
+    if (!status.ok) {
+      return status;
+    }
+
+    if (!status.value.initialized || !status.value.currentBranch) {
+      return ok([]);
+    }
+
+    const remoteRef = `refs/remotes/origin/${status.value.currentBranch}`;
+
+    let remoteOid: string;
+
+    try {
+      remoteOid = await git.resolveRef({ dir: workspacePath, fs, ref: remoteRef });
+    } catch {
+      return ok([]);
+    }
+
+    let localOid: string;
+
+    try {
+      localOid = await git.resolveRef({ dir: workspacePath, fs, ref: "HEAD" });
+    } catch {
+      const commits = await git.log({ depth: 20, dir: workspacePath, fs, ref: remoteOid });
+
+      return ok(commits.map(toCommitSummary));
+    }
+
+    if (localOid === remoteOid) {
+      return ok([]);
+    }
+
+    const [localHistory, remoteHistory] = await Promise.all([
+      git.log({ depth: 100, dir: workspacePath, fs, ref: localOid }),
+      git.log({ depth: 50, dir: workspacePath, fs, ref: remoteOid })
+    ]);
+
+    const localOids = new Set(localHistory.map((c) => c.oid));
+
+    return ok(remoteHistory.filter((c) => !localOids.has(c.oid)).map(toCommitSummary));
+  } catch (error) {
+    return fail(
+      "GIT_INCOMING_COMMITS_FAILED",
+      "GitHubの受信予定の変更を確認できませんでした。",
+      error instanceof Error ? error.message : String(error)
+    );
+  }
+}
+
+export async function readGitSyncPreview(workspacePath: string): Promise<RelicResult<GitSyncPreview>> {
+  const fetchResult = await fetchGitRemote(workspacePath);
+
+  if (!fetchResult.ok) {
+    return fetchResult;
+  }
+
+  const [workingChanges, incomingCommits] = await Promise.all([
+    readGitWorkingChanges(workspacePath),
+    readGitIncomingCommits(workspacePath)
+  ]);
+
+  if (!workingChanges.ok) {
+    return workingChanges;
+  }
+
+  if (!incomingCommits.ok) {
+    return incomingCommits;
+  }
+
+  return ok({
+    incomingCommits: incomingCommits.value,
+    outgoingChanges: workingChanges.value
+  });
+}
+
+const CONFLICT_START_RE = /^<<<<<<< /m;
+
+function resolveConflictSide(content: string, side: "ours" | "theirs"): string {
+  return content.replace(
+    /<<<<<<< [^\n]*\n([\s\S]*?)=======\n([\s\S]*?)>>>>>>> [^\n]*\n?/g,
+    (_match, ours: string, theirs: string) => side === "ours" ? ours : theirs
+  );
+}
+
+export async function readGitConflicts(workspacePath: string): Promise<RelicResult<GitConflict[]>> {
+  try {
+    const status = await readGitStatus(workspacePath);
+
+    if (!status.ok) {
+      return status;
+    }
+
+    if (!status.value.initialized) {
+      return ok([]);
+    }
+
+    const matrix = await git.statusMatrix({ dir: workspacePath, fs });
+    const conflicts: GitConflict[] = [];
+
+    for (const [filePath, head, workdir] of matrix) {
+      if (head === 0 || workdir === 0) {
+        continue;
+      }
+
+      const fullPath = path.join(workspacePath, filePath);
+
+      try {
+        const content = await fs.promises.readFile(fullPath, "utf8");
+
+        if (!CONFLICT_START_RE.test(content)) {
+          continue;
+        }
+
+        conflicts.push({
+          ours: resolveConflictSide(content, "ours"),
+          path: filePath,
+          theirs: resolveConflictSide(content, "theirs")
+        });
+      } catch {
+        // skip unreadable files
+      }
+    }
+
+    return ok(conflicts);
+  } catch (error) {
+    return fail(
+      "GIT_CONFLICTS_FAILED",
+      "コンフリクトファイルを確認できませんでした。",
+      error instanceof Error ? error.message : String(error)
+    );
+  }
+}
+
+export async function resolveGitConflict(
+  workspacePath: string,
+  input: ResolveGitConflictInput
+): Promise<RelicResult<GitConflict[]>> {
+  try {
+    const filePath = path.join(workspacePath, input.path);
+    const content = await fs.promises.readFile(filePath, "utf8");
+    const resolved = resolveConflictSide(content, input.resolution);
+    await fs.promises.writeFile(filePath, resolved, "utf8");
+
+    return readGitConflicts(workspacePath);
+  } catch (error) {
+    return fail(
+      "GIT_CONFLICT_RESOLVE_FAILED",
+      "コンフリクトを解決できませんでした。",
+      error instanceof Error ? error.message : String(error)
+    );
+  }
+}
+
+export async function autoCommitAndPush(
+  workspacePath: string,
+  login: string,
+  accessToken: string
+): Promise<RelicResult<GitRemoteSyncResult>> {
+  const changes = await readGitWorkingChanges(workspacePath);
+
+  if (!changes.ok) {
+    return changes;
+  }
+
+  if (changes.value.length > 0) {
+    const now = new Date().toLocaleString("ja-JP", {
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      month: "2-digit",
+      year: "numeric"
+    });
+
+    const commitResult = await createGitCommit(workspacePath, {
+      authorEmail: `${login}@users.noreply.github.com`,
+      authorName: login,
+      message: `Update notes: ${now}`
+    });
+
+    if (!commitResult.ok) {
+      return commitResult;
+    }
+  }
+
+  try {
+    const status = await readGitStatus(workspacePath);
+
+    if (!status.ok || !status.value.currentBranch) {
+      return fail("GIT_PUSH_FAILED", "現在のブランチを確認できませんでした。");
+    }
+
+    const result = await git.push({
+      dir: workspacePath,
+      fs,
+      http,
+      onAuth: () => toGitAuth(accessToken),
+      ref: status.value.currentBranch,
+      remote: "origin",
+      remoteRef: status.value.currentBranch
+    });
+
+    return ok({
+      errors: pushResultErrors(result),
+      message: "自動同期: GitHubへ送信しました。",
+      updatedRefs: pushResultUpdatedRefs(result)
+    });
+  } catch (error) {
+    return fail(
+      "GIT_PUSH_FAILED",
+      "自動同期: GitHubへ送信できませんでした。",
+      error instanceof Error ? error.message : String(error)
+    );
+  }
 }
