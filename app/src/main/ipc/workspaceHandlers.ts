@@ -6,6 +6,8 @@ import { app, dialog, ipcMain, shell } from "electron";
 import {
   createFolderChannel,
   type CreateFolderInput,
+  createGitCommitChannel,
+  type CreateGitCommitInput,
   createLinkedMarkdownFileChannel,
   type CreateLinkedMarkdownFileInput,
   createMarkdownFileChannel,
@@ -14,7 +16,9 @@ import {
   type DuplicateMarkdownFileInput,
   getBacklinksChannel,
   type GetBacklinksInput,
+  getGitCommitHistoryChannel,
   getGitStatusChannel,
+  getGitWorkingChangesChannel,
   getWorkspaceTagsChannel,
   getWorkspaceStateChannel,
   initializeGitRepositoryChannel,
@@ -41,6 +45,8 @@ import {
   switchWorkspaceChannel,
   type SwitchWorkspaceInput,
   type GitStatus,
+  type GitCommitSummary,
+  type GitWorkingChange,
   type WorkspaceState,
   getFrontmatterCandidatesChannel,
   createFrontmatterTemplateChannel
@@ -49,7 +55,13 @@ import { fail, ok, type RelicResult } from "../../shared/result";
 import { readBacklinks } from "../files/backlinks";
 import { readWorkspaceFileTree } from "../files/fileTree";
 import { createFolder, moveFolder, renameFolder } from "../files/folders";
-import { initializeGitRepository, readGitStatus } from "../files/git";
+import {
+  createGitCommit,
+  initializeGitRepository,
+  readGitCommitHistory,
+  readGitStatus,
+  readGitWorkingChanges
+} from "../files/git";
 import {
   createMarkdownFileAtPath,
   createMarkdownFile,
@@ -120,6 +132,44 @@ export function registerWorkspaceHandlers(): void {
       return fail(
         "GIT_STATUS_FAILED",
         "Git状態を取得できませんでした。",
+        error instanceof Error ? error.message : String(error)
+      );
+    }
+  });
+
+  ipcMain.handle(getGitWorkingChangesChannel, async (): Promise<RelicResult<GitWorkingChange[]>> => {
+    try {
+      const settings = await readAppSettings(app.getPath("userData"));
+      const state = toWorkspaceState(settings);
+
+      if (!state.activeWorkspace) {
+        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
+      }
+
+      return readGitWorkingChanges(state.activeWorkspace.path);
+    } catch (error) {
+      return fail(
+        "GIT_WORKING_CHANGES_FAILED",
+        "変更一覧を取得できませんでした。",
+        error instanceof Error ? error.message : String(error)
+      );
+    }
+  });
+
+  ipcMain.handle(getGitCommitHistoryChannel, async (): Promise<RelicResult<GitCommitSummary[]>> => {
+    try {
+      const settings = await readAppSettings(app.getPath("userData"));
+      const state = toWorkspaceState(settings);
+
+      if (!state.activeWorkspace) {
+        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
+      }
+
+      return readGitCommitHistory(state.activeWorkspace.path);
+    } catch (error) {
+      return fail(
+        "GIT_HISTORY_FAILED",
+        "コミット履歴を取得できませんでした。",
         error instanceof Error ? error.message : String(error)
       );
     }
@@ -694,6 +744,29 @@ export function registerWorkspaceHandlers(): void {
     }
   });
 
+  ipcMain.handle(createGitCommitChannel, async (_event, input: CreateGitCommitInput): Promise<RelicResult<GitCommitSummary>> => {
+    try {
+      if (!isCreateGitCommitInput(input)) {
+        return fail("GIT_COMMIT_INVALID_INPUT", "コミットに必要な情報を入力してください。");
+      }
+
+      const settings = await readAppSettings(app.getPath("userData"));
+      const state = toWorkspaceState(settings);
+
+      if (!state.activeWorkspace) {
+        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
+      }
+
+      return createGitCommit(state.activeWorkspace.path, input);
+    } catch (error) {
+      return fail(
+        "GIT_COMMIT_FAILED",
+        "コミットを作成できませんでした。",
+        error instanceof Error ? error.message : String(error)
+      );
+    }
+  });
+
   ipcMain.handle(
     switchWorkspaceChannel,
     async (_event, input: SwitchWorkspaceInput): Promise<RelicResult<WorkspaceState>> => {
@@ -871,5 +944,18 @@ function isSearchWorkspaceInput(input: unknown): input is SearchWorkspaceInput {
       (input as { mode?: unknown }).mode === "tag" ||
       (input as { mode?: unknown }).mode === "regex" ||
       (input as { mode?: unknown }).mode === "frontmatter")
+  );
+}
+
+function isCreateGitCommitInput(input: unknown): input is CreateGitCommitInput {
+  return (
+    typeof input === "object" &&
+    input !== null &&
+    "authorEmail" in input &&
+    "authorName" in input &&
+    "message" in input &&
+    typeof (input as { authorEmail?: unknown }).authorEmail === "string" &&
+    typeof (input as { authorName?: unknown }).authorName === "string" &&
+    typeof (input as { message?: unknown }).message === "string"
   );
 }

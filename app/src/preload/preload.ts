@@ -3,13 +3,16 @@ import { contextBridge, ipcRenderer } from "electron";
 import {
   applySearchAndReplaceChannel,
   createFolderChannel,
+  createGitCommitChannel,
   createLinkedMarkdownFileChannel,
   createMarkdownFileChannel,
   duplicateMarkdownFileChannel,
   getBacklinksChannel,
   getAppInfoChannel,
+  getGitCommitHistoryChannel,
   getEditorSettingsChannel,
   getGitStatusChannel,
+  getGitWorkingChangesChannel,
   getWorkspaceTagsChannel,
   getWorkspaceStateChannel,
   initializeGitRepositoryChannel,
@@ -30,13 +33,16 @@ import {
   createFrontmatterTemplateChannel,
   type AppInfo,
   type CreateFolderInput,
+  type CreateGitCommitInput,
   type CreateLinkedMarkdownFileInput,
   type CreateLinkedMarkdownFileResult,
   type CreateMarkdownFileInput,
   type DuplicateMarkdownFileInput,
   type EditorSettings,
   type Backlink,
+  type GitCommitSummary,
   type GitStatus,
+  type GitWorkingChange,
   type GetBacklinksInput,
   type MarkdownFileContent,
   type MoveFolderInput,
@@ -65,6 +71,8 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(applySearchAndReplaceChannel, input) as Promise<RelicResult<ReplaceInFileResult>>,
   createFolder: (input: CreateFolderInput) =>
     ipcRenderer.invoke(createFolderChannel, input) as Promise<RelicResult<WorkspaceState>>,
+  createGitCommit: (input: CreateGitCommitInput) =>
+    ipcRenderer.invoke(createGitCommitChannel, input) as Promise<RelicResult<GitCommitSummary>>,
   createLinkedMarkdownFile: (input: CreateLinkedMarkdownFileInput) =>
     ipcRenderer.invoke(createLinkedMarkdownFileChannel, input) as Promise<
       RelicResult<CreateLinkedMarkdownFileResult>
@@ -77,8 +85,12 @@ const relicApi: RelicApi = {
     >,
   getBacklinks: (input: GetBacklinksInput) =>
     ipcRenderer.invoke(getBacklinksChannel, input) as Promise<RelicResult<Backlink[]>>,
+  getGitCommitHistory: () =>
+    ipcRenderer.invoke(getGitCommitHistoryChannel) as Promise<RelicResult<GitCommitSummary[]>>,
   getGitStatus: () =>
     ipcRenderer.invoke(getGitStatusChannel) as Promise<RelicResult<GitStatus>>,
+  getGitWorkingChanges: () =>
+    ipcRenderer.invoke(getGitWorkingChangesChannel) as Promise<RelicResult<GitWorkingChange[]>>,
   getAppInfo: () => ipcRenderer.invoke(getAppInfoChannel) as Promise<RelicResult<AppInfo>>,
   getEditorSettings: () =>
     ipcRenderer.invoke(getEditorSettingsChannel) as Promise<RelicResult<EditorSettings>>,

@@ -7,9 +7,12 @@ export const createMarkdownFileChannel = "workspace:createMarkdownFile";
 export const duplicateMarkdownFileChannel = "workspace:duplicateMarkdownFile";
 export const getBacklinksChannel = "workspace:getBacklinks";
 export const getGitStatusChannel = "workspace:getGitStatus";
+export const getGitCommitHistoryChannel = "workspace:getGitCommitHistory";
+export const getGitWorkingChangesChannel = "workspace:getGitWorkingChanges";
 export const getWorkspaceTagsChannel = "workspace:getTags";
 export const getWorkspaceStateChannel = "workspace:getState";
 export const initializeGitRepositoryChannel = "workspace:initializeGitRepository";
+export const createGitCommitChannel = "workspace:createGitCommit";
 export const moveItemToTrashChannel = "workspace:moveItemToTrash";
 export const openWorkspaceChannel = "workspace:open";
 export const readMarkdownFileChannel = "workspace:readMarkdownFile";
@@ -153,6 +156,25 @@ export interface GitStatus {
   initialized: boolean;
 }
 
+export interface GitWorkingChange {
+  path: string;
+  status: "added" | "deleted" | "modified" | "untracked";
+}
+
+export interface GitCommitSummary {
+  author: string;
+  changedFiles: string[];
+  date: string;
+  hash: string;
+  message: string;
+}
+
+export interface CreateGitCommitInput {
+  authorEmail: string;
+  authorName: string;
+  message: string;
+}
+
 export interface WorkspaceSearchResult {
   fileName: string;
   lineNumber: number | null;
@@ -210,6 +232,7 @@ export interface WorkspaceFileNode {
 
 export interface RelicApi {
   createFolder: (input: CreateFolderInput) => Promise<RelicResult<WorkspaceState>>;
+  createGitCommit: (input: CreateGitCommitInput) => Promise<RelicResult<GitCommitSummary>>;
   createLinkedMarkdownFile: (
     input: CreateLinkedMarkdownFileInput
   ) => Promise<RelicResult<CreateLinkedMarkdownFileResult>>;
@@ -218,7 +241,9 @@ export interface RelicApi {
     input: DuplicateMarkdownFileInput
   ) => Promise<RelicResult<RenameMarkdownFileResult>>;
   getBacklinks: (input: GetBacklinksInput) => Promise<RelicResult<Backlink[]>>;
+  getGitCommitHistory: () => Promise<RelicResult<GitCommitSummary[]>>;
   getGitStatus: () => Promise<RelicResult<GitStatus>>;
+  getGitWorkingChanges: () => Promise<RelicResult<GitWorkingChange[]>>;
   getAppInfo: () => Promise<RelicResult<AppInfo>>;
   getEditorSettings: () => Promise<RelicResult<EditorSettings>>;
   getWorkspaceTags: () => Promise<RelicResult<WorkspaceTagSummary[]>>;
