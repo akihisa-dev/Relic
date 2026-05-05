@@ -4,6 +4,8 @@ import path from "node:path";
 import { app, dialog, ipcMain, shell } from "electron";
 
 import {
+  cloneGitHubRepositoryChannel,
+  type CloneGitHubRepositoryInput,
   connectGitRemoteChannel,
   type ConnectGitRemoteInput,
   createFolderChannel,
@@ -22,13 +24,16 @@ import {
   type DeleteGitTagInput,
   duplicateMarkdownFileChannel,
   type DuplicateMarkdownFileInput,
+  getAutoSyncSettingsChannel,
   getBacklinksChannel,
   type GetBacklinksInput,
   getGitBranchesChannel,
   getGitCommitHistoryChannel,
   getGitCommitDiffChannel,
+  getGitConflictsChannel,
   getGitRemotesChannel,
   getGitStatusChannel,
+  getGitSyncPreviewChannel,
   getGitTagsChannel,
   getGitWorkingChangesChannel,
   getWorkspaceTagsChannel,
@@ -47,16 +52,22 @@ import {
   type RenameFolderInput,
   renameMarkdownFileChannel,
   type RenameMarkdownFileInput,
+  resolveGitConflictChannel,
+  type ResolveGitConflictInput,
   applySearchAndReplaceChannel,
   replaceInFileChannel,
   type ReplaceInFileInput,
+  saveAutoSyncSettingsChannel,
+  type AutoSyncSettings,
   searchAndReplaceChannel,
   type SearchAndReplaceInput,
   searchWorkspaceChannel,
   type SearchWorkspaceInput,
   switchWorkspaceChannel,
   type SwitchWorkspaceInput,
+  type GitConflict,
   type GitStatus,
+  type GitSyncPreview,
   switchGitBranchChannel,
   type SwitchGitBranchInput,
   type GitCommitSummary,
@@ -79,6 +90,7 @@ import { readBacklinks } from "../files/backlinks";
 import { readWorkspaceFileTree } from "../files/fileTree";
 import { createFolder, moveFolder, renameFolder } from "../files/folders";
 import {
+  cloneGitHubRepository,
   createGitBranch,
   createGitCommit,
   createGitTag,
@@ -91,10 +103,13 @@ import {
   readGitBranches,
   readGitCommitDiff,
   readGitCommitHistory,
+  readGitConflicts,
   readGitRemotes,
   readGitStatus,
+  readGitSyncPreview,
   readGitTags,
   readGitWorkingChanges,
+  resolveGitConflict,
   switchGitBranch
 } from "../files/git";
 import {
@@ -1094,6 +1109,153 @@ export function registerWorkspaceHandlers(): void {
       }
     }
   );
+
+  ipcMain.handle(
+    cloneGitHubRepositoryChannel,
+    async (_event, input: CloneGitHubRepositoryInput): Promise<RelicResult<WorkspaceState>> => {
+      try {
+        if (!isCloneGitHubRepositoryInput(input)) {
+          return fail("GIT_CLONE_INVALID_INPUT", "GitHubリポジトリのURLを入力してください。");
+        }
+
+        const selection = await dialog.showOpenDialog({
+          buttonLabel: "ここにクローン",
+          message: "クローン先のフォルダを選んでください。",
+          properties: ["openDirectory", "createDirectory"]
+        });
+
+        if (selection.canceled || selection.filePaths.length === 0) {
+          const settings = await readAppSettings(app.getPath("userData"));
+
+          return ok(await buildWorkspaceState(settings));
+        }
+
+        const parentDir = selection.filePaths[0];
+        const repoName =
+          input.url.split("/").at(-1)?.replace(/\.git$/, "") ?? "repo";
+        const destinationPath = path.join(parentDir, repoName);
+
+        const cloneResult = await cloneGitHubRepository(input.url, destinationPath);
+
+        if (!cloneResult.ok) {
+          return cloneResult;
+        }
+
+        const workspace = createWorkspaceSummary(destinationPath);
+        const settings = await readAppSettings(app.getPath("userData"));
+        const nextSettings = addOrActivateWorkspace(settings, workspace);
+        await writeAppSettings(app.getPath("userData"), nextSettings);
+
+        return ok(await buildWorkspaceState(nextSettings));
+      } catch (error) {
+        return fail(
+          "GIT_CLONE_FAILED",
+          "クローンできませんでした。URLとGitHub接続を確認してください。",
+          error instanceof Error ? error.message : String(error)
+        );
+      }
+    }
+  );
+
+  ipcMain.handle(getGitSyncPreviewChannel, async (): Promise<RelicResult<GitSyncPreview>> => {
+    try {
+      const settings = await readAppSettings(app.getPath("userData"));
+      const state = toWorkspaceState(settings);
+
+      if (!state.activeWorkspace) {
+        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
+      }
+
+      return readGitSyncPreview(state.activeWorkspace.path);
+    } catch (error) {
+      return fail(
+        "GIT_SYNC_PREVIEW_FAILED",
+        "同期プレビューを取得できませんでした。",
+        error instanceof Error ? error.message : String(error)
+      );
+    }
+  });
+
+  ipcMain.handle(getGitConflictsChannel, async (): Promise<RelicResult<GitConflict[]>> => {
+    try {
+      const settings = await readAppSettings(app.getPath("userData"));
+      const state = toWorkspaceState(settings);
+
+      if (!state.activeWorkspace) {
+        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
+      }
+
+      return readGitConflicts(state.activeWorkspace.path);
+    } catch (error) {
+      return fail(
+        "GIT_CONFLICTS_FAILED",
+        "コンフリクト情報を取得できませんでした。",
+        error instanceof Error ? error.message : String(error)
+      );
+    }
+  });
+
+  ipcMain.handle(
+    resolveGitConflictChannel,
+    async (_event, input: ResolveGitConflictInput): Promise<RelicResult<GitConflict[]>> => {
+      try {
+        if (!isResolveGitConflictInput(input)) {
+          return fail("GIT_CONFLICT_INVALID_INPUT", "解決するファイルと方法を指定してください。");
+        }
+
+        const settings = await readAppSettings(app.getPath("userData"));
+        const state = toWorkspaceState(settings);
+
+        if (!state.activeWorkspace) {
+          return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
+        }
+
+        return resolveGitConflict(state.activeWorkspace.path, input);
+      } catch (error) {
+        return fail(
+          "GIT_CONFLICT_RESOLVE_FAILED",
+          "コンフリクトを解決できませんでした。",
+          error instanceof Error ? error.message : String(error)
+        );
+      }
+    }
+  );
+
+  ipcMain.handle(getAutoSyncSettingsChannel, async (): Promise<RelicResult<AutoSyncSettings>> => {
+    try {
+      const settings = await readAppSettings(app.getPath("userData"));
+
+      return ok(settings.autoSync);
+    } catch (error) {
+      return fail(
+        "AUTO_SYNC_SETTINGS_FAILED",
+        "自動同期設定を読み込めませんでした。",
+        error instanceof Error ? error.message : String(error)
+      );
+    }
+  });
+
+  ipcMain.handle(
+    saveAutoSyncSettingsChannel,
+    async (_event, input: AutoSyncSettings): Promise<RelicResult<void>> => {
+      try {
+        if (!isAutoSyncSettings(input)) {
+          return fail("AUTO_SYNC_INVALID_INPUT", "自動同期設定の値が正しくありません。");
+        }
+
+        const settings = await readAppSettings(app.getPath("userData"));
+        await writeAppSettings(app.getPath("userData"), { ...settings, autoSync: input });
+
+        return ok(undefined);
+      } catch (error) {
+        return fail(
+          "AUTO_SYNC_SAVE_FAILED",
+          "自動同期設定を保存できませんでした。",
+          error instanceof Error ? error.message : String(error)
+        );
+      }
+    }
+  );
 }
 
 async function buildWorkspaceState(
@@ -1308,5 +1470,41 @@ function isPushGitTagInput(input: unknown): input is PushGitTagInput {
     input !== null &&
     "name" in input &&
     typeof (input as { name?: unknown }).name === "string"
+  );
+}
+
+function isCloneGitHubRepositoryInput(input: unknown): input is CloneGitHubRepositoryInput {
+  return (
+    typeof input === "object" &&
+    input !== null &&
+    "url" in input &&
+    typeof (input as { url?: unknown }).url === "string"
+  );
+}
+
+function isResolveGitConflictInput(input: unknown): input is ResolveGitConflictInput {
+  return (
+    typeof input === "object" &&
+    input !== null &&
+    "path" in input &&
+    "resolution" in input &&
+    typeof (input as { path?: unknown }).path === "string" &&
+    ((input as { resolution?: unknown }).resolution === "ours" ||
+      (input as { resolution?: unknown }).resolution === "theirs")
+  );
+}
+
+function isAutoSyncSettings(input: unknown): input is AutoSyncSettings {
+  const validIntervals = [5, 15, 30, 60];
+
+  return (
+    typeof input === "object" &&
+    input !== null &&
+    "autoPull" in input &&
+    "autoPush" in input &&
+    "intervalMinutes" in input &&
+    typeof (input as { autoPull?: unknown }).autoPull === "boolean" &&
+    typeof (input as { autoPush?: unknown }).autoPush === "boolean" &&
+    validIntervals.includes((input as { intervalMinutes?: unknown }).intervalMinutes as number)
   );
 }

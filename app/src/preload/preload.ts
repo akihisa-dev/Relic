@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer } from "electron";
 
 import {
   applySearchAndReplaceChannel,
+  cloneGitHubRepositoryChannel,
   connectGitRemoteChannel,
   connectGitHubChannel,
   createFolderChannel,
@@ -13,13 +14,16 @@ import {
   disconnectGitHubChannel,
   deleteGitTagChannel,
   duplicateMarkdownFileChannel,
+  getAutoSyncSettingsChannel,
   getBacklinksChannel,
   getAppInfoChannel,
   getGitHubAuthStatusChannel,
   getGitBranchesChannel,
   getGitCommitHistoryChannel,
   getGitCommitDiffChannel,
+  getGitConflictsChannel,
   getGitRemotesChannel,
+  getGitSyncPreviewChannel,
   getGitTagsChannel,
   getEditorSettingsChannel,
   getGitStatusChannel,
@@ -38,6 +42,8 @@ import {
   renameFolderChannel,
   renameMarkdownFileChannel,
   replaceInFileChannel,
+  resolveGitConflictChannel,
+  saveAutoSyncSettingsChannel,
   saveEditorSettingsChannel,
   searchAndReplaceChannel,
   searchWorkspaceChannel,
@@ -47,6 +53,8 @@ import {
   getFrontmatterCandidatesChannel,
   createFrontmatterTemplateChannel,
   type AppInfo,
+  type AutoSyncSettings,
+  type CloneGitHubRepositoryInput,
   type ConnectGitRemoteInput,
   type CreateFolderInput,
   type CreateGitBranchInput,
@@ -62,10 +70,12 @@ import {
   type GitCommitDiff,
   type GitBranchSummary,
   type GitCommitSummary,
+  type GitConflict,
   type GitHubAuthStatus,
   type GitRemoteSummary,
   type GitRemoteSyncResult,
   type GitStatus,
+  type GitSyncPreview,
   type GitTagSummary,
   type GitWorkingChange,
   type GetBacklinksInput,
@@ -81,6 +91,7 @@ import {
   type RenameMarkdownFileResult,
   type ReplaceInFileInput,
   type ReplaceInFileResult,
+  type ResolveGitConflictInput,
   type SearchAndReplaceInput,
   type SearchAndReplaceMatch,
   type SearchWorkspaceInput,
@@ -96,6 +107,8 @@ import type { RelicResult } from "../shared/result";
 const relicApi: RelicApi = {
   applySearchAndReplace: (input: SearchAndReplaceInput) =>
     ipcRenderer.invoke(applySearchAndReplaceChannel, input) as Promise<RelicResult<ReplaceInFileResult>>,
+  cloneGitHubRepository: (input: CloneGitHubRepositoryInput) =>
+    ipcRenderer.invoke(cloneGitHubRepositoryChannel, input) as Promise<RelicResult<WorkspaceState>>,
   connectGitRemote: (input: ConnectGitRemoteInput) =>
     ipcRenderer.invoke(connectGitRemoteChannel, input) as Promise<RelicResult<GitRemoteSummary[]>>,
   connectGitHubAccount: () =>
@@ -194,7 +207,17 @@ const relicApi: RelicApi = {
   getFrontmatterCandidates: () =>
     ipcRenderer.invoke(getFrontmatterCandidatesChannel) as Promise<RelicResult<Record<string, string[]>>>,
   createFrontmatterTemplate: () =>
-    ipcRenderer.invoke(createFrontmatterTemplateChannel) as Promise<RelicResult<WorkspaceState>>
+    ipcRenderer.invoke(createFrontmatterTemplateChannel) as Promise<RelicResult<WorkspaceState>>,
+  getGitSyncPreview: () =>
+    ipcRenderer.invoke(getGitSyncPreviewChannel) as Promise<RelicResult<GitSyncPreview>>,
+  getGitConflicts: () =>
+    ipcRenderer.invoke(getGitConflictsChannel) as Promise<RelicResult<GitConflict[]>>,
+  resolveGitConflict: (input: ResolveGitConflictInput) =>
+    ipcRenderer.invoke(resolveGitConflictChannel, input) as Promise<RelicResult<GitConflict[]>>,
+  getAutoSyncSettings: () =>
+    ipcRenderer.invoke(getAutoSyncSettingsChannel) as Promise<RelicResult<AutoSyncSettings>>,
+  saveAutoSyncSettings: (input: AutoSyncSettings) =>
+    ipcRenderer.invoke(saveAutoSyncSettingsChannel, input) as Promise<RelicResult<void>>
 };
 
 contextBridge.exposeInMainWorld("relic", relicApi);

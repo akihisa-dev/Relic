@@ -3,14 +3,17 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactElement } from "react";
 
 import type {
+  AutoSyncSettings,
   Backlink,
   GitCommitDiff,
   GitBranchSummary,
+  GitConflict,
   EditorSettings,
   GitCommitSummary,
   GitHubAuthStatus,
   GitRemoteSummary,
   GitStatus,
+  GitSyncPreview,
   GitTagSummary,
   GitWorkingChange,
   MarkdownFileContent,
@@ -21,6 +24,7 @@ import type {
   WorkspaceTagSummary,
   WorkspaceTreeNode
 } from "../shared/ipc";
+import { defaultAutoSyncSettings } from "../shared/ipc";
 import { resolveWikiLinkPath, resolveWikiLinks } from "../shared/links";
 import { CommandPalette, type Command } from "./components/CommandPalette";
 import { Editor } from "./components/Editor";
@@ -538,23 +542,38 @@ function FilesSidebar({
 
 function SettingsSidebar({
   settings,
+  autoSyncSettings,
   onCreateFrontmatterTemplate,
-  onSave
+  onSave,
+  onAutoSyncSave
 }: {
   settings: EditorSettings;
+  autoSyncSettings: AutoSyncSettings;
   onCreateFrontmatterTemplate: () => void;
   onSave: (s: EditorSettings) => void;
+  onAutoSyncSave: (s: AutoSyncSettings) => void;
 }): ReactElement {
   const [draft, setDraft] = useState<EditorSettings>(settings);
+  const [autoSyncDraft, setAutoSyncDraft] = useState<AutoSyncSettings>(autoSyncSettings);
 
   useEffect(() => {
     setDraft(settings);
   }, [settings]);
 
+  useEffect(() => {
+    setAutoSyncDraft(autoSyncSettings);
+  }, [autoSyncSettings]);
+
   const update = <K extends keyof EditorSettings>(key: K, value: EditorSettings[K]): void => {
     const next = { ...draft, [key]: value };
     setDraft(next);
     onSave(next);
+  };
+
+  const updateAutoSync = <K extends keyof AutoSyncSettings>(key: K, value: AutoSyncSettings[K]): void => {
+    const next = { ...autoSyncDraft, [key]: value };
+    setAutoSyncDraft(next);
+    onAutoSyncSave(next);
   };
 
   return (
@@ -627,6 +646,37 @@ function SettingsSidebar({
           frontmatter.md を作成
         </button>
       </div>
+      <div className="links-panel-subheading" style={{ marginTop: "1rem" }}>自動同期</div>
+      <label className="setting-row">
+        <input
+          checked={autoSyncDraft.autoPull}
+          onChange={(e) => updateAutoSync("autoPull", e.target.checked)}
+          type="checkbox"
+        />
+        <span>自動プル</span>
+      </label>
+      <label className="setting-row">
+        <input
+          checked={autoSyncDraft.autoPush}
+          onChange={(e) => updateAutoSync("autoPush", e.target.checked)}
+          type="checkbox"
+        />
+        <span>自動プッシュ</span>
+      </label>
+      <label className="setting-row">
+        <span>同期間隔</span>
+        <select
+          aria-label="同期間隔"
+          disabled={!autoSyncDraft.autoPull && !autoSyncDraft.autoPush}
+          onChange={(e) => updateAutoSync("intervalMinutes", Number(e.target.value) as AutoSyncSettings["intervalMinutes"])}
+          value={autoSyncDraft.intervalMinutes}
+        >
+          <option value={5}>5分</option>
+          <option value={15}>15分</option>
+          <option value={30}>30分</option>
+          <option value={60}>60分</option>
+        </select>
+      </label>
     </div>
   );
 }
@@ -834,6 +884,8 @@ export function App(): ReactElement {
   const [newGitTagMessage, setNewGitTagMessage] = useState("");
   const [gitRemoteUrl, setGitRemoteUrl] = useState("");
   const [gitSyncMessage, setGitSyncMessage] = useState<string | null>(null);
+  const [gitErrorMessage, setGitErrorMessage] = useState<string | null>(null);
+  const [gitRetryAction, setGitRetryAction] = useState<(() => void) | null>(null);
   const [pendingGitBranchSwitch, setPendingGitBranchSwitch] = useState<string | null>(null);
   const [gitCommitMessage, setGitCommitMessage] = useState("");
   const [gitAuthorName, setGitAuthorName] = useState("");
@@ -849,6 +901,13 @@ export function App(): ReactElement {
   const [isPushingGitBranch, setIsPushingGitBranch] = useState(false);
   const [pushingGitTagName, setPushingGitTagName] = useState<string | null>(null);
   const [isSwitchingGitBranch, setIsSwitchingGitBranch] = useState(false);
+  const [gitCloneUrl, setGitCloneUrl] = useState("");
+  const [isCloningGitHub, setIsCloningGitHub] = useState(false);
+  const [gitSyncPreview, setGitSyncPreview] = useState<GitSyncPreview | null>(null);
+  const [gitSyncStep, setGitSyncStep] = useState<"push-preview" | "pull-preview" | "pull-fetching" | null>(null);
+  const [gitConflicts, setGitConflicts] = useState<GitConflict[]>([]);
+  const [isResolvingConflict, setIsResolvingConflict] = useState(false);
+  const [autoSyncSettings, setAutoSyncSettings] = useState<AutoSyncSettings>(defaultAutoSyncSettings);
   const [showCommandPalette, setShowCommandPalette] = useState(false);
   const [showQuickSwitcher, setShowQuickSwitcher] = useState(false);
 
@@ -918,6 +977,12 @@ export function App(): ReactElement {
     void window.relic?.getGitHubAuthStatus().then((result) => {
       if (result.ok) {
         setGitHubAuthStatus(result.value);
+      }
+    });
+
+    void window.relic?.getAutoSyncSettings().then((result) => {
+      if (result.ok) {
+        setAutoSyncSettings(result.value);
       }
     });
   }, [setEditorSettings]);
@@ -1596,12 +1661,57 @@ export function App(): ReactElement {
       .finally(() => setIsConnectingGitRemote(false));
   }, [gitRemoteUrl]);
 
-  const handlePushGitBranch = useCallback((): void => {
+  const clearGitMessages = (): void => {
+    setGitSyncMessage(null);
+    setGitErrorMessage(null);
+    setGitRetryAction(null);
+  };
+
+  const handleShowPushPreview = useCallback((): void => {
+    if (!window.relic) return;
+
+    clearGitMessages();
+    setGitSyncStep("pull-fetching");
+
+    void window.relic
+      .getGitSyncPreview()
+      .then((result) => {
+        if (result.ok) {
+          setGitSyncPreview(result.value);
+          setGitSyncStep("push-preview");
+        } else {
+          setGitSyncStep(null);
+          setGitErrorMessage(result.error.message);
+          setGitRetryAction(() => handleShowPushPreview);
+        }
+      });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleShowPullPreview = useCallback((): void => {
+    if (!window.relic) return;
+
+    clearGitMessages();
+    setGitSyncStep("pull-fetching");
+
+    void window.relic
+      .getGitSyncPreview()
+      .then((result) => {
+        if (result.ok) {
+          setGitSyncPreview(result.value);
+          setGitSyncStep("pull-preview");
+        } else {
+          setGitSyncStep(null);
+          setGitErrorMessage(result.error.message);
+          setGitRetryAction(() => handleShowPullPreview);
+        }
+      });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleConfirmPush = useCallback((): void => {
     if (!window.relic) return;
 
     setIsPushingGitBranch(true);
-    setGitSyncMessage(null);
-    setWorkspaceError(null);
+    setGitSyncStep(null);
 
     void window.relic
       .pushGitBranch()
@@ -1610,18 +1720,18 @@ export function App(): ReactElement {
           setGitSyncMessage(result.value.message);
           refreshGitWorkingChanges();
         } else {
-          setWorkspaceError(result.error.message);
+          setGitErrorMessage(result.error.message);
+          setGitRetryAction(() => handleConfirmPush);
         }
       })
       .finally(() => setIsPushingGitBranch(false));
-  }, [refreshGitWorkingChanges]);
+  }, [refreshGitWorkingChanges]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handlePullGitBranch = useCallback((): void => {
+  const handleConfirmPull = useCallback((): void => {
     if (!window.relic) return;
 
     setIsPullingGitBranch(true);
-    setGitSyncMessage(null);
-    setWorkspaceError(null);
+    setGitSyncStep(null);
 
     void window.relic
       .pullGitBranch()
@@ -1630,19 +1740,70 @@ export function App(): ReactElement {
           setGitSyncMessage(result.value.message);
           refreshGitCommitHistory();
           refreshGitWorkingChanges();
+          void window.relic?.getGitConflicts().then((r) => {
+            if (r.ok) setGitConflicts(r.value);
+          });
         } else {
-          setWorkspaceError(result.error.message);
+          setGitErrorMessage(result.error.message);
+          setGitRetryAction(() => handleConfirmPull);
+          void window.relic?.getGitConflicts().then((r) => {
+            if (r.ok) setGitConflicts(r.value);
+          });
         }
       })
       .finally(() => setIsPullingGitBranch(false));
-  }, [refreshGitCommitHistory, refreshGitWorkingChanges]);
+  }, [refreshGitCommitHistory, refreshGitWorkingChanges]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleResolveConflict = useCallback((filePath: string, resolution: "ours" | "theirs"): void => {
+    if (!window.relic) return;
+
+    setIsResolvingConflict(true);
+
+    void window.relic
+      .resolveGitConflict({ path: filePath, resolution })
+      .then((result) => {
+        if (result.ok) {
+          setGitConflicts(result.value);
+          refreshGitWorkingChanges();
+        } else {
+          setGitErrorMessage(result.error.message);
+        }
+      })
+      .finally(() => setIsResolvingConflict(false));
+  }, [refreshGitWorkingChanges]);
+
+  const handleCloneGitHubRepository = useCallback((): void => {
+    if (!window.relic) return;
+
+    setIsCloningGitHub(true);
+    setGitErrorMessage(null);
+
+    void window.relic
+      .cloneGitHubRepository({ url: gitCloneUrl })
+      .then((result) => {
+        if (result.ok) {
+          setWorkspaceState(result.value);
+          setGitCloneUrl("");
+        } else {
+          setGitErrorMessage(result.error.message);
+        }
+      })
+      .finally(() => setIsCloningGitHub(false));
+  }, [gitCloneUrl]);
+
+  const handleSaveAutoSyncSettings = useCallback((settings: AutoSyncSettings): void => {
+    setAutoSyncSettings(settings);
+    void window.relic?.saveAutoSyncSettings(settings);
+  }, []);
+
+  const handlePushGitBranch = (): void => { handleShowPushPreview(); };
+  const handlePullGitBranch = (): void => { handleShowPullPreview(); };
 
   const handlePushGitTag = useCallback((name: string): void => {
     if (!window.relic) return;
 
     setPushingGitTagName(name);
-    setGitSyncMessage(null);
-    setWorkspaceError(null);
+    clearGitMessages();
 
     void window.relic
       .pushGitTag({ name })
@@ -1650,11 +1811,12 @@ export function App(): ReactElement {
         if (result.ok) {
           setGitSyncMessage(result.value.message);
         } else {
-          setWorkspaceError(result.error.message);
+          setGitErrorMessage(result.error.message);
+          setGitRetryAction(() => () => handlePushGitTag(name));
         }
       })
       .finally(() => setPushingGitTagName(null));
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ──────────────────
   // ファイル移動
@@ -2070,26 +2232,175 @@ export function App(): ReactElement {
                       ) : (
                         <div className="empty-note">GitHubリポジトリはまだ接続されていません。</div>
                       )}
-                      <div className="git-branch-warning-actions">
-                        <button
-                          className="replace-btn"
-                          disabled={isPullingGitBranch || !gitHubAuthStatus?.connected || gitRemotes.length === 0}
-                          onClick={handlePullGitBranch}
-                          type="button"
-                        >
-                          {isPullingGitBranch ? "取得中..." : "Pull"}
-                        </button>
-                        <button
-                          className="primary-button"
-                          disabled={isPushingGitBranch || !gitHubAuthStatus?.connected || gitRemotes.length === 0}
-                          onClick={handlePushGitBranch}
-                          type="button"
-                        >
-                          {isPushingGitBranch ? "送信中..." : "Push"}
-                        </button>
-                      </div>
+                      {gitSyncStep === "pull-fetching" ? (
+                        <div className="empty-note">GitHubの変更を確認中...</div>
+                      ) : gitSyncStep === "push-preview" && gitSyncPreview ? (
+                        <div className="git-sync-preview">
+                          <div className="links-panel-subheading">送信する変更</div>
+                          {gitSyncPreview.outgoingChanges.length > 0 ? (
+                            <ul className="search-results">
+                              {gitSyncPreview.outgoingChanges.map((c) => (
+                                <li className="search-result-item" key={c.path}>
+                                  <div className="search-result-button">
+                                    <span className="search-result-title">{c.path}</span>
+                                    <span className="search-result-line">{c.status}</span>
+                                  </div>
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <div className="empty-note">変更はありません。</div>
+                          )}
+                          {gitSyncPreview.incomingCommits.length > 0 ? (
+                            <>
+                              <div className="links-panel-subheading">受信するコミット</div>
+                              <ul className="search-results">
+                                {gitSyncPreview.incomingCommits.map((c) => (
+                                  <li className="search-result-item" key={c.hash}>
+                                    <div className="search-result-button">
+                                      <span className="search-result-title">{c.message}</span>
+                                      <span className="search-result-line">{c.author}</span>
+                                    </div>
+                                  </li>
+                                ))}
+                              </ul>
+                            </>
+                          ) : null}
+                          <div className="git-branch-warning-actions">
+                            <button
+                              className="primary-button"
+                              disabled={isPushingGitBranch}
+                              onClick={handleConfirmPush}
+                              type="button"
+                            >
+                              {isPushingGitBranch ? "送信中..." : "Push実行"}
+                            </button>
+                            <button
+                              className="replace-btn"
+                              onClick={() => setGitSyncStep(null)}
+                              type="button"
+                            >
+                              キャンセル
+                            </button>
+                          </div>
+                        </div>
+                      ) : gitSyncStep === "pull-preview" && gitSyncPreview ? (
+                        <div className="git-sync-preview">
+                          <div className="links-panel-subheading">受信するコミット</div>
+                          {gitSyncPreview.incomingCommits.length > 0 ? (
+                            <ul className="search-results">
+                              {gitSyncPreview.incomingCommits.map((c) => (
+                                <li className="search-result-item" key={c.hash}>
+                                  <div className="search-result-button">
+                                    <span className="search-result-title">{c.message}</span>
+                                    <span className="search-result-line">{c.author}</span>
+                                  </div>
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <div className="empty-note">新しいコミットはありません。</div>
+                          )}
+                          {gitSyncPreview.outgoingChanges.length > 0 ? (
+                            <>
+                              <div className="links-panel-subheading">未コミットの変更</div>
+                              <ul className="search-results">
+                                {gitSyncPreview.outgoingChanges.map((c) => (
+                                  <li className="search-result-item" key={c.path}>
+                                    <div className="search-result-button">
+                                      <span className="search-result-title">{c.path}</span>
+                                      <span className="search-result-line">{c.status}</span>
+                                    </div>
+                                  </li>
+                                ))}
+                              </ul>
+                            </>
+                          ) : null}
+                          <div className="git-branch-warning-actions">
+                            <button
+                              className="primary-button"
+                              disabled={isPullingGitBranch}
+                              onClick={handleConfirmPull}
+                              type="button"
+                            >
+                              {isPullingGitBranch ? "取得中..." : "Pull実行"}
+                            </button>
+                            <button
+                              className="replace-btn"
+                              onClick={() => setGitSyncStep(null)}
+                              type="button"
+                            >
+                              キャンセル
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="git-branch-warning-actions">
+                          <button
+                            className="replace-btn"
+                            disabled={isPullingGitBranch || !gitHubAuthStatus?.connected || gitRemotes.length === 0}
+                            onClick={handlePullGitBranch}
+                            type="button"
+                          >
+                            Pull
+                          </button>
+                          <button
+                            className="primary-button"
+                            disabled={isPushingGitBranch || !gitHubAuthStatus?.connected || gitRemotes.length === 0}
+                            onClick={handlePushGitBranch}
+                            type="button"
+                          >
+                            Push
+                          </button>
+                        </div>
+                      )}
                       {gitSyncMessage ? <div className="search-result-line">{gitSyncMessage}</div> : null}
+                      {gitErrorMessage ? (
+                        <div className="git-error-block">
+                          <div className="error-note">{gitErrorMessage}</div>
+                          {gitRetryAction ? (
+                            <button className="replace-btn" onClick={gitRetryAction} type="button">
+                              再試行
+                            </button>
+                          ) : null}
+                        </div>
+                      ) : null}
                     </div>
+                    {gitConflicts.length > 0 ? (
+                      <div className="search-block">
+                        <div className="links-panel-subheading">Conflicts</div>
+                        <div className="error-note">
+                          コンフリクトが発生しています。ファイルごとに解決方法を選んでください。
+                        </div>
+                        <ul className="search-results">
+                          {gitConflicts.map((conflict) => (
+                            <li className="search-result-item" key={conflict.path}>
+                              <div className="search-result-button">
+                                <span className="search-result-title">{conflict.path}</span>
+                              </div>
+                              <div className="git-branch-warning-actions">
+                                <button
+                                  className="replace-btn"
+                                  disabled={isResolvingConflict}
+                                  onClick={() => handleResolveConflict(conflict.path, "ours")}
+                                  type="button"
+                                >
+                                  自分の変更を残す
+                                </button>
+                                <button
+                                  className="replace-btn"
+                                  disabled={isResolvingConflict}
+                                  onClick={() => handleResolveConflict(conflict.path, "theirs")}
+                                  type="button"
+                                >
+                                  リモートの内容を使う
+                                </button>
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : null}
                     <div className="search-block">
                       <div className="links-panel-subheading">Repository</div>
                       <div className="setting-row">
@@ -2366,16 +2677,50 @@ export function App(): ReactElement {
                     </div>
                   </>
                 ) : (
-                  <div className="search-block">
-                    <div className="empty-note">このワークスペースはまだGit管理されていません。</div>
-                    <button className="primary-button" onClick={handleInitializeGitRepository} type="button">
-                      このワークスペースでGitを初期化
-                    </button>
-                  </div>
+                  <>
+                    <div className="search-block">
+                      <div className="empty-note">このワークスペースはまだGit管理されていません。</div>
+                      <button className="primary-button" onClick={handleInitializeGitRepository} type="button">
+                        このワークスペースでGitを初期化
+                      </button>
+                    </div>
+                    {gitHubAuthStatus?.connected ? (
+                      <div className="search-block">
+                        <div className="links-panel-subheading">Clone</div>
+                        <div className="empty-note">
+                          GitHubからリポジトリをクローンして新しいワークスペースとして開きます。
+                        </div>
+                        <form
+                          className="git-branch-form"
+                          onSubmit={(e) => { e.preventDefault(); handleCloneGitHubRepository(); }}
+                        >
+                          <input
+                            aria-label="クローンするGitHubリポジトリURL"
+                            className="text-input"
+                            onChange={(e) => setGitCloneUrl(e.target.value)}
+                            placeholder="https://github.com/owner/repo"
+                            value={gitCloneUrl}
+                          />
+                          <button
+                            className="primary-button"
+                            disabled={isCloningGitHub || !gitCloneUrl.trim()}
+                            type="submit"
+                          >
+                            {isCloningGitHub ? "クローン中..." : "クローンして開く"}
+                          </button>
+                        </form>
+                        {gitErrorMessage ? (
+                          <div className="error-note">{gitErrorMessage}</div>
+                        ) : null}
+                      </div>
+                    ) : null}
+                  </>
                 )}
               </div>
             ) : (
               <SettingsSidebar
+                autoSyncSettings={autoSyncSettings}
+                onAutoSyncSave={handleSaveAutoSyncSettings}
                 onCreateFrontmatterTemplate={handleCreateFrontmatterTemplate}
                 onSave={handleSaveSettings}
                 settings={editorSettings}
