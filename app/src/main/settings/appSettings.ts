@@ -1,15 +1,24 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-import { defaultEditorSettings, type EditorSettings, type WorkspaceSummary } from "../../shared/ipc";
+import {
+  defaultAutoSyncSettings,
+  defaultEditorSettings,
+  type AutoSyncInterval,
+  type AutoSyncSettings,
+  type EditorSettings,
+  type WorkspaceSummary
+} from "../../shared/ipc";
 
 export interface AppSettings {
+  autoSync: AutoSyncSettings;
   editorSettings: EditorSettings;
   lastWorkspaceId: string | null;
   workspaces: WorkspaceSummary[];
 }
 
 const defaultAppSettings: AppSettings = {
+  autoSync: defaultAutoSyncSettings,
   editorSettings: defaultEditorSettings,
   lastWorkspaceId: null,
   workspaces: []
@@ -27,6 +36,7 @@ export async function readAppSettings(userDataPath: string): Promise<AppSettings
     const parsedSettings = JSON.parse(rawSettings) as Partial<AppSettings>;
 
     return {
+      autoSync: parseAutoSyncSettings(parsedSettings.autoSync),
       editorSettings: parseEditorSettings(parsedSettings.editorSettings),
       lastWorkspaceId:
         typeof parsedSettings.lastWorkspaceId === "string" ? parsedSettings.lastWorkspaceId : null,
@@ -65,6 +75,24 @@ function parseEditorSettings(raw: unknown): EditorSettings {
     maxWidth: s.maxWidth === "550px" || s.maxWidth === "800px" || s.maxWidth === "none" ? s.maxWidth : "660px",
     showLineNumbers: typeof s.showLineNumbers === "boolean" ? s.showLineNumbers : false,
     spellCheck: typeof s.spellCheck === "boolean" ? s.spellCheck : true
+  };
+}
+
+function parseAutoSyncSettings(raw: unknown): AutoSyncSettings {
+  if (typeof raw !== "object" || raw === null) {
+    return defaultAutoSyncSettings;
+  }
+
+  const s = raw as Record<string, unknown>;
+  const validIntervals: AutoSyncInterval[] = [5, 15, 30, 60];
+  const interval = validIntervals.includes(s.intervalMinutes as AutoSyncInterval)
+    ? (s.intervalMinutes as AutoSyncInterval)
+    : defaultAutoSyncSettings.intervalMinutes;
+
+  return {
+    autoPull: typeof s.autoPull === "boolean" ? s.autoPull : false,
+    autoPush: typeof s.autoPush === "boolean" ? s.autoPush : false,
+    intervalMinutes: interval
   };
 }
 

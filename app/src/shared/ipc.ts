@@ -45,6 +45,12 @@ export const getEditorSettingsChannel = "editor:getSettings";
 export const saveEditorSettingsChannel = "editor:saveSettings";
 export const getFrontmatterCandidatesChannel = "workspace:getFrontmatterCandidates";
 export const createFrontmatterTemplateChannel = "workspace:createFrontmatterTemplate";
+export const cloneGitHubRepositoryChannel = "workspace:cloneGitHubRepository";
+export const getGitSyncPreviewChannel = "workspace:getGitSyncPreview";
+export const getGitConflictsChannel = "workspace:getGitConflicts";
+export const resolveGitConflictChannel = "workspace:resolveGitConflict";
+export const getAutoSyncSettingsChannel = "app:getAutoSyncSettings";
+export const saveAutoSyncSettingsChannel = "app:saveAutoSyncSettings";
 
 export interface AppInfo {
   name: "Relic";
@@ -259,6 +265,40 @@ export interface PushGitTagInput {
   name: string;
 }
 
+export interface CloneGitHubRepositoryInput {
+  url: string;
+}
+
+export type AutoSyncInterval = 5 | 15 | 30 | 60;
+
+export interface AutoSyncSettings {
+  autoPull: boolean;
+  autoPush: boolean;
+  intervalMinutes: AutoSyncInterval;
+}
+
+export const defaultAutoSyncSettings: AutoSyncSettings = {
+  autoPull: false,
+  autoPush: false,
+  intervalMinutes: 15
+};
+
+export interface GitSyncPreview {
+  incomingCommits: GitCommitSummary[];
+  outgoingChanges: GitWorkingChange[];
+}
+
+export interface GitConflict {
+  ours: string;
+  path: string;
+  theirs: string;
+}
+
+export interface ResolveGitConflictInput {
+  path: string;
+  resolution: "ours" | "theirs";
+}
+
 export interface GitRemoteSyncResult {
   errors: string[];
   message: string;
@@ -321,6 +361,7 @@ export interface WorkspaceFileNode {
 }
 
 export interface RelicApi {
+  cloneGitHubRepository: (input: CloneGitHubRepositoryInput) => Promise<RelicResult<WorkspaceState>>;
   connectGitRemote: (input: ConnectGitRemoteInput) => Promise<RelicResult<GitRemoteSummary[]>>;
   connectGitHubAccount: () => Promise<RelicResult<GitHubAuthStatus>>;
   createFolder: (input: CreateFolderInput) => Promise<RelicResult<WorkspaceState>>;
@@ -376,4 +417,9 @@ export interface RelicApi {
   createFrontmatterTemplate: () => Promise<RelicResult<WorkspaceState>>;
   createGitTag: (input: CreateGitTagInput) => Promise<RelicResult<GitTagSummary[]>>;
   deleteGitTag: (input: DeleteGitTagInput) => Promise<RelicResult<GitTagSummary[]>>;
+  getGitSyncPreview: () => Promise<RelicResult<GitSyncPreview>>;
+  getGitConflicts: () => Promise<RelicResult<GitConflict[]>>;
+  resolveGitConflict: (input: ResolveGitConflictInput) => Promise<RelicResult<GitConflict[]>>;
+  getAutoSyncSettings: () => Promise<RelicResult<AutoSyncSettings>>;
+  saveAutoSyncSettings: (input: AutoSyncSettings) => Promise<RelicResult<void>>;
 }

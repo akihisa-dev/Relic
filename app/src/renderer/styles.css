@@ -346,6 +346,18 @@ button:disabled {
   gap: 8px;
 }
 
+.git-sync-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.git-error-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
 .git-tag-target {
   color: #747981;
   font-size: 12px;

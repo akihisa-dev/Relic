@@ -4,7 +4,7 @@ import path from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import { defaultEditorSettings } from "../../shared/ipc";
+import { defaultAutoSyncSettings, defaultEditorSettings } from "../../shared/ipc";
 import { attachmentsDirectoryName, templatesDirectoryName } from "../../shared/workspace";
 import {
   addOrActivateWorkspace,
@@ -14,7 +14,7 @@ import {
   toWorkspaceState
 } from "./workspaceService";
 
-const baseSettings = { editorSettings: defaultEditorSettings };
+const baseSettings = { autoSync: defaultAutoSyncSettings, editorSettings: defaultEditorSettings };
 
 describe("workspaceService", () => {
   const temporaryPaths: string[] = [];
