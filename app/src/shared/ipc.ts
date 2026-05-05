@@ -16,8 +16,15 @@ export const renameFolderChannel = "workspace:renameFolder";
 export const searchWorkspaceChannel = "workspace:search";
 export const switchWorkspaceChannel = "workspace:switch";
 export const writeMarkdownFileChannel = "workspace:writeMarkdownFile";
+export const moveMarkdownFileChannel = "workspace:moveMarkdownFile";
+export const moveFolderChannel = "workspace:moveFolder";
+export const replaceInFileChannel = "workspace:replaceInFile";
+export const searchAndReplaceChannel = "workspace:searchAndReplace";
+export const applySearchAndReplaceChannel = "workspace:applySearchAndReplace";
 export const getEditorSettingsChannel = "editor:getSettings";
 export const saveEditorSettingsChannel = "editor:saveSettings";
+export const getFrontmatterCandidatesChannel = "workspace:getFrontmatterCandidates";
+export const createFrontmatterTemplateChannel = "workspace:createFrontmatterTemplate";
 
 export interface AppInfo {
   name: "Relic";
@@ -81,6 +88,40 @@ export interface RenameFolderInput {
 export interface MoveItemToTrashInput {
   path: string;
   type: "file" | "folder";
+}
+
+export interface MoveMarkdownFileInput {
+  destinationFolder: string;
+  path: string;
+}
+
+export interface MoveFolderInput {
+  destinationFolder: string;
+  path: string;
+}
+
+export interface ReplaceInFileInput {
+  isRegex: boolean;
+  path: string;
+  replacement: string;
+  searchQuery: string;
+}
+
+export interface SearchAndReplaceMatch {
+  lineNumber: number;
+  lineText: string;
+  newLineText: string;
+  path: string;
+}
+
+export interface SearchAndReplaceInput {
+  isRegex: boolean;
+  replacement: string;
+  searchQuery: string;
+}
+
+export interface ReplaceInFileResult {
+  count: number;
 }
 
 export interface SwitchWorkspaceInput {
@@ -173,15 +214,26 @@ export interface RelicApi {
   getEditorSettings: () => Promise<RelicResult<EditorSettings>>;
   getWorkspaceTags: () => Promise<RelicResult<WorkspaceTagSummary[]>>;
   getWorkspaceState: () => Promise<RelicResult<WorkspaceState>>;
+  moveFolder: (input: MoveFolderInput) => Promise<RelicResult<WorkspaceState>>;
   moveItemToTrash: (input: MoveItemToTrashInput) => Promise<RelicResult<WorkspaceState>>;
+  moveMarkdownFile: (
+    input: MoveMarkdownFileInput
+  ) => Promise<RelicResult<RenameMarkdownFileResult>>;
   openWorkspace: () => Promise<RelicResult<WorkspaceState>>;
   readMarkdownFile: (input: ReadMarkdownFileInput) => Promise<RelicResult<MarkdownFileContent>>;
   renameMarkdownFile: (
     input: RenameMarkdownFileInput
   ) => Promise<RelicResult<RenameMarkdownFileResult>>;
   renameFolder: (input: RenameFolderInput) => Promise<RelicResult<WorkspaceState>>;
+  applySearchAndReplace: (input: SearchAndReplaceInput) => Promise<RelicResult<ReplaceInFileResult>>;
+  replaceInFile: (input: ReplaceInFileInput) => Promise<RelicResult<ReplaceInFileResult>>;
   saveEditorSettings: (input: EditorSettings) => Promise<RelicResult<void>>;
+  searchAndReplace: (
+    input: SearchAndReplaceInput
+  ) => Promise<RelicResult<SearchAndReplaceMatch[]>>;
   searchWorkspace: (input: SearchWorkspaceInput) => Promise<RelicResult<WorkspaceSearchResult[]>>;
   switchWorkspace: (input: SwitchWorkspaceInput) => Promise<RelicResult<WorkspaceState>>;
   writeMarkdownFile: (input: WriteMarkdownFileInput) => Promise<RelicResult<void>>;
+  getFrontmatterCandidates: () => Promise<RelicResult<Record<string, string[]>>>;
+  createFrontmatterTemplate: () => Promise<RelicResult<WorkspaceState>>;
 }

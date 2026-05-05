@@ -2,7 +2,7 @@ import DOMPurify from "dompurify";
 import hljs from "highlight.js";
 import katex from "katex";
 import { marked, type Renderer } from "marked";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { MouseEvent, ReactElement } from "react";
 
 import type { EditorSettings } from "../../shared/ipc";
@@ -10,9 +10,14 @@ import type { EditorSettings } from "../../shared/ipc";
 interface PreviewProps {
   content: string;
   onChange?: (content: string) => void;
-  onOpenWikiLink?: (target: string) => void;
+  onOpenWikiLink?: (target: string, heading?: string) => void;
+  scrollTargetHeading?: string;
   settings: EditorSettings;
   workspacePath?: string | null;
+}
+
+function slugifyHeading(text: string): string {
+  return text.trim().toLowerCase().replace(/\s+/g, "-").replace(/[^\w-]/g, "");
 }
 
 const fontFamilyMap: Record<EditorSettings["font"], string> = {
@@ -179,6 +184,13 @@ function buildRenderer(workspacePath: string | null | undefined, imageSources: s
     return `<pre><code class="hljs language-${language}">${highlighted}</code></pre>`;
   };
 
+  renderer.heading = ({ depth, text }: { depth: number; text: string }) => {
+    const plainText = text.replace(/<[^>]+>/g, "");
+    const id = slugifyHeading(plainText);
+
+    return `<h${depth} id="${escapeHtml(id)}">${text}</h${depth}>\n`;
+  };
+
   renderer.image = ({ href, title, text }) => {
     const src = resolveAttachmentImageSrc(workspacePath, href);
     const alt = escapeHtml(text ?? "");
@@ -252,7 +264,7 @@ function renderMarkdown(
     '<input checked type="checkbox" class="preview-checkbox">'
   );
   const sanitized = DOMPurify.sanitize(withCheckboxes, {
-    ADD_ATTR: ["checked", "class", "data-target"]
+    ADD_ATTR: ["checked", "class", "data-target", "id"]
   });
 
   return imageSources.reduce(
@@ -290,9 +302,11 @@ export function Preview({
   content,
   onChange,
   onOpenWikiLink,
+  scrollTargetHeading,
   settings,
   workspacePath
 }: PreviewProps): ReactElement {
+  const containerRef = useRef<HTMLDivElement>(null);
   const [embeds, setEmbeds] = useState<Map<string, EmbedState>>(new Map());
 
   useEffect(() => {
@@ -336,6 +350,15 @@ export function Preview({
     return renderMarkdown(content, workspacePath, embeds, true);
   }, [content, embeds, workspacePath]);
 
+  useEffect(() => {
+    if (!scrollTargetHeading || !containerRef.current) return;
+
+    const id = slugifyHeading(scrollTargetHeading);
+    const el = containerRef.current.querySelector<HTMLElement>(`#${id}`);
+
+    el?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [scrollTargetHeading, html]);
+
   const handleClick = useCallback(
     (e: MouseEvent<HTMLDivElement>) => {
       const target = e.target as HTMLElement;
@@ -343,7 +366,15 @@ export function Preview({
 
       if (wikiLink?.dataset.target && onOpenWikiLink) {
         e.preventDefault();
-        onOpenWikiLink(wikiLink.dataset.target);
+        const fullTarget = wikiLink.dataset.target;
+        const hashIndex = fullTarget.indexOf("#");
+
+        if (hashIndex >= 0) {
+          onOpenWikiLink(fullTarget.slice(0, hashIndex), fullTarget.slice(hashIndex + 1));
+        } else {
+          onOpenWikiLink(fullTarget);
+        }
+
         return;
       }
 
@@ -378,6 +409,7 @@ export function Preview({
 
   return (
     <div
+      ref={containerRef}
       className="preview-body"
       dangerouslySetInnerHTML={{ __html: html }}
       onClick={handleClick}

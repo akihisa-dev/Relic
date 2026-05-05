@@ -3,6 +3,7 @@ import path from "node:path";
 
 import type { MarkdownFileContent } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
+import { updateLinksForFileRename } from "./linkUpdater";
 import { validateBaseName } from "./names";
 import { resolveWorkspaceRelativePath } from "./paths";
 
@@ -174,12 +175,62 @@ export async function renameMarkdownFile(
 
   try {
     await rename(absoluteSourcePath.value, absoluteDestinationPath.value);
+    await updateLinksForFileRename(workspacePath, relativePath, nextRelativePath);
 
     return readMarkdownFile(workspacePath, nextRelativePath);
   } catch (error) {
     return fail(
       "FILE_RENAME_FAILED",
       "ファイル名を変更できませんでした。",
+      error instanceof Error ? error.message : String(error)
+    );
+  }
+}
+
+export async function moveMarkdownFile(
+  workspacePath: string,
+  relativePath: string,
+  destinationFolder: string
+): Promise<RelicResult<MarkdownFileContent>> {
+  if (path.extname(relativePath) !== ".md") {
+    return fail("FILE_TYPE_UNSUPPORTED", "Markdownファイルだけを移動できます。");
+  }
+
+  const absoluteSourcePath = resolveWorkspaceRelativePath(workspacePath, relativePath);
+
+  if (!absoluteSourcePath.ok) {
+    return absoluteSourcePath;
+  }
+
+  const normalizedDestFolder = toWorkspaceRelativePath(destinationFolder.trim());
+  const baseName = path.basename(relativePath);
+  const nextRelativePath = toWorkspaceRelativePath(
+    normalizedDestFolder === "" ? baseName : `${normalizedDestFolder}/${baseName}`
+  );
+
+  if (nextRelativePath === relativePath) {
+    return readMarkdownFile(workspacePath, relativePath);
+  }
+
+  const absoluteDestinationPath = resolveWorkspaceRelativePath(workspacePath, nextRelativePath);
+
+  if (!absoluteDestinationPath.ok) {
+    return absoluteDestinationPath;
+  }
+
+  if (await pathExists(absoluteDestinationPath.value)) {
+    return fail("FILE_ALREADY_EXISTS", "移動先に同じ名前のファイルがすでにあります。");
+  }
+
+  try {
+    await rename(absoluteSourcePath.value, absoluteDestinationPath.value);
+    await updateLinksForFileRename(workspacePath, relativePath, nextRelativePath);
+
+    return readMarkdownFile(workspacePath, nextRelativePath);
+  } catch (error) {
+    return fail(
+      "FILE_MOVE_FAILED",
+      "ファイルを移動できませんでした。",
       error instanceof Error ? error.message : String(error)
     );
   }

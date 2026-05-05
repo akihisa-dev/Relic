@@ -29,6 +29,13 @@ function makeRelicApi(overrides: Partial<typeof window.relic> = {}): typeof wind
     searchWorkspace: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     switchWorkspace: vi.fn(),
     writeMarkdownFile: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
+    getFrontmatterCandidates: vi.fn().mockResolvedValue({ ok: true, value: {} }),
+    createFrontmatterTemplate: vi.fn().mockResolvedValue({ ok: true, value: { activeWorkspace: null, fileTree: [], workspaces: [] } }),
+    moveFolder: vi.fn(),
+    moveMarkdownFile: vi.fn(),
+    applySearchAndReplace: vi.fn(),
+    replaceInFile: vi.fn(),
+    searchAndReplace: vi.fn(),
     ...overrides
   } as typeof window.relic;
 }
