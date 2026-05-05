@@ -311,6 +311,41 @@ describe("App", () => {
     expect(await screen.findByText("正規表現が正しくありません。")).toBeInTheDocument();
   });
 
+  it("フロントマター検索で field と値を渡す", async () => {
+    const searchWorkspace = vi.fn().mockResolvedValue({
+      ok: true,
+      value: [{ fileName: "読書メモ", lineNumber: null, lineText: "status: draft", path: "読書メモ.md" }]
+    });
+
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace }),
+      getFrontmatterCandidates: vi.fn().mockResolvedValue({ ok: true, value: { status: ["draft", "published"] } }),
+      searchWorkspace
+    });
+
+    render(<App />);
+
+    fireEvent.click(screen.getByRole("button", { name: "検索" }));
+    fireEvent.change(await screen.findByRole("combobox", { name: "検索モード" }), {
+      target: { value: "frontmatter" }
+    });
+    fireEvent.change(screen.getByLabelText("フロントマターフィールド"), {
+      target: { value: "status" }
+    });
+    fireEvent.change(screen.getAllByLabelText("検索")[1], {
+      target: { value: "draft" }
+    });
+
+    await waitFor(() => {
+      expect(searchWorkspace).toHaveBeenCalledWith({
+        frontmatterField: "status",
+        mode: "frontmatter",
+        query: "draft"
+      });
+    });
+    expect(await screen.findByText("status: draft")).toBeInTheDocument();
+  });
+
   it("右パネルにアウトゴーイングリンクを表示する", async () => {
     const readMarkdownFile = vi.fn(({ path }: { path: string }) => Promise.resolve({
       ok: true as const,

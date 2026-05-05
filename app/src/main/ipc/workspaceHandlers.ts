@@ -115,7 +115,7 @@ export function registerWorkspaceHandlers(): void {
         return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
       }
 
-      return searchWorkspace(state.activeWorkspace.path, input.query, input.mode);
+      return searchWorkspace(state.activeWorkspace.path, input.query, input.mode, input.frontmatterField);
     } catch (error) {
       return fail(
         "SEARCH_FAILED",
@@ -823,9 +823,11 @@ function isSearchWorkspaceInput(input: unknown): input is SearchWorkspaceInput {
     "query" in input &&
     "mode" in input &&
     typeof (input as { query?: unknown }).query === "string" &&
+    (!("frontmatterField" in input) || typeof (input as { frontmatterField?: unknown }).frontmatterField === "string") &&
     ((input as { mode?: unknown }).mode === "fullText" ||
       (input as { mode?: unknown }).mode === "fileName" ||
       (input as { mode?: unknown }).mode === "tag" ||
-      (input as { mode?: unknown }).mode === "regex")
+      (input as { mode?: unknown }).mode === "regex" ||
+      (input as { mode?: unknown }).mode === "frontmatter")
   );
 }
