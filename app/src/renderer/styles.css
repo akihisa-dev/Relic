@@ -1162,6 +1162,17 @@ button:disabled {
   padding: 4px 12px 8px;
 }
 
+.fm-warning {
+  background: rgba(168, 50, 0, 0.08);
+  border: 1px solid rgba(168, 50, 0, 0.24);
+  border-radius: 4px;
+  color: #a83200;
+  font-size: 11px;
+  line-height: 1.5;
+  margin-bottom: 4px;
+  padding: 6px 8px;
+}
+
 .fm-row {
   align-items: center;
   display: flex;
