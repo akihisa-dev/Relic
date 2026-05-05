@@ -16,6 +16,10 @@ function makeRelicApi(overrides: Partial<typeof window.relic> = {}): typeof wind
   };
 
   return {
+    connectGitRemote: vi.fn().mockResolvedValue({
+      ok: true,
+      value: [{ isOrigin: true, name: "origin", url: "https://github.com/akihisa/relic.git" }]
+    }),
     connectGitHubAccount: vi.fn().mockResolvedValue({
       ok: true,
       value: {
@@ -55,6 +59,7 @@ function makeRelicApi(overrides: Partial<typeof window.relic> = {}): typeof wind
     getGitCommitHistory: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     getGitCommitDiff: vi.fn().mockResolvedValue({ ok: true, value: { commit: { author: "Test User", changedFiles: [], date: "2026-05-05T00:00:00.000Z", hash: "abc123", message: "Initial commit" }, entries: [] } }),
     getGitHubAuthStatus: vi.fn().mockResolvedValue({ ok: true, value: defaultGitHubStatus }),
+    getGitRemotes: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     getGitStatus: vi.fn().mockResolvedValue({ ok: true, value: { currentBranch: null, initialized: false } }),
     getGitTags: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     getGitWorkingChanges: vi.fn().mockResolvedValue({ ok: true, value: [] }),
@@ -83,6 +88,9 @@ function makeRelicApi(overrides: Partial<typeof window.relic> = {}): typeof wind
     moveFolder: vi.fn(),
     moveMarkdownFile: vi.fn(),
     initializeGitRepository: vi.fn().mockResolvedValue({ ok: true, value: { currentBranch: "main", initialized: true } }),
+    pullGitBranch: vi.fn().mockResolvedValue({ ok: true, value: { errors: [], message: "pull ok", updatedRefs: ["main"] } }),
+    pushGitBranch: vi.fn().mockResolvedValue({ ok: true, value: { errors: [], message: "push ok", updatedRefs: ["main"] } }),
+    pushGitTag: vi.fn().mockResolvedValue({ ok: true, value: { errors: [], message: "tag ok", updatedRefs: ["v1.0.0"] } }),
     applySearchAndReplace: vi.fn(),
     replaceInFile: vi.fn(),
     searchAndReplace: vi.fn(),
