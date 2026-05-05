@@ -1,6 +1,7 @@
 import { contextBridge, ipcRenderer } from "electron";
 
 import {
+  applySearchAndReplaceChannel,
   createFolderChannel,
   createLinkedMarkdownFileChannel,
   createMarkdownFileChannel,
@@ -10,15 +11,21 @@ import {
   getEditorSettingsChannel,
   getWorkspaceTagsChannel,
   getWorkspaceStateChannel,
+  moveFolderChannel,
   moveItemToTrashChannel,
+  moveMarkdownFileChannel,
   openWorkspaceChannel,
   readMarkdownFileChannel,
   renameFolderChannel,
   renameMarkdownFileChannel,
+  replaceInFileChannel,
   saveEditorSettingsChannel,
+  searchAndReplaceChannel,
   searchWorkspaceChannel,
   switchWorkspaceChannel,
   writeMarkdownFileChannel,
+  getFrontmatterCandidatesChannel,
+  createFrontmatterTemplateChannel,
   type AppInfo,
   type CreateFolderInput,
   type CreateLinkedMarkdownFileInput,
@@ -29,12 +36,18 @@ import {
   type Backlink,
   type GetBacklinksInput,
   type MarkdownFileContent,
+  type MoveFolderInput,
   type MoveItemToTrashInput,
+  type MoveMarkdownFileInput,
   type RelicApi,
   type ReadMarkdownFileInput,
   type RenameFolderInput,
   type RenameMarkdownFileInput,
   type RenameMarkdownFileResult,
+  type ReplaceInFileInput,
+  type ReplaceInFileResult,
+  type SearchAndReplaceInput,
+  type SearchAndReplaceMatch,
   type SearchWorkspaceInput,
   type SwitchWorkspaceInput,
   type WorkspaceState,
@@ -45,6 +58,8 @@ import {
 import type { RelicResult } from "../shared/result";
 
 const relicApi: RelicApi = {
+  applySearchAndReplace: (input: SearchAndReplaceInput) =>
+    ipcRenderer.invoke(applySearchAndReplaceChannel, input) as Promise<RelicResult<ReplaceInFileResult>>,
   createFolder: (input: CreateFolderInput) =>
     ipcRenderer.invoke(createFolderChannel, input) as Promise<RelicResult<WorkspaceState>>,
   createLinkedMarkdownFile: (input: CreateLinkedMarkdownFileInput) =>
@@ -66,8 +81,14 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(getWorkspaceTagsChannel) as Promise<RelicResult<WorkspaceTagSummary[]>>,
   getWorkspaceState: () =>
     ipcRenderer.invoke(getWorkspaceStateChannel) as Promise<RelicResult<WorkspaceState>>,
+  moveFolder: (input: MoveFolderInput) =>
+    ipcRenderer.invoke(moveFolderChannel, input) as Promise<RelicResult<WorkspaceState>>,
   moveItemToTrash: (input: MoveItemToTrashInput) =>
     ipcRenderer.invoke(moveItemToTrashChannel, input) as Promise<RelicResult<WorkspaceState>>,
+  moveMarkdownFile: (input: MoveMarkdownFileInput) =>
+    ipcRenderer.invoke(moveMarkdownFileChannel, input) as Promise<
+      RelicResult<RenameMarkdownFileResult>
+    >,
   openWorkspace: () =>
     ipcRenderer.invoke(openWorkspaceChannel) as Promise<RelicResult<WorkspaceState>>,
   readMarkdownFile: (input: ReadMarkdownFileInput) =>
@@ -78,8 +99,14 @@ const relicApi: RelicApi = {
     >,
   renameFolder: (input: RenameFolderInput) =>
     ipcRenderer.invoke(renameFolderChannel, input) as Promise<RelicResult<WorkspaceState>>,
+  replaceInFile: (input: ReplaceInFileInput) =>
+    ipcRenderer.invoke(replaceInFileChannel, input) as Promise<RelicResult<ReplaceInFileResult>>,
   saveEditorSettings: (input: EditorSettings) =>
     ipcRenderer.invoke(saveEditorSettingsChannel, input) as Promise<RelicResult<void>>,
+  searchAndReplace: (input: SearchAndReplaceInput) =>
+    ipcRenderer.invoke(searchAndReplaceChannel, input) as Promise<
+      RelicResult<SearchAndReplaceMatch[]>
+    >,
   searchWorkspace: (input: SearchWorkspaceInput) =>
     ipcRenderer.invoke(searchWorkspaceChannel, input) as Promise<
       RelicResult<WorkspaceSearchResult[]>
@@ -87,7 +114,11 @@ const relicApi: RelicApi = {
   switchWorkspace: (input: SwitchWorkspaceInput) =>
     ipcRenderer.invoke(switchWorkspaceChannel, input) as Promise<RelicResult<WorkspaceState>>,
   writeMarkdownFile: (input: WriteMarkdownFileInput) =>
-    ipcRenderer.invoke(writeMarkdownFileChannel, input) as Promise<RelicResult<void>>
+    ipcRenderer.invoke(writeMarkdownFileChannel, input) as Promise<RelicResult<void>>,
+  getFrontmatterCandidates: () =>
+    ipcRenderer.invoke(getFrontmatterCandidatesChannel) as Promise<RelicResult<Record<string, string[]>>>,
+  createFrontmatterTemplate: () =>
+    ipcRenderer.invoke(createFrontmatterTemplateChannel) as Promise<RelicResult<WorkspaceState>>
 };
 
 contextBridge.exposeInMainWorld("relic", relicApi);

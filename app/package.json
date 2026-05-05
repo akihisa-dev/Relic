@@ -21,6 +21,7 @@
     ]
   },
   "dependencies": {
+    "@codemirror/autocomplete": "^6.20.1",
     "@codemirror/commands": "^6.10.3",
     "@codemirror/lang-markdown": "^6.5.0",
     "@codemirror/language": "^6.12.3",
@@ -30,6 +31,7 @@
     "dompurify": "^3.4.2",
     "electron-squirrel-startup": "^1.0.1",
     "highlight.js": "^11.11.1",
+    "js-yaml": "^4.1.1",
     "katex": "^0.16.45",
     "marked": "^18.0.3",
     "react": "^19.1.0",
@@ -44,6 +46,7 @@
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
     "@types/dompurify": "^3.2.0",
+    "@types/js-yaml": "^4.0.9",
     "@types/katex": "^0.16.8",
     "@types/node": "^22.15.3",
     "@types/react": "^19.1.2",
