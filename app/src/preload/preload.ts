@@ -10,6 +10,7 @@ import {
   getBacklinksChannel,
   getAppInfoChannel,
   getGitCommitHistoryChannel,
+  getGitCommitDiffChannel,
   getEditorSettingsChannel,
   getGitStatusChannel,
   getGitWorkingChangesChannel,
@@ -40,6 +41,7 @@ import {
   type DuplicateMarkdownFileInput,
   type EditorSettings,
   type Backlink,
+  type GitCommitDiff,
   type GitCommitSummary,
   type GitStatus,
   type GitWorkingChange,
@@ -87,6 +89,8 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(getBacklinksChannel, input) as Promise<RelicResult<Backlink[]>>,
   getGitCommitHistory: () =>
     ipcRenderer.invoke(getGitCommitHistoryChannel) as Promise<RelicResult<GitCommitSummary[]>>,
+  getGitCommitDiff: (hash: string) =>
+    ipcRenderer.invoke(getGitCommitDiffChannel, hash) as Promise<RelicResult<GitCommitDiff>>,
   getGitStatus: () =>
     ipcRenderer.invoke(getGitStatusChannel) as Promise<RelicResult<GitStatus>>,
   getGitWorkingChanges: () =>

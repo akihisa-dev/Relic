@@ -320,6 +320,50 @@ button:disabled {
   font-size: 12px;
 }
 
+.git-diff-list {
+  display: grid;
+  gap: 12px;
+}
+
+.git-diff-entry {
+  border: 1px solid rgba(31, 35, 40, 0.09);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.git-diff-meta {
+  display: grid;
+  gap: 2px;
+  padding: 8px;
+}
+
+.git-diff-columns {
+  display: grid;
+  gap: 1px;
+  grid-template-columns: 1fr 1fr;
+}
+
+.git-diff-column {
+  background: rgba(31, 35, 40, 0.03);
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  padding: 8px;
+}
+
+.git-diff-code {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-family: Menlo, Monaco, monospace;
+  font-size: 11px;
+  margin: 0;
+  min-height: 72px;
+  overflow: auto;
+  padding: 8px;
+  white-space: pre-wrap;
+}
+
 .tag-list {
   display: grid;
   gap: 6px;

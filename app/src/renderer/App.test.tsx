@@ -24,6 +24,7 @@ function makeRelicApi(overrides: Partial<typeof window.relic> = {}): typeof wind
     duplicateMarkdownFile: vi.fn(),
     getBacklinks: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     getGitCommitHistory: vi.fn().mockResolvedValue({ ok: true, value: [] }),
+    getGitCommitDiff: vi.fn().mockResolvedValue({ ok: true, value: { commit: { author: "Test User", changedFiles: [], date: "2026-05-05T00:00:00.000Z", hash: "abc123", message: "Initial commit" }, entries: [] } }),
     getGitStatus: vi.fn().mockResolvedValue({ ok: true, value: { currentBranch: null, initialized: false } }),
     getGitWorkingChanges: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     getAppInfo: vi.fn().mockResolvedValue({ ok: true, value: { name: "Relic", platform: "darwin", version: "0.0.0" } }),
@@ -423,6 +424,55 @@ describe("App", () => {
       });
     });
     expect(await screen.findByText("Save note")).toBeInTheDocument();
+  });
+
+  it("Gitビューでコミットを選ぶと差分を表示する", async () => {
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace }),
+      getGitStatus: vi.fn().mockResolvedValue({ ok: true, value: { currentBranch: "main", initialized: true } }),
+      getGitWorkingChanges: vi.fn().mockResolvedValue({ ok: true, value: [] }),
+      getGitCommitHistory: vi.fn().mockResolvedValue({
+        ok: true,
+        value: [
+          {
+            author: "Test User",
+            changedFiles: [],
+            date: "2026-05-05T00:00:00.000Z",
+            hash: "def456",
+            message: "Update note"
+          }
+        ]
+      }),
+      getGitCommitDiff: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          commit: {
+            author: "Test User",
+            changedFiles: ["note.md"],
+            date: "2026-05-05T00:00:00.000Z",
+            hash: "def456",
+            message: "Update note"
+          },
+          entries: [
+            {
+              after: "v2",
+              before: "v1",
+              path: "note.md",
+              status: "modified"
+            }
+          ]
+        }
+      })
+    });
+
+    render(<App />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Git" }));
+
+    expect(await screen.findByText("Update note")).toBeInTheDocument();
+    expect(await screen.findByText("note.md")).toBeInTheDocument();
+    expect(screen.getByText("v1")).toBeInTheDocument();
+    expect(screen.getByText("v2")).toBeInTheDocument();
   });
 
   it("右パネルにアウトゴーイングリンクを表示する", async () => {
