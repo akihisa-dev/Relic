@@ -182,6 +182,18 @@ export function Toolbar({ viewRef }: ToolbarProps): ReactElement {
     view.focus();
   };
 
+  const handleBlockId = (): void => {
+    if (!view) return;
+
+    const { state } = view;
+    const pos = state.selection.main.head;
+    const line = state.doc.lineAt(pos);
+    const id = Math.random().toString(36).slice(2, 8);
+
+    view.dispatch({ changes: { from: line.to, insert: ` ^${id}` } });
+    view.focus();
+  };
+
   const handleTableSubmit = (): void => {
     if (!view) return;
     const rows = Math.max(1, parseInt(tableRows, 10) || 3);
@@ -304,6 +316,9 @@ export function Toolbar({ viewRef }: ToolbarProps): ReactElement {
         </div>
         <button className="toolbar-btn" onClick={handleInternalLink} title="内部リンク" type="button">
           [[
+        </button>
+        <button className="toolbar-btn" onClick={handleBlockId} title="ブロックID挿入" type="button">
+          ^ID
         </button>
         <div className="toolbar-inline-dialog-wrap">
           <button

@@ -1,3 +1,6 @@
+import { readFile, writeFile } from "node:fs/promises";
+import path from "node:path";
+
 import { app, dialog, ipcMain, shell } from "electron";
 
 import {
@@ -13,8 +16,12 @@ import {
   type GetBacklinksInput,
   getWorkspaceTagsChannel,
   getWorkspaceStateChannel,
+  moveFolderChannel,
+  type MoveFolderInput,
   moveItemToTrashChannel,
   type MoveItemToTrashInput,
+  moveMarkdownFileChannel,
+  type MoveMarkdownFileInput,
   openWorkspaceChannel,
   readMarkdownFileChannel,
   type ReadMarkdownFileInput,
@@ -22,24 +29,34 @@ import {
   type RenameFolderInput,
   renameMarkdownFileChannel,
   type RenameMarkdownFileInput,
+  applySearchAndReplaceChannel,
+  replaceInFileChannel,
+  type ReplaceInFileInput,
+  searchAndReplaceChannel,
+  type SearchAndReplaceInput,
   searchWorkspaceChannel,
   type SearchWorkspaceInput,
   switchWorkspaceChannel,
   type SwitchWorkspaceInput,
-  type WorkspaceState
+  type WorkspaceState,
+  getFrontmatterCandidatesChannel,
+  createFrontmatterTemplateChannel
 } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { readBacklinks } from "../files/backlinks";
 import { readWorkspaceFileTree } from "../files/fileTree";
-import { createFolder, renameFolder } from "../files/folders";
+import { createFolder, moveFolder, renameFolder } from "../files/folders";
 import {
   createMarkdownFileAtPath,
   createMarkdownFile,
   duplicateMarkdownFile,
+  moveMarkdownFile,
   readMarkdownFile,
   renameMarkdownFile
 } from "../files/markdownFiles";
+import { applySearchAndReplace, replaceInFile, searchAndReplace } from "../files/replace";
 import { moveWorkspaceItemToTrash } from "../files/trash";
+import { parseFrontmatterCandidates } from "../files/frontmatter";
 import { readWorkspaceTags } from "../files/tags";
 import { searchWorkspace } from "../files/search";
 import { readAppSettings, writeAppSettings } from "../settings/appSettings";
@@ -352,6 +369,160 @@ export function registerWorkspaceHandlers(): void {
     }
   });
 
+  ipcMain.handle(moveMarkdownFileChannel, async (_event, input: MoveMarkdownFileInput) => {
+    try {
+      if (!isMoveMarkdownFileInput(input)) {
+        return fail("FILE_MOVE_INVALID_INPUT", "移動先フォルダを指定してください。");
+      }
+
+      const settings = await readAppSettings(app.getPath("userData"));
+      const state = toWorkspaceState(settings);
+
+      if (!state.activeWorkspace) {
+        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
+      }
+
+      const movedFile = await moveMarkdownFile(
+        state.activeWorkspace.path,
+        input.path,
+        input.destinationFolder
+      );
+
+      if (!movedFile.ok) {
+        return movedFile;
+      }
+
+      return ok({
+        file: movedFile.value,
+        workspaceState: await buildWorkspaceState(settings)
+      });
+    } catch (error) {
+      return fail(
+        "FILE_MOVE_FAILED",
+        "ファイルを移動できませんでした。",
+        error instanceof Error ? error.message : String(error)
+      );
+    }
+  });
+
+  ipcMain.handle(moveFolderChannel, async (_event, input: MoveFolderInput) => {
+    try {
+      if (!isMoveFolderInput(input)) {
+        return fail("FOLDER_MOVE_INVALID_INPUT", "移動先フォルダを指定してください。");
+      }
+
+      const settings = await readAppSettings(app.getPath("userData"));
+      const state = toWorkspaceState(settings);
+
+      if (!state.activeWorkspace) {
+        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
+      }
+
+      const movedFolder = await moveFolder(
+        state.activeWorkspace.path,
+        input.path,
+        input.destinationFolder
+      );
+
+      if (!movedFolder.ok) {
+        return movedFolder;
+      }
+
+      return ok(await buildWorkspaceState(settings));
+    } catch (error) {
+      return fail(
+        "FOLDER_MOVE_FAILED",
+        "フォルダを移動できませんでした。",
+        error instanceof Error ? error.message : String(error)
+      );
+    }
+  });
+
+  ipcMain.handle(replaceInFileChannel, async (_event, input: ReplaceInFileInput) => {
+    try {
+      if (!isReplaceInFileInput(input)) {
+        return fail("REPLACE_INVALID_INPUT", "検索語句と置換後テキストを入力してください。");
+      }
+
+      const settings = await readAppSettings(app.getPath("userData"));
+      const state = toWorkspaceState(settings);
+
+      if (!state.activeWorkspace) {
+        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
+      }
+
+      return replaceInFile(
+        state.activeWorkspace.path,
+        input.path,
+        input.searchQuery,
+        input.replacement,
+        input.isRegex
+      );
+    } catch (error) {
+      return fail(
+        "REPLACE_FAILED",
+        "置換できませんでした。",
+        error instanceof Error ? error.message : String(error)
+      );
+    }
+  });
+
+  ipcMain.handle(searchAndReplaceChannel, async (_event, input: SearchAndReplaceInput) => {
+    try {
+      if (!isSearchAndReplaceInput(input)) {
+        return fail("REPLACE_INVALID_INPUT", "検索語句と置換後テキストを入力してください。");
+      }
+
+      const settings = await readAppSettings(app.getPath("userData"));
+      const state = toWorkspaceState(settings);
+
+      if (!state.activeWorkspace) {
+        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
+      }
+
+      return searchAndReplace(
+        state.activeWorkspace.path,
+        input.searchQuery,
+        input.replacement,
+        input.isRegex
+      );
+    } catch (error) {
+      return fail(
+        "REPLACE_FAILED",
+        "置換プレビューを生成できませんでした。",
+        error instanceof Error ? error.message : String(error)
+      );
+    }
+  });
+
+  ipcMain.handle(applySearchAndReplaceChannel, async (_event, input: SearchAndReplaceInput) => {
+    try {
+      if (!isSearchAndReplaceInput(input)) {
+        return fail("REPLACE_INVALID_INPUT", "検索語句と置換後テキストを入力してください。");
+      }
+
+      const settings = await readAppSettings(app.getPath("userData"));
+      const state = toWorkspaceState(settings);
+
+      if (!state.activeWorkspace) {
+        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
+      }
+
+      return applySearchAndReplace(
+        state.activeWorkspace.path,
+        input.searchQuery,
+        input.replacement,
+        input.isRegex
+      );
+    } catch (error) {
+      return fail(
+        "REPLACE_FAILED",
+        "一括置換できませんでした。",
+        error instanceof Error ? error.message : String(error)
+      );
+    }
+  });
+
   ipcMain.handle(renameFolderChannel, async (_event, input: RenameFolderInput) => {
     try {
       if (!isRenameFolderInput(input)) {
@@ -417,6 +588,69 @@ export function registerWorkspaceHandlers(): void {
       }
     }
   );
+
+  ipcMain.handle(getFrontmatterCandidatesChannel, async (): Promise<RelicResult<Record<string, string[]>>> => {
+    try {
+      const settings = await readAppSettings(app.getPath("userData"));
+      const activeWorkspace = settings.workspaces.find((ws) => ws.id === settings.lastWorkspaceId);
+
+      if (!activeWorkspace) {
+        return ok({});
+      }
+
+      const filePath = path.join(activeWorkspace.path, "frontmatter.md");
+
+      try {
+        const content = await readFile(filePath, "utf8");
+        const candidates = parseFrontmatterCandidates(content);
+        const result: Record<string, string[]> = {};
+
+        for (const [field, values] of candidates) {
+          result[field] = values;
+        }
+
+        return ok(result);
+      } catch {
+        return ok({});
+      }
+    } catch (error) {
+      return fail("FRONTMATTER_CANDIDATES_FAILED", String(error));
+    }
+  });
+
+  ipcMain.handle(createFrontmatterTemplateChannel, async (): Promise<RelicResult<WorkspaceState>> => {
+    try {
+      const settings = await readAppSettings(app.getPath("userData"));
+      const activeWorkspace = settings.workspaces.find((ws) => ws.id === settings.lastWorkspaceId);
+
+      if (!activeWorkspace) {
+        return fail("NO_WORKSPACE", "ワークスペースが開かれていません。");
+      }
+
+      const filePath = path.join(activeWorkspace.path, "frontmatter.md");
+      const template = [
+        "# フロントマター候補",
+        "",
+        "## status",
+        "- draft",
+        "- review",
+        "- published",
+        "",
+        "## author",
+        ""
+      ].join("\n");
+
+      await writeFile(filePath, template, { encoding: "utf8", flag: "wx" });
+
+      return ok(await buildWorkspaceState(settings));
+    } catch (error: unknown) {
+      if (typeof error === "object" && error !== null && "code" in error && (error as { code: string }).code === "EEXIST") {
+        return fail("FRONTMATTER_TEMPLATE_EXISTS", "frontmatter.md はすでに存在します。");
+      }
+
+      return fail("FRONTMATTER_TEMPLATE_FAILED", String(error));
+    }
+  });
 
   ipcMain.handle(
     switchWorkspaceChannel,
@@ -529,6 +763,56 @@ function isMoveItemToTrashInput(input: unknown): input is MoveItemToTrashInput {
     "type" in input &&
     typeof (input as { path?: unknown }).path === "string" &&
     ((input as { type?: unknown }).type === "file" || (input as { type?: unknown }).type === "folder")
+  );
+}
+
+function isMoveMarkdownFileInput(input: unknown): input is MoveMarkdownFileInput {
+  return (
+    typeof input === "object" &&
+    input !== null &&
+    "path" in input &&
+    "destinationFolder" in input &&
+    typeof (input as { path?: unknown }).path === "string" &&
+    typeof (input as { destinationFolder?: unknown }).destinationFolder === "string"
+  );
+}
+
+function isMoveFolderInput(input: unknown): input is MoveFolderInput {
+  return (
+    typeof input === "object" &&
+    input !== null &&
+    "path" in input &&
+    "destinationFolder" in input &&
+    typeof (input as { path?: unknown }).path === "string" &&
+    typeof (input as { destinationFolder?: unknown }).destinationFolder === "string"
+  );
+}
+
+function isReplaceInFileInput(input: unknown): input is ReplaceInFileInput {
+  return (
+    typeof input === "object" &&
+    input !== null &&
+    "path" in input &&
+    "searchQuery" in input &&
+    "replacement" in input &&
+    "isRegex" in input &&
+    typeof (input as { path?: unknown }).path === "string" &&
+    typeof (input as { searchQuery?: unknown }).searchQuery === "string" &&
+    typeof (input as { replacement?: unknown }).replacement === "string" &&
+    typeof (input as { isRegex?: unknown }).isRegex === "boolean"
+  );
+}
+
+function isSearchAndReplaceInput(input: unknown): input is SearchAndReplaceInput {
+  return (
+    typeof input === "object" &&
+    input !== null &&
+    "searchQuery" in input &&
+    "replacement" in input &&
+    "isRegex" in input &&
+    typeof (input as { searchQuery?: unknown }).searchQuery === "string" &&
+    typeof (input as { replacement?: unknown }).replacement === "string" &&
+    typeof (input as { isRegex?: unknown }).isRegex === "boolean"
   );
 }
 

@@ -6,6 +6,7 @@ import type {
   Backlink,
   EditorSettings,
   MarkdownFileContent,
+  SearchAndReplaceMatch,
   SearchMode,
   WorkspaceState,
   WorkspaceSearchResult,
@@ -13,8 +14,11 @@ import type {
   WorkspaceTreeNode
 } from "../shared/ipc";
 import { resolveWikiLinkPath, resolveWikiLinks } from "../shared/links";
+import { CommandPalette, type Command } from "./components/CommandPalette";
 import { Editor } from "./components/Editor";
+import { FrontmatterForm } from "./components/FrontmatterForm";
 import { Preview } from "./components/Preview";
+import { QuickSwitcher } from "./components/QuickSwitcher";
 import { Toolbar } from "./components/Toolbar";
 import { useAutoSave } from "./hooks/useAutoSave";
 import { useEditorStore, type PaneId } from "./store/editorStore";
@@ -95,6 +99,7 @@ interface FilesSidebarProps {
 }
 
 function SearchSidebar({
+  activeFilePath,
   error,
   mode,
   query,
@@ -103,8 +108,10 @@ function SearchSidebar({
   onModeChange,
   onOpenFile,
   onQueryChange,
-  onTagSelect
+  onTagSelect,
+  onWorkspaceChange
 }: {
+  activeFilePath: string | null;
   error: string | null;
   mode: SearchMode;
   query: string;
@@ -114,7 +121,86 @@ function SearchSidebar({
   onOpenFile: (path: string) => void;
   onQueryChange: (query: string) => void;
   onTagSelect: (tag: string) => void;
+  onWorkspaceChange: () => void;
 }): ReactElement {
+  const [replaceQuery, setReplaceQuery] = useState("");
+  const [replacementText, setReplacementText] = useState("");
+  const [replaceIsRegex, setReplaceIsRegex] = useState(false);
+  const [replacePreview, setReplacePreview] = useState<SearchAndReplaceMatch[] | null>(null);
+  const [replaceError, setReplaceError] = useState<string | null>(null);
+  const [replaceStatus, setReplaceStatus] = useState<string | null>(null);
+  const [isReplacing, setIsReplacing] = useState(false);
+
+  const handleReplaceInFile = (): void => {
+    if (!activeFilePath || !window.relic) return;
+    setReplaceError(null);
+    setReplaceStatus(null);
+    setIsReplacing(true);
+
+    void window.relic
+      .replaceInFile({
+        isRegex: replaceIsRegex,
+        path: activeFilePath,
+        replacement: replacementText,
+        searchQuery: replaceQuery
+      })
+      .then((result) => {
+        if (result.ok) {
+          setReplaceStatus(`${result.value.count} 件置換しました。`);
+          onWorkspaceChange();
+        } else {
+          setReplaceError(result.error.message);
+        }
+      })
+      .finally(() => setIsReplacing(false));
+  };
+
+  const handlePreviewBulkReplace = (): void => {
+    if (!window.relic) return;
+    setReplaceError(null);
+    setReplaceStatus(null);
+    setReplacePreview(null);
+    setIsReplacing(true);
+
+    void window.relic
+      .searchAndReplace({
+        isRegex: replaceIsRegex,
+        replacement: replacementText,
+        searchQuery: replaceQuery
+      })
+      .then((result) => {
+        if (result.ok) {
+          setReplacePreview(result.value);
+        } else {
+          setReplaceError(result.error.message);
+        }
+      })
+      .finally(() => setIsReplacing(false));
+  };
+
+  const handleApplyBulkReplace = (): void => {
+    if (!window.relic) return;
+    setReplaceError(null);
+    setIsReplacing(true);
+
+    void window.relic
+      .applySearchAndReplace({
+        isRegex: replaceIsRegex,
+        replacement: replacementText,
+        searchQuery: replaceQuery
+      })
+      .then((result) => {
+        if (result.ok) {
+          setReplacePreview(null);
+          setReplaceStatus(`${result.value.count} 件を一括置換しました。`);
+          onWorkspaceChange();
+        } else {
+          setReplaceError(result.error.message);
+        }
+      })
+      .finally(() => setIsReplacing(false));
+  };
+
   return (
     <div className="sidebar-section">
       <input
@@ -181,6 +267,89 @@ function SearchSidebar({
         ) : (
           <div className="empty-note">検索語句を入力してください。</div>
         )}
+      </div>
+      <div className="search-block">
+        <div className="links-panel-subheading">置換</div>
+        <input
+          aria-label="置換する語句"
+          className={`search-input${replaceError && replaceError.includes("正規表現") ? " search-input--error" : ""}`}
+          onChange={(e) => { setReplaceQuery(e.target.value); setReplacePreview(null); setReplaceStatus(null); }}
+          placeholder="検索語句"
+          value={replaceQuery}
+        />
+        <input
+          aria-label="置換後テキスト"
+          className="search-input"
+          onChange={(e) => { setReplacementText(e.target.value); setReplacePreview(null); setReplaceStatus(null); }}
+          placeholder="置換後テキスト"
+          value={replacementText}
+        />
+        <label className="setting-row replace-regex-row">
+          <input
+            checked={replaceIsRegex}
+            onChange={(e) => setReplaceIsRegex(e.target.checked)}
+            type="checkbox"
+          />
+          <span>正規表現</span>
+        </label>
+        <div className="replace-actions">
+          {activeFilePath ? (
+            <button
+              className="replace-btn"
+              disabled={isReplacing || replaceQuery.trim() === ""}
+              onClick={handleReplaceInFile}
+              title="現在のファイルのみ置換"
+              type="button"
+            >
+              このファイルを置換
+            </button>
+          ) : null}
+          <button
+            className="replace-btn"
+            disabled={isReplacing || replaceQuery.trim() === ""}
+            onClick={handlePreviewBulkReplace}
+            type="button"
+          >
+            一括プレビュー
+          </button>
+        </div>
+        {replaceError ? <div className="error-note">{replaceError}</div> : null}
+        {replaceStatus ? <div className="replace-status">{replaceStatus}</div> : null}
+        {replacePreview !== null ? (
+          <div className="replace-preview">
+            <div className="replace-preview-header">
+              {replacePreview.length} 件が一致 — 置換後:
+            </div>
+            {replacePreview.length > 0 ? (
+              <ul className="search-results replace-preview-list">
+                {replacePreview.slice(0, 50).map((m, i) => (
+                  <li className="search-result-item" key={`${m.path}-${m.lineNumber}-${i}`}>
+                    <span className="search-result-title" title={m.path}>{m.path.split("/").pop()?.replace(/\.md$/, "")}</span>
+                    <span className="search-result-line replace-preview-before">{m.lineNumber}: {m.lineText}</span>
+                    <span className="search-result-line replace-preview-after">→ {m.newLineText}</span>
+                  </li>
+                ))}
+                {replacePreview.length > 50 ? (
+                  <li className="search-result-item">
+                    <span className="search-result-line">…他 {replacePreview.length - 50} 件</span>
+                  </li>
+                ) : null}
+              </ul>
+            ) : (
+              <div className="empty-note">一致する箇所はありません。</div>
+            )}
+            {replacePreview.length > 0 ? (
+              <button
+                className="replace-btn replace-btn--confirm"
+                disabled={isReplacing}
+                onClick={handleApplyBulkReplace}
+                type="button"
+              >
+                一括置換を実行
+              </button>
+            ) : null}
+          </div>
+        ) : null}
       </div>
       <div className="search-block">
         <div className="links-panel-subheading">Tags</div>
@@ -310,9 +479,11 @@ function FilesSidebar({
 
 function SettingsSidebar({
   settings,
+  onCreateFrontmatterTemplate,
   onSave
 }: {
   settings: EditorSettings;
+  onCreateFrontmatterTemplate: () => void;
   onSave: (s: EditorSettings) => void;
 }): ReactElement {
   const [draft, setDraft] = useState<EditorSettings>(settings);
@@ -391,6 +562,12 @@ function SettingsSidebar({
         />
         <span>スペルチェック</span>
       </label>
+      <div className="setting-row setting-row--action">
+        <span>フロントマター候補定義</span>
+        <button className="setting-action-btn" onClick={onCreateFrontmatterTemplate} type="button">
+          frontmatter.md を作成
+        </button>
+      </div>
     </div>
   );
 }
@@ -400,23 +577,31 @@ function SettingsSidebar({
 // ────────────────────────────────────────────────
 
 interface PaneViewProps {
+  allFilePaths: string[];
   editorSettings: EditorSettings;
   focusedPane: PaneId;
+  frontmatterCandidates: Record<string, string[]>;
   pane: PaneId;
+  scrollTargetHeading?: string;
   typewriterMode: boolean;
   workspacePath?: string | null;
+  workspaceTags: string[];
   onFocus: () => void;
-  onOpenWikiLink: (target: string) => void;
+  onOpenWikiLink: (target: string, heading?: string) => void;
   onTabClose: (tabId: string) => void;
   onTabSelect: (tabId: string) => void;
 }
 
 function PaneView({
+  allFilePaths,
   editorSettings,
   focusedPane,
+  frontmatterCandidates,
   pane,
+  scrollTargetHeading,
   typewriterMode,
   workspacePath,
+  workspaceTags,
   onFocus,
   onOpenWikiLink,
   onTabClose,
@@ -503,6 +688,7 @@ function PaneView({
           <div className="editor-body">
             {activeTab.viewMode === "source" ? (
               <Editor
+                allFilePaths={allFilePaths}
                 content={activeTab.content}
                 key={activeTab.id}
                 onChange={(content) => updateTabContent(activeTab.id, content)}
@@ -511,14 +697,24 @@ function PaneView({
                 viewRef={viewRef}
               />
             ) : (
-              <Preview
-                content={activeTab.content}
-                key={`preview-${activeTab.id}`}
-                onChange={(content) => updateTabContent(activeTab.id, content)}
-                onOpenWikiLink={onOpenWikiLink}
-                settings={editorSettings}
-                workspacePath={workspacePath}
-              />
+              <div className="preview-with-fm">
+                <FrontmatterForm
+                  candidates={frontmatterCandidates}
+                  content={activeTab.content}
+                  key={`fm-${activeTab.id}`}
+                  onChange={(content) => updateTabContent(activeTab.id, content)}
+                  workspaceTags={workspaceTags}
+                />
+                <Preview
+                  content={activeTab.content}
+                  key={`preview-${activeTab.id}`}
+                  onChange={(content) => updateTabContent(activeTab.id, content)}
+                  onOpenWikiLink={onOpenWikiLink}
+                  scrollTargetHeading={scrollTargetHeading}
+                  settings={editorSettings}
+                  workspacePath={workspacePath}
+                />
+              </div>
             )}
           </div>
           <div className="pane-status">
@@ -561,6 +757,11 @@ export function App(): ReactElement {
   const [searchMode, setSearchMode] = useState<SearchMode>("fullText");
   const [searchResults, setSearchResults] = useState<WorkspaceSearchResult[]>([]);
   const [searchError, setSearchError] = useState<string | null>(null);
+  const [leftPaneScrollHeading, setLeftPaneScrollHeading] = useState<string | undefined>(undefined);
+  const [rightPaneScrollHeading, setRightPaneScrollHeading] = useState<string | undefined>(undefined);
+  const [frontmatterCandidates, setFrontmatterCandidates] = useState<Record<string, string[]>>({});
+  const [showCommandPalette, setShowCommandPalette] = useState(false);
+  const [showQuickSwitcher, setShowQuickSwitcher] = useState(false);
 
   const {
     editorSettings,
@@ -687,17 +888,19 @@ export function App(): ReactElement {
   );
 
   const handleOpenWikiLink = useCallback(
-    (target: string): void => {
+    (target: string, heading?: string): void => {
       const paneState = focusedPane === "left" ? leftPane : rightPane;
       const activeTab = paneState.activeTabId ? tabs[paneState.activeTabId] : null;
 
       if (!activeTab || !window.relic) return;
 
       const path = resolveWikiLinkPath(target, activeTab.path);
+      const setScrollHeading = focusedPane === "left" ? setLeftPaneScrollHeading : setRightPaneScrollHeading;
 
       void window.relic.readMarkdownFile({ path }).then((readResult) => {
         if (readResult.ok) {
           openFileInPane(focusedPane, readResult.value);
+          if (heading) setScrollHeading(heading);
           return;
         }
 
@@ -784,6 +987,37 @@ export function App(): ReactElement {
     };
   }, [searchMode, searchQuery, workspaceState?.activeWorkspace?.id, workspaceState?.fileTree]);
 
+  useEffect(() => {
+    if (!workspaceState?.activeWorkspace || !window.relic) {
+      setFrontmatterCandidates({});
+      return;
+    }
+
+    void window.relic.getFrontmatterCandidates().then((result) => {
+      if (result.ok) setFrontmatterCandidates(result.value);
+    });
+  }, [workspaceState?.activeWorkspace?.id, workspaceState?.fileTree]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent): void => {
+      if (!e.metaKey) return;
+
+      if (e.shiftKey && e.key === "P") {
+        e.preventDefault();
+        setShowQuickSwitcher(false);
+        setShowCommandPalette((v) => !v);
+      } else if (!e.shiftKey && e.key === "p") {
+        e.preventDefault();
+        setShowCommandPalette(false);
+        setShowQuickSwitcher((v) => !v);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown, true);
+
+    return () => window.removeEventListener("keydown", handleKeyDown, true);
+  }, []);
+
   // ──────────────────
   // エディタ設定保存
   // ──────────────────
@@ -795,6 +1029,51 @@ export function App(): ReactElement {
     },
     [setEditorSettings]
   );
+
+  // ──────────────────
+  // ファイル移動
+  // ──────────────────
+
+  const handleMoveActiveFile = useCallback(
+    (destinationFolder: string): void => {
+      const paneState = focusedPane === "left" ? leftPane : rightPane;
+      const tabId = paneState.activeTabId;
+
+      if (!tabId || !window.relic) return;
+
+      const tab = tabs[tabId];
+
+      if (!tab) return;
+
+      void window.relic
+        .moveMarkdownFile({ destinationFolder, path: tab.path })
+        .then((result) => {
+          if (result.ok) {
+            updateTabMeta(tabId, { name: result.value.file.name, path: result.value.file.path });
+            setWorkspaceState(result.value.workspaceState);
+          } else {
+            setWorkspaceError(result.error.message);
+          }
+        });
+    },
+    [focusedPane, leftPane, rightPane, tabs, updateTabMeta]
+  );
+
+  const handleRefreshWorkspaceState = useCallback((): void => {
+    void window.relic?.getWorkspaceState().then((result) => {
+      if (result.ok) setWorkspaceState(result.value);
+    });
+  }, []);
+
+  const handleCreateFrontmatterTemplate = useCallback((): void => {
+    void window.relic?.createFrontmatterTemplate().then((result) => {
+      if (result.ok) {
+        setWorkspaceState(result.value);
+      } else {
+        setWorkspaceError(result.error.message);
+      }
+    });
+  }, []);
 
   // ──────────────────
   // ファイル名リネーム（タブのメタ更新）
@@ -929,6 +1208,69 @@ export function App(): ReactElement {
   }, [activeTabInFocusedPane?.path, workspaceState?.fileTree]);
 
   // ──────────────────
+  // コマンドパレット
+  // ──────────────────
+
+  const commands: Command[] = [
+    {
+      id: "new-note",
+      label: "新規ノートを作成",
+      action: () => { setSidebarView("files"); if (!isSidebarOpen) toggleSidebar(); setIsCreatingFile(true); }
+    },
+    {
+      id: "search",
+      label: "検索を開く",
+      action: () => { setSidebarView("search"); if (!isSidebarOpen) toggleSidebar(); }
+    },
+    {
+      id: "quick-switcher",
+      label: "クイックスイッチャーを開く",
+      shortcut: "⌘P",
+      action: () => setShowQuickSwitcher(true)
+    },
+    {
+      id: "toggle-sidebar",
+      label: "サイドバーを開閉",
+      shortcut: "⌘B",
+      action: toggleSidebar
+    },
+    {
+      id: "toggle-split",
+      label: "分割表示を切り替え",
+      shortcut: "⌘\\",
+      action: toggleSplit
+    },
+    {
+      id: "toggle-right-panel",
+      label: "右パネルを切り替え",
+      shortcut: "⌘⇧B",
+      action: toggleRightPanel
+    },
+    {
+      id: "toggle-focus",
+      label: "フォーカスモードを切り替え",
+      shortcut: "⌘⇧F",
+      action: toggleFocusMode
+    },
+    {
+      id: "toggle-typewriter",
+      label: "タイプライターモードを切り替え",
+      shortcut: "⌘⇧T",
+      action: toggleTypewriterMode
+    },
+    {
+      id: "git",
+      label: "Git ビューを開く",
+      action: () => { setSidebarView("git"); if (!isSidebarOpen) toggleSidebar(); }
+    },
+    {
+      id: "settings",
+      label: "設定を開く",
+      action: () => { setSidebarView("settings"); if (!isSidebarOpen) toggleSidebar(); }
+    }
+  ];
+
+  // ──────────────────
   // レンダリング
   // ──────────────────
 
@@ -987,6 +1329,7 @@ export function App(): ReactElement {
               />
             ) : activeSidebarView === "search" ? (
               <SearchSidebar
+                activeFilePath={activeTabInFocusedPane?.path ?? null}
                 error={searchError}
                 mode={searchMode}
                 onModeChange={setSearchMode}
@@ -996,6 +1339,7 @@ export function App(): ReactElement {
                   setSearchMode("tag");
                   setSearchQuery(tag);
                 }}
+                onWorkspaceChange={handleRefreshWorkspaceState}
                 query={searchQuery}
                 results={searchResults}
                 tags={workspaceTags}
@@ -1005,7 +1349,11 @@ export function App(): ReactElement {
                 <div className="empty-note">Git連携はフェーズ6で追加します。</div>
               </div>
             ) : (
-              <SettingsSidebar onSave={handleSaveSettings} settings={editorSettings} />
+              <SettingsSidebar
+                onCreateFrontmatterTemplate={handleCreateFrontmatterTemplate}
+                onSave={handleSaveSettings}
+                settings={editorSettings}
+              />
             )}
             {workspaceError ? <div className="error-note">{workspaceError}</div> : null}
           </aside>
@@ -1015,10 +1363,13 @@ export function App(): ReactElement {
         <main className="main-area">
           <div className="main-area-top-bar">
             {activeTabInFocusedPane ? (
-              <RenameBar
-                name={activeTabInFocusedPane.name}
-                onRename={handleRenameActiveFile}
-              />
+              <>
+                <RenameBar
+                  name={activeTabInFocusedPane.name}
+                  onRename={handleRenameActiveFile}
+                />
+                <MoveBar onMove={handleMoveActiveFile} />
+              </>
             ) : null}
             <div className="main-area-top-actions">
               <button
@@ -1061,27 +1412,35 @@ export function App(): ReactElement {
           <div className="editor-layout">
             <div className={`panes-container${isSplit ? " panes-container--split" : ""}`}>
               <PaneView
+                allFilePaths={existingMarkdownPaths}
                 editorSettings={editorSettings}
                 focusedPane={focusedPane}
+                frontmatterCandidates={frontmatterCandidates}
                 onFocus={() => setFocusedPane("left")}
                 onOpenWikiLink={handleOpenWikiLink}
                 onTabClose={(tabId) => closeTab("left", tabId)}
                 onTabSelect={(tabId) => setTabActive("left", tabId)}
                 pane="left"
+                scrollTargetHeading={leftPaneScrollHeading}
                 typewriterMode={isTypewriterMode}
                 workspacePath={workspaceState?.activeWorkspace?.path}
+                workspaceTags={workspaceTags.map((t) => t.tag)}
               />
               {isSplit ? (
                 <PaneView
+                  allFilePaths={existingMarkdownPaths}
                   editorSettings={editorSettings}
                   focusedPane={focusedPane}
+                  frontmatterCandidates={frontmatterCandidates}
                   onFocus={() => setFocusedPane("right")}
                   onOpenWikiLink={handleOpenWikiLink}
                   onTabClose={(tabId) => closeTab("right", tabId)}
                   onTabSelect={(tabId) => setTabActive("right", tabId)}
                   pane="right"
+                  scrollTargetHeading={rightPaneScrollHeading}
                   typewriterMode={isTypewriterMode}
                   workspacePath={workspaceState?.activeWorkspace?.path}
+                  workspaceTags={workspaceTags.map((t) => t.tag)}
                 />
               ) : null}
             </div>
@@ -1194,6 +1553,18 @@ export function App(): ReactElement {
           <span>0 文字 / 0 語</span>
         )}
       </footer>
+
+      {showCommandPalette ? (
+        <CommandPalette commands={commands} onClose={() => setShowCommandPalette(false)} />
+      ) : null}
+
+      {showQuickSwitcher ? (
+        <QuickSwitcher
+          filePaths={existingMarkdownPaths}
+          onClose={() => setShowQuickSwitcher(false)}
+          onSelect={handleOpenFile}
+        />
+      ) : null}
     </div>
   );
 }
@@ -1247,6 +1618,51 @@ function RenameBar({ name, onRename }: { name: string; onRename: (v: string) => 
             setEditing(false);
           }
         }}
+        value={draft}
+      />
+    </form>
+  );
+}
+
+function MoveBar({ onMove }: { onMove: (dest: string) => void }): ReactElement {
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState("");
+
+  if (!open) {
+    return (
+      <button
+        className="toolbar-btn"
+        onClick={() => setOpen(true)}
+        title="フォルダへ移動"
+        type="button"
+      >
+        Move
+      </button>
+    );
+  }
+
+  return (
+    <form
+      className="rename-bar-form"
+      onSubmit={(e) => {
+        e.preventDefault();
+        onMove(draft);
+        setDraft("");
+        setOpen(false);
+      }}
+    >
+      <input
+        autoFocus
+        className="rename-bar-input"
+        onBlur={() => setOpen(false)}
+        onChange={(e) => setDraft(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Escape") {
+            setDraft("");
+            setOpen(false);
+          }
+        }}
+        placeholder="移動先フォルダ（空=ルート）"
         value={draft}
       />
     </form>

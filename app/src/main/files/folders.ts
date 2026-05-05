@@ -2,6 +2,7 @@ import { mkdir, rename, stat } from "node:fs/promises";
 import path from "node:path";
 
 import { fail, ok, type RelicResult } from "../../shared/result";
+import { updateLinksForFolderRename } from "./linkUpdater";
 import { validateBaseName } from "./names";
 import { resolveWorkspaceRelativePath } from "./paths";
 
@@ -78,6 +79,7 @@ export async function renameFolder(
     }
 
     await rename(sourcePath.value, destinationPath.value);
+    await updateLinksForFolderRename(workspacePath, relativePath, nextRelativePath);
 
     return ok({
       path: nextRelativePath
@@ -86,6 +88,57 @@ export async function renameFolder(
     return fail(
       "FOLDER_RENAME_FAILED",
       "フォルダ名を変更できませんでした。",
+      error instanceof Error ? error.message : String(error)
+    );
+  }
+}
+
+export async function moveFolder(
+  workspacePath: string,
+  relativePath: string,
+  destinationFolder: string
+): Promise<RelicResult<{ path: string }>> {
+  const sourcePath = resolveWorkspaceRelativePath(workspacePath, relativePath);
+
+  if (!sourcePath.ok) {
+    return sourcePath;
+  }
+
+  const normalizedDestFolder = toWorkspaceRelativePath(destinationFolder.trim());
+  const folderName = path.basename(relativePath);
+  const nextRelativePath = toWorkspaceRelativePath(
+    normalizedDestFolder === "" ? folderName : `${normalizedDestFolder}/${folderName}`
+  );
+
+  if (nextRelativePath === relativePath) {
+    return ok({ path: relativePath });
+  }
+
+  const destinationPath = resolveWorkspaceRelativePath(workspacePath, nextRelativePath);
+
+  if (!destinationPath.ok) {
+    return destinationPath;
+  }
+
+  if (await pathExists(destinationPath.value)) {
+    return fail("FOLDER_ALREADY_EXISTS", "移動先に同じ名前のフォルダまたはファイルがすでにあります。");
+  }
+
+  try {
+    const sourceStats = await stat(sourcePath.value);
+
+    if (!sourceStats.isDirectory()) {
+      return fail("FOLDER_MOVE_NOT_DIRECTORY", "フォルダだけを移動できます。");
+    }
+
+    await rename(sourcePath.value, destinationPath.value);
+    await updateLinksForFolderRename(workspacePath, relativePath, nextRelativePath);
+
+    return ok({ path: nextRelativePath });
+  } catch (error) {
+    return fail(
+      "FOLDER_MOVE_FAILED",
+      "フォルダを移動できませんでした。",
       error instanceof Error ? error.message : String(error)
     );
   }
