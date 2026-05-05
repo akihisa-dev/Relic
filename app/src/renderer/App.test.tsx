@@ -23,8 +23,10 @@ function makeRelicApi(overrides: Partial<typeof window.relic> = {}): typeof wind
         message: "Initial commit"
       }
     }),
+    createGitTag: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     createLinkedMarkdownFile: vi.fn(),
     createMarkdownFile: vi.fn(),
+    deleteGitTag: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     duplicateMarkdownFile: vi.fn(),
     getBacklinks: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     getGitBranches: vi.fn().mockResolvedValue({
@@ -34,6 +36,7 @@ function makeRelicApi(overrides: Partial<typeof window.relic> = {}): typeof wind
     getGitCommitHistory: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     getGitCommitDiff: vi.fn().mockResolvedValue({ ok: true, value: { commit: { author: "Test User", changedFiles: [], date: "2026-05-05T00:00:00.000Z", hash: "abc123", message: "Initial commit" }, entries: [] } }),
     getGitStatus: vi.fn().mockResolvedValue({ ok: true, value: { currentBranch: null, initialized: false } }),
+    getGitTags: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     getGitWorkingChanges: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     getAppInfo: vi.fn().mockResolvedValue({ ok: true, value: { name: "Relic", platform: "darwin", version: "0.0.0" } }),
     getEditorSettings: vi.fn().mockResolvedValue({ ok: true, value: defaultEditorSettings }),
@@ -568,6 +571,61 @@ describe("App", () => {
     expect(await screen.findByText("note.md")).toBeInTheDocument();
     expect(screen.getByText("v1")).toBeInTheDocument();
     expect(screen.getByText("v2")).toBeInTheDocument();
+  });
+
+  it("Gitビューで選択コミットにタグを作成して一覧に表示する", async () => {
+    const createGitTag = vi.fn().mockResolvedValue({
+      ok: true,
+      value: [
+        {
+          annotated: true,
+          date: "2026-05-05T00:00:00.000Z",
+          message: "first release",
+          name: "v1.0.0",
+          targetHash: "def456",
+          targetMessage: "Update note"
+        }
+      ]
+    });
+
+    window.relic = makeRelicApi({
+      createGitTag,
+      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace }),
+      getGitStatus: vi.fn().mockResolvedValue({ ok: true, value: { currentBranch: "main", initialized: true } }),
+      getGitWorkingChanges: vi.fn().mockResolvedValue({ ok: true, value: [] }),
+      getGitCommitHistory: vi.fn().mockResolvedValue({
+        ok: true,
+        value: [
+          {
+            author: "Test User",
+            changedFiles: [],
+            date: "2026-05-05T00:00:00.000Z",
+            hash: "def456",
+            message: "Update note"
+          }
+        ]
+      })
+    });
+
+    render(<App />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Git" }));
+    fireEvent.change(await screen.findByLabelText("Git作者名"), { target: { value: "Test User" } });
+    fireEvent.change(screen.getByLabelText("Git作者メール"), { target: { value: "test@example.com" } });
+    fireEvent.change(screen.getByLabelText("新規Gitタグ名"), { target: { value: "v1.0.0" } });
+    fireEvent.change(screen.getByLabelText("Gitタグメモ"), { target: { value: "first release" } });
+    fireEvent.click(screen.getByRole("button", { name: "タグを作成" }));
+
+    await waitFor(() => {
+      expect(createGitTag).toHaveBeenCalledWith({
+        hash: "def456",
+        message: "first release",
+        name: "v1.0.0",
+        taggerEmail: "test@example.com",
+        taggerName: "Test User"
+      });
+    });
+    expect(await screen.findByText(/v1\.0\.0/)).toBeInTheDocument();
   });
 
   it("右パネルにアウトゴーイングリンクを表示する", async () => {

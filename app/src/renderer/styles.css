@@ -346,6 +346,22 @@ button:disabled {
   gap: 8px;
 }
 
+.git-tag-target {
+  color: #747981;
+  font-size: 12px;
+}
+
+.git-tag-list {
+  margin-top: 4px;
+}
+
+.git-tag-row {
+  align-items: stretch;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
 .git-diff-entry {
   border: 1px solid rgba(31, 35, 40, 0.09);
   border-radius: 8px;

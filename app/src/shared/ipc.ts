@@ -11,12 +11,15 @@ export const getGitCommitHistoryChannel = "workspace:getGitCommitHistory";
 export const getGitCommitDiffChannel = "workspace:getGitCommitDiff";
 export const getGitWorkingChangesChannel = "workspace:getGitWorkingChanges";
 export const getGitBranchesChannel = "workspace:getGitBranches";
+export const getGitTagsChannel = "workspace:getGitTags";
 export const getWorkspaceTagsChannel = "workspace:getTags";
 export const getWorkspaceStateChannel = "workspace:getState";
 export const initializeGitRepositoryChannel = "workspace:initializeGitRepository";
 export const createGitCommitChannel = "workspace:createGitCommit";
 export const createGitBranchChannel = "workspace:createGitBranch";
 export const switchGitBranchChannel = "workspace:switchGitBranch";
+export const createGitTagChannel = "workspace:createGitTag";
+export const deleteGitTagChannel = "workspace:deleteGitTag";
 export const moveItemToTrashChannel = "workspace:moveItemToTrash";
 export const openWorkspaceChannel = "workspace:open";
 export const readMarkdownFileChannel = "workspace:readMarkdownFile";
@@ -190,6 +193,15 @@ export interface GitBranchSummary {
   name: string;
 }
 
+export interface GitTagSummary {
+  annotated: boolean;
+  date: string;
+  message: string | null;
+  name: string;
+  targetHash: string;
+  targetMessage: string | null;
+}
+
 export interface CreateGitCommitInput {
   authorEmail: string;
   authorName: string;
@@ -202,6 +214,18 @@ export interface CreateGitBranchInput {
 
 export interface SwitchGitBranchInput {
   allowDirty?: boolean;
+  name: string;
+}
+
+export interface CreateGitTagInput {
+  hash?: string;
+  message?: string;
+  name: string;
+  taggerEmail?: string;
+  taggerName?: string;
+}
+
+export interface DeleteGitTagInput {
   name: string;
 }
 
@@ -277,6 +301,7 @@ export interface RelicApi {
   getGitCommitDiff: (hash: string) => Promise<RelicResult<GitCommitDiff>>;
   getGitStatus: () => Promise<RelicResult<GitStatus>>;
   getGitWorkingChanges: () => Promise<RelicResult<GitWorkingChange[]>>;
+  getGitTags: () => Promise<RelicResult<GitTagSummary[]>>;
   getAppInfo: () => Promise<RelicResult<AppInfo>>;
   getEditorSettings: () => Promise<RelicResult<EditorSettings>>;
   getWorkspaceTags: () => Promise<RelicResult<WorkspaceTagSummary[]>>;
@@ -305,4 +330,6 @@ export interface RelicApi {
   writeMarkdownFile: (input: WriteMarkdownFileInput) => Promise<RelicResult<void>>;
   getFrontmatterCandidates: () => Promise<RelicResult<Record<string, string[]>>>;
   createFrontmatterTemplate: () => Promise<RelicResult<WorkspaceState>>;
+  createGitTag: (input: CreateGitTagInput) => Promise<RelicResult<GitTagSummary[]>>;
+  deleteGitTag: (input: DeleteGitTagInput) => Promise<RelicResult<GitTagSummary[]>>;
 }
