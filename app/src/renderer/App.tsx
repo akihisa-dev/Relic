@@ -101,10 +101,13 @@ interface FilesSidebarProps {
 function SearchSidebar({
   activeFilePath,
   error,
+  frontmatterCandidates,
+  frontmatterField,
   mode,
   query,
   results,
   tags,
+  onFrontmatterFieldChange,
   onModeChange,
   onOpenFile,
   onQueryChange,
@@ -113,10 +116,13 @@ function SearchSidebar({
 }: {
   activeFilePath: string | null;
   error: string | null;
+  frontmatterCandidates: Record<string, string[]>;
+  frontmatterField: string;
   mode: SearchMode;
   query: string;
   results: WorkspaceSearchResult[];
   tags: WorkspaceTagSummary[];
+  onFrontmatterFieldChange: (field: string) => void;
   onModeChange: (mode: SearchMode) => void;
   onOpenFile: (path: string) => void;
   onQueryChange: (query: string) => void;
@@ -130,6 +136,23 @@ function SearchSidebar({
   const [replaceError, setReplaceError] = useState<string | null>(null);
   const [replaceStatus, setReplaceStatus] = useState<string | null>(null);
   const [isReplacing, setIsReplacing] = useState(false);
+  const knownFrontmatterFields = useMemo(
+    () =>
+      Array.from(
+        new Set([
+          "tags",
+          "aliases",
+          "date",
+          "status",
+          "publish",
+          "url",
+          "author",
+          ...Object.keys(frontmatterCandidates)
+        ])
+      ).sort((a, b) => a.localeCompare(b, "ja")),
+    [frontmatterCandidates]
+  );
+  const frontmatterValueCandidates = frontmatterField ? (frontmatterCandidates[frontmatterField] ?? []) : [];
 
   const handleReplaceInFile = (): void => {
     if (!activeFilePath || !window.relic) return;
@@ -207,8 +230,9 @@ function SearchSidebar({
         aria-label="検索"
         className={`search-input${error ? " search-input--error" : ""}`}
         onChange={(event) => onQueryChange(event.target.value)}
-        placeholder="検索"
+        placeholder={mode === "frontmatter" ? "値を入力" : "検索"}
         value={query}
+        list={mode === "frontmatter" && frontmatterValueCandidates.length > 0 ? "search-frontmatter-values" : undefined}
       />
       <select
         aria-label="検索モード"
@@ -220,7 +244,32 @@ function SearchSidebar({
         <option value="fileName">ファイル名</option>
         <option value="tag">タグ</option>
         <option value="regex">正規表現</option>
+        <option value="frontmatter">フロントマター</option>
       </select>
+      {mode === "frontmatter" ? (
+        <div className="search-frontmatter-fields">
+          <input
+            aria-label="フロントマターフィールド"
+            className="search-input"
+            list="search-frontmatter-fields"
+            onChange={(event) => onFrontmatterFieldChange(event.target.value)}
+            placeholder="field名"
+            value={frontmatterField}
+          />
+          <datalist id="search-frontmatter-fields">
+            {knownFrontmatterFields.map((field) => (
+              <option key={field} value={field} />
+            ))}
+          </datalist>
+          {frontmatterValueCandidates.length > 0 ? (
+            <datalist id="search-frontmatter-values">
+              {frontmatterValueCandidates.map((candidate) => (
+                <option key={candidate} value={candidate} />
+              ))}
+            </datalist>
+          ) : null}
+        </div>
+      ) : null}
       {mode === "regex" ? (
         <div className="search-patterns">
           {[
@@ -262,6 +311,8 @@ function SearchSidebar({
               </li>
             ))}
           </ul>
+        ) : mode === "frontmatter" && !frontmatterField.trim() ? (
+          <div className="empty-note">フィールド名を入力してください。</div>
         ) : query.trim() ? (
           <div className="empty-note">一致する結果はありません。</div>
         ) : (
@@ -755,6 +806,7 @@ export function App(): ReactElement {
   const [workspaceTags, setWorkspaceTags] = useState<WorkspaceTagSummary[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchMode, setSearchMode] = useState<SearchMode>("fullText");
+  const [searchFrontmatterField, setSearchFrontmatterField] = useState("");
   const [searchResults, setSearchResults] = useState<WorkspaceSearchResult[]>([]);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [leftPaneScrollHeading, setLeftPaneScrollHeading] = useState<string | undefined>(undefined);
@@ -970,22 +1022,28 @@ export function App(): ReactElement {
 
     let canceled = false;
 
-    void window.relic.searchWorkspace({ mode: searchMode, query: searchQuery }).then((result) => {
-      if (canceled) return;
+    void window.relic
+      .searchWorkspace({
+        frontmatterField: searchMode === "frontmatter" ? searchFrontmatterField : undefined,
+        mode: searchMode,
+        query: searchQuery
+      })
+      .then((result) => {
+        if (canceled) return;
 
-      if (result.ok) {
-        setSearchResults(result.value);
-        setSearchError(null);
-      } else {
-        setSearchResults([]);
-        setSearchError(result.error.message);
-      }
-    });
+        if (result.ok) {
+          setSearchResults(result.value);
+          setSearchError(null);
+        } else {
+          setSearchResults([]);
+          setSearchError(result.error.message);
+        }
+      });
 
     return () => {
       canceled = true;
     };
-  }, [searchMode, searchQuery, workspaceState?.activeWorkspace?.id, workspaceState?.fileTree]);
+  }, [searchFrontmatterField, searchMode, searchQuery, workspaceState?.activeWorkspace?.id, workspaceState?.fileTree]);
 
   useEffect(() => {
     if (!workspaceState?.activeWorkspace || !window.relic) {
@@ -1331,7 +1389,10 @@ export function App(): ReactElement {
               <SearchSidebar
                 activeFilePath={activeTabInFocusedPane?.path ?? null}
                 error={searchError}
+                frontmatterCandidates={frontmatterCandidates}
+                frontmatterField={searchFrontmatterField}
                 mode={searchMode}
+                onFrontmatterFieldChange={setSearchFrontmatterField}
                 onModeChange={setSearchMode}
                 onOpenFile={handleOpenFile}
                 onQueryChange={setSearchQuery}
