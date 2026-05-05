@@ -10,6 +10,7 @@ interface ParsedFrontmatter {
 const BUILT_IN_FIELDS = ["tags", "aliases"] as const;
 const SYSTEM_FIELDS = ["date", "status", "publish", "url", "author"] as const;
 const KNOWN_FIELDS = new Set([...BUILT_IN_FIELDS, ...SYSTEM_FIELDS]);
+const MAX_FRONTMATTER_FIELDS = 20;
 
 function parseFrontmatter(content: string): ParsedFrontmatter {
   if (!content.startsWith("---\n") && !content.startsWith("---\r\n")) {
@@ -162,6 +163,7 @@ export function FrontmatterForm({
   workspaceTags = []
 }: FrontmatterFormProps): ReactElement | null {
   const { data, body } = parseFrontmatter(content);
+  const fieldCount = Object.keys(data).length;
 
   const updateField = useCallback(
     (key: string, value: unknown): void => {
@@ -208,6 +210,12 @@ export function FrontmatterForm({
 
       {isExpanded ? (
         <div className="fm-fields">
+          {fieldCount > MAX_FRONTMATTER_FIELDS ? (
+            <div className="fm-warning" role="alert">
+              フィールド数が上限の20件を超えています（現在 {fieldCount} 件）。余分な項目はソースモードで整理してください。
+            </div>
+          ) : null}
+
           {/* tags */}
           <div className="fm-row">
             <label className="fm-label">tags</label>
