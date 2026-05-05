@@ -6,8 +6,10 @@ export const createLinkedMarkdownFileChannel = "workspace:createLinkedMarkdownFi
 export const createMarkdownFileChannel = "workspace:createMarkdownFile";
 export const duplicateMarkdownFileChannel = "workspace:duplicateMarkdownFile";
 export const getBacklinksChannel = "workspace:getBacklinks";
+export const getGitStatusChannel = "workspace:getGitStatus";
 export const getWorkspaceTagsChannel = "workspace:getTags";
 export const getWorkspaceStateChannel = "workspace:getState";
+export const initializeGitRepositoryChannel = "workspace:initializeGitRepository";
 export const moveItemToTrashChannel = "workspace:moveItemToTrash";
 export const openWorkspaceChannel = "workspace:open";
 export const readMarkdownFileChannel = "workspace:readMarkdownFile";
@@ -146,6 +148,11 @@ export interface WorkspaceTagSummary {
   tag: string;
 }
 
+export interface GitStatus {
+  currentBranch: string | null;
+  initialized: boolean;
+}
+
 export interface WorkspaceSearchResult {
   fileName: string;
   lineNumber: number | null;
@@ -211,6 +218,7 @@ export interface RelicApi {
     input: DuplicateMarkdownFileInput
   ) => Promise<RelicResult<RenameMarkdownFileResult>>;
   getBacklinks: (input: GetBacklinksInput) => Promise<RelicResult<Backlink[]>>;
+  getGitStatus: () => Promise<RelicResult<GitStatus>>;
   getAppInfo: () => Promise<RelicResult<AppInfo>>;
   getEditorSettings: () => Promise<RelicResult<EditorSettings>>;
   getWorkspaceTags: () => Promise<RelicResult<WorkspaceTagSummary[]>>;
@@ -220,6 +228,7 @@ export interface RelicApi {
   moveMarkdownFile: (
     input: MoveMarkdownFileInput
   ) => Promise<RelicResult<RenameMarkdownFileResult>>;
+  initializeGitRepository: () => Promise<RelicResult<GitStatus>>;
   openWorkspace: () => Promise<RelicResult<WorkspaceState>>;
   readMarkdownFile: (input: ReadMarkdownFileInput) => Promise<RelicResult<MarkdownFileContent>>;
   renameMarkdownFile: (

@@ -13,6 +13,7 @@ function makeRelicApi(overrides: Partial<typeof window.relic> = {}): typeof wind
     createMarkdownFile: vi.fn(),
     duplicateMarkdownFile: vi.fn(),
     getBacklinks: vi.fn().mockResolvedValue({ ok: true, value: [] }),
+    getGitStatus: vi.fn().mockResolvedValue({ ok: true, value: { currentBranch: null, initialized: false } }),
     getAppInfo: vi.fn().mockResolvedValue({ ok: true, value: { name: "Relic", platform: "darwin", version: "0.0.0" } }),
     getEditorSettings: vi.fn().mockResolvedValue({ ok: true, value: defaultEditorSettings }),
     getWorkspaceTags: vi.fn().mockResolvedValue({ ok: true, value: [] }),
@@ -33,6 +34,7 @@ function makeRelicApi(overrides: Partial<typeof window.relic> = {}): typeof wind
     createFrontmatterTemplate: vi.fn().mockResolvedValue({ ok: true, value: { activeWorkspace: null, fileTree: [], workspaces: [] } }),
     moveFolder: vi.fn(),
     moveMarkdownFile: vi.fn(),
+    initializeGitRepository: vi.fn().mockResolvedValue({ ok: true, value: { currentBranch: "main", initialized: true } }),
     applySearchAndReplace: vi.fn(),
     replaceInFile: vi.fn(),
     searchAndReplace: vi.fn(),
@@ -344,6 +346,30 @@ describe("App", () => {
       });
     });
     expect(await screen.findByText("status: draft")).toBeInTheDocument();
+  });
+
+  it("Gitビューでワークスペースを初期化できる", async () => {
+    const initializeGitRepository = vi.fn().mockResolvedValue({
+      ok: true,
+      value: { currentBranch: "main", initialized: true }
+    });
+
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace }),
+      getGitStatus: vi.fn().mockResolvedValue({ ok: true, value: { currentBranch: null, initialized: false } }),
+      initializeGitRepository
+    });
+
+    render(<App />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Git" }));
+    fireEvent.click(await screen.findByRole("button", { name: "このワークスペースでGitを初期化" }));
+
+    await waitFor(() => {
+      expect(initializeGitRepository).toHaveBeenCalled();
+    });
+    expect(await screen.findByText("初期化済み")).toBeInTheDocument();
+    expect(screen.getByText("main")).toBeInTheDocument();
   });
 
   it("右パネルにアウトゴーイングリンクを表示する", async () => {
