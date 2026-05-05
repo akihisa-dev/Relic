@@ -5,6 +5,7 @@ import type { ReactElement } from "react";
 import type {
   Backlink,
   EditorSettings,
+  GitStatus,
   MarkdownFileContent,
   SearchAndReplaceMatch,
   SearchMode,
@@ -812,6 +813,7 @@ export function App(): ReactElement {
   const [leftPaneScrollHeading, setLeftPaneScrollHeading] = useState<string | undefined>(undefined);
   const [rightPaneScrollHeading, setRightPaneScrollHeading] = useState<string | undefined>(undefined);
   const [frontmatterCandidates, setFrontmatterCandidates] = useState<Record<string, string[]>>({});
+  const [gitStatus, setGitStatus] = useState<GitStatus | null>(null);
   const [showCommandPalette, setShowCommandPalette] = useState(false);
   const [showQuickSwitcher, setShowQuickSwitcher] = useState(false);
 
@@ -1057,6 +1059,30 @@ export function App(): ReactElement {
   }, [workspaceState?.activeWorkspace?.id, workspaceState?.fileTree]);
 
   useEffect(() => {
+    if (!workspaceState?.activeWorkspace || !window.relic) {
+      setGitStatus(null);
+      return;
+    }
+
+    let canceled = false;
+
+    void window.relic.getGitStatus().then((result) => {
+      if (canceled) return;
+
+      if (result.ok) {
+        setGitStatus(result.value);
+      } else {
+        setGitStatus(null);
+        setWorkspaceError(result.error.message);
+      }
+    });
+
+    return () => {
+      canceled = true;
+    };
+  }, [workspaceState?.activeWorkspace?.id]);
+
+  useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent): void => {
       if (!e.metaKey) return;
 
@@ -1087,6 +1113,19 @@ export function App(): ReactElement {
     },
     [setEditorSettings]
   );
+
+  const handleInitializeGitRepository = useCallback((): void => {
+    if (!window.relic) return;
+
+    void window.relic.initializeGitRepository().then((result) => {
+      if (result.ok) {
+        setGitStatus(result.value);
+        setWorkspaceError(null);
+      } else {
+        setWorkspaceError(result.error.message);
+      }
+    });
+  }, []);
 
   // ──────────────────
   // ファイル移動
@@ -1407,7 +1446,28 @@ export function App(): ReactElement {
               />
             ) : activeSidebarView === "git" ? (
               <div className="sidebar-section">
-                <div className="empty-note">Git連携はフェーズ6で追加します。</div>
+                {!workspaceState?.activeWorkspace ? (
+                  <div className="empty-note">ワークスペースを開くとGit状態を表示できます。</div>
+                ) : gitStatus?.initialized ? (
+                  <div className="search-block">
+                    <div className="links-panel-subheading">Repository</div>
+                    <div className="setting-row">
+                      <span>状態</span>
+                      <span>初期化済み</span>
+                    </div>
+                    <div className="setting-row">
+                      <span>ブランチ</span>
+                      <span>{gitStatus.currentBranch ?? "(detached)"}</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="search-block">
+                    <div className="empty-note">このワークスペースはまだGit管理されていません。</div>
+                    <button className="primary-button" onClick={handleInitializeGitRepository} type="button">
+                      このワークスペースでGitを初期化
+                    </button>
+                  </div>
+                )}
               </div>
             ) : (
               <SettingsSidebar

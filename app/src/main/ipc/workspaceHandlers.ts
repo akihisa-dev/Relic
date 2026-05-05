@@ -14,8 +14,10 @@ import {
   type DuplicateMarkdownFileInput,
   getBacklinksChannel,
   type GetBacklinksInput,
+  getGitStatusChannel,
   getWorkspaceTagsChannel,
   getWorkspaceStateChannel,
+  initializeGitRepositoryChannel,
   moveFolderChannel,
   type MoveFolderInput,
   moveItemToTrashChannel,
@@ -38,6 +40,7 @@ import {
   type SearchWorkspaceInput,
   switchWorkspaceChannel,
   type SwitchWorkspaceInput,
+  type GitStatus,
   type WorkspaceState,
   getFrontmatterCandidatesChannel,
   createFrontmatterTemplateChannel
@@ -46,6 +49,7 @@ import { fail, ok, type RelicResult } from "../../shared/result";
 import { readBacklinks } from "../files/backlinks";
 import { readWorkspaceFileTree } from "../files/fileTree";
 import { createFolder, moveFolder, renameFolder } from "../files/folders";
+import { initializeGitRepository, readGitStatus } from "../files/git";
 import {
   createMarkdownFileAtPath,
   createMarkdownFile,
@@ -97,6 +101,25 @@ export function registerWorkspaceHandlers(): void {
       return fail(
         "TAGS_READ_FAILED",
         "タグを読み込めませんでした。",
+        error instanceof Error ? error.message : String(error)
+      );
+    }
+  });
+
+  ipcMain.handle(getGitStatusChannel, async (): Promise<RelicResult<GitStatus>> => {
+    try {
+      const settings = await readAppSettings(app.getPath("userData"));
+      const state = toWorkspaceState(settings);
+
+      if (!state.activeWorkspace) {
+        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
+      }
+
+      return readGitStatus(state.activeWorkspace.path);
+    } catch (error) {
+      return fail(
+        "GIT_STATUS_FAILED",
+        "Git状態を取得できませんでした。",
         error instanceof Error ? error.message : String(error)
       );
     }
@@ -649,6 +672,25 @@ export function registerWorkspaceHandlers(): void {
       }
 
       return fail("FRONTMATTER_TEMPLATE_FAILED", String(error));
+    }
+  });
+
+  ipcMain.handle(initializeGitRepositoryChannel, async (): Promise<RelicResult<GitStatus>> => {
+    try {
+      const settings = await readAppSettings(app.getPath("userData"));
+      const state = toWorkspaceState(settings);
+
+      if (!state.activeWorkspace) {
+        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
+      }
+
+      return initializeGitRepository(state.activeWorkspace.path);
+    } catch (error) {
+      return fail(
+        "GIT_INIT_FAILED",
+        "Gitリポジトリを初期化できませんでした。",
+        error instanceof Error ? error.message : String(error)
+      );
     }
   });
 

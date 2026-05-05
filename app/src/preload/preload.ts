@@ -9,8 +9,10 @@ import {
   getBacklinksChannel,
   getAppInfoChannel,
   getEditorSettingsChannel,
+  getGitStatusChannel,
   getWorkspaceTagsChannel,
   getWorkspaceStateChannel,
+  initializeGitRepositoryChannel,
   moveFolderChannel,
   moveItemToTrashChannel,
   moveMarkdownFileChannel,
@@ -34,6 +36,7 @@ import {
   type DuplicateMarkdownFileInput,
   type EditorSettings,
   type Backlink,
+  type GitStatus,
   type GetBacklinksInput,
   type MarkdownFileContent,
   type MoveFolderInput,
@@ -74,6 +77,8 @@ const relicApi: RelicApi = {
     >,
   getBacklinks: (input: GetBacklinksInput) =>
     ipcRenderer.invoke(getBacklinksChannel, input) as Promise<RelicResult<Backlink[]>>,
+  getGitStatus: () =>
+    ipcRenderer.invoke(getGitStatusChannel) as Promise<RelicResult<GitStatus>>,
   getAppInfo: () => ipcRenderer.invoke(getAppInfoChannel) as Promise<RelicResult<AppInfo>>,
   getEditorSettings: () =>
     ipcRenderer.invoke(getEditorSettingsChannel) as Promise<RelicResult<EditorSettings>>,
@@ -89,6 +94,8 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(moveMarkdownFileChannel, input) as Promise<
       RelicResult<RenameMarkdownFileResult>
     >,
+  initializeGitRepository: () =>
+    ipcRenderer.invoke(initializeGitRepositoryChannel) as Promise<RelicResult<GitStatus>>,
   openWorkspace: () =>
     ipcRenderer.invoke(openWorkspaceChannel) as Promise<RelicResult<WorkspaceState>>,
   readMarkdownFile: (input: ReadMarkdownFileInput) =>
