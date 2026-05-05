@@ -6,6 +6,8 @@ import { app, dialog, ipcMain, shell } from "electron";
 import {
   createFolderChannel,
   type CreateFolderInput,
+  createGitBranchChannel,
+  type CreateGitBranchInput,
   createGitCommitChannel,
   type CreateGitCommitInput,
   createLinkedMarkdownFileChannel,
@@ -16,6 +18,7 @@ import {
   type DuplicateMarkdownFileInput,
   getBacklinksChannel,
   type GetBacklinksInput,
+  getGitBranchesChannel,
   getGitCommitHistoryChannel,
   getGitCommitDiffChannel,
   getGitStatusChannel,
@@ -46,8 +49,11 @@ import {
   switchWorkspaceChannel,
   type SwitchWorkspaceInput,
   type GitStatus,
+  switchGitBranchChannel,
+  type SwitchGitBranchInput,
   type GitCommitSummary,
   type GitCommitDiff,
+  type GitBranchSummary,
   type GitWorkingChange,
   type WorkspaceState,
   getFrontmatterCandidatesChannel,
@@ -58,12 +64,15 @@ import { readBacklinks } from "../files/backlinks";
 import { readWorkspaceFileTree } from "../files/fileTree";
 import { createFolder, moveFolder, renameFolder } from "../files/folders";
 import {
+  createGitBranch,
   createGitCommit,
   initializeGitRepository,
+  readGitBranches,
   readGitCommitDiff,
   readGitCommitHistory,
   readGitStatus,
-  readGitWorkingChanges
+  readGitWorkingChanges,
+  switchGitBranch
 } from "../files/git";
 import {
   createMarkdownFileAtPath,
@@ -135,6 +144,25 @@ export function registerWorkspaceHandlers(): void {
       return fail(
         "GIT_STATUS_FAILED",
         "Git状態を取得できませんでした。",
+        error instanceof Error ? error.message : String(error)
+      );
+    }
+  });
+
+  ipcMain.handle(getGitBranchesChannel, async (): Promise<RelicResult<GitBranchSummary[]>> => {
+    try {
+      const settings = await readAppSettings(app.getPath("userData"));
+      const state = toWorkspaceState(settings);
+
+      if (!state.activeWorkspace) {
+        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
+      }
+
+      return readGitBranches(state.activeWorkspace.path);
+    } catch (error) {
+      return fail(
+        "GIT_BRANCHES_FAILED",
+        "ブランチ一覧を取得できませんでした。",
         error instanceof Error ? error.message : String(error)
       );
     }
@@ -793,6 +821,52 @@ export function registerWorkspaceHandlers(): void {
     }
   });
 
+  ipcMain.handle(createGitBranchChannel, async (_event, input: CreateGitBranchInput): Promise<RelicResult<GitBranchSummary[]>> => {
+    try {
+      if (!isCreateGitBranchInput(input)) {
+        return fail("GIT_BRANCH_INVALID_INPUT", "ブランチ名を入力してください。");
+      }
+
+      const settings = await readAppSettings(app.getPath("userData"));
+      const state = toWorkspaceState(settings);
+
+      if (!state.activeWorkspace) {
+        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
+      }
+
+      return createGitBranch(state.activeWorkspace.path, input);
+    } catch (error) {
+      return fail(
+        "GIT_BRANCH_CREATE_FAILED",
+        "ブランチを作成できませんでした。",
+        error instanceof Error ? error.message : String(error)
+      );
+    }
+  });
+
+  ipcMain.handle(switchGitBranchChannel, async (_event, input: SwitchGitBranchInput): Promise<RelicResult<GitBranchSummary[]>> => {
+    try {
+      if (!isSwitchGitBranchInput(input)) {
+        return fail("GIT_BRANCH_INVALID_INPUT", "切り替えるブランチを選択してください。");
+      }
+
+      const settings = await readAppSettings(app.getPath("userData"));
+      const state = toWorkspaceState(settings);
+
+      if (!state.activeWorkspace) {
+        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
+      }
+
+      return switchGitBranch(state.activeWorkspace.path, input);
+    } catch (error) {
+      return fail(
+        "GIT_BRANCH_SWITCH_FAILED",
+        "ブランチを切り替えできませんでした。",
+        error instanceof Error ? error.message : String(error)
+      );
+    }
+  });
+
   ipcMain.handle(
     switchWorkspaceChannel,
     async (_event, input: SwitchWorkspaceInput): Promise<RelicResult<WorkspaceState>> => {
@@ -983,5 +1057,25 @@ function isCreateGitCommitInput(input: unknown): input is CreateGitCommitInput {
     typeof (input as { authorEmail?: unknown }).authorEmail === "string" &&
     typeof (input as { authorName?: unknown }).authorName === "string" &&
     typeof (input as { message?: unknown }).message === "string"
+  );
+}
+
+function isCreateGitBranchInput(input: unknown): input is CreateGitBranchInput {
+  return (
+    typeof input === "object" &&
+    input !== null &&
+    "name" in input &&
+    typeof (input as { name?: unknown }).name === "string"
+  );
+}
+
+function isSwitchGitBranchInput(input: unknown): input is SwitchGitBranchInput {
+  return (
+    typeof input === "object" &&
+    input !== null &&
+    "name" in input &&
+    typeof (input as { name?: unknown }).name === "string" &&
+    (!("allowDirty" in input) ||
+      typeof (input as { allowDirty?: unknown }).allowDirty === "boolean")
   );
 }

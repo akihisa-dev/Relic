@@ -5,6 +5,7 @@ import type { ReactElement } from "react";
 import type {
   Backlink,
   GitCommitDiff,
+  GitBranchSummary,
   EditorSettings,
   GitCommitSummary,
   GitStatus,
@@ -817,14 +818,19 @@ export function App(): ReactElement {
   const [rightPaneScrollHeading, setRightPaneScrollHeading] = useState<string | undefined>(undefined);
   const [frontmatterCandidates, setFrontmatterCandidates] = useState<Record<string, string[]>>({});
   const [gitStatus, setGitStatus] = useState<GitStatus | null>(null);
+  const [gitBranches, setGitBranches] = useState<GitBranchSummary[]>([]);
   const [gitCommitHistory, setGitCommitHistory] = useState<GitCommitSummary[]>([]);
   const [gitWorkingChanges, setGitWorkingChanges] = useState<GitWorkingChange[]>([]);
   const [selectedGitCommitHash, setSelectedGitCommitHash] = useState<string | null>(null);
   const [selectedGitCommitDiff, setSelectedGitCommitDiff] = useState<GitCommitDiff | null>(null);
+  const [newGitBranchName, setNewGitBranchName] = useState("");
+  const [pendingGitBranchSwitch, setPendingGitBranchSwitch] = useState<string | null>(null);
   const [gitCommitMessage, setGitCommitMessage] = useState("");
   const [gitAuthorName, setGitAuthorName] = useState("");
   const [gitAuthorEmail, setGitAuthorEmail] = useState("");
+  const [isCreatingGitBranch, setIsCreatingGitBranch] = useState(false);
   const [isCreatingGitCommit, setIsCreatingGitCommit] = useState(false);
+  const [isSwitchingGitBranch, setIsSwitchingGitBranch] = useState(false);
   const [showCommandPalette, setShowCommandPalette] = useState(false);
   const [showQuickSwitcher, setShowQuickSwitcher] = useState(false);
 
@@ -859,6 +865,21 @@ export function App(): ReactElement {
     toggleSidebar,
     toggleTypewriterMode
   } = useUiStore();
+
+  const applyGitBranches = useCallback((branches: GitBranchSummary[]): void => {
+    setGitBranches(branches);
+
+    const currentBranch = branches.find((branch) => branch.isCurrent)?.name ?? null;
+
+    setGitStatus((current) =>
+      current
+        ? {
+            ...current,
+            currentBranch
+          }
+        : current
+    );
+  }, []);
 
   // 初期ロード
   useEffect(() => {
@@ -1072,8 +1093,10 @@ export function App(): ReactElement {
   useEffect(() => {
     if (!workspaceState?.activeWorkspace || !window.relic) {
       setGitStatus(null);
+      setGitBranches([]);
       setGitCommitHistory([]);
       setGitWorkingChanges([]);
+      setPendingGitBranchSwitch(null);
       return;
     }
 
@@ -1099,27 +1122,40 @@ export function App(): ReactElement {
 
   useEffect(() => {
     if (!workspaceState?.activeWorkspace || !window.relic || !gitStatus?.initialized) {
+      setGitBranches([]);
       setGitCommitHistory([]);
       setGitWorkingChanges([]);
       setSelectedGitCommitHash(null);
       setSelectedGitCommitDiff(null);
+      setPendingGitBranchSwitch(null);
       return;
     }
 
     let canceled = false;
 
+    void window.relic.getGitBranches().then((result) => {
+      if (canceled) return;
+
+      if (result.ok) {
+        applyGitBranches(result.value);
+      } else {
+        setGitBranches([]);
+        setWorkspaceError(result.error.message);
+      }
+    });
+
     void window.relic.getGitCommitHistory().then((result) => {
       if (canceled) return;
 
-        if (result.ok) {
-          setGitCommitHistory(result.value);
-          if (result.value.length > 0 && !selectedGitCommitHash) {
-            setSelectedGitCommitHash(result.value[0].hash);
-          }
-        } else {
-          setGitCommitHistory([]);
-          setWorkspaceError(result.error.message);
+      if (result.ok) {
+        setGitCommitHistory(result.value);
+        if (result.value.length > 0 && !selectedGitCommitHash) {
+          setSelectedGitCommitHash(result.value[0].hash);
         }
+      } else {
+        setGitCommitHistory([]);
+        setWorkspaceError(result.error.message);
+      }
     });
 
     void window.relic.getGitWorkingChanges().then((result) => {
@@ -1136,7 +1172,13 @@ export function App(): ReactElement {
     return () => {
       canceled = true;
     };
-  }, [gitStatus?.initialized, workspaceState?.activeWorkspace?.id, workspaceState?.fileTree]);
+  }, [
+    applyGitBranches,
+    gitStatus?.initialized,
+    selectedGitCommitHash,
+    workspaceState?.activeWorkspace?.id,
+    workspaceState?.fileTree
+  ]);
 
   useEffect(() => {
     if (!window.relic || !selectedGitCommitHash || !gitStatus?.initialized) {
@@ -1194,18 +1236,119 @@ export function App(): ReactElement {
     [setEditorSettings]
   );
 
+  const refreshGitWorkingChanges = useCallback((): void => {
+    if (!window.relic) return;
+
+    void window.relic.getGitWorkingChanges().then((result) => {
+      if (result.ok) {
+        setGitWorkingChanges(result.value);
+      } else {
+        setGitWorkingChanges([]);
+        setWorkspaceError(result.error.message);
+      }
+    });
+  }, []);
+
+  const refreshGitCommitHistory = useCallback((): void => {
+    if (!window.relic) return;
+
+    void window.relic.getGitCommitHistory().then((result) => {
+      if (result.ok) {
+        setGitCommitHistory(result.value);
+        setSelectedGitCommitHash((current) => {
+          if (result.value.length === 0) {
+            return null;
+          }
+
+          return current && result.value.some((commit) => commit.hash === current)
+            ? current
+            : result.value[0].hash;
+        });
+      } else {
+        setGitCommitHistory([]);
+        setWorkspaceError(result.error.message);
+      }
+    });
+  }, []);
+
+  const refreshGitBranches = useCallback((): void => {
+    if (!window.relic) return;
+
+    void window.relic.getGitBranches().then((result) => {
+      if (result.ok) {
+        applyGitBranches(result.value);
+      } else {
+        setGitBranches([]);
+        setWorkspaceError(result.error.message);
+      }
+    });
+  }, [applyGitBranches]);
+
   const handleInitializeGitRepository = useCallback((): void => {
     if (!window.relic) return;
 
     void window.relic.initializeGitRepository().then((result) => {
       if (result.ok) {
         setGitStatus(result.value);
+        setPendingGitBranchSwitch(null);
         setWorkspaceError(null);
+        refreshGitBranches();
+        refreshGitCommitHistory();
+        refreshGitWorkingChanges();
       } else {
         setWorkspaceError(result.error.message);
       }
     });
-  }, []);
+  }, [refreshGitBranches, refreshGitCommitHistory, refreshGitWorkingChanges]);
+
+  const handleCreateGitBranch = useCallback((): void => {
+    if (!window.relic) return;
+
+    setIsCreatingGitBranch(true);
+    setWorkspaceError(null);
+
+    void window.relic
+      .createGitBranch({ name: newGitBranchName })
+      .then((result) => {
+        if (result.ok) {
+          applyGitBranches(result.value);
+          setNewGitBranchName("");
+        } else {
+          setWorkspaceError(result.error.message);
+        }
+      })
+      .finally(() => setIsCreatingGitBranch(false));
+  }, [applyGitBranches, newGitBranchName]);
+
+  const handleSwitchGitBranch = useCallback(
+    (name: string, allowDirty = false): void => {
+      if (!window.relic) return;
+
+      setIsSwitchingGitBranch(true);
+      setWorkspaceError(null);
+
+      void window.relic
+        .switchGitBranch({ allowDirty, name })
+        .then((result) => {
+          if (result.ok) {
+            applyGitBranches(result.value);
+            setPendingGitBranchSwitch(null);
+            refreshGitCommitHistory();
+            refreshGitWorkingChanges();
+            return;
+          }
+
+          if (result.error.code === "GIT_BRANCH_SWITCH_DIRTY") {
+            setPendingGitBranchSwitch(name);
+            return;
+          }
+
+          setWorkspaceError(result.error.message);
+        })
+        .finally(() => setIsSwitchingGitBranch(false));
+    },
+    [applyGitBranches, refreshGitCommitHistory, refreshGitWorkingChanges]
+  );
 
   const handleCreateGitCommit = useCallback((): void => {
     if (!window.relic) return;
@@ -1228,14 +1371,64 @@ export function App(): ReactElement {
         setGitCommitMessage("");
         setGitCommitHistory((current) => [result.value, ...current]);
         setSelectedGitCommitHash(result.value.hash);
-        void window.relic!.getGitWorkingChanges().then((changesResult) => {
-          if (changesResult.ok) {
-            setGitWorkingChanges(changesResult.value);
-          }
-        });
+        setPendingGitBranchSwitch(null);
+        refreshGitWorkingChanges();
       })
       .finally(() => setIsCreatingGitCommit(false));
-  }, [gitAuthorEmail, gitAuthorName, gitCommitMessage]);
+  }, [gitAuthorEmail, gitAuthorName, gitCommitMessage, refreshGitWorkingChanges]);
+
+  const handleCommitAndSwitchGitBranch = useCallback((): void => {
+    if (!window.relic || !pendingGitBranchSwitch) return;
+
+    setIsCreatingGitCommit(true);
+    setIsSwitchingGitBranch(true);
+    setWorkspaceError(null);
+
+    void window.relic
+      .createGitCommit({
+        authorEmail: gitAuthorEmail,
+        authorName: gitAuthorName,
+        message: gitCommitMessage
+      })
+      .then((commitResult) => {
+        if (!commitResult.ok) {
+          setWorkspaceError(commitResult.error.message);
+          return;
+        }
+
+        setGitCommitMessage("");
+        setGitCommitHistory((current) => [commitResult.value, ...current]);
+        setSelectedGitCommitHash(commitResult.value.hash);
+
+        return window.relic!.switchGitBranch({ name: pendingGitBranchSwitch });
+      })
+      .then((switchResult) => {
+        if (!switchResult) {
+          return;
+        }
+
+        if (switchResult.ok) {
+          applyGitBranches(switchResult.value);
+          setPendingGitBranchSwitch(null);
+          refreshGitCommitHistory();
+          refreshGitWorkingChanges();
+        } else {
+          setWorkspaceError(switchResult.error.message);
+        }
+      })
+      .finally(() => {
+        setIsCreatingGitCommit(false);
+        setIsSwitchingGitBranch(false);
+      });
+  }, [
+    applyGitBranches,
+    gitAuthorEmail,
+    gitAuthorName,
+    gitCommitMessage,
+    pendingGitBranchSwitch,
+    refreshGitCommitHistory,
+    refreshGitWorkingChanges
+  ]);
 
   // ──────────────────
   // ファイル移動
@@ -1570,6 +1763,88 @@ export function App(): ReactElement {
                         <span>ブランチ</span>
                         <span>{gitStatus.currentBranch ?? "(detached)"}</span>
                       </div>
+                    </div>
+                    <div className="search-block">
+                      <div className="links-panel-subheading">Branches</div>
+                      <form
+                        className="git-branch-form"
+                        onSubmit={(event) => {
+                          event.preventDefault();
+                          handleCreateGitBranch();
+                        }}
+                      >
+                        <input
+                          aria-label="新規Gitブランチ名"
+                          className="text-input"
+                          onChange={(event) => setNewGitBranchName(event.target.value)}
+                          placeholder="feature/..."
+                          value={newGitBranchName}
+                        />
+                        <button
+                          className="primary-button"
+                          disabled={isCreatingGitBranch}
+                          type="submit"
+                        >
+                          {isCreatingGitBranch ? "作成中..." : "ブランチを作成"}
+                        </button>
+                      </form>
+                      {gitBranches.length > 0 ? (
+                        <ul className="search-results git-branch-list">
+                          {gitBranches.map((branch) => (
+                            <li className="search-result-item" key={branch.name}>
+                              <button
+                                className="search-result-button"
+                                disabled={branch.isCurrent || isSwitchingGitBranch}
+                                onClick={() => handleSwitchGitBranch(branch.name)}
+                                type="button"
+                              >
+                                <span className="search-result-title">
+                                  {branch.name}
+                                  {branch.isCurrent ? " (current)" : ""}
+                                </span>
+                                <span className="search-result-line">
+                                  {branch.isCurrent ? "現在のブランチ" : "切り替える"}
+                                </span>
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <div className="empty-note">ブランチはまだありません。</div>
+                      )}
+                      {pendingGitBranchSwitch ? (
+                        <div className="git-branch-warning">
+                          <div className="error-note">
+                            未コミット変更があります。`{pendingGitBranchSwitch}` へ切り替える前に方法を選んでください。
+                          </div>
+                          <div className="git-branch-warning-actions">
+                            <button
+                              className="primary-button"
+                              disabled={isCreatingGitCommit || isSwitchingGitBranch}
+                              onClick={handleCommitAndSwitchGitBranch}
+                              type="button"
+                            >
+                              コミットして切り替える
+                            </button>
+                            <button
+                              className="replace-btn"
+                              disabled={isSwitchingGitBranch}
+                              onClick={() => handleSwitchGitBranch(pendingGitBranchSwitch, true)}
+                              type="button"
+                            >
+                              変更を残したまま切り替える
+                            </button>
+                            <button
+                              className="replace-btn"
+                              disabled={isCreatingGitCommit || isSwitchingGitBranch}
+                              onClick={() => setPendingGitBranchSwitch(null)}
+                              type="button"
+                            >
+                              キャンセル
+                            </button>
+                          </div>
+                        </div>
+                      ) : null}
                     </div>
                     <div className="search-block">
                       <div className="links-panel-subheading">Commit</div>

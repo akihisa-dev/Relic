@@ -10,10 +10,13 @@ export const getGitStatusChannel = "workspace:getGitStatus";
 export const getGitCommitHistoryChannel = "workspace:getGitCommitHistory";
 export const getGitCommitDiffChannel = "workspace:getGitCommitDiff";
 export const getGitWorkingChangesChannel = "workspace:getGitWorkingChanges";
+export const getGitBranchesChannel = "workspace:getGitBranches";
 export const getWorkspaceTagsChannel = "workspace:getTags";
 export const getWorkspaceStateChannel = "workspace:getState";
 export const initializeGitRepositoryChannel = "workspace:initializeGitRepository";
 export const createGitCommitChannel = "workspace:createGitCommit";
+export const createGitBranchChannel = "workspace:createGitBranch";
+export const switchGitBranchChannel = "workspace:switchGitBranch";
 export const moveItemToTrashChannel = "workspace:moveItemToTrash";
 export const openWorkspaceChannel = "workspace:open";
 export const readMarkdownFileChannel = "workspace:readMarkdownFile";
@@ -182,10 +185,24 @@ export interface GitCommitDiff {
   entries: GitCommitDiffEntry[];
 }
 
+export interface GitBranchSummary {
+  isCurrent: boolean;
+  name: string;
+}
+
 export interface CreateGitCommitInput {
   authorEmail: string;
   authorName: string;
   message: string;
+}
+
+export interface CreateGitBranchInput {
+  name: string;
+}
+
+export interface SwitchGitBranchInput {
+  allowDirty?: boolean;
+  name: string;
 }
 
 export interface WorkspaceSearchResult {
@@ -245,6 +262,7 @@ export interface WorkspaceFileNode {
 
 export interface RelicApi {
   createFolder: (input: CreateFolderInput) => Promise<RelicResult<WorkspaceState>>;
+  createGitBranch: (input: CreateGitBranchInput) => Promise<RelicResult<GitBranchSummary[]>>;
   createGitCommit: (input: CreateGitCommitInput) => Promise<RelicResult<GitCommitSummary>>;
   createLinkedMarkdownFile: (
     input: CreateLinkedMarkdownFileInput
@@ -254,6 +272,7 @@ export interface RelicApi {
     input: DuplicateMarkdownFileInput
   ) => Promise<RelicResult<RenameMarkdownFileResult>>;
   getBacklinks: (input: GetBacklinksInput) => Promise<RelicResult<Backlink[]>>;
+  getGitBranches: () => Promise<RelicResult<GitBranchSummary[]>>;
   getGitCommitHistory: () => Promise<RelicResult<GitCommitSummary[]>>;
   getGitCommitDiff: (hash: string) => Promise<RelicResult<GitCommitDiff>>;
   getGitStatus: () => Promise<RelicResult<GitStatus>>;
@@ -281,6 +300,7 @@ export interface RelicApi {
     input: SearchAndReplaceInput
   ) => Promise<RelicResult<SearchAndReplaceMatch[]>>;
   searchWorkspace: (input: SearchWorkspaceInput) => Promise<RelicResult<WorkspaceSearchResult[]>>;
+  switchGitBranch: (input: SwitchGitBranchInput) => Promise<RelicResult<GitBranchSummary[]>>;
   switchWorkspace: (input: SwitchWorkspaceInput) => Promise<RelicResult<WorkspaceState>>;
   writeMarkdownFile: (input: WriteMarkdownFileInput) => Promise<RelicResult<void>>;
   getFrontmatterCandidates: () => Promise<RelicResult<Record<string, string[]>>>;
