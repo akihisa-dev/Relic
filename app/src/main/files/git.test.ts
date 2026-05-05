@@ -5,12 +5,15 @@ import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
 import {
+  createGitBranch,
   createGitCommit,
   initializeGitRepository,
   readGitCommitDiff,
+  readGitBranches,
   readGitCommitHistory,
   readGitStatus,
-  readGitWorkingChanges
+  readGitWorkingChanges,
+  switchGitBranch
 } from "./git";
 
 describe("git", () => {
@@ -176,6 +179,74 @@ describe("git", () => {
           }
         ]
       }
+    });
+  });
+
+  it("ブランチを作成して一覧に出せる", async () => {
+    const workspacePath = await createWorkspace();
+    await initializeGitRepository(workspacePath);
+    await writeFile(path.join(workspacePath, "note.md"), "hello", "utf8");
+    await createGitCommit(workspacePath, {
+      authorEmail: "test@example.com",
+      authorName: "Test User",
+      message: "Initial commit"
+    });
+
+    const result = await createGitBranch(workspacePath, { name: "feature/test" });
+
+    expect(result).toMatchObject({
+      ok: true,
+      value: [
+        { isCurrent: false, name: "feature/test" },
+        { isCurrent: true, name: "main" }
+      ]
+    });
+  });
+
+  it("未コミット変更があると切り替え確認を要求する", async () => {
+    const workspacePath = await createWorkspace();
+    await initializeGitRepository(workspacePath);
+    await writeFile(path.join(workspacePath, "note.md"), "hello", "utf8");
+    await createGitCommit(workspacePath, {
+      authorEmail: "test@example.com",
+      authorName: "Test User",
+      message: "Initial commit"
+    });
+    await createGitBranch(workspacePath, { name: "feature/test" });
+    await writeFile(path.join(workspacePath, "note.md"), "draft", "utf8");
+
+    await expect(switchGitBranch(workspacePath, { name: "feature/test" })).resolves.toMatchObject({
+      ok: false,
+      error: { code: "GIT_BRANCH_SWITCH_DIRTY" }
+    });
+  });
+
+  it("allowDirty=true なら変更を残したまま切り替えを試みる", async () => {
+    const workspacePath = await createWorkspace();
+    await initializeGitRepository(workspacePath);
+    await writeFile(path.join(workspacePath, "note.md"), "hello", "utf8");
+    await createGitCommit(workspacePath, {
+      authorEmail: "test@example.com",
+      authorName: "Test User",
+      message: "Initial commit"
+    });
+    await createGitBranch(workspacePath, { name: "feature/test" });
+    await writeFile(path.join(workspacePath, "note.md"), "draft", "utf8");
+
+    const switched = await switchGitBranch(workspacePath, {
+      allowDirty: true,
+      name: "feature/test"
+    });
+
+    expect(switched).toMatchObject({
+      ok: true
+    });
+
+    const branches = await readGitBranches(workspacePath);
+
+    expect(branches).toMatchObject({
+      ok: true,
+      value: expect.arrayContaining([{ isCurrent: true, name: "feature/test" }])
     });
   });
 
