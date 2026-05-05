@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import {
   createGitCommit,
   initializeGitRepository,
+  readGitCommitDiff,
   readGitCommitHistory,
   readGitStatus,
   readGitWorkingChanges
@@ -133,6 +134,49 @@ describe("git", () => {
     });
 
     await expect(readFile(notePath, "utf8")).rejects.toBeTruthy();
+  });
+
+  it("コミット差分で before / after を返す", async () => {
+    const workspacePath = await createWorkspace();
+    await initializeGitRepository(workspacePath);
+    const notePath = path.join(workspacePath, "note.md");
+    await writeFile(notePath, "v1", "utf8");
+    await createGitCommit(workspacePath, {
+      authorEmail: "test@example.com",
+      authorName: "Test User",
+      message: "Initial commit"
+    });
+    await new Promise((resolve) => setTimeout(resolve, 1100));
+    await writeFile(notePath, "v2", "utf8");
+
+    const secondCommit = await createGitCommit(workspacePath, {
+      authorEmail: "test@example.com",
+      authorName: "Test User",
+      message: "Update note"
+    });
+
+    if (!secondCommit.ok) {
+      throw new Error("second commit failed");
+    }
+
+    const diff = await readGitCommitDiff(workspacePath, secondCommit.value.hash);
+
+    expect(diff).toMatchObject({
+      ok: true,
+      value: {
+        commit: {
+          message: "Update note"
+        },
+        entries: [
+          {
+            after: "v2",
+            before: "v1",
+            path: "note.md",
+            status: "modified"
+          }
+        ]
+      }
+    });
   });
 
   async function createWorkspace(): Promise<string> {

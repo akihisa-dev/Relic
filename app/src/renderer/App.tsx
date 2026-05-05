@@ -4,6 +4,7 @@ import type { ReactElement } from "react";
 
 import type {
   Backlink,
+  GitCommitDiff,
   EditorSettings,
   GitCommitSummary,
   GitStatus,
@@ -818,6 +819,8 @@ export function App(): ReactElement {
   const [gitStatus, setGitStatus] = useState<GitStatus | null>(null);
   const [gitCommitHistory, setGitCommitHistory] = useState<GitCommitSummary[]>([]);
   const [gitWorkingChanges, setGitWorkingChanges] = useState<GitWorkingChange[]>([]);
+  const [selectedGitCommitHash, setSelectedGitCommitHash] = useState<string | null>(null);
+  const [selectedGitCommitDiff, setSelectedGitCommitDiff] = useState<GitCommitDiff | null>(null);
   const [gitCommitMessage, setGitCommitMessage] = useState("");
   const [gitAuthorName, setGitAuthorName] = useState("");
   const [gitAuthorEmail, setGitAuthorEmail] = useState("");
@@ -1083,6 +1086,8 @@ export function App(): ReactElement {
         setGitStatus(result.value);
       } else {
         setGitStatus(null);
+        setSelectedGitCommitHash(null);
+        setSelectedGitCommitDiff(null);
         setWorkspaceError(result.error.message);
       }
     });
@@ -1096,6 +1101,8 @@ export function App(): ReactElement {
     if (!workspaceState?.activeWorkspace || !window.relic || !gitStatus?.initialized) {
       setGitCommitHistory([]);
       setGitWorkingChanges([]);
+      setSelectedGitCommitHash(null);
+      setSelectedGitCommitDiff(null);
       return;
     }
 
@@ -1104,12 +1111,15 @@ export function App(): ReactElement {
     void window.relic.getGitCommitHistory().then((result) => {
       if (canceled) return;
 
-      if (result.ok) {
-        setGitCommitHistory(result.value);
-      } else {
-        setGitCommitHistory([]);
-        setWorkspaceError(result.error.message);
-      }
+        if (result.ok) {
+          setGitCommitHistory(result.value);
+          if (result.value.length > 0 && !selectedGitCommitHash) {
+            setSelectedGitCommitHash(result.value[0].hash);
+          }
+        } else {
+          setGitCommitHistory([]);
+          setWorkspaceError(result.error.message);
+        }
     });
 
     void window.relic.getGitWorkingChanges().then((result) => {
@@ -1127,6 +1137,30 @@ export function App(): ReactElement {
       canceled = true;
     };
   }, [gitStatus?.initialized, workspaceState?.activeWorkspace?.id, workspaceState?.fileTree]);
+
+  useEffect(() => {
+    if (!window.relic || !selectedGitCommitHash || !gitStatus?.initialized) {
+      setSelectedGitCommitDiff(null);
+      return;
+    }
+
+    let canceled = false;
+
+    void window.relic.getGitCommitDiff(selectedGitCommitHash).then((result) => {
+      if (canceled) return;
+
+      if (result.ok) {
+        setSelectedGitCommitDiff(result.value);
+      } else {
+        setSelectedGitCommitDiff(null);
+        setWorkspaceError(result.error.message);
+      }
+    });
+
+    return () => {
+      canceled = true;
+    };
+  }, [gitStatus?.initialized, selectedGitCommitHash]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent): void => {
@@ -1193,6 +1227,7 @@ export function App(): ReactElement {
 
         setGitCommitMessage("");
         setGitCommitHistory((current) => [result.value, ...current]);
+        setSelectedGitCommitHash(result.value.hash);
         void window.relic!.getGitWorkingChanges().then((changesResult) => {
           if (changesResult.ok) {
             setGitWorkingChanges(changesResult.value);
@@ -1591,17 +1626,50 @@ export function App(): ReactElement {
                         <ul className="search-results">
                           {gitCommitHistory.map((commit) => (
                             <li className="search-result-item" key={commit.hash}>
-                              <div className="search-result-button">
+                              <button
+                                className="search-result-button"
+                                onClick={() => setSelectedGitCommitHash(commit.hash)}
+                                type="button"
+                              >
                                 <span className="search-result-title">{commit.message}</span>
                                 <span className="search-result-line">
                                   {commit.author} · {new Date(commit.date).toLocaleString("ja-JP")}
                                 </span>
-                              </div>
+                              </button>
                             </li>
                           ))}
                         </ul>
                       ) : (
                         <div className="empty-note">コミット履歴はまだありません。</div>
+                      )}
+                    </div>
+                    <div className="search-block">
+                      <div className="links-panel-subheading">Diff</div>
+                      {selectedGitCommitDiff && selectedGitCommitDiff.entries.length > 0 ? (
+                        <div className="git-diff-list">
+                          {selectedGitCommitDiff.entries.map((entry) => (
+                            <div className="git-diff-entry" key={`${selectedGitCommitDiff.commit.hash}-${entry.path}`}>
+                              <div className="git-diff-meta">
+                                <span className="search-result-title">{entry.path}</span>
+                                <span className="search-result-line">{entry.status}</span>
+                              </div>
+                              <div className="git-diff-columns">
+                                <div className="git-diff-column">
+                                  <div className="links-panel-subheading">Before</div>
+                                  <pre className="git-diff-code">{entry.before}</pre>
+                                </div>
+                                <div className="git-diff-column">
+                                  <div className="links-panel-subheading">After</div>
+                                  <pre className="git-diff-code">{entry.after}</pre>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : selectedGitCommitHash ? (
+                        <div className="empty-note">このコミットの差分はありません。</div>
+                      ) : (
+                        <div className="empty-note">コミットを選ぶと差分を表示します。</div>
                       )}
                     </div>
                   </>
