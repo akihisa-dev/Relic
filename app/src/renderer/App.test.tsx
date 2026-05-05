@@ -9,11 +9,23 @@ import { useUiStore } from "./store/uiStore";
 function makeRelicApi(overrides: Partial<typeof window.relic> = {}): typeof window.relic {
   return {
     createFolder: vi.fn(),
+    createGitCommit: vi.fn().mockResolvedValue({
+      ok: true,
+      value: {
+        author: "Test User",
+        changedFiles: ["note.md"],
+        date: "2026-05-05T00:00:00.000Z",
+        hash: "abc123",
+        message: "Initial commit"
+      }
+    }),
     createLinkedMarkdownFile: vi.fn(),
     createMarkdownFile: vi.fn(),
     duplicateMarkdownFile: vi.fn(),
     getBacklinks: vi.fn().mockResolvedValue({ ok: true, value: [] }),
+    getGitCommitHistory: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     getGitStatus: vi.fn().mockResolvedValue({ ok: true, value: { currentBranch: null, initialized: false } }),
+    getGitWorkingChanges: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     getAppInfo: vi.fn().mockResolvedValue({ ok: true, value: { name: "Relic", platform: "darwin", version: "0.0.0" } }),
     getEditorSettings: vi.fn().mockResolvedValue({ ok: true, value: defaultEditorSettings }),
     getWorkspaceTags: vi.fn().mockResolvedValue({ ok: true, value: [] }),
@@ -370,6 +382,47 @@ describe("App", () => {
     });
     expect(await screen.findByText("初期化済み")).toBeInTheDocument();
     expect(screen.getByText("main")).toBeInTheDocument();
+  });
+
+  it("Gitビューでローカルコミットを作成して履歴に追加する", async () => {
+    const createGitCommit = vi.fn().mockResolvedValue({
+      ok: true,
+      value: {
+        author: "Test User",
+        changedFiles: ["note.md"],
+        date: "2026-05-05T00:00:00.000Z",
+        hash: "def456",
+        message: "Save note"
+      }
+    });
+
+    window.relic = makeRelicApi({
+      createGitCommit,
+      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace }),
+      getGitStatus: vi.fn().mockResolvedValue({ ok: true, value: { currentBranch: "main", initialized: true } }),
+      getGitWorkingChanges: vi.fn().mockResolvedValue({
+        ok: true,
+        value: [{ path: "note.md", status: "modified" }]
+      }),
+      getGitCommitHistory: vi.fn().mockResolvedValue({ ok: true, value: [] })
+    });
+
+    render(<App />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Git" }));
+    fireEvent.change(await screen.findByLabelText("Git作者名"), { target: { value: "Test User" } });
+    fireEvent.change(screen.getByLabelText("Git作者メール"), { target: { value: "test@example.com" } });
+    fireEvent.change(screen.getByLabelText("Gitコミットメッセージ"), { target: { value: "Save note" } });
+    fireEvent.click(screen.getByRole("button", { name: "ローカルコミットを作成" }));
+
+    await waitFor(() => {
+      expect(createGitCommit).toHaveBeenCalledWith({
+        authorEmail: "test@example.com",
+        authorName: "Test User",
+        message: "Save note"
+      });
+    });
+    expect(await screen.findByText("Save note")).toBeInTheDocument();
   });
 
   it("右パネルにアウトゴーイングリンクを表示する", async () => {
