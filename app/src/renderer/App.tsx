@@ -8,6 +8,7 @@ import type {
   GitBranchSummary,
   EditorSettings,
   GitCommitSummary,
+  GitHubAuthStatus,
   GitStatus,
   GitTagSummary,
   GitWorkingChange,
@@ -819,6 +820,7 @@ export function App(): ReactElement {
   const [rightPaneScrollHeading, setRightPaneScrollHeading] = useState<string | undefined>(undefined);
   const [frontmatterCandidates, setFrontmatterCandidates] = useState<Record<string, string[]>>({});
   const [gitStatus, setGitStatus] = useState<GitStatus | null>(null);
+  const [gitHubAuthStatus, setGitHubAuthStatus] = useState<GitHubAuthStatus | null>(null);
   const [gitBranches, setGitBranches] = useState<GitBranchSummary[]>([]);
   const [gitCommitHistory, setGitCommitHistory] = useState<GitCommitSummary[]>([]);
   const [gitTags, setGitTags] = useState<GitTagSummary[]>([]);
@@ -835,7 +837,9 @@ export function App(): ReactElement {
   const [isCreatingGitBranch, setIsCreatingGitBranch] = useState(false);
   const [isCreatingGitCommit, setIsCreatingGitCommit] = useState(false);
   const [isCreatingGitTag, setIsCreatingGitTag] = useState(false);
+  const [isConnectingGitHub, setIsConnectingGitHub] = useState(false);
   const [isDeletingGitTag, setIsDeletingGitTag] = useState(false);
+  const [isDisconnectingGitHub, setIsDisconnectingGitHub] = useState(false);
   const [isSwitchingGitBranch, setIsSwitchingGitBranch] = useState(false);
   const [showCommandPalette, setShowCommandPalette] = useState(false);
   const [showQuickSwitcher, setShowQuickSwitcher] = useState(false);
@@ -900,6 +904,12 @@ export function App(): ReactElement {
     void window.relic?.getEditorSettings().then((result) => {
       if (result.ok) {
         setEditorSettings(result.value);
+      }
+    });
+
+    void window.relic?.getGitHubAuthStatus().then((result) => {
+      if (result.ok) {
+        setGitHubAuthStatus(result.value);
       }
     });
   }, [setEditorSettings]);
@@ -1509,6 +1519,42 @@ export function App(): ReactElement {
     refreshGitWorkingChanges
   ]);
 
+  const handleConnectGitHubAccount = useCallback((): void => {
+    if (!window.relic) return;
+
+    setIsConnectingGitHub(true);
+    setWorkspaceError(null);
+
+    void window.relic
+      .connectGitHubAccount()
+      .then((result) => {
+        if (result.ok) {
+          setGitHubAuthStatus(result.value);
+        } else {
+          setWorkspaceError(result.error.message);
+        }
+      })
+      .finally(() => setIsConnectingGitHub(false));
+  }, []);
+
+  const handleDisconnectGitHubAccount = useCallback((): void => {
+    if (!window.relic) return;
+
+    setIsDisconnectingGitHub(true);
+    setWorkspaceError(null);
+
+    void window.relic
+      .disconnectGitHubAccount()
+      .then((result) => {
+        if (result.ok) {
+          setGitHubAuthStatus(result.value);
+        } else {
+          setWorkspaceError(result.error.message);
+        }
+      })
+      .finally(() => setIsDisconnectingGitHub(false));
+  }, []);
+
   // ──────────────────
   // ファイル移動
   // ──────────────────
@@ -1832,6 +1878,56 @@ export function App(): ReactElement {
                   <div className="empty-note">ワークスペースを開くとGit状態を表示できます。</div>
                 ) : gitStatus?.initialized ? (
                   <>
+                    <div className="search-block">
+                      <div className="links-panel-subheading">GitHub</div>
+                      {gitHubAuthStatus?.connected ? (
+                        <>
+                          <div className="setting-row">
+                            <span>接続状態</span>
+                            <span>接続済み</span>
+                          </div>
+                          <div className="setting-row">
+                            <span>アカウント</span>
+                            <span>{gitHubAuthStatus.login ?? "-"}</span>
+                          </div>
+                          <div className="setting-row">
+                            <span>権限</span>
+                            <span>
+                              {gitHubAuthStatus.scopes.length > 0
+                                ? gitHubAuthStatus.scopes.join(", ")
+                                : "-"}
+                            </span>
+                          </div>
+                          <button
+                            className="replace-btn"
+                            disabled={isDisconnectingGitHub}
+                            onClick={handleDisconnectGitHubAccount}
+                            type="button"
+                          >
+                            {isDisconnectingGitHub ? "解除中..." : "GitHub接続を解除"}
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <div className="empty-note">
+                            GitHub と接続すると、このあとクローンや push / pull を追加できます。
+                          </div>
+                          {!gitHubAuthStatus?.configured ? (
+                            <div className="search-result-line">
+                              接続には `RELIC_GITHUB_CLIENT_ID` と `RELIC_GITHUB_CLIENT_SECRET` の設定が必要です。
+                            </div>
+                          ) : null}
+                          <button
+                            className="primary-button"
+                            disabled={isConnectingGitHub || gitHubAuthStatus?.configured === false}
+                            onClick={handleConnectGitHubAccount}
+                            type="button"
+                          >
+                            {isConnectingGitHub ? "ブラウザを開いています..." : "GitHubアカウントを接続"}
+                          </button>
+                        </>
+                      )}
+                    </div>
                     <div className="search-block">
                       <div className="links-panel-subheading">Repository</div>
                       <div className="setting-row">

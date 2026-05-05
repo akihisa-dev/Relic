@@ -2,16 +2,19 @@ import { contextBridge, ipcRenderer } from "electron";
 
 import {
   applySearchAndReplaceChannel,
+  connectGitHubChannel,
   createFolderChannel,
   createGitBranchChannel,
   createGitCommitChannel,
   createGitTagChannel,
   createLinkedMarkdownFileChannel,
   createMarkdownFileChannel,
+  disconnectGitHubChannel,
   deleteGitTagChannel,
   duplicateMarkdownFileChannel,
   getBacklinksChannel,
   getAppInfoChannel,
+  getGitHubAuthStatusChannel,
   getGitBranchesChannel,
   getGitCommitHistoryChannel,
   getGitCommitDiffChannel,
@@ -53,6 +56,7 @@ import {
   type GitCommitDiff,
   type GitBranchSummary,
   type GitCommitSummary,
+  type GitHubAuthStatus,
   type GitStatus,
   type GitTagSummary,
   type GitWorkingChange,
@@ -83,6 +87,8 @@ import type { RelicResult } from "../shared/result";
 const relicApi: RelicApi = {
   applySearchAndReplace: (input: SearchAndReplaceInput) =>
     ipcRenderer.invoke(applySearchAndReplaceChannel, input) as Promise<RelicResult<ReplaceInFileResult>>,
+  connectGitHubAccount: () =>
+    ipcRenderer.invoke(connectGitHubChannel) as Promise<RelicResult<GitHubAuthStatus>>,
   createFolder: (input: CreateFolderInput) =>
     ipcRenderer.invoke(createFolderChannel, input) as Promise<RelicResult<WorkspaceState>>,
   createGitBranch: (input: CreateGitBranchInput) =>
@@ -101,10 +107,14 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(duplicateMarkdownFileChannel, input) as Promise<
       RelicResult<RenameMarkdownFileResult>
     >,
+  disconnectGitHubAccount: () =>
+    ipcRenderer.invoke(disconnectGitHubChannel) as Promise<RelicResult<GitHubAuthStatus>>,
   deleteGitTag: (input: DeleteGitTagInput) =>
     ipcRenderer.invoke(deleteGitTagChannel, input) as Promise<RelicResult<GitTagSummary[]>>,
   getBacklinks: (input: GetBacklinksInput) =>
     ipcRenderer.invoke(getBacklinksChannel, input) as Promise<RelicResult<Backlink[]>>,
+  getGitHubAuthStatus: () =>
+    ipcRenderer.invoke(getGitHubAuthStatusChannel) as Promise<RelicResult<GitHubAuthStatus>>,
   getGitBranches: () =>
     ipcRenderer.invoke(getGitBranchesChannel) as Promise<RelicResult<GitBranchSummary[]>>,
   getGitCommitHistory: () =>

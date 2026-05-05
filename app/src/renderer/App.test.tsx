@@ -1,13 +1,31 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { defaultEditorSettings } from "../shared/ipc";
+import { defaultEditorSettings, type GitHubAuthStatus } from "../shared/ipc";
 import { App } from "./App";
 import { useEditorStore } from "./store/editorStore";
 import { useUiStore } from "./store/uiStore";
 
 function makeRelicApi(overrides: Partial<typeof window.relic> = {}): typeof window.relic {
+  const defaultGitHubStatus: GitHubAuthStatus = {
+    configured: true,
+    connected: false,
+    login: null,
+    scopes: [],
+    tokenType: null
+  };
+
   return {
+    connectGitHubAccount: vi.fn().mockResolvedValue({
+      ok: true,
+      value: {
+        ...defaultGitHubStatus,
+        connected: true,
+        login: "akihisa",
+        scopes: ["repo"],
+        tokenType: "bearer"
+      }
+    }),
     createFolder: vi.fn(),
     createGitBranch: vi.fn().mockResolvedValue({
       ok: true,
@@ -26,6 +44,7 @@ function makeRelicApi(overrides: Partial<typeof window.relic> = {}): typeof wind
     createGitTag: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     createLinkedMarkdownFile: vi.fn(),
     createMarkdownFile: vi.fn(),
+    disconnectGitHubAccount: vi.fn().mockResolvedValue({ ok: true, value: defaultGitHubStatus }),
     deleteGitTag: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     duplicateMarkdownFile: vi.fn(),
     getBacklinks: vi.fn().mockResolvedValue({ ok: true, value: [] }),
@@ -35,6 +54,7 @@ function makeRelicApi(overrides: Partial<typeof window.relic> = {}): typeof wind
     }),
     getGitCommitHistory: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     getGitCommitDiff: vi.fn().mockResolvedValue({ ok: true, value: { commit: { author: "Test User", changedFiles: [], date: "2026-05-05T00:00:00.000Z", hash: "abc123", message: "Initial commit" }, entries: [] } }),
+    getGitHubAuthStatus: vi.fn().mockResolvedValue({ ok: true, value: defaultGitHubStatus }),
     getGitStatus: vi.fn().mockResolvedValue({ ok: true, value: { currentBranch: null, initialized: false } }),
     getGitTags: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     getGitWorkingChanges: vi.fn().mockResolvedValue({ ok: true, value: [] }),
@@ -130,6 +150,60 @@ describe("App", () => {
 
     expect(window.relic!.readMarkdownFile).toHaveBeenCalledWith({ path: "読書メモ.md" });
     expect(await screen.findByText("読書メモ")).toBeInTheDocument();
+  });
+
+  it("Git ビューから GitHub 接続を開始できる", async () => {
+    const connectGitHubAccount = vi.fn().mockResolvedValue({
+      ok: true,
+      value: {
+        configured: true,
+        connected: true,
+        login: "akihisa",
+        scopes: ["repo"],
+        tokenType: "bearer"
+      }
+    });
+
+    window.relic = makeRelicApi({
+      connectGitHubAccount,
+      getGitHubAuthStatus: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          configured: true,
+          connected: false,
+          login: null,
+          scopes: [],
+          tokenType: null
+        }
+      }),
+      getGitStatus: vi.fn().mockResolvedValue({
+        ok: true,
+        value: { currentBranch: "main", initialized: true }
+      }),
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: withWorkspace
+      })
+    });
+
+    useUiStore.setState({
+      activeSidebarView: "git",
+      isFocusMode: false,
+      isRightPanelOpen: true,
+      isSidebarOpen: true,
+      isTypewriterMode: false,
+      rightPanelView: "outline"
+    });
+
+    render(<App />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "GitHubアカウントを接続" }));
+
+    await waitFor(() => {
+      expect(connectGitHubAccount).toHaveBeenCalledTimes(1);
+    });
+
+    expect(await screen.findByText("akihisa")).toBeInTheDocument();
   });
 
   it("新規ノートフォームからファイルを作成する", async () => {
