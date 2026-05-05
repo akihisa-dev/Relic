@@ -1,6 +1,9 @@
 import type { RelicResult } from "./result";
 
 export const getAppInfoChannel = "app:getInfo";
+export const getGitHubAuthStatusChannel = "github:getAuthStatus";
+export const connectGitHubChannel = "github:connect";
+export const disconnectGitHubChannel = "github:disconnect";
 export const createFolderChannel = "workspace:createFolder";
 export const createLinkedMarkdownFileChannel = "workspace:createLinkedMarkdownFile";
 export const createMarkdownFileChannel = "workspace:createMarkdownFile";
@@ -202,6 +205,14 @@ export interface GitTagSummary {
   targetMessage: string | null;
 }
 
+export interface GitHubAuthStatus {
+  configured: boolean;
+  connected: boolean;
+  login: string | null;
+  scopes: string[];
+  tokenType: string | null;
+}
+
 export interface CreateGitCommitInput {
   authorEmail: string;
   authorName: string;
@@ -285,6 +296,7 @@ export interface WorkspaceFileNode {
 }
 
 export interface RelicApi {
+  connectGitHubAccount: () => Promise<RelicResult<GitHubAuthStatus>>;
   createFolder: (input: CreateFolderInput) => Promise<RelicResult<WorkspaceState>>;
   createGitBranch: (input: CreateGitBranchInput) => Promise<RelicResult<GitBranchSummary[]>>;
   createGitCommit: (input: CreateGitCommitInput) => Promise<RelicResult<GitCommitSummary>>;
@@ -295,7 +307,9 @@ export interface RelicApi {
   duplicateMarkdownFile: (
     input: DuplicateMarkdownFileInput
   ) => Promise<RelicResult<RenameMarkdownFileResult>>;
+  disconnectGitHubAccount: () => Promise<RelicResult<GitHubAuthStatus>>;
   getBacklinks: (input: GetBacklinksInput) => Promise<RelicResult<Backlink[]>>;
+  getGitHubAuthStatus: () => Promise<RelicResult<GitHubAuthStatus>>;
   getGitBranches: () => Promise<RelicResult<GitBranchSummary[]>>;
   getGitCommitHistory: () => Promise<RelicResult<GitCommitSummary[]>>;
   getGitCommitDiff: (hash: string) => Promise<RelicResult<GitCommitDiff>>;
