@@ -4,9 +4,12 @@ import path from "node:path";
 import git from "isomorphic-git";
 
 import type {
+  CreateGitBranchInput,
   CreateGitCommitInput,
+  GitBranchSummary,
   GitCommitDiff,
   GitCommitDiffEntry,
+  SwitchGitBranchInput,
   GitCommitSummary,
   GitStatus,
   GitWorkingChange
@@ -91,17 +94,29 @@ export async function readGitWorkingChanges(
       fs
     });
 
-    return ok(
-      matrix
-        .map(([filePath, head, workdir, stage]) => {
-          const statusValue = toWorkingChangeStatus(head, workdir, stage);
+    const changes = await Promise.all(
+      matrix.map(async ([filePath, head, workdir, stage]) => {
+        const statusValue = toWorkingChangeStatus(head, workdir, stage);
 
-          if (!statusValue) {
-            return null;
-          }
-
+        if (statusValue) {
           return { path: filePath, status: statusValue } satisfies GitWorkingChange;
-        })
+        }
+
+        if (
+          head === 1 &&
+          workdir === 1 &&
+          stage === 1 &&
+          (await trackedFileDiffersFromHead(workspacePath, filePath))
+        ) {
+          return { path: filePath, status: "modified" } satisfies GitWorkingChange;
+        }
+
+        return null;
+      })
+    );
+
+    return ok(
+      changes
         .filter((change): change is GitWorkingChange => change !== null)
         .sort((a, b) => a.path.localeCompare(b.path, "ja"))
     );
@@ -109,6 +124,152 @@ export async function readGitWorkingChanges(
     return fail(
       "GIT_WORKING_CHANGES_FAILED",
       "変更一覧を取得できませんでした。",
+      error instanceof Error ? error.message : String(error)
+    );
+  }
+}
+
+export async function readGitBranches(
+  workspacePath: string
+): Promise<RelicResult<GitBranchSummary[]>> {
+  try {
+    const status = await readGitStatus(workspacePath);
+
+    if (!status.ok) {
+      return status;
+    }
+
+    if (!status.value.initialized) {
+      return ok([]);
+    }
+
+    const [branchNames, currentBranch] = await Promise.all([
+      git.listBranches({
+        dir: workspacePath,
+        fs
+      }),
+      git.currentBranch({
+        dir: workspacePath,
+        fs,
+        fullname: false
+      })
+    ]);
+
+    const uniqueBranchNames = Array.from(
+      new Set(currentBranch ? [...branchNames, currentBranch] : branchNames)
+    );
+
+    return ok(
+      uniqueBranchNames
+        .sort((a, b) => a.localeCompare(b, "ja"))
+        .map((name) => ({
+          isCurrent: name === currentBranch,
+          name
+        }))
+    );
+  } catch (error) {
+    return fail(
+      "GIT_BRANCHES_FAILED",
+      "ブランチ一覧を取得できませんでした。",
+      error instanceof Error ? error.message : String(error)
+    );
+  }
+}
+
+export async function createGitBranch(
+  workspacePath: string,
+  input: CreateGitBranchInput
+): Promise<RelicResult<GitBranchSummary[]>> {
+  try {
+    const status = await readGitStatus(workspacePath);
+
+    if (!status.ok) {
+      return status;
+    }
+
+    if (!status.value.initialized) {
+      return fail("GIT_NOT_INITIALIZED", "先にGitを初期化してください。");
+    }
+
+    const branchName = normalizeBranchName(input.name);
+
+    if (!branchName.ok) {
+      return branchName;
+    }
+
+    const hasCommits = await ensureBranchOperationsAvailable(workspacePath);
+
+    if (!hasCommits.ok) {
+      return hasCommits;
+    }
+
+    await git.branch({
+      dir: workspacePath,
+      fs,
+      ref: branchName.value
+    });
+
+    return readGitBranches(workspacePath);
+  } catch (error) {
+    return fail(
+      "GIT_BRANCH_CREATE_FAILED",
+      "ブランチを作成できませんでした。",
+      error instanceof Error ? error.message : String(error)
+    );
+  }
+}
+
+export async function switchGitBranch(
+  workspacePath: string,
+  input: SwitchGitBranchInput
+): Promise<RelicResult<GitBranchSummary[]>> {
+  try {
+    const status = await readGitStatus(workspacePath);
+
+    if (!status.ok) {
+      return status;
+    }
+
+    if (!status.value.initialized) {
+      return fail("GIT_NOT_INITIALIZED", "先にGitを初期化してください。");
+    }
+
+    const branchName = normalizeBranchName(input.name);
+
+    if (!branchName.ok) {
+      return branchName;
+    }
+
+    const hasCommits = await ensureBranchOperationsAvailable(workspacePath);
+
+    if (!hasCommits.ok) {
+      return hasCommits;
+    }
+
+    const workingChanges = await readGitWorkingChanges(workspacePath);
+
+    if (!workingChanges.ok) {
+      return workingChanges;
+    }
+
+    if (workingChanges.value.length > 0 && !input.allowDirty) {
+      return fail(
+        "GIT_BRANCH_SWITCH_DIRTY",
+        "未コミット変更があります。切り替え前に確認してください。"
+      );
+    }
+
+    await git.checkout({
+      dir: workspacePath,
+      fs,
+      ref: branchName.value
+    });
+
+    return readGitBranches(workspacePath);
+  } catch (error) {
+    return fail(
+      "GIT_BRANCH_SWITCH_FAILED",
+      "ブランチを切り替えできませんでした。",
       error instanceof Error ? error.message : String(error)
     );
   }
@@ -353,6 +514,60 @@ function validateCommitInput(
     authorName,
     message
   });
+}
+
+function normalizeBranchName(name: string): RelicResult<string> {
+  const trimmed = name.trim();
+
+  if (trimmed === "") {
+    return fail("GIT_BRANCH_INVALID_INPUT", "ブランチ名を入力してください。");
+  }
+
+  if (trimmed.includes(" ") || trimmed.startsWith(".") || trimmed.endsWith(".") || trimmed.includes("..")) {
+    return fail("GIT_BRANCH_INVALID_INPUT", "ブランチ名の形式が正しくありません。");
+  }
+
+  return ok(trimmed);
+}
+
+async function ensureBranchOperationsAvailable(workspacePath: string): Promise<RelicResult<void>> {
+  try {
+    await git.resolveRef({
+      dir: workspacePath,
+      fs,
+      ref: "HEAD"
+    });
+
+    return ok(undefined);
+  } catch (error) {
+    return fail(
+      "GIT_BRANCH_REQUIRES_COMMIT",
+      "ブランチ操作は最初のコミット後に使えます。",
+      error instanceof Error ? error.message : String(error)
+    );
+  }
+}
+
+async function trackedFileDiffersFromHead(workspacePath: string, filePath: string): Promise<boolean> {
+  try {
+    const [headBlob, worktreeBuffer] = await Promise.all([
+      git.readBlob({
+        dir: workspacePath,
+        fs,
+        filepath: filePath,
+        oid: await git.resolveRef({
+          dir: workspacePath,
+          fs,
+          ref: "HEAD"
+        })
+      }),
+      fs.promises.readFile(path.join(workspacePath, filePath))
+    ]);
+
+    return !Buffer.from(headBlob.blob).equals(worktreeBuffer);
+  } catch {
+    return false;
+  }
 }
 
 async function readCommitFiles(

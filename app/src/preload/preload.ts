@@ -3,12 +3,14 @@ import { contextBridge, ipcRenderer } from "electron";
 import {
   applySearchAndReplaceChannel,
   createFolderChannel,
+  createGitBranchChannel,
   createGitCommitChannel,
   createLinkedMarkdownFileChannel,
   createMarkdownFileChannel,
   duplicateMarkdownFileChannel,
   getBacklinksChannel,
   getAppInfoChannel,
+  getGitBranchesChannel,
   getGitCommitHistoryChannel,
   getGitCommitDiffChannel,
   getEditorSettingsChannel,
@@ -28,12 +30,14 @@ import {
   saveEditorSettingsChannel,
   searchAndReplaceChannel,
   searchWorkspaceChannel,
+  switchGitBranchChannel,
   switchWorkspaceChannel,
   writeMarkdownFileChannel,
   getFrontmatterCandidatesChannel,
   createFrontmatterTemplateChannel,
   type AppInfo,
   type CreateFolderInput,
+  type CreateGitBranchInput,
   type CreateGitCommitInput,
   type CreateLinkedMarkdownFileInput,
   type CreateLinkedMarkdownFileResult,
@@ -42,6 +46,7 @@ import {
   type EditorSettings,
   type Backlink,
   type GitCommitDiff,
+  type GitBranchSummary,
   type GitCommitSummary,
   type GitStatus,
   type GitWorkingChange,
@@ -60,6 +65,7 @@ import {
   type SearchAndReplaceInput,
   type SearchAndReplaceMatch,
   type SearchWorkspaceInput,
+  type SwitchGitBranchInput,
   type SwitchWorkspaceInput,
   type WorkspaceState,
   type WorkspaceSearchResult,
@@ -73,6 +79,8 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(applySearchAndReplaceChannel, input) as Promise<RelicResult<ReplaceInFileResult>>,
   createFolder: (input: CreateFolderInput) =>
     ipcRenderer.invoke(createFolderChannel, input) as Promise<RelicResult<WorkspaceState>>,
+  createGitBranch: (input: CreateGitBranchInput) =>
+    ipcRenderer.invoke(createGitBranchChannel, input) as Promise<RelicResult<GitBranchSummary[]>>,
   createGitCommit: (input: CreateGitCommitInput) =>
     ipcRenderer.invoke(createGitCommitChannel, input) as Promise<RelicResult<GitCommitSummary>>,
   createLinkedMarkdownFile: (input: CreateLinkedMarkdownFileInput) =>
@@ -87,6 +95,8 @@ const relicApi: RelicApi = {
     >,
   getBacklinks: (input: GetBacklinksInput) =>
     ipcRenderer.invoke(getBacklinksChannel, input) as Promise<RelicResult<Backlink[]>>,
+  getGitBranches: () =>
+    ipcRenderer.invoke(getGitBranchesChannel) as Promise<RelicResult<GitBranchSummary[]>>,
   getGitCommitHistory: () =>
     ipcRenderer.invoke(getGitCommitHistoryChannel) as Promise<RelicResult<GitCommitSummary[]>>,
   getGitCommitDiff: (hash: string) =>
@@ -136,6 +146,8 @@ const relicApi: RelicApi = {
     >,
   switchWorkspace: (input: SwitchWorkspaceInput) =>
     ipcRenderer.invoke(switchWorkspaceChannel, input) as Promise<RelicResult<WorkspaceState>>,
+  switchGitBranch: (input: SwitchGitBranchInput) =>
+    ipcRenderer.invoke(switchGitBranchChannel, input) as Promise<RelicResult<GitBranchSummary[]>>,
   writeMarkdownFile: (input: WriteMarkdownFileInput) =>
     ipcRenderer.invoke(writeMarkdownFileChannel, input) as Promise<RelicResult<void>>,
   getFrontmatterCandidates: () =>

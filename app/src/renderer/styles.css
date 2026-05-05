@@ -325,6 +325,27 @@ button:disabled {
   gap: 12px;
 }
 
+.git-branch-form {
+  display: grid;
+  gap: 8px;
+}
+
+.git-branch-list {
+  margin-top: 10px;
+}
+
+.git-branch-warning {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.git-branch-warning-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .git-diff-entry {
   border: 1px solid rgba(31, 35, 40, 0.09);
   border-radius: 8px;
