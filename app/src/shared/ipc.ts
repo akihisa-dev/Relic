@@ -8,6 +8,7 @@ export const duplicateMarkdownFileChannel = "workspace:duplicateMarkdownFile";
 export const getBacklinksChannel = "workspace:getBacklinks";
 export const getGitStatusChannel = "workspace:getGitStatus";
 export const getGitCommitHistoryChannel = "workspace:getGitCommitHistory";
+export const getGitCommitDiffChannel = "workspace:getGitCommitDiff";
 export const getGitWorkingChangesChannel = "workspace:getGitWorkingChanges";
 export const getWorkspaceTagsChannel = "workspace:getTags";
 export const getWorkspaceStateChannel = "workspace:getState";
@@ -169,6 +170,18 @@ export interface GitCommitSummary {
   message: string;
 }
 
+export interface GitCommitDiffEntry {
+  after: string;
+  before: string;
+  path: string;
+  status: "added" | "deleted" | "modified";
+}
+
+export interface GitCommitDiff {
+  commit: GitCommitSummary;
+  entries: GitCommitDiffEntry[];
+}
+
 export interface CreateGitCommitInput {
   authorEmail: string;
   authorName: string;
@@ -242,6 +255,7 @@ export interface RelicApi {
   ) => Promise<RelicResult<RenameMarkdownFileResult>>;
   getBacklinks: (input: GetBacklinksInput) => Promise<RelicResult<Backlink[]>>;
   getGitCommitHistory: () => Promise<RelicResult<GitCommitSummary[]>>;
+  getGitCommitDiff: (hash: string) => Promise<RelicResult<GitCommitDiff>>;
   getGitStatus: () => Promise<RelicResult<GitStatus>>;
   getGitWorkingChanges: () => Promise<RelicResult<GitWorkingChange[]>>;
   getAppInfo: () => Promise<RelicResult<AppInfo>>;

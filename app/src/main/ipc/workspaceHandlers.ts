@@ -17,6 +17,7 @@ import {
   getBacklinksChannel,
   type GetBacklinksInput,
   getGitCommitHistoryChannel,
+  getGitCommitDiffChannel,
   getGitStatusChannel,
   getGitWorkingChangesChannel,
   getWorkspaceTagsChannel,
@@ -46,6 +47,7 @@ import {
   type SwitchWorkspaceInput,
   type GitStatus,
   type GitCommitSummary,
+  type GitCommitDiff,
   type GitWorkingChange,
   type WorkspaceState,
   getFrontmatterCandidatesChannel,
@@ -58,6 +60,7 @@ import { createFolder, moveFolder, renameFolder } from "../files/folders";
 import {
   createGitCommit,
   initializeGitRepository,
+  readGitCommitDiff,
   readGitCommitHistory,
   readGitStatus,
   readGitWorkingChanges
@@ -170,6 +173,29 @@ export function registerWorkspaceHandlers(): void {
       return fail(
         "GIT_HISTORY_FAILED",
         "コミット履歴を取得できませんでした。",
+        error instanceof Error ? error.message : String(error)
+      );
+    }
+  });
+
+  ipcMain.handle(getGitCommitDiffChannel, async (_event, hash: string): Promise<RelicResult<GitCommitDiff>> => {
+    try {
+      if (typeof hash !== "string" || hash.trim() === "") {
+        return fail("GIT_COMMIT_NOT_FOUND", "表示するコミットを選択してください。");
+      }
+
+      const settings = await readAppSettings(app.getPath("userData"));
+      const state = toWorkspaceState(settings);
+
+      if (!state.activeWorkspace) {
+        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
+      }
+
+      return readGitCommitDiff(state.activeWorkspace.path, hash);
+    } catch (error) {
+      return fail(
+        "GIT_COMMIT_DIFF_FAILED",
+        "コミット差分を取得できませんでした。",
         error instanceof Error ? error.message : String(error)
       );
     }
