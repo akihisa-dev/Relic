@@ -1,10 +1,16 @@
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm, unlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import { initializeGitRepository, readGitStatus } from "./git";
+import {
+  createGitCommit,
+  initializeGitRepository,
+  readGitCommitHistory,
+  readGitStatus,
+  readGitWorkingChanges
+} from "./git";
 
 describe("git", () => {
   const temporaryPaths: string[] = [];
@@ -53,6 +59,80 @@ describe("git", () => {
       ok: false,
       error: { code: "GIT_ALREADY_INITIALIZED" }
     });
+  });
+
+  it("未追跡と変更済みファイルを変更一覧として返す", async () => {
+    const workspacePath = await createWorkspace();
+    await initializeGitRepository(workspacePath);
+    await writeFile(path.join(workspacePath, "note.md"), "first", "utf8");
+
+    await expect(readGitWorkingChanges(workspacePath)).resolves.toEqual({
+      ok: true,
+      value: [{ path: "note.md", status: "untracked" }]
+    });
+  });
+
+  it("ローカルコミットを作成して履歴を読める", async () => {
+    const workspacePath = await createWorkspace();
+    await initializeGitRepository(workspacePath);
+    await writeFile(path.join(workspacePath, "note.md"), "hello", "utf8");
+
+    const commitResult = await createGitCommit(workspacePath, {
+      authorEmail: "test@example.com",
+      authorName: "Test User",
+      message: "Initial commit"
+    });
+
+    expect(commitResult).toMatchObject({
+      ok: true,
+      value: {
+        author: "Test User",
+        changedFiles: ["note.md"],
+        message: "Initial commit"
+      }
+    });
+
+    const history = await readGitCommitHistory(workspacePath);
+
+    expect(history).toMatchObject({
+      ok: true,
+      value: [
+        {
+          author: "Test User",
+          message: "Initial commit"
+        }
+      ]
+    });
+  });
+
+  it("削除ファイルもコミットできる", async () => {
+    const workspacePath = await createWorkspace();
+    await initializeGitRepository(workspacePath);
+    const notePath = path.join(workspacePath, "note.md");
+    await writeFile(notePath, "hello", "utf8");
+    await createGitCommit(workspacePath, {
+      authorEmail: "test@example.com",
+      authorName: "Test User",
+      message: "Initial commit"
+    });
+
+    await unlink(notePath);
+
+    const deleteCommit = await createGitCommit(workspacePath, {
+      authorEmail: "test@example.com",
+      authorName: "Test User",
+      message: "Delete note"
+    });
+
+    expect(deleteCommit).toMatchObject({
+      ok: true,
+      value: {
+        changedFiles: ["note.md"],
+        message: "Delete note"
+      }
+    });
+
+    await expect(readFile(notePath, "utf8")).rejects.toBeTruthy();
   });
 
   async function createWorkspace(): Promise<string> {

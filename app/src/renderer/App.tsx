@@ -5,7 +5,9 @@ import type { ReactElement } from "react";
 import type {
   Backlink,
   EditorSettings,
+  GitCommitSummary,
   GitStatus,
+  GitWorkingChange,
   MarkdownFileContent,
   SearchAndReplaceMatch,
   SearchMode,
@@ -814,6 +816,12 @@ export function App(): ReactElement {
   const [rightPaneScrollHeading, setRightPaneScrollHeading] = useState<string | undefined>(undefined);
   const [frontmatterCandidates, setFrontmatterCandidates] = useState<Record<string, string[]>>({});
   const [gitStatus, setGitStatus] = useState<GitStatus | null>(null);
+  const [gitCommitHistory, setGitCommitHistory] = useState<GitCommitSummary[]>([]);
+  const [gitWorkingChanges, setGitWorkingChanges] = useState<GitWorkingChange[]>([]);
+  const [gitCommitMessage, setGitCommitMessage] = useState("");
+  const [gitAuthorName, setGitAuthorName] = useState("");
+  const [gitAuthorEmail, setGitAuthorEmail] = useState("");
+  const [isCreatingGitCommit, setIsCreatingGitCommit] = useState(false);
   const [showCommandPalette, setShowCommandPalette] = useState(false);
   const [showQuickSwitcher, setShowQuickSwitcher] = useState(false);
 
@@ -1061,6 +1069,8 @@ export function App(): ReactElement {
   useEffect(() => {
     if (!workspaceState?.activeWorkspace || !window.relic) {
       setGitStatus(null);
+      setGitCommitHistory([]);
+      setGitWorkingChanges([]);
       return;
     }
 
@@ -1081,6 +1091,42 @@ export function App(): ReactElement {
       canceled = true;
     };
   }, [workspaceState?.activeWorkspace?.id]);
+
+  useEffect(() => {
+    if (!workspaceState?.activeWorkspace || !window.relic || !gitStatus?.initialized) {
+      setGitCommitHistory([]);
+      setGitWorkingChanges([]);
+      return;
+    }
+
+    let canceled = false;
+
+    void window.relic.getGitCommitHistory().then((result) => {
+      if (canceled) return;
+
+      if (result.ok) {
+        setGitCommitHistory(result.value);
+      } else {
+        setGitCommitHistory([]);
+        setWorkspaceError(result.error.message);
+      }
+    });
+
+    void window.relic.getGitWorkingChanges().then((result) => {
+      if (canceled) return;
+
+      if (result.ok) {
+        setGitWorkingChanges(result.value);
+      } else {
+        setGitWorkingChanges([]);
+        setWorkspaceError(result.error.message);
+      }
+    });
+
+    return () => {
+      canceled = true;
+    };
+  }, [gitStatus?.initialized, workspaceState?.activeWorkspace?.id, workspaceState?.fileTree]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent): void => {
@@ -1126,6 +1172,35 @@ export function App(): ReactElement {
       }
     });
   }, []);
+
+  const handleCreateGitCommit = useCallback((): void => {
+    if (!window.relic) return;
+
+    setIsCreatingGitCommit(true);
+    setWorkspaceError(null);
+
+    void window.relic
+      .createGitCommit({
+        authorEmail: gitAuthorEmail,
+        authorName: gitAuthorName,
+        message: gitCommitMessage
+      })
+      .then((result) => {
+        if (!result.ok) {
+          setWorkspaceError(result.error.message);
+          return;
+        }
+
+        setGitCommitMessage("");
+        setGitCommitHistory((current) => [result.value, ...current]);
+        void window.relic!.getGitWorkingChanges().then((changesResult) => {
+          if (changesResult.ok) {
+            setGitWorkingChanges(changesResult.value);
+          }
+        });
+      })
+      .finally(() => setIsCreatingGitCommit(false));
+  }, [gitAuthorEmail, gitAuthorName, gitCommitMessage]);
 
   // ──────────────────
   // ファイル移動
@@ -1449,17 +1524,87 @@ export function App(): ReactElement {
                 {!workspaceState?.activeWorkspace ? (
                   <div className="empty-note">ワークスペースを開くとGit状態を表示できます。</div>
                 ) : gitStatus?.initialized ? (
-                  <div className="search-block">
-                    <div className="links-panel-subheading">Repository</div>
-                    <div className="setting-row">
-                      <span>状態</span>
-                      <span>初期化済み</span>
+                  <>
+                    <div className="search-block">
+                      <div className="links-panel-subheading">Repository</div>
+                      <div className="setting-row">
+                        <span>状態</span>
+                        <span>初期化済み</span>
+                      </div>
+                      <div className="setting-row">
+                        <span>ブランチ</span>
+                        <span>{gitStatus.currentBranch ?? "(detached)"}</span>
+                      </div>
                     </div>
-                    <div className="setting-row">
-                      <span>ブランチ</span>
-                      <span>{gitStatus.currentBranch ?? "(detached)"}</span>
+                    <div className="search-block">
+                      <div className="links-panel-subheading">Commit</div>
+                      <input
+                        aria-label="Git作者名"
+                        className="text-input"
+                        onChange={(event) => setGitAuthorName(event.target.value)}
+                        placeholder="作者名"
+                        value={gitAuthorName}
+                      />
+                      <input
+                        aria-label="Git作者メール"
+                        className="text-input"
+                        onChange={(event) => setGitAuthorEmail(event.target.value)}
+                        placeholder="author@example.com"
+                        value={gitAuthorEmail}
+                      />
+                      <input
+                        aria-label="Gitコミットメッセージ"
+                        className="text-input"
+                        onChange={(event) => setGitCommitMessage(event.target.value)}
+                        placeholder="コミットメッセージ"
+                        value={gitCommitMessage}
+                      />
+                      <button
+                        className="primary-button"
+                        disabled={isCreatingGitCommit}
+                        onClick={handleCreateGitCommit}
+                        type="button"
+                      >
+                        {isCreatingGitCommit ? "コミット中..." : "ローカルコミットを作成"}
+                      </button>
                     </div>
-                  </div>
+                    <div className="search-block">
+                      <div className="links-panel-subheading">Changes</div>
+                      {gitWorkingChanges.length > 0 ? (
+                        <ul className="search-results">
+                          {gitWorkingChanges.map((change) => (
+                            <li className="search-result-item" key={`${change.status}-${change.path}`}>
+                              <div className="search-result-button">
+                                <span className="search-result-title">{change.path}</span>
+                                <span className="search-result-line">{change.status}</span>
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <div className="empty-note">未コミットの変更はありません。</div>
+                      )}
+                    </div>
+                    <div className="search-block">
+                      <div className="links-panel-subheading">History</div>
+                      {gitCommitHistory.length > 0 ? (
+                        <ul className="search-results">
+                          {gitCommitHistory.map((commit) => (
+                            <li className="search-result-item" key={commit.hash}>
+                              <div className="search-result-button">
+                                <span className="search-result-title">{commit.message}</span>
+                                <span className="search-result-line">
+                                  {commit.author} · {new Date(commit.date).toLocaleString("ja-JP")}
+                                </span>
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <div className="empty-note">コミット履歴はまだありません。</div>
+                      )}
+                    </div>
+                  </>
                 ) : (
                   <div className="search-block">
                     <div className="empty-note">このワークスペースはまだGit管理されていません。</div>
