@@ -11,11 +11,11 @@ interface ToolbarProps {
 
 type HeadingLevel = 1 | 2 | 3 | 4 | 5 | 6;
 
-function wrapSelection(view: EditorView, before: string, after: string): void {
+function wrapSelection(view: EditorView, before: string, after: string, placeholder: string): void {
   const { state } = view;
   const changes = state.changeByRange((range) => {
     const selected = state.sliceDoc(range.from, range.to);
-    const text = selected.length > 0 ? selected : "テキスト";
+    const text = selected.length > 0 ? selected : placeholder;
 
     return {
       changes: { from: range.from, to: range.to, insert: `${before}${text}${after}` },
@@ -30,11 +30,11 @@ function wrapSelection(view: EditorView, before: string, after: string): void {
   view.focus();
 }
 
-function insertAtLineStart(view: EditorView, prefix: string): void {
+function insertAtLineStart(view: EditorView, prefix: string, placeholder: string): void {
   const { state } = view;
   const changes = state.changeByRange((range) => {
     const line = state.doc.lineAt(range.from);
-    const insert = `${prefix}${line.text.length > 0 ? line.text : "テキスト"}`;
+    const insert = `${prefix}${line.text.length > 0 ? line.text : placeholder}`;
 
     return {
       changes: { from: line.from, to: line.to, insert },
@@ -69,46 +69,48 @@ export function Toolbar({ viewRef }: ToolbarProps): ReactElement {
   const [tableCols, setTableCols] = useState("3");
 
   const view = viewRef.current;
+  const placeholderText = t("toolbar.placeholderText");
+  const placeholderLinkText = t("toolbar.placeholderLinkText");
 
   const handleBold = (): void => {
     if (!view) return;
-    wrapSelection(view, "**", "**");
+    wrapSelection(view, "**", "**", placeholderText);
   };
 
   const handleItalic = (): void => {
     if (!view) return;
-    wrapSelection(view, "*", "*");
+    wrapSelection(view, "*", "*", placeholderText);
   };
 
   const handleStrikethrough = (): void => {
     if (!view) return;
-    wrapSelection(view, "~~", "~~");
+    wrapSelection(view, "~~", "~~", placeholderText);
   };
 
   const handleHighlight = (): void => {
     if (!view) return;
-    wrapSelection(view, "==", "==");
+    wrapSelection(view, "==", "==", placeholderText);
   };
 
   const handleUnderline = (): void => {
     if (!view) return;
-    wrapSelection(view, "<u>", "</u>");
+    wrapSelection(view, "<u>", "</u>", placeholderText);
   };
 
   const handleInlineCode = (): void => {
     if (!view) return;
-    wrapSelection(view, "`", "`");
+    wrapSelection(view, "`", "`", placeholderText);
   };
 
   const handleHeading = (level: HeadingLevel): void => {
     if (!view) return;
-    insertAtLineStart(view, "#".repeat(level) + " ");
+    insertAtLineStart(view, "#".repeat(level) + " ", placeholderText);
     setShowHeadingMenu(false);
   };
 
   const handleBlockquote = (): void => {
     if (!view) return;
-    insertAtLineStart(view, "> ");
+    insertAtLineStart(view, "> ", placeholderText);
   };
 
   const handleCodeBlock = (): void => {
@@ -123,24 +125,24 @@ export function Toolbar({ viewRef }: ToolbarProps): ReactElement {
 
   const handleBulletList = (): void => {
     if (!view) return;
-    insertAtLineStart(view, "- ");
+    insertAtLineStart(view, "- ", placeholderText);
   };
 
   const handleOrderedList = (): void => {
     if (!view) return;
-    insertAtLineStart(view, "1. ");
+    insertAtLineStart(view, "1. ", placeholderText);
   };
 
   const handleCheckbox = (): void => {
     if (!view) return;
-    insertAtLineStart(view, "- [ ] ");
+    insertAtLineStart(view, "- [ ] ", placeholderText);
   };
 
   const handleLink = (): void => {
     if (!view) return;
     const { state } = view;
     const selected = state.sliceDoc(state.selection.main.from, state.selection.main.to);
-    const text = selected || "リンクテキスト";
+    const text = selected || placeholderLinkText;
 
     if (linkUrl) {
       view.dispatch({
@@ -162,7 +164,7 @@ export function Toolbar({ viewRef }: ToolbarProps): ReactElement {
     if (!view) return;
     const { state } = view;
     const selected = state.sliceDoc(state.selection.main.from, state.selection.main.to);
-    const text = selected || "リンクテキスト";
+    const text = selected || placeholderLinkText;
 
     view.dispatch({
       changes: {
@@ -205,7 +207,7 @@ export function Toolbar({ viewRef }: ToolbarProps): ReactElement {
     const rows = Math.max(1, parseInt(tableRows, 10) || 3);
     const cols = Math.max(1, parseInt(tableCols, 10) || 3);
 
-    const header = "| " + Array.from({ length: cols }, (_, i) => `列${i + 1}`).join(" | ") + " |";
+    const header = "| " + Array.from({ length: cols }, (_, i) => t("toolbar.tableColumn", { index: i + 1 })).join(" | ") + " |";
     const divider = "| " + Array.from({ length: cols }, () => "---").join(" | ") + " |";
     const row = "| " + Array.from({ length: cols }, () => "　").join(" | ") + " |";
     const tableRows_arr = Array.from({ length: rows }, () => row);

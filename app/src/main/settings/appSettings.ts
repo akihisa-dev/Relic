@@ -76,7 +76,7 @@ function parseEditorSettings(raw: unknown): EditorSettings {
   return {
     font: s.font === "mincho" || s.font === "mono" ? s.font : "system",
     fontSize: typeof s.fontSize === "number" && s.fontSize > 0 ? s.fontSize : defaultEditorSettings.fontSize,
-    language: s.language === "ja" ? "ja" : s.language === "en" ? "en" : "system",
+    language: s.language === "ja" ? "ja" : s.language === "system" ? "system" : "en",
     lineHeight: typeof s.lineHeight === "number" && s.lineHeight > 0 ? s.lineHeight : defaultEditorSettings.lineHeight,
     maxWidth: s.maxWidth === "550px" || s.maxWidth === "800px" || s.maxWidth === "none" ? s.maxWidth : "660px",
     showLineNumbers: typeof s.showLineNumbers === "boolean" ? s.showLineNumbers : false,
