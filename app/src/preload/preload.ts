@@ -3,6 +3,8 @@ import { contextBridge, ipcRenderer } from "electron";
 import {
   applySearchAndReplaceChannel,
   cloneGitHubRepositoryChannel,
+  createNewWorkspaceChannel,
+  togglePinChannel,
   connectGitRemoteChannel,
   connectGitHubChannel,
   createFolderChannel,
@@ -109,6 +111,10 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(applySearchAndReplaceChannel, input) as Promise<RelicResult<ReplaceInFileResult>>,
   cloneGitHubRepository: (input: CloneGitHubRepositoryInput) =>
     ipcRenderer.invoke(cloneGitHubRepositoryChannel, input) as Promise<RelicResult<WorkspaceState>>,
+  createNewWorkspace: () =>
+    ipcRenderer.invoke(createNewWorkspaceChannel) as Promise<RelicResult<WorkspaceState>>,
+  togglePin: (path: string) =>
+    ipcRenderer.invoke(togglePinChannel, path) as Promise<RelicResult<WorkspaceState>>,
   connectGitRemote: (input: ConnectGitRemoteInput) =>
     ipcRenderer.invoke(connectGitRemoteChannel, input) as Promise<RelicResult<GitRemoteSummary[]>>,
   connectGitHubAccount: () =>

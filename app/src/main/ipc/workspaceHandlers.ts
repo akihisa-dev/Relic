@@ -1,4 +1,4 @@
-import { readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import { app, dialog, ipcMain, shell } from "electron";
@@ -83,7 +83,9 @@ import {
   type PushGitTagInput,
   type WorkspaceState,
   getFrontmatterCandidatesChannel,
-  createFrontmatterTemplateChannel
+  createFrontmatterTemplateChannel,
+  createNewWorkspaceChannel,
+  togglePinChannel
 } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { readBacklinks } from "../files/backlinks";
@@ -354,6 +356,73 @@ export function registerWorkspaceHandlers(): void {
       return fail(
         "WORKSPACE_OPEN_FAILED",
         "ワークスペースを開けませんでした。フォルダの権限や保存場所を確認してください。",
+        error instanceof Error ? error.message : String(error)
+      );
+    }
+  });
+
+  ipcMain.handle(createNewWorkspaceChannel, async (): Promise<RelicResult<WorkspaceState>> => {
+    try {
+      const selection = await dialog.showSaveDialog({
+        buttonLabel: "ここに作成",
+        message: "新しいワークスペースの場所と名前を指定してください。",
+        nameFieldLabel: "ワークスペース名",
+        showsTagField: false
+      });
+
+      if (selection.canceled || !selection.filePath) {
+        const settings = await readAppSettings(app.getPath("userData"));
+
+        return ok(await buildWorkspaceState(settings));
+      }
+
+      await mkdir(selection.filePath, { recursive: true });
+      const workspace = createWorkspaceSummary(selection.filePath);
+      await prepareWorkspace(workspace.path);
+
+      const settings = await readAppSettings(app.getPath("userData"));
+      const nextSettings = addOrActivateWorkspace(settings, workspace);
+      await writeAppSettings(app.getPath("userData"), nextSettings);
+
+      return ok(await buildWorkspaceState(nextSettings));
+    } catch (error) {
+      return fail(
+        "WORKSPACE_CREATE_FAILED",
+        "ワークスペースを作成できませんでした。",
+        error instanceof Error ? error.message : String(error)
+      );
+    }
+  });
+
+  ipcMain.handle(togglePinChannel, async (_event, path: unknown): Promise<RelicResult<WorkspaceState>> => {
+    try {
+      if (typeof path !== "string") {
+        return fail("TOGGLE_PIN_INVALID_INPUT", "パスが無効です。");
+      }
+
+      const settings = await readAppSettings(app.getPath("userData"));
+      const activeWorkspace = settings.workspaces.find((ws) => ws.id === settings.lastWorkspaceId);
+
+      if (!activeWorkspace) {
+        return fail("TOGGLE_PIN_NO_WORKSPACE", "アクティブなワークスペースがありません。");
+      }
+
+      const current = settings.pinnedPaths[activeWorkspace.id] ?? [];
+      const updated = current.includes(path)
+        ? current.filter((p) => p !== path)
+        : [...current, path];
+
+      const nextSettings: typeof settings = {
+        ...settings,
+        pinnedPaths: { ...settings.pinnedPaths, [activeWorkspace.id]: updated }
+      };
+      await writeAppSettings(app.getPath("userData"), nextSettings);
+
+      return ok(await buildWorkspaceState(nextSettings));
+    } catch (error) {
+      return fail(
+        "TOGGLE_PIN_FAILED",
+        "ピン留め操作に失敗しました。",
         error instanceof Error ? error.message : String(error)
       );
     }
