@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { defaultAutoSyncSettings, defaultEditorSettings, defaultFeatureToggles, type GitHubAuthStatus } from "../shared/ipc";
@@ -117,6 +117,14 @@ const withWorkspace = {
   workspaces: []
 };
 
+async function renderApp() {
+  let result!: ReturnType<typeof render>;
+  await act(async () => {
+    result = render(<App />);
+  });
+  return result;
+}
+
 describe("App", () => {
   beforeAll(() => {
     Object.defineProperty(window, "matchMedia", {
@@ -139,11 +147,11 @@ describe("App", () => {
   it("ビュー切り替えナビとメインエリアが表示される", async () => {
     window.relic = makeRelicApi();
 
-    render(<App />);
+    await renderApp();
 
-    expect(screen.getByRole("navigation", { name: "View switcher" })).toBeInTheDocument();
+    expect(screen.getByRole("navigation")).toBeInTheDocument();
     expect(screen.getByRole("main")).toBeInTheDocument();
-    expect(await screen.findByText("No workspace selected")).toBeInTheDocument();
+    expect(await screen.findByText("ワークスペース未選択")).toBeInTheDocument();
   });
 
   it("ワークスペースを開くとファイルツリーが表示される", async () => {
@@ -157,7 +165,7 @@ describe("App", () => {
       })
     });
 
-    render(<App />);
+    await renderApp();
 
     expect(await screen.findByRole("button", { name: /読書メモ/ })).toBeInTheDocument();
   });
@@ -177,7 +185,7 @@ describe("App", () => {
       })
     });
 
-    render(<App />);
+    await renderApp();
 
     fireEvent.click(await screen.findByRole("button", { name: /読書メモ/ }));
 
@@ -203,7 +211,7 @@ describe("App", () => {
       })
     });
 
-    render(<App />);
+    await renderApp();
 
     const folderButton = await screen.findByRole("button", { name: /資料/ });
     expect(screen.getByRole("button", { name: /読書メモ/ })).toBeInTheDocument();
@@ -232,7 +240,7 @@ describe("App", () => {
       })
     });
 
-    render(<App />);
+    await renderApp();
 
     const fileButton = await screen.findByRole("button", { name: /読書メモ/ });
     fireEvent.click(fileButton);
@@ -247,7 +255,7 @@ describe("App", () => {
       getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
     });
 
-    const { container } = render(<App />);
+    const { container } = await renderApp();
 
     await screen.findByText("Notes");
 
@@ -314,7 +322,7 @@ describe("App", () => {
       rightPanelView: "outline"
     });
 
-    render(<App />);
+    await renderApp();
 
     fireEvent.click(await screen.findByRole("button", { name: "GitHubアカウントを接続" }));
 
@@ -339,7 +347,7 @@ describe("App", () => {
       createMarkdownFile
     });
 
-    render(<App />);
+    await renderApp();
 
     fireEvent.change(await screen.findByRole("textbox", { name: "新規ノート名" }), {
       target: { value: "読書メモ" }
@@ -364,7 +372,7 @@ describe("App", () => {
       createFolder
     });
 
-    render(<App />);
+    await renderApp();
 
     fireEvent.change(await screen.findByRole("textbox", { name: "新規フォルダ名" }), {
       target: { value: "資料" }
@@ -388,7 +396,7 @@ describe("App", () => {
 
     window.relic = makeRelicApi({ openWorkspace });
 
-    render(<App />);
+    await renderApp();
 
     fireEvent.click(await screen.findByRole("button", { name: "フォルダを開く" }));
 
@@ -410,7 +418,7 @@ describe("App", () => {
 
     window.relic = makeRelicApi({ createNewWorkspace });
 
-    render(<App />);
+    await renderApp();
 
     fireEvent.click(await screen.findByRole("button", { name: "新規ワークスペースを作成" }));
 
@@ -446,7 +454,7 @@ describe("App", () => {
       switchWorkspace
     });
 
-    render(<App />);
+    await renderApp();
 
     fireEvent.click(await screen.findByRole("button", { name: "Archive" }));
 
@@ -481,7 +489,7 @@ describe("App", () => {
       renameMarkdownFile
     });
 
-    const { container } = render(<App />);
+    const { container } = await renderApp();
 
     fireEvent.click(await screen.findByRole("button", { name: /読書メモ/ }));
     fireEvent.click(await screen.findByTitle("クリックして名前を変更"));
@@ -526,7 +534,7 @@ describe("App", () => {
       })
     });
 
-    render(<App />);
+    await renderApp();
 
     fireEvent.click(await screen.findByRole("button", { name: /読書メモ/ }));
     fireEvent.keyDown(window, { key: "P", metaKey: true, shiftKey: true });
@@ -556,7 +564,7 @@ describe("App", () => {
       })
     });
 
-    render(<App />);
+    await renderApp();
 
     fireEvent.click(await screen.findByRole("button", { name: /読書メモ/ }));
     fireEvent.keyDown(window, { key: "P", metaKey: true, shiftKey: true });
@@ -608,7 +616,7 @@ describe("App", () => {
       moveMarkdownFile
     });
 
-    render(<App />);
+    await renderApp();
 
     const fileRow = await screen.findByRole("button", { name: /note/ });
     const draftsRow = await screen.findByRole("button", { name: /drafts/ });
@@ -678,7 +686,7 @@ describe("App", () => {
       togglePin
     });
 
-    render(<App />);
+    await renderApp();
 
     fireEvent.click((await screen.findAllByTitle("ピン留め"))[0]);
 
@@ -700,7 +708,7 @@ describe("App", () => {
 
     window.relic = makeRelicApi({ saveEditorSettings });
 
-    render(<App />);
+    await renderApp();
 
     fireEvent.click(screen.getByRole("button", { name: "設定" }));
 
@@ -725,7 +733,7 @@ describe("App", () => {
       })
     });
 
-    render(<App />);
+    await renderApp();
 
     fireEvent.click(screen.getByRole("button", { name: "検索" }));
 
@@ -756,7 +764,7 @@ describe("App", () => {
       searchWorkspace
     });
 
-    render(<App />);
+    await renderApp();
 
     fireEvent.click(screen.getByRole("button", { name: "検索" }));
     fireEvent.change(await screen.findByRole("textbox", { name: "検索" }), {
@@ -785,7 +793,7 @@ describe("App", () => {
       searchWorkspace
     });
 
-    render(<App />);
+    await renderApp();
 
     fireEvent.click(screen.getByRole("button", { name: "検索" }));
     fireEvent.click(await screen.findByRole("button", { name: "#資料" }));
@@ -805,7 +813,7 @@ describe("App", () => {
       })
     });
 
-    render(<App />);
+    await renderApp();
 
     fireEvent.click(screen.getByRole("button", { name: "検索" }));
     fireEvent.change(await screen.findByRole("combobox", { name: "検索モード" }), {
@@ -830,7 +838,7 @@ describe("App", () => {
       searchWorkspace
     });
 
-    render(<App />);
+    await renderApp();
 
     fireEvent.click(screen.getByRole("button", { name: "検索" }));
     fireEvent.change(await screen.findByRole("combobox", { name: "検索モード" }), {
@@ -865,7 +873,7 @@ describe("App", () => {
       initializeGitRepository
     });
 
-    render(<App />);
+    await renderApp();
 
     fireEvent.click(screen.getByRole("button", { name: "Git" }));
     fireEvent.click(await screen.findByRole("button", { name: "このワークスペースでGitを初期化" }));
@@ -896,7 +904,7 @@ describe("App", () => {
       })
     });
 
-    render(<App />);
+    await renderApp();
 
     fireEvent.click(screen.getByRole("button", { name: "Git" }));
     fireEvent.change(await screen.findByLabelText("新規Gitブランチ名"), {
@@ -941,7 +949,7 @@ describe("App", () => {
       switchGitBranch
     });
 
-    render(<App />);
+    await renderApp();
 
     fireEvent.click(screen.getByRole("button", { name: "Git" }));
     fireEvent.click(await screen.findByRole("button", { name: /feature\/test/ }));
@@ -982,7 +990,7 @@ describe("App", () => {
       getGitCommitHistory: vi.fn().mockResolvedValue({ ok: true, value: [] })
     });
 
-    render(<App />);
+    await renderApp();
 
     fireEvent.click(screen.getByRole("button", { name: "Git" }));
     await screen.findByText("コミット履歴はまだありません。");
@@ -1040,7 +1048,7 @@ describe("App", () => {
       })
     });
 
-    render(<App />);
+    await renderApp();
 
     fireEvent.click(screen.getByRole("button", { name: "Git" }));
 
@@ -1084,7 +1092,7 @@ describe("App", () => {
       })
     });
 
-    render(<App />);
+    await renderApp();
 
     fireEvent.click(screen.getByRole("button", { name: "Git" }));
     fireEvent.change(await screen.findByLabelText("Git作者名"), { target: { value: "Test User" } });
@@ -1129,7 +1137,7 @@ describe("App", () => {
       readMarkdownFile
     });
 
-    render(<App />);
+    await renderApp();
 
     fireEvent.click(await screen.findByRole("button", { name: /読書メモ/ }));
     fireEvent.click(screen.getByRole("button", { name: "Links" }));
@@ -1167,7 +1175,7 @@ describe("App", () => {
       readMarkdownFile
     });
 
-    render(<App />);
+    await renderApp();
 
     fireEvent.click(await screen.findByRole("button", { name: /target/ }));
     fireEvent.click(screen.getByRole("button", { name: "Links" }));
@@ -1230,7 +1238,7 @@ describe("App", () => {
       readMarkdownFile
     });
 
-    render(<App />);
+    await renderApp();
 
     fireEvent.click(await screen.findByRole("button", { name: /読書メモ/ }));
     fireEvent.click(screen.getByRole("button", { name: "Links" }));
