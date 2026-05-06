@@ -1694,6 +1694,14 @@ button:disabled {
 .tool-status--error { color: var(--error); }
 .tool-status--success { color: var(--success); }
 
+.settings-info {
+  color: var(--text-2);
+  display: grid;
+  gap: 4px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
 .toast {
   align-items: center;
   background: var(--popup-bg);

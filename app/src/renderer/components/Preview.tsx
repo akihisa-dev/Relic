@@ -18,7 +18,7 @@ interface PreviewProps {
 }
 
 function slugifyHeading(text: string): string {
-  return text.trim().toLowerCase().replace(/\s+/g, "-").replace(/[^\w-]/g, "");
+  return encodeURIComponent(text.trim().toLowerCase().replace(/\s+/g, "-"));
 }
 
 const fontFamilyMap: Record<EditorSettings["font"], string> = {
@@ -176,6 +176,38 @@ export function normalizeEmbedTarget(target: string): string | null {
   return normalized.endsWith(".md") ? normalized : `${normalized}.md`;
 }
 
+function normalizeImageEmbedTarget(target: string): string | null {
+  const normalized = target.trim().split("#")[0].split("^")[0].replace(/\\/g, "/");
+
+  if (
+    normalized === "" ||
+    normalized.startsWith("/") ||
+    normalized.startsWith("//") ||
+    normalized.split("/").some((segment) => segment === "..") ||
+    /^[a-z][a-z0-9+.-]*:/i.test(normalized)
+  ) {
+    return null;
+  }
+
+  const extension = normalized.match(/\.[^.?#/]+(?=$|[?#])/)?.[0].toLowerCase();
+
+  return extension && imageExtensions.has(extension) ? normalized : null;
+}
+
+function resolveEmbeddedImageSrc(
+  workspacePath: string | null | undefined,
+  target: string
+): string | null {
+  if (!workspacePath) return null;
+
+  const normalized = normalizeImageEmbedTarget(target);
+  if (!normalized) return null;
+
+  const imagePath = normalized.startsWith("attachments/") ? normalized : `attachments/${normalized}`;
+
+  return `file://${encodeURI(`${workspacePath.replace(/\/+$/, "")}/${imagePath}`)}`;
+}
+
 function buildRenderer(workspacePath: string | null | undefined, imageSources: string[]): Renderer {
   const renderer = new marked.Renderer();
 
@@ -229,6 +261,8 @@ function extractEmbedTargets(content: string): string[] {
   const targets = new Set<string>();
 
   for (const match of content.matchAll(/!\[\[([^\]\n]+)\]\]/g)) {
+    if (normalizeImageEmbedTarget(match[1])) continue;
+
     const target = normalizeEmbedTarget(match[1]);
 
     if (target) targets.add(target);
@@ -247,6 +281,14 @@ function renderMarkdown(
   const renderer = buildRenderer(workspacePath, imageSources);
   const withEmbedPlaceholders = renderEmbeds
     ? content.replace(/!\[\[([^\]\n]+)\]\]/g, (match, rawTarget: string) => {
+        const imageSrc = resolveEmbeddedImageSrc(workspacePath, rawTarget);
+
+        if (imageSrc) {
+          const imageId = imageSources.push(imageSrc) - 1;
+
+          return `\n\n<img class="preview-attachment-image" data-relic-image-id="${imageId}" alt="${escapeHtml(rawTarget)}">\n\n`;
+        }
+
         const target = normalizeEmbedTarget(rawTarget);
 
         if (!target) {
@@ -356,7 +398,8 @@ export function Preview({
     if (!scrollTargetHeading || !containerRef.current) return;
 
     const id = slugifyHeading(scrollTargetHeading);
-    const el = containerRef.current.querySelector<HTMLElement>(`#${id}`);
+    const headings = containerRef.current.querySelectorAll<HTMLElement>("h1,h2,h3,h4,h5,h6");
+    const el = Array.from(headings).find((heading) => heading.id === id);
 
     el?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [scrollTargetHeading, html]);

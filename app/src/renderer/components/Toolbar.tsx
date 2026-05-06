@@ -178,7 +178,10 @@ export function Toolbar({ viewRef }: ToolbarProps): ReactElement {
     const { state } = view;
     const pos = state.selection.main.head;
 
-    view.dispatch({ changes: { from: pos, insert: "[[" } });
+    view.dispatch({
+      changes: { from: pos, insert: "[[]]" },
+      selection: { anchor: pos + 2 }
+    });
     view.focus();
   };
 

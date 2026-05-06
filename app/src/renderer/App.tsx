@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactElement } from "react";
 
 import type {
+  AppInfo,
   AutoSyncSettings,
   Backlink,
   GitCommitDiff,
@@ -88,6 +89,7 @@ function FileTreeItem({
   pinnedPaths?: Set<string>;
 }): ReactElement {
   const [isDragOver, setIsDragOver] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true);
   const isFolder = node.type === "folder";
 
   const handleDrop = (e: React.DragEvent, destFolder: string): void => {
@@ -124,12 +126,13 @@ function FileTreeItem({
             if (node.type === "file") {
               onOpenFile(node.path);
             } else {
+              setIsExpanded((v) => !v);
               onSelectFolder(node);
             }
           }}
           type="button"
         >
-          <span className="file-tree-icon">{node.type === "folder" ? "▶" : "·"}</span>
+          <span className="file-tree-icon">{node.type === "folder" ? (isExpanded ? "▼" : "▶") : "·"}</span>
           <span className="file-tree-name">{node.name}</span>
         </button>
         {onTogglePin ? (
@@ -143,7 +146,7 @@ function FileTreeItem({
           </button>
         ) : null}
       </div>
-      {node.type === "folder" && node.children.length > 0 ? (
+      {node.type === "folder" && isExpanded && node.children.length > 0 ? (
         <FileTree
           activePaths={activePaths}
           nodes={node.children}
@@ -1009,6 +1012,7 @@ function ToolsSidebar({ workspacePath }: { workspacePath: string | null }): Reac
 // ────────────────────────────────────────────────
 
 function SettingsSidebar({
+  appInfo,
   settings,
   autoSyncSettings,
   featureToggles,
@@ -1017,6 +1021,7 @@ function SettingsSidebar({
   onAutoSyncSave,
   onFeatureTogglesSave
 }: {
+  appInfo: AppInfo | null;
   settings: EditorSettings;
   autoSyncSettings: AutoSyncSettings;
   featureToggles: FeatureToggles;
@@ -1189,6 +1194,11 @@ function SettingsSidebar({
           <span>{label}</span>
         </label>
       ))}
+      <div className="links-panel-subheading" style={{ marginTop: "1rem" }}>アプリ情報</div>
+      <div className="settings-info">
+        <div>Relic {appInfo?.version ?? "0.0.0"}</div>
+        <div>{appInfo?.platform ?? "darwin"}</div>
+      </div>
     </div>
   );
 }
@@ -1393,6 +1403,7 @@ const sidebarViews: Array<{ id: SidebarView; label: string; icon: string }> = [
 
 export function App(): ReactElement {
   const [workspaceState, setWorkspaceState] = useState<WorkspaceState | null>(null);
+  const [appInfo, setAppInfo] = useState<AppInfo | null>(null);
   const [toastMessage, setToastMessage] = useState<{ text: string; type: "error" | "info" } | null>(null);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const showToast = useCallback((text: string, type: "error" | "info" = "error") => {
@@ -1537,6 +1548,12 @@ export function App(): ReactElement {
 
   // 初期ロード
   useEffect(() => {
+    void window.relic?.getAppInfo().then((result) => {
+      if (result.ok) {
+        setAppInfo(result.value);
+      }
+    });
+
     void window.relic?.getWorkspaceState().then((result) => {
       if (result.ok) {
         setWorkspaceState(result.value);
@@ -3502,6 +3519,7 @@ export function App(): ReactElement {
               <ToolsSidebar workspacePath={workspaceState?.activeWorkspace?.path ?? null} />
             ) : (
               <SettingsSidebar
+                appInfo={appInfo}
                 autoSyncSettings={autoSyncSettings}
                 featureToggles={featureToggles}
                 onAutoSyncSave={handleSaveAutoSyncSettings}

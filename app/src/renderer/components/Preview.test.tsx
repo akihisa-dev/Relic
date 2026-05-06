@@ -93,6 +93,25 @@ describe("Preview", () => {
     expect(image).toHaveAttribute("src", "file:///tmp/relic%20workspace/attachments/diagram.png");
   });
 
+  it("Obsidian形式の画像埋め込みをattachments配下の画像として表示する", () => {
+    window.relic = {
+      readMarkdownFile: vi.fn()
+    } as unknown as typeof window.relic;
+
+    render(
+      <Preview
+        content="![[diagram.png]]"
+        settings={settings}
+        workspacePath="/tmp/relic workspace"
+      />
+    );
+
+    const image = screen.getByRole("img", { name: "diagram.png" });
+
+    expect(image).toHaveAttribute("src", "file:///tmp/relic%20workspace/attachments/diagram.png");
+    expect(window.relic!.readMarkdownFile).not.toHaveBeenCalled();
+  });
+
   it("外部URL画像は初期対象外として画像表示しない", () => {
     render(
       <Preview
