@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import type { ReactElement } from "react";
 
+import { useT } from "../i18n";
+
 interface QuickSwitcherProps {
   filePaths: string[];
   onClose: () => void;
@@ -29,6 +31,7 @@ function getDirPath(filePath: string): string {
 }
 
 export function QuickSwitcher({ filePaths, onClose, onSelect }: QuickSwitcherProps): ReactElement {
+  const t = useT();
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -79,7 +82,7 @@ export function QuickSwitcher({ filePaths, onClose, onSelect }: QuickSwitcherPro
               select(filtered[selectedIndex]);
             }
           }}
-          placeholder="ファイル名を検索..."
+          placeholder={t("quickSwitcher.placeholder")}
           type="text"
           value={query}
         />
@@ -103,7 +106,7 @@ export function QuickSwitcher({ filePaths, onClose, onSelect }: QuickSwitcherPro
             );
           })}
           {filtered.length === 0 ? (
-            <li className="command-empty">一致するファイルがありません</li>
+            <li className="command-empty">{t("quickSwitcher.empty")}</li>
           ) : null}
         </ul>
       </div>

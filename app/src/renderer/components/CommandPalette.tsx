@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import type { ReactElement } from "react";
 
+import { useT } from "../i18n";
+
 export interface Command {
   id: string;
   label: string;
@@ -23,6 +25,7 @@ function matchesQuery(label: string, query: string): boolean {
 }
 
 export function CommandPalette({ commands, onClose }: CommandPaletteProps): ReactElement {
+  const t = useT();
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -72,7 +75,7 @@ export function CommandPalette({ commands, onClose }: CommandPaletteProps): Reac
               execute(filtered[selectedIndex]);
             }
           }}
-          placeholder="コマンドを検索..."
+          placeholder={t("commandPalette.placeholder")}
           type="text"
           value={query}
         />
@@ -89,7 +92,7 @@ export function CommandPalette({ commands, onClose }: CommandPaletteProps): Reac
             </li>
           ))}
           {filtered.length === 0 ? (
-            <li className="command-empty">一致するコマンドがありません</li>
+            <li className="command-empty">{t("commandPalette.empty")}</li>
           ) : null}
         </ul>
       </div>
