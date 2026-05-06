@@ -35,6 +35,7 @@ import { Preview } from "./components/Preview";
 import { QuickSwitcher } from "./components/QuickSwitcher";
 import { Toolbar } from "./components/Toolbar";
 import { useAutoSave } from "./hooks/useAutoSave";
+import { createTranslator, I18nProvider, useT, type TranslationKey } from "./i18n";
 import { useEditorStore, type PaneId } from "./store/editorStore";
 import { useUiStore, type SidebarView } from "./store/uiStore";
 import "./styles.css";
@@ -303,6 +304,7 @@ function SearchSidebar({
     [frontmatterCandidates]
   );
   const frontmatterValueCandidates = frontmatterField ? (frontmatterCandidates[frontmatterField] ?? []) : [];
+  const t = useT();
 
   const handleReplaceInFile = (): void => {
     if (!activeFilePath || !window.relic) return;
@@ -319,7 +321,7 @@ function SearchSidebar({
       })
       .then((result) => {
         if (result.ok) {
-          setReplaceStatus(`${result.value.count} 件置換しました。`);
+          setReplaceStatus(t("search.replaceDone", { count: result.value.count }));
           onWorkspaceChange();
         } else {
           setReplaceError(result.error.message);
@@ -377,33 +379,33 @@ function SearchSidebar({
   return (
     <div className="sidebar-section">
       <input
-        aria-label="検索"
+        aria-label={t("search.search")}
         className={`search-input${error ? " search-input--error" : ""}`}
         onChange={(event) => onQueryChange(event.target.value)}
-        placeholder={mode === "frontmatter" ? "値を入力" : "検索"}
+        placeholder={mode === "frontmatter" ? "Value" : t("search.search")}
         value={query}
         list={mode === "frontmatter" && frontmatterValueCandidates.length > 0 ? "search-frontmatter-values" : undefined}
       />
       <select
-        aria-label="検索モード"
+        aria-label={t("search.mode")}
         className="search-mode-select"
         onChange={(event) => onModeChange(event.target.value as SearchMode)}
         value={mode}
       >
-        <option value="fullText">全文</option>
-        <option value="fileName">ファイル名</option>
-        <option value="tag">タグ</option>
-        <option value="regex">正規表現</option>
-        <option value="frontmatter">フロントマター</option>
+        <option value="fullText">{t("search.all")}</option>
+        <option value="fileName">{t("search.fileName")}</option>
+        <option value="tag">Tag</option>
+        <option value="regex">{t("search.regex")}</option>
+        <option value="frontmatter">{t("search.frontmatter")}</option>
       </select>
       {mode === "frontmatter" ? (
         <div className="search-frontmatter-fields">
           <input
-            aria-label="フロントマターフィールド"
+            aria-label={t("search.frontmatterField")}
             className="search-input"
             list="search-frontmatter-fields"
             onChange={(event) => onFrontmatterFieldChange(event.target.value)}
-            placeholder="field名"
+            placeholder={t("search.fieldName")}
             value={frontmatterField}
           />
           <datalist id="search-frontmatter-fields">
@@ -462,27 +464,27 @@ function SearchSidebar({
             ))}
           </ul>
         ) : mode === "frontmatter" && !frontmatterField.trim() ? (
-          <div className="empty-note">フィールド名を入力してください。</div>
+          <div className="empty-note">{t("search.noField")}</div>
         ) : query.trim() ? (
-          <div className="empty-note">一致する結果はありません。</div>
+          <div className="empty-note">{t("search.noMatches")}</div>
         ) : (
-          <div className="empty-note">検索語句を入力してください。</div>
+          <div className="empty-note">{t("search.noResults")}</div>
         )}
       </div>
       <div className="search-block">
-        <div className="links-panel-subheading">置換</div>
+        <div className="links-panel-subheading">{t("search.replace")}</div>
         <input
-          aria-label="置換する語句"
+          aria-label={t("search.replaceQuery")}
           className={`search-input${replaceError && replaceError.includes("正規表現") ? " search-input--error" : ""}`}
           onChange={(e) => { setReplaceQuery(e.target.value); setReplacePreview(null); setReplaceStatus(null); }}
-          placeholder="検索語句"
+          placeholder={t("search.replaceQuery")}
           value={replaceQuery}
         />
         <input
-          aria-label="置換後テキスト"
+          aria-label={t("search.replaceAfter")}
           className="search-input"
           onChange={(e) => { setReplacementText(e.target.value); setReplacePreview(null); setReplaceStatus(null); }}
-          placeholder="置換後テキスト"
+          placeholder={t("search.replaceAfter")}
           value={replacementText}
         />
         <label className="setting-row replace-regex-row">
@@ -491,7 +493,7 @@ function SearchSidebar({
             onChange={(e) => setReplaceIsRegex(e.target.checked)}
             type="checkbox"
           />
-          <span>正規表現</span>
+          <span>{t("search.regex")}</span>
         </label>
         <div className="replace-actions">
           {activeFilePath ? (
@@ -499,10 +501,10 @@ function SearchSidebar({
               className="replace-btn"
               disabled={isReplacing || replaceQuery.trim() === ""}
               onClick={handleReplaceInFile}
-              title="現在のファイルのみ置換"
+              title={t("search.replaceCurrentFile")}
               type="button"
             >
-              このファイルを置換
+              {t("search.replaceCurrentFile")}
             </button>
           ) : null}
           <button
@@ -511,7 +513,7 @@ function SearchSidebar({
             onClick={handlePreviewBulkReplace}
             type="button"
           >
-            一括プレビュー
+            {t("search.bulkPreview")}
           </button>
         </div>
         {replaceError ? <div className="error-note">{replaceError}</div> : null}
@@ -537,7 +539,7 @@ function SearchSidebar({
                 ) : null}
               </ul>
             ) : (
-              <div className="empty-note">一致する箇所はありません。</div>
+              <div className="empty-note">{t("search.noMatches")}</div>
             )}
             {replacePreview.length > 0 ? (
               <button
@@ -546,7 +548,7 @@ function SearchSidebar({
                 onClick={handleApplyBulkReplace}
                 type="button"
               >
-                一括置換を実行
+                {t("search.replace")}
               </button>
             ) : null}
           </div>
@@ -566,7 +568,7 @@ function SearchSidebar({
             ))}
           </ul>
         ) : (
-          <div className="empty-note">タグはまだありません。</div>
+          <div className="empty-note">{t("search.tagsEmpty")}</div>
         )}
       </div>
     </div>
@@ -600,12 +602,13 @@ function FilesSidebar({
     () => new Set(workspaceState?.pinnedPaths ?? []),
     [workspaceState?.pinnedPaths]
   );
+  const t = useT();
 
   return (
     <div className="sidebar-section">
       <div className="workspace-card">
         <div className="workspace-name" title={activeWorkspace?.path}>
-          {activeWorkspace ? activeWorkspace.name : "ワークスペース未選択"}
+          {activeWorkspace ? activeWorkspace.name : t("files.noWorkspace")}
         </div>
       </div>
       <button
@@ -614,7 +617,7 @@ function FilesSidebar({
         onClick={onOpenWorkspace}
         type="button"
       >
-        {isOpeningWorkspace ? "開いています…" : "フォルダを開く"}
+        {isOpeningWorkspace ? t("files.opening") : t("files.openFolder")}
       </button>
       <button
         className="secondary-button"
@@ -622,10 +625,10 @@ function FilesSidebar({
         onClick={onCreateWorkspace}
         type="button"
       >
-        {isCreatingWorkspace ? "作成中…" : "新規ワークスペースを作成"}
+        {isCreatingWorkspace ? t("files.creatingWorkspace") : t("files.createNewWorkspace")}
       </button>
       {workspaceState && workspaceState.workspaces.length > 1 ? (
-        <div className="workspace-list" aria-label="登録済みワークスペース">
+        <div className="workspace-list" aria-label="Registered workspaces">
           {workspaceState.workspaces.map((ws) => (
             <button
               className={`workspace-list-item${ws.id === activeWorkspace?.id ? " active" : ""}`}
@@ -649,14 +652,14 @@ function FilesSidebar({
             }}
           >
             <input
-              aria-label="新規ノート名"
+              aria-label={t("files.newNoteName")}
               className="text-input"
               onChange={(e) => onFileNameDraftChange(e.target.value)}
-              placeholder="新規ノート名"
+              placeholder={t("files.newNoteName")}
               value={fileNameDraft}
             />
             <button disabled={isCreatingFile} type="submit">
-              作成
+              {t("common.create")}
             </button>
           </form>
           <form
@@ -667,19 +670,19 @@ function FilesSidebar({
             }}
           >
             <input
-              aria-label="新規フォルダ名"
+              aria-label={t("files.newFolderName")}
               className="text-input"
               onChange={(e) => onFolderNameDraftChange(e.target.value)}
-              placeholder="新規フォルダ名"
+              placeholder={t("files.newFolderName")}
               value={folderNameDraft}
             />
             <button disabled={isCreatingFolder} type="submit">
-              フォルダ作成
+              {t("files.createFolder")}
             </button>
           </form>
           {pinnedPaths.size > 0 ? (
             <div className="pinned-section">
-              <div className="pinned-section-heading">ピン留め</div>
+              <div className="pinned-section-heading">{t("files.pinned")}</div>
               <ul className="file-tree">
                 {(workspaceState?.pinnedPaths ?? []).map((p) => {
                   const node = findNodeByPath(workspaceState?.fileTree ?? [], p);
@@ -717,7 +720,7 @@ function FilesSidebar({
           />
         </>
       ) : (
-        <div className="empty-note">任意のローカルフォルダをワークスペースとして開けます。</div>
+        <div className="empty-note">{t("files.workspaceHint")}</div>
       )}
     </div>
   );
@@ -728,15 +731,16 @@ function FilesSidebar({
 // ────────────────────────────────────────────────
 
 function ToolsSidebar({ workspacePath }: { workspacePath: string | null }): ReactElement {
+  const t = useT();
   const [titleListFolder, setTitleListFolder] = useState("");
   const [titleListOutputFolder, setTitleListOutputFolder] = useState("");
-  const [titleListOutputName, setTitleListOutputName] = useState("タイトル一覧");
+  const [titleListOutputName, setTitleListOutputName] = useState("Title List");
   const [titleListSort, setTitleListSort] = useState<"name" | "mtime">("name");
   const [titleListStatus, setTitleListStatus] = useState<string | null>(null);
 
   const [tocFolder, setTocFolder] = useState("");
   const [tocOutputFolder, setTocOutputFolder] = useState("");
-  const [tocOutputName, setTocOutputName] = useState("目次");
+  const [tocOutputName, setTocOutputName] = useState("Table of Contents");
   const [tocSubfolders, setTocSubfolders] = useState(true);
   const [tocStatus, setTocStatus] = useState<string | null>(null);
 
@@ -745,7 +749,7 @@ function ToolsSidebar({ workspacePath }: { workspacePath: string | null }): Reac
   const [mergeSortBy, setMergeSortBy] = useState<MergeSortBy>("name");
   const [mergeInsertHeading, setMergeInsertHeading] = useState(true);
   const [mergeOutputFolder, setMergeOutputFolder] = useState("");
-  const [mergeOutputName, setMergeOutputName] = useState("マージ結果");
+  const [mergeOutputName, setMergeOutputName] = useState("Merged Result");
   const [mergeStatus, setMergeStatus] = useState<string | null>(null);
 
   const [splitSource, setSplitSource] = useState("");
@@ -755,45 +759,45 @@ function ToolsSidebar({ workspacePath }: { workspacePath: string | null }): Reac
 
   const handleGenerateTitleList = async () => {
     if (!workspacePath) return;
-    setTitleListStatus("生成中…");
+    setTitleListStatus(t("common.running"));
     const result = await window.relic!.generateTitleList({
       filterFolder: titleListFolder || undefined,
       outputFolder: titleListOutputFolder || ".",
-      outputName: titleListOutputName || "タイトル一覧",
+      outputName: titleListOutputName || t("tools.titleListDefaultName"),
       sortBy: titleListSort
     });
-    setTitleListStatus(result.ok ? `完了: ${result.value}` : `エラー: ${result.error.message}`);
+    setTitleListStatus(result.ok ? `Done: ${result.value}` : `Error: ${result.error.message}`);
   };
 
   const handleGenerateToc = async () => {
     if (!workspacePath) return;
-    setTocStatus("生成中…");
+    setTocStatus(t("common.running"));
     const result = await window.relic!.generateTableOfContents({
       includeSubfolders: tocSubfolders,
       outputFolder: tocOutputFolder || ".",
-      outputName: tocOutputName || "目次",
+      outputName: tocOutputName || t("tools.tocDefaultName"),
       targetFolder: tocFolder || "."
     });
-    setTocStatus(result.ok ? `完了: ${result.value}` : `エラー: ${result.error.message}`);
+    setTocStatus(result.ok ? `Done: ${result.value}` : `Error: ${result.error.message}`);
   };
 
   const handleMergeFiles = async () => {
     if (!workspacePath) return;
-    setMergeStatus("処理中…");
+    setMergeStatus(t("tools.processing"));
     const result = await window.relic!.mergeFiles({
       filterType: mergeFilterType,
       filterValue: mergeFilterValue,
       insertFilenameHeading: mergeInsertHeading,
       outputFolder: mergeOutputFolder || ".",
-      outputName: mergeOutputName || "マージ結果",
+      outputName: mergeOutputName || t("tools.mergeDefaultName"),
       sortBy: mergeSortBy
     });
-    setMergeStatus(result.ok ? `完了: ${result.value}` : `エラー: ${result.error.message}`);
+    setMergeStatus(result.ok ? `Done: ${result.value}` : `Error: ${result.error.message}`);
   };
 
   const handleSplitFile = async () => {
     if (!workspacePath || !splitSource) return;
-    setSplitStatus("処理中…");
+    setSplitStatus(t("tools.processing"));
     const result = await window.relic!.splitFileByHeading({
       headingLevel: splitLevel,
       outputFolder: splitOutputFolder || ".",
@@ -801,50 +805,50 @@ function ToolsSidebar({ workspacePath }: { workspacePath: string | null }): Reac
     });
     setSplitStatus(
       result.ok
-        ? `完了: ${result.value.length}ファイル生成`
-        : `エラー: ${result.error.message}`
+        ? `Done: ${result.value.length} file(s) created`
+        : `Error: ${result.error.message}`
     );
   };
 
   return (
     <div className="sidebar-section">
-      <div className="pane-heading">ファイル加工ツール</div>
+      <div className="pane-heading">{t("tools.tools")}</div>
       {!workspacePath ? (
-        <div className="empty-note">ワークスペースを開いてください。</div>
+        <div className="empty-note">{t("tools.workspaceRequired")}</div>
       ) : (
         <>
-          <div className="links-panel-subheading">タイトル一覧生成</div>
+          <div className="links-panel-subheading">{t("tools.titleList")}</div>
           <div className="search-block">
             <label className="setting-row">
-              <span>対象フォルダ</span>
+              <span>{t("tools.filterFolder")}</span>
               <input
                 onChange={(e) => setTitleListFolder(e.target.value)}
-                placeholder="（空=全体）"
+                placeholder={t("tools.placeholderAll")}
                 type="text"
                 value={titleListFolder}
               />
             </label>
             <label className="setting-row">
-              <span>並び順</span>
+              <span>{t("tools.sort")}</span>
               <select
                 onChange={(e) => setTitleListSort(e.target.value as "name" | "mtime")}
                 value={titleListSort}
               >
-                <option value="name">ファイル名順</option>
-                <option value="mtime">更新日時順</option>
+                <option value="name">{t("tools.sortName")}</option>
+                <option value="mtime">{t("tools.sortMtime")}</option>
               </select>
             </label>
             <label className="setting-row">
-              <span>出力フォルダ</span>
+              <span>{t("tools.outputFolder")}</span>
               <input
                 onChange={(e) => setTitleListOutputFolder(e.target.value)}
-                placeholder="（空=ルート）"
+                placeholder={t("tools.placeholderRoot")}
                 type="text"
                 value={titleListOutputFolder}
               />
             </label>
             <label className="setting-row">
-              <span>ファイル名</span>
+              <span>{t("tools.fileName")}</span>
               <input
                 onChange={(e) => setTitleListOutputName(e.target.value)}
                 type="text"
@@ -852,24 +856,24 @@ function ToolsSidebar({ workspacePath }: { workspacePath: string | null }): Reac
               />
             </label>
             <button className="primary-button" onClick={handleGenerateTitleList} type="button">
-              生成
+              {t("common.create")}
             </button>
-            {titleListStatus && <div className={`tool-status${titleListStatus.startsWith("エラー") ? " tool-status--error" : " tool-status--success"}`}>{titleListStatus}</div>}
+            {titleListStatus && <div className={`tool-status${titleListStatus.startsWith("Error") ? " tool-status--error" : " tool-status--success"}`}>{titleListStatus}</div>}
           </div>
 
-          <div className="links-panel-subheading" style={{ marginTop: "1.5rem" }}>目次生成</div>
+          <div className="links-panel-subheading" style={{ marginTop: "1.5rem" }}>{t("tools.tableOfContents")}</div>
           <div className="search-block">
             <label className="setting-row">
-              <span>対象フォルダ</span>
+              <span>{t("tools.filterFolder")}</span>
               <input
                 onChange={(e) => setTocFolder(e.target.value)}
-                placeholder="（空=ルート）"
+                placeholder={t("tools.placeholderRoot")}
                 type="text"
                 value={tocFolder}
               />
             </label>
             <label className="setting-row">
-              <span>サブフォルダ含む</span>
+              <span>Include subfolders</span>
               <input
                 checked={tocSubfolders}
                 onChange={(e) => setTocSubfolders(e.target.checked)}
@@ -877,16 +881,16 @@ function ToolsSidebar({ workspacePath }: { workspacePath: string | null }): Reac
               />
             </label>
             <label className="setting-row">
-              <span>出力フォルダ</span>
+              <span>{t("tools.outputFolder")}</span>
               <input
                 onChange={(e) => setTocOutputFolder(e.target.value)}
-                placeholder="（空=ルート）"
+                placeholder={t("tools.placeholderRoot")}
                 type="text"
                 value={tocOutputFolder}
               />
             </label>
             <label className="setting-row">
-              <span>ファイル名</span>
+              <span>{t("tools.fileName")}</span>
               <input
                 onChange={(e) => setTocOutputName(e.target.value)}
                 type="text"
@@ -894,27 +898,27 @@ function ToolsSidebar({ workspacePath }: { workspacePath: string | null }): Reac
               />
             </label>
             <button className="primary-button" onClick={handleGenerateToc} type="button">
-              生成
+              {t("common.create")}
             </button>
-            {tocStatus && <div className={`tool-status${tocStatus.startsWith("エラー") ? " tool-status--error" : " tool-status--success"}`}>{tocStatus}</div>}
+            {tocStatus && <div className={`tool-status${tocStatus.startsWith("Error") ? " tool-status--error" : " tool-status--success"}`}>{tocStatus}</div>}
           </div>
 
-          <div className="links-panel-subheading" style={{ marginTop: "1.5rem" }}>条件指定マージ</div>
+          <div className="links-panel-subheading" style={{ marginTop: "1.5rem" }}>{t("tools.merge")}</div>
           <div className="search-block">
             <label className="setting-row">
-              <span>フィルター</span>
+              <span>{t("tools.filter")}</span>
               <select
                 onChange={(e) => setMergeFilterType(e.target.value as MergeFilterType)}
                 value={mergeFilterType}
               >
-                <option value="all">すべて</option>
-                <option value="folder">フォルダ</option>
-                <option value="tag">タグ</option>
+                <option value="all">{t("tools.filterAll")}</option>
+                <option value="folder">{t("tools.filterFolder")}</option>
+                <option value="tag">{t("tools.filterTag")}</option>
               </select>
             </label>
             {mergeFilterType !== "all" && (
               <label className="setting-row">
-                <span>{mergeFilterType === "folder" ? "フォルダ名" : "タグ名"}</span>
+                <span>{mergeFilterType === "folder" ? t("tools.folderName") : "Tag name"}</span>
                 <input
                   onChange={(e) => setMergeFilterValue(e.target.value)}
                   placeholder={mergeFilterType === "folder" ? "例: notes" : "例: project"}
@@ -924,18 +928,18 @@ function ToolsSidebar({ workspacePath }: { workspacePath: string | null }): Reac
               </label>
             )}
             <label className="setting-row">
-              <span>並び順</span>
+              <span>{t("tools.sort")}</span>
               <select
                 onChange={(e) => setMergeSortBy(e.target.value as MergeSortBy)}
                 value={mergeSortBy}
               >
-                <option value="name">ファイル名順</option>
-                <option value="mtime">更新日時順</option>
-                <option value="ctime">作成日時順</option>
+                <option value="name">{t("tools.sortName")}</option>
+                <option value="mtime">{t("tools.sortMtime")}</option>
+                <option value="ctime">{t("tools.sortCtime")}</option>
               </select>
             </label>
             <label className="setting-row">
-              <span>ファイル名見出しを挿入</span>
+              <span>{t("tools.fileNameHeading")}</span>
               <input
                 checked={mergeInsertHeading}
                 onChange={(e) => setMergeInsertHeading(e.target.checked)}
@@ -943,16 +947,16 @@ function ToolsSidebar({ workspacePath }: { workspacePath: string | null }): Reac
               />
             </label>
             <label className="setting-row">
-              <span>出力フォルダ</span>
+              <span>{t("tools.outputFolder")}</span>
               <input
                 onChange={(e) => setMergeOutputFolder(e.target.value)}
-                placeholder="（空=ルート）"
+                placeholder={t("tools.placeholderRoot")}
                 type="text"
                 value={mergeOutputFolder}
               />
             </label>
             <label className="setting-row">
-              <span>ファイル名</span>
+              <span>{t("tools.fileName")}</span>
               <input
                 onChange={(e) => setMergeOutputName(e.target.value)}
                 type="text"
@@ -960,15 +964,15 @@ function ToolsSidebar({ workspacePath }: { workspacePath: string | null }): Reac
               />
             </label>
             <button className="primary-button" onClick={handleMergeFiles} type="button">
-              マージ
+              {t("tools.merge")}
             </button>
-            {mergeStatus && <div className={`tool-status${mergeStatus.startsWith("エラー") ? " tool-status--error" : " tool-status--success"}`}>{mergeStatus}</div>}
+            {mergeStatus && <div className={`tool-status${mergeStatus.startsWith("Error") ? " tool-status--error" : " tool-status--success"}`}>{mergeStatus}</div>}
           </div>
 
-          <div className="links-panel-subheading" style={{ marginTop: "1.5rem" }}>見出しで分割</div>
+          <div className="links-panel-subheading" style={{ marginTop: "1.5rem" }}>{t("tools.splitByHeading")}</div>
           <div className="search-block">
             <label className="setting-row">
-              <span>ソースファイル</span>
+              <span>{t("tools.sourceFile")}</span>
               <input
                 onChange={(e) => setSplitSource(e.target.value)}
                 placeholder="例: notes/draft.md"
@@ -977,7 +981,7 @@ function ToolsSidebar({ workspacePath }: { workspacePath: string | null }): Reac
               />
             </label>
             <label className="setting-row">
-              <span>見出しレベル</span>
+              <span>{t("tools.headingLevel")}</span>
               <select
                 onChange={(e) => setSplitLevel(Number(e.target.value) as SplitHeadingLevel)}
                 value={splitLevel}
@@ -988,18 +992,18 @@ function ToolsSidebar({ workspacePath }: { workspacePath: string | null }): Reac
               </select>
             </label>
             <label className="setting-row">
-              <span>出力フォルダ</span>
+              <span>{t("tools.outputFolder")}</span>
               <input
                 onChange={(e) => setSplitOutputFolder(e.target.value)}
-                placeholder="（空=ルート）"
+                placeholder={t("tools.placeholderRoot")}
                 type="text"
                 value={splitOutputFolder}
               />
             </label>
             <button className="primary-button" onClick={handleSplitFile} type="button">
-              分割
+              {t("tools.splitByHeading")}
             </button>
-            {splitStatus && <div className={`tool-status${splitStatus.startsWith("エラー") ? " tool-status--error" : " tool-status--success"}`}>{splitStatus}</div>}
+            {splitStatus && <div className={`tool-status${splitStatus.startsWith("Error") ? " tool-status--error" : " tool-status--success"}`}>{splitStatus}</div>}
           </div>
         </>
       )}
@@ -1033,6 +1037,7 @@ function SettingsSidebar({
   const [draft, setDraft] = useState<EditorSettings>(settings);
   const [autoSyncDraft, setAutoSyncDraft] = useState<AutoSyncSettings>(autoSyncSettings);
   const [togglesDraft, setTogglesDraft] = useState<FeatureToggles>(featureToggles);
+  const t = useT();
 
   useEffect(() => {
     setDraft(settings);
@@ -1061,19 +1066,19 @@ function SettingsSidebar({
   return (
     <div className="sidebar-section settings-section">
       <label className="setting-row">
-        <span>フォント</span>
+        <span>{t("settings.font")}</span>
         <select
-          aria-label="フォント"
+          aria-label={t("settings.font")}
           onChange={(e) => update("font", e.target.value as EditorSettings["font"])}
           value={draft.font}
         >
-          <option value="system">システムフォント</option>
-          <option value="mincho">ヒラギノ明朝</option>
+          <option value="system">{t("settings.fontSystem")}</option>
+          <option value="mincho">{t("settings.fontMincho")}</option>
           <option value="mono">Menlo</option>
         </select>
       </label>
       <label className="setting-row">
-        <span>フォントサイズ</span>
+        <span>{t("settings.fontSize")}</span>
         <input
           max={32}
           min={10}
@@ -1083,7 +1088,7 @@ function SettingsSidebar({
         />
       </label>
       <label className="setting-row">
-        <span>行間</span>
+        <span>{t("settings.lineHeight")}</span>
         <input
           max={3}
           min={1}
@@ -1094,16 +1099,28 @@ function SettingsSidebar({
         />
       </label>
       <label className="setting-row">
-        <span>最大幅</span>
+        <span>{t("settings.maxWidth")}</span>
         <select
-          aria-label="最大幅"
+          aria-label={t("settings.maxWidth")}
           onChange={(e) => update("maxWidth", e.target.value as EditorSettings["maxWidth"])}
           value={draft.maxWidth}
         >
-          <option value="550px">狭め（550px）</option>
-          <option value="660px">標準（660px）</option>
-          <option value="800px">広め（800px）</option>
-          <option value="none">制限なし</option>
+          <option value="550px">{t("settings.maxWidthNarrow")}</option>
+          <option value="660px">{t("settings.maxWidthStandard")}</option>
+          <option value="800px">{t("settings.maxWidthWide")}</option>
+          <option value="none">{t("settings.maxWidthNone")}</option>
+        </select>
+      </label>
+      <label className="setting-row">
+        <span>{t("settings.language")}</span>
+        <select
+          aria-label={t("settings.language")}
+          onChange={(e) => update("language", e.target.value as EditorSettings["language"])}
+          value={draft.language}
+        >
+          <option value="system">{t("settings.languageSystem")}</option>
+          <option value="en">{t("settings.languageEnglish")}</option>
+          <option value="ja">{t("settings.languageJapanese")}</option>
         </select>
       </label>
       <label className="setting-row">
@@ -1112,7 +1129,7 @@ function SettingsSidebar({
           onChange={(e) => update("showLineNumbers", e.target.checked)}
           type="checkbox"
         />
-        <span>行番号を表示</span>
+        <span>{t("settings.showLineNumbers")}</span>
       </label>
       <label className="setting-row">
         <input
@@ -1120,34 +1137,34 @@ function SettingsSidebar({
           onChange={(e) => update("spellCheck", e.target.checked)}
           type="checkbox"
         />
-        <span>スペルチェック</span>
+        <span>{t("settings.spellCheck")}</span>
       </label>
       <label className="setting-row">
-        <span>テーマ</span>
+        <span>{t("settings.theme")}</span>
         <select
-          aria-label="テーマ"
+          aria-label={t("settings.theme")}
           onChange={(e) => update("theme", e.target.value as EditorSettings["theme"])}
           value={draft.theme}
         >
-          <option value="system">システム設定に合わせる</option>
-          <option value="light">ライト</option>
-          <option value="dark">ダーク</option>
+          <option value="system">{t("settings.themeSystem")}</option>
+          <option value="light">{t("settings.light")}</option>
+          <option value="dark">{t("settings.dark")}</option>
         </select>
       </label>
       <div className="setting-row setting-row--action">
-        <span>フロントマター候補定義</span>
+        <span>{t("settings.frontmatterTemplate")}</span>
         <button className="setting-action-btn" onClick={onCreateFrontmatterTemplate} type="button">
-          frontmatter.md を作成
+          {t("settings.createFrontmatterTemplate")}
         </button>
       </div>
-      <div className="links-panel-subheading" style={{ marginTop: "1rem" }}>自動同期</div>
+      <div className="links-panel-subheading" style={{ marginTop: "1rem" }}>{t("settings.autoSync")}</div>
       <label className="setting-row">
         <input
           checked={autoSyncDraft.autoPull}
           onChange={(e) => updateAutoSync("autoPull", e.target.checked)}
           type="checkbox"
         />
-        <span>自動プル</span>
+        <span>{t("settings.autoPull")}</span>
       </label>
       <label className="setting-row">
         <input
@@ -1155,30 +1172,30 @@ function SettingsSidebar({
           onChange={(e) => updateAutoSync("autoPush", e.target.checked)}
           type="checkbox"
         />
-        <span>自動プッシュ</span>
+        <span>{t("settings.autoPush")}</span>
       </label>
       <label className="setting-row">
-        <span>同期間隔</span>
+        <span>{t("settings.interval")}</span>
         <select
-          aria-label="同期間隔"
+          aria-label={t("settings.interval")}
           disabled={!autoSyncDraft.autoPull && !autoSyncDraft.autoPush}
           onChange={(e) => updateAutoSync("intervalMinutes", Number(e.target.value) as AutoSyncSettings["intervalMinutes"])}
           value={autoSyncDraft.intervalMinutes}
         >
-          <option value={5}>5分</option>
-          <option value={15}>15分</option>
-          <option value={30}>30分</option>
-          <option value={60}>60分</option>
+          <option value={5}>5 min</option>
+          <option value={15}>15 min</option>
+          <option value={30}>30 min</option>
+          <option value={60}>60 min</option>
         </select>
       </label>
-      <div className="links-panel-subheading" style={{ marginTop: "1rem" }}>機能トグル</div>
+      <div className="links-panel-subheading" style={{ marginTop: "1rem" }}>{t("settings.featureToggles")}</div>
       {(
         [
-          { key: "git", label: "GitHub連携" },
-          { key: "tools", label: "ファイル加工ツール" },
-          { key: "frontmatter", label: "フロントマター" },
-          { key: "rightPanel", label: "右パネル" },
-          { key: "focusModes", label: "フォーカス系モード" }
+          { key: "git", label: t("settings.featureGit") },
+          { key: "tools", label: t("settings.featureTools") },
+          { key: "frontmatter", label: t("settings.featureFrontmatter") },
+          { key: "rightPanel", label: t("settings.featureRightPanel") },
+          { key: "focusModes", label: t("settings.featureFocusModes") }
         ] as { key: keyof FeatureToggles; label: string }[]
       ).map(({ key, label }) => (
         <label className="setting-row" key={key}>
@@ -1194,7 +1211,7 @@ function SettingsSidebar({
           <span>{label}</span>
         </label>
       ))}
-      <div className="links-panel-subheading" style={{ marginTop: "1rem" }}>アプリ情報</div>
+      <div className="links-panel-subheading" style={{ marginTop: "1rem" }}>{t("settings.appInfo")}</div>
       <div className="settings-info">
         <div>Relic {appInfo?.version ?? "0.0.0"}</div>
         <div>{appInfo?.platform ?? "darwin"}</div>
@@ -1247,6 +1264,7 @@ function PaneView({
   const paneState = pane === "left" ? leftPane : rightPane;
   const activeTab = paneState.activeTabId ? tabs[paneState.activeTabId] : null;
   const viewRef = useRef<EditorView | null>(null);
+  const t = useT();
 
   // 自動保存
   useAutoSave(activeTab?.content ?? "", activeTab?.path ?? null, activeTab !== null);
@@ -1285,7 +1303,7 @@ function PaneView({
                   e.stopPropagation();
                   onTabClose(tabId);
                 }}
-                title="タブを閉じる"
+                title={t("pane.closeTab")}
                 type="button"
               >
                 ×
@@ -1306,14 +1324,14 @@ function PaneView({
                 onClick={() => setTabViewMode(activeTab.id, "preview")}
                 type="button"
               >
-                プレビュー
+                Preview
               </button>
               <button
                 className={`mode-btn${activeTab.viewMode === "source" ? " mode-btn--active" : ""}`}
                 onClick={() => setTabViewMode(activeTab.id, "source")}
                 type="button"
               >
-                ソース
+                Source
               </button>
             </div>
           </div>
@@ -1353,13 +1371,12 @@ function PaneView({
             )}
           </div>
           <div className="pane-status">
-            <span>{charCount} 文字</span>
-            <span>{wordCount} 語</span>
+            <span>{t("app.wordCount", { chars: charCount, words: wordCount })}</span>
           </div>
         </div>
       ) : (
         <div className="empty-pane">
-          <p className="empty-pane-message">ノートがありません</p>
+          <p className="empty-pane-message">{t("pane.noNotes")}</p>
           {workspacePath ? (
             <form
               className="empty-pane-form"
@@ -1372,14 +1389,14 @@ function PaneView({
               }}
             >
               <input
-                aria-label="ノート名を入力"
+                aria-label={t("pane.enterNoteName")}
                 className="text-input"
                 onChange={(e) => setNewNoteName(e.target.value)}
-                placeholder="ノート名を入力"
+                placeholder={t("pane.enterNoteName")}
                 value={newNoteName}
               />
               <button className="primary-button" disabled={!newNoteName.trim()} type="submit">
-                新規ノートを作成
+                {t("pane.createNote")}
               </button>
             </form>
           ) : null}
@@ -1393,12 +1410,12 @@ function PaneView({
 // App
 // ────────────────────────────────────────────────
 
-const sidebarViews: Array<{ id: SidebarView; label: string; icon: string }> = [
-  { id: "files", label: "ファイル", icon: "F" },
-  { id: "search", label: "検索", icon: "S" },
-  { id: "git", label: "Git", icon: "G" },
-  { id: "tools", label: "ツール", icon: "T" },
-  { id: "settings", label: "設定", icon: "⚙" }
+const sidebarViewDefs: Array<{ id: SidebarView; labelKey: TranslationKey; icon: string }> = [
+  { id: "files", labelKey: "nav.files", icon: "F" },
+  { id: "search", labelKey: "nav.search", icon: "S" },
+  { id: "git", labelKey: "nav.git", icon: "G" },
+  { id: "tools", labelKey: "nav.tools", icon: "T" },
+  { id: "settings", labelKey: "nav.settings", icon: "⚙" }
 ];
 
 export function App(): ReactElement {
@@ -1504,6 +1521,16 @@ export function App(): ReactElement {
     toggleSidebar,
     toggleTypewriterMode
   } = useUiStore();
+
+  const t = useMemo(() => createTranslator(editorSettings.language), [editorSettings.language]);
+  const sidebarViews = useMemo(
+    () =>
+      sidebarViewDefs.map((view) => ({
+        ...view,
+        label: t(view.labelKey)
+      })),
+    [t]
+  );
 
   // テーマ適用
   useEffect(() => {
@@ -2747,64 +2774,64 @@ export function App(): ReactElement {
   const commands: Command[] = [
     {
       id: "new-note",
-      label: "新規ノートを作成",
+      label: t("pane.createNote"),
       shortcut: "⌘N",
       action: () => { setSidebarView("files"); if (!isSidebarOpen) toggleSidebar(); setIsCreatingFile(true); }
     },
     {
       id: "search",
-      label: "検索を開く",
+      label: t("command.search"),
       shortcut: "⌘F",
       action: () => { setSidebarView("search"); if (!isSidebarOpen) toggleSidebar(); }
     },
     {
       id: "quick-switcher",
-      label: "クイックスイッチャーを開く",
+      label: t("command.quickSwitcher"),
       shortcut: "⌘P",
       action: () => setShowQuickSwitcher(true)
     },
     {
       id: "toggle-sidebar",
-      label: "サイドバーを開閉",
+      label: t("command.sidebar"),
       shortcut: "⌘B",
       action: toggleSidebar
     },
     {
       id: "toggle-split",
-      label: "分割表示を切り替え",
+      label: t("command.split"),
       shortcut: "⌘\\",
       action: toggleSplit
     },
     {
       id: "toggle-right-panel",
-      label: "右パネルを切り替え",
+      label: t("command.rightPanel"),
       shortcut: "⌘⇧B",
       action: toggleRightPanel
     },
     {
       id: "toggle-focus",
-      label: "フォーカスモードを切り替え",
+      label: t("command.focusMode"),
       action: toggleFocusMode
     },
     {
       id: "toggle-typewriter",
-      label: "タイプライターモードを切り替え",
+      label: t("command.typewriter"),
       shortcut: "⌘⇧T",
       action: toggleTypewriterMode
     },
     {
       id: "git",
-      label: "Git ビューを開く",
+      label: t("command.gitView"),
       action: () => { setSidebarView("git"); if (!isSidebarOpen) toggleSidebar(); }
     },
     {
       id: "git-push",
-      label: "Git: 手動プッシュ",
+      label: t("command.gitPush"),
       action: () => { setSidebarView("git"); if (!isSidebarOpen) toggleSidebar(); handlePushGitBranch(); }
     },
     {
       id: "git-pull",
-      label: "Git: 手動プル",
+      label: t("command.gitPull"),
       action: () => { setSidebarView("git"); if (!isSidebarOpen) toggleSidebar(); handlePullGitBranch(); }
     },
     ...(gitBranches.length > 1
@@ -2812,7 +2839,7 @@ export function App(): ReactElement {
           .filter((b) => !b.isCurrent)
           .map((b) => ({
             id: `git-branch-${b.name}`,
-            label: `ブランチを切り替え: ${b.name}`,
+            label: t("command.branchSwitch", { name: b.name }),
             action: () => { setSidebarView("git"); if (!isSidebarOpen) toggleSidebar(); handleSwitchGitBranch(b.name); }
           }))
       : []),
@@ -2820,7 +2847,7 @@ export function App(): ReactElement {
       ? [
           {
             id: "rename-file",
-            label: `ファイル名を変更: ${activeTabInFocusedPane.name}`,
+            label: t("command.renameFile", { name: activeTabInFocusedPane.name }),
             action: () => {
               setSidebarView("files");
               if (!isSidebarOpen) toggleSidebar();
@@ -2828,19 +2855,19 @@ export function App(): ReactElement {
           },
           {
             id: "duplicate-file",
-            label: `ファイルを複製: ${activeTabInFocusedPane.name}`,
+            label: t("command.duplicateFile", { name: activeTabInFocusedPane.name }),
             action: handleDuplicateActiveFile
           },
           {
             id: "delete-file",
-            label: `ファイルを削除: ${activeTabInFocusedPane.name}`,
+            label: t("command.deleteFile", { name: activeTabInFocusedPane.name }),
             action: handleDeleteActiveFile
           }
         ]
       : []),
     {
       id: "settings",
-      label: "設定を開く",
+      label: t("command.settings"),
       action: () => { setSidebarView("settings"); if (!isSidebarOpen) toggleSidebar(); }
     }
   ];
@@ -2850,15 +2877,16 @@ export function App(): ReactElement {
   // ──────────────────
 
   return (
+    <I18nProvider language={editorSettings.language}>
     <div className={`app-shell${isFocusMode ? " app-shell--focus" : ""}`}>
       <div className="workspace">
         {/* 縦アイコンナビ（レール） */}
-        <nav aria-label="ビュー切り替え" className="rail">
+        <nav aria-label={t("nav.viewSwitcher")} className="rail">
           <button
-            aria-label="サイドバーを開閉"
+            aria-label={t("pane.toggleSidebar")}
             className="rail-button"
             onClick={toggleSidebar}
-            title="サイドバーを開閉 (⌘B)"
+            title={t("pane.toggleSidebarShortcut")}
             type="button"
           >
             {isSidebarOpen ? "◁" : "▷"}
@@ -2936,7 +2964,7 @@ export function App(): ReactElement {
             ) : activeSidebarView === "git" ? (
               <div className="sidebar-section">
                 {!workspaceState?.activeWorkspace ? (
-                  <div className="empty-note">ワークスペースを開くとGit状態を表示できます。</div>
+                  <div className="empty-note">{t("empty.noWorkspaceGit")}</div>
                 ) : gitStatus?.initialized ? (
                   <>
                     <div className="search-block">
@@ -2944,15 +2972,15 @@ export function App(): ReactElement {
                       {gitHubAuthStatus?.connected ? (
                         <>
                           <div className="setting-row">
-                            <span>接続状態</span>
-                            <span>接続済み</span>
+                            <span>{t("git.connection")}</span>
+                            <span>{t("git.connected")}</span>
                           </div>
                           <div className="setting-row">
-                            <span>アカウント</span>
+                            <span>{t("git.account")}</span>
                             <span>{gitHubAuthStatus.login ?? "-"}</span>
                           </div>
                           <div className="setting-row">
-                            <span>権限</span>
+                            <span>{t("git.scopes")}</span>
                             <span>
                               {gitHubAuthStatus.scopes.length > 0
                                 ? gitHubAuthStatus.scopes.join(", ")
@@ -2965,7 +2993,7 @@ export function App(): ReactElement {
                             onClick={handleDisconnectGitHubAccount}
                             type="button"
                           >
-                            {isDisconnectingGitHub ? "解除中..." : "GitHub接続を解除"}
+                            {isDisconnectingGitHub ? t("git.disconnectingAccount") : t("git.disconnectAccount")}
                           </button>
                         </>
                       ) : (
@@ -2984,7 +3012,7 @@ export function App(): ReactElement {
                             onClick={handleConnectGitHubAccount}
                             type="button"
                           >
-                            {isConnectingGitHub ? "ブラウザを開いています..." : "GitHubアカウントを接続"}
+                            {isConnectingGitHub ? t("git.connectingAccount") : t("git.connectAccount")}
                           </button>
                         </>
                       )}
@@ -2999,7 +3027,7 @@ export function App(): ReactElement {
                         }}
                       >
                         <input
-                          aria-label="GitHubリポジトリURL"
+                          aria-label={t("git.originUrl")}
                           className="text-input"
                           onChange={(event) => setGitRemoteUrl(event.target.value)}
                           placeholder="https://github.com/owner/repo"
@@ -3010,7 +3038,7 @@ export function App(): ReactElement {
                           disabled={isConnectingGitRemote}
                           type="submit"
                         >
-                          {isConnectingGitRemote ? "接続中..." : "originに接続"}
+                          {isConnectingGitRemote ? t("git.connectingOrigin") : t("git.connectOrigin")}
                         </button>
                       </form>
                       {gitRemotes.length > 0 ? (
@@ -3028,13 +3056,13 @@ export function App(): ReactElement {
                           ))}
                         </ul>
                       ) : (
-                        <div className="empty-note">GitHubリポジトリはまだ接続されていません。</div>
+                        <div className="empty-note">No GitHub repository connected yet.</div>
                       )}
                       {gitSyncStep === "pull-fetching" ? (
-                        <div className="empty-note">GitHubの変更を確認中...</div>
+                        <div className="empty-note">Checking GitHub changes...</div>
                       ) : gitSyncStep === "push-preview" && gitSyncPreview ? (
                         <div className="git-sync-preview">
-                          <div className="links-panel-subheading">送信する変更</div>
+                          <div className="links-panel-subheading">{t("git.outgoingChanges")}</div>
                           {gitSyncPreview.outgoingChanges.length > 0 ? (
                             <ul className="search-results">
                               {gitSyncPreview.outgoingChanges.map((c) => (
@@ -3047,11 +3075,11 @@ export function App(): ReactElement {
                               ))}
                             </ul>
                           ) : (
-                            <div className="empty-note">変更はありません。</div>
+                            <div className="empty-note">{t("git.noChanges")}</div>
                           )}
                           {gitSyncPreview.incomingCommits.length > 0 ? (
                             <>
-                              <div className="links-panel-subheading">受信するコミット</div>
+                              <div className="links-panel-subheading">{t("git.incomingCommits")}</div>
                               <ul className="search-results">
                                 {gitSyncPreview.incomingCommits.map((c) => (
                                   <li className="search-result-item" key={c.hash}>
@@ -3071,20 +3099,20 @@ export function App(): ReactElement {
                               onClick={handleConfirmPush}
                               type="button"
                             >
-                              {isPushingGitBranch ? "送信中..." : "Push実行"}
+                              {isPushingGitBranch ? t("git.pushing") : t("git.push")}
                             </button>
                             <button
                               className="replace-btn"
                               onClick={() => setGitSyncStep(null)}
                               type="button"
                             >
-                              キャンセル
+                              {t("common.cancel")}
                             </button>
                           </div>
                         </div>
                       ) : gitSyncStep === "pull-preview" && gitSyncPreview ? (
                         <div className="git-sync-preview">
-                          <div className="links-panel-subheading">受信するコミット</div>
+                          <div className="links-panel-subheading">{t("git.incomingCommits")}</div>
                           {gitSyncPreview.incomingCommits.length > 0 ? (
                             <ul className="search-results">
                               {gitSyncPreview.incomingCommits.map((c) => (
@@ -3097,11 +3125,11 @@ export function App(): ReactElement {
                               ))}
                             </ul>
                           ) : (
-                            <div className="empty-note">新しいコミットはありません。</div>
+                            <div className="empty-note">{t("git.noIncoming")}</div>
                           )}
                           {gitSyncPreview.outgoingChanges.length > 0 ? (
                             <>
-                              <div className="links-panel-subheading">未コミットの変更</div>
+                              <div className="links-panel-subheading">{t("git.uncommittedChanges")}</div>
                               <ul className="search-results">
                                 {gitSyncPreview.outgoingChanges.map((c) => (
                                   <li className="search-result-item" key={c.path}>
@@ -3121,14 +3149,14 @@ export function App(): ReactElement {
                               onClick={handleConfirmPull}
                               type="button"
                             >
-                              {isPullingGitBranch ? "取得中..." : "Pull実行"}
+                              {isPullingGitBranch ? t("git.pulling") : t("git.pull")}
                             </button>
                             <button
                               className="replace-btn"
                               onClick={() => setGitSyncStep(null)}
                               type="button"
                             >
-                              キャンセル
+                              {t("common.cancel")}
                             </button>
                           </div>
                         </div>
@@ -3202,11 +3230,11 @@ export function App(): ReactElement {
                     <div className="search-block">
                       <div className="links-panel-subheading">Repository</div>
                       <div className="setting-row">
-                        <span>状態</span>
-                        <span>初期化済み</span>
+                        <span>{t("git.status")}</span>
+                        <span>{t("git.initialized")}</span>
                       </div>
                       <div className="setting-row">
-                        <span>ブランチ</span>
+                        <span>{t("git.branch")}</span>
                         <span>{gitStatus.currentBranch ?? "(detached)"}</span>
                       </div>
                     </div>
@@ -3220,7 +3248,7 @@ export function App(): ReactElement {
                         }}
                       >
                         <input
-                          aria-label="新規Gitブランチ名"
+                          aria-label={t("git.branchName")}
                           className="text-input"
                           onChange={(event) => setNewGitBranchName(event.target.value)}
                           placeholder="feature/..."
@@ -3231,7 +3259,7 @@ export function App(): ReactElement {
                           disabled={isCreatingGitBranch}
                           type="submit"
                         >
-                          {isCreatingGitBranch ? "作成中..." : "ブランチを作成"}
+                          {isCreatingGitBranch ? t("git.branchCreating") : t("git.branchCreate")}
                         </button>
                       </form>
                       {gitBranches.length > 0 ? (
@@ -3249,19 +3277,19 @@ export function App(): ReactElement {
                                   {branch.isCurrent ? " (current)" : ""}
                                 </span>
                                 <span className="search-result-line">
-                                  {branch.isCurrent ? "現在のブランチ" : "切り替える"}
+                                  {branch.isCurrent ? t("git.currentBranch") : t("git.switch")}
                                 </span>
                               </button>
                             </li>
                           ))}
                         </ul>
                       ) : (
-                        <div className="empty-note">ブランチはまだありません。</div>
+                        <div className="empty-note">{t("git.noBranches")}</div>
                       )}
                       {pendingGitBranchSwitch ? (
                         <div className="git-branch-warning">
                           <div className="error-note">
-                            未コミット変更があります。`{pendingGitBranchSwitch}` へ切り替える前に方法を選んでください。
+                            Uncommitted changes exist. Choose how to switch to `{pendingGitBranchSwitch}`.
                           </div>
                           <div className="git-branch-warning-actions">
                             <button
@@ -3270,7 +3298,7 @@ export function App(): ReactElement {
                               onClick={handleCommitAndSwitchGitBranch}
                               type="button"
                             >
-                              コミットして切り替える
+                              {t("git.switchCommit")}
                             </button>
                             <button
                               className="replace-btn"
@@ -3278,7 +3306,7 @@ export function App(): ReactElement {
                               onClick={() => handleSwitchGitBranch(pendingGitBranchSwitch, true)}
                               type="button"
                             >
-                              変更を残したまま切り替える
+                              {t("git.switchAllowDirty")}
                             </button>
                             <button
                               className="replace-btn"
@@ -3286,7 +3314,7 @@ export function App(): ReactElement {
                               onClick={() => setPendingGitBranchSwitch(null)}
                               type="button"
                             >
-                              キャンセル
+                              {t("common.cancel")}
                             </button>
                           </div>
                         </div>
@@ -3295,24 +3323,24 @@ export function App(): ReactElement {
                     <div className="search-block">
                       <div className="links-panel-subheading">Commit</div>
                       <input
-                        aria-label="Git作者名"
+                        aria-label={t("git.authorName")}
                         className="text-input"
                         onChange={(event) => setGitAuthorName(event.target.value)}
-                        placeholder="作者名"
+                        placeholder={t("git.authorName")}
                         value={gitAuthorName}
                       />
                       <input
-                        aria-label="Git作者メール"
+                        aria-label={t("git.authorEmail")}
                         className="text-input"
                         onChange={(event) => setGitAuthorEmail(event.target.value)}
                         placeholder="author@example.com"
                         value={gitAuthorEmail}
                       />
                       <input
-                        aria-label="Gitコミットメッセージ"
+                        aria-label={t("git.commitMessage")}
                         className="text-input"
                         onChange={(event) => setGitCommitMessage(event.target.value)}
-                        placeholder="コミットメッセージ"
+                        placeholder={t("git.commitMessage")}
                         value={gitCommitMessage}
                       />
                       <button
@@ -3321,7 +3349,7 @@ export function App(): ReactElement {
                         onClick={handleCreateGitCommit}
                         type="button"
                       >
-                        {isCreatingGitCommit ? "コミット中..." : "ローカルコミットを作成"}
+                        {isCreatingGitCommit ? t("git.commitCreating") : t("git.commitCreate")}
                       </button>
                     </div>
                     <div className="search-block">
@@ -3338,7 +3366,7 @@ export function App(): ReactElement {
                           ))}
                         </ul>
                       ) : (
-                        <div className="empty-note">未コミットの変更はありません。</div>
+                        <div className="empty-note">未コミットの{t("git.noChanges")}</div>
                       )}
                     </div>
                     <div className="search-block">
@@ -3361,7 +3389,7 @@ export function App(): ReactElement {
                           ))}
                         </ul>
                       ) : (
-                        <div className="empty-note">コミット履歴はまだありません。</div>
+                        <div className="empty-note">{t("git.commitHistoryEmpty")}</div>
                       )}
                     </div>
                     <div className="search-block">
@@ -3369,20 +3397,20 @@ export function App(): ReactElement {
                       <div className="git-tag-target">
                         {selectedGitCommitHash
                           ? `選択中のコミット ${selectedGitCommitHash.slice(0, 7)} にタグを付けます`
-                          : "履歴からコミットを選ぶと、そのコミットにタグを付けられます。"}
+                          : t("git.selectCommitForTag")}
                       </div>
                       <input
-                        aria-label="新規Gitタグ名"
+                        aria-label={t("git.tagName")}
                         className="text-input"
                         onChange={(event) => setNewGitTagName(event.target.value)}
                         placeholder="v1.0.0"
                         value={newGitTagName}
                       />
                       <input
-                        aria-label="Gitタグメモ"
+                        aria-label={t("git.tagMemo")}
                         className="text-input"
                         onChange={(event) => setNewGitTagMessage(event.target.value)}
-                        placeholder="任意メモ（注釈タグ）"
+                        placeholder={t("git.tagMemoPlaceholder")}
                         value={newGitTagMessage}
                       />
                       <button
@@ -3391,7 +3419,7 @@ export function App(): ReactElement {
                         onClick={handleCreateGitTag}
                         type="button"
                       >
-                        {isCreatingGitTag ? "タグ作成中..." : "タグを作成"}
+                        {isCreatingGitTag ? t("git.tagCreating") : t("git.tagCreate")}
                       </button>
                       {gitTags.length > 0 ? (
                         <ul className="search-results git-tag-list">
@@ -3434,14 +3462,14 @@ export function App(): ReactElement {
                                   onClick={() => handlePushGitTag(tag.name)}
                                   type="button"
                                 >
-                                  {pushingGitTagName === tag.name ? "送信中..." : "Push"}
+                                  {pushingGitTagName === tag.name ? t("git.pushing") : "Push"}
                                 </button>
                               </div>
                             </li>
                           ))}
                         </ul>
                       ) : (
-                        <div className="empty-note">タグはまだありません。</div>
+                        <div className="empty-note">{t("git.tagsEmpty")}</div>
                       )}
                     </div>
                     <div className="search-block">
@@ -3468,18 +3496,18 @@ export function App(): ReactElement {
                           ))}
                         </div>
                       ) : selectedGitCommitHash ? (
-                        <div className="empty-note">このコミットの差分はありません。</div>
+                        <div className="empty-note">{t("git.noCommitDiff")}</div>
                       ) : (
-                        <div className="empty-note">コミットを選ぶと差分を表示します。</div>
+                        <div className="empty-note">{t("git.selectCommitForDiff")}</div>
                       )}
                     </div>
                   </>
                 ) : (
                   <>
                     <div className="search-block">
-                      <div className="empty-note">このワークスペースはまだGit管理されていません。</div>
+                      <div className="empty-note">{t("git.notInitialized")}</div>
                       <button className="primary-button" onClick={handleInitializeGitRepository} type="button">
-                        このワークスペースでGitを初期化
+                        {t("git.initialize")}
                       </button>
                     </div>
                     {gitHubAuthStatus?.connected ? (
@@ -3493,7 +3521,7 @@ export function App(): ReactElement {
                           onSubmit={(e) => { e.preventDefault(); handleCloneGitHubRepository(); }}
                         >
                           <input
-                            aria-label="クローンするGitHubリポジトリURL"
+                            aria-label={t("git.repositoryUrlToClone")}
                             className="text-input"
                             onChange={(e) => setGitCloneUrl(e.target.value)}
                             placeholder="https://github.com/owner/repo"
@@ -3504,7 +3532,7 @@ export function App(): ReactElement {
                             disabled={isCloningGitHub || !gitCloneUrl.trim()}
                             type="submit"
                           >
-                            {isCloningGitHub ? "クローン中..." : "クローンして開く"}
+                            {isCloningGitHub ? t("git.repositoryCloning") : t("git.repositoryClone")}
                           </button>
                         </form>
                         {gitErrorMessage ? (
@@ -3557,7 +3585,7 @@ export function App(): ReactElement {
               <button
                 className={`toolbar-btn${isSplit ? " active" : ""}`}
                 onClick={toggleSplit}
-                title="分割表示 (⌘\\)"
+                title={t("pane.split")}
                 type="button"
               >
                 ⊟
@@ -3571,7 +3599,7 @@ export function App(): ReactElement {
                       if (!isRightPanelOpen) toggleRightPanel();
                       else if (rightPanelView === "outline") toggleRightPanel();
                     }}
-                    title="アウトライン (⌘⇧B)"
+                    title={t("pane.toggleOutline")}
                     type="button"
                   >
                     Outline
@@ -3583,7 +3611,7 @@ export function App(): ReactElement {
                       if (!isRightPanelOpen) toggleRightPanel();
                       else if (rightPanelView === "links") toggleRightPanel();
                     }}
-                    title="リンク"
+                    title={t("pane.toggleLinks")}
                     type="button"
                   >
                     Links
@@ -3652,7 +3680,7 @@ export function App(): ReactElement {
                       ))}
                     </ul>
                   ) : (
-                    <div className="empty-note">見出しがありません。</div>
+                    <div className="empty-note">{t("empty.noHeadings")}</div>
                   )
                 ) : outgoingLinks.length > 0 || backlinks.length > 0 || isLoadingBacklinks ? (
                   <div className="links-panel-stack">
@@ -3668,13 +3696,13 @@ export function App(): ReactElement {
                               <button
                                 className={`links-list-target${link.exists ? "" : " links-list-target--missing"}`}
                                 onClick={() => handleOpenWikiLink(link.wikiLink.target)}
-                                title={link.exists ? link.path : `${link.path} を作成して開く`}
+                                title={link.exists ? link.path : t("links.createAndOpen", { path: link.path })}
                                 type="button"
                               >
                                 {link.displayName}
                               </button>
                               {!link.exists ? (
-                                <span className="links-list-detail">未作成</span>
+                                <span className="links-list-detail">{t("links.missing")}</span>
                               ) : null}
                               {link.wikiLink.heading ? (
                                 <span className="links-list-detail">#{link.wikiLink.heading}</span>
@@ -3686,13 +3714,13 @@ export function App(): ReactElement {
                           ))}
                         </ul>
                       ) : (
-                        <div className="empty-note">このノートから出ているリンクはありません。</div>
+                        <div className="empty-note">{t("empty.noLinks")}</div>
                       )}
                     </div>
                     <div className="links-panel-section">
                       <div className="links-panel-subheading">Backlinks</div>
                       {isLoadingBacklinks ? (
-                        <div className="empty-note">読み込んでいます…</div>
+                        <div className="empty-note">{t("common.loading")}</div>
                       ) : backlinks.length > 0 ? (
                         <ul className="links-list">
                           {backlinks.map((backlink) => (
@@ -3709,18 +3737,18 @@ export function App(): ReactElement {
                                 {backlink.sourceName}
                               </button>
                               {backlink.count > 1 ? (
-                                <span className="links-list-detail">{backlink.count} 件</span>
+                                <span className="links-list-detail">{backlink.count}</span>
                               ) : null}
                             </li>
                           ))}
                         </ul>
                       ) : (
-                        <div className="empty-note">このノートへのバックリンクはありません。</div>
+                        <div className="empty-note">{t("empty.noBacklinks")}</div>
                       )}
                     </div>
                   </div>
                 ) : (
-                  <div className="empty-note">このノートから出ているリンクはありません。</div>
+                  <div className="empty-note">{t("empty.noLinks")}</div>
                 )}
               </aside>
             ) : null}
@@ -3731,14 +3759,14 @@ export function App(): ReactElement {
       <footer className="status-bar">
         <span>Relic</span>
         {activeTabInFocusedPane ? (
-          <>
-            <span>{activeTabInFocusedPane.content.length} 文字</span>
-            <span>
-              {activeTabInFocusedPane.content.split(/\s+/).filter(Boolean).length} 語
-            </span>
-          </>
+          <span>
+            {t("app.wordCount", {
+              chars: activeTabInFocusedPane.content.length,
+              words: activeTabInFocusedPane.content.split(/\s+/).filter(Boolean).length
+            })}
+          </span>
         ) : (
-          <span>0 文字 / 0 語</span>
+          <span>{t("app.wordCount", { chars: 0, words: 0 })}</span>
         )}
       </footer>
 
@@ -3760,6 +3788,7 @@ export function App(): ReactElement {
         </div>
       ) : null}
     </div>
+    </I18nProvider>
   );
 }
 

@@ -381,10 +381,12 @@ export type EditorFont = "system" | "mincho" | "mono";
 export type EditorMaxWidth = "550px" | "660px" | "800px" | "none";
 
 export type AppTheme = "light" | "dark" | "system";
+export type AppLanguage = "system" | "en" | "ja";
 
 export interface EditorSettings {
   font: EditorFont;
   fontSize: number;
+  language: AppLanguage;
   lineHeight: number;
   maxWidth: EditorMaxWidth;
   showLineNumbers: boolean;
@@ -395,6 +397,7 @@ export interface EditorSettings {
 export const defaultEditorSettings: EditorSettings = {
   font: "system",
   fontSize: 16,
+  language: "system",
   lineHeight: 1.7,
   maxWidth: "660px",
   showLineNumbers: false,

@@ -3,6 +3,8 @@ import type { EditorView } from "@codemirror/view";
 import { useState } from "react";
 import type { ReactElement } from "react";
 
+import { useT } from "../i18n";
+
 interface ToolbarProps {
   viewRef: React.RefObject<EditorView | null>;
 }
@@ -58,6 +60,7 @@ function insertBlock(view: EditorView, text: string): void {
 }
 
 export function Toolbar({ viewRef }: ToolbarProps): ReactElement {
+  const t = useT();
   const [showHeadingMenu, setShowHeadingMenu] = useState(false);
   const [showLinkDialog, setShowLinkDialog] = useState(false);
   const [showTableDialog, setShowTableDialog] = useState(false);
@@ -216,22 +219,22 @@ export function Toolbar({ viewRef }: ToolbarProps): ReactElement {
   return (
     <div className="toolbar">
       <div className="toolbar-group">
-        <button className="toolbar-btn" onClick={handleBold} title="太字" type="button">
+        <button className="toolbar-btn" onClick={handleBold} title={t("toolbar.bold")} type="button">
           <strong>B</strong>
         </button>
-        <button className="toolbar-btn" onClick={handleItalic} title="斜体" type="button">
+        <button className="toolbar-btn" onClick={handleItalic} title={t("toolbar.italic")} type="button">
           <em>I</em>
         </button>
-        <button className="toolbar-btn" onClick={handleStrikethrough} title="打ち消し線" type="button">
+        <button className="toolbar-btn" onClick={handleStrikethrough} title={t("toolbar.strikethrough")} type="button">
           S̶
         </button>
-        <button className="toolbar-btn" onClick={handleHighlight} title="ハイライト" type="button">
+        <button className="toolbar-btn" onClick={handleHighlight} title={t("toolbar.highlight")} type="button">
           H
         </button>
-        <button className="toolbar-btn" onClick={handleUnderline} title="下線" type="button">
+        <button className="toolbar-btn" onClick={handleUnderline} title={t("toolbar.underline")} type="button">
           <u>U</u>
         </button>
-        <button className="toolbar-btn" onClick={handleInlineCode} title="インラインコード" type="button">
+        <button className="toolbar-btn" onClick={handleInlineCode} title={t("toolbar.inlineCode")} type="button">
           `code`
         </button>
       </div>
@@ -243,7 +246,7 @@ export function Toolbar({ viewRef }: ToolbarProps): ReactElement {
           <button
             className="toolbar-btn"
             onClick={() => setShowHeadingMenu((v) => !v)}
-            title="見出し"
+            title={t("toolbar.heading")}
             type="button"
           >
             H
@@ -263,13 +266,13 @@ export function Toolbar({ viewRef }: ToolbarProps): ReactElement {
             </div>
           ) : null}
         </div>
-        <button className="toolbar-btn" onClick={handleBlockquote} title="引用" type="button">
+        <button className="toolbar-btn" onClick={handleBlockquote} title={t("toolbar.blockquote")} type="button">
           &ldquo;
         </button>
-        <button className="toolbar-btn" onClick={handleCodeBlock} title="コードブロック" type="button">
+        <button className="toolbar-btn" onClick={handleCodeBlock} title={t("toolbar.codeBlock")} type="button">
           {"</>"}
         </button>
-        <button className="toolbar-btn" onClick={handleHorizontalRule} title="水平線" type="button">
+        <button className="toolbar-btn" onClick={handleHorizontalRule} title={t("toolbar.horizontalRule")} type="button">
           —
         </button>
       </div>
@@ -277,13 +280,13 @@ export function Toolbar({ viewRef }: ToolbarProps): ReactElement {
       <div className="toolbar-separator" />
 
       <div className="toolbar-group">
-        <button className="toolbar-btn" onClick={handleBulletList} title="箇条書き" type="button">
+        <button className="toolbar-btn" onClick={handleBulletList} title={t("toolbar.bulletList")} type="button">
           •
         </button>
-        <button className="toolbar-btn" onClick={handleOrderedList} title="番号付きリスト" type="button">
+        <button className="toolbar-btn" onClick={handleOrderedList} title={t("toolbar.orderedList")} type="button">
           1.
         </button>
-        <button className="toolbar-btn" onClick={handleCheckbox} title="チェックボックス" type="button">
+        <button className="toolbar-btn" onClick={handleCheckbox} title={t("toolbar.checkbox")} type="button">
           ☐
         </button>
       </div>
@@ -292,7 +295,7 @@ export function Toolbar({ viewRef }: ToolbarProps): ReactElement {
 
       <div className="toolbar-group">
         <div className="toolbar-inline-dialog-wrap">
-          <button className="toolbar-btn" onClick={handleLink} title="リンク" type="button">
+          <button className="toolbar-btn" onClick={handleLink} title={t("toolbar.link")} type="button">
             Link
           </button>
           {showLinkDialog ? (
@@ -312,32 +315,32 @@ export function Toolbar({ viewRef }: ToolbarProps): ReactElement {
                 value={linkUrl}
               />
               <button className="toolbar-btn" onClick={handleLinkSubmit} type="button">
-                挿入
+                {t("toolbar.insert")}
               </button>
             </div>
           ) : null}
         </div>
-        <button className="toolbar-btn" onClick={handleInternalLink} title="内部リンク" type="button">
+        <button className="toolbar-btn" onClick={handleInternalLink} title={t("toolbar.internalLink")} type="button">
           [[
         </button>
-        <button className="toolbar-btn" onClick={handleBlockId} title="ブロックID挿入" type="button">
+        <button className="toolbar-btn" onClick={handleBlockId} title={t("toolbar.blockId")} type="button">
           ^ID
         </button>
         <div className="toolbar-inline-dialog-wrap">
           <button
             className="toolbar-btn"
             onClick={() => setShowTableDialog((v) => !v)}
-            title="表"
+            title={t("toolbar.table")}
             type="button"
           >
-            表
+            {t("toolbar.tableShort")}
           </button>
           {showTableDialog ? (
             <div className="toolbar-inline-dialog">
               <input
                 className="toolbar-input toolbar-input--narrow"
                 onChange={(e) => setTableRows(e.target.value)}
-                placeholder="行"
+                placeholder={t("toolbar.rows")}
                 type="number"
                 value={tableRows}
               />
@@ -345,12 +348,12 @@ export function Toolbar({ viewRef }: ToolbarProps): ReactElement {
               <input
                 className="toolbar-input toolbar-input--narrow"
                 onChange={(e) => setTableCols(e.target.value)}
-                placeholder="列"
+                placeholder={t("toolbar.columns")}
                 type="number"
                 value={tableCols}
               />
               <button className="toolbar-btn" onClick={handleTableSubmit} type="button">
-                挿入
+                {t("toolbar.insert")}
               </button>
             </div>
           ) : null}
