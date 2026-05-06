@@ -1,4 +1,4 @@
-import type { EditorView } from "@codemirror/view";
+import { EditorView } from "@codemirror/view";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactElement } from "react";
 
@@ -1239,6 +1239,7 @@ interface PaneViewProps {
   onCreateNote: (name: string) => void;
   onFocus: () => void;
   onOpenWikiLink: (target: string, heading?: string) => void;
+  onScrollTargetHandled?: () => void;
   onTabClose: (tabId: string) => void;
   onTabSelect: (tabId: string) => void;
 }
@@ -1257,6 +1258,7 @@ function PaneView({
   onCreateNote,
   onFocus,
   onOpenWikiLink,
+  onScrollTargetHandled,
   onTabClose,
   onTabSelect
 }: PaneViewProps): ReactElement {
@@ -1269,6 +1271,21 @@ function PaneView({
 
   // 自動保存
   useAutoSave(activeTab?.content ?? "", activeTab?.path ?? null, activeTab !== null);
+
+  // アウトライン見出しジャンプ
+  useEffect(() => {
+    if (!scrollTargetHeading || !viewRef.current) return;
+    const view = viewRef.current;
+    const doc = view.state.doc;
+    for (let i = 1; i <= doc.lines; i++) {
+      const line = doc.line(i);
+      if (/^#{1,6} /.test(line.text) && line.text.replace(/^#{1,6} /, "") === scrollTargetHeading) {
+        view.dispatch({ effects: EditorView.scrollIntoView(line.from, { y: "center" }) });
+        break;
+      }
+    }
+    onScrollTargetHandled?.();
+  }, [scrollTargetHeading, onScrollTargetHandled]);
 
   // 文字数・単語数
   const charCount = activeTab?.content.length ?? 0;
@@ -2671,13 +2688,16 @@ export function App(): ReactElement {
         setSidebarView("files");
         if (!isSidebarOpen) toggleSidebar();
         setIsCreatingFile(true);
+      } else if (e.key === "T" && e.shiftKey) {
+        e.preventDefault();
+        toggleTypewriterMode();
       }
     };
 
     window.addEventListener("keydown", handler);
 
     return () => window.removeEventListener("keydown", handler);
-  }, [focusedPane, isSidebarOpen, leftPane, rightPane, closeTab, setSidebarView, toggleSidebar, toggleSplit, toggleRightPanel, setIsCreatingFile]);
+  }, [focusedPane, isSidebarOpen, leftPane, rightPane, closeTab, setSidebarView, toggleSidebar, toggleSplit, toggleRightPanel, setIsCreatingFile, toggleTypewriterMode]);
 
   // ──────────────────
   // サイドバーリサイズ
@@ -3632,6 +3652,7 @@ export function App(): ReactElement {
                 onCreateNote={handleCreateNoteFromPane}
                 onFocus={() => setFocusedPane("left")}
                 onOpenWikiLink={handleOpenWikiLink}
+                onScrollTargetHandled={() => setLeftPaneScrollHeading(undefined)}
                 onTabClose={(tabId) => closeTab("left", tabId)}
                 onTabSelect={(tabId) => setTabActive("left", tabId)}
                 pane="left"
@@ -3650,6 +3671,7 @@ export function App(): ReactElement {
                   onCreateNote={handleCreateNoteFromPane}
                   onFocus={() => setFocusedPane("right")}
                   onOpenWikiLink={handleOpenWikiLink}
+                  onScrollTargetHandled={() => setRightPaneScrollHeading(undefined)}
                   onTabClose={(tabId) => closeTab("right", tabId)}
                   onTabSelect={(tabId) => setTabActive("right", tabId)}
                   pane="right"
@@ -3674,6 +3696,10 @@ export function App(): ReactElement {
                         <li
                           className={`outline-item outline-item--h${h!.level}`}
                           key={i}
+                          onClick={() => {
+                            const setScrollHeading = focusedPane === "left" ? setLeftPaneScrollHeading : setRightPaneScrollHeading;
+                            setScrollHeading(h!.text);
+                          }}
                           title={h!.text}
                         >
                           {h!.text}
