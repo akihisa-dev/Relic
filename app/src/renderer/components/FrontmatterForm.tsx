@@ -2,6 +2,8 @@ import * as yaml from "js-yaml";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ReactElement } from "react";
 
+import { useT } from "../i18n";
+
 interface ParsedFrontmatter {
   data: Record<string, unknown>;
   body: string;
@@ -60,6 +62,7 @@ interface PillInputProps {
 }
 
 function PillInput({ candidates = [], placeholder, values, onChange }: PillInputProps): ReactElement {
+  const t = useT();
   const [input, setInput] = useState("");
   const [showCandidates, setShowCandidates] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -98,7 +101,7 @@ function PillInput({ candidates = [], placeholder, values, onChange }: PillInput
             <button
               className="fm-pill-remove"
               onClick={() => removeValue(i)}
-              title="削除"
+              title={t("common.delete")}
               type="button"
             >
               ×
@@ -162,6 +165,7 @@ export function FrontmatterForm({
   onChange,
   workspaceTags = []
 }: FrontmatterFormProps): ReactElement | null {
+  const t = useT();
   const { data, body } = parseFrontmatter(content);
   const fieldCount = Object.keys(data).length;
 
@@ -204,7 +208,7 @@ export function FrontmatterForm({
         onClick={() => setIsExpanded((v) => !v)}
         type="button"
       >
-        <span className="fm-toggle-label">フロントマター</span>
+        <span className="fm-toggle-label">{t("frontmatter.title")}</span>
         <span className="fm-toggle-arrow">{isExpanded ? "▲" : "▼"}</span>
       </button>
 
@@ -212,7 +216,7 @@ export function FrontmatterForm({
         <div className="fm-fields">
           {fieldCount > MAX_FRONTMATTER_FIELDS ? (
             <div className="fm-warning" role="alert">
-              フィールド数が上限の20件を超えています（現在 {fieldCount} 件）。余分な項目はソースモードで整理してください。
+              {t("frontmatter.fieldLimit", { count: fieldCount })}
             </div>
           ) : null}
 
@@ -222,7 +226,7 @@ export function FrontmatterForm({
             <PillInput
               candidates={[...workspaceTags, ...(candidates.tags ?? [])]}
               onChange={(v) => updateField("tags", v.length > 0 ? v : undefined)}
-              placeholder="タグを入力..."
+              placeholder={t("frontmatter.tagsPlaceholder")}
               values={tags}
             />
           </div>
@@ -232,7 +236,7 @@ export function FrontmatterForm({
             <label className="fm-label">aliases</label>
             <PillInput
               onChange={(v) => updateField("aliases", v.length > 0 ? v : undefined)}
-              placeholder="別名を入力..."
+              placeholder={t("frontmatter.aliasesPlaceholder")}
               values={aliases}
             />
           </div>
@@ -255,7 +259,7 @@ export function FrontmatterForm({
               className="fm-input"
               list="fm-status-list"
               onChange={(e) => updateField("status", e.target.value || undefined)}
-              placeholder="状態"
+              placeholder={t("frontmatter.statusPlaceholder")}
               type="text"
               value={statusVal}
             />
@@ -300,7 +304,7 @@ export function FrontmatterForm({
             <PillInput
               candidates={candidates.author ?? []}
               onChange={(v) => updateField("author", v.length > 0 ? v : undefined)}
-              placeholder="著者名を入力..."
+              placeholder={t("frontmatter.authorPlaceholder")}
               values={author}
             />
           </div>

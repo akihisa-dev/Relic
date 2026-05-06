@@ -64,7 +64,7 @@ function makeRelicApi(overrides: Partial<typeof window.relic> = {}): typeof wind
     getGitTags: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     getGitWorkingChanges: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     getAppInfo: vi.fn().mockResolvedValue({ ok: true, value: { name: "Relic", platform: "darwin", version: "0.0.0" } }),
-    getEditorSettings: vi.fn().mockResolvedValue({ ok: true, value: defaultEditorSettings }),
+    getEditorSettings: vi.fn().mockResolvedValue({ ok: true, value: { ...defaultEditorSettings, language: "ja" } }),
     getWorkspaceTags: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     getWorkspaceState: vi.fn().mockResolvedValue({
       ok: true,
@@ -141,9 +141,9 @@ describe("App", () => {
 
     render(<App />);
 
-    expect(screen.getByRole("navigation", { name: "ビュー切り替え" })).toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: "View switcher" })).toBeInTheDocument();
     expect(screen.getByRole("main")).toBeInTheDocument();
-    expect(await screen.findByText("ワークスペース未選択")).toBeInTheDocument();
+    expect(await screen.findByText("No workspace selected")).toBeInTheDocument();
   });
 
   it("ワークスペースを開くとファイルツリーが表示される", async () => {

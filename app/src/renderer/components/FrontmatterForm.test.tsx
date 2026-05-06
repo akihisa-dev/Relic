@@ -38,7 +38,7 @@ describe("FrontmatterForm", () => {
     );
 
     expect(screen.getByRole("alert")).toHaveTextContent(
-      "フィールド数が上限の20件を超えています（現在 21 件）。"
+      "The field limit is 20. You currently have 21 fields."
     );
   });
 });
