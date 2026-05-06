@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-export type SidebarView = "files" | "search" | "git" | "settings";
+export type SidebarView = "files" | "search" | "git" | "settings" | "tools";
 export type RightPanelView = "outline" | "links";
 
 interface UiState {

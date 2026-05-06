@@ -74,7 +74,8 @@ function parseEditorSettings(raw: unknown): EditorSettings {
     lineHeight: typeof s.lineHeight === "number" && s.lineHeight > 0 ? s.lineHeight : defaultEditorSettings.lineHeight,
     maxWidth: s.maxWidth === "550px" || s.maxWidth === "800px" || s.maxWidth === "none" ? s.maxWidth : "660px",
     showLineNumbers: typeof s.showLineNumbers === "boolean" ? s.showLineNumbers : false,
-    spellCheck: typeof s.spellCheck === "boolean" ? s.spellCheck : true
+    spellCheck: typeof s.spellCheck === "boolean" ? s.spellCheck : true,
+    theme: s.theme === "light" || s.theme === "dark" ? s.theme : "system"
   };
 }
 

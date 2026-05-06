@@ -8,6 +8,7 @@ import type {
   GitCommitDiff,
   GitBranchSummary,
   GitConflict,
+  AppTheme,
   EditorSettings,
   GitCommitSummary,
   GitHubAuthStatus,
@@ -720,6 +721,145 @@ function FilesSidebar({
 }
 
 // ────────────────────────────────────────────────
+// ToolsSidebar
+// ────────────────────────────────────────────────
+
+function ToolsSidebar({ workspacePath }: { workspacePath: string | null }): ReactElement {
+  const [titleListFolder, setTitleListFolder] = useState("");
+  const [titleListOutputFolder, setTitleListOutputFolder] = useState("");
+  const [titleListOutputName, setTitleListOutputName] = useState("タイトル一覧");
+  const [titleListSort, setTitleListSort] = useState<"name" | "mtime">("name");
+  const [titleListStatus, setTitleListStatus] = useState<string | null>(null);
+
+  const [tocFolder, setTocFolder] = useState("");
+  const [tocOutputFolder, setTocOutputFolder] = useState("");
+  const [tocOutputName, setTocOutputName] = useState("目次");
+  const [tocSubfolders, setTocSubfolders] = useState(true);
+  const [tocStatus, setTocStatus] = useState<string | null>(null);
+
+  const handleGenerateTitleList = async () => {
+    if (!workspacePath) return;
+    setTitleListStatus("生成中…");
+    const result = await window.relic!.generateTitleList({
+      filterFolder: titleListFolder || undefined,
+      outputFolder: titleListOutputFolder || ".",
+      outputName: titleListOutputName || "タイトル一覧",
+      sortBy: titleListSort
+    });
+    setTitleListStatus(result.ok ? `完了: ${result.value}` : `エラー: ${result.error.message}`);
+  };
+
+  const handleGenerateToc = async () => {
+    if (!workspacePath) return;
+    setTocStatus("生成中…");
+    const result = await window.relic!.generateTableOfContents({
+      includeSubfolders: tocSubfolders,
+      outputFolder: tocOutputFolder || ".",
+      outputName: tocOutputName || "目次",
+      targetFolder: tocFolder || "."
+    });
+    setTocStatus(result.ok ? `完了: ${result.value}` : `エラー: ${result.error.message}`);
+  };
+
+  return (
+    <div className="sidebar-section">
+      <div className="pane-heading">ファイル加工ツール</div>
+      {!workspacePath ? (
+        <div className="empty-note">ワークスペースを開いてください。</div>
+      ) : (
+        <>
+          <div className="links-panel-subheading">タイトル一覧生成</div>
+          <div className="search-block">
+            <label className="setting-row">
+              <span>対象フォルダ</span>
+              <input
+                onChange={(e) => setTitleListFolder(e.target.value)}
+                placeholder="（空=全体）"
+                type="text"
+                value={titleListFolder}
+              />
+            </label>
+            <label className="setting-row">
+              <span>並び順</span>
+              <select
+                onChange={(e) => setTitleListSort(e.target.value as "name" | "mtime")}
+                value={titleListSort}
+              >
+                <option value="name">ファイル名順</option>
+                <option value="mtime">更新日時順</option>
+              </select>
+            </label>
+            <label className="setting-row">
+              <span>出力フォルダ</span>
+              <input
+                onChange={(e) => setTitleListOutputFolder(e.target.value)}
+                placeholder="（空=ルート）"
+                type="text"
+                value={titleListOutputFolder}
+              />
+            </label>
+            <label className="setting-row">
+              <span>ファイル名</span>
+              <input
+                onChange={(e) => setTitleListOutputName(e.target.value)}
+                type="text"
+                value={titleListOutputName}
+              />
+            </label>
+            <button className="primary-button" onClick={handleGenerateTitleList} type="button">
+              生成
+            </button>
+            {titleListStatus && <div className="tool-status">{titleListStatus}</div>}
+          </div>
+
+          <div className="links-panel-subheading" style={{ marginTop: "1.5rem" }}>目次生成</div>
+          <div className="search-block">
+            <label className="setting-row">
+              <span>対象フォルダ</span>
+              <input
+                onChange={(e) => setTocFolder(e.target.value)}
+                placeholder="（空=ルート）"
+                type="text"
+                value={tocFolder}
+              />
+            </label>
+            <label className="setting-row">
+              <span>サブフォルダ含む</span>
+              <input
+                checked={tocSubfolders}
+                onChange={(e) => setTocSubfolders(e.target.checked)}
+                type="checkbox"
+              />
+            </label>
+            <label className="setting-row">
+              <span>出力フォルダ</span>
+              <input
+                onChange={(e) => setTocOutputFolder(e.target.value)}
+                placeholder="（空=ルート）"
+                type="text"
+                value={tocOutputFolder}
+              />
+            </label>
+            <label className="setting-row">
+              <span>ファイル名</span>
+              <input
+                onChange={(e) => setTocOutputName(e.target.value)}
+                type="text"
+                value={tocOutputName}
+              />
+            </label>
+            <button className="primary-button" onClick={handleGenerateToc} type="button">
+              生成
+            </button>
+            {tocStatus && <div className="tool-status">{tocStatus}</div>}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ────────────────────────────────────────────────
 // SettingsSidebar
 // ────────────────────────────────────────────────
 
@@ -822,6 +962,18 @@ function SettingsSidebar({
           type="checkbox"
         />
         <span>スペルチェック</span>
+      </label>
+      <label className="setting-row">
+        <span>テーマ</span>
+        <select
+          aria-label="テーマ"
+          onChange={(e) => update("theme", e.target.value as EditorSettings["theme"])}
+          value={draft.theme}
+        >
+          <option value="system">システム設定に合わせる</option>
+          <option value="light">ライト</option>
+          <option value="dark">ダーク</option>
+        </select>
       </label>
       <div className="setting-row setting-row--action">
         <span>フロントマター候補定義</span>
@@ -1054,6 +1206,7 @@ const sidebarViews: Array<{ id: SidebarView; label: string; icon: string }> = [
   { id: "files", label: "ファイル", icon: "F" },
   { id: "search", label: "検索", icon: "S" },
   { id: "git", label: "Git", icon: "G" },
+  { id: "tools", label: "ツール", icon: "T" },
   { id: "settings", label: "設定", icon: "⚙" }
 ];
 
@@ -1149,6 +1302,27 @@ export function App(): ReactElement {
     toggleSidebar,
     toggleTypewriterMode
   } = useUiStore();
+
+  // テーマ適用
+  useEffect(() => {
+    function applyTheme(theme: AppTheme) {
+      const root = document.documentElement;
+      if (theme === "system") {
+        root.removeAttribute("data-theme");
+      } else {
+        root.setAttribute("data-theme", theme);
+      }
+    }
+
+    applyTheme(editorSettings.theme ?? "system");
+
+    if ((editorSettings.theme ?? "system") === "system") {
+      const mq = window.matchMedia("(prefers-color-scheme: dark)");
+      const listener = () => applyTheme("system");
+      mq.addEventListener("change", listener);
+      return () => mq.removeEventListener("change", listener);
+    }
+  }, [editorSettings.theme]);
 
   const [sidebarWidth, setSidebarWidth] = useState(260);
   const sidebarResizingRef = useRef(false);
@@ -3037,6 +3211,8 @@ export function App(): ReactElement {
                   </>
                 )}
               </div>
+            ) : activeSidebarView === "tools" ? (
+              <ToolsSidebar workspacePath={workspaceState?.activeWorkspace?.path ?? null} />
             ) : (
               <SettingsSidebar
                 autoSyncSettings={autoSyncSettings}
