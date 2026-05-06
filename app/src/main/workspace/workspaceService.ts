@@ -62,9 +62,14 @@ export function toWorkspaceState(
   const activeWorkspace =
     settings.workspaces.find((workspace) => workspace.id === settings.lastWorkspaceId) ?? null;
 
+  const pinnedPaths = activeWorkspace
+    ? (settings.pinnedPaths[activeWorkspace.id] ?? [])
+    : [];
+
   return {
     activeWorkspace,
     fileTree,
+    pinnedPaths,
     workspaces: settings.workspaces
   };
 }

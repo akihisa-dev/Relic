@@ -68,7 +68,7 @@ function makeRelicApi(overrides: Partial<typeof window.relic> = {}): typeof wind
     getWorkspaceTags: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     getWorkspaceState: vi.fn().mockResolvedValue({
       ok: true,
-      value: { activeWorkspace: null, fileTree: [], workspaces: [] }
+      value: { activeWorkspace: null, fileTree: [], pinnedPaths: [], workspaces: [] }
     }),
     moveItemToTrash: vi.fn(),
     openWorkspace: vi.fn(),
@@ -84,7 +84,7 @@ function makeRelicApi(overrides: Partial<typeof window.relic> = {}): typeof wind
     switchWorkspace: vi.fn(),
     writeMarkdownFile: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
     getFrontmatterCandidates: vi.fn().mockResolvedValue({ ok: true, value: {} }),
-    createFrontmatterTemplate: vi.fn().mockResolvedValue({ ok: true, value: { activeWorkspace: null, fileTree: [], workspaces: [] } }),
+    createFrontmatterTemplate: vi.fn().mockResolvedValue({ ok: true, value: { activeWorkspace: null, fileTree: [], pinnedPaths: [], workspaces: [] } }),
     moveFolder: vi.fn(),
     moveMarkdownFile: vi.fn(),
     initializeGitRepository: vi.fn().mockResolvedValue({ ok: true, value: { currentBranch: "main", initialized: true } }),
@@ -94,7 +94,9 @@ function makeRelicApi(overrides: Partial<typeof window.relic> = {}): typeof wind
     applySearchAndReplace: vi.fn(),
     replaceInFile: vi.fn(),
     searchAndReplace: vi.fn(),
-    cloneGitHubRepository: vi.fn().mockResolvedValue({ ok: true, value: { activeWorkspace: null, fileTree: [], workspaces: [] } }),
+    cloneGitHubRepository: vi.fn().mockResolvedValue({ ok: true, value: { activeWorkspace: null, fileTree: [], pinnedPaths: [], workspaces: [] } }),
+    createNewWorkspace: vi.fn().mockResolvedValue({ ok: true, value: { activeWorkspace: null, fileTree: [], pinnedPaths: [], workspaces: [] } }),
+    togglePin: vi.fn().mockResolvedValue({ ok: true, value: { activeWorkspace: null, fileTree: [], pinnedPaths: [], workspaces: [] } }),
     getGitSyncPreview: vi.fn().mockResolvedValue({ ok: true, value: { incomingCommits: [], outgoingChanges: [] } }),
     getGitConflicts: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     resolveGitConflict: vi.fn().mockResolvedValue({ ok: true, value: [] }),
@@ -107,6 +109,7 @@ function makeRelicApi(overrides: Partial<typeof window.relic> = {}): typeof wind
 const withWorkspace = {
   activeWorkspace: { id: "ws-1", name: "Notes", path: "/tmp/Notes" },
   fileTree: [],
+  pinnedPaths: [],
   workspaces: []
 };
 
