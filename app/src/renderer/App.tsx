@@ -25,7 +25,7 @@ import type {
   WorkspaceTagSummary,
   WorkspaceTreeNode
 } from "../shared/ipc";
-import { defaultAutoSyncSettings } from "../shared/ipc";
+import { defaultAutoSyncSettings, defaultFeatureToggles, type FeatureToggles, type MergeFilterType, type MergeSortBy, type SplitHeadingLevel } from "../shared/ipc";
 import { resolveWikiLinkPath, resolveWikiLinks } from "../shared/links";
 import { CommandPalette, type Command } from "./components/CommandPalette";
 import { Editor } from "./components/Editor";
@@ -737,6 +737,19 @@ function ToolsSidebar({ workspacePath }: { workspacePath: string | null }): Reac
   const [tocSubfolders, setTocSubfolders] = useState(true);
   const [tocStatus, setTocStatus] = useState<string | null>(null);
 
+  const [mergeFilterType, setMergeFilterType] = useState<MergeFilterType>("all");
+  const [mergeFilterValue, setMergeFilterValue] = useState("");
+  const [mergeSortBy, setMergeSortBy] = useState<MergeSortBy>("name");
+  const [mergeInsertHeading, setMergeInsertHeading] = useState(true);
+  const [mergeOutputFolder, setMergeOutputFolder] = useState("");
+  const [mergeOutputName, setMergeOutputName] = useState("マージ結果");
+  const [mergeStatus, setMergeStatus] = useState<string | null>(null);
+
+  const [splitSource, setSplitSource] = useState("");
+  const [splitLevel, setSplitLevel] = useState<SplitHeadingLevel>(2);
+  const [splitOutputFolder, setSplitOutputFolder] = useState("");
+  const [splitStatus, setSplitStatus] = useState<string | null>(null);
+
   const handleGenerateTitleList = async () => {
     if (!workspacePath) return;
     setTitleListStatus("生成中…");
@@ -759,6 +772,35 @@ function ToolsSidebar({ workspacePath }: { workspacePath: string | null }): Reac
       targetFolder: tocFolder || "."
     });
     setTocStatus(result.ok ? `完了: ${result.value}` : `エラー: ${result.error.message}`);
+  };
+
+  const handleMergeFiles = async () => {
+    if (!workspacePath) return;
+    setMergeStatus("処理中…");
+    const result = await window.relic!.mergeFiles({
+      filterType: mergeFilterType,
+      filterValue: mergeFilterValue,
+      insertFilenameHeading: mergeInsertHeading,
+      outputFolder: mergeOutputFolder || ".",
+      outputName: mergeOutputName || "マージ結果",
+      sortBy: mergeSortBy
+    });
+    setMergeStatus(result.ok ? `完了: ${result.value}` : `エラー: ${result.error.message}`);
+  };
+
+  const handleSplitFile = async () => {
+    if (!workspacePath || !splitSource) return;
+    setSplitStatus("処理中…");
+    const result = await window.relic!.splitFileByHeading({
+      headingLevel: splitLevel,
+      outputFolder: splitOutputFolder || ".",
+      sourcePath: splitSource
+    });
+    setSplitStatus(
+      result.ok
+        ? `完了: ${result.value.length}ファイル生成`
+        : `エラー: ${result.error.message}`
+    );
   };
 
   return (
@@ -853,6 +895,109 @@ function ToolsSidebar({ workspacePath }: { workspacePath: string | null }): Reac
             </button>
             {tocStatus && <div className="tool-status">{tocStatus}</div>}
           </div>
+
+          <div className="links-panel-subheading" style={{ marginTop: "1.5rem" }}>条件指定マージ</div>
+          <div className="search-block">
+            <label className="setting-row">
+              <span>フィルター</span>
+              <select
+                onChange={(e) => setMergeFilterType(e.target.value as MergeFilterType)}
+                value={mergeFilterType}
+              >
+                <option value="all">すべて</option>
+                <option value="folder">フォルダ</option>
+                <option value="tag">タグ</option>
+              </select>
+            </label>
+            {mergeFilterType !== "all" && (
+              <label className="setting-row">
+                <span>{mergeFilterType === "folder" ? "フォルダ名" : "タグ名"}</span>
+                <input
+                  onChange={(e) => setMergeFilterValue(e.target.value)}
+                  placeholder={mergeFilterType === "folder" ? "例: notes" : "例: project"}
+                  type="text"
+                  value={mergeFilterValue}
+                />
+              </label>
+            )}
+            <label className="setting-row">
+              <span>並び順</span>
+              <select
+                onChange={(e) => setMergeSortBy(e.target.value as MergeSortBy)}
+                value={mergeSortBy}
+              >
+                <option value="name">ファイル名順</option>
+                <option value="mtime">更新日時順</option>
+                <option value="ctime">作成日時順</option>
+              </select>
+            </label>
+            <label className="setting-row">
+              <span>ファイル名見出しを挿入</span>
+              <input
+                checked={mergeInsertHeading}
+                onChange={(e) => setMergeInsertHeading(e.target.checked)}
+                type="checkbox"
+              />
+            </label>
+            <label className="setting-row">
+              <span>出力フォルダ</span>
+              <input
+                onChange={(e) => setMergeOutputFolder(e.target.value)}
+                placeholder="（空=ルート）"
+                type="text"
+                value={mergeOutputFolder}
+              />
+            </label>
+            <label className="setting-row">
+              <span>ファイル名</span>
+              <input
+                onChange={(e) => setMergeOutputName(e.target.value)}
+                type="text"
+                value={mergeOutputName}
+              />
+            </label>
+            <button className="primary-button" onClick={handleMergeFiles} type="button">
+              マージ
+            </button>
+            {mergeStatus && <div className="tool-status">{mergeStatus}</div>}
+          </div>
+
+          <div className="links-panel-subheading" style={{ marginTop: "1.5rem" }}>見出しで分割</div>
+          <div className="search-block">
+            <label className="setting-row">
+              <span>ソースファイル</span>
+              <input
+                onChange={(e) => setSplitSource(e.target.value)}
+                placeholder="例: notes/draft.md"
+                type="text"
+                value={splitSource}
+              />
+            </label>
+            <label className="setting-row">
+              <span>見出しレベル</span>
+              <select
+                onChange={(e) => setSplitLevel(Number(e.target.value) as SplitHeadingLevel)}
+                value={splitLevel}
+              >
+                <option value={1}>H1 (#)</option>
+                <option value={2}>H2 (##)</option>
+                <option value={3}>H3 (###)</option>
+              </select>
+            </label>
+            <label className="setting-row">
+              <span>出力フォルダ</span>
+              <input
+                onChange={(e) => setSplitOutputFolder(e.target.value)}
+                placeholder="（空=ルート）"
+                type="text"
+                value={splitOutputFolder}
+              />
+            </label>
+            <button className="primary-button" onClick={handleSplitFile} type="button">
+              分割
+            </button>
+            {splitStatus && <div className="tool-status">{splitStatus}</div>}
+          </div>
         </>
       )}
     </div>
@@ -866,18 +1011,23 @@ function ToolsSidebar({ workspacePath }: { workspacePath: string | null }): Reac
 function SettingsSidebar({
   settings,
   autoSyncSettings,
+  featureToggles,
   onCreateFrontmatterTemplate,
   onSave,
-  onAutoSyncSave
+  onAutoSyncSave,
+  onFeatureTogglesSave
 }: {
   settings: EditorSettings;
   autoSyncSettings: AutoSyncSettings;
+  featureToggles: FeatureToggles;
   onCreateFrontmatterTemplate: () => void;
   onSave: (s: EditorSettings) => void;
   onAutoSyncSave: (s: AutoSyncSettings) => void;
+  onFeatureTogglesSave: (t: FeatureToggles) => void;
 }): ReactElement {
   const [draft, setDraft] = useState<EditorSettings>(settings);
   const [autoSyncDraft, setAutoSyncDraft] = useState<AutoSyncSettings>(autoSyncSettings);
+  const [togglesDraft, setTogglesDraft] = useState<FeatureToggles>(featureToggles);
 
   useEffect(() => {
     setDraft(settings);
@@ -886,6 +1036,10 @@ function SettingsSidebar({
   useEffect(() => {
     setAutoSyncDraft(autoSyncSettings);
   }, [autoSyncSettings]);
+
+  useEffect(() => {
+    setTogglesDraft(featureToggles);
+  }, [featureToggles]);
 
   const update = <K extends keyof EditorSettings>(key: K, value: EditorSettings[K]): void => {
     const next = { ...draft, [key]: value };
@@ -1012,13 +1166,36 @@ function SettingsSidebar({
           <option value={60}>60分</option>
         </select>
       </label>
+      <div className="links-panel-subheading" style={{ marginTop: "1rem" }}>機能トグル</div>
+      {(
+        [
+          { key: "git", label: "GitHub連携" },
+          { key: "tools", label: "ファイル加工ツール" },
+          { key: "frontmatter", label: "フロントマター" },
+          { key: "rightPanel", label: "右パネル" },
+          { key: "focusModes", label: "フォーカス系モード" }
+        ] as { key: keyof FeatureToggles; label: string }[]
+      ).map(({ key, label }) => (
+        <label className="setting-row" key={key}>
+          <input
+            checked={togglesDraft[key]}
+            onChange={(e) => {
+              const next = { ...togglesDraft, [key]: e.target.checked };
+              setTogglesDraft(next);
+              onFeatureTogglesSave(next);
+            }}
+            type="checkbox"
+          />
+          <span>{label}</span>
+        </label>
+      ))}
     </div>
   );
 }
 
-// ────────────────────────────────────────────────
+// ──────────────────────────────────��─────────────
 // PaneView — タブバー + エディタ
-// ────────────────────────────────────────────────
+// ────────────���────────────────────────────���──────
 
 interface PaneViewProps {
   allFilePaths: string[];
@@ -1027,6 +1204,7 @@ interface PaneViewProps {
   frontmatterCandidates: Record<string, string[]>;
   pane: PaneId;
   scrollTargetHeading?: string;
+  showFrontmatter?: boolean;
   typewriterMode: boolean;
   workspacePath?: string | null;
   workspaceTags: string[];
@@ -1044,6 +1222,7 @@ function PaneView({
   frontmatterCandidates,
   pane,
   scrollTargetHeading,
+  showFrontmatter = true,
   typewriterMode,
   workspacePath,
   workspaceTags,
@@ -1131,13 +1310,15 @@ function PaneView({
           <div className="editor-body">
             {activeTab.viewMode === "preview" ? (
               <div className="preview-with-fm">
-                <FrontmatterForm
-                  candidates={frontmatterCandidates}
-                  content={activeTab.content}
-                  key={`fm-${activeTab.id}`}
-                  onChange={(content) => updateTabContent(activeTab.id, content)}
-                  workspaceTags={workspaceTags}
-                />
+                {showFrontmatter && (
+                  <FrontmatterForm
+                    candidates={frontmatterCandidates}
+                    content={activeTab.content}
+                    key={`fm-${activeTab.id}`}
+                    onChange={(content) => updateTabContent(activeTab.id, content)}
+                    workspaceTags={workspaceTags}
+                  />
+                )}
                 <Editor
                   allFilePaths={allFilePaths}
                   content={activeTab.content}
@@ -1268,6 +1449,7 @@ export function App(): ReactElement {
   const [gitConflicts, setGitConflicts] = useState<GitConflict[]>([]);
   const [isResolvingConflict, setIsResolvingConflict] = useState(false);
   const [autoSyncSettings, setAutoSyncSettings] = useState<AutoSyncSettings>(defaultAutoSyncSettings);
+  const [featureToggles, setFeatureToggles] = useState<FeatureToggles>(defaultFeatureToggles);
   const [showCommandPalette, setShowCommandPalette] = useState(false);
   const [showQuickSwitcher, setShowQuickSwitcher] = useState(false);
 
@@ -1369,6 +1551,12 @@ export function App(): ReactElement {
     void window.relic?.getAutoSyncSettings().then((result) => {
       if (result.ok) {
         setAutoSyncSettings(result.value);
+      }
+    });
+
+    void window.relic?.getFeatureToggles().then((result) => {
+      if (result.ok) {
+        setFeatureToggles(result.value);
       }
     });
   }, [setEditorSettings]);
@@ -2225,6 +2413,11 @@ export function App(): ReactElement {
     void window.relic?.saveAutoSyncSettings(settings);
   }, []);
 
+  const handleSaveFeatureToggles = useCallback((toggles: FeatureToggles): void => {
+    setFeatureToggles(toggles);
+    void window.relic?.saveFeatureToggles(toggles);
+  }, []);
+
   const handlePushGitBranch = (): void => { handleShowPushPreview(); };
   const handlePullGitBranch = (): void => { handleShowPullPreview(); };
 
@@ -2566,18 +2759,24 @@ export function App(): ReactElement {
             {isSidebarOpen ? "◁" : "▷"}
           </button>
           <div className="rail-separator" />
-          {sidebarViews.map((view) => (
-            <button
-              aria-label={view.label}
-              className={`rail-button${view.id === activeSidebarView ? " active" : ""}`}
-              key={view.id}
-              onClick={() => setSidebarView(view.id)}
-              title={view.label}
-              type="button"
-            >
-              {view.icon}
-            </button>
-          ))}
+          {sidebarViews
+            .filter((view) => {
+              if (view.id === "git" && !featureToggles.git) return false;
+              if (view.id === "tools" && !featureToggles.tools) return false;
+              return true;
+            })
+            .map((view) => (
+              <button
+                aria-label={view.label}
+                className={`rail-button${view.id === activeSidebarView ? " active" : ""}`}
+                key={view.id}
+                onClick={() => setSidebarView(view.id)}
+                title={view.label}
+                type="button"
+              >
+                {view.icon}
+              </button>
+            ))}
         </nav>
 
         {/* サイドバー */}
@@ -3216,8 +3415,10 @@ export function App(): ReactElement {
             ) : (
               <SettingsSidebar
                 autoSyncSettings={autoSyncSettings}
+                featureToggles={featureToggles}
                 onAutoSyncSave={handleSaveAutoSyncSettings}
                 onCreateFrontmatterTemplate={handleCreateFrontmatterTemplate}
+                onFeatureTogglesSave={handleSaveFeatureToggles}
                 onSave={handleSaveSettings}
                 settings={editorSettings}
               />
@@ -3256,32 +3457,34 @@ export function App(): ReactElement {
               >
                 ⊟
               </button>
-              <button
-                className={`toolbar-btn${rightPanelView === "outline" && isRightPanelOpen ? " active" : ""}`}
-                onClick={() => {
-                  setRightPanelView("outline");
-
-                  if (!isRightPanelOpen) toggleRightPanel();
-                  else if (rightPanelView === "outline") toggleRightPanel();
-                }}
-                title="アウトライン (⌘⇧B)"
-                type="button"
-              >
-                Outline
-              </button>
-              <button
-                className={`toolbar-btn${rightPanelView === "links" && isRightPanelOpen ? " active" : ""}`}
-                onClick={() => {
-                  setRightPanelView("links");
-
-                  if (!isRightPanelOpen) toggleRightPanel();
-                  else if (rightPanelView === "links") toggleRightPanel();
-                }}
-                title="リンク"
-                type="button"
-              >
-                Links
-              </button>
+              {featureToggles.rightPanel && (
+                <>
+                  <button
+                    className={`toolbar-btn${rightPanelView === "outline" && isRightPanelOpen ? " active" : ""}`}
+                    onClick={() => {
+                      setRightPanelView("outline");
+                      if (!isRightPanelOpen) toggleRightPanel();
+                      else if (rightPanelView === "outline") toggleRightPanel();
+                    }}
+                    title="アウトライン (⌘⇧B)"
+                    type="button"
+                  >
+                    Outline
+                  </button>
+                  <button
+                    className={`toolbar-btn${rightPanelView === "links" && isRightPanelOpen ? " active" : ""}`}
+                    onClick={() => {
+                      setRightPanelView("links");
+                      if (!isRightPanelOpen) toggleRightPanel();
+                      else if (rightPanelView === "links") toggleRightPanel();
+                    }}
+                    title="リンク"
+                    type="button"
+                  >
+                    Links
+                  </button>
+                </>
+              )}
             </div>
           </div>
 
@@ -3299,7 +3502,8 @@ export function App(): ReactElement {
                 onTabSelect={(tabId) => setTabActive("left", tabId)}
                 pane="left"
                 scrollTargetHeading={leftPaneScrollHeading}
-                typewriterMode={isTypewriterMode}
+                showFrontmatter={featureToggles.frontmatter}
+                typewriterMode={isTypewriterMode && featureToggles.focusModes}
                 workspacePath={workspaceState?.activeWorkspace?.path}
                 workspaceTags={workspaceTags.map((t) => t.tag)}
               />
@@ -3316,7 +3520,8 @@ export function App(): ReactElement {
                   onTabSelect={(tabId) => setTabActive("right", tabId)}
                   pane="right"
                   scrollTargetHeading={rightPaneScrollHeading}
-                  typewriterMode={isTypewriterMode}
+                  showFrontmatter={featureToggles.frontmatter}
+                  typewriterMode={isTypewriterMode && featureToggles.focusModes}
                   workspacePath={workspaceState?.activeWorkspace?.path}
                   workspaceTags={workspaceTags.map((t) => t.tag)}
                 />

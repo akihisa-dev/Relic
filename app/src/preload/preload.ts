@@ -51,6 +51,13 @@ import {
   type GenerateTitleListInput,
   generateTableOfContentsChannel,
   type GenerateTableOfContentsInput,
+  getFeatureTogglesChannel,
+  saveFeatureTogglesChannel,
+  type FeatureToggles,
+  mergeFilesChannel,
+  type MergeFilesInput,
+  splitFileByHeadingChannel,
+  type SplitFileByHeadingInput,
   searchAndReplaceChannel,
   searchWorkspaceChannel,
   switchGitBranchChannel,
@@ -231,7 +238,15 @@ const relicApi: RelicApi = {
   generateTitleList: (input: GenerateTitleListInput) =>
     ipcRenderer.invoke(generateTitleListChannel, input) as Promise<RelicResult<string>>,
   generateTableOfContents: (input: GenerateTableOfContentsInput) =>
-    ipcRenderer.invoke(generateTableOfContentsChannel, input) as Promise<RelicResult<string>>
+    ipcRenderer.invoke(generateTableOfContentsChannel, input) as Promise<RelicResult<string>>,
+  getFeatureToggles: () =>
+    ipcRenderer.invoke(getFeatureTogglesChannel) as Promise<RelicResult<FeatureToggles>>,
+  saveFeatureToggles: (input: FeatureToggles) =>
+    ipcRenderer.invoke(saveFeatureTogglesChannel, input) as Promise<RelicResult<void>>,
+  mergeFiles: (input: MergeFilesInput) =>
+    ipcRenderer.invoke(mergeFilesChannel, input) as Promise<RelicResult<string>>,
+  splitFileByHeading: (input: SplitFileByHeadingInput) =>
+    ipcRenderer.invoke(splitFileByHeadingChannel, input) as Promise<RelicResult<string[]>>
 };
 
 contextBridge.exposeInMainWorld("relic", relicApi);

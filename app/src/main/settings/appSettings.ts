@@ -4,15 +4,18 @@ import path from "node:path";
 import {
   defaultAutoSyncSettings,
   defaultEditorSettings,
+  defaultFeatureToggles,
   type AutoSyncInterval,
   type AutoSyncSettings,
   type EditorSettings,
+  type FeatureToggles,
   type WorkspaceSummary
 } from "../../shared/ipc";
 
 export interface AppSettings {
   autoSync: AutoSyncSettings;
   editorSettings: EditorSettings;
+  featureToggles: FeatureToggles;
   lastWorkspaceId: string | null;
   workspaces: WorkspaceSummary[];
 }
@@ -20,6 +23,7 @@ export interface AppSettings {
 const defaultAppSettings: AppSettings = {
   autoSync: defaultAutoSyncSettings,
   editorSettings: defaultEditorSettings,
+  featureToggles: defaultFeatureToggles,
   lastWorkspaceId: null,
   workspaces: []
 };
@@ -38,6 +42,7 @@ export async function readAppSettings(userDataPath: string): Promise<AppSettings
     return {
       autoSync: parseAutoSyncSettings(parsedSettings.autoSync),
       editorSettings: parseEditorSettings(parsedSettings.editorSettings),
+      featureToggles: parseFeatureToggles(parsedSettings.featureToggles),
       lastWorkspaceId:
         typeof parsedSettings.lastWorkspaceId === "string" ? parsedSettings.lastWorkspaceId : null,
       workspaces: Array.isArray(parsedSettings.workspaces)
@@ -76,6 +81,22 @@ function parseEditorSettings(raw: unknown): EditorSettings {
     showLineNumbers: typeof s.showLineNumbers === "boolean" ? s.showLineNumbers : false,
     spellCheck: typeof s.spellCheck === "boolean" ? s.spellCheck : true,
     theme: s.theme === "light" || s.theme === "dark" ? s.theme : "system"
+  };
+}
+
+function parseFeatureToggles(raw: unknown): FeatureToggles {
+  if (typeof raw !== "object" || raw === null) {
+    return defaultFeatureToggles;
+  }
+
+  const s = raw as Record<string, unknown>;
+
+  return {
+    git: typeof s.git === "boolean" ? s.git : true,
+    tools: typeof s.tools === "boolean" ? s.tools : true,
+    frontmatter: typeof s.frontmatter === "boolean" ? s.frontmatter : true,
+    rightPanel: typeof s.rightPanel === "boolean" ? s.rightPanel : true,
+    focusModes: typeof s.focusModes === "boolean" ? s.focusModes : true
   };
 }
 

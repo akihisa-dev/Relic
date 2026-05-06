@@ -55,6 +55,10 @@ export const getAutoSyncSettingsChannel = "app:getAutoSyncSettings";
 export const saveAutoSyncSettingsChannel = "app:saveAutoSyncSettings";
 export const generateTitleListChannel = "tools:generateTitleList";
 export const generateTableOfContentsChannel = "tools:generateTableOfContents";
+export const getFeatureTogglesChannel = "app:getFeatureToggles";
+export const saveFeatureTogglesChannel = "app:saveFeatureToggles";
+export const mergeFilesChannel = "tools:mergeFiles";
+export const splitFileByHeadingChannel = "tools:splitFileByHeading";
 
 export interface GenerateTitleListInput {
   filterFolder?: string;
@@ -69,6 +73,26 @@ export interface GenerateTableOfContentsInput {
   outputFolder: string;
   outputName: string;
   targetFolder: string;
+}
+
+export type MergeFilterType = "folder" | "tag" | "all";
+export type MergeSortBy = "name" | "mtime" | "ctime";
+
+export interface MergeFilesInput {
+  filterType: MergeFilterType;
+  filterValue: string;
+  insertFilenameHeading: boolean;
+  outputFolder: string;
+  outputName: string;
+  sortBy: MergeSortBy;
+}
+
+export type SplitHeadingLevel = 1 | 2 | 3;
+
+export interface SplitFileByHeadingInput {
+  headingLevel: SplitHeadingLevel;
+  outputFolder: string;
+  sourcePath: string;
 }
 
 export interface AppInfo {
@@ -303,6 +327,22 @@ export const defaultAutoSyncSettings: AutoSyncSettings = {
   intervalMinutes: 15
 };
 
+export interface FeatureToggles {
+  git: boolean;
+  tools: boolean;
+  frontmatter: boolean;
+  rightPanel: boolean;
+  focusModes: boolean;
+}
+
+export const defaultFeatureToggles: FeatureToggles = {
+  git: true,
+  tools: true,
+  frontmatter: true,
+  rightPanel: true,
+  focusModes: true
+};
+
 export interface GitSyncPreview {
   incomingCommits: GitCommitSummary[];
   outgoingChanges: GitWorkingChange[];
@@ -450,4 +490,8 @@ export interface RelicApi {
   saveAutoSyncSettings: (input: AutoSyncSettings) => Promise<RelicResult<void>>;
   generateTitleList: (input: GenerateTitleListInput) => Promise<RelicResult<string>>;
   generateTableOfContents: (input: GenerateTableOfContentsInput) => Promise<RelicResult<string>>;
+  getFeatureToggles: () => Promise<RelicResult<FeatureToggles>>;
+  saveFeatureToggles: (input: FeatureToggles) => Promise<RelicResult<void>>;
+  mergeFiles: (input: MergeFilesInput) => Promise<RelicResult<string>>;
+  splitFileByHeading: (input: SplitFileByHeadingInput) => Promise<RelicResult<string[]>>;
 }
