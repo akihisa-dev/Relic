@@ -47,6 +47,10 @@ import {
   resolveGitConflictChannel,
   saveAutoSyncSettingsChannel,
   saveEditorSettingsChannel,
+  generateTitleListChannel,
+  type GenerateTitleListInput,
+  generateTableOfContentsChannel,
+  type GenerateTableOfContentsInput,
   searchAndReplaceChannel,
   searchWorkspaceChannel,
   switchGitBranchChannel,
@@ -223,7 +227,11 @@ const relicApi: RelicApi = {
   getAutoSyncSettings: () =>
     ipcRenderer.invoke(getAutoSyncSettingsChannel) as Promise<RelicResult<AutoSyncSettings>>,
   saveAutoSyncSettings: (input: AutoSyncSettings) =>
-    ipcRenderer.invoke(saveAutoSyncSettingsChannel, input) as Promise<RelicResult<void>>
+    ipcRenderer.invoke(saveAutoSyncSettingsChannel, input) as Promise<RelicResult<void>>,
+  generateTitleList: (input: GenerateTitleListInput) =>
+    ipcRenderer.invoke(generateTitleListChannel, input) as Promise<RelicResult<string>>,
+  generateTableOfContents: (input: GenerateTableOfContentsInput) =>
+    ipcRenderer.invoke(generateTableOfContentsChannel, input) as Promise<RelicResult<string>>
 };
 
 contextBridge.exposeInMainWorld("relic", relicApi);

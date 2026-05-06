@@ -53,6 +53,23 @@ export const getGitConflictsChannel = "workspace:getGitConflicts";
 export const resolveGitConflictChannel = "workspace:resolveGitConflict";
 export const getAutoSyncSettingsChannel = "app:getAutoSyncSettings";
 export const saveAutoSyncSettingsChannel = "app:saveAutoSyncSettings";
+export const generateTitleListChannel = "tools:generateTitleList";
+export const generateTableOfContentsChannel = "tools:generateTableOfContents";
+
+export interface GenerateTitleListInput {
+  filterFolder?: string;
+  filterTag?: string;
+  outputFolder: string;
+  outputName: string;
+  sortBy: "name" | "mtime";
+}
+
+export interface GenerateTableOfContentsInput {
+  includeSubfolders: boolean;
+  outputFolder: string;
+  outputName: string;
+  targetFolder: string;
+}
 
 export interface AppInfo {
   name: "Relic";
@@ -323,6 +340,8 @@ export interface WriteMarkdownFileInput {
 export type EditorFont = "system" | "mincho" | "mono";
 export type EditorMaxWidth = "550px" | "660px" | "800px" | "none";
 
+export type AppTheme = "light" | "dark" | "system";
+
 export interface EditorSettings {
   font: EditorFont;
   fontSize: number;
@@ -330,6 +349,7 @@ export interface EditorSettings {
   maxWidth: EditorMaxWidth;
   showLineNumbers: boolean;
   spellCheck: boolean;
+  theme: AppTheme;
 }
 
 export const defaultEditorSettings: EditorSettings = {
@@ -338,7 +358,8 @@ export const defaultEditorSettings: EditorSettings = {
   lineHeight: 1.7,
   maxWidth: "660px",
   showLineNumbers: false,
-  spellCheck: true
+  spellCheck: true,
+  theme: "system"
 };
 
 export interface RenameMarkdownFileResult {
@@ -427,4 +448,6 @@ export interface RelicApi {
   resolveGitConflict: (input: ResolveGitConflictInput) => Promise<RelicResult<GitConflict[]>>;
   getAutoSyncSettings: () => Promise<RelicResult<AutoSyncSettings>>;
   saveAutoSyncSettings: (input: AutoSyncSettings) => Promise<RelicResult<void>>;
+  generateTitleList: (input: GenerateTitleListInput) => Promise<RelicResult<string>>;
+  generateTableOfContents: (input: GenerateTableOfContentsInput) => Promise<RelicResult<string>>;
 }
