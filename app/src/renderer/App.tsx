@@ -851,7 +851,7 @@ function ToolsSidebar({ workspacePath }: { workspacePath: string | null }): Reac
             <button className="primary-button" onClick={handleGenerateTitleList} type="button">
               生成
             </button>
-            {titleListStatus && <div className="tool-status">{titleListStatus}</div>}
+            {titleListStatus && <div className={`tool-status${titleListStatus.startsWith("エラー") ? " tool-status--error" : " tool-status--success"}`}>{titleListStatus}</div>}
           </div>
 
           <div className="links-panel-subheading" style={{ marginTop: "1.5rem" }}>目次生成</div>
@@ -893,7 +893,7 @@ function ToolsSidebar({ workspacePath }: { workspacePath: string | null }): Reac
             <button className="primary-button" onClick={handleGenerateToc} type="button">
               生成
             </button>
-            {tocStatus && <div className="tool-status">{tocStatus}</div>}
+            {tocStatus && <div className={`tool-status${tocStatus.startsWith("エラー") ? " tool-status--error" : " tool-status--success"}`}>{tocStatus}</div>}
           </div>
 
           <div className="links-panel-subheading" style={{ marginTop: "1.5rem" }}>条件指定マージ</div>
@@ -959,7 +959,7 @@ function ToolsSidebar({ workspacePath }: { workspacePath: string | null }): Reac
             <button className="primary-button" onClick={handleMergeFiles} type="button">
               マージ
             </button>
-            {mergeStatus && <div className="tool-status">{mergeStatus}</div>}
+            {mergeStatus && <div className={`tool-status${mergeStatus.startsWith("エラー") ? " tool-status--error" : " tool-status--success"}`}>{mergeStatus}</div>}
           </div>
 
           <div className="links-panel-subheading" style={{ marginTop: "1.5rem" }}>見出しで分割</div>
@@ -996,7 +996,7 @@ function ToolsSidebar({ workspacePath }: { workspacePath: string | null }): Reac
             <button className="primary-button" onClick={handleSplitFile} type="button">
               分割
             </button>
-            {splitStatus && <div className="tool-status">{splitStatus}</div>}
+            {splitStatus && <div className={`tool-status${splitStatus.startsWith("エラー") ? " tool-status--error" : " tool-status--success"}`}>{splitStatus}</div>}
           </div>
         </>
       )}
@@ -1393,7 +1393,16 @@ const sidebarViews: Array<{ id: SidebarView; label: string; icon: string }> = [
 
 export function App(): ReactElement {
   const [workspaceState, setWorkspaceState] = useState<WorkspaceState | null>(null);
-  const [workspaceError, setWorkspaceError] = useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState<{ text: string; type: "error" | "info" } | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const showToast = useCallback((text: string, type: "error" | "info" = "error") => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToastMessage({ text, type });
+    toastTimerRef.current = setTimeout(() => setToastMessage(null), 4000);
+  }, []);
+  const setWorkspaceError = useCallback((msg: string | null) => {
+    if (msg) showToast(msg, "error");
+  }, [showToast]);
   const [fileNameDraft, setFileNameDraft] = useState("");
   const [folderNameDraft, setFolderNameDraft] = useState("");
   const [isCreatingFile, setIsCreatingFile] = useState(false);
@@ -3423,7 +3432,6 @@ export function App(): ReactElement {
                 settings={editorSettings}
               />
             )}
-            {workspaceError ? <div className="error-note">{workspaceError}</div> : null}
             <div
               className="sidebar-resize-handle"
               onMouseDown={(e) => {
@@ -3647,6 +3655,12 @@ export function App(): ReactElement {
           onClose={() => setShowQuickSwitcher(false)}
           onSelect={handleOpenFile}
         />
+      ) : null}
+
+      {toastMessage ? (
+        <div className={`toast toast--${toastMessage.type}`} onClick={() => setToastMessage(null)}>
+          {toastMessage.text}
+        </div>
       ) : null}
     </div>
   );
