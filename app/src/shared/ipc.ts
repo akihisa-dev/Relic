@@ -397,7 +397,7 @@ export interface EditorSettings {
 export const defaultEditorSettings: EditorSettings = {
   font: "system",
   fontSize: 16,
-  language: "system",
+  language: "en",
   lineHeight: 1.7,
   maxWidth: "660px",
   showLineNumbers: false,

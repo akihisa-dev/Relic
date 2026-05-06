@@ -89,6 +89,7 @@ function FileTreeItem({
   onTogglePin?: (path: string) => void;
   pinnedPaths?: Set<string>;
 }): ReactElement {
+  const t = useT();
   const [isDragOver, setIsDragOver] = useState(false);
   const [isExpanded, setIsExpanded] = useState(true);
   const isFolder = node.type === "folder";
@@ -140,7 +141,7 @@ function FileTreeItem({
           <button
             className={`file-tree-pin-btn${isPinned ? " pinned" : ""}`}
             onClick={(e) => { e.stopPropagation(); onTogglePin(node.path); }}
-            title={isPinned ? "ピン留めを解除" : "ピン留め"}
+            title={isPinned ? t("files.unpin") : t("files.pin")}
             type="button"
           >
             📌
@@ -425,10 +426,10 @@ function SearchSidebar({
       {mode === "regex" ? (
         <div className="search-patterns">
           {[
-            ["行頭が見出し", "^#+ "],
-            ["URLを含む行", "https?://"],
-            ["日付形式", "\\d{4}-\\d{2}-\\d{2}"],
-            ["タグ記法", "#\\w+"]
+            [t("search.patternHeading"), "^#+ "],
+            [t("search.patternUrl"), "https?://"],
+            [t("search.patternDate"), "\\d{4}-\\d{2}-\\d{2}"],
+            [t("search.patternTag"), "#\\w+"]
           ].map(([label, pattern]) => (
             <button
               className="search-pattern-btn"
@@ -475,7 +476,7 @@ function SearchSidebar({
         <div className="links-panel-subheading">{t("search.replace")}</div>
         <input
           aria-label={t("search.replaceQuery")}
-          className={`search-input${replaceError && replaceError.includes("正規表現") ? " search-input--error" : ""}`}
+          className={`search-input${replaceError ? " search-input--error" : ""}`}
           onChange={(e) => { setReplaceQuery(e.target.value); setReplacePreview(null); setReplaceStatus(null); }}
           placeholder={t("search.replaceQuery")}
           value={replaceQuery}
@@ -918,10 +919,10 @@ function ToolsSidebar({ workspacePath }: { workspacePath: string | null }): Reac
             </label>
             {mergeFilterType !== "all" && (
               <label className="setting-row">
-                <span>{mergeFilterType === "folder" ? t("tools.folderName") : "Tag name"}</span>
+                <span>{mergeFilterType === "folder" ? t("tools.folderName") : t("tools.tagName")}</span>
                 <input
                   onChange={(e) => setMergeFilterValue(e.target.value)}
-                  placeholder={mergeFilterType === "folder" ? "例: notes" : "例: project"}
+                  placeholder={mergeFilterType === "folder" ? t("tools.placeholderFolderExample") : t("tools.placeholderTagExample")}
                   type="text"
                   value={mergeFilterValue}
                 />
@@ -975,7 +976,7 @@ function ToolsSidebar({ workspacePath }: { workspacePath: string | null }): Reac
               <span>{t("tools.sourceFile")}</span>
               <input
                 onChange={(e) => setSplitSource(e.target.value)}
-                placeholder="例: notes/draft.md"
+                placeholder={t("tools.placeholderSourceExample")}
                 type="text"
                 value={splitSource}
               />
@@ -2323,13 +2324,13 @@ export function App(): ReactElement {
         if (result.ok) {
           setGitRemotes(result.value);
           setGitRemoteUrl(result.value.find((remote) => remote.isOrigin)?.url ?? gitRemoteUrl);
-          setGitSyncMessage("GitHubリポジトリを origin として接続しました。");
+          setGitSyncMessage(t("git.remoteConnected"));
         } else {
           setWorkspaceError(result.error.message);
         }
       })
       .finally(() => setIsConnectingGitRemote(false));
-  }, [gitRemoteUrl]);
+  }, [gitRemoteUrl, t]);
 
   const clearGitMessages = (): void => {
     setGitSyncMessage(null);
@@ -3366,7 +3367,7 @@ export function App(): ReactElement {
                           ))}
                         </ul>
                       ) : (
-                        <div className="empty-note">未コミットの{t("git.noChanges")}</div>
+                        <div className="empty-note">{t("git.noUncommitted")}</div>
                       )}
                     </div>
                     <div className="search-block">
@@ -3797,6 +3798,7 @@ export function App(): ReactElement {
 // ────────────────────────────────────────────────
 
 function RenameBar({ name, onRename }: { name: string; onRename: (v: string) => void }): ReactElement {
+  const t = useT();
   const [draft, setDraft] = useState(name);
   const [editing, setEditing] = useState(false);
 
@@ -3810,7 +3812,7 @@ function RenameBar({ name, onRename }: { name: string; onRename: (v: string) => 
       <button
         className="rename-bar-label"
         onClick={() => setEditing(true)}
-        title="クリックして名前を変更"
+        title={t("pane.rename")}
         type="button"
       >
         {name}
@@ -3848,6 +3850,7 @@ function RenameBar({ name, onRename }: { name: string; onRename: (v: string) => 
 }
 
 function MoveBar({ onMove }: { onMove: (dest: string) => void }): ReactElement {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState("");
 
@@ -3856,7 +3859,7 @@ function MoveBar({ onMove }: { onMove: (dest: string) => void }): ReactElement {
       <button
         className="toolbar-btn"
         onClick={() => setOpen(true)}
-        title="フォルダへ移動"
+        title={t("pane.moveToFolder")}
         type="button"
       >
         Move
@@ -3885,7 +3888,7 @@ function MoveBar({ onMove }: { onMove: (dest: string) => void }): ReactElement {
             setOpen(false);
           }
         }}
-        placeholder="移動先フォルダ（空=ルート）"
+        placeholder={t("pane.moveDestination")}
         value={draft}
       />
     </form>
