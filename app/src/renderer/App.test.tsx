@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
-import { defaultAutoSyncSettings, defaultEditorSettings, type GitHubAuthStatus } from "../shared/ipc";
+import { defaultAutoSyncSettings, defaultEditorSettings, defaultFeatureToggles, type GitHubAuthStatus } from "../shared/ipc";
 import { App } from "./App";
 import { useEditorStore } from "./store/editorStore";
 import { useUiStore } from "./store/uiStore";
@@ -102,6 +102,10 @@ function makeRelicApi(overrides: Partial<typeof window.relic> = {}): typeof wind
     resolveGitConflict: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     getAutoSyncSettings: vi.fn().mockResolvedValue({ ok: true, value: defaultAutoSyncSettings }),
     saveAutoSyncSettings: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
+    getFeatureToggles: vi.fn().mockResolvedValue({ ok: true, value: defaultFeatureToggles }),
+    saveFeatureToggles: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
+    mergeFiles: vi.fn().mockResolvedValue({ ok: true, value: "merged.md" }),
+    splitFileByHeading: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     ...overrides
   } as typeof window.relic;
 }
