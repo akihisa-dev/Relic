@@ -2559,6 +2559,39 @@ export function App(): ReactElement {
     [focusedPane, leftPane, rightPane, tabs, updateTabMeta]
   );
 
+  const handleDuplicateActiveFile = useCallback((): void => {
+    const paneState = focusedPane === "left" ? leftPane : rightPane;
+    const tabId = paneState.activeTabId;
+    if (!tabId || !window.relic) return;
+    const tab = tabs[tabId];
+    if (!tab) return;
+    void window.relic.duplicateMarkdownFile({ path: tab.path }).then((result) => {
+      if (result.ok) {
+        setWorkspaceState(result.value.workspaceState);
+        openFileInPane(focusedPane, result.value.file);
+      } else {
+        setWorkspaceError(result.error.message);
+      }
+    });
+  }, [focusedPane, leftPane, rightPane, tabs, openFileInPane]);
+
+  const handleDeleteActiveFile = useCallback((): void => {
+    const paneState = focusedPane === "left" ? leftPane : rightPane;
+    const tabId = paneState.activeTabId;
+    if (!tabId || !window.relic) return;
+    const tab = tabs[tabId];
+    if (!tab) return;
+    if (!window.confirm(`「${tab.name}」をゴミ箱に移動しますか？`)) return;
+    void window.relic.moveItemToTrash({ path: tab.path, type: "file" }).then((result) => {
+      if (result.ok) {
+        closeTab(focusedPane, tabId);
+        setWorkspaceState(result.value);
+      } else {
+        setWorkspaceError(result.error.message);
+      }
+    });
+  }, [focusedPane, leftPane, rightPane, tabs, closeTab]);
+
   // ──────────────────
   // キーボードショートカット
   // ──────────────────
@@ -2570,7 +2603,7 @@ export function App(): ReactElement {
       if (e.key === "b" && !e.shiftKey) {
         e.preventDefault();
         toggleSidebar();
-      } else if (e.key === "\\" ) {
+      } else if (e.key === "\\") {
         e.preventDefault();
         toggleSplit();
       } else if (e.key === "b" && e.shiftKey) {
@@ -2579,23 +2612,27 @@ export function App(): ReactElement {
       } else if (e.key === "w") {
         e.preventDefault();
         const paneState = focusedPane === "left" ? leftPane : rightPane;
-
-        if (paneState.activeTabId) {
-          closeTab(focusedPane, paneState.activeTabId);
-        }
+        if (paneState.activeTabId) closeTab(focusedPane, paneState.activeTabId);
+      } else if (e.key === "f" && !e.shiftKey) {
+        e.preventDefault();
+        setSidebarView("search");
+        if (!isSidebarOpen) toggleSidebar();
       } else if (e.key === "f" && e.shiftKey) {
         e.preventDefault();
-        toggleFocusMode();
-      } else if (e.key === "t" && e.shiftKey) {
+        setSidebarView("search");
+        if (!isSidebarOpen) toggleSidebar();
+      } else if (e.key === "n" && !e.shiftKey) {
         e.preventDefault();
-        toggleTypewriterMode();
+        setSidebarView("files");
+        if (!isSidebarOpen) toggleSidebar();
+        setIsCreatingFile(true);
       }
     };
 
     window.addEventListener("keydown", handler);
 
     return () => window.removeEventListener("keydown", handler);
-  }, [focusedPane, leftPane, rightPane, closeTab, toggleSidebar, toggleSplit, toggleRightPanel, toggleFocusMode, toggleTypewriterMode]);
+  }, [focusedPane, isSidebarOpen, leftPane, rightPane, closeTab, setSidebarView, toggleSidebar, toggleSplit, toggleRightPanel, setIsCreatingFile]);
 
   // ──────────────────
   // サイドバーリサイズ
@@ -2694,11 +2731,13 @@ export function App(): ReactElement {
     {
       id: "new-note",
       label: "新規ノートを作成",
+      shortcut: "⌘N",
       action: () => { setSidebarView("files"); if (!isSidebarOpen) toggleSidebar(); setIsCreatingFile(true); }
     },
     {
       id: "search",
       label: "検索を開く",
+      shortcut: "⌘F",
       action: () => { setSidebarView("search"); if (!isSidebarOpen) toggleSidebar(); }
     },
     {
@@ -2728,7 +2767,6 @@ export function App(): ReactElement {
     {
       id: "toggle-focus",
       label: "フォーカスモードを切り替え",
-      shortcut: "⌘⇧F",
       action: toggleFocusMode
     },
     {
@@ -2742,6 +2780,47 @@ export function App(): ReactElement {
       label: "Git ビューを開く",
       action: () => { setSidebarView("git"); if (!isSidebarOpen) toggleSidebar(); }
     },
+    {
+      id: "git-push",
+      label: "Git: 手動プッシュ",
+      action: () => { setSidebarView("git"); if (!isSidebarOpen) toggleSidebar(); handlePushGitBranch(); }
+    },
+    {
+      id: "git-pull",
+      label: "Git: 手動プル",
+      action: () => { setSidebarView("git"); if (!isSidebarOpen) toggleSidebar(); handlePullGitBranch(); }
+    },
+    ...(gitBranches.length > 1
+      ? gitBranches
+          .filter((b) => !b.isCurrent)
+          .map((b) => ({
+            id: `git-branch-${b.name}`,
+            label: `ブランチを切り替え: ${b.name}`,
+            action: () => { setSidebarView("git"); if (!isSidebarOpen) toggleSidebar(); handleSwitchGitBranch(b.name); }
+          }))
+      : []),
+    ...(activeTabInFocusedPane
+      ? [
+          {
+            id: "rename-file",
+            label: `ファイル名を変更: ${activeTabInFocusedPane.name}`,
+            action: () => {
+              setSidebarView("files");
+              if (!isSidebarOpen) toggleSidebar();
+            }
+          },
+          {
+            id: "duplicate-file",
+            label: `ファイルを複製: ${activeTabInFocusedPane.name}`,
+            action: handleDuplicateActiveFile
+          },
+          {
+            id: "delete-file",
+            label: `ファイルを削除: ${activeTabInFocusedPane.name}`,
+            action: handleDeleteActiveFile
+          }
+        ]
+      : []),
     {
       id: "settings",
       label: "設定を開く",
