@@ -35,6 +35,7 @@
     "js-yaml": "^4.1.1",
     "katex": "^0.16.45",
     "marked": "^18.0.3",
+    "marked-footnote": "^1.4.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "zustand": "^5.0.4"

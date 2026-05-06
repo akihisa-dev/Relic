@@ -2,6 +2,7 @@ import DOMPurify from "dompurify";
 import hljs from "highlight.js";
 import katex from "katex";
 import { marked, type Renderer } from "marked";
+import markedFootnote from "marked-footnote";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { MouseEvent, ReactElement } from "react";
 
@@ -107,6 +108,7 @@ const obsidianExtension = {
 
 marked.use(mathExtension as Parameters<typeof marked.use>[0]);
 marked.use(obsidianExtension as Parameters<typeof marked.use>[0]);
+marked.use(markedFootnote());
 
 const imageExtensions = new Set([".png", ".jpg", ".jpeg", ".gif", ".webp", ".avif"]);
 const maxEmbeddedFileLength = 20_000;
