@@ -57,14 +57,11 @@ export function activateWorkspace(settings: AppSettings, workspaceId: string): R
 
 export function toWorkspaceState(
   settings: AppSettings,
-  fileTree: WorkspaceTreeNode[] = []
+  fileTree: WorkspaceTreeNode[] = [],
+  pinnedPaths: string[] = []
 ): WorkspaceState {
   const activeWorkspace =
     settings.workspaces.find((workspace) => workspace.id === settings.lastWorkspaceId) ?? null;
-
-  const pinnedPaths = activeWorkspace
-    ? (settings.pinnedPaths[activeWorkspace.id] ?? [])
-    : [];
 
   return {
     activeWorkspace,

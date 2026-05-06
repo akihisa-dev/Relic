@@ -1,9 +1,11 @@
 import { autocompletion, type CompletionContext, type CompletionResult } from "@codemirror/autocomplete";
 import { defaultKeymap, historyKeymap, history } from "@codemirror/commands";
 import { markdown } from "@codemirror/lang-markdown";
+import { syntaxTree } from "@codemirror/language";
 import { EditorState } from "@codemirror/state";
-import { EditorView, ViewPlugin, keymap, lineNumbers } from "@codemirror/view";
-import type { ViewUpdate } from "@codemirror/view";
+import { Decoration, EditorView, ViewPlugin, keymap, lineNumbers } from "@codemirror/view";
+import type { DecorationSet, ViewUpdate } from "@codemirror/view";
+import { GFM } from "@lezer/markdown";
 import { useEffect, useRef } from "react";
 import type { ReactElement } from "react";
 
@@ -12,11 +14,130 @@ import type { EditorSettings } from "../../shared/ipc";
 interface EditorProps {
   allFilePaths?: string[];
   content: string;
+  livePreview?: boolean;
   onChange: (content: string) => void;
   settings: EditorSettings;
   typewriterMode?: boolean;
   viewRef?: React.MutableRefObject<EditorView | null>;
 }
+
+function buildLivePreviewDecorations(view: EditorView): DecorationSet {
+  const { state } = view;
+  const doc = state.doc;
+
+  const cursorLines = new Set<number>();
+  for (const range of state.selection.ranges) {
+    const fromLine = doc.lineAt(range.from).number;
+    const toLine = doc.lineAt(range.to).number;
+    for (let l = fromLine; l <= toLine; l++) cursorLines.add(l);
+  }
+
+  function isOnCursorLine(from: number, to: number): boolean {
+    const start = doc.lineAt(from).number;
+    const end = doc.lineAt(to).number;
+    for (let l = start; l <= end; l++) {
+      if (cursorLines.has(l)) return true;
+    }
+    return false;
+  }
+
+  const ranges: { from: number; to: number; deco: Decoration }[] = [];
+
+  function addReplace(from: number, to: number) {
+    if (from < to) ranges.push({ from, to, deco: Decoration.replace({}) });
+  }
+
+  function addMark(from: number, to: number, cls: string) {
+    if (from < to) ranges.push({ from, to, deco: Decoration.mark({ class: cls }) });
+  }
+
+  const tree = syntaxTree(state);
+
+  for (const { from: visFrom, to: visTo } of view.visibleRanges) {
+    tree.iterate({
+      from: visFrom,
+      to: visTo,
+      enter(node) {
+        const { from, to, name } = node;
+        if (isOnCursorLine(from, to)) return false;
+
+        switch (name) {
+          case "ATXHeading1":
+          case "ATXHeading2":
+          case "ATXHeading3":
+          case "ATXHeading4":
+          case "ATXHeading5":
+          case "ATXHeading6":
+            addMark(from, to, `cm-live-h${name.slice(-1)}`);
+            break;
+          case "HeaderMark":
+            // +1 to also hide the space after ##
+            addReplace(from, Math.min(to + 1, doc.lineAt(from).to));
+            return false;
+          case "StrongEmphasis":
+            addMark(from, to, "cm-live-bold");
+            break;
+          case "Emphasis":
+            addMark(from, to, "cm-live-italic");
+            break;
+          case "EmphasisMark":
+            addReplace(from, to);
+            return false;
+          case "Strikethrough":
+            addMark(from, to, "cm-live-strike");
+            break;
+          case "StrikethroughMark":
+            addReplace(from, to);
+            return false;
+          case "InlineCode":
+            addMark(from, to, "cm-live-code");
+            return false;
+          case "FencedCode":
+          case "CodeBlock":
+            return false;
+        }
+      }
+    });
+
+    // ==highlight== via regex (Obsidian extension not in lezer tree)
+    const visText = doc.sliceString(visFrom, visTo);
+    const hlRe = /==([^=\n]+)==/g;
+    let m: RegExpExecArray | null;
+    while ((m = hlRe.exec(visText)) !== null) {
+      const absFrom = visFrom + m.index;
+      const absTo = absFrom + m[0].length;
+      if (!isOnCursorLine(absFrom, absTo)) {
+        addReplace(absFrom, absFrom + 2);
+        addMark(absFrom + 2, absTo - 2, "cm-live-highlight");
+        addReplace(absTo - 2, absTo);
+      }
+    }
+  }
+
+  ranges.sort((a, b) => a.from - b.from || a.to - b.to);
+
+  return Decoration.set(
+    ranges.map(({ from, to, deco }) => deco.range(from, to)),
+    true
+  );
+}
+
+const livePreviewPlugin = ViewPlugin.fromClass(
+  class {
+    decorations: DecorationSet;
+
+    constructor(view: EditorView) {
+      this.decorations = buildLivePreviewDecorations(view);
+    }
+
+    update(update: ViewUpdate): void {
+      if (update.docChanged || update.selectionSet || update.viewportChanged) {
+        this.decorations = buildLivePreviewDecorations(update.view);
+      }
+    }
+  },
+  { decorations: (v) => v.decorations }
+);
 
 const typewriterExtension = ViewPlugin.fromClass(
   class {
@@ -82,13 +203,14 @@ function buildWikiLinkCompletionSource(allFilePaths: string[]) {
 function buildExtensions(
   settings: EditorSettings,
   typewriterMode: boolean,
+  livePreview: boolean,
   onChangeRef: React.RefObject<(c: string) => void>,
   allFilePaths: string[]
 ) {
   return [
     history(),
     keymap.of([...defaultKeymap, ...historyKeymap]),
-    markdown(),
+    markdown({ extensions: GFM }),
     autocompletion({ override: [buildWikiLinkCompletionSource(allFilePaths)] }),
     EditorView.updateListener.of((update) => {
       if (update.docChanged) onChangeRef.current!(update.state.doc.toString());
@@ -110,13 +232,15 @@ function buildExtensions(
     }),
     EditorView.contentAttributes.of({ spellcheck: settings.spellCheck ? "true" : "false" }),
     ...(settings.showLineNumbers ? [lineNumbers()] : []),
-    ...(typewriterMode ? [typewriterExtension] : [])
+    ...(typewriterMode ? [typewriterExtension] : []),
+    ...(livePreview ? [livePreviewPlugin] : [])
   ];
 }
 
 export function Editor({
   allFilePaths = [],
   content,
+  livePreview = false,
   onChange,
   settings,
   typewriterMode = false,
@@ -133,7 +257,7 @@ export function Editor({
   useEffect(() => {
     if (!containerRef.current) return;
 
-    const extensions = buildExtensions(settings, typewriterMode, onChangeRef, allFilePathsRef.current);
+    const extensions = buildExtensions(settings, typewriterMode, livePreview, onChangeRef, allFilePathsRef.current);
     const state = EditorState.create({ doc: content, extensions });
     const view = new EditorView({ state, parent: containerRef.current });
 
@@ -150,7 +274,7 @@ export function Editor({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 設定・タイプライターモード変更時にエディタを再生成
+  // 設定・タイプライターモード・livePreview変更時にエディタを再生成
   useEffect(() => {
     const view = internalViewRef.current;
 
@@ -163,14 +287,14 @@ export function Editor({
 
     if (!containerRef.current) return;
 
-    const extensions = buildExtensions(settings, typewriterMode, onChangeRef, allFilePathsRef.current);
+    const extensions = buildExtensions(settings, typewriterMode, livePreview, onChangeRef, allFilePathsRef.current);
     const state = EditorState.create({ doc: currentContent, extensions });
     const nextView = new EditorView({ state, parent: containerRef.current });
 
     internalViewRef.current = nextView;
 
     if (viewRef) viewRef.current = nextView;
-  }, [settings, typewriterMode, viewRef]);
+  }, [settings, typewriterMode, livePreview, viewRef]);
 
   return <div className="cm-editor-container" ref={containerRef} />;
 }
