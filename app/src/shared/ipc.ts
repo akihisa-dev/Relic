@@ -45,6 +45,8 @@ export const getEditorSettingsChannel = "editor:getSettings";
 export const saveEditorSettingsChannel = "editor:saveSettings";
 export const getFrontmatterCandidatesChannel = "workspace:getFrontmatterCandidates";
 export const createFrontmatterTemplateChannel = "workspace:createFrontmatterTemplate";
+export const createNewWorkspaceChannel = "workspace:createNew";
+export const togglePinChannel = "workspace:togglePin";
 export const cloneGitHubRepositoryChannel = "workspace:cloneGitHubRepository";
 export const getGitSyncPreviewChannel = "workspace:getGitSyncPreview";
 export const getGitConflictsChannel = "workspace:getGitConflicts";
@@ -67,6 +69,7 @@ export interface WorkspaceSummary {
 export interface WorkspaceState {
   activeWorkspace: WorkspaceSummary | null;
   fileTree: WorkspaceTreeNode[];
+  pinnedPaths: string[];
   workspaces: WorkspaceSummary[];
 }
 
@@ -362,6 +365,8 @@ export interface WorkspaceFileNode {
 
 export interface RelicApi {
   cloneGitHubRepository: (input: CloneGitHubRepositoryInput) => Promise<RelicResult<WorkspaceState>>;
+  createNewWorkspace: () => Promise<RelicResult<WorkspaceState>>;
+  togglePin: (path: string) => Promise<RelicResult<WorkspaceState>>;
   connectGitRemote: (input: ConnectGitRemoteInput) => Promise<RelicResult<GitRemoteSummary[]>>;
   connectGitHubAccount: () => Promise<RelicResult<GitHubAuthStatus>>;
   createFolder: (input: CreateFolderInput) => Promise<RelicResult<WorkspaceState>>;

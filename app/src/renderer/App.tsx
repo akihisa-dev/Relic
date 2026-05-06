@@ -41,48 +41,177 @@ import "./styles.css";
 // FileTree
 // ────────────────────────────────────────────────
 
-function FileTree({
-  activePaths,
-  nodes,
-  onOpenFile,
-  onSelectFolder
-}: {
+function findNodeByPath(nodes: WorkspaceTreeNode[], targetPath: string): WorkspaceTreeNode | null {
+  for (const node of nodes) {
+    if (node.path === targetPath) return node;
+    if (node.type === "folder") {
+      const found = findNodeByPath(node.children, targetPath);
+      if (found) return found;
+    }
+  }
+
+  return null;
+}
+
+interface FileTreeProps {
   activePaths: Set<string>;
+  isRoot?: boolean;
   nodes: WorkspaceTreeNode[];
+  onMoveFile?: (path: string, destFolder: string) => void;
+  onMoveFolder?: (path: string, destFolder: string) => void;
   onOpenFile: (path: string) => void;
   onSelectFolder: (node: Extract<WorkspaceTreeNode, { type: "folder" }>) => void;
+  onTogglePin?: (path: string) => void;
+  pinnedPaths?: Set<string>;
+}
+
+function FileTreeItem({
+  activePaths,
+  isPinned,
+  node,
+  onMoveFile,
+  onMoveFolder,
+  onOpenFile,
+  onSelectFolder,
+  onTogglePin,
+  pinnedPaths
+}: {
+  activePaths: Set<string>;
+  isPinned?: boolean;
+  node: WorkspaceTreeNode;
+  onMoveFile?: (path: string, destFolder: string) => void;
+  onMoveFolder?: (path: string, destFolder: string) => void;
+  onOpenFile: (path: string) => void;
+  onSelectFolder: (node: Extract<WorkspaceTreeNode, { type: "folder" }>) => void;
+  onTogglePin?: (path: string) => void;
+  pinnedPaths?: Set<string>;
 }): ReactElement {
-  if (nodes.length === 0) {
+  const [isDragOver, setIsDragOver] = useState(false);
+  const isFolder = node.type === "folder";
+
+  const handleDrop = (e: React.DragEvent, destFolder: string): void => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+
+    const raw = e.dataTransfer.getData("application/relic-item");
+    if (!raw) return;
+
+    const { path: srcPath, type } = JSON.parse(raw) as { path: string; type: string };
+    if (srcPath === destFolder) return;
+    if (type === "folder" && (destFolder === srcPath || destFolder.startsWith(srcPath + "/"))) return;
+
+    if (type === "file") onMoveFile?.(srcPath, destFolder);
+    else onMoveFolder?.(srcPath, destFolder);
+  };
+
+  return (
+    <li className="file-tree-item">
+      <div className="file-tree-row-wrap">
+        <button
+          className={`file-tree-row ${node.type}${activePaths.has(node.path) ? " active" : ""}${isDragOver ? " drag-over" : ""}`}
+          draggable
+          onDragEnd={() => setIsDragOver(false)}
+          onDragLeave={isFolder ? (e) => { e.stopPropagation(); setIsDragOver(false); } : undefined}
+          onDragOver={isFolder ? (e) => { e.preventDefault(); e.stopPropagation(); setIsDragOver(true); } : undefined}
+          onDragStart={(e) => {
+            e.dataTransfer.setData("application/relic-item", JSON.stringify({ path: node.path, type: node.type }));
+            e.dataTransfer.effectAllowed = "move";
+          }}
+          onDrop={isFolder ? (e) => handleDrop(e, node.path) : undefined}
+          onClick={() => {
+            if (node.type === "file") {
+              onOpenFile(node.path);
+            } else {
+              onSelectFolder(node);
+            }
+          }}
+          type="button"
+        >
+          <span className="file-tree-icon">{node.type === "folder" ? "▶" : "·"}</span>
+          <span className="file-tree-name">{node.name}</span>
+        </button>
+        {onTogglePin ? (
+          <button
+            className={`file-tree-pin-btn${isPinned ? " pinned" : ""}`}
+            onClick={(e) => { e.stopPropagation(); onTogglePin(node.path); }}
+            title={isPinned ? "ピン留めを解除" : "ピン留め"}
+            type="button"
+          >
+            📌
+          </button>
+        ) : null}
+      </div>
+      {node.type === "folder" && node.children.length > 0 ? (
+        <FileTree
+          activePaths={activePaths}
+          nodes={node.children}
+          onMoveFile={onMoveFile}
+          onMoveFolder={onMoveFolder}
+          onOpenFile={onOpenFile}
+          onSelectFolder={onSelectFolder}
+          onTogglePin={onTogglePin}
+          pinnedPaths={pinnedPaths}
+        />
+      ) : null}
+    </li>
+  );
+}
+
+function FileTree({
+  activePaths,
+  isRoot = false,
+  nodes,
+  onMoveFile,
+  onMoveFolder,
+  onOpenFile,
+  onSelectFolder,
+  onTogglePin,
+  pinnedPaths
+}: FileTreeProps): ReactElement {
+  const [isRootDragOver, setIsRootDragOver] = useState(false);
+
+  if (nodes.length === 0 && !isRoot) {
     return <div className="empty-note">Markdownファイルはまだありません。</div>;
   }
 
+  const handleRootDrop = (e: React.DragEvent): void => {
+    e.preventDefault();
+    setIsRootDragOver(false);
+
+    const raw = e.dataTransfer.getData("application/relic-item");
+    if (!raw) return;
+
+    const { path: srcPath, type } = JSON.parse(raw) as { path: string; type: string };
+    if (!srcPath.includes("/")) return;
+
+    if (type === "file") onMoveFile?.(srcPath, "");
+    else onMoveFolder?.(srcPath, "");
+  };
+
   return (
-    <ul className="file-tree">
+    <ul
+      className={`file-tree${isRoot && isRootDragOver ? " file-tree--drag-over" : ""}`}
+      onDragLeave={isRoot ? (e) => { if (e.currentTarget === e.target) setIsRootDragOver(false); } : undefined}
+      onDragOver={isRoot ? (e) => { e.preventDefault(); setIsRootDragOver(true); } : undefined}
+      onDrop={isRoot ? handleRootDrop : undefined}
+    >
+      {nodes.length === 0 ? (
+        <li><div className="empty-note">Markdownファイルはまだありません。</div></li>
+      ) : null}
       {nodes.map((node) => (
-        <li className="file-tree-item" key={node.path}>
-          <button
-            className={`file-tree-row ${node.type}${activePaths.has(node.path) ? " active" : ""}`}
-            onClick={() => {
-              if (node.type === "file") {
-                onOpenFile(node.path);
-              } else {
-                onSelectFolder(node);
-              }
-            }}
-            type="button"
-          >
-            <span className="file-tree-icon">{node.type === "folder" ? "▶" : "·"}</span>
-            <span className="file-tree-name">{node.name}</span>
-          </button>
-          {node.type === "folder" && node.children.length > 0 ? (
-            <FileTree
-              activePaths={activePaths}
-              nodes={node.children}
-              onOpenFile={onOpenFile}
-              onSelectFolder={onSelectFolder}
-            />
-          ) : null}
-        </li>
+        <FileTreeItem
+          activePaths={activePaths}
+          isPinned={pinnedPaths?.has(node.path)}
+          key={node.path}
+          node={node}
+          onMoveFile={onMoveFile}
+          onMoveFolder={onMoveFolder}
+          onOpenFile={onOpenFile}
+          onSelectFolder={onSelectFolder}
+          onTogglePin={onTogglePin}
+          pinnedPaths={pinnedPaths}
+        />
       ))}
     </ul>
   );
@@ -98,15 +227,20 @@ interface FilesSidebarProps {
   folderNameDraft: string;
   isCreatingFile: boolean;
   isCreatingFolder: boolean;
+  isCreatingWorkspace: boolean;
   isOpeningWorkspace: boolean;
   onCreateFile: () => void;
   onCreateFolder: () => void;
+  onCreateWorkspace: () => void;
   onFileNameDraftChange: (v: string) => void;
   onFolderNameDraftChange: (v: string) => void;
+  onMoveFile: (path: string, destFolder: string) => void;
+  onMoveFolder: (path: string, destFolder: string) => void;
   onOpenFile: (path: string) => void;
   onOpenWorkspace: () => void;
   onSelectFolder: (node: Extract<WorkspaceTreeNode, { type: "folder" }>) => void;
   onSwitchWorkspace: (id: string) => void;
+  onTogglePin: (path: string) => void;
   workspaceState: WorkspaceState | null;
 }
 
@@ -441,18 +575,27 @@ function FilesSidebar({
   folderNameDraft,
   isCreatingFile,
   isCreatingFolder,
+  isCreatingWorkspace,
   isOpeningWorkspace,
   onCreateFile,
   onCreateFolder,
+  onCreateWorkspace,
   onFileNameDraftChange,
   onFolderNameDraftChange,
+  onMoveFile,
+  onMoveFolder,
   onOpenFile,
   onOpenWorkspace,
   onSelectFolder,
   onSwitchWorkspace,
+  onTogglePin,
   workspaceState
 }: FilesSidebarProps): ReactElement {
   const activeWorkspace = workspaceState?.activeWorkspace ?? null;
+  const pinnedPaths = useMemo(
+    () => new Set(workspaceState?.pinnedPaths ?? []),
+    [workspaceState?.pinnedPaths]
+  );
 
   return (
     <div className="sidebar-section">
@@ -463,11 +606,19 @@ function FilesSidebar({
       </div>
       <button
         className="primary-button"
-        disabled={isOpeningWorkspace}
+        disabled={isOpeningWorkspace || isCreatingWorkspace}
         onClick={onOpenWorkspace}
         type="button"
       >
         {isOpeningWorkspace ? "開いています…" : "フォルダを開く"}
+      </button>
+      <button
+        className="secondary-button"
+        disabled={isOpeningWorkspace || isCreatingWorkspace}
+        onClick={onCreateWorkspace}
+        type="button"
+      >
+        {isCreatingWorkspace ? "作成中…" : "新規ワークスペースを作成"}
       </button>
       {workspaceState && workspaceState.workspaces.length > 1 ? (
         <div className="workspace-list" aria-label="登録済みワークスペース">
@@ -522,11 +673,43 @@ function FilesSidebar({
               フォルダ作成
             </button>
           </form>
+          {pinnedPaths.size > 0 ? (
+            <div className="pinned-section">
+              <div className="pinned-section-heading">ピン留め</div>
+              <ul className="file-tree">
+                {(workspaceState?.pinnedPaths ?? []).map((p) => {
+                  const node = findNodeByPath(workspaceState?.fileTree ?? [], p);
+
+                  if (!node) return null;
+
+                  return (
+                    <FileTreeItem
+                      activePaths={activePaths}
+                      isPinned
+                      key={p}
+                      node={node}
+                      onMoveFile={onMoveFile}
+                      onMoveFolder={onMoveFolder}
+                      onOpenFile={onOpenFile}
+                      onSelectFolder={onSelectFolder}
+                      onTogglePin={onTogglePin}
+                      pinnedPaths={pinnedPaths}
+                    />
+                  );
+                })}
+              </ul>
+            </div>
+          ) : null}
           <FileTree
             activePaths={activePaths}
+            isRoot
             nodes={workspaceState?.fileTree ?? []}
+            onMoveFile={onMoveFile}
+            onMoveFolder={onMoveFolder}
             onOpenFile={onOpenFile}
             onSelectFolder={onSelectFolder}
+            onTogglePin={onTogglePin}
+            pinnedPaths={pinnedPaths}
           />
         </>
       ) : (
@@ -695,6 +878,7 @@ interface PaneViewProps {
   typewriterMode: boolean;
   workspacePath?: string | null;
   workspaceTags: string[];
+  onCreateNote: (name: string) => void;
   onFocus: () => void;
   onOpenWikiLink: (target: string, heading?: string) => void;
   onTabClose: (tabId: string) => void;
@@ -711,11 +895,13 @@ function PaneView({
   typewriterMode,
   workspacePath,
   workspaceTags,
+  onCreateNote,
   onFocus,
   onOpenWikiLink,
   onTabClose,
   onTabSelect
 }: PaneViewProps): ReactElement {
+  const [newNoteName, setNewNoteName] = useState("");
   const { leftPane, rightPane, tabs, updateTabContent, setTabViewMode } = useEditorStore();
   const paneState = pane === "left" ? leftPane : rightPane;
   const activeTab = paneState.activeTabId ? tabs[paneState.activeTabId] : null;
@@ -833,7 +1019,30 @@ function PaneView({
         </div>
       ) : (
         <div className="empty-pane">
-          <p>ファイルツリーからノートを開いてください</p>
+          <p className="empty-pane-message">ノートがありません</p>
+          {workspacePath ? (
+            <form
+              className="empty-pane-form"
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (newNoteName.trim()) {
+                  onCreateNote(newNoteName.trim());
+                  setNewNoteName("");
+                }
+              }}
+            >
+              <input
+                aria-label="ノート名を入力"
+                className="text-input"
+                onChange={(e) => setNewNoteName(e.target.value)}
+                placeholder="ノート名を入力"
+                value={newNoteName}
+              />
+              <button className="primary-button" disabled={!newNoteName.trim()} type="submit">
+                新規ノートを作成
+              </button>
+            </form>
+          ) : null}
         </div>
       )}
     </div>
@@ -859,6 +1068,7 @@ export function App(): ReactElement {
   const [isCreatingFile, setIsCreatingFile] = useState(false);
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
   const [isOpeningWorkspace, setIsOpeningWorkspace] = useState(false);
+  const [isCreatingWorkspace, setIsCreatingWorkspace] = useState(false);
   const [backlinks, setBacklinks] = useState<Backlink[]>([]);
   const [isLoadingBacklinks, setIsLoadingBacklinks] = useState(false);
   const [workspaceTags, setWorkspaceTags] = useState<WorkspaceTagSummary[]>([]);
@@ -943,6 +1153,11 @@ export function App(): ReactElement {
     toggleTypewriterMode
   } = useUiStore();
 
+  const [sidebarWidth, setSidebarWidth] = useState(260);
+  const sidebarResizingRef = useRef(false);
+  const sidebarResizeStartXRef = useRef(0);
+  const sidebarResizeStartWidthRef = useRef(0);
+
   const applyGitBranches = useCallback((branches: GitBranchSummary[]): void => {
     setGitBranches(branches);
 
@@ -1009,6 +1224,24 @@ export function App(): ReactElement {
       .finally(() => setIsOpeningWorkspace(false));
   }, []);
 
+  const handleCreateNewWorkspace = useCallback((): void => {
+    if (!window.relic) return;
+
+    setIsCreatingWorkspace(true);
+    setWorkspaceError(null);
+
+    void window.relic
+      .createNewWorkspace()
+      .then((result) => {
+        if (result.ok) {
+          setWorkspaceState(result.value);
+        } else {
+          setWorkspaceError(result.error.message);
+        }
+      })
+      .finally(() => setIsCreatingWorkspace(false));
+  }, []);
+
   const handleCreateFile = useCallback((): void => {
     if (!window.relic) return;
 
@@ -1027,6 +1260,31 @@ export function App(): ReactElement {
       })
       .finally(() => setIsCreatingFile(false));
   }, [fileNameDraft]);
+
+  const handleCreateNoteFromPane = useCallback((name: string): void => {
+    if (!window.relic) return;
+
+    void window.relic
+      .createMarkdownFile({ name })
+      .then((result) => {
+        if (result.ok) {
+          setWorkspaceState(result.value);
+          const newFile = result.value.fileTree
+            .flatMap(function flatten(n): string[] {
+              return n.type === "file" ? [n.path] : n.children.flatMap(flatten);
+            })
+            .find((p) => p.endsWith(`${name}.md`));
+
+          if (newFile) {
+            void window.relic!.readMarkdownFile({ path: newFile }).then((r) => {
+              if (r.ok) openFileInPane(focusedPane, r.value);
+            });
+          }
+        } else {
+          setWorkspaceError(result.error.message);
+        }
+      });
+  }, [focusedPane, openFileInPane]);
 
   const handleCreateFolder = useCallback((): void => {
     if (!window.relic) return;
@@ -1822,6 +2080,42 @@ export function App(): ReactElement {
   // ファイル移動
   // ──────────────────
 
+  const handleTogglePin = useCallback((path: string): void => {
+    if (!window.relic) return;
+
+    void window.relic.togglePin(path).then((result) => {
+      if (result.ok) setWorkspaceState(result.value);
+      else setWorkspaceError(result.error.message);
+    });
+  }, []);
+
+  const handleMoveFile = useCallback((path: string, destFolder: string): void => {
+    if (!window.relic) return;
+
+    void window.relic.moveMarkdownFile({ destinationFolder: destFolder, path }).then((result) => {
+      if (result.ok) {
+        const oldTab = Object.entries(tabs).find(([, t]) => t.path === path);
+
+        if (oldTab) updateTabMeta(oldTab[0], { name: result.value.file.name, path: result.value.file.path });
+        setWorkspaceState(result.value.workspaceState);
+      } else {
+        setWorkspaceError(result.error.message);
+      }
+    });
+  }, [tabs, updateTabMeta]);
+
+  const handleMoveFolder = useCallback((path: string, destFolder: string): void => {
+    if (!window.relic) return;
+
+    void window.relic.moveFolder({ destinationFolder: destFolder, path }).then((result) => {
+      if (result.ok) {
+        setWorkspaceState(result.value);
+      } else {
+        setWorkspaceError(result.error.message);
+      }
+    });
+  }, []);
+
   const handleMoveActiveFile = useCallback(
     (destinationFolder: string): void => {
       const paneState = focusedPane === "left" ? leftPane : rightPane;
@@ -1929,6 +2223,30 @@ export function App(): ReactElement {
 
     return () => window.removeEventListener("keydown", handler);
   }, [focusedPane, leftPane, rightPane, closeTab, toggleSidebar, toggleSplit, toggleRightPanel, toggleFocusMode, toggleTypewriterMode]);
+
+  // ──────────────────
+  // サイドバーリサイズ
+  // ──────────────────
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent): void => {
+      if (!sidebarResizingRef.current) return;
+      const delta = e.clientX - sidebarResizeStartXRef.current;
+      const next = Math.max(180, Math.min(500, sidebarResizeStartWidthRef.current + delta));
+      setSidebarWidth(next);
+    };
+    const handleMouseUp = (): void => {
+      sidebarResizingRef.current = false;
+    };
+
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, []);
 
   // ──────────────────
   // アクティブなパスのセット（ファイルツリーのハイライト用）
@@ -2093,7 +2411,7 @@ export function App(): ReactElement {
 
         {/* サイドバー */}
         {isSidebarOpen ? (
-          <aside className="sidebar">
+          <aside className="sidebar" style={{ width: sidebarWidth }}>
             <div className="pane-heading">
               {sidebarViews.find((v) => v.id === activeSidebarView)?.label}
             </div>
@@ -2104,15 +2422,20 @@ export function App(): ReactElement {
                 folderNameDraft={folderNameDraft}
                 isCreatingFile={isCreatingFile}
                 isCreatingFolder={isCreatingFolder}
+                isCreatingWorkspace={isCreatingWorkspace}
                 isOpeningWorkspace={isOpeningWorkspace}
                 onCreateFile={handleCreateFile}
                 onCreateFolder={handleCreateFolder}
+                onCreateWorkspace={handleCreateNewWorkspace}
                 onFileNameDraftChange={setFileNameDraft}
                 onFolderNameDraftChange={setFolderNameDraft}
+                onMoveFile={handleMoveFile}
+                onMoveFolder={handleMoveFolder}
                 onOpenFile={handleOpenFile}
                 onOpenWorkspace={handleOpenWorkspace}
                 onSelectFolder={handleSelectFolder}
                 onSwitchWorkspace={handleSwitchWorkspace}
+                onTogglePin={handleTogglePin}
                 workspaceState={workspaceState}
               />
             ) : activeSidebarView === "search" ? (
@@ -2727,6 +3050,15 @@ export function App(): ReactElement {
               />
             )}
             {workspaceError ? <div className="error-note">{workspaceError}</div> : null}
+            <div
+              className="sidebar-resize-handle"
+              onMouseDown={(e) => {
+                sidebarResizingRef.current = true;
+                sidebarResizeStartXRef.current = e.clientX;
+                sidebarResizeStartWidthRef.current = sidebarWidth;
+                e.preventDefault();
+              }}
+            />
           </aside>
         ) : null}
 
@@ -2787,6 +3119,7 @@ export function App(): ReactElement {
                 editorSettings={editorSettings}
                 focusedPane={focusedPane}
                 frontmatterCandidates={frontmatterCandidates}
+                onCreateNote={handleCreateNoteFromPane}
                 onFocus={() => setFocusedPane("left")}
                 onOpenWikiLink={handleOpenWikiLink}
                 onTabClose={(tabId) => closeTab("left", tabId)}
@@ -2803,6 +3136,7 @@ export function App(): ReactElement {
                   editorSettings={editorSettings}
                   focusedPane={focusedPane}
                   frontmatterCandidates={frontmatterCandidates}
+                  onCreateNote={handleCreateNoteFromPane}
                   onFocus={() => setFocusedPane("right")}
                   onOpenWikiLink={handleOpenWikiLink}
                   onTabClose={(tabId) => closeTab("right", tabId)}

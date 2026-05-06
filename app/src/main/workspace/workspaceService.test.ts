@@ -14,7 +14,7 @@ import {
   toWorkspaceState
 } from "./workspaceService";
 
-const baseSettings = { autoSync: defaultAutoSyncSettings, editorSettings: defaultEditorSettings };
+const baseSettings = { autoSync: defaultAutoSyncSettings, editorSettings: defaultEditorSettings, pinnedPaths: {} };
 
 describe("workspaceService", () => {
   const temporaryPaths: string[] = [];

@@ -14,6 +14,7 @@ export interface AppSettings {
   autoSync: AutoSyncSettings;
   editorSettings: EditorSettings;
   lastWorkspaceId: string | null;
+  pinnedPaths: Record<string, string[]>;
   workspaces: WorkspaceSummary[];
 }
 
@@ -21,6 +22,7 @@ const defaultAppSettings: AppSettings = {
   autoSync: defaultAutoSyncSettings,
   editorSettings: defaultEditorSettings,
   lastWorkspaceId: null,
+  pinnedPaths: {},
   workspaces: []
 };
 
@@ -40,6 +42,7 @@ export async function readAppSettings(userDataPath: string): Promise<AppSettings
       editorSettings: parseEditorSettings(parsedSettings.editorSettings),
       lastWorkspaceId:
         typeof parsedSettings.lastWorkspaceId === "string" ? parsedSettings.lastWorkspaceId : null,
+      pinnedPaths: parsePinnedPaths(parsedSettings.pinnedPaths),
       workspaces: Array.isArray(parsedSettings.workspaces)
         ? parsedSettings.workspaces.filter(isWorkspaceSummary)
         : []
@@ -94,6 +97,20 @@ function parseAutoSyncSettings(raw: unknown): AutoSyncSettings {
     autoPush: typeof s.autoPush === "boolean" ? s.autoPush : false,
     intervalMinutes: interval
   };
+}
+
+function parsePinnedPaths(raw: unknown): Record<string, string[]> {
+  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return {};
+
+  const result: Record<string, string[]> = {};
+
+  for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
+    if (typeof k === "string" && Array.isArray(v)) {
+      result[k] = v.filter((p) => typeof p === "string");
+    }
+  }
+
+  return result;
 }
 
 function isWorkspaceSummary(value: unknown): value is WorkspaceSummary {
