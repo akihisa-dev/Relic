@@ -21,7 +21,7 @@ interface EditorProps {
   viewRef?: React.MutableRefObject<EditorView | null>;
 }
 
-function buildLivePreviewDecorations(view: EditorView): DecorationSet {
+export function buildLivePreviewDecorations(view: EditorView): DecorationSet {
   const { state } = view;
   const doc = state.doc;
 
@@ -161,7 +161,7 @@ const fontFamilyMap: Record<EditorSettings["font"], string> = {
   system: '-apple-system, BlinkMacSystemFont, "Hiragino Sans", sans-serif'
 };
 
-function buildWikiLinkCompletionSource(allFilePaths: string[]) {
+export function buildWikiLinkCompletionSource(allFilePaths: string[]) {
   const basenameMap = new Map<string, string[]>();
 
   for (const filePath of allFilePaths) {
