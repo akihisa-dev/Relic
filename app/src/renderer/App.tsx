@@ -958,11 +958,7 @@ function PaneView({
       {activeTab ? (
         <div className="editor-surface">
           <div className="editor-mode-bar">
-            {activeTab.viewMode === "source" ? (
-              <Toolbar viewRef={viewRef} />
-            ) : (
-              <div className="toolbar" />
-            )}
+            <Toolbar viewRef={viewRef} />
             <div className="editor-mode-toggle">
               <button
                 className={`mode-btn${activeTab.viewMode === "preview" ? " mode-btn--active" : ""}`}
@@ -981,7 +977,27 @@ function PaneView({
             </div>
           </div>
           <div className="editor-body">
-            {activeTab.viewMode === "source" ? (
+            {activeTab.viewMode === "preview" ? (
+              <div className="preview-with-fm">
+                <FrontmatterForm
+                  candidates={frontmatterCandidates}
+                  content={activeTab.content}
+                  key={`fm-${activeTab.id}`}
+                  onChange={(content) => updateTabContent(activeTab.id, content)}
+                  workspaceTags={workspaceTags}
+                />
+                <Editor
+                  allFilePaths={allFilePaths}
+                  content={activeTab.content}
+                  key={`live-${activeTab.id}`}
+                  livePreview
+                  onChange={(content) => updateTabContent(activeTab.id, content)}
+                  settings={editorSettings}
+                  typewriterMode={typewriterMode}
+                  viewRef={viewRef}
+                />
+              </div>
+            ) : (
               <Editor
                 allFilePaths={allFilePaths}
                 content={activeTab.content}
@@ -991,25 +1007,6 @@ function PaneView({
                 typewriterMode={typewriterMode}
                 viewRef={viewRef}
               />
-            ) : (
-              <div className="preview-with-fm">
-                <FrontmatterForm
-                  candidates={frontmatterCandidates}
-                  content={activeTab.content}
-                  key={`fm-${activeTab.id}`}
-                  onChange={(content) => updateTabContent(activeTab.id, content)}
-                  workspaceTags={workspaceTags}
-                />
-                <Preview
-                  content={activeTab.content}
-                  key={`preview-${activeTab.id}`}
-                  onChange={(content) => updateTabContent(activeTab.id, content)}
-                  onOpenWikiLink={onOpenWikiLink}
-                  scrollTargetHeading={scrollTargetHeading}
-                  settings={editorSettings}
-                  workspacePath={workspacePath}
-                />
-              </div>
             )}
           </div>
           <div className="pane-status">

@@ -144,11 +144,26 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
   toggleSplit: () => {
     set((state) => {
       if (state.isSplit) {
-        // 分割解除：右ペインのタブを閉じる（左ペインに残す）
+        // 分割解除：右ペインのタブを左ペインに移す
+        const rightTabIds = state.rightPane.tabIds.filter(
+          (id) => !state.leftPane.tabIds.includes(id)
+        );
+        const mergedTabIds = [...state.leftPane.tabIds, ...rightTabIds];
+        const lastRightActiveId = state.rightPane.activeTabId;
+        const newActiveId =
+          lastRightActiveId && !state.leftPane.tabIds.includes(lastRightActiveId)
+            ? lastRightActiveId
+            : state.leftPane.activeTabId;
+
         return {
           isSplit: false,
-          rightPane: emptyPane(),
-          focusedPane: "left"
+          focusedPane: "left",
+          leftPane: {
+            activeTabId: newActiveId,
+            history: [...state.leftPane.history, ...state.rightPane.history],
+            tabIds: mergedTabIds
+          },
+          rightPane: emptyPane()
         };
       }
 

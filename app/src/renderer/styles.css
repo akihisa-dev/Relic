@@ -995,6 +995,25 @@ button:disabled {
   height: 100%;
 }
 
+/* ライブプレビューデコレーション */
+.cm-live-h1 { font-size: 1.8em; font-weight: bold; }
+.cm-live-h2 { font-size: 1.5em; font-weight: bold; }
+.cm-live-h3 { font-size: 1.25em; font-weight: bold; }
+.cm-live-h4 { font-size: 1.1em; font-weight: bold; }
+.cm-live-h5 { font-size: 1em; font-weight: bold; }
+.cm-live-h6 { font-size: 0.9em; font-weight: bold; }
+.cm-live-bold { font-weight: bold; }
+.cm-live-italic { font-style: italic; }
+.cm-live-strike { text-decoration: line-through; }
+.cm-live-code {
+  background: rgba(27, 31, 35, 0.06);
+  border-radius: 3px;
+  font-family: Menlo, monospace;
+  font-size: 0.9em;
+  padding: 0.1em 0.2em;
+}
+.cm-live-highlight { background: #ffec3d; border-radius: 2px; }
+
 .pane-status {
   align-items: center;
   border-top: 1px solid rgba(31, 35, 40, 0.07);

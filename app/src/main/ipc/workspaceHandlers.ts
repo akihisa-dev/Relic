@@ -128,6 +128,7 @@ import { parseFrontmatterCandidates } from "../files/frontmatter";
 import { readWorkspaceTags } from "../files/tags";
 import { searchWorkspace } from "../files/search";
 import { readAppSettings, writeAppSettings } from "../settings/appSettings";
+import { readWorkspaceSettings, writeWorkspaceSettings } from "../settings/workspaceSettings";
 import {
   addOrActivateWorkspace,
   activateWorkspace,
@@ -407,18 +408,17 @@ export function registerWorkspaceHandlers(): void {
         return fail("TOGGLE_PIN_NO_WORKSPACE", "アクティブなワークスペースがありません。");
       }
 
-      const current = settings.pinnedPaths[activeWorkspace.id] ?? [];
-      const updated = current.includes(path)
-        ? current.filter((p) => p !== path)
-        : [...current, path];
+      const wsSettings = await readWorkspaceSettings(app.getPath("userData"), activeWorkspace.id);
+      const updated = wsSettings.pinnedPaths.includes(path)
+        ? wsSettings.pinnedPaths.filter((p) => p !== path)
+        : [...wsSettings.pinnedPaths, path];
 
-      const nextSettings: typeof settings = {
-        ...settings,
-        pinnedPaths: { ...settings.pinnedPaths, [activeWorkspace.id]: updated }
-      };
-      await writeAppSettings(app.getPath("userData"), nextSettings);
+      await writeWorkspaceSettings(app.getPath("userData"), activeWorkspace.id, {
+        ...wsSettings,
+        pinnedPaths: updated
+      });
 
-      return ok(await buildWorkspaceState(nextSettings));
+      return ok(await buildWorkspaceState(settings));
     } catch (error) {
       return fail(
         "TOGGLE_PIN_FAILED",
@@ -1330,13 +1330,19 @@ export function registerWorkspaceHandlers(): void {
 async function buildWorkspaceState(
   settings: Awaited<ReturnType<typeof readAppSettings>>
 ): Promise<WorkspaceState> {
-  const state = toWorkspaceState(settings);
+  const activeWorkspace =
+    settings.workspaces.find((ws) => ws.id === settings.lastWorkspaceId) ?? null;
 
-  if (!state.activeWorkspace) {
-    return state;
+  if (!activeWorkspace) {
+    return toWorkspaceState(settings);
   }
 
-  return toWorkspaceState(settings, await readWorkspaceFileTree(state.activeWorkspace.path));
+  const [fileTree, wsSettings] = await Promise.all([
+    readWorkspaceFileTree(activeWorkspace.path),
+    readWorkspaceSettings(app.getPath("userData"), activeWorkspace.id)
+  ]);
+
+  return toWorkspaceState(settings, fileTree, wsSettings.pinnedPaths);
 }
 
 function isCreateMarkdownFileInput(input: unknown): input is CreateMarkdownFileInput {
