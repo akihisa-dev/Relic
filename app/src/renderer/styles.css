@@ -39,6 +39,7 @@ button,
 input,
 select {
   font: inherit;
+  -webkit-app-region: no-drag;
 }
 
 button {
@@ -80,6 +81,7 @@ button:disabled {
   display: grid;
   grid-template-columns: 48px auto minmax(0, 1fr);
   min-height: 0;
+  -webkit-app-region: no-drag;
 }
 
 /* ────────────────────────────────── */
