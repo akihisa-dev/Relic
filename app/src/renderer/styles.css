@@ -13,6 +13,9 @@
   --hover: rgba(31, 35, 40, 0.04);
   --hover-strong: rgba(31, 35, 40, 0.1);
   --input-bg: rgba(255, 255, 255, 0.72);
+  --error: #c0392b;
+  --error-bg: #fff0ee;
+  --success: #217a3c;
   color: var(--text);
   background: var(--bg);
   font-family:
@@ -1270,12 +1273,6 @@ button:disabled {
   line-height: 1.6;
 }
 
-.error-note {
-  color: #a14617;
-  font-size: 13px;
-  line-height: 1.6;
-  margin-top: 12px;
-}
 
 /* ────────────────────────────────── */
 /* Replace UI                         */
@@ -1620,6 +1617,9 @@ button:disabled {
   --hover: rgba(255, 255, 255, 0.05);
   --hover-strong: rgba(255, 255, 255, 0.1);
   --input-bg: rgba(255, 255, 255, 0.06);
+  --error: #ff6b6b;
+  --error-bg: rgba(255, 80, 60, 0.12);
+  --success: #5cb85c;
   color-scheme: dark;
 }
 
@@ -1647,6 +1647,9 @@ button:disabled {
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
+    --error: #ff6b6b;
+    --error-bg: rgba(255, 80, 60, 0.12);
+    --success: #5cb85c;
   }
   :root:not([data-theme="light"]) input,
   :root:not([data-theme="light"]) select,
@@ -1660,4 +1663,35 @@ button:disabled {
     color: var(--text-2);
   }
 }
+
 .tool-status { color: var(--text-2); font-size: 12px; margin-top: 4px; word-break: break-all; }
+.tool-status--error { color: var(--error); }
+.tool-status--success { color: var(--success); }
+
+.toast {
+  align-items: center;
+  background: var(--popup-bg);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  bottom: 24px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.14);
+  cursor: pointer;
+  display: flex;
+  font-size: 13px;
+  left: 50%;
+  max-width: 420px;
+  padding: 10px 16px;
+  position: fixed;
+  transform: translateX(-50%);
+  z-index: 9999;
+}
+.toast--error { border-left: 3px solid var(--error); color: var(--error); }
+.toast--info { border-left: 3px solid var(--text-3); color: var(--text); }
+
+.error-note {
+  color: var(--error);
+  font-size: 13px;
+  line-height: 1.6;
+  margin-top: 8px;
+}
