@@ -185,6 +185,92 @@ describe("App", () => {
     expect(await screen.findByText("読書メモ")).toBeInTheDocument();
   });
 
+  it("ファイルツリーのフォルダを開閉できる", async () => {
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [
+            {
+              children: [{ name: "読書メモ", path: "資料/読書メモ.md", type: "file" }],
+              name: "資料",
+              path: "資料",
+              type: "folder"
+            }
+          ]
+        }
+      })
+    });
+
+    render(<App />);
+
+    const folderButton = await screen.findByRole("button", { name: /資料/ });
+    expect(screen.getByRole("button", { name: /読書メモ/ })).toBeInTheDocument();
+
+    fireEvent.click(folderButton);
+
+    expect(screen.queryByRole("button", { name: /読書メモ/ })).not.toBeInTheDocument();
+
+    fireEvent.click(folderButton);
+
+    expect(screen.getByRole("button", { name: /読書メモ/ })).toBeInTheDocument();
+  });
+
+  it("開いているファイルをファイルツリーでハイライトする", async () => {
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [{ name: "読書メモ", path: "読書メモ.md", type: "file" }]
+        }
+      }),
+      readMarkdownFile: vi.fn().mockResolvedValue({
+        ok: true,
+        value: { content: "本文テスト", name: "読書メモ", path: "読書メモ.md" }
+      })
+    });
+
+    render(<App />);
+
+    const fileButton = await screen.findByRole("button", { name: /読書メモ/ });
+    fireEvent.click(fileButton);
+
+    await waitFor(() => {
+      expect(fileButton).toHaveClass("active");
+    });
+  });
+
+  it("サイドバー幅のドラッグ変更を最小180px・最大500pxに制限する", async () => {
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
+    });
+
+    const { container } = render(<App />);
+
+    await screen.findByText("Notes");
+
+    const sidebar = container.querySelector(".sidebar");
+    const resizeHandle = container.querySelector(".sidebar-resize-handle");
+
+    expect(sidebar).toBeInstanceOf(HTMLElement);
+    expect(resizeHandle).toBeInstanceOf(HTMLElement);
+
+    fireEvent.mouseDown(resizeHandle as HTMLElement, { clientX: 260 });
+    fireEvent.mouseMove(document, { clientX: 800 });
+
+    expect(sidebar).toHaveStyle({ width: "500px" });
+
+    fireEvent.mouseUp(document);
+    fireEvent.mouseDown(resizeHandle as HTMLElement, { clientX: 500 });
+    fireEvent.mouseMove(document, { clientX: -200 });
+
+    expect(sidebar).toHaveStyle({ width: "180px" });
+
+    fireEvent.mouseUp(document);
+  });
+
   it("Git ビューから GitHub 接続を開始できる", async () => {
     const connectGitHubAccount = vi.fn().mockResolvedValue({
       ok: true,
@@ -289,6 +375,49 @@ describe("App", () => {
     expect(await screen.findByRole("button", { name: /資料/ })).toBeInTheDocument();
   });
 
+  it("ワークスペースを開くボタンから既存フォルダを登録する", async () => {
+    const openWorkspace = vi.fn().mockResolvedValue({
+      ok: true,
+      value: {
+        activeWorkspace: { id: "ws-1", name: "Notes", path: "/tmp/Notes" },
+        fileTree: [{ name: "index", path: "index.md", type: "file" }],
+        pinnedPaths: [],
+        workspaces: [{ id: "ws-1", name: "Notes", path: "/tmp/Notes" }]
+      }
+    });
+
+    window.relic = makeRelicApi({ openWorkspace });
+
+    render(<App />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "フォルダを開く" }));
+
+    expect(openWorkspace).toHaveBeenCalledTimes(1);
+    expect(await screen.findByText("Notes")).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: /index/ })).toBeInTheDocument();
+  });
+
+  it("新規ワークスペース作成ボタンからワークスペースを登録する", async () => {
+    const createNewWorkspace = vi.fn().mockResolvedValue({
+      ok: true,
+      value: {
+        activeWorkspace: { id: "ws-new", name: "Drafts", path: "/tmp/Drafts" },
+        fileTree: [],
+        pinnedPaths: [],
+        workspaces: [{ id: "ws-new", name: "Drafts", path: "/tmp/Drafts" }]
+      }
+    });
+
+    window.relic = makeRelicApi({ createNewWorkspace });
+
+    render(<App />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "新規ワークスペースを作成" }));
+
+    expect(createNewWorkspace).toHaveBeenCalledTimes(1);
+    expect(await screen.findByText("Drafts")).toBeInTheDocument();
+  });
+
   it("登録済みワークスペースをクリックして切り替える", async () => {
     const switchWorkspace = vi.fn().mockResolvedValue({
       ok: true,
@@ -323,6 +452,247 @@ describe("App", () => {
 
     expect(switchWorkspace).toHaveBeenCalledWith({ workspaceId: "ws-2" });
     expect(await screen.findByRole("button", { name: /old/ })).toBeInTheDocument();
+  });
+
+  it("RenameBar からアクティブファイルをリネームする", async () => {
+    const renameMarkdownFile = vi.fn().mockResolvedValue({
+      ok: true,
+      value: {
+        file: { content: "本文テスト", name: "読書ログ", path: "読書ログ.md" },
+        workspaceState: {
+          ...withWorkspace,
+          fileTree: [{ name: "読書ログ", path: "読書ログ.md", type: "file" }]
+        }
+      }
+    });
+
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [{ name: "読書メモ", path: "読書メモ.md", type: "file" }]
+        }
+      }),
+      readMarkdownFile: vi.fn().mockResolvedValue({
+        ok: true,
+        value: { content: "本文テスト", name: "読書メモ", path: "読書メモ.md" }
+      }),
+      renameMarkdownFile
+    });
+
+    const { container } = render(<App />);
+
+    fireEvent.click(await screen.findByRole("button", { name: /読書メモ/ }));
+    fireEvent.click(await screen.findByTitle("クリックして名前を変更"));
+    fireEvent.change(container.querySelector(".rename-bar-input") as HTMLInputElement, {
+      target: { value: "読書ログ" }
+    });
+    fireEvent.submit(container.querySelector(".rename-bar-form") as HTMLFormElement);
+
+    await waitFor(() => {
+      expect(renameMarkdownFile).toHaveBeenCalledWith({ newName: "読書ログ", path: "読書メモ.md" });
+    });
+    expect((await screen.findAllByText("読書ログ")).length).toBeGreaterThan(0);
+  });
+
+  it("コマンドパレットからアクティブファイルを複製する", async () => {
+    const duplicateMarkdownFile = vi.fn().mockResolvedValue({
+      ok: true,
+      value: {
+        file: { content: "本文テスト", name: "読書メモ のコピー", path: "読書メモ のコピー.md" },
+        workspaceState: {
+          ...withWorkspace,
+          fileTree: [
+            { name: "読書メモ", path: "読書メモ.md", type: "file" },
+            { name: "読書メモ のコピー", path: "読書メモ のコピー.md", type: "file" }
+          ]
+        }
+      }
+    });
+
+    window.relic = makeRelicApi({
+      duplicateMarkdownFile,
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [{ name: "読書メモ", path: "読書メモ.md", type: "file" }]
+        }
+      }),
+      readMarkdownFile: vi.fn().mockResolvedValue({
+        ok: true,
+        value: { content: "本文テスト", name: "読書メモ", path: "読書メモ.md" }
+      })
+    });
+
+    render(<App />);
+
+    fireEvent.click(await screen.findByRole("button", { name: /読書メモ/ }));
+    fireEvent.keyDown(window, { key: "P", metaKey: true, shiftKey: true });
+    fireEvent.click(await screen.findByText("ファイルを複製: 読書メモ"));
+
+    await waitFor(() => {
+      expect(duplicateMarkdownFile).toHaveBeenCalledWith({ path: "読書メモ.md" });
+    });
+  });
+
+  it("コマンドパレットからアクティブファイルをゴミ箱に移動する", async () => {
+    const moveItemToTrash = vi.fn().mockResolvedValue({ ok: true, value: withWorkspace });
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
+
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [{ name: "読書メモ", path: "読書メモ.md", type: "file" }]
+        }
+      }),
+      moveItemToTrash,
+      readMarkdownFile: vi.fn().mockResolvedValue({
+        ok: true,
+        value: { content: "本文テスト", name: "読書メモ", path: "読書メモ.md" }
+      })
+    });
+
+    render(<App />);
+
+    fireEvent.click(await screen.findByRole("button", { name: /読書メモ/ }));
+    fireEvent.keyDown(window, { key: "P", metaKey: true, shiftKey: true });
+    fireEvent.click(await screen.findByText("ファイルを削除: 読書メモ"));
+
+    await waitFor(() => {
+      expect(moveItemToTrash).toHaveBeenCalledWith({ path: "読書メモ.md", type: "file" });
+    });
+    expect(confirmSpy).toHaveBeenCalled();
+
+    confirmSpy.mockRestore();
+  });
+
+  it("ファイルとフォルダをドラッグ&ドロップで移動できる", async () => {
+    const movedWorkspaceState = {
+      ...withWorkspace,
+      fileTree: [
+        {
+          children: [{ name: "note", path: "archive/note.md", type: "file" }],
+          name: "archive",
+          path: "archive",
+          type: "folder"
+        },
+        { children: [], name: "drafts", path: "drafts", type: "folder" }
+      ]
+    };
+    const moveMarkdownFile = vi.fn().mockResolvedValue({
+      ok: true,
+      value: {
+        file: { content: "# Note", name: "note", path: "archive/note.md" },
+        workspaceState: movedWorkspaceState
+      }
+    });
+    const moveFolder = vi.fn().mockResolvedValue({ ok: true, value: movedWorkspaceState });
+
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [
+            { name: "note", path: "note.md", type: "file" },
+            { children: [], name: "drafts", path: "drafts", type: "folder" },
+            { children: [], name: "archive", path: "archive", type: "folder" }
+          ]
+        }
+      }),
+      moveFolder,
+      moveMarkdownFile
+    });
+
+    render(<App />);
+
+    const fileRow = await screen.findByRole("button", { name: /note/ });
+    const draftsRow = await screen.findByRole("button", { name: /drafts/ });
+    const archiveRow = await screen.findByRole("button", { name: /archive/ });
+
+    fireEvent.dragStart(fileRow, {
+      dataTransfer: { effectAllowed: "move", setData: vi.fn() }
+    });
+    fireEvent.drop(archiveRow, {
+      dataTransfer: { getData: () => JSON.stringify({ path: "note.md", type: "file" }) }
+    });
+
+    await waitFor(() => {
+      expect(moveMarkdownFile).toHaveBeenCalledWith({ destinationFolder: "archive", path: "note.md" });
+    });
+
+    fireEvent.dragStart(draftsRow, {
+      dataTransfer: { effectAllowed: "move", setData: vi.fn() }
+    });
+    fireEvent.drop(archiveRow, {
+      dataTransfer: { getData: () => JSON.stringify({ path: "drafts", type: "folder" }) }
+    });
+
+    await waitFor(() => {
+      expect(moveFolder).toHaveBeenCalledWith({ destinationFolder: "archive", path: "drafts" });
+    });
+  });
+
+  it("ファイル・フォルダをピン留めし、ピン留めセクションに表示して解除できる", async () => {
+    const togglePin = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [
+            { name: "読書メモ", path: "読書メモ.md", type: "file" },
+            { children: [], name: "資料", path: "資料", type: "folder" }
+          ],
+          pinnedPaths: ["読書メモ.md", "資料"]
+        }
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [
+            { name: "読書メモ", path: "読書メモ.md", type: "file" },
+            { children: [], name: "資料", path: "資料", type: "folder" }
+          ],
+          pinnedPaths: []
+        }
+      });
+
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [
+            { name: "読書メモ", path: "読書メモ.md", type: "file" },
+            { children: [], name: "資料", path: "資料", type: "folder" }
+          ],
+          pinnedPaths: []
+        }
+      }),
+      togglePin
+    });
+
+    render(<App />);
+
+    fireEvent.click((await screen.findAllByTitle("ピン留め"))[0]);
+
+    await waitFor(() => {
+      expect(togglePin).toHaveBeenCalledWith("読書メモ.md");
+    });
+    expect(await screen.findByText("ピン留め")).toBeInTheDocument();
+    expect(screen.getAllByTitle("ピン留めを解除").length).toBeGreaterThanOrEqual(2);
+
+    fireEvent.click(screen.getAllByTitle("ピン留めを解除")[0]);
+
+    await waitFor(() => {
+      expect(togglePin).toHaveBeenCalledTimes(2);
+    });
   });
 
   it("設定ビューでフォントサイズを変更すると saveEditorSettings が呼ばれる", async () => {
