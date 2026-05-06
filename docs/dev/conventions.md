@@ -10,7 +10,7 @@ AIがコードを書く際は、まずこのファイルで実装境界を確認
 - TypeScriptで実装する
 - 対象OSは macOS 15 Sequoia 以降とする
 - 仕様は `docs/spec/`、画面構成は `docs/ui/`、データ構造は `docs/architecture/data-model.md`、技術スタックは `docs/tech/stack.md` を正とする
-- 実装順は `docs/dev/roadmap.md` に従う
+- 開発位置とフェーズ順は `docs/dev/phases.md` に従う
 - ファイルシステム・Git・ネットワーク・設定保存に触る処理はメインプロセスに置く
 - UI・エディタ・一時的な画面状態はレンダラープロセスに置く
 - レンダラーからOS機能へ直接アクセスしない。必ずpreloadで公開したAPIとIPCを通す
