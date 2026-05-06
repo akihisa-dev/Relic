@@ -69,6 +69,8 @@ checklist: feature-checklist.md
 ### P9-runtime-verification
 
 今の通常作業。
+AIはこのフェーズを前提にユーザーへ接する。
+汎用的な「何をしますか？」ではなく、`feature-checklist.md` の次に進める範囲を具体的に提示する。
 
 最初に読む:
 
