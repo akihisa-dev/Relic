@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { defaultAutoSyncSettings, defaultEditorSettings, type GitHubAuthStatus } from "../shared/ipc";
 import { App } from "./App";
@@ -114,6 +114,18 @@ const withWorkspace = {
 };
 
 describe("App", () => {
+  beforeAll(() => {
+    Object.defineProperty(window, "matchMedia", {
+      writable: true,
+      value: vi.fn().mockImplementation((query: string) => ({
+        matches: false,
+        media: query,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn()
+      }))
+    });
+  });
+
   afterEach(() => {
     vi.clearAllMocks();
     useEditorStore.setState({ tabs: {}, leftPane: { activeTabId: null, history: [], tabIds: [] }, rightPane: { activeTabId: null, history: [], tabIds: [] }, isSplit: false, focusedPane: "left" });

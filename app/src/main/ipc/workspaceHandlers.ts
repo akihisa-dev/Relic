@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, readdir, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import { app, dialog, ipcMain, shell } from "electron";
@@ -85,7 +85,12 @@ import {
   getFrontmatterCandidatesChannel,
   createFrontmatterTemplateChannel,
   createNewWorkspaceChannel,
-  togglePinChannel
+  togglePinChannel,
+  generateTitleListChannel,
+  type GenerateTitleListInput,
+  generateTableOfContentsChannel,
+  type GenerateTableOfContentsInput,
+  type WorkspaceTreeNode
 } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { readBacklinks } from "../files/backlinks";
@@ -1325,6 +1330,121 @@ export function registerWorkspaceHandlers(): void {
       }
     }
   );
+
+  ipcMain.handle(
+    generateTitleListChannel,
+    async (_event, input: GenerateTitleListInput): Promise<RelicResult<string>> => {
+      try {
+        const settings = await readAppSettings(app.getPath("userData"));
+        const state = toWorkspaceState(settings);
+        if (!state.activeWorkspace) return fail("NO_WORKSPACE", "ワークスペースが選択されていません。");
+
+        const workspacePath = state.activeWorkspace.path;
+        const fileTree = await readWorkspaceFileTree(workspacePath);
+
+        // ファイルを収集
+        const collected: { name: string; path: string; mtime: number }[] = [];
+        async function collectFiles(nodes: WorkspaceTreeNode[], folderRelPath: string) {
+          for (const node of nodes) {
+            if (node.type === "folder") {
+              if (!input.filterFolder || folderRelPath === input.filterFolder || node.path === input.filterFolder) {
+                await collectFiles(node.children, node.path);
+              } else if (!input.filterFolder) {
+                await collectFiles(node.children, node.path);
+              }
+            } else {
+              if (input.filterFolder && !node.path.startsWith(input.filterFolder + "/") && node.path !== input.filterFolder) continue;
+              const absPath = path.join(workspacePath, node.path);
+              const s = await stat(absPath);
+              collected.push({ name: node.name.replace(/\.md$/, ""), path: node.path, mtime: s.mtimeMs });
+            }
+          }
+        }
+        await collectFiles(fileTree, "");
+
+        if (input.sortBy === "mtime") {
+          collected.sort((a, b) => b.mtime - a.mtime);
+        } else {
+          collected.sort((a, b) => a.name.localeCompare(b.name, "ja"));
+        }
+
+        const lines = collected.map((f) => `- [[${f.name}]]`);
+        const content = lines.join("\n") + "\n";
+
+        const outputDir = path.join(workspacePath, input.outputFolder);
+        await mkdir(outputDir, { recursive: true });
+        const outputPath = await uniqueFilePath(outputDir, input.outputName);
+        await writeFile(outputPath, content, "utf-8");
+
+        return ok(path.relative(workspacePath, outputPath));
+      } catch (error) {
+        return fail("TITLE_LIST_FAILED", "タイトル一覧の生成に失敗しました。", error instanceof Error ? error.message : String(error));
+      }
+    }
+  );
+
+  ipcMain.handle(
+    generateTableOfContentsChannel,
+    async (_event, input: GenerateTableOfContentsInput): Promise<RelicResult<string>> => {
+      try {
+        const settings = await readAppSettings(app.getPath("userData"));
+        const state = toWorkspaceState(settings);
+        if (!state.activeWorkspace) return fail("NO_WORKSPACE", "ワークスペースが選択されていません。");
+
+        const workspacePath = state.activeWorkspace.path;
+        const targetAbsPath = path.join(workspacePath, input.targetFolder);
+        const lines: string[] = [];
+
+        async function buildToc(dirPath: string, relBase: string, indent: number) {
+          const entries = await readdir(dirPath, { withFileTypes: true });
+          entries.sort((a, b) => {
+            if (a.isDirectory() !== b.isDirectory()) return a.isDirectory() ? -1 : 1;
+            return a.name.localeCompare(b.name, "ja");
+          });
+          for (const entry of entries) {
+            const prefix = "  ".repeat(indent) + "- ";
+            if (entry.isDirectory()) {
+              if (input.includeSubfolders) {
+                lines.push(`${prefix}**${entry.name}/**`);
+                await buildToc(path.join(dirPath, entry.name), path.join(relBase, entry.name), indent + 1);
+              }
+            } else if (entry.name.endsWith(".md")) {
+              const displayName = entry.name.replace(/\.md$/, "");
+              lines.push(`${prefix}[[${displayName}]]`);
+            }
+          }
+        }
+
+        await buildToc(targetAbsPath, input.targetFolder, 0);
+
+        const content = lines.join("\n") + "\n";
+        const outputDir = path.join(workspacePath, input.outputFolder);
+        await mkdir(outputDir, { recursive: true });
+        const outputPath = await uniqueFilePath(outputDir, input.outputName);
+        await writeFile(outputPath, content, "utf-8");
+
+        return ok(path.relative(workspacePath, outputPath));
+      } catch (error) {
+        return fail("TOC_FAILED", "目次の生成に失敗しました。", error instanceof Error ? error.message : String(error));
+      }
+    }
+  );
+}
+
+async function uniqueFilePath(dir: string, name: string): Promise<string> {
+  const ext = name.endsWith(".md") ? "" : ".md";
+  const base = name.replace(/\.md$/, "");
+  let candidate = path.join(dir, `${base}${ext}`);
+  let counter = 1;
+  while (true) {
+    try {
+      await stat(candidate);
+      candidate = path.join(dir, `${base}-${counter}${ext}`);
+      counter++;
+    } catch {
+      return candidate;
+    }
+  }
 }
 
 async function buildWorkspaceState(
