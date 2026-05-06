@@ -1,20 +1,23 @@
 :root {
-  --bg: #f5f4f2;
-  --rail-bg: rgba(239, 238, 235, 0.88);
-  --sidebar-bg: rgba(250, 249, 247, 0.86);
-  --popup-bg: rgba(250, 249, 247, 0.95);
-  --text: #1f2328;
-  --text-2: #555b62;
-  --text-3: #747981;
-  --border: rgba(31, 35, 40, 0.1);
-  --border-soft: rgba(31, 35, 40, 0.13);
-  --border-medium: rgba(31, 35, 40, 0.2);
+  --bg: #fafafa;
+  --rail-bg: rgba(238, 238, 238, 0.88);
+  --sidebar-bg: rgba(244, 244, 244, 0.86);
+  --popup-bg: rgba(250, 250, 250, 0.95);
+  --text: #1c1c1c;
+  --text-2: #5e5e5e;
+  --text-3: #8a8a8a;
+  --border: rgba(28, 28, 28, 0.1);
+  --border-soft: rgba(28, 28, 28, 0.13);
+  --border-medium: rgba(28, 28, 28, 0.2);
   --btn-bg: rgba(255, 255, 255, 0.72);
-  --hover: rgba(31, 35, 40, 0.04);
-  --hover-strong: rgba(31, 35, 40, 0.1);
+  --hover: rgba(28, 28, 28, 0.04);
+  --hover-strong: rgba(28, 28, 28, 0.1);
   --input-bg: rgba(255, 255, 255, 0.72);
-  --error: #c0392b;
-  --error-bg: #fff0ee;
+  --accent: #ff5722;
+  --accent-hover: #e64d1f;
+  --link: #00628c;
+  --error: #ba1a1a;
+  --error-bg: #ffdad6;
   --success: #217a3c;
   color: var(--text);
   background: var(--bg);
@@ -105,7 +108,7 @@ button:disabled {
 .rail-button.active {
   background: rgba(223, 104, 43, 0.14);
   border-color: rgba(223, 104, 43, 0.35);
-  color: #a14617;
+  color: var(--accent);
 }
 
 .rail-separator {
@@ -185,7 +188,7 @@ button:disabled {
 
 .workspace-list-item.active {
   background: rgba(223, 104, 43, 0.12);
-  color: #a14617;
+  color: var(--accent);
 }
 
 /* ────────────────────────────────── */
@@ -228,7 +231,7 @@ button:disabled {
 
 .file-tree-row.active {
   background: rgba(223, 104, 43, 0.12);
-  color: #a14617;
+  color: var(--accent);
 }
 
 .file-tree-row-wrap {
@@ -301,9 +304,12 @@ button:disabled {
 /* ────────────────────────────────── */
 
 .primary-button {
-  background: #df682b;
-  border-color: #c85b24;
+  background: var(--accent);
+  border-color: transparent;
   color: white;
+}
+.primary-button:hover {
+  background: var(--accent-hover);
 }
 
 .secondary-button {
@@ -507,7 +513,7 @@ button:disabled {
 .tag-pill {
   background: rgba(18, 100, 163, 0.08);
   border: 1px solid rgba(18, 100, 163, 0.18);
-  color: #1264a3;
+  color: var(--link);
   min-width: 0;
   overflow: hidden;
   text-align: left;
@@ -637,7 +643,7 @@ button:disabled {
 .toolbar-btn.active {
   background: rgba(18, 100, 163, 0.1);
   border-color: rgba(18, 100, 163, 0.25);
-  color: #1264a3;
+  color: var(--link);
 }
 
 .toolbar-dropdown {
@@ -829,7 +835,7 @@ button:disabled {
   background: none;
   border: 1px solid transparent;
   border-radius: 4px;
-  color: #6b7280;
+  color: var(--text-3);
   cursor: pointer;
   font-size: 11px;
   padding: 2px 8px;
@@ -869,7 +875,7 @@ button:disabled {
 
 .preview-body p { margin: 0.6em 0; }
 
-.preview-body a { color: #0969da; text-decoration: underline; }
+.preview-body a { color: var(--link); text-decoration: underline; }
 
 .preview-body code {
   background: rgba(31, 35, 40, 0.06);
@@ -893,7 +899,7 @@ button:disabled {
 
 .preview-body blockquote {
   border-left: 3px solid rgba(31, 35, 40, 0.2);
-  color: #6b7280;
+  color: var(--text-3);
   margin: 0.6em 0;
   padding-left: 1em;
 }
@@ -948,7 +954,7 @@ button:disabled {
   padding: 2px 6px;
   border: 1px solid rgba(31, 35, 40, 0.12);
   border-radius: 5px;
-  color: #6b7280;
+  color: var(--text-3);
   font-size: 0.92em;
 }
 
@@ -962,7 +968,7 @@ button:disabled {
 
 .preview-file-embed-title {
   margin-bottom: 8px;
-  color: #6b7280;
+  color: var(--text-3);
   font-size: 12px;
   font-weight: 600;
 }
@@ -978,13 +984,13 @@ button:disabled {
 .preview-file-embed--loading,
 .preview-file-embed--error,
 .preview-file-embed--large {
-  color: #6b7280;
+  color: var(--text-3);
   font-size: 13px;
 }
 
 .wikilink {
-  border-bottom: 1px solid #0969da;
-  color: #0969da;
+  border-bottom: 1px solid var(--link);
+  color: var(--link);
   cursor: pointer;
 }
 
@@ -1034,7 +1040,7 @@ button:disabled {
 .pane-status {
   align-items: center;
   border-top: 1px solid rgba(31, 35, 40, 0.07);
-  color: #9aa0a8;
+  color: var(--text-3);
   display: flex;
   font-size: 11px;
   gap: 12px;
@@ -1043,7 +1049,7 @@ button:disabled {
 
 .empty-pane {
   align-items: center;
-  color: #9aa0a8;
+  color: var(--text-3);
   display: flex;
   flex-direction: column;
   font-size: 13px;
@@ -1120,12 +1126,12 @@ button:disabled {
 
 .links-list-kind--link {
   background: rgba(18, 100, 163, 0.1);
-  color: #1264a3;
+  color: var(--link);
 }
 
 .links-list-kind--embed {
   background: rgba(223, 104, 43, 0.12);
-  color: #a14617;
+  color: var(--accent);
 }
 
 .links-list-kind--backlink {
@@ -1150,11 +1156,11 @@ button:disabled {
 
 .links-list-target:hover {
   background: rgba(18, 100, 163, 0.08);
-  color: #1264a3;
+  color: var(--link);
 }
 
 .links-list-target--missing {
-  color: #a14617;
+  color: var(--accent);
   text-decoration: underline;
   text-decoration-style: dotted;
 }
@@ -1255,7 +1261,7 @@ button:disabled {
   align-items: center;
   background: rgba(245, 244, 242, 0.88);
   border-top: 1px solid var(--border);
-  color: #6b6f76;
+  color: var(--text-3);
   display: flex;
   font-size: 12px;
   gap: 16px;
@@ -1603,13 +1609,13 @@ button:disabled {
 /* ────────────────────────────────── */
 
 [data-theme="dark"] {
-  --bg: #1b1b1b;
+  --bg: #131313;
   --rail-bg: rgba(20, 20, 20, 0.95);
   --sidebar-bg: rgba(26, 26, 26, 0.97);
-  --popup-bg: rgba(30, 30, 30, 0.98);
-  --text: #dedad5;
-  --text-2: #9a9ea6;
-  --text-3: #6e7278;
+  --popup-bg: rgba(37, 37, 37, 0.98);
+  --text: #e6e6e6;
+  --text-2: #9e9e9e;
+  --text-3: #6b6b6b;
   --border: rgba(255, 255, 255, 0.1);
   --border-soft: rgba(255, 255, 255, 0.13);
   --border-medium: rgba(255, 255, 255, 0.2);
@@ -1617,8 +1623,11 @@ button:disabled {
   --hover: rgba(255, 255, 255, 0.05);
   --hover-strong: rgba(255, 255, 255, 0.1);
   --input-bg: rgba(255, 255, 255, 0.06);
-  --error: #ff6b6b;
-  --error-bg: rgba(255, 80, 60, 0.12);
+  --accent: #ff5722;
+  --accent-hover: #e64d1f;
+  --link: #00628c;
+  --error: #ba1a1a;
+  --error-bg: rgba(186, 26, 26, 0.15);
   --success: #5cb85c;
   color-scheme: dark;
 }
@@ -1647,8 +1656,25 @@ button:disabled {
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
-    --error: #ff6b6b;
-    --error-bg: rgba(255, 80, 60, 0.12);
+    --bg: #131313;
+    --rail-bg: rgba(20, 20, 20, 0.95);
+    --sidebar-bg: rgba(26, 26, 26, 0.97);
+    --popup-bg: rgba(37, 37, 37, 0.98);
+    --text: #e6e6e6;
+    --text-2: #9e9e9e;
+    --text-3: #6b6b6b;
+    --border: rgba(255, 255, 255, 0.1);
+    --border-soft: rgba(255, 255, 255, 0.13);
+    --border-medium: rgba(255, 255, 255, 0.2);
+    --btn-bg: rgba(255, 255, 255, 0.08);
+    --hover: rgba(255, 255, 255, 0.05);
+    --hover-strong: rgba(255, 255, 255, 0.1);
+    --input-bg: rgba(255, 255, 255, 0.06);
+    --accent: #ff5722;
+    --accent-hover: #e64d1f;
+    --link: #00628c;
+    --error: #ba1a1a;
+    --error-bg: rgba(186, 26, 26, 0.15);
     --success: #5cb85c;
   }
   :root:not([data-theme="light"]) input,
