@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
@@ -8,6 +8,7 @@ import {
   createMarkdownFile,
   createMarkdownFileAtPath,
   duplicateMarkdownFile,
+  moveMarkdownFile,
   normalizeMarkdownFileName,
   readMarkdownFile,
   renameMarkdownFile
@@ -267,5 +268,53 @@ describe("duplicateMarkdownFile", () => {
     await expect(duplicateMarkdownFile(workspacePath, "../outside.md")).resolves.toMatchObject({
       ok: false
     });
+  });
+});
+
+describe("moveMarkdownFile", () => {
+  const temporaryPaths: string[] = [];
+
+  afterEach(async () => {
+    await Promise.all(
+      temporaryPaths.splice(0).map((temporaryPath) =>
+        rm(temporaryPath, {
+          force: true,
+          recursive: true
+        })
+      )
+    );
+  });
+
+  it("Markdownファイルを別フォルダへ移動する", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-move-file-"));
+    temporaryPaths.push(workspacePath);
+
+    await mkdir(path.join(workspacePath, "archive"));
+    await writeFile(path.join(workspacePath, "note.md"), "# Note", "utf8");
+
+    await expect(moveMarkdownFile(workspacePath, "note.md", "archive")).resolves.toEqual({
+      ok: true,
+      value: {
+        content: "# Note",
+        name: "note",
+        path: "archive/note.md"
+      }
+    });
+    await expect(readFile(path.join(workspacePath, "archive/note.md"), "utf8")).resolves.toBe("# Note");
+  });
+
+  it("移動先に同名ファイルがある場合は上書きしない", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-move-file-"));
+    temporaryPaths.push(workspacePath);
+
+    await mkdir(path.join(workspacePath, "archive"));
+    await writeFile(path.join(workspacePath, "note.md"), "source", "utf8");
+    await writeFile(path.join(workspacePath, "archive/note.md"), "existing", "utf8");
+
+    await expect(moveMarkdownFile(workspacePath, "note.md", "archive")).resolves.toMatchObject({
+      ok: false
+    });
+    await expect(readFile(path.join(workspacePath, "note.md"), "utf8")).resolves.toBe("source");
+    await expect(readFile(path.join(workspacePath, "archive/note.md"), "utf8")).resolves.toBe("existing");
   });
 });

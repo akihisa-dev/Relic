@@ -4,7 +4,7 @@ import path from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import { createFolder, renameFolder } from "./folders";
+import { createFolder, moveFolder, renameFolder } from "./folders";
 
 describe("createFolder", () => {
   const temporaryPaths: string[] = [];
@@ -114,5 +114,53 @@ describe("renameFolder", () => {
     await expect(renameFolder(workspacePath, "note.md", "note2")).resolves.toMatchObject({
       ok: false
     });
+  });
+});
+
+describe("moveFolder", () => {
+  const temporaryPaths: string[] = [];
+
+  afterEach(async () => {
+    await Promise.all(
+      temporaryPaths.splice(0).map((temporaryPath) =>
+        rm(temporaryPath, {
+          force: true,
+          recursive: true
+        })
+      )
+    );
+  });
+
+  it("フォルダを別フォルダへ移動する", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-move-folder-"));
+    temporaryPaths.push(workspacePath);
+
+    await mkdir(path.join(workspacePath, "資料"));
+    await mkdir(path.join(workspacePath, "archive"));
+    await writeFile(path.join(workspacePath, "資料", "note.md"), "# Note", "utf8");
+
+    await expect(moveFolder(workspacePath, "資料", "archive")).resolves.toEqual({
+      ok: true,
+      value: {
+        path: "archive/資料"
+      }
+    });
+    expect((await stat(path.join(workspacePath, "archive", "資料"))).isDirectory()).toBe(true);
+    await expect(readFile(path.join(workspacePath, "archive", "資料", "note.md"), "utf8")).resolves.toBe("# Note");
+  });
+
+  it("移動先に同名フォルダがある場合は上書きしない", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-move-folder-"));
+    temporaryPaths.push(workspacePath);
+
+    await mkdir(path.join(workspacePath, "資料"));
+    await mkdir(path.join(workspacePath, "archive"));
+    await mkdir(path.join(workspacePath, "archive", "資料"));
+
+    await expect(moveFolder(workspacePath, "資料", "archive")).resolves.toMatchObject({
+      ok: false
+    });
+    expect((await stat(path.join(workspacePath, "資料"))).isDirectory()).toBe(true);
+    expect((await stat(path.join(workspacePath, "archive", "資料"))).isDirectory()).toBe(true);
   });
 });
