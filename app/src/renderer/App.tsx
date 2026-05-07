@@ -175,10 +175,11 @@ function FileTree({
   onTogglePin,
   pinnedPaths
 }: FileTreeProps): ReactElement {
+  const t = useT();
   const [isRootDragOver, setIsRootDragOver] = useState(false);
 
   if (nodes.length === 0 && !isRoot) {
-    return <div className="empty-note">Markdownファイルはまだありません。</div>;
+    return <div className="empty-note">{t("files.noMarkdownFiles")}</div>;
   }
 
   const handleRootDrop = (e: React.DragEvent): void => {
@@ -203,7 +204,7 @@ function FileTree({
       onDrop={isRoot ? handleRootDrop : undefined}
     >
       {nodes.length === 0 ? (
-        <li><div className="empty-note">Markdownファイルはまだありません。</div></li>
+        <li><div className="empty-note">{t("files.noMarkdownFiles")}</div></li>
       ) : null}
       {nodes.map((node) => (
         <FileTreeItem
@@ -444,7 +445,7 @@ function SearchSidebar({
       ) : null}
       {error ? <div className="error-note">{error}</div> : null}
       <div className="search-block">
-        <div className="links-panel-subheading">Results</div>
+        <div className="links-panel-subheading">{t("search.results")}</div>
         {results.length > 0 ? (
           <ul className="search-results">
             {results.map((result, index) => (
@@ -522,7 +523,7 @@ function SearchSidebar({
         {replacePreview !== null ? (
           <div className="replace-preview">
             <div className="replace-preview-header">
-              {replacePreview.length} 件が一致 — 置換後:
+              {t("search.replaceMatchCount", { count: replacePreview.length })}
             </div>
             {replacePreview.length > 0 ? (
               <ul className="search-results replace-preview-list">
@@ -535,7 +536,7 @@ function SearchSidebar({
                 ))}
                 {replacePreview.length > 50 ? (
                   <li className="search-result-item">
-                    <span className="search-result-line">…他 {replacePreview.length - 50} 件</span>
+                    <span className="search-result-line">{t("search.replaceMoreItems", { count: replacePreview.length - 50 })}</span>
                   </li>
                 ) : null}
               </ul>
@@ -556,7 +557,7 @@ function SearchSidebar({
         ) : null}
       </div>
       <div className="search-block">
-        <div className="links-panel-subheading">Tags</div>
+        <div className="links-panel-subheading">{t("search.tags")}</div>
         {tags.length > 0 ? (
           <ul className="tag-list">
             {tags.map((tag) => (
@@ -874,7 +875,7 @@ function ToolsSidebar({ workspacePath }: { workspacePath: string | null }): Reac
               />
             </label>
             <label className="setting-row">
-              <span>Include subfolders</span>
+              <span>{t("tools.includeSubfolders")}</span>
               <input
                 checked={tocSubfolders}
                 onChange={(e) => setTocSubfolders(e.target.checked)}
@@ -1431,12 +1432,52 @@ function PaneView({
 // App
 // ────────────────────────────────────────────────
 
-const sidebarViewDefs: Array<{ id: SidebarView; labelKey: TranslationKey; icon: string }> = [
-  { id: "files", labelKey: "nav.files", icon: "F" },
-  { id: "search", labelKey: "nav.search", icon: "S" },
-  { id: "git", labelKey: "nav.git", icon: "G" },
-  { id: "tools", labelKey: "nav.tools", icon: "T" },
-  { id: "settings", labelKey: "nav.settings", icon: "⚙" }
+const IconFiles = (): ReactElement => (
+  <svg fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" viewBox="0 0 20 20" width="18">
+    <path d="M3 5a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5z" />
+  </svg>
+);
+
+const IconSearch = (): ReactElement => (
+  <svg fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" viewBox="0 0 20 20" width="18">
+    <circle cx="8.5" cy="8.5" r="5" />
+    <line x1="13" x2="17" y1="13" y2="17" />
+  </svg>
+);
+
+const IconGit = (): ReactElement => (
+  <svg fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" viewBox="0 0 20 20" width="18">
+    <circle cx="6" cy="5" r="2" />
+    <circle cx="6" cy="15" r="2" />
+    <circle cx="14" cy="5" r="2" />
+    <line x1="6" x2="6" y1="7" y2="13" />
+    <path d="M14 7c0 4-8 4-8 8" />
+  </svg>
+);
+
+const IconTools = (): ReactElement => (
+  <svg fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" viewBox="0 0 20 20" width="18">
+    <path d="M15 3a3.5 3.5 0 0 0-3.2 4.9L4.1 15.5a1.5 1.5 0 0 0 2.1 2.1l7.6-7.7A3.5 3.5 0 0 0 18.5 6.5L16 9l-2-2 2.5-2.5A3.5 3.5 0 0 0 15 3z" />
+  </svg>
+);
+
+const IconSettings = (): ReactElement => (
+  <svg fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" viewBox="0 0 20 20" width="18">
+    <line x1="3" x2="17" y1="5" y2="5" />
+    <line x1="3" x2="17" y1="10" y2="10" />
+    <line x1="3" x2="17" y1="15" y2="15" />
+    <circle cx="7" cy="5" fill="currentColor" r="2" stroke="none" />
+    <circle cx="13" cy="10" fill="currentColor" r="2" stroke="none" />
+    <circle cx="7" cy="15" fill="currentColor" r="2" stroke="none" />
+  </svg>
+);
+
+const sidebarViewDefs: Array<{ id: SidebarView; labelKey: TranslationKey; icon: ReactElement }> = [
+  { id: "files", labelKey: "nav.files", icon: <IconFiles /> },
+  { id: "search", labelKey: "nav.search", icon: <IconSearch /> },
+  { id: "git", labelKey: "nav.git", icon: <IconGit /> },
+  { id: "tools", labelKey: "nav.tools", icon: <IconTools /> },
+  { id: "settings", labelKey: "nav.settings", icon: <IconSettings /> }
 ];
 
 export function App(): ReactElement {
@@ -2910,6 +2951,7 @@ export function App(): ReactElement {
   return (
     <I18nProvider language={editorSettings.language}>
     <div className={`app-shell${isFocusMode ? " app-shell--focus" : ""}`}>
+      <div className="title-bar" />
       <div className="workspace">
         {/* 縦アイコンナビ（レール） */}
         <nav aria-label={t("nav.viewSwitcher")} className="rail">
@@ -2920,7 +2962,15 @@ export function App(): ReactElement {
             title={t("pane.toggleSidebarShortcut")}
             type="button"
           >
-            {isSidebarOpen ? "◁" : "▷"}
+            {isSidebarOpen ? (
+              <svg fill="none" height="16" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 16 16" width="16">
+                <polyline points="10,3 5,8 10,13" />
+              </svg>
+            ) : (
+              <svg fill="none" height="16" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 16 16" width="16">
+                <polyline points="6,3 11,8 6,13" />
+              </svg>
+            )}
           </button>
           <div className="rail-separator" />
           {sidebarViews
@@ -2999,7 +3049,7 @@ export function App(): ReactElement {
                 ) : gitStatus?.initialized ? (
                   <>
                     <div className="search-block">
-                      <div className="links-panel-subheading">GitHub</div>
+                      <div className="links-panel-subheading">{t("git.github")}</div>
                       {gitHubAuthStatus?.connected ? (
                         <>
                           <div className="setting-row">
@@ -3030,11 +3080,11 @@ export function App(): ReactElement {
                       ) : (
                         <>
                           <div className="empty-note">
-                            GitHub と接続すると、このあとクローンや push / pull を追加できます。
+                            {t("git.connectHint")}
                           </div>
                           {!gitHubAuthStatus?.configured ? (
                             <div className="search-result-line">
-                              接続には `RELIC_GITHUB_CLIENT_ID` と `RELIC_GITHUB_CLIENT_SECRET` の設定が必要です。
+                              {t("git.connectRequired")}
                             </div>
                           ) : null}
                           <button
@@ -3049,7 +3099,7 @@ export function App(): ReactElement {
                       )}
                     </div>
                     <div className="search-block">
-                      <div className="links-panel-subheading">Remote</div>
+                      <div className="links-panel-subheading">{t("git.remote")}</div>
                       <form
                         className="git-branch-form"
                         onSubmit={(event) => {
@@ -3217,7 +3267,7 @@ export function App(): ReactElement {
                           <div className="error-note">{gitErrorMessage}</div>
                           {gitRetryAction ? (
                             <button className="replace-btn" onClick={gitRetryAction} type="button">
-                              再試行
+                              {t("git.retry")}
                             </button>
                           ) : null}
                         </div>
@@ -3225,9 +3275,9 @@ export function App(): ReactElement {
                     </div>
                     {gitConflicts.length > 0 ? (
                       <div className="search-block">
-                        <div className="links-panel-subheading">Conflicts</div>
+                        <div className="links-panel-subheading">{t("git.conflicts")}</div>
                         <div className="error-note">
-                          コンフリクトが発生しています。ファイルごとに解決方法を選んでください。
+                          {t("git.conflictPrompt")}
                         </div>
                         <ul className="search-results">
                           {gitConflicts.map((conflict) => (
@@ -3242,7 +3292,7 @@ export function App(): ReactElement {
                                   onClick={() => handleResolveConflict(conflict.path, "ours")}
                                   type="button"
                                 >
-                                  自分の変更を残す
+                                  {t("git.conflictChooseOurs")}
                                 </button>
                                 <button
                                   className="replace-btn"
@@ -3250,7 +3300,7 @@ export function App(): ReactElement {
                                   onClick={() => handleResolveConflict(conflict.path, "theirs")}
                                   type="button"
                                 >
-                                  リモートの内容を使う
+                                  {t("git.conflictChooseTheirs")}
                                 </button>
                               </div>
                             </li>
@@ -3259,7 +3309,7 @@ export function App(): ReactElement {
                       </div>
                     ) : null}
                     <div className="search-block">
-                      <div className="links-panel-subheading">Repository</div>
+                      <div className="links-panel-subheading">{t("git.repository")}</div>
                       <div className="setting-row">
                         <span>{t("git.status")}</span>
                         <span>{t("git.initialized")}</span>
@@ -3270,7 +3320,7 @@ export function App(): ReactElement {
                       </div>
                     </div>
                     <div className="search-block">
-                      <div className="links-panel-subheading">Branches</div>
+                      <div className="links-panel-subheading">{t("git.branches")}</div>
                       <form
                         className="git-branch-form"
                         onSubmit={(event) => {
@@ -3352,7 +3402,7 @@ export function App(): ReactElement {
                       ) : null}
                     </div>
                     <div className="search-block">
-                      <div className="links-panel-subheading">Commit</div>
+                      <div className="links-panel-subheading">{t("git.commit")}</div>
                       <input
                         aria-label={t("git.authorName")}
                         className="text-input"
@@ -3384,7 +3434,7 @@ export function App(): ReactElement {
                       </button>
                     </div>
                     <div className="search-block">
-                      <div className="links-panel-subheading">Changes</div>
+                      <div className="links-panel-subheading">{t("git.changes")}</div>
                       {gitWorkingChanges.length > 0 ? (
                         <ul className="search-results">
                           {gitWorkingChanges.map((change) => (
@@ -3401,7 +3451,7 @@ export function App(): ReactElement {
                       )}
                     </div>
                     <div className="search-block">
-                      <div className="links-panel-subheading">History</div>
+                      <div className="links-panel-subheading">{t("git.history")}</div>
                       {gitCommitHistory.length > 0 ? (
                         <ul className="search-results">
                           {gitCommitHistory.map((commit) => (
@@ -3424,10 +3474,10 @@ export function App(): ReactElement {
                       )}
                     </div>
                     <div className="search-block">
-                      <div className="links-panel-subheading">Tags</div>
+                      <div className="links-panel-subheading">{t("git.tags")}</div>
                       <div className="git-tag-target">
                         {selectedGitCommitHash
-                          ? `選択中のコミット ${selectedGitCommitHash.slice(0, 7)} にタグを付けます`
+                          ? t("git.tagTarget", { hash: selectedGitCommitHash.slice(0, 7) })
                           : t("git.selectCommitForTag")}
                       </div>
                       <input
@@ -3481,7 +3531,7 @@ export function App(): ReactElement {
                                   onClick={() => handleDeleteGitTag(tag.name)}
                                   type="button"
                                 >
-                                  削除
+                                  {t("git.tagDelete")}
                                 </button>
                                 <button
                                   className="replace-btn"
@@ -3504,7 +3554,7 @@ export function App(): ReactElement {
                       )}
                     </div>
                     <div className="search-block">
-                      <div className="links-panel-subheading">Diff</div>
+                      <div className="links-panel-subheading">{t("git.diff")}</div>
                       {selectedGitCommitDiff && selectedGitCommitDiff.entries.length > 0 ? (
                         <div className="git-diff-list">
                           {selectedGitCommitDiff.entries.map((entry) => (
@@ -3515,11 +3565,11 @@ export function App(): ReactElement {
                               </div>
                               <div className="git-diff-columns">
                                 <div className="git-diff-column">
-                                  <div className="links-panel-subheading">Before</div>
+                                  <div className="links-panel-subheading">{t("git.diffBefore")}</div>
                                   <pre className="git-diff-code">{entry.before}</pre>
                                 </div>
                                 <div className="git-diff-column">
-                                  <div className="links-panel-subheading">After</div>
+                                  <div className="links-panel-subheading">{t("git.diffAfter")}</div>
                                   <pre className="git-diff-code">{entry.after}</pre>
                                 </div>
                               </div>
@@ -3543,9 +3593,9 @@ export function App(): ReactElement {
                     </div>
                     {gitHubAuthStatus?.connected ? (
                       <div className="search-block">
-                        <div className="links-panel-subheading">Clone</div>
+                        <div className="links-panel-subheading">{t("git.clone")}</div>
                         <div className="empty-note">
-                          GitHubからリポジトリをクローンして新しいワークスペースとして開きます。
+                          {t("git.cloneHint")}
                         </div>
                         <form
                           className="git-branch-form"
@@ -3724,13 +3774,13 @@ export function App(): ReactElement {
                 ) : outgoingLinks.length > 0 || backlinks.length > 0 || isLoadingBacklinks ? (
                   <div className="links-panel-stack">
                     <div className="links-panel-section">
-                      <div className="links-panel-subheading">Outgoing</div>
+                      <div className="links-panel-subheading">{t("links.outgoing")}</div>
                       {outgoingLinks.length > 0 ? (
                         <ul className="links-list">
                           {outgoingLinks.map((link, i) => (
                             <li className="links-list-item" key={`${link.wikiLink.raw}-${i}`}>
                               <span className={`links-list-kind links-list-kind--${link.wikiLink.kind}`}>
-                                {link.wikiLink.kind === "embed" ? "Embed" : "Link"}
+                                {link.wikiLink.kind === "embed" ? t("links.embed") : t("links.link")}
                               </span>
                               <button
                                 className={`links-list-target${link.exists ? "" : " links-list-target--missing"}`}
@@ -3757,7 +3807,7 @@ export function App(): ReactElement {
                       )}
                     </div>
                     <div className="links-panel-section">
-                      <div className="links-panel-subheading">Backlinks</div>
+                      <div className="links-panel-subheading">{t("links.backlinks")}</div>
                       {isLoadingBacklinks ? (
                         <div className="empty-note">{t("common.loading")}</div>
                       ) : backlinks.length > 0 ? (
