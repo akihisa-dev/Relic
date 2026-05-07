@@ -6,7 +6,10 @@ import { autoCommitAndPush, pullGitBranch } from "./files/git";
 import { readGitHubAuthFromKeychain } from "./github/keychain";
 import { registerAppHandlers } from "./ipc/appHandlers";
 import { registerEditorHandlers } from "./ipc/editorHandlers";
+import { registerFileHandlers } from "./ipc/fileHandlers";
 import { registerGitHubHandlers } from "./ipc/githubHandlers";
+import { registerGitWorkspaceHandlers } from "./ipc/gitWorkspaceHandlers";
+import { registerToolHandlers } from "./ipc/toolHandlers";
 import { registerWorkspaceHandlers } from "./ipc/workspaceHandlers";
 import { readAppSettings } from "./settings/appSettings";
 import { saveAutoSyncSettingsChannel } from "../shared/ipc";
@@ -92,7 +95,10 @@ function createWindow(): void {
 app.whenReady().then(() => {
   registerAppHandlers();
   registerEditorHandlers();
+  registerFileHandlers();
   registerGitHubHandlers();
+  registerGitWorkspaceHandlers();
+  registerToolHandlers();
   registerWorkspaceHandlers();
   createWindow();
 
