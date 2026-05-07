@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { defaultAutoSyncSettings, defaultEditorSettings, defaultFeatureToggles, type GitHubAuthStatus } from "../shared/ipc";
@@ -117,12 +117,8 @@ const withWorkspace = {
   workspaces: []
 };
 
-async function renderApp() {
-  let result!: ReturnType<typeof render>;
-  await act(async () => {
-    result = render(<App />);
-  });
-  return result;
+function renderApp() {
+  return render(<App />);
 }
 
 describe("App", () => {

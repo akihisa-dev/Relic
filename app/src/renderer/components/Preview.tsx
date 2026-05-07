@@ -12,6 +12,8 @@ interface PreviewProps {
   content: string;
   onChange?: (content: string) => void;
   onOpenWikiLink?: (target: string, heading?: string) => void;
+  onScrollTargetHandled?: () => void;
+  onTagSearch?: (tag: string) => void;
   scrollTargetHeading?: string;
   settings: EditorSettings;
   workspacePath?: string | null;
@@ -71,9 +73,21 @@ const mathExtension = {
   ]
 };
 
-// ==ハイライト== と [[wikilink]] のObsidian互換拡張
+// ==ハイライト== と [[wikilink]] と #tag のObsidian互換拡張
 const obsidianExtension = {
   extensions: [
+    {
+      name: "hashtag",
+      level: "inline" as const,
+      start: (src: string) => src.indexOf("#"),
+      tokenizer(src: string) {
+        const match = /^#([\w　-鿿゠-ヿ぀-ゟ/]+)/.exec(src);
+        if (match) return { type: "hashtag", raw: match[0], tag: match[1] };
+      },
+      renderer(token: { tag: string }) {
+        return `<span class="hashtag" data-tag="${token.tag}">#${token.tag}</span>`;
+      }
+    },
     {
       name: "highlight",
       level: "inline" as const,
@@ -308,7 +322,7 @@ function renderMarkdown(
     '<input checked type="checkbox" class="preview-checkbox">'
   );
   const sanitized = DOMPurify.sanitize(withCheckboxes, {
-    ADD_ATTR: ["checked", "class", "data-target", "id"]
+    ADD_ATTR: ["checked", "class", "data-tag", "data-target", "id"]
   });
 
   return imageSources.reduce(
@@ -346,6 +360,8 @@ export function Preview({
   content,
   onChange,
   onOpenWikiLink,
+  onScrollTargetHandled,
+  onTagSearch,
   scrollTargetHeading,
   settings,
   workspacePath
@@ -401,8 +417,11 @@ export function Preview({
     const headings = containerRef.current.querySelectorAll<HTMLElement>("h1,h2,h3,h4,h5,h6");
     const el = Array.from(headings).find((heading) => heading.id === id);
 
-    el?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, [scrollTargetHeading, html]);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+      onScrollTargetHandled?.();
+    }
+  }, [scrollTargetHeading, html, onScrollTargetHandled]);
 
   const handleClick = useCallback(
     (e: MouseEvent<HTMLDivElement>) => {
@@ -420,6 +439,14 @@ export function Preview({
           onOpenWikiLink(fullTarget);
         }
 
+        return;
+      }
+
+      const hashTag = target.closest<HTMLElement>(".hashtag");
+
+      if (hashTag?.dataset.tag && onTagSearch) {
+        e.preventDefault();
+        onTagSearch(hashTag.dataset.tag);
         return;
       }
 
