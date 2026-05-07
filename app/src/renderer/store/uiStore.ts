@@ -5,13 +5,11 @@ export type RightPanelView = "outline" | "links";
 
 interface UiState {
   activeSidebarView: SidebarView;
-  isFocusMode: boolean;
   isSidebarOpen: boolean;
   isRightPanelOpen: boolean;
   isTypewriterMode: boolean;
   rightPanelView: RightPanelView;
   setSidebarView: (view: SidebarView) => void;
-  toggleFocusMode: () => void;
   toggleSidebar: () => void;
   toggleRightPanel: () => void;
   toggleTypewriterMode: () => void;
@@ -20,7 +18,6 @@ interface UiState {
 
 export const useUiStore = create<UiState>((set) => ({
   activeSidebarView: "files",
-  isFocusMode: false,
   isSidebarOpen: true,
   isRightPanelOpen: true,
   isTypewriterMode: false,
@@ -30,12 +27,6 @@ export const useUiStore = create<UiState>((set) => ({
       activeSidebarView: view,
       isSidebarOpen: true
     }),
-  toggleFocusMode: () =>
-    set((state) => ({
-      isFocusMode: !state.isFocusMode,
-      isSidebarOpen: state.isFocusMode,
-      isRightPanelOpen: state.isFocusMode
-    })),
   toggleTypewriterMode: () => set((state) => ({ isTypewriterMode: !state.isTypewriterMode })),
   toggleSidebar: () => set((state) => ({ isSidebarOpen: !state.isSidebarOpen })),
   toggleRightPanel: () => set((state) => ({ isRightPanelOpen: !state.isRightPanelOpen })),

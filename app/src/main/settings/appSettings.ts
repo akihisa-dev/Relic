@@ -96,8 +96,7 @@ function parseFeatureToggles(raw: unknown): FeatureToggles {
     git: typeof s.git === "boolean" ? s.git : true,
     tools: typeof s.tools === "boolean" ? s.tools : true,
     frontmatter: typeof s.frontmatter === "boolean" ? s.frontmatter : true,
-    rightPanel: typeof s.rightPanel === "boolean" ? s.rightPanel : true,
-    focusModes: typeof s.focusModes === "boolean" ? s.focusModes : true
+    rightPanel: typeof s.rightPanel === "boolean" ? s.rightPanel : true
   };
 }
 

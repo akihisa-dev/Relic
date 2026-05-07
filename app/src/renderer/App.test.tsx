@@ -137,7 +137,7 @@ describe("App", () => {
   afterEach(() => {
     vi.clearAllMocks();
     useEditorStore.setState({ tabs: {}, leftPane: { activeTabId: null, history: [], tabIds: [] }, rightPane: { activeTabId: null, history: [], tabIds: [] }, isSplit: false, focusedPane: "left" });
-    useUiStore.setState({ activeSidebarView: "files", isFocusMode: false, isRightPanelOpen: true, isSidebarOpen: true, isTypewriterMode: false, rightPanelView: "outline" });
+    useUiStore.setState({ activeSidebarView: "files", isRightPanelOpen: true, isSidebarOpen: true, isTypewriterMode: false, rightPanelView: "outline" });
   });
 
   it("ビュー切り替えナビとメインエリアが表示される", async () => {
@@ -311,7 +311,6 @@ describe("App", () => {
 
     useUiStore.setState({
       activeSidebarView: "git",
-      isFocusMode: false,
       isRightPanelOpen: true,
       isSidebarOpen: true,
       isTypewriterMode: false,

@@ -131,6 +131,8 @@
   "pane.noNotes": "ノートがありません",
   "pane.rename": "クリックして名前を変更",
   "pane.split": "分割表示 (⌘\\\\)",
+  "pane.links": "リンク",
+  "pane.outline": "アウトライン",
   "pane.toggleLinks": "リンク",
   "pane.toggleOutline": "アウトライン (⌘⇧B)",
   "pane.toggleSidebar": "サイドバーを開閉",

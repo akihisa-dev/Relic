@@ -1,7 +1,7 @@
 :root {
   --bg: #fafafa;
-  --rail-bg: rgba(238, 238, 238, 0.88);
-  --sidebar-bg: rgba(244, 244, 244, 0.86);
+  --rail-bg: rgba(30, 30, 32, 0.92);
+  --sidebar-bg: rgba(240, 240, 242, 0.92);
   --popup-bg: rgba(250, 250, 250, 0.95);
   --text: #1c1c1c;
   --text-2: #5e5e5e;
@@ -15,7 +15,7 @@
   --input-bg: rgba(255, 255, 255, 0.72);
   --accent: #ff5722;
   --accent-hover: #e64d1f;
-  --link: #00628c;
+  --link: #0096c7;
   --error: #ba1a1a;
   --error-bg: #ffdad6;
   --success: #217a3c;
@@ -29,6 +29,26 @@
 
 * {
   box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(28, 28, 28, 0.18) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(28, 28, 28, 0.18);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(28, 28, 28, 0.32);
 }
 
 body {
@@ -69,24 +89,17 @@ button:disabled {
 
 .title-bar {
   -webkit-app-region: drag;
-  background: var(--rail-bg);
+  background: rgba(30, 30, 32, 0.92);
   grid-column: 1 / -1;
 }
 
-.app-shell--focus .rail,
-.app-shell--focus .sidebar,
-.app-shell--focus .right-panel {
-  display: none;
-}
-
-.app-shell--focus .workspace {
-  grid-template-columns: minmax(0, 1fr);
-}
 
 .workspace {
   display: grid;
   grid-template-columns: 48px auto minmax(0, 1fr);
+  height: 100%;
   min-height: 0;
+  overflow: hidden;
   -webkit-app-region: no-drag;
 }
 
@@ -97,7 +110,8 @@ button:disabled {
 .rail {
   align-items: center;
   background: var(--rail-bg);
-  border-right: 1px solid var(--border);
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.55);
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -108,11 +122,16 @@ button:disabled {
   align-items: center;
   background: transparent;
   border: none;
+  color: inherit;
   display: inline-flex;
   height: 32px;
   justify-content: center;
   padding: 0;
   width: 32px;
+}
+
+.rail-button:hover {
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .rail-button.active {
@@ -123,7 +142,7 @@ button:disabled {
 }
 
 .rail-separator {
-  background: rgba(31, 35, 40, 0.1);
+  background: rgba(255, 255, 255, 0.12);
   height: 1px;
   width: 24px;
 }
@@ -137,10 +156,22 @@ button:disabled {
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
+  height: 100%;
   min-width: 180px;
+  overflow: hidden;
+}
+
+.sidebar-header {
+  background: inherit;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  padding: 0 16px;
+}
+
+.sidebar-body {
+  flex: 1;
   overflow-y: auto;
   padding: 16px;
-  position: relative;
 }
 
 .pane-heading {
@@ -148,7 +179,7 @@ button:disabled {
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.02em;
-  margin-bottom: 14px;
+  padding: 10px 0;
   text-transform: uppercase;
 }
 
@@ -1271,9 +1302,11 @@ button:disabled {
 .right-panel {
   background: var(--popup-bg);
   border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
   min-width: 220px;
-  overflow-y: auto;
-  padding: 16px;
+  overflow: hidden;
   width: 240px;
 }
 
