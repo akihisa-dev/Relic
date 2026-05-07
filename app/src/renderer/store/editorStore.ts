@@ -29,6 +29,9 @@ interface EditorStore {
   tabs: Record<string, Tab>;
 
   closeTab: (pane: PaneId, tabId: string) => void;
+  closeOtherTabs: (pane: PaneId, tabId: string) => void;
+  closeTabsToRight: (pane: PaneId, tabId: string) => void;
+  closeAllTabsInPane: (pane: PaneId) => void;
   openFileInPane: (pane: PaneId, file: MarkdownFileContent) => void;
   setEditorSettings: (settings: EditorSettings) => void;
   setFocusedPane: (pane: PaneId) => void;
@@ -178,6 +181,72 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
       if (!state.tabs[tabId]) return state;
 
       return { tabs: { ...state.tabs, [tabId]: { ...state.tabs[tabId], viewMode: mode } } };
+    });
+  },
+
+  closeOtherTabs: (pane, tabId) => {
+    set((state) => {
+      const paneKey = pane === "left" ? "leftPane" : "rightPane";
+      const otherPaneKey = pane === "left" ? "rightPane" : "leftPane";
+      const otherPane = state[otherPaneKey];
+
+      // Remove tabs not equal to tabId that aren't used in the other pane
+      const removedIds = state[paneKey].tabIds.filter(
+        (id) => id !== tabId && !otherPane.tabIds.includes(id)
+      );
+      const nextTabs = removedIds.reduce((acc, id) => omit(acc, id), state.tabs as Record<string, unknown>) as typeof state.tabs;
+
+      return {
+        tabs: nextTabs,
+        [paneKey]: {
+          activeTabId: tabId,
+          history: [tabId],
+          tabIds: [tabId]
+        }
+      };
+    });
+  },
+
+  closeTabsToRight: (pane, tabId) => {
+    set((state) => {
+      const paneKey = pane === "left" ? "leftPane" : "rightPane";
+      const otherPaneKey = pane === "left" ? "rightPane" : "leftPane";
+      const otherPane = state[otherPaneKey];
+      const paneState = state[paneKey];
+
+      const idx = paneState.tabIds.indexOf(tabId);
+      const nextTabIds = idx === -1 ? paneState.tabIds : paneState.tabIds.slice(0, idx + 1);
+      const removedIds = paneState.tabIds.slice(idx + 1).filter((id) => !otherPane.tabIds.includes(id));
+      const nextTabs = removedIds.reduce((acc, id) => omit(acc, id), state.tabs as Record<string, unknown>) as typeof state.tabs;
+
+      const activeWasRemoved = paneState.activeTabId !== null && !nextTabIds.includes(paneState.activeTabId);
+      const nextActiveTabId = activeWasRemoved ? tabId : paneState.activeTabId;
+      const nextHistory = paneState.history.filter((id) => nextTabIds.includes(id));
+
+      return {
+        tabs: nextTabs,
+        [paneKey]: {
+          activeTabId: nextActiveTabId,
+          history: nextHistory,
+          tabIds: nextTabIds
+        }
+      };
+    });
+  },
+
+  closeAllTabsInPane: (pane) => {
+    set((state) => {
+      const paneKey = pane === "left" ? "leftPane" : "rightPane";
+      const otherPaneKey = pane === "left" ? "rightPane" : "leftPane";
+      const otherPane = state[otherPaneKey];
+
+      const removedIds = state[paneKey].tabIds.filter((id) => !otherPane.tabIds.includes(id));
+      const nextTabs = removedIds.reduce((acc, id) => omit(acc, id), state.tabs as Record<string, unknown>) as typeof state.tabs;
+
+      return {
+        tabs: nextTabs,
+        [paneKey]: emptyPane()
+      };
     });
   },
 

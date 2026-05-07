@@ -8,7 +8,9 @@
   "scripts": {
     "start": "electron-forge start",
     "package": "electron-forge package",
+    "package:win": "electron-forge package --platform win32 --arch x64",
     "make": "electron-forge make",
+    "make:win": "electron-forge make --platform win32 --arch x64",
     "test": "vitest run",
     "test:watch": "vitest"
   },
@@ -43,6 +45,7 @@
   "devDependencies": {
     "@electron-forge/cli": "^7.8.1",
     "@electron-forge/maker-dmg": "^7.8.1",
+    "@electron-forge/maker-squirrel": "^7.11.1",
     "@electron-forge/maker-zip": "^7.8.1",
     "@electron-forge/plugin-vite": "^7.8.1",
     "@testing-library/jest-dom": "^6.6.3",

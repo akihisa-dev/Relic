@@ -820,6 +820,41 @@ button:disabled {
 }
 
 /* ────────────────────────────────── */
+/* Tab context menu                   */
+/* ────────────────────────────────── */
+
+.tab-context-menu {
+  background: var(--popup-bg);
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  display: flex;
+  flex-direction: column;
+  min-width: 200px;
+  padding: 4px;
+}
+
+.tab-context-menu-item {
+  background: transparent;
+  border: 0;
+  border-radius: 5px;
+  font-size: 13px;
+  min-height: 28px;
+  padding: 0 10px;
+  text-align: left;
+}
+
+.tab-context-menu-item:hover {
+  background: var(--hover-strong);
+}
+
+.tab-context-menu-separator {
+  background: var(--border);
+  height: 1px;
+  margin: 4px 0;
+}
+
+/* ────────────────────────────────── */
 /* Editor surface                     */
 /* ────────────────────────────────── */
 
