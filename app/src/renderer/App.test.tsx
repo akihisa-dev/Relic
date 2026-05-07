@@ -1138,10 +1138,9 @@ describe("App", () => {
     fireEvent.click(await screen.findByRole("button", { name: /読書メモ/ }));
     fireEvent.click(screen.getByRole("button", { name: "Links" }));
 
-    expect(await screen.findByText("Outgoing")).toBeInTheDocument();
+    expect(await screen.findByText("アウトゴーイング")).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: "表示名" }).length).toBeGreaterThan(0);
     expect(screen.getAllByText("埋め込み").length).toBeGreaterThan(0);
-    expect(screen.getByText("Embed")).toBeInTheDocument();
   });
 
   it("右パネルにバックリンクを表示し、クリックすると参照元を開く", async () => {
@@ -1176,7 +1175,7 @@ describe("App", () => {
     fireEvent.click(await screen.findByRole("button", { name: /target/ }));
     fireEvent.click(screen.getByRole("button", { name: "Links" }));
 
-    expect(await screen.findByText("Backlinks")).toBeInTheDocument();
+    expect(await screen.findByText("バックリンク")).toBeInTheDocument();
     fireEvent.click(await screen.findByRole("button", { name: "source" }));
 
     expect(readMarkdownFile).toHaveBeenCalledWith({ path: "source.md" });
