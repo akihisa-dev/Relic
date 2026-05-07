@@ -332,15 +332,13 @@ export interface FeatureToggles {
   tools: boolean;
   frontmatter: boolean;
   rightPanel: boolean;
-  focusModes: boolean;
 }
 
 export const defaultFeatureToggles: FeatureToggles = {
   git: true,
   tools: true,
   frontmatter: true,
-  rightPanel: true,
-  focusModes: true
+  rightPanel: true
 };
 
 export interface GitSyncPreview {

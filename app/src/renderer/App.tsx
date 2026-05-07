@@ -1196,8 +1196,7 @@ function SettingsSidebar({
           { key: "git", label: t("settings.featureGit") },
           { key: "tools", label: t("settings.featureTools") },
           { key: "frontmatter", label: t("settings.featureFrontmatter") },
-          { key: "rightPanel", label: t("settings.featureRightPanel") },
-          { key: "focusModes", label: t("settings.featureFocusModes") }
+          { key: "rightPanel", label: t("settings.featureRightPanel") }
         ] as { key: keyof FeatureToggles; label: string }[]
       ).map(({ key, label }) => (
         <label className="setting-row" key={key}>
@@ -1648,14 +1647,12 @@ export function App(): ReactElement {
 
   const {
     activeSidebarView,
-    isFocusMode,
     isRightPanelOpen,
     isSidebarOpen,
     isTypewriterMode,
     rightPanelView,
     setRightPanelView,
     setSidebarView,
-    toggleFocusMode,
     toggleRightPanel,
     toggleSidebar,
     toggleTypewriterMode
@@ -2965,11 +2962,6 @@ export function App(): ReactElement {
       action: toggleRightPanel
     },
     {
-      id: "toggle-focus",
-      label: t("command.focusMode"),
-      action: toggleFocusMode
-    },
-    {
       id: "toggle-typewriter",
       label: t("command.typewriter"),
       shortcut: "⌘⇧T",
@@ -3034,7 +3026,7 @@ export function App(): ReactElement {
 
   return (
     <I18nProvider language={editorSettings.language}>
-    <div className={`app-shell${isFocusMode ? " app-shell--focus" : ""}`}>
+    <div className="app-shell">
       <div className="title-bar" />
       <div className="workspace">
         {/* 縦アイコンナビ（レール） */}
@@ -3080,9 +3072,12 @@ export function App(): ReactElement {
         {/* サイドバー */}
         {isSidebarOpen ? (
           <aside className="sidebar" style={{ width: sidebarWidth }}>
-            <div className="pane-heading">
-              {sidebarViews.find((v) => v.id === activeSidebarView)?.label}
+            <div className="sidebar-header">
+              <div className="pane-heading">
+                {sidebarViews.find((v) => v.id === activeSidebarView)?.label}
+              </div>
             </div>
+            <div className="sidebar-body">
             {activeSidebarView === "files" ? (
               <FilesSidebar
                 activePaths={activePaths}
@@ -3731,6 +3726,7 @@ export function App(): ReactElement {
                 e.preventDefault();
               }}
             />
+            </div>
           </aside>
         ) : null}
 
@@ -3808,7 +3804,7 @@ export function App(): ReactElement {
                 pane="left"
                 scrollTargetHeading={leftPaneScrollHeading}
                 showFrontmatter={featureToggles.frontmatter}
-                typewriterMode={isTypewriterMode && featureToggles.focusModes}
+                typewriterMode={isTypewriterMode}
                 workspacePath={workspaceState?.activeWorkspace?.path}
                 workspaceTags={workspaceTags.map((t) => t.tag)}
               />
@@ -3833,7 +3829,7 @@ export function App(): ReactElement {
                   pane="right"
                   scrollTargetHeading={rightPaneScrollHeading}
                   showFrontmatter={featureToggles.frontmatter}
-                  typewriterMode={isTypewriterMode && featureToggles.focusModes}
+                  typewriterMode={isTypewriterMode}
                   workspacePath={workspaceState?.activeWorkspace?.path}
                   workspaceTags={workspaceTags.map((t) => t.tag)}
                 />
@@ -3842,9 +3838,12 @@ export function App(): ReactElement {
 
             {isRightPanelOpen ? (
               <aside className="right-panel">
-                <div className="pane-heading">
-                  {rightPanelView === "outline" ? "Outline" : "Links"}
+                <div className="sidebar-header">
+                  <div className="pane-heading">
+                    {rightPanelView === "outline" ? t("pane.outline") : t("pane.links")}
+                  </div>
                 </div>
+                <div className="sidebar-body">
                 {rightPanelView === "outline" ? (
                   outlineHeadings.length > 0 ? (
                     <ul className="outline-list">
@@ -3933,6 +3932,7 @@ export function App(): ReactElement {
                 ) : (
                   <div className="empty-note">{t("empty.noLinks")}</div>
                 )}
+                </div>
               </aside>
             ) : null}
           </div>
