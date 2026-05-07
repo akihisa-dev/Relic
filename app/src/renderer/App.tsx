@@ -1244,6 +1244,11 @@ interface PaneViewProps {
   onTabClose: (tabId: string) => void;
   onTabSelect: (tabId: string) => void;
   onTagSearch: (tag: string) => void;
+  onCloseOtherTabs: (tabId: string) => void;
+  onCloseTabsToRight: (tabId: string) => void;
+  onCloseAllTabs: () => void;
+  onOpenInOtherPane: (tabId: string) => void;
+  isSplitView: boolean;
 }
 
 function PaneView({
@@ -1263,14 +1268,28 @@ function PaneView({
   onScrollTargetHandled,
   onTabClose,
   onTabSelect,
-  onTagSearch
+  onTagSearch,
+  onCloseOtherTabs,
+  onCloseTabsToRight,
+  onCloseAllTabs,
+  onOpenInOtherPane,
+  isSplitView
 }: PaneViewProps): ReactElement {
   const [newNoteName, setNewNoteName] = useState("");
+  const [contextMenu, setContextMenu] = useState<{ tabId: string; x: number; y: number } | null>(null);
   const { leftPane, rightPane, tabs, updateTabContent, setTabViewMode } = useEditorStore();
   const paneState = pane === "left" ? leftPane : rightPane;
   const activeTab = paneState.activeTabId ? tabs[paneState.activeTabId] : null;
   const viewRef = useRef<EditorView | null>(null);
   const t = useT();
+
+  // コンテキストメニューを外部クリックで閉じる
+  useEffect(() => {
+    if (!contextMenu) return;
+    const close = () => setContextMenu(null);
+    window.addEventListener("click", close);
+    return () => window.removeEventListener("click", close);
+  }, [contextMenu]);
 
   // 自動保存
   useAutoSave(activeTab?.content ?? "", activeTab?.path ?? null, activeTab !== null);
@@ -1316,6 +1335,11 @@ function PaneView({
                 e.stopPropagation();
                 onTabSelect(tabId);
               }}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setContextMenu({ tabId, x: e.clientX, y: e.clientY });
+              }}
             >
               <span className="pane-tab-name">{tab.name}</span>
               <button
@@ -1333,6 +1357,56 @@ function PaneView({
           );
         })}
       </div>
+
+      {contextMenu ? (
+        <div
+          className="tab-context-menu"
+          onClick={(e) => e.stopPropagation()}
+          style={{ left: contextMenu.x, position: "fixed", top: contextMenu.y, zIndex: 1000 }}
+        >
+          <button
+            className="tab-context-menu-item"
+            onClick={() => { onTabClose(contextMenu.tabId); setContextMenu(null); }}
+            type="button"
+          >
+            {t("pane.closeTab")}
+          </button>
+          <button
+            className="tab-context-menu-item"
+            onClick={() => { onCloseOtherTabs(contextMenu.tabId); setContextMenu(null); }}
+            type="button"
+          >
+            {t("pane.closeOtherTabs")}
+          </button>
+          <button
+            className="tab-context-menu-item"
+            onClick={() => { onCloseTabsToRight(contextMenu.tabId); setContextMenu(null); }}
+            type="button"
+          >
+            {t("pane.closeTabsToRight")}
+          </button>
+          <div className="tab-context-menu-separator" />
+          <button
+            className="tab-context-menu-item"
+            onClick={() => { onCloseAllTabs(); setContextMenu(null); }}
+            type="button"
+          >
+            {t("pane.closeAllTabs")}
+          </button>
+          {isSplitView ? (
+            <>
+              <div className="tab-context-menu-separator" />
+              <button
+                className="tab-context-menu-item"
+                onClick={() => { onOpenInOtherPane(contextMenu.tabId); setContextMenu(null); }}
+                type="button"
+              >
+                {t("pane.openInOtherPane")}
+              </button>
+            </>
+          ) : null}
+        </div>
+      ) : null}
 
       {/* エディタ本体 or 空状態 */}
       {activeTab ? (
@@ -1561,6 +1635,9 @@ export function App(): ReactElement {
     tabs,
     closeAllTabs,
     closeTab,
+    closeOtherTabs,
+    closeTabsToRight,
+    closeAllTabsInPane,
     openFileInPane,
     setEditorSettings,
     setFocusedPane,
@@ -1830,6 +1907,13 @@ export function App(): ReactElement {
     setSidebarView("search");
     if (!isSidebarOpen) toggleSidebar();
   }, [isSidebarOpen, setSidebarView, toggleSidebar]);
+
+  const openFileInOtherPane = useCallback((fromPane: PaneId, tabId: string) => {
+    const tab = tabs[tabId];
+    if (!tab || !isSplit) return;
+    const otherPane = fromPane === "left" ? "right" : "left";
+    openFileInPane(otherPane, { content: tab.content, name: tab.name, path: tab.path });
+  }, [tabs, isSplit, openFileInPane]);
 
   const handleSelectFolder = useCallback(
     (node: Extract<WorkspaceTreeNode, { type: "folder" }>): void => {
@@ -3716,6 +3800,11 @@ export function App(): ReactElement {
                 onTabClose={(tabId) => closeTab("left", tabId)}
                 onTabSelect={(tabId) => setTabActive("left", tabId)}
                 onTagSearch={handleTagSearch}
+                onCloseOtherTabs={(tabId) => closeOtherTabs("left", tabId)}
+                onCloseTabsToRight={(tabId) => closeTabsToRight("left", tabId)}
+                onCloseAllTabs={() => closeAllTabsInPane("left")}
+                onOpenInOtherPane={(tabId) => openFileInOtherPane("left", tabId)}
+                isSplitView={isSplit}
                 pane="left"
                 scrollTargetHeading={leftPaneScrollHeading}
                 showFrontmatter={featureToggles.frontmatter}
@@ -3736,6 +3825,11 @@ export function App(): ReactElement {
                   onTabClose={(tabId) => closeTab("right", tabId)}
                   onTabSelect={(tabId) => setTabActive("right", tabId)}
                   onTagSearch={handleTagSearch}
+                  onCloseOtherTabs={(tabId) => closeOtherTabs("right", tabId)}
+                  onCloseTabsToRight={(tabId) => closeTabsToRight("right", tabId)}
+                  onCloseAllTabs={() => closeAllTabsInPane("right")}
+                  onOpenInOtherPane={(tabId) => openFileInOtherPane("right", tabId)}
+                  isSplitView={isSplit}
                   pane="right"
                   scrollTargetHeading={rightPaneScrollHeading}
                   showFrontmatter={featureToggles.frontmatter}
