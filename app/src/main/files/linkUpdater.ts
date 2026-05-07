@@ -32,7 +32,11 @@ export async function updateLinksForFileRename(
     let content: string;
     try {
       content = await readFile(absoluteSourcePath.value, "utf8");
-    } catch {
+    } catch (err) {
+      const code = (err as NodeJS.ErrnoException).code;
+      if (code !== "ENOENT") {
+        console.error(`[linkUpdater] readFile failed: ${absoluteSourcePath.value}`, err);
+      }
       continue;
     }
 
@@ -46,7 +50,11 @@ export async function updateLinksForFileRename(
     );
 
     if (updatedContent !== content) {
-      await writeFile(absoluteSourcePath.value, updatedContent, "utf8");
+      try {
+        await writeFile(absoluteSourcePath.value, updatedContent, "utf8");
+      } catch (err) {
+        console.error(`[linkUpdater] writeFile failed: ${absoluteSourcePath.value}`, err);
+      }
     }
   }
 }
@@ -72,7 +80,11 @@ export async function updateLinksForFolderRename(
     let content: string;
     try {
       content = await readFile(absoluteSourcePath.value, "utf8");
-    } catch {
+    } catch (err) {
+      const code = (err as NodeJS.ErrnoException).code;
+      if (code !== "ENOENT") {
+        console.error(`[linkUpdater] readFile failed: ${absoluteSourcePath.value}`, err);
+      }
       continue;
     }
 
@@ -83,7 +95,11 @@ export async function updateLinksForFolderRename(
     );
 
     if (updatedContent !== content) {
-      await writeFile(absoluteSourcePath.value, updatedContent, "utf8");
+      try {
+        await writeFile(absoluteSourcePath.value, updatedContent, "utf8");
+      } catch (err) {
+        console.error(`[linkUpdater] writeFile failed: ${absoluteSourcePath.value}`, err);
+      }
     }
   }
 }
