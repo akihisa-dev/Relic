@@ -1245,4 +1245,28 @@ describe("App", () => {
     });
     expect((await screen.findAllByText("新規ノート")).length).toBeGreaterThan(0);
   });
+
+  it("機能トグル git=false でナビから Git ビューが非表示になる", async () => {
+    window.relic = makeRelicApi({
+      getFeatureToggles: vi.fn().mockResolvedValue({ ok: true, value: { ...defaultFeatureToggles, git: false } }),
+      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
+    });
+
+    await renderApp();
+
+    await screen.findByRole("button", { name: "ファイル" });
+    expect(screen.queryByRole("button", { name: "Git" })).toBeNull();
+  });
+
+  it("機能トグル tools=false でナビから Tools ビューが非表示になる", async () => {
+    window.relic = makeRelicApi({
+      getFeatureToggles: vi.fn().mockResolvedValue({ ok: true, value: { ...defaultFeatureToggles, tools: false } }),
+      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
+    });
+
+    await renderApp();
+
+    await screen.findByRole("button", { name: "ファイル" });
+    expect(screen.queryByRole("button", { name: "ツール" })).toBeNull();
+  });
 });
