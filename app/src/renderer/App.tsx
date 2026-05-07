@@ -1242,6 +1242,7 @@ interface PaneViewProps {
   onScrollTargetHandled?: () => void;
   onTabClose: (tabId: string) => void;
   onTabSelect: (tabId: string) => void;
+  onTagSearch: (tag: string) => void;
 }
 
 function PaneView({
@@ -1260,7 +1261,8 @@ function PaneView({
   onOpenWikiLink,
   onScrollTargetHandled,
   onTabClose,
-  onTabSelect
+  onTabSelect,
+  onTagSearch
 }: PaneViewProps): ReactElement {
   const [newNoteName, setNewNoteName] = useState("");
   const { leftPane, rightPane, tabs, updateTabContent, setTabViewMode } = useEditorStore();
@@ -1365,15 +1367,16 @@ function PaneView({
                     workspaceTags={workspaceTags}
                   />
                 )}
-                <Editor
-                  allFilePaths={allFilePaths}
+                <Preview
                   content={activeTab.content}
-                  key={`live-${activeTab.id}`}
-                  livePreview
+                  key={`preview-${activeTab.id}`}
                   onChange={(content) => updateTabContent(activeTab.id, content)}
+                  onOpenWikiLink={onOpenWikiLink}
+                  onScrollTargetHandled={onScrollTargetHandled}
+                  onTagSearch={onTagSearch}
+                  scrollTargetHeading={scrollTargetHeading}
                   settings={editorSettings}
-                  typewriterMode={typewriterMode}
-                  viewRef={viewRef}
+                  workspacePath={workspacePath}
                 />
               </div>
             ) : (
@@ -1593,13 +1596,15 @@ export function App(): ReactElement {
 
   // 初期ロード
   useEffect(() => {
+    let canceled = false;
+
     void window.relic?.getAppInfo().then((result) => {
-      if (result.ok) {
-        setAppInfo(result.value);
-      }
+      if (canceled) return;
+      if (result.ok) setAppInfo(result.value);
     });
 
     void window.relic?.getWorkspaceState().then((result) => {
+      if (canceled) return;
       if (result.ok) {
         setWorkspaceState(result.value);
       } else {
@@ -1608,28 +1613,26 @@ export function App(): ReactElement {
     });
 
     void window.relic?.getEditorSettings().then((result) => {
-      if (result.ok) {
-        setEditorSettings(result.value);
-      }
+      if (canceled) return;
+      if (result.ok) setEditorSettings(result.value);
     });
 
     void window.relic?.getGitHubAuthStatus().then((result) => {
-      if (result.ok) {
-        setGitHubAuthStatus(result.value);
-      }
+      if (canceled) return;
+      if (result.ok) setGitHubAuthStatus(result.value);
     });
 
     void window.relic?.getAutoSyncSettings().then((result) => {
-      if (result.ok) {
-        setAutoSyncSettings(result.value);
-      }
+      if (canceled) return;
+      if (result.ok) setAutoSyncSettings(result.value);
     });
 
     void window.relic?.getFeatureToggles().then((result) => {
-      if (result.ok) {
-        setFeatureToggles(result.value);
-      }
+      if (canceled) return;
+      if (result.ok) setFeatureToggles(result.value);
     });
+
+    return () => { canceled = true; };
   }, [setEditorSettings]);
 
   // ──────────────────
@@ -1779,6 +1782,13 @@ export function App(): ReactElement {
     },
     [focusedPane, leftPane, openFileInPane, rightPane, tabs]
   );
+
+  const handleTagSearch = useCallback((tag: string): void => {
+    setSearchMode("tag");
+    setSearchQuery(tag);
+    setSidebarView("search");
+    if (!isSidebarOpen) toggleSidebar();
+  }, [isSidebarOpen, setSidebarView, toggleSidebar]);
 
   const handleSelectFolder = useCallback(
     (node: Extract<WorkspaceTreeNode, { type: "folder" }>): void => {
@@ -3655,6 +3665,7 @@ export function App(): ReactElement {
                 onScrollTargetHandled={() => setLeftPaneScrollHeading(undefined)}
                 onTabClose={(tabId) => closeTab("left", tabId)}
                 onTabSelect={(tabId) => setTabActive("left", tabId)}
+                onTagSearch={handleTagSearch}
                 pane="left"
                 scrollTargetHeading={leftPaneScrollHeading}
                 showFrontmatter={featureToggles.frontmatter}
@@ -3674,6 +3685,7 @@ export function App(): ReactElement {
                   onScrollTargetHandled={() => setRightPaneScrollHeading(undefined)}
                   onTabClose={(tabId) => closeTab("right", tabId)}
                   onTabSelect={(tabId) => setTabActive("right", tabId)}
+                  onTagSearch={handleTagSearch}
                   pane="right"
                   scrollTargetHeading={rightPaneScrollHeading}
                   showFrontmatter={featureToggles.frontmatter}
@@ -3795,6 +3807,9 @@ export function App(): ReactElement {
         ) : (
           <span>{t("app.wordCount", { chars: 0, words: 0 })}</span>
         )}
+        {featureToggles.git && gitStatus?.initialized && gitStatus.currentBranch ? (
+          <span className="status-bar-branch">⎇ {gitStatus.currentBranch}</span>
+        ) : null}
       </footer>
 
       {showCommandPalette ? (
