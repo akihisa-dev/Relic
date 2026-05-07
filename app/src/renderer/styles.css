@@ -565,7 +565,7 @@ button:disabled {
 /* ────────────────────────────────── */
 
 .main-area {
-  background: #ffffff;
+  background: var(--bg);
   display: grid;
   grid-template-rows: 40px minmax(0, 1fr);
   min-width: 0;
@@ -780,8 +780,8 @@ button:disabled {
 }
 
 .pane-tab--active {
-  background: #ffffff;
-  border-color: rgba(31, 35, 40, 0.1);
+  background: var(--bg);
+  border-color: var(--border);
   color: var(--text);
 }
 
@@ -1309,13 +1309,13 @@ button:disabled {
 .replace-btn--confirm {
   background: rgba(213, 91, 32, 0.1);
   border-color: rgba(213, 91, 32, 0.3);
-  color: #a83200;
+  color: var(--accent);
   margin-top: 6px;
   width: 100%;
 }
 
 .replace-status {
-  color: #2d6a2d;
+  color: var(--success);
   font-size: 12px;
   margin-top: 6px;
 }
@@ -1336,7 +1336,7 @@ button:disabled {
 }
 
 .replace-preview-list .replace-preview-after {
-  color: #2d6a2d;
+  color: var(--success);
 }
 
 /* ─── Frontmatter Form ─── */
@@ -1387,7 +1387,7 @@ button:disabled {
   background: rgba(168, 50, 0, 0.08);
   border: 1px solid rgba(168, 50, 0, 0.24);
   border-radius: 4px;
-  color: #a83200;
+  color: var(--accent);
   font-size: 11px;
   line-height: 1.5;
   margin-bottom: 4px;
@@ -1647,8 +1647,14 @@ button:disabled {
   color-scheme: dark;
 }
 
-[data-theme="dark"] .preview-content {
+[data-theme="dark"] .preview-body {
   color: var(--text);
+}
+
+[data-theme="dark"] .preview-body mark,
+[data-theme="dark"] .cm-live-highlight {
+  background: rgba(255, 220, 0, 0.25);
+  color: inherit;
 }
 
 [data-theme="dark"] .secondary-button {
@@ -1689,6 +1695,17 @@ button:disabled {
   }
   :root:not([data-theme="light"]) .secondary-button {
     color: var(--text-2);
+  }
+  :root:not([data-theme="light"]) .preview-body {
+    color: var(--text);
+  }
+  :root:not([data-theme="light"]) .preview-body mark,
+  :root:not([data-theme="light"]) .cm-live-highlight {
+    background: rgba(255, 220, 0, 0.25);
+    color: inherit;
+  }
+  :root:not([data-theme="light"]) .cm-editor {
+    color-scheme: dark;
   }
 }
 
