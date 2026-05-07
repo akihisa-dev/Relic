@@ -70,6 +70,7 @@ function createWindow(): void {
     minWidth: 960,
     title: "Relic",
     titleBarStyle: "hiddenInset",
+    trafficLightPosition: { x: 10, y: 12 },
     width: 1240,
     webPreferences: {
       contextIsolation: true,
