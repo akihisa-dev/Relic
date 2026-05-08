@@ -60,7 +60,8 @@ checklist: testing.md, ../tech/stack.md
 | P8 | UI総点検・設計照合 | done | `../ui/screens-macos.md`, `../ui/navigation.md`, `../ui/DESIGN.md` |
 | P9 | 機能確認・不具合修正 | done | `feature-checklist.md` |
 | P10 | 自分用ビルド安定化 | current | `testing.md`, `../tech/stack.md` |
-| P11 | 配布判断・リリース準備 | future | `../PLAN.md`, `../architecture/decisions.md` |
+| P11 | 文書・コード整合化 | future | `doc-code-alignment.md` |
+| P12 | 配布判断・リリース準備 | future | `../PLAN.md`, `../architecture/decisions.md` |
 
 ---
 
@@ -95,6 +96,41 @@ AIはこのフェーズを前提にユーザーへ接する。
 
 - `../ui/DESIGN.md` は通底するデザイン原則。個別アプリの開発状況・機能仕様・設定・判断を書き込まない
 - `../ui/DESIGN.md` は、ユーザーがこのファイル自体のデザイン原則を変更すると明示した場合だけ編集する
+
+---
+
+### P11-doc-code-alignment
+
+文書とコードの不一致を解消するフェーズ。
+
+AIはこのフェーズを前提にユーザーへ接する。
+最初に `doc-code-alignment.md` の「判断が必要な項目まとめ」を提示し、
+1項目ずつユーザーに決定を求めること。決定後、合意した方向でコードまたは文書を修正する。
+
+最初に読む:
+
+- `doc-code-alignment.md`
+
+必要になったときだけ読む:
+
+- 修正対象のコード: `app/src/` 配下の該当ファイル
+- 修正対象の仕様書: `../spec/` 配下の該当ファイル
+- 修正対象の設計書: `../architecture/` 配下の該当ファイル
+- 過去の判断経緯: `../journal/` の該当日
+
+作業の進め方:
+
+1. `doc-code-alignment.md` の「判断が必要な項目 まとめ」表を開く
+2. 🔴 の項目から順に、ユーザーに「コード正・実装・省略」を1問ずつ確認する
+3. 決定したら `doc-code-alignment.md` の「決定」欄を埋める
+4. 全項目の決定が終わったら、合意した変更をコードまたは文書に反映する
+5. 変更後、`feature-checklist.md` と関連する spec ファイルを更新する
+
+注意:
+
+- 1セッションで全項目を解決しようとしない。決定→修正→確認のサイクルを短くする
+- 「コード正」の場合は文書だけを変更する。「実装」の場合はコード変更も伴う
+- 実装を伴う変更は、変更前に影響範囲をユーザーに説明してから着手する
 
 ---
 
