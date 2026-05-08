@@ -5,7 +5,11 @@
       "Bash(echo \"exit: $?\")",
       "Bash(npm --version)",
       "Bash(where node *)",
-      "Bash(npm install *)"
+      "Bash(npm install *)",
+      "PowerShell([System.Environment]::GetEnvironmentVariable\\(\"PATH\", \"User\"\\) -split \";\" | Where-Object { $_ -ne \"\" })",
+      "PowerShell(cmd /c \"where pnpm 2>&1\")",
+      "Bash(pnpm install *)",
+      "PowerShell($bytes = [System.IO.File]::ReadAllBytes\\(\"C:\\\\Users\\\\80921993\\\\github\\\\relic\\\\Relicを起動.bat\"\\); $crlf = 0; $lf = 0; for \\($i = 0; $i -lt $bytes.Length - 1; $i++\\) { if \\($bytes[$i] -eq 13 -and $bytes[$i+1] -eq 10\\) { $crlf++ } elseif \\($bytes[$i] -eq 10 -and \\($i -eq 0 -or $bytes[$i-1] -ne 13\\)\\) { $lf++ } }; \"CRLF: $crlf, LF-only: $lf\")"
     ]
   }
 }
