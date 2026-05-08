@@ -2,12 +2,9 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import {
-  defaultAutoSyncSettings,
   defaultEditorSettings,
   defaultFeatureToggles,
   defaultUserDefinedFields,
-  type AutoSyncInterval,
-  type AutoSyncSettings,
   type EditorSettings,
   type FeatureToggles,
   type UserDefinedField,
@@ -16,7 +13,6 @@ import {
 } from "../../shared/ipc";
 
 export interface AppSettings {
-  autoSync: AutoSyncSettings;
   editorSettings: EditorSettings;
   featureToggles: FeatureToggles;
   lastWorkspaceId: string | null;
@@ -25,7 +21,6 @@ export interface AppSettings {
 }
 
 const defaultAppSettings: AppSettings = {
-  autoSync: defaultAutoSyncSettings,
   editorSettings: defaultEditorSettings,
   featureToggles: defaultFeatureToggles,
   lastWorkspaceId: null,
@@ -45,7 +40,6 @@ export async function readAppSettings(userDataPath: string): Promise<AppSettings
     const parsedSettings = JSON.parse(rawSettings) as Partial<AppSettings>;
 
     return {
-      autoSync: parseAutoSyncSettings(parsedSettings.autoSync),
       editorSettings: parseEditorSettings(parsedSettings.editorSettings),
       featureToggles: parseFeatureToggles(parsedSettings.featureToggles),
       lastWorkspaceId:
@@ -106,35 +100,21 @@ function parseFeatureToggles(raw: unknown): FeatureToggles {
   };
 }
 
-function parseAutoSyncSettings(raw: unknown): AutoSyncSettings {
-  if (typeof raw !== "object" || raw === null) {
-    return defaultAutoSyncSettings;
-  }
-
-  const s = raw as Record<string, unknown>;
-  const validIntervals: AutoSyncInterval[] = [5, 15, 30, 60];
-  const interval = validIntervals.includes(s.intervalMinutes as AutoSyncInterval)
-    ? (s.intervalMinutes as AutoSyncInterval)
-    : defaultAutoSyncSettings.intervalMinutes;
-
-  return {
-    autoPull: typeof s.autoPull === "boolean" ? s.autoPull : false,
-    autoPush: typeof s.autoPush === "boolean" ? s.autoPush : false,
-    intervalMinutes: interval
-  };
-}
-
 const VALID_FIELD_TYPES: UserDefinedFieldType[] = ["text", "number", "date", "boolean", "select", "multi-select", "url"];
+const FIELD_NAME_PATTERN = /^[A-Za-z0-9_]+$/;
 
 function parseUserDefinedFields(raw: unknown): UserDefinedField[] {
   if (!Array.isArray(raw)) return defaultUserDefinedFields;
 
   const result: UserDefinedField[] = [];
+  const names = new Set<string>();
 
   for (const item of raw) {
+    if (result.length >= 13) break;
     if (typeof item !== "object" || item === null) continue;
     const f = item as Record<string, unknown>;
-    if (typeof f.name !== "string" || !f.name) continue;
+    if (typeof f.name !== "string" || !FIELD_NAME_PATTERN.test(f.name)) continue;
+    if (names.has(f.name)) continue;
     if (!VALID_FIELD_TYPES.includes(f.type as UserDefinedFieldType)) continue;
 
     const field: UserDefinedField = { name: f.name, type: f.type as UserDefinedFieldType };
@@ -144,6 +124,7 @@ function parseUserDefinedFields(raw: unknown): UserDefinedField[] {
     }
 
     result.push(field);
+    names.add(field.name);
   }
 
   return result;

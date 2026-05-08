@@ -6,6 +6,21 @@ import { useT } from "../i18n";
 
 const FIELD_TYPES: UserDefinedFieldType[] = ["text", "number", "date", "boolean", "select", "multi-select", "url"];
 const MAX_USER_DEFINED_FIELDS = 13;
+const FIELD_NAME_PATTERN = /^[A-Za-z0-9_]+$/;
+
+function parseChoices(value: string): string[] | undefined {
+  const choices = value.split(",").map((c) => c.trim()).filter(Boolean);
+
+  return choices.length > 0 ? choices : undefined;
+}
+
+function choicesText(field: UserDefinedField): string {
+  return field.choices?.join(", ") ?? "";
+}
+
+function needsChoices(type: UserDefinedFieldType): boolean {
+  return type === "select" || type === "multi-select";
+}
 
 export function SettingsSidebar({
   appInfo,
@@ -66,6 +81,17 @@ export function SettingsSidebar({
     setAutoSyncDraft(next);
     onAutoSyncSave(next);
   };
+
+  const updateUserDefinedField = (index: number, nextField: UserDefinedField): void => {
+    const next = fieldsDraft.map((field, i) => (i === index ? nextField : field));
+    setFieldsDraft(next);
+    onUserDefinedFieldsSave(next);
+  };
+
+  const isFieldNameAvailable = (name: string, currentIndex?: number): boolean => (
+    FIELD_NAME_PATTERN.test(name) &&
+    !fieldsDraft.some((field, i) => field.name === name && i !== currentIndex)
+  );
 
   return (
     <div className="sidebar-section settings-section">
@@ -216,9 +242,46 @@ export function SettingsSidebar({
       ))}
       <div className="links-panel-subheading" style={{ marginTop: "1rem" }}>{t("settings.customFields")}</div>
       {fieldsDraft.map((field, i) => (
-        <div className="setting-row" key={field.name}>
-          <span className="setting-custom-field-name" title={field.name}>{field.name}</span>
-          <span className="setting-custom-field-type">{field.type}</span>
+        <div className="setting-custom-field-edit" key={`${field.name}-${i}`}>
+          <input
+            className="setting-custom-field-input"
+            onChange={(e) => {
+              const name = e.target.value.trim();
+              if (!isFieldNameAvailable(name, i)) return;
+              updateUserDefinedField(i, { ...field, name });
+            }}
+            placeholder={t("settings.customFieldName")}
+            type="text"
+            value={field.name}
+          />
+          <select
+            aria-label={t("settings.customFieldType")}
+            onChange={(e) => {
+              const type = e.target.value as UserDefinedFieldType;
+              updateUserDefinedField(i, {
+                name: field.name,
+                type,
+                ...(needsChoices(type) && field.choices ? { choices: field.choices } : {})
+              });
+            }}
+            value={field.type}
+          >
+            {FIELD_TYPES.map((ft) => (
+              <option key={ft} value={ft}>{ft}</option>
+            ))}
+          </select>
+          {needsChoices(field.type) ? (
+            <input
+              className="setting-custom-field-input"
+              defaultValue={choicesText(field)}
+              onBlur={(e) => {
+                const choices = parseChoices(e.target.value);
+                updateUserDefinedField(i, { ...field, ...(choices ? { choices } : { choices: undefined }) });
+              }}
+              placeholder={t("settings.customFieldChoices")}
+              type="text"
+            />
+          ) : null}
           <button
             className="setting-action-btn setting-action-btn--danger"
             onClick={() => {
@@ -262,13 +325,14 @@ export function SettingsSidebar({
           ) : null}
           <button
             className="setting-action-btn"
-            disabled={!newFieldName.trim() || fieldsDraft.some((f) => f.name === newFieldName.trim())}
+            disabled={!isFieldNameAvailable(newFieldName.trim())}
             onClick={() => {
               const name = newFieldName.trim();
-              if (!name) return;
+              if (!isFieldNameAvailable(name)) return;
               const field: UserDefinedField = { name, type: newFieldType };
-              if ((newFieldType === "select" || newFieldType === "multi-select") && newFieldChoices.trim()) {
-                field.choices = newFieldChoices.split(",").map((c) => c.trim()).filter(Boolean);
+              const choices = parseChoices(newFieldChoices);
+              if (needsChoices(newFieldType) && choices) {
+                field.choices = choices;
               }
               const next = [...fieldsDraft, field];
               setFieldsDraft(next);

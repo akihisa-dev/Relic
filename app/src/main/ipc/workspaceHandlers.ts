@@ -7,6 +7,8 @@ import {
   cloneGitHubRepositoryChannel,
   type CloneGitHubRepositoryInput,
   createNewWorkspaceChannel,
+  defaultAutoSyncSettings,
+  defaultFeatureToggles,
   getAutoSyncSettingsChannel,
   getFeatureTogglesChannel,
   getUserDefinedFieldsChannel,
@@ -18,14 +20,15 @@ import {
   saveFeatureTogglesChannel,
   saveUserDefinedFieldsChannel,
   type FeatureToggles,
-  defaultFeatureToggles,
   switchWorkspaceChannel,
   type SwitchWorkspaceInput,
   togglePinChannel,
   type UserDefinedField,
+  type UserDefinedFieldType,
   type WorkspaceState
 } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
+import { refreshAutoSyncTimer } from "../autoSyncScheduler";
 import { cloneGitHubRepository } from "../files/git";
 import { readWorkspaceFileTree } from "../files/fileTree";
 import { readWorkspaceTags } from "../files/tags";
@@ -38,6 +41,29 @@ import {
   prepareWorkspace,
   toWorkspaceState
 } from "../workspace/workspaceService";
+
+const userDefinedFieldTypes: UserDefinedFieldType[] = ["text", "number", "date", "boolean", "select", "multi-select", "url"];
+const userDefinedFieldNamePattern = /^[A-Za-z0-9_]+$/;
+
+function isUserDefinedFieldsInput(input: unknown): input is UserDefinedField[] {
+  if (!Array.isArray(input) || input.length > 13) return false;
+
+  const names = new Set<string>();
+
+  return input.every((field) => {
+    if (typeof field !== "object" || field === null) return false;
+    const candidate = field as Record<string, unknown>;
+
+    if (typeof candidate.name !== "string" || !userDefinedFieldNamePattern.test(candidate.name)) return false;
+    if (names.has(candidate.name)) return false;
+    names.add(candidate.name);
+    if (!userDefinedFieldTypes.includes(candidate.type as UserDefinedFieldType)) return false;
+    if ("choices" in candidate && !Array.isArray(candidate.choices)) return false;
+    if (Array.isArray(candidate.choices) && !candidate.choices.every((choice) => typeof choice === "string")) return false;
+
+    return true;
+  });
+}
 
 export function registerWorkspaceHandlers(): void {
   ipcMain.handle(getWorkspaceStateChannel, async (): Promise<RelicResult<WorkspaceState>> => {
@@ -93,6 +119,7 @@ export function registerWorkspaceHandlers(): void {
       const settings = await readAppSettings(app.getPath("userData"));
       const nextSettings = addOrActivateWorkspace(settings, workspace);
       await writeAppSettings(app.getPath("userData"), nextSettings);
+      await refreshAutoSyncTimer();
 
       return ok(await buildWorkspaceState(nextSettings));
     } catch (error) {
@@ -126,6 +153,7 @@ export function registerWorkspaceHandlers(): void {
       const settings = await readAppSettings(app.getPath("userData"));
       const nextSettings = addOrActivateWorkspace(settings, workspace);
       await writeAppSettings(app.getPath("userData"), nextSettings);
+      await refreshAutoSyncTimer();
 
       return ok(await buildWorkspaceState(nextSettings));
     } catch (error) {
@@ -195,6 +223,7 @@ export function registerWorkspaceHandlers(): void {
 
         await prepareWorkspace(activeWorkspace.path);
         await writeAppSettings(app.getPath("userData"), nextSettings.value);
+        await refreshAutoSyncTimer();
 
         return ok(await buildWorkspaceState(nextSettings.value));
       } catch (error) {
@@ -242,6 +271,7 @@ export function registerWorkspaceHandlers(): void {
         const settings = await readAppSettings(app.getPath("userData"));
         const nextSettings = addOrActivateWorkspace(settings, workspace);
         await writeAppSettings(app.getPath("userData"), nextSettings);
+        await refreshAutoSyncTimer();
 
         return ok(await buildWorkspaceState(nextSettings));
       } catch (error) {
@@ -257,8 +287,15 @@ export function registerWorkspaceHandlers(): void {
   ipcMain.handle(getAutoSyncSettingsChannel, async (): Promise<RelicResult<AutoSyncSettings>> => {
     try {
       const settings = await readAppSettings(app.getPath("userData"));
+      const activeWorkspace = settings.workspaces.find((ws) => ws.id === settings.lastWorkspaceId);
 
-      return ok(settings.autoSync);
+      if (!activeWorkspace) {
+        return ok(defaultAutoSyncSettings);
+      }
+
+      const workspaceSettings = await readWorkspaceSettings(app.getPath("userData"), activeWorkspace.id);
+
+      return ok(workspaceSettings.autoSync);
     } catch (error) {
       return fail(
         "AUTO_SYNC_SETTINGS_FAILED",
@@ -277,7 +314,18 @@ export function registerWorkspaceHandlers(): void {
         }
 
         const settings = await readAppSettings(app.getPath("userData"));
-        await writeAppSettings(app.getPath("userData"), { ...settings, autoSync: input });
+        const activeWorkspace = settings.workspaces.find((ws) => ws.id === settings.lastWorkspaceId);
+
+        if (!activeWorkspace) {
+          return fail("AUTO_SYNC_NO_WORKSPACE", "自動同期を設定するワークスペースがありません。");
+        }
+
+        const workspaceSettings = await readWorkspaceSettings(app.getPath("userData"), activeWorkspace.id);
+        await writeWorkspaceSettings(app.getPath("userData"), activeWorkspace.id, {
+          ...workspaceSettings,
+          autoSync: input
+        });
+        await refreshAutoSyncTimer();
 
         return ok(undefined);
       } catch (error) {
@@ -320,7 +368,7 @@ export function registerWorkspaceHandlers(): void {
 
   ipcMain.handle(saveUserDefinedFieldsChannel, async (_event, input: UserDefinedField[]): Promise<RelicResult<void>> => {
     try {
-      if (!Array.isArray(input)) {
+      if (!isUserDefinedFieldsInput(input)) {
         return fail("USER_DEFINED_FIELDS_INVALID_INPUT", "カスタムフィールドの値が正しくありません。");
       }
 
