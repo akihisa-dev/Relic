@@ -1760,8 +1760,11 @@ export function App(): ReactElement {
         </nav>
 
         {/* サイドバー */}
-        {isSidebarOpen ? (
-          <aside className="sidebar" style={{ width: sidebarWidth }}>
+          <aside
+            aria-hidden={!isSidebarOpen}
+            className={`sidebar${isSidebarOpen ? "" : " sidebar--closed"}`}
+            style={{ width: isSidebarOpen ? sidebarWidth : 0 }}
+          >
             <div className="sidebar-header">
               <div className="pane-heading">
                 {sidebarViews.find((v) => v.id === activeSidebarView)?.label}
@@ -1913,7 +1916,6 @@ export function App(): ReactElement {
             />
             </div>
           </aside>
-        ) : null}
 
         {/* メインエリア */}
         <main className="main-area">
@@ -2020,8 +2022,10 @@ export function App(): ReactElement {
               </div>
             </div>
 
-            {isRightPanelOpen ? (
-              <aside className="right-panel">
+              <aside
+                aria-hidden={!isRightPanelOpen}
+                className={`right-panel${isRightPanelOpen ? "" : " right-panel--closed"}`}
+              >
                 <div className="sidebar-header">
                   <div className="pane-heading">
                     {rightPanelView === "outline"
@@ -2137,7 +2141,6 @@ export function App(): ReactElement {
                 )}
                 </div>
               </aside>
-            ) : null}
           </div>
         </main>
       </div>
