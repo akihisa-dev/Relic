@@ -9,17 +9,20 @@ import {
   createNewWorkspaceChannel,
   getAutoSyncSettingsChannel,
   getFeatureTogglesChannel,
+  getUserDefinedFieldsChannel,
   getWorkspaceStateChannel,
   getWorkspaceTagsChannel,
   openWorkspaceChannel,
   saveAutoSyncSettingsChannel,
   type AutoSyncSettings,
   saveFeatureTogglesChannel,
+  saveUserDefinedFieldsChannel,
   type FeatureToggles,
   defaultFeatureToggles,
   switchWorkspaceChannel,
   type SwitchWorkspaceInput,
   togglePinChannel,
+  type UserDefinedField,
   type WorkspaceState
 } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
@@ -303,6 +306,29 @@ export function registerWorkspaceHandlers(): void {
       return ok(undefined);
     } catch (error) {
       return fail("FEATURE_TOGGLES_SAVE_FAILED", "機能トグルを保存できませんでした。", error instanceof Error ? error.message : String(error));
+    }
+  });
+
+  ipcMain.handle(getUserDefinedFieldsChannel, async (): Promise<RelicResult<UserDefinedField[]>> => {
+    try {
+      const settings = await readAppSettings(app.getPath("userData"));
+      return ok(settings.userDefinedFields);
+    } catch (error) {
+      return fail("USER_DEFINED_FIELDS_READ_FAILED", "カスタムフィールドを読み込めませんでした。", error instanceof Error ? error.message : String(error));
+    }
+  });
+
+  ipcMain.handle(saveUserDefinedFieldsChannel, async (_event, input: UserDefinedField[]): Promise<RelicResult<void>> => {
+    try {
+      if (!Array.isArray(input)) {
+        return fail("USER_DEFINED_FIELDS_INVALID_INPUT", "カスタムフィールドの値が正しくありません。");
+      }
+
+      const settings = await readAppSettings(app.getPath("userData"));
+      await writeAppSettings(app.getPath("userData"), { ...settings, userDefinedFields: input });
+      return ok(undefined);
+    } catch (error) {
+      return fail("USER_DEFINED_FIELDS_SAVE_FAILED", "カスタムフィールドを保存できませんでした。", error instanceof Error ? error.message : String(error));
     }
   });
 }

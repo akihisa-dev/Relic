@@ -53,7 +53,10 @@ import {
   type GenerateTableOfContentsInput,
   getFeatureTogglesChannel,
   saveFeatureTogglesChannel,
+  getUserDefinedFieldsChannel,
+  saveUserDefinedFieldsChannel,
   type FeatureToggles,
+  type UserDefinedField,
   mergeFilesChannel,
   type MergeFilesInput,
   splitFileByHeadingChannel,
@@ -243,6 +246,10 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(getFeatureTogglesChannel) as Promise<RelicResult<FeatureToggles>>,
   saveFeatureToggles: (input: FeatureToggles) =>
     ipcRenderer.invoke(saveFeatureTogglesChannel, input) as Promise<RelicResult<void>>,
+  getUserDefinedFields: () =>
+    ipcRenderer.invoke(getUserDefinedFieldsChannel) as Promise<RelicResult<UserDefinedField[]>>,
+  saveUserDefinedFields: (input: UserDefinedField[]) =>
+    ipcRenderer.invoke(saveUserDefinedFieldsChannel, input) as Promise<RelicResult<void>>,
   mergeFiles: (input: MergeFilesInput) =>
     ipcRenderer.invoke(mergeFilesChannel, input) as Promise<RelicResult<string>>,
   splitFileByHeading: (input: SplitFileByHeadingInput) =>

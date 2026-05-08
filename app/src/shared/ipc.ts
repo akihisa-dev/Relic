@@ -57,6 +57,8 @@ export const generateTitleListChannel = "tools:generateTitleList";
 export const generateTableOfContentsChannel = "tools:generateTableOfContents";
 export const getFeatureTogglesChannel = "app:getFeatureToggles";
 export const saveFeatureTogglesChannel = "app:saveFeatureToggles";
+export const getUserDefinedFieldsChannel = "app:getUserDefinedFields";
+export const saveUserDefinedFieldsChannel = "app:saveUserDefinedFields";
 export const mergeFilesChannel = "tools:mergeFiles";
 export const splitFileByHeadingChannel = "tools:splitFileByHeading";
 
@@ -334,6 +336,16 @@ export interface FeatureToggles {
   rightPanel: boolean;
 }
 
+export type UserDefinedFieldType = "text" | "number" | "date" | "boolean" | "select" | "multi-select" | "url";
+
+export interface UserDefinedField {
+  choices?: string[];
+  name: string;
+  type: UserDefinedFieldType;
+}
+
+export const defaultUserDefinedFields: UserDefinedField[] = [];
+
 export const defaultFeatureToggles: FeatureToggles = {
   git: true,
   tools: true,
@@ -493,6 +505,8 @@ export interface RelicApi {
   generateTableOfContents: (input: GenerateTableOfContentsInput) => Promise<RelicResult<string>>;
   getFeatureToggles: () => Promise<RelicResult<FeatureToggles>>;
   saveFeatureToggles: (input: FeatureToggles) => Promise<RelicResult<void>>;
+  getUserDefinedFields: () => Promise<RelicResult<UserDefinedField[]>>;
+  saveUserDefinedFields: (input: UserDefinedField[]) => Promise<RelicResult<void>>;
   mergeFiles: (input: MergeFilesInput) => Promise<RelicResult<string>>;
   splitFileByHeading: (input: SplitFileByHeadingInput) => Promise<RelicResult<string[]>>;
 }

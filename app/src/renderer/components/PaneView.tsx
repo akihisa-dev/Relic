@@ -2,7 +2,7 @@ import { EditorView } from "@codemirror/view";
 import { useEffect, useRef, useState } from "react";
 import type { ReactElement } from "react";
 
-import type { EditorSettings } from "../../shared/ipc";
+import type { EditorSettings, UserDefinedField } from "../../shared/ipc";
 import { useT } from "../i18n";
 import { useEditorStore, type PaneId } from "../store/editorStore";
 import { useAutoSave } from "../hooks/useAutoSave";
@@ -20,6 +20,7 @@ export interface PaneViewProps {
   scrollTargetHeading?: string;
   showFrontmatter?: boolean;
   typewriterMode: boolean;
+  userDefinedFields?: UserDefinedField[];
   workspacePath?: string | null;
   workspaceTags: string[];
   onCreateNote: (name: string) => void;
@@ -45,6 +46,7 @@ export function PaneView({
   scrollTargetHeading,
   showFrontmatter = true,
   typewriterMode,
+  userDefinedFields = [],
   workspacePath,
   workspaceTags,
   onCreateNote,
@@ -218,6 +220,7 @@ export function PaneView({
                     content={activeTab.content}
                     key={`fm-${activeTab.id}`}
                     onChange={(content) => updateTabContent(activeTab.id, content)}
+                    userDefinedFields={userDefinedFields}
                     workspaceTags={workspaceTags}
                   />
                 )}
