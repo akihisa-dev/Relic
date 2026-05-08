@@ -1,6 +1,6 @@
 import { EditorView } from "@codemirror/view";
-import { useEffect, useRef, useState } from "react";
-import type { ReactElement } from "react";
+import { useEffect, useState } from "react";
+import type { MutableRefObject, ReactElement } from "react";
 
 import type { EditorSettings, UserDefinedField } from "../../shared/ipc";
 import { useT } from "../i18n";
@@ -8,7 +8,6 @@ import { useEditorStore, type PaneId } from "../store/editorStore";
 import { useAutoSave } from "../hooks/useAutoSave";
 import { Editor } from "./Editor";
 import { FrontmatterForm } from "./FrontmatterForm";
-import { Toolbar } from "./Toolbar";
 
 export interface PaneViewProps {
   allFilePaths: string[];
@@ -22,6 +21,7 @@ export interface PaneViewProps {
   userDefinedFields?: UserDefinedField[];
   workspacePath?: string | null;
   workspaceTags: string[];
+  viewRef: MutableRefObject<EditorView | null>;
   onCreateNote: (name: string) => void;
   onFocus: () => void;
   onScrollTargetHandled?: () => void;
@@ -46,6 +46,7 @@ export function PaneView({
   userDefinedFields = [],
   workspacePath,
   workspaceTags,
+  viewRef,
   onCreateNote,
   onFocus,
   onScrollTargetHandled,
@@ -62,7 +63,6 @@ export function PaneView({
   const { leftPane, rightPane, tabs, updateTabContent } = useEditorStore();
   const paneState = pane === "left" ? leftPane : rightPane;
   const activeTab = paneState.activeTabId ? tabs[paneState.activeTabId] : null;
-  const viewRef = useRef<EditorView | null>(null);
   const t = useT();
 
   useEffect(() => {
@@ -187,9 +187,6 @@ export function PaneView({
 
       {activeTab ? (
         <div className="editor-surface">
-          <div className="editor-toolbar-bar">
-            <Toolbar viewRef={viewRef} />
-          </div>
           <div className="editor-body">
             <div className="live-editor-with-fm">
               {showFrontmatter && (

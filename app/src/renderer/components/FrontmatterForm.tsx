@@ -1,5 +1,5 @@
 import * as yaml from "js-yaml";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import type { ReactElement } from "react";
 
 import type { UserDefinedField } from "../../shared/ipc";
@@ -200,12 +200,7 @@ export function FrontmatterForm({
   const publishVal = data.publish === true;
   const urlVal = data.url !== undefined ? String(data.url) : "";
 
-  const hasAnyData = Object.keys(data).length > 0;
-  const [isExpanded, setIsExpanded] = useState(hasAnyData);
-
-  useEffect(() => {
-    if (hasAnyData) setIsExpanded(true);
-  }, [hasAnyData]);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   return (
     <div className="fm-container">
@@ -214,7 +209,10 @@ export function FrontmatterForm({
         onClick={() => setIsExpanded((v) => !v)}
         type="button"
       >
-        <span className="fm-toggle-label">{t("frontmatter.title")}</span>
+        <span className="fm-toggle-label">
+          {t("frontmatter.title")}
+          {fieldCount > 0 ? <span className="fm-toggle-count">{fieldCount}</span> : null}
+        </span>
         <span className="fm-toggle-arrow">{isExpanded ? "▲" : "▼"}</span>
       </button>
 
