@@ -187,7 +187,7 @@ export function PaneView({
 
       {activeTab ? (
         <div className="editor-surface">
-          <div className="editor-mode-bar">
+          <div className="editor-toolbar-bar">
             <Toolbar viewRef={viewRef} />
           </div>
           <div className="editor-body">
@@ -206,7 +206,6 @@ export function PaneView({
                 allFilePaths={allFilePaths}
                 content={activeTab.content}
                 key={activeTab.id}
-                livePreview
                 onChange={(content) => updateTabContent(activeTab.id, content)}
                 settings={editorSettings}
                 typewriterMode={typewriterMode}

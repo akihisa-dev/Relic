@@ -14,7 +14,6 @@ import type { EditorSettings } from "../../shared/ipc";
 interface EditorProps {
   allFilePaths?: string[];
   content: string;
-  livePreview?: boolean;
   onChange: (content: string) => void;
   settings: EditorSettings;
   typewriterMode?: boolean;
@@ -203,7 +202,6 @@ export function buildWikiLinkCompletionSource(allFilePaths: string[]) {
 function buildExtensions(
   settings: EditorSettings,
   typewriterMode: boolean,
-  livePreview: boolean,
   onChangeRef: React.RefObject<(c: string) => void>,
   allFilePaths: string[]
 ) {
@@ -233,14 +231,13 @@ function buildExtensions(
     EditorView.contentAttributes.of({ spellcheck: settings.spellCheck ? "true" : "false" }),
     ...(settings.showLineNumbers ? [lineNumbers()] : []),
     ...(typewriterMode ? [typewriterExtension] : []),
-    ...(livePreview ? [livePreviewPlugin] : [])
+    livePreviewPlugin
   ];
 }
 
 export function Editor({
   allFilePaths = [],
   content,
-  livePreview = false,
   onChange,
   settings,
   typewriterMode = false,
@@ -257,7 +254,7 @@ export function Editor({
   useEffect(() => {
     if (!containerRef.current) return;
 
-    const extensions = buildExtensions(settings, typewriterMode, livePreview, onChangeRef, allFilePathsRef.current);
+    const extensions = buildExtensions(settings, typewriterMode, onChangeRef, allFilePathsRef.current);
     const state = EditorState.create({ doc: content, extensions });
     const view = new EditorView({ state, parent: containerRef.current });
 
@@ -274,7 +271,7 @@ export function Editor({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 設定・タイプライターモード・livePreview変更時にエディタを再生成
+  // 設定・タイプライターモード変更時にエディタを再生成
   useEffect(() => {
     const view = internalViewRef.current;
 
@@ -287,14 +284,14 @@ export function Editor({
 
     if (!containerRef.current) return;
 
-    const extensions = buildExtensions(settings, typewriterMode, livePreview, onChangeRef, allFilePathsRef.current);
+    const extensions = buildExtensions(settings, typewriterMode, onChangeRef, allFilePathsRef.current);
     const state = EditorState.create({ doc: currentContent, extensions });
     const nextView = new EditorView({ state, parent: containerRef.current });
 
     internalViewRef.current = nextView;
 
     if (viewRef) viewRef.current = nextView;
-  }, [settings, typewriterMode, livePreview, viewRef]);
+  }, [settings, typewriterMode, viewRef]);
 
   return <div className="cm-editor-container" ref={containerRef} />;
 }
