@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360" role="img" aria-labelledby="title desc">
+  <title id="title">Relic smoke test image</title>
+  <desc id="desc">A lightweight SVG image used as an attachment sample.</desc>
+  <rect width="640" height="360" fill="#f6f1e8"/>
+  <rect x="48" y="48" width="544" height="264" rx="8" fill="#ffffff" stroke="#2f3a3c" stroke-width="4"/>
+  <path d="M96 112h240M96 156h360M96 200h296M96 244h192" stroke="#2f3a3c" stroke-width="18" stroke-linecap="round"/>
+  <circle cx="500" cy="122" r="42" fill="#6aa7a2"/>
+  <path d="M474 122l18 18 36-42" fill="none" stroke="#ffffff" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="96" y="296" font-family="system-ui, sans-serif" font-size="28" fill="#2f3a3c">Relic attachment check</text>
+</svg>
