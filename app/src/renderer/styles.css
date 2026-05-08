@@ -1505,65 +1505,44 @@ button:disabled {
   color: var(--success);
 }
 
-/* ─── Frontmatter Form ─── */
-.live-editor-with-fm {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  overflow: hidden;
-}
-
-.live-editor-with-fm .cm-editor {
-  flex: 1;
-  min-height: 0;
-}
-
 .fm-container {
-  background: rgba(250, 250, 250, 0.72);
-  border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
+  display: block;
   font-size: 12px;
+  min-width: 0;
 }
 
-.fm-toggle {
+.fm-summary {
   align-items: center;
-  background: none;
-  border: none;
   color: var(--text-3);
-  cursor: pointer;
-  display: flex;
-  font-size: 11px;
-  gap: 6px;
-  justify-content: space-between;
-  min-height: 24px;
-  padding: 2px 12px;
-  width: 100%;
-}
-
-.fm-toggle:hover { color: var(--text); }
-.fm-toggle-label {
-  align-items: center;
   display: inline-flex;
-  font-weight: 500;
   gap: 6px;
+  margin-bottom: 12px;
+  min-height: 22px;
 }
-.fm-toggle-count {
-  background: rgba(31, 35, 40, 0.06);
+
+.fm-summary-title {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.fm-summary-count {
+  background: rgba(255, 99, 48, 0.1);
+  border: 1px solid rgba(255, 99, 48, 0.16);
   border-radius: 999px;
-  color: var(--text-3);
+  color: var(--accent);
   font-size: 10px;
   line-height: 1;
-  padding: 2px 6px;
+  min-width: 18px;
+  padding: 3px 6px;
+  text-align: center;
 }
-.fm-toggle-arrow { font-size: 8px; }
 
 .fm-fields {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  max-height: 156px;
-  overflow-y: auto;
-  padding: 3px 12px 6px;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
 }
 
 .fm-warning {
@@ -1572,27 +1551,31 @@ button:disabled {
   border-radius: 4px;
   color: var(--accent);
   font-size: 11px;
+  grid-column: 1 / -1;
   line-height: 1.5;
-  margin-bottom: 4px;
   padding: 6px 8px;
 }
 
 .fm-row {
   align-items: center;
-  display: flex;
-  gap: 5px;
+  display: grid;
+  gap: 6px;
+  grid-template-columns: 56px minmax(0, 1fr);
   min-height: 22px;
+  min-width: 0;
+}
+
+.fm-row--url {
+  grid-template-columns: 56px minmax(0, 1fr) 16px;
 }
 
 .fm-label {
   color: var(--text-3);
-  flex-shrink: 0;
   font-size: 11px;
   overflow: hidden;
   text-align: right;
   text-overflow: ellipsis;
   white-space: nowrap;
-  width: 60px;
 }
 
 .fm-label--free { font-style: italic; }
@@ -1602,7 +1585,6 @@ button:disabled {
   border: 1px solid var(--border);
   border-radius: 3px;
   color: var(--text);
-  flex: 1;
   font-size: 12px;
   min-height: 22px;
   min-width: 0;
@@ -1622,7 +1604,6 @@ button:disabled {
 .fm-checkbox { margin: 0; }
 
 .fm-pill-input {
-  flex: 1;
   min-width: 0;
 }
 

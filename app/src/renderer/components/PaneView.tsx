@@ -2,25 +2,20 @@ import { EditorView } from "@codemirror/view";
 import { useEffect, useState } from "react";
 import type { MutableRefObject, ReactElement } from "react";
 
-import type { EditorSettings, UserDefinedField } from "../../shared/ipc";
+import type { EditorSettings } from "../../shared/ipc";
 import { useT } from "../i18n";
 import { useEditorStore, type PaneId } from "../store/editorStore";
 import { useAutoSave } from "../hooks/useAutoSave";
 import { Editor } from "./Editor";
-import { FrontmatterForm } from "./FrontmatterForm";
 
 export interface PaneViewProps {
   allFilePaths: string[];
   editorSettings: EditorSettings;
   focusedPane: PaneId;
-  frontmatterCandidates: Record<string, string[]>;
   pane: PaneId;
   scrollTargetHeading?: string;
-  showFrontmatter?: boolean;
   typewriterMode: boolean;
-  userDefinedFields?: UserDefinedField[];
   workspacePath?: string | null;
-  workspaceTags: string[];
   viewRef: MutableRefObject<EditorView | null>;
   onCreateNote: (name: string) => void;
   onFocus: () => void;
@@ -38,14 +33,10 @@ export function PaneView({
   allFilePaths,
   editorSettings,
   focusedPane,
-  frontmatterCandidates,
   pane,
   scrollTargetHeading,
-  showFrontmatter = true,
   typewriterMode,
-  userDefinedFields = [],
   workspacePath,
-  workspaceTags,
   viewRef,
   onCreateNote,
   onFocus,
@@ -188,27 +179,15 @@ export function PaneView({
       {activeTab ? (
         <div className="editor-surface">
           <div className="editor-body">
-            <div className="live-editor-with-fm">
-              {showFrontmatter && (
-                <FrontmatterForm
-                  candidates={frontmatterCandidates}
-                  content={activeTab.content}
-                  key={`fm-${activeTab.id}`}
-                  onChange={(content) => updateTabContent(activeTab.id, content)}
-                  userDefinedFields={userDefinedFields}
-                  workspaceTags={workspaceTags}
-                />
-              )}
-              <Editor
-                allFilePaths={allFilePaths}
-                content={activeTab.content}
-                key={activeTab.id}
-                onChange={(content) => updateTabContent(activeTab.id, content)}
-                settings={editorSettings}
-                typewriterMode={typewriterMode}
-                viewRef={viewRef}
-              />
-            </div>
+            <Editor
+              allFilePaths={allFilePaths}
+              content={activeTab.content}
+              key={activeTab.id}
+              onChange={(content) => updateTabContent(activeTab.id, content)}
+              settings={editorSettings}
+              typewriterMode={typewriterMode}
+              viewRef={viewRef}
+            />
           </div>
           <div className="pane-status">
             <span>{t("app.wordCount", { chars: charCount, words: wordCount })}</span>

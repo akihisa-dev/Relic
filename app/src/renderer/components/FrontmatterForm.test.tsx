@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { FrontmatterForm } from "./FrontmatterForm";
@@ -25,8 +25,6 @@ describe("FrontmatterForm", () => {
       />
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /Frontmatter/ }));
-
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
@@ -39,14 +37,12 @@ describe("FrontmatterForm", () => {
       />
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /Frontmatter/ }));
-
     expect(screen.getByRole("alert")).toHaveTextContent(
       "The field limit is 20. You currently have 21 fields."
     );
   });
 
-  it("フロントマターがあっても初期表示では折りたたむ", () => {
+  it("フロントマターがあると初期表示でフォームを表示する", () => {
     render(
       <FrontmatterForm
         candidates={{}}
@@ -55,7 +51,8 @@ describe("FrontmatterForm", () => {
       />
     );
 
-    expect(screen.getByRole("button", { name: /Frontmatter/ })).toHaveTextContent("3");
-    expect(screen.queryByDisplayValue("value_1")).not.toBeInTheDocument();
+    expect(screen.getByText("Frontmatter")).toBeInTheDocument();
+    expect(screen.getByText("3")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("value_1")).toBeInTheDocument();
   });
 });
