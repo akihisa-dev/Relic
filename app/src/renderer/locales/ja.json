@@ -34,6 +34,7 @@
   "files.workspaceHint": "任意のローカルフォルダをワークスペースとして開けます。",
   "frontmatter.aliasesPlaceholder": "別名を入力...",
   "frontmatter.authorPlaceholder": "著者名を入力...",
+  "frontmatter.empty": "本文中にフロントマター項目はありません。",
   "frontmatter.fieldLimit": "フィールド数が上限の20件を超えています（現在 {{count}} 件）。余分な項目はフロントマター本文で整理してください。",
   "frontmatter.statusPlaceholder": "状態",
   "frontmatter.tagsPlaceholder": "タグを入力...",

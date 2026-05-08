@@ -34,6 +34,7 @@
   "files.workspaceHint": "Open any local folder as a workspace.",
   "frontmatter.aliasesPlaceholder": "Enter aliases...",
   "frontmatter.authorPlaceholder": "Enter author names...",
+  "frontmatter.empty": "This note has no frontmatter fields.",
   "frontmatter.fieldLimit": "The field limit is 20. You currently have {{count}} fields. Clean up extra fields directly in the frontmatter text.",
   "frontmatter.statusPlaceholder": "Status",
   "frontmatter.tagsPlaceholder": "Enter tags...",
