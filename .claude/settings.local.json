@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(where pnpm *)",
+      "Bash(echo \"exit: $?\")",
+      "Bash(npm --version)",
+      "Bash(where node *)",
+      "Bash(npm install *)"
+    ]
+  }
+}

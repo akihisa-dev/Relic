@@ -15,7 +15,7 @@ if exist "%APP_PATH%" (
   exit /b 0
 )
 
-where pnpm > /dev/null 2>&1
+where pnpm > nul 2>&1
 if errorlevel 1 (
   echo pnpm not found. Please set up the development environment.
   echo.
