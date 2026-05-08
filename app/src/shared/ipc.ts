@@ -16,6 +16,7 @@ export const getGitWorkingChangesChannel = "workspace:getGitWorkingChanges";
 export const getGitBranchesChannel = "workspace:getGitBranches";
 export const getGitTagsChannel = "workspace:getGitTags";
 export const getWorkspaceTagsChannel = "workspace:getTags";
+export const getMarkdownTemplatesChannel = "workspace:getMarkdownTemplates";
 export const getWorkspaceStateChannel = "workspace:getState";
 export const initializeGitRepositoryChannel = "workspace:initializeGitRepository";
 export const createGitCommitChannel = "workspace:createGitCommit";
@@ -77,10 +78,11 @@ export interface GenerateTableOfContentsInput {
   targetFolder: string;
 }
 
-export type MergeFilterType = "folder" | "tag" | "all";
+export type MergeFilterType = "folder" | "frontmatter" | "tag" | "all";
 export type MergeSortBy = "name" | "mtime" | "ctime";
 
 export interface MergeFilesInput {
+  frontmatterField?: string;
   filterType: MergeFilterType;
   filterValue: string;
   insertFilenameHeading: boolean;
@@ -118,6 +120,7 @@ export interface WorkspaceState {
 
 export interface CreateMarkdownFileInput {
   name: string;
+  templatePath?: string;
 }
 
 export interface CreateLinkedMarkdownFileInput {
@@ -203,6 +206,11 @@ export interface SwitchWorkspaceInput {
 
 export interface MarkdownFileContent {
   content: string;
+  name: string;
+  path: string;
+}
+
+export interface MarkdownTemplateSummary {
   name: string;
   path: string;
 }
@@ -465,6 +473,7 @@ export interface RelicApi {
   getGitTags: () => Promise<RelicResult<GitTagSummary[]>>;
   getAppInfo: () => Promise<RelicResult<AppInfo>>;
   getEditorSettings: () => Promise<RelicResult<EditorSettings>>;
+  getMarkdownTemplates: () => Promise<RelicResult<MarkdownTemplateSummary[]>>;
   getWorkspaceTags: () => Promise<RelicResult<WorkspaceTagSummary[]>>;
   getWorkspaceState: () => Promise<RelicResult<WorkspaceState>>;
   moveFolder: (input: MoveFolderInput) => Promise<RelicResult<WorkspaceState>>;

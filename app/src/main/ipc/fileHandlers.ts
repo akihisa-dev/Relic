@@ -16,6 +16,7 @@ import {
   getBacklinksChannel,
   type GetBacklinksInput,
   getFrontmatterCandidatesChannel,
+  getMarkdownTemplatesChannel,
   createFrontmatterTemplateChannel,
   moveFolderChannel,
   type MoveFolderInput,
@@ -51,6 +52,7 @@ import {
 } from "../files/markdownFiles";
 import { applySearchAndReplace, replaceInFile, searchAndReplace } from "../files/replace";
 import { searchWorkspace } from "../files/search";
+import { listMarkdownTemplates } from "../files/templates";
 import { moveWorkspaceItemToTrash } from "../files/trash";
 import { readAppSettings } from "../settings/appSettings";
 import { toWorkspaceState } from "../workspace/workspaceService";
@@ -95,7 +97,7 @@ export function registerFileHandlers(): void {
           return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
         }
 
-        const createdFile = await createMarkdownFile(state.activeWorkspace.path, input.name);
+        const createdFile = await createMarkdownFile(state.activeWorkspace.path, input.name, input.templatePath);
 
         if (!createdFile.ok) {
           return createdFile;
@@ -197,6 +199,25 @@ export function registerFileHandlers(): void {
       return fail(
         "FILE_READ_FAILED",
         "ファイルを読み込めませんでした。",
+        error instanceof Error ? error.message : String(error)
+      );
+    }
+  });
+
+  ipcMain.handle(getMarkdownTemplatesChannel, async () => {
+    try {
+      const settings = await readAppSettings(app.getPath("userData"));
+      const state = toWorkspaceState(settings);
+
+      if (!state.activeWorkspace) {
+        return ok([]);
+      }
+
+      return listMarkdownTemplates(state.activeWorkspace.path);
+    } catch (error) {
+      return fail(
+        "TEMPLATE_LIST_FAILED",
+        "テンプレートを読み込めませんでした。",
         error instanceof Error ? error.message : String(error)
       );
     }
@@ -578,7 +599,10 @@ export function registerFileHandlers(): void {
 }
 
 function isCreateMarkdownFileInput(input: unknown): input is CreateMarkdownFileInput {
-  return isNameInput(input);
+  return (
+    isNameInput(input) &&
+    (!("templatePath" in input) || typeof (input as { templatePath?: unknown }).templatePath === "string")
+  );
 }
 
 function isNameInput(input: unknown): input is { name: string } {

@@ -2,14 +2,11 @@ import { create } from "zustand";
 
 import { defaultEditorSettings, type EditorSettings, type MarkdownFileContent } from "../../shared/ipc";
 
-export type ViewMode = "source" | "preview";
-
 export interface Tab {
   content: string;
   id: string;
   name: string;
   path: string;
-  viewMode: ViewMode;
 }
 
 export type PaneId = "left" | "right";
@@ -36,7 +33,6 @@ interface EditorStore {
   setEditorSettings: (settings: EditorSettings) => void;
   setFocusedPane: (pane: PaneId) => void;
   setTabActive: (pane: PaneId, tabId: string) => void;
-  setTabViewMode: (tabId: string, mode: ViewMode) => void;
   toggleSplit: () => void;
   updateTabContent: (tabId: string, content: string) => void;
   updateTabMeta: (tabId: string, meta: Pick<Tab, "name" | "path">) => void;
@@ -71,7 +67,7 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
       }
 
       const id = `tab-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-      const newTab: Tab = { content: file.content, id, name: file.name, path: file.path, viewMode: "preview" };
+      const newTab: Tab = { content: file.content, id, name: file.name, path: file.path };
 
       return {
         focusedPane: pane,
@@ -175,14 +171,6 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
   },
 
   setFocusedPane: (pane) => set({ focusedPane: pane }),
-
-  setTabViewMode: (tabId, mode) => {
-    set((state) => {
-      if (!state.tabs[tabId]) return state;
-
-      return { tabs: { ...state.tabs, [tabId]: { ...state.tabs[tabId], viewMode: mode } } };
-    });
-  },
 
   closeOtherTabs: (pane, tabId) => {
     set((state) => {

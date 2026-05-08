@@ -1,7 +1,7 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import type { ReactElement } from "react";
 
-import type { WorkspaceState, WorkspaceTreeNode } from "../../shared/ipc";
+import type { MarkdownTemplateSummary, WorkspaceState, WorkspaceTreeNode } from "../../shared/ipc";
 import { useT } from "../i18n";
 import { FileTree, FileTreeItem, findNodeByPath } from "./FileTree";
 
@@ -16,15 +16,21 @@ export interface FilesSidebarProps {
   onCreateFile: () => void;
   onCreateFolder: () => void;
   onCreateWorkspace: () => void;
+  onDeleteItem: (path: string, type: WorkspaceTreeNode["type"]) => void;
+  onDuplicateFile: (path: string) => void;
   onFileNameDraftChange: (v: string) => void;
   onFolderNameDraftChange: (v: string) => void;
   onMoveFile: (path: string, destFolder: string) => void;
   onMoveFolder: (path: string, destFolder: string) => void;
   onOpenFile: (path: string) => void;
   onOpenWorkspace: () => void;
+  onRenameItem: (path: string, type: WorkspaceTreeNode["type"], newName: string) => void;
   onSelectFolder: (node: Extract<WorkspaceTreeNode, { type: "folder" }>) => void;
   onSwitchWorkspace: (id: string) => void;
   onTogglePin: (path: string) => void;
+  onTemplatePathChange: (path: string) => void;
+  selectedTemplatePath: string;
+  templates: MarkdownTemplateSummary[];
   workspaceState: WorkspaceState | null;
 }
 
@@ -39,18 +45,25 @@ export function FilesSidebar({
   onCreateFile,
   onCreateFolder,
   onCreateWorkspace,
+  onDeleteItem,
+  onDuplicateFile,
   onFileNameDraftChange,
   onFolderNameDraftChange,
   onMoveFile,
   onMoveFolder,
   onOpenFile,
   onOpenWorkspace,
+  onRenameItem,
   onSelectFolder,
   onSwitchWorkspace,
   onTogglePin,
+  onTemplatePathChange,
+  selectedTemplatePath,
+  templates,
   workspaceState
 }: FilesSidebarProps): ReactElement {
   const activeWorkspace = workspaceState?.activeWorkspace ?? null;
+  const [isWorkspaceMenuOpen, setIsWorkspaceMenuOpen] = useState(false);
   const pinnedPaths = useMemo(
     () => new Set(workspaceState?.pinnedPaths ?? []),
     [workspaceState?.pinnedPaths]
@@ -60,9 +73,39 @@ export function FilesSidebar({
   return (
     <div className="sidebar-section">
       <div className="workspace-card">
-        <div className="workspace-name" title={activeWorkspace?.path}>
-          {activeWorkspace ? activeWorkspace.name : t("files.noWorkspace")}
-        </div>
+        <button
+          aria-expanded={isWorkspaceMenuOpen}
+          className="workspace-dropdown-trigger"
+          disabled={!workspaceState || workspaceState.workspaces.length <= 1}
+          onClick={() => setIsWorkspaceMenuOpen((v) => !v)}
+          title={activeWorkspace?.path}
+          type="button"
+        >
+          <span className="workspace-name">
+            {activeWorkspace ? activeWorkspace.name : t("files.noWorkspace")}
+          </span>
+          {workspaceState && workspaceState.workspaces.length > 1 ? (
+            <span className="workspace-dropdown-chevron">⌄</span>
+          ) : null}
+        </button>
+        {isWorkspaceMenuOpen && workspaceState && workspaceState.workspaces.length > 1 ? (
+          <div className="workspace-dropdown-menu" aria-label={t("files.registeredWorkspaces")}>
+            {workspaceState.workspaces.map((ws) => (
+              <button
+                className={`workspace-dropdown-item${ws.id === activeWorkspace?.id ? " active" : ""}`}
+                key={ws.id}
+                onClick={() => {
+                  setIsWorkspaceMenuOpen(false);
+                  onSwitchWorkspace(ws.id);
+                }}
+                title={ws.path}
+                type="button"
+              >
+                {ws.name}
+              </button>
+            ))}
+          </div>
+        ) : null}
       </div>
       <button
         className="primary-button"
@@ -80,21 +123,6 @@ export function FilesSidebar({
       >
         {isCreatingWorkspace ? t("files.creatingWorkspace") : t("files.createNewWorkspace")}
       </button>
-      {workspaceState && workspaceState.workspaces.length > 1 ? (
-        <div className="workspace-list" aria-label="Registered workspaces">
-          {workspaceState.workspaces.map((ws) => (
-            <button
-              className={`workspace-list-item${ws.id === activeWorkspace?.id ? " active" : ""}`}
-              key={ws.id}
-              onClick={() => onSwitchWorkspace(ws.id)}
-              title={ws.path}
-              type="button"
-            >
-              {ws.name}
-            </button>
-          ))}
-        </div>
-      ) : null}
       {activeWorkspace ? (
         <>
           <form
@@ -115,6 +143,21 @@ export function FilesSidebar({
               {t("common.create")}
             </button>
           </form>
+          {templates.length > 0 ? (
+            <select
+              aria-label={t("files.template")}
+              className="template-select"
+              onChange={(e) => onTemplatePathChange(e.target.value)}
+              value={selectedTemplatePath}
+            >
+              <option value="">{t("files.noTemplate")}</option>
+              {templates.map((template) => (
+                <option key={template.path} value={template.path}>
+                  {template.name}
+                </option>
+              ))}
+            </select>
+          ) : null}
           <form
             className="new-file-form"
             onSubmit={(e) => {
@@ -148,9 +191,12 @@ export function FilesSidebar({
                       isPinned
                       key={p}
                       node={node}
+                      onDeleteItem={onDeleteItem}
+                      onDuplicateFile={onDuplicateFile}
                       onMoveFile={onMoveFile}
                       onMoveFolder={onMoveFolder}
                       onOpenFile={onOpenFile}
+                      onRenameItem={onRenameItem}
                       onSelectFolder={onSelectFolder}
                       onTogglePin={onTogglePin}
                       pinnedPaths={pinnedPaths}
@@ -164,9 +210,12 @@ export function FilesSidebar({
             activePaths={activePaths}
             isRoot
             nodes={workspaceState?.fileTree ?? []}
+            onDeleteItem={onDeleteItem}
+            onDuplicateFile={onDuplicateFile}
             onMoveFile={onMoveFile}
             onMoveFolder={onMoveFolder}
             onOpenFile={onOpenFile}
+            onRenameItem={onRenameItem}
             onSelectFolder={onSelectFolder}
             onTogglePin={onTogglePin}
             pinnedPaths={pinnedPaths}

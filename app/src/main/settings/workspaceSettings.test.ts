@@ -4,6 +4,7 @@ import path from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
+import { defaultAutoSyncSettings } from "../../shared/ipc";
 import {
   getWorkspaceSettingsPath,
   readWorkspaceSettings,
@@ -26,6 +27,7 @@ describe("workspaceSettings", () => {
     const settings = await readWorkspaceSettings(userDataPath, "workspace-id");
 
     expect(settings.pinnedPaths).toEqual([]);
+    expect(settings.autoSync).toEqual(defaultAutoSyncSettings);
     expect(settings.workspacePath).toBe("");
   });
 
@@ -34,11 +36,13 @@ describe("workspaceSettings", () => {
     temporaryPaths.push(userDataPath);
 
     await writeWorkspaceSettings(userDataPath, "ws-1", {
+      autoSync: { autoPull: true, autoPush: false, intervalMinutes: 30 },
       pinnedPaths: ["notes/readme.md", "docs"],
       workspacePath: "/Users/test/notes"
     });
 
     const settings = await readWorkspaceSettings(userDataPath, "ws-1");
+    expect(settings.autoSync).toEqual({ autoPull: true, autoPush: false, intervalMinutes: 30 });
     expect(settings.pinnedPaths).toEqual(["notes/readme.md", "docs"]);
     expect(settings.workspacePath).toBe("/Users/test/notes");
   });

@@ -17,6 +17,7 @@ import type {
   GitSyncPreview,
   GitTagSummary,
   GitWorkingChange,
+  MarkdownTemplateSummary,
   SearchMode,
   WorkspaceState,
   WorkspaceSearchResult,
@@ -90,6 +91,20 @@ const sidebarViewDefs: Array<{ id: SidebarView; labelKey: TranslationKey; icon: 
   { id: "settings", labelKey: "nav.settings", icon: <IconSettings /> }
 ];
 
+const joinWorkspacePath = (folder: string, name: string): string => (
+  folder ? `${folder}/${name}` : name
+);
+
+const parentFolderOf = (path: string): string => {
+  const index = path.lastIndexOf("/");
+  return index === -1 ? "" : path.slice(0, index);
+};
+
+const displayNameFromPath = (path: string): string => {
+  const name = path.split("/").at(-1) ?? path;
+  return name.endsWith(".md") ? name.slice(0, -3) : name;
+};
+
 export function App(): ReactElement {
   const [workspaceState, setWorkspaceState] = useState<WorkspaceState | null>(null);
   const [appInfo, setAppInfo] = useState<AppInfo | null>(null);
@@ -160,6 +175,8 @@ export function App(): ReactElement {
   const [autoSyncSettings, setAutoSyncSettings] = useState<AutoSyncSettings>(defaultAutoSyncSettings);
   const [featureToggles, setFeatureToggles] = useState<FeatureToggles>(defaultFeatureToggles);
   const [userDefinedFields, setUserDefinedFields] = useState<UserDefinedField[]>(defaultUserDefinedFields);
+  const [markdownTemplates, setMarkdownTemplates] = useState<MarkdownTemplateSummary[]>([]);
+  const [selectedTemplatePath, setSelectedTemplatePath] = useState("");
   const [showCommandPalette, setShowCommandPalette] = useState(false);
   const [showQuickSwitcher, setShowQuickSwitcher] = useState(false);
 
@@ -293,6 +310,33 @@ export function App(): ReactElement {
     return () => { canceled = true; };
   }, [setEditorSettings]);
 
+  useEffect(() => {
+    let canceled = false;
+
+    void window.relic?.getAutoSyncSettings().then((result) => {
+      if (canceled) return;
+      if (result.ok) setAutoSyncSettings(result.value);
+    });
+
+    return () => { canceled = true; };
+  }, [workspaceState?.activeWorkspace?.id]);
+
+  useEffect(() => {
+    let canceled = false;
+
+    void window.relic?.getMarkdownTemplates().then((result) => {
+      if (canceled) return;
+      if (result.ok) {
+        setMarkdownTemplates(result.value);
+        if (!result.value.some((template) => template.path === selectedTemplatePath)) {
+          setSelectedTemplatePath("");
+        }
+      }
+    });
+
+    return () => { canceled = true; };
+  }, [workspaceState?.activeWorkspace?.id, selectedTemplatePath]);
+
   // ──────────────────
   // ワークスペース操作
   // ──────────────────
@@ -340,7 +384,7 @@ export function App(): ReactElement {
     setWorkspaceError(null);
 
     void window.relic
-      .createMarkdownFile({ name: fileNameDraft })
+      .createMarkdownFile({ name: fileNameDraft, templatePath: selectedTemplatePath || undefined })
       .then((result) => {
         if (result.ok) {
           setWorkspaceState(result.value);
@@ -350,13 +394,13 @@ export function App(): ReactElement {
         }
       })
       .finally(() => setIsCreatingFile(false));
-  }, [fileNameDraft]);
+  }, [fileNameDraft, selectedTemplatePath]);
 
   const handleCreateNoteFromPane = useCallback((name: string): void => {
     if (!window.relic) return;
 
     void window.relic
-      .createMarkdownFile({ name })
+      .createMarkdownFile({ name, templatePath: selectedTemplatePath || undefined })
       .then((result) => {
         if (result.ok) {
           setWorkspaceState(result.value);
@@ -375,7 +419,7 @@ export function App(): ReactElement {
           setWorkspaceError(result.error.message);
         }
       });
-  }, [focusedPane, openFileInPane]);
+  }, [focusedPane, openFileInPane, selectedTemplatePath]);
 
   const handleCreateFolder = useCallback((): void => {
     if (!window.relic) return;
@@ -1301,6 +1345,45 @@ export function App(): ReactElement {
     [focusedPane, leftPane, rightPane, tabs, updateTabMeta]
   );
 
+  const handleRenameTreeItem = useCallback(
+    (path: string, type: WorkspaceTreeNode["type"], newName: string): void => {
+      if (!window.relic) return;
+
+      if (type === "file") {
+        void window.relic.renameMarkdownFile({ newName, path }).then((result) => {
+          if (result.ok) {
+            Object.entries(tabs)
+              .filter(([, tab]) => tab.path === path)
+              .forEach(([tabId]) => {
+                updateTabMeta(tabId, { name: result.value.file.name, path: result.value.file.path });
+              });
+            setWorkspaceState(result.value.workspaceState);
+          } else {
+            setWorkspaceError(result.error.message);
+          }
+        });
+        return;
+      }
+
+      void window.relic.renameFolder({ newName, path }).then((result) => {
+        if (result.ok) {
+          const nextFolderPath = joinWorkspacePath(parentFolderOf(path), newName);
+
+          Object.entries(tabs)
+            .filter(([, tab]) => tab.path.startsWith(`${path}/`))
+            .forEach(([tabId, tab]) => {
+              const nextPath = `${nextFolderPath}/${tab.path.slice(path.length + 1)}`;
+              updateTabMeta(tabId, { name: displayNameFromPath(nextPath), path: nextPath });
+            });
+          setWorkspaceState(result.value);
+        } else {
+          setWorkspaceError(result.error.message);
+        }
+      });
+    },
+    [tabs, updateTabMeta, setWorkspaceError]
+  );
+
   const handleDuplicateActiveFile = useCallback((): void => {
     const paneState = focusedPane === "left" ? leftPane : rightPane;
     const tabId = paneState.activeTabId;
@@ -1316,6 +1399,22 @@ export function App(): ReactElement {
       }
     });
   }, [focusedPane, leftPane, rightPane, tabs, openFileInPane]);
+
+  const handleDuplicateTreeFile = useCallback(
+    (path: string): void => {
+      if (!window.relic) return;
+
+      void window.relic.duplicateMarkdownFile({ path }).then((result) => {
+        if (result.ok) {
+          setWorkspaceState(result.value.workspaceState);
+          openFileInPane(focusedPane, result.value.file);
+        } else {
+          setWorkspaceError(result.error.message);
+        }
+      });
+    },
+    [focusedPane, openFileInPane, setWorkspaceError]
+  );
 
   const handleDeleteActiveFile = useCallback((): void => {
     const paneState = focusedPane === "left" ? leftPane : rightPane;
@@ -1333,6 +1432,39 @@ export function App(): ReactElement {
       }
     });
   }, [focusedPane, leftPane, rightPane, tabs, closeTab]);
+
+  const handleDeleteTreeItem = useCallback(
+    (path: string, type: WorkspaceTreeNode["type"]): void => {
+      if (!window.relic) return;
+
+      const name = displayNameFromPath(path);
+      const message = type === "folder"
+        ? `「${name}」フォルダをゴミ箱に移動しますか？フォルダ内のノートと添付ファイルも一緒に移動されます。`
+        : `「${name}」をゴミ箱に移動しますか？`;
+      if (!window.confirm(message)) return;
+
+      void window.relic.moveItemToTrash({ path, type }).then((result) => {
+        if (result.ok) {
+          const matchesPath = (tabPath: string): boolean => (
+            type === "file" ? tabPath === path : tabPath.startsWith(`${path}/`)
+          );
+
+          leftPane.tabIds.forEach((tabId) => {
+            const tab = tabs[tabId];
+            if (tab && matchesPath(tab.path)) closeTab("left", tabId);
+          });
+          rightPane.tabIds.forEach((tabId) => {
+            const tab = tabs[tabId];
+            if (tab && matchesPath(tab.path)) closeTab("right", tabId);
+          });
+          setWorkspaceState(result.value);
+        } else {
+          setWorkspaceError(result.error.message);
+        }
+      });
+    },
+    [leftPane, rightPane, tabs, closeTab, setWorkspaceError]
+  );
 
   // ──────────────────
   // キーボードショートカット
@@ -1638,15 +1770,21 @@ export function App(): ReactElement {
                 onCreateFile={handleCreateFile}
                 onCreateFolder={handleCreateFolder}
                 onCreateWorkspace={handleCreateNewWorkspace}
+                onDeleteItem={handleDeleteTreeItem}
+                onDuplicateFile={handleDuplicateTreeFile}
                 onFileNameDraftChange={setFileNameDraft}
                 onFolderNameDraftChange={setFolderNameDraft}
                 onMoveFile={handleMoveFile}
                 onMoveFolder={handleMoveFolder}
                 onOpenFile={handleOpenFile}
                 onOpenWorkspace={handleOpenWorkspace}
+                onRenameItem={handleRenameTreeItem}
                 onSelectFolder={handleSelectFolder}
                 onSwitchWorkspace={handleSwitchWorkspace}
                 onTogglePin={handleTogglePin}
+                onTemplatePathChange={setSelectedTemplatePath}
+                selectedTemplatePath={selectedTemplatePath}
+                templates={markdownTemplates}
                 workspaceState={workspaceState}
               />
             ) : activeSidebarView === "search" ? (
@@ -1828,11 +1966,9 @@ export function App(): ReactElement {
                 frontmatterCandidates={frontmatterCandidates}
                 onCreateNote={handleCreateNoteFromPane}
                 onFocus={() => setFocusedPane("left")}
-                onOpenWikiLink={handleOpenWikiLink}
                 onScrollTargetHandled={() => setLeftPaneScrollHeading(undefined)}
                 onTabClose={(tabId) => closeTab("left", tabId)}
                 onTabSelect={(tabId) => setTabActive("left", tabId)}
-                onTagSearch={handleTagSearch}
                 onCloseOtherTabs={(tabId) => closeOtherTabs("left", tabId)}
                 onCloseTabsToRight={(tabId) => closeTabsToRight("left", tabId)}
                 onCloseAllTabs={() => closeAllTabsInPane("left")}
@@ -1854,11 +1990,9 @@ export function App(): ReactElement {
                   frontmatterCandidates={frontmatterCandidates}
                   onCreateNote={handleCreateNoteFromPane}
                   onFocus={() => setFocusedPane("right")}
-                  onOpenWikiLink={handleOpenWikiLink}
                   onScrollTargetHandled={() => setRightPaneScrollHeading(undefined)}
                   onTabClose={(tabId) => closeTab("right", tabId)}
                   onTabSelect={(tabId) => setTabActive("right", tabId)}
-                  onTagSearch={handleTagSearch}
                   onCloseOtherTabs={(tabId) => closeOtherTabs("right", tabId)}
                   onCloseTabsToRight={(tabId) => closeTabsToRight("right", tabId)}
                   onCloseAllTabs={() => closeAllTabsInPane("right")}

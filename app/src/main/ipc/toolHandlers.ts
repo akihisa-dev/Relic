@@ -16,6 +16,7 @@ import {
 } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { readWorkspaceFileTree } from "../files/fileTree";
+import { parseFrontmatter } from "../files/frontmatter";
 import { readAppSettings } from "../settings/appSettings";
 import { toWorkspaceState } from "../workspace/workspaceService";
 
@@ -60,6 +61,23 @@ export function registerToolHandlers(): void {
             }
           }
           filtered = tagFiltered;
+        } else if (input.filterType === "frontmatter") {
+          const frontmatterFiltered: typeof candidates = [];
+          const field = input.frontmatterField?.trim() ?? "";
+          const value = input.filterValue.trim();
+
+          if (field && value) {
+            for (const c of candidates) {
+              const content = await readFile(path.join(workspacePath, c.relPath), "utf-8");
+              const { data } = parseFrontmatter(content);
+
+              if (matchesFrontmatterField(data[field], value)) {
+                frontmatterFiltered.push(c);
+              }
+            }
+          }
+
+          filtered = frontmatterFiltered;
         }
 
         if (input.sortBy === "mtime") filtered.sort((a, b) => b.mtime - a.mtime);
@@ -240,6 +258,32 @@ export function registerToolHandlers(): void {
       }
     }
   );
+}
+
+function matchesFrontmatterField(value: unknown, query: string): boolean {
+  if (value === undefined || value === null) {
+    return false;
+  }
+
+  if (Array.isArray(value)) {
+    return value.some((item) => String(item).toLocaleLowerCase().includes(query.toLocaleLowerCase()));
+  }
+
+  if (typeof value === "boolean") {
+    const normalizedQuery = query.toLocaleLowerCase();
+
+    if (["true", "1", "yes", "on"].includes(normalizedQuery)) {
+      return value === true;
+    }
+
+    if (["false", "0", "no", "off"].includes(normalizedQuery)) {
+      return value === false;
+    }
+
+    return String(value).toLocaleLowerCase() === normalizedQuery;
+  }
+
+  return String(value).toLocaleLowerCase().includes(query.toLocaleLowerCase());
 }
 
 async function uniqueFilePath(dir: string, name: string): Promise<string> {
