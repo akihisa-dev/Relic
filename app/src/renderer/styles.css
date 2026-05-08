@@ -1692,6 +1692,40 @@ button:disabled {
 }
 
 .setting-action-btn:hover { background: var(--hover); }
+.setting-action-btn:disabled { opacity: 0.4; cursor: default; }
+.setting-action-btn--danger { border-color: transparent; padding: 2px 6px; }
+.setting-action-btn--danger:hover { background: rgba(220, 60, 60, 0.15); color: #e05050; }
+
+.setting-custom-field-name {
+  flex: 1;
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.setting-custom-field-type {
+  color: var(--text-2);
+  font-size: 11px;
+  margin-right: 4px;
+}
+
+.setting-custom-field-form {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.setting-custom-field-input {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  font-size: 12px;
+  padding: 4px 6px;
+  width: 100%;
+}
 
 /* ────────────────────────────────── */
 /* ダークテーマ                        */

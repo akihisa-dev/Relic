@@ -5,10 +5,13 @@ import {
   defaultAutoSyncSettings,
   defaultEditorSettings,
   defaultFeatureToggles,
+  defaultUserDefinedFields,
   type AutoSyncInterval,
   type AutoSyncSettings,
   type EditorSettings,
   type FeatureToggles,
+  type UserDefinedField,
+  type UserDefinedFieldType,
   type WorkspaceSummary
 } from "../../shared/ipc";
 
@@ -17,6 +20,7 @@ export interface AppSettings {
   editorSettings: EditorSettings;
   featureToggles: FeatureToggles;
   lastWorkspaceId: string | null;
+  userDefinedFields: UserDefinedField[];
   workspaces: WorkspaceSummary[];
 }
 
@@ -25,6 +29,7 @@ const defaultAppSettings: AppSettings = {
   editorSettings: defaultEditorSettings,
   featureToggles: defaultFeatureToggles,
   lastWorkspaceId: null,
+  userDefinedFields: defaultUserDefinedFields,
   workspaces: []
 };
 
@@ -45,6 +50,7 @@ export async function readAppSettings(userDataPath: string): Promise<AppSettings
       featureToggles: parseFeatureToggles(parsedSettings.featureToggles),
       lastWorkspaceId:
         typeof parsedSettings.lastWorkspaceId === "string" ? parsedSettings.lastWorkspaceId : null,
+      userDefinedFields: parseUserDefinedFields(parsedSettings.userDefinedFields),
       workspaces: Array.isArray(parsedSettings.workspaces)
         ? parsedSettings.workspaces.filter(isWorkspaceSummary)
         : []
@@ -116,6 +122,31 @@ function parseAutoSyncSettings(raw: unknown): AutoSyncSettings {
     autoPush: typeof s.autoPush === "boolean" ? s.autoPush : false,
     intervalMinutes: interval
   };
+}
+
+const VALID_FIELD_TYPES: UserDefinedFieldType[] = ["text", "number", "date", "boolean", "select", "multi-select", "url"];
+
+function parseUserDefinedFields(raw: unknown): UserDefinedField[] {
+  if (!Array.isArray(raw)) return defaultUserDefinedFields;
+
+  const result: UserDefinedField[] = [];
+
+  for (const item of raw) {
+    if (typeof item !== "object" || item === null) continue;
+    const f = item as Record<string, unknown>;
+    if (typeof f.name !== "string" || !f.name) continue;
+    if (!VALID_FIELD_TYPES.includes(f.type as UserDefinedFieldType)) continue;
+
+    const field: UserDefinedField = { name: f.name, type: f.type as UserDefinedFieldType };
+
+    if (Array.isArray(f.choices)) {
+      field.choices = f.choices.filter((c): c is string => typeof c === "string");
+    }
+
+    result.push(field);
+  }
+
+  return result;
 }
 
 function isWorkspaceSummary(value: unknown): value is WorkspaceSummary {
