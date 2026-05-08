@@ -200,200 +200,189 @@ export function FrontmatterForm({
   const publishVal = data.publish === true;
   const urlVal = data.url !== undefined ? String(data.url) : "";
 
-  const [isExpanded, setIsExpanded] = useState(false);
-
   return (
     <div className="fm-container">
-      <button
-        className="fm-toggle"
-        onClick={() => setIsExpanded((v) => !v)}
-        type="button"
-      >
-        <span className="fm-toggle-label">
-          {t("frontmatter.title")}
-          {fieldCount > 0 ? <span className="fm-toggle-count">{fieldCount}</span> : null}
-        </span>
-        <span className="fm-toggle-arrow">{isExpanded ? "▲" : "▼"}</span>
-      </button>
+      <div className="fm-summary">
+        <span className="fm-summary-title">{t("frontmatter.title")}</span>
+        {fieldCount > 0 ? <span className="fm-summary-count">{fieldCount}</span> : null}
+      </div>
 
-      {isExpanded ? (
-        <div className="fm-fields">
-          {fieldCount > MAX_FRONTMATTER_FIELDS ? (
-            <div className="fm-warning" role="alert">
-              {t("frontmatter.fieldLimit", { count: fieldCount })}
-            </div>
+      <div className="fm-fields">
+        {fieldCount > MAX_FRONTMATTER_FIELDS ? (
+          <div className="fm-warning" role="alert">
+            {t("frontmatter.fieldLimit", { count: fieldCount })}
+          </div>
+        ) : null}
+
+        {/* tags */}
+        <div className="fm-row">
+          <label className="fm-label">tags</label>
+          <PillInput
+            candidates={[...workspaceTags, ...(candidates.tags ?? [])]}
+            onChange={(v) => updateField("tags", v.length > 0 ? v : undefined)}
+            placeholder={t("frontmatter.tagsPlaceholder")}
+            values={tags}
+          />
+        </div>
+
+        {/* aliases */}
+        <div className="fm-row">
+          <label className="fm-label">aliases</label>
+          <PillInput
+            onChange={(v) => updateField("aliases", v.length > 0 ? v : undefined)}
+            placeholder={t("frontmatter.aliasesPlaceholder")}
+            values={aliases}
+          />
+        </div>
+
+        {/* date */}
+        <div className="fm-row">
+          <label className="fm-label">date</label>
+          <input
+            className="fm-input"
+            onChange={(e) => updateField("date", e.target.value || undefined)}
+            type="date"
+            value={dateVal}
+          />
+        </div>
+
+        {/* status */}
+        <div className="fm-row">
+          <label className="fm-label">status</label>
+          <input
+            className="fm-input"
+            list="fm-status-list"
+            onChange={(e) => updateField("status", e.target.value || undefined)}
+            placeholder={t("frontmatter.statusPlaceholder")}
+            type="text"
+            value={statusVal}
+          />
+          <datalist id="fm-status-list">
+            {(candidates.status ?? ["draft", "review", "published"]).map((s) => (
+              <option key={s} value={s} />
+            ))}
+          </datalist>
+        </div>
+
+        {/* publish */}
+        <div className="fm-row">
+          <label className="fm-label">publish</label>
+          <input
+            checked={publishVal}
+            className="fm-checkbox"
+            onChange={(e) => updateField("publish", e.target.checked || undefined)}
+            type="checkbox"
+          />
+        </div>
+
+        {/* url */}
+        <div className="fm-row fm-row--url">
+          <label className="fm-label">url</label>
+          <input
+            className="fm-input fm-input--url"
+            onChange={(e) => updateField("url", e.target.value || undefined)}
+            placeholder="https://..."
+            type="url"
+            value={urlVal}
+          />
+          {urlVal ? (
+            <a className="fm-url-open" href={urlVal} rel="noreferrer" target="_blank">
+              ↗
+            </a>
           ) : null}
+        </div>
 
-          {/* tags */}
-          <div className="fm-row">
-            <label className="fm-label">tags</label>
-            <PillInput
-              candidates={[...workspaceTags, ...(candidates.tags ?? [])]}
-              onChange={(v) => updateField("tags", v.length > 0 ? v : undefined)}
-              placeholder={t("frontmatter.tagsPlaceholder")}
-              values={tags}
-            />
-          </div>
+        {/* author */}
+        <div className="fm-row">
+          <label className="fm-label">author</label>
+          <PillInput
+            candidates={candidates.author ?? []}
+            onChange={(v) => updateField("author", v.length > 0 ? v : undefined)}
+            placeholder={t("frontmatter.authorPlaceholder")}
+            values={author}
+          />
+        </div>
 
-          {/* aliases */}
-          <div className="fm-row">
-            <label className="fm-label">aliases</label>
-            <PillInput
-              onChange={(v) => updateField("aliases", v.length > 0 ? v : undefined)}
-              placeholder={t("frontmatter.aliasesPlaceholder")}
-              values={aliases}
-            />
-          </div>
+        {/* user-defined fields */}
+        {userDefinedFields.map((field) => {
+          const val = data[field.name];
+          const datalistId = `fm-udf-${field.name}`;
 
-          {/* date */}
-          <div className="fm-row">
-            <label className="fm-label">date</label>
-            <input
-              className="fm-input"
-              onChange={(e) => updateField("date", e.target.value || undefined)}
-              type="date"
-              value={dateVal}
-            />
-          </div>
-
-          {/* status */}
-          <div className="fm-row">
-            <label className="fm-label">status</label>
-            <input
-              className="fm-input"
-              list="fm-status-list"
-              onChange={(e) => updateField("status", e.target.value || undefined)}
-              placeholder={t("frontmatter.statusPlaceholder")}
-              type="text"
-              value={statusVal}
-            />
-            <datalist id="fm-status-list">
-              {(candidates.status ?? ["draft", "review", "published"]).map((s) => (
-                <option key={s} value={s} />
-              ))}
-            </datalist>
-          </div>
-
-          {/* publish */}
-          <div className="fm-row">
-            <label className="fm-label">publish</label>
-            <input
-              checked={publishVal}
-              className="fm-checkbox"
-              onChange={(e) => updateField("publish", e.target.checked || undefined)}
-              type="checkbox"
-            />
-          </div>
-
-          {/* url */}
-          <div className="fm-row">
-            <label className="fm-label">url</label>
-            <input
-              className="fm-input fm-input--url"
-              onChange={(e) => updateField("url", e.target.value || undefined)}
-              placeholder="https://..."
-              type="url"
-              value={urlVal}
-            />
-            {urlVal ? (
-              <a className="fm-url-open" href={urlVal} rel="noreferrer" target="_blank">
-                ↗
-              </a>
-            ) : null}
-          </div>
-
-          {/* author */}
-          <div className="fm-row">
-            <label className="fm-label">author</label>
-            <PillInput
-              candidates={candidates.author ?? []}
-              onChange={(v) => updateField("author", v.length > 0 ? v : undefined)}
-              placeholder={t("frontmatter.authorPlaceholder")}
-              values={author}
-            />
-          </div>
-
-          {/* user-defined fields */}
-          {userDefinedFields.map((field) => {
-            const val = data[field.name];
-            const datalistId = `fm-udf-${field.name}`;
-
-            if (field.type === "boolean") {
-              return (
-                <div className="fm-row" key={field.name}>
-                  <label className="fm-label">{field.name}</label>
-                  <input
-                    checked={val === true}
-                    className="fm-checkbox"
-                    onChange={(e) => updateField(field.name, e.target.checked || undefined)}
-                    type="checkbox"
-                  />
-                </div>
-              );
-            }
-
-            if (field.type === "multi-select") {
-              return (
-                <div className="fm-row" key={field.name}>
-                  <label className="fm-label">{field.name}</label>
-                  <PillInput
-                    candidates={field.choices ?? []}
-                    onChange={(v) => updateField(field.name, v.length > 0 ? v : undefined)}
-                    placeholder={field.name}
-                    values={toStringArray(val)}
-                  />
-                </div>
-              );
-            }
-
-            const inputType = field.type === "number" ? "number" : field.type === "date" ? "date" : field.type === "url" ? "url" : "text";
-            const strVal = val !== undefined ? String(val) : "";
-
+          if (field.type === "boolean") {
             return (
               <div className="fm-row" key={field.name}>
                 <label className="fm-label">{field.name}</label>
-                {field.type === "select" ? (
-                  <>
-                    <input
-                      className="fm-input"
-                      list={datalistId}
-                      onChange={(e) => updateField(field.name, e.target.value || undefined)}
-                      placeholder={field.name}
-                      type="text"
-                      value={strVal}
-                    />
-                    <datalist id={datalistId}>
-                      {(field.choices ?? []).map((c) => <option key={c} value={c} />)}
-                    </datalist>
-                  </>
-                ) : (
-                  <input
-                    className="fm-input"
-                    onChange={(e) => updateField(field.name, e.target.value || undefined)}
-                    type={inputType}
-                    value={strVal}
-                  />
-                )}
+                <input
+                  checked={val === true}
+                  className="fm-checkbox"
+                  onChange={(e) => updateField(field.name, e.target.checked || undefined)}
+                  type="checkbox"
+                />
               </div>
             );
-          })}
+          }
 
-          {/* free fields */}
-          {freeFields.map((key) => (
-            <div className="fm-row" key={key}>
-              <label className="fm-label fm-label--free" title={key}>
-                {key}
-              </label>
-              <input
-                className="fm-input"
-                onChange={(e) => updateField(key, e.target.value || undefined)}
-                type="text"
-                value={data[key] !== undefined ? String(data[key]) : ""}
-              />
+          if (field.type === "multi-select") {
+            return (
+              <div className="fm-row" key={field.name}>
+                <label className="fm-label">{field.name}</label>
+                <PillInput
+                  candidates={field.choices ?? []}
+                  onChange={(v) => updateField(field.name, v.length > 0 ? v : undefined)}
+                  placeholder={field.name}
+                  values={toStringArray(val)}
+                />
+              </div>
+            );
+          }
+
+          const inputType = field.type === "number" ? "number" : field.type === "date" ? "date" : field.type === "url" ? "url" : "text";
+          const strVal = val !== undefined ? String(val) : "";
+
+          return (
+            <div className="fm-row" key={field.name}>
+              <label className="fm-label">{field.name}</label>
+              {field.type === "select" ? (
+                <>
+                  <input
+                    className="fm-input"
+                    list={datalistId}
+                    onChange={(e) => updateField(field.name, e.target.value || undefined)}
+                    placeholder={field.name}
+                    type="text"
+                    value={strVal}
+                  />
+                  <datalist id={datalistId}>
+                    {(field.choices ?? []).map((c) => <option key={c} value={c} />)}
+                  </datalist>
+                </>
+              ) : (
+                <input
+                  className="fm-input"
+                  onChange={(e) => updateField(field.name, e.target.value || undefined)}
+                  type={inputType}
+                  value={strVal}
+                />
+              )}
             </div>
-          ))}
-        </div>
-      ) : null}
+          );
+        })}
+
+        {/* free fields */}
+        {freeFields.map((key) => (
+          <div className="fm-row" key={key}>
+            <label className="fm-label fm-label--free" title={key}>
+              {key}
+            </label>
+            <input
+              className="fm-input"
+              onChange={(e) => updateField(key, e.target.value || undefined)}
+              type="text"
+              value={data[key] !== undefined ? String(data[key]) : ""}
+            />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
