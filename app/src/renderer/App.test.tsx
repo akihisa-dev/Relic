@@ -65,6 +65,7 @@ function makeRelicApi(overrides: Partial<typeof window.relic> = {}): typeof wind
     getGitWorkingChanges: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     getAppInfo: vi.fn().mockResolvedValue({ ok: true, value: { name: "Relic", platform: "darwin", version: "0.0.0" } }),
     getEditorSettings: vi.fn().mockResolvedValue({ ok: true, value: { ...defaultEditorSettings, language: "ja" } }),
+    getMarkdownTemplates: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     getWorkspaceTags: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     getWorkspaceState: vi.fn().mockResolvedValue({
       ok: true,
@@ -351,8 +352,39 @@ describe("App", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "作成" }));
 
-    expect(createMarkdownFile).toHaveBeenCalledWith({ name: "読書メモ" });
+    expect(createMarkdownFile).toHaveBeenCalledWith({ name: "読書メモ", templatePath: undefined });
     expect(await screen.findByRole("button", { name: /読書メモ/ })).toBeInTheDocument();
+  });
+
+  it("新規ノートフォームからテンプレートを選んでファイルを作成する", async () => {
+    const createMarkdownFile = vi.fn().mockResolvedValue({
+      ok: true,
+      value: {
+        ...withWorkspace,
+        fileTree: [{ name: "週報", path: "週報.md", type: "file" }]
+      }
+    });
+
+    window.relic = makeRelicApi({
+      createMarkdownFile,
+      getMarkdownTemplates: vi.fn().mockResolvedValue({
+        ok: true,
+        value: [{ name: "日記", path: "templates/日記.md" }]
+      }),
+      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
+    });
+
+    await renderApp();
+
+    fireEvent.change(await screen.findByRole("textbox", { name: "新規ノート名" }), {
+      target: { value: "週報" }
+    });
+    fireEvent.change(await screen.findByLabelText("テンプレート"), {
+      target: { value: "templates/日記.md" }
+    });
+    fireEvent.click(screen.getByRole("button", { name: "作成" }));
+
+    expect(createMarkdownFile).toHaveBeenCalledWith({ name: "週報", templatePath: "templates/日記.md" });
   });
 
   it("新規フォルダフォームからフォルダを作成する", async () => {
@@ -453,6 +485,7 @@ describe("App", () => {
 
     await renderApp();
 
+    fireEvent.click(await screen.findByRole("button", { name: /Notes/ }));
     fireEvent.click(await screen.findByRole("button", { name: "Archive" }));
 
     expect(switchWorkspace).toHaveBeenCalledWith({ workspaceId: "ws-2" });
@@ -499,6 +532,77 @@ describe("App", () => {
       expect(renameMarkdownFile).toHaveBeenCalledWith({ newName: "読書ログ", path: "読書メモ.md" });
     });
     expect((await screen.findAllByText("読書ログ")).length).toBeGreaterThan(0);
+  });
+
+  it("ファイルツリーの右クリックメニューからインラインでリネームする", async () => {
+    const renameMarkdownFile = vi.fn().mockResolvedValue({
+      ok: true,
+      value: {
+        file: { content: "本文テスト", name: "読書ログ", path: "読書ログ.md" },
+        workspaceState: {
+          ...withWorkspace,
+          fileTree: [{ name: "読書ログ", path: "読書ログ.md", type: "file" }]
+        }
+      }
+    });
+
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [{ name: "読書メモ", path: "読書メモ.md", type: "file" }]
+        }
+      }),
+      renameMarkdownFile
+    });
+
+    await renderApp();
+
+    fireEvent.contextMenu(await screen.findByRole("button", { name: /読書メモ/ }));
+    fireEvent.click(await screen.findByRole("menuitem", { name: "名前を変更" }));
+    fireEvent.change(screen.getByLabelText("名前を変更"), { target: { value: "読書ログ" } });
+    fireEvent.keyDown(screen.getByLabelText("名前を変更"), { key: "Enter" });
+
+    await waitFor(() => {
+      expect(renameMarkdownFile).toHaveBeenCalledWith({ newName: "読書ログ", path: "読書メモ.md" });
+    });
+  });
+
+  it("ファイルツリーの右クリックメニューからファイルを複製する", async () => {
+    const duplicateMarkdownFile = vi.fn().mockResolvedValue({
+      ok: true,
+      value: {
+        file: { content: "本文テスト", name: "読書メモ のコピー", path: "読書メモ のコピー.md" },
+        workspaceState: {
+          ...withWorkspace,
+          fileTree: [
+            { name: "読書メモ", path: "読書メモ.md", type: "file" },
+            { name: "読書メモ のコピー", path: "読書メモ のコピー.md", type: "file" }
+          ]
+        }
+      }
+    });
+
+    window.relic = makeRelicApi({
+      duplicateMarkdownFile,
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [{ name: "読書メモ", path: "読書メモ.md", type: "file" }]
+        }
+      })
+    });
+
+    await renderApp();
+
+    fireEvent.contextMenu(await screen.findByRole("button", { name: /読書メモ/ }));
+    fireEvent.click(await screen.findByRole("menuitem", { name: "複製" }));
+
+    await waitFor(() => {
+      expect(duplicateMarkdownFile).toHaveBeenCalledWith({ path: "読書メモ.md" });
+    });
   });
 
   it("コマンドパレットからアクティブファイルを複製する", async () => {

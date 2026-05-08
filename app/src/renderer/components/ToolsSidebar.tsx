@@ -19,6 +19,7 @@ export function ToolsSidebar({ workspacePath }: { workspacePath: string | null }
   const [tocStatus, setTocStatus] = useState<string | null>(null);
 
   const [mergeFilterType, setMergeFilterType] = useState<MergeFilterType>("all");
+  const [mergeFrontmatterField, setMergeFrontmatterField] = useState("");
   const [mergeFilterValue, setMergeFilterValue] = useState("");
   const [mergeSortBy, setMergeSortBy] = useState<MergeSortBy>("name");
   const [mergeInsertHeading, setMergeInsertHeading] = useState(true);
@@ -59,6 +60,7 @@ export function ToolsSidebar({ workspacePath }: { workspacePath: string | null }
     if (!workspacePath) return;
     setMergeStatus(t("tools.processing"));
     const result = await window.relic!.mergeFiles({
+      frontmatterField: mergeFilterType === "frontmatter" ? mergeFrontmatterField : undefined,
       filterType: mergeFilterType,
       filterValue: mergeFilterValue,
       insertFilenameHeading: mergeInsertHeading,
@@ -188,9 +190,31 @@ export function ToolsSidebar({ workspacePath }: { workspacePath: string | null }
                 <option value="all">{t("tools.filterAll")}</option>
                 <option value="folder">{t("tools.filterFolder")}</option>
                 <option value="tag">{t("tools.filterTag")}</option>
+                <option value="frontmatter">{t("tools.filterFrontmatter")}</option>
               </select>
             </label>
-            {mergeFilterType !== "all" && (
+            {mergeFilterType === "frontmatter" ? (
+              <>
+                <label className="setting-row">
+                  <span>{t("tools.frontmatterField")}</span>
+                  <input
+                    onChange={(e) => setMergeFrontmatterField(e.target.value)}
+                    placeholder={t("tools.placeholderFrontmatterFieldExample")}
+                    type="text"
+                    value={mergeFrontmatterField}
+                  />
+                </label>
+                <label className="setting-row">
+                  <span>{t("tools.frontmatterValue")}</span>
+                  <input
+                    onChange={(e) => setMergeFilterValue(e.target.value)}
+                    placeholder={t("tools.placeholderFrontmatterValueExample")}
+                    type="text"
+                    value={mergeFilterValue}
+                  />
+                </label>
+              </>
+            ) : mergeFilterType !== "all" && (
               <label className="setting-row">
                 <span>{mergeFilterType === "folder" ? t("tools.folderName") : t("tools.tagName")}</span>
                 <input

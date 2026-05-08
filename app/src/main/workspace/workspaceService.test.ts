@@ -4,7 +4,7 @@ import path from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import { defaultAutoSyncSettings, defaultEditorSettings, defaultFeatureToggles, defaultUserDefinedFields } from "../../shared/ipc";
+import { defaultEditorSettings, defaultFeatureToggles, defaultUserDefinedFields } from "../../shared/ipc";
 import { attachmentsDirectoryName, templatesDirectoryName } from "../../shared/workspace";
 import {
   addOrActivateWorkspace,
@@ -14,7 +14,7 @@ import {
   toWorkspaceState
 } from "./workspaceService";
 
-const baseSettings = { autoSync: defaultAutoSyncSettings, editorSettings: defaultEditorSettings, featureToggles: defaultFeatureToggles, userDefinedFields: defaultUserDefinedFields };
+const baseSettings = { editorSettings: defaultEditorSettings, featureToggles: defaultFeatureToggles, userDefinedFields: defaultUserDefinedFields };
 
 describe("workspaceService", () => {
   const temporaryPaths: string[] = [];

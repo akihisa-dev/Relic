@@ -6,6 +6,7 @@ import { fail, ok, type RelicResult } from "../../shared/result";
 import { updateLinksForFileRename } from "./linkUpdater";
 import { validateBaseName } from "./names";
 import { resolveWorkspaceRelativePath } from "./paths";
+import { readMarkdownTemplate } from "./templates";
 
 export interface CreatedMarkdownFile {
   path: string;
@@ -25,7 +26,8 @@ export function normalizeMarkdownFileName(name: string): RelicResult<string> {
 
 export async function createMarkdownFile(
   workspacePath: string,
-  name: string
+  name: string,
+  templatePath?: string
 ): Promise<RelicResult<CreatedMarkdownFile>> {
   const normalizedName = normalizeMarkdownFileName(name);
 
@@ -36,7 +38,13 @@ export async function createMarkdownFile(
   const absoluteFilePath = path.join(workspacePath, normalizedName.value);
 
   try {
-    await writeFile(absoluteFilePath, "", {
+    const content = templatePath ? await readMarkdownTemplate(workspacePath, templatePath) : ok("");
+
+    if (!content.ok) {
+      return content;
+    }
+
+    await writeFile(absoluteFilePath, content.value, {
       encoding: "utf8",
       flag: "wx"
     });

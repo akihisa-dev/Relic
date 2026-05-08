@@ -1,4 +1,5 @@
 import { EditorSelection } from "@codemirror/state";
+import type { EditorState } from "@codemirror/state";
 import type { EditorView } from "@codemirror/view";
 import { useState } from "react";
 import type { ReactElement } from "react";
@@ -10,6 +11,7 @@ interface ToolbarProps {
 }
 
 type HeadingLevel = 1 | 2 | 3 | 4 | 5 | 6;
+type BlockIdFactory = () => string;
 
 function wrapSelection(view: EditorView, before: string, after: string, placeholder: string): void {
   const { state } = view;
@@ -56,6 +58,72 @@ function insertBlock(view: EditorView, text: string): void {
     changes: { from: line.to, insert: `${prefix}\n${text}\n` },
     selection: { anchor: line.to + prefix.length + 1 + text.length + 1 }
   });
+  view.focus();
+}
+
+function hasBlockId(text: string): boolean {
+  return /(?:^|\s)\^[A-Za-z0-9_-]+$/.test(text.trimEnd());
+}
+
+function findParagraphEndLineNumbers(state: EditorState): number[] {
+  const lineNumbers = new Set<number>();
+  const { doc } = state;
+
+  for (const range of state.selection.ranges) {
+    const fromLine = doc.lineAt(range.from);
+    const toLine = doc.lineAt(range.to);
+
+    if (range.empty) {
+      let endLine = fromLine;
+
+      while (endLine.number < doc.lines) {
+        const nextLine = doc.line(endLine.number + 1);
+        if (nextLine.text.trim() === "") break;
+        endLine = nextLine;
+      }
+
+      lineNumbers.add(endLine.number);
+      continue;
+    }
+
+    let paragraphEnd: number | null = null;
+
+    for (let lineNumber = fromLine.number; lineNumber <= toLine.number; lineNumber += 1) {
+      const line = doc.line(lineNumber);
+
+      if (line.text.trim() === "") {
+        if (paragraphEnd !== null) lineNumbers.add(paragraphEnd);
+        paragraphEnd = null;
+        continue;
+      }
+
+      paragraphEnd = lineNumber;
+    }
+
+    if (paragraphEnd !== null) lineNumbers.add(paragraphEnd);
+  }
+
+  return [...lineNumbers].sort((a, b) => a - b);
+}
+
+export function insertBlockIds(view: EditorView, createId: BlockIdFactory = () => Math.random().toString(36).slice(2, 8)): void {
+  const { state } = view;
+  const changes = findParagraphEndLineNumbers(state)
+    .map((lineNumber) => {
+      const line = state.doc.line(lineNumber);
+      if (hasBlockId(line.text)) return null;
+
+      return {
+        from: line.to,
+        insert: `${line.text.trim().length > 0 ? " " : ""}^${createId()}`
+      };
+    })
+    .filter((change): change is { from: number; insert: string } => change !== null);
+
+  if (changes.length > 0) {
+    view.dispatch({ changes });
+  }
+
   view.focus();
 }
 
@@ -192,14 +260,7 @@ export function Toolbar({ viewRef }: ToolbarProps): ReactElement {
 
   const handleBlockId = (): void => {
     if (!view) return;
-
-    const { state } = view;
-    const pos = state.selection.main.head;
-    const line = state.doc.lineAt(pos);
-    const id = Math.random().toString(36).slice(2, 8);
-
-    view.dispatch({ changes: { from: line.to, insert: ` ^${id}` } });
-    view.focus();
+    insertBlockIds(view);
   };
 
   const handleTableSubmit = (): void => {

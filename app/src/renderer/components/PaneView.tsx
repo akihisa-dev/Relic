@@ -8,7 +8,6 @@ import { useEditorStore, type PaneId } from "../store/editorStore";
 import { useAutoSave } from "../hooks/useAutoSave";
 import { Editor } from "./Editor";
 import { FrontmatterForm } from "./FrontmatterForm";
-import { Preview } from "./Preview";
 import { Toolbar } from "./Toolbar";
 
 export interface PaneViewProps {
@@ -25,11 +24,9 @@ export interface PaneViewProps {
   workspaceTags: string[];
   onCreateNote: (name: string) => void;
   onFocus: () => void;
-  onOpenWikiLink: (target: string, heading?: string) => void;
   onScrollTargetHandled?: () => void;
   onTabClose: (tabId: string) => void;
   onTabSelect: (tabId: string) => void;
-  onTagSearch: (tag: string) => void;
   onCloseOtherTabs: (tabId: string) => void;
   onCloseTabsToRight: (tabId: string) => void;
   onCloseAllTabs: () => void;
@@ -51,11 +48,9 @@ export function PaneView({
   workspaceTags,
   onCreateNote,
   onFocus,
-  onOpenWikiLink,
   onScrollTargetHandled,
   onTabClose,
   onTabSelect,
-  onTagSearch,
   onCloseOtherTabs,
   onCloseTabsToRight,
   onCloseAllTabs,
@@ -64,7 +59,7 @@ export function PaneView({
 }: PaneViewProps): ReactElement {
   const [newNoteName, setNewNoteName] = useState("");
   const [contextMenu, setContextMenu] = useState<{ tabId: string; x: number; y: number } | null>(null);
-  const { leftPane, rightPane, tabs, updateTabContent, setTabViewMode } = useEditorStore();
+  const { leftPane, rightPane, tabs, updateTabContent } = useEditorStore();
   const paneState = pane === "left" ? leftPane : rightPane;
   const activeTab = paneState.activeTabId ? tabs[paneState.activeTabId] : null;
   const viewRef = useRef<EditorView | null>(null);
@@ -194,49 +189,19 @@ export function PaneView({
         <div className="editor-surface">
           <div className="editor-mode-bar">
             <Toolbar viewRef={viewRef} />
-            <div className="editor-mode-toggle">
-              <button
-                className={`mode-btn${activeTab.viewMode === "preview" ? " mode-btn--active" : ""}`}
-                onClick={() => setTabViewMode(activeTab.id, "preview")}
-                type="button"
-              >
-                Preview
-              </button>
-              <button
-                className={`mode-btn${activeTab.viewMode === "source" ? " mode-btn--active" : ""}`}
-                onClick={() => setTabViewMode(activeTab.id, "source")}
-                type="button"
-              >
-                Source
-              </button>
-            </div>
           </div>
           <div className="editor-body">
-            {activeTab.viewMode === "preview" ? (
-              <div className="preview-with-fm">
-                {showFrontmatter && (
-                  <FrontmatterForm
-                    candidates={frontmatterCandidates}
-                    content={activeTab.content}
-                    key={`fm-${activeTab.id}`}
-                    onChange={(content) => updateTabContent(activeTab.id, content)}
-                    userDefinedFields={userDefinedFields}
-                    workspaceTags={workspaceTags}
-                  />
-                )}
-                <Preview
+            <div className="live-editor-with-fm">
+              {showFrontmatter && (
+                <FrontmatterForm
+                  candidates={frontmatterCandidates}
                   content={activeTab.content}
-                  key={`preview-${activeTab.id}`}
+                  key={`fm-${activeTab.id}`}
                   onChange={(content) => updateTabContent(activeTab.id, content)}
-                  onOpenWikiLink={onOpenWikiLink}
-                  onScrollTargetHandled={onScrollTargetHandled}
-                  onTagSearch={onTagSearch}
-                  scrollTargetHeading={scrollTargetHeading}
-                  settings={editorSettings}
-                  workspacePath={workspacePath}
+                  userDefinedFields={userDefinedFields}
+                  workspaceTags={workspaceTags}
                 />
-              </div>
-            ) : (
+              )}
               <Editor
                 allFilePaths={allFilePaths}
                 content={activeTab.content}
@@ -247,7 +212,7 @@ export function PaneView({
                 typewriterMode={typewriterMode}
                 viewRef={viewRef}
               />
-            )}
+            </div>
           </div>
           <div className="pane-status">
             <span>{t("app.wordCount", { chars: charCount, words: wordCount })}</span>
