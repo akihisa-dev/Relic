@@ -976,7 +976,7 @@ button:disabled {
   overflow: hidden;
 }
 
-.editor-mode-bar {
+.editor-toolbar-bar {
   align-items: center;
   display: flex;
   justify-content: space-between;
