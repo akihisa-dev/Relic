@@ -55,4 +55,34 @@ describe("FrontmatterForm", () => {
     expect(screen.getByText("3")).toBeInTheDocument();
     expect(screen.getByDisplayValue("value_1")).toBeInTheDocument();
   });
+
+  it("本文中に存在するフロントマター項目だけを表示する", () => {
+    render(
+      <FrontmatterForm
+        candidates={{}}
+        content={"---\nstatus: draft\npublish: false\n---\n本文"}
+        onChange={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText("status")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("draft")).toBeInTheDocument();
+    expect(screen.getByText("publish")).toBeInTheDocument();
+    expect(screen.queryByText("tags")).not.toBeInTheDocument();
+    expect(screen.queryByText("aliases")).not.toBeInTheDocument();
+    expect(screen.queryByText("date")).not.toBeInTheDocument();
+  });
+
+  it("フロントマター項目がない場合は空表示にする", () => {
+    render(
+      <FrontmatterForm
+        candidates={{}}
+        content={"# 本文だけ"}
+        onChange={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText("This note has no frontmatter fields.")).toBeInTheDocument();
+    expect(screen.queryByText("tags")).not.toBeInTheDocument();
+  });
 });

@@ -15,6 +15,10 @@ const SYSTEM_FIELDS = ["date", "status", "publish", "url", "author"] as const;
 const KNOWN_FIELDS = new Set([...BUILT_IN_FIELDS, ...SYSTEM_FIELDS]);
 const MAX_FRONTMATTER_FIELDS = 20;
 
+function hasField(data: Record<string, unknown>, key: string): boolean {
+  return Object.prototype.hasOwnProperty.call(data, key);
+}
+
 function parseFrontmatter(content: string): ParsedFrontmatter {
   if (!content.startsWith("---\n") && !content.startsWith("---\r\n")) {
     return { data: {}, body: content };
@@ -208,6 +212,10 @@ export function FrontmatterForm({
       </div>
 
       <div className="fm-fields">
+        {fieldCount === 0 ? (
+          <div className="empty-note">{t("frontmatter.empty")}</div>
+        ) : null}
+
         {fieldCount > MAX_FRONTMATTER_FIELDS ? (
           <div className="fm-warning" role="alert">
             {t("frontmatter.fieldLimit", { count: fieldCount })}
@@ -215,96 +223,110 @@ export function FrontmatterForm({
         ) : null}
 
         {/* tags */}
-        <div className="fm-row">
-          <label className="fm-label">tags</label>
-          <PillInput
-            candidates={[...workspaceTags, ...(candidates.tags ?? [])]}
-            onChange={(v) => updateField("tags", v.length > 0 ? v : undefined)}
-            placeholder={t("frontmatter.tagsPlaceholder")}
-            values={tags}
-          />
-        </div>
+        {hasField(data, "tags") ? (
+          <div className="fm-row">
+            <label className="fm-label">tags</label>
+            <PillInput
+              candidates={[...workspaceTags, ...(candidates.tags ?? [])]}
+              onChange={(v) => updateField("tags", v.length > 0 ? v : undefined)}
+              placeholder={t("frontmatter.tagsPlaceholder")}
+              values={tags}
+            />
+          </div>
+        ) : null}
 
         {/* aliases */}
-        <div className="fm-row">
-          <label className="fm-label">aliases</label>
-          <PillInput
-            onChange={(v) => updateField("aliases", v.length > 0 ? v : undefined)}
-            placeholder={t("frontmatter.aliasesPlaceholder")}
-            values={aliases}
-          />
-        </div>
+        {hasField(data, "aliases") ? (
+          <div className="fm-row">
+            <label className="fm-label">aliases</label>
+            <PillInput
+              onChange={(v) => updateField("aliases", v.length > 0 ? v : undefined)}
+              placeholder={t("frontmatter.aliasesPlaceholder")}
+              values={aliases}
+            />
+          </div>
+        ) : null}
 
         {/* date */}
-        <div className="fm-row">
-          <label className="fm-label">date</label>
-          <input
-            className="fm-input"
-            onChange={(e) => updateField("date", e.target.value || undefined)}
-            type="date"
-            value={dateVal}
-          />
-        </div>
+        {hasField(data, "date") ? (
+          <div className="fm-row">
+            <label className="fm-label">date</label>
+            <input
+              className="fm-input"
+              onChange={(e) => updateField("date", e.target.value || undefined)}
+              type="date"
+              value={dateVal}
+            />
+          </div>
+        ) : null}
 
         {/* status */}
-        <div className="fm-row">
-          <label className="fm-label">status</label>
-          <input
-            className="fm-input"
-            list="fm-status-list"
-            onChange={(e) => updateField("status", e.target.value || undefined)}
-            placeholder={t("frontmatter.statusPlaceholder")}
-            type="text"
-            value={statusVal}
-          />
-          <datalist id="fm-status-list">
-            {(candidates.status ?? ["draft", "review", "published"]).map((s) => (
-              <option key={s} value={s} />
-            ))}
-          </datalist>
-        </div>
+        {hasField(data, "status") ? (
+          <div className="fm-row">
+            <label className="fm-label">status</label>
+            <input
+              className="fm-input"
+              list="fm-status-list"
+              onChange={(e) => updateField("status", e.target.value || undefined)}
+              placeholder={t("frontmatter.statusPlaceholder")}
+              type="text"
+              value={statusVal}
+            />
+            <datalist id="fm-status-list">
+              {(candidates.status ?? ["draft", "review", "published"]).map((s) => (
+                <option key={s} value={s} />
+              ))}
+            </datalist>
+          </div>
+        ) : null}
 
         {/* publish */}
-        <div className="fm-row">
-          <label className="fm-label">publish</label>
-          <input
-            checked={publishVal}
-            className="fm-checkbox"
-            onChange={(e) => updateField("publish", e.target.checked || undefined)}
-            type="checkbox"
-          />
-        </div>
+        {hasField(data, "publish") ? (
+          <div className="fm-row">
+            <label className="fm-label">publish</label>
+            <input
+              checked={publishVal}
+              className="fm-checkbox"
+              onChange={(e) => updateField("publish", e.target.checked || undefined)}
+              type="checkbox"
+            />
+          </div>
+        ) : null}
 
         {/* url */}
-        <div className="fm-row fm-row--url">
-          <label className="fm-label">url</label>
-          <input
-            className="fm-input fm-input--url"
-            onChange={(e) => updateField("url", e.target.value || undefined)}
-            placeholder="https://..."
-            type="url"
-            value={urlVal}
-          />
-          {urlVal ? (
-            <a className="fm-url-open" href={urlVal} rel="noreferrer" target="_blank">
-              ↗
-            </a>
-          ) : null}
-        </div>
+        {hasField(data, "url") ? (
+          <div className="fm-row fm-row--url">
+            <label className="fm-label">url</label>
+            <input
+              className="fm-input fm-input--url"
+              onChange={(e) => updateField("url", e.target.value || undefined)}
+              placeholder="https://..."
+              type="url"
+              value={urlVal}
+            />
+            {urlVal ? (
+              <a className="fm-url-open" href={urlVal} rel="noreferrer" target="_blank">
+                ↗
+              </a>
+            ) : null}
+          </div>
+        ) : null}
 
         {/* author */}
-        <div className="fm-row">
-          <label className="fm-label">author</label>
-          <PillInput
-            candidates={candidates.author ?? []}
-            onChange={(v) => updateField("author", v.length > 0 ? v : undefined)}
-            placeholder={t("frontmatter.authorPlaceholder")}
-            values={author}
-          />
-        </div>
+        {hasField(data, "author") ? (
+          <div className="fm-row">
+            <label className="fm-label">author</label>
+            <PillInput
+              candidates={candidates.author ?? []}
+              onChange={(v) => updateField("author", v.length > 0 ? v : undefined)}
+              placeholder={t("frontmatter.authorPlaceholder")}
+              values={author}
+            />
+          </div>
+        ) : null}
 
         {/* user-defined fields */}
-        {userDefinedFields.map((field) => {
+        {userDefinedFields.filter((field) => hasField(data, field.name)).map((field) => {
           const val = data[field.name];
           const datalistId = `fm-udf-${field.name}`;
 
