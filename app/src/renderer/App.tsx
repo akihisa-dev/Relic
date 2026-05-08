@@ -29,6 +29,7 @@ import { defaultAutoSyncSettings, defaultFeatureToggles, defaultUserDefinedField
 import { resolveWikiLinkPath, resolveWikiLinks } from "../shared/links";
 import { CommandPalette, type Command } from "./components/CommandPalette";
 import { FilesSidebar } from "./components/FilesSidebar";
+import { FrontmatterForm } from "./components/FrontmatterForm";
 import { GitSidebar } from "./components/GitSidebar";
 import { PaneView } from "./components/PaneView";
 import { QuickSwitcher } from "./components/QuickSwitcher";
@@ -199,6 +200,7 @@ export function App(): ReactElement {
     setFocusedPane,
     setTabActive,
     toggleSplit,
+    updateTabContent,
     updateTabMeta
   } = useEditorStore();
 
@@ -1944,6 +1946,16 @@ export function App(): ReactElement {
                   >
                     {t("pane.outline")}
                   </button>
+                  {featureToggles.frontmatter ? (
+                    <button
+                      className={`toolbar-btn${rightPanelView === "frontmatter" && isRightPanelOpen ? " active" : ""}`}
+                      onClick={() => handleRightPanelViewButton("frontmatter")}
+                      title={t("pane.toggleFrontmatter")}
+                      type="button"
+                    >
+                      {t("pane.frontmatter")}
+                    </button>
+                  ) : null}
                   <button
                     className={`toolbar-btn${rightPanelView === "links" && isRightPanelOpen ? " active" : ""}`}
                     onClick={() => handleRightPanelViewButton("links")}
@@ -1967,7 +1979,6 @@ export function App(): ReactElement {
                   allFilePaths={existingMarkdownPaths}
                   editorSettings={editorSettings}
                   focusedPane={focusedPane}
-                  frontmatterCandidates={frontmatterCandidates}
                   onCreateNote={handleCreateNoteFromPane}
                   onFocus={() => setFocusedPane("left")}
                   onScrollTargetHandled={() => setLeftPaneScrollHeading(undefined)}
@@ -1980,19 +1991,15 @@ export function App(): ReactElement {
                   isSplitView={isSplit}
                   pane="left"
                   scrollTargetHeading={leftPaneScrollHeading}
-                  showFrontmatter={featureToggles.frontmatter}
                   typewriterMode={isTypewriterMode}
-                  userDefinedFields={userDefinedFields}
                   viewRef={leftEditorViewRef}
                   workspacePath={workspaceState?.activeWorkspace?.path}
-                  workspaceTags={workspaceTags.map((t) => t.tag)}
                 />
                 {isSplit ? (
                   <PaneView
                     allFilePaths={existingMarkdownPaths}
                     editorSettings={editorSettings}
                     focusedPane={focusedPane}
-                    frontmatterCandidates={frontmatterCandidates}
                     onCreateNote={handleCreateNoteFromPane}
                     onFocus={() => setFocusedPane("right")}
                     onScrollTargetHandled={() => setRightPaneScrollHeading(undefined)}
@@ -2005,12 +2012,9 @@ export function App(): ReactElement {
                     isSplitView={isSplit}
                     pane="right"
                     scrollTargetHeading={rightPaneScrollHeading}
-                    showFrontmatter={featureToggles.frontmatter}
                     typewriterMode={isTypewriterMode}
-                    userDefinedFields={userDefinedFields}
                     viewRef={rightEditorViewRef}
                     workspacePath={workspaceState?.activeWorkspace?.path}
-                    workspaceTags={workspaceTags.map((t) => t.tag)}
                   />
                 ) : null}
               </div>
@@ -2020,7 +2024,11 @@ export function App(): ReactElement {
               <aside className="right-panel">
                 <div className="sidebar-header">
                   <div className="pane-heading">
-                    {rightPanelView === "outline" ? t("pane.outline") : t("pane.links")}
+                    {rightPanelView === "outline"
+                      ? t("pane.outline")
+                      : rightPanelView === "frontmatter"
+                        ? t("pane.frontmatter")
+                        : t("pane.links")}
                   </div>
                 </div>
                 <div className="sidebar-body">
@@ -2043,6 +2051,21 @@ export function App(): ReactElement {
                     </ul>
                   ) : (
                     <div className="empty-note">{t("empty.noHeadings")}</div>
+                  )
+                ) : rightPanelView === "frontmatter" ? (
+                  activeTabInFocusedPane ? (
+                    <div className="frontmatter-panel">
+                      <FrontmatterForm
+                        candidates={frontmatterCandidates}
+                        content={activeTabInFocusedPane.content}
+                        key={`fm-panel-${activeTabInFocusedPane.id}`}
+                        onChange={(content) => updateTabContent(activeTabInFocusedPane.id, content)}
+                        userDefinedFields={userDefinedFields}
+                        workspaceTags={workspaceTags.map((tag) => tag.tag)}
+                      />
+                    </div>
+                  ) : (
+                    <div className="empty-note">{t("pane.noNotes")}</div>
                   )
                 ) : outgoingLinks.length > 0 || backlinks.length > 0 || isLoadingBacklinks ? (
                   <div className="links-panel-stack">
