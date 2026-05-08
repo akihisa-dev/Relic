@@ -15,7 +15,7 @@ const config = {
   makers: [
     new MakerZIP({}, ["darwin"]),
     new MakerDMG({}),
-    new MakerSquirrel({ name: "Relic" }, ["win32"]),
+    new MakerSquirrel({ name: "Relic", authors: "akihisa-dev" }, ["win32"]),
     new MakerZIP({}, ["win32"])
   ],
   plugins: [
