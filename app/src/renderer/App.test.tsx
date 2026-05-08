@@ -278,6 +278,75 @@ describe("App", () => {
     fireEvent.mouseUp(document);
   });
 
+  it("右パネルのアウトライン・リンクボタンを閉じた後も再度開ける", async () => {
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
+    });
+
+    await renderApp();
+
+    await screen.findByText("Notes");
+
+    const outlineButton = screen.getByRole("button", { name: "アウトライン" });
+    const linksButton = screen.getByRole("button", { name: "リンク" });
+
+    fireEvent.click(outlineButton);
+
+    expect(useUiStore.getState().isRightPanelOpen).toBe(false);
+    expect(useUiStore.getState().rightPanelView).toBe("outline");
+
+    fireEvent.click(outlineButton);
+
+    expect(useUiStore.getState().isRightPanelOpen).toBe(true);
+    expect(useUiStore.getState().rightPanelView).toBe("outline");
+
+    fireEvent.click(linksButton);
+
+    expect(useUiStore.getState().isRightPanelOpen).toBe(true);
+    expect(useUiStore.getState().rightPanelView).toBe("links");
+
+    fireEvent.click(linksButton);
+
+    expect(useUiStore.getState().isRightPanelOpen).toBe(false);
+    expect(useUiStore.getState().rightPanelView).toBe("links");
+
+    fireEvent.click(outlineButton);
+
+    expect(useUiStore.getState().isRightPanelOpen).toBe(true);
+    expect(useUiStore.getState().rightPanelView).toBe("outline");
+  });
+
+  it("サイドバーが閉じていてもショートカットで対象ビューを開ける", async () => {
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
+    });
+    useUiStore.setState({
+      activeSidebarView: "files",
+      isRightPanelOpen: true,
+      isSidebarOpen: false,
+      isTypewriterMode: false,
+      rightPanelView: "outline"
+    });
+
+    await renderApp();
+
+    await screen.findByRole("main");
+
+    fireEvent.keyDown(window, { key: "f", metaKey: true });
+
+    expect(useUiStore.getState().isSidebarOpen).toBe(true);
+    expect(useUiStore.getState().activeSidebarView).toBe("search");
+
+    fireEvent.keyDown(window, { key: "b", metaKey: true });
+
+    expect(useUiStore.getState().isSidebarOpen).toBe(false);
+
+    fireEvent.keyDown(window, { key: "n", metaKey: true });
+
+    expect(useUiStore.getState().isSidebarOpen).toBe(true);
+    expect(useUiStore.getState().activeSidebarView).toBe("files");
+  });
+
   it("Git ビューから GitHub 接続を開始できる", async () => {
     const connectGitHubAccount = vi.fn().mockResolvedValue({
       ok: true,
@@ -1241,7 +1310,7 @@ describe("App", () => {
     await renderApp();
 
     fireEvent.click(await screen.findByRole("button", { name: /読書メモ/ }));
-    fireEvent.click(screen.getByRole("button", { name: "Links" }));
+    fireEvent.click(screen.getByRole("button", { name: "リンク" }));
 
     expect(await screen.findByText("アウトゴーイング")).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: "表示名" }).length).toBeGreaterThan(0);
@@ -1278,7 +1347,7 @@ describe("App", () => {
     await renderApp();
 
     fireEvent.click(await screen.findByRole("button", { name: /target/ }));
-    fireEvent.click(screen.getByRole("button", { name: "Links" }));
+    fireEvent.click(screen.getByRole("button", { name: "リンク" }));
 
     expect(await screen.findByText("バックリンク")).toBeInTheDocument();
     fireEvent.click(await screen.findByRole("button", { name: "source" }));
@@ -1341,7 +1410,7 @@ describe("App", () => {
     await renderApp();
 
     fireEvent.click(await screen.findByRole("button", { name: /読書メモ/ }));
-    fireEvent.click(screen.getByRole("button", { name: "Links" }));
+    fireEvent.click(screen.getByRole("button", { name: "リンク" }));
     fireEvent.click(await screen.findByRole("button", { name: "新規ノート" }));
 
     await waitFor(() => {

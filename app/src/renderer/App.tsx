@@ -1,3 +1,4 @@
+import { EditorView } from "@codemirror/view";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactElement } from "react";
 
@@ -34,9 +35,10 @@ import { QuickSwitcher } from "./components/QuickSwitcher";
 import { SearchSidebar } from "./components/SearchSidebar";
 import { SettingsSidebar } from "./components/SettingsSidebar";
 import { ToolsSidebar } from "./components/ToolsSidebar";
+import { Toolbar } from "./components/Toolbar";
 import { createTranslator, I18nProvider, useT, type TranslationKey } from "./i18n";
 import { useEditorStore, type PaneId } from "./store/editorStore";
-import { useUiStore, type SidebarView } from "./store/uiStore";
+import { useUiStore, type RightPanelView, type SidebarView } from "./store/uiStore";
 import "./styles.css";
 
 // ────────────────────────────────────────────────
@@ -223,6 +225,15 @@ export function App(): ReactElement {
     [t]
   );
 
+  const handleRightPanelViewButton = useCallback((view: RightPanelView): void => {
+    if (isRightPanelOpen && rightPanelView === view) {
+      toggleRightPanel();
+      return;
+    }
+
+    setRightPanelView(view);
+  }, [isRightPanelOpen, rightPanelView, setRightPanelView, toggleRightPanel]);
+
   // テーマ適用
   useEffect(() => {
     function applyTheme(theme: AppTheme) {
@@ -248,6 +259,8 @@ export function App(): ReactElement {
   const sidebarResizingRef = useRef(false);
   const sidebarResizeStartXRef = useRef(0);
   const sidebarResizeStartWidthRef = useRef(0);
+  const leftEditorViewRef = useRef<EditorView | null>(null);
+  const rightEditorViewRef = useRef<EditorView | null>(null);
 
   const applyGitBranches = useCallback((branches: GitBranchSummary[]): void => {
     setGitBranches(branches);
@@ -489,8 +502,7 @@ export function App(): ReactElement {
     setSearchMode("tag");
     setSearchQuery(tag);
     setSidebarView("search");
-    if (!isSidebarOpen) toggleSidebar();
-  }, [isSidebarOpen, setSidebarView, toggleSidebar]);
+  }, [setSidebarView]);
 
   const openFileInOtherPane = useCallback((fromPane: PaneId, tabId: string) => {
     const tab = tabs[tabId];
@@ -1490,15 +1502,12 @@ export function App(): ReactElement {
       } else if (e.key === "f" && !e.shiftKey) {
         e.preventDefault();
         setSidebarView("search");
-        if (!isSidebarOpen) toggleSidebar();
       } else if (e.key === "f" && e.shiftKey) {
         e.preventDefault();
         setSidebarView("search");
-        if (!isSidebarOpen) toggleSidebar();
       } else if (e.key === "n" && !e.shiftKey) {
         e.preventDefault();
         setSidebarView("files");
-        if (!isSidebarOpen) toggleSidebar();
         setIsCreatingFile(true);
       } else if (e.key === "T" && e.shiftKey) {
         e.preventDefault();
@@ -1509,7 +1518,7 @@ export function App(): ReactElement {
     window.addEventListener("keydown", handler);
 
     return () => window.removeEventListener("keydown", handler);
-  }, [focusedPane, isSidebarOpen, leftPane, rightPane, closeTab, setSidebarView, toggleSidebar, toggleSplit, toggleRightPanel, setIsCreatingFile, toggleTypewriterMode]);
+  }, [focusedPane, leftPane, rightPane, closeTab, setSidebarView, toggleSidebar, toggleSplit, toggleRightPanel, setIsCreatingFile, toggleTypewriterMode]);
 
   // ──────────────────
   // サイドバーリサイズ
@@ -1609,13 +1618,13 @@ export function App(): ReactElement {
       id: "new-note",
       label: t("pane.createNote"),
       shortcut: "⌘N",
-      action: () => { setSidebarView("files"); if (!isSidebarOpen) toggleSidebar(); setIsCreatingFile(true); }
+      action: () => { setSidebarView("files"); setIsCreatingFile(true); }
     },
     {
       id: "search",
       label: t("command.search"),
       shortcut: "⌘F",
-      action: () => { setSidebarView("search"); if (!isSidebarOpen) toggleSidebar(); }
+      action: () => { setSidebarView("search"); }
     },
     {
       id: "quick-switcher",
@@ -1650,17 +1659,17 @@ export function App(): ReactElement {
     {
       id: "git",
       label: t("command.gitView"),
-      action: () => { setSidebarView("git"); if (!isSidebarOpen) toggleSidebar(); }
+      action: () => { setSidebarView("git"); }
     },
     {
       id: "git-push",
       label: t("command.gitPush"),
-      action: () => { setSidebarView("git"); if (!isSidebarOpen) toggleSidebar(); handlePushGitBranch(); }
+      action: () => { setSidebarView("git"); handlePushGitBranch(); }
     },
     {
       id: "git-pull",
       label: t("command.gitPull"),
-      action: () => { setSidebarView("git"); if (!isSidebarOpen) toggleSidebar(); handlePullGitBranch(); }
+      action: () => { setSidebarView("git"); handlePullGitBranch(); }
     },
     ...(gitBranches.length > 1
       ? gitBranches
@@ -1668,7 +1677,7 @@ export function App(): ReactElement {
           .map((b) => ({
             id: `git-branch-${b.name}`,
             label: t("command.branchSwitch", { name: b.name }),
-            action: () => { setSidebarView("git"); if (!isSidebarOpen) toggleSidebar(); handleSwitchGitBranch(b.name); }
+            action: () => { setSidebarView("git"); handleSwitchGitBranch(b.name); }
           }))
       : []),
     ...(activeTabInFocusedPane
@@ -1678,7 +1687,6 @@ export function App(): ReactElement {
             label: t("command.renameFile", { name: activeTabInFocusedPane.name }),
             action: () => {
               setSidebarView("files");
-              if (!isSidebarOpen) toggleSidebar();
             }
           },
           {
@@ -1696,7 +1704,7 @@ export function App(): ReactElement {
     {
       id: "settings",
       label: t("command.settings"),
-      action: () => { setSidebarView("settings"); if (!isSidebarOpen) toggleSidebar(); }
+      action: () => { setSidebarView("settings"); }
     }
   ];
 
@@ -1924,33 +1932,25 @@ export function App(): ReactElement {
                 title={t("pane.split")}
                 type="button"
               >
-                ⊟
+                {t("pane.splitShort")}
               </button>
               {featureToggles.rightPanel && (
                 <>
                   <button
                     className={`toolbar-btn${rightPanelView === "outline" && isRightPanelOpen ? " active" : ""}`}
-                    onClick={() => {
-                      setRightPanelView("outline");
-                      if (!isRightPanelOpen) toggleRightPanel();
-                      else if (rightPanelView === "outline") toggleRightPanel();
-                    }}
+                    onClick={() => handleRightPanelViewButton("outline")}
                     title={t("pane.toggleOutline")}
                     type="button"
                   >
-                    Outline
+                    {t("pane.outline")}
                   </button>
                   <button
                     className={`toolbar-btn${rightPanelView === "links" && isRightPanelOpen ? " active" : ""}`}
-                    onClick={() => {
-                      setRightPanelView("links");
-                      if (!isRightPanelOpen) toggleRightPanel();
-                      else if (rightPanelView === "links") toggleRightPanel();
-                    }}
+                    onClick={() => handleRightPanelViewButton("links")}
                     title={t("pane.toggleLinks")}
                     type="button"
                   >
-                    Links
+                    {t("pane.links")}
                   </button>
                 </>
               )}
@@ -1958,55 +1958,62 @@ export function App(): ReactElement {
           </div>
 
           <div className="editor-layout">
-            <div className={`panes-container${isSplit ? " panes-container--split" : ""}`}>
-              <PaneView
-                allFilePaths={existingMarkdownPaths}
-                editorSettings={editorSettings}
-                focusedPane={focusedPane}
-                frontmatterCandidates={frontmatterCandidates}
-                onCreateNote={handleCreateNoteFromPane}
-                onFocus={() => setFocusedPane("left")}
-                onScrollTargetHandled={() => setLeftPaneScrollHeading(undefined)}
-                onTabClose={(tabId) => closeTab("left", tabId)}
-                onTabSelect={(tabId) => setTabActive("left", tabId)}
-                onCloseOtherTabs={(tabId) => closeOtherTabs("left", tabId)}
-                onCloseTabsToRight={(tabId) => closeTabsToRight("left", tabId)}
-                onCloseAllTabs={() => closeAllTabsInPane("left")}
-                onOpenInOtherPane={(tabId) => openFileInOtherPane("left", tabId)}
-                isSplitView={isSplit}
-                pane="left"
-                scrollTargetHeading={leftPaneScrollHeading}
-                showFrontmatter={featureToggles.frontmatter}
-                typewriterMode={isTypewriterMode}
-                userDefinedFields={userDefinedFields}
-                workspacePath={workspaceState?.activeWorkspace?.path}
-                workspaceTags={workspaceTags.map((t) => t.tag)}
-              />
-              {isSplit ? (
+            <div className="editor-workspace">
+              <div className="shared-editor-toolbar">
+                <Toolbar viewRef={focusedPane === "left" ? leftEditorViewRef : rightEditorViewRef} />
+              </div>
+              <div className={`panes-container${isSplit ? " panes-container--split" : ""}`}>
                 <PaneView
                   allFilePaths={existingMarkdownPaths}
                   editorSettings={editorSettings}
                   focusedPane={focusedPane}
                   frontmatterCandidates={frontmatterCandidates}
                   onCreateNote={handleCreateNoteFromPane}
-                  onFocus={() => setFocusedPane("right")}
-                  onScrollTargetHandled={() => setRightPaneScrollHeading(undefined)}
-                  onTabClose={(tabId) => closeTab("right", tabId)}
-                  onTabSelect={(tabId) => setTabActive("right", tabId)}
-                  onCloseOtherTabs={(tabId) => closeOtherTabs("right", tabId)}
-                  onCloseTabsToRight={(tabId) => closeTabsToRight("right", tabId)}
-                  onCloseAllTabs={() => closeAllTabsInPane("right")}
-                  onOpenInOtherPane={(tabId) => openFileInOtherPane("right", tabId)}
+                  onFocus={() => setFocusedPane("left")}
+                  onScrollTargetHandled={() => setLeftPaneScrollHeading(undefined)}
+                  onTabClose={(tabId) => closeTab("left", tabId)}
+                  onTabSelect={(tabId) => setTabActive("left", tabId)}
+                  onCloseOtherTabs={(tabId) => closeOtherTabs("left", tabId)}
+                  onCloseTabsToRight={(tabId) => closeTabsToRight("left", tabId)}
+                  onCloseAllTabs={() => closeAllTabsInPane("left")}
+                  onOpenInOtherPane={(tabId) => openFileInOtherPane("left", tabId)}
                   isSplitView={isSplit}
-                  pane="right"
-                  scrollTargetHeading={rightPaneScrollHeading}
+                  pane="left"
+                  scrollTargetHeading={leftPaneScrollHeading}
                   showFrontmatter={featureToggles.frontmatter}
                   typewriterMode={isTypewriterMode}
                   userDefinedFields={userDefinedFields}
+                  viewRef={leftEditorViewRef}
                   workspacePath={workspaceState?.activeWorkspace?.path}
                   workspaceTags={workspaceTags.map((t) => t.tag)}
                 />
-              ) : null}
+                {isSplit ? (
+                  <PaneView
+                    allFilePaths={existingMarkdownPaths}
+                    editorSettings={editorSettings}
+                    focusedPane={focusedPane}
+                    frontmatterCandidates={frontmatterCandidates}
+                    onCreateNote={handleCreateNoteFromPane}
+                    onFocus={() => setFocusedPane("right")}
+                    onScrollTargetHandled={() => setRightPaneScrollHeading(undefined)}
+                    onTabClose={(tabId) => closeTab("right", tabId)}
+                    onTabSelect={(tabId) => setTabActive("right", tabId)}
+                    onCloseOtherTabs={(tabId) => closeOtherTabs("right", tabId)}
+                    onCloseTabsToRight={(tabId) => closeTabsToRight("right", tabId)}
+                    onCloseAllTabs={() => closeAllTabsInPane("right")}
+                    onOpenInOtherPane={(tabId) => openFileInOtherPane("right", tabId)}
+                    isSplitView={isSplit}
+                    pane="right"
+                    scrollTargetHeading={rightPaneScrollHeading}
+                    showFrontmatter={featureToggles.frontmatter}
+                    typewriterMode={isTypewriterMode}
+                    userDefinedFields={userDefinedFields}
+                    viewRef={rightEditorViewRef}
+                    workspacePath={workspaceState?.activeWorkspace?.path}
+                    workspaceTags={workspaceTags.map((t) => t.tag)}
+                  />
+                ) : null}
+              </div>
             </div>
 
             {isRightPanelOpen ? (

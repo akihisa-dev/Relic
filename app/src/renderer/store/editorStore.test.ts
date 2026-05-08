@@ -119,6 +119,21 @@ describe("editorStore", () => {
     expect(useEditorStore.getState().isSplit).toBe(false);
   });
 
+  it("ファイルを開いた状態で分割すると右ペインにも同じタブが表示される", () => {
+    useEditorStore.getState().openFileInPane("left", sampleFile);
+
+    const activeTabId = useEditorStore.getState().leftPane.activeTabId!;
+
+    useEditorStore.getState().toggleSplit();
+
+    const state = useEditorStore.getState();
+
+    expect(state.isSplit).toBe(true);
+    expect(state.leftPane.activeTabId).toBe(activeTabId);
+    expect(state.rightPane.activeTabId).toBe(activeTabId);
+    expect(state.rightPane.tabIds).toEqual([activeTabId]);
+  });
+
   it("分割解除時に右ペインのタブが閉じられる", () => {
     useEditorStore.getState().toggleSplit();
     useEditorStore.getState().openFileInPane("right", sampleFile2);
