@@ -1,5 +1,6 @@
 @echo off
 chcp 65001 > nul
+set "PATH=%APPDATA%\npm;%PATH%"
 cd /d "%~dp0app"
 
 echo Starting Relic...
