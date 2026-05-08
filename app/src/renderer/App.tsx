@@ -23,7 +23,7 @@ import type {
   WorkspaceTagSummary,
   WorkspaceTreeNode
 } from "../shared/ipc";
-import { defaultAutoSyncSettings, defaultFeatureToggles, type FeatureToggles } from "../shared/ipc";
+import { defaultAutoSyncSettings, defaultFeatureToggles, defaultUserDefinedFields, type FeatureToggles, type UserDefinedField } from "../shared/ipc";
 import { resolveWikiLinkPath, resolveWikiLinks } from "../shared/links";
 import { CommandPalette, type Command } from "./components/CommandPalette";
 import { FilesSidebar } from "./components/FilesSidebar";
@@ -159,6 +159,7 @@ export function App(): ReactElement {
   const [isResolvingConflict, setIsResolvingConflict] = useState(false);
   const [autoSyncSettings, setAutoSyncSettings] = useState<AutoSyncSettings>(defaultAutoSyncSettings);
   const [featureToggles, setFeatureToggles] = useState<FeatureToggles>(defaultFeatureToggles);
+  const [userDefinedFields, setUserDefinedFields] = useState<UserDefinedField[]>(defaultUserDefinedFields);
   const [showCommandPalette, setShowCommandPalette] = useState(false);
   const [showQuickSwitcher, setShowQuickSwitcher] = useState(false);
 
@@ -282,6 +283,11 @@ export function App(): ReactElement {
     void window.relic?.getFeatureToggles().then((result) => {
       if (canceled) return;
       if (result.ok) setFeatureToggles(result.value);
+    });
+
+    void window.relic?.getUserDefinedFields().then((result) => {
+      if (canceled) return;
+      if (result.ok) setUserDefinedFields(result.value);
     });
 
     return () => { canceled = true; };
@@ -1158,6 +1164,11 @@ export function App(): ReactElement {
     void window.relic?.saveFeatureToggles(toggles);
   }, []);
 
+  const handleSaveUserDefinedFields = useCallback((fields: UserDefinedField[]): void => {
+    setUserDefinedFields(fields);
+    void window.relic?.saveUserDefinedFields(fields);
+  }, []);
+
   const handlePushGitBranch = (): void => { handleShowPushPreview(); };
   const handlePullGitBranch = (): void => { handleShowPullPreview(); };
 
@@ -1738,7 +1749,9 @@ export function App(): ReactElement {
                 onCreateFrontmatterTemplate={handleCreateFrontmatterTemplate}
                 onFeatureTogglesSave={handleSaveFeatureToggles}
                 onSave={handleSaveSettings}
+                onUserDefinedFieldsSave={handleSaveUserDefinedFields}
                 settings={editorSettings}
+                userDefinedFields={userDefinedFields}
               />
             )}
             <div
@@ -1829,6 +1842,7 @@ export function App(): ReactElement {
                 scrollTargetHeading={leftPaneScrollHeading}
                 showFrontmatter={featureToggles.frontmatter}
                 typewriterMode={isTypewriterMode}
+                userDefinedFields={userDefinedFields}
                 workspacePath={workspaceState?.activeWorkspace?.path}
                 workspaceTags={workspaceTags.map((t) => t.tag)}
               />
@@ -1854,6 +1868,7 @@ export function App(): ReactElement {
                   scrollTargetHeading={rightPaneScrollHeading}
                   showFrontmatter={featureToggles.frontmatter}
                   typewriterMode={isTypewriterMode}
+                  userDefinedFields={userDefinedFields}
                   workspacePath={workspaceState?.activeWorkspace?.path}
                   workspaceTags={workspaceTags.map((t) => t.tag)}
                 />

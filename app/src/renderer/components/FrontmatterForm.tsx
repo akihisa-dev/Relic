@@ -2,6 +2,7 @@ import * as yaml from "js-yaml";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ReactElement } from "react";
 
+import type { UserDefinedField } from "../../shared/ipc";
 import { useT } from "../i18n";
 
 interface ParsedFrontmatter {
@@ -156,6 +157,7 @@ interface FrontmatterFormProps {
   candidates: Record<string, string[]>;
   content: string;
   onChange: (content: string) => void;
+  userDefinedFields?: UserDefinedField[];
   workspaceTags?: string[];
 }
 
@@ -163,6 +165,7 @@ export function FrontmatterForm({
   candidates,
   content,
   onChange,
+  userDefinedFields = [],
   workspaceTags = []
 }: FrontmatterFormProps): ReactElement | null {
   const t = useT();
@@ -184,7 +187,10 @@ export function FrontmatterForm({
     [body, data, onChange]
   );
 
-  const freeFields = Object.keys(data).filter((k) => !KNOWN_FIELDS.has(k as typeof KNOWN_FIELDS extends Set<infer T> ? T : never));
+  const userDefinedFieldNames = new Set(userDefinedFields.map((f) => f.name));
+  const freeFields = Object.keys(data).filter(
+    (k) => !KNOWN_FIELDS.has(k as typeof KNOWN_FIELDS extends Set<infer T> ? T : never) && !userDefinedFieldNames.has(k)
+  );
 
   const tags = toStringArray(data.tags);
   const aliases = toStringArray(data.aliases);
@@ -308,6 +314,71 @@ export function FrontmatterForm({
               values={author}
             />
           </div>
+
+          {/* user-defined fields */}
+          {userDefinedFields.map((field) => {
+            const val = data[field.name];
+            const datalistId = `fm-udf-${field.name}`;
+
+            if (field.type === "boolean") {
+              return (
+                <div className="fm-row" key={field.name}>
+                  <label className="fm-label">{field.name}</label>
+                  <input
+                    checked={val === true}
+                    className="fm-checkbox"
+                    onChange={(e) => updateField(field.name, e.target.checked || undefined)}
+                    type="checkbox"
+                  />
+                </div>
+              );
+            }
+
+            if (field.type === "multi-select") {
+              return (
+                <div className="fm-row" key={field.name}>
+                  <label className="fm-label">{field.name}</label>
+                  <PillInput
+                    candidates={field.choices ?? []}
+                    onChange={(v) => updateField(field.name, v.length > 0 ? v : undefined)}
+                    placeholder={field.name}
+                    values={toStringArray(val)}
+                  />
+                </div>
+              );
+            }
+
+            const inputType = field.type === "number" ? "number" : field.type === "date" ? "date" : field.type === "url" ? "url" : "text";
+            const strVal = val !== undefined ? String(val) : "";
+
+            return (
+              <div className="fm-row" key={field.name}>
+                <label className="fm-label">{field.name}</label>
+                {field.type === "select" ? (
+                  <>
+                    <input
+                      className="fm-input"
+                      list={datalistId}
+                      onChange={(e) => updateField(field.name, e.target.value || undefined)}
+                      placeholder={field.name}
+                      type="text"
+                      value={strVal}
+                    />
+                    <datalist id={datalistId}>
+                      {(field.choices ?? []).map((c) => <option key={c} value={c} />)}
+                    </datalist>
+                  </>
+                ) : (
+                  <input
+                    className="fm-input"
+                    onChange={(e) => updateField(field.name, e.target.value || undefined)}
+                    type={inputType}
+                    value={strVal}
+                  />
+                )}
+              </div>
+            );
+          })}
 
           {/* free fields */}
           {freeFields.map((key) => (

@@ -1,31 +1,42 @@
 import { useEffect, useState } from "react";
 import type { ReactElement } from "react";
 
-import type { AppInfo, AutoSyncSettings, EditorSettings, FeatureToggles } from "../../shared/ipc";
+import type { AppInfo, AutoSyncSettings, EditorSettings, FeatureToggles, UserDefinedField, UserDefinedFieldType } from "../../shared/ipc";
 import { useT } from "../i18n";
+
+const FIELD_TYPES: UserDefinedFieldType[] = ["text", "number", "date", "boolean", "select", "multi-select", "url"];
+const MAX_USER_DEFINED_FIELDS = 13;
 
 export function SettingsSidebar({
   appInfo,
   settings,
   autoSyncSettings,
   featureToggles,
+  userDefinedFields,
   onCreateFrontmatterTemplate,
   onSave,
   onAutoSyncSave,
-  onFeatureTogglesSave
+  onFeatureTogglesSave,
+  onUserDefinedFieldsSave
 }: {
   appInfo: AppInfo | null;
   settings: EditorSettings;
   autoSyncSettings: AutoSyncSettings;
   featureToggles: FeatureToggles;
+  userDefinedFields: UserDefinedField[];
   onCreateFrontmatterTemplate: () => void;
   onSave: (s: EditorSettings) => void;
   onAutoSyncSave: (s: AutoSyncSettings) => void;
   onFeatureTogglesSave: (t: FeatureToggles) => void;
+  onUserDefinedFieldsSave: (fields: UserDefinedField[]) => void;
 }): ReactElement {
   const [draft, setDraft] = useState<EditorSettings>(settings);
   const [autoSyncDraft, setAutoSyncDraft] = useState<AutoSyncSettings>(autoSyncSettings);
   const [togglesDraft, setTogglesDraft] = useState<FeatureToggles>(featureToggles);
+  const [fieldsDraft, setFieldsDraft] = useState<UserDefinedField[]>(userDefinedFields);
+  const [newFieldName, setNewFieldName] = useState("");
+  const [newFieldType, setNewFieldType] = useState<UserDefinedFieldType>("text");
+  const [newFieldChoices, setNewFieldChoices] = useState("");
   const t = useT();
 
   useEffect(() => {
@@ -39,6 +50,10 @@ export function SettingsSidebar({
   useEffect(() => {
     setTogglesDraft(featureToggles);
   }, [featureToggles]);
+
+  useEffect(() => {
+    setFieldsDraft(userDefinedFields);
+  }, [userDefinedFields]);
 
   const update = <K extends keyof EditorSettings>(key: K, value: EditorSettings[K]): void => {
     const next = { ...draft, [key]: value };
@@ -199,6 +214,76 @@ export function SettingsSidebar({
           <span>{label}</span>
         </label>
       ))}
+      <div className="links-panel-subheading" style={{ marginTop: "1rem" }}>{t("settings.customFields")}</div>
+      {fieldsDraft.map((field, i) => (
+        <div className="setting-row" key={field.name}>
+          <span className="setting-custom-field-name" title={field.name}>{field.name}</span>
+          <span className="setting-custom-field-type">{field.type}</span>
+          <button
+            className="setting-action-btn setting-action-btn--danger"
+            onClick={() => {
+              const next = fieldsDraft.filter((_, j) => j !== i);
+              setFieldsDraft(next);
+              onUserDefinedFieldsSave(next);
+            }}
+            title={t("common.delete")}
+            type="button"
+          >
+            ×
+          </button>
+        </div>
+      ))}
+      {fieldsDraft.length < MAX_USER_DEFINED_FIELDS ? (
+        <div className="setting-custom-field-form">
+          <input
+            className="setting-custom-field-input"
+            onChange={(e) => setNewFieldName(e.target.value)}
+            placeholder={t("settings.customFieldName")}
+            type="text"
+            value={newFieldName}
+          />
+          <select
+            aria-label={t("settings.customFieldType")}
+            onChange={(e) => setNewFieldType(e.target.value as UserDefinedFieldType)}
+            value={newFieldType}
+          >
+            {FIELD_TYPES.map((ft) => (
+              <option key={ft} value={ft}>{ft}</option>
+            ))}
+          </select>
+          {(newFieldType === "select" || newFieldType === "multi-select") ? (
+            <input
+              className="setting-custom-field-input"
+              onChange={(e) => setNewFieldChoices(e.target.value)}
+              placeholder={t("settings.customFieldChoices")}
+              type="text"
+              value={newFieldChoices}
+            />
+          ) : null}
+          <button
+            className="setting-action-btn"
+            disabled={!newFieldName.trim() || fieldsDraft.some((f) => f.name === newFieldName.trim())}
+            onClick={() => {
+              const name = newFieldName.trim();
+              if (!name) return;
+              const field: UserDefinedField = { name, type: newFieldType };
+              if ((newFieldType === "select" || newFieldType === "multi-select") && newFieldChoices.trim()) {
+                field.choices = newFieldChoices.split(",").map((c) => c.trim()).filter(Boolean);
+              }
+              const next = [...fieldsDraft, field];
+              setFieldsDraft(next);
+              onUserDefinedFieldsSave(next);
+              setNewFieldName("");
+              setNewFieldChoices("");
+            }}
+            type="button"
+          >
+            {t("settings.customFieldAdd")}
+          </button>
+        </div>
+      ) : (
+        <div className="settings-info">{t("settings.customFieldLimit", { max: MAX_USER_DEFINED_FIELDS })}</div>
+      )}
       <div className="links-panel-subheading" style={{ marginTop: "1rem" }}>{t("settings.appInfo")}</div>
       <div className="settings-info">
         <div>Relic {appInfo?.version ?? "0.0.0"}</div>
