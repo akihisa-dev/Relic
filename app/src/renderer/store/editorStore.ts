@@ -166,7 +166,18 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
         };
       }
 
-      return { isSplit: true };
+      const activeTabId = state.leftPane.activeTabId;
+
+      if (!activeTabId) return { isSplit: true };
+
+      return {
+        isSplit: true,
+        rightPane: {
+          activeTabId,
+          history: [activeTabId],
+          tabIds: [activeTabId]
+        }
+      };
     });
   },
 
