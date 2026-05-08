@@ -17,6 +17,7 @@
   "pnpm": {
     "onlyBuiltDependencies": [
       "electron",
+      "electron-winstaller",
       "esbuild",
       "fs-xattr",
       "macos-alias"
