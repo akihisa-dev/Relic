@@ -238,6 +238,7 @@ export function PaneView({
                 allFilePaths={allFilePaths}
                 content={activeTab.content}
                 key={activeTab.id}
+                livePreview
                 onChange={(content) => updateTabContent(activeTab.id, content)}
                 settings={editorSettings}
                 typewriterMode={typewriterMode}
