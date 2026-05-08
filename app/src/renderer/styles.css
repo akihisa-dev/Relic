@@ -166,7 +166,25 @@ button:disabled {
   min-width: 180px;
   overflow: hidden;
   position: relative;
-  transition: width 160ms ease, background-color 180ms ease, border-color 180ms ease;
+  transition: width 280ms cubic-bezier(.22, 1, .36, 1), background-color 220ms ease, border-color 220ms ease;
+  will-change: width;
+}
+
+.sidebar--closed {
+  border-right-color: transparent;
+  min-width: 0;
+  pointer-events: none;
+}
+
+.sidebar > .sidebar-header,
+.sidebar > .sidebar-body {
+  opacity: 1;
+  transition: opacity 180ms ease;
+}
+
+.sidebar--closed > .sidebar-header,
+.sidebar--closed > .sidebar-body {
+  opacity: 0;
 }
 
 .sidebar-header {
@@ -1283,6 +1301,10 @@ button:disabled {
   z-index: 20;
 }
 
+.sidebar--closed .sidebar-resize-handle {
+  display: none;
+}
+
 .sidebar-resize-handle:hover {
   background: rgba(31, 35, 40, 0.12);
   transition: background-color 120ms ease;
@@ -1436,8 +1458,27 @@ button:disabled {
   height: 100%;
   min-width: 220px;
   overflow: hidden;
-  transition: width 180ms ease, border-color 180ms ease, background-color 180ms ease;
+  transition: width 280ms cubic-bezier(.22, 1, .36, 1), border-color 220ms ease, background-color 220ms ease;
+  will-change: width;
   width: 240px;
+}
+
+.right-panel--closed {
+  border-left-color: transparent;
+  min-width: 0;
+  pointer-events: none;
+  width: 0;
+}
+
+.right-panel > .sidebar-header,
+.right-panel > .sidebar-body {
+  opacity: 1;
+  transition: opacity 180ms ease;
+}
+
+.right-panel--closed > .sidebar-header,
+.right-panel--closed > .sidebar-body {
+  opacity: 0;
 }
 
 @keyframes panel-pop {
