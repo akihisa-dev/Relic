@@ -90,11 +90,17 @@ describe("Editor", () => {
     expect(classes.has("cm-live-highlight")).toBe(true);
   });
 
-  it("ライブプレビューでカーソル行はMarkdown記法のままにする", async () => {
-    const classes = await collectLivePreviewClasses("==mark==\n\n==other==", 0);
+  it("ライブプレビューでカーソル位置のMarkdown記法もレンダリングを維持する", async () => {
+    const classes = await collectLivePreviewClasses("==mark==", 3);
 
     expect(classes.has("cm-live-highlight")).toBe(true);
     expect(classes.size).toBe(1);
+  });
+
+  it("ライブプレビューでカーソル位置の強調もレンダリングを維持する", async () => {
+    const classes = await collectLivePreviewClasses("**bold**", 3);
+
+    expect(classes.has("cm-live-bold")).toBe(true);
   });
 
   it("ライブプレビューでフォーカスが外れたらカーソル行もレンダリングする", async () => {

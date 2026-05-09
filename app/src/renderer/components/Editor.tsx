@@ -26,6 +26,11 @@ interface TableBlock {
   rows: string[][];
 }
 
+interface SourceRevealRange {
+  from: number;
+  to: number;
+}
+
 function splitTableRow(line: string): string[] {
   const trimmed = line.trim().replace(/^\|/, "").replace(/\|$/, "");
   return trimmed.split("|").map((cell) => cell.trim());
@@ -198,29 +203,29 @@ export function buildLivePreviewDecorations(view: EditorView): DecorationSet {
   const doc = state.doc;
   const editorHasFocus = typeof view.hasFocus === "boolean" ? view.hasFocus : true;
 
-  const cursorLines = new Set<number>();
-  if (editorHasFocus) {
-    for (const range of state.selection.ranges) {
-      const fromLine = doc.lineAt(range.from).number;
-      const toLine = doc.lineAt(range.to).number;
-      for (let l = fromLine; l <= toLine; l++) cursorLines.add(l);
-    }
-  }
-
-  function isOnCursorLine(from: number, to: number): boolean {
-    const start = doc.lineAt(from).number;
-    const end = doc.lineAt(to).number;
-    for (let l = start; l <= end; l++) {
-      if (cursorLines.has(l)) return true;
-    }
-    return false;
-  }
-
   const ranges: { from: number; to: number; deco: Decoration }[] = [];
   const tableBlocks = findTableBlocks(view);
+  const sourceRevealRanges: SourceRevealRange[] = [];
+
+  function selectionTouches(from: number, to: number): boolean {
+    if (!editorHasFocus) return false;
+
+    return state.selection.ranges.some((range) => {
+      if (range.empty) return range.from >= from && range.from <= to;
+      return range.from <= to && range.to >= from;
+    });
+  }
+
+  function addSourceReveal(from: number, to: number) {
+    if (from < to && selectionTouches(from, to)) sourceRevealRanges.push({ from, to });
+  }
+
+  function shouldRevealSource(from: number, to: number): boolean {
+    return sourceRevealRanges.some((range) => from >= range.from && to <= range.to);
+  }
 
   function addReplace(from: number, to: number) {
-    if (from < to) ranges.push({ from, to, deco: Decoration.replace({}) });
+    if (from < to && !shouldRevealSource(from, to)) ranges.push({ from, to, deco: Decoration.replace({}) });
   }
 
   function addMark(from: number, to: number, cls: string) {
@@ -235,7 +240,6 @@ export function buildLivePreviewDecorations(view: EditorView): DecorationSet {
       to: visTo,
       enter(node) {
         const { from, to, name } = node;
-        if (isOnCursorLine(from, to)) return false;
         if (tableBlocks.some((block) => from >= block.from && to <= block.to)) return false;
 
         switch (name) {
@@ -245,6 +249,7 @@ export function buildLivePreviewDecorations(view: EditorView): DecorationSet {
           case "ATXHeading4":
           case "ATXHeading5":
           case "ATXHeading6":
+            addSourceReveal(from, to);
             addMark(from, to, `cm-live-h${name.slice(-1)}`);
             break;
           case "HeaderMark":
@@ -252,21 +257,25 @@ export function buildLivePreviewDecorations(view: EditorView): DecorationSet {
             addReplace(from, Math.min(to + 1, doc.lineAt(from).to));
             return false;
           case "StrongEmphasis":
+            addSourceReveal(from, to);
             addMark(from, to, "cm-live-bold");
             break;
           case "Emphasis":
+            addSourceReveal(from, to);
             addMark(from, to, "cm-live-italic");
             break;
           case "EmphasisMark":
             addReplace(from, to);
             return false;
           case "Strikethrough":
+            addSourceReveal(from, to);
             addMark(from, to, "cm-live-strike");
             break;
           case "StrikethroughMark":
             addReplace(from, to);
             return false;
           case "InlineCode":
+            addSourceReveal(from, to);
             addMark(from, to, "cm-live-code");
             return false;
           case "FencedCode":
@@ -283,16 +292,15 @@ export function buildLivePreviewDecorations(view: EditorView): DecorationSet {
     while ((m = hlRe.exec(visText)) !== null) {
       const absFrom = visFrom + m.index;
       const absTo = absFrom + m[0].length;
-      if (!isOnCursorLine(absFrom, absTo)) {
-        addReplace(absFrom, absFrom + 2);
-        addMark(absFrom + 2, absTo - 2, "cm-live-highlight");
-        addReplace(absTo - 2, absTo);
-      }
+      if (selectionTouches(absFrom, absTo)) addSourceReveal(absFrom, absTo);
+      addReplace(absFrom, absFrom + 2);
+      addMark(absFrom + 2, absTo - 2, "cm-live-highlight");
+      addReplace(absTo - 2, absTo);
     }
   }
 
   for (const block of tableBlocks) {
-    if (isOnCursorLine(block.from, block.to)) continue;
+    if (selectionTouches(block.from, block.to)) continue;
     ranges.push({
       from: block.from,
       to: block.to,
