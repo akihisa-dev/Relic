@@ -3,7 +3,7 @@ import { defaultKeymap, historyKeymap, history } from "@codemirror/commands";
 import { markdown } from "@codemirror/lang-markdown";
 import { syntaxTree } from "@codemirror/language";
 import { EditorState } from "@codemirror/state";
-import { Decoration, EditorView, ViewPlugin, keymap, lineNumbers } from "@codemirror/view";
+import { Decoration, EditorView, ViewPlugin, WidgetType, keymap, lineNumbers } from "@codemirror/view";
 import type { DecorationSet, ViewUpdate } from "@codemirror/view";
 import { GFM } from "@lezer/markdown";
 import { useEffect, useRef } from "react";
@@ -18,6 +18,179 @@ interface EditorProps {
   settings: EditorSettings;
   typewriterMode?: boolean;
   viewRef?: React.MutableRefObject<EditorView | null>;
+}
+
+interface TableBlock {
+  from: number;
+  to: number;
+  rows: string[][];
+}
+
+function splitTableRow(line: string): string[] {
+  const trimmed = line.trim().replace(/^\|/, "").replace(/\|$/, "");
+  return trimmed.split("|").map((cell) => cell.trim());
+}
+
+function isTableDivider(line: string): boolean {
+  return /^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?\s*$/.test(line);
+}
+
+function formatTable(rows: string[][]): string {
+  const colCount = Math.max(...rows.map((row) => row.length), 1);
+  const normalized = rows.map((row) => Array.from({ length: colCount }, (_, i) => row[i] ?? ""));
+  const divider = Array.from({ length: colCount }, () => "---");
+  return [
+    `| ${normalized[0].join(" | ")} |`,
+    `| ${divider.join(" | ")} |`,
+    ...normalized.slice(1).map((row) => `| ${row.join(" | ")} |`)
+  ].join("\n");
+}
+
+function findTableBlocks(view: EditorView): TableBlock[] {
+  const blocks: TableBlock[] = [];
+  const { doc } = view.state;
+  let lineNumber = 1;
+
+  while (lineNumber < doc.lines) {
+    const headerLine = doc.line(lineNumber);
+    const dividerLine = doc.line(lineNumber + 1);
+
+    if (!headerLine.text.includes("|") || !isTableDivider(dividerLine.text)) {
+      lineNumber += 1;
+      continue;
+    }
+
+    const rows = [splitTableRow(headerLine.text)];
+    let endLine = dividerLine;
+    let cursor = lineNumber + 2;
+
+    while (cursor <= doc.lines) {
+      const rowLine = doc.line(cursor);
+      if (!rowLine.text.includes("|") || rowLine.text.trim() === "") break;
+      rows.push(splitTableRow(rowLine.text));
+      endLine = rowLine;
+      cursor += 1;
+    }
+
+    blocks.push({ from: headerLine.from, to: endLine.to, rows });
+    lineNumber = cursor;
+  }
+
+  return blocks;
+}
+
+class TableWidget extends WidgetType {
+  constructor(
+    private readonly view: EditorView,
+    private readonly block: TableBlock
+  ) {
+    super();
+  }
+
+  eq(other: TableWidget): boolean {
+    return this.block.from === other.block.from && this.block.to === other.block.to;
+  }
+
+  toDOM(): HTMLElement {
+    const wrapper = document.createElement("div");
+    wrapper.className = "cm-live-table";
+    const table = document.createElement("table");
+    const colCount = Math.max(...this.block.rows.map((row) => row.length), 1);
+
+    this.block.rows.forEach((row, rowIndex) => {
+      const tr = document.createElement("tr");
+      Array.from({ length: colCount }, (_, colIndex) => row[colIndex] ?? "").forEach((cell, colIndex) => {
+        const td = document.createElement(rowIndex === 0 ? "th" : "td");
+        td.textContent = cell || " ";
+        if (rowIndex === 0) {
+          const controls = document.createElement("span");
+          controls.className = "cm-live-table-controls cm-live-table-controls--col";
+          controls.append(
+            this.button("+", () => this.insertCol(colIndex + 1)),
+            this.button("x", () => this.deleteCol(colIndex))
+          );
+          td.append(controls);
+        }
+        tr.append(td);
+      });
+
+      if (rowIndex > 0) {
+        const controlsCell = document.createElement("td");
+        controlsCell.className = "cm-live-table-row-actions";
+        controlsCell.append(
+          this.button("+", () => this.insertRow(rowIndex + 1)),
+          this.button("x", () => this.deleteRow(rowIndex))
+        );
+        tr.append(controlsCell);
+      }
+
+      table.append(tr);
+    });
+
+    wrapper.append(table);
+    const addRow = document.createElement("button");
+    addRow.className = "cm-live-table-add-row";
+    addRow.type = "button";
+    addRow.textContent = "+";
+    addRow.title = "Add row";
+    addRow.addEventListener("click", () => this.insertRow(this.block.rows.length));
+    wrapper.append(addRow);
+
+    return wrapper;
+  }
+
+  ignoreEvent(): boolean {
+    return false;
+  }
+
+  private button(label: string, onClick: () => void): HTMLButtonElement {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = label;
+    button.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      onClick();
+    });
+    return button;
+  }
+
+  private update(rows: string[][]): void {
+    this.view.dispatch({
+      changes: {
+        from: this.block.from,
+        to: this.block.to,
+        insert: formatTable(rows)
+      }
+    });
+    this.view.focus();
+  }
+
+  private insertRow(index: number): void {
+    const colCount = Math.max(...this.block.rows.map((row) => row.length), 1);
+    const rows = [...this.block.rows];
+    rows.splice(index, 0, Array.from({ length: colCount }, () => ""));
+    this.update(rows);
+  }
+
+  private deleteRow(index: number): void {
+    if (this.block.rows.length <= 2) return;
+    this.update(this.block.rows.filter((_, rowIndex) => rowIndex !== index));
+  }
+
+  private insertCol(index: number): void {
+    this.update(this.block.rows.map((row) => {
+      const next = [...row];
+      next.splice(index, 0, "");
+      return next;
+    }));
+  }
+
+  private deleteCol(index: number): void {
+    const colCount = Math.max(...this.block.rows.map((row) => row.length), 1);
+    if (colCount <= 1) return;
+    this.update(this.block.rows.map((row) => row.filter((_, colIndex) => colIndex !== index)));
+  }
 }
 
 export function buildLivePreviewDecorations(view: EditorView): DecorationSet {
@@ -41,6 +214,7 @@ export function buildLivePreviewDecorations(view: EditorView): DecorationSet {
   }
 
   const ranges: { from: number; to: number; deco: Decoration }[] = [];
+  const tableBlocks = findTableBlocks(view);
 
   function addReplace(from: number, to: number) {
     if (from < to) ranges.push({ from, to, deco: Decoration.replace({}) });
@@ -59,6 +233,7 @@ export function buildLivePreviewDecorations(view: EditorView): DecorationSet {
       enter(node) {
         const { from, to, name } = node;
         if (isOnCursorLine(from, to)) return false;
+        if (tableBlocks.some((block) => from >= block.from && to <= block.to)) return false;
 
         switch (name) {
           case "ATXHeading1":
@@ -111,6 +286,15 @@ export function buildLivePreviewDecorations(view: EditorView): DecorationSet {
         addReplace(absTo - 2, absTo);
       }
     }
+  }
+
+  for (const block of tableBlocks) {
+    if (isOnCursorLine(block.from, block.to)) continue;
+    ranges.push({
+      from: block.from,
+      to: block.to,
+      deco: Decoration.replace({ widget: new TableWidget(view, block), block: true })
+    });
   }
 
   ranges.sort((a, b) => a.from - b.from || a.to - b.to);

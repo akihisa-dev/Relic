@@ -7,8 +7,6 @@ import { FileTree, FileTreeItem, findNodeByPath } from "./FileTree";
 
 export interface FilesSidebarProps {
   activePaths: Set<string>;
-  fileNameDraft: string;
-  folderNameDraft: string;
   isCreatingFile: boolean;
   isCreatingFolder: boolean;
   isCreatingWorkspace: boolean;
@@ -18,8 +16,6 @@ export interface FilesSidebarProps {
   onCreateWorkspace: () => void;
   onDeleteItem: (path: string, type: WorkspaceTreeNode["type"]) => void;
   onDuplicateFile: (path: string) => void;
-  onFileNameDraftChange: (v: string) => void;
-  onFolderNameDraftChange: (v: string) => void;
   onMoveFile: (path: string, destFolder: string) => void;
   onMoveFolder: (path: string, destFolder: string) => void;
   onOpenFile: (path: string) => void;
@@ -35,8 +31,6 @@ export interface FilesSidebarProps {
 
 export function FilesSidebar({
   activePaths,
-  fileNameDraft,
-  folderNameDraft,
   isCreatingFile,
   isCreatingFolder,
   isCreatingWorkspace,
@@ -46,8 +40,6 @@ export function FilesSidebar({
   onCreateWorkspace,
   onDeleteItem,
   onDuplicateFile,
-  onFileNameDraftChange,
-  onFolderNameDraftChange,
   onMoveFile,
   onMoveFolder,
   onOpenFile,
@@ -71,24 +63,14 @@ export function FilesSidebar({
     <div className="sidebar-section">
       {activeWorkspace ? (
         <>
-          <form
-            className="new-file-form new-file-form--primary"
-            onSubmit={(e) => {
-              e.preventDefault();
-              onCreateFile();
-            }}
+          <button
+            className="primary-button"
+            disabled={isCreatingFile}
+            onClick={onCreateFile}
+            type="button"
           >
-            <input
-              aria-label={t("files.newNoteName")}
-              className="text-input"
-              onChange={(e) => onFileNameDraftChange(e.target.value)}
-              placeholder={t("files.newNoteName")}
-              value={fileNameDraft}
-            />
-            <button className="primary-button" disabled={isCreatingFile} type="submit">
-              {t("files.createNoteShort")}
-            </button>
-          </form>
+            {isCreatingFile ? t("common.running") : t("files.createNote")}
+          </button>
           {templates.length > 0 ? (
             <select
               aria-label={t("files.template")}
@@ -104,24 +86,14 @@ export function FilesSidebar({
               ))}
             </select>
           ) : null}
-          <form
-            className="new-file-form"
-            onSubmit={(e) => {
-              e.preventDefault();
-              onCreateFolder();
-            }}
+          <button
+            className="secondary-button"
+            disabled={isCreatingFolder}
+            onClick={onCreateFolder}
+            type="button"
           >
-            <input
-              aria-label={t("files.newFolderName")}
-              className="text-input"
-              onChange={(e) => onFolderNameDraftChange(e.target.value)}
-              placeholder={t("files.newFolderName")}
-              value={folderNameDraft}
-            />
-            <button disabled={isCreatingFolder} type="submit">
-              {t("files.createFolder")}
-            </button>
-          </form>
+            {isCreatingFolder ? t("common.running") : t("files.createFolder")}
+          </button>
           {pinnedPaths.size > 0 ? (
             <div className="pinned-section">
               <div className="pinned-section-heading">{t("files.pinned")}</div>
