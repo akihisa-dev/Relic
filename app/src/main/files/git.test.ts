@@ -114,6 +114,16 @@ describe("git", () => {
     });
   });
 
+  it("Git初期化済みでまだコミットがない場合は履歴なしとして返す", async () => {
+    const workspacePath = await createWorkspace();
+    await initializeGitRepository(workspacePath);
+
+    await expect(readGitCommitHistory(workspacePath)).resolves.toEqual({
+      ok: true,
+      value: []
+    });
+  });
+
   it("削除ファイルもコミットできる", async () => {
     const workspacePath = await createWorkspace();
     await initializeGitRepository(workspacePath);

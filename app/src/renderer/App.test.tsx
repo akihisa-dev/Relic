@@ -205,6 +205,38 @@ describe("App", () => {
     expect(await screen.findByText("読書メモ")).toBeInTheDocument();
   });
 
+  it("ツールバーのMarkdownボタンを開いているタブへ反映する", async () => {
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [{ name: "読書メモ", path: "読書メモ.md", type: "file" }]
+        }
+      }),
+      readMarkdownFile: vi.fn().mockResolvedValue({
+        ok: true,
+        value: { content: "本文テスト", name: "読書メモ", path: "読書メモ.md" }
+      })
+    });
+
+    await renderApp();
+
+    fireEvent.click(await screen.findByRole("button", { name: /読書メモ/ }));
+
+    await waitFor(() => {
+      expect(useEditorStore.getState().leftPane.activeTabId).not.toBeNull();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "B" }));
+
+    await waitFor(() => {
+      const activeTabId = useEditorStore.getState().leftPane.activeTabId;
+      expect(activeTabId).not.toBeNull();
+      expect(useEditorStore.getState().tabs[activeTabId!]?.content).toContain("**");
+    });
+  });
+
   it("ファイルツリーで開いているノートを再選択するとタブを閉じる", async () => {
     window.relic = makeRelicApi({
       getWorkspaceState: vi.fn().mockResolvedValue({
@@ -507,6 +539,38 @@ describe("App", () => {
 
     expect(createMarkdownFile).toHaveBeenCalledWith({ name: "新規ファイル" });
     expect((await screen.findAllByText("新規ファイル")).length).toBeGreaterThan(0);
+  });
+
+  it("メインパネルの新規ファイル作成は名前入力なしで作成する", async () => {
+    const createMarkdownFile = vi.fn().mockResolvedValue({
+      ok: true,
+      value: {
+        ...withWorkspace,
+        fileTree: [{ name: "新規ファイル", path: "新規ファイル.md", type: "file" }]
+      }
+    });
+    const readMarkdownFile = vi.fn().mockResolvedValue({
+      ok: true,
+      value: { content: "", name: "新規ファイル", path: "新規ファイル.md" }
+    });
+
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace }),
+      createMarkdownFile,
+      readMarkdownFile
+    });
+
+    await renderApp();
+
+    expect(screen.queryByLabelText("ファイル名を入力")).not.toBeInTheDocument();
+    fireEvent.click(await screen.findByRole("button", { name: "新規ファイルを作成" }));
+
+    expect(createMarkdownFile).toHaveBeenCalledWith({ name: "新規ファイル" });
+    await waitFor(() => {
+      expect(useEditorStore.getState().leftPane.activeTabId).not.toBeNull();
+    });
+    const activeTabId = useEditorStore.getState().leftPane.activeTabId;
+    expect(useEditorStore.getState().tabs[activeTabId!]?.path).toBe("新規ファイル.md");
   });
 
   it("新規ファイルボタンからテンプレートを選んで名前なしでファイルを作成する", async () => {

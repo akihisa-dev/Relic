@@ -25,6 +25,12 @@ export async function readGitCommitHistory(
       return ok([]);
     }
 
+    const hasHead = await hasCommitHistory(workspacePath);
+
+    if (!hasHead) {
+      return ok([]);
+    }
+
     const commits = await git.log({
       depth,
       dir: workspacePath,
@@ -38,6 +44,20 @@ export async function readGitCommitHistory(
       "コミット履歴を取得できませんでした。",
       error instanceof Error ? error.message : String(error)
     );
+  }
+}
+
+async function hasCommitHistory(workspacePath: string): Promise<boolean> {
+  try {
+    await git.resolveRef({
+      dir: workspacePath,
+      fs,
+      ref: "HEAD"
+    });
+
+    return true;
+  } catch {
+    return false;
   }
 }
 

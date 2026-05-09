@@ -731,7 +731,10 @@ export function App(): ReactElement {
           <div className="editor-layout">
             <div className="editor-workspace">
               <div className="shared-editor-toolbar">
-                <Toolbar viewRef={focusedPane === "left" ? leftEditorViewRef : rightEditorViewRef} />
+                <Toolbar
+                  fallbackViewRef={focusedPane === "left" ? rightEditorViewRef : leftEditorViewRef}
+                  viewRef={focusedPane === "left" ? leftEditorViewRef : rightEditorViewRef}
+                />
               </div>
               <div className={`panes-container${isSplit ? " panes-container--split" : ""}`}>
                 <PaneView
