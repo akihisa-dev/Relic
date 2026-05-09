@@ -15,6 +15,7 @@ export interface GitRemoteOperationReady {
   accessToken: string;
   currentBranch: string;
   login: string;
+  remoteUrl: string;
 }
 
 export async function readGitRemotes(
@@ -137,7 +138,9 @@ export async function ensureRemoteOperationReady(
     return remotes;
   }
 
-  if (!remotes.value.some((remote) => remote.name === "origin")) {
+  const origin = remotes.value.find((remote) => remote.name === "origin");
+
+  if (!origin) {
     return fail("GIT_REMOTE_NOT_CONNECTED", "先にGitHubリポジトリを接続してください。");
   }
 
@@ -150,7 +153,8 @@ export async function ensureRemoteOperationReady(
   return ok({
     accessToken: auth.accessToken,
     currentBranch: status.value.currentBranch,
-    login: auth.login
+    login: auth.login,
+    remoteUrl: origin.url
   });
 }
 

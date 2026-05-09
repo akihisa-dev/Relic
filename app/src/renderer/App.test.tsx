@@ -99,7 +99,17 @@ function makeRelicApi(overrides: Partial<typeof window.relic> = {}): typeof wind
     cloneGitHubRepository: vi.fn().mockResolvedValue({ ok: true, value: { activeWorkspace: null, fileTree: [], pinnedPaths: [], workspaces: [] } }),
     createNewWorkspace: vi.fn().mockResolvedValue({ ok: true, value: { activeWorkspace: null, fileTree: [], pinnedPaths: [], workspaces: [] } }),
     togglePin: vi.fn().mockResolvedValue({ ok: true, value: { activeWorkspace: null, fileTree: [], pinnedPaths: [], workspaces: [] } }),
-    getGitSyncPreview: vi.fn().mockResolvedValue({ ok: true, value: { incomingCommits: [], outgoingChanges: [] } }),
+    getGitSyncPreview: vi.fn().mockResolvedValue({
+      ok: true,
+      value: {
+        branch: "main",
+        incomingCommits: [],
+        outgoingChanges: [],
+        remoteName: "origin",
+        remoteUrl: "https://github.com/owner/repo.git",
+        upstream: "origin/main"
+      }
+    }),
     getGitConflicts: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     resolveGitConflict: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     getAutoSyncSettings: vi.fn().mockResolvedValue({ ok: true, value: defaultAutoSyncSettings }),

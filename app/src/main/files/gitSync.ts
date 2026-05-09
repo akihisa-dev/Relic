@@ -64,6 +64,19 @@ export async function pullGitBranch(
       return ready;
     }
 
+    const workingChanges = await readGitWorkingChanges(workspacePath);
+
+    if (!workingChanges.ok) {
+      return workingChanges;
+    }
+
+    if (workingChanges.value.length > 0) {
+      return fail(
+        "GIT_PULL_DIRTY_WORKTREE",
+        "未コミット変更があります。Pullの前にコミットするか、変更内容を確認してください。"
+      );
+    }
+
     await git.pull({
       author: {
         email: `${ready.value.login}@users.noreply.github.com`,
@@ -164,6 +177,12 @@ export async function fetchGitRemote(workspacePath: string): Promise<RelicResult
 }
 
 export async function readGitSyncPreview(workspacePath: string): Promise<RelicResult<GitSyncPreview>> {
+  const ready = await ensureRemoteOperationReady(workspacePath);
+
+  if (!ready.ok) {
+    return ready;
+  }
+
   const fetchResult = await fetchGitRemote(workspacePath);
 
   if (!fetchResult.ok) {
@@ -184,8 +203,12 @@ export async function readGitSyncPreview(workspacePath: string): Promise<RelicRe
   }
 
   return ok({
+    branch: ready.value.currentBranch,
     incomingCommits: incomingCommits.value,
-    outgoingChanges: workingChanges.value
+    outgoingChanges: workingChanges.value,
+    remoteName: "origin",
+    remoteUrl: ready.value.remoteUrl,
+    upstream: `origin/${ready.value.currentBranch}`
   });
 }
 
