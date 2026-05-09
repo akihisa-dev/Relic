@@ -20,6 +20,7 @@ import {
   getBacklinksChannel,
   getAppInfoChannel,
   getGitHubAuthStatusChannel,
+  getGitHubIntegrationSettingsChannel,
   getGitBranchesChannel,
   getGitCommitHistoryChannel,
   getGitCommitDiffChannel,
@@ -48,6 +49,7 @@ import {
   resolveGitConflictChannel,
   saveAutoSyncSettingsChannel,
   saveEditorSettingsChannel,
+  saveGitHubIntegrationSettingsChannel,
   generateTitleListChannel,
   type GenerateTitleListInput,
   generateTableOfContentsChannel,
@@ -89,6 +91,7 @@ import {
   type GitCommitSummary,
   type GitConflict,
   type GitHubAuthStatus,
+  type GitHubIntegrationSettings,
   type GitRemoteSummary,
   type GitRemoteSyncResult,
   type GitStatus,
@@ -161,6 +164,8 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(getBacklinksChannel, input) as Promise<RelicResult<Backlink[]>>,
   getGitHubAuthStatus: () =>
     ipcRenderer.invoke(getGitHubAuthStatusChannel) as Promise<RelicResult<GitHubAuthStatus>>,
+  getGitHubIntegrationSettings: () =>
+    ipcRenderer.invoke(getGitHubIntegrationSettingsChannel) as Promise<RelicResult<GitHubIntegrationSettings>>,
   getGitBranches: () =>
     ipcRenderer.invoke(getGitBranchesChannel) as Promise<RelicResult<GitBranchSummary[]>>,
   getGitCommitHistory: () =>
@@ -214,6 +219,8 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(replaceInFileChannel, input) as Promise<RelicResult<ReplaceInFileResult>>,
   saveEditorSettings: (input: EditorSettings) =>
     ipcRenderer.invoke(saveEditorSettingsChannel, input) as Promise<RelicResult<void>>,
+  saveGitHubIntegrationSettings: (input: GitHubIntegrationSettings) =>
+    ipcRenderer.invoke(saveGitHubIntegrationSettingsChannel, input) as Promise<RelicResult<void>>,
   searchAndReplace: (input: SearchAndReplaceInput) =>
     ipcRenderer.invoke(searchAndReplaceChannel, input) as Promise<
       RelicResult<SearchAndReplaceMatch[]>

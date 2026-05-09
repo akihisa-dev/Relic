@@ -81,7 +81,7 @@ describe("git", () => {
     });
   });
 
-  it("ローカルコミットを作成して履歴を読める", async () => {
+  it("コミットを作成して履歴を読める", async () => {
     const workspacePath = await createWorkspace();
     await initializeGitRepository(workspacePath);
     await writeFile(path.join(workspacePath, "note.md"), "hello", "utf8");
@@ -202,8 +202,8 @@ describe("git", () => {
     expect(result).toMatchObject({
       ok: true,
       value: [
-        { isCurrent: false, name: "feature/test" },
-        { isCurrent: true, name: "main" }
+        { isCurrent: false, name: "feature/test", upstream: null },
+        { isCurrent: true, name: "main", upstream: null }
       ]
     });
   });
@@ -228,6 +228,37 @@ describe("git", () => {
     });
 
     await expect(readGitRemotes(workspacePath)).resolves.toEqual(connected);
+  });
+
+  it("既存の origin を別のURLで上書きしない", async () => {
+    const workspacePath = await createWorkspace();
+    await initializeGitRepository(workspacePath);
+
+    await connectGitRemote(workspacePath, {
+      url: "https://github.com/akihisa/relic"
+    });
+
+    const result = await connectGitRemote(workspacePath, {
+      url: "https://github.com/akihisa/other"
+    });
+
+    expect(result).toMatchObject({
+      error: {
+        code: "GIT_REMOTE_ORIGIN_ALREADY_CONNECTED"
+      },
+      ok: false
+    });
+
+    await expect(readGitRemotes(workspacePath)).resolves.toEqual({
+      ok: true,
+      value: [
+        {
+          isOrigin: true,
+          name: "origin",
+          url: "https://github.com/akihisa/relic.git"
+        }
+      ]
+    });
   });
 
   it("未コミット変更があると切り替え確認を要求する", async () => {
@@ -273,7 +304,7 @@ describe("git", () => {
 
     expect(branches).toMatchObject({
       ok: true,
-      value: expect.arrayContaining([{ isCurrent: true, name: "feature/test" }])
+      value: expect.arrayContaining([{ isCurrent: true, name: "feature/test", upstream: null }])
     });
   });
 

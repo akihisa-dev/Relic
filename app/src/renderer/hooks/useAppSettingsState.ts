@@ -4,12 +4,14 @@ import type {
   AppInfo,
   AutoSyncSettings,
   EditorSettings,
+  GitHubIntegrationSettings,
   MarkdownTemplateSummary,
   WorkspaceState
 } from "../../shared/ipc";
 import {
   defaultAutoSyncSettings,
   defaultFeatureToggles,
+  defaultGitHubIntegrationSettings,
   defaultUserDefinedFields,
   type FeatureToggles,
   type UserDefinedField
@@ -31,6 +33,7 @@ export function useAppSettingsState({
   const [appInfo, setAppInfo] = useState<AppInfo | null>(null);
   const [autoSyncSettings, setAutoSyncSettings] = useState<AutoSyncSettings>(defaultAutoSyncSettings);
   const [featureToggles, setFeatureToggles] = useState<FeatureToggles>(defaultFeatureToggles);
+  const [gitHubIntegrationSettings, setGitHubIntegrationSettings] = useState<GitHubIntegrationSettings>(defaultGitHubIntegrationSettings);
   const [userDefinedFields, setUserDefinedFields] = useState<UserDefinedField[]>(defaultUserDefinedFields);
   const [markdownTemplates, setMarkdownTemplates] = useState<MarkdownTemplateSummary[]>([]);
   const [selectedTemplatePath, setSelectedTemplatePath] = useState("");
@@ -65,6 +68,11 @@ export function useAppSettingsState({
     void window.relic?.getFeatureToggles().then((result) => {
       if (canceled) return;
       if (result.ok) setFeatureToggles(result.value);
+    });
+
+    void window.relic?.getGitHubIntegrationSettings().then((result) => {
+      if (canceled) return;
+      if (result.ok) setGitHubIntegrationSettings(result.value);
     });
 
     void window.relic?.getUserDefinedFields().then((result) => {
@@ -120,6 +128,11 @@ export function useAppSettingsState({
     void window.relic?.saveFeatureToggles(toggles);
   }, []);
 
+  const handleSaveGitHubIntegrationSettings = useCallback((settings: GitHubIntegrationSettings): void => {
+    setGitHubIntegrationSettings(settings);
+    void window.relic?.saveGitHubIntegrationSettings(settings);
+  }, []);
+
   const handleSaveUserDefinedFields = useCallback((fields: UserDefinedField[]): void => {
     setUserDefinedFields(fields);
     void window.relic?.saveUserDefinedFields(fields);
@@ -129,8 +142,10 @@ export function useAppSettingsState({
     appInfo,
     autoSyncSettings,
     featureToggles,
+    gitHubIntegrationSettings,
     handleSaveAutoSyncSettings,
     handleSaveFeatureToggles,
+    handleSaveGitHubIntegrationSettings,
     handleSaveSettings,
     handleSaveUserDefinedFields,
     markdownTemplates,

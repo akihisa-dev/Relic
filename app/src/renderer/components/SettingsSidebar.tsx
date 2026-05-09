@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import type { ReactElement } from "react";
 
-import type { AppInfo, AutoSyncSettings, EditorSettings, FeatureToggles, UserDefinedField, UserDefinedFieldType } from "../../shared/ipc";
+import type { AppInfo, AutoSyncSettings, EditorSettings, FeatureToggles, GitHubIntegrationSettings, UserDefinedField, UserDefinedFieldType } from "../../shared/ipc";
 import { useT } from "../i18n";
 
 const FIELD_TYPES: UserDefinedFieldType[] = ["text", "number", "date", "boolean", "select", "multi-select", "url"];
@@ -27,27 +27,32 @@ export function SettingsSidebar({
   settings,
   autoSyncSettings,
   featureToggles,
+  gitHubIntegrationSettings,
   userDefinedFields,
   onCreateFrontmatterTemplate,
   onSave,
   onAutoSyncSave,
   onFeatureTogglesSave,
+  onGitHubIntegrationSave,
   onUserDefinedFieldsSave
 }: {
   appInfo: AppInfo | null;
   settings: EditorSettings;
   autoSyncSettings: AutoSyncSettings;
   featureToggles: FeatureToggles;
+  gitHubIntegrationSettings: GitHubIntegrationSettings;
   userDefinedFields: UserDefinedField[];
   onCreateFrontmatterTemplate: () => void;
   onSave: (s: EditorSettings) => void;
   onAutoSyncSave: (s: AutoSyncSettings) => void;
   onFeatureTogglesSave: (t: FeatureToggles) => void;
+  onGitHubIntegrationSave: (s: GitHubIntegrationSettings) => void;
   onUserDefinedFieldsSave: (fields: UserDefinedField[]) => void;
 }): ReactElement {
   const [draft, setDraft] = useState<EditorSettings>(settings);
   const [autoSyncDraft, setAutoSyncDraft] = useState<AutoSyncSettings>(autoSyncSettings);
   const [togglesDraft, setTogglesDraft] = useState<FeatureToggles>(featureToggles);
+  const [gitHubDraft, setGitHubDraft] = useState<GitHubIntegrationSettings>(gitHubIntegrationSettings);
   const [fieldsDraft, setFieldsDraft] = useState<UserDefinedField[]>(userDefinedFields);
   const [newFieldName, setNewFieldName] = useState("");
   const [newFieldType, setNewFieldType] = useState<UserDefinedFieldType>("text");
@@ -65,6 +70,10 @@ export function SettingsSidebar({
   useEffect(() => {
     setTogglesDraft(featureToggles);
   }, [featureToggles]);
+
+  useEffect(() => {
+    setGitHubDraft(gitHubIntegrationSettings);
+  }, [gitHubIntegrationSettings]);
 
   useEffect(() => {
     setFieldsDraft(userDefinedFields);
@@ -86,6 +95,15 @@ export function SettingsSidebar({
     const next = fieldsDraft.map((field, i) => (i === index ? nextField : field));
     setFieldsDraft(next);
     onUserDefinedFieldsSave(next);
+  };
+
+  const updateGitHubIntegration = <K extends keyof GitHubIntegrationSettings>(
+    key: K,
+    value: GitHubIntegrationSettings[K]
+  ): void => {
+    const next = { ...gitHubDraft, [key]: value };
+    setGitHubDraft(next);
+    onGitHubIntegrationSave(next);
   };
 
   const isFieldNameAvailable = (name: string, currentIndex?: number): boolean => (
@@ -187,6 +205,31 @@ export function SettingsSidebar({
           {t("settings.createFrontmatterTemplate")}
         </button>
       </div>
+      <div className="links-panel-subheading" style={{ marginTop: "1rem" }}>{t("settings.githubIntegration")}</div>
+      <label className="setting-row">
+        <span>{t("settings.githubClientId")}</span>
+        <input
+          aria-label={t("settings.githubClientId")}
+          onChange={(e) => updateGitHubIntegration("clientId", e.target.value)}
+          placeholder="Iv1..."
+          type="text"
+          value={gitHubDraft.clientId}
+        />
+      </label>
+      <label className="setting-row">
+        <span>{t("settings.githubScopes")}</span>
+        <input
+          aria-label={t("settings.githubScopes")}
+          onBlur={(e) => updateGitHubIntegration(
+            "scopes",
+            e.target.value.split(",").map((scope) => scope.trim()).filter(Boolean)
+          )}
+          placeholder={t("settings.githubScopesPlaceholder")}
+          type="text"
+          defaultValue={gitHubDraft.scopes.join(", ")}
+          key={gitHubDraft.scopes.join(",")}
+        />
+      </label>
       <div className="links-panel-subheading" style={{ marginTop: "1rem" }}>{t("settings.autoSync")}</div>
       <label className="setting-row">
         <input

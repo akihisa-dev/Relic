@@ -82,11 +82,22 @@ export function useWorkspaceFileActions({
   const handleCreateFile = useCallback((): void => {
     if (!window.relic) return;
 
+    const fileName = fileNameDraft.trim();
+
+    if (!fileName) {
+      setWorkspaceError("ファイル名を入力してください。");
+      return;
+    }
+
     setIsCreatingFile(true);
     setWorkspaceError(null);
 
+    const input = selectedTemplatePath
+      ? { name: fileName, templatePath: selectedTemplatePath }
+      : { name: fileName };
+
     void window.relic
-      .createMarkdownFile({ name: fileNameDraft, templatePath: selectedTemplatePath || undefined })
+      .createMarkdownFile(input)
       .then((result) => {
         if (result.ok) {
           setWorkspaceState(result.value);
@@ -101,16 +112,28 @@ export function useWorkspaceFileActions({
   const handleCreateNoteFromPane = useCallback((name: string): void => {
     if (!window.relic) return;
 
+    const fileName = name.trim();
+
+    if (!fileName) {
+      setWorkspaceError("ファイル名を入力してください。");
+      return;
+    }
+
+    const input = selectedTemplatePath
+      ? { name: fileName, templatePath: selectedTemplatePath }
+      : { name: fileName };
+
     void window.relic
-      .createMarkdownFile({ name, templatePath: selectedTemplatePath || undefined })
+      .createMarkdownFile(input)
       .then((result) => {
         if (result.ok) {
           setWorkspaceState(result.value);
+          const expectedPath = fileName.endsWith(".md") ? fileName : `${fileName}.md`;
           const newFile = result.value.fileTree
             .flatMap(function flatten(node): string[] {
               return node.type === "file" ? [node.path] : node.children.flatMap(flatten);
             })
-            .find((path) => path.endsWith(`${name}.md`));
+            .find((path) => path.endsWith(expectedPath));
 
           if (newFile) {
             void window.relic!.readMarkdownFile({ path: newFile }).then((readResult) => {

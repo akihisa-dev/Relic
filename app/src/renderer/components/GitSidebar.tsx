@@ -33,8 +33,6 @@ export interface GitSidebarProps {
   gitRetryAction: (() => void) | null;
   pendingGitBranchSwitch: string | null;
   gitCommitMessage: string;
-  gitAuthorName: string;
-  gitAuthorEmail: string;
   gitSyncPreview: GitSyncPreview | null;
   gitSyncStep: "push-preview" | "pull-preview" | "pull-fetching" | null;
   gitConflicts: GitConflict[];
@@ -78,8 +76,6 @@ export interface GitSidebarProps {
   onSetGitSyncStep: (step: "push-preview" | "pull-preview" | "pull-fetching" | null) => void;
   onSetPendingGitBranchSwitch: (branch: string | null) => void;
   onSetGitCommitMessage: (v: string) => void;
-  onSetGitAuthorName: (v: string) => void;
-  onSetGitAuthorEmail: (v: string) => void;
   onSetGitCloneUrl: (v: string) => void;
 }
 
@@ -102,8 +98,6 @@ export function GitSidebar({
   gitRetryAction,
   pendingGitBranchSwitch,
   gitCommitMessage,
-  gitAuthorName,
-  gitAuthorEmail,
   gitSyncPreview,
   gitSyncStep,
   gitConflicts,
@@ -147,8 +141,6 @@ export function GitSidebar({
   onSetGitSyncStep,
   onSetPendingGitBranchSwitch,
   onSetGitCommitMessage,
-  onSetGitAuthorName,
-  onSetGitAuthorEmail,
   onSetGitCloneUrl
 }: GitSidebarProps): ReactElement {
   const t = useT();
@@ -476,6 +468,10 @@ export function GitSidebar({
           <span>{t("git.branch")}</span>
           <span>{gitStatus.currentBranch ?? "(detached)"}</span>
         </div>
+        <div className="setting-row">
+          <span>{t("git.upstream")}</span>
+          <span>{gitBranches.find((branch) => branch.isCurrent)?.upstream ?? t("common.none")}</span>
+        </div>
       </div>
       <div className="search-block">
         <div className="links-panel-subheading">{t("git.branches")}</div>
@@ -516,7 +512,7 @@ export function GitSidebar({
                     {branch.isCurrent ? " (current)" : ""}
                   </span>
                   <span className="search-result-line">
-                    {branch.isCurrent ? t("git.currentBranch") : t("git.switch")}
+                    {branch.upstream ?? (branch.isCurrent ? t("git.currentBranch") : t("git.switch"))}
                   </span>
                 </button>
               </li>
@@ -561,20 +557,6 @@ export function GitSidebar({
       </div>
       <div className="search-block">
         <div className="links-panel-subheading">{t("git.commit")}</div>
-        <input
-          aria-label={t("git.authorName")}
-          className="text-input"
-          onChange={(event) => onSetGitAuthorName(event.target.value)}
-          placeholder={t("git.authorName")}
-          value={gitAuthorName}
-        />
-        <input
-          aria-label={t("git.authorEmail")}
-          className="text-input"
-          onChange={(event) => onSetGitAuthorEmail(event.target.value)}
-          placeholder="author@example.com"
-          value={gitAuthorEmail}
-        />
         <input
           aria-label={t("git.commitMessage")}
           className="text-input"

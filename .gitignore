@@ -1,7 +1,26 @@
-# 環境変数（超重要）
+# 環境変数・ローカル認証設定（超重要）
 .env
 .env.*
+.envrc
+*.env
+*.env.*
+!.env.example
+!.env.*.example
+
+# npm / GitHub / OAuth のローカル秘密情報
 .npmrc
+*.npmrc
+!.npmrc.example
+github-oauth*.json
+github-auth*.json
+github-token*.json
+oauth*.json
+token*.json
+credentials*.json
+secrets*.json
+client-secret*.json
+keychain*.json
+keychain*.txt
 
 # Node.js系
 node_modules/
@@ -41,6 +60,22 @@ pnpm-debug.log*
 id_rsa
 id_ed25519
 known_hosts
+*.asc
+*.gpg
+*.age
+*.kdbx
+*.auth
+*.credentials
+*.secret
+*.secrets
+*.token
+*.tokens
+
+# Relic / Electron のローカル実行データ
+app-settings.json
+workspaces/*.json
+relic-user-data/
+Relic Test Workspace/
 
 # ローカルAI/エディタ設定
 .claude/settings.local.json
