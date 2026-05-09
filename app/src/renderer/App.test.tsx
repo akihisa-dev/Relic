@@ -118,6 +118,8 @@ function makeRelicApi(overrides: Partial<typeof window.relic> = {}): typeof wind
     saveGitHubIntegrationSettings: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
     getUserDefinedFields: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     saveUserDefinedFields: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
+    getFrontmatterTemplates: vi.fn().mockResolvedValue({ ok: true, value: [] }),
+    saveFrontmatterTemplates: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
     mergeFiles: vi.fn().mockResolvedValue({ ok: true, value: "merged.md" }),
     splitFileByHeading: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     ...overrides
