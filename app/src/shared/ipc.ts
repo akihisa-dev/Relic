@@ -338,6 +338,8 @@ export const defaultAutoSyncSettings: AutoSyncSettings = {
   intervalMinutes: 15
 };
 
+export const autoSyncFeatureEnabled = false;
+
 export interface GitHubIntegrationSettings {
   clientId: string;
   scopes: string[];

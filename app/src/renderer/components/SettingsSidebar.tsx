@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import type { ReactElement } from "react";
 
-import type { AppInfo, AutoSyncSettings, EditorSettings, FeatureToggles, GitHubIntegrationSettings, UserDefinedField, UserDefinedFieldType } from "../../shared/ipc";
+import { autoSyncFeatureEnabled, type AppInfo, type AutoSyncSettings, type EditorSettings, type FeatureToggles, type GitHubIntegrationSettings, type UserDefinedField, type UserDefinedFieldType } from "../../shared/ipc";
 import { useT } from "../i18n";
 
 const FIELD_TYPES: UserDefinedFieldType[] = ["text", "number", "date", "boolean", "select", "multi-select", "url"];
@@ -231,9 +231,13 @@ export function SettingsSidebar({
         />
       </label>
       <div className="links-panel-subheading" style={{ marginTop: "1rem" }}>{t("settings.autoSync")}</div>
+      {!autoSyncFeatureEnabled ? (
+        <div className="empty-note">{t("settings.autoSyncDisabled")}</div>
+      ) : null}
       <label className="setting-row">
         <input
           checked={autoSyncDraft.autoPull}
+          disabled={!autoSyncFeatureEnabled}
           onChange={(e) => updateAutoSync("autoPull", e.target.checked)}
           type="checkbox"
         />
@@ -242,6 +246,7 @@ export function SettingsSidebar({
       <label className="setting-row">
         <input
           checked={autoSyncDraft.autoPush}
+          disabled={!autoSyncFeatureEnabled}
           onChange={(e) => updateAutoSync("autoPush", e.target.checked)}
           type="checkbox"
         />
@@ -251,7 +256,7 @@ export function SettingsSidebar({
         <span>{t("settings.interval")}</span>
         <select
           aria-label={t("settings.interval")}
-          disabled={!autoSyncDraft.autoPull && !autoSyncDraft.autoPush}
+          disabled={!autoSyncFeatureEnabled || (!autoSyncDraft.autoPull && !autoSyncDraft.autoPush)}
           onChange={(e) => updateAutoSync("intervalMinutes", Number(e.target.value) as AutoSyncSettings["intervalMinutes"])}
           value={autoSyncDraft.intervalMinutes}
         >

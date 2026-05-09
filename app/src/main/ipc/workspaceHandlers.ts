@@ -5,6 +5,7 @@ import { app, dialog, ipcMain } from "electron";
 
 import {
   cloneGitHubRepositoryChannel,
+  autoSyncFeatureEnabled,
   type CloneGitHubRepositoryInput,
   createNewWorkspaceChannel,
   defaultAutoSyncSettings,
@@ -295,7 +296,7 @@ export function registerWorkspaceHandlers(): void {
 
       const workspaceSettings = await readWorkspaceSettings(app.getPath("userData"), activeWorkspace.id);
 
-      return ok(workspaceSettings.autoSync);
+      return ok(autoSyncFeatureEnabled ? workspaceSettings.autoSync : defaultAutoSyncSettings);
     } catch (error) {
       return fail(
         "AUTO_SYNC_SETTINGS_FAILED",
@@ -313,6 +314,13 @@ export function registerWorkspaceHandlers(): void {
           return fail("AUTO_SYNC_INVALID_INPUT", "自動同期設定の値が正しくありません。");
         }
 
+        if (!autoSyncFeatureEnabled && (input.autoPull || input.autoPush)) {
+          return fail(
+            "AUTO_SYNC_DISABLED",
+            "自動同期は現在無効です。P14では手動同期だけを使います。"
+          );
+        }
+
         const settings = await readAppSettings(app.getPath("userData"));
         const activeWorkspace = settings.workspaces.find((ws) => ws.id === settings.lastWorkspaceId);
 
@@ -323,7 +331,7 @@ export function registerWorkspaceHandlers(): void {
         const workspaceSettings = await readWorkspaceSettings(app.getPath("userData"), activeWorkspace.id);
         await writeWorkspaceSettings(app.getPath("userData"), activeWorkspace.id, {
           ...workspaceSettings,
-          autoSync: input
+          autoSync: autoSyncFeatureEnabled ? input : defaultAutoSyncSettings
         });
         await refreshAutoSyncTimer();
 
