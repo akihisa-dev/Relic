@@ -1,4 +1,0 @@
-Relic attachment smoke test
-
-これは添付扱いのテキストファイルです。
-Markdown以外のファイルがワークスペース内で扱えるか確認します。
