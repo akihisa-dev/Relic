@@ -1,7 +1,7 @@
 import { EditorSelection } from "@codemirror/state";
 import type { EditorState } from "@codemirror/state";
-import type { EditorView } from "@codemirror/view";
-import { useState } from "react";
+import { EditorView } from "@codemirror/view";
+import { useRef, useState } from "react";
 import type { ReactElement } from "react";
 
 import { useT } from "../i18n";
@@ -13,6 +13,44 @@ interface ToolbarProps {
 
 type HeadingLevel = 1 | 2 | 3 | 4 | 5 | 6;
 type BlockIdFactory = () => string;
+
+function viewContainsBrowserSelection(view: EditorView): boolean {
+  const selection = window.getSelection();
+  const anchorNode = selection?.anchorNode;
+  const focusNode = selection?.focusNode;
+
+  if (!selection || selection.isCollapsed || !anchorNode || !focusNode) return false;
+
+  return view.dom.contains(anchorNode) || view.dom.contains(focusNode);
+}
+
+function findViewFromNode(node: Node | null): EditorView | null {
+  const element = node instanceof Element ? node : node?.parentElement ?? null;
+
+  return element instanceof HTMLElement ? EditorView.findFromDOM(element) ?? null : null;
+}
+
+function findBrowserSelectionView(): EditorView | null {
+  const selection = window.getSelection();
+
+  if (!selection || selection.isCollapsed) return null;
+
+  return findViewFromNode(selection.anchorNode) ?? findViewFromNode(selection.focusNode);
+}
+
+function findActiveElementView(): EditorView | null {
+  return findViewFromNode(document.activeElement);
+}
+
+function viewContainsActiveElement(view: EditorView): boolean {
+  const activeElement = document.activeElement;
+
+  return activeElement !== null && view.dom.contains(activeElement);
+}
+
+function viewHasNonEmptySelection(view: EditorView): boolean {
+  return view.state.selection.ranges.some((range) => !range.empty);
+}
 
 function wrapSelection(view: EditorView, before: string, after: string, placeholder: string): void {
   const { state } = view;
@@ -130,6 +168,7 @@ export function insertBlockIds(view: EditorView, createId: BlockIdFactory = () =
 
 export function Toolbar({ fallbackViewRef, viewRef }: ToolbarProps): ReactElement {
   const t = useT();
+  const lastTargetViewRef = useRef<EditorView | null>(null);
   const [showHeadingMenu, setShowHeadingMenu] = useState(false);
   const [showLinkDialog, setShowLinkDialog] = useState(false);
   const [showTableDialog, setShowTableDialog] = useState(false);
@@ -139,7 +178,41 @@ export function Toolbar({ fallbackViewRef, viewRef }: ToolbarProps): ReactElemen
 
   const placeholderText = t("toolbar.placeholderText");
   const placeholderLinkText = t("toolbar.placeholderLinkText");
-  const getView = (): EditorView | null => viewRef.current ?? fallbackViewRef?.current ?? null;
+  const getCandidateViews = (): EditorView[] => {
+    const primaryView = viewRef.current;
+    const fallbackView = fallbackViewRef?.current ?? null;
+
+    return [primaryView, fallbackView].filter(
+      (view, index, views): view is EditorView => view !== null && views.indexOf(view) === index
+    );
+  };
+
+  const getView = (): EditorView | null => {
+    const views = getCandidateViews();
+    const activeDomView = findActiveElementView();
+    if (activeDomView) return activeDomView;
+
+    const activeView = views.find(viewContainsActiveElement);
+    if (activeView) return activeView;
+
+    const selectedDomView = findBrowserSelectionView();
+    if (selectedDomView) return selectedDomView;
+
+    const selectedView = views.find(viewContainsBrowserSelection);
+    if (selectedView) return selectedView;
+
+    const focusedView = views.find((view) => view.hasFocus);
+    if (focusedView) return focusedView;
+
+    const selectedStateViews = views.filter(viewHasNonEmptySelection);
+    if (selectedStateViews.length === 1) return selectedStateViews[0];
+
+    return lastTargetViewRef.current ?? views[0] ?? null;
+  };
+
+  const rememberTargetView = (): void => {
+    lastTargetViewRef.current = getView();
+  };
 
   const handleBold = (): void => {
     const view = getView();
@@ -304,6 +377,7 @@ export function Toolbar({ fallbackViewRef, viewRef }: ToolbarProps): ReactElemen
       onMouseDownCapture={(event) => {
         const target = event.target as HTMLElement;
         if (target.closest("input, select, textarea")) return;
+        rememberTargetView();
         event.preventDefault();
       }}
     >

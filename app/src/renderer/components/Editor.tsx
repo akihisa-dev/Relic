@@ -196,12 +196,15 @@ class TableWidget extends WidgetType {
 export function buildLivePreviewDecorations(view: EditorView): DecorationSet {
   const { state } = view;
   const doc = state.doc;
+  const editorHasFocus = typeof view.hasFocus === "boolean" ? view.hasFocus : true;
 
   const cursorLines = new Set<number>();
-  for (const range of state.selection.ranges) {
-    const fromLine = doc.lineAt(range.from).number;
-    const toLine = doc.lineAt(range.to).number;
-    for (let l = fromLine; l <= toLine; l++) cursorLines.add(l);
+  if (editorHasFocus) {
+    for (const range of state.selection.ranges) {
+      const fromLine = doc.lineAt(range.from).number;
+      const toLine = doc.lineAt(range.to).number;
+      for (let l = fromLine; l <= toLine; l++) cursorLines.add(l);
+    }
   }
 
   function isOnCursorLine(from: number, to: number): boolean {
@@ -314,7 +317,7 @@ const livePreviewPlugin = ViewPlugin.fromClass(
     }
 
     update(update: ViewUpdate): void {
-      if (update.docChanged || update.selectionSet || update.viewportChanged) {
+      if (update.docChanged || update.selectionSet || update.viewportChanged || update.focusChanged) {
         this.decorations = buildLivePreviewDecorations(update.view);
       }
     }

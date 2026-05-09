@@ -13,7 +13,7 @@ import { buildLivePreviewDecorations, buildWikiLinkCompletionSource, Editor } fr
 
 const settings = defaultEditorSettings;
 
-async function collectLivePreviewClasses(content: string, cursor: number): Promise<Set<string>> {
+async function collectLivePreviewClasses(content: string, cursor: number, hasFocus = true): Promise<Set<string>> {
   const state = EditorState.create({
     doc: content,
     extensions: [markdown({ extensions: GFM })],
@@ -23,6 +23,7 @@ async function collectLivePreviewClasses(content: string, cursor: number): Promi
 
   const classes = new Set<string>();
   buildLivePreviewDecorations({
+    hasFocus,
     state,
     visibleRanges: [{ from: 0, to: state.doc.length }]
   } as unknown as EditorView).between(0, state.doc.length, (_from, _to, value) => {
@@ -94,5 +95,11 @@ describe("Editor", () => {
 
     expect(classes.has("cm-live-highlight")).toBe(true);
     expect(classes.size).toBe(1);
+  });
+
+  it("ライブプレビューでフォーカスが外れたらカーソル行もレンダリングする", async () => {
+    const classes = await collectLivePreviewClasses("**bold**", 0, false);
+
+    expect(classes.has("cm-live-bold")).toBe(true);
   });
 });
