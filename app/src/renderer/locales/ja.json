@@ -21,6 +21,7 @@
   "files.creatingWorkspace": "作成中…",
   "files.duplicate": "複製",
   "files.moveToTrash": "ゴミ箱に移動",
+  "files.moveSelectedToTrash": "選択した項目をゴミ箱に移動",
   "files.newFolderName": "新規フォルダ名",
   "files.newNoteName": "新規ファイル名",
   "files.noTemplate": "テンプレートなし",
