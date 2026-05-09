@@ -1,8 +1,7 @@
 import { autocompletion, type CompletionContext, type CompletionResult } from "@codemirror/autocomplete";
 import { defaultKeymap, historyKeymap, history } from "@codemirror/commands";
 import { markdown } from "@codemirror/lang-markdown";
-import { syntaxTree } from "@codemirror/language";
-import { EditorState } from "@codemirror/state";
+import { EditorState, StateField } from "@codemirror/state";
 import { Decoration, EditorView, ViewPlugin, WidgetType, keymap, lineNumbers } from "@codemirror/view";
 import type { DecorationSet, ViewUpdate } from "@codemirror/view";
 import { GFM } from "@lezer/markdown";
@@ -31,6 +30,15 @@ interface SourceRevealRange {
   to: number;
 }
 
+interface InlineMatch {
+  from: number;
+  to: number;
+  contentFrom: number;
+  contentTo: number;
+  className: string;
+  hideRanges: Array<{ from: number; to: number }>;
+}
+
 function splitTableRow(line: string): string[] {
   const trimmed = line.trim().replace(/^\|/, "").replace(/\|$/, "");
   return trimmed.split("|").map((cell) => cell.trim());
@@ -51,9 +59,9 @@ function formatTable(rows: string[][]): string {
   ].join("\n");
 }
 
-function findTableBlocks(view: EditorView): TableBlock[] {
+function findTableBlocks(state: EditorState): TableBlock[] {
   const blocks: TableBlock[] = [];
-  const { doc } = view.state;
+  const { doc } = state;
   let lineNumber = 1;
 
   while (lineNumber < doc.lines) {
@@ -85,10 +93,7 @@ function findTableBlocks(view: EditorView): TableBlock[] {
 }
 
 class TableWidget extends WidgetType {
-  constructor(
-    private readonly view: EditorView,
-    private readonly block: TableBlock
-  ) {
+  constructor(private readonly block: TableBlock) {
     super();
   }
 
@@ -111,8 +116,8 @@ class TableWidget extends WidgetType {
           const controls = document.createElement("span");
           controls.className = "cm-live-table-controls cm-live-table-controls--col";
           controls.append(
-            this.button("+", () => this.insertCol(colIndex + 1)),
-            this.button("x", () => this.deleteCol(colIndex))
+            this.button("+", (view) => this.insertCol(view, colIndex + 1)),
+            this.button("x", (view) => this.deleteCol(view, colIndex))
           );
           td.append(controls);
         }
@@ -123,8 +128,8 @@ class TableWidget extends WidgetType {
         const controlsCell = document.createElement("td");
         controlsCell.className = "cm-live-table-row-actions";
         controlsCell.append(
-          this.button("+", () => this.insertRow(rowIndex + 1)),
-          this.button("x", () => this.deleteRow(rowIndex))
+          this.button("+", (view) => this.insertRow(view, rowIndex + 1)),
+          this.button("x", (view) => this.deleteRow(view, rowIndex))
         );
         tr.append(controlsCell);
       }
@@ -138,7 +143,12 @@ class TableWidget extends WidgetType {
     addRow.type = "button";
     addRow.textContent = "+";
     addRow.title = "Add row";
-    addRow.addEventListener("click", () => this.insertRow(this.block.rows.length));
+    addRow.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const view = EditorView.findFromDOM(addRow);
+      if (view) this.insertRow(view, this.block.rows.length);
+    });
     wrapper.append(addRow);
 
     return wrapper;
@@ -148,54 +158,76 @@ class TableWidget extends WidgetType {
     return false;
   }
 
-  private button(label: string, onClick: () => void): HTMLButtonElement {
+  private button(label: string, onClick: (view: EditorView) => void): HTMLButtonElement {
     const button = document.createElement("button");
     button.type = "button";
     button.textContent = label;
     button.addEventListener("click", (event) => {
       event.preventDefault();
       event.stopPropagation();
-      onClick();
+      const view = EditorView.findFromDOM(button);
+      if (view) onClick(view);
     });
     return button;
   }
 
-  private update(rows: string[][]): void {
-    this.view.dispatch({
+  private update(view: EditorView, rows: string[][]): void {
+    view.dispatch({
       changes: {
         from: this.block.from,
         to: this.block.to,
         insert: formatTable(rows)
       }
     });
-    this.view.focus();
+    view.focus();
   }
 
-  private insertRow(index: number): void {
+  private insertRow(view: EditorView, index: number): void {
     const colCount = Math.max(...this.block.rows.map((row) => row.length), 1);
     const rows = [...this.block.rows];
     rows.splice(index, 0, Array.from({ length: colCount }, () => ""));
-    this.update(rows);
+    this.update(view, rows);
   }
 
-  private deleteRow(index: number): void {
+  private deleteRow(view: EditorView, index: number): void {
     if (this.block.rows.length <= 2) return;
-    this.update(this.block.rows.filter((_, rowIndex) => rowIndex !== index));
+    this.update(view, this.block.rows.filter((_, rowIndex) => rowIndex !== index));
   }
 
-  private insertCol(index: number): void {
-    this.update(this.block.rows.map((row) => {
+  private insertCol(view: EditorView, index: number): void {
+    this.update(view, this.block.rows.map((row) => {
       const next = [...row];
       next.splice(index, 0, "");
       return next;
     }));
   }
 
-  private deleteCol(index: number): void {
+  private deleteCol(view: EditorView, index: number): void {
     const colCount = Math.max(...this.block.rows.map((row) => row.length), 1);
     if (colCount <= 1) return;
-    this.update(this.block.rows.map((row) => row.filter((_, colIndex) => colIndex !== index)));
+    this.update(view, this.block.rows.map((row) => row.filter((_, colIndex) => colIndex !== index)));
   }
+}
+
+function overlaps(from: number, to: number, ranges: Array<{ from: number; to: number }>): boolean {
+  return ranges.some((range) => from < range.to && to > range.from);
+}
+
+function collectRegexMatches(
+  text: string,
+  regex: RegExp,
+  createMatch: (match: RegExpExecArray) => InlineMatch | null
+): InlineMatch[] {
+  const matches: InlineMatch[] = [];
+  let match: RegExpExecArray | null;
+
+  while ((match = regex.exec(text)) !== null) {
+    const inlineMatch = createMatch(match);
+    if (inlineMatch) matches.push(inlineMatch);
+    if (match[0].length === 0) regex.lastIndex += 1;
+  }
+
+  return matches;
 }
 
 export function buildLivePreviewDecorations(view: EditorView): DecorationSet {
@@ -204,7 +236,7 @@ export function buildLivePreviewDecorations(view: EditorView): DecorationSet {
   const editorHasFocus = typeof view.hasFocus === "boolean" ? view.hasFocus : true;
 
   const ranges: { from: number; to: number; deco: Decoration }[] = [];
-  const tableBlocks = findTableBlocks(view);
+  const tableBlocks = findTableBlocks(state);
   const sourceRevealRanges: SourceRevealRange[] = [];
 
   function selectionTouches(from: number, to: number): boolean {
@@ -232,79 +264,220 @@ export function buildLivePreviewDecorations(view: EditorView): DecorationSet {
     if (from < to) ranges.push({ from, to, deco: Decoration.mark({ class: cls }) });
   }
 
-  const tree = syntaxTree(state);
+  function addInlineDecorations(lineFrom: number, text: string) {
+    const occupied: Array<{ from: number; to: number }> = [];
+    const matches: InlineMatch[] = [];
 
-  for (const { from: visFrom, to: visTo } of view.visibleRanges) {
-    tree.iterate({
-      from: visFrom,
-      to: visTo,
-      enter(node) {
-        const { from, to, name } = node;
-        if (tableBlocks.some((block) => from >= block.from && to <= block.to)) return false;
+    matches.push(...collectRegexMatches(text, /`([^`\n]+)`/g, (match) => {
+      const from = lineFrom + match.index;
+      const to = from + match[0].length;
+      return {
+        from,
+        to,
+        contentFrom: from + 1,
+        contentTo: to - 1,
+        className: "cm-live-code",
+        hideRanges: [{ from, to: from + 1 }, { from: to - 1, to }]
+      };
+    }));
 
-        switch (name) {
-          case "ATXHeading1":
-          case "ATXHeading2":
-          case "ATXHeading3":
-          case "ATXHeading4":
-          case "ATXHeading5":
-          case "ATXHeading6":
-            addSourceReveal(from, to);
-            addMark(from, to, `cm-live-h${name.slice(-1)}`);
-            break;
-          case "HeaderMark":
-            // +1 to also hide the space after ##
-            addReplace(from, Math.min(to + 1, doc.lineAt(from).to));
-            return false;
-          case "StrongEmphasis":
-            addSourceReveal(from, to);
-            addMark(from, to, "cm-live-bold");
-            break;
-          case "Emphasis":
-            addSourceReveal(from, to);
-            addMark(from, to, "cm-live-italic");
-            break;
-          case "EmphasisMark":
-            addReplace(from, to);
-            return false;
-          case "Strikethrough":
-            addSourceReveal(from, to);
-            addMark(from, to, "cm-live-strike");
-            break;
-          case "StrikethroughMark":
-            addReplace(from, to);
-            return false;
-          case "InlineCode":
-            addSourceReveal(from, to);
-            addMark(from, to, "cm-live-code");
-            return false;
-          case "FencedCode":
-          case "CodeBlock":
-            return false;
-        }
-      }
-    });
+    matches.push(...collectRegexMatches(text, /\[([^\]\n]+)\]\(([^)\n]+)\)/g, (match) => {
+      const from = lineFrom + match.index;
+      const textFrom = from + 1;
+      const textTo = textFrom + match[1].length;
+      const to = from + match[0].length;
+      return {
+        from,
+        to,
+        contentFrom: textFrom,
+        contentTo: textTo,
+        className: "cm-live-link",
+        hideRanges: [{ from, to: from + 1 }, { from: textTo, to }]
+      };
+    }));
 
-    // ==highlight== via regex (Obsidian extension not in lezer tree)
-    const visText = doc.sliceString(visFrom, visTo);
-    const hlRe = /==([^=\n]+)==/g;
-    let m: RegExpExecArray | null;
-    while ((m = hlRe.exec(visText)) !== null) {
-      const absFrom = visFrom + m.index;
-      const absTo = absFrom + m[0].length;
-      if (selectionTouches(absFrom, absTo)) addSourceReveal(absFrom, absTo);
-      addReplace(absFrom, absFrom + 2);
-      addMark(absFrom + 2, absTo - 2, "cm-live-highlight");
-      addReplace(absTo - 2, absTo);
+    matches.push(...collectRegexMatches(text, /\[\[([^\]\n]+)\]\]/g, (match) => {
+      const from = lineFrom + match.index;
+      const to = from + match[0].length;
+      const separatorIndex = match[1].lastIndexOf("|");
+      const contentOffset = separatorIndex >= 0 ? 2 + separatorIndex + 1 : 2;
+      const contentLength = separatorIndex >= 0 ? match[1].length - separatorIndex - 1 : match[1].length;
+      const contentFrom = from + contentOffset;
+      const contentTo = contentFrom + contentLength;
+      const hideRanges = separatorIndex >= 0
+        ? [{ from, to: contentFrom }, { from: to - 2, to }]
+        : [{ from, to: from + 2 }, { from: to - 2, to }];
+      return {
+        from,
+        to,
+        contentFrom,
+        contentTo,
+        className: "cm-live-link",
+        hideRanges
+      };
+    }));
+
+    matches.push(...collectRegexMatches(text, /\*\*([^*\n]+)\*\*/g, (match) => {
+      const from = lineFrom + match.index;
+      const to = from + match[0].length;
+      return {
+        from,
+        to,
+        contentFrom: from + 2,
+        contentTo: to - 2,
+        className: "cm-live-bold",
+        hideRanges: [{ from, to: from + 2 }, { from: to - 2, to }]
+      };
+    }));
+
+    matches.push(...collectRegexMatches(text, /__([^_\n]+)__/g, (match) => {
+      const from = lineFrom + match.index;
+      const to = from + match[0].length;
+      return {
+        from,
+        to,
+        contentFrom: from + 2,
+        contentTo: to - 2,
+        className: "cm-live-bold",
+        hideRanges: [{ from, to: from + 2 }, { from: to - 2, to }]
+      };
+    }));
+
+    matches.push(...collectRegexMatches(text, /~~([^~\n]+)~~/g, (match) => {
+      const from = lineFrom + match.index;
+      const to = from + match[0].length;
+      return {
+        from,
+        to,
+        contentFrom: from + 2,
+        contentTo: to - 2,
+        className: "cm-live-strike",
+        hideRanges: [{ from, to: from + 2 }, { from: to - 2, to }]
+      };
+    }));
+
+    matches.push(...collectRegexMatches(text, /==([^=\n]+)==/g, (match) => {
+      const from = lineFrom + match.index;
+      const to = from + match[0].length;
+      return {
+        from,
+        to,
+        contentFrom: from + 2,
+        contentTo: to - 2,
+        className: "cm-live-highlight",
+        hideRanges: [{ from, to: from + 2 }, { from: to - 2, to }]
+      };
+    }));
+
+    matches.push(...collectRegexMatches(text, /(^|[^\*])\*([^*\n]+)\*(?!\*)/g, (match) => {
+      const markerOffset = match[1].length;
+      const from = lineFrom + match.index + markerOffset;
+      const to = from + match[0].length - markerOffset;
+      return {
+        from,
+        to,
+        contentFrom: from + 1,
+        contentTo: to - 1,
+        className: "cm-live-italic",
+        hideRanges: [{ from, to: from + 1 }, { from: to - 1, to }]
+      };
+    }));
+
+    matches.push(...collectRegexMatches(text, /(^|[^_])_([^_\n]+)_(?!_)/g, (match) => {
+      const markerOffset = match[1].length;
+      const from = lineFrom + match.index + markerOffset;
+      const to = from + match[0].length - markerOffset;
+      return {
+        from,
+        to,
+        contentFrom: from + 1,
+        contentTo: to - 1,
+        className: "cm-live-italic",
+        hideRanges: [{ from, to: from + 1 }, { from: to - 1, to }]
+      };
+    }));
+
+    matches.sort((a, b) => a.from - b.from || b.to - a.to);
+
+    for (const match of matches) {
+      if (overlaps(match.from, match.to, occupied)) continue;
+      occupied.push({ from: match.from, to: match.to });
+      addSourceReveal(match.from, match.to);
+      addMark(match.contentFrom, match.contentTo, match.className);
+      for (const hideRange of match.hideRanges) addReplace(hideRange.from, hideRange.to);
     }
   }
 
-  for (const block of tableBlocks) {
-    if (selectionTouches(block.from, block.to)) continue;
+  function startsInsideFencedCode(lineNumber: number): boolean {
+    let inFencedCode = false;
+
+    for (let currentLine = 1; currentLine < lineNumber; currentLine += 1) {
+      if (/^\s*```/.test(doc.line(currentLine).text)) inFencedCode = !inFencedCode;
+    }
+
+    return inFencedCode;
+  }
+
+  for (const { from: visFrom, to: visTo } of view.visibleRanges) {
+    let lineNumber = doc.lineAt(visFrom).number;
+    let inFencedCode = startsInsideFencedCode(lineNumber);
+
+    while (lineNumber <= doc.lineAt(visTo).number) {
+      const line = doc.line(lineNumber);
+      const text = line.text;
+      const tableBlock = tableBlocks.find((block) => line.from >= block.from && line.to <= block.to);
+
+      if (/^\s*```/.test(text)) {
+        inFencedCode = !inFencedCode;
+        lineNumber += 1;
+        continue;
+      }
+
+      if (tableBlock || inFencedCode) {
+        lineNumber += 1;
+        continue;
+      }
+
+      const headingMatch = /^(#{1,6})\s+(.+)$/.exec(text);
+      if (headingMatch) {
+        const markerFrom = line.from;
+        const contentFrom = line.from + headingMatch[1].length + 1;
+        addSourceReveal(line.from, line.to);
+        addMark(contentFrom, line.to, `cm-live-h${headingMatch[1].length}`);
+        addReplace(markerFrom, contentFrom);
+        addInlineDecorations(contentFrom, text.slice(contentFrom - line.from));
+      } else {
+        addInlineDecorations(line.from, text);
+      }
+
+      lineNumber += 1;
+    }
+  }
+
+  ranges.sort((a, b) => a.from - b.from || a.to - b.to);
+
+  return Decoration.set(
+    ranges.map(({ from, to, deco }) => deco.range(from, to)),
+    true
+  );
+}
+
+export function buildTableDecorations(state: EditorState): DecorationSet {
+  const ranges: { from: number; to: number; deco: Decoration }[] = [];
+
+  function selectionInside(from: number, to: number): boolean {
+    return state.selection.ranges.some((range) => {
+      if (range.empty) return range.from > from && range.from < to;
+      return range.from < to && range.to > from;
+    });
+  }
+
+  for (const block of findTableBlocks(state)) {
+    if (selectionInside(block.from, block.to)) continue;
     ranges.push({
       from: block.from,
       to: block.to,
-      deco: Decoration.replace({ widget: new TableWidget(view, block), block: true })
+      deco: Decoration.replace({ widget: new TableWidget(block), block: true })
     });
   }
 
@@ -316,22 +489,13 @@ export function buildLivePreviewDecorations(view: EditorView): DecorationSet {
   );
 }
 
-const livePreviewPlugin = ViewPlugin.fromClass(
-  class {
-    decorations: DecorationSet;
+const livePreviewTableField = StateField.define<DecorationSet>({
+  create: (state) => buildTableDecorations(state),
+  update: (_decorations, transaction) => buildTableDecorations(transaction.state),
+  provide: (field) => EditorView.decorations.from(field)
+});
 
-    constructor(view: EditorView) {
-      this.decorations = buildLivePreviewDecorations(view);
-    }
-
-    update(update: ViewUpdate): void {
-      if (update.docChanged || update.selectionSet || update.viewportChanged || update.focusChanged) {
-        this.decorations = buildLivePreviewDecorations(update.view);
-      }
-    }
-  },
-  { decorations: (v) => v.decorations }
-);
+const livePreviewPlugin = EditorView.decorations.of((view) => buildLivePreviewDecorations(view));
 
 const typewriterExtension = ViewPlugin.fromClass(
   class {
@@ -426,6 +590,7 @@ function buildExtensions(
     EditorView.contentAttributes.of({ spellcheck: settings.spellCheck ? "true" : "false" }),
     ...(settings.showLineNumbers ? [lineNumbers()] : []),
     ...(typewriterMode ? [typewriterExtension] : []),
+    livePreviewTableField,
     livePreviewPlugin
   ];
 }

@@ -9,7 +9,7 @@ import { createRef } from "react";
 import { describe, expect, it, vi } from "vitest";
 
 import { defaultEditorSettings } from "../../shared/ipc";
-import { buildLivePreviewDecorations, buildWikiLinkCompletionSource, Editor } from "./Editor";
+import { buildLivePreviewDecorations, buildTableDecorations, buildWikiLinkCompletionSource, Editor } from "./Editor";
 
 const settings = defaultEditorSettings;
 
@@ -32,6 +32,24 @@ async function collectLivePreviewClasses(content: string, cursor: number, hasFoc
   });
 
   return classes;
+}
+
+async function collectLivePreviewWidgets(content: string, cursor: number, hasFocus = true): Promise<string[]> {
+  const state = EditorState.create({
+    doc: content,
+    extensions: [markdown({ extensions: GFM })],
+    selection: { anchor: cursor }
+  });
+  await ensureSyntaxTree(state, state.doc.length, 100);
+
+  const widgets: string[] = [];
+  void hasFocus;
+  buildTableDecorations(state).between(0, state.doc.length, (_from, _to, value) => {
+    const widget = (value as unknown as { spec?: { widget?: { constructor?: { name?: string } } } }).spec?.widget;
+    if (widget?.constructor?.name) widgets.push(widget.constructor.name);
+  });
+
+  return widgets;
 }
 
 describe("Editor", () => {
@@ -101,6 +119,48 @@ describe("Editor", () => {
     const classes = await collectLivePreviewClasses("**bold**", 3);
 
     expect(classes.has("cm-live-bold")).toBe(true);
+  });
+
+  it("ライブプレビューで主要なインライン記法を安定して装飾する", async () => {
+    const classes = await collectLivePreviewClasses([
+      "**bold**",
+      "*italic*",
+      "~~strike~~",
+      "`code`",
+      "==mark==",
+      "[link](https://example.com)",
+      "[[Page]]"
+    ].join("\n"), 0, false);
+
+    expect(Array.from(classes)).toEqual(expect.arrayContaining([
+      "cm-live-bold",
+      "cm-live-italic",
+      "cm-live-strike",
+      "cm-live-code",
+      "cm-live-highlight",
+      "cm-live-link"
+    ]));
+  });
+
+  it("ライブプレビューで表を挿入直後のカーソル位置でも表示する", async () => {
+    const content = "| A | B |\n| --- | --- |\n| x | y |";
+    const widgets = await collectLivePreviewWidgets(content, content.length);
+
+    expect(widgets).toContain("TableWidget");
+  });
+
+  it("ライブプレビューで表をDOMに表示する", async () => {
+    const { container } = render(
+      <Editor
+        content={"| A | B |\n| --- | --- |\n| x | y |"}
+        onChange={vi.fn()}
+        settings={settings}
+      />
+    );
+
+    await waitFor(() => expect(container.querySelector(".cm-live-table")).not.toBeNull());
+    expect(container.querySelector(".cm-live-table")?.textContent).toContain("A");
+    expect(container.querySelector(".cm-live-table")?.textContent).toContain("x");
   });
 
   it("ライブプレビューでフォーカスが外れたらカーソル行もレンダリングする", async () => {
