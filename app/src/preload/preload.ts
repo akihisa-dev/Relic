@@ -70,8 +70,6 @@ import {
   switchGitBranchChannel,
   switchWorkspaceChannel,
   writeMarkdownFileChannel,
-  getFrontmatterCandidatesChannel,
-  createFrontmatterTemplateChannel,
   type AppInfo,
   type AutoSyncSettings,
   type CloneGitHubRepositoryInput,
@@ -239,10 +237,6 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(switchGitBranchChannel, input) as Promise<RelicResult<GitBranchSummary[]>>,
   writeMarkdownFile: (input: WriteMarkdownFileInput) =>
     ipcRenderer.invoke(writeMarkdownFileChannel, input) as Promise<RelicResult<void>>,
-  getFrontmatterCandidates: () =>
-    ipcRenderer.invoke(getFrontmatterCandidatesChannel) as Promise<RelicResult<Record<string, string[]>>>,
-  createFrontmatterTemplate: () =>
-    ipcRenderer.invoke(createFrontmatterTemplateChannel) as Promise<RelicResult<WorkspaceState>>,
   getGitSyncPreview: () =>
     ipcRenderer.invoke(getGitSyncPreviewChannel) as Promise<RelicResult<GitSyncPreview>>,
   getGitConflicts: () =>

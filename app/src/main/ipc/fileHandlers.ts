@@ -1,4 +1,3 @@
-import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import { app, ipcMain, shell } from "electron";
@@ -15,9 +14,7 @@ import {
   type DuplicateMarkdownFileInput,
   getBacklinksChannel,
   type GetBacklinksInput,
-  getFrontmatterCandidatesChannel,
   getMarkdownTemplatesChannel,
-  createFrontmatterTemplateChannel,
   moveFolderChannel,
   type MoveFolderInput,
   moveItemToTrashChannel,
@@ -41,7 +38,6 @@ import {
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { readBacklinks } from "../files/backlinks";
 import { createFolder, moveFolder, renameFolder } from "../files/folders";
-import { parseFrontmatterCandidates } from "../files/frontmatter";
 import {
   createMarkdownFileAtPath,
   createMarkdownFile,
@@ -534,68 +530,6 @@ export function registerFileHandlers(): void {
     }
   );
 
-  ipcMain.handle(getFrontmatterCandidatesChannel, async (): Promise<RelicResult<Record<string, string[]>>> => {
-    try {
-      const settings = await readAppSettings(app.getPath("userData"));
-      const activeWorkspace = settings.workspaces.find((ws) => ws.id === settings.lastWorkspaceId);
-
-      if (!activeWorkspace) {
-        return ok({});
-      }
-
-      const filePath = path.join(activeWorkspace.path, "frontmatter.md");
-
-      try {
-        const content = await readFile(filePath, "utf8");
-        const candidates = parseFrontmatterCandidates(content);
-        const result: Record<string, string[]> = {};
-
-        for (const [field, values] of candidates) {
-          result[field] = values;
-        }
-
-        return ok(result);
-      } catch {
-        return ok({});
-      }
-    } catch (error) {
-      return fail("FRONTMATTER_CANDIDATES_FAILED", String(error));
-    }
-  });
-
-  ipcMain.handle(createFrontmatterTemplateChannel, async (): Promise<RelicResult<WorkspaceState>> => {
-    try {
-      const settings = await readAppSettings(app.getPath("userData"));
-      const activeWorkspace = settings.workspaces.find((ws) => ws.id === settings.lastWorkspaceId);
-
-      if (!activeWorkspace) {
-        return fail("NO_WORKSPACE", "ワークスペースが開かれていません。");
-      }
-
-      const filePath = path.join(activeWorkspace.path, "frontmatter.md");
-      const template = [
-        "# フロントマター候補",
-        "",
-        "## status",
-        "- draft",
-        "- review",
-        "- published",
-        "",
-        "## author",
-        ""
-      ].join("\n");
-
-      await writeFile(filePath, template, { encoding: "utf8", flag: "wx" });
-
-      return ok(await buildWorkspaceState(settings));
-    } catch (error: unknown) {
-      if (typeof error === "object" && error !== null && "code" in error && (error as { code: string }).code === "EEXIST") {
-        return fail("FRONTMATTER_TEMPLATE_EXISTS", "frontmatter.md はすでに存在します。");
-      }
-
-      return fail("FRONTMATTER_TEMPLATE_FAILED", String(error));
-    }
-  });
 }
 
 function isCreateMarkdownFileInput(input: unknown): input is CreateMarkdownFileInput {

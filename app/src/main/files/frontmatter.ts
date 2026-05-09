@@ -60,31 +60,3 @@ export function updateFrontmatter(
 
   return writeFrontmatter(body, nextData);
 }
-
-export function parseFrontmatterCandidates(content: string): Map<string, string[]> {
-  const result = new Map<string, string[]>();
-
-  let currentField: string | null = null;
-
-  for (const line of content.split("\n")) {
-    const headingMatch = /^##\s+(.+)/.exec(line);
-
-    if (headingMatch) {
-      currentField = headingMatch[1].trim();
-      result.set(currentField, []);
-      continue;
-    }
-
-    if (currentField) {
-      const bulletMatch = /^[-*+]\s+(.+)/.exec(line);
-
-      if (bulletMatch) {
-        result.get(currentField)!.push(bulletMatch[1].trim());
-      } else if (line.trim() === "" || /^#/.test(line)) {
-        currentField = null;
-      }
-    }
-  }
-
-  return result;
-}

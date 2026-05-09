@@ -307,6 +307,7 @@ export function App(): ReactElement {
   } = useWorkspaceSearchState({
     setSidebarView,
     setWorkspaceError,
+    userDefinedFields,
     workspaceState
   });
 
@@ -318,7 +319,6 @@ export function App(): ReactElement {
     handleDuplicateTreeFile,
     handleCreateFile,
     handleCreateFolder,
-    handleCreateFrontmatterTemplate,
     handleCreateNewWorkspace,
     handleCreateNoteFromPane,
     handleOpenFile,
@@ -656,7 +656,6 @@ export function App(): ReactElement {
                 featureToggles={featureToggles}
                 gitHubIntegrationSettings={gitHubIntegrationSettings}
                 onAutoSyncSave={handleSaveAutoSyncSettings}
-                onCreateFrontmatterTemplate={handleCreateFrontmatterTemplate}
                 onFeatureTogglesSave={handleSaveFeatureToggles}
                 onGitHubIntegrationSave={handleSaveGitHubIntegrationSettings}
                 onSave={handleSaveSettings}

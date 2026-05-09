@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import type {
   SearchMode,
+  UserDefinedField,
   WorkspaceSearchResult,
   WorkspaceState,
   WorkspaceTagSummary
@@ -10,12 +11,14 @@ import type {
 interface UseWorkspaceSearchStateInput {
   setSidebarView: (view: "search") => void;
   setWorkspaceError: (message: string | null) => void;
+  userDefinedFields: UserDefinedField[];
   workspaceState: WorkspaceState | null;
 }
 
 export function useWorkspaceSearchState({
   setSidebarView,
   setWorkspaceError,
+  userDefinedFields,
   workspaceState
 }: UseWorkspaceSearchStateInput) {
   const [workspaceTags, setWorkspaceTags] = useState<WorkspaceTagSummary[]>([]);
@@ -24,7 +27,17 @@ export function useWorkspaceSearchState({
   const [searchFrontmatterField, setSearchFrontmatterField] = useState("");
   const [searchResults, setSearchResults] = useState<WorkspaceSearchResult[]>([]);
   const [searchError, setSearchError] = useState<string | null>(null);
-  const [frontmatterCandidates, setFrontmatterCandidates] = useState<Record<string, string[]>>({});
+  const frontmatterCandidates = useMemo(() => {
+    const result: Record<string, string[]> = {};
+
+    for (const field of userDefinedFields) {
+      if (field.choices && field.choices.length > 0) {
+        result[field.name] = field.choices;
+      }
+    }
+
+    return result;
+  }, [userDefinedFields]);
 
   const handleTagSearch = useCallback((tag: string): void => {
     setSearchMode("tag");
@@ -87,17 +100,6 @@ export function useWorkspaceSearchState({
       canceled = true;
     };
   }, [searchFrontmatterField, searchMode, searchQuery, workspaceState?.activeWorkspace?.id, workspaceState?.fileTree]);
-
-  useEffect(() => {
-    if (!workspaceState?.activeWorkspace || !window.relic) {
-      setFrontmatterCandidates({});
-      return;
-    }
-
-    void window.relic.getFrontmatterCandidates().then((result) => {
-      if (result.ok) setFrontmatterCandidates(result.value);
-    });
-  }, [workspaceState?.activeWorkspace?.id, workspaceState?.fileTree]);
 
   return {
     frontmatterCandidates,
