@@ -4,7 +4,7 @@ import path from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import { defaultEditorSettings, defaultFeatureToggles, defaultGitHubIntegrationSettings, defaultUserDefinedFields } from "../../shared/ipc";
+import { defaultEditorSettings, defaultFeatureToggles, defaultFrontmatterTemplates, defaultGitHubIntegrationSettings, defaultUserDefinedFields } from "../../shared/ipc";
 import { attachmentsDirectoryName, templatesDirectoryName } from "../../shared/workspace";
 import {
   addOrActivateWorkspace,
@@ -18,6 +18,7 @@ import {
 const baseSettings = {
   editorSettings: defaultEditorSettings,
   featureToggles: defaultFeatureToggles,
+  frontmatterTemplates: defaultFrontmatterTemplates,
   githubIntegration: defaultGitHubIntegrationSettings,
   userDefinedFields: defaultUserDefinedFields
 };

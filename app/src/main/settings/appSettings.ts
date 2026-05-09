@@ -4,10 +4,12 @@ import path from "node:path";
 import {
   defaultEditorSettings,
   defaultFeatureToggles,
+  defaultFrontmatterTemplates,
   defaultGitHubIntegrationSettings,
   defaultUserDefinedFields,
   type EditorSettings,
   type FeatureToggles,
+  type FrontmatterTemplate,
   type GitHubIntegrationSettings,
   type UserDefinedField,
   type UserDefinedFieldType,
@@ -17,6 +19,7 @@ import {
 export interface AppSettings {
   editorSettings: EditorSettings;
   featureToggles: FeatureToggles;
+  frontmatterTemplates: FrontmatterTemplate[];
   githubIntegration: GitHubIntegrationSettings;
   lastWorkspaceId: string | null;
   userDefinedFields: UserDefinedField[];
@@ -26,6 +29,7 @@ export interface AppSettings {
 const defaultAppSettings: AppSettings = {
   editorSettings: defaultEditorSettings,
   featureToggles: defaultFeatureToggles,
+  frontmatterTemplates: defaultFrontmatterTemplates,
   githubIntegration: defaultGitHubIntegrationSettings,
   lastWorkspaceId: null,
   userDefinedFields: defaultUserDefinedFields,
@@ -46,6 +50,7 @@ export async function readAppSettings(userDataPath: string): Promise<AppSettings
     return {
       editorSettings: parseEditorSettings(parsedSettings.editorSettings),
       featureToggles: parseFeatureToggles(parsedSettings.featureToggles),
+      frontmatterTemplates: parseFrontmatterTemplates(parsedSettings.frontmatterTemplates),
       githubIntegration: parseGitHubIntegrationSettings(parsedSettings.githubIntegration),
       lastWorkspaceId:
         typeof parsedSettings.lastWorkspaceId === "string" ? parsedSettings.lastWorkspaceId : null,
@@ -178,6 +183,35 @@ function parseUserDefinedFields(raw: unknown): UserDefinedField[] {
 
     result.push(field);
     names.add(field.name);
+  }
+
+  return result;
+}
+
+function parseFrontmatterTemplates(raw: unknown): FrontmatterTemplate[] {
+  if (!Array.isArray(raw)) return defaultFrontmatterTemplates;
+
+  const result: FrontmatterTemplate[] = [];
+  const names = new Set<string>();
+
+  for (const item of raw) {
+    if (typeof item !== "object" || item === null) continue;
+    const template = item as Record<string, unknown>;
+    if (typeof template.name !== "string") continue;
+
+    const name = template.name.trim();
+    if (!name || names.has(name)) continue;
+
+    const fieldNames = Array.isArray(template.fieldNames)
+      ? template.fieldNames.filter((fieldName): fieldName is string => (
+        typeof fieldName === "string" && FIELD_NAME_PATTERN.test(fieldName)
+      ))
+      : [];
+
+    if (fieldNames.length === 0) continue;
+
+    result.push({ fieldNames, name });
+    names.add(name);
   }
 
   return result;

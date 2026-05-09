@@ -2125,6 +2125,13 @@ button:disabled {
   min-width: 0;
 }
 
+.fm-template-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
+
 .fm-add-chip {
   align-items: center;
   background: var(--bg);
@@ -2218,6 +2225,11 @@ button:disabled {
 .fm-remove-field:hover {
   background: var(--hover);
   color: var(--text);
+}
+
+.fm-field-actions {
+  display: flex;
+  gap: 2px;
 }
 
 .fm-pill-input {
@@ -2422,6 +2434,26 @@ button:disabled {
 
 .setting-custom-field-edit select {
   font-size: 12px;
+}
+
+.setting-custom-field-form--stacked {
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 6px;
+}
+
+.setting-template-field-list {
+  display: grid;
+  gap: 4px;
+}
+
+.setting-template-field-choice {
+  align-items: center;
+  color: var(--text-2);
+  display: flex;
+  font-size: 12px;
+  gap: 6px;
+  min-width: 0;
 }
 
 /* ────────────────────────────────── */

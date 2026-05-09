@@ -21,8 +21,11 @@ import {
   saveAutoSyncSettingsChannel,
   type AutoSyncSettings,
   saveFeatureTogglesChannel,
+  getFrontmatterTemplatesChannel,
+  saveFrontmatterTemplatesChannel,
   saveUserDefinedFieldsChannel,
   type FeatureToggles,
+  type FrontmatterTemplate,
   switchWorkspaceChannel,
   type SwitchWorkspaceInput,
   togglePinChannel,
@@ -66,6 +69,28 @@ function isUserDefinedFieldsInput(input: unknown): input is UserDefinedField[] {
     if (Array.isArray(candidate.choices) && !candidate.choices.every((choice) => typeof choice === "string")) return false;
 
     return true;
+  });
+}
+
+function isFrontmatterTemplatesInput(input: unknown): input is FrontmatterTemplate[] {
+  if (!Array.isArray(input)) return false;
+
+  const names = new Set<string>();
+
+  return input.every((template) => {
+    if (typeof template !== "object" || template === null) return false;
+    const candidate = template as Record<string, unknown>;
+    if (typeof candidate.name !== "string" || candidate.name.trim() === "") return false;
+    if (names.has(candidate.name)) return false;
+    names.add(candidate.name);
+
+    return (
+      Array.isArray(candidate.fieldNames) &&
+      candidate.fieldNames.length > 0 &&
+      candidate.fieldNames.every((fieldName) => (
+        typeof fieldName === "string" && userDefinedFieldNamePattern.test(fieldName)
+      ))
+    );
   });
 }
 
@@ -417,6 +442,29 @@ export function registerWorkspaceHandlers(): void {
       return ok(undefined);
     } catch (error) {
       return fail("USER_DEFINED_FIELDS_SAVE_FAILED", "カスタムフィールドを保存できませんでした。", error instanceof Error ? error.message : String(error));
+    }
+  });
+
+  ipcMain.handle(getFrontmatterTemplatesChannel, async (): Promise<RelicResult<FrontmatterTemplate[]>> => {
+    try {
+      const settings = await readAppSettings(app.getPath("userData"));
+      return ok(settings.frontmatterTemplates);
+    } catch (error) {
+      return fail("FRONTMATTER_TEMPLATES_READ_FAILED", "フロントマターテンプレートを読み込めませんでした。", error instanceof Error ? error.message : String(error));
+    }
+  });
+
+  ipcMain.handle(saveFrontmatterTemplatesChannel, async (_event, input: FrontmatterTemplate[]): Promise<RelicResult<void>> => {
+    try {
+      if (!isFrontmatterTemplatesInput(input)) {
+        return fail("FRONTMATTER_TEMPLATES_INVALID_INPUT", "フロントマターテンプレートの値が正しくありません。");
+      }
+
+      const settings = await readAppSettings(app.getPath("userData"));
+      await writeAppSettings(app.getPath("userData"), { ...settings, frontmatterTemplates: input });
+      return ok(undefined);
+    } catch (error) {
+      return fail("FRONTMATTER_TEMPLATES_SAVE_FAILED", "フロントマターテンプレートを保存できませんでした。", error instanceof Error ? error.message : String(error));
     }
   });
 }

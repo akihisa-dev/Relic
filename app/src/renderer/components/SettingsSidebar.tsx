@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import type { ReactElement } from "react";
 
-import { autoSyncFeatureEnabled, type AppInfo, type AutoSyncSettings, type EditorSettings, type FeatureToggles, type GitHubIntegrationSettings, type UserDefinedField, type UserDefinedFieldType } from "../../shared/ipc";
+import { autoSyncFeatureEnabled, type AppInfo, type AutoSyncSettings, type EditorSettings, type FeatureToggles, type FrontmatterTemplate, type GitHubIntegrationSettings, type UserDefinedField, type UserDefinedFieldType } from "../../shared/ipc";
 import { useT } from "../i18n";
 
 const FIELD_TYPES: UserDefinedFieldType[] = ["text", "number", "date", "boolean", "select", "multi-select", "tags", "url"];
@@ -26,11 +26,13 @@ export function SettingsSidebar({
   settings,
   autoSyncSettings,
   featureToggles,
+  frontmatterTemplates,
   gitHubIntegrationSettings,
   userDefinedFields,
   onSave,
   onAutoSyncSave,
   onFeatureTogglesSave,
+  onFrontmatterTemplatesSave,
   onGitHubIntegrationSave,
   onUserDefinedFieldsSave
 }: {
@@ -38,11 +40,13 @@ export function SettingsSidebar({
   settings: EditorSettings;
   autoSyncSettings: AutoSyncSettings;
   featureToggles: FeatureToggles;
+  frontmatterTemplates: FrontmatterTemplate[];
   gitHubIntegrationSettings: GitHubIntegrationSettings;
   userDefinedFields: UserDefinedField[];
   onSave: (s: EditorSettings) => void;
   onAutoSyncSave: (s: AutoSyncSettings) => void;
   onFeatureTogglesSave: (t: FeatureToggles) => void;
+  onFrontmatterTemplatesSave: (templates: FrontmatterTemplate[]) => void;
   onGitHubIntegrationSave: (s: GitHubIntegrationSettings) => void;
   onUserDefinedFieldsSave: (fields: UserDefinedField[]) => void;
 }): ReactElement {
@@ -51,9 +55,12 @@ export function SettingsSidebar({
   const [togglesDraft, setTogglesDraft] = useState<FeatureToggles>(featureToggles);
   const [gitHubDraft, setGitHubDraft] = useState<GitHubIntegrationSettings>(gitHubIntegrationSettings);
   const [fieldsDraft, setFieldsDraft] = useState<UserDefinedField[]>(userDefinedFields);
+  const [templatesDraft, setTemplatesDraft] = useState<FrontmatterTemplate[]>(frontmatterTemplates);
   const [newFieldName, setNewFieldName] = useState("");
   const [newFieldType, setNewFieldType] = useState<UserDefinedFieldType>("text");
   const [newFieldChoices, setNewFieldChoices] = useState("");
+  const [newTemplateFields, setNewTemplateFields] = useState<string[]>([]);
+  const [newTemplateName, setNewTemplateName] = useState("");
   const t = useT();
 
   useEffect(() => {
@@ -76,6 +83,10 @@ export function SettingsSidebar({
     setFieldsDraft(userDefinedFields);
   }, [userDefinedFields]);
 
+  useEffect(() => {
+    setTemplatesDraft(frontmatterTemplates);
+  }, [frontmatterTemplates]);
+
   const update = <K extends keyof EditorSettings>(key: K, value: EditorSettings[K]): void => {
     const next = { ...draft, [key]: value };
     setDraft(next);
@@ -92,6 +103,11 @@ export function SettingsSidebar({
     const next = fieldsDraft.map((field, i) => (i === index ? nextField : field));
     setFieldsDraft(next);
     onUserDefinedFieldsSave(next);
+  };
+
+  const saveTemplates = (templates: FrontmatterTemplate[]): void => {
+    setTemplatesDraft(templates);
+    onFrontmatterTemplatesSave(templates);
   };
 
   const updateGitHubIntegration = <K extends keyof GitHubIntegrationSettings>(
@@ -381,6 +397,76 @@ export function SettingsSidebar({
           type="button"
         >
           {t("settings.customFieldAdd")}
+        </button>
+      </div>
+      <div className="links-panel-subheading" style={{ marginTop: "1rem" }}>{t("settings.frontmatterTemplates")}</div>
+      {templatesDraft.map((template, i) => (
+        <div className="setting-custom-field-edit" key={`${template.name}-${i}`}>
+          <input
+            className="setting-custom-field-input"
+            onChange={(e) => {
+              const name = e.target.value.trim();
+              if (!name || templatesDraft.some((item, index) => item.name === name && index !== i)) return;
+              saveTemplates(templatesDraft.map((item, index) => index === i ? { ...item, name } : item));
+            }}
+            placeholder={t("settings.frontmatterTemplateName")}
+            type="text"
+            value={template.name}
+          />
+          <span className="settings-info">{template.fieldNames.join(", ")}</span>
+          <button
+            className="setting-action-btn setting-action-btn--danger"
+            onClick={() => saveTemplates(templatesDraft.filter((_, index) => index !== i))}
+            title={t("common.delete")}
+            type="button"
+          >
+            ×
+          </button>
+        </div>
+      ))}
+      <div className="setting-custom-field-form setting-custom-field-form--stacked">
+        <input
+          className="setting-custom-field-input"
+          onChange={(e) => setNewTemplateName(e.target.value)}
+          placeholder={t("settings.frontmatterTemplateName")}
+          type="text"
+          value={newTemplateName}
+        />
+        <div className="setting-template-field-list">
+          {fieldsDraft.map((field) => (
+            <label className="setting-template-field-choice" key={field.name}>
+              <input
+                checked={newTemplateFields.includes(field.name)}
+                onChange={(e) => {
+                  setNewTemplateFields((current) => (
+                    e.target.checked
+                      ? [...current, field.name]
+                      : current.filter((name) => name !== field.name)
+                  ));
+                }}
+                type="checkbox"
+              />
+              <span>{field.name}</span>
+            </label>
+          ))}
+        </div>
+        <button
+          className="setting-action-btn"
+          disabled={
+            !newTemplateName.trim() ||
+            newTemplateFields.length === 0 ||
+            templatesDraft.some((template) => template.name === newTemplateName.trim())
+          }
+          onClick={() => {
+            const name = newTemplateName.trim();
+            if (!name || newTemplateFields.length === 0) return;
+            saveTemplates([...templatesDraft, { fieldNames: newTemplateFields, name }]);
+            setNewTemplateName("");
+            setNewTemplateFields([]);
+          }}
+          type="button"
+        >
+          {t("settings.frontmatterTemplateAdd")}
         </button>
       </div>
       <div className="links-panel-subheading" style={{ marginTop: "1rem" }}>{t("settings.appInfo")}</div>

@@ -203,9 +203,11 @@ export function App(): ReactElement {
     appInfo,
     autoSyncSettings,
     featureToggles,
+    frontmatterTemplates,
     gitHubIntegrationSettings,
     handleSaveAutoSyncSettings,
     handleSaveFeatureToggles,
+    handleSaveFrontmatterTemplates,
     handleSaveGitHubIntegrationSettings,
     handleSaveSettings,
     handleSaveUserDefinedFields,
@@ -654,9 +656,11 @@ export function App(): ReactElement {
                 appInfo={appInfo}
                 autoSyncSettings={autoSyncSettings}
                 featureToggles={featureToggles}
+                frontmatterTemplates={frontmatterTemplates}
                 gitHubIntegrationSettings={gitHubIntegrationSettings}
                 onAutoSyncSave={handleSaveAutoSyncSettings}
                 onFeatureTogglesSave={handleSaveFeatureToggles}
+                onFrontmatterTemplatesSave={handleSaveFrontmatterTemplates}
                 onGitHubIntegrationSave={handleSaveGitHubIntegrationSettings}
                 onSave={handleSaveSettings}
                 onUserDefinedFieldsSave={handleSaveUserDefinedFields}
@@ -821,6 +825,8 @@ export function App(): ReactElement {
                         content={activeTabInFocusedPane.content}
                         key={`fm-panel-${activeTabInFocusedPane.id}`}
                         onChange={(content) => updateTabContent(activeTabInFocusedPane.id, content)}
+                        onUserDefinedFieldsChange={handleSaveUserDefinedFields}
+                        frontmatterTemplates={frontmatterTemplates}
                         userDefinedFields={userDefinedFields}
                         workspaceTags={workspaceTags.map((tag) => tag.tag)}
                       />

@@ -2,7 +2,7 @@ import * as yaml from "js-yaml";
 import { useCallback, useRef, useState } from "react";
 import type { ReactElement } from "react";
 
-import type { UserDefinedField } from "../../shared/ipc";
+import type { FrontmatterTemplate, UserDefinedField, UserDefinedFieldType } from "../../shared/ipc";
 import { useT } from "../i18n";
 
 interface ParsedFrontmatter {
@@ -168,7 +168,9 @@ function PillInput({ candidates = [], placeholder, values, onChange }: PillInput
 interface FrontmatterFormProps {
   candidates: Record<string, string[]>;
   content: string;
+  frontmatterTemplates?: FrontmatterTemplate[];
   onChange: (content: string) => void;
+  onUserDefinedFieldsChange?: (fields: UserDefinedField[]) => void;
   userDefinedFields?: UserDefinedField[];
   workspaceTags?: string[];
 }
@@ -176,12 +178,16 @@ interface FrontmatterFormProps {
 export function FrontmatterForm({
   candidates,
   content,
+  frontmatterTemplates = [],
   onChange,
+  onUserDefinedFieldsChange,
   userDefinedFields = [],
   workspaceTags = []
 }: FrontmatterFormProps): ReactElement | null {
   const t = useT();
   const [newFieldName, setNewFieldName] = useState("");
+  const [assigningKey, setAssigningKey] = useState<string | null>(null);
+  const [assigningType, setAssigningType] = useState<UserDefinedFieldType>("text");
   const { data, body } = parseFrontmatter(content);
   const fieldCount = Object.keys(data).length;
 
@@ -224,6 +230,32 @@ export function FrontmatterForm({
   );
 
   const userDefinedFieldNames = new Set(userDefinedFields.map((f) => f.name));
+
+  const applyTemplate = useCallback(
+    (template: FrontmatterTemplate): void => {
+      const nextData = { ...data };
+
+      for (const fieldName of template.fieldNames) {
+        if (hasField(nextData, fieldName)) continue;
+        const field = userDefinedFields.find((item) => item.name === fieldName) ?? null;
+        nextData[fieldName] = defaultValueForField(field);
+      }
+
+      onChange(writeFrontmatter(body, nextData));
+    },
+    [body, data, onChange, userDefinedFields]
+  );
+
+  const assignFieldAbility = useCallback(
+    (key: string, type: UserDefinedFieldType): void => {
+      if (!onUserDefinedFieldsChange || userDefinedFieldNames.has(key)) return;
+      onUserDefinedFieldsChange([...userDefinedFields, { name: key, type }]);
+      setAssigningKey(null);
+      setAssigningType("text");
+    },
+    [onUserDefinedFieldsChange, userDefinedFieldNames, userDefinedFields]
+  );
+
   const freeFields = Object.keys(data).filter(
     (k) => !KNOWN_FIELDS.has(k as typeof KNOWN_FIELDS extends Set<infer T> ? T : never) && !userDefinedFieldNames.has(k)
   );
@@ -282,6 +314,27 @@ export function FrontmatterForm({
             {t("frontmatter.addField")}
           </button>
         </div>
+
+        {frontmatterTemplates.length > 0 ? (
+          <div className="fm-template-list" aria-label={t("frontmatter.templates")}>
+            {frontmatterTemplates.map((template) => {
+              const canApply = template.fieldNames.some((fieldName) => !hasField(data, fieldName));
+
+              return (
+                <button
+                  className="fm-add-chip"
+                  disabled={!canApply}
+                  key={template.name}
+                  onClick={() => applyTemplate(template)}
+                  type="button"
+                >
+                  <span>{template.name}</span>
+                  <span className="fm-add-chip-type">{template.fieldNames.length}</span>
+                </button>
+              );
+            })}
+          </div>
+        ) : null}
 
         {/* tags */}
         {hasField(data, "tags") ? (
@@ -485,13 +538,35 @@ export function FrontmatterForm({
             <label className="fm-label fm-label--free" title={key}>
               {key}
             </label>
-            <input
-              className="fm-input"
-              onChange={(e) => updateField(key, e.target.value || undefined)}
-              type="text"
-              value={data[key] !== undefined ? String(data[key]) : ""}
-            />
-            <button className="fm-remove-field" onClick={() => removeField(key)} title={t("frontmatter.removeField")} type="button">×</button>
+            {assigningKey === key ? (
+              <select
+                aria-label={t("frontmatter.assignAbility")}
+                className="fm-input"
+                onChange={(e) => setAssigningType(e.target.value as UserDefinedFieldType)}
+                value={assigningType}
+              >
+                {(["text", "number", "date", "boolean", "select", "multi-select", "tags", "url"] as UserDefinedFieldType[]).map((type) => (
+                  <option key={type} value={type}>{type}</option>
+                ))}
+              </select>
+            ) : (
+              <input
+                className="fm-input"
+                onChange={(e) => updateField(key, e.target.value || undefined)}
+                type="text"
+                value={data[key] !== undefined ? String(data[key]) : ""}
+              />
+            )}
+            <div className="fm-field-actions">
+              {onUserDefinedFieldsChange ? (
+                assigningKey === key ? (
+                  <button className="fm-remove-field" onClick={() => assignFieldAbility(key, assigningType)} title={t("frontmatter.assignAbility")} type="button">✓</button>
+                ) : (
+                  <button className="fm-remove-field" onClick={() => setAssigningKey(key)} title={t("frontmatter.assignAbility")} type="button">＋</button>
+                )
+              ) : null}
+              <button className="fm-remove-field" onClick={() => removeField(key)} title={t("frontmatter.removeField")} type="button">×</button>
+            </div>
           </div>
         ))}
       </div>
