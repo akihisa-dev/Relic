@@ -298,6 +298,7 @@
   "toolbar.internalLink": "内部リンク",
   "toolbar.italic": "斜体",
   "toolbar.link": "リンク",
+  "toolbar.markdownLink": "Markdownリンク",
   "toolbar.orderedList": "番号付きリスト",
   "toolbar.placeholderLinkText": "リンクテキスト",
   "toolbar.placeholderText": "テキスト",
