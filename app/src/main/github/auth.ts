@@ -92,7 +92,7 @@ export async function connectGitHubAccount(): Promise<RelicResult<GitHubAuthStat
       return fail(
         "GITHUB_OAUTH_EXCHANGE_FAILED",
         "GitHub の認証コードをアクセストークンに交換できませんでした。",
-        tokenResponse.error_description ?? tokenResponse.error
+        sanitizeGitHubOAuthDetail(tokenResponse.error_description ?? tokenResponse.error)
       );
     }
 
@@ -114,7 +114,7 @@ export async function connectGitHubAccount(): Promise<RelicResult<GitHubAuthStat
     return fail(
       "GITHUB_OAUTH_CONNECT_FAILED",
       "GitHubアカウントを接続できませんでした。",
-      error instanceof Error ? error.message : String(error)
+      sanitizeGitHubOAuthDetail(error instanceof Error ? error.message : String(error))
     );
   } finally {
     callbackServer?.close();
@@ -340,5 +340,28 @@ function normalizeCallbackPath(rawPath: string | undefined): string {
     return defaultCallbackPath;
   }
 
-  return trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+  const normalized = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+
+  if (
+    normalized.startsWith("//") ||
+    normalized.includes("..") ||
+    normalized.includes("?") ||
+    normalized.includes("#") ||
+    !/^\/[A-Za-z0-9/_-]+$/.test(normalized)
+  ) {
+    return defaultCallbackPath;
+  }
+
+  return normalized;
+}
+
+function sanitizeGitHubOAuthDetail(detail: string | undefined): string | undefined {
+  if (!detail) {
+    return undefined;
+  }
+
+  return detail
+    .replace(/gh[opsu]_[A-Za-z0-9_]+/g, "[redacted]")
+    .replace(/([?&](?:code|client_secret|access_token|token)=)[^&\s]+/gi, "$1[redacted]")
+    .replace(/(Authorization:\s*(?:token|bearer)\s+)[^\s]+/gi, "$1[redacted]");
 }
