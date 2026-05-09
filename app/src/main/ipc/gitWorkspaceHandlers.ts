@@ -40,7 +40,7 @@ import {
   type GitTagSummary,
   type GitWorkingChange
 } from "../../shared/ipc";
-import { fail, type RelicResult } from "../../shared/result";
+import { fail, ok, type RelicResult } from "../../shared/result";
 import {
   createGitBranch,
   createGitCommit,
@@ -63,6 +63,7 @@ import {
   resolveGitConflict,
   switchGitBranch
 } from "../files/git";
+import { readGitHubAuthFromKeychain } from "../github/keychain";
 import { withActiveWorkspace } from "./activeWorkspace";
 
 export function registerGitWorkspaceHandlers(): void {
@@ -128,12 +129,18 @@ export function registerGitWorkspaceHandlers(): void {
 
   ipcMain.handle(createGitCommitChannel, async (_event, input: CreateGitCommitInput): Promise<RelicResult<GitCommitSummary>> => {
     if (!isCreateGitCommitInput(input)) {
-      return fail("GIT_COMMIT_INVALID_INPUT", "コミットに必要な情報を入力してください。");
+      return fail("GIT_COMMIT_INVALID_INPUT", "コミットメッセージを入力してください。");
+    }
+
+    const author = await readGitHubAuthor();
+
+    if (!author.ok) {
+      return author;
     }
 
     return withActiveWorkspace(
       { code: "GIT_COMMIT_FAILED", message: "コミットを作成できませんでした。" },
-      (workspacePath) => createGitCommit(workspacePath, input)
+      (workspacePath) => createGitCommit(workspacePath, { ...input, ...author.value })
     );
   });
 
@@ -153,9 +160,15 @@ export function registerGitWorkspaceHandlers(): void {
       return fail("GIT_TAG_INVALID_INPUT", "タグ名を入力してください。");
     }
 
+    const tagInput = await withGitHubTagger(input);
+
+    if (!tagInput.ok) {
+      return tagInput;
+    }
+
     return withActiveWorkspace(
       { code: "GIT_TAG_CREATE_FAILED", message: "Gitタグを作成できませんでした。" },
-      (workspacePath) => createGitTag(workspacePath, input)
+      (workspacePath) => createGitTag(workspacePath, tagInput.value)
     );
   });
 
@@ -250,13 +263,48 @@ function isCreateGitCommitInput(input: unknown): input is CreateGitCommitInput {
   return (
     typeof input === "object" &&
     input !== null &&
-    "authorEmail" in input &&
-    "authorName" in input &&
     "message" in input &&
-    typeof (input as { authorEmail?: unknown }).authorEmail === "string" &&
-    typeof (input as { authorName?: unknown }).authorName === "string" &&
     typeof (input as { message?: unknown }).message === "string"
   );
+}
+
+async function readGitHubAuthor(): Promise<RelicResult<{ authorEmail: string; authorName: string }>> {
+  try {
+    const auth = await readGitHubAuthFromKeychain();
+
+    if (!auth) {
+      return fail("GITHUB_AUTH_REQUIRED", "コミットするにはGitHub接続が必要です。");
+    }
+
+    return ok({
+      authorEmail: `${auth.login}@users.noreply.github.com`,
+      authorName: auth.login
+    });
+  } catch (error) {
+    return fail(
+      "GITHUB_AUTH_STATUS_FAILED",
+      "GitHub接続状態を確認できませんでした。",
+      error instanceof Error ? error.message : String(error)
+    );
+  }
+}
+
+async function withGitHubTagger(input: CreateGitTagInput): Promise<RelicResult<CreateGitTagInput>> {
+  if (!input.message?.trim()) {
+    return ok(input);
+  }
+
+  const author = await readGitHubAuthor();
+
+  if (!author.ok) {
+    return author;
+  }
+
+  return ok({
+    ...input,
+    taggerEmail: author.value.authorEmail,
+    taggerName: author.value.authorName
+  });
 }
 
 function isCreateGitBranchInput(input: unknown): input is CreateGitBranchInput {

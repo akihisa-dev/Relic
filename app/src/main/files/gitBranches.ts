@@ -27,7 +27,7 @@ export async function readGitBranches(
       return ok([]);
     }
 
-    const [branchNames, currentBranch] = await Promise.all([
+    const [branchNames, currentBranch, originBranchNames] = await Promise.all([
       git.listBranches({
         dir: workspacePath,
         fs
@@ -36,7 +36,8 @@ export async function readGitBranches(
         dir: workspacePath,
         fs,
         fullname: false
-      })
+      }),
+      listOriginBranches(workspacePath)
     ]);
 
     const uniqueBranchNames = Array.from(
@@ -48,7 +49,8 @@ export async function readGitBranches(
         .sort((a, b) => a.localeCompare(b, "ja"))
         .map((name) => ({
           isCurrent: name === currentBranch,
-          name
+          name,
+          upstream: originBranchNames.has(name) ? `origin/${name}` : null
         }))
     );
   } catch (error) {
@@ -57,6 +59,20 @@ export async function readGitBranches(
       "ブランチ一覧を取得できませんでした。",
       error instanceof Error ? error.message : String(error)
     );
+  }
+}
+
+async function listOriginBranches(workspacePath: string): Promise<Set<string>> {
+  try {
+    const branchNames = await git.listBranches({
+      dir: workspacePath,
+      fs,
+      remote: "origin"
+    });
+
+    return new Set(branchNames);
+  } catch {
+    return new Set();
   }
 }
 

@@ -4,6 +4,8 @@ export const getAppInfoChannel = "app:getInfo";
 export const getGitHubAuthStatusChannel = "github:getAuthStatus";
 export const connectGitHubChannel = "github:connect";
 export const disconnectGitHubChannel = "github:disconnect";
+export const getGitHubIntegrationSettingsChannel = "github:getIntegrationSettings";
+export const saveGitHubIntegrationSettingsChannel = "github:saveIntegrationSettings";
 export const createFolderChannel = "workspace:createFolder";
 export const createLinkedMarkdownFileChannel = "workspace:createLinkedMarkdownFile";
 export const createMarkdownFileChannel = "workspace:createMarkdownFile";
@@ -259,6 +261,7 @@ export interface GitCommitDiff {
 export interface GitBranchSummary {
   isCurrent: boolean;
   name: string;
+  upstream: string | null;
 }
 
 export interface GitTagSummary {
@@ -285,8 +288,6 @@ export interface GitRemoteSummary {
 }
 
 export interface CreateGitCommitInput {
-  authorEmail: string;
-  authorName: string;
   message: string;
 }
 
@@ -335,6 +336,16 @@ export const defaultAutoSyncSettings: AutoSyncSettings = {
   autoPull: false,
   autoPush: false,
   intervalMinutes: 15
+};
+
+export interface GitHubIntegrationSettings {
+  clientId: string;
+  scopes: string[];
+}
+
+export const defaultGitHubIntegrationSettings: GitHubIntegrationSettings = {
+  clientId: "",
+  scopes: []
 };
 
 export interface FeatureToggles {
@@ -462,6 +473,7 @@ export interface RelicApi {
     input: DuplicateMarkdownFileInput
   ) => Promise<RelicResult<RenameMarkdownFileResult>>;
   disconnectGitHubAccount: () => Promise<RelicResult<GitHubAuthStatus>>;
+  getGitHubIntegrationSettings: () => Promise<RelicResult<GitHubIntegrationSettings>>;
   getBacklinks: (input: GetBacklinksInput) => Promise<RelicResult<Backlink[]>>;
   getGitHubAuthStatus: () => Promise<RelicResult<GitHubAuthStatus>>;
   getGitBranches: () => Promise<RelicResult<GitBranchSummary[]>>;
@@ -494,6 +506,7 @@ export interface RelicApi {
   applySearchAndReplace: (input: SearchAndReplaceInput) => Promise<RelicResult<ReplaceInFileResult>>;
   replaceInFile: (input: ReplaceInFileInput) => Promise<RelicResult<ReplaceInFileResult>>;
   saveEditorSettings: (input: EditorSettings) => Promise<RelicResult<void>>;
+  saveGitHubIntegrationSettings: (input: GitHubIntegrationSettings) => Promise<RelicResult<void>>;
   searchAndReplace: (
     input: SearchAndReplaceInput
   ) => Promise<RelicResult<SearchAndReplaceMatch[]>>;

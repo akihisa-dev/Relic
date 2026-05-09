@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
-import { defaultAutoSyncSettings, defaultEditorSettings, defaultFeatureToggles, type GitHubAuthStatus } from "../shared/ipc";
+import { defaultAutoSyncSettings, defaultEditorSettings, defaultFeatureToggles, defaultGitHubIntegrationSettings, type GitHubAuthStatus } from "../shared/ipc";
 import { App } from "./App";
 import { useEditorStore } from "./store/editorStore";
 import { useUiStore } from "./store/uiStore";
@@ -59,6 +59,7 @@ function makeRelicApi(overrides: Partial<typeof window.relic> = {}): typeof wind
     getGitCommitHistory: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     getGitCommitDiff: vi.fn().mockResolvedValue({ ok: true, value: { commit: { author: "Test User", changedFiles: [], date: "2026-05-05T00:00:00.000Z", hash: "abc123", message: "Initial commit" }, entries: [] } }),
     getGitHubAuthStatus: vi.fn().mockResolvedValue({ ok: true, value: defaultGitHubStatus }),
+    getGitHubIntegrationSettings: vi.fn().mockResolvedValue({ ok: true, value: defaultGitHubIntegrationSettings }),
     getGitRemotes: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     getGitStatus: vi.fn().mockResolvedValue({ ok: true, value: { currentBranch: null, initialized: false } }),
     getGitTags: vi.fn().mockResolvedValue({ ok: true, value: [] }),
@@ -105,6 +106,7 @@ function makeRelicApi(overrides: Partial<typeof window.relic> = {}): typeof wind
     saveAutoSyncSettings: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
     getFeatureToggles: vi.fn().mockResolvedValue({ ok: true, value: defaultFeatureToggles }),
     saveFeatureToggles: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
+    saveGitHubIntegrationSettings: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
     getUserDefinedFields: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     saveUserDefinedFields: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
     mergeFiles: vi.fn().mockResolvedValue({ ok: true, value: "merged.md" }),
@@ -440,7 +442,7 @@ describe("App", () => {
     expect(await screen.findByText("akihisa")).toBeInTheDocument();
   });
 
-  it("新規ノートフォームからファイルを作成する", async () => {
+  it("新規ファイルフォームからファイルを作成する", async () => {
     const createMarkdownFile = vi.fn().mockResolvedValue({
       ok: true,
       value: {
@@ -456,7 +458,7 @@ describe("App", () => {
 
     await renderApp();
 
-    fireEvent.change(await screen.findByRole("textbox", { name: "新規ノート名" }), {
+    fireEvent.change(await screen.findByRole("textbox", { name: "新規ファイル名" }), {
       target: { value: "読書メモ" }
     });
     fireEvent.click(screen.getByRole("button", { name: "作成" }));
@@ -465,7 +467,7 @@ describe("App", () => {
     expect(await screen.findByRole("button", { name: /読書メモ/ })).toBeInTheDocument();
   });
 
-  it("新規ノートフォームからテンプレートを選んでファイルを作成する", async () => {
+  it("新規ファイルフォームからテンプレートを選んでファイルを作成する", async () => {
     const createMarkdownFile = vi.fn().mockResolvedValue({
       ok: true,
       value: {
@@ -485,7 +487,7 @@ describe("App", () => {
 
     await renderApp();
 
-    fireEvent.change(await screen.findByRole("textbox", { name: "新規ノート名" }), {
+    fireEvent.change(await screen.findByRole("textbox", { name: "新規ファイル名" }), {
       target: { value: "週報" }
     });
     fireEvent.change(await screen.findByLabelText("テンプレート"), {
@@ -1177,7 +1179,7 @@ describe("App", () => {
     });
   });
 
-  it("Gitビューでローカルコミットを作成して履歴に追加する", async () => {
+  it("Gitビューでコミットメッセージだけを入力して履歴に追加する", async () => {
     const createGitCommit = vi.fn().mockResolvedValue({
       ok: true,
       value: {
@@ -1204,19 +1206,15 @@ describe("App", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Git" }));
     await screen.findByText("コミット履歴はまだありません。");
-    fireEvent.change(await screen.findByLabelText("Git作者名"), { target: { value: "Test User" } });
-    fireEvent.change(screen.getByLabelText("Git作者メール"), { target: { value: "test@example.com" } });
-    fireEvent.change(screen.getByLabelText("Gitコミットメッセージ"), { target: { value: "Save note" } });
-    fireEvent.click(screen.getByRole("button", { name: "ローカルコミットを作成" }));
+    fireEvent.change(await screen.findByLabelText("コミットメッセージ"), { target: { value: "Save note" } });
+    fireEvent.click(screen.getByRole("button", { name: "コミット" }));
 
     await waitFor(() => {
       expect(createGitCommit).toHaveBeenCalledWith({
-        authorEmail: "test@example.com",
-        authorName: "Test User",
         message: "Save note"
       });
     });
-    expect(screen.getByLabelText("Gitコミットメッセージ")).toHaveValue("");
+    expect(screen.getByLabelText("コミットメッセージ")).toHaveValue("");
   });
 
   it("Gitビューでコミットを選ぶと差分を表示する", async () => {
@@ -1305,9 +1303,7 @@ describe("App", () => {
     await renderApp();
 
     fireEvent.click(screen.getByRole("button", { name: "Git" }));
-    fireEvent.change(await screen.findByLabelText("Git作者名"), { target: { value: "Test User" } });
-    fireEvent.change(screen.getByLabelText("Git作者メール"), { target: { value: "test@example.com" } });
-    fireEvent.change(screen.getByLabelText("新規Gitタグ名"), { target: { value: "v1.0.0" } });
+    fireEvent.change(await screen.findByLabelText("新規Gitタグ名"), { target: { value: "v1.0.0" } });
     fireEvent.change(screen.getByLabelText("Gitタグメモ"), { target: { value: "first release" } });
     fireEvent.click(screen.getByRole("button", { name: "タグを作成" }));
 
@@ -1315,9 +1311,7 @@ describe("App", () => {
       expect(createGitTag).toHaveBeenCalledWith({
         hash: "def456",
         message: "first release",
-        name: "v1.0.0",
-        taggerEmail: "test@example.com",
-        taggerName: "Test User"
+        name: "v1.0.0"
       });
     });
     expect(await screen.findByText(/v1\.0\.0/)).toBeInTheDocument();

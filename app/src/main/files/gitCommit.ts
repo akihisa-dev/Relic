@@ -2,19 +2,16 @@ import fs from "node:fs";
 
 import git from "isomorphic-git";
 
-import type {
-  CreateGitCommitInput,
-  GitCommitSummary
-} from "../../shared/ipc";
+import type { GitCommitSummary } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { readGitCommitHistory } from "./gitHistory";
 import { readGitStatus } from "./gitStatus";
-import { validateCommitInput } from "./gitValidation";
+import { type GitCommitAuthorInput, validateCommitInput } from "./gitValidation";
 import { readGitWorkingChanges } from "./gitWorkingTree";
 
 export async function createGitCommit(
   workspacePath: string,
-  input: CreateGitCommitInput
+  input: GitCommitAuthorInput
 ): Promise<RelicResult<GitCommitSummary>> {
   try {
     const status = await readGitStatus(workspacePath);

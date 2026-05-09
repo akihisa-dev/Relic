@@ -4,9 +4,11 @@ import path from "node:path";
 import {
   defaultEditorSettings,
   defaultFeatureToggles,
+  defaultGitHubIntegrationSettings,
   defaultUserDefinedFields,
   type EditorSettings,
   type FeatureToggles,
+  type GitHubIntegrationSettings,
   type UserDefinedField,
   type UserDefinedFieldType,
   type WorkspaceSummary
@@ -15,6 +17,7 @@ import {
 export interface AppSettings {
   editorSettings: EditorSettings;
   featureToggles: FeatureToggles;
+  githubIntegration: GitHubIntegrationSettings;
   lastWorkspaceId: string | null;
   userDefinedFields: UserDefinedField[];
   workspaces: WorkspaceSummary[];
@@ -23,6 +26,7 @@ export interface AppSettings {
 const defaultAppSettings: AppSettings = {
   editorSettings: defaultEditorSettings,
   featureToggles: defaultFeatureToggles,
+  githubIntegration: defaultGitHubIntegrationSettings,
   lastWorkspaceId: null,
   userDefinedFields: defaultUserDefinedFields,
   workspaces: []
@@ -42,6 +46,7 @@ export async function readAppSettings(userDataPath: string): Promise<AppSettings
     return {
       editorSettings: parseEditorSettings(parsedSettings.editorSettings),
       featureToggles: parseFeatureToggles(parsedSettings.featureToggles),
+      githubIntegration: parseGitHubIntegrationSettings(parsedSettings.githubIntegration),
       lastWorkspaceId:
         typeof parsedSettings.lastWorkspaceId === "string" ? parsedSettings.lastWorkspaceId : null,
       userDefinedFields: parseUserDefinedFields(parsedSettings.userDefinedFields),
@@ -98,6 +103,55 @@ function parseFeatureToggles(raw: unknown): FeatureToggles {
     frontmatter: typeof s.frontmatter === "boolean" ? s.frontmatter : true,
     rightPanel: typeof s.rightPanel === "boolean" ? s.rightPanel : true
   };
+}
+
+function parseGitHubIntegrationSettings(raw: unknown): GitHubIntegrationSettings {
+  const envFallback = parseGitHubIntegrationEnv(process.env);
+
+  if (typeof raw !== "object" || raw === null) {
+    return envFallback;
+  }
+
+  const s = raw as Record<string, unknown>;
+  const clientId = typeof s.clientId === "string" ? s.clientId.trim() : envFallback.clientId;
+  const scopes = Array.isArray(s.scopes)
+    ? normalizeGitHubScopes(s.scopes)
+    : envFallback.scopes;
+
+  return {
+    clientId,
+    scopes
+  };
+}
+
+function parseGitHubIntegrationEnv(env: NodeJS.ProcessEnv): GitHubIntegrationSettings {
+  const clientId = env.RELIC_GITHUB_CLIENT_ID?.trim() ?? "";
+  const rawScopes = env.RELIC_GITHUB_OAUTH_SCOPES?.trim();
+
+  return {
+    clientId,
+    scopes: rawScopes
+      ? normalizeGitHubScopes(rawScopes.split(","))
+      : defaultGitHubIntegrationSettings.scopes
+  };
+}
+
+function normalizeGitHubScopes(rawScopes: unknown[]): string[] {
+  const result: string[] = [];
+  const seen = new Set<string>();
+
+  for (const rawScope of rawScopes) {
+    if (typeof rawScope !== "string") continue;
+
+    const scope = rawScope.trim();
+
+    if (!/^[A-Za-z0-9:_-]+$/.test(scope) || seen.has(scope)) continue;
+
+    result.push(scope);
+    seen.add(scope);
+  }
+
+  return result;
 }
 
 const VALID_FIELD_TYPES: UserDefinedFieldType[] = ["text", "number", "date", "boolean", "select", "multi-select", "url"];

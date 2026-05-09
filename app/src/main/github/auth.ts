@@ -1,29 +1,38 @@
-import { randomBytes } from "node:crypto";
-import { createServer } from "node:http";
-import type { AddressInfo } from "node:net";
-
-import { shell } from "electron";
+import { dialog, shell } from "electron";
 
 import { fail, ok, type RelicResult } from "../../shared/result";
+import type { GitHubIntegrationSettings } from "../../shared/ipc";
 import {
   deleteGitHubAuthFromKeychain,
   readGitHubAuthFromKeychain,
   saveGitHubAuthToKeychain
 } from "./keychain";
 
-const githubAuthorizeEndpoint = "https://github.com/login/oauth/authorize";
+const githubDeviceCodeEndpoint = "https://github.com/login/device/code";
 const githubTokenEndpoint = "https://github.com/login/oauth/access_token";
 const githubUserEndpoint = "https://api.github.com/user";
-const defaultCallbackPath = "/oauth/github/callback";
-const defaultGithubScopes = ["repo"];
-const oauthTimeoutMs = 120_000;
+const defaultGithubScopes: string[] = [];
+const deviceGrantType = "urn:ietf:params:oauth:grant-type:device_code";
 
 interface GitHubTokenResponse {
   access_token?: string;
   error?: string;
   error_description?: string;
+  expires_in?: number;
+  refresh_token?: string;
+  refresh_token_expires_in?: number;
   scope?: string;
   token_type?: string;
+}
+
+interface GitHubDeviceCodeResponse {
+  device_code?: string;
+  error?: string;
+  error_description?: string;
+  expires_in?: number;
+  interval?: number;
+  user_code?: string;
+  verification_uri?: string;
 }
 
 interface GitHubUserResponse {
@@ -31,9 +40,7 @@ interface GitHubUserResponse {
 }
 
 export interface GitHubOAuthConfig {
-  callbackPath: string;
   clientId: string;
-  clientSecret: string;
   scopes: string[];
 }
 
@@ -45,12 +52,14 @@ export interface GitHubAuthStatus {
   tokenType: string | null;
 }
 
-export async function readGitHubAuthStatus(): Promise<RelicResult<GitHubAuthStatus>> {
+export async function readGitHubAuthStatus(
+  settings: GitHubIntegrationSettings
+): Promise<RelicResult<GitHubAuthStatus>> {
   try {
     const stored = await readGitHubAuthFromKeychain();
 
     return ok({
-      configured: getGitHubOAuthConfig() !== null,
+      configured: getGitHubOAuthConfig(settings) !== null,
       connected: stored !== null,
       login: stored?.login ?? null,
       scopes: stored?.scopes ?? [],
@@ -65,27 +74,51 @@ export async function readGitHubAuthStatus(): Promise<RelicResult<GitHubAuthStat
   }
 }
 
-export async function connectGitHubAccount(): Promise<RelicResult<GitHubAuthStatus>> {
-  const config = getGitHubOAuthConfig();
+export async function connectGitHubAccount(
+  settings: GitHubIntegrationSettings
+): Promise<RelicResult<GitHubAuthStatus>> {
+  const config = getGitHubOAuthConfig(settings);
 
   if (!config) {
     return fail(
       "GITHUB_OAUTH_NOT_CONFIGURED",
-      "GitHub OAuth の設定がありません。`RELIC_GITHUB_CLIENT_ID` と `RELIC_GITHUB_CLIENT_SECRET` を設定してください。"
+      "GitHub連携の設定がありません。`RELIC_GITHUB_CLIENT_ID` を設定してください。"
     );
   }
 
-  let callbackServer: ReturnType<typeof createServer> | null = null;
-
   try {
-    const state = randomBytes(16).toString("hex");
-    const callback = await createGitHubCallbackServer(config.callbackPath, state);
-    callbackServer = callback.server;
+    const device = await requestGitHubDeviceCode(config);
+    const promptResult = await dialog.showMessageBox({
+      buttons: ["GitHubを開く", "キャンセル"],
+      cancelId: 1,
+      defaultId: 0,
+      detail: `表示されたページで次のコードを入力してください。\n\n${device.userCode}`,
+      message: "GitHub連携を開始します",
+      noLink: true,
+      type: "info"
+    });
 
-    await shell.openExternal(buildGitHubAuthorizeUrl(config, callback.redirectUri, state));
+    if (promptResult.response !== 0) {
+      return fail("GITHUB_OAUTH_CANCELLED", "GitHub連携をキャンセルしました。");
+    }
 
-    const code = await callback.codePromise;
-    const tokenResponse = await exchangeGitHubOAuthCode(config, code, callback.redirectUri);
+    await shell.openExternal(device.verificationUri);
+
+    const codeConfirmedResult = await dialog.showMessageBox({
+      buttons: ["入力したので接続を続ける", "キャンセル"],
+      cancelId: 1,
+      defaultId: 0,
+      detail: `GitHubのDevice Activation画面に、次のコードを入力してください。\n\n${device.userCode}\n\nGitHub側でContinueと認可を完了してから、このボタンを押してください。`,
+      message: "GitHubに入力するコード",
+      noLink: true,
+      type: "info"
+    });
+
+    if (codeConfirmedResult.response !== 0) {
+      return fail("GITHUB_OAUTH_CANCELLED", "GitHub連携をキャンセルしました。");
+    }
+
+    const tokenResponse = await pollGitHubDeviceToken(config, device);
     const accessToken = tokenResponse.access_token?.trim();
 
     if (!accessToken) {
@@ -106,25 +139,26 @@ export async function connectGitHubAccount(): Promise<RelicResult<GitHubAuthStat
       accessToken,
       login: profile.login,
       scopes,
+      tokenExpiresAt: secondsFromNowToIsoString(tokenResponse.expires_in),
       tokenType: tokenResponse.token_type?.trim() || "bearer"
     });
 
-    return readGitHubAuthStatus();
+    return readGitHubAuthStatus(settings);
   } catch (error) {
     return fail(
       "GITHUB_OAUTH_CONNECT_FAILED",
       "GitHubアカウントを接続できませんでした。",
       sanitizeGitHubOAuthDetail(error instanceof Error ? error.message : String(error))
     );
-  } finally {
-    callbackServer?.close();
   }
 }
 
-export async function disconnectGitHubAccount(): Promise<RelicResult<GitHubAuthStatus>> {
+export async function disconnectGitHubAccount(
+  settings: GitHubIntegrationSettings
+): Promise<RelicResult<GitHubAuthStatus>> {
   try {
     await deleteGitHubAuthFromKeychain();
-    return readGitHubAuthStatus();
+    return readGitHubAuthStatus(settings);
   } catch (error) {
     return fail(
       "GITHUB_OAUTH_DISCONNECT_FAILED",
@@ -135,43 +169,26 @@ export async function disconnectGitHubAccount(): Promise<RelicResult<GitHubAuthS
 }
 
 export function getGitHubOAuthConfig(
-  env: NodeJS.ProcessEnv = process.env
+  settings: GitHubIntegrationSettings
 ): GitHubOAuthConfig | null {
-  const clientId = env.RELIC_GITHUB_CLIENT_ID?.trim();
-  const clientSecret = env.RELIC_GITHUB_CLIENT_SECRET?.trim();
+  const clientId = settings.clientId.trim();
 
-  if (!clientId || !clientSecret) {
+  if (!clientId) {
     return null;
   }
 
-  const rawScopes = env.RELIC_GITHUB_OAUTH_SCOPES?.trim();
-  const scopes = rawScopes
-    ? rawScopes.split(",").map((scope) => scope.trim()).filter(Boolean)
-    : defaultGithubScopes;
-
   return {
-    callbackPath: normalizeCallbackPath(env.RELIC_GITHUB_OAUTH_CALLBACK_PATH),
     clientId,
-    clientSecret,
-    scopes
+    scopes: settings.scopes.length > 0 ? settings.scopes : defaultGithubScopes
   };
 }
 
-export function buildGitHubAuthorizeUrl(
-  config: GitHubOAuthConfig,
-  redirectUri: string,
-  state: string
-): string {
-  const params = new URLSearchParams({
-    allow_signup: "false",
-    client_id: config.clientId,
-    prompt: "select_account",
-    redirect_uri: redirectUri,
-    scope: config.scopes.join(" "),
-    state
-  });
-
-  return `${githubAuthorizeEndpoint}?${params.toString()}`;
+export interface GitHubDevicePrompt {
+  deviceCode: string;
+  expiresIn: number;
+  interval: number;
+  userCode: string;
+  verificationUri: string;
 }
 
 export function parseGitHubScopeHeader(scopeHeader: string | null): string[] {
@@ -185,112 +202,18 @@ export function parseGitHubScopeHeader(scopeHeader: string | null): string[] {
     .filter(Boolean);
 }
 
-async function createGitHubCallbackServer(
-  callbackPath: string,
-  expectedState: string
-): Promise<{
-  codePromise: Promise<string>;
-  redirectUri: string;
-  server: ReturnType<typeof createServer>;
-}> {
-  const server = createServer();
 
-  await new Promise<void>((resolve, reject) => {
-    server.once("error", reject);
-    server.listen(0, "127.0.0.1", () => resolve());
+async function requestGitHubDeviceCode(config: GitHubOAuthConfig): Promise<GitHubDevicePrompt> {
+  const body = new URLSearchParams({
+    client_id: config.clientId
   });
 
-  const address = server.address();
-
-  if (!address || typeof address === "string") {
-    throw new Error("GitHub OAuth のコールバック待ち受けポートを取得できませんでした。");
+  if (config.scopes.length > 0) {
+    body.set("scope", config.scopes.join(" "));
   }
 
-  const redirectUri = `http://127.0.0.1:${(address as AddressInfo).port}${callbackPath}`;
-  const codePromise = new Promise<string>((resolve, reject) => {
-    const timeout = setTimeout(() => {
-      cleanup();
-      reject(new Error("GitHub 認証の待ち時間が切れました。もう一度お試しください。"));
-    }, oauthTimeoutMs);
-
-    const cleanup = (): void => {
-      clearTimeout(timeout);
-      server.removeAllListeners("request");
-    };
-
-    server.on("request", (request, response) => {
-      try {
-        const url = new URL(request.url ?? "/", redirectUri);
-
-        if (url.pathname !== callbackPath) {
-          response.statusCode = 404;
-          response.end("Not found");
-          return;
-        }
-
-        const returnedState = url.searchParams.get("state");
-        const code = url.searchParams.get("code");
-        const error = url.searchParams.get("error");
-        const errorDescription = url.searchParams.get("error_description");
-
-        if (error) {
-          response.statusCode = 400;
-          response.setHeader("content-type", "text/html; charset=utf-8");
-          response.end("<html><body><p>GitHub authorization failed. You can close this window.</p></body></html>");
-          cleanup();
-          reject(new Error(errorDescription ?? error));
-          return;
-        }
-
-        if (returnedState !== expectedState) {
-          response.statusCode = 400;
-          response.setHeader("content-type", "text/html; charset=utf-8");
-          response.end("<html><body><p>Invalid OAuth state. You can close this window.</p></body></html>");
-          cleanup();
-          reject(new Error("GitHub OAuth の state 検証に失敗しました。"));
-          return;
-        }
-
-        if (!code) {
-          response.statusCode = 400;
-          response.setHeader("content-type", "text/html; charset=utf-8");
-          response.end("<html><body><p>Missing authorization code. You can close this window.</p></body></html>");
-          cleanup();
-          reject(new Error("GitHub から認証コードを受け取れませんでした。"));
-          return;
-        }
-
-        response.statusCode = 200;
-        response.setHeader("content-type", "text/html; charset=utf-8");
-        response.end("<html><body><p>GitHub authorization completed. You can close this window and return to Relic.</p></body></html>");
-        cleanup();
-        resolve(code);
-      } catch (error) {
-        cleanup();
-        reject(error);
-      }
-    });
-  });
-
-  return {
-    codePromise,
-    redirectUri,
-    server
-  };
-}
-
-async function exchangeGitHubOAuthCode(
-  config: GitHubOAuthConfig,
-  code: string,
-  redirectUri: string
-): Promise<GitHubTokenResponse> {
-  const response = await fetch(githubTokenEndpoint, {
-    body: new URLSearchParams({
-      client_id: config.clientId,
-      client_secret: config.clientSecret,
-      code,
-      redirect_uri: redirectUri
-    }),
+  const response = await fetch(githubDeviceCodeEndpoint, {
+    body,
     headers: {
       Accept: "application/json",
       "Content-Type": "application/x-www-form-urlencoded"
@@ -299,10 +222,88 @@ async function exchangeGitHubOAuthCode(
   });
 
   if (!response.ok) {
-    throw new Error(`GitHub のトークン交換に失敗しました: ${response.status}`);
+    throw new Error(`GitHub のデバイス認証開始に失敗しました: ${response.status}`);
   }
 
-  return (await response.json()) as GitHubTokenResponse;
+  const json = (await response.json()) as GitHubDeviceCodeResponse;
+
+  if (json.error) {
+    throw new Error(json.error_description ?? json.error);
+  }
+
+  const deviceCode = json.device_code?.trim();
+  const userCode = json.user_code?.trim();
+  const verificationUri = json.verification_uri?.trim();
+
+  if (!deviceCode || !userCode || !verificationUri) {
+    throw new Error("GitHub のデバイス認証コードを取得できませんでした。");
+  }
+
+  const parsedVerificationUri = new URL(verificationUri);
+
+  if (parsedVerificationUri.protocol !== "https:" || parsedVerificationUri.hostname !== "github.com") {
+    throw new Error("GitHub のデバイス認証URLが不正です。");
+  }
+
+  return {
+    deviceCode,
+    expiresIn: normalizePositiveNumber(json.expires_in, 900),
+    interval: normalizePositiveNumber(json.interval, 5),
+    userCode,
+    verificationUri
+  };
+}
+
+async function pollGitHubDeviceToken(
+  config: GitHubOAuthConfig,
+  device: GitHubDevicePrompt
+): Promise<GitHubTokenResponse> {
+  const startedAt = Date.now();
+  let intervalMs = device.interval * 1000;
+
+  while (Date.now() - startedAt < device.expiresIn * 1000) {
+    await delay(intervalMs);
+
+    const response = await fetch(githubTokenEndpoint, {
+      body: new URLSearchParams({
+        client_id: config.clientId,
+        device_code: device.deviceCode,
+        grant_type: deviceGrantType
+      }),
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/x-www-form-urlencoded"
+      },
+      method: "POST"
+    });
+
+    if (!response.ok) {
+      throw new Error(`GitHub のデバイストークン取得に失敗しました: ${response.status}`);
+    }
+
+    const json = (await response.json()) as GitHubTokenResponse;
+
+    if (!json.error) {
+      return json;
+    }
+
+    if (json.error === "authorization_pending") {
+      continue;
+    }
+
+    if (json.error === "slow_down") {
+      intervalMs += 5000;
+      continue;
+    }
+
+    if (json.error === "expired_token") {
+      throw new Error("GitHub のデバイス認証コードの有効期限が切れました。");
+    }
+
+    throw new Error(json.error_description ?? json.error);
+  }
+
+  throw new Error("GitHub のデバイス認証の待ち時間が切れました。");
 }
 
 async function fetchGitHubUser(
@@ -333,28 +334,6 @@ async function fetchGitHubUser(
   };
 }
 
-function normalizeCallbackPath(rawPath: string | undefined): string {
-  const trimmed = rawPath?.trim();
-
-  if (!trimmed) {
-    return defaultCallbackPath;
-  }
-
-  const normalized = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
-
-  if (
-    normalized.startsWith("//") ||
-    normalized.includes("..") ||
-    normalized.includes("?") ||
-    normalized.includes("#") ||
-    !/^\/[A-Za-z0-9/_-]+$/.test(normalized)
-  ) {
-    return defaultCallbackPath;
-  }
-
-  return normalized;
-}
-
 function sanitizeGitHubOAuthDetail(detail: string | undefined): string | undefined {
   if (!detail) {
     return undefined;
@@ -362,6 +341,24 @@ function sanitizeGitHubOAuthDetail(detail: string | undefined): string | undefin
 
   return detail
     .replace(/gh[opsu]_[A-Za-z0-9_]+/g, "[redacted]")
-    .replace(/([?&](?:code|client_secret|access_token|token)=)[^&\s]+/gi, "$1[redacted]")
+    .replace(/([?&](?:code|device_code|client_secret|access_token|refresh_token|token)=)[^&\s]+/gi, "$1[redacted]")
     .replace(/(Authorization:\s*(?:token|bearer)\s+)[^\s]+/gi, "$1[redacted]");
+}
+
+function normalizePositiveNumber(value: number | undefined, fallback: number): number {
+  return typeof value === "number" && Number.isFinite(value) && value > 0
+    ? value
+    : fallback;
+}
+
+function secondsFromNowToIsoString(seconds: number | undefined): string | null {
+  if (!seconds || !Number.isFinite(seconds) || seconds <= 0) {
+    return null;
+  }
+
+  return new Date(Date.now() + seconds * 1000).toISOString();
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }

@@ -1,9 +1,14 @@
 import type { CreateGitCommitInput, CreateGitTagInput } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
 
+export interface GitCommitAuthorInput extends CreateGitCommitInput {
+  authorEmail: string;
+  authorName: string;
+}
+
 export function validateCommitInput(
-  input: CreateGitCommitInput
-): RelicResult<CreateGitCommitInput> {
+  input: GitCommitAuthorInput
+): RelicResult<GitCommitAuthorInput> {
   const message = input.message.trim();
   const authorName = input.authorName.trim();
   const authorEmail = input.authorEmail.trim();
@@ -13,11 +18,11 @@ export function validateCommitInput(
   }
 
   if (authorName === "") {
-    return fail("GIT_COMMIT_INVALID_INPUT", "作者名を入力してください。");
+    return fail("GIT_COMMIT_INVALID_INPUT", "GitHub接続情報からコミット作成者を確認できませんでした。");
   }
 
   if (authorEmail === "" || !authorEmail.includes("@")) {
-    return fail("GIT_COMMIT_INVALID_INPUT", "有効なメールアドレスを入力してください。");
+    return fail("GIT_COMMIT_INVALID_INPUT", "GitHub接続情報からコミット用メールアドレスを確認できませんでした。");
   }
 
   return ok({
@@ -121,11 +126,11 @@ export function validateTagInput(
 
   if (message !== "") {
     if (taggerName === "") {
-      return fail("GIT_TAG_INVALID_INPUT", "メモ付きタグには作者名が必要です。");
+      return fail("GIT_TAG_INVALID_INPUT", "GitHub接続情報からタグ作成者を確認できませんでした。");
     }
 
     if (taggerEmail === "" || !taggerEmail.includes("@")) {
-      return fail("GIT_TAG_INVALID_INPUT", "メモ付きタグには有効なメールアドレスが必要です。");
+      return fail("GIT_TAG_INVALID_INPUT", "GitHub接続情報からタグ用メールアドレスを確認できませんでした。");
     }
   }
 

@@ -17,7 +17,7 @@ export interface PaneViewProps {
   typewriterMode: boolean;
   workspacePath?: string | null;
   viewRef: MutableRefObject<EditorView | null>;
-  onCreateNote: (name: string) => void;
+  onCreateFile: (name: string) => void;
   onFocus: () => void;
   onScrollTargetHandled?: () => void;
   onTabClose: (tabId: string) => void;
@@ -38,7 +38,7 @@ export function PaneView({
   typewriterMode,
   workspacePath,
   viewRef,
-  onCreateNote,
+  onCreateFile,
   onFocus,
   onScrollTargetHandled,
   onTabClose,
@@ -49,7 +49,7 @@ export function PaneView({
   onOpenInOtherPane,
   isSplitView
 }: PaneViewProps): ReactElement {
-  const [newNoteName, setNewNoteName] = useState("");
+  const [newFileName, setNewFileName] = useState("");
   const [contextMenu, setContextMenu] = useState<{ tabId: string; x: number; y: number } | null>(null);
   const { leftPane, rightPane, tabs, updateTabContent } = useEditorStore();
   const paneState = pane === "left" ? leftPane : rightPane;
@@ -195,27 +195,27 @@ export function PaneView({
         </div>
       ) : (
         <div className="empty-pane">
-          <p className="empty-pane-message">{t("pane.noNotes")}</p>
+          <p className="empty-pane-message">{t("pane.noFiles")}</p>
           {workspacePath ? (
             <form
               className="empty-pane-form"
               onSubmit={(e) => {
                 e.preventDefault();
-                if (newNoteName.trim()) {
-                  onCreateNote(newNoteName.trim());
-                  setNewNoteName("");
+                if (newFileName.trim()) {
+                  onCreateFile(newFileName.trim());
+                  setNewFileName("");
                 }
               }}
             >
               <input
-                aria-label={t("pane.enterNoteName")}
+                aria-label={t("pane.enterFileName")}
                 className="text-input"
-                onChange={(e) => setNewNoteName(e.target.value)}
-                placeholder={t("pane.enterNoteName")}
-                value={newNoteName}
+                onChange={(e) => setNewFileName(e.target.value)}
+                placeholder={t("pane.enterFileName")}
+                value={newFileName}
               />
-              <button className="primary-button" disabled={!newNoteName.trim()} type="submit">
-                {t("pane.createNote")}
+              <button className="primary-button" disabled={!newFileName.trim()} type="submit">
+                {t("pane.createFile")}
               </button>
             </form>
           ) : null}

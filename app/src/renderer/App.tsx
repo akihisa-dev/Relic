@@ -150,8 +150,10 @@ export function App(): ReactElement {
     appInfo,
     autoSyncSettings,
     featureToggles,
+    gitHubIntegrationSettings,
     handleSaveAutoSyncSettings,
     handleSaveFeatureToggles,
+    handleSaveGitHubIntegrationSettings,
     handleSaveSettings,
     handleSaveUserDefinedFields,
     markdownTemplates,
@@ -166,6 +168,7 @@ export function App(): ReactElement {
   });
 
   const gitPanel = useGitPanelState({
+    gitHubIntegrationSettings,
     setWorkspaceError,
     setWorkspaceState,
     t,
@@ -191,8 +194,6 @@ export function App(): ReactElement {
     gitRetryAction,
     pendingGitBranchSwitch,
     gitCommitMessage,
-    gitAuthorName,
-    gitAuthorEmail,
     gitSyncPreview,
     gitSyncStep,
     gitConflicts,
@@ -235,8 +236,6 @@ export function App(): ReactElement {
     setGitSyncStep,
     setPendingGitBranchSwitch,
     setGitCommitMessage,
-    setGitAuthorName,
-    setGitAuthorEmail,
     setGitCloneUrl
   } = gitPanel;
 
@@ -534,8 +533,6 @@ export function App(): ReactElement {
                 gitRetryAction={gitRetryAction}
                 pendingGitBranchSwitch={pendingGitBranchSwitch}
                 gitCommitMessage={gitCommitMessage}
-                gitAuthorName={gitAuthorName}
-                gitAuthorEmail={gitAuthorEmail}
                 gitSyncPreview={gitSyncPreview}
                 gitSyncStep={gitSyncStep}
                 gitConflicts={gitConflicts}
@@ -579,8 +576,6 @@ export function App(): ReactElement {
                 onSetGitSyncStep={setGitSyncStep}
                 onSetPendingGitBranchSwitch={setPendingGitBranchSwitch}
                 onSetGitCommitMessage={setGitCommitMessage}
-                onSetGitAuthorName={setGitAuthorName}
-                onSetGitAuthorEmail={setGitAuthorEmail}
                 onSetGitCloneUrl={setGitCloneUrl}
               />
             ) : activeSidebarView === "tools" ? (
@@ -590,9 +585,11 @@ export function App(): ReactElement {
                 appInfo={appInfo}
                 autoSyncSettings={autoSyncSettings}
                 featureToggles={featureToggles}
+                gitHubIntegrationSettings={gitHubIntegrationSettings}
                 onAutoSyncSave={handleSaveAutoSyncSettings}
                 onCreateFrontmatterTemplate={handleCreateFrontmatterTemplate}
                 onFeatureTogglesSave={handleSaveFeatureToggles}
+                onGitHubIntegrationSave={handleSaveGitHubIntegrationSettings}
                 onSave={handleSaveSettings}
                 onUserDefinedFieldsSave={handleSaveUserDefinedFields}
                 settings={editorSettings}
@@ -670,7 +667,7 @@ export function App(): ReactElement {
                   allFilePaths={existingMarkdownPaths}
                   editorSettings={editorSettings}
                   focusedPane={focusedPane}
-                  onCreateNote={handleCreateNoteFromPane}
+                  onCreateFile={handleCreateNoteFromPane}
                   onFocus={() => setFocusedPane("left")}
                   onScrollTargetHandled={() => setLeftPaneScrollHeading(undefined)}
                   onTabClose={(tabId) => closeTab("left", tabId)}
@@ -691,7 +688,7 @@ export function App(): ReactElement {
                     allFilePaths={existingMarkdownPaths}
                     editorSettings={editorSettings}
                     focusedPane={focusedPane}
-                    onCreateNote={handleCreateNoteFromPane}
+                    onCreateFile={handleCreateNoteFromPane}
                     onFocus={() => setFocusedPane("right")}
                     onScrollTargetHandled={() => setRightPaneScrollHeading(undefined)}
                     onTabClose={(tabId) => closeTab("right", tabId)}
@@ -758,7 +755,7 @@ export function App(): ReactElement {
                       />
                     </div>
                   ) : (
-                    <div className="empty-note">{t("pane.noNotes")}</div>
+                    <div className="empty-note">{t("pane.noFiles")}</div>
                   )
                 ) : outgoingLinks.length > 0 || backlinks.length > 0 || isLoadingBacklinks ? (
                   <div className="links-panel-stack">
