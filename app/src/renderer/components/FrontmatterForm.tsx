@@ -13,7 +13,7 @@ interface ParsedFrontmatter {
 const BUILT_IN_FIELDS = ["tags", "aliases"] as const;
 const SYSTEM_FIELDS = ["date", "status", "publish", "url", "author"] as const;
 const KNOWN_FIELDS = new Set([...BUILT_IN_FIELDS, ...SYSTEM_FIELDS]);
-const MAX_FRONTMATTER_FIELDS = 20;
+const FIELD_NAME_PATTERN = /^[^\s:][^\r\n:]*$/;
 
 function hasField(data: Record<string, unknown>, key: string): boolean {
   return Object.prototype.hasOwnProperty.call(data, key);
@@ -57,6 +57,14 @@ function toStringArray(value: unknown): string[] {
   if (typeof value === "string" && value) return [value];
 
   return [];
+}
+
+function defaultValueForField(field: UserDefinedField | null): unknown {
+  if (!field) return "";
+  if (field.type === "boolean") return false;
+  if (field.type === "multi-select" || field.type === "tags") return [];
+
+  return "";
 }
 
 interface PillInputProps {
@@ -173,6 +181,7 @@ export function FrontmatterForm({
   workspaceTags = []
 }: FrontmatterFormProps): ReactElement | null {
   const t = useT();
+  const [newFieldName, setNewFieldName] = useState("");
   const { data, body } = parseFrontmatter(content);
   const fieldCount = Object.keys(data).length;
 
@@ -191,10 +200,34 @@ export function FrontmatterForm({
     [body, data, onChange]
   );
 
+  const addField = useCallback(
+    (key: string, field: UserDefinedField | null = null): void => {
+      const name = key.trim();
+
+      if (!FIELD_NAME_PATTERN.test(name) || hasField(data, name)) return;
+
+      onChange(writeFrontmatter(body, { ...data, [name]: defaultValueForField(field) }));
+      setNewFieldName("");
+    },
+    [body, data, onChange]
+  );
+
+  const removeField = useCallback(
+    (key: string): void => {
+      if (!hasField(data, key)) return;
+      const nextData = { ...data };
+
+      delete nextData[key];
+      onChange(writeFrontmatter(body, nextData));
+    },
+    [body, data, onChange]
+  );
+
   const userDefinedFieldNames = new Set(userDefinedFields.map((f) => f.name));
   const freeFields = Object.keys(data).filter(
     (k) => !KNOWN_FIELDS.has(k as typeof KNOWN_FIELDS extends Set<infer T> ? T : never) && !userDefinedFieldNames.has(k)
   );
+  const availableFields = userDefinedFields.filter((field) => !hasField(data, field.name));
 
   const tags = toStringArray(data.tags);
   const aliases = toStringArray(data.aliases);
@@ -216,11 +249,39 @@ export function FrontmatterForm({
           <div className="empty-note">{t("frontmatter.empty")}</div>
         ) : null}
 
-        {fieldCount > MAX_FRONTMATTER_FIELDS ? (
-          <div className="fm-warning" role="alert">
-            {t("frontmatter.fieldLimit", { count: fieldCount })}
+        {availableFields.length > 0 ? (
+          <div className="fm-add-list" aria-label={t("frontmatter.availableFields")}>
+            {availableFields.map((field) => (
+              <button
+                className="fm-add-chip"
+                key={field.name}
+                onClick={() => addField(field.name, field)}
+                type="button"
+              >
+                <span>{field.name}</span>
+                <span className="fm-add-chip-type">{field.type}</span>
+              </button>
+            ))}
           </div>
         ) : null}
+
+        <div className="fm-add-manual">
+          <input
+            className="fm-input"
+            onChange={(e) => setNewFieldName(e.target.value)}
+            placeholder={t("frontmatter.addFieldPlaceholder")}
+            type="text"
+            value={newFieldName}
+          />
+          <button
+            className="setting-action-btn"
+            disabled={!FIELD_NAME_PATTERN.test(newFieldName.trim()) || hasField(data, newFieldName.trim())}
+            onClick={() => addField(newFieldName)}
+            type="button"
+          >
+            {t("frontmatter.addField")}
+          </button>
+        </div>
 
         {/* tags */}
         {hasField(data, "tags") ? (
@@ -232,6 +293,7 @@ export function FrontmatterForm({
               placeholder={t("frontmatter.tagsPlaceholder")}
               values={tags}
             />
+            <button className="fm-remove-field" onClick={() => removeField("tags")} title={t("frontmatter.removeField")} type="button">×</button>
           </div>
         ) : null}
 
@@ -244,6 +306,7 @@ export function FrontmatterForm({
               placeholder={t("frontmatter.aliasesPlaceholder")}
               values={aliases}
             />
+            <button className="fm-remove-field" onClick={() => removeField("aliases")} title={t("frontmatter.removeField")} type="button">×</button>
           </div>
         ) : null}
 
@@ -257,6 +320,7 @@ export function FrontmatterForm({
               type="date"
               value={dateVal}
             />
+            <button className="fm-remove-field" onClick={() => removeField("date")} title={t("frontmatter.removeField")} type="button">×</button>
           </div>
         ) : null}
 
@@ -277,6 +341,7 @@ export function FrontmatterForm({
                 <option key={s} value={s} />
               ))}
             </datalist>
+            <button className="fm-remove-field" onClick={() => removeField("status")} title={t("frontmatter.removeField")} type="button">×</button>
           </div>
         ) : null}
 
@@ -290,6 +355,7 @@ export function FrontmatterForm({
               onChange={(e) => updateField("publish", e.target.checked || undefined)}
               type="checkbox"
             />
+            <button className="fm-remove-field" onClick={() => removeField("publish")} title={t("frontmatter.removeField")} type="button">×</button>
           </div>
         ) : null}
 
@@ -309,6 +375,7 @@ export function FrontmatterForm({
                 ↗
               </a>
             ) : null}
+            <button className="fm-remove-field" onClick={() => removeField("url")} title={t("frontmatter.removeField")} type="button">×</button>
           </div>
         ) : null}
 
@@ -322,13 +389,14 @@ export function FrontmatterForm({
               placeholder={t("frontmatter.authorPlaceholder")}
               values={author}
             />
+            <button className="fm-remove-field" onClick={() => removeField("author")} title={t("frontmatter.removeField")} type="button">×</button>
           </div>
         ) : null}
 
         {/* user-defined fields */}
         {userDefinedFields.filter((field) => hasField(data, field.name)).map((field) => {
           const val = data[field.name];
-          const datalistId = `fm-udf-${field.name}`;
+          const datalistId = `fm-udf-${encodeURIComponent(field.name)}`;
 
           if (field.type === "boolean") {
             return (
@@ -340,6 +408,7 @@ export function FrontmatterForm({
                   onChange={(e) => updateField(field.name, e.target.checked || undefined)}
                   type="checkbox"
                 />
+                <button className="fm-remove-field" onClick={() => removeField(field.name)} title={t("frontmatter.removeField")} type="button">×</button>
               </div>
             );
           }
@@ -354,6 +423,22 @@ export function FrontmatterForm({
                   placeholder={field.name}
                   values={toStringArray(val)}
                 />
+                <button className="fm-remove-field" onClick={() => removeField(field.name)} title={t("frontmatter.removeField")} type="button">×</button>
+              </div>
+            );
+          }
+
+          if (field.type === "tags") {
+            return (
+              <div className="fm-row" key={field.name}>
+                <label className="fm-label">{field.name}</label>
+                <PillInput
+                  candidates={[...workspaceTags, ...(field.choices ?? [])]}
+                  onChange={(v) => updateField(field.name, v.length > 0 ? v : undefined)}
+                  placeholder={field.name}
+                  values={toStringArray(val)}
+                />
+                <button className="fm-remove-field" onClick={() => removeField(field.name)} title={t("frontmatter.removeField")} type="button">×</button>
               </div>
             );
           }
@@ -377,14 +462,18 @@ export function FrontmatterForm({
                   <datalist id={datalistId}>
                     {(field.choices ?? []).map((c) => <option key={c} value={c} />)}
                   </datalist>
+                  <button className="fm-remove-field" onClick={() => removeField(field.name)} title={t("frontmatter.removeField")} type="button">×</button>
                 </>
               ) : (
-                <input
-                  className="fm-input"
-                  onChange={(e) => updateField(field.name, e.target.value || undefined)}
-                  type={inputType}
-                  value={strVal}
-                />
+                <>
+                  <input
+                    className="fm-input"
+                    onChange={(e) => updateField(field.name, e.target.value || undefined)}
+                    type={inputType}
+                    value={strVal}
+                  />
+                  <button className="fm-remove-field" onClick={() => removeField(field.name)} title={t("frontmatter.removeField")} type="button">×</button>
+                </>
               )}
             </div>
           );
@@ -402,6 +491,7 @@ export function FrontmatterForm({
               type="text"
               value={data[key] !== undefined ? String(data[key]) : ""}
             />
+            <button className="fm-remove-field" onClick={() => removeField(key)} title={t("frontmatter.removeField")} type="button">×</button>
           </div>
         ))}
       </div>
