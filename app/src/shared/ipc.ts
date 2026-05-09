@@ -61,6 +61,8 @@ export const getFeatureTogglesChannel = "app:getFeatureToggles";
 export const saveFeatureTogglesChannel = "app:saveFeatureToggles";
 export const getUserDefinedFieldsChannel = "app:getUserDefinedFields";
 export const saveUserDefinedFieldsChannel = "app:saveUserDefinedFields";
+export const getFrontmatterTemplatesChannel = "app:getFrontmatterTemplates";
+export const saveFrontmatterTemplatesChannel = "app:saveFrontmatterTemplates";
 export const mergeFilesChannel = "tools:mergeFiles";
 export const splitFileByHeadingChannel = "tools:splitFileByHeading";
 
@@ -368,7 +370,13 @@ export interface UserDefinedField {
   type: UserDefinedFieldType;
 }
 
+export interface FrontmatterTemplate {
+  fieldNames: string[];
+  name: string;
+}
+
 export const defaultUserDefinedFields: UserDefinedField[] = [];
+export const defaultFrontmatterTemplates: FrontmatterTemplate[] = [];
 
 export const defaultFeatureToggles: FeatureToggles = {
   git: true,
@@ -537,6 +545,8 @@ export interface RelicApi {
   saveFeatureToggles: (input: FeatureToggles) => Promise<RelicResult<void>>;
   getUserDefinedFields: () => Promise<RelicResult<UserDefinedField[]>>;
   saveUserDefinedFields: (input: UserDefinedField[]) => Promise<RelicResult<void>>;
+  getFrontmatterTemplates: () => Promise<RelicResult<FrontmatterTemplate[]>>;
+  saveFrontmatterTemplates: (input: FrontmatterTemplate[]) => Promise<RelicResult<void>>;
   mergeFiles: (input: MergeFilesInput) => Promise<RelicResult<string>>;
   splitFileByHeading: (input: SplitFileByHeadingInput) => Promise<RelicResult<string[]>>;
 }

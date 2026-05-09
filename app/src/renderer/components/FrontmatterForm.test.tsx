@@ -110,4 +110,41 @@ describe("FrontmatterForm", () => {
 
     expect(onChange).toHaveBeenCalledWith("本文");
   });
+
+  it("保存済みテンプレートを適用できる", () => {
+    const onChange = vi.fn();
+
+    render(
+      <FrontmatterForm
+        candidates={{}}
+        content={"---\ntags: [memo]\n---\n本文"}
+        frontmatterTemplates={[{ fieldNames: ["tags", "締切"], name: "原稿" }]}
+        onChange={onChange}
+        userDefinedFields={[{ name: "締切", type: "date" }]}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /原稿/ }));
+
+    expect(onChange).toHaveBeenCalledWith(expect.stringContaining("tags:"));
+    expect(onChange).toHaveBeenCalledWith(expect.stringContaining("締切"));
+  });
+
+  it("未認識キーに入力能力を割り当てられる", () => {
+    const onUserDefinedFieldsChange = vi.fn();
+
+    render(
+      <FrontmatterForm
+        candidates={{}}
+        content={"---\n気分: good\n---\n本文"}
+        onChange={vi.fn()}
+        onUserDefinedFieldsChange={onUserDefinedFieldsChange}
+      />
+    );
+
+    fireEvent.click(screen.getByTitle("Assign input ability"));
+    fireEvent.click(screen.getByTitle("Assign input ability"));
+
+    expect(onUserDefinedFieldsChange).toHaveBeenCalledWith([{ name: "気分", type: "text" }]);
+  });
 });
