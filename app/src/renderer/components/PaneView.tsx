@@ -87,6 +87,8 @@ export function PaneView({
     <div
       className={`pane${focusedPane === pane ? " pane--focused" : ""}`}
       onClick={onFocus}
+      onFocusCapture={onFocus}
+      onPointerDownCapture={onFocus}
     >
       <div className="pane-tab-bar">
         {paneState.tabIds.map((tabId) => {
