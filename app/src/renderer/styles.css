@@ -410,10 +410,13 @@ button:disabled {
 }
 
 .file-tree-row.active {
-  background: var(--hover);
-  box-shadow: inset 2px 0 0 var(--accent);
-  color: var(--text);
+  background: rgba(0, 98, 140, 0.08);
+  color: var(--accent);
   font-weight: 600;
+}
+
+.file-tree-row.active .file-tree-icon {
+  color: var(--accent);
 }
 
 .file-tree-row-wrap {
