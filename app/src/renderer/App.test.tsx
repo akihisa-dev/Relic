@@ -298,7 +298,7 @@ describe("App", () => {
     expect(screen.getByRole("button", { name: /読書メモ/ })).toBeInTheDocument();
   });
 
-  it("開いているファイルをファイルツリーでハイライトする", async () => {
+  it("開いているファイルをファイルツリーではハイライトしない", async () => {
     window.relic = makeRelicApi({
       getWorkspaceState: vi.fn().mockResolvedValue({
         ok: true,
@@ -319,8 +319,9 @@ describe("App", () => {
     fireEvent.click(fileButton);
 
     await waitFor(() => {
-      expect(fileButton).toHaveClass("active");
+      expect(useEditorStore.getState().leftPane.activeTabId).not.toBeNull();
     });
+    expect(fileButton).not.toHaveClass("active");
   });
 
   it("サイドバー幅のドラッグ変更を最小180px・最大500pxに制限する", async () => {
@@ -960,6 +961,146 @@ describe("App", () => {
     await waitFor(() => {
       expect(moveFolder).toHaveBeenCalledWith({ destinationFolder: "archive", path: "drafts" });
     });
+  });
+
+  it("ファイルとフォルダを複数選択できる", async () => {
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [
+            { name: "note", path: "note.md", type: "file" },
+            { children: [], name: "drafts", path: "drafts", type: "folder" },
+            { children: [], name: "archive", path: "archive", type: "folder" }
+          ]
+        }
+      })
+    });
+
+    await renderApp();
+
+    const noteRow = await screen.findByRole("button", { name: /note/ });
+    const draftsRow = await screen.findByRole("button", { name: /drafts/ });
+    const archiveRow = await screen.findByRole("button", { name: /archive/ });
+
+    fireEvent.click(noteRow, { metaKey: true });
+    fireEvent.click(draftsRow, { metaKey: true });
+
+    expect(noteRow).toHaveClass("selected");
+    expect(draftsRow).toHaveClass("selected");
+
+    fireEvent.click(archiveRow, { shiftKey: true });
+
+    expect(noteRow).not.toHaveClass("selected");
+    expect(draftsRow).toHaveClass("selected");
+    expect(archiveRow).toHaveClass("selected");
+  });
+
+  it("複数選択したファイルとフォルダをまとめてドラッグ移動できる", async () => {
+    const movedWorkspaceState = {
+      ...withWorkspace,
+      fileTree: [
+        {
+          children: [
+            { name: "note", path: "archive/note.md", type: "file" },
+            { children: [], name: "drafts", path: "archive/drafts", type: "folder" }
+          ],
+          name: "archive",
+          path: "archive",
+          type: "folder"
+        }
+      ]
+    };
+    const moveMarkdownFile = vi.fn().mockResolvedValue({
+      ok: true,
+      value: {
+        file: { content: "# Note", name: "note", path: "archive/note.md" },
+        workspaceState: movedWorkspaceState
+      }
+    });
+    const moveFolder = vi.fn().mockResolvedValue({ ok: true, value: movedWorkspaceState });
+
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [
+            { name: "note", path: "note.md", type: "file" },
+            { children: [], name: "drafts", path: "drafts", type: "folder" },
+            { children: [], name: "archive", path: "archive", type: "folder" }
+          ]
+        }
+      }),
+      moveFolder,
+      moveMarkdownFile
+    });
+
+    await renderApp();
+
+    const noteRow = await screen.findByRole("button", { name: /note/ });
+    const draftsRow = await screen.findByRole("button", { name: /drafts/ });
+    const archiveRow = await screen.findByRole("button", { name: /archive/ });
+    const setData = vi.fn();
+
+    fireEvent.click(noteRow, { metaKey: true });
+    fireEvent.click(draftsRow, { metaKey: true });
+    fireEvent.dragStart(noteRow, {
+      dataTransfer: { effectAllowed: "move", setData }
+    });
+    const payload = setData.mock.calls[0]?.[1] as string;
+
+    expect(JSON.parse(payload).items).toEqual([
+      { path: "note.md", type: "file" },
+      { path: "drafts", type: "folder" }
+    ]);
+
+    fireEvent.drop(archiveRow, {
+      dataTransfer: { getData: () => payload }
+    });
+
+    await waitFor(() => {
+      expect(moveMarkdownFile).toHaveBeenCalledWith({ destinationFolder: "archive", path: "note.md" });
+      expect(moveFolder).toHaveBeenCalledWith({ destinationFolder: "archive", path: "drafts" });
+    });
+  });
+
+  it("複数選択したファイルとフォルダをまとめてゴミ箱に移動できる", async () => {
+    const moveItemToTrash = vi.fn().mockResolvedValue({ ok: true, value: withWorkspace });
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
+
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [
+            { name: "note", path: "note.md", type: "file" },
+            { children: [], name: "drafts", path: "drafts", type: "folder" }
+          ]
+        }
+      }),
+      moveItemToTrash
+    });
+
+    await renderApp();
+
+    const noteRow = await screen.findByRole("button", { name: /note/ });
+    const draftsRow = await screen.findByRole("button", { name: /drafts/ });
+
+    fireEvent.click(noteRow, { metaKey: true });
+    fireEvent.click(draftsRow, { metaKey: true });
+    fireEvent.contextMenu(noteRow);
+    fireEvent.click(await screen.findByRole("menuitem", { name: "選択した項目をゴミ箱に移動" }));
+
+    await waitFor(() => {
+      expect(moveItemToTrash).toHaveBeenCalledWith({ path: "note.md", type: "file" });
+      expect(moveItemToTrash).toHaveBeenCalledWith({ path: "drafts", type: "folder" });
+    });
+    expect(confirmSpy).toHaveBeenCalledWith(expect.stringContaining("2件"));
+
+    confirmSpy.mockRestore();
   });
 
   it("ファイル・フォルダをピン留めし、ピン留めセクションに表示して解除できる", async () => {

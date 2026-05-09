@@ -409,13 +409,12 @@ button:disabled {
   color: var(--text);
 }
 
-.file-tree-row.active {
-  background: rgba(0, 98, 140, 0.08);
+.file-tree-row.selected {
+  background: rgba(0, 98, 140, 0.12);
   color: var(--accent);
-  font-weight: 600;
 }
 
-.file-tree-row.active .file-tree-icon {
+.file-tree-row.selected .file-tree-icon {
   color: var(--accent);
 }
 

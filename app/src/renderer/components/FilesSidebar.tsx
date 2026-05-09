@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { ReactElement } from "react";
 
 import type { MarkdownTemplateSummary, WorkspaceState, WorkspaceTreeNode } from "../../shared/ipc";
@@ -7,7 +7,6 @@ import { useT } from "../i18n";
 import { FileTree, FileTreeItem, findNodeByPath } from "./FileTree";
 
 export interface FilesSidebarProps {
-  activePaths: Set<string>;
   isCreatingFile: boolean;
   isCreatingFolder: boolean;
   isCreatingWorkspace: boolean;
@@ -16,9 +15,11 @@ export interface FilesSidebarProps {
   onCreateFolder: () => void;
   onCreateWorkspace: () => void;
   onDeleteItem: (path: string, type: WorkspaceTreeNode["type"]) => void;
+  onDeleteItems: (items: Array<{ path: string; type: WorkspaceTreeNode["type"] }>) => void;
   onDuplicateFile: (path: string) => void;
   onMoveFile: (path: string, destFolder: string) => void;
   onMoveFolder: (path: string, destFolder: string) => void;
+  onMoveItems: (items: Array<{ path: string; type: WorkspaceTreeNode["type"] }>, destFolder: string) => void;
   onOpenFile: (path: string) => void;
   onOpenWorkspace: () => void;
   onRenameItem: (path: string, type: WorkspaceTreeNode["type"], newName: string) => void;
@@ -31,7 +32,6 @@ export interface FilesSidebarProps {
 }
 
 export function FilesSidebar({
-  activePaths,
   isCreatingFile,
   isCreatingFolder,
   isCreatingWorkspace,
@@ -40,9 +40,11 @@ export function FilesSidebar({
   onCreateFolder,
   onCreateWorkspace,
   onDeleteItem,
+  onDeleteItems,
   onDuplicateFile,
   onMoveFile,
   onMoveFolder,
+  onMoveItems,
   onOpenFile,
   onOpenWorkspace,
   onRenameItem,
@@ -53,6 +55,8 @@ export function FilesSidebar({
   templates,
   workspaceState
 }: FilesSidebarProps): ReactElement {
+  const [selectionAnchorPath, setSelectionAnchorPath] = useState<string | null>(null);
+  const [selectedPaths, setSelectedPaths] = useState<Set<string>>(new Set());
   const activeWorkspace = workspaceState?.activeWorkspace ?? null;
   const pinnedPaths = useMemo(
     () => new Set(workspaceState?.pinnedPaths ?? []),
@@ -67,7 +71,70 @@ export function FilesSidebar({
       userNodes: nodes.filter((node) => !systemNames.has(node.path))
     };
   }, [workspaceState?.fileTree]);
+  const selectableItems = useMemo(() => {
+    const items: Array<{ path: string; type: WorkspaceTreeNode["type"] }> = [];
+    const walk = (node: WorkspaceTreeNode): void => {
+      items.push({ path: node.path, type: node.type });
+      if (node.type === "folder") node.children.forEach(walk);
+    };
+
+    userNodes.forEach(walk);
+    return items;
+  }, [userNodes]);
+  const selectablePathSet = useMemo(
+    () => new Set(selectableItems.map((item) => item.path)),
+    [selectableItems]
+  );
+  const selectedItems = useMemo(
+    () => selectableItems.filter((item) => selectedPaths.has(item.path)),
+    [selectableItems, selectedPaths]
+  );
   const t = useT();
+
+  useEffect(() => {
+    setSelectedPaths((current) => {
+      const next = new Set([...current].filter((path) => selectablePathSet.has(path)));
+      return next.size === current.size ? current : next;
+    });
+    if (selectionAnchorPath && !selectablePathSet.has(selectionAnchorPath)) {
+      setSelectionAnchorPath(null);
+    }
+  }, [selectablePathSet, selectionAnchorPath]);
+
+  const handleSelectItem = (
+    node: WorkspaceTreeNode,
+    e: React.MouseEvent<HTMLButtonElement>
+  ): boolean => {
+    if (!selectablePathSet.has(node.path)) return true;
+
+    const isRangeSelect = e.shiftKey && selectionAnchorPath && selectablePathSet.has(selectionAnchorPath);
+    const isToggleSelect = e.metaKey || e.ctrlKey;
+
+    if (isRangeSelect) {
+      const fromIndex = selectableItems.findIndex((item) => item.path === selectionAnchorPath);
+      const toIndex = selectableItems.findIndex((item) => item.path === node.path);
+      if (fromIndex >= 0 && toIndex >= 0) {
+        const [start, end] = fromIndex < toIndex ? [fromIndex, toIndex] : [toIndex, fromIndex];
+        setSelectedPaths(new Set(selectableItems.slice(start, end + 1).map((item) => item.path)));
+      }
+      return false;
+    }
+
+    if (isToggleSelect) {
+      setSelectedPaths((current) => {
+        const next = new Set(current);
+        if (next.has(node.path)) next.delete(node.path);
+        else next.add(node.path);
+        return next;
+      });
+      setSelectionAnchorPath(node.path);
+      return false;
+    }
+
+    setSelectedPaths(new Set([node.path]));
+    setSelectionAnchorPath(node.path);
+    return true;
+  };
 
   return (
     <div className="sidebar-section">
@@ -115,19 +182,23 @@ export function FilesSidebar({
 
                   return (
                     <FileTreeItem
-                      activePaths={activePaths}
                       isPinned
                       key={p}
                       node={node}
                       onDeleteItem={onDeleteItem}
+                      onDeleteSelectedItems={() => onDeleteItems(selectedItems)}
                       onDuplicateFile={onDuplicateFile}
                       onMoveFile={onMoveFile}
                       onMoveFolder={onMoveFolder}
+                      onMoveItems={onMoveItems}
                       onOpenFile={onOpenFile}
                       onRenameItem={onRenameItem}
                       onSelectFolder={onSelectFolder}
+                      onSelectItem={handleSelectItem}
                       onTogglePin={onTogglePin}
                       pinnedPaths={pinnedPaths}
+                      selectedItems={selectedItems}
+                      selectedPaths={selectedPaths}
                     />
                   );
                 })}
@@ -135,24 +206,27 @@ export function FilesSidebar({
             </div>
           ) : null}
           <FileTree
-            activePaths={activePaths}
             isRoot
             nodes={userNodes}
             onDeleteItem={onDeleteItem}
+            onDeleteSelectedItems={() => onDeleteItems(selectedItems)}
             onDuplicateFile={onDuplicateFile}
             onMoveFile={onMoveFile}
             onMoveFolder={onMoveFolder}
+            onMoveItems={onMoveItems}
             onOpenFile={onOpenFile}
             onRenameItem={onRenameItem}
             onSelectFolder={onSelectFolder}
+            onSelectItem={handleSelectItem}
             onTogglePin={onTogglePin}
             pinnedPaths={pinnedPaths}
+            selectedItems={selectedItems}
+            selectedPaths={selectedPaths}
           />
           {systemNodes.length > 0 ? (
             <div className="system-folder-section">
               <div className="pinned-section-heading">{t("files.systemFolders")}</div>
               <FileTree
-                activePaths={activePaths}
                 nodes={systemNodes}
                 onOpenFile={onOpenFile}
                 onSelectFolder={onSelectFolder}
