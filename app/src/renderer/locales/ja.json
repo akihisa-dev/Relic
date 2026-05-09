@@ -14,6 +14,7 @@
   "empty.noBacklinks": "このノートへのバックリンクはありません。",
   "empty.noWorkspaceGit": "ワークスペースを開くとGit状態を表示できます。",
   "files.createFolder": "フォルダ作成",
+  "files.createNote": "新規ファイル",
   "files.createNoteShort": "作成",
   "files.noMarkdownFiles": "Markdownファイルはまだありません。",
   "files.createNewWorkspace": "新規ワークスペースを作成",

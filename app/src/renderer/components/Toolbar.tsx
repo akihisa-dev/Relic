@@ -136,77 +136,91 @@ export function Toolbar({ viewRef }: ToolbarProps): ReactElement {
   const [tableRows, setTableRows] = useState("3");
   const [tableCols, setTableCols] = useState("3");
 
-  const view = viewRef.current;
   const placeholderText = t("toolbar.placeholderText");
   const placeholderLinkText = t("toolbar.placeholderLinkText");
+  const getView = (): EditorView | null => viewRef.current;
 
   const handleBold = (): void => {
+    const view = getView();
     if (!view) return;
     wrapSelection(view, "**", "**", placeholderText);
   };
 
   const handleItalic = (): void => {
+    const view = getView();
     if (!view) return;
     wrapSelection(view, "*", "*", placeholderText);
   };
 
   const handleStrikethrough = (): void => {
+    const view = getView();
     if (!view) return;
     wrapSelection(view, "~~", "~~", placeholderText);
   };
 
   const handleHighlight = (): void => {
+    const view = getView();
     if (!view) return;
     wrapSelection(view, "==", "==", placeholderText);
   };
 
   const handleUnderline = (): void => {
+    const view = getView();
     if (!view) return;
     wrapSelection(view, "<u>", "</u>", placeholderText);
   };
 
   const handleInlineCode = (): void => {
+    const view = getView();
     if (!view) return;
     wrapSelection(view, "`", "`", placeholderText);
   };
 
   const handleHeading = (level: HeadingLevel): void => {
+    const view = getView();
     if (!view) return;
     insertAtLineStart(view, "#".repeat(level) + " ", placeholderText);
     setShowHeadingMenu(false);
   };
 
   const handleBlockquote = (): void => {
+    const view = getView();
     if (!view) return;
     insertAtLineStart(view, "> ", placeholderText);
   };
 
   const handleCodeBlock = (): void => {
+    const view = getView();
     if (!view) return;
     insertBlock(view, "```\n\n```");
   };
 
   const handleHorizontalRule = (): void => {
+    const view = getView();
     if (!view) return;
     insertBlock(view, "---");
   };
 
   const handleBulletList = (): void => {
+    const view = getView();
     if (!view) return;
     insertAtLineStart(view, "- ", placeholderText);
   };
 
   const handleOrderedList = (): void => {
+    const view = getView();
     if (!view) return;
     insertAtLineStart(view, "1. ", placeholderText);
   };
 
   const handleCheckbox = (): void => {
+    const view = getView();
     if (!view) return;
     insertAtLineStart(view, "- [ ] ", placeholderText);
   };
 
   const handleLink = (): void => {
+    const view = getView();
     if (!view) return;
     const { state } = view;
     const selected = state.sliceDoc(state.selection.main.from, state.selection.main.to);
@@ -229,6 +243,7 @@ export function Toolbar({ viewRef }: ToolbarProps): ReactElement {
   };
 
   const handleLinkSubmit = (): void => {
+    const view = getView();
     if (!view) return;
     const { state } = view;
     const selected = state.sliceDoc(state.selection.main.from, state.selection.main.to);
@@ -247,6 +262,7 @@ export function Toolbar({ viewRef }: ToolbarProps): ReactElement {
   };
 
   const handleInternalLink = (): void => {
+    const view = getView();
     if (!view) return;
     const { state } = view;
     const pos = state.selection.main.head;
@@ -259,11 +275,13 @@ export function Toolbar({ viewRef }: ToolbarProps): ReactElement {
   };
 
   const handleBlockId = (): void => {
+    const view = getView();
     if (!view) return;
     insertBlockIds(view);
   };
 
   const handleTableSubmit = (): void => {
+    const view = getView();
     if (!view) return;
     const rows = Math.max(1, parseInt(tableRows, 10) || 3);
     const cols = Math.max(1, parseInt(tableCols, 10) || 3);
@@ -280,7 +298,14 @@ export function Toolbar({ viewRef }: ToolbarProps): ReactElement {
   };
 
   return (
-    <div className="toolbar">
+    <div
+      className="toolbar"
+      onMouseDownCapture={(event) => {
+        const target = event.target as HTMLElement;
+        if (target.closest("input, select, textarea")) return;
+        event.preventDefault();
+      }}
+    >
       <div className="toolbar-group">
         <button className="toolbar-btn" data-tooltip={t("toolbar.bold")} onClick={handleBold} title={t("toolbar.bold")} type="button">
           <strong>B</strong>

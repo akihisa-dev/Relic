@@ -205,6 +205,35 @@ describe("App", () => {
     expect(await screen.findByText("読書メモ")).toBeInTheDocument();
   });
 
+  it("ファイルツリーで開いているノートを再選択するとタブを閉じる", async () => {
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [{ name: "読書メモ", path: "読書メモ.md", type: "file" }]
+        }
+      }),
+      readMarkdownFile: vi.fn().mockResolvedValue({
+        ok: true,
+        value: { content: "本文テスト", name: "読書メモ", path: "読書メモ.md" }
+      })
+    });
+
+    await renderApp();
+
+    const fileButton = await screen.findByRole("button", { name: /読書メモ/ });
+    fireEvent.click(fileButton);
+
+    await waitFor(() => {
+      expect(useEditorStore.getState().leftPane.activeTabId).not.toBeNull();
+    });
+
+    fireEvent.click(fileButton);
+
+    expect(useEditorStore.getState().leftPane.activeTabId).toBeNull();
+  });
+
   it("ファイルツリーのフォルダを開閉できる", async () => {
     window.relic = makeRelicApi({
       getWorkspaceState: vi.fn().mockResolvedValue({
@@ -453,42 +482,49 @@ describe("App", () => {
     expect(await screen.findByText("akihisa")).toBeInTheDocument();
   });
 
-  it("新規ファイルフォームからファイルを作成する", async () => {
+  it("新規ファイルボタンから名前なしでファイルを作成する", async () => {
     const createMarkdownFile = vi.fn().mockResolvedValue({
       ok: true,
       value: {
         ...withWorkspace,
-        fileTree: [{ name: "読書メモ", path: "読書メモ.md", type: "file" }]
+        fileTree: [{ name: "新規ファイル", path: "新規ファイル.md", type: "file" }]
       }
+    });
+    const readMarkdownFile = vi.fn().mockResolvedValue({
+      ok: true,
+      value: { content: "", name: "新規ファイル", path: "新規ファイル.md" }
     });
 
     window.relic = makeRelicApi({
       getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace }),
-      createMarkdownFile
+      createMarkdownFile,
+      readMarkdownFile
     });
 
     await renderApp();
 
-    fireEvent.change(await screen.findByRole("textbox", { name: "新規ファイル名" }), {
-      target: { value: "読書メモ" }
-    });
-    fireEvent.click(screen.getByRole("button", { name: "作成" }));
+    fireEvent.click(await screen.findByRole("button", { name: "新規ファイル" }));
 
-    expect(createMarkdownFile).toHaveBeenCalledWith({ name: "読書メモ", templatePath: undefined });
-    expect(await screen.findByRole("button", { name: /読書メモ/ })).toBeInTheDocument();
+    expect(createMarkdownFile).toHaveBeenCalledWith({ name: "新規ファイル" });
+    expect((await screen.findAllByText("新規ファイル")).length).toBeGreaterThan(0);
   });
 
-  it("新規ファイルフォームからテンプレートを選んでファイルを作成する", async () => {
+  it("新規ファイルボタンからテンプレートを選んで名前なしでファイルを作成する", async () => {
     const createMarkdownFile = vi.fn().mockResolvedValue({
       ok: true,
       value: {
         ...withWorkspace,
-        fileTree: [{ name: "週報", path: "週報.md", type: "file" }]
+        fileTree: [{ name: "新規ファイル", path: "新規ファイル.md", type: "file" }]
       }
+    });
+    const readMarkdownFile = vi.fn().mockResolvedValue({
+      ok: true,
+      value: { content: "", name: "新規ファイル", path: "新規ファイル.md" }
     });
 
     window.relic = makeRelicApi({
       createMarkdownFile,
+      readMarkdownFile,
       getMarkdownTemplates: vi.fn().mockResolvedValue({
         ok: true,
         value: [{ name: "日記", path: "templates/日記.md" }]
@@ -498,23 +534,20 @@ describe("App", () => {
 
     await renderApp();
 
-    fireEvent.change(await screen.findByRole("textbox", { name: "新規ファイル名" }), {
-      target: { value: "週報" }
-    });
     fireEvent.change(await screen.findByLabelText("テンプレート"), {
       target: { value: "templates/日記.md" }
     });
-    fireEvent.click(screen.getByRole("button", { name: "作成" }));
+    fireEvent.click(screen.getByRole("button", { name: "新規ファイル" }));
 
-    expect(createMarkdownFile).toHaveBeenCalledWith({ name: "週報", templatePath: "templates/日記.md" });
+    expect(createMarkdownFile).toHaveBeenCalledWith({ name: "新規ファイル", templatePath: "templates/日記.md" });
   });
 
-  it("新規フォルダフォームからフォルダを作成する", async () => {
+  it("新規フォルダボタンから名前なしでフォルダを作成する", async () => {
     const createFolder = vi.fn().mockResolvedValue({
       ok: true,
       value: {
         ...withWorkspace,
-        fileTree: [{ children: [], name: "資料", path: "資料", type: "folder" }]
+        fileTree: [{ children: [], name: "新規フォルダ", path: "新規フォルダ", type: "folder" }]
       }
     });
 
@@ -525,13 +558,10 @@ describe("App", () => {
 
     await renderApp();
 
-    fireEvent.change(await screen.findByRole("textbox", { name: "新規フォルダ名" }), {
-      target: { value: "資料" }
-    });
-    fireEvent.click(screen.getByRole("button", { name: "フォルダ作成" }));
+    fireEvent.click(await screen.findByRole("button", { name: "フォルダ作成" }));
 
-    expect(createFolder).toHaveBeenCalledWith({ name: "資料" });
-    expect(await screen.findByRole("button", { name: /資料/ })).toBeInTheDocument();
+    expect(createFolder).toHaveBeenCalledWith({ name: "新規フォルダ" });
+    expect(await screen.findByRole("button", { name: /新規フォルダ/ })).toBeInTheDocument();
   });
 
   it("ワークスペースを開くボタンから既存フォルダを登録する", async () => {

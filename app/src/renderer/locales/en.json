@@ -14,6 +14,7 @@
   "empty.noBacklinks": "This note has no backlinks.",
   "empty.noWorkspaceGit": "Open a workspace to show Git status.",
   "files.createFolder": "Create folder",
+  "files.createNote": "New file",
   "files.createNoteShort": "Create",
   "files.noMarkdownFiles": "No Markdown files.",
   "files.createNewWorkspace": "Create New Workspace",

@@ -164,6 +164,18 @@ export function GitSidebar({
         </div>
         {gitHubAuthStatus?.connected ? (
           <div className="search-block">
+            <div className="setting-row">
+              <span>{t("git.account")}</span>
+              <span>{gitHubAuthStatus.login ?? "-"}</span>
+            </div>
+            <button
+              className="replace-btn"
+              disabled={isDisconnectingGitHub}
+              onClick={onDisconnectGitHubAccount}
+              type="button"
+            >
+              {isDisconnectingGitHub ? t("git.disconnectingAccount") : t("git.disconnectAccount")}
+            </button>
             <div className="links-panel-subheading">{t("git.clone")}</div>
             <div className="empty-note">
               {t("git.cloneHint")}
