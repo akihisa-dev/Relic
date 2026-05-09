@@ -373,8 +373,12 @@ export const defaultFeatureToggles: FeatureToggles = {
 };
 
 export interface GitSyncPreview {
+  branch: string;
   incomingCommits: GitCommitSummary[];
   outgoingChanges: GitWorkingChange[];
+  remoteName: string;
+  remoteUrl: string;
+  upstream: string;
 }
 
 export interface GitConflict {

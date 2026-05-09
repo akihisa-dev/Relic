@@ -293,6 +293,11 @@ export function GitSidebar({
           <div className="empty-note">Checking GitHub changes...</div>
         ) : gitSyncStep === "push-preview" && gitSyncPreview ? (
           <div className="git-sync-preview">
+            <div className="setting-row">
+              <span>{t("git.destination")}</span>
+              <span>{gitSyncPreview.upstream}</span>
+            </div>
+            <div className="search-result-line">{gitSyncPreview.remoteUrl}</div>
             <div className="links-panel-subheading">{t("git.outgoingChanges")}</div>
             {gitSyncPreview.outgoingChanges.length > 0 ? (
               <ul className="search-results">
@@ -343,6 +348,11 @@ export function GitSidebar({
           </div>
         ) : gitSyncStep === "pull-preview" && gitSyncPreview ? (
           <div className="git-sync-preview">
+            <div className="setting-row">
+              <span>{t("git.source")}</span>
+              <span>{gitSyncPreview.upstream}</span>
+            </div>
+            <div className="search-result-line">{gitSyncPreview.remoteUrl}</div>
             <div className="links-panel-subheading">{t("git.incomingCommits")}</div>
             {gitSyncPreview.incomingCommits.length > 0 ? (
               <ul className="search-results">
@@ -376,7 +386,7 @@ export function GitSidebar({
             <div className="git-branch-warning-actions">
               <button
                 className="primary-button"
-                disabled={isPullingGitBranch}
+                disabled={isPullingGitBranch || gitSyncPreview.outgoingChanges.length > 0}
                 onClick={onConfirmPull}
                 type="button"
               >
