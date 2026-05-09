@@ -200,6 +200,7 @@
   "settings.autoPull": "Auto pull",
   "settings.autoPush": "Auto push",
   "settings.autoSync": "Auto Sync",
+  "settings.autoSyncDisabled": "Auto sync is disabled during P14 safety verification.",
   "settings.dark": "Dark",
   "settings.featureFrontmatter": "Frontmatter",
   "settings.featureGit": "GitHub integration",
