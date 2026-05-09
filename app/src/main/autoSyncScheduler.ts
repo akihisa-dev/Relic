@@ -1,5 +1,6 @@
 import { app } from "electron";
 
+import { autoSyncFeatureEnabled } from "../shared/ipc";
 import { autoCommitAndPush, pullGitBranch } from "./files/git";
 import { readGitHubAuthFromKeychain } from "./github/keychain";
 import { readAppSettings } from "./settings/appSettings";
@@ -27,6 +28,11 @@ export function stopAutoSyncTimer(): void {
 }
 
 export async function refreshAutoSyncTimer(): Promise<void> {
+  if (!autoSyncFeatureEnabled) {
+    stopAutoSyncTimer();
+    return;
+  }
+
   const settings = await readAppSettings(app.getPath("userData"));
   const state = toWorkspaceState(settings);
 
@@ -46,6 +52,10 @@ export async function refreshAutoSyncTimer(): Promise<void> {
 }
 
 async function runAutoSync(): Promise<void> {
+  if (!autoSyncFeatureEnabled) {
+    return;
+  }
+
   try {
     const settings = await readAppSettings(app.getPath("userData"));
     const state = toWorkspaceState(settings);

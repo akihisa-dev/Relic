@@ -200,6 +200,7 @@
   "settings.autoPull": "自動プル",
   "settings.autoPush": "自動プッシュ",
   "settings.autoSync": "自動同期",
+  "settings.autoSyncDisabled": "P14では安全確認のため自動同期を無効にしています。",
   "settings.dark": "ダーク",
   "settings.featureFrontmatter": "フロントマター",
   "settings.featureGit": "GitHub連携",
