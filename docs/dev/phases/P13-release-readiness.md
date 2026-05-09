@@ -28,9 +28,9 @@ Relicの配布判断・リリース準備フェーズの正本。
 
 ## 事前準備
 
-- [ ] テスト用ワークスペースをプロジェクト外へ移動する
-- [ ] 移動先の例: `~/Desktop/Relic Test Workspace`
-- [ ] Relic開発リポジトリ内にテスト用ワークスペースが残っていないことを確認する
+- [x] テスト用ワークスペースをプロジェクト外へ移動する
+- [x] 移動先: `/private/tmp/Relic Test Workspace`
+- [x] Relic開発リポジトリ内にテスト用ワークスペースが残っていないことを確認する
 - [ ] アプリから移動後のワークスペースを開けることを確認する
 
 ---
@@ -39,10 +39,10 @@ Relicの配布判断・リリース準備フェーズの正本。
 
 ### 1. 配布ビルド確認
 
-- `electron-forge package` で自分用アプリを生成できることを確認する
-- 必要に応じて `electron-forge make` で配布物を生成できることを確認する
+- [x] `electron-forge package` で自分用アプリを生成できることを確認する
+- [x] 必要に応じて `electron-forge make` で配布物を生成できることを確認する
 - 生成物から起動できることを確認する
-- Vite単独ビルド確認とForge経由ビルド確認の役割を整理する
+- [x] Vite単独ビルド確認とForge経由ビルド確認の役割を整理する
 
 ### 2. Git / GitHub実操作確認
 
@@ -106,8 +106,25 @@ pnpm audit --audit-level moderate
 
 ## 完了条件
 
-- [ ] テスト用ワークスペースがプロジェクト外に分離されている
-- [ ] 自動テストと型チェックが成功している
-- [ ] Forge経由の配布ビルド確認が成功している
+- [x] テスト用ワークスペースがプロジェクト外に分離されている
+- [x] 自動テストと型チェックが成功している
+- [x] Forge経由の配布ビルド確認が成功している
 - [ ] Git / GitHub実操作の主要導線を確認している
 - [ ] 自分用ビルドとして使い始めるか、追加修正するかを判断できる
+
+---
+
+## 確認メモ
+
+### 2026-05-09
+
+- テスト用ワークスペースとして `/private/tmp/Relic Test Workspace` を作成し、Relic開発リポジトリ外に分離した。
+- Relic開発リポジトリ内にテスト用ワークスペースが残っていないことを確認した。
+- `pnpm exec tsc --noEmit` 成功。
+- `pnpm test` 成功（30 files / 201 tests）。
+- `pnpm exec electron-forge package` 成功。初回はサンドボックス内のDNS制限で `github.com` 解決に失敗し、ネットワーク許可後に成功。
+- `pnpm exec electron-forge make` 成功。初回は `fs-xattr` のネイティブaddon未生成でDMG作成に失敗し、`node_modules/fs-xattr` で `node-gyp rebuild` 実行後に成功。
+- 成果物: `app/out/Relic-darwin-arm64/Relic.app`, `app/out/make/Relic-0.0.0-arm64.dmg`, `app/out/make/zip/darwin/arm64/Relic-darwin-arm64-0.0.0.zip`。
+- `codesign --verify --deep --strict` は未署名/ad-hoc署名状態のため失敗。第三者配布判断ではコード署名を別途確認する。
+- Vite単独確認は開発時の型・バンドル境界確認、Forge経由確認は配布用アプリ生成・パッケージング確認として扱う。
+- 生成物のGUI起動、アプリからのワークスペースオープン、GitHub実操作、依存関係監査は未実施。
