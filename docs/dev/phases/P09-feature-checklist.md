@@ -1,4 +1,4 @@
-# feature-checklist.md
+# P09-feature-checklist.md
 
 Relicアプリの全機能・UI確認チェックリスト。
 コード確認・自動テスト・ビルド・実アプリ操作のいずれかで確認できたら `[x]` にする。

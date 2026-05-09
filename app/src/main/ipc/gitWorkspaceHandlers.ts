@@ -1,4 +1,4 @@
-import { app, ipcMain } from "electron";
+import { ipcMain } from "electron";
 
 import {
   connectGitRemoteChannel,
@@ -40,7 +40,7 @@ import {
   type GitTagSummary,
   type GitWorkingChange
 } from "../../shared/ipc";
-import { fail, ok, type RelicResult } from "../../shared/result";
+import { fail, type RelicResult } from "../../shared/result";
 import {
   createGitBranch,
   createGitCommit,
@@ -63,426 +63,185 @@ import {
   resolveGitConflict,
   switchGitBranch
 } from "../files/git";
-import { readAppSettings } from "../settings/appSettings";
-import { toWorkspaceState } from "../workspace/workspaceService";
+import { withActiveWorkspace } from "./activeWorkspace";
 
 export function registerGitWorkspaceHandlers(): void {
   ipcMain.handle(getGitStatusChannel, async (): Promise<RelicResult<GitStatus>> => {
-    try {
-      const settings = await readAppSettings(app.getPath("userData"));
-      const state = toWorkspaceState(settings);
-
-      if (!state.activeWorkspace) {
-        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
-      }
-
-      return readGitStatus(state.activeWorkspace.path);
-    } catch (error) {
-      return fail(
-        "GIT_STATUS_FAILED",
-        "Git状態を取得できませんでした。",
-        error instanceof Error ? error.message : String(error)
-      );
-    }
+    return withActiveWorkspace(
+      { code: "GIT_STATUS_FAILED", message: "Git状態を取得できませんでした。" },
+      readGitStatus
+    );
   });
 
   ipcMain.handle(getGitTagsChannel, async (): Promise<RelicResult<GitTagSummary[]>> => {
-    try {
-      const settings = await readAppSettings(app.getPath("userData"));
-      const state = toWorkspaceState(settings);
-
-      if (!state.activeWorkspace) {
-        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
-      }
-
-      return readGitTags(state.activeWorkspace.path);
-    } catch (error) {
-      return fail(
-        "GIT_TAGS_FAILED",
-        "Gitタグ一覧を取得できませんでした。",
-        error instanceof Error ? error.message : String(error)
-      );
-    }
+    return withActiveWorkspace(
+      { code: "GIT_TAGS_FAILED", message: "Gitタグ一覧を取得できませんでした。" },
+      readGitTags
+    );
   });
 
   ipcMain.handle(getGitBranchesChannel, async (): Promise<RelicResult<GitBranchSummary[]>> => {
-    try {
-      const settings = await readAppSettings(app.getPath("userData"));
-      const state = toWorkspaceState(settings);
-
-      if (!state.activeWorkspace) {
-        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
-      }
-
-      return readGitBranches(state.activeWorkspace.path);
-    } catch (error) {
-      return fail(
-        "GIT_BRANCHES_FAILED",
-        "ブランチ一覧を取得できませんでした。",
-        error instanceof Error ? error.message : String(error)
-      );
-    }
+    return withActiveWorkspace(
+      { code: "GIT_BRANCHES_FAILED", message: "ブランチ一覧を取得できませんでした。" },
+      readGitBranches
+    );
   });
 
   ipcMain.handle(getGitRemotesChannel, async (): Promise<RelicResult<GitRemoteSummary[]>> => {
-    try {
-      const settings = await readAppSettings(app.getPath("userData"));
-      const state = toWorkspaceState(settings);
-
-      if (!state.activeWorkspace) {
-        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
-      }
-
-      return readGitRemotes(state.activeWorkspace.path);
-    } catch (error) {
-      return fail(
-        "GIT_REMOTES_FAILED",
-        "GitHubリポジトリ接続を確認できませんでした。",
-        error instanceof Error ? error.message : String(error)
-      );
-    }
+    return withActiveWorkspace(
+      { code: "GIT_REMOTES_FAILED", message: "GitHubリポジトリ接続を確認できませんでした。" },
+      readGitRemotes
+    );
   });
 
   ipcMain.handle(getGitWorkingChangesChannel, async (): Promise<RelicResult<GitWorkingChange[]>> => {
-    try {
-      const settings = await readAppSettings(app.getPath("userData"));
-      const state = toWorkspaceState(settings);
-
-      if (!state.activeWorkspace) {
-        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
-      }
-
-      return readGitWorkingChanges(state.activeWorkspace.path);
-    } catch (error) {
-      return fail(
-        "GIT_WORKING_CHANGES_FAILED",
-        "変更一覧を取得できませんでした。",
-        error instanceof Error ? error.message : String(error)
-      );
-    }
+    return withActiveWorkspace(
+      { code: "GIT_WORKING_CHANGES_FAILED", message: "変更一覧を取得できませんでした。" },
+      readGitWorkingChanges
+    );
   });
 
   ipcMain.handle(getGitCommitHistoryChannel, async (): Promise<RelicResult<GitCommitSummary[]>> => {
-    try {
-      const settings = await readAppSettings(app.getPath("userData"));
-      const state = toWorkspaceState(settings);
-
-      if (!state.activeWorkspace) {
-        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
-      }
-
-      return readGitCommitHistory(state.activeWorkspace.path);
-    } catch (error) {
-      return fail(
-        "GIT_HISTORY_FAILED",
-        "コミット履歴を取得できませんでした。",
-        error instanceof Error ? error.message : String(error)
-      );
-    }
+    return withActiveWorkspace(
+      { code: "GIT_HISTORY_FAILED", message: "コミット履歴を取得できませんでした。" },
+      readGitCommitHistory
+    );
   });
 
   ipcMain.handle(getGitCommitDiffChannel, async (_event, hash: string): Promise<RelicResult<GitCommitDiff>> => {
-    try {
-      if (typeof hash !== "string" || hash.trim() === "") {
-        return fail("GIT_COMMIT_NOT_FOUND", "表示するコミットを選択してください。");
-      }
-
-      const settings = await readAppSettings(app.getPath("userData"));
-      const state = toWorkspaceState(settings);
-
-      if (!state.activeWorkspace) {
-        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
-      }
-
-      return readGitCommitDiff(state.activeWorkspace.path, hash);
-    } catch (error) {
-      return fail(
-        "GIT_COMMIT_DIFF_FAILED",
-        "コミット差分を取得できませんでした。",
-        error instanceof Error ? error.message : String(error)
-      );
+    if (typeof hash !== "string" || hash.trim() === "") {
+      return fail("GIT_COMMIT_NOT_FOUND", "表示するコミットを選択してください。");
     }
+
+    return withActiveWorkspace(
+      { code: "GIT_COMMIT_DIFF_FAILED", message: "コミット差分を取得できませんでした。" },
+      (workspacePath) => readGitCommitDiff(workspacePath, hash)
+    );
   });
 
   ipcMain.handle(initializeGitRepositoryChannel, async (): Promise<RelicResult<GitStatus>> => {
-    try {
-      const settings = await readAppSettings(app.getPath("userData"));
-      const state = toWorkspaceState(settings);
-
-      if (!state.activeWorkspace) {
-        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
-      }
-
-      return initializeGitRepository(state.activeWorkspace.path);
-    } catch (error) {
-      return fail(
-        "GIT_INIT_FAILED",
-        "Gitリポジトリを初期化できませんでした。",
-        error instanceof Error ? error.message : String(error)
-      );
-    }
+    return withActiveWorkspace(
+      { code: "GIT_INIT_FAILED", message: "Gitリポジトリを初期化できませんでした。" },
+      initializeGitRepository
+    );
   });
 
   ipcMain.handle(createGitCommitChannel, async (_event, input: CreateGitCommitInput): Promise<RelicResult<GitCommitSummary>> => {
-    try {
-      if (!isCreateGitCommitInput(input)) {
-        return fail("GIT_COMMIT_INVALID_INPUT", "コミットに必要な情報を入力してください。");
-      }
-
-      const settings = await readAppSettings(app.getPath("userData"));
-      const state = toWorkspaceState(settings);
-
-      if (!state.activeWorkspace) {
-        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
-      }
-
-      return createGitCommit(state.activeWorkspace.path, input);
-    } catch (error) {
-      return fail(
-        "GIT_COMMIT_FAILED",
-        "コミットを作成できませんでした。",
-        error instanceof Error ? error.message : String(error)
-      );
+    if (!isCreateGitCommitInput(input)) {
+      return fail("GIT_COMMIT_INVALID_INPUT", "コミットに必要な情報を入力してください。");
     }
+
+    return withActiveWorkspace(
+      { code: "GIT_COMMIT_FAILED", message: "コミットを作成できませんでした。" },
+      (workspacePath) => createGitCommit(workspacePath, input)
+    );
   });
 
   ipcMain.handle(createGitBranchChannel, async (_event, input: CreateGitBranchInput): Promise<RelicResult<GitBranchSummary[]>> => {
-    try {
-      if (!isCreateGitBranchInput(input)) {
-        return fail("GIT_BRANCH_INVALID_INPUT", "ブランチ名を入力してください。");
-      }
-
-      const settings = await readAppSettings(app.getPath("userData"));
-      const state = toWorkspaceState(settings);
-
-      if (!state.activeWorkspace) {
-        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
-      }
-
-      return createGitBranch(state.activeWorkspace.path, input);
-    } catch (error) {
-      return fail(
-        "GIT_BRANCH_CREATE_FAILED",
-        "ブランチを作成できませんでした。",
-        error instanceof Error ? error.message : String(error)
-      );
+    if (!isCreateGitBranchInput(input)) {
+      return fail("GIT_BRANCH_INVALID_INPUT", "ブランチ名を入力してください。");
     }
+
+    return withActiveWorkspace(
+      { code: "GIT_BRANCH_CREATE_FAILED", message: "ブランチを作成できませんでした。" },
+      (workspacePath) => createGitBranch(workspacePath, input)
+    );
   });
 
   ipcMain.handle(createGitTagChannel, async (_event, input: CreateGitTagInput): Promise<RelicResult<GitTagSummary[]>> => {
-    try {
-      if (!isCreateGitTagInput(input)) {
-        return fail("GIT_TAG_INVALID_INPUT", "タグ名を入力してください。");
-      }
-
-      const settings = await readAppSettings(app.getPath("userData"));
-      const state = toWorkspaceState(settings);
-
-      if (!state.activeWorkspace) {
-        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
-      }
-
-      return createGitTag(state.activeWorkspace.path, input);
-    } catch (error) {
-      return fail(
-        "GIT_TAG_CREATE_FAILED",
-        "Gitタグを作成できませんでした。",
-        error instanceof Error ? error.message : String(error)
-      );
+    if (!isCreateGitTagInput(input)) {
+      return fail("GIT_TAG_INVALID_INPUT", "タグ名を入力してください。");
     }
+
+    return withActiveWorkspace(
+      { code: "GIT_TAG_CREATE_FAILED", message: "Gitタグを作成できませんでした。" },
+      (workspacePath) => createGitTag(workspacePath, input)
+    );
   });
 
   ipcMain.handle(deleteGitTagChannel, async (_event, input: DeleteGitTagInput): Promise<RelicResult<GitTagSummary[]>> => {
-    try {
-      if (!isDeleteGitTagInput(input)) {
-        return fail("GIT_TAG_INVALID_INPUT", "削除するタグを選択してください。");
-      }
-
-      const settings = await readAppSettings(app.getPath("userData"));
-      const state = toWorkspaceState(settings);
-
-      if (!state.activeWorkspace) {
-        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
-      }
-
-      return deleteGitTag(state.activeWorkspace.path, input);
-    } catch (error) {
-      return fail(
-        "GIT_TAG_DELETE_FAILED",
-        "Gitタグを削除できませんでした。",
-        error instanceof Error ? error.message : String(error)
-      );
+    if (!isDeleteGitTagInput(input)) {
+      return fail("GIT_TAG_INVALID_INPUT", "削除するタグを選択してください。");
     }
+
+    return withActiveWorkspace(
+      { code: "GIT_TAG_DELETE_FAILED", message: "Gitタグを削除できませんでした。" },
+      (workspacePath) => deleteGitTag(workspacePath, input)
+    );
   });
 
   ipcMain.handle(connectGitRemoteChannel, async (_event, input: ConnectGitRemoteInput): Promise<RelicResult<GitRemoteSummary[]>> => {
-    try {
-      if (!isConnectGitRemoteInput(input)) {
-        return fail("GIT_REMOTE_INVALID_INPUT", "GitHubリポジトリのURLを入力してください。");
-      }
-
-      const settings = await readAppSettings(app.getPath("userData"));
-      const state = toWorkspaceState(settings);
-
-      if (!state.activeWorkspace) {
-        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
-      }
-
-      return connectGitRemote(state.activeWorkspace.path, input);
-    } catch (error) {
-      return fail(
-        "GIT_REMOTE_CONNECT_FAILED",
-        "GitHubリポジトリを接続できませんでした。",
-        error instanceof Error ? error.message : String(error)
-      );
+    if (!isConnectGitRemoteInput(input)) {
+      return fail("GIT_REMOTE_INVALID_INPUT", "GitHubリポジトリのURLを入力してください。");
     }
+
+    return withActiveWorkspace(
+      { code: "GIT_REMOTE_CONNECT_FAILED", message: "GitHubリポジトリを接続できませんでした。" },
+      (workspacePath) => connectGitRemote(workspacePath, input)
+    );
   });
 
   ipcMain.handle(pushGitBranchChannel, async (): Promise<RelicResult<GitRemoteSyncResult>> => {
-    try {
-      const settings = await readAppSettings(app.getPath("userData"));
-      const state = toWorkspaceState(settings);
-
-      if (!state.activeWorkspace) {
-        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
-      }
-
-      return pushGitBranch(state.activeWorkspace.path);
-    } catch (error) {
-      return fail(
-        "GIT_PUSH_FAILED",
-        "GitHubへ送信できませんでした。",
-        error instanceof Error ? error.message : String(error)
-      );
-    }
+    return withActiveWorkspace(
+      { code: "GIT_PUSH_FAILED", message: "GitHubへ送信できませんでした。" },
+      pushGitBranch
+    );
   });
 
   ipcMain.handle(pullGitBranchChannel, async (): Promise<RelicResult<GitRemoteSyncResult>> => {
-    try {
-      const settings = await readAppSettings(app.getPath("userData"));
-      const state = toWorkspaceState(settings);
-
-      if (!state.activeWorkspace) {
-        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
-      }
-
-      return pullGitBranch(state.activeWorkspace.path);
-    } catch (error) {
-      return fail(
-        "GIT_PULL_FAILED",
-        "GitHubから取得できませんでした。",
-        error instanceof Error ? error.message : String(error)
-      );
-    }
+    return withActiveWorkspace(
+      { code: "GIT_PULL_FAILED", message: "GitHubから取得できませんでした。" },
+      pullGitBranch
+    );
   });
 
   ipcMain.handle(pushGitTagChannel, async (_event, input: PushGitTagInput): Promise<RelicResult<GitRemoteSyncResult>> => {
-    try {
-      if (!isPushGitTagInput(input)) {
-        return fail("GIT_TAG_INVALID_INPUT", "送信するタグを選択してください。");
-      }
-
-      const settings = await readAppSettings(app.getPath("userData"));
-      const state = toWorkspaceState(settings);
-
-      if (!state.activeWorkspace) {
-        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
-      }
-
-      return pushGitTag(state.activeWorkspace.path, input);
-    } catch (error) {
-      return fail(
-        "GIT_TAG_PUSH_FAILED",
-        "GitタグをGitHubへ送信できませんでした。",
-        error instanceof Error ? error.message : String(error)
-      );
+    if (!isPushGitTagInput(input)) {
+      return fail("GIT_TAG_INVALID_INPUT", "送信するタグを選択してください。");
     }
+
+    return withActiveWorkspace(
+      { code: "GIT_TAG_PUSH_FAILED", message: "GitタグをGitHubへ送信できませんでした。" },
+      (workspacePath) => pushGitTag(workspacePath, input)
+    );
   });
 
   ipcMain.handle(switchGitBranchChannel, async (_event, input: SwitchGitBranchInput): Promise<RelicResult<GitBranchSummary[]>> => {
-    try {
-      if (!isSwitchGitBranchInput(input)) {
-        return fail("GIT_BRANCH_INVALID_INPUT", "切り替えるブランチを選択してください。");
-      }
-
-      const settings = await readAppSettings(app.getPath("userData"));
-      const state = toWorkspaceState(settings);
-
-      if (!state.activeWorkspace) {
-        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
-      }
-
-      return switchGitBranch(state.activeWorkspace.path, input);
-    } catch (error) {
-      return fail(
-        "GIT_BRANCH_SWITCH_FAILED",
-        "ブランチを切り替えできませんでした。",
-        error instanceof Error ? error.message : String(error)
-      );
+    if (!isSwitchGitBranchInput(input)) {
+      return fail("GIT_BRANCH_INVALID_INPUT", "切り替えるブランチを選択してください。");
     }
+
+    return withActiveWorkspace(
+      { code: "GIT_BRANCH_SWITCH_FAILED", message: "ブランチを切り替えできませんでした。" },
+      (workspacePath) => switchGitBranch(workspacePath, input)
+    );
   });
 
   ipcMain.handle(getGitSyncPreviewChannel, async (): Promise<RelicResult<GitSyncPreview>> => {
-    try {
-      const settings = await readAppSettings(app.getPath("userData"));
-      const state = toWorkspaceState(settings);
-
-      if (!state.activeWorkspace) {
-        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
-      }
-
-      return readGitSyncPreview(state.activeWorkspace.path);
-    } catch (error) {
-      return fail(
-        "GIT_SYNC_PREVIEW_FAILED",
-        "同期プレビューを取得できませんでした。",
-        error instanceof Error ? error.message : String(error)
-      );
-    }
+    return withActiveWorkspace(
+      { code: "GIT_SYNC_PREVIEW_FAILED", message: "同期プレビューを取得できませんでした。" },
+      readGitSyncPreview
+    );
   });
 
   ipcMain.handle(getGitConflictsChannel, async (): Promise<RelicResult<GitConflict[]>> => {
-    try {
-      const settings = await readAppSettings(app.getPath("userData"));
-      const state = toWorkspaceState(settings);
-
-      if (!state.activeWorkspace) {
-        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
-      }
-
-      return readGitConflicts(state.activeWorkspace.path);
-    } catch (error) {
-      return fail(
-        "GIT_CONFLICTS_FAILED",
-        "コンフリクト情報を取得できませんでした。",
-        error instanceof Error ? error.message : String(error)
-      );
-    }
+    return withActiveWorkspace(
+      { code: "GIT_CONFLICTS_FAILED", message: "コンフリクト情報を取得できませんでした。" },
+      readGitConflicts
+    );
   });
 
   ipcMain.handle(
     resolveGitConflictChannel,
     async (_event, input: ResolveGitConflictInput): Promise<RelicResult<GitConflict[]>> => {
-      try {
-        if (!isResolveGitConflictInput(input)) {
-          return fail("GIT_CONFLICT_INVALID_INPUT", "解決するファイルと方法を指定してください。");
-        }
-
-        const settings = await readAppSettings(app.getPath("userData"));
-        const state = toWorkspaceState(settings);
-
-        if (!state.activeWorkspace) {
-          return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
-        }
-
-        return resolveGitConflict(state.activeWorkspace.path, input);
-      } catch (error) {
-        return fail(
-          "GIT_CONFLICT_RESOLVE_FAILED",
-          "コンフリクトを解決できませんでした。",
-          error instanceof Error ? error.message : String(error)
-        );
+      if (!isResolveGitConflictInput(input)) {
+        return fail("GIT_CONFLICT_INVALID_INPUT", "解決するファイルと方法を指定してください。");
       }
+
+      return withActiveWorkspace(
+        { code: "GIT_CONFLICT_RESOLVE_FAILED", message: "コンフリクトを解決できませんでした。" },
+        (workspacePath) => resolveGitConflict(workspacePath, input)
+      );
     }
   );
 }
