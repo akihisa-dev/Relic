@@ -233,6 +233,19 @@ export function useWorkspaceFileActions({
     });
   }, [closeAllTabs, setWorkspaceError, setWorkspaceState]);
 
+  const handleRemoveWorkspace = useCallback((workspaceId: string): void => {
+    if (!window.relic) return;
+
+    void window.relic.removeWorkspace({ workspaceId }).then((result) => {
+      if (result.ok) {
+        setWorkspaceState(result.value);
+        closeAllTabs();
+      } else {
+        setWorkspaceError(result.error.message);
+      }
+    });
+  }, [closeAllTabs, setWorkspaceError, setWorkspaceState]);
+
   const handleRefreshWorkspaceState = useCallback((): void => {
     void window.relic?.getWorkspaceState().then((result) => {
       if (result.ok) setWorkspaceState(result.value);
@@ -472,6 +485,7 @@ export function useWorkspaceFileActions({
     handleOpenWikiLink,
     handleOpenWorkspace,
     handleRefreshWorkspaceState,
+    handleRemoveWorkspace,
     handleSwitchWorkspace,
     handleMoveActiveFile,
     handleMoveFile,

@@ -11,6 +11,7 @@ import {
   activateWorkspace,
   createWorkspaceSummary,
   prepareWorkspace,
+  removeWorkspaceRegistration,
   toWorkspaceState
 } from "./workspaceService";
 
@@ -87,5 +88,26 @@ describe("workspaceService", () => {
         "missing"
       ).ok
     ).toBe(false);
+  });
+
+  it("登録済みワークスペースを一覧から外し、アクティブなら次の候補へ移る", () => {
+    const firstWorkspace = createWorkspaceSummary("/tmp/relic-notes-1");
+    const secondWorkspace = createWorkspaceSummary("/tmp/relic-notes-2");
+    const settings = {
+      ...baseSettings,
+      lastWorkspaceId: firstWorkspace.id,
+      workspaces: [firstWorkspace, secondWorkspace]
+    };
+
+    const result = removeWorkspaceRegistration(settings, firstWorkspace.id);
+
+    expect(result).toEqual({
+      ok: true,
+      value: {
+        ...baseSettings,
+        lastWorkspaceId: secondWorkspace.id,
+        workspaces: [secondWorkspace]
+      }
+    });
   });
 });

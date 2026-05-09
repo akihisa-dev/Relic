@@ -195,7 +195,10 @@ export function PaneView({
         </div>
       ) : (
         <div className="empty-pane">
-          <p className="empty-pane-message">{t("pane.noFiles")}</p>
+          <div className="empty-pane-copy">
+            <p className="empty-pane-kicker">{t("pane.emptyKicker")}</p>
+            <p className="empty-pane-message">{t("pane.noFiles")}</p>
+          </div>
           {workspacePath ? (
             <form
               className="empty-pane-form"

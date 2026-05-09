@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import type { ReactElement } from "react";
 
 import type { MarkdownTemplateSummary, WorkspaceState, WorkspaceTreeNode } from "../../shared/ipc";
@@ -26,7 +26,6 @@ export interface FilesSidebarProps {
   onOpenWorkspace: () => void;
   onRenameItem: (path: string, type: WorkspaceTreeNode["type"], newName: string) => void;
   onSelectFolder: (node: Extract<WorkspaceTreeNode, { type: "folder" }>) => void;
-  onSwitchWorkspace: (id: string) => void;
   onTogglePin: (path: string) => void;
   onTemplatePathChange: (path: string) => void;
   selectedTemplatePath: string;
@@ -55,7 +54,6 @@ export function FilesSidebar({
   onOpenWorkspace,
   onRenameItem,
   onSelectFolder,
-  onSwitchWorkspace,
   onTogglePin,
   onTemplatePathChange,
   selectedTemplatePath,
@@ -63,7 +61,6 @@ export function FilesSidebar({
   workspaceState
 }: FilesSidebarProps): ReactElement {
   const activeWorkspace = workspaceState?.activeWorkspace ?? null;
-  const [isWorkspaceMenuOpen, setIsWorkspaceMenuOpen] = useState(false);
   const pinnedPaths = useMemo(
     () => new Set(workspaceState?.pinnedPaths ?? []),
     [workspaceState?.pinnedPaths]
@@ -72,61 +69,10 @@ export function FilesSidebar({
 
   return (
     <div className="sidebar-section">
-      <div className="workspace-card">
-        <button
-          aria-expanded={isWorkspaceMenuOpen}
-          className="workspace-dropdown-trigger"
-          disabled={!workspaceState || workspaceState.workspaces.length <= 1}
-          onClick={() => setIsWorkspaceMenuOpen((v) => !v)}
-          title={activeWorkspace?.path}
-          type="button"
-        >
-          <span className="workspace-name">
-            {activeWorkspace ? activeWorkspace.name : t("files.noWorkspace")}
-          </span>
-          {workspaceState && workspaceState.workspaces.length > 1 ? (
-            <span className="workspace-dropdown-chevron">⌄</span>
-          ) : null}
-        </button>
-        {isWorkspaceMenuOpen && workspaceState && workspaceState.workspaces.length > 1 ? (
-          <div className="workspace-dropdown-menu" aria-label={t("files.registeredWorkspaces")}>
-            {workspaceState.workspaces.map((ws) => (
-              <button
-                className={`workspace-dropdown-item${ws.id === activeWorkspace?.id ? " active" : ""}`}
-                key={ws.id}
-                onClick={() => {
-                  setIsWorkspaceMenuOpen(false);
-                  onSwitchWorkspace(ws.id);
-                }}
-                title={ws.path}
-                type="button"
-              >
-                {ws.name}
-              </button>
-            ))}
-          </div>
-        ) : null}
-      </div>
-      <button
-        className="primary-button"
-        disabled={isOpeningWorkspace || isCreatingWorkspace}
-        onClick={onOpenWorkspace}
-        type="button"
-      >
-        {isOpeningWorkspace ? t("files.opening") : t("files.openFolder")}
-      </button>
-      <button
-        className="secondary-button"
-        disabled={isOpeningWorkspace || isCreatingWorkspace}
-        onClick={onCreateWorkspace}
-        type="button"
-      >
-        {isCreatingWorkspace ? t("files.creatingWorkspace") : t("files.createNewWorkspace")}
-      </button>
       {activeWorkspace ? (
         <>
           <form
-            className="new-file-form"
+            className="new-file-form new-file-form--primary"
             onSubmit={(e) => {
               e.preventDefault();
               onCreateFile();
@@ -139,8 +85,8 @@ export function FilesSidebar({
               placeholder={t("files.newNoteName")}
               value={fileNameDraft}
             />
-            <button disabled={isCreatingFile} type="submit">
-              {t("common.create")}
+            <button className="primary-button" disabled={isCreatingFile} type="submit">
+              {t("files.createNoteShort")}
             </button>
           </form>
           {templates.length > 0 ? (
@@ -220,9 +166,50 @@ export function FilesSidebar({
             onTogglePin={onTogglePin}
             pinnedPaths={pinnedPaths}
           />
+          <div className="workspace-actions">
+            <button
+              className="secondary-button"
+              disabled={isOpeningWorkspace || isCreatingWorkspace}
+              onClick={onOpenWorkspace}
+              type="button"
+            >
+              {isOpeningWorkspace ? t("files.opening") : t("files.openFolder")}
+            </button>
+            <button
+              className="secondary-button"
+              disabled={isOpeningWorkspace || isCreatingWorkspace}
+              onClick={onCreateWorkspace}
+              type="button"
+            >
+              {isCreatingWorkspace ? t("files.creatingWorkspace") : t("files.createNewWorkspace")}
+            </button>
+          </div>
         </>
       ) : (
-        <div className="empty-note">{t("files.workspaceHint")}</div>
+        <div className="workspace-empty">
+          <div>
+            <p className="workspace-empty-title">{t("files.workspaceEmptyTitle")}</p>
+            <p className="workspace-empty-copy">{t("files.workspaceHint")}</p>
+          </div>
+          <div className="workspace-empty-actions">
+            <button
+              className="primary-button"
+              disabled={isOpeningWorkspace || isCreatingWorkspace}
+              onClick={onOpenWorkspace}
+              type="button"
+            >
+              {isOpeningWorkspace ? t("files.opening") : t("files.openFolder")}
+            </button>
+            <button
+              className="secondary-button"
+              disabled={isOpeningWorkspace || isCreatingWorkspace}
+              onClick={onCreateWorkspace}
+              type="button"
+            >
+              {isCreatingWorkspace ? t("files.creatingWorkspace") : t("files.createNewWorkspace")}
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );
