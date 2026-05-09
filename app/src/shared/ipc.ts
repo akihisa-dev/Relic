@@ -34,6 +34,7 @@ export const pushGitTagChannel = "workspace:pushGitTag";
 export const moveItemToTrashChannel = "workspace:moveItemToTrash";
 export const openWorkspaceChannel = "workspace:open";
 export const readMarkdownFileChannel = "workspace:readMarkdownFile";
+export const removeWorkspaceChannel = "workspace:remove";
 export const renameMarkdownFileChannel = "workspace:renameMarkdownFile";
 export const renameFolderChannel = "workspace:renameFolder";
 export const searchWorkspaceChannel = "workspace:search";
@@ -203,6 +204,10 @@ export interface ReplaceInFileResult {
 }
 
 export interface SwitchWorkspaceInput {
+  workspaceId: string;
+}
+
+export interface RemoveWorkspaceInput {
   workspaceId: string;
 }
 
@@ -505,6 +510,7 @@ export interface RelicApi {
   pushGitBranch: () => Promise<RelicResult<GitRemoteSyncResult>>;
   pushGitTag: (input: PushGitTagInput) => Promise<RelicResult<GitRemoteSyncResult>>;
   readMarkdownFile: (input: ReadMarkdownFileInput) => Promise<RelicResult<MarkdownFileContent>>;
+  removeWorkspace: (input: RemoveWorkspaceInput) => Promise<RelicResult<WorkspaceState>>;
   renameMarkdownFile: (
     input: RenameMarkdownFileInput
   ) => Promise<RelicResult<RenameMarkdownFileResult>>;

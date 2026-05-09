@@ -55,6 +55,27 @@ export function activateWorkspace(settings: AppSettings, workspaceId: string): R
   });
 }
 
+export function removeWorkspaceRegistration(
+  settings: AppSettings,
+  workspaceId: string
+): RelicResult<AppSettings> {
+  if (!settings.workspaces.some((workspace) => workspace.id === workspaceId)) {
+    return fail("WORKSPACE_NOT_FOUND", "登録済みワークスペースが見つかりませんでした。");
+  }
+
+  const workspaces = settings.workspaces.filter((workspace) => workspace.id !== workspaceId);
+  const lastWorkspaceId =
+    settings.lastWorkspaceId === workspaceId
+      ? workspaces.at(0)?.id ?? null
+      : settings.lastWorkspaceId;
+
+  return ok({
+    ...settings,
+    lastWorkspaceId,
+    workspaces
+  });
+}
+
 export function toWorkspaceState(
   settings: AppSettings,
   fileTree: WorkspaceTreeNode[] = [],
