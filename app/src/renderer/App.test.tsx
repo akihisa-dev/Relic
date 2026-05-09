@@ -228,7 +228,7 @@ describe("App", () => {
       expect(useEditorStore.getState().leftPane.activeTabId).not.toBeNull();
     });
 
-    fireEvent.click(screen.getByRole("button", { name: "B" }));
+    fireEvent.click(screen.getByRole("button", { name: "太字" }));
 
     await waitFor(() => {
       const activeTabId = useEditorStore.getState().leftPane.activeTabId;

@@ -339,12 +339,17 @@ export function Toolbar({ fallbackViewRef, viewRef }: ToolbarProps): ReactElemen
     const view = getView();
     if (!view) return;
     const { state } = view;
-    const pos = state.selection.main.head;
+    const changes = state.changeByRange((range) => {
+      const selected = state.sliceDoc(range.from, range.to);
+      const text = selected.length > 0 ? selected : "";
 
-    view.dispatch({
-      changes: { from: pos, insert: "[[]]" },
-      selection: { anchor: pos + 2 }
+      return {
+        changes: { from: range.from, to: range.to, insert: `[[${text}]]` },
+        range: EditorSelection.range(range.from + 2, range.from + 2 + text.length)
+      };
     });
+
+    view.dispatch(changes);
     view.focus();
   };
 
@@ -382,22 +387,22 @@ export function Toolbar({ fallbackViewRef, viewRef }: ToolbarProps): ReactElemen
       }}
     >
       <div className="toolbar-group">
-        <button className="toolbar-btn" data-tooltip={t("toolbar.bold")} onClick={handleBold} title={t("toolbar.bold")} type="button">
+        <button aria-label={t("toolbar.bold")} className="toolbar-btn" data-tooltip={t("toolbar.bold")} onClick={handleBold} title={t("toolbar.bold")} type="button">
           <strong>B</strong>
         </button>
-        <button className="toolbar-btn" data-tooltip={t("toolbar.italic")} onClick={handleItalic} title={t("toolbar.italic")} type="button">
+        <button aria-label={t("toolbar.italic")} className="toolbar-btn" data-tooltip={t("toolbar.italic")} onClick={handleItalic} title={t("toolbar.italic")} type="button">
           <em>I</em>
         </button>
-        <button className="toolbar-btn" data-tooltip={t("toolbar.strikethrough")} onClick={handleStrikethrough} title={t("toolbar.strikethrough")} type="button">
+        <button aria-label={t("toolbar.strikethrough")} className="toolbar-btn" data-tooltip={t("toolbar.strikethrough")} onClick={handleStrikethrough} title={t("toolbar.strikethrough")} type="button">
           S̶
         </button>
-        <button className="toolbar-btn" data-tooltip={t("toolbar.highlight")} onClick={handleHighlight} title={t("toolbar.highlight")} type="button">
+        <button aria-label={t("toolbar.highlight")} className="toolbar-btn" data-tooltip={t("toolbar.highlight")} onClick={handleHighlight} title={t("toolbar.highlight")} type="button">
           H
         </button>
-        <button className="toolbar-btn" data-tooltip={t("toolbar.underline")} onClick={handleUnderline} title={t("toolbar.underline")} type="button">
+        <button aria-label={t("toolbar.underline")} className="toolbar-btn" data-tooltip={t("toolbar.underline")} onClick={handleUnderline} title={t("toolbar.underline")} type="button">
           <u>U</u>
         </button>
-        <button className="toolbar-btn" data-tooltip={t("toolbar.inlineCode")} onClick={handleInlineCode} title={t("toolbar.inlineCode")} type="button">
+        <button aria-label={t("toolbar.inlineCode")} className="toolbar-btn" data-tooltip={t("toolbar.inlineCode")} onClick={handleInlineCode} title={t("toolbar.inlineCode")} type="button">
           `code`
         </button>
       </div>
@@ -407,6 +412,7 @@ export function Toolbar({ fallbackViewRef, viewRef }: ToolbarProps): ReactElemen
       <div className="toolbar-group">
         <div className="toolbar-dropdown">
           <button
+            aria-label={t("toolbar.heading")}
             className="toolbar-btn"
             data-tooltip={t("toolbar.heading")}
             onClick={() => setShowHeadingMenu((v) => !v)}
@@ -430,13 +436,13 @@ export function Toolbar({ fallbackViewRef, viewRef }: ToolbarProps): ReactElemen
             </div>
           ) : null}
         </div>
-        <button className="toolbar-btn" data-tooltip={t("toolbar.blockquote")} onClick={handleBlockquote} title={t("toolbar.blockquote")} type="button">
+        <button aria-label={t("toolbar.blockquote")} className="toolbar-btn" data-tooltip={t("toolbar.blockquote")} onClick={handleBlockquote} title={t("toolbar.blockquote")} type="button">
           &ldquo;
         </button>
-        <button className="toolbar-btn" data-tooltip={t("toolbar.codeBlock")} onClick={handleCodeBlock} title={t("toolbar.codeBlock")} type="button">
+        <button aria-label={t("toolbar.codeBlock")} className="toolbar-btn" data-tooltip={t("toolbar.codeBlock")} onClick={handleCodeBlock} title={t("toolbar.codeBlock")} type="button">
           {"</>"}
         </button>
-        <button className="toolbar-btn" data-tooltip={t("toolbar.horizontalRule")} onClick={handleHorizontalRule} title={t("toolbar.horizontalRule")} type="button">
+        <button aria-label={t("toolbar.horizontalRule")} className="toolbar-btn" data-tooltip={t("toolbar.horizontalRule")} onClick={handleHorizontalRule} title={t("toolbar.horizontalRule")} type="button">
           —
         </button>
       </div>
@@ -444,13 +450,13 @@ export function Toolbar({ fallbackViewRef, viewRef }: ToolbarProps): ReactElemen
       <div className="toolbar-separator" />
 
       <div className="toolbar-group">
-        <button className="toolbar-btn" data-tooltip={t("toolbar.bulletList")} onClick={handleBulletList} title={t("toolbar.bulletList")} type="button">
+        <button aria-label={t("toolbar.bulletList")} className="toolbar-btn" data-tooltip={t("toolbar.bulletList")} onClick={handleBulletList} title={t("toolbar.bulletList")} type="button">
           •
         </button>
-        <button className="toolbar-btn" data-tooltip={t("toolbar.orderedList")} onClick={handleOrderedList} title={t("toolbar.orderedList")} type="button">
+        <button aria-label={t("toolbar.orderedList")} className="toolbar-btn" data-tooltip={t("toolbar.orderedList")} onClick={handleOrderedList} title={t("toolbar.orderedList")} type="button">
           1.
         </button>
-        <button className="toolbar-btn" data-tooltip={t("toolbar.checkbox")} onClick={handleCheckbox} title={t("toolbar.checkbox")} type="button">
+        <button aria-label={t("toolbar.checkbox")} className="toolbar-btn" data-tooltip={t("toolbar.checkbox")} onClick={handleCheckbox} title={t("toolbar.checkbox")} type="button">
           ☐
         </button>
       </div>
@@ -459,7 +465,7 @@ export function Toolbar({ fallbackViewRef, viewRef }: ToolbarProps): ReactElemen
 
       <div className="toolbar-group">
         <div className="toolbar-inline-dialog-wrap">
-          <button className="toolbar-btn" data-tooltip={t("toolbar.link")} onClick={handleLink} title={t("toolbar.link")} type="button">
+          <button aria-label={t("toolbar.markdownLink")} className="toolbar-btn" data-tooltip={t("toolbar.link")} onClick={handleLink} title={t("toolbar.link")} type="button">
             Link
           </button>
           {showLinkDialog ? (
@@ -478,20 +484,21 @@ export function Toolbar({ fallbackViewRef, viewRef }: ToolbarProps): ReactElemen
                 placeholder="URL"
                 value={linkUrl}
               />
-              <button className="toolbar-btn" onClick={handleLinkSubmit} type="button">
+              <button aria-label={t("toolbar.insert")} className="toolbar-btn" onClick={handleLinkSubmit} type="button">
                 {t("toolbar.insert")}
               </button>
             </div>
           ) : null}
         </div>
-        <button className="toolbar-btn" data-tooltip={t("toolbar.internalLink")} onClick={handleInternalLink} title={t("toolbar.internalLink")} type="button">
+        <button aria-label={t("toolbar.internalLink")} className="toolbar-btn" data-tooltip={t("toolbar.internalLink")} onClick={handleInternalLink} title={t("toolbar.internalLink")} type="button">
           [[
         </button>
-        <button className="toolbar-btn" data-tooltip={t("toolbar.blockId")} onClick={handleBlockId} title={t("toolbar.blockId")} type="button">
+        <button aria-label={t("toolbar.blockId")} className="toolbar-btn" data-tooltip={t("toolbar.blockId")} onClick={handleBlockId} title={t("toolbar.blockId")} type="button">
           ^ID
         </button>
         <div className="toolbar-inline-dialog-wrap">
           <button
+            aria-label={t("toolbar.table")}
             className="toolbar-btn"
             data-tooltip={t("toolbar.table")}
             onClick={() => setShowTableDialog((v) => !v)}
@@ -517,7 +524,7 @@ export function Toolbar({ fallbackViewRef, viewRef }: ToolbarProps): ReactElemen
                 type="number"
                 value={tableCols}
               />
-              <button className="toolbar-btn" onClick={handleTableSubmit} type="button">
+              <button aria-label={t("toolbar.insert")} className="toolbar-btn" onClick={handleTableSubmit} type="button">
                 {t("toolbar.insert")}
               </button>
             </div>

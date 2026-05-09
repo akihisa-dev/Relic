@@ -298,6 +298,7 @@
   "toolbar.internalLink": "Internal link",
   "toolbar.italic": "Italic",
   "toolbar.link": "Link",
+  "toolbar.markdownLink": "Markdown link",
   "toolbar.orderedList": "Numbered list",
   "toolbar.placeholderLinkText": "Link text",
   "toolbar.placeholderText": "Text",
