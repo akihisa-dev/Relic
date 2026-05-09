@@ -28,6 +28,28 @@ describe("github auth helpers", () => {
     expect(getGitHubOAuthConfig({ RELIC_GITHUB_CLIENT_SECRET: "client-secret" })).toBeNull();
   });
 
+  it("OAuth コールバックパスが危険な形式ならデフォルトへ戻す", () => {
+    expect(
+      getGitHubOAuthConfig({
+        RELIC_GITHUB_CLIENT_ID: "client-id",
+        RELIC_GITHUB_CLIENT_SECRET: "client-secret",
+        RELIC_GITHUB_OAUTH_CALLBACK_PATH: "//evil.example/callback"
+      })
+    ).toMatchObject({
+      callbackPath: "/oauth/github/callback"
+    });
+
+    expect(
+      getGitHubOAuthConfig({
+        RELIC_GITHUB_CLIENT_ID: "client-id",
+        RELIC_GITHUB_CLIENT_SECRET: "client-secret",
+        RELIC_GITHUB_OAUTH_CALLBACK_PATH: "oauth/github/callback"
+      })
+    ).toMatchObject({
+      callbackPath: "/oauth/github/callback"
+    });
+  });
+
   it("認可URLに必要なクエリを含める", () => {
     const url = new URL(
       buildGitHubAuthorizeUrl(
