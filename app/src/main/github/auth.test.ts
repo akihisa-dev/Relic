@@ -1,11 +1,25 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const keychainMock = vi.hoisted(() => ({
+  deleteGitHubAuthFromKeychain: vi.fn(),
+  readGitHubAuthFromKeychain: vi.fn()
+}));
+
+vi.mock("./keychain", () => keychainMock);
 
 import {
+  disconnectGitHubAccount,
   getGitHubOAuthConfig,
-  parseGitHubScopeHeader
+  parseGitHubScopeHeader,
+  readGitHubAuthStatus
 } from "./auth";
 
 describe("github auth helpers", () => {
+  beforeEach(() => {
+    keychainMock.deleteGitHubAuthFromKeychain.mockReset();
+    keychainMock.readGitHubAuthFromKeychain.mockReset();
+  });
+
   it("環境変数から OAuth 設定を読み込む", () => {
     expect(
       getGitHubOAuthConfig({
@@ -29,5 +43,47 @@ describe("github auth helpers", () => {
       "gist"
     ]);
     expect(parseGitHubScopeHeader(null)).toEqual([]);
+  });
+
+  it("認証状態はトークンを返さない", async () => {
+    keychainMock.readGitHubAuthFromKeychain.mockResolvedValue({
+      accessToken: "secret-access-token",
+      login: "akihisa",
+      scopes: ["repo"],
+      tokenExpiresAt: null,
+      tokenType: "bearer"
+    });
+
+    await expect(
+      readGitHubAuthStatus({ clientId: "client-id", scopes: [] })
+    ).resolves.toEqual({
+      ok: true,
+      value: {
+        configured: true,
+        connected: true,
+        login: "akihisa",
+        scopes: ["repo"],
+        tokenType: "bearer"
+      }
+    });
+  });
+
+  it("ログアウト後はKeychainを削除し、未接続状態を返す", async () => {
+    keychainMock.deleteGitHubAuthFromKeychain.mockResolvedValue(undefined);
+    keychainMock.readGitHubAuthFromKeychain.mockResolvedValue(null);
+
+    await expect(
+      disconnectGitHubAccount({ clientId: "client-id", scopes: [] })
+    ).resolves.toEqual({
+      ok: true,
+      value: {
+        configured: true,
+        connected: false,
+        login: null,
+        scopes: [],
+        tokenType: null
+      }
+    });
+    expect(keychainMock.deleteGitHubAuthFromKeychain).toHaveBeenCalledOnce();
   });
 });
