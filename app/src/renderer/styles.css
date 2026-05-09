@@ -1516,8 +1516,10 @@ button:disabled {
   cursor: grabbing;
 }
 
-.cm-live-table:hover .cm-live-table-handle,
-.cm-live-table:focus-within .cm-live-table-handle {
+.cm-live-table[data-can-grab-column="true"] .cm-live-table-handle--column,
+.cm-live-table[data-can-grab-row="true"] .cm-live-table-handle--row,
+.cm-live-table[data-drag-axis="column"] .cm-live-table-handle--column,
+.cm-live-table[data-drag-axis="row"] .cm-live-table-handle--row {
   opacity: 1;
 }
 
@@ -1568,15 +1570,12 @@ button:disabled {
 
 .cm-live-table-add--column-before {
   bottom: -28px;
+  left: var(--table-active-col-start);
 }
 
 .cm-live-table-add--column-after {
+  left: var(--table-active-col-after);
   top: -28px;
-}
-
-.cm-live-table-add--column-before,
-.cm-live-table-add--column-after {
-  left: var(--table-active-col-center);
 }
 
 .cm-live-table-add--column-before::before,
@@ -1598,16 +1597,17 @@ button:disabled {
 .cm-live-table-add--row-before,
 .cm-live-table-add--row-after {
   height: 28px;
-  top: var(--table-active-row-center);
   width: 18px;
 }
 
 .cm-live-table-add--row-before {
   left: -28px;
+  top: var(--table-active-row-start);
 }
 
 .cm-live-table-add--row-after {
   right: -28px;
+  top: var(--table-active-row-after);
 }
 
 .cm-live-table-add--row-before::before,
@@ -1646,7 +1646,13 @@ button:disabled {
 }
 
 .cm-live-table-handle:hover,
-.cm-live-table-handle:focus-visible,
+.cm-live-table-handle:focus-visible {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+  color: #ffffff;
+  outline: none;
+}
+
 .cm-live-table-add:hover,
 .cm-live-table-add:focus-visible {
   color: var(--accent);

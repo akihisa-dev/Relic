@@ -330,17 +330,23 @@ describe("Editor", () => {
     expect(table.dataset.canAddColumnAfter).toBeUndefined();
     expect(table.dataset.canAddRowBefore).toBe("true");
     expect(table.dataset.canAddRowAfter).toBeUndefined();
+    expect(table.dataset.canGrabRow).toBe("true");
+    expect(table.dataset.canGrabColumn).toBeUndefined();
 
     fireEvent.mouseEnter(container.querySelector('.cm-live-table-cell-input[data-row="0"][data-col="0"]') as HTMLInputElement);
     expect(table.dataset.canAddColumnAfter).toBe("true");
     expect(table.dataset.canAddRowBefore).toBe("true");
     expect(table.dataset.canAddRowAfter).toBeUndefined();
+    expect(table.dataset.canGrabColumn).toBe("true");
+    expect(table.dataset.canGrabRow).toBe("true");
 
     fireEvent.mouseEnter(container.querySelector('.cm-live-table-cell-input[data-row="1"][data-col="1"]') as HTMLInputElement);
     expect(table.dataset.canAddColumnAfter).toBeUndefined();
     expect(table.dataset.canAddColumnBefore).toBe("true");
     expect(table.dataset.canAddRowAfter).toBe("true");
     expect(table.dataset.canAddRowBefore).toBeUndefined();
+    expect(table.dataset.canGrabColumn).toBeUndefined();
+    expect(table.dataset.canGrabRow).toBeUndefined();
   });
 
   it("ライブプレビューの表で削除ボタンを出さず、行列選択ハンドルを出す", async () => {
@@ -419,6 +425,7 @@ describe("Editor", () => {
 
     await waitFor(() => expect(container.querySelector(".cm-live-table-active")).not.toBeNull());
     input.blur();
+    fireEvent.focusOut(input);
 
     await waitFor(() => expect(container.querySelector(".cm-live-table-active")).toBeNull());
   });

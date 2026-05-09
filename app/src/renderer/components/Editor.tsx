@@ -175,19 +175,27 @@ class TableWidget extends WidgetType {
       wrapper.dataset.activeCol = String(colIndex);
     };
 
-    const setAddAffordance = (rowIndex: number, colIndex: number) => {
-      activeRow = rowIndex;
-      activeCol = colIndex;
-      positionControls();
+    const clearAffordance = () => {
       delete wrapper.dataset.canAddColumnBefore;
       delete wrapper.dataset.canAddColumnAfter;
       delete wrapper.dataset.canAddRowBefore;
       delete wrapper.dataset.canAddRowAfter;
+      delete wrapper.dataset.canGrabColumn;
+      delete wrapper.dataset.canGrabRow;
+    };
+
+    const setAddAffordance = (rowIndex: number, colIndex: number) => {
+      activeRow = rowIndex;
+      activeCol = colIndex;
+      positionControls();
+      clearAffordance();
 
       if (rowIndex === 0) wrapper.dataset.canAddColumnAfter = "true";
       if (rowIndex === rowCount - 1) wrapper.dataset.canAddColumnBefore = "true";
       if (colIndex === 0) wrapper.dataset.canAddRowBefore = "true";
       if (colIndex === colCount - 1) wrapper.dataset.canAddRowAfter = "true";
+      if (rowIndex === 0) wrapper.dataset.canGrabColumn = "true";
+      if (colIndex === 0) wrapper.dataset.canGrabRow = "true";
     };
 
     const clearActive = () => {
@@ -197,10 +205,17 @@ class TableWidget extends WidgetType {
       delete wrapper.dataset.activeAxis;
       delete wrapper.dataset.activeRow;
       delete wrapper.dataset.activeCol;
-      delete wrapper.dataset.canAddColumnBefore;
-      delete wrapper.dataset.canAddColumnAfter;
-      delete wrapper.dataset.canAddRowBefore;
-      delete wrapper.dataset.canAddRowAfter;
+      clearAffordance();
+    };
+
+    const clearIfFocusOutside = (relatedTarget: EventTarget | null = null) => {
+      requestAnimationFrame(() => {
+        const relatedNode = relatedTarget instanceof Node ? relatedTarget : null;
+        const activeElement = document.activeElement;
+        if (relatedNode && wrapper.contains(relatedNode)) return;
+        if (activeElement && activeElement !== document.body && wrapper.contains(activeElement)) return;
+        clearActive();
+      });
     };
 
     const moveDraggedSelection = (targetRow: number, targetCol: number) => {
@@ -340,11 +355,7 @@ class TableWidget extends WidgetType {
           this.showMenu(wrapper, event, rowIndex, colIndex);
         });
         input.addEventListener("blur", updateCell);
-        input.addEventListener("blur", () => {
-          requestAnimationFrame(() => {
-            if (!wrapper.contains(document.activeElement)) clearActive();
-          });
-        });
+        input.addEventListener("blur", (event) => clearIfFocusOutside((event as FocusEvent).relatedTarget));
         input.addEventListener("change", updateCell);
         input.addEventListener("keydown", (event) => {
           if (event.key === "Enter") {
@@ -400,6 +411,7 @@ class TableWidget extends WidgetType {
     });
     columnHandle.addEventListener("mouseenter", () => {
       setAddAffordance(0, activeCol);
+      wrapper.dataset.canGrabColumn = "true";
     });
     columnHandle.addEventListener("pointerdown", (event) => {
       markActive("column", activeRow, activeCol);
@@ -428,6 +440,7 @@ class TableWidget extends WidgetType {
     });
     rowHandle.addEventListener("mouseenter", () => {
       setAddAffordance(activeRow, 0);
+      wrapper.dataset.canGrabRow = "true";
     });
     rowHandle.addEventListener("pointerdown", (event) => {
       markActive("row", activeRow, activeCol);
@@ -449,9 +462,10 @@ class TableWidget extends WidgetType {
     wrapper.append(this.edgeAddButton("row-before", () => Math.max(1, activeRow), () => activeCol));
     wrapper.append(this.edgeAddButton("row-after", () => activeRow + 1, () => activeCol));
     wrapper.addEventListener("focusout", () => {
-      requestAnimationFrame(() => {
-        if (!wrapper.contains(document.activeElement)) clearActive();
-      });
+      clearIfFocusOutside();
+    });
+    wrapper.addEventListener("mouseleave", () => {
+      if (!wrapper.dataset.dragAxis) clearAffordance();
     });
     wrapper.addEventListener("dragover", (event) => {
       if (wrapper.dataset.dragAxis) event.preventDefault();
