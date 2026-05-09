@@ -21,6 +21,7 @@
   "files.creatingWorkspace": "Creating...",
   "files.duplicate": "Duplicate",
   "files.moveToTrash": "Move to Trash",
+  "files.moveSelectedToTrash": "Move Selected Items to Trash",
   "files.newFolderName": "New folder name",
   "files.newNoteName": "New file name",
   "files.noTemplate": "No template",

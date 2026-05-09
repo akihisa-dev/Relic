@@ -17,46 +17,58 @@ export function findNodeByPath(nodes: WorkspaceTreeNode[], targetPath: string): 
 }
 
 export interface FileTreeProps {
-  activePaths: Set<string>;
   isRoot?: boolean;
   nodes: WorkspaceTreeNode[];
   onDeleteItem?: (path: string, type: WorkspaceTreeNode["type"]) => void;
+  onDeleteSelectedItems?: () => void;
   onDuplicateFile?: (path: string) => void;
   onMoveFile?: (path: string, destFolder: string) => void;
   onMoveFolder?: (path: string, destFolder: string) => void;
+  onMoveItems?: (items: Array<{ path: string; type: WorkspaceTreeNode["type"] }>, destFolder: string) => void;
   onOpenFile: (path: string) => void;
   onRenameItem?: (path: string, type: WorkspaceTreeNode["type"], newName: string) => void;
   onSelectFolder: (node: Extract<WorkspaceTreeNode, { type: "folder" }>) => void;
+  onSelectItem?: (node: WorkspaceTreeNode, e: React.MouseEvent<HTMLButtonElement>) => boolean;
   onTogglePin?: (path: string) => void;
   pinnedPaths?: Set<string>;
+  selectedItems?: Array<{ path: string; type: WorkspaceTreeNode["type"] }>;
+  selectedPaths?: Set<string>;
 }
 
 export function FileTreeItem({
-  activePaths,
   isPinned,
   node,
   onDeleteItem,
+  onDeleteSelectedItems,
   onDuplicateFile,
   onMoveFile,
   onMoveFolder,
+  onMoveItems,
   onOpenFile,
   onRenameItem,
   onSelectFolder,
+  onSelectItem,
   onTogglePin,
-  pinnedPaths
+  pinnedPaths,
+  selectedItems = [],
+  selectedPaths = new Set<string>()
 }: {
-  activePaths: Set<string>;
   isPinned?: boolean;
   node: WorkspaceTreeNode;
   onDeleteItem?: (path: string, type: WorkspaceTreeNode["type"]) => void;
+  onDeleteSelectedItems?: () => void;
   onDuplicateFile?: (path: string) => void;
   onMoveFile?: (path: string, destFolder: string) => void;
   onMoveFolder?: (path: string, destFolder: string) => void;
+  onMoveItems?: (items: Array<{ path: string; type: WorkspaceTreeNode["type"] }>, destFolder: string) => void;
   onOpenFile: (path: string) => void;
   onRenameItem?: (path: string, type: WorkspaceTreeNode["type"], newName: string) => void;
   onSelectFolder: (node: Extract<WorkspaceTreeNode, { type: "folder" }>) => void;
+  onSelectItem?: (node: WorkspaceTreeNode, e: React.MouseEvent<HTMLButtonElement>) => boolean;
   onTogglePin?: (path: string) => void;
   pinnedPaths?: Set<string>;
+  selectedItems?: Array<{ path: string; type: WorkspaceTreeNode["type"] }>;
+  selectedPaths?: Set<string>;
 }): ReactElement {
   const t = useT();
   const isCommittingRenameRef = useRef(false);
@@ -68,6 +80,8 @@ export function FileTreeItem({
   const [renameDraft, setRenameDraft] = useState(node.name);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
   const isFolder = node.type === "folder";
+  const isSelected = selectedPaths.has(node.path);
+  const useSelectedItems = isSelected && selectedItems.length > 1;
 
   useEffect(() => {
     if (isRenaming) {
@@ -132,31 +146,52 @@ export function FileTreeItem({
     const raw = e.dataTransfer.getData("application/relic-item");
     if (!raw) return;
 
-    const { path: srcPath, type } = JSON.parse(raw) as { path: string; type: string };
-    if (srcPath === destFolder) return;
-    if (type === "folder" && (destFolder === srcPath || destFolder.startsWith(srcPath + "/"))) return;
+    const payload = JSON.parse(raw) as {
+      items?: Array<{ path: string; type: WorkspaceTreeNode["type"] }>;
+      path?: string;
+      type?: WorkspaceTreeNode["type"];
+    };
+    const items = payload.items ?? (payload.path && payload.type ? [{ path: payload.path, type: payload.type }] : []);
+    const movableItems = items.filter((item) => {
+      if (item.path === destFolder) return false;
+      if (item.type === "folder" && destFolder.startsWith(`${item.path}/`)) return false;
+      return true;
+    });
 
-    if (type === "file") onMoveFile?.(srcPath, destFolder);
-    else onMoveFolder?.(srcPath, destFolder);
+    if (movableItems.length === 0) return;
+    if (movableItems.length > 1) {
+      onMoveItems?.(movableItems, destFolder);
+      return;
+    }
+
+    const [item] = movableItems;
+    if (item.type === "file") onMoveFile?.(item.path, destFolder);
+    else onMoveFolder?.(item.path, destFolder);
   };
 
   return (
     <li className="file-tree-item">
       <div className="file-tree-row-wrap">
         <button
-          className={`file-tree-row ${node.type}${activePaths.has(node.path) ? " active" : ""}${isDragOver ? " drag-over" : ""}`}
+          className={`file-tree-row ${node.type}${isSelected ? " selected" : ""}${isDragOver ? " drag-over" : ""}`}
           draggable
           onDragEnd={() => setIsDragOver(false)}
           onDragLeave={isFolder ? (e) => { e.stopPropagation(); setIsDragOver(false); } : undefined}
           onDragOver={isFolder ? (e) => { e.preventDefault(); e.stopPropagation(); setIsDragOver(true); } : undefined}
           onDragStart={(e) => {
-            e.dataTransfer.setData("application/relic-item", JSON.stringify({ path: node.path, type: node.type }));
+            const dragItems = useSelectedItems ? selectedItems : [{ path: node.path, type: node.type }];
+            e.dataTransfer.setData("application/relic-item", JSON.stringify({
+              items: dragItems,
+              path: node.path,
+              type: node.type
+            }));
             e.dataTransfer.effectAllowed = "move";
           }}
           onDrop={isFolder ? (e) => handleDrop(e, node.path) : undefined}
           onContextMenu={(e) => {
             e.preventDefault();
             e.stopPropagation();
+            if (!isSelected) onSelectItem?.(node, e);
             setContextMenu({ x: e.clientX, y: e.clientY });
           }}
           onDoubleClick={(e) => {
@@ -164,8 +199,10 @@ export function FileTreeItem({
             e.stopPropagation();
             startRename();
           }}
-          onClick={() => {
+          onClick={(e) => {
             if (isRenaming) return;
+            const shouldActivate = onSelectItem?.(node, e) ?? true;
+            if (!shouldActivate) return;
             if (node.type === "file") {
               onOpenFile(node.path);
             } else {
@@ -211,10 +248,12 @@ export function FileTreeItem({
             role="menu"
             style={{ left: contextMenu.x, top: contextMenu.y }}
           >
-            <button className="tab-context-menu-item" onClick={startRename} role="menuitem" type="button">
-              {t("files.rename")}
-            </button>
-            {node.type === "file" ? (
+            {useSelectedItems ? null : (
+              <button className="tab-context-menu-item" onClick={startRename} role="menuitem" type="button">
+                {t("files.rename")}
+              </button>
+            )}
+            {node.type === "file" && !useSelectedItems ? (
               <button
                 className="tab-context-menu-item"
                 onClick={() => {
@@ -232,29 +271,34 @@ export function FileTreeItem({
               className="tab-context-menu-item danger"
               onClick={() => {
                 setContextMenu(null);
-                onDeleteItem?.(node.path, node.type);
+                if (useSelectedItems) onDeleteSelectedItems?.();
+                else onDeleteItem?.(node.path, node.type);
               }}
               role="menuitem"
               type="button"
             >
-              {t("files.moveToTrash")}
+              {useSelectedItems ? t("files.moveSelectedToTrash") : t("files.moveToTrash")}
             </button>
           </div>
         ) : null}
       </div>
       {node.type === "folder" && isExpanded && node.children.length > 0 ? (
         <FileTree
-          activePaths={activePaths}
           nodes={node.children}
           onDeleteItem={onDeleteItem}
+          onDeleteSelectedItems={onDeleteSelectedItems}
           onDuplicateFile={onDuplicateFile}
           onMoveFile={onMoveFile}
           onMoveFolder={onMoveFolder}
+          onMoveItems={onMoveItems}
           onOpenFile={onOpenFile}
           onRenameItem={onRenameItem}
           onSelectFolder={onSelectFolder}
+          onSelectItem={onSelectItem}
           onTogglePin={onTogglePin}
           pinnedPaths={pinnedPaths}
+          selectedItems={selectedItems}
+          selectedPaths={selectedPaths}
         />
       ) : null}
     </li>
@@ -262,18 +306,22 @@ export function FileTreeItem({
 }
 
 export function FileTree({
-  activePaths,
   isRoot = false,
   nodes,
   onDeleteItem,
+  onDeleteSelectedItems,
   onDuplicateFile,
   onMoveFile,
   onMoveFolder,
+  onMoveItems,
   onOpenFile,
   onRenameItem,
   onSelectFolder,
+  onSelectItem,
   onTogglePin,
-  pinnedPaths
+  pinnedPaths,
+  selectedItems = [],
+  selectedPaths = new Set<string>()
 }: FileTreeProps): ReactElement {
   const t = useT();
   const [isRootDragOver, setIsRootDragOver] = useState(false);
@@ -289,11 +337,23 @@ export function FileTree({
     const raw = e.dataTransfer.getData("application/relic-item");
     if (!raw) return;
 
-    const { path: srcPath, type } = JSON.parse(raw) as { path: string; type: string };
-    if (!srcPath.includes("/")) return;
+    const payload = JSON.parse(raw) as {
+      items?: Array<{ path: string; type: WorkspaceTreeNode["type"] }>;
+      path?: string;
+      type?: WorkspaceTreeNode["type"];
+    };
+    const items = payload.items ?? (payload.path && payload.type ? [{ path: payload.path, type: payload.type }] : []);
+    const movableItems = items.filter((item) => item.path.includes("/"));
+    if (movableItems.length === 0) return;
 
-    if (type === "file") onMoveFile?.(srcPath, "");
-    else onMoveFolder?.(srcPath, "");
+    if (movableItems.length > 1) {
+      onMoveItems?.(movableItems, "");
+      return;
+    }
+
+    const [item] = movableItems;
+    if (item.type === "file") onMoveFile?.(item.path, "");
+    else onMoveFolder?.(item.path, "");
   };
 
   return (
@@ -308,19 +368,23 @@ export function FileTree({
       ) : null}
       {nodes.map((node) => (
         <FileTreeItem
-          activePaths={activePaths}
           isPinned={pinnedPaths?.has(node.path)}
           key={node.path}
           node={node}
           onDeleteItem={onDeleteItem}
+          onDeleteSelectedItems={onDeleteSelectedItems}
           onDuplicateFile={onDuplicateFile}
           onMoveFile={onMoveFile}
           onMoveFolder={onMoveFolder}
+          onMoveItems={onMoveItems}
           onOpenFile={onOpenFile}
           onRenameItem={onRenameItem}
           onSelectFolder={onSelectFolder}
+          onSelectItem={onSelectItem}
           onTogglePin={onTogglePin}
           pinnedPaths={pinnedPaths}
+          selectedItems={selectedItems}
+          selectedPaths={selectedPaths}
         />
       ))}
     </ul>

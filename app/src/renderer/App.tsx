@@ -313,6 +313,7 @@ export function App(): ReactElement {
   const {
     handleDeleteActiveFile,
     handleDeleteTreeItem,
+    handleDeleteTreeItems,
     handleDuplicateActiveFile,
     handleDuplicateTreeFile,
     handleCreateFile,
@@ -329,6 +330,7 @@ export function App(): ReactElement {
     handleMoveActiveFile,
     handleMoveFile,
     handleMoveFolder,
+    handleMoveTreeItems,
     handleRenameActiveFile,
     handleRenameTreeItem,
     handleTogglePin,
@@ -403,11 +405,6 @@ export function App(): ReactElement {
     []
   );
 
-  // ──────────────────
-  // アクティブなパスのセット（ファイルツリーのハイライト用）
-  // ──────────────────
-
-  const activePaths = new Set(Object.values(tabs).map((t) => t.path));
   const registeredWorkspaces = useMemo(
     () =>
       workspaceState && workspaceState.workspaces.length > 0
@@ -542,7 +539,6 @@ export function App(): ReactElement {
             <div className="sidebar-body">
             {activeSidebarView === "files" ? (
               <FilesSidebar
-                activePaths={activePaths}
                 isCreatingFile={isCreatingFile}
                 isCreatingFolder={isCreatingFolder}
                 isCreatingWorkspace={isCreatingWorkspace}
@@ -551,9 +547,11 @@ export function App(): ReactElement {
                 onCreateFolder={handleCreateFolder}
                 onCreateWorkspace={handleCreateNewWorkspace}
                 onDeleteItem={handleDeleteTreeItem}
+                onDeleteItems={handleDeleteTreeItems}
                 onDuplicateFile={handleDuplicateTreeFile}
                 onMoveFile={handleMoveFile}
                 onMoveFolder={handleMoveFolder}
+                onMoveItems={handleMoveTreeItems}
                 onOpenFile={handleOpenFile}
                 onOpenWorkspace={handleOpenWorkspace}
                 onRenameItem={handleRenameTreeItem}

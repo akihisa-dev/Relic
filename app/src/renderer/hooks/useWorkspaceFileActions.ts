@@ -45,6 +45,19 @@ export function useWorkspaceFileActions({
   const [isOpeningWorkspace, setIsOpeningWorkspace] = useState(false);
   const [isCreatingWorkspace, setIsCreatingWorkspace] = useState(false);
 
+  const removeCoveredItems = useCallback(
+    (items: Array<{ path: string; type: WorkspaceTreeNode["type"] }>) => {
+      return items.filter((item) => {
+        return !items.some((other) => (
+          other.type === "folder" &&
+          other.path !== item.path &&
+          item.path.startsWith(`${other.path}/`)
+        ));
+      });
+    },
+    []
+  );
+
   const nextUniqueFileName = useCallback((workspaceState: WorkspaceState | null): string => {
     const existing = new Set<string>();
     const walk = (node: WorkspaceTreeNode): void => {
@@ -347,12 +360,69 @@ export function useWorkspaceFileActions({
 
     void window.relic.moveFolder({ destinationFolder: destFolder, path }).then((result) => {
       if (result.ok) {
+        const nextFolderPath = joinWorkspacePath(destFolder, displayNameFromPath(path));
+
+        Object.entries(tabs)
+          .filter(([, tab]) => tab.path.startsWith(`${path}/`))
+          .forEach(([tabId, tab]) => {
+            const nextPath = `${nextFolderPath}/${tab.path.slice(path.length + 1)}`;
+            updateTabMeta(tabId, { name: displayNameFromPath(nextPath), path: nextPath });
+          });
         setWorkspaceState(result.value);
       } else {
         setWorkspaceError(result.error.message);
       }
     });
-  }, [setWorkspaceError, setWorkspaceState]);
+  }, [setWorkspaceError, setWorkspaceState, tabs, updateTabMeta]);
+
+  const handleMoveTreeItems = useCallback(
+    (items: Array<{ path: string; type: WorkspaceTreeNode["type"] }>, destFolder: string): void => {
+      if (!window.relic) return;
+
+      const movableItems = removeCoveredItems(items).filter((item) => {
+        if (item.path === destFolder) return false;
+        if (item.type === "folder" && destFolder.startsWith(`${item.path}/`)) return false;
+        return true;
+      });
+
+      if (movableItems.length === 0) return;
+
+      void (async () => {
+        for (const item of movableItems) {
+          if (item.type === "file") {
+            const result = await window.relic!.moveMarkdownFile({ destinationFolder: destFolder, path: item.path });
+            if (!result.ok) {
+              setWorkspaceError(result.error.message);
+              return;
+            }
+
+            const oldTab = Object.entries(tabs).find(([, tab]) => tab.path === item.path);
+
+            if (oldTab) updateTabMeta(oldTab[0], { name: result.value.file.name, path: result.value.file.path });
+            setWorkspaceState(result.value.workspaceState);
+            continue;
+          }
+
+          const result = await window.relic!.moveFolder({ destinationFolder: destFolder, path: item.path });
+          if (!result.ok) {
+            setWorkspaceError(result.error.message);
+            return;
+          }
+
+          const nextFolderPath = joinWorkspacePath(destFolder, displayNameFromPath(item.path));
+
+          Object.entries(tabs)
+            .filter(([, tab]) => tab.path.startsWith(`${item.path}/`))
+            .forEach(([tabId, tab]) => {
+              const nextPath = `${nextFolderPath}/${tab.path.slice(item.path.length + 1)}`;
+              updateTabMeta(tabId, { name: displayNameFromPath(nextPath), path: nextPath });
+            });
+          setWorkspaceState(result.value);
+        }
+      })();
+    },
+    [removeCoveredItems, setWorkspaceError, setWorkspaceState, tabs, updateTabMeta]
+  );
 
   const handleMoveActiveFile = useCallback(
     (destinationFolder: string): void => {
@@ -525,11 +595,54 @@ export function useWorkspaceFileActions({
     [closeTab, leftPane, rightPane, setWorkspaceError, setWorkspaceState, tabs]
   );
 
+  const handleDeleteTreeItems = useCallback(
+    (items: Array<{ path: string; type: WorkspaceTreeNode["type"] }>): void => {
+      if (!window.relic || items.length === 0) return;
+
+      const deletableItems = removeCoveredItems(items);
+      const itemCount = deletableItems.length;
+      const message = `${itemCount}件の項目をゴミ箱に移動しますか？フォルダを含む場合、フォルダ内のノートと添付ファイルも一緒に移動されます。`;
+      if (!window.confirm(message)) return;
+
+      void (async () => {
+        let nextWorkspaceState: WorkspaceState | null = null;
+
+        for (const item of deletableItems) {
+          const result = await window.relic!.moveItemToTrash({ path: item.path, type: item.type });
+          if (!result.ok) {
+            setWorkspaceError(result.error.message);
+            return;
+          }
+          nextWorkspaceState = result.value;
+        }
+
+        const matchesDeletedPath = (tabPath: string): boolean => (
+          deletableItems.some((item) => (
+            item.type === "file" ? tabPath === item.path : tabPath.startsWith(`${item.path}/`)
+          ))
+        );
+
+        leftPane.tabIds.forEach((tabId) => {
+          const tab = tabs[tabId];
+          if (tab && matchesDeletedPath(tab.path)) closeTab("left", tabId);
+        });
+        rightPane.tabIds.forEach((tabId) => {
+          const tab = tabs[tabId];
+          if (tab && matchesDeletedPath(tab.path)) closeTab("right", tabId);
+        });
+
+        if (nextWorkspaceState) setWorkspaceState(nextWorkspaceState);
+      })();
+    },
+    [closeTab, leftPane, removeCoveredItems, rightPane, setWorkspaceError, setWorkspaceState, tabs]
+  );
+
   return {
     fileNameDraft,
     folderNameDraft,
     handleDeleteActiveFile,
     handleDeleteTreeItem,
+    handleDeleteTreeItems,
     handleDuplicateActiveFile,
     handleDuplicateTreeFile,
     handleCreateFile,
@@ -546,6 +659,7 @@ export function useWorkspaceFileActions({
     handleMoveActiveFile,
     handleMoveFile,
     handleMoveFolder,
+    handleMoveTreeItems,
     handleRenameActiveFile,
     handleRenameTreeItem,
     handleTogglePin,
