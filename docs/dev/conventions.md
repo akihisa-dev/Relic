@@ -179,12 +179,26 @@ UIに表示する日本語文言は、後から集約できるようにコンポ
 - GitHub未接続でもローカルGit履歴を使えるようにする
 - GitHub認証はブラウザOAuthのみを扱い、Personal Access Token貼り付け方式を実装しない
 - GitHub OAuthで取得した認証情報はmacOS Keychainに保存し、設定JSONには保存しない
+- GitHub OAuthの `code` / `client_secret` / `access_token` / `token` は、ログ・エラー詳細・テストスナップショットへ出さない
+- GitHub OAuthのコールバックパスはローカルHTTPサーバーの相対パスだけを許可し、URL・クエリ・フラグメント・親ディレクトリ参照を許可しない
 - 手動同期時は必ず差分確認画面を表示する
 - 自動同期はデフォルトOFFにする
 - 自動プッシュ時は保存完了を待ってからコミット・プッシュする
 - 自動コミットメッセージは `Update notes: YYYY-MM-DD HH:mm` 形式にする
 - ブランチ切り替え時に未コミット変更がある場合は、仕様どおり3択を表示する
 - コンフリクト解決では、自分 / リモートの二択に加えて手動編集を許可する
+
+---
+
+## セキュリティ
+
+- Electronのレンダラーは `contextIsolation: true`、`nodeIntegration: false`、`sandbox: true` を基本とする
+- レンダラーへ公開する機能は `preload` の `window.relic` API に限定し、Node.js APIを直接公開しない
+- IPCハンドラは入力型を検証し、ファイル操作は現在のワークスペース内に限定する
+- 外部URLを開く処理は許可リスト方式にし、GitHub連携に必要なURL以外へ自動遷移しない
+- MarkdownプレビューはHTMLをサニタイズし、画像読み込みはワークスペース内の `attachments/` 配下に限定する
+- `.env`、`.npmrc`、秘密鍵、証明書、ローカルAI/エディタ設定はGit管理に含めない
+- 依存関係監査は外部 registry に依存情報を送るため、実行前にユーザーの明示許可を得る
 
 ---
 

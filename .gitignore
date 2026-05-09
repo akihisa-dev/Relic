@@ -1,6 +1,7 @@
 # 環境変数（超重要）
 .env
 .env.*
+.npmrc
 
 # Node.js系
 node_modules/
@@ -23,6 +24,27 @@ coverage/
 
 # ログ
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# 秘密鍵・証明書・認証情報
+*.pem
+*.key
+*.p12
+*.pfx
+*.cer
+*.crt
+*.mobileprovision
+id_rsa
+id_ed25519
+known_hosts
+
+# ローカルAI/エディタ設定
+.claude/settings.local.json
+.codex/
+.gemini/
 
 # OS系
 .DS_Store
