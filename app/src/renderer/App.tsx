@@ -3,31 +3,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactElement } from "react";
 
 import type {
-  AppInfo,
-  AutoSyncSettings,
-  Backlink,
-  GitCommitDiff,
-  GitBranchSummary,
-  GitConflict,
-  AppTheme,
-  EditorSettings,
-  GitCommitSummary,
-  GitHubAuthStatus,
-  GitRemoteSummary,
-  GitStatus,
-  GitSyncPreview,
-  GitTagSummary,
-  GitWorkingChange,
-  MarkdownTemplateSummary,
-  SearchMode,
   WorkspaceState,
-  WorkspaceSearchResult,
-  WorkspaceTagSummary,
   WorkspaceTreeNode
 } from "../shared/ipc";
-import { defaultAutoSyncSettings, defaultFeatureToggles, defaultUserDefinedFields, type FeatureToggles, type UserDefinedField } from "../shared/ipc";
-import { resolveWikiLinkPath, resolveWikiLinks } from "../shared/links";
-import { CommandPalette, type Command } from "./components/CommandPalette";
+import { resolveWikiLinks } from "../shared/links";
+import { CommandPalette } from "./components/CommandPalette";
 import { FilesSidebar } from "./components/FilesSidebar";
 import { FrontmatterForm } from "./components/FrontmatterForm";
 import { GitSidebar } from "./components/GitSidebar";
@@ -39,14 +19,18 @@ import { ToolsSidebar } from "./components/ToolsSidebar";
 import { Toolbar } from "./components/Toolbar";
 import { extractOutlineHeadings, getActiveTabInPane } from "./editorDerivedState";
 import { createTranslator, I18nProvider, useT, type TranslationKey } from "./i18n";
+import { useAppKeyboardShortcuts } from "./hooks/useAppKeyboardShortcuts";
+import { useAppSettingsState } from "./hooks/useAppSettingsState";
+import { useAppTheme } from "./hooks/useAppTheme";
+import { useBacklinksState } from "./hooks/useBacklinksState";
+import { useCommandPaletteCommands } from "./hooks/useCommandPaletteCommands";
+import { useGitPanelState } from "./hooks/useGitPanelState";
+import { useSidebarResize } from "./hooks/useSidebarResize";
+import { useWorkspaceFileActions } from "./hooks/useWorkspaceFileActions";
+import { useWorkspaceSearchState } from "./hooks/useWorkspaceSearchState";
 import { useEditorStore, type PaneId } from "./store/editorStore";
 import { useUiStore, type RightPanelView, type SidebarView } from "./store/uiStore";
-import {
-  collectMarkdownPaths,
-  displayNameFromPath,
-  joinWorkspacePath,
-  parentFolderOf
-} from "./workspacePaths";
+import { collectMarkdownPaths } from "./workspacePaths";
 import "./styles.css";
 
 // ────────────────────────────────────────────────
@@ -103,7 +87,6 @@ const sidebarViewDefs: Array<{ id: SidebarView; labelKey: TranslationKey; icon: 
 
 export function App(): ReactElement {
   const [workspaceState, setWorkspaceState] = useState<WorkspaceState | null>(null);
-  const [appInfo, setAppInfo] = useState<AppInfo | null>(null);
   const [toastMessage, setToastMessage] = useState<{ text: string; type: "error" | "info" } | null>(null);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const showToast = useCallback((text: string, type: "error" | "info" = "error") => {
@@ -114,65 +97,8 @@ export function App(): ReactElement {
   const setWorkspaceError = useCallback((msg: string | null) => {
     if (msg) showToast(msg, "error");
   }, [showToast]);
-  const [fileNameDraft, setFileNameDraft] = useState("");
-  const [folderNameDraft, setFolderNameDraft] = useState("");
-  const [isCreatingFile, setIsCreatingFile] = useState(false);
-  const [isCreatingFolder, setIsCreatingFolder] = useState(false);
-  const [isOpeningWorkspace, setIsOpeningWorkspace] = useState(false);
-  const [isCreatingWorkspace, setIsCreatingWorkspace] = useState(false);
-  const [backlinks, setBacklinks] = useState<Backlink[]>([]);
-  const [isLoadingBacklinks, setIsLoadingBacklinks] = useState(false);
-  const [workspaceTags, setWorkspaceTags] = useState<WorkspaceTagSummary[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchMode, setSearchMode] = useState<SearchMode>("fullText");
-  const [searchFrontmatterField, setSearchFrontmatterField] = useState("");
-  const [searchResults, setSearchResults] = useState<WorkspaceSearchResult[]>([]);
-  const [searchError, setSearchError] = useState<string | null>(null);
   const [leftPaneScrollHeading, setLeftPaneScrollHeading] = useState<string | undefined>(undefined);
   const [rightPaneScrollHeading, setRightPaneScrollHeading] = useState<string | undefined>(undefined);
-  const [frontmatterCandidates, setFrontmatterCandidates] = useState<Record<string, string[]>>({});
-  const [gitStatus, setGitStatus] = useState<GitStatus | null>(null);
-  const [gitHubAuthStatus, setGitHubAuthStatus] = useState<GitHubAuthStatus | null>(null);
-  const [gitRemotes, setGitRemotes] = useState<GitRemoteSummary[]>([]);
-  const [gitBranches, setGitBranches] = useState<GitBranchSummary[]>([]);
-  const [gitCommitHistory, setGitCommitHistory] = useState<GitCommitSummary[]>([]);
-  const [gitTags, setGitTags] = useState<GitTagSummary[]>([]);
-  const [gitWorkingChanges, setGitWorkingChanges] = useState<GitWorkingChange[]>([]);
-  const [selectedGitCommitHash, setSelectedGitCommitHash] = useState<string | null>(null);
-  const [selectedGitCommitDiff, setSelectedGitCommitDiff] = useState<GitCommitDiff | null>(null);
-  const [newGitBranchName, setNewGitBranchName] = useState("");
-  const [newGitTagName, setNewGitTagName] = useState("");
-  const [newGitTagMessage, setNewGitTagMessage] = useState("");
-  const [gitRemoteUrl, setGitRemoteUrl] = useState("");
-  const [gitSyncMessage, setGitSyncMessage] = useState<string | null>(null);
-  const [gitErrorMessage, setGitErrorMessage] = useState<string | null>(null);
-  const [gitRetryAction, setGitRetryAction] = useState<(() => void) | null>(null);
-  const [pendingGitBranchSwitch, setPendingGitBranchSwitch] = useState<string | null>(null);
-  const [gitCommitMessage, setGitCommitMessage] = useState("");
-  const [gitAuthorName, setGitAuthorName] = useState("");
-  const [gitAuthorEmail, setGitAuthorEmail] = useState("");
-  const [isCreatingGitBranch, setIsCreatingGitBranch] = useState(false);
-  const [isCreatingGitCommit, setIsCreatingGitCommit] = useState(false);
-  const [isCreatingGitTag, setIsCreatingGitTag] = useState(false);
-  const [isConnectingGitHub, setIsConnectingGitHub] = useState(false);
-  const [isConnectingGitRemote, setIsConnectingGitRemote] = useState(false);
-  const [isDeletingGitTag, setIsDeletingGitTag] = useState(false);
-  const [isDisconnectingGitHub, setIsDisconnectingGitHub] = useState(false);
-  const [isPullingGitBranch, setIsPullingGitBranch] = useState(false);
-  const [isPushingGitBranch, setIsPushingGitBranch] = useState(false);
-  const [pushingGitTagName, setPushingGitTagName] = useState<string | null>(null);
-  const [isSwitchingGitBranch, setIsSwitchingGitBranch] = useState(false);
-  const [gitCloneUrl, setGitCloneUrl] = useState("");
-  const [isCloningGitHub, setIsCloningGitHub] = useState(false);
-  const [gitSyncPreview, setGitSyncPreview] = useState<GitSyncPreview | null>(null);
-  const [gitSyncStep, setGitSyncStep] = useState<"push-preview" | "pull-preview" | "pull-fetching" | null>(null);
-  const [gitConflicts, setGitConflicts] = useState<GitConflict[]>([]);
-  const [isResolvingConflict, setIsResolvingConflict] = useState(false);
-  const [autoSyncSettings, setAutoSyncSettings] = useState<AutoSyncSettings>(defaultAutoSyncSettings);
-  const [featureToggles, setFeatureToggles] = useState<FeatureToggles>(defaultFeatureToggles);
-  const [userDefinedFields, setUserDefinedFields] = useState<UserDefinedField[]>(defaultUserDefinedFields);
-  const [markdownTemplates, setMarkdownTemplates] = useState<MarkdownTemplateSummary[]>([]);
-  const [selectedTemplatePath, setSelectedTemplatePath] = useState("");
   const [showCommandPalette, setShowCommandPalette] = useState(false);
   const [showQuickSwitcher, setShowQuickSwitcher] = useState(false);
 
@@ -220,6 +146,190 @@ export function App(): ReactElement {
     [t]
   );
 
+  const {
+    appInfo,
+    autoSyncSettings,
+    featureToggles,
+    handleSaveAutoSyncSettings,
+    handleSaveFeatureToggles,
+    handleSaveSettings,
+    handleSaveUserDefinedFields,
+    markdownTemplates,
+    selectedTemplatePath,
+    setSelectedTemplatePath,
+    userDefinedFields
+  } = useAppSettingsState({
+    setEditorSettings,
+    setWorkspaceError,
+    setWorkspaceState,
+    workspaceState
+  });
+
+  const gitPanel = useGitPanelState({
+    setWorkspaceError,
+    setWorkspaceState,
+    t,
+    workspaceState
+  });
+
+  const {
+    gitStatus,
+    gitHubAuthStatus,
+    gitRemotes,
+    gitBranches,
+    gitCommitHistory,
+    gitTags,
+    gitWorkingChanges,
+    selectedGitCommitHash,
+    selectedGitCommitDiff,
+    newGitBranchName,
+    newGitTagName,
+    newGitTagMessage,
+    gitRemoteUrl,
+    gitSyncMessage,
+    gitErrorMessage,
+    gitRetryAction,
+    pendingGitBranchSwitch,
+    gitCommitMessage,
+    gitAuthorName,
+    gitAuthorEmail,
+    gitSyncPreview,
+    gitSyncStep,
+    gitConflicts,
+    gitCloneUrl,
+    isCreatingGitBranch,
+    isCreatingGitCommit,
+    isCreatingGitTag,
+    isConnectingGitHub,
+    isConnectingGitRemote,
+    isDeletingGitTag,
+    isDisconnectingGitHub,
+    isPullingGitBranch,
+    isPushingGitBranch,
+    pushingGitTagName,
+    isSwitchingGitBranch,
+    isCloningGitHub,
+    isResolvingConflict,
+    handleInitializeGitRepository,
+    handleCloneGitHubRepository,
+    handleConnectGitHubAccount,
+    handleDisconnectGitHubAccount,
+    handleConnectGitRemote,
+    handlePushGitBranch,
+    handlePullGitBranch,
+    handleConfirmPush,
+    handleConfirmPull,
+    handleCreateGitBranch,
+    handleSwitchGitBranch,
+    handleCommitAndSwitchGitBranch,
+    handleCreateGitCommit,
+    handleCreateGitTag,
+    handleDeleteGitTag,
+    handlePushGitTag,
+    handleResolveConflict,
+    setSelectedGitCommitHash,
+    setNewGitBranchName,
+    setNewGitTagName,
+    setNewGitTagMessage,
+    setGitRemoteUrl,
+    setGitSyncStep,
+    setPendingGitBranchSwitch,
+    setGitCommitMessage,
+    setGitAuthorName,
+    setGitAuthorEmail,
+    setGitCloneUrl
+  } = gitPanel;
+
+  const {
+    frontmatterCandidates,
+    handleTagSearch,
+    searchError,
+    searchFrontmatterField,
+    searchMode,
+    searchQuery,
+    searchResults,
+    setSearchFrontmatterField,
+    setSearchMode,
+    setSearchQuery,
+    workspaceTags
+  } = useWorkspaceSearchState({
+    setSidebarView,
+    setWorkspaceError,
+    workspaceState
+  });
+
+  const {
+    fileNameDraft,
+    folderNameDraft,
+    handleDeleteActiveFile,
+    handleDeleteTreeItem,
+    handleDuplicateActiveFile,
+    handleDuplicateTreeFile,
+    handleCreateFile,
+    handleCreateFolder,
+    handleCreateFrontmatterTemplate,
+    handleCreateNewWorkspace,
+    handleCreateNoteFromPane,
+    handleOpenFile,
+    handleOpenWikiLink,
+    handleOpenWorkspace,
+    handleRefreshWorkspaceState,
+    handleSwitchWorkspace,
+    handleMoveActiveFile,
+    handleMoveFile,
+    handleMoveFolder,
+    handleRenameActiveFile,
+    handleRenameTreeItem,
+    handleTogglePin,
+    isCreatingFile,
+    isCreatingFolder,
+    isCreatingWorkspace,
+    isOpeningWorkspace,
+    setFileNameDraft,
+    setFolderNameDraft,
+    setIsCreatingFile
+  } = useWorkspaceFileActions({
+    closeAllTabs,
+    closeTab,
+    focusedPane,
+    leftPane,
+    openFileInPane,
+    rightPane,
+    selectedTemplatePath,
+    setLeftPaneScrollHeading,
+    setRightPaneScrollHeading,
+    setWorkspaceError,
+    setWorkspaceState,
+    tabs,
+    updateTabMeta
+  });
+
+  useAppTheme(editorSettings.theme);
+
+  useAppKeyboardShortcuts({
+    closeTab,
+    focusedPane,
+    leftPane,
+    rightPane,
+    setIsCreatingFile,
+    setShowCommandPalette,
+    setShowQuickSwitcher,
+    setSidebarView,
+    toggleRightPanel,
+    toggleSidebar,
+    toggleSplit,
+    toggleTypewriterMode
+  });
+
+  const { sidebarWidth, startSidebarResize } = useSidebarResize({
+    initialWidth: 260,
+    maxWidth: 500,
+    minWidth: 180
+  });
+
+  const leftEditorViewRef = useRef<EditorView | null>(null);
+  const rightEditorViewRef = useRef<EditorView | null>(null);
+
   const handleRightPanelViewButton = useCallback((view: RightPanelView): void => {
     if (isRightPanelOpen && rightPanelView === view) {
       toggleRightPanel();
@@ -228,276 +338,6 @@ export function App(): ReactElement {
 
     setRightPanelView(view);
   }, [isRightPanelOpen, rightPanelView, setRightPanelView, toggleRightPanel]);
-
-  // テーマ適用
-  useEffect(() => {
-    function applyTheme(theme: AppTheme) {
-      const root = document.documentElement;
-      if (theme === "system") {
-        root.removeAttribute("data-theme");
-      } else {
-        root.setAttribute("data-theme", theme);
-      }
-    }
-
-    applyTheme(editorSettings.theme ?? "system");
-
-    if ((editorSettings.theme ?? "system") === "system") {
-      const mq = window.matchMedia("(prefers-color-scheme: dark)");
-      const listener = () => applyTheme("system");
-      mq.addEventListener("change", listener);
-      return () => mq.removeEventListener("change", listener);
-    }
-  }, [editorSettings.theme]);
-
-  const [sidebarWidth, setSidebarWidth] = useState(260);
-  const sidebarResizingRef = useRef(false);
-  const sidebarResizeStartXRef = useRef(0);
-  const sidebarResizeStartWidthRef = useRef(0);
-  const leftEditorViewRef = useRef<EditorView | null>(null);
-  const rightEditorViewRef = useRef<EditorView | null>(null);
-
-  const applyGitBranches = useCallback((branches: GitBranchSummary[]): void => {
-    setGitBranches(branches);
-
-    const currentBranch = branches.find((branch) => branch.isCurrent)?.name ?? null;
-
-    setGitStatus((current) =>
-      current
-        ? {
-            ...current,
-            currentBranch
-          }
-        : current
-    );
-  }, []);
-
-  // 初期ロード
-  useEffect(() => {
-    let canceled = false;
-
-    void window.relic?.getAppInfo().then((result) => {
-      if (canceled) return;
-      if (result.ok) setAppInfo(result.value);
-    });
-
-    void window.relic?.getWorkspaceState().then((result) => {
-      if (canceled) return;
-      if (result.ok) {
-        setWorkspaceState(result.value);
-      } else {
-        setWorkspaceError(result.error.message);
-      }
-    });
-
-    void window.relic?.getEditorSettings().then((result) => {
-      if (canceled) return;
-      if (result.ok) setEditorSettings(result.value);
-    });
-
-    void window.relic?.getGitHubAuthStatus().then((result) => {
-      if (canceled) return;
-      if (result.ok) setGitHubAuthStatus(result.value);
-    });
-
-    void window.relic?.getAutoSyncSettings().then((result) => {
-      if (canceled) return;
-      if (result.ok) setAutoSyncSettings(result.value);
-    });
-
-    void window.relic?.getFeatureToggles().then((result) => {
-      if (canceled) return;
-      if (result.ok) setFeatureToggles(result.value);
-    });
-
-    void window.relic?.getUserDefinedFields().then((result) => {
-      if (canceled) return;
-      if (result.ok) setUserDefinedFields(result.value);
-    });
-
-    return () => { canceled = true; };
-  }, [setEditorSettings]);
-
-  useEffect(() => {
-    let canceled = false;
-
-    void window.relic?.getAutoSyncSettings().then((result) => {
-      if (canceled) return;
-      if (result.ok) setAutoSyncSettings(result.value);
-    });
-
-    return () => { canceled = true; };
-  }, [workspaceState?.activeWorkspace?.id]);
-
-  useEffect(() => {
-    let canceled = false;
-
-    void window.relic?.getMarkdownTemplates().then((result) => {
-      if (canceled) return;
-      if (result.ok) {
-        setMarkdownTemplates(result.value);
-        if (!result.value.some((template) => template.path === selectedTemplatePath)) {
-          setSelectedTemplatePath("");
-        }
-      }
-    });
-
-    return () => { canceled = true; };
-  }, [workspaceState?.activeWorkspace?.id, selectedTemplatePath]);
-
-  // ──────────────────
-  // ワークスペース操作
-  // ──────────────────
-
-  const handleOpenWorkspace = useCallback((): void => {
-    if (!window.relic) return;
-
-    setIsOpeningWorkspace(true);
-    setWorkspaceError(null);
-
-    void window.relic
-      .openWorkspace()
-      .then((result) => {
-        if (result.ok) {
-          setWorkspaceState(result.value);
-        } else {
-          setWorkspaceError(result.error.message);
-        }
-      })
-      .finally(() => setIsOpeningWorkspace(false));
-  }, []);
-
-  const handleCreateNewWorkspace = useCallback((): void => {
-    if (!window.relic) return;
-
-    setIsCreatingWorkspace(true);
-    setWorkspaceError(null);
-
-    void window.relic
-      .createNewWorkspace()
-      .then((result) => {
-        if (result.ok) {
-          setWorkspaceState(result.value);
-        } else {
-          setWorkspaceError(result.error.message);
-        }
-      })
-      .finally(() => setIsCreatingWorkspace(false));
-  }, []);
-
-  const handleCreateFile = useCallback((): void => {
-    if (!window.relic) return;
-
-    setIsCreatingFile(true);
-    setWorkspaceError(null);
-
-    void window.relic
-      .createMarkdownFile({ name: fileNameDraft, templatePath: selectedTemplatePath || undefined })
-      .then((result) => {
-        if (result.ok) {
-          setWorkspaceState(result.value);
-          setFileNameDraft("");
-        } else {
-          setWorkspaceError(result.error.message);
-        }
-      })
-      .finally(() => setIsCreatingFile(false));
-  }, [fileNameDraft, selectedTemplatePath]);
-
-  const handleCreateNoteFromPane = useCallback((name: string): void => {
-    if (!window.relic) return;
-
-    void window.relic
-      .createMarkdownFile({ name, templatePath: selectedTemplatePath || undefined })
-      .then((result) => {
-        if (result.ok) {
-          setWorkspaceState(result.value);
-          const newFile = result.value.fileTree
-            .flatMap(function flatten(n): string[] {
-              return n.type === "file" ? [n.path] : n.children.flatMap(flatten);
-            })
-            .find((p) => p.endsWith(`${name}.md`));
-
-          if (newFile) {
-            void window.relic!.readMarkdownFile({ path: newFile }).then((r) => {
-              if (r.ok) openFileInPane(focusedPane, r.value);
-            });
-          }
-        } else {
-          setWorkspaceError(result.error.message);
-        }
-      });
-  }, [focusedPane, openFileInPane, selectedTemplatePath]);
-
-  const handleCreateFolder = useCallback((): void => {
-    if (!window.relic) return;
-
-    setIsCreatingFolder(true);
-    setWorkspaceError(null);
-
-    void window.relic
-      .createFolder({ name: folderNameDraft })
-      .then((result) => {
-        if (result.ok) {
-          setWorkspaceState(result.value);
-          setFolderNameDraft("");
-        } else {
-          setWorkspaceError(result.error.message);
-        }
-      })
-      .finally(() => setIsCreatingFolder(false));
-  }, [folderNameDraft]);
-
-  const handleOpenFile = useCallback(
-    (path: string): void => {
-      if (!window.relic) return;
-
-      void window.relic.readMarkdownFile({ path }).then((result) => {
-        if (result.ok) {
-          openFileInPane(focusedPane, result.value);
-        } else {
-          setWorkspaceError(result.error.message);
-        }
-      });
-    },
-    [focusedPane, openFileInPane]
-  );
-
-  const handleOpenWikiLink = useCallback(
-    (target: string, heading?: string): void => {
-      const paneState = focusedPane === "left" ? leftPane : rightPane;
-      const activeTab = paneState.activeTabId ? tabs[paneState.activeTabId] : null;
-
-      if (!activeTab || !window.relic) return;
-
-      const path = resolveWikiLinkPath(target, activeTab.path);
-      const setScrollHeading = focusedPane === "left" ? setLeftPaneScrollHeading : setRightPaneScrollHeading;
-
-      void window.relic.readMarkdownFile({ path }).then((readResult) => {
-        if (readResult.ok) {
-          openFileInPane(focusedPane, readResult.value);
-          if (heading) setScrollHeading(heading);
-          return;
-        }
-
-        void window.relic!.createLinkedMarkdownFile({ path }).then((createResult) => {
-          if (createResult.ok) {
-            setWorkspaceState(createResult.value.workspaceState);
-            openFileInPane(focusedPane, createResult.value.file);
-          } else {
-            setWorkspaceError(createResult.error.message);
-          }
-        });
-      });
-    },
-    [focusedPane, leftPane, openFileInPane, rightPane, tabs]
-  );
-
-  const handleTagSearch = useCallback((tag: string): void => {
-    setSearchMode("tag");
-    setSearchQuery(tag);
-    setSidebarView("search");
-  }, [setSidebarView]);
 
   const openFileInOtherPane = useCallback((fromPane: PaneId, tabId: string) => {
     const tab = tabs[tabId];
@@ -512,1032 +352,6 @@ export function App(): ReactElement {
     },
     []
   );
-
-  const handleSwitchWorkspace = useCallback((workspaceId: string): void => {
-    if (!window.relic) return;
-
-    void window.relic.switchWorkspace({ workspaceId }).then((result) => {
-      if (result.ok) {
-        setWorkspaceState(result.value);
-        closeAllTabs();
-      } else {
-        setWorkspaceError(result.error.message);
-      }
-    });
-  }, [closeAllTabs]);
-
-  useEffect(() => {
-    if (!workspaceState?.activeWorkspace || !window.relic) {
-      setWorkspaceTags([]);
-      return;
-    }
-
-    let canceled = false;
-
-    void window.relic.getWorkspaceTags().then((result) => {
-      if (canceled) return;
-
-      if (result.ok) {
-        setWorkspaceTags(result.value);
-      } else {
-        setWorkspaceTags([]);
-        setWorkspaceError(result.error.message);
-      }
-    });
-
-    return () => {
-      canceled = true;
-    };
-  }, [workspaceState?.activeWorkspace?.id, workspaceState?.fileTree]);
-
-  useEffect(() => {
-    if (!workspaceState?.activeWorkspace || !window.relic || searchQuery.trim() === "") {
-      setSearchResults([]);
-      setSearchError(null);
-      return;
-    }
-
-    let canceled = false;
-
-    void window.relic
-      .searchWorkspace({
-        frontmatterField: searchMode === "frontmatter" ? searchFrontmatterField : undefined,
-        mode: searchMode,
-        query: searchQuery
-      })
-      .then((result) => {
-        if (canceled) return;
-
-        if (result.ok) {
-          setSearchResults(result.value);
-          setSearchError(null);
-        } else {
-          setSearchResults([]);
-          setSearchError(result.error.message);
-        }
-      });
-
-    return () => {
-      canceled = true;
-    };
-  }, [searchFrontmatterField, searchMode, searchQuery, workspaceState?.activeWorkspace?.id, workspaceState?.fileTree]);
-
-  useEffect(() => {
-    if (!workspaceState?.activeWorkspace || !window.relic) {
-      setFrontmatterCandidates({});
-      return;
-    }
-
-    void window.relic.getFrontmatterCandidates().then((result) => {
-      if (result.ok) setFrontmatterCandidates(result.value);
-    });
-  }, [workspaceState?.activeWorkspace?.id, workspaceState?.fileTree]);
-
-  useEffect(() => {
-    if (!workspaceState?.activeWorkspace || !window.relic) {
-      setGitStatus(null);
-      setGitBranches([]);
-      setGitCommitHistory([]);
-      setGitTags([]);
-      setGitWorkingChanges([]);
-      setPendingGitBranchSwitch(null);
-      return;
-    }
-
-    let canceled = false;
-
-    void window.relic.getGitStatus().then((result) => {
-      if (canceled) return;
-
-      if (result.ok) {
-        setGitStatus(result.value);
-      } else {
-        setGitStatus(null);
-        setSelectedGitCommitHash(null);
-        setSelectedGitCommitDiff(null);
-        setWorkspaceError(result.error.message);
-      }
-    });
-
-    return () => {
-      canceled = true;
-    };
-  }, [workspaceState?.activeWorkspace?.id]);
-
-  useEffect(() => {
-    if (!workspaceState?.activeWorkspace || !window.relic || !gitStatus?.initialized) {
-      setGitBranches([]);
-      setGitCommitHistory([]);
-      setGitRemotes([]);
-      setGitTags([]);
-      setGitWorkingChanges([]);
-      setSelectedGitCommitHash(null);
-      setSelectedGitCommitDiff(null);
-      setPendingGitBranchSwitch(null);
-      return;
-    }
-
-    let canceled = false;
-
-    void window.relic.getGitBranches().then((result) => {
-      if (canceled) return;
-
-      if (result.ok) {
-        applyGitBranches(result.value);
-      } else {
-        setGitBranches([]);
-        setWorkspaceError(result.error.message);
-      }
-    });
-
-    void window.relic.getGitRemotes().then((result) => {
-      if (canceled) return;
-
-      if (result.ok) {
-        setGitRemotes(result.value);
-        setGitRemoteUrl(result.value.find((remote) => remote.isOrigin)?.url ?? "");
-      } else {
-        setGitRemotes([]);
-      }
-    });
-
-    void window.relic.getGitCommitHistory().then((result) => {
-      if (canceled) return;
-
-      if (result.ok) {
-        setGitCommitHistory(result.value);
-        if (result.value.length > 0 && !selectedGitCommitHash) {
-          setSelectedGitCommitHash(result.value[0].hash);
-        }
-      } else {
-        setGitCommitHistory([]);
-        setWorkspaceError(result.error.message);
-      }
-    });
-
-    void window.relic.getGitTags().then((result) => {
-      if (canceled) return;
-
-      if (result.ok) {
-        setGitTags(result.value);
-      } else {
-        setGitTags([]);
-        setWorkspaceError(result.error.message);
-      }
-    });
-
-    void window.relic.getGitWorkingChanges().then((result) => {
-      if (canceled) return;
-
-      if (result.ok) {
-        setGitWorkingChanges(result.value);
-      } else {
-        setGitWorkingChanges([]);
-        setWorkspaceError(result.error.message);
-      }
-    });
-
-    return () => {
-      canceled = true;
-    };
-  }, [
-    applyGitBranches,
-    gitStatus?.initialized,
-    selectedGitCommitHash,
-    workspaceState?.activeWorkspace?.id,
-    workspaceState?.fileTree
-  ]);
-
-  useEffect(() => {
-    if (!window.relic || !selectedGitCommitHash || !gitStatus?.initialized) {
-      setSelectedGitCommitDiff(null);
-      return;
-    }
-
-    let canceled = false;
-
-    void window.relic.getGitCommitDiff(selectedGitCommitHash).then((result) => {
-      if (canceled) return;
-
-      if (result.ok) {
-        setSelectedGitCommitDiff(result.value);
-      } else {
-        setSelectedGitCommitDiff(null);
-        setWorkspaceError(result.error.message);
-      }
-    });
-
-    return () => {
-      canceled = true;
-    };
-  }, [gitStatus?.initialized, selectedGitCommitHash]);
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent): void => {
-      if (!e.metaKey) return;
-
-      if (e.shiftKey && e.key === "P") {
-        e.preventDefault();
-        setShowQuickSwitcher(false);
-        setShowCommandPalette((v) => !v);
-      } else if (!e.shiftKey && e.key === "p") {
-        e.preventDefault();
-        setShowCommandPalette(false);
-        setShowQuickSwitcher((v) => !v);
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown, true);
-
-    return () => window.removeEventListener("keydown", handleKeyDown, true);
-  }, []);
-
-  // ──────────────────
-  // エディタ設定保存
-  // ──────────────────
-
-  const handleSaveSettings = useCallback(
-    (settings: EditorSettings): void => {
-      setEditorSettings(settings);
-      void window.relic?.saveEditorSettings(settings);
-    },
-    [setEditorSettings]
-  );
-
-  const refreshGitWorkingChanges = useCallback((): void => {
-    if (!window.relic) return;
-
-    void window.relic.getGitWorkingChanges().then((result) => {
-      if (result.ok) {
-        setGitWorkingChanges(result.value);
-      } else {
-        setGitWorkingChanges([]);
-        setWorkspaceError(result.error.message);
-      }
-    });
-  }, []);
-
-  const refreshGitCommitHistory = useCallback((): void => {
-    if (!window.relic) return;
-
-    void window.relic.getGitCommitHistory().then((result) => {
-      if (result.ok) {
-        setGitCommitHistory(result.value);
-        setSelectedGitCommitHash((current) => {
-          if (result.value.length === 0) {
-            return null;
-          }
-
-          return current && result.value.some((commit) => commit.hash === current)
-            ? current
-            : result.value[0].hash;
-        });
-      } else {
-        setGitCommitHistory([]);
-        setWorkspaceError(result.error.message);
-      }
-    });
-  }, []);
-
-  const refreshGitTags = useCallback((): void => {
-    if (!window.relic) return;
-
-    void window.relic.getGitTags().then((result) => {
-      if (result.ok) {
-        setGitTags(result.value);
-      } else {
-        setGitTags([]);
-        setWorkspaceError(result.error.message);
-      }
-    });
-  }, []);
-
-  const refreshGitBranches = useCallback((): void => {
-    if (!window.relic) return;
-
-    void window.relic.getGitBranches().then((result) => {
-      if (result.ok) {
-        applyGitBranches(result.value);
-      } else {
-        setGitBranches([]);
-        setWorkspaceError(result.error.message);
-      }
-    });
-  }, [applyGitBranches]);
-
-  const handleInitializeGitRepository = useCallback((): void => {
-    if (!window.relic) return;
-
-    void window.relic.initializeGitRepository().then((result) => {
-      if (result.ok) {
-        setGitStatus(result.value);
-        setPendingGitBranchSwitch(null);
-        setWorkspaceError(null);
-        refreshGitBranches();
-        refreshGitCommitHistory();
-        refreshGitTags();
-        refreshGitWorkingChanges();
-      } else {
-        setWorkspaceError(result.error.message);
-      }
-    });
-  }, [refreshGitBranches, refreshGitCommitHistory, refreshGitTags, refreshGitWorkingChanges]);
-
-  const handleCreateGitBranch = useCallback((): void => {
-    if (!window.relic) return;
-
-    setIsCreatingGitBranch(true);
-    setWorkspaceError(null);
-
-    void window.relic
-      .createGitBranch({ name: newGitBranchName })
-      .then((result) => {
-        if (result.ok) {
-          applyGitBranches(result.value);
-          setNewGitBranchName("");
-        } else {
-          setWorkspaceError(result.error.message);
-        }
-      })
-      .finally(() => setIsCreatingGitBranch(false));
-  }, [applyGitBranches, newGitBranchName]);
-
-  const handleSwitchGitBranch = useCallback(
-    (name: string, allowDirty = false): void => {
-      if (!window.relic) return;
-
-      setIsSwitchingGitBranch(true);
-      setWorkspaceError(null);
-
-      void window.relic
-        .switchGitBranch({ allowDirty, name })
-        .then((result) => {
-          if (result.ok) {
-            applyGitBranches(result.value);
-            setPendingGitBranchSwitch(null);
-            refreshGitCommitHistory();
-            refreshGitWorkingChanges();
-            return;
-          }
-
-          if (result.error.code === "GIT_BRANCH_SWITCH_DIRTY") {
-            setPendingGitBranchSwitch(name);
-            return;
-          }
-
-          setWorkspaceError(result.error.message);
-        })
-        .finally(() => setIsSwitchingGitBranch(false));
-    },
-    [applyGitBranches, refreshGitCommitHistory, refreshGitWorkingChanges]
-  );
-
-  const handleCreateGitCommit = useCallback((): void => {
-    if (!window.relic) return;
-
-    setIsCreatingGitCommit(true);
-    setWorkspaceError(null);
-
-    void window.relic
-      .createGitCommit({
-        authorEmail: gitAuthorEmail,
-        authorName: gitAuthorName,
-        message: gitCommitMessage
-      })
-      .then((result) => {
-        if (!result.ok) {
-          setWorkspaceError(result.error.message);
-          return;
-        }
-
-        setGitCommitMessage("");
-        setGitCommitHistory((current) => [result.value, ...current]);
-        setSelectedGitCommitHash(result.value.hash);
-        setPendingGitBranchSwitch(null);
-        refreshGitWorkingChanges();
-      })
-      .finally(() => setIsCreatingGitCommit(false));
-  }, [gitAuthorEmail, gitAuthorName, gitCommitMessage, refreshGitWorkingChanges]);
-
-  const handleCreateGitTag = useCallback((): void => {
-    if (!window.relic) return;
-
-    setIsCreatingGitTag(true);
-    setWorkspaceError(null);
-
-    void window.relic
-      .createGitTag({
-        hash: selectedGitCommitHash ?? undefined,
-        message: newGitTagMessage,
-        name: newGitTagName,
-        taggerEmail: gitAuthorEmail,
-        taggerName: gitAuthorName
-      })
-      .then((result) => {
-        if (!result.ok) {
-          setWorkspaceError(result.error.message);
-          return;
-        }
-
-        setGitTags(result.value);
-        setNewGitTagName("");
-        setNewGitTagMessage("");
-      })
-      .finally(() => setIsCreatingGitTag(false));
-  }, [gitAuthorEmail, gitAuthorName, newGitTagMessage, newGitTagName, selectedGitCommitHash]);
-
-  const handleDeleteGitTag = useCallback((name: string): void => {
-    if (!window.relic) return;
-
-    setIsDeletingGitTag(true);
-    setWorkspaceError(null);
-
-    void window.relic
-      .deleteGitTag({ name })
-      .then((result) => {
-        if (!result.ok) {
-          setWorkspaceError(result.error.message);
-          return;
-        }
-
-        setGitTags(result.value);
-      })
-      .finally(() => setIsDeletingGitTag(false));
-  }, []);
-
-  const handleCommitAndSwitchGitBranch = useCallback((): void => {
-    if (!window.relic || !pendingGitBranchSwitch) return;
-
-    setIsCreatingGitCommit(true);
-    setIsSwitchingGitBranch(true);
-    setWorkspaceError(null);
-
-    void window.relic
-      .createGitCommit({
-        authorEmail: gitAuthorEmail,
-        authorName: gitAuthorName,
-        message: gitCommitMessage
-      })
-      .then((commitResult) => {
-        if (!commitResult.ok) {
-          setWorkspaceError(commitResult.error.message);
-          return;
-        }
-
-        setGitCommitMessage("");
-        setGitCommitHistory((current) => [commitResult.value, ...current]);
-        setSelectedGitCommitHash(commitResult.value.hash);
-
-        return window.relic!.switchGitBranch({ name: pendingGitBranchSwitch });
-      })
-      .then((switchResult) => {
-        if (!switchResult) {
-          return;
-        }
-
-        if (switchResult.ok) {
-          applyGitBranches(switchResult.value);
-          setPendingGitBranchSwitch(null);
-          refreshGitCommitHistory();
-          refreshGitWorkingChanges();
-        } else {
-          setWorkspaceError(switchResult.error.message);
-        }
-      })
-      .finally(() => {
-        setIsCreatingGitCommit(false);
-        setIsSwitchingGitBranch(false);
-      });
-  }, [
-    applyGitBranches,
-    gitAuthorEmail,
-    gitAuthorName,
-    gitCommitMessage,
-    pendingGitBranchSwitch,
-    refreshGitCommitHistory,
-    refreshGitWorkingChanges
-  ]);
-
-  const handleConnectGitHubAccount = useCallback((): void => {
-    if (!window.relic) return;
-
-    setIsConnectingGitHub(true);
-    setWorkspaceError(null);
-
-    void window.relic
-      .connectGitHubAccount()
-      .then((result) => {
-        if (result.ok) {
-          setGitHubAuthStatus(result.value);
-        } else {
-          setWorkspaceError(result.error.message);
-        }
-      })
-      .finally(() => setIsConnectingGitHub(false));
-  }, []);
-
-  const handleDisconnectGitHubAccount = useCallback((): void => {
-    if (!window.relic) return;
-
-    setIsDisconnectingGitHub(true);
-    setWorkspaceError(null);
-
-    void window.relic
-      .disconnectGitHubAccount()
-      .then((result) => {
-        if (result.ok) {
-          setGitHubAuthStatus(result.value);
-        } else {
-          setWorkspaceError(result.error.message);
-        }
-      })
-      .finally(() => setIsDisconnectingGitHub(false));
-  }, []);
-
-  const handleConnectGitRemote = useCallback((): void => {
-    if (!window.relic) return;
-
-    setIsConnectingGitRemote(true);
-    setGitSyncMessage(null);
-    setWorkspaceError(null);
-
-    void window.relic
-      .connectGitRemote({ url: gitRemoteUrl })
-      .then((result) => {
-        if (result.ok) {
-          setGitRemotes(result.value);
-          setGitRemoteUrl(result.value.find((remote) => remote.isOrigin)?.url ?? gitRemoteUrl);
-          setGitSyncMessage(t("git.remoteConnected"));
-        } else {
-          setWorkspaceError(result.error.message);
-        }
-      })
-      .finally(() => setIsConnectingGitRemote(false));
-  }, [gitRemoteUrl, t]);
-
-  const clearGitMessages = (): void => {
-    setGitSyncMessage(null);
-    setGitErrorMessage(null);
-    setGitRetryAction(null);
-  };
-
-  const handleShowPushPreview = useCallback((): void => {
-    if (!window.relic) return;
-
-    clearGitMessages();
-    setGitSyncStep("pull-fetching");
-
-    void window.relic
-      .getGitSyncPreview()
-      .then((result) => {
-        if (result.ok) {
-          setGitSyncPreview(result.value);
-          setGitSyncStep("push-preview");
-        } else {
-          setGitSyncStep(null);
-          setGitErrorMessage(result.error.message);
-          setGitRetryAction(() => handleShowPushPreview);
-        }
-      });
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const handleShowPullPreview = useCallback((): void => {
-    if (!window.relic) return;
-
-    clearGitMessages();
-    setGitSyncStep("pull-fetching");
-
-    void window.relic
-      .getGitSyncPreview()
-      .then((result) => {
-        if (result.ok) {
-          setGitSyncPreview(result.value);
-          setGitSyncStep("pull-preview");
-        } else {
-          setGitSyncStep(null);
-          setGitErrorMessage(result.error.message);
-          setGitRetryAction(() => handleShowPullPreview);
-        }
-      });
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const handleConfirmPush = useCallback((): void => {
-    if (!window.relic) return;
-
-    setIsPushingGitBranch(true);
-    setGitSyncStep(null);
-
-    void window.relic
-      .pushGitBranch()
-      .then((result) => {
-        if (result.ok) {
-          setGitSyncMessage(result.value.message);
-          refreshGitWorkingChanges();
-        } else {
-          setGitErrorMessage(result.error.message);
-          setGitRetryAction(() => handleConfirmPush);
-        }
-      })
-      .finally(() => setIsPushingGitBranch(false));
-  }, [refreshGitWorkingChanges]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const handleConfirmPull = useCallback((): void => {
-    if (!window.relic) return;
-
-    setIsPullingGitBranch(true);
-    setGitSyncStep(null);
-
-    void window.relic
-      .pullGitBranch()
-      .then((result) => {
-        if (result.ok) {
-          setGitSyncMessage(result.value.message);
-          refreshGitCommitHistory();
-          refreshGitWorkingChanges();
-          void window.relic?.getGitConflicts().then((r) => {
-            if (r.ok) setGitConflicts(r.value);
-          });
-        } else {
-          setGitErrorMessage(result.error.message);
-          setGitRetryAction(() => handleConfirmPull);
-          void window.relic?.getGitConflicts().then((r) => {
-            if (r.ok) setGitConflicts(r.value);
-          });
-        }
-      })
-      .finally(() => setIsPullingGitBranch(false));
-  }, [refreshGitCommitHistory, refreshGitWorkingChanges]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const handleResolveConflict = useCallback((filePath: string, resolution: "ours" | "theirs"): void => {
-    if (!window.relic) return;
-
-    setIsResolvingConflict(true);
-
-    void window.relic
-      .resolveGitConflict({ path: filePath, resolution })
-      .then((result) => {
-        if (result.ok) {
-          setGitConflicts(result.value);
-          refreshGitWorkingChanges();
-        } else {
-          setGitErrorMessage(result.error.message);
-        }
-      })
-      .finally(() => setIsResolvingConflict(false));
-  }, [refreshGitWorkingChanges]);
-
-  const handleCloneGitHubRepository = useCallback((): void => {
-    if (!window.relic) return;
-
-    setIsCloningGitHub(true);
-    setGitErrorMessage(null);
-
-    void window.relic
-      .cloneGitHubRepository({ url: gitCloneUrl })
-      .then((result) => {
-        if (result.ok) {
-          setWorkspaceState(result.value);
-          setGitCloneUrl("");
-        } else {
-          setGitErrorMessage(result.error.message);
-        }
-      })
-      .finally(() => setIsCloningGitHub(false));
-  }, [gitCloneUrl]);
-
-  const handleSaveAutoSyncSettings = useCallback((settings: AutoSyncSettings): void => {
-    setAutoSyncSettings(settings);
-    void window.relic?.saveAutoSyncSettings(settings);
-  }, []);
-
-  const handleSaveFeatureToggles = useCallback((toggles: FeatureToggles): void => {
-    setFeatureToggles(toggles);
-    void window.relic?.saveFeatureToggles(toggles);
-  }, []);
-
-  const handleSaveUserDefinedFields = useCallback((fields: UserDefinedField[]): void => {
-    setUserDefinedFields(fields);
-    void window.relic?.saveUserDefinedFields(fields);
-  }, []);
-
-  const handlePushGitBranch = (): void => { handleShowPushPreview(); };
-  const handlePullGitBranch = (): void => { handleShowPullPreview(); };
-
-  const handlePushGitTag = useCallback((name: string): void => {
-    if (!window.relic) return;
-
-    setPushingGitTagName(name);
-    clearGitMessages();
-
-    void window.relic
-      .pushGitTag({ name })
-      .then((result) => {
-        if (result.ok) {
-          setGitSyncMessage(result.value.message);
-        } else {
-          setGitErrorMessage(result.error.message);
-          setGitRetryAction(() => () => handlePushGitTag(name));
-        }
-      })
-      .finally(() => setPushingGitTagName(null));
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // ──────────────────
-  // ファイル移動
-  // ──────────────────
-
-  const handleTogglePin = useCallback((path: string): void => {
-    if (!window.relic) return;
-
-    void window.relic.togglePin(path).then((result) => {
-      if (result.ok) setWorkspaceState(result.value);
-      else setWorkspaceError(result.error.message);
-    });
-  }, []);
-
-  const handleMoveFile = useCallback((path: string, destFolder: string): void => {
-    if (!window.relic) return;
-
-    void window.relic.moveMarkdownFile({ destinationFolder: destFolder, path }).then((result) => {
-      if (result.ok) {
-        const oldTab = Object.entries(tabs).find(([, t]) => t.path === path);
-
-        if (oldTab) updateTabMeta(oldTab[0], { name: result.value.file.name, path: result.value.file.path });
-        setWorkspaceState(result.value.workspaceState);
-      } else {
-        setWorkspaceError(result.error.message);
-      }
-    });
-  }, [tabs, updateTabMeta]);
-
-  const handleMoveFolder = useCallback((path: string, destFolder: string): void => {
-    if (!window.relic) return;
-
-    void window.relic.moveFolder({ destinationFolder: destFolder, path }).then((result) => {
-      if (result.ok) {
-        setWorkspaceState(result.value);
-      } else {
-        setWorkspaceError(result.error.message);
-      }
-    });
-  }, []);
-
-  const handleMoveActiveFile = useCallback(
-    (destinationFolder: string): void => {
-      const paneState = focusedPane === "left" ? leftPane : rightPane;
-      const tabId = paneState.activeTabId;
-
-      if (!tabId || !window.relic) return;
-
-      const tab = tabs[tabId];
-
-      if (!tab) return;
-
-      void window.relic
-        .moveMarkdownFile({ destinationFolder, path: tab.path })
-        .then((result) => {
-          if (result.ok) {
-            updateTabMeta(tabId, { name: result.value.file.name, path: result.value.file.path });
-            setWorkspaceState(result.value.workspaceState);
-          } else {
-            setWorkspaceError(result.error.message);
-          }
-        });
-    },
-    [focusedPane, leftPane, rightPane, tabs, updateTabMeta]
-  );
-
-  const handleRefreshWorkspaceState = useCallback((): void => {
-    void window.relic?.getWorkspaceState().then((result) => {
-      if (result.ok) setWorkspaceState(result.value);
-    });
-  }, []);
-
-  const handleCreateFrontmatterTemplate = useCallback((): void => {
-    void window.relic?.createFrontmatterTemplate().then((result) => {
-      if (result.ok) {
-        setWorkspaceState(result.value);
-      } else {
-        setWorkspaceError(result.error.message);
-      }
-    });
-  }, []);
-
-  // ──────────────────
-  // ファイル名リネーム（タブのメタ更新）
-  // ──────────────────
-
-  const handleRenameActiveFile = useCallback(
-    (newName: string): void => {
-      const paneState = focusedPane === "left" ? leftPane : rightPane;
-      const tabId = paneState.activeTabId;
-
-      if (!tabId || !window.relic) return;
-
-      const tab = tabs[tabId];
-
-      if (!tab) return;
-
-      void window.relic
-        .renameMarkdownFile({ newName, path: tab.path })
-        .then((result) => {
-          if (result.ok) {
-            updateTabMeta(tabId, { name: result.value.file.name, path: result.value.file.path });
-            setWorkspaceState(result.value.workspaceState);
-          } else {
-            setWorkspaceError(result.error.message);
-          }
-        });
-    },
-    [focusedPane, leftPane, rightPane, tabs, updateTabMeta]
-  );
-
-  const handleRenameTreeItem = useCallback(
-    (path: string, type: WorkspaceTreeNode["type"], newName: string): void => {
-      if (!window.relic) return;
-
-      if (type === "file") {
-        void window.relic.renameMarkdownFile({ newName, path }).then((result) => {
-          if (result.ok) {
-            Object.entries(tabs)
-              .filter(([, tab]) => tab.path === path)
-              .forEach(([tabId]) => {
-                updateTabMeta(tabId, { name: result.value.file.name, path: result.value.file.path });
-              });
-            setWorkspaceState(result.value.workspaceState);
-          } else {
-            setWorkspaceError(result.error.message);
-          }
-        });
-        return;
-      }
-
-      void window.relic.renameFolder({ newName, path }).then((result) => {
-        if (result.ok) {
-          const nextFolderPath = joinWorkspacePath(parentFolderOf(path), newName);
-
-          Object.entries(tabs)
-            .filter(([, tab]) => tab.path.startsWith(`${path}/`))
-            .forEach(([tabId, tab]) => {
-              const nextPath = `${nextFolderPath}/${tab.path.slice(path.length + 1)}`;
-              updateTabMeta(tabId, { name: displayNameFromPath(nextPath), path: nextPath });
-            });
-          setWorkspaceState(result.value);
-        } else {
-          setWorkspaceError(result.error.message);
-        }
-      });
-    },
-    [tabs, updateTabMeta, setWorkspaceError]
-  );
-
-  const handleDuplicateActiveFile = useCallback((): void => {
-    const paneState = focusedPane === "left" ? leftPane : rightPane;
-    const tabId = paneState.activeTabId;
-    if (!tabId || !window.relic) return;
-    const tab = tabs[tabId];
-    if (!tab) return;
-    void window.relic.duplicateMarkdownFile({ path: tab.path }).then((result) => {
-      if (result.ok) {
-        setWorkspaceState(result.value.workspaceState);
-        openFileInPane(focusedPane, result.value.file);
-      } else {
-        setWorkspaceError(result.error.message);
-      }
-    });
-  }, [focusedPane, leftPane, rightPane, tabs, openFileInPane]);
-
-  const handleDuplicateTreeFile = useCallback(
-    (path: string): void => {
-      if (!window.relic) return;
-
-      void window.relic.duplicateMarkdownFile({ path }).then((result) => {
-        if (result.ok) {
-          setWorkspaceState(result.value.workspaceState);
-          openFileInPane(focusedPane, result.value.file);
-        } else {
-          setWorkspaceError(result.error.message);
-        }
-      });
-    },
-    [focusedPane, openFileInPane, setWorkspaceError]
-  );
-
-  const handleDeleteActiveFile = useCallback((): void => {
-    const paneState = focusedPane === "left" ? leftPane : rightPane;
-    const tabId = paneState.activeTabId;
-    if (!tabId || !window.relic) return;
-    const tab = tabs[tabId];
-    if (!tab) return;
-    if (!window.confirm(`「${tab.name}」をゴミ箱に移動しますか？`)) return;
-    void window.relic.moveItemToTrash({ path: tab.path, type: "file" }).then((result) => {
-      if (result.ok) {
-        closeTab(focusedPane, tabId);
-        setWorkspaceState(result.value);
-      } else {
-        setWorkspaceError(result.error.message);
-      }
-    });
-  }, [focusedPane, leftPane, rightPane, tabs, closeTab]);
-
-  const handleDeleteTreeItem = useCallback(
-    (path: string, type: WorkspaceTreeNode["type"]): void => {
-      if (!window.relic) return;
-
-      const name = displayNameFromPath(path);
-      const message = type === "folder"
-        ? `「${name}」フォルダをゴミ箱に移動しますか？フォルダ内のノートと添付ファイルも一緒に移動されます。`
-        : `「${name}」をゴミ箱に移動しますか？`;
-      if (!window.confirm(message)) return;
-
-      void window.relic.moveItemToTrash({ path, type }).then((result) => {
-        if (result.ok) {
-          const matchesPath = (tabPath: string): boolean => (
-            type === "file" ? tabPath === path : tabPath.startsWith(`${path}/`)
-          );
-
-          leftPane.tabIds.forEach((tabId) => {
-            const tab = tabs[tabId];
-            if (tab && matchesPath(tab.path)) closeTab("left", tabId);
-          });
-          rightPane.tabIds.forEach((tabId) => {
-            const tab = tabs[tabId];
-            if (tab && matchesPath(tab.path)) closeTab("right", tabId);
-          });
-          setWorkspaceState(result.value);
-        } else {
-          setWorkspaceError(result.error.message);
-        }
-      });
-    },
-    [leftPane, rightPane, tabs, closeTab, setWorkspaceError]
-  );
-
-  // ──────────────────
-  // キーボードショートカット
-  // ──────────────────
-
-  useEffect(() => {
-    const handler = (e: KeyboardEvent): void => {
-      if (!e.metaKey) return;
-
-      if (e.key === "b" && !e.shiftKey) {
-        e.preventDefault();
-        toggleSidebar();
-      } else if (e.key === "\\") {
-        e.preventDefault();
-        toggleSplit();
-      } else if (e.key === "b" && e.shiftKey) {
-        e.preventDefault();
-        toggleRightPanel();
-      } else if (e.key === "w") {
-        e.preventDefault();
-        const paneState = focusedPane === "left" ? leftPane : rightPane;
-        if (paneState.activeTabId) closeTab(focusedPane, paneState.activeTabId);
-      } else if (e.key === "f" && !e.shiftKey) {
-        e.preventDefault();
-        setSidebarView("search");
-      } else if (e.key === "f" && e.shiftKey) {
-        e.preventDefault();
-        setSidebarView("search");
-      } else if (e.key === "n" && !e.shiftKey) {
-        e.preventDefault();
-        setSidebarView("files");
-        setIsCreatingFile(true);
-      } else if (e.key === "T" && e.shiftKey) {
-        e.preventDefault();
-        toggleTypewriterMode();
-      }
-    };
-
-    window.addEventListener("keydown", handler);
-
-    return () => window.removeEventListener("keydown", handler);
-  }, [focusedPane, leftPane, rightPane, closeTab, setSidebarView, toggleSidebar, toggleSplit, toggleRightPanel, setIsCreatingFile, toggleTypewriterMode]);
-
-  // ──────────────────
-  // サイドバーリサイズ
-  // ──────────────────
-
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent): void => {
-      if (!sidebarResizingRef.current) return;
-      const delta = e.clientX - sidebarResizeStartXRef.current;
-      const next = Math.max(180, Math.min(500, sidebarResizeStartWidthRef.current + delta));
-      setSidebarWidth(next);
-    };
-    const handleMouseUp = (): void => {
-      sidebarResizingRef.current = false;
-    };
-
-    document.addEventListener("mousemove", handleMouseMove);
-    document.addEventListener("mouseup", handleMouseUp);
-
-    return () => {
-      document.removeEventListener("mousemove", handleMouseMove);
-      document.removeEventListener("mouseup", handleMouseUp);
-    };
-  }, []);
 
   // ──────────────────
   // アクティブなパスのセット（ファイルツリーのハイライト用）
@@ -1566,134 +380,29 @@ export function App(): ReactElement {
     ? resolveWikiLinks(activeTabInFocusedPane.content, activeTabInFocusedPane.path, existingMarkdownPaths)
     : [];
 
-  useEffect(() => {
-    if (!activeTabInFocusedPane || !window.relic) {
-      setBacklinks([]);
-      return;
-    }
+  const { backlinks, isLoadingBacklinks } = useBacklinksState({
+    activeFilePath: activeTabInFocusedPane?.path ?? null,
+    fileTree: workspaceState?.fileTree,
+    setWorkspaceError
+  });
 
-    let canceled = false;
-    setIsLoadingBacklinks(true);
-
-    void window.relic
-      .getBacklinks({ path: activeTabInFocusedPane.path })
-      .then((result) => {
-        if (canceled) return;
-
-        if (result.ok) {
-          setBacklinks(result.value);
-        } else {
-          setBacklinks([]);
-          setWorkspaceError(result.error.message);
-        }
-      })
-      .finally(() => {
-        if (!canceled) setIsLoadingBacklinks(false);
-      });
-
-    return () => {
-      canceled = true;
-    };
-  }, [activeTabInFocusedPane?.path, workspaceState?.fileTree]);
-
-  // ──────────────────
-  // コマンドパレット
-  // ──────────────────
-
-  const commands: Command[] = [
-    {
-      id: "new-note",
-      label: t("pane.createNote"),
-      shortcut: "⌘N",
-      action: () => { setSidebarView("files"); setIsCreatingFile(true); }
-    },
-    {
-      id: "search",
-      label: t("command.search"),
-      shortcut: "⌘F",
-      action: () => { setSidebarView("search"); }
-    },
-    {
-      id: "quick-switcher",
-      label: t("command.quickSwitcher"),
-      shortcut: "⌘P",
-      action: () => setShowQuickSwitcher(true)
-    },
-    {
-      id: "toggle-sidebar",
-      label: t("command.sidebar"),
-      shortcut: "⌘B",
-      action: toggleSidebar
-    },
-    {
-      id: "toggle-split",
-      label: t("command.split"),
-      shortcut: "⌘\\",
-      action: toggleSplit
-    },
-    {
-      id: "toggle-right-panel",
-      label: t("command.rightPanel"),
-      shortcut: "⌘⇧B",
-      action: toggleRightPanel
-    },
-    {
-      id: "toggle-typewriter",
-      label: t("command.typewriter"),
-      shortcut: "⌘⇧T",
-      action: toggleTypewriterMode
-    },
-    {
-      id: "git",
-      label: t("command.gitView"),
-      action: () => { setSidebarView("git"); }
-    },
-    {
-      id: "git-push",
-      label: t("command.gitPush"),
-      action: () => { setSidebarView("git"); handlePushGitBranch(); }
-    },
-    {
-      id: "git-pull",
-      label: t("command.gitPull"),
-      action: () => { setSidebarView("git"); handlePullGitBranch(); }
-    },
-    ...(gitBranches.length > 1
-      ? gitBranches
-          .filter((b) => !b.isCurrent)
-          .map((b) => ({
-            id: `git-branch-${b.name}`,
-            label: t("command.branchSwitch", { name: b.name }),
-            action: () => { setSidebarView("git"); handleSwitchGitBranch(b.name); }
-          }))
-      : []),
-    ...(activeTabInFocusedPane
-      ? [
-          {
-            id: "rename-file",
-            label: t("command.renameFile", { name: activeTabInFocusedPane.name }),
-            action: () => {
-              setSidebarView("files");
-            }
-          },
-          {
-            id: "duplicate-file",
-            label: t("command.duplicateFile", { name: activeTabInFocusedPane.name }),
-            action: handleDuplicateActiveFile
-          },
-          {
-            id: "delete-file",
-            label: t("command.deleteFile", { name: activeTabInFocusedPane.name }),
-            action: handleDeleteActiveFile
-          }
-        ]
-      : []),
-    {
-      id: "settings",
-      label: t("command.settings"),
-      action: () => { setSidebarView("settings"); }
-    }
-  ];
+  const commands = useCommandPaletteCommands({
+    activeFileName: activeTabInFocusedPane?.name ?? null,
+    gitBranches,
+    handleDeleteActiveFile,
+    handleDuplicateActiveFile,
+    handlePullGitBranch,
+    handlePushGitBranch,
+    handleSwitchGitBranch,
+    setIsCreatingFile,
+    setShowQuickSwitcher,
+    setSidebarView,
+    t,
+    toggleRightPanel,
+    toggleSidebar,
+    toggleSplit,
+    toggleTypewriterMode
+  });
 
   // ──────────────────
   // レンダリング
@@ -1892,12 +601,7 @@ export function App(): ReactElement {
             )}
             <div
               className="sidebar-resize-handle"
-              onMouseDown={(e) => {
-                sidebarResizingRef.current = true;
-                sidebarResizeStartXRef.current = e.clientX;
-                sidebarResizeStartWidthRef.current = sidebarWidth;
-                e.preventDefault();
-              }}
+              onMouseDown={startSidebarResize}
             />
             </div>
           </aside>
