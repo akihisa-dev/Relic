@@ -46,11 +46,11 @@ import {
   toWorkspaceState
 } from "../workspace/workspaceService";
 
-const userDefinedFieldTypes: UserDefinedFieldType[] = ["text", "number", "date", "boolean", "select", "multi-select", "url"];
-const userDefinedFieldNamePattern = /^[A-Za-z0-9_]+$/;
+const userDefinedFieldTypes: UserDefinedFieldType[] = ["text", "number", "date", "boolean", "select", "multi-select", "tags", "url"];
+const userDefinedFieldNamePattern = /^[^\s:][^\r\n:]*$/;
 
 function isUserDefinedFieldsInput(input: unknown): input is UserDefinedField[] {
-  if (!Array.isArray(input) || input.length > 13) return false;
+  if (!Array.isArray(input)) return false;
 
   const names = new Set<string>();
 

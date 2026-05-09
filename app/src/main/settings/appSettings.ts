@@ -154,7 +154,7 @@ function normalizeGitHubScopes(rawScopes: unknown[]): string[] {
   return result;
 }
 
-const VALID_FIELD_TYPES: UserDefinedFieldType[] = ["text", "number", "date", "boolean", "select", "multi-select", "url"];
+const VALID_FIELD_TYPES: UserDefinedFieldType[] = ["text", "number", "date", "boolean", "select", "multi-select", "tags", "url"];
 const FIELD_NAME_PATTERN = /^[^\s:][^\r\n:]*$/;
 
 function parseUserDefinedFields(raw: unknown): UserDefinedField[] {
