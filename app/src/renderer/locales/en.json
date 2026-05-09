@@ -32,6 +32,7 @@
   "files.registeredWorkspaces": "Registered workspaces",
   "files.rename": "Rename",
   "files.removeWorkspace": "Remove {{name}} from list",
+  "files.systemFolders": "System folders",
   "files.template": "Template",
   "files.unpin": "Unpin",
   "files.workspaceEmptyTitle": "Choose a place to write",

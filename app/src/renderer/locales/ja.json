@@ -32,6 +32,7 @@
   "files.registeredWorkspaces": "登録済みワークスペース",
   "files.rename": "名前を変更",
   "files.removeWorkspace": "{{name}} を一覧から削除",
+  "files.systemFolders": "システムフォルダ",
   "files.template": "テンプレート",
   "files.unpin": "ピン留めを解除",
   "files.workspaceEmptyTitle": "書く場所を選ぶ",

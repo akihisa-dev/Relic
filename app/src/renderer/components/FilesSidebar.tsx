@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import type { ReactElement } from "react";
 
 import type { MarkdownTemplateSummary, WorkspaceState, WorkspaceTreeNode } from "../../shared/ipc";
+import { attachmentsDirectoryName, templatesDirectoryName } from "../../shared/workspace";
 import { useT } from "../i18n";
 import { FileTree, FileTreeItem, findNodeByPath } from "./FileTree";
 
@@ -57,6 +58,15 @@ export function FilesSidebar({
     () => new Set(workspaceState?.pinnedPaths ?? []),
     [workspaceState?.pinnedPaths]
   );
+  const { systemNodes, userNodes } = useMemo(() => {
+    const systemNames = new Set([attachmentsDirectoryName, templatesDirectoryName]);
+    const nodes = workspaceState?.fileTree ?? [];
+
+    return {
+      systemNodes: nodes.filter((node) => systemNames.has(node.path)),
+      userNodes: nodes.filter((node) => !systemNames.has(node.path))
+    };
+  }, [workspaceState?.fileTree]);
   const t = useT();
 
   return (
@@ -127,7 +137,7 @@ export function FilesSidebar({
           <FileTree
             activePaths={activePaths}
             isRoot
-            nodes={workspaceState?.fileTree ?? []}
+            nodes={userNodes}
             onDeleteItem={onDeleteItem}
             onDuplicateFile={onDuplicateFile}
             onMoveFile={onMoveFile}
@@ -138,6 +148,17 @@ export function FilesSidebar({
             onTogglePin={onTogglePin}
             pinnedPaths={pinnedPaths}
           />
+          {systemNodes.length > 0 ? (
+            <div className="system-folder-section">
+              <div className="pinned-section-heading">{t("files.systemFolders")}</div>
+              <FileTree
+                activePaths={activePaths}
+                nodes={systemNodes}
+                onOpenFile={onOpenFile}
+                onSelectFolder={onSelectFolder}
+              />
+            </div>
+          ) : null}
           <div className="workspace-actions">
             <button
               className="secondary-button"
