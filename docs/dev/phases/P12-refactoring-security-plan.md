@@ -68,6 +68,13 @@ Relicの大規模リファクタリング・安全性強化フェーズの正本
 - [x] `workspacePaths.test.ts` を追加し、パス結合・親フォルダ取得・表示名・Markdownパス収集を確認
 - [x] アクティブタブ取得とアウトライン抽出を `app/src/renderer/editorDerivedState.ts` へ切り出し
 - [x] `editorDerivedState.test.ts` を追加し、ペイン別アクティブタブ取得とMarkdown見出し抽出を確認
+- [x] Git / GitHub サイドバー用の state / action / effect を `app/src/renderer/hooks/useGitPanelState.ts` へ切り出し
+- [x] 検索・タグ・frontmatter候補の state / effect を `app/src/renderer/hooks/useWorkspaceSearchState.ts` へ切り出し
+- [x] 初期ロード・設定保存・テンプレート取得の state / effect を `app/src/renderer/hooks/useAppSettingsState.ts` へ切り出し
+- [x] ワークスペース作成/オープン・ノート/フォルダ作成・wikilinkオープンを `app/src/renderer/hooks/useWorkspaceFileActions.ts` へ切り出し
+- [x] ファイル/フォルダの移動・リネーム・複製・削除・ピン留め操作を `app/src/renderer/hooks/useWorkspaceFileActions.ts` へ集約
+- [x] テーマ適用・キーボードショートカット・サイドバーリサイズ・バックリンク取得を `app/src/renderer/hooks/` 配下へ切り出し
+- [x] コマンドパレットのコマンド生成を `app/src/renderer/hooks/useCommandPaletteCommands.ts` へ切り出し
 
 ### 2. セキュリティ境界の棚卸し
 
@@ -102,6 +109,23 @@ Relicの大規模リファクタリング・安全性強化フェーズの正本
 - 既存のGitテストが成功する
 - リモート操作の安全確認が一貫している
 
+進捗:
+
+- [x] Git入力検証・ブランチ名/タグ名/GitHub URL正規化・token認証値生成を `app/src/main/files/gitValidation.ts` へ切り出し
+- [x] `gitValidation.test.ts` を追加し、GitHub URL・タグ注釈入力・認証値生成を直接確認
+- [x] Git状態取得を `app/src/main/files/gitStatus.ts` へ切り出し、既存の `git.ts` 公開口は維持
+- [x] コミット履歴・コミット差分取得を `app/src/main/files/gitHistory.ts` へ切り出し、同期プレビュー用のcommit summary生成を共通化
+- [x] Gitタグ一覧・作成・削除を `app/src/main/files/gitTags.ts` へ切り出し、ブランチ/タグ共通のHEAD存在確認を `gitRepositoryChecks.ts` に分離
+- [x] working tree の変更一覧取得を `app/src/main/files/gitWorkingTree.ts` へ切り出し、ブランチ切替時の未コミット変更確認から再利用
+- [x] Gitブランチ一覧・作成・切替を `app/src/main/files/gitBranches.ts` へ切り出し、既存の `git.ts` 公開口は維持
+- [x] Gitリモート一覧・接続・リモート操作前提確認・push結果整形を `app/src/main/files/gitRemote.ts` へ切り出し、GitHub token取得箇所を局所化
+- [x] push / pull / fetch / tag push / 同期プレビューを `app/src/main/files/gitSync.ts` へ切り出し、リモート同期処理を集約
+- [x] コミット作成を `app/src/main/files/gitCommit.ts` へ切り出し、working tree / history / validation との依存を明確化
+- [x] コンフリクト検出・解決を `app/src/main/files/gitConflicts.ts` へ切り出し、競合マーカー解析とファイル書き戻し範囲を局所化
+- [x] GitHubリポジトリ clone を `app/src/main/files/gitClone.ts` へ切り出し、clone時のURL正規化・keychain認証・token利用を局所化
+- [x] Git初期化を `app/src/main/files/gitInit.ts` へ切り出し、初期化済み確認と `git.init` の責務を分離
+- [x] 自動コミット/自動pushを `app/src/main/files/gitAutoSync.ts` へ切り出し、tokenを引数で受ける自動同期経路を通常同期から分離
+
 ### 4. IPCハンドラ共通化
 
 - active workspace 取得、入力検証、例外の `RelicResult` 化を共通化する
@@ -128,6 +152,12 @@ Relicの大規模リファクタリング・安全性強化フェーズの正本
 
 - 機能維持と安全性を損なわない軽量化だけが入っている
 - ビルド時のchunk警告について、対応または保留理由が明確になっている
+
+進捗:
+
+- [x] `vite.renderer.config.ts` に `manualChunks` を追加し、React / CodeMirror / Markdown preview系依存を分割
+- [x] `pnpm exec vite build --config vite.renderer.config.ts` で500KB超えchunk警告が出ないことを確認
+- [x] `pnpm exec vite build --config vite.main.config.ts` と `pnpm exec vite build --config vite.preload.config.ts` は成功。ただし単独Vite実行ではElectron Forgeがentryを注入しないため、既存どおりrenderer HTMLを拾いchunk警告が表示される
 
 ---
 
@@ -163,8 +193,22 @@ pnpm audit --audit-level moderate
 
 ## 完了条件
 
-- 優先領域のリファクタリングが完了している
-- GitHub本格導入に必要なセキュリティ境界が整っている
-- `pnpm exec tsc --noEmit` と `pnpm test` が成功する
-- 必要なビルド確認が成功する
-- 残リスクと次フェーズ候補が整理されている
+- [x] 優先領域のリファクタリングが完了している
+- [x] GitHub本格導入に必要なセキュリティ境界が整っている
+- [x] `pnpm exec tsc --noEmit` と `pnpm test` が成功する
+- [x] 必要なビルド確認が成功する
+- [x] 残リスクと次フェーズ候補が整理されている
+
+## 最終確認
+
+- `pnpm exec tsc --noEmit`: 成功
+- `pnpm test`: 成功（30 files / 201 tests）
+- `pnpm exec vite build --config vite.main.config.ts`: 成功
+- `pnpm exec vite build --config vite.preload.config.ts`: 成功
+- `pnpm exec vite build --config vite.renderer.config.ts`: 成功（500KB超えchunk警告なし）
+
+## 残リスクと次フェーズ候補
+
+- `vite.main.config.ts` / `vite.preload.config.ts` はElectron Forge経由でentryを受け取る前提のため、単独Vite実行ではrenderer HTMLを拾う。P13では配布ビルド確認として `electron-forge package` / `electron-forge make` を正規の確認コマンドに寄せる。
+- 依存関係監査は外部 registry に依存情報を送るため、P12では未実行。実行する場合はユーザーの明示許可を得てから行う。
+- GitHub機能の本格導入前に、P13で実アプリ操作によるOAuth / clone / push / pull / conflict解決の通し確認を行う。
