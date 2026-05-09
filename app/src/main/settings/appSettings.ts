@@ -155,7 +155,7 @@ function normalizeGitHubScopes(rawScopes: unknown[]): string[] {
 }
 
 const VALID_FIELD_TYPES: UserDefinedFieldType[] = ["text", "number", "date", "boolean", "select", "multi-select", "url"];
-const FIELD_NAME_PATTERN = /^[A-Za-z0-9_]+$/;
+const FIELD_NAME_PATTERN = /^[^\s:][^\r\n:]*$/;
 
 function parseUserDefinedFields(raw: unknown): UserDefinedField[] {
   if (!Array.isArray(raw)) return defaultUserDefinedFields;
@@ -164,7 +164,6 @@ function parseUserDefinedFields(raw: unknown): UserDefinedField[] {
   const names = new Set<string>();
 
   for (const item of raw) {
-    if (result.length >= 13) break;
     if (typeof item !== "object" || item === null) continue;
     const f = item as Record<string, unknown>;
     if (typeof f.name !== "string" || !FIELD_NAME_PATTERN.test(f.name)) continue;

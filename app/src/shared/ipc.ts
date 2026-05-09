@@ -47,8 +47,6 @@ export const searchAndReplaceChannel = "workspace:searchAndReplace";
 export const applySearchAndReplaceChannel = "workspace:applySearchAndReplace";
 export const getEditorSettingsChannel = "editor:getSettings";
 export const saveEditorSettingsChannel = "editor:saveSettings";
-export const getFrontmatterCandidatesChannel = "workspace:getFrontmatterCandidates";
-export const createFrontmatterTemplateChannel = "workspace:createFrontmatterTemplate";
 export const createNewWorkspaceChannel = "workspace:createNew";
 export const togglePinChannel = "workspace:togglePin";
 export const cloneGitHubRepositoryChannel = "workspace:cloneGitHubRepository";
@@ -526,8 +524,6 @@ export interface RelicApi {
   switchGitBranch: (input: SwitchGitBranchInput) => Promise<RelicResult<GitBranchSummary[]>>;
   switchWorkspace: (input: SwitchWorkspaceInput) => Promise<RelicResult<WorkspaceState>>;
   writeMarkdownFile: (input: WriteMarkdownFileInput) => Promise<RelicResult<void>>;
-  getFrontmatterCandidates: () => Promise<RelicResult<Record<string, string[]>>>;
-  createFrontmatterTemplate: () => Promise<RelicResult<WorkspaceState>>;
   createGitTag: (input: CreateGitTagInput) => Promise<RelicResult<GitTagSummary[]>>;
   deleteGitTag: (input: DeleteGitTagInput) => Promise<RelicResult<GitTagSummary[]>>;
   getGitSyncPreview: () => Promise<RelicResult<GitSyncPreview>>;

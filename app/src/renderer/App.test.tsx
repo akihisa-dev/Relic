@@ -86,8 +86,6 @@ function makeRelicApi(overrides: Partial<typeof window.relic> = {}): typeof wind
     }),
     switchWorkspace: vi.fn(),
     writeMarkdownFile: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
-    getFrontmatterCandidates: vi.fn().mockResolvedValue({ ok: true, value: {} }),
-    createFrontmatterTemplate: vi.fn().mockResolvedValue({ ok: true, value: { activeWorkspace: null, fileTree: [], pinnedPaths: [], workspaces: [] } }),
     moveFolder: vi.fn(),
     moveMarkdownFile: vi.fn(),
     initializeGitRepository: vi.fn().mockResolvedValue({ ok: true, value: { currentBranch: "main", initialized: true } }),
@@ -1291,8 +1289,11 @@ describe("App", () => {
     });
 
     window.relic = makeRelicApi({
+      getUserDefinedFields: vi.fn().mockResolvedValue({
+        ok: true,
+        value: [{ choices: ["draft", "published"], name: "status", type: "select" }]
+      }),
       getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace }),
-      getFrontmatterCandidates: vi.fn().mockResolvedValue({ ok: true, value: { status: ["draft", "published"] } }),
       searchWorkspace
     });
 

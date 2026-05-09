@@ -321,16 +321,6 @@ export function useWorkspaceFileActions({
     });
   }, [setWorkspaceState]);
 
-  const handleCreateFrontmatterTemplate = useCallback((): void => {
-    void window.relic?.createFrontmatterTemplate().then((result) => {
-      if (result.ok) {
-        setWorkspaceState(result.value);
-      } else {
-        setWorkspaceError(result.error.message);
-      }
-    });
-  }, [setWorkspaceError, setWorkspaceState]);
-
   const handleTogglePin = useCallback((path: string): void => {
     if (!window.relic) return;
 
@@ -647,7 +637,6 @@ export function useWorkspaceFileActions({
     handleDuplicateTreeFile,
     handleCreateFile,
     handleCreateFolder,
-    handleCreateFrontmatterTemplate,
     handleCreateNewWorkspace,
     handleCreateNoteFromPane,
     handleOpenFile,

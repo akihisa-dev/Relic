@@ -15,7 +15,7 @@
       </div>
       <nav class="tabs">
         <div class="tab active">公開メモ.md</div>
-        <div class="tab">frontmatter.md</div>
+        <div class="tab">読書メモ.md</div>
       </nav>
       <div class="title-actions">
         <span>main</span>
@@ -38,7 +38,7 @@
           </div>
           <div class="side-scroll">
             <div class="list-item active">📄 公開メモ</div>
-            <div class="list-item">📄 frontmatter</div>
+            <div class="list-item">📄 読書メモ</div>
             <div class="list-item">📄 templates/記事</div>
           </div>
         </section>
@@ -61,7 +61,7 @@
               <div class="frontmatter-strip">
                 <div class="frontmatter-strip-header">
                   <span class="frontmatter-strip-title">frontmatter</span>
-                  <span class="muted">frontmatter.md candidates</span>
+                  <span class="muted">YAML block rendered as fields</span>
                 </div>
                 <div class="frontmatter-grid">
                   <div class="frontmatter-field">
@@ -69,16 +69,16 @@
                     <span class="frontmatter-value"><span class="pill">小説</span> <span class="pill">公開候補</span></span>
                   </div>
                   <div class="frontmatter-field">
-                    <span class="frontmatter-key">status</span>
+                    <span class="frontmatter-key">状態</span>
                     <span class="frontmatter-value">review</span>
                   </div>
                   <div class="frontmatter-field">
-                    <span class="frontmatter-key">author</span>
-                    <span class="frontmatter-value"><span class="pill">自分</span> <span class="pill">編集者A</span></span>
+                    <span class="frontmatter-key">締切</span>
+                    <span class="frontmatter-value">2026-05-20</span>
                   </div>
                   <div class="frontmatter-field">
-                    <span class="frontmatter-key">publish</span>
-                    <span class="frontmatter-value">on</span>
+                    <span class="frontmatter-key">登場人物</span>
+                    <span class="frontmatter-value"><span class="pill">自分</span> <span class="pill">編集者A</span></span>
                   </div>
                 </div>
               </div>
@@ -89,14 +89,17 @@
           </div>
 
           <aside class="right-panel">
-            <div class="panel-title"><span>候補定義</span><span class="badge">frontmatter.md</span></div>
-            <div class="section-title">status</div>
-            <div class="result-item active">draft</div>
+            <div class="panel-title"><span>フロントマター</span><span class="badge">右パネル</span></div>
+            <div class="section-title">このファイルに追加</div>
+            <div class="result-item active">締切 <span class="muted">日付</span></div>
+            <div class="result-item">状態 <span class="muted">選択肢</span></div>
+            <div class="result-item">登場人物 <span class="muted">複数候補</span></div>
+            <div class="section-title">テンプレート</div>
+            <div class="result-item">公開メモ</div>
+            <div class="result-item">読書メモ</div>
+            <div class="section-title">候補</div>
             <div class="result-item">review</div>
             <div class="result-item">published</div>
-            <div class="section-title">author</div>
-            <div class="result-item">自分</div>
-            <div class="result-item">編集者A</div>
           </aside>
         </section>
       </main>

@@ -5,8 +5,7 @@ import { autoSyncFeatureEnabled, type AppInfo, type AutoSyncSettings, type Edito
 import { useT } from "../i18n";
 
 const FIELD_TYPES: UserDefinedFieldType[] = ["text", "number", "date", "boolean", "select", "multi-select", "url"];
-const MAX_USER_DEFINED_FIELDS = 13;
-const FIELD_NAME_PATTERN = /^[A-Za-z0-9_]+$/;
+const FIELD_NAME_PATTERN = /^[^\s:][^\r\n:]*$/;
 
 function parseChoices(value: string): string[] | undefined {
   const choices = value.split(",").map((c) => c.trim()).filter(Boolean);
@@ -29,7 +28,6 @@ export function SettingsSidebar({
   featureToggles,
   gitHubIntegrationSettings,
   userDefinedFields,
-  onCreateFrontmatterTemplate,
   onSave,
   onAutoSyncSave,
   onFeatureTogglesSave,
@@ -42,7 +40,6 @@ export function SettingsSidebar({
   featureToggles: FeatureToggles;
   gitHubIntegrationSettings: GitHubIntegrationSettings;
   userDefinedFields: UserDefinedField[];
-  onCreateFrontmatterTemplate: () => void;
   onSave: (s: EditorSettings) => void;
   onAutoSyncSave: (s: AutoSyncSettings) => void;
   onFeatureTogglesSave: (t: FeatureToggles) => void;
@@ -199,12 +196,6 @@ export function SettingsSidebar({
           <option value="dark">{t("settings.dark")}</option>
         </select>
       </label>
-      <div className="setting-row setting-row--action">
-        <span>{t("settings.frontmatterTemplate")}</span>
-        <button className="setting-action-btn" onClick={onCreateFrontmatterTemplate} type="button">
-          {t("settings.createFrontmatterTemplate")}
-        </button>
-      </div>
       <div className="links-panel-subheading" style={{ marginTop: "1rem" }}>{t("settings.githubIntegration")}</div>
       <label className="setting-row">
         <span>{t("settings.githubClientId")}</span>
@@ -344,58 +335,54 @@ export function SettingsSidebar({
           </button>
         </div>
       ))}
-      {fieldsDraft.length < MAX_USER_DEFINED_FIELDS ? (
-        <div className="setting-custom-field-form">
+      <div className="setting-custom-field-form">
+        <input
+          className="setting-custom-field-input"
+          onChange={(e) => setNewFieldName(e.target.value)}
+          placeholder={t("settings.customFieldName")}
+          type="text"
+          value={newFieldName}
+        />
+        <select
+          aria-label={t("settings.customFieldType")}
+          onChange={(e) => setNewFieldType(e.target.value as UserDefinedFieldType)}
+          value={newFieldType}
+        >
+          {FIELD_TYPES.map((ft) => (
+            <option key={ft} value={ft}>{ft}</option>
+          ))}
+        </select>
+        {(newFieldType === "select" || newFieldType === "multi-select") ? (
           <input
             className="setting-custom-field-input"
-            onChange={(e) => setNewFieldName(e.target.value)}
-            placeholder={t("settings.customFieldName")}
+            onChange={(e) => setNewFieldChoices(e.target.value)}
+            placeholder={t("settings.customFieldChoices")}
             type="text"
-            value={newFieldName}
+            value={newFieldChoices}
           />
-          <select
-            aria-label={t("settings.customFieldType")}
-            onChange={(e) => setNewFieldType(e.target.value as UserDefinedFieldType)}
-            value={newFieldType}
-          >
-            {FIELD_TYPES.map((ft) => (
-              <option key={ft} value={ft}>{ft}</option>
-            ))}
-          </select>
-          {(newFieldType === "select" || newFieldType === "multi-select") ? (
-            <input
-              className="setting-custom-field-input"
-              onChange={(e) => setNewFieldChoices(e.target.value)}
-              placeholder={t("settings.customFieldChoices")}
-              type="text"
-              value={newFieldChoices}
-            />
-          ) : null}
-          <button
-            className="setting-action-btn"
-            disabled={!isFieldNameAvailable(newFieldName.trim())}
-            onClick={() => {
-              const name = newFieldName.trim();
-              if (!isFieldNameAvailable(name)) return;
-              const field: UserDefinedField = { name, type: newFieldType };
-              const choices = parseChoices(newFieldChoices);
-              if (needsChoices(newFieldType) && choices) {
-                field.choices = choices;
-              }
-              const next = [...fieldsDraft, field];
-              setFieldsDraft(next);
-              onUserDefinedFieldsSave(next);
-              setNewFieldName("");
-              setNewFieldChoices("");
-            }}
-            type="button"
-          >
-            {t("settings.customFieldAdd")}
-          </button>
-        </div>
-      ) : (
-        <div className="settings-info">{t("settings.customFieldLimit", { max: MAX_USER_DEFINED_FIELDS })}</div>
-      )}
+        ) : null}
+        <button
+          className="setting-action-btn"
+          disabled={!isFieldNameAvailable(newFieldName.trim())}
+          onClick={() => {
+            const name = newFieldName.trim();
+            if (!isFieldNameAvailable(name)) return;
+            const field: UserDefinedField = { name, type: newFieldType };
+            const choices = parseChoices(newFieldChoices);
+            if (needsChoices(newFieldType) && choices) {
+              field.choices = choices;
+            }
+            const next = [...fieldsDraft, field];
+            setFieldsDraft(next);
+            onUserDefinedFieldsSave(next);
+            setNewFieldName("");
+            setNewFieldChoices("");
+          }}
+          type="button"
+        >
+          {t("settings.customFieldAdd")}
+        </button>
+      </div>
       <div className="links-panel-subheading" style={{ marginTop: "1rem" }}>{t("settings.appInfo")}</div>
       <div className="settings-info">
         <div>Relic {appInfo?.version ?? "0.0.0"}</div>

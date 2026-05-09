@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 
 import {
   parseFrontmatter,
-  parseFrontmatterCandidates,
   updateFrontmatter,
   writeFrontmatter
 } from "./frontmatter";
@@ -80,21 +79,5 @@ describe("updateFrontmatter", () => {
 
     expect(parsed.data.tags).toEqual(["x"]);
     expect(parsed.body).toBe("本文");
-  });
-});
-
-describe("parseFrontmatterCandidates", () => {
-  it("frontmatter.mdから候補を読み込む", () => {
-    const content = "# フロントマター候補\n\n## status\n- draft\n- review\n- published\n\n## author\n- 自分\n";
-    const result = parseFrontmatterCandidates(content);
-
-    expect(result.get("status")).toEqual(["draft", "review", "published"]);
-    expect(result.get("author")).toEqual(["自分"]);
-  });
-
-  it("候補がない場合は空のMapを返す", () => {
-    const result = parseFrontmatterCandidates("# 何もない");
-
-    expect(result.size).toBe(0);
   });
 });
