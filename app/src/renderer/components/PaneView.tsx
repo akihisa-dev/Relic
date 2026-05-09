@@ -49,7 +49,6 @@ export function PaneView({
   onOpenInOtherPane,
   isSplitView
 }: PaneViewProps): ReactElement {
-  const [newFileName, setNewFileName] = useState("");
   const [contextMenu, setContextMenu] = useState<{ tabId: string; x: number; y: number } | null>(null);
   const { leftPane, rightPane, tabs, updateTabContent } = useEditorStore();
   const paneState = pane === "left" ? leftPane : rightPane;
@@ -200,27 +199,11 @@ export function PaneView({
             <p className="empty-pane-message">{t("pane.noFiles")}</p>
           </div>
           {workspacePath ? (
-            <form
-              className="empty-pane-form"
-              onSubmit={(e) => {
-                e.preventDefault();
-                if (newFileName.trim()) {
-                  onCreateFile(newFileName.trim());
-                  setNewFileName("");
-                }
-              }}
-            >
-              <input
-                aria-label={t("pane.enterFileName")}
-                className="text-input"
-                onChange={(e) => setNewFileName(e.target.value)}
-                placeholder={t("pane.enterFileName")}
-                value={newFileName}
-              />
-              <button className="primary-button" disabled={!newFileName.trim()} type="submit">
+            <div className="empty-pane-form">
+              <button className="primary-button" onClick={() => onCreateFile("")} type="button">
                 {t("pane.createFile")}
               </button>
-            </form>
+            </div>
           ) : null}
         </div>
       )}

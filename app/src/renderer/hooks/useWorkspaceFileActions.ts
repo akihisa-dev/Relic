@@ -156,12 +156,7 @@ export function useWorkspaceFileActions({
   const handleCreateNoteFromPane = useCallback((name: string): void => {
     if (!window.relic) return;
 
-    const fileName = name.trim();
-
-    if (!fileName) {
-      setWorkspaceError("ファイル名を入力してください。");
-      return;
-    }
+    const fileName = name.trim() || nextUniqueFileName(workspaceState);
 
     const input = selectedTemplatePath
       ? { name: fileName, templatePath: selectedTemplatePath }
@@ -188,7 +183,15 @@ export function useWorkspaceFileActions({
           setWorkspaceError(result.error.message);
         }
       });
-  }, [focusedPane, openFileInPane, selectedTemplatePath, setWorkspaceError, setWorkspaceState]);
+  }, [
+    focusedPane,
+    nextUniqueFileName,
+    openFileInPane,
+    selectedTemplatePath,
+    setWorkspaceError,
+    setWorkspaceState,
+    workspaceState
+  ]);
 
   const handleCreateFolder = useCallback((): void => {
     if (!window.relic) return;

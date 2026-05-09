@@ -7,6 +7,7 @@ import type { ReactElement } from "react";
 import { useT } from "../i18n";
 
 interface ToolbarProps {
+  fallbackViewRef?: React.RefObject<EditorView | null>;
   viewRef: React.RefObject<EditorView | null>;
 }
 
@@ -127,7 +128,7 @@ export function insertBlockIds(view: EditorView, createId: BlockIdFactory = () =
   view.focus();
 }
 
-export function Toolbar({ viewRef }: ToolbarProps): ReactElement {
+export function Toolbar({ fallbackViewRef, viewRef }: ToolbarProps): ReactElement {
   const t = useT();
   const [showHeadingMenu, setShowHeadingMenu] = useState(false);
   const [showLinkDialog, setShowLinkDialog] = useState(false);
@@ -138,7 +139,7 @@ export function Toolbar({ viewRef }: ToolbarProps): ReactElement {
 
   const placeholderText = t("toolbar.placeholderText");
   const placeholderLinkText = t("toolbar.placeholderLinkText");
-  const getView = (): EditorView | null => viewRef.current;
+  const getView = (): EditorView | null => viewRef.current ?? fallbackViewRef?.current ?? null;
 
   const handleBold = (): void => {
     const view = getView();

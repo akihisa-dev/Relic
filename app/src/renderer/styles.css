@@ -385,8 +385,8 @@ button:disabled {
 
 .file-tree .file-tree {
   border-left: 1px solid var(--border);
-  margin-left: 10px;
-  padding-left: 10px;
+  margin-left: 14px;
+  padding-left: 12px;
 }
 
 .file-tree-row {
@@ -425,6 +425,16 @@ button:disabled {
   position: relative;
 }
 
+.file-tree .file-tree .file-tree-row-wrap::before {
+  background: var(--border);
+  content: "";
+  height: 1px;
+  left: -12px;
+  position: absolute;
+  top: 14px;
+  width: 8px;
+}
+
 .file-tree-row-wrap .file-tree-row {
   flex: 1;
   min-width: 0;
@@ -454,6 +464,14 @@ button:disabled {
   padding-bottom: 8px;
 }
 
+.system-folder-section {
+  border-top: 1px solid var(--border);
+  display: grid;
+  gap: 6px;
+  margin-top: 4px;
+  padding-top: 10px;
+}
+
 .pinned-section-heading {
   color: var(--text-3);
   font-size: 11px;
@@ -469,7 +487,8 @@ button:disabled {
 }
 
 .file-tree--drag-over {
-  outline: 1px dashed var(--accent);
+  background: rgba(0, 98, 140, 0.04);
+  border-radius: 6px;
 }
 
 .file-tree-icon {
