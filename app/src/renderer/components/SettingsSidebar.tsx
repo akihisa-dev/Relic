@@ -4,7 +4,7 @@ import type { ReactElement } from "react";
 import { autoSyncFeatureEnabled, type AppInfo, type AutoSyncSettings, type EditorSettings, type FeatureToggles, type GitHubIntegrationSettings, type UserDefinedField, type UserDefinedFieldType } from "../../shared/ipc";
 import { useT } from "../i18n";
 
-const FIELD_TYPES: UserDefinedFieldType[] = ["text", "number", "date", "boolean", "select", "multi-select", "url"];
+const FIELD_TYPES: UserDefinedFieldType[] = ["text", "number", "date", "boolean", "select", "multi-select", "tags", "url"];
 const FIELD_NAME_PATTERN = /^[^\s:][^\r\n:]*$/;
 
 function parseChoices(value: string): string[] | undefined {
@@ -18,7 +18,7 @@ function choicesText(field: UserDefinedField): string {
 }
 
 function needsChoices(type: UserDefinedFieldType): boolean {
-  return type === "select" || type === "multi-select";
+  return type === "select" || type === "multi-select" || type === "tags";
 }
 
 export function SettingsSidebar({
@@ -352,7 +352,7 @@ export function SettingsSidebar({
             <option key={ft} value={ft}>{ft}</option>
           ))}
         </select>
-        {(newFieldType === "select" || newFieldType === "multi-select") ? (
+        {needsChoices(newFieldType) ? (
           <input
             className="setting-custom-field-input"
             onChange={(e) => setNewFieldChoices(e.target.value)}

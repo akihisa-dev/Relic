@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { FrontmatterForm } from "./FrontmatterForm";
@@ -16,32 +16,6 @@ function makeContent(fieldCount: number): string {
 }
 
 describe("FrontmatterForm", () => {
-  it("フィールド数が20件以下なら警告を出さない", () => {
-    render(
-      <FrontmatterForm
-        candidates={{}}
-        content={makeContent(20)}
-        onChange={vi.fn()}
-      />
-    );
-
-    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
-  });
-
-  it("フィールド数が21件以上なら警告を出す", () => {
-    render(
-      <FrontmatterForm
-        candidates={{}}
-        content={makeContent(21)}
-        onChange={vi.fn()}
-      />
-    );
-
-    expect(screen.getByRole("alert")).toHaveTextContent(
-      "The field limit is 20. You currently have 21 fields."
-    );
-  });
-
   it("フロントマターがあると初期表示でフォームを表示する", () => {
     render(
       <FrontmatterForm
@@ -84,5 +58,56 @@ describe("FrontmatterForm", () => {
 
     expect(screen.getByText("This note has no frontmatter fields.")).toBeInTheDocument();
     expect(screen.queryByText("tags")).not.toBeInTheDocument();
+  });
+
+  it("登録済みフィールドを後から追加できる", () => {
+    const onChange = vi.fn();
+
+    render(
+      <FrontmatterForm
+        candidates={{}}
+        content={"# 本文だけ"}
+        onChange={onChange}
+        userDefinedFields={[{ name: "締切", type: "date" }]}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /締切/ }));
+
+    expect(onChange).toHaveBeenCalledWith(expect.stringContaining("締切"));
+    expect(onChange).toHaveBeenCalledWith(expect.stringContaining("# 本文だけ"));
+  });
+
+  it("任意フィールドを後から追加できる", () => {
+    const onChange = vi.fn();
+
+    render(
+      <FrontmatterForm
+        candidates={{}}
+        content={"# 本文だけ"}
+        onChange={onChange}
+      />
+    );
+
+    fireEvent.change(screen.getByPlaceholderText("Add field"), { target: { value: "気分" } });
+    fireEvent.click(screen.getByRole("button", { name: "Add" }));
+
+    expect(onChange).toHaveBeenCalledWith(expect.stringContaining("気分"));
+  });
+
+  it("このファイルからフィールドを削除できる", () => {
+    const onChange = vi.fn();
+
+    render(
+      <FrontmatterForm
+        candidates={{}}
+        content={"---\nstatus: draft\n---\n本文"}
+        onChange={onChange}
+      />
+    );
+
+    fireEvent.click(screen.getByTitle("Remove from this file"));
+
+    expect(onChange).toHaveBeenCalledWith("本文");
   });
 });

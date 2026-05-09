@@ -2118,28 +2118,53 @@ button:disabled {
   min-width: 0;
 }
 
-.fm-warning {
-  background: rgba(168, 50, 0, 0.08);
-  border: 1px solid rgba(168, 50, 0, 0.24);
+.fm-add-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
+
+.fm-add-chip {
+  align-items: center;
+  background: var(--bg);
+  border: 1px solid var(--border);
   border-radius: 4px;
-  color: var(--attention);
+  color: var(--text);
+  cursor: pointer;
+  display: inline-flex;
   font-size: 11px;
-  grid-column: 1 / -1;
-  line-height: 1.5;
-  padding: 6px 8px;
+  gap: 5px;
+  min-height: 24px;
+  min-width: 0;
+  padding: 2px 7px;
+}
+
+.fm-add-chip:hover { background: var(--hover); }
+
+.fm-add-chip-type {
+  color: var(--text-3);
+  font-size: 10px;
+}
+
+.fm-add-manual {
+  display: grid;
+  gap: 6px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  min-width: 0;
 }
 
 .fm-row {
   align-items: center;
   display: grid;
   gap: 6px;
-  grid-template-columns: 56px minmax(0, 1fr);
+  grid-template-columns: 56px minmax(0, 1fr) 22px;
   min-height: 22px;
   min-width: 0;
 }
 
 .fm-row--url {
-  grid-template-columns: 56px minmax(0, 1fr) 16px;
+  grid-template-columns: 56px minmax(0, 1fr) 16px 22px;
 }
 
 .fm-label {
@@ -2175,6 +2200,25 @@ button:disabled {
 .fm-url-open:hover { color: var(--text); }
 
 .fm-checkbox { margin: 0; }
+
+.fm-remove-field {
+  align-items: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  color: var(--text-3);
+  cursor: pointer;
+  display: inline-flex;
+  height: 22px;
+  justify-content: center;
+  padding: 0;
+  width: 22px;
+}
+
+.fm-remove-field:hover {
+  background: var(--hover);
+  color: var(--text);
+}
 
 .fm-pill-input {
   min-width: 0;
