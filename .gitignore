@@ -18,6 +18,7 @@ out/
 
 # テスト
 coverage/
+test-workspaces/
 
 # webpack
 .webpack/
