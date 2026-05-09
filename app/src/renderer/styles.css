@@ -116,7 +116,7 @@ button:disabled {
 /* ────────────────────────────────── */
 
 .rail {
-  align-items: center;
+  align-items: stretch;
   background: var(--rail-bg);
   border-right: 1px solid var(--border);
   color: var(--text-3);
@@ -130,8 +130,7 @@ button:disabled {
   z-index: 2;
 }
 
-.rail:hover,
-.rail:focus-within {
+.rail:hover {
   width: 220px;
 }
 
@@ -141,11 +140,13 @@ button:disabled {
   border: none;
   color: inherit;
   display: inline-flex;
+  gap: 10px;
   height: 32px;
-  justify-content: center;
-  padding: 0;
+  justify-content: flex-start;
+  overflow: hidden;
+  padding: 0 7px;
   transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease;
-  width: 32px;
+  width: 100%;
 }
 
 .rail-button:hover {
@@ -153,17 +154,43 @@ button:disabled {
   color: var(--text);
 }
 
+.rail-button > svg {
+  flex: 0 0 auto;
+}
+
 .rail-button.active {
-  background: transparent;
-  border-left: 3px solid var(--accent);
-  border-radius: 0;
+  background: rgba(0, 98, 140, 0.08);
+  border-radius: 6px;
   color: var(--accent);
+}
+
+.rail-button-label {
+  color: var(--text);
+  flex: 0 1 auto;
+  font-size: 13px;
+  font-weight: 600;
+  max-width: 0;
+  opacity: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: max-width 160ms ease, opacity 120ms ease;
+  white-space: nowrap;
+}
+
+.rail:hover .rail-button-label {
+  max-width: 150px;
+  opacity: 1;
 }
 
 .rail-separator {
   background: var(--border);
   height: 1px;
   width: 24px;
+}
+
+.rail-spacer {
+  flex: 1;
+  min-height: 16px;
 }
 
 /* ────────────────────────────────── */
@@ -250,8 +277,7 @@ button:disabled {
   width: 32px;
 }
 
-.rail:hover .workspace-switcher,
-.rail:focus-within .workspace-switcher {
+.rail:hover .workspace-switcher {
   width: 100%;
 }
 
@@ -266,7 +292,6 @@ button:disabled {
 
 .workspace-switcher-item.active {
   background: rgba(0, 98, 140, 0.06);
-  box-shadow: inset 2px 0 0 var(--accent);
 }
 
 .workspace-switcher-main {
@@ -320,8 +345,7 @@ button:disabled {
   white-space: nowrap;
 }
 
-.rail:hover .workspace-switcher-name,
-.rail:focus-within .workspace-switcher-name {
+.rail:hover .workspace-switcher-name {
   opacity: 1;
 }
 
@@ -338,8 +362,7 @@ button:disabled {
   width: 24px;
 }
 
-.rail:hover .workspace-switcher-remove,
-.rail:focus-within .workspace-switcher-remove {
+.rail:hover .workspace-switcher-remove {
   opacity: 1;
 }
 
@@ -1339,6 +1362,89 @@ button:disabled {
   padding: 0.1em 0.2em;
 }
 .cm-live-highlight { background: #ffec3d; border-radius: 2px; }
+
+.cm-live-table {
+  margin: 10px 0;
+  overflow-x: auto;
+  padding-right: 28px;
+  position: relative;
+}
+
+.cm-live-table table {
+  border-collapse: collapse;
+  color: var(--text);
+  font-size: 14px;
+  width: max-content;
+}
+
+.cm-live-table th,
+.cm-live-table td {
+  border: 1px solid var(--border);
+  min-width: 96px;
+  padding: 7px 10px;
+  position: relative;
+  text-align: left;
+}
+
+.cm-live-table th {
+  background: var(--hover);
+  font-weight: 700;
+}
+
+.cm-live-table-row-actions {
+  border: 0 !important;
+  min-width: 48px !important;
+  padding: 0 0 0 6px !important;
+}
+
+.cm-live-table-controls {
+  display: inline-flex;
+  gap: 3px;
+  opacity: 0;
+  position: absolute;
+  right: 4px;
+  top: -12px;
+  transition: opacity 120ms ease;
+}
+
+.cm-live-table th:hover .cm-live-table-controls,
+.cm-live-table th:focus-within .cm-live-table-controls,
+.cm-live-table tr:hover .cm-live-table-row-actions button {
+  opacity: 1;
+}
+
+.cm-live-table button {
+  align-items: center;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-2);
+  display: inline-flex;
+  font-size: 11px;
+  height: 20px;
+  justify-content: center;
+  line-height: 1;
+  min-height: 0;
+  padding: 0;
+  width: 20px;
+}
+
+.cm-live-table button:hover {
+  background: var(--hover);
+  color: var(--accent);
+}
+
+.cm-live-table-row-actions button {
+  margin-right: 3px;
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.cm-live-table-add-row {
+  bottom: -8px;
+  left: 12px;
+  position: absolute;
+}
 
 .pane-status {
   align-items: center;

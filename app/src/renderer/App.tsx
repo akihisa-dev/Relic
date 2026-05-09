@@ -311,8 +311,6 @@ export function App(): ReactElement {
   });
 
   const {
-    fileNameDraft,
-    folderNameDraft,
     handleDeleteActiveFile,
     handleDeleteTreeItem,
     handleDuplicateActiveFile,
@@ -338,8 +336,6 @@ export function App(): ReactElement {
     isCreatingFolder,
     isCreatingWorkspace,
     isOpeningWorkspace,
-    setFileNameDraft,
-    setFolderNameDraft,
     setIsCreatingFile
   } = useWorkspaceFileActions({
     closeAllTabs,
@@ -354,7 +350,8 @@ export function App(): ReactElement {
     setWorkspaceError,
     setWorkspaceState,
     tabs,
-    updateTabMeta
+    updateTabMeta,
+    workspaceState
   });
 
   useAppTheme(editorSettings.theme);
@@ -493,17 +490,9 @@ export function App(): ReactElement {
                 <polyline points="6,3 11,8 6,13" />
               </svg>
             )}
+            <span className="rail-button-label">{t("pane.toggleSidebar")}</span>
           </button>
           <div className="rail-separator" />
-          <RailWorkspaceSwitcher
-            activeWorkspaceId={workspaceState?.activeWorkspace?.id ?? null}
-            ariaLabel={t("files.registeredWorkspaces")}
-            onRemoveWorkspace={handleRemoveWorkspace}
-            onSwitchWorkspace={handleSwitchWorkspace}
-            removeLabel={(name) => t("files.removeWorkspace", { name })}
-            workspaces={registeredWorkspaces}
-          />
-          {registeredWorkspaces.length > 0 ? <div className="rail-separator" /> : null}
           {sidebarViews
             .filter((view) => {
               if (view.id === "git" && !featureToggles.git) return false;
@@ -520,8 +509,23 @@ export function App(): ReactElement {
                 type="button"
               >
                 {view.icon}
+                <span className="rail-button-label">{view.label}</span>
               </button>
             ))}
+          {registeredWorkspaces.length > 0 ? (
+            <>
+              <div className="rail-spacer" />
+              <div className="rail-separator" />
+              <RailWorkspaceSwitcher
+                activeWorkspaceId={workspaceState?.activeWorkspace?.id ?? null}
+                ariaLabel={t("files.registeredWorkspaces")}
+                onRemoveWorkspace={handleRemoveWorkspace}
+                onSwitchWorkspace={handleSwitchWorkspace}
+                removeLabel={(name) => t("files.removeWorkspace", { name })}
+                workspaces={registeredWorkspaces}
+              />
+            </>
+          ) : null}
         </nav>
 
         {/* サイドバー */}
@@ -539,8 +543,6 @@ export function App(): ReactElement {
             {activeSidebarView === "files" ? (
               <FilesSidebar
                 activePaths={activePaths}
-                fileNameDraft={fileNameDraft}
-                folderNameDraft={folderNameDraft}
                 isCreatingFile={isCreatingFile}
                 isCreatingFolder={isCreatingFolder}
                 isCreatingWorkspace={isCreatingWorkspace}
@@ -550,8 +552,6 @@ export function App(): ReactElement {
                 onCreateWorkspace={handleCreateNewWorkspace}
                 onDeleteItem={handleDeleteTreeItem}
                 onDuplicateFile={handleDuplicateTreeFile}
-                onFileNameDraftChange={setFileNameDraft}
-                onFolderNameDraftChange={setFolderNameDraft}
                 onMoveFile={handleMoveFile}
                 onMoveFolder={handleMoveFolder}
                 onOpenFile={handleOpenFile}

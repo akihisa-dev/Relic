@@ -1,8 +1,9 @@
 import { EditorSelection, EditorState } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import { insertBlockIds } from "./Toolbar";
+import { insertBlockIds, Toolbar } from "./Toolbar";
 
 function createView(doc: string, selection: EditorSelection): EditorView {
   return new EditorView({
@@ -40,6 +41,20 @@ describe("Toolbar block IDs", () => {
     insertBlockIds(view, () => "new123");
 
     expect(view.state.doc.toString()).toBe("already ^abc123");
+    view.destroy();
+  });
+});
+
+describe("Toolbar markdown actions", () => {
+  it("ボタン押下時に現在のエディタへMarkdown記法を適用する", () => {
+    const view = createView("hello", EditorSelection.single(0, 5));
+    const viewRef = { current: view };
+
+    render(<Toolbar viewRef={viewRef} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "B" }));
+
+    expect(view.state.doc.toString()).toBe("**hello**");
     view.destroy();
   });
 });

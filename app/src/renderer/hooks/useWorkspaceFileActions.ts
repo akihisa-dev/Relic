@@ -19,6 +19,7 @@ interface UseWorkspaceFileActionsInput {
   setWorkspaceState: (state: WorkspaceState) => void;
   tabs: Record<string, Tab>;
   updateTabMeta: (tabId: string, meta: Pick<Tab, "name" | "path">) => void;
+  workspaceState: WorkspaceState | null;
 }
 
 export function useWorkspaceFileActions({
@@ -34,7 +35,8 @@ export function useWorkspaceFileActions({
   setWorkspaceError,
   setWorkspaceState,
   tabs,
-  updateTabMeta
+  updateTabMeta,
+  workspaceState
 }: UseWorkspaceFileActionsInput) {
   const [fileNameDraft, setFileNameDraft] = useState("");
   const [folderNameDraft, setFolderNameDraft] = useState("");
@@ -42,6 +44,38 @@ export function useWorkspaceFileActions({
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
   const [isOpeningWorkspace, setIsOpeningWorkspace] = useState(false);
   const [isCreatingWorkspace, setIsCreatingWorkspace] = useState(false);
+
+  const nextUniqueFileName = useCallback((workspaceState: WorkspaceState | null): string => {
+    const existing = new Set<string>();
+    const walk = (node: WorkspaceTreeNode): void => {
+      if (node.type === "file") existing.add(node.path);
+      else node.children.forEach(walk);
+    };
+
+    workspaceState?.fileTree.forEach(walk);
+
+    for (let i = 1; ; i += 1) {
+      const name = i === 1 ? "新規ファイル" : `新規ファイル ${i}`;
+      if (!existing.has(`${name}.md`)) return name;
+    }
+  }, []);
+
+  const nextUniqueFolderName = useCallback((workspaceState: WorkspaceState | null): string => {
+    const existing = new Set<string>();
+    const walk = (node: WorkspaceTreeNode): void => {
+      if (node.type === "folder") {
+        existing.add(node.path);
+        node.children.forEach(walk);
+      }
+    };
+
+    workspaceState?.fileTree.forEach(walk);
+
+    for (let i = 1; ; i += 1) {
+      const name = i === 1 ? "新規フォルダ" : `新規フォルダ ${i}`;
+      if (!existing.has(name)) return name;
+    }
+  }, []);
 
   const handleOpenWorkspace = useCallback((): void => {
     if (!window.relic) return;
@@ -82,12 +116,7 @@ export function useWorkspaceFileActions({
   const handleCreateFile = useCallback((): void => {
     if (!window.relic) return;
 
-    const fileName = fileNameDraft.trim();
-
-    if (!fileName) {
-      setWorkspaceError("ファイル名を入力してください。");
-      return;
-    }
+    const fileName = fileNameDraft.trim() || nextUniqueFileName(workspaceState);
 
     setIsCreatingFile(true);
     setWorkspaceError(null);
@@ -102,12 +131,27 @@ export function useWorkspaceFileActions({
         if (result.ok) {
           setWorkspaceState(result.value);
           setFileNameDraft("");
+          const expectedPath = fileName.endsWith(".md") ? fileName : `${fileName}.md`;
+          void window.relic!.readMarkdownFile({ path: expectedPath }).then((readResult) => {
+            if (readResult.ok) {
+              openFileInPane(focusedPane, readResult.value);
+            }
+          });
         } else {
           setWorkspaceError(result.error.message);
         }
       })
       .finally(() => setIsCreatingFile(false));
-  }, [fileNameDraft, selectedTemplatePath, setWorkspaceError, setWorkspaceState]);
+  }, [
+    fileNameDraft,
+    focusedPane,
+    nextUniqueFileName,
+    openFileInPane,
+    selectedTemplatePath,
+    setWorkspaceError,
+    setWorkspaceState,
+    workspaceState
+  ]);
 
   const handleCreateNoteFromPane = useCallback((name: string): void => {
     if (!window.relic) return;
@@ -153,7 +197,7 @@ export function useWorkspaceFileActions({
     setWorkspaceError(null);
 
     void window.relic
-      .createFolder({ name: folderNameDraft })
+      .createFolder({ name: folderNameDraft.trim() || nextUniqueFolderName(workspaceState) })
       .then((result) => {
         if (result.ok) {
           setWorkspaceState(result.value);
@@ -163,11 +207,20 @@ export function useWorkspaceFileActions({
         }
       })
       .finally(() => setIsCreatingFolder(false));
-  }, [folderNameDraft, setWorkspaceError, setWorkspaceState]);
+  }, [folderNameDraft, nextUniqueFolderName, setWorkspaceError, setWorkspaceState, workspaceState]);
 
   const handleOpenFile = useCallback(
     (path: string): void => {
       if (!window.relic) return;
+
+      const paneState = focusedPane === "left" ? leftPane : rightPane;
+      const activeTabId = paneState.activeTabId;
+      const activeTab = activeTabId ? tabs[activeTabId] : null;
+
+      if (activeTabId && activeTab?.path === path) {
+        closeTab(focusedPane, activeTabId);
+        return;
+      }
 
       void window.relic.readMarkdownFile({ path }).then((result) => {
         if (result.ok) {
@@ -177,7 +230,7 @@ export function useWorkspaceFileActions({
         }
       });
     },
-    [focusedPane, openFileInPane, setWorkspaceError]
+    [closeTab, focusedPane, leftPane, openFileInPane, rightPane, setWorkspaceError, tabs]
   );
 
   const handleOpenWikiLink = useCallback(

@@ -9,6 +9,7 @@ interface UiState {
   isRightPanelOpen: boolean;
   isTypewriterMode: boolean;
   rightPanelView: RightPanelView;
+  openSidebar: () => void;
   setSidebarView: (view: SidebarView) => void;
   toggleSidebar: () => void;
   toggleRightPanel: () => void;
@@ -22,6 +23,7 @@ export const useUiStore = create<UiState>((set) => ({
   isRightPanelOpen: true,
   isTypewriterMode: false,
   rightPanelView: "outline",
+  openSidebar: () => set({ isSidebarOpen: true }),
   setSidebarView: (view) =>
     set({
       activeSidebarView: view,
