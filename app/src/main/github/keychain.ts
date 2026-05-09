@@ -10,6 +10,7 @@ export interface StoredGitHubAuth {
   accessToken: string;
   login: string;
   scopes: string[];
+  tokenExpiresAt: string | null;
   tokenType: string;
 }
 
@@ -24,7 +25,14 @@ export async function readGitHubAuthFromKeychain(): Promise<StoredGitHubAuth | n
       "-w"
     ]);
 
-    return parseStoredGitHubAuth(stdout);
+    const auth = parseStoredGitHubAuth(stdout);
+
+    if (isExpired(auth.tokenExpiresAt)) {
+      await deleteGitHubAuthFromKeychain();
+      return null;
+    }
+
+    return auth;
   } catch (error) {
     if (isMissingKeychainItem(error)) {
       return null;
@@ -73,6 +81,9 @@ function parseStoredGitHubAuth(raw: string): StoredGitHubAuth {
     typeof parsed.login !== "string" ||
     !Array.isArray(parsed.scopes) ||
     parsed.scopes.some((scope) => typeof scope !== "string") ||
+    (parsed.tokenExpiresAt !== null &&
+      parsed.tokenExpiresAt !== undefined &&
+      typeof parsed.tokenExpiresAt !== "string") ||
     typeof parsed.tokenType !== "string"
   ) {
     throw new Error("GitHub認証情報の形式が不正です。");
@@ -82,6 +93,7 @@ function parseStoredGitHubAuth(raw: string): StoredGitHubAuth {
     accessToken: parsed.accessToken,
     login: parsed.login,
     scopes: parsed.scopes,
+    tokenExpiresAt: parsed.tokenExpiresAt ?? null,
     tokenType: parsed.tokenType
   };
 }
@@ -94,4 +106,18 @@ function isMissingKeychainItem(error: unknown): boolean {
   const candidate = error as { code?: number; stderr?: string };
 
   return candidate.code === 44 || candidate.stderr?.includes("could not be found") === true;
+}
+
+function isExpired(expiresAt: string | null): boolean {
+  if (!expiresAt) {
+    return false;
+  }
+
+  const timestamp = Date.parse(expiresAt);
+
+  if (Number.isNaN(timestamp)) {
+    return true;
+  }
+
+  return timestamp <= Date.now();
 }

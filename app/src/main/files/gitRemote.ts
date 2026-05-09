@@ -78,9 +78,27 @@ export async function connectGitRemote(
       return url;
     }
 
+    const remotes = await readGitRemotes(workspacePath);
+
+    if (!remotes.ok) {
+      return remotes;
+    }
+
+    const existingOrigin = remotes.value.find((remote) => remote.name === "origin");
+
+    if (existingOrigin) {
+      if (existingOrigin.url === url.value) {
+        return ok(remotes.value);
+      }
+
+      return fail(
+        "GIT_REMOTE_ORIGIN_ALREADY_CONNECTED",
+        "origin はすでに別のGitHubリポジトリに接続されています。送信先を変える場合は、先に現在の接続を確認してください。"
+      );
+    }
+
     await git.addRemote({
       dir: workspacePath,
-      force: true,
       fs,
       remote: "origin",
       url: url.value

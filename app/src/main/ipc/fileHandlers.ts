@@ -601,7 +601,9 @@ export function registerFileHandlers(): void {
 function isCreateMarkdownFileInput(input: unknown): input is CreateMarkdownFileInput {
   return (
     isNameInput(input) &&
-    (!("templatePath" in input) || typeof (input as { templatePath?: unknown }).templatePath === "string")
+    (!("templatePath" in input) ||
+      typeof (input as { templatePath?: unknown }).templatePath === "string" ||
+      typeof (input as { templatePath?: unknown }).templatePath === "undefined")
   );
 }
 

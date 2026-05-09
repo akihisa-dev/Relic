@@ -6,6 +6,7 @@ import type {
   GitCommitSummary,
   GitConflict,
   GitHubAuthStatus,
+  GitHubIntegrationSettings,
   GitRemoteSummary,
   GitStatus,
   GitSyncPreview,
@@ -19,6 +20,7 @@ type GitSyncStep = "push-preview" | "pull-preview" | "pull-fetching" | null;
 interface UseGitPanelStateInput {
   setWorkspaceError: (message: string | null) => void;
   setWorkspaceState: (state: WorkspaceState) => void;
+  gitHubIntegrationSettings: GitHubIntegrationSettings;
   t: (key: "git.remoteConnected") => string;
   workspaceState: WorkspaceState | null;
 }
@@ -26,6 +28,7 @@ interface UseGitPanelStateInput {
 export function useGitPanelState({
   setWorkspaceError,
   setWorkspaceState,
+  gitHubIntegrationSettings,
   t,
   workspaceState
 }: UseGitPanelStateInput) {
@@ -47,8 +50,6 @@ export function useGitPanelState({
   const [gitRetryAction, setGitRetryAction] = useState<(() => void) | null>(null);
   const [pendingGitBranchSwitch, setPendingGitBranchSwitch] = useState<string | null>(null);
   const [gitCommitMessage, setGitCommitMessage] = useState("");
-  const [gitAuthorName, setGitAuthorName] = useState("");
-  const [gitAuthorEmail, setGitAuthorEmail] = useState("");
   const [isCreatingGitBranch, setIsCreatingGitBranch] = useState(false);
   const [isCreatingGitCommit, setIsCreatingGitCommit] = useState(false);
   const [isCreatingGitTag, setIsCreatingGitTag] = useState(false);
@@ -80,7 +81,7 @@ export function useGitPanelState({
           }
         : current
     );
-  }, []);
+  }, [gitHubIntegrationSettings.clientId, gitHubIntegrationSettings.scopes]);
 
   const refreshGitWorkingChanges = useCallback((): void => {
     if (!window.relic) return;
@@ -375,8 +376,6 @@ export function useGitPanelState({
 
     void window.relic
       .createGitCommit({
-        authorEmail: gitAuthorEmail,
-        authorName: gitAuthorName,
         message: gitCommitMessage
       })
       .then((result) => {
@@ -392,7 +391,7 @@ export function useGitPanelState({
         refreshGitWorkingChanges();
       })
       .finally(() => setIsCreatingGitCommit(false));
-  }, [gitAuthorEmail, gitAuthorName, gitCommitMessage, refreshGitWorkingChanges, setWorkspaceError]);
+  }, [gitCommitMessage, refreshGitWorkingChanges, setWorkspaceError]);
 
   const handleCreateGitTag = useCallback((): void => {
     if (!window.relic) return;
@@ -404,9 +403,7 @@ export function useGitPanelState({
       .createGitTag({
         hash: selectedGitCommitHash ?? undefined,
         message: newGitTagMessage,
-        name: newGitTagName,
-        taggerEmail: gitAuthorEmail,
-        taggerName: gitAuthorName
+        name: newGitTagName
       })
       .then((result) => {
         if (!result.ok) {
@@ -419,7 +416,7 @@ export function useGitPanelState({
         setNewGitTagMessage("");
       })
       .finally(() => setIsCreatingGitTag(false));
-  }, [gitAuthorEmail, gitAuthorName, newGitTagMessage, newGitTagName, selectedGitCommitHash, setWorkspaceError]);
+  }, [newGitTagMessage, newGitTagName, selectedGitCommitHash, setWorkspaceError]);
 
   const handleDeleteGitTag = useCallback((name: string): void => {
     if (!window.relic) return;
@@ -449,8 +446,6 @@ export function useGitPanelState({
 
     void window.relic
       .createGitCommit({
-        authorEmail: gitAuthorEmail,
-        authorName: gitAuthorName,
         message: gitCommitMessage
       })
       .then((commitResult) => {
@@ -485,8 +480,6 @@ export function useGitPanelState({
       });
   }, [
     applyGitBranches,
-    gitAuthorEmail,
-    gitAuthorName,
     gitCommitMessage,
     pendingGitBranchSwitch,
     refreshGitCommitHistory,
@@ -713,8 +706,6 @@ export function useGitPanelState({
     gitRetryAction,
     pendingGitBranchSwitch,
     gitCommitMessage,
-    gitAuthorName,
-    gitAuthorEmail,
     gitSyncPreview,
     gitSyncStep,
     gitConflicts,
@@ -757,8 +748,6 @@ export function useGitPanelState({
     setGitSyncStep,
     setPendingGitBranchSwitch,
     setGitCommitMessage,
-    setGitAuthorName,
-    setGitAuthorEmail,
     setGitCloneUrl
   };
 }
