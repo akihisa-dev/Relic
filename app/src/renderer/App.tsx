@@ -37,9 +37,16 @@ import { SearchSidebar } from "./components/SearchSidebar";
 import { SettingsSidebar } from "./components/SettingsSidebar";
 import { ToolsSidebar } from "./components/ToolsSidebar";
 import { Toolbar } from "./components/Toolbar";
+import { extractOutlineHeadings, getActiveTabInPane } from "./editorDerivedState";
 import { createTranslator, I18nProvider, useT, type TranslationKey } from "./i18n";
 import { useEditorStore, type PaneId } from "./store/editorStore";
 import { useUiStore, type RightPanelView, type SidebarView } from "./store/uiStore";
+import {
+  collectMarkdownPaths,
+  displayNameFromPath,
+  joinWorkspacePath,
+  parentFolderOf
+} from "./workspacePaths";
 import "./styles.css";
 
 // ────────────────────────────────────────────────
@@ -93,20 +100,6 @@ const sidebarViewDefs: Array<{ id: SidebarView; labelKey: TranslationKey; icon: 
   { id: "tools", labelKey: "nav.tools", icon: <IconTools /> },
   { id: "settings", labelKey: "nav.settings", icon: <IconSettings /> }
 ];
-
-const joinWorkspacePath = (folder: string, name: string): string => (
-  folder ? `${folder}/${name}` : name
-);
-
-const parentFolderOf = (path: string): string => {
-  const index = path.lastIndexOf("/");
-  return index === -1 ? "" : path.slice(0, index);
-};
-
-const displayNameFromPath = (path: string): string => {
-  const name = path.split("/").at(-1) ?? path;
-  return name.endsWith(".md") ? name.slice(0, -3) : name;
-};
 
 export function App(): ReactElement {
   const [workspaceState, setWorkspaceState] = useState<WorkspaceState | null>(null);
@@ -1560,22 +1553,14 @@ export function App(): ReactElement {
   // アウトライン（右パネル）
   // ──────────────────
 
-  const activeTabInFocusedPane = (() => {
-    const paneState = focusedPane === "left" ? leftPane : rightPane;
-
-    return paneState.activeTabId ? tabs[paneState.activeTabId] : null;
-  })();
+  const activeTabInFocusedPane = getActiveTabInPane(
+    focusedPane,
+    { leftPane, rightPane },
+    tabs
+  );
 
   const outlineHeadings = activeTabInFocusedPane
-    ? activeTabInFocusedPane.content
-        .split("\n")
-        .filter((line) => /^#{1,6} /.test(line))
-        .map((line) => {
-          const match = /^(#{1,6}) (.+)/.exec(line);
-
-          return match ? { level: match[1].length, text: match[2] } : null;
-        })
-        .filter(Boolean)
+    ? extractOutlineHeadings(activeTabInFocusedPane.content)
     : [];
   const outgoingLinks = activeTabInFocusedPane
     ? resolveWikiLinks(activeTabInFocusedPane.content, activeTabInFocusedPane.path, existingMarkdownPaths)
@@ -2283,11 +2268,5 @@ function MoveBar({ onMove }: { onMove: (dest: string) => void }): ReactElement {
         value={draft}
       />
     </form>
-  );
-}
-
-function collectMarkdownPaths(nodes: WorkspaceTreeNode[]): string[] {
-  return nodes.flatMap((node) =>
-    node.type === "file" ? [node.path] : collectMarkdownPaths(node.children)
   );
 }

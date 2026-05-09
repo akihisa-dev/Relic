@@ -15,7 +15,7 @@ AIのセッション開始時は、`../AI.md` から [project.md](project.md)、
 | [principles.md](principles.md) | 設計思想・対象ユーザー・ポジショニング |
 | [glossary.md](glossary.md) | 用語定義。コード・UI・ドキュメントで使う言葉の統一基準 |
 | [dev/phases.md](dev/phases.md) | 開発フェーズ管理の正本。現在位置と読む文書を判断する入口 |
-| [dev/feature-checklist.md](dev/feature-checklist.md) | 実機での全機能・UI稼働確認チェックリスト |
+| [dev/phases/](dev/phases/) | 各フェーズ専用の計画・チェックリスト・判断メモ |
 | [dev/open-questions.md](dev/open-questions.md) | 未決定事項の正本 |
 | [dev/conventions.md](dev/conventions.md) | コーディング規約 |
 | [dev/testing.md](dev/testing.md) | テスト方針 |
