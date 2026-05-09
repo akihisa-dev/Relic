@@ -43,6 +43,7 @@ import {
   pushGitBranchChannel,
   pushGitTagChannel,
   readMarkdownFileChannel,
+  removeWorkspaceChannel,
   renameFolderChannel,
   renameMarkdownFileChannel,
   replaceInFileChannel,
@@ -107,6 +108,7 @@ import {
   type RelicApi,
   type PushGitTagInput,
   type ReadMarkdownFileInput,
+  type RemoveWorkspaceInput,
   type RenameFolderInput,
   type RenameMarkdownFileInput,
   type RenameMarkdownFileResult,
@@ -209,6 +211,8 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(pushGitTagChannel, input) as Promise<RelicResult<GitRemoteSyncResult>>,
   readMarkdownFile: (input: ReadMarkdownFileInput) =>
     ipcRenderer.invoke(readMarkdownFileChannel, input) as Promise<RelicResult<MarkdownFileContent>>,
+  removeWorkspace: (input: RemoveWorkspaceInput) =>
+    ipcRenderer.invoke(removeWorkspaceChannel, input) as Promise<RelicResult<WorkspaceState>>,
   renameMarkdownFile: (input: RenameMarkdownFileInput) =>
     ipcRenderer.invoke(renameMarkdownFileChannel, input) as Promise<
       RelicResult<RenameMarkdownFileResult>

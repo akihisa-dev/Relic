@@ -85,6 +85,59 @@ const sidebarViewDefs: Array<{ id: SidebarView; labelKey: TranslationKey; icon: 
   { id: "settings", labelKey: "nav.settings", icon: <IconSettings /> }
 ];
 
+interface RailWorkspaceSwitcherProps {
+  activeWorkspaceId: string | null;
+  ariaLabel: string;
+  onRemoveWorkspace: (id: string) => void;
+  onSwitchWorkspace: (id: string) => void;
+  removeLabel: (name: string) => string;
+  workspaces: WorkspaceState["workspaces"];
+}
+
+function RailWorkspaceSwitcher({
+  activeWorkspaceId,
+  ariaLabel,
+  onRemoveWorkspace,
+  onSwitchWorkspace,
+  removeLabel,
+  workspaces
+}: RailWorkspaceSwitcherProps): ReactElement | null {
+  if (workspaces.length === 0) return null;
+
+  return (
+    <div className="workspace-switcher" aria-label={ariaLabel}>
+      {workspaces.map((ws) => {
+        const isActive = ws.id === activeWorkspaceId;
+        const initial = ws.name.trim().charAt(0).toUpperCase() || "W";
+
+        return (
+          <div className={`workspace-switcher-item${isActive ? " active" : ""}`} key={ws.id}>
+            <button
+              aria-label={ws.name}
+              className="workspace-switcher-main"
+              onClick={() => onSwitchWorkspace(ws.id)}
+              title={ws.path}
+              type="button"
+            >
+              <span className="workspace-switcher-icon">{initial}</span>
+              <span className="workspace-switcher-name">{ws.name}</span>
+            </button>
+            <button
+              aria-label={removeLabel(ws.name)}
+              className="workspace-switcher-remove"
+              onClick={() => onRemoveWorkspace(ws.id)}
+              title={removeLabel(ws.name)}
+              type="button"
+            >
+              ×
+            </button>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export function App(): ReactElement {
   const [workspaceState, setWorkspaceState] = useState<WorkspaceState | null>(null);
   const [toastMessage, setToastMessage] = useState<{ text: string; type: "error" | "info" } | null>(null);
@@ -273,6 +326,7 @@ export function App(): ReactElement {
     handleOpenWikiLink,
     handleOpenWorkspace,
     handleRefreshWorkspaceState,
+    handleRemoveWorkspace,
     handleSwitchWorkspace,
     handleMoveActiveFile,
     handleMoveFile,
@@ -357,6 +411,15 @@ export function App(): ReactElement {
   // ──────────────────
 
   const activePaths = new Set(Object.values(tabs).map((t) => t.path));
+  const registeredWorkspaces = useMemo(
+    () =>
+      workspaceState && workspaceState.workspaces.length > 0
+        ? workspaceState.workspaces
+        : workspaceState?.activeWorkspace
+          ? [workspaceState.activeWorkspace]
+          : [],
+    [workspaceState]
+  );
   const existingMarkdownPaths = useMemo(
     () => collectMarkdownPaths(workspaceState?.fileTree ?? []),
     [workspaceState?.fileTree]
@@ -432,6 +495,15 @@ export function App(): ReactElement {
             )}
           </button>
           <div className="rail-separator" />
+          <RailWorkspaceSwitcher
+            activeWorkspaceId={workspaceState?.activeWorkspace?.id ?? null}
+            ariaLabel={t("files.registeredWorkspaces")}
+            onRemoveWorkspace={handleRemoveWorkspace}
+            onSwitchWorkspace={handleSwitchWorkspace}
+            removeLabel={(name) => t("files.removeWorkspace", { name })}
+            workspaces={registeredWorkspaces}
+          />
+          {registeredWorkspaces.length > 0 ? <div className="rail-separator" /> : null}
           {sidebarViews
             .filter((view) => {
               if (view.id === "git" && !featureToggles.git) return false;
@@ -486,7 +558,6 @@ export function App(): ReactElement {
                 onOpenWorkspace={handleOpenWorkspace}
                 onRenameItem={handleRenameTreeItem}
                 onSelectFolder={handleSelectFolder}
-                onSwitchWorkspace={handleSwitchWorkspace}
                 onTogglePin={handleTogglePin}
                 onTemplatePathChange={setSelectedTemplatePath}
                 selectedTemplatePath={selectedTemplatePath}
@@ -939,7 +1010,7 @@ function MoveBar({ onMove }: { onMove: (dest: string) => void }): ReactElement {
         title={t("pane.moveToFolder")}
         type="button"
       >
-        Move
+        {t("pane.moveShort")}
       </button>
     );
   }

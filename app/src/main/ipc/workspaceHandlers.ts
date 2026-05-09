@@ -16,6 +16,8 @@ import {
   getWorkspaceStateChannel,
   getWorkspaceTagsChannel,
   openWorkspaceChannel,
+  removeWorkspaceChannel,
+  type RemoveWorkspaceInput,
   saveAutoSyncSettingsChannel,
   type AutoSyncSettings,
   saveFeatureTogglesChannel,
@@ -40,6 +42,7 @@ import {
   activateWorkspace,
   createWorkspaceSummary,
   prepareWorkspace,
+  removeWorkspaceRegistration,
   toWorkspaceState
 } from "../workspace/workspaceService";
 
@@ -238,6 +241,35 @@ export function registerWorkspaceHandlers(): void {
   );
 
   ipcMain.handle(
+    removeWorkspaceChannel,
+    async (_event, input: RemoveWorkspaceInput): Promise<RelicResult<WorkspaceState>> => {
+      try {
+        if (!isWorkspaceIdInput(input)) {
+          return fail("WORKSPACE_REMOVE_INVALID_INPUT", "ワークスペースを選択してください。");
+        }
+
+        const settings = await readAppSettings(app.getPath("userData"));
+        const nextSettings = removeWorkspaceRegistration(settings, input.workspaceId);
+
+        if (!nextSettings.ok) {
+          return nextSettings;
+        }
+
+        await writeAppSettings(app.getPath("userData"), nextSettings.value);
+        await refreshAutoSyncTimer();
+
+        return ok(await buildWorkspaceState(nextSettings.value));
+      } catch (error) {
+        return fail(
+          "WORKSPACE_REMOVE_FAILED",
+          "ワークスペースを一覧から削除できませんでした。",
+          error instanceof Error ? error.message : String(error)
+        );
+      }
+    }
+  );
+
+  ipcMain.handle(
     cloneGitHubRepositoryChannel,
     async (_event, input: CloneGitHubRepositoryInput): Promise<RelicResult<WorkspaceState>> => {
       try {
@@ -407,13 +439,17 @@ export async function buildWorkspaceState(
   return toWorkspaceState(settings, fileTree, wsSettings.pinnedPaths);
 }
 
-function isSwitchWorkspaceInput(input: unknown): input is SwitchWorkspaceInput {
+function isWorkspaceIdInput(input: unknown): input is { workspaceId: string } {
   return (
     typeof input === "object" &&
     input !== null &&
     "workspaceId" in input &&
     typeof (input as { workspaceId?: unknown }).workspaceId === "string"
   );
+}
+
+function isSwitchWorkspaceInput(input: unknown): input is SwitchWorkspaceInput {
+  return isWorkspaceIdInput(input);
 }
 
 function isCloneGitHubRepositoryInput(input: unknown): input is CloneGitHubRepositoryInput {

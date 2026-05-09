@@ -54,6 +54,7 @@ function makeRelicApi(overrides: Partial<typeof window.relic> = {}): typeof wind
     pushGitBranch: vi.fn(),
     pushGitTag: vi.fn(),
     readMarkdownFile: vi.fn(),
+    removeWorkspace: vi.fn(),
     renameFolder: vi.fn(),
     renameMarkdownFile: vi.fn(),
     replaceInFile: vi.fn(),

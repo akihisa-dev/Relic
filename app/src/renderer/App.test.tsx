@@ -75,6 +75,7 @@ function makeRelicApi(overrides: Partial<typeof window.relic> = {}): typeof wind
     moveItemToTrash: vi.fn(),
     openWorkspace: vi.fn(),
     readMarkdownFile: vi.fn(),
+    removeWorkspace: vi.fn().mockResolvedValue({ ok: true, value: { activeWorkspace: null, fileTree: [], pinnedPaths: [], workspaces: [] } }),
     renameMarkdownFile: vi.fn(),
     renameFolder: vi.fn(),
     saveEditorSettings: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
@@ -162,7 +163,7 @@ describe("App", () => {
 
     expect(screen.getByRole("navigation")).toBeInTheDocument();
     expect(screen.getByRole("main")).toBeInTheDocument();
-    expect(await screen.findByText("ワークスペース未選択")).toBeInTheDocument();
+    expect(await screen.findByText("書く場所を選ぶ")).toBeInTheDocument();
   });
 
   it("ワークスペースを開くとファイルツリーが表示される", async () => {
@@ -606,7 +607,7 @@ describe("App", () => {
 
     await renderApp();
 
-    fireEvent.click(await screen.findByRole("button", { name: /Notes/ }));
+    fireEvent.click(await screen.findByRole("button", { name: "Notes" }));
     fireEvent.click(await screen.findByRole("button", { name: "Archive" }));
 
     expect(switchWorkspace).toHaveBeenCalledWith({ workspaceId: "ws-2" });
