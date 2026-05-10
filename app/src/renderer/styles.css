@@ -232,7 +232,7 @@ button:not(:disabled):active {
 }
 
 .sidebar--resizing {
-  border-right-color: var(--primary);
+  border-right-color: var(--accent);
   transition: background-color 120ms ease, border-color 120ms ease;
 }
 
@@ -264,6 +264,7 @@ button:not(:disabled):active {
 
 .sidebar-body {
   flex: 1;
+  margin-right: 8px;
   overflow-y: auto;
   padding: 16px;
 }
@@ -2263,10 +2264,10 @@ button:not(:disabled):active {
   bottom: 0;
   cursor: col-resize;
   position: absolute;
-  right: -2px;
+  right: 0;
   top: 0;
   transition: background-color 120ms ease, box-shadow 120ms ease, transform 120ms cubic-bezier(.18, 1.35, .28, 1);
-  width: 6px;
+  width: 8px;
   z-index: 20;
 }
 
