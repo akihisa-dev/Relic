@@ -62,7 +62,7 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
       if (existing) {
         return {
           focusedPane: pane,
-          [paneKey]: activateTab(paneState, existing.id)
+          [paneKey]: activateTab(ensureTabInPane(paneState, existing.id), existing.id)
         };
       }
 
@@ -261,6 +261,15 @@ function activateTab(pane: PaneState, tabId: string): PaneState {
     ...pane,
     activeTabId: tabId,
     history: [...pane.history.filter((id) => id !== tabId), tabId]
+  };
+}
+
+function ensureTabInPane(pane: PaneState, tabId: string): PaneState {
+  if (pane.tabIds.includes(tabId)) return pane;
+
+  return {
+    ...pane,
+    tabIds: [...pane.tabIds, tabId]
   };
 }
 

@@ -821,6 +821,33 @@ describe("App", () => {
     });
   });
 
+  it("ファイルツリーの右クリックメニューを画面基準で表示する", async () => {
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [{ name: "読書メモ", path: "読書メモ.md", type: "file" }]
+        }
+      })
+    });
+
+    await renderApp();
+
+    fireEvent.contextMenu(await screen.findByRole("button", { name: /読書メモ/ }), {
+      clientX: 490,
+      clientY: 1040
+    });
+
+    const menu = await screen.findByRole("menu");
+
+    expect(menu).toHaveClass("file-tree-context-menu");
+    expect(menu.parentElement).toBe(document.body);
+    expect(menu).toHaveStyle({ position: "fixed" });
+    expect(Number.parseInt((menu as HTMLElement).style.left, 10)).toBeGreaterThan(0);
+    expect(Number.parseInt((menu as HTMLElement).style.top, 10)).toBeGreaterThan(0);
+  });
+
   it("コマンドパレットからアクティブファイルを複製する", async () => {
     const duplicateMarkdownFile = vi.fn().mockResolvedValue({
       ok: true,

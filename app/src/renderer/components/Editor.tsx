@@ -45,12 +45,13 @@ interface InlineMatch {
 interface FrontmatterBlock {
   bodyFrom: number;
   data: Record<string, unknown>;
+  endLine: number;
   from: number;
+  startLine: number;
   to: number;
   yamlText: string;
 }
 
-const frontmatterFieldNamePattern = /^[^\s:][^\r\n:]*$/;
 const topLevelYamlFieldPattern = /^([^#\s][^:]*):(?:\s|$)/;
 
 interface YamlFieldEntry {
@@ -353,27 +354,29 @@ class TableWidget extends WidgetType {
 
     const beginCoordinateDrag = (
       axis: "column" | "row",
-      clientX: number,
-      clientY: number,
-      preventDefault: () => void
+      event: MouseEvent | PointerEvent
     ) => {
-      preventDefault();
+      if (wrapper.dataset.dragAxis) return;
+      event.preventDefault();
+      event.stopPropagation();
       const sourceRow = activeRow;
       const sourceCol = activeCol;
       wrapper.dataset.dragAxis = axis;
       wrapper.dataset.dragSourceRow = String(sourceRow);
       wrapper.dataset.dragSourceCol = String(sourceCol);
       setDropTarget(sourceRow, sourceCol);
-      const firstTarget = targetFromPoint(clientX, clientY);
+      const firstTarget = targetFromPoint(event.clientX, event.clientY);
       if (firstTarget) setDropTarget(firstTarget.row, firstTarget.col);
 
       const move = (moveEvent: MouseEvent | PointerEvent) => {
+        moveEvent.preventDefault();
         const target = targetFromEvent(moveEvent);
         if (target) {
           setDropTarget(target.row, target.col);
         }
       };
       const up = (upEvent: MouseEvent | PointerEvent) => {
+        upEvent.preventDefault();
         const target = targetFromEvent(upEvent);
         if (target) {
           moveDraggedSelection(target.row, target.col);
@@ -493,11 +496,12 @@ class TableWidget extends WidgetType {
     });
     columnHandle.addEventListener("pointerdown", (event) => {
       markActive("column", activeRow, activeCol);
-      beginCoordinateDrag("column", event.clientX, event.clientY, () => event.preventDefault());
+      beginCoordinateDrag("column", event);
     });
     columnHandle.addEventListener("mousedown", (event) => {
+      if (typeof window.PointerEvent === "function") return;
       markActive("column", activeRow, activeCol);
-      beginCoordinateDrag("column", event.clientX, event.clientY, () => event.preventDefault());
+      beginCoordinateDrag("column", event);
     });
     columnHandle.addEventListener("contextmenu", (event) => {
       event.preventDefault();
@@ -522,11 +526,12 @@ class TableWidget extends WidgetType {
     });
     rowHandle.addEventListener("pointerdown", (event) => {
       markActive("row", activeRow, activeCol);
-      beginCoordinateDrag("row", event.clientX, event.clientY, () => event.preventDefault());
+      beginCoordinateDrag("row", event);
     });
     rowHandle.addEventListener("mousedown", (event) => {
+      if (typeof window.PointerEvent === "function") return;
       markActive("row", activeRow, activeCol);
-      beginCoordinateDrag("row", event.clientX, event.clientY, () => event.preventDefault());
+      beginCoordinateDrag("row", event);
     });
     rowHandle.addEventListener("contextmenu", (event) => {
       event.preventDefault();
@@ -834,6 +839,39 @@ class ListMarkerWidget extends WidgetType {
   }
 }
 
+class InlineFormatWidget extends WidgetType {
+  constructor(
+    private readonly tagName: "span" | "strong" | "em" | "code" | "a" | "u",
+    private readonly text: string,
+    private readonly className: string
+  ) {
+    super();
+  }
+
+  eq(other: InlineFormatWidget): boolean {
+    return this.tagName === other.tagName && this.text === other.text && this.className === other.className;
+  }
+
+  toDOM(): HTMLElement {
+    const element = document.createElement(this.tagName);
+    element.className = this.className;
+    element.textContent = this.text;
+    if (this.className === "cm-live-bold") {
+      element.style.display = "inline-block";
+      element.style.fontWeight = "900";
+      element.style.paddingInline = "0.015em";
+      element.style.textShadow = "0.025em 0 0 currentColor";
+    }
+    if (this.className === "cm-live-italic") {
+      element.style.display = "inline-block";
+      element.style.fontStyle = "italic";
+      element.style.transform = "skewX(-14deg)";
+      element.style.transformOrigin = "baseline";
+    }
+    return element;
+  }
+}
+
 class CheckboxWidget extends WidgetType {
   constructor(private readonly checked: boolean) {
     super();
@@ -869,7 +907,8 @@ class FrontmatterPropertiesWidget extends WidgetType {
   constructor(
     private readonly block: FrontmatterBlock,
     private readonly userDefinedFields: UserDefinedField[],
-    private readonly candidates: Record<string, string[]>
+    private readonly candidates: Record<string, string[]>,
+    private readonly lineNumber: number
   ) {
     super();
   }
@@ -877,12 +916,24 @@ class FrontmatterPropertiesWidget extends WidgetType {
   eq(other: FrontmatterPropertiesWidget): boolean {
     return this.block.from === other.block.from &&
       this.block.to === other.block.to &&
-      JSON.stringify(this.block.data) === JSON.stringify(other.block.data);
+      JSON.stringify(this.block.data) === JSON.stringify(other.block.data) &&
+      this.lineNumber === other.lineNumber;
   }
 
   toDOM(view: EditorView): HTMLElement {
     const wrapper = document.createElement("section");
     wrapper.className = "cm-frontmatter-properties";
+
+    if (this.lineNumber !== this.block.startLine) {
+      const row = this.rowForLine(view);
+      if (row) {
+        wrapper.append(row);
+      } else {
+        wrapper.classList.add("cm-frontmatter-properties--spacer");
+      }
+      return wrapper;
+    }
+
     const header = document.createElement("button");
     header.className = "cm-frontmatter-header";
     header.type = "button";
@@ -897,20 +948,12 @@ class FrontmatterPropertiesWidget extends WidgetType {
     count.textContent = String(Object.keys(this.block.data).length);
     header.append(icon, title, count);
 
-    const body = document.createElement("div");
-    body.className = "cm-frontmatter-body";
-
     header.addEventListener("click", () => {
       const collapsed = wrapper.dataset.collapsed === "true";
       wrapper.dataset.collapsed = collapsed ? "false" : "true";
     });
 
-    for (const [key, value] of Object.entries(this.block.data)) {
-      body.append(this.renderRow(view, key, value));
-    }
-
-    body.append(this.renderAddRow(view));
-    wrapper.append(header, body);
+    wrapper.append(header);
     return wrapper;
   }
 
@@ -949,42 +992,20 @@ class FrontmatterPropertiesWidget extends WidgetType {
     return row;
   }
 
-  private isEditableScalar(value: unknown): boolean {
-    return value === null || value === undefined || typeof value !== "object" || value instanceof Date;
+  private rowForLine(view: EditorView): HTMLElement | null {
+    const yamlLineIndex = this.lineNumber - this.block.startLine - 1;
+    if (yamlLineIndex < 0 || this.lineNumber >= this.block.endLine) return null;
+
+    const lines = this.block.yamlText.replace(/\r\n/g, "\n").split("\n");
+    if (lines.at(-1) === "") lines.pop();
+    const entry = findTopLevelYamlFieldEntries(lines).find((item) => item.start === yamlLineIndex);
+    if (!entry || !Object.prototype.hasOwnProperty.call(this.block.data, entry.key)) return null;
+
+    return this.renderRow(view, entry.key, this.block.data[entry.key]);
   }
 
-  private renderAddRow(view: EditorView): HTMLElement {
-    const row = document.createElement("div");
-    row.className = "cm-frontmatter-add-row";
-
-    const plus = document.createElement("span");
-    plus.className = "cm-frontmatter-row-icon";
-    plus.textContent = "+";
-
-    const input = document.createElement("input");
-    input.className = "cm-frontmatter-add-input";
-    input.placeholder = "プロパティを追加";
-    const addOptions = this.userDefinedFields
-      .map((field) => field.name)
-      .filter((name) => !Object.prototype.hasOwnProperty.call(this.block.data, name));
-    const datalist = this.createDatalist(input, "fields", addOptions);
-
-    const addField = () => {
-      const name = input.value.trim();
-      if (!frontmatterFieldNamePattern.test(name) || Object.prototype.hasOwnProperty.call(this.block.data, name)) return;
-      this.writeData(view, { ...this.block.data, [name]: "" });
-    };
-
-    input.addEventListener("keydown", (event) => {
-      if (event.key !== "Enter") return;
-      event.preventDefault();
-      addField();
-    });
-    input.addEventListener("blur", addField);
-
-    row.append(plus, input);
-    if (datalist) row.append(datalist);
-    return row;
+  private isEditableScalar(value: unknown): boolean {
+    return value === null || value === undefined || typeof value !== "object" || value instanceof Date;
   }
 
   private scalarInput(view: EditorView, key: string, value: unknown, field?: UserDefinedField): HTMLElement {
@@ -1246,73 +1267,6 @@ class FrontmatterPropertiesWidget extends WidgetType {
   }
 }
 
-class FrontmatterStarterWidget extends WidgetType {
-  constructor(private readonly userDefinedFields: UserDefinedField[]) {
-    super();
-  }
-
-  eq(other: FrontmatterStarterWidget): boolean {
-    return JSON.stringify(this.userDefinedFields) === JSON.stringify(other.userDefinedFields);
-  }
-
-  toDOM(view: EditorView): HTMLElement {
-    const wrapper = document.createElement("section");
-    wrapper.className = "cm-frontmatter-starter";
-
-    const plus = document.createElement("span");
-    plus.className = "cm-frontmatter-row-icon";
-    plus.textContent = "+";
-
-    const input = document.createElement("input");
-    input.className = "cm-frontmatter-add-input";
-    input.placeholder = "プロパティを追加";
-    const datalist = this.createDatalist(input);
-
-    const addFrontmatter = () => {
-      const name = input.value.trim();
-      if (!frontmatterFieldNamePattern.test(name)) return;
-
-      view.dispatch({
-        changes: {
-          from: 0,
-          insert: `---\n${name}:\n---\n`
-        },
-        selection: { anchor: name.length + 6 }
-      });
-    };
-
-    input.addEventListener("keydown", (event) => {
-      if (event.key !== "Enter") return;
-      event.preventDefault();
-      addFrontmatter();
-    });
-
-    wrapper.append(plus, input);
-    if (datalist) wrapper.append(datalist);
-    return wrapper;
-  }
-
-  ignoreEvent(): boolean {
-    return false;
-  }
-
-  private createDatalist(input: HTMLInputElement): HTMLDataListElement | null {
-    if (this.userDefinedFields.length === 0) return null;
-
-    const datalist = document.createElement("datalist");
-    datalist.id = `cm-frontmatter-new-fields-${Math.random().toString(36).slice(2)}`;
-
-    for (const field of this.userDefinedFields) {
-      const option = document.createElement("option");
-      option.value = field.name;
-      datalist.append(option);
-    }
-
-    input.setAttribute("list", datalist.id);
-    return datalist;
-  }
-}
-
 function overlaps(from: number, to: number, ranges: Array<{ from: number; to: number }>): boolean {
   return ranges.some((range) => from < range.to && to > range.from);
 }
@@ -1346,10 +1300,6 @@ function findFrontmatterLineRange(doc: Text): { end: number; start: number } | n
   return null;
 }
 
-function startsWithFrontmatterDelimiter(doc: Text): boolean {
-  return doc.lines >= 1 && doc.line(1).text.trim() === "---";
-}
-
 function findFrontmatterBlock(state: EditorState): FrontmatterBlock | null {
   const range = findFrontmatterLineRange(state.doc);
   if (!range) return null;
@@ -1361,13 +1311,25 @@ function findFrontmatterBlock(state: EditorState): FrontmatterBlock | null {
   try {
     const parsed = yaml.load(yamlText);
 
-    if (parsed === null || parsed === undefined) return { bodyFrom: closeLine.to + 1, data: {}, from: openLine.from, to: closeLine.to, yamlText };
+    if (parsed === null || parsed === undefined) {
+      return {
+        bodyFrom: closeLine.to + 1,
+        data: {},
+        endLine: range.end,
+        from: openLine.from,
+        startLine: range.start,
+        to: closeLine.to,
+        yamlText
+      };
+    }
     if (typeof parsed !== "object" || Array.isArray(parsed)) return null;
 
     return {
       bodyFrom: closeLine.to + 1,
       data: parsed as Record<string, unknown>,
+      endLine: range.end,
       from: openLine.from,
+      startLine: range.start,
       to: closeLine.to,
       yamlText
     };
@@ -1382,24 +1344,22 @@ export function buildFrontmatterPropertiesDecorations(
   candidates: Record<string, string[]> = {}
 ): DecorationSet {
   const block = findFrontmatterBlock(state);
-  if (!block) {
-    if (startsWithFrontmatterDelimiter(state.doc)) return Decoration.none;
+  if (!block) return Decoration.none;
 
-    return Decoration.set([
-      Decoration.widget({
-        block: true,
-        side: -1,
-        widget: new FrontmatterStarterWidget(userDefinedFields)
-      }).range(0)
-    ]);
+  const ranges: { from: number; to: number; deco: Decoration }[] = [];
+  for (let lineNumber = block.startLine; lineNumber <= block.endLine; lineNumber += 1) {
+    const line = state.doc.line(lineNumber);
+    const widget = new FrontmatterPropertiesWidget(block, userDefinedFields, candidates, lineNumber);
+    ranges.push({
+      from: line.from,
+      to: line.to,
+      deco: line.from < line.to
+        ? Decoration.replace({ widget })
+        : Decoration.widget({ widget })
+    });
   }
 
-  return Decoration.set([
-    Decoration.replace({
-      block: true,
-      widget: new FrontmatterPropertiesWidget(block, userDefinedFields, candidates)
-    }).range(block.from, block.to)
-  ]);
+  return Decoration.set(ranges.map((range) => range.deco.range(range.from, range.to)), true);
 }
 
 export function buildLivePreviewDecorations(view: EditorView): DecorationSet {
@@ -1435,7 +1395,11 @@ export function buildLivePreviewDecorations(view: EditorView): DecorationSet {
 
   function addMark(from: number, to: number, cls: string) {
     if (from < to) {
-      const attributes = cls === "cm-live-bold" ? { style: "font-weight: 800;" } : undefined;
+      const attributes = cls === "cm-live-bold"
+        ? { style: "display: inline-block; font-weight: 900; padding-inline: 0.015em; text-shadow: 0.025em 0 0 currentColor;" }
+        : cls === "cm-live-italic"
+          ? { style: "display: inline-block; font-style: italic; transform: skewX(-14deg); transform-origin: baseline;" }
+          : undefined;
       ranges.push({ from, to, deco: Decoration.mark({ attributes, class: cls }) });
     }
   }
@@ -1444,6 +1408,30 @@ export function buildLivePreviewDecorations(view: EditorView): DecorationSet {
     if (from < to && !shouldRevealSource(from, to)) {
       ranges.push({ from, to, deco: Decoration.replace({ widget }) });
     }
+  }
+
+  function addInlineFormat(lineFrom: number, match: InlineMatch, text: string) {
+    if (!selectionTouches(match.from, match.to)) {
+      const tagName = match.className === "cm-live-bold"
+        ? "strong"
+        : match.className === "cm-live-italic"
+          ? "em"
+          : match.className === "cm-live-code"
+            ? "code"
+            : match.className === "cm-live-underline"
+              ? "u"
+              : "span";
+      addWidget(
+        match.from,
+        match.to,
+        new InlineFormatWidget(tagName, text.slice(match.contentFrom - lineFrom, match.contentTo - lineFrom), match.className)
+      );
+      return;
+    }
+
+    addSourceReveal(match.from, match.to);
+    addMark(match.contentFrom, match.contentTo, match.className);
+    for (const hideRange of match.hideRanges) addReplace(hideRange.from, hideRange.to);
   }
 
   function addInlineDecorations(lineFrom: number, text: string) {
@@ -1597,9 +1585,7 @@ export function buildLivePreviewDecorations(view: EditorView): DecorationSet {
     for (const match of matches) {
       if (overlaps(match.from, match.to, occupied)) continue;
       occupied.push({ from: match.from, to: match.to });
-      addSourceReveal(match.from, match.to);
-      addMark(match.contentFrom, match.contentTo, match.className);
-      for (const hideRange of match.hideRanges) addReplace(hideRange.from, hideRange.to);
+      addInlineFormat(lineFrom, match, text);
     }
   }
 
@@ -1826,6 +1812,7 @@ function buildExtensions(
     history(),
     keymap.of([...defaultKeymap, ...historyKeymap]),
     markdown({ extensions: GFM }),
+    EditorView.lineWrapping,
     autocompletion({ override: [buildWikiLinkCompletionSource(allFilePaths)] }),
     EditorView.updateListener.of((update) => {
       if (update.docChanged) onChangeRef.current!(update.state.doc.toString());
@@ -1842,6 +1829,11 @@ function buildExtensions(
         maxWidth: settings.maxWidth === "none" ? "none" : settings.maxWidth,
         margin: "0 auto",
         padding: "24px 32px"
+      },
+      ".cm-line": {
+        overflowWrap: "anywhere",
+        whiteSpace: "pre-wrap",
+        wordBreak: "break-word"
       },
       ".cm-focused": { outline: "none" }
     }),
@@ -1902,6 +1894,22 @@ export function Editor({
     // content は初期値のみ使用。以降は onChange で管理する
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    const view = internalViewRef.current;
+    if (!view) return;
+
+    const currentContent = view.state.doc.toString();
+    if (currentContent === content) return;
+
+    view.dispatch({
+      changes: {
+        from: 0,
+        insert: content,
+        to: view.state.doc.length
+      }
+    });
+  }, [content]);
 
   // 設定・タイプライターモード変更時にエディタを再生成
   useEffect(() => {
