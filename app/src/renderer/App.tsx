@@ -411,6 +411,9 @@ export function App(): ReactElement {
     toX: number;
     toY: number;
   } | null>(null);
+  const pendingSidebarFileOpenTokensRef = useRef<Record<string, number>>({});
+  const sidebarFileOpenTokenRef = useRef(0);
+  const [fileSelectionCount, setFileSelectionCount] = useState(0);
   const [isWorkspaceRenameActive, setIsWorkspaceRenameActive] = useState(false);
   const [isWorkspaceRenameHoldingRail, setIsWorkspaceRenameHoldingRail] = useState(false);
   const workspaceRenameHoldTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -789,33 +792,48 @@ export function App(): ReactElement {
     const editorState = useEditorStore.getState();
     const targetPane = editorState.focusedPane;
     const paneState = targetPane === "left" ? editorState.leftPane : editorState.rightPane;
-    const activeTabId = paneState.activeTabId;
-    const activeTab = activeTabId ? editorState.tabs[activeTabId] : null;
+    const tabBar = document.querySelector(`.pane${targetPane === "left" ? "" : ":last-child"} .pane-tab-bar`) ?? document.querySelector(".pane-tab-bar");
+    const tabBarRect = tabBar?.getBoundingClientRect();
+    const pendingToken = pendingSidebarFileOpenTokensRef.current[path];
 
-    if (activeTabId && activeTab?.kind === "file" && activeTab.path === path) {
-      const tabElement = document.querySelector(`.pane-tab[data-tab-id="${activeTabId}"]`);
+    if (pendingToken) {
+      delete pendingSidebarFileOpenTokensRef.current[path];
+      setRailTabFlight({
+        direction: "close",
+        fromX: (tabBarRect?.left ?? rowRect.left + rowRect.width + 120) + 48,
+        fromY: (tabBarRect?.top ?? rowRect.top) + 15,
+        label: displayNameFromPath(path),
+        toX: rowRect.left + rowRect.width / 2,
+        toY: rowRect.top + rowRect.height / 2
+      });
+      window.setTimeout(() => setRailTabFlight(null), 360);
+      return;
+    }
+
+    const openTabIdInPane = paneState.tabIds.find((tabId) => {
+      const tab = editorState.tabs[tabId];
+      return tab?.kind === "file" && tab.path === path;
+    });
+    const openTabInPane = openTabIdInPane ? editorState.tabs[openTabIdInPane] : null;
+
+    if (openTabIdInPane && openTabInPane?.kind === "file") {
+      const tabElement = document.querySelector(`.pane-tab[data-tab-id="${openTabIdInPane}"]`);
       const tabRect = tabElement?.getBoundingClientRect();
 
       setRailTabFlight({
         direction: "close",
         fromX: (tabRect?.left ?? rowRect.left + rowRect.width + 120) + (tabRect?.width ?? 96) / 2,
         fromY: (tabRect?.top ?? rowRect.top) + (tabRect?.height ?? 30) / 2,
-        label: activeTab.name,
+        label: openTabInPane.name,
         toX: rowRect.left + rowRect.width / 2,
         toY: rowRect.top + rowRect.height / 2
       });
-      window.setTimeout(() => {
-        const latestState = useEditorStore.getState();
-        const latestPane = targetPane === "left" ? latestState.leftPane : latestState.rightPane;
-        if (latestPane.tabIds.includes(activeTabId)) closeTab(targetPane, activeTabId);
-      }, 140);
+      closeTab(targetPane, openTabIdInPane);
       window.setTimeout(() => setRailTabFlight(null), 360);
       return;
     }
 
     const existingTab = Object.values(editorState.tabs).find((tab) => tab.kind === "file" && tab.path === path);
-    const tabBar = document.querySelector(`.pane${targetPane === "left" ? "" : ":last-child"} .pane-tab-bar`) ?? document.querySelector(".pane-tab-bar");
-    const tabBarRect = tabBar?.getBoundingClientRect();
     const label = existingTab?.name ?? displayNameFromPath(path);
 
     setRailTabFlight({
@@ -836,7 +854,12 @@ export function App(): ReactElement {
     if (!window.relic) return;
 
     setWorkspaceError(null);
+    const token = sidebarFileOpenTokenRef.current + 1;
+    sidebarFileOpenTokenRef.current = token;
+    pendingSidebarFileOpenTokensRef.current[path] = token;
     void window.relic.readMarkdownFile({ path }).then((result) => {
+      if (pendingSidebarFileOpenTokensRef.current[path] !== token) return;
+      delete pendingSidebarFileOpenTokensRef.current[path];
       if (result.ok) {
         openFileInPane(targetPane, result.value);
       } else {
@@ -844,6 +867,10 @@ export function App(): ReactElement {
       }
     });
   }, [closeTab, handleOpenFile, openFileInPane, setWorkspaceError]);
+
+  const renderPanelTabIcon = useCallback((panel: PanelTabKind): ReactNode => (
+    sidebarViews.find((view) => view.id === panel)?.icon ?? null
+  ), [sidebarViews]);
 
   useAppTheme(editorSettings.theme);
 
@@ -1360,11 +1387,16 @@ export function App(): ReactElement {
             className={`sidebar${isSidebarOpen ? "" : " sidebar--closed"}${isSidebarResizing ? " sidebar--resizing" : ""}`}
             style={{ width: isSidebarOpen ? sidebarWidth : 0 }}
           >
-            <div className="sidebar-header">
-              <div className="pane-heading">
-                {sidebarViews.find((v) => v.id === activeSidebarView)?.label}
+              <div className="sidebar-header">
+                <div className="pane-heading">
+                  {sidebarViews.find((v) => v.id === activeSidebarView)?.label}
+                  {activeSidebarView === "files" && fileSelectionCount > 1 ? (
+                    <span className="pane-heading-count">
+                      {t("files.selectedCount", { count: fileSelectionCount })}
+                    </span>
+                  ) : null}
+                </div>
               </div>
-            </div>
             <div className={`sidebar-body sidebar-view-content sidebar-view-content--${activeSidebarView}`}>
             {activeSidebarView !== "search" ? (
               <FilesSidebar
@@ -1389,6 +1421,7 @@ export function App(): ReactElement {
                 onRevealItem={handleRevealWorkspaceItem}
                 onRenameItem={handleRenameTreeItem}
                 onSelectFolder={handleSelectFolder}
+                onSelectedCountChange={setFileSelectionCount}
                 onTogglePin={handleTogglePin}
                 openFilePaths={openFilePathSet}
                 onTemplatePathChange={setSelectedTemplatePath}
@@ -1505,6 +1538,7 @@ export function App(): ReactElement {
                   isSplitView={isSplit}
                   pane="left"
                   renderPanelTab={renderPanelTab}
+                  renderPanelTabIcon={renderPanelTabIcon}
                   scrollTargetHeading={leftPaneScrollHeading}
                   typewriterMode={isTypewriterMode}
                   userDefinedFields={userDefinedFields}
@@ -1538,6 +1572,7 @@ export function App(): ReactElement {
                     isSplitView={isSplit}
                     pane="right"
                     renderPanelTab={renderPanelTab}
+                    renderPanelTabIcon={renderPanelTabIcon}
                     scrollTargetHeading={rightPaneScrollHeading}
                     typewriterMode={isTypewriterMode}
                     userDefinedFields={userDefinedFields}

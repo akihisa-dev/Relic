@@ -46,6 +46,7 @@
   "files.rename": "名前を変更",
   "files.revealInFinder": "Finderで表示",
   "files.removeWorkspace": "{{name}} を一覧から削除",
+  "files.selectedCount": "{{count}}件選択中",
   "files.systemFolders": "システムフォルダ",
   "files.template": "テンプレート",
   "files.unpin": "ピン留めを解除",

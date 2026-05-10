@@ -352,6 +352,81 @@ describe("App", () => {
     });
   });
 
+  it("ファイル読み込み完了前に再クリックすると開く操作を取り消す", async () => {
+    let resolveRead: (value: Awaited<ReturnType<NonNullable<typeof window.relic>["readMarkdownFile"]>>) => void = () => {};
+    const readMarkdownFile = vi.fn().mockReturnValue(new Promise((resolve) => {
+      resolveRead = resolve;
+    }));
+
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [{ name: "読書メモ", path: "読書メモ.md", type: "file" }]
+        }
+      }),
+      readMarkdownFile
+    });
+
+    await renderApp();
+
+    const fileButton = await screen.findByRole("button", { name: /読書メモ/ });
+    fireEvent.click(fileButton);
+    fireEvent.click(fileButton);
+
+    resolveRead({
+      ok: true,
+      value: { content: "本文テスト", name: "読書メモ", path: "読書メモ.md" }
+    });
+
+    await waitFor(() => {
+      expect(readMarkdownFile).toHaveBeenCalledTimes(1);
+    });
+    await Promise.resolve();
+
+    expect(useEditorStore.getState().leftPane.activeTabId).toBeNull();
+  });
+
+  it("複数ファイルを開いた後でもファイルツリー再クリックで対象タブを閉じる", async () => {
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [
+            { name: "読書メモ", path: "読書メモ.md", type: "file" },
+            { name: "日記", path: "日記.md", type: "file" }
+          ]
+        }
+      }),
+      readMarkdownFile: vi.fn().mockImplementation(({ path }: { path: string }) => Promise.resolve({
+        ok: true,
+        value: { content: "本文テスト", name: path.replace(/\.md$/, ""), path }
+      }))
+    });
+
+    await renderApp();
+
+    const firstFileButton = await screen.findByRole("button", { name: /読書メモ/ });
+    const secondFileButton = await screen.findByRole("button", { name: /日記/ });
+
+    fireEvent.click(firstFileButton);
+    await waitFor(() => {
+      expect(Object.values(useEditorStore.getState().tabs).some((tab) => tab.kind === "file" && tab.path === "読書メモ.md")).toBe(true);
+    });
+
+    fireEvent.click(secondFileButton);
+    await waitFor(() => {
+      expect(Object.values(useEditorStore.getState().tabs).some((tab) => tab.kind === "file" && tab.path === "日記.md")).toBe(true);
+    });
+
+    fireEvent.click(firstFileButton);
+
+    expect(Object.values(useEditorStore.getState().tabs).some((tab) => tab.kind === "file" && tab.path === "読書メモ.md")).toBe(false);
+    expect(Object.values(useEditorStore.getState().tabs).some((tab) => tab.kind === "file" && tab.path === "日記.md")).toBe(true);
+  });
+
   it("ファイルツリーのフォルダを開閉できる", async () => {
     window.relic = makeRelicApi({
       getWorkspaceState: vi.fn().mockResolvedValue({
@@ -511,6 +586,7 @@ describe("App", () => {
       kind: "panel",
       panel: "frontmatter"
     });
+    expect(document.querySelector('.pane-tab[data-tab-id="panel-frontmatter"] .pane-tab-icon svg')).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "フロントマター" })).toHaveClass("active");
     expect(screen.getByText("カスタムフィールド")).toBeInTheDocument();
     expect(screen.getByDisplayValue("status")).toBeInTheDocument();
@@ -1838,6 +1914,11 @@ describe("App", () => {
   });
 
   it("ファイルとフォルダを複数選択できる", async () => {
+    const readMarkdownFile = vi.fn().mockResolvedValue({
+      ok: true,
+      value: { content: "本文", name: "note", path: "note.md" }
+    });
+
     window.relic = makeRelicApi({
       getWorkspaceState: vi.fn().mockResolvedValue({
         ok: true,
@@ -1849,7 +1930,8 @@ describe("App", () => {
             { children: [], name: "archive", path: "archive", type: "folder" }
           ]
         }
-      })
+      }),
+      readMarkdownFile
     });
 
     await renderApp();
@@ -1865,6 +1947,7 @@ describe("App", () => {
     expect(noteRow).toHaveClass("multi-selected");
     expect(draftsRow).toHaveClass("selected");
     expect(draftsRow).toHaveClass("multi-selected");
+    expect(screen.getByText("2件選択中")).toBeInTheDocument();
 
     fireEvent.click(archiveRow, { shiftKey: true });
 
@@ -1873,6 +1956,11 @@ describe("App", () => {
     expect(draftsRow).toHaveClass("multi-selected");
     expect(archiveRow).toHaveClass("selected");
     expect(archiveRow).toHaveClass("multi-selected");
+    expect(screen.getByText("2件選択中")).toBeInTheDocument();
+
+    fireEvent.click(noteRow);
+
+    expect(readMarkdownFile).not.toHaveBeenCalled();
   });
 
   it("複数選択したファイルとフォルダをまとめてドラッグ移動できる", async () => {
