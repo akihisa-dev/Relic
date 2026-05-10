@@ -29,6 +29,7 @@ function makeRelicApi(overrides: Partial<typeof window.relic> = {}): typeof wind
     getEditorSettings: vi.fn(),
     getFeatureToggles: vi.fn().mockResolvedValue({ ok: true, value: defaultFeatureToggles }),
     getFrontmatterTemplates: vi.fn(),
+    getFrontmatterValueCandidates: vi.fn(),
     getGitBranches: vi.fn(),
     getGitCommitDiff: vi.fn(),
     getGitCommitHistory: vi.fn(),

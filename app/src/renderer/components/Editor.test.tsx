@@ -194,6 +194,130 @@ describe("Editor", () => {
     ]));
   });
 
+  it("先頭フロントマターは水平線にせずメタデータとして薄く表示する", async () => {
+    const content = "---\nstatus: draft\n---\n# 本文";
+    const classes = await collectLivePreviewClasses(content, content.length, false);
+    const widgets = await collectInlineLivePreviewWidgets(content, content.length, false);
+
+    expect(classes.has("cm-live-frontmatter")).toBe(true);
+    expect(widgets).not.toContain("HorizontalRuleWidget");
+  });
+
+  it("先頭フロントマターをプロパティフォームとしてDOM表示する", async () => {
+    const viewRef = createRef<EditorView | null>();
+    const onChange = vi.fn();
+    const { container } = render(
+      <Editor
+        content={"---\nversion: v1.0\naliases: [帝都オルスター, 帝都]\n---\n# 本文"}
+        onChange={onChange}
+        settings={settings}
+        viewRef={viewRef}
+      />
+    );
+
+    await waitFor(() => expect(container.querySelector(".cm-frontmatter-properties")).not.toBeNull());
+    expect(container.textContent).toContain("プロパティ");
+    expect(container.textContent).toContain("version");
+    expect(container.textContent).toContain("帝都オルスター");
+
+    const input = container.querySelector(".cm-frontmatter-input") as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "v1.1" } });
+
+    expect(onChange).toHaveBeenLastCalledWith(expect.stringContaining("version: v1.1"));
+    expect(viewRef.current?.state.doc.toString()).toContain("---\nversion: v1.1");
+  });
+
+  it("プロパティフォームは折りたためる", async () => {
+    const { container } = render(
+      <Editor
+        content={"---\nversion: v1.0\n---\n# 本文"}
+        onChange={vi.fn()}
+        settings={settings}
+      />
+    );
+
+    await waitFor(() => expect(container.querySelector(".cm-frontmatter-properties")).not.toBeNull());
+    fireEvent.click(container.querySelector(".cm-frontmatter-header") as HTMLButtonElement);
+
+    expect(container.querySelector(".cm-frontmatter-properties")?.getAttribute("data-collapsed")).toBe("true");
+  });
+
+  it("プロパティフォームからプロパティを追加できる", async () => {
+    const viewRef = createRef<EditorView | null>();
+    const onChange = vi.fn();
+    const { container } = render(
+      <Editor
+        content={"---\nversion: v1.0\n---\n# 本文"}
+        onChange={onChange}
+        settings={settings}
+        viewRef={viewRef}
+      />
+    );
+
+    await waitFor(() => expect(container.querySelector(".cm-frontmatter-add-input")).not.toBeNull());
+    const input = container.querySelector(".cm-frontmatter-add-input") as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "updated" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+
+    expect(onChange).toHaveBeenLastCalledWith(expect.stringContaining("updated:"));
+    expect(viewRef.current?.state.doc.toString()).toContain("updated:");
+  });
+
+  it("プロパティフォームからプロパティを削除できる", async () => {
+    const viewRef = createRef<EditorView | null>();
+    const onChange = vi.fn();
+    const { container } = render(
+      <Editor
+        content={"---\nversion: v1.0\nstatus: draft\n---\n# 本文"}
+        onChange={onChange}
+        settings={settings}
+        viewRef={viewRef}
+      />
+    );
+
+    await waitFor(() => expect(container.querySelector(".cm-frontmatter-remove")).not.toBeNull());
+    fireEvent.click(container.querySelector(".cm-frontmatter-remove") as HTMLButtonElement);
+
+    expect(onChange).toHaveBeenLastCalledWith(expect.not.stringContaining("version:"));
+    expect(viewRef.current?.state.doc.toString()).toContain("status: draft");
+  });
+
+  it("登録済みプロパティの入力能力をフォームに反映する", async () => {
+    const viewRef = createRef<EditorView | null>();
+    const onChange = vi.fn();
+    const { container } = render(
+      <Editor
+        content={"---\nstatus: draft\nupdated: 2026-03-29\npublished: false\n---\n# 本文"}
+        frontmatterCandidates={{ status: ["review"] }}
+        onChange={onChange}
+        settings={settings}
+        userDefinedFields={[
+          { choices: ["draft", "published"], name: "status", type: "select" },
+          { name: "updated", type: "date" },
+          { name: "published", type: "boolean" }
+        ]}
+        viewRef={viewRef}
+      />
+    );
+
+    await waitFor(() => expect(container.querySelector(".cm-frontmatter-properties")).not.toBeNull());
+    const statusInput = Array.from(container.querySelectorAll(".cm-frontmatter-input"))
+      .find((input) => (input as HTMLInputElement).value === "draft") as HTMLInputElement;
+    const statusOptions = Array.from(container.querySelectorAll(`#${statusInput.getAttribute("list")} option`))
+      .map((option) => (option as HTMLOptionElement).value);
+    expect(statusOptions).toEqual(["draft", "published", "review"]);
+
+    const dateInput = Array.from(container.querySelectorAll(".cm-frontmatter-input"))
+      .find((input) => (input as HTMLInputElement).type === "date") as HTMLInputElement;
+    expect(dateInput.value).toBe("2026-03-29");
+    fireEvent.change(dateInput, { target: { value: "2026-04-01" } });
+    expect(viewRef.current?.state.doc.toString()).toContain("updated: 2026-04-01");
+
+    const checkbox = container.querySelector(".cm-frontmatter-checkbox") as HTMLInputElement;
+    fireEvent.click(checkbox);
+    expect(viewRef.current?.state.doc.toString()).toContain("published: true");
+  });
+
   it("ライブプレビューで表を挿入直後のカーソル位置でも表示する", async () => {
     const content = "| A | B |\n| --- | --- |\n| x | y |";
     const widgets = await collectLivePreviewWidgets(content, content.length);
@@ -424,8 +548,8 @@ describe("Editor", () => {
     input.focus();
 
     await waitFor(() => expect(container.querySelector(".cm-live-table-active")).not.toBeNull());
-    input.blur();
-    fireEvent.focusOut(input);
+    fireEvent.blur(input, { relatedTarget: document.body });
+    fireEvent.focusOut(input, { relatedTarget: document.body });
 
     await waitFor(() => expect(container.querySelector(".cm-live-table-active")).toBeNull());
   });

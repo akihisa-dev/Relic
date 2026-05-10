@@ -15,6 +15,14 @@ describe("parseFrontmatter", () => {
     expect(result.body).toBe("本文");
   });
 
+  it("CRLFのフロントマターを本文先頭に改行を残さず解析する", () => {
+    const content = "---\r\ntitle: Hello\r\n---\r\n本文";
+    const result = parseFrontmatter(content);
+
+    expect(result.data).toEqual({ title: "Hello" });
+    expect(result.body).toBe("本文");
+  });
+
   it("フロントマターがなければ空dataと全体をbodyとして返す", () => {
     const content = "# タイトル\n本文";
     const result = parseFrontmatter(content);

@@ -66,6 +66,7 @@ function makeRelicApi(overrides: Partial<typeof window.relic> = {}): typeof wind
     getGitWorkingChanges: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     getAppInfo: vi.fn().mockResolvedValue({ ok: true, value: { name: "Relic", platform: "darwin", version: "0.0.0" } }),
     getEditorSettings: vi.fn().mockResolvedValue({ ok: true, value: { ...defaultEditorSettings, language: "ja" } }),
+    getFrontmatterValueCandidates: vi.fn().mockResolvedValue({ ok: true, value: {} }),
     getMarkdownTemplates: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     getWorkspaceTags: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     getWorkspaceState: vi.fn().mockResolvedValue({
@@ -363,7 +364,6 @@ describe("App", () => {
     await screen.findByText("Notes");
 
     const outlineButton = screen.getByRole("button", { name: "アウトライン" });
-    const frontmatterButton = screen.getByRole("button", { name: "フロントマター" });
     const linksButton = screen.getByRole("button", { name: "リンク" });
 
     fireEvent.click(outlineButton);
@@ -376,10 +376,7 @@ describe("App", () => {
     expect(useUiStore.getState().isRightPanelOpen).toBe(true);
     expect(useUiStore.getState().rightPanelView).toBe("outline");
 
-    fireEvent.click(frontmatterButton);
-
-    expect(useUiStore.getState().isRightPanelOpen).toBe(true);
-    expect(useUiStore.getState().rightPanelView).toBe("frontmatter");
+    expect(screen.queryByRole("button", { name: "フロントマター" })).not.toBeInTheDocument();
 
     fireEvent.click(linksButton);
 
@@ -395,40 +392,6 @@ describe("App", () => {
 
     expect(useUiStore.getState().isRightPanelOpen).toBe(true);
     expect(useUiStore.getState().rightPanelView).toBe("outline");
-  });
-
-  it("右パネルのフロントマター編集を本文へ反映する", async () => {
-    window.relic = makeRelicApi({
-      getWorkspaceState: vi.fn().mockResolvedValue({
-        ok: true,
-        value: {
-          ...withWorkspace,
-          fileTree: [{ name: "読書メモ", path: "読書メモ.md", type: "file" }]
-        }
-      }),
-      readMarkdownFile: vi.fn().mockResolvedValue({
-        ok: true,
-        value: {
-          content: "---\nstatus: draft\n---\n# 読書メモ",
-          name: "読書メモ",
-          path: "読書メモ.md"
-        }
-      })
-    });
-
-    await renderApp();
-
-    fireEvent.click(await screen.findByRole("button", { name: /読書メモ/ }));
-    fireEvent.click(await screen.findByRole("button", { name: "フロントマター" }));
-
-    fireEvent.change(await screen.findByDisplayValue("draft"), {
-      target: { value: "review" }
-    });
-
-    const tab = Object.values(useEditorStore.getState().tabs)[0];
-
-    expect(tab.content).toContain("status: review");
-    expect(tab.content).toContain("# 読書メモ");
   });
 
   it("サイドバーが閉じていてもショートカットで対象ビューを開ける", async () => {

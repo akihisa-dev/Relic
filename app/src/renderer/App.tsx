@@ -9,7 +9,6 @@ import type {
 import { resolveWikiLinks } from "../shared/links";
 import { CommandPalette } from "./components/CommandPalette";
 import { FilesSidebar } from "./components/FilesSidebar";
-import { FrontmatterForm } from "./components/FrontmatterForm";
 import { GitSidebar } from "./components/GitSidebar";
 import { PaneView } from "./components/PaneView";
 import { QuickSwitcher } from "./components/QuickSwitcher";
@@ -706,16 +705,6 @@ export function App(): ReactElement {
                   >
                     {t("pane.outline")}
                   </button>
-                  {featureToggles.frontmatter ? (
-                    <button
-                      className={`toolbar-btn${rightPanelView === "frontmatter" && isRightPanelOpen ? " active" : ""}`}
-                      onClick={() => handleRightPanelViewButton("frontmatter")}
-                      title={t("pane.toggleFrontmatter")}
-                      type="button"
-                    >
-                      {t("pane.frontmatter")}
-                    </button>
-                  ) : null}
                   <button
                     className={`toolbar-btn${rightPanelView === "links" && isRightPanelOpen ? " active" : ""}`}
                     onClick={() => handleRightPanelViewButton("links")}
@@ -742,6 +731,7 @@ export function App(): ReactElement {
                   allFilePaths={existingMarkdownPaths}
                   editorSettings={editorSettings}
                   focusedPane={focusedPane}
+                  frontmatterCandidates={frontmatterCandidates}
                   onCreateFile={handleCreateNoteFromPane}
                   onFocus={() => setFocusedPane("left")}
                   onScrollTargetHandled={() => setLeftPaneScrollHeading(undefined)}
@@ -755,6 +745,7 @@ export function App(): ReactElement {
                   pane="left"
                   scrollTargetHeading={leftPaneScrollHeading}
                   typewriterMode={isTypewriterMode}
+                  userDefinedFields={userDefinedFields}
                   viewRef={leftEditorViewRef}
                   workspacePath={workspaceState?.activeWorkspace?.path}
                 />
@@ -763,6 +754,7 @@ export function App(): ReactElement {
                     allFilePaths={existingMarkdownPaths}
                     editorSettings={editorSettings}
                     focusedPane={focusedPane}
+                    frontmatterCandidates={frontmatterCandidates}
                     onCreateFile={handleCreateNoteFromPane}
                     onFocus={() => setFocusedPane("right")}
                     onScrollTargetHandled={() => setRightPaneScrollHeading(undefined)}
@@ -776,6 +768,7 @@ export function App(): ReactElement {
                     pane="right"
                     scrollTargetHeading={rightPaneScrollHeading}
                     typewriterMode={isTypewriterMode}
+                    userDefinedFields={userDefinedFields}
                     viewRef={rightEditorViewRef}
                     workspacePath={workspaceState?.activeWorkspace?.path}
                   />
@@ -791,9 +784,7 @@ export function App(): ReactElement {
                   <div className="pane-heading">
                     {rightPanelView === "outline"
                       ? t("pane.outline")
-                      : rightPanelView === "frontmatter"
-                        ? t("pane.frontmatter")
-                        : t("pane.links")}
+                      : t("pane.links")}
                   </div>
                 </div>
                 <div className="sidebar-body">
@@ -816,23 +807,6 @@ export function App(): ReactElement {
                     </ul>
                   ) : (
                     <div className="empty-note">{t("empty.noHeadings")}</div>
-                  )
-                ) : rightPanelView === "frontmatter" ? (
-                  activeTabInFocusedPane ? (
-                    <div className="frontmatter-panel">
-                      <FrontmatterForm
-                        candidates={frontmatterCandidates}
-                        content={activeTabInFocusedPane.content}
-                        key={`fm-panel-${activeTabInFocusedPane.id}`}
-                        onChange={(content) => updateTabContent(activeTabInFocusedPane.id, content)}
-                        onUserDefinedFieldsChange={handleSaveUserDefinedFields}
-                        frontmatterTemplates={frontmatterTemplates}
-                        userDefinedFields={userDefinedFields}
-                        workspaceTags={workspaceTags.map((tag) => tag.tag)}
-                      />
-                    </div>
-                  ) : (
-                    <div className="empty-note">{t("pane.noFiles")}</div>
                   )
                 ) : outgoingLinks.length > 0 || backlinks.length > 0 || isLoadingBacklinks ? (
                   <div className="links-panel-stack">

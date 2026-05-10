@@ -22,6 +22,7 @@ import {
   type AutoSyncSettings,
   saveFeatureTogglesChannel,
   getFrontmatterTemplatesChannel,
+  getFrontmatterValueCandidatesChannel,
   saveFrontmatterTemplatesChannel,
   saveUserDefinedFieldsChannel,
   type FeatureToggles,
@@ -37,6 +38,7 @@ import { fail, ok, type RelicResult } from "../../shared/result";
 import { refreshAutoSyncTimer } from "../autoSyncScheduler";
 import { cloneGitHubRepository } from "../files/git";
 import { readWorkspaceFileTree } from "../files/fileTree";
+import { readFrontmatterValueCandidates } from "../files/frontmatterCandidates";
 import { readWorkspaceTags } from "../files/tags";
 import { readAppSettings, writeAppSettings } from "../settings/appSettings";
 import { readWorkspaceSettings, writeWorkspaceSettings } from "../settings/workspaceSettings";
@@ -123,6 +125,25 @@ export function registerWorkspaceHandlers(): void {
       return fail(
         "TAGS_READ_FAILED",
         "タグを読み込めませんでした。",
+        error instanceof Error ? error.message : String(error)
+      );
+    }
+  });
+
+  ipcMain.handle(getFrontmatterValueCandidatesChannel, async () => {
+    try {
+      const settings = await readAppSettings(app.getPath("userData"));
+      const state = toWorkspaceState(settings);
+
+      if (!state.activeWorkspace) {
+        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
+      }
+
+      return readFrontmatterValueCandidates(state.activeWorkspace.path);
+    } catch (error) {
+      return fail(
+        "FRONTMATTER_VALUE_CANDIDATES_READ_FAILED",
+        "フロントマター候補を読み込めませんでした。",
         error instanceof Error ? error.message : String(error)
       );
     }

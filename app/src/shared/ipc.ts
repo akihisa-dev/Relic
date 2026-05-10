@@ -18,6 +18,7 @@ export const getGitWorkingChangesChannel = "workspace:getGitWorkingChanges";
 export const getGitBranchesChannel = "workspace:getGitBranches";
 export const getGitTagsChannel = "workspace:getGitTags";
 export const getWorkspaceTagsChannel = "workspace:getTags";
+export const getFrontmatterValueCandidatesChannel = "workspace:getFrontmatterValueCandidates";
 export const getMarkdownTemplatesChannel = "workspace:getMarkdownTemplates";
 export const getWorkspaceStateChannel = "workspace:getState";
 export const initializeGitRepositoryChannel = "workspace:initializeGitRepository";
@@ -503,6 +504,7 @@ export interface RelicApi {
   getAppInfo: () => Promise<RelicResult<AppInfo>>;
   getEditorSettings: () => Promise<RelicResult<EditorSettings>>;
   getMarkdownTemplates: () => Promise<RelicResult<MarkdownTemplateSummary[]>>;
+  getFrontmatterValueCandidates: () => Promise<RelicResult<Record<string, string[]>>>;
   getWorkspaceTags: () => Promise<RelicResult<WorkspaceTagSummary[]>>;
   getWorkspaceState: () => Promise<RelicResult<WorkspaceState>>;
   moveFolder: (input: MoveFolderInput) => Promise<RelicResult<WorkspaceState>>;
