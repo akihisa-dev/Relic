@@ -136,6 +136,7 @@ function RailWorkspaceSwitcher({
   workspaces
 }: RailWorkspaceSwitcherProps): ReactElement | null {
   const [contextMenu, setContextMenu] = useState<{ workspaceId: string; name: string; x: number; y: number } | null>(null);
+  const [renamingWorkspace, setRenamingWorkspace] = useState<{ id: string; name: string; value: string } | null>(null);
 
   useEffect(() => {
     if (!contextMenu) return;
@@ -155,29 +156,79 @@ function RailWorkspaceSwitcher({
 
   if (workspaces.length === 0) return null;
 
+  const startRename = (workspaceId: string, name: string): void => {
+    setContextMenu(null);
+    setRenamingWorkspace({ id: workspaceId, name, value: name });
+  };
+
+  const commitRename = (): void => {
+    if (!renamingWorkspace) return;
+
+    const nextName = renamingWorkspace.value.trim();
+    const previousName = renamingWorkspace.name;
+    const workspaceId = renamingWorkspace.id;
+    setRenamingWorkspace(null);
+
+    if (!nextName || nextName === previousName) return;
+    onRenameWorkspace(workspaceId, nextName);
+  };
+
+  const cancelRename = (): void => setRenamingWorkspace(null);
+
   return (
     <div className="workspace-switcher" aria-label={ariaLabel}>
       {workspaces.map((ws) => {
         const isActive = ws.id === activeWorkspaceId;
+        const isRenaming = renamingWorkspace?.id === ws.id;
         const initial = ws.name.trim().charAt(0).toUpperCase() || "W";
 
         return (
           <div className={`workspace-switcher-item${isActive ? " active" : ""}`} key={ws.id}>
-            <button
-              aria-label={ws.name}
-              className="workspace-switcher-main"
-              onContextMenu={(event) => {
-                event.preventDefault();
-                event.stopPropagation();
-                setContextMenu({ name: ws.name, workspaceId: ws.id, ...fixedMenuPosition(event.clientX, event.clientY, 96) });
-              }}
-              onDoubleClick={() => onRenameWorkspace(ws.id, ws.name)}
-              onClick={() => onSwitchWorkspace(ws.id)}
-              title={ws.path}
-              type="button"
-            >
-              <span className="workspace-switcher-icon">{initial}</span>
-            </button>
+            {isRenaming ? (
+              <div className="workspace-switcher-main workspace-switcher-main--editing">
+                <span className="workspace-switcher-icon">{initial}</span>
+                <input
+                  aria-label={renameLabel}
+                  autoFocus
+                  className="workspace-switcher-input"
+                  onBlur={commitRename}
+                  onChange={(event) => {
+                    setRenamingWorkspace((current) => (
+                      current && current.id === ws.id
+                        ? { ...current, value: event.target.value }
+                        : current
+                    ));
+                  }}
+                  onClick={(event) => event.stopPropagation()}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") commitRename();
+                    if (event.key === "Escape") cancelRename();
+                  }}
+                  value={renamingWorkspace.value}
+                />
+              </div>
+            ) : (
+              <button
+                aria-label={ws.name}
+                className="workspace-switcher-main"
+                onContextMenu={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  setContextMenu({ name: ws.name, workspaceId: ws.id, ...fixedMenuPosition(event.clientX, event.clientY, 96) });
+                }}
+                onDoubleClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  startRename(ws.id, ws.name);
+                }}
+                onClick={() => onSwitchWorkspace(ws.id)}
+                title={ws.path}
+                type="button"
+              >
+                <span className="workspace-switcher-icon">{initial}</span>
+                <span className="workspace-switcher-name">{ws.name}</span>
+              </button>
+            )}
             <button
               aria-label={removeLabel(ws.name)}
               className="workspace-switcher-remove"
@@ -194,14 +245,16 @@ function RailWorkspaceSwitcher({
         <div
           className="tab-context-menu workspace-context-menu"
           onClick={(event) => event.stopPropagation()}
+          role="menu"
           style={{ left: contextMenu.x, position: "fixed", top: contextMenu.y, zIndex: 1000 }}
         >
           <button
             className="tab-context-menu-item"
             onClick={() => {
-              onRenameWorkspace(contextMenu.workspaceId, contextMenu.name);
+              startRename(contextMenu.workspaceId, contextMenu.name);
               setContextMenu(null);
             }}
+            role="menuitem"
             type="button"
           >
             {renameLabel}
@@ -212,6 +265,7 @@ function RailWorkspaceSwitcher({
               onRemoveWorkspace(contextMenu.workspaceId);
               setContextMenu(null);
             }}
+            role="menuitem"
             type="button"
           >
             {removeLabel(contextMenu.name)}
@@ -790,15 +844,6 @@ export function App(): ReactElement {
           : [],
     [workspaceState]
   );
-  const promptRenameWorkspace = useCallback((workspaceId: string, currentName: string): void => {
-    const nextName = window.prompt(t("files.workspaceRenamePrompt"), currentName);
-    if (nextName === null) return;
-
-    const trimmedName = nextName.trim();
-    if (!trimmedName || trimmedName === currentName) return;
-
-    handleRenameWorkspace(workspaceId, trimmedName);
-  }, [handleRenameWorkspace, t]);
   const existingMarkdownPaths = useMemo(
     () => collectMarkdownPaths(workspaceState?.fileTree ?? []),
     [workspaceState?.fileTree]
@@ -906,7 +951,7 @@ export function App(): ReactElement {
                 activeWorkspaceId={workspaceState?.activeWorkspace?.id ?? null}
                 ariaLabel={t("files.registeredWorkspaces")}
                 onRemoveWorkspace={handleRemoveWorkspace}
-                onRenameWorkspace={promptRenameWorkspace}
+                onRenameWorkspace={handleRenameWorkspace}
                 onSwitchWorkspace={handleSwitchWorkspace}
                 renameLabel={t("files.rename")}
                 removeLabel={(name) => t("files.removeWorkspace", { name })}
@@ -950,7 +995,6 @@ export function App(): ReactElement {
                 onOpenWorkspace={handleOpenWorkspace}
                 onRevealItem={handleRevealWorkspaceItem}
                 onRenameItem={handleRenameTreeItem}
-                onRenameWorkspace={promptRenameWorkspace}
                 onSelectFolder={handleSelectFolder}
                 onTogglePin={handleTogglePin}
                 onTemplatePathChange={setSelectedTemplatePath}
