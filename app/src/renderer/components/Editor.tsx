@@ -1898,14 +1898,11 @@ export function findClickableLinkAtPosition(
 
   for (const match of line.text.matchAll(/\[([^\]\n]+)\]\(([^)\n]+)\)/g)) {
     const fullText = match[0];
-    const label = match[1];
     const href = match[2];
     const start = match.index ?? 0;
-    const labelStart = start + 1;
-    const labelEnd = labelStart + label.length;
 
     if (offset >= start && offset <= start + fullText.length) {
-      return offset >= labelStart && offset <= labelEnd ? { href, type: "markdown" } : null;
+      return { href, type: "markdown" };
     }
   }
 
@@ -1916,23 +1913,14 @@ export function findClickableLinkAtPosition(
 
     if (offset < start || offset > end) continue;
 
-    const [targetPart, aliasPart] = body.split("|", 2);
+    const [targetPart] = body.split("|", 2);
     const blockParts = targetPart.trim().split("^", 2);
     const headingParts = blockParts[0].split("#", 2);
     const target = headingParts[0].trim();
 
     if (!target) return null;
 
-    const visibleStart = aliasPart === undefined
-      ? start + 2
-      : start + 2 + targetPart.length + 1;
-    const visibleEnd = aliasPart === undefined
-      ? end - 2
-      : visibleStart + aliasPart.length;
-
-    return offset >= visibleStart && offset <= visibleEnd
-      ? { heading: headingParts[1]?.trim() || undefined, target, type: "wiki" }
-      : null;
+    return { heading: headingParts[1]?.trim() || undefined, target, type: "wiki" };
   }
 
   return null;

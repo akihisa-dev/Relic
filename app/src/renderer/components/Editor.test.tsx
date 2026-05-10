@@ -9,7 +9,13 @@ import { createRef } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { defaultEditorSettings } from "../../shared/ipc";
-import { buildLivePreviewDecorations, buildTableDecorations, buildWikiLinkCompletionSource, Editor } from "./Editor";
+import {
+  buildLivePreviewDecorations,
+  buildTableDecorations,
+  buildWikiLinkCompletionSource,
+  Editor,
+  findClickableLinkAtPosition
+} from "./Editor";
 
 const settings = defaultEditorSettings;
 
@@ -311,6 +317,22 @@ describe("Editor", () => {
       "cm-live-underline",
       "cm-live-link"
     ]));
+  });
+
+  it("ライブ表示で置換されたリンクの先頭位置クリックもリンクとして扱う", () => {
+    const state = EditorState.create({
+      doc: "トップ: [リンク確認用トップ](./00-リンク確認用トップ.md)\nWiki: [[01-企画メモ]]"
+    });
+
+    expect(findClickableLinkAtPosition(state.doc, 5)).toEqual({
+      href: "./00-リンク確認用トップ.md",
+      type: "markdown"
+    });
+    expect(findClickableLinkAtPosition(state.doc, 45)).toEqual({
+      heading: undefined,
+      target: "01-企画メモ",
+      type: "wiki"
+    });
   });
 
   it("ライブプレビューでブロック記法を安定して装飾する", async () => {
