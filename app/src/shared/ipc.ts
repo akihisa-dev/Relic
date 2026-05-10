@@ -38,6 +38,7 @@ export const readMarkdownFileChannel = "workspace:readMarkdownFile";
 export const removeWorkspaceChannel = "workspace:remove";
 export const renameMarkdownFileChannel = "workspace:renameMarkdownFile";
 export const renameFolderChannel = "workspace:renameFolder";
+export const revealWorkspaceItemChannel = "workspace:revealItem";
 export const searchWorkspaceChannel = "workspace:search";
 export const switchWorkspaceChannel = "workspace:switch";
 export const writeMarkdownFileChannel = "workspace:writeMarkdownFile";
@@ -133,6 +134,7 @@ export interface CreateLinkedMarkdownFileInput {
 
 export interface CreateFolderInput {
   name: string;
+  parentFolder?: string;
 }
 
 export interface ReadMarkdownFileInput {
@@ -168,6 +170,10 @@ export interface RenameFolderInput {
 export interface MoveItemToTrashInput {
   path: string;
   type: "file" | "folder";
+}
+
+export interface RevealWorkspaceItemInput {
+  path: string;
 }
 
 export interface MoveMarkdownFileInput {
@@ -518,11 +524,13 @@ export interface RelicApi {
   pushGitBranch: () => Promise<RelicResult<GitRemoteSyncResult>>;
   pushGitTag: (input: PushGitTagInput) => Promise<RelicResult<GitRemoteSyncResult>>;
   readMarkdownFile: (input: ReadMarkdownFileInput) => Promise<RelicResult<MarkdownFileContent>>;
+  readClipboardText: () => string;
   removeWorkspace: (input: RemoveWorkspaceInput) => Promise<RelicResult<WorkspaceState>>;
   renameMarkdownFile: (
     input: RenameMarkdownFileInput
   ) => Promise<RelicResult<RenameMarkdownFileResult>>;
   renameFolder: (input: RenameFolderInput) => Promise<RelicResult<WorkspaceState>>;
+  revealWorkspaceItem: (input: RevealWorkspaceItemInput) => Promise<RelicResult<void>>;
   applySearchAndReplace: (input: SearchAndReplaceInput) => Promise<RelicResult<ReplaceInFileResult>>;
   replaceInFile: (input: ReplaceInFileInput) => Promise<RelicResult<ReplaceInFileResult>>;
   saveEditorSettings: (input: EditorSettings) => Promise<RelicResult<void>>;
@@ -534,6 +542,7 @@ export interface RelicApi {
   switchGitBranch: (input: SwitchGitBranchInput) => Promise<RelicResult<GitBranchSummary[]>>;
   switchWorkspace: (input: SwitchWorkspaceInput) => Promise<RelicResult<WorkspaceState>>;
   writeMarkdownFile: (input: WriteMarkdownFileInput) => Promise<RelicResult<void>>;
+  writeClipboardText: (text: string) => void;
   createGitTag: (input: CreateGitTagInput) => Promise<RelicResult<GitTagSummary[]>>;
   deleteGitTag: (input: DeleteGitTagInput) => Promise<RelicResult<GitTagSummary[]>>;
   getGitSyncPreview: () => Promise<RelicResult<GitSyncPreview>>;

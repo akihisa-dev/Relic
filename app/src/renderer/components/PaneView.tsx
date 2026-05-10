@@ -29,7 +29,11 @@ export interface PaneViewProps {
   onCloseOtherTabs: (tabId: string) => void;
   onCloseTabsToRight: (tabId: string) => void;
   onCloseAllTabs: () => void;
+  onDuplicateTabFile?: (tabId: string) => void;
   onOpenInOtherPane: (tabId: string) => void;
+  onRevealTabFile?: (tabId: string) => void;
+  onTogglePinTab?: (tabId: string) => void;
+  pinnedPaths?: Set<string>;
   isSplitView: boolean;
 }
 
@@ -54,7 +58,11 @@ export function PaneView({
   onCloseOtherTabs,
   onCloseTabsToRight,
   onCloseAllTabs,
+  onDuplicateTabFile,
   onOpenInOtherPane,
+  onRevealTabFile,
+  onTogglePinTab,
+  pinnedPaths,
   isSplitView
 }: PaneViewProps): ReactElement {
   const [contextMenu, setContextMenu] = useState<{ tabId: string; x: number; y: number } | null>(null);
@@ -90,6 +98,8 @@ export function PaneView({
   const wordCount = activeTab
     ? activeTab.content.split(/\s+/).filter(Boolean).length
     : 0;
+  const contextTab = contextMenu ? tabs[contextMenu.tabId] : null;
+  const contextTabIsPinned = contextTab ? pinnedPaths?.has(contextTab.path) : false;
 
   return (
     <div
@@ -144,6 +154,86 @@ export function PaneView({
           onClick={(e) => e.stopPropagation()}
           style={{ left: contextMenu.x, position: "fixed", top: contextMenu.y, zIndex: 1000 }}
         >
+          {contextTab ? (
+            <>
+              <button
+                className="tab-context-menu-item"
+                onClick={() => {
+                  onTabSelect(contextMenu.tabId);
+                  setContextMenu(null);
+                }}
+                type="button"
+              >
+                {t("files.open")}
+              </button>
+              {onDuplicateTabFile ? (
+                <button
+                  className="tab-context-menu-item"
+                  onClick={() => {
+                    onDuplicateTabFile(contextMenu.tabId);
+                    setContextMenu(null);
+                  }}
+                  type="button"
+                >
+                  {t("files.duplicate")}
+                </button>
+              ) : null}
+              {onTogglePinTab ? (
+                <button
+                  className="tab-context-menu-item"
+                  onClick={() => {
+                    onTogglePinTab(contextMenu.tabId);
+                    setContextMenu(null);
+                  }}
+                  type="button"
+                >
+                  {contextTabIsPinned ? t("files.unpin") : t("files.pin")}
+                </button>
+              ) : null}
+              <button
+                className="tab-context-menu-item"
+                onClick={() => {
+                  void navigator.clipboard?.writeText(contextTab.path);
+                  setContextMenu(null);
+                }}
+                type="button"
+              >
+                {t("files.copyPath")}
+              </button>
+              <button
+                className="tab-context-menu-item"
+                onClick={() => {
+                  void navigator.clipboard?.writeText(`[[${contextTab.path.replace(/\.md$/i, "")}]]`);
+                  setContextMenu(null);
+                }}
+                type="button"
+              >
+                {t("files.copyMarkdownLink")}
+              </button>
+              {onRevealTabFile ? (
+                <button
+                  className="tab-context-menu-item"
+                  onClick={() => {
+                    onRevealTabFile(contextMenu.tabId);
+                    setContextMenu(null);
+                  }}
+                  type="button"
+                >
+                  {t("files.revealInFinder")}
+                </button>
+              ) : null}
+              {isSplitView ? (
+                <button
+                  className="tab-context-menu-item"
+                  onClick={() => { onOpenInOtherPane(contextMenu.tabId); setContextMenu(null); }}
+                  type="button"
+                >
+                  {t("pane.openInOtherPane")}
+                </button>
+              ) : null}
+              <div className="tab-context-menu-separator" />
+            </>
+          ) : null}
           <button
             className="tab-context-menu-item"
             onClick={() => {
@@ -185,18 +275,6 @@ export function PaneView({
           >
             {t("pane.closeAllTabs")}
           </button>
-          {isSplitView ? (
-            <>
-              <div className="tab-context-menu-separator" />
-              <button
-                className="tab-context-menu-item"
-                onClick={() => { onOpenInOtherPane(contextMenu.tabId); setContextMenu(null); }}
-                type="button"
-              >
-                {t("pane.openInOtherPane")}
-              </button>
-            </>
-          ) : null}
         </div>
       ) : null}
 

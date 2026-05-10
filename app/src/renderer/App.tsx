@@ -84,6 +84,32 @@ const sidebarViewDefs: Array<{ id: SidebarView; labelKey: TranslationKey; icon: 
   { id: "settings", labelKey: "nav.settings", icon: <IconSettings /> }
 ];
 
+function joinWorkspacePath(folderPath: string, name: string): string {
+  const normalizedFolder = folderPath.trim().replace(/\\/g, "/").replace(/^\/+|\/+$/g, "");
+  const normalizedName = name.trim().replace(/\\/g, "/").replace(/^\/+/, "");
+  return normalizedFolder ? `${normalizedFolder}/${normalizedName}` : normalizedName;
+}
+
+function ensureMarkdownExtension(name: string): string {
+  return name.trim().endsWith(".md") ? name.trim() : `${name.trim()}.md`;
+}
+
+function markdownLinkForPath(path: string): string {
+  return `[[${path.replace(/\.md$/i, "")}]]`;
+}
+
+function fixedMenuPosition(x: number, y: number, estimatedHeight = 240): { x: number; y: number } {
+  const margin = 8;
+  const estimatedWidth = 220;
+  const maxX = Math.max(margin, window.innerWidth - estimatedWidth - margin);
+  const maxY = Math.max(margin, window.innerHeight - estimatedHeight - margin);
+
+  return {
+    x: Math.min(Math.max(margin, x), maxX),
+    y: Math.min(Math.max(margin, y), maxY)
+  };
+}
+
 const TAB_CLOSE_MOTION_MS = 180;
 
 const paneTabMotionKey = (pane: PaneId, tabId: string): string => `${pane}:${tabId}`;
@@ -144,6 +170,15 @@ function RailWorkspaceSwitcher({
 export function App(): ReactElement {
   const [workspaceState, setWorkspaceState] = useState<WorkspaceState | null>(null);
   const [toastMessage, setToastMessage] = useState<{ text: string; type: "error" | "info" } | null>(null);
+  const [linkContextMenu, setLinkContextMenu] = useState<{
+    heading?: string;
+    markdownLink: string;
+    openKind: "file" | "wiki";
+    path: string;
+    target?: string;
+    x: number;
+    y: number;
+  } | null>(null);
   const [isToastClosing, setIsToastClosing] = useState(false);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const toastCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -248,6 +283,22 @@ export function App(): ReactElement {
       if (splitCloseTimerRef.current) clearTimeout(splitCloseTimerRef.current);
     };
   }, []);
+
+  useEffect(() => {
+    if (!linkContextMenu) return;
+    const close = (): void => setLinkContextMenu(null);
+    const handleKeyDown = (e: KeyboardEvent): void => {
+      if (e.key === "Escape") close();
+    };
+
+    window.addEventListener("click", close);
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("click", close);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [linkContextMenu]);
 
   const t = useMemo(() => createTranslator(editorSettings.language), [editorSettings.language]);
   const sidebarViews = useMemo(
@@ -570,6 +621,102 @@ export function App(): ReactElement {
     });
   }, [focusedPane, isSplit, openFileInPane, setWorkspaceError]);
 
+  const openWorkspacePathInOtherPane = useCallback((path: string, heading?: string): void => {
+    if (!window.relic || !isSplit) return;
+    const otherPane = focusedPane === "left" ? "right" : "left";
+    const setScrollHeading = otherPane === "left" ? setLeftPaneScrollHeading : setRightPaneScrollHeading;
+
+    void window.relic.readMarkdownFile({ path }).then((readResult) => {
+      if (readResult.ok) {
+        openFileInPane(otherPane, readResult.value);
+        if (heading) setScrollHeading(heading);
+        return;
+      }
+
+      void window.relic!.createLinkedMarkdownFile({ path }).then((createResult) => {
+        if (createResult.ok) {
+          setWorkspaceState(createResult.value.workspaceState);
+          openFileInPane(otherPane, createResult.value.file);
+          if (heading) setScrollHeading(heading);
+        } else {
+          setWorkspaceError(createResult.error.message);
+        }
+      });
+    });
+  }, [
+    focusedPane,
+    isSplit,
+    openFileInPane,
+    setLeftPaneScrollHeading,
+    setRightPaneScrollHeading,
+    setWorkspaceError,
+    setWorkspaceState
+  ]);
+
+  const handleCreateFileInFolder = useCallback((folderPath: string): void => {
+    if (!window.relic) return;
+    const fileName = window.prompt(t("files.newNoteName"), "Untitled.md");
+    if (fileName === null) return;
+    const trimmedFileName = fileName.trim();
+    if (!trimmedFileName) return;
+
+    const nextPath = joinWorkspacePath(folderPath, ensureMarkdownExtension(trimmedFileName));
+
+    setWorkspaceError(null);
+    void window.relic.createLinkedMarkdownFile({ path: nextPath }).then((result) => {
+      if (result.ok) {
+        setWorkspaceState(result.value.workspaceState);
+        openFileInPane(focusedPane, result.value.file);
+      } else {
+        setWorkspaceError(result.error.message);
+      }
+    });
+  }, [focusedPane, openFileInPane, setWorkspaceError, setWorkspaceState, t]);
+
+  const handleCreateFolderInFolder = useCallback((folderPath: string): void => {
+    if (!window.relic) return;
+    const folderName = window.prompt(t("files.newFolderName"), "New Folder");
+    if (folderName === null) return;
+    const trimmedFolderName = folderName.trim();
+    if (!trimmedFolderName) return;
+
+    setWorkspaceError(null);
+    void window.relic.createFolder({ name: trimmedFolderName, parentFolder: folderPath }).then((result) => {
+      if (result.ok) {
+        setWorkspaceState(result.value);
+      } else {
+        setWorkspaceError(result.error.message);
+      }
+    });
+  }, [setWorkspaceError, setWorkspaceState, t]);
+
+  const handleRevealWorkspaceItem = useCallback((path: string): void => {
+    if (!window.relic) return;
+
+    setWorkspaceError(null);
+    void window.relic.revealWorkspaceItem({ path }).then((result) => {
+      if (!result.ok) setWorkspaceError(result.error.message);
+    });
+  }, [setWorkspaceError]);
+
+  const handleDuplicateTabFile = useCallback((tabId: string): void => {
+    const tab = tabs[tabId];
+    if (!tab) return;
+    handleDuplicateTreeFile(tab.path);
+  }, [handleDuplicateTreeFile, tabs]);
+
+  const handleRevealTabFile = useCallback((tabId: string): void => {
+    const tab = tabs[tabId];
+    if (!tab) return;
+    handleRevealWorkspaceItem(tab.path);
+  }, [handleRevealWorkspaceItem, tabs]);
+
+  const handleTogglePinTab = useCallback((tabId: string): void => {
+    const tab = tabs[tabId];
+    if (!tab) return;
+    handleTogglePin(tab.path);
+  }, [handleTogglePin, tabs]);
+
   const handleSelectFolder = useCallback(
     (node: Extract<WorkspaceTreeNode, { type: "folder" }>): void => {
       void node; // フェーズ2ではフォルダ選択は何もしない
@@ -589,6 +736,10 @@ export function App(): ReactElement {
   const existingMarkdownPaths = useMemo(
     () => collectMarkdownPaths(workspaceState?.fileTree ?? []),
     [workspaceState?.fileTree]
+  );
+  const pinnedPathSet = useMemo(
+    () => new Set(workspaceState?.pinnedPaths ?? []),
+    [workspaceState?.pinnedPaths]
   );
 
   // ──────────────────
@@ -716,7 +867,9 @@ export function App(): ReactElement {
                 isCreatingWorkspace={isCreatingWorkspace}
                 isOpeningWorkspace={isOpeningWorkspace}
                 onCreateFile={handleCreateFile}
+                onCreateFileInFolder={handleCreateFileInFolder}
                 onCreateFolder={handleCreateFolder}
+                onCreateFolderInFolder={handleCreateFolderInFolder}
                 onCreateWorkspace={handleCreateNewWorkspace}
                 onDeleteItem={handleDeleteTreeItem}
                 onDeleteItems={handleDeleteTreeItems}
@@ -727,6 +880,7 @@ export function App(): ReactElement {
                 onOpenFile={handleOpenFile}
                 onOpenInOtherPane={isSplit ? openTreeFileInOtherPane : undefined}
                 onOpenWorkspace={handleOpenWorkspace}
+                onRevealItem={handleRevealWorkspaceItem}
                 onRenameItem={handleRenameTreeItem}
                 onSelectFolder={handleSelectFolder}
                 onTogglePin={handleTogglePin}
@@ -916,7 +1070,11 @@ export function App(): ReactElement {
                   onCloseOtherTabs={(tabId) => closeOtherTabsWithMotion("left", tabId)}
                   onCloseTabsToRight={(tabId) => closeTabsToRightWithMotion("left", tabId)}
                   onCloseAllTabs={() => closeAllTabsInPaneWithMotion("left")}
+                  onDuplicateTabFile={handleDuplicateTabFile}
                   onOpenInOtherPane={(tabId) => openFileInOtherPane("left", tabId)}
+                  onRevealTabFile={handleRevealTabFile}
+                  onTogglePinTab={handleTogglePinTab}
+                  pinnedPaths={pinnedPathSet}
                   isSplitView={isSplit}
                   pane="left"
                   scrollTargetHeading={leftPaneScrollHeading}
@@ -941,7 +1099,11 @@ export function App(): ReactElement {
                     onCloseOtherTabs={(tabId) => closeOtherTabsWithMotion("right", tabId)}
                     onCloseTabsToRight={(tabId) => closeTabsToRightWithMotion("right", tabId)}
                     onCloseAllTabs={() => closeAllTabsInPaneWithMotion("right")}
+                    onDuplicateTabFile={handleDuplicateTabFile}
                     onOpenInOtherPane={(tabId) => openFileInOtherPane("right", tabId)}
+                    onRevealTabFile={handleRevealTabFile}
+                    onTogglePinTab={handleTogglePinTab}
+                    pinnedPaths={pinnedPathSet}
                     isSplitView={isSplit}
                     pane="right"
                     scrollTargetHeading={rightPaneScrollHeading}
@@ -1000,6 +1162,18 @@ export function App(): ReactElement {
                               <button
                                 className={`links-list-target${link.exists ? "" : " links-list-target--missing"}`}
                                 onClick={() => handleOpenWikiLink(link.wikiLink.target)}
+                                onContextMenu={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  setLinkContextMenu({
+                                    heading: link.wikiLink.heading ?? undefined,
+                                    markdownLink: link.wikiLink.raw,
+                                    openKind: "wiki",
+                                    path: link.path,
+                                    target: link.wikiLink.target,
+                                    ...fixedMenuPosition(e.clientX, e.clientY)
+                                  });
+                                }}
                                 title={link.exists ? link.path : t("links.createAndOpen", { path: link.path })}
                                 type="button"
                               >
@@ -1035,6 +1209,16 @@ export function App(): ReactElement {
                               <button
                                 className="links-list-target"
                                 onClick={() => handleOpenFile(backlink.sourcePath)}
+                                onContextMenu={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  setLinkContextMenu({
+                                    markdownLink: markdownLinkForPath(backlink.sourcePath),
+                                    openKind: "file",
+                                    path: backlink.sourcePath,
+                                    ...fixedMenuPosition(e.clientX, e.clientY)
+                                  });
+                                }}
                                 title={backlink.sourcePath}
                                 type="button"
                               >
@@ -1087,6 +1271,77 @@ export function App(): ReactElement {
           onClose={() => setShowQuickSwitcher(false)}
           onSelect={handleOpenFile}
         />
+      ) : null}
+
+      {linkContextMenu ? (
+        <div
+          className="tab-context-menu link-context-menu"
+          onClick={(e) => e.stopPropagation()}
+          role="menu"
+          style={{ left: linkContextMenu.x, position: "fixed", top: linkContextMenu.y, zIndex: 1000 }}
+        >
+          <button
+            className="tab-context-menu-item"
+            onClick={() => {
+              if (linkContextMenu.openKind === "wiki" && linkContextMenu.target) {
+                handleOpenWikiLink(linkContextMenu.target, linkContextMenu.heading);
+              } else {
+                handleOpenFile(linkContextMenu.path);
+              }
+              setLinkContextMenu(null);
+            }}
+            role="menuitem"
+            type="button"
+          >
+            {t("files.open")}
+          </button>
+          {isSplit ? (
+            <button
+              className="tab-context-menu-item"
+              onClick={() => {
+                openWorkspacePathInOtherPane(linkContextMenu.path, linkContextMenu.heading);
+                setLinkContextMenu(null);
+              }}
+              role="menuitem"
+              type="button"
+            >
+              {t("pane.openInOtherPane")}
+            </button>
+          ) : null}
+          <button
+            className="tab-context-menu-item"
+            onClick={() => {
+              void navigator.clipboard?.writeText(linkContextMenu.markdownLink);
+              setLinkContextMenu(null);
+            }}
+            role="menuitem"
+            type="button"
+          >
+            {t("files.copyMarkdownLink")}
+          </button>
+          <button
+            className="tab-context-menu-item"
+            onClick={() => {
+              void navigator.clipboard?.writeText(linkContextMenu.path);
+              setLinkContextMenu(null);
+            }}
+            role="menuitem"
+            type="button"
+          >
+            {t("files.copyPath")}
+          </button>
+          <button
+            className="tab-context-menu-item"
+            onClick={() => {
+              handleRevealWorkspaceItem(linkContextMenu.path);
+              setLinkContextMenu(null);
+            }}
+            role="menuitem"
+            type="button"
+          >
+            {t("files.revealInFinder")}
+          </button>
+        </div>
       ) : null}
 
       {toastMessage ? (

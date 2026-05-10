@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from "electron";
+import { clipboard, contextBridge, ipcRenderer } from "electron";
 
 import {
   applySearchAndReplaceChannel,
@@ -48,6 +48,7 @@ import {
   renameFolderChannel,
   renameMarkdownFileChannel,
   replaceInFileChannel,
+  revealWorkspaceItemChannel,
   resolveGitConflictChannel,
   saveAutoSyncSettingsChannel,
   saveEditorSettingsChannel,
@@ -116,6 +117,7 @@ import {
   type RenameMarkdownFileResult,
   type ReplaceInFileInput,
   type ReplaceInFileResult,
+  type RevealWorkspaceItemInput,
   type ResolveGitConflictInput,
   type SearchAndReplaceInput,
   type SearchAndReplaceMatch,
@@ -215,6 +217,7 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(pushGitTagChannel, input) as Promise<RelicResult<GitRemoteSyncResult>>,
   readMarkdownFile: (input: ReadMarkdownFileInput) =>
     ipcRenderer.invoke(readMarkdownFileChannel, input) as Promise<RelicResult<MarkdownFileContent>>,
+  readClipboardText: () => clipboard.readText(),
   removeWorkspace: (input: RemoveWorkspaceInput) =>
     ipcRenderer.invoke(removeWorkspaceChannel, input) as Promise<RelicResult<WorkspaceState>>,
   renameMarkdownFile: (input: RenameMarkdownFileInput) =>
@@ -223,6 +226,8 @@ const relicApi: RelicApi = {
     >,
   renameFolder: (input: RenameFolderInput) =>
     ipcRenderer.invoke(renameFolderChannel, input) as Promise<RelicResult<WorkspaceState>>,
+  revealWorkspaceItem: (input: RevealWorkspaceItemInput) =>
+    ipcRenderer.invoke(revealWorkspaceItemChannel, input) as Promise<RelicResult<void>>,
   replaceInFile: (input: ReplaceInFileInput) =>
     ipcRenderer.invoke(replaceInFileChannel, input) as Promise<RelicResult<ReplaceInFileResult>>,
   saveEditorSettings: (input: EditorSettings) =>
@@ -243,6 +248,7 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(switchGitBranchChannel, input) as Promise<RelicResult<GitBranchSummary[]>>,
   writeMarkdownFile: (input: WriteMarkdownFileInput) =>
     ipcRenderer.invoke(writeMarkdownFileChannel, input) as Promise<RelicResult<void>>,
+  writeClipboardText: (text: string) => clipboard.writeText(text),
   getGitSyncPreview: () =>
     ipcRenderer.invoke(getGitSyncPreviewChannel) as Promise<RelicResult<GitSyncPreview>>,
   getGitConflicts: () =>
