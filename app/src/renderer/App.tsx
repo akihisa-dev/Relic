@@ -185,6 +185,8 @@ export function App(): ReactElement {
   const [rightPaneScrollHeading, setRightPaneScrollHeading] = useState<string | undefined>(undefined);
   const [closingPaneTabs, setClosingPaneTabs] = useState<Set<string>>(() => new Set());
   const closeMotionTimersRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  const splitCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [isSplitClosing, setIsSplitClosing] = useState(false);
   const [editorActionPulse, setEditorActionPulse] = useState(0);
   const [showCommandPalette, setShowCommandPalette] = useState(false);
   const [showQuickSwitcher, setShowQuickSwitcher] = useState(false);
@@ -222,6 +224,30 @@ export function App(): ReactElement {
     toggleSidebar,
     toggleTypewriterMode
   } = useUiStore();
+
+  const toggleSplitWithMotion = useCallback((): void => {
+    if (!isSplit) {
+      if (splitCloseTimerRef.current) clearTimeout(splitCloseTimerRef.current);
+      setIsSplitClosing(false);
+      toggleSplit();
+      return;
+    }
+
+    if (isSplitClosing) return;
+
+    setIsSplitClosing(true);
+    splitCloseTimerRef.current = setTimeout(() => {
+      toggleSplit();
+      setIsSplitClosing(false);
+      splitCloseTimerRef.current = null;
+    }, 190);
+  }, [isSplit, isSplitClosing, toggleSplit]);
+
+  useEffect(() => {
+    return () => {
+      if (splitCloseTimerRef.current) clearTimeout(splitCloseTimerRef.current);
+    };
+  }, []);
 
   const t = useMemo(() => createTranslator(editorSettings.language), [editorSettings.language]);
   const sidebarViews = useMemo(
@@ -501,7 +527,7 @@ export function App(): ReactElement {
     setSidebarView,
     toggleRightPanel,
     toggleSidebar,
-    toggleSplit,
+    toggleSplit: toggleSplitWithMotion,
     toggleTypewriterMode
   });
 
@@ -588,7 +614,7 @@ export function App(): ReactElement {
     t,
     toggleRightPanel,
     toggleSidebar,
-    toggleSplit,
+    toggleSplit: toggleSplitWithMotion,
     toggleTypewriterMode
   });
 
@@ -820,7 +846,7 @@ export function App(): ReactElement {
             <div className="main-area-top-actions">
               <button
                 className={`toolbar-btn${isSplit ? " active" : ""}`}
-                onClick={toggleSplit}
+                onClick={toggleSplitWithMotion}
                 title={t("pane.split")}
                 type="button"
               >
@@ -858,7 +884,7 @@ export function App(): ReactElement {
                   viewRef={focusedPane === "left" ? leftEditorViewRef : rightEditorViewRef}
                 />
               </div>
-              <div className={`panes-container${isSplit ? " panes-container--split" : ""}`}>
+              <div className={`panes-container${isSplit ? " panes-container--split" : ""}${isSplitClosing ? " panes-container--closing-split" : ""}`}>
                 <PaneView
                   allFilePaths={existingMarkdownPaths}
                   closingTabIds={leftClosingTabIds}

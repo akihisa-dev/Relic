@@ -1,7 +1,7 @@
 import { EditorSelection } from "@codemirror/state";
 import type { EditorState } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ReactElement } from "react";
 
 import { useT } from "../i18n";
@@ -14,6 +14,7 @@ interface ToolbarProps {
 
 type HeadingLevel = 1 | 2 | 3 | 4 | 5 | 6;
 type BlockIdFactory = () => string;
+type ToolbarPanel = "heading" | "link" | "table";
 
 function viewContainsBrowserSelection(view: EditorView): boolean {
   const selection = window.getSelection();
@@ -173,9 +174,11 @@ export function Toolbar({ fallbackViewRef, onEditorAction, viewRef }: ToolbarPro
   const [showHeadingMenu, setShowHeadingMenu] = useState(false);
   const [showLinkDialog, setShowLinkDialog] = useState(false);
   const [showTableDialog, setShowTableDialog] = useState(false);
+  const [closingPanel, setClosingPanel] = useState<ToolbarPanel | null>(null);
   const [linkUrl, setLinkUrl] = useState("");
   const [tableRows, setTableRows] = useState("3");
   const [tableCols, setTableCols] = useState("3");
+  const closePanelTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const placeholderText = t("toolbar.placeholderText");
   const placeholderLinkText = t("toolbar.placeholderLinkText");
@@ -214,6 +217,27 @@ export function Toolbar({ fallbackViewRef, onEditorAction, viewRef }: ToolbarPro
   const rememberTargetView = (): void => {
     lastTargetViewRef.current = getView();
   };
+
+  const closePanel = (panel: ToolbarPanel, close: () => void, afterClose?: () => void): void => {
+    if (closePanelTimerRef.current) clearTimeout(closePanelTimerRef.current);
+    setClosingPanel(panel);
+    closePanelTimerRef.current = setTimeout(() => {
+      close();
+      afterClose?.();
+      setClosingPanel(null);
+      closePanelTimerRef.current = null;
+    }, 160);
+  };
+
+  const closeHeadingMenu = (): void => closePanel("heading", () => setShowHeadingMenu(false));
+  const closeLinkDialog = (afterClose?: () => void): void => closePanel("link", () => setShowLinkDialog(false), afterClose);
+  const closeTableDialog = (): void => closePanel("table", () => setShowTableDialog(false));
+
+  useEffect(() => {
+    return () => {
+      if (closePanelTimerRef.current) clearTimeout(closePanelTimerRef.current);
+    };
+  }, []);
 
   const handleBold = (): void => {
     const view = getView();
@@ -262,7 +286,7 @@ export function Toolbar({ fallbackViewRef, onEditorAction, viewRef }: ToolbarPro
     if (!view) return;
     insertAtLineStart(view, "#".repeat(level) + " ", placeholderText);
     onEditorAction?.();
-    setShowHeadingMenu(false);
+    closeHeadingMenu();
   };
 
   const handleBlockquote = (): void => {
@@ -324,9 +348,9 @@ export function Toolbar({ fallbackViewRef, onEditorAction, viewRef }: ToolbarPro
       });
       view.focus();
       onEditorAction?.();
-      setShowLinkDialog(false);
-      setLinkUrl("");
+      closeLinkDialog(() => setLinkUrl(""));
     } else {
+      setClosingPanel(null);
       setShowLinkDialog(true);
     }
   };
@@ -347,8 +371,7 @@ export function Toolbar({ fallbackViewRef, onEditorAction, viewRef }: ToolbarPro
     });
     view.focus();
     onEditorAction?.();
-    setShowLinkDialog(false);
-    setLinkUrl("");
+    closeLinkDialog(() => setLinkUrl(""));
   };
 
   const handleInternalLink = (): void => {
@@ -391,7 +414,7 @@ export function Toolbar({ fallbackViewRef, onEditorAction, viewRef }: ToolbarPro
 
     insertBlock(view, tableText);
     onEditorAction?.();
-    setShowTableDialog(false);
+    closeTableDialog();
     view.focus();
   };
 
@@ -434,14 +457,20 @@ export function Toolbar({ fallbackViewRef, onEditorAction, viewRef }: ToolbarPro
             aria-label={t("toolbar.heading")}
             className="toolbar-btn"
             data-tooltip={t("toolbar.heading")}
-            onClick={() => setShowHeadingMenu((v) => !v)}
+            onClick={() => {
+              if (showHeadingMenu) closeHeadingMenu();
+              else {
+                setClosingPanel(null);
+                setShowHeadingMenu(true);
+              }
+            }}
             title={t("toolbar.heading")}
             type="button"
           >
             H
           </button>
           {showHeadingMenu ? (
-            <div className="toolbar-dropdown-menu">
+            <div className={`toolbar-dropdown-menu${closingPanel === "heading" ? " toolbar-panel--closing" : ""}`}>
               {([1, 2, 3, 4, 5, 6] as HeadingLevel[]).map((level) => (
                 <button
                   className="toolbar-dropdown-item"
@@ -488,7 +517,7 @@ export function Toolbar({ fallbackViewRef, onEditorAction, viewRef }: ToolbarPro
             Link
           </button>
           {showLinkDialog ? (
-            <div className="toolbar-inline-dialog">
+            <div className={`toolbar-inline-dialog${closingPanel === "link" ? " toolbar-panel--closing" : ""}`}>
               <input
                 autoFocus
                 className="toolbar-input"
@@ -496,8 +525,7 @@ export function Toolbar({ fallbackViewRef, onEditorAction, viewRef }: ToolbarPro
                 onKeyDown={(e) => {
                   if (e.key === "Enter") handleLinkSubmit();
                   if (e.key === "Escape") {
-                    setShowLinkDialog(false);
-                    setLinkUrl("");
+                    closeLinkDialog(() => setLinkUrl(""));
                   }
                 }}
                 placeholder="URL"
@@ -520,14 +548,20 @@ export function Toolbar({ fallbackViewRef, onEditorAction, viewRef }: ToolbarPro
             aria-label={t("toolbar.table")}
             className="toolbar-btn"
             data-tooltip={t("toolbar.table")}
-            onClick={() => setShowTableDialog((v) => !v)}
+            onClick={() => {
+              if (showTableDialog) closeTableDialog();
+              else {
+                setClosingPanel(null);
+                setShowTableDialog(true);
+              }
+            }}
             title={t("toolbar.table")}
             type="button"
           >
             {t("toolbar.tableShort")}
           </button>
           {showTableDialog ? (
-            <div className="toolbar-inline-dialog">
+            <div className={`toolbar-inline-dialog${closingPanel === "table" ? " toolbar-panel--closing" : ""}`}>
               <input
                 className="toolbar-input toolbar-input--narrow"
                 onChange={(e) => setTableRows(e.target.value)}

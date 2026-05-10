@@ -402,6 +402,24 @@ describe("App", () => {
     expect(useUiStore.getState().rightPanelView).toBe("outline");
   });
 
+  it("分割表示を閉じると退場反応を通る", async () => {
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
+    });
+
+    const { container } = await renderApp();
+
+    const splitButton = await screen.findByRole("button", { name: "分割" });
+
+    fireEvent.click(splitButton);
+    const panes = container.querySelector(".panes-container");
+    if (!(panes instanceof HTMLElement)) throw new Error("panes container was not rendered");
+    expect(panes).toHaveClass("panes-container--split");
+
+    fireEvent.click(splitButton);
+    expect(panes).toHaveClass("panes-container--closing-split");
+  });
+
   it("サイドバーが閉じていてもショートカットで対象ビューを開ける", async () => {
     window.relic = makeRelicApi({
       getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
