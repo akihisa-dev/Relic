@@ -16,8 +16,20 @@ export function findNodeByPath(nodes: WorkspaceTreeNode[], targetPath: string): 
   return null;
 }
 
+function collectNodePaths(nodes: WorkspaceTreeNode[]): Set<string> {
+  const paths = new Set<string>();
+  const walk = (node: WorkspaceTreeNode): void => {
+    paths.add(node.path);
+    if (node.type === "folder") node.children.forEach(walk);
+  };
+
+  nodes.forEach(walk);
+  return paths;
+}
+
 export interface FileTreeProps {
   isRoot?: boolean;
+  motionPaths?: Set<string>;
   nodes: WorkspaceTreeNode[];
   onDeleteItem?: (path: string, type: WorkspaceTreeNode["type"]) => void;
   onDeleteSelectedItems?: () => void;
@@ -36,6 +48,7 @@ export interface FileTreeProps {
 }
 
 export function FileTreeItem({
+  isAppearing,
   isPinned,
   node,
   onDeleteItem,
@@ -53,6 +66,7 @@ export function FileTreeItem({
   selectedItems = [],
   selectedPaths = new Set<string>()
 }: {
+  isAppearing?: boolean;
   isPinned?: boolean;
   node: WorkspaceTreeNode;
   onDeleteItem?: (path: string, type: WorkspaceTreeNode["type"]) => void;
@@ -74,11 +88,14 @@ export function FileTreeItem({
   const isCommittingRenameRef = useRef(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
+  const removeMotionTimerRef = useRef<number | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const [isExpanded, setIsExpanded] = useState(true);
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameDraft, setRenameDraft] = useState(node.name);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isRemoving, setIsRemoving] = useState(false);
   const isFolder = node.type === "folder";
   const isSelected = selectedPaths.has(node.path);
   const useSelectedItems = isSelected && selectedItems.length > 1;
@@ -111,6 +128,12 @@ export function FileTreeItem({
     };
   }, [contextMenu]);
 
+  useEffect(() => {
+    return () => {
+      if (removeMotionTimerRef.current) window.clearTimeout(removeMotionTimerRef.current);
+    };
+  }, []);
+
   const startRename = (): void => {
     isCommittingRenameRef.current = false;
     setContextMenu(null);
@@ -136,6 +159,15 @@ export function FileTreeItem({
     }
 
     onRenameItem?.(node.path, node.type, nextName);
+  };
+
+  const markRemoving = (): void => {
+    setIsRemoving(true);
+    if (removeMotionTimerRef.current) window.clearTimeout(removeMotionTimerRef.current);
+    removeMotionTimerRef.current = window.setTimeout(() => {
+      setIsRemoving(false);
+      removeMotionTimerRef.current = null;
+    }, 190);
   };
 
   const handleDrop = (e: React.DragEvent, destFolder: string): void => {
@@ -173,12 +205,16 @@ export function FileTreeItem({
     <li className="file-tree-item">
       <div className="file-tree-row-wrap">
         <button
-          className={`file-tree-row ${node.type}${isSelected ? " selected" : ""}${isDragOver ? " drag-over" : ""}`}
+          className={`file-tree-row ${node.type}${isSelected ? " selected" : ""}${isDragging ? " dragging" : ""}${isDragOver ? " drag-over" : ""}${isAppearing ? " file-tree-row--appearing" : ""}${isRemoving ? " file-tree-row--removing" : ""}`}
           draggable
-          onDragEnd={() => setIsDragOver(false)}
+          onDragEnd={() => {
+            setIsDragging(false);
+            setIsDragOver(false);
+          }}
           onDragLeave={isFolder ? (e) => { e.stopPropagation(); setIsDragOver(false); } : undefined}
           onDragOver={isFolder ? (e) => { e.preventDefault(); e.stopPropagation(); setIsDragOver(true); } : undefined}
           onDragStart={(e) => {
+            setIsDragging(true);
             const dragItems = useSelectedItems ? selectedItems : [{ path: node.path, type: node.type }];
             e.dataTransfer.setData("application/relic-item", JSON.stringify({
               items: dragItems,
@@ -273,6 +309,7 @@ export function FileTreeItem({
               className="tab-context-menu-item danger"
               onClick={() => {
                 setContextMenu(null);
+                markRemoving();
                 if (useSelectedItems) onDeleteSelectedItems?.();
                 else onDeleteItem?.(node.path, node.type);
               }}
@@ -287,6 +324,7 @@ export function FileTreeItem({
       {node.type === "folder" && isExpanded && node.children.length > 0 ? (
         <FileTree
           animation="expand"
+          motionPaths={isAppearing ? new Set([node.path, ...node.children.map((child) => child.path)]) : undefined}
           nodes={node.children}
           onDeleteItem={onDeleteItem}
           onDeleteSelectedItems={onDeleteSelectedItems}
@@ -311,6 +349,7 @@ export function FileTreeItem({
 export function FileTree({
   animation,
   isRoot = false,
+  motionPaths,
   nodes,
   onDeleteItem,
   onDeleteSelectedItems,
@@ -329,6 +368,24 @@ export function FileTree({
 }: FileTreeProps & { animation?: "expand" }): ReactElement {
   const t = useT();
   const [isRootDragOver, setIsRootDragOver] = useState(false);
+  const previousPathsRef = useRef<Set<string>>(collectNodePaths(nodes));
+  const [appearingPaths, setAppearingPaths] = useState<Set<string>>(new Set());
+  const activeAppearingPaths = motionPaths ?? appearingPaths;
+
+  useEffect(() => {
+    const nextPaths = collectNodePaths(nodes);
+    const previousPaths = previousPathsRef.current;
+
+    const addedPaths = [...nextPaths].filter((path) => !previousPaths.has(path));
+    previousPathsRef.current = nextPaths;
+
+    if (addedPaths.length === 0) return;
+
+    setAppearingPaths(new Set(addedPaths));
+    const timeout = window.setTimeout(() => setAppearingPaths(new Set()), 260);
+
+    return () => window.clearTimeout(timeout);
+  }, [nodes]);
 
   if (nodes.length === 0 && !isRoot) {
     return <div className="empty-note">{t("files.noMarkdownFiles")}</div>;
@@ -372,6 +429,7 @@ export function FileTree({
       ) : null}
       {nodes.map((node) => (
         <FileTreeItem
+          isAppearing={activeAppearingPaths.has(node.path)}
           isPinned={pinnedPaths?.has(node.path)}
           key={node.path}
           node={node}
