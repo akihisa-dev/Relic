@@ -263,6 +263,42 @@ describe("Editor", () => {
     expect(viewRef.current?.state.doc.toString()).toContain("updated:");
   });
 
+  it("フロントマターがない本文へプロパティフォームから新規作成できる", async () => {
+    const viewRef = createRef<EditorView | null>();
+    const onChange = vi.fn();
+    const { container } = render(
+      <Editor
+        content={"# 本文"}
+        onChange={onChange}
+        settings={settings}
+        userDefinedFields={[{ name: "status", type: "select" }]}
+        viewRef={viewRef}
+      />
+    );
+
+    await waitFor(() => expect(container.querySelector(".cm-frontmatter-starter")).not.toBeNull());
+    const input = container.querySelector(".cm-frontmatter-starter .cm-frontmatter-add-input") as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "status" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+
+    expect(onChange).toHaveBeenLastCalledWith("---\nstatus:\n---\n# 本文");
+    expect(viewRef.current?.state.doc.toString()).toBe("---\nstatus:\n---\n# 本文");
+    await waitFor(() => expect(container.querySelector(".cm-frontmatter-properties")).not.toBeNull());
+  });
+
+  it("未完了のフロントマター記法には新規作成入口を重ねない", async () => {
+    const { container } = render(
+      <Editor
+        content={"---\nstatus: draft\n# 本文"}
+        onChange={vi.fn()}
+        settings={settings}
+      />
+    );
+
+    await waitFor(() => expect(container.querySelector(".cm-editor")).not.toBeNull());
+    expect(container.querySelector(".cm-frontmatter-starter")).toBeNull();
+  });
+
   it("プロパティフォームからプロパティを削除できる", async () => {
     const viewRef = createRef<EditorView | null>();
     const onChange = vi.fn();
