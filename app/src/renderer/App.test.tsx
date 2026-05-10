@@ -207,7 +207,7 @@ describe("App", () => {
     fireEvent.click(await screen.findByRole("button", { name: /読書メモ/ }));
 
     expect(window.relic!.readMarkdownFile).toHaveBeenCalledWith({ path: "読書メモ.md" });
-    expect(await screen.findByText("読書メモ")).toBeInTheDocument();
+    expect(await screen.findByText("読書メモ", { selector: ".pane-tab-name" })).toBeInTheDocument();
   });
 
   it("タブの右クリックメニューから複製・ピン留め・コピー・Finder表示を実行する", async () => {
@@ -334,18 +334,22 @@ describe("App", () => {
       })
     });
 
-    await renderApp();
+    const { container } = await renderApp();
 
     const fileButton = await screen.findByRole("button", { name: /読書メモ/ });
     fireEvent.click(fileButton);
+    expect(container.querySelector(".rail-tab-flight--open")).toBeInTheDocument();
 
     await waitFor(() => {
       expect(useEditorStore.getState().leftPane.activeTabId).not.toBeNull();
     });
 
     fireEvent.click(fileButton);
+    expect(container.querySelector(".rail-tab-flight--close")).toBeInTheDocument();
 
-    expect(useEditorStore.getState().leftPane.activeTabId).toBeNull();
+    await waitFor(() => {
+      expect(useEditorStore.getState().leftPane.activeTabId).toBeNull();
+    });
   });
 
   it("ファイルツリーのフォルダを開閉できる", async () => {
@@ -404,6 +408,7 @@ describe("App", () => {
       expect(useEditorStore.getState().leftPane.activeTabId).not.toBeNull();
     });
     expect(fileButton).not.toHaveClass("active");
+    expect(fileButton).toHaveClass("open");
   });
 
   it("サイドバー幅のドラッグ変更を最小180px・最大500pxに制限する", async () => {
@@ -1857,13 +1862,17 @@ describe("App", () => {
     fireEvent.click(draftsRow, { metaKey: true });
 
     expect(noteRow).toHaveClass("selected");
+    expect(noteRow).toHaveClass("multi-selected");
     expect(draftsRow).toHaveClass("selected");
+    expect(draftsRow).toHaveClass("multi-selected");
 
     fireEvent.click(archiveRow, { shiftKey: true });
 
     expect(noteRow).not.toHaveClass("selected");
     expect(draftsRow).toHaveClass("selected");
+    expect(draftsRow).toHaveClass("multi-selected");
     expect(archiveRow).toHaveClass("selected");
+    expect(archiveRow).toHaveClass("multi-selected");
   });
 
   it("複数選択したファイルとフォルダをまとめてドラッグ移動できる", async () => {

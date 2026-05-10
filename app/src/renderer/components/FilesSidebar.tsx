@@ -22,13 +22,14 @@ export interface FilesSidebarProps {
   onMoveFile: (path: string, destFolder: string) => void;
   onMoveFolder: (path: string, destFolder: string) => void;
   onMoveItems: (items: Array<{ path: string; type: WorkspaceTreeNode["type"] }>, destFolder: string) => void;
-  onOpenFile: (path: string) => void;
+  onOpenFile: (path: string, event?: React.MouseEvent<HTMLButtonElement>) => void;
   onOpenInOtherPane?: (path: string) => void;
   onOpenWorkspace: () => void;
   onRevealItem?: (path: string) => void;
   onRenameItem: (path: string, type: WorkspaceTreeNode["type"], newName: string) => void;
   onSelectFolder: (node: Extract<WorkspaceTreeNode, { type: "folder" }>) => void;
   onTogglePin: (path: string) => void;
+  openFilePaths?: Set<string>;
   onTemplatePathChange: (path: string) => void;
   selectedTemplatePath: string;
   templates: MarkdownTemplateSummary[];
@@ -58,6 +59,7 @@ export function FilesSidebar({
   onRenameItem,
   onSelectFolder,
   onTogglePin,
+  openFilePaths,
   onTemplatePathChange,
   selectedTemplatePath,
   templates,
@@ -208,6 +210,7 @@ export function FilesSidebar({
                       onSelectFolder={onSelectFolder}
                       onSelectItem={handleSelectItem}
                       onTogglePin={onTogglePin}
+                      openFilePaths={openFilePaths}
                       pinnedPaths={pinnedPaths}
                       selectedItems={selectedItems}
                       selectedPaths={selectedPaths}
@@ -235,6 +238,7 @@ export function FilesSidebar({
             onSelectFolder={onSelectFolder}
             onSelectItem={handleSelectItem}
             onTogglePin={onTogglePin}
+            openFilePaths={openFilePaths}
             pinnedPaths={pinnedPaths}
             selectedItems={selectedItems}
             selectedPaths={selectedPaths}
@@ -245,6 +249,7 @@ export function FilesSidebar({
               <FileTree
                 nodes={systemNodes}
                 onOpenFile={onOpenFile}
+                openFilePaths={openFilePaths}
                 onSelectFolder={onSelectFolder}
               />
             </div>
