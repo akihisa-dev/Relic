@@ -27,7 +27,67 @@ function collectNodePaths(nodes: WorkspaceTreeNode[]): Set<string> {
   return paths;
 }
 
+function parentFolderOf(path: string): string {
+  const separatorIndex = path.lastIndexOf("/");
+  return separatorIndex >= 0 ? path.slice(0, separatorIndex) : "";
+}
+
+function parseDragItems(dataTransfer: DataTransfer): Array<{ path: string; type: WorkspaceTreeNode["type"] }> {
+  const raw = dataTransfer.getData("application/relic-item");
+  if (!raw) return [];
+
+  try {
+    const payload = JSON.parse(raw) as {
+      items?: Array<{ path: string; type: WorkspaceTreeNode["type"] }>;
+      path?: string;
+      type?: WorkspaceTreeNode["type"];
+    };
+
+    return payload.items ?? (payload.path && payload.type ? [{ path: payload.path, type: payload.type }] : []);
+  } catch {
+    return [];
+  }
+}
+
+function movableItemsForDestination(
+  items: Array<{ path: string; type: WorkspaceTreeNode["type"] }>,
+  destinationFolder: string
+): Array<{ path: string; type: WorkspaceTreeNode["type"] }> {
+  return items.filter((item) => {
+    if (item.path === destinationFolder) return false;
+    if (parentFolderOf(item.path) === destinationFolder) return false;
+    if (item.type === "folder" && destinationFolder.startsWith(`${item.path}/`)) return false;
+    return true;
+  });
+}
+
+function shouldTreeHandleDrop(e: React.DragEvent): boolean {
+  const target = e.target;
+  if (!(target instanceof Element)) return false;
+  const row = target.closest(".file-tree-row");
+  if (!row || !e.currentTarget.contains(row)) return true;
+  return row.getAttribute("data-node-type") === "file";
+}
+
+function moveItemsToDestination(
+  items: Array<{ path: string; type: WorkspaceTreeNode["type"] }>,
+  destinationFolder: string,
+  handlers: Pick<FileTreeProps, "onMoveFile" | "onMoveFolder" | "onMoveItems">
+): void {
+  const movableItems = movableItemsForDestination(items, destinationFolder);
+  if (movableItems.length === 0) return;
+  if (movableItems.length > 1) {
+    handlers.onMoveItems?.(movableItems, destinationFolder);
+    return;
+  }
+
+  const [item] = movableItems;
+  if (item.type === "file") handlers.onMoveFile?.(item.path, destinationFolder);
+  else handlers.onMoveFolder?.(item.path, destinationFolder);
+}
+
 export interface FileTreeProps {
+  destinationFolder?: string;
   isRoot?: boolean;
   motionPaths?: Set<string>;
   nodes: WorkspaceTreeNode[];
@@ -175,30 +235,7 @@ export function FileTreeItem({
     e.stopPropagation();
     setIsDragOver(false);
 
-    const raw = e.dataTransfer.getData("application/relic-item");
-    if (!raw) return;
-
-    const payload = JSON.parse(raw) as {
-      items?: Array<{ path: string; type: WorkspaceTreeNode["type"] }>;
-      path?: string;
-      type?: WorkspaceTreeNode["type"];
-    };
-    const items = payload.items ?? (payload.path && payload.type ? [{ path: payload.path, type: payload.type }] : []);
-    const movableItems = items.filter((item) => {
-      if (item.path === destFolder) return false;
-      if (item.type === "folder" && destFolder.startsWith(`${item.path}/`)) return false;
-      return true;
-    });
-
-    if (movableItems.length === 0) return;
-    if (movableItems.length > 1) {
-      onMoveItems?.(movableItems, destFolder);
-      return;
-    }
-
-    const [item] = movableItems;
-    if (item.type === "file") onMoveFile?.(item.path, destFolder);
-    else onMoveFolder?.(item.path, destFolder);
+    moveItemsToDestination(parseDragItems(e.dataTransfer), destFolder, { onMoveFile, onMoveFolder, onMoveItems });
   };
 
   return (
@@ -206,6 +243,8 @@ export function FileTreeItem({
       <div className="file-tree-row-wrap">
         <button
           className={`file-tree-row ${node.type}${isSelected ? " selected" : ""}${isDragging ? " dragging" : ""}${isDragOver ? " drag-over" : ""}${isAppearing ? " file-tree-row--appearing" : ""}${isRemoving ? " file-tree-row--removing" : ""}`}
+          data-node-path={node.path}
+          data-node-type={node.type}
           draggable
           onDragEnd={() => {
             setIsDragging(false);
@@ -321,9 +360,10 @@ export function FileTreeItem({
           </div>
         ) : null}
       </div>
-      {node.type === "folder" && isExpanded && node.children.length > 0 ? (
+      {node.type === "folder" && isExpanded ? (
         <FileTree
           animation="expand"
+          destinationFolder={node.path}
           motionPaths={isAppearing ? new Set([node.path, ...node.children.map((child) => child.path)]) : undefined}
           nodes={node.children}
           onDeleteItem={onDeleteItem}
@@ -348,6 +388,7 @@ export function FileTreeItem({
 
 export function FileTree({
   animation,
+  destinationFolder = "",
   isRoot = false,
   motionPaths,
   nodes,
@@ -367,7 +408,7 @@ export function FileTree({
   selectedPaths = new Set<string>()
 }: FileTreeProps & { animation?: "expand" }): ReactElement {
   const t = useT();
-  const [isRootDragOver, setIsRootDragOver] = useState(false);
+  const [isTreeDragOver, setIsTreeDragOver] = useState(false);
   const previousPathsRef = useRef<Set<string>>(collectNodePaths(nodes));
   const [appearingPaths, setAppearingPaths] = useState<Set<string>>(new Set());
   const activeAppearingPaths = motionPaths ?? appearingPaths;
@@ -387,42 +428,27 @@ export function FileTree({
     return () => window.clearTimeout(timeout);
   }, [nodes]);
 
-  if (nodes.length === 0 && !isRoot) {
-    return <div className="empty-note">{t("files.noMarkdownFiles")}</div>;
-  }
+  const handleTreeDrop = (e: React.DragEvent): void => {
+    if (!shouldTreeHandleDrop(e)) return;
 
-  const handleRootDrop = (e: React.DragEvent): void => {
     e.preventDefault();
-    setIsRootDragOver(false);
+    e.stopPropagation();
+    setIsTreeDragOver(false);
 
-    const raw = e.dataTransfer.getData("application/relic-item");
-    if (!raw) return;
-
-    const payload = JSON.parse(raw) as {
-      items?: Array<{ path: string; type: WorkspaceTreeNode["type"] }>;
-      path?: string;
-      type?: WorkspaceTreeNode["type"];
-    };
-    const items = payload.items ?? (payload.path && payload.type ? [{ path: payload.path, type: payload.type }] : []);
-    const movableItems = items.filter((item) => item.path.includes("/"));
-    if (movableItems.length === 0) return;
-
-    if (movableItems.length > 1) {
-      onMoveItems?.(movableItems, "");
-      return;
-    }
-
-    const [item] = movableItems;
-    if (item.type === "file") onMoveFile?.(item.path, "");
-    else onMoveFolder?.(item.path, "");
+    moveItemsToDestination(parseDragItems(e.dataTransfer), destinationFolder, { onMoveFile, onMoveFolder, onMoveItems });
   };
 
   return (
     <ul
-      className={`file-tree${animation === "expand" ? " file-tree--expanding" : ""}${isRoot && isRootDragOver ? " file-tree--drag-over" : ""}`}
-      onDragLeave={isRoot ? (e) => { if (e.currentTarget === e.target) setIsRootDragOver(false); } : undefined}
-      onDragOver={isRoot ? (e) => { e.preventDefault(); setIsRootDragOver(true); } : undefined}
-      onDrop={isRoot ? handleRootDrop : undefined}
+      className={`file-tree${animation === "expand" ? " file-tree--expanding" : ""}${isTreeDragOver ? " file-tree--drag-over" : ""}`}
+      onDragLeave={(e) => { if (e.currentTarget === e.target) setIsTreeDragOver(false); }}
+      onDragOver={(e) => {
+        if (!shouldTreeHandleDrop(e)) return;
+        e.preventDefault();
+        e.stopPropagation();
+        setIsTreeDragOver(true);
+      }}
+      onDrop={handleTreeDrop}
     >
       {nodes.length === 0 ? (
         <li><div className="empty-note">{t("files.noMarkdownFiles")}</div></li>
