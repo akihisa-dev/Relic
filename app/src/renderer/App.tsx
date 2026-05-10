@@ -411,6 +411,13 @@ export function App(): ReactElement {
     toX: number;
     toY: number;
   } | null>(null);
+  const [sidebarCreateFlight, setSidebarCreateFlight] = useState<{
+    fromX: number;
+    fromY: number;
+    label: string;
+    toX: number;
+    toY: number;
+  } | null>(null);
   const pendingSidebarFileOpenTokensRef = useRef<Record<string, number>>({});
   const sidebarFileOpenTokenRef = useRef(0);
   const [fileSelectionCount, setFileSelectionCount] = useState(0);
@@ -871,6 +878,45 @@ export function App(): ReactElement {
   const renderPanelTabIcon = useCallback((panel: PanelTabKind): ReactNode => (
     sidebarViews.find((view) => view.id === panel)?.icon ?? null
   ), [sidebarViews]);
+
+  const handleCreateFileFromSidebar = useCallback((event?: MouseEvent<HTMLButtonElement>): void => {
+    if (event) {
+      const buttonRect = event.currentTarget.getBoundingClientRect();
+      const tabBar = document.querySelector(`.pane${focusedPane === "left" ? "" : ":last-child"} .pane-tab-bar`) ?? document.querySelector(".pane-tab-bar");
+      const tabBarRect = tabBar?.getBoundingClientRect();
+
+      setRailTabFlight({
+        direction: "open",
+        fromX: buttonRect.left + buttonRect.width / 2,
+        fromY: buttonRect.top + buttonRect.height / 2,
+        label: t("files.createNote"),
+        toX: (tabBarRect?.left ?? buttonRect.left + buttonRect.width + 120) + 48,
+        toY: (tabBarRect?.top ?? buttonRect.top) + 15
+      });
+      window.setTimeout(() => setRailTabFlight(null), 360);
+    }
+
+    handleCreateFile();
+  }, [focusedPane, handleCreateFile, t]);
+
+  const handleCreateFolderFromSidebar = useCallback((event?: MouseEvent<HTMLButtonElement>): void => {
+    if (event) {
+      const buttonRect = event.currentTarget.getBoundingClientRect();
+      const tree = document.querySelector(".sidebar-view-content--files .file-tree");
+      const treeRect = tree?.getBoundingClientRect();
+
+      setSidebarCreateFlight({
+        fromX: buttonRect.left + buttonRect.width / 2,
+        fromY: buttonRect.top + buttonRect.height / 2,
+        label: t("files.createFolder"),
+        toX: (treeRect?.left ?? buttonRect.left) + 24,
+        toY: (treeRect?.top ?? buttonRect.top + 72) + 14
+      });
+      window.setTimeout(() => setSidebarCreateFlight(null), 300);
+    }
+
+    handleCreateFolder();
+  }, [handleCreateFolder, t]);
 
   useAppTheme(editorSettings.theme);
 
@@ -1404,9 +1450,9 @@ export function App(): ReactElement {
                 isCreatingFolder={isCreatingFolder}
                 isCreatingWorkspace={isCreatingWorkspace}
                 isOpeningWorkspace={isOpeningWorkspace}
-                onCreateFile={handleCreateFile}
+                onCreateFile={handleCreateFileFromSidebar}
                 onCreateFileInFolder={handleCreateFileInFolder}
-                onCreateFolder={handleCreateFolder}
+                onCreateFolder={handleCreateFolderFromSidebar}
                 onCreateFolderInFolder={handleCreateFolderInFolder}
                 onCreateWorkspace={handleCreateNewWorkspace}
                 onDeleteItem={handleDeleteTreeItem}
@@ -1739,6 +1785,20 @@ export function App(): ReactElement {
           } as CSSProperties}
         >
           {railTabFlight.label}
+        </div>
+      ) : null}
+
+      {sidebarCreateFlight ? (
+        <div
+          className="sidebar-create-flight"
+          style={{
+            "--sidebar-create-flight-from-x": `${sidebarCreateFlight.fromX}px`,
+            "--sidebar-create-flight-from-y": `${sidebarCreateFlight.fromY}px`,
+            "--sidebar-create-flight-to-x": `${sidebarCreateFlight.toX}px`,
+            "--sidebar-create-flight-to-y": `${sidebarCreateFlight.toY}px`
+          } as CSSProperties}
+        >
+          {sidebarCreateFlight.label}
         </div>
       ) : null}
 

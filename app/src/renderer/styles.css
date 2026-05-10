@@ -210,6 +210,26 @@ button:not(:disabled):active {
   transform-origin: center;
 }
 
+.sidebar-create-flight {
+  background: var(--bg);
+  border: 1px solid var(--accent-ring);
+  border-radius: 6px;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 650;
+  left: 0;
+  max-width: 160px;
+  overflow: hidden;
+  padding: 5px 10px;
+  pointer-events: none;
+  position: fixed;
+  text-overflow: ellipsis;
+  top: 0;
+  white-space: nowrap;
+  z-index: 10000;
+  animation: sidebar-create-flight 300ms cubic-bezier(.2, .9, .18, 1) forwards;
+}
+
 .rail-button-label {
   color: var(--text);
   flex: 0 1 auto;
@@ -2849,6 +2869,33 @@ button:not(:disabled):active {
   }
 }
 
+@keyframes sidebar-create-flight {
+  0% {
+    opacity: 0;
+    transform: translate(
+      calc(var(--sidebar-create-flight-from-x) - 50%),
+      calc(var(--sidebar-create-flight-from-y) - 50%)
+    ) scale(0.88);
+  }
+  18% {
+    opacity: 1;
+  }
+  72% {
+    opacity: 1;
+    transform: translate(
+      calc(var(--sidebar-create-flight-to-x) - 50%),
+      calc(var(--sidebar-create-flight-to-y) - 50% - 8px)
+    ) scale(0.96);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(
+      calc(var(--sidebar-create-flight-to-x) - 50%),
+      calc(var(--sidebar-create-flight-to-y) - 50%)
+    ) scale(1);
+  }
+}
+
 @keyframes right-panel-content-in {
   from {
     opacity: 0;
@@ -3512,6 +3559,8 @@ button:not(:disabled):active {
 @media (prefers-reduced-motion: reduce) {
   .pane-tab,
   .pane-tab-close,
+  .rail-tab-flight,
+  .sidebar-create-flight,
   .file-tree,
   .file-tree-row,
   .file-tree-row--appearing,
