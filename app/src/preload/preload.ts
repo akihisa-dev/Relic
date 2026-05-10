@@ -32,6 +32,7 @@ import {
   getGitStatusChannel,
   getGitWorkingChangesChannel,
   getMarkdownTemplatesChannel,
+  getFrontmatterValueCandidatesChannel,
   getWorkspaceTagsChannel,
   getWorkspaceStateChannel,
   initializeGitRepositoryChannel,
@@ -188,6 +189,8 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(getEditorSettingsChannel) as Promise<RelicResult<EditorSettings>>,
   getMarkdownTemplates: () =>
     ipcRenderer.invoke(getMarkdownTemplatesChannel) as Promise<RelicResult<MarkdownTemplateSummary[]>>,
+  getFrontmatterValueCandidates: () =>
+    ipcRenderer.invoke(getFrontmatterValueCandidatesChannel) as Promise<RelicResult<Record<string, string[]>>>,
   getWorkspaceTags: () =>
     ipcRenderer.invoke(getWorkspaceTagsChannel) as Promise<RelicResult<WorkspaceTagSummary[]>>,
   getWorkspaceState: () =>

@@ -8,19 +8,21 @@ export interface ParsedFrontmatter {
 const DELIMITER = "---";
 
 export function parseFrontmatter(content: string): ParsedFrontmatter {
-  if (!content.startsWith(`${DELIMITER}\n`) && !content.startsWith(`${DELIMITER}\r\n`)) {
+  const openDelimiter = /^---\r?\n/.exec(content);
+
+  if (!openDelimiter) {
     return { data: {}, body: content };
   }
 
-  const rest = content.slice(DELIMITER.length + 1);
-  const closeIndex = rest.search(/^---$/m);
+  const rest = content.slice(openDelimiter[0].length);
+  const closeDelimiter = /^---(?:\r?\n|$)/m.exec(rest);
 
-  if (closeIndex === -1) {
+  if (!closeDelimiter || closeDelimiter.index === undefined) {
     return { data: {}, body: content };
   }
 
-  const yamlText = rest.slice(0, closeIndex);
-  const body = rest.slice(closeIndex + DELIMITER.length + 1);
+  const yamlText = rest.slice(0, closeDelimiter.index);
+  const body = rest.slice(closeDelimiter.index + closeDelimiter[0].length);
 
   try {
     const parsed = yaml.load(yamlText);

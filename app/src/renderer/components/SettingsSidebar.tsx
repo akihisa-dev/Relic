@@ -100,14 +100,40 @@ export function SettingsSidebar({
   };
 
   const updateUserDefinedField = (index: number, nextField: UserDefinedField): void => {
+    const previousField = fieldsDraft[index];
     const next = fieldsDraft.map((field, i) => (i === index ? nextField : field));
     setFieldsDraft(next);
     onUserDefinedFieldsSave(next);
+
+    if (previousField && previousField.name !== nextField.name) {
+      const nextTemplates = templatesDraft.map((template) => ({
+        ...template,
+        fieldNames: template.fieldNames.map((name) => name === previousField.name ? nextField.name : name)
+      }));
+      saveTemplates(nextTemplates);
+      setNewTemplateFields((current) => current.map((name) => name === previousField.name ? nextField.name : name));
+    }
   };
 
   const saveTemplates = (templates: FrontmatterTemplate[]): void => {
     setTemplatesDraft(templates);
     onFrontmatterTemplatesSave(templates);
+  };
+
+  const updateTemplate = (index: number, nextTemplate: FrontmatterTemplate): void => {
+    saveTemplates(templatesDraft.map((template, i) => i === index ? nextTemplate : template));
+  };
+
+  const removeFieldFromTemplates = (fieldName: string): void => {
+    const nextTemplates = templatesDraft
+      .map((template) => ({
+        ...template,
+        fieldNames: template.fieldNames.filter((name) => name !== fieldName)
+      }))
+      .filter((template) => template.fieldNames.length > 0);
+
+    saveTemplates(nextTemplates);
+    setNewTemplateFields((current) => current.filter((name) => name !== fieldName));
   };
 
   const updateGitHubIntegration = <K extends keyof GitHubIntegrationSettings>(
@@ -343,6 +369,7 @@ export function SettingsSidebar({
               const next = fieldsDraft.filter((_, j) => j !== i);
               setFieldsDraft(next);
               onUserDefinedFieldsSave(next);
+              removeFieldFromTemplates(field.name);
             }}
             title={t("common.delete")}
             type="button"
@@ -401,19 +428,36 @@ export function SettingsSidebar({
       </div>
       <div className="links-panel-subheading" style={{ marginTop: "1rem" }}>{t("settings.frontmatterTemplates")}</div>
       {templatesDraft.map((template, i) => (
-        <div className="setting-custom-field-edit" key={`${template.name}-${i}`}>
+        <div className="setting-template-editor" key={`${template.name}-${i}`}>
           <input
             className="setting-custom-field-input"
             onChange={(e) => {
               const name = e.target.value.trim();
               if (!name || templatesDraft.some((item, index) => item.name === name && index !== i)) return;
-              saveTemplates(templatesDraft.map((item, index) => index === i ? { ...item, name } : item));
+              updateTemplate(i, { ...template, name });
             }}
             placeholder={t("settings.frontmatterTemplateName")}
             type="text"
             value={template.name}
           />
-          <span className="settings-info">{template.fieldNames.join(", ")}</span>
+          <div className="setting-template-field-list">
+            {fieldsDraft.map((field) => (
+              <label className="setting-template-field-choice" key={field.name}>
+                <input
+                  checked={template.fieldNames.includes(field.name)}
+                  onChange={(e) => {
+                    const fieldNames = e.target.checked
+                      ? [...template.fieldNames, field.name]
+                      : template.fieldNames.filter((name) => name !== field.name);
+                    if (fieldNames.length === 0) return;
+                    updateTemplate(i, { ...template, fieldNames });
+                  }}
+                  type="checkbox"
+                />
+                <span>{field.name}</span>
+              </label>
+            ))}
+          </div>
           <button
             className="setting-action-btn setting-action-btn--danger"
             onClick={() => saveTemplates(templatesDraft.filter((_, index) => index !== i))}
