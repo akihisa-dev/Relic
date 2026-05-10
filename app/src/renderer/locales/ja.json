@@ -49,6 +49,7 @@
   "files.systemFolders": "システムフォルダ",
   "files.template": "テンプレート",
   "files.unpin": "ピン留めを解除",
+  "files.workspace": "ワークスペース",
   "files.workspaceEmptyTitle": "書く場所を選ぶ",
   "files.workspaceHint": "任意のローカルフォルダをワークスペースとして開けます。",
   "files.workspaceRenamePrompt": "ワークスペース名を入力してください。",

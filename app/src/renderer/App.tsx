@@ -177,7 +177,6 @@ function RailWorkspaceSwitcher({
               type="button"
             >
               <span className="workspace-switcher-icon">{initial}</span>
-              <span className="workspace-switcher-name">{ws.name}</span>
             </button>
             <button
               aria-label={removeLabel(ws.name)}
@@ -951,6 +950,7 @@ export function App(): ReactElement {
                 onOpenWorkspace={handleOpenWorkspace}
                 onRevealItem={handleRevealWorkspaceItem}
                 onRenameItem={handleRenameTreeItem}
+                onRenameWorkspace={promptRenameWorkspace}
                 onSelectFolder={handleSelectFolder}
                 onTogglePin={handleTogglePin}
                 onTemplatePathChange={setSelectedTemplatePath}

@@ -49,6 +49,7 @@
   "files.systemFolders": "System folders",
   "files.template": "Template",
   "files.unpin": "Unpin",
+  "files.workspace": "Workspace",
   "files.workspaceEmptyTitle": "Choose a place to write",
   "files.workspaceHint": "Open any local folder as a workspace.",
   "files.workspaceRenamePrompt": "Enter a workspace name.",

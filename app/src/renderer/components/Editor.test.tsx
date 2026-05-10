@@ -132,6 +132,31 @@ describe("Editor", () => {
     expect(view.state.doc.toString()).toBe("hello world");
   });
 
+  it("ライブ表示のリンク文字クリックでリンクを開く", async () => {
+    const onOpenLink = vi.fn();
+    const onOpenWikiLink = vi.fn();
+    const viewRef = createRef<EditorView | null>();
+
+    render(
+      <Editor
+        content={"トップ: [リンク確認用トップ](./00-リンク確認用トップ.md)\nWiki: [[01-企画メモ]]"}
+        onChange={vi.fn()}
+        onOpenLink={onOpenLink}
+        onOpenWikiLink={onOpenWikiLink}
+        settings={settings}
+        viewRef={viewRef}
+      />
+    );
+
+    await waitFor(() => expect(viewRef.current).not.toBeNull());
+
+    fireEvent.click(await screen.findByText("リンク確認用トップ"));
+    expect(onOpenLink).toHaveBeenCalledWith("./00-リンク確認用トップ.md");
+
+    fireEvent.click(await screen.findByText("01-企画メモ"));
+    expect(onOpenWikiLink).toHaveBeenCalledWith("01-企画メモ", undefined);
+  });
+
   it("本文の右クリックメニューからコピー・カット・ペーストを実行できる", async () => {
     const viewRef = createRef<EditorView | null>();
     const readClipboardText = vi.fn().mockReturnValue("!");

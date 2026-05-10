@@ -113,29 +113,39 @@ describe("workspaceService", () => {
     });
   });
 
-  it("登録済みワークスペースの表示名を変更する", () => {
-    const workspace = createWorkspaceSummary("/tmp/relic-notes");
+  it("登録済みワークスペースのフォルダ名を変更する", async () => {
+    const parentPath = await mkdtemp(path.join(os.tmpdir(), "relic-workspace-parent-"));
+    temporaryPaths.push(parentPath);
+    const workspacePath = path.join(parentPath, "relic-notes");
+    await prepareWorkspace(workspacePath);
+    const workspace = createWorkspaceSummary(workspacePath);
     const settings = {
       ...baseSettings,
       lastWorkspaceId: workspace.id,
       workspaces: [workspace]
     };
 
-    const result = renameWorkspaceRegistration(settings, workspace.id, "小説メモ");
+    const result = await renameWorkspaceRegistration(settings, workspace.id, "小説メモ");
+    const nextWorkspace = createWorkspaceSummary(path.join(parentPath, "小説メモ"));
 
     expect(result).toEqual({
       ok: true,
       value: {
-        ...baseSettings,
-        lastWorkspaceId: workspace.id,
-        workspaces: [{ ...workspace, name: "小説メモ" }]
+        nextSettings: {
+          ...baseSettings,
+          lastWorkspaceId: nextWorkspace.id,
+          workspaces: [nextWorkspace]
+        },
+        newWorkspaceId: nextWorkspace.id,
+        oldWorkspaceId: workspace.id
       }
     });
+    await expect(stat(path.join(parentPath, "小説メモ"))).resolves.toBeTruthy();
   });
 
-  it("空のワークスペース名は拒否する", () => {
+  it("空のワークスペース名は拒否する", async () => {
     const workspace = createWorkspaceSummary("/tmp/relic-notes");
-    const result = renameWorkspaceRegistration(
+    const result = await renameWorkspaceRegistration(
       { ...baseSettings, lastWorkspaceId: workspace.id, workspaces: [workspace] },
       workspace.id,
       "  "
