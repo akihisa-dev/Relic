@@ -76,6 +76,33 @@ export function removeWorkspaceRegistration(
   });
 }
 
+export function renameWorkspaceRegistration(
+  settings: AppSettings,
+  workspaceId: string,
+  name: string
+): RelicResult<AppSettings> {
+  const trimmedName = name.trim();
+
+  if (!trimmedName) {
+    return fail("WORKSPACE_NAME_EMPTY", "ワークスペース名を入力してください。");
+  }
+
+  if (/[\/\\\r\n]/.test(trimmedName)) {
+    return fail("WORKSPACE_NAME_INVALID", "ワークスペース名に使えない文字が含まれています。");
+  }
+
+  if (!settings.workspaces.some((workspace) => workspace.id === workspaceId)) {
+    return fail("WORKSPACE_NOT_FOUND", "登録済みワークスペースが見つかりませんでした。");
+  }
+
+  return ok({
+    ...settings,
+    workspaces: settings.workspaces.map((workspace) => (
+      workspace.id === workspaceId ? { ...workspace, name: trimmedName } : workspace
+    ))
+  });
+}
+
 export function toWorkspaceState(
   settings: AppSettings,
   fileTree: WorkspaceTreeNode[] = [],

@@ -1625,7 +1625,7 @@ button:not(:disabled):active {
 }
 .cm-live-strike { text-decoration: line-through; }
 .cm-live-underline { text-decoration: underline; text-underline-offset: 2px; }
-.cm-live-link { color: var(--link); text-decoration: underline; text-underline-offset: 2px; }
+.cm-live-link { color: var(--link); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
 .cm-live-code {
   background: rgba(27, 31, 35, 0.06);
   border-radius: 3px;

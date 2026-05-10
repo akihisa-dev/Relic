@@ -17,7 +17,9 @@ import {
   getWorkspaceTagsChannel,
   openWorkspaceChannel,
   removeWorkspaceChannel,
+  renameWorkspaceChannel,
   type RemoveWorkspaceInput,
+  type RenameWorkspaceInput,
   saveAutoSyncSettingsChannel,
   type AutoSyncSettings,
   saveFeatureTogglesChannel,
@@ -48,6 +50,7 @@ import {
   createWorkspaceSummary,
   prepareWorkspace,
   removeWorkspaceRegistration,
+  renameWorkspaceRegistration,
   toWorkspaceState
 } from "../workspace/workspaceService";
 
@@ -316,6 +319,34 @@ export function registerWorkspaceHandlers(): void {
   );
 
   ipcMain.handle(
+    renameWorkspaceChannel,
+    async (_event, input: RenameWorkspaceInput): Promise<RelicResult<WorkspaceState>> => {
+      try {
+        if (!isRenameWorkspaceInput(input)) {
+          return fail("WORKSPACE_RENAME_INVALID_INPUT", "ワークスペース名を入力してください。");
+        }
+
+        const settings = await readAppSettings(app.getPath("userData"));
+        const nextSettings = renameWorkspaceRegistration(settings, input.workspaceId, input.name);
+
+        if (!nextSettings.ok) {
+          return nextSettings;
+        }
+
+        await writeAppSettings(app.getPath("userData"), nextSettings.value);
+
+        return ok(await buildWorkspaceState(nextSettings.value));
+      } catch (error) {
+        return fail(
+          "WORKSPACE_RENAME_FAILED",
+          "ワークスペース名を変更できませんでした。",
+          error instanceof Error ? error.message : String(error)
+        );
+      }
+    }
+  );
+
+  ipcMain.handle(
     cloneGitHubRepositoryChannel,
     async (_event, input: CloneGitHubRepositoryInput): Promise<RelicResult<WorkspaceState>> => {
       try {
@@ -519,6 +550,17 @@ function isWorkspaceIdInput(input: unknown): input is { workspaceId: string } {
 
 function isSwitchWorkspaceInput(input: unknown): input is SwitchWorkspaceInput {
   return isWorkspaceIdInput(input);
+}
+
+function isRenameWorkspaceInput(input: unknown): input is RenameWorkspaceInput {
+  return (
+    typeof input === "object" &&
+    input !== null &&
+    "workspaceId" in input &&
+    "name" in input &&
+    typeof (input as { workspaceId?: unknown }).workspaceId === "string" &&
+    typeof (input as { name?: unknown }).name === "string"
+  );
 }
 
 function isCloneGitHubRepositoryInput(input: unknown): input is CloneGitHubRepositoryInput {
