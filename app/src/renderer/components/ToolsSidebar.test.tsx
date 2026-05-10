@@ -53,11 +53,13 @@ function makeRelicApi(overrides: Partial<typeof window.relic> = {}): typeof wind
     pullGitBranch: vi.fn(),
     pushGitBranch: vi.fn(),
     pushGitTag: vi.fn(),
+    readClipboardText: vi.fn().mockReturnValue(""),
     readMarkdownFile: vi.fn(),
     removeWorkspace: vi.fn(),
     renameFolder: vi.fn(),
     renameMarkdownFile: vi.fn(),
     replaceInFile: vi.fn(),
+    revealWorkspaceItem: vi.fn(),
     resolveGitConflict: vi.fn(),
     saveAutoSyncSettings: vi.fn(),
     saveEditorSettings: vi.fn(),
@@ -70,6 +72,7 @@ function makeRelicApi(overrides: Partial<typeof window.relic> = {}): typeof wind
     switchGitBranch: vi.fn(),
     switchWorkspace: vi.fn(),
     togglePin: vi.fn(),
+    writeClipboardText: vi.fn(),
     writeMarkdownFile: vi.fn(),
     ...overrides
   } as typeof window.relic;

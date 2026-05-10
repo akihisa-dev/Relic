@@ -12,7 +12,8 @@ export interface CreatedFolder {
 
 export async function createFolder(
   workspacePath: string,
-  name: string
+  name: string,
+  parentFolder = ""
 ): Promise<RelicResult<CreatedFolder>> {
   const validatedName = validateBaseName(name, "フォルダ名を入力してください。");
 
@@ -20,11 +21,22 @@ export async function createFolder(
     return validatedName;
   }
 
+  const normalizedParentFolder = toWorkspaceRelativePath(parentFolder.trim());
+  const nextRelativePath = toWorkspaceRelativePath(
+    normalizedParentFolder === "" ? validatedName.value : `${normalizedParentFolder}/${validatedName.value}`
+  );
+  const parentPath =
+    normalizedParentFolder === "" ? ok(workspacePath) : resolveWorkspaceRelativePath(workspacePath, normalizedParentFolder);
+
+  if (!parentPath.ok) {
+    return parentPath;
+  }
+
   try {
-    await mkdir(path.join(workspacePath, validatedName.value));
+    await mkdir(path.join(parentPath.value, validatedName.value));
 
     return ok({
-      path: validatedName.value
+      path: nextRelativePath
     });
   } catch (error) {
     if (isFileExistsError(error)) {

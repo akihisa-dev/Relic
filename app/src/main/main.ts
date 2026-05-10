@@ -1,4 +1,4 @@
-import { app, BrowserWindow, shell } from "electron";
+import { app, BrowserWindow, Menu, shell } from "electron";
 import started from "electron-squirrel-startup";
 import path from "node:path";
 
@@ -38,6 +38,7 @@ function createWindow(): void {
   });
 
   configureWindowSecurity(mainWindow);
+  configureEditorContextMenu(mainWindow);
 
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
     void mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
@@ -46,6 +47,24 @@ function createWindow(): void {
       path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`)
     );
   }
+}
+
+function configureEditorContextMenu(window: BrowserWindow): void {
+  window.webContents.on("context-menu", (event, params) => {
+    if (!params.isEditable) return;
+
+    event.preventDefault();
+    Menu.buildFromTemplate([
+      { enabled: params.editFlags.canUndo, label: "取り消し", click: () => window.webContents.undo() },
+      { enabled: params.editFlags.canRedo, label: "やり直し", click: () => window.webContents.redo() },
+      { type: "separator" },
+      { label: "カット", click: () => window.webContents.cut() },
+      { label: "コピー", click: () => window.webContents.copy() },
+      { label: "ペースト", click: () => window.webContents.paste() },
+      { type: "separator" },
+      { label: "すべて選択", click: () => window.webContents.selectAll() }
+    ]).popup({ window });
+  });
 }
 
 function configureWindowSecurity(window: BrowserWindow): void {

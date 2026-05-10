@@ -42,6 +42,30 @@ describe("createFolder", () => {
     expect(result.ok).toBe(false);
   });
 
+  it("親フォルダを指定して配下にフォルダを作成する", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-create-folder-"));
+    temporaryPaths.push(workspacePath);
+
+    await mkdir(path.join(workspacePath, "資料"));
+
+    await expect(createFolder(workspacePath, "下書き", "資料")).resolves.toEqual({
+      ok: true,
+      value: {
+        path: "資料/下書き"
+      }
+    });
+    expect((await stat(path.join(workspacePath, "資料", "下書き"))).isDirectory()).toBe(true);
+  });
+
+  it("親フォルダがワークスペース外を指す場合は作成しない", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-create-folder-"));
+    temporaryPaths.push(workspacePath);
+
+    await expect(createFolder(workspacePath, "下書き", "../outside")).resolves.toMatchObject({
+      ok: false
+    });
+  });
+
   it("同名フォルダや同名ファイルがある場合は作成しない", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-create-folder-"));
     temporaryPaths.push(workspacePath);
