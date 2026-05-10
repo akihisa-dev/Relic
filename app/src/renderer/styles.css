@@ -1566,13 +1566,45 @@ button:disabled {
 }
 
 .cm-frontmatter-pill {
+  align-items: center;
   background: var(--hover);
   border-radius: 999px;
   color: var(--text);
   display: inline-flex;
   font-size: 0.92em;
+  gap: 4px;
   max-width: 100%;
-  padding: 2px 8px;
+  padding: 2px 4px 2px 8px;
+}
+
+.cm-frontmatter-pill-value {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  min-width: 24px;
+  outline: none;
+  padding: 0;
+  width: min(18ch, 100%);
+}
+
+.cm-frontmatter-pill-remove {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
+  color: var(--text-3);
+  cursor: pointer;
+  display: inline-flex;
+  height: 18px;
+  justify-content: center;
+  padding: 0;
+  width: 18px;
+}
+
+.cm-frontmatter-pill-remove:hover {
+  background: var(--surface);
+  color: var(--text);
 }
 
 .cm-frontmatter-pill-input {
