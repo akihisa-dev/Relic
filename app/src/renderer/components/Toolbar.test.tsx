@@ -334,4 +334,32 @@ describe("Toolbar markdown actions", () => {
     ].join("\n"));
     view.destroy();
   });
+
+  it("見出しドロップダウンを閉じると退場反応を通る", () => {
+    const view = createView("hello", EditorSelection.single(0, 5));
+    render(<Toolbar viewRef={{ current: view }} />);
+
+    clickToolbarButton("Heading");
+    const menu = screen.getByRole("button", { name: "H1" }).closest(".toolbar-dropdown-menu");
+    if (!(menu instanceof HTMLElement)) throw new Error("heading menu was not rendered");
+
+    fireEvent.click(screen.getByRole("button", { name: "H1" }));
+
+    expect(menu).toHaveClass("toolbar-panel--closing");
+    view.destroy();
+  });
+
+  it("リンク入力ダイアログを閉じると退場反応を通る", async () => {
+    const { unmount, view } = await renderToolbarWithEditor("あああ", EditorSelection.single(0, 3));
+
+    clickToolbarButton("Markdown link");
+    const dialog = screen.getByPlaceholderText("URL").closest(".toolbar-inline-dialog");
+    if (!(dialog instanceof HTMLElement)) throw new Error("link dialog was not rendered");
+
+    fireEvent.keyDown(screen.getByPlaceholderText("URL"), { key: "Escape" });
+
+    expect(dialog).toHaveClass("toolbar-panel--closing");
+    view.destroy();
+    unmount();
+  });
 });

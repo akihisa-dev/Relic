@@ -1131,6 +1131,10 @@ button:not(:disabled):active {
   z-index: 220;
 }
 
+.toolbar-panel--closing {
+  animation: toolbar-panel-out 150ms cubic-bezier(.4, 0, .2, 1) forwards;
+}
+
 .toolbar-input {
   border: 1px solid var(--border-soft);
   border-radius: 5px;
@@ -1173,6 +1177,10 @@ button:not(:disabled):active {
   animation: pane-split-in 220ms cubic-bezier(.18, 1.15, .28, 1);
   border-left: 1px solid rgba(31, 35, 40, 0.1);
   transform-origin: right center;
+}
+
+.panes-container--closing-split .pane + .pane {
+  animation: pane-split-out 180ms cubic-bezier(.4, 0, .2, 1) forwards;
 }
 
 .pane {
@@ -2626,6 +2634,17 @@ button:not(:disabled):active {
   }
 }
 
+@keyframes pane-split-out {
+  from {
+    opacity: 1;
+    transform: translateX(0) scaleX(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(14px) scaleX(0.98);
+  }
+}
+
 @keyframes right-panel-content-in {
   from {
     opacity: 0;
@@ -2656,6 +2675,17 @@ button:not(:disabled):active {
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes toolbar-panel-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-5px) scale(0.97);
   }
 }
 
@@ -3254,6 +3284,7 @@ button:not(:disabled):active {
   .command-item,
   .toast,
   .panes-container--split .pane + .pane,
+  .panes-container--closing-split .pane + .pane,
   .right-panel-content,
   .sidebar-view-content,
   .outline-list,
@@ -3262,6 +3293,7 @@ button:not(:disabled):active {
   .sidebar-resize-handle,
   .toolbar-dropdown-menu,
   .toolbar-inline-dialog,
+  .toolbar-panel--closing,
   .toolbar-btn.active,
   .rename-bar-label,
   .rename-bar-form,
