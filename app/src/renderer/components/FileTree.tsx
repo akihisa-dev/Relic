@@ -121,8 +121,9 @@ export interface FileTreeProps {
   onMoveFile?: (path: string, destFolder: string) => void;
   onMoveFolder?: (path: string, destFolder: string) => void;
   onMoveItems?: (items: Array<{ path: string; type: WorkspaceTreeNode["type"] }>, destFolder: string) => void;
-  onOpenFile: (path: string) => void;
+  onOpenFile: (path: string, event?: React.MouseEvent<HTMLButtonElement>) => void;
   onOpenInOtherPane?: (path: string) => void;
+  openFilePaths?: Set<string>;
   onRevealItem?: (path: string) => void;
   onRenameItem?: (path: string, type: WorkspaceTreeNode["type"], newName: string) => void;
   onSelectFolder: (node: Extract<WorkspaceTreeNode, { type: "folder" }>) => void;
@@ -147,6 +148,7 @@ export function FileTreeItem({
   onMoveItems,
   onOpenFile,
   onOpenInOtherPane,
+  openFilePaths,
   onRevealItem,
   onRenameItem,
   onSelectFolder,
@@ -167,8 +169,9 @@ export function FileTreeItem({
   onMoveFile?: (path: string, destFolder: string) => void;
   onMoveFolder?: (path: string, destFolder: string) => void;
   onMoveItems?: (items: Array<{ path: string; type: WorkspaceTreeNode["type"] }>, destFolder: string) => void;
-  onOpenFile: (path: string) => void;
+  onOpenFile: (path: string, event?: React.MouseEvent<HTMLButtonElement>) => void;
   onOpenInOtherPane?: (path: string) => void;
+  openFilePaths?: Set<string>;
   onRevealItem?: (path: string) => void;
   onRenameItem?: (path: string, type: WorkspaceTreeNode["type"], newName: string) => void;
   onSelectFolder: (node: Extract<WorkspaceTreeNode, { type: "folder" }>) => void;
@@ -192,6 +195,7 @@ export function FileTreeItem({
   const [isRemoving, setIsRemoving] = useState(false);
   const isFolder = node.type === "folder";
   const isSelected = selectedPaths.has(node.path);
+  const isOpen = node.type === "file" && openFilePaths?.has(node.path);
   const useSelectedItems = isSelected && selectedItems.length > 1;
 
   useEffect(() => {
@@ -309,7 +313,7 @@ export function FileTreeItem({
     <li className="file-tree-item">
       <div className="file-tree-row-wrap">
         <button
-          className={`file-tree-row ${node.type}${isSelected ? " selected" : ""}${isDragging ? " dragging" : ""}${isDragOver ? " drag-over" : ""}${isAppearing ? " file-tree-row--appearing" : ""}${isRemoving ? " file-tree-row--removing" : ""}`}
+          className={`file-tree-row ${node.type}${isOpen ? " open" : ""}${isSelected ? " selected" : ""}${useSelectedItems ? " multi-selected" : ""}${isDragging ? " dragging" : ""}${isDragOver ? " drag-over" : ""}${isAppearing ? " file-tree-row--appearing" : ""}${isRemoving ? " file-tree-row--removing" : ""}`}
           data-node-path={node.path}
           data-node-type={node.type}
           draggable
@@ -346,7 +350,7 @@ export function FileTreeItem({
             const shouldActivate = onSelectItem?.(node, e) ?? true;
             if (!shouldActivate) return;
             if (node.type === "file") {
-              onOpenFile(node.path);
+              onOpenFile(node.path, e);
             } else {
               setIsExpanded((v) => !v);
               onSelectFolder(node);
@@ -531,6 +535,7 @@ export function FileTreeItem({
           onMoveItems={onMoveItems}
           onOpenFile={onOpenFile}
           onOpenInOtherPane={onOpenInOtherPane}
+          openFilePaths={openFilePaths}
           onRevealItem={onRevealItem}
           onRenameItem={onRenameItem}
           onSelectFolder={onSelectFolder}
@@ -561,6 +566,7 @@ export function FileTree({
   onMoveItems,
   onOpenFile,
   onOpenInOtherPane,
+  openFilePaths,
   onRevealItem,
   onRenameItem,
   onSelectFolder,
@@ -632,6 +638,7 @@ export function FileTree({
           onMoveItems={onMoveItems}
           onOpenFile={onOpenFile}
           onOpenInOtherPane={onOpenInOtherPane}
+          openFilePaths={openFilePaths}
           onRevealItem={onRevealItem}
           onRenameItem={onRenameItem}
           onSelectFolder={onSelectFolder}
