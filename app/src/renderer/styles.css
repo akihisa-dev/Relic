@@ -1430,6 +1430,16 @@ button:disabled {
   margin: 0 0 20px;
 }
 
+.cm-frontmatter-starter {
+  align-items: center;
+  color: var(--text);
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 24px minmax(0, 1fr);
+  margin: 0 0 18px;
+  min-height: 28px;
+}
+
 .cm-frontmatter-header {
   align-items: center;
   background: transparent;
