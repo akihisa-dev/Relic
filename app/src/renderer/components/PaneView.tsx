@@ -1,6 +1,6 @@
 import { EditorView } from "@codemirror/view";
 import { useEffect, useState } from "react";
-import type { MutableRefObject, ReactElement, ReactNode } from "react";
+import type { DragEvent, MutableRefObject, ReactElement, ReactNode } from "react";
 
 import type { EditorSettings, UserDefinedField } from "../../shared/ipc";
 import { useT } from "../i18n";
@@ -28,6 +28,7 @@ export interface PaneViewProps {
   onOpenWikiLink?: (target: string, heading?: string) => void;
   onScrollTargetHandled?: () => void;
   onTabClose: (tabId: string) => void;
+  onTabMove: (fromPane: PaneId, toPane: PaneId, tabId: string, targetTabId?: string | null, position?: "before" | "after") => void;
   onTabSelect: (tabId: string) => void;
   onCloseOtherTabs: (tabId: string) => void;
   onCloseTabsToRight: (tabId: string) => void;
@@ -60,6 +61,7 @@ export function PaneView({
   onOpenWikiLink,
   onScrollTargetHandled,
   onTabClose,
+  onTabMove,
   onTabSelect,
   onCloseOtherTabs,
   onCloseTabsToRight,
@@ -111,6 +113,30 @@ export function PaneView({
   const contextTab = contextMenu ? tabs[contextMenu.tabId] : null;
   const contextTabIsFile = contextTab?.kind === "file";
   const contextTabIsPinned = contextTabIsFile ? pinnedPaths?.has(contextTab.path) : false;
+  const readDraggedTab = (e: DragEvent): { fromPane: PaneId; tabId: string } | null => {
+    const raw = e.dataTransfer.getData("application/relic-tab");
+    if (!raw) return null;
+
+    try {
+      const payload = JSON.parse(raw) as { fromPane?: PaneId; tabId?: string };
+      return payload.fromPane && payload.tabId ? { fromPane: payload.fromPane, tabId: payload.tabId } : null;
+    } catch {
+      return null;
+    }
+  };
+  const dropPositionForTab = (e: DragEvent<HTMLElement>): "before" | "after" => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    return e.clientX < rect.left + rect.width / 2 ? "before" : "after";
+  };
+  const isTabDrag = (e: DragEvent): boolean => Array.from(e.dataTransfer.types).includes("application/relic-tab");
+  const handleTabDrop = (e: DragEvent<HTMLElement>, targetTabId?: string | null): void => {
+    const draggedTab = readDraggedTab(e);
+    if (!draggedTab) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+    onTabMove(draggedTab.fromPane, pane, draggedTab.tabId, targetTabId ?? null, targetTabId ? dropPositionForTab(e) : "after");
+  };
 
   return (
     <div
@@ -119,7 +145,13 @@ export function PaneView({
       onFocusCapture={onFocus}
       onPointerDownCapture={onFocus}
     >
-      <div className="pane-tab-bar">
+      <div
+        className="pane-tab-bar"
+        onDragOver={(e) => {
+          if (isTabDrag(e)) e.preventDefault();
+        }}
+        onDrop={(e) => handleTabDrop(e, null)}
+      >
         {paneState.tabIds.map((tabId) => {
           const tab = tabs[tabId];
           const isClosing = closingTabIds.has(tabId);
@@ -130,6 +162,7 @@ export function PaneView({
             <div
               className={`pane-tab${paneState.activeTabId === tabId ? " pane-tab--active" : ""}${isClosing ? " pane-tab--closing" : ""}`}
               data-tab-id={tabId}
+              draggable={!isClosing}
               key={tabId}
               onClick={(e) => {
                 e.stopPropagation();
@@ -142,6 +175,15 @@ export function PaneView({
                 if (isClosing) return;
                 setContextMenu({ tabId, x: e.clientX, y: e.clientY });
               }}
+              onDragOver={(e) => {
+                if (isTabDrag(e)) e.preventDefault();
+              }}
+              onDragStart={(e) => {
+                if (isClosing) return;
+                e.dataTransfer.setData("application/relic-tab", JSON.stringify({ fromPane: pane, tabId }));
+                e.dataTransfer.effectAllowed = "move";
+              }}
+              onDrop={(e) => handleTabDrop(e, tabId)}
             >
               <span className="pane-tab-name">{tab.name}</span>
               <button

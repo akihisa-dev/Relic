@@ -513,14 +513,27 @@ button:not(:disabled):active {
   color: var(--text);
 }
 
-.file-tree-row.selected {
-  animation: file-tree-select 180ms cubic-bezier(.18, 1.25, .28, 1);
+.file-tree-row.open {
   background: var(--accent-soft);
   color: var(--accent);
 }
 
-.file-tree-row.selected .file-tree-icon {
+.file-tree-row.open .file-tree-icon {
   color: var(--accent);
+}
+
+.file-tree-row.selected {
+  animation: file-tree-select 180ms cubic-bezier(.18, 1.25, .28, 1);
+}
+
+.file-tree-row.multi-selected .file-tree-icon {
+  color: var(--accent);
+}
+
+.file-tree-row.multi-selected.file .file-tree-icon {
+  font-size: 15px;
+  line-height: 1;
+  transform: scale(1.25);
 }
 
 .file-tree-row--appearing {
@@ -1173,6 +1186,10 @@ button:not(:disabled):active {
   border-color: var(--border-soft);
   box-shadow: inset 0 2px 0 var(--accent);
   color: var(--text);
+}
+
+.main-area-top-actions .toolbar-btn.active {
+  box-shadow: none;
 }
 
 .toolbar-dropdown {

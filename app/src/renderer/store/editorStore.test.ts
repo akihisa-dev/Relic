@@ -181,6 +181,40 @@ describe("editorStore", () => {
     expect(state.rightPane.activeTabId).toBeNull();
   });
 
+  it("同じペイン内でタブを並べ替えられる", () => {
+    useEditorStore.getState().openFileInPane("left", sampleFile);
+    useEditorStore.getState().openFileInPane("left", sampleFile2);
+
+    const stateBeforeMove = useEditorStore.getState();
+    const [firstTabId, secondTabId] = stateBeforeMove.leftPane.tabIds;
+
+    useEditorStore.getState().moveTab("left", "left", secondTabId, firstTabId, "before");
+
+    const state = useEditorStore.getState();
+
+    expect(state.leftPane.tabIds).toEqual([secondTabId, firstTabId]);
+    expect(state.leftPane.activeTabId).toBe(secondTabId);
+  });
+
+  it("分割表示中にタブを左右ペイン間で移動できる", () => {
+    useEditorStore.getState().openFileInPane("left", sampleFile);
+    useEditorStore.getState().openFileInPane("left", sampleFile2);
+    useEditorStore.getState().toggleSplit();
+
+    const stateBeforeMove = useEditorStore.getState();
+    const movingTabId = stateBeforeMove.leftPane.tabIds[0];
+    const targetTabId = stateBeforeMove.rightPane.tabIds[0];
+
+    useEditorStore.getState().moveTab("left", "right", movingTabId, targetTabId, "after");
+
+    const state = useEditorStore.getState();
+
+    expect(state.leftPane.tabIds).not.toContain(movingTabId);
+    expect(state.rightPane.tabIds).toEqual([targetTabId, movingTabId]);
+    expect(state.rightPane.activeTabId).toBe(movingTabId);
+    expect(state.focusedPane).toBe("right");
+  });
+
   it("closeAllTabs で全タブが削除される", () => {
     useEditorStore.getState().openFileInPane("left", sampleFile);
     useEditorStore.getState().openFileInPane("left", sampleFile2);

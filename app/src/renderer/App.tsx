@@ -109,6 +109,10 @@ function markdownLinkForPath(path: string): string {
   return `[[${path.replace(/\.md$/i, "")}]]`;
 }
 
+function displayNameFromPath(path: string): string {
+  return path.split("/").at(-1)?.replace(/\.md$/i, "") ?? path;
+}
+
 function fixedMenuPosition(x: number, y: number, estimatedHeight = 240): { x: number; y: number } {
   const margin = 8;
   const estimatedWidth = 220;
@@ -423,6 +427,7 @@ export function App(): ReactElement {
     closeOtherTabs,
     closeTabsToRight,
     closeAllTabsInPane,
+    moveTab,
     openFileInPane,
     openPanelInPane,
     setEditorSettings,
@@ -774,6 +779,72 @@ export function App(): ReactElement {
     workspaceState
   });
 
+  const handleSidebarOpenFile = useCallback((path: string, event?: MouseEvent<HTMLButtonElement>): void => {
+    if (!event) {
+      handleOpenFile(path);
+      return;
+    }
+
+    const rowRect = event.currentTarget.getBoundingClientRect();
+    const editorState = useEditorStore.getState();
+    const targetPane = editorState.focusedPane;
+    const paneState = targetPane === "left" ? editorState.leftPane : editorState.rightPane;
+    const activeTabId = paneState.activeTabId;
+    const activeTab = activeTabId ? editorState.tabs[activeTabId] : null;
+
+    if (activeTabId && activeTab?.kind === "file" && activeTab.path === path) {
+      const tabElement = document.querySelector(`.pane-tab[data-tab-id="${activeTabId}"]`);
+      const tabRect = tabElement?.getBoundingClientRect();
+
+      setRailTabFlight({
+        direction: "close",
+        fromX: (tabRect?.left ?? rowRect.left + rowRect.width + 120) + (tabRect?.width ?? 96) / 2,
+        fromY: (tabRect?.top ?? rowRect.top) + (tabRect?.height ?? 30) / 2,
+        label: activeTab.name,
+        toX: rowRect.left + rowRect.width / 2,
+        toY: rowRect.top + rowRect.height / 2
+      });
+      window.setTimeout(() => {
+        const latestState = useEditorStore.getState();
+        const latestPane = targetPane === "left" ? latestState.leftPane : latestState.rightPane;
+        if (latestPane.tabIds.includes(activeTabId)) closeTab(targetPane, activeTabId);
+      }, 140);
+      window.setTimeout(() => setRailTabFlight(null), 360);
+      return;
+    }
+
+    const existingTab = Object.values(editorState.tabs).find((tab) => tab.kind === "file" && tab.path === path);
+    const tabBar = document.querySelector(`.pane${targetPane === "left" ? "" : ":last-child"} .pane-tab-bar`) ?? document.querySelector(".pane-tab-bar");
+    const tabBarRect = tabBar?.getBoundingClientRect();
+    const label = existingTab?.name ?? displayNameFromPath(path);
+
+    setRailTabFlight({
+      direction: "open",
+      fromX: rowRect.left + rowRect.width / 2,
+      fromY: rowRect.top + rowRect.height / 2,
+      label,
+      toX: (tabBarRect?.left ?? rowRect.left + rowRect.width + 120) + 48,
+      toY: (tabBarRect?.top ?? rowRect.top) + 15
+    });
+    window.setTimeout(() => setRailTabFlight(null), 360);
+
+    if (existingTab?.kind === "file") {
+      openFileInPane(targetPane, { content: existingTab.content, name: existingTab.name, path: existingTab.path });
+      return;
+    }
+
+    if (!window.relic) return;
+
+    setWorkspaceError(null);
+    void window.relic.readMarkdownFile({ path }).then((result) => {
+      if (result.ok) {
+        openFileInPane(targetPane, result.value);
+      } else {
+        setWorkspaceError(result.error.message);
+      }
+    });
+  }, [closeTab, handleOpenFile, openFileInPane, setWorkspaceError]);
+
   useAppTheme(editorSettings.theme);
 
   useAppKeyboardShortcuts({
@@ -952,6 +1023,14 @@ export function App(): ReactElement {
   const pinnedPathSet = useMemo(
     () => new Set(workspaceState?.pinnedPaths ?? []),
     [workspaceState?.pinnedPaths]
+  );
+  const openFilePathSet = useMemo(
+    () => new Set(
+      Object.values(tabs)
+        .filter((tab) => tab.kind === "file")
+        .map((tab) => tab.path)
+    ),
+    [tabs]
   );
 
   // ──────────────────
@@ -1304,13 +1383,14 @@ export function App(): ReactElement {
                 onMoveFile={handleMoveFile}
                 onMoveFolder={handleMoveFolder}
                 onMoveItems={handleMoveTreeItems}
-                onOpenFile={handleOpenFile}
+                onOpenFile={handleSidebarOpenFile}
                 onOpenInOtherPane={isSplit ? openTreeFileInOtherPane : undefined}
                 onOpenWorkspace={handleOpenWorkspace}
                 onRevealItem={handleRevealWorkspaceItem}
                 onRenameItem={handleRenameTreeItem}
                 onSelectFolder={handleSelectFolder}
                 onTogglePin={handleTogglePin}
+                openFilePaths={openFilePathSet}
                 onTemplatePathChange={setSelectedTemplatePath}
                 selectedTemplatePath={selectedTemplatePath}
                 templates={markdownTemplates}
@@ -1326,7 +1406,7 @@ export function App(): ReactElement {
                 mode={searchMode}
                 onFrontmatterFieldChange={setSearchFrontmatterField}
                 onModeChange={setSearchMode}
-                onOpenFile={handleOpenFile}
+                onOpenFile={handleSidebarOpenFile}
                 onQueryChange={setSearchQuery}
                 onTagSelect={(tag) => {
                   setSearchMode("tag");
@@ -1412,6 +1492,7 @@ export function App(): ReactElement {
                   onOpenWikiLink={handleOpenWikiLink}
                   onScrollTargetHandled={() => setLeftPaneScrollHeading(undefined)}
                   onTabClose={(tabId) => closeTabWithMotion("left", tabId)}
+                  onTabMove={moveTab}
                   onTabSelect={(tabId) => setTabActive("left", tabId)}
                   onCloseOtherTabs={(tabId) => closeOtherTabsWithMotion("left", tabId)}
                   onCloseTabsToRight={(tabId) => closeTabsToRightWithMotion("left", tabId)}
@@ -1444,6 +1525,7 @@ export function App(): ReactElement {
                     onOpenWikiLink={handleOpenWikiLink}
                     onScrollTargetHandled={() => setRightPaneScrollHeading(undefined)}
                     onTabClose={(tabId) => closeTabWithMotion("right", tabId)}
+                    onTabMove={moveTab}
                     onTabSelect={(tabId) => setTabActive("right", tabId)}
                     onCloseOtherTabs={(tabId) => closeOtherTabsWithMotion("right", tabId)}
                     onCloseTabsToRight={(tabId) => closeTabsToRightWithMotion("right", tabId)}

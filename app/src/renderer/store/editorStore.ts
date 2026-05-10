@@ -40,6 +40,7 @@ interface EditorStore {
   closeOtherTabs: (pane: PaneId, tabId: string) => void;
   closeTabsToRight: (pane: PaneId, tabId: string) => void;
   closeAllTabsInPane: (pane: PaneId) => void;
+  moveTab: (fromPane: PaneId, toPane: PaneId, tabId: string, targetTabId?: string | null, position?: "before" | "after") => void;
   openFileInPane: (pane: PaneId, file: MarkdownFileContent) => void;
   openPanelInPane: (pane: PaneId, panel: PanelTabKind, name: string) => void;
   setEditorSettings: (settings: EditorSettings) => void;
@@ -276,6 +277,67 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
       return {
         tabs: nextTabs,
         [paneKey]: emptyPane()
+      };
+    });
+  },
+
+  moveTab: (fromPane, toPane, tabId, targetTabId = null, position = "after") => {
+    set((state) => {
+      if (!state.tabs[tabId]) return state;
+
+      const fromKey = fromPane === "left" ? "leftPane" : "rightPane";
+      const toKey = toPane === "left" ? "leftPane" : "rightPane";
+      const fromState = state[fromKey];
+      const toState = state[toKey];
+
+      if (!fromState.tabIds.includes(tabId) && !toState.tabIds.includes(tabId)) return state;
+
+      const nextFromIds = fromState.tabIds.filter((id) => id !== tabId);
+      const baseToIds = fromPane === toPane
+        ? nextFromIds
+        : toState.tabIds.filter((id) => id !== tabId);
+      const targetIndex = targetTabId ? baseToIds.indexOf(targetTabId) : -1;
+      const insertIndex = targetIndex === -1
+        ? baseToIds.length
+        : position === "before"
+          ? targetIndex
+          : targetIndex + 1;
+      const nextToIds = [
+        ...baseToIds.slice(0, insertIndex),
+        tabId,
+        ...baseToIds.slice(insertIndex)
+      ];
+
+      const nextFromHistory = fromState.history.filter((id) => id !== tabId);
+      const nextFromActive = fromState.activeTabId === tabId
+        ? nextFromHistory.at(-1) ?? nextFromIds.at(-1) ?? null
+        : fromState.activeTabId;
+      const nextToHistory = [...toState.history.filter((id) => id !== tabId), tabId]
+        .filter((id) => nextToIds.includes(id));
+
+      if (fromPane === toPane) {
+        return {
+          focusedPane: toPane,
+          [toKey]: {
+            activeTabId: tabId,
+            history: [...fromState.history.filter((id) => id !== tabId), tabId],
+            tabIds: nextToIds
+          }
+        };
+      }
+
+      return {
+        focusedPane: toPane,
+        [fromKey]: {
+          activeTabId: nextFromActive,
+          history: nextFromHistory,
+          tabIds: nextFromIds
+        },
+        [toKey]: {
+          activeTabId: tabId,
+          history: nextToHistory,
+          tabIds: nextToIds
+        }
       };
     });
   },
