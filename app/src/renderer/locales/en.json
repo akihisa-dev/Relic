@@ -46,6 +46,7 @@
   "files.rename": "Rename",
   "files.revealInFinder": "Show in Finder",
   "files.removeWorkspace": "Remove {{name}} from list",
+  "files.selectedCount": "{{count}} selected",
   "files.systemFolders": "System folders",
   "files.template": "Template",
   "files.unpin": "Unpin",

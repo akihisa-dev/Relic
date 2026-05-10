@@ -302,12 +302,23 @@ button:not(:disabled):active {
 }
 
 .pane-heading {
+  align-items: center;
   color: var(--text-2);
+  display: flex;
   font-size: 12px;
   font-weight: 700;
+  gap: 8px;
   letter-spacing: 0.02em;
   padding: 10px 0;
   text-transform: uppercase;
+}
+
+.pane-heading-count {
+  color: var(--text-3);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
 }
 
 .sidebar-section {
@@ -530,10 +541,9 @@ button:not(:disabled):active {
   color: var(--accent);
 }
 
-.file-tree-row.multi-selected.file .file-tree-icon {
-  font-size: 15px;
-  line-height: 1;
-  transform: scale(1.25);
+.file-tree-row.multi-selected {
+  outline: 1px dotted var(--accent-ring);
+  outline-offset: -3px;
 }
 
 .file-tree-row--appearing {
@@ -1409,6 +1419,17 @@ button:not(:disabled):active {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.pane-tab-icon {
+  align-items: center;
+  display: inline-flex;
+  flex: 0 0 auto;
+}
+
+.pane-tab-icon > svg {
+  height: 14px;
+  width: 14px;
 }
 
 .pane-tab-close {
