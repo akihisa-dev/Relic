@@ -2,13 +2,24 @@ import { create } from "zustand";
 
 import { defaultEditorSettings, type EditorSettings, type MarkdownFileContent } from "../../shared/ipc";
 
-export interface Tab {
+export type PanelTabKind = "git" | "tools" | "frontmatter" | "settings";
+
+export interface FileTab {
   content: string;
   id: string;
+  kind: "file";
   name: string;
   path: string;
 }
 
+export interface PanelTab {
+  id: string;
+  kind: "panel";
+  name: string;
+  panel: PanelTabKind;
+}
+
+export type Tab = FileTab | PanelTab;
 export type PaneId = "left" | "right";
 
 export interface PaneState {
@@ -30,12 +41,13 @@ interface EditorStore {
   closeTabsToRight: (pane: PaneId, tabId: string) => void;
   closeAllTabsInPane: (pane: PaneId) => void;
   openFileInPane: (pane: PaneId, file: MarkdownFileContent) => void;
+  openPanelInPane: (pane: PaneId, panel: PanelTabKind, name: string) => void;
   setEditorSettings: (settings: EditorSettings) => void;
   setFocusedPane: (pane: PaneId) => void;
   setTabActive: (pane: PaneId, tabId: string) => void;
   toggleSplit: () => void;
   updateTabContent: (tabId: string, content: string) => void;
-  updateTabMeta: (tabId: string, meta: Pick<Tab, "name" | "path">) => void;
+  updateTabMeta: (tabId: string, meta: Pick<FileTab, "name" | "path">) => void;
   closeAllTabs: () => void;
 }
 
@@ -53,7 +65,7 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
     const { tabs } = get();
 
     // すでに同じパスのタブが開いている場合はそちらをアクティブにする
-    const existing = Object.values(tabs).find((t) => t.path === file.path);
+    const existing = Object.values(tabs).find((t) => t.kind === "file" && t.path === file.path);
 
     set((state) => {
       const paneKey = pane === "left" ? "leftPane" : "rightPane";
@@ -67,7 +79,7 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
       }
 
       const id = `tab-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-      const newTab: Tab = { content: file.content, id, name: file.name, path: file.path };
+      const newTab: FileTab = { content: file.content, id, kind: "file", name: file.name, path: file.path };
 
       return {
         focusedPane: pane,
@@ -77,6 +89,25 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
           history: [...paneState.history, id],
           tabIds: [...paneState.tabIds, id]
         }
+      };
+    });
+  },
+
+  openPanelInPane: (pane, panel, name) => {
+    const id = `panel-${panel}`;
+
+    set((state) => {
+      const paneKey = pane === "left" ? "leftPane" : "rightPane";
+      const paneState = state[paneKey];
+      const existing = state.tabs[id];
+      const nextTabs = existing
+        ? state.tabs
+        : { ...state.tabs, [id]: { id, kind: "panel" as const, name, panel } };
+
+      return {
+        focusedPane: pane,
+        tabs: nextTabs,
+        [paneKey]: activateTab(ensureTabInPane(paneState, id), id)
       };
     });
   },
@@ -126,7 +157,7 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
 
   updateTabContent: (tabId, content) => {
     set((state) => {
-      if (!state.tabs[tabId]) return state;
+      if (state.tabs[tabId]?.kind !== "file") return state;
 
       return { tabs: { ...state.tabs, [tabId]: { ...state.tabs[tabId], content } } };
     });
@@ -134,7 +165,7 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
 
   updateTabMeta: (tabId, meta) => {
     set((state) => {
-      if (!state.tabs[tabId]) return state;
+      if (state.tabs[tabId]?.kind !== "file") return state;
 
       return { tabs: { ...state.tabs, [tabId]: { ...state.tabs[tabId], ...meta } } };
     });

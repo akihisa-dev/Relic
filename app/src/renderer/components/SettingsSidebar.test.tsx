@@ -2,15 +2,11 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import {
-  defaultAutoSyncSettings,
-  defaultEditorSettings,
-  defaultFeatureToggles,
-  defaultGitHubIntegrationSettings,
   type FrontmatterTemplate,
   type UserDefinedField
 } from "../../shared/ipc";
 import { I18nProvider } from "../i18n";
-import { SettingsSidebar } from "./SettingsSidebar";
+import { FrontmatterSidebar } from "./FrontmatterSidebar";
 
 function renderSettings({
   frontmatterTemplates = [],
@@ -25,26 +21,17 @@ function renderSettings({
 }) {
   render(
     <I18nProvider language="en">
-      <SettingsSidebar
-        appInfo={null}
-        autoSyncSettings={defaultAutoSyncSettings}
-        featureToggles={defaultFeatureToggles}
+      <FrontmatterSidebar
         frontmatterTemplates={frontmatterTemplates}
-        gitHubIntegrationSettings={defaultGitHubIntegrationSettings}
-        onAutoSyncSave={vi.fn()}
-        onFeatureTogglesSave={vi.fn()}
         onFrontmatterTemplatesSave={onFrontmatterTemplatesSave}
-        onGitHubIntegrationSave={vi.fn()}
-        onSave={vi.fn()}
         onUserDefinedFieldsSave={onUserDefinedFieldsSave}
-        settings={defaultEditorSettings}
         userDefinedFields={userDefinedFields}
       />
     </I18nProvider>
   );
 }
 
-describe("SettingsSidebar", () => {
+describe("FrontmatterSidebar", () => {
   it("既存フロントマターテンプレートのフィールド構成を編集できる", () => {
     const onFrontmatterTemplatesSave = vi.fn();
 

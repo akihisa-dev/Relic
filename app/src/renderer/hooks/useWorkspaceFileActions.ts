@@ -2,7 +2,7 @@ import { useCallback, useState } from "react";
 
 import type { MarkdownFileContent, WorkspaceState, WorkspaceTreeNode } from "../../shared/ipc";
 import { resolveMarkdownLinkPath, resolveWikiLinkPath } from "../../shared/links";
-import type { PaneId, PaneState, Tab } from "../store/editorStore";
+import type { FileTab, PaneId, PaneState, Tab } from "../store/editorStore";
 import { displayNameFromPath, joinWorkspacePath, parentFolderOf } from "../workspacePaths";
 
 interface UseWorkspaceFileActionsInput {
@@ -18,7 +18,7 @@ interface UseWorkspaceFileActionsInput {
   setWorkspaceError: (message: string | null) => void;
   setWorkspaceState: (state: WorkspaceState) => void;
   tabs: Record<string, Tab>;
-  updateTabMeta: (tabId: string, meta: Pick<Tab, "name" | "path">) => void;
+  updateTabMeta: (tabId: string, meta: Pick<FileTab, "name" | "path">) => void;
   workspaceState: WorkspaceState | null;
 }
 
@@ -233,7 +233,7 @@ export function useWorkspaceFileActions({
       const activeTabId = paneState.activeTabId;
       const activeTab = activeTabId ? tabs[activeTabId] : null;
 
-      if (activeTabId && activeTab?.path === path) {
+      if (activeTabId && activeTab?.kind === "file" && activeTab.path === path) {
         closeTab(focusedPane, activeTabId);
         return;
       }
@@ -254,7 +254,7 @@ export function useWorkspaceFileActions({
       const paneState = focusedPane === "left" ? leftPane : rightPane;
       const activeTab = paneState.activeTabId ? tabs[paneState.activeTabId] : null;
 
-      if (!activeTab || !window.relic) return;
+      if (!activeTab || activeTab.kind !== "file" || !window.relic) return;
 
       const path = resolveWikiLinkPath(target, activeTab.path);
       const setScrollHeading = focusedPane === "left" ? setLeftPaneScrollHeading : setRightPaneScrollHeading;
@@ -294,7 +294,7 @@ export function useWorkspaceFileActions({
       const paneState = focusedPane === "left" ? leftPane : rightPane;
       const activeTab = paneState.activeTabId ? tabs[paneState.activeTabId] : null;
 
-      if (!activeTab || !window.relic) return;
+      if (!activeTab || activeTab.kind !== "file" || !window.relic) return;
 
       const resolved = resolveMarkdownLinkPath(href, activeTab.path);
       if (!resolved) return;
@@ -391,7 +391,7 @@ export function useWorkspaceFileActions({
 
     void window.relic.moveMarkdownFile({ destinationFolder: destFolder, path }).then((result) => {
       if (result.ok) {
-        const oldTab = Object.entries(tabs).find(([, tab]) => tab.path === path);
+        const oldTab = Object.entries(tabs).find(([, tab]) => tab.kind === "file" && tab.path === path);
 
         if (oldTab) updateTabMeta(oldTab[0], { name: result.value.file.name, path: result.value.file.path });
         setWorkspaceState(result.value.workspaceState);
@@ -409,8 +409,9 @@ export function useWorkspaceFileActions({
         const nextFolderPath = joinWorkspacePath(destFolder, displayNameFromPath(path));
 
         Object.entries(tabs)
-          .filter(([, tab]) => tab.path.startsWith(`${path}/`))
+          .filter(([, tab]) => tab.kind === "file" && tab.path.startsWith(`${path}/`))
           .forEach(([tabId, tab]) => {
+            if (tab.kind !== "file") return;
             const nextPath = `${nextFolderPath}/${tab.path.slice(path.length + 1)}`;
             updateTabMeta(tabId, { name: displayNameFromPath(nextPath), path: nextPath });
           });
@@ -442,7 +443,7 @@ export function useWorkspaceFileActions({
               return;
             }
 
-            const oldTab = Object.entries(tabs).find(([, tab]) => tab.path === item.path);
+            const oldTab = Object.entries(tabs).find(([, tab]) => tab.kind === "file" && tab.path === item.path);
 
             if (oldTab) updateTabMeta(oldTab[0], { name: result.value.file.name, path: result.value.file.path });
             setWorkspaceState(result.value.workspaceState);
@@ -458,8 +459,9 @@ export function useWorkspaceFileActions({
           const nextFolderPath = joinWorkspacePath(destFolder, displayNameFromPath(item.path));
 
           Object.entries(tabs)
-            .filter(([, tab]) => tab.path.startsWith(`${item.path}/`))
+            .filter(([, tab]) => tab.kind === "file" && tab.path.startsWith(`${item.path}/`))
             .forEach(([tabId, tab]) => {
+              if (tab.kind !== "file") return;
               const nextPath = `${nextFolderPath}/${tab.path.slice(item.path.length + 1)}`;
               updateTabMeta(tabId, { name: displayNameFromPath(nextPath), path: nextPath });
             });
@@ -479,7 +481,7 @@ export function useWorkspaceFileActions({
 
       const tab = tabs[tabId];
 
-      if (!tab) return;
+      if (!tab || tab.kind !== "file") return;
 
       void window.relic
         .moveMarkdownFile({ destinationFolder, path: tab.path })
@@ -504,7 +506,7 @@ export function useWorkspaceFileActions({
 
       const tab = tabs[tabId];
 
-      if (!tab) return;
+      if (!tab || tab.kind !== "file") return;
 
       void window.relic
         .renameMarkdownFile({ newName, path: tab.path })
@@ -528,7 +530,7 @@ export function useWorkspaceFileActions({
         void window.relic.renameMarkdownFile({ newName, path }).then((result) => {
           if (result.ok) {
             Object.entries(tabs)
-              .filter(([, tab]) => tab.path === path)
+              .filter(([, tab]) => tab.kind === "file" && tab.path === path)
               .forEach(([tabId]) => {
                 updateTabMeta(tabId, { name: result.value.file.name, path: result.value.file.path });
               });
@@ -545,8 +547,9 @@ export function useWorkspaceFileActions({
           const nextFolderPath = joinWorkspacePath(parentFolderOf(path), newName);
 
           Object.entries(tabs)
-            .filter(([, tab]) => tab.path.startsWith(`${path}/`))
+            .filter(([, tab]) => tab.kind === "file" && tab.path.startsWith(`${path}/`))
             .forEach(([tabId, tab]) => {
+              if (tab.kind !== "file") return;
               const nextPath = `${nextFolderPath}/${tab.path.slice(path.length + 1)}`;
               updateTabMeta(tabId, { name: displayNameFromPath(nextPath), path: nextPath });
             });
@@ -564,7 +567,7 @@ export function useWorkspaceFileActions({
     const tabId = paneState.activeTabId;
     if (!tabId || !window.relic) return;
     const tab = tabs[tabId];
-    if (!tab) return;
+    if (!tab || tab.kind !== "file") return;
     void window.relic.duplicateMarkdownFile({ path: tab.path }).then((result) => {
       if (result.ok) {
         setWorkspaceState(result.value.workspaceState);
@@ -596,7 +599,7 @@ export function useWorkspaceFileActions({
     const tabId = paneState.activeTabId;
     if (!tabId || !window.relic) return;
     const tab = tabs[tabId];
-    if (!tab) return;
+    if (!tab || tab.kind !== "file") return;
     if (!window.confirm(`「${tab.name}」をゴミ箱に移動しますか？`)) return;
     void window.relic.moveItemToTrash({ path: tab.path, type: "file" }).then((result) => {
       if (result.ok) {
@@ -626,11 +629,11 @@ export function useWorkspaceFileActions({
 
           leftPane.tabIds.forEach((tabId) => {
             const tab = tabs[tabId];
-            if (tab && matchesPath(tab.path)) closeTab("left", tabId);
+            if (tab?.kind === "file" && matchesPath(tab.path)) closeTab("left", tabId);
           });
           rightPane.tabIds.forEach((tabId) => {
             const tab = tabs[tabId];
-            if (tab && matchesPath(tab.path)) closeTab("right", tabId);
+            if (tab?.kind === "file" && matchesPath(tab.path)) closeTab("right", tabId);
           });
           setWorkspaceState(result.value);
         } else {
@@ -670,11 +673,11 @@ export function useWorkspaceFileActions({
 
         leftPane.tabIds.forEach((tabId) => {
           const tab = tabs[tabId];
-          if (tab && matchesDeletedPath(tab.path)) closeTab("left", tabId);
+          if (tab?.kind === "file" && matchesDeletedPath(tab.path)) closeTab("left", tabId);
         });
         rightPane.tabIds.forEach((tabId) => {
           const tab = tabs[tabId];
-          if (tab && matchesDeletedPath(tab.path)) closeTab("right", tabId);
+          if (tab?.kind === "file" && matchesDeletedPath(tab.path)) closeTab("right", tabId);
         });
 
         if (nextWorkspaceState) setWorkspaceState(nextWorkspaceState);
