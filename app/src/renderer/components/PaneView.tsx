@@ -2,7 +2,7 @@ import { EditorView } from "@codemirror/view";
 import { useEffect, useState } from "react";
 import type { MutableRefObject, ReactElement } from "react";
 
-import type { EditorSettings } from "../../shared/ipc";
+import type { EditorSettings, UserDefinedField } from "../../shared/ipc";
 import { useT } from "../i18n";
 import { useEditorStore, type PaneId } from "../store/editorStore";
 import { useAutoSave } from "../hooks/useAutoSave";
@@ -12,9 +12,11 @@ export interface PaneViewProps {
   allFilePaths: string[];
   editorSettings: EditorSettings;
   focusedPane: PaneId;
+  frontmatterCandidates: Record<string, string[]>;
   pane: PaneId;
   scrollTargetHeading?: string;
   typewriterMode: boolean;
+  userDefinedFields: UserDefinedField[];
   workspacePath?: string | null;
   viewRef: MutableRefObject<EditorView | null>;
   onCreateFile: (name: string) => void;
@@ -33,9 +35,11 @@ export function PaneView({
   allFilePaths,
   editorSettings,
   focusedPane,
+  frontmatterCandidates,
   pane,
   scrollTargetHeading,
   typewriterMode,
+  userDefinedFields,
   workspacePath,
   viewRef,
   onCreateFile,
@@ -183,10 +187,12 @@ export function PaneView({
             <Editor
               allFilePaths={allFilePaths}
               content={activeTab.content}
+              frontmatterCandidates={frontmatterCandidates}
               key={activeTab.id}
               onChange={(content) => updateTabContent(activeTab.id, content)}
               settings={editorSettings}
               typewriterMode={typewriterMode}
+              userDefinedFields={userDefinedFields}
               viewRef={viewRef}
             />
           </div>

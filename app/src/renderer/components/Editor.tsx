@@ -1,21 +1,24 @@
 import { autocompletion, type CompletionContext, type CompletionResult } from "@codemirror/autocomplete";
 import { defaultKeymap, historyKeymap, history } from "@codemirror/commands";
 import { markdown } from "@codemirror/lang-markdown";
-import { EditorState, StateField } from "@codemirror/state";
+import { EditorState, StateField, type Text } from "@codemirror/state";
 import { Decoration, EditorView, ViewPlugin, WidgetType, keymap, lineNumbers } from "@codemirror/view";
 import type { DecorationSet, ViewUpdate } from "@codemirror/view";
 import { GFM } from "@lezer/markdown";
+import * as yaml from "js-yaml";
 import { useEffect, useRef } from "react";
 import type { ReactElement } from "react";
 
-import type { EditorSettings } from "../../shared/ipc";
+import type { EditorSettings, UserDefinedField } from "../../shared/ipc";
 
 interface EditorProps {
   allFilePaths?: string[];
   content: string;
+  frontmatterCandidates?: Record<string, string[]>;
   onChange: (content: string) => void;
   settings: EditorSettings;
   typewriterMode?: boolean;
+  userDefinedFields?: UserDefinedField[];
   viewRef?: React.MutableRefObject<EditorView | null>;
 }
 
@@ -38,6 +41,15 @@ interface InlineMatch {
   className: string;
   hideRanges: Array<{ from: number; to: number }>;
 }
+
+interface FrontmatterBlock {
+  bodyFrom: number;
+  data: Record<string, unknown>;
+  from: number;
+  to: number;
+}
+
+const frontmatterFieldNamePattern = /^[^\s:][^\r\n:]*$/;
 
 function splitTableRow(line: string): string[] {
   const trimmed = line.trim().replace(/^\|/, "").replace(/\|$/, "");
@@ -209,10 +221,16 @@ class TableWidget extends WidgetType {
     };
 
     const clearIfFocusOutside = (relatedTarget: EventTarget | null = null) => {
+      const relatedNode = relatedTarget instanceof Node ? relatedTarget : null;
+
+      if (relatedNode && wrapper.contains(relatedNode)) return;
+      if (relatedNode && !wrapper.contains(relatedNode)) {
+        clearActive();
+        return;
+      }
+
       requestAnimationFrame(() => {
-        const relatedNode = relatedTarget instanceof Node ? relatedTarget : null;
         const activeElement = document.activeElement;
-        if (relatedNode && wrapper.contains(relatedNode)) return;
         if (activeElement && activeElement !== document.body && wrapper.contains(activeElement)) return;
         clearActive();
       });
@@ -461,8 +479,8 @@ class TableWidget extends WidgetType {
     wrapper.append(this.edgeAddButton("column-after", () => activeCol + 1, () => activeRow));
     wrapper.append(this.edgeAddButton("row-before", () => Math.max(1, activeRow), () => activeCol));
     wrapper.append(this.edgeAddButton("row-after", () => activeRow + 1, () => activeCol));
-    wrapper.addEventListener("focusout", () => {
-      clearIfFocusOutside();
+    wrapper.addEventListener("focusout", (event) => {
+      clearIfFocusOutside((event as FocusEvent).relatedTarget);
     });
     wrapper.addEventListener("mouseleave", () => {
       if (!wrapper.dataset.dragAxis) clearAffordance();
@@ -787,6 +805,264 @@ class HorizontalRuleWidget extends WidgetType {
   }
 }
 
+class FrontmatterPropertiesWidget extends WidgetType {
+  constructor(
+    private readonly block: FrontmatterBlock,
+    private readonly userDefinedFields: UserDefinedField[],
+    private readonly candidates: Record<string, string[]>
+  ) {
+    super();
+  }
+
+  eq(other: FrontmatterPropertiesWidget): boolean {
+    return this.block.from === other.block.from &&
+      this.block.to === other.block.to &&
+      JSON.stringify(this.block.data) === JSON.stringify(other.block.data);
+  }
+
+  toDOM(view: EditorView): HTMLElement {
+    const wrapper = document.createElement("section");
+    wrapper.className = "cm-frontmatter-properties";
+    const header = document.createElement("button");
+    header.className = "cm-frontmatter-header";
+    header.type = "button";
+
+    const icon = document.createElement("span");
+    icon.className = "cm-frontmatter-toggle";
+    icon.textContent = "⌄";
+    const title = document.createElement("span");
+    title.textContent = "プロパティ";
+    const count = document.createElement("span");
+    count.className = "cm-frontmatter-count";
+    count.textContent = String(Object.keys(this.block.data).length);
+    header.append(icon, title, count);
+
+    const body = document.createElement("div");
+    body.className = "cm-frontmatter-body";
+
+    header.addEventListener("click", () => {
+      const collapsed = wrapper.dataset.collapsed === "true";
+      wrapper.dataset.collapsed = collapsed ? "false" : "true";
+      icon.textContent = collapsed ? "⌄" : "›";
+    });
+
+    for (const [key, value] of Object.entries(this.block.data)) {
+      body.append(this.renderRow(view, key, value));
+    }
+
+    body.append(this.renderAddRow(view));
+    wrapper.append(header, body);
+    return wrapper;
+  }
+
+  ignoreEvent(): boolean {
+    return false;
+  }
+
+  private renderRow(view: EditorView, key: string, value: unknown): HTMLElement {
+    const row = document.createElement("div");
+    row.className = "cm-frontmatter-row";
+
+    const drag = document.createElement("span");
+    drag.className = "cm-frontmatter-row-icon";
+    drag.textContent = "☰";
+
+    const label = document.createElement("span");
+    label.className = "cm-frontmatter-key";
+    label.textContent = key;
+
+    const field = this.fieldFor(key);
+    const input = field?.type === "boolean"
+      ? this.booleanInput(view, key, value)
+      : field?.type === "multi-select" || field?.type === "tags" || Array.isArray(value)
+        ? this.arrayInput(view, key, Array.isArray(value) ? value : [], field)
+        : this.scalarInput(view, key, value, field);
+    const removeButton = document.createElement("button");
+    removeButton.className = "cm-frontmatter-remove";
+    removeButton.title = "プロパティを削除";
+    removeButton.type = "button";
+    removeButton.textContent = "×";
+    removeButton.addEventListener("click", () => this.updateField(view, key, undefined));
+
+    row.append(drag, label, input, removeButton);
+    return row;
+  }
+
+  private renderAddRow(view: EditorView): HTMLElement {
+    const row = document.createElement("div");
+    row.className = "cm-frontmatter-add-row";
+
+    const plus = document.createElement("span");
+    plus.className = "cm-frontmatter-row-icon";
+    plus.textContent = "+";
+
+    const input = document.createElement("input");
+    input.className = "cm-frontmatter-add-input";
+    input.placeholder = "プロパティを追加";
+    const addOptions = this.userDefinedFields
+      .map((field) => field.name)
+      .filter((name) => !Object.prototype.hasOwnProperty.call(this.block.data, name));
+    const datalist = this.createDatalist(input, "fields", addOptions);
+
+    const addField = () => {
+      const name = input.value.trim();
+      if (!frontmatterFieldNamePattern.test(name) || Object.prototype.hasOwnProperty.call(this.block.data, name)) return;
+      this.writeData(view, { ...this.block.data, [name]: "" });
+    };
+
+    input.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter") return;
+      event.preventDefault();
+      addField();
+    });
+    input.addEventListener("blur", addField);
+
+    row.append(plus, input);
+    if (datalist) row.append(datalist);
+    return row;
+  }
+
+  private scalarInput(view: EditorView, key: string, value: unknown, field?: UserDefinedField): HTMLElement {
+    const wrap = document.createElement("span");
+    wrap.className = "cm-frontmatter-input-wrap";
+    const input = document.createElement("input");
+    input.className = "cm-frontmatter-input";
+    input.type = field?.type === "date"
+      ? "date"
+      : field?.type === "number"
+        ? "number"
+        : field?.type === "url"
+          ? "url"
+          : "text";
+    input.value = value instanceof Date ? value.toISOString().slice(0, 10) : value === null || value === undefined ? "" : String(value);
+    const datalist = this.createDatalist(input, key, this.choicesFor(key, field));
+
+    input.addEventListener("change", () => {
+      this.updateField(view, key, this.parseScalarValue(input.value, field));
+    });
+
+    wrap.append(input);
+    if (datalist) wrap.append(datalist);
+    return wrap;
+  }
+
+  private booleanInput(view: EditorView, key: string, value: unknown): HTMLElement {
+    const label = document.createElement("label");
+    label.className = "cm-frontmatter-boolean";
+    const input = document.createElement("input");
+    input.className = "cm-frontmatter-checkbox";
+    input.checked = value === true || String(value).toLowerCase() === "true";
+    input.type = "checkbox";
+    const text = document.createElement("span");
+    text.textContent = input.checked ? "true" : "false";
+
+    input.addEventListener("change", () => {
+      text.textContent = input.checked ? "true" : "false";
+      this.updateField(view, key, input.checked);
+    });
+
+    label.append(input, text);
+    return label;
+  }
+
+  private arrayInput(view: EditorView, key: string, value: unknown[], field?: UserDefinedField): HTMLElement {
+    const wrap = document.createElement("div");
+    wrap.className = "cm-frontmatter-pills";
+
+    for (const item of value) {
+      const pill = document.createElement("span");
+      pill.className = "cm-frontmatter-pill";
+      pill.textContent = String(item);
+      wrap.append(pill);
+    }
+
+    const input = document.createElement("input");
+    input.className = "cm-frontmatter-pill-input";
+    input.placeholder = "+";
+    const datalist = this.createDatalist(input, key, this.choicesFor(key, field));
+    input.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter") return;
+      event.preventDefault();
+      const nextValue = input.value.trim();
+      if (!nextValue) return;
+      this.updateField(view, key, [...value.map(String), nextValue]);
+    });
+    wrap.append(input);
+    if (datalist) wrap.append(datalist);
+
+    return wrap;
+  }
+
+  private updateField(view: EditorView, key: string, value: unknown): void {
+    const nextData = { ...this.block.data };
+
+    if (value === undefined || value === "" || (Array.isArray(value) && value.length === 0)) {
+      delete nextData[key];
+    } else {
+      nextData[key] = value;
+    }
+
+    this.writeData(view, nextData);
+  }
+
+  private writeData(view: EditorView, nextData: Record<string, unknown>): void {
+    const nextYaml = this.serializeData(nextData).trimEnd();
+    const nextBlock = Object.keys(nextData).length > 0 ? `---\n${nextYaml}\n---` : "";
+    view.dispatch({
+      changes: {
+        from: this.block.from,
+        insert: nextBlock,
+        to: this.block.to
+      }
+    });
+  }
+
+  private serializeData(data: Record<string, unknown>): string {
+    return Object.entries(data)
+      .map(([key, value]) => {
+        const field = this.fieldFor(key);
+        if (value === "") return `${key}:`;
+        if (field?.type === "date" && typeof value === "string") return `${key}: ${value}`;
+        return yaml.dump({ [key]: value }, { lineWidth: -1 }).trimEnd();
+      })
+      .join("\n");
+  }
+
+  private fieldFor(key: string): UserDefinedField | undefined {
+    return this.userDefinedFields.find((field) => field.name === key);
+  }
+
+  private choicesFor(key: string, field?: UserDefinedField): string[] {
+    return Array.from(new Set([...(field?.choices ?? []), ...(this.candidates[key] ?? [])])).sort((a, b) => a.localeCompare(b));
+  }
+
+  private createDatalist(input: HTMLInputElement, key: string, values: string[]): HTMLDataListElement | null {
+    if (values.length === 0) return null;
+
+    const datalist = document.createElement("datalist");
+    const safeKey = key.replace(/[^a-zA-Z0-9_-]/g, "-");
+    datalist.id = `cm-frontmatter-${safeKey}-${Math.random().toString(36).slice(2)}`;
+
+    for (const value of values) {
+      const option = document.createElement("option");
+      option.value = value;
+      datalist.append(option);
+    }
+
+    input.setAttribute("list", datalist.id);
+    return datalist;
+  }
+
+  private parseScalarValue(value: string, field?: UserDefinedField): unknown {
+    if (value === "") return undefined;
+    if (field?.type === "number") {
+      const numericValue = Number(value);
+      return Number.isNaN(numericValue) ? value : numericValue;
+    }
+    return value;
+  }
+}
+
 function overlaps(from: number, to: number, ranges: Array<{ from: number; to: number }>): boolean {
   return ranges.some((range) => from < range.to && to > range.from);
 }
@@ -808,6 +1084,59 @@ function collectRegexMatches(
   return matches;
 }
 
+function findFrontmatterLineRange(doc: Text): { end: number; start: number } | null {
+  if (doc.lines < 2 || doc.line(1).text.trim() !== "---") return null;
+
+  for (let lineNumber = 2; lineNumber <= doc.lines; lineNumber += 1) {
+    if (doc.line(lineNumber).text.trim() === "---") {
+      return { end: lineNumber, start: 1 };
+    }
+  }
+
+  return null;
+}
+
+function findFrontmatterBlock(state: EditorState): FrontmatterBlock | null {
+  const range = findFrontmatterLineRange(state.doc);
+  if (!range) return null;
+
+  const openLine = state.doc.line(range.start);
+  const closeLine = state.doc.line(range.end);
+  const yamlText = state.doc.sliceString(openLine.to + 1, closeLine.from);
+
+  try {
+    const parsed = yaml.load(yamlText);
+
+    if (parsed === null || parsed === undefined) return { bodyFrom: closeLine.to + 1, data: {}, from: openLine.from, to: closeLine.to };
+    if (typeof parsed !== "object" || Array.isArray(parsed)) return null;
+
+    return {
+      bodyFrom: closeLine.to + 1,
+      data: parsed as Record<string, unknown>,
+      from: openLine.from,
+      to: closeLine.to
+    };
+  } catch {
+    return null;
+  }
+}
+
+export function buildFrontmatterPropertiesDecorations(
+  state: EditorState,
+  userDefinedFields: UserDefinedField[] = [],
+  candidates: Record<string, string[]> = {}
+): DecorationSet {
+  const block = findFrontmatterBlock(state);
+  if (!block) return Decoration.none;
+
+  return Decoration.set([
+    Decoration.replace({
+      block: true,
+      widget: new FrontmatterPropertiesWidget(block, userDefinedFields, candidates)
+    }).range(block.from, block.to)
+  ]);
+}
+
 export function buildLivePreviewDecorations(view: EditorView): DecorationSet {
   const { state } = view;
   const doc = state.doc;
@@ -815,6 +1144,7 @@ export function buildLivePreviewDecorations(view: EditorView): DecorationSet {
 
   const ranges: { from: number; to: number; deco: Decoration }[] = [];
   const tableBlocks = findTableBlocks(state);
+  const frontmatterLineRange = findFrontmatterLineRange(doc);
   const sourceRevealRanges: SourceRevealRange[] = [];
 
   function selectionTouches(from: number, to: number): boolean {
@@ -1027,6 +1357,16 @@ export function buildLivePreviewDecorations(view: EditorView): DecorationSet {
       const text = line.text;
       const tableBlock = tableBlocks.find((block) => line.from >= block.from && line.to <= block.to);
 
+      if (
+        frontmatterLineRange &&
+        lineNumber >= frontmatterLineRange.start &&
+        lineNumber <= frontmatterLineRange.end
+      ) {
+        addMark(line.from, line.to, "cm-live-frontmatter");
+        lineNumber += 1;
+        continue;
+      }
+
       if (/^\s*```/.test(text)) {
         addSourceReveal(line.from, line.to);
         addReplace(line.from, line.to);
@@ -1131,6 +1471,21 @@ const livePreviewTableField = StateField.define<DecorationSet>({
   provide: (field) => EditorView.decorations.from(field)
 });
 
+function createFrontmatterPropertiesField(
+  userDefinedFields: UserDefinedField[],
+  candidates: Record<string, string[]>
+): StateField<DecorationSet> {
+  return StateField.define<DecorationSet>({
+    create: (state) => buildFrontmatterPropertiesDecorations(state, userDefinedFields, candidates),
+    update: (_decorations, transaction) => buildFrontmatterPropertiesDecorations(
+      transaction.state,
+      userDefinedFields,
+      candidates
+    ),
+    provide: (field) => EditorView.decorations.from(field)
+  });
+}
+
 const livePreviewPlugin = EditorView.decorations.of((view) => buildLivePreviewDecorations(view));
 
 const typewriterExtension = ViewPlugin.fromClass(
@@ -1198,7 +1553,9 @@ function buildExtensions(
   settings: EditorSettings,
   typewriterMode: boolean,
   onChangeRef: React.RefObject<(c: string) => void>,
-  allFilePaths: string[]
+  allFilePaths: string[],
+  userDefinedFields: UserDefinedField[],
+  frontmatterCandidates: Record<string, string[]>
 ) {
   return [
     history(),
@@ -1226,6 +1583,7 @@ function buildExtensions(
     EditorView.contentAttributes.of({ spellcheck: settings.spellCheck ? "true" : "false" }),
     ...(settings.showLineNumbers ? [lineNumbers()] : []),
     ...(typewriterMode ? [typewriterExtension] : []),
+    createFrontmatterPropertiesField(userDefinedFields, frontmatterCandidates),
     livePreviewTableField,
     livePreviewPlugin
   ];
@@ -1234,23 +1592,36 @@ function buildExtensions(
 export function Editor({
   allFilePaths = [],
   content,
+  frontmatterCandidates = {},
   onChange,
   settings,
   typewriterMode = false,
+  userDefinedFields = [],
   viewRef
 }: EditorProps): ReactElement {
   const containerRef = useRef<HTMLDivElement>(null);
   const internalViewRef = useRef<EditorView | null>(null);
   const onChangeRef = useRef(onChange);
   const allFilePathsRef = useRef(allFilePaths);
+  const frontmatterCandidatesRef = useRef(frontmatterCandidates);
+  const userDefinedFieldsRef = useRef(userDefinedFields);
 
   onChangeRef.current = onChange;
   allFilePathsRef.current = allFilePaths;
+  frontmatterCandidatesRef.current = frontmatterCandidates;
+  userDefinedFieldsRef.current = userDefinedFields;
 
   useEffect(() => {
     if (!containerRef.current) return;
 
-    const extensions = buildExtensions(settings, typewriterMode, onChangeRef, allFilePathsRef.current);
+    const extensions = buildExtensions(
+      settings,
+      typewriterMode,
+      onChangeRef,
+      allFilePathsRef.current,
+      userDefinedFieldsRef.current,
+      frontmatterCandidatesRef.current
+    );
     const state = EditorState.create({ doc: content, extensions });
     const view = new EditorView({ state, parent: containerRef.current });
 
@@ -1280,14 +1651,21 @@ export function Editor({
 
     if (!containerRef.current) return;
 
-    const extensions = buildExtensions(settings, typewriterMode, onChangeRef, allFilePathsRef.current);
+    const extensions = buildExtensions(
+      settings,
+      typewriterMode,
+      onChangeRef,
+      allFilePathsRef.current,
+      userDefinedFieldsRef.current,
+      frontmatterCandidatesRef.current
+    );
     const state = EditorState.create({ doc: currentContent, extensions });
     const nextView = new EditorView({ state, parent: containerRef.current });
 
     internalViewRef.current = nextView;
 
     if (viewRef) viewRef.current = nextView;
-  }, [settings, typewriterMode, viewRef]);
+  }, [frontmatterCandidates, settings, typewriterMode, userDefinedFields, viewRef]);
 
   return <div className="cm-editor-container" ref={containerRef} />;
 }
