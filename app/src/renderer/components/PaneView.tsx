@@ -10,6 +10,8 @@ import { Editor } from "./Editor";
 
 export interface PaneViewProps {
   allFilePaths: string[];
+  closingTabIds: Set<string>;
+  editorActionPulse: number;
   editorSettings: EditorSettings;
   focusedPane: PaneId;
   frontmatterCandidates: Record<string, string[]>;
@@ -33,6 +35,8 @@ export interface PaneViewProps {
 
 export function PaneView({
   allFilePaths,
+  closingTabIds,
+  editorActionPulse,
   editorSettings,
   focusedPane,
   frontmatterCandidates,
@@ -97,20 +101,23 @@ export function PaneView({
       <div className="pane-tab-bar">
         {paneState.tabIds.map((tabId) => {
           const tab = tabs[tabId];
+          const isClosing = closingTabIds.has(tabId);
 
           if (!tab) return null;
 
           return (
             <div
-              className={`pane-tab${paneState.activeTabId === tabId ? " pane-tab--active" : ""}`}
+              className={`pane-tab${paneState.activeTabId === tabId ? " pane-tab--active" : ""}${isClosing ? " pane-tab--closing" : ""}`}
               key={tabId}
               onClick={(e) => {
                 e.stopPropagation();
+                if (isClosing) return;
                 onTabSelect(tabId);
               }}
               onContextMenu={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
+                if (isClosing) return;
                 setContextMenu({ tabId, x: e.clientX, y: e.clientY });
               }}
             >
@@ -139,21 +146,30 @@ export function PaneView({
         >
           <button
             className="tab-context-menu-item"
-            onClick={() => { onTabClose(contextMenu.tabId); setContextMenu(null); }}
+            onClick={() => {
+              onTabClose(contextMenu.tabId);
+              setContextMenu(null);
+            }}
             type="button"
           >
             {t("pane.closeTab")}
           </button>
           <button
             className="tab-context-menu-item"
-            onClick={() => { onCloseOtherTabs(contextMenu.tabId); setContextMenu(null); }}
+            onClick={() => {
+              onCloseOtherTabs(contextMenu.tabId);
+              setContextMenu(null);
+            }}
             type="button"
           >
             {t("pane.closeOtherTabs")}
           </button>
           <button
             className="tab-context-menu-item"
-            onClick={() => { onCloseTabsToRight(contextMenu.tabId); setContextMenu(null); }}
+            onClick={() => {
+              onCloseTabsToRight(contextMenu.tabId);
+              setContextMenu(null);
+            }}
             type="button"
           >
             {t("pane.closeTabsToRight")}
@@ -161,7 +177,10 @@ export function PaneView({
           <div className="tab-context-menu-separator" />
           <button
             className="tab-context-menu-item"
-            onClick={() => { onCloseAllTabs(); setContextMenu(null); }}
+            onClick={() => {
+              onCloseAllTabs();
+              setContextMenu(null);
+            }}
             type="button"
           >
             {t("pane.closeAllTabs")}
@@ -182,7 +201,9 @@ export function PaneView({
       ) : null}
 
       {activeTab ? (
-        <div className="editor-surface">
+        <div
+          className={`editor-surface${editorActionPulse > 0 ? ` editor-surface--action-${editorActionPulse % 2 === 0 ? "even" : "odd"}` : ""}`}
+        >
           <div className="editor-body">
             <Editor
               allFilePaths={allFilePaths}

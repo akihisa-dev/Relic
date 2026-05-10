@@ -903,7 +903,6 @@ class FrontmatterPropertiesWidget extends WidgetType {
     header.addEventListener("click", () => {
       const collapsed = wrapper.dataset.collapsed === "true";
       wrapper.dataset.collapsed = collapsed ? "false" : "true";
-      icon.textContent = collapsed ? "⌄" : "›";
     });
 
     for (const [key, value] of Object.entries(this.block.data)) {
