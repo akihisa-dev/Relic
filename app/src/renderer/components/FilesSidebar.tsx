@@ -28,6 +28,7 @@ export interface FilesSidebarProps {
   onRevealItem?: (path: string) => void;
   onRenameItem: (path: string, type: WorkspaceTreeNode["type"], newName: string) => void;
   onSelectFolder: (node: Extract<WorkspaceTreeNode, { type: "folder" }>) => void;
+  onSelectedCountChange?: (count: number) => void;
   onTogglePin: (path: string) => void;
   openFilePaths?: Set<string>;
   onTemplatePathChange: (path: string) => void;
@@ -58,6 +59,7 @@ export function FilesSidebar({
   onRevealItem,
   onRenameItem,
   onSelectFolder,
+  onSelectedCountChange,
   onTogglePin,
   openFilePaths,
   onTemplatePathChange,
@@ -111,6 +113,10 @@ export function FilesSidebar({
     }
   }, [selectablePathSet, selectionAnchorPath]);
 
+  useEffect(() => {
+    onSelectedCountChange?.(selectedItems.length);
+  }, [onSelectedCountChange, selectedItems.length]);
+
   const handleSelectItem = (
     node: WorkspaceTreeNode,
     e: React.MouseEvent<HTMLButtonElement>
@@ -119,6 +125,7 @@ export function FilesSidebar({
 
     const isRangeSelect = e.shiftKey && selectionAnchorPath && selectablePathSet.has(selectionAnchorPath);
     const isToggleSelect = e.metaKey || e.ctrlKey;
+    const isMultiSelectionMode = selectedPaths.size > 1;
 
     if (isRangeSelect) {
       const fromIndex = selectableItems.findIndex((item) => item.path === selectionAnchorPath);
@@ -143,7 +150,7 @@ export function FilesSidebar({
 
     setSelectedPaths(new Set([node.path]));
     setSelectionAnchorPath(node.path);
-    return true;
+    return !isMultiSelectionMode;
   };
 
   return (

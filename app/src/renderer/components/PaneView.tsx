@@ -22,6 +22,7 @@ export interface PaneViewProps {
   workspacePath?: string | null;
   viewRef: MutableRefObject<EditorView | null>;
   renderPanelTab: (panel: PanelTabKind) => ReactNode;
+  renderPanelTabIcon: (panel: PanelTabKind) => ReactNode;
   onCreateFile: (name: string) => void;
   onFocus: () => void;
   onOpenLink?: (href: string) => void;
@@ -55,6 +56,7 @@ export function PaneView({
   workspacePath,
   viewRef,
   renderPanelTab,
+  renderPanelTabIcon,
   onCreateFile,
   onFocus,
   onOpenLink,
@@ -185,6 +187,11 @@ export function PaneView({
               }}
               onDrop={(e) => handleTabDrop(e, tabId)}
             >
+              {tab.kind === "panel" ? (
+                <span className="pane-tab-icon" aria-hidden="true">
+                  {renderPanelTabIcon(tab.panel)}
+                </span>
+              ) : null}
               <span className="pane-tab-name">{tab.name}</span>
               <button
                 className="pane-tab-close"
