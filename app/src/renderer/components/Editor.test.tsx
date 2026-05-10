@@ -73,6 +73,27 @@ async function collectInlineLivePreviewWidgets(content: string, cursor: number, 
   return widgets;
 }
 
+async function collectInlineLivePreviewWidgetClasses(content: string, cursor: number, hasFocus = true): Promise<string[]> {
+  const state = EditorState.create({
+    doc: content,
+    extensions: [markdown({ extensions: GFM })],
+    selection: { anchor: cursor }
+  });
+  await ensureSyntaxTree(state, state.doc.length, 100);
+
+  const classes: string[] = [];
+  buildLivePreviewDecorations({
+    hasFocus,
+    state,
+    visibleRanges: [{ from: 0, to: state.doc.length }]
+  } as unknown as EditorView).between(0, state.doc.length, (_from, _to, value) => {
+    const widget = (value as unknown as { spec?: { widget?: { className?: string } } }).spec?.widget;
+    if (widget?.className) classes.push(widget.className);
+  });
+
+  return classes;
+}
+
 describe("Editor", () => {
   it("テキスト入力変更を onChange に通知し、Undo / Redo が動作する", async () => {
     const onChange = vi.fn();
@@ -101,6 +122,47 @@ describe("Editor", () => {
     expect(view.state.doc.toString()).toBe("hello world");
   });
 
+  it("外側からcontentが更新されたら表示中の文書も同期する", async () => {
+    const viewRef = createRef<EditorView | null>();
+    const { rerender } = render(
+      <Editor
+        content="left"
+        onChange={vi.fn()}
+        settings={settings}
+        viewRef={viewRef}
+      />
+    );
+
+    await waitFor(() => expect(viewRef.current).not.toBeNull());
+    expect(viewRef.current!.state.doc.toString()).toBe("left");
+
+    rerender(
+      <Editor
+        content="right"
+        onChange={vi.fn()}
+        settings={settings}
+        viewRef={viewRef}
+      />
+    );
+
+    await waitFor(() => expect(viewRef.current!.state.doc.toString()).toBe("right"));
+  });
+
+  it("本文は設定幅の内側で折り返す", async () => {
+    const { container } = render(
+      <Editor
+        content={"長い本文".repeat(80)}
+        onChange={vi.fn()}
+        settings={{ ...settings, maxWidth: "660px" }}
+      />
+    );
+
+    await waitFor(() => expect(container.querySelector(".cm-lineWrapping")).not.toBeNull());
+
+    expect(container.querySelector(".cm-content")).toHaveStyle({ maxWidth: "660px" });
+    expect(container.querySelector(".cm-line")).toHaveStyle({ whiteSpace: "pre-wrap" });
+  });
+
   it("[[ 入力時のファイル名補完候補を作る", () => {
     const source = buildWikiLinkCompletionSource([
       "読書メモ.md",
@@ -124,9 +186,9 @@ describe("Editor", () => {
 
   it("ライブプレビューでカーソル外のMarkdown記法を装飾する", async () => {
     const content = "==mark==\n\nx";
-    const classes = await collectLivePreviewClasses(content, content.length);
+    const classes = await collectInlineLivePreviewWidgetClasses(content, content.length);
 
-    expect(classes.has("cm-live-highlight")).toBe(true);
+    expect(classes).toContain("cm-live-highlight");
   });
 
   it("ライブプレビューでカーソル位置のMarkdown記法もレンダリングを維持する", async () => {
@@ -143,7 +205,7 @@ describe("Editor", () => {
   });
 
   it("ライブプレビューで主要なインライン記法を安定して装飾する", async () => {
-    const classes = await collectLivePreviewClasses([
+    const widgetClasses = await collectInlineLivePreviewWidgetClasses([
       "**bold**",
       "*italic*",
       "~~strike~~",
@@ -154,7 +216,7 @@ describe("Editor", () => {
       "[[Page]]"
     ].join("\n"), 0, false);
 
-    expect(Array.from(classes)).toEqual(expect.arrayContaining([
+    expect(widgetClasses).toEqual(expect.arrayContaining([
       "cm-live-bold",
       "cm-live-italic",
       "cm-live-strike",
@@ -230,6 +292,28 @@ describe("Editor", () => {
     expect(viewRef.current?.state.doc.toString()).toContain("---\nversion: v1.1");
   });
 
+  it("プロパティフォーム化したフロントマターも通常の行番号ガターに表示する", async () => {
+    const { container } = render(
+      <Editor
+        content={"---\nversion: v1.0\nupdated: 2026-03-24\naliases:\n  - test\n---\n# 本文"}
+        onChange={vi.fn()}
+        settings={{ ...settings, showLineNumbers: true }}
+      />
+    );
+
+    await waitFor(() => expect(container.querySelector(".cm-frontmatter-properties")).not.toBeNull());
+
+    expect(Array.from(container.querySelectorAll(".cm-gutterElement")).map((line) => line.textContent)).toEqual(expect.arrayContaining([
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6"
+    ]));
+    expect(container.querySelector(".cm-frontmatter-line-number")).toBeNull();
+  });
+
   it("プロパティフォームは折りたためる", async () => {
     const { container } = render(
       <Editor
@@ -245,7 +329,7 @@ describe("Editor", () => {
     expect(container.querySelector(".cm-frontmatter-properties")?.getAttribute("data-collapsed")).toBe("true");
   });
 
-  it("プロパティフォームからプロパティを追加できる", async () => {
+  it("プロパティフォームに追加用入力を常駐させない", async () => {
     const viewRef = createRef<EditorView | null>();
     const onChange = vi.fn();
     const { container } = render(
@@ -257,16 +341,15 @@ describe("Editor", () => {
       />
     );
 
-    await waitFor(() => expect(container.querySelector(".cm-frontmatter-add-input")).not.toBeNull());
-    const input = container.querySelector(".cm-frontmatter-add-input") as HTMLInputElement;
-    fireEvent.change(input, { target: { value: "updated" } });
-    fireEvent.keyDown(input, { key: "Enter" });
+    await waitFor(() => expect(container.querySelector(".cm-frontmatter-properties")).not.toBeNull());
 
-    expect(onChange).toHaveBeenLastCalledWith(expect.stringContaining("updated:"));
-    expect(viewRef.current?.state.doc.toString()).toContain("updated:");
+    expect(container.querySelector(".cm-frontmatter-add-input")).toBeNull();
+    expect(container.querySelector(".cm-frontmatter-add-row")).toBeNull();
+    expect(onChange).not.toHaveBeenCalled();
+    expect(viewRef.current?.state.doc.toString()).toBe("---\nversion: v1.0\n---\n# 本文");
   });
 
-  it("フロントマターがない本文へプロパティフォームから新規作成できる", async () => {
+  it("フロントマターがない本文に新規作成入口を重ねない", async () => {
     const viewRef = createRef<EditorView | null>();
     const onChange = vi.fn();
     const { container } = render(
@@ -279,14 +362,12 @@ describe("Editor", () => {
       />
     );
 
-    await waitFor(() => expect(container.querySelector(".cm-frontmatter-starter")).not.toBeNull());
-    const input = container.querySelector(".cm-frontmatter-starter .cm-frontmatter-add-input") as HTMLInputElement;
-    fireEvent.change(input, { target: { value: "status" } });
-    fireEvent.keyDown(input, { key: "Enter" });
+    await waitFor(() => expect(container.querySelector(".cm-editor")).not.toBeNull());
 
-    expect(onChange).toHaveBeenLastCalledWith("---\nstatus:\n---\n# 本文");
-    expect(viewRef.current?.state.doc.toString()).toBe("---\nstatus:\n---\n# 本文");
-    await waitFor(() => expect(container.querySelector(".cm-frontmatter-properties")).not.toBeNull());
+    expect(container.querySelector(".cm-frontmatter-starter")).toBeNull();
+    expect(container.querySelector(".cm-frontmatter-add-input")).toBeNull();
+    expect(onChange).not.toHaveBeenCalled();
+    expect(viewRef.current?.state.doc.toString()).toBe("# 本文");
   });
 
   it("未完了のフロントマター記法には新規作成入口を重ねない", async () => {
@@ -734,6 +815,30 @@ describe("Editor", () => {
     expect(viewRef.current?.state.doc.toString()).toBe("| C | A | B |\n| --- | --- | --- |\n| 3 | 1 | 2 |\n| z | x | y |");
   });
 
+  it("ライブプレビューの表ドラッグ開始は pointer と mouse の二重発火でも一度だけ処理する", async () => {
+    const viewRef = createRef<EditorView | null>();
+    const { container } = render(
+      <Editor
+        content={"| A | B | C |\n| --- | --- | --- |\n| x | y | z |"}
+        onChange={vi.fn()}
+        settings={settings}
+        viewRef={viewRef}
+      />
+    );
+
+    await waitFor(() => expect(container.querySelector(".cm-live-table-handle--column")).not.toBeNull());
+    (container.querySelector('.cm-live-table-cell-input[data-row="1"][data-col="2"]') as HTMLInputElement).focus();
+    const handle = container.querySelector(".cm-live-table-handle--column") as HTMLButtonElement;
+    fireEvent.pointerDown(handle, { clientX: 250, clientY: 40 });
+    fireEvent.mouseDown(handle, { clientX: 250, clientY: 40 });
+    fireEvent.pointerUp(container.querySelector('td[data-row="1"][data-column="0"]') as HTMLTableCellElement, {
+      clientX: 110,
+      clientY: 70
+    });
+
+    expect(viewRef.current?.state.doc.toString()).toBe("| C | A | B |\n| --- | --- | --- |\n| z | x | y |");
+  });
+
   it("ライブプレビューの表で行ハンドルを左側の帯のままドラッグして移動できる", async () => {
     const viewRef = createRef<EditorView | null>();
     const originalElementFromPoint = document.elementFromPoint;
@@ -780,8 +885,8 @@ describe("Editor", () => {
     });
   });
 
-  it("ライブプレビューの太字はDOM上でも強いウェイトを持つ", async () => {
-    const { container } = render(
+  it("ライブプレビューの太字と斜体はDOM上でもレンダリング指定を持つ", async () => {
+    const boldRender = render(
       <Editor
         content="**太字**"
         onChange={vi.fn()}
@@ -789,13 +894,51 @@ describe("Editor", () => {
       />
     );
 
+    await waitFor(() => expect(boldRender.container.querySelector(".cm-live-bold")).not.toBeNull());
+    const boldElement = boldRender.container.querySelector(".cm-live-bold") as HTMLElement;
+    expect(boldElement.style.fontWeight).toBe("900");
+    expect(boldElement.style.paddingInline).toBe("0.015em");
+    expect(boldElement.style.textShadow).toBe("0.025em 0 0 currentColor");
+    boldRender.unmount();
+
+    const italicRender = render(
+      <Editor
+        content="*斜体*"
+        onChange={vi.fn()}
+        settings={settings}
+      />
+    );
+
+    await waitFor(() => expect(italicRender.container.querySelector(".cm-live-italic")).not.toBeNull());
+    const italicElement = italicRender.container.querySelector(".cm-live-italic") as HTMLElement;
+    expect(italicElement.style.fontStyle).toBe("italic");
+    expect(italicElement.style.transform).toBe("skewX(-14deg)");
+  });
+
+  it("編集後もライブプレビュー装飾を更新する", async () => {
+    const viewRef = createRef<EditorView | null>();
+    const { container } = render(
+      <Editor
+        content="plain"
+        onChange={vi.fn()}
+        settings={settings}
+        viewRef={viewRef}
+      />
+    );
+
+    await waitFor(() => expect(viewRef.current).not.toBeNull());
+    expect(container.querySelector(".cm-live-bold")).toBeNull();
+
+    viewRef.current!.dispatch({
+      changes: { from: 0, to: viewRef.current!.state.doc.length, insert: "**bold**" }
+    });
+
     await waitFor(() => expect(container.querySelector(".cm-live-bold")).not.toBeNull());
-    expect((container.querySelector(".cm-live-bold") as HTMLElement).style.fontWeight).toBe("800");
   });
 
   it("ライブプレビューでフォーカスが外れたらカーソル行もレンダリングする", async () => {
-    const classes = await collectLivePreviewClasses("**bold**", 0, false);
+    const classes = await collectInlineLivePreviewWidgetClasses("**bold**", 0, false);
 
-    expect(classes.has("cm-live-bold")).toBe(true);
+    expect(classes).toContain("cm-live-bold");
   });
 });

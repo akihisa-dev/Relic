@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { ReactElement } from "react";
+import { createPortal } from "react-dom";
 
 import type { WorkspaceTreeNode } from "../../shared/ipc";
 import { useT } from "../i18n";
@@ -84,6 +85,19 @@ function moveItemsToDestination(
   const [item] = movableItems;
   if (item.type === "file") handlers.onMoveFile?.(item.path, destinationFolder);
   else handlers.onMoveFolder?.(item.path, destinationFolder);
+}
+
+function contextMenuPosition(x: number, y: number): { x: number; y: number } {
+  const margin = 8;
+  const estimatedWidth = 220;
+  const estimatedHeight = 132;
+  const maxX = Math.max(margin, window.innerWidth - estimatedWidth - margin);
+  const maxY = Math.max(margin, window.innerHeight - estimatedHeight - margin);
+
+  return {
+    x: Math.min(Math.max(margin, x), maxX),
+    y: Math.min(Math.max(margin, y), maxY)
+  };
 }
 
 export interface FileTreeProps {
@@ -267,7 +281,7 @@ export function FileTreeItem({
             e.preventDefault();
             e.stopPropagation();
             if (!isSelected) onSelectItem?.(node, e);
-            setContextMenu({ x: e.clientX, y: e.clientY });
+            setContextMenu(contextMenuPosition(e.clientX, e.clientY));
           }}
           onDoubleClick={(e) => {
             e.preventDefault();
@@ -318,12 +332,12 @@ export function FileTreeItem({
             📌
           </button>
         ) : null}
-        {contextMenu ? (
+        {contextMenu ? createPortal(
           <div
             className="tab-context-menu file-tree-context-menu"
             ref={menuRef}
             role="menu"
-            style={{ left: contextMenu.x, top: contextMenu.y }}
+            style={{ left: contextMenu.x, position: "fixed", top: contextMenu.y, zIndex: 1000 }}
           >
             {useSelectedItems ? null : (
               <button className="tab-context-menu-item" onClick={startRename} role="menuitem" type="button">
@@ -357,7 +371,8 @@ export function FileTreeItem({
             >
               {useSelectedItems ? t("files.moveSelectedToTrash") : t("files.moveToTrash")}
             </button>
-          </div>
+          </div>,
+          document.body
         ) : null}
       </div>
       {node.type === "folder" && isExpanded ? (
