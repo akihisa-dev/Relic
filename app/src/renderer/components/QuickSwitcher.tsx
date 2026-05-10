@@ -32,8 +32,10 @@ function getDirPath(filePath: string): string {
 
 export function QuickSwitcher({ filePaths, onClose, onSelect }: QuickSwitcherProps): ReactElement {
   const t = useT();
+  const [isClosing, setIsClosing] = useState(false);
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const closeTimerRef = useRef<number | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const filtered = filePaths.filter((p) => matchesQuery(p, query)).slice(0, 50);
@@ -49,24 +51,39 @@ export function QuickSwitcher({ filePaths, onClose, onSelect }: QuickSwitcherPro
     setSelectedIndex(0);
   }, [query]);
 
+  const requestClose = (): void => {
+    if (isClosing) return;
+    setIsClosing(true);
+    closeTimerRef.current = window.setTimeout(() => {
+      onClose();
+      closeTimerRef.current = null;
+    }, 170);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (closeTimerRef.current) window.clearTimeout(closeTimerRef.current);
+    };
+  }, []);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent): void => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") requestClose();
     };
 
     window.addEventListener("keydown", handleKeyDown);
 
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onClose]);
+  }, [requestClose]);
 
   const select = (filePath: string): void => {
     onSelect(filePath);
-    onClose();
+    requestClose();
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="quick-switcher" onClick={(e) => e.stopPropagation()}>
+    <div className={`modal-overlay${isClosing ? " modal-overlay--closing" : ""}`} onClick={requestClose}>
+      <div className={`quick-switcher${isClosing ? " quick-switcher--closing" : ""}`} onClick={(e) => e.stopPropagation()}>
         <input
           ref={inputRef}
           className="command-palette-input"

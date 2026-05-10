@@ -341,11 +341,19 @@ describe("App", () => {
     expect(resizeHandle).toBeInstanceOf(HTMLElement);
 
     fireEvent.mouseDown(resizeHandle as HTMLElement, { clientX: 260 });
+
+    expect(sidebar).toHaveClass("sidebar--resizing");
+    expect(resizeHandle).toHaveClass("sidebar-resize-handle--active");
+
     fireEvent.mouseMove(document, { clientX: 800 });
 
     expect(sidebar).toHaveStyle({ width: "500px" });
 
     fireEvent.mouseUp(document);
+
+    expect(sidebar).not.toHaveClass("sidebar--resizing");
+    expect(resizeHandle).not.toHaveClass("sidebar-resize-handle--active");
+
     fireEvent.mouseDown(resizeHandle as HTMLElement, { clientX: 500 });
     fireEvent.mouseMove(document, { clientX: -200 });
 
@@ -503,6 +511,11 @@ describe("App", () => {
 
     expect(createMarkdownFile).toHaveBeenCalledWith({ name: "新規ファイル" });
     expect((await screen.findAllByText("新規ファイル")).length).toBeGreaterThan(0);
+    await waitFor(() => {
+      expect(screen.getAllByRole("button", { name: /新規ファイル/ }).some((button) => (
+        button.classList.contains("file-tree-row--appearing")
+      ))).toBe(true);
+    });
   });
 
   it("メインパネルの新規ファイル作成は名前入力なしで作成する", async () => {
@@ -783,6 +796,11 @@ describe("App", () => {
     await waitFor(() => {
       expect(duplicateMarkdownFile).toHaveBeenCalledWith({ path: "読書メモ.md" });
     });
+    await waitFor(() => {
+      expect(screen.getAllByRole("button", { name: /読書メモ のコピー/ }).some((button) => (
+        button.classList.contains("file-tree-row--appearing")
+      ))).toBe(true);
+    });
   });
 
   it("コマンドパレットからアクティブファイルを複製する", async () => {
@@ -824,6 +842,48 @@ describe("App", () => {
     await waitFor(() => {
       expect(duplicateMarkdownFile).toHaveBeenCalledWith({ path: "読書メモ.md" });
     });
+  });
+
+  it("コマンドパレットを閉じると退場反応を通る", async () => {
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
+    });
+
+    const { container } = await renderApp();
+
+    fireEvent.keyDown(window, { key: "P", metaKey: true, shiftKey: true });
+
+    const palette = container.querySelector(".command-palette");
+    if (!(palette instanceof HTMLElement)) throw new Error("command palette was not rendered");
+
+    fireEvent.keyDown(window, { key: "Escape" });
+
+    const overlay = container.querySelector(".modal-overlay");
+    if (!(overlay instanceof HTMLElement)) throw new Error("modal overlay was not rendered");
+
+    expect(palette).toHaveClass("command-palette--closing");
+    expect(overlay).toHaveClass("modal-overlay--closing");
+  });
+
+  it("クイックスイッチャーを閉じると退場反応を通る", async () => {
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
+    });
+
+    const { container } = await renderApp();
+
+    fireEvent.keyDown(window, { key: "p", metaKey: true });
+
+    const switcher = container.querySelector(".quick-switcher");
+    if (!(switcher instanceof HTMLElement)) throw new Error("quick switcher was not rendered");
+
+    fireEvent.keyDown(window, { key: "Escape" });
+
+    const overlay = container.querySelector(".modal-overlay");
+    if (!(overlay instanceof HTMLElement)) throw new Error("modal overlay was not rendered");
+
+    expect(switcher).toHaveClass("quick-switcher--closing");
+    expect(overlay).toHaveClass("modal-overlay--closing");
   });
 
   it("コマンドパレットからアクティブファイルをゴミ箱に移動する", async () => {
@@ -906,9 +966,16 @@ describe("App", () => {
     fireEvent.dragStart(fileRow, {
       dataTransfer: { effectAllowed: "move", setData: vi.fn() }
     });
+
+    expect(fileRow).toHaveClass("dragging");
+
     fireEvent.drop(archiveRow, {
       dataTransfer: { getData: () => JSON.stringify({ path: "note.md", type: "file" }) }
     });
+
+    fireEvent.dragEnd(fileRow);
+
+    expect(fileRow).not.toHaveClass("dragging");
 
     await waitFor(() => {
       expect(moveMarkdownFile).toHaveBeenCalledWith({ destinationFolder: "archive", path: "note.md" });
@@ -1056,6 +1123,8 @@ describe("App", () => {
     fireEvent.click(draftsRow, { metaKey: true });
     fireEvent.contextMenu(noteRow);
     fireEvent.click(await screen.findByRole("menuitem", { name: "選択した項目をゴミ箱に移動" }));
+
+    expect(noteRow).toHaveClass("file-tree-row--removing");
 
     await waitFor(() => {
       expect(moveItemToTrash).toHaveBeenCalledWith({ path: "note.md", type: "file" });
@@ -1245,6 +1314,26 @@ describe("App", () => {
     });
 
     expect(await screen.findByText("正規表現が正しくありません。")).toBeInTheDocument();
+  });
+
+  it("トーストを閉じると退場反応を通る", async () => {
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace }),
+      createMarkdownFile: vi.fn().mockResolvedValue({
+        ok: false,
+        error: { code: "CREATE_FAILED", message: "ファイルを作成できませんでした。" }
+      })
+    });
+
+    await renderApp();
+
+    fireEvent.click(await screen.findByRole("button", { name: "新規ファイル" }));
+
+    const toast = await screen.findByText("ファイルを作成できませんでした。");
+    expect(toast).toBeInstanceOf(HTMLElement);
+    fireEvent.click(toast);
+
+    expect(toast).toHaveClass("toast--closing");
   });
 
   it("フロントマター検索で field と値を渡す", async () => {

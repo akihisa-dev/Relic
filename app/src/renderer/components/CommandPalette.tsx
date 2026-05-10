@@ -26,8 +26,10 @@ function matchesQuery(label: string, query: string): boolean {
 
 export function CommandPalette({ commands, onClose }: CommandPaletteProps): ReactElement {
   const t = useT();
+  const [isClosing, setIsClosing] = useState(false);
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const closeTimerRef = useRef<number | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const filtered = commands.filter((c) => matchesQuery(c.label, query));
@@ -40,26 +42,41 @@ export function CommandPalette({ commands, onClose }: CommandPaletteProps): Reac
     setSelectedIndex(0);
   }, [query]);
 
+  const requestClose = (): void => {
+    if (isClosing) return;
+    setIsClosing(true);
+    closeTimerRef.current = window.setTimeout(() => {
+      onClose();
+      closeTimerRef.current = null;
+    }, 170);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (closeTimerRef.current) window.clearTimeout(closeTimerRef.current);
+    };
+  }, []);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent): void => {
       if (e.key === "Escape") {
-        onClose();
+        requestClose();
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
 
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onClose]);
+  }, [requestClose]);
 
   const execute = (command: Command): void => {
     command.action();
-    onClose();
+    requestClose();
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="command-palette" onClick={(e) => e.stopPropagation()}>
+    <div className={`modal-overlay${isClosing ? " modal-overlay--closing" : ""}`} onClick={requestClose}>
+      <div className={`command-palette${isClosing ? " command-palette--closing" : ""}`} onClick={(e) => e.stopPropagation()}>
         <input
           ref={inputRef}
           className="command-palette-input"

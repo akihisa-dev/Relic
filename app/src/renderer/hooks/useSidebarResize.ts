@@ -13,12 +13,14 @@ export function useSidebarResize({
   minWidth
 }: UseSidebarResizeInput) {
   const [sidebarWidth, setSidebarWidth] = useState(initialWidth);
+  const [isSidebarResizing, setIsSidebarResizing] = useState(false);
   const sidebarResizingRef = useRef(false);
   const sidebarResizeStartXRef = useRef(0);
   const sidebarResizeStartWidthRef = useRef(0);
 
   const startSidebarResize = useCallback((event: ReactMouseEvent): void => {
     sidebarResizingRef.current = true;
+    setIsSidebarResizing(true);
     sidebarResizeStartXRef.current = event.clientX;
     sidebarResizeStartWidthRef.current = sidebarWidth;
     event.preventDefault();
@@ -33,6 +35,7 @@ export function useSidebarResize({
     };
     const handleMouseUp = (): void => {
       sidebarResizingRef.current = false;
+      setIsSidebarResizing(false);
     };
 
     document.addEventListener("mousemove", handleMouseMove);
@@ -46,6 +49,7 @@ export function useSidebarResize({
 
   return {
     sidebarWidth,
+    isSidebarResizing,
     startSidebarResize
   };
 }
