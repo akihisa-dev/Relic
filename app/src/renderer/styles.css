@@ -679,6 +679,42 @@ button:not(:disabled):active {
   transform-origin: left center;
 }
 
+.list-loading-note {
+  animation: loading-note-in 170ms cubic-bezier(.22, 1, .36, 1);
+  border: 1px solid rgba(31, 35, 40, 0.08);
+  border-radius: 6px;
+  color: var(--text-3);
+  font-size: 13px;
+  line-height: 1.6;
+  overflow: hidden;
+  padding: 8px 10px 8px 28px;
+  position: relative;
+}
+
+.list-loading-note::before {
+  animation: loading-dot-pulse 860ms ease-in-out infinite;
+  background: var(--accent);
+  border-radius: 999px;
+  content: "";
+  height: 7px;
+  left: 11px;
+  opacity: 0.66;
+  position: absolute;
+  top: 14px;
+  width: 7px;
+}
+
+.list-loading-note::after {
+  animation: loading-sweep 1180ms ease-in-out infinite;
+  background: linear-gradient(90deg, transparent, rgba(0, 98, 140, 0.12), transparent);
+  bottom: 0;
+  content: "";
+  left: -40%;
+  position: absolute;
+  top: 0;
+  width: 40%;
+}
+
 .search-result-button {
   background: transparent;
   border: 1px solid rgba(31, 35, 40, 0.09);
@@ -2801,6 +2837,35 @@ button:not(:disabled):active {
   }
 }
 
+@keyframes loading-note-in {
+  from {
+    opacity: 0;
+    transform: translateX(-4px) scaleX(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scaleX(1);
+  }
+}
+
+@keyframes loading-dot-pulse {
+  0%, 100% {
+    transform: scale(0.82);
+  }
+  50% {
+    transform: scale(1.18);
+  }
+}
+
+@keyframes loading-sweep {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(350%);
+  }
+}
+
 .outline-list {
   animation: right-panel-content-in 170ms cubic-bezier(.22, 1, .36, 1);
   display: grid;
@@ -3306,6 +3371,9 @@ button:not(:disabled):active {
   .cm-frontmatter-add-row,
   .cm-frontmatter-pill,
   .cm-frontmatter-yaml-input[aria-invalid="true"],
+  .list-loading-note,
+  .list-loading-note::before,
+  .list-loading-note::after,
   .search-result-item,
   .git-diff-entry,
   .links-list-item {

@@ -27,6 +27,7 @@ export function useWorkspaceSearchState({
   const [searchFrontmatterField, setSearchFrontmatterField] = useState("");
   const [searchResults, setSearchResults] = useState<WorkspaceSearchResult[]>([]);
   const [searchError, setSearchError] = useState<string | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
   const [workspaceFrontmatterCandidates, setWorkspaceFrontmatterCandidates] = useState<Record<string, string[]>>({});
   const frontmatterCandidates = useMemo(() => {
     const result: Record<string, string[]> = { ...workspaceFrontmatterCandidates };
@@ -96,11 +97,13 @@ export function useWorkspaceSearchState({
     if (!workspaceState?.activeWorkspace || !window.relic || searchQuery.trim() === "") {
       setSearchResults([]);
       setSearchError(null);
+      setIsSearching(false);
       return;
     }
 
     let canceled = false;
 
+    setIsSearching(true);
     void window.relic
       .searchWorkspace({
         frontmatterField: searchMode === "frontmatter" ? searchFrontmatterField : undefined,
@@ -117,6 +120,9 @@ export function useWorkspaceSearchState({
           setSearchResults([]);
           setSearchError(result.error.message);
         }
+      })
+      .finally(() => {
+        if (!canceled) setIsSearching(false);
       });
 
     return () => {
@@ -127,6 +133,7 @@ export function useWorkspaceSearchState({
   return {
     frontmatterCandidates,
     handleTagSearch,
+    isSearching,
     searchError,
     searchFrontmatterField,
     searchMode,

@@ -144,6 +144,21 @@ export function GitSidebar({
   onSetGitCloneUrl
 }: GitSidebarProps): ReactElement {
   const t = useT();
+  const isGitBusy =
+    isCreatingGitBranch ||
+    isCreatingGitCommit ||
+    isCreatingGitTag ||
+    isConnectingGitHub ||
+    isConnectingGitRemote ||
+    isDeletingGitTag ||
+    isDisconnectingGitHub ||
+    isPullingGitBranch ||
+    isPushingGitBranch ||
+    pushingGitTagName !== null ||
+    isSwitchingGitBranch ||
+    isCloningGitHub ||
+    isResolvingConflict ||
+    gitSyncStep === "pull-fetching";
 
   if (!hasWorkspace) {
     return (
@@ -210,6 +225,9 @@ export function GitSidebar({
 
   return (
     <div className="sidebar-section">
+      {isGitBusy ? (
+        <div className="list-loading-note">{t("common.loading")}</div>
+      ) : null}
       <div className="search-block">
         <div className="links-panel-subheading">{t("git.github")}</div>
         {gitHubAuthStatus?.connected ? (
