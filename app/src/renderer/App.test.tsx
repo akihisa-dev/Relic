@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { defaultAutoSyncSettings, defaultEditorSettings, defaultFeatureToggles, defaultGitHubIntegrationSettings, type GitHubAuthStatus } from "../shared/ipc";
@@ -78,6 +78,7 @@ function makeRelicApi(overrides: Partial<typeof window.relic> = {}): typeof wind
     readClipboardText: vi.fn().mockReturnValue(""),
     readMarkdownFile: vi.fn(),
     removeWorkspace: vi.fn().mockResolvedValue({ ok: true, value: { activeWorkspace: null, fileTree: [], pinnedPaths: [], workspaces: [] } }),
+    renameWorkspace: vi.fn().mockResolvedValue({ ok: true, value: { activeWorkspace: { id: "ws-1", name: "Renamed", path: "/tmp/Renamed" }, fileTree: [], pinnedPaths: [], workspaces: [{ id: "ws-1", name: "Renamed", path: "/tmp/Renamed" }] } }),
     renameMarkdownFile: vi.fn(),
     renameFolder: vi.fn(),
     revealWorkspaceItem: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
@@ -779,6 +780,67 @@ describe("App", () => {
 
     expect(switchWorkspace).toHaveBeenCalledWith({ workspaceId: "ws-2" });
     expect(await screen.findByRole("button", { name: /old/ })).toBeInTheDocument();
+  });
+
+  it("左レールのワークスペース名をダブルクリックで変更する", async () => {
+    const renameWorkspace = vi.fn().mockResolvedValue({
+      ok: true,
+      value: {
+        activeWorkspace: { id: "ws-1", name: "Renamed", path: "/tmp/Renamed" },
+        fileTree: [],
+        pinnedPaths: [],
+        workspaces: [{ id: "ws-1", name: "Renamed", path: "/tmp/Renamed" }]
+      }
+    });
+
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          activeWorkspace: { id: "ws-1", name: "Notes", path: "/tmp/Notes" },
+          fileTree: [],
+          pinnedPaths: [],
+          workspaces: [{ id: "ws-1", name: "Notes", path: "/tmp/Notes" }]
+        }
+      }),
+      renameWorkspace
+    });
+
+    await renderApp();
+
+    fireEvent.doubleClick(await screen.findByRole("button", { name: "Notes" }));
+    fireEvent.change(await screen.findByLabelText("名前を変更"), { target: { value: "Renamed" } });
+    fireEvent.keyDown(screen.getByLabelText("名前を変更"), { key: "Enter" });
+
+    expect(renameWorkspace).toHaveBeenCalledWith({ name: "Renamed", workspaceId: "ws-1" });
+  });
+
+  it("左レールのワークスペース右クリックメニューから一覧削除する", async () => {
+    const removeWorkspace = vi.fn().mockResolvedValue({
+      ok: true,
+      value: { activeWorkspace: null, fileTree: [], pinnedPaths: [], workspaces: [] }
+    });
+
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          activeWorkspace: { id: "ws-1", name: "Notes", path: "/tmp/Notes" },
+          fileTree: [],
+          pinnedPaths: [],
+          workspaces: [{ id: "ws-1", name: "Notes", path: "/tmp/Notes" }]
+        }
+      }),
+      removeWorkspace
+    });
+
+    await renderApp();
+
+    fireEvent.contextMenu(await screen.findByRole("button", { name: "Notes" }));
+    const menu = await screen.findByRole("menu");
+    fireEvent.click(within(menu).getByRole("menuitem", { name: "Notes を一覧から削除" }));
+
+    expect(removeWorkspace).toHaveBeenCalledWith({ workspaceId: "ws-1" });
   });
 
   it("RenameBar からアクティブファイルをリネームする", async () => {
