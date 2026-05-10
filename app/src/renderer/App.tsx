@@ -144,11 +144,39 @@ function RailWorkspaceSwitcher({
 export function App(): ReactElement {
   const [workspaceState, setWorkspaceState] = useState<WorkspaceState | null>(null);
   const [toastMessage, setToastMessage] = useState<{ text: string; type: "error" | "info" } | null>(null);
+  const [isToastClosing, setIsToastClosing] = useState(false);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const toastCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const closeToast = useCallback(() => {
+    if (!toastMessage || isToastClosing) return;
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    if (toastCloseTimerRef.current) clearTimeout(toastCloseTimerRef.current);
+    setIsToastClosing(true);
+    toastCloseTimerRef.current = setTimeout(() => {
+      setToastMessage(null);
+      setIsToastClosing(false);
+      toastCloseTimerRef.current = null;
+    }, 170);
+  }, [isToastClosing, toastMessage]);
   const showToast = useCallback((text: string, type: "error" | "info" = "error") => {
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    if (toastCloseTimerRef.current) clearTimeout(toastCloseTimerRef.current);
+    setIsToastClosing(false);
     setToastMessage({ text, type });
-    toastTimerRef.current = setTimeout(() => setToastMessage(null), 4000);
+    toastTimerRef.current = setTimeout(() => {
+      setIsToastClosing(true);
+      toastCloseTimerRef.current = setTimeout(() => {
+        setToastMessage(null);
+        setIsToastClosing(false);
+        toastCloseTimerRef.current = null;
+      }, 170);
+    }, 4000);
+  }, []);
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+      if (toastCloseTimerRef.current) clearTimeout(toastCloseTimerRef.current);
+    };
   }, []);
   const setWorkspaceError = useCallback((msg: string | null) => {
     if (msg) showToast(msg, "error");
@@ -477,7 +505,7 @@ export function App(): ReactElement {
     toggleTypewriterMode
   });
 
-  const { sidebarWidth, startSidebarResize } = useSidebarResize({
+  const { sidebarWidth, isSidebarResizing, startSidebarResize } = useSidebarResize({
     initialWidth: 260,
     maxWidth: 500,
     minWidth: 180
@@ -632,7 +660,7 @@ export function App(): ReactElement {
         {/* サイドバー */}
           <aside
             aria-hidden={!isSidebarOpen}
-            className={`sidebar${isSidebarOpen ? "" : " sidebar--closed"}`}
+            className={`sidebar${isSidebarOpen ? "" : " sidebar--closed"}${isSidebarResizing ? " sidebar--resizing" : ""}`}
             style={{ width: isSidebarOpen ? sidebarWidth : 0 }}
           >
             <div className="sidebar-header">
@@ -771,7 +799,7 @@ export function App(): ReactElement {
               />
             )}
             <div
-              className="sidebar-resize-handle"
+              className={`sidebar-resize-handle${isSidebarResizing ? " sidebar-resize-handle--active" : ""}`}
               onMouseDown={startSidebarResize}
             />
             </div>
@@ -1020,7 +1048,7 @@ export function App(): ReactElement {
       ) : null}
 
       {toastMessage ? (
-        <div className={`toast toast--${toastMessage.type}`} onClick={() => setToastMessage(null)}>
+        <div className={`toast toast--${toastMessage.type}${isToastClosing ? " toast--closing" : ""}`} onClick={closeToast}>
           {toastMessage.text}
         </div>
       ) : null}

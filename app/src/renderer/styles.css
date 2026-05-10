@@ -227,6 +227,11 @@ button:not(:disabled):active {
   pointer-events: none;
 }
 
+.sidebar--resizing {
+  border-right-color: var(--primary);
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+
 .sidebar > .sidebar-header,
 .sidebar > .sidebar-body {
   opacity: 1;
@@ -454,6 +459,14 @@ button:not(:disabled):active {
   color: var(--accent);
 }
 
+.file-tree-row--appearing {
+  animation: file-tree-appear 240ms cubic-bezier(.18, 1.25, .28, 1);
+}
+
+.file-tree-row--removing {
+  animation: file-tree-remove 180ms cubic-bezier(.4, 0, .2, 1);
+}
+
 .file-tree-row-wrap {
   align-items: center;
   display: flex;
@@ -520,6 +533,13 @@ button:not(:disabled):active {
   background: var(--hover-strong);
   outline: 1px dashed var(--accent);
   transform: translateX(2px) scale(1.012);
+}
+
+.file-tree-row.dragging {
+  background: rgba(0, 98, 140, 0.08);
+  color: var(--accent);
+  opacity: 0.78;
+  transform: translateX(3px) scale(1.012);
 }
 
 .file-tree--drag-over {
@@ -2194,6 +2214,7 @@ button:not(:disabled):active {
   position: absolute;
   right: -2px;
   top: 0;
+  transition: background-color 120ms ease, box-shadow 120ms ease, transform 120ms cubic-bezier(.18, 1.35, .28, 1);
   width: 6px;
   z-index: 20;
 }
@@ -2202,9 +2223,15 @@ button:not(:disabled):active {
   display: none;
 }
 
-.sidebar-resize-handle:hover {
+.sidebar-resize-handle:hover,
+.sidebar-resize-handle--active {
   background: rgba(31, 35, 40, 0.12);
-  transition: background-color 120ms ease;
+}
+
+.sidebar-resize-handle--active {
+  box-shadow: 0 0 0 1px rgba(0, 98, 140, 0.28);
+  transform: scaleX(1.45);
+  transform-origin: center;
 }
 
 /* ────────────────────────────────── */
@@ -2479,6 +2506,32 @@ button:not(:disabled):active {
   }
 }
 
+@keyframes file-tree-appear {
+  0% {
+    opacity: 0;
+    transform: translateX(-6px) scale(0.985);
+  }
+  70% {
+    opacity: 1;
+    transform: translateX(2px) scale(1.01);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes file-tree-remove {
+  0% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+  100% {
+    opacity: 0.42;
+    transform: translateX(-6px) scale(0.985);
+  }
+}
+
 @keyframes file-tree-drop-zone {
   from {
     transform: scale(0.99);
@@ -2497,6 +2550,15 @@ button:not(:disabled):active {
   }
 }
 
+@keyframes modal-overlay-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
 @keyframes modal-surface-in {
   from {
     opacity: 0;
@@ -2505,6 +2567,17 @@ button:not(:disabled):active {
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes modal-surface-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
   }
 }
 
@@ -2528,6 +2601,17 @@ button:not(:disabled):active {
   to {
     opacity: 1;
     transform: translateX(-50%) translateY(0) scale(1);
+  }
+}
+
+@keyframes toast-out {
+  from {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-50%) translateY(8px) scale(0.98);
   }
 }
 
@@ -2844,6 +2928,15 @@ button:not(:disabled):active {
   width: 480px;
 }
 
+.modal-overlay--closing {
+  animation: modal-overlay-out 160ms ease forwards;
+}
+
+.command-palette--closing,
+.quick-switcher--closing {
+  animation: modal-surface-out 160ms cubic-bezier(.4, 0, .2, 1) forwards;
+}
+
 .command-palette-input {
   background: transparent;
   border: none;
@@ -3134,6 +3227,9 @@ button:not(:disabled):active {
 }
 .toast--error { border-left: 3px solid var(--error); color: var(--error); }
 .toast--info { border-left: 3px solid var(--text-3); color: var(--text); }
+.toast--closing {
+  animation: toast-out 160ms cubic-bezier(.4, 0, .2, 1) forwards;
+}
 
 .error-note {
   color: var(--error);
@@ -3147,9 +3243,14 @@ button:not(:disabled):active {
   .pane-tab-close,
   .file-tree,
   .file-tree-row,
+  .file-tree-row--appearing,
+  .file-tree-row--removing,
   .modal-overlay,
+  .modal-overlay--closing,
   .command-palette,
+  .command-palette--closing,
   .quick-switcher,
+  .quick-switcher--closing,
   .command-item,
   .toast,
   .panes-container--split .pane + .pane,
@@ -3157,6 +3258,8 @@ button:not(:disabled):active {
   .sidebar-view-content,
   .outline-list,
   .links-panel-stack,
+  .sidebar,
+  .sidebar-resize-handle,
   .toolbar-dropdown-menu,
   .toolbar-inline-dialog,
   .toolbar-btn.active,
