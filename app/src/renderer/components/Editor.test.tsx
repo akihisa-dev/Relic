@@ -390,6 +390,52 @@ describe("Editor", () => {
     expect(viewRef.current?.state.doc.toString()).toContain("title: \"New title\" # 表示名");
   });
 
+  it("複雑なYAML値をフォーム上のYAML入力で編集できる", async () => {
+    const viewRef = createRef<EditorView | null>();
+    const { container } = render(
+      <Editor
+        content={"---\nstatus: draft\nmeta:\n  source: web\n  rating: 5\n---\n# 本文"}
+        onChange={vi.fn()}
+        settings={settings}
+        viewRef={viewRef}
+      />
+    );
+
+    await waitFor(() => expect(container.querySelector(".cm-frontmatter-yaml-input")).not.toBeNull());
+    expect(container.textContent).toContain("meta");
+    expect(container.querySelectorAll(".cm-frontmatter-input")).toHaveLength(1);
+
+    const yamlInput = container.querySelector(".cm-frontmatter-yaml-input") as HTMLTextAreaElement;
+    fireEvent.change(yamlInput, { target: { value: "source: web\nrating: 6" } });
+
+    expect(viewRef.current?.state.doc.toString()).toContain("meta:\n  source: web\n  rating: 6");
+
+    const input = container.querySelector(".cm-frontmatter-input") as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "review" } });
+
+    expect(viewRef.current?.state.doc.toString()).toContain("status: review");
+    expect(viewRef.current?.state.doc.toString()).toContain("meta:\n  source: web\n  rating: 6");
+  });
+
+  it("複雑なYAML値の入力が不正な場合は本文を更新しない", async () => {
+    const viewRef = createRef<EditorView | null>();
+    const { container } = render(
+      <Editor
+        content={"---\nmeta:\n  source: web\n---\n# 本文"}
+        onChange={vi.fn()}
+        settings={settings}
+        viewRef={viewRef}
+      />
+    );
+
+    await waitFor(() => expect(container.querySelector(".cm-frontmatter-yaml-input")).not.toBeNull());
+    const yamlInput = container.querySelector(".cm-frontmatter-yaml-input") as HTMLTextAreaElement;
+    fireEvent.change(yamlInput, { target: { value: "source: [web" } });
+
+    expect(yamlInput.getAttribute("aria-invalid")).toBe("true");
+    expect(viewRef.current?.state.doc.toString()).toContain("meta:\n  source: web");
+  });
+
   it("登録済みプロパティの入力能力をフォームに反映する", async () => {
     const viewRef = createRef<EditorView | null>();
     const onChange = vi.fn();

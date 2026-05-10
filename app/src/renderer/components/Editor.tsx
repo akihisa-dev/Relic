@@ -936,7 +936,9 @@ class FrontmatterPropertiesWidget extends WidgetType {
       ? this.booleanInput(view, key, value)
       : field?.type === "multi-select" || field?.type === "tags" || Array.isArray(value)
         ? this.arrayInput(view, key, Array.isArray(value) ? value : [], field)
-        : this.scalarInput(view, key, value, field);
+        : this.isEditableScalar(value)
+          ? this.scalarInput(view, key, value, field)
+          : this.complexValueInput(view, key, value);
     const removeButton = document.createElement("button");
     removeButton.className = "cm-frontmatter-remove";
     removeButton.title = "プロパティを削除";
@@ -946,6 +948,10 @@ class FrontmatterPropertiesWidget extends WidgetType {
 
     row.append(drag, label, input, removeButton);
     return row;
+  }
+
+  private isEditableScalar(value: unknown): boolean {
+    return value === null || value === undefined || typeof value !== "object" || value instanceof Date;
   }
 
   private renderAddRow(view: EditorView): HTMLElement {
@@ -1004,6 +1010,25 @@ class FrontmatterPropertiesWidget extends WidgetType {
     wrap.append(input);
     if (datalist) wrap.append(datalist);
     return wrap;
+  }
+
+  private complexValueInput(view: EditorView, key: string, value: unknown): HTMLElement {
+    const textarea = document.createElement("textarea");
+    textarea.className = "cm-frontmatter-yaml-input";
+    textarea.rows = 3;
+    textarea.spellcheck = false;
+    textarea.value = yaml.dump(value, { lineWidth: -1 }).trimEnd();
+
+    textarea.addEventListener("change", () => {
+      try {
+        textarea.removeAttribute("aria-invalid");
+        this.updateField(view, key, yaml.load(textarea.value));
+      } catch {
+        textarea.setAttribute("aria-invalid", "true");
+      }
+    });
+
+    return textarea;
   }
 
   private booleanInput(view: EditorView, key: string, value: unknown): HTMLElement {

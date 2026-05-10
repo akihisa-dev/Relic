@@ -1522,6 +1522,24 @@ button:disabled {
   width: 100%;
 }
 
+.cm-frontmatter-yaml-input {
+  background: transparent;
+  border: 0;
+  color: var(--text);
+  font-family: Menlo, monospace;
+  font-size: 0.9em;
+  line-height: 1.45;
+  min-width: 0;
+  outline: none;
+  padding: 2px 0;
+  resize: vertical;
+  width: 100%;
+}
+
+.cm-frontmatter-yaml-input[aria-invalid="true"] {
+  color: var(--danger);
+}
+
 .cm-frontmatter-add-input {
   color: var(--text-2);
 }
