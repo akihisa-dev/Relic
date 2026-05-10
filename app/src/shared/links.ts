@@ -16,6 +16,11 @@ export interface ResolvedWikiLink {
   wikiLink: WikiLink;
 }
 
+export interface MarkdownLinkTarget {
+  heading: string | null;
+  path: string;
+}
+
 export function parseWikiLinks(markdown: string): WikiLink[] {
   const links: WikiLink[] = [];
   const source = maskFencedCodeBlocks(markdown);
@@ -55,6 +60,35 @@ export function resolveWikiLinkPath(target: string, sourcePath: string): string 
   return normalizePathSegments(
     sourceDirectory === "" ? normalizedTarget : `${sourceDirectory}/${normalizedTarget}`
   );
+}
+
+export function resolveMarkdownLinkPath(href: string, sourcePath: string): MarkdownLinkTarget | null {
+  const trimmedHref = href.trim();
+
+  if (
+    trimmedHref === "" ||
+    /^[a-z][a-z0-9+.-]*:/i.test(trimmedHref) ||
+    trimmedHref.startsWith("#")
+  ) {
+    return null;
+  }
+
+  const [pathPart, headingPart] = trimmedHref.split("#", 2);
+  const decodedPath = decodeMarkdownLinkPath(pathPart);
+  const normalizedTarget = decodedPath.endsWith(".md") ? decodedPath : `${decodedPath}.md`;
+  const sourceDirectory = sourcePath.includes("/")
+    ? sourcePath.split("/").slice(0, -1).join("/")
+    : "";
+  const resolvedPath = normalizedTarget.startsWith("/")
+    ? normalizePathSegments(normalizedTarget)
+    : normalizePathSegments(
+      sourceDirectory === "" ? normalizedTarget : `${sourceDirectory}/${normalizedTarget}`
+    );
+
+  return {
+    heading: headingPart ? decodeMarkdownLinkPath(headingPart).trim() || null : null,
+    path: resolvedPath
+  };
 }
 
 export function resolveWikiLinks(
@@ -118,4 +152,12 @@ function normalizePathSegments(value: string): string {
   }
 
   return output.join("/");
+}
+
+function decodeMarkdownLinkPath(value: string): string {
+  try {
+    return decodeURIComponent(value.trim()).replace(/\\/g, "/");
+  } catch {
+    return value.trim().replace(/\\/g, "/");
+  }
 }

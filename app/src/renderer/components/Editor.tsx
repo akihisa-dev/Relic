@@ -18,6 +18,8 @@ interface EditorProps {
   content: string;
   frontmatterCandidates?: Record<string, string[]>;
   onChange: (content: string) => void;
+  onOpenLink?: (href: string) => void;
+  onOpenWikiLink?: (target: string, heading?: string) => void;
   settings: EditorSettings;
   typewriterMode?: boolean;
   userDefinedFields?: UserDefinedField[];
@@ -42,6 +44,13 @@ interface InlineMatch {
   contentTo: number;
   className: string;
   hideRanges: Array<{ from: number; to: number }>;
+}
+
+interface ClickableLinkAtPosition {
+  href?: string;
+  heading?: string;
+  target?: string;
+  type: "markdown" | "wiki";
 }
 
 interface FrontmatterBlock {
@@ -1809,7 +1818,9 @@ function buildExtensions(
   allFilePaths: string[],
   userDefinedFields: UserDefinedField[],
   frontmatterCandidates: Record<string, string[]>,
-  onContextMenu: (event: MouseEvent, view: EditorView) => boolean
+  onContextMenu: (event: MouseEvent, view: EditorView) => boolean,
+  onOpenLinkRef: React.RefObject<((href: string) => void) | undefined>,
+  onOpenWikiLinkRef: React.RefObject<((target: string, heading?: string) => void) | undefined>
 ) {
   return [
     history(),
@@ -1818,6 +1829,32 @@ function buildExtensions(
     EditorView.lineWrapping,
     autocompletion({ override: [buildWikiLinkCompletionSource(allFilePaths)] }),
     EditorView.domEventHandlers({
+      click: (event, view) => {
+        const target = event.target;
+        if (!(target instanceof HTMLElement) || !target.closest(".cm-live-link")) return false;
+        if (event.defaultPrevented || event.button !== 0) return false;
+
+        const position = view.posAtCoords({ x: event.clientX, y: event.clientY });
+        if (position === null) return false;
+
+        const link = findClickableLinkAtPosition(view.state.doc, position);
+        if (!link) return false;
+
+        event.preventDefault();
+        event.stopPropagation();
+
+        if (link.type === "markdown" && link.href) {
+          onOpenLinkRef.current?.(link.href);
+          return true;
+        }
+
+        if (link.type === "wiki" && link.target) {
+          onOpenWikiLinkRef.current?.(link.target, link.heading ?? undefined);
+          return true;
+        }
+
+        return false;
+      },
       contextmenu: onContextMenu
     }),
     EditorView.updateListener.of((update) => {
@@ -1850,6 +1887,55 @@ function buildExtensions(
     livePreviewTableField,
     livePreviewPlugin
   ];
+}
+
+export function findClickableLinkAtPosition(
+  doc: Text,
+  position: number
+): ClickableLinkAtPosition | null {
+  const line = doc.lineAt(position);
+  const offset = position - line.from;
+
+  for (const match of line.text.matchAll(/\[([^\]\n]+)\]\(([^)\n]+)\)/g)) {
+    const fullText = match[0];
+    const label = match[1];
+    const href = match[2];
+    const start = match.index ?? 0;
+    const labelStart = start + 1;
+    const labelEnd = labelStart + label.length;
+
+    if (offset >= start && offset <= start + fullText.length) {
+      return offset >= labelStart && offset <= labelEnd ? { href, type: "markdown" } : null;
+    }
+  }
+
+  for (const match of line.text.matchAll(/\[\[([^\]\n]+)\]\]/g)) {
+    const body = match[1];
+    const start = match.index ?? 0;
+    const end = start + match[0].length;
+
+    if (offset < start || offset > end) continue;
+
+    const [targetPart, aliasPart] = body.split("|", 2);
+    const blockParts = targetPart.trim().split("^", 2);
+    const headingParts = blockParts[0].split("#", 2);
+    const target = headingParts[0].trim();
+
+    if (!target) return null;
+
+    const visibleStart = aliasPart === undefined
+      ? start + 2
+      : start + 2 + targetPart.length + 1;
+    const visibleEnd = aliasPart === undefined
+      ? end - 2
+      : visibleStart + aliasPart.length;
+
+    return offset >= visibleStart && offset <= visibleEnd
+      ? { heading: headingParts[1]?.trim() || undefined, target, type: "wiki" }
+      : null;
+  }
+
+  return null;
 }
 
 function editorContextMenuPosition(x: number, y: number): { x: number; y: number } {
@@ -1909,6 +1995,8 @@ export function Editor({
   content,
   frontmatterCandidates = {},
   onChange,
+  onOpenLink,
+  onOpenWikiLink,
   settings,
   typewriterMode = false,
   userDefinedFields = [],
@@ -1918,6 +2006,8 @@ export function Editor({
   const containerRef = useRef<HTMLDivElement>(null);
   const internalViewRef = useRef<EditorView | null>(null);
   const onChangeRef = useRef(onChange);
+  const onOpenLinkRef = useRef(onOpenLink);
+  const onOpenWikiLinkRef = useRef(onOpenWikiLink);
   const allFilePathsRef = useRef(allFilePaths);
   const frontmatterCandidatesRef = useRef(frontmatterCandidates);
   const userDefinedFieldsRef = useRef(userDefinedFields);
@@ -1931,6 +2021,8 @@ export function Editor({
   } | null>(null);
 
   onChangeRef.current = onChange;
+  onOpenLinkRef.current = onOpenLink;
+  onOpenWikiLinkRef.current = onOpenWikiLink;
   allFilePathsRef.current = allFilePaths;
   frontmatterCandidatesRef.current = frontmatterCandidates;
   userDefinedFieldsRef.current = userDefinedFields;
@@ -2122,7 +2214,9 @@ export function Editor({
       allFilePathsRef.current,
       userDefinedFieldsRef.current,
       frontmatterCandidatesRef.current,
-      openContextMenu
+      openContextMenu,
+      onOpenLinkRef,
+      onOpenWikiLinkRef
     );
     const state = EditorState.create({ doc: content, extensions });
     const view = new EditorView({ state, parent: containerRef.current });
@@ -2176,7 +2270,9 @@ export function Editor({
       allFilePathsRef.current,
       userDefinedFieldsRef.current,
       frontmatterCandidatesRef.current,
-      openContextMenu
+      openContextMenu,
+      onOpenLinkRef,
+      onOpenWikiLinkRef
     );
     const state = EditorState.create({ doc: currentContent, extensions });
     const nextView = new EditorView({ state, parent: containerRef.current });

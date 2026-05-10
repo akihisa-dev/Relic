@@ -23,6 +23,8 @@ export interface PaneViewProps {
   viewRef: MutableRefObject<EditorView | null>;
   onCreateFile: (name: string) => void;
   onFocus: () => void;
+  onOpenLink?: (href: string) => void;
+  onOpenWikiLink?: (target: string, heading?: string) => void;
   onScrollTargetHandled?: () => void;
   onTabClose: (tabId: string) => void;
   onTabSelect: (tabId: string) => void;
@@ -52,6 +54,8 @@ export function PaneView({
   viewRef,
   onCreateFile,
   onFocus,
+  onOpenLink,
+  onOpenWikiLink,
   onScrollTargetHandled,
   onTabClose,
   onTabSelect,
@@ -289,6 +293,8 @@ export function PaneView({
               frontmatterCandidates={frontmatterCandidates}
               key={activeTab.id}
               onChange={(content) => updateTabContent(activeTab.id, content)}
+              onOpenLink={onOpenLink}
+              onOpenWikiLink={onOpenWikiLink}
               settings={editorSettings}
               typewriterMode={typewriterMode}
               userDefinedFields={userDefinedFields}
