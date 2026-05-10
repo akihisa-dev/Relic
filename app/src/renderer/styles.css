@@ -1218,7 +1218,11 @@ button:not(:disabled):active {
 
 .panes-container {
   display: grid;
+  grid-auto-flow: column;
+  grid-auto-rows: minmax(0, 1fr);
   grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  height: 100%;
   min-height: 0;
   min-width: 0;
   overflow: hidden;
@@ -1242,6 +1246,7 @@ button:not(:disabled):active {
 .pane {
   display: grid;
   grid-template-rows: 36px minmax(0, 1fr);
+  height: 100%;
   min-height: 0;
   min-width: 0;
   overflow: hidden;

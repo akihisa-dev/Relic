@@ -29,6 +29,8 @@ import {
   type RenameMarkdownFileInput,
   replaceInFileChannel,
   type ReplaceInFileInput,
+  revealWorkspaceItemChannel,
+  type RevealWorkspaceItemInput,
   searchAndReplaceChannel,
   type SearchAndReplaceInput,
   searchWorkspaceChannel,
@@ -50,6 +52,7 @@ import { applySearchAndReplace, replaceInFile, searchAndReplace } from "../files
 import { searchWorkspace } from "../files/search";
 import { listMarkdownTemplates } from "../files/templates";
 import { moveWorkspaceItemToTrash } from "../files/trash";
+import { resolveWorkspaceRelativePath } from "../files/paths";
 import { readAppSettings } from "../settings/appSettings";
 import { toWorkspaceState } from "../workspace/workspaceService";
 import { buildWorkspaceState } from "./workspaceHandlers";
@@ -160,7 +163,7 @@ export function registerFileHandlers(): void {
           return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
         }
 
-        const createdFolder = await createFolder(state.activeWorkspace.path, input.name);
+        const createdFolder = await createFolder(state.activeWorkspace.path, input.name, input.parentFolder);
 
         if (!createdFolder.ok) {
           return createdFolder;
@@ -524,6 +527,39 @@ export function registerFileHandlers(): void {
         return fail(
           "TRASH_MOVE_FAILED",
           "ゴミ箱に移動できませんでした。",
+          error instanceof Error ? error.message : String(error)
+        );
+      }
+    }
+  );
+
+  ipcMain.handle(
+    revealWorkspaceItemChannel,
+    async (_event, input: RevealWorkspaceItemInput): Promise<RelicResult<void>> => {
+      try {
+        if (!isPathInput(input)) {
+          return fail("REVEAL_INVALID_INPUT", "表示する項目を選択してください。");
+        }
+
+        const settings = await readAppSettings(app.getPath("userData"));
+        const state = toWorkspaceState(settings);
+
+        if (!state.activeWorkspace) {
+          return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
+        }
+
+        const absolutePath = resolveWorkspaceRelativePath(state.activeWorkspace.path, input.path);
+
+        if (!absolutePath.ok) {
+          return absolutePath;
+        }
+
+        shell.showItemInFolder(absolutePath.value);
+        return ok(undefined);
+      } catch (error) {
+        return fail(
+          "REVEAL_FAILED",
+          "Finderで表示できませんでした。",
           error instanceof Error ? error.message : String(error)
         );
       }

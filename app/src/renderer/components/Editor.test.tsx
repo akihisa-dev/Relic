@@ -4,9 +4,9 @@ import { ensureSyntaxTree } from "@codemirror/language";
 import { EditorState } from "@codemirror/state";
 import type { EditorView } from "@codemirror/view";
 import { GFM } from "@lezer/markdown";
-import { fireEvent, render, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { createRef } from "react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { defaultEditorSettings } from "../../shared/ipc";
 import { buildLivePreviewDecorations, buildTableDecorations, buildWikiLinkCompletionSource, Editor } from "./Editor";
@@ -95,6 +95,10 @@ async function collectInlineLivePreviewWidgetClasses(content: string, cursor: nu
 }
 
 describe("Editor", () => {
+  afterEach(() => {
+    window.relic = undefined;
+  });
+
   it("テキスト入力変更を onChange に通知し、Undo / Redo が動作する", async () => {
     const onChange = vi.fn();
     const viewRef = createRef<EditorView | null>();
@@ -120,6 +124,88 @@ describe("Editor", () => {
 
     expect(redo(view)).toBe(true);
     expect(view.state.doc.toString()).toBe("hello world");
+  });
+
+  it("本文の右クリックメニューからコピー・カット・ペーストを実行できる", async () => {
+    const viewRef = createRef<EditorView | null>();
+    const readClipboardText = vi.fn().mockReturnValue("!");
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    window.relic = {
+      readClipboardText
+    } as unknown as typeof window.relic;
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: {
+        readText: readClipboardText,
+        writeText
+      }
+    });
+
+    render(
+      <Editor
+        content="hello world"
+        onChange={vi.fn()}
+        settings={{ ...settings, language: "ja" }}
+        viewRef={viewRef}
+      />
+    );
+
+    await waitFor(() => expect(viewRef.current).not.toBeNull());
+    const view = viewRef.current!;
+    const contentElement = view.dom.querySelector(".cm-content")!;
+    view.dispatch({ selection: { anchor: 0, head: 5 } });
+
+    fireEvent.mouseDown(contentElement, { button: 2, clientX: 32, clientY: 32 });
+    expect(await screen.findByRole("menuitem", { name: "Copy" })).toBeInTheDocument();
+    fireEvent.keyDown(window, { key: "Escape" });
+    await waitFor(() => {
+      expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+    });
+
+    fireEvent.contextMenu(contentElement, { clientX: 32, clientY: 32 });
+    expect(await screen.findByRole("menuitem", { name: "Cut" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "Copy" })).toBeEnabled();
+    expect(screen.getByRole("menuitem", { name: "Cut" })).toBeEnabled();
+    fireEvent.click(screen.getByRole("menuitem", { name: "Copy" }));
+    await waitFor(() => {
+      expect(writeText).toHaveBeenCalledWith("hello");
+    });
+    await waitFor(() => {
+      expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+    });
+
+    view.dispatch({ selection: { anchor: 5, head: 5 } });
+    fireEvent.contextMenu(contentElement, { clientX: 32, clientY: 32 });
+    expect(await screen.findByRole("menuitem", { name: "Copy" })).toBeEnabled();
+    expect(screen.getByRole("menuitem", { name: "Cut" })).toBeEnabled();
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Paste" }));
+    await waitFor(() => {
+      expect(document.body.textContent).toContain("hello! world");
+    });
+  });
+
+  it("Electronでは本文の右クリックをネイティブメニューへ任せる", async () => {
+    const viewRef = createRef<EditorView | null>();
+    window.relic = {
+      readClipboardText: vi.fn(),
+      writeClipboardText: vi.fn()
+    } as unknown as typeof window.relic;
+
+    render(
+      <Editor
+        content="hello world"
+        onChange={vi.fn()}
+        settings={{ ...settings, language: "ja" }}
+        viewRef={viewRef}
+      />
+    );
+
+    await waitFor(() => expect(viewRef.current).not.toBeNull());
+    const contentElement = viewRef.current!.dom.querySelector(".cm-content")!;
+
+    fireEvent.contextMenu(contentElement, { clientX: 32, clientY: 32 });
+
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
   });
 
   it("外側からcontentが更新されたら表示中の文書も同期する", async () => {

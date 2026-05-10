@@ -33,6 +33,14 @@ function parentFolderOf(path: string): string {
   return separatorIndex >= 0 ? path.slice(0, separatorIndex) : "";
 }
 
+function markdownLinkForPath(path: string): string {
+  return `[[${path.replace(/\.md$/i, "")}]]`;
+}
+
+function normalizeDestinationFolder(folder: string): string {
+  return folder.trim().replace(/\\/g, "/").replace(/^\/+|\/+$/g, "");
+}
+
 function parseDragItems(dataTransfer: DataTransfer): Array<{ path: string; type: WorkspaceTreeNode["type"] }> {
   const raw = dataTransfer.getData("application/relic-item");
   if (!raw) return [];
@@ -90,7 +98,7 @@ function moveItemsToDestination(
 function contextMenuPosition(x: number, y: number): { x: number; y: number } {
   const margin = 8;
   const estimatedWidth = 220;
-  const estimatedHeight = 240;
+  const estimatedHeight = 340;
   const maxX = Math.max(margin, window.innerWidth - estimatedWidth - margin);
   const maxY = Math.max(margin, window.innerHeight - estimatedHeight - margin);
 
@@ -107,12 +115,15 @@ export interface FileTreeProps {
   nodes: WorkspaceTreeNode[];
   onDeleteItem?: (path: string, type: WorkspaceTreeNode["type"]) => void;
   onDeleteSelectedItems?: () => void;
+  onCreateFileInFolder?: (folderPath: string) => void;
+  onCreateFolderInFolder?: (folderPath: string) => void;
   onDuplicateFile?: (path: string) => void;
   onMoveFile?: (path: string, destFolder: string) => void;
   onMoveFolder?: (path: string, destFolder: string) => void;
   onMoveItems?: (items: Array<{ path: string; type: WorkspaceTreeNode["type"] }>, destFolder: string) => void;
   onOpenFile: (path: string) => void;
   onOpenInOtherPane?: (path: string) => void;
+  onRevealItem?: (path: string) => void;
   onRenameItem?: (path: string, type: WorkspaceTreeNode["type"], newName: string) => void;
   onSelectFolder: (node: Extract<WorkspaceTreeNode, { type: "folder" }>) => void;
   onSelectItem?: (node: WorkspaceTreeNode, e: React.MouseEvent<HTMLButtonElement>) => boolean;
@@ -128,12 +139,15 @@ export function FileTreeItem({
   node,
   onDeleteItem,
   onDeleteSelectedItems,
+  onCreateFileInFolder,
+  onCreateFolderInFolder,
   onDuplicateFile,
   onMoveFile,
   onMoveFolder,
   onMoveItems,
   onOpenFile,
   onOpenInOtherPane,
+  onRevealItem,
   onRenameItem,
   onSelectFolder,
   onSelectItem,
@@ -147,12 +161,15 @@ export function FileTreeItem({
   node: WorkspaceTreeNode;
   onDeleteItem?: (path: string, type: WorkspaceTreeNode["type"]) => void;
   onDeleteSelectedItems?: () => void;
+  onCreateFileInFolder?: (folderPath: string) => void;
+  onCreateFolderInFolder?: (folderPath: string) => void;
   onDuplicateFile?: (path: string) => void;
   onMoveFile?: (path: string, destFolder: string) => void;
   onMoveFolder?: (path: string, destFolder: string) => void;
   onMoveItems?: (items: Array<{ path: string; type: WorkspaceTreeNode["type"] }>, destFolder: string) => void;
   onOpenFile: (path: string) => void;
   onOpenInOtherPane?: (path: string) => void;
+  onRevealItem?: (path: string) => void;
   onRenameItem?: (path: string, type: WorkspaceTreeNode["type"], newName: string) => void;
   onSelectFolder: (node: Extract<WorkspaceTreeNode, { type: "folder" }>) => void;
   onSelectItem?: (node: WorkspaceTreeNode, e: React.MouseEvent<HTMLButtonElement>) => boolean;
@@ -263,6 +280,23 @@ export function FileTreeItem({
     void navigator.clipboard?.writeText(node.path);
   };
 
+  const copyMarkdownLink = (): void => {
+    setContextMenu(null);
+    void navigator.clipboard?.writeText(markdownLinkForPath(node.path));
+  };
+
+  const moveNode = (): void => {
+    setContextMenu(null);
+    const defaultFolder = parentFolderOf(node.path);
+    const destination = window.prompt(t("files.moveDestinationPrompt"), defaultFolder);
+    if (destination === null) return;
+    moveItemsToDestination(
+      useSelectedItems ? selectedItems : [{ path: node.path, type: node.type }],
+      normalizeDestinationFolder(destination),
+      { onMoveFile, onMoveFolder, onMoveItems }
+    );
+  };
+
   const handleDrop = (e: React.DragEvent, destFolder: string): void => {
     e.preventDefault();
     e.stopPropagation();
@@ -360,6 +394,35 @@ export function FileTreeItem({
           >
             {useSelectedItems ? null : (
               <>
+                {node.type === "folder" && onCreateFileInFolder ? (
+                  <button
+                    className="tab-context-menu-item"
+                    onClick={() => {
+                      setContextMenu(null);
+                      onCreateFileInFolder(node.path);
+                    }}
+                    role="menuitem"
+                    type="button"
+                  >
+                    {t("files.createFileHere")}
+                  </button>
+                ) : null}
+                {node.type === "folder" && onCreateFolderInFolder ? (
+                  <button
+                    className="tab-context-menu-item"
+                    onClick={() => {
+                      setContextMenu(null);
+                      onCreateFolderInFolder(node.path);
+                    }}
+                    role="menuitem"
+                    type="button"
+                  >
+                    {t("files.createFolderHere")}
+                  </button>
+                ) : null}
+                {node.type === "folder" && (onCreateFileInFolder || onCreateFolderInFolder) ? (
+                  <div className="tab-context-menu-separator" />
+                ) : null}
                 <button className="tab-context-menu-item" onClick={openNode} role="menuitem" type="button">
                   {t("files.open")}
                 </button>
@@ -392,6 +455,24 @@ export function FileTreeItem({
                 <button className="tab-context-menu-item" onClick={copyPath} role="menuitem" type="button">
                   {t("files.copyPath")}
                 </button>
+                {node.type === "file" ? (
+                  <button className="tab-context-menu-item" onClick={copyMarkdownLink} role="menuitem" type="button">
+                    {t("files.copyMarkdownLink")}
+                  </button>
+                ) : null}
+                {onRevealItem ? (
+                  <button
+                    className="tab-context-menu-item"
+                    onClick={() => {
+                      setContextMenu(null);
+                      onRevealItem(node.path);
+                    }}
+                    role="menuitem"
+                    type="button"
+                  >
+                    {t("files.revealInFinder")}
+                  </button>
+                ) : null}
                 <div className="tab-context-menu-separator" />
               </>
             )}
@@ -413,6 +494,9 @@ export function FileTreeItem({
                 {t("files.duplicate")}
               </button>
             ) : null}
+            <button className="tab-context-menu-item" onClick={moveNode} role="menuitem" type="button">
+              {useSelectedItems ? t("files.moveSelected") : t("files.move")}
+            </button>
             <div className="tab-context-menu-separator" />
             <button
               className="tab-context-menu-item danger"
@@ -439,12 +523,15 @@ export function FileTreeItem({
           nodes={node.children}
           onDeleteItem={onDeleteItem}
           onDeleteSelectedItems={onDeleteSelectedItems}
+          onCreateFileInFolder={onCreateFileInFolder}
+          onCreateFolderInFolder={onCreateFolderInFolder}
           onDuplicateFile={onDuplicateFile}
           onMoveFile={onMoveFile}
           onMoveFolder={onMoveFolder}
           onMoveItems={onMoveItems}
           onOpenFile={onOpenFile}
           onOpenInOtherPane={onOpenInOtherPane}
+          onRevealItem={onRevealItem}
           onRenameItem={onRenameItem}
           onSelectFolder={onSelectFolder}
           onSelectItem={onSelectItem}
@@ -466,12 +553,15 @@ export function FileTree({
   nodes,
   onDeleteItem,
   onDeleteSelectedItems,
+  onCreateFileInFolder,
+  onCreateFolderInFolder,
   onDuplicateFile,
   onMoveFile,
   onMoveFolder,
   onMoveItems,
   onOpenFile,
   onOpenInOtherPane,
+  onRevealItem,
   onRenameItem,
   onSelectFolder,
   onSelectItem,
@@ -534,12 +624,15 @@ export function FileTree({
           node={node}
           onDeleteItem={onDeleteItem}
           onDeleteSelectedItems={onDeleteSelectedItems}
+          onCreateFileInFolder={onCreateFileInFolder}
+          onCreateFolderInFolder={onCreateFolderInFolder}
           onDuplicateFile={onDuplicateFile}
           onMoveFile={onMoveFile}
           onMoveFolder={onMoveFolder}
           onMoveItems={onMoveItems}
           onOpenFile={onOpenFile}
           onOpenInOtherPane={onOpenInOtherPane}
+          onRevealItem={onRevealItem}
           onRenameItem={onRenameItem}
           onSelectFolder={onSelectFolder}
           onSelectItem={onSelectItem}

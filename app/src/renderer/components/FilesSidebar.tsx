@@ -12,7 +12,9 @@ export interface FilesSidebarProps {
   isCreatingWorkspace: boolean;
   isOpeningWorkspace: boolean;
   onCreateFile: () => void;
+  onCreateFileInFolder?: (folderPath: string) => void;
   onCreateFolder: () => void;
+  onCreateFolderInFolder?: (folderPath: string) => void;
   onCreateWorkspace: () => void;
   onDeleteItem: (path: string, type: WorkspaceTreeNode["type"]) => void;
   onDeleteItems: (items: Array<{ path: string; type: WorkspaceTreeNode["type"] }>) => void;
@@ -23,6 +25,7 @@ export interface FilesSidebarProps {
   onOpenFile: (path: string) => void;
   onOpenInOtherPane?: (path: string) => void;
   onOpenWorkspace: () => void;
+  onRevealItem?: (path: string) => void;
   onRenameItem: (path: string, type: WorkspaceTreeNode["type"], newName: string) => void;
   onSelectFolder: (node: Extract<WorkspaceTreeNode, { type: "folder" }>) => void;
   onTogglePin: (path: string) => void;
@@ -38,7 +41,9 @@ export function FilesSidebar({
   isCreatingWorkspace,
   isOpeningWorkspace,
   onCreateFile,
+  onCreateFileInFolder,
   onCreateFolder,
+  onCreateFolderInFolder,
   onCreateWorkspace,
   onDeleteItem,
   onDeleteItems,
@@ -49,6 +54,7 @@ export function FilesSidebar({
   onOpenFile,
   onOpenInOtherPane,
   onOpenWorkspace,
+  onRevealItem,
   onRenameItem,
   onSelectFolder,
   onTogglePin,
@@ -189,12 +195,15 @@ export function FilesSidebar({
                       node={node}
                       onDeleteItem={onDeleteItem}
                       onDeleteSelectedItems={() => onDeleteItems(selectedItems)}
+                      onCreateFileInFolder={onCreateFileInFolder}
+                      onCreateFolderInFolder={onCreateFolderInFolder}
                       onDuplicateFile={onDuplicateFile}
                       onMoveFile={onMoveFile}
                       onMoveFolder={onMoveFolder}
                       onMoveItems={onMoveItems}
                       onOpenFile={onOpenFile}
                       onOpenInOtherPane={onOpenInOtherPane}
+                      onRevealItem={onRevealItem}
                       onRenameItem={onRenameItem}
                       onSelectFolder={onSelectFolder}
                       onSelectItem={handleSelectItem}
@@ -213,12 +222,15 @@ export function FilesSidebar({
             nodes={userNodes}
             onDeleteItem={onDeleteItem}
             onDeleteSelectedItems={() => onDeleteItems(selectedItems)}
+            onCreateFileInFolder={onCreateFileInFolder}
+            onCreateFolderInFolder={onCreateFolderInFolder}
             onDuplicateFile={onDuplicateFile}
             onMoveFile={onMoveFile}
             onMoveFolder={onMoveFolder}
             onMoveItems={onMoveItems}
             onOpenFile={onOpenFile}
             onOpenInOtherPane={onOpenInOtherPane}
+            onRevealItem={onRevealItem}
             onRenameItem={onRenameItem}
             onSelectFolder={onSelectFolder}
             onSelectItem={handleSelectItem}
