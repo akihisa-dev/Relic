@@ -1011,6 +1011,201 @@ describe("App", () => {
     });
   });
 
+  it("展開済みフォルダ内の余白へドロップしたときは、そのフォルダ内へ移動する", async () => {
+    const moveMarkdownFile = vi.fn().mockResolvedValue({
+      ok: true,
+      value: {
+        file: { content: "# Note", name: "note", path: "archive/note.md" },
+        workspaceState: withWorkspace
+      }
+    });
+
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [
+            { name: "note", path: "note.md", type: "file" },
+            {
+              children: [{ name: "old", path: "archive/old.md", type: "file" }],
+              name: "archive",
+              path: "archive",
+              type: "folder"
+            }
+          ]
+        }
+      }),
+      moveMarkdownFile
+    });
+
+    const { container } = await renderApp();
+
+    const noteRow = await screen.findByRole("button", { name: /note/ });
+    const archiveRow = await screen.findByRole("button", { name: /archive/ });
+    const archiveTree = archiveRow.closest("li")?.querySelector("ul.file-tree");
+
+    expect(archiveTree).not.toBeNull();
+
+    fireEvent.dragStart(noteRow, {
+      dataTransfer: { effectAllowed: "move", setData: vi.fn() }
+    });
+    fireEvent.dragOver(archiveTree ?? container, {
+      dataTransfer: { getData: () => JSON.stringify({ path: "note.md", type: "file" }) }
+    });
+
+    expect(archiveTree).toHaveClass("file-tree--drag-over");
+
+    fireEvent.drop(archiveTree ?? container, {
+      dataTransfer: { getData: () => JSON.stringify({ path: "note.md", type: "file" }) }
+    });
+
+    await waitFor(() => {
+      expect(moveMarkdownFile).toHaveBeenCalledWith({ destinationFolder: "archive", path: "note.md" });
+    });
+  });
+
+  it("フォルダ内のファイル行へドロップしたときは、その親フォルダ内へ移動する", async () => {
+    const moveMarkdownFile = vi.fn().mockResolvedValue({
+      ok: true,
+      value: {
+        file: { content: "# Note", name: "note", path: "archive/note.md" },
+        workspaceState: withWorkspace
+      }
+    });
+
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [
+            { name: "note", path: "note.md", type: "file" },
+            {
+              children: [{ name: "old", path: "archive/old.md", type: "file" }],
+              name: "archive",
+              path: "archive",
+              type: "folder"
+            }
+          ]
+        }
+      }),
+      moveMarkdownFile
+    });
+
+    await renderApp();
+
+    const noteRow = await screen.findByRole("button", { name: /note/ });
+    const oldRow = await screen.findByRole("button", { name: /old/ });
+
+    fireEvent.dragStart(noteRow, {
+      dataTransfer: { effectAllowed: "move", setData: vi.fn() }
+    });
+    fireEvent.drop(oldRow, {
+      dataTransfer: { getData: () => JSON.stringify({ path: "note.md", type: "file" }) }
+    });
+
+    await waitFor(() => {
+      expect(moveMarkdownFile).toHaveBeenCalledWith({ destinationFolder: "archive", path: "note.md" });
+    });
+  });
+
+  it("空フォルダの内容エリアへドロップできる", async () => {
+    const moveMarkdownFile = vi.fn().mockResolvedValue({
+      ok: true,
+      value: {
+        file: { content: "# Note", name: "note", path: "archive/note.md" },
+        workspaceState: withWorkspace
+      }
+    });
+
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [
+            { name: "note", path: "note.md", type: "file" },
+            { children: [], name: "archive", path: "archive", type: "folder" }
+          ]
+        }
+      }),
+      moveMarkdownFile
+    });
+
+    const { container } = await renderApp();
+
+    const noteRow = await screen.findByRole("button", { name: /note/ });
+    const archiveRow = await screen.findByRole("button", { name: /archive/ });
+    const archiveTree = archiveRow.closest("li")?.querySelector("ul.file-tree");
+
+    expect(archiveTree).not.toBeNull();
+
+    fireEvent.dragStart(noteRow, {
+      dataTransfer: { effectAllowed: "move", setData: vi.fn() }
+    });
+    fireEvent.dragOver(archiveTree ?? container, {
+      dataTransfer: { getData: () => JSON.stringify({ path: "note.md", type: "file" }) }
+    });
+
+    expect(archiveTree).toHaveClass("file-tree--drag-over");
+
+    fireEvent.drop(archiveTree ?? container, {
+      dataTransfer: { getData: () => JSON.stringify({ path: "note.md", type: "file" }) }
+    });
+
+    await waitFor(() => {
+      expect(moveMarkdownFile).toHaveBeenCalledWith({ destinationFolder: "archive", path: "note.md" });
+    });
+  });
+
+  it("同じ親フォルダや子孫フォルダへはドラッグ移動しない", async () => {
+    const moveFolder = vi.fn();
+    const moveMarkdownFile = vi.fn();
+
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [
+            {
+              children: [
+                { name: "note", path: "archive/note.md", type: "file" },
+                {
+                  children: [],
+                  name: "child",
+                  path: "archive/child",
+                  type: "folder"
+                }
+              ],
+              name: "archive",
+              path: "archive",
+              type: "folder"
+            }
+          ]
+        }
+      }),
+      moveFolder,
+      moveMarkdownFile
+    });
+
+    await renderApp();
+
+    const archiveRow = await screen.findByRole("button", { name: /archive/ });
+    const childRow = await screen.findByRole("button", { name: /child/ });
+
+    fireEvent.drop(archiveRow, {
+      dataTransfer: { getData: () => JSON.stringify({ path: "archive/note.md", type: "file" }) }
+    });
+    fireEvent.drop(childRow, {
+      dataTransfer: { getData: () => JSON.stringify({ path: "archive", type: "folder" }) }
+    });
+
+    expect(moveMarkdownFile).not.toHaveBeenCalled();
+    expect(moveFolder).not.toHaveBeenCalled();
+  });
+
   it("ファイルとフォルダを複数選択できる", async () => {
     window.relic = makeRelicApi({
       getWorkspaceState: vi.fn().mockResolvedValue({

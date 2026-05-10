@@ -415,6 +415,12 @@ button:not(:disabled):active {
   border-left: 1px solid var(--border);
   margin-left: 14px;
   padding-left: 12px;
+  transition:
+    background-color 220ms ease,
+    border-color 220ms ease,
+    box-shadow 220ms ease,
+    padding-left 220ms cubic-bezier(.22, 1, .36, 1),
+    transform 220ms cubic-bezier(.22, 1, .36, 1);
 }
 
 .file-tree--expanding {
@@ -464,7 +470,7 @@ button:not(:disabled):active {
 }
 
 .file-tree-row--appearing {
-  animation: file-tree-appear 240ms cubic-bezier(.18, 1.25, .28, 1);
+  animation: file-tree-appear 260ms cubic-bezier(.22, 1, .36, 1);
 }
 
 .file-tree-row--removing {
@@ -534,9 +540,10 @@ button:not(:disabled):active {
 }
 
 .file-tree-row.drag-over {
-  background: var(--hover-strong);
-  outline: 1px dashed var(--accent);
-  transform: translateX(2px) scale(1.012);
+  background: var(--accent-softer);
+  box-shadow: inset 2px 0 0 var(--accent);
+  outline: none;
+  transform: translateX(1px);
 }
 
 .file-tree-row.dragging {
@@ -549,7 +556,13 @@ button:not(:disabled):active {
 .file-tree--drag-over {
   background: var(--accent-softer);
   border-radius: 6px;
-  animation: file-tree-drop-zone 180ms cubic-bezier(.18, 1.25, .28, 1);
+  box-shadow: inset 1px 0 0 var(--accent-ring);
+}
+
+.file-tree .file-tree.file-tree--drag-over {
+  border-left-color: var(--accent);
+  padding-left: 16px;
+  transform: translateX(1px);
 }
 
 .file-tree-icon {
@@ -2557,15 +2570,11 @@ button:not(:disabled):active {
 @keyframes file-tree-appear {
   0% {
     opacity: 0;
-    transform: translateX(-6px) scale(0.985);
-  }
-  70% {
-    opacity: 1;
-    transform: translateX(2px) scale(1.01);
+    transform: translateX(-4px);
   }
   100% {
     opacity: 1;
-    transform: translateX(0) scale(1);
+    transform: translateX(0);
   }
 }
 
@@ -2577,15 +2586,6 @@ button:not(:disabled):active {
   100% {
     opacity: 0.42;
     transform: translateX(-6px) scale(0.985);
-  }
-}
-
-@keyframes file-tree-drop-zone {
-  from {
-    transform: scale(0.99);
-  }
-  to {
-    transform: scale(1);
   }
 }
 
