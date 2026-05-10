@@ -90,7 +90,7 @@ function moveItemsToDestination(
 function contextMenuPosition(x: number, y: number): { x: number; y: number } {
   const margin = 8;
   const estimatedWidth = 220;
-  const estimatedHeight = 132;
+  const estimatedHeight = 240;
   const maxX = Math.max(margin, window.innerWidth - estimatedWidth - margin);
   const maxY = Math.max(margin, window.innerHeight - estimatedHeight - margin);
 
@@ -112,6 +112,7 @@ export interface FileTreeProps {
   onMoveFolder?: (path: string, destFolder: string) => void;
   onMoveItems?: (items: Array<{ path: string; type: WorkspaceTreeNode["type"] }>, destFolder: string) => void;
   onOpenFile: (path: string) => void;
+  onOpenInOtherPane?: (path: string) => void;
   onRenameItem?: (path: string, type: WorkspaceTreeNode["type"], newName: string) => void;
   onSelectFolder: (node: Extract<WorkspaceTreeNode, { type: "folder" }>) => void;
   onSelectItem?: (node: WorkspaceTreeNode, e: React.MouseEvent<HTMLButtonElement>) => boolean;
@@ -132,6 +133,7 @@ export function FileTreeItem({
   onMoveFolder,
   onMoveItems,
   onOpenFile,
+  onOpenInOtherPane,
   onRenameItem,
   onSelectFolder,
   onSelectItem,
@@ -150,6 +152,7 @@ export function FileTreeItem({
   onMoveFolder?: (path: string, destFolder: string) => void;
   onMoveItems?: (items: Array<{ path: string; type: WorkspaceTreeNode["type"] }>, destFolder: string) => void;
   onOpenFile: (path: string) => void;
+  onOpenInOtherPane?: (path: string) => void;
   onRenameItem?: (path: string, type: WorkspaceTreeNode["type"], newName: string) => void;
   onSelectFolder: (node: Extract<WorkspaceTreeNode, { type: "folder" }>) => void;
   onSelectItem?: (node: WorkspaceTreeNode, e: React.MouseEvent<HTMLButtonElement>) => boolean;
@@ -242,6 +245,22 @@ export function FileTreeItem({
       setIsRemoving(false);
       removeMotionTimerRef.current = null;
     }, 190);
+  };
+
+  const openNode = (): void => {
+    setContextMenu(null);
+    if (node.type === "file") {
+      onOpenFile(node.path);
+      return;
+    }
+
+    setIsExpanded(true);
+    onSelectFolder(node);
+  };
+
+  const copyPath = (): void => {
+    setContextMenu(null);
+    void navigator.clipboard?.writeText(node.path);
   };
 
   const handleDrop = (e: React.DragEvent, destFolder: string): void => {
@@ -340,6 +359,43 @@ export function FileTreeItem({
             style={{ left: contextMenu.x, position: "fixed", top: contextMenu.y, zIndex: 1000 }}
           >
             {useSelectedItems ? null : (
+              <>
+                <button className="tab-context-menu-item" onClick={openNode} role="menuitem" type="button">
+                  {t("files.open")}
+                </button>
+                {node.type === "file" && onOpenInOtherPane ? (
+                  <button
+                    className="tab-context-menu-item"
+                    onClick={() => {
+                      setContextMenu(null);
+                      onOpenInOtherPane(node.path);
+                    }}
+                    role="menuitem"
+                    type="button"
+                  >
+                    {t("pane.openInOtherPane")}
+                  </button>
+                ) : null}
+                {onTogglePin ? (
+                  <button
+                    className="tab-context-menu-item"
+                    onClick={() => {
+                      setContextMenu(null);
+                      onTogglePin(node.path);
+                    }}
+                    role="menuitem"
+                    type="button"
+                  >
+                    {isPinned ? t("files.unpin") : t("files.pin")}
+                  </button>
+                ) : null}
+                <button className="tab-context-menu-item" onClick={copyPath} role="menuitem" type="button">
+                  {t("files.copyPath")}
+                </button>
+                <div className="tab-context-menu-separator" />
+              </>
+            )}
+            {useSelectedItems ? null : (
               <button className="tab-context-menu-item" onClick={startRename} role="menuitem" type="button">
                 {t("files.rename")}
               </button>
@@ -388,6 +444,7 @@ export function FileTreeItem({
           onMoveFolder={onMoveFolder}
           onMoveItems={onMoveItems}
           onOpenFile={onOpenFile}
+          onOpenInOtherPane={onOpenInOtherPane}
           onRenameItem={onRenameItem}
           onSelectFolder={onSelectFolder}
           onSelectItem={onSelectItem}
@@ -414,6 +471,7 @@ export function FileTree({
   onMoveFolder,
   onMoveItems,
   onOpenFile,
+  onOpenInOtherPane,
   onRenameItem,
   onSelectFolder,
   onSelectItem,
@@ -481,6 +539,7 @@ export function FileTree({
           onMoveFolder={onMoveFolder}
           onMoveItems={onMoveItems}
           onOpenFile={onOpenFile}
+          onOpenInOtherPane={onOpenInOtherPane}
           onRenameItem={onRenameItem}
           onSelectFolder={onSelectFolder}
           onSelectItem={onSelectItem}

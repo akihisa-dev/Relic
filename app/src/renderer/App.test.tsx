@@ -821,6 +821,65 @@ describe("App", () => {
     });
   });
 
+  it("ファイルツリーの右クリックメニューから開く・ピン留め・パスコピーを実行する", async () => {
+    const readMarkdownFile = vi.fn().mockResolvedValue({
+      ok: true,
+      value: { content: "本文テスト", name: "読書メモ", path: "読書メモ.md" }
+    });
+    const togglePin = vi.fn().mockResolvedValue({
+      ok: true,
+      value: {
+        ...withWorkspace,
+        fileTree: [{ name: "読書メモ", path: "読書メモ.md", type: "file" }],
+        pinnedPaths: ["読書メモ.md"]
+      }
+    });
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText }
+    });
+
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [{ name: "読書メモ", path: "読書メモ.md", type: "file" }]
+        }
+      }),
+      readMarkdownFile,
+      togglePin
+    });
+
+    await renderApp();
+
+    const fileRow = await screen.findByRole("button", { name: /読書メモ/ });
+    fireEvent.contextMenu(fileRow);
+
+    expect(await screen.findByRole("menuitem", { name: "開く" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "ピン留め" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "パスをコピー" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("menuitem", { name: "パスをコピー" }));
+
+    expect(writeText).toHaveBeenCalledWith("読書メモ.md");
+
+    fireEvent.contextMenu(fileRow);
+    fireEvent.click(await screen.findByRole("menuitem", { name: "ピン留め" }));
+
+    await waitFor(() => {
+      expect(togglePin).toHaveBeenCalledWith("読書メモ.md");
+    });
+
+    fireEvent.contextMenu(fileRow);
+    fireEvent.click(await screen.findByRole("menuitem", { name: "開く" }));
+
+    await waitFor(() => {
+      expect(readMarkdownFile).toHaveBeenCalledWith({ path: "読書メモ.md" });
+    });
+  });
+
   it("ファイルツリーの右クリックメニューを画面基準で表示する", async () => {
     window.relic = makeRelicApi({
       getWorkspaceState: vi.fn().mockResolvedValue({
