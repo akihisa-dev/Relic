@@ -134,6 +134,21 @@ describe("editorStore", () => {
     expect(state.rightPane.tabIds).toEqual([activeTabId]);
   });
 
+  it("すでに開いているファイルを別ペインで開くと、そのペインのタブ列にも表示される", () => {
+    useEditorStore.getState().openFileInPane("left", sampleFile);
+    const tabId = useEditorStore.getState().leftPane.activeTabId!;
+
+    useEditorStore.getState().toggleSplit();
+    useEditorStore.getState().openFileInPane("right", sampleFile);
+
+    const state = useEditorStore.getState();
+
+    expect(state.leftPane.tabIds).toContain(tabId);
+    expect(state.rightPane.tabIds).toContain(tabId);
+    expect(state.rightPane.activeTabId).toBe(tabId);
+    expect(Object.values(state.tabs).filter((tab) => tab.path === sampleFile.path)).toHaveLength(1);
+  });
+
   it("分割解除時に右ペインのタブが閉じられる", () => {
     useEditorStore.getState().toggleSplit();
     useEditorStore.getState().openFileInPane("right", sampleFile2);
