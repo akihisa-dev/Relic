@@ -84,6 +84,10 @@ const sidebarViewDefs: Array<{ id: SidebarView; labelKey: TranslationKey; icon: 
   { id: "settings", labelKey: "nav.settings", icon: <IconSettings /> }
 ];
 
+const TAB_CLOSE_MOTION_MS = 180;
+
+const paneTabMotionKey = (pane: PaneId, tabId: string): string => `${pane}:${tabId}`;
+
 interface RailWorkspaceSwitcherProps {
   activeWorkspaceId: string | null;
   ariaLabel: string;
@@ -151,6 +155,9 @@ export function App(): ReactElement {
   }, [showToast]);
   const [leftPaneScrollHeading, setLeftPaneScrollHeading] = useState<string | undefined>(undefined);
   const [rightPaneScrollHeading, setRightPaneScrollHeading] = useState<string | undefined>(undefined);
+  const [closingPaneTabs, setClosingPaneTabs] = useState<Set<string>>(() => new Set());
+  const closeMotionTimersRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  const [editorActionPulse, setEditorActionPulse] = useState(0);
   const [showCommandPalette, setShowCommandPalette] = useState(false);
   const [showQuickSwitcher, setShowQuickSwitcher] = useState(false);
 
@@ -197,6 +204,102 @@ export function App(): ReactElement {
       })),
     [t]
   );
+
+  useEffect(() => {
+    const timers = closeMotionTimersRef.current;
+    return () => {
+      for (const timer of Object.values(timers)) clearTimeout(timer);
+    };
+  }, []);
+
+  const clearClosingPaneTabs = useCallback((keys: string[]): void => {
+    setClosingPaneTabs((current) => {
+      const next = new Set(current);
+      for (const key of keys) next.delete(key);
+      return next;
+    });
+
+    for (const key of keys) {
+      delete closeMotionTimersRef.current[key];
+    }
+  }, []);
+
+  const closeTabWithMotion = useCallback((pane: PaneId, tabId: string): void => {
+    if (!tabs[tabId]) return;
+
+    const key = paneTabMotionKey(pane, tabId);
+    let shouldSchedule = false;
+
+    setClosingPaneTabs((current) => {
+      if (current.has(key)) return current;
+      shouldSchedule = true;
+      return new Set(current).add(key);
+    });
+
+    if (!shouldSchedule) return;
+
+    closeMotionTimersRef.current[key] = setTimeout(() => {
+      closeTab(pane, tabId);
+      clearClosingPaneTabs([key]);
+    }, TAB_CLOSE_MOTION_MS);
+  }, [clearClosingPaneTabs, closeTab, tabs]);
+
+  const closeTabsWithMotion = useCallback((pane: PaneId, tabIds: string[], closeAction: () => void): void => {
+    const targetKeys = tabIds
+      .filter((tabId) => tabs[tabId])
+      .map((tabId) => paneTabMotionKey(pane, tabId))
+      .filter((key) => !closingPaneTabs.has(key));
+
+    if (targetKeys.length === 0) return;
+
+    setClosingPaneTabs((current) => {
+      const next = new Set(current);
+      for (const key of targetKeys) next.add(key);
+      return next;
+    });
+
+    const timer = setTimeout(() => {
+      closeAction();
+      clearClosingPaneTabs(targetKeys);
+    }, TAB_CLOSE_MOTION_MS);
+
+    for (const key of targetKeys) {
+      closeMotionTimersRef.current[key] = timer;
+    }
+  }, [clearClosingPaneTabs, closingPaneTabs, tabs]);
+
+  const leftClosingTabIds = useMemo(
+    () => new Set(leftPane.tabIds.filter((tabId) => closingPaneTabs.has(paneTabMotionKey("left", tabId)))),
+    [closingPaneTabs, leftPane.tabIds]
+  );
+  const rightClosingTabIds = useMemo(
+    () => new Set(rightPane.tabIds.filter((tabId) => closingPaneTabs.has(paneTabMotionKey("right", tabId)))),
+    [closingPaneTabs, rightPane.tabIds]
+  );
+
+  const closeOtherTabsWithMotion = useCallback((pane: PaneId, tabId: string): void => {
+    const paneState = pane === "left" ? leftPane : rightPane;
+    closeTabsWithMotion(
+      pane,
+      paneState.tabIds.filter((id) => id !== tabId),
+      () => closeOtherTabs(pane, tabId)
+    );
+  }, [closeOtherTabs, closeTabsWithMotion, leftPane, rightPane]);
+
+  const closeTabsToRightWithMotion = useCallback((pane: PaneId, tabId: string): void => {
+    const paneState = pane === "left" ? leftPane : rightPane;
+    const tabIndex = paneState.tabIds.indexOf(tabId);
+    closeTabsWithMotion(
+      pane,
+      tabIndex === -1 ? [] : paneState.tabIds.slice(tabIndex + 1),
+      () => closeTabsToRight(pane, tabId)
+    );
+  }, [closeTabsToRight, closeTabsWithMotion, leftPane, rightPane]);
+
+  const closeAllTabsInPaneWithMotion = useCallback((pane: PaneId): void => {
+    const paneState = pane === "left" ? leftPane : rightPane;
+    closeTabsWithMotion(pane, paneState.tabIds, () => closeAllTabsInPane(pane));
+  }, [closeAllTabsInPane, closeTabsWithMotion, leftPane, rightPane]);
 
   const {
     appInfo,
@@ -360,7 +463,7 @@ export function App(): ReactElement {
   useAppTheme(editorSettings.theme);
 
   useAppKeyboardShortcuts({
-    closeTab,
+    closeTab: closeTabWithMotion,
     focusedPane,
     leftPane,
     rightPane,
@@ -537,7 +640,7 @@ export function App(): ReactElement {
                 {sidebarViews.find((v) => v.id === activeSidebarView)?.label}
               </div>
             </div>
-            <div className="sidebar-body">
+            <div className={`sidebar-body sidebar-view-content sidebar-view-content--${activeSidebarView}`}>
             {activeSidebarView === "files" ? (
               <FilesSidebar
                 isCreatingFile={isCreatingFile}
@@ -723,23 +826,26 @@ export function App(): ReactElement {
               <div className="shared-editor-toolbar">
                 <Toolbar
                   fallbackViewRef={focusedPane === "left" ? rightEditorViewRef : leftEditorViewRef}
+                  onEditorAction={() => setEditorActionPulse((value) => value + 1)}
                   viewRef={focusedPane === "left" ? leftEditorViewRef : rightEditorViewRef}
                 />
               </div>
               <div className={`panes-container${isSplit ? " panes-container--split" : ""}`}>
                 <PaneView
                   allFilePaths={existingMarkdownPaths}
+                  closingTabIds={leftClosingTabIds}
                   editorSettings={editorSettings}
                   focusedPane={focusedPane}
                   frontmatterCandidates={frontmatterCandidates}
+                  editorActionPulse={focusedPane === "left" ? editorActionPulse : 0}
                   onCreateFile={handleCreateNoteFromPane}
                   onFocus={() => setFocusedPane("left")}
                   onScrollTargetHandled={() => setLeftPaneScrollHeading(undefined)}
-                  onTabClose={(tabId) => closeTab("left", tabId)}
+                  onTabClose={(tabId) => closeTabWithMotion("left", tabId)}
                   onTabSelect={(tabId) => setTabActive("left", tabId)}
-                  onCloseOtherTabs={(tabId) => closeOtherTabs("left", tabId)}
-                  onCloseTabsToRight={(tabId) => closeTabsToRight("left", tabId)}
-                  onCloseAllTabs={() => closeAllTabsInPane("left")}
+                  onCloseOtherTabs={(tabId) => closeOtherTabsWithMotion("left", tabId)}
+                  onCloseTabsToRight={(tabId) => closeTabsToRightWithMotion("left", tabId)}
+                  onCloseAllTabs={() => closeAllTabsInPaneWithMotion("left")}
                   onOpenInOtherPane={(tabId) => openFileInOtherPane("left", tabId)}
                   isSplitView={isSplit}
                   pane="left"
@@ -752,17 +858,19 @@ export function App(): ReactElement {
                 {isSplit ? (
                   <PaneView
                     allFilePaths={existingMarkdownPaths}
+                    closingTabIds={rightClosingTabIds}
                     editorSettings={editorSettings}
                     focusedPane={focusedPane}
                     frontmatterCandidates={frontmatterCandidates}
+                    editorActionPulse={focusedPane === "right" ? editorActionPulse : 0}
                     onCreateFile={handleCreateNoteFromPane}
                     onFocus={() => setFocusedPane("right")}
                     onScrollTargetHandled={() => setRightPaneScrollHeading(undefined)}
-                    onTabClose={(tabId) => closeTab("right", tabId)}
+                    onTabClose={(tabId) => closeTabWithMotion("right", tabId)}
                     onTabSelect={(tabId) => setTabActive("right", tabId)}
-                    onCloseOtherTabs={(tabId) => closeOtherTabs("right", tabId)}
-                    onCloseTabsToRight={(tabId) => closeTabsToRight("right", tabId)}
-                    onCloseAllTabs={() => closeAllTabsInPane("right")}
+                    onCloseOtherTabs={(tabId) => closeOtherTabsWithMotion("right", tabId)}
+                    onCloseTabsToRight={(tabId) => closeTabsToRightWithMotion("right", tabId)}
+                    onCloseAllTabs={() => closeAllTabsInPaneWithMotion("right")}
                     onOpenInOtherPane={(tabId) => openFileInOtherPane("right", tabId)}
                     isSplitView={isSplit}
                     pane="right"
@@ -787,7 +895,7 @@ export function App(): ReactElement {
                       : t("pane.links")}
                   </div>
                 </div>
-                <div className="sidebar-body">
+                <div className={`sidebar-body right-panel-content right-panel-content--${rightPanelView}`}>
                 {rightPanelView === "outline" ? (
                   outlineHeadings.length > 0 ? (
                     <ul className="outline-list">
