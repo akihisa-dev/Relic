@@ -11,6 +11,7 @@ import {
   activateWorkspace,
   createWorkspaceSummary,
   prepareWorkspace,
+  renameWorkspaceRegistration,
   removeWorkspaceRegistration,
   toWorkspaceState
 } from "./workspaceService";
@@ -110,5 +111,36 @@ describe("workspaceService", () => {
         workspaces: [secondWorkspace]
       }
     });
+  });
+
+  it("登録済みワークスペースの表示名を変更する", () => {
+    const workspace = createWorkspaceSummary("/tmp/relic-notes");
+    const settings = {
+      ...baseSettings,
+      lastWorkspaceId: workspace.id,
+      workspaces: [workspace]
+    };
+
+    const result = renameWorkspaceRegistration(settings, workspace.id, "小説メモ");
+
+    expect(result).toEqual({
+      ok: true,
+      value: {
+        ...baseSettings,
+        lastWorkspaceId: workspace.id,
+        workspaces: [{ ...workspace, name: "小説メモ" }]
+      }
+    });
+  });
+
+  it("空のワークスペース名は拒否する", () => {
+    const workspace = createWorkspaceSummary("/tmp/relic-notes");
+    const result = renameWorkspaceRegistration(
+      { ...baseSettings, lastWorkspaceId: workspace.id, workspaces: [workspace] },
+      workspace.id,
+      "  "
+    );
+
+    expect(result.ok).toBe(false);
   });
 });

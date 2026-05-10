@@ -36,6 +36,7 @@ export const moveItemToTrashChannel = "workspace:moveItemToTrash";
 export const openWorkspaceChannel = "workspace:open";
 export const readMarkdownFileChannel = "workspace:readMarkdownFile";
 export const removeWorkspaceChannel = "workspace:remove";
+export const renameWorkspaceChannel = "workspace:rename";
 export const renameMarkdownFileChannel = "workspace:renameMarkdownFile";
 export const renameFolderChannel = "workspace:renameFolder";
 export const revealWorkspaceItemChannel = "workspace:revealItem";
@@ -215,6 +216,11 @@ export interface SwitchWorkspaceInput {
 }
 
 export interface RemoveWorkspaceInput {
+  workspaceId: string;
+}
+
+export interface RenameWorkspaceInput {
+  name: string;
   workspaceId: string;
 }
 
@@ -526,6 +532,7 @@ export interface RelicApi {
   readMarkdownFile: (input: ReadMarkdownFileInput) => Promise<RelicResult<MarkdownFileContent>>;
   readClipboardText: () => string;
   removeWorkspace: (input: RemoveWorkspaceInput) => Promise<RelicResult<WorkspaceState>>;
+  renameWorkspace: (input: RenameWorkspaceInput) => Promise<RelicResult<WorkspaceState>>;
   renameMarkdownFile: (
     input: RenameMarkdownFileInput
   ) => Promise<RelicResult<RenameMarkdownFileResult>>;

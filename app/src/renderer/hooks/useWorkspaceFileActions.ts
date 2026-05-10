@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
 
 import type { MarkdownFileContent, WorkspaceState, WorkspaceTreeNode } from "../../shared/ipc";
-import { resolveWikiLinkPath } from "../../shared/links";
+import { resolveMarkdownLinkPath, resolveWikiLinkPath } from "../../shared/links";
 import type { PaneId, PaneState, Tab } from "../store/editorStore";
 import { displayNameFromPath, joinWorkspacePath, parentFolderOf } from "../workspacePaths";
 
@@ -289,6 +289,49 @@ export function useWorkspaceFileActions({
     ]
   );
 
+  const handleOpenMarkdownLink = useCallback(
+    (href: string): void => {
+      const paneState = focusedPane === "left" ? leftPane : rightPane;
+      const activeTab = paneState.activeTabId ? tabs[paneState.activeTabId] : null;
+
+      if (!activeTab || !window.relic) return;
+
+      const resolved = resolveMarkdownLinkPath(href, activeTab.path);
+      if (!resolved) return;
+
+      const setScrollHeading = focusedPane === "left" ? setLeftPaneScrollHeading : setRightPaneScrollHeading;
+
+      void window.relic.readMarkdownFile({ path: resolved.path }).then((readResult) => {
+        if (readResult.ok) {
+          openFileInPane(focusedPane, readResult.value);
+          if (resolved.heading) setScrollHeading(resolved.heading);
+          return;
+        }
+
+        void window.relic!.createLinkedMarkdownFile({ path: resolved.path }).then((createResult) => {
+          if (createResult.ok) {
+            setWorkspaceState(createResult.value.workspaceState);
+            openFileInPane(focusedPane, createResult.value.file);
+            if (resolved.heading) setScrollHeading(resolved.heading);
+          } else {
+            setWorkspaceError(createResult.error.message);
+          }
+        });
+      });
+    },
+    [
+      focusedPane,
+      leftPane,
+      openFileInPane,
+      rightPane,
+      setLeftPaneScrollHeading,
+      setRightPaneScrollHeading,
+      setWorkspaceError,
+      setWorkspaceState,
+      tabs
+    ]
+  );
+
   const handleSwitchWorkspace = useCallback((workspaceId: string): void => {
     if (!window.relic) return;
 
@@ -314,6 +357,18 @@ export function useWorkspaceFileActions({
       }
     });
   }, [closeAllTabs, setWorkspaceError, setWorkspaceState]);
+
+  const handleRenameWorkspace = useCallback((workspaceId: string, name: string): void => {
+    if (!window.relic) return;
+
+    void window.relic.renameWorkspace({ name, workspaceId }).then((result) => {
+      if (result.ok) {
+        setWorkspaceState(result.value);
+      } else {
+        setWorkspaceError(result.error.message);
+      }
+    });
+  }, [setWorkspaceError, setWorkspaceState]);
 
   const handleRefreshWorkspaceState = useCallback((): void => {
     void window.relic?.getWorkspaceState().then((result) => {
@@ -640,10 +695,12 @@ export function useWorkspaceFileActions({
     handleCreateNewWorkspace,
     handleCreateNoteFromPane,
     handleOpenFile,
+    handleOpenMarkdownLink,
     handleOpenWikiLink,
     handleOpenWorkspace,
     handleRefreshWorkspaceState,
     handleRemoveWorkspace,
+    handleRenameWorkspace,
     handleSwitchWorkspace,
     handleMoveActiveFile,
     handleMoveFile,

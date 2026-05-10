@@ -118,7 +118,9 @@ interface RailWorkspaceSwitcherProps {
   activeWorkspaceId: string | null;
   ariaLabel: string;
   onRemoveWorkspace: (id: string) => void;
+  onRenameWorkspace: (id: string, currentName: string) => void;
   onSwitchWorkspace: (id: string) => void;
+  renameLabel: string;
   removeLabel: (name: string) => string;
   workspaces: WorkspaceState["workspaces"];
 }
@@ -127,10 +129,30 @@ function RailWorkspaceSwitcher({
   activeWorkspaceId,
   ariaLabel,
   onRemoveWorkspace,
+  onRenameWorkspace,
   onSwitchWorkspace,
+  renameLabel,
   removeLabel,
   workspaces
 }: RailWorkspaceSwitcherProps): ReactElement | null {
+  const [contextMenu, setContextMenu] = useState<{ workspaceId: string; name: string; x: number; y: number } | null>(null);
+
+  useEffect(() => {
+    if (!contextMenu) return;
+    const close = (): void => setContextMenu(null);
+    const handleKeyDown = (event: KeyboardEvent): void => {
+      if (event.key === "Escape") close();
+    };
+
+    window.addEventListener("click", close);
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("click", close);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [contextMenu]);
+
   if (workspaces.length === 0) return null;
 
   return (
@@ -144,6 +166,12 @@ function RailWorkspaceSwitcher({
             <button
               aria-label={ws.name}
               className="workspace-switcher-main"
+              onContextMenu={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                setContextMenu({ name: ws.name, workspaceId: ws.id, ...fixedMenuPosition(event.clientX, event.clientY, 96) });
+              }}
+              onDoubleClick={() => onRenameWorkspace(ws.id, ws.name)}
               onClick={() => onSwitchWorkspace(ws.id)}
               title={ws.path}
               type="button"
@@ -163,6 +191,34 @@ function RailWorkspaceSwitcher({
           </div>
         );
       })}
+      {contextMenu ? (
+        <div
+          className="tab-context-menu workspace-context-menu"
+          onClick={(event) => event.stopPropagation()}
+          style={{ left: contextMenu.x, position: "fixed", top: contextMenu.y, zIndex: 1000 }}
+        >
+          <button
+            className="tab-context-menu-item"
+            onClick={() => {
+              onRenameWorkspace(contextMenu.workspaceId, contextMenu.name);
+              setContextMenu(null);
+            }}
+            type="button"
+          >
+            {renameLabel}
+          </button>
+          <button
+            className="tab-context-menu-item danger"
+            onClick={() => {
+              onRemoveWorkspace(contextMenu.workspaceId);
+              setContextMenu(null);
+            }}
+            type="button"
+          >
+            {removeLabel(contextMenu.name)}
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -532,10 +588,12 @@ export function App(): ReactElement {
     handleCreateNewWorkspace,
     handleCreateNoteFromPane,
     handleOpenFile,
+    handleOpenMarkdownLink,
     handleOpenWikiLink,
     handleOpenWorkspace,
     handleRefreshWorkspaceState,
     handleRemoveWorkspace,
+    handleRenameWorkspace,
     handleSwitchWorkspace,
     handleMoveActiveFile,
     handleMoveFile,
@@ -733,6 +791,15 @@ export function App(): ReactElement {
           : [],
     [workspaceState]
   );
+  const promptRenameWorkspace = useCallback((workspaceId: string, currentName: string): void => {
+    const nextName = window.prompt(t("files.workspaceRenamePrompt"), currentName);
+    if (nextName === null) return;
+
+    const trimmedName = nextName.trim();
+    if (!trimmedName || trimmedName === currentName) return;
+
+    handleRenameWorkspace(workspaceId, trimmedName);
+  }, [handleRenameWorkspace, t]);
   const existingMarkdownPaths = useMemo(
     () => collectMarkdownPaths(workspaceState?.fileTree ?? []),
     [workspaceState?.fileTree]
@@ -840,7 +907,9 @@ export function App(): ReactElement {
                 activeWorkspaceId={workspaceState?.activeWorkspace?.id ?? null}
                 ariaLabel={t("files.registeredWorkspaces")}
                 onRemoveWorkspace={handleRemoveWorkspace}
+                onRenameWorkspace={promptRenameWorkspace}
                 onSwitchWorkspace={handleSwitchWorkspace}
+                renameLabel={t("files.rename")}
                 removeLabel={(name) => t("files.removeWorkspace", { name })}
                 workspaces={registeredWorkspaces}
               />
@@ -1064,6 +1133,8 @@ export function App(): ReactElement {
                   editorActionPulse={focusedPane === "left" ? editorActionPulse : 0}
                   onCreateFile={handleCreateNoteFromPane}
                   onFocus={() => setFocusedPane("left")}
+                  onOpenLink={handleOpenMarkdownLink}
+                  onOpenWikiLink={handleOpenWikiLink}
                   onScrollTargetHandled={() => setLeftPaneScrollHeading(undefined)}
                   onTabClose={(tabId) => closeTabWithMotion("left", tabId)}
                   onTabSelect={(tabId) => setTabActive("left", tabId)}
@@ -1093,6 +1164,8 @@ export function App(): ReactElement {
                     editorActionPulse={focusedPane === "right" ? editorActionPulse : 0}
                     onCreateFile={handleCreateNoteFromPane}
                     onFocus={() => setFocusedPane("right")}
+                    onOpenLink={handleOpenMarkdownLink}
+                    onOpenWikiLink={handleOpenWikiLink}
                     onScrollTargetHandled={() => setRightPaneScrollHeading(undefined)}
                     onTabClose={(tabId) => closeTabWithMotion("right", tabId)}
                     onTabSelect={(tabId) => setTabActive("right", tabId)}

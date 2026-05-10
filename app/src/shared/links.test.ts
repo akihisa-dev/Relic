@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   normalizeWikiLinkTarget,
   parseWikiLinks,
+  resolveMarkdownLinkPath,
   resolveWikiLinkPath,
   resolveWikiLinks
 } from "./links";
@@ -70,6 +71,26 @@ describe("resolveWikiLinkPath", () => {
 
   it("パス付きリンクはワークスペース相対として解決する", () => {
     expect(resolveWikiLinkPath("archive/参照先", "folder/source.md")).toBe("archive/参照先.md");
+  });
+});
+
+describe("resolveMarkdownLinkPath", () => {
+  it("相対Markdownリンクをリンク元ファイル基準で解決する", () => {
+    expect(resolveMarkdownLinkPath("./child.md#決定事項", "notes/source.md")).toEqual({
+      heading: "決定事項",
+      path: "notes/child.md"
+    });
+  });
+
+  it(".md拡張子なしの相対リンクもMarkdownファイルとして解決する", () => {
+    expect(resolveMarkdownLinkPath("../drafts/企画", "notes/current/source.md")).toEqual({
+      heading: null,
+      path: "notes/drafts/企画.md"
+    });
+  });
+
+  it("外部URLはワークスペース内リンクとして扱わない", () => {
+    expect(resolveMarkdownLinkPath("https://example.com", "source.md")).toBeNull();
   });
 });
 
