@@ -753,6 +753,7 @@ describe("App", () => {
 
     fireEvent.click(await screen.findByRole("button", { name: "新規ファイル" }));
 
+    expect(document.querySelector(".rail-tab-flight--open")).toBeInTheDocument();
     expect(createMarkdownFile).toHaveBeenCalledWith({ name: "新規ファイル" });
     expect((await screen.findAllByText("新規ファイル")).length).toBeGreaterThan(0);
     await waitFor(() => {
@@ -847,6 +848,7 @@ describe("App", () => {
 
     fireEvent.click(await screen.findByRole("button", { name: "フォルダ作成" }));
 
+    expect(document.querySelector(".sidebar-create-flight")).toBeInTheDocument();
     expect(createFolder).toHaveBeenCalledWith({ name: "新規フォルダ" });
     expect(await screen.findByRole("button", { name: /新規フォルダ/ })).toBeInTheDocument();
   });
