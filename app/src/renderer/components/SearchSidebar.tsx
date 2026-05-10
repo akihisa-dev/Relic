@@ -9,6 +9,7 @@ export function SearchSidebar({
   error,
   frontmatterCandidates,
   frontmatterField,
+  isSearching,
   mode,
   query,
   results,
@@ -24,6 +25,7 @@ export function SearchSidebar({
   error: string | null;
   frontmatterCandidates: Record<string, string[]>;
   frontmatterField: string;
+  isSearching: boolean;
   mode: SearchMode;
   query: string;
   results: WorkspaceSearchResult[];
@@ -199,7 +201,9 @@ export function SearchSidebar({
       {error ? <div className="error-note">{error}</div> : null}
       <div className="search-block">
         <div className="links-panel-subheading">{t("search.results")}</div>
-        {results.length > 0 ? (
+        {isSearching ? (
+          <div className="list-loading-note">{t("common.loading")}</div>
+        ) : results.length > 0 ? (
           <ul className="search-results">
             {results.map((result, index) => (
               <li className="search-result-item" key={`${result.path}-${result.lineNumber}-${index}`}>

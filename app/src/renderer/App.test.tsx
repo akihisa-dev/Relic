@@ -1286,6 +1286,23 @@ describe("App", () => {
     expect(readMarkdownFile).toHaveBeenCalledWith({ path: "読書メモ.md" });
   });
 
+  it("検索中は読み込み反応を表示する", async () => {
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace }),
+      searchWorkspace: vi.fn().mockReturnValue(new Promise(() => undefined))
+    });
+
+    await renderApp();
+
+    fireEvent.click(screen.getByRole("button", { name: "検索" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "検索" }), {
+      target: { value: "draft" }
+    });
+
+    const loading = await screen.findByText("読み込んでいます…");
+    expect(loading).toHaveClass("list-loading-note");
+  });
+
   it("タグピルをクリックするとタグ検索に切り替える", async () => {
     const searchWorkspace = vi.fn().mockResolvedValue({
       ok: true,
