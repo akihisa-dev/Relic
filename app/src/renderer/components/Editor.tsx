@@ -1063,6 +1063,73 @@ class FrontmatterPropertiesWidget extends WidgetType {
   }
 }
 
+class FrontmatterStarterWidget extends WidgetType {
+  constructor(private readonly userDefinedFields: UserDefinedField[]) {
+    super();
+  }
+
+  eq(other: FrontmatterStarterWidget): boolean {
+    return JSON.stringify(this.userDefinedFields) === JSON.stringify(other.userDefinedFields);
+  }
+
+  toDOM(view: EditorView): HTMLElement {
+    const wrapper = document.createElement("section");
+    wrapper.className = "cm-frontmatter-starter";
+
+    const plus = document.createElement("span");
+    plus.className = "cm-frontmatter-row-icon";
+    plus.textContent = "+";
+
+    const input = document.createElement("input");
+    input.className = "cm-frontmatter-add-input";
+    input.placeholder = "プロパティを追加";
+    const datalist = this.createDatalist(input);
+
+    const addFrontmatter = () => {
+      const name = input.value.trim();
+      if (!frontmatterFieldNamePattern.test(name)) return;
+
+      view.dispatch({
+        changes: {
+          from: 0,
+          insert: `---\n${name}:\n---\n`
+        },
+        selection: { anchor: name.length + 6 }
+      });
+    };
+
+    input.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter") return;
+      event.preventDefault();
+      addFrontmatter();
+    });
+
+    wrapper.append(plus, input);
+    if (datalist) wrapper.append(datalist);
+    return wrapper;
+  }
+
+  ignoreEvent(): boolean {
+    return false;
+  }
+
+  private createDatalist(input: HTMLInputElement): HTMLDataListElement | null {
+    if (this.userDefinedFields.length === 0) return null;
+
+    const datalist = document.createElement("datalist");
+    datalist.id = `cm-frontmatter-new-fields-${Math.random().toString(36).slice(2)}`;
+
+    for (const field of this.userDefinedFields) {
+      const option = document.createElement("option");
+      option.value = field.name;
+      datalist.append(option);
+    }
+
+    input.setAttribute("list", datalist.id);
+    return datalist;
+  }
+}
+
 function overlaps(from: number, to: number, ranges: Array<{ from: number; to: number }>): boolean {
   return ranges.some((range) => from < range.to && to > range.from);
 }
@@ -1096,6 +1163,10 @@ function findFrontmatterLineRange(doc: Text): { end: number; start: number } | n
   return null;
 }
 
+function startsWithFrontmatterDelimiter(doc: Text): boolean {
+  return doc.lines >= 1 && doc.line(1).text.trim() === "---";
+}
+
 function findFrontmatterBlock(state: EditorState): FrontmatterBlock | null {
   const range = findFrontmatterLineRange(state.doc);
   if (!range) return null;
@@ -1127,7 +1198,17 @@ export function buildFrontmatterPropertiesDecorations(
   candidates: Record<string, string[]> = {}
 ): DecorationSet {
   const block = findFrontmatterBlock(state);
-  if (!block) return Decoration.none;
+  if (!block) {
+    if (startsWithFrontmatterDelimiter(state.doc)) return Decoration.none;
+
+    return Decoration.set([
+      Decoration.widget({
+        block: true,
+        side: -1,
+        widget: new FrontmatterStarterWidget(userDefinedFields)
+      }).range(0)
+    ]);
+  }
 
   return Decoration.set([
     Decoration.replace({
