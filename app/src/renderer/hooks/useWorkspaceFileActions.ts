@@ -358,16 +358,17 @@ export function useWorkspaceFileActions({
     });
   }, [closeAllTabs, setWorkspaceError, setWorkspaceState]);
 
-  const handleRenameWorkspace = useCallback((workspaceId: string, name: string): void => {
-    if (!window.relic) return;
+  const handleRenameWorkspace = useCallback(async (workspaceId: string, name: string): Promise<boolean> => {
+    if (!window.relic) return false;
 
-    void window.relic.renameWorkspace({ name, workspaceId }).then((result) => {
-      if (result.ok) {
-        setWorkspaceState(result.value);
-      } else {
-        setWorkspaceError(result.error.message);
-      }
-    });
+    const result = await window.relic.renameWorkspace({ name, workspaceId });
+    if (result.ok) {
+      setWorkspaceState(result.value);
+      return true;
+    }
+
+    setWorkspaceError(result.error.message);
+    return false;
   }, [setWorkspaceError, setWorkspaceState]);
 
   const handleRefreshWorkspaceState = useCallback((): void => {
