@@ -327,15 +327,28 @@ export function registerWorkspaceHandlers(): void {
         }
 
         const settings = await readAppSettings(app.getPath("userData"));
-        const nextSettings = renameWorkspaceRegistration(settings, input.workspaceId, input.name);
+        const renameResult = await renameWorkspaceRegistration(settings, input.workspaceId, input.name);
 
-        if (!nextSettings.ok) {
-          return nextSettings;
+        if (!renameResult.ok) {
+          return renameResult;
         }
 
-        await writeAppSettings(app.getPath("userData"), nextSettings.value);
+        if (renameResult.value.oldWorkspaceId !== renameResult.value.newWorkspaceId) {
+          const workspaceSettings = await readWorkspaceSettings(
+            app.getPath("userData"),
+            renameResult.value.oldWorkspaceId
+          );
+          await writeWorkspaceSettings(
+            app.getPath("userData"),
+            renameResult.value.newWorkspaceId,
+            workspaceSettings
+          );
+        }
 
-        return ok(await buildWorkspaceState(nextSettings.value));
+        await writeAppSettings(app.getPath("userData"), renameResult.value.nextSettings);
+        await refreshAutoSyncTimer();
+
+        return ok(await buildWorkspaceState(renameResult.value.nextSettings));
       } catch (error) {
         return fail(
           "WORKSPACE_RENAME_FAILED",

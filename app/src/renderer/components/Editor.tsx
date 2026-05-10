@@ -854,7 +854,8 @@ class InlineFormatWidget extends WidgetType {
   constructor(
     private readonly tagName: "span" | "strong" | "em" | "code" | "a" | "u",
     private readonly text: string,
-    private readonly className: string
+    private readonly className: string,
+    private readonly onClick?: () => void
   ) {
     super();
   }
@@ -867,6 +868,23 @@ class InlineFormatWidget extends WidgetType {
     const element = document.createElement(this.tagName);
     element.className = this.className;
     element.textContent = this.text;
+    if (this.onClick) {
+      let opened = false;
+      const openLink = (event: Event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+        if (opened) return;
+        opened = true;
+        this.onClick?.();
+        window.setTimeout(() => {
+          opened = false;
+        }, 0);
+      };
+      element.addEventListener("pointerdown", openLink);
+      element.addEventListener("mousedown", openLink);
+      element.addEventListener("click", openLink);
+    }
     if (this.className === "cm-live-bold") {
       element.style.display = "inline-block";
       element.style.fontWeight = "900";
@@ -880,6 +898,10 @@ class InlineFormatWidget extends WidgetType {
       element.style.transformOrigin = "baseline";
     }
     return element;
+  }
+
+  ignoreEvent(event: Event): boolean {
+    return Boolean(this.onClick && ["click", "mousedown", "pointerdown"].includes(event.type));
   }
 }
 
@@ -1373,7 +1395,10 @@ export function buildFrontmatterPropertiesDecorations(
   return Decoration.set(ranges.map((range) => range.deco.range(range.from, range.to)), true);
 }
 
-export function buildLivePreviewDecorations(view: EditorView): DecorationSet {
+export function buildLivePreviewDecorations(
+  view: EditorView,
+  onOpenClickableLink?: (link: ClickableLinkAtPosition) => void
+): DecorationSet {
   const { state } = view;
   const doc = state.doc;
   const editorHasFocus = typeof view.hasFocus === "boolean" ? view.hasFocus : true;
@@ -1432,10 +1457,22 @@ export function buildLivePreviewDecorations(view: EditorView): DecorationSet {
             : match.className === "cm-live-underline"
               ? "u"
               : "span";
+      const link = match.className === "cm-live-link"
+        ? findClickableLinkAtPosition(state.doc, match.from)
+        : null;
+      const handleClick = link
+        ? () => onOpenClickableLink?.(link)
+        : undefined;
+
       addWidget(
         match.from,
         match.to,
-        new InlineFormatWidget(tagName, text.slice(match.contentFrom - lineFrom, match.contentTo - lineFrom), match.className)
+        new InlineFormatWidget(
+          tagName,
+          text.slice(match.contentFrom - lineFrom, match.contentTo - lineFrom),
+          match.className,
+          handleClick
+        )
       );
       return;
     }
@@ -1748,7 +1785,21 @@ function createFrontmatterPropertiesField(
   });
 }
 
-const livePreviewPlugin = EditorView.decorations.of((view) => buildLivePreviewDecorations(view));
+function createLivePreviewPlugin(
+  onOpenLinkRef: React.RefObject<((href: string) => void) | undefined>,
+  onOpenWikiLinkRef: React.RefObject<((target: string, heading?: string) => void) | undefined>
+) {
+  return EditorView.decorations.of((view) => buildLivePreviewDecorations(view, (link) => {
+    if (link.type === "markdown" && link.href) {
+      onOpenLinkRef.current?.(link.href);
+      return;
+    }
+
+    if (link.type === "wiki" && link.target) {
+      onOpenWikiLinkRef.current?.(link.target, link.heading ?? undefined);
+    }
+  }));
+}
 
 const typewriterExtension = ViewPlugin.fromClass(
   class {
@@ -1885,7 +1936,7 @@ function buildExtensions(
     ...(typewriterMode ? [typewriterExtension] : []),
     createFrontmatterPropertiesField(userDefinedFields, frontmatterCandidates),
     livePreviewTableField,
-    livePreviewPlugin
+    createLivePreviewPlugin(onOpenLinkRef, onOpenWikiLinkRef)
   ];
 }
 
