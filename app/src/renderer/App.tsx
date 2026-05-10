@@ -117,8 +117,10 @@ const paneTabMotionKey = (pane: PaneId, tabId: string): string => `${pane}:${tab
 interface RailWorkspaceSwitcherProps {
   activeWorkspaceId: string | null;
   ariaLabel: string;
+  onRenameActiveChange?: (isActive: boolean) => void;
+  onRenameComplete?: () => void;
   onRemoveWorkspace: (id: string) => void;
-  onRenameWorkspace: (id: string, currentName: string) => void;
+  onRenameWorkspace: (id: string, currentName: string) => Promise<boolean>;
   onSwitchWorkspace: (id: string) => void;
   renameLabel: string;
   removeLabel: (name: string) => string;
@@ -128,6 +130,8 @@ interface RailWorkspaceSwitcherProps {
 function RailWorkspaceSwitcher({
   activeWorkspaceId,
   ariaLabel,
+  onRenameActiveChange,
+  onRenameComplete,
   onRemoveWorkspace,
   onRenameWorkspace,
   onSwitchWorkspace,
@@ -137,6 +141,18 @@ function RailWorkspaceSwitcher({
 }: RailWorkspaceSwitcherProps): ReactElement | null {
   const [contextMenu, setContextMenu] = useState<{ workspaceId: string; name: string; x: number; y: number } | null>(null);
   const [renamingWorkspace, setRenamingWorkspace] = useState<{ id: string; name: string; value: string } | null>(null);
+  const [isComposingRename, setIsComposingRename] = useState(false);
+  const isCommittingRenameRef = useRef(false);
+  const skipNextRenameEnterKeyUpRef = useRef(false);
+  const isRenamingWorkspace = renamingWorkspace !== null;
+
+  useEffect(() => {
+    onRenameActiveChange?.(isRenamingWorkspace);
+  }, [isRenamingWorkspace, onRenameActiveChange]);
+
+  useEffect(() => {
+    return () => onRenameActiveChange?.(false);
+  }, [onRenameActiveChange]);
 
   useEffect(() => {
     if (!contextMenu) return;
@@ -158,22 +174,36 @@ function RailWorkspaceSwitcher({
 
   const startRename = (workspaceId: string, name: string): void => {
     setContextMenu(null);
+    isCommittingRenameRef.current = false;
+    skipNextRenameEnterKeyUpRef.current = false;
     setRenamingWorkspace({ id: workspaceId, name, value: name });
   };
 
-  const commitRename = (): void => {
+  const commitRename = async (value = renamingWorkspace?.value ?? ""): Promise<void> => {
     if (!renamingWorkspace) return;
+    if (isCommittingRenameRef.current) return;
 
-    const nextName = renamingWorkspace.value.trim();
+    const nextName = value.trim();
     const previousName = renamingWorkspace.name;
     const workspaceId = renamingWorkspace.id;
-    setRenamingWorkspace(null);
+    isCommittingRenameRef.current = true;
 
-    if (!nextName || nextName === previousName) return;
-    onRenameWorkspace(workspaceId, nextName);
+    if (!nextName || nextName === previousName) {
+      setRenamingWorkspace(null);
+      return;
+    }
+
+    await onRenameWorkspace(workspaceId, nextName);
+    onRenameComplete?.();
+    setRenamingWorkspace(null);
   };
 
-  const cancelRename = (): void => setRenamingWorkspace(null);
+  const cancelRename = (): void => {
+    setIsComposingRename(false);
+    isCommittingRenameRef.current = false;
+    skipNextRenameEnterKeyUpRef.current = false;
+    setRenamingWorkspace(null);
+  };
 
   return (
     <div className="workspace-switcher" aria-label={ariaLabel}>
@@ -191,7 +221,9 @@ function RailWorkspaceSwitcher({
                   aria-label={renameLabel}
                   autoFocus
                   className="workspace-switcher-input"
-                  onBlur={commitRename}
+                  onBlur={(event) => {
+                    void commitRename(event.currentTarget.value);
+                  }}
                   onChange={(event) => {
                     setRenamingWorkspace((current) => (
                       current && current.id === ws.id
@@ -200,9 +232,31 @@ function RailWorkspaceSwitcher({
                     ));
                   }}
                   onClick={(event) => event.stopPropagation()}
+                  onCompositionEnd={() => setIsComposingRename(false)}
+                  onCompositionStart={() => setIsComposingRename(true)}
                   onKeyDown={(event) => {
-                    if (event.key === "Enter") commitRename();
-                    if (event.key === "Escape") cancelRename();
+                    if (event.key === "Enter") {
+                      if (isComposingRename || event.nativeEvent.isComposing) {
+                        skipNextRenameEnterKeyUpRef.current = true;
+                        return;
+                      }
+                      event.preventDefault();
+                      void commitRename(event.currentTarget.value);
+                    }
+                    if (event.key === "Escape") {
+                      event.preventDefault();
+                      cancelRename();
+                    }
+                  }}
+                  onKeyUp={(event) => {
+                    if (event.key !== "Enter") return;
+                    if (skipNextRenameEnterKeyUpRef.current) {
+                      skipNextRenameEnterKeyUpRef.current = false;
+                      return;
+                    }
+                    if (isComposingRename || event.nativeEvent.isComposing) return;
+                    event.preventDefault();
+                    void commitRename(event.currentTarget.value);
                   }}
                   value={renamingWorkspace.value}
                 />
@@ -334,6 +388,9 @@ export function App(): ReactElement {
   const [editorActionPulse, setEditorActionPulse] = useState(0);
   const [showCommandPalette, setShowCommandPalette] = useState(false);
   const [showQuickSwitcher, setShowQuickSwitcher] = useState(false);
+  const [isWorkspaceRenameActive, setIsWorkspaceRenameActive] = useState(false);
+  const [isWorkspaceRenameHoldingRail, setIsWorkspaceRenameHoldingRail] = useState(false);
+  const workspaceRenameHoldTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const {
     editorSettings,
@@ -365,9 +422,29 @@ export function App(): ReactElement {
     setRightPanelView,
     setSidebarView,
     toggleRightPanel,
-    toggleSidebar,
+    toggleSidebar: toggleSidebarState,
     toggleTypewriterMode
   } = useUiStore();
+
+  const toggleSidebar = useCallback((): void => {
+    if (isWorkspaceRenameActive) return;
+    toggleSidebarState();
+  }, [isWorkspaceRenameActive, toggleSidebarState]);
+
+  const holdWorkspaceRailAfterRename = useCallback((): void => {
+    if (workspaceRenameHoldTimerRef.current) clearTimeout(workspaceRenameHoldTimerRef.current);
+    setIsWorkspaceRenameHoldingRail(true);
+    workspaceRenameHoldTimerRef.current = setTimeout(() => {
+      setIsWorkspaceRenameHoldingRail(false);
+      workspaceRenameHoldTimerRef.current = null;
+    }, 900);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (workspaceRenameHoldTimerRef.current) clearTimeout(workspaceRenameHoldTimerRef.current);
+    };
+  }, []);
 
   const toggleSplitWithMotion = useCallback((): void => {
     if (!isSplit) {
@@ -904,7 +981,10 @@ export function App(): ReactElement {
       <div className="title-bar" />
       <div className="workspace">
         {/* 縦アイコンナビ（レール） */}
-        <nav aria-label={t("nav.viewSwitcher")} className="rail">
+        <nav
+          aria-label={t("nav.viewSwitcher")}
+          className={`rail${isWorkspaceRenameActive || isWorkspaceRenameHoldingRail ? " rail--workspace-editing" : ""}`}
+        >
           <button
             aria-label={t("pane.toggleSidebar")}
             className="rail-button"
@@ -950,6 +1030,8 @@ export function App(): ReactElement {
               <RailWorkspaceSwitcher
                 activeWorkspaceId={workspaceState?.activeWorkspace?.id ?? null}
                 ariaLabel={t("files.registeredWorkspaces")}
+                onRenameActiveChange={setIsWorkspaceRenameActive}
+                onRenameComplete={holdWorkspaceRailAfterRename}
                 onRemoveWorkspace={handleRemoveWorkspace}
                 onRenameWorkspace={handleRenameWorkspace}
                 onSwitchWorkspace={handleSwitchWorkspace}
