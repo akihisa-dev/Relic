@@ -453,6 +453,7 @@ export function App(): ReactElement {
   const {
     frontmatterCandidates,
     handleTagSearch,
+    isSearching,
     searchError,
     searchFrontmatterField,
     searchMode,
@@ -726,6 +727,7 @@ export function App(): ReactElement {
                 error={searchError}
                 frontmatterCandidates={frontmatterCandidates}
                 frontmatterField={searchFrontmatterField}
+                isSearching={isSearching}
                 mode={searchMode}
                 onFrontmatterFieldChange={setSearchFrontmatterField}
                 onModeChange={setSearchMode}
@@ -1008,7 +1010,7 @@ export function App(): ReactElement {
                     <div className="links-panel-section">
                       <div className="links-panel-subheading">{t("links.backlinks")}</div>
                       {isLoadingBacklinks ? (
-                        <div className="empty-note">{t("common.loading")}</div>
+                        <div className="list-loading-note">{t("common.loading")}</div>
                       ) : backlinks.length > 0 ? (
                         <ul className="links-list">
                           {backlinks.map((backlink) => (
