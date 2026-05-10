@@ -826,11 +826,11 @@ export function App(): ReactElement {
                 userDefinedFields={userDefinedFields}
               />
             )}
+            </div>
             <div
               className={`sidebar-resize-handle${isSidebarResizing ? " sidebar-resize-handle--active" : ""}`}
               onMouseDown={startSidebarResize}
             />
-            </div>
           </aside>
 
         {/* メインエリア */}
