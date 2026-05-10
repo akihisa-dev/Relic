@@ -21,6 +21,7 @@ export interface FilesSidebarProps {
   onMoveFolder: (path: string, destFolder: string) => void;
   onMoveItems: (items: Array<{ path: string; type: WorkspaceTreeNode["type"] }>, destFolder: string) => void;
   onOpenFile: (path: string) => void;
+  onOpenInOtherPane?: (path: string) => void;
   onOpenWorkspace: () => void;
   onRenameItem: (path: string, type: WorkspaceTreeNode["type"], newName: string) => void;
   onSelectFolder: (node: Extract<WorkspaceTreeNode, { type: "folder" }>) => void;
@@ -46,6 +47,7 @@ export function FilesSidebar({
   onMoveFolder,
   onMoveItems,
   onOpenFile,
+  onOpenInOtherPane,
   onOpenWorkspace,
   onRenameItem,
   onSelectFolder,
@@ -192,6 +194,7 @@ export function FilesSidebar({
                       onMoveFolder={onMoveFolder}
                       onMoveItems={onMoveItems}
                       onOpenFile={onOpenFile}
+                      onOpenInOtherPane={onOpenInOtherPane}
                       onRenameItem={onRenameItem}
                       onSelectFolder={onSelectFolder}
                       onSelectItem={handleSelectItem}
@@ -215,6 +218,7 @@ export function FilesSidebar({
             onMoveFolder={onMoveFolder}
             onMoveItems={onMoveItems}
             onOpenFile={onOpenFile}
+            onOpenInOtherPane={onOpenInOtherPane}
             onRenameItem={onRenameItem}
             onSelectFolder={onSelectFolder}
             onSelectItem={handleSelectItem}

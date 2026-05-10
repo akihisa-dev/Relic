@@ -557,6 +557,19 @@ export function App(): ReactElement {
     openFileInPane(otherPane, { content: tab.content, name: tab.name, path: tab.path });
   }, [tabs, isSplit, openFileInPane]);
 
+  const openTreeFileInOtherPane = useCallback((path: string): void => {
+    if (!window.relic || !isSplit) return;
+    const otherPane = focusedPane === "left" ? "right" : "left";
+
+    void window.relic.readMarkdownFile({ path }).then((result) => {
+      if (result.ok) {
+        openFileInPane(otherPane, result.value);
+      } else {
+        setWorkspaceError(result.error.message);
+      }
+    });
+  }, [focusedPane, isSplit, openFileInPane, setWorkspaceError]);
+
   const handleSelectFolder = useCallback(
     (node: Extract<WorkspaceTreeNode, { type: "folder" }>): void => {
       void node; // フェーズ2ではフォルダ選択は何もしない
@@ -712,6 +725,7 @@ export function App(): ReactElement {
                 onMoveFolder={handleMoveFolder}
                 onMoveItems={handleMoveTreeItems}
                 onOpenFile={handleOpenFile}
+                onOpenInOtherPane={isSplit ? openTreeFileInOtherPane : undefined}
                 onOpenWorkspace={handleOpenWorkspace}
                 onRenameItem={handleRenameTreeItem}
                 onSelectFolder={handleSelectFolder}
