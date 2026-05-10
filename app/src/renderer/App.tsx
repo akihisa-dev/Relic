@@ -1,6 +1,6 @@
 import { EditorView } from "@codemirror/view";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { ReactElement } from "react";
+import type { CSSProperties, MouseEvent, ReactElement, ReactNode } from "react";
 
 import type {
   WorkspaceState,
@@ -9,6 +9,7 @@ import type {
 import { resolveWikiLinks } from "../shared/links";
 import { CommandPalette } from "./components/CommandPalette";
 import { FilesSidebar } from "./components/FilesSidebar";
+import { FrontmatterSidebar } from "./components/FrontmatterSidebar";
 import { GitSidebar } from "./components/GitSidebar";
 import { PaneView } from "./components/PaneView";
 import { QuickSwitcher } from "./components/QuickSwitcher";
@@ -16,7 +17,7 @@ import { SearchSidebar } from "./components/SearchSidebar";
 import { SettingsSidebar } from "./components/SettingsSidebar";
 import { ToolsSidebar } from "./components/ToolsSidebar";
 import { Toolbar } from "./components/Toolbar";
-import { extractOutlineHeadings, getActiveTabInPane } from "./editorDerivedState";
+import { extractOutlineHeadings, getActiveFileTabInPane, getActiveTabInPane } from "./editorDerivedState";
 import { createTranslator, I18nProvider, useT, type TranslationKey } from "./i18n";
 import { useAppKeyboardShortcuts } from "./hooks/useAppKeyboardShortcuts";
 import { useAppSettingsState } from "./hooks/useAppSettingsState";
@@ -27,7 +28,7 @@ import { useGitPanelState } from "./hooks/useGitPanelState";
 import { useSidebarResize } from "./hooks/useSidebarResize";
 import { useWorkspaceFileActions } from "./hooks/useWorkspaceFileActions";
 import { useWorkspaceSearchState } from "./hooks/useWorkspaceSearchState";
-import { useEditorStore, type PaneId } from "./store/editorStore";
+import { useEditorStore, type PaneId, type PanelTabKind } from "./store/editorStore";
 import { useUiStore, type RightPanelView, type SidebarView } from "./store/uiStore";
 import { collectMarkdownPaths } from "./workspacePaths";
 import "./styles.css";
@@ -65,6 +66,15 @@ const IconTools = (): ReactElement => (
   </svg>
 );
 
+const IconFrontmatter = (): ReactElement => (
+  <svg fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" viewBox="0 0 20 20" width="18">
+    <rect height="14" rx="2" width="12" x="4" y="3" />
+    <line x1="7" x2="13" y1="7" y2="7" />
+    <line x1="7" x2="11" y1="10" y2="10" />
+    <line x1="7" x2="12" y1="13" y2="13" />
+  </svg>
+);
+
 const IconSettings = (): ReactElement => (
   <svg fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" viewBox="0 0 20 20" width="18">
     <line x1="3" x2="17" y1="5" y2="5" />
@@ -81,6 +91,7 @@ const sidebarViewDefs: Array<{ id: SidebarView; labelKey: TranslationKey; icon: 
   { id: "search", labelKey: "nav.search", icon: <IconSearch /> },
   { id: "git", labelKey: "nav.git", icon: <IconGit /> },
   { id: "tools", labelKey: "nav.tools", icon: <IconTools /> },
+  { id: "frontmatter", labelKey: "nav.frontmatter", icon: <IconFrontmatter /> },
   { id: "settings", labelKey: "nav.settings", icon: <IconSettings /> }
 ];
 
@@ -388,6 +399,14 @@ export function App(): ReactElement {
   const [editorActionPulse, setEditorActionPulse] = useState(0);
   const [showCommandPalette, setShowCommandPalette] = useState(false);
   const [showQuickSwitcher, setShowQuickSwitcher] = useState(false);
+  const [railTabFlight, setRailTabFlight] = useState<{
+    direction: "open" | "close";
+    fromX: number;
+    fromY: number;
+    label: string;
+    toX: number;
+    toY: number;
+  } | null>(null);
   const [isWorkspaceRenameActive, setIsWorkspaceRenameActive] = useState(false);
   const [isWorkspaceRenameHoldingRail, setIsWorkspaceRenameHoldingRail] = useState(false);
   const workspaceRenameHoldTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -405,6 +424,7 @@ export function App(): ReactElement {
     closeTabsToRight,
     closeAllTabsInPane,
     openFileInPane,
+    openPanelInPane,
     setEditorSettings,
     setFocusedPane,
     setTabActive,
@@ -516,7 +536,7 @@ export function App(): ReactElement {
   }, []);
 
   const closeTabWithMotion = useCallback((pane: PaneId, tabId: string): void => {
-    if (!tabs[tabId]) return;
+    if (!useEditorStore.getState().tabs[tabId]) return;
 
     const key = paneTabMotionKey(pane, tabId);
     let shouldSchedule = false;
@@ -533,7 +553,7 @@ export function App(): ReactElement {
       closeTab(pane, tabId);
       clearClosingPaneTabs([key]);
     }, TAB_CLOSE_MOTION_MS);
-  }, [clearClosingPaneTabs, closeTab, tabs]);
+  }, [clearClosingPaneTabs, closeTab]);
 
   const closeTabsWithMotion = useCallback((pane: PaneId, tabIds: string[], closeAction: () => void): void => {
     const targetKeys = tabIds
@@ -793,8 +813,12 @@ export function App(): ReactElement {
     const tab = tabs[tabId];
     if (!tab || !isSplit) return;
     const otherPane = fromPane === "left" ? "right" : "left";
-    openFileInPane(otherPane, { content: tab.content, name: tab.name, path: tab.path });
-  }, [tabs, isSplit, openFileInPane]);
+    if (tab.kind === "file") {
+      openFileInPane(otherPane, { content: tab.content, name: tab.name, path: tab.path });
+    } else {
+      openPanelInPane(otherPane, tab.panel, tab.name);
+    }
+  }, [tabs, isSplit, openFileInPane, openPanelInPane]);
 
   const openTreeFileInOtherPane = useCallback((path: string): void => {
     if (!window.relic || !isSplit) return;
@@ -889,19 +913,19 @@ export function App(): ReactElement {
 
   const handleDuplicateTabFile = useCallback((tabId: string): void => {
     const tab = tabs[tabId];
-    if (!tab) return;
+    if (!tab || tab.kind !== "file") return;
     handleDuplicateTreeFile(tab.path);
   }, [handleDuplicateTreeFile, tabs]);
 
   const handleRevealTabFile = useCallback((tabId: string): void => {
     const tab = tabs[tabId];
-    if (!tab) return;
+    if (!tab || tab.kind !== "file") return;
     handleRevealWorkspaceItem(tab.path);
   }, [handleRevealWorkspaceItem, tabs]);
 
   const handleTogglePinTab = useCallback((tabId: string): void => {
     const tab = tabs[tabId];
-    if (!tab) return;
+    if (!tab || tab.kind !== "file") return;
     handleTogglePin(tab.path);
   }, [handleTogglePin, tabs]);
 
@@ -939,22 +963,27 @@ export function App(): ReactElement {
     { leftPane, rightPane },
     tabs
   );
+  const activeFileTabInFocusedPane = getActiveFileTabInPane(
+    focusedPane,
+    { leftPane, rightPane },
+    tabs
+  );
 
-  const outlineHeadings = activeTabInFocusedPane
-    ? extractOutlineHeadings(activeTabInFocusedPane.content)
+  const outlineHeadings = activeFileTabInFocusedPane
+    ? extractOutlineHeadings(activeFileTabInFocusedPane.content)
     : [];
-  const outgoingLinks = activeTabInFocusedPane
-    ? resolveWikiLinks(activeTabInFocusedPane.content, activeTabInFocusedPane.path, existingMarkdownPaths)
+  const outgoingLinks = activeFileTabInFocusedPane
+    ? resolveWikiLinks(activeFileTabInFocusedPane.content, activeFileTabInFocusedPane.path, existingMarkdownPaths)
     : [];
 
   const { backlinks, isLoadingBacklinks } = useBacklinksState({
-    activeFilePath: activeTabInFocusedPane?.path ?? null,
+    activeFilePath: activeFileTabInFocusedPane?.path ?? null,
     fileTree: workspaceState?.fileTree,
     setWorkspaceError
   });
 
   const commands = useCommandPaletteCommands({
-    activeFileName: activeTabInFocusedPane?.name ?? null,
+    activeFileName: activeFileTabInFocusedPane?.name ?? null,
     gitBranches,
     handleDeleteActiveFile,
     handleDuplicateActiveFile,
@@ -970,6 +999,197 @@ export function App(): ReactElement {
     toggleSplit: toggleSplitWithMotion,
     toggleTypewriterMode
   });
+
+  const panelLabels = useMemo<Record<PanelTabKind, string>>(() => ({
+    frontmatter: t("nav.frontmatter"),
+    git: t("nav.git"),
+    settings: t("nav.settings"),
+    tools: t("nav.tools")
+  }), [t]);
+
+  const openPanelTabIds = useMemo(() => new Set(
+    Object.values(tabs)
+      .filter((tab) => tab.kind === "panel")
+      .map((tab) => tab.panel)
+  ), [tabs]);
+
+  useEffect(() => {
+    if (
+      activeSidebarView !== "git" &&
+      activeSidebarView !== "tools" &&
+      activeSidebarView !== "frontmatter" &&
+      activeSidebarView !== "settings"
+    ) {
+      return;
+    }
+
+    openPanelInPane(focusedPane, activeSidebarView, panelLabels[activeSidebarView]);
+    setSidebarView("files");
+  }, [activeSidebarView, focusedPane, openPanelInPane, panelLabels, setSidebarView]);
+
+  const handleRailPanelButton = useCallback((panel: PanelTabKind, label: string, event: MouseEvent<HTMLButtonElement>): void => {
+    const railRect = event.currentTarget.getBoundingClientRect();
+    const panelTabId = `panel-${panel}`;
+    const editorState = useEditorStore.getState();
+    const openedPanes: PaneId[] = [
+      ...(editorState.leftPane.tabIds.includes(panelTabId) ? ["left" as const] : []),
+      ...(editorState.rightPane.tabIds.includes(panelTabId) ? ["right" as const] : [])
+    ];
+
+    if (openedPanes.length > 0) {
+      const tabElement = document.querySelector(`.pane-tab[data-tab-id="${panelTabId}"]`);
+      const tabRect = tabElement?.getBoundingClientRect();
+
+      setRailTabFlight({
+        direction: "close",
+        fromX: (tabRect?.left ?? railRect.left + 180) + (tabRect?.width ?? 96) / 2,
+        fromY: (tabRect?.top ?? railRect.top) + (tabRect?.height ?? 30) / 2,
+        label,
+        toX: railRect.left + railRect.width / 2,
+        toY: railRect.top + railRect.height / 2
+      });
+      window.setTimeout(() => {
+        const latestState = useEditorStore.getState();
+        for (const pane of openedPanes) {
+          const paneState = pane === "left" ? latestState.leftPane : latestState.rightPane;
+          if (paneState.tabIds.includes(panelTabId)) closeTab(pane, panelTabId);
+        }
+      }, 140);
+      window.setTimeout(() => setRailTabFlight(null), 360);
+      return;
+    }
+
+    openPanelInPane(focusedPane, panel, label);
+
+    requestAnimationFrame(() => {
+      const pane = document.querySelector(`.pane${focusedPane === "left" ? "" : ":last-child"} .pane-tab-bar`) ?? document.querySelector(".pane-tab-bar");
+      const toRect = pane?.getBoundingClientRect();
+      setRailTabFlight({
+        direction: "open",
+        fromX: railRect.left + railRect.width / 2,
+        fromY: railRect.top + railRect.height / 2,
+        label,
+        toX: (toRect?.left ?? railRect.left + 180) + 48,
+        toY: (toRect?.top ?? railRect.top) + 15
+      });
+      window.setTimeout(() => setRailTabFlight(null), 360);
+    });
+  }, [closeTab, focusedPane, openPanelInPane]);
+
+  const renderPanelTab = useCallback((panel: PanelTabKind): ReactNode => {
+    if (panel === "git") {
+      return (
+        <GitSidebar
+          gitStatus={gitStatus}
+          gitHubAuthStatus={gitHubAuthStatus}
+          gitRemotes={gitRemotes}
+          gitBranches={gitBranches}
+          gitCommitHistory={gitCommitHistory}
+          gitTags={gitTags}
+          gitWorkingChanges={gitWorkingChanges}
+          selectedGitCommitHash={selectedGitCommitHash}
+          selectedGitCommitDiff={selectedGitCommitDiff}
+          newGitBranchName={newGitBranchName}
+          newGitTagName={newGitTagName}
+          newGitTagMessage={newGitTagMessage}
+          gitRemoteUrl={gitRemoteUrl}
+          gitSyncMessage={gitSyncMessage}
+          gitErrorMessage={gitErrorMessage}
+          gitRetryAction={gitRetryAction}
+          pendingGitBranchSwitch={pendingGitBranchSwitch}
+          gitCommitMessage={gitCommitMessage}
+          gitSyncPreview={gitSyncPreview}
+          gitSyncStep={gitSyncStep}
+          gitConflicts={gitConflicts}
+          gitCloneUrl={gitCloneUrl}
+          isCreatingGitBranch={isCreatingGitBranch}
+          isCreatingGitCommit={isCreatingGitCommit}
+          isCreatingGitTag={isCreatingGitTag}
+          isConnectingGitHub={isConnectingGitHub}
+          isConnectingGitRemote={isConnectingGitRemote}
+          isDeletingGitTag={isDeletingGitTag}
+          isDisconnectingGitHub={isDisconnectingGitHub}
+          isPullingGitBranch={isPullingGitBranch}
+          isPushingGitBranch={isPushingGitBranch}
+          pushingGitTagName={pushingGitTagName}
+          isSwitchingGitBranch={isSwitchingGitBranch}
+          isCloningGitHub={isCloningGitHub}
+          isResolvingConflict={isResolvingConflict}
+          hasWorkspace={!!workspaceState?.activeWorkspace}
+          onInitializeGitRepository={handleInitializeGitRepository}
+          onCloneGitHubRepository={handleCloneGitHubRepository}
+          onConnectGitHubAccount={handleConnectGitHubAccount}
+          onDisconnectGitHubAccount={handleDisconnectGitHubAccount}
+          onConnectGitRemote={handleConnectGitRemote}
+          onPushGitBranch={handlePushGitBranch}
+          onPullGitBranch={handlePullGitBranch}
+          onConfirmPush={handleConfirmPush}
+          onConfirmPull={handleConfirmPull}
+          onCreateGitBranch={handleCreateGitBranch}
+          onSwitchGitBranch={handleSwitchGitBranch}
+          onCommitAndSwitchGitBranch={handleCommitAndSwitchGitBranch}
+          onCreateGitCommit={handleCreateGitCommit}
+          onCreateGitTag={handleCreateGitTag}
+          onDeleteGitTag={handleDeleteGitTag}
+          onPushGitTag={handlePushGitTag}
+          onResolveConflict={handleResolveConflict}
+          onSelectCommitHash={setSelectedGitCommitHash}
+          onSetNewGitBranchName={setNewGitBranchName}
+          onSetNewGitTagName={setNewGitTagName}
+          onSetNewGitTagMessage={setNewGitTagMessage}
+          onSetGitRemoteUrl={setGitRemoteUrl}
+          onSetGitSyncStep={setGitSyncStep}
+          onSetPendingGitBranchSwitch={setPendingGitBranchSwitch}
+          onSetGitCommitMessage={setGitCommitMessage}
+          onSetGitCloneUrl={setGitCloneUrl}
+        />
+      );
+    }
+
+    if (panel === "tools") {
+      return <ToolsSidebar workspacePath={workspaceState?.activeWorkspace?.path ?? null} />;
+    }
+
+    if (panel === "frontmatter") {
+      return (
+        <FrontmatterSidebar
+          frontmatterTemplates={frontmatterTemplates}
+          onFrontmatterTemplatesSave={handleSaveFrontmatterTemplates}
+          onUserDefinedFieldsSave={handleSaveUserDefinedFields}
+          userDefinedFields={userDefinedFields}
+        />
+      );
+    }
+
+    return (
+      <SettingsSidebar
+        appInfo={appInfo}
+        autoSyncSettings={autoSyncSettings}
+        featureToggles={featureToggles}
+        gitHubIntegrationSettings={gitHubIntegrationSettings}
+        onAutoSyncSave={handleSaveAutoSyncSettings}
+        onFeatureTogglesSave={handleSaveFeatureToggles}
+        onGitHubIntegrationSave={handleSaveGitHubIntegrationSettings}
+        onSave={handleSaveSettings}
+        settings={editorSettings}
+      />
+    );
+  }, [
+    appInfo, autoSyncSettings, editorSettings, featureToggles, frontmatterTemplates, gitBranches, gitCloneUrl,
+    gitCommitHistory, gitCommitMessage, gitConflicts, gitErrorMessage, gitHubAuthStatus, gitHubIntegrationSettings,
+    gitRemotes, gitRemoteUrl, gitRetryAction, gitStatus, gitSyncMessage, gitSyncPreview, gitSyncStep, gitTags,
+    gitWorkingChanges, handleCloneGitHubRepository, handleCommitAndSwitchGitBranch, handleConfirmPull, handleConfirmPush,
+    handleConnectGitHubAccount, handleConnectGitRemote, handleCreateGitBranch, handleCreateGitCommit, handleCreateGitTag,
+    handleDeleteGitTag, handleDisconnectGitHubAccount, handleInitializeGitRepository, handlePullGitBranch, handlePushGitBranch,
+    handlePushGitTag, handleResolveConflict, handleSaveAutoSyncSettings, handleSaveFeatureToggles,
+    handleSaveFrontmatterTemplates, handleSaveGitHubIntegrationSettings, handleSaveSettings, handleSaveUserDefinedFields,
+    handleSwitchGitBranch, isCloningGitHub, isConnectingGitHub, isConnectingGitRemote, isCreatingGitBranch,
+    isCreatingGitCommit, isCreatingGitTag, isDeletingGitTag, isDisconnectingGitHub, isPullingGitBranch,
+    isPushingGitBranch, isResolvingConflict, isSwitchingGitBranch, newGitBranchName, newGitTagMessage,
+    newGitTagName, pendingGitBranchSwitch, pushingGitTagName, selectedGitCommitDiff, selectedGitCommitHash,
+    setGitCloneUrl, setGitCommitMessage, setGitRemoteUrl, setGitSyncStep, setNewGitBranchName, setNewGitTagMessage,
+    setNewGitTagName, setPendingGitBranchSwitch, setSelectedGitCommitHash, userDefinedFields, workspaceState
+  ]);
 
   // ──────────────────
   // レンダリング
@@ -1008,14 +1228,26 @@ export function App(): ReactElement {
             .filter((view) => {
               if (view.id === "git" && !featureToggles.git) return false;
               if (view.id === "tools" && !featureToggles.tools) return false;
+              if (view.id === "frontmatter" && !featureToggles.frontmatter) return false;
               return true;
             })
             .map((view) => (
               <button
                 aria-label={view.label}
-                className={`rail-button${view.id === activeSidebarView ? " active" : ""}`}
+                className={`rail-button${
+                  view.id === "files" || view.id === "search"
+                    ? view.id === activeSidebarView ? " active" : ""
+                    : openPanelTabIds.has(view.id) ? " active" : ""
+                }`}
                 key={view.id}
-                onClick={() => setSidebarView(view.id)}
+                onClick={(event) => {
+                  if (view.id === "files" || view.id === "search") {
+                    setSidebarView(view.id);
+                    return;
+                  }
+
+                  handleRailPanelButton(view.id, view.label, event);
+                }}
                 title={view.label}
                 type="button"
               >
@@ -1055,7 +1287,7 @@ export function App(): ReactElement {
               </div>
             </div>
             <div className={`sidebar-body sidebar-view-content sidebar-view-content--${activeSidebarView}`}>
-            {activeSidebarView === "files" ? (
+            {activeSidebarView !== "search" ? (
               <FilesSidebar
                 isCreatingFile={isCreatingFile}
                 isCreatingFolder={isCreatingFolder}
@@ -1084,9 +1316,9 @@ export function App(): ReactElement {
                 templates={markdownTemplates}
                 workspaceState={workspaceState}
               />
-            ) : activeSidebarView === "search" ? (
+            ) : (
               <SearchSidebar
-                activeFilePath={activeTabInFocusedPane?.path ?? null}
+                activeFilePath={activeFileTabInFocusedPane?.path ?? null}
                 error={searchError}
                 frontmatterCandidates={frontmatterCandidates}
                 frontmatterField={searchFrontmatterField}
@@ -1105,89 +1337,6 @@ export function App(): ReactElement {
                 results={searchResults}
                 tags={workspaceTags}
               />
-            ) : activeSidebarView === "git" ? (
-              <GitSidebar
-                gitStatus={gitStatus}
-                gitHubAuthStatus={gitHubAuthStatus}
-                gitRemotes={gitRemotes}
-                gitBranches={gitBranches}
-                gitCommitHistory={gitCommitHistory}
-                gitTags={gitTags}
-                gitWorkingChanges={gitWorkingChanges}
-                selectedGitCommitHash={selectedGitCommitHash}
-                selectedGitCommitDiff={selectedGitCommitDiff}
-                newGitBranchName={newGitBranchName}
-                newGitTagName={newGitTagName}
-                newGitTagMessage={newGitTagMessage}
-                gitRemoteUrl={gitRemoteUrl}
-                gitSyncMessage={gitSyncMessage}
-                gitErrorMessage={gitErrorMessage}
-                gitRetryAction={gitRetryAction}
-                pendingGitBranchSwitch={pendingGitBranchSwitch}
-                gitCommitMessage={gitCommitMessage}
-                gitSyncPreview={gitSyncPreview}
-                gitSyncStep={gitSyncStep}
-                gitConflicts={gitConflicts}
-                gitCloneUrl={gitCloneUrl}
-                isCreatingGitBranch={isCreatingGitBranch}
-                isCreatingGitCommit={isCreatingGitCommit}
-                isCreatingGitTag={isCreatingGitTag}
-                isConnectingGitHub={isConnectingGitHub}
-                isConnectingGitRemote={isConnectingGitRemote}
-                isDeletingGitTag={isDeletingGitTag}
-                isDisconnectingGitHub={isDisconnectingGitHub}
-                isPullingGitBranch={isPullingGitBranch}
-                isPushingGitBranch={isPushingGitBranch}
-                pushingGitTagName={pushingGitTagName}
-                isSwitchingGitBranch={isSwitchingGitBranch}
-                isCloningGitHub={isCloningGitHub}
-                isResolvingConflict={isResolvingConflict}
-                hasWorkspace={!!workspaceState?.activeWorkspace}
-                onInitializeGitRepository={handleInitializeGitRepository}
-                onCloneGitHubRepository={handleCloneGitHubRepository}
-                onConnectGitHubAccount={handleConnectGitHubAccount}
-                onDisconnectGitHubAccount={handleDisconnectGitHubAccount}
-                onConnectGitRemote={handleConnectGitRemote}
-                onPushGitBranch={handlePushGitBranch}
-                onPullGitBranch={handlePullGitBranch}
-                onConfirmPush={handleConfirmPush}
-                onConfirmPull={handleConfirmPull}
-                onCreateGitBranch={handleCreateGitBranch}
-                onSwitchGitBranch={handleSwitchGitBranch}
-                onCommitAndSwitchGitBranch={handleCommitAndSwitchGitBranch}
-                onCreateGitCommit={handleCreateGitCommit}
-                onCreateGitTag={handleCreateGitTag}
-                onDeleteGitTag={handleDeleteGitTag}
-                onPushGitTag={handlePushGitTag}
-                onResolveConflict={handleResolveConflict}
-                onSelectCommitHash={setSelectedGitCommitHash}
-                onSetNewGitBranchName={setNewGitBranchName}
-                onSetNewGitTagName={setNewGitTagName}
-                onSetNewGitTagMessage={setNewGitTagMessage}
-                onSetGitRemoteUrl={setGitRemoteUrl}
-                onSetGitSyncStep={setGitSyncStep}
-                onSetPendingGitBranchSwitch={setPendingGitBranchSwitch}
-                onSetGitCommitMessage={setGitCommitMessage}
-                onSetGitCloneUrl={setGitCloneUrl}
-              />
-            ) : activeSidebarView === "tools" ? (
-              <ToolsSidebar workspacePath={workspaceState?.activeWorkspace?.path ?? null} />
-            ) : (
-              <SettingsSidebar
-                appInfo={appInfo}
-                autoSyncSettings={autoSyncSettings}
-                featureToggles={featureToggles}
-                frontmatterTemplates={frontmatterTemplates}
-                gitHubIntegrationSettings={gitHubIntegrationSettings}
-                onAutoSyncSave={handleSaveAutoSyncSettings}
-                onFeatureTogglesSave={handleSaveFeatureToggles}
-                onFrontmatterTemplatesSave={handleSaveFrontmatterTemplates}
-                onGitHubIntegrationSave={handleSaveGitHubIntegrationSettings}
-                onSave={handleSaveSettings}
-                onUserDefinedFieldsSave={handleSaveUserDefinedFields}
-                settings={editorSettings}
-                userDefinedFields={userDefinedFields}
-              />
             )}
             </div>
             <div
@@ -1199,10 +1348,10 @@ export function App(): ReactElement {
         {/* メインエリア */}
         <main className="main-area">
           <div className="main-area-top-bar">
-            {activeTabInFocusedPane ? (
+            {activeFileTabInFocusedPane ? (
               <>
                 <RenameBar
-                  name={activeTabInFocusedPane.name}
+                  name={activeFileTabInFocusedPane.name}
                   onRename={handleRenameActiveFile}
                 />
                 <MoveBar onMove={handleMoveActiveFile} />
@@ -1274,6 +1423,7 @@ export function App(): ReactElement {
                   pinnedPaths={pinnedPathSet}
                   isSplitView={isSplit}
                   pane="left"
+                  renderPanelTab={renderPanelTab}
                   scrollTargetHeading={leftPaneScrollHeading}
                   typewriterMode={isTypewriterMode}
                   userDefinedFields={userDefinedFields}
@@ -1305,6 +1455,7 @@ export function App(): ReactElement {
                     pinnedPaths={pinnedPathSet}
                     isSplitView={isSplit}
                     pane="right"
+                    renderPanelTab={renderPanelTab}
                     scrollTargetHeading={rightPaneScrollHeading}
                     typewriterMode={isTypewriterMode}
                     userDefinedFields={userDefinedFields}
@@ -1445,11 +1596,11 @@ export function App(): ReactElement {
 
       <footer className="status-bar">
         <span>Relic</span>
-        {activeTabInFocusedPane ? (
+        {activeFileTabInFocusedPane ? (
           <span>
             {t("app.wordCount", {
-              chars: activeTabInFocusedPane.content.length,
-              words: activeTabInFocusedPane.content.split(/\s+/).filter(Boolean).length
+              chars: activeFileTabInFocusedPane.content.length,
+              words: activeFileTabInFocusedPane.content.split(/\s+/).filter(Boolean).length
             })}
           </span>
         ) : (
@@ -1459,6 +1610,20 @@ export function App(): ReactElement {
           <span className="status-bar-branch">⎇ {gitStatus.currentBranch}</span>
         ) : null}
       </footer>
+
+      {railTabFlight ? (
+        <div
+          className={`rail-tab-flight rail-tab-flight--${railTabFlight.direction}`}
+          style={{
+            "--rail-tab-flight-from-x": `${railTabFlight.fromX}px`,
+            "--rail-tab-flight-from-y": `${railTabFlight.fromY}px`,
+            "--rail-tab-flight-to-x": `${railTabFlight.toX}px`,
+            "--rail-tab-flight-to-y": `${railTabFlight.toY}px`
+          } as CSSProperties}
+        >
+          {railTabFlight.label}
+        </div>
+      ) : null}
 
       {showCommandPalette ? (
         <CommandPalette commands={commands} onClose={() => setShowCommandPalette(false)} />

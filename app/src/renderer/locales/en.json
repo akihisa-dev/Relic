@@ -146,6 +146,7 @@
   "links.missing": "Missing",
   "links.outgoing": "Outgoing",
   "nav.files": "Files",
+  "nav.frontmatter": "Frontmatter",
   "nav.git": "Git",
   "nav.search": "Search",
   "nav.settings": "Settings",

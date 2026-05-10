@@ -313,7 +313,9 @@ describe("App", () => {
     await waitFor(() => {
       const activeTabId = useEditorStore.getState().leftPane.activeTabId;
       expect(activeTabId).not.toBeNull();
-      expect(useEditorStore.getState().tabs[activeTabId!]?.content).toContain("**");
+      const tab = useEditorStore.getState().tabs[activeTabId!];
+      expect(tab?.kind).toBe("file");
+      if (tab?.kind === "file") expect(tab.content).toContain("**");
     });
   });
 
@@ -463,7 +465,9 @@ describe("App", () => {
     expect(useUiStore.getState().isRightPanelOpen).toBe(true);
     expect(useUiStore.getState().rightPanelView).toBe("outline");
 
-    expect(screen.queryByRole("button", { name: "フロントマター" })).not.toBeInTheDocument();
+    const topActions = document.querySelector(".main-area-top-actions");
+    expect(topActions).toBeInstanceOf(HTMLElement);
+    expect(within(topActions as HTMLElement).queryByRole("button", { name: "フロントマター" })).not.toBeInTheDocument();
 
     fireEvent.click(linksButton);
 
@@ -479,6 +483,68 @@ describe("App", () => {
 
     expect(useUiStore.getState().isRightPanelOpen).toBe(true);
     expect(useUiStore.getState().rightPanelView).toBe("outline");
+  });
+
+  it("レールのフロントマターボタンから専用設定を開ける", async () => {
+    window.relic = makeRelicApi({
+      getUserDefinedFields: vi.fn().mockResolvedValue({
+        ok: true,
+        value: [{ name: "status", type: "select", choices: ["draft", "done"] }]
+      }),
+      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
+    });
+
+    await renderApp();
+
+    await screen.findByText("Notes");
+
+    fireEvent.click(screen.getByRole("button", { name: "フロントマター" }));
+
+    const activeTabId = useEditorStore.getState().leftPane.activeTabId;
+    expect(activeTabId).toBe("panel-frontmatter");
+    expect(useEditorStore.getState().tabs[activeTabId!]).toMatchObject({
+      kind: "panel",
+      panel: "frontmatter"
+    });
+    expect(screen.getByRole("button", { name: "フロントマター" })).toHaveClass("active");
+    expect(screen.getByText("カスタムフィールド")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("status")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "フロントマター" }));
+
+    expect(document.querySelector(".rail-tab-flight")).toBeInTheDocument();
+    expect(document.querySelector(".rail-tab-flight--close")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(useEditorStore.getState().leftPane.activeTabId).toBeNull();
+    });
+    expect(useEditorStore.getState().tabs["panel-frontmatter"]).toBeUndefined();
+  });
+
+  it("別の画面タブを開いた後でも開いているレールボタンを押すと閉じる", async () => {
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
+    });
+
+    await renderApp();
+
+    await screen.findByText("Notes");
+
+    fireEvent.click(screen.getByRole("button", { name: "フロントマター" }));
+    fireEvent.click(screen.getByRole("button", { name: "設定" }));
+
+    expect(useEditorStore.getState().tabs["panel-frontmatter"]).toMatchObject({
+      kind: "panel",
+      panel: "frontmatter"
+    });
+    expect(useEditorStore.getState().leftPane.activeTabId).toBe("panel-settings");
+    expect(screen.getByRole("button", { name: "フロントマター" })).toHaveClass("active");
+
+    fireEvent.click(screen.getByRole("button", { name: "フロントマター" }));
+
+    await waitFor(() => {
+      expect(useEditorStore.getState().tabs["panel-frontmatter"]).toBeUndefined();
+    });
+    expect(useEditorStore.getState().tabs["panel-settings"]).toBeDefined();
   });
 
   it("分割表示を閉じると退場反応を通る", async () => {
@@ -644,7 +710,9 @@ describe("App", () => {
       expect(useEditorStore.getState().leftPane.activeTabId).not.toBeNull();
     });
     const activeTabId = useEditorStore.getState().leftPane.activeTabId;
-    expect(useEditorStore.getState().tabs[activeTabId!]?.path).toBe("新規ファイル.md");
+    const tab = useEditorStore.getState().tabs[activeTabId!];
+    expect(tab?.kind).toBe("file");
+    if (tab?.kind === "file") expect(tab.path).toBe("新規ファイル.md");
   });
 
   it("新規ファイルボタンからテンプレートを選んで名前なしでファイルを作成する", async () => {

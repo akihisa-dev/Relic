@@ -146,6 +146,7 @@
   "links.missing": "未作成",
   "links.outgoing": "アウトゴーイング",
   "nav.files": "ファイル",
+  "nav.frontmatter": "フロントマター",
   "nav.git": "Git",
   "nav.search": "検索",
   "nav.settings": "設定",

@@ -1,19 +1,20 @@
 import { describe, expect, it } from "vitest";
 
 import type { PaneState, Tab } from "./store/editorStore";
-import { extractOutlineHeadings, getActiveTabInPane } from "./editorDerivedState";
+import { extractOutlineHeadings, getActiveFileTabInPane, getActiveTabInPane } from "./editorDerivedState";
 
 describe("editorDerivedState", () => {
   it("指定ペインのアクティブタブを返す", () => {
     const leftPane: PaneState = { activeTabId: "left-tab", history: ["left-tab"], tabIds: ["left-tab"] };
     const rightPane: PaneState = { activeTabId: "right-tab", history: ["right-tab"], tabIds: ["right-tab"] };
     const tabs: Record<string, Tab> = {
-      "left-tab": { content: "# Left", id: "left-tab", name: "Left", path: "left.md" },
-      "right-tab": { content: "# Right", id: "right-tab", name: "Right", path: "right.md" }
+      "left-tab": { content: "# Left", id: "left-tab", kind: "file", name: "Left", path: "left.md" },
+      "right-tab": { content: "# Right", id: "right-tab", kind: "file", name: "Right", path: "right.md" }
     };
 
-    expect(getActiveTabInPane("left", { leftPane, rightPane }, tabs)?.path).toBe("left.md");
-    expect(getActiveTabInPane("right", { leftPane, rightPane }, tabs)?.path).toBe("right.md");
+    expect(getActiveFileTabInPane("left", { leftPane, rightPane }, tabs)?.path).toBe("left.md");
+    expect(getActiveFileTabInPane("right", { leftPane, rightPane }, tabs)?.path).toBe("right.md");
+    expect(getActiveTabInPane("left", { leftPane, rightPane }, tabs)?.name).toBe("Left");
   });
 
   it("存在しないアクティブタブは null にする", () => {

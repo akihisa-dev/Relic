@@ -1,10 +1,10 @@
 import { EditorView } from "@codemirror/view";
 import { useEffect, useState } from "react";
-import type { MutableRefObject, ReactElement } from "react";
+import type { MutableRefObject, ReactElement, ReactNode } from "react";
 
 import type { EditorSettings, UserDefinedField } from "../../shared/ipc";
 import { useT } from "../i18n";
-import { useEditorStore, type PaneId } from "../store/editorStore";
+import { useEditorStore, type PaneId, type PanelTabKind } from "../store/editorStore";
 import { useAutoSave } from "../hooks/useAutoSave";
 import { Editor } from "./Editor";
 
@@ -21,6 +21,7 @@ export interface PaneViewProps {
   userDefinedFields: UserDefinedField[];
   workspacePath?: string | null;
   viewRef: MutableRefObject<EditorView | null>;
+  renderPanelTab: (panel: PanelTabKind) => ReactNode;
   onCreateFile: (name: string) => void;
   onFocus: () => void;
   onOpenLink?: (href: string) => void;
@@ -52,6 +53,7 @@ export function PaneView({
   userDefinedFields,
   workspacePath,
   viewRef,
+  renderPanelTab,
   onCreateFile,
   onFocus,
   onOpenLink,
@@ -82,7 +84,11 @@ export function PaneView({
     return () => window.removeEventListener("click", close);
   }, [contextMenu]);
 
-  useAutoSave(activeTab?.content ?? "", activeTab?.path ?? null, activeTab !== null);
+  useAutoSave(
+    activeTab?.kind === "file" ? activeTab.content : "",
+    activeTab?.kind === "file" ? activeTab.path : null,
+    activeTab?.kind === "file"
+  );
 
   useEffect(() => {
     if (!scrollTargetHeading || !viewRef.current) return;
@@ -98,12 +104,13 @@ export function PaneView({
     onScrollTargetHandled?.();
   }, [scrollTargetHeading, onScrollTargetHandled]);
 
-  const charCount = activeTab?.content.length ?? 0;
-  const wordCount = activeTab
+  const charCount = activeTab?.kind === "file" ? activeTab.content.length : 0;
+  const wordCount = activeTab?.kind === "file"
     ? activeTab.content.split(/\s+/).filter(Boolean).length
     : 0;
   const contextTab = contextMenu ? tabs[contextMenu.tabId] : null;
-  const contextTabIsPinned = contextTab ? pinnedPaths?.has(contextTab.path) : false;
+  const contextTabIsFile = contextTab?.kind === "file";
+  const contextTabIsPinned = contextTabIsFile ? pinnedPaths?.has(contextTab.path) : false;
 
   return (
     <div
@@ -122,6 +129,7 @@ export function PaneView({
           return (
             <div
               className={`pane-tab${paneState.activeTabId === tabId ? " pane-tab--active" : ""}${isClosing ? " pane-tab--closing" : ""}`}
+              data-tab-id={tabId}
               key={tabId}
               onClick={(e) => {
                 e.stopPropagation();
@@ -170,7 +178,7 @@ export function PaneView({
               >
                 {t("files.open")}
               </button>
-              {onDuplicateTabFile ? (
+              {contextTabIsFile && onDuplicateTabFile ? (
                 <button
                   className="tab-context-menu-item"
                   onClick={() => {
@@ -182,7 +190,7 @@ export function PaneView({
                   {t("files.duplicate")}
                 </button>
               ) : null}
-              {onTogglePinTab ? (
+              {contextTabIsFile && onTogglePinTab ? (
                 <button
                   className="tab-context-menu-item"
                   onClick={() => {
@@ -194,27 +202,31 @@ export function PaneView({
                   {contextTabIsPinned ? t("files.unpin") : t("files.pin")}
                 </button>
               ) : null}
-              <button
-                className="tab-context-menu-item"
-                onClick={() => {
-                  void navigator.clipboard?.writeText(contextTab.path);
-                  setContextMenu(null);
-                }}
-                type="button"
-              >
-                {t("files.copyPath")}
-              </button>
-              <button
-                className="tab-context-menu-item"
-                onClick={() => {
-                  void navigator.clipboard?.writeText(`[[${contextTab.path.replace(/\.md$/i, "")}]]`);
-                  setContextMenu(null);
-                }}
-                type="button"
-              >
-                {t("files.copyMarkdownLink")}
-              </button>
-              {onRevealTabFile ? (
+              {contextTabIsFile ? (
+                <>
+                  <button
+                    className="tab-context-menu-item"
+                    onClick={() => {
+                      void navigator.clipboard?.writeText(contextTab.path);
+                      setContextMenu(null);
+                    }}
+                    type="button"
+                  >
+                    {t("files.copyPath")}
+                  </button>
+                  <button
+                    className="tab-context-menu-item"
+                    onClick={() => {
+                      void navigator.clipboard?.writeText(`[[${contextTab.path.replace(/\.md$/i, "")}]]`);
+                      setContextMenu(null);
+                    }}
+                    type="button"
+                  >
+                    {t("files.copyMarkdownLink")}
+                  </button>
+                </>
+              ) : null}
+              {contextTabIsFile && onRevealTabFile ? (
                 <button
                   className="tab-context-menu-item"
                   onClick={() => {
@@ -282,7 +294,7 @@ export function PaneView({
         </div>
       ) : null}
 
-      {activeTab ? (
+      {activeTab?.kind === "file" ? (
         <div
           className={`editor-surface${editorActionPulse > 0 ? ` editor-surface--action-${editorActionPulse % 2 === 0 ? "even" : "odd"}` : ""}`}
         >
@@ -303,6 +315,12 @@ export function PaneView({
           </div>
           <div className="pane-status">
             <span>{t("app.wordCount", { chars: charCount, words: wordCount })}</span>
+          </div>
+        </div>
+      ) : activeTab?.kind === "panel" ? (
+        <div className="editor-surface panel-tab-surface">
+          <div className="panel-tab-body">
+            {renderPanelTab(activeTab.panel)}
           </div>
         </div>
       ) : (

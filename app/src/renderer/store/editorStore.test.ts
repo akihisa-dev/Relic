@@ -40,7 +40,8 @@ describe("editorStore", () => {
     expect(state.leftPane.activeTabId).toBeTruthy();
     const tabId = state.leftPane.activeTabId!;
     expect(state.tabs[tabId].name).toBe("テスト");
-    expect(state.tabs[tabId].path).toBe("テスト.md");
+    expect(state.tabs[tabId].kind).toBe("file");
+    if (state.tabs[tabId].kind === "file") expect(state.tabs[tabId].path).toBe("テスト.md");
 
     void leftPane;
     void tabs;
@@ -104,7 +105,8 @@ describe("editorStore", () => {
 
     const state = useEditorStore.getState();
 
-    expect(state.tabs[tabId].content).toBe("更新された内容");
+    expect(state.tabs[tabId].kind).toBe("file");
+    if (state.tabs[tabId].kind === "file") expect(state.tabs[tabId].content).toBe("更新された内容");
   });
 
   it("分割表示をトグルできる", () => {
@@ -146,7 +148,23 @@ describe("editorStore", () => {
     expect(state.leftPane.tabIds).toContain(tabId);
     expect(state.rightPane.tabIds).toContain(tabId);
     expect(state.rightPane.activeTabId).toBe(tabId);
-    expect(Object.values(state.tabs).filter((tab) => tab.path === sampleFile.path)).toHaveLength(1);
+    expect(Object.values(state.tabs).filter((tab) => tab.kind === "file" && tab.path === sampleFile.path)).toHaveLength(1);
+  });
+
+  it("画面タブを開くと安定したIDでアクティブになる", () => {
+    useEditorStore.getState().openPanelInPane("left", "settings", "設定");
+    useEditorStore.getState().openPanelInPane("left", "settings", "設定");
+
+    const state = useEditorStore.getState();
+
+    expect(state.leftPane.tabIds).toEqual(["panel-settings"]);
+    expect(state.leftPane.activeTabId).toBe("panel-settings");
+    expect(state.tabs["panel-settings"]).toEqual({
+      id: "panel-settings",
+      kind: "panel",
+      name: "設定",
+      panel: "settings"
+    });
   });
 
   it("分割解除時に右ペインのタブが閉じられる", () => {
