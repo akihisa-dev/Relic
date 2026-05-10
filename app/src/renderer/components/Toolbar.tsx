@@ -8,6 +8,7 @@ import { useT } from "../i18n";
 
 interface ToolbarProps {
   fallbackViewRef?: React.RefObject<EditorView | null>;
+  onEditorAction?: () => void;
   viewRef: React.RefObject<EditorView | null>;
 }
 
@@ -166,7 +167,7 @@ export function insertBlockIds(view: EditorView, createId: BlockIdFactory = () =
   view.focus();
 }
 
-export function Toolbar({ fallbackViewRef, viewRef }: ToolbarProps): ReactElement {
+export function Toolbar({ fallbackViewRef, onEditorAction, viewRef }: ToolbarProps): ReactElement {
   const t = useT();
   const lastTargetViewRef = useRef<EditorView | null>(null);
   const [showHeadingMenu, setShowHeadingMenu] = useState(false);
@@ -218,42 +219,49 @@ export function Toolbar({ fallbackViewRef, viewRef }: ToolbarProps): ReactElemen
     const view = getView();
     if (!view) return;
     wrapSelection(view, "**", "**", placeholderText);
+    onEditorAction?.();
   };
 
   const handleItalic = (): void => {
     const view = getView();
     if (!view) return;
     wrapSelection(view, "*", "*", placeholderText);
+    onEditorAction?.();
   };
 
   const handleStrikethrough = (): void => {
     const view = getView();
     if (!view) return;
     wrapSelection(view, "~~", "~~", placeholderText);
+    onEditorAction?.();
   };
 
   const handleHighlight = (): void => {
     const view = getView();
     if (!view) return;
     wrapSelection(view, "==", "==", placeholderText);
+    onEditorAction?.();
   };
 
   const handleUnderline = (): void => {
     const view = getView();
     if (!view) return;
     wrapSelection(view, "<u>", "</u>", placeholderText);
+    onEditorAction?.();
   };
 
   const handleInlineCode = (): void => {
     const view = getView();
     if (!view) return;
     wrapSelection(view, "`", "`", placeholderText);
+    onEditorAction?.();
   };
 
   const handleHeading = (level: HeadingLevel): void => {
     const view = getView();
     if (!view) return;
     insertAtLineStart(view, "#".repeat(level) + " ", placeholderText);
+    onEditorAction?.();
     setShowHeadingMenu(false);
   };
 
@@ -261,36 +269,42 @@ export function Toolbar({ fallbackViewRef, viewRef }: ToolbarProps): ReactElemen
     const view = getView();
     if (!view) return;
     insertAtLineStart(view, "> ", placeholderText);
+    onEditorAction?.();
   };
 
   const handleCodeBlock = (): void => {
     const view = getView();
     if (!view) return;
     insertBlock(view, "```\n\n```");
+    onEditorAction?.();
   };
 
   const handleHorizontalRule = (): void => {
     const view = getView();
     if (!view) return;
     insertBlock(view, "---");
+    onEditorAction?.();
   };
 
   const handleBulletList = (): void => {
     const view = getView();
     if (!view) return;
     insertAtLineStart(view, "- ", placeholderText);
+    onEditorAction?.();
   };
 
   const handleOrderedList = (): void => {
     const view = getView();
     if (!view) return;
     insertAtLineStart(view, "1. ", placeholderText);
+    onEditorAction?.();
   };
 
   const handleCheckbox = (): void => {
     const view = getView();
     if (!view) return;
     insertAtLineStart(view, "- [ ] ", placeholderText);
+    onEditorAction?.();
   };
 
   const handleLink = (): void => {
@@ -309,6 +323,7 @@ export function Toolbar({ fallbackViewRef, viewRef }: ToolbarProps): ReactElemen
         }
       });
       view.focus();
+      onEditorAction?.();
       setShowLinkDialog(false);
       setLinkUrl("");
     } else {
@@ -331,6 +346,7 @@ export function Toolbar({ fallbackViewRef, viewRef }: ToolbarProps): ReactElemen
       }
     });
     view.focus();
+    onEditorAction?.();
     setShowLinkDialog(false);
     setLinkUrl("");
   };
@@ -351,12 +367,14 @@ export function Toolbar({ fallbackViewRef, viewRef }: ToolbarProps): ReactElemen
 
     view.dispatch(changes);
     view.focus();
+    onEditorAction?.();
   };
 
   const handleBlockId = (): void => {
     const view = getView();
     if (!view) return;
     insertBlockIds(view);
+    onEditorAction?.();
   };
 
   const handleTableSubmit = (): void => {
@@ -372,6 +390,7 @@ export function Toolbar({ fallbackViewRef, viewRef }: ToolbarProps): ReactElemen
     const tableText = [header, divider, ...tableRows_arr].join("\n");
 
     insertBlock(view, tableText);
+    onEditorAction?.();
     setShowTableDialog(false);
     view.focus();
   };

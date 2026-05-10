@@ -212,7 +212,9 @@ export function FileTreeItem({
           }}
           type="button"
         >
-          <span className="file-tree-icon">{node.type === "folder" ? (isExpanded ? "▼" : "▶") : "·"}</span>
+          <span className={`file-tree-icon${isFolder ? " file-tree-icon--folder" : ""}${isFolder && isExpanded ? " file-tree-icon--expanded" : ""}`}>
+            {node.type === "folder" ? "▶" : "·"}
+          </span>
           {isRenaming ? (
             <input
               aria-label={t("files.rename")}
@@ -284,6 +286,7 @@ export function FileTreeItem({
       </div>
       {node.type === "folder" && isExpanded && node.children.length > 0 ? (
         <FileTree
+          animation="expand"
           nodes={node.children}
           onDeleteItem={onDeleteItem}
           onDeleteSelectedItems={onDeleteSelectedItems}
@@ -306,6 +309,7 @@ export function FileTreeItem({
 }
 
 export function FileTree({
+  animation,
   isRoot = false,
   nodes,
   onDeleteItem,
@@ -322,7 +326,7 @@ export function FileTree({
   pinnedPaths,
   selectedItems = [],
   selectedPaths = new Set<string>()
-}: FileTreeProps): ReactElement {
+}: FileTreeProps & { animation?: "expand" }): ReactElement {
   const t = useT();
   const [isRootDragOver, setIsRootDragOver] = useState(false);
 
@@ -358,7 +362,7 @@ export function FileTree({
 
   return (
     <ul
-      className={`file-tree${isRoot && isRootDragOver ? " file-tree--drag-over" : ""}`}
+      className={`file-tree${animation === "expand" ? " file-tree--expanding" : ""}${isRoot && isRootDragOver ? " file-tree--drag-over" : ""}`}
       onDragLeave={isRoot ? (e) => { if (e.currentTarget === e.target) setIsRootDragOver(false); } : undefined}
       onDragOver={isRoot ? (e) => { e.preventDefault(); setIsRootDragOver(true); } : undefined}
       onDrop={isRoot ? handleRootDrop : undefined}
