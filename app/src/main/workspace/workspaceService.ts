@@ -1,4 +1,4 @@
-import { mkdir } from "node:fs/promises";
+import { mkdir, rename, stat } from "node:fs/promises";
 import path from "node:path";
 import { createHash } from "node:crypto";
 
@@ -6,6 +6,7 @@ import type { WorkspaceState, WorkspaceSummary, WorkspaceTreeNode } from "../../
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { attachmentsDirectoryName, templatesDirectoryName } from "../../shared/workspace";
 import type { AppSettings } from "../settings/appSettings";
+import { validateBaseName } from "../files/names";
 
 export function createWorkspaceSummary(workspacePath: string): WorkspaceSummary {
   const normalizedPath = path.resolve(workspacePath);
@@ -76,31 +77,78 @@ export function removeWorkspaceRegistration(
   });
 }
 
-export function renameWorkspaceRegistration(
+export interface RenamedWorkspaceRegistration {
+  nextSettings: AppSettings;
+  newWorkspaceId: string;
+  oldWorkspaceId: string;
+}
+
+export async function renameWorkspaceRegistration(
   settings: AppSettings,
   workspaceId: string,
   name: string
-): RelicResult<AppSettings> {
-  const trimmedName = name.trim();
+): Promise<RelicResult<RenamedWorkspaceRegistration>> {
+  const validatedName = validateBaseName(name, "ワークスペース名を入力してください。");
 
-  if (!trimmedName) {
-    return fail("WORKSPACE_NAME_EMPTY", "ワークスペース名を入力してください。");
+  if (!validatedName.ok) {
+    return validatedName;
   }
 
-  if (/[\/\\\r\n]/.test(trimmedName)) {
-    return fail("WORKSPACE_NAME_INVALID", "ワークスペース名に使えない文字が含まれています。");
-  }
+  const workspace = settings.workspaces.find((item) => item.id === workspaceId);
 
-  if (!settings.workspaces.some((workspace) => workspace.id === workspaceId)) {
+  if (!workspace) {
     return fail("WORKSPACE_NOT_FOUND", "登録済みワークスペースが見つかりませんでした。");
   }
 
-  return ok({
-    ...settings,
-    workspaces: settings.workspaces.map((workspace) => (
-      workspace.id === workspaceId ? { ...workspace, name: trimmedName } : workspace
-    ))
-  });
+  const nextPath = path.join(path.dirname(workspace.path), validatedName.value);
+  const nextWorkspace = createWorkspaceSummary(nextPath);
+
+  if (workspace.path === nextWorkspace.path) {
+    return ok({
+      nextSettings: settings,
+      newWorkspaceId: workspace.id,
+      oldWorkspaceId: workspace.id
+    });
+  }
+
+  try {
+    const sourceStats = await stat(workspace.path);
+
+    if (!sourceStats.isDirectory()) {
+      return fail("WORKSPACE_RENAME_NOT_DIRECTORY", "ワークスペースフォルダが見つかりませんでした。");
+    }
+
+    try {
+      await stat(nextWorkspace.path);
+      return fail("WORKSPACE_ALREADY_EXISTS", "同じ名前のフォルダがすでにあります。");
+    } catch (error) {
+      if (!isMissingFileError(error)) throw error;
+    }
+
+    await rename(workspace.path, nextWorkspace.path);
+
+    const nextSettings: AppSettings = {
+      ...settings,
+      lastWorkspaceId: settings.lastWorkspaceId === workspace.id
+        ? nextWorkspace.id
+        : settings.lastWorkspaceId,
+      workspaces: settings.workspaces.map((item) => (
+        item.id === workspace.id ? nextWorkspace : item
+      ))
+    };
+
+    return ok({
+      nextSettings,
+      newWorkspaceId: nextWorkspace.id,
+      oldWorkspaceId: workspace.id
+    });
+  } catch (error) {
+    return fail(
+      "WORKSPACE_RENAME_FAILED",
+      "ワークスペース名を変更できませんでした。",
+      error instanceof Error ? error.message : String(error)
+    );
+  }
 }
 
 export function toWorkspaceState(
@@ -117,4 +165,13 @@ export function toWorkspaceState(
     pinnedPaths,
     workspaces: settings.workspaces
   };
+}
+
+function isMissingFileError(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code?: string }).code === "ENOENT"
+  );
 }
