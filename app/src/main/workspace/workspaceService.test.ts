@@ -143,6 +143,35 @@ describe("workspaceService", () => {
     await expect(stat(path.join(parentPath, "小説メモ"))).resolves.toBeTruthy();
   });
 
+  it("登録済みワークスペースの大文字小文字だけの名前変更を許可する", async () => {
+    const parentPath = await mkdtemp(path.join(os.tmpdir(), "relic-workspace-parent-"));
+    temporaryPaths.push(parentPath);
+    const workspacePath = path.join(parentPath, "Relic Notes");
+    await prepareWorkspace(workspacePath);
+    const workspace = createWorkspaceSummary(workspacePath);
+    const settings = {
+      ...baseSettings,
+      lastWorkspaceId: workspace.id,
+      workspaces: [workspace]
+    };
+
+    const result = await renameWorkspaceRegistration(settings, workspace.id, "relic notes");
+    const nextWorkspace = createWorkspaceSummary(path.join(parentPath, "relic notes"));
+
+    expect(result).toEqual({
+      ok: true,
+      value: {
+        nextSettings: {
+          ...baseSettings,
+          lastWorkspaceId: nextWorkspace.id,
+          workspaces: [nextWorkspace]
+        },
+        newWorkspaceId: nextWorkspace.id,
+        oldWorkspaceId: workspace.id
+      }
+    });
+  });
+
   it("空のワークスペース名は拒否する", async () => {
     const workspace = createWorkspaceSummary("/tmp/relic-notes");
     const result = await renameWorkspaceRegistration(

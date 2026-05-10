@@ -118,14 +118,28 @@ export async function renameWorkspaceRegistration(
       return fail("WORKSPACE_RENAME_NOT_DIRECTORY", "ワークスペースフォルダが見つかりませんでした。");
     }
 
+    let targetIsSourceDirectory = false;
+
     try {
-      await stat(nextWorkspace.path);
-      return fail("WORKSPACE_ALREADY_EXISTS", "同じ名前のフォルダがすでにあります。");
+      const targetStats = await stat(nextWorkspace.path);
+      if (sourceStats.dev !== targetStats.dev || sourceStats.ino !== targetStats.ino) {
+        return fail("WORKSPACE_ALREADY_EXISTS", "同じ名前のフォルダがすでにあります。");
+      }
+      targetIsSourceDirectory = true;
     } catch (error) {
       if (!isMissingFileError(error)) throw error;
     }
 
-    await rename(workspace.path, nextWorkspace.path);
+    if (targetIsSourceDirectory) {
+      const temporaryPath = path.join(
+        path.dirname(workspace.path),
+        `.relic-rename-${nextWorkspace.id}-${Date.now()}`
+      );
+      await rename(workspace.path, temporaryPath);
+      await rename(temporaryPath, nextWorkspace.path);
+    } else {
+      await rename(workspace.path, nextWorkspace.path);
+    }
 
     const nextSettings: AppSettings = {
       ...settings,

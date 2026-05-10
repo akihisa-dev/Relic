@@ -812,7 +812,227 @@ describe("App", () => {
     fireEvent.change(await screen.findByLabelText("名前を変更"), { target: { value: "Renamed" } });
     fireEvent.keyDown(screen.getByLabelText("名前を変更"), { key: "Enter" });
 
-    expect(renameWorkspace).toHaveBeenCalledWith({ name: "Renamed", workspaceId: "ws-1" });
+    await waitFor(() => {
+      expect(renameWorkspace).toHaveBeenCalledWith({ name: "Renamed", workspaceId: "ws-1" });
+    });
+  });
+
+  it("左レールのワークスペース名変更後は少しレールを開いたままにする", async () => {
+    const renameWorkspace = vi.fn().mockResolvedValue({
+      ok: true,
+      value: {
+        activeWorkspace: { id: "ws-1", name: "Renamed", path: "/tmp/Renamed" },
+        fileTree: [],
+        pinnedPaths: [],
+        workspaces: [{ id: "ws-1", name: "Renamed", path: "/tmp/Renamed" }]
+      }
+    });
+
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          activeWorkspace: { id: "ws-1", name: "Notes", path: "/tmp/Notes" },
+          fileTree: [],
+          pinnedPaths: [],
+          workspaces: [{ id: "ws-1", name: "Notes", path: "/tmp/Notes" }]
+        }
+      }),
+      renameWorkspace
+    });
+
+    await renderApp();
+
+    const rail = screen.getByRole("navigation");
+    fireEvent.doubleClick(await screen.findByRole("button", { name: "Notes" }));
+    fireEvent.change(await screen.findByLabelText("名前を変更"), { target: { value: "Renamed" } });
+    fireEvent.keyDown(screen.getByLabelText("名前を変更"), { key: "Enter" });
+
+    await waitFor(() => {
+      expect(renameWorkspace).toHaveBeenCalledWith({ name: "Renamed", workspaceId: "ws-1" });
+    });
+    expect(rail).toHaveClass("rail--workspace-editing");
+
+    await waitFor(() => {
+      expect(rail).not.toHaveClass("rail--workspace-editing");
+    }, { timeout: 1500 });
+  });
+
+  it("左レールのワークスペース名変更中はレールを開いたままにする", async () => {
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          activeWorkspace: { id: "ws-1", name: "Notes", path: "/tmp/Notes" },
+          fileTree: [],
+          pinnedPaths: [],
+          workspaces: [{ id: "ws-1", name: "Notes", path: "/tmp/Notes" }]
+        }
+      })
+    });
+
+    await renderApp();
+
+    const rail = screen.getByRole("navigation");
+    fireEvent.doubleClick(await screen.findByRole("button", { name: "Notes" }));
+
+    expect(rail).toHaveClass("rail--workspace-editing");
+
+    fireEvent.keyDown(screen.getByLabelText("名前を変更"), { key: "Escape" });
+
+    expect(rail).not.toHaveClass("rail--workspace-editing");
+  });
+
+  it("左レールのワークスペース名変更でIME確定中のEnterではリネーム確定しない", async () => {
+    const renameWorkspace = vi.fn().mockResolvedValue({
+      ok: true,
+      value: {
+        activeWorkspace: { id: "ws-1", name: "小説メモ", path: "/tmp/小説メモ" },
+        fileTree: [],
+        pinnedPaths: [],
+        workspaces: [{ id: "ws-1", name: "小説メモ", path: "/tmp/小説メモ" }]
+      }
+    });
+
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          activeWorkspace: { id: "ws-1", name: "Notes", path: "/tmp/Notes" },
+          fileTree: [],
+          pinnedPaths: [],
+          workspaces: [{ id: "ws-1", name: "Notes", path: "/tmp/Notes" }]
+        }
+      }),
+      renameWorkspace
+    });
+
+    await renderApp();
+
+    fireEvent.doubleClick(await screen.findByRole("button", { name: "Notes" }));
+    const input = await screen.findByLabelText("名前を変更");
+    fireEvent.change(input, { target: { value: "小説メモ" } });
+    fireEvent.keyDown(input, { isComposing: true, key: "Enter" });
+
+    expect(renameWorkspace).not.toHaveBeenCalled();
+
+    fireEvent.keyDown(input, { key: "Enter" });
+
+    await waitFor(() => {
+      expect(renameWorkspace).toHaveBeenCalledWith({ name: "小説メモ", workspaceId: "ws-1" });
+    });
+  });
+
+  it("左レールのワークスペース名変更でIME確定後のkeyCode 229のEnterは確定する", async () => {
+    const renameWorkspace = vi.fn().mockResolvedValue({
+      ok: true,
+      value: {
+        activeWorkspace: { id: "ws-1", name: "小説メモ", path: "/tmp/小説メモ" },
+        fileTree: [],
+        pinnedPaths: [],
+        workspaces: [{ id: "ws-1", name: "小説メモ", path: "/tmp/小説メモ" }]
+      }
+    });
+
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          activeWorkspace: { id: "ws-1", name: "Notes", path: "/tmp/Notes" },
+          fileTree: [],
+          pinnedPaths: [],
+          workspaces: [{ id: "ws-1", name: "Notes", path: "/tmp/Notes" }]
+        }
+      }),
+      renameWorkspace
+    });
+
+    await renderApp();
+
+    fireEvent.doubleClick(await screen.findByRole("button", { name: "Notes" }));
+    const input = await screen.findByLabelText("名前を変更");
+    fireEvent.change(input, { target: { value: "小説メモ" } });
+    fireEvent.keyDown(input, { key: "Enter", keyCode: 229 });
+
+    await waitFor(() => {
+      expect(renameWorkspace).toHaveBeenCalledWith({ name: "小説メモ", workspaceId: "ws-1" });
+    });
+  });
+
+  it("左レールのワークスペース名変更で文字確定Enterのkeyupではリネーム確定しない", async () => {
+    const renameWorkspace = vi.fn().mockResolvedValue({
+      ok: true,
+      value: {
+        activeWorkspace: { id: "ws-1", name: "小説メモ", path: "/tmp/小説メモ" },
+        fileTree: [],
+        pinnedPaths: [],
+        workspaces: [{ id: "ws-1", name: "小説メモ", path: "/tmp/小説メモ" }]
+      }
+    });
+
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          activeWorkspace: { id: "ws-1", name: "Notes", path: "/tmp/Notes" },
+          fileTree: [],
+          pinnedPaths: [],
+          workspaces: [{ id: "ws-1", name: "Notes", path: "/tmp/Notes" }]
+        }
+      }),
+      renameWorkspace
+    });
+
+    await renderApp();
+
+    fireEvent.doubleClick(await screen.findByRole("button", { name: "Notes" }));
+    const input = await screen.findByLabelText("名前を変更");
+    fireEvent.change(input, { target: { value: "小説メモ" } });
+    fireEvent.compositionStart(input);
+    fireEvent.keyDown(input, { isComposing: true, key: "Enter" });
+    expect(renameWorkspace).not.toHaveBeenCalled();
+
+    fireEvent.compositionEnd(input);
+    fireEvent.keyUp(input, { key: "Enter" });
+
+    expect(renameWorkspace).not.toHaveBeenCalled();
+
+    fireEvent.keyDown(input, { key: "Enter" });
+
+    await waitFor(() => {
+      expect(renameWorkspace).toHaveBeenCalledWith({ name: "小説メモ", workspaceId: "ws-1" });
+    });
+  });
+
+  it("左レールのワークスペース名変更が失敗してもリネーム状態を終了する", async () => {
+    const renameWorkspace = vi.fn().mockResolvedValue({
+      ok: false,
+      error: { code: "WORKSPACE_RENAME_FAILED", message: "ワークスペース名を変更できませんでした。" }
+    });
+
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          activeWorkspace: { id: "ws-1", name: "Notes", path: "/tmp/Notes" },
+          fileTree: [],
+          pinnedPaths: [],
+          workspaces: [{ id: "ws-1", name: "Notes", path: "/tmp/Notes" }]
+        }
+      }),
+      renameWorkspace
+    });
+
+    await renderApp();
+
+    fireEvent.doubleClick(await screen.findByRole("button", { name: "Notes" }));
+    const input = await screen.findByLabelText("名前を変更");
+    fireEvent.change(input, { target: { value: "Renamed" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+
+    await waitFor(() => {
+      expect(screen.queryByLabelText("名前を変更")).not.toBeInTheDocument();
+    });
   });
 
   it("左レールのワークスペース右クリックメニューから一覧削除する", async () => {
