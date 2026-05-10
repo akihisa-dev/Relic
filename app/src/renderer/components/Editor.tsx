@@ -47,9 +47,69 @@ interface FrontmatterBlock {
   data: Record<string, unknown>;
   from: number;
   to: number;
+  yamlText: string;
 }
 
 const frontmatterFieldNamePattern = /^[^\s:][^\r\n:]*$/;
+const topLevelYamlFieldPattern = /^([^#\s][^:]*):(?:\s|$)/;
+
+interface YamlFieldEntry {
+  end: number;
+  key: string;
+  start: number;
+}
+
+function findYamlInlineComment(line: string): string | null {
+  let quote: "'" | "\"" | null = null;
+
+  for (let index = 0; index < line.length; index += 1) {
+    const char = line[index];
+    const previous = index > 0 ? line[index - 1] : "";
+
+    if (quote) {
+      if (char === quote && previous !== "\\") quote = null;
+      continue;
+    }
+
+    if (char === "'" || char === "\"") {
+      quote = char;
+      continue;
+    }
+
+    if (char === "#" && (index === 0 || /\s/.test(previous))) {
+      return line.slice(index).trimEnd();
+    }
+  }
+
+  return null;
+}
+
+function findYamlScalarQuote(line: string): "'" | "\"" | null {
+  const match = /^[^:]+:\s*(["'])/.exec(line);
+  if (!match) return null;
+
+  return match[1] === "'" ? "'" : "\"";
+}
+
+function isYamlFlowSequence(line: string): boolean {
+  return /^[^:]+:\s*\[/.test(line);
+}
+
+function findTopLevelYamlFieldEntries(lines: string[]): YamlFieldEntry[] {
+  const entries: YamlFieldEntry[] = [];
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const match = topLevelYamlFieldPattern.exec(lines[index]);
+    if (!match) continue;
+
+    let end = index + 1;
+    while (end < lines.length && /^[ \t]/.test(lines[end])) end += 1;
+
+    entries.push({ end, key: match[1].trim(), start: index });
+  }
+
+  return entries;
+}
 
 function splitTableRow(line: string): string[] {
   const trimmed = line.trim().replace(/^\|/, "").replace(/\|$/, "");
@@ -969,10 +1029,34 @@ class FrontmatterPropertiesWidget extends WidgetType {
     const wrap = document.createElement("div");
     wrap.className = "cm-frontmatter-pills";
 
-    for (const item of value) {
+    for (const [index, item] of value.entries()) {
       const pill = document.createElement("span");
       pill.className = "cm-frontmatter-pill";
-      pill.textContent = String(item);
+
+      const itemInput = document.createElement("input");
+      itemInput.className = "cm-frontmatter-pill-value";
+      itemInput.value = String(item);
+      itemInput.addEventListener("change", () => {
+        const nextValue = itemInput.value.trim();
+        const nextItems = value.map(String);
+        if (!nextValue) {
+          nextItems.splice(index, 1);
+        } else {
+          nextItems[index] = nextValue;
+        }
+        this.updateField(view, key, nextItems);
+      });
+
+      const removeButton = document.createElement("button");
+      removeButton.className = "cm-frontmatter-pill-remove";
+      removeButton.title = "値を削除";
+      removeButton.type = "button";
+      removeButton.textContent = "×";
+      removeButton.addEventListener("click", () => {
+        this.updateField(view, key, value.map(String).filter((_, itemIndex) => itemIndex !== index));
+      });
+
+      pill.append(itemInput, removeButton);
       wrap.append(pill);
     }
 
@@ -1006,7 +1090,7 @@ class FrontmatterPropertiesWidget extends WidgetType {
   }
 
   private writeData(view: EditorView, nextData: Record<string, unknown>): void {
-    const nextYaml = this.serializeData(nextData).trimEnd();
+    const nextYaml = this.serializeDataPreservingYaml(nextData).trimEnd();
     const nextBlock = Object.keys(nextData).length > 0 ? `---\n${nextYaml}\n---` : "";
     view.dispatch({
       changes: {
@@ -1026,6 +1110,81 @@ class FrontmatterPropertiesWidget extends WidgetType {
         return yaml.dump({ [key]: value }, { lineWidth: -1 }).trimEnd();
       })
       .join("\n");
+  }
+
+  private serializeEntryPreservingInlineComment(entry: YamlFieldEntry, lines: string[], value: unknown): string {
+    const serialized = this.serializeEntryPreservingQuote(entry, lines, value);
+    const comment = entry.end === entry.start + 1 ? findYamlInlineComment(lines[entry.start]) : null;
+
+    if (!comment || serialized.includes("\n")) return serialized;
+
+    return `${serialized} ${comment}`;
+  }
+
+  private serializeEntryPreservingQuote(entry: YamlFieldEntry, lines: string[], value: unknown): string {
+    if (entry.end === entry.start + 1 && Array.isArray(value) && isYamlFlowSequence(lines[entry.start])) {
+      return `${entry.key}: [${value.map((item) => this.serializeFlowScalar(item)).join(", ")}]`;
+    }
+
+    if (entry.end !== entry.start + 1 || typeof value !== "string" || value.includes("\n")) {
+      return this.serializeData({ [entry.key]: value });
+    }
+
+    const quote = findYamlScalarQuote(lines[entry.start]);
+    if (!quote) return this.serializeData({ [entry.key]: value });
+
+    if (quote === "'") {
+      return `${entry.key}: '${value.replaceAll("'", "''")}'`;
+    }
+
+    return `${entry.key}: ${JSON.stringify(value)}`;
+  }
+
+  private serializeFlowScalar(value: unknown): string {
+    if (typeof value === "string") return JSON.stringify(value);
+    if (typeof value === "number" || typeof value === "boolean") return String(value);
+    if (value === null) return "null";
+    return JSON.stringify(String(value));
+  }
+
+  private serializeDataPreservingYaml(data: Record<string, unknown>): string {
+    const keys = Object.keys(data);
+    if (keys.length === 0) return "";
+
+    const lines = this.block.yamlText.replace(/\r\n/g, "\n").split("\n");
+    if (lines.at(-1) === "") lines.pop();
+
+    const entries = findTopLevelYamlFieldEntries(lines);
+    if (entries.length === 0) {
+      const preservedPrefix = lines.join("\n").trimEnd();
+      const serialized = this.serializeData(data);
+      return preservedPrefix ? `${preservedPrefix}\n${serialized}` : serialized;
+    }
+
+    const entryByStart = new Map(entries.map((entry) => [entry.start, entry]));
+    const writtenKeys = new Set<string>();
+    const output: string[] = [];
+
+    for (let index = 0; index < lines.length; index += 1) {
+      const entry = entryByStart.get(index);
+      if (!entry) {
+        output.push(lines[index]);
+        continue;
+      }
+
+      if (Object.prototype.hasOwnProperty.call(data, entry.key)) {
+        output.push(this.serializeEntryPreservingInlineComment(entry, lines, data[entry.key]));
+        writtenKeys.add(entry.key);
+      }
+
+      index = entry.end - 1;
+    }
+
+    for (const key of keys) {
+      if (!writtenKeys.has(key)) output.push(this.serializeData({ [key]: data[key] }));
+    }
+
+    return output.join("\n");
   }
 
   private fieldFor(key: string): UserDefinedField | undefined {
@@ -1178,14 +1337,15 @@ function findFrontmatterBlock(state: EditorState): FrontmatterBlock | null {
   try {
     const parsed = yaml.load(yamlText);
 
-    if (parsed === null || parsed === undefined) return { bodyFrom: closeLine.to + 1, data: {}, from: openLine.from, to: closeLine.to };
+    if (parsed === null || parsed === undefined) return { bodyFrom: closeLine.to + 1, data: {}, from: openLine.from, to: closeLine.to, yamlText };
     if (typeof parsed !== "object" || Array.isArray(parsed)) return null;
 
     return {
       bodyFrom: closeLine.to + 1,
       data: parsed as Record<string, unknown>,
       from: openLine.from,
-      to: closeLine.to
+      to: closeLine.to,
+      yamlText
     };
   } catch {
     return null;

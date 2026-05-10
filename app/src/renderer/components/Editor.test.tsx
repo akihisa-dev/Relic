@@ -218,7 +218,10 @@ describe("Editor", () => {
     await waitFor(() => expect(container.querySelector(".cm-frontmatter-properties")).not.toBeNull());
     expect(container.textContent).toContain("プロパティ");
     expect(container.textContent).toContain("version");
-    expect(container.textContent).toContain("帝都オルスター");
+    expect(Array.from(container.querySelectorAll(".cm-frontmatter-pill-value")).map((input) => (input as HTMLInputElement).value)).toEqual([
+      "帝都オルスター",
+      "帝都"
+    ]);
 
     const input = container.querySelector(".cm-frontmatter-input") as HTMLInputElement;
     fireEvent.change(input, { target: { value: "v1.1" } });
@@ -316,6 +319,75 @@ describe("Editor", () => {
 
     expect(onChange).toHaveBeenLastCalledWith(expect.not.stringContaining("version:"));
     expect(viewRef.current?.state.doc.toString()).toContain("status: draft");
+  });
+
+  it("配列プロパティの値を個別に編集・削除できる", async () => {
+    const viewRef = createRef<EditorView | null>();
+    const { container } = render(
+      <Editor
+        content={"---\ntags: [draft, review]\n---\n# 本文"}
+        onChange={vi.fn()}
+        settings={settings}
+        viewRef={viewRef}
+      />
+    );
+
+    await waitFor(() => expect(container.querySelector(".cm-frontmatter-pill-value")).not.toBeNull());
+    const values = Array.from(container.querySelectorAll(".cm-frontmatter-pill-value")) as HTMLInputElement[];
+    fireEvent.change(values[0], { target: { value: "idea" } });
+
+    expect(viewRef.current?.state.doc.toString()).toContain("tags: [\"idea\", \"review\"]");
+
+    await waitFor(() => expect(container.querySelectorAll(".cm-frontmatter-pill-remove")).toHaveLength(2));
+    fireEvent.click(container.querySelectorAll(".cm-frontmatter-pill-remove")[1] as HTMLButtonElement);
+
+    expect(viewRef.current?.state.doc.toString()).toContain("tags: [\"idea\"]");
+    expect(viewRef.current?.state.doc.toString()).not.toContain("review");
+  });
+
+  it("プロパティ編集時にYAMLのコメント行とフィールド順をできるだけ保つ", async () => {
+    const viewRef = createRef<EditorView | null>();
+    const { container } = render(
+      <Editor
+        content={"---\n# 管理用メモ\nstatus: draft # 執筆状態\n\n# 公開日\npublished: false\n---\n# 本文"}
+        onChange={vi.fn()}
+        settings={settings}
+        userDefinedFields={[{ name: "published", type: "boolean" }]}
+        viewRef={viewRef}
+      />
+    );
+
+    await waitFor(() => expect(container.querySelector(".cm-frontmatter-input")).not.toBeNull());
+    const input = container.querySelector(".cm-frontmatter-input") as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "review" } });
+
+    expect(viewRef.current?.state.doc.toString()).toContain([
+      "---",
+      "# 管理用メモ",
+      "status: review # 執筆状態",
+      "",
+      "# 公開日",
+      "published: false",
+      "---"
+    ].join("\n"));
+  });
+
+  it("プロパティ編集時に単純な文字列スカラーのクォートを保つ", async () => {
+    const viewRef = createRef<EditorView | null>();
+    const { container } = render(
+      <Editor
+        content={"---\ntitle: \"Old title\" # 表示名\n---\n# 本文"}
+        onChange={vi.fn()}
+        settings={settings}
+        viewRef={viewRef}
+      />
+    );
+
+    await waitFor(() => expect(container.querySelector(".cm-frontmatter-input")).not.toBeNull());
+    const input = container.querySelector(".cm-frontmatter-input") as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "New title" } });
+
+    expect(viewRef.current?.state.doc.toString()).toContain("title: \"New title\" # 表示名");
   });
 
   it("登録済みプロパティの入力能力をフォームに反映する", async () => {
