@@ -27,7 +27,6 @@ export interface FilesSidebarProps {
   onOpenWorkspace: () => void;
   onRevealItem?: (path: string) => void;
   onRenameItem: (path: string, type: WorkspaceTreeNode["type"], newName: string) => void;
-  onRenameWorkspace?: (workspaceId: string, currentName: string) => void;
   onSelectFolder: (node: Extract<WorkspaceTreeNode, { type: "folder" }>) => void;
   onTogglePin: (path: string) => void;
   onTemplatePathChange: (path: string) => void;
@@ -57,7 +56,6 @@ export function FilesSidebar({
   onOpenWorkspace,
   onRevealItem,
   onRenameItem,
-  onRenameWorkspace,
   onSelectFolder,
   onTogglePin,
   onTemplatePathChange,
@@ -150,23 +148,6 @@ export function FilesSidebar({
     <div className="sidebar-section">
       {activeWorkspace ? (
         <>
-          <div className="workspace-summary">
-            <div className="workspace-summary-text">
-              <span className="workspace-summary-label">{t("files.workspace")}</span>
-              <span className="workspace-summary-name" title={activeWorkspace.path}>
-                {activeWorkspace.name}
-              </span>
-            </div>
-            {onRenameWorkspace ? (
-              <button
-                className="workspace-summary-rename"
-                onClick={() => onRenameWorkspace(activeWorkspace.id, activeWorkspace.name)}
-                type="button"
-              >
-                {t("files.rename")}
-              </button>
-            ) : null}
-          </div>
           <button
             className="primary-button"
             disabled={isCreatingFile}
