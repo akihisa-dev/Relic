@@ -69,6 +69,7 @@ function makeRelicApi(overrides: Partial<typeof window.relic> = {}): typeof wind
     getFrontmatterValueCandidates: vi.fn().mockResolvedValue({ ok: true, value: {} }),
     getMarkdownTemplates: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     getWorkspaceAliases: vi.fn().mockResolvedValue({ ok: true, value: {} }),
+    getWorkspaceChronicle: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     getWorkspaceTags: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     getWorkspaceState: vi.fn().mockResolvedValue({
       ok: true,
@@ -600,6 +601,31 @@ describe("App", () => {
       expect(useEditorStore.getState().leftPane.activeTabId).toBeNull();
     });
     expect(useEditorStore.getState().tabs["panel-frontmatter"]).toBeUndefined();
+  });
+
+  it("レールの年表ボタンからchronicleを持つファイルを表示できる", async () => {
+    window.relic = makeRelicApi({
+      getWorkspaceChronicle: vi.fn().mockResolvedValue({
+        ok: true,
+        value: [{ endYear: 1333, fileName: "鎌倉時代", path: "history/kamakura.md", startYear: 1185 }]
+      }),
+      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
+    });
+
+    await renderApp();
+
+    await screen.findByText("Notes");
+
+    fireEvent.click(screen.getByRole("button", { name: "年表" }));
+
+    const activeTabId = useEditorStore.getState().leftPane.activeTabId;
+    expect(activeTabId).toBe("panel-chronicle");
+    expect(useEditorStore.getState().tabs[activeTabId!]).toMatchObject({
+      kind: "panel",
+      panel: "chronicle"
+    });
+    expect(screen.getByText("鎌倉時代")).toBeInTheDocument();
+    expect(screen.getByText("1185 - 1333")).toBeInTheDocument();
   });
 
   it("画面タブ名は言語変更に追従する", async () => {

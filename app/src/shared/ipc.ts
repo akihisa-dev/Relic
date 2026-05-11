@@ -20,6 +20,7 @@ export const getGitBranchesChannel = "workspace:getGitBranches";
 export const getGitTagsChannel = "workspace:getGitTags";
 export const getWorkspaceTagsChannel = "workspace:getTags";
 export const getWorkspaceAliasesChannel = "workspace:getAliases";
+export const getWorkspaceChronicleChannel = "workspace:getChronicle";
 export const getFrontmatterValueCandidatesChannel = "workspace:getFrontmatterValueCandidates";
 export const getMarkdownTemplatesChannel = "workspace:getMarkdownTemplates";
 export const getWorkspaceStateChannel = "workspace:getState";
@@ -117,6 +118,13 @@ export interface WorkspaceSummary {
   id: string;
   name: string;
   path: string;
+}
+
+export interface ChronicleEntry {
+  endYear: number;
+  fileName: string;
+  path: string;
+  startYear: number;
 }
 
 export interface WorkspaceState {
@@ -528,6 +536,7 @@ export interface RelicApi {
   getEditorSettings: () => Promise<RelicResult<EditorSettings>>;
   getMarkdownTemplates: () => Promise<RelicResult<MarkdownTemplateSummary[]>>;
   getWorkspaceAliases: () => Promise<RelicResult<AliasIndex>>;
+  getWorkspaceChronicle: () => Promise<RelicResult<ChronicleEntry[]>>;
   getFrontmatterValueCandidates: () => Promise<RelicResult<Record<string, string[]>>>;
   getWorkspaceTags: () => Promise<RelicResult<WorkspaceTagSummary[]>>;
   getWorkspaceState: () => Promise<RelicResult<WorkspaceState>>;

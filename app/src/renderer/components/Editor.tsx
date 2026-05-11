@@ -1007,13 +1007,15 @@ class FrontmatterPropertiesWidget extends WidgetType {
     label.textContent = key;
 
     const field = this.fieldFor(key);
-    const input = field?.type === "boolean"
-      ? this.booleanInput(view, key, value)
-      : field?.type === "multi-select" || key === "aliases" || key === "tags" || Array.isArray(value)
-        ? this.arrayInput(view, key, Array.isArray(value) ? value : value === null || value === undefined ? [] : [value], field)
-        : this.isEditableScalar(value)
-          ? this.scalarInput(view, key, value, field)
-          : this.complexValueInput(view, key, value);
+    const input = key === "chronicle"
+      ? this.chronicleInput(view, key, Array.isArray(value) ? value : [])
+      : field?.type === "boolean"
+        ? this.booleanInput(view, key, value)
+        : field?.type === "multi-select" || key === "aliases" || key === "tags" || Array.isArray(value)
+          ? this.arrayInput(view, key, Array.isArray(value) ? value : value === null || value === undefined ? [] : [value], field)
+          : this.isEditableScalar(value)
+            ? this.scalarInput(view, key, value, field)
+            : this.complexValueInput(view, key, value);
     const removeButton = document.createElement("button");
     removeButton.className = "cm-frontmatter-remove";
     removeButton.title = "プロパティを削除";
@@ -1116,6 +1118,48 @@ class FrontmatterPropertiesWidget extends WidgetType {
     return label;
   }
 
+  private chronicleInput(view: EditorView, key: string, value: unknown[]): HTMLElement {
+    const wrap = document.createElement("span");
+    wrap.className = "cm-frontmatter-input-wrap cm-frontmatter-chronicle";
+
+    const startInput = document.createElement("input");
+    startInput.className = "cm-frontmatter-input";
+    startInput.type = "number";
+    startInput.value = this.chronicleInputValue(value[0]);
+
+    const endInput = document.createElement("input");
+    endInput.className = "cm-frontmatter-input";
+    endInput.placeholder = "end";
+    endInput.type = "number";
+    endInput.value = value.length > 1 ? this.chronicleInputValue(value[1]) : "";
+
+    const commit = (): void => {
+      const startYear = parseChronicleYearInput(startInput.value);
+      const endYear = parseChronicleYearInput(endInput.value);
+
+      if (startYear === null) {
+        this.updateField(view, key, undefined);
+        return;
+      }
+
+      if (endYear === null || endYear === startYear) {
+        this.updateField(view, key, [startYear]);
+        return;
+      }
+
+      this.updateField(view, key, startYear <= endYear ? [startYear, endYear] : [endYear, startYear]);
+    };
+
+    startInput.addEventListener("change", commit);
+    endInput.addEventListener("change", commit);
+    wrap.append(startInput, endInput);
+    return wrap;
+  }
+
+  private chronicleInputValue(value: unknown): string {
+    return typeof value === "number" && Number.isInteger(value) && value !== 0 ? String(value) : "";
+  }
+
   private arrayInput(view: EditorView, key: string, value: unknown[], field?: UserDefinedField): HTMLElement {
     const wrap = document.createElement("div");
     wrap.className = "cm-frontmatter-pills";
@@ -1197,6 +1241,7 @@ class FrontmatterPropertiesWidget extends WidgetType {
       .map(([key, value]) => {
         const field = this.fieldFor(key);
         if (value === "") return `${key}:`;
+        if (key === "chronicle" && Array.isArray(value)) return `${key}: [${value.map((item) => this.serializeFlowScalar(item)).join(", ")}]`;
         if (field?.type === "date" && typeof value === "string") return `${key}: ${value}`;
         return yaml.dump({ [key]: value }, { lineWidth: -1 }).trimEnd();
       })
@@ -1213,7 +1258,7 @@ class FrontmatterPropertiesWidget extends WidgetType {
   }
 
   private serializeEntryPreservingQuote(entry: YamlFieldEntry, lines: string[], value: unknown): string {
-    if (entry.end === entry.start + 1 && Array.isArray(value) && isYamlFlowSequence(lines[entry.start])) {
+    if (entry.end === entry.start + 1 && Array.isArray(value) && (entry.key === "chronicle" || isYamlFlowSequence(lines[entry.start]))) {
       return `${entry.key}: [${value.map((item) => this.serializeFlowScalar(item)).join(", ")}]`;
     }
 
@@ -1316,6 +1361,13 @@ class FrontmatterPropertiesWidget extends WidgetType {
 
 function overlaps(from: number, to: number, ranges: Array<{ from: number; to: number }>): boolean {
   return ranges.some((range) => from < range.to && to > range.from);
+}
+
+function parseChronicleYearInput(value: string): number | null {
+  const trimmed = value.trim();
+  if (!/^-?\d+$/.test(trimmed)) return null;
+  const year = Number(trimmed);
+  return Number.isInteger(year) && year !== 0 ? year : null;
 }
 
 function collectRegexMatches(

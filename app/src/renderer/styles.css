@@ -1927,6 +1927,12 @@ button:not(:disabled):active {
   width: 100%;
 }
 
+.cm-frontmatter-chronicle {
+  display: grid;
+  gap: 6px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
 .cm-frontmatter-yaml-input {
   background: transparent;
   border: 0;
@@ -3588,6 +3594,207 @@ button:not(:disabled):active {
 
 .frontmatter-field-add .frontmatter-choice-editor {
   grid-column: 1 / -1;
+}
+
+/* ─── Chronicle ─── */
+.chronicle-panel {
+  min-width: 0;
+  width: 100%;
+}
+
+.chronicle-panel-header {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.chronicle-scale {
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  display: inline-flex;
+  overflow: hidden;
+}
+
+.chronicle-scale-button {
+  background: transparent;
+  border: 0;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 13px;
+  height: 26px;
+  line-height: 1;
+  width: 28px;
+}
+
+.chronicle-scale-button:hover {
+  background: var(--hover);
+}
+
+.chronicle-scale-button:disabled {
+  color: var(--text-3);
+  cursor: default;
+  opacity: 0.45;
+}
+
+.chronicle-scale-value {
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  color: var(--text-2);
+  font-size: 11px;
+  line-height: 26px;
+  min-width: 46px;
+  text-align: center;
+}
+
+.chronicle-chart {
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  margin-top: 12px;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.chronicle-grid {
+  min-width: 100%;
+  position: relative;
+}
+
+.chronicle-name-column {
+  background: var(--bg);
+  border-right: 1px solid var(--border);
+  left: 0;
+  position: sticky;
+  top: 0;
+  z-index: 4;
+}
+
+.chronicle-name-header {
+  background: var(--bg);
+  min-height: 34px;
+}
+
+.chronicle-timeline {
+  left: 0;
+  position: absolute;
+  top: 0;
+}
+
+.chronicle-axis {
+  color: var(--text-3);
+  background: var(--bg);
+  display: block;
+  font-size: 11px;
+  min-height: 34px;
+  position: relative;
+}
+
+.chronicle-axis-tick {
+  align-items: flex-end;
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.chronicle-file-name {
+  background: var(--bg);
+  border: 0;
+  color: var(--text);
+  cursor: pointer;
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  height: 38px;
+  min-width: 0;
+  overflow: hidden;
+  padding: 0 12px;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 100%;
+}
+
+.chronicle-file-name:hover {
+  background: var(--hover);
+}
+
+.chronicle-tracks {
+  background:
+    repeating-linear-gradient(
+      to right,
+      var(--border) 0,
+      var(--border) 1px,
+      transparent 1px,
+      transparent var(--chronicle-grid-x, 100px)
+    ),
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent 37px,
+      var(--border) 37px,
+      var(--border) 38px
+    );
+  background-position-x: var(--chronicle-grid-offset-x, 0), 0;
+  position: relative;
+}
+
+.chronicle-tracks::after {
+  background:
+    repeating-linear-gradient(
+      to right,
+      var(--border) 0,
+      var(--border) 1px,
+      transparent 1px,
+      transparent var(--chronicle-grid-x, 100px)
+    ),
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent 37px,
+      var(--border) 37px,
+      var(--border) 38px
+    );
+  background-position-x: var(--chronicle-grid-offset-x, 0), 0;
+  content: "";
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+  z-index: 2;
+}
+
+.chronicle-fill {
+  align-items: center;
+  background: rgba(0, 124, 175, 0.08);
+  border: 0;
+  color: var(--text);
+  cursor: pointer;
+  display: flex;
+  font-size: 11px;
+  font-weight: 600;
+  height: 38px;
+  justify-content: flex-end;
+  min-width: 28px;
+  overflow: hidden;
+  padding: 0 7px;
+  position: absolute;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  z-index: 1;
+}
+
+.chronicle-fill:hover {
+  background: rgba(0, 124, 175, 0.14);
+}
+
+.chronicle-fill--single {
+  justify-content: center;
 }
 
 @media (max-width: 760px) {

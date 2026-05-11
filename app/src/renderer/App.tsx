@@ -3,11 +3,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, MouseEvent, ReactElement, ReactNode } from "react";
 
 import type {
+  ChronicleEntry,
   WorkspaceState,
   WorkspaceTreeNode
 } from "../shared/ipc";
 import { resolveWikiLinks, type AliasIndex } from "../shared/links";
 import { CommandPalette } from "./components/CommandPalette";
+import { ChronicleSidebar } from "./components/ChronicleSidebar";
 import { FilesSidebar } from "./components/FilesSidebar";
 import { FrontmatterSidebar } from "./components/FrontmatterSidebar";
 import { GitSidebar } from "./components/GitSidebar";
@@ -75,6 +77,16 @@ const IconFrontmatter = (): ReactElement => (
   </svg>
 );
 
+const IconChronicle = (): ReactElement => (
+  <svg fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" viewBox="0 0 20 20" width="18">
+    <line x1="3" x2="17" y1="10" y2="10" />
+    <circle cx="6" cy="10" r="2" />
+    <rect height="4" rx="1.5" width="7" x="10" y="8" />
+    <line x1="6" x2="6" y1="5" y2="15" />
+    <line x1="13.5" x2="13.5" y1="5" y2="15" />
+  </svg>
+);
+
 const IconSettings = (): ReactElement => (
   <svg fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" viewBox="0 0 20 20" width="18">
     <line x1="3" x2="17" y1="5" y2="5" />
@@ -92,6 +104,7 @@ const sidebarViewDefs: Array<{ id: SidebarView; labelKey: TranslationKey; icon: 
   { id: "git", labelKey: "nav.git", icon: <IconGit /> },
   { id: "tools", labelKey: "nav.tools", icon: <IconTools /> },
   { id: "frontmatter", labelKey: "nav.frontmatter", icon: <IconFrontmatter /> },
+  { id: "chronicle", labelKey: "nav.chronicle", icon: <IconChronicle /> },
   { id: "settings", labelKey: "nav.settings", icon: <IconSettings /> }
 ];
 
@@ -348,6 +361,7 @@ function RailWorkspaceSwitcher({
 export function App(): ReactElement {
   const [workspaceState, setWorkspaceState] = useState<WorkspaceState | null>(null);
   const [aliasesByPath, setAliasesByPath] = useState<AliasIndex>({});
+  const [chronicleEntries, setChronicleEntries] = useState<ChronicleEntry[]>([]);
   const [toastMessage, setToastMessage] = useState<{ text: string; type: "error" | "info" } | null>(null);
   const [linkContextMenu, setLinkContextMenu] = useState<{
     heading?: string;
@@ -770,6 +784,30 @@ export function App(): ReactElement {
     };
   }, [setWorkspaceError, workspaceState?.activeWorkspace?.id, workspaceState?.fileTree]);
 
+  useEffect(() => {
+    if (!workspaceState?.activeWorkspace || !window.relic) {
+      setChronicleEntries([]);
+      return;
+    }
+
+    let canceled = false;
+
+    void window.relic.getWorkspaceChronicle().then((result) => {
+      if (canceled) return;
+
+      if (result.ok) {
+        setChronicleEntries(result.value);
+      } else {
+        setChronicleEntries([]);
+        setWorkspaceError(result.error.message);
+      }
+    });
+
+    return () => {
+      canceled = true;
+    };
+  }, [setWorkspaceError, workspaceState?.activeWorkspace?.id, workspaceState?.fileTree]);
+
   const {
     handleDeleteActiveFile,
     handleDeleteTreeItem,
@@ -1179,6 +1217,7 @@ export function App(): ReactElement {
   });
 
   const panelLabels = useMemo<Record<PanelTabKind, string>>(() => ({
+    chronicle: t("nav.chronicle"),
     frontmatter: t("nav.frontmatter"),
     git: t("nav.git"),
     settings: t("nav.settings"),
@@ -1196,6 +1235,7 @@ export function App(): ReactElement {
       activeSidebarView !== "git" &&
       activeSidebarView !== "tools" &&
       activeSidebarView !== "frontmatter" &&
+      activeSidebarView !== "chronicle" &&
       activeSidebarView !== "settings"
     ) {
       return;
@@ -1337,6 +1377,15 @@ export function App(): ReactElement {
       );
     }
 
+    if (panel === "chronicle") {
+      return (
+        <ChronicleSidebar
+          entries={chronicleEntries}
+          onOpenFile={handleOpenFile}
+        />
+      );
+    }
+
     return (
       <SettingsSidebar
         appInfo={appInfo}
@@ -1351,14 +1400,14 @@ export function App(): ReactElement {
       />
     );
   }, [
-    appInfo, autoSyncSettings, editorSettings, featureToggles, gitBranches, gitCloneUrl,
+    appInfo, autoSyncSettings, chronicleEntries, editorSettings, featureToggles, gitBranches, gitCloneUrl,
     gitCommitHistory, gitCommitMessage, gitConflicts, gitErrorMessage, gitHubAuthStatus, gitHubIntegrationSettings,
     gitRemotes, gitRemoteUrl, gitRetryAction, gitStatus, gitSyncMessage, gitSyncPreview, gitSyncStep, gitTags,
     gitWorkingChanges, handleCloneGitHubRepository, handleCommitAndSwitchGitBranch, handleConfirmPull, handleConfirmPush,
     handleConnectGitHubAccount, handleConnectGitRemote, handleCreateGitBranch, handleCreateGitCommit, handleCreateGitTag,
     handleDeleteGitTag, handleDisconnectGitHubAccount, handleInitializeGitRepository, handlePullGitBranch, handlePushGitBranch,
     handlePushGitTag, handleResolveConflict, handleSaveAutoSyncSettings, handleSaveFeatureToggles,
-    handleSaveGitHubIntegrationSettings, handleSaveSettings, handleSaveUserDefinedFields,
+    handleSaveGitHubIntegrationSettings, handleSaveSettings, handleSaveUserDefinedFields, handleOpenFile,
     handleSwitchGitBranch, isCloningGitHub, isConnectingGitHub, isConnectingGitRemote, isCreatingGitBranch,
     isCreatingGitCommit, isCreatingGitTag, isDeletingGitTag, isDisconnectingGitHub, isPullingGitBranch,
     isPushingGitBranch, isResolvingConflict, isSwitchingGitBranch, newGitBranchName, newGitTagMessage,
