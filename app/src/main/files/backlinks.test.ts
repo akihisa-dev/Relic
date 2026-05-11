@@ -38,6 +38,21 @@ describe("readBacklinks", () => {
     });
   });
 
+  it("aliases経由のリンクもバックリンクとして扱う", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-backlinks-"));
+    temporaryPaths.push(workspacePath);
+    await writeFile(path.join(workspacePath, "A.md"), "---\naliases: [a, α]\n---\n# A", "utf8");
+    await writeFile(path.join(workspacePath, "source.md"), "[[a]]\n[[α]]", "utf8");
+
+    await expect(readBacklinks(workspacePath, "A.md")).resolves.toEqual({
+      ok: true,
+      value: [
+        { count: 2, sourceName: "source", sourcePath: "source.md" }
+      ]
+    });
+  });
+
+
   it("Markdown以外とワークスペース外への参照を拒否する", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-backlinks-"));
     temporaryPaths.push(workspacePath);

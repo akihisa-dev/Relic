@@ -2,20 +2,29 @@ import { useEffect, useRef, useState } from "react";
 import type { ReactElement } from "react";
 
 import { useT } from "../i18n";
+import type { AliasIndex } from "../../shared/links";
 
 interface QuickSwitcherProps {
+  aliasesByPath?: AliasIndex;
   filePaths: string[];
   onClose: () => void;
   onSelect: (path: string) => void;
 }
 
-function matchesQuery(filePath: string, query: string): boolean {
+function matchingAlias(filePath: string, query: string, aliasesByPath: AliasIndex): string | null {
+  if (!query) return null;
+
+  return aliasesByPath[filePath]?.find((alias) => alias.toLowerCase().includes(query.toLowerCase())) ?? null;
+}
+
+function matchesQuery(filePath: string, query: string, aliasesByPath: AliasIndex): boolean {
   if (!query) return true;
 
   const basename = filePath.split("/").at(-1)?.replace(/\.md$/, "") ?? filePath;
 
   return basename.toLowerCase().includes(query.toLowerCase()) ||
-    filePath.toLowerCase().includes(query.toLowerCase());
+    filePath.toLowerCase().includes(query.toLowerCase()) ||
+    matchingAlias(filePath, query, aliasesByPath) !== null;
 }
 
 function getBasename(filePath: string): string {
@@ -30,7 +39,7 @@ function getDirPath(filePath: string): string {
   return parts.join("/");
 }
 
-export function QuickSwitcher({ filePaths, onClose, onSelect }: QuickSwitcherProps): ReactElement {
+export function QuickSwitcher({ aliasesByPath = {}, filePaths, onClose, onSelect }: QuickSwitcherProps): ReactElement {
   const t = useT();
   const [isClosing, setIsClosing] = useState(false);
   const [query, setQuery] = useState("");
@@ -38,7 +47,7 @@ export function QuickSwitcher({ filePaths, onClose, onSelect }: QuickSwitcherPro
   const closeTimerRef = useRef<number | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const filtered = filePaths.filter((p) => matchesQuery(p, query)).slice(0, 50);
+  const filtered = filePaths.filter((p) => matchesQuery(p, query, aliasesByPath)).slice(0, 50);
 
   const basenames = filtered.map(getBasename);
   const duplicates = new Set(basenames.filter((b, i) => basenames.indexOf(b) !== i));
@@ -107,6 +116,7 @@ export function QuickSwitcher({ filePaths, onClose, onSelect }: QuickSwitcherPro
           {filtered.map((filePath, i) => {
             const basename = getBasename(filePath);
             const showPath = duplicates.has(basename);
+            const alias = matchingAlias(filePath, query, aliasesByPath);
 
             return (
               <li
@@ -116,8 +126,8 @@ export function QuickSwitcher({ filePaths, onClose, onSelect }: QuickSwitcherPro
                 onMouseEnter={() => setSelectedIndex(i)}
               >
                 <span className="command-label">{basename}</span>
-                {showPath ? (
-                  <span className="command-shortcut">{getDirPath(filePath)}</span>
+                {alias || showPath ? (
+                  <span className="command-shortcut">{alias ? `alias: ${alias}` : getDirPath(filePath)}</span>
                 ) : null}
               </li>
             );

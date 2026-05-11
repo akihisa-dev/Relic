@@ -172,10 +172,10 @@ const VALID_FIELD_TYPES: UserDefinedFieldType[] = [
   "tags",
   "url",
   "email",
-  "list",
-  "yaml"
+  "list"
 ];
 const FIELD_NAME_PATTERN = /^[^\s:][^\r\n:]*$/;
+const RESERVED_FIELD_NAMES = new Set(["aliases"]);
 
 function parseUserDefinedFields(raw: unknown): UserDefinedField[] {
   if (!Array.isArray(raw)) return defaultUserDefinedFields;
@@ -186,7 +186,11 @@ function parseUserDefinedFields(raw: unknown): UserDefinedField[] {
   for (const item of raw) {
     if (typeof item !== "object" || item === null) continue;
     const f = item as Record<string, unknown>;
-    if (typeof f.name !== "string" || !FIELD_NAME_PATTERN.test(f.name)) continue;
+    if (
+      typeof f.name !== "string" ||
+      !FIELD_NAME_PATTERN.test(f.name) ||
+      RESERVED_FIELD_NAMES.has(f.name)
+    ) continue;
     if (names.has(f.name)) continue;
     if (!VALID_FIELD_TYPES.includes(f.type as UserDefinedFieldType)) continue;
 

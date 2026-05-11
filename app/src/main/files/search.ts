@@ -8,6 +8,7 @@ import type {
 } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { parseMarkdownTags } from "../../shared/tags";
+import { extractAliases } from "./aliases";
 import { parseFrontmatter } from "./frontmatter";
 import { readWorkspaceFileTree } from "./fileTree";
 import { resolveWorkspaceRelativePath } from "./paths";
@@ -52,8 +53,12 @@ export async function searchWorkspace(
       const content = await readFile(absolutePath.value, "utf8");
 
       if (mode === "fileName") {
-        if (fileName.toLocaleLowerCase().includes(normalizedQuery.toLocaleLowerCase())) {
-          results.push({ fileName, lineNumber: null, lineText: relativePath, path: relativePath });
+        const alias = extractAliases(content).find((item) =>
+          item.toLocaleLowerCase().includes(normalizedQuery.toLocaleLowerCase())
+        );
+
+        if (fileName.toLocaleLowerCase().includes(normalizedQuery.toLocaleLowerCase()) || alias) {
+          results.push({ fileName, lineNumber: null, lineText: alias ? `alias: ${alias}` : relativePath, path: relativePath });
         }
 
         continue;

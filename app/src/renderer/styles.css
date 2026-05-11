@@ -105,7 +105,7 @@ button:not(:disabled):active {
   display: grid;
   grid-template-rows: 38px minmax(0, 1fr) 28px;
   height: 100vh;
-  min-width: 960px;
+  min-width: 0;
   overflow: hidden;
 }
 
@@ -118,10 +118,10 @@ button:not(:disabled):active {
 
 
 .workspace {
-  display: grid;
-  grid-template-columns: auto auto minmax(0, 1fr);
+  display: flex;
   height: 100%;
   min-height: 0;
+  min-width: 0;
   overflow: hidden;
   -webkit-app-region: no-drag;
 }
@@ -142,6 +142,7 @@ button:not(:disabled):active {
   padding: 8px 8px 12px;
   transition: width 180ms ease;
   width: 48px;
+  flex: 0 0 auto;
   z-index: 2;
 }
 
@@ -268,6 +269,7 @@ button:not(:disabled):active {
   background: var(--sidebar-bg);
   border-right: 1px solid var(--border);
   display: flex;
+  flex: 0 0 auto;
   flex-direction: column;
   height: 100%;
   min-width: 180px;
@@ -1084,6 +1086,7 @@ button:not(:disabled):active {
 .main-area {
   background: var(--bg);
   display: grid;
+  flex: 1 1 auto;
   grid-template-rows: 40px minmax(0, 1fr);
   min-height: 0;
   min-width: 0;
@@ -1113,8 +1116,7 @@ button:not(:disabled):active {
 }
 
 .editor-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  display: flex;
   height: 100%;
   min-height: 0;
   min-width: 0;
@@ -1123,6 +1125,7 @@ button:not(:disabled):active {
 
 .editor-workspace {
   display: grid;
+  flex: 1 1 auto;
   grid-template-rows: auto minmax(0, 1fr);
   min-height: 0;
   min-width: 0;
@@ -1537,8 +1540,10 @@ button:not(:disabled):active {
 
 .panel-tab-body {
   box-sizing: border-box;
+  container-type: inline-size;
   height: 100%;
   min-height: 0;
+  min-width: 0;
   overflow: auto;
   padding: 20px clamp(18px, 3vw, 40px);
 }
@@ -1546,6 +1551,8 @@ button:not(:disabled):active {
 .panel-tab-body > .sidebar-section {
   margin: 0 auto;
   max-width: 920px;
+  min-width: 0;
+  width: min(100%, 920px);
 }
 
 .preview-body {
@@ -2578,6 +2585,7 @@ button:not(:disabled):active {
   background: var(--popup-bg);
   border-left: 1px solid var(--border);
   display: flex;
+  flex: 0 0 240px;
   flex-direction: column;
   height: 100%;
   min-width: 220px;
@@ -2589,6 +2597,7 @@ button:not(:disabled):active {
 
 .right-panel--closed {
   border-left-color: transparent;
+  flex-basis: 0;
   min-width: 0;
   pointer-events: none;
   width: 0;
@@ -3327,6 +3336,8 @@ button:not(:disabled):active {
 
 .frontmatter-settings-section {
   max-width: 860px;
+  min-width: 0;
+  width: min(100%, 860px);
 }
 
 .setting-custom-field-input {
@@ -3358,8 +3369,9 @@ button:not(:disabled):active {
   border-radius: 6px;
   display: grid;
   gap: 8px;
-  grid-template-columns: minmax(180px, 1fr) minmax(150px, 220px) auto;
+  grid-template-columns: minmax(0, 1fr) minmax(130px, 220px) auto;
   margin-top: 14px;
+  min-width: 0;
   padding: 10px;
 }
 
@@ -3368,10 +3380,19 @@ button:not(:disabled):active {
   min-width: 68px;
 }
 
+.frontmatter-field-group-label {
+  color: var(--text-3);
+  font-size: 11px;
+  font-weight: 700;
+  margin-top: 14px;
+  text-transform: uppercase;
+}
+
 .frontmatter-field-list {
   display: grid;
   gap: 8px;
   margin-top: 14px;
+  min-width: 0;
 }
 
 .frontmatter-field-empty {
@@ -3383,12 +3404,17 @@ button:not(:disabled):active {
 .frontmatter-field-card {
   border: 1px solid var(--border);
   border-radius: 7px;
+  min-width: 0;
   overflow: hidden;
 }
 
 .frontmatter-field-card[data-expanded="true"] {
   border-color: var(--border-soft);
   box-shadow: 0 1px 0 rgba(0, 0, 0, 0.02);
+}
+
+.frontmatter-field-card--fixed {
+  margin-top: 6px;
 }
 
 .frontmatter-field-summary {
@@ -3406,8 +3432,17 @@ button:not(:disabled):active {
   width: 100%;
 }
 
+.frontmatter-field-summary--static {
+  cursor: default;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
 .frontmatter-field-summary:hover {
   background: var(--hover);
+}
+
+.frontmatter-field-summary--static:hover {
+  background: transparent;
 }
 
 .frontmatter-field-name {
@@ -3516,6 +3551,21 @@ button:not(:disabled):active {
 }
 
 @media (max-width: 760px) {
+  .frontmatter-field-add {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .frontmatter-field-add-btn {
+    justify-self: start;
+  }
+
+  .frontmatter-field-label {
+    align-items: stretch;
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@container (max-width: 640px) {
   .frontmatter-field-add {
     grid-template-columns: minmax(0, 1fr);
   }

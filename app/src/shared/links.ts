@@ -21,6 +21,8 @@ export interface MarkdownLinkTarget {
   path: string;
 }
 
+export type AliasIndex = Record<string, string[]>;
+
 export function parseWikiLinks(markdown: string): WikiLink[] {
   const links: WikiLink[] = [];
   const source = maskFencedCodeBlocks(markdown);
@@ -94,20 +96,38 @@ export function resolveMarkdownLinkPath(href: string, sourcePath: string): Markd
 export function resolveWikiLinks(
   markdown: string,
   sourcePath: string,
-  existingMarkdownPaths: Iterable<string>
+  existingMarkdownPaths: Iterable<string>,
+  aliasesByPath: AliasIndex = {}
 ): ResolvedWikiLink[] {
   const existingPaths = new Set([...existingMarkdownPaths].map(normalizePathSegments));
+  const aliasTargets = buildAliasTargetMap(aliasesByPath);
 
   return parseWikiLinks(markdown).map((wikiLink) => {
     const resolvedPath = resolveWikiLinkPath(wikiLink.target, sourcePath);
+    const aliasPath = existingPaths.has(resolvedPath) ? null : aliasTargets.get(aliasKey(wikiLink.target)) ?? null;
+    const path = aliasPath ?? resolvedPath;
 
     return {
-      displayName: wikiLink.alias ?? resolvedPath.split("/").at(-1)!.replace(/\.md$/, ""),
-      exists: existingPaths.has(resolvedPath),
-      path: resolvedPath,
+      displayName: wikiLink.alias ?? path.split("/").at(-1)!.replace(/\.md$/, ""),
+      exists: existingPaths.has(path),
+      path,
       wikiLink
     };
   });
+}
+
+export function resolveWikiLinkPathWithAliases(
+  target: string,
+  sourcePath: string,
+  existingMarkdownPaths: Iterable<string>,
+  aliasesByPath: AliasIndex = {}
+): string {
+  const resolvedPath = resolveWikiLinkPath(target, sourcePath);
+  const existingPaths = new Set([...existingMarkdownPaths].map(normalizePathSegments));
+
+  if (existingPaths.has(resolvedPath)) return resolvedPath;
+
+  return buildAliasTargetMap(aliasesByPath).get(aliasKey(target)) ?? resolvedPath;
 }
 
 function parseWikiLinkBody(
@@ -152,6 +172,27 @@ function normalizePathSegments(value: string): string {
   }
 
   return output.join("/");
+}
+
+function buildAliasTargetMap(aliasesByPath: AliasIndex): Map<string, string> {
+  const result = new Map<string, string>();
+
+  for (const [path, aliases] of Object.entries(aliasesByPath).sort(([a], [b]) => a.localeCompare(b))) {
+    for (const alias of aliases) {
+      const key = aliasKey(alias);
+      if (key && !result.has(key)) result.set(key, normalizePathSegments(path));
+    }
+  }
+
+  return result;
+}
+
+function aliasKey(value: string): string {
+  return value
+    .trim()
+    .replace(/\\/g, "/")
+    .replace(/\.md$/i, "")
+    .toLocaleLowerCase();
 }
 
 function decodeMarkdownLinkPath(value: string): string {

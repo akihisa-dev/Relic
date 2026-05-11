@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
 
 import type { MarkdownFileContent, WorkspaceState, WorkspaceTreeNode } from "../../shared/ipc";
-import { resolveMarkdownLinkPath, resolveWikiLinkPath } from "../../shared/links";
+import { resolveMarkdownLinkPath, resolveWikiLinkPathWithAliases, type AliasIndex } from "../../shared/links";
 import type { FileTab, PaneId, PaneState, Tab } from "../store/editorStore";
 import { displayNameFromPath, joinWorkspacePath, parentFolderOf } from "../workspacePaths";
 
@@ -11,6 +11,8 @@ interface UseWorkspaceFileActionsInput {
   focusedPane: PaneId;
   leftPane: PaneState;
   openFileInPane: (pane: PaneId, file: MarkdownFileContent) => void;
+  aliasesByPath: AliasIndex;
+  existingMarkdownPaths: string[];
   rightPane: PaneState;
   selectedTemplatePath: string;
   setLeftPaneScrollHeading: (heading: string | undefined) => void;
@@ -28,6 +30,8 @@ export function useWorkspaceFileActions({
   focusedPane,
   leftPane,
   openFileInPane,
+  aliasesByPath,
+  existingMarkdownPaths,
   rightPane,
   selectedTemplatePath,
   setLeftPaneScrollHeading,
@@ -256,7 +260,7 @@ export function useWorkspaceFileActions({
 
       if (!activeTab || activeTab.kind !== "file" || !window.relic) return;
 
-      const path = resolveWikiLinkPath(target, activeTab.path);
+      const path = resolveWikiLinkPathWithAliases(target, activeTab.path, existingMarkdownPaths, aliasesByPath);
       const setScrollHeading = focusedPane === "left" ? setLeftPaneScrollHeading : setRightPaneScrollHeading;
 
       void window.relic.readMarkdownFile({ path }).then((readResult) => {
@@ -278,6 +282,8 @@ export function useWorkspaceFileActions({
     },
     [
       focusedPane,
+      aliasesByPath,
+      existingMarkdownPaths,
       leftPane,
       openFileInPane,
       rightPane,

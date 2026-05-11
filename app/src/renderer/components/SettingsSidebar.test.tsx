@@ -51,8 +51,7 @@ describe("FrontmatterSidebar", () => {
       "Tags",
       "URL",
       "Email",
-      "List",
-      "YAML"
+      "List"
     ]);
   });
 
@@ -66,6 +65,19 @@ describe("FrontmatterSidebar", () => {
     fireEvent.click(screen.getByRole("button", { name: "Add" }));
 
     expect(onUserDefinedFieldsSave).toHaveBeenCalledWith([{ name: "deadline", type: "date" }]);
+  });
+
+  it("aliasesを固定プロパティとして表示し、カスタムプロパティには追加しない", () => {
+    const onUserDefinedFieldsSave = vi.fn();
+
+    renderFrontmatterSidebar({ onUserDefinedFieldsSave });
+
+    expect(screen.getByText("Fixed properties")).not.toBeNull();
+    expect(screen.getByText("Custom properties")).not.toBeNull();
+    expect(screen.getByText("aliases")).not.toBeNull();
+    fireEvent.change(screen.getByPlaceholderText("Field name"), { target: { value: "aliases" } });
+
+    expect(screen.getByRole("button", { name: "Add" })).toBeDisabled();
   });
 
   it("候補をチップとして追加・削除できる", () => {
