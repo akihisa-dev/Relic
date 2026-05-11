@@ -1009,8 +1009,12 @@ class FrontmatterPropertiesWidget extends WidgetType {
     const field = this.fieldFor(key);
     const input = field?.type === "boolean"
       ? this.booleanInput(view, key, value)
-      : field?.type === "multi-select" || field?.type === "tags" || Array.isArray(value)
+      : field?.type === "multi-select" || field?.type === "tags" || field?.type === "list" || Array.isArray(value)
         ? this.arrayInput(view, key, Array.isArray(value) ? value : [], field)
+        : field?.type === "long-text"
+          ? this.longTextInput(view, key, value)
+          : field?.type === "yaml"
+            ? this.complexValueInput(view, key, value)
         : this.isEditableScalar(value)
           ? this.scalarInput(view, key, value, field)
           : this.complexValueInput(view, key, value);
@@ -1046,14 +1050,8 @@ class FrontmatterPropertiesWidget extends WidgetType {
     wrap.className = "cm-frontmatter-input-wrap";
     const input = document.createElement("input");
     input.className = "cm-frontmatter-input";
-    input.type = field?.type === "date"
-      ? "date"
-      : field?.type === "number"
-        ? "number"
-        : field?.type === "url"
-          ? "url"
-          : "text";
-    input.value = value instanceof Date ? value.toISOString().slice(0, 10) : value === null || value === undefined ? "" : String(value);
+    input.type = this.inputTypeFor(field);
+    input.value = this.scalarInputValue(value, field);
     const datalist = this.createDatalist(input, key, this.choicesFor(key, field));
 
     input.addEventListener("change", () => {
@@ -1063,6 +1061,39 @@ class FrontmatterPropertiesWidget extends WidgetType {
     wrap.append(input);
     if (datalist) wrap.append(datalist);
     return wrap;
+  }
+
+  private inputTypeFor(field?: UserDefinedField): string {
+    if (field?.type === "date") return "date";
+    if (field?.type === "datetime") return "datetime-local";
+    if (field?.type === "time") return "time";
+    if (field?.type === "number") return "number";
+    if (field?.type === "url") return "url";
+    if (field?.type === "email") return "email";
+    return "text";
+  }
+
+  private scalarInputValue(value: unknown, field?: UserDefinedField): string {
+    if (value === null || value === undefined) return "";
+    if (value instanceof Date) {
+      if (field?.type === "datetime") return value.toISOString().slice(0, 16);
+      if (field?.type === "time") return value.toISOString().slice(11, 16);
+      return value.toISOString().slice(0, 10);
+    }
+    return String(value);
+  }
+
+  private longTextInput(view: EditorView, key: string, value: unknown): HTMLElement {
+    const textarea = document.createElement("textarea");
+    textarea.className = "cm-frontmatter-yaml-input cm-frontmatter-textarea-input";
+    textarea.rows = 2;
+    textarea.value = value === null || value === undefined ? "" : String(value);
+
+    textarea.addEventListener("change", () => {
+      this.updateField(view, key, textarea.value);
+    });
+
+    return textarea;
   }
 
   private complexValueInput(view: EditorView, key: string, value: unknown): HTMLElement {

@@ -1,89 +1,81 @@
 import { useEffect, useState } from "react";
 import type { ReactElement } from "react";
 
-import type { FrontmatterTemplate, UserDefinedField, UserDefinedFieldType } from "../../shared/ipc";
-import { useT } from "../i18n";
+import type { UserDefinedField, UserDefinedFieldType } from "../../shared/ipc";
+import { useT, type TranslationKey } from "../i18n";
 
-const FIELD_TYPES: UserDefinedFieldType[] = ["text", "number", "date", "boolean", "select", "multi-select", "tags", "url"];
+const FIELD_TYPES: UserDefinedFieldType[] = [
+  "text",
+  "long-text",
+  "number",
+  "date",
+  "datetime",
+  "time",
+  "boolean",
+  "select",
+  "multi-select",
+  "tags",
+  "url",
+  "email",
+  "list",
+  "yaml"
+];
 const FIELD_NAME_PATTERN = /^[^\s:][^\r\n:]*$/;
-
-function parseChoices(value: string): string[] | undefined {
-  const choices = value.split(",").map((c) => c.trim()).filter(Boolean);
-
-  return choices.length > 0 ? choices : undefined;
-}
-
-function choicesText(field: UserDefinedField): string {
-  return field.choices?.join(", ") ?? "";
-}
+const FIELD_TYPE_LABEL_KEYS: Record<UserDefinedFieldType, TranslationKey> = {
+  boolean: "settings.fieldTypeBoolean",
+  date: "settings.fieldTypeDate",
+  datetime: "settings.fieldTypeDatetime",
+  email: "settings.fieldTypeEmail",
+  list: "settings.fieldTypeList",
+  "long-text": "settings.fieldTypeLongText",
+  "multi-select": "settings.fieldTypeMultiSelect",
+  number: "settings.fieldTypeNumber",
+  select: "settings.fieldTypeSelect",
+  tags: "settings.fieldTypeTags",
+  time: "settings.fieldTypeTime",
+  text: "settings.fieldTypeText",
+  url: "settings.fieldTypeUrl",
+  yaml: "settings.fieldTypeYaml"
+};
 
 function needsChoices(type: UserDefinedFieldType): boolean {
   return type === "select" || type === "multi-select" || type === "tags";
 }
 
+function parseChoiceInput(value: string): string[] {
+  return value.split(/[,\n]/).map((choice) => choice.trim()).filter(Boolean);
+}
+
+function uniqueChoices(choices: string[]): string[] {
+  return Array.from(new Set(choices));
+}
+
 export function FrontmatterSidebar({
-  frontmatterTemplates,
   userDefinedFields,
-  onFrontmatterTemplatesSave,
   onUserDefinedFieldsSave
 }: {
-  frontmatterTemplates: FrontmatterTemplate[];
   userDefinedFields: UserDefinedField[];
-  onFrontmatterTemplatesSave: (templates: FrontmatterTemplate[]) => void;
   onUserDefinedFieldsSave: (fields: UserDefinedField[]) => void;
 }): ReactElement {
   const [fieldsDraft, setFieldsDraft] = useState<UserDefinedField[]>(userDefinedFields);
-  const [templatesDraft, setTemplatesDraft] = useState<FrontmatterTemplate[]>(frontmatterTemplates);
+  const [expandedField, setExpandedField] = useState<string | null>(userDefinedFields[0]?.name ?? null);
+  const [choiceInputs, setChoiceInputs] = useState<Record<string, string>>({});
   const [newFieldName, setNewFieldName] = useState("");
   const [newFieldType, setNewFieldType] = useState<UserDefinedFieldType>("text");
-  const [newFieldChoices, setNewFieldChoices] = useState("");
-  const [newTemplateFields, setNewTemplateFields] = useState<string[]>([]);
-  const [newTemplateName, setNewTemplateName] = useState("");
+  const [newChoiceInput, setNewChoiceInput] = useState("");
+  const [newChoices, setNewChoices] = useState<string[]>([]);
   const t = useT();
 
   useEffect(() => {
     setFieldsDraft(userDefinedFields);
+    setExpandedField((current) => current && userDefinedFields.some((field) => field.name === current)
+      ? current
+      : userDefinedFields[0]?.name ?? null);
   }, [userDefinedFields]);
 
-  useEffect(() => {
-    setTemplatesDraft(frontmatterTemplates);
-  }, [frontmatterTemplates]);
-
-  const saveTemplates = (templates: FrontmatterTemplate[]): void => {
-    setTemplatesDraft(templates);
-    onFrontmatterTemplatesSave(templates);
-  };
-
-  const updateUserDefinedField = (index: number, nextField: UserDefinedField): void => {
-    const previousField = fieldsDraft[index];
-    const next = fieldsDraft.map((field, i) => (i === index ? nextField : field));
-    setFieldsDraft(next);
-    onUserDefinedFieldsSave(next);
-
-    if (previousField && previousField.name !== nextField.name) {
-      const nextTemplates = templatesDraft.map((template) => ({
-        ...template,
-        fieldNames: template.fieldNames.map((name) => name === previousField.name ? nextField.name : name)
-      }));
-      saveTemplates(nextTemplates);
-      setNewTemplateFields((current) => current.map((name) => name === previousField.name ? nextField.name : name));
-    }
-  };
-
-  const updateTemplate = (index: number, nextTemplate: FrontmatterTemplate): void => {
-    saveTemplates(templatesDraft.map((template, i) => i === index ? nextTemplate : template));
-  };
-
-  const removeFieldFromTemplates = (fieldName: string): void => {
-    const nextTemplates = templatesDraft
-      .map((template) => ({
-        ...template,
-        fieldNames: template.fieldNames.filter((name) => name !== fieldName)
-      }))
-      .filter((template) => template.fieldNames.length > 0);
-
-    saveTemplates(nextTemplates);
-    setNewTemplateFields((current) => current.filter((name) => name !== fieldName));
+  const saveFields = (fields: UserDefinedField[]): void => {
+    setFieldsDraft(fields);
+    onUserDefinedFieldsSave(fields);
   };
 
   const isFieldNameAvailable = (name: string, currentIndex?: number): boolean => (
@@ -91,66 +83,49 @@ export function FrontmatterSidebar({
     !fieldsDraft.some((field, i) => field.name === name && i !== currentIndex)
   );
 
+  const updateUserDefinedField = (index: number, nextField: UserDefinedField): void => {
+    const previousName = fieldsDraft[index]?.name;
+    saveFields(fieldsDraft.map((field, i) => (i === index ? nextField : field)));
+
+    if (previousName && previousName !== nextField.name) {
+      setExpandedField(nextField.name);
+      setChoiceInputs((current) => {
+        const next = { ...current, [nextField.name]: current[previousName] ?? "" };
+        delete next[previousName];
+        return next;
+      });
+    }
+  };
+
+  const addChoicesToField = (index: number, input: string): void => {
+    const field = fieldsDraft[index];
+    if (!field) return;
+
+    const choices = parseChoiceInput(input);
+    if (choices.length === 0) return;
+
+    updateUserDefinedField(index, {
+      ...field,
+      choices: uniqueChoices([...(field.choices ?? []), ...choices])
+    });
+    setChoiceInputs((current) => ({ ...current, [field.name]: "" }));
+  };
+
+  const addNewChoices = (): void => {
+    const choices = parseChoiceInput(newChoiceInput);
+    if (choices.length === 0) return;
+
+    setNewChoices((current) => uniqueChoices([...current, ...choices]));
+    setNewChoiceInput("");
+  };
+
+  const canAddNewField = isFieldNameAvailable(newFieldName.trim());
+
   return (
     <div className="sidebar-section settings-section frontmatter-settings-section">
-      <div className="links-panel-subheading">{t("settings.customFields")}</div>
-      {fieldsDraft.map((field, i) => (
-        <div className="setting-custom-field-edit" key={`${field.name}-${i}`}>
-          <input
-            className="setting-custom-field-input"
-            onChange={(e) => {
-              const name = e.target.value.trim();
-              if (!isFieldNameAvailable(name, i)) return;
-              updateUserDefinedField(i, { ...field, name });
-            }}
-            placeholder={t("settings.customFieldName")}
-            type="text"
-            value={field.name}
-          />
-          <select
-            aria-label={t("settings.customFieldType")}
-            onChange={(e) => {
-              const type = e.target.value as UserDefinedFieldType;
-              updateUserDefinedField(i, {
-                name: field.name,
-                type,
-                ...(needsChoices(type) && field.choices ? { choices: field.choices } : {})
-              });
-            }}
-            value={field.type}
-          >
-            {FIELD_TYPES.map((ft) => (
-              <option key={ft} value={ft}>{ft}</option>
-            ))}
-          </select>
-          {needsChoices(field.type) ? (
-            <input
-              className="setting-custom-field-input"
-              defaultValue={choicesText(field)}
-              onBlur={(e) => {
-                const choices = parseChoices(e.target.value);
-                updateUserDefinedField(i, { ...field, ...(choices ? { choices } : { choices: undefined }) });
-              }}
-              placeholder={t("settings.customFieldChoices")}
-              type="text"
-            />
-          ) : null}
-          <button
-            className="setting-action-btn setting-action-btn--danger"
-            onClick={() => {
-              const next = fieldsDraft.filter((_, j) => j !== i);
-              setFieldsDraft(next);
-              onUserDefinedFieldsSave(next);
-              removeFieldFromTemplates(field.name);
-            }}
-            title={t("common.delete")}
-            type="button"
-          >
-            ×
-          </button>
-        </div>
-      ))}
-      <div className="setting-custom-field-form">
+      <div className="links-panel-subheading">{t("settings.frontmatterAbilities")}</div>
+
+      <div className="frontmatter-field-add">
         <input
           className="setting-custom-field-input"
           onChange={(e) => setNewFieldName(e.target.value)}
@@ -160,130 +135,200 @@ export function FrontmatterSidebar({
         />
         <select
           aria-label={t("settings.customFieldType")}
-          onChange={(e) => setNewFieldType(e.target.value as UserDefinedFieldType)}
+          className="frontmatter-field-type-select"
+          onChange={(e) => {
+            const type = e.target.value as UserDefinedFieldType;
+            setNewFieldType(type);
+            if (!needsChoices(type)) {
+              setNewChoices([]);
+              setNewChoiceInput("");
+            }
+          }}
           value={newFieldType}
         >
-          {FIELD_TYPES.map((ft) => (
-            <option key={ft} value={ft}>{ft}</option>
+          {FIELD_TYPES.map((type) => (
+            <option key={type} value={type}>{t(FIELD_TYPE_LABEL_KEYS[type])}</option>
           ))}
         </select>
         {needsChoices(newFieldType) ? (
-          <input
-            className="setting-custom-field-input"
-            onChange={(e) => setNewFieldChoices(e.target.value)}
-            placeholder={t("settings.customFieldChoices")}
-            type="text"
-            value={newFieldChoices}
-          />
+          <div className="frontmatter-choice-editor">
+            <div className="frontmatter-choice-list">
+              {newChoices.map((choice) => (
+                <span className="frontmatter-choice-pill" key={choice}>
+                  <span>{choice}</span>
+                  <button
+                    aria-label={t("settings.removeChoice", { choice })}
+                    onClick={() => setNewChoices((current) => current.filter((item) => item !== choice))}
+                    type="button"
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+            <div className="frontmatter-choice-add">
+              <input
+                className="setting-custom-field-input"
+                onChange={(e) => setNewChoiceInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key !== "Enter") return;
+                  e.preventDefault();
+                  addNewChoices();
+                }}
+                placeholder={t("settings.choiceAddPlaceholder")}
+                type="text"
+                value={newChoiceInput}
+              />
+              <button className="setting-action-btn" disabled={!newChoiceInput.trim()} onClick={addNewChoices} type="button">
+                {t("settings.choiceAdd")}
+              </button>
+            </div>
+          </div>
         ) : null}
         <button
-          className="setting-action-btn"
-          disabled={!isFieldNameAvailable(newFieldName.trim())}
+          className="setting-action-btn frontmatter-field-add-btn"
+          disabled={!canAddNewField}
           onClick={() => {
             const name = newFieldName.trim();
             if (!isFieldNameAvailable(name)) return;
+
             const field: UserDefinedField = { name, type: newFieldType };
-            const choices = parseChoices(newFieldChoices);
-            if (needsChoices(newFieldType) && choices) {
-              field.choices = choices;
+            if (needsChoices(newFieldType) && newChoices.length > 0) {
+              field.choices = newChoices;
             }
+
             const next = [...fieldsDraft, field];
-            setFieldsDraft(next);
-            onUserDefinedFieldsSave(next);
+            saveFields(next);
+            setExpandedField(name);
             setNewFieldName("");
-            setNewFieldChoices("");
+            setNewFieldType("text");
+            setNewChoiceInput("");
+            setNewChoices([]);
           }}
           type="button"
         >
           {t("settings.customFieldAdd")}
         </button>
       </div>
-      <div className="links-panel-subheading" style={{ marginTop: "1rem" }}>{t("settings.frontmatterTemplates")}</div>
-      {templatesDraft.map((template, i) => (
-        <div className="setting-template-editor" key={`${template.name}-${i}`}>
-          <input
-            className="setting-custom-field-input"
-            onChange={(e) => {
-              const name = e.target.value.trim();
-              if (!name || templatesDraft.some((item, index) => item.name === name && index !== i)) return;
-              updateTemplate(i, { ...template, name });
-            }}
-            placeholder={t("settings.frontmatterTemplateName")}
-            type="text"
-            value={template.name}
-          />
-          <div className="setting-template-field-list">
-            {fieldsDraft.map((field) => (
-              <label className="setting-template-field-choice" key={field.name}>
-                <input
-                  checked={template.fieldNames.includes(field.name)}
-                  onChange={(e) => {
-                    const fieldNames = e.target.checked
-                      ? [...template.fieldNames, field.name]
-                      : template.fieldNames.filter((name) => name !== field.name);
-                    if (fieldNames.length === 0) return;
-                    updateTemplate(i, { ...template, fieldNames });
-                  }}
-                  type="checkbox"
-                />
-                <span>{field.name}</span>
-              </label>
-            ))}
-          </div>
-          <button
-            className="setting-action-btn setting-action-btn--danger"
-            onClick={() => saveTemplates(templatesDraft.filter((_, index) => index !== i))}
-            title={t("common.delete")}
-            type="button"
-          >
-            ×
-          </button>
-        </div>
-      ))}
-      <div className="setting-custom-field-form setting-custom-field-form--stacked">
-        <input
-          className="setting-custom-field-input"
-          onChange={(e) => setNewTemplateName(e.target.value)}
-          placeholder={t("settings.frontmatterTemplateName")}
-          type="text"
-          value={newTemplateName}
-        />
-        <div className="setting-template-field-list">
-          {fieldsDraft.map((field) => (
-            <label className="setting-template-field-choice" key={field.name}>
-              <input
-                checked={newTemplateFields.includes(field.name)}
-                onChange={(e) => {
-                  setNewTemplateFields((current) => (
-                    e.target.checked
-                      ? [...current, field.name]
-                      : current.filter((name) => name !== field.name)
-                  ));
-                }}
-                type="checkbox"
-              />
-              <span>{field.name}</span>
-            </label>
-          ))}
-        </div>
-        <button
-          className="setting-action-btn"
-          disabled={
-            !newTemplateName.trim() ||
-            newTemplateFields.length === 0 ||
-            templatesDraft.some((template) => template.name === newTemplateName.trim())
-          }
-          onClick={() => {
-            const name = newTemplateName.trim();
-            if (!name || newTemplateFields.length === 0) return;
-            saveTemplates([...templatesDraft, { fieldNames: newTemplateFields, name }]);
-            setNewTemplateName("");
-            setNewTemplateFields([]);
-          }}
-          type="button"
-        >
-          {t("settings.frontmatterTemplateAdd")}
-        </button>
+
+      <div className="frontmatter-field-list">
+        {fieldsDraft.length === 0 ? (
+          <div className="frontmatter-field-empty">{t("settings.customFieldEmpty")}</div>
+        ) : null}
+
+        {fieldsDraft.map((field, i) => {
+          const isExpanded = expandedField === field.name;
+
+          return (
+            <section className="frontmatter-field-card" data-expanded={isExpanded} key={`${field.name}-${i}`}>
+              <button
+                className="frontmatter-field-summary"
+                onClick={() => setExpandedField(isExpanded ? null : field.name)}
+                type="button"
+              >
+                <span className="frontmatter-field-name">{field.name}</span>
+                <span className="frontmatter-field-type">{t(FIELD_TYPE_LABEL_KEYS[field.type])}</span>
+              </button>
+
+              {isExpanded ? (
+                <div className="frontmatter-field-detail">
+                  <label className="frontmatter-field-label">
+                    <span>{t("settings.customFieldName")}</span>
+                    <input
+                      className="setting-custom-field-input"
+                      onChange={(e) => {
+                        const name = e.target.value.trim();
+                        if (!isFieldNameAvailable(name, i)) return;
+                        updateUserDefinedField(i, { ...field, name });
+                      }}
+                      type="text"
+                      value={field.name}
+                    />
+                  </label>
+                  <label className="frontmatter-field-label">
+                    <span>{t("settings.customFieldType")}</span>
+                    <select
+                      aria-label={t("settings.customFieldType")}
+                      className="frontmatter-field-type-select"
+                      onChange={(e) => {
+                        const type = e.target.value as UserDefinedFieldType;
+                        updateUserDefinedField(i, {
+                          name: field.name,
+                          type,
+                          ...(needsChoices(type) && field.choices ? { choices: field.choices } : {})
+                        });
+                      }}
+                      value={field.type}
+                    >
+                      {FIELD_TYPES.map((type) => (
+                        <option key={type} value={type}>{t(FIELD_TYPE_LABEL_KEYS[type])}</option>
+                      ))}
+                    </select>
+                  </label>
+
+                  {needsChoices(field.type) ? (
+                    <div className="frontmatter-field-label">
+                      <span>{t("settings.customFieldChoices")}</span>
+                      <div className="frontmatter-choice-editor">
+                        <div className="frontmatter-choice-list">
+                          {(field.choices ?? []).map((choice) => (
+                            <span className="frontmatter-choice-pill" key={choice}>
+                              <span>{choice}</span>
+                              <button
+                                aria-label={t("settings.removeChoice", { choice })}
+                                onClick={() => {
+                                  const choices = (field.choices ?? []).filter((item) => item !== choice);
+                                  updateUserDefinedField(i, { ...field, ...(choices.length > 0 ? { choices } : { choices: undefined }) });
+                                }}
+                                type="button"
+                              >
+                                ×
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                        <div className="frontmatter-choice-add">
+                          <input
+                            className="setting-custom-field-input"
+                            onChange={(e) => setChoiceInputs((current) => ({ ...current, [field.name]: e.target.value }))}
+                            onKeyDown={(e) => {
+                              if (e.key !== "Enter") return;
+                              e.preventDefault();
+                              addChoicesToField(i, choiceInputs[field.name] ?? "");
+                            }}
+                            placeholder={t("settings.choiceAddPlaceholder")}
+                            type="text"
+                            value={choiceInputs[field.name] ?? ""}
+                          />
+                          <button
+                            className="setting-action-btn"
+                            disabled={!(choiceInputs[field.name] ?? "").trim()}
+                            onClick={() => addChoicesToField(i, choiceInputs[field.name] ?? "")}
+                            type="button"
+                          >
+                            {t("settings.choiceAdd")}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  <button
+                    className="setting-action-btn setting-action-btn--danger frontmatter-field-delete"
+                    onClick={() => {
+                      const next = fieldsDraft.filter((_, j) => j !== i);
+                      saveFields(next);
+                      setExpandedField(next[i]?.name ?? next[i - 1]?.name ?? null);
+                    }}
+                    type="button"
+                  >
+                    {t("common.delete")}
+                  </button>
+                </div>
+              ) : null}
+            </section>
+          );
+        })}
       </div>
     </div>
   );

@@ -375,7 +375,21 @@ export interface FeatureToggles {
   rightPanel: boolean;
 }
 
-export type UserDefinedFieldType = "text" | "number" | "date" | "boolean" | "select" | "multi-select" | "tags" | "url";
+export type UserDefinedFieldType =
+  | "text"
+  | "long-text"
+  | "number"
+  | "date"
+  | "datetime"
+  | "time"
+  | "boolean"
+  | "select"
+  | "multi-select"
+  | "tags"
+  | "url"
+  | "email"
+  | "list"
+  | "yaml";
 
 export interface UserDefinedField {
   choices?: string[];
