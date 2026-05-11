@@ -14,6 +14,7 @@ import {
   getFeatureTogglesChannel,
   getUserDefinedFieldsChannel,
   getWorkspaceAliasesChannel,
+  getWorkspaceChronicleChannel,
   getWorkspaceStateChannel,
   getWorkspaceTagsChannel,
   openWorkspaceChannel,
@@ -41,6 +42,7 @@ import { fail, ok, type RelicResult } from "../../shared/result";
 import { refreshAutoSyncTimer } from "../autoSyncScheduler";
 import { cloneGitHubRepository } from "../files/git";
 import { readWorkspaceAliases } from "../files/aliases";
+import { readWorkspaceChronicle } from "../files/chronicle";
 import { readWorkspaceFileTree } from "../files/fileTree";
 import { readFrontmatterValueCandidates } from "../files/frontmatterCandidates";
 import { readWorkspaceTags } from "../files/tags";
@@ -68,7 +70,7 @@ const userDefinedFieldTypes: UserDefinedFieldType[] = [
   "url"
 ];
 const userDefinedFieldNamePattern = /^[^\s:][^\r\n:]*$/;
-const reservedUserDefinedFieldNames = new Set(["aliases", "tags"]);
+const reservedUserDefinedFieldNames = new Set(["aliases", "tags", "chronicle"]);
 
 function isUserDefinedFieldsInput(input: unknown): input is UserDefinedField[] {
   if (!Array.isArray(input)) return false;
@@ -183,6 +185,25 @@ export function registerWorkspaceHandlers(): void {
       return fail(
         "WORKSPACE_ALIASES_FAILED",
         "別名を読み込めませんでした。",
+        error instanceof Error ? error.message : String(error)
+      );
+    }
+  });
+
+  ipcMain.handle(getWorkspaceChronicleChannel, async () => {
+    try {
+      const settings = await readAppSettings(app.getPath("userData"));
+      const state = toWorkspaceState(settings);
+
+      if (!state.activeWorkspace) {
+        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
+      }
+
+      return readWorkspaceChronicle(state.activeWorkspace.path);
+    } catch (error) {
+      return fail(
+        "WORKSPACE_CHRONICLE_FAILED",
+        "年表を読み込めませんでした。",
         error instanceof Error ? error.message : String(error)
       );
     }

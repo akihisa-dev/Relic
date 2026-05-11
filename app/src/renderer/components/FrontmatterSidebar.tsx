@@ -38,7 +38,7 @@ const FIELD_TYPE_DESCRIPTION_KEYS: Record<UserDefinedFieldType, TranslationKey> 
   text: "settings.fieldTypeTextDescription",
   url: "settings.fieldTypeUrlDescription"
 };
-const RESERVED_FIELD_NAMES = new Set(["aliases", "tags"]);
+const RESERVED_FIELD_NAMES = new Set(["aliases", "tags", "chronicle"]);
 
 function needsChoices(type: UserDefinedFieldType): boolean {
   return type === "select" || type === "multi-select";
@@ -142,6 +142,13 @@ export function FrontmatterSidebar({
           <span className="frontmatter-field-type">{t("settings.fixedField")}</span>
         </div>
         <p className="frontmatter-field-description">{t("settings.fixedFieldTagsDescription")}</p>
+      </section>
+      <section className="frontmatter-field-card frontmatter-field-card--fixed">
+        <div className="frontmatter-field-summary frontmatter-field-summary--static">
+          <span className="frontmatter-field-name">chronicle</span>
+          <span className="frontmatter-field-type">{t("settings.fixedField")}</span>
+        </div>
+        <p className="frontmatter-field-description">{t("settings.fixedFieldChronicleDescription")}</p>
       </section>
 
       <div className="frontmatter-field-group-label">{t("settings.freeFields")}</div>

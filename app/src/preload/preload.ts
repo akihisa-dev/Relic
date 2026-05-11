@@ -34,6 +34,7 @@ import {
   getMarkdownTemplatesChannel,
   getFrontmatterValueCandidatesChannel,
   getWorkspaceAliasesChannel,
+  getWorkspaceChronicleChannel,
   getWorkspaceTagsChannel,
   getWorkspaceStateChannel,
   initializeGitRepositoryChannel,
@@ -80,6 +81,7 @@ import {
   type AppInfo,
   type AutoSyncSettings,
   type CloneGitHubRepositoryInput,
+  type ChronicleEntry,
   type ConnectGitRemoteInput,
   type CreateFolderInput,
   type CreateGitBranchInput,
@@ -197,6 +199,8 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(getMarkdownTemplatesChannel) as Promise<RelicResult<MarkdownTemplateSummary[]>>,
   getWorkspaceAliases: () =>
     ipcRenderer.invoke(getWorkspaceAliasesChannel) as Promise<RelicResult<AliasIndex>>,
+  getWorkspaceChronicle: () =>
+    ipcRenderer.invoke(getWorkspaceChronicleChannel) as Promise<RelicResult<ChronicleEntry[]>>,
   getFrontmatterValueCandidates: () =>
     ipcRenderer.invoke(getFrontmatterValueCandidatesChannel) as Promise<RelicResult<Record<string, string[]>>>,
   getWorkspaceTags: () =>

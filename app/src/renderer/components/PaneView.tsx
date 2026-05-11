@@ -397,6 +397,7 @@ export function PaneView({
 
 function panelTabLabel(panel: PanelTabKind, t: Translator): string {
   if (panel === "frontmatter") return t("nav.frontmatter");
+  if (panel === "chronicle") return t("nav.chronicle");
   if (panel === "git") return t("nav.git");
   if (panel === "settings") return t("nav.settings");
   return t("nav.tools");

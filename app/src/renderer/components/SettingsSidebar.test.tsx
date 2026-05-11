@@ -64,7 +64,7 @@ describe("FrontmatterSidebar", () => {
     expect(onUserDefinedFieldsSave).toHaveBeenCalledWith([{ name: "deadline", type: "date" }]);
   });
 
-  it("aliasesとtagsを固定プロパティとして表示し、カスタムプロパティには追加しない", () => {
+  it("aliasesとtagsとchronicleを固定プロパティとして表示し、カスタムプロパティには追加しない", () => {
     const onUserDefinedFieldsSave = vi.fn();
 
     renderFrontmatterSidebar({ onUserDefinedFieldsSave });
@@ -73,13 +73,19 @@ describe("FrontmatterSidebar", () => {
     expect(screen.getByText("Custom properties")).not.toBeNull();
     expect(screen.getByText("aliases")).not.toBeNull();
     expect(screen.getByText("tags")).not.toBeNull();
+    expect(screen.getByText("chronicle")).not.toBeNull();
     expect(screen.getByText("Alternative names that can link to this file. Used for link resolution and file name search.")).toBeInTheDocument();
     expect(screen.getByText("Tags that classify this file. Used for tag lists, tag search, and tag filtering.")).toBeInTheDocument();
+    expect(screen.getByText("Places this file on the timeline as a single year or range. Use chronicle: [1185] or chronicle: [1185, 1333].")).toBeInTheDocument();
     fireEvent.change(screen.getByPlaceholderText("Field name"), { target: { value: "aliases" } });
 
     expect(screen.getByRole("button", { name: "Add" })).toBeDisabled();
 
     fireEvent.change(screen.getByPlaceholderText("Field name"), { target: { value: "tags" } });
+
+    expect(screen.getByRole("button", { name: "Add" })).toBeDisabled();
+
+    fireEvent.change(screen.getByPlaceholderText("Field name"), { target: { value: "chronicle" } });
 
     expect(screen.getByRole("button", { name: "Add" })).toBeDisabled();
   });
