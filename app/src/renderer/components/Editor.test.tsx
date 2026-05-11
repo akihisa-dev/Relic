@@ -559,6 +559,30 @@ describe("Editor", () => {
     expect(viewRef.current?.state.doc.toString()).not.toContain("review");
   });
 
+  it("chronicleプロパティは1行配列として編集する", async () => {
+    const viewRef = createRef<EditorView | null>();
+    const { container } = render(
+      <Editor
+        content={"---\nchronicle:\n---\n# 本文"}
+        onChange={vi.fn()}
+        settings={settings}
+        viewRef={viewRef}
+      />
+    );
+
+    await waitFor(() => expect(container.querySelector(".cm-frontmatter-chronicle")).not.toBeNull());
+    const inputs = Array.from(container.querySelectorAll(".cm-frontmatter-chronicle .cm-frontmatter-input")) as HTMLInputElement[];
+    fireEvent.change(inputs[0], { target: { value: "1185" } });
+
+    expect(viewRef.current?.state.doc.toString()).toContain("chronicle: [1185]");
+
+    await waitFor(() => expect(container.querySelector(".cm-frontmatter-chronicle")).not.toBeNull());
+    const nextInputs = Array.from(container.querySelectorAll(".cm-frontmatter-chronicle .cm-frontmatter-input")) as HTMLInputElement[];
+    fireEvent.change(nextInputs[1], { target: { value: "1333" } });
+
+    expect(viewRef.current?.state.doc.toString()).toContain("chronicle: [1185, 1333]");
+  });
+
   it("プロパティ編集時にYAMLのコメント行とフィールド順をできるだけ保つ", async () => {
     const viewRef = createRef<EditorView | null>();
     const { container } = render(
