@@ -122,6 +122,19 @@ Relicを「書く道具」として使い続けやすくするために、機能
 - [x] `pnpm test -- SettingsSidebar.test.tsx App.test.tsx` を通す（32ファイル / 313テスト）
 - [ ] 実アプリで目視確認する
 
+### フロントマター設定の書き方説明と1行配列整理 実装チェックリスト
+
+- [x] 固定プロパティカードに、Markdown上での書き方例を表示する
+- [x] `aliases`、`tags`、`chronicle` の単体・複数/期間の例を、すべて1行配列で表示する
+- [x] カスタムプロパティにも、入力タイプごとのMarkdown上の書き方例を表示する
+- [x] `aliases`、`tags`、複数候補プロパティを、フォーム編集後は1行配列として書き戻す
+- [x] `docs/ui/DESIGN.md` を確認し、有彩色の線・グラデーションを使わずグレースケールでメリハリを付ける
+- [x] `docs/spec/frontmatter.md` に固定プロパティの1行配列方針とカスタムプロパティの書き方例を追記する
+- [x] `pnpm exec tsc --noEmit` を通す
+- [x] `pnpm test -- SettingsSidebar.test.tsx` を通す（全33ファイル / 320テスト）
+- [x] `pnpm test -- Editor.test.tsx SettingsSidebar.test.tsx` を通す（全33ファイル / 322テスト）
+- [ ] 実アプリで目視確認する
+
 ### レール画面タブ化 実装チェックリスト
 
 - [x] ファイルタブと画面タブをタブ状態で区別する

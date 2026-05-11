@@ -39,6 +39,27 @@ const FIELD_TYPE_DESCRIPTION_KEYS: Record<UserDefinedFieldType, TranslationKey> 
   url: "settings.fieldTypeUrlDescription"
 };
 const RESERVED_FIELD_NAMES = new Set(["aliases", "tags", "chronicle"]);
+const FIXED_FIELDS: Array<{
+  name: "aliases" | "tags" | "chronicle";
+  descriptionKey: TranslationKey;
+  examples: [TranslationKey, TranslationKey];
+}> = [
+  {
+    name: "aliases",
+    descriptionKey: "settings.fixedFieldAliasesDescription",
+    examples: ["settings.fixedFieldAliasesSingleExample", "settings.fixedFieldAliasesMultipleExample"]
+  },
+  {
+    name: "tags",
+    descriptionKey: "settings.fixedFieldTagsDescription",
+    examples: ["settings.fixedFieldTagsSingleExample", "settings.fixedFieldTagsMultipleExample"]
+  },
+  {
+    name: "chronicle",
+    descriptionKey: "settings.fixedFieldChronicleDescription",
+    examples: ["settings.fixedFieldChronicleSingleExample", "settings.fixedFieldChronicleRangeExample"]
+  }
+];
 
 function needsChoices(type: UserDefinedFieldType): boolean {
   return type === "select" || type === "multi-select";
@@ -50,6 +71,35 @@ function parseChoiceInput(value: string): string[] {
 
 function uniqueChoices(choices: string[]): string[] {
   return Array.from(new Set(choices));
+}
+
+function formatYamlExample(name: string, type: UserDefinedFieldType, choices: string[], t: (key: TranslationKey) => string): string {
+  const fieldName = name.trim() || t("settings.customFieldExampleName");
+  const [firstChoice, secondChoice] = choices.length > 0
+    ? [choices[0], choices[1] ?? t("settings.customFieldExampleChoiceSecond")]
+    : [t("settings.customFieldExampleChoiceFirst"), t("settings.customFieldExampleChoiceSecond")];
+
+  switch (type) {
+    case "boolean":
+      return `${fieldName}: true`;
+    case "date":
+      return `${fieldName}: 2026-05-20`;
+    case "datetime":
+      return `${fieldName}: 2026-05-20T09:30`;
+    case "multi-select":
+      return `${fieldName}: [${firstChoice}, ${secondChoice}]`;
+    case "number":
+      return `${fieldName}: 3`;
+    case "select":
+      return `${fieldName}: ${firstChoice}`;
+    case "time":
+      return `${fieldName}: 09:30`;
+    case "url":
+      return `${fieldName}: https://example.com`;
+    case "text":
+    default:
+      return `${fieldName}: ${t("settings.customFieldExampleTextValue")}`;
+  }
 }
 
 export function FrontmatterSidebar({
@@ -127,29 +177,25 @@ export function FrontmatterSidebar({
   return (
     <div className="sidebar-section settings-section frontmatter-settings-section">
       <div className="links-panel-subheading">{t("settings.frontmatterProperties")}</div>
+      <p className="frontmatter-format-guide">{t("settings.frontmatterFormatGuide")}</p>
 
       <div className="frontmatter-field-group-label">{t("settings.fixedFields")}</div>
-      <section className="frontmatter-field-card frontmatter-field-card--fixed">
-        <div className="frontmatter-field-summary frontmatter-field-summary--static">
-          <span className="frontmatter-field-name">aliases</span>
-          <span className="frontmatter-field-type">{t("settings.fixedField")}</span>
-        </div>
-        <p className="frontmatter-field-description">{t("settings.fixedFieldAliasesDescription")}</p>
-      </section>
-      <section className="frontmatter-field-card frontmatter-field-card--fixed">
-        <div className="frontmatter-field-summary frontmatter-field-summary--static">
-          <span className="frontmatter-field-name">tags</span>
-          <span className="frontmatter-field-type">{t("settings.fixedField")}</span>
-        </div>
-        <p className="frontmatter-field-description">{t("settings.fixedFieldTagsDescription")}</p>
-      </section>
-      <section className="frontmatter-field-card frontmatter-field-card--fixed">
-        <div className="frontmatter-field-summary frontmatter-field-summary--static">
-          <span className="frontmatter-field-name">chronicle</span>
-          <span className="frontmatter-field-type">{t("settings.fixedField")}</span>
-        </div>
-        <p className="frontmatter-field-description">{t("settings.fixedFieldChronicleDescription")}</p>
-      </section>
+      {FIXED_FIELDS.map((field) => (
+        <section className="frontmatter-field-card frontmatter-field-card--fixed" key={field.name}>
+          <div className="frontmatter-field-summary frontmatter-field-summary--static">
+            <span className="frontmatter-field-name">{field.name}</span>
+            <span className="frontmatter-field-type">{t("settings.fixedField")}</span>
+          </div>
+          <div className="frontmatter-field-description">
+            <p>{t(field.descriptionKey)}</p>
+            <div className="frontmatter-field-examples" aria-label={t("settings.frontmatterExampleLabel")}>
+              {field.examples.map((exampleKey) => (
+                <code key={exampleKey}>{t(exampleKey)}</code>
+              ))}
+            </div>
+          </div>
+        </section>
+      ))}
 
       <div className="frontmatter-field-group-label">{t("settings.freeFields")}</div>
 
@@ -179,6 +225,10 @@ export function FrontmatterSidebar({
           ))}
         </select>
         <p className="frontmatter-field-type-help">{t(FIELD_TYPE_DESCRIPTION_KEYS[newFieldType])}</p>
+        <div className="frontmatter-writing-example">
+          <span>{t("settings.customFieldWritingExample")}</span>
+          <code>{formatYamlExample(newFieldName, newFieldType, newChoices, t)}</code>
+        </div>
         {needsChoices(newFieldType) ? (
           <div className="frontmatter-choice-editor">
             <div className="frontmatter-choice-list">
@@ -258,6 +308,10 @@ export function FrontmatterSidebar({
                 <span className="frontmatter-field-name">{field.name}</span>
                 <span className="frontmatter-field-type">{t(FIELD_TYPE_LABEL_KEYS[field.type])}</span>
               </button>
+              <div className="frontmatter-field-summary-example">
+                <span>{t("settings.customFieldWritingExample")}</span>
+                <code>{formatYamlExample(field.name, field.type, field.choices ?? [], t)}</code>
+              </div>
 
               {isExpanded ? (
                 <div className="frontmatter-field-detail">
