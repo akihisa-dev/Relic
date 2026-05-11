@@ -50,6 +50,7 @@ describe("FrontmatterSidebar", () => {
       "URL"
     ]);
     expect(screen.getByText("For short free-form values, such as notes, names, or labels.")).toBeInTheDocument();
+    expect(screen.getByText("status: note")).toBeInTheDocument();
   });
 
   it("フィールドを追加できる", () => {
@@ -64,6 +65,23 @@ describe("FrontmatterSidebar", () => {
     expect(onUserDefinedFieldsSave).toHaveBeenCalledWith([{ name: "deadline", type: "date" }]);
   });
 
+  it("カスタムプロパティの入力タイプごとに書き方を表示する", () => {
+    renderFrontmatterSidebar({
+      userDefinedFields: [
+        { name: "characters", type: "multi-select", choices: ["Alice", "Bob"] },
+        { name: "published", type: "boolean" }
+      ]
+    });
+
+    expect(screen.getByText("characters: [Alice, Bob]")).toBeInTheDocument();
+    expect(screen.getByText("published: true")).toBeInTheDocument();
+
+    fireEvent.change(screen.getByPlaceholderText("Field name"), { target: { value: "source" } });
+    fireEvent.change(screen.getAllByLabelText("Input type")[0], { target: { value: "url" } });
+
+    expect(screen.getByText("source: https://example.com")).toBeInTheDocument();
+  });
+
   it("aliasesとtagsとchronicleを固定プロパティとして表示し、カスタムプロパティには追加しない", () => {
     const onUserDefinedFieldsSave = vi.fn();
 
@@ -74,9 +92,16 @@ describe("FrontmatterSidebar", () => {
     expect(screen.getByText("aliases")).not.toBeNull();
     expect(screen.getByText("tags")).not.toBeNull();
     expect(screen.getByText("chronicle")).not.toBeNull();
-    expect(screen.getByText("Alternative names that can link to this file. Used for link resolution and file name search.")).toBeInTheDocument();
-    expect(screen.getByText("Tags that classify this file. Used for tag lists, tag search, and tag filtering.")).toBeInTheDocument();
-    expect(screen.getByText("Places this file on the timeline as a single year or range. Use chronicle: [1185] or chronicle: [1185, 1333].")).toBeInTheDocument();
+    expect(screen.getByText("Write each property on one line inside the --- block at the top of the Markdown file.")).toBeInTheDocument();
+    expect(screen.getByText("Alternative names that can link to this file. Used for link resolution and file name search. Write one or many values as the same one-line array.")).toBeInTheDocument();
+    expect(screen.getByText("aliases: [Capital]")).toBeInTheDocument();
+    expect(screen.getByText("aliases: [Capital, Old Capital]")).toBeInTheDocument();
+    expect(screen.getByText("Tags that classify this file. Used for tag lists, tag search, and tag filtering. Write one or many values as the same one-line array.")).toBeInTheDocument();
+    expect(screen.getByText("tags: [source]")).toBeInTheDocument();
+    expect(screen.getByText("tags: [source, draft]")).toBeInTheDocument();
+    expect(screen.getByText("Places this file on the timeline as a single year or range. Write a single year or range as the same one-line array.")).toBeInTheDocument();
+    expect(screen.getByText("chronicle: [1185]")).toBeInTheDocument();
+    expect(screen.getByText("chronicle: [1185, 1333]")).toBeInTheDocument();
     fireEvent.change(screen.getByPlaceholderText("Field name"), { target: { value: "aliases" } });
 
     expect(screen.getByRole("button", { name: "Add" })).toBeDisabled();

@@ -3344,6 +3344,17 @@ button:not(:disabled):active {
   width: min(100%, 860px);
 }
 
+.frontmatter-format-guide {
+  background: rgba(28, 28, 28, 0.035);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-2);
+  font-size: 12px;
+  line-height: 1.5;
+  margin: 8px 0 0;
+  padding: 8px 10px;
+}
+
 .setting-custom-field-input {
   background: var(--bg);
   border: 1px solid var(--border);
@@ -3429,11 +3440,14 @@ button:not(:disabled):active {
 }
 
 .frontmatter-field-card[data-expanded="true"] {
-  border-color: var(--border-soft);
+  border-color: var(--border-medium);
   box-shadow: 0 1px 0 rgba(0, 0, 0, 0.02);
 }
 
 .frontmatter-field-card--fixed {
+  background: rgba(28, 28, 28, 0.025);
+  border-color: var(--border-medium);
+  border-width: 2px;
   margin-top: 6px;
 }
 
@@ -3459,11 +3473,35 @@ button:not(:disabled):active {
 
 .frontmatter-field-description {
   border-top: 1px solid var(--border);
-  color: var(--text-3);
+  color: var(--text-2);
   font-size: 12px;
   line-height: 1.5;
   margin: 0;
-  padding: 0 12px 10px;
+  padding: 10px 12px 12px;
+}
+
+.frontmatter-field-description p {
+  margin: 0;
+}
+
+.frontmatter-field-examples {
+  display: grid;
+  gap: 6px;
+  margin-top: 9px;
+}
+
+.frontmatter-field-examples code {
+  background: rgba(28, 28, 28, 0.045);
+  border: 1px solid var(--border-medium);
+  border-radius: 5px;
+  color: var(--text);
+  display: block;
+  font-family: "SF Mono", "Menlo", "Consolas", monospace;
+  font-size: 12px;
+  line-height: 1.35;
+  overflow-x: auto;
+  padding: 7px 9px;
+  white-space: nowrap;
 }
 
 .frontmatter-field-summary:hover {
@@ -3484,8 +3522,8 @@ button:not(:disabled):active {
 }
 
 .frontmatter-field-type {
-  background: var(--accent-softer);
-  border: 1px solid var(--accent-soft);
+  background: rgba(28, 28, 28, 0.055);
+  border: 1px solid var(--border);
   border-radius: 999px;
   color: var(--text-2);
   font-size: 11px;
@@ -3531,6 +3569,74 @@ button:not(:disabled):active {
 
 .frontmatter-field-add > .frontmatter-field-type-help {
   grid-column: 2 / 3;
+}
+
+.frontmatter-field-add > .frontmatter-writing-example {
+  grid-column: 1 / 3;
+}
+
+.frontmatter-writing-example {
+  align-items: center;
+  color: var(--text-3);
+  display: grid;
+  font-size: 11px;
+  gap: 6px;
+  grid-template-columns: auto minmax(0, 1fr);
+  line-height: 1.35;
+  min-width: 0;
+}
+
+.frontmatter-writing-example > span:first-child {
+  font-weight: 700;
+}
+
+.frontmatter-writing-example code {
+  background: rgba(28, 28, 28, 0.045);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--text);
+  display: block;
+  font-family: "SF Mono", "Menlo", "Consolas", monospace;
+  font-size: 12px;
+  line-height: 1.35;
+  min-width: 0;
+  overflow-x: auto;
+  padding: 6px 8px;
+  white-space: nowrap;
+}
+
+.frontmatter-writing-example--inline {
+  margin-top: 2px;
+}
+
+.frontmatter-field-summary-example {
+  align-items: center;
+  border-top: 1px solid var(--border);
+  color: var(--text-3);
+  display: grid;
+  font-size: 11px;
+  gap: 6px;
+  grid-template-columns: auto minmax(0, 1fr);
+  padding: 8px 12px;
+}
+
+.frontmatter-field-summary-example > span:first-child {
+  font-weight: 700;
+}
+
+.frontmatter-field-summary-example code {
+  background: rgba(28, 28, 28, 0.045);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--text);
+  display: block;
+  font-family: "SF Mono", "Menlo", "Consolas", monospace;
+  font-size: 12px;
+  line-height: 1.35;
+  min-width: 0;
+  overflow-x: auto;
+  padding: 6px 8px;
+  white-space: nowrap;
 }
 
 .frontmatter-choice-editor {
@@ -3917,6 +4023,15 @@ button:not(:disabled):active {
   background: rgba(255, 255, 255, 0.04);
 }
 
+[data-theme="dark"] .frontmatter-format-guide,
+[data-theme="dark"] .frontmatter-field-card--fixed,
+[data-theme="dark"] .frontmatter-field-examples code,
+[data-theme="dark"] .frontmatter-writing-example code,
+[data-theme="dark"] .frontmatter-field-summary-example code,
+[data-theme="dark"] .frontmatter-field-type {
+  background: rgba(255, 255, 255, 0.04);
+}
+
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
@@ -3959,6 +4074,14 @@ button:not(:disabled):active {
     color: var(--text-2);
   }
   :root:not([data-theme="light"]) .new-file-form--primary {
+    background: rgba(255, 255, 255, 0.04);
+  }
+  :root:not([data-theme="light"]) .frontmatter-format-guide,
+  :root:not([data-theme="light"]) .frontmatter-field-card--fixed,
+  :root:not([data-theme="light"]) .frontmatter-field-examples code,
+  :root:not([data-theme="light"]) .frontmatter-writing-example code,
+  :root:not([data-theme="light"]) .frontmatter-field-summary-example code,
+  :root:not([data-theme="light"]) .frontmatter-field-type {
     background: rgba(255, 255, 255, 0.04);
   }
   :root:not([data-theme="light"]) .preview-body {

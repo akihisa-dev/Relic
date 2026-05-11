@@ -559,6 +559,32 @@ describe("Editor", () => {
     expect(viewRef.current?.state.doc.toString()).not.toContain("review");
   });
 
+  it("aliasesとtagsは元が複数行でも1行配列として書き戻す", async () => {
+    const viewRef = createRef<EditorView | null>();
+    const { container } = render(
+      <Editor
+        content={"---\naliases:\n  - 帝都\n  - 旧都\ntags:\n  - 資料\n---\n# 本文"}
+        onChange={vi.fn()}
+        settings={settings}
+        viewRef={viewRef}
+      />
+    );
+
+    await waitFor(() => expect(container.querySelector(".cm-frontmatter-pill-value")).not.toBeNull());
+    const values = Array.from(container.querySelectorAll(".cm-frontmatter-pill-value")) as HTMLInputElement[];
+    fireEvent.change(values[0], { target: { value: "王都" } });
+
+    expect(viewRef.current?.state.doc.toString()).toContain("aliases: [\"王都\", \"旧都\"]");
+    expect(viewRef.current?.state.doc.toString()).not.toContain("aliases:\n  -");
+
+    await waitFor(() => expect(container.querySelectorAll(".cm-frontmatter-pill-value")).toHaveLength(3));
+    const nextValues = Array.from(container.querySelectorAll(".cm-frontmatter-pill-value")) as HTMLInputElement[];
+    fireEvent.change(nextValues[2], { target: { value: "下書き" } });
+
+    expect(viewRef.current?.state.doc.toString()).toContain("tags: [\"下書き\"]");
+    expect(viewRef.current?.state.doc.toString()).not.toContain("tags:\n  -");
+  });
+
   it("chronicleプロパティは1行配列として編集する", async () => {
     const viewRef = createRef<EditorView | null>();
     const { container } = render(
