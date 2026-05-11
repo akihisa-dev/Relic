@@ -54,7 +54,22 @@ import {
   toWorkspaceState
 } from "../workspace/workspaceService";
 
-const userDefinedFieldTypes: UserDefinedFieldType[] = ["text", "number", "date", "boolean", "select", "multi-select", "tags", "url"];
+const userDefinedFieldTypes: UserDefinedFieldType[] = [
+  "text",
+  "long-text",
+  "number",
+  "date",
+  "datetime",
+  "time",
+  "boolean",
+  "select",
+  "multi-select",
+  "tags",
+  "url",
+  "email",
+  "list",
+  "yaml"
+];
 const userDefinedFieldNamePattern = /^[^\s:][^\r\n:]*$/;
 
 function isUserDefinedFieldsInput(input: unknown): input is UserDefinedField[] {

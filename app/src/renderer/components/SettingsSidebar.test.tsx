@@ -1,29 +1,20 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
-import {
-  type FrontmatterTemplate,
-  type UserDefinedField
-} from "../../shared/ipc";
+import { type UserDefinedField } from "../../shared/ipc";
 import { I18nProvider } from "../i18n";
 import { FrontmatterSidebar } from "./FrontmatterSidebar";
 
-function renderSettings({
-  frontmatterTemplates = [],
+function renderFrontmatterSidebar({
   userDefinedFields = [],
-  onFrontmatterTemplatesSave = vi.fn(),
   onUserDefinedFieldsSave = vi.fn()
 }: {
-  frontmatterTemplates?: FrontmatterTemplate[];
   userDefinedFields?: UserDefinedField[];
-  onFrontmatterTemplatesSave?: (templates: FrontmatterTemplate[]) => void;
   onUserDefinedFieldsSave?: (fields: UserDefinedField[]) => void;
-}) {
+} = {}) {
   render(
     <I18nProvider language="en">
       <FrontmatterSidebar
-        frontmatterTemplates={frontmatterTemplates}
-        onFrontmatterTemplatesSave={onFrontmatterTemplatesSave}
         onUserDefinedFieldsSave={onUserDefinedFieldsSave}
         userDefinedFields={userDefinedFields}
       />
@@ -32,56 +23,77 @@ function renderSettings({
 }
 
 describe("FrontmatterSidebar", () => {
-  it("既存フロントマターテンプレートのフィールド構成を編集できる", () => {
-    const onFrontmatterTemplatesSave = vi.fn();
-
-    renderSettings({
-      frontmatterTemplates: [{ fieldNames: ["status"], name: "Draft" }],
-      onFrontmatterTemplatesSave,
+  it("入力タイプを通常の名前で表示する", () => {
+    renderFrontmatterSidebar({
       userDefinedFields: [
-        { name: "status", type: "select" },
-        { name: "date", type: "date" }
+        { name: "published", type: "boolean" },
+        { name: "characters", type: "multi-select" }
       ]
     });
 
-    fireEvent.click(screen.getAllByLabelText("date")[0]);
+    expect(screen.getAllByText("Toggle").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Multiple choices").length).toBeGreaterThan(0);
+  });
 
-    expect(onFrontmatterTemplatesSave).toHaveBeenCalledWith([
-      { fieldNames: ["status", "date"], name: "Draft" }
+  it("主要な入力タイプを選べる", () => {
+    renderFrontmatterSidebar();
+
+    expect(Array.from(screen.getByLabelText("Input type").querySelectorAll("option")).map((option) => option.textContent)).toEqual([
+      "Text",
+      "Long text",
+      "Number",
+      "Date",
+      "Date and time",
+      "Time",
+      "Toggle",
+      "Single choice",
+      "Multiple choices",
+      "Tags",
+      "URL",
+      "Email",
+      "List",
+      "YAML"
     ]);
   });
 
-  it("フィールド名変更をテンプレートにも反映する", () => {
-    const onFrontmatterTemplatesSave = vi.fn();
+  it("フィールドを追加できる", () => {
     const onUserDefinedFieldsSave = vi.fn();
 
-    renderSettings({
-      frontmatterTemplates: [{ fieldNames: ["締切"], name: "原稿" }],
-      onFrontmatterTemplatesSave,
-      onUserDefinedFieldsSave,
-      userDefinedFields: [{ name: "締切", type: "date" }]
-    });
+    renderFrontmatterSidebar({ onUserDefinedFieldsSave });
 
-    fireEvent.change(screen.getByDisplayValue("締切"), { target: { value: "期限" } });
+    fireEvent.change(screen.getByPlaceholderText("Field name"), { target: { value: "deadline" } });
+    fireEvent.change(screen.getByLabelText("Input type"), { target: { value: "date" } });
+    fireEvent.click(screen.getByRole("button", { name: "Add" }));
 
-    expect(onUserDefinedFieldsSave).toHaveBeenCalledWith([{ name: "期限", type: "date" }]);
-    expect(onFrontmatterTemplatesSave).toHaveBeenCalledWith([{ fieldNames: ["期限"], name: "原稿" }]);
+    expect(onUserDefinedFieldsSave).toHaveBeenCalledWith([{ name: "deadline", type: "date" }]);
   });
 
-  it("フィールド削除時に空になるテンプレートを残さない", () => {
-    const onFrontmatterTemplatesSave = vi.fn();
+  it("候補をチップとして追加・削除できる", () => {
     const onUserDefinedFieldsSave = vi.fn();
 
-    renderSettings({
-      frontmatterTemplates: [{ fieldNames: ["締切"], name: "原稿" }],
-      onFrontmatterTemplatesSave,
+    renderFrontmatterSidebar({
       onUserDefinedFieldsSave,
-      userDefinedFields: [{ name: "締切", type: "date" }]
+      userDefinedFields: [{ choices: ["draft"], name: "status", type: "select" }]
     });
 
-    fireEvent.click(screen.getAllByTitle("Delete")[0]);
+    fireEvent.change(screen.getByPlaceholderText("Enter a choice"), { target: { value: "review" } });
+    fireEvent.click(screen.getByRole("button", { name: "Add choice" }));
 
-    expect(onUserDefinedFieldsSave).toHaveBeenCalledWith([]);
-    expect(onFrontmatterTemplatesSave).toHaveBeenCalledWith([]);
+    expect(onUserDefinedFieldsSave).toHaveBeenCalledWith([
+      { choices: ["draft", "review"], name: "status", type: "select" }
+    ]);
+
+    fireEvent.click(screen.getByLabelText("Remove draft"));
+
+    expect(onUserDefinedFieldsSave).toHaveBeenLastCalledWith([
+      { choices: ["review"], name: "status", type: "select" }
+    ]);
+  });
+
+  it("テンプレート管理を表示しない", () => {
+    renderFrontmatterSidebar();
+
+    expect(screen.queryByText("Frontmatter templates")).toBeNull();
+    expect(screen.queryByPlaceholderText("Template name")).toBeNull();
   });
 });

@@ -588,7 +588,7 @@ describe("App", () => {
     });
     expect(document.querySelector('.pane-tab[data-tab-id="panel-frontmatter"] .pane-tab-icon svg')).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "フロントマター" })).toHaveClass("active");
-    expect(screen.getByText("カスタムフィールド")).toBeInTheDocument();
+    expect(screen.getByText("フロントマターの入力能力")).toBeInTheDocument();
     expect(screen.getByDisplayValue("status")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "フロントマター" }));

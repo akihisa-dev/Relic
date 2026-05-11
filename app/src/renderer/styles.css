@@ -3325,11 +3325,8 @@ button:not(:disabled):active {
 .setting-action-btn--danger { border-color: transparent; padding: 2px 6px; }
 .setting-action-btn--danger:hover { background: var(--error-bg); color: var(--error); }
 
-.setting-custom-field-form {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin-top: 4px;
+.frontmatter-settings-section {
+  max-width: 860px;
 }
 
 .setting-custom-field-input {
@@ -3338,55 +3335,199 @@ button:not(:disabled):active {
   border-radius: 4px;
   color: var(--text);
   font-size: 12px;
-  padding: 4px 6px;
+  min-height: 34px;
+  padding: 6px 9px;
   width: 100%;
 }
 
-.setting-custom-field-edit {
+.frontmatter-field-type-select {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  font-size: 12px;
+  min-height: 34px;
+  padding: 6px 9px;
+  width: 100%;
+}
+
+.frontmatter-field-add {
+  align-items: start;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
   display: grid;
-  gap: 4px;
-  grid-template-columns: minmax(0, 1fr) 92px auto;
+  gap: 8px;
+  grid-template-columns: minmax(180px, 1fr) minmax(150px, 220px) auto;
+  margin-top: 14px;
+  padding: 10px;
 }
 
-.setting-custom-field-edit .setting-custom-field-input {
-  grid-column: 1 / -2;
+.frontmatter-field-add-btn {
+  align-self: stretch;
+  min-width: 68px;
 }
 
-.setting-custom-field-edit select {
+.frontmatter-field-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.frontmatter-field-empty {
+  color: var(--text-3);
+  font-size: 12px;
+  padding: 8px 2px;
+}
+
+.frontmatter-field-card {
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  overflow: hidden;
+}
+
+.frontmatter-field-card[data-expanded="true"] {
+  border-color: var(--border-soft);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.02);
+}
+
+.frontmatter-field-summary {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: var(--text);
+  cursor: pointer;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  min-height: 42px;
+  padding: 8px 12px;
+  text-align: left;
+  width: 100%;
+}
+
+.frontmatter-field-summary:hover {
+  background: var(--hover);
+}
+
+.frontmatter-field-name {
+  font-size: 14px;
+  font-weight: 600;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.frontmatter-field-type {
+  background: var(--accent-softer);
+  border: 1px solid var(--accent-soft);
+  border-radius: 999px;
+  color: var(--text-2);
+  font-size: 11px;
+  line-height: 1;
+  padding: 5px 8px;
+  white-space: nowrap;
+}
+
+.frontmatter-field-detail {
+  background: rgba(0, 0, 0, 0.012);
+  border-top: 1px solid var(--border);
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+}
+
+.frontmatter-field-label {
+  align-items: center;
+  color: var(--text-2);
+  display: grid;
+  font-size: 12px;
+  gap: 10px;
+  grid-template-columns: 104px minmax(0, 1fr);
+}
+
+.frontmatter-field-label > span:first-child {
+  color: var(--text-3);
   font-size: 12px;
 }
 
-.setting-template-editor {
+.frontmatter-choice-editor {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.frontmatter-choice-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-height: 0;
+}
+
+.frontmatter-choice-pill {
+  align-items: center;
+  background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 4px;
+  color: var(--text);
+  display: inline-flex;
+  font-size: 12px;
+  gap: 4px;
+  max-width: 100%;
+  min-height: 24px;
+  padding: 2px 4px 2px 7px;
+}
+
+.frontmatter-choice-pill span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.frontmatter-choice-pill button {
+  background: transparent;
+  border: 0;
+  border-radius: 3px;
+  color: var(--text-2);
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+  padding: 2px 4px;
+}
+
+.frontmatter-choice-pill button:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+
+.frontmatter-choice-add {
   display: grid;
   gap: 6px;
   grid-template-columns: minmax(0, 1fr) auto;
-  padding: 6px;
 }
 
-.setting-template-editor .setting-template-field-list {
+.frontmatter-field-delete {
+  justify-self: end;
+  margin-top: 2px;
+}
+
+.frontmatter-field-add .frontmatter-choice-editor {
   grid-column: 1 / -1;
 }
 
-.setting-custom-field-form--stacked {
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 6px;
-}
+@media (max-width: 760px) {
+  .frontmatter-field-add {
+    grid-template-columns: minmax(0, 1fr);
+  }
 
-.setting-template-field-list {
-  display: grid;
-  gap: 4px;
-}
+  .frontmatter-field-add-btn {
+    justify-self: start;
+  }
 
-.setting-template-field-choice {
-  align-items: center;
-  color: var(--text-2);
-  display: flex;
-  font-size: 12px;
-  gap: 6px;
-  min-width: 0;
+  .frontmatter-field-label {
+    align-items: stretch;
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 /* ────────────────────────────────── */
