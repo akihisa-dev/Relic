@@ -1808,13 +1808,12 @@ button:not(:disabled):active {
 
 .cm-frontmatter-properties {
   animation: frontmatter-panel-in 180ms cubic-bezier(.22, 1, .36, 1);
-  align-items: center;
+  align-items: flex-start;
   color: var(--text);
   display: inline-flex;
-  height: 1.45em;
   line-height: 1.45;
   max-width: 100%;
-  min-height: 0;
+  min-height: 1.45em;
   transform-origin: top left;
   vertical-align: baseline;
 }
@@ -1866,13 +1865,12 @@ button:not(:disabled):active {
 }
 
 .cm-frontmatter-row {
-  align-items: center;
+  align-items: flex-start;
   animation: frontmatter-row-in 170ms cubic-bezier(.22, 1, .36, 1);
   display: grid;
   gap: 12px;
   grid-template-columns: 24px 180px minmax(0, 1fr) 24px;
-  height: 1.45em;
-  min-height: 0;
+  min-height: 1.45em;
   min-width: min(760px, 100%);
   transform-origin: left center;
   transition: background-color 120ms ease, transform 120ms cubic-bezier(.18, 1.35, .28, 1);

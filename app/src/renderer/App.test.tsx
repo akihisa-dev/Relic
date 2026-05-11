@@ -602,6 +602,26 @@ describe("App", () => {
     expect(useEditorStore.getState().tabs["panel-frontmatter"]).toBeUndefined();
   });
 
+  it("画面タブ名は言語変更に追従する", async () => {
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
+    });
+
+    await renderApp();
+
+    await screen.findByText("Notes");
+
+    fireEvent.click(screen.getByRole("button", { name: "フロントマター" }));
+
+    expect(document.querySelector('.pane-tab[data-tab-id="panel-frontmatter"]')?.textContent).toContain("フロントマター");
+
+    useEditorStore.getState().setEditorSettings({ ...defaultEditorSettings, language: "en" });
+
+    await waitFor(() => {
+      expect(document.querySelector('.pane-tab[data-tab-id="panel-frontmatter"]')?.textContent).toContain("Frontmatter");
+    });
+  });
+
   it("別の画面タブを開いた後でも開いているレールボタンを押すと閉じる", async () => {
     window.relic = makeRelicApi({
       getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
