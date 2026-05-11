@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import type { DragEvent, MutableRefObject, ReactElement, ReactNode } from "react";
 
 import type { EditorSettings, UserDefinedField } from "../../shared/ipc";
-import { useT } from "../i18n";
+import { useT, type Translator } from "../i18n";
 import { useEditorStore, type PaneId, type PanelTabKind } from "../store/editorStore";
 import { useAutoSave } from "../hooks/useAutoSave";
 import { Editor } from "./Editor";
@@ -115,6 +115,10 @@ export function PaneView({
   const contextTab = contextMenu ? tabs[contextMenu.tabId] : null;
   const contextTabIsFile = contextTab?.kind === "file";
   const contextTabIsPinned = contextTabIsFile ? pinnedPaths?.has(contextTab.path) : false;
+  const tabLabel = (tab: typeof activeTab): string => {
+    if (!tab) return "";
+    return tab.kind === "panel" ? panelTabLabel(tab.panel, t) : tab.name;
+  };
   const readDraggedTab = (e: DragEvent): { fromPane: PaneId; tabId: string } | null => {
     const raw = e.dataTransfer.getData("application/relic-tab");
     if (!raw) return null;
@@ -192,7 +196,7 @@ export function PaneView({
                   {renderPanelTabIcon(tab.panel)}
                 </span>
               ) : null}
-              <span className="pane-tab-name">{tab.name}</span>
+              <span className="pane-tab-name">{tabLabel(tab)}</span>
               <button
                 className="pane-tab-close"
                 onClick={(e) => {
@@ -389,4 +393,11 @@ export function PaneView({
       )}
     </div>
   );
+}
+
+function panelTabLabel(panel: PanelTabKind, t: Translator): string {
+  if (panel === "frontmatter") return t("nav.frontmatter");
+  if (panel === "git") return t("nav.git");
+  if (panel === "settings") return t("nav.settings");
+  return t("nav.tools");
 }
