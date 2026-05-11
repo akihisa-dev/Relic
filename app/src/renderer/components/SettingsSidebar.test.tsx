@@ -40,7 +40,6 @@ describe("FrontmatterSidebar", () => {
 
     expect(Array.from(screen.getByLabelText("Input type").querySelectorAll("option")).map((option) => option.textContent)).toEqual([
       "Text",
-      "Long text",
       "Number",
       "Date",
       "Date and time",
@@ -48,11 +47,9 @@ describe("FrontmatterSidebar", () => {
       "Toggle",
       "Single choice",
       "Multiple choices",
-      "Tags",
-      "URL",
-      "Email",
-      "List"
+      "URL"
     ]);
+    expect(screen.getByText("For short free-form values, such as notes, names, or labels.")).toBeInTheDocument();
   });
 
   it("フィールドを追加できる", () => {
@@ -67,7 +64,7 @@ describe("FrontmatterSidebar", () => {
     expect(onUserDefinedFieldsSave).toHaveBeenCalledWith([{ name: "deadline", type: "date" }]);
   });
 
-  it("aliasesを固定プロパティとして表示し、カスタムプロパティには追加しない", () => {
+  it("aliasesとtagsを固定プロパティとして表示し、カスタムプロパティには追加しない", () => {
     const onUserDefinedFieldsSave = vi.fn();
 
     renderFrontmatterSidebar({ onUserDefinedFieldsSave });
@@ -75,7 +72,14 @@ describe("FrontmatterSidebar", () => {
     expect(screen.getByText("Fixed properties")).not.toBeNull();
     expect(screen.getByText("Custom properties")).not.toBeNull();
     expect(screen.getByText("aliases")).not.toBeNull();
+    expect(screen.getByText("tags")).not.toBeNull();
+    expect(screen.getByText("Alternative names that can link to this file. Used for link resolution and file name search.")).toBeInTheDocument();
+    expect(screen.getByText("Tags that classify this file. Used for tag lists, tag search, and tag filtering.")).toBeInTheDocument();
     fireEvent.change(screen.getByPlaceholderText("Field name"), { target: { value: "aliases" } });
+
+    expect(screen.getByRole("button", { name: "Add" })).toBeDisabled();
+
+    fireEvent.change(screen.getByPlaceholderText("Field name"), { target: { value: "tags" } });
 
     expect(screen.getByRole("button", { name: "Add" })).toBeDisabled();
   });
