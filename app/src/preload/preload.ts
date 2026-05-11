@@ -33,6 +33,7 @@ import {
   getGitWorkingChangesChannel,
   getMarkdownTemplatesChannel,
   getFrontmatterValueCandidatesChannel,
+  getWorkspaceAliasesChannel,
   getWorkspaceTagsChannel,
   getWorkspaceStateChannel,
   initializeGitRepositoryChannel,
@@ -132,6 +133,7 @@ import {
   type WriteMarkdownFileInput
 } from "../shared/ipc";
 import type { RelicResult } from "../shared/result";
+import type { AliasIndex } from "../shared/links";
 
 const relicApi: RelicApi = {
   applySearchAndReplace: (input: SearchAndReplaceInput) =>
@@ -193,6 +195,8 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(getEditorSettingsChannel) as Promise<RelicResult<EditorSettings>>,
   getMarkdownTemplates: () =>
     ipcRenderer.invoke(getMarkdownTemplatesChannel) as Promise<RelicResult<MarkdownTemplateSummary[]>>,
+  getWorkspaceAliases: () =>
+    ipcRenderer.invoke(getWorkspaceAliasesChannel) as Promise<RelicResult<AliasIndex>>,
   getFrontmatterValueCandidates: () =>
     ipcRenderer.invoke(getFrontmatterValueCandidatesChannel) as Promise<RelicResult<Record<string, string[]>>>,
   getWorkspaceTags: () =>

@@ -28,7 +28,7 @@ describe("searchWorkspace", () => {
       value: [
         {
           fileName: "読書メモ",
-          lineNumber: 7,
+          lineNumber: 8,
           lineText: "本文ドラフト",
           path: "読書メモ.md"
         }
@@ -42,6 +42,15 @@ describe("searchWorkspace", () => {
     await expect(searchWorkspace(workspacePath, "nested", "fileName")).resolves.toMatchObject({
       ok: true,
       value: [{ fileName: "nested", lineNumber: null, path: "folder/nested.md" }]
+    });
+  });
+
+  it("ファイル名検索でaliasesに一致するノートを返す", async () => {
+    const workspacePath = await createSearchWorkspace();
+
+    await expect(searchWorkspace(workspacePath, "別名", "fileName")).resolves.toMatchObject({
+      ok: true,
+      value: [{ fileName: "読書メモ", lineText: "alias: 別名メモ", path: "読書メモ.md" }]
     });
   });
 
@@ -65,7 +74,7 @@ describe("searchWorkspace", () => {
     expect(result).toMatchObject({ ok: true });
     expect(result.ok ? result.value : []).toContainEqual({
       fileName: "読書メモ",
-      lineNumber: 6,
+      lineNumber: 7,
       lineText: "# 読書メモ",
       path: "読書メモ.md"
     });
@@ -106,7 +115,7 @@ describe("searchWorkspace", () => {
     await mkdir(path.join(workspacePath, "folder"));
     await writeFile(
       path.join(workspacePath, "読書メモ.md"),
-      "---\ntags: [資料]\nstatus: draft\nauthor: [自分, 編集者]\n---\n# 読書メモ\n本文ドラフト",
+      "---\naliases: [別名メモ]\ntags: [資料]\nstatus: draft\nauthor: [自分, 編集者]\n---\n# 読書メモ\n本文ドラフト",
       "utf8"
     );
     await writeFile(path.join(workspacePath, "folder", "nested.md"), "#資料\n別本文", "utf8");

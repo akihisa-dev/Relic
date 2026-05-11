@@ -4,6 +4,7 @@ import path from "node:path";
 import type { Backlink, WorkspaceTreeNode } from "../../shared/ipc";
 import { resolveWikiLinks } from "../../shared/links";
 import { fail, ok, type RelicResult } from "../../shared/result";
+import { readWorkspaceAliases } from "./aliases";
 import { readWorkspaceFileTree } from "./fileTree";
 import { resolveWorkspaceRelativePath } from "./paths";
 
@@ -24,6 +25,8 @@ export async function readBacklinks(
   try {
     const fileTree = await readWorkspaceFileTree(workspacePath);
     const markdownPaths = collectMarkdownPaths(fileTree);
+    const aliasesResult = await readWorkspaceAliases(workspacePath);
+    const aliasesByPath = aliasesResult.ok ? aliasesResult.value : {};
     const backlinks: Backlink[] = [];
 
     for (const sourcePath of markdownPaths) {
@@ -34,7 +37,7 @@ export async function readBacklinks(
       if (!sourceFile.ok) continue;
 
       const content = await readFile(sourceFile.value, "utf8");
-      const count = resolveWikiLinks(content, sourcePath, markdownPaths).filter(
+      const count = resolveWikiLinks(content, sourcePath, markdownPaths, aliasesByPath).filter(
         (link) => link.path === targetRelativePath
       ).length;
 

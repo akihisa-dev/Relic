@@ -1,3 +1,4 @@
+import type { AliasIndex } from "./links";
 import type { RelicResult } from "./result";
 
 export const getAppInfoChannel = "app:getInfo";
@@ -18,6 +19,7 @@ export const getGitWorkingChangesChannel = "workspace:getGitWorkingChanges";
 export const getGitBranchesChannel = "workspace:getGitBranches";
 export const getGitTagsChannel = "workspace:getGitTags";
 export const getWorkspaceTagsChannel = "workspace:getTags";
+export const getWorkspaceAliasesChannel = "workspace:getAliases";
 export const getFrontmatterValueCandidatesChannel = "workspace:getFrontmatterValueCandidates";
 export const getMarkdownTemplatesChannel = "workspace:getMarkdownTemplates";
 export const getWorkspaceStateChannel = "workspace:getState";
@@ -388,8 +390,7 @@ export type UserDefinedFieldType =
   | "tags"
   | "url"
   | "email"
-  | "list"
-  | "yaml";
+  | "list";
 
 export interface UserDefinedField {
   choices?: string[];
@@ -530,6 +531,7 @@ export interface RelicApi {
   getAppInfo: () => Promise<RelicResult<AppInfo>>;
   getEditorSettings: () => Promise<RelicResult<EditorSettings>>;
   getMarkdownTemplates: () => Promise<RelicResult<MarkdownTemplateSummary[]>>;
+  getWorkspaceAliases: () => Promise<RelicResult<AliasIndex>>;
   getFrontmatterValueCandidates: () => Promise<RelicResult<Record<string, string[]>>>;
   getWorkspaceTags: () => Promise<RelicResult<WorkspaceTagSummary[]>>;
   getWorkspaceState: () => Promise<RelicResult<WorkspaceState>>;

@@ -68,6 +68,7 @@ function makeRelicApi(overrides: Partial<typeof window.relic> = {}): typeof wind
     getEditorSettings: vi.fn().mockResolvedValue({ ok: true, value: { ...defaultEditorSettings, language: "ja" } }),
     getFrontmatterValueCandidates: vi.fn().mockResolvedValue({ ok: true, value: {} }),
     getMarkdownTemplates: vi.fn().mockResolvedValue({ ok: true, value: [] }),
+    getWorkspaceAliases: vi.fn().mockResolvedValue({ ok: true, value: {} }),
     getWorkspaceTags: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     getWorkspaceState: vi.fn().mockResolvedValue({
       ok: true,
@@ -588,7 +589,7 @@ describe("App", () => {
     });
     expect(document.querySelector('.pane-tab[data-tab-id="panel-frontmatter"] .pane-tab-icon svg')).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "フロントマター" })).toHaveClass("active");
-    expect(screen.getByText("フロントマターの入力能力")).toBeInTheDocument();
+    expect(screen.getByText("フロントマター設定")).toBeInTheDocument();
     expect(screen.getByDisplayValue("status")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "フロントマター" }));

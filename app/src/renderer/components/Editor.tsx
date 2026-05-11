@@ -1010,11 +1010,9 @@ class FrontmatterPropertiesWidget extends WidgetType {
     const input = field?.type === "boolean"
       ? this.booleanInput(view, key, value)
       : field?.type === "multi-select" || field?.type === "tags" || field?.type === "list" || Array.isArray(value)
-        ? this.arrayInput(view, key, Array.isArray(value) ? value : [], field)
+        ? this.arrayInput(view, key, Array.isArray(value) ? value : value === null || value === undefined ? [] : [value], field)
         : field?.type === "long-text"
           ? this.longTextInput(view, key, value)
-          : field?.type === "yaml"
-            ? this.complexValueInput(view, key, value)
         : this.isEditableScalar(value)
           ? this.scalarInput(view, key, value, field)
           : this.complexValueInput(view, key, value);
@@ -1297,6 +1295,7 @@ class FrontmatterPropertiesWidget extends WidgetType {
   }
 
   private fieldFor(key: string): UserDefinedField | undefined {
+    if (key === "aliases") return { name: "aliases", type: "list" };
     return this.userDefinedFields.find((field) => field.name === key);
   }
 
