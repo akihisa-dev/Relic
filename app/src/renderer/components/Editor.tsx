@@ -107,6 +107,10 @@ function isYamlFlowSequence(line: string): boolean {
   return /^[^:]+:\s*\[/.test(line);
 }
 
+function shouldSerializeArrayAsFlowSequence(key: string, field?: UserDefinedField): boolean {
+  return key === "aliases" || key === "tags" || key === "chronicle" || field?.type === "multi-select";
+}
+
 function findTopLevelYamlFieldEntries(lines: string[]): YamlFieldEntry[] {
   const entries: YamlFieldEntry[] = [];
 
@@ -1241,7 +1245,9 @@ class FrontmatterPropertiesWidget extends WidgetType {
       .map(([key, value]) => {
         const field = this.fieldFor(key);
         if (value === "") return `${key}:`;
-        if (key === "chronicle" && Array.isArray(value)) return `${key}: [${value.map((item) => this.serializeFlowScalar(item)).join(", ")}]`;
+        if (Array.isArray(value) && shouldSerializeArrayAsFlowSequence(key, field)) {
+          return `${key}: [${value.map((item) => this.serializeFlowScalar(item)).join(", ")}]`;
+        }
         if (field?.type === "date" && typeof value === "string") return `${key}: ${value}`;
         return yaml.dump({ [key]: value }, { lineWidth: -1 }).trimEnd();
       })
@@ -1258,7 +1264,15 @@ class FrontmatterPropertiesWidget extends WidgetType {
   }
 
   private serializeEntryPreservingQuote(entry: YamlFieldEntry, lines: string[], value: unknown): string {
-    if (entry.end === entry.start + 1 && Array.isArray(value) && (entry.key === "chronicle" || isYamlFlowSequence(lines[entry.start]))) {
+    const field = this.fieldFor(entry.key);
+
+    if (
+      Array.isArray(value) &&
+      (
+        shouldSerializeArrayAsFlowSequence(entry.key, field) ||
+        (entry.end === entry.start + 1 && isYamlFlowSequence(lines[entry.start]))
+      )
+    ) {
       return `${entry.key}: [${value.map((item) => this.serializeFlowScalar(item)).join(", ")}]`;
     }
 
