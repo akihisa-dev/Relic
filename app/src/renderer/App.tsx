@@ -631,11 +631,9 @@ export function App(): ReactElement {
     appInfo,
     autoSyncSettings,
     featureToggles,
-    frontmatterTemplates,
     gitHubIntegrationSettings,
     handleSaveAutoSyncSettings,
     handleSaveFeatureToggles,
-    handleSaveFrontmatterTemplates,
     handleSaveGitHubIntegrationSettings,
     handleSaveSettings,
     handleSaveUserDefinedFields,
@@ -1305,8 +1303,6 @@ export function App(): ReactElement {
     if (panel === "frontmatter") {
       return (
         <FrontmatterSidebar
-          frontmatterTemplates={frontmatterTemplates}
-          onFrontmatterTemplatesSave={handleSaveFrontmatterTemplates}
           onUserDefinedFieldsSave={handleSaveUserDefinedFields}
           userDefinedFields={userDefinedFields}
         />
@@ -1327,14 +1323,14 @@ export function App(): ReactElement {
       />
     );
   }, [
-    appInfo, autoSyncSettings, editorSettings, featureToggles, frontmatterTemplates, gitBranches, gitCloneUrl,
+    appInfo, autoSyncSettings, editorSettings, featureToggles, gitBranches, gitCloneUrl,
     gitCommitHistory, gitCommitMessage, gitConflicts, gitErrorMessage, gitHubAuthStatus, gitHubIntegrationSettings,
     gitRemotes, gitRemoteUrl, gitRetryAction, gitStatus, gitSyncMessage, gitSyncPreview, gitSyncStep, gitTags,
     gitWorkingChanges, handleCloneGitHubRepository, handleCommitAndSwitchGitBranch, handleConfirmPull, handleConfirmPush,
     handleConnectGitHubAccount, handleConnectGitRemote, handleCreateGitBranch, handleCreateGitCommit, handleCreateGitTag,
     handleDeleteGitTag, handleDisconnectGitHubAccount, handleInitializeGitRepository, handlePullGitBranch, handlePushGitBranch,
     handlePushGitTag, handleResolveConflict, handleSaveAutoSyncSettings, handleSaveFeatureToggles,
-    handleSaveFrontmatterTemplates, handleSaveGitHubIntegrationSettings, handleSaveSettings, handleSaveUserDefinedFields,
+    handleSaveGitHubIntegrationSettings, handleSaveSettings, handleSaveUserDefinedFields,
     handleSwitchGitBranch, isCloningGitHub, isConnectingGitHub, isConnectingGitRemote, isCreatingGitBranch,
     isCreatingGitCommit, isCreatingGitTag, isDeletingGitTag, isDisconnectingGitHub, isPullingGitBranch,
     isPushingGitBranch, isResolvingConflict, isSwitchingGitBranch, newGitBranchName, newGitTagMessage,
