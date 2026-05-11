@@ -81,24 +81,24 @@ function formatYamlExample(name: string, type: UserDefinedFieldType, choices: st
 
   switch (type) {
     case "boolean":
-      return `${fieldName}: true`;
+      return `${fieldName}: [true]`;
     case "date":
-      return `${fieldName}: 2026-05-20`;
+      return `${fieldName}: [2026-05-20]`;
     case "datetime":
-      return `${fieldName}: 2026-05-20T09:30`;
+      return `${fieldName}: [2026-05-20T09:30]`;
     case "multi-select":
       return `${fieldName}: [${firstChoice}, ${secondChoice}]`;
     case "number":
-      return `${fieldName}: 3`;
+      return `${fieldName}: [3]`;
     case "select":
-      return `${fieldName}: ${firstChoice}`;
+      return `${fieldName}: [${firstChoice}]`;
     case "time":
-      return `${fieldName}: 09:30`;
+      return `${fieldName}: [09:30]`;
     case "url":
-      return `${fieldName}: https://example.com`;
+      return `${fieldName}: [https://example.com]`;
     case "text":
     default:
-      return `${fieldName}: ${t("settings.customFieldExampleTextValue")}`;
+      return `${fieldName}: [${t("settings.customFieldExampleTextValue")}]`;
   }
 }
 
@@ -111,6 +111,7 @@ export function FrontmatterSidebar({
 }): ReactElement {
   const [fieldsDraft, setFieldsDraft] = useState<UserDefinedField[]>(userDefinedFields);
   const [expandedField, setExpandedField] = useState<string | null>(userDefinedFields[0]?.name ?? null);
+  const [fieldNameDrafts, setFieldNameDrafts] = useState<string[]>(() => userDefinedFields.map((field) => field.name));
   const [choiceInputs, setChoiceInputs] = useState<Record<string, string>>({});
   const [newFieldName, setNewFieldName] = useState("");
   const [newFieldType, setNewFieldType] = useState<UserDefinedFieldType>("text");
@@ -120,6 +121,7 @@ export function FrontmatterSidebar({
 
   useEffect(() => {
     setFieldsDraft(userDefinedFields);
+    setFieldNameDrafts(userDefinedFields.map((field) => field.name));
     setExpandedField((current) => current && userDefinedFields.some((field) => field.name === current)
       ? current
       : userDefinedFields[0]?.name ?? null);
@@ -142,6 +144,7 @@ export function FrontmatterSidebar({
 
     if (previousName && previousName !== nextField.name) {
       setExpandedField(nextField.name);
+      setFieldNameDrafts((current) => current.map((name, i) => (i === index ? nextField.name : name)));
       setChoiceInputs((current) => {
         const next = { ...current, [nextField.name]: current[previousName] ?? "" };
         delete next[previousName];
@@ -172,12 +175,33 @@ export function FrontmatterSidebar({
     setNewChoiceInput("");
   };
 
+  const commitFieldName = (index: number): void => {
+    const field = fieldsDraft[index];
+    if (!field) return;
+
+    const name = (fieldNameDrafts[index] ?? field.name).trim();
+    if (name === field.name) {
+      setFieldNameDrafts((current) => current.map((item, i) => (i === index ? field.name : item)));
+      return;
+    }
+
+    if (!isFieldNameAvailable(name, index)) {
+      setFieldNameDrafts((current) => current.map((item, i) => (i === index ? field.name : item)));
+      return;
+    }
+
+    updateUserDefinedField(index, { ...field, name });
+  };
+
   const canAddNewField = isFieldNameAvailable(newFieldName.trim());
 
   return (
     <div className="sidebar-section settings-section frontmatter-settings-section">
       <div className="links-panel-subheading">{t("settings.frontmatterProperties")}</div>
-      <p className="frontmatter-format-guide">{t("settings.frontmatterFormatGuide")}</p>
+      <div className="frontmatter-format-guide">
+        <p>{t("settings.frontmatterFormatGuide")}</p>
+        <code>{t("settings.frontmatterFormatExample")}</code>
+      </div>
 
       <div className="frontmatter-field-group-label">{t("settings.fixedFields")}</div>
       {FIXED_FIELDS.map((field) => (
@@ -320,12 +344,28 @@ export function FrontmatterSidebar({
                     <input
                       className="setting-custom-field-input"
                       onChange={(e) => {
-                        const name = e.target.value.trim();
-                        if (!isFieldNameAvailable(name, i)) return;
-                        updateUserDefinedField(i, { ...field, name });
+                        const name = e.target.value;
+                        setFieldNameDrafts((current) => {
+                          const next = [...current];
+                          next[i] = name;
+                          return next;
+                        });
+                      }}
+                      onBlur={() => commitFieldName(i)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          commitFieldName(i);
+                          e.currentTarget.blur();
+                          return;
+                        }
+                        if (e.key === "Escape") {
+                          setFieldNameDrafts((current) => current.map((name, index) => (index === i ? field.name : name)));
+                          e.currentTarget.blur();
+                        }
                       }}
                       type="text"
-                      value={field.name}
+                      value={fieldNameDrafts[i] ?? field.name}
                     />
                   </label>
                   <label className="frontmatter-field-label">
