@@ -3375,8 +3375,24 @@ button:not(:disabled):active {
   padding: 10px;
 }
 
+.frontmatter-field-add > .setting-custom-field-input {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.frontmatter-field-add > .frontmatter-field-type-select {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.frontmatter-field-add > .frontmatter-choice-editor {
+  grid-column: 1 / 3;
+}
+
 .frontmatter-field-add-btn {
   align-self: stretch;
+  grid-column: 3;
+  grid-row: 1 / span 2;
   min-width: 68px;
 }
 
@@ -3437,6 +3453,15 @@ button:not(:disabled):active {
   grid-template-columns: minmax(0, 1fr) auto auto;
 }
 
+.frontmatter-field-description {
+  border-top: 1px solid var(--border);
+  color: var(--text-3);
+  font-size: 12px;
+  line-height: 1.5;
+  margin: 0;
+  padding: 0 12px 10px;
+}
+
 .frontmatter-field-summary:hover {
   background: var(--hover);
 }
@@ -3485,6 +3510,23 @@ button:not(:disabled):active {
 .frontmatter-field-label > span:first-child {
   color: var(--text-3);
   font-size: 12px;
+}
+
+.frontmatter-field-type-control {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.frontmatter-field-type-help {
+  color: var(--text-3);
+  font-size: 11px;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.frontmatter-field-add > .frontmatter-field-type-help {
+  grid-column: 2 / 3;
 }
 
 .frontmatter-choice-editor {

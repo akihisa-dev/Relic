@@ -1,48 +1,30 @@
 export interface ParsedTags {
-  bodyTags: string[];
   frontmatterTags: string[];
   tags: string[];
 }
 
 export function parseMarkdownTags(markdown: string): ParsedTags {
-  const { body, frontmatter } = splitFrontmatter(markdown);
-  const bodyTags = uniqueTags(parseBodyTags(body));
+  const frontmatter = splitFrontmatter(markdown);
   const frontmatterTags = uniqueTags(parseFrontmatterTags(frontmatter));
 
   return {
-    bodyTags,
     frontmatterTags,
-    tags: uniqueTags([...frontmatterTags, ...bodyTags])
+    tags: frontmatterTags
   };
 }
 
-function splitFrontmatter(markdown: string): { body: string; frontmatter: string | null } {
+function splitFrontmatter(markdown: string): string | null {
   if (!markdown.startsWith("---\n")) {
-    return { body: markdown, frontmatter: null };
+    return null;
   }
 
   const endIndex = markdown.indexOf("\n---", 4);
 
   if (endIndex === -1) {
-    return { body: markdown, frontmatter: null };
+    return null;
   }
 
-  return {
-    body: markdown.slice(endIndex + 5),
-    frontmatter: markdown.slice(4, endIndex)
-  };
-}
-
-function parseBodyTags(markdown: string): string[] {
-  const source = maskCode(markdown);
-  const tags: string[] = [];
-  const pattern = /(^|[\s([{])#([\p{L}\p{N}_-]+(?:\/[\p{L}\p{N}_-]+)*)/gu;
-
-  for (const match of source.matchAll(pattern)) {
-    tags.push(match[2]);
-  }
-
-  return tags;
+  return markdown.slice(4, endIndex);
 }
 
 function parseFrontmatterTags(frontmatter: string | null): string[] {
@@ -100,10 +82,4 @@ function uniqueTags(tags: string[]): string[] {
   return [...new Set(tags.map(cleanTagValue).filter(Boolean))].sort((a, b) =>
     a.localeCompare(b, "ja")
   );
-}
-
-function maskCode(markdown: string): string {
-  return markdown
-    .replace(/^```[\s\S]*?^```/gm, (block) => " ".repeat(block.length))
-    .replace(/`[^`\n]+`/g, (code) => " ".repeat(code.length));
 }

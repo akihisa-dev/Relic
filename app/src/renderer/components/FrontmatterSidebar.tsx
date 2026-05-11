@@ -6,7 +6,6 @@ import { useT, type TranslationKey } from "../i18n";
 
 const FIELD_TYPES: UserDefinedFieldType[] = [
   "text",
-  "long-text",
   "number",
   "date",
   "datetime",
@@ -14,31 +13,35 @@ const FIELD_TYPES: UserDefinedFieldType[] = [
   "boolean",
   "select",
   "multi-select",
-  "tags",
-  "url",
-  "email",
-  "list"
+  "url"
 ];
 const FIELD_NAME_PATTERN = /^[^\s:][^\r\n:]*$/;
 const FIELD_TYPE_LABEL_KEYS: Record<UserDefinedFieldType, TranslationKey> = {
   boolean: "settings.fieldTypeBoolean",
   date: "settings.fieldTypeDate",
   datetime: "settings.fieldTypeDatetime",
-  email: "settings.fieldTypeEmail",
-  list: "settings.fieldTypeList",
-  "long-text": "settings.fieldTypeLongText",
   "multi-select": "settings.fieldTypeMultiSelect",
   number: "settings.fieldTypeNumber",
   select: "settings.fieldTypeSelect",
-  tags: "settings.fieldTypeTags",
   time: "settings.fieldTypeTime",
   text: "settings.fieldTypeText",
   url: "settings.fieldTypeUrl"
 };
-const RESERVED_FIELD_NAMES = new Set(["aliases"]);
+const FIELD_TYPE_DESCRIPTION_KEYS: Record<UserDefinedFieldType, TranslationKey> = {
+  boolean: "settings.fieldTypeBooleanDescription",
+  date: "settings.fieldTypeDateDescription",
+  datetime: "settings.fieldTypeDatetimeDescription",
+  "multi-select": "settings.fieldTypeMultiSelectDescription",
+  number: "settings.fieldTypeNumberDescription",
+  select: "settings.fieldTypeSelectDescription",
+  time: "settings.fieldTypeTimeDescription",
+  text: "settings.fieldTypeTextDescription",
+  url: "settings.fieldTypeUrlDescription"
+};
+const RESERVED_FIELD_NAMES = new Set(["aliases", "tags"]);
 
 function needsChoices(type: UserDefinedFieldType): boolean {
-  return type === "select" || type === "multi-select" || type === "tags";
+  return type === "select" || type === "multi-select";
 }
 
 function parseChoiceInput(value: string): string[] {
@@ -130,8 +133,15 @@ export function FrontmatterSidebar({
         <div className="frontmatter-field-summary frontmatter-field-summary--static">
           <span className="frontmatter-field-name">aliases</span>
           <span className="frontmatter-field-type">{t("settings.fixedField")}</span>
-          <span className="frontmatter-field-type">{t("settings.fieldTypeList")}</span>
         </div>
+        <p className="frontmatter-field-description">{t("settings.fixedFieldAliasesDescription")}</p>
+      </section>
+      <section className="frontmatter-field-card frontmatter-field-card--fixed">
+        <div className="frontmatter-field-summary frontmatter-field-summary--static">
+          <span className="frontmatter-field-name">tags</span>
+          <span className="frontmatter-field-type">{t("settings.fixedField")}</span>
+        </div>
+        <p className="frontmatter-field-description">{t("settings.fixedFieldTagsDescription")}</p>
       </section>
 
       <div className="frontmatter-field-group-label">{t("settings.freeFields")}</div>
@@ -161,6 +171,7 @@ export function FrontmatterSidebar({
             <option key={type} value={type}>{t(FIELD_TYPE_LABEL_KEYS[type])}</option>
           ))}
         </select>
+        <p className="frontmatter-field-type-help">{t(FIELD_TYPE_DESCRIPTION_KEYS[newFieldType])}</p>
         {needsChoices(newFieldType) ? (
           <div className="frontmatter-choice-editor">
             <div className="frontmatter-choice-list">
@@ -258,23 +269,26 @@ export function FrontmatterSidebar({
                   </label>
                   <label className="frontmatter-field-label">
                     <span>{t("settings.customFieldType")}</span>
-                    <select
-                      aria-label={t("settings.customFieldType")}
-                      className="frontmatter-field-type-select"
-                      onChange={(e) => {
-                        const type = e.target.value as UserDefinedFieldType;
-                        updateUserDefinedField(i, {
-                          name: field.name,
-                          type,
-                          ...(needsChoices(type) && field.choices ? { choices: field.choices } : {})
-                        });
-                      }}
-                      value={field.type}
-                    >
-                      {FIELD_TYPES.map((type) => (
-                        <option key={type} value={type}>{t(FIELD_TYPE_LABEL_KEYS[type])}</option>
-                      ))}
-                    </select>
+                    <span className="frontmatter-field-type-control">
+                      <select
+                        aria-label={t("settings.customFieldType")}
+                        className="frontmatter-field-type-select"
+                        onChange={(e) => {
+                          const type = e.target.value as UserDefinedFieldType;
+                          updateUserDefinedField(i, {
+                            name: field.name,
+                            type,
+                            ...(needsChoices(type) && field.choices ? { choices: field.choices } : {})
+                          });
+                        }}
+                        value={field.type}
+                      >
+                        {FIELD_TYPES.map((type) => (
+                          <option key={type} value={type}>{t(FIELD_TYPE_LABEL_KEYS[type])}</option>
+                        ))}
+                      </select>
+                      <span className="frontmatter-field-type-help">{t(FIELD_TYPE_DESCRIPTION_KEYS[field.type])}</span>
+                    </span>
                   </label>
 
                   {needsChoices(field.type) ? (

@@ -58,7 +58,6 @@ import {
 
 const userDefinedFieldTypes: UserDefinedFieldType[] = [
   "text",
-  "long-text",
   "number",
   "date",
   "datetime",
@@ -66,13 +65,10 @@ const userDefinedFieldTypes: UserDefinedFieldType[] = [
   "boolean",
   "select",
   "multi-select",
-  "tags",
-  "url",
-  "email",
-  "list"
+  "url"
 ];
 const userDefinedFieldNamePattern = /^[^\s:][^\r\n:]*$/;
-const reservedUserDefinedFieldNames = new Set(["aliases"]);
+const reservedUserDefinedFieldNames = new Set(["aliases", "tags"]);
 
 function isUserDefinedFieldsInput(input: unknown): input is UserDefinedField[] {
   if (!Array.isArray(input)) return false;

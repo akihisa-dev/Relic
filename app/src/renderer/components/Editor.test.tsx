@@ -686,19 +686,17 @@ describe("Editor", () => {
     expect(viewRef.current?.state.doc.toString()).toContain("published: true");
   });
 
-  it("追加した主要入力タイプをフォームに反映する", async () => {
+  it("日時・時刻・URL入力タイプと固定tagsをフォームに反映する", async () => {
     const viewRef = createRef<EditorView | null>();
     const { container } = render(
       <Editor
-        content={"---\ndescription: long\nstarted: 2026-05-11T20:30\nhour: \"20:30\"\nmail: test@example.com\nitems: [a]\nraw:\n  nested: true\n---\n# 本文"}
+        content={"---\nstarted: 2026-05-11T20:30\nhour: \"20:30\"\nsource: https://example.com\ntags: [資料]\nraw:\n  nested: true\n---\n# 本文"}
         onChange={vi.fn()}
         settings={settings}
         userDefinedFields={[
-          { name: "description", type: "long-text" },
           { name: "started", type: "datetime" },
           { name: "hour", type: "time" },
-          { name: "mail", type: "email" },
-          { name: "items", type: "list" }
+          { name: "source", type: "url" }
         ]}
         viewRef={viewRef}
       />
@@ -709,8 +707,7 @@ describe("Editor", () => {
     const inputs = Array.from(container.querySelectorAll(".cm-frontmatter-input")) as HTMLInputElement[];
     expect(inputs.some((input) => input.type === "datetime-local")).toBe(true);
     expect(inputs.some((input) => input.type === "time")).toBe(true);
-    expect(inputs.some((input) => input.type === "email")).toBe(true);
-    expect(container.querySelector(".cm-frontmatter-textarea-input")).not.toBeNull();
+    expect(inputs.some((input) => input.type === "url")).toBe(true);
     expect(container.querySelector(".cm-frontmatter-pill-input")).not.toBeNull();
     expect(container.querySelector(".cm-frontmatter-yaml-input")).not.toBeNull();
   });
