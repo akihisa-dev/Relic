@@ -625,7 +625,7 @@ describe("App", () => {
       panel: "chronicle"
     });
     expect(screen.getByText("鎌倉時代")).toBeInTheDocument();
-    expect(screen.getByText("1185 - 1333")).toBeInTheDocument();
+    expect(screen.getByText("1185 〜 1333")).toBeInTheDocument();
   });
 
   it("画面タブ名は言語変更に追従する", async () => {

@@ -3664,7 +3664,6 @@ button:not(:disabled):active {
 
 .chronicle-name-column {
   background: var(--bg);
-  border-right: 1px solid var(--border);
   left: 0;
   position: sticky;
   top: 0;
@@ -3673,7 +3672,8 @@ button:not(:disabled):active {
 
 .chronicle-name-header {
   background: var(--bg);
-  min-height: 34px;
+  box-sizing: border-box;
+  height: 34px;
 }
 
 .chronicle-timeline {
@@ -3702,9 +3702,22 @@ button:not(:disabled):active {
   white-space: nowrap;
 }
 
+.chronicle-axis-tick--start {
+  justify-content: flex-start;
+  transform: none;
+}
+
+.chronicle-axis-tick--end {
+  justify-content: flex-end;
+  transform: translateX(-100%);
+}
+
 .chronicle-file-name {
   background: var(--bg);
   border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  box-sizing: border-box;
   color: var(--text);
   cursor: pointer;
   display: block;
@@ -3770,7 +3783,7 @@ button:not(:disabled):active {
 
 .chronicle-fill {
   align-items: center;
-  background: rgba(0, 124, 175, 0.08);
+  background: rgba(0, 124, 175, 0.18);
   border: 0;
   color: var(--text);
   cursor: pointer;
@@ -3778,23 +3791,35 @@ button:not(:disabled):active {
   font-size: 11px;
   font-weight: 600;
   height: 38px;
-  justify-content: flex-end;
-  min-width: 28px;
-  overflow: hidden;
-  padding: 0 7px;
+  justify-content: flex-start;
+  min-width: 0;
+  overflow: visible;
+  padding: 0;
   position: absolute;
   text-align: left;
   text-overflow: ellipsis;
   white-space: nowrap;
-  z-index: 1;
+  z-index: 3;
 }
 
 .chronicle-fill:hover {
-  background: rgba(0, 124, 175, 0.14);
+  background: rgba(0, 124, 175, 0.26);
+}
+
+.chronicle-fill-label {
+  box-sizing: border-box;
+  display: block;
+  left: 7px;
+  padding: 0 7px;
+  position: absolute;
 }
 
 .chronicle-fill--single {
   justify-content: center;
+}
+
+.chronicle-fill--single .chronicle-fill-label {
+  position: absolute;
 }
 
 @media (max-width: 760px) {

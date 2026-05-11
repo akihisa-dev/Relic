@@ -12,11 +12,13 @@ interface ChronicleSidebarProps {
 const ROW_HEIGHT = 38;
 const NAME_COLUMN_WIDTH = 180;
 const SCALE_OPTIONS = [25, 50, 100, 200, 500] as const;
-const TICK_WIDTH = 144;
+const TICK_WIDTH = 72;
+const LABEL_HORIZONTAL_PADDING = 14;
 
 export function ChronicleSidebar({ entries, onOpenFile }: ChronicleSidebarProps): ReactElement {
   const t = useT();
   const [scaleIndex, setScaleIndex] = useState(2);
+  const [scrollLeft, setScrollLeft] = useState(0);
   const tickInterval = SCALE_OPTIONS[scaleIndex] ?? 100;
   const yearWidth = TICK_WIDTH / tickInterval;
   const { axisEnd, axisStart } = timelineBounds(entries, tickInterval);
@@ -57,7 +59,7 @@ export function ChronicleSidebar({ entries, onOpenFile }: ChronicleSidebarProps)
       {entries.length === 0 ? (
         <div className="frontmatter-field-empty">{t("chronicle.empty")}</div>
       ) : (
-        <div className="chronicle-chart">
+        <div className="chronicle-chart" onScroll={(event) => setScrollLeft(event.currentTarget.scrollLeft)}>
           <div className="chronicle-grid" style={{ width: NAME_COLUMN_WIDTH + timelineWidth }}>
             <div className="chronicle-name-column" style={{ width: NAME_COLUMN_WIDTH }}>
               <div className="chronicle-name-header" />
@@ -75,9 +77,9 @@ export function ChronicleSidebar({ entries, onOpenFile }: ChronicleSidebarProps)
             </div>
             <div className="chronicle-timeline" style={{ marginLeft: NAME_COLUMN_WIDTH, width: timelineWidth }}>
               <div className="chronicle-axis" style={{ width: timelineWidth }}>
-                {ticks.map((tick) => (
+                {ticks.map((tick, index) => (
                   <span
-                    className="chronicle-axis-tick"
+                    className={`chronicle-axis-tick${index === 0 ? " chronicle-axis-tick--start" : ""}${index === ticks.length - 1 ? " chronicle-axis-tick--end" : ""}`}
                     key={tick}
                     style={{ left: (tick - axisStart) * yearWidth }}
                   >
@@ -99,8 +101,14 @@ export function ChronicleSidebar({ entries, onOpenFile }: ChronicleSidebarProps)
                   const end = yearToAxis(entry.endYear);
                   const left = Math.max(0, (start - axisStart) * yearWidth);
                   const isSingleYear = entry.startYear === entry.endYear;
-                  const width = isSingleYear ? Math.max(46, yearWidth) : Math.max(28, (end - start + 1) * yearWidth);
                   const rangeLabel = formatRange(entry);
+                  const labelWidth = labelWidthForText(rangeLabel);
+                  const naturalWidth = isSingleYear ? yearWidth : (end - start + 1) * yearWidth;
+                  const width = isSingleYear ? Math.max(46, naturalWidth) : Math.max(28, naturalWidth);
+                  const maxLabelLeft = Math.max(0, width - labelWidth);
+                  const labelLeft = isSingleYear
+                    ? (width - labelWidth) / 2
+                    : Math.max(7, Math.min(maxLabelLeft, scrollLeft - left + 7));
 
                   return (
                     <button
@@ -115,7 +123,7 @@ export function ChronicleSidebar({ entries, onOpenFile }: ChronicleSidebarProps)
                       title={`${entry.fileName} ${rangeLabel}`}
                       type="button"
                     >
-                      {rangeLabel}
+                      <span className="chronicle-fill-label" style={{ left: labelLeft, width: labelWidth }}>{rangeLabel}</span>
                     </button>
                   );
                 })}
@@ -168,13 +176,17 @@ function axisToYear(axis: number): number {
 
 function formatRange(entry: ChronicleEntry): string {
   if (entry.startYear === entry.endYear) return formatYear(entry.startYear);
-  return `${formatYear(entry.startYear)} - ${formatYear(entry.endYear)}`;
+  return `${formatYear(entry.startYear)} 〜 ${formatYear(entry.endYear)}`;
 }
 
 function formatYear(year: number): string {
-  return String(year);
+  return year < 0 ? `−${Math.abs(year)}` : String(year);
 }
 
 function formatAxisYear(axis: number): string {
   return formatYear(axisToYear(axis));
+}
+
+function labelWidthForText(text: string): number {
+  return text.length * 8 + LABEL_HORIZONTAL_PADDING;
 }
