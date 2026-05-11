@@ -108,7 +108,15 @@ function isYamlFlowSequence(line: string): boolean {
 }
 
 function shouldSerializeArrayAsFlowSequence(key: string, field?: UserDefinedField): boolean {
-  return key === "aliases" || key === "tags" || key === "chronicle" || field?.type === "multi-select";
+  return key === "aliases" || key === "tags" || key === "chronicle" || Boolean(field);
+}
+
+function isSingleValueField(field?: UserDefinedField): boolean {
+  return Boolean(field && field.type !== "multi-select");
+}
+
+function firstArrayValue(value: unknown): unknown {
+  return Array.isArray(value) ? value[0] : value;
 }
 
 function findTopLevelYamlFieldEntries(lines: string[]): YamlFieldEntry[] {
@@ -1014,7 +1022,9 @@ class FrontmatterPropertiesWidget extends WidgetType {
     const input = key === "chronicle"
       ? this.chronicleInput(view, key, Array.isArray(value) ? value : [])
       : field?.type === "boolean"
-        ? this.booleanInput(view, key, value)
+        ? this.booleanInput(view, key, firstArrayValue(value), true)
+        : isSingleValueField(field)
+          ? this.scalarInput(view, key, firstArrayValue(value), field, true)
         : field?.type === "multi-select" || key === "aliases" || key === "tags" || Array.isArray(value)
           ? this.arrayInput(view, key, Array.isArray(value) ? value : value === null || value === undefined ? [] : [value], field)
           : this.isEditableScalar(value)
@@ -1047,7 +1057,7 @@ class FrontmatterPropertiesWidget extends WidgetType {
     return value === null || value === undefined || typeof value !== "object" || value instanceof Date;
   }
 
-  private scalarInput(view: EditorView, key: string, value: unknown, field?: UserDefinedField): HTMLElement {
+  private scalarInput(view: EditorView, key: string, value: unknown, field?: UserDefinedField, writeAsArray = false): HTMLElement {
     const wrap = document.createElement("span");
     wrap.className = "cm-frontmatter-input-wrap";
     const input = document.createElement("input");
@@ -1057,7 +1067,8 @@ class FrontmatterPropertiesWidget extends WidgetType {
     const datalist = this.createDatalist(input, key, this.choicesFor(key, field));
 
     input.addEventListener("change", () => {
-      this.updateField(view, key, this.parseScalarValue(input.value, field));
+      const nextValue = this.parseScalarValue(input.value, field);
+      this.updateField(view, key, writeAsArray && nextValue !== undefined ? [nextValue] : nextValue);
     });
 
     wrap.append(input);
@@ -1103,7 +1114,7 @@ class FrontmatterPropertiesWidget extends WidgetType {
     return textarea;
   }
 
-  private booleanInput(view: EditorView, key: string, value: unknown): HTMLElement {
+  private booleanInput(view: EditorView, key: string, value: unknown, writeAsArray = false): HTMLElement {
     const label = document.createElement("label");
     label.className = "cm-frontmatter-boolean";
     const input = document.createElement("input");
@@ -1115,7 +1126,7 @@ class FrontmatterPropertiesWidget extends WidgetType {
 
     input.addEventListener("change", () => {
       text.textContent = input.checked ? "true" : "false";
-      this.updateField(view, key, input.checked);
+      this.updateField(view, key, writeAsArray ? [input.checked] : input.checked);
     });
 
     label.append(input, text);
