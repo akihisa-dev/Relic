@@ -379,7 +379,6 @@ export interface FeatureToggles {
 
 export type UserDefinedFieldType =
   | "text"
-  | "long-text"
   | "number"
   | "date"
   | "datetime"
@@ -387,10 +386,7 @@ export type UserDefinedFieldType =
   | "boolean"
   | "select"
   | "multi-select"
-  | "tags"
-  | "url"
-  | "email"
-  | "list";
+  | "url";
 
 export interface UserDefinedField {
   choices?: string[];

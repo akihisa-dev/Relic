@@ -13,7 +13,6 @@ interface PreviewProps {
   onChange?: (content: string) => void;
   onOpenWikiLink?: (target: string, heading?: string) => void;
   onScrollTargetHandled?: () => void;
-  onTagSearch?: (tag: string) => void;
   scrollTargetHeading?: string;
   settings: EditorSettings;
   workspacePath?: string | null;
@@ -73,21 +72,9 @@ const mathExtension = {
   ]
 };
 
-// ==ハイライト== と [[wikilink]] と #tag のObsidian互換拡張
+// ==ハイライト== と [[wikilink]] のObsidian互換拡張
 const obsidianExtension = {
   extensions: [
-    {
-      name: "hashtag",
-      level: "inline" as const,
-      start: (src: string) => src.indexOf("#"),
-      tokenizer(src: string) {
-        const match = /^#([\w　-鿿゠-ヿ぀-ゟ/]+)/.exec(src);
-        if (match) return { type: "hashtag", raw: match[0], tag: match[1] };
-      },
-      renderer(token: { tag: string }) {
-        return `<span class="hashtag" data-tag="${token.tag}">#${token.tag}</span>`;
-      }
-    },
     {
       name: "highlight",
       level: "inline" as const,
@@ -322,7 +309,7 @@ function renderMarkdown(
     '<input checked type="checkbox" class="preview-checkbox">'
   );
   const sanitized = DOMPurify.sanitize(withCheckboxes, {
-    ADD_ATTR: ["checked", "class", "data-tag", "data-target", "id"]
+    ADD_ATTR: ["checked", "class", "data-target", "id"]
   });
 
   return imageSources.reduce(
@@ -361,7 +348,6 @@ export function Preview({
   onChange,
   onOpenWikiLink,
   onScrollTargetHandled,
-  onTagSearch,
   scrollTargetHeading,
   settings,
   workspacePath
@@ -439,14 +425,6 @@ export function Preview({
           onOpenWikiLink(fullTarget);
         }
 
-        return;
-      }
-
-      const hashTag = target.closest<HTMLElement>(".hashtag");
-
-      if (hashTag?.dataset.tag && onTagSearch) {
-        e.preventDefault();
-        onTagSearch(hashTag.dataset.tag);
         return;
       }
 

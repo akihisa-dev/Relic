@@ -20,7 +20,7 @@ describe("readWorkspaceTags", () => {
     );
   });
 
-  it("ワークスペース内Markdownの本文タグとfrontmatter tagsを集計する", async () => {
+  it("ワークスペース内Markdownのfrontmatter tagsだけを集計する", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-tags-"));
     temporaryPaths.push(workspacePath);
     await mkdir(path.join(workspacePath, "folder"));
@@ -31,8 +31,7 @@ describe("readWorkspaceTags", () => {
     await expect(readWorkspaceTags(workspacePath)).resolves.toEqual({
       ok: true,
       value: [
-        { count: 1, tag: "キャラ/主人公" },
-        { count: 2, tag: "資料" },
+        { count: 1, tag: "資料" },
         { count: 1, tag: "小説" }
       ]
     });

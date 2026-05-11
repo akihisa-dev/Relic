@@ -54,13 +54,12 @@ describe("searchWorkspace", () => {
     });
   });
 
-  it("タグ検索で本文タグとfrontmatter tagsを対象にする", async () => {
+  it("タグ検索でfrontmatter tagsだけを対象にする", async () => {
     const workspacePath = await createSearchWorkspace();
 
     await expect(searchWorkspace(workspacePath, "#資料", "tag")).resolves.toMatchObject({
       ok: true,
       value: [
-        { fileName: "nested", path: "folder/nested.md" },
         { fileName: "読書メモ", path: "読書メモ.md" }
       ]
     });

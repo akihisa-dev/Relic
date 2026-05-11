@@ -79,6 +79,13 @@ describe("Preview", () => {
     expect(onOpenWikiLink).toHaveBeenCalledWith("参照先");
   });
 
+  it("本文中の#記法をタグUIとして扱わない", () => {
+    render(<Preview content="本文 #資料" settings={settings} />);
+
+    expect(screen.getByText("本文 #資料")).toBeInTheDocument();
+    expect(document.querySelector(".hashtag")).toBeNull();
+  });
+
   it("attachments配下の画像をワークスペース内のfile URLとして表示する", () => {
     render(
       <Preview

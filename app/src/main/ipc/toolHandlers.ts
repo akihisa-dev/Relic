@@ -15,6 +15,7 @@ import {
   type WorkspaceTreeNode
 } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
+import { parseMarkdownTags } from "../../shared/tags";
 import { readWorkspaceFileTree } from "../files/fileTree";
 import { parseFrontmatter } from "../files/frontmatter";
 import { readAppSettings } from "../settings/appSettings";
@@ -54,9 +55,10 @@ export function registerToolHandlers(): void {
           );
         } else if (input.filterType === "tag" && input.filterValue) {
           const tagFiltered: typeof candidates = [];
+          const tag = input.filterValue.trim().replace(/^#/, "");
           for (const c of candidates) {
             const content = await readFile(path.join(workspacePath, c.relPath), "utf-8");
-            if (content.includes(`#${input.filterValue}`) || content.includes(`tags:`) && content.includes(input.filterValue)) {
+            if (parseMarkdownTags(content).tags.includes(tag)) {
               tagFiltered.push(c);
             }
           }

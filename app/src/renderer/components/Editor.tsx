@@ -1009,10 +1009,8 @@ class FrontmatterPropertiesWidget extends WidgetType {
     const field = this.fieldFor(key);
     const input = field?.type === "boolean"
       ? this.booleanInput(view, key, value)
-      : field?.type === "multi-select" || field?.type === "tags" || field?.type === "list" || Array.isArray(value)
+      : field?.type === "multi-select" || key === "aliases" || key === "tags" || Array.isArray(value)
         ? this.arrayInput(view, key, Array.isArray(value) ? value : value === null || value === undefined ? [] : [value], field)
-        : field?.type === "long-text"
-          ? this.longTextInput(view, key, value)
         : this.isEditableScalar(value)
           ? this.scalarInput(view, key, value, field)
           : this.complexValueInput(view, key, value);
@@ -1067,7 +1065,6 @@ class FrontmatterPropertiesWidget extends WidgetType {
     if (field?.type === "time") return "time";
     if (field?.type === "number") return "number";
     if (field?.type === "url") return "url";
-    if (field?.type === "email") return "email";
     return "text";
   }
 
@@ -1079,19 +1076,6 @@ class FrontmatterPropertiesWidget extends WidgetType {
       return value.toISOString().slice(0, 10);
     }
     return String(value);
-  }
-
-  private longTextInput(view: EditorView, key: string, value: unknown): HTMLElement {
-    const textarea = document.createElement("textarea");
-    textarea.className = "cm-frontmatter-yaml-input cm-frontmatter-textarea-input";
-    textarea.rows = 2;
-    textarea.value = value === null || value === undefined ? "" : String(value);
-
-    textarea.addEventListener("change", () => {
-      this.updateField(view, key, textarea.value);
-    });
-
-    return textarea;
   }
 
   private complexValueInput(view: EditorView, key: string, value: unknown): HTMLElement {
@@ -1295,7 +1279,7 @@ class FrontmatterPropertiesWidget extends WidgetType {
   }
 
   private fieldFor(key: string): UserDefinedField | undefined {
-    if (key === "aliases") return { name: "aliases", type: "list" };
+    if (key === "aliases" || key === "tags") return { name: key, type: "multi-select" };
     return this.userDefinedFields.find((field) => field.name === key);
   }
 

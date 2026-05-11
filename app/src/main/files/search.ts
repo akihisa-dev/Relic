@@ -68,7 +68,7 @@ export async function searchWorkspace(
         const tagQuery = normalizedQuery.replace(/^#/, "");
 
         if (parseMarkdownTags(content).tags.includes(tagQuery)) {
-          results.push({ fileName, lineNumber: null, lineText: `#${tagQuery}`, path: relativePath });
+          results.push({ fileName, lineNumber: null, lineText: `tags: ${tagQuery}`, path: relativePath });
         }
 
         continue;
