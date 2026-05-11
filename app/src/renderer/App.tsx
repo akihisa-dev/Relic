@@ -6,7 +6,7 @@ import type {
   WorkspaceState,
   WorkspaceTreeNode
 } from "../shared/ipc";
-import { resolveWikiLinks } from "../shared/links";
+import { resolveWikiLinks, type AliasIndex } from "../shared/links";
 import { CommandPalette } from "./components/CommandPalette";
 import { FilesSidebar } from "./components/FilesSidebar";
 import { FrontmatterSidebar } from "./components/FrontmatterSidebar";
@@ -347,6 +347,7 @@ function RailWorkspaceSwitcher({
 
 export function App(): ReactElement {
   const [workspaceState, setWorkspaceState] = useState<WorkspaceState | null>(null);
+  const [aliasesByPath, setAliasesByPath] = useState<AliasIndex>({});
   const [toastMessage, setToastMessage] = useState<{ text: string; type: "error" | "info" } | null>(null);
   const [linkContextMenu, setLinkContextMenu] = useState<{
     heading?: string;
@@ -740,6 +741,35 @@ export function App(): ReactElement {
     workspaceState
   });
 
+  const existingMarkdownPaths = useMemo(
+    () => collectMarkdownPaths(workspaceState?.fileTree ?? []),
+    [workspaceState?.fileTree]
+  );
+
+  useEffect(() => {
+    if (!workspaceState?.activeWorkspace || !window.relic) {
+      setAliasesByPath({});
+      return;
+    }
+
+    let canceled = false;
+
+    void window.relic.getWorkspaceAliases().then((result) => {
+      if (canceled) return;
+
+      if (result.ok) {
+        setAliasesByPath(result.value);
+      } else {
+        setAliasesByPath({});
+        setWorkspaceError(result.error.message);
+      }
+    });
+
+    return () => {
+      canceled = true;
+    };
+  }, [setWorkspaceError, workspaceState?.activeWorkspace?.id, workspaceState?.fileTree]);
+
   const {
     handleDeleteActiveFile,
     handleDeleteTreeItem,
@@ -771,8 +801,10 @@ export function App(): ReactElement {
     isOpeningWorkspace,
     setIsCreatingFile
   } = useWorkspaceFileActions({
+    aliasesByPath,
     closeAllTabs,
     closeTab,
+    existingMarkdownPaths,
     focusedPane,
     leftPane,
     openFileInPane,
@@ -1087,10 +1119,6 @@ export function App(): ReactElement {
           : [],
     [workspaceState]
   );
-  const existingMarkdownPaths = useMemo(
-    () => collectMarkdownPaths(workspaceState?.fileTree ?? []),
-    [workspaceState?.fileTree]
-  );
   const pinnedPathSet = useMemo(
     () => new Set(workspaceState?.pinnedPaths ?? []),
     [workspaceState?.pinnedPaths]
@@ -1123,7 +1151,7 @@ export function App(): ReactElement {
     ? extractOutlineHeadings(activeFileTabInFocusedPane.content)
     : [];
   const outgoingLinks = activeFileTabInFocusedPane
-    ? resolveWikiLinks(activeFileTabInFocusedPane.content, activeFileTabInFocusedPane.path, existingMarkdownPaths)
+    ? resolveWikiLinks(activeFileTabInFocusedPane.content, activeFileTabInFocusedPane.path, existingMarkdownPaths, aliasesByPath)
     : [];
 
   const { backlinks, isLoadingBacklinks } = useBacklinksState({
@@ -1804,6 +1832,7 @@ export function App(): ReactElement {
 
       {showQuickSwitcher ? (
         <QuickSwitcher
+          aliasesByPath={aliasesByPath}
           filePaths={existingMarkdownPaths}
           onClose={() => setShowQuickSwitcher(false)}
           onSelect={handleOpenFile}

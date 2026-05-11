@@ -5,6 +5,7 @@ import {
   parseWikiLinks,
   resolveMarkdownLinkPath,
   resolveWikiLinkPath,
+  resolveWikiLinkPathWithAliases,
   resolveWikiLinks
 } from "./links";
 
@@ -108,5 +109,21 @@ describe("resolveWikiLinks", () => {
         path: "notes/未作成.md"
       })
     ]);
+  });
+
+  it("リンク先が存在しない場合はaliasesで解決する", () => {
+    expect(resolveWikiLinks("[[α]]", "source.md", ["A.md"], { "A.md": ["α", "a"] })).toEqual([
+      expect.objectContaining({
+        exists: true,
+        path: "A.md"
+      })
+    ]);
+  });
+});
+
+describe("resolveWikiLinkPathWithAliases", () => {
+  it("既存パスを優先し、存在しないリンクだけaliasesで解決する", () => {
+    expect(resolveWikiLinkPathWithAliases("a", "source.md", ["A.md"], { "A.md": ["a"] })).toBe("A.md");
+    expect(resolveWikiLinkPathWithAliases("a", "source.md", ["a.md", "A.md"], { "A.md": ["a"] })).toBe("a.md");
   });
 });

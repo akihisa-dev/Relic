@@ -17,8 +17,7 @@ const FIELD_TYPES: UserDefinedFieldType[] = [
   "tags",
   "url",
   "email",
-  "list",
-  "yaml"
+  "list"
 ];
 const FIELD_NAME_PATTERN = /^[^\s:][^\r\n:]*$/;
 const FIELD_TYPE_LABEL_KEYS: Record<UserDefinedFieldType, TranslationKey> = {
@@ -34,9 +33,9 @@ const FIELD_TYPE_LABEL_KEYS: Record<UserDefinedFieldType, TranslationKey> = {
   tags: "settings.fieldTypeTags",
   time: "settings.fieldTypeTime",
   text: "settings.fieldTypeText",
-  url: "settings.fieldTypeUrl",
-  yaml: "settings.fieldTypeYaml"
+  url: "settings.fieldTypeUrl"
 };
+const RESERVED_FIELD_NAMES = new Set(["aliases"]);
 
 function needsChoices(type: UserDefinedFieldType): boolean {
   return type === "select" || type === "multi-select" || type === "tags";
@@ -80,6 +79,7 @@ export function FrontmatterSidebar({
 
   const isFieldNameAvailable = (name: string, currentIndex?: number): boolean => (
     FIELD_NAME_PATTERN.test(name) &&
+    !RESERVED_FIELD_NAMES.has(name) &&
     !fieldsDraft.some((field, i) => field.name === name && i !== currentIndex)
   );
 
@@ -123,7 +123,18 @@ export function FrontmatterSidebar({
 
   return (
     <div className="sidebar-section settings-section frontmatter-settings-section">
-      <div className="links-panel-subheading">{t("settings.frontmatterAbilities")}</div>
+      <div className="links-panel-subheading">{t("settings.frontmatterProperties")}</div>
+
+      <div className="frontmatter-field-group-label">{t("settings.fixedFields")}</div>
+      <section className="frontmatter-field-card frontmatter-field-card--fixed">
+        <div className="frontmatter-field-summary frontmatter-field-summary--static">
+          <span className="frontmatter-field-name">aliases</span>
+          <span className="frontmatter-field-type">{t("settings.fixedField")}</span>
+          <span className="frontmatter-field-type">{t("settings.fieldTypeList")}</span>
+        </div>
+      </section>
+
+      <div className="frontmatter-field-group-label">{t("settings.freeFields")}</div>
 
       <div className="frontmatter-field-add">
         <input

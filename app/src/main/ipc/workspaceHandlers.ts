@@ -13,6 +13,7 @@ import {
   getAutoSyncSettingsChannel,
   getFeatureTogglesChannel,
   getUserDefinedFieldsChannel,
+  getWorkspaceAliasesChannel,
   getWorkspaceStateChannel,
   getWorkspaceTagsChannel,
   openWorkspaceChannel,
@@ -39,6 +40,7 @@ import {
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { refreshAutoSyncTimer } from "../autoSyncScheduler";
 import { cloneGitHubRepository } from "../files/git";
+import { readWorkspaceAliases } from "../files/aliases";
 import { readWorkspaceFileTree } from "../files/fileTree";
 import { readFrontmatterValueCandidates } from "../files/frontmatterCandidates";
 import { readWorkspaceTags } from "../files/tags";
@@ -67,10 +69,10 @@ const userDefinedFieldTypes: UserDefinedFieldType[] = [
   "tags",
   "url",
   "email",
-  "list",
-  "yaml"
+  "list"
 ];
 const userDefinedFieldNamePattern = /^[^\s:][^\r\n:]*$/;
+const reservedUserDefinedFieldNames = new Set(["aliases"]);
 
 function isUserDefinedFieldsInput(input: unknown): input is UserDefinedField[] {
   if (!Array.isArray(input)) return false;
@@ -81,7 +83,11 @@ function isUserDefinedFieldsInput(input: unknown): input is UserDefinedField[] {
     if (typeof field !== "object" || field === null) return false;
     const candidate = field as Record<string, unknown>;
 
-    if (typeof candidate.name !== "string" || !userDefinedFieldNamePattern.test(candidate.name)) return false;
+    if (
+      typeof candidate.name !== "string" ||
+      !userDefinedFieldNamePattern.test(candidate.name) ||
+      reservedUserDefinedFieldNames.has(candidate.name)
+    ) return false;
     if (names.has(candidate.name)) return false;
     names.add(candidate.name);
     if (!userDefinedFieldTypes.includes(candidate.type as UserDefinedFieldType)) return false;
@@ -162,6 +168,25 @@ export function registerWorkspaceHandlers(): void {
       return fail(
         "FRONTMATTER_VALUE_CANDIDATES_READ_FAILED",
         "フロントマター候補を読み込めませんでした。",
+        error instanceof Error ? error.message : String(error)
+      );
+    }
+  });
+
+  ipcMain.handle(getWorkspaceAliasesChannel, async () => {
+    try {
+      const settings = await readAppSettings(app.getPath("userData"));
+      const state = toWorkspaceState(settings);
+
+      if (!state.activeWorkspace) {
+        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
+      }
+
+      return readWorkspaceAliases(state.activeWorkspace.path);
+    } catch (error) {
+      return fail(
+        "WORKSPACE_ALIASES_FAILED",
+        "別名を読み込めませんでした。",
         error instanceof Error ? error.message : String(error)
       );
     }

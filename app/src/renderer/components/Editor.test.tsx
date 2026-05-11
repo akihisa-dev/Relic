@@ -650,7 +650,7 @@ describe("Editor", () => {
     expect(viewRef.current?.state.doc.toString()).toContain("meta:\n  source: web");
   });
 
-  it("登録済みプロパティの入力能力をフォームに反映する", async () => {
+  it("登録済みプロパティの入力タイプをフォームに反映する", async () => {
     const viewRef = createRef<EditorView | null>();
     const onChange = vi.fn();
     const { container } = render(
@@ -698,8 +698,7 @@ describe("Editor", () => {
           { name: "started", type: "datetime" },
           { name: "hour", type: "time" },
           { name: "mail", type: "email" },
-          { name: "items", type: "list" },
-          { name: "raw", type: "yaml" }
+          { name: "items", type: "list" }
         ]}
         viewRef={viewRef}
       />
