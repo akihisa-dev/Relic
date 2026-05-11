@@ -3349,10 +3349,30 @@ button:not(:disabled):active {
   border: 1px solid var(--border);
   border-radius: 6px;
   color: var(--text-2);
+  display: grid;
   font-size: 12px;
+  gap: 8px;
   line-height: 1.5;
   margin: 8px 0 0;
   padding: 8px 10px;
+}
+
+.frontmatter-format-guide p {
+  margin: 0;
+}
+
+.frontmatter-format-guide code {
+  background: rgba(28, 28, 28, 0.045);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--text);
+  display: block;
+  font-family: "SF Mono", "Menlo", "Consolas", monospace;
+  font-size: 12px;
+  line-height: 1.45;
+  overflow-x: auto;
+  padding: 7px 9px;
+  white-space: pre;
 }
 
 .setting-custom-field-input {
@@ -4024,6 +4044,7 @@ button:not(:disabled):active {
 }
 
 [data-theme="dark"] .frontmatter-format-guide,
+[data-theme="dark"] .frontmatter-format-guide code,
 [data-theme="dark"] .frontmatter-field-card--fixed,
 [data-theme="dark"] .frontmatter-field-examples code,
 [data-theme="dark"] .frontmatter-writing-example code,
@@ -4077,6 +4098,7 @@ button:not(:disabled):active {
     background: rgba(255, 255, 255, 0.04);
   }
   :root:not([data-theme="light"]) .frontmatter-format-guide,
+  :root:not([data-theme="light"]) .frontmatter-format-guide code,
   :root:not([data-theme="light"]) .frontmatter-field-card--fixed,
   :root:not([data-theme="light"]) .frontmatter-field-examples code,
   :root:not([data-theme="light"]) .frontmatter-writing-example code,

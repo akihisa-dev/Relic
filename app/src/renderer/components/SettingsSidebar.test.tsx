@@ -50,7 +50,7 @@ describe("FrontmatterSidebar", () => {
       "URL"
     ]);
     expect(screen.getByText("For short free-form values, such as notes, names, or labels.")).toBeInTheDocument();
-    expect(screen.getByText("status: note")).toBeInTheDocument();
+    expect(screen.getByText("status: [note]")).toBeInTheDocument();
   });
 
   it("フィールドを追加できる", () => {
@@ -65,6 +65,27 @@ describe("FrontmatterSidebar", () => {
     expect(onUserDefinedFieldsSave).toHaveBeenCalledWith([{ name: "deadline", type: "date" }]);
   });
 
+  it("フィールド名は入力途中で保存せず、確定時に保存する", () => {
+    const onUserDefinedFieldsSave = vi.fn();
+
+    renderFrontmatterSidebar({
+      onUserDefinedFieldsSave,
+      userDefinedFields: [{ name: "status", type: "text" }]
+    });
+
+    const nameInput = screen.getByDisplayValue("status") as HTMLInputElement;
+    fireEvent.change(nameInput, { target: { value: "" } });
+    expect(nameInput.value).toBe("");
+    expect(onUserDefinedFieldsSave).not.toHaveBeenCalled();
+
+    fireEvent.change(nameInput, { target: { value: "公開状態" } });
+    expect(nameInput.value).toBe("公開状態");
+    expect(onUserDefinedFieldsSave).not.toHaveBeenCalled();
+
+    fireEvent.blur(nameInput);
+    expect(onUserDefinedFieldsSave).toHaveBeenCalledWith([{ name: "公開状態", type: "text" }]);
+  });
+
   it("カスタムプロパティの入力タイプごとに書き方を表示する", () => {
     renderFrontmatterSidebar({
       userDefinedFields: [
@@ -74,12 +95,12 @@ describe("FrontmatterSidebar", () => {
     });
 
     expect(screen.getByText("characters: [Alice, Bob]")).toBeInTheDocument();
-    expect(screen.getByText("published: true")).toBeInTheDocument();
+    expect(screen.getByText("published: [true]")).toBeInTheDocument();
 
     fireEvent.change(screen.getByPlaceholderText("Field name"), { target: { value: "source" } });
     fireEvent.change(screen.getAllByLabelText("Input type")[0], { target: { value: "url" } });
 
-    expect(screen.getByText("source: https://example.com")).toBeInTheDocument();
+    expect(screen.getByText("source: [https://example.com]")).toBeInTheDocument();
   });
 
   it("aliasesとtagsとchronicleを固定プロパティとして表示し、カスタムプロパティには追加しない", () => {
@@ -92,7 +113,8 @@ describe("FrontmatterSidebar", () => {
     expect(screen.getByText("aliases")).not.toBeNull();
     expect(screen.getByText("tags")).not.toBeNull();
     expect(screen.getByText("chronicle")).not.toBeNull();
-    expect(screen.getByText("Write each property on one line inside the --- block at the top of the Markdown file.")).toBeInTheDocument();
+    expect(screen.getByText("At the very top of the Markdown file, make a settings block that starts with --- and ends with ---. Write each property inside that block on its own line.")).toBeInTheDocument();
+    expect(screen.getByText((_, element) => element?.tagName === "CODE" && element.textContent === "---\nproperty: [value]\n---\nStart writing here")).toBeInTheDocument();
     expect(screen.getByText("Alternative names that can link to this file. Used for link resolution and file name search. Write one or many values as the same one-line array.")).toBeInTheDocument();
     expect(screen.getByText("aliases: [Capital]")).toBeInTheDocument();
     expect(screen.getByText("aliases: [Capital, Old Capital]")).toBeInTheDocument();

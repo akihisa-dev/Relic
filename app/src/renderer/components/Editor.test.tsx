@@ -724,16 +724,18 @@ describe("Editor", () => {
     const statusOptions = Array.from(container.querySelectorAll(`#${statusInput.getAttribute("list")} option`))
       .map((option) => (option as HTMLOptionElement).value);
     expect(statusOptions).toEqual(["draft", "published", "review"]);
+    fireEvent.change(statusInput, { target: { value: "review" } });
+    expect(viewRef.current?.state.doc.toString()).toContain("status: [\"review\"]");
 
     const dateInput = Array.from(container.querySelectorAll(".cm-frontmatter-input"))
       .find((input) => (input as HTMLInputElement).type === "date") as HTMLInputElement;
     expect(dateInput.value).toBe("2026-03-29");
     fireEvent.change(dateInput, { target: { value: "2026-04-01" } });
-    expect(viewRef.current?.state.doc.toString()).toContain("updated: 2026-04-01");
+    expect(viewRef.current?.state.doc.toString()).toContain("updated: [\"2026-04-01\"]");
 
     const checkbox = container.querySelector(".cm-frontmatter-checkbox") as HTMLInputElement;
     fireEvent.click(checkbox);
-    expect(viewRef.current?.state.doc.toString()).toContain("published: true");
+    expect(viewRef.current?.state.doc.toString()).toContain("published: [true]");
   });
 
   it("日時・時刻・URL入力タイプと固定tagsをフォームに反映する", async () => {
