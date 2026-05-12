@@ -35,7 +35,6 @@ function makeRelicApi(overrides: Partial<typeof window.relic> = {}): typeof wind
     getGitStatus: vi.fn(),
     getGitSyncPreview: vi.fn(),
     getGitWorkingChanges: vi.fn(),
-    getMarkdownTemplates: vi.fn(),
     getUserDefinedFields: vi.fn(),
     getWorkspaceState: vi.fn(),
     getWorkspaceTags: vi.fn(),

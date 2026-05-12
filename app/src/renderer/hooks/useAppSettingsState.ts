@@ -6,7 +6,6 @@ import type {
   EditorSettings,
   FrontmatterTemplate,
   GitHubIntegrationSettings,
-  MarkdownTemplateSummary,
   WorkspaceState
 } from "../../shared/ipc";
 import {
@@ -38,8 +37,6 @@ export function useAppSettingsState({
   const [frontmatterTemplates, setFrontmatterTemplates] = useState<FrontmatterTemplate[]>(defaultFrontmatterTemplates);
   const [gitHubIntegrationSettings, setGitHubIntegrationSettings] = useState<GitHubIntegrationSettings>(defaultGitHubIntegrationSettings);
   const [userDefinedFields, setUserDefinedFields] = useState<UserDefinedField[]>(defaultUserDefinedFields);
-  const [markdownTemplates, setMarkdownTemplates] = useState<MarkdownTemplateSummary[]>([]);
-  const [selectedTemplatePath, setSelectedTemplatePath] = useState("");
 
   useEffect(() => {
     let canceled = false;
@@ -102,22 +99,6 @@ export function useAppSettingsState({
     return () => { canceled = true; };
   }, [workspaceState?.activeWorkspace?.id]);
 
-  useEffect(() => {
-    let canceled = false;
-
-    void window.relic?.getMarkdownTemplates().then((result) => {
-      if (canceled) return;
-      if (result.ok) {
-        setMarkdownTemplates(result.value);
-        if (!result.value.some((template) => template.path === selectedTemplatePath)) {
-          setSelectedTemplatePath("");
-        }
-      }
-    });
-
-    return () => { canceled = true; };
-  }, [selectedTemplatePath, workspaceState?.activeWorkspace?.id]);
-
   const handleSaveSettings = useCallback(
     (settings: EditorSettings): void => {
       setEditorSettings(settings);
@@ -163,9 +144,6 @@ export function useAppSettingsState({
     handleSaveGitHubIntegrationSettings,
     handleSaveSettings,
     handleSaveUserDefinedFields,
-    markdownTemplates,
-    selectedTemplatePath,
-    setSelectedTemplatePath,
     userDefinedFields
   };
 }

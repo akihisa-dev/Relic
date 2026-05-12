@@ -66,20 +66,6 @@ describe("createMarkdownFile", () => {
     await expect(readFile(path.join(workspacePath, "読書メモ.md"), "utf8")).resolves.toBe("既存");
   });
 
-  it("テンプレート本文でMarkdownファイルを作成する", async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-create-file-"));
-    temporaryPaths.push(workspacePath);
-    await mkdir(path.join(workspacePath, "templates"));
-    await writeFile(path.join(workspacePath, "templates", "日記.md"), "# 今日\n\n", "utf8");
-
-    await expect(createMarkdownFile(workspacePath, "日記ログ", "templates/日記.md")).resolves.toEqual({
-      ok: true,
-      value: {
-        path: "日記ログ.md"
-      }
-    });
-    await expect(readFile(path.join(workspacePath, "日記ログ.md"), "utf8")).resolves.toBe("# 今日\n\n");
-  });
 });
 
 describe("createMarkdownFileAtPath", () => {

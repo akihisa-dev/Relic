@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { defaultEditorSettings } from "../../shared/ipc";
-import { Preview, normalizeEmbedTarget, resolveAttachmentImageSrc } from "./Preview";
+import { Preview, normalizeEmbedTarget } from "./Preview";
 
 const settings = defaultEditorSettings;
 
@@ -86,7 +86,7 @@ describe("Preview", () => {
     expect(document.querySelector(".hashtag")).toBeNull();
   });
 
-  it("attachments配下の画像をワークスペース内のfile URLとして表示する", () => {
+  it("Markdown画像を画像として表示しない", () => {
     render(
       <Preview
         content="![図](attachments/diagram.png)"
@@ -95,12 +95,11 @@ describe("Preview", () => {
       />
     );
 
-    const image = screen.getByRole("img", { name: "図" });
-
-    expect(image).toHaveAttribute("src", "file:///tmp/relic%20workspace/attachments/diagram.png");
+    expect(screen.queryByRole("img")).not.toBeInTheDocument();
+    expect(screen.getByText("図")).toBeInTheDocument();
   });
 
-  it("Obsidian形式の画像埋め込みをattachments配下の画像として表示する", () => {
+  it("Obsidian形式の画像埋め込みをファイル埋め込みとして扱わない", () => {
     window.relic = {
       readMarkdownFile: vi.fn()
     } as unknown as typeof window.relic;
@@ -113,9 +112,8 @@ describe("Preview", () => {
       />
     );
 
-    const image = screen.getByRole("img", { name: "diagram.png" });
-
-    expect(image).toHaveAttribute("src", "file:///tmp/relic%20workspace/attachments/diagram.png");
+    expect(screen.queryByRole("img")).not.toBeInTheDocument();
+    expect(screen.getByText("![[diagram.png]]")).toBeInTheDocument();
     expect(window.relic!.readMarkdownFile).not.toHaveBeenCalled();
   });
 
@@ -166,22 +164,11 @@ describe("Preview", () => {
   });
 });
 
-describe("resolveAttachmentImageSrc", () => {
-  it("attachments配下のラスター画像だけを許可する", () => {
-    expect(resolveAttachmentImageSrc("/tmp/relic", "attachments/image.webp")).toBe(
-      "file:///tmp/relic/attachments/image.webp"
-    );
-    expect(resolveAttachmentImageSrc("/tmp/relic", "notes/image.png")).toBeNull();
-    expect(resolveAttachmentImageSrc("/tmp/relic", "attachments/../secret.png")).toBeNull();
-    expect(resolveAttachmentImageSrc("/tmp/relic", "attachments/icon.svg")).toBeNull();
-    expect(resolveAttachmentImageSrc("/tmp/relic", "https://example.com/image.png")).toBeNull();
-  });
-});
-
 describe("normalizeEmbedTarget", () => {
   it("Markdownファイルとして読める埋め込み先へ正規化する", () => {
     expect(normalizeEmbedTarget("Folder/Note")).toBe("Folder/Note.md");
     expect(normalizeEmbedTarget("Folder/Note.md#見出し")).toBe("Folder/Note.md");
+    expect(normalizeEmbedTarget("Folder/image.png")).toBeNull();
     expect(normalizeEmbedTarget("../secret")).toBeNull();
     expect(normalizeEmbedTarget("https://example.com/note.md")).toBeNull();
   });

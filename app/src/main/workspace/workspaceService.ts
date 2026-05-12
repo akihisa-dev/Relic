@@ -1,10 +1,9 @@
-import { mkdir, rename, stat } from "node:fs/promises";
+import { rename, stat } from "node:fs/promises";
 import path from "node:path";
 import { createHash } from "node:crypto";
 
 import type { WorkspaceState, WorkspaceSummary, WorkspaceTreeNode } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
-import { attachmentsDirectoryName, templatesDirectoryName } from "../../shared/workspace";
 import type { AppSettings } from "../settings/appSettings";
 import { validateBaseName } from "../files/names";
 
@@ -19,10 +18,7 @@ export function createWorkspaceSummary(workspacePath: string): WorkspaceSummary 
 }
 
 export async function prepareWorkspace(workspacePath: string): Promise<void> {
-  await Promise.all([
-    mkdir(path.join(workspacePath, attachmentsDirectoryName), { recursive: true }),
-    mkdir(path.join(workspacePath, templatesDirectoryName), { recursive: true })
-  ]);
+  await stat(workspacePath);
 }
 
 export function addOrActivateWorkspace(

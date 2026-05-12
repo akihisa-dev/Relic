@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { ReactElement } from "react";
 
-import type { MarkdownTemplateSummary, WorkspaceState, WorkspaceTreeNode } from "../../shared/ipc";
-import { attachmentsDirectoryName, templatesDirectoryName } from "../../shared/workspace";
+import type { WorkspaceState, WorkspaceTreeNode } from "../../shared/ipc";
 import { useT } from "../i18n";
 import { FileTree, FileTreeItem, findNodeByPath } from "./FileTree";
 
@@ -31,9 +30,6 @@ export interface FilesSidebarProps {
   onSelectedCountChange?: (count: number) => void;
   onTogglePin: (path: string) => void;
   openFilePaths?: Set<string>;
-  onTemplatePathChange: (path: string) => void;
-  selectedTemplatePath: string;
-  templates: MarkdownTemplateSummary[];
   workspaceState: WorkspaceState | null;
 }
 
@@ -62,9 +58,6 @@ export function FilesSidebar({
   onSelectedCountChange,
   onTogglePin,
   openFilePaths,
-  onTemplatePathChange,
-  selectedTemplatePath,
-  templates,
   workspaceState
 }: FilesSidebarProps): ReactElement {
   const [selectionAnchorPath, setSelectionAnchorPath] = useState<string | null>(null);
@@ -74,15 +67,7 @@ export function FilesSidebar({
     () => new Set(workspaceState?.pinnedPaths ?? []),
     [workspaceState?.pinnedPaths]
   );
-  const { systemNodes, userNodes } = useMemo(() => {
-    const systemNames = new Set([attachmentsDirectoryName, templatesDirectoryName]);
-    const nodes = workspaceState?.fileTree ?? [];
-
-    return {
-      systemNodes: nodes.filter((node) => systemNames.has(node.path)),
-      userNodes: nodes.filter((node) => !systemNames.has(node.path))
-    };
-  }, [workspaceState?.fileTree]);
+  const userNodes = useMemo(() => workspaceState?.fileTree ?? [], [workspaceState?.fileTree]);
   const selectableItems = useMemo(() => {
     const items: Array<{ path: string; type: WorkspaceTreeNode["type"] }> = [];
     const walk = (node: WorkspaceTreeNode): void => {
@@ -165,21 +150,6 @@ export function FilesSidebar({
           >
             {isCreatingFile ? t("common.running") : t("files.createNote")}
           </button>
-          {templates.length > 0 ? (
-            <select
-              aria-label={t("files.template")}
-              className="template-select"
-              onChange={(e) => onTemplatePathChange(e.target.value)}
-              value={selectedTemplatePath}
-            >
-              <option value="">{t("files.noTemplate")}</option>
-              {templates.map((template) => (
-                <option key={template.path} value={template.path}>
-                  {template.name}
-                </option>
-              ))}
-            </select>
-          ) : null}
           <button
             className="secondary-button"
             disabled={isCreatingFolder}
@@ -250,17 +220,6 @@ export function FilesSidebar({
             selectedItems={selectedItems}
             selectedPaths={selectedPaths}
           />
-          {systemNodes.length > 0 ? (
-            <div className="system-folder-section">
-              <div className="pinned-section-heading">{t("files.systemFolders")}</div>
-              <FileTree
-                nodes={systemNodes}
-                onOpenFile={onOpenFile}
-                openFilePaths={openFilePaths}
-                onSelectFolder={onSelectFolder}
-              />
-            </div>
-          ) : null}
           <div className="workspace-actions">
             <button
               className="secondary-button"
