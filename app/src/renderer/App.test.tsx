@@ -623,7 +623,7 @@ describe("App", () => {
     expect(useEditorStore.getState().tabs["panel-frontmatter"]).toBeUndefined();
   });
 
-  it("レールの年表ボタンからchronicleを持つファイルを表示できる", async () => {
+  it("レールのチャートボタンからchronicleを持つファイルを表示できる", async () => {
     window.relic = makeRelicApi({
       getWorkspaceChronicle: vi.fn().mockResolvedValue({
         ok: true,
@@ -649,7 +649,7 @@ describe("App", () => {
 
     await screen.findByText("Notes");
 
-    fireEvent.click(screen.getByRole("button", { name: "年表" }));
+    fireEvent.click(screen.getByRole("button", { name: "チャート" }));
     fireEvent.click(renderResult.container.querySelector(".chronicle-source-toggle-button")!);
 
     const activeTabId = useEditorStore.getState().leftPane.activeTabId;
@@ -675,7 +675,7 @@ describe("App", () => {
 
     await screen.findByText("Notes");
 
-    fireEvent.click(screen.getByRole("button", { name: "年表" }));
+    fireEvent.click(screen.getByRole("button", { name: "チャート" }));
     fireEvent.click(container.querySelector(".chronicle-source-toggle-button")!);
 
     expect(screen.getAllByText("鎌倉時代").length).toBeGreaterThan(0);
