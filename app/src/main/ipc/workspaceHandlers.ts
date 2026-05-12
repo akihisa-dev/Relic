@@ -15,6 +15,7 @@ import {
   getUserDefinedFieldsChannel,
   getWorkspaceAliasesChannel,
   getWorkspaceChronicleChannel,
+  getWorkspaceGraphChannel,
   getWorkspaceStateChannel,
   getWorkspaceTagsChannel,
   openWorkspaceChannel,
@@ -48,6 +49,7 @@ import { readWorkspaceAliases } from "../files/aliases";
 import { readWorkspaceChronicle } from "../files/chronicle";
 import { readWorkspaceFileTree } from "../files/fileTree";
 import { readFrontmatterValueCandidates } from "../files/frontmatterCandidates";
+import { readWorkspaceGraph } from "../files/graph";
 import { readWorkspaceTags } from "../files/tags";
 import { readAppSettings, writeAppSettings } from "../settings/appSettings";
 import { readWorkspaceSettings, writeWorkspaceSettings } from "../settings/workspaceSettings";
@@ -230,6 +232,25 @@ export function registerWorkspaceHandlers(): void {
       return fail(
         "WORKSPACE_CHRONICLE_FAILED",
         "年表を読み込めませんでした。",
+        error instanceof Error ? error.message : String(error)
+      );
+    }
+  });
+
+  ipcMain.handle(getWorkspaceGraphChannel, async () => {
+    try {
+      const settings = await readAppSettings(app.getPath("userData"));
+      const state = toWorkspaceState(settings);
+
+      if (!state.activeWorkspace) {
+        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
+      }
+
+      return readWorkspaceGraph(state.activeWorkspace.path);
+    } catch (error) {
+      return fail(
+        "WORKSPACE_GRAPH_FAILED",
+        "グラフを読み込めませんでした。",
         error instanceof Error ? error.message : String(error)
       );
     }
