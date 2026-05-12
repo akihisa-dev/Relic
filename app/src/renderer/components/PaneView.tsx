@@ -78,6 +78,10 @@ export function PaneView({
   isSplitView
 }: PaneViewProps): ReactElement {
   const [contextMenu, setContextMenu] = useState<{ tabId: string; x: number; y: number } | null>(null);
+  const [tabDropTarget, setTabDropTarget] = useState<{
+    position: "after" | "before";
+    tabId: string | null;
+  } | null>(null);
   const { leftPane, rightPane, tabs, updateTabContent } = useEditorStore();
   const paneState = pane === "left" ? leftPane : rightPane;
   const activeTab = paneState.activeTabId ? tabs[paneState.activeTabId] : null;
@@ -143,6 +147,7 @@ export function PaneView({
 
     e.preventDefault();
     e.stopPropagation();
+    setTabDropTarget(null);
     onTabMove(draggedTab.fromPane, pane, draggedTab.tabId, targetTabId ?? null, targetTabId ? dropPositionForTab(e) : "after");
   };
 
@@ -154,9 +159,16 @@ export function PaneView({
       onPointerDownCapture={onFocus}
     >
       <div
-        className="pane-tab-bar"
+        className={`pane-tab-bar${tabDropTarget?.tabId === null ? " pane-tab-bar--drop-end" : ""}`}
+        onDragLeave={(e) => {
+          if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setTabDropTarget(null);
+        }}
         onDragOver={(e) => {
-          if (isTabDrag(e)) e.preventDefault();
+          if (!isTabDrag(e)) return;
+          e.preventDefault();
+          if (e.target === e.currentTarget) {
+            setTabDropTarget({ position: "after", tabId: null });
+          }
         }}
         onDrop={(e) => handleTabDrop(e, null)}
       >
@@ -168,7 +180,7 @@ export function PaneView({
 
           return (
             <div
-              className={`pane-tab${paneState.activeTabId === tabId ? " pane-tab--active" : ""}${isClosing ? " pane-tab--closing" : ""}`}
+              className={`pane-tab pane-tab--${tab.kind}${paneState.activeTabId === tabId ? " pane-tab--active" : ""}${isClosing ? " pane-tab--closing" : ""}${tabDropTarget?.tabId === tabId ? ` pane-tab--drop-${tabDropTarget.position}` : ""}`}
               data-tab-id={tabId}
               draggable={!isClosing}
               key={tabId}
@@ -184,18 +196,26 @@ export function PaneView({
                 setContextMenu({ tabId, x: e.clientX, y: e.clientY });
               }}
               onDragOver={(e) => {
-                if (isTabDrag(e)) e.preventDefault();
+                if (!isTabDrag(e)) return;
+                e.preventDefault();
+                e.stopPropagation();
+                setTabDropTarget({ position: dropPositionForTab(e), tabId });
               }}
               onDragStart={(e) => {
                 if (isClosing) return;
                 e.dataTransfer.setData("application/relic-tab", JSON.stringify({ fromPane: pane, tabId }));
                 e.dataTransfer.effectAllowed = "move";
               }}
+              onDragEnd={() => setTabDropTarget(null)}
               onDrop={(e) => handleTabDrop(e, tabId)}
             >
               {tab.kind === "panel" ? (
                 <span className="pane-tab-icon" aria-hidden="true">
                   {renderPanelTabIcon(tab.panel)}
+                </span>
+              ) : tab.kind === "gantt" ? (
+                <span className="pane-tab-icon" aria-hidden="true">
+                  <GanttTabIcon />
                 </span>
               ) : null}
               <span className="pane-tab-name">{tabLabel(tab)}</span>
@@ -400,6 +420,19 @@ export function PaneView({
         </div>
       )}
     </div>
+  );
+}
+
+function GanttTabIcon(): ReactElement {
+  return (
+    <svg fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.7" viewBox="0 0 16 16" width="14">
+      <line x1="2" x2="14" y1="4" y2="4" />
+      <line x1="2" x2="14" y1="8" y2="8" />
+      <line x1="2" x2="14" y1="12" y2="12" />
+      <rect height="2.8" rx="1" width="5" x="4" y="2.6" />
+      <rect height="2.8" rx="1" width="7" x="7" y="6.6" />
+      <rect height="2.8" rx="1" width="4" x="3" y="10.6" />
+    </svg>
   );
 }
 
