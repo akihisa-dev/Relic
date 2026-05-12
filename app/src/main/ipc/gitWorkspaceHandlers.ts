@@ -3,33 +3,20 @@ import { ipcMain } from "electron";
 import {
   connectGitRemoteChannel,
   type ConnectGitRemoteInput,
-  createGitBranchChannel,
-  type CreateGitBranchInput,
   createGitCommitChannel,
   type CreateGitCommitInput,
-  createGitTagChannel,
-  type CreateGitTagInput,
-  deleteGitTagChannel,
-  type DeleteGitTagInput,
-  getGitBranchesChannel,
   getGitCommitDiffChannel,
   getGitCommitHistoryChannel,
   getGitConflictsChannel,
   getGitRemotesChannel,
   getGitStatusChannel,
   getGitSyncPreviewChannel,
-  getGitTagsChannel,
   getGitWorkingChangesChannel,
   initializeGitRepositoryChannel,
   pullGitBranchChannel,
   pushGitBranchChannel,
-  pushGitTagChannel,
-  type PushGitTagInput,
   resolveGitConflictChannel,
   type ResolveGitConflictInput,
-  switchGitBranchChannel,
-  type SwitchGitBranchInput,
-  type GitBranchSummary,
   type GitCommitDiff,
   type GitCommitSummary,
   type GitConflict,
@@ -37,31 +24,23 @@ import {
   type GitRemoteSyncResult,
   type GitStatus,
   type GitSyncPreview,
-  type GitTagSummary,
   type GitWorkingChange
 } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
 import {
-  createGitBranch,
   createGitCommit,
-  createGitTag,
   connectGitRemote,
-  deleteGitTag,
   initializeGitRepository,
   pullGitBranch,
   pushGitBranch,
-  pushGitTag,
-  readGitBranches,
   readGitCommitDiff,
   readGitCommitHistory,
   readGitConflicts,
   readGitRemotes,
   readGitStatus,
   readGitSyncPreview,
-  readGitTags,
   readGitWorkingChanges,
-  resolveGitConflict,
-  switchGitBranch
+  resolveGitConflict
 } from "../files/git";
 import { readGitHubAuthFromKeychain } from "../github/keychain";
 import { withActiveWorkspace } from "./activeWorkspace";
@@ -71,20 +50,6 @@ export function registerGitWorkspaceHandlers(): void {
     return withActiveWorkspace(
       { code: "GIT_STATUS_FAILED", message: "Git状態を取得できませんでした。" },
       readGitStatus
-    );
-  });
-
-  ipcMain.handle(getGitTagsChannel, async (): Promise<RelicResult<GitTagSummary[]>> => {
-    return withActiveWorkspace(
-      { code: "GIT_TAGS_FAILED", message: "Gitタグ一覧を取得できませんでした。" },
-      readGitTags
-    );
-  });
-
-  ipcMain.handle(getGitBranchesChannel, async (): Promise<RelicResult<GitBranchSummary[]>> => {
-    return withActiveWorkspace(
-      { code: "GIT_BRANCHES_FAILED", message: "ブランチ一覧を取得できませんでした。" },
-      readGitBranches
     );
   });
 
@@ -144,45 +109,6 @@ export function registerGitWorkspaceHandlers(): void {
     );
   });
 
-  ipcMain.handle(createGitBranchChannel, async (_event, input: CreateGitBranchInput): Promise<RelicResult<GitBranchSummary[]>> => {
-    if (!isCreateGitBranchInput(input)) {
-      return fail("GIT_BRANCH_INVALID_INPUT", "ブランチ名を入力してください。");
-    }
-
-    return withActiveWorkspace(
-      { code: "GIT_BRANCH_CREATE_FAILED", message: "ブランチを作成できませんでした。" },
-      (workspacePath) => createGitBranch(workspacePath, input)
-    );
-  });
-
-  ipcMain.handle(createGitTagChannel, async (_event, input: CreateGitTagInput): Promise<RelicResult<GitTagSummary[]>> => {
-    if (!isCreateGitTagInput(input)) {
-      return fail("GIT_TAG_INVALID_INPUT", "タグ名を入力してください。");
-    }
-
-    const tagInput = await withGitHubTagger(input);
-
-    if (!tagInput.ok) {
-      return tagInput;
-    }
-
-    return withActiveWorkspace(
-      { code: "GIT_TAG_CREATE_FAILED", message: "Gitタグを作成できませんでした。" },
-      (workspacePath) => createGitTag(workspacePath, tagInput.value)
-    );
-  });
-
-  ipcMain.handle(deleteGitTagChannel, async (_event, input: DeleteGitTagInput): Promise<RelicResult<GitTagSummary[]>> => {
-    if (!isDeleteGitTagInput(input)) {
-      return fail("GIT_TAG_INVALID_INPUT", "削除するタグを選択してください。");
-    }
-
-    return withActiveWorkspace(
-      { code: "GIT_TAG_DELETE_FAILED", message: "Gitタグを削除できませんでした。" },
-      (workspacePath) => deleteGitTag(workspacePath, input)
-    );
-  });
-
   ipcMain.handle(connectGitRemoteChannel, async (_event, input: ConnectGitRemoteInput): Promise<RelicResult<GitRemoteSummary[]>> => {
     if (!isConnectGitRemoteInput(input)) {
       return fail("GIT_REMOTE_INVALID_INPUT", "GitHubリポジトリのURLを入力してください。");
@@ -205,28 +131,6 @@ export function registerGitWorkspaceHandlers(): void {
     return withActiveWorkspace(
       { code: "GIT_PULL_FAILED", message: "GitHubから取得できませんでした。" },
       pullGitBranch
-    );
-  });
-
-  ipcMain.handle(pushGitTagChannel, async (_event, input: PushGitTagInput): Promise<RelicResult<GitRemoteSyncResult>> => {
-    if (!isPushGitTagInput(input)) {
-      return fail("GIT_TAG_INVALID_INPUT", "送信するタグを選択してください。");
-    }
-
-    return withActiveWorkspace(
-      { code: "GIT_TAG_PUSH_FAILED", message: "GitタグをGitHubへ送信できませんでした。" },
-      (workspacePath) => pushGitTag(workspacePath, input)
-    );
-  });
-
-  ipcMain.handle(switchGitBranchChannel, async (_event, input: SwitchGitBranchInput): Promise<RelicResult<GitBranchSummary[]>> => {
-    if (!isSwitchGitBranchInput(input)) {
-      return fail("GIT_BRANCH_INVALID_INPUT", "切り替えるブランチを選択してください。");
-    }
-
-    return withActiveWorkspace(
-      { code: "GIT_BRANCH_SWITCH_FAILED", message: "ブランチを切り替えできませんでした。" },
-      (workspacePath) => switchGitBranch(workspacePath, input)
     );
   });
 
@@ -289,81 +193,12 @@ async function readGitHubAuthor(): Promise<RelicResult<{ authorEmail: string; au
   }
 }
 
-async function withGitHubTagger(input: CreateGitTagInput): Promise<RelicResult<CreateGitTagInput>> {
-  if (!input.message?.trim()) {
-    return ok(input);
-  }
-
-  const author = await readGitHubAuthor();
-
-  if (!author.ok) {
-    return author;
-  }
-
-  return ok({
-    ...input,
-    taggerEmail: author.value.authorEmail,
-    taggerName: author.value.authorName
-  });
-}
-
-function isCreateGitBranchInput(input: unknown): input is CreateGitBranchInput {
-  return (
-    typeof input === "object" &&
-    input !== null &&
-    "name" in input &&
-    typeof (input as { name?: unknown }).name === "string"
-  );
-}
-
-function isSwitchGitBranchInput(input: unknown): input is SwitchGitBranchInput {
-  return (
-    typeof input === "object" &&
-    input !== null &&
-    "name" in input &&
-    typeof (input as { name?: unknown }).name === "string" &&
-    (!("allowDirty" in input) ||
-      typeof (input as { allowDirty?: unknown }).allowDirty === "boolean")
-  );
-}
-
-function isCreateGitTagInput(input: unknown): input is CreateGitTagInput {
-  return (
-    typeof input === "object" &&
-    input !== null &&
-    "name" in input &&
-    typeof (input as { name?: unknown }).name === "string" &&
-    (!("hash" in input) || typeof (input as { hash?: unknown }).hash === "string") &&
-    (!("message" in input) || typeof (input as { message?: unknown }).message === "string") &&
-    (!("taggerName" in input) || typeof (input as { taggerName?: unknown }).taggerName === "string") &&
-    (!("taggerEmail" in input) || typeof (input as { taggerEmail?: unknown }).taggerEmail === "string")
-  );
-}
-
-function isDeleteGitTagInput(input: unknown): input is DeleteGitTagInput {
-  return (
-    typeof input === "object" &&
-    input !== null &&
-    "name" in input &&
-    typeof (input as { name?: unknown }).name === "string"
-  );
-}
-
 function isConnectGitRemoteInput(input: unknown): input is ConnectGitRemoteInput {
   return (
     typeof input === "object" &&
     input !== null &&
     "url" in input &&
     typeof (input as { url?: unknown }).url === "string"
-  );
-}
-
-function isPushGitTagInput(input: unknown): input is PushGitTagInput {
-  return (
-    typeof input === "object" &&
-    input !== null &&
-    "name" in input &&
-    typeof (input as { name?: unknown }).name === "string"
   );
 }
 
