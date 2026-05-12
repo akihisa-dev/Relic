@@ -4,17 +4,26 @@ import path from "node:path";
 import {
   defaultAutoSyncSettings,
   type AutoSyncInterval,
-  type AutoSyncSettings
+  type AutoSyncSettings,
+  type GanttChartSettings,
+  type GanttChartSource
 } from "../../shared/ipc";
 
 export interface WorkspaceSettings {
   autoSync: AutoSyncSettings;
+  ganttCharts: GanttChartSettings[];
   pinnedPaths: string[];
   workspacePath: string;
 }
 
+export const defaultGanttCharts: GanttChartSettings[] = [
+  { filePaths: [], id: "chronicle", name: "chronicle", source: "chronicle" },
+  { filePaths: [], id: "date", name: "date", source: "date" }
+];
+
 const defaultWorkspaceSettings: WorkspaceSettings = {
   autoSync: defaultAutoSyncSettings,
+  ganttCharts: defaultGanttCharts,
   pinnedPaths: [],
   workspacePath: ""
 };
@@ -35,6 +44,7 @@ export async function readWorkspaceSettings(
 
     return {
       autoSync: parseAutoSyncSettings(parsed.autoSync),
+      ganttCharts: parseGanttCharts(parsed.ganttCharts),
       pinnedPaths: Array.isArray(parsed.pinnedPaths)
         ? parsed.pinnedPaths.filter((p) => typeof p === "string")
         : [],
@@ -47,6 +57,51 @@ export async function readWorkspaceSettings(
 
     throw error;
   }
+}
+
+export function parseGanttCharts(raw: unknown): GanttChartSettings[] {
+  if (!Array.isArray(raw)) return defaultGanttCharts;
+
+  const parsed = raw.flatMap((chart): GanttChartSettings[] => {
+    if (typeof chart !== "object" || chart === null) return [];
+
+    const candidate = chart as Record<string, unknown>;
+    const id = typeof candidate.id === "string" ? candidate.id.trim() : "";
+    const name = typeof candidate.name === "string" ? candidate.name.trim() : "";
+    const source = candidate.source;
+
+    if (!id || !isGanttChartSource(source)) return [];
+
+    return [{
+      filePaths: parseGanttChartFilePaths(candidate.filePaths),
+      id,
+      name: name || defaultGanttChartName(source),
+      source
+    }];
+  });
+
+  return defaultGanttCharts.map((defaultChart) => {
+    const saved = parsed.find((chart) => chart.id === defaultChart.id || chart.source === defaultChart.source);
+
+    return {
+      ...defaultChart,
+      filePaths: saved?.filePaths ?? defaultChart.filePaths
+    };
+  });
+}
+
+function parseGanttChartFilePaths(raw: unknown): string[] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+
+  return Array.from(new Set(raw.filter((path) => typeof path === "string")));
+}
+
+function isGanttChartSource(value: unknown): value is GanttChartSource {
+  return value === "chronicle" || value === "date";
+}
+
+function defaultGanttChartName(source: GanttChartSource): string {
+  return source === "date" ? "日付ガント" : "年表";
 }
 
 export async function writeWorkspaceSettings(

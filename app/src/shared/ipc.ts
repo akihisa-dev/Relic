@@ -19,6 +19,7 @@ export const getGitWorkingChangesChannel = "workspace:getGitWorkingChanges";
 export const getWorkspaceTagsChannel = "workspace:getTags";
 export const getWorkspaceAliasesChannel = "workspace:getAliases";
 export const getWorkspaceChronicleChannel = "workspace:getChronicle";
+export const saveWorkspaceGanttChartsChannel = "workspace:saveGanttCharts";
 export const getFrontmatterValueCandidatesChannel = "workspace:getFrontmatterValueCandidates";
 export const getMarkdownTemplatesChannel = "workspace:getMarkdownTemplates";
 export const getWorkspaceStateChannel = "workspace:getState";
@@ -113,11 +114,26 @@ export interface WorkspaceSummary {
   path: string;
 }
 
-export interface ChronicleEntry {
-  endYear: number;
+export type GanttChartSource = "chronicle" | "date";
+
+export interface GanttChartSettings {
+  filePaths?: string[];
+  id: string;
+  name: string;
+  source: GanttChartSource;
+}
+
+export interface GanttChartEntry {
+  endLabel: string;
+  endValue: number;
   fileName: string;
   path: string;
-  startYear: number;
+  startLabel: string;
+  startValue: number;
+}
+
+export interface WorkspaceGanttChart extends GanttChartSettings {
+  entries: GanttChartEntry[];
 }
 
 export interface WorkspaceState {
@@ -486,7 +502,7 @@ export interface RelicApi {
   getEditorSettings: () => Promise<RelicResult<EditorSettings>>;
   getMarkdownTemplates: () => Promise<RelicResult<MarkdownTemplateSummary[]>>;
   getWorkspaceAliases: () => Promise<RelicResult<AliasIndex>>;
-  getWorkspaceChronicle: () => Promise<RelicResult<ChronicleEntry[]>>;
+  getWorkspaceChronicle: () => Promise<RelicResult<WorkspaceGanttChart[]>>;
   getFrontmatterValueCandidates: () => Promise<RelicResult<Record<string, string[]>>>;
   getWorkspaceTags: () => Promise<RelicResult<WorkspaceTagSummary[]>>;
   getWorkspaceState: () => Promise<RelicResult<WorkspaceState>>;
@@ -524,6 +540,7 @@ export interface RelicApi {
   resolveGitConflict: (input: ResolveGitConflictInput) => Promise<RelicResult<GitConflict[]>>;
   getAutoSyncSettings: () => Promise<RelicResult<AutoSyncSettings>>;
   saveAutoSyncSettings: (input: AutoSyncSettings) => Promise<RelicResult<void>>;
+  saveWorkspaceGanttCharts: (input: GanttChartSettings[]) => Promise<RelicResult<WorkspaceGanttChart[]>>;
   generateTitleList: (input: GenerateTitleListInput) => Promise<RelicResult<string>>;
   generateTableOfContents: (input: GenerateTableOfContentsInput) => Promise<RelicResult<string>>;
   getFeatureToggles: () => Promise<RelicResult<FeatureToggles>>;

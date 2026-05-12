@@ -104,6 +104,7 @@ function makeRelicApi(overrides: Partial<typeof window.relic> = {}): typeof wind
     resolveGitConflict: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     getAutoSyncSettings: vi.fn().mockResolvedValue({ ok: true, value: defaultAutoSyncSettings }),
     saveAutoSyncSettings: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
+    saveWorkspaceGanttCharts: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     getFeatureToggles: vi.fn().mockResolvedValue({ ok: true, value: defaultFeatureToggles }),
     saveFeatureToggles: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
     saveGitHubIntegrationSettings: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
@@ -150,7 +151,7 @@ describe("App", () => {
   it("ビュー切り替えナビとメインエリアが表示される", async () => {
     window.relic = makeRelicApi();
 
-    await renderApp();
+    const { container } = await renderApp();
 
     expect(screen.getByRole("navigation")).toBeInTheDocument();
     expect(screen.getByRole("main")).toBeInTheDocument();
@@ -168,7 +169,7 @@ describe("App", () => {
       })
     });
 
-    await renderApp();
+    const { container } = await renderApp();
 
     expect(await screen.findByRole("button", { name: /読書メモ/ })).toBeInTheDocument();
   });
@@ -188,7 +189,7 @@ describe("App", () => {
       })
     });
 
-    await renderApp();
+    const { container } = await renderApp();
 
     fireEvent.click(await screen.findByRole("button", { name: /読書メモ/ }));
 
@@ -242,7 +243,7 @@ describe("App", () => {
       togglePin
     });
 
-    await renderApp();
+    const { container } = await renderApp();
 
     fireEvent.click(await screen.findByRole("button", { name: /読書メモ/ }));
     const tab = (await screen.findByText("読書メモ", { selector: ".pane-tab-name" })).closest(".pane-tab");
@@ -305,7 +306,7 @@ describe("App", () => {
     });
   });
 
-  it("ファイルツリーで開いているノートを再選択するとタブを閉じる", async () => {
+  it("ファイルツリーで開いているノートを再選択するとタブをアクティブにする", async () => {
     window.relic = makeRelicApi({
       getWorkspaceState: vi.fn().mockResolvedValue({
         ok: true,
@@ -329,10 +330,42 @@ describe("App", () => {
     await waitFor(() => {
       expect(useEditorStore.getState().leftPane.activeTabId).not.toBeNull();
     });
+    const openedTabId = useEditorStore.getState().leftPane.activeTabId;
 
     fireEvent.click(fileButton);
-    expect(container.querySelector(".rail-tab-flight--close")).toBeInTheDocument();
+    expect(container.querySelector(".rail-tab-flight--close")).not.toBeInTheDocument();
 
+    await waitFor(() => {
+      expect(useEditorStore.getState().leftPane.activeTabId).toBe(openedTabId);
+    });
+  });
+
+  it("ファイルタブを閉じるとファイル行へ吸い込む表示を出す", async () => {
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [{ name: "読書メモ", path: "読書メモ.md", type: "file" }]
+        }
+      }),
+      readMarkdownFile: vi.fn().mockResolvedValue({
+        ok: true,
+        value: { content: "本文テスト", name: "読書メモ", path: "読書メモ.md" }
+      })
+    });
+
+    const { container } = await renderApp();
+
+    fireEvent.click(await screen.findByRole("button", { name: /読書メモ/ }));
+    const tab = (await screen.findByText("読書メモ", { selector: ".pane-tab-name" })).closest(".pane-tab");
+    expect(tab).toBeInstanceOf(HTMLElement);
+
+    fireEvent.click(within(tab as HTMLElement).getByTitle("タブを閉じる"));
+
+    await waitFor(() => {
+      expect(container.querySelector(".rail-tab-flight--close")).toBeInTheDocument();
+    });
     await waitFor(() => {
       expect(useEditorStore.getState().leftPane.activeTabId).toBeNull();
     });
@@ -374,7 +407,7 @@ describe("App", () => {
     expect(useEditorStore.getState().leftPane.activeTabId).toBeNull();
   });
 
-  it("複数ファイルを開いた後でもファイルツリー再クリックで対象タブを閉じる", async () => {
+  it("複数ファイルを開いた後でもファイルツリー再クリックで対象タブをアクティブにする", async () => {
     window.relic = makeRelicApi({
       getWorkspaceState: vi.fn().mockResolvedValue({
         ok: true,
@@ -409,7 +442,10 @@ describe("App", () => {
 
     fireEvent.click(firstFileButton);
 
-    expect(Object.values(useEditorStore.getState().tabs).some((tab) => tab.kind === "file" && tab.path === "読書メモ.md")).toBe(false);
+    const state = useEditorStore.getState();
+    const firstTabId = Object.values(state.tabs).find((tab) => tab.kind === "file" && tab.path === "読書メモ.md")?.id;
+    expect(firstTabId).toBeTruthy();
+    expect(state.leftPane.activeTabId).toBe(firstTabId);
     expect(Object.values(useEditorStore.getState().tabs).some((tab) => tab.kind === "file" && tab.path === "日記.md")).toBe(true);
   });
 
@@ -514,7 +550,7 @@ describe("App", () => {
       getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
     });
 
-    await renderApp();
+    const { container } = await renderApp();
 
     await screen.findByText("Notes");
 
@@ -560,7 +596,7 @@ describe("App", () => {
       getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
     });
 
-    await renderApp();
+    const { container } = await renderApp();
 
     await screen.findByText("Notes");
 
@@ -591,24 +627,58 @@ describe("App", () => {
     window.relic = makeRelicApi({
       getWorkspaceChronicle: vi.fn().mockResolvedValue({
         ok: true,
+        value: [{
+          entries: [{
+            endLabel: "1333",
+            endValue: 1332,
+            fileName: "鎌倉時代",
+            path: "history/kamakura.md",
+            startLabel: "1185",
+            startValue: 1184
+          }],
+          filePaths: ["history/kamakura.md"],
+          id: "chronicle",
+          name: "年表",
+          source: "chronicle"
+        }]
+      }),
+      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
+    });
+
+    const renderResult = await renderApp();
+
+    await screen.findByText("Notes");
+
+    fireEvent.click(screen.getByRole("button", { name: "年表" }));
+    fireEvent.click(renderResult.container.querySelector(".chronicle-source-toggle-button")!);
+
+    const activeTabId = useEditorStore.getState().leftPane.activeTabId;
+    expect(activeTabId).toBe("gantt-chronicle");
+    expect(useEditorStore.getState().tabs[activeTabId!]).toMatchObject({
+      chartId: "chronicle",
+      kind: "gantt"
+    });
+    expect(screen.getAllByText("鎌倉時代").length).toBeGreaterThan(0);
+    expect(screen.getByText("1185 〜 1333")).toBeInTheDocument();
+  });
+
+  it("旧形式の年表データが返っても年表タブを表示できる", async () => {
+    window.relic = makeRelicApi({
+      getWorkspaceChronicle: vi.fn().mockResolvedValue({
+        ok: true,
         value: [{ endYear: 1333, fileName: "鎌倉時代", path: "history/kamakura.md", startYear: 1185 }]
       }),
       getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
     });
 
-    await renderApp();
+    const { container } = await renderApp();
 
     await screen.findByText("Notes");
 
     fireEvent.click(screen.getByRole("button", { name: "年表" }));
+    fireEvent.click(container.querySelector(".chronicle-source-toggle-button")!);
 
-    const activeTabId = useEditorStore.getState().leftPane.activeTabId;
-    expect(activeTabId).toBe("panel-chronicle");
-    expect(useEditorStore.getState().tabs[activeTabId!]).toMatchObject({
-      kind: "panel",
-      panel: "chronicle"
-    });
-    expect(screen.getByText("鎌倉時代")).toBeInTheDocument();
+    expect(screen.getAllByText("鎌倉時代").length).toBeGreaterThan(0);
     expect(screen.getByText("1185 〜 1333")).toBeInTheDocument();
   });
 
