@@ -1,15 +1,18 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import type { ReactElement } from "react";
 
-import type { WorkspaceGraph, WorkspaceGraphEdge, WorkspaceGraphNode } from "../../shared/ipc";
+import type { WorkspaceGraphEdge, WorkspaceGraphNode } from "../../shared/ipc";
 import { useT } from "../i18n";
+import { useGraphStore, type GraphLinkFilter } from "../store/graphStore";
 
 interface GraphSidebarProps {
-  onOpenFile: (path: string) => void;
   workspaceId: string | null;
 }
 
-type LinkFilter = "all" | "linked" | "unlinked";
+interface GraphPanelProps {
+  onOpenFile: (path: string) => void;
+  workspaceId: string | null;
+}
 
 interface GraphPoint extends WorkspaceGraphNode {
   degree: number;
@@ -30,42 +33,31 @@ const GRAPH_CENTER_X = GRAPH_WIDTH / 2;
 const GRAPH_CENTER_Y = GRAPH_HEIGHT / 2;
 const GRAPH_PADDING = 28;
 
-export function GraphSidebar({ onOpenFile, workspaceId }: GraphSidebarProps): ReactElement {
+export function GraphSidebar({ workspaceId }: GraphSidebarProps): ReactElement {
   const t = useT();
-  const [graph, setGraph] = useState<WorkspaceGraph | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [folderFilter, setFolderFilter] = useState("");
-  const [tagFilter, setTagFilter] = useState("");
-  const [linkFilter, setLinkFilter] = useState<LinkFilter>("all");
-  const [query, setQuery] = useState("");
-  const [minDegree, setMinDegree] = useState(0);
-  const [showLabels, setShowLabels] = useState(true);
-  const [zoom, setZoom] = useState(1);
-  const [selectedPath, setSelectedPath] = useState<string | null>(null);
-
-  const loadGraph = useCallback((): void => {
-    if (!window.relic || !workspaceId) {
-      setGraph(null);
-      return;
-    }
-
-    setIsLoading(true);
-    setError(null);
-    void window.relic.getWorkspaceGraph().then((result) => {
-      setIsLoading(false);
-      if (result.ok) {
-        setGraph(result.value);
-      } else {
-        setGraph(null);
-        setError(result.error.message);
-      }
-    });
-  }, [workspaceId]);
+  const {
+    folderFilter,
+    graph,
+    linkFilter,
+    loadGraph,
+    minDegree,
+    query,
+    resetFilters,
+    setFolderFilter,
+    setLinkFilter,
+    setMinDegree,
+    setQuery,
+    setShowLabels,
+    setTagFilter,
+    setZoom,
+    showLabels,
+    tagFilter,
+    zoom
+  } = useGraphStore();
 
   useEffect(() => {
-    loadGraph();
-  }, [loadGraph]);
+    loadGraph(workspaceId);
+  }, [loadGraph, workspaceId]);
 
   const folders = useMemo(() => {
     if (!graph) return [];
@@ -79,81 +71,11 @@ export function GraphSidebar({ onOpenFile, workspaceId }: GraphSidebarProps): Re
       .sort((a, b) => a.localeCompare(b, "ja"));
   }, [graph]);
 
-  const graphStats = useMemo(() => graph ? buildGraphStats(graph.edges) : new Map<string, NodeStats>(), [graph]);
-
-  const filteredGraph = useMemo<GraphViewModel>(() => {
-    if (!graph) return { edges: [], nodes: [] };
-
-    const normalizedQuery = query.trim().toLocaleLowerCase();
-
-    const nodes = graph.nodes.filter((node) => {
-      const stats = graphStats.get(node.path) ?? emptyNodeStats();
-      const degree = stats.incoming + stats.outgoing;
-
-      if (folderFilter && node.folder !== folderFilter) return false;
-      if (tagFilter && !node.tags.includes(tagFilter)) return false;
-      if (linkFilter === "linked" && degree === 0) return false;
-      if (linkFilter === "unlinked" && degree > 0) return false;
-      if (degree < minDegree) return false;
-      if (
-        normalizedQuery &&
-        !node.name.toLocaleLowerCase().includes(normalizedQuery) &&
-        !node.path.toLocaleLowerCase().includes(normalizedQuery)
-      ) return false;
-      return true;
-    });
-    const nodePaths = new Set(nodes.map((node) => node.path));
-    const edges = graph.edges.filter((edge) => nodePaths.has(edge.sourcePath) && nodePaths.has(edge.targetPath));
-
-    return { edges, nodes };
-  }, [
-    folderFilter,
-    graph,
-    graphStats,
-    linkFilter,
-    minDegree,
-    query,
-    tagFilter
-  ]);
-
-  const points = useMemo(
-    () => layoutGraph(filteredGraph.nodes, filteredGraph.edges, selectedPath),
-    [filteredGraph.edges, filteredGraph.nodes, selectedPath]
-  );
-  const pointByPath = useMemo(() => new Map(points.map((point) => [point.path, point])), [points]);
-  const selectedNode = useMemo(
-    () => filteredGraph.nodes.find((node) => node.path === selectedPath) ?? null,
-    [filteredGraph.nodes, selectedPath]
-  );
-  const selectedLinks = useMemo(() => {
-    if (!selectedNode) return { incoming: [], outgoing: [] };
-    const nodeByPath = new Map(filteredGraph.nodes.map((node) => [node.path, node]));
-
-    return {
-      incoming: filteredGraph.edges
-        .filter((edge) => edge.targetPath === selectedNode.path)
-        .map((edge) => nodeByPath.get(edge.sourcePath))
-        .filter((node): node is WorkspaceGraphNode => !!node),
-      outgoing: filteredGraph.edges
-        .filter((edge) => edge.sourcePath === selectedNode.path)
-        .map((edge) => nodeByPath.get(edge.targetPath))
-        .filter((node): node is WorkspaceGraphNode => !!node)
-    };
-  }, [filteredGraph.edges, filteredGraph.nodes, selectedNode]);
-
-  const resetFilters = (): void => {
-    setFolderFilter("");
-    setTagFilter("");
-    setLinkFilter("all");
-    setQuery("");
-    setMinDegree(0);
-  };
-
   return (
-    <div className="graph-sidebar">
+    <div className="graph-sidebar graph-sidebar--controls">
       <div className="graph-topbar">
         <div className="links-panel-subheading">{t("graph.title")}</div>
-        <button className="graph-icon-button" onClick={loadGraph} title={t("graph.refresh")} type="button">
+        <button className="graph-icon-button" onClick={() => loadGraph(workspaceId, true)} title={t("graph.refresh")} type="button">
           ↻
         </button>
       </div>
@@ -188,7 +110,7 @@ export function GraphSidebar({ onOpenFile, workspaceId }: GraphSidebarProps): Re
         </label>
         <label className="setting-row">
           <span>{t("graph.links")}</span>
-          <select onChange={(event) => setLinkFilter(event.target.value as LinkFilter)} value={linkFilter}>
+          <select onChange={(event) => setLinkFilter(event.target.value as GraphLinkFilter)} value={linkFilter}>
             <option value="all">{t("graph.linksAll")}</option>
             <option value="linked">{t("graph.linksLinked")}</option>
             <option value="unlinked">{t("graph.linksUnlinked")}</option>
@@ -227,7 +149,86 @@ export function GraphSidebar({ onOpenFile, workspaceId }: GraphSidebarProps): Re
           {t("graph.reset")}
         </button>
       </div>
+    </div>
+  );
+}
 
+export function GraphPanel({ onOpenFile, workspaceId }: GraphPanelProps): ReactElement {
+  const t = useT();
+  const {
+    error,
+    folderFilter,
+    graph,
+    isLoading,
+    linkFilter,
+    loadGraph,
+    minDegree,
+    query,
+    selectedPath,
+    setSelectedPath,
+    showLabels,
+    tagFilter,
+    zoom
+  } = useGraphStore();
+
+  useEffect(() => {
+    loadGraph(workspaceId);
+  }, [loadGraph, workspaceId]);
+
+  const graphStats = useMemo(() => graph ? buildGraphStats(graph.edges) : new Map<string, NodeStats>(), [graph]);
+  const filteredGraph = useMemo<GraphViewModel>(() => {
+    if (!graph) return { edges: [], nodes: [] };
+
+    const normalizedQuery = query.trim().toLocaleLowerCase();
+    const nodes = graph.nodes.filter((node) => {
+      const stats = graphStats.get(node.path) ?? emptyNodeStats();
+      const degree = stats.incoming + stats.outgoing;
+
+      if (folderFilter && node.folder !== folderFilter) return false;
+      if (tagFilter && !node.tags.includes(tagFilter)) return false;
+      if (linkFilter === "linked" && degree === 0) return false;
+      if (linkFilter === "unlinked" && degree > 0) return false;
+      if (degree < minDegree) return false;
+      if (
+        normalizedQuery &&
+        !node.name.toLocaleLowerCase().includes(normalizedQuery) &&
+        !node.path.toLocaleLowerCase().includes(normalizedQuery)
+      ) return false;
+      return true;
+    });
+    const nodePaths = new Set(nodes.map((node) => node.path));
+    const edges = graph.edges.filter((edge) => nodePaths.has(edge.sourcePath) && nodePaths.has(edge.targetPath));
+
+    return { edges, nodes };
+  }, [folderFilter, graph, graphStats, linkFilter, minDegree, query, tagFilter]);
+
+  const points = useMemo(
+    () => layoutGraph(filteredGraph.nodes, filteredGraph.edges, selectedPath),
+    [filteredGraph.edges, filteredGraph.nodes, selectedPath]
+  );
+  const pointByPath = useMemo(() => new Map(points.map((point) => [point.path, point])), [points]);
+  const selectedNode = useMemo(
+    () => filteredGraph.nodes.find((node) => node.path === selectedPath) ?? null,
+    [filteredGraph.nodes, selectedPath]
+  );
+  const selectedLinks = useMemo(() => {
+    if (!selectedNode) return { incoming: [], outgoing: [] };
+    const nodeByPath = new Map(filteredGraph.nodes.map((node) => [node.path, node]));
+
+    return {
+      incoming: filteredGraph.edges
+        .filter((edge) => edge.targetPath === selectedNode.path)
+        .map((edge) => nodeByPath.get(edge.sourcePath))
+        .filter((node): node is WorkspaceGraphNode => !!node),
+      outgoing: filteredGraph.edges
+        .filter((edge) => edge.sourcePath === selectedNode.path)
+        .map((edge) => nodeByPath.get(edge.targetPath))
+        .filter((node): node is WorkspaceGraphNode => !!node)
+    };
+  }, [filteredGraph.edges, filteredGraph.nodes, selectedNode]);
+
+  return (
+    <div className="graph-panel">
       <div className="graph-canvas" aria-label={t("graph.title")}>
         {isLoading ? (
           <div className="frontmatter-field-empty">{t("common.loading")}</div>
@@ -282,10 +283,7 @@ export function GraphSidebar({ onOpenFile, workspaceId }: GraphSidebarProps): Re
                       tabIndex={0}
                     >
                       <circle
-                        className={[
-                          "graph-node",
-                          isSelected ? "graph-node--selected" : ""
-                        ].filter(Boolean).join(" ")}
+                        className={["graph-node", isSelected ? "graph-node--selected" : ""].filter(Boolean).join(" ")}
                         cx={point.x}
                         cy={point.y}
                         r={radius}

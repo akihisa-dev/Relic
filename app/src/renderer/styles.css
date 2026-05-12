@@ -3917,6 +3917,20 @@ button:not(:disabled):active {
   min-width: 0;
 }
 
+.graph-sidebar--controls {
+  align-content: start;
+  grid-template-rows: auto auto;
+}
+
+.graph-panel {
+  display: grid;
+  gap: 12px;
+  grid-template-rows: minmax(260px, 1fr) auto minmax(120px, auto);
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+}
+
 .graph-topbar {
   align-items: center;
   display: flex;

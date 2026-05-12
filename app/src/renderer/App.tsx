@@ -15,7 +15,7 @@ import { ChronicleSidebar, GanttChartView } from "./components/ChronicleSidebar"
 import { FilesSidebar } from "./components/FilesSidebar";
 import { FrontmatterSidebar } from "./components/FrontmatterSidebar";
 import { GitSidebar } from "./components/GitSidebar";
-import { GraphSidebar } from "./components/GraphSidebar";
+import { GraphPanel, GraphSidebar } from "./components/GraphSidebar";
 import { PaneView } from "./components/PaneView";
 import { QuickSwitcher } from "./components/QuickSwitcher";
 import { SearchSidebar } from "./components/SearchSidebar";
@@ -1295,10 +1295,10 @@ export function App(): ReactElement {
     return true;
   }), [featureToggles.frontmatter, featureToggles.git, featureToggles.tools, sidebarViews]);
   const sidebarRailViews = enabledRailViews.filter((view) =>
-    view.id === "files" || view.id === "search" || view.id === "chronicle"
+    view.id === "files" || view.id === "search" || view.id === "graph" || view.id === "chronicle"
   );
   const panelRailViews = enabledRailViews.filter((view) =>
-    view.id !== "files" && view.id !== "search" && view.id !== "chronicle"
+    view.id !== "files" && view.id !== "search" && view.id !== "graph" && view.id !== "chronicle"
   );
 
   useEffect(() => {
@@ -1306,12 +1306,14 @@ export function App(): ReactElement {
       activeSidebarView !== "git" &&
       activeSidebarView !== "tools" &&
       activeSidebarView !== "frontmatter" &&
-      activeSidebarView !== "settings"
+      activeSidebarView !== "settings" &&
+      activeSidebarView !== "graph"
     ) {
       return;
     }
 
     openPanelInPane(focusedPane, activeSidebarView, panelLabels[activeSidebarView]);
+    if (activeSidebarView === "graph") return;
     setSidebarView("files");
   }, [activeSidebarView, focusedPane, openPanelInPane, panelLabels, setSidebarView]);
 
@@ -1432,7 +1434,7 @@ export function App(): ReactElement {
 
     if (panel === "graph") {
       return (
-        <GraphSidebar
+        <GraphPanel
           onOpenFile={handleOpenFile}
           workspaceId={workspaceState?.activeWorkspace?.id ?? null}
         />
@@ -1598,6 +1600,10 @@ export function App(): ReactElement {
                 activeChartId={activeGanttChartIdInFocusedPane}
                 charts={ganttCharts}
                 onOpenChart={handleOpenGanttChart}
+              />
+            ) : activeSidebarView === "graph" ? (
+              <GraphSidebar
+                workspaceId={workspaceState?.activeWorkspace?.id ?? null}
               />
             ) : (
               <SearchSidebar

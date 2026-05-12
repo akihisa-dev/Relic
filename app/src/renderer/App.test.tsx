@@ -4,6 +4,7 @@ import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { defaultAutoSyncSettings, defaultEditorSettings, defaultFeatureToggles, defaultGitHubIntegrationSettings, type GitHubAuthStatus } from "../shared/ipc";
 import { App } from "./App";
 import { useEditorStore } from "./store/editorStore";
+import { useGraphStore } from "./store/graphStore";
 import { useUiStore } from "./store/uiStore";
 
 function makeRelicApi(overrides: Partial<typeof window.relic> = {}): typeof window.relic {
@@ -145,6 +146,7 @@ describe("App", () => {
   afterEach(() => {
     vi.clearAllMocks();
     useEditorStore.setState({ tabs: {}, leftPane: { activeTabId: null, history: [], tabIds: [] }, rightPane: { activeTabId: null, history: [], tabIds: [] }, isSplit: false, focusedPane: "left" });
+    useGraphStore.setState({ error: null, folderFilter: "", graph: null, isLoading: false, linkFilter: "all", loadedWorkspaceId: null, minDegree: 0, query: "", selectedPath: null, showLabels: true, tagFilter: "", zoom: 1 });
     useUiStore.setState({ activeSidebarView: "files", isRightPanelOpen: true, isSidebarOpen: true, isTypewriterMode: false, rightPanelView: "outline" });
   });
 
@@ -193,10 +195,12 @@ describe("App", () => {
       })
     });
 
-    await renderApp();
+    const { container } = await renderApp();
     fireEvent.click(await screen.findByRole("button", { name: "グラフ" }));
 
     expect(getWorkspaceGraph).toHaveBeenCalled();
+    expect(await screen.findByText("グラフ", { selector: ".pane-tab-name" })).toBeInTheDocument();
+    expect(container.querySelector(".sidebar-view-content--graph")).toContainElement(screen.getByPlaceholderText("ファイル名・パス"));
     expect(await screen.findByText("2 ノード / 1 リンク")).toBeInTheDocument();
 
     fireEvent.change(screen.getByPlaceholderText("ファイル名・パス"), { target: { value: "A" } });
