@@ -524,7 +524,7 @@ button:not(:disabled):active {
   display: grid;
   font-size: 13px;
   gap: 6px;
-  grid-template-columns: 16px minmax(0, 1fr);
+  grid-template-columns: 24px minmax(0, 1fr);
   min-height: 28px;
   padding: 0 8px;
   text-align: left;
@@ -662,18 +662,56 @@ button:not(:disabled):active {
 }
 
 .file-tree-icon {
+  align-items: center;
   color: var(--text-3);
+  display: inline-flex;
   font-size: 10px;
+  gap: 2px;
+  justify-content: center;
+  min-width: 24px;
   text-align: center;
   transition: color 140ms ease, transform 160ms cubic-bezier(.18, 1.35, .28, 1);
 }
 
 .file-tree-icon--folder {
-  transform: rotate(0deg);
+  transform: none;
 }
 
-.file-tree-icon--expanded {
+.file-tree-icon--expanded .file-tree-folder-chevron {
   transform: rotate(90deg);
+}
+
+.file-tree-folder-chevron {
+  display: inline-block;
+  font-size: 9px;
+  transition: transform 160ms cubic-bezier(.18, 1.35, .28, 1);
+}
+
+.file-tree-folder-icon {
+  border: 1.5px solid currentColor;
+  border-radius: 2px;
+  display: inline-block;
+  height: 10px;
+  position: relative;
+  width: 12px;
+}
+
+.file-tree-folder-icon::before {
+  background: var(--surface);
+  border: 1.5px solid currentColor;
+  border-bottom: 0;
+  border-radius: 2px 2px 0 0;
+  content: "";
+  height: 4px;
+  left: -1.5px;
+  position: absolute;
+  top: -5px;
+  width: 7px;
+}
+
+.file-tree-file-dot {
+  font-size: 12px;
+  line-height: 1;
 }
 
 .file-tree-name {

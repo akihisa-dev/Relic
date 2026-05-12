@@ -5,6 +5,14 @@ import { createPortal } from "react-dom";
 import type { WorkspaceTreeNode } from "../../shared/ipc";
 import { useT } from "../i18n";
 
+type ExpansionAction = "expand" | "collapse";
+
+export interface FileTreeExpansionRequest {
+  action: ExpansionAction;
+  id: number;
+  scopePath?: string;
+}
+
 export function findNodeByPath(nodes: WorkspaceTreeNode[], targetPath: string): WorkspaceTreeNode | null {
   for (const node of nodes) {
     if (node.path === targetPath) return node;
@@ -98,7 +106,7 @@ function moveItemsToDestination(
 function contextMenuPosition(x: number, y: number): { x: number; y: number } {
   const margin = 8;
   const estimatedWidth = 220;
-  const estimatedHeight = 340;
+  const estimatedHeight = 460;
   const maxX = Math.max(margin, window.innerWidth - estimatedWidth - margin);
   const maxY = Math.max(margin, window.innerHeight - estimatedHeight - margin);
 
@@ -108,8 +116,15 @@ function contextMenuPosition(x: number, y: number): { x: number; y: number } {
   };
 }
 
+function expansionRequestAppliesTo(path: string, request?: FileTreeExpansionRequest): boolean {
+  if (!request) return false;
+  if (!request.scopePath) return true;
+  return path === request.scopePath || path.startsWith(`${request.scopePath}/`);
+}
+
 export interface FileTreeProps {
   destinationFolder?: string;
+  expansionRequest?: FileTreeExpansionRequest;
   isRoot?: boolean;
   motionPaths?: Set<string>;
   nodes: WorkspaceTreeNode[];
@@ -123,6 +138,7 @@ export interface FileTreeProps {
   onMoveItems?: (items: Array<{ path: string; type: WorkspaceTreeNode["type"] }>, destFolder: string) => void;
   onOpenFile: (path: string, event?: React.MouseEvent<HTMLButtonElement>) => void;
   onOpenInOtherPane?: (path: string) => void;
+  onRequestExpansion?: (action: ExpansionAction, scopePath?: string) => void;
   openFilePaths?: Set<string>;
   onRevealItem?: (path: string) => void;
   onRenameItem?: (path: string, type: WorkspaceTreeNode["type"], newName: string) => void;
@@ -135,6 +151,7 @@ export interface FileTreeProps {
 }
 
 export function FileTreeItem({
+  expansionRequest,
   isAppearing,
   isPinned,
   node,
@@ -148,6 +165,7 @@ export function FileTreeItem({
   onMoveItems,
   onOpenFile,
   onOpenInOtherPane,
+  onRequestExpansion,
   openFilePaths,
   onRevealItem,
   onRenameItem,
@@ -158,6 +176,7 @@ export function FileTreeItem({
   selectedItems = [],
   selectedPaths = new Set<string>()
 }: {
+  expansionRequest?: FileTreeExpansionRequest;
   isAppearing?: boolean;
   isPinned?: boolean;
   node: WorkspaceTreeNode;
@@ -171,6 +190,7 @@ export function FileTreeItem({
   onMoveItems?: (items: Array<{ path: string; type: WorkspaceTreeNode["type"] }>, destFolder: string) => void;
   onOpenFile: (path: string, event?: React.MouseEvent<HTMLButtonElement>) => void;
   onOpenInOtherPane?: (path: string) => void;
+  onRequestExpansion?: (action: ExpansionAction, scopePath?: string) => void;
   openFilePaths?: Set<string>;
   onRevealItem?: (path: string) => void;
   onRenameItem?: (path: string, type: WorkspaceTreeNode["type"], newName: string) => void;
@@ -231,6 +251,11 @@ export function FileTreeItem({
       if (removeMotionTimerRef.current) window.clearTimeout(removeMotionTimerRef.current);
     };
   }, []);
+
+  useEffect(() => {
+    if (!isFolder || !expansionRequestAppliesTo(node.path, expansionRequest)) return;
+    setIsExpanded(expansionRequest?.action === "expand");
+  }, [expansionRequest, isFolder, node.path]);
 
   const startRename = (): void => {
     isCommittingRenameRef.current = false;
@@ -359,7 +384,14 @@ export function FileTreeItem({
           type="button"
         >
           <span className={`file-tree-icon${isFolder ? " file-tree-icon--folder" : ""}${isFolder && isExpanded ? " file-tree-icon--expanded" : ""}`}>
-            {node.type === "folder" ? "▶" : "·"}
+            {node.type === "folder" ? (
+              <>
+                <span aria-hidden="true" className="file-tree-folder-chevron">▶</span>
+                <span aria-hidden="true" className="file-tree-folder-icon" />
+              </>
+            ) : (
+              <span className="file-tree-file-dot">·</span>
+            )}
           </span>
           {isRenaming ? (
             <input
@@ -426,6 +458,55 @@ export function FileTreeItem({
                 ) : null}
                 {node.type === "folder" && (onCreateFileInFolder || onCreateFolderInFolder) ? (
                   <div className="tab-context-menu-separator" />
+                ) : null}
+                {node.type === "folder" && onRequestExpansion ? (
+                  <>
+                    <button
+                      className="tab-context-menu-item"
+                      onClick={() => {
+                        setContextMenu(null);
+                        onRequestExpansion("expand", node.path);
+                      }}
+                      role="menuitem"
+                      type="button"
+                    >
+                      {t("files.expandFolder")}
+                    </button>
+                    <button
+                      className="tab-context-menu-item"
+                      onClick={() => {
+                        setContextMenu(null);
+                        onRequestExpansion("collapse", node.path);
+                      }}
+                      role="menuitem"
+                      type="button"
+                    >
+                      {t("files.collapseFolder")}
+                    </button>
+                    <button
+                      className="tab-context-menu-item"
+                      onClick={() => {
+                        setContextMenu(null);
+                        onRequestExpansion("expand");
+                      }}
+                      role="menuitem"
+                      type="button"
+                    >
+                      {t("files.expandAllFolders")}
+                    </button>
+                    <button
+                      className="tab-context-menu-item"
+                      onClick={() => {
+                        setContextMenu(null);
+                        onRequestExpansion("collapse");
+                      }}
+                      role="menuitem"
+                      type="button"
+                    >
+                      {t("files.collapseAllFolders")}
+                    </button>
+                    <div className="tab-context-menu-separator" />
+                  </>
                 ) : null}
                 <button className="tab-context-menu-item" onClick={openNode} role="menuitem" type="button">
                   {t("files.open")}
@@ -523,6 +604,7 @@ export function FileTreeItem({
         <FileTree
           animation="expand"
           destinationFolder={node.path}
+          expansionRequest={expansionRequest}
           motionPaths={isAppearing ? new Set([node.path, ...node.children.map((child) => child.path)]) : undefined}
           nodes={node.children}
           onDeleteItem={onDeleteItem}
@@ -535,6 +617,7 @@ export function FileTreeItem({
           onMoveItems={onMoveItems}
           onOpenFile={onOpenFile}
           onOpenInOtherPane={onOpenInOtherPane}
+          onRequestExpansion={onRequestExpansion}
           openFilePaths={openFilePaths}
           onRevealItem={onRevealItem}
           onRenameItem={onRenameItem}
@@ -553,6 +636,7 @@ export function FileTreeItem({
 export function FileTree({
   animation,
   destinationFolder = "",
+  expansionRequest,
   isRoot = false,
   motionPaths,
   nodes,
@@ -566,6 +650,7 @@ export function FileTree({
   onMoveItems,
   onOpenFile,
   onOpenInOtherPane,
+  onRequestExpansion,
   openFilePaths,
   onRevealItem,
   onRenameItem,
@@ -625,6 +710,7 @@ export function FileTree({
       {nodes.map((node) => (
         <FileTreeItem
           isAppearing={activeAppearingPaths.has(node.path)}
+          expansionRequest={expansionRequest}
           isPinned={pinnedPaths?.has(node.path)}
           key={node.path}
           node={node}
@@ -638,6 +724,7 @@ export function FileTree({
           onMoveItems={onMoveItems}
           onOpenFile={onOpenFile}
           onOpenInOtherPane={onOpenInOtherPane}
+          onRequestExpansion={onRequestExpansion}
           openFilePaths={openFilePaths}
           onRevealItem={onRevealItem}
           onRenameItem={onRenameItem}
