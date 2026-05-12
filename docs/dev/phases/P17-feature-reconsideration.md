@@ -216,6 +216,18 @@ Relicを「書く道具」として使い続けやすくするために、機能
 - [x] `pnpm test -- chronicle.test.ts SettingsSidebar.test.tsx Editor.test.tsx App.test.tsx` を通す（全33ファイル / 320テスト）
 - [ ] 実アプリで目視確認する
 
+### Git機能のブランチ・タグ削減 実装チェックリスト
+
+- 方向性: Git機能をスリムにし、ユーザーが触る機能からブランチ管理とGitタグ管理を外す
+- 実施: Git画面からブランチ作成・切り替え・未コミット時の切り替え確認・Gitタグ作成/削除/送信を削除した
+- 実施: コマンドパレットからブランチ切り替えコマンドを削除した
+- 実施: renderer / preload / IPC の公開APIからブランチ管理とGitタグ管理の入口を削除した
+- 実施: Git内部公開口からブランチ管理・Gitタグ管理を外し、専用実装ファイルと入力検証を削除した
+- 実施: Git機能の自動テストからブランチ管理・Gitタグ管理の操作テストを削除した
+- 確認: `pnpm exec tsc --noEmit` 通過
+- 確認: `pnpm test -- --run App.test.tsx git.test.ts gitValidation.test.ts ToolsSidebar.test.tsx` 通過（全33ファイル / 311テスト）
+- 残り: 実アプリでGit画面にブランチ管理・Gitタグ管理が表示されないことを目視確認する
+
 ---
 
 ## 最初に読む

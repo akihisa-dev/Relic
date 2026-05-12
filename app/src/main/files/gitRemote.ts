@@ -129,7 +129,7 @@ export async function ensureRemoteOperationReady(
   }
 
   if (!status.value.currentBranch) {
-    return fail("GIT_BRANCH_NOT_SELECTED", "送受信するブランチを選択してください。");
+    return fail("GIT_SYNC_TARGET_NOT_FOUND", "送受信する履歴を確認できませんでした。");
   }
 
   const remotes = await readGitRemotes(workspacePath);

@@ -1,7 +1,6 @@
 import type { ReactElement } from "react";
 
 import type {
-  GitBranchSummary,
   GitCommitDiff,
   GitCommitSummary,
   GitConflict,
@@ -9,7 +8,6 @@ import type {
   GitRemoteSummary,
   GitStatus,
   GitSyncPreview,
-  GitTagSummary,
   GitWorkingChange
 } from "../../shared/ipc";
 import { useT } from "../i18n";
@@ -18,36 +16,25 @@ export interface GitSidebarProps {
   gitStatus: GitStatus | null;
   gitHubAuthStatus: GitHubAuthStatus | null;
   gitRemotes: GitRemoteSummary[];
-  gitBranches: GitBranchSummary[];
   gitCommitHistory: GitCommitSummary[];
-  gitTags: GitTagSummary[];
   gitWorkingChanges: GitWorkingChange[];
   selectedGitCommitHash: string | null;
   selectedGitCommitDiff: GitCommitDiff | null;
-  newGitBranchName: string;
-  newGitTagName: string;
-  newGitTagMessage: string;
   gitRemoteUrl: string;
   gitSyncMessage: string | null;
   gitErrorMessage: string | null;
   gitRetryAction: (() => void) | null;
-  pendingGitBranchSwitch: string | null;
   gitCommitMessage: string;
   gitSyncPreview: GitSyncPreview | null;
   gitSyncStep: "push-preview" | "pull-preview" | "pull-fetching" | null;
   gitConflicts: GitConflict[];
   gitCloneUrl: string;
-  isCreatingGitBranch: boolean;
   isCreatingGitCommit: boolean;
-  isCreatingGitTag: boolean;
   isConnectingGitHub: boolean;
   isConnectingGitRemote: boolean;
-  isDeletingGitTag: boolean;
   isDisconnectingGitHub: boolean;
   isPullingGitBranch: boolean;
   isPushingGitBranch: boolean;
-  pushingGitTagName: string | null;
-  isSwitchingGitBranch: boolean;
   isCloningGitHub: boolean;
   isResolvingConflict: boolean;
   hasWorkspace: boolean;
@@ -60,21 +47,11 @@ export interface GitSidebarProps {
   onPullGitBranch: () => void;
   onConfirmPush: () => void;
   onConfirmPull: () => void;
-  onCreateGitBranch: () => void;
-  onSwitchGitBranch: (name: string, allowDirty?: boolean) => void;
-  onCommitAndSwitchGitBranch: () => void;
   onCreateGitCommit: () => void;
-  onCreateGitTag: () => void;
-  onDeleteGitTag: (name: string) => void;
-  onPushGitTag: (name: string) => void;
   onResolveConflict: (path: string, resolution: "ours" | "theirs") => void;
   onSelectCommitHash: (hash: string | null) => void;
-  onSetNewGitBranchName: (v: string) => void;
-  onSetNewGitTagName: (v: string) => void;
-  onSetNewGitTagMessage: (v: string) => void;
   onSetGitRemoteUrl: (v: string) => void;
   onSetGitSyncStep: (step: "push-preview" | "pull-preview" | "pull-fetching" | null) => void;
-  onSetPendingGitBranchSwitch: (branch: string | null) => void;
   onSetGitCommitMessage: (v: string) => void;
   onSetGitCloneUrl: (v: string) => void;
 }
@@ -83,36 +60,25 @@ export function GitSidebar({
   gitStatus,
   gitHubAuthStatus,
   gitRemotes,
-  gitBranches,
   gitCommitHistory,
-  gitTags,
   gitWorkingChanges,
   selectedGitCommitHash,
   selectedGitCommitDiff,
-  newGitBranchName,
-  newGitTagName,
-  newGitTagMessage,
   gitRemoteUrl,
   gitSyncMessage,
   gitErrorMessage,
   gitRetryAction,
-  pendingGitBranchSwitch,
   gitCommitMessage,
   gitSyncPreview,
   gitSyncStep,
   gitConflicts,
   gitCloneUrl,
-  isCreatingGitBranch,
   isCreatingGitCommit,
-  isCreatingGitTag,
   isConnectingGitHub,
   isConnectingGitRemote,
-  isDeletingGitTag,
   isDisconnectingGitHub,
   isPullingGitBranch,
   isPushingGitBranch,
-  pushingGitTagName,
-  isSwitchingGitBranch,
   isCloningGitHub,
   isResolvingConflict,
   hasWorkspace,
@@ -125,37 +91,22 @@ export function GitSidebar({
   onPullGitBranch,
   onConfirmPush,
   onConfirmPull,
-  onCreateGitBranch,
-  onSwitchGitBranch,
-  onCommitAndSwitchGitBranch,
   onCreateGitCommit,
-  onCreateGitTag,
-  onDeleteGitTag,
-  onPushGitTag,
   onResolveConflict,
   onSelectCommitHash,
-  onSetNewGitBranchName,
-  onSetNewGitTagName,
-  onSetNewGitTagMessage,
   onSetGitRemoteUrl,
   onSetGitSyncStep,
-  onSetPendingGitBranchSwitch,
   onSetGitCommitMessage,
   onSetGitCloneUrl
 }: GitSidebarProps): ReactElement {
   const t = useT();
   const isGitBusy =
-    isCreatingGitBranch ||
     isCreatingGitCommit ||
-    isCreatingGitTag ||
     isConnectingGitHub ||
     isConnectingGitRemote ||
-    isDeletingGitTag ||
     isDisconnectingGitHub ||
     isPullingGitBranch ||
     isPushingGitBranch ||
-    pushingGitTagName !== null ||
-    isSwitchingGitBranch ||
     isCloningGitHub ||
     isResolvingConflict ||
     gitSyncStep === "pull-fetching";
@@ -196,7 +147,7 @@ export function GitSidebar({
               {t("git.cloneHint")}
             </div>
             <form
-              className="git-branch-form"
+              className="git-form"
               onSubmit={(e) => { e.preventDefault(); onCloneGitHubRepository(); }}
             >
               <input
@@ -281,7 +232,7 @@ export function GitSidebar({
       <div className="search-block">
         <div className="links-panel-subheading">{t("git.remote")}</div>
         <form
-          className="git-branch-form"
+          className="git-form"
           onSubmit={(event) => {
             event.preventDefault();
             onConnectGitRemote();
@@ -325,7 +276,7 @@ export function GitSidebar({
           <div className="git-sync-preview">
             <div className="setting-row">
               <span>{t("git.destination")}</span>
-              <span>{gitSyncPreview.upstream}</span>
+              <span>{gitSyncPreview.remoteName}</span>
             </div>
             <div className="search-result-line">{gitSyncPreview.remoteUrl}</div>
             <div className="links-panel-subheading">{t("git.outgoingChanges")}</div>
@@ -358,7 +309,7 @@ export function GitSidebar({
                 </ul>
               </>
             ) : null}
-            <div className="git-branch-warning-actions">
+            <div className="git-action-row">
               <button
                 className="primary-button"
                 disabled={isPushingGitBranch}
@@ -380,7 +331,7 @@ export function GitSidebar({
           <div className="git-sync-preview">
             <div className="setting-row">
               <span>{t("git.source")}</span>
-              <span>{gitSyncPreview.upstream}</span>
+              <span>{gitSyncPreview.remoteName}</span>
             </div>
             <div className="search-result-line">{gitSyncPreview.remoteUrl}</div>
             <div className="links-panel-subheading">{t("git.incomingCommits")}</div>
@@ -413,7 +364,7 @@ export function GitSidebar({
                 </ul>
               </>
             ) : null}
-            <div className="git-branch-warning-actions">
+            <div className="git-action-row">
               <button
                 className="primary-button"
                 disabled={isPullingGitBranch || gitSyncPreview.outgoingChanges.length > 0}
@@ -432,7 +383,7 @@ export function GitSidebar({
             </div>
           </div>
         ) : (
-          <div className="git-branch-warning-actions">
+          <div className="git-action-row">
             <button
               className="replace-btn"
               disabled={isPullingGitBranch || !gitHubAuthStatus?.connected || gitRemotes.length === 0}
@@ -475,7 +426,7 @@ export function GitSidebar({
                 <div className="search-result-button">
                   <span className="search-result-title">{conflict.path}</span>
                 </div>
-                <div className="git-branch-warning-actions">
+                <div className="git-action-row">
                   <button
                     className="replace-btn"
                     disabled={isResolvingConflict}
@@ -504,96 +455,6 @@ export function GitSidebar({
           <span>{t("git.status")}</span>
           <span>{t("git.initialized")}</span>
         </div>
-        <div className="setting-row">
-          <span>{t("git.branch")}</span>
-          <span>{gitStatus.currentBranch ?? "(detached)"}</span>
-        </div>
-        <div className="setting-row">
-          <span>{t("git.upstream")}</span>
-          <span>{gitBranches.find((branch) => branch.isCurrent)?.upstream ?? t("common.none")}</span>
-        </div>
-      </div>
-      <div className="search-block">
-        <div className="links-panel-subheading">{t("git.branches")}</div>
-        <form
-          className="git-branch-form"
-          onSubmit={(event) => {
-            event.preventDefault();
-            onCreateGitBranch();
-          }}
-        >
-          <input
-            aria-label={t("git.branchName")}
-            className="text-input"
-            onChange={(event) => onSetNewGitBranchName(event.target.value)}
-            placeholder="feature/..."
-            value={newGitBranchName}
-          />
-          <button
-            className="primary-button"
-            disabled={isCreatingGitBranch}
-            type="submit"
-          >
-            {isCreatingGitBranch ? t("git.branchCreating") : t("git.branchCreate")}
-          </button>
-        </form>
-        {gitBranches.length > 0 ? (
-          <ul className="search-results git-branch-list">
-            {gitBranches.map((branch) => (
-              <li className="search-result-item" key={branch.name}>
-                <button
-                  className="search-result-button"
-                  disabled={branch.isCurrent || isSwitchingGitBranch}
-                  onClick={() => onSwitchGitBranch(branch.name)}
-                  type="button"
-                >
-                  <span className="search-result-title">
-                    {branch.name}
-                    {branch.isCurrent ? " (current)" : ""}
-                  </span>
-                  <span className="search-result-line">
-                    {branch.upstream ?? (branch.isCurrent ? t("git.currentBranch") : t("git.switch"))}
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <div className="empty-note">{t("git.noBranches")}</div>
-        )}
-        {pendingGitBranchSwitch ? (
-          <div className="git-branch-warning">
-            <div className="error-note">
-              Uncommitted changes exist. Choose how to switch to `{pendingGitBranchSwitch}`.
-            </div>
-            <div className="git-branch-warning-actions">
-              <button
-                className="primary-button"
-                disabled={isCreatingGitCommit || isSwitchingGitBranch}
-                onClick={onCommitAndSwitchGitBranch}
-                type="button"
-              >
-                {t("git.switchCommit")}
-              </button>
-              <button
-                className="replace-btn"
-                disabled={isSwitchingGitBranch}
-                onClick={() => onSwitchGitBranch(pendingGitBranchSwitch, true)}
-                type="button"
-              >
-                {t("git.switchAllowDirty")}
-              </button>
-              <button
-                className="replace-btn"
-                disabled={isCreatingGitCommit || isSwitchingGitBranch}
-                onClick={() => onSetPendingGitBranchSwitch(null)}
-                type="button"
-              >
-                {t("common.cancel")}
-              </button>
-            </div>
-          </div>
-        ) : null}
       </div>
       <div className="search-block">
         <div className="links-panel-subheading">{t("git.commit")}</div>
@@ -651,86 +512,6 @@ export function GitSidebar({
           </ul>
         ) : (
           <div className="empty-note">{t("git.commitHistoryEmpty")}</div>
-        )}
-      </div>
-      <div className="search-block">
-        <div className="links-panel-subheading">{t("git.tags")}</div>
-        <div className="git-tag-target">
-          {selectedGitCommitHash
-            ? t("git.tagTarget", { hash: selectedGitCommitHash.slice(0, 7) })
-            : t("git.selectCommitForTag")}
-        </div>
-        <input
-          aria-label={t("git.tagName")}
-          className="text-input"
-          onChange={(event) => onSetNewGitTagName(event.target.value)}
-          placeholder="v1.0.0"
-          value={newGitTagName}
-        />
-        <input
-          aria-label={t("git.tagMemo")}
-          className="text-input"
-          onChange={(event) => onSetNewGitTagMessage(event.target.value)}
-          placeholder={t("git.tagMemoPlaceholder")}
-          value={newGitTagMessage}
-        />
-        <button
-          className="primary-button"
-          disabled={isCreatingGitTag || !selectedGitCommitHash}
-          onClick={onCreateGitTag}
-          type="button"
-        >
-          {isCreatingGitTag ? t("git.tagCreating") : t("git.tagCreate")}
-        </button>
-        {gitTags.length > 0 ? (
-          <ul className="search-results git-tag-list">
-            {gitTags.map((tag) => (
-              <li className="search-result-item" key={tag.name}>
-                <div className="git-tag-row">
-                  <button
-                    className="search-result-button"
-                    onClick={() => onSelectCommitHash(tag.targetHash)}
-                    type="button"
-                  >
-                    <span className="search-result-title">
-                      {tag.name}
-                      {tag.annotated ? " (annotated)" : ""}
-                    </span>
-                    <span className="search-result-line">
-                      {tag.targetHash.slice(0, 7)} · {new Date(tag.date).toLocaleString("ja-JP")}
-                    </span>
-                    {tag.message ? (
-                      <span className="search-result-line">{tag.message}</span>
-                    ) : tag.targetMessage ? (
-                      <span className="search-result-line">{tag.targetMessage}</span>
-                    ) : null}
-                  </button>
-                  <button
-                    className="replace-btn"
-                    disabled={isDeletingGitTag}
-                    onClick={() => onDeleteGitTag(tag.name)}
-                    type="button"
-                  >
-                    {t("git.tagDelete")}
-                  </button>
-                  <button
-                    className="replace-btn"
-                    disabled={
-                      pushingGitTagName === tag.name ||
-                      !gitHubAuthStatus?.connected ||
-                      gitRemotes.length === 0
-                    }
-                    onClick={() => onPushGitTag(tag.name)}
-                    type="button"
-                  >
-                    {pushingGitTagName === tag.name ? t("git.pushing") : "Push"}
-                  </button>
-                </div>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <div className="empty-note">{t("git.tagsEmpty")}</div>
         )}
       </div>
       <div className="search-block">

@@ -1,6 +1,5 @@
 import { useMemo } from "react";
 
-import type { GitBranchSummary } from "../../shared/ipc";
 import type { Command } from "../components/CommandPalette";
 import type { TranslationKey } from "../i18n";
 
@@ -8,12 +7,10 @@ type Translate = (key: TranslationKey, params?: Record<string, string>) => strin
 
 interface UseCommandPaletteCommandsInput {
   activeFileName: string | null;
-  gitBranches: GitBranchSummary[];
   handleDeleteActiveFile: () => void;
   handleDuplicateActiveFile: () => void;
   handlePullGitBranch: () => void;
   handlePushGitBranch: () => void;
-  handleSwitchGitBranch: (branchName: string) => void;
   setIsCreatingFile: (isCreating: boolean) => void;
   setShowQuickSwitcher: (isShown: boolean) => void;
   setSidebarView: (view: "files" | "search" | "git" | "settings") => void;
@@ -26,12 +23,10 @@ interface UseCommandPaletteCommandsInput {
 
 export function useCommandPaletteCommands({
   activeFileName,
-  gitBranches,
   handleDeleteActiveFile,
   handleDuplicateActiveFile,
   handlePullGitBranch,
   handlePushGitBranch,
-  handleSwitchGitBranch,
   setIsCreatingFile,
   setShowQuickSwitcher,
   setSidebarView,
@@ -100,15 +95,6 @@ export function useCommandPaletteCommands({
         label: t("command.gitPull"),
         action: () => { setSidebarView("git"); handlePullGitBranch(); }
       },
-      ...(gitBranches.length > 1
-        ? gitBranches
-            .filter((branch) => !branch.isCurrent)
-            .map((branch) => ({
-              id: `git-branch-${branch.name}`,
-              label: t("command.branchSwitch", { name: branch.name }),
-              action: () => { setSidebarView("git"); handleSwitchGitBranch(branch.name); }
-            }))
-        : []),
       ...(activeFileName
         ? [
             {
@@ -138,12 +124,10 @@ export function useCommandPaletteCommands({
     ],
     [
       activeFileName,
-      gitBranches,
       handleDeleteActiveFile,
       handleDuplicateActiveFile,
       handlePullGitBranch,
       handlePushGitBranch,
-      handleSwitchGitBranch,
       setIsCreatingFile,
       setShowQuickSwitcher,
       setSidebarView,

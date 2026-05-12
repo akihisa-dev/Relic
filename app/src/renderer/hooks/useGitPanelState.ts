@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 
 import type {
-  GitBranchSummary,
   GitCommitDiff,
   GitCommitSummary,
   GitConflict,
@@ -10,7 +9,6 @@ import type {
   GitRemoteSummary,
   GitStatus,
   GitSyncPreview,
-  GitTagSummary,
   GitWorkingChange,
   WorkspaceState
 } from "../../shared/ipc";
@@ -35,53 +33,27 @@ export function useGitPanelState({
   const [gitStatus, setGitStatus] = useState<GitStatus | null>(null);
   const [gitHubAuthStatus, setGitHubAuthStatus] = useState<GitHubAuthStatus | null>(null);
   const [gitRemotes, setGitRemotes] = useState<GitRemoteSummary[]>([]);
-  const [gitBranches, setGitBranches] = useState<GitBranchSummary[]>([]);
   const [gitCommitHistory, setGitCommitHistory] = useState<GitCommitSummary[]>([]);
-  const [gitTags, setGitTags] = useState<GitTagSummary[]>([]);
   const [gitWorkingChanges, setGitWorkingChanges] = useState<GitWorkingChange[]>([]);
   const [selectedGitCommitHash, setSelectedGitCommitHash] = useState<string | null>(null);
   const [selectedGitCommitDiff, setSelectedGitCommitDiff] = useState<GitCommitDiff | null>(null);
-  const [newGitBranchName, setNewGitBranchName] = useState("");
-  const [newGitTagName, setNewGitTagName] = useState("");
-  const [newGitTagMessage, setNewGitTagMessage] = useState("");
   const [gitRemoteUrl, setGitRemoteUrl] = useState("");
   const [gitSyncMessage, setGitSyncMessage] = useState<string | null>(null);
   const [gitErrorMessage, setGitErrorMessage] = useState<string | null>(null);
   const [gitRetryAction, setGitRetryAction] = useState<(() => void) | null>(null);
-  const [pendingGitBranchSwitch, setPendingGitBranchSwitch] = useState<string | null>(null);
   const [gitCommitMessage, setGitCommitMessage] = useState("");
-  const [isCreatingGitBranch, setIsCreatingGitBranch] = useState(false);
   const [isCreatingGitCommit, setIsCreatingGitCommit] = useState(false);
-  const [isCreatingGitTag, setIsCreatingGitTag] = useState(false);
   const [isConnectingGitHub, setIsConnectingGitHub] = useState(false);
   const [isConnectingGitRemote, setIsConnectingGitRemote] = useState(false);
-  const [isDeletingGitTag, setIsDeletingGitTag] = useState(false);
   const [isDisconnectingGitHub, setIsDisconnectingGitHub] = useState(false);
   const [isPullingGitBranch, setIsPullingGitBranch] = useState(false);
   const [isPushingGitBranch, setIsPushingGitBranch] = useState(false);
-  const [pushingGitTagName, setPushingGitTagName] = useState<string | null>(null);
-  const [isSwitchingGitBranch, setIsSwitchingGitBranch] = useState(false);
   const [gitCloneUrl, setGitCloneUrl] = useState("");
   const [isCloningGitHub, setIsCloningGitHub] = useState(false);
   const [gitSyncPreview, setGitSyncPreview] = useState<GitSyncPreview | null>(null);
   const [gitSyncStep, setGitSyncStep] = useState<GitSyncStep>(null);
   const [gitConflicts, setGitConflicts] = useState<GitConflict[]>([]);
   const [isResolvingConflict, setIsResolvingConflict] = useState(false);
-
-  const applyGitBranches = useCallback((branches: GitBranchSummary[]): void => {
-    setGitBranches(branches);
-
-    const currentBranch = branches.find((branch) => branch.isCurrent)?.name ?? null;
-
-    setGitStatus((current) =>
-      current
-        ? {
-            ...current,
-            currentBranch
-          }
-        : current
-    );
-  }, [gitHubIntegrationSettings.clientId, gitHubIntegrationSettings.scopes]);
 
   const refreshGitWorkingChanges = useCallback((): void => {
     if (!window.relic) return;
@@ -118,32 +90,6 @@ export function useGitPanelState({
     });
   }, [setWorkspaceError]);
 
-  const refreshGitTags = useCallback((): void => {
-    if (!window.relic) return;
-
-    void window.relic.getGitTags().then((result) => {
-      if (result.ok) {
-        setGitTags(result.value);
-      } else {
-        setGitTags([]);
-        setWorkspaceError(result.error.message);
-      }
-    });
-  }, [setWorkspaceError]);
-
-  const refreshGitBranches = useCallback((): void => {
-    if (!window.relic) return;
-
-    void window.relic.getGitBranches().then((result) => {
-      if (result.ok) {
-        applyGitBranches(result.value);
-      } else {
-        setGitBranches([]);
-        setWorkspaceError(result.error.message);
-      }
-    });
-  }, [applyGitBranches, setWorkspaceError]);
-
   const clearGitMessages = useCallback((): void => {
     setGitSyncMessage(null);
     setGitErrorMessage(null);
@@ -164,11 +110,8 @@ export function useGitPanelState({
   useEffect(() => {
     if (!workspaceState?.activeWorkspace || !window.relic) {
       setGitStatus(null);
-      setGitBranches([]);
       setGitCommitHistory([]);
-      setGitTags([]);
       setGitWorkingChanges([]);
-      setPendingGitBranchSwitch(null);
       return;
     }
 
@@ -194,29 +137,15 @@ export function useGitPanelState({
 
   useEffect(() => {
     if (!workspaceState?.activeWorkspace || !window.relic || !gitStatus?.initialized) {
-      setGitBranches([]);
       setGitCommitHistory([]);
       setGitRemotes([]);
-      setGitTags([]);
       setGitWorkingChanges([]);
       setSelectedGitCommitHash(null);
       setSelectedGitCommitDiff(null);
-      setPendingGitBranchSwitch(null);
       return;
     }
 
     let canceled = false;
-
-    void window.relic.getGitBranches().then((result) => {
-      if (canceled) return;
-
-      if (result.ok) {
-        applyGitBranches(result.value);
-      } else {
-        setGitBranches([]);
-        setWorkspaceError(result.error.message);
-      }
-    });
 
     void window.relic.getGitRemotes().then((result) => {
       if (canceled) return;
@@ -243,17 +172,6 @@ export function useGitPanelState({
       }
     });
 
-    void window.relic.getGitTags().then((result) => {
-      if (canceled) return;
-
-      if (result.ok) {
-        setGitTags(result.value);
-      } else {
-        setGitTags([]);
-        setWorkspaceError(result.error.message);
-      }
-    });
-
     void window.relic.getGitWorkingChanges().then((result) => {
       if (canceled) return;
 
@@ -269,7 +187,6 @@ export function useGitPanelState({
       canceled = true;
     };
   }, [
-    applyGitBranches,
     gitStatus?.initialized,
     selectedGitCommitHash,
     setWorkspaceError,
@@ -307,66 +224,14 @@ export function useGitPanelState({
     void window.relic.initializeGitRepository().then((result) => {
       if (result.ok) {
         setGitStatus(result.value);
-        setPendingGitBranchSwitch(null);
         setWorkspaceError(null);
-        refreshGitBranches();
         refreshGitCommitHistory();
-        refreshGitTags();
         refreshGitWorkingChanges();
       } else {
         setWorkspaceError(result.error.message);
       }
     });
-  }, [refreshGitBranches, refreshGitCommitHistory, refreshGitTags, refreshGitWorkingChanges, setWorkspaceError]);
-
-  const handleCreateGitBranch = useCallback((): void => {
-    if (!window.relic) return;
-
-    setIsCreatingGitBranch(true);
-    setWorkspaceError(null);
-
-    void window.relic
-      .createGitBranch({ name: newGitBranchName })
-      .then((result) => {
-        if (result.ok) {
-          applyGitBranches(result.value);
-          setNewGitBranchName("");
-        } else {
-          setWorkspaceError(result.error.message);
-        }
-      })
-      .finally(() => setIsCreatingGitBranch(false));
-  }, [applyGitBranches, newGitBranchName, setWorkspaceError]);
-
-  const handleSwitchGitBranch = useCallback(
-    (name: string, allowDirty = false): void => {
-      if (!window.relic) return;
-
-      setIsSwitchingGitBranch(true);
-      setWorkspaceError(null);
-
-      void window.relic
-        .switchGitBranch({ allowDirty, name })
-        .then((result) => {
-          if (result.ok) {
-            applyGitBranches(result.value);
-            setPendingGitBranchSwitch(null);
-            refreshGitCommitHistory();
-            refreshGitWorkingChanges();
-            return;
-          }
-
-          if (result.error.code === "GIT_BRANCH_SWITCH_DIRTY") {
-            setPendingGitBranchSwitch(name);
-            return;
-          }
-
-          setWorkspaceError(result.error.message);
-        })
-        .finally(() => setIsSwitchingGitBranch(false));
-    },
-    [applyGitBranches, refreshGitCommitHistory, refreshGitWorkingChanges, setWorkspaceError]
-  );
+  }, [refreshGitCommitHistory, refreshGitWorkingChanges, setWorkspaceError]);
 
   const handleCreateGitCommit = useCallback((): void => {
     if (!window.relic) return;
@@ -387,105 +252,10 @@ export function useGitPanelState({
         setGitCommitMessage("");
         setGitCommitHistory((current) => [result.value, ...current]);
         setSelectedGitCommitHash(result.value.hash);
-        setPendingGitBranchSwitch(null);
         refreshGitWorkingChanges();
       })
       .finally(() => setIsCreatingGitCommit(false));
   }, [gitCommitMessage, refreshGitWorkingChanges, setWorkspaceError]);
-
-  const handleCreateGitTag = useCallback((): void => {
-    if (!window.relic) return;
-
-    setIsCreatingGitTag(true);
-    setWorkspaceError(null);
-
-    void window.relic
-      .createGitTag({
-        hash: selectedGitCommitHash ?? undefined,
-        message: newGitTagMessage,
-        name: newGitTagName
-      })
-      .then((result) => {
-        if (!result.ok) {
-          setWorkspaceError(result.error.message);
-          return;
-        }
-
-        setGitTags(result.value);
-        setNewGitTagName("");
-        setNewGitTagMessage("");
-      })
-      .finally(() => setIsCreatingGitTag(false));
-  }, [newGitTagMessage, newGitTagName, selectedGitCommitHash, setWorkspaceError]);
-
-  const handleDeleteGitTag = useCallback((name: string): void => {
-    if (!window.relic) return;
-
-    setIsDeletingGitTag(true);
-    setWorkspaceError(null);
-
-    void window.relic
-      .deleteGitTag({ name })
-      .then((result) => {
-        if (!result.ok) {
-          setWorkspaceError(result.error.message);
-          return;
-        }
-
-        setGitTags(result.value);
-      })
-      .finally(() => setIsDeletingGitTag(false));
-  }, [setWorkspaceError]);
-
-  const handleCommitAndSwitchGitBranch = useCallback((): void => {
-    if (!window.relic || !pendingGitBranchSwitch) return;
-
-    setIsCreatingGitCommit(true);
-    setIsSwitchingGitBranch(true);
-    setWorkspaceError(null);
-
-    void window.relic
-      .createGitCommit({
-        message: gitCommitMessage
-      })
-      .then((commitResult) => {
-        if (!commitResult.ok) {
-          setWorkspaceError(commitResult.error.message);
-          return;
-        }
-
-        setGitCommitMessage("");
-        setGitCommitHistory((current) => [commitResult.value, ...current]);
-        setSelectedGitCommitHash(commitResult.value.hash);
-
-        return window.relic!.switchGitBranch({ name: pendingGitBranchSwitch });
-      })
-      .then((switchResult) => {
-        if (!switchResult) {
-          return;
-        }
-
-        if (switchResult.ok) {
-          applyGitBranches(switchResult.value);
-          setPendingGitBranchSwitch(null);
-          refreshGitCommitHistory();
-          refreshGitWorkingChanges();
-        } else {
-          setWorkspaceError(switchResult.error.message);
-        }
-      })
-      .finally(() => {
-        setIsCreatingGitCommit(false);
-        setIsSwitchingGitBranch(false);
-      });
-  }, [
-    applyGitBranches,
-    gitCommitMessage,
-    pendingGitBranchSwitch,
-    refreshGitCommitHistory,
-    refreshGitWorkingChanges,
-    setWorkspaceError
-  ]);
 
   const handleConnectGitHubAccount = useCallback((): void => {
     if (!window.relic) return;
@@ -668,59 +438,29 @@ export function useGitPanelState({
       .finally(() => setIsCloningGitHub(false));
   }, [gitCloneUrl, setWorkspaceState]);
 
-  const handlePushGitTag = useCallback((name: string): void => {
-    if (!window.relic) return;
-
-    setPushingGitTagName(name);
-    clearGitMessages();
-
-    void window.relic
-      .pushGitTag({ name })
-      .then((result) => {
-        if (result.ok) {
-          setGitSyncMessage(result.value.message);
-        } else {
-          setGitErrorMessage(result.error.message);
-          setGitRetryAction(() => () => handlePushGitTag(name));
-        }
-      })
-      .finally(() => setPushingGitTagName(null));
-  }, [clearGitMessages]);
-
   return {
     gitStatus,
     gitHubAuthStatus,
     gitRemotes,
-    gitBranches,
     gitCommitHistory,
-    gitTags,
     gitWorkingChanges,
     selectedGitCommitHash,
     selectedGitCommitDiff,
-    newGitBranchName,
-    newGitTagName,
-    newGitTagMessage,
     gitRemoteUrl,
     gitSyncMessage,
     gitErrorMessage,
     gitRetryAction,
-    pendingGitBranchSwitch,
     gitCommitMessage,
     gitSyncPreview,
     gitSyncStep,
     gitConflicts,
     gitCloneUrl,
-    isCreatingGitBranch,
     isCreatingGitCommit,
-    isCreatingGitTag,
     isConnectingGitHub,
     isConnectingGitRemote,
-    isDeletingGitTag,
     isDisconnectingGitHub,
     isPullingGitBranch,
     isPushingGitBranch,
-    pushingGitTagName,
-    isSwitchingGitBranch,
     isCloningGitHub,
     isResolvingConflict,
     handleInitializeGitRepository,
@@ -732,21 +472,11 @@ export function useGitPanelState({
     handlePullGitBranch: handleShowPullPreview,
     handleConfirmPush,
     handleConfirmPull,
-    handleCreateGitBranch,
-    handleSwitchGitBranch,
-    handleCommitAndSwitchGitBranch,
     handleCreateGitCommit,
-    handleCreateGitTag,
-    handleDeleteGitTag,
-    handlePushGitTag,
     handleResolveConflict,
     setSelectedGitCommitHash,
-    setNewGitBranchName,
-    setNewGitTagName,
-    setNewGitTagMessage,
     setGitRemoteUrl,
     setGitSyncStep,
-    setPendingGitBranchSwitch,
     setGitCommitMessage,
     setGitCloneUrl
   };

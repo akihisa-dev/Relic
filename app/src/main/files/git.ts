@@ -1,5 +1,4 @@
 export { autoCommitAndPush } from "./gitAutoSync";
-export { createGitBranch, readGitBranches, switchGitBranch } from "./gitBranches";
 export { cloneGitHubRepository } from "./gitClone";
 export { createGitCommit } from "./gitCommit";
 export { readGitConflicts, resolveGitConflict } from "./gitConflicts";
@@ -7,6 +6,5 @@ export { readGitCommitDiff, readGitCommitHistory } from "./gitHistory";
 export { initializeGitRepository } from "./gitInit";
 export { connectGitRemote, readGitRemotes } from "./gitRemote";
 export { readGitStatus } from "./gitStatus";
-export { fetchGitRemote, pullGitBranch, pushGitBranch, pushGitTag, readGitSyncPreview } from "./gitSync";
-export { createGitTag, deleteGitTag, readGitTags } from "./gitTags";
+export { fetchGitRemote, pullGitBranch, pushGitBranch, readGitSyncPreview } from "./gitSync";
 export { readGitWorkingChanges } from "./gitWorkingTree";

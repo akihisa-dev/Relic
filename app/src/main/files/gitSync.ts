@@ -6,8 +6,7 @@ import http from "isomorphic-git/http/node";
 import type {
   GitCommitSummary,
   GitRemoteSyncResult,
-  GitSyncPreview,
-  PushGitTagInput
+  GitSyncPreview
 } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { toCommitSummary } from "./gitHistory";
@@ -17,7 +16,7 @@ import {
   pushResultUpdatedRefs
 } from "./gitRemote";
 import { readGitStatus } from "./gitStatus";
-import { normalizeTagName, toGitAuth } from "./gitValidation";
+import { toGitAuth } from "./gitValidation";
 import { readGitWorkingChanges } from "./gitWorkingTree";
 
 export async function pushGitBranch(
@@ -42,7 +41,7 @@ export async function pushGitBranch(
 
     return ok({
       errors: pushResultErrors(result),
-      message: "現在のブランチをGitHubへ送信しました。",
+      message: "GitHubへ送信しました。",
       updatedRefs: pushResultUpdatedRefs(result)
     });
   } catch (error) {
@@ -95,54 +94,13 @@ export async function pullGitBranch(
 
     return ok({
       errors: [],
-      message: "GitHubから現在のブランチを取得しました。",
+      message: "GitHubから取得しました。",
       updatedRefs: [ready.value.currentBranch]
     });
   } catch (error) {
     return fail(
       "GIT_PULL_FAILED",
       "GitHubから取得できませんでした。競合がある場合は手動で確認してください。",
-      error instanceof Error ? error.message : String(error)
-    );
-  }
-}
-
-export async function pushGitTag(
-  workspacePath: string,
-  input: PushGitTagInput
-): Promise<RelicResult<GitRemoteSyncResult>> {
-  try {
-    const tagName = normalizeTagName(input.name);
-
-    if (!tagName.ok) {
-      return tagName;
-    }
-
-    const ready = await ensureRemoteOperationReady(workspacePath);
-
-    if (!ready.ok) {
-      return ready;
-    }
-
-    const result = await git.push({
-      dir: workspacePath,
-      fs,
-      http,
-      onAuth: () => toGitAuth(ready.value.accessToken),
-      ref: `refs/tags/${tagName.value}`,
-      remote: "origin",
-      remoteRef: `refs/tags/${tagName.value}`
-    });
-
-    return ok({
-      errors: pushResultErrors(result),
-      message: `タグ ${tagName.value} をGitHubへ送信しました。`,
-      updatedRefs: pushResultUpdatedRefs(result)
-    });
-  } catch (error) {
-    return fail(
-      "GIT_TAG_PUSH_FAILED",
-      "GitタグをGitHubへ送信できませんでした。",
       error instanceof Error ? error.message : String(error)
     );
   }

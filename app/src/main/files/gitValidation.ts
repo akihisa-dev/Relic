@@ -1,4 +1,4 @@
-import type { CreateGitCommitInput, CreateGitTagInput } from "../../shared/ipc";
+import type { CreateGitCommitInput } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
 
 export interface GitCommitAuthorInput extends CreateGitCommitInput {
@@ -30,42 +30,6 @@ export function validateCommitInput(
     authorName,
     message
   });
-}
-
-export function normalizeBranchName(name: string): RelicResult<string> {
-  const trimmed = name.trim();
-
-  if (trimmed === "") {
-    return fail("GIT_BRANCH_INVALID_INPUT", "ブランチ名を入力してください。");
-  }
-
-  if (trimmed.includes(" ") || trimmed.startsWith(".") || trimmed.endsWith(".") || trimmed.includes("..")) {
-    return fail("GIT_BRANCH_INVALID_INPUT", "ブランチ名の形式が正しくありません。");
-  }
-
-  return ok(trimmed);
-}
-
-export function normalizeTagName(name: string): RelicResult<string> {
-  const trimmed = name.trim();
-
-  if (trimmed === "") {
-    return fail("GIT_TAG_INVALID_INPUT", "タグ名を入力してください。");
-  }
-
-  if (
-    trimmed.includes(" ") ||
-    trimmed.startsWith(".") ||
-    trimmed.endsWith(".") ||
-    trimmed.includes("..") ||
-    trimmed.includes("^") ||
-    trimmed.includes(":") ||
-    trimmed.includes("~")
-  ) {
-    return fail("GIT_TAG_INVALID_INPUT", "タグ名の形式が正しくありません。");
-  }
-
-  return ok(trimmed);
 }
 
 export function normalizeGitHubRemoteUrl(url: string): RelicResult<string> {
@@ -105,40 +69,4 @@ export function toGitAuth(accessToken: string): { password: string; username: st
     password: accessToken,
     username: "x-access-token"
   };
-}
-
-export function validateTagInput(
-  input: CreateGitTagInput
-): RelicResult<Required<Pick<CreateGitTagInput, "hash" | "name">> & Pick<CreateGitTagInput, "message"> & {
-  taggerEmail: string;
-  taggerName: string;
-}> {
-  const normalizedName = normalizeTagName(input.name);
-
-  if (!normalizedName.ok) {
-    return normalizedName;
-  }
-
-  const hash = input.hash?.trim() || "HEAD";
-  const message = input.message?.trim() || "";
-  const taggerName = input.taggerName?.trim() || "";
-  const taggerEmail = input.taggerEmail?.trim() || "";
-
-  if (message !== "") {
-    if (taggerName === "") {
-      return fail("GIT_TAG_INVALID_INPUT", "GitHub接続情報からタグ作成者を確認できませんでした。");
-    }
-
-    if (taggerEmail === "" || !taggerEmail.includes("@")) {
-      return fail("GIT_TAG_INVALID_INPUT", "GitHub接続情報からタグ用メールアドレスを確認できませんでした。");
-    }
-  }
-
-  return ok({
-    hash,
-    message: message === "" ? undefined : message,
-    name: normalizedName.value,
-    taggerEmail,
-    taggerName
-  });
 }

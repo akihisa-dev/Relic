@@ -881,22 +881,12 @@ button:not(:disabled):active {
   gap: 12px;
 }
 
-.git-branch-form {
+.git-form {
   display: grid;
   gap: 8px;
 }
 
-.git-branch-list {
-  margin-top: 10px;
-}
-
-.git-branch-warning {
-  display: grid;
-  gap: 10px;
-  margin-top: 12px;
-}
-
-.git-branch-warning-actions {
+.git-action-row {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
@@ -912,22 +902,6 @@ button:not(:disabled):active {
   display: flex;
   flex-direction: column;
   gap: 6px;
-}
-
-.git-tag-target {
-  color: var(--text-3);
-  font-size: 12px;
-}
-
-.git-tag-list {
-  margin-top: 4px;
-}
-
-.git-tag-row {
-  align-items: stretch;
-  display: grid;
-  gap: 8px;
-  grid-template-columns: minmax(0, 1fr) auto;
 }
 
 .git-diff-entry {
@@ -3146,11 +3120,6 @@ button:not(:disabled):active {
   font-size: 12px;
   gap: 16px;
   padding: 0 12px;
-}
-
-.status-bar-branch {
-  color: var(--link);
-  font-weight: 500;
 }
 
 /* ────────────────────────────────── */
