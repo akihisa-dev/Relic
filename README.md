@@ -72,3 +72,17 @@ pnpm test
 ## プラットフォーム
 
 macOS（Sequoia 以降）
+
+
+## Windows 配布（インストーラーなし）
+
+Windows 版は **インストーラーを使わず**、ZIP 展開後に `Relic.exe` を直接起動する運用です。
+
+1. `pnpm package:win` を実行して `app/out/Relic-win32-x64/` を生成
+2. `Relic-win32-x64` フォルダをそのまま配布（または ZIP 化して配布）
+3. 利用者は ZIP を展開し、`Relic.exe` を直接起動
+4. 必要に応じて `Relic.exe` のショートカットを作成
+
+- `Setup.exe` / `Update.exe` / `.nupkg` は生成しません。
+- コード署名なし配布のため SmartScreen 警告が出る可能性があります。
+- 方針として SmartScreen よりも Defender 誤検知・隔離の回避を優先します。
