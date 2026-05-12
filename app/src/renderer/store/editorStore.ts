@@ -2,7 +2,7 @@ import { create } from "zustand";
 
 import { defaultEditorSettings, type EditorSettings, type MarkdownFileContent } from "../../shared/ipc";
 
-export type PanelTabKind = "git" | "tools" | "frontmatter" | "settings";
+export type PanelTabKind = "git" | "tools" | "frontmatter" | "settings" | "graph";
 
 export interface FileTab {
   content: string;

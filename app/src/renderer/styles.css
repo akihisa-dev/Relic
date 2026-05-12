@@ -3794,7 +3794,9 @@ button:not(:disabled):active {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  height: 100%;
   min-width: 0;
+  min-height: 0;
 }
 
 .chronicle-create {
@@ -3895,13 +3897,255 @@ button:not(:disabled):active {
   border-top: 1px solid var(--border);
   display: grid;
   gap: 8px;
+  grid-template-rows: minmax(0, 1fr);
+  min-height: 0;
   padding-top: 12px;
 }
 
 .chronicle-file-select {
-  max-height: 280px;
+  min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;
+}
+
+.graph-sidebar {
+  display: grid;
+  gap: 12px;
+  grid-template-rows: auto auto minmax(240px, 1fr) auto minmax(120px, auto);
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+}
+
+.graph-topbar {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.graph-icon-button,
+.graph-reset-button {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--text-2);
+  cursor: pointer;
+  font-size: 12px;
+  min-height: 28px;
+  padding: 0 10px;
+}
+
+.graph-icon-button:hover,
+.graph-reset-button:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+
+.graph-icon-button {
+  flex: 0 0 28px;
+  font-size: 13px;
+  padding: 0;
+}
+
+.graph-filters {
+  border-bottom: 1px solid var(--border);
+  display: grid;
+  gap: 10px;
+  padding-bottom: 12px;
+}
+
+.graph-search {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.graph-search span {
+  color: var(--text-3);
+  font-weight: 600;
+}
+
+.graph-search input {
+  background: var(--bg);
+  border: 1px solid var(--border-soft);
+  border-radius: 6px;
+  box-sizing: border-box;
+  color: var(--text);
+  min-height: 30px;
+  padding: 0 8px;
+  width: 100%;
+}
+
+.graph-filters input[type="range"] {
+  width: 130px;
+}
+
+.graph-reset-button {
+  justify-self: end;
+}
+
+.graph-canvas {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  min-height: 240px;
+  overflow: hidden;
+  position: relative;
+}
+
+.graph-canvas svg {
+  display: block;
+  height: 100%;
+  min-height: 240px;
+  width: 100%;
+}
+
+.graph-edge {
+  stroke: var(--border-strong);
+  stroke-opacity: 0.72;
+  stroke-width: 1;
+}
+
+.graph-edge--selected {
+  stroke: var(--accent);
+  stroke-opacity: 0.9;
+  stroke-width: 1.4;
+}
+
+.graph-node-hit {
+  cursor: pointer;
+  outline: none;
+}
+
+.graph-node-hit text {
+  fill: var(--text-2);
+  font-size: 10px;
+  pointer-events: none;
+  paint-order: stroke;
+  stroke: var(--bg);
+  stroke-linejoin: round;
+  stroke-width: 4px;
+}
+
+.graph-node {
+  fill: var(--bg);
+  stroke: var(--text-2);
+  stroke-width: 1.5;
+}
+
+.graph-node--selected {
+  fill: var(--accent-soft);
+  stroke: var(--accent);
+  stroke-width: 2;
+}
+
+.graph-node-hit:hover .graph-node,
+.graph-node-hit:focus-visible .graph-node {
+  fill: var(--accent-soft);
+  stroke: var(--accent);
+}
+
+.graph-summary {
+  color: var(--text-3);
+  font-size: 12px;
+  line-height: 1.4;
+  text-align: right;
+}
+
+.graph-detail {
+  border-top: 1px solid var(--border);
+  display: grid;
+  gap: 10px;
+  min-height: 0;
+  padding-top: 12px;
+}
+
+.graph-detail-title {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  cursor: pointer;
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  padding: 8px 10px;
+  text-align: left;
+}
+
+.graph-detail-title:hover {
+  background: var(--hover);
+}
+
+.graph-detail-title span:first-child {
+  font-size: 13px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.graph-detail-title span:last-child {
+  color: var(--text-3);
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.graph-tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.graph-tag-list span {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-2);
+  font-size: 11px;
+  line-height: 20px;
+  padding: 0 8px;
+}
+
+.graph-link-list {
+  display: grid;
+  gap: 6px;
+}
+
+.graph-link-list-title {
+  color: var(--text-3);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.graph-link-list button {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 12px;
+  min-height: 28px;
+  overflow: hidden;
+  padding: 0 8px;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.graph-link-list button:hover {
+  background: var(--hover);
+}
+
+.graph-link-empty {
+  color: var(--text-3);
+  font-size: 12px;
+  line-height: 1.4;
 }
 
 .chronicle-chart-tabs {
@@ -3973,6 +4217,7 @@ button:not(:disabled):active {
   min-width: 0;
   overflow-x: auto;
   overflow-y: hidden;
+  position: relative;
 }
 
 .chronicle-grid {
@@ -4009,17 +4254,13 @@ button:not(:disabled):active {
   position: relative;
 }
 
-.chronicle-axis--date {
-  min-height: 46px;
-}
-
 .chronicle-axis-row {
   display: block;
   height: 23px;
   position: relative;
 }
 
-.chronicle-axis-row--year {
+.chronicle-axis-row--divider {
   border-bottom: 1px solid var(--border);
 }
 
@@ -4037,6 +4278,10 @@ button:not(:disabled):active {
   text-align: center;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.chronicle-axis--date .chronicle-axis-cell {
+  padding: 0 2px;
 }
 
 .chronicle-axis-tick {
@@ -4133,6 +4378,17 @@ button:not(:disabled):active {
   position: relative;
 }
 
+.chronicle-tracks--date {
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent 37px,
+      var(--border) 37px,
+      var(--border) 38px
+    );
+}
+
 .chronicle-tracks::after {
   background:
     repeating-linear-gradient(
@@ -4155,6 +4411,26 @@ button:not(:disabled):active {
   pointer-events: none;
   position: absolute;
   z-index: 2;
+}
+
+.chronicle-tracks--date::after {
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent 37px,
+      var(--border) 37px,
+      var(--border) 38px
+    );
+}
+
+.chronicle-date-grid-line {
+  background: var(--border);
+  bottom: 0;
+  position: absolute;
+  top: 0;
+  width: 1px;
+  z-index: 1;
 }
 
 .chronicle-fill {
@@ -4188,6 +4464,7 @@ button:not(:disabled):active {
   left: 7px;
   padding: 0 7px;
   position: absolute;
+  z-index: 1;
 }
 
 .chronicle-fill--single {

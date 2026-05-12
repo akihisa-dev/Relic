@@ -58,6 +58,7 @@ function makeRelicApi(overrides: Partial<typeof window.relic> = {}): typeof wind
     getFrontmatterValueCandidates: vi.fn().mockResolvedValue({ ok: true, value: {} }),
     getWorkspaceAliases: vi.fn().mockResolvedValue({ ok: true, value: {} }),
     getWorkspaceChronicle: vi.fn().mockResolvedValue({ ok: true, value: [] }),
+    getWorkspaceGraph: vi.fn().mockResolvedValue({ ok: true, value: { edges: [], nodes: [] } }),
     getWorkspaceTags: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     getWorkspaceState: vi.fn().mockResolvedValue({
       ok: true,
@@ -171,6 +172,39 @@ describe("App", () => {
     const { container } = await renderApp();
 
     expect(await screen.findByRole("button", { name: /読書メモ/ })).toBeInTheDocument();
+  });
+
+  it("レールからグラフビューを開き、検索と選択ノード詳細を表示できる", async () => {
+    const getWorkspaceGraph = vi.fn().mockResolvedValue({
+      ok: true,
+      value: {
+        edges: [{ sourcePath: "A.md", targetPath: "B.md" }],
+        nodes: [
+          { folder: "", name: "A", path: "A.md", tags: ["資料"] },
+          { folder: "", name: "B", path: "B.md", tags: [] }
+        ]
+      }
+    });
+    window.relic = makeRelicApi({
+      getWorkspaceGraph,
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: withWorkspace
+      })
+    });
+
+    await renderApp();
+    fireEvent.click(await screen.findByRole("button", { name: "グラフ" }));
+
+    expect(getWorkspaceGraph).toHaveBeenCalled();
+    expect(await screen.findByText("2 ノード / 1 リンク")).toBeInTheDocument();
+
+    fireEvent.change(screen.getByPlaceholderText("ファイル名・パス"), { target: { value: "A" } });
+    expect(screen.getByText("1 ノード / 0 リンク")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "A" }));
+    expect(screen.getByRole("button", { name: /A.md/ })).toBeInTheDocument();
+    expect(screen.getByText("#資料")).toBeInTheDocument();
   });
 
   it("ファイルツリーのノートをクリックするとタブが開く", async () => {
@@ -719,7 +753,7 @@ describe("App", () => {
     expect(screen.getByText("1185 〜 1333")).toBeInTheDocument();
   });
 
-  it("dateチャートはドロップ前でも空の日付ガントを表示する", async () => {
+  it("dateチャートは表示対象が空でも日付ガントを表示する", async () => {
     window.relic = makeRelicApi({
       getWorkspaceChronicle: vi.fn().mockResolvedValue({
         ok: true,
@@ -751,7 +785,7 @@ describe("App", () => {
     expect(useEditorStore.getState().leftPane.activeTabId).toBe("gantt-date");
     expect(screen.getByText("実装タスク")).toBeInTheDocument();
     expect(screen.queryByText("2026-05-01 〜 2026-05-05")).not.toBeInTheDocument();
-    expect(screen.getByText("30日")).toBeInTheDocument();
+    expect(screen.getByText("月")).toBeInTheDocument();
     expect(container.querySelector(".chronicle-chart")).toBeInTheDocument();
     expect(container.querySelector(".chronicle-fill")).not.toBeInTheDocument();
   });

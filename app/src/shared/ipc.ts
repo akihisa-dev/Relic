@@ -19,6 +19,7 @@ export const getGitWorkingChangesChannel = "workspace:getGitWorkingChanges";
 export const getWorkspaceTagsChannel = "workspace:getTags";
 export const getWorkspaceAliasesChannel = "workspace:getAliases";
 export const getWorkspaceChronicleChannel = "workspace:getChronicle";
+export const getWorkspaceGraphChannel = "workspace:getGraph";
 export const saveWorkspaceGanttChartsChannel = "workspace:saveGanttCharts";
 export const getFrontmatterValueCandidatesChannel = "workspace:getFrontmatterValueCandidates";
 export const getWorkspaceStateChannel = "workspace:getState";
@@ -258,6 +259,23 @@ export interface WorkspaceTagSummary {
   tag: string;
 }
 
+export interface WorkspaceGraphNode {
+  folder: string;
+  name: string;
+  path: string;
+  tags: string[];
+}
+
+export interface WorkspaceGraphEdge {
+  sourcePath: string;
+  targetPath: string;
+}
+
+export interface WorkspaceGraph {
+  edges: WorkspaceGraphEdge[];
+  nodes: WorkspaceGraphNode[];
+}
+
 export interface GitStatus {
   currentBranch: string | null;
   initialized: boolean;
@@ -495,6 +513,7 @@ export interface RelicApi {
   getEditorSettings: () => Promise<RelicResult<EditorSettings>>;
   getWorkspaceAliases: () => Promise<RelicResult<AliasIndex>>;
   getWorkspaceChronicle: () => Promise<RelicResult<WorkspaceGanttChart[]>>;
+  getWorkspaceGraph: () => Promise<RelicResult<WorkspaceGraph>>;
   getFrontmatterValueCandidates: () => Promise<RelicResult<Record<string, string[]>>>;
   getWorkspaceTags: () => Promise<RelicResult<WorkspaceTagSummary[]>>;
   getWorkspaceState: () => Promise<RelicResult<WorkspaceState>>;

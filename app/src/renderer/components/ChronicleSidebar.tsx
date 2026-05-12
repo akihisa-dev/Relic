@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import type { CSSProperties, DragEvent, ReactElement } from "react";
+import type { CSSProperties, ReactElement } from "react";
 
 import type { GanttChartEntry, GanttChartSource, WorkspaceGanttChart } from "../../shared/ipc";
 import { useT } from "../i18n";
@@ -12,7 +12,6 @@ interface ChronicleSidebarProps {
 
 interface GanttChartViewProps {
   chart: WorkspaceGanttChart | null;
-  onAddFile: (chartId: string, path: string) => void;
   onOpenFile: (path: string) => void;
   onRemoveFile: (chartId: string, path: string) => void;
 }
@@ -36,12 +35,22 @@ interface ChartFileNode {
 const ROW_HEIGHT = 38;
 const NAME_COLUMN_WIDTH = 180;
 const TICK_WIDTH = 72;
-const DATE_TICK_WIDTH = 132;
+const DATE_TICK_WIDTH = 52;
 const LABEL_HORIZONTAL_PADDING = 14;
 const SCALE_OPTIONS: Record<GanttChartSource, readonly number[]> = {
   chronicle: [25, 50, 100, 200, 500],
-  date: [1, 7, 30, 90]
+  date: [0, 1, 2]
 };
+
+const DATE_SCALES = [
+  { label: "日", step: 1, unit: "day" },
+  { label: "月", step: null, unit: "month" },
+  { label: "年", step: null, unit: "year" }
+] as const;
+
+type DateScale = typeof DATE_SCALES[number];
+type DateScaleUnit = DateScale["unit"];
+type DateAxisSegmentUnit = DateScaleUnit | "month" | "year";
 
 interface DateAxisSegment {
   endValue: number;
@@ -138,7 +147,8 @@ function ChartFileTreeItem({
             type="button"
           >
             <span className={`file-tree-icon file-tree-icon--folder${isExpanded ? " file-tree-icon--expanded" : ""}`}>
-              ›
+              <span aria-hidden="true" className="file-tree-folder-chevron">▶</span>
+              <span aria-hidden="true" className="file-tree-folder-icon" />
             </span>
             <span className="file-tree-name">{node.name}</span>
           </button>
@@ -161,18 +171,12 @@ function ChartFileTreeItem({
       <div className="file-tree-row-wrap">
         <button
           className={`file-tree-row file${isSelected ? " selected" : ""}`}
-          draggable
-          onDragStart={(event) => {
-            event.dataTransfer.setData("application/relic-gantt-file", JSON.stringify({
-              chartId,
-              path: node.entry.path
-            }));
-            event.dataTransfer.effectAllowed = "copy";
-          }}
           title={node.entry.path}
           type="button"
         >
-          <span className="file-tree-icon">•</span>
+          <span className="file-tree-icon">
+            <span className="file-tree-file-dot">·</span>
+          </span>
           <span className="file-tree-name">{node.name}</span>
         </button>
       </div>
@@ -180,49 +184,29 @@ function ChartFileTreeItem({
   );
 }
 
-export function GanttChartView({ chart, onAddFile, onOpenFile, onRemoveFile }: GanttChartViewProps): ReactElement {
+export function GanttChartView({ chart, onOpenFile, onRemoveFile }: GanttChartViewProps): ReactElement {
   const t = useT();
-  const [scaleIndex, setScaleIndex] = useState(2);
+  const [scaleIndex, setScaleIndex] = useState(1);
   const [scrollLeft, setScrollLeft] = useState(0);
   const activeSource = chart && isGanttChartSource(chart.source) ? chart.source : "chronicle";
   const scaleOptions = SCALE_OPTIONS[activeSource];
   const tickInterval = scaleOptions[Math.min(scaleIndex, scaleOptions.length - 1)] ?? scaleOptions[0] ?? 100;
+  const dateScale = activeSource === "date" ? DATE_SCALES[tickInterval] ?? DATE_SCALES[2] : null;
   const entries = useMemo(() => visibleEntries(chart), [chart]);
-  const { axisEnd, axisStart } = timelineBounds(entries, tickInterval, activeSource);
+  const { axisEnd, axisStart } = timelineBounds(entries, tickInterval, activeSource, dateScale);
   const axisSpan = Math.max(1, axisEnd - axisStart + 1);
   const tickWidth = activeSource === "date" ? DATE_TICK_WIDTH : TICK_WIDTH;
-  const unitWidth = tickWidth / tickInterval;
+  const unitWidth = activeSource === "date" ? dateUnitWidth(dateScale) : tickWidth / tickInterval;
   const timelineWidth = Math.max(720, axisSpan * unitWidth);
   const ticks = useMemo(
-    () => buildTicks(axisStart, axisEnd, tickInterval, activeSource),
-    [activeSource, axisEnd, axisStart, tickInterval]
+    () => buildTicks(axisStart, axisEnd, tickInterval, activeSource, dateScale),
+    [activeSource, axisEnd, axisStart, dateScale, tickInterval]
   );
   const gridOffset = ticks.length > 0 ? (ticks[0] - axisStart) * unitWidth : 0;
-
-  const handleDrop = (event: DragEvent<HTMLDivElement>): void => {
-    if (!chart) return;
-
-    const raw = event.dataTransfer.getData("application/relic-gantt-file");
-    if (!raw) return;
-
-    event.preventDefault();
-
-    try {
-      const payload = JSON.parse(raw) as { chartId?: string; path?: string };
-      if (payload.chartId === chart.id && payload.path) onAddFile(chart.id, payload.path);
-    } catch {
-      return;
-    }
-  };
+  const dateAxisHeight = activeSource === "date" ? dateAxisHeightForScale(dateScale) : 34;
 
   return (
-    <div
-      className="chronicle-panel"
-      onDragOver={(event) => {
-        if (event.dataTransfer.types.includes("application/relic-gantt-file")) event.preventDefault();
-      }}
-      onDrop={handleDrop}
-    >
+    <div className="chronicle-panel">
       <div className="chronicle-panel-header">
         <div className="links-panel-subheading">{chart?.name ?? t("chronicle.title")}</div>
         <div className="chronicle-scale" aria-label={t("chronicle.scale")}>
@@ -253,14 +237,17 @@ export function GanttChartView({ chart, onAddFile, onOpenFile, onRemoveFile }: G
         <div className="chronicle-chart" onScroll={(event) => setScrollLeft(event.currentTarget.scrollLeft)}>
           <div className="chronicle-grid" style={{ width: NAME_COLUMN_WIDTH + timelineWidth }}>
             <div className="chronicle-name-column" style={{ width: NAME_COLUMN_WIDTH }}>
-              <div className="chronicle-name-header" style={{ height: activeSource === "date" ? 46 : 34 }} />
+              <div className="chronicle-name-header" style={{ height: dateAxisHeight }} />
               {entries.length === 0 ? (
                 <div className="chronicle-file-name-row chronicle-file-name-row--empty">
                   <div className="chronicle-file-name chronicle-file-name--empty">{t("chronicle.empty")}</div>
                 </div>
               ) : (
                 entries.map((entry) => (
-                  <div className="chronicle-file-name-row" key={entry.path}>
+                  <div
+                    className="chronicle-file-name-row"
+                    key={entry.path}
+                  >
                     <button
                       className="chronicle-file-name"
                       onClick={() => onOpenFile(entry.path)}
@@ -283,7 +270,7 @@ export function GanttChartView({ chart, onAddFile, onOpenFile, onRemoveFile }: G
             </div>
             <div className="chronicle-timeline" style={{ marginLeft: NAME_COLUMN_WIDTH, width: timelineWidth }}>
               {activeSource === "date" ? (
-                <DateAxis axisEnd={axisEnd} axisStart={axisStart} unitWidth={unitWidth} width={timelineWidth} />
+                <DateAxis axisEnd={axisEnd} axisStart={axisStart} scale={dateScale ?? DATE_SCALES[2]} unitWidth={unitWidth} width={timelineWidth} />
               ) : (
                 <div className="chronicle-axis" style={{ width: timelineWidth }}>
                   {ticks.map((tick, index) => (
@@ -298,7 +285,7 @@ export function GanttChartView({ chart, onAddFile, onOpenFile, onRemoveFile }: G
                 </div>
               )}
               <div
-                className="chronicle-tracks"
+                className={`chronicle-tracks${activeSource === "date" ? " chronicle-tracks--date" : ""}`}
                 style={{
                   "--chronicle-grid-x": `${tickInterval * unitWidth}px`,
                   "--chronicle-grid-offset-x": `${gridOffset}px`,
@@ -306,13 +293,20 @@ export function GanttChartView({ chart, onAddFile, onOpenFile, onRemoveFile }: G
                   width: timelineWidth
                 } as CSSProperties}
               >
+                {activeSource === "date" ? (
+                  <DateGridLines axisStart={axisStart} ticks={ticks} unitWidth={unitWidth} />
+                ) : null}
                 {entries.map((entry, index) => {
                   const left = Math.max(0, (entry.startValue - axisStart) * unitWidth);
                   const isSingleValue = entry.startValue === entry.endValue;
-                  const rangeLabel = formatRange(entry);
+                  const rangeLabel = formatRange(entry, activeSource, dateScale);
                   const labelWidth = labelWidthForText(rangeLabel);
                   const naturalWidth = isSingleValue ? unitWidth : (entry.endValue - entry.startValue + 1) * unitWidth;
-                  const width = isSingleValue ? Math.max(activeSource === "date" ? 84 : 46, naturalWidth) : Math.max(28, naturalWidth);
+                  const width = activeSource === "date"
+                    ? naturalWidth
+                    : isSingleValue
+                      ? Math.max(46, naturalWidth)
+                      : Math.max(28, naturalWidth);
                   const maxLabelLeft = Math.max(0, width - labelWidth);
                   const labelLeft = isSingleValue
                     ? (width - labelWidth) / 2
@@ -347,48 +341,70 @@ export function GanttChartView({ chart, onAddFile, onOpenFile, onRemoveFile }: G
 function DateAxis({
   axisEnd,
   axisStart,
+  scale,
   unitWidth,
   width
 }: {
   axisEnd: number;
   axisStart: number;
+  scale: DateScale;
   unitWidth: number;
   width: number;
 }): ReactElement {
   const years = buildDateAxisSegments(axisStart, axisEnd, "year");
   const months = buildDateAxisSegments(axisStart, axisEnd, "month");
+  const units = buildDateAxisSegments(axisStart, axisEnd, scale.unit);
+  const rows = scale.unit === "day"
+    ? [years, months, units]
+    : scale.unit === "year"
+      ? [units]
+      : [years, units];
 
   return (
     <div className="chronicle-axis chronicle-axis--date" style={{ width }}>
-      <div className="chronicle-axis-row chronicle-axis-row--year">
-        {years.map((segment) => (
-          <span
-            className="chronicle-axis-cell"
-            key={`year-${segment.label}-${segment.startValue}`}
-            style={{
-              left: (segment.startValue - axisStart) * unitWidth,
-              width: Math.max(1, (segment.endValue - segment.startValue + 1) * unitWidth)
-            }}
-          >
-            {segment.label}
-          </span>
-        ))}
-      </div>
-      <div className="chronicle-axis-row chronicle-axis-row--month">
-        {months.map((segment) => (
-          <span
-            className="chronicle-axis-cell"
-            key={`month-${segment.label}-${segment.startValue}`}
-            style={{
-              left: (segment.startValue - axisStart) * unitWidth,
-              width: Math.max(1, (segment.endValue - segment.startValue + 1) * unitWidth)
-            }}
-          >
-            {segment.label}
-          </span>
-        ))}
-      </div>
+      {rows.map((row, rowIndex) => (
+        <div
+          className={`chronicle-axis-row${rowIndex < rows.length - 1 ? " chronicle-axis-row--divider" : ""}`}
+          key={`date-axis-row-${rowIndex}`}
+        >
+          {row.map((segment) => (
+            <span
+              className="chronicle-axis-cell"
+              key={`${rowIndex}-${segment.label}-${segment.startValue}`}
+              style={{
+                left: (segment.startValue - axisStart) * unitWidth,
+                width: Math.max(1, (segment.endValue - segment.startValue + 1) * unitWidth)
+              }}
+            >
+              {segment.label}
+            </span>
+          ))}
+        </div>
+      ))}
     </div>
+  );
+}
+
+function DateGridLines({
+  axisStart,
+  ticks,
+  unitWidth
+}: {
+  axisStart: number;
+  ticks: number[];
+  unitWidth: number;
+}): ReactElement {
+  return (
+    <>
+      {ticks.map((tick) => (
+        <span
+          aria-hidden="true"
+          className="chronicle-date-grid-line"
+          key={tick}
+          style={{ left: (tick - axisStart) * unitWidth }}
+        />
+      ))}
+    </>
   );
 }
 
@@ -447,17 +463,29 @@ function visibleEntries(chart: WorkspaceGanttChart | null): GanttChartEntry[] {
   if (!chart) return [];
   if (!chart.filePaths || chart.filePaths.length === 0) return [];
 
-  const visiblePaths = new Set(chart.filePaths);
-  return chart.entries.filter((entry) => visiblePaths.has(entry.path));
+  const entriesByPath = new Map(chart.entries.map((entry) => [entry.path, entry]));
+  return chart.filePaths.flatMap((path) => {
+    const entry = entriesByPath.get(path);
+    return entry ? [entry] : [];
+  });
 }
 
 function timelineBounds(
   entries: GanttChartEntry[],
   tickInterval: number,
-  source: GanttChartSource
+  source: GanttChartSource,
+  dateScale: DateScale | null
 ): { axisEnd: number; axisStart: number } {
   if (entries.length === 0) {
     const today = source === "date" ? dateToDay(new Date().toISOString().slice(0, 10)) : 1;
+    if (source === "date" && dateScale) {
+      const start = previousDateUnit(today, dateScale.unit);
+      let end = start;
+      for (let i = 0; i < 8; i += 1) end = nextDateUnit(end, dateScale.unit);
+
+      return { axisEnd: end - 1, axisStart: start };
+    }
+
     return {
       axisEnd: today + tickInterval * 4,
       axisStart: today - tickInterval
@@ -474,6 +502,13 @@ function timelineBounds(
   const paddedStart = min - padding;
   const paddedEnd = max + padding;
 
+  if (source === "date" && dateScale) {
+    return {
+      axisEnd: nextDateUnit(paddedEnd, dateScale.unit) - 1,
+      axisStart: previousDateUnit(paddedStart, dateScale.unit)
+    };
+  }
+
   return {
     axisEnd: Math.ceil(paddedEnd / tickInterval) * tickInterval + tickInterval,
     axisStart: Math.floor(paddedStart / tickInterval) * tickInterval - tickInterval
@@ -484,9 +519,10 @@ function buildTicks(
   axisStart: number,
   axisEnd: number,
   interval: number,
-  source: GanttChartSource
+  source: GanttChartSource,
+  dateScale: DateScale | null
 ): number[] {
-  if (source === "date") return buildDateTicks(axisStart, axisEnd, interval);
+  if (source === "date") return buildDateTicks(axisStart, axisEnd, dateScale ?? DATE_SCALES[2]);
 
   const first = Math.floor(axisStart / interval) * interval;
   const ticks: number[] = [];
@@ -499,21 +535,29 @@ function buildTicks(
   return ticks;
 }
 
-function buildDateTicks(axisStart: number, axisEnd: number, interval: number): number[] {
+function buildDateTicks(axisStart: number, axisEnd: number, scale: DateScale): number[] {
   const ticks: number[] = [];
-  let cursor = firstDateTick(axisStart, interval);
+  let cursor = previousDateUnit(axisStart, scale.unit);
 
   while (cursor <= axisEnd) {
     if (cursor >= axisStart) ticks.push(cursor);
-    cursor = nextDateTick(cursor, interval);
+    cursor = nextDateUnit(cursor, scale.unit);
   }
 
   return ticks;
 }
 
-function formatRange(entry: GanttChartEntry): string {
-  if (entry.startValue === entry.endValue) return entry.startLabel;
-  return `${entry.startLabel} 〜 ${entry.endLabel}`;
+function formatRange(entry: GanttChartEntry, source: GanttChartSource, dateScale: DateScale | null): string {
+  if (source !== "date" || !dateScale) {
+    if (entry.startValue === entry.endValue) return entry.startLabel;
+    return `${entry.startLabel} 〜 ${entry.endLabel}`;
+  }
+
+  const start = formatDateLabel(entry.startLabel, dateScale.unit);
+  const end = formatDateLabel(entry.endLabel, dateScale.unit);
+
+  if (start === end) return start;
+  return `${start} 〜 ${end}`;
 }
 
 function formatAxisValue(value: number, source: GanttChartSource): string {
@@ -523,7 +567,7 @@ function formatAxisValue(value: number, source: GanttChartSource): string {
 
 function formatScaleValue(value: number, source: GanttChartSource): string {
   if (source === "chronicle") return String(value);
-  return `${value}日`;
+  return DATE_SCALES[value]?.label ?? "月";
 }
 
 function labelWidthForText(text: string): number {
@@ -538,46 +582,10 @@ function dateToDay(value: string): number {
   return Math.floor(new Date(`${value}T00:00:00.000Z`).getTime() / 86_400_000);
 }
 
-function firstDateTick(axisStart: number, interval: number): number {
-  const date = new Date(axisStart * 86_400_000);
-
-  if (interval >= 90) {
-    const month = Math.floor(date.getUTCMonth() / 3) * 3;
-    return dateToDay(`${date.getUTCFullYear()}-${String(month + 1).padStart(2, "0")}-01`);
-  }
-
-  if (interval >= 30) {
-    return dateToDay(`${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}-01`);
-  }
-
-  if (interval >= 7) {
-    const day = date.getUTCDay();
-    return axisStart - ((day + 6) % 7);
-  }
-
-  return axisStart;
-}
-
-function nextDateTick(value: number, interval: number): number {
-  const date = new Date(value * 86_400_000);
-
-  if (interval >= 90) {
-    date.setUTCMonth(date.getUTCMonth() + 3, 1);
-    return Math.floor(date.getTime() / 86_400_000);
-  }
-
-  if (interval >= 30) {
-    date.setUTCMonth(date.getUTCMonth() + 1, 1);
-    return Math.floor(date.getTime() / 86_400_000);
-  }
-
-  return value + interval;
-}
-
 function buildDateAxisSegments(
   axisStart: number,
   axisEnd: number,
-  unit: "month" | "year"
+  unit: DateAxisSegmentUnit
 ): DateAxisSegment[] {
   const segments: DateAxisSegment[] = [];
   let cursor = startOfDateUnit(axisStart, unit);
@@ -590,7 +598,7 @@ function buildDateAxisSegments(
     if (endValue >= startValue) {
       segments.push({
         endValue,
-        label: unit === "year" ? dayToDate(cursor).slice(0, 4) : dayToDate(cursor).slice(5, 7),
+        label: formatDateAxisSegmentLabel(cursor, unit),
         startValue
       });
     }
@@ -601,22 +609,60 @@ function buildDateAxisSegments(
   return segments;
 }
 
-function startOfDateUnit(value: number, unit: "month" | "year"): number {
+function startOfDateUnit(value: number, unit: DateAxisSegmentUnit): number {
   const date = new Date(value * 86_400_000);
-  const month = unit === "year" ? 0 : date.getUTCMonth();
+  if (unit === "day") return value;
+
+  const month = unit === "year"
+    ? 0
+    : date.getUTCMonth();
+
   return dateToDay(`${date.getUTCFullYear()}-${String(month + 1).padStart(2, "0")}-01`);
 }
 
-function nextDateUnit(value: number, unit: "month" | "year"): number {
+function nextDateUnit(value: number, unit: DateAxisSegmentUnit): number {
   const date = new Date(value * 86_400_000);
 
-  if (unit === "year") {
-    date.setUTCFullYear(date.getUTCFullYear() + 1, 0, 1);
-  } else {
+  if (unit === "day") return value + 1;
+
+  if (unit === "month") {
     date.setUTCMonth(date.getUTCMonth() + 1, 1);
+  } else {
+    date.setUTCFullYear(date.getUTCFullYear() + 1, 0, 1);
   }
 
   return Math.floor(date.getTime() / 86_400_000);
+}
+
+function previousDateUnit(value: number, unit: DateAxisSegmentUnit): number {
+  return startOfDateUnit(value, unit);
+}
+
+function dateUnitWidth(scale: DateScale | null): number {
+  if (!scale) return DATE_TICK_WIDTH / 30;
+  if (scale.unit === "day") return 22;
+  if (scale.unit === "year") return 1.2;
+  return (DATE_TICK_WIDTH * 3) / 30;
+}
+
+function dateAxisHeightForScale(scale: DateScale | null): number {
+  return scale?.unit === "day" ? 69 : 46;
+}
+
+function formatDateAxisSegmentLabel(value: number, unit: DateAxisSegmentUnit): string {
+  const date = new Date(value * 86_400_000);
+  const year = date.getUTCFullYear();
+  const month = date.getUTCMonth() + 1;
+
+  if (unit === "year") return String(year);
+  if (unit === "day") return String(date.getUTCDate()).padStart(2, "0");
+  return String(month).padStart(2, "0");
+}
+
+function formatDateLabel(value: string, unit: DateScaleUnit): string {
+  if (unit === "day") return value.slice(8, 10);
+  if (unit === "month") return value.slice(5);
+  return value;
 }
 
 function isGanttChartSource(value: unknown): value is GanttChartSource {
