@@ -26,7 +26,6 @@ import {
   getEditorSettingsChannel,
   getGitStatusChannel,
   getGitWorkingChangesChannel,
-  getMarkdownTemplatesChannel,
   getFrontmatterValueCandidatesChannel,
   getWorkspaceAliasesChannel,
   getWorkspaceChronicleChannel,
@@ -97,7 +96,6 @@ import {
   type GetBacklinksInput,
   type GanttChartSettings,
   type MarkdownFileContent,
-  type MarkdownTemplateSummary,
   type MoveFolderInput,
   type MoveItemToTrashInput,
   type MoveMarkdownFileInput,
@@ -173,8 +171,6 @@ const relicApi: RelicApi = {
   getAppInfo: () => ipcRenderer.invoke(getAppInfoChannel) as Promise<RelicResult<AppInfo>>,
   getEditorSettings: () =>
     ipcRenderer.invoke(getEditorSettingsChannel) as Promise<RelicResult<EditorSettings>>,
-  getMarkdownTemplates: () =>
-    ipcRenderer.invoke(getMarkdownTemplatesChannel) as Promise<RelicResult<MarkdownTemplateSummary[]>>,
   getWorkspaceAliases: () =>
     ipcRenderer.invoke(getWorkspaceAliasesChannel) as Promise<RelicResult<AliasIndex>>,
   getWorkspaceChronicle: () =>

@@ -681,9 +681,6 @@ export function App(): ReactElement {
     handleSaveGitHubIntegrationSettings,
     handleSaveSettings,
     handleSaveUserDefinedFields,
-    markdownTemplates,
-    selectedTemplatePath,
-    setSelectedTemplatePath,
     userDefinedFields
   } = useAppSettingsState({
     setEditorSettings,
@@ -884,7 +881,6 @@ export function App(): ReactElement {
     leftPane,
     openFileInPane,
     rightPane,
-    selectedTemplatePath,
     setLeftPaneScrollHeading,
     setRightPaneScrollHeading,
     setWorkspaceError,
@@ -1565,9 +1561,6 @@ export function App(): ReactElement {
                 onSelectedCountChange={setFileSelectionCount}
                 onTogglePin={handleTogglePin}
                 openFilePaths={openFilePathSet}
-                onTemplatePathChange={setSelectedTemplatePath}
-                selectedTemplatePath={selectedTemplatePath}
-                templates={markdownTemplates}
                 workspaceState={workspaceState}
               />
             ) : activeSidebarView === "chronicle" ? (

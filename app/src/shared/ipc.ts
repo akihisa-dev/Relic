@@ -21,7 +21,6 @@ export const getWorkspaceAliasesChannel = "workspace:getAliases";
 export const getWorkspaceChronicleChannel = "workspace:getChronicle";
 export const saveWorkspaceGanttChartsChannel = "workspace:saveGanttCharts";
 export const getFrontmatterValueCandidatesChannel = "workspace:getFrontmatterValueCandidates";
-export const getMarkdownTemplatesChannel = "workspace:getMarkdownTemplates";
 export const getWorkspaceStateChannel = "workspace:getState";
 export const initializeGitRepositoryChannel = "workspace:initializeGitRepository";
 export const createGitCommitChannel = "workspace:createGitCommit";
@@ -145,7 +144,6 @@ export interface WorkspaceState {
 
 export interface CreateMarkdownFileInput {
   name: string;
-  templatePath?: string;
 }
 
 export interface CreateLinkedMarkdownFileInput {
@@ -245,11 +243,6 @@ export interface RenameWorkspaceInput {
 
 export interface MarkdownFileContent {
   content: string;
-  name: string;
-  path: string;
-}
-
-export interface MarkdownTemplateSummary {
   name: string;
   path: string;
 }
@@ -500,7 +493,6 @@ export interface RelicApi {
   getGitRemotes: () => Promise<RelicResult<GitRemoteSummary[]>>;
   getAppInfo: () => Promise<RelicResult<AppInfo>>;
   getEditorSettings: () => Promise<RelicResult<EditorSettings>>;
-  getMarkdownTemplates: () => Promise<RelicResult<MarkdownTemplateSummary[]>>;
   getWorkspaceAliases: () => Promise<RelicResult<AliasIndex>>;
   getWorkspaceChronicle: () => Promise<RelicResult<WorkspaceGanttChart[]>>;
   getFrontmatterValueCandidates: () => Promise<RelicResult<Record<string, string[]>>>;

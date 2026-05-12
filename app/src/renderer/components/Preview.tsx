@@ -111,7 +111,6 @@ marked.use(mathExtension as Parameters<typeof marked.use>[0]);
 marked.use(obsidianExtension as Parameters<typeof marked.use>[0]);
 marked.use(markedFootnote());
 
-const imageExtensions = new Set([".png", ".jpg", ".jpeg", ".gif", ".webp", ".avif"]);
 const maxEmbeddedFileLength = 20_000;
 
 type EmbedState =
@@ -128,39 +127,6 @@ function escapeHtml(value: string): string {
     .replace(/"/g, "&quot;");
 }
 
-export function resolveAttachmentImageSrc(
-  workspacePath: string | null | undefined,
-  href: string
-): string | null {
-  if (!workspacePath) return null;
-
-  const trimmed = href.trim();
-
-  if (
-    trimmed === "" ||
-    trimmed.startsWith("/") ||
-    trimmed.startsWith("//") ||
-    /^[a-z][a-z0-9+.-]*:/i.test(trimmed)
-  ) {
-    return null;
-  }
-
-  const normalized = trimmed.replace(/\\/g, "/");
-  const segments = normalized.split("/").filter(Boolean);
-
-  if (segments[0] !== "attachments" || segments.some((segment) => segment === "..")) {
-    return null;
-  }
-
-  const extension = normalized.match(/\.[^.?#/]+(?=$|[?#])/)?.[0].toLowerCase();
-
-  if (!extension || !imageExtensions.has(extension)) {
-    return null;
-  }
-
-  return `file://${encodeURI(`${workspacePath.replace(/\/+$/, "")}/${normalized}`)}`;
-}
-
 export function normalizeEmbedTarget(target: string): string | null {
   const normalized = target.trim().split("#")[0].split("^")[0].replace(/\\/g, "/");
 
@@ -174,42 +140,16 @@ export function normalizeEmbedTarget(target: string): string | null {
     return null;
   }
 
-  return normalized.endsWith(".md") ? normalized : `${normalized}.md`;
-}
+  const extension = normalized.match(/\.[^.?#/]+(?=$|[?#])/)?.[0].toLowerCase();
 
-function normalizeImageEmbedTarget(target: string): string | null {
-  const normalized = target.trim().split("#")[0].split("^")[0].replace(/\\/g, "/");
-
-  if (
-    normalized === "" ||
-    normalized.startsWith("/") ||
-    normalized.startsWith("//") ||
-    normalized.split("/").some((segment) => segment === "..") ||
-    /^[a-z][a-z0-9+.-]*:/i.test(normalized)
-  ) {
+  if (extension && extension !== ".md") {
     return null;
   }
 
-  const extension = normalized.match(/\.[^.?#/]+(?=$|[?#])/)?.[0].toLowerCase();
-
-  return extension && imageExtensions.has(extension) ? normalized : null;
+  return normalized.endsWith(".md") ? normalized : `${normalized}.md`;
 }
 
-function resolveEmbeddedImageSrc(
-  workspacePath: string | null | undefined,
-  target: string
-): string | null {
-  if (!workspacePath) return null;
-
-  const normalized = normalizeImageEmbedTarget(target);
-  if (!normalized) return null;
-
-  const imagePath = normalized.startsWith("attachments/") ? normalized : `attachments/${normalized}`;
-
-  return `file://${encodeURI(`${workspacePath.replace(/\/+$/, "")}/${imagePath}`)}`;
-}
-
-function buildRenderer(workspacePath: string | null | undefined, imageSources: string[]): Renderer {
+function buildRenderer(): Renderer {
   const renderer = new marked.Renderer();
 
   renderer.code = ({ lang, text }) => {
@@ -227,17 +167,10 @@ function buildRenderer(workspacePath: string | null | undefined, imageSources: s
   };
 
   renderer.image = ({ href, title, text }) => {
-    const src = resolveAttachmentImageSrc(workspacePath, href);
     const alt = escapeHtml(text ?? "");
-
-    if (!src) {
-      return `<span class="preview-image-placeholder">${alt || escapeHtml(href)}</span>`;
-    }
-
-    const imageId = imageSources.push(src) - 1;
     const titleAttribute = title ? ` title="${escapeHtml(title)}"` : "";
 
-    return `<img class="preview-attachment-image" data-relic-image-id="${imageId}" alt="${alt}"${titleAttribute}>`;
+    return `<span class="preview-image-placeholder"${titleAttribute}>${alt || escapeHtml(href)}</span>`;
   };
 
   return renderer;
@@ -262,8 +195,6 @@ function extractEmbedTargets(content: string): string[] {
   const targets = new Set<string>();
 
   for (const match of content.matchAll(/!\[\[([^\]\n]+)\]\]/g)) {
-    if (normalizeImageEmbedTarget(match[1])) continue;
-
     const target = normalizeEmbedTarget(match[1]);
 
     if (target) targets.add(target);
@@ -278,18 +209,9 @@ function renderMarkdown(
   embeds: Map<string, EmbedState>,
   renderEmbeds: boolean
 ): string {
-  const imageSources: string[] = [];
-  const renderer = buildRenderer(workspacePath, imageSources);
+  const renderer = buildRenderer();
   const withEmbedPlaceholders = renderEmbeds
     ? content.replace(/!\[\[([^\]\n]+)\]\]/g, (match, rawTarget: string) => {
-        const imageSrc = resolveEmbeddedImageSrc(workspacePath, rawTarget);
-
-        if (imageSrc) {
-          const imageId = imageSources.push(imageSrc) - 1;
-
-          return `\n\n<img class="preview-attachment-image" data-relic-image-id="${imageId}" alt="${escapeHtml(rawTarget)}">\n\n`;
-        }
-
         const target = normalizeEmbedTarget(rawTarget);
 
         if (!target) {
@@ -312,11 +234,7 @@ function renderMarkdown(
     ADD_ATTR: ["checked", "class", "data-target", "id"]
   });
 
-  return imageSources.reduce(
-    (htmlWithImages, src, imageId) =>
-      htmlWithImages.replace(`data-relic-image-id="${imageId}"`, `src="${src}"`),
-    sanitized
-  );
+  return sanitized;
 }
 
 function renderFileEmbed(
