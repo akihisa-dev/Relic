@@ -480,6 +480,62 @@ describe("App", () => {
     expect(screen.getByRole("button", { name: /読書メモ/ })).toBeInTheDocument();
   });
 
+  it("フォルダ右クリックメニューからフォルダ以下と全体を一括開閉できる", async () => {
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [
+            {
+              children: [
+                {
+                  children: [{ name: "草稿", path: "資料/下書き/草稿.md", type: "file" }],
+                  name: "下書き",
+                  path: "資料/下書き",
+                  type: "folder"
+                },
+                { name: "読書メモ", path: "資料/読書メモ.md", type: "file" }
+              ],
+              name: "資料",
+              path: "資料",
+              type: "folder"
+            },
+            {
+              children: [{ name: "保管メモ", path: "保管/保管メモ.md", type: "file" }],
+              name: "保管",
+              path: "保管",
+              type: "folder"
+            }
+          ]
+        }
+      })
+    });
+
+    await renderApp();
+
+    const folderButton = await screen.findByRole("button", { name: /資料/ });
+
+    fireEvent.contextMenu(folderButton);
+    fireEvent.click(await screen.findByRole("menuitem", { name: "このフォルダ以下を閉じる" }));
+    expect(screen.queryByRole("button", { name: /読書メモ/ })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /保管メモ/ })).toBeInTheDocument();
+
+    fireEvent.contextMenu(folderButton);
+    fireEvent.click(await screen.findByRole("menuitem", { name: "このフォルダ以下を開く" }));
+    expect(screen.getByRole("button", { name: /草稿/ })).toBeInTheDocument();
+
+    fireEvent.contextMenu(folderButton);
+    fireEvent.click(await screen.findByRole("menuitem", { name: "すべてのフォルダを閉じる" }));
+    expect(screen.queryByRole("button", { name: /読書メモ/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /保管メモ/ })).not.toBeInTheDocument();
+
+    fireEvent.contextMenu(folderButton);
+    fireEvent.click(await screen.findByRole("menuitem", { name: "すべてのフォルダを開く" }));
+    expect(screen.getByRole("button", { name: /草稿/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /保管メモ/ })).toBeInTheDocument();
+  });
+
   it("開いているファイルをファイルツリーではハイライトしない", async () => {
     window.relic = makeRelicApi({
       getWorkspaceState: vi.fn().mockResolvedValue({

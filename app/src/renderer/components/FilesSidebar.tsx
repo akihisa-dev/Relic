@@ -3,6 +3,7 @@ import type { ReactElement } from "react";
 
 import type { WorkspaceState, WorkspaceTreeNode } from "../../shared/ipc";
 import { useT } from "../i18n";
+import type { FileTreeExpansionRequest } from "./FileTree";
 import { FileTree, FileTreeItem, findNodeByPath } from "./FileTree";
 
 export interface FilesSidebarProps {
@@ -60,6 +61,7 @@ export function FilesSidebar({
   openFilePaths,
   workspaceState
 }: FilesSidebarProps): ReactElement {
+  const [expansionRequest, setExpansionRequest] = useState<FileTreeExpansionRequest | undefined>(undefined);
   const [selectionAnchorPath, setSelectionAnchorPath] = useState<string | null>(null);
   const [selectedPaths, setSelectedPaths] = useState<Set<string>>(new Set());
   const activeWorkspace = workspaceState?.activeWorkspace ?? null;
@@ -138,6 +140,10 @@ export function FilesSidebar({
     return !isMultiSelectionMode;
   };
 
+  const requestExpansion = (action: FileTreeExpansionRequest["action"], scopePath?: string): void => {
+    setExpansionRequest((current) => ({ action, id: (current?.id ?? 0) + 1, scopePath }));
+  };
+
   return (
     <div className="sidebar-section">
       {activeWorkspace ? (
@@ -169,6 +175,7 @@ export function FilesSidebar({
 
                   return (
                     <FileTreeItem
+                      expansionRequest={expansionRequest}
                       isPinned
                       key={p}
                       node={node}
@@ -182,6 +189,7 @@ export function FilesSidebar({
                       onMoveItems={onMoveItems}
                       onOpenFile={onOpenFile}
                       onOpenInOtherPane={onOpenInOtherPane}
+                      onRequestExpansion={requestExpansion}
                       onRevealItem={onRevealItem}
                       onRenameItem={onRenameItem}
                       onSelectFolder={onSelectFolder}
@@ -198,6 +206,7 @@ export function FilesSidebar({
             </div>
           ) : null}
           <FileTree
+            expansionRequest={expansionRequest}
             isRoot
             nodes={userNodes}
             onDeleteItem={onDeleteItem}
@@ -210,6 +219,7 @@ export function FilesSidebar({
             onMoveItems={onMoveItems}
             onOpenFile={onOpenFile}
             onOpenInOtherPane={onOpenInOtherPane}
+            onRequestExpansion={requestExpansion}
             onRevealItem={onRevealItem}
             onRenameItem={onRenameItem}
             onSelectFolder={onSelectFolder}
