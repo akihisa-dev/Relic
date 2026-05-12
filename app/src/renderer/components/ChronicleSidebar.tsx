@@ -17,6 +17,22 @@ interface GanttChartViewProps {
   onRemoveFile: (chartId: string, path: string) => void;
 }
 
+type ChartFileTreeNode = ChartFileFolderNode | ChartFileNode;
+
+interface ChartFileFolderNode {
+  children: ChartFileTreeNode[];
+  name: string;
+  path: string;
+  type: "folder";
+}
+
+interface ChartFileNode {
+  entry: GanttChartEntry;
+  name: string;
+  path: string;
+  type: "file";
+}
+
 const ROW_HEIGHT = 38;
 const NAME_COLUMN_WIDTH = 180;
 const TICK_WIDTH = 72;
@@ -29,17 +45,21 @@ const SCALE_OPTIONS: Record<GanttChartSource, readonly number[]> = {
 export function ChronicleSidebar({ activeChartId, charts, onOpenChart }: ChronicleSidebarProps): ReactElement {
   const selectedChart = charts.find((chart) => chart.id === activeChartId) ?? charts[0] ?? null;
   const candidateEntries = selectedChart ? entriesForSource(charts, selectedChart.source) : [];
+  const candidateTree = useMemo(() => buildChartFileTree(candidateEntries), [candidateEntries]);
+  const selectedChartFilePaths = useMemo(
+    () => new Set(selectedChart?.filePaths ?? []),
+    [selectedChart?.filePaths]
+  );
 
   return (
     <div className="chronicle-sidebar">
-      <div className="chronicle-source-toggle" role="tablist">
+      <div className="chronicle-source-buttons">
         {charts.map((chart) => (
           <button
-            aria-selected={chart.id === selectedChart?.id}
-            className={`chronicle-source-toggle-button${chart.id === selectedChart?.id ? " active" : ""}`}
+            aria-pressed={chart.id === selectedChart?.id}
+            className={`chronicle-source-button${chart.id === selectedChart?.id ? " active" : ""}`}
             key={chart.id}
             onClick={() => onOpenChart(chart)}
-            role="tab"
             type="button"
           >
             {chart.source}
@@ -52,27 +72,104 @@ export function ChronicleSidebar({ activeChartId, charts, onOpenChart }: Chronic
           <div className="chronicle-file-select">
             {candidateEntries.length === 0 ? (
               <div className="frontmatter-field-empty">表示できるファイルはまだありません。</div>
-            ) : candidateEntries.map((entry) => (
-                <div
-                  className="chronicle-file-option"
-                  draggable
-                  key={entry.path}
-                  onDragStart={(event) => {
-                    event.dataTransfer.setData("application/relic-gantt-file", JSON.stringify({
-                      chartId: selectedChart.id,
-                      path: entry.path
-                    }));
-                    event.dataTransfer.effectAllowed = "copy";
-                  }}
-                  title={entry.path}
-                >
-                  <span>{entry.fileName}</span>
-                </div>
-            ))}
+            ) : (
+              <ChartFileTree
+                chartId={selectedChart.id}
+                nodes={candidateTree}
+                selectedFilePaths={selectedChartFilePaths}
+              />
+            )}
           </div>
         </div>
       ) : null}
     </div>
+  );
+}
+
+function ChartFileTree({
+  chartId,
+  nodes,
+  selectedFilePaths
+}: {
+  chartId: string;
+  nodes: ChartFileTreeNode[];
+  selectedFilePaths: Set<string>;
+}): ReactElement {
+  return (
+    <ul className="file-tree">
+      {nodes.map((node) => (
+        <ChartFileTreeItem
+          chartId={chartId}
+          key={node.path}
+          node={node}
+          selectedFilePaths={selectedFilePaths}
+        />
+      ))}
+    </ul>
+  );
+}
+
+function ChartFileTreeItem({
+  chartId,
+  node,
+  selectedFilePaths
+}: {
+  chartId: string;
+  node: ChartFileTreeNode;
+  selectedFilePaths: Set<string>;
+}): ReactElement {
+  const [isExpanded, setIsExpanded] = useState(true);
+
+  if (node.type === "folder") {
+    return (
+      <li className="file-tree-item">
+        <div className="file-tree-row-wrap">
+          <button
+            className="file-tree-row folder"
+            onClick={() => setIsExpanded((current) => !current)}
+            title={node.path}
+            type="button"
+          >
+            <span className={`file-tree-icon file-tree-icon--folder${isExpanded ? " file-tree-icon--expanded" : ""}`}>
+              ›
+            </span>
+            <span className="file-tree-name">{node.name}</span>
+          </button>
+        </div>
+        {isExpanded ? (
+          <ChartFileTree
+            chartId={chartId}
+            nodes={node.children}
+            selectedFilePaths={selectedFilePaths}
+          />
+        ) : null}
+      </li>
+    );
+  }
+
+  const isSelected = selectedFilePaths.has(node.entry.path);
+
+  return (
+    <li className="file-tree-item">
+      <div className="file-tree-row-wrap">
+        <button
+          className={`file-tree-row file${isSelected ? " selected" : ""}`}
+          draggable
+          onDragStart={(event) => {
+            event.dataTransfer.setData("application/relic-gantt-file", JSON.stringify({
+              chartId,
+              path: node.entry.path
+            }));
+            event.dataTransfer.effectAllowed = "copy";
+          }}
+          title={node.entry.path}
+          type="button"
+        >
+          <span className="file-tree-icon">•</span>
+          <span className="file-tree-name">{node.name}</span>
+        </button>
+      </div>
+    </li>
   );
 }
 
@@ -231,6 +328,53 @@ export function GanttChartView({ chart, onAddFile, onOpenFile, onRemoveFile }: G
 
 function entriesForSource(charts: WorkspaceGanttChart[], source: GanttChartSource): GanttChartEntry[] {
   return charts.find((chart) => chart.source === source)?.entries ?? [];
+}
+
+function buildChartFileTree(entries: GanttChartEntry[]): ChartFileTreeNode[] {
+  const root: ChartFileFolderNode = { children: [], name: "", path: "", type: "folder" };
+  const foldersByPath = new Map<string, ChartFileFolderNode>([["", root]]);
+
+  for (const entry of entries) {
+    const parts = entry.path.split("/").filter(Boolean);
+    if (parts.length === 0) continue;
+
+    let parent = root;
+    let currentPath = "";
+
+    for (const folderName of parts.slice(0, -1)) {
+      currentPath = currentPath ? `${currentPath}/${folderName}` : folderName;
+
+      let folder = foldersByPath.get(currentPath);
+      if (!folder) {
+        folder = { children: [], name: folderName, path: currentPath, type: "folder" };
+        foldersByPath.set(currentPath, folder);
+        parent.children.push(folder);
+      }
+
+      parent = folder;
+    }
+
+    parent.children.push({
+      entry,
+      name: entry.fileName,
+      path: entry.path,
+      type: "file"
+    });
+  }
+
+  sortChartFileTree(root.children);
+  return root.children;
+}
+
+function sortChartFileTree(nodes: ChartFileTreeNode[]): void {
+  nodes.sort((a, b) => {
+    if (a.type !== b.type) return a.type === "folder" ? -1 : 1;
+    return a.name.localeCompare(b.name, "ja");
+  });
+
+  for (const node of nodes) {
+    if (node.type === "folder") sortChartFileTree(node.children);
+  }
 }
 
 function visibleEntries(chart: WorkspaceGanttChart | null): GanttChartEntry[] {

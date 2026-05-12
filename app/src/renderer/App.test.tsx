@@ -650,7 +650,7 @@ describe("App", () => {
     await screen.findByText("Notes");
 
     fireEvent.click(screen.getByRole("button", { name: "チャート" }));
-    fireEvent.click(renderResult.container.querySelector(".chronicle-source-toggle-button")!);
+    fireEvent.click(renderResult.container.querySelector(".chronicle-source-button")!);
 
     const activeTabId = useEditorStore.getState().leftPane.activeTabId;
     expect(activeTabId).toBe("gantt-chronicle");
@@ -658,6 +658,8 @@ describe("App", () => {
       chartId: "chronicle",
       kind: "gantt"
     });
+    expect(screen.getByText("history")).toBeInTheDocument();
+    expect(renderResult.container.querySelector(".chronicle-sidebar .file-tree-row.file.selected")).toHaveTextContent("鎌倉時代");
     expect(screen.getAllByText("鎌倉時代").length).toBeGreaterThan(0);
     expect(screen.getByText("1185 〜 1333")).toBeInTheDocument();
   });
@@ -676,7 +678,7 @@ describe("App", () => {
     await screen.findByText("Notes");
 
     fireEvent.click(screen.getByRole("button", { name: "チャート" }));
-    fireEvent.click(container.querySelector(".chronicle-source-toggle-button")!);
+    fireEvent.click(container.querySelector(".chronicle-source-button")!);
 
     expect(screen.getAllByText("鎌倉時代").length).toBeGreaterThan(0);
     expect(screen.getByText("1185 〜 1333")).toBeInTheDocument();
