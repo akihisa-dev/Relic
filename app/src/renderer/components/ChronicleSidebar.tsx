@@ -36,11 +36,18 @@ interface ChartFileNode {
 const ROW_HEIGHT = 38;
 const NAME_COLUMN_WIDTH = 180;
 const TICK_WIDTH = 72;
+const DATE_TICK_WIDTH = 132;
 const LABEL_HORIZONTAL_PADDING = 14;
 const SCALE_OPTIONS: Record<GanttChartSource, readonly number[]> = {
   chronicle: [25, 50, 100, 200, 500],
-  date: [7, 30, 90, 365]
+  date: [1, 7, 30, 90]
 };
+
+interface DateAxisSegment {
+  endValue: number;
+  label: string;
+  startValue: number;
+}
 
 export function ChronicleSidebar({ activeChartId, charts, onOpenChart }: ChronicleSidebarProps): ReactElement {
   const selectedChart = charts.find((chart) => chart.id === activeChartId) ?? charts[0] ?? null;
@@ -180,16 +187,17 @@ export function GanttChartView({ chart, onAddFile, onOpenFile, onRemoveFile }: G
   const activeSource = chart && isGanttChartSource(chart.source) ? chart.source : "chronicle";
   const scaleOptions = SCALE_OPTIONS[activeSource];
   const tickInterval = scaleOptions[Math.min(scaleIndex, scaleOptions.length - 1)] ?? scaleOptions[0] ?? 100;
-  const yearWidth = TICK_WIDTH / tickInterval;
   const entries = useMemo(() => visibleEntries(chart), [chart]);
-  const { axisEnd, axisStart } = timelineBounds(entries, tickInterval);
+  const { axisEnd, axisStart } = timelineBounds(entries, tickInterval, activeSource);
   const axisSpan = Math.max(1, axisEnd - axisStart + 1);
-  const timelineWidth = Math.max(720, axisSpan * yearWidth);
+  const tickWidth = activeSource === "date" ? DATE_TICK_WIDTH : TICK_WIDTH;
+  const unitWidth = tickWidth / tickInterval;
+  const timelineWidth = Math.max(720, axisSpan * unitWidth);
   const ticks = useMemo(
-    () => buildTicks(axisStart, axisEnd, tickInterval),
-    [axisEnd, axisStart, tickInterval]
+    () => buildTicks(axisStart, axisEnd, tickInterval, activeSource),
+    [activeSource, axisEnd, axisStart, tickInterval]
   );
-  const gridOffset = ticks.length > 0 ? (ticks[0] - axisStart) * yearWidth : 0;
+  const gridOffset = ticks.length > 0 ? (ticks[0] - axisStart) * unitWidth : 0;
 
   const handleDrop = (event: DragEvent<HTMLDivElement>): void => {
     if (!chart) return;
@@ -227,7 +235,7 @@ export function GanttChartView({ chart, onAddFile, onOpenFile, onRemoveFile }: G
           >
             -
           </button>
-          <span className="chronicle-scale-value">{tickInterval}</span>
+          <span className="chronicle-scale-value">{formatScaleValue(tickInterval, activeSource)}</span>
           <button
             aria-label={t("chronicle.scaleIncrease")}
             className="chronicle-scale-button"
@@ -239,70 +247,80 @@ export function GanttChartView({ chart, onAddFile, onOpenFile, onRemoveFile }: G
           </button>
         </div>
       </div>
-      {!chart || entries.length === 0 ? (
+      {!chart ? (
         <div className="frontmatter-field-empty">{t("chronicle.empty")}</div>
       ) : (
         <div className="chronicle-chart" onScroll={(event) => setScrollLeft(event.currentTarget.scrollLeft)}>
           <div className="chronicle-grid" style={{ width: NAME_COLUMN_WIDTH + timelineWidth }}>
             <div className="chronicle-name-column" style={{ width: NAME_COLUMN_WIDTH }}>
-              <div className="chronicle-name-header" />
-              {entries.map((entry) => (
-                <div className="chronicle-file-name-row" key={entry.path}>
-                  <button
-                    className="chronicle-file-name"
-                    onClick={() => onOpenFile(entry.path)}
-                    title={entry.path}
-                    type="button"
-                  >
-                    {entry.fileName}
-                  </button>
-                  <button
-                    aria-label={`${entry.fileName}を年表から外す`}
-                    className="chronicle-file-remove"
-                    onClick={() => chart ? onRemoveFile(chart.id, entry.path) : undefined}
-                    type="button"
-                  >
-                    ×
-                  </button>
+              <div className="chronicle-name-header" style={{ height: activeSource === "date" ? 46 : 34 }} />
+              {entries.length === 0 ? (
+                <div className="chronicle-file-name-row chronicle-file-name-row--empty">
+                  <div className="chronicle-file-name chronicle-file-name--empty">{t("chronicle.empty")}</div>
                 </div>
-              ))}
+              ) : (
+                entries.map((entry) => (
+                  <div className="chronicle-file-name-row" key={entry.path}>
+                    <button
+                      className="chronicle-file-name"
+                      onClick={() => onOpenFile(entry.path)}
+                      title={entry.path}
+                      type="button"
+                    >
+                      {entry.fileName}
+                    </button>
+                    <button
+                      aria-label={`${entry.fileName}をチャートから外す`}
+                      className="chronicle-file-remove"
+                      onClick={() => chart ? onRemoveFile(chart.id, entry.path) : undefined}
+                      type="button"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))
+              )}
             </div>
             <div className="chronicle-timeline" style={{ marginLeft: NAME_COLUMN_WIDTH, width: timelineWidth }}>
-              <div className="chronicle-axis" style={{ width: timelineWidth }}>
-                {ticks.map((tick, index) => (
-                  <span
-                    className={`chronicle-axis-tick${index === 0 ? " chronicle-axis-tick--start" : ""}${index === ticks.length - 1 ? " chronicle-axis-tick--end" : ""}`}
-                    key={tick}
-                    style={{ left: (tick - axisStart) * yearWidth }}
-                  >
-                    {formatAxisValue(tick, activeSource)}
-                  </span>
-                ))}
-              </div>
+              {activeSource === "date" ? (
+                <DateAxis axisEnd={axisEnd} axisStart={axisStart} unitWidth={unitWidth} width={timelineWidth} />
+              ) : (
+                <div className="chronicle-axis" style={{ width: timelineWidth }}>
+                  {ticks.map((tick, index) => (
+                    <span
+                      className={`chronicle-axis-tick${index === 0 ? " chronicle-axis-tick--start" : ""}${index === ticks.length - 1 ? " chronicle-axis-tick--end" : ""}`}
+                      key={tick}
+                      style={{ left: (tick - axisStart) * unitWidth }}
+                    >
+                      {formatAxisValue(tick, activeSource)}
+                    </span>
+                  ))}
+                </div>
+              )}
               <div
                 className="chronicle-tracks"
                 style={{
-                  "--chronicle-grid-x": `${tickInterval * yearWidth}px`,
+                  "--chronicle-grid-x": `${tickInterval * unitWidth}px`,
                   "--chronicle-grid-offset-x": `${gridOffset}px`,
-                  height: entries.length * ROW_HEIGHT,
+                  height: Math.max(1, entries.length) * ROW_HEIGHT,
                   width: timelineWidth
                 } as CSSProperties}
               >
                 {entries.map((entry, index) => {
-                  const left = Math.max(0, (entry.startValue - axisStart) * yearWidth);
-                  const isSingleYear = entry.startValue === entry.endValue;
+                  const left = Math.max(0, (entry.startValue - axisStart) * unitWidth);
+                  const isSingleValue = entry.startValue === entry.endValue;
                   const rangeLabel = formatRange(entry);
                   const labelWidth = labelWidthForText(rangeLabel);
-                  const naturalWidth = isSingleYear ? yearWidth : (entry.endValue - entry.startValue + 1) * yearWidth;
-                  const width = isSingleYear ? Math.max(46, naturalWidth) : Math.max(28, naturalWidth);
+                  const naturalWidth = isSingleValue ? unitWidth : (entry.endValue - entry.startValue + 1) * unitWidth;
+                  const width = isSingleValue ? Math.max(activeSource === "date" ? 84 : 46, naturalWidth) : Math.max(28, naturalWidth);
                   const maxLabelLeft = Math.max(0, width - labelWidth);
-                  const labelLeft = isSingleYear
+                  const labelLeft = isSingleValue
                     ? (width - labelWidth) / 2
                     : Math.max(7, Math.min(maxLabelLeft, scrollLeft - left + 7));
 
                   return (
                     <button
-                      className={`chronicle-fill${isSingleYear ? " chronicle-fill--single" : ""}`}
+                      className={`chronicle-fill${isSingleValue ? " chronicle-fill--single" : ""}`}
                       key={entry.path}
                       onClick={() => onOpenFile(entry.path)}
                       style={{
@@ -322,6 +340,54 @@ export function GanttChartView({ chart, onAddFile, onOpenFile, onRemoveFile }: G
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function DateAxis({
+  axisEnd,
+  axisStart,
+  unitWidth,
+  width
+}: {
+  axisEnd: number;
+  axisStart: number;
+  unitWidth: number;
+  width: number;
+}): ReactElement {
+  const years = buildDateAxisSegments(axisStart, axisEnd, "year");
+  const months = buildDateAxisSegments(axisStart, axisEnd, "month");
+
+  return (
+    <div className="chronicle-axis chronicle-axis--date" style={{ width }}>
+      <div className="chronicle-axis-row chronicle-axis-row--year">
+        {years.map((segment) => (
+          <span
+            className="chronicle-axis-cell"
+            key={`year-${segment.label}-${segment.startValue}`}
+            style={{
+              left: (segment.startValue - axisStart) * unitWidth,
+              width: Math.max(1, (segment.endValue - segment.startValue + 1) * unitWidth)
+            }}
+          >
+            {segment.label}
+          </span>
+        ))}
+      </div>
+      <div className="chronicle-axis-row chronicle-axis-row--month">
+        {months.map((segment) => (
+          <span
+            className="chronicle-axis-cell"
+            key={`month-${segment.label}-${segment.startValue}`}
+            style={{
+              left: (segment.startValue - axisStart) * unitWidth,
+              width: Math.max(1, (segment.endValue - segment.startValue + 1) * unitWidth)
+            }}
+          >
+            {segment.label}
+          </span>
+        ))}
+      </div>
     </div>
   );
 }
@@ -379,20 +445,32 @@ function sortChartFileTree(nodes: ChartFileTreeNode[]): void {
 
 function visibleEntries(chart: WorkspaceGanttChart | null): GanttChartEntry[] {
   if (!chart) return [];
-  if (!chart.filePaths) return chart.entries;
+  if (!chart.filePaths || chart.filePaths.length === 0) return [];
 
   const visiblePaths = new Set(chart.filePaths);
   return chart.entries.filter((entry) => visiblePaths.has(entry.path));
 }
 
-function timelineBounds(entries: GanttChartEntry[], tickInterval: number): { axisEnd: number; axisStart: number } {
-  if (entries.length === 0) return { axisEnd: 1, axisStart: 1 };
+function timelineBounds(
+  entries: GanttChartEntry[],
+  tickInterval: number,
+  source: GanttChartSource
+): { axisEnd: number; axisStart: number } {
+  if (entries.length === 0) {
+    const today = source === "date" ? dateToDay(new Date().toISOString().slice(0, 10)) : 1;
+    return {
+      axisEnd: today + tickInterval * 4,
+      axisStart: today - tickInterval
+    };
+  }
 
   const starts = entries.map((entry) => entry.startValue);
   const ends = entries.map((entry) => entry.endValue);
   const min = Math.min(...starts);
   const max = Math.max(...ends);
-  const padding = Math.max(1, Math.ceil((max - min + 1) * 0.06));
+  const padding = source === "date"
+    ? Math.max(3, Math.ceil((max - min + 1) * 0.18))
+    : Math.max(1, Math.ceil((max - min + 1) * 0.06));
   const paddedStart = min - padding;
   const paddedEnd = max + padding;
 
@@ -402,7 +480,14 @@ function timelineBounds(entries: GanttChartEntry[], tickInterval: number): { axi
   };
 }
 
-function buildTicks(axisStart: number, axisEnd: number, interval: number): number[] {
+function buildTicks(
+  axisStart: number,
+  axisEnd: number,
+  interval: number,
+  source: GanttChartSource
+): number[] {
+  if (source === "date") return buildDateTicks(axisStart, axisEnd, interval);
+
   const first = Math.floor(axisStart / interval) * interval;
   const ticks: number[] = [];
 
@@ -414,16 +499,31 @@ function buildTicks(axisStart: number, axisEnd: number, interval: number): numbe
   return ticks;
 }
 
+function buildDateTicks(axisStart: number, axisEnd: number, interval: number): number[] {
+  const ticks: number[] = [];
+  let cursor = firstDateTick(axisStart, interval);
+
+  while (cursor <= axisEnd) {
+    if (cursor >= axisStart) ticks.push(cursor);
+    cursor = nextDateTick(cursor, interval);
+  }
+
+  return ticks;
+}
+
 function formatRange(entry: GanttChartEntry): string {
   if (entry.startValue === entry.endValue) return entry.startLabel;
   return `${entry.startLabel} 〜 ${entry.endLabel}`;
 }
 
 function formatAxisValue(value: number, source: GanttChartSource): string {
-  if (source === "date") return dayToDate(value);
-
   const year = value < 0 ? value : value + 1;
   return year < 0 ? `−${Math.abs(year)}` : String(year);
+}
+
+function formatScaleValue(value: number, source: GanttChartSource): string {
+  if (source === "chronicle") return String(value);
+  return `${value}日`;
 }
 
 function labelWidthForText(text: string): number {
@@ -432,6 +532,91 @@ function labelWidthForText(text: string): number {
 
 function dayToDate(value: number): string {
   return new Date(value * 86_400_000).toISOString().slice(0, 10);
+}
+
+function dateToDay(value: string): number {
+  return Math.floor(new Date(`${value}T00:00:00.000Z`).getTime() / 86_400_000);
+}
+
+function firstDateTick(axisStart: number, interval: number): number {
+  const date = new Date(axisStart * 86_400_000);
+
+  if (interval >= 90) {
+    const month = Math.floor(date.getUTCMonth() / 3) * 3;
+    return dateToDay(`${date.getUTCFullYear()}-${String(month + 1).padStart(2, "0")}-01`);
+  }
+
+  if (interval >= 30) {
+    return dateToDay(`${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}-01`);
+  }
+
+  if (interval >= 7) {
+    const day = date.getUTCDay();
+    return axisStart - ((day + 6) % 7);
+  }
+
+  return axisStart;
+}
+
+function nextDateTick(value: number, interval: number): number {
+  const date = new Date(value * 86_400_000);
+
+  if (interval >= 90) {
+    date.setUTCMonth(date.getUTCMonth() + 3, 1);
+    return Math.floor(date.getTime() / 86_400_000);
+  }
+
+  if (interval >= 30) {
+    date.setUTCMonth(date.getUTCMonth() + 1, 1);
+    return Math.floor(date.getTime() / 86_400_000);
+  }
+
+  return value + interval;
+}
+
+function buildDateAxisSegments(
+  axisStart: number,
+  axisEnd: number,
+  unit: "month" | "year"
+): DateAxisSegment[] {
+  const segments: DateAxisSegment[] = [];
+  let cursor = startOfDateUnit(axisStart, unit);
+
+  while (cursor <= axisEnd) {
+    const next = nextDateUnit(cursor, unit);
+    const startValue = Math.max(axisStart, cursor);
+    const endValue = Math.min(axisEnd, next - 1);
+
+    if (endValue >= startValue) {
+      segments.push({
+        endValue,
+        label: unit === "year" ? dayToDate(cursor).slice(0, 4) : dayToDate(cursor).slice(5, 7),
+        startValue
+      });
+    }
+
+    cursor = next;
+  }
+
+  return segments;
+}
+
+function startOfDateUnit(value: number, unit: "month" | "year"): number {
+  const date = new Date(value * 86_400_000);
+  const month = unit === "year" ? 0 : date.getUTCMonth();
+  return dateToDay(`${date.getUTCFullYear()}-${String(month + 1).padStart(2, "0")}-01`);
+}
+
+function nextDateUnit(value: number, unit: "month" | "year"): number {
+  const date = new Date(value * 86_400_000);
+
+  if (unit === "year") {
+    date.setUTCFullYear(date.getUTCFullYear() + 1, 0, 1);
+  } else {
+    date.setUTCMonth(date.getUTCMonth() + 1, 1);
+  }
+
+  return Math.floor(date.getTime() / 86_400_000);
 }
 
 function isGanttChartSource(value: unknown): value is GanttChartSource {

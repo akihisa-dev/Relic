@@ -663,6 +663,43 @@ describe("App", () => {
     expect(screen.getByText("1185 〜 1333")).toBeInTheDocument();
   });
 
+  it("dateチャートはドロップ前でも空の日付ガントを表示する", async () => {
+    window.relic = makeRelicApi({
+      getWorkspaceChronicle: vi.fn().mockResolvedValue({
+        ok: true,
+        value: [{
+          entries: [{
+            endLabel: "2026-05-05",
+            endValue: 20578,
+            fileName: "実装タスク",
+            path: "tasks/implementation.md",
+            startLabel: "2026-05-01",
+            startValue: 20574
+          }],
+          filePaths: [],
+          id: "date",
+          name: "date",
+          source: "date"
+        }]
+      }),
+      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
+    });
+
+    const { container } = await renderApp();
+
+    await screen.findByText("Notes");
+
+    fireEvent.click(screen.getByRole("button", { name: "チャート" }));
+    fireEvent.click(container.querySelectorAll(".chronicle-source-button")[1]);
+
+    expect(useEditorStore.getState().leftPane.activeTabId).toBe("gantt-date");
+    expect(screen.getByText("実装タスク")).toBeInTheDocument();
+    expect(screen.queryByText("2026-05-01 〜 2026-05-05")).not.toBeInTheDocument();
+    expect(screen.getByText("30日")).toBeInTheDocument();
+    expect(container.querySelector(".chronicle-chart")).toBeInTheDocument();
+    expect(container.querySelector(".chronicle-fill")).not.toBeInTheDocument();
+  });
+
   it("旧形式の年表データが返っても年表タブを表示できる", async () => {
     window.relic = makeRelicApi({
       getWorkspaceChronicle: vi.fn().mockResolvedValue({
