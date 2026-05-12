@@ -675,36 +675,25 @@ export function App(): ReactElement {
     gitStatus,
     gitHubAuthStatus,
     gitRemotes,
-    gitBranches,
     gitCommitHistory,
-    gitTags,
     gitWorkingChanges,
     selectedGitCommitHash,
     selectedGitCommitDiff,
-    newGitBranchName,
-    newGitTagName,
-    newGitTagMessage,
     gitRemoteUrl,
     gitSyncMessage,
     gitErrorMessage,
     gitRetryAction,
-    pendingGitBranchSwitch,
     gitCommitMessage,
     gitSyncPreview,
     gitSyncStep,
     gitConflicts,
     gitCloneUrl,
-    isCreatingGitBranch,
     isCreatingGitCommit,
-    isCreatingGitTag,
     isConnectingGitHub,
     isConnectingGitRemote,
-    isDeletingGitTag,
     isDisconnectingGitHub,
     isPullingGitBranch,
     isPushingGitBranch,
-    pushingGitTagName,
-    isSwitchingGitBranch,
     isCloningGitHub,
     isResolvingConflict,
     handleInitializeGitRepository,
@@ -716,21 +705,11 @@ export function App(): ReactElement {
     handlePullGitBranch,
     handleConfirmPush,
     handleConfirmPull,
-    handleCreateGitBranch,
-    handleSwitchGitBranch,
-    handleCommitAndSwitchGitBranch,
     handleCreateGitCommit,
-    handleCreateGitTag,
-    handleDeleteGitTag,
-    handlePushGitTag,
     handleResolveConflict,
     setSelectedGitCommitHash,
-    setNewGitBranchName,
-    setNewGitTagName,
-    setNewGitTagMessage,
     setGitRemoteUrl,
     setGitSyncStep,
-    setPendingGitBranchSwitch,
     setGitCommitMessage,
     setGitCloneUrl
   } = gitPanel;
@@ -1200,12 +1179,10 @@ export function App(): ReactElement {
 
   const commands = useCommandPaletteCommands({
     activeFileName: activeFileTabInFocusedPane?.name ?? null,
-    gitBranches,
     handleDeleteActiveFile,
     handleDuplicateActiveFile,
     handlePullGitBranch,
     handlePushGitBranch,
-    handleSwitchGitBranch,
     setIsCreatingFile,
     setShowQuickSwitcher,
     setSidebarView,
@@ -1301,36 +1278,25 @@ export function App(): ReactElement {
           gitStatus={gitStatus}
           gitHubAuthStatus={gitHubAuthStatus}
           gitRemotes={gitRemotes}
-          gitBranches={gitBranches}
           gitCommitHistory={gitCommitHistory}
-          gitTags={gitTags}
           gitWorkingChanges={gitWorkingChanges}
           selectedGitCommitHash={selectedGitCommitHash}
           selectedGitCommitDiff={selectedGitCommitDiff}
-          newGitBranchName={newGitBranchName}
-          newGitTagName={newGitTagName}
-          newGitTagMessage={newGitTagMessage}
           gitRemoteUrl={gitRemoteUrl}
           gitSyncMessage={gitSyncMessage}
           gitErrorMessage={gitErrorMessage}
           gitRetryAction={gitRetryAction}
-          pendingGitBranchSwitch={pendingGitBranchSwitch}
           gitCommitMessage={gitCommitMessage}
           gitSyncPreview={gitSyncPreview}
           gitSyncStep={gitSyncStep}
           gitConflicts={gitConflicts}
           gitCloneUrl={gitCloneUrl}
-          isCreatingGitBranch={isCreatingGitBranch}
           isCreatingGitCommit={isCreatingGitCommit}
-          isCreatingGitTag={isCreatingGitTag}
           isConnectingGitHub={isConnectingGitHub}
           isConnectingGitRemote={isConnectingGitRemote}
-          isDeletingGitTag={isDeletingGitTag}
           isDisconnectingGitHub={isDisconnectingGitHub}
           isPullingGitBranch={isPullingGitBranch}
           isPushingGitBranch={isPushingGitBranch}
-          pushingGitTagName={pushingGitTagName}
-          isSwitchingGitBranch={isSwitchingGitBranch}
           isCloningGitHub={isCloningGitHub}
           isResolvingConflict={isResolvingConflict}
           hasWorkspace={!!workspaceState?.activeWorkspace}
@@ -1343,21 +1309,11 @@ export function App(): ReactElement {
           onPullGitBranch={handlePullGitBranch}
           onConfirmPush={handleConfirmPush}
           onConfirmPull={handleConfirmPull}
-          onCreateGitBranch={handleCreateGitBranch}
-          onSwitchGitBranch={handleSwitchGitBranch}
-          onCommitAndSwitchGitBranch={handleCommitAndSwitchGitBranch}
           onCreateGitCommit={handleCreateGitCommit}
-          onCreateGitTag={handleCreateGitTag}
-          onDeleteGitTag={handleDeleteGitTag}
-          onPushGitTag={handlePushGitTag}
           onResolveConflict={handleResolveConflict}
           onSelectCommitHash={setSelectedGitCommitHash}
-          onSetNewGitBranchName={setNewGitBranchName}
-          onSetNewGitTagName={setNewGitTagName}
-          onSetNewGitTagMessage={setNewGitTagMessage}
           onSetGitRemoteUrl={setGitRemoteUrl}
           onSetGitSyncStep={setGitSyncStep}
-          onSetPendingGitBranchSwitch={setPendingGitBranchSwitch}
           onSetGitCommitMessage={setGitCommitMessage}
           onSetGitCloneUrl={setGitCloneUrl}
         />
@@ -1400,20 +1356,19 @@ export function App(): ReactElement {
       />
     );
   }, [
-    appInfo, autoSyncSettings, chronicleEntries, editorSettings, featureToggles, gitBranches, gitCloneUrl,
+    appInfo, autoSyncSettings, chronicleEntries, editorSettings, featureToggles, gitCloneUrl,
     gitCommitHistory, gitCommitMessage, gitConflicts, gitErrorMessage, gitHubAuthStatus, gitHubIntegrationSettings,
-    gitRemotes, gitRemoteUrl, gitRetryAction, gitStatus, gitSyncMessage, gitSyncPreview, gitSyncStep, gitTags,
-    gitWorkingChanges, handleCloneGitHubRepository, handleCommitAndSwitchGitBranch, handleConfirmPull, handleConfirmPush,
-    handleConnectGitHubAccount, handleConnectGitRemote, handleCreateGitBranch, handleCreateGitCommit, handleCreateGitTag,
-    handleDeleteGitTag, handleDisconnectGitHubAccount, handleInitializeGitRepository, handlePullGitBranch, handlePushGitBranch,
-    handlePushGitTag, handleResolveConflict, handleSaveAutoSyncSettings, handleSaveFeatureToggles,
+    gitRemotes, gitRemoteUrl, gitRetryAction, gitStatus, gitSyncMessage, gitSyncPreview, gitSyncStep,
+    gitWorkingChanges, handleCloneGitHubRepository, handleConfirmPull, handleConfirmPush,
+    handleConnectGitHubAccount, handleConnectGitRemote, handleCreateGitCommit,
+    handleDisconnectGitHubAccount, handleInitializeGitRepository, handlePullGitBranch, handlePushGitBranch,
+    handleResolveConflict, handleSaveAutoSyncSettings, handleSaveFeatureToggles,
     handleSaveGitHubIntegrationSettings, handleSaveSettings, handleSaveUserDefinedFields, handleOpenFile,
-    handleSwitchGitBranch, isCloningGitHub, isConnectingGitHub, isConnectingGitRemote, isCreatingGitBranch,
-    isCreatingGitCommit, isCreatingGitTag, isDeletingGitTag, isDisconnectingGitHub, isPullingGitBranch,
-    isPushingGitBranch, isResolvingConflict, isSwitchingGitBranch, newGitBranchName, newGitTagMessage,
-    newGitTagName, pendingGitBranchSwitch, pushingGitTagName, selectedGitCommitDiff, selectedGitCommitHash,
-    setGitCloneUrl, setGitCommitMessage, setGitRemoteUrl, setGitSyncStep, setNewGitBranchName, setNewGitTagMessage,
-    setNewGitTagName, setPendingGitBranchSwitch, setSelectedGitCommitHash, userDefinedFields, workspaceState
+    isCloningGitHub, isConnectingGitHub, isConnectingGitRemote,
+    isCreatingGitCommit, isDisconnectingGitHub, isPullingGitBranch,
+    isPushingGitBranch, isResolvingConflict, selectedGitCommitDiff, selectedGitCommitHash,
+    setGitCloneUrl, setGitCommitMessage, setGitRemoteUrl, setGitSyncStep,
+    setSelectedGitCommitHash, userDefinedFields, workspaceState
   ]);
 
   // ──────────────────
@@ -1842,9 +1797,6 @@ export function App(): ReactElement {
         ) : (
           <span>{t("app.wordCount", { chars: 0, words: 0 })}</span>
         )}
-        {featureToggles.git && gitStatus?.initialized && gitStatus.currentBranch ? (
-          <span className="status-bar-branch">⎇ {gitStatus.currentBranch}</span>
-        ) : null}
       </footer>
 
       {railTabFlight ? (

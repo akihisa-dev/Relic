@@ -8,26 +8,21 @@ import {
   connectGitRemoteChannel,
   connectGitHubChannel,
   createFolderChannel,
-  createGitBranchChannel,
   createGitCommitChannel,
-  createGitTagChannel,
   createLinkedMarkdownFileChannel,
   createMarkdownFileChannel,
   disconnectGitHubChannel,
-  deleteGitTagChannel,
   duplicateMarkdownFileChannel,
   getAutoSyncSettingsChannel,
   getBacklinksChannel,
   getAppInfoChannel,
   getGitHubAuthStatusChannel,
   getGitHubIntegrationSettingsChannel,
-  getGitBranchesChannel,
   getGitCommitHistoryChannel,
   getGitCommitDiffChannel,
   getGitConflictsChannel,
   getGitRemotesChannel,
   getGitSyncPreviewChannel,
-  getGitTagsChannel,
   getEditorSettingsChannel,
   getGitStatusChannel,
   getGitWorkingChangesChannel,
@@ -44,7 +39,6 @@ import {
   openWorkspaceChannel,
   pullGitBranchChannel,
   pushGitBranchChannel,
-  pushGitTagChannel,
   readMarkdownFileChannel,
   removeWorkspaceChannel,
   renameWorkspaceChannel,
@@ -75,7 +69,6 @@ import {
   type SplitFileByHeadingInput,
   searchAndReplaceChannel,
   searchWorkspaceChannel,
-  switchGitBranchChannel,
   switchWorkspaceChannel,
   writeMarkdownFileChannel,
   type AppInfo,
@@ -84,18 +77,14 @@ import {
   type ChronicleEntry,
   type ConnectGitRemoteInput,
   type CreateFolderInput,
-  type CreateGitBranchInput,
   type CreateGitCommitInput,
-  type CreateGitTagInput,
   type CreateLinkedMarkdownFileInput,
   type CreateLinkedMarkdownFileResult,
   type CreateMarkdownFileInput,
-  type DeleteGitTagInput,
   type DuplicateMarkdownFileInput,
   type EditorSettings,
   type Backlink,
   type GitCommitDiff,
-  type GitBranchSummary,
   type GitCommitSummary,
   type GitConflict,
   type GitHubAuthStatus,
@@ -104,7 +93,6 @@ import {
   type GitRemoteSyncResult,
   type GitStatus,
   type GitSyncPreview,
-  type GitTagSummary,
   type GitWorkingChange,
   type GetBacklinksInput,
   type MarkdownFileContent,
@@ -113,7 +101,6 @@ import {
   type MoveItemToTrashInput,
   type MoveMarkdownFileInput,
   type RelicApi,
-  type PushGitTagInput,
   type ReadMarkdownFileInput,
   type RemoveWorkspaceInput,
   type RenameWorkspaceInput,
@@ -127,7 +114,6 @@ import {
   type SearchAndReplaceInput,
   type SearchAndReplaceMatch,
   type SearchWorkspaceInput,
-  type SwitchGitBranchInput,
   type SwitchWorkspaceInput,
   type WorkspaceState,
   type WorkspaceSearchResult,
@@ -152,12 +138,8 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(connectGitHubChannel) as Promise<RelicResult<GitHubAuthStatus>>,
   createFolder: (input: CreateFolderInput) =>
     ipcRenderer.invoke(createFolderChannel, input) as Promise<RelicResult<WorkspaceState>>,
-  createGitBranch: (input: CreateGitBranchInput) =>
-    ipcRenderer.invoke(createGitBranchChannel, input) as Promise<RelicResult<GitBranchSummary[]>>,
   createGitCommit: (input: CreateGitCommitInput) =>
     ipcRenderer.invoke(createGitCommitChannel, input) as Promise<RelicResult<GitCommitSummary>>,
-  createGitTag: (input: CreateGitTagInput) =>
-    ipcRenderer.invoke(createGitTagChannel, input) as Promise<RelicResult<GitTagSummary[]>>,
   createLinkedMarkdownFile: (input: CreateLinkedMarkdownFileInput) =>
     ipcRenderer.invoke(createLinkedMarkdownFileChannel, input) as Promise<
       RelicResult<CreateLinkedMarkdownFileResult>
@@ -170,16 +152,12 @@ const relicApi: RelicApi = {
     >,
   disconnectGitHubAccount: () =>
     ipcRenderer.invoke(disconnectGitHubChannel) as Promise<RelicResult<GitHubAuthStatus>>,
-  deleteGitTag: (input: DeleteGitTagInput) =>
-    ipcRenderer.invoke(deleteGitTagChannel, input) as Promise<RelicResult<GitTagSummary[]>>,
   getBacklinks: (input: GetBacklinksInput) =>
     ipcRenderer.invoke(getBacklinksChannel, input) as Promise<RelicResult<Backlink[]>>,
   getGitHubAuthStatus: () =>
     ipcRenderer.invoke(getGitHubAuthStatusChannel) as Promise<RelicResult<GitHubAuthStatus>>,
   getGitHubIntegrationSettings: () =>
     ipcRenderer.invoke(getGitHubIntegrationSettingsChannel) as Promise<RelicResult<GitHubIntegrationSettings>>,
-  getGitBranches: () =>
-    ipcRenderer.invoke(getGitBranchesChannel) as Promise<RelicResult<GitBranchSummary[]>>,
   getGitCommitHistory: () =>
     ipcRenderer.invoke(getGitCommitHistoryChannel) as Promise<RelicResult<GitCommitSummary[]>>,
   getGitCommitDiff: (hash: string) =>
@@ -188,8 +166,6 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(getGitStatusChannel) as Promise<RelicResult<GitStatus>>,
   getGitRemotes: () =>
     ipcRenderer.invoke(getGitRemotesChannel) as Promise<RelicResult<GitRemoteSummary[]>>,
-  getGitTags: () =>
-    ipcRenderer.invoke(getGitTagsChannel) as Promise<RelicResult<GitTagSummary[]>>,
   getGitWorkingChanges: () =>
     ipcRenderer.invoke(getGitWorkingChangesChannel) as Promise<RelicResult<GitWorkingChange[]>>,
   getAppInfo: () => ipcRenderer.invoke(getAppInfoChannel) as Promise<RelicResult<AppInfo>>,
@@ -223,8 +199,6 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(pullGitBranchChannel) as Promise<RelicResult<GitRemoteSyncResult>>,
   pushGitBranch: () =>
     ipcRenderer.invoke(pushGitBranchChannel) as Promise<RelicResult<GitRemoteSyncResult>>,
-  pushGitTag: (input: PushGitTagInput) =>
-    ipcRenderer.invoke(pushGitTagChannel, input) as Promise<RelicResult<GitRemoteSyncResult>>,
   readMarkdownFile: (input: ReadMarkdownFileInput) =>
     ipcRenderer.invoke(readMarkdownFileChannel, input) as Promise<RelicResult<MarkdownFileContent>>,
   readClipboardText: () => clipboard.readText(),
@@ -256,8 +230,6 @@ const relicApi: RelicApi = {
     >,
   switchWorkspace: (input: SwitchWorkspaceInput) =>
     ipcRenderer.invoke(switchWorkspaceChannel, input) as Promise<RelicResult<WorkspaceState>>,
-  switchGitBranch: (input: SwitchGitBranchInput) =>
-    ipcRenderer.invoke(switchGitBranchChannel, input) as Promise<RelicResult<GitBranchSummary[]>>,
   writeMarkdownFile: (input: WriteMarkdownFileInput) =>
     ipcRenderer.invoke(writeMarkdownFileChannel, input) as Promise<RelicResult<void>>,
   writeClipboardText: (text: string) => clipboard.writeText(text),

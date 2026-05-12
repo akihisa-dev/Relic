@@ -46,7 +46,7 @@ export async function autoCommitAndPush(
     const status = await readGitStatus(workspacePath);
 
     if (!status.ok || !status.value.currentBranch) {
-      return fail("GIT_PUSH_FAILED", "現在のブランチを確認できませんでした。");
+      return fail("GIT_PUSH_FAILED", "送信する履歴を確認できませんでした。");
     }
 
     const result = await git.push({

@@ -16,8 +16,6 @@ export const getGitStatusChannel = "workspace:getGitStatus";
 export const getGitCommitHistoryChannel = "workspace:getGitCommitHistory";
 export const getGitCommitDiffChannel = "workspace:getGitCommitDiff";
 export const getGitWorkingChangesChannel = "workspace:getGitWorkingChanges";
-export const getGitBranchesChannel = "workspace:getGitBranches";
-export const getGitTagsChannel = "workspace:getGitTags";
 export const getWorkspaceTagsChannel = "workspace:getTags";
 export const getWorkspaceAliasesChannel = "workspace:getAliases";
 export const getWorkspaceChronicleChannel = "workspace:getChronicle";
@@ -26,15 +24,10 @@ export const getMarkdownTemplatesChannel = "workspace:getMarkdownTemplates";
 export const getWorkspaceStateChannel = "workspace:getState";
 export const initializeGitRepositoryChannel = "workspace:initializeGitRepository";
 export const createGitCommitChannel = "workspace:createGitCommit";
-export const createGitBranchChannel = "workspace:createGitBranch";
-export const switchGitBranchChannel = "workspace:switchGitBranch";
-export const createGitTagChannel = "workspace:createGitTag";
-export const deleteGitTagChannel = "workspace:deleteGitTag";
 export const getGitRemotesChannel = "workspace:getGitRemotes";
 export const connectGitRemoteChannel = "workspace:connectGitRemote";
 export const pullGitBranchChannel = "workspace:pullGitBranch";
 export const pushGitBranchChannel = "workspace:pushGitBranch";
-export const pushGitTagChannel = "workspace:pushGitTag";
 export const moveItemToTrashChannel = "workspace:moveItemToTrash";
 export const openWorkspaceChannel = "workspace:open";
 export const readMarkdownFileChannel = "workspace:readMarkdownFile";
@@ -286,21 +279,6 @@ export interface GitCommitDiff {
   entries: GitCommitDiffEntry[];
 }
 
-export interface GitBranchSummary {
-  isCurrent: boolean;
-  name: string;
-  upstream: string | null;
-}
-
-export interface GitTagSummary {
-  annotated: boolean;
-  date: string;
-  message: string | null;
-  name: string;
-  targetHash: string;
-  targetMessage: string | null;
-}
-
 export interface GitHubAuthStatus {
   configured: boolean;
   connected: boolean;
@@ -319,33 +297,8 @@ export interface CreateGitCommitInput {
   message: string;
 }
 
-export interface CreateGitBranchInput {
-  name: string;
-}
-
-export interface SwitchGitBranchInput {
-  allowDirty?: boolean;
-  name: string;
-}
-
-export interface CreateGitTagInput {
-  hash?: string;
-  message?: string;
-  name: string;
-  taggerEmail?: string;
-  taggerName?: string;
-}
-
-export interface DeleteGitTagInput {
-  name: string;
-}
-
 export interface ConnectGitRemoteInput {
   url: string;
-}
-
-export interface PushGitTagInput {
-  name: string;
 }
 
 export interface CloneGitHubRepositoryInput {
@@ -512,7 +465,6 @@ export interface RelicApi {
   connectGitRemote: (input: ConnectGitRemoteInput) => Promise<RelicResult<GitRemoteSummary[]>>;
   connectGitHubAccount: () => Promise<RelicResult<GitHubAuthStatus>>;
   createFolder: (input: CreateFolderInput) => Promise<RelicResult<WorkspaceState>>;
-  createGitBranch: (input: CreateGitBranchInput) => Promise<RelicResult<GitBranchSummary[]>>;
   createGitCommit: (input: CreateGitCommitInput) => Promise<RelicResult<GitCommitSummary>>;
   createLinkedMarkdownFile: (
     input: CreateLinkedMarkdownFileInput
@@ -525,13 +477,11 @@ export interface RelicApi {
   getGitHubIntegrationSettings: () => Promise<RelicResult<GitHubIntegrationSettings>>;
   getBacklinks: (input: GetBacklinksInput) => Promise<RelicResult<Backlink[]>>;
   getGitHubAuthStatus: () => Promise<RelicResult<GitHubAuthStatus>>;
-  getGitBranches: () => Promise<RelicResult<GitBranchSummary[]>>;
   getGitCommitHistory: () => Promise<RelicResult<GitCommitSummary[]>>;
   getGitCommitDiff: (hash: string) => Promise<RelicResult<GitCommitDiff>>;
   getGitStatus: () => Promise<RelicResult<GitStatus>>;
   getGitWorkingChanges: () => Promise<RelicResult<GitWorkingChange[]>>;
   getGitRemotes: () => Promise<RelicResult<GitRemoteSummary[]>>;
-  getGitTags: () => Promise<RelicResult<GitTagSummary[]>>;
   getAppInfo: () => Promise<RelicResult<AppInfo>>;
   getEditorSettings: () => Promise<RelicResult<EditorSettings>>;
   getMarkdownTemplates: () => Promise<RelicResult<MarkdownTemplateSummary[]>>;
@@ -549,7 +499,6 @@ export interface RelicApi {
   openWorkspace: () => Promise<RelicResult<WorkspaceState>>;
   pullGitBranch: () => Promise<RelicResult<GitRemoteSyncResult>>;
   pushGitBranch: () => Promise<RelicResult<GitRemoteSyncResult>>;
-  pushGitTag: (input: PushGitTagInput) => Promise<RelicResult<GitRemoteSyncResult>>;
   readMarkdownFile: (input: ReadMarkdownFileInput) => Promise<RelicResult<MarkdownFileContent>>;
   readClipboardText: () => string;
   removeWorkspace: (input: RemoveWorkspaceInput) => Promise<RelicResult<WorkspaceState>>;
@@ -567,12 +516,9 @@ export interface RelicApi {
     input: SearchAndReplaceInput
   ) => Promise<RelicResult<SearchAndReplaceMatch[]>>;
   searchWorkspace: (input: SearchWorkspaceInput) => Promise<RelicResult<WorkspaceSearchResult[]>>;
-  switchGitBranch: (input: SwitchGitBranchInput) => Promise<RelicResult<GitBranchSummary[]>>;
   switchWorkspace: (input: SwitchWorkspaceInput) => Promise<RelicResult<WorkspaceState>>;
   writeMarkdownFile: (input: WriteMarkdownFileInput) => Promise<RelicResult<void>>;
   writeClipboardText: (text: string) => void;
-  createGitTag: (input: CreateGitTagInput) => Promise<RelicResult<GitTagSummary[]>>;
-  deleteGitTag: (input: DeleteGitTagInput) => Promise<RelicResult<GitTagSummary[]>>;
   getGitSyncPreview: () => Promise<RelicResult<GitSyncPreview>>;
   getGitConflicts: () => Promise<RelicResult<GitConflict[]>>;
   resolveGitConflict: (input: ResolveGitConflictInput) => Promise<RelicResult<GitConflict[]>>;
