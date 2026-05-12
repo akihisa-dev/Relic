@@ -977,7 +977,11 @@ export function App(): ReactElement {
       chart={ganttCharts.find((chart) => chart.id === chartId) ?? null}
       onAddFile={(targetChartId, path) => handleSetGanttChartFilePaths(targetChartId, (paths) => [...paths, path])}
       onOpenFile={handleOpenFile}
-      onRemoveFile={(targetChartId, path) => handleSetGanttChartFilePaths(targetChartId, (paths) => paths.filter((item) => item !== path))}
+      onRemoveFile={(targetChartId, path) => {
+        handleSetGanttChartFilePaths(targetChartId, (paths) => {
+          return paths.filter((item) => item !== path);
+        });
+      }}
     />
   ), [ganttCharts, handleOpenFile, handleSetGanttChartFilePaths]);
 

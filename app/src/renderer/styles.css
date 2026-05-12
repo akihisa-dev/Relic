@@ -1340,6 +1340,7 @@ button:not(:disabled):active {
   gap: 2px;
   overflow-x: auto;
   padding: 0 8px;
+  position: relative;
 }
 
 .pane-tab-bar::-webkit-scrollbar {
@@ -1378,9 +1379,38 @@ button:not(:disabled):active {
 
 .pane-tab--active {
   animation: tab-select 180ms cubic-bezier(.18, 1.25, .28, 1);
-  background: var(--bg);
-  border-color: var(--border);
+  background: var(--accent-soft);
+  border-color: var(--accent);
   color: var(--text);
+}
+
+.pane-tab--gantt.pane-tab--active {
+  color: var(--accent);
+}
+
+.pane-tab--drop-before::before,
+.pane-tab--drop-after::after,
+.pane-tab-bar--drop-end::after {
+  background: var(--accent);
+  border-radius: 999px;
+  bottom: 4px;
+  content: "";
+  position: absolute;
+  top: 4px;
+  width: 3px;
+  z-index: 5;
+}
+
+.pane-tab--drop-before::before {
+  left: -3px;
+}
+
+.pane-tab--drop-after::after {
+  right: -3px;
+}
+
+.pane-tab-bar--drop-end::after {
+  right: 8px;
 }
 
 .pane-tab:active {
@@ -3941,6 +3971,36 @@ button:not(:disabled):active {
   position: relative;
 }
 
+.chronicle-axis--date {
+  min-height: 46px;
+}
+
+.chronicle-axis-row {
+  display: block;
+  height: 23px;
+  position: relative;
+}
+
+.chronicle-axis-row--year {
+  border-bottom: 1px solid var(--border);
+}
+
+.chronicle-axis-cell {
+  align-items: center;
+  border-right: 1px solid var(--border);
+  box-sizing: border-box;
+  display: flex;
+  inset-block: 0;
+  justify-content: center;
+  min-width: 0;
+  overflow: hidden;
+  padding: 0 6px;
+  position: absolute;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .chronicle-axis-tick {
   align-items: flex-end;
   bottom: 0;
@@ -3967,6 +4027,10 @@ button:not(:disabled):active {
   grid-template-columns: minmax(0, 1fr) 30px;
 }
 
+.chronicle-file-name-row--empty {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .chronicle-file-name,
 .chronicle-file-remove {
   background: var(--bg);
@@ -3990,6 +4054,14 @@ button:not(:disabled):active {
   text-overflow: ellipsis;
   white-space: nowrap;
   width: 100%;
+}
+
+.chronicle-file-name--empty {
+  align-items: center;
+  color: var(--text-3);
+  cursor: default;
+  display: flex;
+  font-weight: 500;
 }
 
 .chronicle-file-remove {
