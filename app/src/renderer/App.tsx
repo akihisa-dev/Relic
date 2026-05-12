@@ -15,6 +15,7 @@ import { ChronicleSidebar, GanttChartView } from "./components/ChronicleSidebar"
 import { FilesSidebar } from "./components/FilesSidebar";
 import { FrontmatterSidebar } from "./components/FrontmatterSidebar";
 import { GitSidebar } from "./components/GitSidebar";
+import { GraphSidebar } from "./components/GraphSidebar";
 import { PaneView } from "./components/PaneView";
 import { QuickSwitcher } from "./components/QuickSwitcher";
 import { SearchSidebar } from "./components/SearchSidebar";
@@ -89,6 +90,19 @@ const IconChronicle = (): ReactElement => (
   </svg>
 );
 
+const IconGraph = (): ReactElement => (
+  <svg fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" viewBox="0 0 20 20" width="18">
+    <circle cx="5" cy="6" r="2" />
+    <circle cx="14" cy="4" r="2" />
+    <circle cx="15" cy="14" r="2" />
+    <circle cx="6" cy="15" r="2" />
+    <line x1="6.7" x2="12.2" y1="5.6" y2="4.4" />
+    <line x1="14.3" x2="14.8" y1="6" y2="12" />
+    <line x1="13.2" x2="7.8" y1="14.3" y2="14.8" />
+    <line x1="6.2" x2="13.8" y1="7.5" y2="12.5" />
+  </svg>
+);
+
 const IconSettings = (): ReactElement => (
   <svg fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" viewBox="0 0 20 20" width="18">
     <line x1="3" x2="17" y1="5" y2="5" />
@@ -100,9 +114,12 @@ const IconSettings = (): ReactElement => (
   </svg>
 );
 
-const sidebarViewDefs: Array<{ id: SidebarView; labelKey: TranslationKey; icon: ReactElement }> = [
+type RailViewId = SidebarView | PanelTabKind;
+
+const sidebarViewDefs: Array<{ id: RailViewId; labelKey: TranslationKey; icon: ReactElement }> = [
   { id: "files", labelKey: "nav.files", icon: <IconFiles /> },
   { id: "search", labelKey: "nav.search", icon: <IconSearch /> },
+  { id: "graph", labelKey: "nav.graph", icon: <IconGraph /> },
   { id: "git", labelKey: "nav.git", icon: <IconGit /> },
   { id: "tools", labelKey: "nav.tools", icon: <IconTools /> },
   { id: "frontmatter", labelKey: "nav.frontmatter", icon: <IconFrontmatter /> },
@@ -975,7 +992,6 @@ export function App(): ReactElement {
   const renderGanttChartTab = useCallback((chartId: string): ReactNode => (
     <GanttChartView
       chart={ganttCharts.find((chart) => chart.id === chartId) ?? null}
-      onAddFile={(targetChartId, path) => handleSetGanttChartFilePaths(targetChartId, (paths) => [...paths, path])}
       onOpenFile={handleOpenFile}
       onRemoveFile={(targetChartId, path) => {
         handleSetGanttChartFilePaths(targetChartId, (paths) => {
@@ -1261,6 +1277,7 @@ export function App(): ReactElement {
 
   const panelLabels = useMemo<Record<PanelTabKind, string>>(() => ({
     frontmatter: t("nav.frontmatter"),
+    graph: t("nav.graph"),
     git: t("nav.git"),
     settings: t("nav.settings"),
     tools: t("nav.tools")
@@ -1413,6 +1430,15 @@ export function App(): ReactElement {
       );
     }
 
+    if (panel === "graph") {
+      return (
+        <GraphSidebar
+          onOpenFile={handleOpenFile}
+          workspaceId={workspaceState?.activeWorkspace?.id ?? null}
+        />
+      );
+    }
+
     return (
       <SettingsSidebar
         appInfo={appInfo}
@@ -1439,7 +1465,7 @@ export function App(): ReactElement {
     isCreatingGitCommit, isDisconnectingGitHub, isPullingGitBranch,
     isPushingGitBranch, isResolvingConflict, selectedGitCommitDiff, selectedGitCommitHash,
     setGitCloneUrl, setGitCommitMessage, setGitRemoteUrl, setGitSyncStep,
-    setSelectedGitCommitHash, userDefinedFields, workspaceState
+    setSelectedGitCommitHash, userDefinedFields, workspaceState, activeFileTabInFocusedPane
   ]);
 
   // ──────────────────
@@ -1480,7 +1506,7 @@ export function App(): ReactElement {
                 aria-label={view.label}
                 className={`rail-button${view.id === activeSidebarView ? " active" : ""}`}
                 key={view.id}
-                onClick={() => setSidebarView(view.id)}
+                onClick={() => setSidebarView(view.id as SidebarView)}
                 title={view.label}
                 type="button"
               >
