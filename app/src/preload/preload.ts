@@ -48,6 +48,7 @@ import {
   revealWorkspaceItemChannel,
   resolveGitConflictChannel,
   saveAutoSyncSettingsChannel,
+  saveWorkspaceGanttChartsChannel,
   saveEditorSettingsChannel,
   saveGitHubIntegrationSettingsChannel,
   generateTitleListChannel,
@@ -74,7 +75,6 @@ import {
   type AppInfo,
   type AutoSyncSettings,
   type CloneGitHubRepositoryInput,
-  type ChronicleEntry,
   type ConnectGitRemoteInput,
   type CreateFolderInput,
   type CreateGitCommitInput,
@@ -95,6 +95,7 @@ import {
   type GitSyncPreview,
   type GitWorkingChange,
   type GetBacklinksInput,
+  type GanttChartSettings,
   type MarkdownFileContent,
   type MarkdownTemplateSummary,
   type MoveFolderInput,
@@ -116,6 +117,7 @@ import {
   type SearchWorkspaceInput,
   type SwitchWorkspaceInput,
   type WorkspaceState,
+  type WorkspaceGanttChart,
   type WorkspaceSearchResult,
   type WorkspaceTagSummary,
   type WriteMarkdownFileInput
@@ -176,7 +178,7 @@ const relicApi: RelicApi = {
   getWorkspaceAliases: () =>
     ipcRenderer.invoke(getWorkspaceAliasesChannel) as Promise<RelicResult<AliasIndex>>,
   getWorkspaceChronicle: () =>
-    ipcRenderer.invoke(getWorkspaceChronicleChannel) as Promise<RelicResult<ChronicleEntry[]>>,
+    ipcRenderer.invoke(getWorkspaceChronicleChannel) as Promise<RelicResult<WorkspaceGanttChart[]>>,
   getFrontmatterValueCandidates: () =>
     ipcRenderer.invoke(getFrontmatterValueCandidatesChannel) as Promise<RelicResult<Record<string, string[]>>>,
   getWorkspaceTags: () =>
@@ -243,6 +245,8 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(getAutoSyncSettingsChannel) as Promise<RelicResult<AutoSyncSettings>>,
   saveAutoSyncSettings: (input: AutoSyncSettings) =>
     ipcRenderer.invoke(saveAutoSyncSettingsChannel, input) as Promise<RelicResult<void>>,
+  saveWorkspaceGanttCharts: (input: GanttChartSettings[]) =>
+    ipcRenderer.invoke(saveWorkspaceGanttChartsChannel, input) as Promise<RelicResult<WorkspaceGanttChart[]>>,
   generateTitleList: (input: GenerateTitleListInput) =>
     ipcRenderer.invoke(generateTitleListChannel, input) as Promise<RelicResult<string>>,
   generateTableOfContents: (input: GenerateTableOfContentsInput) =>

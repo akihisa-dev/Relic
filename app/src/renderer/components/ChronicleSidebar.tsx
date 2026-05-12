@@ -1,26 +1,90 @@
 import { useMemo, useState } from "react";
-import type { CSSProperties, ReactElement } from "react";
+import type { CSSProperties, DragEvent, ReactElement } from "react";
 
-import type { ChronicleEntry } from "../../shared/ipc";
+import type { GanttChartEntry, GanttChartSource, WorkspaceGanttChart } from "../../shared/ipc";
 import { useT } from "../i18n";
 
 interface ChronicleSidebarProps {
-  entries: ChronicleEntry[];
+  activeChartId: string | null;
+  charts: WorkspaceGanttChart[];
+  onOpenChart: (chart: WorkspaceGanttChart) => void;
+}
+
+interface GanttChartViewProps {
+  chart: WorkspaceGanttChart | null;
+  onAddFile: (chartId: string, path: string) => void;
   onOpenFile: (path: string) => void;
+  onRemoveFile: (chartId: string, path: string) => void;
 }
 
 const ROW_HEIGHT = 38;
 const NAME_COLUMN_WIDTH = 180;
-const SCALE_OPTIONS = [25, 50, 100, 200, 500] as const;
 const TICK_WIDTH = 72;
 const LABEL_HORIZONTAL_PADDING = 14;
+const SCALE_OPTIONS: Record<GanttChartSource, readonly number[]> = {
+  chronicle: [25, 50, 100, 200, 500],
+  date: [7, 30, 90, 365]
+};
 
-export function ChronicleSidebar({ entries, onOpenFile }: ChronicleSidebarProps): ReactElement {
+export function ChronicleSidebar({ activeChartId, charts, onOpenChart }: ChronicleSidebarProps): ReactElement {
+  const selectedChart = charts.find((chart) => chart.id === activeChartId) ?? charts[0] ?? null;
+  const candidateEntries = selectedChart ? entriesForSource(charts, selectedChart.source) : [];
+
+  return (
+    <div className="chronicle-sidebar">
+      <div className="chronicle-source-toggle" role="tablist">
+        {charts.map((chart) => (
+          <button
+            aria-selected={chart.id === selectedChart?.id}
+            className={`chronicle-source-toggle-button${chart.id === selectedChart?.id ? " active" : ""}`}
+            key={chart.id}
+            onClick={() => onOpenChart(chart)}
+            role="tab"
+            type="button"
+          >
+            {chart.source}
+          </button>
+        ))}
+      </div>
+
+      {selectedChart ? (
+        <div className="chronicle-sidebar-detail">
+          <div className="chronicle-file-select">
+            {candidateEntries.length === 0 ? (
+              <div className="frontmatter-field-empty">表示できるファイルはまだありません。</div>
+            ) : candidateEntries.map((entry) => (
+                <div
+                  className="chronicle-file-option"
+                  draggable
+                  key={entry.path}
+                  onDragStart={(event) => {
+                    event.dataTransfer.setData("application/relic-gantt-file", JSON.stringify({
+                      chartId: selectedChart.id,
+                      path: entry.path
+                    }));
+                    event.dataTransfer.effectAllowed = "copy";
+                  }}
+                  title={entry.path}
+                >
+                  <span>{entry.fileName}</span>
+                </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+export function GanttChartView({ chart, onAddFile, onOpenFile, onRemoveFile }: GanttChartViewProps): ReactElement {
   const t = useT();
   const [scaleIndex, setScaleIndex] = useState(2);
   const [scrollLeft, setScrollLeft] = useState(0);
-  const tickInterval = SCALE_OPTIONS[scaleIndex] ?? 100;
+  const activeSource = chart && isGanttChartSource(chart.source) ? chart.source : "chronicle";
+  const scaleOptions = SCALE_OPTIONS[activeSource];
+  const tickInterval = scaleOptions[Math.min(scaleIndex, scaleOptions.length - 1)] ?? scaleOptions[0] ?? 100;
   const yearWidth = TICK_WIDTH / tickInterval;
+  const entries = useMemo(() => visibleEntries(chart), [chart]);
   const { axisEnd, axisStart } = timelineBounds(entries, tickInterval);
   const axisSpan = Math.max(1, axisEnd - axisStart + 1);
   const timelineWidth = Math.max(720, axisSpan * yearWidth);
@@ -30,10 +94,32 @@ export function ChronicleSidebar({ entries, onOpenFile }: ChronicleSidebarProps)
   );
   const gridOffset = ticks.length > 0 ? (ticks[0] - axisStart) * yearWidth : 0;
 
+  const handleDrop = (event: DragEvent<HTMLDivElement>): void => {
+    if (!chart) return;
+
+    const raw = event.dataTransfer.getData("application/relic-gantt-file");
+    if (!raw) return;
+
+    event.preventDefault();
+
+    try {
+      const payload = JSON.parse(raw) as { chartId?: string; path?: string };
+      if (payload.chartId === chart.id && payload.path) onAddFile(chart.id, payload.path);
+    } catch {
+      return;
+    }
+  };
+
   return (
-    <div className="chronicle-panel">
+    <div
+      className="chronicle-panel"
+      onDragOver={(event) => {
+        if (event.dataTransfer.types.includes("application/relic-gantt-file")) event.preventDefault();
+      }}
+      onDrop={handleDrop}
+    >
       <div className="chronicle-panel-header">
-        <div className="links-panel-subheading">{t("chronicle.title")}</div>
+        <div className="links-panel-subheading">{chart?.name ?? t("chronicle.title")}</div>
         <div className="chronicle-scale" aria-label={t("chronicle.scale")}>
           <button
             aria-label={t("chronicle.scaleDecrease")}
@@ -48,15 +134,15 @@ export function ChronicleSidebar({ entries, onOpenFile }: ChronicleSidebarProps)
           <button
             aria-label={t("chronicle.scaleIncrease")}
             className="chronicle-scale-button"
-            disabled={scaleIndex === SCALE_OPTIONS.length - 1}
-            onClick={() => setScaleIndex((current) => Math.min(SCALE_OPTIONS.length - 1, current + 1))}
+            disabled={scaleIndex >= scaleOptions.length - 1}
+            onClick={() => setScaleIndex((current) => Math.min(scaleOptions.length - 1, current + 1))}
             type="button"
           >
             +
           </button>
         </div>
       </div>
-      {entries.length === 0 ? (
+      {!chart || entries.length === 0 ? (
         <div className="frontmatter-field-empty">{t("chronicle.empty")}</div>
       ) : (
         <div className="chronicle-chart" onScroll={(event) => setScrollLeft(event.currentTarget.scrollLeft)}>
@@ -64,15 +150,24 @@ export function ChronicleSidebar({ entries, onOpenFile }: ChronicleSidebarProps)
             <div className="chronicle-name-column" style={{ width: NAME_COLUMN_WIDTH }}>
               <div className="chronicle-name-header" />
               {entries.map((entry) => (
-                <button
-                  className="chronicle-file-name"
-                  key={entry.path}
-                  onClick={() => onOpenFile(entry.path)}
-                  title={entry.path}
-                  type="button"
-                >
-                  {entry.fileName}
-                </button>
+                <div className="chronicle-file-name-row" key={entry.path}>
+                  <button
+                    className="chronicle-file-name"
+                    onClick={() => onOpenFile(entry.path)}
+                    title={entry.path}
+                    type="button"
+                  >
+                    {entry.fileName}
+                  </button>
+                  <button
+                    aria-label={`${entry.fileName}を年表から外す`}
+                    className="chronicle-file-remove"
+                    onClick={() => chart ? onRemoveFile(chart.id, entry.path) : undefined}
+                    type="button"
+                  >
+                    ×
+                  </button>
+                </div>
               ))}
             </div>
             <div className="chronicle-timeline" style={{ marginLeft: NAME_COLUMN_WIDTH, width: timelineWidth }}>
@@ -83,7 +178,7 @@ export function ChronicleSidebar({ entries, onOpenFile }: ChronicleSidebarProps)
                     key={tick}
                     style={{ left: (tick - axisStart) * yearWidth }}
                   >
-                    {formatAxisYear(tick)}
+                    {formatAxisValue(tick, activeSource)}
                   </span>
                 ))}
               </div>
@@ -97,13 +192,11 @@ export function ChronicleSidebar({ entries, onOpenFile }: ChronicleSidebarProps)
                 } as CSSProperties}
               >
                 {entries.map((entry, index) => {
-                  const start = yearToAxis(entry.startYear);
-                  const end = yearToAxis(entry.endYear);
-                  const left = Math.max(0, (start - axisStart) * yearWidth);
-                  const isSingleYear = entry.startYear === entry.endYear;
+                  const left = Math.max(0, (entry.startValue - axisStart) * yearWidth);
+                  const isSingleYear = entry.startValue === entry.endValue;
                   const rangeLabel = formatRange(entry);
                   const labelWidth = labelWidthForText(rangeLabel);
-                  const naturalWidth = isSingleYear ? yearWidth : (end - start + 1) * yearWidth;
+                  const naturalWidth = isSingleYear ? yearWidth : (entry.endValue - entry.startValue + 1) * yearWidth;
                   const width = isSingleYear ? Math.max(46, naturalWidth) : Math.max(28, naturalWidth);
                   const maxLabelLeft = Math.max(0, width - labelWidth);
                   const labelLeft = isSingleYear
@@ -136,11 +229,23 @@ export function ChronicleSidebar({ entries, onOpenFile }: ChronicleSidebarProps)
   );
 }
 
-function timelineBounds(entries: ChronicleEntry[], tickInterval: number): { axisEnd: number; axisStart: number } {
+function entriesForSource(charts: WorkspaceGanttChart[], source: GanttChartSource): GanttChartEntry[] {
+  return charts.find((chart) => chart.source === source)?.entries ?? [];
+}
+
+function visibleEntries(chart: WorkspaceGanttChart | null): GanttChartEntry[] {
+  if (!chart) return [];
+  if (!chart.filePaths) return chart.entries;
+
+  const visiblePaths = new Set(chart.filePaths);
+  return chart.entries.filter((entry) => visiblePaths.has(entry.path));
+}
+
+function timelineBounds(entries: GanttChartEntry[], tickInterval: number): { axisEnd: number; axisStart: number } {
   if (entries.length === 0) return { axisEnd: 1, axisStart: 1 };
 
-  const starts = entries.map((entry) => yearToAxis(entry.startYear));
-  const ends = entries.map((entry) => yearToAxis(entry.endYear));
+  const starts = entries.map((entry) => entry.startValue);
+  const ends = entries.map((entry) => entry.endValue);
   const min = Math.min(...starts);
   const max = Math.max(...ends);
   const padding = Math.max(1, Math.ceil((max - min + 1) * 0.06));
@@ -165,28 +270,26 @@ function buildTicks(axisStart: number, axisEnd: number, interval: number): numbe
   return ticks;
 }
 
-function yearToAxis(year: number): number {
-  if (year === 0) return 0;
-  return year < 0 ? year : year - 1;
+function formatRange(entry: GanttChartEntry): string {
+  if (entry.startValue === entry.endValue) return entry.startLabel;
+  return `${entry.startLabel} 〜 ${entry.endLabel}`;
 }
 
-function axisToYear(axis: number): number {
-  return axis < 0 ? axis : axis + 1;
-}
+function formatAxisValue(value: number, source: GanttChartSource): string {
+  if (source === "date") return dayToDate(value);
 
-function formatRange(entry: ChronicleEntry): string {
-  if (entry.startYear === entry.endYear) return formatYear(entry.startYear);
-  return `${formatYear(entry.startYear)} 〜 ${formatYear(entry.endYear)}`;
-}
-
-function formatYear(year: number): string {
+  const year = value < 0 ? value : value + 1;
   return year < 0 ? `−${Math.abs(year)}` : String(year);
-}
-
-function formatAxisYear(axis: number): string {
-  return formatYear(axisToYear(axis));
 }
 
 function labelWidthForText(text: string): number {
   return text.length * 8 + LABEL_HORIZONTAL_PADDING;
+}
+
+function dayToDate(value: number): string {
+  return new Date(value * 86_400_000).toISOString().slice(0, 10);
+}
+
+function isGanttChartSource(value: unknown): value is GanttChartSource {
+  return value === "chronicle" || value === "date";
 }

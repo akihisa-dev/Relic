@@ -21,6 +21,7 @@ export interface PaneViewProps {
   userDefinedFields: UserDefinedField[];
   workspacePath?: string | null;
   viewRef: MutableRefObject<EditorView | null>;
+  renderGanttChartTab: (chartId: string) => ReactNode;
   renderPanelTab: (panel: PanelTabKind) => ReactNode;
   renderPanelTabIcon: (panel: PanelTabKind) => ReactNode;
   onCreateFile: (name: string) => void;
@@ -55,6 +56,7 @@ export function PaneView({
   userDefinedFields,
   workspacePath,
   viewRef,
+  renderGanttChartTab,
   renderPanelTab,
   renderPanelTabIcon,
   onCreateFile,
@@ -376,6 +378,12 @@ export function PaneView({
             {renderPanelTab(activeTab.panel)}
           </div>
         </div>
+      ) : activeTab?.kind === "gantt" ? (
+        <div className="editor-surface panel-tab-surface">
+          <div className="panel-tab-body">
+            {renderGanttChartTab(activeTab.chartId)}
+          </div>
+        </div>
       ) : (
         <div className="empty-pane">
           <div className="empty-pane-copy">
@@ -397,7 +405,6 @@ export function PaneView({
 
 function panelTabLabel(panel: PanelTabKind, t: Translator): string {
   if (panel === "frontmatter") return t("nav.frontmatter");
-  if (panel === "chronicle") return t("nav.chronicle");
   if (panel === "git") return t("nav.git");
   if (panel === "settings") return t("nav.settings");
   return t("nav.tools");

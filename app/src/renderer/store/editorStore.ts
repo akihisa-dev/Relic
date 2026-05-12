@@ -2,7 +2,7 @@ import { create } from "zustand";
 
 import { defaultEditorSettings, type EditorSettings, type MarkdownFileContent } from "../../shared/ipc";
 
-export type PanelTabKind = "git" | "tools" | "frontmatter" | "chronicle" | "settings";
+export type PanelTabKind = "git" | "tools" | "frontmatter" | "settings";
 
 export interface FileTab {
   content: string;
@@ -19,7 +19,14 @@ export interface PanelTab {
   panel: PanelTabKind;
 }
 
-export type Tab = FileTab | PanelTab;
+export interface GanttTab {
+  chartId: string;
+  id: string;
+  kind: "gantt";
+  name: string;
+}
+
+export type Tab = FileTab | GanttTab | PanelTab;
 export type PaneId = "left" | "right";
 
 export interface PaneState {
@@ -42,6 +49,7 @@ interface EditorStore {
   closeAllTabsInPane: (pane: PaneId) => void;
   moveTab: (fromPane: PaneId, toPane: PaneId, tabId: string, targetTabId?: string | null, position?: "before" | "after") => void;
   openFileInPane: (pane: PaneId, file: MarkdownFileContent) => void;
+  openGanttChartInPane: (pane: PaneId, chart: { id: string; name: string }) => void;
   openPanelInPane: (pane: PaneId, panel: PanelTabKind, name: string) => void;
   setEditorSettings: (settings: EditorSettings) => void;
   setFocusedPane: (pane: PaneId) => void;
@@ -104,6 +112,25 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
       const nextTabs = existing
         ? state.tabs
         : { ...state.tabs, [id]: { id, kind: "panel" as const, name, panel } };
+
+      return {
+        focusedPane: pane,
+        tabs: nextTabs,
+        [paneKey]: activateTab(ensureTabInPane(paneState, id), id)
+      };
+    });
+  },
+
+  openGanttChartInPane: (pane, chart) => {
+    const id = `gantt-${chart.id}`;
+
+    set((state) => {
+      const paneKey = pane === "left" ? "leftPane" : "rightPane";
+      const paneState = state[paneKey];
+      const existing = state.tabs[id];
+      const nextTabs = existing
+        ? { ...state.tabs, [id]: { ...existing, name: chart.name } }
+        : { ...state.tabs, [id]: { chartId: chart.id, id, kind: "gantt" as const, name: chart.name } };
 
       return {
         focusedPane: pane,
