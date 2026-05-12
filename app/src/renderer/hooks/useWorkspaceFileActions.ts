@@ -14,7 +14,6 @@ interface UseWorkspaceFileActionsInput {
   aliasesByPath: AliasIndex;
   existingMarkdownPaths: string[];
   rightPane: PaneState;
-  selectedTemplatePath: string;
   setLeftPaneScrollHeading: (heading: string | undefined) => void;
   setRightPaneScrollHeading: (heading: string | undefined) => void;
   setWorkspaceError: (message: string | null) => void;
@@ -33,7 +32,6 @@ export function useWorkspaceFileActions({
   aliasesByPath,
   existingMarkdownPaths,
   rightPane,
-  selectedTemplatePath,
   setLeftPaneScrollHeading,
   setRightPaneScrollHeading,
   setWorkspaceError,
@@ -138,12 +136,8 @@ export function useWorkspaceFileActions({
     setIsCreatingFile(true);
     setWorkspaceError(null);
 
-    const input = selectedTemplatePath
-      ? { name: fileName, templatePath: selectedTemplatePath }
-      : { name: fileName };
-
     void window.relic
-      .createMarkdownFile(input)
+      .createMarkdownFile({ name: fileName })
       .then((result) => {
         if (result.ok) {
           setWorkspaceState(result.value);
@@ -164,7 +158,6 @@ export function useWorkspaceFileActions({
     focusedPane,
     nextUniqueFileName,
     openFileInPane,
-    selectedTemplatePath,
     setWorkspaceError,
     setWorkspaceState,
     workspaceState
@@ -175,12 +168,8 @@ export function useWorkspaceFileActions({
 
     const fileName = name.trim() || nextUniqueFileName(workspaceState);
 
-    const input = selectedTemplatePath
-      ? { name: fileName, templatePath: selectedTemplatePath }
-      : { name: fileName };
-
     void window.relic
-      .createMarkdownFile(input)
+      .createMarkdownFile({ name: fileName })
       .then((result) => {
         if (result.ok) {
           setWorkspaceState(result.value);
@@ -204,7 +193,6 @@ export function useWorkspaceFileActions({
     focusedPane,
     nextUniqueFileName,
     openFileInPane,
-    selectedTemplatePath,
     setWorkspaceError,
     setWorkspaceState,
     workspaceState
@@ -623,7 +611,7 @@ export function useWorkspaceFileActions({
 
       const name = displayNameFromPath(path);
       const message = type === "folder"
-        ? `「${name}」フォルダをゴミ箱に移動しますか？フォルダ内のノートと添付ファイルも一緒に移動されます。`
+        ? `「${name}」フォルダをゴミ箱に移動しますか？フォルダ内のノートやファイルも一緒に移動されます。`
         : `「${name}」をゴミ箱に移動しますか？`;
       if (!window.confirm(message)) return;
 
@@ -656,7 +644,7 @@ export function useWorkspaceFileActions({
 
       const deletableItems = removeCoveredItems(items);
       const itemCount = deletableItems.length;
-      const message = `${itemCount}件の項目をゴミ箱に移動しますか？フォルダを含む場合、フォルダ内のノートと添付ファイルも一緒に移動されます。`;
+      const message = `${itemCount}件の項目をゴミ箱に移動しますか？フォルダを含む場合、フォルダ内のノートやファイルも一緒に移動されます。`;
       if (!window.confirm(message)) return;
 
       void (async () => {

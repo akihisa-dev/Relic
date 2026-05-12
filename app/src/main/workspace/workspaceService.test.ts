@@ -1,11 +1,10 @@
-import { mkdtemp, rm, stat } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, stat } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
 import { defaultEditorSettings, defaultFeatureToggles, defaultFrontmatterTemplates, defaultGitHubIntegrationSettings, defaultUserDefinedFields } from "../../shared/ipc";
-import { attachmentsDirectoryName, templatesDirectoryName } from "../../shared/workspace";
 import {
   addOrActivateWorkspace,
   activateWorkspace,
@@ -38,16 +37,19 @@ describe("workspaceService", () => {
     );
   });
 
-  it("ワークスペース準備時に必須フォルダを作成する", async () => {
+  it("ワークスペース準備時に専用フォルダを作成しない", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-workspace-"));
     temporaryPaths.push(workspacePath);
 
     await prepareWorkspace(workspacePath);
 
-    expect((await stat(path.join(workspacePath, attachmentsDirectoryName))).isDirectory()).toBe(
-      true
-    );
-    expect((await stat(path.join(workspacePath, templatesDirectoryName))).isDirectory()).toBe(true);
+    expect((await stat(workspacePath)).isDirectory()).toBe(true);
+    await expect(stat(path.join(workspacePath, "attachments"))).rejects.toMatchObject({
+      code: "ENOENT"
+    });
+    await expect(stat(path.join(workspacePath, "templates"))).rejects.toMatchObject({
+      code: "ENOENT"
+    });
   });
 
   it("同じパスのワークスペースを重複登録せずアクティブにする", () => {
@@ -117,6 +119,7 @@ describe("workspaceService", () => {
     const parentPath = await mkdtemp(path.join(os.tmpdir(), "relic-workspace-parent-"));
     temporaryPaths.push(parentPath);
     const workspacePath = path.join(parentPath, "relic-notes");
+    await mkdir(workspacePath);
     await prepareWorkspace(workspacePath);
     const workspace = createWorkspaceSummary(workspacePath);
     const settings = {
@@ -147,6 +150,7 @@ describe("workspaceService", () => {
     const parentPath = await mkdtemp(path.join(os.tmpdir(), "relic-workspace-parent-"));
     temporaryPaths.push(parentPath);
     const workspacePath = path.join(parentPath, "Relic Notes");
+    await mkdir(workspacePath);
     await prepareWorkspace(workspacePath);
     const workspace = createWorkspaceSummary(workspacePath);
     const settings = {

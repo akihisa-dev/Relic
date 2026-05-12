@@ -263,6 +263,18 @@ Relicを「書く道具」として使い続けやすくするために、機能
 - 確認: `pnpm test -- --run App.test.tsx git.test.ts gitValidation.test.ts ToolsSidebar.test.tsx` 通過（全33ファイル / 311テスト）
 - 残り: 実アプリでGit画面にブランチ管理・Gitタグ管理が表示されないことを目視確認する
 
+### 専用アタッチメント・Markdownテンプレート削除 実装チェックリスト
+
+- 方向性: 勢いで入れた `attachments/` と `templates/` の専用フォルダ扱いをやめ、通常のワークスペース内フォルダとして扱う
+- 実施: ワークスペース準備時に `attachments/` と `templates/` を自動作成しないようにした
+- 実施: ファイルサイドバーで `attachments/` と `templates/` をシステムフォルダとして分離表示しないようにした
+- 実施: `templates/` 内Markdownを新規ファイルテンプレートとして読むIPC・preload API・UI選択欄・実装ファイルを削除した
+- 実施: 新規Markdownファイルは常に空本文で作成するようにした
+- 実施: Markdownプレビューで `attachments/` 配下画像とObsidian形式画像埋め込みを特別に画像表示しないようにした
+- 確認: `pnpm exec tsc --noEmit` 通過
+- 確認: `pnpm test -- --run workspaceService.test.ts markdownFiles.test.ts Preview.test.tsx App.test.tsx ToolsSidebar.test.tsx` 通過（全32ファイル / 312テスト）
+- 残り: 実アプリで新規ワークスペース作成時に専用フォルダが増えないこと、既存の同名フォルダが通常フォルダとして表示されることを目視確認する
+
 ---
 
 ## 最初に読む

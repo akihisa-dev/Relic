@@ -706,17 +706,6 @@ button:not(:disabled):active {
   z-index: 1000;
 }
 
-.template-select {
-  background: var(--input-bg);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  color: var(--text);
-  font-size: 13px;
-  min-height: 30px;
-  padding: 0 8px;
-  width: 100%;
-}
-
 /* ────────────────────────────────── */
 /* Buttons / Inputs                   */
 /* ────────────────────────────────── */
@@ -1613,14 +1602,6 @@ button:not(:disabled):active {
   background: var(--highlight);
   border-radius: 2px;
   padding: 0 2px;
-}
-
-.preview-attachment-image {
-  display: block;
-  max-height: 560px;
-  max-width: 100%;
-  border-radius: 6px;
-  object-fit: contain;
 }
 
 .preview-image-placeholder {

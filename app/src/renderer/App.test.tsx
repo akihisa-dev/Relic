@@ -56,7 +56,6 @@ function makeRelicApi(overrides: Partial<typeof window.relic> = {}): typeof wind
     getAppInfo: vi.fn().mockResolvedValue({ ok: true, value: { name: "Relic", platform: "darwin", version: "0.0.0" } }),
     getEditorSettings: vi.fn().mockResolvedValue({ ok: true, value: { ...defaultEditorSettings, language: "ja" } }),
     getFrontmatterValueCandidates: vi.fn().mockResolvedValue({ ok: true, value: {} }),
-    getMarkdownTemplates: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     getWorkspaceAliases: vi.fn().mockResolvedValue({ ok: true, value: {} }),
     getWorkspaceChronicle: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     getWorkspaceTags: vi.fn().mockResolvedValue({ ok: true, value: [] }),
@@ -898,39 +897,6 @@ describe("App", () => {
     const tab = useEditorStore.getState().tabs[activeTabId!];
     expect(tab?.kind).toBe("file");
     if (tab?.kind === "file") expect(tab.path).toBe("新規ファイル.md");
-  });
-
-  it("新規ファイルボタンからテンプレートを選んで名前なしでファイルを作成する", async () => {
-    const createMarkdownFile = vi.fn().mockResolvedValue({
-      ok: true,
-      value: {
-        ...withWorkspace,
-        fileTree: [{ name: "新規ファイル", path: "新規ファイル.md", type: "file" }]
-      }
-    });
-    const readMarkdownFile = vi.fn().mockResolvedValue({
-      ok: true,
-      value: { content: "", name: "新規ファイル", path: "新規ファイル.md" }
-    });
-
-    window.relic = makeRelicApi({
-      createMarkdownFile,
-      readMarkdownFile,
-      getMarkdownTemplates: vi.fn().mockResolvedValue({
-        ok: true,
-        value: [{ name: "日記", path: "templates/日記.md" }]
-      }),
-      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
-    });
-
-    await renderApp();
-
-    fireEvent.change(await screen.findByLabelText("テンプレート"), {
-      target: { value: "templates/日記.md" }
-    });
-    fireEvent.click(screen.getByRole("button", { name: "新規ファイル" }));
-
-    expect(createMarkdownFile).toHaveBeenCalledWith({ name: "新規ファイル", templatePath: "templates/日記.md" });
   });
 
   it("新規フォルダボタンから名前なしでフォルダを作成する", async () => {
