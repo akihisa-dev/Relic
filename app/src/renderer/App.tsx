@@ -3,13 +3,15 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, MouseEvent, ReactElement, ReactNode } from "react";
 
 import type {
-  ChronicleEntry,
+  GanttChartEntry,
+  GanttChartSettings,
+  WorkspaceGanttChart,
   WorkspaceState,
   WorkspaceTreeNode
 } from "../shared/ipc";
 import { resolveWikiLinks, type AliasIndex } from "../shared/links";
 import { CommandPalette } from "./components/CommandPalette";
-import { ChronicleSidebar } from "./components/ChronicleSidebar";
+import { ChronicleSidebar, GanttChartView } from "./components/ChronicleSidebar";
 import { FilesSidebar } from "./components/FilesSidebar";
 import { FrontmatterSidebar } from "./components/FrontmatterSidebar";
 import { GitSidebar } from "./components/GitSidebar";
@@ -361,7 +363,7 @@ function RailWorkspaceSwitcher({
 export function App(): ReactElement {
   const [workspaceState, setWorkspaceState] = useState<WorkspaceState | null>(null);
   const [aliasesByPath, setAliasesByPath] = useState<AliasIndex>({});
-  const [chronicleEntries, setChronicleEntries] = useState<ChronicleEntry[]>([]);
+  const [ganttCharts, setGanttCharts] = useState<WorkspaceGanttChart[]>([]);
   const [toastMessage, setToastMessage] = useState<{ text: string; type: "error" | "info" } | null>(null);
   const [linkContextMenu, setLinkContextMenu] = useState<{
     heading?: string;
@@ -454,6 +456,7 @@ export function App(): ReactElement {
     closeAllTabsInPane,
     moveTab,
     openFileInPane,
+    openGanttChartInPane,
     openPanelInPane,
     setEditorSettings,
     setFocusedPane,
@@ -565,25 +568,51 @@ export function App(): ReactElement {
     }
   }, []);
 
+  const startFileTabCloseFlight = useCallback((tabId: string): void => {
+    const tab = useEditorStore.getState().tabs[tabId];
+    if (tab?.kind !== "file") return;
+
+    const tabElement = document.querySelector<HTMLElement>(`.pane-tab[data-tab-id="${tabId}"]`);
+    const rowElement = Array.from(document.querySelectorAll<HTMLElement>(".file-tree-row[data-node-type='file']"))
+      .find((element) => element.getAttribute("data-node-path") === tab.path);
+    const fallbackTargetElement = document.querySelector<HTMLElement>(".sidebar");
+    if (!tabElement || (!rowElement && !fallbackTargetElement)) return;
+
+    const tabRect = tabElement.getBoundingClientRect();
+    const targetRect = (rowElement ?? fallbackTargetElement)?.getBoundingClientRect();
+    if (!targetRect) return;
+
+    setRailTabFlight({
+      direction: "close",
+      fromX: tabRect.left + tabRect.width / 2,
+      fromY: tabRect.top + tabRect.height / 2,
+      label: tab.name,
+      toX: targetRect.left + targetRect.width / 2,
+      toY: targetRect.top + targetRect.height / 2
+    });
+    window.setTimeout(() => {
+      if (typeof window !== "undefined") setRailTabFlight(null);
+    }, 420);
+  }, []);
+
   const closeTabWithMotion = useCallback((pane: PaneId, tabId: string): void => {
     if (!useEditorStore.getState().tabs[tabId]) return;
 
     const key = paneTabMotionKey(pane, tabId);
-    let shouldSchedule = false;
+    if (closingPaneTabs.has(key)) return;
 
     setClosingPaneTabs((current) => {
       if (current.has(key)) return current;
-      shouldSchedule = true;
       return new Set(current).add(key);
     });
 
-    if (!shouldSchedule) return;
+    startFileTabCloseFlight(tabId);
 
     closeMotionTimersRef.current[key] = setTimeout(() => {
       closeTab(pane, tabId);
       clearClosingPaneTabs([key]);
     }, TAB_CLOSE_MOTION_MS);
-  }, [clearClosingPaneTabs, closeTab]);
+  }, [clearClosingPaneTabs, closeTab, closingPaneTabs, startFileTabCloseFlight]);
 
   const closeTabsWithMotion = useCallback((pane: PaneId, tabIds: string[], closeAction: () => void): void => {
     const targetKeys = tabIds
@@ -765,7 +794,7 @@ export function App(): ReactElement {
 
   useEffect(() => {
     if (!workspaceState?.activeWorkspace || !window.relic) {
-      setChronicleEntries([]);
+      setGanttCharts([]);
       return;
     }
 
@@ -775,9 +804,9 @@ export function App(): ReactElement {
       if (canceled) return;
 
       if (result.ok) {
-        setChronicleEntries(result.value);
+        setGanttCharts(normalizeWorkspaceGanttCharts(result.value));
       } else {
-        setChronicleEntries([]);
+        setGanttCharts([]);
         setWorkspaceError(result.error.message);
       }
     });
@@ -786,6 +815,35 @@ export function App(): ReactElement {
       canceled = true;
     };
   }, [setWorkspaceError, workspaceState?.activeWorkspace?.id, workspaceState?.fileTree]);
+
+  const handleSaveGanttCharts = useCallback(async (charts: GanttChartSettings[]): Promise<void> => {
+    if (!window.relic) return;
+
+    const result = await window.relic.saveWorkspaceGanttCharts(charts);
+
+    if (result.ok) {
+      setGanttCharts(normalizeWorkspaceGanttCharts(result.value));
+    } else {
+      setWorkspaceError(result.error.message);
+    }
+  }, [setWorkspaceError]);
+
+  const handleOpenGanttChart = useCallback((chart: WorkspaceGanttChart): void => {
+    openGanttChartInPane(focusedPane, chart);
+  }, [focusedPane, openGanttChartInPane]);
+
+  const handleSetGanttChartFilePaths = useCallback((chartId: string, updater: (paths: string[]) => string[]) => {
+    const chart = ganttCharts.find((candidate) => candidate.id === chartId);
+    if (!chart) return;
+
+    const currentPaths = chart.filePaths ?? [];
+    const nextPaths = Array.from(new Set(updater(currentPaths)));
+    void handleSaveGanttCharts(ganttCharts.map((candidate) =>
+      candidate.id === chartId
+        ? { filePaths: nextPaths, id: candidate.id, name: candidate.name, source: candidate.source }
+        : { filePaths: candidate.filePaths ?? [], id: candidate.id, name: candidate.name, source: candidate.source }
+    ));
+  }, [ganttCharts, handleSaveGanttCharts]);
 
   const {
     handleDeleteActiveFile,
@@ -860,7 +918,9 @@ export function App(): ReactElement {
         toX: rowRect.left + rowRect.width / 2,
         toY: rowRect.top + rowRect.height / 2
       });
-      window.setTimeout(() => setRailTabFlight(null), 360);
+      window.setTimeout(() => {
+        if (typeof window !== "undefined") setRailTabFlight(null);
+      }, 360);
       return;
     }
 
@@ -871,19 +931,7 @@ export function App(): ReactElement {
     const openTabInPane = openTabIdInPane ? editorState.tabs[openTabIdInPane] : null;
 
     if (openTabIdInPane && openTabInPane?.kind === "file") {
-      const tabElement = document.querySelector(`.pane-tab[data-tab-id="${openTabIdInPane}"]`);
-      const tabRect = tabElement?.getBoundingClientRect();
-
-      setRailTabFlight({
-        direction: "close",
-        fromX: (tabRect?.left ?? rowRect.left + rowRect.width + 120) + (tabRect?.width ?? 96) / 2,
-        fromY: (tabRect?.top ?? rowRect.top) + (tabRect?.height ?? 30) / 2,
-        label: openTabInPane.name,
-        toX: rowRect.left + rowRect.width / 2,
-        toY: rowRect.top + rowRect.height / 2
-      });
-      closeTab(targetPane, openTabIdInPane);
-      window.setTimeout(() => setRailTabFlight(null), 360);
+      setTabActive(targetPane, openTabIdInPane);
       return;
     }
 
@@ -898,7 +946,9 @@ export function App(): ReactElement {
       toX: (tabBarRect?.left ?? rowRect.left + rowRect.width + 120) + 48,
       toY: (tabBarRect?.top ?? rowRect.top) + 15
     });
-    window.setTimeout(() => setRailTabFlight(null), 360);
+    window.setTimeout(() => {
+      if (typeof window !== "undefined") setRailTabFlight(null);
+    }, 360);
 
     if (existingTab?.kind === "file") {
       openFileInPane(targetPane, { content: existingTab.content, name: existingTab.name, path: existingTab.path });
@@ -920,11 +970,20 @@ export function App(): ReactElement {
         setWorkspaceError(result.error.message);
       }
     });
-  }, [closeTab, handleOpenFile, openFileInPane, setWorkspaceError]);
+  }, [handleOpenFile, openFileInPane, setTabActive, setWorkspaceError]);
 
   const renderPanelTabIcon = useCallback((panel: PanelTabKind): ReactNode => (
     sidebarViews.find((view) => view.id === panel)?.icon ?? null
   ), [sidebarViews]);
+
+  const renderGanttChartTab = useCallback((chartId: string): ReactNode => (
+    <GanttChartView
+      chart={ganttCharts.find((chart) => chart.id === chartId) ?? null}
+      onAddFile={(targetChartId, path) => handleSetGanttChartFilePaths(targetChartId, (paths) => [...paths, path])}
+      onOpenFile={handleOpenFile}
+      onRemoveFile={(targetChartId, path) => handleSetGanttChartFilePaths(targetChartId, (paths) => paths.filter((item) => item !== path))}
+    />
+  ), [ganttCharts, handleOpenFile, handleSetGanttChartFilePaths]);
 
   const handleCreateFileFromSidebar = useCallback((event?: MouseEvent<HTMLButtonElement>): void => {
     if (event) {
@@ -940,7 +999,9 @@ export function App(): ReactElement {
         toX: (tabBarRect?.left ?? buttonRect.left + buttonRect.width + 120) + 48,
         toY: (tabBarRect?.top ?? buttonRect.top) + 15
       });
-      window.setTimeout(() => setRailTabFlight(null), 360);
+      window.setTimeout(() => {
+        if (typeof window !== "undefined") setRailTabFlight(null);
+      }, 360);
     }
 
     handleCreateFile();
@@ -1006,10 +1067,12 @@ export function App(): ReactElement {
     const otherPane = fromPane === "left" ? "right" : "left";
     if (tab.kind === "file") {
       openFileInPane(otherPane, { content: tab.content, name: tab.name, path: tab.path });
-    } else {
+    } else if (tab.kind === "panel") {
       openPanelInPane(otherPane, tab.panel, tab.name);
+    } else {
+      openGanttChartInPane(otherPane, { id: tab.chartId, name: tab.name });
     }
-  }, [tabs, isSplit, openFileInPane, openPanelInPane]);
+  }, [tabs, isSplit, openFileInPane, openGanttChartInPane, openPanelInPane]);
 
   const openTreeFileInOtherPane = useCallback((path: string): void => {
     if (!window.relic || !isSplit) return;
@@ -1163,6 +1226,9 @@ export function App(): ReactElement {
     { leftPane, rightPane },
     tabs
   );
+  const activeGanttChartIdInFocusedPane = activeTabInFocusedPane?.kind === "gantt"
+    ? activeTabInFocusedPane.chartId
+    : null;
 
   const outlineHeadings = activeFileTabInFocusedPane
     ? extractOutlineHeadings(activeFileTabInFocusedPane.content)
@@ -1194,7 +1260,6 @@ export function App(): ReactElement {
   });
 
   const panelLabels = useMemo<Record<PanelTabKind, string>>(() => ({
-    chronicle: t("nav.chronicle"),
     frontmatter: t("nav.frontmatter"),
     git: t("nav.git"),
     settings: t("nav.settings"),
@@ -1206,13 +1271,24 @@ export function App(): ReactElement {
       .filter((tab) => tab.kind === "panel")
       .map((tab) => tab.panel)
   ), [tabs]);
+  const enabledRailViews = useMemo(() => sidebarViews.filter((view) => {
+    if (view.id === "git" && !featureToggles.git) return false;
+    if (view.id === "tools" && !featureToggles.tools) return false;
+    if (view.id === "frontmatter" && !featureToggles.frontmatter) return false;
+    return true;
+  }), [featureToggles.frontmatter, featureToggles.git, featureToggles.tools, sidebarViews]);
+  const sidebarRailViews = enabledRailViews.filter((view) =>
+    view.id === "files" || view.id === "search" || view.id === "chronicle"
+  );
+  const panelRailViews = enabledRailViews.filter((view) =>
+    view.id !== "files" && view.id !== "search" && view.id !== "chronicle"
+  );
 
   useEffect(() => {
     if (
       activeSidebarView !== "git" &&
       activeSidebarView !== "tools" &&
       activeSidebarView !== "frontmatter" &&
-      activeSidebarView !== "chronicle" &&
       activeSidebarView !== "settings"
     ) {
       return;
@@ -1250,7 +1326,9 @@ export function App(): ReactElement {
           if (paneState.tabIds.includes(panelTabId)) closeTab(pane, panelTabId);
         }
       }, 140);
-      window.setTimeout(() => setRailTabFlight(null), 360);
+      window.setTimeout(() => {
+        if (typeof window !== "undefined") setRailTabFlight(null);
+      }, 360);
       return;
     }
 
@@ -1267,7 +1345,9 @@ export function App(): ReactElement {
         toX: (toRect?.left ?? railRect.left + 180) + 48,
         toY: (toRect?.top ?? railRect.top) + 15
       });
-      window.setTimeout(() => setRailTabFlight(null), 360);
+      window.setTimeout(() => {
+        if (typeof window !== "undefined") setRailTabFlight(null);
+      }, 360);
     });
   }, [closeTab, focusedPane, openPanelInPane]);
 
@@ -1333,15 +1413,6 @@ export function App(): ReactElement {
       );
     }
 
-    if (panel === "chronicle") {
-      return (
-        <ChronicleSidebar
-          entries={chronicleEntries}
-          onOpenFile={handleOpenFile}
-        />
-      );
-    }
-
     return (
       <SettingsSidebar
         appInfo={appInfo}
@@ -1356,7 +1427,7 @@ export function App(): ReactElement {
       />
     );
   }, [
-    appInfo, autoSyncSettings, chronicleEntries, editorSettings, featureToggles, gitCloneUrl,
+    appInfo, autoSyncSettings, editorSettings, featureToggles, gitCloneUrl,
     gitCommitHistory, gitCommitMessage, gitConflicts, gitErrorMessage, gitHubAuthStatus, gitHubIntegrationSettings,
     gitRemotes, gitRemoteUrl, gitRetryAction, gitStatus, gitSyncMessage, gitSyncPreview, gitSyncStep,
     gitWorkingChanges, handleCloneGitHubRepository, handleConfirmPull, handleConfirmPush,
@@ -1404,30 +1475,12 @@ export function App(): ReactElement {
             <span className="rail-button-label">{t("pane.toggleSidebar")}</span>
           </button>
           <div className="rail-separator" />
-          {sidebarViews
-            .filter((view) => {
-              if (view.id === "git" && !featureToggles.git) return false;
-              if (view.id === "tools" && !featureToggles.tools) return false;
-              if (view.id === "frontmatter" && !featureToggles.frontmatter) return false;
-              return true;
-            })
-            .map((view) => (
+          {sidebarRailViews.map((view) => (
               <button
                 aria-label={view.label}
-                className={`rail-button${
-                  view.id === "files" || view.id === "search"
-                    ? view.id === activeSidebarView ? " active" : ""
-                    : openPanelTabIds.has(view.id) ? " active" : ""
-                }`}
+                className={`rail-button${view.id === activeSidebarView ? " active" : ""}`}
                 key={view.id}
-                onClick={(event) => {
-                  if (view.id === "files" || view.id === "search") {
-                    setSidebarView(view.id);
-                    return;
-                  }
-
-                  handleRailPanelButton(view.id, view.label, event);
-                }}
+                onClick={() => setSidebarView(view.id)}
                 title={view.label}
                 type="button"
               >
@@ -1435,6 +1488,20 @@ export function App(): ReactElement {
                 <span className="rail-button-label">{view.label}</span>
               </button>
             ))}
+          <div className="rail-separator" />
+          {panelRailViews.map((view) => (
+            <button
+              aria-label={view.label}
+              className={`rail-button${openPanelTabIds.has(view.id as PanelTabKind) ? " active" : ""}`}
+              key={view.id}
+              onClick={(event) => handleRailPanelButton(view.id as PanelTabKind, view.label, event)}
+              title={view.label}
+              type="button"
+            >
+              {view.icon}
+              <span className="rail-button-label">{view.label}</span>
+            </button>
+          ))}
           {registeredWorkspaces.length > 0 ? (
             <>
               <div className="rail-spacer" />
@@ -1472,7 +1539,7 @@ export function App(): ReactElement {
                 </div>
               </div>
             <div className={`sidebar-body sidebar-view-content sidebar-view-content--${activeSidebarView}`}>
-            {activeSidebarView !== "search" ? (
+            {activeSidebarView === "files" ? (
               <FilesSidebar
                 isCreatingFile={isCreatingFile}
                 isCreatingFolder={isCreatingFolder}
@@ -1502,6 +1569,12 @@ export function App(): ReactElement {
                 selectedTemplatePath={selectedTemplatePath}
                 templates={markdownTemplates}
                 workspaceState={workspaceState}
+              />
+            ) : activeSidebarView === "chronicle" ? (
+              <ChronicleSidebar
+                activeChartId={activeGanttChartIdInFocusedPane}
+                charts={ganttCharts}
+                onOpenChart={handleOpenGanttChart}
               />
             ) : (
               <SearchSidebar
@@ -1611,6 +1684,7 @@ export function App(): ReactElement {
                   pinnedPaths={pinnedPathSet}
                   isSplitView={isSplit}
                   pane="left"
+                  renderGanttChartTab={renderGanttChartTab}
                   renderPanelTab={renderPanelTab}
                   renderPanelTabIcon={renderPanelTabIcon}
                   scrollTargetHeading={leftPaneScrollHeading}
@@ -1645,6 +1719,7 @@ export function App(): ReactElement {
                     pinnedPaths={pinnedPathSet}
                     isSplitView={isSplit}
                     pane="right"
+                    renderGanttChartTab={renderGanttChartTab}
                     renderPanelTab={renderPanelTab}
                     renderPanelTabIcon={renderPanelTabIcon}
                     scrollTargetHeading={rightPaneScrollHeading}
@@ -1919,6 +1994,80 @@ export function App(): ReactElement {
     </div>
     </I18nProvider>
   );
+}
+
+function normalizeWorkspaceGanttCharts(value: unknown): WorkspaceGanttChart[] {
+  if (!Array.isArray(value)) return [];
+
+  if (value.every(isWorkspaceGanttChart)) return fixedWorkspaceGanttCharts(value);
+
+  const legacyEntries = value.flatMap((entry): GanttChartEntry[] => {
+    if (typeof entry !== "object" || entry === null) return [];
+
+    const candidate = entry as Record<string, unknown>;
+    if (
+      typeof candidate.path !== "string" ||
+      typeof candidate.fileName !== "string" ||
+      typeof candidate.startYear !== "number" ||
+      typeof candidate.endYear !== "number"
+    ) return [];
+
+    return [{
+      endLabel: formatLegacyChronicleYear(candidate.endYear),
+      endValue: legacyChronicleYearToAxis(candidate.endYear),
+      fileName: candidate.fileName,
+      path: candidate.path,
+      startLabel: formatLegacyChronicleYear(candidate.startYear),
+      startValue: legacyChronicleYearToAxis(candidate.startYear)
+    }];
+  });
+
+  return legacyEntries.length > 0
+    ? fixedWorkspaceGanttCharts([{ entries: legacyEntries, filePaths: legacyEntries.map((entry) => entry.path), id: "chronicle", name: "chronicle", source: "chronicle" }])
+    : fixedWorkspaceGanttCharts([]);
+}
+
+function fixedWorkspaceGanttCharts(charts: WorkspaceGanttChart[]): WorkspaceGanttChart[] {
+  const chronicle = charts.find((chart) => chart.source === "chronicle" || chart.id === "chronicle");
+  const date = charts.find((chart) => chart.source === "date" || chart.id === "date");
+
+  return [
+    {
+      entries: chronicle?.entries ?? [],
+      filePaths: chronicle?.filePaths ?? [],
+      id: "chronicle",
+      name: "chronicle",
+      source: "chronicle"
+    },
+    {
+      entries: date?.entries ?? [],
+      filePaths: date?.filePaths ?? [],
+      id: "date",
+      name: "date",
+      source: "date"
+    }
+  ];
+}
+
+function isWorkspaceGanttChart(value: unknown): value is WorkspaceGanttChart {
+  if (typeof value !== "object" || value === null) return false;
+
+  const chart = value as Record<string, unknown>;
+  return (
+    typeof chart.id === "string" &&
+    typeof chart.name === "string" &&
+    (chart.source === "chronicle" || chart.source === "date") &&
+    Array.isArray(chart.entries) &&
+    (!("filePaths" in chart) || Array.isArray(chart.filePaths))
+  );
+}
+
+function legacyChronicleYearToAxis(year: number): number {
+  return year < 0 ? year : year - 1;
+}
+
+function formatLegacyChronicleYear(year: number): string {
+  return year < 0 ? `−${Math.abs(year)}` : String(year);
 }
 
 // ────────────────────────────────────────────────

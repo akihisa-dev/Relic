@@ -108,7 +108,7 @@ function isYamlFlowSequence(line: string): boolean {
 }
 
 function shouldSerializeArrayAsFlowSequence(key: string, field?: UserDefinedField): boolean {
-  return key === "aliases" || key === "tags" || key === "chronicle" || Boolean(field);
+  return key === "aliases" || key === "tags" || key === "chronicle" || key === "date" || Boolean(field);
 }
 
 function isSingleValueField(field?: UserDefinedField): boolean {
@@ -1021,6 +1021,8 @@ class FrontmatterPropertiesWidget extends WidgetType {
     const field = this.fieldFor(key);
     const input = key === "chronicle"
       ? this.chronicleInput(view, key, Array.isArray(value) ? value : [])
+      : key === "date"
+        ? this.dateRangeInput(view, key, Array.isArray(value) ? value : value === null || value === undefined ? [] : [value])
       : field?.type === "boolean"
         ? this.booleanInput(view, key, firstArrayValue(value), true)
         : isSingleValueField(field)
@@ -1175,6 +1177,48 @@ class FrontmatterPropertiesWidget extends WidgetType {
     return typeof value === "number" && Number.isInteger(value) && value !== 0 ? String(value) : "";
   }
 
+  private dateRangeInput(view: EditorView, key: string, value: unknown[]): HTMLElement {
+    const wrap = document.createElement("span");
+    wrap.className = "cm-frontmatter-input-wrap cm-frontmatter-date-range";
+
+    const startInput = document.createElement("input");
+    startInput.className = "cm-frontmatter-input";
+    startInput.type = "date";
+    startInput.value = this.dateInputValue(value[0]);
+
+    const endInput = document.createElement("input");
+    endInput.className = "cm-frontmatter-input";
+    endInput.type = "date";
+    endInput.value = value.length > 1 ? this.dateInputValue(value[1]) : "";
+
+    const commit = (): void => {
+      const startDate = parseDateInput(startInput.value);
+      const endDate = parseDateInput(endInput.value);
+
+      if (startDate === null) {
+        this.updateField(view, key, undefined);
+        return;
+      }
+
+      if (endDate === null || endDate === startDate) {
+        this.updateField(view, key, [startDate]);
+        return;
+      }
+
+      this.updateField(view, key, startDate <= endDate ? [startDate, endDate] : [endDate, startDate]);
+    };
+
+    startInput.addEventListener("change", commit);
+    endInput.addEventListener("change", commit);
+    wrap.append(startInput, endInput);
+    return wrap;
+  }
+
+  private dateInputValue(value: unknown): string {
+    if (value instanceof Date) return value.toISOString().slice(0, 10);
+    return typeof value === "string" && parseDateInput(value) !== null ? value : "";
+  }
+
   private arrayInput(view: EditorView, key: string, value: unknown[], field?: UserDefinedField): HTMLElement {
     const wrap = document.createElement("div");
     wrap.className = "cm-frontmatter-pills";
@@ -1257,7 +1301,7 @@ class FrontmatterPropertiesWidget extends WidgetType {
         const field = this.fieldFor(key);
         if (value === "") return `${key}:`;
         if (Array.isArray(value) && shouldSerializeArrayAsFlowSequence(key, field)) {
-          return `${key}: [${value.map((item) => this.serializeFlowScalar(item)).join(", ")}]`;
+          return `${key}: [${value.map((item) => this.serializeFlowScalar(key, item)).join(", ")}]`;
         }
         if (field?.type === "date" && typeof value === "string") return `${key}: ${value}`;
         return yaml.dump({ [key]: value }, { lineWidth: -1 }).trimEnd();
@@ -1284,7 +1328,7 @@ class FrontmatterPropertiesWidget extends WidgetType {
         (entry.end === entry.start + 1 && isYamlFlowSequence(lines[entry.start]))
       )
     ) {
-      return `${entry.key}: [${value.map((item) => this.serializeFlowScalar(item)).join(", ")}]`;
+      return `${entry.key}: [${value.map((item) => this.serializeFlowScalar(entry.key, item)).join(", ")}]`;
     }
 
     if (entry.end !== entry.start + 1 || typeof value !== "string" || value.includes("\n")) {
@@ -1301,7 +1345,8 @@ class FrontmatterPropertiesWidget extends WidgetType {
     return `${entry.key}: ${JSON.stringify(value)}`;
   }
 
-  private serializeFlowScalar(value: unknown): string {
+  private serializeFlowScalar(key: string, value: unknown): string {
+    if (key === "date" && typeof value === "string" && parseDateInput(value) !== null) return value;
     if (typeof value === "string") return JSON.stringify(value);
     if (typeof value === "number" || typeof value === "boolean") return String(value);
     if (value === null) return "null";
@@ -1350,6 +1395,7 @@ class FrontmatterPropertiesWidget extends WidgetType {
 
   private fieldFor(key: string): UserDefinedField | undefined {
     if (key === "aliases" || key === "tags") return { name: key, type: "multi-select" };
+    if (key === "date") return { name: key, type: "date" };
     return this.userDefinedFields.find((field) => field.name === key);
   }
 
@@ -1393,6 +1439,13 @@ function parseChronicleYearInput(value: string): number | null {
   if (!/^-?\d+$/.test(trimmed)) return null;
   const year = Number(trimmed);
   return Number.isInteger(year) && year !== 0 ? year : null;
+}
+
+function parseDateInput(value: string): string | null {
+  const trimmed = value.trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return null;
+  const date = new Date(`${trimmed}T00:00:00.000Z`);
+  return Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== trimmed ? null : trimmed;
 }
 
 function collectRegexMatches(

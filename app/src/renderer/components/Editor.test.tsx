@@ -609,6 +609,30 @@ describe("Editor", () => {
     expect(viewRef.current?.state.doc.toString()).toContain("chronicle: [1185, 1333]");
   });
 
+  it("dateプロパティは年月日の単日・期間を1行配列として編集する", async () => {
+    const viewRef = createRef<EditorView | null>();
+    const { container } = render(
+      <Editor
+        content={"---\ndate:\n---\n# 本文"}
+        onChange={vi.fn()}
+        settings={settings}
+        viewRef={viewRef}
+      />
+    );
+
+    await waitFor(() => expect(container.querySelector(".cm-frontmatter-date-range")).not.toBeNull());
+    const inputs = Array.from(container.querySelectorAll(".cm-frontmatter-date-range .cm-frontmatter-input")) as HTMLInputElement[];
+    fireEvent.change(inputs[0], { target: { value: "2026-05-12" } });
+
+    expect(viewRef.current?.state.doc.toString()).toContain("date: [2026-05-12]");
+
+    await waitFor(() => expect(container.querySelector(".cm-frontmatter-date-range")).not.toBeNull());
+    const nextInputs = Array.from(container.querySelectorAll(".cm-frontmatter-date-range .cm-frontmatter-input")) as HTMLInputElement[];
+    fireEvent.change(nextInputs[1], { target: { value: "2026-05-20" } });
+
+    expect(viewRef.current?.state.doc.toString()).toContain("date: [2026-05-12, 2026-05-20]");
+  });
+
   it("プロパティ編集時にYAMLのコメント行とフィールド順をできるだけ保つ", async () => {
     const viewRef = createRef<EditorView | null>();
     const { container } = render(

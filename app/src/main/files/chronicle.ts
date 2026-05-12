@@ -1,16 +1,22 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 
-import type { ChronicleEntry, WorkspaceTreeNode } from "../../shared/ipc";
+import type { GanttChartEntry, GanttChartSettings, WorkspaceGanttChart, WorkspaceTreeNode } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { readWorkspaceFileTree } from "./fileTree";
 import { parseFrontmatter } from "./frontmatter";
 import { resolveWorkspaceRelativePath } from "./paths";
 
-export async function readWorkspaceChronicle(workspacePath: string): Promise<RelicResult<ChronicleEntry[]>> {
+export async function readWorkspaceChronicle(
+  workspacePath: string,
+  charts: GanttChartSettings[]
+): Promise<RelicResult<WorkspaceGanttChart[]>> {
   try {
     const fileTree = await readWorkspaceFileTree(workspacePath);
-    const entries: ChronicleEntry[] = [];
+    const entriesBySource: Record<GanttChartSettings["source"], GanttChartEntry[]> = {
+      chronicle: [],
+      date: []
+    };
 
     for (const relativePath of collectMarkdownPaths(fileTree)) {
       const absolutePath = resolveWorkspaceRelativePath(workspacePath, relativePath);
@@ -20,21 +26,40 @@ export async function readWorkspaceChronicle(workspacePath: string): Promise<Rel
       const content = await readFile(absolutePath.value, "utf8");
       const range = extractChronicleRange(content);
 
-      if (!range) continue;
+      if (range) {
+        entriesBySource.chronicle.push({
+          endLabel: formatYear(range.endYear),
+          endValue: yearToAxis(range.endYear),
+          fileName: path.basename(relativePath, ".md"),
+          path: relativePath,
+          startLabel: formatYear(range.startYear),
+          startValue: yearToAxis(range.startYear)
+        });
+      }
 
-      entries.push({
-        endYear: range.endYear,
-        fileName: path.basename(relativePath, ".md"),
-        path: relativePath,
-        startYear: range.startYear
-      });
+      const dateRange = extractDateRange(content);
+
+      if (dateRange) {
+        entriesBySource.date.push({
+          endLabel: dateRange.endDate,
+          endValue: dateToDay(dateRange.endDate),
+          fileName: path.basename(relativePath, ".md"),
+          path: relativePath,
+          startLabel: dateRange.startDate,
+          startValue: dateToDay(dateRange.startDate)
+        });
+      }
     }
 
-    return ok(entries.sort((a, b) =>
-      a.startYear - b.startYear ||
-      a.endYear - b.endYear ||
-      a.fileName.localeCompare(b.fileName, "ja")
-    ));
+    const sortedEntriesBySource = {
+      chronicle: sortEntries(entriesBySource.chronicle),
+      date: sortEntries(entriesBySource.date)
+    };
+
+    return ok(charts.map((chart) => ({
+      ...chart,
+      entries: sortedEntriesBySource[chart.source]
+    })));
   } catch (error) {
     return fail(
       "CHRONICLE_READ_FAILED",
@@ -42,6 +67,14 @@ export async function readWorkspaceChronicle(workspacePath: string): Promise<Rel
       error instanceof Error ? error.message : String(error)
     );
   }
+}
+
+function sortEntries(entries: GanttChartEntry[]): GanttChartEntry[] {
+  return [...entries].sort((a, b) =>
+    a.startValue - b.startValue ||
+      a.endValue - b.endValue ||
+      a.fileName.localeCompare(b.fileName, "ja")
+  );
 }
 
 export function extractChronicleRange(markdown: string): { endYear: number; startYear: number } | null {
@@ -59,8 +92,52 @@ export function extractChronicleRange(markdown: string): { endYear: number; star
   return { endYear, startYear };
 }
 
+export function extractDateRange(markdown: string): { endDate: string; startDate: string } | null {
+  const { data } = parseFrontmatter(markdown);
+  const value = data.date;
+
+  if (!Array.isArray(value) || (value.length !== 1 && value.length !== 2)) return null;
+  const dates = value.map(normalizeDateValue);
+  if (dates.some((date) => date === null)) return null;
+
+  const startDate = dates[0];
+  const endDate = dates.length === 1 ? startDate : dates[1];
+  if (!startDate || !endDate) return null;
+
+  if (startDate > endDate) return null;
+
+  return { endDate, startDate };
+}
+
 function isValidChronicleYear(value: unknown): value is number {
   return typeof value === "number" && Number.isInteger(value) && value !== 0;
+}
+
+function normalizeDateValue(value: unknown): string | null {
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value.toISOString().slice(0, 10);
+  }
+
+  if (typeof value !== "string") return null;
+
+  const trimmed = value.trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return null;
+
+  const date = new Date(`${trimmed}T00:00:00.000Z`);
+  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === trimmed ? trimmed : null;
+}
+
+function dateToDay(value: string): number {
+  return Math.floor(new Date(`${value}T00:00:00.000Z`).getTime() / 86_400_000);
+}
+
+function yearToAxis(year: number): number {
+  if (year === 0) return 0;
+  return year < 0 ? year : year - 1;
+}
+
+function formatYear(year: number): string {
+  return year < 0 ? `−${Math.abs(year)}` : String(year);
 }
 
 function collectMarkdownPaths(nodes: WorkspaceTreeNode[]): string[] {

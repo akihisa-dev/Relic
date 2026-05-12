@@ -23,6 +23,7 @@ import {
   type RemoveWorkspaceInput,
   type RenameWorkspaceInput,
   saveAutoSyncSettingsChannel,
+  saveWorkspaceGanttChartsChannel,
   type AutoSyncSettings,
   saveFeatureTogglesChannel,
   getFrontmatterTemplatesChannel,
@@ -31,6 +32,8 @@ import {
   saveUserDefinedFieldsChannel,
   type FeatureToggles,
   type FrontmatterTemplate,
+  type GanttChartSettings,
+  type GanttChartSource,
   switchWorkspaceChannel,
   type SwitchWorkspaceInput,
   togglePinChannel,
@@ -70,7 +73,8 @@ const userDefinedFieldTypes: UserDefinedFieldType[] = [
   "url"
 ];
 const userDefinedFieldNamePattern = /^[^\s:][^\r\n:]*$/;
-const reservedUserDefinedFieldNames = new Set(["aliases", "tags", "chronicle"]);
+const reservedUserDefinedFieldNames = new Set(["aliases", "tags", "chronicle", "date"]);
+const ganttChartSources: GanttChartSource[] = ["chronicle", "date"];
 
 function isUserDefinedFieldsInput(input: unknown): input is UserDefinedField[] {
   if (!Array.isArray(input)) return false;
@@ -92,6 +96,27 @@ function isUserDefinedFieldsInput(input: unknown): input is UserDefinedField[] {
     if ("choices" in candidate && !Array.isArray(candidate.choices)) return false;
     if (Array.isArray(candidate.choices) && !candidate.choices.every((choice) => typeof choice === "string")) return false;
 
+    return true;
+  });
+}
+
+function isGanttChartsInput(input: unknown): input is GanttChartSettings[] {
+  if (!Array.isArray(input) || input.length !== 2) return false;
+
+  const sources = new Set<GanttChartSource>();
+
+  return input.every((chart) => {
+    if (typeof chart !== "object" || chart === null) return false;
+
+    const candidate = chart as Record<string, unknown>;
+    if (typeof candidate.id !== "string" || candidate.id.trim() === "") return false;
+    if (typeof candidate.name !== "string" || candidate.name.trim() === "") return false;
+    if (!ganttChartSources.includes(candidate.source as GanttChartSource)) return false;
+    if (sources.has(candidate.source as GanttChartSource)) return false;
+    if ("filePaths" in candidate && !Array.isArray(candidate.filePaths)) return false;
+    if (Array.isArray(candidate.filePaths) && !candidate.filePaths.every((path) => typeof path === "string")) return false;
+
+    sources.add(candidate.source as GanttChartSource);
     return true;
   });
 }
@@ -199,11 +224,46 @@ export function registerWorkspaceHandlers(): void {
         return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
       }
 
-      return readWorkspaceChronicle(state.activeWorkspace.path);
+      const workspaceSettings = await readWorkspaceSettings(app.getPath("userData"), state.activeWorkspace.id);
+      return readWorkspaceChronicle(state.activeWorkspace.path, workspaceSettings.ganttCharts);
     } catch (error) {
       return fail(
         "WORKSPACE_CHRONICLE_FAILED",
         "年表を読み込めませんでした。",
+        error instanceof Error ? error.message : String(error)
+      );
+    }
+  });
+
+  ipcMain.handle(saveWorkspaceGanttChartsChannel, async (_event, input: unknown) => {
+    try {
+      if (!isGanttChartsInput(input)) {
+        return fail("INVALID_GANTT_CHARTS", "年表設定が正しくありません。");
+      }
+
+      const settings = await readAppSettings(app.getPath("userData"));
+      const state = toWorkspaceState(settings);
+
+      if (!state.activeWorkspace) {
+        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
+      }
+
+      const workspaceSettings = await readWorkspaceSettings(app.getPath("userData"), state.activeWorkspace.id);
+      await writeWorkspaceSettings(app.getPath("userData"), state.activeWorkspace.id, {
+        ...workspaceSettings,
+        ganttCharts: input.map((chart) => ({
+          filePaths: chart.filePaths,
+          id: chart.id.trim(),
+          name: chart.name.trim(),
+          source: chart.source
+        }))
+      });
+
+      return readWorkspaceChronicle(state.activeWorkspace.path, input);
+    } catch (error) {
+      return fail(
+        "WORKSPACE_GANTT_SAVE_FAILED",
+        "年表設定を保存できませんでした。",
         error instanceof Error ? error.message : String(error)
       );
     }
