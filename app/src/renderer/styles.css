@@ -3754,28 +3754,29 @@ button:not(:disabled):active {
   grid-template-columns: minmax(0, 1fr);
 }
 
-.chronicle-source-toggle {
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  overflow: hidden;
+.chronicle-source-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
-.chronicle-source-toggle-button {
+.chronicle-source-button {
   background: var(--bg);
-  border: 0;
+  border: 1px solid var(--border);
+  border-radius: 5px;
   color: var(--text-2);
   cursor: pointer;
   font-size: 12px;
-  height: 30px;
+  min-height: 28px;
+  padding: 0 10px;
 }
 
-.chronicle-source-toggle-button + .chronicle-source-toggle-button {
-  border-left: 1px solid var(--border);
+.chronicle-source-button:hover {
+  background: var(--hover);
+  color: var(--text);
 }
 
-.chronicle-source-toggle-button.active {
+.chronicle-source-button.active {
   background: var(--hover);
   color: var(--text);
   font-weight: 600;
@@ -3849,33 +3850,9 @@ button:not(:disabled):active {
 }
 
 .chronicle-file-select {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
   max-height: 280px;
-  overflow: auto;
-}
-
-.chronicle-file-option {
-  align-items: center;
-  border: 1px solid transparent;
-  border-radius: 5px;
-  color: var(--text);
-  cursor: grab;
-  display: flex;
-  gap: 8px;
-  min-width: 0;
-  padding: 6px 8px;
-}
-
-.chronicle-file-option:hover {
-  background: var(--hover);
-}
-
-.chronicle-file-option span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .chronicle-chart-tabs {
