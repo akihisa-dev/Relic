@@ -1,7 +1,7 @@
 import { autocompletion, type CompletionContext, type CompletionResult } from "@codemirror/autocomplete";
 import { defaultKeymap, historyKeymap, history } from "@codemirror/commands";
 import { markdown } from "@codemirror/lang-markdown";
-import { Compartment, EditorState, StateField, type Text } from "@codemirror/state";
+import { Compartment, EditorState, StateEffect, StateField, type Text } from "@codemirror/state";
 import { Decoration, EditorView, ViewPlugin, WidgetType, keymap, lineNumbers } from "@codemirror/view";
 import type { DecorationSet, ViewUpdate } from "@codemirror/view";
 import { GFM } from "@lezer/markdown";
@@ -73,6 +73,17 @@ const frontmatterFieldNamePattern = /^[^#\s:][^\r\n:]*$/;
 const fixedFrontmatterFieldNames = ["aliases", "tags", "chronicle", "date"];
 const editorEditableCompartment = new Compartment();
 const frontmatterDialogRequestEvent = "relic-frontmatter-dialog-request";
+const frontmatterCollapsedEffect = StateEffect.define<boolean>();
+const frontmatterCollapsedField = StateField.define<boolean>({
+  create: () => false,
+  update: (value, transaction) => {
+    for (const effect of transaction.effects) {
+      if (effect.is(frontmatterCollapsedEffect)) return effect.value;
+    }
+
+    return value;
+  }
+});
 
 interface YamlFieldEntry {
   end: number;
@@ -962,7 +973,8 @@ class FrontmatterPropertiesWidget extends WidgetType {
     private readonly block: FrontmatterBlock,
     private readonly userDefinedFields: UserDefinedField[],
     private readonly candidates: Record<string, string[]>,
-    private readonly lineNumber: number
+    private readonly lineNumber: number,
+    private readonly collapsed: boolean
   ) {
     super();
   }
@@ -971,12 +983,14 @@ class FrontmatterPropertiesWidget extends WidgetType {
     return this.block.from === other.block.from &&
       this.block.to === other.block.to &&
       JSON.stringify(this.block.data) === JSON.stringify(other.block.data) &&
-      this.lineNumber === other.lineNumber;
+      this.lineNumber === other.lineNumber &&
+      this.collapsed === other.collapsed;
   }
 
   toDOM(view: EditorView): HTMLElement {
     const wrapper = document.createElement("section");
     wrapper.className = "cm-frontmatter-properties";
+    wrapper.dataset.collapsed = String(this.collapsed);
     wrapper.contentEditable = "false";
     wrapper.addEventListener("focusin", () => setEditorEditable(view, false));
     wrapper.addEventListener("focusout", (event) => {
@@ -987,6 +1001,11 @@ class FrontmatterPropertiesWidget extends WidgetType {
     });
 
     if (this.lineNumber !== this.block.startLine) {
+      if (this.collapsed) {
+        wrapper.classList.add("cm-frontmatter-properties--collapsed-line");
+        return wrapper;
+      }
+
       const row = this.rowForLine(view);
       if (row) {
         wrapper.append(row);
@@ -1000,6 +1019,8 @@ class FrontmatterPropertiesWidget extends WidgetType {
 
     const header = document.createElement("button");
     header.className = "cm-frontmatter-header";
+    header.ariaExpanded = String(!this.collapsed);
+    header.title = this.collapsed ? "プロパティを開く" : "プロパティを閉じる";
     header.type = "button";
 
     const icon = document.createElement("span");
@@ -1012,9 +1033,9 @@ class FrontmatterPropertiesWidget extends WidgetType {
     count.textContent = String(Object.keys(this.block.data).length);
     header.append(icon, title, count);
 
-    header.addEventListener("click", () => {
-      const collapsed = wrapper.dataset.collapsed === "true";
-      wrapper.dataset.collapsed = collapsed ? "false" : "true";
+    header.addEventListener("click", (event) => {
+      event.preventDefault();
+      view.dispatch({ effects: frontmatterCollapsedEffect.of(!this.collapsed) });
     });
 
     wrapper.append(header);
@@ -1647,10 +1668,11 @@ export function buildFrontmatterPropertiesDecorations(
   const block = findFrontmatterBlock(state);
   if (!block) return Decoration.none;
 
+  const collapsed = state.field(frontmatterCollapsedField, false) ?? false;
   const ranges: { from: number; to: number; deco: Decoration }[] = [];
   for (let lineNumber = block.startLine; lineNumber <= block.endLine; lineNumber += 1) {
     const line = state.doc.line(lineNumber);
-    const widget = new FrontmatterPropertiesWidget(block, userDefinedFields, candidates, lineNumber);
+    const widget = new FrontmatterPropertiesWidget(block, userDefinedFields, candidates, lineNumber, collapsed);
     ranges.push({
       from: line.from,
       to: line.to,
@@ -1658,6 +1680,17 @@ export function buildFrontmatterPropertiesDecorations(
         ? Decoration.replace({ widget })
         : Decoration.widget({ widget })
     });
+
+    if (collapsed && lineNumber !== block.startLine) {
+      ranges.push({
+        from: line.from,
+        to: line.from,
+        deco: Decoration.line({
+          attributes: { "aria-hidden": "true" },
+          class: "cm-frontmatter-line-collapsed"
+        })
+      });
+    }
   }
 
   return Decoration.set(ranges.map((range) => range.deco.range(range.from, range.to)), true);
@@ -2149,6 +2182,7 @@ function buildExtensions(
     markdown({ extensions: GFM }),
     EditorView.lineWrapping,
     autocompletion({ override: [buildWikiLinkCompletionSource(allFilePaths)] }),
+    frontmatterCollapsedField,
     EditorView.domEventHandlers({
       click: (event, view) => {
         const target = event.target;

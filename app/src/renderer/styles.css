@@ -1929,6 +1929,11 @@ button:not(:disabled):active {
   height: 1.45em;
 }
 
+.cm-frontmatter-line-collapsed,
+.cm-frontmatter-properties--collapsed-line {
+  display: none;
+}
+
 .cm-frontmatter-header {
   align-items: center;
   background: transparent;
