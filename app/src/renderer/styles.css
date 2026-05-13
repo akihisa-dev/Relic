@@ -1800,6 +1800,108 @@ button:not(:disabled):active {
   gap: 9px;
 }
 
+.dashboard-property-section {
+  align-content: start;
+}
+
+.dashboard-property-select {
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  height: 30px;
+  min-width: 0;
+  padding: 0 8px;
+  width: min(100%, 220px);
+}
+
+.dashboard-donut-layout {
+  align-items: center;
+  display: grid;
+  gap: 18px;
+  grid-template-columns: minmax(140px, 0.8fr) minmax(0, 1fr);
+  min-width: 0;
+}
+
+.dashboard-donut {
+  align-items: center;
+  aspect-ratio: 1;
+  background: var(--donut-gradient);
+  border-radius: 999px;
+  display: grid;
+  justify-items: center;
+  margin: 0 auto;
+  max-width: 170px;
+  min-width: 120px;
+  padding: 18px;
+  position: relative;
+  width: 100%;
+}
+
+.dashboard-donut::after {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  content: "";
+  inset: 24%;
+  position: absolute;
+}
+
+.dashboard-donut strong,
+.dashboard-donut span {
+  min-width: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.dashboard-donut strong {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.dashboard-donut span {
+  color: var(--text-3);
+  font-size: 11px;
+  line-height: 1.2;
+  margin-top: 4px;
+}
+
+.dashboard-donut-legend {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+
+.dashboard-donut-legend-item {
+  align-items: center;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 10px minmax(0, 1fr) auto;
+  min-width: 0;
+}
+
+.dashboard-donut-legend-item span {
+  border-radius: 999px;
+  height: 10px;
+  width: 10px;
+}
+
+.dashboard-donut-legend-item b {
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 500;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dashboard-donut-legend-item small {
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 650;
+}
+
 .dashboard-bar-row {
   align-items: center;
   display: grid;
@@ -1858,6 +1960,10 @@ button:not(:disabled):active {
   .dashboard-file-bars {
     grid-template-columns: repeat(4, minmax(0, 1fr));
     min-height: 220px;
+  }
+
+  .dashboard-donut-layout {
+    grid-template-columns: 1fr;
   }
 }
 
