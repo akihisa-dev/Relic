@@ -4,14 +4,13 @@ import type { CSSProperties, MouseEvent, ReactElement, ReactNode } from "react";
 
 import type {
   GanttChartEntry,
-  GanttChartSettings,
   WorkspaceGanttChart,
   WorkspaceState,
   WorkspaceTreeNode
 } from "../shared/ipc";
 import { resolveWikiLinks, type AliasIndex } from "../shared/links";
 import { CommandPalette } from "./components/CommandPalette";
-import { ChronicleSidebar, GanttChartView } from "./components/ChronicleSidebar";
+import { GanttChartView } from "./components/ChronicleSidebar";
 import { FilesSidebar } from "./components/FilesSidebar";
 import { FrontmatterSidebar } from "./components/FrontmatterSidebar";
 import { GitSidebar } from "./components/GitSidebar";
@@ -491,6 +490,7 @@ export function App(): ReactElement {
     rightPanelView,
     setRightPanelView,
     setSidebarView,
+    closeSidebar,
     toggleRightPanel,
     toggleSidebar: toggleSidebarState,
     toggleTypewriterMode
@@ -830,35 +830,6 @@ export function App(): ReactElement {
     };
   }, [setWorkspaceError, workspaceState?.activeWorkspace?.id, workspaceState?.fileTree]);
 
-  const handleSaveGanttCharts = useCallback(async (charts: GanttChartSettings[]): Promise<void> => {
-    if (!window.relic) return;
-
-    const result = await window.relic.saveWorkspaceGanttCharts(charts);
-
-    if (result.ok) {
-      setGanttCharts(normalizeWorkspaceGanttCharts(result.value));
-    } else {
-      setWorkspaceError(result.error.message);
-    }
-  }, [setWorkspaceError]);
-
-  const handleOpenGanttChart = useCallback((chart: WorkspaceGanttChart): void => {
-    openGanttChartInPane(focusedPane, chart);
-  }, [focusedPane, openGanttChartInPane]);
-
-  const handleSetGanttChartFilePaths = useCallback((chartId: string, updater: (paths: string[]) => string[]) => {
-    const chart = ganttCharts.find((candidate) => candidate.id === chartId);
-    if (!chart) return;
-
-    const currentPaths = chart.filePaths ?? [];
-    const nextPaths = Array.from(new Set(updater(currentPaths)));
-    void handleSaveGanttCharts(ganttCharts.map((candidate) =>
-      candidate.id === chartId
-        ? { filePaths: nextPaths, id: candidate.id, name: candidate.name, source: candidate.source }
-        : { filePaths: candidate.filePaths ?? [], id: candidate.id, name: candidate.name, source: candidate.source }
-    ));
-  }, [ganttCharts, handleSaveGanttCharts]);
-
   const {
     handleDeleteActiveFile,
     handleDeleteTreeItem,
@@ -991,15 +962,11 @@ export function App(): ReactElement {
 
   const renderGanttChartTab = useCallback((chartId: string): ReactNode => (
     <GanttChartView
-      chart={ganttCharts.find((chart) => chart.id === chartId) ?? null}
+      chart={chartId === "charts" ? null : ganttCharts.find((chart) => chart.id === chartId) ?? null}
+      charts={chartId === "charts" ? ganttCharts : undefined}
       onOpenFile={handleOpenFile}
-      onRemoveFile={(targetChartId, path) => {
-        handleSetGanttChartFilePaths(targetChartId, (paths) => {
-          return paths.filter((item) => item !== path);
-        });
-      }}
     />
-  ), [ganttCharts, handleOpenFile, handleSetGanttChartFilePaths]);
+  ), [ganttCharts, handleOpenFile]);
 
   const handleCreateFileFromSidebar = useCallback((event?: MouseEvent<HTMLButtonElement>): void => {
     if (event) {
@@ -1255,10 +1222,6 @@ export function App(): ReactElement {
     }
     return null;
   }, [focusedPane, leftPane, rightPane, tabs]);
-  const activeGanttChartIdInFocusedPane = activeTabInFocusedPane?.kind === "gantt"
-    ? activeTabInFocusedPane.chartId
-    : null;
-
   const outlineHeadings = activeFileTabInFocusedPane
     ? extractOutlineHeadings(activeFileTabInFocusedPane.content)
     : [];
@@ -1301,6 +1264,10 @@ export function App(): ReactElement {
       .filter((tab) => tab.kind === "panel")
       .map((tab) => tab.panel)
   ), [tabs]);
+  const isChartTabOpen = useMemo(
+    () => Object.values(tabs).some((tab) => tab.kind === "gantt" && tab.chartId === "charts"),
+    [tabs]
+  );
   const enabledRailViews = useMemo(() => sidebarViews.filter((view) => {
     if (view.id === "git" && !featureToggles.git) return false;
     if (view.id === "tools" && !featureToggles.tools) return false;
@@ -1308,10 +1275,11 @@ export function App(): ReactElement {
     return true;
   }), [featureToggles.frontmatter, featureToggles.git, featureToggles.tools, sidebarViews]);
   const sidebarRailViews = enabledRailViews.filter((view) =>
-    view.id === "files" || view.id === "search" || view.id === "graph" || view.id === "chronicle"
+    view.id === "files" || view.id === "search"
   );
+  const chartRailView = enabledRailViews.find((view) => view.id === "chronicle");
   const panelRailViews = enabledRailViews.filter((view) =>
-    view.id !== "files" && view.id !== "search" && view.id !== "graph" && view.id !== "chronicle"
+    view.id !== "files" && view.id !== "search" && view.id !== "chronicle"
   );
 
   useEffect(() => {
@@ -1381,6 +1349,60 @@ export function App(): ReactElement {
       }, 360);
     });
   }, [closeTab, focusedPane, openPanelInPane]);
+
+  const handleRailChartButton = useCallback((label: string, event: MouseEvent<HTMLButtonElement>): void => {
+    const railRect = event.currentTarget.getBoundingClientRect();
+    const tabId = "gantt-charts";
+    const editorState = useEditorStore.getState();
+    const openedPanes: PaneId[] = [
+      ...(editorState.leftPane.tabIds.includes(tabId) ? ["left" as const] : []),
+      ...(editorState.rightPane.tabIds.includes(tabId) ? ["right" as const] : [])
+    ];
+
+    if (openedPanes.length > 0) {
+      const tabElement = document.querySelector(`.pane-tab[data-tab-id="${tabId}"]`);
+      const tabRect = tabElement?.getBoundingClientRect();
+
+      setRailTabFlight({
+        direction: "close",
+        fromX: (tabRect?.left ?? railRect.left + 180) + (tabRect?.width ?? 96) / 2,
+        fromY: (tabRect?.top ?? railRect.top) + (tabRect?.height ?? 30) / 2,
+        label,
+        toX: railRect.left + railRect.width / 2,
+        toY: railRect.top + railRect.height / 2
+      });
+      window.setTimeout(() => {
+        const latestState = useEditorStore.getState();
+        for (const pane of openedPanes) {
+          const paneState = pane === "left" ? latestState.leftPane : latestState.rightPane;
+          if (paneState.tabIds.includes(tabId)) closeTab(pane, tabId);
+        }
+      }, 140);
+      window.setTimeout(() => {
+        if (typeof window !== "undefined") setRailTabFlight(null);
+      }, 360);
+      return;
+    }
+
+    closeSidebar();
+    openGanttChartInPane(focusedPane, { id: "charts", name: label });
+
+    requestAnimationFrame(() => {
+      const pane = document.querySelector(`.pane${focusedPane === "left" ? "" : ":last-child"} .pane-tab-bar`) ?? document.querySelector(".pane-tab-bar");
+      const toRect = pane?.getBoundingClientRect();
+      setRailTabFlight({
+        direction: "open",
+        fromX: railRect.left + railRect.width / 2,
+        fromY: railRect.top + railRect.height / 2,
+        label,
+        toX: (toRect?.left ?? railRect.left + 180) + 48,
+        toY: (toRect?.top ?? railRect.top) + 15
+      });
+      window.setTimeout(() => {
+        if (typeof window !== "undefined") setRailTabFlight(null);
+      }, 360);
+    });
+  }, [closeSidebar, closeTab, focusedPane, openGanttChartInPane]);
 
   const renderPanelTab = useCallback((panel: PanelTabKind): ReactNode => {
     if (panel === "git") {
@@ -1529,6 +1551,18 @@ export function App(): ReactElement {
                 <span className="rail-button-label">{view.label}</span>
               </button>
             ))}
+          {chartRailView ? (
+            <button
+              aria-label={chartRailView.label}
+              className={`rail-button${isChartTabOpen ? " active" : ""}`}
+              onClick={(event) => handleRailChartButton(chartRailView.label, event)}
+              title={chartRailView.label}
+              type="button"
+            >
+              {chartRailView.icon}
+              <span className="rail-button-label">{chartRailView.label}</span>
+            </button>
+          ) : null}
           <div className="rail-separator" />
           {panelRailViews.map((view) => (
             <button
@@ -1607,12 +1641,6 @@ export function App(): ReactElement {
                 onTogglePin={handleTogglePin}
                 openFilePaths={openFilePathSet}
                 workspaceState={workspaceState}
-              />
-            ) : activeSidebarView === "chronicle" ? (
-              <ChronicleSidebar
-                activeChartId={activeGanttChartIdInFocusedPane}
-                charts={ganttCharts}
-                onOpenChart={handleOpenGanttChart}
               />
             ) : activeSidebarView === "search" ? (
               <SearchSidebar

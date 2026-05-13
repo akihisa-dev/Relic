@@ -3740,7 +3740,12 @@ button:not(:disabled):active {
 
 /* ─── Chronicle ─── */
 .chronicle-panel {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+  height: 100%;
   min-width: 0;
+  min-height: 0;
+  position: relative;
   width: 100%;
 }
 
@@ -3908,6 +3913,57 @@ button:not(:disabled):active {
   overflow-y: auto;
 }
 
+.chronicle-hover-settings {
+  background: var(--popup-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.12);
+  opacity: 0;
+  padding: 8px;
+  pointer-events: none;
+  position: absolute;
+  right: 12px;
+  top: 12px;
+  transform: translateY(-4px);
+  transition: opacity 140ms ease, transform 140ms ease;
+  width: min(260px, calc(100% - 24px));
+  z-index: 8;
+}
+
+.chronicle-panel:hover .chronicle-hover-settings,
+.chronicle-panel:focus-within .chronicle-hover-settings {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.chronicle-controls {
+  display: grid;
+  gap: 8px;
+}
+
+.chronicle-search {
+  display: grid;
+  gap: 6px;
+}
+
+.chronicle-search span {
+  color: var(--text-3);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.chronicle-search input {
+  background: var(--bg);
+  border: 1px solid var(--border-soft);
+  border-radius: 6px;
+  box-sizing: border-box;
+  color: var(--text);
+  min-height: 30px;
+  padding: 0 8px;
+  width: 100%;
+}
+
 .graph-sidebar {
   display: grid;
   gap: 12px;
@@ -3924,8 +3980,8 @@ button:not(:disabled):active {
 
 .graph-panel {
   display: grid;
-  gap: 8px;
-  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 0;
+  grid-template-rows: minmax(0, 1fr);
   height: 100%;
   min-height: 0;
   min-width: 0;
@@ -4160,8 +4216,8 @@ button:not(:disabled):active {
 
 .graph-canvas {
   background: var(--bg);
-  border: 1px solid transparent;
-  border-radius: 6px;
+  border: none;
+  border-radius: 0;
   min-height: 0;
   overflow: hidden;
   position: relative;
@@ -4176,6 +4232,7 @@ button:not(:disabled):active {
 
 .graph-svg {
   cursor: grab;
+  outline: none;
   touch-action: none;
   user-select: none;
 }
@@ -4280,7 +4337,12 @@ button:not(:disabled):active {
   color: var(--text-3);
   font-size: 12px;
   line-height: 1.4;
+  pointer-events: none;
+  position: absolute;
+  right: 20px;
+  bottom: 20px;
   text-align: right;
+  z-index: 2;
 }
 
 .graph-detail {
@@ -4445,7 +4507,7 @@ button:not(:disabled):active {
 .chronicle-chart {
   border: 1px solid var(--border);
   border-radius: 7px;
-  margin-top: 12px;
+  height: 100%;
   min-width: 0;
   overflow-x: auto;
   overflow-y: hidden;
@@ -4539,7 +4601,7 @@ button:not(:disabled):active {
 
 .chronicle-file-name-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 30px;
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .chronicle-file-name-row--empty {
@@ -4705,6 +4767,18 @@ button:not(:disabled):active {
 
 .chronicle-fill--single .chronicle-fill-label {
   position: absolute;
+}
+
+.chronicle-summary {
+  bottom: 20px;
+  color: var(--text-3);
+  font-size: 12px;
+  line-height: 1.4;
+  pointer-events: none;
+  position: absolute;
+  right: 20px;
+  text-align: right;
+  z-index: 6;
 }
 
 @media (max-width: 760px) {
