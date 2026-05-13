@@ -41,6 +41,7 @@ export interface PaneViewProps {
   onTogglePinTab?: (tabId: string) => void;
   pinnedPaths?: Set<string>;
   isSplitView: boolean;
+  sourceMode: boolean;
 }
 
 export function PaneView({
@@ -75,7 +76,8 @@ export function PaneView({
   onRevealTabFile,
   onTogglePinTab,
   pinnedPaths,
-  isSplitView
+  isSplitView,
+  sourceMode
 }: PaneViewProps): ReactElement {
   const [contextMenu, setContextMenu] = useState<{ tabId: string; x: number; y: number } | null>(null);
   const [tabDropTarget, setTabDropTarget] = useState<{
@@ -383,6 +385,7 @@ export function PaneView({
               onOpenLink={onOpenLink}
               onOpenWikiLink={onOpenWikiLink}
               settings={editorSettings}
+              sourceMode={sourceMode}
               typewriterMode={typewriterMode}
               userDefinedFields={userDefinedFields}
               viewRef={viewRef}

@@ -1,7 +1,7 @@
 import { autocompletion, type CompletionContext, type CompletionResult } from "@codemirror/autocomplete";
 import { defaultKeymap, historyKeymap, history } from "@codemirror/commands";
 import { markdown } from "@codemirror/lang-markdown";
-import { EditorState, StateField, type Text } from "@codemirror/state";
+import { Compartment, EditorState, StateField, type Text } from "@codemirror/state";
 import { Decoration, EditorView, ViewPlugin, WidgetType, keymap, lineNumbers } from "@codemirror/view";
 import type { DecorationSet, ViewUpdate } from "@codemirror/view";
 import { GFM } from "@lezer/markdown";
@@ -21,6 +21,7 @@ interface EditorProps {
   onOpenLink?: (href: string) => void;
   onOpenWikiLink?: (target: string, heading?: string) => void;
   settings: EditorSettings;
+  sourceMode?: boolean;
   typewriterMode?: boolean;
   userDefinedFields?: UserDefinedField[];
   viewRef?: React.MutableRefObject<EditorView | null>;
@@ -63,7 +64,15 @@ interface FrontmatterBlock {
   yamlText: string;
 }
 
+type FrontmatterDialogRequest =
+  | { type: "array-value"; key: string }
+  | { type: "property" };
+
 const topLevelYamlFieldPattern = /^([^#\s][^:]*):(?:\s|$)/;
+const frontmatterFieldNamePattern = /^[^#\s:][^\r\n:]*$/;
+const fixedFrontmatterFieldNames = ["aliases", "tags", "chronicle", "date"];
+const editorEditableCompartment = new Compartment();
+const frontmatterDialogRequestEvent = "relic-frontmatter-dialog-request";
 
 interface YamlFieldEntry {
   end: number;
@@ -968,11 +977,21 @@ class FrontmatterPropertiesWidget extends WidgetType {
   toDOM(view: EditorView): HTMLElement {
     const wrapper = document.createElement("section");
     wrapper.className = "cm-frontmatter-properties";
+    wrapper.contentEditable = "false";
+    wrapper.addEventListener("focusin", () => setEditorEditable(view, false));
+    wrapper.addEventListener("focusout", (event) => {
+      const nextTarget = (event as FocusEvent).relatedTarget;
+      if (!(nextTarget instanceof Node) || !wrapper.contains(nextTarget)) {
+        setEditorEditable(view, true);
+      }
+    });
 
     if (this.lineNumber !== this.block.startLine) {
       const row = this.rowForLine(view);
       if (row) {
         wrapper.append(row);
+      } else if (this.lineNumber === this.block.endLine) {
+        wrapper.append(this.addRow(view));
       } else {
         wrapper.classList.add("cm-frontmatter-properties--spacer");
       }
@@ -1003,7 +1022,7 @@ class FrontmatterPropertiesWidget extends WidgetType {
   }
 
   ignoreEvent(): boolean {
-    return false;
+    return true;
   }
 
   private renderRow(view: EditorView, key: string, value: unknown): HTMLElement {
@@ -1041,6 +1060,55 @@ class FrontmatterPropertiesWidget extends WidgetType {
 
     row.append(drag, label, input, removeButton);
     return row;
+  }
+
+  private addRow(view: EditorView): HTMLElement {
+    const row = document.createElement("div");
+    row.className = "cm-frontmatter-row cm-frontmatter-add-row";
+
+    const icon = document.createElement("span");
+    icon.className = "cm-frontmatter-row-icon";
+    icon.textContent = "+";
+
+    const label = document.createElement("span");
+    label.className = "cm-frontmatter-key";
+    label.textContent = "追加";
+
+    const help = document.createElement("span");
+    help.className = "cm-frontmatter-add-help";
+    help.textContent = "プロパティを追加";
+
+    const button = document.createElement("button");
+    button.className = "cm-frontmatter-add";
+    button.title = "プロパティを追加";
+    button.type = "button";
+    button.textContent = "+";
+    this.isolateWidgetControl(button);
+
+    button.addEventListener("click", (event) => {
+      event.preventDefault();
+      requestFrontmatterDialog(view, { type: "property" });
+    });
+
+    row.append(icon, label, help, button);
+    return row;
+  }
+
+  private isolateWidgetControl(element: HTMLElement): void {
+    for (const eventName of [
+      "beforeinput",
+      "input",
+      "keydown",
+      "keyup",
+      "compositionstart",
+      "compositionupdate",
+      "compositionend",
+      "pointerdown",
+      "mousedown",
+      "click"
+    ]) {
+      element.addEventListener(eventName, (event) => event.stopPropagation());
+    }
   }
 
   private rowForLine(view: EditorView): HTMLElement | null {
@@ -1254,19 +1322,14 @@ class FrontmatterPropertiesWidget extends WidgetType {
       wrap.append(pill);
     }
 
-    const input = document.createElement("input");
-    input.className = "cm-frontmatter-pill-input";
-    input.placeholder = "+";
-    const datalist = this.createDatalist(input, key, this.choicesFor(key, field));
-    input.addEventListener("keydown", (event) => {
-      if (event.key !== "Enter") return;
-      event.preventDefault();
-      const nextValue = input.value.trim();
-      if (!nextValue) return;
-      this.updateField(view, key, [...value.map(String), nextValue]);
-    });
-    wrap.append(input);
-    if (datalist) wrap.append(datalist);
+    const addButton = document.createElement("button");
+    addButton.className = "cm-frontmatter-pill-add";
+    addButton.title = "値を追加";
+    addButton.type = "button";
+    addButton.textContent = "+";
+    this.isolateWidgetControl(addButton);
+    addButton.addEventListener("click", () => requestFrontmatterDialog(view, { key, type: "array-value" }));
+    wrap.append(addButton);
 
     return wrap;
   }
@@ -1284,6 +1347,7 @@ class FrontmatterPropertiesWidget extends WidgetType {
   }
 
   private writeData(view: EditorView, nextData: Record<string, unknown>): void {
+    setEditorEditable(view, true);
     const nextYaml = this.serializeDataPreservingYaml(nextData).trimEnd();
     const nextBlock = Object.keys(nextData).length > 0 ? `---\n${nextYaml}\n---` : "";
     view.dispatch({
@@ -1400,7 +1464,19 @@ class FrontmatterPropertiesWidget extends WidgetType {
   }
 
   private choicesFor(key: string, field?: UserDefinedField): string[] {
+    if (key === "aliases") return [];
     return Array.from(new Set([...(field?.choices ?? []), ...(this.candidates[key] ?? [])])).sort((a, b) => a.localeCompare(b));
+  }
+
+  private availableFieldNames(): string[] {
+    const usedKeys = new Set(Object.keys(this.block.data));
+    return Array.from(new Set([
+      ...fixedFrontmatterFieldNames,
+      ...this.userDefinedFields.map((field) => field.name),
+      ...Object.keys(this.candidates)
+    ]))
+      .filter((key) => !usedKeys.has(key))
+      .sort((a, b) => a.localeCompare(b));
   }
 
   private createDatalist(input: HTMLInputElement, key: string, values: string[]): HTMLDataListElement | null {
@@ -1513,6 +1589,54 @@ function findFrontmatterBlock(state: EditorState): FrontmatterBlock | null {
   } catch {
     return null;
   }
+}
+
+function setEditorEditable(view: EditorView, editable: boolean): void {
+  view.dispatch({
+    effects: editorEditableCompartment.reconfigure(EditorView.editable.of(editable))
+  });
+}
+
+function requestFrontmatterDialog(view: EditorView, detail: FrontmatterDialogRequest): void {
+  view.dom.dispatchEvent(new CustomEvent<FrontmatterDialogRequest>(frontmatterDialogRequestEvent, {
+    bubbles: true,
+    detail
+  }));
+}
+
+function appendFrontmatterField(view: EditorView, key: string): void {
+  const block = findFrontmatterBlock(view.state);
+  if (!block) return;
+
+  const closeLine = view.state.doc.line(block.endLine);
+  view.dispatch({
+    changes: { from: closeLine.from, insert: `${key}:\n` }
+  });
+}
+
+function appendFrontmatterArrayValue(view: EditorView, key: string, value: string): void {
+  const block = findFrontmatterBlock(view.state);
+  if (!block) return;
+
+  const currentValue = block.data[key];
+  const nextValue = [
+    ...(Array.isArray(currentValue) ? currentValue : currentValue === null || currentValue === undefined ? [] : [currentValue]),
+    value
+  ];
+  const serialized = `${key}: [${nextValue.map((item) => JSON.stringify(String(item))).join(", ")}]`;
+  const lines = block.yamlText.replace(/\r\n/g, "\n").split("\n");
+  if (lines.at(-1) === "") lines.pop();
+  const entry = findTopLevelYamlFieldEntries(lines).find((item) => item.key === key);
+
+  if (!entry) {
+    const closeLine = view.state.doc.line(block.endLine);
+    view.dispatch({ changes: { from: closeLine.from, insert: `${serialized}\n` } });
+    return;
+  }
+
+  const from = view.state.doc.line(block.startLine + 1 + entry.start).from;
+  const to = view.state.doc.line(block.startLine + entry.end).to;
+  view.dispatch({ changes: { from, insert: serialized, to } });
 }
 
 export function buildFrontmatterPropertiesDecorations(
@@ -2009,6 +2133,7 @@ export function buildWikiLinkCompletionSource(allFilePaths: string[]) {
 function buildExtensions(
   settings: EditorSettings,
   typewriterMode: boolean,
+  sourceMode: boolean,
   onChangeRef: React.RefObject<(c: string) => void>,
   allFilePaths: string[],
   userDefinedFields: UserDefinedField[],
@@ -2020,6 +2145,7 @@ function buildExtensions(
   return [
     history(),
     keymap.of([...defaultKeymap, ...historyKeymap]),
+    editorEditableCompartment.of(EditorView.editable.of(true)),
     markdown({ extensions: GFM }),
     EditorView.lineWrapping,
     autocompletion({ override: [buildWikiLinkCompletionSource(allFilePaths)] }),
@@ -2078,9 +2204,11 @@ function buildExtensions(
     EditorView.contentAttributes.of({ spellcheck: settings.spellCheck ? "true" : "false" }),
     ...(settings.showLineNumbers ? [lineNumbers()] : []),
     ...(typewriterMode ? [typewriterExtension] : []),
-    createFrontmatterPropertiesField(userDefinedFields, frontmatterCandidates),
-    livePreviewTableField,
-    createLivePreviewPlugin(onOpenLinkRef, onOpenWikiLinkRef)
+    ...(!sourceMode ? [
+      createFrontmatterPropertiesField(userDefinedFields, frontmatterCandidates),
+      livePreviewTableField,
+      createLivePreviewPlugin(onOpenLinkRef, onOpenWikiLinkRef)
+    ] : [])
   ];
 }
 
@@ -2173,6 +2301,11 @@ function usesElectronNativeEditorMenu(): boolean {
   return Boolean(window.relic?.readClipboardText && window.relic.writeClipboardText);
 }
 
+function destroyEditorView(view: EditorView, container: HTMLElement | null): void {
+  view.destroy();
+  container?.replaceChildren();
+}
+
 export function Editor({
   allFilePaths = [],
   content,
@@ -2181,6 +2314,7 @@ export function Editor({
   onOpenLink,
   onOpenWikiLink,
   settings,
+  sourceMode = false,
   typewriterMode = false,
   userDefinedFields = [],
   viewRef
@@ -2195,6 +2329,9 @@ export function Editor({
   const frontmatterCandidatesRef = useRef(frontmatterCandidates);
   const userDefinedFieldsRef = useRef(userDefinedFields);
   const lastSelectionRef = useRef<{ from: number; text: string; to: number } | null>(null);
+  const [frontmatterDialog, setFrontmatterDialog] = useState<FrontmatterDialogRequest | null>(null);
+  const [frontmatterDialogValue, setFrontmatterDialogValue] = useState("");
+  const [frontmatterDialogError, setFrontmatterDialogError] = useState<string | null>(null);
   const [contextMenu, setContextMenu] = useState<{
     selectionFrom: number;
     selectionText: string;
@@ -2268,11 +2405,51 @@ export function Editor({
   };
 
   const closeContextMenu = (): void => setContextMenu(null);
+  const closeFrontmatterDialog = (): void => {
+    setFrontmatterDialog(null);
+    setFrontmatterDialogValue("");
+    setFrontmatterDialogError(null);
+  };
+
+  const submitFrontmatterDialog = (): void => {
+    const view = internalViewRef.current;
+    const value = frontmatterDialogValue.trim();
+    if (!view || !frontmatterDialog) return;
+
+    if (!value) {
+      setFrontmatterDialogError("入力してください");
+      return;
+    }
+
+    if (frontmatterDialog.type === "property") {
+      const block = findFrontmatterBlock(view.state);
+      if (!frontmatterFieldNamePattern.test(value)) {
+        setFrontmatterDialogError("プロパティ名に使えない文字があります");
+        return;
+      }
+      if (block && Object.prototype.hasOwnProperty.call(block.data, value)) {
+        setFrontmatterDialogError("同じプロパティが既にあります");
+        return;
+      }
+      appendFrontmatterField(view, value);
+    } else {
+      appendFrontmatterArrayValue(view, frontmatterDialog.key, value);
+    }
+
+    closeFrontmatterDialog();
+  };
 
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
+    const handleFrontmatterDialogRequest = (event: Event): void => {
+      const detail = (event as CustomEvent<FrontmatterDialogRequest>).detail;
+      if (!detail) return;
+      setFrontmatterDialog(detail);
+      setFrontmatterDialogValue("");
+      setFrontmatterDialogError(null);
+    };
     const handleContextMenu = (event: MouseEvent): void => {
       const view = internalViewRef.current;
       if (!view) return;
@@ -2285,6 +2462,7 @@ export function Editor({
       if (openContextMenu(event, view)) event.stopPropagation();
     };
 
+    container.addEventListener(frontmatterDialogRequestEvent, handleFrontmatterDialogRequest);
     container.addEventListener("pointerdown", handleRightButtonDown, true);
     container.addEventListener("mousedown", handleRightButtonDown, true);
     container.addEventListener("mouseup", handleRightButtonDown, true);
@@ -2292,6 +2470,7 @@ export function Editor({
     container.addEventListener("contextmenu", handleContextMenu, true);
 
     return () => {
+      container.removeEventListener(frontmatterDialogRequestEvent, handleFrontmatterDialogRequest);
       container.removeEventListener("pointerdown", handleRightButtonDown, true);
       container.removeEventListener("mousedown", handleRightButtonDown, true);
       container.removeEventListener("mouseup", handleRightButtonDown, true);
@@ -2366,6 +2545,9 @@ export function Editor({
     view.dispatch({ selection: { anchor: 0, head: view.state.doc.length } });
     view.focus();
   };
+  const frontmatterDialogCandidates = frontmatterDialog?.type === "array-value" && frontmatterDialog.key !== "aliases"
+    ? frontmatterCandidates[frontmatterDialog.key] ?? []
+    : [];
 
   useEffect(() => {
     if (!contextMenu) return;
@@ -2393,6 +2575,7 @@ export function Editor({
     const extensions = buildExtensions(
       settings,
       typewriterMode,
+      sourceMode,
       onChangeRef,
       allFilePathsRef.current,
       userDefinedFieldsRef.current,
@@ -2409,7 +2592,7 @@ export function Editor({
     if (viewRef) viewRef.current = view;
 
     return () => {
-      view.destroy();
+      destroyEditorView(view, containerRef.current);
       internalViewRef.current = null;
       if (viewRef) viewRef.current = null;
     };
@@ -2440,15 +2623,17 @@ export function Editor({
     if (!view) return;
 
     const currentContent = view.state.doc.toString();
+    const container = containerRef.current;
 
-    view.destroy();
+    destroyEditorView(view, container);
     internalViewRef.current = null;
 
-    if (!containerRef.current) return;
+    if (!container) return;
 
     const extensions = buildExtensions(
       settings,
       typewriterMode,
+      sourceMode,
       onChangeRef,
       allFilePathsRef.current,
       userDefinedFieldsRef.current,
@@ -2458,16 +2643,51 @@ export function Editor({
       onOpenWikiLinkRef
     );
     const state = EditorState.create({ doc: currentContent, extensions });
-    const nextView = new EditorView({ state, parent: containerRef.current });
+    const nextView = new EditorView({ state, parent: container });
 
     internalViewRef.current = nextView;
 
     if (viewRef) viewRef.current = nextView;
-  }, [frontmatterCandidates, settings, typewriterMode, userDefinedFields, viewRef]);
+  }, [frontmatterCandidates, settings, sourceMode, typewriterMode, userDefinedFields, viewRef]);
 
   return (
     <>
       <div className="cm-editor-container" onContextMenuCapture={openReactContextMenu} ref={containerRef} />
+      {frontmatterDialog ? (
+        <div className="frontmatter-add-dialog" role="dialog" aria-modal="true">
+          <div className="frontmatter-add-dialog-title">
+            {frontmatterDialog.type === "property" ? "プロパティを追加" : `${frontmatterDialog.key} に値を追加`}
+          </div>
+          <input
+            autoFocus
+            className="frontmatter-add-dialog-input"
+            list={frontmatterDialogCandidates.length > 0 ? "frontmatter-add-dialog-candidates" : undefined}
+            onChange={(event) => {
+              setFrontmatterDialogValue(event.target.value);
+              setFrontmatterDialogError(null);
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") event.preventDefault();
+              if (event.key === "Escape") closeFrontmatterDialog();
+            }}
+            placeholder={frontmatterDialog.type === "property" ? "プロパティ名" : "値"}
+            type="text"
+            value={frontmatterDialogValue}
+          />
+          {frontmatterDialogCandidates.length > 0 ? (
+            <datalist id="frontmatter-add-dialog-candidates">
+              {frontmatterDialogCandidates.map((candidate) => (
+                <option key={candidate} value={candidate} />
+              ))}
+            </datalist>
+          ) : null}
+          {frontmatterDialogError ? <div className="frontmatter-add-dialog-error">{frontmatterDialogError}</div> : null}
+          <div className="frontmatter-add-dialog-actions">
+            <button onClick={closeFrontmatterDialog} type="button">キャンセル</button>
+            <button onClick={submitFrontmatterDialog} type="button">追加</button>
+          </div>
+        </div>
+      ) : null}
       {contextMenu ? createPortal(
         <div
           className="tab-context-menu editor-context-menu"

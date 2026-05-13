@@ -218,6 +218,8 @@
   "pane.noFiles": "ファイルがありません",
   "pane.noNotes": "ファイルがありません",
   "pane.rename": "クリックして名前を変更",
+  "pane.sourceMode": "ソースモード",
+  "pane.sourceShort": "ソース",
   "pane.split": "分割表示 (⌘\\\\)",
   "pane.splitShort": "分割",
   "pane.links": "リンク",
