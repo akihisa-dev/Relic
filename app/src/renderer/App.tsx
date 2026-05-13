@@ -1320,6 +1320,7 @@ export function App(): ReactElement {
         <DashboardPanel
           fileTree={workspaceState?.fileTree ?? []}
           onOpenFile={handleOpenFile}
+          userDefinedFields={userDefinedFields}
           workspaceId={workspaceState?.activeWorkspace?.id ?? null}
         />
       );
