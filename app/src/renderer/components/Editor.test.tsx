@@ -412,6 +412,7 @@ describe("Editor", () => {
 
     await waitFor(() => expect(container.querySelector(".cm-frontmatter-properties")).not.toBeNull());
     expect(container.textContent).toContain("プロパティ");
+    expect((container.querySelector(".cm-frontmatter-properties") as HTMLElement).contentEditable).toBe("false");
     expect(container.textContent).toContain("version");
     expect(Array.from(container.querySelectorAll(".cm-frontmatter-pill-value")).map((input) => (input as HTMLInputElement).value)).toEqual([
       "帝都オルスター",
@@ -423,6 +424,47 @@ describe("Editor", () => {
 
     expect(onChange).toHaveBeenLastCalledWith(expect.stringContaining("version: v1.1"));
     expect(viewRef.current?.state.doc.toString()).toContain("---\nversion: v1.1");
+  });
+
+  it("ソースモードではフロントマターをフォーム化せずMarkdown構文のまま表示する", async () => {
+    const { container } = render(
+      <Editor
+        content={"---\nversion: v1.0\n---\n# 本文"}
+        onChange={vi.fn()}
+        settings={settings}
+        sourceMode
+      />
+    );
+
+    await waitFor(() => expect(container.querySelector(".cm-editor")).not.toBeNull());
+
+    expect(container.querySelector(".cm-frontmatter-properties")).toBeNull();
+    expect(container.textContent).toContain("version: v1.0");
+  });
+
+  it("ソースモード切替時に既存のフォーム化DOMを残さない", async () => {
+    const { container, rerender } = render(
+      <Editor
+        content={"---\nversion: v1.0\n---\n# 本文"}
+        onChange={vi.fn()}
+        settings={settings}
+      />
+    );
+
+    await waitFor(() => expect(container.querySelector(".cm-frontmatter-properties")).not.toBeNull());
+
+    rerender(
+      <Editor
+        content={"---\nversion: v1.0\n---\n# 本文"}
+        onChange={vi.fn()}
+        settings={settings}
+        sourceMode
+      />
+    );
+
+    await waitFor(() => expect(container.querySelector(".cm-frontmatter-properties")).toBeNull());
+    expect(container.querySelectorAll(".cm-editor")).toHaveLength(1);
+    expect(container.textContent).toContain("version: v1.0");
   });
 
   it("プロパティフォーム化したフロントマターも通常の行番号ガターに表示する", async () => {
@@ -462,7 +504,7 @@ describe("Editor", () => {
     expect(container.querySelector(".cm-frontmatter-properties")?.getAttribute("data-collapsed")).toBe("true");
   });
 
-  it("プロパティフォームに追加用入力を常駐させない", async () => {
+  it("プロパティフォームから既存フロントマターにプロパティを追加できる", async () => {
     const viewRef = createRef<EditorView | null>();
     const onChange = vi.fn();
     const { container } = render(
@@ -476,10 +518,18 @@ describe("Editor", () => {
 
     await waitFor(() => expect(container.querySelector(".cm-frontmatter-properties")).not.toBeNull());
 
-    expect(container.querySelector(".cm-frontmatter-add-input")).toBeNull();
-    expect(container.querySelector(".cm-frontmatter-add-row")).toBeNull();
+    fireEvent.click(container.querySelector(".cm-frontmatter-add") as HTMLButtonElement);
+    const input = container.querySelector(".frontmatter-add-dialog-input") as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "status" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+
     expect(onChange).not.toHaveBeenCalled();
     expect(viewRef.current?.state.doc.toString()).toBe("---\nversion: v1.0\n---\n# 本文");
+
+    fireEvent.click(container.querySelector(".frontmatter-add-dialog-actions button:last-child") as HTMLButtonElement);
+
+    expect(onChange).toHaveBeenLastCalledWith(expect.stringContaining("status:"));
+    expect(viewRef.current?.state.doc.toString()).toContain("---\nversion: v1.0\nstatus:\n---");
   });
 
   it("フロントマターがない本文に新規作成入口を重ねない", async () => {
@@ -559,6 +609,29 @@ describe("Editor", () => {
     expect(viewRef.current?.state.doc.toString()).not.toContain("review");
   });
 
+  it("配列プロパティのプラスボタンから値を追加できる", async () => {
+    const viewRef = createRef<EditorView | null>();
+    const { container } = render(
+      <Editor
+        content={"---\ntags: [draft]\n---\n# 本文"}
+        onChange={vi.fn()}
+        settings={settings}
+        viewRef={viewRef}
+      />
+    );
+
+    fireEvent.click(container.querySelector(".cm-frontmatter-pill-add") as HTMLButtonElement);
+    const input = container.querySelector(".frontmatter-add-dialog-input") as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "review" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+
+    expect(viewRef.current?.state.doc.toString()).toBe("---\ntags: [draft]\n---\n# 本文");
+
+    fireEvent.click(container.querySelector(".frontmatter-add-dialog-actions button:last-child") as HTMLButtonElement);
+
+    expect(viewRef.current?.state.doc.toString()).toContain("tags: [\"draft\", \"review\"]");
+  });
+
   it("aliasesとtagsは元が複数行でも1行配列として書き戻す", async () => {
     const viewRef = createRef<EditorView | null>();
     const { container } = render(
@@ -583,6 +656,36 @@ describe("Editor", () => {
 
     expect(viewRef.current?.state.doc.toString()).toContain("tags: [\"下書き\"]");
     expect(viewRef.current?.state.doc.toString()).not.toContain("tags:\n  -");
+  });
+
+  it("aliases入力では他ファイル由来の候補を表示しない", async () => {
+    const { container } = render(
+      <Editor
+        content={"---\naliases: [自分の別名]\ntags: [資料]\n---\n# 本文"}
+        frontmatterCandidates={{
+          aliases: ["他ファイルの別名"],
+          tags: ["下書き"]
+        }}
+        onChange={vi.fn()}
+        settings={settings}
+      />
+    );
+
+    await waitFor(() => expect(container.querySelector(".cm-frontmatter-properties")).not.toBeNull());
+
+    const rows = Array.from(container.querySelectorAll(".cm-frontmatter-row"));
+    const aliasRow = rows.find((row) => row.querySelector(".cm-frontmatter-key")?.textContent === "aliases") as HTMLElement;
+    const tagRow = rows.find((row) => row.querySelector(".cm-frontmatter-key")?.textContent === "tags") as HTMLElement;
+    fireEvent.click(aliasRow.querySelector(".cm-frontmatter-pill-add") as HTMLButtonElement);
+    expect((container.querySelector(".frontmatter-add-dialog-input") as HTMLInputElement).getAttribute("list")).toBeNull();
+    fireEvent.click(container.querySelector(".frontmatter-add-dialog-actions button:first-child") as HTMLButtonElement);
+    await waitFor(() => expect(container.querySelector(".frontmatter-add-dialog-input")).toBeNull());
+
+    const nextRows = Array.from(container.querySelectorAll(".cm-frontmatter-row"));
+    const nextTagRow = nextRows.find((row) => row.querySelector(".cm-frontmatter-key")?.textContent === "tags") as HTMLElement;
+    fireEvent.click(nextTagRow.querySelector(".cm-frontmatter-pill-add") as HTMLButtonElement);
+    await waitFor(() => expect(container.querySelector(".frontmatter-add-dialog-input")).not.toBeNull());
+    expect((container.querySelector(".frontmatter-add-dialog-input") as HTMLInputElement).getAttribute("list")).not.toBeNull();
   });
 
   it("chronicleプロパティは1行配列として編集する", async () => {
@@ -691,7 +794,7 @@ describe("Editor", () => {
 
     await waitFor(() => expect(container.querySelector(".cm-frontmatter-yaml-input")).not.toBeNull());
     expect(container.textContent).toContain("meta");
-    expect(container.querySelectorAll(".cm-frontmatter-input")).toHaveLength(1);
+    expect(container.querySelectorAll(".cm-frontmatter-row:not(.cm-frontmatter-add-row) .cm-frontmatter-input")).toHaveLength(1);
 
     const yamlInput = container.querySelector(".cm-frontmatter-yaml-input") as HTMLTextAreaElement;
     fireEvent.change(yamlInput, { target: { value: "source: web\nrating: 6" } });
@@ -784,7 +887,7 @@ describe("Editor", () => {
     expect(inputs.some((input) => input.type === "datetime-local")).toBe(true);
     expect(inputs.some((input) => input.type === "time")).toBe(true);
     expect(inputs.some((input) => input.type === "url")).toBe(true);
-    expect(container.querySelector(".cm-frontmatter-pill-input")).not.toBeNull();
+    expect(container.querySelector(".cm-frontmatter-pill-add")).not.toBeNull();
     expect(container.querySelector(".cm-frontmatter-yaml-input")).not.toBeNull();
   });
 

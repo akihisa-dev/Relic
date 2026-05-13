@@ -218,6 +218,8 @@
   "pane.noFiles": "No files",
   "pane.noNotes": "No files",
   "pane.rename": "Click to rename",
+  "pane.sourceMode": "Source mode",
+  "pane.sourceShort": "Source",
   "pane.split": "Split view (⌘\\\\)",
   "pane.splitShort": "Split",
   "pane.links": "Links",

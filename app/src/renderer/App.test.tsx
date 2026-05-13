@@ -888,6 +888,21 @@ describe("App", () => {
     expect(panes).toHaveClass("panes-container--closing-split");
   });
 
+  it("右上の分割ボタン横でソースモードを切り替えられる", async () => {
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
+    });
+
+    await renderApp();
+
+    const sourceButton = await screen.findByRole("button", { name: "ソース" });
+    expect(screen.getByRole("button", { name: "分割" })).toBeInTheDocument();
+
+    fireEvent.click(sourceButton);
+
+    expect(sourceButton).toHaveClass("active");
+  });
+
   it("サイドバーが閉じていてもショートカットで対象ビューを開ける", async () => {
     window.relic = makeRelicApi({
       getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
