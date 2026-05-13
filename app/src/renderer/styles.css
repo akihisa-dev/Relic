@@ -1804,15 +1804,27 @@ button:not(:disabled):active {
   align-content: start;
 }
 
+.dashboard-property-picker {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.dashboard-property-picker span {
+  color: var(--text-3);
+  font-size: 12px;
+}
+
 .dashboard-property-select {
   background: var(--input-bg);
   border: 1px solid var(--border);
   border-radius: 6px;
   color: var(--text);
-  height: 30px;
+  font-weight: 650;
+  height: 34px;
   min-width: 0;
-  padding: 0 8px;
-  width: min(100%, 220px);
+  padding: 0 10px;
+  width: 100%;
 }
 
 .dashboard-donut-layout {
@@ -1902,6 +1914,50 @@ button:not(:disabled):active {
   font-weight: 650;
 }
 
+.dashboard-tag-map {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  min-height: 240px;
+  overflow: hidden;
+  position: relative;
+}
+
+.dashboard-tag-map-cell {
+  background: var(--tag-fill);
+  border: 1px solid var(--border);
+  display: grid;
+  gap: 6px;
+  grid-template-rows: minmax(0, 1fr) auto;
+  height: var(--cell-height);
+  left: var(--cell-x);
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+  padding: 10px;
+  position: absolute;
+  top: var(--cell-y);
+  width: var(--cell-width);
+}
+
+.dashboard-tag-map-cell span {
+  align-self: end;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dashboard-tag-map-cell b {
+  color: var(--text-3);
+  font-size: 12px;
+  line-height: 1;
+}
+
 .dashboard-bar-row {
   align-items: center;
   display: grid;
@@ -1964,6 +2020,10 @@ button:not(:disabled):active {
 
   .dashboard-donut-layout {
     grid-template-columns: 1fr;
+  }
+
+  .dashboard-tag-map {
+    min-height: 220px;
   }
 }
 
