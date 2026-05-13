@@ -27,8 +27,8 @@ interface GraphViewModel {
   nodes: WorkspaceGraphNode[];
 }
 
-const GRAPH_WIDTH = 360;
-const GRAPH_HEIGHT = 300;
+const GRAPH_WIDTH = 720;
+const GRAPH_HEIGHT = 520;
 const GRAPH_CENTER_X = GRAPH_WIDTH / 2;
 const GRAPH_CENTER_Y = GRAPH_HEIGHT / 2;
 const GRAPH_PADDING = 28;
@@ -211,6 +211,15 @@ export function GraphPanel({ onOpenFile, workspaceId }: GraphPanelProps): ReactE
     () => filteredGraph.nodes.find((node) => node.path === selectedPath) ?? null,
     [filteredGraph.nodes, selectedPath]
   );
+  const relatedPaths = useMemo(() => {
+    if (!selectedPath) return new Set<string>();
+    const paths = new Set([selectedPath]);
+    for (const edge of filteredGraph.edges) {
+      if (edge.sourcePath === selectedPath) paths.add(edge.targetPath);
+      if (edge.targetPath === selectedPath) paths.add(edge.sourcePath);
+    }
+    return paths;
+  }, [filteredGraph.edges, selectedPath]);
   const selectedLinks = useMemo(() => {
     if (!selectedNode) return { incoming: [], outgoing: [] };
     const nodeByPath = new Map(filteredGraph.nodes.map((node) => [node.path, node]));
@@ -245,9 +254,14 @@ export function GraphPanel({ onOpenFile, workspaceId }: GraphPanelProps): ReactE
                   const target = pointByPath.get(edge.targetPath);
                   if (!source || !target) return null;
                   const isSelected = selectedPath === edge.sourcePath || selectedPath === edge.targetPath;
+                  const className = [
+                    "graph-edge",
+                    isSelected ? "graph-edge--selected" : "",
+                    selectedPath && !isSelected ? "graph-edge--dimmed" : ""
+                  ].filter(Boolean).join(" ");
                   return (
                     <line
-                      className={isSelected ? "graph-edge graph-edge--selected" : "graph-edge"}
+                      className={className}
                       key={`${edge.sourcePath}-${edge.targetPath}`}
                       x1={source.x}
                       x2={target.x}
@@ -260,7 +274,15 @@ export function GraphPanel({ onOpenFile, workspaceId }: GraphPanelProps): ReactE
               <g className="graph-node-layer">
                 {points.map((point) => {
                   const isSelected = point.path === selectedPath;
-                  const radius = Math.min(11, 4.5 + Math.sqrt(point.degree) * 2.3);
+                  const isRelated = relatedPaths.has(point.path);
+                  const radius = Math.min(8.5, 3.8 + Math.sqrt(point.degree) * 1.7);
+                  const nodeClassName = [
+                    "graph-node",
+                    isSelected ? "graph-node--selected" : "",
+                    selectedPath && !isRelated ? "graph-node--dimmed" : "",
+                    selectedPath && isRelated && !isSelected ? "graph-node--related" : ""
+                  ].filter(Boolean).join(" ");
+                  const labelClassName = selectedPath && !isRelated ? "graph-label graph-label--dimmed" : "graph-label";
 
                   return (
                     <g
@@ -283,13 +305,13 @@ export function GraphPanel({ onOpenFile, workspaceId }: GraphPanelProps): ReactE
                       tabIndex={0}
                     >
                       <circle
-                        className={["graph-node", isSelected ? "graph-node--selected" : ""].filter(Boolean).join(" ")}
+                        className={nodeClassName}
                         cx={point.x}
                         cy={point.y}
                         r={radius}
                       />
                       {showLabels ? (
-                        <text x={point.x + radius + 4} y={point.y + 4}>{point.name}</text>
+                        <text className={labelClassName} x={point.x + radius + 5} y={point.y + 4}>{point.name}</text>
                       ) : null}
                     </g>
                   );
@@ -398,7 +420,7 @@ function layoutGraph(
     const nodeStats = stats.get(node.path) ?? emptyNodeStats();
     const degree = nodeStats.incoming + nodeStats.outgoing;
     const angle = (Math.PI * 2 * index) / Math.max(1, nodes.length) - Math.PI / 2;
-    const radius = 86 + (index % 4) * 12;
+    const radius = Math.min(190, 96 + (index % 7) * 17);
 
     return {
       ...node,
@@ -421,7 +443,7 @@ function layoutGraph(
     }))
     .filter((edge) => edge.sourceIndex >= 0 && edge.targetIndex >= 0);
 
-  for (let tick = 0; tick < 72; tick += 1) {
+  for (let tick = 0; tick < 96; tick += 1) {
     const forces = initial.map(() => ({ x: 0, y: 0 }));
 
     for (let i = 0; i < initial.length; i += 1) {
@@ -430,7 +452,7 @@ function layoutGraph(
         const dy = initial[j].y - initial[i].y || 0.01;
         const distanceSquared = Math.max(64, dx * dx + dy * dy);
         const distance = Math.sqrt(distanceSquared);
-        const strength = 520 / distanceSquared;
+        const strength = 1550 / distanceSquared;
         const fx = (dx / distance) * strength;
         const fy = (dy / distance) * strength;
         forces[i].x -= fx;
@@ -446,8 +468,8 @@ function layoutGraph(
       const dx = target.x - source.x || 0.01;
       const dy = target.y - source.y || 0.01;
       const distance = Math.max(1, Math.sqrt(dx * dx + dy * dy));
-      const preferred = 68;
-      const strength = (distance - preferred) * 0.018;
+      const preferred = 118;
+      const strength = (distance - preferred) * 0.014;
       const fx = (dx / distance) * strength;
       const fy = (dy / distance) * strength;
       forces[edge.sourceIndex].x += fx;
@@ -459,7 +481,7 @@ function layoutGraph(
     for (let i = 0; i < initial.length; i += 1) {
       const node = initial[i];
       const isPinned = node.path === selectedPath;
-      const centerStrength = isPinned ? 0.12 : 0.025;
+      const centerStrength = isPinned ? 0.08 : 0.018;
       forces[i].x += (GRAPH_CENTER_X - node.x) * centerStrength;
       forces[i].y += (GRAPH_CENTER_Y - node.y) * centerStrength;
       node.x = clamp(node.x + forces[i].x, GRAPH_PADDING, GRAPH_WIDTH - GRAPH_PADDING);
