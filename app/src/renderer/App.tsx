@@ -40,9 +40,14 @@ import "./styles.css";
 // App
 // ────────────────────────────────────────────────
 
-const IconFiles = (): ReactElement => (
+const IconFiles = ({ sidebarOpen = false }: { sidebarOpen?: boolean } = {}): ReactElement => (
   <svg fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" viewBox="0 0 20 20" width="18">
     <path d="M3 5a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5z" />
+    {sidebarOpen ? (
+      <polyline points="12.75,8.75 10.25,11 12.75,13.25" />
+    ) : (
+      <polyline points="10.75,8.75 13.25,11 10.75,13.25" />
+    )}
   </svg>
 );
 
@@ -577,31 +582,26 @@ export function App(): ReactElement {
     }
   }, []);
 
-  const startFileTabCloseFlight = useCallback((tabId: string): void => {
+  const startTabCloseFlight = useCallback((tabId: string): void => {
     const tab = useEditorStore.getState().tabs[tabId];
-    if (tab?.kind !== "file") return;
+    if (!tab) return;
 
     const tabElement = document.querySelector<HTMLElement>(`.pane-tab[data-tab-id="${tabId}"]`);
-    const rowElement = Array.from(document.querySelectorAll<HTMLElement>(".file-tree-row[data-node-type='file']"))
-      .find((element) => element.getAttribute("data-node-path") === tab.path);
-    const fallbackTargetElement = document.querySelector<HTMLElement>(".sidebar");
-    if (!tabElement || (!rowElement && !fallbackTargetElement)) return;
+    if (!tabElement) return;
 
     const tabRect = tabElement.getBoundingClientRect();
-    const targetRect = (rowElement ?? fallbackTargetElement)?.getBoundingClientRect();
-    if (!targetRect) return;
 
     setRailTabFlight({
       direction: "close",
       fromX: tabRect.left + tabRect.width / 2,
       fromY: tabRect.top + tabRect.height / 2,
       label: tab.name,
-      toX: targetRect.left + targetRect.width / 2,
-      toY: targetRect.top + targetRect.height / 2
+      toX: tabRect.left + tabRect.width / 2,
+      toY: tabRect.top + tabRect.height / 2 + 2
     });
     window.setTimeout(() => {
       if (typeof window !== "undefined") setRailTabFlight(null);
-    }, 420);
+    }, 260);
   }, []);
 
   const closeTabWithMotion = useCallback((pane: PaneId, tabId: string): void => {
@@ -615,13 +615,13 @@ export function App(): ReactElement {
       return new Set(current).add(key);
     });
 
-    startFileTabCloseFlight(tabId);
+    startTabCloseFlight(tabId);
 
     closeMotionTimersRef.current[key] = setTimeout(() => {
       closeTab(pane, tabId);
       clearClosingPaneTabs([key]);
     }, TAB_CLOSE_MOTION_MS);
-  }, [clearClosingPaneTabs, closeTab, closingPaneTabs, startFileTabCloseFlight]);
+  }, [clearClosingPaneTabs, closeTab, closingPaneTabs, startTabCloseFlight]);
 
   const closeTabsWithMotion = useCallback((pane: PaneId, tabIds: string[], closeAction: () => void): void => {
     const targetKeys = tabIds
@@ -1259,9 +1259,22 @@ export function App(): ReactElement {
       .filter((tab) => tab.kind === "panel")
       .map((tab) => tab.panel)
   ), [tabs]);
+  const activePanelTabIds = useMemo(() => new Set(
+    [leftPane.activeTabId, rightPane.activeTabId]
+      .map((tabId) => tabId ? tabs[tabId] : null)
+      .filter((tab) => tab?.kind === "panel")
+      .map((tab) => tab.panel)
+  ), [leftPane.activeTabId, rightPane.activeTabId, tabs]);
   const isChartTabOpen = useMemo(
     () => Object.values(tabs).some((tab) => tab.kind === "gantt" && tab.chartId === "charts"),
     [tabs]
+  );
+  const isChartTabActive = useMemo(
+    () => [leftPane.activeTabId, rightPane.activeTabId].some((tabId) => {
+      const tab = tabId ? tabs[tabId] : null;
+      return tab?.kind === "gantt" && tab.chartId === "charts";
+    }),
+    [leftPane.activeTabId, rightPane.activeTabId, tabs]
   );
   const enabledRailViews = useMemo(() => sidebarViews.filter((view) => {
     if (view.id === "git" && !featureToggles.git) return false;
@@ -1302,27 +1315,8 @@ export function App(): ReactElement {
     ];
 
     if (openedPanes.length > 0) {
-      const tabElement = document.querySelector(`.pane-tab[data-tab-id="${panelTabId}"]`);
-      const tabRect = tabElement?.getBoundingClientRect();
-
-      setRailTabFlight({
-        direction: "close",
-        fromX: (tabRect?.left ?? railRect.left + 180) + (tabRect?.width ?? 96) / 2,
-        fromY: (tabRect?.top ?? railRect.top) + (tabRect?.height ?? 30) / 2,
-        label,
-        toX: railRect.left + railRect.width / 2,
-        toY: railRect.top + railRect.height / 2
-      });
-      window.setTimeout(() => {
-        const latestState = useEditorStore.getState();
-        for (const pane of openedPanes) {
-          const paneState = pane === "left" ? latestState.leftPane : latestState.rightPane;
-          if (paneState.tabIds.includes(panelTabId)) closeTab(pane, panelTabId);
-        }
-      }, 140);
-      window.setTimeout(() => {
-        if (typeof window !== "undefined") setRailTabFlight(null);
-      }, 360);
+      setRailTabFlight(null);
+      setTabActive(openedPanes.includes(focusedPane) ? focusedPane : openedPanes[0], panelTabId);
       return;
     }
 
@@ -1343,7 +1337,7 @@ export function App(): ReactElement {
         if (typeof window !== "undefined") setRailTabFlight(null);
       }, 360);
     });
-  }, [closeTab, focusedPane, openPanelInPane]);
+  }, [focusedPane, openPanelInPane, setTabActive]);
 
   const handleRailChartButton = useCallback((label: string, event: MouseEvent<HTMLButtonElement>): void => {
     const railRect = event.currentTarget.getBoundingClientRect();
@@ -1355,27 +1349,9 @@ export function App(): ReactElement {
     ];
 
     if (openedPanes.length > 0) {
-      const tabElement = document.querySelector(`.pane-tab[data-tab-id="${tabId}"]`);
-      const tabRect = tabElement?.getBoundingClientRect();
-
-      setRailTabFlight({
-        direction: "close",
-        fromX: (tabRect?.left ?? railRect.left + 180) + (tabRect?.width ?? 96) / 2,
-        fromY: (tabRect?.top ?? railRect.top) + (tabRect?.height ?? 30) / 2,
-        label,
-        toX: railRect.left + railRect.width / 2,
-        toY: railRect.top + railRect.height / 2
-      });
-      window.setTimeout(() => {
-        const latestState = useEditorStore.getState();
-        for (const pane of openedPanes) {
-          const paneState = pane === "left" ? latestState.leftPane : latestState.rightPane;
-          if (paneState.tabIds.includes(tabId)) closeTab(pane, tabId);
-        }
-      }, 140);
-      window.setTimeout(() => {
-        if (typeof window !== "undefined") setRailTabFlight(null);
-      }, 360);
+      closeSidebar();
+      setRailTabFlight(null);
+      setTabActive(openedPanes.includes(focusedPane) ? focusedPane : openedPanes[0], tabId);
       return;
     }
 
@@ -1397,7 +1373,7 @@ export function App(): ReactElement {
         if (typeof window !== "undefined") setRailTabFlight(null);
       }, 360);
     });
-  }, [closeSidebar, closeTab, focusedPane, openGanttChartInPane]);
+  }, [closeSidebar, focusedPane, openGanttChartInPane, setTabActive]);
 
   const renderPanelTab = useCallback((panel: PanelTabKind): ReactNode => {
     if (panel === "git") {
@@ -1514,33 +1490,19 @@ export function App(): ReactElement {
           aria-label={t("nav.viewSwitcher")}
           className={`rail${isWorkspaceRenameActive || isWorkspaceRenameHoldingRail ? " rail--workspace-editing" : ""}`}
         >
-          <button
-            aria-label={t("pane.toggleSidebar")}
-            className="rail-button"
-            onClick={toggleSidebar}
-            title={t("pane.toggleSidebarShortcut")}
-            type="button"
-          >
-            {isSidebarOpen ? (
-              <svg fill="none" height="16" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 16 16" width="16">
-                <polyline points="10,3 5,8 10,13" />
-              </svg>
-            ) : (
-              <svg fill="none" height="16" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 16 16" width="16">
-                <polyline points="6,3 11,8 6,13" />
-              </svg>
-            )}
-            <span className="rail-button-label">{t("pane.toggleSidebar")}</span>
-          </button>
-          <div className="rail-separator" />
           {primaryRailViews.map((view) => (
               <button
                 aria-label={view.label}
-                className={`rail-button${view.id === "graph" ? openPanelTabIds.has("graph") ? " active" : "" : view.id === activeSidebarView ? " active" : ""}`}
+                className={`rail-button${view.id === "graph" ? activePanelTabIds.has("graph") ? " active" : openPanelTabIds.has("graph") ? " open" : "" : view.id === activeSidebarView && isSidebarOpen ? " active" : ""}`}
                 key={view.id}
                 onClick={(event) => {
                   if (view.id === "graph") {
                     handleRailPanelButton("graph", view.label, event);
+                    return;
+                  }
+
+                  if (view.id === "files" && activeSidebarView === "files" && isSidebarOpen) {
+                    closeSidebar();
                     return;
                   }
 
@@ -1549,14 +1511,14 @@ export function App(): ReactElement {
                 title={view.label}
                 type="button"
               >
-                {view.icon}
+                {view.id === "files" ? <IconFiles sidebarOpen={isSidebarOpen} /> : view.icon}
                 <span className="rail-button-label">{view.label}</span>
               </button>
             ))}
           {chartRailView ? (
             <button
               aria-label={chartRailView.label}
-              className={`rail-button${isChartTabOpen ? " active" : ""}`}
+              className={`rail-button${isChartTabActive ? " active" : isChartTabOpen ? " open" : ""}`}
               onClick={(event) => handleRailChartButton(chartRailView.label, event)}
               title={chartRailView.label}
               type="button"
@@ -1569,7 +1531,7 @@ export function App(): ReactElement {
           {panelRailViews.map((view) => (
             <button
               aria-label={view.label}
-              className={`rail-button${openPanelTabIds.has(view.id as PanelTabKind) ? " active" : ""}`}
+              className={`rail-button${activePanelTabIds.has(view.id as PanelTabKind) ? " active" : openPanelTabIds.has(view.id as PanelTabKind) ? " open" : ""}`}
               key={view.id}
               onClick={(event) => handleRailPanelButton(view.id as PanelTabKind, view.label, event)}
               title={view.label}
