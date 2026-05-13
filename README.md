@@ -1,10 +1,10 @@
 # Relic
 
-書き手のための、Git付きマークダウンエディタ。
+Relicは、書き手のためのMarkdownワークスペースです。
 
-GitHubは強力だが、技術者向けに作られている。Obsidianは高機能だが、バージョン管理の恩恵を受けられない。Relicはその空白を埋める——コードを書かない人間が、自分のテキストの歴史を管理できるアプリ。
+ローカルフォルダ内のMarkdownファイルをそのまま扱い、執筆・整理・検索・参照をデスクトップアプリ内で完結させることを目的にしています。
 
-> ステータス：開発中
+> ステータス: 開発中
 
 ---
 
@@ -12,45 +12,79 @@ GitHubは強力だが、技術者向けに作られている。Obsidianは高機
 
 - Markdownでノート・仕様・日記・原稿・技術メモを書きたい人
 - 書いたものをプレーンテキストとして長く残したい人
-- Gitの履歴管理を使いたいが、CLIや開発者向けツールは重いと感じる人
 - VS Codeほど本格的な環境ではなく、書くことに集中できる道具がほしい人
+- ローカルフォルダやクラウド同期フォルダを、自分で管理できる形のまま使いたい人
 
 ---
 
-## 主な機能
+## 現在の主な機能
 
-- マークダウンエディタ（ライブプレビュー / ソースモード）
-- フォルダ・ファイル管理（ネスト対応）
-- 内部リンク `[[...]]` とバックリンク
-- タグ `#tag` と全文検索
-- GitHub連携（コミット・プッシュ・差分表示・ブランチ管理）
-- コマンドパレット / クイックスイッチャー
+- Markdownエディタ（ライブプレビュー）
+- ローカルワークスペース管理
+- ファイル / フォルダの作成、リネーム、移動、複製、削除
+- タブ、左右分割表示、右パネル
+- 内部リンク `[[...]]`
+- バックリンク / アウトゴーイングリンク
+- アウトライン表示
+- フロントマター（YAML）編集補助
+- フロントマター `tags:` によるタグ扱い
+- 全文検索、ファイル名検索、タグ検索
+- クイックスイッチャー
+- コマンドパレット
+- ファイル加工ツール（マージ、分割、タイトル一覧、目次生成）
+- ライト / ダーク / システム追従テーマ
+
+---
+
+## 現行アプリに持たないもの
+
+- Git / GitHub連携
+- GitHub OAuth認証
+- コミット、プッシュ、プル、ブランチ管理、タグ管理
+- 自動同期
+- プラグイン機能
+- AI機能
+
+同期や履歴管理が必要な場合は、iCloud Drive / OneDrive / Dropbox などのクラウド同期フォルダ、またはRelic外部のツールで扱います。
+
+---
+
+## プラットフォーム
+
+- macOS
+- Windows
+
+RelicはElectronアプリです。OS固有処理は必要な箇所だけに限定し、通常のファイル操作は各OSのローカルフォルダとして扱います。
 
 ---
 
 ## 技術スタック
 
-- **フレームワーク**: Electron
-- **言語**: TypeScript
-- **UI**: React
-- **エディタエンジン**: CodeMirror 6
-- **Git**: isomorphic-git
+- TypeScript
+- Electron
+- React
+- CodeMirror 6
+- Zustand
+- Vitest
+- Electron Forge
+- pnpm
 
-詳細は `docs/tech/stack.md` を参照。
+詳細は [docs/tech/stack.md](docs/tech/stack.md) を参照してください。
 
 ---
 
 ## リポジトリ構成
 
-- `docs/`: 計画・仕様・設計・開発メモ
 - `app/`: Electron / React アプリ本体
+- `docs/`: 計画・仕様・設計・開発メモ
 - `AI.md`: AIエージェント向けの共通ルール
+- `README.md`: 対外的なプロジェクト説明
 
 ---
 
 ## 開発
 
-アプリ本体のコマンドは `app/` で実行する。
+アプリ本体のコマンドは `app/` で実行します。
 
 ```sh
 cd app
@@ -58,37 +92,66 @@ pnpm install
 pnpm start
 ```
 
-テスト:
+OS別の起動エイリアス:
 
 ```sh
-cd app
-pnpm test
+pnpm start:mac
+pnpm start:win
 ```
 
-ダブルクリックで起動する場合は `app/Relicを起動.command` を使う。
+`start:mac` / `start:win` は同じElectron開発起動をOS別名で呼ぶためのエイリアスです。実行するOS上で使います。
 
 ---
 
-## プラットフォーム
+## 検証
 
-macOS（Sequoia 以降）
+型チェックとテストをまとめて実行します。
 
+```sh
+cd app
+pnpm verify
+```
 
-## Windows 配布（インストーラーなし）
+個別に実行する場合:
 
-Windows 版は **インストーラーを使わず**、ZIP 展開後に `Relic.exe` を直接起動する運用です。
+```sh
+pnpm typecheck
+pnpm test
+```
 
-1. `pnpm package:win` を実行して `app/out/Relic-win32-x64/` を生成
-2. `Relic-win32-x64` フォルダをそのまま配布（または ZIP 化して配布）
-3. 利用者は ZIP を展開し、`Relic.exe` を直接起動
-4. 必要に応じて `Relic.exe` のショートカットを作成
+OS別のテストエイリアス:
 
-- `Setup.exe` / `Update.exe` / `.nupkg` は生成しません。
-- コード署名なし配布のため SmartScreen 警告が出る可能性があります。
-- 方針として SmartScreen よりも Defender 誤検知・隔離の回避を優先します。
+```sh
+pnpm test:mac
+pnpm test:win
+```
 
+---
 
-### Windows セーフビルド手順（Defender 誤検知対策）
+## Macビルド
+
+```sh
+cd app
+pnpm build:mac:safe
+```
+
+`build:mac:safe` は以下を順に実行します。
+
+1. `clean:out` で `app/out` を削除
+2. `package:mac` で unpacked app を生成
+3. `check:mac:safe` で成果物を検証
+
+検証内容:
+
+- 必須: `out/Relic-darwin-*/Relic.app/Contents/MacOS/Relic`
+- 必須: `out/Relic-darwin-*/Relic.app/Contents/Resources/app.asar`
+- 禁止: `Setup*.exe` / `Update.exe` / `*.nupkg` / `RELEASES`
+
+---
+
+## Windowsビルド
+
+Windows版はインストーラーを使わず、ZIP展開後に `Relic.exe` を直接起動する運用です。
 
 ```sh
 cd app
@@ -98,8 +161,23 @@ pnpm build:win:safe
 `build:win:safe` は以下を順に実行します。
 
 1. `clean:out` で `app/out` を削除
-2. `package:win` で unpacked app (`out/Relic-win32-x64/`) を生成
+2. `package:win` で unpacked app を生成
 3. `check:win:safe` で成果物を検証
-   - 必須: `out/Relic-win32-x64/Relic.exe`
-   - 禁止: `Setup*.exe` / `Update.exe` / `*.nupkg` / `RELEASES`
 
+検証内容:
+
+- 必須: `out/Relic-win32-x64/Relic.exe`
+- 必須: `out/Relic-win32-x64/resources/app.asar`
+- 禁止: `Setup*.exe` / `Update.exe` / `*.nupkg` / `RELEASES`
+
+配布する場合は、`out/Relic-win32-x64/` フォルダをそのまま配布するかZIP化します。
+
+---
+
+## ドキュメント
+
+- 現在の開発フェーズ: [docs/dev/phases.md](docs/dev/phases.md)
+- プロジェクト概要: [docs/project.md](docs/project.md)
+- 仕様書: [docs/spec](docs/spec)
+- アーキテクチャ: [docs/architecture](docs/architecture)
+- 技術スタック: [docs/tech/stack.md](docs/tech/stack.md)
