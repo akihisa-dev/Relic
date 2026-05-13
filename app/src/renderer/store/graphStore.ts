@@ -4,44 +4,96 @@ import type { WorkspaceGraph } from "../../shared/ipc";
 
 export type GraphLinkFilter = "all" | "linked" | "unlinked";
 
+export interface GraphGroup {
+  color: string;
+  id: string;
+  query: string;
+}
+
 interface GraphState {
   error: string | null;
   folderFilter: string;
   graph: WorkspaceGraph | null;
+  groups: GraphGroup[];
+  centerForce: number;
   isLoading: boolean;
   linkFilter: GraphLinkFilter;
+  linkForce: number;
+  linkDistance: number;
+  linkThickness: number;
+  localGraphDepth: number;
   loadedWorkspaceId: string | null;
   minDegree: number;
+  nodeSize: number;
   query: string;
+  repelForce: number;
   selectedPath: string | null;
+  showArrows: boolean;
   showLabels: boolean;
+  showOrphans: boolean;
   tagFilter: string;
+  textFadeThreshold: number;
   zoom: number;
+  addGroup: () => void;
   loadGraph: (workspaceId: string | null, force?: boolean) => void;
+  removeGroup: (id: string) => void;
   resetFilters: () => void;
+  setCenterForce: (value: number) => void;
   setFolderFilter: (value: string) => void;
+  setLinkDistance: (value: number) => void;
+  setLinkForce: (value: number) => void;
   setLinkFilter: (value: GraphLinkFilter) => void;
+  setLinkThickness: (value: number) => void;
+  setLocalGraphDepth: (value: number) => void;
   setMinDegree: (value: number) => void;
+  setNodeSize: (value: number) => void;
   setQuery: (value: string) => void;
+  setRepelForce: (value: number) => void;
   setSelectedPath: (value: string | null) => void;
+  setShowArrows: (value: boolean) => void;
   setShowLabels: (value: boolean) => void;
+  setShowOrphans: (value: boolean) => void;
   setTagFilter: (value: string) => void;
+  setTextFadeThreshold: (value: number) => void;
   setZoom: (value: number) => void;
+  updateGroup: (id: string, patch: Partial<Omit<GraphGroup, "id">>) => void;
 }
+
+const graphGroupColors = ["#8b5cf6", "#0ea5e9", "#10b981", "#f59e0b", "#ef4444", "#ec4899"];
 
 export const useGraphStore = create<GraphState>((set, get) => ({
   error: null,
   folderFilter: "",
   graph: null,
+  groups: [],
+  centerForce: 1,
   isLoading: false,
+  linkDistance: 118,
   linkFilter: "all",
+  linkForce: 1,
+  linkThickness: 1,
+  localGraphDepth: 0,
   loadedWorkspaceId: null,
   minDegree: 0,
+  nodeSize: 1,
   query: "",
+  repelForce: 1,
   selectedPath: null,
+  showArrows: false,
   showLabels: true,
+  showOrphans: true,
   tagFilter: "",
+  textFadeThreshold: 0.85,
   zoom: 1,
+  addGroup: () => set((state) => {
+    const color = graphGroupColors[state.groups.length % graphGroupColors.length];
+    return {
+      groups: [
+        ...state.groups,
+        { color, id: `graph-group-${Date.now()}-${state.groups.length}`, query: "" }
+      ]
+    };
+  }),
   loadGraph: (workspaceId, force = false) => {
     if (!window.relic || !workspaceId) {
       set({ error: null, graph: null, isLoading: false, loadedWorkspaceId: null, selectedPath: null });
@@ -62,18 +114,43 @@ export const useGraphStore = create<GraphState>((set, get) => ({
     });
   },
   resetFilters: () => set({
+    centerForce: 1,
     folderFilter: "",
+    groups: [],
+    linkDistance: 118,
     linkFilter: "all",
+    linkForce: 1,
+    linkThickness: 1,
+    localGraphDepth: 0,
     minDegree: 0,
+    nodeSize: 1,
     query: "",
-    tagFilter: ""
+    repelForce: 1,
+    showArrows: false,
+    showOrphans: true,
+    tagFilter: "",
+    textFadeThreshold: 0.85
   }),
+  removeGroup: (id) => set((state) => ({ groups: state.groups.filter((group) => group.id !== id) })),
+  setCenterForce: (value) => set({ centerForce: value }),
   setFolderFilter: (value) => set({ folderFilter: value }),
+  setLinkDistance: (value) => set({ linkDistance: value }),
+  setLinkForce: (value) => set({ linkForce: value }),
   setLinkFilter: (value) => set({ linkFilter: value }),
+  setLinkThickness: (value) => set({ linkThickness: value }),
+  setLocalGraphDepth: (value) => set({ localGraphDepth: value }),
   setMinDegree: (value) => set({ minDegree: value }),
+  setNodeSize: (value) => set({ nodeSize: value }),
   setQuery: (value) => set({ query: value }),
+  setRepelForce: (value) => set({ repelForce: value }),
   setSelectedPath: (value) => set({ selectedPath: value }),
+  setShowArrows: (value) => set({ showArrows: value }),
   setShowLabels: (value) => set({ showLabels: value }),
+  setShowOrphans: (value) => set({ showOrphans: value }),
   setTagFilter: (value) => set({ tagFilter: value }),
-  setZoom: (value) => set({ zoom: value })
+  setTextFadeThreshold: (value) => set({ textFadeThreshold: value }),
+  setZoom: (value) => set({ zoom: value }),
+  updateGroup: (id, patch) => set((state) => ({
+    groups: state.groups.map((group) => group.id === id ? { ...group, ...patch } : group)
+  }))
 }));
