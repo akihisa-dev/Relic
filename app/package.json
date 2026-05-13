@@ -10,9 +10,11 @@
     "package": "electron-forge package",
     "package:win": "electron-forge package --platform win32 --arch x64",
     "make": "electron-forge make",
-    "make:win": "electron-forge make --platform win32 --arch x64",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "clean:out": "node scripts/clean-out.mjs",
+    "check:win:safe": "node scripts/check-windows-artifacts.mjs",
+    "build:win:safe": "pnpm clean:out && pnpm package:win && pnpm check:win:safe"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
