@@ -6,11 +6,13 @@ export function resolveWorkspaceRelativePath(
   workspacePath: string,
   relativePath: string
 ): RelicResult<string> {
-  if (path.isAbsolute(relativePath)) {
+  const normalizedInput = relativePath.replace(/\\/g, "/");
+
+  if (path.posix.isAbsolute(normalizedInput) || path.win32.isAbsolute(normalizedInput)) {
     return fail("WORKSPACE_PATH_INVALID", "ワークスペース内の相対パスを指定してください。");
   }
 
-  const normalizedRelativePath = relativePath.split("/").join(path.sep);
+  const normalizedRelativePath = normalizedInput.split("/").join(path.sep);
   const absolutePath = path.resolve(workspacePath, normalizedRelativePath);
   const relativeFromWorkspace = path.relative(workspacePath, absolutePath);
 

@@ -2,43 +2,25 @@ import { clipboard, contextBridge, ipcRenderer } from "electron";
 
 import {
   applySearchAndReplaceChannel,
-  cloneGitHubRepositoryChannel,
   createNewWorkspaceChannel,
   togglePinChannel,
-  connectGitRemoteChannel,
-  connectGitHubChannel,
   createFolderChannel,
-  createGitCommitChannel,
   createLinkedMarkdownFileChannel,
   createMarkdownFileChannel,
-  disconnectGitHubChannel,
   duplicateMarkdownFileChannel,
-  getAutoSyncSettingsChannel,
   getBacklinksChannel,
   getAppInfoChannel,
-  getGitHubAuthStatusChannel,
-  getGitHubIntegrationSettingsChannel,
-  getGitCommitHistoryChannel,
-  getGitCommitDiffChannel,
-  getGitConflictsChannel,
-  getGitRemotesChannel,
-  getGitSyncPreviewChannel,
   getEditorSettingsChannel,
-  getGitStatusChannel,
-  getGitWorkingChangesChannel,
   getFrontmatterValueCandidatesChannel,
   getWorkspaceAliasesChannel,
   getWorkspaceChronicleChannel,
   getWorkspaceGraphChannel,
   getWorkspaceTagsChannel,
   getWorkspaceStateChannel,
-  initializeGitRepositoryChannel,
   moveFolderChannel,
   moveItemToTrashChannel,
   moveMarkdownFileChannel,
   openWorkspaceChannel,
-  pullGitBranchChannel,
-  pushGitBranchChannel,
   readMarkdownFileChannel,
   removeWorkspaceChannel,
   renameWorkspaceChannel,
@@ -46,11 +28,8 @@ import {
   renameMarkdownFileChannel,
   replaceInFileChannel,
   revealWorkspaceItemChannel,
-  resolveGitConflictChannel,
-  saveAutoSyncSettingsChannel,
   saveWorkspaceGanttChartsChannel,
   saveEditorSettingsChannel,
-  saveGitHubIntegrationSettingsChannel,
   generateTitleListChannel,
   type GenerateTitleListInput,
   generateTableOfContentsChannel,
@@ -73,27 +52,13 @@ import {
   switchWorkspaceChannel,
   writeMarkdownFileChannel,
   type AppInfo,
-  type AutoSyncSettings,
-  type CloneGitHubRepositoryInput,
-  type ConnectGitRemoteInput,
   type CreateFolderInput,
-  type CreateGitCommitInput,
   type CreateLinkedMarkdownFileInput,
   type CreateLinkedMarkdownFileResult,
   type CreateMarkdownFileInput,
   type DuplicateMarkdownFileInput,
   type EditorSettings,
   type Backlink,
-  type GitCommitDiff,
-  type GitCommitSummary,
-  type GitConflict,
-  type GitHubAuthStatus,
-  type GitHubIntegrationSettings,
-  type GitRemoteSummary,
-  type GitRemoteSyncResult,
-  type GitStatus,
-  type GitSyncPreview,
-  type GitWorkingChange,
   type GetBacklinksInput,
   type GanttChartSettings,
   type MarkdownFileContent,
@@ -110,7 +75,6 @@ import {
   type ReplaceInFileInput,
   type ReplaceInFileResult,
   type RevealWorkspaceItemInput,
-  type ResolveGitConflictInput,
   type SearchAndReplaceInput,
   type SearchAndReplaceMatch,
   type SearchWorkspaceInput,
@@ -128,20 +92,12 @@ import type { AliasIndex } from "../shared/links";
 const relicApi: RelicApi = {
   applySearchAndReplace: (input: SearchAndReplaceInput) =>
     ipcRenderer.invoke(applySearchAndReplaceChannel, input) as Promise<RelicResult<ReplaceInFileResult>>,
-  cloneGitHubRepository: (input: CloneGitHubRepositoryInput) =>
-    ipcRenderer.invoke(cloneGitHubRepositoryChannel, input) as Promise<RelicResult<WorkspaceState>>,
   createNewWorkspace: () =>
     ipcRenderer.invoke(createNewWorkspaceChannel) as Promise<RelicResult<WorkspaceState>>,
   togglePin: (path: string) =>
     ipcRenderer.invoke(togglePinChannel, path) as Promise<RelicResult<WorkspaceState>>,
-  connectGitRemote: (input: ConnectGitRemoteInput) =>
-    ipcRenderer.invoke(connectGitRemoteChannel, input) as Promise<RelicResult<GitRemoteSummary[]>>,
-  connectGitHubAccount: () =>
-    ipcRenderer.invoke(connectGitHubChannel) as Promise<RelicResult<GitHubAuthStatus>>,
   createFolder: (input: CreateFolderInput) =>
     ipcRenderer.invoke(createFolderChannel, input) as Promise<RelicResult<WorkspaceState>>,
-  createGitCommit: (input: CreateGitCommitInput) =>
-    ipcRenderer.invoke(createGitCommitChannel, input) as Promise<RelicResult<GitCommitSummary>>,
   createLinkedMarkdownFile: (input: CreateLinkedMarkdownFileInput) =>
     ipcRenderer.invoke(createLinkedMarkdownFileChannel, input) as Promise<
       RelicResult<CreateLinkedMarkdownFileResult>
@@ -152,24 +108,8 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(duplicateMarkdownFileChannel, input) as Promise<
       RelicResult<RenameMarkdownFileResult>
     >,
-  disconnectGitHubAccount: () =>
-    ipcRenderer.invoke(disconnectGitHubChannel) as Promise<RelicResult<GitHubAuthStatus>>,
   getBacklinks: (input: GetBacklinksInput) =>
     ipcRenderer.invoke(getBacklinksChannel, input) as Promise<RelicResult<Backlink[]>>,
-  getGitHubAuthStatus: () =>
-    ipcRenderer.invoke(getGitHubAuthStatusChannel) as Promise<RelicResult<GitHubAuthStatus>>,
-  getGitHubIntegrationSettings: () =>
-    ipcRenderer.invoke(getGitHubIntegrationSettingsChannel) as Promise<RelicResult<GitHubIntegrationSettings>>,
-  getGitCommitHistory: () =>
-    ipcRenderer.invoke(getGitCommitHistoryChannel) as Promise<RelicResult<GitCommitSummary[]>>,
-  getGitCommitDiff: (hash: string) =>
-    ipcRenderer.invoke(getGitCommitDiffChannel, hash) as Promise<RelicResult<GitCommitDiff>>,
-  getGitStatus: () =>
-    ipcRenderer.invoke(getGitStatusChannel) as Promise<RelicResult<GitStatus>>,
-  getGitRemotes: () =>
-    ipcRenderer.invoke(getGitRemotesChannel) as Promise<RelicResult<GitRemoteSummary[]>>,
-  getGitWorkingChanges: () =>
-    ipcRenderer.invoke(getGitWorkingChangesChannel) as Promise<RelicResult<GitWorkingChange[]>>,
   getAppInfo: () => ipcRenderer.invoke(getAppInfoChannel) as Promise<RelicResult<AppInfo>>,
   getEditorSettings: () =>
     ipcRenderer.invoke(getEditorSettingsChannel) as Promise<RelicResult<EditorSettings>>,
@@ -193,14 +133,8 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(moveMarkdownFileChannel, input) as Promise<
       RelicResult<RenameMarkdownFileResult>
     >,
-  initializeGitRepository: () =>
-    ipcRenderer.invoke(initializeGitRepositoryChannel) as Promise<RelicResult<GitStatus>>,
   openWorkspace: () =>
     ipcRenderer.invoke(openWorkspaceChannel) as Promise<RelicResult<WorkspaceState>>,
-  pullGitBranch: () =>
-    ipcRenderer.invoke(pullGitBranchChannel) as Promise<RelicResult<GitRemoteSyncResult>>,
-  pushGitBranch: () =>
-    ipcRenderer.invoke(pushGitBranchChannel) as Promise<RelicResult<GitRemoteSyncResult>>,
   readMarkdownFile: (input: ReadMarkdownFileInput) =>
     ipcRenderer.invoke(readMarkdownFileChannel, input) as Promise<RelicResult<MarkdownFileContent>>,
   readClipboardText: () => clipboard.readText(),
@@ -220,8 +154,6 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(replaceInFileChannel, input) as Promise<RelicResult<ReplaceInFileResult>>,
   saveEditorSettings: (input: EditorSettings) =>
     ipcRenderer.invoke(saveEditorSettingsChannel, input) as Promise<RelicResult<void>>,
-  saveGitHubIntegrationSettings: (input: GitHubIntegrationSettings) =>
-    ipcRenderer.invoke(saveGitHubIntegrationSettingsChannel, input) as Promise<RelicResult<void>>,
   searchAndReplace: (input: SearchAndReplaceInput) =>
     ipcRenderer.invoke(searchAndReplaceChannel, input) as Promise<
       RelicResult<SearchAndReplaceMatch[]>
@@ -235,16 +167,6 @@ const relicApi: RelicApi = {
   writeMarkdownFile: (input: WriteMarkdownFileInput) =>
     ipcRenderer.invoke(writeMarkdownFileChannel, input) as Promise<RelicResult<void>>,
   writeClipboardText: (text: string) => clipboard.writeText(text),
-  getGitSyncPreview: () =>
-    ipcRenderer.invoke(getGitSyncPreviewChannel) as Promise<RelicResult<GitSyncPreview>>,
-  getGitConflicts: () =>
-    ipcRenderer.invoke(getGitConflictsChannel) as Promise<RelicResult<GitConflict[]>>,
-  resolveGitConflict: (input: ResolveGitConflictInput) =>
-    ipcRenderer.invoke(resolveGitConflictChannel, input) as Promise<RelicResult<GitConflict[]>>,
-  getAutoSyncSettings: () =>
-    ipcRenderer.invoke(getAutoSyncSettingsChannel) as Promise<RelicResult<AutoSyncSettings>>,
-  saveAutoSyncSettings: (input: AutoSyncSettings) =>
-    ipcRenderer.invoke(saveAutoSyncSettingsChannel, input) as Promise<RelicResult<void>>,
   saveWorkspaceGanttCharts: (input: GanttChartSettings[]) =>
     ipcRenderer.invoke(saveWorkspaceGanttChartsChannel, input) as Promise<RelicResult<WorkspaceGanttChart[]>>,
   generateTitleList: (input: GenerateTitleListInput) =>

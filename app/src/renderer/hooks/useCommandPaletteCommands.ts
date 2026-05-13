@@ -9,12 +9,10 @@ interface UseCommandPaletteCommandsInput {
   activeFileName: string | null;
   handleDeleteActiveFile: () => void;
   handleDuplicateActiveFile: () => void;
-  handlePullGitBranch: () => void;
-  handlePushGitBranch: () => void;
   requestFileSearchFocus: () => void;
   setIsCreatingFile: (isCreating: boolean) => void;
   setShowQuickSwitcher: (isShown: boolean) => void;
-  setSidebarView: (view: "files" | "git" | "settings") => void;
+  setSidebarView: (view: "files" | "settings") => void;
   t: Translate;
   toggleRightPanel: () => void;
   toggleSidebar: () => void;
@@ -26,8 +24,6 @@ export function useCommandPaletteCommands({
   activeFileName,
   handleDeleteActiveFile,
   handleDuplicateActiveFile,
-  handlePullGitBranch,
-  handlePushGitBranch,
   requestFileSearchFocus,
   setIsCreatingFile,
   setShowQuickSwitcher,
@@ -82,21 +78,6 @@ export function useCommandPaletteCommands({
         shortcut: "⌘⇧T",
         action: toggleTypewriterMode
       },
-      {
-        id: "git",
-        label: t("command.gitView"),
-        action: () => { setSidebarView("git"); }
-      },
-      {
-        id: "git-push",
-        label: t("command.gitPush"),
-        action: () => { setSidebarView("git"); handlePushGitBranch(); }
-      },
-      {
-        id: "git-pull",
-        label: t("command.gitPull"),
-        action: () => { setSidebarView("git"); handlePullGitBranch(); }
-      },
       ...(activeFileName
         ? [
             {
@@ -128,8 +109,6 @@ export function useCommandPaletteCommands({
       activeFileName,
       handleDeleteActiveFile,
       handleDuplicateActiveFile,
-      handlePullGitBranch,
-      handlePushGitBranch,
       requestFileSearchFocus,
       setIsCreatingFile,
       setShowQuickSwitcher,
