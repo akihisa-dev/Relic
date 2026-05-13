@@ -23,6 +23,11 @@ interface GraphPoint extends WorkspaceGraphNode {
   y: number;
 }
 
+interface GraphSimPoint extends GraphPoint {
+  vx: number;
+  vy: number;
+}
+
 interface GraphViewModel {
   edges: WorkspaceGraphEdge[];
   nodes: WorkspaceGraphNode[];
@@ -287,7 +292,8 @@ export function GraphPanel({ activeFilePath, onOpenFile, workspaceId }: GraphPan
   const nodeDragStateRef = useRef<GraphNodeDragState | null>(null);
   const [hoveredPath, setHoveredPath] = useState<string | null>(null);
   const [isPanning, setIsPanning] = useState(false);
-  const [nodePositions, setNodePositions] = useState<Record<string, GraphPan>>({});
+  const simPointsRef = useRef<GraphSimPoint[]>([]);
+  const [simPoints, setSimPoints] = useState<GraphSimPoint[]>([]);
   const [pan, setPan] = useState<GraphPan>({ x: 0, y: 0 });
 
   useEffect(() => {
@@ -328,18 +334,57 @@ export function GraphPanel({ activeFilePath, onOpenFile, workspaceId }: GraphPan
     return { edges, nodes: nodes.filter((node) => localNodePaths.has(node.path)) };
   }, [activeFilePath, folderFilter, graph, graphStats, linkFilter, localGraphDepth, minDegree, query, showOrphans, tagFilter]);
 
-  const points = useMemo(
-    () => layoutGraph(filteredGraph.nodes, filteredGraph.edges, {
+  useEffect(() => {
+    const seedPoints = layoutGraph(filteredGraph.nodes, filteredGraph.edges, {
       centerForce,
       linkDistance,
       linkForce,
       repelForce
-    }).map((point) => {
-      const manualPosition = nodePositions[point.path];
-      return manualPosition ? { ...point, x: manualPosition.x, y: manualPosition.y } : point;
-    }),
-    [centerForce, filteredGraph.edges, filteredGraph.nodes, linkDistance, linkForce, nodePositions, repelForce]
-  );
+    });
+    const existingPoints = new Map(simPointsRef.current.map((point) => [point.path, point]));
+    const nextPoints = seedPoints.map((point) => {
+      const existing = existingPoints.get(point.path);
+      return {
+        ...point,
+        vx: existing?.vx ?? 0,
+        vy: existing?.vy ?? 0,
+        x: existing?.x ?? point.x,
+        y: existing?.y ?? point.y
+      };
+    });
+
+    simPointsRef.current = nextPoints;
+    setSimPoints(nextPoints);
+  }, [filteredGraph.edges, filteredGraph.nodes]);
+
+  useEffect(() => {
+    if (filteredGraph.nodes.length === 0) return;
+
+    let frameId = 0;
+    let lastPaint = 0;
+
+    function tick(time: number): void {
+      const nextPoints = tickGraphSimulation(
+        simPointsRef.current,
+        filteredGraph.edges,
+        { centerForce, linkDistance, linkForce, repelForce },
+        nodeDragStateRef.current?.path ?? null
+      );
+      simPointsRef.current = nextPoints;
+
+      if (time - lastPaint > 32) {
+        lastPaint = time;
+        setSimPoints(nextPoints);
+      }
+
+      frameId = window.requestAnimationFrame(tick);
+    }
+
+    frameId = window.requestAnimationFrame(tick);
+    return () => window.cancelAnimationFrame(frameId);
+  }, [centerForce, filteredGraph.edges, filteredGraph.nodes.length, linkDistance, linkForce, repelForce]);
+
+  const points = simPoints;
   const pointByPath = useMemo(() => new Map(points.map((point) => [point.path, point])), [points]);
   const focusedPath = hoveredPath ?? selectedPath;
   const relatedPaths = useMemo(() => {
@@ -479,13 +524,16 @@ export function GraphPanel({ activeFilePath, onOpenFile, workspaceId }: GraphPan
     if (!moved && !dragState.moved) return;
 
     nodeDragStateRef.current = { ...dragState, moved: dragState.moved || moved };
-    setNodePositions((current) => ({
-      ...current,
-      [dragState.path]: {
-        x: clamp(dragState.startPoint.x + graphDelta.x / zoom, GRAPH_PADDING, GRAPH_WIDTH - GRAPH_PADDING),
-        y: clamp(dragState.startPoint.y + graphDelta.y / zoom, GRAPH_PADDING, GRAPH_HEIGHT - GRAPH_PADDING)
-      }
-    }));
+    const nextPosition = {
+      x: clamp(dragState.startPoint.x + graphDelta.x / zoom, GRAPH_PADDING, GRAPH_WIDTH - GRAPH_PADDING),
+      y: clamp(dragState.startPoint.y + graphDelta.y / zoom, GRAPH_PADDING, GRAPH_HEIGHT - GRAPH_PADDING)
+    };
+    const nextPoints = simPointsRef.current.map((point) => point.path === dragState.path
+      ? { ...point, vx: 0, vy: 0, x: nextPosition.x, y: nextPosition.y }
+      : point
+    );
+    simPointsRef.current = nextPoints;
+    setSimPoints(nextPoints);
   }
 
   function handleNodePointerEnd(event: PointerEvent<SVGGElement>, point: GraphPoint): void {
@@ -807,6 +855,77 @@ function layoutGraph(
   return initial.sort((a, b) => {
     return a.path.localeCompare(b.path, "ja");
   });
+}
+
+function tickGraphSimulation(
+  points: GraphSimPoint[],
+  edges: WorkspaceGraphEdge[],
+  forceSettings: GraphForceSettings,
+  pinnedPath: string | null
+): GraphSimPoint[] {
+  if (points.length <= 1) return points;
+
+  const next = points.map((point) => ({ ...point }));
+  const indexByPath = new Map(next.map((point, index) => [point.path, index]));
+  const forces = next.map(() => ({ x: 0, y: 0 }));
+  const pinnedIndex = pinnedPath ? indexByPath.get(pinnedPath) : undefined;
+
+  for (let i = 0; i < next.length; i += 1) {
+    for (let j = i + 1; j < next.length; j += 1) {
+      const dx = next[j].x - next[i].x || 0.01;
+      const dy = next[j].y - next[i].y || 0.01;
+      const distanceSquared = Math.max(81, dx * dx + dy * dy);
+      const distance = Math.sqrt(distanceSquared);
+      const strength = (1320 * forceSettings.repelForce) / distanceSquared;
+      const fx = (dx / distance) * strength;
+      const fy = (dy / distance) * strength;
+      forces[i].x -= fx;
+      forces[i].y -= fy;
+      forces[j].x += fx;
+      forces[j].y += fy;
+    }
+  }
+
+  for (const edge of edges) {
+    const sourceIndex = indexByPath.get(edge.sourcePath);
+    const targetIndex = indexByPath.get(edge.targetPath);
+    if (sourceIndex === undefined || targetIndex === undefined) continue;
+
+    const source = next[sourceIndex];
+    const target = next[targetIndex];
+    const dx = target.x - source.x || 0.01;
+    const dy = target.y - source.y || 0.01;
+    const distance = Math.max(1, Math.sqrt(dx * dx + dy * dy));
+    const strength = (distance - forceSettings.linkDistance) * 0.018 * forceSettings.linkForce;
+    const fx = (dx / distance) * strength;
+    const fy = (dy / distance) * strength;
+    forces[sourceIndex].x += fx;
+    forces[sourceIndex].y += fy;
+    forces[targetIndex].x -= fx;
+    forces[targetIndex].y -= fy;
+  }
+
+  for (let i = 0; i < next.length; i += 1) {
+    const point = next[i];
+    if (i === pinnedIndex) {
+      point.vx = 0;
+      point.vy = 0;
+      continue;
+    }
+
+    const centerStrength = 0.0055 * forceSettings.centerForce;
+    forces[i].x += (GRAPH_CENTER_X - point.x) * centerStrength;
+    forces[i].y += (GRAPH_CENTER_Y - point.y) * centerStrength;
+    point.vx = (point.vx + forces[i].x) * 0.76;
+    point.vy = (point.vy + forces[i].y) * 0.76;
+    point.x = clamp(point.x + point.vx, GRAPH_PADDING, GRAPH_WIDTH - GRAPH_PADDING);
+    point.y = clamp(point.y + point.vy, GRAPH_PADDING, GRAPH_HEIGHT - GRAPH_PADDING);
+
+    if (point.x === GRAPH_PADDING || point.x === GRAPH_WIDTH - GRAPH_PADDING) point.vx = 0;
+    if (point.y === GRAPH_PADDING || point.y === GRAPH_HEIGHT - GRAPH_PADDING) point.vy = 0;
+  }
+
+  return next;
 }
 
 function clamp(value: number, min: number, max: number): number {
