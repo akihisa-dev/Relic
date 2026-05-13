@@ -86,3 +86,20 @@ Windows 版は **インストーラーを使わず**、ZIP 展開後に `Relic.e
 - `Setup.exe` / `Update.exe` / `.nupkg` は生成しません。
 - コード署名なし配布のため SmartScreen 警告が出る可能性があります。
 - 方針として SmartScreen よりも Defender 誤検知・隔離の回避を優先します。
+
+
+### Windows セーフビルド手順（Defender 誤検知対策）
+
+```sh
+cd app
+pnpm build:win:safe
+```
+
+`build:win:safe` は以下を順に実行します。
+
+1. `clean:out` で `app/out` を削除
+2. `package:win` で unpacked app (`out/Relic-win32-x64/`) を生成
+3. `check:win:safe` で成果物を検証
+   - 必須: `out/Relic-win32-x64/Relic.exe`
+   - 禁止: `Setup*.exe` / `Update.exe` / `*.nupkg` / `RELEASES`
+

@@ -150,7 +150,7 @@ export function registerWorkspaceHandlers(): void {
     try {
       const settings = await readAppSettings(app.getPath("userData"));
 
-      return ok(await buildWorkspaceState(settings));
+      return ok(await buildWorkspaceState(settings, { hydrateActiveWorkspace: false }));
     } catch (error) {
       return fail(
         "WORKSPACE_STATE_FAILED",
@@ -672,13 +672,22 @@ export function registerWorkspaceHandlers(): void {
   });
 }
 
+type BuildWorkspaceStateOptions = {
+  hydrateActiveWorkspace?: boolean;
+};
+
 export async function buildWorkspaceState(
-  settings: Awaited<ReturnType<typeof readAppSettings>>
+  settings: Awaited<ReturnType<typeof readAppSettings>>,
+  options: BuildWorkspaceStateOptions = {}
 ): Promise<WorkspaceState> {
   const activeWorkspace =
     settings.workspaces.find((ws) => ws.id === settings.lastWorkspaceId) ?? null;
 
   if (!activeWorkspace) {
+    return toWorkspaceState(settings);
+  }
+
+  if (options.hydrateActiveWorkspace === false) {
     return toWorkspaceState(settings);
   }
 

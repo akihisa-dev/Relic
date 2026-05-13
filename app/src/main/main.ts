@@ -1,7 +1,7 @@
 import { app, BrowserWindow, Menu, shell } from "electron";
 import path from "node:path";
 
-import { refreshAutoSyncTimer, stopAutoSyncTimer } from "./autoSyncScheduler";
+import { stopAutoSyncTimer } from "./autoSyncScheduler";
 import { registerAppHandlers } from "./ipc/appHandlers";
 import { registerEditorHandlers } from "./ipc/editorHandlers";
 import { registerFileHandlers } from "./ipc/fileHandlers";
@@ -118,7 +118,6 @@ app.whenReady().then(() => {
   registerWorkspaceHandlers();
   createWindow();
 
-  void refreshAutoSyncTimer();
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
