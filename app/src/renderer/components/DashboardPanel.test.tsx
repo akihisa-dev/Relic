@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { WorkspaceTreeNode } from "../../shared/ipc";
-import { buildDashboardStats, buildPropertyDistribution } from "./DashboardPanel";
+import { buildDashboardStats, buildPropertyDistribution, buildTreemapRects } from "./DashboardPanel";
 
 describe("buildDashboardStats", () => {
   it("summarizes markdown files for the dashboard", () => {
@@ -79,5 +79,27 @@ describe("buildDashboardStats", () => {
       { count: 1, label: "pilot" },
       { count: 1, label: "Unset" }
     ]);
+  });
+
+  it("lays out tag treemaps for a wide dashboard card without thin horizontal bands", () => {
+    const rects = buildTreemapRects([
+      { count: 7, label: "chart" },
+      { count: 4, label: "history" },
+      { count: 3, label: "japan" },
+      { count: 3, label: "merge" },
+      { count: 3, label: "search" },
+      { count: 1, label: "tools" },
+      { count: 1, label: "alpha" },
+      { count: 1, label: "frontmatter" },
+      { count: 1, label: "markdown" },
+      { count: 1, label: "schedule" },
+      { count: 1, label: "memo" },
+      { count: 1, label: "beta" }
+    ]);
+
+    expect(rects).toHaveLength(12);
+    expect(rects[0]).toMatchObject({ accent: true, label: "chart" });
+    expect(Math.min(...rects.map((rect) => rect.height))).toBeGreaterThan(20);
+    expect(rects.every((rect) => rect.width > 0 && rect.height > 0)).toBe(true);
   });
 });
