@@ -204,7 +204,7 @@ describe("App", () => {
 
     expect(getWorkspaceGraph).toHaveBeenCalled();
     expect(await screen.findByText("グラフ", { selector: ".pane-tab-name" })).toBeInTheDocument();
-    expect(container.querySelector(".sidebar-view-content--graph")).toContainElement(screen.getByPlaceholderText("ファイル名・パス"));
+    expect(container.querySelector(".graph-panel")).toContainElement(screen.getByPlaceholderText("ファイル名・パス"));
     expect(await screen.findByText("2 ノード / 1 リンク")).toBeInTheDocument();
 
     fireEvent.change(screen.getByPlaceholderText("ファイル名・パス"), { target: { value: "A" } });

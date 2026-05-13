@@ -15,7 +15,7 @@ import { ChronicleSidebar, GanttChartView } from "./components/ChronicleSidebar"
 import { FilesSidebar } from "./components/FilesSidebar";
 import { FrontmatterSidebar } from "./components/FrontmatterSidebar";
 import { GitSidebar } from "./components/GitSidebar";
-import { GraphPanel, GraphSidebar } from "./components/GraphSidebar";
+import { GraphPanel } from "./components/GraphSidebar";
 import { PaneView } from "./components/PaneView";
 import { QuickSwitcher } from "./components/QuickSwitcher";
 import { SearchSidebar } from "./components/SearchSidebar";
@@ -1326,7 +1326,6 @@ export function App(): ReactElement {
     }
 
     openPanelInPane(focusedPane, activeSidebarView, panelLabels[activeSidebarView]);
-    if (activeSidebarView === "graph") return;
     setSidebarView("files");
   }, [activeSidebarView, focusedPane, openPanelInPane, panelLabels, setSidebarView]);
 
@@ -1615,11 +1614,7 @@ export function App(): ReactElement {
                 charts={ganttCharts}
                 onOpenChart={handleOpenGanttChart}
               />
-            ) : activeSidebarView === "graph" ? (
-              <GraphSidebar
-                workspaceId={workspaceState?.activeWorkspace?.id ?? null}
-              />
-            ) : (
+            ) : activeSidebarView === "search" ? (
               <SearchSidebar
                 activeFilePath={activeFileTabInFocusedPane?.path ?? null}
                 error={searchError}
@@ -1640,7 +1635,7 @@ export function App(): ReactElement {
                 results={searchResults}
                 tags={workspaceTags}
               />
-            )}
+            ) : null}
             </div>
             <div
               className={`sidebar-resize-handle${isSidebarResizing ? " sidebar-resize-handle--active" : ""}`}
