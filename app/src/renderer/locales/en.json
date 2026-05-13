@@ -255,7 +255,7 @@
   "settings.choiceAdd": "Add choice",
   "settings.choiceAddPlaceholder": "Enter a choice",
   "settings.customFields": "Custom Fields",
-  "settings.customFieldEmpty": "No custom properties yet.",
+  "settings.customFieldEmpty": "No custom fields yet.",
   "settings.customFieldName": "Field name",
   "settings.customFieldType": "Input type",
   "settings.customFieldChoices": "Choices",
