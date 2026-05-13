@@ -59,7 +59,6 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile }: GanttC
     () => buildTicks(axisStart, axisEnd, tickInterval, activeSource, dateScale),
     [activeSource, axisEnd, axisStart, dateScale, tickInterval]
   );
-  const gridOffset = ticks.length > 0 ? (ticks[0] - axisStart) * unitWidth : 0;
   const dateAxisHeight = activeSource === "date" ? dateAxisHeightForScale(dateScale) : 34;
 
   useEffect(() => {
@@ -176,15 +175,11 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile }: GanttC
               <div
                 className={`chronicle-tracks${activeSource === "date" ? " chronicle-tracks--date" : ""}`}
                 style={{
-                  "--chronicle-grid-x": `${tickInterval * unitWidth}px`,
-                  "--chronicle-grid-offset-x": `${gridOffset}px`,
                   height: Math.max(1, entries.length) * ROW_HEIGHT,
                   width: timelineWidth
                 } as CSSProperties}
               >
-                {activeSource === "date" ? (
-                  <DateGridLines axisStart={axisStart} ticks={ticks} unitWidth={unitWidth} />
-                ) : null}
+                <ChartGuideLines axisStart={axisStart} rowCount={Math.max(1, entries.length)} ticks={ticks} unitWidth={unitWidth} />
                 {entries.map((entry, index) => {
                   const left = Math.max(0, (entry.startValue - axisStart) * unitWidth);
                   const isSingleValue = entry.startValue === entry.endValue;
@@ -335,26 +330,36 @@ function DateAxis({
   );
 }
 
-function DateGridLines({
+function ChartGuideLines({
   axisStart,
+  rowCount,
   ticks,
   unitWidth
 }: {
   axisStart: number;
+  rowCount: number;
   ticks: number[];
   unitWidth: number;
 }): ReactElement {
+  const rowLines = Array.from({ length: rowCount + 1 }, (_value, index) => index * ROW_HEIGHT);
+
   return (
-    <>
+    <div aria-hidden="true" className="chronicle-guide-lines">
       {ticks.map((tick) => (
         <span
-          aria-hidden="true"
-          className="chronicle-date-grid-line"
-          key={tick}
+          className="chronicle-guide-line"
+          key={`tick-${tick}`}
           style={{ left: (tick - axisStart) * unitWidth }}
         />
       ))}
-    </>
+      {rowLines.map((top) => (
+        <span
+          className="chronicle-guide-row-line"
+          key={`row-${top}`}
+          style={{ top }}
+        />
+      ))}
+    </div>
   );
 }
 
