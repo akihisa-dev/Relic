@@ -361,9 +361,8 @@ export function GraphPanel({ activeFilePath, onOpenFile, workspaceId }: GraphPan
     if (filteredGraph.nodes.length === 0) return;
 
     let frameId = 0;
-    let lastPaint = 0;
 
-    function tick(time: number): void {
+    function tick(): void {
       const nextPoints = tickGraphSimulation(
         simPointsRef.current,
         filteredGraph.edges,
@@ -371,11 +370,7 @@ export function GraphPanel({ activeFilePath, onOpenFile, workspaceId }: GraphPan
         nodeDragStateRef.current?.path ?? null
       );
       simPointsRef.current = nextPoints;
-
-      if (time - lastPaint > 32) {
-        lastPaint = time;
-        setSimPoints(nextPoints);
-      }
+      setSimPoints(nextPoints);
 
       frameId = window.requestAnimationFrame(tick);
     }
