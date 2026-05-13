@@ -55,7 +55,16 @@ interface GraphDragState {
   startPan: GraphPan;
 }
 
-export function GraphSidebar({ workspaceId }: GraphSidebarProps): ReactElement {
+interface GraphNodeDragState {
+  moved: boolean;
+  path: string;
+  pointerId: number;
+  startClientX: number;
+  startClientY: number;
+  startPoint: GraphPan;
+}
+
+function GraphControls({ workspaceId }: GraphSidebarProps): ReactElement {
   const t = useT();
   const {
     addGroup,
@@ -118,7 +127,7 @@ export function GraphSidebar({ workspaceId }: GraphSidebarProps): ReactElement {
   }, [graph]);
 
   return (
-    <div className="graph-sidebar graph-sidebar--controls">
+    <div className="graph-controls">
       <div className="graph-topbar">
         <div className="links-panel-subheading">{t("graph.title")}</div>
         <button className="graph-icon-button" onClick={() => loadGraph(workspaceId, true)} title={t("graph.refresh")} type="button">
@@ -367,8 +376,11 @@ export function GraphPanel({ activeFilePath, onOpenFile, workspaceId }: GraphPan
   } = useGraphStore();
   const svgRef = useRef<SVGSVGElement | null>(null);
   const dragStateRef = useRef<GraphDragState | null>(null);
+  const suppressNodeClickRef = useRef(false);
+  const nodeDragStateRef = useRef<GraphNodeDragState | null>(null);
   const [hoveredPath, setHoveredPath] = useState<string | null>(null);
   const [isPanning, setIsPanning] = useState(false);
+  const [nodePositions, setNodePositions] = useState<Record<string, GraphPan>>({});
   const [pan, setPan] = useState<GraphPan>({ x: 0, y: 0 });
 
   useEffect(() => {
@@ -415,14 +427,13 @@ export function GraphPanel({ activeFilePath, onOpenFile, workspaceId }: GraphPan
       linkDistance,
       linkForce,
       repelForce
+    }).map((point) => {
+      const manualPosition = nodePositions[point.path];
+      return manualPosition ? { ...point, x: manualPosition.x, y: manualPosition.y } : point;
     }),
-    [centerForce, filteredGraph.edges, filteredGraph.nodes, linkDistance, linkForce, repelForce, selectedPath]
+    [centerForce, filteredGraph.edges, filteredGraph.nodes, linkDistance, linkForce, nodePositions, repelForce, selectedPath]
   );
   const pointByPath = useMemo(() => new Map(points.map((point) => [point.path, point])), [points]);
-  const selectedNode = useMemo(
-    () => filteredGraph.nodes.find((node) => node.path === selectedPath) ?? null,
-    [filteredGraph.nodes, selectedPath]
-  );
   const focusedPath = hoveredPath ?? selectedPath;
   const relatedPaths = useMemo(() => {
     if (!focusedPath) return new Set<string>();
@@ -433,21 +444,6 @@ export function GraphPanel({ activeFilePath, onOpenFile, workspaceId }: GraphPan
     }
     return paths;
   }, [filteredGraph.edges, focusedPath]);
-  const selectedLinks = useMemo(() => {
-    if (!selectedNode) return { incoming: [], outgoing: [] };
-    const nodeByPath = new Map(filteredGraph.nodes.map((node) => [node.path, node]));
-
-    return {
-      incoming: filteredGraph.edges
-        .filter((edge) => edge.targetPath === selectedNode.path)
-        .map((edge) => nodeByPath.get(edge.sourcePath))
-        .filter((node): node is WorkspaceGraphNode => !!node),
-      outgoing: filteredGraph.edges
-        .filter((edge) => edge.sourcePath === selectedNode.path)
-        .map((edge) => nodeByPath.get(edge.targetPath))
-        .filter((node): node is WorkspaceGraphNode => !!node)
-    };
-  }, [filteredGraph.edges, filteredGraph.nodes, selectedNode]);
   const labelOpacity = showLabels
     ? clamp((zoom - textFadeThreshold + 0.5) / 0.5, 0.18, 1)
     : 0;
@@ -548,8 +544,72 @@ export function GraphPanel({ activeFilePath, onOpenFile, workspaceId }: GraphPan
     setIsPanning(false);
   }
 
+  function handleNodePointerDown(event: PointerEvent<SVGGElement>, point: GraphPoint): void {
+    if (event.button !== 0) return;
+
+    event.stopPropagation();
+    nodeDragStateRef.current = {
+      moved: false,
+      path: point.path,
+      pointerId: event.pointerId,
+      startClientX: event.clientX,
+      startClientY: event.clientY,
+      startPoint: { x: point.x, y: point.y }
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+    setSelectedPath(point.path);
+  }
+
+  function handleNodePointerMove(event: PointerEvent<SVGGElement>): void {
+    const dragState = nodeDragStateRef.current;
+    if (!dragState || dragState.pointerId !== event.pointerId) return;
+
+    event.stopPropagation();
+    const clientDeltaX = event.clientX - dragState.startClientX;
+    const clientDeltaY = event.clientY - dragState.startClientY;
+    const graphDelta = getGraphDelta(clientDeltaX, clientDeltaY);
+    const moved = Math.hypot(clientDeltaX, clientDeltaY) > 3;
+    if (!moved && !dragState.moved) return;
+
+    nodeDragStateRef.current = { ...dragState, moved: dragState.moved || moved };
+    setNodePositions((current) => ({
+      ...current,
+      [dragState.path]: {
+        x: clamp(dragState.startPoint.x + graphDelta.x / zoom, GRAPH_PADDING, GRAPH_WIDTH - GRAPH_PADDING),
+        y: clamp(dragState.startPoint.y + graphDelta.y / zoom, GRAPH_PADDING, GRAPH_HEIGHT - GRAPH_PADDING)
+      }
+    }));
+  }
+
+  function handleNodePointerEnd(event: PointerEvent<SVGGElement>, point: GraphPoint): void {
+    const dragState = nodeDragStateRef.current;
+    if (!dragState || dragState.pointerId !== event.pointerId) return;
+
+    event.stopPropagation();
+    nodeDragStateRef.current = null;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    suppressNodeClickRef.current = dragState.moved;
+    if (!dragState.moved) setSelectedPath(point.path);
+  }
+
+  function handleNodePointerCancel(event: PointerEvent<SVGGElement>): void {
+    const dragState = nodeDragStateRef.current;
+    if (!dragState || dragState.pointerId !== event.pointerId) return;
+
+    event.stopPropagation();
+    nodeDragStateRef.current = null;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+  }
+
   return (
     <div className="graph-panel">
+      <div className="graph-hover-settings">
+        <GraphControls workspaceId={workspaceId} />
+      </div>
       <div className="graph-canvas" aria-label={t("graph.title")}>
         {isLoading ? (
           <div className="frontmatter-field-empty">{t("common.loading")}</div>
@@ -629,10 +689,18 @@ export function GraphPanel({ activeFilePath, onOpenFile, workspaceId }: GraphPan
                       className="graph-node-hit"
                       key={point.path}
                       onClick={() => {
+                        if (suppressNodeClickRef.current) {
+                          suppressNodeClickRef.current = false;
+                          return;
+                        }
                         setSelectedPath(point.path);
                         onOpenFile(point.path);
                       }}
                       onPointerEnter={() => setHoveredPath(point.path)}
+                      onPointerCancel={handleNodePointerCancel}
+                      onPointerDown={(event) => handleNodePointerDown(event, point)}
+                      onPointerMove={handleNodePointerMove}
+                      onPointerUp={(event) => handleNodePointerEnd(event, point)}
                       onPointerLeave={() => setHoveredPath((current) => current === point.path ? null : current)}
                       onKeyDown={(event) => {
                         if (event.key === "Enter") {
@@ -670,63 +738,6 @@ export function GraphPanel({ activeFilePath, onOpenFile, workspaceId }: GraphPan
       <div className="graph-summary">
         {t("graph.summary", { edges: filteredGraph.edges.length, nodes: filteredGraph.nodes.length })}
       </div>
-
-      <div className="graph-detail">
-        {selectedNode ? (
-          <>
-            <button className="graph-detail-title" onClick={() => onOpenFile(selectedNode.path)} type="button">
-              <span>{selectedNode.name}</span>
-              <span>{selectedNode.path}</span>
-            </button>
-            {selectedNode.tags.length > 0 ? (
-              <div className="graph-tag-list">
-                {selectedNode.tags.map((tag) => <span key={tag}>#{tag}</span>)}
-              </div>
-            ) : null}
-            <GraphLinkList
-              emptyLabel={t("graph.noOutgoing")}
-              label={t("graph.outgoing")}
-              nodes={selectedLinks.outgoing}
-              onOpenFile={onOpenFile}
-            />
-            <GraphLinkList
-              emptyLabel={t("graph.noIncoming")}
-              label={t("graph.incoming")}
-              nodes={selectedLinks.incoming}
-              onOpenFile={onOpenFile}
-            />
-          </>
-        ) : (
-          <div className="frontmatter-field-empty">{t("graph.selectNode")}</div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function GraphLinkList({
-  emptyLabel,
-  label,
-  nodes,
-  onOpenFile
-}: {
-  emptyLabel: string;
-  label: string;
-  nodes: WorkspaceGraphNode[];
-  onOpenFile: (path: string) => void;
-}): ReactElement {
-  return (
-    <div className="graph-link-list">
-      <div className="graph-link-list-title">{label}</div>
-      {nodes.length === 0 ? (
-        <div className="graph-link-empty">{emptyLabel}</div>
-      ) : (
-        nodes.map((node) => (
-          <button key={node.path} onClick={() => onOpenFile(node.path)} title={node.path} type="button">
-            {node.name}
-          </button>
-        ))
-      )}
     </div>
   );
 }
