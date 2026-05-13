@@ -3940,6 +3940,11 @@ button:not(:disabled):active {
   min-width: 0;
 }
 
+.graph-topbar-actions {
+  display: inline-flex;
+  gap: 4px;
+}
+
 .graph-icon-button,
 .graph-reset-button {
   background: var(--bg);
@@ -3959,21 +3964,73 @@ button:not(:disabled):active {
 }
 
 .graph-icon-button {
-  flex: 0 0 28px;
-  font-size: 13px;
+  flex: 0 0 24px;
+  font-size: 12px;
+  min-height: 24px;
   padding: 0;
+}
+
+.graph-controls-minimized {
+  background: var(--popup-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-2);
+  font-size: 15px;
+  height: 30px;
+  min-height: 30px;
+  padding: 0;
+  width: 30px;
+}
+
+.graph-controls-minimized:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+
+.graph-control-section {
+  border-top: 1px solid var(--border);
+  display: grid;
+}
+
+.graph-control-section:first-child {
+  border-top: none;
+}
+
+.graph-control-section-title {
+  align-items: center;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  color: var(--text);
+  display: inline-flex;
+  font-size: 12px;
+  gap: 8px;
+  justify-content: flex-start;
+  min-height: 38px;
+  padding: 0 4px;
+  text-align: left;
+}
+
+.graph-control-section-title:hover {
+  background: var(--hover);
+}
+
+.graph-control-section-body {
+  display: grid;
+  gap: 8px;
+  padding: 0 4px 10px;
 }
 
 .graph-controls {
   display: grid;
-  gap: 12px;
+  gap: 8px;
   min-height: 0;
 }
 
 .graph-filters {
   display: grid;
-  gap: 10px;
-  max-height: min(68vh, 640px);
+  gap: 0;
+  max-height: min(52vh, 420px);
   overflow: auto;
   padding-right: 2px;
 }
@@ -4001,14 +4058,12 @@ button:not(:disabled):active {
 }
 
 .graph-filters input[type="range"] {
-  width: 130px;
+  width: 108px;
 }
 
 .graph-group-controls {
-  border-top: 1px solid var(--border);
   display: grid;
   gap: 8px;
-  padding-top: 10px;
 }
 
 .graph-group-heading {
@@ -4074,18 +4129,26 @@ button:not(:disabled):active {
 .graph-hover-settings {
   background: var(--popup-bg);
   border: 1px solid var(--border);
-  border-radius: 8px;
-  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.16);
+  border-radius: 6px;
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.12);
   opacity: 0;
-  padding: 12px;
+  padding: 8px;
   pointer-events: none;
   position: absolute;
-  right: 14px;
-  top: 14px;
+  right: 12px;
+  top: 12px;
   transform: translateY(-4px);
   transition: opacity 140ms ease, transform 140ms ease;
-  width: min(320px, calc(100% - 28px));
+  width: min(250px, calc(100% - 24px));
   z-index: 3;
+}
+
+.graph-hover-settings:has(.graph-controls-minimized) {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  padding: 0;
+  width: 30px;
 }
 
 .graph-panel:hover .graph-hover-settings,
@@ -4096,14 +4159,9 @@ button:not(:disabled):active {
 }
 
 .graph-canvas {
-  background:
-    linear-gradient(rgba(128, 128, 128, 0.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(128, 128, 128, 0.035) 1px, transparent 1px),
-    var(--bg);
-  background-size: 28px 28px;
+  background: var(--bg);
   border: 1px solid transparent;
   border-radius: 6px;
-  box-shadow: inset 0 0 0 1px rgba(128, 128, 128, 0.045);
   min-height: 0;
   overflow: hidden;
   position: relative;
@@ -4128,19 +4186,19 @@ button:not(:disabled):active {
 
 .graph-edge {
   stroke: var(--text-3);
-  stroke-opacity: 0.42;
-  stroke-width: 0.9;
+  stroke-opacity: 0.24;
+  stroke-width: 0.7;
   transition: stroke 140ms ease, stroke-opacity 140ms ease, stroke-width 140ms ease;
 }
 
 .graph-edge--selected {
-  stroke: var(--accent);
-  stroke-opacity: 0.78;
-  stroke-width: 1.6;
+  stroke: var(--text-2);
+  stroke-opacity: 0.58;
+  stroke-width: 1;
 }
 
 .graph-edge--dimmed {
-  stroke-opacity: 0.12;
+  stroke-opacity: 0.08;
 }
 
 .graph-arrow-marker {
@@ -4149,8 +4207,8 @@ button:not(:disabled):active {
 }
 
 .graph-arrow-marker--selected {
-  fill: var(--accent);
-  fill-opacity: 0.82;
+  fill: var(--text-2);
+  fill-opacity: 0.72;
 }
 
 .graph-node-hit {
@@ -4164,12 +4222,12 @@ button:not(:disabled):active {
 
 .graph-label {
   fill: var(--text-2);
-  font-size: 11px;
+  font-size: 9px;
   pointer-events: none;
   paint-order: stroke;
   stroke: var(--bg);
   stroke-linejoin: round;
-  stroke-width: 5px;
+  stroke-width: 4px;
   transition: fill-opacity 140ms ease;
 }
 
@@ -4179,25 +4237,25 @@ button:not(:disabled):active {
 
 .graph-node {
   fill: var(--text-2);
-  fill-opacity: 0.82;
+  fill-opacity: 0.58;
   stroke: var(--bg);
   stroke-opacity: 0.96;
-  stroke-width: 2.2;
+  stroke-width: 1.8;
   transition: fill 140ms ease, fill-opacity 140ms ease, stroke 140ms ease, stroke-width 140ms ease;
 }
 
 .graph-node--selected {
-  fill: var(--accent);
-  fill-opacity: 1;
-  stroke: var(--accent);
-  stroke-width: 4;
+  fill: var(--text);
+  fill-opacity: 0.86;
+  stroke: var(--bg);
+  stroke-width: 2.4;
 }
 
 .graph-node--focused {
-  fill: var(--accent);
-  fill-opacity: 1;
-  stroke: var(--accent);
-  stroke-width: 3.2;
+  fill: var(--text);
+  fill-opacity: 0.82;
+  stroke: var(--bg);
+  stroke-width: 2.2;
 }
 
 .graph-node--related {
@@ -4212,10 +4270,10 @@ button:not(:disabled):active {
 
 .graph-node-hit:hover .graph-node,
 .graph-node-hit:focus-visible .graph-node {
-  fill: var(--accent);
-  fill-opacity: 1;
-  stroke: var(--accent);
-  stroke-width: 3.2;
+  fill: var(--text);
+  fill-opacity: 0.84;
+  stroke: var(--bg);
+  stroke-width: 2.2;
 }
 
 .graph-summary {
