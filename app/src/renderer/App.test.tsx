@@ -382,7 +382,7 @@ describe("App", () => {
     });
   });
 
-  it("ファイルタブを閉じるとファイル行へ吸い込む表示を出す", async () => {
+  it("ファイルタブを閉じるとその場で下へ消える表示を出す", async () => {
     window.relic = makeRelicApi({
       getWorkspaceState: vi.fn().mockResolvedValue({
         ok: true,
@@ -713,12 +713,9 @@ describe("App", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "フロントマター" }));
 
-    expect(document.querySelector(".rail-tab-flight")).toBeInTheDocument();
-    expect(document.querySelector(".rail-tab-flight--close")).toBeInTheDocument();
-    await waitFor(() => {
-      expect(useEditorStore.getState().leftPane.activeTabId).toBeNull();
-    });
-    expect(useEditorStore.getState().tabs["panel-frontmatter"]).toBeUndefined();
+    expect(document.querySelector(".rail-tab-flight--close")).not.toBeInTheDocument();
+    expect(useEditorStore.getState().leftPane.activeTabId).toBe("panel-frontmatter");
+    expect(useEditorStore.getState().tabs["panel-frontmatter"]).toBeDefined();
   });
 
   it("レールのチャートボタンからchronicleを持つファイルを表示できる", async () => {
@@ -844,7 +841,7 @@ describe("App", () => {
     });
   });
 
-  it("別の画面タブを開いた後でも開いているレールボタンを押すと閉じる", async () => {
+  it("別の画面タブを開いた後でも開いているレールボタンを押すと対象タブをアクティブにする", async () => {
     window.relic = makeRelicApi({
       getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
     });
@@ -861,13 +858,15 @@ describe("App", () => {
       panel: "frontmatter"
     });
     expect(useEditorStore.getState().leftPane.activeTabId).toBe("panel-settings");
-    expect(screen.getByRole("button", { name: "フロントマター" })).toHaveClass("active");
+    expect(screen.getByRole("button", { name: "フロントマター" })).toHaveClass("open");
+    expect(screen.getByRole("button", { name: "フロントマター" })).not.toHaveClass("active");
 
     fireEvent.click(screen.getByRole("button", { name: "フロントマター" }));
 
-    await waitFor(() => {
-      expect(useEditorStore.getState().tabs["panel-frontmatter"]).toBeUndefined();
-    });
+    expect(document.querySelector(".rail-tab-flight--close")).not.toBeInTheDocument();
+    expect(useEditorStore.getState().leftPane.activeTabId).toBe("panel-frontmatter");
+    expect(screen.getByRole("button", { name: "フロントマター" })).toHaveClass("active");
+    expect(useEditorStore.getState().tabs["panel-frontmatter"]).toBeDefined();
     expect(useEditorStore.getState().tabs["panel-settings"]).toBeDefined();
   });
 
@@ -921,6 +920,30 @@ describe("App", () => {
 
     expect(useUiStore.getState().isSidebarOpen).toBe(true);
     expect(useUiStore.getState().activeSidebarView).toBe("files");
+  });
+
+  it("ファイルボタンでファイルサイドバーを開閉できる", async () => {
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
+    });
+
+    await renderApp();
+
+    const fileButton = await screen.findByRole("button", { name: "ファイル" });
+
+    expect(useUiStore.getState().isSidebarOpen).toBe(true);
+    expect(fileButton).toHaveClass("active");
+
+    fireEvent.click(fileButton);
+
+    expect(useUiStore.getState().isSidebarOpen).toBe(false);
+    expect(fileButton).not.toHaveClass("active");
+
+    fireEvent.click(fileButton);
+
+    expect(useUiStore.getState().isSidebarOpen).toBe(true);
+    expect(useUiStore.getState().activeSidebarView).toBe("files");
+    expect(fileButton).toHaveClass("active");
   });
 
   it("Git ビューから GitHub 接続を開始できる", async () => {
