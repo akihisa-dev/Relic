@@ -453,6 +453,7 @@ export function App(): ReactElement {
   const [fileSelectionCount, setFileSelectionCount] = useState(0);
   const [isWorkspaceRenameActive, setIsWorkspaceRenameActive] = useState(false);
   const [isWorkspaceRenameHoldingRail, setIsWorkspaceRenameHoldingRail] = useState(false);
+  const [isSourceMode, setIsSourceMode] = useState(false);
   const workspaceRenameHoldTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const {
@@ -1639,6 +1640,14 @@ export function App(): ReactElement {
             ) : null}
             <div className="main-area-top-actions">
               <button
+                className={`toolbar-btn${isSourceMode ? " active" : ""}`}
+                onClick={() => setIsSourceMode((value) => !value)}
+                title={t("pane.sourceMode")}
+                type="button"
+              >
+                {t("pane.sourceShort")}
+              </button>
+              <button
                 className={`toolbar-btn${isSplit ? " active" : ""}`}
                 onClick={toggleSplitWithMotion}
                 title={t("pane.split")}
@@ -1708,6 +1717,7 @@ export function App(): ReactElement {
                   renderPanelTab={renderPanelTab}
                   renderPanelTabIcon={renderPanelTabIcon}
                   scrollTargetHeading={leftPaneScrollHeading}
+                  sourceMode={isSourceMode}
                   typewriterMode={isTypewriterMode}
                   userDefinedFields={userDefinedFields}
                   viewRef={leftEditorViewRef}
@@ -1743,6 +1753,7 @@ export function App(): ReactElement {
                     renderPanelTab={renderPanelTab}
                     renderPanelTabIcon={renderPanelTabIcon}
                     scrollTargetHeading={rightPaneScrollHeading}
+                    sourceMode={isSourceMode}
                     typewriterMode={isTypewriterMode}
                     userDefinedFields={userDefinedFields}
                     viewRef={rightEditorViewRef}
