@@ -908,7 +908,10 @@ describe("App", () => {
     fireEvent.keyDown(window, { key: "f", metaKey: true });
 
     expect(useUiStore.getState().isSidebarOpen).toBe(true);
-    expect(useUiStore.getState().activeSidebarView).toBe("search");
+    expect(useUiStore.getState().activeSidebarView).toBe("files");
+    await waitFor(() => {
+      expect(screen.getByLabelText("ファイル検索")).toHaveFocus();
+    });
 
     fireEvent.keyDown(window, { key: "b", metaKey: true });
 
@@ -2344,24 +2347,19 @@ describe("App", () => {
     );
   });
 
-  it("検索サイドバーにワークスペースタグを表示する", async () => {
+  it("ファイルモードの検索フォームで検索方法候補を表示する", async () => {
     window.relic = makeRelicApi({
-      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace }),
-      getWorkspaceTags: vi.fn().mockResolvedValue({
-        ok: true,
-        value: [
-          { count: 2, tag: "資料" },
-          { count: 1, tag: "キャラ/主人公" }
-        ]
-      })
+      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
     });
 
     await renderApp();
 
-    fireEvent.click(screen.getByRole("button", { name: "検索" }));
+    fireEvent.focus(await screen.findByLabelText("ファイル検索"));
 
-    expect(await screen.findByRole("button", { name: "#資料" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "#キャラ/主人公" })).toBeInTheDocument();
+    expect(await screen.findByRole("option", { name: "全文" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "ファイル名" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "タグ" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "プロパティ" })).toBeInTheDocument();
   });
 
   it("検索語句を入力すると検索結果を表示し、クリックでファイルを開く", async () => {
@@ -2389,8 +2387,7 @@ describe("App", () => {
 
     await renderApp();
 
-    fireEvent.click(screen.getByRole("button", { name: "検索" }));
-    fireEvent.change(await screen.findByRole("textbox", { name: "検索" }), {
+    fireEvent.change(await screen.findByLabelText("ファイル検索"), {
       target: { value: "一致" }
     });
 
@@ -2409,8 +2406,7 @@ describe("App", () => {
 
     await renderApp();
 
-    fireEvent.click(screen.getByRole("button", { name: "検索" }));
-    fireEvent.change(screen.getByRole("textbox", { name: "検索" }), {
+    fireEvent.change(await screen.findByLabelText("ファイル検索"), {
       target: { value: "draft" }
     });
 
@@ -2418,7 +2414,7 @@ describe("App", () => {
     expect(loading).toHaveClass("list-loading-note");
   });
 
-  it("タグピルをクリックするとタグ検索に切り替える", async () => {
+  it("検索方法でタグを選ぶとタグ検索に切り替える", async () => {
     const searchWorkspace = vi.fn().mockResolvedValue({
       ok: true,
       value: [{ fileName: "資料ノート", lineNumber: null, lineText: "#資料", path: "資料ノート.md" }]
@@ -2426,17 +2422,16 @@ describe("App", () => {
 
     window.relic = makeRelicApi({
       getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace }),
-      getWorkspaceTags: vi.fn().mockResolvedValue({
-        ok: true,
-        value: [{ count: 1, tag: "資料" }]
-      }),
       searchWorkspace
     });
 
     await renderApp();
 
-    fireEvent.click(screen.getByRole("button", { name: "検索" }));
-    fireEvent.click(await screen.findByRole("button", { name: "#資料" }));
+    fireEvent.focus(await screen.findByLabelText("ファイル検索"));
+    fireEvent.click(await screen.findByRole("option", { name: "タグ" }));
+    fireEvent.change(screen.getByLabelText("ファイル検索"), {
+      target: { value: "資料" }
+    });
 
     await waitFor(() => {
       expect(searchWorkspace).toHaveBeenCalledWith({ mode: "tag", query: "資料" });
@@ -2455,11 +2450,9 @@ describe("App", () => {
 
     await renderApp();
 
-    fireEvent.click(screen.getByRole("button", { name: "検索" }));
-    fireEvent.change(await screen.findByRole("combobox", { name: "検索モード" }), {
-      target: { value: "regex" }
-    });
-    fireEvent.change(screen.getByRole("textbox", { name: "検索" }), {
+    fireEvent.focus(await screen.findByLabelText("ファイル検索"));
+    fireEvent.click(await screen.findByRole("option", { name: "正規表現" }));
+    fireEvent.change(screen.getByLabelText("ファイル検索"), {
       target: { value: "[" }
     });
 
@@ -2503,14 +2496,12 @@ describe("App", () => {
 
     await renderApp();
 
-    fireEvent.click(screen.getByRole("button", { name: "検索" }));
-    fireEvent.change(await screen.findByRole("combobox", { name: "検索モード" }), {
-      target: { value: "frontmatter" }
-    });
-    fireEvent.change(screen.getByLabelText("フロントマターフィールド"), {
+    fireEvent.focus(await screen.findByLabelText("ファイル検索"));
+    fireEvent.click(await screen.findByRole("option", { name: "プロパティ" }));
+    fireEvent.change(screen.getByLabelText("プロパティ名"), {
       target: { value: "status" }
     });
-    fireEvent.change(screen.getAllByLabelText("検索")[1], {
+    fireEvent.change(screen.getByLabelText("ファイル検索"), {
       target: { value: "draft" }
     });
 
