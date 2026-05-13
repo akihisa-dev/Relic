@@ -28,6 +28,16 @@ interface DashboardFileStats {
   words: number;
 }
 
+interface DashboardTreemapRect {
+  count: number;
+  fill: string;
+  height: number;
+  label: string;
+  width: number;
+  x: number;
+  y: number;
+}
+
 export interface DashboardStats {
   averageChars: number;
   files: DashboardFileStats[];
@@ -58,6 +68,7 @@ const lengthBucketDefs = [
 ];
 
 const chartColors = ["#00628c", "#1c1c1c", "#5e5e5e", "#8a8a8a", "#c6c6c6", "#e0e0e0"];
+const tagTreemapFills = ["#d9edf4", "#e5eadc", "#f2e8d8", "#eadfea", "#e6e6e6", "#dfe6ee"];
 
 export function buildDashboardStats(
   files: LoadedMarkdownFile[],
@@ -202,6 +213,72 @@ function percentage(value: number, max: number): number {
   return Math.max(4, Math.round((value / max) * 100));
 }
 
+function buildTreemapRects(entries: Array<{ count: number; label: string }>): DashboardTreemapRect[] {
+  const visibleEntries = entries
+    .filter((entry) => entry.count > 0)
+    .map((entry, index) => ({ ...entry, fill: tagTreemapFills[index % tagTreemapFills.length] }));
+  const totalArea = visibleEntries.reduce((sum, entry) => sum + entry.count, 0);
+  if (totalArea <= 0) return [];
+
+  const items = visibleEntries.map((entry) => ({
+    ...entry,
+    area: (entry.count / totalArea) * 10000
+  }));
+  const rects: DashboardTreemapRect[] = [];
+  let remaining = { height: 100, width: 100, x: 0, y: 0 };
+  let row: typeof items = [];
+  let rest = [...items];
+
+  const worstRatio = (candidate: typeof items, side: number): number => {
+    if (candidate.length === 0) return Infinity;
+    const areas = candidate.map((item) => item.area);
+    const sum = areas.reduce((value, area) => value + area, 0);
+    const max = Math.max(...areas);
+    const min = Math.min(...areas);
+    return Math.max((side * side * max) / (sum * sum), (sum * sum) / (side * side * min));
+  };
+
+  const placeRow = (placedRow: typeof items): void => {
+    const rowArea = placedRow.reduce((sum, item) => sum + item.area, 0);
+
+    if (remaining.width >= remaining.height) {
+      const rowHeight = rowArea / remaining.width;
+      let currentX = remaining.x;
+      for (const item of placedRow) {
+        const itemWidth = item.area / rowHeight;
+        rects.push({ count: item.count, fill: item.fill, height: rowHeight, label: item.label, width: itemWidth, x: currentX, y: remaining.y });
+        currentX += itemWidth;
+      }
+      remaining = { ...remaining, height: remaining.height - rowHeight, y: remaining.y + rowHeight };
+      return;
+    }
+
+    const rowWidth = rowArea / remaining.height;
+    let currentY = remaining.y;
+    for (const item of placedRow) {
+      const itemHeight = item.area / rowWidth;
+      rects.push({ count: item.count, fill: item.fill, height: itemHeight, label: item.label, width: rowWidth, x: remaining.x, y: currentY });
+      currentY += itemHeight;
+    }
+    remaining = { ...remaining, width: remaining.width - rowWidth, x: remaining.x + rowWidth };
+  };
+
+  while (rest.length > 0) {
+    const next = rest[0];
+    const side = Math.min(remaining.width, remaining.height);
+    if (row.length === 0 || worstRatio([...row, next], side) <= worstRatio(row, side)) {
+      row.push(next);
+      rest = rest.slice(1);
+    } else {
+      placeRow(row);
+      row = [];
+    }
+  }
+
+  if (row.length > 0) placeRow(row);
+  return rects;
+}
+
 function donutGradient(entries: Array<{ color: string; count: number }>): string {
   const total = entries.reduce((sum, entry) => sum + entry.count, 0);
   if (total <= 0) return "var(--hover)";
@@ -261,10 +338,9 @@ export function DashboardPanel({ fileTree, onOpenFile, userDefinedFields, worksp
   }, [filePaths, fileTree, refreshToken, workspaceId]);
 
   const maxFolderCount = Math.max(0, ...(stats?.folderDistribution.map((item) => item.count) ?? []));
-  const maxBucketCount = Math.max(0, ...(stats?.lengthBuckets.map((item) => item.count) ?? []));
-  const maxTagCount = Math.max(0, ...(stats?.tagDistribution.map((item) => item.count) ?? []));
   const topFiles = stats?.files.slice(0, 8) ?? [];
   const maxTopFileChars = Math.max(0, ...topFiles.map((file) => file.chars));
+  const tagTreemapRects = useMemo(() => buildTreemapRects(stats?.tagDistribution ?? []), [stats?.tagDistribution]);
   const selectedField = chartFields.find((field) => field.name === selectedProperty) ?? chartFields[0];
   const propertyDistribution = useMemo(() => buildPropertyDistribution(
     stats?.files ?? [],
@@ -333,38 +409,12 @@ export function DashboardPanel({ fileTree, onOpenFile, userDefinedFields, worksp
 
         <section className="dashboard-section">
           <div className="dashboard-section-title">
-            <h3>{t("dashboard.lengths")}</h3>
-            <span>{t("dashboard.words", { count: formatNumber(stats?.totalWords ?? 0) })}</span>
-          </div>
-          <div className="dashboard-bars">
-            {(stats?.lengthBuckets ?? []).map((item) => (
-              <BarRow count={item.count} key={item.label} label={item.label} max={maxBucketCount} />
-            ))}
-          </div>
-        </section>
-
-        <section className="dashboard-section">
-          <div className="dashboard-section-title">
             <h3>{t("dashboard.folders")}</h3>
             <span>{t("dashboard.folderCount", { count: stats?.folderCount ?? 0 })}</span>
           </div>
           <div className="dashboard-bars">
             {(stats?.folderDistribution ?? []).map((item) => (
               <BarRow count={item.count} key={item.label} label={item.label} max={maxFolderCount} />
-            ))}
-          </div>
-        </section>
-
-        <section className="dashboard-section dashboard-property-section">
-          <div className="dashboard-section-title">
-            <h3>{t("dashboard.tagsCloud")}</h3>
-            <span>{t("dashboard.frontmatter", { count: stats?.frontmatterFiles ?? 0 })}</span>
-          </div>
-          <div className="dashboard-bars">
-            {(stats?.tagDistribution ?? []).length === 0 ? (
-              <span className="dashboard-muted">{t("search.tagsEmpty")}</span>
-            ) : stats?.tagDistribution.map((tag) => (
-              <BarRow count={tag.count} key={tag.label} label={`#${tag.label}`} max={maxTagCount} />
             ))}
           </div>
         </section>
@@ -378,15 +428,18 @@ export function DashboardPanel({ fileTree, onOpenFile, userDefinedFields, worksp
             <div className="dashboard-empty">{t("dashboard.propertyNoFields")}</div>
           ) : (
             <>
-              <select
-                className="dashboard-property-select"
-                onChange={(event) => setSelectedProperty(event.target.value)}
-                value={selectedField?.name ?? ""}
-              >
-                {chartFields.map((field) => (
-                  <option key={field.name} value={field.name}>{field.name}</option>
-                ))}
-              </select>
+              <label className="dashboard-property-picker">
+                <span>{t("dashboard.propertySelect")}</span>
+                <select
+                  className="dashboard-property-select"
+                  onChange={(event) => setSelectedProperty(event.target.value)}
+                  value={selectedField?.name ?? ""}
+                >
+                  {chartFields.map((field) => (
+                    <option key={field.name} value={field.name}>{field.name}</option>
+                  ))}
+                </select>
+              </label>
               <div className="dashboard-donut-layout">
                 <div
                   aria-label={t("dashboard.propertyDistribution")}
@@ -411,6 +464,34 @@ export function DashboardPanel({ fileTree, onOpenFile, userDefinedFields, worksp
               </div>
             </>
           )}
+        </section>
+
+        <section className="dashboard-section dashboard-section--wide">
+          <div className="dashboard-section-title">
+            <h3>{t("dashboard.tagsCloud")}</h3>
+            <span>{t("dashboard.frontmatter", { count: stats?.frontmatterFiles ?? 0 })}</span>
+          </div>
+          <div className="dashboard-tag-map">
+            {tagTreemapRects.length === 0 ? (
+              <span className="dashboard-muted">{t("search.tagsEmpty")}</span>
+            ) : tagTreemapRects.map((tag) => (
+              <div
+                className="dashboard-tag-map-cell"
+                key={tag.label}
+                style={{
+                  "--cell-height": `${tag.height}%`,
+                  "--cell-width": `${tag.width}%`,
+                  "--cell-x": `${tag.x}%`,
+                  "--cell-y": `${tag.y}%`,
+                  "--tag-fill": tag.fill
+                } as CSSProperties}
+                title={`#${tag.label} / ${tag.count}`}
+              >
+                <span>#{tag.label}</span>
+                <b>{tag.count}</b>
+              </div>
+            ))}
+          </div>
         </section>
       </div>
     </section>

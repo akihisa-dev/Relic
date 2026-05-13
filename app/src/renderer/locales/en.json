@@ -25,6 +25,7 @@
   "dashboard.propertyNoFields": "No select or multi-select custom properties.",
   "dashboard.propertyOccurrences": "Value occurrences",
   "dashboard.propertyOther": "Other",
+  "dashboard.propertySelect": "Property",
   "dashboard.propertyUnset": "Unset",
   "dashboard.refresh": "Refresh",
   "dashboard.summary": "Statistics summary",
