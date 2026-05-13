@@ -49,23 +49,6 @@ function normalizeDestinationFolder(folder: string): string {
   return folder.trim().replace(/\\/g, "/").replace(/^\/+|\/+$/g, "");
 }
 
-function parseDragItems(dataTransfer: DataTransfer): Array<{ path: string; type: WorkspaceTreeNode["type"] }> {
-  const raw = dataTransfer.getData("application/relic-item");
-  if (!raw) return [];
-
-  try {
-    const payload = JSON.parse(raw) as {
-      items?: Array<{ path: string; type: WorkspaceTreeNode["type"] }>;
-      path?: string;
-      type?: WorkspaceTreeNode["type"];
-    };
-
-    return payload.items ?? (payload.path && payload.type ? [{ path: payload.path, type: payload.type }] : []);
-  } catch {
-    return [];
-  }
-}
-
 function movableItemsForDestination(
   items: Array<{ path: string; type: WorkspaceTreeNode["type"] }>,
   destinationFolder: string
@@ -76,14 +59,6 @@ function movableItemsForDestination(
     if (item.type === "folder" && destinationFolder.startsWith(`${item.path}/`)) return false;
     return true;
   });
-}
-
-function shouldTreeHandleDrop(e: React.DragEvent): boolean {
-  const target = e.target;
-  if (!(target instanceof Element)) return false;
-  const row = target.closest(".file-tree-row");
-  if (!row || !e.currentTarget.contains(row)) return true;
-  return row.getAttribute("data-node-type") === "file";
 }
 
 function moveItemsToDestination(
@@ -123,7 +98,6 @@ function expansionRequestAppliesTo(path: string, request?: FileTreeExpansionRequ
 }
 
 export interface FileTreeProps {
-  destinationFolder?: string;
   expansionRequest?: FileTreeExpansionRequest;
   isRoot?: boolean;
   motionPaths?: Set<string>;
@@ -206,12 +180,10 @@ export function FileTreeItem({
   const inputRef = useRef<HTMLInputElement | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const removeMotionTimerRef = useRef<number | null>(null);
-  const [isDragOver, setIsDragOver] = useState(false);
   const [isExpanded, setIsExpanded] = useState(true);
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameDraft, setRenameDraft] = useState(node.name);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
   const isFolder = node.type === "folder";
   const isSelected = selectedPaths.has(node.path);
@@ -326,39 +298,14 @@ export function FileTreeItem({
     );
   };
 
-  const handleDrop = (e: React.DragEvent, destFolder: string): void => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragOver(false);
-
-    moveItemsToDestination(parseDragItems(e.dataTransfer), destFolder, { onMoveFile, onMoveFolder, onMoveItems });
-  };
-
   return (
     <li className="file-tree-item">
       <div className="file-tree-row-wrap">
         <button
-          className={`file-tree-row ${node.type}${isOpen ? " open" : ""}${isSelected ? " selected" : ""}${useSelectedItems ? " multi-selected" : ""}${isDragging ? " dragging" : ""}${isDragOver ? " drag-over" : ""}${isAppearing ? " file-tree-row--appearing" : ""}${isRemoving ? " file-tree-row--removing" : ""}`}
+          className={`file-tree-row ${node.type}${isOpen ? " open" : ""}${isSelected ? " selected" : ""}${useSelectedItems ? " multi-selected" : ""}${isAppearing ? " file-tree-row--appearing" : ""}${isRemoving ? " file-tree-row--removing" : ""}`}
           data-node-path={node.path}
           data-node-type={node.type}
-          draggable
-          onDragEnd={() => {
-            setIsDragging(false);
-            setIsDragOver(false);
-          }}
-          onDragLeave={isFolder ? (e) => { e.stopPropagation(); setIsDragOver(false); } : undefined}
-          onDragOver={isFolder ? (e) => { e.preventDefault(); e.stopPropagation(); setIsDragOver(true); } : undefined}
-          onDragStart={(e) => {
-            setIsDragging(true);
-            const dragItems = useSelectedItems ? selectedItems : [{ path: node.path, type: node.type }];
-            e.dataTransfer.setData("application/relic-item", JSON.stringify({
-              items: dragItems,
-              path: node.path,
-              type: node.type
-            }));
-            e.dataTransfer.effectAllowed = "move";
-          }}
-          onDrop={isFolder ? (e) => handleDrop(e, node.path) : undefined}
+          draggable={false}
           onContextMenu={(e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -603,7 +550,6 @@ export function FileTreeItem({
       {node.type === "folder" && isExpanded ? (
         <FileTree
           animation="expand"
-          destinationFolder={node.path}
           expansionRequest={expansionRequest}
           motionPaths={isAppearing ? new Set([node.path, ...node.children.map((child) => child.path)]) : undefined}
           nodes={node.children}
@@ -635,7 +581,6 @@ export function FileTreeItem({
 
 export function FileTree({
   animation,
-  destinationFolder = "",
   expansionRequest,
   isRoot = false,
   motionPaths,
@@ -662,7 +607,6 @@ export function FileTree({
   selectedPaths = new Set<string>()
 }: FileTreeProps & { animation?: "expand" }): ReactElement {
   const t = useT();
-  const [isTreeDragOver, setIsTreeDragOver] = useState(false);
   const previousPathsRef = useRef<Set<string>>(collectNodePaths(nodes));
   const [appearingPaths, setAppearingPaths] = useState<Set<string>>(new Set());
   const activeAppearingPaths = motionPaths ?? appearingPaths;
@@ -682,27 +626,9 @@ export function FileTree({
     return () => window.clearTimeout(timeout);
   }, [nodes]);
 
-  const handleTreeDrop = (e: React.DragEvent): void => {
-    if (!shouldTreeHandleDrop(e)) return;
-
-    e.preventDefault();
-    e.stopPropagation();
-    setIsTreeDragOver(false);
-
-    moveItemsToDestination(parseDragItems(e.dataTransfer), destinationFolder, { onMoveFile, onMoveFolder, onMoveItems });
-  };
-
   return (
     <ul
-      className={`file-tree${animation === "expand" ? " file-tree--expanding" : ""}${isTreeDragOver ? " file-tree--drag-over" : ""}`}
-      onDragLeave={(e) => { if (e.currentTarget === e.target) setIsTreeDragOver(false); }}
-      onDragOver={(e) => {
-        if (!shouldTreeHandleDrop(e)) return;
-        e.preventDefault();
-        e.stopPropagation();
-        setIsTreeDragOver(true);
-      }}
-      onDrop={handleTreeDrop}
+      className={`file-tree${animation === "expand" ? " file-tree--expanding" : ""}`}
     >
       {nodes.length === 0 ? (
         <li><div className="empty-note">{t("files.noMarkdownFiles")}</div></li>
