@@ -11,6 +11,7 @@ import type {
 import { resolveWikiLinks, type AliasIndex } from "../shared/links";
 import { CommandPalette } from "./components/CommandPalette";
 import { GanttChartView } from "./components/ChronicleSidebar";
+import { DashboardPanel } from "./components/DashboardPanel";
 import { FilesSidebar } from "./components/FilesSidebar";
 import { FrontmatterSidebar } from "./components/FrontmatterSidebar";
 import { GraphPanel } from "./components/GraphSidebar";
@@ -87,6 +88,15 @@ const IconGraph = (): ReactElement => (
   </svg>
 );
 
+const IconDashboard = (): ReactElement => (
+  <svg fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" viewBox="0 0 20 20" width="18">
+    <rect height="5" rx="1.4" width="5" x="3" y="3" />
+    <rect height="5" rx="1.4" width="5" x="12" y="3" />
+    <rect height="5" rx="1.4" width="5" x="3" y="12" />
+    <path d="M12 16l1.5-3 1.7 2 1.8-4" />
+  </svg>
+);
+
 const IconSettings = (): ReactElement => (
   <svg fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" viewBox="0 0 20 20" width="18">
     <line x1="3" x2="17" y1="5" y2="5" />
@@ -102,6 +112,7 @@ type RailViewId = SidebarView | PanelTabKind;
 
 const sidebarViewDefs: Array<{ id: RailViewId; labelKey: TranslationKey; icon: ReactElement }> = [
   { id: "files", labelKey: "nav.files", icon: <IconFiles /> },
+  { id: "dashboard", labelKey: "nav.dashboard", icon: <IconDashboard /> },
   { id: "graph", labelKey: "nav.graph", icon: <IconGraph /> },
   { id: "tools", labelKey: "nav.tools", icon: <IconTools /> },
   { id: "frontmatter", labelKey: "nav.frontmatter", icon: <IconFrontmatter /> },
@@ -1177,6 +1188,7 @@ export function App(): ReactElement {
   });
 
   const panelLabels = useMemo<Record<PanelTabKind, string>>(() => ({
+    dashboard: t("nav.dashboard"),
     frontmatter: t("nav.frontmatter"),
     graph: t("nav.graph"),
     settings: t("nav.settings"),
@@ -1211,11 +1223,11 @@ export function App(): ReactElement {
     return true;
   }), [featureToggles.frontmatter, featureToggles.tools, sidebarViews]);
   const primaryRailViews = enabledRailViews.filter((view) =>
-    view.id === "files" || view.id === "graph"
+    view.id === "files" || view.id === "dashboard" || view.id === "graph"
   );
   const chartRailView = enabledRailViews.find((view) => view.id === "chronicle");
   const panelRailViews = enabledRailViews.filter((view) =>
-    view.id !== "files" && view.id !== "graph" && view.id !== "chronicle"
+    view.id !== "files" && view.id !== "dashboard" && view.id !== "graph" && view.id !== "chronicle"
   );
 
   useEffect(() => {
@@ -1303,6 +1315,16 @@ export function App(): ReactElement {
   }, [closeSidebar, focusedPane, openGanttChartInPane, setTabActive]);
 
   const renderPanelTab = useCallback((panel: PanelTabKind): ReactNode => {
+    if (panel === "dashboard") {
+      return (
+        <DashboardPanel
+          fileTree={workspaceState?.fileTree ?? []}
+          onOpenFile={handleOpenFile}
+          workspaceId={workspaceState?.activeWorkspace?.id ?? null}
+        />
+      );
+    }
+
     if (panel === "tools") {
       return <ToolsSidebar workspacePath={workspaceState?.activeWorkspace?.path ?? null} />;
     }
@@ -1358,11 +1380,11 @@ export function App(): ReactElement {
           {primaryRailViews.map((view) => (
               <button
                 aria-label={view.label}
-                className={`rail-button${view.id === "graph" ? activePanelTabIds.has("graph") ? " active" : openPanelTabIds.has("graph") ? " open" : "" : view.id === activeSidebarView && isSidebarOpen ? " active" : ""}`}
+                className={`rail-button${view.id === "graph" || view.id === "dashboard" ? activePanelTabIds.has(view.id as PanelTabKind) ? " active" : openPanelTabIds.has(view.id as PanelTabKind) ? " open" : "" : view.id === activeSidebarView && isSidebarOpen ? " active" : ""}`}
                 key={view.id}
                 onClick={(event) => {
-                  if (view.id === "graph") {
-                    handleRailPanelButton("graph", view.label, event);
+                  if (view.id === "graph" || view.id === "dashboard") {
+                    handleRailPanelButton(view.id as PanelTabKind, view.label, event);
                     return;
                   }
 
