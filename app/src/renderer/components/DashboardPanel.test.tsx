@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { WorkspaceTreeNode } from "../../shared/ipc";
-import { buildDashboardStats } from "./DashboardPanel";
+import { buildDashboardStats, buildPropertyDistribution } from "./DashboardPanel";
 
 describe("buildDashboardStats", () => {
   it("summarizes markdown files for the dashboard", () => {
@@ -39,5 +39,45 @@ describe("buildDashboardStats", () => {
     expect(stats.folderDistribution).toContainEqual({ count: 1, label: "Story" });
     expect(stats.folderDistribution).toContainEqual({ count: 1, label: "Root" });
     expect(stats.files[0].path).toBe("Story/Scene.md");
+  });
+
+  it("counts select and multi-select property values", () => {
+    const stats = buildDashboardStats([
+      {
+        content: "---\nstatus: draft\nroles: [hero, pilot]\n---\n# A",
+        name: "A.md",
+        path: "A.md"
+      },
+      {
+        content: "---\nstatus: done\nroles: [hero]\n---\n# B",
+        name: "B.md",
+        path: "B.md"
+      },
+      {
+        content: "# C",
+        name: "C.md",
+        path: "C.md"
+      }
+    ], []);
+
+    expect(buildPropertyDistribution(
+      stats.files,
+      { choices: ["draft", "done"], name: "status", type: "select" },
+      { other: "Other", unset: "Unset" }
+    ).map(({ count, label }) => ({ count, label }))).toEqual([
+      { count: 1, label: "done" },
+      { count: 1, label: "draft" },
+      { count: 1, label: "Unset" }
+    ]);
+
+    expect(buildPropertyDistribution(
+      stats.files,
+      { choices: ["hero", "pilot"], name: "roles", type: "multi-select" },
+      { other: "Other", unset: "Unset" }
+    ).map(({ count, label }) => ({ count, label }))).toEqual([
+      { count: 2, label: "hero" },
+      { count: 1, label: "pilot" },
+      { count: 1, label: "Unset" }
+    ]);
   });
 });
