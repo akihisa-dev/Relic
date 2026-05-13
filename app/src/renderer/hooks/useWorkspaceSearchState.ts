@@ -1,27 +1,23 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import type {
   SearchMode,
   UserDefinedField,
   WorkspaceSearchResult,
-  WorkspaceState,
-  WorkspaceTagSummary
+  WorkspaceState
 } from "../../shared/ipc";
 
 interface UseWorkspaceSearchStateInput {
-  setSidebarView: (view: "search") => void;
   setWorkspaceError: (message: string | null) => void;
   userDefinedFields: UserDefinedField[];
   workspaceState: WorkspaceState | null;
 }
 
 export function useWorkspaceSearchState({
-  setSidebarView,
   setWorkspaceError,
   userDefinedFields,
   workspaceState
 }: UseWorkspaceSearchStateInput) {
-  const [workspaceTags, setWorkspaceTags] = useState<WorkspaceTagSummary[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchMode, setSearchMode] = useState<SearchMode>("fullText");
   const [searchFrontmatterField, setSearchFrontmatterField] = useState("");
@@ -38,36 +34,6 @@ export function useWorkspaceSearchState({
 
     return result;
   }, [userDefinedFields, workspaceFrontmatterCandidates]);
-
-  const handleTagSearch = useCallback((tag: string): void => {
-    setSearchMode("tag");
-    setSearchQuery(tag);
-    setSidebarView("search");
-  }, [setSidebarView]);
-
-  useEffect(() => {
-    if (!workspaceState?.activeWorkspace || !window.relic) {
-      setWorkspaceTags([]);
-      return;
-    }
-
-    let canceled = false;
-
-    void window.relic.getWorkspaceTags().then((result) => {
-      if (canceled) return;
-
-      if (result.ok) {
-        setWorkspaceTags(result.value);
-      } else {
-        setWorkspaceTags([]);
-        setWorkspaceError(result.error.message);
-      }
-    });
-
-    return () => {
-      canceled = true;
-    };
-  }, [setWorkspaceError, workspaceState?.activeWorkspace?.id, workspaceState?.fileTree]);
 
   useEffect(() => {
     if (!workspaceState?.activeWorkspace || !window.relic) {
@@ -132,7 +98,6 @@ export function useWorkspaceSearchState({
 
   return {
     frontmatterCandidates,
-    handleTagSearch,
     isSearching,
     searchError,
     searchFrontmatterField,
@@ -141,8 +106,7 @@ export function useWorkspaceSearchState({
     searchResults,
     setSearchFrontmatterField,
     setSearchMode,
-    setSearchQuery,
-    workspaceTags
+    setSearchQuery
   };
 }
 

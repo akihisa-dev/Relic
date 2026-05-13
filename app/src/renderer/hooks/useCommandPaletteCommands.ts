@@ -11,9 +11,10 @@ interface UseCommandPaletteCommandsInput {
   handleDuplicateActiveFile: () => void;
   handlePullGitBranch: () => void;
   handlePushGitBranch: () => void;
+  requestFileSearchFocus: () => void;
   setIsCreatingFile: (isCreating: boolean) => void;
   setShowQuickSwitcher: (isShown: boolean) => void;
-  setSidebarView: (view: "files" | "search" | "git" | "settings") => void;
+  setSidebarView: (view: "files" | "git" | "settings") => void;
   t: Translate;
   toggleRightPanel: () => void;
   toggleSidebar: () => void;
@@ -27,6 +28,7 @@ export function useCommandPaletteCommands({
   handleDuplicateActiveFile,
   handlePullGitBranch,
   handlePushGitBranch,
+  requestFileSearchFocus,
   setIsCreatingFile,
   setShowQuickSwitcher,
   setSidebarView,
@@ -48,7 +50,7 @@ export function useCommandPaletteCommands({
         id: "search",
         label: t("command.search"),
         shortcut: "⌘F",
-        action: () => { setSidebarView("search"); }
+        action: requestFileSearchFocus
       },
       {
         id: "quick-switcher",
@@ -128,6 +130,7 @@ export function useCommandPaletteCommands({
       handleDuplicateActiveFile,
       handlePullGitBranch,
       handlePushGitBranch,
+      requestFileSearchFocus,
       setIsCreatingFile,
       setShowQuickSwitcher,
       setSidebarView,
