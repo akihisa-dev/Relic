@@ -4699,78 +4699,31 @@ button:not(:disabled):active {
 }
 
 .chronicle-tracks {
-  background:
-    repeating-linear-gradient(
-      to right,
-      var(--border) 0,
-      var(--border) 1px,
-      transparent 1px,
-      transparent var(--chronicle-grid-x, 100px)
-    ),
-    repeating-linear-gradient(
-      to bottom,
-      transparent 0,
-      transparent 37px,
-      var(--border) 37px,
-      var(--border) 38px
-    );
-  background-position-x: var(--chronicle-grid-offset-x, 0), 0;
+  background: var(--bg);
   position: relative;
 }
 
-.chronicle-tracks--date {
-  background:
-    repeating-linear-gradient(
-      to bottom,
-      transparent 0,
-      transparent 37px,
-      var(--border) 37px,
-      var(--border) 38px
-    );
-}
-
-.chronicle-tracks::after {
-  background:
-    repeating-linear-gradient(
-      to right,
-      var(--border) 0,
-      var(--border) 1px,
-      transparent 1px,
-      transparent var(--chronicle-grid-x, 100px)
-    ),
-    repeating-linear-gradient(
-      to bottom,
-      transparent 0,
-      transparent 37px,
-      var(--border) 37px,
-      var(--border) 38px
-    );
-  background-position-x: var(--chronicle-grid-offset-x, 0), 0;
-  content: "";
+.chronicle-guide-lines {
   inset: 0;
   pointer-events: none;
   position: absolute;
   z-index: 2;
 }
 
-.chronicle-tracks--date::after {
-  background:
-    repeating-linear-gradient(
-      to bottom,
-      transparent 0,
-      transparent 37px,
-      var(--border) 37px,
-      var(--border) 38px
-    );
-}
-
-.chronicle-date-grid-line {
-  background: var(--border);
+.chronicle-guide-line {
+  background: var(--border-soft);
   bottom: 0;
   position: absolute;
   top: 0;
   width: 1px;
-  z-index: 1;
+}
+
+.chronicle-guide-row-line {
+  background: var(--border);
+  height: 1px;
+  left: 0;
+  position: absolute;
+  right: 0;
 }
 
 .chronicle-fill {
