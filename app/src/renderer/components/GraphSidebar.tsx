@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { KeyboardEvent, PointerEvent, ReactElement, WheelEvent } from "react";
+import type { KeyboardEvent, PointerEvent, ReactElement, ReactNode, WheelEvent } from "react";
 
 import type { WorkspaceGraphEdge, WorkspaceGraphNode } from "../../shared/ipc";
 import { useT } from "../i18n";
@@ -66,6 +66,8 @@ interface GraphNodeDragState {
 
 function GraphControls({ workspaceId }: GraphSidebarProps): ReactElement {
   const t = useT();
+  const [isMinimized, setIsMinimized] = useState(false);
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
   const {
     addGroup,
     centerForce,
@@ -126,221 +128,126 @@ function GraphControls({ workspaceId }: GraphSidebarProps): ReactElement {
       .sort((a, b) => a.localeCompare(b, "ja"));
   }, [graph]);
 
+  function toggleSection(section: string): void {
+    setOpenSections((current) => ({ ...current, [section]: !current[section] }));
+  }
+
+  if (isMinimized) {
+    return (
+      <button className="graph-controls-minimized" onClick={() => setIsMinimized(false)} title={t("graph.expand")} type="button">
+        ⋯
+      </button>
+    );
+  }
+
   return (
     <div className="graph-controls">
       <div className="graph-topbar">
         <div className="links-panel-subheading">{t("graph.title")}</div>
+        <div className="graph-topbar-actions">
         <button className="graph-icon-button" onClick={() => loadGraph(workspaceId, true)} title={t("graph.refresh")} type="button">
           ↻
         </button>
+          <button className="graph-icon-button" onClick={() => setIsMinimized(true)} title={t("graph.collapse")} type="button">
+            ×
+          </button>
+        </div>
       </div>
 
       <div className="graph-filters">
-        <label className="graph-search">
-          <span>{t("graph.search")}</span>
-          <input
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder={t("graph.searchPlaceholder")}
-            type="search"
-            value={query}
-          />
-        </label>
-        <label className="setting-row">
-          <span>{t("graph.folder")}</span>
-          <select onChange={(event) => setFolderFilter(event.target.value)} value={folderFilter}>
-            <option value="">{t("graph.allFolders")}</option>
-            {folders.map((folder) => (
-              <option key={folder} value={folder}>{folder}</option>
-            ))}
-          </select>
-        </label>
-        <label className="setting-row">
-          <span>{t("graph.tag")}</span>
-          <select onChange={(event) => setTagFilter(event.target.value)} value={tagFilter}>
-            <option value="">{t("graph.allTags")}</option>
-            {tags.map((tag) => (
-              <option key={tag} value={tag}>{tag}</option>
-            ))}
-          </select>
-        </label>
-        <label className="setting-row">
-          <span>{t("graph.links")}</span>
-          <select onChange={(event) => setLinkFilter(event.target.value as GraphLinkFilter)} value={linkFilter}>
-            <option value="all">{t("graph.linksAll")}</option>
-            <option value="linked">{t("graph.linksLinked")}</option>
-            <option value="unlinked">{t("graph.linksUnlinked")}</option>
-          </select>
-        </label>
-        <label className="setting-row">
-          <span>{t("graph.minLinks")}</span>
-          <input
-            max="20"
-            min="0"
-            onChange={(event) => setMinDegree(Number(event.target.value))}
-            type="number"
-            value={minDegree}
-          />
-        </label>
-        <label className="setting-row">
-          <span>{t("graph.localDepth")}</span>
-          <input
-            max="3"
-            min="0"
-            onChange={(event) => setLocalGraphDepth(Number(event.target.value))}
-            type="number"
-            value={localGraphDepth}
-          />
-        </label>
-        <div className="graph-group-controls">
+        <GraphControlSection isOpen={!!openSections.filter} label={t("graph.filter")} onToggle={() => toggleSection("filter")}>
+          <label className="graph-search">
+            <span>{t("graph.search")}</span>
+            <input onChange={(event) => setQuery(event.target.value)} placeholder={t("graph.searchPlaceholder")} type="search" value={query} />
+          </label>
+          <label className="setting-row">
+            <span>{t("graph.folder")}</span>
+            <select onChange={(event) => setFolderFilter(event.target.value)} value={folderFilter}>
+              <option value="">{t("graph.allFolders")}</option>
+              {folders.map((folder) => <option key={folder} value={folder}>{folder}</option>)}
+            </select>
+          </label>
+          <label className="setting-row">
+            <span>{t("graph.tag")}</span>
+            <select onChange={(event) => setTagFilter(event.target.value)} value={tagFilter}>
+              <option value="">{t("graph.allTags")}</option>
+              {tags.map((tag) => <option key={tag} value={tag}>{tag}</option>)}
+            </select>
+          </label>
+          <label className="setting-row">
+            <span>{t("graph.links")}</span>
+            <select onChange={(event) => setLinkFilter(event.target.value as GraphLinkFilter)} value={linkFilter}>
+              <option value="all">{t("graph.linksAll")}</option>
+              <option value="linked">{t("graph.linksLinked")}</option>
+              <option value="unlinked">{t("graph.linksUnlinked")}</option>
+            </select>
+          </label>
+          <label className="setting-row">
+            <span>{t("graph.minLinks")}</span>
+            <input max="20" min="0" onChange={(event) => setMinDegree(Number(event.target.value))} type="number" value={minDegree} />
+          </label>
+          <label className="setting-row">
+            <span>{t("graph.localDepth")}</span>
+            <input max="3" min="0" onChange={(event) => setLocalGraphDepth(Number(event.target.value))} type="number" value={localGraphDepth} />
+          </label>
+        </GraphControlSection>
+
+        <GraphControlSection isOpen={!!openSections.groups} label={t("graph.groups")} onToggle={() => toggleSection("groups")}>
           <div className="graph-group-heading">
             <span>{t("graph.groups")}</span>
-            <button className="graph-mini-button" onClick={addGroup} type="button">
-              {t("graph.groupAdd")}
-            </button>
+            <button className="graph-mini-button" onClick={addGroup} type="button">{t("graph.groupAdd")}</button>
           </div>
           {groups.map((group) => (
             <div className="graph-group-row" key={group.id}>
-              <input
-                aria-label={t("graph.groupColor")}
-                className="graph-group-color"
-                onChange={(event) => updateGroup(group.id, { color: event.target.value })}
-                type="color"
-                value={group.color}
-              />
-              <input
-                aria-label={t("graph.groupQuery")}
-                onChange={(event) => updateGroup(group.id, { query: event.target.value })}
-                placeholder={t("graph.searchSyntaxHint")}
-                type="search"
-                value={group.query}
-              />
-              <button
-                aria-label={t("graph.groupRemove")}
-                className="graph-mini-button graph-mini-button--icon"
-                onClick={() => removeGroup(group.id)}
-                type="button"
-              >
-                ×
-              </button>
+              <input aria-label={t("graph.groupColor")} className="graph-group-color" onChange={(event) => updateGroup(group.id, { color: event.target.value })} type="color" value={group.color} />
+              <input aria-label={t("graph.groupQuery")} onChange={(event) => updateGroup(group.id, { query: event.target.value })} placeholder={t("graph.searchSyntaxHint")} type="search" value={group.query} />
+              <button aria-label={t("graph.groupRemove")} className="graph-mini-button graph-mini-button--icon" onClick={() => removeGroup(group.id)} type="button">×</button>
             </div>
           ))}
-        </div>
-        <label className="setting-row">
-          <span>{t("graph.zoom")}</span>
-          <input
-            max="1.8"
-            min="0.7"
-            onChange={(event) => setZoom(clamp(Number(event.target.value), GRAPH_MIN_ZOOM, GRAPH_MAX_ZOOM))}
-            step="0.1"
-            type="range"
-            value={zoom}
-          />
-        </label>
-        <label className="setting-row">
-          <span>{t("graph.nodeSize")}</span>
-          <input
-            max="1.8"
-            min="0.6"
-            onChange={(event) => setNodeSize(Number(event.target.value))}
-            step="0.1"
-            type="range"
-            value={nodeSize}
-          />
-        </label>
-        <label className="setting-row">
-          <span>{t("graph.linkThickness")}</span>
-          <input
-            max="2.2"
-            min="0.5"
-            onChange={(event) => setLinkThickness(Number(event.target.value))}
-            step="0.1"
-            type="range"
-            value={linkThickness}
-          />
-        </label>
-        <label className="setting-row">
-          <span>{t("graph.textFade")}</span>
-          <input
-            max="1.6"
-            min="0.4"
-            onChange={(event) => setTextFadeThreshold(Number(event.target.value))}
-            step="0.1"
-            type="range"
-            value={textFadeThreshold}
-          />
-        </label>
-        <label className="setting-row">
-          <span>{t("graph.centerForce")}</span>
-          <input
-            max="2"
-            min="0.2"
-            onChange={(event) => setCenterForce(Number(event.target.value))}
-            step="0.1"
-            type="range"
-            value={centerForce}
-          />
-        </label>
-        <label className="setting-row">
-          <span>{t("graph.repelForce")}</span>
-          <input
-            max="2.2"
-            min="0.4"
-            onChange={(event) => setRepelForce(Number(event.target.value))}
-            step="0.1"
-            type="range"
-            value={repelForce}
-          />
-        </label>
-        <label className="setting-row">
-          <span>{t("graph.linkForce")}</span>
-          <input
-            max="2"
-            min="0.3"
-            onChange={(event) => setLinkForce(Number(event.target.value))}
-            step="0.1"
-            type="range"
-            value={linkForce}
-          />
-        </label>
-        <label className="setting-row">
-          <span>{t("graph.linkDistance")}</span>
-          <input
-            max="190"
-            min="60"
-            onChange={(event) => setLinkDistance(Number(event.target.value))}
-            step="5"
-            type="range"
-            value={linkDistance}
-          />
-        </label>
-        <label className="setting-row">
-          <span>{t("graph.labels")}</span>
-          <input
-            checked={showLabels}
-            onChange={(event) => setShowLabels(event.target.checked)}
-            type="checkbox"
-          />
-        </label>
-        <label className="setting-row">
-          <span>{t("graph.arrows")}</span>
-          <input
-            checked={showArrows}
-            onChange={(event) => setShowArrows(event.target.checked)}
-            type="checkbox"
-          />
-        </label>
-        <label className="setting-row">
-          <span>{t("graph.showOrphans")}</span>
-          <input
-            checked={showOrphans}
-            onChange={(event) => setShowOrphans(event.target.checked)}
-            type="checkbox"
-          />
-        </label>
+        </GraphControlSection>
+
+        <GraphControlSection isOpen={!!openSections.display} label={t("graph.viewSettings")} onToggle={() => toggleSection("display")}>
+          <label className="setting-row"><span>{t("graph.zoom")}</span><input max="1.8" min="0.7" onChange={(event) => setZoom(clamp(Number(event.target.value), GRAPH_MIN_ZOOM, GRAPH_MAX_ZOOM))} step="0.1" type="range" value={zoom} /></label>
+          <label className="setting-row"><span>{t("graph.nodeSize")}</span><input max="1.8" min="0.6" onChange={(event) => setNodeSize(Number(event.target.value))} step="0.1" type="range" value={nodeSize} /></label>
+          <label className="setting-row"><span>{t("graph.linkThickness")}</span><input max="2.2" min="0.5" onChange={(event) => setLinkThickness(Number(event.target.value))} step="0.1" type="range" value={linkThickness} /></label>
+          <label className="setting-row"><span>{t("graph.textFade")}</span><input max="1.6" min="0.4" onChange={(event) => setTextFadeThreshold(Number(event.target.value))} step="0.1" type="range" value={textFadeThreshold} /></label>
+          <label className="setting-row"><span>{t("graph.labels")}</span><input checked={showLabels} onChange={(event) => setShowLabels(event.target.checked)} type="checkbox" /></label>
+          <label className="setting-row"><span>{t("graph.arrows")}</span><input checked={showArrows} onChange={(event) => setShowArrows(event.target.checked)} type="checkbox" /></label>
+          <label className="setting-row"><span>{t("graph.showOrphans")}</span><input checked={showOrphans} onChange={(event) => setShowOrphans(event.target.checked)} type="checkbox" /></label>
+        </GraphControlSection>
+
+        <GraphControlSection isOpen={!!openSections.forces} label={t("graph.forces")} onToggle={() => toggleSection("forces")}>
+          <label className="setting-row"><span>{t("graph.centerForce")}</span><input max="2" min="0.2" onChange={(event) => setCenterForce(Number(event.target.value))} step="0.1" type="range" value={centerForce} /></label>
+          <label className="setting-row"><span>{t("graph.repelForce")}</span><input max="2.2" min="0.4" onChange={(event) => setRepelForce(Number(event.target.value))} step="0.1" type="range" value={repelForce} /></label>
+          <label className="setting-row"><span>{t("graph.linkForce")}</span><input max="2" min="0.3" onChange={(event) => setLinkForce(Number(event.target.value))} step="0.1" type="range" value={linkForce} /></label>
+          <label className="setting-row"><span>{t("graph.linkDistance")}</span><input max="190" min="60" onChange={(event) => setLinkDistance(Number(event.target.value))} step="5" type="range" value={linkDistance} /></label>
+        </GraphControlSection>
         <button className="graph-reset-button" onClick={resetFilters} type="button">
           {t("graph.reset")}
         </button>
       </div>
+    </div>
+  );
+}
+
+function GraphControlSection({
+  children,
+  isOpen,
+  label,
+  onToggle
+}: {
+  children: ReactNode;
+  isOpen: boolean;
+  label: string;
+  onToggle: () => void;
+}): ReactElement {
+  return (
+    <div className="graph-control-section">
+      <button className="graph-control-section-title" onClick={onToggle} type="button">
+        <span>{isOpen ? "⌄" : "›"}</span>
+        <span>{label}</span>
+      </button>
+      {isOpen ? <div className="graph-control-section-body">{children}</div> : null}
     </div>
   );
 }
@@ -422,7 +329,7 @@ export function GraphPanel({ activeFilePath, onOpenFile, workspaceId }: GraphPan
   }, [activeFilePath, folderFilter, graph, graphStats, linkFilter, localGraphDepth, minDegree, query, showOrphans, tagFilter]);
 
   const points = useMemo(
-    () => layoutGraph(filteredGraph.nodes, filteredGraph.edges, selectedPath, {
+    () => layoutGraph(filteredGraph.nodes, filteredGraph.edges, {
       centerForce,
       linkDistance,
       linkForce,
@@ -431,7 +338,7 @@ export function GraphPanel({ activeFilePath, onOpenFile, workspaceId }: GraphPan
       const manualPosition = nodePositions[point.path];
       return manualPosition ? { ...point, x: manualPosition.x, y: manualPosition.y } : point;
     }),
-    [centerForce, filteredGraph.edges, filteredGraph.nodes, linkDistance, linkForce, nodePositions, repelForce, selectedPath]
+    [centerForce, filteredGraph.edges, filteredGraph.nodes, linkDistance, linkForce, nodePositions, repelForce]
   );
   const pointByPath = useMemo(() => new Map(points.map((point) => [point.path, point])), [points]);
   const focusedPath = hoveredPath ?? selectedPath;
@@ -673,7 +580,7 @@ export function GraphPanel({ activeFilePath, onOpenFile, workspaceId }: GraphPan
                   const isRelated = relatedPaths.has(point.path);
                   const isFocused = point.path === focusedPath;
                   const group = groupByPath.get(point.path);
-                  const radius = Math.min(13, 3.8 + Math.sqrt(point.incoming) * 2.2) * nodeSize;
+                  const radius = Math.min(8, 2.6 + Math.sqrt(point.incoming) * 1.45) * nodeSize;
                   const nodeClassName = [
                     "graph-node",
                     isSelected ? "graph-node--selected" : "",
@@ -822,7 +729,6 @@ function collectLocalGraphPaths(edges: WorkspaceGraphEdge[], centerPath: string,
 function layoutGraph(
   nodes: WorkspaceGraphNode[],
   edges: WorkspaceGraphEdge[],
-  selectedPath: string | null,
   forceSettings: GraphForceSettings
 ): GraphPoint[] {
   const stats = buildGraphStats(edges);
@@ -890,8 +796,7 @@ function layoutGraph(
 
     for (let i = 0; i < initial.length; i += 1) {
       const node = initial[i];
-      const isPinned = node.path === selectedPath;
-      const centerStrength = (isPinned ? 0.08 : 0.018) * forceSettings.centerForce;
+      const centerStrength = 0.016 * forceSettings.centerForce;
       forces[i].x += (GRAPH_CENTER_X - node.x) * centerStrength;
       forces[i].y += (GRAPH_CENTER_Y - node.y) * centerStrength;
       node.x = clamp(node.x + forces[i].x, GRAPH_PADDING, GRAPH_WIDTH - GRAPH_PADDING);
@@ -900,8 +805,6 @@ function layoutGraph(
   }
 
   return initial.sort((a, b) => {
-    if (a.path === selectedPath) return 1;
-    if (b.path === selectedPath) return -1;
     return a.path.localeCompare(b.path, "ja");
   });
 }
