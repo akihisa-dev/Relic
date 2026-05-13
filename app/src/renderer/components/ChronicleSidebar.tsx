@@ -1,35 +1,13 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { CSSProperties, ReactElement } from "react";
 
 import type { GanttChartEntry, GanttChartSource, WorkspaceGanttChart } from "../../shared/ipc";
 import { useT } from "../i18n";
 
-interface ChronicleSidebarProps {
-  activeChartId: string | null;
-  charts: WorkspaceGanttChart[];
-  onOpenChart: (chart: WorkspaceGanttChart) => void;
-}
-
 interface GanttChartViewProps {
-  chart: WorkspaceGanttChart | null;
+  chart?: WorkspaceGanttChart | null;
+  charts?: WorkspaceGanttChart[];
   onOpenFile: (path: string) => void;
-  onRemoveFile: (chartId: string, path: string) => void;
-}
-
-type ChartFileTreeNode = ChartFileFolderNode | ChartFileNode;
-
-interface ChartFileFolderNode {
-  children: ChartFileTreeNode[];
-  name: string;
-  path: string;
-  type: "folder";
-}
-
-interface ChartFileNode {
-  entry: GanttChartEntry;
-  name: string;
-  path: string;
-  type: "file";
 }
 
 const ROW_HEIGHT = 38;
@@ -58,141 +36,19 @@ interface DateAxisSegment {
   startValue: number;
 }
 
-export function ChronicleSidebar({ activeChartId, charts, onOpenChart }: ChronicleSidebarProps): ReactElement {
-  const selectedChart = charts.find((chart) => chart.id === activeChartId) ?? charts[0] ?? null;
-  const candidateEntries = selectedChart ? entriesForSource(charts, selectedChart.source) : [];
-  const candidateTree = useMemo(() => buildChartFileTree(candidateEntries), [candidateEntries]);
-  const selectedChartFilePaths = useMemo(
-    () => new Set(selectedChart?.filePaths ?? []),
-    [selectedChart?.filePaths]
-  );
-
-  return (
-    <div className="chronicle-sidebar">
-      <div className="chronicle-source-buttons">
-        {charts.map((chart) => (
-          <button
-            aria-pressed={chart.id === selectedChart?.id}
-            className={`chronicle-source-button${chart.id === selectedChart?.id ? " active" : ""}`}
-            key={chart.id}
-            onClick={() => onOpenChart(chart)}
-            type="button"
-          >
-            {chart.source}
-          </button>
-        ))}
-      </div>
-
-      {selectedChart ? (
-        <div className="chronicle-sidebar-detail">
-          <div className="chronicle-file-select">
-            {candidateEntries.length === 0 ? (
-              <div className="frontmatter-field-empty">表示できるファイルはまだありません。</div>
-            ) : (
-              <ChartFileTree
-                chartId={selectedChart.id}
-                nodes={candidateTree}
-                selectedFilePaths={selectedChartFilePaths}
-              />
-            )}
-          </div>
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-function ChartFileTree({
-  chartId,
-  nodes,
-  selectedFilePaths
-}: {
-  chartId: string;
-  nodes: ChartFileTreeNode[];
-  selectedFilePaths: Set<string>;
-}): ReactElement {
-  return (
-    <ul className="file-tree">
-      {nodes.map((node) => (
-        <ChartFileTreeItem
-          chartId={chartId}
-          key={node.path}
-          node={node}
-          selectedFilePaths={selectedFilePaths}
-        />
-      ))}
-    </ul>
-  );
-}
-
-function ChartFileTreeItem({
-  chartId,
-  node,
-  selectedFilePaths
-}: {
-  chartId: string;
-  node: ChartFileTreeNode;
-  selectedFilePaths: Set<string>;
-}): ReactElement {
-  const [isExpanded, setIsExpanded] = useState(true);
-
-  if (node.type === "folder") {
-    return (
-      <li className="file-tree-item">
-        <div className="file-tree-row-wrap">
-          <button
-            className="file-tree-row folder"
-            onClick={() => setIsExpanded((current) => !current)}
-            title={node.path}
-            type="button"
-          >
-            <span className={`file-tree-icon file-tree-icon--folder${isExpanded ? " file-tree-icon--expanded" : ""}`}>
-              <span aria-hidden="true" className="file-tree-folder-chevron">▶</span>
-              <span aria-hidden="true" className="file-tree-folder-icon" />
-            </span>
-            <span className="file-tree-name">{node.name}</span>
-          </button>
-        </div>
-        {isExpanded ? (
-          <ChartFileTree
-            chartId={chartId}
-            nodes={node.children}
-            selectedFilePaths={selectedFilePaths}
-          />
-        ) : null}
-      </li>
-    );
-  }
-
-  const isSelected = selectedFilePaths.has(node.entry.path);
-
-  return (
-    <li className="file-tree-item">
-      <div className="file-tree-row-wrap">
-        <button
-          className={`file-tree-row file${isSelected ? " selected" : ""}`}
-          title={node.entry.path}
-          type="button"
-        >
-          <span className="file-tree-icon">
-            <span className="file-tree-file-dot">·</span>
-          </span>
-          <span className="file-tree-name">{node.name}</span>
-        </button>
-      </div>
-    </li>
-  );
-}
-
-export function GanttChartView({ chart, onOpenFile, onRemoveFile }: GanttChartViewProps): ReactElement {
+export function GanttChartView({ chart = null, charts = [], onOpenFile }: GanttChartViewProps): ReactElement {
   const t = useT();
+  const availableCharts = useMemo(() => chartsForView(chart, charts), [chart, charts]);
+  const [selectedChartId, setSelectedChartId] = useState(availableCharts[0]?.id ?? "chronicle");
+  const [query, setQuery] = useState("");
   const [scaleIndex, setScaleIndex] = useState(1);
   const [scrollLeft, setScrollLeft] = useState(0);
-  const activeSource = chart && isGanttChartSource(chart.source) ? chart.source : "chronicle";
+  const activeChart = chart ?? availableCharts.find((candidate) => candidate.id === selectedChartId) ?? availableCharts[0] ?? null;
+  const activeSource = activeChart && isGanttChartSource(activeChart.source) ? activeChart.source : "chronicle";
   const scaleOptions = SCALE_OPTIONS[activeSource];
   const tickInterval = scaleOptions[Math.min(scaleIndex, scaleOptions.length - 1)] ?? scaleOptions[0] ?? 100;
   const dateScale = activeSource === "date" ? DATE_SCALES[tickInterval] ?? DATE_SCALES[2] : null;
-  const entries = useMemo(() => visibleEntries(chart), [chart]);
+  const entries = useMemo(() => filterEntries(visibleEntries(activeChart), query), [activeChart, query]);
   const { axisEnd, axisStart } = timelineBounds(entries, tickInterval, activeSource, dateScale);
   const axisSpan = Math.max(1, axisEnd - axisStart + 1);
   const tickWidth = activeSource === "date" ? DATE_TICK_WIDTH : TICK_WIDTH;
@@ -205,33 +61,64 @@ export function GanttChartView({ chart, onOpenFile, onRemoveFile }: GanttChartVi
   const gridOffset = ticks.length > 0 ? (ticks[0] - axisStart) * unitWidth : 0;
   const dateAxisHeight = activeSource === "date" ? dateAxisHeightForScale(dateScale) : 34;
 
+  useEffect(() => {
+    if (availableCharts.some((candidate) => candidate.id === selectedChartId)) return;
+    setSelectedChartId(availableCharts[0]?.id ?? "chronicle");
+  }, [availableCharts, selectedChartId]);
+
   return (
     <div className="chronicle-panel">
-      <div className="chronicle-panel-header">
-        <div className="links-panel-subheading">{chart?.name ?? t("chronicle.title")}</div>
-        <div className="chronicle-scale" aria-label={t("chronicle.scale")}>
-          <button
-            aria-label={t("chronicle.scaleDecrease")}
-            className="chronicle-scale-button"
-            disabled={scaleIndex === 0}
-            onClick={() => setScaleIndex((current) => Math.max(0, current - 1))}
-            type="button"
-          >
-            -
-          </button>
-          <span className="chronicle-scale-value">{formatScaleValue(tickInterval, activeSource)}</span>
-          <button
-            aria-label={t("chronicle.scaleIncrease")}
-            className="chronicle-scale-button"
-            disabled={scaleIndex >= scaleOptions.length - 1}
-            onClick={() => setScaleIndex((current) => Math.min(scaleOptions.length - 1, current + 1))}
-            type="button"
-          >
-            +
-          </button>
+      <div className="chronicle-hover-settings">
+        <div className="chronicle-controls">
+          <div className="chronicle-source-buttons" aria-label={t("chronicle.source")}>
+            {availableCharts.map((candidate) => (
+              <button
+                aria-pressed={candidate.id === activeChart?.id}
+                className={`chronicle-source-button${candidate.id === activeChart?.id ? " active" : ""}`}
+                key={candidate.id}
+                onClick={() => {
+                  setSelectedChartId(candidate.id);
+                  setScaleIndex(candidate.source === "date" ? 1 : 1);
+                }}
+                type="button"
+              >
+                {candidate.source}
+              </button>
+            ))}
+          </div>
+          <label className="chronicle-search">
+            <span>{t("chronicle.search")}</span>
+            <input
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder={t("chronicle.searchPlaceholder")}
+              type="search"
+              value={query}
+            />
+          </label>
+          <div className="chronicle-scale" aria-label={t("chronicle.scale")}>
+            <button
+              aria-label={t("chronicle.scaleDecrease")}
+              className="chronicle-scale-button"
+              disabled={scaleIndex === 0}
+              onClick={() => setScaleIndex((current) => Math.max(0, current - 1))}
+              type="button"
+            >
+              -
+            </button>
+            <span className="chronicle-scale-value">{formatScaleValue(tickInterval, activeSource)}</span>
+            <button
+              aria-label={t("chronicle.scaleIncrease")}
+              className="chronicle-scale-button"
+              disabled={scaleIndex >= scaleOptions.length - 1}
+              onClick={() => setScaleIndex((current) => Math.min(scaleOptions.length - 1, current + 1))}
+              type="button"
+            >
+              +
+            </button>
+          </div>
         </div>
       </div>
-      {!chart ? (
+      {!activeChart ? (
         <div className="frontmatter-field-empty">{t("chronicle.empty")}</div>
       ) : (
         <div className="chronicle-chart" onScroll={(event) => setScrollLeft(event.currentTarget.scrollLeft)}>
@@ -255,14 +142,6 @@ export function GanttChartView({ chart, onOpenFile, onRemoveFile }: GanttChartVi
                       type="button"
                     >
                       {entry.fileName}
-                    </button>
-                    <button
-                      aria-label={`${entry.fileName}をチャートから外す`}
-                      className="chronicle-file-remove"
-                      onClick={() => chart ? onRemoveFile(chart.id, entry.path) : undefined}
-                      type="button"
-                    >
-                      ×
                     </button>
                   </div>
                 ))
@@ -334,6 +213,9 @@ export function GanttChartView({ chart, onOpenFile, onRemoveFile }: GanttChartVi
           </div>
         </div>
       )}
+      <div className="chronicle-summary">
+        {activeChart ? t("chronicle.summary", { count: entries.length, source: activeChart.source }) : t("chronicle.title")}
+      </div>
     </div>
   );
 }
@@ -408,66 +290,26 @@ function DateGridLines({
   );
 }
 
-function entriesForSource(charts: WorkspaceGanttChart[], source: GanttChartSource): GanttChartEntry[] {
-  return charts.find((chart) => chart.source === source)?.entries ?? [];
-}
-
-function buildChartFileTree(entries: GanttChartEntry[]): ChartFileTreeNode[] {
-  const root: ChartFileFolderNode = { children: [], name: "", path: "", type: "folder" };
-  const foldersByPath = new Map<string, ChartFileFolderNode>([["", root]]);
-
-  for (const entry of entries) {
-    const parts = entry.path.split("/").filter(Boolean);
-    if (parts.length === 0) continue;
-
-    let parent = root;
-    let currentPath = "";
-
-    for (const folderName of parts.slice(0, -1)) {
-      currentPath = currentPath ? `${currentPath}/${folderName}` : folderName;
-
-      let folder = foldersByPath.get(currentPath);
-      if (!folder) {
-        folder = { children: [], name: folderName, path: currentPath, type: "folder" };
-        foldersByPath.set(currentPath, folder);
-        parent.children.push(folder);
-      }
-
-      parent = folder;
-    }
-
-    parent.children.push({
-      entry,
-      name: entry.fileName,
-      path: entry.path,
-      type: "file"
-    });
-  }
-
-  sortChartFileTree(root.children);
-  return root.children;
-}
-
-function sortChartFileTree(nodes: ChartFileTreeNode[]): void {
-  nodes.sort((a, b) => {
-    if (a.type !== b.type) return a.type === "folder" ? -1 : 1;
-    return a.name.localeCompare(b.name, "ja");
-  });
-
-  for (const node of nodes) {
-    if (node.type === "folder") sortChartFileTree(node.children);
-  }
-}
-
 function visibleEntries(chart: WorkspaceGanttChart | null): GanttChartEntry[] {
   if (!chart) return [];
-  if (!chart.filePaths || chart.filePaths.length === 0) return [];
+  return chart.entries;
+}
 
-  const entriesByPath = new Map(chart.entries.map((entry) => [entry.path, entry]));
-  return chart.filePaths.flatMap((path) => {
-    const entry = entriesByPath.get(path);
-    return entry ? [entry] : [];
-  });
+function chartsForView(chart: WorkspaceGanttChart | null, charts: WorkspaceGanttChart[]): WorkspaceGanttChart[] {
+  if (chart) return [chart];
+  return charts;
+}
+
+function filterEntries(entries: GanttChartEntry[], query: string): GanttChartEntry[] {
+  const normalizedQuery = query.trim().toLowerCase();
+  if (!normalizedQuery) return entries;
+
+  return entries.filter((entry) => (
+    entry.fileName.toLowerCase().includes(normalizedQuery) ||
+    entry.path.toLowerCase().includes(normalizedQuery) ||
+    entry.startLabel.toLowerCase().includes(normalizedQuery) ||
+    entry.endLabel.toLowerCase().includes(normalizedQuery)
+  ));
 }
 
 function timelineBounds(

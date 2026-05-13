@@ -751,13 +751,13 @@ describe("App", () => {
     fireEvent.click(renderResult.container.querySelector(".chronicle-source-button")!);
 
     const activeTabId = useEditorStore.getState().leftPane.activeTabId;
-    expect(activeTabId).toBe("gantt-chronicle");
+    expect(activeTabId).toBe("gantt-charts");
     expect(useEditorStore.getState().tabs[activeTabId!]).toMatchObject({
-      chartId: "chronicle",
+      chartId: "charts",
       kind: "gantt"
     });
-    expect(screen.getByText("history")).toBeInTheDocument();
-    expect(renderResult.container.querySelector(".chronicle-sidebar .file-tree-row.file.selected")).toHaveTextContent("鎌倉時代");
+    expect(useUiStore.getState().isSidebarOpen).toBe(false);
+    expect(renderResult.container.querySelector(".chronicle-sidebar")).toBeNull();
     expect(screen.getAllByText("鎌倉時代").length).toBeGreaterThan(0);
     expect(screen.getByText("1185 〜 1333")).toBeInTheDocument();
   });
@@ -791,12 +791,13 @@ describe("App", () => {
     fireEvent.click(screen.getByRole("button", { name: "チャート" }));
     fireEvent.click(container.querySelectorAll(".chronicle-source-button")[1]);
 
-    expect(useEditorStore.getState().leftPane.activeTabId).toBe("gantt-date");
+    expect(useEditorStore.getState().leftPane.activeTabId).toBe("gantt-charts");
     expect(screen.getByText("実装タスク")).toBeInTheDocument();
     expect(screen.queryByText("2026-05-01 〜 2026-05-05")).not.toBeInTheDocument();
+    expect(screen.getByText("05-01 〜 05-05")).toBeInTheDocument();
     expect(screen.getByText("月")).toBeInTheDocument();
     expect(container.querySelector(".chronicle-chart")).toBeInTheDocument();
-    expect(container.querySelector(".chronicle-fill")).not.toBeInTheDocument();
+    expect(container.querySelector(".chronicle-fill")).toBeInTheDocument();
   });
 
   it("旧形式の年表データが返っても年表タブを表示できる", async () => {
@@ -1851,7 +1852,7 @@ describe("App", () => {
     confirmSpy.mockRestore();
   });
 
-  it("ファイルとフォルダをドラッグ&ドロップで移動できる", async () => {
+  it("ファイルとフォルダはドラッグ&ドロップで移動しない", async () => {
     const movedWorkspaceState = {
       ...withWorkspace,
       fileTree: [
@@ -1899,7 +1900,7 @@ describe("App", () => {
       dataTransfer: { effectAllowed: "move", setData: vi.fn() }
     });
 
-    expect(fileRow).toHaveClass("dragging");
+    expect(fileRow).not.toHaveClass("dragging");
 
     fireEvent.drop(archiveRow, {
       dataTransfer: { getData: () => JSON.stringify({ path: "note.md", type: "file" }) }
@@ -1909,9 +1910,7 @@ describe("App", () => {
 
     expect(fileRow).not.toHaveClass("dragging");
 
-    await waitFor(() => {
-      expect(moveMarkdownFile).toHaveBeenCalledWith({ destinationFolder: "archive", path: "note.md" });
-    });
+    expect(moveMarkdownFile).not.toHaveBeenCalled();
 
     fireEvent.dragStart(draftsRow, {
       dataTransfer: { effectAllowed: "move", setData: vi.fn() }
@@ -1920,12 +1919,10 @@ describe("App", () => {
       dataTransfer: { getData: () => JSON.stringify({ path: "drafts", type: "folder" }) }
     });
 
-    await waitFor(() => {
-      expect(moveFolder).toHaveBeenCalledWith({ destinationFolder: "archive", path: "drafts" });
-    });
+    expect(moveFolder).not.toHaveBeenCalled();
   });
 
-  it("展開済みフォルダ内の余白へドロップしたときは、そのフォルダ内へ移動する", async () => {
+  it("展開済みフォルダ内の余白へドロップしても移動しない", async () => {
     const moveMarkdownFile = vi.fn().mockResolvedValue({
       ok: true,
       value: {
@@ -1968,18 +1965,16 @@ describe("App", () => {
       dataTransfer: { getData: () => JSON.stringify({ path: "note.md", type: "file" }) }
     });
 
-    expect(archiveTree).toHaveClass("file-tree--drag-over");
+    expect(archiveTree).not.toHaveClass("file-tree--drag-over");
 
     fireEvent.drop(archiveTree ?? container, {
       dataTransfer: { getData: () => JSON.stringify({ path: "note.md", type: "file" }) }
     });
 
-    await waitFor(() => {
-      expect(moveMarkdownFile).toHaveBeenCalledWith({ destinationFolder: "archive", path: "note.md" });
-    });
+    expect(moveMarkdownFile).not.toHaveBeenCalled();
   });
 
-  it("フォルダ内のファイル行へドロップしたときは、その親フォルダ内へ移動する", async () => {
+  it("フォルダ内のファイル行へドロップしても移動しない", async () => {
     const moveMarkdownFile = vi.fn().mockResolvedValue({
       ok: true,
       value: {
@@ -2019,12 +2014,10 @@ describe("App", () => {
       dataTransfer: { getData: () => JSON.stringify({ path: "note.md", type: "file" }) }
     });
 
-    await waitFor(() => {
-      expect(moveMarkdownFile).toHaveBeenCalledWith({ destinationFolder: "archive", path: "note.md" });
-    });
+    expect(moveMarkdownFile).not.toHaveBeenCalled();
   });
 
-  it("空フォルダの内容エリアへドロップできる", async () => {
+  it("空フォルダの内容エリアへドロップしても移動しない", async () => {
     const moveMarkdownFile = vi.fn().mockResolvedValue({
       ok: true,
       value: {
@@ -2062,15 +2055,13 @@ describe("App", () => {
       dataTransfer: { getData: () => JSON.stringify({ path: "note.md", type: "file" }) }
     });
 
-    expect(archiveTree).toHaveClass("file-tree--drag-over");
+    expect(archiveTree).not.toHaveClass("file-tree--drag-over");
 
     fireEvent.drop(archiveTree ?? container, {
       dataTransfer: { getData: () => JSON.stringify({ path: "note.md", type: "file" }) }
     });
 
-    await waitFor(() => {
-      expect(moveMarkdownFile).toHaveBeenCalledWith({ destinationFolder: "archive", path: "note.md" });
-    });
+    expect(moveMarkdownFile).not.toHaveBeenCalled();
   });
 
   it("同じ親フォルダや子孫フォルダへはドラッグ移動しない", async () => {
@@ -2170,7 +2161,7 @@ describe("App", () => {
     expect(readMarkdownFile).not.toHaveBeenCalled();
   });
 
-  it("複数選択したファイルとフォルダをまとめてドラッグ移動できる", async () => {
+  it("複数選択したファイルとフォルダもドラッグ移動しない", async () => {
     const movedWorkspaceState = {
       ...withWorkspace,
       fileTree: [
@@ -2222,21 +2213,16 @@ describe("App", () => {
     fireEvent.dragStart(noteRow, {
       dataTransfer: { effectAllowed: "move", setData }
     });
-    const payload = setData.mock.calls[0]?.[1] as string;
+    const payload = setData.mock.calls[0]?.[1] as string | undefined;
 
-    expect(JSON.parse(payload).items).toEqual([
-      { path: "note.md", type: "file" },
-      { path: "drafts", type: "folder" }
-    ]);
+    expect(payload).toBeUndefined();
 
     fireEvent.drop(archiveRow, {
-      dataTransfer: { getData: () => payload }
+      dataTransfer: { getData: () => "" }
     });
 
-    await waitFor(() => {
-      expect(moveMarkdownFile).toHaveBeenCalledWith({ destinationFolder: "archive", path: "note.md" });
-      expect(moveFolder).toHaveBeenCalledWith({ destinationFolder: "archive", path: "drafts" });
-    });
+    expect(moveMarkdownFile).not.toHaveBeenCalled();
+    expect(moveFolder).not.toHaveBeenCalled();
   });
 
   it("複数選択したファイルとフォルダをまとめてゴミ箱に移動できる", async () => {
