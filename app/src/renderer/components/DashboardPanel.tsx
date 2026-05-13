@@ -177,7 +177,9 @@ export function DashboardPanel({ fileTree, onOpenFile, workspaceId }: DashboardP
 
   const maxFolderCount = Math.max(0, ...(stats?.folderDistribution.map((item) => item.count) ?? []));
   const maxBucketCount = Math.max(0, ...(stats?.lengthBuckets.map((item) => item.count) ?? []));
+  const maxTagCount = Math.max(0, ...(stats?.tagDistribution.map((item) => item.count) ?? []));
   const topFiles = stats?.files.slice(0, 8) ?? [];
+  const maxTopFileChars = Math.max(0, ...topFiles.map((file) => file.chars));
 
   return (
     <section className="dashboard-panel" aria-label={t("dashboard.title")}>
@@ -206,20 +208,21 @@ export function DashboardPanel({ fileTree, onOpenFile, workspaceId }: DashboardP
             <h3>{t("dashboard.terrain")}</h3>
             <span>{t("dashboard.average", { count: formatNumber(stats?.averageChars ?? 0) })}</span>
           </div>
-          <div className="dashboard-terrain" aria-hidden="true">
+          <div className="dashboard-file-bars">
             {topFiles.length === 0 ? (
               <div className="dashboard-empty">{t("dashboard.empty")}</div>
             ) : topFiles.map((file) => (
               <button
-                className="dashboard-terrain-bar"
+                className="dashboard-file-bar"
                 key={file.path}
                 onClick={() => onOpenFile(file.path)}
-                style={{ "--bar-height": `${percentage(file.chars, stats?.maxChars ?? 0)}%` } as CSSProperties}
-                title={file.path}
+                style={{ "--bar-height": `${percentage(file.chars, maxTopFileChars)}%` } as CSSProperties}
+                title={`${file.path} / ${formatNumber(file.chars)}`}
                 type="button"
               >
-                <span />
-                <small>{file.name.replace(/\.md$/i, "")}</small>
+                <span className="dashboard-file-bar-fill" />
+                <span className="dashboard-file-bar-value">{formatNumber(file.chars)}</span>
+                <span className="dashboard-file-bar-label">{file.name.replace(/\.md$/i, "")}</span>
               </button>
             ))}
           </div>
@@ -254,31 +257,11 @@ export function DashboardPanel({ fileTree, onOpenFile, workspaceId }: DashboardP
             <h3>{t("dashboard.tagsCloud")}</h3>
             <span>{t("dashboard.frontmatter", { count: stats?.frontmatterFiles ?? 0 })}</span>
           </div>
-          <div className="dashboard-tag-cloud">
+          <div className="dashboard-bars">
             {(stats?.tagDistribution ?? []).length === 0 ? (
               <span className="dashboard-muted">{t("search.tagsEmpty")}</span>
             ) : stats?.tagDistribution.map((tag) => (
-              <span className="dashboard-tag" key={tag.label}>
-                #{tag.label}
-                <b>{tag.count}</b>
-              </span>
-            ))}
-          </div>
-        </section>
-
-        <section className="dashboard-section">
-          <div className="dashboard-section-title">
-            <h3>{t("dashboard.topFiles")}</h3>
-            <span>{t("dashboard.headings", { count: stats?.totalHeadings ?? 0 })}</span>
-          </div>
-          <div className="dashboard-file-list">
-            {topFiles.length === 0 ? (
-              <div className="dashboard-empty">{t("dashboard.empty")}</div>
-            ) : topFiles.map((file) => (
-              <button className="dashboard-file-row" key={file.path} onClick={() => onOpenFile(file.path)} title={file.path} type="button">
-                <span>{file.name.replace(/\.md$/i, "")}</span>
-                <small>{formatNumber(file.chars)}</small>
-              </button>
+              <BarRow count={tag.count} key={tag.label} label={`#${tag.label}`} max={maxTagCount} />
             ))}
           </div>
         </section>
