@@ -490,18 +490,35 @@ describe("Editor", () => {
   });
 
   it("プロパティフォームは折りたためる", async () => {
+    const viewRef = createRef<EditorView | null>();
+    const onChange = vi.fn();
     const { container } = render(
       <Editor
-        content={"---\nversion: v1.0\n---\n# 本文"}
-        onChange={vi.fn()}
+        content={"---\nversion: v1.0\nstatus: draft\n---\n# 本文"}
+        onChange={onChange}
         settings={settings}
+        viewRef={viewRef}
       />
     );
 
     await waitFor(() => expect(container.querySelector(".cm-frontmatter-properties")).not.toBeNull());
+    expect(container.querySelectorAll(".cm-frontmatter-row")).toHaveLength(3);
+
     fireEvent.click(container.querySelector(".cm-frontmatter-header") as HTMLButtonElement);
 
-    expect(container.querySelector(".cm-frontmatter-properties")?.getAttribute("data-collapsed")).toBe("true");
+    await waitFor(() => {
+      expect(container.querySelector(".cm-frontmatter-properties")?.getAttribute("data-collapsed")).toBe("true");
+    });
+    expect(container.querySelectorAll(".cm-frontmatter-row")).toHaveLength(0);
+    expect(onChange).not.toHaveBeenCalled();
+    expect(viewRef.current?.state.doc.toString()).toBe("---\nversion: v1.0\nstatus: draft\n---\n# 本文");
+
+    fireEvent.click(container.querySelector(".cm-frontmatter-header") as HTMLButtonElement);
+
+    await waitFor(() => {
+      expect(container.querySelector(".cm-frontmatter-properties")?.getAttribute("data-collapsed")).toBe("false");
+    });
+    expect(container.querySelectorAll(".cm-frontmatter-row")).toHaveLength(3);
   });
 
   it("プロパティフォームから既存フロントマターにプロパティを追加できる", async () => {

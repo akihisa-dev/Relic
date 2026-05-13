@@ -2385,7 +2385,7 @@ describe("App", () => {
     );
   });
 
-  it("ファイルモードの検索フォームで検索方法候補を表示する", async () => {
+  it("ファイルモードの検索方法ボタンで検索方法候補を表示する", async () => {
     window.relic = makeRelicApi({
       getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
     });
@@ -2393,6 +2393,10 @@ describe("App", () => {
     await renderApp();
 
     fireEvent.focus(await screen.findByLabelText("ファイル検索"));
+
+    expect(screen.queryByRole("option", { name: "全文" })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "検索方法" }));
 
     expect(await screen.findByRole("option", { name: "全文" })).toBeInTheDocument();
     expect(screen.getByRole("option", { name: "ファイル名" })).toBeInTheDocument();
@@ -2465,8 +2469,12 @@ describe("App", () => {
 
     await renderApp();
 
-    fireEvent.focus(await screen.findByLabelText("ファイル検索"));
+    await screen.findByLabelText("ファイル検索");
+    fireEvent.click(screen.getByRole("button", { name: "検索方法" }));
     fireEvent.click(await screen.findByRole("option", { name: "タグ" }));
+    await waitFor(() => {
+      expect(screen.queryByRole("option", { name: "タグ" })).not.toBeInTheDocument();
+    });
     fireEvent.change(screen.getByLabelText("ファイル検索"), {
       target: { value: "資料" }
     });
@@ -2488,7 +2496,8 @@ describe("App", () => {
 
     await renderApp();
 
-    fireEvent.focus(await screen.findByLabelText("ファイル検索"));
+    await screen.findByLabelText("ファイル検索");
+    fireEvent.click(screen.getByRole("button", { name: "検索方法" }));
     fireEvent.click(await screen.findByRole("option", { name: "正規表現" }));
     fireEvent.change(screen.getByLabelText("ファイル検索"), {
       target: { value: "[" }
@@ -2534,7 +2543,8 @@ describe("App", () => {
 
     await renderApp();
 
-    fireEvent.focus(await screen.findByLabelText("ファイル検索"));
+    await screen.findByLabelText("ファイル検索");
+    fireEvent.click(screen.getByRole("button", { name: "検索方法" }));
     fireEvent.click(await screen.findByRole("option", { name: "プロパティ" }));
     fireEvent.change(screen.getByLabelText("プロパティ名"), {
       target: { value: "status" }
