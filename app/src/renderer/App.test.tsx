@@ -146,7 +146,7 @@ describe("App", () => {
   afterEach(() => {
     vi.clearAllMocks();
     useEditorStore.setState({ tabs: {}, leftPane: { activeTabId: null, history: [], tabIds: [] }, rightPane: { activeTabId: null, history: [], tabIds: [] }, isSplit: false, focusedPane: "left" });
-    useGraphStore.setState({ error: null, folderFilter: "", graph: null, isLoading: false, linkFilter: "all", loadedWorkspaceId: null, minDegree: 0, query: "", selectedPath: null, showLabels: true, tagFilter: "", zoom: 1 });
+    useGraphStore.setState({ centerForce: 1, error: null, folderFilter: "", graph: null, groups: [], isLoading: false, linkDistance: 118, linkFilter: "all", linkForce: 1, linkThickness: 1, loadedWorkspaceId: null, localGraphDepth: 0, minDegree: 0, nodeSize: 1, query: "", repelForce: 1, selectedPath: null, showArrows: false, showLabels: true, showOrphans: true, tagFilter: "", textFadeThreshold: 0.85, zoom: 1 });
     useUiStore.setState({ activeSidebarView: "files", isRightPanelOpen: true, isSidebarOpen: true, isTypewriterMode: false, rightPanelView: "outline" });
   });
 
@@ -192,6 +192,10 @@ describe("App", () => {
       getWorkspaceState: vi.fn().mockResolvedValue({
         ok: true,
         value: withWorkspace
+      }),
+      readMarkdownFile: vi.fn().mockResolvedValue({
+        ok: true,
+        value: { content: "A body", name: "A", path: "A.md" }
       })
     });
 
@@ -207,8 +211,8 @@ describe("App", () => {
     expect(screen.getByText("1 ノード / 0 リンク")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "A" }));
-    expect(screen.getByRole("button", { name: /A.md/ })).toBeInTheDocument();
-    expect(screen.getByText("#資料")).toBeInTheDocument();
+    expect(await screen.findByText("A", { selector: ".pane-tab-name" })).toBeInTheDocument();
+    expect(screen.getByText("A body")).toBeInTheDocument();
   });
 
   it("ファイルツリーのノートをクリックするとタブが開く", async () => {
