@@ -2,7 +2,8 @@
 chcp 65001 > nul
 cd /d "%~dp0app"
 
-set APP_PATH=%CD%\out\Relic-win32-x64\Relic.exe
+set "APP_PATH=%CD%\out\Relic-win32-x64\Relic.exe"
+set "PNPM_CMD=%APPDATA%\npm\pnpm.cmd"
 
 if exist "%APP_PATH%" (
   start "" "%APP_PATH%"
@@ -16,14 +17,32 @@ if exist "%APP_PATH%" (
 echo Starting Relic...
 echo.
 
-if exist "%APPDATA%\npm\pnpm.cmd" (
-  "%APPDATA%\npm\pnpm.cmd" start
+if not exist "%PNPM_CMD%" (
+  echo pnpm not found. Please set up the development environment.
   echo.
-  echo Relic has exited.
   pause
-  exit /b 0
+  exit /b 1
 )
 
-echo pnpm not found. Please set up the development environment.
+if not exist "node_modules" (
+  echo node_modules not found. Running pnpm install...
+  call "%PNPM_CMD%" install
+  if errorlevel 1 (
+    echo.
+    echo Failed to install dependencies.
+    pause
+    exit /b 1
+  )
+)
+
+call "%PNPM_CMD%" start
+if errorlevel 1 (
+  echo.
+  echo Relic failed to start.
+  pause
+  exit /b 1
+)
+
 echo.
+echo Relic has exited.
 pause
