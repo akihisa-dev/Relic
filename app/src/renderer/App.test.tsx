@@ -760,6 +760,8 @@ describe("App", () => {
     expect(renderResult.container.querySelector(".chronicle-sidebar")).toBeNull();
     expect(screen.getAllByText("鎌倉時代").length).toBeGreaterThan(0);
     expect(screen.getByText("1185 〜 1333")).toBeInTheDocument();
+    expect(renderResult.container.querySelectorAll(".chronicle-guide-line").length).toBeGreaterThan(0);
+    expect(renderResult.container.querySelectorAll(".chronicle-guide-row-line").length).toBeGreaterThan(0);
   });
 
   it("dateチャートは表示対象が空でも日付ガントを表示する", async () => {
@@ -798,6 +800,8 @@ describe("App", () => {
     expect(screen.getByText("月")).toBeInTheDocument();
     expect(container.querySelector(".chronicle-chart")).toBeInTheDocument();
     expect(container.querySelector(".chronicle-fill")).toBeInTheDocument();
+    expect(container.querySelectorAll(".chronicle-guide-line").length).toBeGreaterThan(0);
+    expect(container.querySelectorAll(".chronicle-guide-row-line").length).toBeGreaterThan(0);
   });
 
   it("旧形式の年表データが返っても年表タブを表示できる", async () => {
