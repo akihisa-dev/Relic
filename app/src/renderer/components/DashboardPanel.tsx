@@ -29,10 +29,12 @@ interface DashboardFileStats {
 }
 
 interface DashboardTreemapRect {
+  accent: boolean;
   count: number;
   fill: string;
   height: number;
   label: string;
+  showLabel: boolean;
   width: number;
   x: number;
   y: number;
@@ -68,7 +70,9 @@ const lengthBucketDefs = [
 ];
 
 const chartColors = ["#00628c", "#1c1c1c", "#5e5e5e", "#8a8a8a", "#c6c6c6", "#e0e0e0"];
-const tagTreemapFills = ["#d9edf4", "#e5eadc", "#f2e8d8", "#eadfea", "#e6e6e6", "#dfe6ee"];
+const tagTreemapFills = ["var(--bg)", "var(--hover)", "var(--hover)", "var(--bg)", "var(--hover-strong)", "var(--hover)"];
+const treemapLayoutWidth = 300;
+const treemapLayoutHeight = 100;
 
 export function buildDashboardStats(
   files: LoadedMarkdownFile[],
@@ -213,69 +217,79 @@ function percentage(value: number, max: number): number {
   return Math.max(4, Math.round((value / max) * 100));
 }
 
-function buildTreemapRects(entries: Array<{ count: number; label: string }>): DashboardTreemapRect[] {
+export function buildTreemapRects(entries: Array<{ count: number; label: string }>): DashboardTreemapRect[] {
   const visibleEntries = entries
     .filter((entry) => entry.count > 0)
-    .map((entry, index) => ({ ...entry, fill: tagTreemapFills[index % tagTreemapFills.length] }));
-  const totalArea = visibleEntries.reduce((sum, entry) => sum + entry.count, 0);
-  if (totalArea <= 0) return [];
+    .map((entry, index) => ({
+      ...entry,
+      accent: index === 0,
+      fill: tagTreemapFills[index % tagTreemapFills.length]
+    }));
+  const totalCount = visibleEntries.reduce((sum, entry) => sum + entry.count, 0);
+  if (totalCount <= 0) return [];
 
-  const items = visibleEntries.map((entry) => ({
-    ...entry,
-    area: (entry.count / totalArea) * 10000
-  }));
   const rects: DashboardTreemapRect[] = [];
-  let remaining = { height: 100, width: 100, x: 0, y: 0 };
-  let row: typeof items = [];
-  let rest = [...items];
+  const placeItems = (
+    items: typeof visibleEntries,
+    frame: { height: number; width: number; x: number; y: number }
+  ): void => {
+    if (items.length === 0) return;
 
-  const worstRatio = (candidate: typeof items, side: number): number => {
-    if (candidate.length === 0) return Infinity;
-    const areas = candidate.map((item) => item.area);
-    const sum = areas.reduce((value, area) => value + area, 0);
-    const max = Math.max(...areas);
-    const min = Math.min(...areas);
-    return Math.max((side * side * max) / (sum * sum), (sum * sum) / (side * side * min));
-  };
+    if (items.length === 1) {
+      const [item] = items;
+      const widthPercent = (frame.width / treemapLayoutWidth) * 100;
+      const heightPercent = (frame.height / treemapLayoutHeight) * 100;
 
-  const placeRow = (placedRow: typeof items): void => {
-    const rowArea = placedRow.reduce((sum, item) => sum + item.area, 0);
-
-    if (remaining.width >= remaining.height) {
-      const rowHeight = rowArea / remaining.width;
-      let currentX = remaining.x;
-      for (const item of placedRow) {
-        const itemWidth = item.area / rowHeight;
-        rects.push({ count: item.count, fill: item.fill, height: rowHeight, label: item.label, width: itemWidth, x: currentX, y: remaining.y });
-        currentX += itemWidth;
-      }
-      remaining = { ...remaining, height: remaining.height - rowHeight, y: remaining.y + rowHeight };
+      rects.push({
+        accent: item.accent,
+        count: item.count,
+        fill: item.fill,
+        height: heightPercent,
+        label: item.label,
+        showLabel: widthPercent >= 14 && heightPercent >= 18,
+        width: widthPercent,
+        x: (frame.x / treemapLayoutWidth) * 100,
+        y: (frame.y / treemapLayoutHeight) * 100
+      });
       return;
     }
 
-    const rowWidth = rowArea / remaining.height;
-    let currentY = remaining.y;
-    for (const item of placedRow) {
-      const itemHeight = item.area / rowWidth;
-      rects.push({ count: item.count, fill: item.fill, height: itemHeight, label: item.label, width: rowWidth, x: remaining.x, y: currentY });
-      currentY += itemHeight;
+    const groupTotal = items.reduce((sum, item) => sum + item.count, 0);
+    let runningTotal = 0;
+    let splitIndex = 1;
+    let bestDistance = Infinity;
+
+    for (let index = 1; index < items.length; index += 1) {
+      runningTotal += items[index - 1].count;
+      const distance = Math.abs((groupTotal / 2) - runningTotal);
+      if (distance < bestDistance) {
+        bestDistance = distance;
+        splitIndex = index;
+      }
     }
-    remaining = { ...remaining, width: remaining.width - rowWidth, x: remaining.x + rowWidth };
+
+    const firstGroup = items.slice(0, splitIndex);
+    const secondGroup = items.slice(splitIndex);
+    const firstTotal = firstGroup.reduce((sum, item) => sum + item.count, 0);
+
+    if (frame.width >= frame.height) {
+      const firstWidth = frame.width * (firstTotal / groupTotal);
+      placeItems(firstGroup, { ...frame, width: firstWidth });
+      placeItems(secondGroup, { ...frame, width: frame.width - firstWidth, x: frame.x + firstWidth });
+      return;
+    }
+
+    const firstHeight = frame.height * (firstTotal / groupTotal);
+    placeItems(firstGroup, { ...frame, height: firstHeight });
+    placeItems(secondGroup, { ...frame, height: frame.height - firstHeight, y: frame.y + firstHeight });
   };
 
-  while (rest.length > 0) {
-    const next = rest[0];
-    const side = Math.min(remaining.width, remaining.height);
-    if (row.length === 0 || worstRatio([...row, next], side) <= worstRatio(row, side)) {
-      row.push(next);
-      rest = rest.slice(1);
-    } else {
-      placeRow(row);
-      row = [];
-    }
-  }
-
-  if (row.length > 0) placeRow(row);
+  placeItems(visibleEntries, {
+    height: treemapLayoutHeight,
+    width: treemapLayoutWidth,
+    x: 0,
+    y: 0
+  });
   return rects;
 }
 
@@ -476,7 +490,7 @@ export function DashboardPanel({ fileTree, onOpenFile, userDefinedFields, worksp
               <span className="dashboard-muted">{t("search.tagsEmpty")}</span>
             ) : tagTreemapRects.map((tag) => (
               <div
-                className="dashboard-tag-map-cell"
+                className={`dashboard-tag-map-cell${tag.accent ? " dashboard-tag-map-cell--accent" : ""}${tag.showLabel ? "" : " dashboard-tag-map-cell--compact"}`}
                 key={tag.label}
                 style={{
                   "--cell-height": `${tag.height}%`,
@@ -487,7 +501,7 @@ export function DashboardPanel({ fileTree, onOpenFile, userDefinedFields, worksp
                 } as CSSProperties}
                 title={`#${tag.label} / ${tag.count}`}
               >
-                <span>#{tag.label}</span>
+                {tag.showLabel ? <span>#{tag.label}</span> : null}
                 <b>{tag.count}</b>
               </div>
             ))}
