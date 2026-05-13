@@ -1274,12 +1274,12 @@ export function App(): ReactElement {
     if (view.id === "frontmatter" && !featureToggles.frontmatter) return false;
     return true;
   }), [featureToggles.frontmatter, featureToggles.git, featureToggles.tools, sidebarViews]);
-  const sidebarRailViews = enabledRailViews.filter((view) =>
-    view.id === "files" || view.id === "search"
+  const primaryRailViews = enabledRailViews.filter((view) =>
+    view.id === "files" || view.id === "search" || view.id === "graph"
   );
   const chartRailView = enabledRailViews.find((view) => view.id === "chronicle");
   const panelRailViews = enabledRailViews.filter((view) =>
-    view.id !== "files" && view.id !== "search" && view.id !== "chronicle"
+    view.id !== "files" && view.id !== "search" && view.id !== "graph" && view.id !== "chronicle"
   );
 
   useEffect(() => {
@@ -1538,12 +1538,19 @@ export function App(): ReactElement {
             <span className="rail-button-label">{t("pane.toggleSidebar")}</span>
           </button>
           <div className="rail-separator" />
-          {sidebarRailViews.map((view) => (
+          {primaryRailViews.map((view) => (
               <button
                 aria-label={view.label}
-                className={`rail-button${view.id === activeSidebarView ? " active" : ""}`}
+                className={`rail-button${view.id === "graph" ? openPanelTabIds.has("graph") ? " active" : "" : view.id === activeSidebarView ? " active" : ""}`}
                 key={view.id}
-                onClick={() => setSidebarView(view.id as SidebarView)}
+                onClick={(event) => {
+                  if (view.id === "graph") {
+                    handleRailPanelButton("graph", view.label, event);
+                    return;
+                  }
+
+                  setSidebarView(view.id as SidebarView);
+                }}
                 title={view.label}
                 type="button"
               >
