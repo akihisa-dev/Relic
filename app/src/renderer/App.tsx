@@ -1242,6 +1242,19 @@ export function App(): ReactElement {
     { leftPane, rightPane },
     tabs
   );
+  const activeFilePathForGraph = useMemo(() => {
+    const paneOrder = focusedPane === "left" ? [leftPane, rightPane] : [rightPane, leftPane];
+    for (const pane of paneOrder) {
+      for (const tabId of [...pane.history].reverse()) {
+        const tab = tabs[tabId];
+        if (tab?.kind === "file") return tab.path;
+      }
+    }
+    for (const tab of Object.values(tabs)) {
+      if (tab.kind === "file") return tab.path;
+    }
+    return null;
+  }, [focusedPane, leftPane, rightPane, tabs]);
   const activeGanttChartIdInFocusedPane = activeTabInFocusedPane?.kind === "gantt"
     ? activeTabInFocusedPane.chartId
     : null;
@@ -1435,6 +1448,7 @@ export function App(): ReactElement {
     if (panel === "graph") {
       return (
         <GraphPanel
+          activeFilePath={activeFilePathForGraph}
           onOpenFile={handleOpenFile}
           workspaceId={workspaceState?.activeWorkspace?.id ?? null}
         />
@@ -1462,7 +1476,7 @@ export function App(): ReactElement {
     handleConnectGitHubAccount, handleConnectGitRemote, handleCreateGitCommit,
     handleDisconnectGitHubAccount, handleInitializeGitRepository, handlePullGitBranch, handlePushGitBranch,
     handleResolveConflict, handleSaveAutoSyncSettings, handleSaveFeatureToggles,
-    handleSaveGitHubIntegrationSettings, handleSaveSettings, handleSaveUserDefinedFields, handleOpenFile,
+    activeFilePathForGraph, handleSaveGitHubIntegrationSettings, handleSaveSettings, handleSaveUserDefinedFields, handleOpenFile,
     isCloningGitHub, isConnectingGitHub, isConnectingGitRemote,
     isCreatingGitCommit, isDisconnectingGitHub, isPullingGitBranch,
     isPushingGitBranch, isResolvingConflict, selectedGitCommitDiff, selectedGitCommitHash,

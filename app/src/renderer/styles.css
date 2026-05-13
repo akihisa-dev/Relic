@@ -3996,6 +3996,69 @@ button:not(:disabled):active {
   width: 130px;
 }
 
+.graph-group-controls {
+  border-top: 1px solid var(--border);
+  display: grid;
+  gap: 8px;
+  padding-top: 10px;
+}
+
+.graph-group-heading {
+  align-items: center;
+  color: var(--text-3);
+  display: flex;
+  font-size: 12px;
+  font-weight: 600;
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.graph-group-row {
+  align-items: center;
+  display: grid;
+  gap: 6px;
+  grid-template-columns: 28px minmax(0, 1fr) 24px;
+}
+
+.graph-group-row input[type="search"] {
+  background: var(--bg);
+  border: 1px solid var(--border-soft);
+  border-radius: 5px;
+  color: var(--text);
+  min-height: 26px;
+  min-width: 0;
+  padding: 0 7px;
+}
+
+.graph-group-color {
+  background: transparent;
+  border: none;
+  height: 24px;
+  padding: 0;
+  width: 28px;
+}
+
+.graph-mini-button {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--text-2);
+  font-size: 11px;
+  min-height: 24px;
+  padding: 0 7px;
+}
+
+.graph-mini-button--icon {
+  font-size: 14px;
+  min-width: 24px;
+  padding: 0;
+}
+
+.graph-mini-button:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+
 .graph-reset-button {
   justify-self: end;
 }
@@ -4021,6 +4084,16 @@ button:not(:disabled):active {
   width: 100%;
 }
 
+.graph-svg {
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.graph-svg--panning {
+  cursor: grabbing;
+}
+
 .graph-edge {
   stroke: var(--text-3);
   stroke-opacity: 0.42;
@@ -4036,6 +4109,16 @@ button:not(:disabled):active {
 
 .graph-edge--dimmed {
   stroke-opacity: 0.12;
+}
+
+.graph-arrow-marker {
+  fill: var(--text-3);
+  fill-opacity: 0.46;
+}
+
+.graph-arrow-marker--selected {
+  fill: var(--accent);
+  fill-opacity: 0.82;
 }
 
 .graph-node-hit {
@@ -4072,6 +4155,13 @@ button:not(:disabled):active {
   fill-opacity: 1;
   stroke: var(--accent);
   stroke-width: 4;
+}
+
+.graph-node--focused {
+  fill: var(--accent);
+  fill-opacity: 1;
+  stroke: var(--accent);
+  stroke-width: 3.2;
 }
 
 .graph-node--related {
