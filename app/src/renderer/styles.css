@@ -987,75 +987,6 @@ button:not(:disabled):active {
   font-size: 12px;
 }
 
-.git-diff-list {
-  display: grid;
-  gap: 12px;
-}
-
-.git-form {
-  display: grid;
-  gap: 8px;
-}
-
-.git-action-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.git-sync-preview {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.git-error-block {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.git-diff-entry {
-  animation: list-result-in 170ms cubic-bezier(.22, 1, .36, 1);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  overflow: hidden;
-  transform-origin: left center;
-}
-
-.git-diff-meta {
-  display: grid;
-  gap: 2px;
-  padding: 8px;
-}
-
-.git-diff-columns {
-  display: grid;
-  gap: 1px;
-  grid-template-columns: 1fr 1fr;
-}
-
-.git-diff-column {
-  background: var(--hover);
-  display: grid;
-  gap: 6px;
-  min-width: 0;
-  padding: 8px;
-}
-
-.git-diff-code {
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  font-family: Menlo, Monaco, monospace;
-  font-size: 11px;
-  margin: 0;
-  min-height: 72px;
-  overflow: auto;
-  padding: 8px;
-  white-space: pre-wrap;
-}
-
 .tag-list {
   display: grid;
   gap: 6px;
@@ -5242,7 +5173,6 @@ button:not(:disabled):active {
   .list-loading-note::before,
   .list-loading-note::after,
   .search-result-item,
-  .git-diff-entry,
   .links-list-item {
     animation-duration: 1ms;
     transition-duration: 1ms;

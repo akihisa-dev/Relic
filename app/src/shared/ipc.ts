@@ -2,20 +2,11 @@ import type { AliasIndex } from "./links";
 import type { RelicResult } from "./result";
 
 export const getAppInfoChannel = "app:getInfo";
-export const getGitHubAuthStatusChannel = "github:getAuthStatus";
-export const connectGitHubChannel = "github:connect";
-export const disconnectGitHubChannel = "github:disconnect";
-export const getGitHubIntegrationSettingsChannel = "github:getIntegrationSettings";
-export const saveGitHubIntegrationSettingsChannel = "github:saveIntegrationSettings";
 export const createFolderChannel = "workspace:createFolder";
 export const createLinkedMarkdownFileChannel = "workspace:createLinkedMarkdownFile";
 export const createMarkdownFileChannel = "workspace:createMarkdownFile";
 export const duplicateMarkdownFileChannel = "workspace:duplicateMarkdownFile";
 export const getBacklinksChannel = "workspace:getBacklinks";
-export const getGitStatusChannel = "workspace:getGitStatus";
-export const getGitCommitHistoryChannel = "workspace:getGitCommitHistory";
-export const getGitCommitDiffChannel = "workspace:getGitCommitDiff";
-export const getGitWorkingChangesChannel = "workspace:getGitWorkingChanges";
 export const getWorkspaceTagsChannel = "workspace:getTags";
 export const getWorkspaceAliasesChannel = "workspace:getAliases";
 export const getWorkspaceChronicleChannel = "workspace:getChronicle";
@@ -23,12 +14,6 @@ export const getWorkspaceGraphChannel = "workspace:getGraph";
 export const saveWorkspaceGanttChartsChannel = "workspace:saveGanttCharts";
 export const getFrontmatterValueCandidatesChannel = "workspace:getFrontmatterValueCandidates";
 export const getWorkspaceStateChannel = "workspace:getState";
-export const initializeGitRepositoryChannel = "workspace:initializeGitRepository";
-export const createGitCommitChannel = "workspace:createGitCommit";
-export const getGitRemotesChannel = "workspace:getGitRemotes";
-export const connectGitRemoteChannel = "workspace:connectGitRemote";
-export const pullGitBranchChannel = "workspace:pullGitBranch";
-export const pushGitBranchChannel = "workspace:pushGitBranch";
 export const moveItemToTrashChannel = "workspace:moveItemToTrash";
 export const openWorkspaceChannel = "workspace:open";
 export const readMarkdownFileChannel = "workspace:readMarkdownFile";
@@ -49,12 +34,6 @@ export const getEditorSettingsChannel = "editor:getSettings";
 export const saveEditorSettingsChannel = "editor:saveSettings";
 export const createNewWorkspaceChannel = "workspace:createNew";
 export const togglePinChannel = "workspace:togglePin";
-export const cloneGitHubRepositoryChannel = "workspace:cloneGitHubRepository";
-export const getGitSyncPreviewChannel = "workspace:getGitSyncPreview";
-export const getGitConflictsChannel = "workspace:getGitConflicts";
-export const resolveGitConflictChannel = "workspace:resolveGitConflict";
-export const getAutoSyncSettingsChannel = "app:getAutoSyncSettings";
-export const saveAutoSyncSettingsChannel = "app:saveAutoSyncSettings";
 export const generateTitleListChannel = "tools:generateTitleList";
 export const generateTableOfContentsChannel = "tools:generateTableOfContents";
 export const getFeatureTogglesChannel = "app:getFeatureToggles";
@@ -276,90 +255,7 @@ export interface WorkspaceGraph {
   nodes: WorkspaceGraphNode[];
 }
 
-export interface GitStatus {
-  currentBranch: string | null;
-  initialized: boolean;
-}
-
-export interface GitWorkingChange {
-  path: string;
-  status: "added" | "deleted" | "modified" | "untracked";
-}
-
-export interface GitCommitSummary {
-  author: string;
-  changedFiles: string[];
-  date: string;
-  hash: string;
-  message: string;
-}
-
-export interface GitCommitDiffEntry {
-  after: string;
-  before: string;
-  path: string;
-  status: "added" | "deleted" | "modified";
-}
-
-export interface GitCommitDiff {
-  commit: GitCommitSummary;
-  entries: GitCommitDiffEntry[];
-}
-
-export interface GitHubAuthStatus {
-  configured: boolean;
-  connected: boolean;
-  login: string | null;
-  scopes: string[];
-  tokenType: string | null;
-}
-
-export interface GitRemoteSummary {
-  isOrigin: boolean;
-  name: string;
-  url: string;
-}
-
-export interface CreateGitCommitInput {
-  message: string;
-}
-
-export interface ConnectGitRemoteInput {
-  url: string;
-}
-
-export interface CloneGitHubRepositoryInput {
-  url: string;
-}
-
-export type AutoSyncInterval = 5 | 15 | 30 | 60;
-
-export interface AutoSyncSettings {
-  autoPull: boolean;
-  autoPush: boolean;
-  intervalMinutes: AutoSyncInterval;
-}
-
-export const defaultAutoSyncSettings: AutoSyncSettings = {
-  autoPull: false,
-  autoPush: false,
-  intervalMinutes: 15
-};
-
-export const autoSyncFeatureEnabled = false;
-
-export interface GitHubIntegrationSettings {
-  clientId: string;
-  scopes: string[];
-}
-
-export const defaultGitHubIntegrationSettings: GitHubIntegrationSettings = {
-  clientId: "",
-  scopes: []
-};
-
 export interface FeatureToggles {
-  git: boolean;
   tools: boolean;
   frontmatter: boolean;
   rightPanel: boolean;
@@ -391,37 +287,10 @@ export const defaultUserDefinedFields: UserDefinedField[] = [];
 export const defaultFrontmatterTemplates: FrontmatterTemplate[] = [];
 
 export const defaultFeatureToggles: FeatureToggles = {
-  git: true,
   tools: true,
   frontmatter: true,
   rightPanel: true
 };
-
-export interface GitSyncPreview {
-  branch: string;
-  incomingCommits: GitCommitSummary[];
-  outgoingChanges: GitWorkingChange[];
-  remoteName: string;
-  remoteUrl: string;
-  upstream: string;
-}
-
-export interface GitConflict {
-  ours: string;
-  path: string;
-  theirs: string;
-}
-
-export interface ResolveGitConflictInput {
-  path: string;
-  resolution: "ours" | "theirs";
-}
-
-export interface GitRemoteSyncResult {
-  errors: string[];
-  message: string;
-  updatedRefs: string[];
-}
 
 export interface WorkspaceSearchResult {
   fileName: string;
@@ -486,13 +355,9 @@ export interface WorkspaceFileNode {
 }
 
 export interface RelicApi {
-  cloneGitHubRepository: (input: CloneGitHubRepositoryInput) => Promise<RelicResult<WorkspaceState>>;
   createNewWorkspace: () => Promise<RelicResult<WorkspaceState>>;
   togglePin: (path: string) => Promise<RelicResult<WorkspaceState>>;
-  connectGitRemote: (input: ConnectGitRemoteInput) => Promise<RelicResult<GitRemoteSummary[]>>;
-  connectGitHubAccount: () => Promise<RelicResult<GitHubAuthStatus>>;
   createFolder: (input: CreateFolderInput) => Promise<RelicResult<WorkspaceState>>;
-  createGitCommit: (input: CreateGitCommitInput) => Promise<RelicResult<GitCommitSummary>>;
   createLinkedMarkdownFile: (
     input: CreateLinkedMarkdownFileInput
   ) => Promise<RelicResult<CreateLinkedMarkdownFileResult>>;
@@ -500,15 +365,7 @@ export interface RelicApi {
   duplicateMarkdownFile: (
     input: DuplicateMarkdownFileInput
   ) => Promise<RelicResult<RenameMarkdownFileResult>>;
-  disconnectGitHubAccount: () => Promise<RelicResult<GitHubAuthStatus>>;
-  getGitHubIntegrationSettings: () => Promise<RelicResult<GitHubIntegrationSettings>>;
   getBacklinks: (input: GetBacklinksInput) => Promise<RelicResult<Backlink[]>>;
-  getGitHubAuthStatus: () => Promise<RelicResult<GitHubAuthStatus>>;
-  getGitCommitHistory: () => Promise<RelicResult<GitCommitSummary[]>>;
-  getGitCommitDiff: (hash: string) => Promise<RelicResult<GitCommitDiff>>;
-  getGitStatus: () => Promise<RelicResult<GitStatus>>;
-  getGitWorkingChanges: () => Promise<RelicResult<GitWorkingChange[]>>;
-  getGitRemotes: () => Promise<RelicResult<GitRemoteSummary[]>>;
   getAppInfo: () => Promise<RelicResult<AppInfo>>;
   getEditorSettings: () => Promise<RelicResult<EditorSettings>>;
   getWorkspaceAliases: () => Promise<RelicResult<AliasIndex>>;
@@ -522,10 +379,7 @@ export interface RelicApi {
   moveMarkdownFile: (
     input: MoveMarkdownFileInput
   ) => Promise<RelicResult<RenameMarkdownFileResult>>;
-  initializeGitRepository: () => Promise<RelicResult<GitStatus>>;
   openWorkspace: () => Promise<RelicResult<WorkspaceState>>;
-  pullGitBranch: () => Promise<RelicResult<GitRemoteSyncResult>>;
-  pushGitBranch: () => Promise<RelicResult<GitRemoteSyncResult>>;
   readMarkdownFile: (input: ReadMarkdownFileInput) => Promise<RelicResult<MarkdownFileContent>>;
   readClipboardText: () => string;
   removeWorkspace: (input: RemoveWorkspaceInput) => Promise<RelicResult<WorkspaceState>>;
@@ -538,7 +392,6 @@ export interface RelicApi {
   applySearchAndReplace: (input: SearchAndReplaceInput) => Promise<RelicResult<ReplaceInFileResult>>;
   replaceInFile: (input: ReplaceInFileInput) => Promise<RelicResult<ReplaceInFileResult>>;
   saveEditorSettings: (input: EditorSettings) => Promise<RelicResult<void>>;
-  saveGitHubIntegrationSettings: (input: GitHubIntegrationSettings) => Promise<RelicResult<void>>;
   searchAndReplace: (
     input: SearchAndReplaceInput
   ) => Promise<RelicResult<SearchAndReplaceMatch[]>>;
@@ -546,11 +399,6 @@ export interface RelicApi {
   switchWorkspace: (input: SwitchWorkspaceInput) => Promise<RelicResult<WorkspaceState>>;
   writeMarkdownFile: (input: WriteMarkdownFileInput) => Promise<RelicResult<void>>;
   writeClipboardText: (text: string) => void;
-  getGitSyncPreview: () => Promise<RelicResult<GitSyncPreview>>;
-  getGitConflicts: () => Promise<RelicResult<GitConflict[]>>;
-  resolveGitConflict: (input: ResolveGitConflictInput) => Promise<RelicResult<GitConflict[]>>;
-  getAutoSyncSettings: () => Promise<RelicResult<AutoSyncSettings>>;
-  saveAutoSyncSettings: (input: AutoSyncSettings) => Promise<RelicResult<void>>;
   saveWorkspaceGanttCharts: (input: GanttChartSettings[]) => Promise<RelicResult<WorkspaceGanttChart[]>>;
   generateTitleList: (input: GenerateTitleListInput) => Promise<RelicResult<string>>;
   generateTableOfContents: (input: GenerateTableOfContentsInput) => Promise<RelicResult<string>>;

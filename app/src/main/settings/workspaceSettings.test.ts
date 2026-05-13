@@ -4,7 +4,6 @@ import path from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import { defaultAutoSyncSettings } from "../../shared/ipc";
 import {
   defaultGanttCharts,
   getWorkspaceSettingsPath,
@@ -28,7 +27,6 @@ describe("workspaceSettings", () => {
     const settings = await readWorkspaceSettings(userDataPath, "workspace-id");
 
     expect(settings.pinnedPaths).toEqual([]);
-    expect(settings.autoSync).toEqual(defaultAutoSyncSettings);
     expect(settings.ganttCharts).toEqual(defaultGanttCharts);
     expect(settings.workspacePath).toBe("");
   });
@@ -38,7 +36,6 @@ describe("workspaceSettings", () => {
     temporaryPaths.push(userDataPath);
 
     await writeWorkspaceSettings(userDataPath, "ws-1", {
-      autoSync: { autoPull: true, autoPush: false, intervalMinutes: 30 },
       ganttCharts: [
         { filePaths: ["history/kamakura.md"], id: "chronicle", name: "歴史", source: "chronicle" },
         { filePaths: [], id: "schedule", name: "予定", source: "date" }
@@ -48,7 +45,6 @@ describe("workspaceSettings", () => {
     });
 
     const settings = await readWorkspaceSettings(userDataPath, "ws-1");
-    expect(settings.autoSync).toEqual({ autoPull: true, autoPush: false, intervalMinutes: 30 });
     expect(settings.ganttCharts).toEqual([
       { filePaths: ["history/kamakura.md"], id: "chronicle", name: "chronicle", source: "chronicle" },
       { filePaths: [], id: "date", name: "date", source: "date" }

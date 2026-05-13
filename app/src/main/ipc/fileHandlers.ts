@@ -538,7 +538,7 @@ export function registerFileHandlers(): void {
       } catch (error) {
         return fail(
           "REVEAL_FAILED",
-          "Finderで表示できませんでした。",
+          "ファイルの場所を表示できませんでした。",
           error instanceof Error ? error.message : String(error)
         );
       }

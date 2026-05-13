@@ -21,11 +21,9 @@ vi.mock("electron", () => ({
 }));
 
 import {
-  defaultAutoSyncSettings,
   defaultEditorSettings,
   defaultFeatureToggles,
   defaultFrontmatterTemplates,
-  defaultGitHubIntegrationSettings,
   defaultUserDefinedFields,
   getWorkspaceStateChannel
 } from "../../shared/ipc";
@@ -64,7 +62,6 @@ describe("workspaceHandlers", () => {
         editorSettings: defaultEditorSettings,
         featureToggles: defaultFeatureToggles,
         frontmatterTemplates: defaultFrontmatterTemplates,
-        githubIntegration: defaultGitHubIntegrationSettings,
         lastWorkspaceId: null,
         userDefinedFields: defaultUserDefinedFields,
         workspaces: []
@@ -73,7 +70,6 @@ describe("workspaceHandlers", () => {
     );
     await writeAppSettings(userDataPath, settings);
     await writeWorkspaceSettings(userDataPath, workspace.id, {
-      autoSync: defaultAutoSyncSettings,
       ganttCharts: defaultGanttCharts,
       pinnedPaths: ["読書メモ.md"],
       workspacePath

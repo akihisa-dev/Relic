@@ -1,59 +1,19 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
-import { defaultAutoSyncSettings, defaultEditorSettings, defaultFeatureToggles, defaultGitHubIntegrationSettings, type GitHubAuthStatus } from "../shared/ipc";
+import { defaultEditorSettings, defaultFeatureToggles } from "../shared/ipc";
 import { App } from "./App";
 import { useEditorStore } from "./store/editorStore";
 import { useGraphStore } from "./store/graphStore";
 import { useUiStore } from "./store/uiStore";
 
 function makeRelicApi(overrides: Partial<typeof window.relic> = {}): typeof window.relic {
-  const defaultGitHubStatus: GitHubAuthStatus = {
-    configured: true,
-    connected: false,
-    login: null,
-    scopes: [],
-    tokenType: null
-  };
-
   return {
-    connectGitRemote: vi.fn().mockResolvedValue({
-      ok: true,
-      value: [{ isOrigin: true, name: "origin", url: "https://github.com/akihisa/relic.git" }]
-    }),
-    connectGitHubAccount: vi.fn().mockResolvedValue({
-      ok: true,
-      value: {
-        ...defaultGitHubStatus,
-        connected: true,
-        login: "akihisa",
-        scopes: ["repo"],
-        tokenType: "bearer"
-      }
-    }),
     createFolder: vi.fn(),
-    createGitCommit: vi.fn().mockResolvedValue({
-      ok: true,
-      value: {
-        author: "Test User",
-        changedFiles: ["note.md"],
-        date: "2026-05-05T00:00:00.000Z",
-        hash: "abc123",
-        message: "Initial commit"
-      }
-    }),
     createLinkedMarkdownFile: vi.fn(),
     createMarkdownFile: vi.fn(),
-    disconnectGitHubAccount: vi.fn().mockResolvedValue({ ok: true, value: defaultGitHubStatus }),
     duplicateMarkdownFile: vi.fn(),
     getBacklinks: vi.fn().mockResolvedValue({ ok: true, value: [] }),
-    getGitCommitHistory: vi.fn().mockResolvedValue({ ok: true, value: [] }),
-    getGitCommitDiff: vi.fn().mockResolvedValue({ ok: true, value: { commit: { author: "Test User", changedFiles: [], date: "2026-05-05T00:00:00.000Z", hash: "abc123", message: "Initial commit" }, entries: [] } }),
-    getGitHubAuthStatus: vi.fn().mockResolvedValue({ ok: true, value: defaultGitHubStatus }),
-    getGitHubIntegrationSettings: vi.fn().mockResolvedValue({ ok: true, value: defaultGitHubIntegrationSettings }),
-    getGitRemotes: vi.fn().mockResolvedValue({ ok: true, value: [] }),
-    getGitStatus: vi.fn().mockResolvedValue({ ok: true, value: { currentBranch: null, initialized: false } }),
-    getGitWorkingChanges: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     getAppInfo: vi.fn().mockResolvedValue({ ok: true, value: { name: "Relic", platform: "darwin", version: "0.0.0" } }),
     getEditorSettings: vi.fn().mockResolvedValue({ ok: true, value: { ...defaultEditorSettings, language: "ja" } }),
     getFrontmatterValueCandidates: vi.fn().mockResolvedValue({ ok: true, value: {} }),
@@ -81,34 +41,14 @@ function makeRelicApi(overrides: Partial<typeof window.relic> = {}): typeof wind
     writeMarkdownFile: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
     moveFolder: vi.fn(),
     moveMarkdownFile: vi.fn(),
-    initializeGitRepository: vi.fn().mockResolvedValue({ ok: true, value: { currentBranch: "main", initialized: true } }),
-    pullGitBranch: vi.fn().mockResolvedValue({ ok: true, value: { errors: [], message: "pull ok", updatedRefs: ["main"] } }),
-    pushGitBranch: vi.fn().mockResolvedValue({ ok: true, value: { errors: [], message: "push ok", updatedRefs: ["main"] } }),
     applySearchAndReplace: vi.fn(),
     replaceInFile: vi.fn(),
     searchAndReplace: vi.fn(),
-    cloneGitHubRepository: vi.fn().mockResolvedValue({ ok: true, value: { activeWorkspace: null, fileTree: [], pinnedPaths: [], workspaces: [] } }),
     createNewWorkspace: vi.fn().mockResolvedValue({ ok: true, value: { activeWorkspace: null, fileTree: [], pinnedPaths: [], workspaces: [] } }),
     togglePin: vi.fn().mockResolvedValue({ ok: true, value: { activeWorkspace: null, fileTree: [], pinnedPaths: [], workspaces: [] } }),
-    getGitSyncPreview: vi.fn().mockResolvedValue({
-      ok: true,
-      value: {
-        branch: "main",
-        incomingCommits: [],
-        outgoingChanges: [],
-        remoteName: "origin",
-        remoteUrl: "https://github.com/owner/repo.git",
-        upstream: "origin/main"
-      }
-    }),
-    getGitConflicts: vi.fn().mockResolvedValue({ ok: true, value: [] }),
-    resolveGitConflict: vi.fn().mockResolvedValue({ ok: true, value: [] }),
-    getAutoSyncSettings: vi.fn().mockResolvedValue({ ok: true, value: defaultAutoSyncSettings }),
-    saveAutoSyncSettings: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
     saveWorkspaceGanttCharts: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     getFeatureToggles: vi.fn().mockResolvedValue({ ok: true, value: defaultFeatureToggles }),
     saveFeatureToggles: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
-    saveGitHubIntegrationSettings: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
     getUserDefinedFields: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     saveUserDefinedFields: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
     getFrontmatterTemplates: vi.fn().mockResolvedValue({ ok: true, value: [] }),
@@ -239,7 +179,7 @@ describe("App", () => {
     expect(await screen.findByText("読書メモ", { selector: ".pane-tab-name" })).toBeInTheDocument();
   });
 
-  it("タブの右クリックメニューから複製・ピン留め・コピー・Finder表示を実行する", async () => {
+  it("タブの右クリックメニューから複製・ピン留め・コピー・場所表示を実行する", async () => {
     const duplicateMarkdownFile = vi.fn().mockResolvedValue({
       ok: true,
       value: {
@@ -308,7 +248,7 @@ describe("App", () => {
     });
 
     fireEvent.contextMenu(tab!);
-    fireEvent.click(await screen.findByRole("button", { name: "Finderで表示" }));
+    fireEvent.click(await screen.findByRole("button", { name: "ファイルの場所を表示" }));
     await waitFor(() => {
       expect(revealWorkspaceItem).toHaveBeenCalledWith({ path: "読書メモ.md" });
     });
@@ -961,59 +901,6 @@ describe("App", () => {
     expect(fileButton).toHaveClass("active");
   });
 
-  it("Git ビューから GitHub 接続を開始できる", async () => {
-    const connectGitHubAccount = vi.fn().mockResolvedValue({
-      ok: true,
-      value: {
-        configured: true,
-        connected: true,
-        login: "akihisa",
-        scopes: ["repo"],
-        tokenType: "bearer"
-      }
-    });
-
-    window.relic = makeRelicApi({
-      connectGitHubAccount,
-      getGitHubAuthStatus: vi.fn().mockResolvedValue({
-        ok: true,
-        value: {
-          configured: true,
-          connected: false,
-          login: null,
-          scopes: [],
-          tokenType: null
-        }
-      }),
-      getGitStatus: vi.fn().mockResolvedValue({
-        ok: true,
-        value: { currentBranch: "main", initialized: true }
-      }),
-      getWorkspaceState: vi.fn().mockResolvedValue({
-        ok: true,
-        value: withWorkspace
-      })
-    });
-
-    useUiStore.setState({
-      activeSidebarView: "git",
-      isRightPanelOpen: true,
-      isSidebarOpen: true,
-      isTypewriterMode: false,
-      rightPanelView: "outline"
-    });
-
-    await renderApp();
-
-    fireEvent.click(await screen.findByRole("button", { name: "GitHubアカウントを接続" }));
-
-    await waitFor(() => {
-      expect(connectGitHubAccount).toHaveBeenCalledTimes(1);
-    });
-
-    expect(await screen.findByText("akihisa")).toBeInTheDocument();
-  });
-
   it("新規ファイルボタンから名前なしでファイルを作成する", async () => {
     const createMarkdownFile = vi.fn().mockResolvedValue({
       ok: true,
@@ -1642,7 +1529,7 @@ describe("App", () => {
     });
   });
 
-  it("ファイルツリーの右クリックメニューから作成・移動・Markdownリンクコピー・Finder表示を実行する", async () => {
+  it("ファイルツリーの右クリックメニューから作成・移動・Markdownリンクコピー・場所表示を実行する", async () => {
     const createLinkedMarkdownFile = vi.fn().mockResolvedValue({
       ok: true,
       value: {
@@ -1736,7 +1623,7 @@ describe("App", () => {
     expect(writeText).toHaveBeenCalledWith("[[資料/読書メモ]]");
 
     fireEvent.contextMenu(fileRow);
-    fireEvent.click(await screen.findByRole("menuitem", { name: "Finderで表示" }));
+    fireEvent.click(await screen.findByRole("menuitem", { name: "ファイルの場所を表示" }));
     await waitFor(() => {
       expect(revealWorkspaceItem).toHaveBeenCalledWith({ path: "資料/読書メモ.md" });
     });
@@ -2563,116 +2450,6 @@ describe("App", () => {
     expect(await screen.findByText("status: draft")).toBeInTheDocument();
   });
 
-  it("Gitビューでワークスペースを初期化できる", async () => {
-    const initializeGitRepository = vi.fn().mockResolvedValue({
-      ok: true,
-      value: { currentBranch: "main", initialized: true }
-    });
-
-    window.relic = makeRelicApi({
-      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace }),
-      getGitStatus: vi.fn().mockResolvedValue({ ok: true, value: { currentBranch: null, initialized: false } }),
-      initializeGitRepository
-    });
-
-    await renderApp();
-
-    fireEvent.click(screen.getByRole("button", { name: "Git" }));
-    fireEvent.click(await screen.findByRole("button", { name: "このワークスペースでGitを初期化" }));
-
-    await waitFor(() => {
-      expect(initializeGitRepository).toHaveBeenCalled();
-    });
-    expect(await screen.findByText("初期化済み")).toBeInTheDocument();
-  });
-
-  it("Gitビューでコミットメッセージだけを入力して履歴に追加する", async () => {
-    const createGitCommit = vi.fn().mockResolvedValue({
-      ok: true,
-      value: {
-        author: "Test User",
-        changedFiles: ["note.md"],
-        date: "2026-05-05T00:00:00.000Z",
-        hash: "def456",
-        message: "Save note"
-      }
-    });
-
-    window.relic = makeRelicApi({
-      createGitCommit,
-      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace }),
-      getGitStatus: vi.fn().mockResolvedValue({ ok: true, value: { currentBranch: "main", initialized: true } }),
-      getGitWorkingChanges: vi.fn().mockResolvedValue({
-        ok: true,
-        value: [{ path: "note.md", status: "modified" }]
-      }),
-      getGitCommitHistory: vi.fn().mockResolvedValue({ ok: true, value: [] })
-    });
-
-    await renderApp();
-
-    fireEvent.click(screen.getByRole("button", { name: "Git" }));
-    await screen.findByText("コミット履歴はまだありません。");
-    fireEvent.change(await screen.findByLabelText("コミットメッセージ"), { target: { value: "Save note" } });
-    fireEvent.click(screen.getByRole("button", { name: "コミット" }));
-
-    await waitFor(() => {
-      expect(createGitCommit).toHaveBeenCalledWith({
-        message: "Save note"
-      });
-    });
-    expect(screen.getByLabelText("コミットメッセージ")).toHaveValue("");
-  });
-
-  it("Gitビューでコミットを選ぶと差分を表示する", async () => {
-    window.relic = makeRelicApi({
-      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace }),
-      getGitStatus: vi.fn().mockResolvedValue({ ok: true, value: { currentBranch: "main", initialized: true } }),
-      getGitWorkingChanges: vi.fn().mockResolvedValue({ ok: true, value: [] }),
-      getGitCommitHistory: vi.fn().mockResolvedValue({
-        ok: true,
-        value: [
-          {
-            author: "Test User",
-            changedFiles: [],
-            date: "2026-05-05T00:00:00.000Z",
-            hash: "def456",
-            message: "Update note"
-          }
-        ]
-      }),
-      getGitCommitDiff: vi.fn().mockResolvedValue({
-        ok: true,
-        value: {
-          commit: {
-            author: "Test User",
-            changedFiles: ["note.md"],
-            date: "2026-05-05T00:00:00.000Z",
-            hash: "def456",
-            message: "Update note"
-          },
-          entries: [
-            {
-              after: "v2",
-              before: "v1",
-              path: "note.md",
-              status: "modified"
-            }
-          ]
-        }
-      })
-    });
-
-    await renderApp();
-
-    fireEvent.click(screen.getByRole("button", { name: "Git" }));
-
-    expect(await screen.findByText("Update note")).toBeInTheDocument();
-    expect(await screen.findByText("note.md")).toBeInTheDocument();
-    expect(screen.getByText("v1")).toBeInTheDocument();
-    expect(screen.getByText("v2")).toBeInTheDocument();
-  });
-
   it("右パネルにアウトゴーイングリンクを表示する", async () => {
     const readMarkdownFile = vi.fn(({ path }: { path: string }) => Promise.resolve({
       ok: true as const,
@@ -2707,7 +2484,7 @@ describe("App", () => {
     expect(screen.getAllByText("埋め込み").length).toBeGreaterThan(0);
   });
 
-  it("右パネルのリンクを右クリックしてコピーとFinder表示を実行する", async () => {
+  it("右パネルのリンクを右クリックしてコピーと場所表示を実行する", async () => {
     const revealWorkspaceItem = vi.fn().mockResolvedValue({ ok: true, value: undefined });
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, "clipboard", {
@@ -2747,7 +2524,7 @@ describe("App", () => {
     expect(writeText).toHaveBeenCalledWith("参照先.md");
 
     fireEvent.contextMenu(screen.getByRole("button", { name: "表示名" }));
-    fireEvent.click(await screen.findByRole("menuitem", { name: "Finderで表示" }));
+    fireEvent.click(await screen.findByRole("menuitem", { name: "ファイルの場所を表示" }));
     await waitFor(() => {
       expect(revealWorkspaceItem).toHaveBeenCalledWith({ path: "参照先.md" });
     });
@@ -2853,18 +2630,6 @@ describe("App", () => {
       expect(createLinkedMarkdownFile).toHaveBeenCalledWith({ path: "folder/新規ノート.md" });
     });
     expect((await screen.findAllByText("新規ノート")).length).toBeGreaterThan(0);
-  });
-
-  it("機能トグル git=false でナビから Git ビューが非表示になる", async () => {
-    window.relic = makeRelicApi({
-      getFeatureToggles: vi.fn().mockResolvedValue({ ok: true, value: { ...defaultFeatureToggles, git: false } }),
-      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
-    });
-
-    await renderApp();
-
-    await screen.findByRole("button", { name: "ファイル" });
-    expect(screen.queryByRole("button", { name: "Git" })).toBeNull();
   });
 
   it("機能トグル tools=false でナビから Tools ビューが非表示になる", async () => {

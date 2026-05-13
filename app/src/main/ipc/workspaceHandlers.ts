@@ -1,16 +1,10 @@
 import { mkdir } from "node:fs/promises";
-import path from "node:path";
 
 import { app, dialog, ipcMain } from "electron";
 
 import {
-  cloneGitHubRepositoryChannel,
-  autoSyncFeatureEnabled,
-  type CloneGitHubRepositoryInput,
   createNewWorkspaceChannel,
-  defaultAutoSyncSettings,
   defaultFeatureToggles,
-  getAutoSyncSettingsChannel,
   getFeatureTogglesChannel,
   getUserDefinedFieldsChannel,
   getWorkspaceAliasesChannel,
@@ -23,9 +17,7 @@ import {
   renameWorkspaceChannel,
   type RemoveWorkspaceInput,
   type RenameWorkspaceInput,
-  saveAutoSyncSettingsChannel,
   saveWorkspaceGanttChartsChannel,
-  type AutoSyncSettings,
   saveFeatureTogglesChannel,
   getFrontmatterTemplatesChannel,
   getFrontmatterValueCandidatesChannel,
@@ -43,8 +35,6 @@ import {
   type WorkspaceState
 } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
-import { refreshAutoSyncTimer } from "../autoSyncScheduler";
-import { cloneGitHubRepository } from "../files/git";
 import { readWorkspaceAliases } from "../files/aliases";
 import { readWorkspaceChronicle } from "../files/chronicle";
 import { readWorkspaceFileTree } from "../files/fileTree";
@@ -310,7 +300,6 @@ export function registerWorkspaceHandlers(): void {
       const settings = await readAppSettings(app.getPath("userData"));
       const nextSettings = addOrActivateWorkspace(settings, workspace);
       await writeAppSettings(app.getPath("userData"), nextSettings);
-      await refreshAutoSyncTimer();
 
       return ok(await buildWorkspaceState(nextSettings));
     } catch (error) {
@@ -344,7 +333,6 @@ export function registerWorkspaceHandlers(): void {
       const settings = await readAppSettings(app.getPath("userData"));
       const nextSettings = addOrActivateWorkspace(settings, workspace);
       await writeAppSettings(app.getPath("userData"), nextSettings);
-      await refreshAutoSyncTimer();
 
       return ok(await buildWorkspaceState(nextSettings));
     } catch (error) {
@@ -414,7 +402,6 @@ export function registerWorkspaceHandlers(): void {
 
         await prepareWorkspace(activeWorkspace.path);
         await writeAppSettings(app.getPath("userData"), nextSettings.value);
-        await refreshAutoSyncTimer();
 
         return ok(await buildWorkspaceState(nextSettings.value));
       } catch (error) {
@@ -443,7 +430,6 @@ export function registerWorkspaceHandlers(): void {
         }
 
         await writeAppSettings(app.getPath("userData"), nextSettings.value);
-        await refreshAutoSyncTimer();
 
         return ok(await buildWorkspaceState(nextSettings.value));
       } catch (error) {
@@ -484,122 +470,12 @@ export function registerWorkspaceHandlers(): void {
         }
 
         await writeAppSettings(app.getPath("userData"), renameResult.value.nextSettings);
-        await refreshAutoSyncTimer();
 
         return ok(await buildWorkspaceState(renameResult.value.nextSettings));
       } catch (error) {
         return fail(
           "WORKSPACE_RENAME_FAILED",
           "ワークスペース名を変更できませんでした。",
-          error instanceof Error ? error.message : String(error)
-        );
-      }
-    }
-  );
-
-  ipcMain.handle(
-    cloneGitHubRepositoryChannel,
-    async (_event, input: CloneGitHubRepositoryInput): Promise<RelicResult<WorkspaceState>> => {
-      try {
-        if (!isCloneGitHubRepositoryInput(input)) {
-          return fail("GIT_CLONE_INVALID_INPUT", "GitHubリポジトリのURLを入力してください。");
-        }
-
-        const selection = await dialog.showOpenDialog({
-          buttonLabel: "ここにクローン",
-          message: "クローン先のフォルダを選んでください。",
-          properties: ["openDirectory", "createDirectory"]
-        });
-
-        if (selection.canceled || selection.filePaths.length === 0) {
-          const settings = await readAppSettings(app.getPath("userData"));
-
-          return ok(await buildWorkspaceState(settings));
-        }
-
-        const parentDir = selection.filePaths[0];
-        const repoName =
-          input.url.split("/").at(-1)?.replace(/\.git$/, "") ?? "repo";
-        const destinationPath = path.join(parentDir, repoName);
-
-        const cloneResult = await cloneGitHubRepository(input.url, destinationPath);
-
-        if (!cloneResult.ok) {
-          return cloneResult;
-        }
-
-        const workspace = createWorkspaceSummary(destinationPath);
-        const settings = await readAppSettings(app.getPath("userData"));
-        const nextSettings = addOrActivateWorkspace(settings, workspace);
-        await writeAppSettings(app.getPath("userData"), nextSettings);
-        await refreshAutoSyncTimer();
-
-        return ok(await buildWorkspaceState(nextSettings));
-      } catch (error) {
-        return fail(
-          "GIT_CLONE_FAILED",
-          "クローンできませんでした。URLとGitHub接続を確認してください。",
-          error instanceof Error ? error.message : String(error)
-        );
-      }
-    }
-  );
-
-  ipcMain.handle(getAutoSyncSettingsChannel, async (): Promise<RelicResult<AutoSyncSettings>> => {
-    try {
-      const settings = await readAppSettings(app.getPath("userData"));
-      const activeWorkspace = settings.workspaces.find((ws) => ws.id === settings.lastWorkspaceId);
-
-      if (!activeWorkspace) {
-        return ok(defaultAutoSyncSettings);
-      }
-
-      const workspaceSettings = await readWorkspaceSettings(app.getPath("userData"), activeWorkspace.id);
-
-      return ok(autoSyncFeatureEnabled ? workspaceSettings.autoSync : defaultAutoSyncSettings);
-    } catch (error) {
-      return fail(
-        "AUTO_SYNC_SETTINGS_FAILED",
-        "自動同期設定を読み込めませんでした。",
-        error instanceof Error ? error.message : String(error)
-      );
-    }
-  });
-
-  ipcMain.handle(
-    saveAutoSyncSettingsChannel,
-    async (_event, input: AutoSyncSettings): Promise<RelicResult<void>> => {
-      try {
-        if (!isAutoSyncSettings(input)) {
-          return fail("AUTO_SYNC_INVALID_INPUT", "自動同期設定の値が正しくありません。");
-        }
-
-        if (!autoSyncFeatureEnabled && (input.autoPull || input.autoPush)) {
-          return fail(
-            "AUTO_SYNC_DISABLED",
-            "自動同期は現在無効です。P14では手動同期だけを使います。"
-          );
-        }
-
-        const settings = await readAppSettings(app.getPath("userData"));
-        const activeWorkspace = settings.workspaces.find((ws) => ws.id === settings.lastWorkspaceId);
-
-        if (!activeWorkspace) {
-          return fail("AUTO_SYNC_NO_WORKSPACE", "自動同期を設定するワークスペースがありません。");
-        }
-
-        const workspaceSettings = await readWorkspaceSettings(app.getPath("userData"), activeWorkspace.id);
-        await writeWorkspaceSettings(app.getPath("userData"), activeWorkspace.id, {
-          ...workspaceSettings,
-          autoSync: autoSyncFeatureEnabled ? input : defaultAutoSyncSettings
-        });
-        await refreshAutoSyncTimer();
-
-        return ok(undefined);
-      } catch (error) {
-        return fail(
-          "AUTO_SYNC_SAVE_FAILED",
-          "自動同期設定を保存できませんでした。",
           error instanceof Error ? error.message : String(error)
         );
       }
@@ -711,29 +587,5 @@ function isRenameWorkspaceInput(input: unknown): input is RenameWorkspaceInput {
     "name" in input &&
     typeof (input as { workspaceId?: unknown }).workspaceId === "string" &&
     typeof (input as { name?: unknown }).name === "string"
-  );
-}
-
-function isCloneGitHubRepositoryInput(input: unknown): input is CloneGitHubRepositoryInput {
-  return (
-    typeof input === "object" &&
-    input !== null &&
-    "url" in input &&
-    typeof (input as { url?: unknown }).url === "string"
-  );
-}
-
-function isAutoSyncSettings(input: unknown): input is AutoSyncSettings {
-  const validIntervals = [5, 15, 30, 60];
-
-  return (
-    typeof input === "object" &&
-    input !== null &&
-    "autoPull" in input &&
-    "autoPush" in input &&
-    "intervalMinutes" in input &&
-    typeof (input as { autoPull?: unknown }).autoPull === "boolean" &&
-    typeof (input as { autoPush?: unknown }).autoPush === "boolean" &&
-    validIntervals.includes((input as { intervalMinutes?: unknown }).intervalMinutes as number)
   );
 }

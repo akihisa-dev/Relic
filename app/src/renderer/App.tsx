@@ -13,7 +13,6 @@ import { CommandPalette } from "./components/CommandPalette";
 import { GanttChartView } from "./components/ChronicleSidebar";
 import { FilesSidebar } from "./components/FilesSidebar";
 import { FrontmatterSidebar } from "./components/FrontmatterSidebar";
-import { GitSidebar } from "./components/GitSidebar";
 import { GraphPanel } from "./components/GraphSidebar";
 import { PaneView } from "./components/PaneView";
 import { QuickSwitcher } from "./components/QuickSwitcher";
@@ -27,7 +26,6 @@ import { useAppSettingsState } from "./hooks/useAppSettingsState";
 import { useAppTheme } from "./hooks/useAppTheme";
 import { useBacklinksState } from "./hooks/useBacklinksState";
 import { useCommandPaletteCommands } from "./hooks/useCommandPaletteCommands";
-import { useGitPanelState } from "./hooks/useGitPanelState";
 import { useSidebarResize } from "./hooks/useSidebarResize";
 import { useWorkspaceFileActions } from "./hooks/useWorkspaceFileActions";
 import { useWorkspaceSearchState } from "./hooks/useWorkspaceSearchState";
@@ -48,16 +46,6 @@ const IconFiles = ({ sidebarOpen = false }: { sidebarOpen?: boolean } = {}): Rea
     ) : (
       <polyline points="10.75,8.75 13.25,11 10.75,13.25" />
     )}
-  </svg>
-);
-
-const IconGit = (): ReactElement => (
-  <svg fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" viewBox="0 0 20 20" width="18">
-    <circle cx="6" cy="5" r="2" />
-    <circle cx="6" cy="15" r="2" />
-    <circle cx="14" cy="5" r="2" />
-    <line x1="6" x2="6" y1="7" y2="13" />
-    <path d="M14 7c0 4-8 4-8 8" />
   </svg>
 );
 
@@ -115,7 +103,6 @@ type RailViewId = SidebarView | PanelTabKind;
 const sidebarViewDefs: Array<{ id: RailViewId; labelKey: TranslationKey; icon: ReactElement }> = [
   { id: "files", labelKey: "nav.files", icon: <IconFiles /> },
   { id: "graph", labelKey: "nav.graph", icon: <IconGraph /> },
-  { id: "git", labelKey: "nav.git", icon: <IconGit /> },
   { id: "tools", labelKey: "nav.tools", icon: <IconTools /> },
   { id: "frontmatter", labelKey: "nav.frontmatter", icon: <IconFrontmatter /> },
   { id: "chronicle", labelKey: "nav.chronicle", icon: <IconChronicle /> },
@@ -683,72 +670,16 @@ export function App(): ReactElement {
 
   const {
     appInfo,
-    autoSyncSettings,
     featureToggles,
-    gitHubIntegrationSettings,
-    handleSaveAutoSyncSettings,
     handleSaveFeatureToggles,
-    handleSaveGitHubIntegrationSettings,
     handleSaveSettings,
     handleSaveUserDefinedFields,
     userDefinedFields
   } = useAppSettingsState({
     setEditorSettings,
     setWorkspaceError,
-    setWorkspaceState,
-    workspaceState
+    setWorkspaceState
   });
-
-  const gitPanel = useGitPanelState({
-    gitHubIntegrationSettings,
-    setWorkspaceError,
-    setWorkspaceState,
-    t,
-    workspaceState
-  });
-
-  const {
-    gitStatus,
-    gitHubAuthStatus,
-    gitRemotes,
-    gitCommitHistory,
-    gitWorkingChanges,
-    selectedGitCommitHash,
-    selectedGitCommitDiff,
-    gitRemoteUrl,
-    gitSyncMessage,
-    gitErrorMessage,
-    gitRetryAction,
-    gitCommitMessage,
-    gitSyncPreview,
-    gitSyncStep,
-    gitConflicts,
-    gitCloneUrl,
-    isCreatingGitCommit,
-    isConnectingGitHub,
-    isConnectingGitRemote,
-    isDisconnectingGitHub,
-    isPullingGitBranch,
-    isPushingGitBranch,
-    isCloningGitHub,
-    isResolvingConflict,
-    handleInitializeGitRepository,
-    handleCloneGitHubRepository,
-    handleConnectGitHubAccount,
-    handleDisconnectGitHubAccount,
-    handleConnectGitRemote,
-    handlePushGitBranch,
-    handlePullGitBranch,
-    handleConfirmPush,
-    handleConfirmPull,
-    handleCreateGitCommit,
-    handleResolveConflict,
-    setSelectedGitCommitHash,
-    setGitRemoteUrl,
-    setGitSyncStep,
-    setGitCommitMessage,
-    setGitCloneUrl
-  } = gitPanel;
 
   const {
     frontmatterCandidates,
@@ -1234,8 +1165,6 @@ export function App(): ReactElement {
     activeFileName: activeFileTabInFocusedPane?.name ?? null,
     handleDeleteActiveFile,
     handleDuplicateActiveFile,
-    handlePullGitBranch,
-    handlePushGitBranch,
     requestFileSearchFocus,
     setIsCreatingFile,
     setShowQuickSwitcher,
@@ -1250,7 +1179,6 @@ export function App(): ReactElement {
   const panelLabels = useMemo<Record<PanelTabKind, string>>(() => ({
     frontmatter: t("nav.frontmatter"),
     graph: t("nav.graph"),
-    git: t("nav.git"),
     settings: t("nav.settings"),
     tools: t("nav.tools")
   }), [t]);
@@ -1278,11 +1206,10 @@ export function App(): ReactElement {
     [leftPane.activeTabId, rightPane.activeTabId, tabs]
   );
   const enabledRailViews = useMemo(() => sidebarViews.filter((view) => {
-    if (view.id === "git" && !featureToggles.git) return false;
     if (view.id === "tools" && !featureToggles.tools) return false;
     if (view.id === "frontmatter" && !featureToggles.frontmatter) return false;
     return true;
-  }), [featureToggles.frontmatter, featureToggles.git, featureToggles.tools, sidebarViews]);
+  }), [featureToggles.frontmatter, featureToggles.tools, sidebarViews]);
   const primaryRailViews = enabledRailViews.filter((view) =>
     view.id === "files" || view.id === "graph"
   );
@@ -1293,7 +1220,6 @@ export function App(): ReactElement {
 
   useEffect(() => {
     if (
-      activeSidebarView !== "git" &&
       activeSidebarView !== "tools" &&
       activeSidebarView !== "frontmatter" &&
       activeSidebarView !== "settings" &&
@@ -1377,54 +1303,6 @@ export function App(): ReactElement {
   }, [closeSidebar, focusedPane, openGanttChartInPane, setTabActive]);
 
   const renderPanelTab = useCallback((panel: PanelTabKind): ReactNode => {
-    if (panel === "git") {
-      return (
-        <GitSidebar
-          gitStatus={gitStatus}
-          gitHubAuthStatus={gitHubAuthStatus}
-          gitRemotes={gitRemotes}
-          gitCommitHistory={gitCommitHistory}
-          gitWorkingChanges={gitWorkingChanges}
-          selectedGitCommitHash={selectedGitCommitHash}
-          selectedGitCommitDiff={selectedGitCommitDiff}
-          gitRemoteUrl={gitRemoteUrl}
-          gitSyncMessage={gitSyncMessage}
-          gitErrorMessage={gitErrorMessage}
-          gitRetryAction={gitRetryAction}
-          gitCommitMessage={gitCommitMessage}
-          gitSyncPreview={gitSyncPreview}
-          gitSyncStep={gitSyncStep}
-          gitConflicts={gitConflicts}
-          gitCloneUrl={gitCloneUrl}
-          isCreatingGitCommit={isCreatingGitCommit}
-          isConnectingGitHub={isConnectingGitHub}
-          isConnectingGitRemote={isConnectingGitRemote}
-          isDisconnectingGitHub={isDisconnectingGitHub}
-          isPullingGitBranch={isPullingGitBranch}
-          isPushingGitBranch={isPushingGitBranch}
-          isCloningGitHub={isCloningGitHub}
-          isResolvingConflict={isResolvingConflict}
-          hasWorkspace={!!workspaceState?.activeWorkspace}
-          onInitializeGitRepository={handleInitializeGitRepository}
-          onCloneGitHubRepository={handleCloneGitHubRepository}
-          onConnectGitHubAccount={handleConnectGitHubAccount}
-          onDisconnectGitHubAccount={handleDisconnectGitHubAccount}
-          onConnectGitRemote={handleConnectGitRemote}
-          onPushGitBranch={handlePushGitBranch}
-          onPullGitBranch={handlePullGitBranch}
-          onConfirmPush={handleConfirmPush}
-          onConfirmPull={handleConfirmPull}
-          onCreateGitCommit={handleCreateGitCommit}
-          onResolveConflict={handleResolveConflict}
-          onSelectCommitHash={setSelectedGitCommitHash}
-          onSetGitRemoteUrl={setGitRemoteUrl}
-          onSetGitSyncStep={setGitSyncStep}
-          onSetGitCommitMessage={setGitCommitMessage}
-          onSetGitCloneUrl={setGitCloneUrl}
-        />
-      );
-    }
-
     if (panel === "tools") {
       return <ToolsSidebar workspacePath={workspaceState?.activeWorkspace?.path ?? null} />;
     }
@@ -1451,30 +1329,16 @@ export function App(): ReactElement {
     return (
       <SettingsSidebar
         appInfo={appInfo}
-        autoSyncSettings={autoSyncSettings}
         featureToggles={featureToggles}
-        gitHubIntegrationSettings={gitHubIntegrationSettings}
-        onAutoSyncSave={handleSaveAutoSyncSettings}
         onFeatureTogglesSave={handleSaveFeatureToggles}
-        onGitHubIntegrationSave={handleSaveGitHubIntegrationSettings}
         onSave={handleSaveSettings}
         settings={editorSettings}
       />
     );
   }, [
-    appInfo, autoSyncSettings, editorSettings, featureToggles, gitCloneUrl,
-    gitCommitHistory, gitCommitMessage, gitConflicts, gitErrorMessage, gitHubAuthStatus, gitHubIntegrationSettings,
-    gitRemotes, gitRemoteUrl, gitRetryAction, gitStatus, gitSyncMessage, gitSyncPreview, gitSyncStep,
-    gitWorkingChanges, handleCloneGitHubRepository, handleConfirmPull, handleConfirmPush,
-    handleConnectGitHubAccount, handleConnectGitRemote, handleCreateGitCommit,
-    handleDisconnectGitHubAccount, handleInitializeGitRepository, handlePullGitBranch, handlePushGitBranch,
-    handleResolveConflict, handleSaveAutoSyncSettings, handleSaveFeatureToggles,
-    activeFilePathForGraph, handleSaveGitHubIntegrationSettings, handleSaveSettings, handleSaveUserDefinedFields, handleOpenFile,
-    isCloningGitHub, isConnectingGitHub, isConnectingGitRemote,
-    isCreatingGitCommit, isDisconnectingGitHub, isPullingGitBranch,
-    isPushingGitBranch, isResolvingConflict, selectedGitCommitDiff, selectedGitCommitHash,
-    setGitCloneUrl, setGitCommitMessage, setGitRemoteUrl, setGitSyncStep,
-    setSelectedGitCommitHash, userDefinedFields, workspaceState, activeFileTabInFocusedPane
+    activeFilePathForGraph, appInfo, editorSettings, featureToggles, handleOpenFile,
+    handleSaveFeatureToggles, handleSaveSettings, handleSaveUserDefinedFields,
+    userDefinedFields, workspaceState
   ]);
 
   // ──────────────────

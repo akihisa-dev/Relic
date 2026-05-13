@@ -1,52 +1,29 @@
 # tech/git-implementation.md
 
-Git機能の実装方法に関する調査・決定を記録するドキュメント。
+Git機能の技術方針を記録するドキュメント。
 
 ---
 
 ## 決定
 
-**isomorphic-git** を採用する。
+Relicは現行アプリにGit機能を持たない。
+
+isomorphic-git / simple-git / nodegit などのGit操作ライブラリは採用しない。GitHub OAuth、プル、コミット、プッシュ、ブランチ管理、タグ管理、自動同期もアプリ責務に含めない。
 
 ---
 
-## 選定理由
+## 理由
 
-- JavaScript のみで書かれており、ユーザーの Mac に Git がインストールされていなくても動作する
-- Relic はアプリ自体に Git 機能を内蔵するため、環境依存をゼロにできる
-- Electron との相性が良く、追加のネイティブコンパイルが不要
-- コミット・プッシュ・プル・ブランチ管理・差分取得など、Relic に必要な操作をすべてサポート
-- GitHub OAuth との組み合わせも公式ドキュメントに例示があり、実装しやすい
-
----
-
-## 比較検討した選択肢
-
-| ライブラリ | 概要 | 見送り理由 |
-|-----------|------|-----------|
-| isomorphic-git | **採用** | — |
-| simple-git | ユーザーの Mac にある Git コマンドを借りて動く | 一般ユーザーの Mac には Git が入っていないことがある。「Git が見つかりません」エラーのリスク |
-| nodegit (libgit2) | 高機能だがインストール時にソースコードのビルドが走る | 環境によってビルドが失敗する。配布・サポートが複雑になる |
+- Relicの中心はローカルMarkdown編集であり、Git操作は編集体験と責務が異なる
+- 認証、ネットワーク同期、コンフリクト解決は安定性とサポートコストが高い
+- Mac / Windows 両対応では、Git実行環境や認証情報保管の差分を持たないほうが安定する
+- 履歴管理やリモート共有が必要な場合は、Relic外部のGitクライアントやクラウド同期フォルダで扱える
 
 ---
 
-## GitHub 認証との連携
+## 実装上の扱い
 
-- GitHub OAuth で取得したトークンを isomorphic-git の `http` オプションに渡す
-- OAuthで取得した認証情報はmacOS Keychainに保存し、設定JSONには保存しない
-- `@isomorphic-git/http` パッケージ（Node.js 対応）を使用
-
----
-
-## 主要パッケージ
-
-```
-isomorphic-git           # Git操作本体
-@isomorphic-git/http     # HTTP通信（push/pull用）
-```
-
----
-
-## 参考
-
-- [isomorphic-git 公式](https://isomorphic-git.org/)
+- `isomorphic-git` は依存関係に含めない
+- Git / GitHub 用IPC、メインプロセスサービス、レンダラーUIを持たない
+- アプリ設定・ワークスペース設定にGit接続情報や自動同期設定を保存しない
+- サイドバー、設定画面、コマンドパレットにGit関連操作を表示しない

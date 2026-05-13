@@ -1,51 +1,34 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
-import { defaultAutoSyncSettings, defaultFeatureToggles } from "../../shared/ipc";
+import { defaultFeatureToggles } from "../../shared/ipc";
 import { I18nProvider } from "../i18n";
 import { ToolsSidebar } from "./ToolsSidebar";
 
 function makeRelicApi(overrides: Partial<typeof window.relic> = {}): typeof window.relic {
   return {
     applySearchAndReplace: vi.fn(),
-    cloneGitHubRepository: vi.fn(),
-    connectGitRemote: vi.fn(),
-    connectGitHubAccount: vi.fn(),
     createFolder: vi.fn(),
-    createGitCommit: vi.fn(),
     createLinkedMarkdownFile: vi.fn(),
     createMarkdownFile: vi.fn(),
     createNewWorkspace: vi.fn(),
-    disconnectGitHubAccount: vi.fn(),
     duplicateMarkdownFile: vi.fn(),
     generateTableOfContents: vi.fn(),
     generateTitleList: vi.fn(),
     getAppInfo: vi.fn(),
-    getAutoSyncSettings: vi.fn().mockResolvedValue({ ok: true, value: defaultAutoSyncSettings }),
     getBacklinks: vi.fn(),
     getEditorSettings: vi.fn(),
     getFeatureToggles: vi.fn().mockResolvedValue({ ok: true, value: defaultFeatureToggles }),
     getFrontmatterTemplates: vi.fn(),
     getFrontmatterValueCandidates: vi.fn(),
-    getGitCommitDiff: vi.fn(),
-    getGitCommitHistory: vi.fn(),
-    getGitConflicts: vi.fn(),
-    getGitHubAuthStatus: vi.fn(),
-    getGitRemotes: vi.fn(),
-    getGitStatus: vi.fn(),
-    getGitSyncPreview: vi.fn(),
-    getGitWorkingChanges: vi.fn(),
     getUserDefinedFields: vi.fn(),
     getWorkspaceState: vi.fn(),
     getWorkspaceTags: vi.fn(),
-    initializeGitRepository: vi.fn(),
     mergeFiles: vi.fn().mockResolvedValue({ ok: true, value: "merged.md" }),
     moveFolder: vi.fn(),
     moveItemToTrash: vi.fn(),
     moveMarkdownFile: vi.fn(),
     openWorkspace: vi.fn(),
-    pullGitBranch: vi.fn(),
-    pushGitBranch: vi.fn(),
     readClipboardText: vi.fn().mockReturnValue(""),
     readMarkdownFile: vi.fn(),
     removeWorkspace: vi.fn(),
@@ -53,8 +36,6 @@ function makeRelicApi(overrides: Partial<typeof window.relic> = {}): typeof wind
     renameMarkdownFile: vi.fn(),
     replaceInFile: vi.fn(),
     revealWorkspaceItem: vi.fn(),
-    resolveGitConflict: vi.fn(),
-    saveAutoSyncSettings: vi.fn(),
     saveEditorSettings: vi.fn(),
     saveFeatureToggles: vi.fn(),
     saveFrontmatterTemplates: vi.fn(),

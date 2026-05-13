@@ -2,15 +2,11 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import {
-  defaultAutoSyncSettings,
-  type AutoSyncInterval,
-  type AutoSyncSettings,
   type GanttChartSettings,
   type GanttChartSource
 } from "../../shared/ipc";
 
 export interface WorkspaceSettings {
-  autoSync: AutoSyncSettings;
   ganttCharts: GanttChartSettings[];
   pinnedPaths: string[];
   workspacePath: string;
@@ -22,7 +18,6 @@ export const defaultGanttCharts: GanttChartSettings[] = [
 ];
 
 const defaultWorkspaceSettings: WorkspaceSettings = {
-  autoSync: defaultAutoSyncSettings,
   ganttCharts: defaultGanttCharts,
   pinnedPaths: [],
   workspacePath: ""
@@ -43,7 +38,6 @@ export async function readWorkspaceSettings(
     const parsed = JSON.parse(raw) as Partial<WorkspaceSettings>;
 
     return {
-      autoSync: parseAutoSyncSettings(parsed.autoSync),
       ganttCharts: parseGanttCharts(parsed.ganttCharts),
       pinnedPaths: Array.isArray(parsed.pinnedPaths)
         ? parsed.pinnedPaths.filter((p) => typeof p === "string")
@@ -122,22 +116,4 @@ function isMissingFileError(error: unknown): boolean {
     "code" in error &&
     (error as { code?: string }).code === "ENOENT"
   );
-}
-
-function parseAutoSyncSettings(raw: unknown): AutoSyncSettings {
-  if (typeof raw !== "object" || raw === null) {
-    return defaultAutoSyncSettings;
-  }
-
-  const s = raw as Record<string, unknown>;
-  const validIntervals: AutoSyncInterval[] = [5, 15, 30, 60];
-  const interval = validIntervals.includes(s.intervalMinutes as AutoSyncInterval)
-    ? (s.intervalMinutes as AutoSyncInterval)
-    : defaultAutoSyncSettings.intervalMinutes;
-
-  return {
-    autoPull: typeof s.autoPull === "boolean" ? s.autoPull : false,
-    autoPush: typeof s.autoPush === "boolean" ? s.autoPush : false,
-    intervalMinutes: interval
-  };
 }
