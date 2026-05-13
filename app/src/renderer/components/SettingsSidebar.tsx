@@ -1,34 +1,24 @@
 import { useEffect, useState } from "react";
 import type { ReactElement } from "react";
 
-import { autoSyncFeatureEnabled, type AppInfo, type AutoSyncSettings, type EditorSettings, type FeatureToggles, type GitHubIntegrationSettings } from "../../shared/ipc";
+import { type AppInfo, type EditorSettings, type FeatureToggles } from "../../shared/ipc";
 import { useT } from "../i18n";
 
 export function SettingsSidebar({
   appInfo,
   settings,
-  autoSyncSettings,
   featureToggles,
-  gitHubIntegrationSettings,
   onSave,
-  onAutoSyncSave,
-  onFeatureTogglesSave,
-  onGitHubIntegrationSave
+  onFeatureTogglesSave
 }: {
   appInfo: AppInfo | null;
   settings: EditorSettings;
-  autoSyncSettings: AutoSyncSettings;
   featureToggles: FeatureToggles;
-  gitHubIntegrationSettings: GitHubIntegrationSettings;
   onSave: (s: EditorSettings) => void;
-  onAutoSyncSave: (s: AutoSyncSettings) => void;
   onFeatureTogglesSave: (t: FeatureToggles) => void;
-  onGitHubIntegrationSave: (s: GitHubIntegrationSettings) => void;
 }): ReactElement {
   const [draft, setDraft] = useState<EditorSettings>(settings);
-  const [autoSyncDraft, setAutoSyncDraft] = useState<AutoSyncSettings>(autoSyncSettings);
   const [togglesDraft, setTogglesDraft] = useState<FeatureToggles>(featureToggles);
-  const [gitHubDraft, setGitHubDraft] = useState<GitHubIntegrationSettings>(gitHubIntegrationSettings);
   const t = useT();
 
   useEffect(() => {
@@ -36,36 +26,13 @@ export function SettingsSidebar({
   }, [settings]);
 
   useEffect(() => {
-    setAutoSyncDraft(autoSyncSettings);
-  }, [autoSyncSettings]);
-
-  useEffect(() => {
     setTogglesDraft(featureToggles);
   }, [featureToggles]);
-
-  useEffect(() => {
-    setGitHubDraft(gitHubIntegrationSettings);
-  }, [gitHubIntegrationSettings]);
 
   const update = <K extends keyof EditorSettings>(key: K, value: EditorSettings[K]): void => {
     const next = { ...draft, [key]: value };
     setDraft(next);
     onSave(next);
-  };
-
-  const updateAutoSync = <K extends keyof AutoSyncSettings>(key: K, value: AutoSyncSettings[K]): void => {
-    const next = { ...autoSyncDraft, [key]: value };
-    setAutoSyncDraft(next);
-    onAutoSyncSave(next);
-  };
-
-  const updateGitHubIntegration = <K extends keyof GitHubIntegrationSettings>(
-    key: K,
-    value: GitHubIntegrationSettings[K]
-  ): void => {
-    const next = { ...gitHubDraft, [key]: value };
-    setGitHubDraft(next);
-    onGitHubIntegrationSave(next);
   };
 
   return (
@@ -156,71 +123,9 @@ export function SettingsSidebar({
           <option value="dark">{t("settings.dark")}</option>
         </select>
       </label>
-      <div className="links-panel-subheading" style={{ marginTop: "1rem" }}>{t("settings.githubIntegration")}</div>
-      <label className="setting-row">
-        <span>{t("settings.githubClientId")}</span>
-        <input
-          aria-label={t("settings.githubClientId")}
-          onChange={(e) => updateGitHubIntegration("clientId", e.target.value)}
-          placeholder="Iv1..."
-          type="text"
-          value={gitHubDraft.clientId}
-        />
-      </label>
-      <label className="setting-row">
-        <span>{t("settings.githubScopes")}</span>
-        <input
-          aria-label={t("settings.githubScopes")}
-          onBlur={(e) => updateGitHubIntegration(
-            "scopes",
-            e.target.value.split(",").map((scope) => scope.trim()).filter(Boolean)
-          )}
-          placeholder={t("settings.githubScopesPlaceholder")}
-          type="text"
-          defaultValue={gitHubDraft.scopes.join(", ")}
-          key={gitHubDraft.scopes.join(",")}
-        />
-      </label>
-      <div className="links-panel-subheading" style={{ marginTop: "1rem" }}>{t("settings.autoSync")}</div>
-      {!autoSyncFeatureEnabled ? (
-        <div className="empty-note">{t("settings.autoSyncDisabled")}</div>
-      ) : null}
-      <label className="setting-row">
-        <input
-          checked={autoSyncDraft.autoPull}
-          disabled={!autoSyncFeatureEnabled}
-          onChange={(e) => updateAutoSync("autoPull", e.target.checked)}
-          type="checkbox"
-        />
-        <span>{t("settings.autoPull")}</span>
-      </label>
-      <label className="setting-row">
-        <input
-          checked={autoSyncDraft.autoPush}
-          disabled={!autoSyncFeatureEnabled}
-          onChange={(e) => updateAutoSync("autoPush", e.target.checked)}
-          type="checkbox"
-        />
-        <span>{t("settings.autoPush")}</span>
-      </label>
-      <label className="setting-row">
-        <span>{t("settings.interval")}</span>
-        <select
-          aria-label={t("settings.interval")}
-          disabled={!autoSyncFeatureEnabled || (!autoSyncDraft.autoPull && !autoSyncDraft.autoPush)}
-          onChange={(e) => updateAutoSync("intervalMinutes", Number(e.target.value) as AutoSyncSettings["intervalMinutes"])}
-          value={autoSyncDraft.intervalMinutes}
-        >
-          <option value={5}>5 min</option>
-          <option value={15}>15 min</option>
-          <option value={30}>30 min</option>
-          <option value={60}>60 min</option>
-        </select>
-      </label>
       <div className="links-panel-subheading" style={{ marginTop: "1rem" }}>{t("settings.featureToggles")}</div>
       {(
         [
-          { key: "git", label: t("settings.featureGit") },
           { key: "tools", label: t("settings.featureTools") },
           { key: "frontmatter", label: t("settings.featureFrontmatter") },
           { key: "rightPanel", label: t("settings.featureRightPanel") }
@@ -242,7 +147,7 @@ export function SettingsSidebar({
       <div className="links-panel-subheading" style={{ marginTop: "1rem" }}>{t("settings.appInfo")}</div>
       <div className="settings-info">
         <div>Relic {appInfo?.version ?? "0.0.0"}</div>
-        <div>{appInfo?.platform ?? "darwin"}</div>
+        <div>{appInfo?.platform ?? "-"}</div>
       </div>
     </div>
   );

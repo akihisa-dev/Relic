@@ -1,12 +1,9 @@
-import { app, BrowserWindow, Menu, shell } from "electron";
+import { app, BrowserWindow, Menu, shell, type BrowserWindowConstructorOptions } from "electron";
 import path from "node:path";
 
-import { stopAutoSyncTimer } from "./autoSyncScheduler";
 import { registerAppHandlers } from "./ipc/appHandlers";
 import { registerEditorHandlers } from "./ipc/editorHandlers";
 import { registerFileHandlers } from "./ipc/fileHandlers";
-import { registerGitHubHandlers } from "./ipc/githubHandlers";
-import { registerGitWorkspaceHandlers } from "./ipc/gitWorkspaceHandlers";
 import { registerToolHandlers } from "./ipc/toolHandlers";
 import { registerWorkspaceHandlers } from "./ipc/workspaceHandlers";
 
@@ -15,14 +12,19 @@ declare const MAIN_WINDOW_VITE_NAME: string;
 
 
 function createWindow(): void {
-  const mainWindow = new BrowserWindow({
+  const isMac = process.platform === "darwin";
+  const windowOptions: BrowserWindowConstructorOptions = {
     height: 820,
     minHeight: 640,
     minWidth: 960,
     title: "Relic",
-    titleBarStyle: "hiddenInset",
-    trafficLightPosition: { x: 10, y: 12 },
     width: 1240,
+    ...(isMac
+      ? {
+          titleBarStyle: "hiddenInset",
+          trafficLightPosition: { x: 10, y: 12 }
+        }
+      : {}),
     webPreferences: {
       allowRunningInsecureContent: false,
       contextIsolation: true,
@@ -31,7 +33,8 @@ function createWindow(): void {
       sandbox: true,
       webSecurity: true
     }
-  });
+  };
+  const mainWindow = new BrowserWindow(windowOptions);
 
   configureWindowSecurity(mainWindow);
   configureEditorContextMenu(mainWindow);
@@ -112,8 +115,6 @@ app.whenReady().then(() => {
   registerAppHandlers();
   registerEditorHandlers();
   registerFileHandlers();
-  registerGitHubHandlers();
-  registerGitWorkspaceHandlers();
   registerToolHandlers();
   registerWorkspaceHandlers();
   createWindow();
@@ -124,10 +125,6 @@ app.whenReady().then(() => {
       createWindow();
     }
   });
-});
-
-app.on("before-quit", () => {
-  stopAutoSyncTimer();
 });
 
 app.on("window-all-closed", () => {
