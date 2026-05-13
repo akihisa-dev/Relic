@@ -440,6 +440,7 @@ function GanttTabIcon(): ReactElement {
 }
 
 function panelTabLabel(panel: PanelTabKind, t: Translator): string {
+  if (panel === "dashboard") return t("nav.dashboard");
   if (panel === "frontmatter") return t("nav.frontmatter");
   if (panel === "graph") return t("nav.graph");
   if (panel === "settings") return t("nav.settings");
