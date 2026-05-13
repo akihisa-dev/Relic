@@ -150,7 +150,6 @@ export function FilesSidebar({
   useEffect(() => {
     if (searchFocusRequest <= 0) return;
     searchInputRef.current?.focus();
-    setIsSearchMethodMenuOpen(true);
   }, [searchFocusRequest]);
 
   useEffect(() => {
@@ -234,7 +233,6 @@ export function FilesSidebar({
                 aria-label={t("files.search")}
                 list={searchMode === "frontmatter" && frontmatterValueCandidates.length > 0 ? "files-search-frontmatter-values" : undefined}
                 onChange={(event) => onSearchQueryChange(event.target.value)}
-                onFocus={() => setIsSearchMethodMenuOpen(true)}
                 placeholder={searchPlaceholder}
                 ref={searchInputRef}
                 type="search"
