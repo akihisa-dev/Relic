@@ -1733,49 +1733,58 @@ button:not(:disabled):active {
   white-space: nowrap;
 }
 
-.dashboard-terrain {
+.dashboard-file-bars {
   align-items: end;
   border-bottom: 1px solid var(--border);
   display: grid;
-  gap: 8px;
+  gap: 10px;
   grid-template-columns: repeat(8, minmax(0, 1fr));
-  min-height: 220px;
-  padding-top: 6px;
+  min-height: 260px;
+  padding-top: 8px;
 }
 
-.dashboard-terrain-bar {
-  align-items: stretch;
+.dashboard-file-bar {
   align-self: stretch;
   background: transparent;
   border: 0;
   border-radius: 0;
-  color: var(--text-3);
+  color: var(--text-2);
   display: grid;
-  gap: 8px;
-  grid-template-rows: minmax(0, 1fr) 34px;
+  gap: 6px;
+  grid-template-rows: minmax(0, 1fr) 16px 32px;
   min-height: 0;
   min-width: 0;
   padding: 0;
 }
 
-.dashboard-terrain-bar span {
+.dashboard-file-bar-fill {
   align-self: end;
-  background:
-    linear-gradient(to top, var(--accent), var(--accent)) bottom / 100% var(--bar-height) no-repeat,
-    var(--hover);
-  border: 1px solid var(--border);
-  border-radius: 6px 6px 0 0;
+  background: var(--accent);
+  border-radius: 5px 5px 0 0;
   display: block;
-  min-height: 12px;
-  transition: border-color 140ms ease, filter 140ms ease;
+  height: var(--bar-height);
+  min-height: 2px;
+  transition: background-color 140ms ease, filter 140ms ease;
 }
 
-.dashboard-terrain-bar:hover span {
-  border-color: var(--accent);
+.dashboard-file-bar:hover .dashboard-file-bar-fill {
+  background: var(--accent-hover);
   filter: brightness(0.98);
 }
 
-.dashboard-terrain-bar small {
+.dashboard-file-bar-value {
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dashboard-file-bar-label {
   color: var(--text-2);
   font-size: 11px;
   line-height: 1.2;
@@ -1830,70 +1839,6 @@ button:not(:disabled):active {
   text-align: right;
 }
 
-.dashboard-tag-cloud {
-  align-content: start;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  min-height: 112px;
-}
-
-.dashboard-tag {
-  align-items: center;
-  background: var(--hover);
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  color: var(--text-2);
-  display: inline-flex;
-  font-size: 12px;
-  gap: 6px;
-  max-width: 100%;
-  min-height: 26px;
-  min-width: 0;
-  padding: 0 9px;
-}
-
-.dashboard-tag b {
-  color: var(--accent);
-  font-size: 11px;
-  font-weight: 700;
-}
-
-.dashboard-file-list {
-  display: grid;
-  gap: 6px;
-}
-
-.dashboard-file-row {
-  align-items: center;
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: 6px;
-  display: grid;
-  gap: 10px;
-  grid-template-columns: minmax(0, 1fr) auto;
-  min-width: 0;
-  padding: 7px 8px;
-  text-align: left;
-}
-
-.dashboard-file-row:hover {
-  background: var(--hover);
-  border-color: var(--border);
-}
-
-.dashboard-file-row span {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.dashboard-file-row small {
-  color: var(--text-3);
-  font-size: 12px;
-}
-
 .dashboard-empty,
 .dashboard-muted {
   color: var(--text-3);
@@ -1910,8 +1855,9 @@ button:not(:disabled):active {
     grid-column: auto;
   }
 
-  .dashboard-terrain {
+  .dashboard-file-bars {
     grid-template-columns: repeat(4, minmax(0, 1fr));
+    min-height: 220px;
   }
 }
 
