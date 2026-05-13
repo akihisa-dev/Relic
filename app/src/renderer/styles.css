@@ -3942,6 +3942,40 @@ button:not(:disabled):active {
   gap: 8px;
 }
 
+.hover-menu-drag-handle {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  color: var(--text-3);
+  cursor: grab;
+  display: flex;
+  height: 18px;
+  justify-content: center;
+  margin: -2px 0 4px;
+  padding: 0;
+  width: 100%;
+}
+
+.hover-menu-drag-handle:active {
+  cursor: grabbing;
+}
+
+.hover-menu-drag-handle:hover {
+  background: var(--hover);
+  color: var(--text-2);
+}
+
+.hover-menu-drag-handle span {
+  background:
+    radial-gradient(currentColor 1.1px, transparent 1.4px) 0 0 / 6px 6px,
+    radial-gradient(currentColor 1.1px, transparent 1.4px) 3px 3px / 6px 6px;
+  display: block;
+  height: 10px;
+  opacity: 0.78;
+  width: 24px;
+}
+
 .chronicle-search {
   display: grid;
   gap: 6px;
@@ -3994,6 +4028,18 @@ button:not(:disabled):active {
   gap: 8px;
   justify-content: space-between;
   min-width: 0;
+}
+
+.graph-topbar-title {
+  align-items: center;
+  display: grid;
+  gap: 2px;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+}
+
+.graph-topbar-title .hover-menu-drag-handle {
+  margin-bottom: 0;
 }
 
 .graph-topbar-actions {
