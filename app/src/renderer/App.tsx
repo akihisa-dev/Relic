@@ -17,7 +17,6 @@ import { GitSidebar } from "./components/GitSidebar";
 import { GraphPanel } from "./components/GraphSidebar";
 import { PaneView } from "./components/PaneView";
 import { QuickSwitcher } from "./components/QuickSwitcher";
-import { SearchSidebar } from "./components/SearchSidebar";
 import { SettingsSidebar } from "./components/SettingsSidebar";
 import { ToolsSidebar } from "./components/ToolsSidebar";
 import { Toolbar } from "./components/Toolbar";
@@ -44,13 +43,6 @@ import "./styles.css";
 const IconFiles = (): ReactElement => (
   <svg fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" viewBox="0 0 20 20" width="18">
     <path d="M3 5a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5z" />
-  </svg>
-);
-
-const IconSearch = (): ReactElement => (
-  <svg fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" viewBox="0 0 20 20" width="18">
-    <circle cx="8.5" cy="8.5" r="5" />
-    <line x1="13" x2="17" y1="13" y2="17" />
   </svg>
 );
 
@@ -117,7 +109,6 @@ type RailViewId = SidebarView | PanelTabKind;
 
 const sidebarViewDefs: Array<{ id: RailViewId; labelKey: TranslationKey; icon: ReactElement }> = [
   { id: "files", labelKey: "nav.files", icon: <IconFiles /> },
-  { id: "search", labelKey: "nav.search", icon: <IconSearch /> },
   { id: "graph", labelKey: "nav.graph", icon: <IconGraph /> },
   { id: "git", labelKey: "nav.git", icon: <IconGit /> },
   { id: "tools", labelKey: "nav.tools", icon: <IconTools /> },
@@ -451,6 +442,7 @@ export function App(): ReactElement {
     toX: number;
     toY: number;
   } | null>(null);
+  const [fileSearchFocusRequest, setFileSearchFocusRequest] = useState(0);
   const pendingSidebarFileOpenTokensRef = useRef<Record<string, number>>({});
   const sidebarFileOpenTokenRef = useRef(0);
   const [fileSelectionCount, setFileSelectionCount] = useState(0);
@@ -759,7 +751,6 @@ export function App(): ReactElement {
 
   const {
     frontmatterCandidates,
-    handleTagSearch,
     isSearching,
     searchError,
     searchFrontmatterField,
@@ -768,14 +759,17 @@ export function App(): ReactElement {
     searchResults,
     setSearchFrontmatterField,
     setSearchMode,
-    setSearchQuery,
-    workspaceTags
+    setSearchQuery
   } = useWorkspaceSearchState({
-    setSidebarView,
     setWorkspaceError,
     userDefinedFields,
     workspaceState
   });
+
+  const requestFileSearchFocus = useCallback((): void => {
+    setSidebarView("files");
+    setFileSearchFocusRequest((current) => current + 1);
+  }, [setSidebarView]);
 
   const existingMarkdownPaths = useMemo(
     () => collectMarkdownPaths(workspaceState?.fileTree ?? []),
@@ -844,7 +838,6 @@ export function App(): ReactElement {
     handleOpenMarkdownLink,
     handleOpenWikiLink,
     handleOpenWorkspace,
-    handleRefreshWorkspaceState,
     handleRemoveWorkspace,
     handleRenameWorkspace,
     handleSwitchWorkspace,
@@ -1015,6 +1008,7 @@ export function App(): ReactElement {
     closeTab: closeTabWithMotion,
     focusedPane,
     leftPane,
+    requestFileSearchFocus,
     rightPane,
     setIsCreatingFile,
     setShowCommandPalette,
@@ -1241,6 +1235,7 @@ export function App(): ReactElement {
     handleDuplicateActiveFile,
     handlePullGitBranch,
     handlePushGitBranch,
+    requestFileSearchFocus,
     setIsCreatingFile,
     setShowQuickSwitcher,
     setSidebarView,
@@ -1275,11 +1270,11 @@ export function App(): ReactElement {
     return true;
   }), [featureToggles.frontmatter, featureToggles.git, featureToggles.tools, sidebarViews]);
   const primaryRailViews = enabledRailViews.filter((view) =>
-    view.id === "files" || view.id === "search" || view.id === "graph"
+    view.id === "files" || view.id === "graph"
   );
   const chartRailView = enabledRailViews.find((view) => view.id === "chronicle");
   const panelRailViews = enabledRailViews.filter((view) =>
-    view.id !== "files" && view.id !== "search" && view.id !== "graph" && view.id !== "chronicle"
+    view.id !== "files" && view.id !== "graph" && view.id !== "chronicle"
   );
 
   useEffect(() => {
@@ -1626,6 +1621,7 @@ export function App(): ReactElement {
                 isCreatingFile={isCreatingFile}
                 isCreatingFolder={isCreatingFolder}
                 isCreatingWorkspace={isCreatingWorkspace}
+                isSearching={isSearching}
                 isOpeningWorkspace={isOpeningWorkspace}
                 onCreateFile={handleCreateFileFromSidebar}
                 onCreateFileInFolder={handleCreateFileInFolder}
@@ -1645,30 +1641,19 @@ export function App(): ReactElement {
                 onRenameItem={handleRenameTreeItem}
                 onSelectFolder={handleSelectFolder}
                 onSelectedCountChange={setFileSelectionCount}
+                onSearchFrontmatterFieldChange={setSearchFrontmatterField}
+                onSearchModeChange={setSearchMode}
+                onSearchQueryChange={setSearchQuery}
                 onTogglePin={handleTogglePin}
                 openFilePaths={openFilePathSet}
+                searchError={searchError}
+                searchFocusRequest={fileSearchFocusRequest}
+                searchFrontmatterCandidates={frontmatterCandidates}
+                searchFrontmatterField={searchFrontmatterField}
+                searchMode={searchMode}
+                searchQuery={searchQuery}
+                searchResults={searchResults}
                 workspaceState={workspaceState}
-              />
-            ) : activeSidebarView === "search" ? (
-              <SearchSidebar
-                activeFilePath={activeFileTabInFocusedPane?.path ?? null}
-                error={searchError}
-                frontmatterCandidates={frontmatterCandidates}
-                frontmatterField={searchFrontmatterField}
-                isSearching={isSearching}
-                mode={searchMode}
-                onFrontmatterFieldChange={setSearchFrontmatterField}
-                onModeChange={setSearchMode}
-                onOpenFile={handleSidebarOpenFile}
-                onQueryChange={setSearchQuery}
-                onTagSelect={(tag) => {
-                  setSearchMode("tag");
-                  setSearchQuery(tag);
-                }}
-                onWorkspaceChange={handleRefreshWorkspaceState}
-                query={searchQuery}
-                results={searchResults}
-                tags={workspaceTags}
               />
             ) : null}
             </div>
