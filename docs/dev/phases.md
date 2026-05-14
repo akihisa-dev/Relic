@@ -36,8 +36,9 @@ AIは `AI.md` と `docs/product/project.md` の次にこのファイルを読み
 
 ```yaml
 current: P21
-summary: 文書整理
+summary: 文書整理（完了、次フェーズ未指定）
 checklist: phases/P21-document-organization.md
+note: 次フェーズが明示されるまで current は変更しない
 ```
 
 ---
