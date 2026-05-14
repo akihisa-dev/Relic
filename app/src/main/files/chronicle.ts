@@ -1,7 +1,7 @@
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-import type { GanttChartEntry, GanttChartSettings, UpdateGanttChartEntryInput, WorkspaceGanttChart, WorkspaceTreeNode } from "../../shared/ipc";
+import type { GanttChartDateKind, GanttChartEntry, GanttChartSettings, UpdateGanttChartEntryInput, WorkspaceGanttChart, WorkspaceTreeNode } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { readWorkspaceFileTree } from "./fileTree";
 import { parseFrontmatter, updateFrontmatter } from "./frontmatter";
@@ -37,10 +37,17 @@ export async function readWorkspaceChronicle(
         });
       }
 
-      const dateRange = extractDateRange(content);
+      const frontmatter = parseFrontmatter(content);
+      const dateRanges: Array<{ kind: GanttChartDateKind; range: DateRange }> = [];
+      const plannedDateRange = extractDateRangeFromData(frontmatter.data, "planned");
+      const actualDateRange = extractDateRangeFromData(frontmatter.data, "actual");
 
-      if (dateRange) {
+      if (plannedDateRange) dateRanges.push({ kind: "planned", range: plannedDateRange });
+      if (actualDateRange) dateRanges.push({ kind: "actual", range: actualDateRange });
+
+      for (const { kind, range: dateRange } of dateRanges) {
         entriesBySource.date.push({
+          dateKind: kind,
           endLabel: dateRange.endDate,
           endValue: dateToDay(dateRange.endDate),
           fileName: path.basename(relativePath, ".md"),
@@ -53,7 +60,7 @@ export async function readWorkspaceChronicle(
 
     const sortedEntriesBySource = {
       chronicle: sortEntries(entriesBySource.chronicle),
-      date: sortEntries(entriesBySource.date)
+      date: sortDateEntries(entriesBySource.date)
     };
 
     return ok(charts.map((chart) => ({
@@ -110,6 +117,16 @@ function sortEntries(entries: GanttChartEntry[]): GanttChartEntry[] {
   );
 }
 
+function sortDateEntries(entries: GanttChartEntry[]): GanttChartEntry[] {
+  return [...entries].sort((a, b) =>
+    a.fileName.localeCompare(b.fileName, "ja") ||
+      a.path.localeCompare(b.path, "ja") ||
+      dateKindOrder(a.dateKind) - dateKindOrder(b.dateKind) ||
+      a.startValue - b.startValue ||
+      a.endValue - b.endValue
+  );
+}
+
 function updateChronicleDataForChartEdit(
   data: Record<string, unknown>,
   input: UpdateGanttChartEntryInput
@@ -126,12 +143,19 @@ function updateChronicleDataForChartEdit(
       ...data,
       chronicle: rangeToArray(startYear, endYear)
     };
-    const dateRange = extractDateRangeFromData(data);
+    for (const kind of ["planned", "actual"] as const) {
+      const dateRange = extractDateRangeFromData(data, kind);
 
-    if (dateRange) {
-      const nextStartDate = shiftDateYears(dateRange.startDate, startYear - originalStartYear);
-      const nextEndDate = shiftDateYears(dateRange.endDate, endYear - originalEndYear);
-      next.date = rangeToArray(nextStartDate, nextEndDate);
+      if (dateRange) {
+        const fieldName = dateFieldNameForKind(kind);
+        const nextStartDate = shiftDateYears(dateRange.startDate, startYear - originalStartYear);
+        const nextEndDate = shiftDateYears(dateRange.endDate, endYear - originalEndYear);
+        next[fieldName] = rangeToArray(nextStartDate, nextEndDate);
+
+        if (kind === "planned" && Array.isArray(data.date)) {
+          next.date = next[fieldName];
+        }
+      }
     }
 
     return next;
@@ -139,10 +163,17 @@ function updateChronicleDataForChartEdit(
 
   const startDate = dayToDate(start);
   const endDate = dayToDate(end);
+  const dateKind = input.dateKind ?? "planned";
+  const fieldName = dateFieldNameForKind(dateKind);
   const next: Record<string, unknown> = {
     ...data,
-    date: rangeToArray(startDate, endDate)
+    [fieldName]: rangeToArray(startDate, endDate)
   };
+
+  if (dateKind === "planned" && Array.isArray(data.date)) {
+    next.date = next[fieldName];
+  }
+
   const startYear = dateYear(startDate);
   const endYear = dateYear(endDate);
   next.chronicle = rangeToArray(startYear, endYear);
@@ -169,13 +200,18 @@ function extractChronicleRangeFromData(data: Record<string, unknown>): { endYear
   return { endYear, startYear };
 }
 
-export function extractDateRange(markdown: string): { endDate: string; startDate: string } | null {
-  const { data } = parseFrontmatter(markdown);
-  return extractDateRangeFromData(data);
+interface DateRange {
+  endDate: string;
+  startDate: string;
 }
 
-function extractDateRangeFromData(data: Record<string, unknown>): { endDate: string; startDate: string } | null {
-  const value = data.date;
+export function extractDateRange(markdown: string): DateRange | null {
+  const { data } = parseFrontmatter(markdown);
+  return extractDateRangeFromData(data, "planned");
+}
+
+function extractDateRangeFromData(data: Record<string, unknown>, kind: GanttChartDateKind): DateRange | null {
+  const value = kind === "planned" ? data.plannedDate ?? data.date : data.actualDate;
 
   if (!Array.isArray(value) || (value.length !== 1 && value.length !== 2)) return null;
   const dates = value.map(normalizeDateValue);
@@ -188,6 +224,15 @@ function extractDateRangeFromData(data: Record<string, unknown>): { endDate: str
   if (startDate > endDate) return null;
 
   return { endDate, startDate };
+}
+
+function dateFieldNameForKind(kind: GanttChartDateKind): "actualDate" | "plannedDate" {
+  return kind === "actual" ? "actualDate" : "plannedDate";
+}
+
+function dateKindOrder(kind: GanttChartDateKind | undefined): number {
+  if (kind === "actual") return 1;
+  return 0;
 }
 
 function rangeToArray<T>(start: T, end: T): T[] {

@@ -95,6 +95,7 @@ export interface WorkspaceSummary {
 }
 
 export type GanttChartSource = "chronicle" | "date";
+export type GanttChartDateKind = "actual" | "planned";
 
 export interface GanttChartSettings {
   filePaths?: string[];
@@ -104,6 +105,7 @@ export interface GanttChartSettings {
 }
 
 export interface GanttChartEntry {
+  dateKind?: GanttChartDateKind;
   endLabel: string;
   endValue: number;
   fileName: string;
@@ -119,6 +121,7 @@ export interface WorkspaceGanttChart extends GanttChartSettings {
 export type GanttChartEntryEditKind = "move" | "resize-start" | "resize-end";
 
 export interface UpdateGanttChartEntryInput {
+  dateKind?: GanttChartDateKind;
   endValue: number;
   kind: GanttChartEntryEditKind;
   originalEndValue: number;
