@@ -16,13 +16,13 @@ Relicの技術選定・設計判断フェーズの正本。
 
 ## 正本・参照
 
-- `../tech/`
-- `../architecture/decisions.md`
+- `../../tech/`
+- `../../architecture/decisions.md`
 
 ---
 
 ## 完了状態
 
-- 技術スタックを `../tech/stack.md` に整理した
-- 主要な設計判断を `../architecture/decisions.md` に記録した
+- 技術スタックを `../../tech/stack.md` に整理した
+- 主要な設計判断を `../../architecture/decisions.md` に記録した
 - このフェーズは完了済み

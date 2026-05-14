@@ -16,8 +16,8 @@ Relicの自分用ビルド安定化フェーズの正本。
 
 ## 正本・参照
 
-- `testing.md`
-- `../tech/stack.md`
+- `../testing.md`
+- `../../tech/stack.md`
 
 ---
 

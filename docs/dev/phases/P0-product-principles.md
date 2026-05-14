@@ -16,13 +16,13 @@ Relicのプロダクト意図・対象ユーザー整理フェーズの正本。
 
 ## 正本・参照
 
-- `../principles.md`
-- `../PLAN.md`
+- `../../product/principles.md`
+- `../../product/PLAN.md`
 
 ---
 
 ## 完了状態
 
-- プロダクトの設計思想を `../principles.md` に整理した
-- アプリ名、対象プラットフォーム、基本方針を `../PLAN.md` に整理した
+- プロダクトの設計思想を `../../product/principles.md` に整理した
+- アプリ名、対象プラットフォーム、基本方針を `../../product/PLAN.md` に整理した
 - このフェーズは完了済み

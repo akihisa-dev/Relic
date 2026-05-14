@@ -16,8 +16,8 @@ RelicのGit・GitHub連携フェーズの正本。
 
 ## 正本・参照
 
-- `../spec/github.md`
-- `../tech/git-implementation.md`
+- `../../spec/github.md`
+- `../../tech/git-implementation.md`
 
 ---
 

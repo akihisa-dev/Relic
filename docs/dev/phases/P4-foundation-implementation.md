@@ -16,14 +16,14 @@ Relicの基礎実装フェーズの正本。
 
 ## 正本・参照
 
-- `../tech/stack.md`
-- `../architecture/overview.md`
-- `../spec/file-management.md`
-- `../spec/navigation.md`
-- `../spec/editor.md`
-- `../spec/markdown.md`
-- `../spec/links-and-tags.md`
-- `../spec/search.md`
+- `../../tech/stack.md`
+- `../../architecture/overview.md`
+- `../../spec/file-management.md`
+- `../../spec/navigation.md`
+- `../../spec/editor.md`
+- `../../spec/markdown.md`
+- `../../spec/links-and-tags.md`
+- `../../spec/search.md`
 
 ---
 

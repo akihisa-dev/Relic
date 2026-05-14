@@ -1,7 +1,7 @@
 # docs/INDEX.md
 
 このファイルはドキュメント群の索引です。
-AIのセッション開始時は、`../AI.md` から [project.md](project.md)、[dev/phases.md](dev/phases.md) の順に進みます。
+AIのセッション開始時は、`../AI.md` から [product/project.md](product/project.md)、[dev/phases.md](dev/phases.md) の順に進みます。
 
 ---
 
@@ -10,12 +10,14 @@ AIのセッション開始時は、`../AI.md` から [project.md](project.md)、
 | ファイル | 内容 |
 |----------|------|
 | [_rules.md](_rules.md) | ドキュメント作成・管理の全体ルール |
-| [project.md](project.md) | 内部向けプロジェクト概要。AIがプロジェクト前提を把握する入口 |
-| [PLAN.md](PLAN.md) | アプリ設計計画書。確定事項・技術スタックの大枠 |
-| [principles.md](principles.md) | 設計思想・対象ユーザー・ポジショニング |
-| [glossary.md](glossary.md) | 用語定義。コード・UI・ドキュメントで使う言葉の統一基準 |
+| [product/project.md](product/project.md) | 内部向けプロジェクト概要。AIがプロジェクト前提を把握する入口 |
+| [product/PLAN.md](product/PLAN.md) | アプリ設計計画書。確定事項・技術スタックの大枠 |
+| [product/principles.md](product/principles.md) | 設計思想・対象ユーザー・ポジショニング |
+| [product/glossary.md](product/glossary.md) | 用語定義。コード・UI・ドキュメントで使う言葉の統一基準 |
+| [product/](product/) | プロジェクト固有のプロダクト前提 |
 | [dev/phases.md](dev/phases.md) | 開発フェーズ管理の正本。現在位置と読む文書を判断する入口 |
 | [dev/phases/](dev/phases/) | 各フェーズ専用の計画・チェックリスト・判断メモ |
+| [dev/template.md](dev/template.md) | 今後の開発プロジェクトへ流用する文書・リポジトリ構造テンプレート |
 | [dev/open-questions.md](dev/open-questions.md) | 未決定事項の正本 |
 | [dev/conventions.md](dev/conventions.md) | コーディング規約 |
 | [dev/testing.md](dev/testing.md) | テスト方針 |
