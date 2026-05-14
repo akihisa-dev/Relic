@@ -3,130 +3,121 @@
 このドキュメントはRelicの設計・開発・会話において使用する用語を定義する。
 ここに定義された用語は、仕様書・ジャーナル・会話すべてで一貫して使用すること。
 
-対照表の参照アプリ：**Obsidian / GitHub / VS Code**
+対照表の参照アプリ：**Obsidian / VS Code**
 
 ---
 
 ## 基本構造
 
 ### ワークスペース
-ユーザーがRelicに登録したローカルフォルダ1つ。その中のすべての `.md` ファイルがアプリで管理される。検索・内部リンク・タグ・GitHub連携はこの単位で完結する。
+ユーザーがRelicに登録したローカルフォルダ1つ。その中の `.md` ファイルがアプリで管理される。検索・内部リンク・タグはこの単位で完結する。同期や履歴管理が必要な場合は、OS・クラウド同期フォルダ・Relic外部のツールで扱う。
 
-| Obsidian | GitHub | VS Code |
-|---|---|---|
-| Vault | Repository | Workspace |
+| Obsidian | VS Code |
+|---|---|
+| Vault | Workspace |
 
 ---
 
 ### ファイル
 ワークスペース内に存在するMarkdownファイル（`.md`）1つ。Relicにおける情報の最小単位。フロントマターとテキストコンテンツで構成される。
 
-| Obsidian | GitHub | VS Code |
-|---|---|---|
-| Note | File | File |
+| Obsidian | VS Code |
+|---|---|
+| Note | File |
 
 ---
 
 ### フォルダ
 ワークスペース内でファイルをグループ化する入れ物。OSのディレクトリと1対1で対応する。フォルダの中にさらにフォルダを作ることができる（ネスト）。
 
-| Obsidian | GitHub | VS Code |
-|---|---|---|
-| Folder | Directory | Folder |
+| Obsidian | VS Code |
+|---|---|
+| Folder | Folder |
 
 ---
 
 ## エディタモード
 
 ### ライブプレビュー
-エディタのデフォルトモード。Markdown記法をリアルタイムにレンダリングして表示する。`**太字**` と入力すると即座に **太字** として表示される。カーソルまたは選択範囲が装飾された文字に触れているときは、その装飾に使われている記法だけを表示し、レンダリング自体は維持する。
+エディタのデフォルトモード。Markdown記法をリアルタイムにレンダリングして表示する。カーソルまたは選択範囲が装飾された文字に触れているときは、その装飾に使われている記法だけを表示し、レンダリング自体は維持する。
 
-| Obsidian | GitHub | VS Code |
-|---|---|---|
-| Live Preview | — | Preview（別ペイン） |
+| Obsidian | VS Code |
+|---|---|
+| Live Preview | Preview（別ペイン） |
 
 ---
 
 ### ソースモード
 Markdown記法をそのままテキストとして表示するモード。レンダリングを行わない。`**太字**` はそのまま `**太字**` と表示される。
 
-| Obsidian | GitHub | VS Code |
-|---|---|---|
-| Source mode | 編集画面 | 通常の編集画面 |
-
----
-
-### フォーカスモード
-現在カーソルがある段落以外を薄暗く表示するモード。書くことに集中するための表示補助。ライブプレビュー・ソースモードと併用できる。
-
-| Obsidian | GitHub | VS Code |
-|---|---|---|
-| — | — | Zen Mode（類似） |
+| Obsidian | VS Code |
+|---|---|
+| Source mode | 通常の編集画面 |
 
 ---
 
 ### タイプライターモード
-カーソル行が常に画面中央に固定されるモード。下にスクロールしても視点が動かない。ライブプレビュー・ソースモードと併用できる。
+カーソル行が常に画面中央付近に来るようにスクロールする表示補助。書いている行を見失いにくくするためのモード。
 
-| Obsidian | GitHub | VS Code |
-|---|---|---|
-| Typewriter mode | — | — |
+| Obsidian | VS Code |
+|---|---|
+| Typewriter mode | — |
 
 ---
 
 ## リンク・タグ
 
 ### 内部リンク
-`[[ファイル名]]` 記法でワークスペース内の別のファイルへリンクを張る機能。リンク先が存在しない場合は未作成であることを示すスタイルで表示し、クリックで新規ファイルを作成する。
+`[[ファイル名]]` 記法でワークスペース内の別のファイルへリンクを張る機能。リンク先が存在しない場合は未作成であることを示すスタイルで表示し、クリックで新規ファイルを作成できる。
 
-| Obsidian | GitHub | VS Code |
-|---|---|---|
-| Internal link / Wiki link | — | — |
+| Obsidian | VS Code |
+|---|---|
+| Internal link / Wiki link | — |
 
 ---
 
 ### バックリンク
 あるファイルを内部リンクで参照している他のファイルの一覧。「このファイルはどこから参照されているか」を示す。右パネルに表示され、エクスポート・印刷の対象には含まれない。
 
-| Obsidian | GitHub | VS Code |
-|---|---|---|
-| Backlinks | — | — |
+| Obsidian | VS Code |
+|---|---|
+| Backlinks | — |
 
 ---
 
 ### アウトゴーイングリンク
 あるファイルが内部リンクで参照している他のファイルの一覧。「このファイルはどこへリンクしているか」を示す。右パネルに表示され、エクスポート・印刷の対象には含まれない。
 
-| Obsidian | GitHub | VS Code |
-|---|---|---|
-| Outgoing links | — | — |
+| Obsidian | VS Code |
+|---|---|
+| Outgoing links | — |
 
 ---
 
 ### タグ
 ファイルをカテゴリ分けするためのラベル。フロントマターの固定プロパティ `tags:` で付与できる。複数のファイルを横断して検索・絞り込みができる。本文中の関連づけにはインラインリンク `[[...]]` を使う。
 
-| Obsidian | GitHub | VS Code |
-|---|---|---|
-| Tag | Label | — |
+| Obsidian | VS Code |
+|---|---|
+| Tag | — |
 
 ---
 
 ### フロントマター
 ファイル先頭の `---` で囲まれたYAMLブロック。ファイルのメタデータ（タイトル・タグ・日付など）を記述する場所。エディタ上では生のYAMLではなくフォーム形式で表示・編集できる。
 
-| Obsidian | GitHub | VS Code |
-|---|---|---|
-| Frontmatter / Properties | Front matter（Jekyll等） | — |
+| Obsidian | VS Code |
+|---|---|
+| Frontmatter / Properties | — |
 
 ---
 
-### テンプレート
-新規ファイル作成時に適用できる雛形ファイル。専用のテンプレートフォルダ内に置いた `.md` ファイルがテンプレートとして認識される。フロントマターや定型文をあらかじめ記述しておける。
+### フロントマターテンプレート
+複数の能力付きフィールドをまとめて現在のMarkdownファイルへ付与するための保存済みセット。ワークスペース内の専用テンプレートフォルダや本文テンプレートファイルには依存しない。
 
-| Obsidian | GitHub | VS Code |
-|---|---|---|
-| Template | Repository template | Snippet（類似） |
+| Obsidian | VS Code |
+|---|---|
+| Template（類似） | Snippet（類似） |
 
 ---
 
@@ -135,262 +126,179 @@ Markdown記法をそのままテキストとして表示するモード。レン
 ### アプリウィンドウ
 アプリ全体が表示される1つのウィンドウ。タイトルバー・サイドバー・メインエリア・ステータスバーなど、画面上のすべてのUI要素を含む外枠。
 
-| Obsidian | GitHub | VS Code |
-|---|---|---|
-| App window | Browser window / App window | Window |
+| Obsidian | VS Code |
+|---|---|
+| App window | Window |
 
 ---
 
 ### タイトルバー
-ウィンドウ最上部のバー。macOSのウィンドウ操作ボタン、アプリ名、タブバー、ブランチ名や同期状態などのグローバルな情報を表示する領域。
+ウィンドウ最上部のバー。macOSのウィンドウ操作ボタン、アプリ名、タブバーなどのグローバルな情報を表示する領域。
 
-| Obsidian | GitHub | VS Code |
-|---|---|---|
-| Title bar | Browser chrome（類似） | Title bar |
+| Obsidian | VS Code |
+|---|---|
+| Title bar | Title bar |
 
 ---
 
 ### タブバー
-開いているタブを横並びで表示する領域。タイトルバー内、またはエディタ上部に配置される。個々のファイルを示す部品は「タブ」と呼ぶ。
+開いているタブを横並びで表示する領域。タイトルバー内、またはエディタ上部に配置される。個々のファイルやビューを示す部品は「タブ」と呼ぶ。
 
-| Obsidian | GitHub | VS Code |
-|---|---|---|
-| Tab bar | Tab bar | Tab bar |
+| Obsidian | VS Code |
+|---|---|
+| Tab bar | Tab bar |
 
 ---
 
 ### カラム
 画面全体を構成する大きな縦方向の区画。レイアウトの骨格を表す言葉で、サイドバーやメインエリアのような主要領域を指す。Relicの基本構造は「左サイドバー + 右メインエリア」の2カラムである。
 
-| Obsidian | GitHub | VS Code |
-|---|---|---|
-| Sidebar / Main area | Sidebar / Content area | Side bar / Editor area |
+| Obsidian | VS Code |
+|---|---|
+| Sidebar / Main area | Side bar / Editor area |
 
 ---
 
 ### ペイン
 作業領域の中を分割した表示枠。主にエディタを左右に分割して複数ファイルを同時に表示する場合の、それぞれの表示領域を指す。分割表示の右側は「右ペイン」と呼べるが、アウトラインなどの補助領域はペインではなくパネルと呼ぶ。
 
-| Obsidian | GitHub | VS Code |
-|---|---|---|
-| Pane | — | Editor group |
+| Obsidian | VS Code |
+|---|---|
+| Pane | Editor group |
 
 ---
 
 ### パネル
-補助情報や操作を表示するための領域。ファイルツリー・検索・Git・設定・アウトライン・リンク一覧など、作業対象そのものではなく作業を助ける情報や操作を扱う。固定表示される場合も、ボタンで開閉される場合もある。
+補助情報や操作を表示するための領域。ファイルツリー・検索・設定・アウトライン・リンク一覧など、作業対象そのものではなく作業を助ける情報や操作を扱う。固定表示される場合も、ボタンで開閉される場合もある。
 
-| Obsidian | GitHub | VS Code |
-|---|---|---|
-| Panel / Sidebar view | Panel | View / Panel |
+| Obsidian | VS Code |
+|---|---|
+| Panel / Sidebar view | View / Panel |
 
 ---
 
 ### メインエリア
-画面右側の主要な作業領域。常にエディタを表示する領域であり、検索・設定・Gitなどの補助操作で別画面へ遷移しない。ツールバー・エディタ本体・右パネルを含む。
+画面右側の主要な作業領域。エディタやダッシュボードなど、現在開いているタブの内容を表示する。ツールバー・エディタ本体・右パネルを含む。
 
-| Obsidian | GitHub | VS Code |
-|---|---|---|
-| Editor area | File view / Editor area | Editor area |
+| Obsidian | VS Code |
+|---|---|
+| Editor area | Editor area |
 
 ---
 
 ### サイドバー
-アプリ左側に表示されるパネル。ファイルツリー・検索・Git・設定など複数のビューに切り替えて使う。ボタンまたはショートカットで開閉できる。サイドバー内のあらゆる操作でメインエリア（エディタ）が切り替わることはない。
+アプリ左側に表示されるパネル。ファイルツリー・検索・設定など複数のビューに切り替えて使う。ボタンまたはショートカットで開閉できる。
 
-| Obsidian | GitHub | VS Code |
-|---|---|---|
-| File explorer | — | Explorer |
+| Obsidian | VS Code |
+|---|---|
+| File explorer | Explorer |
 
 ---
 
 ### ビュー切替レール
-サイドバー内で、ファイルツリー・検索・Git・設定などのサイドバービューを切り替えるための細い縦方向の領域。アイコンボタンを縦に並べる。
+サイドバー内で、ファイルツリー・検索・設定などのサイドバービューを切り替えるための細い縦方向の領域。アイコンボタンを縦に並べる。
 
-| Obsidian | GitHub | VS Code |
-|---|---|---|
-| Ribbon（類似） | — | Activity bar |
+| Obsidian | VS Code |
+|---|---|
+| Ribbon（類似） | Activity bar |
 
 ---
 
 ### サイドバービュー
-サイドバー内で切り替えて表示される内容領域。ファイルツリー・検索・Git・設定などがそれぞれサイドバービューにあたる。
+サイドバー内で切り替えて表示される内容領域。ファイルツリー・検索・設定などがそれぞれサイドバービューにあたる。
 
-| Obsidian | GitHub | VS Code |
-|---|---|---|
-| Sidebar view | — | View |
+| Obsidian | VS Code |
+|---|---|
+| Sidebar view | View |
 
 ---
 
 ### ワークスペース切替
 現在開いているワークスペース名を表示し、別のワークスペースへの切り替えや新規ワークスペース作成を行う領域。サイドバー上部に配置する。
 
-| Obsidian | GitHub | VS Code |
-|---|---|---|
-| Vault switcher | Repository switcher | Workspace switcher |
+| Obsidian | VS Code |
+|---|---|
+| Vault switcher | Workspace switcher |
 
 ---
 
 ### ファイルツリー
 ワークスペース内のフォルダとファイルを階層表示するサイドバービュー。フォルダの開閉、ファイルの選択、ピン留め項目の表示などを行う。
 
-| Obsidian | GitHub | VS Code |
-|---|---|---|
-| File explorer | File tree | Explorer tree |
+| Obsidian | VS Code |
+|---|---|
+| File explorer | Explorer tree |
 
 ---
 
 ### ツールバー
 エディタ上部に表示される操作バー。モード切り替えボタンなどのアクションを配置する。
 
-| Obsidian | GitHub | VS Code |
-|---|---|---|
-| — | Toolbar | Toolbar |
+| Obsidian | VS Code |
+|---|---|
+| — | Toolbar |
 
 ---
 
 ### エディタ本体
-Markdownファイルの本文を表示・編集する領域。ライブプレビュー・ソースモード・フォーカスモードなどの表示モードは、この領域に適用される。
+Markdownファイルの本文を表示・編集する領域。ライブプレビュー・ソースモード・タイプライターモードなどの表示モードは、この領域に適用される。
 
-| Obsidian | GitHub | VS Code |
-|---|---|---|
-| Editor | File editor | Text editor |
+| Obsidian | VS Code |
+|---|---|
+| Editor | Text editor |
 
 ---
 
 ### 右パネル
 メインエリアの右側に開閉表示される補助パネル。アウトラインパネルやリンクパネルを表示する。分割表示の「右ペイン」とは別物。
 
-| Obsidian | GitHub | VS Code |
-|---|---|---|
-| Right sidebar / Right panel | — | Secondary side bar / Panel |
+| Obsidian | VS Code |
+|---|---|
+| Right sidebar / Right panel | Secondary side bar / Panel |
 
 ---
 
 ### ステータスバー
 エディタ下部に常時表示されるバー。現在開いているファイルの文字数・単語数などの情報を表示する。
 
-| Obsidian | GitHub | VS Code |
-|---|---|---|
-| Status bar | — | Status bar |
+| Obsidian | VS Code |
+|---|---|
+| Status bar | Status bar |
 
 ---
 
 ### タブ
-複数のファイルを同時に開くためのUI。ブラウザのタブと同じ概念。エディタ上部に横並びで表示され、タブが多い場合は横スクロールで切り替える。
+複数のファイルやビューを同時に開くためのUI。ブラウザのタブと同じ概念。エディタ上部に横並びで表示され、タブが多い場合は横スクロールで切り替える。
 
-| Obsidian | GitHub | VS Code |
-|---|---|---|
-| Tab | Tab | Tab |
+| Obsidian | VS Code |
+|---|---|
+| Tab | Tab |
 
 ---
 
 ### アウトラインパネル
 エディタ右側に表示されるパネル。現在開いているファイルの見出し（H1〜H6）一覧を表示し、クリックで該当箇所にジャンプできる。ボタンで開閉できる。
 
-| Obsidian | GitHub | VS Code |
-|---|---|---|
-| Outline | — | Outline |
+| Obsidian | VS Code |
+|---|---|
+| Outline | Outline |
 
 ---
 
 ### ピン留め
 よく使うファイルやフォルダをサイドバー上部に固定表示する機能。ピン留めしたアイテムは常にすぐアクセスできる位置に表示される。
 
-| Obsidian | GitHub | VS Code |
-|---|---|---|
-| Bookmark（類似） | — | Pinned（類似） |
+| Obsidian | VS Code |
+|---|---|
+| Bookmark（類似） | Pinned（類似） |
 
 ---
 
 ### 分割表示
 エディタエリアを左右2つのペインに分けて、異なるファイルを同時に表示・編集できる機能。ショートカットまたはボタンで分割・解除できる。
 
-| Obsidian | GitHub | VS Code |
-|---|---|---|
-| Split pane | — | Split editor |
-
----
-
-## GitHub連携
-
-### リポジトリ
-GitHub上のプロジェクト置き場。ワークスペースと1対1で紐付けられる。変更履歴の管理・バックアップ・他デバイスとの同期に使う。
-
-| Obsidian | GitHub | VS Code |
-|---|---|---|
-| — | Repository | — |
-
----
-
-### クローン
-GitHubのリポジトリをローカルのワークスペースとしてコピーしてくる操作。初回接続時に使う。
-
-| Obsidian | GitHub | VS Code |
-|---|---|---|
-| — | Clone | Clone |
-
----
-
-### コミット
-ワークスペース内のファイルへの変更を1つのまとまりとして記録する操作。変更内容を説明するコミットメッセージを付けることができる。
-
-| Obsidian | GitHub | VS Code |
-|---|---|---|
-| — | Commit | Commit |
-
----
-
-### プッシュ
-ローカルのコミット履歴をGitHubのリポジトリに送信する操作。これによってGitHub上に変更が反映される。
-
-| Obsidian | GitHub | VS Code |
-|---|---|---|
-| — | Push | Push |
-
----
-
-### プル
-GitHubのリポジトリにある最新の変更をローカルのワークスペースに取得する操作。
-
-| Obsidian | GitHub | VS Code |
-|---|---|---|
-| — | Pull | Pull |
-
----
-
-### ブランチ
-コミット履歴の分岐。メインの履歴（mainブランチ）とは別に作業用の分岐を作ることで、本線に影響を与えずに変更を試せる。
-
-| Obsidian | GitHub | VS Code |
-|---|---|---|
-| — | Branch | Branch |
-
----
-
-### Diff（差分）
-2つのバージョン間でファイルの内容がどう変わったかを示す表示。追加された行・削除された行をそれぞれ色で区別して左右に並べて表示する。
-
-| Obsidian | GitHub | VS Code |
-|---|---|---|
-| — | Diff | Diff |
-
----
-
-### コンフリクト（競合）
-同じファイルの同じ箇所を異なる方法で変更したとき、Gitがどちらを採用すべきか判断できない状態。Relicでは発生時に通知し、ファイルごとにどちらの内容を残すかを選択できる。
-
-| Obsidian | GitHub | VS Code |
-|---|---|---|
-| — | Conflict / Merge conflict | Merge conflict |
-
----
-
-### 自動同期
-設定した時間間隔でプルとプッシュを自動実行する機能。デフォルトはオフ。間隔は設定画面で変更できる。
-
-| Obsidian | GitHub | VS Code |
-|---|---|---|
-| — | — | — |
+| Obsidian | VS Code |
+|---|---|
+| Split pane | Split editor |
 
 ---
