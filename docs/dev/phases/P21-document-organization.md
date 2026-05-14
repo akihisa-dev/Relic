@@ -111,6 +111,15 @@ AIが先に全件整理リストを正本化しない。
 - 確認: `docs/spec docs/ui` 内のMarkdownリンクを確認し、対象リンク先として `docs/spec/search.md`, `docs/spec/frontmatter.md`, `docs/spec/links-and-tags.md`, `docs/spec/markdown.md` が存在することを確認した
 - 残り: 今回範囲の仕様/UI文書整合は完了。現行アプリの実操作確認や、仕様として残す将来機能の棚卸しはP21の別作業範囲として扱う
 
+### 仕様文書の過去フェーズ表現整理
+
+- 方向性: `docs/spec/markdown.md`, `docs/spec/command-palette.md`, `docs/spec/file-tools.md` は、現行仕様として読める表現へ整理する。コード変更、仕様変更、新規機能追加は含めない
+- 実施: `docs/spec/markdown.md` の外部URL画像説明から初期仕様前提を外し、現行の表示対象外仕様として整理した
+- 実施: `docs/spec/command-palette.md` と `docs/spec/file-tools.md` から初期リリース前提の表現を外し、現行の対象カテゴリ・対象機能として整理した
+- 実施: `AI.md` の指示解釈ルールに、解釈は長い段落ではなく箇条書きで提示することを追記した
+- 確認: `rg` で対象仕様文書に `初期仕様`, `初期リリース`, `初期対象` が残っていないことを確認した
+- 残り: 今回範囲の仕様文書表現整理とAI運用ルール追記は完了。`docs/dev/phases.md` と `docs/journal/` はフェーズ区切り指示がないため更新しない
+
 ### 設計/技術文書の整合
 
 - 方向性: `docs/architecture/` と `docs/tech/` は、現行Relicの「ローカルMarkdownワークスペース」「左レール + ファイルサイドバー + タブ式メインエリア」を正として整理する。コード変更、仕様変更、新規機能追加は含めない
@@ -121,6 +130,14 @@ AIが先に全件整理リストを正本化しない。
 - 確認: `rg` で `docs/architecture docs/tech` 内に古い画面構成が採用済み機能として残っていないことを確認した。`タブ式メインエリア`, `ファイルサイドバー`, `パネルタブ`, `frontmatterTemplates`, `ganttCharts` の現行前提が残っていることも確認した
 - 確認: `docs/architecture docs/tech` 内のMarkdownリンクを確認し、対象リンク先として `docs/tech/editor-engine.md`, `docs/spec/frontmatter.md` が存在することを確認した
 - 残り: 今回範囲の設計/技術文書整合は完了。`docs/dev/conventions.md` と `docs/dev/testing.md` は下記の別作業範囲で整理した
+
+### 技術・設計文書の時期依存表現整理
+
+- 方向性: `docs/architecture/decisions.md` と `docs/tech/stack.md` は、現行の技術選定・設計判断として読める表現へ整理する。コード変更、仕様変更、技術選定変更は含めない
+- 実施: `docs/architecture/decisions.md` の Vitest / Zustand 採用理由から、時期依存の `将来的に` と `初期段階` 表現を外した
+- 実施: `docs/tech/stack.md` の対象OS説明を、macOS / Windows を現行対象、iOS を現行スタック対象外の別検討対象として整理した
+- 確認: `rg` で `docs/architecture/decisions.md` と `docs/tech/stack.md` に `初期段階`, `将来的に` が残っていないことを確認した
+- 残り: 今回範囲の技術・設計文書の時期依存表現整理は完了。`docs/dev/phases.md` と `docs/journal/` はフェーズ区切り指示がないため更新しない
 
 ### 開発規約・テスト方針の整合
 
