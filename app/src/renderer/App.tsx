@@ -900,7 +900,10 @@ export function App(): ReactElement {
   const handleUpdateGanttChartEntry = useCallback(async (input: UpdateGanttChartEntryInput): Promise<void> => {
     if (!window.relic) return;
 
-    const result = await window.relic.updateGanttChartEntry(input);
+    const updateEntry = (window.relic as Partial<typeof window.relic>).updateGanttChartEntry;
+    const result = typeof updateEntry === "function"
+      ? await updateEntry(input).catch(() => updateGanttChartEntryFallback(input))
+      : await updateGanttChartEntryFallback(input);
 
     if (result.ok) {
       setGanttCharts(normalizeWorkspaceGanttCharts(result.value));
@@ -2009,6 +2012,157 @@ function legacyChronicleYearToAxis(year: number): number {
 
 function formatLegacyChronicleYear(year: number): string {
   return year < 0 ? `−${Math.abs(year)}` : String(year);
+}
+
+async function updateGanttChartEntryFallback(input: UpdateGanttChartEntryInput): Promise<{ ok: true; value: WorkspaceGanttChart[] } | { error: { message: string }; ok: false }> {
+  if (!window.relic) return { error: { message: "チャートの変更を保存できませんでした。" }, ok: false };
+
+  const file = await window.relic.readMarkdownFile({ path: input.path });
+
+  if (!file.ok) return { error: file.error, ok: false };
+
+  const content = updateChartFrontmatter(file.value.content, input);
+  const write = await window.relic.writeMarkdownFile({ content, path: input.path });
+
+  if (!write.ok) return { error: write.error, ok: false };
+
+  const charts = await window.relic.getWorkspaceChronicle();
+
+  if (!charts.ok) return { error: charts.error, ok: false };
+
+  return { ok: true, value: charts.value };
+}
+
+function updateChartFrontmatter(content: string, input: UpdateGanttChartEntryInput): string {
+  const frontmatter = splitFrontmatterBlock(content);
+  const yamlText = frontmatter?.yaml ?? "";
+  const updates = chartFrontmatterUpdates(yamlText, input);
+  const nextYaml = Object.entries(updates).reduce(
+    (yaml, [field, values]) => setYamlArrayField(yaml, field, values),
+    yamlText
+  );
+
+  if (frontmatter) {
+    return `${frontmatter.open}${nextYaml}${frontmatter.close}${frontmatter.body}`;
+  }
+
+  return `---\n${nextYaml}---\n${content}`;
+}
+
+function splitFrontmatterBlock(content: string): { body: string; close: string; open: string; yaml: string } | null {
+  const open = /^---\r?\n/.exec(content);
+
+  if (!open) return null;
+
+  const rest = content.slice(open[0].length);
+  const close = /^---(?:\r?\n|$)/m.exec(rest);
+
+  if (!close || close.index === undefined) return null;
+
+  return {
+    body: rest.slice(close.index + close[0].length),
+    close: close[0],
+    open: open[0],
+    yaml: rest.slice(0, close.index)
+  };
+}
+
+function chartFrontmatterUpdates(yamlText: string, input: UpdateGanttChartEntryInput): Record<string, string[]> {
+  const start = Math.min(input.startValue, input.endValue);
+  const end = Math.max(input.startValue, input.endValue);
+
+  if (input.source === "date") {
+    const startDate = chartDayToDate(start);
+    const endDate = chartDayToDate(end);
+
+    return {
+      chronicle: rangeToStringArray(dateYear(startDate), dateYear(endDate)),
+      date: rangeToStringArray(startDate, endDate)
+    };
+  }
+
+  const originalDate = readYamlArrayField(yamlText, "date");
+  const originalStartYear = chartAxisToYear(input.originalStartValue);
+  const originalEndYear = chartAxisToYear(input.originalEndValue);
+  const startYear = chartAxisToYear(start);
+  const endYear = chartAxisToYear(end);
+  const updates: Record<string, string[]> = {
+    chronicle: rangeToStringArray(startYear, endYear)
+  };
+
+  if (originalDate.length === 1 || originalDate.length === 2) {
+    const startDate = originalDate[0];
+    const endDate = originalDate[1] ?? startDate;
+
+    if (isDateString(startDate) && isDateString(endDate)) {
+      updates.date = rangeToStringArray(
+        shiftDateYears(startDate, startYear - originalStartYear),
+        shiftDateYears(endDate, endYear - originalEndYear)
+      );
+    }
+  }
+
+  return updates;
+}
+
+function setYamlArrayField(yamlText: string, field: string, values: string[]): string {
+  const line = `${field}: [${values.join(", ")}]\n`;
+  const pattern = new RegExp(`^${escapeRegExp(field)}\\s*:.*(?:\\r?\\n|$)`, "m");
+
+  if (pattern.test(yamlText)) {
+    return yamlText.replace(pattern, line);
+  }
+
+  return `${yamlText}${yamlText.endsWith("\n") || yamlText.length === 0 ? "" : "\n"}${line}`;
+}
+
+function readYamlArrayField(yamlText: string, field: string): string[] {
+  const pattern = new RegExp(`^${escapeRegExp(field)}\\s*:\\s*\\[([^\\]]*)\\]`, "m");
+  const match = pattern.exec(yamlText);
+
+  if (!match) return [];
+
+  return match[1]
+    .split(",")
+    .map((value) => value.trim().replace(/^['"]|['"]$/g, ""))
+    .filter(Boolean);
+}
+
+function rangeToStringArray(start: string | number, end: string | number): string[] {
+  return start === end ? [String(start)] : [String(start), String(end)];
+}
+
+function chartAxisToYear(value: number): number {
+  return value < 0 ? value : value + 1;
+}
+
+function chartDayToDate(value: number): string {
+  return new Date(value * 86_400_000).toISOString().slice(0, 10);
+}
+
+function isDateString(value: string): boolean {
+  return /^\d{4}-\d{2}-\d{2}$/.test(value) && chartDayToDate(Math.floor(new Date(`${value}T00:00:00.000Z`).getTime() / 86_400_000)) === value;
+}
+
+function shiftDateYears(value: string, deltaYears: number): string {
+  if (deltaYears === 0) return value;
+
+  const date = new Date(`${value}T00:00:00.000Z`);
+  const month = date.getUTCMonth();
+  const day = date.getUTCDate();
+  const nextYear = date.getUTCFullYear() + deltaYears;
+  const lastDay = new Date(Date.UTC(nextYear, month + 1, 0)).getUTCDate();
+  const next = new Date(Date.UTC(nextYear, month, Math.min(day, lastDay)));
+
+  return next.toISOString().slice(0, 10);
+}
+
+function dateYear(value: string): number {
+  return Number(value.slice(0, 4));
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 // ────────────────────────────────────────────────
