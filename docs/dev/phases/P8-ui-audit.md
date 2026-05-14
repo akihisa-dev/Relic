@@ -16,9 +16,9 @@ RelicのUI総点検・設計照合フェーズの正本。
 
 ## 正本・参照
 
-- `../ui/screens-macos.md`
-- `../ui/navigation.md`
-- `../ui/DESIGN.md`
+- `../../ui/screens-macos.md`
+- `../../ui/navigation.md`
+- `../../ui/DESIGN.md`
 
 ---
 

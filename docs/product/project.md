@@ -41,6 +41,8 @@ Relicは、書き手のためのMarkdownワークスペース。
 
 - `app/`: Electron / React アプリ本体
 - `docs/`: 内部向けの計画・仕様・設計・開発文書
+- `docs/product/`: Relic固有のプロダクト前提
+- `scripts/`: 起動・ビルドなどの補助スクリプト
 - `AI.md`: AIエージェント向けの共通行動規約
 - `README.md`: 対外的なプロジェクト説明
 
@@ -48,4 +50,4 @@ Relicは、書き手のためのMarkdownワークスペース。
 
 ## 次に読む文書
 
-現在の開発位置は [dev/phases.md](dev/phases.md) を参照する。
+現在の開発位置は [../dev/phases.md](../dev/phases.md) を参照する。

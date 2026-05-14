@@ -2,9 +2,10 @@
 
 set -u
 
-cd "$(dirname "$0")/app"
+cd "$(dirname "$0")/../app"
 
-echo "Relic を起動しています..."
+echo "Relic をビルドしています..."
+echo "（数分かかります）"
 echo ""
 
 if ! command -v pnpm >/dev/null 2>&1; then
@@ -16,8 +17,11 @@ if ! command -v pnpm >/dev/null 2>&1; then
   exit 1
 fi
 
-pnpm start
+pnpm make
 
 echo ""
-echo "Relic が終了しました。Enterキーを押すと閉じます。"
+echo "ビルドが完了しました。"
+echo "app/out/ フォルダに Relic.app が生成されています。"
+echo ""
+echo "Enterキーを押すと閉じます。"
 read -r

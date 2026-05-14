@@ -16,8 +16,8 @@ Relicのフロントマターとコマンド操作フェーズの正本。
 
 ## 正本・参照
 
-- `../spec/frontmatter.md`
-- `../spec/command-palette.md`
+- `../../spec/frontmatter.md`
+- `../../spec/command-palette.md`
 
 ---
 

@@ -16,7 +16,7 @@ Relicを「書く道具」として使い続けやすくするために、機能
 - ユーザー本人が不要・重い・分かりにくいと感じている機能を起点にする
 - 機能追加よりも、機能の整理、削減、統合、導線の見直しを同等以上に重視する
 - 仕様変更・実装変更は、対象機能と方向性が合意されてから行う
-- 機能判断は `../principles.md` と `../PLAN.md` に反しない範囲で行う
+- 機能判断は `../../product/principles.md` と `../../product/PLAN.md` に反しない範囲で行う
 
 ---
 
@@ -294,14 +294,14 @@ Relicを「書く道具」として使い続けやすくするために、機能
 
 ## 最初に読む
 
-- `../principles.md`
-- `../PLAN.md`
+- `../../product/principles.md`
+- `../../product/PLAN.md`
 
 必要になったときだけ読む:
 
-- 既存仕様を確認する: 対応する `../spec/*.md`
-- UIへの影響を確認する: `../ui/screens-macos.md`, `../ui/navigation.md`, `../ui/DESIGN.md`
-- 実装規約とテスト方針を確認する: `conventions.md`, `testing.md`
+- 既存仕様を確認する: 対応する `../../spec/*.md`
+- UIへの影響を確認する: `../../ui/screens-macos.md`, `../../ui/navigation.md`, `../../ui/DESIGN.md`
+- 実装規約とテスト方針を確認する: `../conventions.md`, `../testing.md`
 
 ---
 
