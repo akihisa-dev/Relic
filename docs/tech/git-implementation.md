@@ -1,6 +1,6 @@
 # tech/git-implementation.md
 
-Git機能の技術方針を記録するドキュメント。
+Git機能を現行アプリに採用しない技術判断を記録するドキュメント。
 
 ---
 
@@ -9,6 +9,8 @@ Git機能の技術方針を記録するドキュメント。
 Relicは現行アプリにGit機能を持たない。
 
 isomorphic-git / simple-git / nodegit などのGit操作ライブラリは採用しない。GitHub OAuth、プル、コミット、プッシュ、ブランチ管理、タグ管理、自動同期もアプリ責務に含めない。
+
+この文書は、Git / GitHub機能を復活させるための設計書ではなく、現行アプリで採用しない範囲を明確にするための記録として残す。
 
 ---
 
@@ -27,3 +29,4 @@ isomorphic-git / simple-git / nodegit などのGit操作ライブラリは採用
 - Git / GitHub 用IPC、メインプロセスサービス、レンダラーUIを持たない
 - アプリ設定・ワークスペース設定にGit接続情報や自動同期設定を保存しない
 - サイドバー、設定画面、コマンドパレットにGit関連操作を表示しない
+- `app/src/main/main.ts` に残る `github.com` への外部URL許可は、Webリンクを安全に外部ブラウザで開くための許可リストであり、GitHub認証やGit操作の実装とは扱わない

@@ -11,6 +11,11 @@
 | 言語 | TypeScript | 型安全な開発のため |
 | デスクトップフレームワーク | Electron | macOS / Windows 向けデスクトップアプリを Web 技術で構築 |
 | エディタエンジン | CodeMirror 6 | 詳細は [tech/editor-engine.md](editor-engine.md) |
+| Markdownパーサー | marked | プレビューHTML生成に使用 |
+| HTML安全化 | DOMPurify | MarkdownプレビューのHTMLをサニタイズ |
+| シンタックスハイライト | highlight.js | コードブロックのハイライトに使用 |
+| 数式表示 | KaTeX | Markdown内の数式表示に使用 |
+| YAML処理 | js-yaml | フロントマターの読み書きに使用 |
 | クラウド同期フォルダ対応 | ネイティブファイルシステム経由 | iCloud Drive / OneDrive / Dropbox などを、OS上のローカルフォルダとして直接読み書き。各クラウドサービスのAPI連携は持たない |
 | UIフレームワーク | React | Obsidianと同じ。AI駆動開発との相性が最良 |
 | React状態管理 | Zustand | 横断的UI状態に限定して使用。ファイル内容・検索インデックス・設定永続化は入れない |
