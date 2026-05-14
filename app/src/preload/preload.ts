@@ -29,6 +29,7 @@ import {
   replaceInFileChannel,
   revealWorkspaceItemChannel,
   saveWorkspaceGanttChartsChannel,
+  updateGanttChartEntryChannel,
   saveEditorSettingsChannel,
   generateTitleListChannel,
   type GenerateTitleListInput,
@@ -61,6 +62,7 @@ import {
   type Backlink,
   type GetBacklinksInput,
   type GanttChartSettings,
+  type UpdateGanttChartEntryInput,
   type MarkdownFileContent,
   type MoveFolderInput,
   type MoveItemToTrashInput,
@@ -169,6 +171,8 @@ const relicApi: RelicApi = {
   writeClipboardText: (text: string) => clipboard.writeText(text),
   saveWorkspaceGanttCharts: (input: GanttChartSettings[]) =>
     ipcRenderer.invoke(saveWorkspaceGanttChartsChannel, input) as Promise<RelicResult<WorkspaceGanttChart[]>>,
+  updateGanttChartEntry: (input: UpdateGanttChartEntryInput) =>
+    ipcRenderer.invoke(updateGanttChartEntryChannel, input) as Promise<RelicResult<WorkspaceGanttChart[]>>,
   generateTitleList: (input: GenerateTitleListInput) =>
     ipcRenderer.invoke(generateTitleListChannel, input) as Promise<RelicResult<string>>,
   generateTableOfContents: (input: GenerateTableOfContentsInput) =>

@@ -43,6 +43,8 @@
   "chronicle.scaleIncrease": "Use coarser scale",
   "chronicle.search": "Search / filter",
   "chronicle.searchPlaceholder": "File name, path, or value",
+  "chronicle.resizeEnd": "Resize bar end",
+  "chronicle.resizeStart": "Resize bar start",
   "chronicle.source": "Chart type",
   "chronicle.summary": "{{source}} / {{count}} files",
   "chronicle.title": "Charts",

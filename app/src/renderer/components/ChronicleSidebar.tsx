@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, PointerEvent, ReactElement, RefObject } from "react";
 
-import type { GanttChartEntry, GanttChartSource, WorkspaceGanttChart } from "../../shared/ipc";
+import type { GanttChartEntry, GanttChartEntryEditKind, GanttChartSource, UpdateGanttChartEntryInput, WorkspaceGanttChart } from "../../shared/ipc";
 import { useT } from "../i18n";
 
 interface GanttChartViewProps {
   chart?: WorkspaceGanttChart | null;
   charts?: WorkspaceGanttChart[];
   onOpenFile: (path: string) => void;
+  onUpdateEntry?: (input: UpdateGanttChartEntryInput) => Promise<void> | void;
 }
 
 const ROW_HEIGHT = 38;
@@ -36,7 +37,14 @@ interface DateAxisSegment {
   startValue: number;
 }
 
-export function GanttChartView({ chart = null, charts = [], onOpenFile }: GanttChartViewProps): ReactElement {
+interface DragPreview {
+  endValue: number;
+  path: string;
+  source: GanttChartSource;
+  startValue: number;
+}
+
+export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdateEntry }: GanttChartViewProps): ReactElement {
   const t = useT();
   const floatingPanel = useFloatingPanelPosition();
   const availableCharts = useMemo(() => chartsForView(chart, charts), [chart, charts]);
@@ -44,6 +52,7 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile }: GanttC
   const [query, setQuery] = useState("");
   const [scaleIndex, setScaleIndex] = useState(1);
   const [scrollLeft, setScrollLeft] = useState(0);
+  const [dragPreview, setDragPreview] = useState<DragPreview | null>(null);
   const activeChart = chart ?? availableCharts.find((candidate) => candidate.id === selectedChartId) ?? availableCharts[0] ?? null;
   const activeSource = activeChart && isGanttChartSource(activeChart.source) ? activeChart.source : "chronicle";
   const scaleOptions = SCALE_OPTIONS[activeSource];
@@ -65,6 +74,107 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile }: GanttC
     if (availableCharts.some((candidate) => candidate.id === selectedChartId)) return;
     setSelectedChartId(availableCharts[0]?.id ?? "chronicle");
   }, [availableCharts, selectedChartId]);
+
+  useEffect(() => {
+    setDragPreview(null);
+  }, [activeChart?.id]);
+
+  const startEntryEdit = (
+    event: PointerEvent<HTMLElement>,
+    entry: GanttChartEntry,
+    kind: GanttChartEntryEditKind
+  ): void => {
+    if (event.button > 0 || !onUpdateEntry) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    const originalStartValue = entry.startValue;
+    const originalEndValue = entry.endValue;
+    const startClientX = event.clientX;
+    const target = event.currentTarget;
+
+    if (target.setPointerCapture) {
+      target.setPointerCapture(event.pointerId);
+    }
+
+    const nextRangeForDelta = (delta: number): { endValue: number; startValue: number } => {
+      if (kind === "move") {
+        return {
+          endValue: originalEndValue + delta,
+          startValue: originalStartValue + delta
+        };
+      }
+
+      if (kind === "resize-start") {
+        return {
+          endValue: originalEndValue,
+          startValue: Math.min(originalStartValue + delta, originalEndValue)
+        };
+      }
+
+      return {
+        endValue: Math.max(originalStartValue, originalEndValue + delta),
+        startValue: originalStartValue
+      };
+    };
+
+    const move = (moveEvent: globalThis.PointerEvent): void => {
+      const delta = pointerDelta(moveEvent.clientX, startClientX, unitWidth);
+      const nextRange = nextRangeForDelta(delta);
+
+      setDragPreview({
+        path: entry.path,
+        source: activeSource,
+        ...nextRange
+      });
+    };
+
+    const stop = (stopEvent: globalThis.PointerEvent): void => {
+      const delta = pointerDelta(stopEvent.clientX, startClientX, unitWidth);
+      const nextRange = nextRangeForDelta(delta);
+
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", stop);
+      window.removeEventListener("pointercancel", cancel);
+
+      if (target.hasPointerCapture?.(event.pointerId)) {
+        target.releasePointerCapture(event.pointerId);
+      }
+
+      if (delta === 0) {
+        setDragPreview(null);
+        return;
+      }
+
+      void Promise.resolve(onUpdateEntry({
+        endValue: nextRange.endValue,
+        kind,
+        originalEndValue,
+        originalStartValue,
+        path: entry.path,
+        source: activeSource,
+        startValue: nextRange.startValue
+      })).finally(() => setDragPreview(null));
+    };
+
+    const cancel = (): void => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", stop);
+      window.removeEventListener("pointercancel", cancel);
+      setDragPreview(null);
+    };
+
+    setDragPreview({
+      endValue: entry.endValue,
+      path: entry.path,
+      source: activeSource,
+      startValue: entry.startValue
+    });
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", stop);
+    window.addEventListener("pointercancel", cancel);
+  };
 
   return (
     <div className="chronicle-panel">
@@ -181,11 +291,12 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile }: GanttC
               >
                 <ChartGuideLines axisStart={axisStart} rowCount={Math.max(1, entries.length)} ticks={ticks} unitWidth={unitWidth} />
                 {entries.map((entry, index) => {
-                  const left = Math.max(0, (entry.startValue - axisStart) * unitWidth);
-                  const isSingleValue = entry.startValue === entry.endValue;
-                  const rangeLabel = formatRange(entry, activeSource, dateScale);
+                  const previewEntry = previewEntryForDrag(entry, dragPreview);
+                  const left = Math.max(0, (previewEntry.startValue - axisStart) * unitWidth);
+                  const isSingleValue = previewEntry.startValue === previewEntry.endValue;
+                  const rangeLabel = formatRange(previewEntry, activeSource, dateScale);
                   const labelWidth = labelWidthForText(rangeLabel);
-                  const naturalWidth = isSingleValue ? unitWidth : (entry.endValue - entry.startValue + 1) * unitWidth;
+                  const naturalWidth = isSingleValue ? unitWidth : (previewEntry.endValue - previewEntry.startValue + 1) * unitWidth;
                   const width = activeSource === "date"
                     ? naturalWidth
                     : isSingleValue
@@ -198,9 +309,10 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile }: GanttC
 
                   return (
                     <button
-                      className={`chronicle-fill${isSingleValue ? " chronicle-fill--single" : ""}`}
+                      aria-label={`${entry.fileName} ${rangeLabel}`}
+                      className={`chronicle-fill${isSingleValue ? " chronicle-fill--single" : ""}${dragPreview?.path === entry.path && dragPreview.source === activeSource ? " chronicle-fill--dragging" : ""}`}
                       key={entry.path}
-                      onClick={() => onOpenFile(entry.path)}
+                      onPointerDown={(event) => startEntryEdit(event, entry, "move")}
                       style={{
                         left,
                         top: index * ROW_HEIGHT,
@@ -209,7 +321,19 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile }: GanttC
                       title={`${entry.fileName} ${rangeLabel}`}
                       type="button"
                     >
+                      <span
+                        aria-label={t("chronicle.resizeStart")}
+                        className="chronicle-fill-resize chronicle-fill-resize--start"
+                        onPointerDown={(event) => startEntryEdit(event, entry, "resize-start")}
+                        role="separator"
+                      />
                       <span className="chronicle-fill-label" style={{ left: labelLeft, width: labelWidth }}>{rangeLabel}</span>
+                      <span
+                        aria-label={t("chronicle.resizeEnd")}
+                        className="chronicle-fill-resize chronicle-fill-resize--end"
+                        onPointerDown={(event) => startEntryEdit(event, entry, "resize-end")}
+                        role="separator"
+                      />
                     </button>
                   );
                 })}
@@ -383,6 +507,25 @@ function filterEntries(entries: GanttChartEntry[], query: string): GanttChartEnt
     entry.startLabel.toLowerCase().includes(normalizedQuery) ||
     entry.endLabel.toLowerCase().includes(normalizedQuery)
   ));
+}
+
+function previewEntryForDrag(entry: GanttChartEntry, preview: DragPreview | null): GanttChartEntry {
+  if (!preview || preview.path !== entry.path) return entry;
+
+  const startLabel = preview.source === "date"
+    ? dayToDate(preview.startValue)
+    : formatAxisValue(preview.startValue, "chronicle");
+  const endLabel = preview.source === "date"
+    ? dayToDate(preview.endValue)
+    : formatAxisValue(preview.endValue, "chronicle");
+
+  return {
+    ...entry,
+    endLabel,
+    endValue: preview.endValue,
+    startLabel,
+    startValue: preview.startValue
+  };
 }
 
 function timelineBounds(
@@ -586,4 +729,9 @@ function isGanttChartSource(value: unknown): value is GanttChartSource {
 
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
+}
+
+function pointerDelta(clientX: number, startClientX: number, unitWidth: number): number {
+  if (!Number.isFinite(clientX) || !Number.isFinite(startClientX) || unitWidth <= 0) return 0;
+  return Math.round((clientX - startClientX) / unitWidth);
 }

@@ -47,6 +47,7 @@ function makeRelicApi(overrides: Partial<typeof window.relic> = {}): typeof wind
     createNewWorkspace: vi.fn().mockResolvedValue({ ok: true, value: { activeWorkspace: null, fileTree: [], pinnedPaths: [], workspaces: [] } }),
     togglePin: vi.fn().mockResolvedValue({ ok: true, value: { activeWorkspace: null, fileTree: [], pinnedPaths: [], workspaces: [] } }),
     saveWorkspaceGanttCharts: vi.fn().mockResolvedValue({ ok: true, value: [] }),
+    updateGanttChartEntry: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     getFeatureToggles: vi.fn().mockResolvedValue({ ok: true, value: defaultFeatureToggles }),
     saveFeatureToggles: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
     getUserDefinedFields: vi.fn().mockResolvedValue({ ok: true, value: [] }),
@@ -739,6 +740,89 @@ describe("App", () => {
     expect(container.querySelector(".chronicle-fill")).toBeInTheDocument();
     expect(container.querySelectorAll(".chronicle-guide-line").length).toBeGreaterThan(0);
     expect(container.querySelectorAll(".chronicle-guide-row-line").length).toBeGreaterThan(0);
+  });
+
+  it("チャートバーはクリックでファイルを開かずドラッグで日付範囲を更新する", async () => {
+    const updateGanttChartEntry = vi.fn().mockResolvedValue({
+      ok: true,
+      value: [{
+        entries: [{
+          endLabel: "2026-05-06",
+          endValue: 20579,
+          fileName: "実装タスク",
+          path: "tasks/implementation.md",
+          startLabel: "2026-05-02",
+          startValue: 20575
+        }],
+        filePaths: [],
+        id: "date",
+        name: "date",
+        source: "date"
+      }]
+    });
+    const readMarkdownFile = vi.fn().mockResolvedValue({
+      ok: true,
+      value: { content: "---\ndate: [2026-05-02, 2026-05-06]\n---\n# 実装タスク", name: "実装タスク", path: "tasks/implementation.md" }
+    });
+
+    window.relic = makeRelicApi({
+      getWorkspaceChronicle: vi.fn().mockResolvedValue({
+        ok: true,
+        value: [{
+          entries: [{
+            endLabel: "2026-05-05",
+            endValue: 20578,
+            fileName: "実装タスク",
+            path: "tasks/implementation.md",
+            startLabel: "2026-05-01",
+            startValue: 20574
+          }],
+          filePaths: [],
+          id: "date",
+          name: "date",
+          source: "date"
+        }]
+      }),
+      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace }),
+      readMarkdownFile,
+      updateGanttChartEntry
+    });
+
+    const { container } = await renderApp();
+
+    await screen.findByText("Notes");
+
+    fireEvent.click(screen.getByRole("button", { name: "チャート" }));
+    fireEvent.click(container.querySelectorAll(".chronicle-source-button")[1]);
+
+    const fill = container.querySelector(".chronicle-fill") as HTMLElement;
+    fireEvent.click(fill);
+
+    expect(readMarkdownFile).not.toHaveBeenCalled();
+
+    const pointerDown = new Event("pointerdown", { bubbles: true }) as PointerEvent;
+    Object.defineProperty(pointerDown, "button", { value: 0 });
+    Object.defineProperty(pointerDown, "clientX", { value: 0 });
+    Object.defineProperty(pointerDown, "pointerId", { value: 1 });
+    fill.dispatchEvent(pointerDown);
+    const pointerMove = new Event("pointermove") as PointerEvent;
+    Object.defineProperty(pointerMove, "clientX", { value: 5 });
+    Object.defineProperty(pointerMove, "pointerId", { value: 1 });
+    window.dispatchEvent(pointerMove);
+    const pointerUp = new Event("pointerup") as PointerEvent;
+    Object.defineProperty(pointerUp, "clientX", { value: 5 });
+    Object.defineProperty(pointerUp, "pointerId", { value: 1 });
+    window.dispatchEvent(pointerUp);
+
+    await waitFor(() => expect(updateGanttChartEntry).toHaveBeenCalledWith({
+      endValue: 20579,
+      kind: "move",
+      originalEndValue: 20578,
+      originalStartValue: 20574,
+      path: "tasks/implementation.md",
+      source: "date",
+      startValue: 20575
+    }));
   });
 
   it("旧形式の年表データが返っても年表タブを表示できる", async () => {

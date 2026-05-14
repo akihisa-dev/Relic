@@ -4,6 +4,7 @@ import type { CSSProperties, MouseEvent, ReactElement, ReactNode } from "react";
 
 import type {
   GanttChartEntry,
+  UpdateGanttChartEntryInput,
   WorkspaceGanttChart,
   WorkspaceState,
   WorkspaceTreeNode
@@ -896,13 +897,35 @@ export function App(): ReactElement {
     sidebarViews.find((view) => view.id === panel)?.icon ?? null
   ), [sidebarViews]);
 
+  const handleUpdateGanttChartEntry = useCallback(async (input: UpdateGanttChartEntryInput): Promise<void> => {
+    if (!window.relic) return;
+
+    const result = await window.relic.updateGanttChartEntry(input);
+
+    if (result.ok) {
+      setGanttCharts(normalizeWorkspaceGanttCharts(result.value));
+      const updatedFile = await window.relic.readMarkdownFile({ path: input.path });
+
+      if (updatedFile.ok) {
+        Object.values(tabs).forEach((tab) => {
+          if (tab.kind === "file" && tab.path === input.path) {
+            updateTabContent(tab.id, updatedFile.value.content);
+          }
+        });
+      }
+    } else {
+      setWorkspaceError(result.error.message);
+    }
+  }, [setWorkspaceError, tabs, updateTabContent]);
+
   const renderGanttChartTab = useCallback((chartId: string): ReactNode => (
     <GanttChartView
       chart={chartId === "charts" ? null : ganttCharts.find((chart) => chart.id === chartId) ?? null}
       charts={chartId === "charts" ? ganttCharts : undefined}
       onOpenFile={handleOpenFile}
+      onUpdateEntry={handleUpdateGanttChartEntry}
     />
-  ), [ganttCharts, handleOpenFile]);
+  ), [ganttCharts, handleOpenFile, handleUpdateGanttChartEntry]);
 
   const handleCreateFileFromSidebar = useCallback((event?: MouseEvent<HTMLButtonElement>): void => {
     if (event) {
