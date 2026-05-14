@@ -67,7 +67,7 @@ const userDefinedFieldTypes: UserDefinedFieldType[] = [
   "url"
 ];
 const userDefinedFieldNamePattern = /^[^\s:][^\r\n:]*$/;
-const reservedUserDefinedFieldNames = new Set(["aliases", "tags", "chronicle", "date"]);
+const reservedUserDefinedFieldNames = new Set(["aliases", "tags", "chronicle", "date", "plannedDate", "actualDate"]);
 const ganttChartSources: GanttChartSource[] = ["chronicle", "date"];
 
 function isUserDefinedFieldsInput(input: unknown): input is UserDefinedField[] {
@@ -127,6 +127,7 @@ function isUpdateGanttChartEntryInput(input: unknown): input is UpdateGanttChart
   return (
     typeof candidate.path === "string" &&
     ganttChartSources.includes(candidate.source as GanttChartSource) &&
+    (!("dateKind" in candidate) || candidate.dateKind === "planned" || candidate.dateKind === "actual") &&
     (candidate.kind === "move" || candidate.kind === "resize-start" || candidate.kind === "resize-end") &&
     Number.isInteger(candidate.originalStartValue) &&
     Number.isInteger(candidate.originalEndValue) &&
