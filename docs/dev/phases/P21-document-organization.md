@@ -90,3 +90,23 @@ AIが先に全件整理リストを正本化しない。
 - AIの読み込み導線を `AI.md` → `docs/product/project.md` → `docs/dev/phases.md` → 現在フェーズ正本に更新した
 - 今後の開発プロジェクトへ流用する文書・リポジトリ構造テンプレートとして `docs/dev/template.md` を追加した
 - `docs/INDEX.md`, `docs/_rules.md`, `README.md` の参照と説明を新しい構成に合わせた
+
+### プロダクト文書の整理
+
+- 方向性: `docs/product/` は、現行Relicのプロダクト前提だけを書く場所として整理する。Git / GitHub関連の過去経緯は `docs/dev/phases/` と `docs/journal/` に履歴として残し、プロダクト文書ではローカルMarkdownワークスペース、外部同期・外部履歴管理、現行UI用語を正とする
+- 実施: `docs/product/principles.md` からGit / GitHub / 内蔵履歴管理を前提にした対象ユーザー・利用フロー・用語説明を外し、「書く、整理する、探す、読み返す」を中心に書き直した
+- 実施: `docs/product/glossary.md` の比較表からGitHub列を外し、GitHub連携セクションを削除した。ワークスペース、タイトルバー、サイドバー、パネルなどに残っていたGit / GitHub前提の説明も現行UIに合わせて修正した
+- 実施: `docs/product/PLAN.md` の「GitHub連携」を「同期・履歴管理」に言い換え、本文テンプレート前提の表現を現行のフロントマターテンプレートへ合わせた
+- 確認: `rg` で `docs/product/` 内の `Git`, `GitHub`, `コミット`, `プッシュ`, `プル`, `ブランチ`, `自動同期`, `コンフリクト` が残っていないことを確認した。`docs/product/` 内の相対リンク先として `docs/dev/phases.md` と `docs/tech/stack.md` が存在することも確認した
+- 残り: 今回範囲の `docs/product/` 整理は完了。`docs/spec/` や `docs/ui/` の詳細整合は、P21の別作業範囲として扱う
+
+### 仕様/UI文書の整合
+
+- 方向性: `docs/spec/` と `docs/ui/` は、現行Relicの「左レール + ファイルサイドバー + タブ式メインエリア」を正として整理する。コード変更、仕様変更、新規機能追加は含めない
+- 実施: `docs/spec/editor.md` を、ライブプレビュー / ソースモード / タイプライターモードの現行構成に合わせた。ソースモードではフロントマターをフォーム化せずYAMLとして表示することを明記した
+- 実施: `docs/ui/screens-macos.md`, `docs/ui/navigation.md`, `docs/spec/navigation.md` を、ファイルはファイルサイドバー、ダッシュボード・グラフ・ファイル加工・フロントマター設定・設定はパネルタブ、年表 / 日付チャートはチャートタブとして開く構造へ整理した
+- 実施: `docs/spec/frontmatter.md` を、ファイル単位のフロントマター編集はファイルタブ内、入力能力や固定プロパティの管理はフロントマター設定パネルタブで行う構造へ整理した。右パネルはアウトラインとリンク一覧に限定した
+- 実施: `docs/spec/search.md` と `docs/spec/command-palette.md` の検索・設定導線を、ファイルサイドバー検索と設定パネルタブの現行導線に合わせた
+- 確認: `rg` で `docs/spec docs/ui` 内に `メインエリアは絶対に遷移しない`, `常にエディタ`, `ソースモード.*持たない`, `右パネル.*テンプレート適用` が残っていないことを確認した。`ダッシュボード`, `グラフ`, `チャート`, `フロントマター`, `ソースモード` の現行導線用語が残っていることも確認した
+- 確認: `docs/spec docs/ui` 内のMarkdownリンクを確認し、対象リンク先として `docs/spec/search.md`, `docs/spec/frontmatter.md`, `docs/spec/links-and-tags.md`, `docs/spec/markdown.md` が存在することを確認した
+- 残り: 今回範囲の仕様/UI文書整合は完了。現行アプリの実操作確認や、仕様として残す将来機能の棚卸しはP21の別作業範囲として扱う
