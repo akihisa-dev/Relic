@@ -38,9 +38,9 @@ const FIELD_TYPE_DESCRIPTION_KEYS: Record<UserDefinedFieldType, TranslationKey> 
   text: "settings.fieldTypeTextDescription",
   url: "settings.fieldTypeUrlDescription"
 };
-const RESERVED_FIELD_NAMES = new Set(["aliases", "tags", "chronicle", "date"]);
+const RESERVED_FIELD_NAMES = new Set(["aliases", "tags", "chronicle", "date", "plannedDate", "actualDate"]);
 const FIXED_FIELDS: Array<{
-  name: "aliases" | "tags" | "chronicle" | "date";
+  name: "actualDate" | "aliases" | "tags" | "chronicle" | "plannedDate";
   descriptionKey: TranslationKey;
   examples: [TranslationKey, TranslationKey];
 }> = [
@@ -60,9 +60,14 @@ const FIXED_FIELDS: Array<{
     examples: ["settings.fixedFieldChronicleSingleExample", "settings.fixedFieldChronicleRangeExample"]
   },
   {
-    name: "date",
-    descriptionKey: "settings.fixedFieldDateDescription",
-    examples: ["settings.fixedFieldDateSingleExample", "settings.fixedFieldDateRangeExample"]
+    name: "plannedDate",
+    descriptionKey: "settings.fixedFieldPlannedDateDescription",
+    examples: ["settings.fixedFieldPlannedDateSingleExample", "settings.fixedFieldPlannedDateRangeExample"]
+  },
+  {
+    name: "actualDate",
+    descriptionKey: "settings.fixedFieldActualDateDescription",
+    examples: ["settings.fixedFieldActualDateSingleExample", "settings.fixedFieldActualDateRangeExample"]
   }
 ];
 

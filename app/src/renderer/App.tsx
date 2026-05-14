@@ -2074,14 +2074,22 @@ function chartFrontmatterUpdates(yamlText: string, input: UpdateGanttChartEntryI
   if (input.source === "date") {
     const startDate = chartDayToDate(start);
     const endDate = chartDayToDate(end);
-
-    return {
+    const dateField = input.dateKind === "actual" ? "actualDate" : "plannedDate";
+    const updates: Record<string, string[]> = {
       chronicle: rangeToStringArray(dateYear(startDate), dateYear(endDate)),
-      date: rangeToStringArray(startDate, endDate)
+      [dateField]: rangeToStringArray(startDate, endDate)
     };
+
+    if (dateField === "plannedDate" && readYamlArrayField(yamlText, "date").length > 0) {
+      updates.date = updates.plannedDate;
+    }
+
+    return updates;
   }
 
-  const originalDate = readYamlArrayField(yamlText, "date");
+  const originalPlannedDate = readYamlArrayField(yamlText, "plannedDate");
+  const originalLegacyDate = readYamlArrayField(yamlText, "date");
+  const originalActualDate = readYamlArrayField(yamlText, "actualDate");
   const originalStartYear = chartAxisToYear(input.originalStartValue);
   const originalEndYear = chartAxisToYear(input.originalEndValue);
   const startYear = chartAxisToYear(start);
@@ -2090,17 +2098,28 @@ function chartFrontmatterUpdates(yamlText: string, input: UpdateGanttChartEntryI
     chronicle: rangeToStringArray(startYear, endYear)
   };
 
-  if (originalDate.length === 1 || originalDate.length === 2) {
-    const startDate = originalDate[0];
-    const endDate = originalDate[1] ?? startDate;
+  const shiftDateRange = (values: string[]): string[] | null => {
+    if (values.length !== 1 && values.length !== 2) return null;
+
+    const startDate = values[0];
+    const endDate = values[1] ?? startDate;
 
     if (isDateString(startDate) && isDateString(endDate)) {
-      updates.date = rangeToStringArray(
+      return rangeToStringArray(
         shiftDateYears(startDate, startYear - originalStartYear),
         shiftDateYears(endDate, endYear - originalEndYear)
       );
     }
-  }
+
+    return null;
+  };
+
+  const plannedDate = shiftDateRange(originalPlannedDate.length > 0 ? originalPlannedDate : originalLegacyDate);
+  const actualDate = shiftDateRange(originalActualDate);
+
+  if (plannedDate) updates.plannedDate = plannedDate;
+  if (plannedDate && originalLegacyDate.length > 0) updates.date = plannedDate;
+  if (actualDate) updates.actualDate = actualDate;
 
   return updates;
 }

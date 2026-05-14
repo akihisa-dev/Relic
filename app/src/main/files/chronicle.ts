@@ -150,15 +150,16 @@ function updateChronicleDataForChartEdit(
         const fieldName = dateFieldNameForKind(kind);
         const nextStartDate = shiftDateYears(dateRange.startDate, startYear - originalStartYear);
         const nextEndDate = shiftDateYears(dateRange.endDate, endYear - originalEndYear);
-        next[fieldName] = rangeToArray(nextStartDate, nextEndDate);
+        const nextDateRange = rangeToArray(nextStartDate, nextEndDate);
+        next[fieldName] = nextDateRange;
 
         if (kind === "planned" && Array.isArray(data.date)) {
-          next.date = next[fieldName];
+          next.date = [...nextDateRange];
         }
       }
     }
 
-    return next;
+    return normalizeDateFieldsForWrite(next);
   }
 
   const startDate = dayToDate(start);
@@ -171,14 +172,14 @@ function updateChronicleDataForChartEdit(
   };
 
   if (dateKind === "planned" && Array.isArray(data.date)) {
-    next.date = next[fieldName];
+    next.date = [...(next[fieldName] as string[])];
   }
 
   const startYear = dateYear(startDate);
   const endYear = dateYear(endDate);
   next.chronicle = rangeToArray(startYear, endYear);
 
-  return next;
+  return normalizeDateFieldsForWrite(next);
 }
 
 export function extractChronicleRange(markdown: string): { endYear: number; startYear: number } | null {
@@ -233,6 +234,32 @@ function dateFieldNameForKind(kind: GanttChartDateKind): "actualDate" | "planned
 function dateKindOrder(kind: GanttChartDateKind | undefined): number {
   if (kind === "actual") return 1;
   return 0;
+}
+
+function normalizeDateFieldsForWrite(data: Record<string, unknown>): Record<string, unknown> {
+  const next = { ...data };
+
+  for (const fieldName of ["date", "plannedDate", "actualDate"]) {
+    const range = extractRawDateRangeFromData(data, fieldName);
+    if (range) next[fieldName] = rangeToArray(range.startDate, range.endDate);
+  }
+
+  return next;
+}
+
+function extractRawDateRangeFromData(data: Record<string, unknown>, fieldName: string): DateRange | null {
+  const value = data[fieldName];
+
+  if (!Array.isArray(value) || (value.length !== 1 && value.length !== 2)) return null;
+  const dates = value.map(normalizeDateValue);
+  if (dates.some((date) => date === null)) return null;
+
+  const startDate = dates[0];
+  const endDate = dates.length === 1 ? startDate : dates[1];
+  if (!startDate || !endDate) return null;
+  if (startDate > endDate) return null;
+
+  return { endDate, startDate };
 }
 
 function rangeToArray<T>(start: T, end: T): T[] {
