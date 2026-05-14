@@ -275,8 +275,13 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdate
                       title={entry.path}
                       type="button"
                     >
-                      {entry.fileName}{activeSource === "date" ? ` · ${formatDateKindLabel(entry.dateKind, t)}` : ""}
+                      {entry.fileName}
                     </button>
+                    {activeSource === "date" ? (
+                      <div className={`chronicle-date-kind chronicle-date-kind--${entry.dateKind ?? "planned"}`}>
+                        {formatDateKindLabel(entry.dateKind, t)}
+                      </div>
+                    ) : null}
                   </div>
                 ))
               )}

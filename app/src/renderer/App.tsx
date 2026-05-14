@@ -492,6 +492,10 @@ export function App(): ReactElement {
     toggleSidebar: toggleSidebarState,
     toggleTypewriterMode
   } = useUiStore();
+  const hasOpenGanttChart = useMemo(
+    () => Object.values(tabs).some((tab) => tab.kind === "gantt"),
+    [tabs]
+  );
 
   const toggleSidebar = useCallback((): void => {
     if (isWorkspaceRenameActive) return;
@@ -744,6 +748,25 @@ export function App(): ReactElement {
     };
   }, [setWorkspaceError, workspaceState?.activeWorkspace?.id, workspaceState?.fileTree]);
 
+  const reloadGanttCharts = useCallback(async (): Promise<void> => {
+    if (!workspaceState?.activeWorkspace || !window.relic) {
+      setGanttCharts([]);
+      return;
+    }
+
+    const result = await window.relic.getWorkspaceChronicle();
+
+    if (result.ok) {
+      const normalized = hasOpenGanttChart
+        ? await normalizeWorkspaceGanttChartsWithFiles(result.value, workspaceState.fileTree)
+        : normalizeWorkspaceGanttCharts(result.value);
+      setGanttCharts(normalized);
+    } else {
+      setGanttCharts([]);
+      setWorkspaceError(result.error.message);
+    }
+  }, [hasOpenGanttChart, setWorkspaceError, workspaceState?.activeWorkspace?.id, workspaceState?.fileTree]);
+
   useEffect(() => {
     if (!workspaceState?.activeWorkspace || !window.relic) {
       setGanttCharts([]);
@@ -767,6 +790,11 @@ export function App(): ReactElement {
       canceled = true;
     };
   }, [setWorkspaceError, workspaceState?.activeWorkspace?.id, workspaceState?.fileTree]);
+
+  useEffect(() => {
+    if (!hasOpenGanttChart) return;
+    void reloadGanttCharts();
+  }, [hasOpenGanttChart, reloadGanttCharts]);
 
   const {
     handleDeleteActiveFile,
@@ -906,7 +934,7 @@ export function App(): ReactElement {
       : await updateGanttChartEntryFallback(input);
 
     if (result.ok) {
-      setGanttCharts(normalizeWorkspaceGanttCharts(result.value));
+      setGanttCharts(await normalizeWorkspaceGanttChartsWithFiles(result.value, workspaceState?.fileTree ?? []));
       const updatedFile = await window.relic.readMarkdownFile({ path: input.path });
 
       if (updatedFile.ok) {
@@ -929,6 +957,10 @@ export function App(): ReactElement {
       onUpdateEntry={handleUpdateGanttChartEntry}
     />
   ), [ganttCharts, handleOpenFile, handleUpdateGanttChartEntry]);
+
+  const handleFileSaved = useCallback((): void => {
+    void reloadGanttCharts();
+  }, [reloadGanttCharts]);
 
   const handleCreateFileFromSidebar = useCallback((event?: MouseEvent<HTMLButtonElement>): void => {
     if (event) {
@@ -1610,6 +1642,7 @@ export function App(): ReactElement {
                   editorActionPulse={focusedPane === "left" ? editorActionPulse : 0}
                   onCreateFile={handleCreateNoteFromPane}
                   onFocus={() => setFocusedPane("left")}
+                  onFileSaved={handleFileSaved}
                   onOpenLink={handleOpenMarkdownLink}
                   onOpenWikiLink={handleOpenWikiLink}
                   onScrollTargetHandled={() => setLeftPaneScrollHeading(undefined)}
@@ -1646,6 +1679,7 @@ export function App(): ReactElement {
                     editorActionPulse={focusedPane === "right" ? editorActionPulse : 0}
                     onCreateFile={handleCreateNoteFromPane}
                     onFocus={() => setFocusedPane("right")}
+                    onFileSaved={handleFileSaved}
                     onOpenLink={handleOpenMarkdownLink}
                     onOpenWikiLink={handleOpenWikiLink}
                     onScrollTargetHandled={() => setRightPaneScrollHeading(undefined)}
@@ -1969,6 +2003,110 @@ function normalizeWorkspaceGanttCharts(value: unknown): WorkspaceGanttChart[] {
   return legacyEntries.length > 0
     ? fixedWorkspaceGanttCharts([{ entries: legacyEntries, filePaths: legacyEntries.map((entry) => entry.path), id: "chronicle", name: "chronicle", source: "chronicle" }])
     : fixedWorkspaceGanttCharts([]);
+}
+
+async function normalizeWorkspaceGanttChartsWithFiles(
+  value: unknown,
+  fileTree: WorkspaceTreeNode[]
+): Promise<WorkspaceGanttChart[]> {
+  const charts = normalizeWorkspaceGanttCharts(value);
+  const dateEntries = await readDateChartEntriesFromFiles(fileTree);
+
+  if (dateEntries.length === 0) return charts;
+
+  return charts.map((chart) => (
+    chart.source === "date"
+      ? { ...chart, entries: dateEntries }
+      : chart
+  ));
+}
+
+async function readDateChartEntriesFromFiles(fileTree: WorkspaceTreeNode[]): Promise<GanttChartEntry[]> {
+  if (!window.relic) return [];
+
+  const paths = collectMarkdownPaths(fileTree);
+  const entries = await Promise.all(paths.map(async (filePath): Promise<GanttChartEntry[]> => {
+    const file = await window.relic!.readMarkdownFile({ path: filePath });
+
+    if (!file?.ok) return [];
+
+    const frontmatter = splitFrontmatterBlock(file.value.content);
+    if (!frontmatter) return [];
+
+    const plannedRange = readChartDateRange(frontmatter.yaml, "plannedDate") ?? readChartDateRange(frontmatter.yaml, "date");
+    const actualRange = readChartDateRange(frontmatter.yaml, "actualDate");
+    const fileName = file.value.name || filePath.split("/").at(-1)?.replace(/\.md$/, "") || filePath;
+    const result: GanttChartEntry[] = [];
+
+    if (plannedRange) {
+      result.push(dateRangeToEntry(filePath, fileName, "planned", plannedRange));
+    }
+
+    if (actualRange) {
+      result.push(dateRangeToEntry(filePath, fileName, "actual", actualRange));
+    }
+
+    return result;
+  }));
+
+  return entries
+    .flat()
+    .sort((a, b) =>
+      a.fileName.localeCompare(b.fileName, "ja") ||
+        a.path.localeCompare(b.path, "ja") ||
+        dateKindOrderForRenderer(a.dateKind) - dateKindOrderForRenderer(b.dateKind) ||
+        a.startValue - b.startValue ||
+        a.endValue - b.endValue
+    );
+}
+
+function dateRangeToEntry(
+  filePath: string,
+  fileName: string,
+  dateKind: "actual" | "planned",
+  range: { endDate: string; startDate: string }
+): GanttChartEntry {
+  return {
+    dateKind,
+    endLabel: range.endDate,
+    endValue: chartDateToDay(range.endDate),
+    fileName,
+    path: filePath,
+    startLabel: range.startDate,
+    startValue: chartDateToDay(range.startDate)
+  };
+}
+
+function readChartDateRange(yamlText: string, field: string): { endDate: string; startDate: string } | null {
+  const values = readYamlArrayField(yamlText, field).map(normalizeChartDateValue);
+  if (values.length !== 1 && values.length !== 2) return null;
+  if (values.some((value) => value === null)) return null;
+
+  const startDate = values[0];
+  const endDate = values[1] ?? startDate;
+  if (!startDate || !endDate) return null;
+  if (startDate > endDate) return null;
+
+  return { endDate, startDate };
+}
+
+function normalizeChartDateValue(value: string): string | null {
+  const trimmed = value.trim();
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    return isDateString(trimmed) ? trimmed : null;
+  }
+
+  const date = new Date(trimmed.replace(/\s*\([^)]*\)\s*$/, ""));
+  return Number.isNaN(date.getTime()) ? null : date.toISOString().slice(0, 10);
+}
+
+function chartDateToDay(value: string): number {
+  return Math.floor(new Date(`${value}T00:00:00.000Z`).getTime() / 86_400_000);
+}
+
+function dateKindOrderForRenderer(kind: GanttChartEntry["dateKind"]): number {
+  return kind === "actual" ? 1 : 0;
 }
 
 function fixedWorkspaceGanttCharts(charts: WorkspaceGanttChart[]): WorkspaceGanttChart[] {

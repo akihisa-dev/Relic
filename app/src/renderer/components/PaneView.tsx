@@ -28,6 +28,7 @@ export interface PaneViewProps {
   onFocus: () => void;
   onOpenLink?: (href: string) => void;
   onOpenWikiLink?: (target: string, heading?: string) => void;
+  onFileSaved?: (path: string) => void;
   onScrollTargetHandled?: () => void;
   onTabClose: (tabId: string) => void;
   onTabMove: (fromPane: PaneId, toPane: PaneId, tabId: string, targetTabId?: string | null, position?: "before" | "after") => void;
@@ -64,6 +65,7 @@ export function PaneView({
   onFocus,
   onOpenLink,
   onOpenWikiLink,
+  onFileSaved,
   onScrollTargetHandled,
   onTabClose,
   onTabMove,
@@ -99,7 +101,8 @@ export function PaneView({
   useAutoSave(
     activeTab?.kind === "file" ? activeTab.content : "",
     activeTab?.kind === "file" ? activeTab.path : null,
-    activeTab?.kind === "file"
+    activeTab?.kind === "file",
+    onFileSaved
   );
 
   useEffect(() => {

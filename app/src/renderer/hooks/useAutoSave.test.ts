@@ -29,6 +29,16 @@ describe("useAutoSave", () => {
     });
   });
 
+  it("保存成功後に onSaved を呼ぶ", async () => {
+    const onSaved = vi.fn();
+
+    renderHook(() => useAutoSave("# メモ", "memo.md", true, onSaved));
+
+    await vi.advanceTimersByTimeAsync(1000);
+
+    expect(onSaved).toHaveBeenCalledWith("memo.md");
+  });
+
   it("内容が変わると以前のタイマーをキャンセルして1秒後に保存する", async () => {
     const { rerender } = renderHook(({ content }) => useAutoSave(content, "memo.md", true), {
       initialProps: { content: "初稿" }
