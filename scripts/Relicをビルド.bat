@@ -1,6 +1,6 @@
 @echo off
 chcp 65001 > nul
-cd /d "%~dp0app"
+cd /d "%~dp0..\app"
 
 set "PNPM_CMD=%APPDATA%\npm\pnpm.cmd"
 

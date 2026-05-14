@@ -1,6 +1,6 @@
 @echo off
 chcp 65001 > nul
-cd /d "%~dp0app"
+cd /d "%~dp0..\app"
 
 set "APP_PATH=%CD%\out\Relic-win32-x64\Relic.exe"
 set "PNPM_CMD=%APPDATA%\npm\pnpm.cmd"

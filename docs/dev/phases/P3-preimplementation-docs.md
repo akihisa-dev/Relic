@@ -16,15 +16,15 @@ Relicの実装前ドキュメント整備フェーズの正本。
 
 ## 正本・参照
 
-- `conventions.md`
-- `testing.md`
-- `open-questions.md`
+- `../conventions.md`
+- `../testing.md`
+- `../open-questions.md`
 
 ---
 
 ## 完了状態
 
-- コーディング規約を `conventions.md` に整理した
-- テスト方針を `testing.md` に整理した
-- 未決定事項の管理先を `open-questions.md` に定めた
+- コーディング規約を `../conventions.md` に整理した
+- テスト方針を `../testing.md` に整理した
+- 未決定事項の管理先を `../open-questions.md` に定めた
 - このフェーズは完了済み

@@ -16,8 +16,8 @@ Relicのファイル加工ツールと仕上げフェーズの正本。
 
 ## 正本・参照
 
-- `../spec/file-tools.md`
-- `../spec/github.md`
+- `../../spec/file-tools.md`
+- `../../spec/github.md`
 
 ---
 
