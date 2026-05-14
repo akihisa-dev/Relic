@@ -110,3 +110,15 @@ AIが先に全件整理リストを正本化しない。
 - 確認: `rg` で `docs/spec docs/ui` 内に `メインエリアは絶対に遷移しない`, `常にエディタ`, `ソースモード.*持たない`, `右パネル.*テンプレート適用` が残っていないことを確認した。`ダッシュボード`, `グラフ`, `チャート`, `フロントマター`, `ソースモード` の現行導線用語が残っていることも確認した
 - 確認: `docs/spec docs/ui` 内のMarkdownリンクを確認し、対象リンク先として `docs/spec/search.md`, `docs/spec/frontmatter.md`, `docs/spec/links-and-tags.md`, `docs/spec/markdown.md` が存在することを確認した
 - 残り: 今回範囲の仕様/UI文書整合は完了。現行アプリの実操作確認や、仕様として残す将来機能の棚卸しはP21の別作業範囲として扱う
+
+### 設計/技術文書の整合
+
+- 方向性: `docs/architecture/` と `docs/tech/` は、現行Relicの「ローカルMarkdownワークスペース」「Git/GitHubなし」「左レール + ファイルサイドバー + タブ式メインエリア」を正として整理する。コード変更、仕様変更、新規機能追加は含めない
+- 実施: `docs/architecture/decisions.md` の `009` を、常にエディタを表示する前提から、ファイルタブを編集体験の中心にしつつ補助機能をパネルタブ / チャートタブとして扱う判断へ更新した。Git / GitHubなしの判断は維持した
+- 実施: `docs/architecture/overview.md` を、メインプロセスはファイル操作・検索/リンク/タグ/年表/グラフ生成・設定保存・IPC境界、レンダラーは左レール・ファイルサイドバー・ファイルタブ・パネルタブ・チャートタブ・右パネル・CodeMirrorエディタを担う構成へ整理した
+- 実施: `docs/architecture/data-model.md` のアプリ設定とワークスペース設定を、現行の `editorSettings`, `featureToggles`, `userDefinedFields`, `frontmatterTemplates`, `lastWorkspaceId`, `workspaces`, `workspacePath`, `pinnedPaths`, `ganttCharts` に合わせた。Relic専用必須フォルダを自動作成しない判断は維持した
+- 実施: `docs/tech/stack.md` と `docs/tech/editor-engine.md` に、Markdownプレビューとフロントマター処理で使う `marked`, `DOMPurify`, `highlight.js`, `KaTeX`, `js-yaml` を必要最小限で追記した
+- 実施: `docs/tech/git-implementation.md` を、Git機能を採用しない技術判断の記録として明確化した。`app/src/main/main.ts` の `github.com` 外部URL許可は、GitHub認証やGit操作の実装ではなく外部リンク許可リストとして扱うことを明記した
+- 確認: `rg` で `docs/architecture docs/tech` 内に `メインエリアは常にエディタ`, `Git.*実装`, `GitHub.*連携`, `自動同期`, `ブランチ管理`, `タグ管理` が、採用済み機能として残っていないことを確認した。`タブ式メインエリア`, `ファイルサイドバー`, `パネルタブ`, `frontmatterTemplates`, `ganttCharts` の現行前提が残っていることも確認した
+- 確認: `docs/architecture docs/tech` 内のMarkdownリンクを確認し、対象リンク先として `docs/tech/editor-engine.md`, `docs/tech/git-implementation.md`, `docs/spec/frontmatter.md` が存在することを確認した
+- 残り: 今回範囲の設計/技術文書整合は完了。`docs/dev/conventions.md` と `docs/dev/testing.md` に残る古いGit前提は、P21の別作業範囲として扱う
