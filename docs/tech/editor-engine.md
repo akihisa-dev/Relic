@@ -10,6 +10,8 @@
 
 ライブプレビューはCodeMirror 6を中心に実装する。ただし、Markdown解析・HTML安全化・KaTeX連携などは専用ライブラリを組み合わせ、CodeMirrorだけで無理に完結させない。
 
+Markdownプレビューでは `marked` でHTMLを生成し、`DOMPurify` で安全化する。コードブロックのハイライトには `highlight.js`、数式表示には `KaTeX` を使う。フロントマターのYAML読み書きには `js-yaml` を使う。
+
 ---
 
 ## 選定理由
@@ -40,6 +42,11 @@
 @codemirror/state         # 状態管理
 @codemirror/lang-markdown # Markdownサポート
 @codemirror/language      # 言語サポート基盤
+marked                    # MarkdownプレビューHTML生成
+dompurify                 # HTML安全化
+highlight.js              # コードブロックのシンタックスハイライト
+katex                     # 数式表示
+js-yaml                   # フロントマターYAML処理
 ```
 
 ---
