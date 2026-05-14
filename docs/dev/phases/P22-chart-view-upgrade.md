@@ -98,5 +98,9 @@ Relicのチャートビューアップグレードフェーズの正本。
 - 実施: `date` チャートでは `plannedDate` をブルー、`actualDate` をオレンジで表示し、同じファイルに両方がある場合は計画行・実行行の2行で表示するようにした
 - 実施: 計画バー編集は `plannedDate`、実行バー編集は `actualDate` を更新するようにし、旧 `date` がある場合は計画バー編集時に旧 `date` も同期するようにした
 - 実施: フロントマター固定プロパティの候補と予約名に `plannedDate` / `actualDate` を追加し、旧 `date` は既存ファイル編集の互換だけ残す形にした
-- 確認: `pnpm typecheck`、`pnpm test -- chronicle.test.ts SettingsSidebar.test.tsx App.test.tsx`、`git diff --check` を確認済み。テストコマンドはプロジェクト設定により全テストを実行し、313件通過した
+- 実施: Markdown保存後にチャートデータを再読み込みする経路を追加し、フロントマターで `plannedDate` / `actualDate` を編集した後もチャートへ反映されるようにした
+- 実施: 既存テストデータに混ざっていた `Tue May 12 2026 09:00:00 GMT+0900 (日本標準時)` 形式の日付文字列も、チャート読み込み時に `YYYY-MM-DD` として扱えるようにした
+- 実施: main側のdateチャート返却に実行行が含まれない場合でも、チャートタブ表示時にrenderer側でMarkdownから `plannedDate` / `actualDate` を読み直して2行表示を補完するようにした
+- 実施: `計画` / `実行` 表記はファイル名に混ぜず、dateチャート左列内の別セルとして表示するようにした
+- 確認: `pnpm typecheck`、`pnpm test -- chronicle.test.ts SettingsSidebar.test.tsx App.test.tsx`、`pnpm test -- useAutoSave.test.ts App.test.tsx chronicle.test.ts`、`pnpm test -- chronicle.test.ts`、`pnpm test -- App.test.tsx chronicle.test.ts`、`git diff --check` を確認済み。最新の対象テストでは316件通過した
 - 残り: 実アプリでの計画/実行2行表示、ブルー/オレンジの見え方、バー編集後の体感確認は未確認

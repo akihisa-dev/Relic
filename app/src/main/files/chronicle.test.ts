@@ -54,6 +54,13 @@ describe("extractDateRange", () => {
     });
   });
 
+  it("日付文字列形式が混ざっていても読む", () => {
+    expect(extractDateRange("---\nplannedDate: [\"Tue May 12 2026 09:00:00 GMT+0900 (日本標準時)\"]\n---\n# A")).toEqual({
+      endDate: "2026-05-12",
+      startDate: "2026-05-12"
+    });
+  });
+
   it("不正な日付や逆順の期間は読まない", () => {
     expect(extractDateRange("---\ndate: ['2026-02-31']\n---\n# A")).toBeNull();
     expect(extractDateRange("---\ndate: [2026-05-20, 2026-05-12]\n---\n# A")).toBeNull();

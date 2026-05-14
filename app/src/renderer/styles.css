@@ -5197,7 +5197,7 @@ button:not(:disabled):active {
 
 .chronicle-file-name-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) 48px;
 }
 
 .chronicle-file-name-row--empty {
@@ -5205,7 +5205,8 @@ button:not(:disabled):active {
 }
 
 .chronicle-file-name,
-.chronicle-file-remove {
+.chronicle-file-remove,
+.chronicle-date-kind {
   background: var(--bg);
   border: 0;
   border-bottom: 1px solid var(--border);
@@ -5227,6 +5228,22 @@ button:not(:disabled):active {
   text-overflow: ellipsis;
   white-space: nowrap;
   width: 100%;
+}
+
+.chronicle-date-kind {
+  align-items: center;
+  border-left: 1px solid var(--border-soft);
+  display: flex;
+  font-weight: 700;
+  justify-content: center;
+}
+
+.chronicle-date-kind--planned {
+  color: rgb(0, 98, 140);
+}
+
+.chronicle-date-kind--actual {
+  color: rgb(174, 78, 0);
 }
 
 .chronicle-file-name--empty {

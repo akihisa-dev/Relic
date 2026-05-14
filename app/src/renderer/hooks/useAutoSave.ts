@@ -3,7 +3,8 @@ import { useEffect, useRef } from "react";
 export function useAutoSave(
   content: string,
   path: string | null,
-  enabled: boolean
+  enabled: boolean,
+  onSaved?: (path: string) => void
 ): { isSaving: boolean } {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isSavingRef = useRef(false);
@@ -18,9 +19,13 @@ export function useAutoSave(
     timerRef.current = setTimeout(() => {
       isSavingRef.current = true;
 
-      void window.relic!.writeMarkdownFile({ content, path }).finally(() => {
-        isSavingRef.current = false;
-      });
+      void window.relic!.writeMarkdownFile({ content, path })
+        .then((result) => {
+          if (result.ok) onSaved?.(path);
+        })
+        .finally(() => {
+          isSavingRef.current = false;
+        });
     }, 1000);
 
     return () => {
@@ -28,7 +33,7 @@ export function useAutoSave(
         clearTimeout(timerRef.current);
       }
     };
-  }, [content, path, enabled]);
+  }, [content, path, enabled, onSaved]);
 
   return { isSaving: isSavingRef.current };
 }

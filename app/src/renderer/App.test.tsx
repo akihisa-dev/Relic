@@ -741,8 +741,9 @@ describe("App", () => {
     fireEvent.click(container.querySelectorAll(".chronicle-source-button")[1]);
 
     expect(useEditorStore.getState().leftPane.activeTabId).toBe("gantt-charts");
-    expect(screen.getByText("実装タスク · 計画")).toBeInTheDocument();
-    expect(screen.getByText("実装タスク · 実行")).toBeInTheDocument();
+    expect(container.querySelectorAll(".chronicle-file-name")).toHaveLength(2);
+    expect(screen.getByText("計画")).toBeInTheDocument();
+    expect(screen.getByText("実行")).toBeInTheDocument();
     expect(screen.queryByText("2026-05-01 〜 2026-05-05")).not.toBeInTheDocument();
     expect(screen.getByText("05-01 〜 05-05")).toBeInTheDocument();
     expect(screen.getByText("05-03 〜 05-06")).toBeInTheDocument();
@@ -753,6 +754,49 @@ describe("App", () => {
     expect(container.querySelector('.chronicle-fill[data-date-kind="actual"]')).toBeInTheDocument();
     expect(container.querySelectorAll(".chronicle-guide-line").length).toBeGreaterThan(0);
     expect(container.querySelectorAll(".chronicle-guide-row-line").length).toBeGreaterThan(0);
+  });
+
+  it("main側がdate行を返さない場合もMarkdownからplannedDateとactualDateを補完する", async () => {
+    window.relic = makeRelicApi({
+      getWorkspaceChronicle: vi.fn().mockResolvedValue({
+        ok: true,
+        value: [{
+          entries: [],
+          filePaths: [],
+          id: "date",
+          name: "date",
+          source: "date"
+        }]
+      }),
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [{ name: "実装タスク", path: "tasks/implementation.md", type: "file" }]
+        }
+      }),
+      readMarkdownFile: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          content: "---\nplannedDate: [2026-05-01, 2026-05-05]\nactualDate: [2026-05-03, 2026-05-06]\n---\n# 実装タスク",
+          name: "実装タスク",
+          path: "tasks/implementation.md"
+        }
+      })
+    });
+
+    const { container } = await renderApp();
+
+    await screen.findByText("Notes");
+
+    fireEvent.click(screen.getByRole("button", { name: "チャート" }));
+    fireEvent.click(container.querySelectorAll(".chronicle-source-button")[1]);
+
+    await waitFor(() => expect(container.querySelectorAll(".chronicle-file-name")).toHaveLength(2));
+    expect(screen.getByText("計画")).toBeInTheDocument();
+    expect(screen.getByText("実行")).toBeInTheDocument();
+    expect(container.querySelector('.chronicle-fill[data-date-kind="planned"]')).toBeInTheDocument();
+    expect(container.querySelector('.chronicle-fill[data-date-kind="actual"]')).toBeInTheDocument();
   });
 
   it("チャートバーはクリックでファイルを開かずドラッグで日付範囲を更新する", async () => {
