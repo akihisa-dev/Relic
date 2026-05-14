@@ -43,7 +43,7 @@ Relicの大規模リファクタリング・安全性強化フェーズの正本
 ## フェーズ文書管理
 
 - [x] フェーズ専用文書を `docs/dev/phases/` に集約
-- [x] `P09-feature-checklist.md`, `P11-doc-code-alignment.md`, `P12-refactoring-security-plan.md` のように、ファイル名で対応フェーズが分かる形に改名
+- [x] `P9-feature-checklist.md`, `P11-doc-code-alignment.md`, `P12-refactoring-security-plan.md` のように、ファイル名で対応フェーズが分かる形に改名
 - [x] `docs/dev/phases.md`, `docs/INDEX.md`, `AI.md` の現行参照を更新
 
 ---
