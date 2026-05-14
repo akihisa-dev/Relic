@@ -4,7 +4,7 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { extractChronicleRange, extractDateRange, updateWorkspaceGanttChartEntry } from "./chronicle";
+import { extractChronicleRange, extractDateRange, readWorkspaceChronicle, updateWorkspaceGanttChartEntry } from "./chronicle";
 
 describe("extractChronicleRange", () => {
   it("単年を1要素配列として読む", () => {
@@ -47,9 +47,55 @@ describe("extractDateRange", () => {
     });
   });
 
+  it("plannedDateを計画dateとして優先して読む", () => {
+    expect(extractDateRange("---\ndate: [2026-05-12]\nplannedDate: [2026-05-20]\n---\n# A")).toEqual({
+      endDate: "2026-05-20",
+      startDate: "2026-05-20"
+    });
+  });
+
   it("不正な日付や逆順の期間は読まない", () => {
     expect(extractDateRange("---\ndate: ['2026-02-31']\n---\n# A")).toBeNull();
     expect(extractDateRange("---\ndate: [2026-05-20, 2026-05-12]\n---\n# A")).toBeNull();
+  });
+});
+
+describe("readWorkspaceChronicle", () => {
+  it("dateチャートにplannedDateとactualDateを1ファイル2行として読む", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-date-chart-"));
+    await writeFile(
+      path.join(workspacePath, "entry.md"),
+      "---\nplannedDate: [2026-05-01, 2026-05-05]\nactualDate: [2026-05-03, 2026-05-06]\n---\n# A\n",
+      "utf8"
+    );
+
+    const result = await readWorkspaceChronicle(
+      workspacePath,
+      [
+        { filePaths: [], id: "chronicle", name: "chronicle", source: "chronicle" },
+        { filePaths: [], id: "date", name: "date", source: "date" }
+      ]
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    expect(result.value.find((chart) => chart.source === "date")?.entries).toMatchObject([
+      {
+        dateKind: "planned",
+        endLabel: "2026-05-05",
+        fileName: "entry",
+        path: "entry.md",
+        startLabel: "2026-05-01"
+      },
+      {
+        dateKind: "actual",
+        endLabel: "2026-05-06",
+        fileName: "entry",
+        path: "entry.md",
+        startLabel: "2026-05-03"
+      }
+    ]);
   });
 });
 
@@ -110,5 +156,42 @@ describe("updateWorkspaceGanttChartEntry", () => {
     const updated = await readFile(filePath, "utf8");
     expect(extractDateRange(updated)).toEqual({ endDate: "2027-01-02", startDate: "2026-12-30" });
     expect(extractChronicleRange(updated)).toEqual({ endYear: 2027, startYear: 2026 });
+    expect(updated).toContain("plannedDate:");
+    expect(updated).not.toContain("&ref");
+  });
+
+  it("actualDateバーの長さ変更時にactualDateとchronicleを連動して更新する", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-actual-date-update-"));
+    const filePath = path.join(workspacePath, "entry.md");
+    await writeFile(filePath, "---\nchronicle: [2026]\nplannedDate: [2026-05-01]\nactualDate: [2026-05-02]\n---\n# A\n", "utf8");
+
+    const result = await updateWorkspaceGanttChartEntry(
+      workspacePath,
+      [
+        { filePaths: [], id: "chronicle", name: "chronicle", source: "chronicle" },
+        { filePaths: [], id: "date", name: "date", source: "date" }
+      ],
+      {
+        dateKind: "actual",
+        endValue: 20580,
+        kind: "resize-end",
+        originalEndValue: 20575,
+        originalStartValue: 20575,
+        path: "entry.md",
+        source: "date",
+        startValue: 20575
+      }
+    );
+
+    expect(result.ok).toBe(true);
+
+    const updated = await readFile(filePath, "utf8");
+    expect(updated).toContain("plannedDate:");
+    expect(updated).toContain("actualDate:");
+    expect(updated).toContain("2026-05-01");
+    expect(updated).toContain("2026-05-02");
+    expect(updated).toContain("2026-05-07");
+    expect(updated).not.toContain("T00:00:00.000Z");
+    expect(extractChronicleRange(updated)).toEqual({ endYear: 2026, startYear: 2026 });
   });
 });

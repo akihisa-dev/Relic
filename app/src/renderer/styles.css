@@ -5309,6 +5309,32 @@ button:not(:disabled):active {
   cursor: grabbing;
 }
 
+.chronicle-fill--planned {
+  background: rgba(0, 124, 175, 0.18);
+}
+
+.chronicle-fill--planned:hover {
+  background: rgba(0, 124, 175, 0.26);
+}
+
+.chronicle-fill--planned:active,
+.chronicle-fill--planned.chronicle-fill--dragging {
+  background: rgba(0, 124, 175, 0.32);
+}
+
+.chronicle-fill--actual {
+  background: rgba(224, 108, 0, 0.2);
+}
+
+.chronicle-fill--actual:hover {
+  background: rgba(224, 108, 0, 0.28);
+}
+
+.chronicle-fill--actual:active,
+.chronicle-fill--actual.chronicle-fill--dragging {
+  background: rgba(224, 108, 0, 0.34);
+}
+
 .chronicle-fill-label {
   box-sizing: border-box;
   display: block;
@@ -5337,6 +5363,10 @@ button:not(:disabled):active {
   top: 4px;
   transition: opacity 120ms ease;
   width: 2px;
+}
+
+.chronicle-fill--actual .chronicle-fill-resize::after {
+  background: rgba(174, 78, 0, 0.48);
 }
 
 .chronicle-fill:hover .chronicle-fill-resize::after,

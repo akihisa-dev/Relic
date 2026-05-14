@@ -70,7 +70,7 @@ type FrontmatterDialogRequest =
 
 const topLevelYamlFieldPattern = /^([^#\s][^:]*):(?:\s|$)/;
 const frontmatterFieldNamePattern = /^[^#\s:][^\r\n:]*$/;
-const fixedFrontmatterFieldNames = ["aliases", "tags", "chronicle", "date"];
+const fixedFrontmatterFieldNames = ["aliases", "tags", "chronicle", "plannedDate", "actualDate"];
 const editorEditableCompartment = new Compartment();
 const frontmatterDialogRequestEvent = "relic-frontmatter-dialog-request";
 const frontmatterCollapsedEffect = StateEffect.define<boolean>();
@@ -128,7 +128,7 @@ function isYamlFlowSequence(line: string): boolean {
 }
 
 function shouldSerializeArrayAsFlowSequence(key: string, field?: UserDefinedField): boolean {
-  return key === "aliases" || key === "tags" || key === "chronicle" || key === "date" || Boolean(field);
+  return isFixedDateRangeField(key) || key === "aliases" || key === "tags" || key === "chronicle" || Boolean(field);
 }
 
 function isSingleValueField(field?: UserDefinedField): boolean {
@@ -1061,7 +1061,7 @@ class FrontmatterPropertiesWidget extends WidgetType {
     const field = this.fieldFor(key);
     const input = key === "chronicle"
       ? this.chronicleInput(view, key, Array.isArray(value) ? value : [])
-      : key === "date"
+      : isFixedDateRangeField(key)
         ? this.dateRangeInput(view, key, Array.isArray(value) ? value : value === null || value === undefined ? [] : [value])
       : field?.type === "boolean"
         ? this.booleanInput(view, key, firstArrayValue(value), true)
@@ -1431,7 +1431,7 @@ class FrontmatterPropertiesWidget extends WidgetType {
   }
 
   private serializeFlowScalar(key: string, value: unknown): string {
-    if (key === "date" && typeof value === "string" && parseDateInput(value) !== null) return value;
+    if (isFixedDateRangeField(key) && typeof value === "string" && parseDateInput(value) !== null) return value;
     if (typeof value === "string") return JSON.stringify(value);
     if (typeof value === "number" || typeof value === "boolean") return String(value);
     if (value === null) return "null";
@@ -1480,7 +1480,7 @@ class FrontmatterPropertiesWidget extends WidgetType {
 
   private fieldFor(key: string): UserDefinedField | undefined {
     if (key === "aliases" || key === "tags") return { name: key, type: "multi-select" };
-    if (key === "date") return { name: key, type: "date" };
+    if (isFixedDateRangeField(key)) return { name: key, type: "date" };
     return this.userDefinedFields.find((field) => field.name === key);
   }
 
@@ -1543,6 +1543,10 @@ function parseDateInput(value: string): string | null {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return null;
   const date = new Date(`${trimmed}T00:00:00.000Z`);
   return Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== trimmed ? null : trimmed;
+}
+
+function isFixedDateRangeField(key: string): boolean {
+  return key === "date" || key === "plannedDate" || key === "actualDate";
 }
 
 function collectRegexMatches(
