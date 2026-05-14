@@ -1,10 +1,10 @@
-import { readFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-import type { GanttChartEntry, GanttChartSettings, WorkspaceGanttChart, WorkspaceTreeNode } from "../../shared/ipc";
+import type { GanttChartEntry, GanttChartSettings, UpdateGanttChartEntryInput, WorkspaceGanttChart, WorkspaceTreeNode } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { readWorkspaceFileTree } from "./fileTree";
-import { parseFrontmatter } from "./frontmatter";
+import { parseFrontmatter, updateFrontmatter } from "./frontmatter";
 import { resolveWorkspaceRelativePath } from "./paths";
 
 export async function readWorkspaceChronicle(
@@ -69,6 +69,39 @@ export async function readWorkspaceChronicle(
   }
 }
 
+export async function updateWorkspaceGanttChartEntry(
+  workspacePath: string,
+  charts: GanttChartSettings[],
+  input: UpdateGanttChartEntryInput
+): Promise<RelicResult<WorkspaceGanttChart[]>> {
+  try {
+    const absolutePath = resolveWorkspaceRelativePath(workspacePath, input.path);
+
+    if (!absolutePath.ok) {
+      return absolutePath;
+    }
+
+    if (path.extname(absolutePath.value) !== ".md") {
+      return fail("GANTT_ENTRY_NOT_MARKDOWN", "Markdownファイル以外は更新できません。");
+    }
+
+    const content = await readFile(absolutePath.value, "utf8");
+    const nextContent = updateFrontmatter(content, (data) =>
+      updateChronicleDataForChartEdit(data, input)
+    );
+
+    await writeFile(absolutePath.value, nextContent, "utf8");
+
+    return readWorkspaceChronicle(workspacePath, charts);
+  } catch (error) {
+    return fail(
+      "GANTT_ENTRY_UPDATE_FAILED",
+      "チャートの変更をファイルへ保存できませんでした。",
+      error instanceof Error ? error.message : String(error)
+    );
+  }
+}
+
 function sortEntries(entries: GanttChartEntry[]): GanttChartEntry[] {
   return [...entries].sort((a, b) =>
     a.startValue - b.startValue ||
@@ -77,8 +110,56 @@ function sortEntries(entries: GanttChartEntry[]): GanttChartEntry[] {
   );
 }
 
+function updateChronicleDataForChartEdit(
+  data: Record<string, unknown>,
+  input: UpdateGanttChartEntryInput
+): Record<string, unknown> {
+  const start = Math.min(input.startValue, input.endValue);
+  const end = Math.max(input.startValue, input.endValue);
+
+  if (input.source === "chronicle") {
+    const originalStartYear = axisToYear(input.originalStartValue);
+    const originalEndYear = axisToYear(input.originalEndValue);
+    const startYear = axisToYear(start);
+    const endYear = axisToYear(end);
+    const next: Record<string, unknown> = {
+      ...data,
+      chronicle: rangeToArray(startYear, endYear)
+    };
+    const dateRange = extractDateRangeFromData(data);
+
+    if (dateRange) {
+      const nextStartDate = shiftDateYears(dateRange.startDate, startYear - originalStartYear);
+      const nextEndDate = shiftDateYears(dateRange.endDate, endYear - originalEndYear);
+      next.date = rangeToArray(nextStartDate, nextEndDate);
+    }
+
+    return next;
+  }
+
+  const startDate = dayToDate(start);
+  const endDate = dayToDate(end);
+  const next: Record<string, unknown> = {
+    ...data,
+    date: rangeToArray(startDate, endDate)
+  };
+  const chronicleRange = extractChronicleRangeFromData(data);
+
+  if (chronicleRange) {
+    const startYear = dateYear(startDate);
+    const endYear = dateYear(endDate);
+    next.chronicle = rangeToArray(startYear, endYear);
+  }
+
+  return next;
+}
+
 export function extractChronicleRange(markdown: string): { endYear: number; startYear: number } | null {
   const { data } = parseFrontmatter(markdown);
+  return extractChronicleRangeFromData(data);
+}
+
+function extractChronicleRangeFromData(data: Record<string, unknown>): { endYear: number; startYear: number } | null {
   const value = data.chronicle;
 
   if (!Array.isArray(value) || (value.length !== 1 && value.length !== 2)) return null;
@@ -94,6 +175,10 @@ export function extractChronicleRange(markdown: string): { endYear: number; star
 
 export function extractDateRange(markdown: string): { endDate: string; startDate: string } | null {
   const { data } = parseFrontmatter(markdown);
+  return extractDateRangeFromData(data);
+}
+
+function extractDateRangeFromData(data: Record<string, unknown>): { endDate: string; startDate: string } | null {
   const value = data.date;
 
   if (!Array.isArray(value) || (value.length !== 1 && value.length !== 2)) return null;
@@ -107,6 +192,31 @@ export function extractDateRange(markdown: string): { endDate: string; startDate
   if (startDate > endDate) return null;
 
   return { endDate, startDate };
+}
+
+function rangeToArray<T>(start: T, end: T): T[] {
+  return start === end ? [start] : [start, end];
+}
+
+function axisToYear(value: number): number {
+  return value < 0 ? value : value + 1;
+}
+
+function shiftDateYears(value: string, deltaYears: number): string {
+  if (deltaYears === 0) return value;
+
+  const date = new Date(`${value}T00:00:00.000Z`);
+  const month = date.getUTCMonth();
+  const day = date.getUTCDate();
+  const nextYear = date.getUTCFullYear() + deltaYears;
+  const lastDay = new Date(Date.UTC(nextYear, month + 1, 0)).getUTCDate();
+  const next = new Date(Date.UTC(nextYear, month, Math.min(day, lastDay)));
+
+  return next.toISOString().slice(0, 10);
+}
+
+function dateYear(value: string): number {
+  return Number(value.slice(0, 4));
 }
 
 function isValidChronicleYear(value: unknown): value is number {
@@ -129,6 +239,10 @@ function normalizeDateValue(value: unknown): string | null {
 
 function dateToDay(value: string): number {
   return Math.floor(new Date(`${value}T00:00:00.000Z`).getTime() / 86_400_000);
+}
+
+function dayToDate(value: number): string {
+  return new Date(value * 86_400_000).toISOString().slice(0, 10);
 }
 
 function yearToAxis(year: number): number {

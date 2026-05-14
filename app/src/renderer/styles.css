@@ -5314,7 +5314,7 @@ button:not(:disabled):active {
   background: rgba(0, 124, 175, 0.18);
   border: 0;
   color: var(--text);
-  cursor: pointer;
+  cursor: grab;
   display: flex;
   font-size: 11px;
   font-weight: 600;
@@ -5326,12 +5326,20 @@ button:not(:disabled):active {
   position: absolute;
   text-align: left;
   text-overflow: ellipsis;
+  touch-action: none;
+  user-select: none;
   white-space: nowrap;
   z-index: 3;
 }
 
 .chronicle-fill:hover {
   background: rgba(0, 124, 175, 0.26);
+}
+
+.chronicle-fill:active,
+.chronicle-fill--dragging {
+  background: rgba(0, 124, 175, 0.32);
+  cursor: grabbing;
 }
 
 .chronicle-fill-label {
@@ -5341,6 +5349,48 @@ button:not(:disabled):active {
   padding: 0 7px;
   position: absolute;
   z-index: 1;
+}
+
+.chronicle-fill-resize {
+  bottom: 4px;
+  cursor: ew-resize;
+  position: absolute;
+  top: 4px;
+  width: 10px;
+  z-index: 2;
+}
+
+.chronicle-fill-resize::after {
+  background: rgba(0, 98, 140, 0.42);
+  border-radius: 999px;
+  bottom: 4px;
+  content: "";
+  opacity: 0;
+  position: absolute;
+  top: 4px;
+  transition: opacity 120ms ease;
+  width: 2px;
+}
+
+.chronicle-fill:hover .chronicle-fill-resize::after,
+.chronicle-fill--dragging .chronicle-fill-resize::after {
+  opacity: 1;
+}
+
+.chronicle-fill-resize--start {
+  left: 0;
+}
+
+.chronicle-fill-resize--start::after {
+  left: 3px;
+}
+
+.chronicle-fill-resize--end {
+  right: 0;
+}
+
+.chronicle-fill-resize--end::after {
+  right: 3px;
 }
 
 .chronicle-fill--single {
