@@ -147,9 +147,9 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdate
       const nextRange = nextRangeForDelta(delta);
 
       setDragPreview({
-        dateKind: entry.dateKind,
         path: entry.path,
         source: activeSource,
+        ...dateKindPatch(entry),
         ...nextRange
       });
     };
@@ -177,7 +177,7 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdate
         originalEndValue,
         originalStartValue,
         path: entry.path,
-        dateKind: entry.dateKind,
+        ...dateKindPatch(entry),
         source: activeSource,
         startValue: nextRange.startValue
       })).finally(() => setDragPreview(null));
@@ -191,10 +191,10 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdate
     };
 
     setDragPreview({
-      dateKind: entry.dateKind,
       endValue: entry.endValue,
       path: entry.path,
       source: activeSource,
+      ...dateKindPatch(entry),
       startValue: entry.startValue
     });
     window.addEventListener("pointermove", move);
@@ -469,6 +469,10 @@ function filterEntries(entries: GanttChartEntry[], query: string): GanttChartEnt
 
 function entryKey(entry: GanttChartEntry): string {
   return `${entry.path}:${entry.dateKind ?? "default"}`;
+}
+
+function dateKindPatch(entry: GanttChartEntry): { dateKind: GanttChartDateKind } | Record<string, never> {
+  return entry.dateKind ? { dateKind: entry.dateKind } : {};
 }
 
 function isPreviewForEntry(

@@ -708,12 +708,21 @@ describe("App", () => {
         ok: true,
         value: [{
           entries: [{
+            dateKind: "planned",
             endLabel: "2026-05-05",
             endValue: 20578,
             fileName: "実装タスク",
             path: "tasks/implementation.md",
             startLabel: "2026-05-01",
             startValue: 20574
+          }, {
+            dateKind: "actual",
+            endLabel: "2026-05-06",
+            endValue: 20579,
+            fileName: "実装タスク",
+            path: "tasks/implementation.md",
+            startLabel: "2026-05-03",
+            startValue: 20576
           }],
           filePaths: [],
           id: "date",
@@ -732,12 +741,16 @@ describe("App", () => {
     fireEvent.click(container.querySelectorAll(".chronicle-source-button")[1]);
 
     expect(useEditorStore.getState().leftPane.activeTabId).toBe("gantt-charts");
-    expect(screen.getByText("実装タスク")).toBeInTheDocument();
+    expect(screen.getByText("実装タスク · 計画")).toBeInTheDocument();
+    expect(screen.getByText("実装タスク · 実行")).toBeInTheDocument();
     expect(screen.queryByText("2026-05-01 〜 2026-05-05")).not.toBeInTheDocument();
     expect(screen.getByText("05-01 〜 05-05")).toBeInTheDocument();
+    expect(screen.getByText("05-03 〜 05-06")).toBeInTheDocument();
     expect(screen.getByText("月")).toBeInTheDocument();
     expect(container.querySelector(".chronicle-chart")).toBeInTheDocument();
-    expect(container.querySelector(".chronicle-fill")).toBeInTheDocument();
+    expect(container.querySelectorAll(".chronicle-fill")).toHaveLength(2);
+    expect(container.querySelector('.chronicle-fill[data-date-kind="planned"]')).toBeInTheDocument();
+    expect(container.querySelector('.chronicle-fill[data-date-kind="actual"]')).toBeInTheDocument();
     expect(container.querySelectorAll(".chronicle-guide-line").length).toBeGreaterThan(0);
     expect(container.querySelectorAll(".chronicle-guide-row-line").length).toBeGreaterThan(0);
   });
@@ -747,6 +760,7 @@ describe("App", () => {
       ok: true,
       value: [{
         entries: [{
+          dateKind: "planned",
           endLabel: "2026-05-06",
           endValue: 20579,
           fileName: "実装タスク",
@@ -770,6 +784,7 @@ describe("App", () => {
         ok: true,
         value: [{
           entries: [{
+            dateKind: "planned",
             endLabel: "2026-05-05",
             endValue: 20578,
             fileName: "実装タスク",
@@ -820,6 +835,7 @@ describe("App", () => {
       originalEndValue: 20578,
       originalStartValue: 20574,
       path: "tasks/implementation.md",
+      dateKind: "planned",
       source: "date",
       startValue: 20575
     }));
@@ -841,6 +857,7 @@ describe("App", () => {
         ok: true,
         value: [{
           entries: [{
+            dateKind: "planned",
             endLabel: "2026-05-05",
             endValue: 20578,
             fileName: "実装タスク",
@@ -879,7 +896,7 @@ describe("App", () => {
     window.dispatchEvent(pointerUp);
 
     await waitFor(() => expect(writeMarkdownFile).toHaveBeenCalledWith({
-      content: "---\nchronicle: [2026]\ndate: [2026-05-02, 2026-05-06]\n---\n# 実装タスク",
+      content: "---\nchronicle: [2026]\ndate: [2026-05-02, 2026-05-06]\nplannedDate: [2026-05-02, 2026-05-06]\n---\n# 実装タスク",
       path: "tasks/implementation.md"
     }));
   });
