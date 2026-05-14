@@ -18,6 +18,7 @@ import {
   type RemoveWorkspaceInput,
   type RenameWorkspaceInput,
   saveWorkspaceGanttChartsChannel,
+  updateGanttChartEntryChannel,
   saveFeatureTogglesChannel,
   getFrontmatterTemplatesChannel,
   getFrontmatterValueCandidatesChannel,
@@ -27,6 +28,7 @@ import {
   type FrontmatterTemplate,
   type GanttChartSettings,
   type GanttChartSource,
+  type UpdateGanttChartEntryInput,
   switchWorkspaceChannel,
   type SwitchWorkspaceInput,
   togglePinChannel,
@@ -36,7 +38,7 @@ import {
 } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { readWorkspaceAliases } from "../files/aliases";
-import { readWorkspaceChronicle } from "../files/chronicle";
+import { readWorkspaceChronicle, updateWorkspaceGanttChartEntry } from "../files/chronicle";
 import { readWorkspaceFileTree } from "../files/fileTree";
 import { readFrontmatterValueCandidates } from "../files/frontmatterCandidates";
 import { readWorkspaceGraph } from "../files/graph";
@@ -111,6 +113,27 @@ function isGanttChartsInput(input: unknown): input is GanttChartSettings[] {
     sources.add(candidate.source as GanttChartSource);
     return true;
   });
+}
+
+function isUpdateGanttChartEntryInput(input: unknown): input is UpdateGanttChartEntryInput {
+  if (typeof input !== "object" || input === null) return false;
+
+  const candidate = input as Record<string, unknown>;
+  const startValue = candidate.startValue;
+  const endValue = candidate.endValue;
+
+  if (typeof startValue !== "number" || typeof endValue !== "number") return false;
+
+  return (
+    typeof candidate.path === "string" &&
+    ganttChartSources.includes(candidate.source as GanttChartSource) &&
+    (candidate.kind === "move" || candidate.kind === "resize-start" || candidate.kind === "resize-end") &&
+    Number.isInteger(candidate.originalStartValue) &&
+    Number.isInteger(candidate.originalEndValue) &&
+    Number.isInteger(startValue) &&
+    Number.isInteger(endValue) &&
+    startValue <= endValue
+  );
 }
 
 function isFrontmatterTemplatesInput(input: unknown): input is FrontmatterTemplate[] {
@@ -275,6 +298,30 @@ export function registerWorkspaceHandlers(): void {
       return fail(
         "WORKSPACE_GANTT_SAVE_FAILED",
         "年表設定を保存できませんでした。",
+        error instanceof Error ? error.message : String(error)
+      );
+    }
+  });
+
+  ipcMain.handle(updateGanttChartEntryChannel, async (_event, input: unknown) => {
+    try {
+      if (!isUpdateGanttChartEntryInput(input)) {
+        return fail("GANTT_ENTRY_UPDATE_INVALID_INPUT", "チャートの変更内容が正しくありません。");
+      }
+
+      const settings = await readAppSettings(app.getPath("userData"));
+      const state = toWorkspaceState(settings);
+
+      if (!state.activeWorkspace) {
+        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
+      }
+
+      const workspaceSettings = await readWorkspaceSettings(app.getPath("userData"), state.activeWorkspace.id);
+      return updateWorkspaceGanttChartEntry(state.activeWorkspace.path, workspaceSettings.ganttCharts, input);
+    } catch (error) {
+      return fail(
+        "GANTT_ENTRY_UPDATE_FAILED",
+        "チャートの変更を保存できませんでした。",
         error instanceof Error ? error.message : String(error)
       );
     }

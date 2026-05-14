@@ -12,6 +12,7 @@ export const getWorkspaceAliasesChannel = "workspace:getAliases";
 export const getWorkspaceChronicleChannel = "workspace:getChronicle";
 export const getWorkspaceGraphChannel = "workspace:getGraph";
 export const saveWorkspaceGanttChartsChannel = "workspace:saveGanttCharts";
+export const updateGanttChartEntryChannel = "workspace:updateGanttChartEntry";
 export const getFrontmatterValueCandidatesChannel = "workspace:getFrontmatterValueCandidates";
 export const getWorkspaceStateChannel = "workspace:getState";
 export const moveItemToTrashChannel = "workspace:moveItemToTrash";
@@ -113,6 +114,18 @@ export interface GanttChartEntry {
 
 export interface WorkspaceGanttChart extends GanttChartSettings {
   entries: GanttChartEntry[];
+}
+
+export type GanttChartEntryEditKind = "move" | "resize-start" | "resize-end";
+
+export interface UpdateGanttChartEntryInput {
+  endValue: number;
+  kind: GanttChartEntryEditKind;
+  originalEndValue: number;
+  originalStartValue: number;
+  path: string;
+  source: GanttChartSource;
+  startValue: number;
 }
 
 export interface WorkspaceState {
@@ -400,6 +413,7 @@ export interface RelicApi {
   writeMarkdownFile: (input: WriteMarkdownFileInput) => Promise<RelicResult<void>>;
   writeClipboardText: (text: string) => void;
   saveWorkspaceGanttCharts: (input: GanttChartSettings[]) => Promise<RelicResult<WorkspaceGanttChart[]>>;
+  updateGanttChartEntry: (input: UpdateGanttChartEntryInput) => Promise<RelicResult<WorkspaceGanttChart[]>>;
   generateTitleList: (input: GenerateTitleListInput) => Promise<RelicResult<string>>;
   generateTableOfContents: (input: GenerateTableOfContentsInput) => Promise<RelicResult<string>>;
   getFeatureToggles: () => Promise<RelicResult<FeatureToggles>>;

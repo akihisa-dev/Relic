@@ -43,6 +43,8 @@
   "chronicle.scaleIncrease": "スケールを粗くする",
   "chronicle.search": "検索 / フィルタ",
   "chronicle.searchPlaceholder": "ファイル名・パス・値",
+  "chronicle.resizeEnd": "バーの終了位置を変更",
+  "chronicle.resizeStart": "バーの開始位置を変更",
   "chronicle.source": "チャート種別",
   "chronicle.summary": "{{source}} / {{count}}件",
   "chronicle.title": "チャート",

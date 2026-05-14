@@ -35,10 +35,9 @@ AIは `AI.md` と `docs/product/project.md` の次にこのファイルを読み
 ## 現在フェーズ
 
 ```yaml
-current: P21
-summary: 文書整理（完了、次フェーズ未指定）
-checklist: phases/P21-document-organization.md
-note: 次フェーズが明示されるまで current は変更しない
+current: P22
+summary: チャートビューアップグレード
+checklist: phases/P22-chart-view-upgrade.md
 ```
 
 ---
@@ -68,7 +67,8 @@ note: 次フェーズが明示されるまで current は変更しない
 | P18 | UX/UIデザイン修正 | done | `phases/P18-ui-ux-design-fixes.md`, `../ui/screens-macos.md`, `../ui/navigation.md`, `../ui/DESIGN.md` |
 | P19 | リファクタリングおよび整理 | done | `phases/P19-refactoring-organization.md`, `conventions.md`, `testing.md`, 必要に応じて `../architecture/overview.md` |
 | P20 | 大型機能追加 | done | `phases/P20-major-feature-addition.md`, `conventions.md`, `testing.md`, 必要に応じて `../spec/`, `../architecture/overview.md`, `../ui/` |
-| P21 | 文書整理 | current | `phases/P21-document-organization.md`, 必要に応じて `../INDEX.md`, `../spec/`, `../ui/`, `../architecture/`, `../tech/`, `../../README.md` |
+| P21 | 文書整理 | done | `phases/P21-document-organization.md`, 必要に応じて `../INDEX.md`, `../spec/`, `../ui/`, `../architecture/`, `../tech/`, `../../README.md` |
+| P22 | チャートビューアップグレード | current | `phases/P22-chart-view-upgrade.md`, `conventions.md`, `testing.md`, 必要に応じて `../spec/navigation.md`, `../ui/screens-macos.md`, `../ui/navigation.md`, `../ui/DESIGN.md`, `../architecture/overview.md` |
 
 ### 取り下げた非正当フェーズ
 
@@ -80,6 +80,36 @@ P15はAIが先に方針を作りすぎたため、正当な開発フェーズと
 ---
 
 ## フェーズ別の読み込みルール
+
+### P22-chart-view-upgrade
+
+Relicのチャートビューをアップグレードするフェーズ。
+
+AIはこのフェーズを前提にユーザーへ接する。
+対象は既存のチャートビューであり、チャートビュー以外の画面や新規機能へ範囲を広げる場合は、事前にユーザーへ確認する。
+
+最初に読む:
+
+- `phases/P22-chart-view-upgrade.md`
+
+必要になったときだけ読む:
+
+- 実装規約: `conventions.md`
+- テスト方針: `testing.md`
+- 導線仕様: `../spec/navigation.md`
+- UI構成: `../ui/screens-macos.md`, `../ui/navigation.md`
+- デザイン原則: `../ui/DESIGN.md`
+- アーキテクチャ前提: `../architecture/overview.md`
+
+注意:
+
+- ユーザーが指定したチャートビューの改善だけを対象にする
+- 仕様、UI、保存形式、表示データの意味を勝手に決めない
+- 実装前に、改善したい点、対象画面、最小の変更単位、確認方法を明示する
+- 見た目の変更にデータ構造変更や別機能追加を混ぜない
+- 変更後は `pnpm typecheck` と、対象に応じたテストを確認する
+
+---
 
 ### P21-document-organization
 
