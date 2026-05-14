@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, PointerEvent, ReactElement } from "react";
 
-import type { GanttChartEntry, GanttChartEntryEditKind, GanttChartSource, UpdateGanttChartEntryInput, WorkspaceGanttChart } from "../../shared/ipc";
-import { useT } from "../i18n";
+import type { GanttChartDateKind, GanttChartEntry, GanttChartEntryEditKind, GanttChartSource, UpdateGanttChartEntryInput, WorkspaceGanttChart } from "../../shared/ipc";
+import { useT, type Translator } from "../i18n";
 
 interface GanttChartViewProps {
   chart?: WorkspaceGanttChart | null;
@@ -38,6 +38,7 @@ interface DateAxisSegment {
 }
 
 interface DragPreview {
+  dateKind?: GanttChartDateKind;
   endValue: number;
   path: string;
   source: GanttChartSource;
@@ -52,13 +53,17 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdate
   const [scaleIndex, setScaleIndex] = useState(1);
   const [scrollLeft, setScrollLeft] = useState(0);
   const [dragPreview, setDragPreview] = useState<DragPreview | null>(null);
+  const chartRef = useRef<HTMLDivElement | null>(null);
+  const previousAxisStartRef = useRef<number | null>(null);
   const activeChart = chart ?? availableCharts.find((candidate) => candidate.id === selectedChartId) ?? availableCharts[0] ?? null;
   const activeSource = activeChart && isGanttChartSource(activeChart.source) ? activeChart.source : "chronicle";
   const scaleOptions = SCALE_OPTIONS[activeSource];
   const tickInterval = scaleOptions[Math.min(scaleIndex, scaleOptions.length - 1)] ?? scaleOptions[0] ?? 100;
   const dateScale = activeSource === "date" ? DATE_SCALES[tickInterval] ?? DATE_SCALES[2] : null;
   const entries = useMemo(() => filterEntries(visibleEntries(activeChart), query), [activeChart, query]);
-  const { axisEnd, axisStart } = timelineBounds(entries, tickInterval, activeSource, dateScale);
+  const computedBounds = timelineBounds(entries, tickInterval, activeSource, dateScale);
+  const boundsKey = `${activeChart?.id ?? "none"}:${activeSource}:${tickInterval}:${query}`;
+  const { axisEnd, axisStart } = useStableTimelineBounds(computedBounds, boundsKey);
   const axisSpan = Math.max(1, axisEnd - axisStart + 1);
   const tickWidth = activeSource === "date" ? DATE_TICK_WIDTH : TICK_WIDTH;
   const unitWidth = activeSource === "date" ? dateUnitWidth(dateScale) : tickWidth / tickInterval;
@@ -68,6 +73,25 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdate
     [activeSource, axisEnd, axisStart, dateScale, tickInterval]
   );
   const dateAxisHeight = activeSource === "date" ? dateAxisHeightForScale(dateScale) : 34;
+
+  useLayoutEffect(() => {
+    const previousAxisStart = previousAxisStartRef.current;
+    previousAxisStartRef.current = axisStart;
+
+    if (previousAxisStart === null || previousAxisStart === axisStart) return;
+
+    const chartElement = chartRef.current;
+
+    if (!chartElement) return;
+
+    const delta = (previousAxisStart - axisStart) * unitWidth;
+
+    if (delta === 0) return;
+
+    const nextScrollLeft = Math.max(0, chartElement.scrollLeft + delta);
+    chartElement.scrollLeft = nextScrollLeft;
+    setScrollLeft(nextScrollLeft);
+  }, [axisStart, unitWidth]);
 
   useEffect(() => {
     if (availableCharts.some((candidate) => candidate.id === selectedChartId)) return;
@@ -123,6 +147,7 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdate
       const nextRange = nextRangeForDelta(delta);
 
       setDragPreview({
+        dateKind: entry.dateKind,
         path: entry.path,
         source: activeSource,
         ...nextRange
@@ -152,6 +177,7 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdate
         originalEndValue,
         originalStartValue,
         path: entry.path,
+        dateKind: entry.dateKind,
         source: activeSource,
         startValue: nextRange.startValue
       })).finally(() => setDragPreview(null));
@@ -165,6 +191,7 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdate
     };
 
     setDragPreview({
+      dateKind: entry.dateKind,
       endValue: entry.endValue,
       path: entry.path,
       source: activeSource,
@@ -228,7 +255,7 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdate
       {!activeChart ? (
         <div className="frontmatter-field-empty">{t("chronicle.empty")}</div>
       ) : (
-        <div className="chronicle-chart" onScroll={(event) => setScrollLeft(event.currentTarget.scrollLeft)}>
+        <div className="chronicle-chart" onScroll={(event) => setScrollLeft(event.currentTarget.scrollLeft)} ref={chartRef}>
           <div className="chronicle-grid" style={{ width: NAME_COLUMN_WIDTH + timelineWidth }}>
             <div className="chronicle-name-column" style={{ width: NAME_COLUMN_WIDTH }}>
               <div className="chronicle-name-header" style={{ height: dateAxisHeight }} />
@@ -240,7 +267,7 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdate
                 entries.map((entry) => (
                   <div
                     className="chronicle-file-name-row"
-                    key={entry.path}
+                    key={entryKey(entry)}
                   >
                     <button
                       className="chronicle-file-name"
@@ -248,7 +275,7 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdate
                       title={entry.path}
                       type="button"
                     >
-                      {entry.fileName}
+                      {entry.fileName}{activeSource === "date" ? ` · ${formatDateKindLabel(entry.dateKind, t)}` : ""}
                     </button>
                   </div>
                 ))
@@ -298,15 +325,16 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdate
                   return (
                     <button
                       aria-label={`${entry.fileName} ${rangeLabel}`}
-                      className={`chronicle-fill${isSingleValue ? " chronicle-fill--single" : ""}${dragPreview?.path === entry.path && dragPreview.source === activeSource ? " chronicle-fill--dragging" : ""}`}
-                      key={entry.path}
+                      className={`chronicle-fill${isSingleValue ? " chronicle-fill--single" : ""}${activeSource === "date" ? ` chronicle-fill--${entry.dateKind ?? "planned"}` : ""}${isPreviewForEntry(entry, dragPreview, activeSource) ? " chronicle-fill--dragging" : ""}`}
+                      data-date-kind={entry.dateKind}
+                      key={entryKey(entry)}
                       onPointerDown={(event) => startEntryEdit(event, entry, "move")}
                       style={{
                         left,
                         top: index * ROW_HEIGHT,
                         width
                       }}
-                      title={`${entry.fileName} ${rangeLabel}`}
+                      title={`${entry.fileName}${activeSource === "date" ? ` ${formatDateKindLabel(entry.dateKind, t)}` : ""} ${rangeLabel}`}
                       type="button"
                     >
                       <span
@@ -439,8 +467,62 @@ function filterEntries(entries: GanttChartEntry[], query: string): GanttChartEnt
   ));
 }
 
+function entryKey(entry: GanttChartEntry): string {
+  return `${entry.path}:${entry.dateKind ?? "default"}`;
+}
+
+function isPreviewForEntry(
+  entry: GanttChartEntry,
+  preview: DragPreview | null,
+  source: GanttChartSource
+): boolean {
+  return Boolean(
+    preview &&
+      preview.path === entry.path &&
+      preview.source === source &&
+      (preview.dateKind ?? "planned") === (entry.dateKind ?? "planned")
+  );
+}
+
+function useStableTimelineBounds(
+  computedBounds: { axisEnd: number; axisStart: number },
+  key: string
+): { axisEnd: number; axisStart: number } {
+  const [stable, setStable] = useState<{ bounds: { axisEnd: number; axisStart: number }; key: string } | null>(null);
+
+  useLayoutEffect(() => {
+    setStable((current) => {
+      if (!current || current.key !== key) {
+        return { bounds: computedBounds, key };
+      }
+
+      const nextBounds = {
+        axisEnd: Math.max(current.bounds.axisEnd, computedBounds.axisEnd),
+        axisStart: Math.min(current.bounds.axisStart, computedBounds.axisStart)
+      };
+
+      if (
+        nextBounds.axisEnd === current.bounds.axisEnd &&
+        nextBounds.axisStart === current.bounds.axisStart
+      ) {
+        return current;
+      }
+
+      return { bounds: nextBounds, key };
+    });
+  }, [computedBounds.axisEnd, computedBounds.axisStart, key]);
+
+  if (!stable || stable.key !== key) return computedBounds;
+
+  return stable.bounds;
+}
+
 function previewEntryForDrag(entry: GanttChartEntry, preview: DragPreview | null): GanttChartEntry {
-  if (!preview || preview.path !== entry.path) return entry;
+  if (
+    !preview ||
+    preview.path !== entry.path ||
+    (preview.dateKind ?? "planned") !== (entry.dateKind ?? "planned")
+  ) return entry;
 
   const startLabel = preview.source === "date"
     ? dayToDate(preview.startValue)
@@ -456,6 +538,10 @@ function previewEntryForDrag(entry: GanttChartEntry, preview: DragPreview | null
     startLabel,
     startValue: preview.startValue
   };
+}
+
+function formatDateKindLabel(kind: GanttChartDateKind | undefined, t: Translator): string {
+  return kind === "actual" ? t("chronicle.actualDate") : t("chronicle.plannedDate");
 }
 
 function timelineBounds(
