@@ -93,11 +93,11 @@ AIが先に全件整理リストを正本化しない。
 
 ### プロダクト文書の整理
 
-- 方向性: `docs/product/` は、現行Relicのプロダクト前提だけを書く場所として整理する。Git / GitHub関連の過去経緯は `docs/dev/phases/` と `docs/journal/` に履歴として残し、プロダクト文書ではローカルMarkdownワークスペース、外部同期・外部履歴管理、現行UI用語を正とする
-- 実施: `docs/product/principles.md` からGit / GitHub / 内蔵履歴管理を前提にした対象ユーザー・利用フロー・用語説明を外し、「書く、整理する、探す、読み返す」を中心に書き直した
-- 実施: `docs/product/glossary.md` の比較表からGitHub列を外し、GitHub連携セクションを削除した。ワークスペース、タイトルバー、サイドバー、パネルなどに残っていたGit / GitHub前提の説明も現行UIに合わせて修正した
-- 実施: `docs/product/PLAN.md` の「GitHub連携」を「同期・履歴管理」に言い換え、本文テンプレート前提の表現を現行のフロントマターテンプレートへ合わせた
-- 確認: `rg` で `docs/product/` 内の `Git`, `GitHub`, `コミット`, `プッシュ`, `プル`, `ブランチ`, `自動同期`, `コンフリクト` が残っていないことを確認した。`docs/product/` 内の相対リンク先として `docs/dev/phases.md` と `docs/tech/stack.md` が存在することも確認した
+- 方向性: `docs/product/` は、現行Relicのプロダクト前提だけを書く場所として整理する。プロダクト文書ではローカルMarkdownワークスペース、現行UI用語、現在の利用フローを正とする
+- 実施: `docs/product/principles.md` を、「書く、整理する、探す、読み返す」を中心に書き直した
+- 実施: `docs/product/glossary.md` の用語説明を、現行UIと現在のワークスペース概念に合わせて修正した
+- 実施: `docs/product/PLAN.md` を、現行のフロントマターテンプレートとローカルフォルダ前提に合わせた
+- 確認: `docs/product/` 内の相対リンク先として `docs/dev/phases.md` と `docs/tech/stack.md` が存在することを確認した
 - 残り: 今回範囲の `docs/product/` 整理は完了。`docs/spec/` や `docs/ui/` の詳細整合は、P21の別作業範囲として扱う
 
 ### 仕様/UI文書の整合
@@ -107,18 +107,26 @@ AIが先に全件整理リストを正本化しない。
 - 実施: `docs/ui/screens-macos.md`, `docs/ui/navigation.md`, `docs/spec/navigation.md` を、ファイルはファイルサイドバー、ダッシュボード・グラフ・ファイル加工・フロントマター設定・設定はパネルタブ、年表 / 日付チャートはチャートタブとして開く構造へ整理した
 - 実施: `docs/spec/frontmatter.md` を、ファイル単位のフロントマター編集はファイルタブ内、入力能力や固定プロパティの管理はフロントマター設定パネルタブで行う構造へ整理した。右パネルはアウトラインとリンク一覧に限定した
 - 実施: `docs/spec/search.md` と `docs/spec/command-palette.md` の検索・設定導線を、ファイルサイドバー検索と設定パネルタブの現行導線に合わせた
-- 確認: `rg` で `docs/spec docs/ui` 内に `メインエリアは絶対に遷移しない`, `常にエディタ`, `ソースモード.*持たない`, `右パネル.*テンプレート適用` が残っていないことを確認した。`ダッシュボード`, `グラフ`, `チャート`, `フロントマター`, `ソースモード` の現行導線用語が残っていることも確認した
+- 確認: `docs/spec docs/ui` 内の古い画面構成表現を確認し、`ダッシュボード`, `グラフ`, `チャート`, `フロントマター`, `ソースモード` の現行導線用語が残っていることも確認した
 - 確認: `docs/spec docs/ui` 内のMarkdownリンクを確認し、対象リンク先として `docs/spec/search.md`, `docs/spec/frontmatter.md`, `docs/spec/links-and-tags.md`, `docs/spec/markdown.md` が存在することを確認した
 - 残り: 今回範囲の仕様/UI文書整合は完了。現行アプリの実操作確認や、仕様として残す将来機能の棚卸しはP21の別作業範囲として扱う
 
 ### 設計/技術文書の整合
 
-- 方向性: `docs/architecture/` と `docs/tech/` は、現行Relicの「ローカルMarkdownワークスペース」「Git/GitHubなし」「左レール + ファイルサイドバー + タブ式メインエリア」を正として整理する。コード変更、仕様変更、新規機能追加は含めない
-- 実施: `docs/architecture/decisions.md` の `009` を、常にエディタを表示する前提から、ファイルタブを編集体験の中心にしつつ補助機能をパネルタブ / チャートタブとして扱う判断へ更新した。Git / GitHubなしの判断は維持した
+- 方向性: `docs/architecture/` と `docs/tech/` は、現行Relicの「ローカルMarkdownワークスペース」「左レール + ファイルサイドバー + タブ式メインエリア」を正として整理する。コード変更、仕様変更、新規機能追加は含めない
+- 実施: `docs/architecture/decisions.md` の `009` を、常にエディタを表示する前提から、ファイルタブを編集体験の中心にしつつ補助機能をパネルタブ / チャートタブとして扱う判断へ更新した
 - 実施: `docs/architecture/overview.md` を、メインプロセスはファイル操作・検索/リンク/タグ/年表/グラフ生成・設定保存・IPC境界、レンダラーは左レール・ファイルサイドバー・ファイルタブ・パネルタブ・チャートタブ・右パネル・CodeMirrorエディタを担う構成へ整理した
 - 実施: `docs/architecture/data-model.md` のアプリ設定とワークスペース設定を、現行の `editorSettings`, `featureToggles`, `userDefinedFields`, `frontmatterTemplates`, `lastWorkspaceId`, `workspaces`, `workspacePath`, `pinnedPaths`, `ganttCharts` に合わせた。Relic専用必須フォルダを自動作成しない判断は維持した
 - 実施: `docs/tech/stack.md` と `docs/tech/editor-engine.md` に、Markdownプレビューとフロントマター処理で使う `marked`, `DOMPurify`, `highlight.js`, `KaTeX`, `js-yaml` を必要最小限で追記した
-- 実施: `docs/tech/git-implementation.md` を、Git機能を採用しない技術判断の記録として明確化した。`app/src/main/main.ts` の `github.com` 外部URL許可は、GitHub認証やGit操作の実装ではなく外部リンク許可リストとして扱うことを明記した
-- 確認: `rg` で `docs/architecture docs/tech` 内に `メインエリアは常にエディタ`, `Git.*実装`, `GitHub.*連携`, `自動同期`, `ブランチ管理`, `タグ管理` が、採用済み機能として残っていないことを確認した。`タブ式メインエリア`, `ファイルサイドバー`, `パネルタブ`, `frontmatterTemplates`, `ganttCharts` の現行前提が残っていることも確認した
-- 確認: `docs/architecture docs/tech` 内のMarkdownリンクを確認し、対象リンク先として `docs/tech/editor-engine.md`, `docs/tech/git-implementation.md`, `docs/spec/frontmatter.md` が存在することを確認した
-- 残り: 今回範囲の設計/技術文書整合は完了。`docs/dev/conventions.md` と `docs/dev/testing.md` に残る古いGit前提は、P21の別作業範囲として扱う
+- 確認: `rg` で `docs/architecture docs/tech` 内に古い画面構成が採用済み機能として残っていないことを確認した。`タブ式メインエリア`, `ファイルサイドバー`, `パネルタブ`, `frontmatterTemplates`, `ganttCharts` の現行前提が残っていることも確認した
+- 確認: `docs/architecture docs/tech` 内のMarkdownリンクを確認し、対象リンク先として `docs/tech/editor-engine.md`, `docs/spec/frontmatter.md` が存在することを確認した
+- 残り: 今回範囲の設計/技術文書整合は完了。`docs/dev/conventions.md` と `docs/dev/testing.md` に残る古い前提は、P21の別作業範囲として扱う
+
+### 現行機能だけを書く整理
+
+- 方向性: 正本文書は、現行Relicに存在する機能・構成・運用を中心に書く。存在しないものを否定文として説明するための文書や節は置かない。ただし、仕様境界として必要な否定は残す
+- 実施: `README.md`, `SECURITY.md`, `AI.md`, `docs/product/`, `docs/spec/`, `docs/tech/`, `docs/architecture/`, `docs/dev/conventions.md`, `docs/dev/testing.md` を、現行機能中心の説明へ整理した
+- 実施: 現行仕様の正本として不要になった専用仕様文書と技術判断文書を削除し、参照していたフェーズ正本を現在の名前と内容へ整理した
+- 実施: 完了済みフェーズ文書のうち、次回参照に不要な過去の詳細が多いものは、目的・完了状態・現在の参照先が分かる短い正本へ圧縮した
+- 確認: 入口文書、プロダクト文書、仕様文書、UI文書、設計文書、技術文書、開発規約、テスト方針、フェーズ管理文書に、削除済み文書への参照が残っていないことを確認した
+- 残り: `docs/journal/` と `docs/archive/` は時系列ログ・アーカイブとして扱い、今回の正本文書整理の対象外にした
