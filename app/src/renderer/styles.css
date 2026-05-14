@@ -4324,7 +4324,7 @@ button:not(:disabled):active {
 /* ─── Chronicle ─── */
 .chronicle-panel {
   display: grid;
-  grid-template-rows: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
   height: 100%;
   min-width: 0;
   min-height: 0;
@@ -4391,34 +4391,6 @@ button:not(:disabled):active {
   display: grid;
   gap: 8px;
   grid-template-columns: minmax(0, 1fr);
-}
-
-.chronicle-source-buttons {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.chronicle-source-button {
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 5px;
-  color: var(--text-2);
-  cursor: pointer;
-  font-size: 12px;
-  min-height: 28px;
-  padding: 0 10px;
-}
-
-.chronicle-source-button:hover {
-  background: var(--hover);
-  color: var(--text);
-}
-
-.chronicle-source-button.active {
-  background: var(--hover);
-  color: var(--text);
-  font-weight: 600;
 }
 
 .chronicle-sidebar-list {
@@ -4496,78 +4468,66 @@ button:not(:disabled):active {
   overflow-y: auto;
 }
 
-.chronicle-hover-settings {
-  background: var(--popup-bg);
+.chronicle-toolbar {
+  align-items: center;
+  background: color-mix(in srgb, var(--bg) 92%, var(--hover));
+  border-bottom: 1px solid var(--border);
+  display: grid;
+  gap: 10px;
+  grid-template-columns: auto minmax(160px, 240px) auto;
+  justify-content: start;
+  min-height: 40px;
+  padding: 5px 12px;
+  z-index: 7;
+}
+
+.chronicle-source-buttons {
+  background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 6px;
-  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.12);
-  opacity: 0;
-  padding: 8px;
-  pointer-events: none;
-  position: absolute;
-  right: 12px;
-  top: 12px;
-  transform: translateY(-4px);
-  transition: opacity 140ms ease, transform 140ms ease;
-  width: min(260px, calc(100% - 24px));
-  z-index: 8;
+  display: inline-flex;
+  overflow: hidden;
 }
 
-.chronicle-panel:hover .chronicle-hover-settings,
-.chronicle-panel:focus-within .chronicle-hover-settings {
-  opacity: 1;
-  pointer-events: auto;
-  transform: translateY(0);
-}
-
-.chronicle-controls {
-  display: grid;
-  gap: 8px;
-}
-
-.hover-menu-drag-handle {
-  align-items: center;
+.chronicle-source-button {
   background: transparent;
   border: 0;
-  border-radius: 4px;
-  color: var(--text-3);
-  cursor: grab;
-  display: flex;
-  height: 18px;
-  justify-content: center;
-  margin: -2px 0 4px;
-  padding: 0;
-  width: 100%;
-}
-
-.hover-menu-drag-handle:active {
-  cursor: grabbing;
-}
-
-.hover-menu-drag-handle:hover {
-  background: var(--hover);
+  border-left: 1px solid var(--border);
   color: var(--text-2);
+  cursor: pointer;
+  font-size: 12px;
+  height: 26px;
+  min-width: 70px;
+  padding: 0 10px;
 }
 
-.hover-menu-drag-handle span {
-  background:
-    radial-gradient(currentColor 1.1px, transparent 1.4px) 0 0 / 6px 6px,
-    radial-gradient(currentColor 1.1px, transparent 1.4px) 3px 3px / 6px 6px;
-  display: block;
-  height: 10px;
-  opacity: 0.78;
-  width: 24px;
+.chronicle-source-button:first-child {
+  border-left: 0;
+}
+
+.chronicle-source-button:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+
+.chronicle-source-button.active {
+  background: var(--text);
+  color: var(--bg);
+  font-weight: 600;
 }
 
 .chronicle-search {
+  align-items: center;
   display: grid;
-  gap: 6px;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 7px;
 }
 
 .chronicle-search span {
   color: var(--text-3);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
+  white-space: nowrap;
 }
 
 .chronicle-search input {
@@ -4576,9 +4536,15 @@ button:not(:disabled):active {
   border-radius: 6px;
   box-sizing: border-box;
   color: var(--text);
-  min-height: 30px;
+  height: 26px;
+  min-width: 0;
   padding: 0 8px;
   width: 100%;
+}
+
+.chronicle-search input:focus {
+  border-color: var(--accent);
+  outline: none;
 }
 
 .graph-sidebar {
@@ -5137,6 +5103,7 @@ button:not(:disabled):active {
   border: 1px solid var(--border);
   border-radius: 7px;
   height: 100%;
+  min-height: 0;
   min-width: 0;
   overflow-x: auto;
   overflow-y: hidden;

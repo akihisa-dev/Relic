@@ -143,13 +143,9 @@ function updateChronicleDataForChartEdit(
     ...data,
     date: rangeToArray(startDate, endDate)
   };
-  const chronicleRange = extractChronicleRangeFromData(data);
-
-  if (chronicleRange) {
-    const startYear = dateYear(startDate);
-    const endYear = dateYear(endDate);
-    next.chronicle = rangeToArray(startYear, endYear);
-  }
+  const startYear = dateYear(startDate);
+  const endYear = dateYear(endDate);
+  next.chronicle = rangeToArray(startYear, endYear);
 
   return next;
 }

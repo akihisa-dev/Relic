@@ -825,6 +825,65 @@ describe("App", () => {
     }));
   });
 
+  it("チャート更新専用IPCが使えない場合も既存のファイル読み書きでバー変更を保存する", async () => {
+    const readMarkdownFile = vi.fn().mockResolvedValue({
+      ok: true,
+      value: {
+        content: "---\nchronicle: [2026]\ndate: [2026-05-01, 2026-05-05]\n---\n# 実装タスク",
+        name: "実装タスク",
+        path: "tasks/implementation.md"
+      }
+    });
+    const writeMarkdownFile = vi.fn().mockResolvedValue({ ok: true, value: undefined });
+
+    window.relic = makeRelicApi({
+      getWorkspaceChronicle: vi.fn().mockResolvedValue({
+        ok: true,
+        value: [{
+          entries: [{
+            endLabel: "2026-05-05",
+            endValue: 20578,
+            fileName: "実装タスク",
+            path: "tasks/implementation.md",
+            startLabel: "2026-05-01",
+            startValue: 20574
+          }],
+          filePaths: [],
+          id: "date",
+          name: "date",
+          source: "date"
+        }]
+      }),
+      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace }),
+      readMarkdownFile,
+      updateGanttChartEntry: undefined,
+      writeMarkdownFile
+    } as Partial<typeof window.relic>);
+
+    const { container } = await renderApp();
+
+    await screen.findByText("Notes");
+
+    fireEvent.click(screen.getByRole("button", { name: "チャート" }));
+    fireEvent.click(container.querySelectorAll(".chronicle-source-button")[1]);
+
+    const fill = container.querySelector(".chronicle-fill") as HTMLElement;
+    const pointerDown = new Event("pointerdown", { bubbles: true }) as PointerEvent;
+    Object.defineProperty(pointerDown, "button", { value: 0 });
+    Object.defineProperty(pointerDown, "clientX", { value: 0 });
+    Object.defineProperty(pointerDown, "pointerId", { value: 1 });
+    fill.dispatchEvent(pointerDown);
+    const pointerUp = new Event("pointerup") as PointerEvent;
+    Object.defineProperty(pointerUp, "clientX", { value: 5 });
+    Object.defineProperty(pointerUp, "pointerId", { value: 1 });
+    window.dispatchEvent(pointerUp);
+
+    await waitFor(() => expect(writeMarkdownFile).toHaveBeenCalledWith({
+      content: "---\nchronicle: [2026]\ndate: [2026-05-02, 2026-05-06]\n---\n# 実装タスク",
+      path: "tasks/implementation.md"
+    }));
+  });
+
   it("旧形式の年表データが返っても年表タブを表示できる", async () => {
     window.relic = makeRelicApi({
       getWorkspaceChronicle: vi.fn().mockResolvedValue({
