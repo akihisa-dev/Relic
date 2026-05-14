@@ -26,7 +26,7 @@ if not exist "node_modules" (
   )
 )
 
-call "%PNPM_CMD%" make:win
+call "%PNPM_CMD%" build:win:safe
 if errorlevel 1 (
   echo.
   echo Build failed.
@@ -36,6 +36,6 @@ if errorlevel 1 (
 
 echo.
 echo Build complete.
-echo Relic.exe is in app\out\Relic-win32-x64\
+echo Safe build output is in app\out\Relic-win32-x64\
 echo.
 pause
