@@ -98,8 +98,21 @@ describe("buildDashboardStats", () => {
     ]);
 
     expect(rects).toHaveLength(12);
-    expect(rects[0]).toMatchObject({ accent: true, label: "chart" });
+    expect(rects[0]).toMatchObject({ label: "chart" });
     expect(Math.min(...rects.map((rect) => rect.height))).toBeGreaterThan(20);
     expect(rects.every((rect) => rect.width > 0 && rect.height > 0)).toBe(true);
+  });
+
+  it("uses one hue with stronger tone for larger tag counts", () => {
+    const rects = buildTreemapRects([
+      { count: 10, label: "large" },
+      { count: 1, label: "small" }
+    ]);
+
+    expect(rects.map((rect) => rect.fill)).toEqual([
+      "color-mix(in srgb, var(--accent) 78%, var(--bg))",
+      "color-mix(in srgb, var(--accent) 24%, var(--bg))"
+    ]);
+    expect(rects.map((rect) => rect.textLight)).toEqual([true, false]);
   });
 });

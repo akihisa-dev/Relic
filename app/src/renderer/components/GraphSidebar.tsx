@@ -54,6 +54,13 @@ interface GraphPan {
   y: number;
 }
 
+interface GraphViewBox {
+  height: number;
+  width: number;
+  x: number;
+  y: number;
+}
+
 interface GraphDragState {
   pointerId: number;
   startClientX: number;
@@ -329,6 +336,19 @@ function GraphControlSection({
   );
 }
 
+export function buildGraphViewBox(zoom: number, pan: GraphPan): GraphViewBox {
+  const safeZoom = clamp(zoom, GRAPH_MIN_ZOOM, GRAPH_MAX_ZOOM);
+  const width = GRAPH_WIDTH / safeZoom;
+  const height = GRAPH_HEIGHT / safeZoom;
+
+  return {
+    height,
+    width,
+    x: GRAPH_CENTER_X - (width / 2) + pan.x,
+    y: GRAPH_CENTER_Y - (height / 2) + pan.y
+  };
+}
+
 export function GraphPanel({ activeFilePath, onOpenFile, workspaceId }: GraphPanelProps): ReactElement {
   const t = useT();
   const floatingPanel = useFloatingPanelPosition();
@@ -436,6 +456,11 @@ export function GraphPanel({ activeFilePath, onOpenFile, workspaceId }: GraphPan
     let frameId = 0;
 
     function tick(): void {
+      if (dragStateRef.current) {
+        frameId = window.requestAnimationFrame(tick);
+        return;
+      }
+
       const nextPoints = tickGraphSimulation(
         simPointsRef.current,
         filteredGraph.edges,
@@ -478,13 +503,14 @@ export function GraphPanel({ activeFilePath, onOpenFile, workspaceId }: GraphPan
     }
     return result;
   }, [filteredGraph.nodes, groups]);
+  const viewBox = buildGraphViewBox(zoom, pan);
 
   function getGraphDelta(deltaX: number, deltaY: number): GraphPan {
     const bounds = svgRef.current?.getBoundingClientRect();
     if (!bounds || bounds.width === 0 || bounds.height === 0) return { x: deltaX, y: deltaY };
     return {
-      x: deltaX * (GRAPH_WIDTH / bounds.width),
-      y: deltaY * (GRAPH_HEIGHT / bounds.height)
+      x: deltaX * (viewBox.width / bounds.width),
+      y: deltaY * (viewBox.height / bounds.height)
     };
   }
 
@@ -495,7 +521,7 @@ export function GraphPanel({ activeFilePath, onOpenFile, workspaceId }: GraphPan
   }
 
   function handleGraphKeyDown(event: KeyboardEvent<SVGSVGElement>): void {
-    const panStep = event.shiftKey ? 72 : 28;
+    const panStep = (event.shiftKey ? 72 : 28) / zoom;
     if (event.key === "+" || event.key === "=") {
       event.preventDefault();
       setZoom(Number(clamp(zoom + 0.1, GRAPH_MIN_ZOOM, GRAPH_MAX_ZOOM).toFixed(2)));
@@ -508,22 +534,22 @@ export function GraphPanel({ activeFilePath, onOpenFile, workspaceId }: GraphPan
     }
     if (event.key === "ArrowUp") {
       event.preventDefault();
-      setPan((current) => ({ ...current, y: current.y + panStep }));
+      setPan((current) => ({ ...current, y: current.y - panStep }));
       return;
     }
     if (event.key === "ArrowDown") {
       event.preventDefault();
-      setPan((current) => ({ ...current, y: current.y - panStep }));
+      setPan((current) => ({ ...current, y: current.y + panStep }));
       return;
     }
     if (event.key === "ArrowLeft") {
       event.preventDefault();
-      setPan((current) => ({ ...current, x: current.x + panStep }));
+      setPan((current) => ({ ...current, x: current.x - panStep }));
       return;
     }
     if (event.key === "ArrowRight") {
       event.preventDefault();
-      setPan((current) => ({ ...current, x: current.x - panStep }));
+      setPan((current) => ({ ...current, x: current.x + panStep }));
     }
   }
 
@@ -548,8 +574,8 @@ export function GraphPanel({ activeFilePath, onOpenFile, workspaceId }: GraphPan
 
     const delta = getGraphDelta(event.clientX - dragState.startClientX, event.clientY - dragState.startClientY);
     setPan({
-      x: dragState.startPan.x + delta.x,
-      y: dragState.startPan.y + delta.y
+      x: dragState.startPan.x - delta.x,
+      y: dragState.startPan.y - delta.y
     });
   }
 
@@ -593,8 +619,8 @@ export function GraphPanel({ activeFilePath, onOpenFile, workspaceId }: GraphPan
 
     nodeDragStateRef.current = { ...dragState, moved: dragState.moved || moved };
     const nextPosition = {
-      x: clamp(dragState.startPoint.x + graphDelta.x / zoom, GRAPH_PADDING, GRAPH_WIDTH - GRAPH_PADDING),
-      y: clamp(dragState.startPoint.y + graphDelta.y / zoom, GRAPH_PADDING, GRAPH_HEIGHT - GRAPH_PADDING)
+      x: clamp(dragState.startPoint.x + graphDelta.x, GRAPH_PADDING, GRAPH_WIDTH - GRAPH_PADDING),
+      y: clamp(dragState.startPoint.y + graphDelta.y, GRAPH_PADDING, GRAPH_HEIGHT - GRAPH_PADDING)
     };
     const nextPoints = simPointsRef.current.map((point) => point.path === dragState.path
       ? { ...point, vx: 0, vy: 0, x: nextPosition.x, y: nextPosition.y }
@@ -652,7 +678,7 @@ export function GraphPanel({ activeFilePath, onOpenFile, workspaceId }: GraphPan
             ref={svgRef}
             role="img"
             tabIndex={0}
-            viewBox={`0 0 ${GRAPH_WIDTH} ${GRAPH_HEIGHT}`}
+            viewBox={`${viewBox.x} ${viewBox.y} ${viewBox.width} ${viewBox.height}`}
           >
             {showArrows ? (
               <defs>
@@ -664,7 +690,7 @@ export function GraphPanel({ activeFilePath, onOpenFile, workspaceId }: GraphPan
                 </marker>
               </defs>
             ) : null}
-            <g transform={`translate(${GRAPH_CENTER_X * (1 - zoom) + pan.x} ${GRAPH_CENTER_Y * (1 - zoom) + pan.y}) scale(${zoom})`}>
+            <g>
               <g className="graph-edge-layer">
                 {filteredGraph.edges.map((edge) => {
                   const source = pointByPath.get(edge.sourcePath);

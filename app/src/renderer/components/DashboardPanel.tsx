@@ -29,12 +29,12 @@ interface DashboardFileStats {
 }
 
 interface DashboardTreemapRect {
-  accent: boolean;
   count: number;
   fill: string;
   height: number;
   label: string;
   showLabel: boolean;
+  textLight: boolean;
   width: number;
   x: number;
   y: number;
@@ -70,7 +70,6 @@ const lengthBucketDefs = [
 ];
 
 const chartColors = ["#00628c", "#1c1c1c", "#5e5e5e", "#8a8a8a", "#c6c6c6", "#e0e0e0"];
-const tagTreemapFills = ["var(--bg)", "var(--hover)", "var(--hover)", "var(--bg)", "var(--hover-strong)", "var(--hover)"];
 const treemapLayoutWidth = 300;
 const treemapLayoutHeight = 100;
 
@@ -220,12 +219,9 @@ function percentage(value: number, max: number): number {
 export function buildTreemapRects(entries: Array<{ count: number; label: string }>): DashboardTreemapRect[] {
   const visibleEntries = entries
     .filter((entry) => entry.count > 0)
-    .map((entry, index) => ({
-      ...entry,
-      accent: index === 0,
-      fill: tagTreemapFills[index % tagTreemapFills.length]
-    }));
+    .map((entry) => ({ ...entry }));
   const totalCount = visibleEntries.reduce((sum, entry) => sum + entry.count, 0);
+  const maxCount = Math.max(0, ...visibleEntries.map((entry) => entry.count));
   if (totalCount <= 0) return [];
 
   const rects: DashboardTreemapRect[] = [];
@@ -241,12 +237,12 @@ export function buildTreemapRects(entries: Array<{ count: number; label: string 
       const heightPercent = (frame.height / treemapLayoutHeight) * 100;
 
       rects.push({
-        accent: item.accent,
         count: item.count,
-        fill: item.fill,
+        fill: treemapFill(item.count, maxCount),
         height: heightPercent,
         label: item.label,
         showLabel: widthPercent >= 14 && heightPercent >= 18,
+        textLight: treemapIntensity(item.count, maxCount) >= 62,
         width: widthPercent,
         x: (frame.x / treemapLayoutWidth) * 100,
         y: (frame.y / treemapLayoutHeight) * 100
@@ -291,6 +287,15 @@ export function buildTreemapRects(entries: Array<{ count: number; label: string 
     y: 0
   });
   return rects;
+}
+
+function treemapIntensity(count: number, maxCount: number): number {
+  if (maxCount <= 0) return 18;
+  return Math.round(18 + ((count / maxCount) * 60));
+}
+
+function treemapFill(count: number, maxCount: number): string {
+  return `color-mix(in srgb, var(--accent) ${treemapIntensity(count, maxCount)}%, var(--bg))`;
 }
 
 function donutGradient(entries: Array<{ color: string; count: number }>): string {
@@ -490,7 +495,7 @@ export function DashboardPanel({ fileTree, onOpenFile, userDefinedFields, worksp
               <span className="dashboard-muted">{t("search.tagsEmpty")}</span>
             ) : tagTreemapRects.map((tag) => (
               <div
-                className={`dashboard-tag-map-cell${tag.accent ? " dashboard-tag-map-cell--accent" : ""}${tag.showLabel ? "" : " dashboard-tag-map-cell--compact"}`}
+                className={`dashboard-tag-map-cell${tag.showLabel ? "" : " dashboard-tag-map-cell--compact"}${tag.textLight ? " dashboard-tag-map-cell--light-text" : ""}`}
                 key={tag.label}
                 style={{
                   "--cell-height": `${tag.height}%`,
