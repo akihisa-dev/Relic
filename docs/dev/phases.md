@@ -52,15 +52,15 @@ checklist: phases/P21-document-organization.md
 | P3 | 実装前ドキュメント整備 | done | `phases/P3-preimplementation-docs.md`, `conventions.md`, `testing.md`, `open-questions.md` |
 | P4 | 基礎実装 | done | `phases/P4-foundation-implementation.md`, `../tech/stack.md`, `../architecture/overview.md`, `../spec/file-management.md`, `../spec/navigation.md`, `../spec/editor.md`, `../spec/markdown.md`, `../spec/links-and-tags.md`, `../spec/search.md` |
 | P5 | フロントマターとコマンド操作 | done | `phases/P5-frontmatter-command.md`, `../spec/frontmatter.md`, `../spec/command-palette.md` |
-| P6 | Git・GitHub連携 | done | `phases/P6-git-github.md`, `../spec/github.md`, `../tech/git-implementation.md` |
-| P7 | ファイル加工ツールと仕上げ | done | `phases/P7-file-tools.md`, `../spec/file-tools.md`, `../spec/github.md` |
+| P6 | 変更管理検討 | done | `phases/P6-change-safety.md` |
+| P7 | ファイル加工ツールと仕上げ | done | `phases/P7-file-tools.md`, `../spec/file-tools.md` |
 | P8 | UI総点検・設計照合 | done | `phases/P8-ui-audit.md`, `../ui/screens-macos.md`, `../ui/navigation.md`, `../ui/DESIGN.md` |
 | P9 | 機能確認・不具合修正 | done | `phases/P9-feature-checklist.md` |
 | P10 | 自分用ビルド安定化 | done | `phases/P10-build-stabilization.md`, `testing.md`, `../tech/stack.md` |
 | P11 | 文書・コード整合化 | done | `phases/P11-doc-code-alignment.md` |
 | P12 | 大規模リファクタリング・安全性強化 | done | `phases/P12-refactoring-security-plan.md`, `conventions.md`, `testing.md` |
 | P13 | 配布判断・リリース準備 | done | `phases/P13-release-readiness.md`, `../product/PLAN.md`, `../architecture/decisions.md` |
-| P14 | GitHub連携の安全導入 | done | `phases/P14-github-integration.md`, `../spec/github.md`, `../tech/git-implementation.md`, `../architecture/decisions.md` |
+| P14 | 外部連携の安全検討 | done | `phases/P14-external-safety.md`, `../architecture/decisions.md` |
 | P15 | UI/UXの洗練（AI起案・取り下げ） | rejected | `phases/P15-rejected-ai-ui-ux-polish.md` |
 | P16 | UI/UXの洗練（ヒアリング起点） | done | `phases/P16-ui-ux-polish.md`, `../ui/screens-macos.md`, `../ui/navigation.md`, `../ui/DESIGN.md` |
 | P17 | 機能再考（ヒアリング起点） | done | `phases/P17-feature-reconsideration.md`, 必要に応じて `../spec/`, `../product/PLAN.md`, `../product/principles.md` |
@@ -138,7 +138,6 @@ AIはこのフェーズを前提にユーザーへ接する。
 - ユーザーが指定した大型機能だけを対象にする
 - 仕様・UI・保存形式・IPC APIを勝手に決めない
 - 実装前に、最小の縦切り単位と検証方法を明示する
-- P19で削除したGit / GitHub機能を、ユーザーの明示なしに復活させない
 - 変更後は `pnpm typecheck` と、対象に応じたテストを確認する
 - P20正本に日誌を書かない。フェーズ文書には、機能ごとの判断・進捗だけを残す
 
@@ -245,7 +244,6 @@ AIが先に方針・チェックリスト・実装内容を作らず、ユーザ
 
 注意:
 
-- GitHub機能の追加実装には進まない
 - 見た目だけでなく、書く道具としての気持ちよさ、主従関係、操作の流れを重視する
 - ユーザーが「やりたい」「こうしたい」と言っただけで、仕様・フェーズ・チェックリスト・デザイン方針を勝手に作らない
 - 方針化・正本化・実装の前に、必ずユーザーへヒアリングする
@@ -286,7 +284,7 @@ AIはこのフェーズを前提にユーザーへ接する。
 
 ### P12-refactoring-security
 
-大規模リファクタリングとGitHub本格導入前の安全性強化フェーズ。
+大規模リファクタリングと安全性強化フェーズ。
 
 AIはこのフェーズを前提にユーザーへ接する。
 優先度は、1. 機能維持、2. セキュリティ、3. 安定性、4. 軽量化。
@@ -300,7 +298,6 @@ AIはこのフェーズを前提にユーザーへ接する。
 
 - 実装規約と安全ルール: `conventions.md`
 - テスト方針: `testing.md`
-- Git / GitHub の正解: `../spec/github.md`, `../tech/git-implementation.md`
 - Electron / アーキテクチャ判断: `../architecture/overview.md`, `../architecture/decisions.md`
 - UI変更を伴う場合: `../ui/screens-macos.md`, `../ui/navigation.md`, `../ui/DESIGN.md`
 
@@ -309,7 +306,7 @@ AIはこのフェーズを前提にユーザーへ接する。
 1. `phases/P12-refactoring-security-plan.md` の順序に従い、1回の変更範囲を小さく切る
 2. 変更前に対象ファイル・影響範囲・確認方法を短く説明する
 3. 機能維持を最優先し、既存UI・既存IPC API・既存データ形式を不用意に変えない
-4. GitHub / Electron / IPC / ファイル操作は、セキュリティ境界を弱めない
+4. Electron / IPC / ファイル操作は、セキュリティ境界を弱めない
 5. 変更後は `pnpm exec tsc --noEmit` と `pnpm test` を基本確認にする
 6. 依存関係監査など外部サービスへ情報を送る確認は、ユーザーの明示許可を得てから実施する
 
