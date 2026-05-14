@@ -91,6 +91,15 @@ AIが先に全件整理リストを正本化しない。
 - 今後の開発プロジェクトへ流用する文書・リポジトリ構造テンプレートとして `docs/dev/template.md` を追加した
 - `docs/INDEX.md`, `docs/_rules.md`, `README.md` の参照と説明を新しい構成に合わせた
 
+### 補助スクリプトとREADMEの整合
+
+- 方向性: `scripts/` 配下の補助スクリプトと `README.md` は、現行の開発版起動・safe build 運用を正として整理する。アプリ本体コード、仕様、技術選定、フェーズ状態の変更は含めない
+- 実施: `scripts/Relicを起動.bat` からパッケージ版 `Relic.exe` を優先起動する分岐を外し、Windowsでも開発版の `pnpm start` を起動する形へ揃えた
+- 実施: `scripts/Relicをビルド.command` と `scripts/Relicをビルド.bat` を、通常の `make` ではなく `build:mac:safe` / `build:win:safe` を呼ぶ形へ揃えた
+- 実施: `README.md` のリポジトリ構成に `AGENTS.md`, `CLAUDE.md`, `SECURITY.md` の役割を追記し、起動・ビルド補助スクリプトの説明を実体に合わせた
+- 確認: `rg` で補助スクリプトに古い `pnpm make`, `make:win`, パッケージ版優先起動の参照が残っていないことを確認した。Mac用 `.command` は `zsh -n` で構文確認した
+- 残り: 今回範囲の補助スクリプトとREADME整合は完了。`scripts/debug.bat` はWindowsのpnpm検出確認用として残す。`docs/dev/phases.md` と `docs/journal/` はフェーズ区切り指示がないため更新しない
+
 ### プロダクト文書の整理
 
 - 方向性: `docs/product/` は、現行Relicのプロダクト前提だけを書く場所として整理する。プロダクト文書ではローカルMarkdownワークスペース、現行UI用語、現在の利用フローを正とする

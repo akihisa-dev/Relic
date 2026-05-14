@@ -2,17 +2,7 @@
 chcp 65001 > nul
 cd /d "%~dp0..\app"
 
-set "APP_PATH=%CD%\out\Relic-win32-x64\Relic.exe"
 set "PNPM_CMD=%APPDATA%\npm\pnpm.cmd"
-
-if exist "%APP_PATH%" (
-  start "" "%APP_PATH%"
-  echo Starting Relic...
-  echo Relic.exe launched.
-  echo You can close this window.
-  timeout /t 3 > nul
-  exit /b 0
-)
 
 echo Starting Relic...
 echo.
