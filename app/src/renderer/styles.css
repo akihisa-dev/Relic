@@ -1926,27 +1926,24 @@ button:not(:disabled):active {
 
 .dashboard-tag-map-cell {
   background: var(--tag-fill);
-  border: 1px solid var(--border-soft);
-  border-radius: 7px;
+  border: 0;
+  border-radius: 0;
   display: flex;
   flex-direction: column;
   gap: 6px;
-  height: calc(var(--cell-height) - 6px);
+  height: var(--cell-height);
   justify-content: space-between;
-  left: calc(var(--cell-x) + 3px);
+  left: var(--cell-x);
   min-height: 0;
   min-width: 0;
+  outline: 1px solid color-mix(in srgb, var(--bg) 72%, var(--accent));
+  outline-offset: -1px;
   overflow: hidden;
   padding: 10px;
   position: absolute;
-  top: calc(var(--cell-y) + 3px);
+  top: var(--cell-y);
   transition: background-color 140ms ease, border-color 140ms ease;
-  width: calc(var(--cell-width) - 6px);
-}
-
-.dashboard-tag-map-cell--accent {
-  border-color: var(--border-medium);
-  box-shadow: inset 0 3px 0 var(--accent);
+  width: var(--cell-width);
 }
 
 .dashboard-tag-map-cell--compact {
@@ -1975,6 +1972,11 @@ button:not(:disabled):active {
 .dashboard-tag-map-cell--compact b {
   color: var(--text-3);
   font-size: 11px;
+}
+
+.dashboard-tag-map-cell--light-text span,
+.dashboard-tag-map-cell--light-text b {
+  color: var(--bg);
 }
 
 .dashboard-bar-row {
