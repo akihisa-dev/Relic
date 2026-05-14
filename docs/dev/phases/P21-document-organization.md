@@ -120,7 +120,16 @@ AIが先に全件整理リストを正本化しない。
 - 実施: `docs/tech/stack.md` と `docs/tech/editor-engine.md` に、Markdownプレビューとフロントマター処理で使う `marked`, `DOMPurify`, `highlight.js`, `KaTeX`, `js-yaml` を必要最小限で追記した
 - 確認: `rg` で `docs/architecture docs/tech` 内に古い画面構成が採用済み機能として残っていないことを確認した。`タブ式メインエリア`, `ファイルサイドバー`, `パネルタブ`, `frontmatterTemplates`, `ganttCharts` の現行前提が残っていることも確認した
 - 確認: `docs/architecture docs/tech` 内のMarkdownリンクを確認し、対象リンク先として `docs/tech/editor-engine.md`, `docs/spec/frontmatter.md` が存在することを確認した
-- 残り: 今回範囲の設計/技術文書整合は完了。`docs/dev/conventions.md` と `docs/dev/testing.md` に残る古い前提は、P21の別作業範囲として扱う
+- 残り: 今回範囲の設計/技術文書整合は完了。`docs/dev/conventions.md` と `docs/dev/testing.md` は下記の別作業範囲で整理した
+
+### 開発規約・テスト方針の整合
+
+- 方向性: `docs/dev/conventions.md` と `docs/dev/testing.md` は、現行Relicの「Relic専用必須フォルダを自動作成しない」「フロントマターテンプレートはアプリ設定」「文書整理では対象文書と正本の整合を確認する」を正として整理する。コード変更、仕様変更、新規機能追加は含めない
+- 実施: `docs/dev/conventions.md` から初期実装段階の表現、`attachments/` / `templates/` 自動作成前提、専用添付フォルダ前提、毎回の日誌更新前提を外し、現行のワークスペース・画像・テンプレート・文書更新規則に合わせた
+- 実施: `docs/dev/testing.md` から `attachments/` / `templates/` 自動作成を期待するテスト前提と初期段階向け表現を外し、P8以降の確認・安定化・文書整理で使う確認方針を追記した
+- 確認: `rg` で `docs/dev/conventions.md` と `docs/dev/testing.md` を確認し、`attachments`, `初期実装`, `初期段階`, `プロジェクト作成後`, `Git`, `GitHub` が残っていないことを確認した。`templates` は、ワークスペース内テンプレートフォルダへ依存しないという否定文としてのみ残した
+- 確認: `docs/spec/file-management.md`, `docs/spec/markdown.md`, `docs/spec/links-and-tags.md`, `docs/architecture/data-model.md` の現行前提と矛盾しないことを確認した
+- 残り: 今回範囲の `docs/dev/conventions.md` と `docs/dev/testing.md` 整理は完了。`docs/dev/phases.md` と `docs/journal/` はフェーズ区切り指示がないため更新しない
 
 ### 現行機能だけを書く整理
 
