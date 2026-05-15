@@ -408,7 +408,14 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdate
                   width: timelineWidth
                 } as CSSProperties}
               >
-                <ChartGuideLines axisStart={axisStart} rowCount={Math.max(1, rows.length)} ticks={guideTicks} unitWidth={unitWidth} />
+                <ChartGuideLines
+                  axisStart={axisStart}
+                  dateScale={dateScale}
+                  rowCount={Math.max(1, rows.length)}
+                  source={activeSource}
+                  ticks={guideTicks}
+                  unitWidth={unitWidth}
+                />
                 {activeSource === "date" ? (
                   <TodayLine axisEnd={axisEnd} axisStart={axisStart} unitWidth={unitWidth} />
                 ) : null}
@@ -433,7 +440,7 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdate
                       ? statusLabelForEntry(entry)
                       : "";
                     const statusLabelWidth = statusLabel ? labelWidthForText(statusLabel) : 0;
-                    const visibleTimelineStart = Math.max(0, scrollLeft - NAME_COLUMN_WIDTH);
+                    const visibleTimelineStart = Math.max(0, scrollLeft);
                     const statusLabelLeft = Math.max(
                       5,
                       Math.min(Math.max(5, width - statusLabelWidth - 5), visibleTimelineStart - left + 5)
@@ -537,22 +544,29 @@ function DateAxis({
 
 function ChartGuideLines({
   axisStart,
+  dateScale,
   rowCount,
+  source,
   ticks,
   unitWidth
 }: {
   axisStart: number;
+  dateScale: DateScale | null;
   rowCount: number;
+  source: GanttChartSource;
   ticks: ChartGuideTick[];
   unitWidth: number;
 }): ReactElement {
   const rowLines = Array.from({ length: rowCount + 1 }, (_value, index) => index * ROW_HEIGHT);
+  const sourceClassName = source === "date"
+    ? `chronicle-guide-lines--date chronicle-guide-lines--date-${dateScale?.unit ?? "month"}`
+    : "chronicle-guide-lines--chronicle";
 
   return (
-    <div aria-hidden="true" className="chronicle-guide-lines">
+    <div aria-hidden="true" className={`chronicle-guide-lines ${sourceClassName}`}>
       {ticks.map((tick) => (
         <span
-          className={`chronicle-guide-line${tick.isMajor ? " chronicle-guide-line--major" : ""}`}
+          className={`chronicle-guide-line chronicle-guide-line--${tick.isMajor ? "major" : "minor"}`}
           key={`tick-${tick.value}`}
           style={{ left: (tick.value - axisStart) * unitWidth }}
         />
@@ -706,7 +720,7 @@ function statusValuesForEntries(entries: GanttChartEntry[]): string[] {
 
 function statusLabelForEntry(entry: GanttChartEntry): string {
   return (entry.statuses ?? [])
-    .filter((status) => fixedStatusValues.includes(status as typeof fixedStatusValues[number]))
+    .filter((status) => status.trim() !== "")
     .join(" / ");
 }
 

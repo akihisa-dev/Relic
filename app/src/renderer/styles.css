@@ -5284,23 +5284,47 @@ button:not(:disabled):active {
 }
 
 .chronicle-guide-line {
-  background: rgba(28, 28, 28, 0.07);
+  background: rgba(28, 28, 28, 0.055);
   bottom: 0;
   position: absolute;
   top: 0;
   width: 1px;
 }
 
+.chronicle-guide-line--minor {
+  background: rgba(28, 28, 28, 0.055);
+}
+
 .chronicle-guide-line--major {
-  background: rgba(28, 28, 28, 0.16);
+  background: rgba(28, 28, 28, 0.15);
+}
+
+.chronicle-guide-lines--date .chronicle-guide-line--minor {
+  background: rgba(28, 28, 28, 0.026);
+}
+
+.chronicle-guide-lines--date-month .chronicle-guide-line--minor {
+  background: rgba(28, 28, 28, 0.022);
+}
+
+.chronicle-guide-lines--date .chronicle-guide-line--major {
+  background: rgba(28, 28, 28, 0.105);
+}
+
+.chronicle-guide-lines--chronicle .chronicle-guide-line--major {
+  background: rgba(28, 28, 28, 0.15);
 }
 
 .chronicle-guide-row-line {
-  background: var(--border);
+  background: rgba(28, 28, 28, 0.06);
   height: 1px;
   left: 0;
   position: absolute;
   right: 0;
+}
+
+.chronicle-guide-lines--date .chronicle-guide-row-line {
+  background: rgba(28, 28, 28, 0.045);
 }
 
 .chronicle-today-line {
@@ -5397,16 +5421,20 @@ button:not(:disabled):active {
 }
 
 .chronicle-fill-status {
+  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid rgba(174, 78, 0, 0.24);
+  border-radius: 4px;
   box-sizing: border-box;
   color: rgb(96, 42, 0);
   display: block;
   font-size: 11px;
   font-weight: 700;
-  line-height: 18px;
+  line-height: 16px;
   overflow: hidden;
-  padding: 0 5px;
+  padding: 0 6px;
   pointer-events: none;
   position: absolute;
+  top: 0;
   text-overflow: ellipsis;
   white-space: nowrap;
   z-index: 1;
