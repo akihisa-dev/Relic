@@ -116,7 +116,7 @@ const VALID_FIELD_TYPES: UserDefinedFieldType[] = [
   "url"
 ];
 const FIELD_NAME_PATTERN = /^[^\s:][^\r\n:]*$/;
-const RESERVED_FIELD_NAMES = new Set(["aliases", "tags", "chronicle", "date", "plannedDate", "actualDate"]);
+const RESERVED_FIELD_NAMES = new Set(["aliases", "tags", "status", "chronicle", "date", "plannedDate", "actualDate"]);
 
 function parseUserDefinedFields(raw: unknown): UserDefinedField[] {
   if (!Array.isArray(raw)) return defaultUserDefinedFields;
