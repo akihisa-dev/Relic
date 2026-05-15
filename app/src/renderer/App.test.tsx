@@ -698,7 +698,17 @@ describe("App", () => {
     expect(renderResult.container.querySelector(".chronicle-sidebar")).toBeNull();
     expect(screen.getAllByText("鎌倉時代").length).toBeGreaterThan(0);
     expect(screen.getByText("1185 〜 1333")).toBeInTheDocument();
+    expect(renderResult.container.querySelector(".chronicle-scale-value")).toHaveTextContent("50");
+    expect(screen.queryByText("計画")).not.toBeInTheDocument();
+    expect(screen.queryByText("実行")).not.toBeInTheDocument();
     expect(renderResult.container.querySelectorAll(".chronicle-guide-line").length).toBeGreaterThan(0);
+    expect(renderResult.container.querySelectorAll(".chronicle-guide-line--major").length).toBeGreaterThan(0);
+    expect(renderResult.container.querySelectorAll(".chronicle-guide-line").length).toBeGreaterThan(
+      renderResult.container.querySelectorAll(".chronicle-guide-line--major").length
+    );
+    fireEvent.click(screen.getByRole("button", { name: "スケールを細かくする" }));
+    fireEvent.click(screen.getByRole("button", { name: "スケールを細かくする" }));
+    expect(renderResult.container.querySelector(".chronicle-scale-value")).toHaveTextContent("1");
     expect(renderResult.container.querySelectorAll(".chronicle-guide-row-line").length).toBeGreaterThan(0);
   });
 
@@ -741,9 +751,9 @@ describe("App", () => {
     fireEvent.click(container.querySelectorAll(".chronicle-source-button")[1]);
 
     expect(useEditorStore.getState().leftPane.activeTabId).toBe("gantt-charts");
-    expect(container.querySelectorAll(".chronicle-file-name")).toHaveLength(2);
-    expect(screen.getByText("計画")).toBeInTheDocument();
-    expect(screen.getByText("実行")).toBeInTheDocument();
+    expect(container.querySelectorAll(".chronicle-file-name")).toHaveLength(1);
+    expect(screen.queryByText("計画")).not.toBeInTheDocument();
+    expect(screen.queryByText("実行")).not.toBeInTheDocument();
     expect(screen.queryByText("2026-05-01 〜 2026-05-05")).not.toBeInTheDocument();
     expect(screen.getByText("05-01 〜 05-05")).toBeInTheDocument();
     expect(screen.getByText("05-03 〜 05-06")).toBeInTheDocument();
@@ -752,8 +762,68 @@ describe("App", () => {
     expect(container.querySelectorAll(".chronicle-fill")).toHaveLength(2);
     expect(container.querySelector('.chronicle-fill[data-date-kind="planned"]')).toBeInTheDocument();
     expect(container.querySelector('.chronicle-fill[data-date-kind="actual"]')).toBeInTheDocument();
-    expect(container.querySelectorAll(".chronicle-guide-line").length).toBeGreaterThan(0);
+    expect(container.querySelector(".chronicle-today-line")).toBeInTheDocument();
+    expect(container.querySelectorAll(".chronicle-guide-line").length).toBeGreaterThan(30);
+    expect(container.querySelectorAll(".chronicle-guide-line--major").length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByRole("button", { name: "スケールを細かくする" }));
+    expect(screen.getByText("日")).toBeInTheDocument();
+    expect(container.querySelectorAll(".chronicle-guide-line--major").length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByRole("button", { name: "スケールを粗くする" }));
+    fireEvent.click(screen.getByRole("button", { name: "スケールを粗くする" }));
+    expect(screen.getByText("年")).toBeInTheDocument();
+    expect(container.querySelectorAll(".chronicle-guide-line").length).toBeGreaterThan(10);
+    expect(container.querySelectorAll(".chronicle-guide-line--major").length).toBeGreaterThan(0);
     expect(container.querySelectorAll(".chronicle-guide-row-line").length).toBeGreaterThan(0);
+  });
+
+  it("チャート面を掴んで横スクロールできる", async () => {
+    window.relic = makeRelicApi({
+      getWorkspaceChronicle: vi.fn().mockResolvedValue({
+        ok: true,
+        value: [{
+          entries: [{
+            endLabel: "2026-06-20",
+            endValue: 20624,
+            fileName: "長い予定",
+            path: "tasks/long.md",
+            startLabel: "2026-05-01",
+            startValue: 20574
+          }],
+          filePaths: [],
+          id: "date",
+          name: "date",
+          source: "date"
+        }]
+      }),
+      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
+    });
+
+    const { container } = await renderApp();
+
+    await screen.findByText("Notes");
+
+    fireEvent.click(screen.getByRole("button", { name: "チャート" }));
+    fireEvent.click(container.querySelectorAll(".chronicle-source-button")[1]);
+
+    const chart = container.querySelector(".chronicle-chart") as HTMLDivElement;
+    Object.defineProperty(chart, "scrollLeft", { configurable: true, value: 120, writable: true });
+
+    const pointerDown = new Event("pointerdown", { bubbles: true }) as PointerEvent;
+    Object.defineProperty(pointerDown, "button", { value: 0 });
+    Object.defineProperty(pointerDown, "clientX", { value: 200 });
+    Object.defineProperty(pointerDown, "pointerId", { value: 1 });
+    chart.dispatchEvent(pointerDown);
+
+    const pointerMove = new Event("pointermove") as PointerEvent;
+    Object.defineProperty(pointerMove, "clientX", { value: 150 });
+    Object.defineProperty(pointerMove, "pointerId", { value: 1 });
+    window.dispatchEvent(pointerMove);
+
+    const pointerUp = new Event("pointerup") as PointerEvent;
+    Object.defineProperty(pointerUp, "pointerId", { value: 1 });
+    window.dispatchEvent(pointerUp);
+
+    expect(chart.scrollLeft).toBe(170);
   });
 
   it("main側がdate行を返さない場合もMarkdownからplannedDateとactualDateを補完する", async () => {
@@ -792,11 +862,67 @@ describe("App", () => {
     fireEvent.click(screen.getByRole("button", { name: "チャート" }));
     fireEvent.click(container.querySelectorAll(".chronicle-source-button")[1]);
 
-    await waitFor(() => expect(container.querySelectorAll(".chronicle-file-name")).toHaveLength(2));
-    expect(screen.getByText("計画")).toBeInTheDocument();
-    expect(screen.getByText("実行")).toBeInTheDocument();
+    await waitFor(() => expect(container.querySelectorAll(".chronicle-file-name")).toHaveLength(1));
+    expect(screen.queryByText("計画")).not.toBeInTheDocument();
+    expect(screen.queryByText("実行")).not.toBeInTheDocument();
     expect(container.querySelector('.chronicle-fill[data-date-kind="planned"]')).toBeInTheDocument();
     expect(container.querySelector('.chronicle-fill[data-date-kind="actual"]')).toBeInTheDocument();
+  });
+
+  it("main側がdate行を返さない場合も片方だけあるplannedDateまたはactualDateを補完する", async () => {
+    window.relic = makeRelicApi({
+      getWorkspaceChronicle: vi.fn().mockResolvedValue({
+        ok: true,
+        value: [{
+          entries: [],
+          filePaths: [],
+          id: "date",
+          name: "date",
+          source: "date"
+        }]
+      }),
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [
+            { name: "計画だけ", path: "tasks/planned-only.md", type: "file" },
+            { name: "実行だけ", path: "tasks/actual-only.md", type: "file" }
+          ]
+        }
+      }),
+      readMarkdownFile: vi.fn().mockImplementation(({ path }: { path: string }) => Promise.resolve({
+        ok: true as const,
+        value: {
+          content: path === "tasks/actual-only.md"
+            ? "---\nstatus: [done]\nactualDate: [2026-05-03]\n---\n# 実行だけ"
+            : "---\nstatus: [todo]\nplannedDate: [2026-05-01]\n---\n# 計画だけ",
+          name: path === "tasks/actual-only.md" ? "実行だけ" : "計画だけ",
+          path
+        }
+      }))
+    });
+
+    const { container } = await renderApp();
+
+    await screen.findByText("Notes");
+
+    fireEvent.click(screen.getByRole("button", { name: "チャート" }));
+    fireEvent.click(container.querySelectorAll(".chronicle-source-button")[1]);
+
+    await waitFor(() => expect(container.querySelectorAll(".chronicle-file-name")).toHaveLength(2));
+    expect(container.querySelectorAll('.chronicle-fill[data-date-kind="planned"]')).toHaveLength(1);
+    expect(container.querySelectorAll('.chronicle-fill[data-date-kind="actual"]')).toHaveLength(1);
+    expect(container.querySelector('.chronicle-file-name[title="tasks/planned-only.md"]')).toHaveTextContent("計画だけ");
+    expect(container.querySelector('.chronicle-file-name[title="tasks/actual-only.md"]')).toHaveTextContent("実行だけ");
+
+    fireEvent.change(screen.getByLabelText("status"), { target: { value: "done" } });
+
+    expect(container.querySelectorAll(".chronicle-file-name")).toHaveLength(1);
+    expect(container.querySelector('.chronicle-file-name[title="tasks/planned-only.md"]')).not.toBeInTheDocument();
+    expect(container.querySelector('.chronicle-file-name[title="tasks/actual-only.md"]')).toHaveTextContent("実行だけ");
+    expect(container.querySelectorAll('.chronicle-fill[data-date-kind="planned"]')).toHaveLength(0);
+    expect(container.querySelectorAll('.chronicle-fill[data-date-kind="actual"]')).toHaveLength(1);
   });
 
   it("チャートバーはクリックでファイルを開かずドラッグで日付範囲を更新する", async () => {

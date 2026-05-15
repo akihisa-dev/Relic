@@ -17,7 +17,7 @@ const TICK_WIDTH = 72;
 const DATE_TICK_WIDTH = 52;
 const LABEL_HORIZONTAL_PADDING = 14;
 const SCALE_OPTIONS: Record<GanttChartSource, readonly number[]> = {
-  chronicle: [25, 50, 100, 200, 500],
+  chronicle: [1, 25, 50, 100, 200, 500],
   date: [0, 1, 2]
 };
 
@@ -37,6 +37,19 @@ interface DateAxisSegment {
   startValue: number;
 }
 
+interface ChartGuideTick {
+  isMajor: boolean;
+  value: number;
+}
+
+interface ChartRow {
+  entries: GanttChartEntry[];
+  fileName: string;
+  key: string;
+  path: string;
+  statuses: string[];
+}
+
 interface DragPreview {
   dateKind?: GanttChartDateKind;
   endValue: number;
@@ -53,20 +66,24 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdate
   const [selectedChartId, setSelectedChartId] = useState(availableCharts[0]?.id ?? "chronicle");
   const [query, setQuery] = useState("");
   const [sortKey, setSortKey] = useState<ChronicleSortKey>("start-asc");
-  const [scaleIndex, setScaleIndex] = useState(1);
+  const [statusFilter, setStatusFilter] = useState("");
+  const [scaleIndex, setScaleIndex] = useState(() => defaultScaleIndex((chart ?? availableCharts[0])?.source ?? "chronicle"));
   const [scrollLeft, setScrollLeft] = useState(0);
   const [dragPreview, setDragPreview] = useState<DragPreview | null>(null);
   const chartRef = useRef<HTMLDivElement | null>(null);
   const previousAxisStartRef = useRef<number | null>(null);
   const activeChart = chart ?? availableCharts.find((candidate) => candidate.id === selectedChartId) ?? availableCharts[0] ?? null;
   const activeSource = activeChart && isGanttChartSource(activeChart.source) ? activeChart.source : "chronicle";
+  const allEntries = visibleEntries(activeChart);
+  const statusOptions = useMemo(() => statusValuesForEntries(allEntries), [allEntries]);
   const scaleOptions = SCALE_OPTIONS[activeSource];
   const tickInterval = scaleOptions[Math.min(scaleIndex, scaleOptions.length - 1)] ?? scaleOptions[0] ?? 100;
   const dateScale = activeSource === "date" ? DATE_SCALES[tickInterval] ?? DATE_SCALES[2] : null;
-  const entries = useMemo(
-    () => sortEntries(filterEntries(visibleEntries(activeChart), query), sortKey),
-    [activeChart, query, sortKey]
+  const rows = useMemo(
+    () => sortRows(filterRows(buildChartRows(allEntries, activeSource), query, activeSource === "date" ? statusFilter : ""), sortKey),
+    [activeSource, allEntries, query, sortKey, statusFilter]
   );
+  const entries = useMemo(() => rows.flatMap((row) => row.entries), [rows]);
   const computedBounds = timelineBounds(entries, tickInterval, activeSource, dateScale);
   const boundsKey = `${activeChart?.id ?? "none"}:${activeSource}:${tickInterval}:${query}`;
   const { axisEnd, axisStart } = useStableTimelineBounds(computedBounds, boundsKey);
@@ -77,6 +94,10 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdate
   const ticks = useMemo(
     () => buildTicks(axisStart, axisEnd, tickInterval, activeSource, dateScale),
     [activeSource, axisEnd, axisStart, dateScale, tickInterval]
+  );
+  const guideTicks = useMemo(
+    () => buildGuideTicks(axisStart, axisEnd, ticks, tickInterval, activeSource, dateScale),
+    [activeSource, axisEnd, axisStart, dateScale, tickInterval, ticks]
   );
   const dateAxisHeight = activeSource === "date" ? dateAxisHeightForScale(dateScale) : 34;
 
@@ -107,6 +128,11 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdate
   useEffect(() => {
     setDragPreview(null);
   }, [activeChart?.id]);
+
+  useEffect(() => {
+    if (activeSource !== "date" || statusFilter === "" || statusOptions.includes(statusFilter)) return;
+    setStatusFilter("");
+  }, [activeSource, statusFilter, statusOptions]);
 
   const startEntryEdit = (
     event: PointerEvent<HTMLElement>,
@@ -208,6 +234,41 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdate
     window.addEventListener("pointercancel", cancel);
   };
 
+  const startChartPan = (event: PointerEvent<HTMLDivElement>): void => {
+    if (event.button > 0) return;
+    if (event.target instanceof Element && event.target.closest(".chronicle-fill, .chronicle-file-name")) return;
+
+    const chartElement = event.currentTarget;
+    const startClientX = event.clientX;
+    const startScrollLeft = chartElement.scrollLeft;
+
+    event.preventDefault();
+
+    if (chartElement.setPointerCapture) {
+      chartElement.setPointerCapture(event.pointerId);
+    }
+
+    const move = (moveEvent: globalThis.PointerEvent): void => {
+      const nextScrollLeft = Math.max(0, startScrollLeft - (moveEvent.clientX - startClientX));
+      chartElement.scrollLeft = nextScrollLeft;
+      setScrollLeft(nextScrollLeft);
+    };
+
+    const stop = (): void => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", stop);
+      window.removeEventListener("pointercancel", stop);
+
+      if (chartElement.hasPointerCapture?.(event.pointerId)) {
+        chartElement.releasePointerCapture(event.pointerId);
+      }
+    };
+
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", stop);
+    window.addEventListener("pointercancel", stop);
+  };
+
   return (
     <div className="chronicle-panel">
       <div className="chronicle-toolbar">
@@ -219,7 +280,7 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdate
               key={candidate.id}
               onClick={() => {
                 setSelectedChartId(candidate.id);
-                setScaleIndex(candidate.source === "date" ? 1 : 1);
+                setScaleIndex(defaultScaleIndex(candidate.source));
               }}
               type="button"
             >
@@ -245,6 +306,17 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdate
             <option value="name-desc">{t("chronicle.sortNameDesc")}</option>
           </select>
         </label>
+        {activeSource === "date" && statusOptions.length > 0 ? (
+          <label className="chronicle-search chronicle-status-filter">
+            <span>{t("chronicle.status")}</span>
+            <select onChange={(event) => setStatusFilter(event.target.value)} value={statusFilter}>
+              <option value="">{t("chronicle.statusAll")}</option>
+              {statusOptions.map((status) => (
+                <option key={status} value={status}>{status}</option>
+              ))}
+            </select>
+          </label>
+        ) : null}
         <div className="chronicle-scale" aria-label={t("chronicle.scale")}>
           <button
             aria-label={t("chronicle.scaleDecrease")}
@@ -270,33 +342,33 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdate
       {!activeChart ? (
         <div className="frontmatter-field-empty">{t("chronicle.empty")}</div>
       ) : (
-        <div className="chronicle-chart" onScroll={(event) => setScrollLeft(event.currentTarget.scrollLeft)} ref={chartRef}>
+        <div
+          className="chronicle-chart"
+          onPointerDown={startChartPan}
+          onScroll={(event) => setScrollLeft(event.currentTarget.scrollLeft)}
+          ref={chartRef}
+        >
           <div className="chronicle-grid" style={{ width: NAME_COLUMN_WIDTH + timelineWidth }}>
             <div className="chronicle-name-column" style={{ width: NAME_COLUMN_WIDTH }}>
               <div className="chronicle-name-header" style={{ height: dateAxisHeight }} />
-              {entries.length === 0 ? (
+              {rows.length === 0 ? (
                 <div className="chronicle-file-name-row chronicle-file-name-row--empty">
                   <div className="chronicle-file-name chronicle-file-name--empty">{t("chronicle.empty")}</div>
                 </div>
               ) : (
-                entries.map((entry) => (
+                rows.map((row) => (
                   <div
-                    className="chronicle-file-name-row"
-                    key={entryKey(entry)}
+                    className={`chronicle-file-name-row${activeSource === "date" ? " chronicle-file-name-row--date" : ""}`}
+                    key={row.key}
                   >
                     <button
                       className="chronicle-file-name"
-                      onClick={() => onOpenFile(entry.path)}
-                      title={entry.path}
+                      onClick={() => onOpenFile(row.path)}
+                      title={row.path}
                       type="button"
                     >
-                      {entry.fileName}
+                      {row.fileName}
                     </button>
-                    {activeSource === "date" ? (
-                      <div className={`chronicle-date-kind chronicle-date-kind--${entry.dateKind ?? "planned"}`}>
-                        {formatDateKindLabel(entry.dateKind, t)}
-                      </div>
-                    ) : null}
                   </div>
                 ))
               )}
@@ -320,66 +392,71 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdate
               <div
                 className={`chronicle-tracks${activeSource === "date" ? " chronicle-tracks--date" : ""}`}
                 style={{
-                  height: Math.max(1, entries.length) * ROW_HEIGHT,
+                  height: Math.max(1, rows.length) * ROW_HEIGHT,
                   width: timelineWidth
                 } as CSSProperties}
               >
-                <ChartGuideLines axisStart={axisStart} rowCount={Math.max(1, entries.length)} ticks={ticks} unitWidth={unitWidth} />
-                {entries.map((entry, index) => {
-                  const previewEntry = previewEntryForDrag(entry, dragPreview);
-                  const left = Math.max(0, (previewEntry.startValue - axisStart) * unitWidth);
-                  const isSingleValue = previewEntry.startValue === previewEntry.endValue;
-                  const rangeLabel = formatRange(previewEntry, activeSource, dateScale);
-                  const labelWidth = labelWidthForText(rangeLabel);
-                  const naturalWidth = isSingleValue ? unitWidth : (previewEntry.endValue - previewEntry.startValue + 1) * unitWidth;
-                  const width = activeSource === "date"
-                    ? naturalWidth
-                    : isSingleValue
-                      ? Math.max(46, naturalWidth)
-                      : Math.max(28, naturalWidth);
-                  const maxLabelLeft = Math.max(0, width - labelWidth);
-                  const labelLeft = isSingleValue
-                    ? (width - labelWidth) / 2
-                    : Math.max(7, Math.min(maxLabelLeft, scrollLeft - left + 7));
+                <ChartGuideLines axisStart={axisStart} rowCount={Math.max(1, rows.length)} ticks={guideTicks} unitWidth={unitWidth} />
+                {activeSource === "date" ? (
+                  <TodayLine axisEnd={axisEnd} axisStart={axisStart} unitWidth={unitWidth} />
+                ) : null}
+                {rows.map((row, index) => row.entries.map((entry) => {
+                    const previewEntry = previewEntryForDrag(entry, dragPreview);
+                    const left = Math.max(0, (previewEntry.startValue - axisStart) * unitWidth);
+                    const isSingleValue = previewEntry.startValue === previewEntry.endValue;
+                    const rangeLabel = formatRange(previewEntry, activeSource, dateScale);
+                    const labelWidth = labelWidthForText(rangeLabel);
+                    const naturalWidth = isSingleValue ? unitWidth : (previewEntry.endValue - previewEntry.startValue + 1) * unitWidth;
+                    const width = activeSource === "date"
+                      ? Math.max(4, naturalWidth)
+                      : isSingleValue
+                        ? Math.max(46, naturalWidth)
+                        : Math.max(28, naturalWidth);
+                    const maxLabelLeft = Math.max(0, width - labelWidth);
+                    const labelLeft = isSingleValue
+                      ? (width - labelWidth) / 2
+                      : Math.max(7, Math.min(maxLabelLeft, scrollLeft - left + 7));
+                    const dateKind = entry.dateKind ?? "planned";
 
-                  return (
-                    <button
-                      aria-label={`${entry.fileName} ${rangeLabel}`}
-                      className={`chronicle-fill${isSingleValue ? " chronicle-fill--single" : ""}${activeSource === "date" ? ` chronicle-fill--${entry.dateKind ?? "planned"}` : ""}${isPreviewForEntry(entry, dragPreview, activeSource) ? " chronicle-fill--dragging" : ""}`}
-                      data-date-kind={entry.dateKind}
-                      key={entryKey(entry)}
-                      onPointerDown={(event) => startEntryEdit(event, entry, "move")}
-                      style={{
-                        left,
-                        top: index * ROW_HEIGHT,
-                        width
-                      }}
-                      title={`${entry.fileName}${activeSource === "date" ? ` ${formatDateKindLabel(entry.dateKind, t)}` : ""} ${rangeLabel}`}
-                      type="button"
-                    >
-                      <span
-                        aria-label={t("chronicle.resizeStart")}
-                        className="chronicle-fill-resize chronicle-fill-resize--start"
-                        onPointerDown={(event) => startEntryEdit(event, entry, "resize-start")}
-                        role="separator"
-                      />
-                      <span className="chronicle-fill-label" style={{ left: labelLeft, width: labelWidth }}>{rangeLabel}</span>
-                      <span
-                        aria-label={t("chronicle.resizeEnd")}
-                        className="chronicle-fill-resize chronicle-fill-resize--end"
-                        onPointerDown={(event) => startEntryEdit(event, entry, "resize-end")}
-                        role="separator"
-                      />
-                    </button>
-                  );
-                })}
+                    return (
+                      <button
+                        aria-label={`${entry.fileName} ${formatDateKindLabel(entry.dateKind, t)} ${rangeLabel}`}
+                        className={`chronicle-fill${isSingleValue ? " chronicle-fill--single" : ""}${activeSource === "date" ? ` chronicle-fill--date chronicle-fill--${dateKind}` : ""}${isPreviewForEntry(entry, dragPreview, activeSource) ? " chronicle-fill--dragging" : ""}`}
+                        data-date-kind={entry.dateKind}
+                        key={entryKey(entry)}
+                        onPointerDown={(event) => startEntryEdit(event, entry, "move")}
+                        style={{
+                          height: activeSource === "date" ? dateFillHeight() : undefined,
+                          left,
+                          top: index * ROW_HEIGHT + (activeSource === "date" ? dateFillOffset() : 0),
+                          width
+                        }}
+                        title={`${entry.fileName}${activeSource === "date" ? ` ${formatDateKindLabel(entry.dateKind, t)}: ` : " "}${rangeLabel}`}
+                        type="button"
+                      >
+                        <span
+                          aria-label={t("chronicle.resizeStart")}
+                          className="chronicle-fill-resize chronicle-fill-resize--start"
+                          onPointerDown={(event) => startEntryEdit(event, entry, "resize-start")}
+                          role="separator"
+                        />
+                        <span className="chronicle-fill-label" style={{ left: labelLeft, width: labelWidth }}>{rangeLabel}</span>
+                        <span
+                          aria-label={t("chronicle.resizeEnd")}
+                          className="chronicle-fill-resize chronicle-fill-resize--end"
+                          onPointerDown={(event) => startEntryEdit(event, entry, "resize-end")}
+                          role="separator"
+                        />
+                      </button>
+                    );
+                  }))}
               </div>
             </div>
           </div>
         </div>
       )}
       <div className="chronicle-summary">
-        {activeChart ? t("chronicle.summary", { count: entries.length, source: activeChart.source }) : t("chronicle.title")}
+        {activeChart ? t("chronicle.summary", { count: rows.length, source: activeChart.source }) : t("chronicle.title")}
       </div>
     </div>
   );
@@ -440,7 +517,7 @@ function ChartGuideLines({
 }: {
   axisStart: number;
   rowCount: number;
-  ticks: number[];
+  ticks: ChartGuideTick[];
   unitWidth: number;
 }): ReactElement {
   const rowLines = Array.from({ length: rowCount + 1 }, (_value, index) => index * ROW_HEIGHT);
@@ -449,9 +526,9 @@ function ChartGuideLines({
     <div aria-hidden="true" className="chronicle-guide-lines">
       {ticks.map((tick) => (
         <span
-          className="chronicle-guide-line"
-          key={`tick-${tick}`}
-          style={{ left: (tick - axisStart) * unitWidth }}
+          className={`chronicle-guide-line${tick.isMajor ? " chronicle-guide-line--major" : ""}`}
+          key={`tick-${tick.value}`}
+          style={{ left: (tick.value - axisStart) * unitWidth }}
         />
       ))}
       {rowLines.map((top) => (
@@ -465,6 +542,28 @@ function ChartGuideLines({
   );
 }
 
+function TodayLine({
+  axisEnd,
+  axisStart,
+  unitWidth
+}: {
+  axisEnd: number;
+  axisStart: number;
+  unitWidth: number;
+}): ReactElement | null {
+  const today = dateToDay(new Date().toISOString().slice(0, 10));
+
+  if (today < axisStart || today > axisEnd) return null;
+
+  return (
+    <span
+      aria-hidden="true"
+      className="chronicle-today-line"
+      style={{ left: (today - axisStart + 0.5) * unitWidth }}
+    />
+  );
+}
+
 function visibleEntries(chart: WorkspaceGanttChart | null): GanttChartEntry[] {
   if (!chart) return [];
   return chart.entries;
@@ -475,32 +574,117 @@ function chartsForView(chart: WorkspaceGanttChart | null, charts: WorkspaceGantt
   return charts;
 }
 
-function filterEntries(entries: GanttChartEntry[], query: string): GanttChartEntry[] {
-  const normalizedQuery = query.trim().toLowerCase();
-  if (!normalizedQuery) return entries;
+function buildChartRows(entries: GanttChartEntry[], source: GanttChartSource): ChartRow[] {
+  if (source !== "date") {
+    return entries.map((entry) => ({
+      entries: [entry],
+      fileName: entry.fileName,
+      key: entryKey(entry),
+      path: entry.path,
+      statuses: entry.statuses ?? []
+    }));
+  }
 
-  return entries.filter((entry) => (
-    entry.fileName.toLowerCase().includes(normalizedQuery) ||
-    entry.path.toLowerCase().includes(normalizedQuery) ||
-    entry.startLabel.toLowerCase().includes(normalizedQuery) ||
-    entry.endLabel.toLowerCase().includes(normalizedQuery)
+  const rows = new Map<string, ChartRow>();
+
+  for (const entry of entries) {
+    const current = rows.get(entry.path);
+
+    if (current) {
+      current.entries.push(entry);
+      current.statuses = mergeStatuses(current.statuses, entry.statuses ?? []);
+      continue;
+    }
+
+    rows.set(entry.path, {
+      entries: [entry],
+      fileName: entry.fileName,
+      key: entry.path,
+      path: entry.path,
+      statuses: entry.statuses ?? []
+    });
+  }
+
+  return Array.from(rows.values()).map((row) => ({
+    ...row,
+    entries: sortDateRowEntries(row.entries)
+  }));
+}
+
+function filterRows(rows: ChartRow[], query: string, statusFilter: string): ChartRow[] {
+  const normalizedQuery = query.trim().toLowerCase();
+  if (!normalizedQuery && !statusFilter) return rows;
+
+  return rows.filter((row) => (
+    (!statusFilter || row.statuses.includes(statusFilter)) &&
+    (!normalizedQuery || matchesRowQuery(row, normalizedQuery))
   ));
 }
 
-function sortEntries(entries: GanttChartEntry[], sortKey: ChronicleSortKey): GanttChartEntry[] {
+function matchesRowQuery(row: ChartRow, normalizedQuery: string): boolean {
+  return (
+    row.fileName.toLowerCase().includes(normalizedQuery) ||
+    row.path.toLowerCase().includes(normalizedQuery) ||
+    row.statuses.some((status) => status.toLowerCase().includes(normalizedQuery)) ||
+    row.entries.some((entry) => (
+      entry.startLabel.toLowerCase().includes(normalizedQuery) ||
+      entry.endLabel.toLowerCase().includes(normalizedQuery)
+    ))
+  );
+}
+
+function sortRows(rows: ChartRow[], sortKey: ChronicleSortKey): ChartRow[] {
   const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
-  const sorted = [...entries];
+  const sorted = [...rows];
   sorted.sort((a, b) => {
     if (sortKey === "name-asc") return collator.compare(a.fileName, b.fileName) || collator.compare(a.path, b.path);
     if (sortKey === "name-desc") return collator.compare(b.fileName, a.fileName) || collator.compare(b.path, a.path);
 
-    const primary = sortKey === "start-desc" ? b.startValue - a.startValue : a.startValue - b.startValue;
+    const aStart = rowStartValue(a);
+    const bStart = rowStartValue(b);
+    const aEnd = rowEndValue(a);
+    const bEnd = rowEndValue(b);
+    const primary = sortKey === "start-desc" ? bStart - aStart : aStart - bStart;
     if (primary !== 0) return primary;
-    const secondary = sortKey === "start-desc" ? b.endValue - a.endValue : a.endValue - b.endValue;
+    const secondary = sortKey === "start-desc" ? bEnd - aEnd : aEnd - bEnd;
     if (secondary !== 0) return secondary;
     return collator.compare(a.fileName, b.fileName) || collator.compare(a.path, b.path);
   });
   return sorted;
+}
+
+function rowStartValue(row: ChartRow): number {
+  return Math.min(...row.entries.map((entry) => entry.startValue));
+}
+
+function rowEndValue(row: ChartRow): number {
+  return Math.max(...row.entries.map((entry) => entry.endValue));
+}
+
+function sortDateRowEntries(entries: GanttChartEntry[]): GanttChartEntry[] {
+  return [...entries].sort((a, b) => dateKindOrder(a.dateKind) - dateKindOrder(b.dateKind));
+}
+
+function dateKindOrder(kind: GanttChartDateKind | undefined): number {
+  return kind === "actual" ? 1 : 0;
+}
+
+function mergeStatuses(current: string[], next: string[]): string[] {
+  return [...new Set([...current, ...next])];
+}
+
+function statusValuesForEntries(entries: GanttChartEntry[]): string[] {
+  const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
+  return [...new Set(entries.flatMap((entry) => entry.statuses ?? []))]
+    .sort((a, b) => collator.compare(a, b));
+}
+
+function dateFillOffset(): number {
+  return 10;
+}
+
+function dateFillHeight(): number {
+  return 18;
 }
 
 function entryKey(entry: GanttChartEntry): string {
@@ -636,7 +820,7 @@ function buildTicks(
   source: GanttChartSource,
   dateScale: DateScale | null
 ): number[] {
-  if (source === "date") return buildDateTicks(axisStart, axisEnd, dateScale ?? DATE_SCALES[2]);
+  if (source === "date") return buildDateTicks(axisStart, axisEnd, dateGuideUnit(dateScale ?? DATE_SCALES[2]));
 
   const first = Math.floor(axisStart / interval) * interval;
   const ticks: number[] = [];
@@ -649,16 +833,71 @@ function buildTicks(
   return ticks;
 }
 
-function buildDateTicks(axisStart: number, axisEnd: number, scale: DateScale): number[] {
-  const ticks: number[] = [];
-  let cursor = previousDateUnit(axisStart, scale.unit);
+function buildGuideTicks(
+  axisStart: number,
+  axisEnd: number,
+  ticks: number[],
+  interval: number,
+  source: GanttChartSource,
+  dateScale: DateScale | null
+): ChartGuideTick[] {
+  if (source !== "date") {
+    const majorTicks = new Set(ticks);
+    return buildChronicleTicks(axisStart, axisEnd, chronicleGuideInterval(interval))
+      .map((value) => ({
+        isMajor: majorTicks.has(value),
+        value
+      }));
+  }
 
-  while (cursor <= axisEnd) {
-    if (cursor >= axisStart) ticks.push(cursor);
-    cursor = nextDateUnit(cursor, scale.unit);
+  if (!dateScale) return ticks.map((value) => ({ isMajor: false, value }));
+
+  const majorTicks = new Set(buildDateTicks(axisStart, axisEnd, dateMajorGuideUnit(dateScale)));
+  return ticks.map((value) => ({
+    isMajor: majorTicks.has(value),
+    value
+  }));
+}
+
+function buildChronicleTicks(axisStart: number, axisEnd: number, interval: number): number[] {
+  const first = Math.floor(axisStart / interval) * interval;
+  const ticks: number[] = [];
+
+  for (let tick = first; tick <= axisEnd; tick += interval) {
+    if (tick < axisStart) continue;
+    ticks.push(tick);
   }
 
   return ticks;
+}
+
+function chronicleGuideInterval(interval: number): number {
+  const options = SCALE_OPTIONS.chronicle;
+  const index = options.indexOf(interval);
+  return index > 0 ? options[index - 1] : interval;
+}
+
+function buildDateTicks(axisStart: number, axisEnd: number, unit: DateAxisSegmentUnit): number[] {
+  const ticks: number[] = [];
+  let cursor = previousDateUnit(axisStart, unit);
+
+  while (cursor <= axisEnd) {
+    if (cursor >= axisStart) ticks.push(cursor);
+    cursor = nextDateUnit(cursor, unit);
+  }
+
+  return ticks;
+}
+
+function dateGuideUnit(scale: DateScale): DateAxisSegmentUnit {
+  if (scale.unit === "year") return "month";
+  if (scale.unit === "month") return "day";
+  return "day";
+}
+
+function dateMajorGuideUnit(scale: DateScale): DateAxisSegmentUnit {
+  if (scale.unit === "year") return "year";
+  return "month";
 }
 
 function formatRange(entry: GanttChartEntry, source: GanttChartSource, dateScale: DateScale | null): string {
@@ -781,6 +1020,11 @@ function formatDateLabel(value: string, unit: DateScaleUnit): string {
 
 function isGanttChartSource(value: unknown): value is GanttChartSource {
   return value === "chronicle" || value === "date";
+}
+
+function defaultScaleIndex(source: GanttChartSource): number {
+  if (source === "date") return 1;
+  return Math.max(0, SCALE_OPTIONS.chronicle.indexOf(50));
 }
 
 function pointerDelta(clientX: number, startClientX: number, unitWidth: number): number {

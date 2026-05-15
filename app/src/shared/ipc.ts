@@ -112,6 +112,7 @@ export interface GanttChartEntry {
   path: string;
   startLabel: string;
   startValue: number;
+  statuses?: string[];
 }
 
 export interface WorkspaceGanttChart extends GanttChartSettings {

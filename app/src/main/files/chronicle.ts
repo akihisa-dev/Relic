@@ -41,6 +41,7 @@ export async function readWorkspaceChronicle(
       const dateRanges: Array<{ kind: GanttChartDateKind; range: DateRange }> = [];
       const plannedDateRange = extractDateRangeFromData(frontmatter.data, "planned");
       const actualDateRange = extractDateRangeFromData(frontmatter.data, "actual");
+      const statuses = extractStatusValues(frontmatter.data);
 
       if (plannedDateRange) dateRanges.push({ kind: "planned", range: plannedDateRange });
       if (actualDateRange) dateRanges.push({ kind: "actual", range: actualDateRange });
@@ -53,7 +54,8 @@ export async function readWorkspaceChronicle(
           fileName: path.basename(relativePath, ".md"),
           path: relativePath,
           startLabel: dateRange.startDate,
-          startValue: dateToDay(dateRange.startDate)
+          startValue: dateToDay(dateRange.startDate),
+          statuses
         });
       }
     }
@@ -225,6 +227,17 @@ function extractDateRangeFromData(data: Record<string, unknown>, kind: GanttChar
   if (startDate > endDate) return null;
 
   return { endDate, startDate };
+}
+
+function extractStatusValues(data: Record<string, unknown>): string[] {
+  const value = data.status;
+  const rawValues = Array.isArray(value) ? value : typeof value === "string" ? [value] : [];
+  const statuses = rawValues
+    .filter((candidate): candidate is string => typeof candidate === "string")
+    .map((candidate) => candidate.trim())
+    .filter((candidate) => candidate.length > 0);
+
+  return [...new Set(statuses)];
 }
 
 function dateFieldNameForKind(kind: GanttChartDateKind): "actualDate" | "plannedDate" {

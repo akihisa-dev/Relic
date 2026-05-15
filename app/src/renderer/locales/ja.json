@@ -398,5 +398,7 @@
   "chronicle.sortStartAsc": "開始順（昇順）",
   "chronicle.sortStartDesc": "開始順（降順）",
   "chronicle.sortNameAsc": "ファイル名（昇順）",
-  "chronicle.sortNameDesc": "ファイル名（降順）"
+  "chronicle.sortNameDesc": "ファイル名（降順）",
+  "chronicle.status": "status",
+  "chronicle.statusAll": "すべて"
 }

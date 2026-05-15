@@ -398,5 +398,7 @@
   "chronicle.sortStartAsc": "Start (asc)",
   "chronicle.sortStartDesc": "Start (desc)",
   "chronicle.sortNameAsc": "File name (asc)",
-  "chronicle.sortNameDesc": "File name (desc)"
+  "chronicle.sortNameDesc": "File name (desc)",
+  "chronicle.status": "status",
+  "chronicle.statusAll": "All"
 }

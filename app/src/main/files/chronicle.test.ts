@@ -104,6 +104,50 @@ describe("readWorkspaceChronicle", () => {
       }
     ]);
   });
+
+  it("dateチャートに片方だけあるplannedDateまたはactualDateを読む", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-date-chart-single-kind-"));
+    await writeFile(
+      path.join(workspacePath, "planned-only.md"),
+      "---\nstatus: [todo]\nplannedDate: [2026-05-01]\n---\n# A\n",
+      "utf8"
+    );
+    await writeFile(
+      path.join(workspacePath, "actual-only.md"),
+      "---\nstatus: [done]\nactualDate: [2026-05-03]\n---\n# B\n",
+      "utf8"
+    );
+
+    const result = await readWorkspaceChronicle(
+      workspacePath,
+      [
+        { filePaths: [], id: "chronicle", name: "chronicle", source: "chronicle" },
+        { filePaths: [], id: "date", name: "date", source: "date" }
+      ]
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    expect(result.value.find((chart) => chart.source === "date")?.entries).toMatchObject([
+      {
+        dateKind: "actual",
+        endLabel: "2026-05-03",
+        fileName: "actual-only",
+        path: "actual-only.md",
+        startLabel: "2026-05-03",
+        statuses: ["done"]
+      },
+      {
+        dateKind: "planned",
+        endLabel: "2026-05-01",
+        fileName: "planned-only",
+        path: "planned-only.md",
+        startLabel: "2026-05-01",
+        statuses: ["todo"]
+      }
+    ]);
+  });
 });
 
 describe("updateWorkspaceGanttChartEntry", () => {
