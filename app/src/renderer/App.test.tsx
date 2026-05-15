@@ -740,12 +740,8 @@ describe("App", () => {
     Object.defineProperty(pointerDown, "clientX", { value: 0 });
     Object.defineProperty(pointerDown, "pointerId", { value: 1 });
     fill.dispatchEvent(pointerDown);
-    const pointerMove = new Event("pointermove") as PointerEvent;
-    Object.defineProperty(pointerMove, "clientX", { value: 50 });
-    Object.defineProperty(pointerMove, "pointerId", { value: 1 });
-    window.dispatchEvent(pointerMove);
     const pointerUp = new Event("pointerup") as PointerEvent;
-    Object.defineProperty(pointerUp, "clientX", { value: 30 });
+    Object.defineProperty(pointerUp, "clientX", { value: 20 });
     Object.defineProperty(pointerUp, "pointerId", { value: 1 });
     window.dispatchEvent(pointerUp);
 
@@ -760,7 +756,77 @@ describe("App", () => {
     }));
   });
 
-  it("chronicleチャートのバー編集は選択中スケール単位でスナップする", async () => {
+  it("chronicleチャートのバー編集は低速ドラッグで1年単位の細かな変更にする", async () => {
+    const updateGanttChartEntry = vi.fn().mockResolvedValue({ ok: true, value: [] });
+
+    window.relic = makeRelicApi({
+      getWorkspaceChronicle: vi.fn().mockResolvedValue({
+        ok: true,
+        value: [{
+          entries: [{
+            endLabel: "1333",
+            endValue: 1332,
+            fileName: "鎌倉時代",
+            path: "history/kamakura.md",
+            startLabel: "1185",
+            startValue: 1184
+          }],
+          filePaths: ["history/kamakura.md"],
+          id: "chronicle",
+          name: "年表",
+          source: "chronicle"
+        }]
+      }),
+      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace }),
+      readMarkdownFile: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          content: "---\nchronicle: [1210, 1358]\n---\n# 鎌倉時代",
+          name: "鎌倉時代",
+          path: "history/kamakura.md"
+        }
+      }),
+      updateGanttChartEntry
+    });
+
+    const { container } = await renderApp();
+
+    await screen.findByText("Notes");
+
+    fireEvent.click(screen.getByRole("button", { name: "チャート" }));
+    fireEvent.click(container.querySelector(".chronicle-source-button")!);
+    fireEvent.click(screen.getByRole("button", { name: "スケールを細かくする" }));
+    expect(container.querySelector(".chronicle-scale-value")).toHaveTextContent("25");
+
+    const fill = container.querySelector(".chronicle-fill") as HTMLElement;
+    const pointerDown = new Event("pointerdown", { bubbles: true }) as PointerEvent;
+    Object.defineProperty(pointerDown, "button", { value: 0 });
+    Object.defineProperty(pointerDown, "clientX", { value: 0 });
+    Object.defineProperty(pointerDown, "pointerId", { value: 1 });
+    fill.dispatchEvent(pointerDown);
+    for (let clientX = 1; clientX <= 72; clientX += 1) {
+      const pointerMove = new Event("pointermove") as PointerEvent;
+      Object.defineProperty(pointerMove, "clientX", { value: clientX });
+      Object.defineProperty(pointerMove, "pointerId", { value: 1 });
+      window.dispatchEvent(pointerMove);
+    }
+    const pointerUp = new Event("pointerup") as PointerEvent;
+    Object.defineProperty(pointerUp, "clientX", { value: 72 });
+    Object.defineProperty(pointerUp, "pointerId", { value: 1 });
+    window.dispatchEvent(pointerUp);
+
+    await waitFor(() => expect(updateGanttChartEntry).toHaveBeenCalledWith({
+      endValue: 1348,
+      kind: "move",
+      originalEndValue: 1332,
+      originalStartValue: 1184,
+      path: "history/kamakura.md",
+      source: "chronicle",
+      startValue: 1200
+    }));
+  });
+
+  it("chronicleチャートのバー編集は高速ドラッグで大きく移動する", async () => {
     const updateGanttChartEntry = vi.fn().mockResolvedValue({ ok: true, value: [] });
 
     window.relic = makeRelicApi({
@@ -814,13 +880,13 @@ describe("App", () => {
     window.dispatchEvent(pointerUp);
 
     await waitFor(() => expect(updateGanttChartEntry).toHaveBeenCalledWith({
-      endValue: 1357,
+      endValue: 1366,
       kind: "move",
       originalEndValue: 1332,
       originalStartValue: 1184,
       path: "history/kamakura.md",
       source: "chronicle",
-      startValue: 1209
+      startValue: 1218
     }));
   });
 
