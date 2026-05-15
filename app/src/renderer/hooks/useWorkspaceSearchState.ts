@@ -6,6 +6,7 @@ import type {
   WorkspaceSearchResult,
   WorkspaceState
 } from "../../shared/ipc";
+import { fixedStatusValues } from "../../shared/status";
 
 interface UseWorkspaceSearchStateInput {
   setWorkspaceError: (message: string | null) => void;
@@ -27,6 +28,7 @@ export function useWorkspaceSearchState({
   const [workspaceFrontmatterCandidates, setWorkspaceFrontmatterCandidates] = useState<Record<string, string[]>>({});
   const frontmatterCandidates = useMemo(() => {
     const result: Record<string, string[]> = { ...workspaceFrontmatterCandidates };
+    result.status = [...fixedStatusValues];
 
     for (const field of userDefinedFields) {
       result[field.name] = mergeCandidates(result[field.name] ?? [], field.choices ?? []);

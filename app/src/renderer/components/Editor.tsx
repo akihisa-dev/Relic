@@ -11,6 +11,7 @@ import type { ReactElement } from "react";
 import { createPortal } from "react-dom";
 
 import type { EditorSettings, UserDefinedField } from "../../shared/ipc";
+import { fixedStatusValues } from "../../shared/status";
 import { useT } from "../i18n";
 
 interface EditorProps {
@@ -1480,12 +1481,14 @@ class FrontmatterPropertiesWidget extends WidgetType {
 
   private fieldFor(key: string): UserDefinedField | undefined {
     if (key === "aliases" || key === "tags") return { name: key, type: "multi-select" };
+    if (key === "status") return { name: key, type: "multi-select", choices: [...fixedStatusValues] };
     if (isFixedDateRangeField(key)) return { name: key, type: "date" };
     return this.userDefinedFields.find((field) => field.name === key);
   }
 
   private choicesFor(key: string, field?: UserDefinedField): string[] {
     if (key === "aliases") return [];
+    if (key === "status") return [...fixedStatusValues];
     return Array.from(new Set([...(field?.choices ?? []), ...(this.candidates[key] ?? [])])).sort((a, b) => a.localeCompare(b));
   }
 
@@ -2584,7 +2587,7 @@ export function Editor({
     view.focus();
   };
   const frontmatterDialogCandidates = frontmatterDialog?.type === "array-value" && frontmatterDialog.key !== "aliases"
-    ? frontmatterCandidates[frontmatterDialog.key] ?? []
+    ? frontmatterDialogCandidatesFor(frontmatterDialog.key, frontmatterCandidates)
     : [];
 
   useEffect(() => {
@@ -2782,4 +2785,9 @@ export function Editor({
       ) : null}
     </>
   );
+}
+
+function frontmatterDialogCandidatesFor(key: string, candidates: Record<string, string[]>): string[] {
+  if (key === "status") return [...fixedStatusValues];
+  return candidates[key] ?? [];
 }

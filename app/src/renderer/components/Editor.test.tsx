@@ -757,7 +757,7 @@ describe("Editor", () => {
     const viewRef = createRef<EditorView | null>();
     const { container } = render(
       <Editor
-        content={"---\n# 管理用メモ\nstatus: draft # 執筆状態\n\n# 公開日\npublished: false\n---\n# 本文"}
+        content={"---\n# 管理用メモ\nphase: draft # 執筆状態\n\n# 公開日\npublished: false\n---\n# 本文"}
         onChange={vi.fn()}
         settings={settings}
         userDefinedFields={[{ name: "published", type: "boolean" }]}
@@ -772,7 +772,7 @@ describe("Editor", () => {
     expect(viewRef.current?.state.doc.toString()).toContain([
       "---",
       "# 管理用メモ",
-      "status: review # 執筆状態",
+      "phase: review # 執筆状態",
       "",
       "# 公開日",
       "published: false",
@@ -802,7 +802,7 @@ describe("Editor", () => {
     const viewRef = createRef<EditorView | null>();
     const { container } = render(
       <Editor
-        content={"---\nstatus: draft\nmeta:\n  source: web\n  rating: 5\n---\n# 本文"}
+        content={"---\nphase: draft\nmeta:\n  source: web\n  rating: 5\n---\n# 本文"}
         onChange={vi.fn()}
         settings={settings}
         viewRef={viewRef}
@@ -821,7 +821,7 @@ describe("Editor", () => {
     const input = container.querySelector(".cm-frontmatter-input") as HTMLInputElement;
     fireEvent.change(input, { target: { value: "review" } });
 
-    expect(viewRef.current?.state.doc.toString()).toContain("status: review");
+    expect(viewRef.current?.state.doc.toString()).toContain("phase: review");
     expect(viewRef.current?.state.doc.toString()).toContain("meta:\n  source: web\n  rating: 6");
   });
 
@@ -849,12 +849,12 @@ describe("Editor", () => {
     const onChange = vi.fn();
     const { container } = render(
       <Editor
-        content={"---\nstatus: draft\nupdated: 2026-03-29\npublished: false\n---\n# 本文"}
-        frontmatterCandidates={{ status: ["review"] }}
+        content={"---\ncategory: draft\nupdated: 2026-03-29\npublished: false\n---\n# 本文"}
+        frontmatterCandidates={{ category: ["review"] }}
         onChange={onChange}
         settings={settings}
         userDefinedFields={[
-          { choices: ["draft", "published"], name: "status", type: "select" },
+          { choices: ["draft", "published"], name: "category", type: "select" },
           { name: "updated", type: "date" },
           { name: "published", type: "boolean" }
         ]}
@@ -869,7 +869,7 @@ describe("Editor", () => {
       .map((option) => (option as HTMLOptionElement).value);
     expect(statusOptions).toEqual(["draft", "published", "review"]);
     fireEvent.change(statusInput, { target: { value: "review" } });
-    expect(viewRef.current?.state.doc.toString()).toContain("status: [\"review\"]");
+    expect(viewRef.current?.state.doc.toString()).toContain("category: [\"review\"]");
 
     const dateInput = Array.from(container.querySelectorAll(".cm-frontmatter-input"))
       .find((input) => (input as HTMLInputElement).type === "date") as HTMLInputElement;
@@ -880,6 +880,25 @@ describe("Editor", () => {
     const checkbox = container.querySelector(".cm-frontmatter-checkbox") as HTMLInputElement;
     fireEvent.click(checkbox);
     expect(viewRef.current?.state.doc.toString()).toContain("published: [true]");
+  });
+
+  it("statusプロパティは固定候補を入力補助に使う", async () => {
+    const { container } = render(
+      <Editor
+        content={"---\nstatus: [未着手]\n---\n# 本文"}
+        frontmatterCandidates={{ status: ["draft"] }}
+        onChange={vi.fn()}
+        settings={settings}
+      />
+    );
+
+    await waitFor(() => expect(container.querySelector(".cm-frontmatter-properties")).not.toBeNull());
+    fireEvent.click(container.querySelector(".cm-frontmatter-pill-add") as HTMLButtonElement);
+    await waitFor(() => expect(container.querySelector(".frontmatter-add-dialog-input")).not.toBeNull());
+
+    const candidates = Array.from(container.querySelectorAll("#frontmatter-add-dialog-candidates option"))
+      .map((option) => (option as HTMLOptionElement).value);
+    expect(candidates).toEqual(["未着手", "進行中", "完了", "中断", "中止"]);
   });
 
   it("日時・時刻・URL入力タイプと固定tagsをフォームに反映する", async () => {

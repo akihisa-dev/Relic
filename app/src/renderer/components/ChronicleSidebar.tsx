@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, PointerEvent, ReactElement } from "react";
 
 import type { GanttChartDateKind, GanttChartEntry, GanttChartEntryEditKind, GanttChartSource, UpdateGanttChartEntryInput, WorkspaceGanttChart } from "../../shared/ipc";
+import { fixedStatusValues } from "../../shared/status";
 import { useT, type Translator } from "../i18n";
 
 interface GanttChartViewProps {
@@ -89,7 +90,7 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdate
   const { axisEnd, axisStart } = useStableTimelineBounds(computedBounds, boundsKey);
   const axisSpan = Math.max(1, axisEnd - axisStart + 1);
   const tickWidth = activeSource === "date" ? DATE_TICK_WIDTH : TICK_WIDTH;
-  const unitWidth = activeSource === "date" ? dateUnitWidth(dateScale) : tickWidth / tickInterval;
+  const unitWidth = activeSource === "date" ? dateUnitWidth(dateScale) : chronicleUnitWidth(tickInterval, tickWidth);
   const timelineWidth = Math.max(720, axisSpan * unitWidth);
   const ticks = useMemo(
     () => buildTicks(axisStart, axisEnd, tickInterval, activeSource, dateScale),
@@ -148,6 +149,9 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdate
     const originalEndValue = entry.endValue;
     const startClientX = event.clientX;
     const target = event.currentTarget;
+    const snapUnit = activeSource === "chronicle" ? tickInterval : 1;
+    const dragSteps = createStablePointerDelta(startClientX, unitWidth * snapUnit);
+    let currentPreviewRange = { endValue: originalEndValue, startValue: originalStartValue };
 
     if (target.setPointerCapture) {
       target.setPointerCapture(event.pointerId);
@@ -175,9 +179,17 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdate
     };
 
     const move = (moveEvent: globalThis.PointerEvent): void => {
-      const delta = pointerDelta(moveEvent.clientX, startClientX, unitWidth);
+      const delta = dragSteps(moveEvent.clientX) * snapUnit;
       const nextRange = nextRangeForDelta(delta);
 
+      if (
+        currentPreviewRange.endValue === nextRange.endValue &&
+        currentPreviewRange.startValue === nextRange.startValue
+      ) {
+        return;
+      }
+
+      currentPreviewRange = nextRange;
       setDragPreview({
         path: entry.path,
         source: activeSource,
@@ -187,7 +199,7 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdate
     };
 
     const stop = (stopEvent: globalThis.PointerEvent): void => {
-      const delta = pointerDelta(stopEvent.clientX, startClientX, unitWidth);
+      const delta = dragSteps(stopEvent.clientX) * snapUnit;
       const nextRange = nextRangeForDelta(delta);
 
       window.removeEventListener("pointermove", move);
@@ -417,10 +429,19 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdate
                       ? (width - labelWidth) / 2
                       : Math.max(7, Math.min(maxLabelLeft, scrollLeft - left + 7));
                     const dateKind = entry.dateKind ?? "planned";
+                    const statusLabel = activeSource === "date" && dateKind === "actual"
+                      ? statusLabelForEntry(entry)
+                      : "";
+                    const statusLabelWidth = statusLabel ? labelWidthForText(statusLabel) : 0;
+                    const visibleTimelineStart = Math.max(0, scrollLeft - NAME_COLUMN_WIDTH);
+                    const statusLabelLeft = Math.max(
+                      5,
+                      Math.min(Math.max(5, width - statusLabelWidth - 5), visibleTimelineStart - left + 5)
+                    );
 
                     return (
                       <button
-                        aria-label={`${entry.fileName} ${formatDateKindLabel(entry.dateKind, t)} ${rangeLabel}`}
+                        aria-label={`${entry.fileName} ${formatDateKindLabel(entry.dateKind, t)} ${rangeLabel}${statusLabel ? ` ${statusLabel}` : ""}`}
                         className={`chronicle-fill${isSingleValue ? " chronicle-fill--single" : ""}${activeSource === "date" ? ` chronicle-fill--date chronicle-fill--${dateKind}` : ""}${isPreviewForEntry(entry, dragPreview, activeSource) ? " chronicle-fill--dragging" : ""}`}
                         data-date-kind={entry.dateKind}
                         key={entryKey(entry)}
@@ -441,6 +462,11 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdate
                           role="separator"
                         />
                         <span className="chronicle-fill-label" style={{ left: labelLeft, width: labelWidth }}>{rangeLabel}</span>
+                        {statusLabel ? (
+                          <span className="chronicle-fill-status" style={{ left: statusLabelLeft, maxWidth: Math.max(statusLabelWidth, width - 10) }}>
+                            {statusLabel}
+                          </span>
+                        ) : null}
                         <span
                           aria-label={t("chronicle.resizeEnd")}
                           className="chronicle-fill-resize chronicle-fill-resize--end"
@@ -674,9 +700,14 @@ function mergeStatuses(current: string[], next: string[]): string[] {
 }
 
 function statusValuesForEntries(entries: GanttChartEntry[]): string[] {
-  const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
-  return [...new Set(entries.flatMap((entry) => entry.statuses ?? []))]
-    .sort((a, b) => collator.compare(a, b));
+  void entries;
+  return [...fixedStatusValues];
+}
+
+function statusLabelForEntry(entry: GanttChartEntry): string {
+  return (entry.statuses ?? [])
+    .filter((status) => fixedStatusValues.includes(status as typeof fixedStatusValues[number]))
+    .join(" / ");
 }
 
 function dateFillOffset(): number {
@@ -807,9 +838,13 @@ function timelineBounds(
     };
   }
 
+  const boundsInterval = chronicleAxisTickInterval(tickInterval);
+  const startYear = Math.floor(axisToYear(paddedStart) / boundsInterval) * boundsInterval - boundsInterval;
+  const endYear = Math.ceil(axisToYear(paddedEnd) / boundsInterval) * boundsInterval + boundsInterval;
+
   return {
-    axisEnd: Math.ceil(paddedEnd / tickInterval) * tickInterval + tickInterval,
-    axisStart: Math.floor(paddedStart / tickInterval) * tickInterval - tickInterval
+    axisEnd: yearToAxis(endYear === 0 ? boundsInterval : endYear),
+    axisStart: yearToAxis(startYear === 0 ? -boundsInterval : startYear)
   };
 }
 
@@ -822,15 +857,7 @@ function buildTicks(
 ): number[] {
   if (source === "date") return buildDateTicks(axisStart, axisEnd, dateGuideUnit(dateScale ?? DATE_SCALES[2]));
 
-  const first = Math.floor(axisStart / interval) * interval;
-  const ticks: number[] = [];
-
-  for (let tick = first; tick <= axisEnd; tick += interval) {
-    if (tick < axisStart) continue;
-    ticks.push(tick);
-  }
-
-  return ticks;
+  return buildChronicleTicks(axisStart, axisEnd, chronicleAxisTickInterval(interval));
 }
 
 function buildGuideTicks(
@@ -860,21 +887,31 @@ function buildGuideTicks(
 }
 
 function buildChronicleTicks(axisStart: number, axisEnd: number, interval: number): number[] {
-  const first = Math.floor(axisStart / interval) * interval;
+  const first = firstChronicleTickYear(axisToYear(axisStart), interval);
+  const endYear = axisToYear(axisEnd);
   const ticks: number[] = [];
 
-  for (let tick = first; tick <= axisEnd; tick += interval) {
-    if (tick < axisStart) continue;
+  for (let year = first; year <= endYear; year += interval) {
+    if (year === 0) continue;
+    const tick = yearToAxis(year);
+    if (tick < axisStart || tick > axisEnd) continue;
     ticks.push(tick);
   }
 
   return ticks;
 }
 
+function firstChronicleTickYear(startYear: number, interval: number): number {
+  if (interval <= 1) return startYear;
+  return Math.ceil(startYear / interval) * interval;
+}
+
+function chronicleAxisTickInterval(interval: number): number {
+  return interval === 1 ? 10 : interval;
+}
+
 function chronicleGuideInterval(interval: number): number {
-  const options = SCALE_OPTIONS.chronicle;
-  const index = options.indexOf(interval);
-  return index > 0 ? options[index - 1] : interval;
+  return interval;
 }
 
 function buildDateTicks(axisStart: number, axisEnd: number, unit: DateAxisSegmentUnit): number[] {
@@ -914,8 +951,17 @@ function formatRange(entry: GanttChartEntry, source: GanttChartSource, dateScale
 }
 
 function formatAxisValue(value: number, source: GanttChartSource): string {
-  const year = value < 0 ? value : value + 1;
+  const year = axisToYear(value);
   return year < 0 ? `−${Math.abs(year)}` : String(year);
+}
+
+function axisToYear(value: number): number {
+  return value < 0 ? value : value + 1;
+}
+
+function yearToAxis(year: number): number {
+  if (year === 0) return 0;
+  return year < 0 ? year : year - 1;
 }
 
 function formatScaleValue(value: number, source: GanttChartSource): string {
@@ -998,6 +1044,11 @@ function dateUnitWidth(scale: DateScale | null): number {
   return (DATE_TICK_WIDTH * 3) / 30;
 }
 
+function chronicleUnitWidth(interval: number, tickWidth: number): number {
+  if (interval === 1) return tickWidth / 2;
+  return tickWidth / interval;
+}
+
 function dateAxisHeightForScale(scale: DateScale | null): number {
   return scale?.unit === "day" ? 69 : 46;
 }
@@ -1027,7 +1078,20 @@ function defaultScaleIndex(source: GanttChartSource): number {
   return Math.max(0, SCALE_OPTIONS.chronicle.indexOf(50));
 }
 
-function pointerDelta(clientX: number, startClientX: number, unitWidth: number): number {
-  if (!Number.isFinite(clientX) || !Number.isFinite(startClientX) || unitWidth <= 0) return 0;
-  return Math.round((clientX - startClientX) / unitWidth);
+function createStablePointerDelta(startClientX: number, unitWidth: number): (clientX: number) => number {
+  let delta = 0;
+
+  return (clientX: number): number => {
+    if (!Number.isFinite(clientX) || !Number.isFinite(startClientX) || unitWidth <= 0) return delta;
+
+    const rawDelta = (clientX - startClientX) / unitWidth;
+
+    if (rawDelta >= delta + 0.65) {
+      delta = Math.floor(rawDelta + 0.35);
+    } else if (rawDelta <= delta - 0.65) {
+      delta = Math.ceil(rawDelta - 0.35);
+    }
+
+    return delta;
+  };
 }
