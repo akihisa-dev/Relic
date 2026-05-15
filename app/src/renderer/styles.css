@@ -5396,6 +5396,22 @@ button:not(:disabled):active {
   z-index: 1;
 }
 
+.chronicle-fill-status {
+  box-sizing: border-box;
+  color: rgb(96, 42, 0);
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 18px;
+  overflow: hidden;
+  padding: 0 5px;
+  pointer-events: none;
+  position: absolute;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  z-index: 1;
+}
+
 .chronicle-fill-resize {
   bottom: 4px;
   cursor: ew-resize;
