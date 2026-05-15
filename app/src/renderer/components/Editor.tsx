@@ -70,7 +70,7 @@ type FrontmatterDialogRequest =
 
 const topLevelYamlFieldPattern = /^([^#\s][^:]*):(?:\s|$)/;
 const frontmatterFieldNamePattern = /^[^#\s:][^\r\n:]*$/;
-const fixedFrontmatterFieldNames = ["aliases", "tags", "chronicle", "plannedDate", "actualDate"];
+const fixedFrontmatterFieldNames = ["aliases", "tags", "status", "chronicle", "plannedDate", "actualDate"];
 const editorEditableCompartment = new Compartment();
 const frontmatterDialogRequestEvent = "relic-frontmatter-dialog-request";
 const frontmatterCollapsedEffect = StateEffect.define<boolean>();
