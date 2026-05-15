@@ -5430,12 +5430,11 @@ button:not(:disabled):active {
   font-size: 11px;
   font-weight: 700;
   line-height: 16px;
-  overflow: hidden;
+  overflow: visible;
   padding: 0 6px;
   pointer-events: none;
   position: absolute;
   top: 0;
-  text-overflow: ellipsis;
   white-space: nowrap;
   z-index: 1;
 }

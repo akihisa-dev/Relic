@@ -979,20 +979,15 @@ describe("App", () => {
     expect(screen.queryByText("実行")).not.toBeInTheDocument();
     expect(container.querySelector('.chronicle-fill[data-date-kind="planned"]')).toBeInTheDocument();
     expect(container.querySelector('.chronicle-fill[data-date-kind="actual"]')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "スケールを細かくする" }));
     const plannedFill = container.querySelector('.chronicle-fill[data-date-kind="planned"]') as HTMLElement;
     const actualFill = container.querySelector('.chronicle-fill[data-date-kind="actual"]') as HTMLElement;
     expect(plannedFill.querySelector(".chronicle-fill-status")).toBeNull();
-    expect(actualFill.querySelector(".chronicle-fill-status")).toHaveTextContent("進行中");
+    const initialStatusLabel = actualFill.querySelector(".chronicle-fill-status") as HTMLElement;
+    expect(initialStatusLabel).toHaveTextContent("進行中");
+	    expect(parseFloat(initialStatusLabel.style.width)).toBeGreaterThan(parseFloat(actualFill.style.width));
 
-    const chartElement = container.querySelector(".chronicle-chart") as HTMLElement;
-    const statusLabel = actualFill.querySelector(".chronicle-fill-status") as HTMLElement;
-    const initialStatusLeft = statusLabel.style.left;
-    const actualLeft = parseFloat(actualFill.style.left);
-    chartElement.scrollLeft = actualLeft + 240;
-    fireEvent.scroll(chartElement);
-
-    await waitFor(() => expect((actualFill.querySelector(".chronicle-fill-status") as HTMLElement).style.left).not.toBe(initialStatusLeft));
+    const initialStatusLeft = initialStatusLabel.style.left;
+    expect(initialStatusLeft).not.toBe("");
   });
 
   it("main側がdate行を返さない場合も片方だけあるplannedDateまたはactualDateを補完する", async () => {

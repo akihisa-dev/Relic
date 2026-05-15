@@ -440,10 +440,11 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdate
                       ? statusLabelForEntry(entry)
                       : "";
                     const statusLabelWidth = statusLabel ? labelWidthForText(statusLabel) : 0;
+                    const statusBadgeWidth = statusLabel ? statusLabelWidth + 2 : 0;
                     const visibleTimelineStart = Math.max(0, scrollLeft);
                     const statusLabelLeft = Math.max(
                       5,
-                      Math.min(Math.max(5, width - statusLabelWidth - 5), visibleTimelineStart - left + 5)
+                      Math.min(Math.max(5, width - statusBadgeWidth - 5), visibleTimelineStart - left + 5)
                     );
 
                     return (
@@ -470,7 +471,7 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdate
                         />
                         <span className="chronicle-fill-label" style={{ left: labelLeft, width: labelWidth }}>{rangeLabel}</span>
                         {statusLabel ? (
-                          <span className="chronicle-fill-status" style={{ left: statusLabelLeft, maxWidth: Math.max(statusLabelWidth, width - 10) }}>
+                          <span className="chronicle-fill-status" style={{ left: statusLabelLeft, width: statusBadgeWidth }}>
                             {statusLabel}
                           </span>
                         ) : null}
