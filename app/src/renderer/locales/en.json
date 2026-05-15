@@ -390,5 +390,10 @@
   "toolbar.table": "Table",
   "toolbar.tableColumn": "Column {{index}}",
   "toolbar.tableShort": "Table",
-  "toolbar.underline": "Underline"
+  "toolbar.underline": "Underline",
+  "chronicle.sort": "Sort",
+  "chronicle.sortStartAsc": "Start (asc)",
+  "chronicle.sortStartDesc": "Start (desc)",
+  "chronicle.sortNameAsc": "File name (asc)",
+  "chronicle.sortNameDesc": "File name (desc)"
 }
