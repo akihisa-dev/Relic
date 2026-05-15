@@ -4474,7 +4474,7 @@ button:not(:disabled):active {
   border-bottom: 1px solid var(--border);
   display: grid;
   gap: 10px;
-  grid-template-columns: auto minmax(160px, 240px) auto;
+  grid-template-columns: auto minmax(160px, 220px) minmax(160px, 220px) auto;
   justify-content: start;
   min-height: 40px;
   padding: 5px 12px;
@@ -5711,4 +5711,22 @@ button:not(:disabled):active {
   .search-result-button {
     transition-duration: 1ms;
   }
+}
+
+
+.chronicle-sort select {
+  background: var(--bg);
+  border: 1px solid var(--border-soft);
+  border-radius: 6px;
+  box-sizing: border-box;
+  color: var(--text);
+  height: 26px;
+  min-width: 0;
+  padding: 0 8px;
+  width: 100%;
+}
+
+.chronicle-sort select:focus {
+  border-color: var(--accent);
+  outline: none;
 }

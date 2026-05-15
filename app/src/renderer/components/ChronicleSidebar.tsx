@@ -45,11 +45,14 @@ interface DragPreview {
   startValue: number;
 }
 
+type ChronicleSortKey = "start-asc" | "start-desc" | "name-asc" | "name-desc";
+
 export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdateEntry }: GanttChartViewProps): ReactElement {
   const t = useT();
   const availableCharts = useMemo(() => chartsForView(chart, charts), [chart, charts]);
   const [selectedChartId, setSelectedChartId] = useState(availableCharts[0]?.id ?? "chronicle");
   const [query, setQuery] = useState("");
+  const [sortKey, setSortKey] = useState<ChronicleSortKey>("start-asc");
   const [scaleIndex, setScaleIndex] = useState(1);
   const [scrollLeft, setScrollLeft] = useState(0);
   const [dragPreview, setDragPreview] = useState<DragPreview | null>(null);
@@ -60,7 +63,10 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdate
   const scaleOptions = SCALE_OPTIONS[activeSource];
   const tickInterval = scaleOptions[Math.min(scaleIndex, scaleOptions.length - 1)] ?? scaleOptions[0] ?? 100;
   const dateScale = activeSource === "date" ? DATE_SCALES[tickInterval] ?? DATE_SCALES[2] : null;
-  const entries = useMemo(() => filterEntries(visibleEntries(activeChart), query), [activeChart, query]);
+  const entries = useMemo(
+    () => sortEntries(filterEntries(visibleEntries(activeChart), query), sortKey),
+    [activeChart, query, sortKey]
+  );
   const computedBounds = timelineBounds(entries, tickInterval, activeSource, dateScale);
   const boundsKey = `${activeChart?.id ?? "none"}:${activeSource}:${tickInterval}:${query}`;
   const { axisEnd, axisStart } = useStableTimelineBounds(computedBounds, boundsKey);
@@ -229,6 +235,15 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdate
             type="search"
             value={query}
           />
+        </label>
+        <label className="chronicle-search chronicle-sort">
+          <span>{t("chronicle.sort")}</span>
+          <select onChange={(event) => setSortKey(event.target.value as ChronicleSortKey)} value={sortKey}>
+            <option value="start-asc">{t("chronicle.sortStartAsc")}</option>
+            <option value="start-desc">{t("chronicle.sortStartDesc")}</option>
+            <option value="name-asc">{t("chronicle.sortNameAsc")}</option>
+            <option value="name-desc">{t("chronicle.sortNameDesc")}</option>
+          </select>
         </label>
         <div className="chronicle-scale" aria-label={t("chronicle.scale")}>
           <button
@@ -470,6 +485,22 @@ function filterEntries(entries: GanttChartEntry[], query: string): GanttChartEnt
     entry.startLabel.toLowerCase().includes(normalizedQuery) ||
     entry.endLabel.toLowerCase().includes(normalizedQuery)
   ));
+}
+
+function sortEntries(entries: GanttChartEntry[], sortKey: ChronicleSortKey): GanttChartEntry[] {
+  const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
+  const sorted = [...entries];
+  sorted.sort((a, b) => {
+    if (sortKey === "name-asc") return collator.compare(a.fileName, b.fileName) || collator.compare(a.path, b.path);
+    if (sortKey === "name-desc") return collator.compare(b.fileName, a.fileName) || collator.compare(b.path, a.path);
+
+    const primary = sortKey === "start-desc" ? b.startValue - a.startValue : a.startValue - b.startValue;
+    if (primary !== 0) return primary;
+    const secondary = sortKey === "start-desc" ? b.endValue - a.endValue : a.endValue - b.endValue;
+    if (secondary !== 0) return secondary;
+    return collator.compare(a.fileName, b.fileName) || collator.compare(a.path, b.path);
+  });
+  return sorted;
 }
 
 function entryKey(entry: GanttChartEntry): string {
