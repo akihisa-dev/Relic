@@ -390,5 +390,10 @@
   "toolbar.table": "表",
   "toolbar.tableColumn": "列{{index}}",
   "toolbar.tableShort": "表",
-  "toolbar.underline": "下線"
+  "toolbar.underline": "下線",
+  "chronicle.sort": "並び替え",
+  "chronicle.sortStartAsc": "開始順（昇順）",
+  "chronicle.sortStartDesc": "開始順（降順）",
+  "chronicle.sortNameAsc": "ファイル名（昇順）",
+  "chronicle.sortNameDesc": "ファイル名（降順）"
 }
