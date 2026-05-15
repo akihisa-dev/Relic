@@ -2035,15 +2035,16 @@ async function readDateChartEntriesFromFiles(fileTree: WorkspaceTreeNode[]): Pro
 
     const plannedRange = readChartDateRange(frontmatter.yaml, "plannedDate") ?? readChartDateRange(frontmatter.yaml, "date");
     const actualRange = readChartDateRange(frontmatter.yaml, "actualDate");
+    const statuses = readYamlArrayField(frontmatter.yaml, "status");
     const fileName = file.value.name || filePath.split("/").at(-1)?.replace(/\.md$/, "") || filePath;
     const result: GanttChartEntry[] = [];
 
     if (plannedRange) {
-      result.push(dateRangeToEntry(filePath, fileName, "planned", plannedRange));
+      result.push(dateRangeToEntry(filePath, fileName, "planned", plannedRange, statuses));
     }
 
     if (actualRange) {
-      result.push(dateRangeToEntry(filePath, fileName, "actual", actualRange));
+      result.push(dateRangeToEntry(filePath, fileName, "actual", actualRange, statuses));
     }
 
     return result;
@@ -2064,7 +2065,8 @@ function dateRangeToEntry(
   filePath: string,
   fileName: string,
   dateKind: "actual" | "planned",
-  range: { endDate: string; startDate: string }
+  range: { endDate: string; startDate: string },
+  statuses: string[] = []
 ): GanttChartEntry {
   return {
     dateKind,
@@ -2073,7 +2075,8 @@ function dateRangeToEntry(
     fileName,
     path: filePath,
     startLabel: range.startDate,
-    startValue: chartDateToDay(range.startDate)
+    startValue: chartDateToDay(range.startDate),
+    statuses
   };
 }
 

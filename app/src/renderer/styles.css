@@ -5102,12 +5102,17 @@ button:not(:disabled):active {
 .chronicle-chart {
   border: 1px solid var(--border);
   border-radius: 7px;
+  cursor: grab;
   height: 100%;
   min-height: 0;
   min-width: 0;
   overflow-x: auto;
   overflow-y: hidden;
   position: relative;
+}
+
+.chronicle-chart:active {
+  cursor: grabbing;
 }
 
 .chronicle-grid {
@@ -5120,7 +5125,7 @@ button:not(:disabled):active {
   left: 0;
   position: sticky;
   top: 0;
-  z-index: 4;
+  z-index: 8;
 }
 
 .chronicle-name-header {
@@ -5133,6 +5138,7 @@ button:not(:disabled):active {
   left: 0;
   position: absolute;
   top: 0;
+  z-index: 1;
 }
 
 .chronicle-axis {
@@ -5197,7 +5203,7 @@ button:not(:disabled):active {
 
 .chronicle-file-name-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 48px;
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .chronicle-file-name-row--empty {
@@ -5278,11 +5284,15 @@ button:not(:disabled):active {
 }
 
 .chronicle-guide-line {
-  background: var(--border-soft);
+  background: rgba(28, 28, 28, 0.07);
   bottom: 0;
   position: absolute;
   top: 0;
   width: 1px;
+}
+
+.chronicle-guide-line--major {
+  background: rgba(28, 28, 28, 0.16);
 }
 
 .chronicle-guide-row-line {
@@ -5291,6 +5301,15 @@ button:not(:disabled):active {
   left: 0;
   position: absolute;
   right: 0;
+}
+
+.chronicle-today-line {
+  background: rgba(186, 26, 26, 0.72);
+  bottom: 0;
+  position: absolute;
+  top: 0;
+  width: 2px;
+  z-index: 4;
 }
 
 .chronicle-fill {
@@ -5327,29 +5346,45 @@ button:not(:disabled):active {
 }
 
 .chronicle-fill--planned {
-  background: rgba(0, 124, 175, 0.18);
+  background: rgba(0, 124, 175, 0.24);
 }
 
 .chronicle-fill--planned:hover {
-  background: rgba(0, 124, 175, 0.26);
+  background: rgba(0, 124, 175, 0.32);
 }
 
 .chronicle-fill--planned:active,
 .chronicle-fill--planned.chronicle-fill--dragging {
-  background: rgba(0, 124, 175, 0.32);
+  background: rgba(0, 124, 175, 0.38);
 }
 
 .chronicle-fill--actual {
-  background: rgba(224, 108, 0, 0.2);
+  background: rgba(224, 108, 0, 0.34);
+}
+
+.chronicle-fill--date {
+  border-radius: 2px;
+}
+
+.chronicle-fill--date .chronicle-fill-label {
+  display: none;
+}
+
+.chronicle-fill--date.chronicle-fill--planned {
+  z-index: 3;
+}
+
+.chronicle-fill--date.chronicle-fill--actual {
+  z-index: 4;
 }
 
 .chronicle-fill--actual:hover {
-  background: rgba(224, 108, 0, 0.28);
+  background: rgba(224, 108, 0, 0.42);
 }
 
 .chronicle-fill--actual:active,
 .chronicle-fill--actual.chronicle-fill--dragging {
-  background: rgba(224, 108, 0, 0.34);
+  background: rgba(224, 108, 0, 0.5);
 }
 
 .chronicle-fill-label {
