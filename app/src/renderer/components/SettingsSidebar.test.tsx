@@ -103,7 +103,7 @@ describe("FrontmatterSidebar", () => {
     expect(screen.getByText("source: [https://example.com]")).toBeInTheDocument();
   });
 
-  it("aliasesとtagsとchronicleと計画/実行dateを固定プロパティとして表示し、カスタムプロパティには追加しない", () => {
+  it("aliasesとtagsとstatusとchronicleと計画/実行dateを固定プロパティとして表示し、カスタムプロパティには追加しない", () => {
     const onUserDefinedFieldsSave = vi.fn();
 
     renderFrontmatterSidebar({ onUserDefinedFieldsSave });
@@ -112,6 +112,7 @@ describe("FrontmatterSidebar", () => {
     expect(screen.getByText("Custom properties")).not.toBeNull();
     expect(screen.getByText("aliases")).not.toBeNull();
     expect(screen.getByText("tags")).not.toBeNull();
+    expect(screen.getByText("status")).not.toBeNull();
     expect(screen.getByText("chronicle")).not.toBeNull();
     expect(screen.getByText("plannedDate")).not.toBeNull();
     expect(screen.getByText("actualDate")).not.toBeNull();
@@ -123,6 +124,9 @@ describe("FrontmatterSidebar", () => {
     expect(screen.getByText("Tags that classify this file. Used for tag lists, tag search, and tag filtering. Write one or many values as the same one-line array.")).toBeInTheDocument();
     expect(screen.getByText("tags: [source]")).toBeInTheDocument();
     expect(screen.getByText("tags: [source, draft]")).toBeInTheDocument();
+    expect(screen.getByText("The status of this file for date chart workflows. Write one or many status values as the same one-line array.")).toBeInTheDocument();
+    expect(screen.getByText("status: [planned]")).toBeInTheDocument();
+    expect(screen.getByText("status: [planned, done]")).toBeInTheDocument();
     expect(screen.getByText("Places this file on the timeline as a single year or range. Write a single year or range as the same one-line array.")).toBeInTheDocument();
     expect(screen.getByText("chronicle: [1185]")).toBeInTheDocument();
     expect(screen.getByText("chronicle: [1185, 1333]")).toBeInTheDocument();
@@ -155,6 +159,10 @@ describe("FrontmatterSidebar", () => {
     fireEvent.change(screen.getByPlaceholderText("Field name"), { target: { value: "actualDate" } });
 
     expect(screen.getByRole("button", { name: "Add" })).toBeDisabled();
+
+    fireEvent.change(screen.getByPlaceholderText("Field name"), { target: { value: "status" } });
+
+    expect(screen.getByRole("button", { name: "Add" })).toBeDisabled();
   });
 
   it("候補をチップとして追加・削除できる", () => {
@@ -162,20 +170,20 @@ describe("FrontmatterSidebar", () => {
 
     renderFrontmatterSidebar({
       onUserDefinedFieldsSave,
-      userDefinedFields: [{ choices: ["draft"], name: "status", type: "select" }]
+      userDefinedFields: [{ choices: ["draft"], name: "phase", type: "select" }]
     });
 
     fireEvent.change(screen.getByPlaceholderText("Enter a choice"), { target: { value: "review" } });
     fireEvent.click(screen.getByRole("button", { name: "Add choice" }));
 
     expect(onUserDefinedFieldsSave).toHaveBeenCalledWith([
-      { choices: ["draft", "review"], name: "status", type: "select" }
+      { choices: ["draft", "review"], name: "phase", type: "select" }
     ]);
 
     fireEvent.click(screen.getByLabelText("Remove draft"));
 
     expect(onUserDefinedFieldsSave).toHaveBeenLastCalledWith([
-      { choices: ["review"], name: "status", type: "select" }
+      { choices: ["review"], name: "phase", type: "select" }
     ]);
   });
 
