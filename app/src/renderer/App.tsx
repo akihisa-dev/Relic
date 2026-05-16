@@ -1,38 +1,25 @@
 import type { EditorView } from "@codemirror/view";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { MouseEvent, ReactElement, ReactNode } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
+import type { ReactElement } from "react";
 
 import type { WorkspaceState } from "../shared/ipc";
 import type { AppLinkContextMenu } from "./appLinks";
 import {
-  activePanelTabIdsForPanes,
-  enabledRailViewsForFeatures,
-  isChartTabActiveInPanes,
-  isChartTabOpenInTabs,
   openFilePathsForTabs,
-  openPanelTabIdsForTabs,
-  panelLabelsForTranslator,
   registeredWorkspacesForState,
-  splitRailViews,
-  type AppRailView
 } from "./appShellModel";
 import { AppEditorWorkspace } from "./components/AppEditorWorkspace";
 import { AppFilesSidebar } from "./components/AppFilesSidebar";
 import { AppOverlays } from "./components/AppOverlays";
 import { AppRail } from "./components/AppRail";
 import { AppStatusBar } from "./components/AppStatusBar";
-import { GanttChartView } from "./components/ChronicleSidebar";
-import { DashboardPanel } from "./components/DashboardPanel";
-import { FrontmatterSidebar } from "./components/FrontmatterSidebar";
-import { GraphPanel } from "./components/GraphSidebar";
-import { SettingsSidebar } from "./components/SettingsSidebar";
-import { ToolsSidebar } from "./components/ToolsSidebar";
-import { sidebarViewDefs } from "./components/RailNavigation";
 import { createTranslator, I18nProvider } from "./i18n";
 import { useActiveDocumentContext } from "./hooks/useActiveDocumentContext";
 import { useAppKeyboardShortcuts } from "./hooks/useAppKeyboardShortcuts";
 import { useAppPaneFileActions } from "./hooks/useAppPaneFileActions";
+import { useAppRailNavigation } from "./hooks/useAppRailNavigation";
 import { useAppSettingsState } from "./hooks/useAppSettingsState";
+import { useAppTabRenderers } from "./hooks/useAppTabRenderers";
 import { useAppTheme } from "./hooks/useAppTheme";
 import { useAppToast } from "./hooks/useAppToast";
 import { useCommandPaletteCommands } from "./hooks/useCommandPaletteCommands";
@@ -46,7 +33,7 @@ import { useWorkspaceFileActions } from "./hooks/useWorkspaceFileActions";
 import { useWorkspaceGanttCharts } from "./hooks/useWorkspaceGanttCharts";
 import { useWorkspaceRenameRailHold } from "./hooks/useWorkspaceRenameRailHold";
 import { useWorkspaceSearchState } from "./hooks/useWorkspaceSearchState";
-import { useEditorStore, type PaneId, type PanelTabKind } from "./store/editorStore";
+import { useEditorStore } from "./store/editorStore";
 import { useUiStore, type RightPanelView } from "./store/uiStore";
 import { collectMarkdownPaths } from "./workspacePaths";
 import "./styles.css";
@@ -143,15 +130,6 @@ export function App(): ReactElement {
   }, [isWorkspaceRenameActive, toggleSidebarState]);
 
   const t = useMemo(() => createTranslator(editorSettings.language), [editorSettings.language]);
-  const sidebarViews = useMemo<Array<AppRailView<ReactElement>>>(
-    () =>
-      sidebarViewDefs.map((view) => ({
-        ...view,
-        label: t(view.labelKey)
-      })),
-    [t]
-  );
-
   const {
     appInfo,
     featureToggles,
@@ -263,19 +241,6 @@ export function App(): ReactElement {
     showSidebarCreateFlight,
     t
   });
-
-  const renderPanelTabIcon = useCallback((panel: PanelTabKind): ReactNode => (
-    sidebarViews.find((view) => view.id === panel)?.icon ?? null
-  ), [sidebarViews]);
-
-  const renderGanttChartTab = useCallback((chartId: string): ReactNode => (
-    <GanttChartView
-      chart={chartId === "charts" ? null : ganttCharts.find((chart) => chart.id === chartId) ?? null}
-      charts={chartId === "charts" ? ganttCharts : undefined}
-      onOpenFile={handleOpenFile}
-      onUpdateEntry={handleUpdateGanttChartEntry}
-    />
-  ), [ganttCharts, handleOpenFile, handleUpdateGanttChartEntry]);
 
   const handleFileSaved = useCallback((): void => {
     void reloadGanttCharts();
@@ -390,157 +355,49 @@ export function App(): ReactElement {
     toggleTypewriterMode
   });
 
-  const panelLabels = useMemo(() => panelLabelsForTranslator(t), [t]);
+  const {
+    activePanelTabIds,
+    chartRailView,
+    handleRailChartButton,
+    handleRailPanelButton,
+    isChartTabActive,
+    isChartTabOpen,
+    openPanelTabIds,
+    panelRailViews,
+    primaryRailViews,
+    renderPanelTabIcon,
+    sidebarViews
+  } = useAppRailNavigation({
+    activeSidebarView,
+    clearRailTabFlight,
+    closeSidebar,
+    featureToggles,
+    focusedPane,
+    leftPane,
+    openGanttChartInPane,
+    openPanelInPane,
+    rightPane,
+    setSidebarView,
+    setTabActive,
+    showRailTabFlight,
+    t,
+    tabs
+  });
 
-  const openPanelTabIds = useMemo(() => openPanelTabIdsForTabs(tabs), [tabs]);
-  const activePanelTabIds = useMemo(
-    () => activePanelTabIdsForPanes(leftPane, rightPane, tabs),
-    [leftPane, rightPane, tabs]
-  );
-  const isChartTabOpen = useMemo(
-    () => isChartTabOpenInTabs(tabs),
-    [tabs]
-  );
-  const isChartTabActive = useMemo(
-    () => isChartTabActiveInPanes(leftPane, rightPane, tabs),
-    [leftPane, rightPane, tabs]
-  );
-  const enabledRailViews = useMemo(
-    () => enabledRailViewsForFeatures(sidebarViews, featureToggles),
-    [featureToggles, sidebarViews]
-  );
-  const { chartRailView, panelRailViews, primaryRailViews } = useMemo(
-    () => splitRailViews(enabledRailViews),
-    [enabledRailViews]
-  );
-
-  useEffect(() => {
-    if (
-      activeSidebarView !== "tools" &&
-      activeSidebarView !== "frontmatter" &&
-      activeSidebarView !== "settings" &&
-      activeSidebarView !== "graph"
-    ) {
-      return;
-    }
-
-    openPanelInPane(focusedPane, activeSidebarView, panelLabels[activeSidebarView]);
-    setSidebarView("files");
-  }, [activeSidebarView, focusedPane, openPanelInPane, panelLabels, setSidebarView]);
-
-  const handleRailPanelButton = useCallback((panel: PanelTabKind, label: string, event: MouseEvent<HTMLButtonElement>): void => {
-    const railRect = event.currentTarget.getBoundingClientRect();
-    const panelTabId = `panel-${panel}`;
-    const editorState = useEditorStore.getState();
-    const openedPanes: PaneId[] = [
-      ...(editorState.leftPane.tabIds.includes(panelTabId) ? ["left" as const] : []),
-      ...(editorState.rightPane.tabIds.includes(panelTabId) ? ["right" as const] : [])
-    ];
-
-    if (openedPanes.length > 0) {
-      clearRailTabFlight();
-      setTabActive(openedPanes.includes(focusedPane) ? focusedPane : openedPanes[0], panelTabId);
-      return;
-    }
-
-    openPanelInPane(focusedPane, panel, label);
-
-    requestAnimationFrame(() => {
-      const pane = document.querySelector(`.pane${focusedPane === "left" ? "" : ":last-child"} .pane-tab-bar`) ?? document.querySelector(".pane-tab-bar");
-      const toRect = pane?.getBoundingClientRect();
-      showRailTabFlight({
-        direction: "open",
-        fromX: railRect.left + railRect.width / 2,
-        fromY: railRect.top + railRect.height / 2,
-        label,
-        toX: (toRect?.left ?? railRect.left + 180) + 48,
-        toY: (toRect?.top ?? railRect.top) + 15
-      });
-    });
-  }, [clearRailTabFlight, focusedPane, openPanelInPane, setTabActive, showRailTabFlight]);
-
-  const handleRailChartButton = useCallback((label: string, event: MouseEvent<HTMLButtonElement>): void => {
-    const railRect = event.currentTarget.getBoundingClientRect();
-    const tabId = "gantt-charts";
-    const editorState = useEditorStore.getState();
-    const openedPanes: PaneId[] = [
-      ...(editorState.leftPane.tabIds.includes(tabId) ? ["left" as const] : []),
-      ...(editorState.rightPane.tabIds.includes(tabId) ? ["right" as const] : [])
-    ];
-
-    if (openedPanes.length > 0) {
-      closeSidebar();
-      clearRailTabFlight();
-      setTabActive(openedPanes.includes(focusedPane) ? focusedPane : openedPanes[0], tabId);
-      return;
-    }
-
-    closeSidebar();
-    openGanttChartInPane(focusedPane, { id: "charts", name: label });
-
-    requestAnimationFrame(() => {
-      const pane = document.querySelector(`.pane${focusedPane === "left" ? "" : ":last-child"} .pane-tab-bar`) ?? document.querySelector(".pane-tab-bar");
-      const toRect = pane?.getBoundingClientRect();
-      showRailTabFlight({
-        direction: "open",
-        fromX: railRect.left + railRect.width / 2,
-        fromY: railRect.top + railRect.height / 2,
-        label,
-        toX: (toRect?.left ?? railRect.left + 180) + 48,
-        toY: (toRect?.top ?? railRect.top) + 15
-      });
-    });
-  }, [clearRailTabFlight, closeSidebar, focusedPane, openGanttChartInPane, setTabActive, showRailTabFlight]);
-
-  const renderPanelTab = useCallback((panel: PanelTabKind): ReactNode => {
-    if (panel === "dashboard") {
-      return (
-        <DashboardPanel
-          fileTree={workspaceState?.fileTree ?? []}
-          onOpenFile={handleOpenFile}
-          userDefinedFields={userDefinedFields}
-          workspaceId={workspaceState?.activeWorkspace?.id ?? null}
-        />
-      );
-    }
-
-    if (panel === "tools") {
-      return <ToolsSidebar workspacePath={workspaceState?.activeWorkspace?.path ?? null} />;
-    }
-
-    if (panel === "frontmatter") {
-      return (
-        <FrontmatterSidebar
-          onUserDefinedFieldsSave={handleSaveUserDefinedFields}
-          userDefinedFields={userDefinedFields}
-        />
-      );
-    }
-
-    if (panel === "graph") {
-      return (
-        <GraphPanel
-          activeFilePath={activeFilePathForGraph}
-          onOpenFile={handleOpenFile}
-          workspaceId={workspaceState?.activeWorkspace?.id ?? null}
-        />
-      );
-    }
-
-    return (
-      <SettingsSidebar
-        appInfo={appInfo}
-        featureToggles={featureToggles}
-        onFeatureTogglesSave={handleSaveFeatureToggles}
-        onSave={handleSaveSettings}
-        settings={editorSettings}
-      />
-    );
-  }, [
-    activeFilePathForGraph, appInfo, editorSettings, featureToggles, handleOpenFile,
-    handleSaveFeatureToggles, handleSaveSettings, handleSaveUserDefinedFields,
-    userDefinedFields, workspaceState
-  ]);
+  const { renderGanttChartTab, renderPanelTab } = useAppTabRenderers({
+    activeFilePathForGraph,
+    appInfo,
+    editorSettings,
+    featureToggles,
+    ganttCharts,
+    handleOpenFile,
+    handleSaveFeatureToggles,
+    handleSaveSettings,
+    handleSaveUserDefinedFields,
+    handleUpdateGanttChartEntry,
+    userDefinedFields,
+    workspaceState
+  });
 
   // ──────────────────
   // レンダリング
