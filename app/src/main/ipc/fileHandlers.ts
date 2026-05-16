@@ -50,6 +50,19 @@ import { searchWorkspace } from "../files/search";
 import { moveWorkspaceItemToTrash } from "../files/trash";
 import { resolveWorkspaceRelativePath } from "../files/paths";
 import { getActiveWorkspaceContext, ipcErrorDetails } from "./activeWorkspace";
+import {
+  isCreateMarkdownFileInput,
+  isMoveFolderInput,
+  isMoveItemToTrashInput,
+  isMoveMarkdownFileInput,
+  isNameInput,
+  isPathInput,
+  isRenameFolderInput,
+  isRenameMarkdownFileInput,
+  isReplaceInFileInput,
+  isSearchAndReplaceInput,
+  isSearchWorkspaceInput
+} from "./fileHandlerValidators";
 import { buildWorkspaceState } from "./workspaceHandlers";
 
 export function registerFileHandlers(): void {
@@ -478,125 +491,4 @@ export function registerFileHandlers(): void {
     }
   );
 
-}
-
-function isCreateMarkdownFileInput(input: unknown): input is CreateMarkdownFileInput {
-  return isNameInput(input);
-}
-
-function isNameInput(input: unknown): input is { name: string } {
-  return (
-    typeof input === "object" &&
-    input !== null &&
-    "name" in input &&
-    typeof (input as { name?: unknown }).name === "string"
-  );
-}
-
-function isPathInput(input: unknown): input is { path: string } {
-  return (
-    typeof input === "object" &&
-    input !== null &&
-    "path" in input &&
-    typeof (input as { path?: unknown }).path === "string"
-  );
-}
-
-function isRenameMarkdownFileInput(input: unknown): input is RenameMarkdownFileInput {
-  return (
-    typeof input === "object" &&
-    input !== null &&
-    "path" in input &&
-    "newName" in input &&
-    typeof (input as { path?: unknown }).path === "string" &&
-    typeof (input as { newName?: unknown }).newName === "string"
-  );
-}
-
-function isRenameFolderInput(input: unknown): input is RenameFolderInput {
-  return (
-    typeof input === "object" &&
-    input !== null &&
-    "path" in input &&
-    "newName" in input &&
-    typeof (input as { path?: unknown }).path === "string" &&
-    typeof (input as { newName?: unknown }).newName === "string"
-  );
-}
-
-function isMoveItemToTrashInput(input: unknown): input is MoveItemToTrashInput {
-  return (
-    typeof input === "object" &&
-    input !== null &&
-    "path" in input &&
-    "type" in input &&
-    typeof (input as { path?: unknown }).path === "string" &&
-    ((input as { type?: unknown }).type === "file" || (input as { type?: unknown }).type === "folder")
-  );
-}
-
-function isMoveMarkdownFileInput(input: unknown): input is MoveMarkdownFileInput {
-  return (
-    typeof input === "object" &&
-    input !== null &&
-    "path" in input &&
-    "destinationFolder" in input &&
-    typeof (input as { path?: unknown }).path === "string" &&
-    typeof (input as { destinationFolder?: unknown }).destinationFolder === "string"
-  );
-}
-
-function isMoveFolderInput(input: unknown): input is MoveFolderInput {
-  return (
-    typeof input === "object" &&
-    input !== null &&
-    "path" in input &&
-    "destinationFolder" in input &&
-    typeof (input as { path?: unknown }).path === "string" &&
-    typeof (input as { destinationFolder?: unknown }).destinationFolder === "string"
-  );
-}
-
-function isReplaceInFileInput(input: unknown): input is ReplaceInFileInput {
-  return (
-    typeof input === "object" &&
-    input !== null &&
-    "path" in input &&
-    "searchQuery" in input &&
-    "replacement" in input &&
-    "isRegex" in input &&
-    typeof (input as { path?: unknown }).path === "string" &&
-    typeof (input as { searchQuery?: unknown }).searchQuery === "string" &&
-    typeof (input as { replacement?: unknown }).replacement === "string" &&
-    typeof (input as { isRegex?: unknown }).isRegex === "boolean"
-  );
-}
-
-function isSearchAndReplaceInput(input: unknown): input is SearchAndReplaceInput {
-  return (
-    typeof input === "object" &&
-    input !== null &&
-    "searchQuery" in input &&
-    "replacement" in input &&
-    "isRegex" in input &&
-    typeof (input as { searchQuery?: unknown }).searchQuery === "string" &&
-    typeof (input as { replacement?: unknown }).replacement === "string" &&
-    typeof (input as { isRegex?: unknown }).isRegex === "boolean"
-  );
-}
-
-function isSearchWorkspaceInput(input: unknown): input is SearchWorkspaceInput {
-  return (
-    typeof input === "object" &&
-    input !== null &&
-    "query" in input &&
-    "mode" in input &&
-    typeof (input as { query?: unknown }).query === "string" &&
-    (!("frontmatterField" in input) || typeof (input as { frontmatterField?: unknown }).frontmatterField === "string") &&
-    ((input as { mode?: unknown }).mode === "fullText" ||
-      (input as { mode?: unknown }).mode === "fileName" ||
-      (input as { mode?: unknown }).mode === "tag" ||
-      (input as { mode?: unknown }).mode === "regex" ||
-      (input as { mode?: unknown }).mode === "frontmatter")
-  );
 }

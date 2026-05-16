@@ -180,3 +180,10 @@ Relicの大規模リファクタリングフェーズの正本。
 - 実施: `activeWorkspace.ts` に `getActiveWorkspaceContext` と `ipcErrorDetails` を追加し、`fileHandlers.ts` はファイル操作handlerのactive workspace取得とsettings参照を共通context経由にした。`workspaceHandlers.ts` はタグ、frontmatter候補、aliases、chronicle、graph、Gantt設定保存/更新のactive workspace取得を共通context経由にした
 - 確認: `pnpm exec vitest run src/main/files/markdownFiles.test.ts src/main/files/chronicle.test.ts`、`pnpm typecheck`、`pnpm test`、`git diff --check` が通過した。全体テストは49ファイル、401件が通過した
 - 残り: 今回指定されたIPC helper整理単位は完了。実アプリ確認はIPC/preload APIと戻り値を変えない内部helper整理のため未実施
+
+### ファイル操作hook・IPC validator・Toolbar・Dashboard分離
+
+- 方向性: 仕様、UI、文言、CSS、保存形式、IPC/preload API、store構造を変えず、残っていたファイル操作hook、IPC入力検証、Toolbar編集コマンド、Dashboard計算modelの責務を小さい内部moduleへ分離する
+- 実施: `useWorkspaceFileActions.ts` を既存返り値を維持するfacadeにし、workspace登録/切替、ファイル作成、open/link open、移動/rename/delete/duplicateをhookへ分けた。`fileHandlers.ts` と `workspaceHandlers.ts` の入力検証を validator moduleへ移し、対象テストを追加した。`Toolbar.tsx` のCodeMirror編集コマンドとtarget view解決を `toolbarCommands.ts` へ移し、既存の `insertBlockIds` named exportはre-exportで維持した。`DashboardPanel.tsx` の統計、frontmatter集計、treemap/donut計算を `dashboardModel.ts` へ移し、既存named exportはre-exportで維持した
+- 確認: `pnpm exec vitest run src/renderer/App.test.tsx src/renderer/hooks/workspaceFileActionHelpers.test.ts src/renderer/components/Toolbar.test.tsx src/renderer/components/DashboardPanel.test.tsx src/renderer/dashboardModel.test.ts src/main/ipc/workspaceHandlers.test.ts src/main/ipc/fileHandlerValidators.test.ts src/main/ipc/workspaceHandlerValidators.test.ts` が通過した。対象テストは8ファイル、118件が通過した。最終確認として `pnpm typecheck`、`pnpm test`、`git diff --check` が通過し、全体テストは52ファイル、411件が通過した
+- 残り: 今回指定された継続リファクタリング単位は完了。`ChronicleSidebar.tsx` の追加分割は次の単位に回す。実アプリ確認はUI/仕様を変えない内部module分離のため未実施
