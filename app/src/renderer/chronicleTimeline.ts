@@ -1,4 +1,5 @@
 import type { GanttChartDateKind, GanttChartEntry, GanttChartSource, WorkspaceGanttChart } from "../shared/ipc";
+import { axisToYear, dateToDay, dayToDate, yearToAxis } from "../shared/chartTime";
 import { fixedStatusValues } from "../shared/status";
 import type { Translator } from "./i18n";
 
@@ -510,15 +511,6 @@ export function formatAxisValue(value: number, source: GanttChartSource): string
   return year < 0 ? `−${Math.abs(year)}` : String(year);
 }
 
-export function axisToYear(value: number): number {
-  return value < 0 ? value : value + 1;
-}
-
-export function yearToAxis(year: number): number {
-  if (year === 0) return 0;
-  return year < 0 ? year : year - 1;
-}
-
 export function formatScaleValue(value: number, source: GanttChartSource): string {
   if (source === "chronicle") return String(value);
   return DATE_SCALES[value]?.label ?? "月";
@@ -526,14 +518,6 @@ export function formatScaleValue(value: number, source: GanttChartSource): strin
 
 export function labelWidthForText(text: string): number {
   return text.length * 8 + LABEL_HORIZONTAL_PADDING;
-}
-
-export function dayToDate(value: number): string {
-  return new Date(value * 86_400_000).toISOString().slice(0, 10);
-}
-
-export function dateToDay(value: string): number {
-  return Math.floor(new Date(`${value}T00:00:00.000Z`).getTime() / 86_400_000);
 }
 
 export function currentDateDay(): number {
