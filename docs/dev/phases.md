@@ -35,9 +35,9 @@ AIは `AI.md` と `docs/product/project.md` の次にこのファイルを読み
 ## 現在フェーズ
 
 ```yaml
-current: P22
-summary: チャートビューアップグレード
-checklist: phases/P22-chart-view-upgrade.md
+current: P23
+summary: 大規模リファクタリング
+checklist: phases/P23-large-refactoring.md
 ```
 
 ---
@@ -68,7 +68,8 @@ checklist: phases/P22-chart-view-upgrade.md
 | P19 | リファクタリングおよび整理 | done | `phases/P19-refactoring-organization.md`, `conventions.md`, `testing.md`, 必要に応じて `../architecture/overview.md` |
 | P20 | 大型機能追加 | done | `phases/P20-major-feature-addition.md`, `conventions.md`, `testing.md`, 必要に応じて `../spec/`, `../architecture/overview.md`, `../ui/` |
 | P21 | 文書整理 | done | `phases/P21-document-organization.md`, 必要に応じて `../INDEX.md`, `../spec/`, `../ui/`, `../architecture/`, `../tech/`, `../../README.md` |
-| P22 | チャートビューアップグレード | current | `phases/P22-chart-view-upgrade.md`, `conventions.md`, `testing.md`, 必要に応じて `../spec/navigation.md`, `../ui/screens-macos.md`, `../ui/navigation.md`, `../ui/DESIGN.md`, `../architecture/overview.md` |
+| P22 | チャートビューアップグレード | done | `phases/P22-chart-view-upgrade.md`, `conventions.md`, `testing.md`, 必要に応じて `../spec/navigation.md`, `../ui/screens-macos.md`, `../ui/navigation.md`, `../ui/DESIGN.md`, `../architecture/overview.md` |
+| P23 | 大規模リファクタリング | current | `phases/P23-large-refactoring.md`, `conventions.md`, `testing.md`, 必要に応じて `../architecture/overview.md`, `../architecture/decisions.md`, `../spec/`, `../ui/` |
 
 ### 取り下げた非正当フェーズ
 
@@ -80,6 +81,35 @@ P15はAIが先に方針を作りすぎたため、正当な開発フェーズと
 ---
 
 ## フェーズ別の読み込みルール
+
+### P23-large-refactoring
+
+Relicの大規模リファクタリングフェーズ。
+
+AIはこのフェーズを前提にユーザーへ接する。
+対象は既存挙動を保ったコード構造の整理であり、仕様変更、UI変更、保存形式変更、機能追加へ広げる場合は、事前にユーザーへ確認する。
+
+最初に読む:
+
+- `phases/P23-large-refactoring.md`
+
+必要になったときだけ読む:
+
+- 実装規約: `conventions.md`
+- テスト方針: `testing.md`
+- アーキテクチャ前提: `../architecture/overview.md`, `../architecture/decisions.md`
+- 対象機能の正解: 対応する `../spec/*.md`
+- UI挙動に触れる場合: `../ui/screens-macos.md`, `../ui/navigation.md`, `../ui/DESIGN.md`
+
+注意:
+
+- ユーザーが指定したリファクタリング対象、またはコード確認後にユーザーへ提示して合意した対象だけを扱う
+- 既存挙動を変えない。挙動変更が必要になった場合は、リファクタリングから分けて確認する
+- 大きなファイル移動・責務分割は、対象、理由、検証方法を明示してから進める
+- 変更後は `pnpm typecheck` と、対象に応じたテストを確認する
+- 実アプリ確認が必要な挙動は、確認範囲と未確認理由をP23正本に残す
+
+---
 
 ### P22-chart-view-upgrade
 

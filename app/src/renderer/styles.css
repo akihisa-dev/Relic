@@ -4323,8 +4323,8 @@ button:not(:disabled):active {
 
 /* ─── Chronicle ─── */
 .chronicle-panel {
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  display: flex;
+  flex-direction: column;
   height: 100%;
   min-width: 0;
   min-height: 0;
@@ -5103,7 +5103,8 @@ button:not(:disabled):active {
   border: 1px solid var(--border);
   border-radius: 7px;
   cursor: grab;
-  height: 100%;
+  flex: 1 1 0;
+  height: auto;
   min-height: 0;
   min-width: 0;
   overflow-x: auto;
@@ -5145,6 +5146,21 @@ button:not(:disabled):active {
   padding: 0 12px 8px;
 }
 
+.chronicle-name-header--chronicle {
+  align-items: end;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-3);
+  display: grid;
+  font-size: 11px;
+  font-weight: 700;
+  grid-template-columns: minmax(0, 1fr) 96px;
+  padding: 0 12px 8px;
+}
+
+.chronicle-name-header--chronicle span {
+  text-align: left;
+}
+
 .chronicle-name-header--date span {
   text-align: left;
 }
@@ -5169,6 +5185,10 @@ button:not(:disabled):active {
   display: block;
   height: 23px;
   position: relative;
+}
+
+.chronicle-axis-row--chronicle {
+  height: 34px;
 }
 
 .chronicle-axis-row--divider {
@@ -5225,6 +5245,10 @@ button:not(:disabled):active {
   grid-template-columns: minmax(0, 1fr) 96px 96px;
 }
 
+.chronicle-file-name-row--chronicle {
+  grid-template-columns: minmax(0, 1fr) 96px;
+}
+
 .chronicle-file-name-row--empty {
   grid-template-columns: minmax(0, 1fr);
 }
@@ -5273,6 +5297,34 @@ button:not(:disabled):active {
   text-align: left;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.chronicle-year-summary {
+  align-items: center;
+  background: var(--bg);
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-left: 1px solid var(--border-soft);
+  border-radius: 0;
+  box-sizing: border-box;
+  color: var(--text-2);
+  cursor: pointer;
+  display: flex;
+  font-size: 11px;
+  font-weight: 650;
+  height: 38px;
+  justify-content: flex-start;
+  min-width: 0;
+  overflow: hidden;
+  padding: 0 12px;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chronicle-year-summary:hover {
+  background: var(--hover);
+  color: var(--text);
 }
 
 .chronicle-date-summary--planned {
@@ -5358,8 +5410,12 @@ button:not(:disabled):active {
   background: rgba(28, 28, 28, 0.105);
 }
 
+.chronicle-guide-lines--chronicle .chronicle-guide-line--minor {
+  background: rgba(28, 28, 28, 0.038);
+}
+
 .chronicle-guide-lines--chronicle .chronicle-guide-line--major {
-  background: rgba(28, 28, 28, 0.15);
+  background: rgba(28, 28, 28, 0.19);
 }
 
 .chronicle-guide-row-line {
@@ -5438,6 +5494,56 @@ button:not(:disabled):active {
   background: var(--hover);
 }
 
+.chronicle-minimap-panel {
+  align-items: center;
+  box-sizing: border-box;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 300px minmax(0, 1fr);
+  min-height: 30px;
+  padding: 2px 0 6px;
+}
+
+.chronicle-minimap-label {
+  color: var(--text-3);
+  font-size: 11px;
+  font-weight: 800;
+  padding-left: 16px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.chronicle-minimap {
+  align-items: center;
+  background: rgba(0, 124, 175, 0.035);
+  border: 1px solid rgba(28, 28, 28, 0.08);
+  border-radius: 999px;
+  box-sizing: border-box;
+  cursor: pointer;
+  display: block;
+  height: 12px;
+  min-width: 0;
+  position: relative;
+}
+
+.chronicle-minimap-item {
+  background: rgba(0, 124, 175, 0.56);
+  border-radius: 999px;
+  height: 4px;
+  position: absolute;
+  top: 3px;
+}
+
+.chronicle-minimap-window {
+  background: rgba(28, 28, 28, 0.045);
+  border: 1px solid rgba(28, 28, 28, 0.38);
+  border-radius: 999px;
+  bottom: -2px;
+  box-sizing: border-box;
+  position: absolute;
+  top: -2px;
+}
+
 .chronicle-fill {
   align-items: center;
   background: rgba(0, 124, 175, 0.18);
@@ -5502,6 +5608,11 @@ button:not(:disabled):active {
 
 .chronicle-fill--date.chronicle-fill--actual {
   z-index: 4;
+}
+
+.chronicle-fill--chronicle .chronicle-fill-label {
+  background: color-mix(in srgb, var(--bg) 72%, transparent);
+  border-radius: 4px;
 }
 
 .chronicle-fill--actual:hover {
@@ -5585,14 +5696,6 @@ button:not(:disabled):active {
 
 .chronicle-fill-resize--end::after {
   right: 3px;
-}
-
-.chronicle-fill--single {
-  justify-content: center;
-}
-
-.chronicle-fill--single .chronicle-fill-label {
-  position: absolute;
 }
 
 .chronicle-summary {
