@@ -1,27 +1,23 @@
-import { mkdir, rename, stat, readFile, writeFile } from "node:fs/promises";
+import { mkdir, rename, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import type { MarkdownFileContent } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
+import { errorDetails, isFileExistsError, pathExists } from "./fileSystem";
 import { updateLinksForFileRename } from "./linkUpdater";
-import { validateBaseName } from "./names";
+import {
+  createCopyRelativePath,
+  markdownPathInFolder,
+  normalizeMarkdownFileName,
+  renamedMarkdownPath
+} from "./markdownFilePaths";
 import { resolveWorkspaceRelativePath, toWorkspaceRelativePath } from "./paths";
 
 export interface CreatedMarkdownFile {
   path: string;
 }
 
-export function normalizeMarkdownFileName(name: string): RelicResult<string> {
-  const validatedName = validateBaseName(name, "ファイル名を入力してください。");
-
-  if (!validatedName.ok) {
-    return validatedName;
-  }
-
-  return ok(
-    path.extname(validatedName.value) === ".md" ? validatedName.value : `${validatedName.value}.md`
-  );
-}
+export { normalizeMarkdownFileName } from "./markdownFilePaths";
 
 export async function createMarkdownFile(
   workspacePath: string,
@@ -52,7 +48,7 @@ export async function createMarkdownFile(
     return fail(
       "FILE_CREATE_FAILED",
       "ファイルを作成できませんでした。",
-      error instanceof Error ? error.message : String(error)
+      errorDetails(error)
     );
   }
 }
@@ -99,7 +95,7 @@ export async function createMarkdownFileAtPath(
     return fail(
       "FILE_CREATE_FAILED",
       "ファイルを作成できませんでした。",
-      error instanceof Error ? error.message : String(error)
+      errorDetails(error)
     );
   }
 }
@@ -130,7 +126,7 @@ export async function readMarkdownFile(
     return fail(
       "FILE_READ_FAILED",
       "ファイルを読み込めませんでした。",
-      error instanceof Error ? error.message : String(error)
+      errorDetails(error)
     );
   }
 }
@@ -150,16 +146,13 @@ export async function renameMarkdownFile(
     return absoluteSourcePath;
   }
 
-  const normalizedNewName = normalizeMarkdownFileName(newName);
+  const nextRelativePath = renamedMarkdownPath(relativePath, newName);
 
-  if (!normalizedNewName.ok) {
-    return normalizedNewName;
+  if (!nextRelativePath.ok) {
+    return nextRelativePath;
   }
 
-  const nextRelativePath = toWorkspaceRelativePath(
-    path.join(path.dirname(relativePath), normalizedNewName.value)
-  );
-  const absoluteDestinationPath = resolveWorkspaceRelativePath(workspacePath, nextRelativePath);
+  const absoluteDestinationPath = resolveWorkspaceRelativePath(workspacePath, nextRelativePath.value);
 
   if (!absoluteDestinationPath.ok) {
     return absoluteDestinationPath;
@@ -175,14 +168,14 @@ export async function renameMarkdownFile(
 
   try {
     await rename(absoluteSourcePath.value, absoluteDestinationPath.value);
-    await updateLinksForFileRename(workspacePath, relativePath, nextRelativePath);
+    await updateLinksForFileRename(workspacePath, relativePath, nextRelativePath.value);
 
-    return readMarkdownFile(workspacePath, nextRelativePath);
+    return readMarkdownFile(workspacePath, nextRelativePath.value);
   } catch (error) {
     return fail(
       "FILE_RENAME_FAILED",
       "ファイル名を変更できませんでした。",
-      error instanceof Error ? error.message : String(error)
+      errorDetails(error)
     );
   }
 }
@@ -202,11 +195,7 @@ export async function moveMarkdownFile(
     return absoluteSourcePath;
   }
 
-  const normalizedDestFolder = toWorkspaceRelativePath(destinationFolder.trim());
-  const baseName = path.basename(relativePath);
-  const nextRelativePath = toWorkspaceRelativePath(
-    normalizedDestFolder === "" ? baseName : `${normalizedDestFolder}/${baseName}`
-  );
+  const nextRelativePath = markdownPathInFolder(relativePath, destinationFolder);
 
   if (nextRelativePath === relativePath) {
     return readMarkdownFile(workspacePath, relativePath);
@@ -231,7 +220,7 @@ export async function moveMarkdownFile(
     return fail(
       "FILE_MOVE_FAILED",
       "ファイルを移動できませんでした。",
-      error instanceof Error ? error.message : String(error)
+      errorDetails(error)
     );
   }
 }
@@ -269,61 +258,7 @@ export async function duplicateMarkdownFile(
     return fail(
       "FILE_DUPLICATE_FAILED",
       "ファイルを複製できませんでした。",
-      error instanceof Error ? error.message : String(error)
+      errorDetails(error)
     );
-  }
-}
-
-function isFileExistsError(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    (error as { code?: string }).code === "EEXIST"
-  );
-}
-
-async function pathExists(filePath: string): Promise<boolean> {
-  try {
-    await stat(filePath);
-    return true;
-  } catch (error) {
-    return !isMissingFileError(error);
-  }
-}
-
-function isMissingFileError(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    (error as { code?: string }).code === "ENOENT"
-  );
-}
-
-async function createCopyRelativePath(
-  workspacePath: string,
-  sourceRelativePath: string
-): Promise<string> {
-  const directory = path.dirname(sourceRelativePath);
-  const extension = path.extname(sourceRelativePath);
-  const baseName = path.basename(sourceRelativePath, extension);
-  let copyIndex = 1;
-
-  while (true) {
-    const copyName =
-      copyIndex === 1 ? `${baseName} のコピー${extension}` : `${baseName} のコピー ${copyIndex}${extension}`;
-    const candidateRelativePath = toWorkspaceRelativePath(path.join(directory, copyName));
-    const candidatePath = resolveWorkspaceRelativePath(workspacePath, candidateRelativePath);
-
-    if (!candidatePath.ok) {
-      throw new Error(candidatePath.error.message);
-    }
-
-    if (!(await pathExists(candidatePath.value))) {
-      return candidateRelativePath;
-    }
-
-    copyIndex += 1;
   }
 }
