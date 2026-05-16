@@ -279,3 +279,10 @@ AIはこのフェーズを前提にユーザーへ接する。
 - 実施: `toolsSidebarModel.ts` を追加し、各ツールdraft初期値、IPC入力生成、成功/失敗status整形、status error判定を純粋処理へ移した。`useToolsSidebarState.ts` を追加し、draft状態と実行handlerをhook化した。`ToolsSidebarSections.tsx` を追加し、title list、TOC、merge、split、共通status表示を分け、`ToolsSidebar.tsx` はworkspace有無分岐とsection組み立てに絞った
 - 確認: `pnpm exec vitest run src/renderer/toolsSidebarModel.test.ts src/renderer/components/ToolsSidebar.test.tsx src/renderer/App.test.tsx`、`pnpm typecheck`、`pnpm test`、`git diff --check` が通過した。全体テストは71ファイル、491件が通過した
 - 残り: 今回指定されたToolsSidebar分割単位は完了。実アプリ確認はUI/仕様を変えない内部component/hook/model分離のため未実施
+
+### Editor context menu / frontmatter dialog責務分離
+
+- 方向性: UI文言、CSS class名、DOM構造、右クリックメニュー項目、clipboard挙動、frontmatter追加dialog、CodeMirror extension構成、`Editor.tsx` の既存re-exportを変えず、`Editor.tsx` に残っていたcontext menu、clipboard、frontmatter dialog、補助候補判定を内部moduleへ分離する
+- 実施: `editorContextMenuModel.ts` を追加し、context menu位置clampとfrontmatter dialog候補判定を純粋処理へ移した。`editorClipboard.ts` を追加し、renderer clipboard読み書きとElectron native menu判定を分けた。`useEditorContextMenu.ts` と `useEditorFrontmatterDialog.ts` を追加し、右クリックメニュー状態、copy/cut/paste/select all、frontmatter dialog状態とsubmit処理をhook化した。`EditorContextMenu.tsx` と `EditorFrontmatterDialog.tsx` を追加し、`Editor.tsx` はCodeMirror生成、props/ref同期、event bridge、子component組み立てに寄せた
+- 確認: `pnpm exec vitest run src/renderer/editorContextMenuModel.test.ts src/renderer/components/Editor.test.tsx src/renderer/App.test.tsx`、`pnpm typecheck`、`pnpm test`、`git diff --check` が通過した。全体テストは72ファイル、493件が通過した
+- 残り: 今回指定されたEditor追加分割単位は完了。実アプリ確認はUI/仕様を変えない内部component/hook/model分離のため未実施
