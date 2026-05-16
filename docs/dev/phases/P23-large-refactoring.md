@@ -293,3 +293,10 @@ AIはこのフェーズを前提にユーザーへ接する。
 - 実施: `chronicleTimelineConstants.ts`、`chronicleTimelineAxis.ts`、`chronicleTimelineRows.ts`、`chronicleTimelineNavigation.ts`、`chronicleTimelineDrag.ts` を追加し、`chronicleTimeline.ts` は既存named exportを維持するfacadeにした。追加で `chronicleTimelineAxis.test.ts` と `chronicleTimelineRows.test.ts` を追加し、分離後のmodule境界を直接確認した
 - 確認: `pnpm exec vitest run src/renderer/chronicleTimelineAxis.test.ts src/renderer/chronicleTimelineRows.test.ts src/renderer/chronicleTimeline.test.ts src/renderer/components/ChronicleChartGrid.test.tsx src/renderer/hooks/useChronicleChartModel.test.tsx src/renderer/hooks/useChronicleChartViewport.test.tsx src/renderer/hooks/useChronicleEntryDrag.test.tsx src/renderer/App.test.tsx`、`pnpm typecheck`、`pnpm test`、`git diff --check` が通過した。全体テストは74ファイル、498件が通過した
 - 残り: 今回指定されたChronicleTimeline追加分割単位は完了。実アプリ確認はUI/仕様を変えない内部module分離のため未実施
+
+### Toolbar UI責務分離
+
+- 方向性: UI文言、CSS class名、DOM構造、ボタン順、CodeMirrorコマンド、`Toolbar` と `insertBlockIds` の既存import経路を変えず、`Toolbar.tsx` に残っていたpanel状態、target view解決、表Markdown生成、ボタン群描画を内部moduleへ分離する
+- 実施: `toolbarModel.ts` を追加し、heading level、panel class、表サイズ正規化、表Markdown生成を純粋処理へ移した。`useToolbarActions.ts` を追加し、target view記憶、panel開閉、各Markdown操作handlerをhook化した。`ToolbarButtonGroups.tsx` を追加し、inline、block、list、insertの各ボタン群を分け、`Toolbar.tsx` は既存exportを維持する組み立て役にした
+- 確認: `pnpm exec vitest run src/renderer/toolbarModel.test.ts src/renderer/components/Toolbar.test.tsx src/renderer/App.test.tsx`、`pnpm typecheck`、`pnpm test`、`git diff --check` が通過した。全体テストは75ファイル、501件が通過した
+- 残り: 今回指定されたToolbar分割単位は完了。実アプリ確認はUI/仕様を変えない内部component/hook/model分離のため未実施
