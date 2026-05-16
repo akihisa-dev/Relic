@@ -286,3 +286,10 @@ AIはこのフェーズを前提にユーザーへ接する。
 - 実施: `editorContextMenuModel.ts` を追加し、context menu位置clampとfrontmatter dialog候補判定を純粋処理へ移した。`editorClipboard.ts` を追加し、renderer clipboard読み書きとElectron native menu判定を分けた。`useEditorContextMenu.ts` と `useEditorFrontmatterDialog.ts` を追加し、右クリックメニュー状態、copy/cut/paste/select all、frontmatter dialog状態とsubmit処理をhook化した。`EditorContextMenu.tsx` と `EditorFrontmatterDialog.tsx` を追加し、`Editor.tsx` はCodeMirror生成、props/ref同期、event bridge、子component組み立てに寄せた
 - 確認: `pnpm exec vitest run src/renderer/editorContextMenuModel.test.ts src/renderer/components/Editor.test.tsx src/renderer/App.test.tsx`、`pnpm typecheck`、`pnpm test`、`git diff --check` が通過した。全体テストは72ファイル、493件が通過した
 - 残り: 今回指定されたEditor追加分割単位は完了。実アプリ確認はUI/仕様を変えない内部component/hook/model分離のため未実施
+
+### ChronicleTimeline純粋処理責務分離
+
+- 方向性: UI文言、DOM構造、CSS、IPC/preload API、Gantt保存形式、`chronicleTimeline.ts` の既存import経路を変えず、年表/日付チャートの行生成、軸・目盛り、minimap/offscreen navigation、drag差分計算、定数を内部moduleへ分離する
+- 実施: `chronicleTimelineConstants.ts`、`chronicleTimelineAxis.ts`、`chronicleTimelineRows.ts`、`chronicleTimelineNavigation.ts`、`chronicleTimelineDrag.ts` を追加し、`chronicleTimeline.ts` は既存named exportを維持するfacadeにした。追加で `chronicleTimelineAxis.test.ts` と `chronicleTimelineRows.test.ts` を追加し、分離後のmodule境界を直接確認した
+- 確認: `pnpm exec vitest run src/renderer/chronicleTimelineAxis.test.ts src/renderer/chronicleTimelineRows.test.ts src/renderer/chronicleTimeline.test.ts src/renderer/components/ChronicleChartGrid.test.tsx src/renderer/hooks/useChronicleChartModel.test.tsx src/renderer/hooks/useChronicleChartViewport.test.tsx src/renderer/hooks/useChronicleEntryDrag.test.tsx src/renderer/App.test.tsx`、`pnpm typecheck`、`pnpm test`、`git diff --check` が通過した。全体テストは74ファイル、498件が通過した
+- 残り: 今回指定されたChronicleTimeline追加分割単位は完了。実アプリ確認はUI/仕様を変えない内部module分離のため未実施
