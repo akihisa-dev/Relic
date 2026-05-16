@@ -244,3 +244,10 @@ AIはこのフェーズを前提にユーザーへ接する。
 - 実施: `FileTreeContextMenu.tsx` と `FileTreeItemRow.tsx` を追加し、context menu DOMと行表示を分けた。`useFileTreeItemState.ts` と `useFileTreeMotion.ts` を追加し、rename、context menu close、remove motion、展開要求反映、追加表示motionをhook化した。`fileTreeModel.ts` にはrename確定判定、Markdownリンク整形、multi-select操作対象判定、追加path/motion path計算を追加した。`FileTree.tsx` は既存exportを維持し、`FileTree` と `FileTreeItem` の組み立てに絞った
 - 確認: `pnpm exec vitest run src/renderer/fileTreeModel.test.ts src/renderer/components/FileTree.test.tsx src/renderer/components/SettingsSidebar.test.tsx src/renderer/App.test.tsx`、`pnpm typecheck`、`pnpm test`、`git diff --check` が通過した。全体テストは63ファイル、458件が通過した
 - 残り: 今回指定されたFileTree UI分割単位は完了。実アプリ確認はUI/仕様を変えない内部hook/component/model分離のため未実施
+
+### PaneView UI責務分離
+
+- 方向性: UI文言、CSS class名、DOM role、tab id、clipboard内容、drag MIME type、IPC/preload API、store状態構造、保存形式、`App.tsx` からの呼び出し方を変えず、`PaneView.tsx` に残っていたタブバー、タブ右クリックメニュー、drag/drop、表示surface、heading scroll補助を内部moduleへ分離する
+- 実施: `paneViewModel.ts` を追加し、panel tab label、文字数/単語数、Markdownリンク整形、tab drag payload、drop位置判定を分けた。`usePaneTabInteractions.ts` と `usePaneHeadingScroll.ts` を追加し、context menu開閉、drop target、drag/drop handler、heading scroll effectをhook化した。`PaneTabBar.tsx`、`PaneTabContextMenu.tsx`、`PaneContentSurface.tsx` を追加し、`PaneView.tsx` はstore接続、autosave、hook呼び出し、子component組み立て中心にした
+- 確認: `pnpm exec vitest run src/renderer/paneViewModel.test.ts src/renderer/components/PaneView.test.tsx src/renderer/App.test.tsx src/renderer/store/editorStore.test.ts`、`pnpm typecheck`、`pnpm test`、`git diff --check` が通過した。全体テストは65ファイル、467件が通過した
+- 残り: 今回指定されたPaneView UI分割単位は完了。実アプリ確認はUI/仕様を変えない内部component/hook/model分離のため未実施
