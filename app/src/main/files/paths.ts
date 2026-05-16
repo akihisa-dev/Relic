@@ -30,3 +30,16 @@ export function resolveWorkspaceRelativePath(
 
   return ok(absolutePath);
 }
+
+export function resolveWorkspaceRelativePathOrRoot(
+  workspacePath: string,
+  relativePath: string
+): RelicResult<string> {
+  const normalizedInput = relativePath.replace(/\\/g, "/").trim();
+
+  if (normalizedInput === "" || normalizedInput === ".") {
+    return ok(workspacePath);
+  }
+
+  return resolveWorkspaceRelativePath(workspacePath, relativePath);
+}
