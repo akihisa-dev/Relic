@@ -251,3 +251,10 @@ AIはこのフェーズを前提にユーザーへ接する。
 - 実施: `paneViewModel.ts` を追加し、panel tab label、文字数/単語数、Markdownリンク整形、tab drag payload、drop位置判定を分けた。`usePaneTabInteractions.ts` と `usePaneHeadingScroll.ts` を追加し、context menu開閉、drop target、drag/drop handler、heading scroll effectをhook化した。`PaneTabBar.tsx`、`PaneTabContextMenu.tsx`、`PaneContentSurface.tsx` を追加し、`PaneView.tsx` はstore接続、autosave、hook呼び出し、子component組み立て中心にした
 - 確認: `pnpm exec vitest run src/renderer/paneViewModel.test.ts src/renderer/components/PaneView.test.tsx src/renderer/App.test.tsx src/renderer/store/editorStore.test.ts`、`pnpm typecheck`、`pnpm test`、`git diff --check` が通過した。全体テストは65ファイル、467件が通過した
 - 残り: 今回指定されたPaneView UI分割単位は完了。実アプリ確認はUI/仕様を変えない内部component/hook/model分離のため未実施
+
+### FrontmatterSidebar設定UI責務分離
+
+- 方向性: UI文言、CSS class名、DOM構造、frontmatter設定の保存形式、IPC/preload API、`SettingsSidebar` からの呼び出し方を変えず、`FrontmatterSidebar.tsx` に残っていた固定フィールド表示、カスタムフィールド追加、既存フィールド編集、選択肢編集、YAML例生成を内部moduleへ分離する
+- 実施: `frontmatterSettingsModel.ts` を追加し、field type定義、固定フィールド定義、選択肢parse/重複排除、field名検証、YAML例生成を分けた。`useFrontmatterFieldsState.ts` を追加し、draft同期、field追加/更新/削除、選択肢追加、field名確定をhook化した。`FrontmatterFixedFields.tsx`、`FrontmatterFieldAddForm.tsx`、`FrontmatterFieldList.tsx`、`FrontmatterChoiceEditor.tsx` を追加し、`FrontmatterSidebar.tsx` は各部品の組み立てに絞った
+- 確認: `pnpm exec vitest run src/renderer/frontmatterSettingsModel.test.ts src/renderer/components/SettingsSidebar.test.tsx`、`pnpm typecheck`、`pnpm test`、`git diff --check` が通過した。全体テストは66ファイル、472件が通過した
+- 残り: 今回指定された短時間内のFrontmatterSidebar分割単位は完了。実アプリ確認はUI/仕様を変えない内部component/hook/model分離のため未実施
