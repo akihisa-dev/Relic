@@ -230,3 +230,10 @@ AIはこのフェーズを前提にユーザーへ接する。
 - 実施: `editorFrontmatterModel.ts` と `editorFrontmatterWidget.ts` を追加し、YAML行解析、固定フィールド判定、date/chronicle入力解析、YAML保持シリアライズ、frontmatter widgetを分けた。`editorTableModel.ts` と `editorTableWidget.ts` を追加し、table検出、format、行列操作、table widgetを分けた。既存の `editorFrontmatter.ts` と `editorTables.ts` はnamed exportを維持するfacadeにした
 - 確認: `pnpm exec vitest run src/renderer/editorFrontmatterModel.test.ts src/renderer/editorTableModel.test.ts src/renderer/components/Editor.test.tsx`、`pnpm typecheck`、`pnpm test`、`git diff --check` が通過した。全体テストは60ファイル、439件が通過した
 - 残り: 今回指定されたEditor周辺分割単位は完了。実アプリ確認はUI/仕様を変えない内部model/widget分離のため未実施
+
+### Markdown Preview / Live Preview責務分離
+
+- 方向性: 仕様、UI文言、DOM class名、CSS、Markdown保存形式、IPC/preload API、`Editor.tsx` と `Preview.tsx` の既存export経路を変えず、Markdown live previewとpreview renderingに残っていた純粋処理、CodeMirror widget、React hook責務を分離する
+- 実施: `editorLivePreviewModel.ts` と `editorLivePreviewWidgets.ts` を追加し、inline記法検出、重なり判定、クリック可能リンク判定、CodeMirror widgetを分けた。`previewMarkdown.ts` と `usePreviewEmbeds.ts` を追加し、Markdown rendering、embed target正規化、checkbox更新、埋め込み読み込みeffectを分けた。既存の `editorLivePreview.ts` と `components/Preview.tsx` は既存exportを維持したまま組み立て側に寄せた
+- 確認: `pnpm exec vitest run src/renderer/editorLivePreviewModel.test.ts src/renderer/previewMarkdown.test.ts src/renderer/components/Preview.test.tsx src/renderer/components/Editor.test.tsx`、`pnpm typecheck`、`pnpm test`、`git diff --check` が通過した。全体テストは62ファイル、449件が通過した
+- 残り: 今回指定されたMarkdown Preview / Live Preview分割単位は完了。実アプリ確認はUI/仕様を変えない内部model/widget/hook分離のため未実施
