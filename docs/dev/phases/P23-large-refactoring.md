@@ -131,3 +131,10 @@ Relicの大規模リファクタリングフェーズの正本。
 - 実施: `app/src/renderer/components/GraphControlSections.tsx` を追加し、filter、groups、display、forcesの各sectionと共通section wrapperを移した。`GraphControls.tsx` はworkspaceIdによる既存graph読込、最小化/展開、topbar、再読み込み、section開閉状態、reset button、浮動パネル位置調整hookを中心に残した
 - 確認: `pnpm exec vitest run src/renderer/components/GraphControlSections.test.tsx`、`pnpm exec vitest run src/renderer/components/GraphControls.test.tsx`、`pnpm exec vitest run src/renderer/components/GraphSidebar.test.tsx`、`pnpm exec vitest run src/renderer/App.test.tsx`、`pnpm typecheck`、`pnpm test`、`git diff --check` が通過した。全体テストは42ファイル、370件が通過した
 - 残り: 今回指定された分割単位は完了。実アプリ確認はUI/仕様を変えない内部component分離のため未実施
+
+### GraphControls floating panel hook分離
+
+- 方向性: 仕様、UI文言、DOM class名、CSS、保存形式、IPC/preload API、`graphStore` の状態構造を変えず、`GraphControls.tsx` に残っていた浮動パネル位置調整hookをhooks配下へ分離する
+- 実施: `app/src/renderer/hooks/useGraphFloatingPanelPosition.ts` を追加し、drag handleのpointer down、初期位置style、pointermove時のclamp、pointerup/pointercancel時のlistener解除処理を移した。`GraphSidebar.tsx` は新hookをhooks配下からimportし、`GraphControls.tsx` は操作パネルcomponent本体に絞った
+- 確認: `pnpm exec vitest run src/renderer/hooks/useGraphFloatingPanelPosition.test.tsx`、`pnpm exec vitest run src/renderer/components/GraphControls.test.tsx`、`pnpm exec vitest run src/renderer/components/GraphSidebar.test.tsx`、`pnpm exec vitest run src/renderer/App.test.tsx`、`pnpm typecheck`、`pnpm test`、`git diff --check` が通過した。全体テストは43ファイル、374件が通過した
+- 残り: 今回指定された分割単位は完了。実アプリ確認はUI/仕様を変えない内部hook分離のため未実施

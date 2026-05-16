@@ -9,10 +9,11 @@ import {
 } from "../graphLayout";
 import type { GraphForceSettings, GraphViewModel } from "../graphLayout";
 import { useGraphCanvasInteractions } from "../hooks/useGraphCanvasInteractions";
+import { useGraphFloatingPanelPosition } from "../hooks/useGraphFloatingPanelPosition";
 import { useT } from "../i18n";
 import { useGraphStore } from "../store/graphStore";
 import { GraphCanvas } from "./GraphCanvas";
-import { GraphControls, useGraphFloatingPanelPosition } from "./GraphControls";
+import { GraphControls } from "./GraphControls";
 
 export { buildGraphViewBox } from "../graphLayout";
 
