@@ -138,3 +138,10 @@ Relicの大規模リファクタリングフェーズの正本。
 - 実施: `app/src/renderer/hooks/useGraphFloatingPanelPosition.ts` を追加し、drag handleのpointer down、初期位置style、pointermove時のclamp、pointerup/pointercancel時のlistener解除処理を移した。`GraphSidebar.tsx` は新hookをhooks配下からimportし、`GraphControls.tsx` は操作パネルcomponent本体に絞った
 - 確認: `pnpm exec vitest run src/renderer/hooks/useGraphFloatingPanelPosition.test.tsx`、`pnpm exec vitest run src/renderer/components/GraphControls.test.tsx`、`pnpm exec vitest run src/renderer/components/GraphSidebar.test.tsx`、`pnpm exec vitest run src/renderer/App.test.tsx`、`pnpm typecheck`、`pnpm test`、`git diff --check` が通過した。全体テストは43ファイル、374件が通過した
 - 残り: 今回指定された分割単位は完了。実アプリ確認はUI/仕様を変えない内部hook分離のため未実施
+
+### GraphPanel model hook分離
+
+- 方向性: 仕様、UI文言、DOM class名、CSS、保存形式、IPC/preload API、`graphStore` の状態構造を変えず、`GraphSidebar.tsx` に残っていたstore接続、graph読込、表示モデル導出をhookへ分離する
+- 実施: `app/src/renderer/hooks/useGraphPanelModel.ts` を追加し、GraphPanel用store state/action取得、workspaceIdによる既存graph読込effect、hoveredPath state、filteredGraph、focusedPath、labelOpacity、groupByPath、forceSettings導出、`useGraphCanvasInteractions` 呼び出しを移した。`GraphSidebar.tsx` は `useT`、浮動パネルhook、model hook、loading/error/empty分岐、`GraphControls` と `GraphCanvas` のJSX組み立てを中心に残した
+- 確認: `pnpm exec vitest run src/renderer/hooks/useGraphPanelModel.test.tsx`、`pnpm exec vitest run src/renderer/hooks/useGraphCanvasInteractions.test.tsx`、`pnpm exec vitest run src/renderer/components/GraphCanvas.test.tsx`、`pnpm exec vitest run src/renderer/components/GraphSidebar.test.tsx`、`pnpm exec vitest run src/renderer/App.test.tsx`、`pnpm typecheck`、`pnpm test`、`git diff --check` が通過した。全体テストは44ファイル、379件が通過した
+- 残り: 今回指定された分割単位は完了。実アプリ確認はUI/仕様を変えない内部hook分離のため未実施

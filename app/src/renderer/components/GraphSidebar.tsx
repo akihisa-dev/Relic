@@ -1,17 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
 import type { ReactElement } from "react";
 
-import {
-  buildFilteredGraph,
-  buildGraphViewBox,
-  clamp,
-  buildGroupByPath
-} from "../graphLayout";
-import type { GraphForceSettings, GraphViewModel } from "../graphLayout";
-import { useGraphCanvasInteractions } from "../hooks/useGraphCanvasInteractions";
+import { buildGraphViewBox } from "../graphLayout";
 import { useGraphFloatingPanelPosition } from "../hooks/useGraphFloatingPanelPosition";
+import { useGraphPanelModel } from "../hooks/useGraphPanelModel";
 import { useT } from "../i18n";
-import { useGraphStore } from "../store/graphStore";
 import { GraphCanvas } from "./GraphCanvas";
 import { GraphControls } from "./GraphControls";
 
@@ -27,71 +19,22 @@ export function GraphPanel({ activeFilePath, onOpenFile, workspaceId }: GraphPan
   const t = useT();
   const floatingPanel = useGraphFloatingPanelPosition();
   const {
-    centerForce,
     error,
-    folderFilter,
-    graph,
-    groups,
-    isLoading,
-    linkDistance,
-    linkFilter,
-    linkForce,
-    linkThickness,
-    localGraphDepth,
-    loadGraph,
-    minDegree,
-    nodeSize,
-    query,
-    repelForce,
-    selectedPath,
-    setSelectedPath,
-    setZoom,
-    showArrows,
-    showLabels,
-    showOrphans,
-    tagFilter,
-    textFadeThreshold,
-    zoom
-  } = useGraphStore();
-  const [hoveredPath, setHoveredPath] = useState<string | null>(null);
-
-  useEffect(() => {
-    loadGraph(workspaceId);
-  }, [loadGraph, workspaceId]);
-
-  const filteredGraph = useMemo<GraphViewModel>(() => buildFilteredGraph({
-    activeFilePath,
-    folderFilter,
-    graph,
-    linkFilter,
-    localGraphDepth,
-    minDegree,
-    query,
-    showOrphans,
-    tagFilter
-  }), [activeFilePath, folderFilter, graph, linkFilter, localGraphDepth, minDegree, query, showOrphans, tagFilter]);
-  const focusedPath = hoveredPath ?? selectedPath;
-  const labelOpacity = showLabels
-    ? clamp((zoom - textFadeThreshold + 0.5) / 0.5, 0.18, 1)
-    : 0;
-  const groupByPath = useMemo(() => buildGroupByPath(filteredGraph.nodes, groups), [filteredGraph.nodes, groups]);
-  const forceSettings = useMemo<GraphForceSettings>(() => ({
-    centerForce,
-    linkDistance,
-    linkForce,
-    repelForce
-  }), [centerForce, linkDistance, linkForce, repelForce]);
-  const graphCanvas = useGraphCanvasInteractions({
-    edges: filteredGraph.edges,
+    filteredGraph,
     focusedPath,
-    forceSettings,
-    nodes: filteredGraph.nodes,
-    onOpenFile,
+    graphCanvas,
+    groupByPath,
+    isLoading,
+    labelOpacity,
+    linkThickness,
+    nodeSize,
     selectedPath,
-    setFocusedPath: setHoveredPath,
-    setSelectedPath,
-    setZoom,
-    zoom
+    showArrows,
+    showLabels
+  } = useGraphPanelModel({
+    activeFilePath,
+    onOpenFile,
+    workspaceId
   });
 
   return (
