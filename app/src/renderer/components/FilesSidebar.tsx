@@ -1,11 +1,14 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import type { ReactElement } from "react";
 
 import type { SearchMode, WorkspaceSearchResult, WorkspaceState, WorkspaceTreeNode } from "../../shared/ipc";
-import { findNodeByPath, type FileTreeExpansionRequest } from "../fileTreeModel";
+import { type FileTreeExpansionRequest } from "../fileTreeModel";
+import { isFilteringFiles as isFilteringFilesModel } from "../filesSidebarModel";
 import { useFileTreeSelection } from "../hooks/useFileTreeSelection";
-import { useT, type Translator } from "../i18n";
-import { FileTree, FileTreeItem } from "./FileTree";
+import { FilesSearchResults } from "./FilesSearchResults";
+import { FilesSidebarSearch } from "./FilesSidebarSearch";
+import { FilesSidebarTreeSection } from "./FilesSidebarTreeSection";
+import { FilesCreateActions, FilesWorkspaceActions, FilesWorkspaceEmpty } from "./FilesWorkspaceActions";
 
 export interface FilesSidebarProps {
   isCreatingFile: boolean;
@@ -85,9 +88,6 @@ export function FilesSidebar({
   workspaceState
 }: FilesSidebarProps): ReactElement {
   const [expansionRequest, setExpansionRequest] = useState<FileTreeExpansionRequest | undefined>(undefined);
-  const [isSearchMethodMenuOpen, setIsSearchMethodMenuOpen] = useState(false);
-  const searchInputRef = useRef<HTMLInputElement | null>(null);
-  const searchShellRef = useRef<HTMLDivElement | null>(null);
   const activeWorkspace = workspaceState?.activeWorkspace ?? null;
   const pinnedPaths = useMemo(
     () => new Set(workspaceState?.pinnedPaths ?? []),
@@ -98,145 +98,35 @@ export function FilesSidebar({
     nodes: userNodes,
     onSelectedCountChange
   });
-  const knownFrontmatterFields = useMemo(
-    () =>
-      Array.from(
-        new Set([
-          "tags",
-          "aliases",
-          "date",
-          "status",
-          "publish",
-          "url",
-          "author",
-          ...Object.keys(searchFrontmatterCandidates)
-        ])
-      ).sort((a, b) => a.localeCompare(b, "ja")),
-    [searchFrontmatterCandidates]
-  );
-  const frontmatterValueCandidates = searchFrontmatterField ? (searchFrontmatterCandidates[searchFrontmatterField] ?? []) : [];
-  const isFilteringFiles = searchQuery.trim() !== "" || isSearching || searchError !== null;
-  const t = useT();
-
-  useEffect(() => {
-    if (searchFocusRequest <= 0) return;
-    searchInputRef.current?.focus();
-  }, [searchFocusRequest]);
-
-  useEffect(() => {
-    if (!isSearchMethodMenuOpen) return;
-
-    const close = (event: globalThis.PointerEvent): void => {
-      if (searchShellRef.current?.contains(event.target as Node)) return;
-      setIsSearchMethodMenuOpen(false);
-    };
-
-    window.addEventListener("pointerdown", close);
-
-    return () => window.removeEventListener("pointerdown", close);
-  }, [isSearchMethodMenuOpen]);
+  const isFilteringFiles = isFilteringFilesModel({ isSearching, query: searchQuery, searchError });
 
   const requestExpansion = (action: FileTreeExpansionRequest["action"], scopePath?: string): void => {
     setExpansionRequest((current) => ({ action, id: (current?.id ?? 0) + 1, scopePath }));
   };
 
-  const searchModeOptions: Array<{ label: string; mode: SearchMode }> = [
-    { label: t("files.searchModeFullText"), mode: "fullText" },
-    { label: t("files.searchModeFileName"), mode: "fileName" },
-    { label: t("files.searchModeTag"), mode: "tag" },
-    { label: t("files.searchModeFrontmatter"), mode: "frontmatter" },
-    { label: t("files.searchModeRegex"), mode: "regex" }
-  ];
-  const activeSearchModeLabel = searchModeOptions.find((option) => option.mode === searchMode)?.label ?? t("files.searchModeFullText");
-  const searchPlaceholder = t("files.searchPlaceholder", { mode: activeSearchModeLabel });
-
   return (
     <div className="sidebar-section">
       {activeWorkspace ? (
         <>
-          <div className="files-search" ref={searchShellRef}>
-            <label className={`files-search-input${searchError ? " files-search-input--error" : ""}`}>
-              <button
-                aria-label={t("files.searchMethod")}
-                className="files-search-mode-button"
-                onClick={() => setIsSearchMethodMenuOpen((current) => !current)}
-                type="button"
-              >
-                {activeSearchModeLabel}
-              </button>
-              <input
-                aria-label={t("files.search")}
-                list={searchMode === "frontmatter" && frontmatterValueCandidates.length > 0 ? "files-search-frontmatter-values" : undefined}
-                onChange={(event) => onSearchQueryChange(event.target.value)}
-                placeholder={searchPlaceholder}
-                ref={searchInputRef}
-                type="search"
-                value={searchQuery}
-              />
-            </label>
-            {isSearchMethodMenuOpen ? (
-              <div className="files-search-method-menu" role="listbox" aria-label={t("files.searchMethod")}>
-                {searchModeOptions.map((option) => (
-                  <button
-                    aria-selected={option.mode === searchMode}
-                    className={`files-search-method${option.mode === searchMode ? " active" : ""}`}
-                    key={option.mode}
-                    onClick={() => {
-                      onSearchModeChange(option.mode);
-                      setIsSearchMethodMenuOpen(false);
-                      window.setTimeout(() => searchInputRef.current?.focus(), 0);
-                    }}
-                    role="option"
-                    type="button"
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
-            ) : null}
-            {searchMode === "frontmatter" ? (
-              <div className="files-search-frontmatter">
-                <input
-                  aria-label={t("files.searchFrontmatterField")}
-                  className="search-input"
-                  list="files-search-frontmatter-fields"
-                  onChange={(event) => onSearchFrontmatterFieldChange(event.target.value)}
-                  placeholder={t("files.searchFrontmatterField")}
-                  value={searchFrontmatterField}
-                />
-                <datalist id="files-search-frontmatter-fields">
-                  {knownFrontmatterFields.map((field) => (
-                    <option key={field} value={field} />
-                  ))}
-                </datalist>
-                {frontmatterValueCandidates.length > 0 ? (
-                  <datalist id="files-search-frontmatter-values">
-                    {frontmatterValueCandidates.map((candidate) => (
-                      <option key={candidate} value={candidate} />
-                    ))}
-                  </datalist>
-                ) : null}
-              </div>
-            ) : null}
-          </div>
-          <button
-            className="primary-button"
-            disabled={isCreatingFile}
-            onClick={onCreateFile}
-            type="button"
-          >
-            {isCreatingFile ? t("common.running") : t("files.createNote")}
-          </button>
-          <button
-            className="secondary-button"
-            disabled={isCreatingFolder}
-            onClick={onCreateFolder}
-            type="button"
-          >
-            {isCreatingFolder ? t("common.running") : t("files.createFolder")}
-          </button>
+          <FilesSidebarSearch
+            onSearchFrontmatterFieldChange={onSearchFrontmatterFieldChange}
+            onSearchModeChange={onSearchModeChange}
+            onSearchQueryChange={onSearchQueryChange}
+            searchError={searchError}
+            searchFocusRequest={searchFocusRequest}
+            searchFrontmatterCandidates={searchFrontmatterCandidates}
+            searchFrontmatterField={searchFrontmatterField}
+            searchMode={searchMode}
+            searchQuery={searchQuery}
+          />
+          <FilesCreateActions
+            isCreatingFile={isCreatingFile}
+            isCreatingFolder={isCreatingFolder}
+            onCreateFile={onCreateFile}
+            onCreateFolder={onCreateFolder}
+          />
           {isFilteringFiles ? (
-            <FileSearchResults
+            <FilesSearchResults
               error={searchError}
               frontmatterField={searchFrontmatterField}
               isSearching={isSearching}
@@ -244,54 +134,11 @@ export function FilesSidebar({
               onOpenFile={onOpenFile}
               query={searchQuery}
               results={searchResults}
-              t={t}
             />
-          ) : pinnedPaths.size > 0 ? (
-            <div className="pinned-section">
-              <div className="pinned-section-heading">{t("files.pinned")}</div>
-              <ul className="file-tree">
-                {(workspaceState?.pinnedPaths ?? []).map((p) => {
-                  const node = findNodeByPath(workspaceState?.fileTree ?? [], p);
-
-                  if (!node) return null;
-
-                  return (
-                    <FileTreeItem
-                      expansionRequest={expansionRequest}
-                      isPinned
-                      key={p}
-                      node={node}
-                      onDeleteItem={onDeleteItem}
-                      onDeleteSelectedItems={() => onDeleteItems(selectedItems)}
-                      onCreateFileInFolder={onCreateFileInFolder}
-                      onCreateFolderInFolder={onCreateFolderInFolder}
-                      onDuplicateFile={onDuplicateFile}
-                      onMoveFile={onMoveFile}
-                      onMoveFolder={onMoveFolder}
-                      onMoveItems={onMoveItems}
-                      onOpenFile={onOpenFile}
-                      onOpenInOtherPane={onOpenInOtherPane}
-                      onRequestExpansion={requestExpansion}
-                      onRevealItem={onRevealItem}
-                      onRenameItem={onRenameItem}
-                      onSelectFolder={onSelectFolder}
-                      onSelectItem={handleSelectItem}
-                      onTogglePin={onTogglePin}
-                      openFilePaths={openFilePaths}
-                      pinnedPaths={pinnedPaths}
-                      selectedItems={selectedItems}
-                      selectedPaths={selectedPaths}
-                    />
-                  );
-                })}
-              </ul>
-            </div>
           ) : null}
-          {isFilteringFiles ? null : (
-            <FileTree
+          {!isFilteringFiles && workspaceState ? (
+            <FilesSidebarTreeSection
               expansionRequest={expansionRequest}
-              isRoot
-              nodes={userNodes}
               onDeleteItem={onDeleteItem}
               onDeleteSelectedItems={() => onDeleteItems(selectedItems)}
               onCreateFileInFolder={onCreateFileInFolder}
@@ -312,106 +159,23 @@ export function FilesSidebar({
               pinnedPaths={pinnedPaths}
               selectedItems={selectedItems}
               selectedPaths={selectedPaths}
+              workspaceState={workspaceState}
             />
-          )}
-          <div className="workspace-actions">
-            <button
-              className="secondary-button"
-              disabled={isOpeningWorkspace || isCreatingWorkspace}
-              onClick={onOpenWorkspace}
-              type="button"
-            >
-              {isOpeningWorkspace ? t("files.opening") : t("files.openFolder")}
-            </button>
-            <button
-              className="secondary-button"
-              disabled={isOpeningWorkspace || isCreatingWorkspace}
-              onClick={onCreateWorkspace}
-              type="button"
-            >
-              {isCreatingWorkspace ? t("files.creatingWorkspace") : t("files.createNewWorkspace")}
-            </button>
-          </div>
+          ) : null}
+          <FilesWorkspaceActions
+            isCreatingWorkspace={isCreatingWorkspace}
+            isOpeningWorkspace={isOpeningWorkspace}
+            onCreateWorkspace={onCreateWorkspace}
+            onOpenWorkspace={onOpenWorkspace}
+          />
         </>
       ) : (
-        <div className="workspace-empty">
-          <div>
-            <p className="workspace-empty-title">{t("files.workspaceEmptyTitle")}</p>
-            <p className="workspace-empty-copy">{t("files.workspaceHint")}</p>
-          </div>
-          <div className="workspace-empty-actions">
-            <button
-              className="primary-button"
-              disabled={isOpeningWorkspace || isCreatingWorkspace}
-              onClick={onOpenWorkspace}
-              type="button"
-            >
-              {isOpeningWorkspace ? t("files.opening") : t("files.openFolder")}
-            </button>
-            <button
-              className="secondary-button"
-              disabled={isOpeningWorkspace || isCreatingWorkspace}
-              onClick={onCreateWorkspace}
-              type="button"
-            >
-              {isCreatingWorkspace ? t("files.creatingWorkspace") : t("files.createNewWorkspace")}
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function FileSearchResults({
-  error,
-  frontmatterField,
-  isSearching,
-  mode,
-  onOpenFile,
-  query,
-  results,
-  t
-}: {
-  error: string | null;
-  frontmatterField: string;
-  isSearching: boolean;
-  mode: SearchMode;
-  onOpenFile: (path: string, event?: React.MouseEvent<HTMLButtonElement>) => void;
-  query: string;
-  results: WorkspaceSearchResult[];
-  t: Translator;
-}): ReactElement {
-  if (error) return <div className="error-note">{error}</div>;
-  if (isSearching) return <div className="list-loading-note">{t("common.loading")}</div>;
-  if (mode === "frontmatter" && query.trim() !== "" && !frontmatterField.trim()) return <div className="empty-note">{t("search.noField")}</div>;
-
-  return (
-    <div className="files-search-results">
-      <div className="links-panel-subheading">
-        {t("files.searchResults", { count: results.length })}
-      </div>
-      {results.length > 0 ? (
-        <ul className="search-results">
-          {results.map((result, index) => (
-            <li className="search-result-item" key={`${result.path}-${result.lineNumber}-${index}`}>
-              <button
-                className="search-result-button"
-                onClick={(event) => onOpenFile(result.path, event)}
-                title={result.path}
-                type="button"
-              >
-                <span className="search-result-title">{result.fileName}</span>
-                <span className="search-result-line">
-                  {result.lineNumber ? `${result.lineNumber}: ` : ""}
-                  {result.lineText}
-                </span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <div className="empty-note">{t("search.noMatches")}</div>
+        <FilesWorkspaceEmpty
+          isCreatingWorkspace={isCreatingWorkspace}
+          isOpeningWorkspace={isOpeningWorkspace}
+          onCreateWorkspace={onCreateWorkspace}
+          onOpenWorkspace={onOpenWorkspace}
+        />
       )}
     </div>
   );
