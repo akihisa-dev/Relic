@@ -112,9 +112,9 @@ P24では、事前に固定した長い実施リストは置かない。
 - 確認: `pnpm exec vitest run src/renderer/components/SettingsSidebar.test.tsx src/renderer/components/ToolsSidebar.test.tsx src/renderer/components/GraphControlSections.test.tsx src/renderer/App.test.tsx`、`pnpm typecheck`、`pnpm test`、`git diff --check` が通過した。全体テストは78ファイル、516件が通過した。開発版レンダラーを `pnpm exec vite --host 127.0.0.1 --port 5173 --config vite.renderer.config.ts` で起動し、設定タブ、フロントマター設定、ファイル加工の未登録ワークスペース表示、グラフ空状態、設定タブのダーク表示を確認した
 - 残り: Electron実機でワークスペースを開いた状態のファイル加工入力群とグラフhover操作パネルの目視確認は、ユーザーのワークスペースまたは検証用フォルダ選択が必要なため未実施。対象コンポーネントの操作・保存挙動は自動テストで確認済み
 
-### チャートビューの固定単位化とズーム操作
+### チャートビューの固定単位化
 
-- 方向性: チャートビューのスケール切り替えを廃止し、`chronicle` は1年単位、日付チャートは1日単位を基準に固定する。表示密度の変更は、既存データ形式、IPC/preload API、store状態構造を変えず、ズームイン・ズームアウトだけで行う
-- 実施: `SCALE_OPTIONS`、scale index、scale表示文言を廃止し、共通の `CHART_ZOOM_LEVELS` と `zoomIndex` で単位幅だけを変える構造へ変更した。`chronicle` の軸・ガイドは1年単位を基準にし、10年ごとの主要ガイドを残した。日付チャートは常に day scale を使い、年・月・日の3段軸を表示する。ツールバーは「ズーム」表示、縮小、拡大、全体、今日の操作へ置き換え、仕様文書のチャート説明も固定単位とズーム操作へ更新した
-- 確認: `pnpm exec vitest run src/renderer/components/ChronicleToolbar.test.tsx src/renderer/components/ChronicleChartGrid.test.tsx src/renderer/hooks/useChronicleChartModel.test.tsx src/renderer/hooks/useChronicleChartViewport.test.tsx src/renderer/chronicleTimeline.test.ts src/renderer/chronicleTimelineAxis.test.ts src/renderer/App.test.tsx`、`pnpm typecheck`、`pnpm test` が通過した。全体テストは78ファイル、517件が通過した。開発版レンダラーを `pnpm exec vite --host 127.0.0.1 --port 5173 --config vite.renderer.config.ts` で起動し、チャートタブの空状態、ズーム表示、縮小/拡大操作、コンソールエラーなしを確認した
-- 残り: Electron実機で実ワークスペースを開いた状態のチャート目視確認は未実施。chronicle/date の固定単位、ズーム、バー編集、date補完、保存フォールバックは自動テストで確認済み
+- 方向性: チャートビューのスケール切り替え、ズームイン、ズームアウト、全体表示ボタンを廃止し、`chronicle` は1年単位、日付チャートは1日単位だけで固定表示する。既存データ形式、IPC/preload API、store状態構造は変えない
+- 実施: `SCALE_OPTIONS`、scale index、scale表示文言、ツールバーのスケール操作を削除し、モデル側は `tickInterval = 1` と day scale に固定した。`chronicle` の軸・ガイドは1年単位を基準にし、日付チャートは常に年・月・日の3段軸を表示する。dateの「今日」移動だけは残した。仕様文書のチャート説明も固定単位へ更新した
+- 確認: `pnpm exec vitest run src/renderer/components/ChronicleToolbar.test.tsx src/renderer/components/ChronicleChartGrid.test.tsx src/renderer/hooks/useChronicleChartModel.test.tsx src/renderer/hooks/useChronicleChartViewport.test.tsx src/renderer/chronicleTimeline.test.ts src/renderer/chronicleTimelineAxis.test.ts src/renderer/App.test.tsx`、`pnpm typecheck`、`pnpm test`、`git diff --check` が通過した。全体テストは78ファイル、516件が通過した。開発版レンダラーを `pnpm exec vite --host 127.0.0.1 --port 5173 --config vite.renderer.config.ts` で起動し、チャートタブにスケール、ズーム、全体ボタンが表示されないこととコンソールエラーなしを確認した
+- 残り: 実ワークスペースを開いたElectron実機目視は未実施

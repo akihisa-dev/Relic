@@ -2,7 +2,6 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import type { WorkspaceGanttChart } from "../../shared/ipc";
-import { CHART_ZOOM_LEVELS, DEFAULT_CHART_ZOOM_INDEX } from "../chronicleTimeline";
 import { I18nProvider } from "../i18n";
 import { ChronicleToolbar, type ChronicleToolbarProps } from "./ChronicleToolbar";
 
@@ -23,20 +22,15 @@ function renderToolbar(overrides: Partial<ChronicleToolbarProps> = {}) {
     activeChart: chronicleChart,
     activeSource: "chronicle",
     availableCharts: [chronicleChart, dateChart],
-    fitChronicleOverview: vi.fn(),
     query: "",
     scrollToToday: vi.fn(),
     selectChart: vi.fn(),
     setQuery: vi.fn(),
     setSortKey: vi.fn(),
     setStatusFilter: vi.fn(),
-    setZoomIndex: vi.fn(),
     sortKey: "start-asc",
     statusFilter: "",
     statusOptions: ["未着手", "完了"],
-    zoomIndex: DEFAULT_CHART_ZOOM_INDEX,
-    zoomLevel: CHART_ZOOM_LEVELS[DEFAULT_CHART_ZOOM_INDEX],
-    zoomOptions: CHART_ZOOM_LEVELS,
     ...overrides
   };
 
@@ -51,7 +45,7 @@ function renderToolbar(overrides: Partial<ChronicleToolbarProps> = {}) {
 }
 
 describe("ChronicleToolbar", () => {
-  it("source/search/sort/zoomを既存classと文言で描画しcallbackへつなぐ", () => {
+  it("source/search/sortを既存classと文言で描画しcallbackへつなぐ", () => {
     const { container, props } = renderToolbar();
 
     expect(container.querySelector(".chronicle-toolbar")).toBeInTheDocument();
@@ -59,16 +53,11 @@ describe("ChronicleToolbar", () => {
     fireEvent.click(screen.getByRole("button", { name: "date" }));
     fireEvent.change(screen.getByPlaceholderText("ファイル名・パス・値"), { target: { value: "鎌倉" } });
     fireEvent.change(screen.getByDisplayValue("開始順（昇順）"), { target: { value: "name-desc" } });
-    fireEvent.click(screen.getByRole("button", { name: "全体" }));
-    fireEvent.click(screen.getByRole("button", { name: "縮小" }));
-    fireEvent.click(screen.getByRole("button", { name: "拡大" }));
 
     expect(props.selectChart).toHaveBeenCalledWith(expect.objectContaining({ id: "date" }));
     expect(props.setQuery).toHaveBeenCalledWith("鎌倉");
     expect(props.setSortKey).toHaveBeenCalledWith("name-desc");
-    expect(props.fitChronicleOverview).toHaveBeenCalledTimes(1);
-    expect(props.setZoomIndex).toHaveBeenCalledTimes(2);
-    expect(screen.getByText("100%")).toHaveClass("chronicle-zoom-value");
+    expect(container.querySelector(".chronicle-actions")).toBeNull();
   });
 
   it("date sourceではstatus filterと今日buttonを表示する", () => {

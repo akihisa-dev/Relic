@@ -644,14 +644,13 @@ describe("App", () => {
     expect(screen.getByText("1185 〜 1333")).toBeInTheDocument();
     expect(screen.getByText("年代")).toBeInTheDocument();
     expect(screen.getByText("1185-1333")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "全体" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "1185-1333" })).toHaveAttribute(
       "title",
       "この年代へ移動"
     );
     expect(renderResult.container.querySelector(".chronicle-minimap")).toBeInTheDocument();
     expect(renderResult.container.querySelector(".chronicle-minimap-item")).toBeInTheDocument();
-    expect(renderResult.container.querySelector(".chronicle-zoom-value")).toHaveTextContent("100%");
+    expect(renderResult.container.querySelector(".chronicle-actions")).toBeNull();
     expect(screen.queryByText("計画")).not.toBeInTheDocument();
     expect(screen.queryByText("実行")).not.toBeInTheDocument();
     expect(renderResult.container.querySelectorAll(".chronicle-guide-line").length).toBeGreaterThan(0);
@@ -659,10 +658,6 @@ describe("App", () => {
     expect(renderResult.container.querySelectorAll(".chronicle-guide-line").length).toBeGreaterThan(
       renderResult.container.querySelectorAll(".chronicle-guide-line--major").length
     );
-    fireEvent.click(screen.getByRole("button", { name: "縮小" }));
-    expect(renderResult.container.querySelector(".chronicle-zoom-value")).toHaveTextContent("50%");
-    fireEvent.click(screen.getByRole("button", { name: "拡大" }));
-    expect(renderResult.container.querySelector(".chronicle-zoom-value")).toHaveTextContent("100%");
     const oneYearAxisLabels = Array.from(renderResult.container.querySelectorAll(".chronicle-axis--chronicle .chronicle-axis-cell"))
       .map((element) => Number(element.textContent?.replace("−", "-") ?? Number.NaN));
     expect(oneYearAxisLabels.length).toBeGreaterThan(0);
@@ -733,7 +728,7 @@ describe("App", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "チャート" }));
     fireEvent.click(container.querySelector(".chronicle-source-button")!);
-    expect(container.querySelector(".chronicle-zoom-value")).toHaveTextContent("100%");
+    expect(container.querySelector(".chronicle-actions")).toBeNull();
 
     const fill = container.querySelector(".chronicle-fill") as HTMLElement;
     const pointerDown = new Event("pointerdown", { bubbles: true }) as PointerEvent;
@@ -802,7 +797,7 @@ describe("App", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "チャート" }));
     fireEvent.click(container.querySelector(".chronicle-source-button")!);
-    expect(container.querySelector(".chronicle-zoom-value")).toHaveTextContent("100%");
+    expect(container.querySelector(".chronicle-actions")).toBeNull();
 
     const fill = container.querySelector(".chronicle-fill") as HTMLElement;
     const pointerDown = new Event("pointerdown", { bubbles: true }) as PointerEvent;
@@ -885,6 +880,7 @@ describe("App", () => {
     expect(screen.getByText("01 〜 05")).toBeInTheDocument();
     expect(screen.getByText("03 〜 06")).toBeInTheDocument();
     expect(container.querySelectorAll(".chronicle-axis--date .chronicle-axis-row")).toHaveLength(3);
+    expect(screen.getByRole("button", { name: "今日" })).toBeInTheDocument();
     expect(container.querySelector(".chronicle-chart")).toBeInTheDocument();
     expect(container.querySelectorAll(".chronicle-fill")).toHaveLength(2);
     expect(container.querySelector('.chronicle-fill[data-date-kind="planned"]')).toBeInTheDocument();
@@ -892,13 +888,6 @@ describe("App", () => {
     expect(container.querySelector(".chronicle-today-line")).toBeInTheDocument();
     expect(container.querySelectorAll(".chronicle-guide-line").length).toBeGreaterThan(0);
     expect(container.querySelectorAll(".chronicle-guide-line--major").length).toBeGreaterThan(0);
-    fireEvent.click(screen.getByRole("button", { name: "縮小" }));
-    expect(container.querySelector(".chronicle-zoom-value")).toHaveTextContent("50%");
-    expect(container.querySelectorAll(".chronicle-axis--date .chronicle-axis-row")).toHaveLength(3);
-    expect(container.querySelectorAll(".chronicle-guide-line--major").length).toBeGreaterThan(0);
-    fireEvent.click(screen.getByRole("button", { name: "拡大" }));
-    expect(container.querySelector(".chronicle-zoom-value")).toHaveTextContent("100%");
-    expect(container.querySelectorAll(".chronicle-guide-line").length).toBeGreaterThan(0);
     expect(container.querySelectorAll(".chronicle-guide-line--major").length).toBeGreaterThan(0);
     expect(container.querySelectorAll(".chronicle-guide-row-line").length).toBeGreaterThan(0);
 

@@ -122,7 +122,7 @@ describe("chronicleTimeline", () => {
   });
 
   it("date の bounds、ticks、axis segments、guide tick を計算する", () => {
-    const dateScale = DATE_SCALES[1];
+    const dateScale = DATE_SCALES[0];
     const dateEntry = entry({
       dateKind: "planned",
       endLabel: "2026-06-20",
@@ -148,7 +148,7 @@ describe("chronicleTimeline", () => {
       { endValue: day("2026-05-31"), label: "05", startValue: day("2026-05-15") },
       { endValue: day("2026-06-02"), label: "06", startValue: day("2026-06-01") }
     ]);
-    expect(formatRange(dateEntry, "date", DATE_SCALES[1])).toBe("05-01 〜 06-20");
+    expect(formatRange(dateEntry, "date", DATE_SCALES[0])).toBe("01 〜 20");
   });
 
   it("offscreen indicators、minimap、navigation target を計算する", () => {

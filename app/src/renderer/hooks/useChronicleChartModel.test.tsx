@@ -2,7 +2,6 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import type { GanttChartEntry, WorkspaceGanttChart } from "../../shared/ipc";
-import { DEFAULT_CHART_ZOOM_INDEX } from "../chronicleTimeline";
 import { useUiStore } from "../store/uiStore";
 import { useChronicleChartModel } from "./useChronicleChartModel";
 
@@ -48,7 +47,7 @@ describe("useChronicleChartModel", () => {
     });
   });
 
-  it("chart選択時にstore選択とzoom初期値を更新する", () => {
+  it("chart選択時にstore選択と固定単位を維持する", () => {
     const chronicleChart = chart();
     const dateChart = chart({ id: "date", name: "date", source: "date" });
     const { result } = renderHook(() => useChronicleChartModel({
@@ -62,7 +61,6 @@ describe("useChronicleChartModel", () => {
 
     expect(useUiStore.getState().selectedGanttChartId).toBe("date");
     expect(result.current.activeSource).toBe("date");
-    expect(result.current.zoomIndex).toBe(DEFAULT_CHART_ZOOM_INDEX);
     expect(result.current.tickInterval).toBe(1);
     expect(result.current.dateScale?.unit).toBe("day");
   });

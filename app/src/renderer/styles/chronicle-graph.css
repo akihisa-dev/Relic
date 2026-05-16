@@ -16,43 +16,10 @@
   justify-content: space-between;
 }
 
-.chronicle-zoom {
+.chronicle-actions {
   align-items: center;
-  border: 1px solid var(--border);
-  border-radius: 5px;
   display: inline-flex;
-  overflow: hidden;
-}
-
-.chronicle-zoom-button {
-  background: transparent;
-  border: 0;
-  color: var(--text);
-  cursor: pointer;
-  font-size: 13px;
-  height: 26px;
-  line-height: 1;
-  width: 28px;
-}
-
-.chronicle-zoom-button:hover {
-  background: var(--hover);
-}
-
-.chronicle-zoom-button:disabled {
-  color: var(--text-3);
-  cursor: default;
-  opacity: 0.45;
-}
-
-.chronicle-zoom-value {
-  border-left: 1px solid var(--border);
-  border-right: 1px solid var(--border);
-  color: var(--text-2);
-  font-size: 11px;
-  line-height: 26px;
-  min-width: 46px;
-  text-align: center;
+  gap: 8px;
 }
 
 .chronicle-sidebar {
@@ -151,7 +118,7 @@
   border-bottom: 1px solid var(--border);
   display: grid;
   gap: 10px;
-  grid-template-columns: auto minmax(160px, 220px) minmax(160px, 220px) auto;
+  grid-template-columns: auto minmax(160px, 220px) minmax(160px, 220px) minmax(130px, 190px) auto;
   justify-content: start;
   min-height: 40px;
   padding: 5px 12px;
