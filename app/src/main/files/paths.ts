@@ -2,6 +2,10 @@ import path from "node:path";
 
 import { fail, ok, type RelicResult } from "../../shared/result";
 
+export function toWorkspaceRelativePath(filePath: string): string {
+  return filePath.split(path.sep).join("/");
+}
+
 export function resolveWorkspaceRelativePath(
   workspacePath: string,
   relativePath: string

@@ -1,8 +1,9 @@
 import { readFile } from "node:fs/promises";
 
-import type { WorkspaceTagSummary, WorkspaceTreeNode } from "../../shared/ipc";
+import type { WorkspaceTagSummary } from "../../shared/ipc";
 import { parseMarkdownTags } from "../../shared/tags";
 import { fail, ok, type RelicResult } from "../../shared/result";
+import { collectMarkdownPaths } from "../../shared/workspaceTree";
 import { readWorkspaceFileTree } from "./fileTree";
 import { resolveWorkspaceRelativePath } from "./paths";
 
@@ -37,10 +38,4 @@ export async function readWorkspaceTags(
       error instanceof Error ? error.message : String(error)
     );
   }
-}
-
-function collectMarkdownPaths(nodes: WorkspaceTreeNode[]): string[] {
-  return nodes.flatMap((node) =>
-    node.type === "file" ? [node.path] : collectMarkdownPaths(node.children)
-  );
 }

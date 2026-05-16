@@ -1,8 +1,8 @@
 import { readFile } from "node:fs/promises";
 
 import type { AliasIndex } from "../../shared/links";
-import type { WorkspaceTreeNode } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
+import { collectMarkdownPaths } from "../../shared/workspaceTree";
 import { readWorkspaceFileTree } from "./fileTree";
 import { parseFrontmatter } from "./frontmatter";
 import { resolveWorkspaceRelativePath } from "./paths";
@@ -63,10 +63,4 @@ function uniqueAliases(values: string[]): string[] {
   }
 
   return result;
-}
-
-function collectMarkdownPaths(nodes: WorkspaceTreeNode[]): string[] {
-  return nodes.flatMap((node) =>
-    node.type === "file" ? [node.path] : collectMarkdownPaths(node.children)
-  );
 }

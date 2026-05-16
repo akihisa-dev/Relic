@@ -1,8 +1,11 @@
-import type { WorkspaceTreeNode } from "../shared/ipc";
+export { collectMarkdownPaths } from "../shared/workspaceTree";
 
-export const joinWorkspacePath = (folder: string, name: string): string => (
-  folder ? `${folder}/${name}` : name
-);
+export const joinWorkspacePath = (folder: string, name: string): string => {
+  const normalizedFolder = folder.trim().replace(/\\/g, "/").replace(/^\/+|\/+$/g, "");
+  const normalizedName = name.trim().replace(/\\/g, "/").replace(/^\/+/, "");
+
+  return normalizedFolder ? `${normalizedFolder}/${normalizedName}` : normalizedName;
+};
 
 export const parentFolderOf = (path: string): string => {
   const index = path.lastIndexOf("/");
@@ -11,11 +14,5 @@ export const parentFolderOf = (path: string): string => {
 
 export const displayNameFromPath = (path: string): string => {
   const name = path.split("/").at(-1) ?? path;
-  return name.endsWith(".md") ? name.slice(0, -3) : name;
+  return name.replace(/\.md$/i, "");
 };
-
-export function collectMarkdownPaths(nodes: WorkspaceTreeNode[]): string[] {
-  return nodes.flatMap((node) =>
-    node.type === "file" ? [node.path] : collectMarkdownPaths(node.children)
-  );
-}

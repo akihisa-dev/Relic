@@ -2,7 +2,7 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { resolveWorkspaceRelativePath } from "./paths";
+import { resolveWorkspaceRelativePath, toWorkspaceRelativePath } from "./paths";
 
 describe("resolveWorkspaceRelativePath", () => {
   it("ワークスペース内の相対パスを絶対パスへ解決する", () => {
@@ -17,5 +17,11 @@ describe("resolveWorkspaceRelativePath", () => {
     expect(resolveWorkspaceRelativePath("/tmp/relic-notes", "C:\\Users\\test\\note.md").ok).toBe(false);
     expect(resolveWorkspaceRelativePath("/tmp/relic-notes", "\\\\server\\share\\note.md").ok).toBe(false);
     expect(resolveWorkspaceRelativePath("/tmp/relic-notes", "../other.md").ok).toBe(false);
+  });
+});
+
+describe("toWorkspaceRelativePath", () => {
+  it("OS のパス区切りをワークスペース相対パスの区切りへ正規化する", () => {
+    expect(toWorkspaceRelativePath(path.join("notes", "idea.md"))).toBe("notes/idea.md");
   });
 });

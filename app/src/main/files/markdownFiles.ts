@@ -5,7 +5,7 @@ import type { MarkdownFileContent } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { updateLinksForFileRename } from "./linkUpdater";
 import { validateBaseName } from "./names";
-import { resolveWorkspaceRelativePath } from "./paths";
+import { resolveWorkspaceRelativePath, toWorkspaceRelativePath } from "./paths";
 
 export interface CreatedMarkdownFile {
   path: string;
@@ -299,10 +299,6 @@ function isMissingFileError(error: unknown): boolean {
     "code" in error &&
     (error as { code?: string }).code === "ENOENT"
   );
-}
-
-function toWorkspaceRelativePath(filePath: string): string {
-  return filePath.split(path.sep).join("/");
 }
 
 async function createCopyRelativePath(
