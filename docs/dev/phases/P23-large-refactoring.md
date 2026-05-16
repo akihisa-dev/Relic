@@ -223,3 +223,10 @@ AIはこのフェーズを前提にユーザーへ接する。
 - 実施: `useChronicleChartModel.ts`、`useChronicleChartViewport.ts`、`useChronicleEntryDrag.ts`、`useStableTimelineBounds.ts` を追加し、active chart選択、rows/axis/minimap導出、viewport scroll/pan/minimap操作、entry move/resize previewと更新input生成をhook化した。`ChronicleToolbar.tsx`、`ChronicleMinimap.tsx`、`ChronicleChartGrid.tsx` を追加し、`ChronicleSidebar.tsx` はhook呼び出しと子component組み立てを中心に残した
 - 確認: `pnpm exec vitest run src/renderer/hooks/useChronicleChartModel.test.tsx src/renderer/hooks/useChronicleChartViewport.test.tsx src/renderer/hooks/useChronicleEntryDrag.test.tsx src/renderer/components/ChronicleToolbar.test.tsx src/renderer/components/ChronicleMinimap.test.tsx src/renderer/components/ChronicleChartGrid.test.tsx` が通過した。周辺確認として `pnpm exec vitest run src/renderer/chronicleTimeline.test.ts src/renderer/ganttChartData.test.ts src/renderer/App.test.tsx`、最終確認として `pnpm typecheck` と `pnpm test` が通過し、全体テストは58ファイル、429件が通過した
 - 残り: 今回指定されたChronicleSidebar追加分割単位は完了。実アプリ確認はUI/仕様を変えない内部hook/component分離のため未実施
+
+### Editor frontmatter/table責務分離
+
+- 方向性: 仕様、UI文言、DOM class名、CSS、保存形式、IPC/preload API、`Editor.tsx` の既存re-exportを変えず、`editorFrontmatter.ts` と `editorTables.ts` に残っていたmodel処理とCodeMirror/DOM widget処理を分離する
+- 実施: `editorFrontmatterModel.ts` と `editorFrontmatterWidget.ts` を追加し、YAML行解析、固定フィールド判定、date/chronicle入力解析、YAML保持シリアライズ、frontmatter widgetを分けた。`editorTableModel.ts` と `editorTableWidget.ts` を追加し、table検出、format、行列操作、table widgetを分けた。既存の `editorFrontmatter.ts` と `editorTables.ts` はnamed exportを維持するfacadeにした
+- 確認: `pnpm exec vitest run src/renderer/editorFrontmatterModel.test.ts src/renderer/editorTableModel.test.ts src/renderer/components/Editor.test.tsx`、`pnpm typecheck`、`pnpm test`、`git diff --check` が通過した。全体テストは60ファイル、439件が通過した
+- 残り: 今回指定されたEditor周辺分割単位は完了。実アプリ確認はUI/仕様を変えない内部model/widget分離のため未実施
