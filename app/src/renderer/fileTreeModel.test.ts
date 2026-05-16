@@ -2,12 +2,18 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { WorkspaceTreeNode } from "../shared/ipc";
 import {
+  addedNodePaths,
+  childMotionPathsForAppearingFolder,
   contextMenuPosition,
   expansionRequestAppliesTo,
+  fileTreeMarkdownLinkForPath,
+  fileTreeOperationItems,
   findNodeByPath,
   movableItemsForDestination,
   moveItemsToDestination,
-  normalizeDestinationFolder
+  normalizeDestinationFolder,
+  resolveRenameCommit,
+  shouldUseSelectedFileTreeItems
 } from "./fileTreeModel";
 
 const tree: WorkspaceTreeNode[] = [
@@ -36,6 +42,49 @@ describe("fileTreeModel", () => {
 
   it("normalizes destination folders from prompt input", () => {
     expect(normalizeDestinationFolder(" /Drafts\\Ideas/ ")).toBe("Drafts/Ideas");
+  });
+
+  it("formats Markdown links from tree paths", () => {
+    expect(fileTreeMarkdownLinkForPath("Folder/Note.md")).toBe("[[Folder/Note]]");
+    expect(fileTreeMarkdownLinkForPath("Folder/Note.markdown")).toBe("[[Folder/Note.markdown]]");
+  });
+
+  it("resolves rename commits from drafts", () => {
+    expect(resolveRenameCommit("Note", "  New Note  ")).toEqual({
+      nextName: "New Note",
+      shouldCommit: true
+    });
+    expect(resolveRenameCommit("Note", " Note ")).toEqual({
+      nextName: "Note",
+      shouldCommit: false
+    });
+    expect(resolveRenameCommit("Note", "   ")).toEqual({
+      nextName: "",
+      shouldCommit: false
+    });
+  });
+
+  it("selects single or multi operation items", () => {
+    const node = tree[1]!;
+    const selectedItems = [
+      { path: "Root.md", type: "file" as const },
+      { path: "Folder", type: "folder" as const }
+    ];
+
+    expect(shouldUseSelectedFileTreeItems(true, selectedItems)).toBe(true);
+    expect(shouldUseSelectedFileTreeItems(false, selectedItems)).toBe(false);
+    expect(fileTreeOperationItems(node, selectedItems, true)).toEqual(selectedItems);
+    expect(fileTreeOperationItems(node, selectedItems, false)).toEqual([{ path: "Root.md", type: "file" }]);
+  });
+
+  it("calculates added and child motion paths", () => {
+    const previousPaths = new Set(["Folder", "Folder/Child.md"]);
+    const added = addedNodePaths(previousPaths, tree);
+
+    expect(added).toEqual(new Set(["Folder/Nested", "Folder/Nested/Nested.md", "Root.md"]));
+    expect(childMotionPathsForAppearingFolder(tree[0]!, true)).toEqual(new Set(["Folder", "Folder/Child.md", "Folder/Nested"]));
+    expect(childMotionPathsForAppearingFolder(tree[1]!, true)).toBeUndefined();
+    expect(childMotionPathsForAppearingFolder(tree[0]!, false)).toBeUndefined();
   });
 
   it("filters no-op and invalid folder moves", () => {

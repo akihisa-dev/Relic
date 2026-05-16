@@ -237,3 +237,10 @@ AIはこのフェーズを前提にユーザーへ接する。
 - 実施: `editorLivePreviewModel.ts` と `editorLivePreviewWidgets.ts` を追加し、inline記法検出、重なり判定、クリック可能リンク判定、CodeMirror widgetを分けた。`previewMarkdown.ts` と `usePreviewEmbeds.ts` を追加し、Markdown rendering、embed target正規化、checkbox更新、埋め込み読み込みeffectを分けた。既存の `editorLivePreview.ts` と `components/Preview.tsx` は既存exportを維持したまま組み立て側に寄せた
 - 確認: `pnpm exec vitest run src/renderer/editorLivePreviewModel.test.ts src/renderer/previewMarkdown.test.ts src/renderer/components/Preview.test.tsx src/renderer/components/Editor.test.tsx`、`pnpm typecheck`、`pnpm test`、`git diff --check` が通過した。全体テストは62ファイル、449件が通過した
 - 残り: 今回指定されたMarkdown Preview / Live Preview分割単位は完了。実アプリ確認はUI/仕様を変えない内部model/widget/hook分離のため未実施
+
+### FileTree UI責務分離
+
+- 方向性: UI文言、CSS class名、DOM role、context menu項目順、clipboard内容、prompt内容、IPC/preload API、保存形式、ファイル操作仕様、`FilesSidebar.tsx` からの既存import経路を変えず、`FileTree.tsx` に残っていた行表示、context menu、rename、展開、追加表示motionを内部moduleへ分離する
+- 実施: `FileTreeContextMenu.tsx` と `FileTreeItemRow.tsx` を追加し、context menu DOMと行表示を分けた。`useFileTreeItemState.ts` と `useFileTreeMotion.ts` を追加し、rename、context menu close、remove motion、展開要求反映、追加表示motionをhook化した。`fileTreeModel.ts` にはrename確定判定、Markdownリンク整形、multi-select操作対象判定、追加path/motion path計算を追加した。`FileTree.tsx` は既存exportを維持し、`FileTree` と `FileTreeItem` の組み立てに絞った
+- 確認: `pnpm exec vitest run src/renderer/fileTreeModel.test.ts src/renderer/components/FileTree.test.tsx src/renderer/components/SettingsSidebar.test.tsx src/renderer/App.test.tsx`、`pnpm typecheck`、`pnpm test`、`git diff --check` が通過した。全体テストは63ファイル、458件が通過した
+- 残り: 今回指定されたFileTree UI分割単位は完了。実アプリ確認はUI/仕様を変えない内部hook/component/model分離のため未実施

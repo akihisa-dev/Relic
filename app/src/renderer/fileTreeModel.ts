@@ -20,6 +20,11 @@ export interface FileTreeMoveHandlers {
   onMoveItems?: (items: FileTreeMoveItem[], destFolder: string) => void;
 }
 
+export interface FileTreeRenameCommit {
+  nextName: string;
+  shouldCommit: boolean;
+}
+
 export function findNodeByPath(nodes: WorkspaceTreeNode[], targetPath: string): WorkspaceTreeNode | null {
   for (const node of nodes) {
     if (node.path === targetPath) return node;
@@ -41,6 +46,43 @@ export function collectNodePaths(nodes: WorkspaceTreeNode[]): Set<string> {
 
   nodes.forEach(walk);
   return paths;
+}
+
+export function addedNodePaths(previousPaths: Set<string>, nodes: WorkspaceTreeNode[]): Set<string> {
+  const nextPaths = collectNodePaths(nodes);
+  return new Set([...nextPaths].filter((path) => !previousPaths.has(path)));
+}
+
+export function childMotionPathsForAppearingFolder(node: WorkspaceTreeNode, isAppearing?: boolean): Set<string> | undefined {
+  if (!isAppearing || node.type !== "folder") return undefined;
+  return new Set([node.path, ...node.children.map((child) => child.path)]);
+}
+
+export function fileTreeMarkdownLinkForPath(path: string): string {
+  return `[[${path.replace(/\.md$/i, "")}]]`;
+}
+
+export function resolveRenameCommit(currentName: string, draft: string): FileTreeRenameCommit {
+  const nextName = draft.trim();
+  return {
+    nextName,
+    shouldCommit: nextName !== "" && nextName !== currentName
+  };
+}
+
+export function shouldUseSelectedFileTreeItems(
+  isSelected: boolean,
+  selectedItems: FileTreeMoveItem[]
+): boolean {
+  return isSelected && selectedItems.length > 1;
+}
+
+export function fileTreeOperationItems(
+  node: WorkspaceTreeNode,
+  selectedItems: FileTreeMoveItem[],
+  useSelectedItems: boolean
+): FileTreeMoveItem[] {
+  return useSelectedItems ? selectedItems : [{ path: node.path, type: node.type }];
 }
 
 export function normalizeDestinationFolder(folder: string): string {
