@@ -138,6 +138,44 @@ describe("ChronicleChartGrid", () => {
     expect(container.querySelector(".chronicle-fill-status")).toHaveTextContent("完了");
   });
 
+  it("dateの年・月ラベルを横スクロール位置へ追従させる", () => {
+    const axisStart = day("2026-05-01");
+    const dateChart = chart({
+      entries: [
+        entry({
+          dateKind: "planned",
+          endLabel: "2026-05-20",
+          endValue: day("2026-05-20"),
+          fileName: "実装タスク",
+          path: "tasks/implementation.md",
+          startLabel: "2026-05-01",
+          startValue: axisStart
+        })
+      ],
+      id: "date",
+      name: "date",
+      source: "date"
+    });
+    const { container } = renderGrid({
+      activeChart: dateChart,
+      activeSource: "date",
+      axisEnd: day("2026-06-30"),
+      axisStart,
+      scrollLeft: 220,
+      timelineWidth: 1342
+    });
+    const rows = container.querySelectorAll(".chronicle-axis--date .chronicle-axis-row");
+    const yearLabel = rows[0]?.querySelector(".chronicle-axis-cell-label--follow") as HTMLElement;
+    const monthLabel = rows[1]?.querySelector(".chronicle-axis-cell-label--follow") as HTMLElement;
+    const dayLabel = rows[2]?.querySelector(".chronicle-axis-cell-label--follow");
+
+    expect(yearLabel).toHaveTextContent("2026");
+    expect(yearLabel).toHaveStyle({ transform: "translateX(226px)" });
+    expect(monthLabel).toHaveTextContent("05");
+    expect(monthLabel).toHaveStyle({ transform: "translateX(226px)" });
+    expect(dayLabel).toBeNull();
+  });
+
   it("active chartなしでは既存empty表示を出す", () => {
     renderGrid({ activeChart: null, rows: [] });
 

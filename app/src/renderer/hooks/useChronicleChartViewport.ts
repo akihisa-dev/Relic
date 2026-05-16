@@ -121,7 +121,7 @@ export function useChronicleChartViewport({
   }, []);
 
   const handleMinimapPointer = useCallback((event: PointerEvent<HTMLDivElement>): void => {
-    if (activeSource !== "chronicle" || event.button > 0) return;
+    if (event.button > 0) return;
 
     const minimapElement = minimapRef.current;
     if (!minimapElement) return;
@@ -154,7 +154,7 @@ export function useChronicleChartViewport({
     window.addEventListener("pointermove", move);
     window.addEventListener("pointerup", stop);
     window.addEventListener("pointercancel", stop);
-  }, [activeSource, axisEnd, axisStart, scrollToTimelineValue]);
+  }, [axisEnd, axisStart, scrollToTimelineValue]);
 
   useLayoutEffect(() => {
     updateChartViewportWidth();

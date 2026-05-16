@@ -2,7 +2,7 @@ import { act, renderHook } from "@testing-library/react";
 import type { MutableRefObject } from "react";
 import { describe, expect, it, vi } from "vitest";
 
-import type { GanttChartEntry, WorkspaceGanttChart } from "../../shared/ipc";
+import type { GanttChartEntry, GanttChartSource, WorkspaceGanttChart } from "../../shared/ipc";
 import { useChronicleChartViewport } from "./useChronicleChartViewport";
 
 function entry(overrides: Partial<GanttChartEntry> = {}): GanttChartEntry {
@@ -17,12 +17,12 @@ function entry(overrides: Partial<GanttChartEntry> = {}): GanttChartEntry {
   };
 }
 
-function chart(): WorkspaceGanttChart {
+function chart(source: GanttChartSource = "chronicle"): WorkspaceGanttChart {
   return {
     entries: [entry()],
-    id: "chronicle",
-    name: "chronicle",
-    source: "chronicle"
+    id: source,
+    name: source,
+    source
   };
 }
 
@@ -60,10 +60,10 @@ function makePointerEvent<T extends Element>(overrides: Partial<{
   } as never;
 }
 
-function renderViewport() {
+function renderViewport(activeSource: GanttChartSource = "chronicle") {
   const hook = renderHook(() => useChronicleChartViewport({
-    activeChart: chart(),
-    activeSource: "chronicle",
+    activeChart: chart(activeSource),
+    activeSource,
     axisEnd: 99,
     axisStart: 0,
     entries: [entry({ endValue: 20, startValue: 10 })],
@@ -131,6 +131,25 @@ describe("useChronicleChartViewport", () => {
 
   it("minimap pointer操作でtimeline値へscrollする", () => {
     const { hook } = renderViewport();
+    const chartElement = makeDiv({ clientWidth: 200, scrollWidth: 1000 });
+    const minimapElement = makeDiv({ clientWidth: 100, scrollWidth: 100, width: 100 });
+    (hook.result.current.chartRef as MutableRefObject<HTMLDivElement | null>).current = chartElement;
+    (hook.result.current.minimapRef as MutableRefObject<HTMLDivElement | null>).current = minimapElement;
+
+    act(() => {
+      hook.result.current.handleMinimapPointer(makePointerEvent<HTMLDivElement>({
+        clientX: 50,
+        currentTarget: minimapElement,
+        target: minimapElement
+      }));
+    });
+
+    expect(chartElement.scrollLeft).toBe(430);
+    expect(hook.result.current.scrollLeft).toBe(430);
+  });
+
+  it("date sourceでもminimap pointer操作でtimeline値へscrollする", () => {
+    const { hook } = renderViewport("date");
     const chartElement = makeDiv({ clientWidth: 200, scrollWidth: 1000 });
     const minimapElement = makeDiv({ clientWidth: 100, scrollWidth: 100, width: 100 });
     (hook.result.current.chartRef as MutableRefObject<HTMLDivElement | null>).current = chartElement;

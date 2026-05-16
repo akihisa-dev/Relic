@@ -61,6 +61,7 @@ describe("useChronicleChartModel", () => {
 
     expect(useUiStore.getState().selectedGanttChartId).toBe("date");
     expect(result.current.activeSource).toBe("date");
+    expect(result.current.minimapItems).toHaveLength(1);
     expect(result.current.tickInterval).toBe(1);
     expect(result.current.dateScale?.unit).toBe("day");
   });

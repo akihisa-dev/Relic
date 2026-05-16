@@ -181,6 +181,25 @@ export function labelWidthForText(text: string): number {
   return text.length * 8 + LABEL_HORIZONTAL_PADDING;
 }
 
+export function dateAxisFollowLabelOffset({
+  axisStart,
+  scrollLeft,
+  segment,
+  unitWidth
+}: {
+  axisStart: number;
+  scrollLeft: number;
+  segment: DateAxisSegment;
+  unitWidth: number;
+}): number {
+  const segmentLeft = (segment.startValue - axisStart) * unitWidth;
+  const segmentWidth = Math.max(1, (segment.endValue - segment.startValue + 1) * unitWidth);
+  const labelWidth = Math.min(segmentWidth, labelWidthForText(segment.label));
+  const maxOffset = Math.max(0, segmentWidth - labelWidth);
+
+  return clamp(scrollLeft - segmentLeft + 6, 0, maxOffset);
+}
+
 export function currentDateDay(): number {
   return dateToDay(new Date().toISOString().slice(0, 10));
 }

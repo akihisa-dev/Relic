@@ -45,7 +45,7 @@
   "chronicle.offscreenPast": "左に{{count}}件の年表項目があります",
   "chronicle.offscreenFuture": "右に{{count}}件の年表項目があります",
   "chronicle.offscreenRight": "右に{{count}}件の日付があります",
-  "chronicle.minimap": "年表ミニマップ",
+  "chronicle.minimap": "チャートミニマップ",
   "chronicle.overview": "全体",
   "chronicle.period": "年代",
   "chronicle.search": "検索 / フィルタ",

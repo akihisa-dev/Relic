@@ -112,8 +112,8 @@ export function useChronicleChartModel({
   );
   const dateAxisHeight = activeSource === "date" ? dateAxisHeightForScale(dateScale) : 34;
   const minimapItems = useMemo(
-    () => activeSource === "chronicle" ? minimapItemsForEntries(entries, axisStart, axisEnd) : [],
-    [activeSource, axisEnd, axisStart, entries]
+    () => minimapItemsForEntries(entries, axisStart, axisEnd),
+    [axisEnd, axisStart, entries]
   );
   const selectChart = useCallback((nextChart: WorkspaceGanttChart): void => {
     setSelectedGanttChartId(nextChart.id);
@@ -192,9 +192,7 @@ export function buildChronicleViewportState({
     dateOffscreenIndicators: activeSource === "date"
       ? dateOffscreenBarIndicators(entries, visibleStartValue, visibleEndValue)
       : { left: null, right: null },
-    minimapViewport: activeSource === "chronicle"
-      ? minimapViewportRange(axisStart, axisEnd, visibleStartValue, visibleEndValue)
-      : { leftPercent: 0, widthPercent: 0 },
+    minimapViewport: minimapViewportRange(axisStart, axisEnd, visibleStartValue, visibleEndValue),
     visibleEndValue,
     visibleStartValue
   };
