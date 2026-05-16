@@ -18,6 +18,7 @@ import {
 import type { GraphPan, GraphPoint, GraphSimPoint, GraphViewModel } from "../graphLayout";
 import { useT } from "../i18n";
 import { useGraphStore } from "../store/graphStore";
+import { GraphCanvas } from "./GraphCanvas";
 import { GraphControls, useGraphFloatingPanelPosition } from "./GraphControls";
 
 export { buildGraphViewBox } from "../graphLayout";
@@ -151,7 +152,6 @@ export function GraphPanel({ activeFilePath, onOpenFile, workspaceId }: GraphPan
   }, [centerForce, filteredGraph.edges, filteredGraph.nodes.length, linkDistance, linkForce, repelForce]);
 
   const points = simPoints;
-  const pointByPath = useMemo(() => new Map(points.map((point) => [point.path, point])), [points]);
   const focusedPath = hoveredPath ?? selectedPath;
   const relatedPaths = useMemo(() => collectRelatedGraphPaths(filteredGraph.edges, focusedPath), [filteredGraph.edges, focusedPath]);
   const labelOpacity = showLabels
@@ -245,6 +245,15 @@ export function GraphPanel({ activeFilePath, onOpenFile, workspaceId }: GraphPan
     setIsPanning(false);
   }
 
+  function handleNodeClick(point: GraphPoint): void {
+    if (suppressNodeClickRef.current) {
+      suppressNodeClickRef.current = false;
+      return;
+    }
+    setSelectedPath(point.path);
+    onOpenFile(point.path);
+  }
+
   function handleNodePointerDown(event: PointerEvent<SVGGElement>, point: GraphPoint): void {
     if (event.button !== 0) return;
 
@@ -309,6 +318,18 @@ export function GraphPanel({ activeFilePath, onOpenFile, workspaceId }: GraphPan
     }
   }
 
+  function handleNodeKeyDown(event: KeyboardEvent<SVGGElement>, point: GraphPoint): void {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      setSelectedPath(point.path);
+      onOpenFile(point.path);
+    }
+    if (event.key === " ") {
+      event.preventDefault();
+      setSelectedPath(point.path);
+    }
+  }
+
   return (
     <div className="graph-panel">
       <div className="graph-hover-settings" ref={floatingPanel.panelRef} style={floatingPanel.style}>
@@ -322,120 +343,36 @@ export function GraphPanel({ activeFilePath, onOpenFile, workspaceId }: GraphPan
         ) : points.length === 0 ? (
           <div className="frontmatter-field-empty">{t("graph.empty")}</div>
         ) : (
-          <svg
-            className={isPanning ? "graph-svg graph-svg--panning" : "graph-svg"}
-            onKeyDown={handleGraphKeyDown}
-            onPointerCancel={handleGraphPointerEnd}
-            onPointerDown={handleGraphPointerDown}
-            onPointerMove={handleGraphPointerMove}
-            onPointerUp={handleGraphPointerEnd}
-            onWheel={handleGraphWheel}
-            ref={svgRef}
-            role="img"
-            tabIndex={0}
-            viewBox={`${viewBox.x} ${viewBox.y} ${viewBox.width} ${viewBox.height}`}
-          >
-            {showArrows ? (
-              <defs>
-                <marker id="graph-arrow" markerHeight="8" markerUnits="userSpaceOnUse" markerWidth="8" orient="auto" refX="8" refY="4">
-                  <path className="graph-arrow-marker" d="M 0 0 L 8 4 L 0 8 z" />
-                </marker>
-                <marker id="graph-arrow-selected" markerHeight="8" markerUnits="userSpaceOnUse" markerWidth="8" orient="auto" refX="8" refY="4">
-                  <path className="graph-arrow-marker graph-arrow-marker--selected" d="M 0 0 L 8 4 L 0 8 z" />
-                </marker>
-              </defs>
-            ) : null}
-            <g>
-              <g className="graph-edge-layer">
-                {filteredGraph.edges.map((edge) => {
-                  const source = pointByPath.get(edge.sourcePath);
-                  const target = pointByPath.get(edge.targetPath);
-                  if (!source || !target) return null;
-                  const isFocused = focusedPath === edge.sourcePath || focusedPath === edge.targetPath;
-                  const className = [
-                    "graph-edge",
-                    isFocused ? "graph-edge--selected" : "",
-                    focusedPath && !isFocused ? "graph-edge--dimmed" : ""
-                  ].filter(Boolean).join(" ");
-                  return (
-                    <line
-                      className={className}
-                      key={`${edge.sourcePath}-${edge.targetPath}`}
-                      markerEnd={showArrows ? `url(#${isFocused ? "graph-arrow-selected" : "graph-arrow"})` : undefined}
-                      style={{ strokeWidth: (isFocused ? 1.6 : 0.9) * linkThickness }}
-                      x1={source.x}
-                      x2={target.x}
-                      y1={source.y}
-                      y2={target.y}
-                    />
-                  );
-                })}
-              </g>
-              <g className="graph-node-layer">
-                {points.map((point) => {
-                  const isSelected = point.path === selectedPath;
-                  const isRelated = relatedPaths.has(point.path);
-                  const isFocused = point.path === focusedPath;
-                  const group = groupByPath.get(point.path);
-                  const radius = Math.min(8, 2.6 + Math.sqrt(point.incoming) * 1.45) * nodeSize;
-                  const nodeClassName = [
-                    "graph-node",
-                    isSelected ? "graph-node--selected" : "",
-                    isFocused && !isSelected ? "graph-node--focused" : "",
-                    focusedPath && !isRelated ? "graph-node--dimmed" : "",
-                    focusedPath && isRelated && !isSelected && !isFocused ? "graph-node--related" : ""
-                  ].filter(Boolean).join(" ");
-                  const labelClassName = focusedPath && !isRelated ? "graph-label graph-label--dimmed" : "graph-label";
-
-                  return (
-                    <g
-                      aria-label={point.name}
-                      className="graph-node-hit"
-                      key={point.path}
-                      onClick={() => {
-                        if (suppressNodeClickRef.current) {
-                          suppressNodeClickRef.current = false;
-                          return;
-                        }
-                        setSelectedPath(point.path);
-                        onOpenFile(point.path);
-                      }}
-                      onPointerEnter={() => setHoveredPath(point.path)}
-                      onPointerCancel={handleNodePointerCancel}
-                      onPointerDown={(event) => handleNodePointerDown(event, point)}
-                      onPointerMove={handleNodePointerMove}
-                      onPointerUp={(event) => handleNodePointerEnd(event, point)}
-                      onPointerLeave={() => setHoveredPath((current) => current === point.path ? null : current)}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter") {
-                          event.preventDefault();
-                          setSelectedPath(point.path);
-                          onOpenFile(point.path);
-                        }
-                        if (event.key === " ") {
-                          event.preventDefault();
-                          setSelectedPath(point.path);
-                        }
-                      }}
-                      role="button"
-                      tabIndex={0}
-                    >
-                      <circle
-                        className={nodeClassName}
-                        cx={point.x}
-                        cy={point.y}
-                        r={radius}
-                        style={group ? { fill: group.color } : undefined}
-                      />
-                      {showLabels ? (
-                        <text className={labelClassName} style={{ opacity: labelOpacity }} x={point.x + radius + 5} y={point.y + 4}>{point.name}</text>
-                      ) : null}
-                    </g>
-                  );
-                })}
-              </g>
-            </g>
-          </svg>
+          <GraphCanvas
+            edges={filteredGraph.edges}
+            focusedPath={focusedPath}
+            groupByPath={groupByPath}
+            isPanning={isPanning}
+            labelOpacity={labelOpacity}
+            linkThickness={linkThickness}
+            nodeSize={nodeSize}
+            onGraphKeyDown={handleGraphKeyDown}
+            onGraphPointerCancel={handleGraphPointerEnd}
+            onGraphPointerDown={handleGraphPointerDown}
+            onGraphPointerMove={handleGraphPointerMove}
+            onGraphPointerUp={handleGraphPointerEnd}
+            onGraphWheel={handleGraphWheel}
+            onNodeClick={handleNodeClick}
+            onNodeKeyDown={handleNodeKeyDown}
+            onNodePointerCancel={handleNodePointerCancel}
+            onNodePointerDown={handleNodePointerDown}
+            onNodePointerEnter={setHoveredPath}
+            onNodePointerLeave={(path) => setHoveredPath((current) => current === path ? null : current)}
+            onNodePointerMove={handleNodePointerMove}
+            onNodePointerUp={handleNodePointerEnd}
+            points={points}
+            relatedPaths={relatedPaths}
+            selectedPath={selectedPath}
+            showArrows={showArrows}
+            showLabels={showLabels}
+            svgRef={svgRef}
+            viewBox={viewBox}
+          />
         )}
       </div>
 

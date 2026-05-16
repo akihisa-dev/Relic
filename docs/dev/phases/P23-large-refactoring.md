@@ -110,3 +110,10 @@ Relicの大規模リファクタリングフェーズの正本。
 - 実施: `app/src/renderer/components/GraphControls.tsx` を追加し、`GraphControls`、操作パネルsection、浮動パネル位置調整hookを移した。`GraphSidebar.tsx` は `GraphPanel`、SVG操作、node drag/pan/key/wheel handler、キャンバス描画を中心に残した
 - 確認: `pnpm exec vitest run src/renderer/components/GraphControls.test.tsx`、`pnpm exec vitest run src/renderer/components/GraphSidebar.test.tsx`、`pnpm exec vitest run src/renderer/App.test.tsx`、`pnpm typecheck`、`pnpm test`、`git diff --check` が通過した。全体テストは39ファイル、357件が通過した
 - 残り: 今回指定された分割単位は完了。実アプリ確認はUI/仕様を変えない内部component分離のため未実施
+
+### GraphSidebar SVGキャンバス分離
+
+- 方向性: 仕様、UI文言、CSS、保存形式、IPC/preload API、`graphStore`、`graphLayout.ts` の計算処理を変えず、`GraphSidebar.tsx` に残っていたSVGキャンバス描画を独立componentへ分離する
+- 実施: `app/src/renderer/components/GraphCanvas.tsx` を追加し、SVG本体、arrow marker定義、edge layer、node layer、label描画を移した。`GraphSidebar.tsx` はgraph状態、simulation、pan/zoom/drag handler、loading/error/empty表示、summary、`GraphControls` 呼び出しを中心に残した
+- 確認: `pnpm exec vitest run src/renderer/components/GraphCanvas.test.tsx`、`pnpm exec vitest run src/renderer/components/GraphSidebar.test.tsx`、`pnpm exec vitest run src/renderer/App.test.tsx`、`pnpm typecheck`、`pnpm test`、`git diff --check` が通過した。全体テストは40ファイル、361件が通過した
+- 残り: 今回指定された分割単位は完了。実アプリ確認はUI/仕様を変えない内部component分離のため未実施
