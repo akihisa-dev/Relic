@@ -258,3 +258,10 @@ AIはこのフェーズを前提にユーザーへ接する。
 - 実施: `frontmatterSettingsModel.ts` を追加し、field type定義、固定フィールド定義、選択肢parse/重複排除、field名検証、YAML例生成を分けた。`useFrontmatterFieldsState.ts` を追加し、draft同期、field追加/更新/削除、選択肢追加、field名確定をhook化した。`FrontmatterFixedFields.tsx`、`FrontmatterFieldAddForm.tsx`、`FrontmatterFieldList.tsx`、`FrontmatterChoiceEditor.tsx` を追加し、`FrontmatterSidebar.tsx` は各部品の組み立てに絞った
 - 確認: `pnpm exec vitest run src/renderer/frontmatterSettingsModel.test.ts src/renderer/components/SettingsSidebar.test.tsx`、`pnpm typecheck`、`pnpm test`、`git diff --check` が通過した。全体テストは66ファイル、472件が通過した
 - 残り: 今回指定された短時間内のFrontmatterSidebar分割単位は完了。実アプリ確認はUI/仕様を変えない内部component/hook/model分離のため未実施
+
+### App shell/render責務分離
+
+- 方向性: UI文言、CSS class名、DOM role、rail/menu/PaneView/AppTopBar/AppRightPanelの既存挙動、IPC/preload API、store状態構造、保存形式を変えず、`App.tsx` に残っていたshell派生値、rail、files sidebar、editor workspace、status bar描画を内部moduleへ分離する
+- 実施: `appShellModel.ts` を追加し、登録workspace fallback、open file/panel tab集合、active panel/chart判定、panel label、feature toggleによるrail表示、rail group分割を純粋処理へ移した。`AppRail.tsx`、`AppFilesSidebar.tsx`、`AppEditorWorkspace.tsx`、`AppStatusBar.tsx` を追加し、`App.tsx` はstore/hook接続、主要callback、panel tab組み立て、overlay組み立てを中心にした
+- 確認: `pnpm exec vitest run src/renderer/appShellModel.test.ts src/renderer/App.test.tsx`、`pnpm typecheck`、`pnpm test`、`git diff --check` が通過した。全体テストは67ファイル、477件が通過した
+- 残り: 今回指定されたApp追加分割単位は完了。実アプリ確認はUI/仕様を変えない内部component/model分離のため未実施
