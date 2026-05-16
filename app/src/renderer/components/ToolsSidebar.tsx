@@ -35,8 +35,11 @@ export function ToolsSidebar({ workspacePath }: { workspacePath: string | null }
   } = useToolsSidebarState(workspacePath, t);
 
   return (
-    <div className="sidebar-section">
-      <div className="pane-heading">{t("tools.tools")}</div>
+    <div className="settings-page tools-settings-page">
+      <header className="settings-page-header">
+        <p className="dashboard-kicker">{t("nav.tools")}</p>
+        <h2>{t("tools.tools")}</h2>
+      </header>
       {!workspacePath ? (
         <div className="empty-note">{t("tools.workspaceRequired")}</div>
       ) : (

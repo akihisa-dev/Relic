@@ -1,4 +1,193 @@
 /* ─── Settings ─── */
+.settings-page {
+  display: grid;
+  gap: 16px;
+  margin: 0 auto;
+  max-width: 960px;
+  min-width: 0;
+  width: min(100%, 960px);
+}
+
+.tools-settings-page {
+  max-width: 1040px;
+}
+
+.settings-page-header {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.settings-page-header h2 {
+  font-size: 26px;
+  font-weight: 650;
+  line-height: 1.15;
+  margin: 0;
+}
+
+.settings-group {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  padding: 14px;
+}
+
+.settings-stack {
+  display: grid;
+  gap: 0;
+  min-width: 0;
+}
+
+.setting-row {
+  align-items: center;
+  display: grid;
+  font-size: 13px;
+  gap: 12px;
+  grid-template-columns: minmax(112px, 0.64fr) minmax(0, 1fr);
+  min-height: 40px;
+  min-width: 0;
+  padding: 8px 0;
+}
+
+.setting-row + .setting-row {
+  border-top: 1px solid var(--border);
+}
+
+.setting-row > span:first-child {
+  color: var(--text-2);
+  min-width: 0;
+}
+
+.setting-row input[type="number"],
+.setting-row input[type="search"],
+.setting-row input[type="text"],
+.setting-row select,
+.settings-control {
+  background: var(--input-bg);
+  border: 1px solid var(--border-soft);
+  border-radius: 7px;
+  color: var(--text);
+  min-height: 32px;
+  min-width: 0;
+  padding: 0 9px;
+  width: 100%;
+}
+
+.setting-row input[type="range"] {
+  accent-color: var(--accent);
+  min-width: 0;
+  width: 100%;
+}
+
+.settings-number-input {
+  max-width: 124px;
+  justify-self: end;
+  text-align: right;
+}
+
+.setting-row input[type="checkbox"] {
+  appearance: none;
+  background: var(--border-medium);
+  border: 0;
+  border-radius: 999px;
+  height: 22px;
+  justify-self: end;
+  margin: 0;
+  position: relative;
+  transition: background-color 140ms ease;
+  width: 38px;
+}
+
+.setting-row input[type="checkbox"]::after {
+  background: var(--bg);
+  border-radius: 999px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+  content: "";
+  height: 18px;
+  left: 2px;
+  position: absolute;
+  top: 2px;
+  transition: transform 140ms ease;
+  width: 18px;
+}
+
+.setting-row input[type="checkbox"]:checked {
+  background: var(--accent);
+}
+
+.setting-row input[type="checkbox"]:checked::after {
+  transform: translateX(16px);
+}
+
+.setting-row input:focus-visible,
+.setting-row select:focus-visible,
+.settings-segmented-button:focus-visible {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: 2px;
+}
+
+.settings-segmented {
+  align-items: stretch;
+  background: var(--hover);
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  justify-self: end;
+  max-width: 100%;
+  min-width: 0;
+  padding: 2px;
+  width: 100%;
+}
+
+.settings-segmented-button {
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  color: var(--text-2);
+  flex: 1 1 auto;
+  font-size: 11px;
+  font-weight: 600;
+  min-height: 28px;
+  min-width: 0;
+  padding: 0 6px;
+  white-space: nowrap;
+}
+
+.settings-segmented-button[aria-pressed="true"] {
+  background: var(--bg);
+  color: var(--text);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.settings-segmented-button:not([aria-pressed="true"]):hover {
+  background: var(--hover-strong);
+  color: var(--text);
+}
+
+.tools-settings-group .search-block {
+  gap: 0;
+}
+
+.tools-settings-group .primary-button {
+  justify-self: end;
+  margin-top: 10px;
+}
+
+.frontmatter-settings-section {
+  max-width: 980px;
+  min-width: 0;
+  width: min(100%, 980px);
+}
+
+.frontmatter-settings-group {
+  align-content: start;
+}
+
 .setting-row--action {
   align-items: flex-start;
   flex-direction: column;
@@ -19,12 +208,6 @@
 .setting-action-btn:disabled { opacity: 0.4; cursor: default; }
 .setting-action-btn--danger { border-color: transparent; padding: 2px 6px; }
 .setting-action-btn--danger:hover { background: var(--error-bg); color: var(--error); }
-
-.frontmatter-settings-section {
-  max-width: 860px;
-  min-width: 0;
-  width: min(100%, 860px);
-}
 
 .frontmatter-format-guide {
   background: rgba(28, 28, 28, 0.035);
@@ -81,8 +264,8 @@
 
 .frontmatter-field-add {
   align-items: start;
-  background: var(--bg);
-  border: 1px solid var(--border);
+  background: var(--input-bg);
+  border: 1px solid var(--border-soft);
   border-radius: 6px;
   display: grid;
   gap: 8px;
@@ -117,7 +300,6 @@
   color: var(--text-3);
   font-size: 11px;
   font-weight: 700;
-  margin-top: 14px;
   text-transform: uppercase;
 }
 
@@ -135,7 +317,8 @@
 }
 
 .frontmatter-field-card {
-  border: 1px solid var(--border);
+  background: var(--bg);
+  border: 1px solid var(--border-soft);
   border-radius: 7px;
   min-width: 0;
   overflow: hidden;
@@ -147,9 +330,9 @@
 }
 
 .frontmatter-field-card--fixed {
-  background: rgba(28, 28, 28, 0.025);
+  background: var(--input-bg);
   border-color: var(--border-medium);
-  border-width: 2px;
+  border-width: 1px;
   margin-top: 6px;
 }
 
@@ -404,3 +587,43 @@
   grid-column: 1 / -1;
 }
 
+@container (max-width: 640px) {
+  .setting-row {
+    align-items: start;
+    gap: 7px;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .setting-row input[type="checkbox"],
+  .settings-number-input,
+  .settings-segmented {
+    justify-self: start;
+  }
+
+  .settings-segmented {
+    width: 100%;
+  }
+
+  .settings-segmented-button {
+    white-space: normal;
+  }
+
+  .frontmatter-field-add {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .frontmatter-field-add > .setting-custom-field-input,
+  .frontmatter-field-add > .frontmatter-field-type-select,
+  .frontmatter-field-add > .frontmatter-choice-editor,
+  .frontmatter-field-add > .frontmatter-field-type-help,
+  .frontmatter-field-add > .frontmatter-writing-example,
+  .frontmatter-field-add-btn {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  .frontmatter-field-label {
+    align-items: start;
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

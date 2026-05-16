@@ -1,9 +1,10 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
-import { type UserDefinedField } from "../../shared/ipc";
+import { defaultEditorSettings, defaultFeatureToggles, type UserDefinedField } from "../../shared/ipc";
 import { I18nProvider } from "../i18n";
 import { FrontmatterSidebar } from "./FrontmatterSidebar";
+import { SettingsSidebar } from "./SettingsSidebar";
 
 function renderFrontmatterSidebar({
   userDefinedFields = [],
@@ -192,5 +193,58 @@ describe("FrontmatterSidebar", () => {
 
     expect(screen.queryByText("Frontmatter templates")).toBeNull();
     expect(screen.queryByPlaceholderText("Template name")).toBeNull();
+  });
+});
+
+describe("SettingsSidebar", () => {
+  function renderSettingsSidebar({
+    onFeatureTogglesSave = vi.fn(),
+    onSave = vi.fn()
+  }: {
+    onFeatureTogglesSave?: (toggles: typeof defaultFeatureToggles) => void;
+    onSave?: (settings: typeof defaultEditorSettings) => void;
+  } = {}) {
+    render(
+      <I18nProvider language="en">
+        <SettingsSidebar
+          appInfo={{ name: "Relic", platform: "darwin", version: "1.2.3" }}
+          featureToggles={defaultFeatureToggles}
+          onFeatureTogglesSave={onFeatureTogglesSave}
+          onSave={onSave}
+          settings={defaultEditorSettings}
+        />
+      </I18nProvider>
+    );
+  }
+
+  it("設定タブをセクション化して表示する", () => {
+    renderSettingsSidebar();
+
+    expect(screen.getByRole("heading", { name: "Settings" })).toBeInTheDocument();
+    expect(screen.getByText("Appearance")).toBeInTheDocument();
+    expect(screen.getByText("Editor")).toBeInTheDocument();
+    expect(screen.getByText("Features")).toBeInTheDocument();
+    expect(screen.getByText("App Info")).toBeInTheDocument();
+    expect(screen.getByText("Relic 1.2.3")).toBeInTheDocument();
+  });
+
+  it("設定変更時に既存のEditorSettings形式で保存する", () => {
+    const onSave = vi.fn();
+    renderSettingsSidebar({ onSave });
+
+    fireEvent.click(screen.getByRole("button", { name: "Dark" }));
+    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ theme: "dark" }));
+
+    fireEvent.change(screen.getByDisplayValue("16"), { target: { value: "18" } });
+    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ fontSize: 18 }));
+  });
+
+  it("機能トグルを既存のFeatureToggles形式で保存する", () => {
+    const onFeatureTogglesSave = vi.fn();
+    renderSettingsSidebar({ onFeatureTogglesSave });
+
+    fireEvent.click(screen.getByLabelText("File tools"));
+
+    expect(onFeatureTogglesSave).toHaveBeenCalledWith(expect.objectContaining({ tools: false }));
   });
 });

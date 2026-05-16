@@ -23,8 +23,8 @@ export function MergeFilesToolSection({
   const t = useT();
 
   return (
-    <>
-      <div className="links-panel-subheading" style={{ marginTop: "1.5rem" }}>{t("tools.merge")}</div>
+    <section className="settings-group tools-settings-group">
+      <div className="links-panel-subheading">{t("tools.merge")}</div>
       <div className="search-block">
         <label className="setting-row">
           <span>{t("tools.filter")}</span>
@@ -111,7 +111,7 @@ export function MergeFilesToolSection({
         </button>
         <ToolStatus status={status} />
       </div>
-    </>
+    </section>
   );
 }
 
@@ -131,8 +131,8 @@ export function SplitFileToolSection({
   const t = useT();
 
   return (
-    <>
-      <div className="links-panel-subheading" style={{ marginTop: "1.5rem" }}>{t("tools.splitByHeading")}</div>
+    <section className="settings-group tools-settings-group">
+      <div className="links-panel-subheading">{t("tools.splitByHeading")}</div>
       <div className="search-block">
         <label className="setting-row">
           <span>{t("tools.sourceFile")}</span>
@@ -168,6 +168,6 @@ export function SplitFileToolSection({
         </button>
         <ToolStatus status={status} />
       </div>
-    </>
+    </section>
   );
 }

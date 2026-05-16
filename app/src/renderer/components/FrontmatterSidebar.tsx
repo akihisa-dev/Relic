@@ -18,45 +18,55 @@ export function FrontmatterSidebar({
   const fieldsState = useFrontmatterFieldsState({ onUserDefinedFieldsSave, userDefinedFields });
 
   return (
-    <div className="sidebar-section settings-section frontmatter-settings-section">
-      <div className="links-panel-subheading">{t("settings.frontmatterProperties")}</div>
-      <div className="frontmatter-format-guide">
-        <p>{t("settings.frontmatterFormatGuide")}</p>
-        <code>{t("settings.frontmatterFormatExample")}</code>
-      </div>
+    <div className="settings-page frontmatter-settings-section">
+      <header className="settings-page-header">
+        <p className="dashboard-kicker">{t("nav.frontmatter")}</p>
+        <h2>{t("settings.frontmatterProperties")}</h2>
+      </header>
 
-      <FrontmatterFixedFields />
+      <section className="settings-group frontmatter-settings-group">
+        <div className="frontmatter-format-guide">
+          <p>{t("settings.frontmatterFormatGuide")}</p>
+          <code>{t("settings.frontmatterFormatExample")}</code>
+        </div>
+      </section>
 
-      <div className="frontmatter-field-group-label">{t("settings.freeFields")}</div>
+      <section className="settings-group frontmatter-settings-group">
+        <FrontmatterFixedFields />
+      </section>
 
-      <FrontmatterFieldAddForm
-        canAddNewField={fieldsState.canAddNewField}
-        newChoiceInput={fieldsState.newChoiceInput}
-        newChoices={fieldsState.newChoices}
-        newFieldName={fieldsState.newFieldName}
-        newFieldType={fieldsState.newFieldType}
-        onAddNewChoices={fieldsState.addNewChoices}
-        onAddNewField={fieldsState.addNewField}
-        onNewChoiceInputChange={fieldsState.setNewChoiceInput}
-        onNewChoicesChange={fieldsState.setNewChoices}
-        onNewFieldNameChange={fieldsState.setNewFieldName}
-        onNewFieldTypeChange={fieldsState.setNewFieldTypeAndResetChoices}
-      />
+      <section className="settings-group frontmatter-settings-group">
+        <div className="frontmatter-field-group-label">{t("settings.freeFields")}</div>
 
-      <FrontmatterFieldList
-        addChoicesToField={fieldsState.addChoicesToField}
-        choiceInputs={fieldsState.choiceInputs}
-        commitFieldName={fieldsState.commitFieldName}
-        deleteField={fieldsState.deleteField}
-        expandedField={fieldsState.expandedField}
-        fieldNameDrafts={fieldsState.fieldNameDrafts}
-        fieldsDraft={fieldsState.fieldsDraft}
-        onChoiceInputChange={(fieldName, value) => fieldsState.setChoiceInputs((current) => ({ ...current, [fieldName]: value }))}
-        onExpandedFieldChange={fieldsState.setExpandedField}
-        onFieldNameDraftChange={fieldsState.setExistingFieldNameDraft}
-        onFieldNameDraftReset={fieldsState.resetExistingFieldNameDraft}
-        updateUserDefinedField={fieldsState.updateUserDefinedField}
-      />
+        <FrontmatterFieldAddForm
+          canAddNewField={fieldsState.canAddNewField}
+          newChoiceInput={fieldsState.newChoiceInput}
+          newChoices={fieldsState.newChoices}
+          newFieldName={fieldsState.newFieldName}
+          newFieldType={fieldsState.newFieldType}
+          onAddNewChoices={fieldsState.addNewChoices}
+          onAddNewField={fieldsState.addNewField}
+          onNewChoiceInputChange={fieldsState.setNewChoiceInput}
+          onNewChoicesChange={fieldsState.setNewChoices}
+          onNewFieldNameChange={fieldsState.setNewFieldName}
+          onNewFieldTypeChange={fieldsState.setNewFieldTypeAndResetChoices}
+        />
+
+        <FrontmatterFieldList
+          addChoicesToField={fieldsState.addChoicesToField}
+          choiceInputs={fieldsState.choiceInputs}
+          commitFieldName={fieldsState.commitFieldName}
+          deleteField={fieldsState.deleteField}
+          expandedField={fieldsState.expandedField}
+          fieldNameDrafts={fieldsState.fieldNameDrafts}
+          fieldsDraft={fieldsState.fieldsDraft}
+          onChoiceInputChange={(fieldName, value) => fieldsState.setChoiceInputs((current) => ({ ...current, [fieldName]: value }))}
+          onExpandedFieldChange={fieldsState.setExpandedField}
+          onFieldNameDraftChange={fieldsState.setExistingFieldNameDraft}
+          onFieldNameDraftReset={fieldsState.resetExistingFieldNameDraft}
+          updateUserDefinedField={fieldsState.updateUserDefinedField}
+        />
+      </section>
     </div>
   );
 }
