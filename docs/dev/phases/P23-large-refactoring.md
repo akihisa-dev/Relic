@@ -145,3 +145,10 @@ Relicの大規模リファクタリングフェーズの正本。
 - 実施: `app/src/renderer/hooks/useGraphPanelModel.ts` を追加し、GraphPanel用store state/action取得、workspaceIdによる既存graph読込effect、hoveredPath state、filteredGraph、focusedPath、labelOpacity、groupByPath、forceSettings導出、`useGraphCanvasInteractions` 呼び出しを移した。`GraphSidebar.tsx` は `useT`、浮動パネルhook、model hook、loading/error/empty分岐、`GraphControls` と `GraphCanvas` のJSX組み立てを中心に残した
 - 確認: `pnpm exec vitest run src/renderer/hooks/useGraphPanelModel.test.tsx`、`pnpm exec vitest run src/renderer/hooks/useGraphCanvasInteractions.test.tsx`、`pnpm exec vitest run src/renderer/components/GraphCanvas.test.tsx`、`pnpm exec vitest run src/renderer/components/GraphSidebar.test.tsx`、`pnpm exec vitest run src/renderer/App.test.tsx`、`pnpm typecheck`、`pnpm test`、`git diff --check` が通過した。全体テストは44ファイル、379件が通過した
 - 残り: 今回指定された分割単位は完了。実アプリ確認はUI/仕様を変えない内部hook分離のため未実施
+
+### Graph canvas internals分離
+
+- 方向性: 仕様、UI文言、DOM class名、CSS、保存形式、IPC/preload API、`graphStore`、`graphLayout.ts` の計算処理を変えず、Graph canvas内部に残っていたinteraction/rendering責務をhook/componentへ分離する
+- 実施: `app/src/renderer/hooks/useGraphSimulation.ts`、`useGraphViewportInteractions.ts`、`useGraphNodeInteractions.ts` を追加し、`useGraphCanvasInteractions.ts` は既存input/outputを維持したorchestratorにした。`app/src/renderer/components/GraphCanvasLayers.tsx` を追加し、arrow marker、edge layer、node layerを分離した。`GraphCanvasProps`、marker id、class名、role、tabIndex、aria-label、node click/key behaviorは維持した
+- 確認: `pnpm exec vitest run src/renderer/hooks/useGraphSimulation.test.tsx`、`pnpm exec vitest run src/renderer/hooks/useGraphViewportInteractions.test.tsx`、`pnpm exec vitest run src/renderer/hooks/useGraphNodeInteractions.test.tsx`、`pnpm exec vitest run src/renderer/hooks/useGraphCanvasInteractions.test.tsx`、`pnpm exec vitest run src/renderer/components/GraphCanvasLayers.test.tsx`、`pnpm exec vitest run src/renderer/components/GraphCanvas.test.tsx`、`pnpm exec vitest run src/renderer/components/GraphSidebar.test.tsx`、`pnpm exec vitest run src/renderer/App.test.tsx`、`pnpm typecheck`、`pnpm test`、`git diff --check` が通過した。全体テストは48ファイル、395件が通過した
+- 残り: 今回指定された分割単位は完了。実アプリ確認はUI/仕様を変えない内部hook/component分離のため未実施
