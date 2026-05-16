@@ -1,0 +1,243 @@
+import { type Text } from "@codemirror/state";
+
+export interface SourceRevealRange {
+  from: number;
+  to: number;
+}
+
+export interface InlineMatch {
+  from: number;
+  to: number;
+  contentFrom: number;
+  contentTo: number;
+  className: string;
+  hideRanges: Array<{ from: number; to: number }>;
+}
+
+export interface ClickableLinkAtPosition {
+  href?: string;
+  heading?: string;
+  target?: string;
+  type: "markdown" | "wiki";
+}
+
+export function overlaps(from: number, to: number, ranges: Array<{ from: number; to: number }>): boolean {
+  return ranges.some((range) => from < range.to && to > range.from);
+}
+
+export function collectRegexMatches(
+  text: string,
+  regex: RegExp,
+  createMatch: (match: RegExpExecArray) => InlineMatch | null
+): InlineMatch[] {
+  const matches: InlineMatch[] = [];
+  let match: RegExpExecArray | null;
+
+  while ((match = regex.exec(text)) !== null) {
+    const inlineMatch = createMatch(match);
+    if (inlineMatch) matches.push(inlineMatch);
+    if (match[0].length === 0) regex.lastIndex += 1;
+  }
+
+  return matches;
+}
+
+export function collectInlineMatches(lineFrom: number, text: string): InlineMatch[] {
+  const occupied: Array<{ from: number; to: number }> = [];
+  const matches: InlineMatch[] = [];
+
+  matches.push(...collectRegexMatches(text, /`([^`\n]+)`/g, (match) => {
+    const from = lineFrom + match.index;
+    const to = from + match[0].length;
+    return {
+      from,
+      to,
+      contentFrom: from + 1,
+      contentTo: to - 1,
+      className: "cm-live-code",
+      hideRanges: [{ from, to: from + 1 }, { from: to - 1, to }]
+    };
+  }));
+
+  matches.push(...collectRegexMatches(text, /\[([^\]\n]+)\]\(([^)\n]+)\)/g, (match) => {
+    const from = lineFrom + match.index;
+    const textFrom = from + 1;
+    const textTo = textFrom + match[1].length;
+    const to = from + match[0].length;
+    return {
+      from,
+      to,
+      contentFrom: textFrom,
+      contentTo: textTo,
+      className: "cm-live-link",
+      hideRanges: [{ from, to: from + 1 }, { from: textTo, to }]
+    };
+  }));
+
+  matches.push(...collectRegexMatches(text, /\[\[([^\]\n]+)\]\]/g, (match) => {
+    const from = lineFrom + match.index;
+    const to = from + match[0].length;
+    const separatorIndex = match[1].lastIndexOf("|");
+    const contentOffset = separatorIndex >= 0 ? 2 + separatorIndex + 1 : 2;
+    const contentLength = separatorIndex >= 0 ? match[1].length - separatorIndex - 1 : match[1].length;
+    const contentFrom = from + contentOffset;
+    const contentTo = contentFrom + contentLength;
+    const hideRanges = separatorIndex >= 0
+      ? [{ from, to: contentFrom }, { from: to - 2, to }]
+      : [{ from, to: from + 2 }, { from: to - 2, to }];
+    return {
+      from,
+      to,
+      contentFrom,
+      contentTo,
+      className: "cm-live-link",
+      hideRanges
+    };
+  }));
+
+  matches.push(...collectRegexMatches(text, /\*\*([^*\n]+)\*\*/g, (match) => {
+    const from = lineFrom + match.index;
+    const to = from + match[0].length;
+    return {
+      from,
+      to,
+      contentFrom: from + 2,
+      contentTo: to - 2,
+      className: "cm-live-bold",
+      hideRanges: [{ from, to: from + 2 }, { from: to - 2, to }]
+    };
+  }));
+
+  matches.push(...collectRegexMatches(text, /__([^_\n]+)__/g, (match) => {
+    const from = lineFrom + match.index;
+    const to = from + match[0].length;
+    return {
+      from,
+      to,
+      contentFrom: from + 2,
+      contentTo: to - 2,
+      className: "cm-live-bold",
+      hideRanges: [{ from, to: from + 2 }, { from: to - 2, to }]
+    };
+  }));
+
+  matches.push(...collectRegexMatches(text, /~~([^~\n]+)~~/g, (match) => {
+    const from = lineFrom + match.index;
+    const to = from + match[0].length;
+    return {
+      from,
+      to,
+      contentFrom: from + 2,
+      contentTo: to - 2,
+      className: "cm-live-strike",
+      hideRanges: [{ from, to: from + 2 }, { from: to - 2, to }]
+    };
+  }));
+
+  matches.push(...collectRegexMatches(text, /==([^=\n]+)==/g, (match) => {
+    const from = lineFrom + match.index;
+    const to = from + match[0].length;
+    return {
+      from,
+      to,
+      contentFrom: from + 2,
+      contentTo: to - 2,
+      className: "cm-live-highlight",
+      hideRanges: [{ from, to: from + 2 }, { from: to - 2, to }]
+    };
+  }));
+
+  matches.push(...collectRegexMatches(text, /<u>([^<\n]+)<\/u>/g, (match) => {
+    const from = lineFrom + match.index;
+    const to = from + match[0].length;
+    return {
+      from,
+      to,
+      contentFrom: from + 3,
+      contentTo: to - 4,
+      className: "cm-live-underline",
+      hideRanges: [{ from, to: from + 3 }, { from: to - 4, to }]
+    };
+  }));
+
+  matches.push(...collectRegexMatches(text, /(^|[^\*])\*([^*\n]+)\*(?!\*)/g, (match) => {
+    const markerOffset = match[1].length;
+    const from = lineFrom + match.index + markerOffset;
+    const to = from + match[0].length - markerOffset;
+    return {
+      from,
+      to,
+      contentFrom: from + 1,
+      contentTo: to - 1,
+      className: "cm-live-italic",
+      hideRanges: [{ from, to: from + 1 }, { from: to - 1, to }]
+    };
+  }));
+
+  matches.push(...collectRegexMatches(text, /(^|[^_])_([^_\n]+)_(?!_)/g, (match) => {
+    const markerOffset = match[1].length;
+    const from = lineFrom + match.index + markerOffset;
+    const to = from + match[0].length - markerOffset;
+    return {
+      from,
+      to,
+      contentFrom: from + 1,
+      contentTo: to - 1,
+      className: "cm-live-italic",
+      hideRanges: [{ from, to: from + 1 }, { from: to - 1, to }]
+    };
+  }));
+
+  matches.sort((a, b) => a.from - b.from || b.to - a.to);
+
+  return matches.filter((match) => {
+    if (overlaps(match.from, match.to, occupied)) return false;
+    occupied.push({ from: match.from, to: match.to });
+    return true;
+  });
+}
+
+export function tagNameForInlineMatch(className: string): "span" | "strong" | "em" | "code" | "a" | "u" {
+  if (className === "cm-live-bold") return "strong";
+  if (className === "cm-live-italic") return "em";
+  if (className === "cm-live-code") return "code";
+  if (className === "cm-live-underline") return "u";
+  return "span";
+}
+
+export function findClickableLinkAtPosition(
+  doc: Text,
+  position: number
+): ClickableLinkAtPosition | null {
+  const line = doc.lineAt(position);
+  const offset = position - line.from;
+
+  for (const match of line.text.matchAll(/\[([^\]\n]+)\]\(([^)\n]+)\)/g)) {
+    const fullText = match[0];
+    const href = match[2];
+    const start = match.index ?? 0;
+
+    if (offset >= start && offset <= start + fullText.length) {
+      return { href, type: "markdown" };
+    }
+  }
+
+  for (const match of line.text.matchAll(/\[\[([^\]\n]+)\]\]/g)) {
+    const body = match[1];
+    const start = match.index ?? 0;
+    const end = start + match[0].length;
+
+    if (offset < start || offset > end) continue;
+
+    const [targetPart] = body.split("|", 2);
+    const blockParts = targetPart.trim().split("^", 2);
+    const headingParts = blockParts[0].split("#", 2);
+    const target = headingParts[0].trim();
+
+    if (!target) return null;
+
+    return { heading: headingParts[1]?.trim() || undefined, target, type: "wiki" };
+  }
+
+  return null;
+}
