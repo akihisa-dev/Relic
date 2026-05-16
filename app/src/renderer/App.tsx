@@ -20,15 +20,19 @@ import { QuickSwitcher } from "./components/QuickSwitcher";
 import { SettingsSidebar } from "./components/SettingsSidebar";
 import { ToolsSidebar } from "./components/ToolsSidebar";
 import { Toolbar } from "./components/Toolbar";
+import { fixedMenuPosition, IconFiles, RailWorkspaceSwitcher, sidebarViewDefs } from "./components/RailNavigation";
 import { extractOutlineHeadings, getActiveFileTabInPane, getActiveTabInPane } from "./editorDerivedState";
 import { normalizeWorkspaceGanttCharts, normalizeWorkspaceGanttChartsWithFiles, updateGanttChartEntryFallback } from "./ganttChartData";
-import { createTranslator, I18nProvider, useT, type TranslationKey } from "./i18n";
+import { createTranslator, I18nProvider, useT } from "./i18n";
 import { useAppKeyboardShortcuts } from "./hooks/useAppKeyboardShortcuts";
 import { useAppSettingsState } from "./hooks/useAppSettingsState";
 import { useAppTheme } from "./hooks/useAppTheme";
 import { useBacklinksState } from "./hooks/useBacklinksState";
 import { useCommandPaletteCommands } from "./hooks/useCommandPaletteCommands";
+import { usePaneTabMotion } from "./hooks/usePaneTabMotion";
+import { useRailFlights } from "./hooks/useRailFlights";
 import { useSidebarResize } from "./hooks/useSidebarResize";
+import { useSplitCloseMotion } from "./hooks/useSplitCloseMotion";
 import { useWorkspaceFileActions } from "./hooks/useWorkspaceFileActions";
 import { useWorkspaceSearchState } from "./hooks/useWorkspaceSearchState";
 import { useEditorStore, type PaneId, type PanelTabKind } from "./store/editorStore";
@@ -40,325 +44,12 @@ import "./styles.css";
 // App
 // ────────────────────────────────────────────────
 
-const IconFiles = ({ sidebarOpen = false }: { sidebarOpen?: boolean } = {}): ReactElement => (
-  <svg fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" viewBox="0 0 20 20" width="18">
-    <path d="M3 5a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5z" />
-    {sidebarOpen ? (
-      <polyline points="12.75,8.75 10.25,11 12.75,13.25" />
-    ) : (
-      <polyline points="10.75,8.75 13.25,11 10.75,13.25" />
-    )}
-  </svg>
-);
-
-const IconTools = (): ReactElement => (
-  <svg fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" viewBox="0 0 20 20" width="18">
-    <path d="M15 3a3.5 3.5 0 0 0-3.2 4.9L4.1 15.5a1.5 1.5 0 0 0 2.1 2.1l7.6-7.7A3.5 3.5 0 0 0 18.5 6.5L16 9l-2-2 2.5-2.5A3.5 3.5 0 0 0 15 3z" />
-  </svg>
-);
-
-const IconFrontmatter = (): ReactElement => (
-  <svg fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" viewBox="0 0 20 20" width="18">
-    <rect height="14" rx="2" width="12" x="4" y="3" />
-    <line x1="7" x2="13" y1="7" y2="7" />
-    <line x1="7" x2="11" y1="10" y2="10" />
-    <line x1="7" x2="12" y1="13" y2="13" />
-  </svg>
-);
-
-const IconChronicle = (): ReactElement => (
-  <svg fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" viewBox="0 0 20 20" width="18">
-    <line x1="3" x2="17" y1="10" y2="10" />
-    <circle cx="6" cy="10" r="2" />
-    <rect height="4" rx="1.5" width="7" x="10" y="8" />
-    <line x1="6" x2="6" y1="5" y2="15" />
-    <line x1="13.5" x2="13.5" y1="5" y2="15" />
-  </svg>
-);
-
-const IconGraph = (): ReactElement => (
-  <svg fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" viewBox="0 0 20 20" width="18">
-    <circle cx="5" cy="6" r="2" />
-    <circle cx="14" cy="4" r="2" />
-    <circle cx="15" cy="14" r="2" />
-    <circle cx="6" cy="15" r="2" />
-    <line x1="6.7" x2="12.2" y1="5.6" y2="4.4" />
-    <line x1="14.3" x2="14.8" y1="6" y2="12" />
-    <line x1="13.2" x2="7.8" y1="14.3" y2="14.8" />
-    <line x1="6.2" x2="13.8" y1="7.5" y2="12.5" />
-  </svg>
-);
-
-const IconDashboard = (): ReactElement => (
-  <svg fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" viewBox="0 0 20 20" width="18">
-    <rect height="5" rx="1.4" width="5" x="3" y="3" />
-    <rect height="5" rx="1.4" width="5" x="12" y="3" />
-    <rect height="5" rx="1.4" width="5" x="3" y="12" />
-    <path d="M12 16l1.5-3 1.7 2 1.8-4" />
-  </svg>
-);
-
-const IconSettings = (): ReactElement => (
-  <svg fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" viewBox="0 0 20 20" width="18">
-    <line x1="3" x2="17" y1="5" y2="5" />
-    <line x1="3" x2="17" y1="10" y2="10" />
-    <line x1="3" x2="17" y1="15" y2="15" />
-    <circle cx="7" cy="5" fill="currentColor" r="2" stroke="none" />
-    <circle cx="13" cy="10" fill="currentColor" r="2" stroke="none" />
-    <circle cx="7" cy="15" fill="currentColor" r="2" stroke="none" />
-  </svg>
-);
-
-type RailViewId = SidebarView | PanelTabKind;
-
-const sidebarViewDefs: Array<{ id: RailViewId; labelKey: TranslationKey; icon: ReactElement }> = [
-  { id: "files", labelKey: "nav.files", icon: <IconFiles /> },
-  { id: "dashboard", labelKey: "nav.dashboard", icon: <IconDashboard /> },
-  { id: "graph", labelKey: "nav.graph", icon: <IconGraph /> },
-  { id: "tools", labelKey: "nav.tools", icon: <IconTools /> },
-  { id: "frontmatter", labelKey: "nav.frontmatter", icon: <IconFrontmatter /> },
-  { id: "chronicle", labelKey: "nav.chronicle", icon: <IconChronicle /> },
-  { id: "settings", labelKey: "nav.settings", icon: <IconSettings /> }
-];
-
 function ensureMarkdownExtension(name: string): string {
   return name.trim().endsWith(".md") ? name.trim() : `${name.trim()}.md`;
 }
 
 function markdownLinkForPath(path: string): string {
   return `[[${path.replace(/\.md$/i, "")}]]`;
-}
-
-function fixedMenuPosition(x: number, y: number, estimatedHeight = 240): { x: number; y: number } {
-  const margin = 8;
-  const estimatedWidth = 220;
-  const maxX = Math.max(margin, window.innerWidth - estimatedWidth - margin);
-  const maxY = Math.max(margin, window.innerHeight - estimatedHeight - margin);
-
-  return {
-    x: Math.min(Math.max(margin, x), maxX),
-    y: Math.min(Math.max(margin, y), maxY)
-  };
-}
-
-const TAB_CLOSE_MOTION_MS = 180;
-
-const paneTabMotionKey = (pane: PaneId, tabId: string): string => `${pane}:${tabId}`;
-
-interface RailWorkspaceSwitcherProps {
-  activeWorkspaceId: string | null;
-  ariaLabel: string;
-  onRenameActiveChange?: (isActive: boolean) => void;
-  onRenameComplete?: () => void;
-  onRemoveWorkspace: (id: string) => void;
-  onRenameWorkspace: (id: string, currentName: string) => Promise<boolean>;
-  onSwitchWorkspace: (id: string) => void;
-  renameLabel: string;
-  removeLabel: (name: string) => string;
-  workspaces: WorkspaceState["workspaces"];
-}
-
-function RailWorkspaceSwitcher({
-  activeWorkspaceId,
-  ariaLabel,
-  onRenameActiveChange,
-  onRenameComplete,
-  onRemoveWorkspace,
-  onRenameWorkspace,
-  onSwitchWorkspace,
-  renameLabel,
-  removeLabel,
-  workspaces
-}: RailWorkspaceSwitcherProps): ReactElement | null {
-  const [contextMenu, setContextMenu] = useState<{ workspaceId: string; name: string; x: number; y: number } | null>(null);
-  const [renamingWorkspace, setRenamingWorkspace] = useState<{ id: string; name: string; value: string } | null>(null);
-  const [isComposingRename, setIsComposingRename] = useState(false);
-  const isCommittingRenameRef = useRef(false);
-  const skipNextRenameEnterKeyUpRef = useRef(false);
-  const isRenamingWorkspace = renamingWorkspace !== null;
-
-  useEffect(() => {
-    onRenameActiveChange?.(isRenamingWorkspace);
-  }, [isRenamingWorkspace, onRenameActiveChange]);
-
-  useEffect(() => {
-    return () => onRenameActiveChange?.(false);
-  }, [onRenameActiveChange]);
-
-  useEffect(() => {
-    if (!contextMenu) return;
-    const close = (): void => setContextMenu(null);
-    const handleKeyDown = (event: KeyboardEvent): void => {
-      if (event.key === "Escape") close();
-    };
-
-    window.addEventListener("click", close);
-    window.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      window.removeEventListener("click", close);
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [contextMenu]);
-
-  if (workspaces.length === 0) return null;
-
-  const startRename = (workspaceId: string, name: string): void => {
-    setContextMenu(null);
-    isCommittingRenameRef.current = false;
-    skipNextRenameEnterKeyUpRef.current = false;
-    setRenamingWorkspace({ id: workspaceId, name, value: name });
-  };
-
-  const commitRename = async (value = renamingWorkspace?.value ?? ""): Promise<void> => {
-    if (!renamingWorkspace) return;
-    if (isCommittingRenameRef.current) return;
-
-    const nextName = value.trim();
-    const previousName = renamingWorkspace.name;
-    const workspaceId = renamingWorkspace.id;
-    isCommittingRenameRef.current = true;
-
-    if (!nextName || nextName === previousName) {
-      setRenamingWorkspace(null);
-      return;
-    }
-
-    await onRenameWorkspace(workspaceId, nextName);
-    onRenameComplete?.();
-    setRenamingWorkspace(null);
-  };
-
-  const cancelRename = (): void => {
-    setIsComposingRename(false);
-    isCommittingRenameRef.current = false;
-    skipNextRenameEnterKeyUpRef.current = false;
-    setRenamingWorkspace(null);
-  };
-
-  return (
-    <div className="workspace-switcher" aria-label={ariaLabel}>
-      {workspaces.map((ws) => {
-        const isActive = ws.id === activeWorkspaceId;
-        const isRenaming = renamingWorkspace?.id === ws.id;
-        const initial = ws.name.trim().charAt(0).toUpperCase() || "W";
-
-        return (
-          <div className={`workspace-switcher-item${isActive ? " active" : ""}`} key={ws.id}>
-            {isRenaming ? (
-              <div className="workspace-switcher-main workspace-switcher-main--editing">
-                <span className="workspace-switcher-icon">{initial}</span>
-                <input
-                  aria-label={renameLabel}
-                  autoFocus
-                  className="workspace-switcher-input"
-                  onBlur={(event) => {
-                    void commitRename(event.currentTarget.value);
-                  }}
-                  onChange={(event) => {
-                    setRenamingWorkspace((current) => (
-                      current && current.id === ws.id
-                        ? { ...current, value: event.target.value }
-                        : current
-                    ));
-                  }}
-                  onClick={(event) => event.stopPropagation()}
-                  onCompositionEnd={() => setIsComposingRename(false)}
-                  onCompositionStart={() => setIsComposingRename(true)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") {
-                      if (isComposingRename || event.nativeEvent.isComposing) {
-                        skipNextRenameEnterKeyUpRef.current = true;
-                        return;
-                      }
-                      event.preventDefault();
-                      void commitRename(event.currentTarget.value);
-                    }
-                    if (event.key === "Escape") {
-                      event.preventDefault();
-                      cancelRename();
-                    }
-                  }}
-                  onKeyUp={(event) => {
-                    if (event.key !== "Enter") return;
-                    if (skipNextRenameEnterKeyUpRef.current) {
-                      skipNextRenameEnterKeyUpRef.current = false;
-                      return;
-                    }
-                    if (isComposingRename || event.nativeEvent.isComposing) return;
-                    event.preventDefault();
-                    void commitRename(event.currentTarget.value);
-                  }}
-                  value={renamingWorkspace.value}
-                />
-              </div>
-            ) : (
-              <button
-                aria-label={ws.name}
-                className="workspace-switcher-main"
-                onContextMenu={(event) => {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  setContextMenu({ name: ws.name, workspaceId: ws.id, ...fixedMenuPosition(event.clientX, event.clientY, 96) });
-                }}
-                onDoubleClick={(event) => {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  startRename(ws.id, ws.name);
-                }}
-                onClick={() => onSwitchWorkspace(ws.id)}
-                title={ws.path}
-                type="button"
-              >
-                <span className="workspace-switcher-icon">{initial}</span>
-                <span className="workspace-switcher-name">{ws.name}</span>
-              </button>
-            )}
-            <button
-              aria-label={removeLabel(ws.name)}
-              className="workspace-switcher-remove"
-              onClick={() => onRemoveWorkspace(ws.id)}
-              title={removeLabel(ws.name)}
-              type="button"
-            >
-              ×
-            </button>
-          </div>
-        );
-      })}
-      {contextMenu ? (
-        <div
-          className="tab-context-menu workspace-context-menu"
-          onClick={(event) => event.stopPropagation()}
-          role="menu"
-          style={{ left: contextMenu.x, position: "fixed", top: contextMenu.y, zIndex: 1000 }}
-        >
-          <button
-            className="tab-context-menu-item"
-            onClick={() => {
-              startRename(contextMenu.workspaceId, contextMenu.name);
-              setContextMenu(null);
-            }}
-            role="menuitem"
-            type="button"
-          >
-            {renameLabel}
-          </button>
-          <button
-            className="tab-context-menu-item danger"
-            onClick={() => {
-              onRemoveWorkspace(contextMenu.workspaceId);
-              setContextMenu(null);
-            }}
-            role="menuitem"
-            type="button"
-          >
-            {removeLabel(contextMenu.name)}
-          </button>
-        </div>
-      ) : null}
-    </div>
-  );
 }
 
 export function App(): ReactElement {
@@ -414,28 +105,16 @@ export function App(): ReactElement {
   }, [showToast]);
   const [leftPaneScrollHeading, setLeftPaneScrollHeading] = useState<string | undefined>(undefined);
   const [rightPaneScrollHeading, setRightPaneScrollHeading] = useState<string | undefined>(undefined);
-  const [closingPaneTabs, setClosingPaneTabs] = useState<Set<string>>(() => new Set());
-  const closeMotionTimersRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
-  const splitCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [isSplitClosing, setIsSplitClosing] = useState(false);
   const [editorActionPulse, setEditorActionPulse] = useState(0);
   const [showCommandPalette, setShowCommandPalette] = useState(false);
   const [showQuickSwitcher, setShowQuickSwitcher] = useState(false);
-  const [railTabFlight, setRailTabFlight] = useState<{
-    direction: "open" | "close";
-    fromX: number;
-    fromY: number;
-    label: string;
-    toX: number;
-    toY: number;
-  } | null>(null);
-  const [sidebarCreateFlight, setSidebarCreateFlight] = useState<{
-    fromX: number;
-    fromY: number;
-    label: string;
-    toX: number;
-    toY: number;
-  } | null>(null);
+  const {
+    clearRailTabFlight,
+    railTabFlight,
+    showRailTabFlight,
+    showSidebarCreateFlight,
+    sidebarCreateFlight
+  } = useRailFlights();
   const [fileSearchFocusRequest, setFileSearchFocusRequest] = useState(0);
   const pendingSidebarFileOpenTokensRef = useRef<Record<string, number>>({});
   const sidebarFileOpenTokenRef = useRef(0);
@@ -486,6 +165,24 @@ export function App(): ReactElement {
     () => Object.values(tabs).some((tab) => tab.kind === "gantt"),
     [tabs]
   );
+  const { isSplitClosing, toggleSplitWithMotion } = useSplitCloseMotion(isSplit, toggleSplit);
+  const {
+    closeAllTabsInPaneWithMotion,
+    closeOtherTabsWithMotion,
+    closeTabWithMotion,
+    closeTabsToRightWithMotion,
+    leftClosingTabIds,
+    rightClosingTabIds
+  } = usePaneTabMotion({
+    closeAllTabsInPane,
+    closeOtherTabs,
+    closeTab,
+    closeTabsToRight,
+    leftPane,
+    rightPane,
+    showRailTabFlight,
+    tabs
+  });
 
   const toggleSidebar = useCallback((): void => {
     if (isWorkspaceRenameActive) return;
@@ -504,30 +201,6 @@ export function App(): ReactElement {
   useEffect(() => {
     return () => {
       if (workspaceRenameHoldTimerRef.current) clearTimeout(workspaceRenameHoldTimerRef.current);
-    };
-  }, []);
-
-  const toggleSplitWithMotion = useCallback((): void => {
-    if (!isSplit) {
-      if (splitCloseTimerRef.current) clearTimeout(splitCloseTimerRef.current);
-      setIsSplitClosing(false);
-      toggleSplit();
-      return;
-    }
-
-    if (isSplitClosing) return;
-
-    setIsSplitClosing(true);
-    splitCloseTimerRef.current = setTimeout(() => {
-      toggleSplit();
-      setIsSplitClosing(false);
-      splitCloseTimerRef.current = null;
-    }, 190);
-  }, [isSplit, isSplitClosing, toggleSplit]);
-
-  useEffect(() => {
-    return () => {
-      if (splitCloseTimerRef.current) clearTimeout(splitCloseTimerRef.current);
     };
   }, []);
 
@@ -556,123 +229,6 @@ export function App(): ReactElement {
       })),
     [t]
   );
-
-  useEffect(() => {
-    const timers = closeMotionTimersRef.current;
-    return () => {
-      for (const timer of Object.values(timers)) clearTimeout(timer);
-    };
-  }, []);
-
-  const clearClosingPaneTabs = useCallback((keys: string[]): void => {
-    setClosingPaneTabs((current) => {
-      const next = new Set(current);
-      for (const key of keys) next.delete(key);
-      return next;
-    });
-
-    for (const key of keys) {
-      delete closeMotionTimersRef.current[key];
-    }
-  }, []);
-
-  const startTabCloseFlight = useCallback((tabId: string): void => {
-    const tab = useEditorStore.getState().tabs[tabId];
-    if (!tab) return;
-
-    const tabElement = document.querySelector<HTMLElement>(`.pane-tab[data-tab-id="${tabId}"]`);
-    if (!tabElement) return;
-
-    const tabRect = tabElement.getBoundingClientRect();
-
-    setRailTabFlight({
-      direction: "close",
-      fromX: tabRect.left + tabRect.width / 2,
-      fromY: tabRect.top + tabRect.height / 2,
-      label: tab.name,
-      toX: tabRect.left + tabRect.width / 2,
-      toY: tabRect.top + tabRect.height / 2 + 2
-    });
-    window.setTimeout(() => {
-      if (typeof window !== "undefined") setRailTabFlight(null);
-    }, 260);
-  }, []);
-
-  const closeTabWithMotion = useCallback((pane: PaneId, tabId: string): void => {
-    if (!useEditorStore.getState().tabs[tabId]) return;
-
-    const key = paneTabMotionKey(pane, tabId);
-    if (closingPaneTabs.has(key)) return;
-
-    setClosingPaneTabs((current) => {
-      if (current.has(key)) return current;
-      return new Set(current).add(key);
-    });
-
-    startTabCloseFlight(tabId);
-
-    closeMotionTimersRef.current[key] = setTimeout(() => {
-      closeTab(pane, tabId);
-      clearClosingPaneTabs([key]);
-    }, TAB_CLOSE_MOTION_MS);
-  }, [clearClosingPaneTabs, closeTab, closingPaneTabs, startTabCloseFlight]);
-
-  const closeTabsWithMotion = useCallback((pane: PaneId, tabIds: string[], closeAction: () => void): void => {
-    const targetKeys = tabIds
-      .filter((tabId) => tabs[tabId])
-      .map((tabId) => paneTabMotionKey(pane, tabId))
-      .filter((key) => !closingPaneTabs.has(key));
-
-    if (targetKeys.length === 0) return;
-
-    setClosingPaneTabs((current) => {
-      const next = new Set(current);
-      for (const key of targetKeys) next.add(key);
-      return next;
-    });
-
-    const timer = setTimeout(() => {
-      closeAction();
-      clearClosingPaneTabs(targetKeys);
-    }, TAB_CLOSE_MOTION_MS);
-
-    for (const key of targetKeys) {
-      closeMotionTimersRef.current[key] = timer;
-    }
-  }, [clearClosingPaneTabs, closingPaneTabs, tabs]);
-
-  const leftClosingTabIds = useMemo(
-    () => new Set(leftPane.tabIds.filter((tabId) => closingPaneTabs.has(paneTabMotionKey("left", tabId)))),
-    [closingPaneTabs, leftPane.tabIds]
-  );
-  const rightClosingTabIds = useMemo(
-    () => new Set(rightPane.tabIds.filter((tabId) => closingPaneTabs.has(paneTabMotionKey("right", tabId)))),
-    [closingPaneTabs, rightPane.tabIds]
-  );
-
-  const closeOtherTabsWithMotion = useCallback((pane: PaneId, tabId: string): void => {
-    const paneState = pane === "left" ? leftPane : rightPane;
-    closeTabsWithMotion(
-      pane,
-      paneState.tabIds.filter((id) => id !== tabId),
-      () => closeOtherTabs(pane, tabId)
-    );
-  }, [closeOtherTabs, closeTabsWithMotion, leftPane, rightPane]);
-
-  const closeTabsToRightWithMotion = useCallback((pane: PaneId, tabId: string): void => {
-    const paneState = pane === "left" ? leftPane : rightPane;
-    const tabIndex = paneState.tabIds.indexOf(tabId);
-    closeTabsWithMotion(
-      pane,
-      tabIndex === -1 ? [] : paneState.tabIds.slice(tabIndex + 1),
-      () => closeTabsToRight(pane, tabId)
-    );
-  }, [closeTabsToRight, closeTabsWithMotion, leftPane, rightPane]);
-
-  const closeAllTabsInPaneWithMotion = useCallback((pane: PaneId): void => {
-    const paneState = pane === "left" ? leftPane : rightPane;
-    closeTabsWithMotion(pane, paneState.tabIds, () => closeAllTabsInPane(pane));
-  }, [closeAllTabsInPane, closeTabsWithMotion, leftPane, rightPane]);
 
   const {
     appInfo,
@@ -849,7 +405,7 @@ export function App(): ReactElement {
 
     if (pendingToken) {
       delete pendingSidebarFileOpenTokensRef.current[path];
-      setRailTabFlight({
+      showRailTabFlight({
         direction: "close",
         fromX: (tabBarRect?.left ?? rowRect.left + rowRect.width + 120) + 48,
         fromY: (tabBarRect?.top ?? rowRect.top) + 15,
@@ -857,9 +413,6 @@ export function App(): ReactElement {
         toX: rowRect.left + rowRect.width / 2,
         toY: rowRect.top + rowRect.height / 2
       });
-      window.setTimeout(() => {
-        if (typeof window !== "undefined") setRailTabFlight(null);
-      }, 360);
       return;
     }
 
@@ -877,7 +430,7 @@ export function App(): ReactElement {
     const existingTab = Object.values(editorState.tabs).find((tab) => tab.kind === "file" && tab.path === path);
     const label = existingTab?.name ?? displayNameFromPath(path);
 
-    setRailTabFlight({
+    showRailTabFlight({
       direction: "open",
       fromX: rowRect.left + rowRect.width / 2,
       fromY: rowRect.top + rowRect.height / 2,
@@ -885,9 +438,6 @@ export function App(): ReactElement {
       toX: (tabBarRect?.left ?? rowRect.left + rowRect.width + 120) + 48,
       toY: (tabBarRect?.top ?? rowRect.top) + 15
     });
-    window.setTimeout(() => {
-      if (typeof window !== "undefined") setRailTabFlight(null);
-    }, 360);
 
     if (existingTab?.kind === "file") {
       openFileInPane(targetPane, { content: existingTab.content, name: existingTab.name, path: existingTab.path });
@@ -909,7 +459,7 @@ export function App(): ReactElement {
         setWorkspaceError(result.error.message);
       }
     });
-  }, [handleOpenFile, openFileInPane, setTabActive, setWorkspaceError]);
+  }, [handleOpenFile, openFileInPane, setTabActive, setWorkspaceError, showRailTabFlight]);
 
   const renderPanelTabIcon = useCallback((panel: PanelTabKind): ReactNode => (
     sidebarViews.find((view) => view.id === panel)?.icon ?? null
@@ -959,7 +509,7 @@ export function App(): ReactElement {
       const tabBar = document.querySelector(`.pane${focusedPane === "left" ? "" : ":last-child"} .pane-tab-bar`) ?? document.querySelector(".pane-tab-bar");
       const tabBarRect = tabBar?.getBoundingClientRect();
 
-      setRailTabFlight({
+      showRailTabFlight({
         direction: "open",
         fromX: buttonRect.left + buttonRect.width / 2,
         fromY: buttonRect.top + buttonRect.height / 2,
@@ -967,13 +517,10 @@ export function App(): ReactElement {
         toX: (tabBarRect?.left ?? buttonRect.left + buttonRect.width + 120) + 48,
         toY: (tabBarRect?.top ?? buttonRect.top) + 15
       });
-      window.setTimeout(() => {
-        if (typeof window !== "undefined") setRailTabFlight(null);
-      }, 360);
     }
 
     handleCreateFile();
-  }, [focusedPane, handleCreateFile, t]);
+  }, [focusedPane, handleCreateFile, showRailTabFlight, t]);
 
   const handleCreateFolderFromSidebar = useCallback((event?: MouseEvent<HTMLButtonElement>): void => {
     if (event) {
@@ -981,18 +528,17 @@ export function App(): ReactElement {
       const tree = document.querySelector(".sidebar-view-content--files .file-tree");
       const treeRect = tree?.getBoundingClientRect();
 
-      setSidebarCreateFlight({
+      showSidebarCreateFlight({
         fromX: buttonRect.left + buttonRect.width / 2,
         fromY: buttonRect.top + buttonRect.height / 2,
         label: t("files.createFolder"),
         toX: (treeRect?.left ?? buttonRect.left) + 24,
         toY: (treeRect?.top ?? buttonRect.top + 72) + 14
       });
-      window.setTimeout(() => setSidebarCreateFlight(null), 300);
     }
 
     handleCreateFolder();
-  }, [handleCreateFolder, t]);
+  }, [handleCreateFolder, showSidebarCreateFlight, t]);
 
   useAppTheme(editorSettings.theme);
 
@@ -1303,7 +849,7 @@ export function App(): ReactElement {
     ];
 
     if (openedPanes.length > 0) {
-      setRailTabFlight(null);
+      clearRailTabFlight();
       setTabActive(openedPanes.includes(focusedPane) ? focusedPane : openedPanes[0], panelTabId);
       return;
     }
@@ -1313,7 +859,7 @@ export function App(): ReactElement {
     requestAnimationFrame(() => {
       const pane = document.querySelector(`.pane${focusedPane === "left" ? "" : ":last-child"} .pane-tab-bar`) ?? document.querySelector(".pane-tab-bar");
       const toRect = pane?.getBoundingClientRect();
-      setRailTabFlight({
+      showRailTabFlight({
         direction: "open",
         fromX: railRect.left + railRect.width / 2,
         fromY: railRect.top + railRect.height / 2,
@@ -1321,11 +867,8 @@ export function App(): ReactElement {
         toX: (toRect?.left ?? railRect.left + 180) + 48,
         toY: (toRect?.top ?? railRect.top) + 15
       });
-      window.setTimeout(() => {
-        if (typeof window !== "undefined") setRailTabFlight(null);
-      }, 360);
     });
-  }, [focusedPane, openPanelInPane, setTabActive]);
+  }, [clearRailTabFlight, focusedPane, openPanelInPane, setTabActive, showRailTabFlight]);
 
   const handleRailChartButton = useCallback((label: string, event: MouseEvent<HTMLButtonElement>): void => {
     const railRect = event.currentTarget.getBoundingClientRect();
@@ -1338,7 +881,7 @@ export function App(): ReactElement {
 
     if (openedPanes.length > 0) {
       closeSidebar();
-      setRailTabFlight(null);
+      clearRailTabFlight();
       setTabActive(openedPanes.includes(focusedPane) ? focusedPane : openedPanes[0], tabId);
       return;
     }
@@ -1349,7 +892,7 @@ export function App(): ReactElement {
     requestAnimationFrame(() => {
       const pane = document.querySelector(`.pane${focusedPane === "left" ? "" : ":last-child"} .pane-tab-bar`) ?? document.querySelector(".pane-tab-bar");
       const toRect = pane?.getBoundingClientRect();
-      setRailTabFlight({
+      showRailTabFlight({
         direction: "open",
         fromX: railRect.left + railRect.width / 2,
         fromY: railRect.top + railRect.height / 2,
@@ -1357,11 +900,8 @@ export function App(): ReactElement {
         toX: (toRect?.left ?? railRect.left + 180) + 48,
         toY: (toRect?.top ?? railRect.top) + 15
       });
-      window.setTimeout(() => {
-        if (typeof window !== "undefined") setRailTabFlight(null);
-      }, 360);
     });
-  }, [closeSidebar, focusedPane, openGanttChartInPane, setTabActive]);
+  }, [clearRailTabFlight, closeSidebar, focusedPane, openGanttChartInPane, setTabActive, showRailTabFlight]);
 
   const renderPanelTab = useCallback((panel: PanelTabKind): ReactNode => {
     if (panel === "dashboard") {

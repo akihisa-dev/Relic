@@ -82,3 +82,10 @@ Relicの大規模リファクタリングフェーズの正本。
 - 実施: `app/src/renderer/chronicleTimeline.ts` を追加し、`ChronicleSidebar.tsx` にはReact component、hook、ref、pointer event handler、JSXを残した。IPC、preload API、UI、保存形式は変更しない
 - 確認: `pnpm typecheck` と `pnpm test` が通過した。テストは36ファイル、338件が通過した
 - 残り: `ChronicleSidebar.tsx` の描画用小コンポーネント分割、`Editor.tsx` のCodeMirror/frontmatter/table責務分割、`App.tsx` の追加分割、main側 `chronicle.ts` との重複整理は別単位として扱う
+
+### Editor・Chronicle・App追加分割
+
+- 方向性: 既存P23変更を保持したまま、仕様、UI、保存形式、IPC/preload APIを変えず、巨大化した `Editor.tsx`、`ChronicleSidebar.tsx`、`chronicle.ts`、`App.tsx` の責務境界を内部モジュールへ分ける
+- 実施: `Editor.tsx` から表編集、frontmatter/YAML保持、live preview、CodeMirror拡張構築、編集可否compartmentを分離した。Chronicle/Ganttは軸・ガイド線・今日線・オフスクリーンジャンプ・安定bounds hookを描画部品へ移し、main側の年表データ整形を `chronicleData.ts` に分離した。日付/年表座標変換とrange配列化は `app/src/shared/chartTime.ts` に集約した。`App.tsx` はレール定義とワークスペース切替UIを `RailNavigation.tsx` へ移し、タブ閉じ、レール飛行、split閉じ演出をhook化した
+- 確認: `pnpm exec vitest run src/renderer/components/Editor.test.tsx`、`pnpm exec vitest run src/renderer/chronicleTimeline.test.ts src/renderer/ganttChartData.test.ts src/main/files/chronicle.test.ts`、`pnpm exec vitest run src/renderer/App.test.tsx` が通過した。最終確認として `pnpm typecheck` と `pnpm test` が通過し、全体テストは36ファイル、338件が通過した
+- 残り: 今回指定された分割単位は完了。以後は追加で大きな責務が残る箇所を対象化する場合、同じく仕様変更とUI変更を混ぜずに別単位として扱う

@@ -5,6 +5,7 @@ import type {
   WorkspaceGanttChart,
   WorkspaceTreeNode
 } from "../shared/ipc";
+import { axisToYear, dayToDate, dateToDay, isDateString, rangeToStringArray, shiftDateYears } from "../shared/chartTime";
 import type { RelicResult } from "../shared/result";
 import { collectMarkdownPaths } from "../shared/workspaceTree";
 
@@ -146,11 +147,11 @@ function dateRangeToEntry(
   return {
     dateKind,
     endLabel: range.endDate,
-    endValue: chartDateToDay(range.endDate),
+    endValue: dateToDay(range.endDate),
     fileName,
     path: filePath,
     startLabel: range.startDate,
-    startValue: chartDateToDay(range.startDate),
+    startValue: dateToDay(range.startDate),
     statuses
   };
 }
@@ -177,10 +178,6 @@ function normalizeChartDateValue(value: string): string | null {
 
   const date = new Date(trimmed.replace(/\s*\([^)]*\)\s*$/, ""));
   return Number.isNaN(date.getTime()) ? null : date.toISOString().slice(0, 10);
-}
-
-function chartDateToDay(value: string): number {
-  return Math.floor(new Date(`${value}T00:00:00.000Z`).getTime() / 86_400_000);
 }
 
 function dateKindOrderForRenderer(kind: GanttChartEntry["dateKind"]): number {
@@ -253,8 +250,8 @@ function chartFrontmatterUpdates(yamlText: string, input: UpdateGanttChartEntryI
   const end = Math.max(input.startValue, input.endValue);
 
   if (input.source === "date") {
-    const startDate = chartDayToDate(start);
-    const endDate = chartDayToDate(end);
+    const startDate = dayToDate(start);
+    const endDate = dayToDate(end);
     const dateField = input.dateKind === "actual" ? "actualDate" : "plannedDate";
     const updates: Record<string, string[]> = {
       chronicle: rangeToStringArray(dateYear(startDate), dateYear(endDate)),
@@ -271,10 +268,10 @@ function chartFrontmatterUpdates(yamlText: string, input: UpdateGanttChartEntryI
   const originalPlannedDate = readYamlArrayField(yamlText, "plannedDate");
   const originalLegacyDate = readYamlArrayField(yamlText, "date");
   const originalActualDate = readYamlArrayField(yamlText, "actualDate");
-  const originalStartYear = chartAxisToYear(input.originalStartValue);
-  const originalEndYear = chartAxisToYear(input.originalEndValue);
-  const startYear = chartAxisToYear(start);
-  const endYear = chartAxisToYear(end);
+  const originalStartYear = axisToYear(input.originalStartValue);
+  const originalEndYear = axisToYear(input.originalEndValue);
+  const startYear = axisToYear(start);
+  const endYear = axisToYear(end);
   const updates: Record<string, string[]> = {
     chronicle: rangeToStringArray(startYear, endYear)
   };
@@ -326,38 +323,6 @@ function readYamlArrayField(yamlText: string, field: string): string[] {
     .split(",")
     .map((value) => value.trim().replace(/^['"]|['"]$/g, ""))
     .filter(Boolean);
-}
-
-function rangeToStringArray(start: string | number, end: string | number): string[] {
-  return start === end ? [String(start)] : [String(start), String(end)];
-}
-
-function chartAxisToYear(value: number): number {
-  return value < 0 ? value : value + 1;
-}
-
-function chartDayToDate(value: number): string {
-  return new Date(value * 86_400_000).toISOString().slice(0, 10);
-}
-
-function isDateString(value: string): boolean {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
-
-  const time = new Date(`${value}T00:00:00.000Z`).getTime();
-  return !Number.isNaN(time) && chartDayToDate(Math.floor(time / 86_400_000)) === value;
-}
-
-function shiftDateYears(value: string, deltaYears: number): string {
-  if (deltaYears === 0) return value;
-
-  const date = new Date(`${value}T00:00:00.000Z`);
-  const month = date.getUTCMonth();
-  const day = date.getUTCDate();
-  const nextYear = date.getUTCFullYear() + deltaYears;
-  const lastDay = new Date(Date.UTC(nextYear, month + 1, 0)).getUTCDate();
-  const next = new Date(Date.UTC(nextYear, month, Math.min(day, lastDay)));
-
-  return next.toISOString().slice(0, 10);
 }
 
 function dateYear(value: string): number {
