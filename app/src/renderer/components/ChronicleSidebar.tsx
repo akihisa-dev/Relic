@@ -1,9 +1,10 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, PointerEvent, ReactElement } from "react";
 
 import type { GanttChartDateKind, GanttChartEntry, GanttChartEntryEditKind, GanttChartSource, UpdateGanttChartEntryInput, WorkspaceGanttChart } from "../../shared/ipc";
 import { fixedStatusValues } from "../../shared/status";
 import { useT, type Translator } from "../i18n";
+import { useUiStore } from "../store/uiStore";
 
 interface GanttChartViewProps {
   chart?: WorkspaceGanttChart | null;
@@ -14,6 +15,7 @@ interface GanttChartViewProps {
 
 const ROW_HEIGHT = 38;
 const NAME_COLUMN_WIDTH = 180;
+const DATE_NAME_COLUMN_WIDTH = 430;
 const TICK_WIDTH = 72;
 const DATE_TICK_WIDTH = 52;
 const LABEL_HORIZONTAL_PADDING = 14;
@@ -63,21 +65,30 @@ interface DragPreview {
   startValue: number;
 }
 
+interface DateOffscreenIndicator {
+  count: number;
+  targetValue: number;
+}
+
 type ChronicleSortKey = "start-asc" | "start-desc" | "name-asc" | "name-desc";
 
 export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdateEntry }: GanttChartViewProps): ReactElement {
   const t = useT();
   const availableCharts = useMemo(() => chartsForView(chart, charts), [chart, charts]);
-  const [selectedChartId, setSelectedChartId] = useState(availableCharts[0]?.id ?? "chronicle");
+  const selectedGanttChartId = useUiStore((state) => state.selectedGanttChartId);
+  const setSelectedGanttChartId = useUiStore((state) => state.setSelectedGanttChartId);
+  const initialChart = chart ?? availableCharts.find((candidate) => candidate.id === selectedGanttChartId) ?? availableCharts[0] ?? null;
   const [query, setQuery] = useState("");
   const [sortKey, setSortKey] = useState<ChronicleSortKey>("start-asc");
   const [statusFilter, setStatusFilter] = useState("");
-  const [scaleIndex, setScaleIndex] = useState(() => defaultScaleIndex((chart ?? availableCharts[0])?.source ?? "chronicle"));
+  const [scaleIndex, setScaleIndex] = useState(() => defaultScaleIndex(initialChart?.source ?? "chronicle"));
   const [scrollLeft, setScrollLeft] = useState(0);
+  const [chartViewportWidth, setChartViewportWidth] = useState(720);
   const [dragPreview, setDragPreview] = useState<DragPreview | null>(null);
   const chartRef = useRef<HTMLDivElement | null>(null);
   const previousAxisStartRef = useRef<number | null>(null);
-  const activeChart = chart ?? availableCharts.find((candidate) => candidate.id === selectedChartId) ?? availableCharts[0] ?? null;
+  const initialDateScrollKeyRef = useRef<string | null>(null);
+  const activeChart = chart ?? availableCharts.find((candidate) => candidate.id === selectedGanttChartId) ?? availableCharts[0] ?? null;
   const activeSource = activeChart && isGanttChartSource(activeChart.source) ? activeChart.source : "chronicle";
   const allEntries = visibleEntries(activeChart);
   const statusOptions = useMemo(() => statusValuesForEntries(allEntries), [allEntries]);
@@ -95,7 +106,11 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdate
   const axisSpan = Math.max(1, axisEnd - axisStart + 1);
   const tickWidth = activeSource === "date" ? DATE_TICK_WIDTH : TICK_WIDTH;
   const unitWidth = activeSource === "date" ? dateUnitWidth(dateScale) : chronicleUnitWidth(tickInterval, tickWidth);
+  const nameColumnWidth = activeSource === "date" ? DATE_NAME_COLUMN_WIDTH : NAME_COLUMN_WIDTH;
   const timelineWidth = Math.max(720, axisSpan * unitWidth);
+  const viewportTimelineWidth = Math.max(1, chartViewportWidth - nameColumnWidth);
+  const visibleStartValue = axisStart + scrollLeft / unitWidth;
+  const visibleEndValue = axisStart + (scrollLeft + viewportTimelineWidth) / unitWidth;
   const ticks = useMemo(
     () => buildTicks(axisStart, axisEnd, tickInterval, activeSource, dateScale),
     [activeSource, axisEnd, axisStart, dateScale, tickInterval]
@@ -105,6 +120,53 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdate
     [activeSource, axisEnd, axisStart, dateScale, tickInterval, ticks]
   );
   const dateAxisHeight = activeSource === "date" ? dateAxisHeightForScale(dateScale) : 34;
+  const dateOffscreenIndicators = activeSource === "date"
+    ? dateOffscreenBarIndicators(entries, visibleStartValue, visibleEndValue)
+    : { left: null, right: null };
+
+  const updateChartViewportWidth = useCallback((): void => {
+    const chartElement = chartRef.current;
+    if (!chartElement) return;
+
+    const nextWidth = chartElement.clientWidth || chartElement.getBoundingClientRect().width || 720;
+    setChartViewportWidth(nextWidth);
+  }, []);
+
+  const scrollToTimelineValue = useCallback((value: number): void => {
+    const chartElement = chartRef.current;
+    if (!chartElement) return;
+
+    const currentViewportTimelineWidth = Math.max(1, (chartElement.clientWidth || chartViewportWidth) - nameColumnWidth);
+    const maxScrollLeft = Math.max(0, chartElement.scrollWidth - (chartElement.clientWidth || chartViewportWidth));
+    const targetScrollLeft = clamp(
+      (value - axisStart + 0.5) * unitWidth - currentViewportTimelineWidth / 2,
+      0,
+      maxScrollLeft
+    );
+
+    chartElement.scrollLeft = targetScrollLeft;
+    setScrollLeft(targetScrollLeft);
+  }, [axisStart, chartViewportWidth, nameColumnWidth, unitWidth]);
+
+  const scrollToToday = useCallback((): void => {
+    scrollToTimelineValue(dateNavigationTarget(entries, axisStart, axisEnd));
+  }, [axisEnd, axisStart, entries, scrollToTimelineValue]);
+
+  useLayoutEffect(() => {
+    updateChartViewportWidth();
+
+    const chartElement = chartRef.current;
+    if (!chartElement) return;
+
+    if (typeof ResizeObserver !== "undefined") {
+      const observer = new ResizeObserver(updateChartViewportWidth);
+      observer.observe(chartElement);
+      return () => observer.disconnect();
+    }
+
+    window.addEventListener("resize", updateChartViewportWidth);
+    return () => window.removeEventListener("resize", updateChartViewportWidth);
+  }, [activeChart?.id, updateChartViewportWidth]);
 
   useLayoutEffect(() => {
     const previousAxisStart = previousAxisStartRef.current;
@@ -125,10 +187,25 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdate
     setScrollLeft(nextScrollLeft);
   }, [axisStart, unitWidth]);
 
+  useLayoutEffect(() => {
+    if (activeSource !== "date" || !activeChart) return;
+
+    const key = activeChart.id;
+    if (initialDateScrollKeyRef.current === key) return;
+
+    initialDateScrollKeyRef.current = key;
+    scrollToToday();
+  }, [activeChart, activeSource, scrollToToday]);
+
   useEffect(() => {
-    if (availableCharts.some((candidate) => candidate.id === selectedChartId)) return;
-    setSelectedChartId(availableCharts[0]?.id ?? "chronicle");
-  }, [availableCharts, selectedChartId]);
+    if (chart) return;
+
+    const fallbackId = availableCharts[0]?.id ?? null;
+    if (selectedGanttChartId && availableCharts.some((candidate) => candidate.id === selectedGanttChartId)) return;
+    if (selectedGanttChartId === fallbackId) return;
+
+    setSelectedGanttChartId(fallbackId);
+  }, [availableCharts, chart, selectedGanttChartId, setSelectedGanttChartId]);
 
   useEffect(() => {
     setDragPreview(null);
@@ -253,7 +330,7 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdate
 
   const startChartPan = (event: PointerEvent<HTMLDivElement>): void => {
     if (event.button > 0) return;
-    if (event.target instanceof Element && event.target.closest(".chronicle-fill, .chronicle-file-name")) return;
+    if (event.target instanceof Element && event.target.closest(".chronicle-fill, .chronicle-file-name, .chronicle-offscreen-jump")) return;
 
     const chartElement = event.currentTarget;
     const startClientX = event.clientX;
@@ -296,7 +373,7 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdate
               className={`chronicle-source-button${candidate.id === activeChart?.id ? " active" : ""}`}
               key={candidate.id}
               onClick={() => {
-                setSelectedChartId(candidate.id);
+                setSelectedGanttChartId(candidate.id);
                 setScaleIndex(defaultScaleIndex(candidate.source));
               }}
               type="button"
@@ -335,6 +412,15 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdate
           </label>
         ) : null}
         <div className="chronicle-scale" aria-label={t("chronicle.scale")}>
+          {activeSource === "date" ? (
+            <button
+              className="chronicle-today-button"
+              onClick={scrollToToday}
+              type="button"
+            >
+              {t("chronicle.today")}
+            </button>
+          ) : null}
           <button
             aria-label={t("chronicle.scaleDecrease")}
             className="chronicle-scale-button"
@@ -365,9 +451,24 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdate
           onScroll={(event) => setScrollLeft(event.currentTarget.scrollLeft)}
           ref={chartRef}
         >
-          <div className="chronicle-grid" style={{ width: NAME_COLUMN_WIDTH + timelineWidth }}>
-            <div className="chronicle-name-column" style={{ width: NAME_COLUMN_WIDTH }}>
-              <div className="chronicle-name-header" style={{ height: dateAxisHeight }} />
+          {activeSource === "date" ? (
+            <DateOffscreenJumpButtons
+              indicators={dateOffscreenIndicators}
+              onJump={scrollToTimelineValue}
+              t={t}
+            />
+          ) : null}
+          <div className="chronicle-grid" style={{ width: nameColumnWidth + timelineWidth }}>
+            <div className="chronicle-name-column" style={{ width: nameColumnWidth }}>
+              <div className={`chronicle-name-header${activeSource === "date" ? " chronicle-name-header--date" : ""}`} style={{ height: dateAxisHeight }}>
+                {activeSource === "date" ? (
+                  <>
+                    <span />
+                    <span>{t("chronicle.plannedDate")}</span>
+                    <span>{t("chronicle.actualDate")}</span>
+                  </>
+                ) : null}
+              </div>
               {rows.length === 0 ? (
                 <div className="chronicle-file-name-row chronicle-file-name-row--empty">
                   <div className="chronicle-file-name chronicle-file-name--empty">{t("chronicle.empty")}</div>
@@ -386,11 +487,21 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdate
                     >
                       {row.fileName}
                     </button>
+                    {activeSource === "date" ? (
+                      <>
+                        <span className="chronicle-date-summary chronicle-date-summary--planned">
+                          {dateSummaryForRow(row, "planned")}
+                        </span>
+                        <span className="chronicle-date-summary chronicle-date-summary--actual">
+                          {dateSummaryForRow(row, "actual")}
+                        </span>
+                      </>
+                    ) : null}
                   </div>
                 ))
               )}
             </div>
-            <div className="chronicle-timeline" style={{ marginLeft: NAME_COLUMN_WIDTH, width: timelineWidth }}>
+            <div className="chronicle-timeline" style={{ marginLeft: nameColumnWidth, width: timelineWidth }}>
               {activeSource === "date" ? (
                 <DateAxis axisEnd={axisEnd} axisStart={axisStart} scale={dateScale ?? DATE_SCALES[2]} unitWidth={unitWidth} width={timelineWidth} />
               ) : (
@@ -597,7 +708,7 @@ function TodayLine({
   axisStart: number;
   unitWidth: number;
 }): ReactElement | null {
-  const today = dateToDay(new Date().toISOString().slice(0, 10));
+  const today = currentDateDay();
 
   if (today < axisStart || today > axisEnd) return null;
 
@@ -607,6 +718,45 @@ function TodayLine({
       className="chronicle-today-line"
       style={{ left: (today - axisStart + 0.5) * unitWidth }}
     />
+  );
+}
+
+function DateOffscreenJumpButtons({
+  indicators,
+  onJump,
+  t
+}: {
+  indicators: { left: DateOffscreenIndicator | null; right: DateOffscreenIndicator | null };
+  onJump: (value: number) => void;
+  t: Translator;
+}): ReactElement | null {
+  if (!indicators.left && !indicators.right) return null;
+
+  return (
+    <div className="chronicle-offscreen-jumps">
+      {indicators.left ? (
+        <button
+          aria-label={t("chronicle.offscreenLeft", { count: indicators.left.count })}
+          className="chronicle-offscreen-jump chronicle-offscreen-jump--left"
+          onClick={() => onJump(indicators.left?.targetValue ?? 0)}
+          title={t("chronicle.offscreenLeft", { count: indicators.left.count })}
+          type="button"
+        >
+          ← {indicators.left.count}
+        </button>
+      ) : null}
+      {indicators.right ? (
+        <button
+          aria-label={t("chronicle.offscreenRight", { count: indicators.right.count })}
+          className="chronicle-offscreen-jump chronicle-offscreen-jump--right"
+          onClick={() => onJump(indicators.right?.targetValue ?? 0)}
+          title={t("chronicle.offscreenRight", { count: indicators.right.count })}
+          type="button"
+        >
+          {indicators.right.count} →
+        </button>
+      ) : null}
+    </div>
   );
 }
 
@@ -730,6 +880,49 @@ function statusLabelForEntry(entry: GanttChartEntry): string {
     .join(" / ");
 }
 
+function dateSummaryForRow(row: ChartRow, kind: GanttChartDateKind): string {
+  const entry = row.entries.find((candidate) => (candidate.dateKind ?? "planned") === kind);
+  if (!entry) return "";
+
+  const sameYear = entry.startLabel.slice(0, 4) === entry.endLabel.slice(0, 4);
+  const start = formatDateSummaryLabel(entry.startLabel, sameYear);
+  const end = formatDateSummaryLabel(entry.endLabel, sameYear);
+  return start === end ? start : `${start}-${end}`;
+}
+
+function formatDateSummaryLabel(value: string, omitYear: boolean): string {
+  const normalized = value.replace(/-/g, "/");
+  return omitYear ? normalized.slice(5) : normalized;
+}
+
+function dateOffscreenBarIndicators(
+  entries: GanttChartEntry[],
+  visibleStartValue: number,
+  visibleEndValue: number
+): { left: DateOffscreenIndicator | null; right: DateOffscreenIndicator | null } {
+  const leftEntries = entries.filter((entry) => entry.endValue < visibleStartValue);
+  const rightEntries = entries.filter((entry) => entry.startValue > visibleEndValue);
+  const leftTarget = leftEntries.length > 0 ? Math.max(...leftEntries.map((entry) => entry.endValue)) : null;
+  const rightTarget = rightEntries.length > 0 ? Math.min(...rightEntries.map((entry) => entry.startValue)) : null;
+
+  return {
+    left: leftTarget === null ? null : { count: leftEntries.length, targetValue: leftTarget },
+    right: rightTarget === null ? null : { count: rightEntries.length, targetValue: rightTarget }
+  };
+}
+
+function dateNavigationTarget(entries: GanttChartEntry[], axisStart: number, axisEnd: number): number {
+  const today = currentDateDay();
+  if (today >= axisStart && today <= axisEnd) return today;
+  if (entries.length === 0) return clamp(today, axisStart, axisEnd);
+
+  return entries.reduce((nearest, entry) => {
+    const nearestDistance = Math.min(Math.abs(nearest.startValue - today), Math.abs(nearest.endValue - today));
+    const entryDistance = Math.min(Math.abs(entry.startValue - today), Math.abs(entry.endValue - today));
+    return entryDistance < nearestDistance ? entry : nearest;
+  }, entries[0]).startValue;
+}
+
 function dateFillOffset(): number {
   return 10;
 }
@@ -826,7 +1019,7 @@ function timelineBounds(
   dateScale: DateScale | null
 ): { axisEnd: number; axisStart: number } {
   if (entries.length === 0) {
-    const today = source === "date" ? dateToDay(new Date().toISOString().slice(0, 10)) : 1;
+    const today = source === "date" ? currentDateDay() : 1;
     if (source === "date" && dateScale) {
       const start = previousDateUnit(today, dateScale.unit);
       let end = start;
@@ -843,8 +1036,9 @@ function timelineBounds(
 
   const starts = entries.map((entry) => entry.startValue);
   const ends = entries.map((entry) => entry.endValue);
-  const min = Math.min(...starts);
-  const max = Math.max(...ends);
+  const today = source === "date" ? currentDateDay() : null;
+  const min = Math.min(...starts, ...(today === null ? [] : [today]));
+  const max = Math.max(...ends, ...(today === null ? [] : [today]));
   const padding = source === "date"
     ? Math.max(3, Math.ceil((max - min + 1) * 0.18))
     : Math.max(1, Math.ceil((max - min + 1) * 0.06));
@@ -999,6 +1193,14 @@ function dayToDate(value: number): string {
 
 function dateToDay(value: string): number {
   return Math.floor(new Date(`${value}T00:00:00.000Z`).getTime() / 86_400_000);
+}
+
+function currentDateDay(): number {
+  return dateToDay(new Date().toISOString().slice(0, 10));
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
 }
 
 function buildDateAxisSegments(
