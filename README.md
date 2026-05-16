@@ -179,8 +179,14 @@ pnpm build:win:safe
 
 ## ドキュメント
 
+- 文書索引・分類: [docs/INDEX.md](docs/INDEX.md)
 - 現在の開発フェーズ: [docs/dev/phases.md](docs/dev/phases.md)
 - プロジェクト概要: [docs/product/project.md](docs/product/project.md)
+- 用語集: [docs/product/glossary.md](docs/product/glossary.md)
 - 仕様書: [docs/spec](docs/spec)
+- UI文書: [docs/ui](docs/ui)
 - アーキテクチャ: [docs/architecture](docs/architecture)
 - 技術スタック: [docs/tech/stack.md](docs/tech/stack.md)
+- 開発規約・テスト方針: [docs/dev/conventions.md](docs/dev/conventions.md), [docs/dev/testing.md](docs/dev/testing.md)
+
+`docs/journal/` と `docs/archive/` は履歴資料です。現行の仕様・設計判断は、上記の正本文書を参照します。
