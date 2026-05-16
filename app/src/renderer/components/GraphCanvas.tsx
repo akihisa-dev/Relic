@@ -4,6 +4,7 @@ import type { KeyboardEvent, PointerEvent, ReactElement, RefObject, WheelEvent }
 import type { WorkspaceGraphEdge } from "../../shared/ipc";
 import type { GraphPoint, GraphViewBox } from "../graphLayout";
 import type { GraphGroup } from "../store/graphStore";
+import { GraphArrowMarkers, GraphEdgeLayer, GraphNodeLayer } from "./GraphCanvasLayers";
 
 export interface GraphCanvasProps {
   edges: WorkspaceGraphEdge[];
@@ -82,88 +83,33 @@ export function GraphCanvas({
       tabIndex={0}
       viewBox={`${viewBox.x} ${viewBox.y} ${viewBox.width} ${viewBox.height}`}
     >
-      {showArrows ? (
-        <defs>
-          <marker id="graph-arrow" markerHeight="8" markerUnits="userSpaceOnUse" markerWidth="8" orient="auto" refX="8" refY="4">
-            <path className="graph-arrow-marker" d="M 0 0 L 8 4 L 0 8 z" />
-          </marker>
-          <marker id="graph-arrow-selected" markerHeight="8" markerUnits="userSpaceOnUse" markerWidth="8" orient="auto" refX="8" refY="4">
-            <path className="graph-arrow-marker graph-arrow-marker--selected" d="M 0 0 L 8 4 L 0 8 z" />
-          </marker>
-        </defs>
-      ) : null}
+      {showArrows ? <GraphArrowMarkers /> : null}
       <g>
-        <g className="graph-edge-layer">
-          {edges.map((edge) => {
-            const source = pointByPath.get(edge.sourcePath);
-            const target = pointByPath.get(edge.targetPath);
-            if (!source || !target) return null;
-            const isFocused = focusedPath === edge.sourcePath || focusedPath === edge.targetPath;
-            const className = [
-              "graph-edge",
-              isFocused ? "graph-edge--selected" : "",
-              focusedPath && !isFocused ? "graph-edge--dimmed" : ""
-            ].filter(Boolean).join(" ");
-            return (
-              <line
-                className={className}
-                key={`${edge.sourcePath}-${edge.targetPath}`}
-                markerEnd={showArrows ? `url(#${isFocused ? "graph-arrow-selected" : "graph-arrow"})` : undefined}
-                style={{ strokeWidth: (isFocused ? 1.6 : 0.9) * linkThickness }}
-                x1={source.x}
-                x2={target.x}
-                y1={source.y}
-                y2={target.y}
-              />
-            );
-          })}
-        </g>
-        <g className="graph-node-layer">
-          {points.map((point) => {
-            const isSelected = point.path === selectedPath;
-            const isRelated = relatedPaths.has(point.path);
-            const isFocused = point.path === focusedPath;
-            const group = groupByPath.get(point.path);
-            const radius = Math.min(8, 2.6 + Math.sqrt(point.incoming) * 1.45) * nodeSize;
-            const nodeClassName = [
-              "graph-node",
-              isSelected ? "graph-node--selected" : "",
-              isFocused && !isSelected ? "graph-node--focused" : "",
-              focusedPath && !isRelated ? "graph-node--dimmed" : "",
-              focusedPath && isRelated && !isSelected && !isFocused ? "graph-node--related" : ""
-            ].filter(Boolean).join(" ");
-            const labelClassName = focusedPath && !isRelated ? "graph-label graph-label--dimmed" : "graph-label";
-
-            return (
-              <g
-                aria-label={point.name}
-                className="graph-node-hit"
-                key={point.path}
-                onClick={() => onNodeClick(point)}
-                onPointerEnter={() => onNodePointerEnter(point.path)}
-                onPointerCancel={onNodePointerCancel}
-                onPointerDown={(event) => onNodePointerDown(event, point)}
-                onPointerMove={onNodePointerMove}
-                onPointerUp={(event) => onNodePointerUp(event, point)}
-                onPointerLeave={() => onNodePointerLeave(point.path)}
-                onKeyDown={(event) => onNodeKeyDown(event, point)}
-                role="button"
-                tabIndex={0}
-              >
-                <circle
-                  className={nodeClassName}
-                  cx={point.x}
-                  cy={point.y}
-                  r={radius}
-                  style={group ? { fill: group.color } : undefined}
-                />
-                {showLabels ? (
-                  <text className={labelClassName} style={{ opacity: labelOpacity }} x={point.x + radius + 5} y={point.y + 4}>{point.name}</text>
-                ) : null}
-              </g>
-            );
-          })}
-        </g>
+        <GraphEdgeLayer
+          edges={edges}
+          focusedPath={focusedPath}
+          linkThickness={linkThickness}
+          pointByPath={pointByPath}
+          showArrows={showArrows}
+        />
+        <GraphNodeLayer
+          focusedPath={focusedPath}
+          groupByPath={groupByPath}
+          labelOpacity={labelOpacity}
+          nodeSize={nodeSize}
+          onNodeClick={onNodeClick}
+          onNodeKeyDown={onNodeKeyDown}
+          onNodePointerCancel={onNodePointerCancel}
+          onNodePointerDown={onNodePointerDown}
+          onNodePointerEnter={onNodePointerEnter}
+          onNodePointerLeave={onNodePointerLeave}
+          onNodePointerMove={onNodePointerMove}
+          onNodePointerUp={onNodePointerUp}
+          points={points}
+          relatedPaths={relatedPaths}
+          selectedPath={selectedPath}
+          showLabels={showLabels}
+        />
       </g>
     </svg>
   );
