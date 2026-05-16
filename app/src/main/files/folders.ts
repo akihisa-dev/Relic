@@ -2,6 +2,7 @@ import { mkdir, rename, stat } from "node:fs/promises";
 import path from "node:path";
 
 import { fail, ok, type RelicResult } from "../../shared/result";
+import { errorDetails, isFileExistsError, pathExists } from "./fileSystem";
 import { updateLinksForFolderRename } from "./linkUpdater";
 import { validateBaseName } from "./names";
 import { resolveWorkspaceRelativePath, toWorkspaceRelativePath } from "./paths";
@@ -46,7 +47,7 @@ export async function createFolder(
     return fail(
       "FOLDER_CREATE_FAILED",
       "フォルダを作成できませんでした。",
-      error instanceof Error ? error.message : String(error)
+      errorDetails(error)
     );
   }
 }
@@ -100,7 +101,7 @@ export async function renameFolder(
     return fail(
       "FOLDER_RENAME_FAILED",
       "フォルダ名を変更できませんでした。",
-      error instanceof Error ? error.message : String(error)
+      errorDetails(error)
     );
   }
 }
@@ -151,34 +152,7 @@ export async function moveFolder(
     return fail(
       "FOLDER_MOVE_FAILED",
       "フォルダを移動できませんでした。",
-      error instanceof Error ? error.message : String(error)
+      errorDetails(error)
     );
   }
-}
-
-function isFileExistsError(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    (error as { code?: string }).code === "EEXIST"
-  );
-}
-
-async function pathExists(filePath: string): Promise<boolean> {
-  try {
-    await stat(filePath);
-    return true;
-  } catch (error) {
-    return !isMissingFileError(error);
-  }
-}
-
-function isMissingFileError(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    (error as { code?: string }).code === "ENOENT"
-  );
 }

@@ -9,6 +9,7 @@ import { fail, ok, type RelicResult } from "../../shared/result";
 import { collectMarkdownPaths } from "../../shared/workspaceTree";
 import { readWorkspaceFileTree } from "./fileTree";
 import { resolveWorkspaceRelativePath } from "./paths";
+import { buildReplacementPreviewLine, buildReplacementRegex } from "./replaceModel";
 
 export async function replaceInFile(
   workspacePath: string,
@@ -31,23 +32,19 @@ export async function replaceInFile(
     return fail("FILE_TYPE_UNSUPPORTED", "Markdownファイルだけを対象にできます。");
   }
 
-  let regex: RegExp;
+  const regex = buildReplacementRegex(searchQuery, isRegex);
 
-  try {
-    regex = isRegex
-      ? new RegExp(searchQuery, "g")
-      : new RegExp(escapeRegExp(searchQuery), "g");
-  } catch {
-    return fail("REPLACE_REGEX_INVALID", "正規表現が正しくありません。");
+  if (!regex.ok) {
+    return regex;
   }
 
   try {
     const content = await readFile(absolutePath.value, "utf8");
-    const matches = content.match(regex);
+    const matches = content.match(regex.value);
     const count = matches ? matches.length : 0;
 
     if (count > 0) {
-      const updated = content.replaceAll(regex, replacement);
+      const updated = content.replaceAll(regex.value, replacement);
       await writeFile(absolutePath.value, updated, "utf8");
     }
 
@@ -67,18 +64,10 @@ export async function searchAndReplace(
   replacement: string,
   isRegex: boolean
 ): Promise<RelicResult<SearchAndReplaceMatch[]>> {
-  if (searchQuery.trim() === "") {
-    return fail("REPLACE_EMPTY_QUERY", "検索語句を入力してください。");
-  }
+  const regex = buildReplacementRegex(searchQuery, isRegex);
 
-  let regex: RegExp;
-
-  try {
-    regex = isRegex
-      ? new RegExp(searchQuery, "g")
-      : new RegExp(escapeRegExp(searchQuery), "g");
-  } catch {
-    return fail("REPLACE_REGEX_INVALID", "正規表現が正しくありません。");
+  if (!regex.ok) {
+    return regex;
   }
 
   try {
@@ -96,9 +85,9 @@ export async function searchAndReplace(
       for (let index = 0; index < lines.length; index += 1) {
         const line = lines[index];
 
-        if (regex.test(line)) {
-          regex.lastIndex = 0;
-          const newLineText = line.replaceAll(regex, replacement);
+        if (regex.value.test(line)) {
+          regex.value.lastIndex = 0;
+          const newLineText = buildReplacementPreviewLine(line, regex.value, replacement);
           matches.push({
             lineNumber: index + 1,
             lineText: line.trim() === "" ? "(空行)" : line.trim(),
@@ -107,7 +96,7 @@ export async function searchAndReplace(
           });
         }
 
-        regex.lastIndex = 0;
+        regex.value.lastIndex = 0;
       }
     }
 
@@ -127,18 +116,10 @@ export async function applySearchAndReplace(
   replacement: string,
   isRegex: boolean
 ): Promise<RelicResult<{ count: number }>> {
-  if (searchQuery.trim() === "") {
-    return fail("REPLACE_EMPTY_QUERY", "検索語句を入力してください。");
-  }
+  const regex = buildReplacementRegex(searchQuery, isRegex);
 
-  let regex: RegExp;
-
-  try {
-    regex = isRegex
-      ? new RegExp(searchQuery, "g")
-      : new RegExp(escapeRegExp(searchQuery), "g");
-  } catch {
-    return fail("REPLACE_REGEX_INVALID", "正規表現が正しくありません。");
+  if (!regex.ok) {
+    return regex;
   }
 
   try {
@@ -151,16 +132,16 @@ export async function applySearchAndReplace(
       if (!absolutePath.ok) continue;
 
       const content = await readFile(absolutePath.value, "utf8");
-      const matches = content.match(regex);
+      const matches = content.match(regex.value);
 
       if (matches && matches.length > 0) {
-        regex.lastIndex = 0;
-        const updated = content.replaceAll(regex, replacement);
+        regex.value.lastIndex = 0;
+        const updated = content.replaceAll(regex.value, replacement);
         await writeFile(absolutePath.value, updated, "utf8");
         count += matches.length;
       }
 
-      regex.lastIndex = 0;
+      regex.value.lastIndex = 0;
     }
 
     return ok({ count });
@@ -171,8 +152,4 @@ export async function applySearchAndReplace(
       error instanceof Error ? error.message : String(error)
     );
   }
-}
-
-function escapeRegExp(str: string): string {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
