@@ -2,93 +2,26 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { defaultEditorSettings, defaultFeatureToggles } from "../shared/ipc";
+import {
+  installMatchMediaMock,
+  makeRelicApi,
+  resetRendererStores,
+  testWorkspaceState as withWorkspace
+} from "../test/rendererTestUtils";
 import { App } from "./App";
 import { useEditorStore } from "./store/editorStore";
-import { useGraphStore } from "./store/graphStore";
 import { useUiStore } from "./store/uiStore";
-
-function makeRelicApi(overrides: Partial<typeof window.relic> = {}): typeof window.relic {
-  return {
-    createFolder: vi.fn(),
-    createLinkedMarkdownFile: vi.fn(),
-    createMarkdownFile: vi.fn(),
-    duplicateMarkdownFile: vi.fn(),
-    getBacklinks: vi.fn().mockResolvedValue({ ok: true, value: [] }),
-    getAppInfo: vi.fn().mockResolvedValue({ ok: true, value: { name: "Relic", platform: "darwin", version: "0.0.0" } }),
-    getEditorSettings: vi.fn().mockResolvedValue({ ok: true, value: { ...defaultEditorSettings, language: "ja" } }),
-    getFrontmatterValueCandidates: vi.fn().mockResolvedValue({ ok: true, value: {} }),
-    getWorkspaceAliases: vi.fn().mockResolvedValue({ ok: true, value: {} }),
-    getWorkspaceChronicle: vi.fn().mockResolvedValue({ ok: true, value: [] }),
-    getWorkspaceGraph: vi.fn().mockResolvedValue({ ok: true, value: { edges: [], nodes: [] } }),
-    getWorkspaceTags: vi.fn().mockResolvedValue({ ok: true, value: [] }),
-    getWorkspaceState: vi.fn().mockResolvedValue({
-      ok: true,
-      value: { activeWorkspace: null, fileTree: [], pinnedPaths: [], workspaces: [] }
-    }),
-    moveItemToTrash: vi.fn(),
-    openWorkspace: vi.fn(),
-    readClipboardText: vi.fn().mockReturnValue(""),
-    readMarkdownFile: vi.fn(),
-    removeWorkspace: vi.fn().mockResolvedValue({ ok: true, value: { activeWorkspace: null, fileTree: [], pinnedPaths: [], workspaces: [] } }),
-    renameWorkspace: vi.fn().mockResolvedValue({ ok: true, value: { activeWorkspace: { id: "ws-1", name: "Renamed", path: "/tmp/Renamed" }, fileTree: [], pinnedPaths: [], workspaces: [{ id: "ws-1", name: "Renamed", path: "/tmp/Renamed" }] } }),
-    renameMarkdownFile: vi.fn(),
-    renameFolder: vi.fn(),
-    revealWorkspaceItem: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
-    saveEditorSettings: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
-    searchWorkspace: vi.fn().mockResolvedValue({ ok: true, value: [] }),
-    switchWorkspace: vi.fn(),
-    writeClipboardText: vi.fn(),
-    writeMarkdownFile: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
-    moveFolder: vi.fn(),
-    moveMarkdownFile: vi.fn(),
-    applySearchAndReplace: vi.fn(),
-    replaceInFile: vi.fn(),
-    searchAndReplace: vi.fn(),
-    createNewWorkspace: vi.fn().mockResolvedValue({ ok: true, value: { activeWorkspace: null, fileTree: [], pinnedPaths: [], workspaces: [] } }),
-    togglePin: vi.fn().mockResolvedValue({ ok: true, value: { activeWorkspace: null, fileTree: [], pinnedPaths: [], workspaces: [] } }),
-    saveWorkspaceGanttCharts: vi.fn().mockResolvedValue({ ok: true, value: [] }),
-    updateGanttChartEntry: vi.fn().mockResolvedValue({ ok: true, value: [] }),
-    getFeatureToggles: vi.fn().mockResolvedValue({ ok: true, value: defaultFeatureToggles }),
-    saveFeatureToggles: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
-    getUserDefinedFields: vi.fn().mockResolvedValue({ ok: true, value: [] }),
-    saveUserDefinedFields: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
-    getFrontmatterTemplates: vi.fn().mockResolvedValue({ ok: true, value: [] }),
-    saveFrontmatterTemplates: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
-    mergeFiles: vi.fn().mockResolvedValue({ ok: true, value: "merged.md" }),
-    splitFileByHeading: vi.fn().mockResolvedValue({ ok: true, value: [] }),
-    ...overrides
-  } as typeof window.relic;
-}
-
-const withWorkspace = {
-  activeWorkspace: { id: "ws-1", name: "Notes", path: "/tmp/Notes" },
-  fileTree: [],
-  pinnedPaths: [],
-  workspaces: []
-};
 
 function renderApp() {
   return render(<App />);
 }
 
 describe("App", () => {
-  beforeAll(() => {
-    Object.defineProperty(window, "matchMedia", {
-      writable: true,
-      value: vi.fn().mockImplementation((query: string) => ({
-        matches: false,
-        media: query,
-        addEventListener: vi.fn(),
-        removeEventListener: vi.fn()
-      }))
-    });
-  });
+  beforeAll(installMatchMediaMock);
 
   afterEach(() => {
     vi.clearAllMocks();
-    useEditorStore.setState({ tabs: {}, leftPane: { activeTabId: null, history: [], tabIds: [] }, rightPane: { activeTabId: null, history: [], tabIds: [] }, isSplit: false, focusedPane: "left" });
-    useGraphStore.setState({ centerForce: 1, error: null, folderFilter: "", graph: null, groups: [], isLoading: false, linkDistance: 118, linkFilter: "all", linkForce: 1, linkThickness: 1, loadedWorkspaceId: null, localGraphDepth: 0, minDegree: 0, nodeSize: 1, query: "", repelForce: 1, selectedPath: null, showArrows: false, showLabels: true, showOrphans: true, tagFilter: "", textFadeThreshold: 0.85, zoom: 1 });
-    useUiStore.setState({ activeSidebarView: "files", isRightPanelOpen: true, isSidebarOpen: true, isTypewriterMode: false, rightPanelView: "outline", selectedGanttChartId: null });
+    resetRendererStores();
   });
 
   it("ビュー切り替えナビとメインエリアが表示される", async () => {
