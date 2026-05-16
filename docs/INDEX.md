@@ -48,3 +48,6 @@ AIのセッション開始時は、`../AI.md` から [product/project.md](produc
 | [archive/mockups/index.html](archive/mockups/index.html) | アーカイブ済みの静的画面モック。現行仕様判断では参照しない |
 | [assets/](assets/) | ロゴ案などの設計・検討素材 |
 | [journal/_template.md](journal/_template.md) | 開発日誌のエントリーテンプレート |
+
+`AGENTS.md` と `CLAUDE.md` はルート直下の薄い入口文書です。
+実ルールは `AI.md` にだけ置き、これらの入口文書には独自ルールを書きません。
