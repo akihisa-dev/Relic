@@ -1,12 +1,11 @@
 import type { PointerEventHandler, ReactElement, RefObject } from "react";
 
-import type { GanttChartSource, WorkspaceGanttChart } from "../../shared/ipc";
+import type { WorkspaceGanttChart } from "../../shared/ipc";
 import type { MinimapItem } from "../chronicleTimeline";
 import { useT } from "../i18n";
 
 export interface ChronicleMinimapProps {
   activeChart: WorkspaceGanttChart | null;
-  activeSource: GanttChartSource;
   minimapItems: MinimapItem[];
   minimapRef: RefObject<HTMLDivElement | null>;
   minimapViewport: { leftPercent: number; widthPercent: number };
@@ -15,7 +14,6 @@ export interface ChronicleMinimapProps {
 
 export function ChronicleMinimap({
   activeChart,
-  activeSource,
   minimapItems,
   minimapRef,
   minimapViewport,
@@ -23,7 +21,7 @@ export function ChronicleMinimap({
 }: ChronicleMinimapProps): ReactElement | null {
   const t = useT();
 
-  if (!activeChart || activeSource !== "chronicle" || minimapItems.length === 0) return null;
+  if (!activeChart || minimapItems.length === 0) return null;
 
   return (
     <div className="chronicle-minimap-panel">

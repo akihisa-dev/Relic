@@ -111,7 +111,14 @@ export function ChronicleChartGrid({
         />
         <div className="chronicle-timeline" style={{ marginLeft: nameColumnWidth, width: timelineWidth }}>
           {activeSource === "date" ? (
-            <DateAxis axisEnd={axisEnd} axisStart={axisStart} scale={dateScale ?? DATE_SCALES[0]} unitWidth={unitWidth} width={timelineWidth} />
+            <DateAxis
+              axisEnd={axisEnd}
+              axisStart={axisStart}
+              scale={dateScale ?? DATE_SCALES[0]}
+              scrollLeft={scrollLeft}
+              unitWidth={unitWidth}
+              width={timelineWidth}
+            />
           ) : (
             <ChronicleAxis
               axisEnd={axisEnd}

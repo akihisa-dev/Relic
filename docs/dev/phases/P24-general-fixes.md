@@ -118,3 +118,10 @@ P24では、事前に固定した長い実施リストは置かない。
 - 実施: `SCALE_OPTIONS`、scale index、scale表示文言、ツールバーのスケール操作を削除し、モデル側は `tickInterval = 1` と day scale に固定した。`chronicle` の軸・ガイドは1年単位を基準にし、日付チャートは常に年・月・日の3段軸を表示する。dateの「今日」移動だけは残した。仕様文書のチャート説明も固定単位へ更新した
 - 確認: `pnpm exec vitest run src/renderer/components/ChronicleToolbar.test.tsx src/renderer/components/ChronicleChartGrid.test.tsx src/renderer/hooks/useChronicleChartModel.test.tsx src/renderer/hooks/useChronicleChartViewport.test.tsx src/renderer/chronicleTimeline.test.ts src/renderer/chronicleTimelineAxis.test.ts src/renderer/App.test.tsx`、`pnpm typecheck`、`pnpm test`、`git diff --check` が通過した。全体テストは78ファイル、516件が通過した。開発版レンダラーを `pnpm exec vite --host 127.0.0.1 --port 5173 --config vite.renderer.config.ts` で起動し、チャートタブにスケール、ズーム、全体ボタンが表示されないこととコンソールエラーなしを確認した
 - 残り: 実ワークスペースを開いたElectron実機目視は未実施
+
+### dateチャートの視認性改善
+
+- 方向性: dateチャートでも全体位置を把握できるようにし、横スクロール中に表示中の年・月が分からなくなる違和感を減らす。対象は既存チャートビュー内の表示・操作だけに限定し、既存データ形式、IPC/preload API、store状態構造、バー編集挙動は変えない
+- 実施: `chronicle` 専用だったミニマップ表示・項目計算・ミニマップ操作をdateチャートでも使うようにした。ミニマップのアクセシブル名は年表専用ではなくチャート共通の文言に変更した。date軸では、年・月のセル枠を維持したまま、ラベル文字だけを横スクロール位置に追従させ、区間内で表示中の年月が分かるようにした
+- 確認: `pnpm exec vitest run src/renderer/components/ChronicleMinimap.test.tsx src/renderer/hooks/useChronicleChartModel.test.tsx src/renderer/hooks/useChronicleChartViewport.test.tsx src/renderer/App.test.tsx`、`pnpm exec vitest run src/renderer/chronicleTimelineAxis.test.ts src/renderer/components/ChronicleChartGrid.test.tsx src/renderer/App.test.tsx`、`pnpm typecheck`、`pnpm test`、`git diff --check` が通過した。全体テストは最終確認時点で78ファイル、519件が通過した
+- 残り: 実ワークスペースを開いたElectron実機目視は未実施。チャートビュー全体のスクロール、ジャンプ、ドラッグ、ミニマップ操作のなめらかさ改善は未実施で、次の修正単位として扱う

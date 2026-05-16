@@ -73,7 +73,6 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdate
       />
       <ChronicleMinimap
         activeChart={model.activeChart}
-        activeSource={model.activeSource}
         minimapItems={model.minimapItems}
         minimapRef={viewport.minimapRef}
         minimapViewport={viewportState.minimapViewport}

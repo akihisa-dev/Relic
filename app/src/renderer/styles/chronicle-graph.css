@@ -865,6 +865,24 @@
   padding: 0 2px;
 }
 
+.chronicle-axis--date .chronicle-axis-cell--follow {
+  justify-content: flex-start;
+  padding: 0;
+}
+
+.chronicle-axis-cell-label {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chronicle-axis-cell-label--follow {
+  padding: 0 6px;
+  will-change: transform;
+}
+
 .chronicle-axis-tick {
   align-items: flex-end;
   bottom: 0;

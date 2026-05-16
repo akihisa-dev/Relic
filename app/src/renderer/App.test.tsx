@@ -885,6 +885,8 @@ describe("App", () => {
     expect(container.querySelectorAll(".chronicle-fill")).toHaveLength(2);
     expect(container.querySelector('.chronicle-fill[data-date-kind="planned"]')).toBeInTheDocument();
     expect(container.querySelector('.chronicle-fill[data-date-kind="actual"]')).toBeInTheDocument();
+    expect(container.querySelector(".chronicle-minimap")).toBeInTheDocument();
+    expect(container.querySelectorAll(".chronicle-minimap-item")).toHaveLength(2);
     expect(container.querySelector(".chronicle-today-line")).toBeInTheDocument();
     expect(container.querySelectorAll(".chronicle-guide-line").length).toBeGreaterThan(0);
     expect(container.querySelectorAll(".chronicle-guide-line--major").length).toBeGreaterThan(0);

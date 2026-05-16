@@ -6,6 +6,7 @@ import {
   ROW_HEIGHT,
   buildChronicleAxisSegments,
   buildDateAxisSegments,
+  dateAxisFollowLabelOffset,
   type ChartGuideTick,
   type DateOffscreenIndicator,
   type DateScale
@@ -15,12 +16,14 @@ import type { Translator } from "../i18n";
 export function DateAxis({
   axisEnd,
   axisStart,
+  scrollLeft,
   scale,
   unitWidth,
   width
 }: {
   axisEnd: number;
   axisStart: number;
+  scrollLeft: number;
   scale: DateScale;
   unitWidth: number;
   width: number;
@@ -29,30 +32,48 @@ export function DateAxis({
   const months = buildDateAxisSegments(axisStart, axisEnd, "month");
   const units = buildDateAxisSegments(axisStart, axisEnd, scale.unit);
   const rows = scale.unit === "day"
-    ? [years, months, units]
+    ? [
+        { followsScroll: true, key: "year", segments: years },
+        { followsScroll: true, key: "month", segments: months },
+        { followsScroll: false, key: scale.unit, segments: units }
+      ]
     : scale.unit === "year"
-      ? [units]
-      : [years, units];
+      ? [{ followsScroll: false, key: scale.unit, segments: units }]
+      : [
+          { followsScroll: true, key: "year", segments: years },
+          { followsScroll: true, key: scale.unit, segments: units }
+        ];
 
   return (
     <div className="chronicle-axis chronicle-axis--date" style={{ width }}>
       {rows.map((row, rowIndex) => (
         <div
           className={`chronicle-axis-row${rowIndex < rows.length - 1 ? " chronicle-axis-row--divider" : ""}`}
-          key={`date-axis-row-${rowIndex}`}
+          key={`date-axis-row-${row.key}`}
         >
-          {row.map((segment) => (
-            <span
-              className="chronicle-axis-cell"
-              key={`${rowIndex}-${segment.label}-${segment.startValue}`}
-              style={{
-                left: (segment.startValue - axisStart) * unitWidth,
-                width: Math.max(1, (segment.endValue - segment.startValue + 1) * unitWidth)
-              }}
-            >
-              {segment.label}
-            </span>
-          ))}
+          {row.segments.map((segment) => {
+            const labelOffset = row.followsScroll
+              ? dateAxisFollowLabelOffset({ axisStart, scrollLeft, segment, unitWidth })
+              : 0;
+
+            return (
+              <span
+                className={`chronicle-axis-cell${row.followsScroll ? " chronicle-axis-cell--follow" : ""}`}
+                key={`${row.key}-${segment.label}-${segment.startValue}`}
+                style={{
+                  left: (segment.startValue - axisStart) * unitWidth,
+                  width: Math.max(1, (segment.endValue - segment.startValue + 1) * unitWidth)
+                }}
+              >
+                <span
+                  className={`chronicle-axis-cell-label${row.followsScroll ? " chronicle-axis-cell-label--follow" : ""}`}
+                  style={row.followsScroll ? { transform: `translateX(${labelOffset}px)` } : undefined}
+                >
+                  {segment.label}
+                </span>
+              </span>
+            );
+          })}
         </div>
       ))}
     </div>

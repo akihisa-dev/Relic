@@ -5,6 +5,7 @@ import {
   buildDateAxisSegments,
   chronicleAxisTickInterval,
   chronicleUnitWidth,
+  dateAxisFollowLabelOffset,
   dateAxisHeightForScale,
   dateGuideUnit,
   dateMajorGuideUnit,
@@ -41,5 +42,18 @@ describe("chronicleTimelineAxis", () => {
       { endValue: dateToDay("2026-05-31"), label: "05", startValue: may15 },
       { endValue: dateToDay("2026-06-02"), label: "06", startValue: dateToDay("2026-06-01") }
     ]);
+
+    expect(dateAxisFollowLabelOffset({
+      axisStart: dateToDay("2026-05-01"),
+      scrollLeft: 220,
+      segment: { endValue: dateToDay("2026-05-31"), label: "05", startValue: dateToDay("2026-05-01") },
+      unitWidth: 22
+    })).toBe(226);
+    expect(dateAxisFollowLabelOffset({
+      axisStart: dateToDay("2026-05-01"),
+      scrollLeft: 900,
+      segment: { endValue: dateToDay("2026-05-31"), label: "05", startValue: dateToDay("2026-05-01") },
+      unitWidth: 22
+    })).toBe(652);
   });
 });
