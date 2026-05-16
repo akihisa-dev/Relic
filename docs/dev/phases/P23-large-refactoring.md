@@ -89,3 +89,10 @@ Relicの大規模リファクタリングフェーズの正本。
 - 実施: `Editor.tsx` から表編集、frontmatter/YAML保持、live preview、CodeMirror拡張構築、編集可否compartmentを分離した。Chronicle/Ganttは軸・ガイド線・今日線・オフスクリーンジャンプ・安定bounds hookを描画部品へ移し、main側の年表データ整形を `chronicleData.ts` に分離した。日付/年表座標変換とrange配列化は `app/src/shared/chartTime.ts` に集約した。`App.tsx` はレール定義とワークスペース切替UIを `RailNavigation.tsx` へ移し、タブ閉じ、レール飛行、split閉じ演出をhook化した
 - 確認: `pnpm exec vitest run src/renderer/components/Editor.test.tsx`、`pnpm exec vitest run src/renderer/chronicleTimeline.test.ts src/renderer/ganttChartData.test.ts src/main/files/chronicle.test.ts`、`pnpm exec vitest run src/renderer/App.test.tsx` が通過した。最終確認として `pnpm typecheck` と `pnpm test` が通過し、全体テストは36ファイル、338件が通過した
 - 残り: 今回指定された分割単位は完了。以後は追加で大きな責務が残る箇所を対象化する場合、同じく仕様変更とUI変更を混ぜずに別単位として扱う
+
+### App周辺の責務分割
+
+- 方向性: 仕様、UI、保存形式、IPC/preload APIを変えず、`App.tsx` と `useWorkspaceFileActions` 周辺に残るファイル操作補助、右パネル、上部バー、オーバーレイの責務を内部モジュールへ分離する
+- 実施: `useWorkspaceFileActions` から重複除外、ユニーク名生成、作成後path探索、フォルダ配下タブ更新、削除対象path判定を `workspaceFileActionHelpers.ts` へ分離した。`App.tsx` からサイドバーの飛行演出つきファイル操作を `useSidebarFileInteractions.ts`、active document導出を `useActiveDocumentContext.ts`、右パネルを `AppRightPanel.tsx`、上部バーを `AppTopBar.tsx`、オーバーレイ群を `AppOverlays.tsx` へ分離した
+- 確認: `pnpm exec vitest run src/renderer/hooks/workspaceFileActionHelpers.test.ts`、`pnpm exec vitest run src/renderer/App.test.tsx`、`pnpm typecheck`、`pnpm test`、`git diff --check` が通過した。全体テストは37ファイル、344件が通過した
+- 残り: 今回指定された分割単位は完了。実アプリ確認は自動テストで表示・操作差分が残らなかったため未実施

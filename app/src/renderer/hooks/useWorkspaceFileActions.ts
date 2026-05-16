@@ -4,6 +4,16 @@ import type { MarkdownFileContent, WorkspaceState, WorkspaceTreeNode } from "../
 import { resolveMarkdownLinkPath, resolveWikiLinkPathWithAliases, type AliasIndex } from "../../shared/links";
 import type { FileTab, PaneId, PaneState, Tab } from "../store/editorStore";
 import { displayNameFromPath, joinWorkspacePath, parentFolderOf } from "../workspacePaths";
+import {
+  buildFolderTabPathUpdates,
+  findCreatedMarkdownPath,
+  getMovableTreeItems,
+  matchesAnyTreeItemPath,
+  matchesTreeItemPath,
+  nextUniqueFileName,
+  nextUniqueFolderName,
+  removeCoveredItems
+} from "./workspaceFileActionHelpers";
 
 interface UseWorkspaceFileActionsInput {
   closeAllTabs: () => void;
@@ -46,51 +56,6 @@ export function useWorkspaceFileActions({
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
   const [isOpeningWorkspace, setIsOpeningWorkspace] = useState(false);
   const [isCreatingWorkspace, setIsCreatingWorkspace] = useState(false);
-
-  const removeCoveredItems = useCallback(
-    (items: Array<{ path: string; type: WorkspaceTreeNode["type"] }>) => {
-      return items.filter((item) => {
-        return !items.some((other) => (
-          other.type === "folder" &&
-          other.path !== item.path &&
-          item.path.startsWith(`${other.path}/`)
-        ));
-      });
-    },
-    []
-  );
-
-  const nextUniqueFileName = useCallback((workspaceState: WorkspaceState | null): string => {
-    const existing = new Set<string>();
-    const walk = (node: WorkspaceTreeNode): void => {
-      if (node.type === "file") existing.add(node.path);
-      else node.children.forEach(walk);
-    };
-
-    workspaceState?.fileTree.forEach(walk);
-
-    for (let i = 1; ; i += 1) {
-      const name = i === 1 ? "新規ファイル" : `新規ファイル ${i}`;
-      if (!existing.has(`${name}.md`)) return name;
-    }
-  }, []);
-
-  const nextUniqueFolderName = useCallback((workspaceState: WorkspaceState | null): string => {
-    const existing = new Set<string>();
-    const walk = (node: WorkspaceTreeNode): void => {
-      if (node.type === "folder") {
-        existing.add(node.path);
-        node.children.forEach(walk);
-      }
-    };
-
-    workspaceState?.fileTree.forEach(walk);
-
-    for (let i = 1; ; i += 1) {
-      const name = i === 1 ? "新規フォルダ" : `新規フォルダ ${i}`;
-      if (!existing.has(name)) return name;
-    }
-  }, []);
 
   const handleOpenWorkspace = useCallback((): void => {
     if (!window.relic) return;
@@ -156,7 +121,6 @@ export function useWorkspaceFileActions({
   }, [
     fileNameDraft,
     focusedPane,
-    nextUniqueFileName,
     openFileInPane,
     setWorkspaceError,
     setWorkspaceState,
@@ -174,11 +138,7 @@ export function useWorkspaceFileActions({
         if (result.ok) {
           setWorkspaceState(result.value);
           const expectedPath = fileName.endsWith(".md") ? fileName : `${fileName}.md`;
-          const newFile = result.value.fileTree
-            .flatMap(function flatten(node): string[] {
-              return node.type === "file" ? [node.path] : node.children.flatMap(flatten);
-            })
-            .find((path) => path.endsWith(expectedPath));
+          const newFile = findCreatedMarkdownPath(result.value.fileTree, expectedPath);
 
           if (newFile) {
             void window.relic!.readMarkdownFile({ path: newFile }).then((readResult) => {
@@ -191,7 +151,6 @@ export function useWorkspaceFileActions({
       });
   }, [
     focusedPane,
-    nextUniqueFileName,
     openFileInPane,
     setWorkspaceError,
     setWorkspaceState,
@@ -215,7 +174,7 @@ export function useWorkspaceFileActions({
         }
       })
       .finally(() => setIsCreatingFolder(false));
-  }, [folderNameDraft, nextUniqueFolderName, setWorkspaceError, setWorkspaceState, workspaceState]);
+  }, [folderNameDraft, setWorkspaceError, setWorkspaceState, workspaceState]);
 
   const handleOpenFile = useCallback(
     (path: string): void => {
@@ -402,13 +361,8 @@ export function useWorkspaceFileActions({
       if (result.ok) {
         const nextFolderPath = joinWorkspacePath(destFolder, displayNameFromPath(path));
 
-        Object.entries(tabs)
-          .filter(([, tab]) => tab.kind === "file" && tab.path.startsWith(`${path}/`))
-          .forEach(([tabId, tab]) => {
-            if (tab.kind !== "file") return;
-            const nextPath = `${nextFolderPath}/${tab.path.slice(path.length + 1)}`;
-            updateTabMeta(tabId, { name: displayNameFromPath(nextPath), path: nextPath });
-          });
+        buildFolderTabPathUpdates(tabs, path, nextFolderPath)
+          .forEach((update) => updateTabMeta(update.tabId, { name: update.name, path: update.path }));
         setWorkspaceState(result.value);
       } else {
         setWorkspaceError(result.error.message);
@@ -420,11 +374,7 @@ export function useWorkspaceFileActions({
     (items: Array<{ path: string; type: WorkspaceTreeNode["type"] }>, destFolder: string): void => {
       if (!window.relic) return;
 
-      const movableItems = removeCoveredItems(items).filter((item) => {
-        if (item.path === destFolder) return false;
-        if (item.type === "folder" && destFolder.startsWith(`${item.path}/`)) return false;
-        return true;
-      });
+      const movableItems = getMovableTreeItems(items, destFolder);
 
       if (movableItems.length === 0) return;
 
@@ -452,18 +402,13 @@ export function useWorkspaceFileActions({
 
           const nextFolderPath = joinWorkspacePath(destFolder, displayNameFromPath(item.path));
 
-          Object.entries(tabs)
-            .filter(([, tab]) => tab.kind === "file" && tab.path.startsWith(`${item.path}/`))
-            .forEach(([tabId, tab]) => {
-              if (tab.kind !== "file") return;
-              const nextPath = `${nextFolderPath}/${tab.path.slice(item.path.length + 1)}`;
-              updateTabMeta(tabId, { name: displayNameFromPath(nextPath), path: nextPath });
-            });
+          buildFolderTabPathUpdates(tabs, item.path, nextFolderPath)
+            .forEach((update) => updateTabMeta(update.tabId, { name: update.name, path: update.path }));
           setWorkspaceState(result.value);
         }
       })();
     },
-    [removeCoveredItems, setWorkspaceError, setWorkspaceState, tabs, updateTabMeta]
+    [setWorkspaceError, setWorkspaceState, tabs, updateTabMeta]
   );
 
   const handleMoveActiveFile = useCallback(
@@ -540,13 +485,8 @@ export function useWorkspaceFileActions({
         if (result.ok) {
           const nextFolderPath = joinWorkspacePath(parentFolderOf(path), newName);
 
-          Object.entries(tabs)
-            .filter(([, tab]) => tab.kind === "file" && tab.path.startsWith(`${path}/`))
-            .forEach(([tabId, tab]) => {
-              if (tab.kind !== "file") return;
-              const nextPath = `${nextFolderPath}/${tab.path.slice(path.length + 1)}`;
-              updateTabMeta(tabId, { name: displayNameFromPath(nextPath), path: nextPath });
-            });
+          buildFolderTabPathUpdates(tabs, path, nextFolderPath)
+            .forEach((update) => updateTabMeta(update.tabId, { name: update.name, path: update.path }));
           setWorkspaceState(result.value);
         } else {
           setWorkspaceError(result.error.message);
@@ -617,17 +557,15 @@ export function useWorkspaceFileActions({
 
       void window.relic.moveItemToTrash({ path, type }).then((result) => {
         if (result.ok) {
-          const matchesPath = (tabPath: string): boolean => (
-            type === "file" ? tabPath === path : tabPath.startsWith(`${path}/`)
-          );
+          const item = { path, type };
 
           leftPane.tabIds.forEach((tabId) => {
             const tab = tabs[tabId];
-            if (tab?.kind === "file" && matchesPath(tab.path)) closeTab("left", tabId);
+            if (tab?.kind === "file" && matchesTreeItemPath(tab.path, item)) closeTab("left", tabId);
           });
           rightPane.tabIds.forEach((tabId) => {
             const tab = tabs[tabId];
-            if (tab?.kind === "file" && matchesPath(tab.path)) closeTab("right", tabId);
+            if (tab?.kind === "file" && matchesTreeItemPath(tab.path, item)) closeTab("right", tabId);
           });
           setWorkspaceState(result.value);
         } else {
@@ -659,25 +597,19 @@ export function useWorkspaceFileActions({
           nextWorkspaceState = result.value;
         }
 
-        const matchesDeletedPath = (tabPath: string): boolean => (
-          deletableItems.some((item) => (
-            item.type === "file" ? tabPath === item.path : tabPath.startsWith(`${item.path}/`)
-          ))
-        );
-
         leftPane.tabIds.forEach((tabId) => {
           const tab = tabs[tabId];
-          if (tab?.kind === "file" && matchesDeletedPath(tab.path)) closeTab("left", tabId);
+          if (tab?.kind === "file" && matchesAnyTreeItemPath(tab.path, deletableItems)) closeTab("left", tabId);
         });
         rightPane.tabIds.forEach((tabId) => {
           const tab = tabs[tabId];
-          if (tab?.kind === "file" && matchesDeletedPath(tab.path)) closeTab("right", tabId);
+          if (tab?.kind === "file" && matchesAnyTreeItemPath(tab.path, deletableItems)) closeTab("right", tabId);
         });
 
         if (nextWorkspaceState) setWorkspaceState(nextWorkspaceState);
       })();
     },
-    [closeTab, leftPane, removeCoveredItems, rightPane, setWorkspaceError, setWorkspaceState, tabs]
+    [closeTab, leftPane, rightPane, setWorkspaceError, setWorkspaceState, tabs]
   );
 
   return {
