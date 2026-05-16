@@ -14,6 +14,7 @@ import { fail, ok, type RelicResult } from "../../shared/result";
 import { parseMarkdownTags } from "../../shared/tags";
 import { readWorkspaceFileTree } from "../files/fileTree";
 import { parseFrontmatter } from "../files/frontmatter";
+import { resolveWorkspaceRelativePath, resolveWorkspaceRelativePathOrRoot } from "../files/paths";
 import { readAppSettings } from "../settings/appSettings";
 import { toWorkspaceState } from "../workspace/workspaceService";
 
@@ -50,9 +51,13 @@ export async function mergeFiles(input: MergeFilesInput): Promise<RelicResult<st
   }
 
   const merged = parts.join("\n\n---\n\n") + "\n";
-  const outputDir = path.join(workspacePath, input.outputFolder || ".");
-  await mkdir(outputDir, { recursive: true });
-  const outputPath = await uniqueFilePath(outputDir, input.outputName || "merged");
+  const outputDir = resolveWorkspaceRelativePathOrRoot(workspacePath, input.outputFolder);
+  if (!outputDir.ok) return outputDir;
+  const outputName = safeOutputName(input.outputName || "merged");
+  if (!outputName.ok) return outputName;
+
+  await mkdir(outputDir.value, { recursive: true });
+  const outputPath = await uniqueFilePath(outputDir.value, outputName.value);
   await writeFile(outputPath, merged, "utf-8");
 
   return ok(path.relative(workspacePath, outputPath));
@@ -63,16 +68,19 @@ export async function splitFileByHeading(input: SplitFileByHeadingInput): Promis
   if (!context.ok) return context;
 
   const { workspacePath } = context.value;
-  const absSource = path.join(workspacePath, input.sourcePath);
-  const content = await readFile(absSource, "utf-8");
+  const absSource = resolveWorkspaceRelativePath(workspacePath, input.sourcePath);
+  if (!absSource.ok) return absSource;
+  const content = await readFile(absSource.value, "utf-8");
   const sections = splitMarkdownSections(content, input.headingLevel);
 
   if (sections.length === 0) {
     return fail("SPLIT_NO_HEADINGS", `H${input.headingLevel} の見出しが見つかりませんでした。`);
   }
 
-  const outputDir = path.join(workspacePath, input.outputFolder || ".");
-  await mkdir(outputDir, { recursive: true });
+  const outputDir = resolveWorkspaceRelativePathOrRoot(workspacePath, input.outputFolder);
+  if (!outputDir.ok) return outputDir;
+
+  await mkdir(outputDir.value, { recursive: true });
 
   const created: string[] = [];
   for (const section of sections) {
@@ -80,7 +88,7 @@ export async function splitFileByHeading(input: SplitFileByHeadingInput): Promis
       .replace(/[/\\:*?"<>|]/g, "_")
       .replace(/\s+/g, " ")
       .trim() || "untitled";
-    const outPath = await uniqueFilePath(outputDir, safeName);
+    const outPath = await uniqueFilePath(outputDir.value, safeName);
     const sectionContent = section.lines.join("\n").trimEnd() + "\n";
     await writeFile(outPath, sectionContent, "utf-8");
     created.push(path.relative(workspacePath, outPath));
@@ -106,9 +114,13 @@ export async function generateTitleList(input: GenerateTitleListInput): Promise<
   const lines = collected.map((file) => `- [[${file.name}]]`);
   const content = lines.join("\n") + "\n";
 
-  const outputDir = path.join(workspacePath, input.outputFolder);
-  await mkdir(outputDir, { recursive: true });
-  const outputPath = await uniqueFilePath(outputDir, input.outputName);
+  const outputDir = resolveWorkspaceRelativePathOrRoot(workspacePath, input.outputFolder);
+  if (!outputDir.ok) return outputDir;
+  const outputName = safeOutputName(input.outputName);
+  if (!outputName.ok) return outputName;
+
+  await mkdir(outputDir.value, { recursive: true });
+  const outputPath = await uniqueFilePath(outputDir.value, outputName.value);
   await writeFile(outputPath, content, "utf-8");
 
   return ok(path.relative(workspacePath, outputPath));
@@ -121,15 +133,20 @@ export async function generateTableOfContents(
   if (!context.ok) return context;
 
   const { workspacePath } = context.value;
-  const targetAbsPath = path.join(workspacePath, input.targetFolder);
+  const targetAbsPath = resolveWorkspaceRelativePathOrRoot(workspacePath, input.targetFolder);
+  if (!targetAbsPath.ok) return targetAbsPath;
   const lines: string[] = [];
 
-  await collectTableOfContentsLines(targetAbsPath, input.targetFolder, 0, input.includeSubfolders, lines);
+  await collectTableOfContentsLines(targetAbsPath.value, input.targetFolder, 0, input.includeSubfolders, lines);
 
   const content = lines.join("\n") + "\n";
-  const outputDir = path.join(workspacePath, input.outputFolder);
-  await mkdir(outputDir, { recursive: true });
-  const outputPath = await uniqueFilePath(outputDir, input.outputName);
+  const outputDir = resolveWorkspaceRelativePathOrRoot(workspacePath, input.outputFolder);
+  if (!outputDir.ok) return outputDir;
+  const outputName = safeOutputName(input.outputName);
+  if (!outputName.ok) return outputName;
+
+  await mkdir(outputDir.value, { recursive: true });
+  const outputPath = await uniqueFilePath(outputDir.value, outputName.value);
   await writeFile(outputPath, content, "utf-8");
 
   return ok(path.relative(workspacePath, outputPath));
@@ -319,6 +336,24 @@ function matchesFrontmatterField(value: unknown, query: string): boolean {
   }
 
   return String(value).toLocaleLowerCase().includes(query.toLocaleLowerCase());
+}
+
+function safeOutputName(name: string): RelicResult<string> {
+  const trimmed = name.trim();
+  const normalized = trimmed.replace(/\\/g, "/");
+
+  if (
+    !trimmed ||
+    normalized.includes("/") ||
+    normalized === "." ||
+    normalized === ".." ||
+    path.posix.isAbsolute(normalized) ||
+    path.win32.isAbsolute(trimmed)
+  ) {
+    return fail("TOOL_OUTPUT_NAME_INVALID", "出力ファイル名が無効です。");
+  }
+
+  return ok(trimmed);
 }
 
 async function uniqueFilePath(dir: string, name: string): Promise<string> {

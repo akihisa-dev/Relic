@@ -2,7 +2,11 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { resolveWorkspaceRelativePath, toWorkspaceRelativePath } from "./paths";
+import {
+  resolveWorkspaceRelativePath,
+  resolveWorkspaceRelativePathOrRoot,
+  toWorkspaceRelativePath
+} from "./paths";
 
 describe("resolveWorkspaceRelativePath", () => {
   it("ワークスペース内の相対パスを絶対パスへ解決する", () => {
@@ -17,6 +21,24 @@ describe("resolveWorkspaceRelativePath", () => {
     expect(resolveWorkspaceRelativePath("/tmp/relic-notes", "C:\\Users\\test\\note.md").ok).toBe(false);
     expect(resolveWorkspaceRelativePath("/tmp/relic-notes", "\\\\server\\share\\note.md").ok).toBe(false);
     expect(resolveWorkspaceRelativePath("/tmp/relic-notes", "../other.md").ok).toBe(false);
+  });
+});
+
+describe("resolveWorkspaceRelativePathOrRoot", () => {
+  it("空文字とドットをワークスペース直下として扱う", () => {
+    expect(resolveWorkspaceRelativePathOrRoot("/tmp/relic-notes", "")).toEqual({
+      ok: true,
+      value: "/tmp/relic-notes"
+    });
+    expect(resolveWorkspaceRelativePathOrRoot("/tmp/relic-notes", ".")).toEqual({
+      ok: true,
+      value: "/tmp/relic-notes"
+    });
+  });
+
+  it("ワークスペース外への参照は拒否する", () => {
+    expect(resolveWorkspaceRelativePathOrRoot("/tmp/relic-notes", "../other").ok).toBe(false);
+    expect(resolveWorkspaceRelativePathOrRoot("/tmp/relic-notes", "/tmp/other").ok).toBe(false);
   });
 });
 
