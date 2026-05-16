@@ -124,51 +124,51 @@ dark-colors:
 
 typography:
   display-lg:
-    fontFamily: Inter
+    fontFamily: System UI
     fontSize: 48px
     fontWeight: '700'
     lineHeight: 56px
     letterSpacing: -0.02em
   headline-lg:
-    fontFamily: Inter
+    fontFamily: System UI
     fontSize: 32px
     fontWeight: '600'
     lineHeight: 40px
     letterSpacing: -0.01em
   headline-md:
-    fontFamily: Inter
+    fontFamily: System UI
     fontSize: 24px
     fontWeight: '600'
     lineHeight: 32px
   body-lg:
-    fontFamily: Inter
+    fontFamily: System UI
     fontSize: 18px
     fontWeight: '400'
     lineHeight: 28px
   body-md:
-    fontFamily: Inter
+    fontFamily: System UI
     fontSize: 16px
     fontWeight: '400'
     lineHeight: 24px
   body-sm:
-    fontFamily: Inter
+    fontFamily: System UI
     fontSize: 14px
     fontWeight: '400'
     lineHeight: 20px
   label-md:
-    fontFamily: Inter
+    fontFamily: System UI
     fontSize: 12px
     fontWeight: '600'
     lineHeight: 16px
     letterSpacing: 0.05em
   metric-xl:
-    fontFamily: Inter
+    fontFamily: System UI
     fontSize: 40px
     fontWeight: '700'
     lineHeight: 48px
     letterSpacing: -0.03em
   code-md:
-    fontFamily: "'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace"
+    fontFamily: "Menlo, SF Mono, Consolas, monospace"
     fontSize: 14px
     fontWeight: '400'
     lineHeight: 22px
@@ -271,18 +271,18 @@ spacing:
 
 ## Typography
 
-すべての UI スタイルで **Inter** を使用します。コードブロックには **JetBrains Mono**（フォールバック: Fira Code, Cascadia Code）を使用します。階層はウェイトの変化によって確立し、色による区別は最小限に抑えます。
+現行実装では、UI全体に macOS / OS 標準のシステムフォント（`-apple-system`, `SF Pro Text`, `Hiragino Sans`, `Yu Gothic`, `system-ui` 相当）を使用します。コードブロックやファイルパスなどの等幅表示には Menlo / SF Mono / Consolas 系を使用します。階層はウェイトの変化によって確立し、色による区別は最小限に抑えます。
 
 | スタイル      | フォント | サイズ | ウェイト | 行間  | レタースペーシング | 用途                 |
 |---------------|----------|--------|----------|-------|--------------------|----------------------|
-| `display-lg`  | Inter    | 48px   | 700      | 56px  | −0.02em            | 最大見出し           |
-| `headline-lg` | Inter    | 32px   | 600      | 40px  | −0.01em            | セクション見出し     |
-| `headline-md` | Inter    | 24px   | 600      | 32px  | —                  | サブセクション見出し |
-| `body-lg`     | Inter    | 18px   | 400      | 28px  | —                  | 主要本文             |
-| `body-md`     | Inter    | 16px   | 400      | 24px  | —                  | 標準本文             |
-| `body-sm`     | Inter    | 14px   | 400      | 20px  | —                  | 補足・キャプション   |
-| `label-md`    | Inter    | 12px   | 600      | 16px  | +0.05em            | ラベル・メタデータ   |
-| `metric-xl`   | Inter    | 40px   | 700      | 48px  | −0.03em            | 数値・状態指標       |
+| `display-lg`  | System UI | 48px   | 700      | 56px  | −0.02em            | 最大見出し           |
+| `headline-lg` | System UI | 32px   | 600      | 40px  | −0.01em            | セクション見出し     |
+| `headline-md` | System UI | 24px   | 600      | 32px  | —                  | サブセクション見出し |
+| `body-lg`     | System UI | 18px   | 400      | 28px  | —                  | 主要本文             |
+| `body-md`     | System UI | 16px   | 400      | 24px  | —                  | 標準本文             |
+| `body-sm`     | System UI | 14px   | 400      | 20px  | —                  | 補足・キャプション   |
+| `label-md`    | System UI | 12px   | 600      | 16px  | +0.05em            | ラベル・メタデータ   |
+| `metric-xl`   | System UI | 40px   | 700      | 48px  | −0.03em            | 数値・状態指標       |
 | `code-md`     | Mono     | 14px   | 400      | 22px  | —                  | コードブロック・インラインコード |
 
 **運用ルール：**
@@ -311,7 +311,7 @@ spacing:
 | `lg`      | 48px  | セクション間の余白             |
 | `xl`      | 80px  | 大ブロック間の余白             |
 
-デスクトップは12カラム、モバイルは4カラムを基本とします。マージンとガターは余裕を持たせ、アクセントカラーの要素が十分な空間を持つことで即座に識別できるようにします。
+現行アプリはデスクトップ向けの固定シェルを前提とし、左レール、ファイルサイドバー、メインエリア、右パネルの幅で情報密度を調整します。マージンとガターは余裕を持たせ、アクセントカラーの要素が十分な空間を持つことで即座に識別できるようにします。
 
 - 独立したコンテンツブロックの区切りには `lg` / `xl` を使用します。
 - コンポーネント内部のパディングには `xs` / `sm` / `md-sm` を使用します。
