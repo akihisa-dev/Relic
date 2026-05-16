@@ -8,43 +8,32 @@ export interface ChronicleToolbarProps {
   activeChart: WorkspaceGanttChart | null;
   activeSource: GanttChartSource;
   availableCharts: WorkspaceGanttChart[];
-  fitChronicleOverview: () => void;
   query: string;
   scrollToToday: () => void;
   selectChart: (chart: WorkspaceGanttChart) => void;
   setQuery: Dispatch<SetStateAction<string>>;
   setSortKey: Dispatch<SetStateAction<ChronicleSortKey>>;
   setStatusFilter: Dispatch<SetStateAction<string>>;
-  setZoomIndex: Dispatch<SetStateAction<number>>;
   sortKey: ChronicleSortKey;
   statusFilter: string;
   statusOptions: string[];
-  zoomIndex: number;
-  zoomLevel: number;
-  zoomOptions: readonly number[];
 }
 
 export function ChronicleToolbar({
   activeChart,
   activeSource,
   availableCharts,
-  fitChronicleOverview,
   query,
   scrollToToday,
   selectChart,
   setQuery,
   setSortKey,
   setStatusFilter,
-  setZoomIndex,
   sortKey,
   statusFilter,
-  statusOptions,
-  zoomIndex,
-  zoomLevel,
-  zoomOptions
+  statusOptions
 }: ChronicleToolbarProps): ReactElement {
   const t = useT();
-  const zoomLabel = `${Math.round(zoomLevel * 100)}%`;
 
   return (
     <div className="chronicle-toolbar">
@@ -90,8 +79,8 @@ export function ChronicleToolbar({
           </select>
         </label>
       ) : null}
-      <div className="chronicle-zoom" aria-label={t("chronicle.zoom")}>
-        {activeSource === "date" ? (
+      {activeSource === "date" ? (
+        <div className="chronicle-actions">
           <button
             className="chronicle-today-button"
             onClick={scrollToToday}
@@ -99,35 +88,8 @@ export function ChronicleToolbar({
           >
             {t("chronicle.today")}
           </button>
-        ) : activeSource === "chronicle" ? (
-          <button
-            className="chronicle-today-button"
-            onClick={fitChronicleOverview}
-            type="button"
-          >
-            {t("chronicle.fitAll")}
-          </button>
-        ) : null}
-        <button
-          aria-label={t("chronicle.zoomOut")}
-          className="chronicle-zoom-button"
-          disabled={zoomIndex === 0}
-          onClick={() => setZoomIndex((current) => Math.max(0, current - 1))}
-          type="button"
-        >
-          -
-        </button>
-        <span className="chronicle-zoom-value">{zoomLabel}</span>
-        <button
-          aria-label={t("chronicle.zoomIn")}
-          className="chronicle-zoom-button"
-          disabled={zoomIndex >= zoomOptions.length - 1}
-          onClick={() => setZoomIndex((current) => Math.min(zoomOptions.length - 1, current + 1))}
-          type="button"
-        >
-          +
-        </button>
-      </div>
+        </div>
+      ) : null}
     </div>
   );
 }

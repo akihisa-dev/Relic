@@ -1,5 +1,5 @@
 import { useCallback, useLayoutEffect, useRef, useState } from "react";
-import type { Dispatch, PointerEvent, RefObject, SetStateAction, UIEvent } from "react";
+import type { PointerEvent, RefObject, UIEvent } from "react";
 
 import type { GanttChartEntry, GanttChartSource, WorkspaceGanttChart } from "../../shared/ipc";
 import {
@@ -16,14 +16,11 @@ interface UseChronicleChartViewportInput {
   entries: GanttChartEntry[];
   nameColumnWidth: number;
   unitWidth: number;
-  zoomIndex: number;
-  setZoomIndex: Dispatch<SetStateAction<number>>;
 }
 
 export interface ChronicleChartViewport {
   chartRef: RefObject<HTMLDivElement | null>;
   chartViewportWidth: number;
-  fitChronicleOverview: () => void;
   handleChartScroll: (event: UIEvent<HTMLDivElement>) => void;
   handleMinimapPointer: (event: PointerEvent<HTMLDivElement>) => void;
   minimapRef: RefObject<HTMLDivElement | null>;
@@ -41,16 +38,13 @@ export function useChronicleChartViewport({
   axisStart,
   entries,
   nameColumnWidth,
-  unitWidth,
-  zoomIndex,
-  setZoomIndex
+  unitWidth
 }: UseChronicleChartViewportInput): ChronicleChartViewport {
   const [scrollLeft, setScrollLeft] = useState(0);
   const [chartViewportWidth, setChartViewportWidth] = useState(720);
   const chartRef = useRef<HTMLDivElement | null>(null);
   const minimapRef = useRef<HTMLDivElement | null>(null);
-  const previousTimelineMetricsRef = useRef<{ axisStart: number; unitWidth: number } | null>(null);
-  const focusAfterZoomRef = useRef(false);
+  const previousAxisStartRef = useRef<number | null>(null);
   const initialDateScrollKeyRef = useRef<string | null>(null);
   const initialChronicleScrollKeyRef = useRef<string | null>(null);
 
@@ -86,16 +80,6 @@ export function useChronicleChartViewport({
     const target = chronicleNavigationTarget(entries, axisStart, axisEnd);
     if (target !== null) scrollToTimelineValue(target);
   }, [axisEnd, axisStart, entries, scrollToTimelineValue]);
-
-  const fitChronicleOverview = useCallback((): void => {
-    if (zoomIndex === 0) {
-      scrollToChronicleFocus();
-      return;
-    }
-
-    focusAfterZoomRef.current = true;
-    setZoomIndex(0);
-  }, [scrollToChronicleFocus, setZoomIndex, zoomIndex]);
 
   const handleChartScroll = useCallback((event: UIEvent<HTMLDivElement>): void => {
     setScrollLeft(event.currentTarget.scrollLeft);
@@ -189,27 +173,23 @@ export function useChronicleChartViewport({
   }, [activeChart?.id, updateChartViewportWidth]);
 
   useLayoutEffect(() => {
-    const previousMetrics = previousTimelineMetricsRef.current;
-    previousTimelineMetricsRef.current = { axisStart, unitWidth };
+    const previousAxisStart = previousAxisStartRef.current;
+    previousAxisStartRef.current = axisStart;
 
-    if (!previousMetrics) return;
-    if (previousMetrics.axisStart === axisStart && previousMetrics.unitWidth === unitWidth) return;
+    if (previousAxisStart === null || previousAxisStart === axisStart) return;
 
     const chartElement = chartRef.current;
 
     if (!chartElement) return;
 
-    const currentViewportTimelineWidth = Math.max(1, (chartElement.clientWidth || chartViewportWidth) - nameColumnWidth);
-    const centerValue = previousMetrics.axisStart + (chartElement.scrollLeft + currentViewportTimelineWidth / 2) / previousMetrics.unitWidth;
-    const maxScrollLeft = Math.max(0, chartElement.scrollWidth - (chartElement.clientWidth || chartViewportWidth));
-    const nextScrollLeft = clamp(
-      (centerValue - axisStart) * unitWidth - currentViewportTimelineWidth / 2,
-      0,
-      maxScrollLeft
-    );
+    const delta = (previousAxisStart - axisStart) * unitWidth;
+
+    if (delta === 0) return;
+
+    const nextScrollLeft = Math.max(0, chartElement.scrollLeft + delta);
     chartElement.scrollLeft = nextScrollLeft;
     setScrollLeft(nextScrollLeft);
-  }, [axisStart, chartViewportWidth, nameColumnWidth, unitWidth]);
+  }, [axisStart, unitWidth]);
 
   useLayoutEffect(() => {
     if (activeSource !== "date" || !activeChart) return;
@@ -231,17 +211,9 @@ export function useChronicleChartViewport({
     scrollToChronicleFocus();
   }, [activeChart, activeSource, scrollToChronicleFocus]);
 
-  useLayoutEffect(() => {
-    if (activeSource !== "chronicle" || !activeChart || !focusAfterZoomRef.current || zoomIndex !== 0) return;
-
-    focusAfterZoomRef.current = false;
-    scrollToChronicleFocus();
-  }, [activeChart, activeSource, scrollToChronicleFocus, zoomIndex]);
-
   return {
     chartRef,
     chartViewportWidth,
-    fitChronicleOverview,
     handleChartScroll,
     handleMinimapPointer,
     minimapRef,

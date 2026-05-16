@@ -2,7 +2,6 @@ import type { GanttChartEntry, GanttChartSource } from "../shared/ipc";
 import { axisToYear, dateToDay, yearToAxis } from "../shared/chartTime";
 import {
   DATE_SCALES,
-  DATE_TICK_WIDTH,
   LABEL_HORIZONTAL_PADDING,
   type DateAxisSegmentUnit,
   type DateScale,
@@ -77,7 +76,7 @@ export function buildTicks(
   source: GanttChartSource,
   dateScale: DateScale | null
 ): number[] {
-  if (source === "date") return buildDateTicks(axisStart, axisEnd, dateGuideUnit(dateScale ?? DATE_SCALES[2]));
+  if (source === "date") return buildDateTicks(axisStart, axisEnd, dateGuideUnit(dateScale ?? DATE_SCALES[0]));
 
   return buildChronicleTicks(axisStart, axisEnd, chronicleAxisTickInterval(interval));
 }
@@ -153,13 +152,10 @@ export function buildDateTicks(axisStart: number, axisEnd: number, unit: DateAxi
 }
 
 export function dateGuideUnit(scale: DateScale): DateAxisSegmentUnit {
-  if (scale.unit === "year") return "month";
-  if (scale.unit === "month") return "day";
   return "day";
 }
 
 export function dateMajorGuideUnit(scale: DateScale): DateAxisSegmentUnit {
-  if (scale.unit === "year") return "year";
   return "month";
 }
 
@@ -274,10 +270,7 @@ export function previousDateUnit(value: number, unit: DateAxisSegmentUnit): numb
 }
 
 export function dateUnitWidth(scale: DateScale | null): number {
-  if (!scale) return DATE_TICK_WIDTH / 30;
-  if (scale.unit === "day") return 22;
-  if (scale.unit === "year") return 1.2;
-  return (DATE_TICK_WIDTH * 3) / 30;
+  return 22;
 }
 
 export function chronicleUnitWidth(interval: number, tickWidth: number): number {
@@ -286,7 +279,7 @@ export function chronicleUnitWidth(interval: number, tickWidth: number): number 
 }
 
 export function dateAxisHeightForScale(scale: DateScale | null): number {
-  return scale?.unit === "day" ? 69 : 46;
+  return 69;
 }
 
 export function formatDateAxisSegmentLabel(value: number, unit: DateAxisSegmentUnit): string {
@@ -304,9 +297,7 @@ export function formatChronicleAxisSegmentLabel(year: number): string {
 }
 
 export function formatDateLabel(value: string, unit: DateScaleUnit): string {
-  if (unit === "day") return value.slice(8, 10);
-  if (unit === "month") return value.slice(5);
-  return value;
+  return value.slice(8, 10);
 }
 
 export function isGanttChartSource(value: unknown): value is GanttChartSource {
