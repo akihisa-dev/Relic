@@ -2,9 +2,9 @@ import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import { resolveWikiLinkPath } from "../../shared/links";
+import { collectMarkdownPaths } from "../../shared/workspaceTree";
 import { readWorkspaceFileTree } from "./fileTree";
 import { resolveWorkspaceRelativePath } from "./paths";
-import type { WorkspaceTreeNode } from "../../shared/ipc";
 
 /**
  * ファイルリネーム後、ワークスペース内の内部リンクを一括更新する。
@@ -225,10 +225,4 @@ function parseWikiLinkBody(body: string): ParsedWikiLinkBody | null {
 
 function maskFencedCodeBlocks(markdown: string): string {
   return markdown.replace(/^```[\s\S]*?^```/gm, (block) => " ".repeat(block.length));
-}
-
-function collectMarkdownPaths(nodes: WorkspaceTreeNode[]): string[] {
-  return nodes.flatMap((node) =>
-    node.type === "file" ? [node.path] : collectMarkdownPaths(node.children)
-  );
 }

@@ -1,9 +1,10 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 
-import type { Backlink, WorkspaceTreeNode } from "../../shared/ipc";
+import type { Backlink } from "../../shared/ipc";
 import { resolveWikiLinks } from "../../shared/links";
 import { fail, ok, type RelicResult } from "../../shared/result";
+import { collectMarkdownPaths } from "../../shared/workspaceTree";
 import { readWorkspaceAliases } from "./aliases";
 import { readWorkspaceFileTree } from "./fileTree";
 import { resolveWorkspaceRelativePath } from "./paths";
@@ -58,10 +59,4 @@ export async function readBacklinks(
       error instanceof Error ? error.message : String(error)
     );
   }
-}
-
-function collectMarkdownPaths(nodes: WorkspaceTreeNode[]): string[] {
-  return nodes.flatMap((node) =>
-    node.type === "file" ? [node.path] : collectMarkdownPaths(node.children)
-  );
 }

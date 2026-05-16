@@ -2,6 +2,7 @@ import { readdir } from "node:fs/promises";
 import path from "node:path";
 
 import type { WorkspaceTreeNode } from "../../shared/ipc";
+import { toWorkspaceRelativePath } from "./paths";
 
 export async function readWorkspaceFileTree(workspacePath: string): Promise<WorkspaceTreeNode[]> {
   return readDirectory(workspacePath, "");
@@ -50,8 +51,4 @@ function compareTreeNodes(a: WorkspaceTreeNode, b: WorkspaceTreeNode): number {
 
 function isTreeNode(value: WorkspaceTreeNode | null): value is WorkspaceTreeNode {
   return value !== null;
-}
-
-function toWorkspaceRelativePath(filePath: string): string {
-  return filePath.split(path.sep).join("/");
 }

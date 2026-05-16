@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 
-import type { WorkspaceTreeNode } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
+import { collectMarkdownPaths } from "../../shared/workspaceTree";
 import { parseFrontmatter } from "./frontmatter";
 import { readWorkspaceFileTree } from "./fileTree";
 import { resolveWorkspaceRelativePath } from "./paths";
@@ -45,12 +45,6 @@ export async function readFrontmatterValueCandidates(
       error instanceof Error ? error.message : String(error)
     );
   }
-}
-
-function collectMarkdownPaths(nodes: WorkspaceTreeNode[]): string[] {
-  return nodes.flatMap((node) =>
-    node.type === "file" ? [node.path] : collectMarkdownPaths(node.children)
-  );
 }
 
 function stringifyCandidateValues(value: unknown): string[] {

@@ -3,7 +3,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, MouseEvent, ReactElement, ReactNode } from "react";
 
 import type {
-  GanttChartEntry,
   UpdateGanttChartEntryInput,
   WorkspaceGanttChart,
   WorkspaceState,
@@ -22,6 +21,7 @@ import { SettingsSidebar } from "./components/SettingsSidebar";
 import { ToolsSidebar } from "./components/ToolsSidebar";
 import { Toolbar } from "./components/Toolbar";
 import { extractOutlineHeadings, getActiveFileTabInPane, getActiveTabInPane } from "./editorDerivedState";
+import { normalizeWorkspaceGanttCharts, normalizeWorkspaceGanttChartsWithFiles, updateGanttChartEntryFallback } from "./ganttChartData";
 import { createTranslator, I18nProvider, useT, type TranslationKey } from "./i18n";
 import { useAppKeyboardShortcuts } from "./hooks/useAppKeyboardShortcuts";
 import { useAppSettingsState } from "./hooks/useAppSettingsState";
@@ -33,7 +33,7 @@ import { useWorkspaceFileActions } from "./hooks/useWorkspaceFileActions";
 import { useWorkspaceSearchState } from "./hooks/useWorkspaceSearchState";
 import { useEditorStore, type PaneId, type PanelTabKind } from "./store/editorStore";
 import { useUiStore, type RightPanelView, type SidebarView } from "./store/uiStore";
-import { collectMarkdownPaths } from "./workspacePaths";
+import { collectMarkdownPaths, displayNameFromPath, joinWorkspacePath } from "./workspacePaths";
 import "./styles.css";
 
 // ────────────────────────────────────────────────
@@ -121,22 +121,12 @@ const sidebarViewDefs: Array<{ id: RailViewId; labelKey: TranslationKey; icon: R
   { id: "settings", labelKey: "nav.settings", icon: <IconSettings /> }
 ];
 
-function joinWorkspacePath(folderPath: string, name: string): string {
-  const normalizedFolder = folderPath.trim().replace(/\\/g, "/").replace(/^\/+|\/+$/g, "");
-  const normalizedName = name.trim().replace(/\\/g, "/").replace(/^\/+/, "");
-  return normalizedFolder ? `${normalizedFolder}/${normalizedName}` : normalizedName;
-}
-
 function ensureMarkdownExtension(name: string): string {
   return name.trim().endsWith(".md") ? name.trim() : `${name.trim()}.md`;
 }
 
 function markdownLinkForPath(path: string): string {
   return `[[${path.replace(/\.md$/i, "")}]]`;
-}
-
-function displayNameFromPath(path: string): string {
-  return path.split("/").at(-1)?.replace(/\.md$/i, "") ?? path;
 }
 
 function fixedMenuPosition(x: number, y: number, estimatedHeight = 240): { x: number; y: number } {
@@ -758,7 +748,7 @@ export function App(): ReactElement {
 
     if (result.ok) {
       const normalized = hasOpenGanttChart
-        ? await normalizeWorkspaceGanttChartsWithFiles(result.value, workspaceState.fileTree)
+        ? await normalizeWorkspaceGanttChartsWithFiles(result.value, workspaceState.fileTree, window.relic.readMarkdownFile)
         : normalizeWorkspaceGanttCharts(result.value);
       setGanttCharts(normalized);
     } else {
@@ -928,14 +918,15 @@ export function App(): ReactElement {
   const handleUpdateGanttChartEntry = useCallback(async (input: UpdateGanttChartEntryInput): Promise<void> => {
     if (!window.relic) return;
 
-    const updateEntry = (window.relic as Partial<typeof window.relic>).updateGanttChartEntry;
+    const relic = window.relic;
+    const updateEntry = (relic as Partial<typeof relic>).updateGanttChartEntry;
     const result = typeof updateEntry === "function"
-      ? await updateEntry(input).catch(() => updateGanttChartEntryFallback(input))
-      : await updateGanttChartEntryFallback(input);
+      ? await updateEntry(input).catch(() => updateGanttChartEntryFallback(input, relic))
+      : await updateGanttChartEntryFallback(input, relic);
 
     if (result.ok) {
-      setGanttCharts(await normalizeWorkspaceGanttChartsWithFiles(result.value, workspaceState?.fileTree ?? []));
-      const updatedFile = await window.relic.readMarkdownFile({ path: input.path });
+      setGanttCharts(await normalizeWorkspaceGanttChartsWithFiles(result.value, workspaceState?.fileTree ?? [], relic.readMarkdownFile));
+      const updatedFile = await relic.readMarkdownFile({ path: input.path });
 
       if (updatedFile.ok) {
         Object.values(tabs).forEach((tab) => {
@@ -1972,357 +1963,6 @@ export function App(): ReactElement {
     </div>
     </I18nProvider>
   );
-}
-
-function normalizeWorkspaceGanttCharts(value: unknown): WorkspaceGanttChart[] {
-  if (!Array.isArray(value)) return [];
-
-  if (value.every(isWorkspaceGanttChart)) return fixedWorkspaceGanttCharts(value);
-
-  const legacyEntries = value.flatMap((entry): GanttChartEntry[] => {
-    if (typeof entry !== "object" || entry === null) return [];
-
-    const candidate = entry as Record<string, unknown>;
-    if (
-      typeof candidate.path !== "string" ||
-      typeof candidate.fileName !== "string" ||
-      typeof candidate.startYear !== "number" ||
-      typeof candidate.endYear !== "number"
-    ) return [];
-
-    return [{
-      endLabel: formatLegacyChronicleYear(candidate.endYear),
-      endValue: legacyChronicleYearToAxis(candidate.endYear),
-      fileName: candidate.fileName,
-      path: candidate.path,
-      startLabel: formatLegacyChronicleYear(candidate.startYear),
-      startValue: legacyChronicleYearToAxis(candidate.startYear)
-    }];
-  });
-
-  return legacyEntries.length > 0
-    ? fixedWorkspaceGanttCharts([{ entries: legacyEntries, filePaths: legacyEntries.map((entry) => entry.path), id: "chronicle", name: "chronicle", source: "chronicle" }])
-    : fixedWorkspaceGanttCharts([]);
-}
-
-async function normalizeWorkspaceGanttChartsWithFiles(
-  value: unknown,
-  fileTree: WorkspaceTreeNode[]
-): Promise<WorkspaceGanttChart[]> {
-  const charts = normalizeWorkspaceGanttCharts(value);
-  const dateEntries = await readDateChartEntriesFromFiles(fileTree);
-
-  if (dateEntries.length === 0) return charts;
-
-  return charts.map((chart) => (
-    chart.source === "date"
-      ? { ...chart, entries: dateEntries }
-      : chart
-  ));
-}
-
-async function readDateChartEntriesFromFiles(fileTree: WorkspaceTreeNode[]): Promise<GanttChartEntry[]> {
-  if (!window.relic) return [];
-
-  const paths = collectMarkdownPaths(fileTree);
-  const entries = await Promise.all(paths.map(async (filePath): Promise<GanttChartEntry[]> => {
-    const file = await window.relic!.readMarkdownFile({ path: filePath });
-
-    if (!file?.ok) return [];
-
-    const frontmatter = splitFrontmatterBlock(file.value.content);
-    if (!frontmatter) return [];
-
-    const plannedRange = readChartDateRange(frontmatter.yaml, "plannedDate") ?? readChartDateRange(frontmatter.yaml, "date");
-    const actualRange = readChartDateRange(frontmatter.yaml, "actualDate");
-    const statuses = readYamlArrayField(frontmatter.yaml, "status");
-    const fileName = file.value.name || filePath.split("/").at(-1)?.replace(/\.md$/, "") || filePath;
-    const result: GanttChartEntry[] = [];
-
-    if (plannedRange) {
-      result.push(dateRangeToEntry(filePath, fileName, "planned", plannedRange, statuses));
-    }
-
-    if (actualRange) {
-      result.push(dateRangeToEntry(filePath, fileName, "actual", actualRange, statuses));
-    }
-
-    return result;
-  }));
-
-  return entries
-    .flat()
-    .sort((a, b) =>
-      a.fileName.localeCompare(b.fileName, "ja") ||
-        a.path.localeCompare(b.path, "ja") ||
-        dateKindOrderForRenderer(a.dateKind) - dateKindOrderForRenderer(b.dateKind) ||
-        a.startValue - b.startValue ||
-        a.endValue - b.endValue
-    );
-}
-
-function dateRangeToEntry(
-  filePath: string,
-  fileName: string,
-  dateKind: "actual" | "planned",
-  range: { endDate: string; startDate: string },
-  statuses: string[] = []
-): GanttChartEntry {
-  return {
-    dateKind,
-    endLabel: range.endDate,
-    endValue: chartDateToDay(range.endDate),
-    fileName,
-    path: filePath,
-    startLabel: range.startDate,
-    startValue: chartDateToDay(range.startDate),
-    statuses
-  };
-}
-
-function readChartDateRange(yamlText: string, field: string): { endDate: string; startDate: string } | null {
-  const values = readYamlArrayField(yamlText, field).map(normalizeChartDateValue);
-  if (values.length !== 1 && values.length !== 2) return null;
-  if (values.some((value) => value === null)) return null;
-
-  const startDate = values[0];
-  const endDate = values[1] ?? startDate;
-  if (!startDate || !endDate) return null;
-  if (startDate > endDate) return null;
-
-  return { endDate, startDate };
-}
-
-function normalizeChartDateValue(value: string): string | null {
-  const trimmed = value.trim();
-
-  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
-    return isDateString(trimmed) ? trimmed : null;
-  }
-
-  const date = new Date(trimmed.replace(/\s*\([^)]*\)\s*$/, ""));
-  return Number.isNaN(date.getTime()) ? null : date.toISOString().slice(0, 10);
-}
-
-function chartDateToDay(value: string): number {
-  return Math.floor(new Date(`${value}T00:00:00.000Z`).getTime() / 86_400_000);
-}
-
-function dateKindOrderForRenderer(kind: GanttChartEntry["dateKind"]): number {
-  return kind === "actual" ? 1 : 0;
-}
-
-function fixedWorkspaceGanttCharts(charts: WorkspaceGanttChart[]): WorkspaceGanttChart[] {
-  const chronicle = charts.find((chart) => chart.source === "chronicle" || chart.id === "chronicle");
-  const date = charts.find((chart) => chart.source === "date" || chart.id === "date");
-
-  return [
-    {
-      entries: chronicle?.entries ?? [],
-      filePaths: chronicle?.filePaths ?? [],
-      id: "chronicle",
-      name: "chronicle",
-      source: "chronicle"
-    },
-    {
-      entries: date?.entries ?? [],
-      filePaths: date?.filePaths ?? [],
-      id: "date",
-      name: "date",
-      source: "date"
-    }
-  ];
-}
-
-function isWorkspaceGanttChart(value: unknown): value is WorkspaceGanttChart {
-  if (typeof value !== "object" || value === null) return false;
-
-  const chart = value as Record<string, unknown>;
-  return (
-    typeof chart.id === "string" &&
-    typeof chart.name === "string" &&
-    (chart.source === "chronicle" || chart.source === "date") &&
-    Array.isArray(chart.entries) &&
-    (!("filePaths" in chart) || Array.isArray(chart.filePaths))
-  );
-}
-
-function legacyChronicleYearToAxis(year: number): number {
-  return year < 0 ? year : year - 1;
-}
-
-function formatLegacyChronicleYear(year: number): string {
-  return year < 0 ? `−${Math.abs(year)}` : String(year);
-}
-
-async function updateGanttChartEntryFallback(input: UpdateGanttChartEntryInput): Promise<{ ok: true; value: WorkspaceGanttChart[] } | { error: { message: string }; ok: false }> {
-  if (!window.relic) return { error: { message: "チャートの変更を保存できませんでした。" }, ok: false };
-
-  const file = await window.relic.readMarkdownFile({ path: input.path });
-
-  if (!file.ok) return { error: file.error, ok: false };
-
-  const content = updateChartFrontmatter(file.value.content, input);
-  const write = await window.relic.writeMarkdownFile({ content, path: input.path });
-
-  if (!write.ok) return { error: write.error, ok: false };
-
-  const charts = await window.relic.getWorkspaceChronicle();
-
-  if (!charts.ok) return { error: charts.error, ok: false };
-
-  return { ok: true, value: charts.value };
-}
-
-function updateChartFrontmatter(content: string, input: UpdateGanttChartEntryInput): string {
-  const frontmatter = splitFrontmatterBlock(content);
-  const yamlText = frontmatter?.yaml ?? "";
-  const updates = chartFrontmatterUpdates(yamlText, input);
-  const nextYaml = Object.entries(updates).reduce(
-    (yaml, [field, values]) => setYamlArrayField(yaml, field, values),
-    yamlText
-  );
-
-  if (frontmatter) {
-    return `${frontmatter.open}${nextYaml}${frontmatter.close}${frontmatter.body}`;
-  }
-
-  return `---\n${nextYaml}---\n${content}`;
-}
-
-function splitFrontmatterBlock(content: string): { body: string; close: string; open: string; yaml: string } | null {
-  const open = /^---\r?\n/.exec(content);
-
-  if (!open) return null;
-
-  const rest = content.slice(open[0].length);
-  const close = /^---(?:\r?\n|$)/m.exec(rest);
-
-  if (!close || close.index === undefined) return null;
-
-  return {
-    body: rest.slice(close.index + close[0].length),
-    close: close[0],
-    open: open[0],
-    yaml: rest.slice(0, close.index)
-  };
-}
-
-function chartFrontmatterUpdates(yamlText: string, input: UpdateGanttChartEntryInput): Record<string, string[]> {
-  const start = Math.min(input.startValue, input.endValue);
-  const end = Math.max(input.startValue, input.endValue);
-
-  if (input.source === "date") {
-    const startDate = chartDayToDate(start);
-    const endDate = chartDayToDate(end);
-    const dateField = input.dateKind === "actual" ? "actualDate" : "plannedDate";
-    const updates: Record<string, string[]> = {
-      chronicle: rangeToStringArray(dateYear(startDate), dateYear(endDate)),
-      [dateField]: rangeToStringArray(startDate, endDate)
-    };
-
-    if (dateField === "plannedDate" && readYamlArrayField(yamlText, "date").length > 0) {
-      updates.date = updates.plannedDate;
-    }
-
-    return updates;
-  }
-
-  const originalPlannedDate = readYamlArrayField(yamlText, "plannedDate");
-  const originalLegacyDate = readYamlArrayField(yamlText, "date");
-  const originalActualDate = readYamlArrayField(yamlText, "actualDate");
-  const originalStartYear = chartAxisToYear(input.originalStartValue);
-  const originalEndYear = chartAxisToYear(input.originalEndValue);
-  const startYear = chartAxisToYear(start);
-  const endYear = chartAxisToYear(end);
-  const updates: Record<string, string[]> = {
-    chronicle: rangeToStringArray(startYear, endYear)
-  };
-
-  const shiftDateRange = (values: string[]): string[] | null => {
-    if (values.length !== 1 && values.length !== 2) return null;
-
-    const startDate = values[0];
-    const endDate = values[1] ?? startDate;
-
-    if (isDateString(startDate) && isDateString(endDate)) {
-      return rangeToStringArray(
-        shiftDateYears(startDate, startYear - originalStartYear),
-        shiftDateYears(endDate, endYear - originalEndYear)
-      );
-    }
-
-    return null;
-  };
-
-  const plannedDate = shiftDateRange(originalPlannedDate.length > 0 ? originalPlannedDate : originalLegacyDate);
-  const actualDate = shiftDateRange(originalActualDate);
-
-  if (plannedDate) updates.plannedDate = plannedDate;
-  if (plannedDate && originalLegacyDate.length > 0) updates.date = plannedDate;
-  if (actualDate) updates.actualDate = actualDate;
-
-  return updates;
-}
-
-function setYamlArrayField(yamlText: string, field: string, values: string[]): string {
-  const line = `${field}: [${values.join(", ")}]\n`;
-  const pattern = new RegExp(`^${escapeRegExp(field)}\\s*:.*(?:\\r?\\n|$)`, "m");
-
-  if (pattern.test(yamlText)) {
-    return yamlText.replace(pattern, line);
-  }
-
-  return `${yamlText}${yamlText.endsWith("\n") || yamlText.length === 0 ? "" : "\n"}${line}`;
-}
-
-function readYamlArrayField(yamlText: string, field: string): string[] {
-  const pattern = new RegExp(`^${escapeRegExp(field)}\\s*:\\s*\\[([^\\]]*)\\]`, "m");
-  const match = pattern.exec(yamlText);
-
-  if (!match) return [];
-
-  return match[1]
-    .split(",")
-    .map((value) => value.trim().replace(/^['"]|['"]$/g, ""))
-    .filter(Boolean);
-}
-
-function rangeToStringArray(start: string | number, end: string | number): string[] {
-  return start === end ? [String(start)] : [String(start), String(end)];
-}
-
-function chartAxisToYear(value: number): number {
-  return value < 0 ? value : value + 1;
-}
-
-function chartDayToDate(value: number): string {
-  return new Date(value * 86_400_000).toISOString().slice(0, 10);
-}
-
-function isDateString(value: string): boolean {
-  return /^\d{4}-\d{2}-\d{2}$/.test(value) && chartDayToDate(Math.floor(new Date(`${value}T00:00:00.000Z`).getTime() / 86_400_000)) === value;
-}
-
-function shiftDateYears(value: string, deltaYears: number): string {
-  if (deltaYears === 0) return value;
-
-  const date = new Date(`${value}T00:00:00.000Z`);
-  const month = date.getUTCMonth();
-  const day = date.getUTCDate();
-  const nextYear = date.getUTCFullYear() + deltaYears;
-  const lastDay = new Date(Date.UTC(nextYear, month + 1, 0)).getUTCDate();
-  const next = new Date(Date.UTC(nextYear, month, Math.min(day, lastDay)));
-
-  return next.toISOString().slice(0, 10);
-}
-
-function dateYear(value: string): number {
-  return Number(value.slice(0, 4));
-}
-
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 // ────────────────────────────────────────────────

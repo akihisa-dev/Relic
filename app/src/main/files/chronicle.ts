@@ -1,8 +1,9 @@
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-import type { GanttChartDateKind, GanttChartEntry, GanttChartSettings, UpdateGanttChartEntryInput, WorkspaceGanttChart, WorkspaceTreeNode } from "../../shared/ipc";
+import type { GanttChartDateKind, GanttChartEntry, GanttChartSettings, UpdateGanttChartEntryInput, WorkspaceGanttChart } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
+import { collectMarkdownPaths } from "../../shared/workspaceTree";
 import { readWorkspaceFileTree } from "./fileTree";
 import { parseFrontmatter, updateFrontmatter } from "./frontmatter";
 import { resolveWorkspaceRelativePath } from "./paths";
@@ -336,10 +337,4 @@ function yearToAxis(year: number): number {
 
 function formatYear(year: number): string {
   return year < 0 ? `−${Math.abs(year)}` : String(year);
-}
-
-function collectMarkdownPaths(nodes: WorkspaceTreeNode[]): string[] {
-  return nodes.flatMap((node) =>
-    node.type === "file" ? [node.path] : collectMarkdownPaths(node.children)
-  );
 }

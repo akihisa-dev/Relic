@@ -3,11 +3,11 @@ import path from "node:path";
 
 import type {
   SearchMode,
-  WorkspaceSearchResult,
-  WorkspaceTreeNode
+  WorkspaceSearchResult
 } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { parseMarkdownTags } from "../../shared/tags";
+import { collectMarkdownPaths } from "../../shared/workspaceTree";
 import { extractAliases } from "./aliases";
 import { parseFrontmatter } from "./frontmatter";
 import { readWorkspaceFileTree } from "./fileTree";
@@ -152,10 +152,4 @@ function formatFrontmatterValue(value: unknown): string {
   }
 
   return String(value);
-}
-
-function collectMarkdownPaths(nodes: WorkspaceTreeNode[]): string[] {
-  return nodes.flatMap((node) =>
-    node.type === "file" ? [node.path] : collectMarkdownPaths(node.children)
-  );
 }

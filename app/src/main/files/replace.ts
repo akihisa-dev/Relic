@@ -3,10 +3,10 @@ import path from "node:path";
 
 import type {
   ReplaceInFileResult,
-  SearchAndReplaceMatch,
-  WorkspaceTreeNode
+  SearchAndReplaceMatch
 } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
+import { collectMarkdownPaths } from "../../shared/workspaceTree";
 import { readWorkspaceFileTree } from "./fileTree";
 import { resolveWorkspaceRelativePath } from "./paths";
 
@@ -175,10 +175,4 @@ export async function applySearchAndReplace(
 
 function escapeRegExp(str: string): string {
   return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-function collectMarkdownPaths(nodes: WorkspaceTreeNode[]): string[] {
-  return nodes.flatMap((node) =>
-    node.type === "file" ? [node.path] : collectMarkdownPaths(node.children)
-  );
 }

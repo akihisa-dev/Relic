@@ -4,7 +4,7 @@ import path from "node:path";
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { updateLinksForFolderRename } from "./linkUpdater";
 import { validateBaseName } from "./names";
-import { resolveWorkspaceRelativePath } from "./paths";
+import { resolveWorkspaceRelativePath, toWorkspaceRelativePath } from "./paths";
 
 export interface CreatedFolder {
   path: string;
@@ -181,8 +181,4 @@ function isMissingFileError(error: unknown): boolean {
     "code" in error &&
     (error as { code?: string }).code === "ENOENT"
   );
-}
-
-function toWorkspaceRelativePath(filePath: string): string {
-  return filePath.split(path.sep).join("/");
 }

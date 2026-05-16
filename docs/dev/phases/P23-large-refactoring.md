@@ -60,4 +60,25 @@ Relicの大規模リファクタリングフェーズの正本。
 - 方向性: P23は、既存挙動を保ちながらコード構造を整理する大規模リファクタリングフェーズとして進める
 - 実施: `docs/dev/phases.md` の現在フェーズをP23へ変更し、P23正本を追加した
 - 確認: コード実装には入らず、フェーズ開始文書だけを更新する
-- 残り: 最初に扱うリファクタリング対象、変更範囲、検証方法をユーザー確認してから実装する
+- 残り: 最初のリファクタリング対象は共通処理抽出として実施済み。以後は次のリファクタリング単位ごとに対象、変更範囲、検証方法を確認してから実装する
+
+### 共通処理抽出
+
+- 方向性: 最初のリファクタリング単位は、挙動を変えずにワークスペースツリー走査、mainプロセスのワークスペース相対パス変換、renderer側のパス表示・結合ヘルパーを共通化する
+- 実施: `collectMarkdownPaths` を shared の共通処理へ集約し、main側の重複した `toWorkspaceRelativePath` を `app/src/main/files/paths.ts` へ集約した。renderer側は `app/src/renderer/workspacePaths.ts` をパス表示・結合ヘルパーの参照先にした
+- 確認: `pnpm typecheck` と `pnpm test` が通過した。テストは34ファイル、324件が通過した
+- 残り: `Editor.tsx`、`App.tsx`、`ChronicleSidebar.tsx` の大きな責務分割は次のリファクタリング単位として扱う
+
+### Appチャート補助処理抽出
+
+- 方向性: `App.tsx` 末尾に残っていたチャート正規化、Markdown frontmatter からのdateチャート補完、チャート更新IPC未提供時の保存fallbackをrenderer内の純粋寄りモジュールへ分離する
+- 実施: `app/src/renderer/ganttChartData.ts` を追加し、`App.tsx` は `window.relic` から取得した読み書き関数を渡す呼び出し側に限定した。IPC、preload API、UI、保存形式は変更しない
+- 確認: `pnpm typecheck` と `pnpm test` が通過した。テストは35ファイル、332件が通過した
+- 残り: `ChronicleSidebar.tsx` の描画・ドラッグ処理分割、`Editor.tsx` のCodeMirror/frontmatter/table責務分割、main側 `chronicle.ts` との重複整理は別単位として扱う
+
+### Chronicleチャート計算処理抽出
+
+- 方向性: `ChronicleSidebar.tsx` のReact描画と、行生成・絞り込み・ソート・軸・目盛り・minimap・ドラッグ差分計算を分離し、チャート計算を純粋関数として検証できる形にする
+- 実施: `app/src/renderer/chronicleTimeline.ts` を追加し、`ChronicleSidebar.tsx` にはReact component、hook、ref、pointer event handler、JSXを残した。IPC、preload API、UI、保存形式は変更しない
+- 確認: `pnpm typecheck` と `pnpm test` が通過した。テストは36ファイル、338件が通過した
+- 残り: `ChronicleSidebar.tsx` の描画用小コンポーネント分割、`Editor.tsx` のCodeMirror/frontmatter/table責務分割、`App.tsx` の追加分割、main側 `chronicle.ts` との重複整理は別単位として扱う
