@@ -72,6 +72,61 @@ AIはこのフェーズを前提にユーザーへ接する。
 
 ---
 
+## 残り実施リスト
+
+P23の残りは、実装単位で12件と見積もる。
+内訳は、正本整備1件、主要リファクタリング10件、締め確認1件とする。
+
+以後はこの順番で1件ずつ進める。
+各単位は、対象差分とこのP23正本をまとめて確認し、日本語コミットを作る。
+UI、保存形式、IPC/preload API、store状態構造、既存import経路は変更しない。
+
+1. [x] **P23残り実施リスト正本化**
+   - `docs/dev/phases/P23-large-refactoring.md` に残りリスト、順序、完了条件を追加する。
+   - この追加自体を1コミットにする。
+2. [ ] **App.tsx orchestrator整理**
+   - `App.tsx` に残るstore接続、pane/tab組み立て、workspace effect、callback束を追加hook/modelへ分離する。
+   - UI、store状態構造、IPC/preload APIは変更しない。
+3. [ ] **Editor table widget追加分割**
+   - `editorTableWidget.ts` のDOM生成、active state、drag/drop、context menu、edge add buttonを内部moduleへ分ける。
+   - Markdown table保存形式、CSS class、menu文言、操作順は変更しない。
+4. [ ] **Editor frontmatter widget追加分割**
+   - `editorFrontmatterWidget.ts` のrow rendering、input生成、field更新、collapse decorationを分ける。
+   - YAML仕様、UI文言、CSS class、frontmatter保存形式は変更しない。
+5. [ ] **main IPC handler追加分割**
+   - `workspaceHandlers.ts`、`fileHandlers.ts`、`toolHandlers.ts` のhandler登録と個別処理をdomain別moduleへ分ける。
+   - IPCチャンネル名、戻り値、エラーdetails、preload APIは変更しない。
+6. [ ] **editorStore action分離**
+   - `editorStore.ts` のpane/tab操作、panel/gantt/file tab操作、履歴更新補助を純粋helperへ分ける。
+   - Zustand state shapeと既存hook利用方法は変更しない。
+7. [ ] **ChronicleChartGrid描画追加分割**
+   - `ChronicleChartGrid.tsx` と `chronicleChartParts.tsx` のname column、tracks、entry bar、today/guide描画を整理する。
+   - DOM class、ARIA、drag挙動、表示文言は変更しない。
+8. [ ] **Graph layout model追加分割**
+   - `graphLayout.ts` のfilter/group/stats、layout初期化、simulation tick、viewBoxをmodule分割する。
+   - 既存export経路はfacadeで維持する。
+9. [ ] **Gantt/frontmatter data処理分割**
+   - `ganttChartData.ts` のchart正規化、frontmatter read/write、legacy chronicle変換を分ける。
+   - 保存形式とfallback挙動は変更しない。
+10. [ ] **main file domain追加分割**
+    - `markdownFiles.ts`、`linkUpdater.ts`、`folders.ts`、`replace.ts` 周辺で、ファイル名検証、path変換、リンク更新、読み書き操作を必要範囲で整理する。
+    - ファイル操作仕様、リンク更新仕様、エラーコードは変更しない。
+11. [ ] **残存300行級UI/modelの仕上げ**
+    - `RailNavigation.tsx`、`ToolsSidebarSections.tsx`、`DashboardPanel.tsx` / `dashboardModel.ts`、`useWorkspaceFileMutationActions.ts` など、300行前後でまだ責務が混ざる箇所を最後に小分けで処理する。
+    - ここは各ファイルごとに小さいコミットへ分ける。
+12. [ ] **P23締め確認**
+    - 大型ファイル一覧、既存テスト、`pnpm typecheck`、`pnpm test`、`git diff --check` で最終確認する。
+    - P23正本に「完了判断・残した意図的な未分割箇所・実アプリ未確認理由」を追記する。
+
+完了条件:
+
+- 各実装単位で、対象ユニット/コンポーネントテスト、影響範囲の既存回帰テスト、`pnpm typecheck`、`pnpm test`、`git diff --check` を確認する。
+- 文書だけの単位では、`git diff --check` を最低確認とし、コードテストは不要と判断した理由を完了報告に書く。
+- 実アプリ確認は、UI/仕様を変えない内部分離では原則未実施とし、自動テストで差分が出た場合だけ必要範囲を判断する。
+- P23の残量は無限に細かく分けず、現時点で300行超または責務混在が明確な箇所を完了対象にする。
+
+---
+
 ## 進捗
 
 このフェーズでは、ユーザーが指定または合意したリファクタリング単位ごとに、次回作業時の判断に必要な状態だけを記録する。
@@ -300,3 +355,10 @@ AIはこのフェーズを前提にユーザーへ接する。
 - 実施: `toolbarModel.ts` を追加し、heading level、panel class、表サイズ正規化、表Markdown生成を純粋処理へ移した。`useToolbarActions.ts` を追加し、target view記憶、panel開閉、各Markdown操作handlerをhook化した。`ToolbarButtonGroups.tsx` を追加し、inline、block、list、insertの各ボタン群を分け、`Toolbar.tsx` は既存exportを維持する組み立て役にした
 - 確認: `pnpm exec vitest run src/renderer/toolbarModel.test.ts src/renderer/components/Toolbar.test.tsx src/renderer/App.test.tsx`、`pnpm typecheck`、`pnpm test`、`git diff --check` が通過した。全体テストは75ファイル、501件が通過した
 - 残り: 今回指定されたToolbar分割単位は完了。実アプリ確認はUI/仕様を変えない内部component/hook/model分離のため未実施
+
+### P23残り実施リスト正本化
+
+- 方向性: P23の残りを無限に細分化せず、現時点で300行超または責務混在が明確な箇所を、正本上の実施リストとして固定する
+- 実施: `残り実施リスト` を追加し、正本整備1件、主要リファクタリング10件、締め確認1件の順番と完了条件を明記した
+- 確認: 文書更新のみのため、`git diff --check` を確認する。コードテストは不要
+- 残り: 次は実施リスト2件目の `App.tsx orchestrator整理` から順番に進める
