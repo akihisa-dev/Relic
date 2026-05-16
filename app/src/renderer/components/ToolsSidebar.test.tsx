@@ -1,57 +1,9 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { defaultFeatureToggles } from "../../shared/ipc";
+import { makeRelicApi } from "../../test/rendererTestUtils";
 import { I18nProvider } from "../i18n";
 import { ToolsSidebar } from "./ToolsSidebar";
-
-function makeRelicApi(overrides: Partial<typeof window.relic> = {}): typeof window.relic {
-  return {
-    applySearchAndReplace: vi.fn(),
-    createFolder: vi.fn(),
-    createLinkedMarkdownFile: vi.fn(),
-    createMarkdownFile: vi.fn(),
-    createNewWorkspace: vi.fn(),
-    duplicateMarkdownFile: vi.fn(),
-    generateTableOfContents: vi.fn(),
-    generateTitleList: vi.fn(),
-    getAppInfo: vi.fn(),
-    getBacklinks: vi.fn(),
-    getEditorSettings: vi.fn(),
-    getFeatureToggles: vi.fn().mockResolvedValue({ ok: true, value: defaultFeatureToggles }),
-    getFrontmatterTemplates: vi.fn(),
-    getFrontmatterValueCandidates: vi.fn(),
-    getUserDefinedFields: vi.fn(),
-    getWorkspaceState: vi.fn(),
-    getWorkspaceTags: vi.fn(),
-    mergeFiles: vi.fn().mockResolvedValue({ ok: true, value: "merged.md" }),
-    moveFolder: vi.fn(),
-    moveItemToTrash: vi.fn(),
-    moveMarkdownFile: vi.fn(),
-    openWorkspace: vi.fn(),
-    readClipboardText: vi.fn().mockReturnValue(""),
-    readMarkdownFile: vi.fn(),
-    removeWorkspace: vi.fn(),
-    renameFolder: vi.fn(),
-    renameMarkdownFile: vi.fn(),
-    replaceInFile: vi.fn(),
-    revealWorkspaceItem: vi.fn(),
-    saveEditorSettings: vi.fn(),
-    saveFeatureToggles: vi.fn(),
-    saveFrontmatterTemplates: vi.fn(),
-    saveWorkspaceGanttCharts: vi.fn(),
-    saveUserDefinedFields: vi.fn(),
-    searchAndReplace: vi.fn(),
-    searchWorkspace: vi.fn(),
-    splitFileByHeading: vi.fn(),
-    switchWorkspace: vi.fn(),
-    togglePin: vi.fn(),
-    updateGanttChartEntry: vi.fn(),
-    writeClipboardText: vi.fn(),
-    writeMarkdownFile: vi.fn(),
-    ...overrides
-  } as typeof window.relic;
-}
 
 function renderToolsSidebar(language: "en" | "ja" = "en", workspacePath: string | null = "/tmp/notes") {
   return render(
