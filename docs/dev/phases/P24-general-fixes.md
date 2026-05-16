@@ -125,3 +125,10 @@ P24では、事前に固定した長い実施リストは置かない。
 - 実施: `chronicle` 専用だったミニマップ表示・項目計算・ミニマップ操作をdateチャートでも使うようにした。ミニマップのアクセシブル名は年表専用ではなくチャート共通の文言に変更した。date軸では、年・月のセル枠を維持したまま、ラベル文字だけを横スクロール位置に追従させ、区間内で表示中の年月が分かるようにした
 - 確認: `pnpm exec vitest run src/renderer/components/ChronicleMinimap.test.tsx src/renderer/hooks/useChronicleChartModel.test.tsx src/renderer/hooks/useChronicleChartViewport.test.tsx src/renderer/App.test.tsx`、`pnpm exec vitest run src/renderer/chronicleTimelineAxis.test.ts src/renderer/components/ChronicleChartGrid.test.tsx src/renderer/App.test.tsx`、`pnpm typecheck`、`pnpm test`、`git diff --check` が通過した。全体テストは最終確認時点で78ファイル、519件が通過した
 - 残り: 実ワークスペースを開いたElectron実機目視は未実施。チャートビュー全体のスクロール、ジャンプ、ドラッグ、ミニマップ操作のなめらかさ改善は未実施で、次の修正単位として扱う
+
+### チャートビューの移動なめらかさ改善
+
+- 方向性: チャートビュー全体のスクロール、ジャンプ、ドラッグ、ミニマップ操作の移動をなめらかにする。対象は既存チャートビュー内の移動処理だけに限定し、既存データ形式、IPC/preload API、store状態構造、チャート固定単位、バー編集挙動は変えない
+- 実施: `useChronicleChartViewport` で、今日/フォーカス/左右ジャンプ/ミニマップクリックの移動を `requestAnimationFrame` による短いスムーズスクロールへ変更した。チャート面ドラッグとネイティブスクロール中の `scrollLeft` 状態反映は1フレーム単位に間引き、ミニマップドラッグ中は操作位置へ即時追従するようにした。`prefers-reduced-motion` では即時移動へ戻す
+- 確認: `pnpm exec vitest run src/renderer/hooks/useChronicleChartViewport.test.tsx src/renderer/components/ChronicleChartGrid.test.tsx src/renderer/components/ChronicleMinimap.test.tsx src/renderer/App.test.tsx`、`pnpm typecheck`、`pnpm test`、`git diff --check` が通過した。全体テストは78ファイル、520件が通過した
+- 残り: 実ワークスペースを開いたElectron実機目視は未実施。今回の対象だったスクロール、ジャンプ、ドラッグ、ミニマップ操作の自動テスト上の確認は完了

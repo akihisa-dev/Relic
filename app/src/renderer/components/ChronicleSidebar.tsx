@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import type { ReactElement } from "react";
 
 import type { UpdateGanttChartEntryInput, WorkspaceGanttChart } from "../../shared/ipc";
@@ -54,6 +54,9 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdate
     resetKey: model.activeChart?.id ?? null,
     unitWidth: model.unitWidth
   });
+  const handleJump = useCallback((value: number): void => {
+    viewport.scrollToTimelineValue(value, "smooth");
+  }, [viewport.scrollToTimelineValue]);
 
   return (
     <div className="chronicle-panel">
@@ -93,7 +96,7 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdate
         nameColumnWidth={model.nameColumnWidth}
         onChartPointerDown={viewport.startChartPan}
         onChartScroll={viewport.handleChartScroll}
-        onJump={viewport.scrollToTimelineValue}
+        onJump={handleJump}
         onOpenFile={onOpenFile}
         onStartEntryEdit={entryDrag.startEntryEdit}
         rows={model.rows}
