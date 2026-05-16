@@ -272,3 +272,10 @@ AIはこのフェーズを前提にユーザーへ接する。
 - 実施: `filesSidebarModel.ts` を追加し、frontmatter検索field候補、value候補、filtering判定、検索mode表示を純粋処理へ移した。`FilesSidebarSearch.tsx`、`FilesSearchResults.tsx`、`FilesSidebarTreeSection.tsx`、`FilesWorkspaceActions.tsx` を追加し、`FilesSidebar.tsx` は選択状態、展開要求、子component組み立てを中心にした
 - 確認: `pnpm exec vitest run src/renderer/filesSidebarModel.test.ts src/renderer/components/FilesSidebarSearch.test.tsx src/renderer/components/FilesSearchResults.test.tsx src/renderer/components/FileTree.test.tsx src/renderer/App.test.tsx`、`pnpm typecheck`、`pnpm test`、`git diff --check` が通過した。全体テストは70ファイル、485件が通過した
 - 残り: 今回指定されたFilesSidebar分割単位は完了。実アプリ確認はUI/仕様を変えない内部component/model分離のため未実施
+
+### ToolsSidebarツールフォーム責務分離
+
+- 方向性: UI文言、CSS class名、DOM構造、各フォームの入力項目、IPC/preload API、保存形式、status文言を変えず、`ToolsSidebar.tsx` に残っていたtitle list、TOC、merge、splitのdraft状態、IPC入力生成、status整形、section描画を内部moduleへ分離する
+- 実施: `toolsSidebarModel.ts` を追加し、各ツールdraft初期値、IPC入力生成、成功/失敗status整形、status error判定を純粋処理へ移した。`useToolsSidebarState.ts` を追加し、draft状態と実行handlerをhook化した。`ToolsSidebarSections.tsx` を追加し、title list、TOC、merge、split、共通status表示を分け、`ToolsSidebar.tsx` はworkspace有無分岐とsection組み立てに絞った
+- 確認: `pnpm exec vitest run src/renderer/toolsSidebarModel.test.ts src/renderer/components/ToolsSidebar.test.tsx src/renderer/App.test.tsx`、`pnpm typecheck`、`pnpm test`、`git diff --check` が通過した。全体テストは71ファイル、491件が通過した
+- 残り: 今回指定されたToolsSidebar分割単位は完了。実アプリ確認はUI/仕様を変えない内部component/hook/model分離のため未実施
