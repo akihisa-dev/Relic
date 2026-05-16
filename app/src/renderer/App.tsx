@@ -1,22 +1,33 @@
-import { EditorView } from "@codemirror/view";
+import type { EditorView } from "@codemirror/view";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { MouseEvent, ReactElement, ReactNode } from "react";
 
 import type { WorkspaceState } from "../shared/ipc";
 import type { AppLinkContextMenu } from "./appLinks";
+import {
+  activePanelTabIdsForPanes,
+  enabledRailViewsForFeatures,
+  isChartTabActiveInPanes,
+  isChartTabOpenInTabs,
+  openFilePathsForTabs,
+  openPanelTabIdsForTabs,
+  panelLabelsForTranslator,
+  registeredWorkspacesForState,
+  splitRailViews,
+  type AppRailView
+} from "./appShellModel";
+import { AppEditorWorkspace } from "./components/AppEditorWorkspace";
+import { AppFilesSidebar } from "./components/AppFilesSidebar";
 import { AppOverlays } from "./components/AppOverlays";
-import { AppRightPanel } from "./components/AppRightPanel";
-import { AppTopBar } from "./components/AppTopBar";
+import { AppRail } from "./components/AppRail";
+import { AppStatusBar } from "./components/AppStatusBar";
 import { GanttChartView } from "./components/ChronicleSidebar";
 import { DashboardPanel } from "./components/DashboardPanel";
-import { FilesSidebar } from "./components/FilesSidebar";
 import { FrontmatterSidebar } from "./components/FrontmatterSidebar";
 import { GraphPanel } from "./components/GraphSidebar";
-import { PaneView } from "./components/PaneView";
 import { SettingsSidebar } from "./components/SettingsSidebar";
 import { ToolsSidebar } from "./components/ToolsSidebar";
-import { Toolbar } from "./components/Toolbar";
-import { IconFiles, RailWorkspaceSwitcher, sidebarViewDefs } from "./components/RailNavigation";
+import { sidebarViewDefs } from "./components/RailNavigation";
 import { createTranslator, I18nProvider } from "./i18n";
 import { useActiveDocumentContext } from "./hooks/useActiveDocumentContext";
 import { useAppKeyboardShortcuts } from "./hooks/useAppKeyboardShortcuts";
@@ -36,7 +47,7 @@ import { useWorkspaceGanttCharts } from "./hooks/useWorkspaceGanttCharts";
 import { useWorkspaceRenameRailHold } from "./hooks/useWorkspaceRenameRailHold";
 import { useWorkspaceSearchState } from "./hooks/useWorkspaceSearchState";
 import { useEditorStore, type PaneId, type PanelTabKind } from "./store/editorStore";
-import { useUiStore, type RightPanelView, type SidebarView } from "./store/uiStore";
+import { useUiStore, type RightPanelView } from "./store/uiStore";
 import { collectMarkdownPaths } from "./workspacePaths";
 import "./styles.css";
 
@@ -132,7 +143,7 @@ export function App(): ReactElement {
   }, [isWorkspaceRenameActive, toggleSidebarState]);
 
   const t = useMemo(() => createTranslator(editorSettings.language), [editorSettings.language]);
-  const sidebarViews = useMemo(
+  const sidebarViews = useMemo<Array<AppRailView<ReactElement>>>(
     () =>
       sidebarViewDefs.map((view) => ({
         ...view,
@@ -334,12 +345,7 @@ export function App(): ReactElement {
   });
 
   const registeredWorkspaces = useMemo(
-    () =>
-      workspaceState && workspaceState.workspaces.length > 0
-        ? workspaceState.workspaces
-        : workspaceState?.activeWorkspace
-          ? [workspaceState.activeWorkspace]
-          : [],
+    () => registeredWorkspacesForState(workspaceState),
     [workspaceState]
   );
   const pinnedPathSet = useMemo(
@@ -347,11 +353,7 @@ export function App(): ReactElement {
     [workspaceState?.pinnedPaths]
   );
   const openFilePathSet = useMemo(
-    () => new Set(
-      Object.values(tabs)
-        .filter((tab) => tab.kind === "file")
-        .map((tab) => tab.path)
-    ),
+    () => openFilePathsForTabs(tabs),
     [tabs]
   );
 
@@ -388,47 +390,28 @@ export function App(): ReactElement {
     toggleTypewriterMode
   });
 
-  const panelLabels = useMemo<Record<PanelTabKind, string>>(() => ({
-    dashboard: t("nav.dashboard"),
-    frontmatter: t("nav.frontmatter"),
-    graph: t("nav.graph"),
-    settings: t("nav.settings"),
-    tools: t("nav.tools")
-  }), [t]);
+  const panelLabels = useMemo(() => panelLabelsForTranslator(t), [t]);
 
-  const openPanelTabIds = useMemo(() => new Set(
-    Object.values(tabs)
-      .filter((tab) => tab.kind === "panel")
-      .map((tab) => tab.panel)
-  ), [tabs]);
-  const activePanelTabIds = useMemo(() => new Set(
-    [leftPane.activeTabId, rightPane.activeTabId]
-      .map((tabId) => tabId ? tabs[tabId] : null)
-      .filter((tab) => tab?.kind === "panel")
-      .map((tab) => tab.panel)
-  ), [leftPane.activeTabId, rightPane.activeTabId, tabs]);
+  const openPanelTabIds = useMemo(() => openPanelTabIdsForTabs(tabs), [tabs]);
+  const activePanelTabIds = useMemo(
+    () => activePanelTabIdsForPanes(leftPane, rightPane, tabs),
+    [leftPane, rightPane, tabs]
+  );
   const isChartTabOpen = useMemo(
-    () => Object.values(tabs).some((tab) => tab.kind === "gantt" && tab.chartId === "charts"),
+    () => isChartTabOpenInTabs(tabs),
     [tabs]
   );
   const isChartTabActive = useMemo(
-    () => [leftPane.activeTabId, rightPane.activeTabId].some((tabId) => {
-      const tab = tabId ? tabs[tabId] : null;
-      return tab?.kind === "gantt" && tab.chartId === "charts";
-    }),
-    [leftPane.activeTabId, rightPane.activeTabId, tabs]
+    () => isChartTabActiveInPanes(leftPane, rightPane, tabs),
+    [leftPane, rightPane, tabs]
   );
-  const enabledRailViews = useMemo(() => sidebarViews.filter((view) => {
-    if (view.id === "tools" && !featureToggles.tools) return false;
-    if (view.id === "frontmatter" && !featureToggles.frontmatter) return false;
-    return true;
-  }), [featureToggles.frontmatter, featureToggles.tools, sidebarViews]);
-  const primaryRailViews = enabledRailViews.filter((view) =>
-    view.id === "files" || view.id === "dashboard" || view.id === "graph"
+  const enabledRailViews = useMemo(
+    () => enabledRailViewsForFeatures(sidebarViews, featureToggles),
+    [featureToggles, sidebarViews]
   );
-  const chartRailView = enabledRailViews.find((view) => view.id === "chronicle");
-  const panelRailViews = enabledRailViews.filter((view) =>
-    view.id !== "files" && view.id !== "dashboard" && view.id !== "graph" && view.id !== "chronicle"
+  const { chartRailView, panelRailViews, primaryRailViews } = useMemo(
+    () => splitRailViews(enabledRailViews),
+    [enabledRailViews]
   );
 
   useEffect(() => {
@@ -568,281 +551,151 @@ export function App(): ReactElement {
     <div className="app-shell">
       <div className="title-bar" />
       <div className="workspace">
-        {/* 縦アイコンナビ（レール） */}
-        <nav
-          aria-label={t("nav.viewSwitcher")}
-          className={`rail${isWorkspaceRenameActive || isWorkspaceRenameHoldingRail ? " rail--workspace-editing" : ""}`}
-        >
-          {primaryRailViews.map((view) => (
-              <button
-                aria-label={view.label}
-                className={`rail-button${view.id === "graph" || view.id === "dashboard" ? activePanelTabIds.has(view.id as PanelTabKind) ? " active" : openPanelTabIds.has(view.id as PanelTabKind) ? " open" : "" : view.id === activeSidebarView && isSidebarOpen ? " active" : ""}`}
-                key={view.id}
-                onClick={(event) => {
-                  if (view.id === "graph" || view.id === "dashboard") {
-                    handleRailPanelButton(view.id as PanelTabKind, view.label, event);
-                    return;
-                  }
+        <AppRail
+          activePanelTabIds={activePanelTabIds}
+          activeSidebarView={activeSidebarView}
+          activeWorkspaceId={workspaceState?.activeWorkspace?.id ?? null}
+          chartRailView={chartRailView}
+          isChartTabActive={isChartTabActive}
+          isChartTabOpen={isChartTabOpen}
+          isSidebarOpen={isSidebarOpen}
+          isWorkspaceRenameActive={isWorkspaceRenameActive}
+          isWorkspaceRenameHoldingRail={isWorkspaceRenameHoldingRail}
+          onChartButton={handleRailChartButton}
+          onCloseSidebar={closeSidebar}
+          onPanelButton={handleRailPanelButton}
+          onRemoveWorkspace={handleRemoveWorkspace}
+          onRenameActiveChange={setIsWorkspaceRenameActive}
+          onRenameComplete={holdWorkspaceRailAfterRename}
+          onRenameWorkspace={handleRenameWorkspace}
+          onSetSidebarView={setSidebarView}
+          onSwitchWorkspace={handleSwitchWorkspace}
+          openPanelTabIds={openPanelTabIds}
+          panelRailViews={panelRailViews}
+          primaryRailViews={primaryRailViews}
+          registeredWorkspaces={registeredWorkspaces}
+          renameLabel={t("files.rename")}
+          removeWorkspaceLabel={(name) => t("files.removeWorkspace", { name })}
+          viewSwitcherLabel={t("nav.viewSwitcher")}
+          workspacesLabel={t("files.registeredWorkspaces")}
+        />
 
-                  if (view.id === "files" && activeSidebarView === "files" && isSidebarOpen) {
-                    closeSidebar();
-                    return;
-                  }
+        <AppFilesSidebar
+          activeSidebarView={activeSidebarView}
+          fileSelectionCount={fileSelectionCount}
+          isCreatingFile={isCreatingFile}
+          isCreatingFolder={isCreatingFolder}
+          isCreatingWorkspace={isCreatingWorkspace}
+          isOpeningWorkspace={isOpeningWorkspace}
+          isSearching={isSearching}
+          isSidebarOpen={isSidebarOpen}
+          isSidebarResizing={isSidebarResizing}
+          onCreateFile={handleCreateFileFromSidebar}
+          onCreateFileInFolder={handleCreateFileInFolder}
+          onCreateFolder={handleCreateFolderFromSidebar}
+          onCreateFolderInFolder={handleCreateFolderInFolder}
+          onCreateWorkspace={handleCreateNewWorkspace}
+          onDeleteItem={handleDeleteTreeItem}
+          onDeleteItems={handleDeleteTreeItems}
+          onDuplicateFile={handleDuplicateTreeFile}
+          onMoveFile={handleMoveFile}
+          onMoveFolder={handleMoveFolder}
+          onMoveItems={handleMoveTreeItems}
+          onOpenFile={handleSidebarOpenFile}
+          onOpenInOtherPane={isSplit ? openTreeFileInOtherPane : undefined}
+          onOpenWorkspace={handleOpenWorkspace}
+          onRevealItem={handleRevealWorkspaceItem}
+          onRenameItem={handleRenameTreeItem}
+          onSearchFrontmatterFieldChange={setSearchFrontmatterField}
+          onSearchModeChange={setSearchMode}
+          onSearchQueryChange={setSearchQuery}
+          onSelectFolder={handleSelectFolder}
+          onSelectedCountChange={setFileSelectionCount}
+          onTogglePin={handleTogglePin}
+          openFilePaths={openFilePathSet}
+          searchError={searchError}
+          searchFocusRequest={fileSearchFocusRequest}
+          searchFrontmatterCandidates={frontmatterCandidates}
+          searchFrontmatterField={searchFrontmatterField}
+          searchMode={searchMode}
+          searchQuery={searchQuery}
+          searchResults={searchResults}
+          selectedCountLabel={t("files.selectedCount", { count: fileSelectionCount })}
+          sidebarViews={sidebarViews}
+          sidebarWidth={sidebarWidth}
+          startSidebarResize={startSidebarResize}
+          workspaceState={workspaceState}
+        />
 
-                  setSidebarView(view.id as SidebarView);
-                }}
-                title={view.label}
-                type="button"
-              >
-                {view.id === "files" ? <IconFiles sidebarOpen={isSidebarOpen} /> : view.icon}
-                <span className="rail-button-label">{view.label}</span>
-              </button>
-            ))}
-          {chartRailView ? (
-            <button
-              aria-label={chartRailView.label}
-              className={`rail-button${isChartTabActive ? " active" : isChartTabOpen ? " open" : ""}`}
-              onClick={(event) => handleRailChartButton(chartRailView.label, event)}
-              title={chartRailView.label}
-              type="button"
-            >
-              {chartRailView.icon}
-              <span className="rail-button-label">{chartRailView.label}</span>
-            </button>
-          ) : null}
-          <div className="rail-separator" />
-          {panelRailViews.map((view) => (
-            <button
-              aria-label={view.label}
-              className={`rail-button${activePanelTabIds.has(view.id as PanelTabKind) ? " active" : openPanelTabIds.has(view.id as PanelTabKind) ? " open" : ""}`}
-              key={view.id}
-              onClick={(event) => handleRailPanelButton(view.id as PanelTabKind, view.label, event)}
-              title={view.label}
-              type="button"
-            >
-              {view.icon}
-              <span className="rail-button-label">{view.label}</span>
-            </button>
-          ))}
-          {registeredWorkspaces.length > 0 ? (
-            <>
-              <div className="rail-spacer" />
-              <div className="rail-separator" />
-              <RailWorkspaceSwitcher
-                activeWorkspaceId={workspaceState?.activeWorkspace?.id ?? null}
-                ariaLabel={t("files.registeredWorkspaces")}
-                onRenameActiveChange={setIsWorkspaceRenameActive}
-                onRenameComplete={holdWorkspaceRailAfterRename}
-                onRemoveWorkspace={handleRemoveWorkspace}
-                onRenameWorkspace={handleRenameWorkspace}
-                onSwitchWorkspace={handleSwitchWorkspace}
-                renameLabel={t("files.rename")}
-                removeLabel={(name) => t("files.removeWorkspace", { name })}
-                workspaces={registeredWorkspaces}
-              />
-            </>
-          ) : null}
-        </nav>
+        <AppEditorWorkspace
+          activeFileName={activeFileTabInFocusedPane?.name ?? null}
+          allFilePaths={existingMarkdownPaths}
+          backlinks={backlinks}
+          editorActionPulse={editorActionPulse}
+          editorSettings={editorSettings}
+          focusedPane={focusedPane}
+          frontmatterCandidates={frontmatterCandidates}
+          isLoadingBacklinks={isLoadingBacklinks}
+          isRightPanelOpen={isRightPanelOpen}
+          isSourceMode={isSourceMode}
+          isSplit={isSplit}
+          isSplitClosing={isSplitClosing}
+          isTypewriterMode={isTypewriterMode}
+          leftClosingTabIds={leftClosingTabIds}
+          leftEditorViewRef={leftEditorViewRef}
+          leftPaneScrollHeading={leftPaneScrollHeading}
+          onCloseAllTabsInPane={closeAllTabsInPaneWithMotion}
+          onCloseOtherTabs={closeOtherTabsWithMotion}
+          onCloseTabsToRight={closeTabsToRightWithMotion}
+          onCreateFile={handleCreateNoteFromPane}
+          onDuplicateTabFile={handleDuplicateTabFile}
+          onEditorAction={() => setEditorActionPulse((value) => value + 1)}
+          onFileSaved={handleFileSaved}
+          onMoveActiveFile={handleMoveActiveFile}
+          onOpenFile={handleOpenFile}
+          onOpenInOtherPane={openFileInOtherPane}
+          onOpenLink={handleOpenMarkdownLink}
+          onOpenWikiLink={handleOpenWikiLink}
+          onOutlineHeadingClick={(heading) => {
+            const setScrollHeading = focusedPane === "left" ? setLeftPaneScrollHeading : setRightPaneScrollHeading;
+            setScrollHeading(heading);
+          }}
+          onRenameActiveFile={handleRenameActiveFile}
+          onRevealTabFile={handleRevealTabFile}
+          onRightPanelViewButton={handleRightPanelViewButton}
+          onScrollTargetHandled={(pane) => {
+            if (pane === "left") {
+              setLeftPaneScrollHeading(undefined);
+              return;
+            }
 
-        {/* サイドバー */}
-          <aside
-            aria-hidden={!isSidebarOpen}
-            className={`sidebar${isSidebarOpen ? "" : " sidebar--closed"}${isSidebarResizing ? " sidebar--resizing" : ""}`}
-            style={{ width: isSidebarOpen ? sidebarWidth : 0 }}
-          >
-              <div className="sidebar-header">
-                <div className="pane-heading">
-                  {sidebarViews.find((v) => v.id === activeSidebarView)?.label}
-                  {activeSidebarView === "files" && fileSelectionCount > 1 ? (
-                    <span className="pane-heading-count">
-                      {t("files.selectedCount", { count: fileSelectionCount })}
-                    </span>
-                  ) : null}
-                </div>
-              </div>
-            <div className={`sidebar-body sidebar-view-content sidebar-view-content--${activeSidebarView}`}>
-            {activeSidebarView === "files" ? (
-              <FilesSidebar
-                isCreatingFile={isCreatingFile}
-                isCreatingFolder={isCreatingFolder}
-                isCreatingWorkspace={isCreatingWorkspace}
-                isSearching={isSearching}
-                isOpeningWorkspace={isOpeningWorkspace}
-                onCreateFile={handleCreateFileFromSidebar}
-                onCreateFileInFolder={handleCreateFileInFolder}
-                onCreateFolder={handleCreateFolderFromSidebar}
-                onCreateFolderInFolder={handleCreateFolderInFolder}
-                onCreateWorkspace={handleCreateNewWorkspace}
-                onDeleteItem={handleDeleteTreeItem}
-                onDeleteItems={handleDeleteTreeItems}
-                onDuplicateFile={handleDuplicateTreeFile}
-                onMoveFile={handleMoveFile}
-                onMoveFolder={handleMoveFolder}
-                onMoveItems={handleMoveTreeItems}
-                onOpenFile={handleSidebarOpenFile}
-                onOpenInOtherPane={isSplit ? openTreeFileInOtherPane : undefined}
-                onOpenWorkspace={handleOpenWorkspace}
-                onRevealItem={handleRevealWorkspaceItem}
-                onRenameItem={handleRenameTreeItem}
-                onSelectFolder={handleSelectFolder}
-                onSelectedCountChange={setFileSelectionCount}
-                onSearchFrontmatterFieldChange={setSearchFrontmatterField}
-                onSearchModeChange={setSearchMode}
-                onSearchQueryChange={setSearchQuery}
-                onTogglePin={handleTogglePin}
-                openFilePaths={openFilePathSet}
-                searchError={searchError}
-                searchFocusRequest={fileSearchFocusRequest}
-                searchFrontmatterCandidates={frontmatterCandidates}
-                searchFrontmatterField={searchFrontmatterField}
-                searchMode={searchMode}
-                searchQuery={searchQuery}
-                searchResults={searchResults}
-                workspaceState={workspaceState}
-              />
-            ) : null}
-            </div>
-            <div
-              className={`sidebar-resize-handle${isSidebarResizing ? " sidebar-resize-handle--active" : ""}`}
-              onMouseDown={startSidebarResize}
-            />
-          </aside>
-
-        {/* メインエリア */}
-        <main className="main-area">
-          <AppTopBar
-            activeFileName={activeFileTabInFocusedPane?.name ?? null}
-            isRightPanelOpen={isRightPanelOpen}
-            isSourceMode={isSourceMode}
-            isSplit={isSplit}
-            onMoveActiveFile={handleMoveActiveFile}
-            onRenameActiveFile={handleRenameActiveFile}
-            onRightPanelViewButton={handleRightPanelViewButton}
-            onSourceModeToggle={() => setIsSourceMode((value) => !value)}
-            onSplitToggle={toggleSplitWithMotion}
-            rightPanelView={rightPanelView}
-            showRightPanelControls={featureToggles.rightPanel}
-          />
-
-          <div className="editor-layout">
-            <div className="editor-workspace">
-              <div className="shared-editor-toolbar">
-                <Toolbar
-                  fallbackViewRef={focusedPane === "left" ? rightEditorViewRef : leftEditorViewRef}
-                  onEditorAction={() => setEditorActionPulse((value) => value + 1)}
-                  viewRef={focusedPane === "left" ? leftEditorViewRef : rightEditorViewRef}
-                />
-              </div>
-              <div className={`panes-container${isSplit ? " panes-container--split" : ""}${isSplitClosing ? " panes-container--closing-split" : ""}`}>
-                <PaneView
-                  allFilePaths={existingMarkdownPaths}
-                  closingTabIds={leftClosingTabIds}
-                  editorSettings={editorSettings}
-                  focusedPane={focusedPane}
-                  frontmatterCandidates={frontmatterCandidates}
-                  editorActionPulse={focusedPane === "left" ? editorActionPulse : 0}
-                  onCreateFile={handleCreateNoteFromPane}
-                  onFocus={() => setFocusedPane("left")}
-                  onFileSaved={handleFileSaved}
-                  onOpenLink={handleOpenMarkdownLink}
-                  onOpenWikiLink={handleOpenWikiLink}
-                  onScrollTargetHandled={() => setLeftPaneScrollHeading(undefined)}
-                  onTabClose={(tabId) => closeTabWithMotion("left", tabId)}
-                  onTabMove={moveTab}
-                  onTabSelect={(tabId) => setTabActive("left", tabId)}
-                  onCloseOtherTabs={(tabId) => closeOtherTabsWithMotion("left", tabId)}
-                  onCloseTabsToRight={(tabId) => closeTabsToRightWithMotion("left", tabId)}
-                  onCloseAllTabs={() => closeAllTabsInPaneWithMotion("left")}
-                  onDuplicateTabFile={handleDuplicateTabFile}
-                  onOpenInOtherPane={(tabId) => openFileInOtherPane("left", tabId)}
-                  onRevealTabFile={handleRevealTabFile}
-                  onTogglePinTab={handleTogglePinTab}
-                  pinnedPaths={pinnedPathSet}
-                  isSplitView={isSplit}
-                  pane="left"
-                  renderGanttChartTab={renderGanttChartTab}
-                  renderPanelTab={renderPanelTab}
-                  renderPanelTabIcon={renderPanelTabIcon}
-                  scrollTargetHeading={leftPaneScrollHeading}
-                  sourceMode={isSourceMode}
-                  typewriterMode={isTypewriterMode}
-                  userDefinedFields={userDefinedFields}
-                  viewRef={leftEditorViewRef}
-                  workspacePath={workspaceState?.activeWorkspace?.path}
-                />
-                {isSplit ? (
-                  <PaneView
-                    allFilePaths={existingMarkdownPaths}
-                    closingTabIds={rightClosingTabIds}
-                    editorSettings={editorSettings}
-                    focusedPane={focusedPane}
-                    frontmatterCandidates={frontmatterCandidates}
-                    editorActionPulse={focusedPane === "right" ? editorActionPulse : 0}
-                    onCreateFile={handleCreateNoteFromPane}
-                    onFocus={() => setFocusedPane("right")}
-                    onFileSaved={handleFileSaved}
-                    onOpenLink={handleOpenMarkdownLink}
-                    onOpenWikiLink={handleOpenWikiLink}
-                    onScrollTargetHandled={() => setRightPaneScrollHeading(undefined)}
-                    onTabClose={(tabId) => closeTabWithMotion("right", tabId)}
-                    onTabMove={moveTab}
-                    onTabSelect={(tabId) => setTabActive("right", tabId)}
-                    onCloseOtherTabs={(tabId) => closeOtherTabsWithMotion("right", tabId)}
-                    onCloseTabsToRight={(tabId) => closeTabsToRightWithMotion("right", tabId)}
-                    onCloseAllTabs={() => closeAllTabsInPaneWithMotion("right")}
-                    onDuplicateTabFile={handleDuplicateTabFile}
-                    onOpenInOtherPane={(tabId) => openFileInOtherPane("right", tabId)}
-                    onRevealTabFile={handleRevealTabFile}
-                    onTogglePinTab={handleTogglePinTab}
-                    pinnedPaths={pinnedPathSet}
-                    isSplitView={isSplit}
-                    pane="right"
-                    renderGanttChartTab={renderGanttChartTab}
-                    renderPanelTab={renderPanelTab}
-                    renderPanelTabIcon={renderPanelTabIcon}
-                    scrollTargetHeading={rightPaneScrollHeading}
-                    sourceMode={isSourceMode}
-                    typewriterMode={isTypewriterMode}
-                    userDefinedFields={userDefinedFields}
-                    viewRef={rightEditorViewRef}
-                    workspacePath={workspaceState?.activeWorkspace?.path}
-                  />
-                ) : null}
-              </div>
-            </div>
-
-              <AppRightPanel
-                backlinks={backlinks}
-                isLoadingBacklinks={isLoadingBacklinks}
-                isOpen={isRightPanelOpen}
-                onOpenFile={handleOpenFile}
-                onOpenWikiLink={handleOpenWikiLink}
-                onOutlineHeadingClick={(heading) => {
-                  const setScrollHeading = focusedPane === "left" ? setLeftPaneScrollHeading : setRightPaneScrollHeading;
-                  setScrollHeading(heading);
-                }}
-                outlineHeadings={outlineHeadings}
-                outgoingLinks={outgoingLinks}
-                rightPanelView={rightPanelView}
-                setLinkContextMenu={setLinkContextMenu}
-              />
-          </div>
-        </main>
+            setRightPaneScrollHeading(undefined);
+          }}
+          onSetFocusedPane={setFocusedPane}
+          onSourceModeToggle={() => setIsSourceMode((value) => !value)}
+          onSplitToggle={toggleSplitWithMotion}
+          onTabClose={closeTabWithMotion}
+          onTabMove={moveTab}
+          onTabSelect={setTabActive}
+          onTogglePinTab={handleTogglePinTab}
+          outlineHeadings={outlineHeadings}
+          outgoingLinks={outgoingLinks}
+          pinnedPaths={pinnedPathSet}
+          renderGanttChartTab={renderGanttChartTab}
+          renderPanelTab={renderPanelTab}
+          renderPanelTabIcon={renderPanelTabIcon}
+          rightClosingTabIds={rightClosingTabIds}
+          rightEditorViewRef={rightEditorViewRef}
+          rightPaneScrollHeading={rightPaneScrollHeading}
+          rightPanelView={rightPanelView}
+          setLinkContextMenu={setLinkContextMenu}
+          showRightPanelControls={featureToggles.rightPanel}
+          userDefinedFields={userDefinedFields}
+          workspacePath={workspaceState?.activeWorkspace?.path}
+        />
       </div>
 
-      <footer className="status-bar">
-        <span>Relic</span>
-        {activeFileTabInFocusedPane ? (
-          <span>
-            {t("app.wordCount", {
-              chars: activeFileTabInFocusedPane.content.length,
-              words: activeFileTabInFocusedPane.content.split(/\s+/).filter(Boolean).length
-            })}
-          </span>
-        ) : (
-          <span>{t("app.wordCount", { chars: 0, words: 0 })}</span>
-        )}
-      </footer>
+      <AppStatusBar activeFileTab={activeFileTabInFocusedPane} />
 
       <AppOverlays
         aliasesByPath={aliasesByPath}
