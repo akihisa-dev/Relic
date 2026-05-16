@@ -61,7 +61,7 @@ function makePointerEvent<T extends Element>(overrides: Partial<{
 }
 
 function renderViewport() {
-  const setScaleIndex = vi.fn();
+  const setZoomIndex = vi.fn();
   const hook = renderHook(() => useChronicleChartViewport({
     activeChart: chart(),
     activeSource: "chronicle",
@@ -69,12 +69,11 @@ function renderViewport() {
     axisStart: 0,
     entries: [entry({ endValue: 20, startValue: 10 })],
     nameColumnWidth: 50,
-    scaleIndex: 1,
-    setScaleIndex,
-    tickInterval: 10,
-    unitWidth: 10
+    unitWidth: 10,
+    zoomIndex: 5,
+    setZoomIndex
   }));
-  return { hook, setScaleIndex };
+  return { hook, setZoomIndex };
 }
 
 describe("useChronicleChartViewport", () => {
@@ -150,5 +149,15 @@ describe("useChronicleChartViewport", () => {
 
     expect(chartElement.scrollLeft).toBe(430);
     expect(hook.result.current.scrollLeft).toBe(430);
+  });
+
+  it("全体表示は最小zoomへ切り替える", () => {
+    const { hook, setZoomIndex } = renderViewport();
+
+    act(() => {
+      hook.result.current.fitChronicleOverview();
+    });
+
+    expect(setZoomIndex).toHaveBeenCalledWith(0);
   });
 });

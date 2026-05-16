@@ -42,8 +42,8 @@ function renderGrid(overrides: Partial<ChronicleChartGridProps> = {}) {
   const activeChart = overrides.activeChart === undefined ? chart() : overrides.activeChart;
   const activeSource = overrides.activeSource ?? activeChart?.source ?? "chronicle";
   const entries = activeChart?.entries ?? [];
-  const dateScale = activeSource === "date" ? DATE_SCALES[1] : null;
-  const tickInterval = activeSource === "date" ? 1 : 10;
+  const dateScale = activeSource === "date" ? DATE_SCALES[0] : null;
+  const tickInterval = 1;
   const bounds = timelineBounds(entries, tickInterval, activeSource, dateScale);
   const ticks = buildTicks(bounds.axisStart, bounds.axisEnd, tickInterval, activeSource, dateScale);
   const props: ChronicleChartGridProps = {
@@ -53,7 +53,7 @@ function renderGrid(overrides: Partial<ChronicleChartGridProps> = {}) {
     axisStart: bounds.axisStart,
     chartRef: createRef<HTMLDivElement>(),
     chronicleOffscreenIndicators: { left: null, right: null },
-    dateAxisHeight: activeSource === "date" ? 46 : 34,
+    dateAxisHeight: activeSource === "date" ? 69 : 34,
     dateOffscreenIndicators: { left: null, right: null },
     dateScale,
     dragPreview: null,
@@ -68,7 +68,7 @@ function renderGrid(overrides: Partial<ChronicleChartGridProps> = {}) {
     scrollLeft: 0,
     tickInterval,
     timelineWidth: 720,
-    unitWidth: activeSource === "date" ? 5 : 7.2,
+    unitWidth: activeSource === "date" ? 22 : 36,
     ...overrides
   };
 

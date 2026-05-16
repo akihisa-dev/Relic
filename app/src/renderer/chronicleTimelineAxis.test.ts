@@ -3,27 +3,22 @@ import { describe, expect, it } from "vitest";
 import { dateToDay } from "../shared/chartTime";
 import {
   buildDateAxisSegments,
+  chronicleAxisTickInterval,
   chronicleUnitWidth,
   dateAxisHeightForScale,
   dateGuideUnit,
   dateMajorGuideUnit,
   dateUnitWidth,
-  defaultScaleIndex,
   formatDateAxisSegmentLabel,
   formatDateLabel,
-  formatScaleValue,
   nextDateUnit,
   startOfDateUnit
 } from "./chronicleTimelineAxis";
 import { DATE_SCALES } from "./chronicleTimelineConstants";
 
 describe("chronicleTimelineAxis", () => {
-  it("date scale ごとの unit と表示幅を計算する", () => {
-    expect(defaultScaleIndex("chronicle")).toBe(1);
-    expect(defaultScaleIndex("date")).toBe(1);
-    expect(formatScaleValue(0, "date")).toBe("日");
-    expect(formatScaleValue(99, "date")).toBe("月");
-
+  it("固定単位の unit と表示幅を計算する", () => {
+    expect(chronicleAxisTickInterval(1)).toBe(1);
     expect(dateGuideUnit(DATE_SCALES[2])).toBe("month");
     expect(dateMajorGuideUnit(DATE_SCALES[2])).toBe("year");
     expect(dateUnitWidth(DATE_SCALES[0])).toBe(22);

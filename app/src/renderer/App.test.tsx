@@ -651,7 +651,7 @@ describe("App", () => {
     );
     expect(renderResult.container.querySelector(".chronicle-minimap")).toBeInTheDocument();
     expect(renderResult.container.querySelector(".chronicle-minimap-item")).toBeInTheDocument();
-    expect(renderResult.container.querySelector(".chronicle-scale-value")).toHaveTextContent("10");
+    expect(renderResult.container.querySelector(".chronicle-zoom-value")).toHaveTextContent("100%");
     expect(screen.queryByText("計画")).not.toBeInTheDocument();
     expect(screen.queryByText("実行")).not.toBeInTheDocument();
     expect(renderResult.container.querySelectorAll(".chronicle-guide-line").length).toBeGreaterThan(0);
@@ -659,12 +659,14 @@ describe("App", () => {
     expect(renderResult.container.querySelectorAll(".chronicle-guide-line").length).toBeGreaterThan(
       renderResult.container.querySelectorAll(".chronicle-guide-line--major").length
     );
-    fireEvent.click(screen.getByRole("button", { name: "スケールを細かくする" }));
-    expect(renderResult.container.querySelector(".chronicle-scale-value")).toHaveTextContent("1");
-    const oneYearScaleAxisLabels = Array.from(renderResult.container.querySelectorAll(".chronicle-axis--chronicle .chronicle-axis-cell"))
-      .map((element) => element.textContent?.replace("−", "-") ?? "");
-    expect(oneYearScaleAxisLabels.length).toBeGreaterThan(0);
-    expect(oneYearScaleAxisLabels.every((label) => Number(label) % 10 === 0)).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: "縮小" }));
+    expect(renderResult.container.querySelector(".chronicle-zoom-value")).toHaveTextContent("50%");
+    fireEvent.click(screen.getByRole("button", { name: "拡大" }));
+    expect(renderResult.container.querySelector(".chronicle-zoom-value")).toHaveTextContent("100%");
+    const oneYearAxisLabels = Array.from(renderResult.container.querySelectorAll(".chronicle-axis--chronicle .chronicle-axis-cell"))
+      .map((element) => Number(element.textContent?.replace("−", "-") ?? Number.NaN));
+    expect(oneYearAxisLabels.length).toBeGreaterThan(0);
+    expect(oneYearAxisLabels.slice(1, 5).every((label, index) => label - oneYearAxisLabels[index] === 1)).toBe(true);
     expect(renderResult.container.querySelectorAll(".chronicle-guide-line").length).toBeGreaterThan(
       renderResult.container.querySelectorAll(".chronicle-guide-line--major").length
     );
@@ -731,8 +733,7 @@ describe("App", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "チャート" }));
     fireEvent.click(container.querySelector(".chronicle-source-button")!);
-    fireEvent.click(screen.getByRole("button", { name: "スケールを細かくする" }));
-    expect(container.querySelector(".chronicle-scale-value")).toHaveTextContent("1");
+    expect(container.querySelector(".chronicle-zoom-value")).toHaveTextContent("100%");
 
     const fill = container.querySelector(".chronicle-fill") as HTMLElement;
     const pointerDown = new Event("pointerdown", { bubbles: true }) as PointerEvent;
@@ -801,8 +802,7 @@ describe("App", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "チャート" }));
     fireEvent.click(container.querySelector(".chronicle-source-button")!);
-    fireEvent.click(screen.getByRole("button", { name: "スケールを細かくする" }));
-    expect(container.querySelector(".chronicle-scale-value")).toHaveTextContent("1");
+    expect(container.querySelector(".chronicle-zoom-value")).toHaveTextContent("100%");
 
     const fill = container.querySelector(".chronicle-fill") as HTMLElement;
     const pointerDown = new Event("pointerdown", { bubbles: true }) as PointerEvent;
@@ -882,23 +882,23 @@ describe("App", () => {
     expect(screen.getByText("計画")).toBeInTheDocument();
     expect(screen.getByText("実行")).toBeInTheDocument();
     expect(screen.queryByText("2026-05-01 〜 2026-05-05")).not.toBeInTheDocument();
-    expect(screen.getByText("05-01 〜 05-05")).toBeInTheDocument();
-    expect(screen.getByText("05-03 〜 05-06")).toBeInTheDocument();
-    expect(screen.getByText("月")).toBeInTheDocument();
+    expect(screen.getByText("01 〜 05")).toBeInTheDocument();
+    expect(screen.getByText("03 〜 06")).toBeInTheDocument();
+    expect(container.querySelectorAll(".chronicle-axis--date .chronicle-axis-row")).toHaveLength(3);
     expect(container.querySelector(".chronicle-chart")).toBeInTheDocument();
     expect(container.querySelectorAll(".chronicle-fill")).toHaveLength(2);
     expect(container.querySelector('.chronicle-fill[data-date-kind="planned"]')).toBeInTheDocument();
     expect(container.querySelector('.chronicle-fill[data-date-kind="actual"]')).toBeInTheDocument();
     expect(container.querySelector(".chronicle-today-line")).toBeInTheDocument();
-    expect(container.querySelectorAll(".chronicle-guide-line").length).toBeGreaterThan(30);
+    expect(container.querySelectorAll(".chronicle-guide-line").length).toBeGreaterThan(0);
     expect(container.querySelectorAll(".chronicle-guide-line--major").length).toBeGreaterThan(0);
-    fireEvent.click(screen.getByRole("button", { name: "スケールを細かくする" }));
-    expect(screen.getByText("日")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "縮小" }));
+    expect(container.querySelector(".chronicle-zoom-value")).toHaveTextContent("50%");
+    expect(container.querySelectorAll(".chronicle-axis--date .chronicle-axis-row")).toHaveLength(3);
     expect(container.querySelectorAll(".chronicle-guide-line--major").length).toBeGreaterThan(0);
-    fireEvent.click(screen.getByRole("button", { name: "スケールを粗くする" }));
-    fireEvent.click(screen.getByRole("button", { name: "スケールを粗くする" }));
-    expect(screen.getByText("年")).toBeInTheDocument();
-    expect(container.querySelectorAll(".chronicle-guide-line").length).toBeGreaterThan(10);
+    fireEvent.click(screen.getByRole("button", { name: "拡大" }));
+    expect(container.querySelector(".chronicle-zoom-value")).toHaveTextContent("100%");
+    expect(container.querySelectorAll(".chronicle-guide-line").length).toBeGreaterThan(0);
     expect(container.querySelectorAll(".chronicle-guide-line--major").length).toBeGreaterThan(0);
     expect(container.querySelectorAll(".chronicle-guide-row-line").length).toBeGreaterThan(0);
 
@@ -1005,7 +1005,7 @@ describe("App", () => {
     expect(plannedFill.querySelector(".chronicle-fill-status")).toBeNull();
     const initialStatusLabel = actualFill.querySelector(".chronicle-fill-status") as HTMLElement;
     expect(initialStatusLabel).toHaveTextContent("進行中");
-	    expect(parseFloat(initialStatusLabel.style.width)).toBeGreaterThan(parseFloat(actualFill.style.width));
+    expect(parseFloat(initialStatusLabel.style.width)).toBeLessThanOrEqual(parseFloat(actualFill.style.width));
 
     const initialStatusLeft = initialStatusLabel.style.left;
     expect(initialStatusLeft).not.toBe("");
@@ -1133,11 +1133,11 @@ describe("App", () => {
     Object.defineProperty(pointerDown, "pointerId", { value: 1 });
     fill.dispatchEvent(pointerDown);
     const pointerMove = new Event("pointermove") as PointerEvent;
-    Object.defineProperty(pointerMove, "clientX", { value: 5 });
+    Object.defineProperty(pointerMove, "clientX", { value: 15 });
     Object.defineProperty(pointerMove, "pointerId", { value: 1 });
     window.dispatchEvent(pointerMove);
     const pointerUp = new Event("pointerup") as PointerEvent;
-    Object.defineProperty(pointerUp, "clientX", { value: 5 });
+    Object.defineProperty(pointerUp, "clientX", { value: 15 });
     Object.defineProperty(pointerUp, "pointerId", { value: 1 });
     window.dispatchEvent(pointerUp);
 
@@ -1203,7 +1203,7 @@ describe("App", () => {
     Object.defineProperty(pointerDown, "pointerId", { value: 1 });
     fill.dispatchEvent(pointerDown);
     const pointerUp = new Event("pointerup") as PointerEvent;
-    Object.defineProperty(pointerUp, "clientX", { value: 5 });
+    Object.defineProperty(pointerUp, "clientX", { value: 15 });
     Object.defineProperty(pointerUp, "pointerId", { value: 1 });
     window.dispatchEvent(pointerUp);
 

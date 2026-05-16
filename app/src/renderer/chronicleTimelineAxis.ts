@@ -4,7 +4,6 @@ import {
   DATE_SCALES,
   DATE_TICK_WIDTH,
   LABEL_HORIZONTAL_PADDING,
-  SCALE_OPTIONS,
   type DateAxisSegmentUnit,
   type DateScale,
   type DateScaleUnit
@@ -130,7 +129,7 @@ export function firstChronicleTickYear(startYear: number, interval: number): num
 }
 
 export function chronicleAxisTickInterval(interval: number): number {
-  return interval === 1 ? 10 : interval;
+  return Math.max(1, interval);
 }
 
 export function chronicleMajorGuideInterval(interval: number): number {
@@ -180,11 +179,6 @@ export function formatRange(entry: GanttChartEntry, source: GanttChartSource, da
 export function formatAxisValue(value: number, source: GanttChartSource): string {
   const year = axisToYear(value);
   return year < 0 ? `−${Math.abs(year)}` : String(year);
-}
-
-export function formatScaleValue(value: number, source: GanttChartSource): string {
-  if (source === "chronicle") return String(value);
-  return DATE_SCALES[value]?.label ?? "月";
 }
 
 export function labelWidthForText(text: string): number {
@@ -317,9 +311,4 @@ export function formatDateLabel(value: string, unit: DateScaleUnit): string {
 
 export function isGanttChartSource(value: unknown): value is GanttChartSource {
   return value === "chronicle" || value === "date";
-}
-
-export function defaultScaleIndex(source: GanttChartSource): number {
-  if (source === "date") return 1;
-  return Math.max(0, SCALE_OPTIONS.chronicle.indexOf(10));
 }

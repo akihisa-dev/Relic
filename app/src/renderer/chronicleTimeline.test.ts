@@ -101,23 +101,23 @@ describe("chronicleTimeline", () => {
   it("chronicle の bounds、ticks、axis segments、guide tick を計算する", () => {
     const bounds = timelineBounds([
       entry({ endValue: 1332, startValue: 1184 })
-    ], 10, "chronicle", null);
+    ], 1, "chronicle", null);
 
-    expect(bounds).toEqual({ axisEnd: 1359, axisStart: 1159 });
-    expect(chronicleAxisTickInterval(1)).toBe(10);
-    expect(buildTicks(bounds.axisStart, bounds.axisEnd, 10, "chronicle", null).slice(0, 3)).toEqual([
-      1159,
-      1169,
-      1179
+    expect(bounds).toEqual({ axisEnd: 1342, axisStart: 1174 });
+    expect(chronicleAxisTickInterval(1)).toBe(1);
+    expect(buildTicks(bounds.axisStart, bounds.axisEnd, 1, "chronicle", null).slice(0, 3)).toEqual([
+      1174,
+      1175,
+      1176
     ]);
     expect(buildGuideTicks(bounds.axisStart, bounds.axisEnd, [], 1, "chronicle", null).find((tick) => tick.value === 1189)).toEqual({
       isMajor: true,
       value: 1189
     });
-    expect(buildChronicleAxisSegments(bounds.axisStart, bounds.axisEnd, 10)[0]).toEqual({
-      endValue: 1168,
-      label: "1160",
-      startValue: 1159
+    expect(buildChronicleAxisSegments(bounds.axisStart, bounds.axisEnd, 1)[0]).toEqual({
+      endValue: 1174,
+      label: "1175",
+      startValue: 1174
     });
   });
 
