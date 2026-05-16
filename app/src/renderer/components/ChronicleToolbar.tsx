@@ -1,7 +1,7 @@
 import type { Dispatch, ReactElement, SetStateAction } from "react";
 
 import type { GanttChartSource, WorkspaceGanttChart } from "../../shared/ipc";
-import { formatScaleValue, type ChronicleSortKey } from "../chronicleTimeline";
+import type { ChronicleSortKey } from "../chronicleTimeline";
 import { useT } from "../i18n";
 
 export interface ChronicleToolbarProps {
@@ -10,18 +10,18 @@ export interface ChronicleToolbarProps {
   availableCharts: WorkspaceGanttChart[];
   fitChronicleOverview: () => void;
   query: string;
-  scaleIndex: number;
-  scaleOptions: readonly number[];
   scrollToToday: () => void;
   selectChart: (chart: WorkspaceGanttChart) => void;
   setQuery: Dispatch<SetStateAction<string>>;
-  setScaleIndex: Dispatch<SetStateAction<number>>;
   setSortKey: Dispatch<SetStateAction<ChronicleSortKey>>;
   setStatusFilter: Dispatch<SetStateAction<string>>;
+  setZoomIndex: Dispatch<SetStateAction<number>>;
   sortKey: ChronicleSortKey;
   statusFilter: string;
   statusOptions: string[];
-  tickInterval: number;
+  zoomIndex: number;
+  zoomLevel: number;
+  zoomOptions: readonly number[];
 }
 
 export function ChronicleToolbar({
@@ -30,20 +30,21 @@ export function ChronicleToolbar({
   availableCharts,
   fitChronicleOverview,
   query,
-  scaleIndex,
-  scaleOptions,
   scrollToToday,
   selectChart,
   setQuery,
-  setScaleIndex,
   setSortKey,
   setStatusFilter,
+  setZoomIndex,
   sortKey,
   statusFilter,
   statusOptions,
-  tickInterval
+  zoomIndex,
+  zoomLevel,
+  zoomOptions
 }: ChronicleToolbarProps): ReactElement {
   const t = useT();
+  const zoomLabel = `${Math.round(zoomLevel * 100)}%`;
 
   return (
     <div className="chronicle-toolbar">
@@ -89,7 +90,7 @@ export function ChronicleToolbar({
           </select>
         </label>
       ) : null}
-      <div className="chronicle-scale" aria-label={t("chronicle.scale")}>
+      <div className="chronicle-zoom" aria-label={t("chronicle.zoom")}>
         {activeSource === "date" ? (
           <button
             className="chronicle-today-button"
@@ -108,20 +109,20 @@ export function ChronicleToolbar({
           </button>
         ) : null}
         <button
-          aria-label={t("chronicle.scaleDecrease")}
-          className="chronicle-scale-button"
-          disabled={scaleIndex === 0}
-          onClick={() => setScaleIndex((current) => Math.max(0, current - 1))}
+          aria-label={t("chronicle.zoomOut")}
+          className="chronicle-zoom-button"
+          disabled={zoomIndex === 0}
+          onClick={() => setZoomIndex((current) => Math.max(0, current - 1))}
           type="button"
         >
           -
         </button>
-        <span className="chronicle-scale-value">{formatScaleValue(tickInterval, activeSource)}</span>
+        <span className="chronicle-zoom-value">{zoomLabel}</span>
         <button
-          aria-label={t("chronicle.scaleIncrease")}
-          className="chronicle-scale-button"
-          disabled={scaleIndex >= scaleOptions.length - 1}
-          onClick={() => setScaleIndex((current) => Math.min(scaleOptions.length - 1, current + 1))}
+          aria-label={t("chronicle.zoomIn")}
+          className="chronicle-zoom-button"
+          disabled={zoomIndex >= zoomOptions.length - 1}
+          onClick={() => setZoomIndex((current) => Math.min(zoomOptions.length - 1, current + 1))}
           type="button"
         >
           +

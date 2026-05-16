@@ -16,7 +16,7 @@
   justify-content: space-between;
 }
 
-.chronicle-scale {
+.chronicle-zoom {
   align-items: center;
   border: 1px solid var(--border);
   border-radius: 5px;
@@ -24,7 +24,7 @@
   overflow: hidden;
 }
 
-.chronicle-scale-button {
+.chronicle-zoom-button {
   background: transparent;
   border: 0;
   color: var(--text);
@@ -35,17 +35,17 @@
   width: 28px;
 }
 
-.chronicle-scale-button:hover {
+.chronicle-zoom-button:hover {
   background: var(--hover);
 }
 
-.chronicle-scale-button:disabled {
+.chronicle-zoom-button:disabled {
   color: var(--text-3);
   cursor: default;
   opacity: 0.45;
 }
 
-.chronicle-scale-value {
+.chronicle-zoom-value {
   border-left: 1px solid var(--border);
   border-right: 1px solid var(--border);
   color: var(--text-2);

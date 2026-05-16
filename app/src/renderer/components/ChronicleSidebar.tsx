@@ -27,10 +27,9 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdate
     axisStart: model.axisStart,
     entries: model.entries,
     nameColumnWidth: model.nameColumnWidth,
-    scaleIndex: model.scaleIndex,
-    setScaleIndex: model.setScaleIndex,
-    tickInterval: model.tickInterval,
-    unitWidth: model.unitWidth
+    unitWidth: model.unitWidth,
+    zoomIndex: model.zoomIndex,
+    setZoomIndex: model.setZoomIndex
   });
   const viewportState = useMemo(() => buildChronicleViewportState({
     activeSource: model.activeSource,
@@ -66,18 +65,18 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdate
         availableCharts={model.availableCharts}
         fitChronicleOverview={viewport.fitChronicleOverview}
         query={model.query}
-        scaleIndex={model.scaleIndex}
-        scaleOptions={model.scaleOptions}
         scrollToToday={viewport.scrollToToday}
         selectChart={model.selectChart}
         setQuery={model.setQuery}
-        setScaleIndex={model.setScaleIndex}
         setSortKey={model.setSortKey}
         setStatusFilter={model.setStatusFilter}
+        setZoomIndex={model.setZoomIndex}
         sortKey={model.sortKey}
         statusFilter={model.statusFilter}
         statusOptions={model.statusOptions}
-        tickInterval={model.tickInterval}
+        zoomIndex={model.zoomIndex}
+        zoomLevel={model.zoomLevel}
+        zoomOptions={model.zoomOptions}
       />
       <ChronicleMinimap
         activeChart={model.activeChart}

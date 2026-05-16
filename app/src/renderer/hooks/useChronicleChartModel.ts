@@ -3,11 +3,11 @@ import type { Dispatch, SetStateAction } from "react";
 
 import type { GanttChartSource, WorkspaceGanttChart } from "../../shared/ipc";
 import {
+  CHART_ZOOM_LEVELS,
   CHRONICLE_NAME_COLUMN_WIDTH,
   DATE_NAME_COLUMN_WIDTH,
   DATE_SCALES,
-  DATE_TICK_WIDTH,
-  SCALE_OPTIONS,
+  DEFAULT_CHART_ZOOM_INDEX,
   TICK_WIDTH,
   buildChartRows,
   buildGuideTicks,
@@ -17,7 +17,6 @@ import {
   dateAxisHeightForScale,
   dateOffscreenBarIndicators,
   dateUnitWidth,
-  defaultScaleIndex,
   filterRows,
   isGanttChartSource,
   minimapItemsForEntries,
@@ -56,13 +55,11 @@ export interface ChronicleChartModel {
   nameColumnWidth: number;
   query: string;
   rows: ChartRow[];
-  scaleIndex: number;
-  scaleOptions: readonly number[];
   selectChart: (chart: WorkspaceGanttChart) => void;
   setQuery: Dispatch<SetStateAction<string>>;
-  setScaleIndex: Dispatch<SetStateAction<number>>;
   setSortKey: Dispatch<SetStateAction<ChronicleSortKey>>;
   setStatusFilter: Dispatch<SetStateAction<string>>;
+  setZoomIndex: Dispatch<SetStateAction<number>>;
   sortKey: ChronicleSortKey;
   statusFilter: string;
   statusOptions: string[];
@@ -70,6 +67,9 @@ export interface ChronicleChartModel {
   ticks: number[];
   timelineWidth: number;
   unitWidth: number;
+  zoomIndex: number;
+  zoomLevel: number;
+  zoomOptions: readonly number[];
 }
 
 export interface ChronicleViewportState {
@@ -87,29 +87,30 @@ export function useChronicleChartModel({
   const availableCharts = useMemo(() => chartsForView(chart, charts), [chart, charts]);
   const selectedGanttChartId = useUiStore((state) => state.selectedGanttChartId);
   const setSelectedGanttChartId = useUiStore((state) => state.setSelectedGanttChartId);
-  const initialChart = chart ?? availableCharts.find((candidate) => candidate.id === selectedGanttChartId) ?? availableCharts[0] ?? null;
   const [query, setQuery] = useState("");
   const [sortKey, setSortKey] = useState<ChronicleSortKey>("start-asc");
   const [statusFilter, setStatusFilter] = useState("");
-  const [scaleIndex, setScaleIndex] = useState(() => defaultScaleIndex(initialChart?.source ?? "chronicle"));
+  const [zoomIndex, setZoomIndex] = useState(DEFAULT_CHART_ZOOM_INDEX);
   const activeChart = chart ?? availableCharts.find((candidate) => candidate.id === selectedGanttChartId) ?? availableCharts[0] ?? null;
   const activeSource = activeChart && isGanttChartSource(activeChart.source) ? activeChart.source : "chronicle";
   const allEntries = visibleEntries(activeChart);
   const statusOptions = useMemo(() => statusValuesForEntries(allEntries), [allEntries]);
-  const scaleOptions = SCALE_OPTIONS[activeSource];
-  const tickInterval = scaleOptions[Math.min(scaleIndex, scaleOptions.length - 1)] ?? scaleOptions[0] ?? 100;
-  const dateScale = activeSource === "date" ? DATE_SCALES[tickInterval] ?? DATE_SCALES[2] : null;
+  const zoomOptions = CHART_ZOOM_LEVELS;
+  const boundedZoomIndex = Math.max(0, Math.min(zoomIndex, zoomOptions.length - 1));
+  const zoomLevel = zoomOptions[boundedZoomIndex] ?? 1;
+  const tickInterval = 1;
+  const dateScale = activeSource === "date" ? DATE_SCALES[0] : null;
   const rows = useMemo(
     () => sortRows(filterRows(buildChartRows(allEntries, activeSource), query, activeSource === "date" ? statusFilter : ""), sortKey),
     [activeSource, allEntries, query, sortKey, statusFilter]
   );
   const entries = useMemo(() => rows.flatMap((row) => row.entries), [rows]);
   const computedBounds = timelineBounds(entries, tickInterval, activeSource, dateScale);
-  const boundsKey = `${activeChart?.id ?? "none"}:${activeSource}:${tickInterval}:${query}`;
+  const boundsKey = `${activeChart?.id ?? "none"}:${activeSource}:${query}`;
   const { axisEnd, axisStart } = useStableTimelineBounds(computedBounds, boundsKey);
   const axisSpan = Math.max(1, axisEnd - axisStart + 1);
-  const tickWidth = activeSource === "date" ? DATE_TICK_WIDTH : TICK_WIDTH;
-  const unitWidth = activeSource === "date" ? dateUnitWidth(dateScale) : chronicleUnitWidth(tickInterval, tickWidth);
+  const baseUnitWidth = activeSource === "date" ? dateUnitWidth(dateScale) : chronicleUnitWidth(tickInterval, TICK_WIDTH);
+  const unitWidth = baseUnitWidth * zoomLevel;
   const nameColumnWidth = activeSource === "date" ? DATE_NAME_COLUMN_WIDTH : CHRONICLE_NAME_COLUMN_WIDTH;
   const timelineWidth = Math.max(720, axisSpan * unitWidth);
   const ticks = useMemo(
@@ -127,7 +128,7 @@ export function useChronicleChartModel({
   );
   const selectChart = useCallback((nextChart: WorkspaceGanttChart): void => {
     setSelectedGanttChartId(nextChart.id);
-    setScaleIndex(defaultScaleIndex(nextChart.source));
+    setZoomIndex(DEFAULT_CHART_ZOOM_INDEX);
   }, [setSelectedGanttChartId]);
 
   useEffect(() => {
@@ -159,20 +160,21 @@ export function useChronicleChartModel({
     nameColumnWidth,
     query,
     rows,
-    scaleIndex,
-    scaleOptions,
     selectChart,
     setQuery,
-    setScaleIndex,
     setSortKey,
     setStatusFilter,
+    setZoomIndex,
     sortKey,
     statusFilter,
     statusOptions,
     tickInterval,
     ticks,
     timelineWidth,
-    unitWidth
+    unitWidth,
+    zoomIndex,
+    zoomLevel,
+    zoomOptions
   };
 }
 
