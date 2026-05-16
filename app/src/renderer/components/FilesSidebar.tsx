@@ -2,9 +2,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { ReactElement } from "react";
 
 import type { SearchMode, WorkspaceSearchResult, WorkspaceState, WorkspaceTreeNode } from "../../shared/ipc";
+import { findNodeByPath, type FileTreeExpansionRequest } from "../fileTreeModel";
+import { useFileTreeSelection } from "../hooks/useFileTreeSelection";
 import { useT, type Translator } from "../i18n";
-import type { FileTreeExpansionRequest } from "./FileTree";
-import { FileTree, FileTreeItem, findNodeByPath } from "./FileTree";
+import { FileTree, FileTreeItem } from "./FileTree";
 
 export interface FilesSidebarProps {
   isCreatingFile: boolean;
@@ -85,8 +86,6 @@ export function FilesSidebar({
 }: FilesSidebarProps): ReactElement {
   const [expansionRequest, setExpansionRequest] = useState<FileTreeExpansionRequest | undefined>(undefined);
   const [isSearchMethodMenuOpen, setIsSearchMethodMenuOpen] = useState(false);
-  const [selectionAnchorPath, setSelectionAnchorPath] = useState<string | null>(null);
-  const [selectedPaths, setSelectedPaths] = useState<Set<string>>(new Set());
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const searchShellRef = useRef<HTMLDivElement | null>(null);
   const activeWorkspace = workspaceState?.activeWorkspace ?? null;
@@ -95,24 +94,10 @@ export function FilesSidebar({
     [workspaceState?.pinnedPaths]
   );
   const userNodes = useMemo(() => workspaceState?.fileTree ?? [], [workspaceState?.fileTree]);
-  const selectableItems = useMemo(() => {
-    const items: Array<{ path: string; type: WorkspaceTreeNode["type"] }> = [];
-    const walk = (node: WorkspaceTreeNode): void => {
-      items.push({ path: node.path, type: node.type });
-      if (node.type === "folder") node.children.forEach(walk);
-    };
-
-    userNodes.forEach(walk);
-    return items;
-  }, [userNodes]);
-  const selectablePathSet = useMemo(
-    () => new Set(selectableItems.map((item) => item.path)),
-    [selectableItems]
-  );
-  const selectedItems = useMemo(
-    () => selectableItems.filter((item) => selectedPaths.has(item.path)),
-    [selectableItems, selectedPaths]
-  );
+  const { handleSelectItem, selectedItems, selectedPaths } = useFileTreeSelection({
+    nodes: userNodes,
+    onSelectedCountChange
+  });
   const knownFrontmatterFields = useMemo(
     () =>
       Array.from(
@@ -134,20 +119,6 @@ export function FilesSidebar({
   const t = useT();
 
   useEffect(() => {
-    setSelectedPaths((current) => {
-      const next = new Set([...current].filter((path) => selectablePathSet.has(path)));
-      return next.size === current.size ? current : next;
-    });
-    if (selectionAnchorPath && !selectablePathSet.has(selectionAnchorPath)) {
-      setSelectionAnchorPath(null);
-    }
-  }, [selectablePathSet, selectionAnchorPath]);
-
-  useEffect(() => {
-    onSelectedCountChange?.(selectedItems.length);
-  }, [onSelectedCountChange, selectedItems.length]);
-
-  useEffect(() => {
     if (searchFocusRequest <= 0) return;
     searchInputRef.current?.focus();
   }, [searchFocusRequest]);
@@ -164,42 +135,6 @@ export function FilesSidebar({
 
     return () => window.removeEventListener("pointerdown", close);
   }, [isSearchMethodMenuOpen]);
-
-  const handleSelectItem = (
-    node: WorkspaceTreeNode,
-    e: React.MouseEvent<HTMLButtonElement>
-  ): boolean => {
-    if (!selectablePathSet.has(node.path)) return true;
-
-    const isRangeSelect = e.shiftKey && selectionAnchorPath && selectablePathSet.has(selectionAnchorPath);
-    const isToggleSelect = e.metaKey || e.ctrlKey;
-    const isMultiSelectionMode = selectedPaths.size > 1;
-
-    if (isRangeSelect) {
-      const fromIndex = selectableItems.findIndex((item) => item.path === selectionAnchorPath);
-      const toIndex = selectableItems.findIndex((item) => item.path === node.path);
-      if (fromIndex >= 0 && toIndex >= 0) {
-        const [start, end] = fromIndex < toIndex ? [fromIndex, toIndex] : [toIndex, fromIndex];
-        setSelectedPaths(new Set(selectableItems.slice(start, end + 1).map((item) => item.path)));
-      }
-      return false;
-    }
-
-    if (isToggleSelect) {
-      setSelectedPaths((current) => {
-        const next = new Set(current);
-        if (next.has(node.path)) next.delete(node.path);
-        else next.add(node.path);
-        return next;
-      });
-      setSelectionAnchorPath(node.path);
-      return false;
-    }
-
-    setSelectedPaths(new Set([node.path]));
-    setSelectionAnchorPath(node.path);
-    return !isMultiSelectionMode;
-  };
 
   const requestExpansion = (action: FileTreeExpansionRequest["action"], scopePath?: string): void => {
     setExpansionRequest((current) => ({ action, id: (current?.id ?? 0) + 1, scopePath }));
