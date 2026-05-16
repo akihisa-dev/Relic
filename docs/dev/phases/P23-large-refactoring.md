@@ -152,3 +152,31 @@ Relicの大規模リファクタリングフェーズの正本。
 - 実施: `app/src/renderer/hooks/useGraphSimulation.ts`、`useGraphViewportInteractions.ts`、`useGraphNodeInteractions.ts` を追加し、`useGraphCanvasInteractions.ts` は既存input/outputを維持したorchestratorにした。`app/src/renderer/components/GraphCanvasLayers.tsx` を追加し、arrow marker、edge layer、node layerを分離した。`GraphCanvasProps`、marker id、class名、role、tabIndex、aria-label、node click/key behaviorは維持した
 - 確認: `pnpm exec vitest run src/renderer/hooks/useGraphSimulation.test.tsx`、`pnpm exec vitest run src/renderer/hooks/useGraphViewportInteractions.test.tsx`、`pnpm exec vitest run src/renderer/hooks/useGraphNodeInteractions.test.tsx`、`pnpm exec vitest run src/renderer/hooks/useGraphCanvasInteractions.test.tsx`、`pnpm exec vitest run src/renderer/components/GraphCanvasLayers.test.tsx`、`pnpm exec vitest run src/renderer/components/GraphCanvas.test.tsx`、`pnpm exec vitest run src/renderer/components/GraphSidebar.test.tsx`、`pnpm exec vitest run src/renderer/App.test.tsx`、`pnpm typecheck`、`pnpm test`、`git diff --check` が通過した。全体テストは48ファイル、395件が通過した
 - 残り: 今回指定された分割単位は完了。実アプリ確認はUI/仕様を変えない内部hook/component分離のため未実施
+
+### Graph canvas internals再確認
+
+- 方向性: 直近のGraph canvas internals分離を、追加リファクタリング前の安全確認として再確認する
+- 実施: 作業開始時点でGraph分割の未コミット差分が残っていないことを確認し、Graph関連hook/componentテストを再実行した
+- 確認: `pnpm exec vitest run src/renderer/hooks/useGraphSimulation.test.tsx src/renderer/hooks/useGraphViewportInteractions.test.tsx src/renderer/hooks/useGraphNodeInteractions.test.tsx src/renderer/hooks/useGraphCanvasInteractions.test.tsx src/renderer/components/GraphCanvasLayers.test.tsx src/renderer/components/GraphCanvas.test.tsx src/renderer/components/GraphSidebar.test.tsx` が通過した。7ファイル、27件が通過した
+- 残り: Graph分割の締めとして追加対応は不要
+
+### App状態・pane補助処理追加分割
+
+- 方向性: 仕様、UI、保存形式、IPC/preload API、store状態構造を変えず、`App.tsx` に残っていたtoast、workspace由来データ、Gantt更新、workspace rename rail保持、pane/file補助操作をhookへ分離する
+- 実施: `useAppToast.ts`、`useWorkspaceAliases.ts`、`useWorkspaceGanttCharts.ts`、`useWorkspaceRenameRailHold.ts`、`useAppPaneFileActions.ts` を追加した。`App.tsx` は画面構成、store接続、主要hookの組み立てを中心に残した
+- 確認: `pnpm exec vitest run src/renderer/App.test.tsx`、`pnpm typecheck`、`pnpm test`、`git diff --check` が通過した。全体テストは49ファイル、401件が通過した
+- 残り: 今回指定されたApp追加分割単位は完了。実アプリ確認はUI/仕様を変えない内部hook分離のため未実施
+
+### ファイル操作UIモデル分離
+
+- 方向性: ファイル操作の仕様、確認ダイアログ、リンク更新挙動を変えず、`FileTree.tsx` と `FilesSidebar.tsx` に同居していたツリー計算、移動判定、複数選択状態を分離する
+- 実施: `app/src/renderer/fileTreeModel.ts` を追加し、node探索、展開要求判定、移動先正規化、移動対象filter、context menu位置計算を移した。`useFileTreeSelection.ts` を追加し、`FilesSidebar.tsx` の選択anchor、range選択、toggle選択、選択数通知をhook化した
+- 確認: `pnpm exec vitest run src/renderer/fileTreeModel.test.ts src/renderer/hooks/workspaceFileActionHelpers.test.ts`、`pnpm typecheck`、`pnpm test`、`git diff --check` が通過した。全体テストは49ファイル、401件が通過した
+- 残り: 今回指定されたファイル操作UI分割単位は完了。実アプリ確認はUI/仕様を変えない内部model/hook分離のため未実施
+
+### main IPC active workspace helper整理
+
+- 方向性: IPCチャンネル名、preload API、戻り値、エラーコード、main/renderer責務境界を変えず、`fileHandlers.ts` と `workspaceHandlers.ts` に重複していたactive workspace取得と例外details変換を共通化する
+- 実施: `activeWorkspace.ts` に `getActiveWorkspaceContext` と `ipcErrorDetails` を追加し、`fileHandlers.ts` はファイル操作handlerのactive workspace取得とsettings参照を共通context経由にした。`workspaceHandlers.ts` はタグ、frontmatter候補、aliases、chronicle、graph、Gantt設定保存/更新のactive workspace取得を共通context経由にした
+- 確認: `pnpm exec vitest run src/main/files/markdownFiles.test.ts src/main/files/chronicle.test.ts`、`pnpm typecheck`、`pnpm test`、`git diff --check` が通過した。全体テストは49ファイル、401件が通過した
+- 残り: 今回指定されたIPC helper整理単位は完了。実アプリ確認はIPC/preload APIと戻り値を変えない内部helper整理のため未実施

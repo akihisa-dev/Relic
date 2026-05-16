@@ -1,6 +1,4 @@
-import path from "node:path";
-
-import { app, ipcMain, shell } from "electron";
+import { ipcMain, shell } from "electron";
 
 import {
   applySearchAndReplaceChannel,
@@ -51,8 +49,7 @@ import { applySearchAndReplace, replaceInFile, searchAndReplace } from "../files
 import { searchWorkspace } from "../files/search";
 import { moveWorkspaceItemToTrash } from "../files/trash";
 import { resolveWorkspaceRelativePath } from "../files/paths";
-import { readAppSettings } from "../settings/appSettings";
-import { toWorkspaceState } from "../workspace/workspaceService";
+import { getActiveWorkspaceContext, ipcErrorDetails } from "./activeWorkspace";
 import { buildWorkspaceState } from "./workspaceHandlers";
 
 export function registerFileHandlers(): void {
@@ -62,19 +59,15 @@ export function registerFileHandlers(): void {
         return fail("SEARCH_INVALID_INPUT", "検索語句を入力してください。");
       }
 
-      const settings = await readAppSettings(app.getPath("userData"));
-      const state = toWorkspaceState(settings);
+      const context = await getActiveWorkspaceContext();
+      if (!context.ok) return context;
 
-      if (!state.activeWorkspace) {
-        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
-      }
-
-      return searchWorkspace(state.activeWorkspace.path, input.query, input.mode, input.frontmatterField);
+      return searchWorkspace(context.value.activeWorkspace.path, input.query, input.mode, input.frontmatterField);
     } catch (error) {
       return fail(
         "SEARCH_FAILED",
         "検索できませんでした。",
-        error instanceof Error ? error.message : String(error)
+        ipcErrorDetails(error)
       );
     }
   });
@@ -87,25 +80,21 @@ export function registerFileHandlers(): void {
           return fail("FILE_CREATE_INVALID_INPUT", "ファイル名を入力してください。");
         }
 
-        const settings = await readAppSettings(app.getPath("userData"));
-        const state = toWorkspaceState(settings);
+        const context = await getActiveWorkspaceContext();
+        if (!context.ok) return context;
 
-        if (!state.activeWorkspace) {
-          return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
-        }
-
-        const createdFile = await createMarkdownFile(state.activeWorkspace.path, input.name);
+        const createdFile = await createMarkdownFile(context.value.activeWorkspace.path, input.name);
 
         if (!createdFile.ok) {
           return createdFile;
         }
 
-        return ok(await buildWorkspaceState(settings));
+        return ok(await buildWorkspaceState(context.value.settings));
       } catch (error) {
         return fail(
           "FILE_CREATE_FAILED",
           "ファイルを作成できませんでした。",
-          error instanceof Error ? error.message : String(error)
+          ipcErrorDetails(error)
         );
       }
     }
@@ -119,14 +108,10 @@ export function registerFileHandlers(): void {
           return fail("FILE_CREATE_INVALID_INPUT", "作成するファイルを指定してください。");
         }
 
-        const settings = await readAppSettings(app.getPath("userData"));
-        const state = toWorkspaceState(settings);
+        const context = await getActiveWorkspaceContext();
+        if (!context.ok) return context;
 
-        if (!state.activeWorkspace) {
-          return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
-        }
-
-        const createdFile = await createMarkdownFileAtPath(state.activeWorkspace.path, input.path);
+        const createdFile = await createMarkdownFileAtPath(context.value.activeWorkspace.path, input.path);
 
         if (!createdFile.ok) {
           return createdFile;
@@ -134,13 +119,13 @@ export function registerFileHandlers(): void {
 
         return ok({
           file: createdFile.value,
-          workspaceState: await buildWorkspaceState(settings)
+          workspaceState: await buildWorkspaceState(context.value.settings)
         });
       } catch (error) {
         return fail(
           "FILE_CREATE_FAILED",
           "ファイルを作成できませんでした。",
-          error instanceof Error ? error.message : String(error)
+          ipcErrorDetails(error)
         );
       }
     }
@@ -154,25 +139,21 @@ export function registerFileHandlers(): void {
           return fail("FOLDER_CREATE_INVALID_INPUT", "フォルダ名を入力してください。");
         }
 
-        const settings = await readAppSettings(app.getPath("userData"));
-        const state = toWorkspaceState(settings);
+        const context = await getActiveWorkspaceContext();
+        if (!context.ok) return context;
 
-        if (!state.activeWorkspace) {
-          return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
-        }
-
-        const createdFolder = await createFolder(state.activeWorkspace.path, input.name, input.parentFolder);
+        const createdFolder = await createFolder(context.value.activeWorkspace.path, input.name, input.parentFolder);
 
         if (!createdFolder.ok) {
           return createdFolder;
         }
 
-        return ok(await buildWorkspaceState(settings));
+        return ok(await buildWorkspaceState(context.value.settings));
       } catch (error) {
         return fail(
           "FOLDER_CREATE_FAILED",
           "フォルダを作成できませんでした。",
-          error instanceof Error ? error.message : String(error)
+          ipcErrorDetails(error)
         );
       }
     }
@@ -184,19 +165,15 @@ export function registerFileHandlers(): void {
         return fail("FILE_READ_INVALID_INPUT", "ファイルパスを指定してください。");
       }
 
-      const settings = await readAppSettings(app.getPath("userData"));
-      const state = toWorkspaceState(settings);
+      const context = await getActiveWorkspaceContext();
+      if (!context.ok) return context;
 
-      if (!state.activeWorkspace) {
-        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
-      }
-
-      return readMarkdownFile(state.activeWorkspace.path, input.path);
+      return readMarkdownFile(context.value.activeWorkspace.path, input.path);
     } catch (error) {
       return fail(
         "FILE_READ_FAILED",
         "ファイルを読み込めませんでした。",
-        error instanceof Error ? error.message : String(error)
+        ipcErrorDetails(error)
       );
     }
   });
@@ -207,19 +184,15 @@ export function registerFileHandlers(): void {
         return fail("BACKLINKS_INVALID_INPUT", "バックリンクを確認するファイルを指定してください。");
       }
 
-      const settings = await readAppSettings(app.getPath("userData"));
-      const state = toWorkspaceState(settings);
+      const context = await getActiveWorkspaceContext();
+      if (!context.ok) return context;
 
-      if (!state.activeWorkspace) {
-        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
-      }
-
-      return readBacklinks(state.activeWorkspace.path, input.path);
+      return readBacklinks(context.value.activeWorkspace.path, input.path);
     } catch (error) {
       return fail(
         "BACKLINKS_READ_FAILED",
         "バックリンクを読み込めませんでした。",
-        error instanceof Error ? error.message : String(error)
+        ipcErrorDetails(error)
       );
     }
   });
@@ -230,14 +203,10 @@ export function registerFileHandlers(): void {
         return fail("FILE_DUPLICATE_INVALID_INPUT", "複製するファイルを選択してください。");
       }
 
-      const settings = await readAppSettings(app.getPath("userData"));
-      const state = toWorkspaceState(settings);
+      const context = await getActiveWorkspaceContext();
+      if (!context.ok) return context;
 
-      if (!state.activeWorkspace) {
-        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
-      }
-
-      const duplicatedFile = await duplicateMarkdownFile(state.activeWorkspace.path, input.path);
+      const duplicatedFile = await duplicateMarkdownFile(context.value.activeWorkspace.path, input.path);
 
       if (!duplicatedFile.ok) {
         return duplicatedFile;
@@ -245,13 +214,13 @@ export function registerFileHandlers(): void {
 
       return ok({
         file: duplicatedFile.value,
-        workspaceState: await buildWorkspaceState(settings)
+        workspaceState: await buildWorkspaceState(context.value.settings)
       });
     } catch (error) {
       return fail(
         "FILE_DUPLICATE_FAILED",
         "ファイルを複製できませんでした。",
-        error instanceof Error ? error.message : String(error)
+        ipcErrorDetails(error)
       );
     }
   });
@@ -262,15 +231,11 @@ export function registerFileHandlers(): void {
         return fail("FILE_RENAME_INVALID_INPUT", "変更後のファイル名を入力してください。");
       }
 
-      const settings = await readAppSettings(app.getPath("userData"));
-      const state = toWorkspaceState(settings);
-
-      if (!state.activeWorkspace) {
-        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
-      }
+      const context = await getActiveWorkspaceContext();
+      if (!context.ok) return context;
 
       const renamedFile = await renameMarkdownFile(
-        state.activeWorkspace.path,
+        context.value.activeWorkspace.path,
         input.path,
         input.newName
       );
@@ -281,13 +246,13 @@ export function registerFileHandlers(): void {
 
       return ok({
         file: renamedFile.value,
-        workspaceState: await buildWorkspaceState(settings)
+        workspaceState: await buildWorkspaceState(context.value.settings)
       });
     } catch (error) {
       return fail(
         "FILE_RENAME_FAILED",
         "ファイル名を変更できませんでした。",
-        error instanceof Error ? error.message : String(error)
+        ipcErrorDetails(error)
       );
     }
   });
@@ -298,15 +263,11 @@ export function registerFileHandlers(): void {
         return fail("FILE_MOVE_INVALID_INPUT", "移動先フォルダを指定してください。");
       }
 
-      const settings = await readAppSettings(app.getPath("userData"));
-      const state = toWorkspaceState(settings);
-
-      if (!state.activeWorkspace) {
-        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
-      }
+      const context = await getActiveWorkspaceContext();
+      if (!context.ok) return context;
 
       const movedFile = await moveMarkdownFile(
-        state.activeWorkspace.path,
+        context.value.activeWorkspace.path,
         input.path,
         input.destinationFolder
       );
@@ -317,13 +278,13 @@ export function registerFileHandlers(): void {
 
       return ok({
         file: movedFile.value,
-        workspaceState: await buildWorkspaceState(settings)
+        workspaceState: await buildWorkspaceState(context.value.settings)
       });
     } catch (error) {
       return fail(
         "FILE_MOVE_FAILED",
         "ファイルを移動できませんでした。",
-        error instanceof Error ? error.message : String(error)
+        ipcErrorDetails(error)
       );
     }
   });
@@ -334,15 +295,11 @@ export function registerFileHandlers(): void {
         return fail("FOLDER_MOVE_INVALID_INPUT", "移動先フォルダを指定してください。");
       }
 
-      const settings = await readAppSettings(app.getPath("userData"));
-      const state = toWorkspaceState(settings);
-
-      if (!state.activeWorkspace) {
-        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
-      }
+      const context = await getActiveWorkspaceContext();
+      if (!context.ok) return context;
 
       const movedFolder = await moveFolder(
-        state.activeWorkspace.path,
+        context.value.activeWorkspace.path,
         input.path,
         input.destinationFolder
       );
@@ -351,12 +308,12 @@ export function registerFileHandlers(): void {
         return movedFolder;
       }
 
-      return ok(await buildWorkspaceState(settings));
+      return ok(await buildWorkspaceState(context.value.settings));
     } catch (error) {
       return fail(
         "FOLDER_MOVE_FAILED",
         "フォルダを移動できませんでした。",
-        error instanceof Error ? error.message : String(error)
+        ipcErrorDetails(error)
       );
     }
   });
@@ -367,15 +324,11 @@ export function registerFileHandlers(): void {
         return fail("REPLACE_INVALID_INPUT", "検索語句と置換後テキストを入力してください。");
       }
 
-      const settings = await readAppSettings(app.getPath("userData"));
-      const state = toWorkspaceState(settings);
-
-      if (!state.activeWorkspace) {
-        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
-      }
+      const context = await getActiveWorkspaceContext();
+      if (!context.ok) return context;
 
       return replaceInFile(
-        state.activeWorkspace.path,
+        context.value.activeWorkspace.path,
         input.path,
         input.searchQuery,
         input.replacement,
@@ -385,7 +338,7 @@ export function registerFileHandlers(): void {
       return fail(
         "REPLACE_FAILED",
         "置換できませんでした。",
-        error instanceof Error ? error.message : String(error)
+        ipcErrorDetails(error)
       );
     }
   });
@@ -396,15 +349,11 @@ export function registerFileHandlers(): void {
         return fail("REPLACE_INVALID_INPUT", "検索語句と置換後テキストを入力してください。");
       }
 
-      const settings = await readAppSettings(app.getPath("userData"));
-      const state = toWorkspaceState(settings);
-
-      if (!state.activeWorkspace) {
-        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
-      }
+      const context = await getActiveWorkspaceContext();
+      if (!context.ok) return context;
 
       return searchAndReplace(
-        state.activeWorkspace.path,
+        context.value.activeWorkspace.path,
         input.searchQuery,
         input.replacement,
         input.isRegex
@@ -413,7 +362,7 @@ export function registerFileHandlers(): void {
       return fail(
         "REPLACE_FAILED",
         "置換プレビューを生成できませんでした。",
-        error instanceof Error ? error.message : String(error)
+        ipcErrorDetails(error)
       );
     }
   });
@@ -424,15 +373,11 @@ export function registerFileHandlers(): void {
         return fail("REPLACE_INVALID_INPUT", "検索語句と置換後テキストを入力してください。");
       }
 
-      const settings = await readAppSettings(app.getPath("userData"));
-      const state = toWorkspaceState(settings);
-
-      if (!state.activeWorkspace) {
-        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
-      }
+      const context = await getActiveWorkspaceContext();
+      if (!context.ok) return context;
 
       return applySearchAndReplace(
-        state.activeWorkspace.path,
+        context.value.activeWorkspace.path,
         input.searchQuery,
         input.replacement,
         input.isRegex
@@ -441,7 +386,7 @@ export function registerFileHandlers(): void {
       return fail(
         "REPLACE_FAILED",
         "一括置換できませんでした。",
-        error instanceof Error ? error.message : String(error)
+        ipcErrorDetails(error)
       );
     }
   });
@@ -452,25 +397,21 @@ export function registerFileHandlers(): void {
         return fail("FOLDER_RENAME_INVALID_INPUT", "変更後のフォルダ名を入力してください。");
       }
 
-      const settings = await readAppSettings(app.getPath("userData"));
-      const state = toWorkspaceState(settings);
+      const context = await getActiveWorkspaceContext();
+      if (!context.ok) return context;
 
-      if (!state.activeWorkspace) {
-        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
-      }
-
-      const renamedFolder = await renameFolder(state.activeWorkspace.path, input.path, input.newName);
+      const renamedFolder = await renameFolder(context.value.activeWorkspace.path, input.path, input.newName);
 
       if (!renamedFolder.ok) {
         return renamedFolder;
       }
 
-      return ok(await buildWorkspaceState(settings));
+      return ok(await buildWorkspaceState(context.value.settings));
     } catch (error) {
       return fail(
         "FOLDER_RENAME_FAILED",
         "フォルダ名を変更できませんでした。",
-        error instanceof Error ? error.message : String(error)
+        ipcErrorDetails(error)
       );
     }
   });
@@ -483,15 +424,11 @@ export function registerFileHandlers(): void {
           return fail("TRASH_MOVE_INVALID_INPUT", "ゴミ箱に移動する項目を選択してください。");
         }
 
-        const settings = await readAppSettings(app.getPath("userData"));
-        const state = toWorkspaceState(settings);
-
-        if (!state.activeWorkspace) {
-          return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
-        }
+        const context = await getActiveWorkspaceContext();
+        if (!context.ok) return context;
 
         const movedItem = await moveWorkspaceItemToTrash(
-          state.activeWorkspace.path,
+          context.value.activeWorkspace.path,
           input.path,
           input.type,
           shell.trashItem
@@ -501,12 +438,12 @@ export function registerFileHandlers(): void {
           return movedItem;
         }
 
-        return ok(await buildWorkspaceState(settings));
+        return ok(await buildWorkspaceState(context.value.settings));
       } catch (error) {
         return fail(
           "TRASH_MOVE_FAILED",
           "ゴミ箱に移動できませんでした。",
-          error instanceof Error ? error.message : String(error)
+          ipcErrorDetails(error)
         );
       }
     }
@@ -520,14 +457,10 @@ export function registerFileHandlers(): void {
           return fail("REVEAL_INVALID_INPUT", "表示する項目を選択してください。");
         }
 
-        const settings = await readAppSettings(app.getPath("userData"));
-        const state = toWorkspaceState(settings);
+        const context = await getActiveWorkspaceContext();
+        if (!context.ok) return context;
 
-        if (!state.activeWorkspace) {
-          return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
-        }
-
-        const absolutePath = resolveWorkspaceRelativePath(state.activeWorkspace.path, input.path);
+        const absolutePath = resolveWorkspaceRelativePath(context.value.activeWorkspace.path, input.path);
 
         if (!absolutePath.ok) {
           return absolutePath;
@@ -539,7 +472,7 @@ export function registerFileHandlers(): void {
         return fail(
           "REVEAL_FAILED",
           "ファイルの場所を表示できませんでした。",
-          error instanceof Error ? error.message : String(error)
+          ipcErrorDetails(error)
         );
       }
     }

@@ -3,99 +3,21 @@ import type { ReactElement } from "react";
 import { createPortal } from "react-dom";
 
 import type { WorkspaceTreeNode } from "../../shared/ipc";
+import { markdownLinkForPath } from "../appLinks";
+import {
+  collectNodePaths,
+  contextMenuPosition,
+  expansionRequestAppliesTo,
+  type FileTreeExpansionAction,
+  type FileTreeExpansionRequest,
+  moveItemsToDestination,
+  normalizeDestinationFolder
+} from "../fileTreeModel";
 import { useT } from "../i18n";
+import { parentFolderOf } from "../workspacePaths";
 
-type ExpansionAction = "expand" | "collapse";
-
-export interface FileTreeExpansionRequest {
-  action: ExpansionAction;
-  id: number;
-  scopePath?: string;
-}
-
-export function findNodeByPath(nodes: WorkspaceTreeNode[], targetPath: string): WorkspaceTreeNode | null {
-  for (const node of nodes) {
-    if (node.path === targetPath) return node;
-    if (node.type === "folder") {
-      const found = findNodeByPath(node.children, targetPath);
-      if (found) return found;
-    }
-  }
-
-  return null;
-}
-
-function collectNodePaths(nodes: WorkspaceTreeNode[]): Set<string> {
-  const paths = new Set<string>();
-  const walk = (node: WorkspaceTreeNode): void => {
-    paths.add(node.path);
-    if (node.type === "folder") node.children.forEach(walk);
-  };
-
-  nodes.forEach(walk);
-  return paths;
-}
-
-function parentFolderOf(path: string): string {
-  const separatorIndex = path.lastIndexOf("/");
-  return separatorIndex >= 0 ? path.slice(0, separatorIndex) : "";
-}
-
-function markdownLinkForPath(path: string): string {
-  return `[[${path.replace(/\.md$/i, "")}]]`;
-}
-
-function normalizeDestinationFolder(folder: string): string {
-  return folder.trim().replace(/\\/g, "/").replace(/^\/+|\/+$/g, "");
-}
-
-function movableItemsForDestination(
-  items: Array<{ path: string; type: WorkspaceTreeNode["type"] }>,
-  destinationFolder: string
-): Array<{ path: string; type: WorkspaceTreeNode["type"] }> {
-  return items.filter((item) => {
-    if (item.path === destinationFolder) return false;
-    if (parentFolderOf(item.path) === destinationFolder) return false;
-    if (item.type === "folder" && destinationFolder.startsWith(`${item.path}/`)) return false;
-    return true;
-  });
-}
-
-function moveItemsToDestination(
-  items: Array<{ path: string; type: WorkspaceTreeNode["type"] }>,
-  destinationFolder: string,
-  handlers: Pick<FileTreeProps, "onMoveFile" | "onMoveFolder" | "onMoveItems">
-): void {
-  const movableItems = movableItemsForDestination(items, destinationFolder);
-  if (movableItems.length === 0) return;
-  if (movableItems.length > 1) {
-    handlers.onMoveItems?.(movableItems, destinationFolder);
-    return;
-  }
-
-  const [item] = movableItems;
-  if (item.type === "file") handlers.onMoveFile?.(item.path, destinationFolder);
-  else handlers.onMoveFolder?.(item.path, destinationFolder);
-}
-
-function contextMenuPosition(x: number, y: number): { x: number; y: number } {
-  const margin = 8;
-  const estimatedWidth = 220;
-  const estimatedHeight = 460;
-  const maxX = Math.max(margin, window.innerWidth - estimatedWidth - margin);
-  const maxY = Math.max(margin, window.innerHeight - estimatedHeight - margin);
-
-  return {
-    x: Math.min(Math.max(margin, x), maxX),
-    y: Math.min(Math.max(margin, y), maxY)
-  };
-}
-
-function expansionRequestAppliesTo(path: string, request?: FileTreeExpansionRequest): boolean {
-  if (!request) return false;
-  if (!request.scopePath) return true;
-  return path === request.scopePath || path.startsWith(`${request.scopePath}/`);
-}
+export type { FileTreeExpansionRequest } from "../fileTreeModel";
+export { findNodeByPath } from "../fileTreeModel";
 
 export interface FileTreeProps {
   expansionRequest?: FileTreeExpansionRequest;
@@ -112,7 +34,7 @@ export interface FileTreeProps {
   onMoveItems?: (items: Array<{ path: string; type: WorkspaceTreeNode["type"] }>, destFolder: string) => void;
   onOpenFile: (path: string, event?: React.MouseEvent<HTMLButtonElement>) => void;
   onOpenInOtherPane?: (path: string) => void;
-  onRequestExpansion?: (action: ExpansionAction, scopePath?: string) => void;
+  onRequestExpansion?: (action: FileTreeExpansionAction, scopePath?: string) => void;
   openFilePaths?: Set<string>;
   onRevealItem?: (path: string) => void;
   onRenameItem?: (path: string, type: WorkspaceTreeNode["type"], newName: string) => void;
@@ -164,7 +86,7 @@ export function FileTreeItem({
   onMoveItems?: (items: Array<{ path: string; type: WorkspaceTreeNode["type"] }>, destFolder: string) => void;
   onOpenFile: (path: string, event?: React.MouseEvent<HTMLButtonElement>) => void;
   onOpenInOtherPane?: (path: string) => void;
-  onRequestExpansion?: (action: ExpansionAction, scopePath?: string) => void;
+  onRequestExpansion?: (action: FileTreeExpansionAction, scopePath?: string) => void;
   openFilePaths?: Set<string>;
   onRevealItem?: (path: string) => void;
   onRenameItem?: (path: string, type: WorkspaceTreeNode["type"], newName: string) => void;

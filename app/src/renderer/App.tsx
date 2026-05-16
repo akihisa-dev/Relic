@@ -2,15 +2,9 @@ import { EditorView } from "@codemirror/view";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { MouseEvent, ReactElement, ReactNode } from "react";
 
-import type {
-  UpdateGanttChartEntryInput,
-  WorkspaceGanttChart,
-  WorkspaceState,
-  WorkspaceTreeNode
-} from "../shared/ipc";
-import type { AliasIndex } from "../shared/links";
+import type { WorkspaceState } from "../shared/ipc";
 import type { AppLinkContextMenu } from "./appLinks";
-import { AppOverlays, type ToastMessage } from "./components/AppOverlays";
+import { AppOverlays } from "./components/AppOverlays";
 import { AppRightPanel } from "./components/AppRightPanel";
 import { AppTopBar } from "./components/AppTopBar";
 import { GanttChartView } from "./components/ChronicleSidebar";
@@ -23,76 +17,33 @@ import { SettingsSidebar } from "./components/SettingsSidebar";
 import { ToolsSidebar } from "./components/ToolsSidebar";
 import { Toolbar } from "./components/Toolbar";
 import { IconFiles, RailWorkspaceSwitcher, sidebarViewDefs } from "./components/RailNavigation";
-import { normalizeWorkspaceGanttCharts, normalizeWorkspaceGanttChartsWithFiles, updateGanttChartEntryFallback } from "./ganttChartData";
 import { createTranslator, I18nProvider } from "./i18n";
 import { useActiveDocumentContext } from "./hooks/useActiveDocumentContext";
 import { useAppKeyboardShortcuts } from "./hooks/useAppKeyboardShortcuts";
+import { useAppPaneFileActions } from "./hooks/useAppPaneFileActions";
 import { useAppSettingsState } from "./hooks/useAppSettingsState";
 import { useAppTheme } from "./hooks/useAppTheme";
+import { useAppToast } from "./hooks/useAppToast";
 import { useCommandPaletteCommands } from "./hooks/useCommandPaletteCommands";
 import { usePaneTabMotion } from "./hooks/usePaneTabMotion";
 import { useRailFlights } from "./hooks/useRailFlights";
 import { useSidebarResize } from "./hooks/useSidebarResize";
 import { useSidebarFileInteractions } from "./hooks/useSidebarFileInteractions";
 import { useSplitCloseMotion } from "./hooks/useSplitCloseMotion";
+import { useWorkspaceAliases } from "./hooks/useWorkspaceAliases";
 import { useWorkspaceFileActions } from "./hooks/useWorkspaceFileActions";
+import { useWorkspaceGanttCharts } from "./hooks/useWorkspaceGanttCharts";
+import { useWorkspaceRenameRailHold } from "./hooks/useWorkspaceRenameRailHold";
 import { useWorkspaceSearchState } from "./hooks/useWorkspaceSearchState";
 import { useEditorStore, type PaneId, type PanelTabKind } from "./store/editorStore";
 import { useUiStore, type RightPanelView, type SidebarView } from "./store/uiStore";
-import { collectMarkdownPaths, joinWorkspacePath } from "./workspacePaths";
+import { collectMarkdownPaths } from "./workspacePaths";
 import "./styles.css";
-
-// ────────────────────────────────────────────────
-// App
-// ────────────────────────────────────────────────
-
-function ensureMarkdownExtension(name: string): string {
-  return name.trim().endsWith(".md") ? name.trim() : `${name.trim()}.md`;
-}
 
 export function App(): ReactElement {
   const [workspaceState, setWorkspaceState] = useState<WorkspaceState | null>(null);
-  const [aliasesByPath, setAliasesByPath] = useState<AliasIndex>({});
-  const [ganttCharts, setGanttCharts] = useState<WorkspaceGanttChart[]>([]);
-  const [toastMessage, setToastMessage] = useState<ToastMessage | null>(null);
   const [linkContextMenu, setLinkContextMenu] = useState<AppLinkContextMenu | null>(null);
-  const [isToastClosing, setIsToastClosing] = useState(false);
-  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const toastCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const closeToast = useCallback(() => {
-    if (!toastMessage || isToastClosing) return;
-    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-    if (toastCloseTimerRef.current) clearTimeout(toastCloseTimerRef.current);
-    setIsToastClosing(true);
-    toastCloseTimerRef.current = setTimeout(() => {
-      setToastMessage(null);
-      setIsToastClosing(false);
-      toastCloseTimerRef.current = null;
-    }, 170);
-  }, [isToastClosing, toastMessage]);
-  const showToast = useCallback((text: string, type: "error" | "info" = "error") => {
-    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-    if (toastCloseTimerRef.current) clearTimeout(toastCloseTimerRef.current);
-    setIsToastClosing(false);
-    setToastMessage({ text, type });
-    toastTimerRef.current = setTimeout(() => {
-      setIsToastClosing(true);
-      toastCloseTimerRef.current = setTimeout(() => {
-        setToastMessage(null);
-        setIsToastClosing(false);
-        toastCloseTimerRef.current = null;
-      }, 170);
-    }, 4000);
-  }, []);
-  useEffect(() => {
-    return () => {
-      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-      if (toastCloseTimerRef.current) clearTimeout(toastCloseTimerRef.current);
-    };
-  }, []);
-  const setWorkspaceError = useCallback((msg: string | null) => {
-    if (msg) showToast(msg, "error");
-  }, [showToast]);
+  const { closeToast, isToastClosing, setWorkspaceError, toastMessage } = useAppToast();
   const [leftPaneScrollHeading, setLeftPaneScrollHeading] = useState<string | undefined>(undefined);
   const [rightPaneScrollHeading, setRightPaneScrollHeading] = useState<string | undefined>(undefined);
   const [editorActionPulse, setEditorActionPulse] = useState(0);
@@ -107,10 +58,13 @@ export function App(): ReactElement {
   } = useRailFlights();
   const [fileSearchFocusRequest, setFileSearchFocusRequest] = useState(0);
   const [fileSelectionCount, setFileSelectionCount] = useState(0);
-  const [isWorkspaceRenameActive, setIsWorkspaceRenameActive] = useState(false);
-  const [isWorkspaceRenameHoldingRail, setIsWorkspaceRenameHoldingRail] = useState(false);
   const [isSourceMode, setIsSourceMode] = useState(false);
-  const workspaceRenameHoldTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const {
+    holdWorkspaceRailAfterRename,
+    isWorkspaceRenameActive,
+    isWorkspaceRenameHoldingRail,
+    setIsWorkspaceRenameActive
+  } = useWorkspaceRenameRailHold();
 
   const {
     editorSettings,
@@ -177,21 +131,6 @@ export function App(): ReactElement {
     toggleSidebarState();
   }, [isWorkspaceRenameActive, toggleSidebarState]);
 
-  const holdWorkspaceRailAfterRename = useCallback((): void => {
-    if (workspaceRenameHoldTimerRef.current) clearTimeout(workspaceRenameHoldTimerRef.current);
-    setIsWorkspaceRenameHoldingRail(true);
-    workspaceRenameHoldTimerRef.current = setTimeout(() => {
-      setIsWorkspaceRenameHoldingRail(false);
-      workspaceRenameHoldTimerRef.current = null;
-    }, 900);
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      if (workspaceRenameHoldTimerRef.current) clearTimeout(workspaceRenameHoldTimerRef.current);
-    };
-  }, []);
-
   const t = useMemo(() => createTranslator(editorSettings.language), [editorSettings.language]);
   const sidebarViews = useMemo(
     () =>
@@ -241,78 +180,14 @@ export function App(): ReactElement {
     () => collectMarkdownPaths(workspaceState?.fileTree ?? []),
     [workspaceState?.fileTree]
   );
-
-  useEffect(() => {
-    if (!workspaceState?.activeWorkspace || !window.relic) {
-      setAliasesByPath({});
-      return;
-    }
-
-    let canceled = false;
-
-    void window.relic.getWorkspaceAliases().then((result) => {
-      if (canceled) return;
-
-      if (result.ok) {
-        setAliasesByPath(result.value);
-      } else {
-        setAliasesByPath({});
-        setWorkspaceError(result.error.message);
-      }
-    });
-
-    return () => {
-      canceled = true;
-    };
-  }, [setWorkspaceError, workspaceState?.activeWorkspace?.id, workspaceState?.fileTree]);
-
-  const reloadGanttCharts = useCallback(async (): Promise<void> => {
-    if (!workspaceState?.activeWorkspace || !window.relic) {
-      setGanttCharts([]);
-      return;
-    }
-
-    const result = await window.relic.getWorkspaceChronicle();
-
-    if (result.ok) {
-      const normalized = hasOpenGanttChart
-        ? await normalizeWorkspaceGanttChartsWithFiles(result.value, workspaceState.fileTree, window.relic.readMarkdownFile)
-        : normalizeWorkspaceGanttCharts(result.value);
-      setGanttCharts(normalized);
-    } else {
-      setGanttCharts([]);
-      setWorkspaceError(result.error.message);
-    }
-  }, [hasOpenGanttChart, setWorkspaceError, workspaceState?.activeWorkspace?.id, workspaceState?.fileTree]);
-
-  useEffect(() => {
-    if (!workspaceState?.activeWorkspace || !window.relic) {
-      setGanttCharts([]);
-      return;
-    }
-
-    let canceled = false;
-
-    void window.relic.getWorkspaceChronicle().then((result) => {
-      if (canceled) return;
-
-      if (result.ok) {
-        setGanttCharts(normalizeWorkspaceGanttCharts(result.value));
-      } else {
-        setGanttCharts([]);
-        setWorkspaceError(result.error.message);
-      }
-    });
-
-    return () => {
-      canceled = true;
-    };
-  }, [setWorkspaceError, workspaceState?.activeWorkspace?.id, workspaceState?.fileTree]);
-
-  useEffect(() => {
-    if (!hasOpenGanttChart) return;
-    void reloadGanttCharts();
-  }, [hasOpenGanttChart, reloadGanttCharts]);
+  const aliasesByPath = useWorkspaceAliases({ setWorkspaceError, workspaceState });
+  const { ganttCharts, handleUpdateGanttChartEntry, reloadGanttCharts } = useWorkspaceGanttCharts({
+    hasOpenGanttChart,
+    setWorkspaceError,
+    tabs,
+    updateTabContent,
+    workspaceState
+  });
 
   const {
     handleDeleteActiveFile,
@@ -382,31 +257,6 @@ export function App(): ReactElement {
     sidebarViews.find((view) => view.id === panel)?.icon ?? null
   ), [sidebarViews]);
 
-  const handleUpdateGanttChartEntry = useCallback(async (input: UpdateGanttChartEntryInput): Promise<void> => {
-    if (!window.relic) return;
-
-    const relic = window.relic;
-    const updateEntry = (relic as Partial<typeof relic>).updateGanttChartEntry;
-    const result = typeof updateEntry === "function"
-      ? await updateEntry(input).catch(() => updateGanttChartEntryFallback(input, relic))
-      : await updateGanttChartEntryFallback(input, relic);
-
-    if (result.ok) {
-      setGanttCharts(await normalizeWorkspaceGanttChartsWithFiles(result.value, workspaceState?.fileTree ?? [], relic.readMarkdownFile));
-      const updatedFile = await relic.readMarkdownFile({ path: input.path });
-
-      if (updatedFile.ok) {
-        Object.values(tabs).forEach((tab) => {
-          if (tab.kind === "file" && tab.path === input.path) {
-            updateTabContent(tab.id, updatedFile.value.content);
-          }
-        });
-      }
-    } else {
-      setWorkspaceError(result.error.message);
-    }
-  }, [setWorkspaceError, tabs, updateTabContent]);
-
   const renderGanttChartTab = useCallback((chartId: string): ReactNode => (
     <GanttChartView
       chart={chartId === "charts" ? null : ganttCharts.find((chart) => chart.id === chartId) ?? null}
@@ -456,134 +306,32 @@ export function App(): ReactElement {
     setRightPanelView(view);
   }, [isRightPanelOpen, rightPanelView, setRightPanelView, toggleRightPanel]);
 
-  const openFileInOtherPane = useCallback((fromPane: PaneId, tabId: string) => {
-    const tab = tabs[tabId];
-    if (!tab || !isSplit) return;
-    const otherPane = fromPane === "left" ? "right" : "left";
-    if (tab.kind === "file") {
-      openFileInPane(otherPane, { content: tab.content, name: tab.name, path: tab.path });
-    } else if (tab.kind === "panel") {
-      openPanelInPane(otherPane, tab.panel, tab.name);
-    } else {
-      openGanttChartInPane(otherPane, { id: tab.chartId, name: tab.name });
-    }
-  }, [tabs, isSplit, openFileInPane, openGanttChartInPane, openPanelInPane]);
-
-  const openTreeFileInOtherPane = useCallback((path: string): void => {
-    if (!window.relic || !isSplit) return;
-    const otherPane = focusedPane === "left" ? "right" : "left";
-
-    void window.relic.readMarkdownFile({ path }).then((result) => {
-      if (result.ok) {
-        openFileInPane(otherPane, result.value);
-      } else {
-        setWorkspaceError(result.error.message);
-      }
-    });
-  }, [focusedPane, isSplit, openFileInPane, setWorkspaceError]);
-
-  const openWorkspacePathInOtherPane = useCallback((path: string, heading?: string): void => {
-    if (!window.relic || !isSplit) return;
-    const otherPane = focusedPane === "left" ? "right" : "left";
-    const setScrollHeading = otherPane === "left" ? setLeftPaneScrollHeading : setRightPaneScrollHeading;
-
-    void window.relic.readMarkdownFile({ path }).then((readResult) => {
-      if (readResult.ok) {
-        openFileInPane(otherPane, readResult.value);
-        if (heading) setScrollHeading(heading);
-        return;
-      }
-
-      void window.relic!.createLinkedMarkdownFile({ path }).then((createResult) => {
-        if (createResult.ok) {
-          setWorkspaceState(createResult.value.workspaceState);
-          openFileInPane(otherPane, createResult.value.file);
-          if (heading) setScrollHeading(heading);
-        } else {
-          setWorkspaceError(createResult.error.message);
-        }
-      });
-    });
-  }, [
+  const {
+    handleCreateFileInFolder,
+    handleCreateFolderInFolder,
+    handleDuplicateTabFile,
+    handleRevealTabFile,
+    handleRevealWorkspaceItem,
+    handleSelectFolder,
+    handleTogglePinTab,
+    openFileInOtherPane,
+    openTreeFileInOtherPane,
+    openWorkspacePathInOtherPane
+  } = useAppPaneFileActions({
     focusedPane,
+    handleDuplicateTreeFile,
+    handleTogglePin,
     isSplit,
     openFileInPane,
+    openGanttChartInPane,
+    openPanelInPane,
     setLeftPaneScrollHeading,
     setRightPaneScrollHeading,
     setWorkspaceError,
-    setWorkspaceState
-  ]);
-
-  const handleCreateFileInFolder = useCallback((folderPath: string): void => {
-    if (!window.relic) return;
-    const fileName = window.prompt(t("files.newNoteName"), "Untitled.md");
-    if (fileName === null) return;
-    const trimmedFileName = fileName.trim();
-    if (!trimmedFileName) return;
-
-    const nextPath = joinWorkspacePath(folderPath, ensureMarkdownExtension(trimmedFileName));
-
-    setWorkspaceError(null);
-    void window.relic.createLinkedMarkdownFile({ path: nextPath }).then((result) => {
-      if (result.ok) {
-        setWorkspaceState(result.value.workspaceState);
-        openFileInPane(focusedPane, result.value.file);
-      } else {
-        setWorkspaceError(result.error.message);
-      }
-    });
-  }, [focusedPane, openFileInPane, setWorkspaceError, setWorkspaceState, t]);
-
-  const handleCreateFolderInFolder = useCallback((folderPath: string): void => {
-    if (!window.relic) return;
-    const folderName = window.prompt(t("files.newFolderName"), "New Folder");
-    if (folderName === null) return;
-    const trimmedFolderName = folderName.trim();
-    if (!trimmedFolderName) return;
-
-    setWorkspaceError(null);
-    void window.relic.createFolder({ name: trimmedFolderName, parentFolder: folderPath }).then((result) => {
-      if (result.ok) {
-        setWorkspaceState(result.value);
-      } else {
-        setWorkspaceError(result.error.message);
-      }
-    });
-  }, [setWorkspaceError, setWorkspaceState, t]);
-
-  const handleRevealWorkspaceItem = useCallback((path: string): void => {
-    if (!window.relic) return;
-
-    setWorkspaceError(null);
-    void window.relic.revealWorkspaceItem({ path }).then((result) => {
-      if (!result.ok) setWorkspaceError(result.error.message);
-    });
-  }, [setWorkspaceError]);
-
-  const handleDuplicateTabFile = useCallback((tabId: string): void => {
-    const tab = tabs[tabId];
-    if (!tab || tab.kind !== "file") return;
-    handleDuplicateTreeFile(tab.path);
-  }, [handleDuplicateTreeFile, tabs]);
-
-  const handleRevealTabFile = useCallback((tabId: string): void => {
-    const tab = tabs[tabId];
-    if (!tab || tab.kind !== "file") return;
-    handleRevealWorkspaceItem(tab.path);
-  }, [handleRevealWorkspaceItem, tabs]);
-
-  const handleTogglePinTab = useCallback((tabId: string): void => {
-    const tab = tabs[tabId];
-    if (!tab || tab.kind !== "file") return;
-    handleTogglePin(tab.path);
-  }, [handleTogglePin, tabs]);
-
-  const handleSelectFolder = useCallback(
-    (node: Extract<WorkspaceTreeNode, { type: "folder" }>): void => {
-      void node; // フェーズ2ではフォルダ選択は何もしない
-    },
-    []
-  );
+    setWorkspaceState,
+    t,
+    tabs
+  });
 
   const registeredWorkspaces = useMemo(
     () =>

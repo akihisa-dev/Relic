@@ -54,6 +54,7 @@ import {
   renameWorkspaceRegistration,
   toWorkspaceState
 } from "../workspace/workspaceService";
+import { getActiveWorkspaceContext, ipcErrorDetails } from "./activeWorkspace";
 
 const userDefinedFieldTypes: UserDefinedFieldType[] = [
   "text",
@@ -169,103 +170,86 @@ export function registerWorkspaceHandlers(): void {
       return fail(
         "WORKSPACE_STATE_FAILED",
         "ワークスペース情報を読み込めませんでした。",
-        error instanceof Error ? error.message : String(error)
+        ipcErrorDetails(error)
       );
     }
   });
 
   ipcMain.handle(getWorkspaceTagsChannel, async () => {
     try {
-      const settings = await readAppSettings(app.getPath("userData"));
-      const state = toWorkspaceState(settings);
+      const context = await getActiveWorkspaceContext();
+      if (!context.ok) return context;
 
-      if (!state.activeWorkspace) {
-        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
-      }
-
-      return readWorkspaceTags(state.activeWorkspace.path);
+      return readWorkspaceTags(context.value.activeWorkspace.path);
     } catch (error) {
       return fail(
         "TAGS_READ_FAILED",
         "タグを読み込めませんでした。",
-        error instanceof Error ? error.message : String(error)
+        ipcErrorDetails(error)
       );
     }
   });
 
   ipcMain.handle(getFrontmatterValueCandidatesChannel, async () => {
     try {
-      const settings = await readAppSettings(app.getPath("userData"));
-      const state = toWorkspaceState(settings);
+      const context = await getActiveWorkspaceContext();
+      if (!context.ok) return context;
 
-      if (!state.activeWorkspace) {
-        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
-      }
-
-      return readFrontmatterValueCandidates(state.activeWorkspace.path);
+      return readFrontmatterValueCandidates(context.value.activeWorkspace.path);
     } catch (error) {
       return fail(
         "FRONTMATTER_VALUE_CANDIDATES_READ_FAILED",
         "フロントマター候補を読み込めませんでした。",
-        error instanceof Error ? error.message : String(error)
+        ipcErrorDetails(error)
       );
     }
   });
 
   ipcMain.handle(getWorkspaceAliasesChannel, async () => {
     try {
-      const settings = await readAppSettings(app.getPath("userData"));
-      const state = toWorkspaceState(settings);
+      const context = await getActiveWorkspaceContext();
+      if (!context.ok) return context;
 
-      if (!state.activeWorkspace) {
-        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
-      }
-
-      return readWorkspaceAliases(state.activeWorkspace.path);
+      return readWorkspaceAliases(context.value.activeWorkspace.path);
     } catch (error) {
       return fail(
         "WORKSPACE_ALIASES_FAILED",
         "別名を読み込めませんでした。",
-        error instanceof Error ? error.message : String(error)
+        ipcErrorDetails(error)
       );
     }
   });
 
   ipcMain.handle(getWorkspaceChronicleChannel, async () => {
     try {
-      const settings = await readAppSettings(app.getPath("userData"));
-      const state = toWorkspaceState(settings);
+      const context = await getActiveWorkspaceContext();
+      if (!context.ok) return context;
 
-      if (!state.activeWorkspace) {
-        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
-      }
-
-      const workspaceSettings = await readWorkspaceSettings(app.getPath("userData"), state.activeWorkspace.id);
-      return readWorkspaceChronicle(state.activeWorkspace.path, workspaceSettings.ganttCharts);
+      const workspaceSettings = await readWorkspaceSettings(
+        context.value.userDataPath,
+        context.value.activeWorkspace.id
+      );
+      return readWorkspaceChronicle(context.value.activeWorkspace.path, workspaceSettings.ganttCharts);
     } catch (error) {
       return fail(
         "WORKSPACE_CHRONICLE_FAILED",
         "年表を読み込めませんでした。",
-        error instanceof Error ? error.message : String(error)
+        ipcErrorDetails(error)
       );
     }
   });
 
   ipcMain.handle(getWorkspaceGraphChannel, async () => {
     try {
-      const settings = await readAppSettings(app.getPath("userData"));
-      const state = toWorkspaceState(settings);
+      const context = await getActiveWorkspaceContext();
+      if (!context.ok) return context;
 
-      if (!state.activeWorkspace) {
-        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
-      }
-
-      return readWorkspaceGraph(state.activeWorkspace.path);
+      return readWorkspaceGraph(context.value.activeWorkspace.path);
     } catch (error) {
       return fail(
         "WORKSPACE_GRAPH_FAILED",
         "グラフを読み込めませんでした。",
-        error instanceof Error ? error.message : String(error)
+        ipcErrorDetails(error)
       );
     }
   });
@@ -276,15 +260,14 @@ export function registerWorkspaceHandlers(): void {
         return fail("INVALID_GANTT_CHARTS", "年表設定が正しくありません。");
       }
 
-      const settings = await readAppSettings(app.getPath("userData"));
-      const state = toWorkspaceState(settings);
+      const context = await getActiveWorkspaceContext();
+      if (!context.ok) return context;
 
-      if (!state.activeWorkspace) {
-        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
-      }
-
-      const workspaceSettings = await readWorkspaceSettings(app.getPath("userData"), state.activeWorkspace.id);
-      await writeWorkspaceSettings(app.getPath("userData"), state.activeWorkspace.id, {
+      const workspaceSettings = await readWorkspaceSettings(
+        context.value.userDataPath,
+        context.value.activeWorkspace.id
+      );
+      await writeWorkspaceSettings(context.value.userDataPath, context.value.activeWorkspace.id, {
         ...workspaceSettings,
         ganttCharts: input.map((chart) => ({
           filePaths: chart.filePaths,
@@ -294,12 +277,12 @@ export function registerWorkspaceHandlers(): void {
         }))
       });
 
-      return readWorkspaceChronicle(state.activeWorkspace.path, input);
+      return readWorkspaceChronicle(context.value.activeWorkspace.path, input);
     } catch (error) {
       return fail(
         "WORKSPACE_GANTT_SAVE_FAILED",
         "年表設定を保存できませんでした。",
-        error instanceof Error ? error.message : String(error)
+        ipcErrorDetails(error)
       );
     }
   });
@@ -310,20 +293,19 @@ export function registerWorkspaceHandlers(): void {
         return fail("GANTT_ENTRY_UPDATE_INVALID_INPUT", "チャートの変更内容が正しくありません。");
       }
 
-      const settings = await readAppSettings(app.getPath("userData"));
-      const state = toWorkspaceState(settings);
+      const context = await getActiveWorkspaceContext();
+      if (!context.ok) return context;
 
-      if (!state.activeWorkspace) {
-        return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
-      }
-
-      const workspaceSettings = await readWorkspaceSettings(app.getPath("userData"), state.activeWorkspace.id);
-      return updateWorkspaceGanttChartEntry(state.activeWorkspace.path, workspaceSettings.ganttCharts, input);
+      const workspaceSettings = await readWorkspaceSettings(
+        context.value.userDataPath,
+        context.value.activeWorkspace.id
+      );
+      return updateWorkspaceGanttChartEntry(context.value.activeWorkspace.path, workspaceSettings.ganttCharts, input);
     } catch (error) {
       return fail(
         "GANTT_ENTRY_UPDATE_FAILED",
         "チャートの変更を保存できませんでした。",
-        error instanceof Error ? error.message : String(error)
+        ipcErrorDetails(error)
       );
     }
   });
@@ -354,7 +336,7 @@ export function registerWorkspaceHandlers(): void {
       return fail(
         "WORKSPACE_OPEN_FAILED",
         "ワークスペースを開けませんでした。フォルダの権限や保存場所を確認してください。",
-        error instanceof Error ? error.message : String(error)
+        ipcErrorDetails(error)
       );
     }
   });
@@ -387,7 +369,7 @@ export function registerWorkspaceHandlers(): void {
       return fail(
         "WORKSPACE_CREATE_FAILED",
         "ワークスペースを作成できませんでした。",
-        error instanceof Error ? error.message : String(error)
+        ipcErrorDetails(error)
       );
     }
   });
@@ -420,7 +402,7 @@ export function registerWorkspaceHandlers(): void {
       return fail(
         "TOGGLE_PIN_FAILED",
         "ピン留め操作に失敗しました。",
-        error instanceof Error ? error.message : String(error)
+        ipcErrorDetails(error)
       );
     }
   });
@@ -456,7 +438,7 @@ export function registerWorkspaceHandlers(): void {
         return fail(
           "WORKSPACE_SWITCH_FAILED",
           "ワークスペースを切り替えられませんでした。",
-          error instanceof Error ? error.message : String(error)
+          ipcErrorDetails(error)
         );
       }
     }
@@ -484,7 +466,7 @@ export function registerWorkspaceHandlers(): void {
         return fail(
           "WORKSPACE_REMOVE_FAILED",
           "ワークスペースを一覧から削除できませんでした。",
-          error instanceof Error ? error.message : String(error)
+          ipcErrorDetails(error)
         );
       }
     }
@@ -524,7 +506,7 @@ export function registerWorkspaceHandlers(): void {
         return fail(
           "WORKSPACE_RENAME_FAILED",
           "ワークスペース名を変更できませんでした。",
-          error instanceof Error ? error.message : String(error)
+          ipcErrorDetails(error)
         );
       }
     }
@@ -535,7 +517,7 @@ export function registerWorkspaceHandlers(): void {
       const settings = await readAppSettings(app.getPath("userData"));
       return ok(settings.featureToggles ?? defaultFeatureToggles);
     } catch (error) {
-      return fail("FEATURE_TOGGLES_READ_FAILED", "機能トグルを読み込めませんでした。", error instanceof Error ? error.message : String(error));
+      return fail("FEATURE_TOGGLES_READ_FAILED", "機能トグルを読み込めませんでした。", ipcErrorDetails(error));
     }
   });
 
@@ -545,7 +527,7 @@ export function registerWorkspaceHandlers(): void {
       await writeAppSettings(app.getPath("userData"), { ...settings, featureToggles: input });
       return ok(undefined);
     } catch (error) {
-      return fail("FEATURE_TOGGLES_SAVE_FAILED", "機能トグルを保存できませんでした。", error instanceof Error ? error.message : String(error));
+      return fail("FEATURE_TOGGLES_SAVE_FAILED", "機能トグルを保存できませんでした。", ipcErrorDetails(error));
     }
   });
 
@@ -554,7 +536,7 @@ export function registerWorkspaceHandlers(): void {
       const settings = await readAppSettings(app.getPath("userData"));
       return ok(settings.userDefinedFields);
     } catch (error) {
-      return fail("USER_DEFINED_FIELDS_READ_FAILED", "カスタムフィールドを読み込めませんでした。", error instanceof Error ? error.message : String(error));
+      return fail("USER_DEFINED_FIELDS_READ_FAILED", "カスタムフィールドを読み込めませんでした。", ipcErrorDetails(error));
     }
   });
 
@@ -568,7 +550,7 @@ export function registerWorkspaceHandlers(): void {
       await writeAppSettings(app.getPath("userData"), { ...settings, userDefinedFields: input });
       return ok(undefined);
     } catch (error) {
-      return fail("USER_DEFINED_FIELDS_SAVE_FAILED", "カスタムフィールドを保存できませんでした。", error instanceof Error ? error.message : String(error));
+      return fail("USER_DEFINED_FIELDS_SAVE_FAILED", "カスタムフィールドを保存できませんでした。", ipcErrorDetails(error));
     }
   });
 
@@ -577,7 +559,7 @@ export function registerWorkspaceHandlers(): void {
       const settings = await readAppSettings(app.getPath("userData"));
       return ok(settings.frontmatterTemplates);
     } catch (error) {
-      return fail("FRONTMATTER_TEMPLATES_READ_FAILED", "フロントマターテンプレートを読み込めませんでした。", error instanceof Error ? error.message : String(error));
+      return fail("FRONTMATTER_TEMPLATES_READ_FAILED", "フロントマターテンプレートを読み込めませんでした。", ipcErrorDetails(error));
     }
   });
 
@@ -591,7 +573,7 @@ export function registerWorkspaceHandlers(): void {
       await writeAppSettings(app.getPath("userData"), { ...settings, frontmatterTemplates: input });
       return ok(undefined);
     } catch (error) {
-      return fail("FRONTMATTER_TEMPLATES_SAVE_FAILED", "フロントマターテンプレートを保存できませんでした。", error instanceof Error ? error.message : String(error));
+      return fail("FRONTMATTER_TEMPLATES_SAVE_FAILED", "フロントマターテンプレートを保存できませんでした。", ipcErrorDetails(error));
     }
   });
 }
