@@ -1,0 +1,146 @@
+import { createRef } from "react";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+
+import type { GanttChartEntry, WorkspaceGanttChart } from "../../shared/ipc";
+import {
+  DATE_SCALES,
+  buildChartRows,
+  buildGuideTicks,
+  buildTicks,
+  timelineBounds
+} from "../chronicleTimeline";
+import { I18nProvider } from "../i18n";
+import { ChronicleChartGrid, type ChronicleChartGridProps } from "./ChronicleChartGrid";
+
+const day = (value: string): number =>
+  Math.floor(new Date(`${value}T00:00:00.000Z`).getTime() / 86_400_000);
+
+function entry(overrides: Partial<GanttChartEntry> = {}): GanttChartEntry {
+  return {
+    endLabel: "1333",
+    endValue: 1332,
+    fileName: "鎌倉時代",
+    path: "history/kamakura.md",
+    startLabel: "1185",
+    startValue: 1184,
+    ...overrides
+  };
+}
+
+function chart(overrides: Partial<WorkspaceGanttChart> = {}): WorkspaceGanttChart {
+  return {
+    entries: [entry()],
+    id: "chronicle",
+    name: "chronicle",
+    source: "chronicle",
+    ...overrides
+  };
+}
+
+function renderGrid(overrides: Partial<ChronicleChartGridProps> = {}) {
+  const activeChart = overrides.activeChart === undefined ? chart() : overrides.activeChart;
+  const activeSource = overrides.activeSource ?? activeChart?.source ?? "chronicle";
+  const entries = activeChart?.entries ?? [];
+  const dateScale = activeSource === "date" ? DATE_SCALES[1] : null;
+  const tickInterval = activeSource === "date" ? 1 : 10;
+  const bounds = timelineBounds(entries, tickInterval, activeSource, dateScale);
+  const ticks = buildTicks(bounds.axisStart, bounds.axisEnd, tickInterval, activeSource, dateScale);
+  const props: ChronicleChartGridProps = {
+    activeChart,
+    activeSource,
+    axisEnd: bounds.axisEnd,
+    axisStart: bounds.axisStart,
+    chartRef: createRef<HTMLDivElement>(),
+    chronicleOffscreenIndicators: { left: null, right: null },
+    dateAxisHeight: activeSource === "date" ? 46 : 34,
+    dateOffscreenIndicators: { left: null, right: null },
+    dateScale,
+    dragPreview: null,
+    guideTicks: buildGuideTicks(bounds.axisStart, bounds.axisEnd, ticks, tickInterval, activeSource, dateScale),
+    nameColumnWidth: activeSource === "date" ? 430 : 300,
+    onChartPointerDown: vi.fn(),
+    onChartScroll: vi.fn(),
+    onJump: vi.fn(),
+    onOpenFile: vi.fn(),
+    onStartEntryEdit: vi.fn(),
+    rows: buildChartRows(entries, activeSource),
+    scrollLeft: 0,
+    tickInterval,
+    timelineWidth: 720,
+    unitWidth: activeSource === "date" ? 5 : 7.2,
+    ...overrides
+  };
+
+  return {
+    props,
+    ...render(
+      <I18nProvider language="ja">
+        <ChronicleChartGrid {...props} />
+      </I18nProvider>
+    )
+  };
+}
+
+describe("ChronicleChartGrid", () => {
+  it("chronicleのname列、axis、barを既存class名で描画し操作callbackへつなぐ", () => {
+    const { container, props } = renderGrid();
+
+    expect(container.querySelector(".chronicle-chart")).toBeInTheDocument();
+    expect(container.querySelector(".chronicle-name-column")).toHaveStyle({ width: "300px" });
+    expect(container.querySelector(".chronicle-name-header--chronicle")).toBeInTheDocument();
+    expect(container.querySelector(".chronicle-axis--chronicle")).toBeInTheDocument();
+    expect(container.querySelector(".chronicle-fill--chronicle")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "鎌倉時代" }));
+    fireEvent.click(screen.getByTitle("この年代へ移動"));
+    fireEvent.pointerDown(container.querySelector(".chronicle-chart") as Element);
+
+    expect(props.onOpenFile).toHaveBeenCalledWith("history/kamakura.md");
+    expect(props.onJump).toHaveBeenCalledWith(expect.any(Number));
+    expect(props.onChartPointerDown).toHaveBeenCalledTimes(1);
+  });
+
+  it("dateのplanned/actual列とstatus badgeを既存class名で描画する", () => {
+    const dateChart = chart({
+      entries: [
+        entry({
+          dateKind: "planned",
+          endLabel: "2026-05-05",
+          endValue: day("2026-05-05"),
+          fileName: "実装タスク",
+          path: "tasks/implementation.md",
+          startLabel: "2026-05-01",
+          startValue: day("2026-05-01")
+        }),
+        entry({
+          dateKind: "actual",
+          endLabel: "2026-05-06",
+          endValue: day("2026-05-06"),
+          fileName: "実装タスク",
+          path: "tasks/implementation.md",
+          startLabel: "2026-05-03",
+          startValue: day("2026-05-03"),
+          statuses: ["完了"]
+        })
+      ],
+      id: "date",
+      name: "date",
+      source: "date"
+    });
+    const { container } = renderGrid({ activeChart: dateChart, activeSource: "date" });
+
+    expect(screen.getByText("計画")).toBeInTheDocument();
+    expect(screen.getByText("実行")).toBeInTheDocument();
+    expect(container.querySelector(".chronicle-name-header--date")).toBeInTheDocument();
+    expect(container.querySelector(".chronicle-fill--planned")).toBeInTheDocument();
+    expect(container.querySelector(".chronicle-fill--actual")).toBeInTheDocument();
+    expect(container.querySelector(".chronicle-fill-status")).toHaveTextContent("完了");
+  });
+
+  it("active chartなしでは既存empty表示を出す", () => {
+    renderGrid({ activeChart: null, rows: [] });
+
+    expect(screen.getByText("このガントチャートに表示できるファイルはまだありません。")).toHaveClass("frontmatter-field-empty");
+  });
+});
