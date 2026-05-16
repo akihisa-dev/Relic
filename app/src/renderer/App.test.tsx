@@ -709,23 +709,26 @@ describe("App", () => {
     expect(renderResult.container.querySelector(".chronicle-sidebar")).toBeNull();
     expect(screen.getAllByText("鎌倉時代").length).toBeGreaterThan(0);
     expect(screen.getByText("1185 〜 1333")).toBeInTheDocument();
-    expect(renderResult.container.querySelector(".chronicle-scale-value")).toHaveTextContent("50");
+    expect(screen.getByText("年代")).toBeInTheDocument();
+    expect(screen.getByText("1185-1333")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "全体" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "1185-1333" })).toHaveAttribute(
+      "title",
+      "この年代へ移動"
+    );
+    expect(renderResult.container.querySelector(".chronicle-minimap")).toBeInTheDocument();
+    expect(renderResult.container.querySelector(".chronicle-minimap-item")).toBeInTheDocument();
+    expect(renderResult.container.querySelector(".chronicle-scale-value")).toHaveTextContent("10");
     expect(screen.queryByText("計画")).not.toBeInTheDocument();
     expect(screen.queryByText("実行")).not.toBeInTheDocument();
     expect(renderResult.container.querySelectorAll(".chronicle-guide-line").length).toBeGreaterThan(0);
     expect(renderResult.container.querySelectorAll(".chronicle-guide-line--major").length).toBeGreaterThan(0);
-    expect(renderResult.container.querySelectorAll(".chronicle-guide-line")).toHaveLength(
-      renderResult.container.querySelectorAll(".chronicle-guide-line--major").length
-    );
-    fireEvent.click(screen.getByRole("button", { name: "スケールを細かくする" }));
-    expect(renderResult.container.querySelector(".chronicle-scale-value")).toHaveTextContent("25");
-    expect(renderResult.container.querySelectorAll(".chronicle-guide-line").length).toBeLessThan(100);
-    expect(renderResult.container.querySelectorAll(".chronicle-guide-line")).toHaveLength(
+    expect(renderResult.container.querySelectorAll(".chronicle-guide-line").length).toBeGreaterThan(
       renderResult.container.querySelectorAll(".chronicle-guide-line--major").length
     );
     fireEvent.click(screen.getByRole("button", { name: "スケールを細かくする" }));
     expect(renderResult.container.querySelector(".chronicle-scale-value")).toHaveTextContent("1");
-    const oneYearScaleAxisLabels = Array.from(renderResult.container.querySelectorAll(".chronicle-axis-tick"))
+    const oneYearScaleAxisLabels = Array.from(renderResult.container.querySelectorAll(".chronicle-axis--chronicle .chronicle-axis-cell"))
       .map((element) => element.textContent?.replace("−", "-") ?? "");
     expect(oneYearScaleAxisLabels.length).toBeGreaterThan(0);
     expect(oneYearScaleAxisLabels.every((label) => Number(label) % 10 === 0)).toBe(true);
@@ -796,7 +799,7 @@ describe("App", () => {
     fireEvent.click(screen.getByRole("button", { name: "チャート" }));
     fireEvent.click(container.querySelector(".chronicle-source-button")!);
     fireEvent.click(screen.getByRole("button", { name: "スケールを細かくする" }));
-    expect(container.querySelector(".chronicle-scale-value")).toHaveTextContent("25");
+    expect(container.querySelector(".chronicle-scale-value")).toHaveTextContent("1");
 
     const fill = container.querySelector(".chronicle-fill") as HTMLElement;
     const pointerDown = new Event("pointerdown", { bubbles: true }) as PointerEvent;
@@ -816,13 +819,13 @@ describe("App", () => {
     window.dispatchEvent(pointerUp);
 
     await waitFor(() => expect(updateGanttChartEntry).toHaveBeenCalledWith({
-      endValue: 1348,
+      endValue: 1333,
       kind: "move",
       originalEndValue: 1332,
       originalStartValue: 1184,
       path: "history/kamakura.md",
       source: "chronicle",
-      startValue: 1200
+      startValue: 1185
     }));
   });
 
@@ -866,7 +869,7 @@ describe("App", () => {
     fireEvent.click(screen.getByRole("button", { name: "チャート" }));
     fireEvent.click(container.querySelector(".chronicle-source-button")!);
     fireEvent.click(screen.getByRole("button", { name: "スケールを細かくする" }));
-    expect(container.querySelector(".chronicle-scale-value")).toHaveTextContent("25");
+    expect(container.querySelector(".chronicle-scale-value")).toHaveTextContent("1");
 
     const fill = container.querySelector(".chronicle-fill") as HTMLElement;
     const pointerDown = new Event("pointerdown", { bubbles: true }) as PointerEvent;
@@ -880,13 +883,13 @@ describe("App", () => {
     window.dispatchEvent(pointerUp);
 
     await waitFor(() => expect(updateGanttChartEntry).toHaveBeenCalledWith({
-      endValue: 1366,
+      endValue: 1335,
       kind: "move",
       originalEndValue: 1332,
       originalStartValue: 1184,
       path: "history/kamakura.md",
       source: "chronicle",
-      startValue: 1218
+      startValue: 1187
     }));
   });
 

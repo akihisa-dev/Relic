@@ -14,7 +14,7 @@ interface GanttChartViewProps {
 }
 
 const ROW_HEIGHT = 38;
-const NAME_COLUMN_WIDTH = 180;
+const CHRONICLE_NAME_COLUMN_WIDTH = 300;
 const DATE_NAME_COLUMN_WIDTH = 430;
 const TICK_WIDTH = 72;
 const DATE_TICK_WIDTH = 52;
@@ -24,7 +24,7 @@ const CHRONICLE_FAST_DRAG_SPEED = 1.4;
 const CHRONICLE_FINE_DRAG_MULTIPLIER = 0.65;
 const CHRONICLE_FAST_DRAG_MULTIPLIER = 1.35;
 const SCALE_OPTIONS: Record<GanttChartSource, readonly number[]> = {
-  chronicle: [1, 25, 50, 100, 200, 500],
+  chronicle: [1, 10, 100],
   date: [0, 1, 2]
 };
 
@@ -70,6 +70,12 @@ interface DateOffscreenIndicator {
   targetValue: number;
 }
 
+interface MinimapItem {
+  key: string;
+  leftPercent: number;
+  widthPercent: number;
+}
+
 type ChronicleSortKey = "start-asc" | "start-desc" | "name-asc" | "name-desc";
 
 export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdateEntry }: GanttChartViewProps): ReactElement {
@@ -86,8 +92,10 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdate
   const [chartViewportWidth, setChartViewportWidth] = useState(720);
   const [dragPreview, setDragPreview] = useState<DragPreview | null>(null);
   const chartRef = useRef<HTMLDivElement | null>(null);
+  const minimapRef = useRef<HTMLDivElement | null>(null);
   const previousAxisStartRef = useRef<number | null>(null);
   const initialDateScrollKeyRef = useRef<string | null>(null);
+  const initialChronicleScrollKeyRef = useRef<string | null>(null);
   const activeChart = chart ?? availableCharts.find((candidate) => candidate.id === selectedGanttChartId) ?? availableCharts[0] ?? null;
   const activeSource = activeChart && isGanttChartSource(activeChart.source) ? activeChart.source : "chronicle";
   const allEntries = visibleEntries(activeChart);
@@ -106,7 +114,7 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdate
   const axisSpan = Math.max(1, axisEnd - axisStart + 1);
   const tickWidth = activeSource === "date" ? DATE_TICK_WIDTH : TICK_WIDTH;
   const unitWidth = activeSource === "date" ? dateUnitWidth(dateScale) : chronicleUnitWidth(tickInterval, tickWidth);
-  const nameColumnWidth = activeSource === "date" ? DATE_NAME_COLUMN_WIDTH : NAME_COLUMN_WIDTH;
+  const nameColumnWidth = activeSource === "date" ? DATE_NAME_COLUMN_WIDTH : CHRONICLE_NAME_COLUMN_WIDTH;
   const timelineWidth = Math.max(720, axisSpan * unitWidth);
   const viewportTimelineWidth = Math.max(1, chartViewportWidth - nameColumnWidth);
   const visibleStartValue = axisStart + scrollLeft / unitWidth;
@@ -123,6 +131,16 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdate
   const dateOffscreenIndicators = activeSource === "date"
     ? dateOffscreenBarIndicators(entries, visibleStartValue, visibleEndValue)
     : { left: null, right: null };
+  const chronicleOffscreenIndicators = activeSource === "chronicle"
+    ? timelineOffscreenBarIndicators(entries, visibleStartValue, visibleEndValue)
+    : { left: null, right: null };
+  const minimapItems = useMemo(
+    () => activeSource === "chronicle" ? minimapItemsForEntries(entries, axisStart, axisEnd) : [],
+    [activeSource, axisEnd, axisStart, entries]
+  );
+  const minimapViewport = activeSource === "chronicle"
+    ? minimapViewportRange(axisStart, axisEnd, visibleStartValue, visibleEndValue)
+    : { leftPercent: 0, widthPercent: 0 };
 
   const updateChartViewportWidth = useCallback((): void => {
     const chartElement = chartRef.current;
@@ -151,6 +169,22 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdate
   const scrollToToday = useCallback((): void => {
     scrollToTimelineValue(dateNavigationTarget(entries, axisStart, axisEnd));
   }, [axisEnd, axisStart, entries, scrollToTimelineValue]);
+
+  const scrollToChronicleFocus = useCallback((): void => {
+    const target = chronicleNavigationTarget(entries, axisStart, axisEnd);
+    if (target !== null) scrollToTimelineValue(target);
+  }, [axisEnd, axisStart, entries, scrollToTimelineValue]);
+
+  const fitChronicleOverview = useCallback((): void => {
+    const overviewScaleIndex = SCALE_OPTIONS.chronicle.length - 1;
+
+    if (scaleIndex === overviewScaleIndex) {
+      scrollToChronicleFocus();
+      return;
+    }
+
+    setScaleIndex(overviewScaleIndex);
+  }, [scaleIndex, scrollToChronicleFocus]);
 
   useLayoutEffect(() => {
     updateChartViewportWidth();
@@ -196,6 +230,16 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdate
     initialDateScrollKeyRef.current = key;
     scrollToToday();
   }, [activeChart, activeSource, scrollToToday]);
+
+  useLayoutEffect(() => {
+    if (activeSource !== "chronicle" || !activeChart) return;
+
+    const key = `${activeChart.id}:${tickInterval}`;
+    if (initialChronicleScrollKeyRef.current === key) return;
+
+    initialChronicleScrollKeyRef.current = key;
+    scrollToChronicleFocus();
+  }, [activeChart, activeSource, scrollToChronicleFocus, tickInterval]);
 
   useEffect(() => {
     if (chart) return;
@@ -363,6 +407,42 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdate
     window.addEventListener("pointercancel", stop);
   };
 
+  const handleMinimapPointer = (event: PointerEvent<HTMLDivElement>): void => {
+    if (activeSource !== "chronicle" || event.button > 0) return;
+
+    const minimapElement = minimapRef.current;
+    if (!minimapElement) return;
+
+    const scrollFromClientX = (clientX: number): void => {
+      const rect = minimapElement.getBoundingClientRect();
+      const ratio = rect.width > 0 ? clamp((clientX - rect.left) / rect.width, 0, 1) : 0;
+      const targetValue = axisStart + ratio * Math.max(1, axisEnd - axisStart + 1);
+      scrollToTimelineValue(targetValue);
+    };
+
+    event.preventDefault();
+    scrollFromClientX(event.clientX);
+
+    if (minimapElement.setPointerCapture) {
+      minimapElement.setPointerCapture(event.pointerId);
+    }
+
+    const move = (moveEvent: globalThis.PointerEvent): void => scrollFromClientX(moveEvent.clientX);
+    const stop = (): void => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", stop);
+      window.removeEventListener("pointercancel", stop);
+
+      if (minimapElement.hasPointerCapture?.(event.pointerId)) {
+        minimapElement.releasePointerCapture(event.pointerId);
+      }
+    };
+
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", stop);
+    window.addEventListener("pointercancel", stop);
+  };
+
   return (
     <div className="chronicle-panel">
       <div className="chronicle-toolbar">
@@ -420,6 +500,14 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdate
             >
               {t("chronicle.today")}
             </button>
+          ) : activeSource === "chronicle" ? (
+            <button
+              className="chronicle-today-button"
+              onClick={fitChronicleOverview}
+              type="button"
+            >
+              {t("chronicle.fitAll")}
+            </button>
           ) : null}
           <button
             aria-label={t("chronicle.scaleDecrease")}
@@ -442,6 +530,30 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdate
           </button>
         </div>
       </div>
+      {activeChart && activeSource === "chronicle" && minimapItems.length > 0 ? (
+        <div className="chronicle-minimap-panel">
+          <span className="chronicle-minimap-label">{t("chronicle.overview")}</span>
+          <div
+            aria-label={t("chronicle.minimap")}
+            className="chronicle-minimap"
+            onPointerDown={handleMinimapPointer}
+            ref={minimapRef}
+            role="slider"
+          >
+            {minimapItems.map((item) => (
+              <span
+                className="chronicle-minimap-item"
+                key={item.key}
+                style={{ left: `${item.leftPercent}%`, width: `${item.widthPercent}%` }}
+              />
+            ))}
+            <span
+              className="chronicle-minimap-window"
+              style={{ left: `${minimapViewport.leftPercent}%`, width: `${minimapViewport.widthPercent}%` }}
+            />
+          </div>
+        </div>
+      ) : null}
       {!activeChart ? (
         <div className="frontmatter-field-empty">{t("chronicle.empty")}</div>
       ) : (
@@ -457,17 +569,29 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdate
               onJump={scrollToTimelineValue}
               t={t}
             />
+          ) : activeSource === "chronicle" ? (
+            <TimelineOffscreenJumpButtons
+              indicators={chronicleOffscreenIndicators}
+              leftOffset={nameColumnWidth}
+              onJump={scrollToTimelineValue}
+              t={t}
+            />
           ) : null}
           <div className="chronicle-grid" style={{ width: nameColumnWidth + timelineWidth }}>
             <div className="chronicle-name-column" style={{ width: nameColumnWidth }}>
-              <div className={`chronicle-name-header${activeSource === "date" ? " chronicle-name-header--date" : ""}`} style={{ height: dateAxisHeight }}>
+              <div className={`chronicle-name-header${activeSource === "date" ? " chronicle-name-header--date" : " chronicle-name-header--chronicle"}`} style={{ height: dateAxisHeight }}>
                 {activeSource === "date" ? (
                   <>
                     <span />
                     <span>{t("chronicle.plannedDate")}</span>
                     <span>{t("chronicle.actualDate")}</span>
                   </>
-                ) : null}
+                ) : (
+                  <>
+                    <span />
+                    <span>{t("chronicle.period")}</span>
+                  </>
+                )}
               </div>
               {rows.length === 0 ? (
                 <div className="chronicle-file-name-row chronicle-file-name-row--empty">
@@ -476,7 +600,7 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdate
               ) : (
                 rows.map((row) => (
                   <div
-                    className={`chronicle-file-name-row${activeSource === "date" ? " chronicle-file-name-row--date" : ""}`}
+                    className={`chronicle-file-name-row${activeSource === "date" ? " chronicle-file-name-row--date" : " chronicle-file-name-row--chronicle"}`}
                     key={row.key}
                   >
                     <button
@@ -496,7 +620,16 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdate
                           {dateSummaryForRow(row, "actual")}
                         </span>
                       </>
-                    ) : null}
+                    ) : (
+                      <button
+                        className="chronicle-year-summary"
+                        onClick={() => scrollToTimelineValue(rowCenterValue(row))}
+                        title={t("chronicle.jumpToPeriod")}
+                        type="button"
+                      >
+                        {chronicleSummaryForRow(row)}
+                      </button>
+                    )}
                   </div>
                 ))
               )}
@@ -505,17 +638,13 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdate
               {activeSource === "date" ? (
                 <DateAxis axisEnd={axisEnd} axisStart={axisStart} scale={dateScale ?? DATE_SCALES[2]} unitWidth={unitWidth} width={timelineWidth} />
               ) : (
-                <div className="chronicle-axis" style={{ width: timelineWidth }}>
-                  {ticks.map((tick, index) => (
-                    <span
-                      className={`chronicle-axis-tick${index === 0 ? " chronicle-axis-tick--start" : ""}${index === ticks.length - 1 ? " chronicle-axis-tick--end" : ""}`}
-                      key={tick}
-                      style={{ left: (tick - axisStart) * unitWidth }}
-                    >
-                      {formatAxisValue(tick, activeSource)}
-                    </span>
-                  ))}
-                </div>
+                <ChronicleAxis
+                  axisEnd={axisEnd}
+                  axisStart={axisStart}
+                  interval={chronicleAxisTickInterval(tickInterval)}
+                  unitWidth={unitWidth}
+                  width={timelineWidth}
+                />
               )}
               <div
                 className={`chronicle-tracks${activeSource === "date" ? " chronicle-tracks--date" : ""}`}
@@ -537,20 +666,22 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdate
                 ) : null}
                 {rows.map((row, index) => row.entries.map((entry) => {
                     const previewEntry = previewEntryForDrag(entry, dragPreview);
-                    const left = Math.max(0, (previewEntry.startValue - axisStart) * unitWidth);
+                    const valueLeft = Math.max(0, (previewEntry.startValue - axisStart) * unitWidth);
                     const isSingleValue = previewEntry.startValue === previewEntry.endValue;
                     const rangeLabel = formatRange(previewEntry, activeSource, dateScale);
                     const labelWidth = labelWidthForText(rangeLabel);
                     const naturalWidth = isSingleValue ? unitWidth : (previewEntry.endValue - previewEntry.startValue + 1) * unitWidth;
-                    const width = activeSource === "date"
-                      ? Math.max(4, naturalWidth)
-                      : isSingleValue
-                        ? Math.max(46, naturalWidth)
-                        : Math.max(28, naturalWidth);
+                    const width = Math.max(4, naturalWidth);
+                    const left = activeSource === "chronicle" && isSingleValue
+                      ? Math.max(0, valueLeft + (naturalWidth - width) / 2)
+                      : valueLeft;
                     const maxLabelLeft = Math.max(0, width - labelWidth);
                     const labelLeft = isSingleValue
                       ? (width - labelWidth) / 2
                       : Math.max(7, Math.min(maxLabelLeft, scrollLeft - left + 7));
+                    const top = activeSource === "date"
+                      ? index * ROW_HEIGHT + dateFillOffset()
+                      : index * ROW_HEIGHT;
                     const dateKind = entry.dateKind ?? "planned";
                     const statusLabel = activeSource === "date" && dateKind === "actual"
                       ? statusLabelForEntry(entry)
@@ -566,14 +697,14 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdate
                     return (
                       <button
                         aria-label={`${entry.fileName} ${formatDateKindLabel(entry.dateKind, t)} ${rangeLabel}${statusLabel ? ` ${statusLabel}` : ""}`}
-                        className={`chronicle-fill${isSingleValue ? " chronicle-fill--single" : ""}${activeSource === "date" ? ` chronicle-fill--date chronicle-fill--${dateKind}` : ""}${isPreviewForEntry(entry, dragPreview, activeSource) ? " chronicle-fill--dragging" : ""}`}
+                        className={`chronicle-fill${activeSource === "date" ? ` chronicle-fill--date chronicle-fill--${dateKind}` : " chronicle-fill--chronicle"}${isPreviewForEntry(entry, dragPreview, activeSource) ? " chronicle-fill--dragging" : ""}`}
                         data-date-kind={entry.dateKind}
                         key={entryKey(entry)}
                         onPointerDown={(event) => startEntryEdit(event, entry, "move")}
                         style={{
                           height: activeSource === "date" ? dateFillHeight() : undefined,
                           left,
-                          top: index * ROW_HEIGHT + (activeSource === "date" ? dateFillOffset() : 0),
+                          top,
                           width
                         }}
                         title={`${entry.fileName}${activeSource === "date" ? ` ${formatDateKindLabel(entry.dateKind, t)}: ` : " "}${rangeLabel}`}
@@ -655,6 +786,41 @@ function DateAxis({
           ))}
         </div>
       ))}
+    </div>
+  );
+}
+
+function ChronicleAxis({
+  axisEnd,
+  axisStart,
+  interval,
+  unitWidth,
+  width
+}: {
+  axisEnd: number;
+  axisStart: number;
+  interval: number;
+  unitWidth: number;
+  width: number;
+}): ReactElement {
+  const segments = buildChronicleAxisSegments(axisStart, axisEnd, interval);
+
+  return (
+    <div className="chronicle-axis chronicle-axis--chronicle" style={{ width }}>
+      <div className="chronicle-axis-row chronicle-axis-row--chronicle">
+        {segments.map((segment) => (
+          <span
+            className="chronicle-axis-cell"
+            key={`${segment.label}-${segment.startValue}`}
+            style={{
+              left: (segment.startValue - axisStart) * unitWidth,
+              width: Math.max(1, (segment.endValue - segment.startValue + 1) * unitWidth)
+            }}
+          >
+            {segment.label}
+          </span>
+        ))}
+      </div>
     </div>
   );
 }
@@ -751,6 +917,48 @@ function DateOffscreenJumpButtons({
           className="chronicle-offscreen-jump chronicle-offscreen-jump--right"
           onClick={() => onJump(indicators.right?.targetValue ?? 0)}
           title={t("chronicle.offscreenRight", { count: indicators.right.count })}
+          type="button"
+        >
+          {indicators.right.count} →
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+function TimelineOffscreenJumpButtons({
+  indicators,
+  leftOffset,
+  onJump,
+  t
+}: {
+  indicators: { left: DateOffscreenIndicator | null; right: DateOffscreenIndicator | null };
+  leftOffset: number;
+  onJump: (value: number) => void;
+  t: Translator;
+}): ReactElement | null {
+  if (!indicators.left && !indicators.right) return null;
+
+  return (
+    <div className="chronicle-offscreen-jumps">
+      {indicators.left ? (
+        <button
+          aria-label={t("chronicle.offscreenPast", { count: indicators.left.count })}
+          className="chronicle-offscreen-jump chronicle-offscreen-jump--left"
+          onClick={() => onJump(indicators.left?.targetValue ?? 0)}
+          style={{ left: leftOffset + 10 }}
+          title={t("chronicle.offscreenPast", { count: indicators.left.count })}
+          type="button"
+        >
+          ← {indicators.left.count}
+        </button>
+      ) : null}
+      {indicators.right ? (
+        <button
+          aria-label={t("chronicle.offscreenFuture", { count: indicators.right.count })}
+          className="chronicle-offscreen-jump chronicle-offscreen-jump--right"
+          onClick={() => onJump(indicators.right?.targetValue ?? 0)}
+          title={t("chronicle.offscreenFuture", { count: indicators.right.count })}
           type="button"
         >
           {indicators.right.count} →
@@ -857,6 +1065,10 @@ function rowEndValue(row: ChartRow): number {
   return Math.max(...row.entries.map((entry) => entry.endValue));
 }
 
+function rowCenterValue(row: ChartRow): number {
+  return (rowStartValue(row) + rowEndValue(row)) / 2;
+}
+
 function sortDateRowEntries(entries: GanttChartEntry[]): GanttChartEntry[] {
   return [...entries].sort((a, b) => dateKindOrder(a.dateKind) - dateKindOrder(b.dateKind));
 }
@@ -890,9 +1102,68 @@ function dateSummaryForRow(row: ChartRow, kind: GanttChartDateKind): string {
   return start === end ? start : `${start}-${end}`;
 }
 
+function chronicleSummaryForRow(row: ChartRow): string {
+  const start = Math.min(...row.entries.map((entry) => entry.startValue));
+  const end = Math.max(...row.entries.map((entry) => entry.endValue));
+  const startLabel = formatAxisValue(start, "chronicle");
+  const endLabel = formatAxisValue(end, "chronicle");
+
+  return startLabel === endLabel ? startLabel : `${startLabel}-${endLabel}`;
+}
+
 function formatDateSummaryLabel(value: string, omitYear: boolean): string {
   const normalized = value.replace(/-/g, "/");
   return omitYear ? normalized.slice(5) : normalized;
+}
+
+function timelineOffscreenBarIndicators(
+  entries: GanttChartEntry[],
+  visibleStartValue: number,
+  visibleEndValue: number
+): { left: DateOffscreenIndicator | null; right: DateOffscreenIndicator | null } {
+  const leftEntries = entries.filter((entry) => entry.endValue < visibleStartValue);
+  const rightEntries = entries.filter((entry) => entry.startValue > visibleEndValue);
+  const leftTarget = leftEntries.length > 0 ? Math.max(...leftEntries.map((entry) => entry.endValue)) : null;
+  const rightTarget = rightEntries.length > 0 ? Math.min(...rightEntries.map((entry) => entry.startValue)) : null;
+
+  return {
+    left: leftTarget === null ? null : { count: leftEntries.length, targetValue: leftTarget },
+    right: rightTarget === null ? null : { count: rightEntries.length, targetValue: rightTarget }
+  };
+}
+
+function minimapItemsForEntries(entries: GanttChartEntry[], axisStart: number, axisEnd: number): MinimapItem[] {
+  const span = Math.max(1, axisEnd - axisStart + 1);
+
+  return entries.map((entry) => ({
+    key: entryKey(entry),
+    leftPercent: clamp(((entry.startValue - axisStart) / span) * 100, 0, 100),
+    widthPercent: clamp(((entry.endValue - entry.startValue + 1) / span) * 100, 0.8, 100)
+  }));
+}
+
+function minimapViewportRange(
+  axisStart: number,
+  axisEnd: number,
+  visibleStartValue: number,
+  visibleEndValue: number
+): { leftPercent: number; widthPercent: number } {
+  const span = Math.max(1, axisEnd - axisStart + 1);
+  const leftPercent = clamp(((visibleStartValue - axisStart) / span) * 100, 0, 100);
+  const widthPercent = clamp(((visibleEndValue - visibleStartValue) / span) * 100, 2, 100 - leftPercent);
+
+  return { leftPercent, widthPercent };
+}
+
+function chronicleNavigationTarget(entries: GanttChartEntry[], axisStart: number, axisEnd: number): number | null {
+  if (entries.length === 0) return null;
+
+  const sortedMidpoints = entries
+    .map((entry) => (entry.startValue + entry.endValue) / 2)
+    .sort((a, b) => a - b);
+  const midpoint = sortedMidpoints[Math.floor(sortedMidpoints.length / 2)] ?? (axisStart + axisEnd) / 2;
+
+  return clamp(midpoint, axisStart, axisEnd);
 }
 
 function dateOffscreenBarIndicators(
@@ -1083,8 +1354,8 @@ function buildGuideTicks(
   dateScale: DateScale | null
 ): ChartGuideTick[] {
   if (source !== "date") {
-    const majorTicks = new Set(ticks);
-    return buildChronicleTicks(axisStart, axisEnd, chronicleGuideInterval(interval))
+    const majorTicks = new Set(buildChronicleTicks(axisStart, axisEnd, chronicleMajorGuideInterval(interval)));
+    return buildChronicleTicks(axisStart, axisEnd, chronicleMinorGuideInterval(interval))
       .map((value) => ({
         isMajor: majorTicks.has(value),
         value
@@ -1124,8 +1395,12 @@ function chronicleAxisTickInterval(interval: number): number {
   return interval === 1 ? 10 : interval;
 }
 
-function chronicleGuideInterval(interval: number): number {
-  return interval;
+function chronicleMajorGuideInterval(interval: number): number {
+  return interval === 1 ? 10 : 100;
+}
+
+function chronicleMinorGuideInterval(interval: number): number {
+  return interval === 100 ? 10 : interval;
 }
 
 function buildDateTicks(axisStart: number, axisEnd: number, unit: DateAxisSegmentUnit): number[] {
@@ -1230,6 +1505,30 @@ function buildDateAxisSegments(
   return segments;
 }
 
+function buildChronicleAxisSegments(axisStart: number, axisEnd: number, interval: number): DateAxisSegment[] {
+  const segments: DateAxisSegment[] = [];
+  const first = firstChronicleTickYear(axisToYear(axisStart), interval);
+  const endYear = axisToYear(axisEnd);
+
+  for (let year = first; year <= endYear; year += interval) {
+    if (year === 0) continue;
+
+    const nextYear = year + interval;
+    const startValue = Math.max(axisStart, yearToAxis(year));
+    const endValue = Math.min(axisEnd, yearToAxis(nextYear) - 1);
+
+    if (endValue >= startValue) {
+      segments.push({
+        endValue,
+        label: formatChronicleAxisSegmentLabel(year),
+        startValue
+      });
+    }
+  }
+
+  return segments;
+}
+
 function startOfDateUnit(value: number, unit: DateAxisSegmentUnit): number {
   const date = new Date(value * 86_400_000);
   if (unit === "day") return value;
@@ -1285,6 +1584,10 @@ function formatDateAxisSegmentLabel(value: number, unit: DateAxisSegmentUnit): s
   return String(month).padStart(2, "0");
 }
 
+function formatChronicleAxisSegmentLabel(year: number): string {
+  return year < 0 ? `−${Math.abs(year)}` : String(year);
+}
+
 function formatDateLabel(value: string, unit: DateScaleUnit): string {
   if (unit === "day") return value.slice(8, 10);
   if (unit === "month") return value.slice(5);
@@ -1297,7 +1600,7 @@ function isGanttChartSource(value: unknown): value is GanttChartSource {
 
 function defaultScaleIndex(source: GanttChartSource): number {
   if (source === "date") return 1;
-  return Math.max(0, SCALE_OPTIONS.chronicle.indexOf(50));
+  return Math.max(0, SCALE_OPTIONS.chronicle.indexOf(10));
 }
 
 function createStablePointerDelta(startClientX: number, unitWidth: number): (clientX: number, _timeStamp?: number) => number {
