@@ -5,6 +5,22 @@ AIのセッション開始時は、`../AI.md` から [product/project.md](produc
 
 ---
 
+## 文書分類
+
+| 分類 | 対象 | 扱い |
+|------|------|------|
+| 現行正本 | `README.md`, `AI.md`, `docs/product/`, `docs/spec/`, `docs/ui/`, `docs/architecture/`, `docs/tech/`, `docs/dev/phases.md`, 現在フェーズ正本, `docs/dev/conventions.md`, `docs/dev/testing.md`, `docs/dev/open-questions.md` | 現行の実装・仕様・運用判断に使う |
+| 入口・索引 | `AGENTS.md`, `CLAUDE.md`, `docs/INDEX.md`, `docs/_rules.md` | 正本への導線と文書運用だけを扱う |
+| テンプレート | `docs/spec/_template.md`, `docs/dev/template.md`, `docs/journal/_template.md` | 新規文書や今後の開発へ流用する形式。Relic固有仕様の正本ではない |
+| 履歴 | `docs/journal/` | 当時の作業・判断の記録。現在の正本として扱わず、過去記述を現行基準で書き換えない |
+| アーカイブ | `docs/archive/` | 過去の静的モックや検討資料。現行仕様判断では参照しない |
+| 素材 | `docs/assets/` | ロゴ案などの検討素材。仕様・運用の正本ではない |
+
+現行実装と文書の整合を確認する場合は、現行正本を実装に合わせて更新する。
+履歴・アーカイブは、過去記録としての意味を保つため、現行仕様に合わせた書き換え対象にしない。
+
+---
+
 ## ドキュメントマップ
 
 | ファイル | 内容 |
