@@ -1,15 +1,21 @@
 import { useCallback } from "react";
 
 import type { WorkspaceState, WorkspaceTreeNode } from "../../shared/ipc";
-import { displayNameFromPath, joinWorkspacePath, parentFolderOf } from "../workspacePaths";
 import {
   buildFolderTabPathUpdates,
   getMovableTreeItems,
-  matchesAnyTreeItemPath,
-  matchesTreeItemPath,
   removeCoveredItems
 } from "./workspaceFileActionHelpers";
 import type { WorkspaceFileActionsContext } from "./workspaceFileActionTypes";
+import {
+  deleteTreeItemMessage,
+  deleteTreeItemsMessage,
+  getActiveFileTab,
+  movedFolderPath,
+  renamedFolderPath,
+  tabCloseTargetsForTreeItem,
+  tabCloseTargetsForTreeItems
+} from "./workspaceFileMutationModel";
 
 type WorkspaceFileMutationInput = Pick<
   WorkspaceFileActionsContext,
@@ -55,7 +61,7 @@ export function useWorkspaceFileMutationActions({
 
     void window.relic.moveFolder({ destinationFolder: destFolder, path }).then((result) => {
       if (result.ok) {
-        const nextFolderPath = joinWorkspacePath(destFolder, displayNameFromPath(path));
+        const nextFolderPath = movedFolderPath(path, destFolder);
 
         buildFolderTabPathUpdates(tabs, path, nextFolderPath)
           .forEach((update) => updateTabMeta(update.tabId, { name: update.name, path: update.path }));
@@ -96,7 +102,7 @@ export function useWorkspaceFileMutationActions({
             return;
           }
 
-          const nextFolderPath = joinWorkspacePath(destFolder, displayNameFromPath(item.path));
+          const nextFolderPath = movedFolderPath(item.path, destFolder);
 
           buildFolderTabPathUpdates(tabs, item.path, nextFolderPath)
             .forEach((update) => updateTabMeta(update.tabId, { name: update.name, path: update.path }));
@@ -109,20 +115,15 @@ export function useWorkspaceFileMutationActions({
 
   const handleMoveActiveFile = useCallback(
     (destinationFolder: string): void => {
-      const paneState = focusedPane === "left" ? leftPane : rightPane;
-      const tabId = paneState.activeTabId;
+      const activeFile = getActiveFileTab({ focusedPane, leftPane, rightPane, tabs });
 
-      if (!tabId || !window.relic) return;
-
-      const tab = tabs[tabId];
-
-      if (!tab || tab.kind !== "file") return;
+      if (!activeFile || !window.relic) return;
 
       void window.relic
-        .moveMarkdownFile({ destinationFolder, path: tab.path })
+        .moveMarkdownFile({ destinationFolder, path: activeFile.tab.path })
         .then((result) => {
           if (result.ok) {
-            updateTabMeta(tabId, { name: result.value.file.name, path: result.value.file.path });
+            updateTabMeta(activeFile.tabId, { name: result.value.file.name, path: result.value.file.path });
             setWorkspaceState(result.value.workspaceState);
           } else {
             setWorkspaceError(result.error.message);
@@ -134,20 +135,15 @@ export function useWorkspaceFileMutationActions({
 
   const handleRenameActiveFile = useCallback(
     (newName: string): void => {
-      const paneState = focusedPane === "left" ? leftPane : rightPane;
-      const tabId = paneState.activeTabId;
+      const activeFile = getActiveFileTab({ focusedPane, leftPane, rightPane, tabs });
 
-      if (!tabId || !window.relic) return;
-
-      const tab = tabs[tabId];
-
-      if (!tab || tab.kind !== "file") return;
+      if (!activeFile || !window.relic) return;
 
       void window.relic
-        .renameMarkdownFile({ newName, path: tab.path })
+        .renameMarkdownFile({ newName, path: activeFile.tab.path })
         .then((result) => {
           if (result.ok) {
-            updateTabMeta(tabId, { name: result.value.file.name, path: result.value.file.path });
+            updateTabMeta(activeFile.tabId, { name: result.value.file.name, path: result.value.file.path });
             setWorkspaceState(result.value.workspaceState);
           } else {
             setWorkspaceError(result.error.message);
@@ -179,7 +175,7 @@ export function useWorkspaceFileMutationActions({
 
       void window.relic.renameFolder({ newName, path }).then((result) => {
         if (result.ok) {
-          const nextFolderPath = joinWorkspacePath(parentFolderOf(path), newName);
+          const nextFolderPath = renamedFolderPath(path, newName);
 
           buildFolderTabPathUpdates(tabs, path, nextFolderPath)
             .forEach((update) => updateTabMeta(update.tabId, { name: update.name, path: update.path }));
@@ -193,12 +189,9 @@ export function useWorkspaceFileMutationActions({
   );
 
   const handleDuplicateActiveFile = useCallback((): void => {
-    const paneState = focusedPane === "left" ? leftPane : rightPane;
-    const tabId = paneState.activeTabId;
-    if (!tabId || !window.relic) return;
-    const tab = tabs[tabId];
-    if (!tab || tab.kind !== "file") return;
-    void window.relic.duplicateMarkdownFile({ path: tab.path }).then((result) => {
+    const activeFile = getActiveFileTab({ focusedPane, leftPane, rightPane, tabs });
+    if (!activeFile || !window.relic) return;
+    void window.relic.duplicateMarkdownFile({ path: activeFile.tab.path }).then((result) => {
       if (result.ok) {
         setWorkspaceState(result.value.workspaceState);
         openFileInPane(focusedPane, result.value.file);
@@ -225,15 +218,12 @@ export function useWorkspaceFileMutationActions({
   );
 
   const handleDeleteActiveFile = useCallback((): void => {
-    const paneState = focusedPane === "left" ? leftPane : rightPane;
-    const tabId = paneState.activeTabId;
-    if (!tabId || !window.relic) return;
-    const tab = tabs[tabId];
-    if (!tab || tab.kind !== "file") return;
-    if (!window.confirm(`「${tab.name}」をゴミ箱に移動しますか？`)) return;
-    void window.relic.moveItemToTrash({ path: tab.path, type: "file" }).then((result) => {
+    const activeFile = getActiveFileTab({ focusedPane, leftPane, rightPane, tabs });
+    if (!activeFile || !window.relic) return;
+    if (!window.confirm(`「${activeFile.tab.name}」をゴミ箱に移動しますか？`)) return;
+    void window.relic.moveItemToTrash({ path: activeFile.tab.path, type: "file" }).then((result) => {
       if (result.ok) {
-        closeTab(focusedPane, tabId);
+        closeTab(focusedPane, activeFile.tabId);
         setWorkspaceState(result.value);
       } else {
         setWorkspaceError(result.error.message);
@@ -245,24 +235,14 @@ export function useWorkspaceFileMutationActions({
     (path: string, type: WorkspaceTreeNode["type"]): void => {
       if (!window.relic) return;
 
-      const name = displayNameFromPath(path);
-      const message = type === "folder"
-        ? `「${name}」フォルダをゴミ箱に移動しますか？フォルダ内のノートやファイルも一緒に移動されます。`
-        : `「${name}」をゴミ箱に移動しますか？`;
+      const message = deleteTreeItemMessage(path, type);
       if (!window.confirm(message)) return;
 
       void window.relic.moveItemToTrash({ path, type }).then((result) => {
         if (result.ok) {
           const item = { path, type };
-
-          leftPane.tabIds.forEach((tabId) => {
-            const tab = tabs[tabId];
-            if (tab?.kind === "file" && matchesTreeItemPath(tab.path, item)) closeTab("left", tabId);
-          });
-          rightPane.tabIds.forEach((tabId) => {
-            const tab = tabs[tabId];
-            if (tab?.kind === "file" && matchesTreeItemPath(tab.path, item)) closeTab("right", tabId);
-          });
+          tabCloseTargetsForTreeItem({ item, leftPane, rightPane, tabs })
+            .forEach((target) => closeTab(target.pane, target.tabId));
           setWorkspaceState(result.value);
         } else {
           setWorkspaceError(result.error.message);
@@ -278,7 +258,7 @@ export function useWorkspaceFileMutationActions({
 
       const deletableItems = removeCoveredItems(items);
       const itemCount = deletableItems.length;
-      const message = `${itemCount}件の項目をゴミ箱に移動しますか？フォルダを含む場合、フォルダ内のノートやファイルも一緒に移動されます。`;
+      const message = deleteTreeItemsMessage(itemCount);
       if (!window.confirm(message)) return;
 
       void (async () => {
@@ -293,14 +273,8 @@ export function useWorkspaceFileMutationActions({
           nextWorkspaceState = result.value;
         }
 
-        leftPane.tabIds.forEach((tabId) => {
-          const tab = tabs[tabId];
-          if (tab?.kind === "file" && matchesAnyTreeItemPath(tab.path, deletableItems)) closeTab("left", tabId);
-        });
-        rightPane.tabIds.forEach((tabId) => {
-          const tab = tabs[tabId];
-          if (tab?.kind === "file" && matchesAnyTreeItemPath(tab.path, deletableItems)) closeTab("right", tabId);
-        });
+        tabCloseTargetsForTreeItems({ items: deletableItems, leftPane, rightPane, tabs })
+          .forEach((target) => closeTab(target.pane, target.tabId));
 
         if (nextWorkspaceState) setWorkspaceState(nextWorkspaceState);
       })();
