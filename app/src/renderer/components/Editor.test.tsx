@@ -863,12 +863,12 @@ describe("Editor", () => {
     );
 
     await waitFor(() => expect(container.querySelector(".cm-frontmatter-properties")).not.toBeNull());
-    const statusInput = Array.from(container.querySelectorAll(".cm-frontmatter-input"))
-      .find((input) => (input as HTMLInputElement).value === "draft") as HTMLInputElement;
-    const statusOptions = Array.from(container.querySelectorAll(`#${statusInput.getAttribute("list")} option`))
+    const categorySelect = Array.from(container.querySelectorAll("select.cm-frontmatter-input"))
+      .find((select) => (select as HTMLSelectElement).value === "draft") as HTMLSelectElement;
+    const statusOptions = Array.from(categorySelect.querySelectorAll("option"))
       .map((option) => (option as HTMLOptionElement).value);
     expect(statusOptions).toEqual(["draft", "published", "review"]);
-    fireEvent.change(statusInput, { target: { value: "review" } });
+    fireEvent.change(categorySelect, { target: { value: "review" } });
     expect(viewRef.current?.state.doc.toString()).toContain("category: [\"review\"]");
 
     const dateInput = Array.from(container.querySelectorAll(".cm-frontmatter-input"))
@@ -882,23 +882,29 @@ describe("Editor", () => {
     expect(viewRef.current?.state.doc.toString()).toContain("published: [true]");
   });
 
-  it("statusプロパティは固定候補を入力補助に使う", async () => {
+  it("statusプロパティは固定候補を単一選択の入力補助に使う", async () => {
+    const viewRef = createRef<EditorView | null>();
     const { container } = render(
       <Editor
         content={"---\nstatus: [未着手]\n---\n# 本文"}
         frontmatterCandidates={{ status: ["draft"] }}
         onChange={vi.fn()}
         settings={settings}
+        viewRef={viewRef}
       />
     );
 
     await waitFor(() => expect(container.querySelector(".cm-frontmatter-properties")).not.toBeNull());
-    fireEvent.click(container.querySelector(".cm-frontmatter-pill-add") as HTMLButtonElement);
-    await waitFor(() => expect(container.querySelector(".frontmatter-add-dialog-input")).not.toBeNull());
+    expect(container.querySelector(".cm-frontmatter-pill-add")).toBeNull();
 
-    const candidates = Array.from(container.querySelectorAll("#frontmatter-add-dialog-candidates option"))
+    const input = container.querySelector("select.cm-frontmatter-input") as HTMLSelectElement;
+    expect(input.value).toBe("未着手");
+    const candidates = Array.from(input.querySelectorAll("option"))
       .map((option) => (option as HTMLOptionElement).value);
     expect(candidates).toEqual(["未着手", "進行中", "完了", "中断", "中止"]);
+
+    fireEvent.change(input, { target: { value: "完了" } });
+    expect(viewRef.current?.state.doc.toString()).toContain("status: [\"完了\"]");
   });
 
   it("日時・時刻・URL入力タイプと固定tagsをフォームに反映する", async () => {

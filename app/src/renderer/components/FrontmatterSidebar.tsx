@@ -42,7 +42,7 @@ const RESERVED_FIELD_NAMES = new Set(["aliases", "tags", "status", "chronicle", 
 const FIXED_FIELDS: Array<{
   name: "actualDate" | "aliases" | "tags" | "status" | "chronicle" | "plannedDate";
   descriptionKey: TranslationKey;
-  examples: [TranslationKey, TranslationKey];
+  examples: TranslationKey[];
 }> = [
   {
     name: "aliases",
@@ -57,7 +57,7 @@ const FIXED_FIELDS: Array<{
   {
     name: "status",
     descriptionKey: "settings.fixedFieldStatusDescription",
-    examples: ["settings.fixedFieldStatusSingleExample", "settings.fixedFieldStatusMultipleExample"]
+    examples: ["settings.fixedFieldStatusSingleExample"]
   },
   {
     name: "chronicle",

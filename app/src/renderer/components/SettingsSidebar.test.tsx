@@ -124,9 +124,9 @@ describe("FrontmatterSidebar", () => {
     expect(screen.getByText("Tags that classify this file. Used for tag lists, tag search, and tag filtering. Write one or many values as the same one-line array.")).toBeInTheDocument();
     expect(screen.getByText("tags: [source]")).toBeInTheDocument();
     expect(screen.getByText("tags: [source, draft]")).toBeInTheDocument();
-    expect(screen.getByText("The status of this file for date chart workflows. Write one or many status values as the same one-line array.")).toBeInTheDocument();
+    expect(screen.getByText("The status of this file for date chart workflows. Choose exactly one fixed option and write it as a one-item inline array.")).toBeInTheDocument();
     expect(screen.getByText("status: [未着手]")).toBeInTheDocument();
-    expect(screen.getByText("status: [進行中, 完了]")).toBeInTheDocument();
+    expect(screen.queryByText("status: [進行中, 完了]")).toBeNull();
     expect(screen.getByText("Places this file on the timeline as a single year or range. Write a single year or range as the same one-line array.")).toBeInTheDocument();
     expect(screen.getByText("chronicle: [1185]")).toBeInTheDocument();
     expect(screen.getByText("chronicle: [1185, 1333]")).toBeInTheDocument();

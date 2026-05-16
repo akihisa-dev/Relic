@@ -1150,6 +1150,8 @@ class FrontmatterPropertiesWidget extends WidgetType {
   }
 
   private scalarInput(view: EditorView, key: string, value: unknown, field?: UserDefinedField, writeAsArray = false): HTMLElement {
+    if (field?.type === "select") return this.selectInput(view, key, value, field, writeAsArray);
+
     const wrap = document.createElement("span");
     wrap.className = "cm-frontmatter-input-wrap";
     const input = document.createElement("input");
@@ -1165,6 +1167,40 @@ class FrontmatterPropertiesWidget extends WidgetType {
 
     wrap.append(input);
     if (datalist) wrap.append(datalist);
+    return wrap;
+  }
+
+  private selectInput(view: EditorView, key: string, value: unknown, field: UserDefinedField, writeAsArray = false): HTMLElement {
+    const wrap = document.createElement("span");
+    wrap.className = "cm-frontmatter-input-wrap";
+    const select = document.createElement("select");
+    select.className = "cm-frontmatter-input cm-frontmatter-select";
+
+    const currentValue = this.scalarInputValue(value, field);
+    const choices = this.choicesFor(key, field);
+    const options = currentValue && !choices.includes(currentValue) ? [currentValue, ...choices] : choices;
+
+    if (!currentValue) {
+      const option = document.createElement("option");
+      option.value = "";
+      option.textContent = "";
+      select.append(option);
+    }
+
+    for (const choice of options) {
+      const option = document.createElement("option");
+      option.value = choice;
+      option.textContent = choice;
+      select.append(option);
+    }
+
+    select.value = currentValue;
+    select.addEventListener("change", () => {
+      const nextValue = this.parseScalarValue(select.value, field);
+      this.updateField(view, key, writeAsArray && nextValue !== undefined ? [nextValue] : nextValue);
+    });
+
+    wrap.append(select);
     return wrap;
   }
 
@@ -1481,7 +1517,7 @@ class FrontmatterPropertiesWidget extends WidgetType {
 
   private fieldFor(key: string): UserDefinedField | undefined {
     if (key === "aliases" || key === "tags") return { name: key, type: "multi-select" };
-    if (key === "status") return { name: key, type: "multi-select", choices: [...fixedStatusValues] };
+    if (key === "status") return { name: key, type: "select", choices: [...fixedStatusValues] };
     if (isFixedDateRangeField(key)) return { name: key, type: "date" };
     return this.userDefinedFields.find((field) => field.name === key);
   }

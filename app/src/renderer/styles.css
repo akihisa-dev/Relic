@@ -5134,6 +5134,21 @@ button:not(:disabled):active {
   height: 34px;
 }
 
+.chronicle-name-header--date {
+  align-items: end;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-3);
+  display: grid;
+  font-size: 11px;
+  font-weight: 700;
+  grid-template-columns: minmax(0, 1fr) 96px 96px;
+  padding: 0 12px 8px;
+}
+
+.chronicle-name-header--date span {
+  text-align: left;
+}
+
 .chronicle-timeline {
   left: 0;
   position: absolute;
@@ -5206,6 +5221,10 @@ button:not(:disabled):active {
   grid-template-columns: minmax(0, 1fr);
 }
 
+.chronicle-file-name-row--date {
+  grid-template-columns: minmax(0, 1fr) 96px 96px;
+}
+
 .chronicle-file-name-row--empty {
   grid-template-columns: minmax(0, 1fr);
 }
@@ -5229,11 +5248,39 @@ button:not(:disabled):active {
   display: block;
   font-weight: 600;
   overflow: hidden;
-  padding: 0 12px;
+  padding: 0 16px;
   text-align: left;
   text-overflow: ellipsis;
   white-space: nowrap;
   width: 100%;
+}
+
+.chronicle-date-summary {
+  align-items: center;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  border-left: 1px solid var(--border-soft);
+  box-sizing: border-box;
+  color: var(--text-2);
+  display: flex;
+  font-size: 11px;
+  font-weight: 650;
+  height: 38px;
+  justify-content: flex-start;
+  min-width: 0;
+  overflow: hidden;
+  padding: 0 12px;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chronicle-date-summary--planned {
+  color: rgb(0, 98, 140);
+}
+
+.chronicle-date-summary--actual {
+  color: rgb(174, 78, 0);
 }
 
 .chronicle-date-kind {
@@ -5334,6 +5381,61 @@ button:not(:disabled):active {
   top: 0;
   width: 2px;
   z-index: 4;
+}
+
+.chronicle-today-button {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--text-2);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  height: 28px;
+  min-width: 48px;
+  padding: 0 10px;
+}
+
+.chronicle-today-button:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+
+.chronicle-offscreen-jumps {
+  inset: 0;
+  pointer-events: none;
+  position: sticky;
+  top: 0;
+  z-index: 9;
+}
+
+.chronicle-offscreen-jump {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 800;
+  height: 28px;
+  min-width: 46px;
+  padding: 0 10px;
+  pointer-events: auto;
+  position: absolute;
+  top: 58px;
+}
+
+.chronicle-offscreen-jump--left {
+  left: calc(430px + 10px);
+}
+
+.chronicle-offscreen-jump--right {
+  right: 14px;
+}
+
+.chronicle-offscreen-jump:hover {
+  background: var(--hover);
 }
 
 .chronicle-fill {

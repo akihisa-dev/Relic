@@ -88,7 +88,7 @@ describe("App", () => {
     vi.clearAllMocks();
     useEditorStore.setState({ tabs: {}, leftPane: { activeTabId: null, history: [], tabIds: [] }, rightPane: { activeTabId: null, history: [], tabIds: [] }, isSplit: false, focusedPane: "left" });
     useGraphStore.setState({ centerForce: 1, error: null, folderFilter: "", graph: null, groups: [], isLoading: false, linkDistance: 118, linkFilter: "all", linkForce: 1, linkThickness: 1, loadedWorkspaceId: null, localGraphDepth: 0, minDegree: 0, nodeSize: 1, query: "", repelForce: 1, selectedPath: null, showArrows: false, showLabels: true, showOrphans: true, tagFilter: "", textFadeThreshold: 0.85, zoom: 1 });
-    useUiStore.setState({ activeSidebarView: "files", isRightPanelOpen: true, isSidebarOpen: true, isTypewriterMode: false, rightPanelView: "outline" });
+    useUiStore.setState({ activeSidebarView: "files", isRightPanelOpen: true, isSidebarOpen: true, isTypewriterMode: false, rightPanelView: "outline", selectedGanttChartId: null });
   });
 
   it("ビュー切り替えナビとメインエリアが表示される", async () => {
@@ -896,6 +896,19 @@ describe("App", () => {
         ok: true,
         value: [{
           entries: [{
+            endLabel: "2026",
+            endValue: 2025,
+            fileName: "実装タスク",
+            path: "tasks/implementation.md",
+            startLabel: "2026",
+            startValue: 2025
+          }],
+          filePaths: ["tasks/implementation.md"],
+          id: "chronicle",
+          name: "chronicle",
+          source: "chronicle"
+        }, {
+          entries: [{
             dateKind: "planned",
             endLabel: "2026-05-05",
             endValue: 20578,
@@ -930,8 +943,8 @@ describe("App", () => {
 
     expect(useEditorStore.getState().leftPane.activeTabId).toBe("gantt-charts");
     expect(container.querySelectorAll(".chronicle-file-name")).toHaveLength(1);
-    expect(screen.queryByText("計画")).not.toBeInTheDocument();
-    expect(screen.queryByText("実行")).not.toBeInTheDocument();
+    expect(screen.getByText("計画")).toBeInTheDocument();
+    expect(screen.getByText("実行")).toBeInTheDocument();
     expect(screen.queryByText("2026-05-01 〜 2026-05-05")).not.toBeInTheDocument();
     expect(screen.getByText("05-01 〜 05-05")).toBeInTheDocument();
     expect(screen.getByText("05-03 〜 05-06")).toBeInTheDocument();
@@ -952,6 +965,12 @@ describe("App", () => {
     expect(container.querySelectorAll(".chronicle-guide-line").length).toBeGreaterThan(10);
     expect(container.querySelectorAll(".chronicle-guide-line--major").length).toBeGreaterThan(0);
     expect(container.querySelectorAll(".chronicle-guide-row-line").length).toBeGreaterThan(0);
+
+    fireEvent.click(screen.getByRole("button", { name: "フロントマター" }));
+    fireEvent.click(screen.getByRole("button", { name: "チャート" }));
+
+    expect(container.querySelector(".chronicle-source-button.active")).toHaveTextContent("date");
+    expect(container.querySelector('.chronicle-fill[data-date-kind="actual"]')).toBeInTheDocument();
   });
 
   it("チャート面を掴んで横スクロールできる", async () => {
@@ -1041,8 +1060,8 @@ describe("App", () => {
     fireEvent.click(container.querySelectorAll(".chronicle-source-button")[1]);
 
     await waitFor(() => expect(container.querySelectorAll(".chronicle-file-name")).toHaveLength(1));
-    expect(screen.queryByText("計画")).not.toBeInTheDocument();
-    expect(screen.queryByText("実行")).not.toBeInTheDocument();
+    expect(screen.getByText("計画")).toBeInTheDocument();
+    expect(screen.getByText("実行")).toBeInTheDocument();
     expect(container.querySelector('.chronicle-fill[data-date-kind="planned"]')).toBeInTheDocument();
     expect(container.querySelector('.chronicle-fill[data-date-kind="actual"]')).toBeInTheDocument();
     const plannedFill = container.querySelector('.chronicle-fill[data-date-kind="planned"]') as HTMLElement;
