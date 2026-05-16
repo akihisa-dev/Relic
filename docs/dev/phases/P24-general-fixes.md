@@ -104,3 +104,10 @@ P24では、事前に固定した長い実施リストは置かない。
 - 実施: `docs/dev/phases.md` の現在フェーズをP24へ変更し、P24正本を追加した
 - 確認: コード実装には入らず、フェーズ開始文書だけを更新する
 - 残り: 最初の修正対象は、ユーザー指定または調査後の合意に基づいて決める
+
+### 補助パネルUIモダン化
+
+- 方向性: 設定、フロントマター設定、ファイル加工、グラフ操作パネルの `setting-row` 系UIを、既存の設定値、保存形式、IPC/preload API、store状態構造を変えず、macOS設定型の静かなグルーピング、セグメント操作、スイッチ表示へ揃える
+- 実施: `SettingsSegmentedControl` を追加し、設定タブを表示、エディタ、機能、アプリ情報の `settings-group` へ再構成した。チェックボックスはCSSでスイッチ表示にし、テーマ、言語、フォント、最大幅は既存値のままセグメント操作へ変更した。フロントマター設定、ファイル加工、グラフ操作パネルも `settings-page` / `settings-group` / `settings-stack` / `setting-row` の共通スタイルへ寄せた。i18nには設定タブのセクション見出しだけを追加した
+- 確認: `pnpm exec vitest run src/renderer/components/SettingsSidebar.test.tsx src/renderer/components/ToolsSidebar.test.tsx src/renderer/components/GraphControlSections.test.tsx src/renderer/App.test.tsx`、`pnpm typecheck`、`pnpm test`、`git diff --check` が通過した。全体テストは78ファイル、516件が通過した。開発版レンダラーを `pnpm exec vite --host 127.0.0.1 --port 5173 --config vite.renderer.config.ts` で起動し、設定タブ、フロントマター設定、ファイル加工の未登録ワークスペース表示、グラフ空状態、設定タブのダーク表示を確認した
+- 残り: Electron実機でワークスペースを開いた状態のファイル加工入力群とグラフhover操作パネルの目視確認は、ユーザーのワークスペースまたは検証用フォルダ選択が必要なため未実施。対象コンポーネントの操作・保存挙動は自動テストで確認済み

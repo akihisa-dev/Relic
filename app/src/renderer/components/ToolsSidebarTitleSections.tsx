@@ -20,7 +20,7 @@ export function TitleListToolSection({
   const t = useT();
 
   return (
-    <>
+    <section className="settings-group tools-settings-group">
       <div className="links-panel-subheading">{t("tools.titleList")}</div>
       <div className="search-block">
         <label className="setting-row">
@@ -64,7 +64,7 @@ export function TitleListToolSection({
         </button>
         <ToolStatus status={status} />
       </div>
-    </>
+    </section>
   );
 }
 
@@ -82,8 +82,8 @@ export function TocToolSection({
   const t = useT();
 
   return (
-    <>
-      <div className="links-panel-subheading" style={{ marginTop: "1.5rem" }}>{t("tools.tableOfContents")}</div>
+    <section className="settings-group tools-settings-group">
+      <div className="links-panel-subheading">{t("tools.tableOfContents")}</div>
       <div className="search-block">
         <label className="setting-row">
           <span>{t("tools.filterFolder")}</span>
@@ -124,6 +124,6 @@ export function TocToolSection({
         </button>
         <ToolStatus status={status} />
       </div>
-    </>
+    </section>
   );
 }

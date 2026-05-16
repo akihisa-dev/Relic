@@ -174,7 +174,7 @@ export function GraphControlSection({
         <span>{isOpen ? "⌄" : "›"}</span>
         <span>{label}</span>
       </button>
-      {isOpen ? <div className="graph-control-section-body">{children}</div> : null}
+      {isOpen ? <div className="graph-control-section-body settings-stack">{children}</div> : null}
     </div>
   );
 }
