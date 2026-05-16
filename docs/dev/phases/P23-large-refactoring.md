@@ -124,3 +124,10 @@ Relicの大規模リファクタリングフェーズの正本。
 - 実施: `app/src/renderer/hooks/useGraphCanvasInteractions.ts` を追加し、simPoints/ref、simulation tick、pan/isPanning/svgRef、graph wheel/key/pointer handler、node click/key/pointer/hover handler、viewBoxとrelatedPaths導出を移した。`GraphSidebar.tsx` はstore接続、filtered graph導出、loading/error/empty、summary、`GraphControls` と `GraphCanvas` の組み立てを中心に残した
 - 確認: `pnpm exec vitest run src/renderer/hooks/useGraphCanvasInteractions.test.tsx`、`pnpm exec vitest run src/renderer/components/GraphCanvas.test.tsx`、`pnpm exec vitest run src/renderer/components/GraphSidebar.test.tsx`、`pnpm exec vitest run src/renderer/App.test.tsx`、`pnpm typecheck`、`pnpm test`、`git diff --check` が通過した。全体テストは41ファイル、366件が通過した
 - 残り: 今回指定された分割単位は完了。実アプリ確認はUI/仕様を変えない内部hook分離のため未実施
+
+### GraphControls section分離
+
+- 方向性: 仕様、UI文言、DOM class名、CSS、保存形式、IPC/preload API、`graphStore` の状態構造を変えず、`GraphControls.tsx` にまとまって残っていた操作パネル各sectionを内部componentへ分離する
+- 実施: `app/src/renderer/components/GraphControlSections.tsx` を追加し、filter、groups、display、forcesの各sectionと共通section wrapperを移した。`GraphControls.tsx` はworkspaceIdによる既存graph読込、最小化/展開、topbar、再読み込み、section開閉状態、reset button、浮動パネル位置調整hookを中心に残した
+- 確認: `pnpm exec vitest run src/renderer/components/GraphControlSections.test.tsx`、`pnpm exec vitest run src/renderer/components/GraphControls.test.tsx`、`pnpm exec vitest run src/renderer/components/GraphSidebar.test.tsx`、`pnpm exec vitest run src/renderer/App.test.tsx`、`pnpm typecheck`、`pnpm test`、`git diff --check` が通過した。全体テストは42ファイル、370件が通過した
+- 残り: 今回指定された分割単位は完了。実アプリ確認はUI/仕様を変えない内部component分離のため未実施
