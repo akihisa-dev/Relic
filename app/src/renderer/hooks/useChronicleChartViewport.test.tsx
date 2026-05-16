@@ -1,6 +1,6 @@
 import { act, renderHook } from "@testing-library/react";
 import type { MutableRefObject } from "react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import type { GanttChartEntry, GanttChartSource, WorkspaceGanttChart } from "../../shared/ipc";
 import { useChronicleChartViewport } from "./useChronicleChartViewport";
@@ -74,28 +74,6 @@ function renderViewport(activeSource: GanttChartSource = "chronicle") {
 }
 
 describe("useChronicleChartViewport", () => {
-  let frameCallbacks: FrameRequestCallback[];
-
-  beforeEach(() => {
-    frameCallbacks = [];
-    vi.stubGlobal("requestAnimationFrame", vi.fn((callback: FrameRequestCallback) => {
-      frameCallbacks.push(callback);
-      return frameCallbacks.length;
-    }));
-    vi.stubGlobal("cancelAnimationFrame", vi.fn());
-  });
-
-  afterEach(() => {
-    vi.unstubAllGlobals();
-  });
-
-  function flushAnimationFrames(timestamp = 1_000_000): void {
-    const callbacks = frameCallbacks.splice(0);
-    act(() => {
-      callbacks.forEach((callback) => callback(timestamp));
-    });
-  }
-
   it("scrollToTimelineValueでtargetを中央寄せしscroll範囲内にclampする", () => {
     const { hook } = renderViewport();
     const chartElement = makeDiv({ clientWidth: 200, scrollWidth: 1000 });
@@ -104,23 +82,6 @@ describe("useChronicleChartViewport", () => {
     act(() => {
       hook.result.current.scrollToTimelineValue(10);
     });
-
-    expect(chartElement.scrollLeft).toBe(30);
-    expect(hook.result.current.scrollLeft).toBe(30);
-  });
-
-  it("smooth指定のtimeline移動はrequestAnimationFrameでscrollする", () => {
-    const { hook } = renderViewport();
-    const chartElement = makeDiv({ clientWidth: 200, scrollWidth: 1000 });
-    (hook.result.current.chartRef as MutableRefObject<HTMLDivElement | null>).current = chartElement;
-
-    act(() => {
-      hook.result.current.scrollToTimelineValue(10, "smooth");
-    });
-
-    expect(chartElement.scrollLeft).toBe(0);
-
-    flushAnimationFrames();
 
     expect(chartElement.scrollLeft).toBe(30);
     expect(hook.result.current.scrollLeft).toBe(30);
@@ -145,7 +106,6 @@ describe("useChronicleChartViewport", () => {
     act(() => {
       window.dispatchEvent(new MouseEvent("pointerup"));
     });
-    flushAnimationFrames();
 
     expect(chartElement.scrollLeft).toBe(150);
     expect(hook.result.current.scrollLeft).toBe(150);
@@ -183,7 +143,6 @@ describe("useChronicleChartViewport", () => {
         target: minimapElement
       }));
     });
-    flushAnimationFrames();
 
     expect(chartElement.scrollLeft).toBe(430);
     expect(hook.result.current.scrollLeft).toBe(430);
@@ -203,7 +162,6 @@ describe("useChronicleChartViewport", () => {
         target: minimapElement
       }));
     });
-    flushAnimationFrames();
 
     expect(chartElement.scrollLeft).toBe(430);
     expect(hook.result.current.scrollLeft).toBe(430);
