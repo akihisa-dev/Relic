@@ -265,3 +265,10 @@ AIはこのフェーズを前提にユーザーへ接する。
 - 実施: `appShellModel.ts` を追加し、登録workspace fallback、open file/panel tab集合、active panel/chart判定、panel label、feature toggleによるrail表示、rail group分割を純粋処理へ移した。`AppRail.tsx`、`AppFilesSidebar.tsx`、`AppEditorWorkspace.tsx`、`AppStatusBar.tsx` を追加し、`App.tsx` はstore/hook接続、主要callback、panel tab組み立て、overlay組み立てを中心にした
 - 確認: `pnpm exec vitest run src/renderer/appShellModel.test.ts src/renderer/App.test.tsx`、`pnpm typecheck`、`pnpm test`、`git diff --check` が通過した。全体テストは67ファイル、477件が通過した
 - 残り: 今回指定されたApp追加分割単位は完了。実アプリ確認はUI/仕様を変えない内部component/model分離のため未実施
+
+### FilesSidebar検索・tree表示責務分離
+
+- 方向性: UI文言、CSS class名、DOM構造、検索方法menu、frontmatter候補datalist、workspace action、FileTree呼び出し、IPC/preload API、保存形式を変えず、`FilesSidebar.tsx` に残っていた検索UI、検索結果、pin/tree表示、workspace action、検索派生値を内部moduleへ分離する
+- 実施: `filesSidebarModel.ts` を追加し、frontmatter検索field候補、value候補、filtering判定、検索mode表示を純粋処理へ移した。`FilesSidebarSearch.tsx`、`FilesSearchResults.tsx`、`FilesSidebarTreeSection.tsx`、`FilesWorkspaceActions.tsx` を追加し、`FilesSidebar.tsx` は選択状態、展開要求、子component組み立てを中心にした
+- 確認: `pnpm exec vitest run src/renderer/filesSidebarModel.test.ts src/renderer/components/FilesSidebarSearch.test.tsx src/renderer/components/FilesSearchResults.test.tsx src/renderer/components/FileTree.test.tsx src/renderer/App.test.tsx`、`pnpm typecheck`、`pnpm test`、`git diff --check` が通過した。全体テストは70ファイル、485件が通過した
+- 残り: 今回指定されたFilesSidebar分割単位は完了。実アプリ確認はUI/仕様を変えない内部component/model分離のため未実施
