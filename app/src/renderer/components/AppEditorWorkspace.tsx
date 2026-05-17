@@ -10,6 +10,7 @@ import type { RightPanelView } from "../store/uiStore";
 import { AppRightPanel } from "./AppRightPanel";
 import { AppTopBar } from "./AppTopBar";
 import { PaneView } from "./PaneView";
+import { Toolbar } from "./Toolbar";
 
 interface AppEditorWorkspaceProps {
   activeFileName: string | null;
@@ -142,6 +143,13 @@ export function AppEditorWorkspace({
 
       <div className="editor-layout">
         <div className="editor-workspace">
+          <div className="shared-editor-toolbar">
+            <Toolbar
+              fallbackViewRef={focusedPane === "left" ? rightEditorViewRef : leftEditorViewRef}
+              onEditorAction={onEditorAction}
+              viewRef={focusedPane === "left" ? leftEditorViewRef : rightEditorViewRef}
+            />
+          </div>
           <div className={`panes-container${isSplit ? " panes-container--split" : ""}${isSplitClosing ? " panes-container--closing-split" : ""}`}>
             <PaneView
               allFilePaths={allFilePaths}
@@ -167,7 +175,6 @@ export function AppEditorWorkspace({
               onCloseTabsToRight={(tabId) => onCloseTabsToRight("left", tabId)}
               onCreateFile={onCreateFile}
               onDuplicateTabFile={onDuplicateTabFile}
-              onEditorAction={onEditorAction}
               onFileSaved={onFileSaved}
               onFocus={() => onSetFocusedPane("left")}
               onOpenInOtherPane={(tabId) => onOpenInOtherPane("left", tabId)}
@@ -205,7 +212,6 @@ export function AppEditorWorkspace({
                 onCloseTabsToRight={(tabId) => onCloseTabsToRight("right", tabId)}
                 onCreateFile={onCreateFile}
                 onDuplicateTabFile={onDuplicateTabFile}
-                onEditorAction={onEditorAction}
                 onFileSaved={onFileSaved}
                 onFocus={() => onSetFocusedPane("right")}
                 onOpenInOtherPane={(tabId) => onOpenInOtherPane("right", tabId)}

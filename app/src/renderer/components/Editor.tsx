@@ -8,8 +8,6 @@ import { buildExtensions, destroyEditorView } from "../editorExtensions";
 import { frontmatterDialogRequestEvent, type FrontmatterDialogRequest } from "../editorFrontmatter";
 import { useEditorContextMenu } from "../hooks/useEditorContextMenu";
 import { useEditorFrontmatterDialog } from "../hooks/useEditorFrontmatterDialog";
-import { useToolbarActions } from "../hooks/useToolbarActions";
-import { useT } from "../i18n";
 import { EditorContextMenu } from "./EditorContextMenu";
 import { EditorFrontmatterDialog } from "./EditorFrontmatterDialog";
 
@@ -21,7 +19,6 @@ interface EditorProps {
   content: string;
   frontmatterCandidates?: Record<string, string[]>;
   onChange: (content: string) => void;
-  onEditorAction?: () => void;
   onOpenLink?: (href: string) => void;
   onOpenWikiLink?: (target: string, heading?: string) => void;
   settings: EditorSettings;
@@ -36,7 +33,6 @@ export function Editor({
   content,
   frontmatterCandidates = {},
   onChange,
-  onEditorAction,
   onOpenLink,
   onOpenWikiLink,
   settings,
@@ -45,7 +41,6 @@ export function Editor({
   userDefinedFields = [],
   viewRef
 }: EditorProps): ReactElement {
-  const t = useT();
   const containerRef = useRef<HTMLDivElement>(null);
   const internalViewRef = useRef<EditorView | null>(null);
   const onChangeRef = useRef(onChange);
@@ -62,16 +57,8 @@ export function Editor({
     openContextMenu,
     openReactContextMenu,
     pasteClipboard,
-    prepareContextSelection,
     selectAll
   } = useEditorContextMenu({ viewRef: internalViewRef });
-  const markdownActions = useToolbarActions({
-    onEditorAction,
-    placeholderLinkText: t("toolbar.placeholderLinkText"),
-    placeholderText: t("toolbar.placeholderText"),
-    tableColumnLabel: (index) => t("toolbar.tableColumn", { index }),
-    viewRef: internalViewRef
-  });
   const {
     closeFrontmatterDialog,
     frontmatterDialog,
@@ -226,8 +213,6 @@ export function Editor({
       />
       <EditorContextMenu
         contextMenu={contextMenu}
-        markdownActions={markdownActions}
-        onBeforeMarkdownAction={prepareContextSelection}
         onClose={closeContextMenu}
         onCopy={copySelection}
         onCut={cutSelection}

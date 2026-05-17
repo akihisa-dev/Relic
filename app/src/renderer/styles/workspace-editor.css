@@ -3,40 +3,13 @@
 /* ────────────────────────────────── */
 
 .main-area {
-  background:
-    radial-gradient(ellipse at 18% 8%, rgba(255, 255, 255, 0.34), transparent 34%),
-    linear-gradient(145deg, var(--surface-container-low), var(--surface-container) 44%, var(--surface-container-highest)),
-    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.038) 0 1px, rgba(0, 0, 0, 0.01) 1px 2px),
-    var(--surface-container);
-  border: 1px solid rgba(28, 28, 28, 0.1);
-  border-radius: 22px;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.95),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.07),
-    -6px 0 16px rgba(0, 0, 0, 0.035),
-    0 12px 32px rgba(0, 0, 0, 0.06);
-  contain: paint;
+  background: var(--bg);
   display: grid;
   flex: 1 1 auto;
   grid-template-rows: 40px minmax(0, 1fr);
-  margin: 14px 14px 14px 8px;
   min-height: 0;
   min-width: 0;
   overflow: hidden;
-  position: relative;
-}
-
-.main-area::before {
-  background-image:
-    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.032) 0 1px, rgba(0, 0, 0, 0.011) 1px 2px),
-    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.012) 0 1px, rgba(0, 0, 0, 0.007) 1px 2px);
-  background-size: auto, auto;
-  content: "";
-  inset: 0;
-  mix-blend-mode: multiply;
-  opacity: 0.46;
-  pointer-events: none;
-  position: absolute;
 }
 
 .main-area-top-bar {
@@ -44,11 +17,8 @@
   border-bottom: 1px solid var(--border);
   display: flex;
   gap: 8px;
-  background: transparent;
-  padding: 0 24px;
+  padding: 0 12px;
   -webkit-app-region: drag;
-  position: relative;
-  z-index: 1;
 }
 
 .main-area-top-bar button,
@@ -70,14 +40,12 @@
   min-height: 0;
   min-width: 0;
   overflow: hidden;
-  position: relative;
-  z-index: 1;
 }
 
 .editor-workspace {
   display: grid;
   flex: 1 1 auto;
-  grid-template-rows: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
   min-height: 0;
   min-width: 0;
   overflow: hidden;
@@ -100,7 +68,6 @@
   display: flex;
   flex-shrink: 0;
   gap: 2px;
-  background: transparent;
   overflow: visible;
   padding: 4px 10px;
   position: relative;
@@ -137,7 +104,6 @@
 .toolbar-btn:hover {
   background: var(--hover);
   border-color: var(--border-soft);
-  box-shadow: var(--shadow-control);
 }
 
 .toolbar-btn[data-tooltip]:hover::after,
@@ -168,11 +134,9 @@
 
 .toolbar-btn.active {
   animation: toolbar-active-settle 160ms cubic-bezier(.18, 1.25, .28, 1);
-  background: var(--metal-control);
+  background: var(--hover);
   border-color: var(--border-soft);
-  box-shadow:
-    inset 0 2px 0 var(--accent),
-    var(--shadow-control);
+  box-shadow: inset 0 2px 0 var(--accent);
   color: var(--text);
 }
 
@@ -186,12 +150,10 @@
 
 .toolbar-dropdown-menu {
   animation: toolbar-panel-in 150ms cubic-bezier(.18, 1.18, .28, 1);
-  background:
-    var(--metal-sheen),
-    var(--popup-bg);
+  background: var(--popup-bg);
   border: 1px solid var(--border-soft);
   border-radius: 8px;
-  box-shadow: var(--shadow-panel);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
   display: flex;
   flex-direction: column;
   left: 0;
@@ -231,12 +193,10 @@
 .toolbar-inline-dialog {
   align-items: center;
   animation: toolbar-panel-in 150ms cubic-bezier(.18, 1.18, .28, 1);
-  background:
-    var(--metal-sheen),
-    var(--popup-bg);
+  background: var(--popup-bg);
   border: 1px solid var(--border-soft);
   border-radius: 8px;
-  box-shadow: var(--shadow-panel);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
   display: flex;
   gap: 6px;
   left: 0;
@@ -252,7 +212,6 @@
 }
 
 .toolbar-input {
-  background: var(--input-bg);
   border: 1px solid var(--border-soft);
   border-radius: 5px;
   font-size: 13px;
@@ -287,7 +246,7 @@
   min-height: 0;
   min-width: 0;
   overflow: hidden;
-  transition: grid-template-columns 180ms cubic-bezier(.2, .8, .2, 1);
+  transition: grid-template-columns 240ms cubic-bezier(.22, 1, .36, 1);
 }
 
 .panes-container--split {
@@ -315,7 +274,7 @@
 }
 
 .pane--focused .pane-tab-bar {
-  background: transparent;
+  background: var(--bg);
 }
 
 .pane--focused .editor-surface--action-odd {
@@ -334,7 +293,7 @@
 
 .pane-tab-bar {
   align-items: end;
-  background: transparent;
+  background: var(--sidebar-bg);
   border-bottom: 1px solid var(--border);
   display: flex;
   gap: 2px;
@@ -379,13 +338,8 @@
 
 .pane-tab--active {
   animation: tab-select 180ms cubic-bezier(.18, 1.25, .28, 1);
-  background:
-    var(--metal-sheen),
-    color-mix(in srgb, var(--surface-container-low) 78%, var(--popup-bg) 22%);
-  border-color: var(--border-soft);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.42),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.035);
+  background: var(--accent-soft);
+  border-color: var(--accent);
   color: var(--text);
 }
 
@@ -464,7 +418,7 @@
 }
 
 .pane-tab-close:hover {
-  background: var(--hover-strong);
+  background: rgba(31, 35, 40, 0.1);
   color: var(--text);
 }
 
@@ -477,12 +431,10 @@
 /* ────────────────────────────────── */
 
 .tab-context-menu {
-  background:
-    var(--metal-sheen),
-    var(--popup-bg);
+  background: var(--popup-bg);
   border: 1px solid var(--border-soft);
   border-radius: 8px;
-  box-shadow: var(--shadow-panel);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
   display: flex;
   flex-direction: column;
   max-width: calc(100vw - 16px);
@@ -518,96 +470,11 @@
   margin: 4px 0;
 }
 
-.editor-context-menu {
-  max-height: min(78vh, 620px);
-  overflow: auto;
-  width: min(340px, calc(100vw - 16px));
-}
-
-.editor-context-menu-section {
-  display: grid;
-  gap: 4px;
-  min-width: 0;
-}
-
-.editor-context-menu-label {
-  color: var(--text-3);
-  font-size: 11px;
-  font-weight: 700;
-  line-height: 1;
-  padding: 6px 8px 2px;
-  text-transform: uppercase;
-}
-
-.editor-context-menu-grid {
-  display: grid;
-  gap: 2px;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.editor-context-menu-grid--heading {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-.editor-context-menu-grid--inline {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.editor-context-menu-inline-dialog {
-  align-items: center;
-  animation: toolbar-panel-in 150ms cubic-bezier(.18, 1.18, .28, 1);
-  background: var(--metal-recess);
-  border: 1px solid var(--border-soft);
-  border-radius: 6px;
-  display: grid;
-  gap: 6px;
-  grid-template-columns: minmax(0, 1fr) auto;
-  margin: 2px 0 4px;
-  padding: 6px;
-}
-
-.editor-context-menu-inline-dialog:has(.editor-context-menu-input--number) {
-  grid-template-columns: minmax(48px, 1fr) auto minmax(48px, 1fr) auto;
-}
-
-.editor-context-menu-input {
-  background: var(--input-bg);
-  border: 1px solid var(--border-soft);
-  border-radius: 5px;
-  color: var(--text);
-  font-size: 13px;
-  min-height: 28px;
-  min-width: 0;
-  padding: 0 8px;
-  width: 100%;
-}
-
-.editor-context-menu-input--number {
-  text-align: right;
-}
-
-.editor-context-menu-input:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 2px var(--accent-soft);
-  outline: none;
-}
-
-.editor-context-menu-insert {
-  justify-content: center;
-  min-width: 56px;
-}
-
-.editor-context-menu-multiply {
-  color: var(--text-3);
-  font-size: 12px;
-}
-
 /* ────────────────────────────────── */
 /* Editor surface                     */
 /* ────────────────────────────────── */
 
 .editor-surface {
-  background: transparent;
   display: grid;
   grid-template-rows: minmax(0, 1fr) 24px;
   height: 100%;
@@ -623,9 +490,6 @@
 .panel-tab-body {
   box-sizing: border-box;
   container-type: inline-size;
-  background:
-    linear-gradient(180deg, transparent, color-mix(in srgb, var(--surface-container-high) 18%, transparent)),
-    transparent;
   height: 100%;
   min-height: 0;
   min-width: 0;

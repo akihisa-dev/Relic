@@ -19,8 +19,8 @@ export function editorContextMenuPosition(
   viewport: EditorContextMenuViewport = window
 ): { x: number; y: number } {
   const margin = 8;
-  const estimatedWidth = Math.min(340, Math.max(0, viewport.innerWidth - margin * 2));
-  const estimatedHeight = Math.min(620, Math.max(0, Math.floor(viewport.innerHeight * 0.78)));
+  const estimatedWidth = 220;
+  const estimatedHeight = 180;
   const maxX = Math.max(margin, viewport.innerWidth - estimatedWidth - margin);
   const maxY = Math.max(margin, viewport.innerHeight - estimatedHeight - margin);
 

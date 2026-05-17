@@ -3,49 +3,18 @@
 /* ────────────────────────────────── */
 
 .app-shell {
-  background:
-    radial-gradient(ellipse at 26% 16%, rgba(255, 255, 255, 0.34), transparent 34%),
-    linear-gradient(145deg, #f7f7f5, #e7e7e4 44%, #d4d4d0),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0) 24%),
-    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.045) 0 1px, rgba(0, 0, 0, 0.012) 1px 2px),
-    var(--aluminum-base);
-  border: 0;
-  border-radius: 0;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.72),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.08),
-    inset 0 0 28px rgba(255, 255, 255, 0.12);
   display: grid;
   grid-template-rows: 38px minmax(0, 1fr) 28px;
   height: 100vh;
   min-width: 0;
   overflow: hidden;
-  position: relative;
-  transform: none;
-  width: 100vw;
-}
-
-.app-shell::before {
-  background-image:
-    radial-gradient(circle at 16% 0%, rgba(255, 255, 255, 0.42), transparent 24%),
-    radial-gradient(ellipse at 82% 100%, rgba(0, 0, 0, 0.075), transparent 30%),
-    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.018) 0 1px, rgba(0, 0, 0, 0.008) 1px 2px),
-    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.014) 0 1px, rgba(0, 0, 0, 0.006) 1px 3px);
-  background-size: cover, cover, auto, auto;
-  content: "";
-  inset: 0;
-  opacity: 0.62;
-  pointer-events: none;
-  position: absolute;
 }
 
 .title-bar {
   -webkit-app-region: drag;
-  background: transparent;
+  background: var(--bg);
   border-bottom: 1px solid var(--border);
   grid-column: 1 / -1;
-  position: relative;
-  z-index: 1;
 }
 
 
@@ -55,9 +24,7 @@
   min-height: 0;
   min-width: 0;
   overflow: hidden;
-  position: relative;
   -webkit-app-region: no-drag;
-  z-index: 1;
 }
 
 /* ────────────────────────────────── */
@@ -67,91 +34,58 @@
 .rail {
   align-items: stretch;
   background: var(--rail-bg);
-  border-right: 0;
-  box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.32);
+  border-right: 1px solid var(--border);
   color: var(--text-3);
   display: flex;
-  flex: 0 0 58px;
   flex-direction: column;
-  gap: 0;
+  gap: 8px;
   overflow: hidden;
-  padding: 22px 9px 18px;
-  transition:
-    flex-basis 160ms cubic-bezier(.2, .8, .2, 1),
-    width 160ms cubic-bezier(.2, .8, .2, 1),
-    background-color 160ms ease;
-  width: 58px;
+  padding: 8px 8px 12px;
+  transition: width 180ms ease;
+  width: 48px;
+  flex: 0 0 auto;
   z-index: 2;
 }
 
 .rail:hover,
 .rail--workspace-editing {
-  background: rgba(255, 255, 255, 0.08);
-  flex-basis: 170px;
-  width: 170px;
+  width: 220px;
 }
 
 .rail-button {
   align-items: center;
   background: transparent;
   border: none;
-  box-shadow: none;
   color: inherit;
   display: inline-flex;
-  gap: 12px;
-  height: 34px;
+  gap: 10px;
+  height: 32px;
   justify-content: flex-start;
   overflow: hidden;
-  padding: 0;
+  padding: 0 7px;
   transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease, transform 120ms cubic-bezier(.18, 1.4, .28, 1);
   width: 100%;
 }
 
-.rail-button + .rail-button,
-.rail-separator + .rail-button {
-  margin-top: 8px;
-}
-
-.rail-separator + .rail-button {
-  margin-top: 4px;
-}
-
 .rail-button:hover {
-  background: transparent;
-  box-shadow: none;
+  background: var(--hover);
   color: var(--text);
 }
 
 .rail-button > svg {
-  flex: 0 0 34px;
-  height: 18px;
-  width: 34px;
+  flex: 0 0 auto;
 }
 
 .rail-button.open {
-  background: rgba(255, 255, 255, 0.18);
-  border-radius: 8px;
+  background: var(--hover);
+  border-radius: 6px;
   color: var(--text);
 }
 
 .rail-button.active {
-  background: transparent;
-  border-radius: 8px;
-  box-shadow: none;
+  background: var(--accent-soft);
+  border-radius: 6px;
   color: var(--accent);
-  position: relative;
-}
-
-.rail-button.active::after {
-  background: var(--accent);
-  border-radius: 999px;
-  bottom: 4px;
-  box-shadow: 0 0 0 4px rgba(0, 98, 140, 0.06);
-  content: "";
-  height: 6px;
-  left: 2px;
-  position: absolute;
-  width: 6px;
 }
 
 .rail-tab-flight {
@@ -219,14 +153,13 @@
 
 .rail:hover .rail-button-label,
 .rail--workspace-editing .rail-button-label {
-  max-width: 96px;
+  max-width: 150px;
   opacity: 1;
 }
 
 .rail-separator {
   background: var(--border);
   height: 1px;
-  margin-top: 3px;
   width: 24px;
 }
 
@@ -240,51 +173,21 @@
 /* ────────────────────────────────── */
 
 .sidebar {
-  background:
-    radial-gradient(ellipse at 24% 12%, rgba(255, 255, 255, 0.42), transparent 34%),
-    linear-gradient(128deg, transparent 0 18%, rgba(255, 255, 255, 0.2) 30%, transparent 46%),
-    linear-gradient(160deg, rgba(255, 255, 255, 0.64), rgba(242, 242, 240, 0.36) 52%, rgba(210, 210, 208, 0.22)),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.08), rgba(0, 0, 0, 0.018)),
-    var(--sidebar-bg);
-  border: 1px solid rgba(255, 255, 255, 0.52);
-  border-radius: 22px;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.88),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.035),
-    inset 1px 0 0 rgba(255, 255, 255, 0.34),
-    inset 12px 0 24px rgba(255, 255, 255, 0.14),
-    0 10px 24px rgba(0, 0, 0, 0.05);
-  contain: paint;
+  background: var(--sidebar-bg);
+  border-right: 1px solid var(--border);
   display: flex;
   flex: 0 0 auto;
   flex-direction: column;
-  height: calc(100% - 28px);
-  margin: 14px 0 14px 8px;
+  height: 100%;
   min-width: 180px;
   overflow: hidden;
   position: relative;
-  transition: width 180ms cubic-bezier(.2, .8, .2, 1), border-color 160ms ease;
-}
-
-.sidebar::before {
-  background-image:
-    radial-gradient(ellipse at 64% 18%, rgba(255, 255, 255, 0.32), transparent 32%),
-    linear-gradient(126deg, transparent 0 22%, rgba(255, 255, 255, 0.18) 34%, transparent 48%),
-    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.035) 0 1px, rgba(0, 0, 0, 0.014) 1px 2px),
-    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.014) 0 1px, rgba(0, 0, 0, 0.008) 1px 2px);
-  background-size: cover, cover, auto, auto;
-  content: "";
-  inset: 0;
-  mix-blend-mode: overlay;
-  opacity: 0.42;
-  pointer-events: none;
-  position: absolute;
+  transition: width 280ms cubic-bezier(.22, 1, .36, 1), background-color 220ms ease, border-color 220ms ease;
+  will-change: width;
 }
 
 .sidebar--closed {
-  border-color: transparent;
-  margin-left: 0;
-  margin-right: 0;
+  border-right-color: transparent;
   min-width: 0;
   pointer-events: none;
 }
@@ -297,11 +200,9 @@
 .sidebar > .sidebar-header,
 .sidebar > .sidebar-body {
   opacity: 1;
-  position: relative;
   transform: translateX(0) scaleX(1);
   transform-origin: left center;
-  transition: opacity 140ms ease, transform 180ms cubic-bezier(.2, .8, .2, 1);
-  z-index: 1;
+  transition: opacity 180ms ease, transform 240ms cubic-bezier(.22, 1, .36, 1);
 }
 
 .sidebar--closed > .sidebar-header,
@@ -316,28 +217,28 @@
 }
 
 .sidebar-header {
-  background: transparent;
-  border-bottom: 0;
+  background: inherit;
+  border-bottom: 1px solid var(--border);
   flex-shrink: 0;
-  padding: 0 18px;
+  padding: 0 16px;
 }
 
 .sidebar-body {
   flex: 1;
-  margin-right: 0;
+  margin-right: 8px;
   overflow-y: auto;
-  padding: 0 18px 18px;
+  padding: 16px;
 }
 
 .pane-heading {
   align-items: center;
-  color: var(--text-3);
+  color: var(--text-2);
   display: flex;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   gap: 8px;
-  letter-spacing: 0.06em;
-  padding: 18px 0;
+  letter-spacing: 0.02em;
+  padding: 10px 0;
   text-transform: uppercase;
 }
 
@@ -392,8 +293,7 @@
 }
 
 .workspace-switcher-item.active {
-  background: rgba(255, 255, 255, 0.16);
-  box-shadow: inset 2px 0 0 var(--accent);
+  background: var(--accent-softer);
 }
 
 .workspace-switcher-main {
@@ -421,10 +321,9 @@
 
 .workspace-switcher-icon {
   align-items: center;
-  background: var(--metal-control);
+  background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 5px;
-  box-shadow: var(--shadow-control);
   color: var(--text-2);
   display: inline-flex;
   flex: 0 0 16px;
@@ -460,7 +359,7 @@
 }
 
 .workspace-switcher-input {
-  background: var(--input-bg);
+  background: var(--bg);
   border: 1px solid var(--accent-ring);
   border-radius: 5px;
   color: var(--text);

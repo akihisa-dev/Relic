@@ -156,19 +156,16 @@
 /* ────────────────────────────────── */
 
 .right-panel {
-  background:
-    linear-gradient(160deg, rgba(255, 255, 255, 0.22), rgba(0, 0, 0, 0.018)),
-    var(--popup-bg);
+  background: var(--popup-bg);
   border-left: 1px solid var(--border);
-  box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.22);
   display: flex;
   flex: 0 0 240px;
   flex-direction: column;
   height: 100%;
   min-width: 220px;
   overflow: hidden;
-  contain: paint;
-  transition: width 180ms cubic-bezier(.2, .8, .2, 1), border-color 160ms ease;
+  transition: width 280ms cubic-bezier(.22, 1, .36, 1), border-color 220ms ease, background-color 220ms ease;
+  will-change: width;
   width: 240px;
 }
 
@@ -185,7 +182,7 @@
   opacity: 1;
   transform: translateX(0) scaleX(1);
   transform-origin: right center;
-  transition: opacity 140ms ease, transform 180ms cubic-bezier(.2, .8, .2, 1);
+  transition: opacity 180ms ease, transform 240ms cubic-bezier(.22, 1, .36, 1);
 }
 
 .right-panel--closed > .sidebar-header,
@@ -712,9 +709,7 @@
 
 .status-bar {
   align-items: center;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(0, 0, 0, 0.018)),
-    var(--sidebar-bg);
+  background: var(--sidebar-bg);
   border-top: 1px solid var(--border);
   color: var(--text-3);
   display: flex;
@@ -811,12 +806,10 @@
 .command-palette,
 .quick-switcher {
   animation: modal-surface-in 180ms cubic-bezier(.18, 1.18, .28, 1);
-  background:
-    var(--metal-sheen),
-    var(--sidebar-bg);
+  background: var(--sidebar-bg);
   border: 1px solid var(--border);
   border-radius: 8px;
-  box-shadow: var(--shadow-panel);
+  box-shadow: 0 8px 32px rgba(0,0,0,.2);
   max-height: 60vh;
   overflow: hidden;
   transform-origin: top center;

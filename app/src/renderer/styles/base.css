@@ -1,83 +1,34 @@
 :root {
   --bg: #ffffff;
-  --rail-bg: rgba(244, 244, 244, 0.74);
-  --sidebar-bg: rgba(244, 244, 244, 0.82);
-  --popup-bg: rgba(255, 255, 255, 0.88);
+  --rail-bg: rgba(255, 255, 255, 0.96);
+  --sidebar-bg: rgba(250, 250, 250, 0.96);
+  --popup-bg: rgba(255, 255, 255, 0.98);
   --text: #1c1c1c;
   --text-2: #5e5e5e;
   --text-3: #8a8a8a;
-  --border: rgba(28, 28, 28, 0.09);
-  --border-soft: rgba(28, 28, 28, 0.12);
-  --border-medium: rgba(28, 28, 28, 0.18);
-  --btn-bg: rgba(238, 238, 236, 0.52);
-  --hover: rgba(255, 255, 255, 0.24);
-  --hover-strong: rgba(28, 28, 28, 0.07);
-  --input-bg: rgba(238, 238, 236, 0.48);
+  --border: rgba(28, 28, 28, 0.1);
+  --border-soft: rgba(28, 28, 28, 0.13);
+  --border-medium: rgba(28, 28, 28, 0.2);
+  --btn-bg: rgba(255, 255, 255, 0.9);
+  --hover: rgba(28, 28, 28, 0.04);
+  --hover-strong: rgba(28, 28, 28, 0.1);
+  --input-bg: rgba(255, 255, 255, 0.72);
   --accent: #00628c;
   --accent-hover: #007caf;
   --accent-soft: rgba(0, 98, 140, 0.08);
   --accent-softer: rgba(0, 98, 140, 0.04);
   --accent-ring: rgba(0, 98, 140, 0.16);
   --link: #00628c;
-  --attention: #c46a1a;
-  --attention-hover: #a95816;
-  --error: #b02f00;
-  --error-bg: rgba(176, 47, 0, 0.12);
+  --attention: #ff5722;
+  --attention-hover: #e64d1f;
+  --error: #ba1a1a;
+  --error-bg: #ffdad6;
   --highlight: rgba(0, 98, 140, 0.12);
   --success: #217a3c;
-  --surface: #ffffff;
-  --surface-dim: #f4f4f4;
-  --surface-container-low: #fafafa;
-  --surface-container: #f4f4f4;
-  --surface-container-high: #eeeeee;
-  --surface-container-highest: #e8e8e8;
-  --aluminum-base: #f4f4f4;
-  --aluminum-mid: #e8e8e8;
-  --aluminum-edge: #dcdcdc;
-  --aluminum-shadow: #cfcfcf;
-  --aluminum-grain: rgba(0, 0, 0, 0.035);
-  --metal-sheen:
-    radial-gradient(ellipse at 22% 8%, rgba(255, 255, 255, 0.46), transparent 34%),
-    linear-gradient(145deg, rgba(255, 255, 255, 0.52), rgba(232, 232, 232, 0.58) 52%, rgba(212, 212, 212, 0.46)),
-    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.04) 0 1px, rgba(0, 0, 0, 0.01) 1px 2px);
-  --metal-control:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.38), rgba(0, 0, 0, 0.025)),
-    var(--btn-bg);
-  --metal-panel:
-    var(--metal-sheen),
-    color-mix(in srgb, var(--popup-bg) 84%, var(--surface-container-high) 16%);
-  --metal-panel-soft:
-    radial-gradient(ellipse at 18% 8%, rgba(255, 255, 255, 0.32), transparent 34%),
-    linear-gradient(150deg, color-mix(in srgb, var(--surface) 88%, transparent), color-mix(in srgb, var(--surface-container) 74%, transparent)),
-    var(--surface-container-low);
-  --metal-canvas:
-    radial-gradient(ellipse at 20% 8%, rgba(255, 255, 255, 0.22), transparent 36%),
-    linear-gradient(150deg, color-mix(in srgb, var(--surface-container-low) 88%, transparent), color-mix(in srgb, var(--surface-container) 78%, transparent) 48%, color-mix(in srgb, var(--surface-container-high) 70%, transparent)),
-    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.022) 0 1px, rgba(0, 0, 0, 0.007) 1px 2px),
-    var(--surface-container-low);
-  --metal-recess:
-    linear-gradient(180deg, rgba(0, 0, 0, 0.026), rgba(255, 255, 255, 0.18)),
-    var(--input-bg);
-  --shadow-panel:
-    inset 0 1px 0 rgba(255, 255, 255, 0.76),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.05),
-    0 18px 48px rgba(0, 0, 0, 0.08);
-  --shadow-control:
-    inset 0 1px 0 rgba(255, 255, 255, 0.58),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.04);
-  --shadow-layer:
-    inset 0 1px 0 rgba(255, 255, 255, 0.62),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.04),
-    0 8px 22px rgba(0, 0, 0, 0.045);
-  --shadow-canvas:
-    inset 0 1px 0 rgba(255, 255, 255, 0.48),
-    inset 0 0 0 1px rgba(28, 28, 28, 0.035);
-  --chart-line-soft: rgba(28, 28, 28, 0.045);
-  --chart-line-medium: rgba(28, 28, 28, 0.12);
   color: var(--text);
   background: var(--bg);
   font-family:
-    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Noto Sans JP", sans-serif;
+    -apple-system, BlinkMacSystemFont, "SF Pro Text", "Hiragino Sans", "Yu Gothic", sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
 }
@@ -114,14 +65,6 @@ body,
   overflow: hidden;
 }
 
-body {
-  background: var(--aluminum-base);
-}
-
-#root {
-  display: block;
-}
-
 button,
 input,
 select {
@@ -131,9 +74,8 @@ select {
 
 button {
   border: 1px solid var(--border-soft);
-  border-radius: 8px;
-  background: var(--metal-control);
-  box-shadow: var(--shadow-control);
+  border-radius: 6px;
+  background: var(--btn-bg);
   color: inherit;
   cursor: default;
   min-height: 28px;
