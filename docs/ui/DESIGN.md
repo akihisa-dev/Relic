@@ -1,598 +1,498 @@
-# DESIGN.md - Anodized Instrument
-
-> AIエージェントと実装者が、同じ質感・余白・色使いでUIを生成するためのデザイン仕様書。
-> 方向性は `Teenage Engineering x MacBook Aluminum x visionOS Layer`。
-> UIではなく道具。テキストエディタではなく、執筆機である。
-
 ---
-name: Anodized Instrument
-
+name: Monochrome Blue
 colors:
-  primary: "#00628c"
-  on-primary: "#ffffff"
-  primary-container: "#007caf"
-  on-primary-container: "#fcfcff"
-  primary-fixed: "#c8e6ff"
-  on-primary-fixed: "#001e2e"
+  # アクセントブルー（通常操作・情報）
+  primary: '#00628c'
+  on-primary: '#ffffff'
+  primary-container: '#007caf'
+  on-primary-container: '#fcfcff'
+  inverse-primary: '#86cfff'
+  primary-fixed: '#c8e6ff'
+  primary-fixed-dim: '#86cfff'
+  on-primary-fixed: '#001e2e'
+  on-primary-fixed-variant: '#004c6d'
 
-  caution: "#c46a1a"
-  on-caution: "#ffffff"
-  caution-container: "#f2b36d"
-  on-caution-container: "#3f1a00"
+  # ウォームオレンジ（注意・確定・不可逆）
+  tertiary: '#b02f00'
+  on-tertiary: '#ffffff'
+  tertiary-container: '#ff5722'
+  on-tertiary-container: '#541200'
+  tertiary-fixed: '#ffdbd1'
+  tertiary-fixed-dim: '#ffb5a0'
+  on-tertiary-fixed: '#3b0900'
+  on-tertiary-fixed-variant: '#862200'
 
-  danger: "#b02f00"
-  on-danger: "#ffffff"
-  danger-container: "#ff5722"
-  on-danger-container: "#541200"
+  # セカンダリ（グレースケール）
+  secondary: '#5e5e5e'
+  on-secondary: '#ffffff'
+  secondary-container: '#e0e0e0'
+  on-secondary-container: '#626262'
+  secondary-fixed: '#e4e4e4'
+  secondary-fixed-dim: '#c6c6c6'
+  on-secondary-fixed: '#1c1c1c'
+  on-secondary-fixed-variant: '#474747'
 
-  secondary: "#5e5e5e"
-  secondary-container: "#e0e0e0"
-  on-secondary-container: "#626262"
+  # サーフェス
+  surface: '#ffffff'
+  surface-dim: '#e8e8e8'
+  surface-bright: '#ffffff'
+  surface-container-lowest: '#ffffff'
+  surface-container-low: '#fafafa'
+  surface-container: '#f4f4f4'
+  surface-container-high: '#eeeeee'
+  surface-container-highest: '#e8e8e8'
+  surface-variant: '#eeeeee'
+  on-surface: '#1c1c1c'
+  on-surface-variant: '#5e5e5e'
+  inverse-surface: '#303030'
+  inverse-on-surface: '#f0f0f0'
 
-  background: "#ffffff"
-  on-background: "#1c1c1c"
-  surface: "#ffffff"
-  surface-dim: "#f4f4f4"
-  surface-container-low: "#fafafa"
-  surface-container: "#f4f4f4"
-  surface-container-high: "#eeeeee"
-  surface-container-highest: "#e8e8e8"
-  surface-variant: "#eeeeee"
+  # アウトライン
+  outline: '#8a8a8a'
+  outline-variant: '#e0e0e0'
 
-  aluminum-base: "#f4f4f4"
-  aluminum-mid: "#e8e8e8"
-  aluminum-edge: "#dcdcdc"
-  aluminum-shadow: "#cfcfcf"
-  aluminum-grain: "rgba(0,0,0,.035)"
+  # 背景
+  background: '#ffffff'
+  on-background: '#1c1c1c'
 
-  on-surface: "#1c1c1c"
-  on-surface-variant: "#5e5e5e"
-  outline: "#8a8a8a"
-  outline-variant: "#e0e0e0"
+  # エラー
+  error: '#ba1a1a'
+  on-error: '#ffffff'
+  error-container: '#ffdad6'
+  on-error-container: '#93000a'
 
 dark-colors:
-  primary: "#00628c"
-  on-primary: "#ffffff"
-  primary-container: "#007caf"
+  # アクセントブルー（通常操作・情報）- ライトモードと同値
+  primary: '#00628c'
+  on-primary: '#ffffff'
+  primary-container: '#007caf'
+  on-primary-container: '#fcfcff'
+  inverse-primary: '#86cfff'
+  primary-fixed: '#c8e6ff'
+  primary-fixed-dim: '#86cfff'
+  on-primary-fixed: '#001e2e'
+  on-primary-fixed-variant: '#004c6d'
 
-  caution: "#f2a14a"
-  on-caution: "#1c1c1c"
+  # ウォームオレンジ（注意・確定・不可逆）- ライトモードと同値
+  tertiary: '#b02f00'
+  on-tertiary: '#ffffff'
+  tertiary-container: '#ff5722'
+  on-tertiary-container: '#541200'
+  tertiary-fixed: '#ffdbd1'
+  tertiary-fixed-dim: '#ffb5a0'
+  on-tertiary-fixed: '#3b0900'
+  on-tertiary-fixed-variant: '#862200'
 
-  danger: "#ff5722"
-  on-danger: "#ffffff"
+  # セカンダリ（グレースケール）
+  secondary: '#9e9e9e'
+  on-secondary: '#131313'
+  secondary-container: '#2e2e2e'
+  on-secondary-container: '#b8b8b8'
+  secondary-fixed: '#282828'
+  secondary-fixed-dim: '#404040'
+  on-secondary-fixed: '#e6e6e6'
+  on-secondary-fixed-variant: '#9e9e9e'
 
-  secondary: "#9e9e9e"
-  secondary-container: "#2e2e2e"
+  # サーフェス
+  surface: '#131313'
+  surface-dim: '#0e0e0e'
+  surface-bright: '#252525'
+  surface-container-lowest: '#1a1a1a'
+  surface-container-low: '#1f1f1f'
+  surface-container: '#252525'
+  surface-container-high: '#2c2c2c'
+  surface-container-highest: '#333333'
+  surface-variant: '#333333'
+  on-surface: '#e6e6e6'
+  on-surface-variant: '#9e9e9e'
+  inverse-surface: '#e6e6e6'
+  inverse-on-surface: '#2e2e2e'
 
-  background: "#0e0e0e"
-  on-background: "#e6e6e6"
-  surface: "#131313"
-  surface-dim: "#0e0e0e"
-  surface-container-low: "#1f1f1f"
-  surface-container: "#252525"
-  surface-container-high: "#2c2c2c"
-  surface-container-highest: "#333333"
+  # アウトライン
+  outline: '#6b6b6b'
+  outline-variant: '#2e2e2e'
 
-  aluminum-base: "#202020"
-  aluminum-mid: "#2a2a2a"
-  aluminum-edge: "#3a3a3a"
-  aluminum-shadow: "#111111"
-  aluminum-grain: "rgba(255,255,255,.04)"
+  # 背景
+  background: '#131313'
+  on-background: '#e6e6e6'
 
-  on-surface: "#e6e6e6"
-  on-surface-variant: "#9e9e9e"
-  outline: "#6b6b6b"
-  outline-variant: "#2e2e2e"
+  # エラー - ライトモードと同値
+  error: '#ba1a1a'
+  on-error: '#ffffff'
+  error-container: '#ffdad6'
+  on-error-container: '#93000a'
 
 typography:
   display-lg:
-    fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Noto Sans JP', sans-serif"
-    fontSize: "48px"
-    fontWeight: "700"
-    lineHeight: "56px"
-    letterSpacing: "-0.02em"
+    fontFamily: System UI
+    fontSize: 48px
+    fontWeight: '700'
+    lineHeight: 56px
+    letterSpacing: -0.02em
   headline-lg:
-    fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Noto Sans JP', sans-serif"
-    fontSize: "32px"
-    fontWeight: "600"
-    lineHeight: "40px"
-    letterSpacing: "-0.01em"
+    fontFamily: System UI
+    fontSize: 32px
+    fontWeight: '600'
+    lineHeight: 40px
+    letterSpacing: -0.01em
+  headline-md:
+    fontFamily: System UI
+    fontSize: 24px
+    fontWeight: '600'
+    lineHeight: 32px
+  body-lg:
+    fontFamily: System UI
+    fontSize: 18px
+    fontWeight: '400'
+    lineHeight: 28px
   body-md:
-    fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Noto Sans JP', sans-serif"
-    fontSize: "16px"
-    fontWeight: "400"
-    lineHeight: "28px"
-    letterSpacing: "0"
+    fontFamily: System UI
+    fontSize: 16px
+    fontWeight: '400'
+    lineHeight: 24px
   body-sm:
-    fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Noto Sans JP', sans-serif"
-    fontSize: "14px"
-    fontWeight: "400"
-    lineHeight: "22px"
-    letterSpacing: "0"
+    fontFamily: System UI
+    fontSize: 14px
+    fontWeight: '400'
+    lineHeight: 20px
   label-md:
-    fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Noto Sans JP', sans-serif"
-    fontSize: "12px"
-    fontWeight: "600"
-    lineHeight: "16px"
-    letterSpacing: "0.06em"
+    fontFamily: System UI
+    fontSize: 12px
+    fontWeight: '600'
+    lineHeight: 16px
+    letterSpacing: 0.05em
+  metric-xl:
+    fontFamily: System UI
+    fontSize: 40px
+    fontWeight: '700'
+    lineHeight: 48px
+    letterSpacing: -0.03em
+  code-md:
+    fontFamily: "Menlo, SF Mono, Consolas, monospace"
+    fontSize: 14px
+    fontWeight: '400'
+    lineHeight: 22px
 
-radii:
-  sm: "4px"
-  md: "8px"
-  lg: "12px"
-  xl: "16px"
-  panel: "22px"
+rounded:
+  sm: 0.25rem
+  DEFAULT: 0.5rem
+  md: 0.75rem
+  lg: 1rem
+  xl: 1.5rem
+  full: 9999px
 
 spacing:
-  xs: "4px"
-  sm: "8px"
-  md: "16px"
-  lg: "24px"
-  xl: "48px"
-  xxl: "80px"
+  xs: 4px
+  base: 8px
+  sm: 12px
+  md-sm: 16px
+  md: 24px
+  gutter: 24px
+  margin: 32px
+  lg: 48px
+  xl: 80px
 ---
 
-## 1. Core Concept
+## Overview
 
-このデザインシステムは、Teenage Engineering 的な工業製品の静けさ、MacBook の梨地アルマイト加工、visionOS 的な浮遊レイヤーを基準にする。
+白を主体とするクリーンなモノクロームデザインシステムです。画面の大部分は白と薄いグレーで構成し、黒は本文・見出し・必要な境界に限って使います。有彩色は2色のみ、いずれも**ほんのアクセント**として機能します。
 
-一般的なSaaS UIではない。装飾された画面ではなく、思考を支える精密な道具である。
+> 画面の90%はモノクロームである。有彩色はそこに意味を与えるために存在する。
 
-テキストエディタではない。これは執筆機である。
+ブルーとオレンジは多用しません。画面の通常状態はモノクロームで保ち、ブルーは情報や現在の対象を伝えるために、オレンジはユーザーに一呼吸置かせたい場面にだけ使います。
 
-目的は、情報を見せることではなく、思考を前に出すこと。ノイズを減らし、集中を支えること。
+**2アクセントの役割：**
 
-キーワード:
+> ブルーは「案内と情報」——通常操作、リンク、現在の対象、補助的な状態表示に使う。
+> オレンジは「注意を伴う決定」——最終確定、不可逆操作、危険、強い注意にだけ使う。
 
-- Industrial Calm
-- Industrial Minimalism
-- Quiet Precision
-- Liquid Aluminum
-- Floating Metal
-- Floating Metal Layers
-- Silent Interface
-- Writing Machine
-- Matte Anodized Aluminum
-- Matte Depth
-- Layered Monochrome
+**デザイン原則：**
 
-画面は主張しない。UIは消えるべきである。ただし、消えながら高い工業的品質を持つ。
+1. **モノクロームが主役である。** 有彩色は脇役。背景・カード・セクション区切り・番号・アイコンなど、情報の器にあたる部分はすべてグレースケールで構成する。
+2. **ライトモードは白が主役である。** 黒い面で締めるのではなく、白い面・薄いグレーの区切り・十分な余白で清潔感を作る。黒は本文、見出し、必要なアイコンに限る。
+3. **モノクロ領域のすべての色は彩度ゼロ（R=G=B の完全無彩色）でなければならない。** オレンジ混じりのベージュや青みがかったグレーをモノクロとして使ってはならない。白は白、グレーはグレー、黒は黒である。
+4. **アクセントとモノクロの間にグラデーションはない。** 薄いオレンジも濃い青も、それが「アクセント要素として配置された色」である限り許容される。しかし「モノクロの器」に色味を持ち込んではならない。アクセントはモノクロームの中にポツンと存在するからこそ機能する。
+5. **ブルーは通常のアクセントである。** リンク・情報ラベル・現在の対象・通常のプライマリ操作・フォーカスに使う。ブルーも装飾ではなく、ユーザーの理解や移動を助ける場所に限る。
+6. **オレンジは通常操作に使わない。** ボタン、タブ、ツールバー、リスト選択、フォーカス、通常の現在地表示にオレンジを使ってはならない。オレンジは最終確定・不可逆・危険・強い注意に限る。
+7. **アクセントカラーは装飾ではなく信号である。** 「押してほしい」「今ここにいる」「ここに注意してほしい」という意味を持たない場所に、有彩色を置いてはならない。色を使う前に、その色がユーザーへ伝える行動・現在地・情報を説明できなければならない。
+8. **有彩色で大きな面を塗らない。** ブルー・オレンジともに、カード背景・セクション背景・大きな囲みへの使用を禁止する。例外は小さなボタンや小型バッジなど、意味を持つ操作・情報要素に限る。
 
-## 2. Visual Principles
+---
 
-### Monochrome First
+## Colors
 
-画面の90%以上は、白・薄いグレー・無彩色のアルミニウムで構成する。
+パレットは**モノクローム基盤**と**2つの機能的アクセント**で構成されます。通常時のアクセントはブルー、例外時の注意色はオレンジです。
 
-有彩色は信号であり、装飾ではない。Blue、Orange、Red は、意味のある状態表示のみに使う。
+### 通常アクセント：ブルー
 
-### Liquid Aluminum
+`primary`（`#00628c`）は、情報・案内・通常の主操作を示す色です。Relicの日常操作はここに寄せ、オレンジを増やさないことを優先します。
 
-中心コンセプトは `Liquid Aluminum`。
+| 使ってよい場所 | トークン |
+|------|---------|
+| 通常のプライマリボタンの背景 | `primary-container` |
+| フォーカスリング・入力フィールドのアクティブボーダー | `primary` |
+| リンク・内部リンク・外部リンクアイコン | `primary` |
+| 現在の対象・補助的な状態表示 | `primary` |
+| 小型の情報バッジ背景 | `primary-fixed` |
 
-これは glassmorphism、透明UI、ネオングラデーション、flat UI、skeuomorphism のいずれでもない。
+| 使ってはいけない場所 |
+|------|
+| カード・パネル・セクションの背景塗り |
+| 装飾目的のボーダーや区切り線 |
+| 色がなくても分かる通常テキストの強調 |
+| 注意・危険・不可逆操作 |
 
-求めているのは、liquid metal、floating metal、soft machinery である。液体のように柔らかく浮遊しながら、アルマイト加工された金属の硬質さを持つ。
+### 注意カラー：ウォームオレンジ
 
-必要な質感:
+`tertiary-container`（`#ff5722`）は、最も強い注意色です。通常操作に使うと画面全体が急かして見えるため、使う場所を厳しく制限します。
 
-- MacBook系の梨地アルマイト
-- matte anodized aluminum
-- エッジだけがわずかに光る
-- 中央面は静かでマット
-- 光は拡散し、鏡面反射しない
-- 酸化皮膜のような静かな表情
-- 微細な粒子とヘアラインを持つ
-- レイヤー同士が浅く浮いている
+| 使ってよい場所 | トークン |
+|------|---------|
+| 削除・破棄・上書きなど不可逆操作の確定ボタン | `tertiary-container` |
+| 危険・強い注意のステータス | `tertiary` |
+| クリティカルな数値・ピーク値のテキスト | `tertiary-container` |
+| 警告バッジ背景 | `tertiary-fixed` |
 
-禁止:
+| 使ってはいけない場所 |
+|------|
+| 通常のプライマリボタン |
+| 通常のフォーカスリング |
+| 通常のナビゲーション現在地 |
+| タブ・ツールバー・リストの選択状態 |
+| カード・パネル・セクションの背景塗り |
 
-- ギラつき
-- クローム感
-- 鏡面反射
-- 光沢プラスチック
-- 強いガラス表現
-- fake metal
-- CG metal感
+### グレースケール基盤
 
-### Anodized Texture
+画面の大部分を占める要素——背景・カード・セクション区切り・番号・アイコン・ボーダー——はすべてグレースケールで構成します。ライトモードでは白を最も広い面に使い、薄いグレーは区切りと階層にだけ使います。有彩色が少量であるほど、登場したときの意味が強くなります。
 
-アルマイト加工の微細な梨地粒子、酸化皮膜、わずかな不均一性を表現する。
+**すべての surface・secondary・outline トークンは彩度ゼロの完全無彩色です。** 実装時にこれらのトークンを色味のある値で上書きしてはなりません。
 
-ただし、テクスチャは「感じる」レベルに留める。写真素材のように見せたり、ノイズを主張させたりしてはならない。
+---
 
-必須:
+## Typography
 
-- 微細grain
-- anodized texture
-- matte depth
-- subtle noise
-- soft edge highlight
-- diffuse reflection
+現行実装では、UI全体に macOS / OS 標準のシステムフォント（`-apple-system`, `SF Pro Text`, `Hiragino Sans`, `Yu Gothic`, `system-ui` 相当）を使用します。コードブロックやファイルパスなどの等幅表示には Menlo / SF Mono / Consolas 系を使用します。階層はウェイトの変化によって確立し、色による区別は最小限に抑えます。
 
-禁止:
+| スタイル      | フォント | サイズ | ウェイト | 行間  | レタースペーシング | 用途                 |
+|---------------|----------|--------|----------|-------|--------------------|----------------------|
+| `display-lg`  | System UI | 48px   | 700      | 56px  | −0.02em            | 最大見出し           |
+| `headline-lg` | System UI | 32px   | 600      | 40px  | −0.01em            | セクション見出し     |
+| `headline-md` | System UI | 24px   | 600      | 32px  | —                  | サブセクション見出し |
+| `body-lg`     | System UI | 18px   | 400      | 28px  | —                  | 主要本文             |
+| `body-md`     | System UI | 16px   | 400      | 24px  | —                  | 標準本文             |
+| `body-sm`     | System UI | 14px   | 400      | 20px  | —                  | 補足・キャプション   |
+| `label-md`    | System UI | 12px   | 600      | 16px  | +0.05em            | ラベル・メタデータ   |
+| `metric-xl`   | System UI | 40px   | 700      | 48px  | −0.03em            | 数値・状態指標       |
+| `code-md`     | Mono     | 14px   | 400      | 22px  | —                  | コードブロック・インラインコード |
 
-- texture主張
-- 写真的ノイズ
-- 過剰roughness
-- CG metal感
+**運用ルール：**
 
-## 3. Color Usage
+- **ディスプレイ & ヘッドライン** はセミボールド以上 + タイトなレタースペーシングで権威あるプレゼンスを演出します。
+- **`metric-xl`** は数値・状態の強調に使用します。通常の情報値は `primary`（ブルー）、クリティカルな状態のみ `tertiary-container`（オレンジ）を適用します。
+- **`label-md`** は大文字 + レタースペーシング拡大でメタデータを本文から色なしで分離します。
+- テキストリンクには `body-md` または `body-sm` に `primary`（ブルー）を適用します。アンダーラインはホバー時のみ表示します。
+- **`code-md`** はインラインコード・コードブロック・ファイルパスなどすべての等幅表示に使用します。背景には `surface-container`（グレー）を当てます。
 
-### Primary Blue
+---
 
-`primary (#00628c)` は、次の用途に限定する。
+## Layout & Spacing
 
-- 現在地
-- リンク
-- フォーカス
-- アクティブ状態
-- 情報表示
+**8px リズム**に基づいたフルードグリッドシステムです。
 
-広い面積に使わない。青は光る信号であり、背景色や装飾色ではない。
+| トークン  | 値    | 用途                           |
+|-----------|-------|--------------------------------|
+| `xs`      | 4px   | コンポーネント内の極小余白     |
+| `base`    | 8px   | グリッドの基準単位             |
+| `sm`      | 12px  | コンポーネント内パディング     |
+| `md-sm`   | 16px  | ボタンパディング・リスト行高   |
+| `md`      | 24px  | 要素間の標準余白               |
+| `gutter`  | 24px  | グリッドのガター幅             |
+| `margin`  | 32px  | レイアウトマージン             |
+| `lg`      | 48px  | セクション間の余白             |
+| `xl`      | 80px  | 大ブロック間の余白             |
 
-### Caution Orange
+現行アプリはデスクトップ向けの固定シェルを前提とし、左レール、ファイルサイドバー、メインエリア、右パネルの幅で情報密度を調整します。マージンとガターは余裕を持たせ、アクセントカラーの要素が十分な空間を持つことで即座に識別できるようにします。
 
-`caution (#c46a1a)` は、工業機器の注意灯として扱う。
+- 独立したコンテンツブロックの区切りには `lg` / `xl` を使用します。
+- コンポーネント内部のパディングには `xs` / `sm` / `md-sm` を使用します。
 
-用途:
+---
 
-- 未保存
-- 未確定
-- 要確認
-- 競合
-- 外部変更
-- リンク切れ
-- インポート結果の警告
-- 注意が必要な frontmatter
+## Elevation
 
-通常のCTA、選択中、アクティブタブ、リンク、装飾には使わない。
+奥行きは**色の濃淡による階層**と微細な拡散シャドウで表現します。エレベーションは状態変化の手段として使いません。
 
-### Danger Red
+| レイヤー | 背景色 | ボーダー | 用途 |
+|---------|--------|---------|------|
+| ベース | `surface`（`#ffffff`） | なし | ページ背景 |
+| コンテナ | `surface-container-lowest`（`#ffffff`） | 1px `outline-variant` | カード・パネル |
+| 浮上要素 | `surface-container-lowest`（`#ffffff`） | なし + 拡散シャドウ | モーダル・ドロップダウン |
 
-`danger (#b02f00)` は、破壊的または失敗状態に限定する。
+**シャドウ：** 不透明度 5〜8%、色味なし、超拡散。重厚さより「軽い浮き上がり」を表現します。
 
-用途:
+**アクティブ状態：** 一般的な選択中・オン状態は、背景の濃淡・ボーダーの太さ・文字ウェイトで表現します。オレンジのボーダーやラインを、単なる選択状態の装飾として使ってはなりません。ブルーを使う場合も、現在の対象やリンクなど、案内として意味がある場合に限ります。
 
-- 削除
-- 不可逆操作
-- 保存失敗
-- 破壊的操作
-- ファイル破損の可能性
+**現在地の表示：** グローバルナビゲーションやサイドナビゲーションなど、ユーザーが「今どこにいるか」を把握するための主要な現在地表示には、`primary`（ブルー）の細いインジケーターラインを使用できます。通常のリスト選択はグレーで表現します。
 
-通常操作や装飾に使わない。
+---
 
-### Neutral Grayscale
+## Shapes
 
-グレーは無彩色を基本にする。ただし、MacBook のアルマイト加工に見える範囲の、ごくわずかな温度差は許容する。
+基本の角丸は **`DEFAULT`（0.5rem / 8px）** です。
 
-重要なのは、色で階層を作らないこと。階層は色相ではなく、明度、素材、粒子、エッジ、浮遊感で作る。
+| トークン  | 値      | 用途                                   |
+|-----------|---------|----------------------------------------|
+| `sm`      | 0.25rem | チェックボックス・小型インジケーター   |
+| `DEFAULT` | 0.5rem  | ボタン・入力フィールド・カード（標準） |
+| `md`      | 0.75rem | モーダル・大型パネル                   |
+| `lg`      | 1rem    | ボトムシート・サイドパネル             |
+| `xl`      | 1.5rem  | フルスクリーンオーバーレイ             |
+| `full`    | 9999px  | アバター・ラジオボタン・ピル型チップ   |
 
-アルミニウム表現は、色相ではなく次の要素で作る。
+チェックボックスは `sm`（0.25rem）を維持し、`full` のラジオボタンと視覚的に区別します。
 
-- 明度差
-- 粒子
-- エッジハイライト
-- レイヤー
-- ごく浅いシャドウ
+---
 
-## 4. Typography
+## Components
 
-タイポグラフィは感情を演出しない。必要なのは、精密感・可読性・OS統合感・静けさである。
+### ボタン
 
-推奨フォント:
+| 種類 | 背景 | テキスト | ボーダー | 角丸 | ホバー |
+|------|------|---------|---------|------|--------|
+| プライマリ | `primary-container`（`#007caf`） | `on-primary`（白） | なし | `DEFAULT` | 若干暗化 |
+| セカンダリ | `secondary-container` | `on-secondary-container` | なし | `DEFAULT` | 若干暗化 |
+| アウトライン | 透明 | `on-surface` | 1px `outline` | `DEFAULT` | `surface-container` 背景 |
+| 注意・危険 | `tertiary-container`（`#ff5722`） | `on-tertiary`（白） | なし | `DEFAULT` | 若干暗化 |
 
-- SF Pro
-- Inter
-- IBM Plex Sans
-- Geist
-- Noto Sans JP
+### ナビゲーション
 
-基本指定:
+主要ナビゲーションの現在地は、テキストを太字 `on-surface`（`#1c1c1c`）にし、必要に応じて3px の `primary`（ブルー）インジケーターラインを添えます。サイドナビは縦ライン、トップナビは横ラインです。
 
-```css
-font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
-  "Noto Sans JP", sans-serif;
-letter-spacing: 0;
-```
+ただし、このインジケーターは現在地を示すためのものです。ボタンのオン状態、ツールバーの選択状態、カードやリスト項目の強調に転用してはなりません。
 
-日本語本文は `line-height: 1.7` から `1.8` を目安にする。見出しやラベルでは必要に応じて `letter-spacing` をわずかに広げてよい。
+### 入力フィールド
 
-禁止:
+ボーダー `outline-variant`・8px 角丸。フォーカス時にボーダーが `primary`（ブルー）へトランジションします。エラー時は `error` へトランジションします。
 
-- 過度に個性的なフォント
-- 装飾的なセリフ体
-- ビューポート幅に連動したフォントサイズ
-- 読ませる本文への強い字間
-- 感情的なタイポグラフィ
+### チップ
 
-## 5. Layout
+| 種類 | 背景 | テキスト | ボーダー |
+|------|------|---------|---------|
+| デフォルト | `surface-container` | `on-surface-variant` | なし |
+| アクティブ（操作系） | `surface-container-highest` | `on-surface` | 1px `outline` |
+| 情報系バッジ | `primary-fixed`（薄青） | `on-primary-fixed` | なし |
+| 情報系アウトライン | 透明 | `primary` | 1px `primary` |
+| 注意系バッジ | `tertiary-fixed`（薄オレンジ） | `on-tertiary-fixed` | なし |
 
-レイアウトは完全中央配置を避ける。
+### 選択ハイライト
 
-重要なのは、偏心・非対称・重心のわずかなズレ・静かな緊張感である。
+`outline`（グレー）の 1px ボーダー + `surface-container-high` の背景。選択状態に有彩色は使わない。識別はボーダーの太さ（2px）と背景の濃淡で行う。`sm`（0.25rem）角丸。
 
-原則:
+### カード
 
-- アプリ全体は一つのアルミ筐体として扱う
-- sidebar は筐体に溶けた操作領域として扱う
-- editor / main panel は筐体の上に乗る執筆レイヤーとして扱う
-- 余白は広めに取る
-- 情報を詰め込みすぎない
-- ページ全体をカードの集合にしない
-- セクションをカードで包みすぎない
+背景 `surface-container-lowest`（`#ffffff`）・1px `outline-variant` ボーダー・`DEFAULT`（8px）角丸。
 
-### Sidebar
+カードのボーダーと背景は常にグレースケールで表現します。強調・推奨・グルーピングの差異は、ボーダーの太さ（1px → 2px）と背景の濃淡（`surface-container-lowest` → `surface-container-low`）の組み合わせで表現します。
 
-サイドバーはかなり重要である。
+**カードに有彩色を使う場面は存在しない。** オレンジや青のボーダー・背景はいかなる理由があっても禁止します。
 
-サイドバーはレイアウトの一部ではない。ただし、執筆機では独立プレートとして浮かせるより、背景と一体化した base chassis として扱う方を優先する。
+### ステップ番号・連番インジケーター
 
-サイドバーはアルミ筐体そのものであり、メイン執筆パネルがその上に層として乗る。
+手順の番号やステップを示す丸・バッジは `on-surface`（黒）または `surface-container-highest`（濃いグレー）で塗ります。オレンジの丸は警告や不可逆操作と混同を招くため禁止します。
 
-必須:
+### ラベル・バッジ（推奨・ステータス・カウント）
 
-- app body と連続したtexture
-- 弱い刻印感
-- 控えめなhighlight
-- 外周余白
-- メインパネルとの層差
+「推奨」「おすすめ」「新着」などのラベルはグレー系（`surface-container-highest` 背景・`on-surface-variant` テキスト）で表示します。重要度の強調にオレンジを使ってはなりません。オレンジは注意・危険・不可逆の意味を持つ場所だけです。
 
-禁止:
+情報系のステータス（件数・進捗・分類）は `primary-fixed` 背景・`on-primary-fixed` テキストの小型バッジで表示します。
 
-- サイドバーをカード化する
-- サイドバーに強いshadowを与える
-- サイドバーをメインと同格の浮遊レイヤーにする
+エラー・警告系は `error-container` 背景・`on-error-container` テキストを使います。
 
-visionOS 的なレイヤー感は、メイン執筆パネルに集中させる。ただし、透明なガラスUIにしてはならない。透明感ではなく、金属筐体の上に浮く執筆面として扱う。
+### メトリクス表示
 
-## 6. Shape
+`metric-xl` スタイルを基本は `on-surface` で表示します。情報的なステータス値には `primary`（ブルー）を適用します。クリティカルな状態・ピーク値のみ `tertiary-container`（オレンジ）を適用します。
 
-角丸は工業製品的でなければならない。
+---
 
-推奨値:
+## Motion
 
-| 用途 | Radius |
-|---|---:|
-| 小さな制御部品 | 4px |
-| ボタン・入力欄 | 8px |
-| 小パネル | 12px |
-| 大パネル | 16px |
-| 浮遊プレート | 22px |
+アニメーションは**滑らかで落ち着いた**印象を目指します。UIの操作感を損なわない範囲で、状態変化を柔らかく伝えます。装飾的なアニメーションは使いません。
 
-極端な pill shape は使わない。必要なのは、加工された金属の角である。
+### Duration（時間）
 
-## 7. Elevation
+| トークン           | 値     | 用途                                     |
+|--------------------|--------|------------------------------------------|
+| `duration-fast`    | 120ms  | チェックボックス・トグル・小型インタラクション |
+| `duration-normal`  | 200ms  | ホバー・フォーカス・ボタン状態変化         |
+| `duration-slow`    | 300ms  | パネル開閉・モーダル表示                  |
+| `duration-slower`  | 400ms  | 画面遷移・大きな要素の登場                |
 
-奥行きは、重い影ではなく、レイヤー・明度差・微細なshadow・エッジハイライトで表現する。
+### Easing（イージング）
 
-推奨:
+| トークン          | 値                          | 用途                     |
+|-------------------|-----------------------------|--------------------------|
+| `ease-standard`   | `cubic-bezier(0.2, 0, 0, 1)` | 標準的な状態変化          |
+| `ease-enter`      | `cubic-bezier(0, 0, 0.2, 1)` | 要素が現れるとき          |
+| `ease-exit`       | `cubic-bezier(0.4, 0, 1, 1)` | 要素が消えるとき          |
 
-```css
---shadow-panel:
-  inset 0 1px 0 rgba(255,255,255,.75),
-  inset 0 -1px 0 rgba(0,0,0,.05),
-  0 18px 48px rgba(0,0,0,.08);
+### 用途別の組み合わせ
 
---shadow-control:
-  inset 0 1px 0 rgba(255,255,255,.55),
-  inset 0 -1px 0 rgba(0,0,0,.04);
-```
+| 場面                     | duration              | easing          |
+|--------------------------|-----------------------|-----------------|
+| ホバー状態               | `duration-normal`（200ms） | `ease-standard` |
+| フォーカスリング          | `duration-fast`（120ms）   | `ease-enter`    |
+| モーダル・パネル 開く    | `duration-slow`（300ms）   | `ease-enter`    |
+| モーダル・パネル 閉じる  | `duration-normal`（200ms） | `ease-exit`     |
+| トグル・チェックボックス | `duration-fast`（120ms）   | `ease-standard` |
 
-禁止:
+**原則：**
 
-- 黒く重いshadow
-- 深すぎるdrop shadow
-- 浮遊感ではなく紙のカードに見える影
+- 状態変化の伝達にのみアニメーションを使う。装飾目的のアニメーションは禁止
+- 消えるアニメーションは現れるアニメーションより短くする（`ease-exit` は `ease-enter` より速い）
+- `prefers-reduced-motion` が有効な場合はすべてのトランジションを無効化する
 
-## 8. Components
+---
 
-### Buttons
+## Dark Mode
 
-ボタンは小さく、静かで、工業的で、精密に見える必要がある。
+OSの設定に自動追従し、アプリ設定で手動固定も可能です。
 
-原則:
+**基本方針：**
 
-- 高さは `32px` から `40px`
-- radius は `8px` 前後
-- border と inset highlight で形を出す
-- hover は最小限の明度変化
-- primary action でも青い大面積は避ける
+- モノクローム原則はダークモードでも同一。すべてのサーフェストークンは彩度ゼロ（R=G=B）
+- アクセントカラー（ブルー・オレンジ）はライトモードと同値。暗い背景でも十分な視認性を持つ
+- 背景は純粋な黒（`#000000`）を避け、目への負担を軽減するため `#131313` を基準とする
+- テキストも純粋な白（`#ffffff`）を避け、`#e6e6e6` を基準とする
+- コンポーネント定義・使用ルールはライトモードと共通
 
-禁止:
+### サーフェス階層（ダークモード）
 
-- 派手なgradient
-- 大きなCTA風ボタン
-- 強い色面
-- 過剰なhover animation
+暗い背景の上にコンテナが浮かび上がる構造。数値が大きいほど明るく、より手前に位置する。
 
-### Navigation
+| トークン | 値 | 用途 |
+|---|---|---|
+| `surface-dim` | `#0e0e0e` | 最も暗いサーフェス（オーバーレイ背景など） |
+| `surface` | `#131313` | ページ背景 |
+| `surface-container-lowest` | `#1a1a1a` | カード・パネル |
+| `surface-container-low` | `#1f1f1f` | 入れ子のコンテナ |
+| `surface-container` | `#252525` | 標準コンテナ |
+| `surface-container-high` | `#2c2c2c` | 強調コンテナ |
+| `surface-container-highest` | `#333333` | 最も手前のコンテナ |
 
-navigation は道具感を持つ。
+---
 
-現在地は Primary Blue の小さな信号、細いライン、または最小限の背景差で示す。青いタブや大きな塗り面で示してはならない。
+## AIデザインの典型表現を避けること
 
-### Panels / Cards
+AI生成UIに頻出する以下のパターンは、このシステムでは明示的に禁止します。
 
-カードは「紙のカード」ではなく、金属パネルとして扱う。
-
-必要な要素:
-
-- edge highlight
-- matte surface
-- subtle grain
-- shallow elevation
-- restrained border
-
-### Inputs
-
-入力欄は彫り込みではなく、薄い金属面の上に置かれた制御部品として扱う。
-
-推奨:
-
-- background: `surface-container-low`
-- border: `1px solid outline-variant`
-- focus: Primary Blue の細い ring
-- height: `36px` から `44px`
-
-### Interface Reduction
-
-このUIは説明しない。
-
-減らすもの:
-
-- ツールバー
-- アイコン
-- ラベル
-- 説明
-- 装飾
-
-増やすもの:
-
-- 余白
-- 精密感
-- 静けさ
-- 素材感
-
-情報を多く見せるほど良い、という発想を採用しない。思考の邪魔になるものを消し、必要な操作だけを道具として残す。
-
-## 9. Motion
-
-motion は装飾ではない。深度理解、状態変化、レイヤー移動、フォーカス補助のために使う。
-
-推奨:
-
-- duration: `160ms` から `260ms`
-- easing: `cubic-bezier(.2, .8, .2, 1)`
-- 移動量は小さくする
-- opacity と transform を中心にする
-- inertia
-- fluidity
-- soft damping
-- subtle depth
-
-禁止:
-
-- 速すぎるanimation
-- 強いbounce
-- 装飾的な連続animation
-- attentionを奪うmotion
-- 派手なspring
-- flashy animation
-- 過剰motion
-
-## 10. Dark Mode
-
-ダークモードでも思想は同じ。黒いUIではなく、暗所用の工業機材として設計する。
-
-原則:
-
-- 純黒を使わない
-- matte aluminum を維持する
-- matte dark aluminum として扱う
-- 粒子感を残す
-- Primary Blue は信号としてのみ使う
-- コントラストを確保しつつ、発光感を強めすぎない
-
-禁止:
-
-- pure black
-- neon
-- glowing UI
-
-## 11. Forbidden Patterns
-
-以下は禁止。
-
-- AIっぽいgradient
-- 過剰なglassmorphism
-- neon accent
-- glossy plastic
-- chrome metal
-- pure flat UI
-- 強い彩度
-- 重すぎるblur
-- card乱立
-- 過剰shadow
-- 装飾的animation
-- one-note palette
-- 巨大なhero風UI
-- マーケティングサイト的な演出
-- SaaS感
-- 色で階層を作る
-- flatすぎるUI
-
-## 12. Implementation Snippet
-
-```css
-:root {
-  --background: #ffffff;
-  --surface: #ffffff;
-  --surface-container-low: #fafafa;
-  --surface-container: #f4f4f4;
-  --surface-container-high: #eeeeee;
-  --on-surface: #1c1c1c;
-  --on-surface-variant: #5e5e5e;
-  --outline: #8a8a8a;
-  --outline-variant: #e0e0e0;
-  --primary: #00628c;
-  --caution: #c46a1a;
-  --danger: #b02f00;
-
-  --radius-control: 8px;
-  --radius-panel: 22px;
-
-  --shadow-panel:
-    inset 0 1px 0 rgba(255,255,255,.75),
-    inset 0 -1px 0 rgba(0,0,0,.05),
-    0 18px 48px rgba(0,0,0,.08);
-
-  --grain:
-    repeating-linear-gradient(
-      90deg,
-      rgba(255,255,255,.035) 0 1px,
-      rgba(0,0,0,.012) 1px 2px
-    );
-}
-```
-
-## 13. Agent Prompt Guide
-
-このデザインシステムに従う場合、AIには次のように指示する。
-
-```text
-Anodized Instrument のデザインシステムに従ってUIを作成してください。
-
-方向性は Teenage Engineering x MacBook Aluminum x visionOS Layer。
-UIではなく道具、テキストエディタではなく執筆機として設計します。
-
-画面の90%以上は白、薄いグレー、無彩色のアルミニウムで構成します。
-Blue (#00628c) は現在地、選択、リンク、フォーカス、情報信号に限定します。
-Orange (#c46a1a) は注意、未保存、未確定、要確認、競合、外部変更、リンク切れに限定します。
-Red (#b02f00) は削除、不可逆操作、保存失敗、破壊的操作に限定します。
-
-質感は matte anodized aluminum。
-エッジだけをわずかに光らせ、中央面は静かに保ちます。
-微細な粒子、酸化皮膜のような質感、浅いshadow、明度差、レイヤーで奥行きを作ります。
-クローム、鏡面反射、派手なgradient、過剰glassmorphism、透明UI、fake metalは禁止です。
-
-アプリ全体は一つのアルミ筐体として扱います。
-sidebar は背景と一体化した base chassis として扱い、editor / main panel だけをその上に乗る執筆レイヤーとして扱います。
-角丸は8px、12px、16px、22pxの範囲で工業製品的に使います。
-ボタンは小さく静かにし、hoverやmotionは最小限にします。
-
-フォントは Inter / system-ui / Noto Sans JP。
-ツールバー、アイコン、ラベル、説明、装飾は減らします。
-余白、精密感、静けさ、素材感を増やします。
-UIは装飾ではなく、思考のための精密な道具として設計してください。
-```
-
-## 14. Final Principle
-
-このUIは派手さで魅せない。
-
-重要なのは、素材、静けさ、粒子感、精密感、集中、工業的品質である。
-
-最終的な方向性は `Teenage Engineering x MacBook Aluminum x visionOS Layer`。
-
-UIは消えるべきである。しかし、消えながら圧倒的な品質を持たなければならない。
+| 禁止パターン | 理由 | 代替表現 |
+|------------|------|---------|
+| カード枠をオレンジ・青で囲む | 有彩色を装飾に使うことになる | グレーのボーダー太さで強調 |
+| ボタンやリスト項目の片側だけに有彩色ラインを入れる | 現在地表示ではなく、装飾的な強調に見える | 背景濃淡・境界線・文字ウェイトで状態を示す |
+| 選択状態のカードを有彩色で塗る | 面積が大きく色が主役になる | 背景濃淡とボーダー太さで区別 |
+| ステップ番号の丸をオレンジにする | 警告や不可逆操作と混同する | 黒・濃いグレーで塗る |
+| 「推奨」バッジをオレンジにする | 重要度の表現に有彩色を使うことになる | グレー系バッジで表示 |
+| グラデーションを使う | モノクロームの原則に反する | フラットな単色のみ |
+| 複数のカードに異なる有彩色を割り当てる | パレットの一貫性が崩れる | すべてグレースケールで統一 |
+| サーフェス・背景に色味を持ち込む | モノクロ領域を汚染する | 彩度ゼロのグレーのみ使用 |
+| ナビゲーションの選択背景をベージュ・暖色にする | 無彩色に見えてオレンジが混入している | 純粋なグレー（`surface-container-high`等）を使う |

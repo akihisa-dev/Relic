@@ -58,7 +58,7 @@
 
 .chronicle-sidebar-open,
 .chronicle-sidebar-delete {
-  background: var(--metal-panel-soft);
+  background: var(--bg);
   border: 0;
   color: var(--text);
   cursor: pointer;
@@ -114,7 +114,7 @@
 
 .chronicle-toolbar {
   align-items: center;
-  background: var(--metal-panel-soft);
+  background: color-mix(in srgb, var(--bg) 92%, var(--hover));
   border-bottom: 1px solid var(--border);
   display: grid;
   gap: 10px;
@@ -126,8 +126,8 @@
 }
 
 .chronicle-source-buttons {
-  background: var(--metal-recess);
-  border: 1px solid var(--border-soft);
+  background: var(--bg);
+  border: 1px solid var(--border);
   border-radius: 6px;
   display: inline-flex;
   overflow: hidden;
@@ -175,7 +175,7 @@
 }
 
 .chronicle-search input {
-  background: var(--input-bg);
+  background: var(--bg);
   border: 1px solid var(--border-soft);
   border-radius: 6px;
   box-sizing: border-box;
@@ -242,8 +242,8 @@
 
 .graph-icon-button,
 .graph-reset-button {
-  background: var(--metal-control);
-  border: 1px solid var(--border-soft);
+  background: var(--bg);
+  border: 1px solid var(--border);
   border-radius: 5px;
   color: var(--text-2);
   cursor: pointer;
@@ -357,7 +357,7 @@
 }
 
 .graph-search input {
-  background: var(--input-bg);
+  background: var(--bg);
   border: 1px solid var(--border-soft);
   border-radius: 6px;
   box-sizing: border-box;
@@ -394,7 +394,7 @@
 }
 
 .graph-group-row input[type="search"] {
-  background: var(--input-bg);
+  background: var(--bg);
   border: 1px solid var(--border-soft);
   border-radius: 5px;
   color: var(--text);
@@ -516,10 +516,9 @@
 }
 
 .graph-canvas {
-  background: var(--metal-canvas);
+  background: var(--bg);
   border: none;
   border-radius: 0;
-  box-shadow: var(--shadow-canvas);
   min-height: 0;
   overflow: hidden;
   position: relative;
@@ -872,8 +871,8 @@
 .chronicle-chart-tab,
 .chronicle-chart-add,
 .chronicle-chart-delete {
-  background: var(--metal-control);
-  border: 1px solid var(--border-soft);
+  background: var(--bg);
+  border: 1px solid var(--border);
   border-radius: 5px;
   color: var(--text-2);
   cursor: pointer;
@@ -910,8 +909,8 @@
 
 .chronicle-chart-name-input,
 .chronicle-chart-source-select {
-  background: var(--input-bg);
-  border: 1px solid var(--border-soft);
+  background: var(--bg);
+  border: 1px solid var(--border);
   border-radius: 5px;
   box-sizing: border-box;
   color: var(--text);
@@ -923,10 +922,8 @@
 }
 
 .chronicle-chart {
-  background: var(--metal-canvas);
-  border: 1px solid var(--border-soft);
+  border: 1px solid var(--border);
   border-radius: 7px;
-  box-shadow: var(--shadow-canvas);
   cursor: grab;
   flex: 1 1 0;
   height: auto;
@@ -947,7 +944,7 @@
 }
 
 .chronicle-name-column {
-  background: var(--metal-panel-soft);
+  background: var(--bg);
   left: 0;
   position: sticky;
   top: 0;
@@ -955,7 +952,7 @@
 }
 
 .chronicle-name-header {
-  background: transparent;
+  background: var(--bg);
   box-sizing: border-box;
   height: 34px;
 }
@@ -999,7 +996,7 @@
 
 .chronicle-axis {
   color: var(--text-3);
-  background: var(--metal-panel-soft);
+  background: var(--bg);
   display: block;
   font-size: 11px;
   min-height: 34px;
@@ -1099,7 +1096,7 @@
 .chronicle-file-name,
 .chronicle-file-remove,
 .chronicle-date-kind {
-  background: color-mix(in srgb, var(--surface-container-low) 72%, transparent);
+  background: var(--bg);
   border: 0;
   border-bottom: 1px solid var(--border);
   border-radius: 0;
@@ -1124,7 +1121,7 @@
 
 .chronicle-date-summary {
   align-items: center;
-  background: color-mix(in srgb, var(--surface-container-low) 72%, transparent);
+  background: var(--bg);
   border-bottom: 1px solid var(--border);
   border-left: 1px solid var(--border-soft);
   box-sizing: border-box;
@@ -1144,7 +1141,7 @@
 
 .chronicle-year-summary {
   align-items: center;
-  background: color-mix(in srgb, var(--surface-container-low) 72%, transparent);
+  background: var(--bg);
   border: 0;
   border-bottom: 1px solid var(--border);
   border-left: 1px solid var(--border-soft);
@@ -1214,7 +1211,7 @@
 }
 
 .chronicle-tracks {
-  background: var(--metal-canvas);
+  background: var(--bg);
   position: relative;
 }
 
@@ -1226,7 +1223,7 @@
 }
 
 .chronicle-guide-line {
-  background: var(--chart-line-soft);
+  background: rgba(28, 28, 28, 0.055);
   bottom: 0;
   position: absolute;
   top: 0;
@@ -1234,35 +1231,35 @@
 }
 
 .chronicle-guide-line--minor {
-  background: var(--chart-line-soft);
+  background: rgba(28, 28, 28, 0.055);
 }
 
 .chronicle-guide-line--major {
-  background: var(--chart-line-medium);
+  background: rgba(28, 28, 28, 0.15);
 }
 
 .chronicle-guide-lines--date .chronicle-guide-line--minor {
-  background: color-mix(in srgb, var(--chart-line-soft) 58%, transparent);
+  background: rgba(28, 28, 28, 0.026);
 }
 
 .chronicle-guide-lines--date-month .chronicle-guide-line--minor {
-  background: color-mix(in srgb, var(--chart-line-soft) 50%, transparent);
+  background: rgba(28, 28, 28, 0.022);
 }
 
 .chronicle-guide-lines--date .chronicle-guide-line--major {
-  background: color-mix(in srgb, var(--chart-line-medium) 76%, transparent);
+  background: rgba(28, 28, 28, 0.105);
 }
 
 .chronicle-guide-lines--chronicle .chronicle-guide-line--minor {
-  background: color-mix(in srgb, var(--chart-line-soft) 72%, transparent);
+  background: rgba(28, 28, 28, 0.038);
 }
 
 .chronicle-guide-lines--chronicle .chronicle-guide-line--major {
-  background: color-mix(in srgb, var(--chart-line-medium) 100%, transparent);
+  background: rgba(28, 28, 28, 0.19);
 }
 
 .chronicle-guide-row-line {
-  background: var(--chart-line-soft);
+  background: rgba(28, 28, 28, 0.06);
   height: 1px;
   left: 0;
   position: absolute;
@@ -1270,7 +1267,7 @@
 }
 
 .chronicle-guide-lines--date .chronicle-guide-row-line {
-  background: color-mix(in srgb, var(--chart-line-soft) 82%, transparent);
+  background: rgba(28, 28, 28, 0.045);
 }
 
 .chronicle-today-line {
@@ -1283,8 +1280,8 @@
 }
 
 .chronicle-today-button {
-  background: var(--metal-control);
-  border: 1px solid var(--border-soft);
+  background: var(--bg);
+  border: 1px solid var(--border);
   border-radius: 5px;
   color: var(--text-2);
   cursor: pointer;
@@ -1309,8 +1306,8 @@
 }
 
 .chronicle-offscreen-jump {
-  background: var(--metal-panel);
-  border: 1px solid var(--border-soft);
+  background: var(--bg);
+  border: 1px solid var(--border);
   border-radius: 999px;
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
   color: var(--text);
@@ -1378,8 +1375,8 @@
 }
 
 .chronicle-minimap-window {
-  background: color-mix(in srgb, var(--surface-container-high) 44%, transparent);
-  border: 1px solid var(--chart-line-medium);
+  background: rgba(28, 28, 28, 0.045);
+  border: 1px solid rgba(28, 28, 28, 0.38);
   border-radius: 999px;
   bottom: -2px;
   box-sizing: border-box;

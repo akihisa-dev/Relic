@@ -31,13 +31,13 @@
   align-items: center;
   background: transparent;
   border: 0;
-  border-radius: 8px;
+  border-radius: 6px;
   color: var(--text-2);
   display: grid;
   font-size: 13px;
   gap: 6px;
   grid-template-columns: 24px minmax(0, 1fr);
-  min-height: 30px;
+  min-height: 28px;
   padding: 0 8px;
   text-align: left;
   transform-origin: left center;
@@ -51,7 +51,6 @@
 
 .file-tree-row:hover {
   background: var(--hover);
-  box-shadow: var(--shadow-control);
   transform: translateX(1px);
 }
 
@@ -61,24 +60,12 @@
 
 .file-tree-row.selected {
   animation: file-tree-select 180ms cubic-bezier(.18, 1.25, .28, 1);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.2), rgba(0, 0, 0, 0.016));
-  box-shadow: none;
-  color: var(--text);
-  position: relative;
+  background: var(--accent-soft);
+  color: var(--accent);
 }
 
 .file-tree-row.selected .file-tree-icon {
-  color: var(--text-3);
-}
-
-.file-tree-row.selected::after {
-  background: var(--accent);
-  border-radius: 999px;
-  content: "";
-  height: 6px;
-  position: absolute;
-  right: 8px;
-  width: 6px;
+  color: var(--accent);
 }
 
 .file-tree-row.multi-selected .file-tree-icon {
@@ -247,7 +234,7 @@
 
 .file-tree-rename-input {
   animation: inline-control-in 150ms cubic-bezier(.18, 1.18, .28, 1);
-  background: var(--input-bg);
+  background: var(--bg);
   border: 1px solid var(--accent);
   border-radius: 4px;
   color: var(--text);
@@ -274,71 +261,36 @@
 /* ────────────────────────────────── */
 
 .primary-button {
-  background: var(--metal-control);
-  border: 0;
-  border-radius: 14px;
-  box-shadow: none;
-  color: var(--accent);
-  font-size: 16px;
-  min-height: 44px;
-  position: relative;
+  background: var(--accent);
+  border-color: transparent;
+  color: white;
 }
 .primary-button:hover {
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.42), rgba(0, 98, 140, 0.035)),
-    var(--btn-bg);
-  border-color: var(--accent);
+  background: var(--accent-hover);
 }
 
 .secondary-button {
-  background: var(--metal-control);
-  border: 0;
-  border-radius: 14px;
-  box-shadow: none;
+  background: transparent;
+  border-color: var(--border-medium);
   color: var(--text-2);
-  font-size: 15px;
-  min-height: 40px;
-  position: relative;
 }
 
 .files-search {
   display: grid;
-  gap: 10px;
+  gap: 8px;
   position: relative;
   z-index: 5;
 }
 
 .files-search-input {
   align-items: center;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.28), rgba(0, 0, 0, 0.018)),
-    var(--input-bg);
-  border: 0;
-  border-radius: 14px;
-  box-shadow: none;
+  background: var(--input-bg);
+  border: 1px solid var(--border-soft);
+  border-radius: 6px;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
-  min-height: 46px;
+  min-height: 34px;
   overflow: hidden;
-  position: relative;
-}
-
-.files-search-input::before,
-.text-input::before,
-.primary-button::before,
-.secondary-button::before {
-  border-bottom: 2px solid rgba(255, 255, 255, 0.78);
-  border-left: 2px solid rgba(0, 0, 0, 0.12);
-  border-radius: inherit;
-  border-right: 2px solid rgba(0, 0, 0, 0.12);
-  border-top: 2px solid rgba(0, 0, 0, 0.24);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.22),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.06);
-  content: "";
-  inset: -2px;
-  pointer-events: none;
-  position: absolute;
 }
 
 .files-search-input--error {
@@ -347,35 +299,32 @@
 }
 
 .files-search-mode-button {
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--hover);
   border: 0;
   border-radius: 0;
   border-right: 1px solid var(--border);
   color: var(--text-2);
-  font-size: 15px;
-  min-height: 46px;
-  padding: 0 12px;
+  font-size: 12px;
+  min-height: 34px;
+  padding: 0 9px;
 }
 
 .files-search-input input {
   background: transparent;
   border: 0;
   color: var(--text);
-  font-size: 16px;
-  min-height: 46px;
+  min-height: 34px;
   min-width: 0;
   outline: none;
-  padding: 0 14px;
+  padding: 0 10px;
   width: 100%;
 }
 
 .files-search-method-menu {
-  background:
-    var(--metal-sheen),
-    var(--popup-bg);
+  background: var(--popup-bg);
   border: 1px solid var(--border-soft);
   border-radius: 7px;
-  box-shadow: var(--shadow-panel);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12);
   display: grid;
   gap: 4px;
   left: 0;
@@ -408,7 +357,6 @@
 }
 
 .search-input {
-  background: var(--input-bg);
   border: 1px solid var(--border-soft);
   border-radius: 6px;
   min-height: 32px;
@@ -422,7 +370,6 @@
 }
 
 .search-mode-select {
-  background: var(--input-bg);
   border: 1px solid var(--border-soft);
   border-radius: 6px;
   min-height: 30px;
@@ -502,7 +449,7 @@
 }
 
 .search-result-button {
-  background: rgba(255, 255, 255, 0.12);
+  background: transparent;
   border: 1px solid var(--border);
   display: grid;
   gap: 3px;
@@ -521,7 +468,6 @@
 .search-result-button:hover {
   background: var(--hover);
   border-color: var(--accent-ring);
-  box-shadow: var(--shadow-control);
   transform: translateX(2px);
 }
 
@@ -563,8 +509,8 @@
 }
 
 .tag-pill {
-  background: var(--accent-softer);
-  border: 1px solid var(--accent-ring);
+  background: rgba(18, 100, 163, 0.08);
+  border: 1px solid rgba(18, 100, 163, 0.18);
   color: var(--link);
   min-width: 0;
   overflow: hidden;
@@ -579,30 +525,24 @@
 }
 
 .text-input {
-  background: var(--metal-control);
-  border: 0;
-  border-radius: 14px;
-  font-size: 16px;
-  min-height: 44px;
+  border: 1px solid var(--border-soft);
+  border-radius: 6px;
+  min-height: 30px;
   min-width: 0;
-  padding: 0 14px;
-  position: relative;
+  padding: 0 10px;
   width: 100%;
 }
 
 .new-file-form {
   display: grid;
-  gap: 10px;
+  gap: 8px;
   grid-template-columns: minmax(0, 1fr) auto;
 }
 
 .new-file-form--primary {
-  background:
-    var(--metal-sheen),
-    var(--popup-bg);
+  background: var(--popup-bg);
   border: 1px solid var(--border);
   border-radius: 8px;
-  box-shadow: var(--shadow-control);
   padding: 8px;
 }
 

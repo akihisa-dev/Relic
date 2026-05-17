@@ -26,10 +26,9 @@
 }
 
 .settings-group {
-  background: var(--metal-panel);
-  border: 1px solid var(--border-soft);
+  background: var(--bg);
+  border: 1px solid var(--border);
   border-radius: 8px;
-  box-shadow: var(--shadow-layer);
   display: grid;
   gap: 12px;
   min-width: 0;
@@ -103,7 +102,7 @@
 }
 
 .setting-row input[type="checkbox"]::after {
-  background: var(--metal-panel-soft);
+  background: var(--bg);
   border-radius: 999px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
   content: "";
@@ -160,9 +159,9 @@
 }
 
 .settings-segmented-button[aria-pressed="true"] {
-  background: var(--metal-control);
+  background: var(--bg);
   color: var(--text);
-  box-shadow: var(--shadow-control);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
 }
 
 .settings-segmented-button:not([aria-pressed="true"]):hover {
@@ -211,8 +210,8 @@
 .setting-action-btn--danger:hover { background: var(--error-bg); color: var(--error); }
 
 .frontmatter-format-guide {
-  background: var(--metal-recess);
-  border: 1px solid var(--border-soft);
+  background: rgba(28, 28, 28, 0.035);
+  border: 1px solid var(--border);
   border-radius: 6px;
   color: var(--text-2);
   display: grid;
@@ -228,8 +227,8 @@
 }
 
 .frontmatter-format-guide code {
-  background: var(--metal-panel-soft);
-  border: 1px solid var(--border-soft);
+  background: rgba(28, 28, 28, 0.045);
+  border: 1px solid var(--border);
   border-radius: 5px;
   color: var(--text);
   display: block;
@@ -242,8 +241,8 @@
 }
 
 .setting-custom-field-input {
-  background: var(--input-bg);
-  border: 1px solid var(--border-soft);
+  background: var(--bg);
+  border: 1px solid var(--border);
   border-radius: 4px;
   color: var(--text);
   font-size: 12px;
@@ -253,8 +252,8 @@
 }
 
 .frontmatter-field-type-select {
-  background: var(--input-bg);
-  border: 1px solid var(--border-soft);
+  background: var(--bg);
+  border: 1px solid var(--border);
   border-radius: 4px;
   color: var(--text);
   font-size: 12px;
@@ -318,7 +317,7 @@
 }
 
 .frontmatter-field-card {
-  background: var(--metal-panel-soft);
+  background: var(--bg);
   border: 1px solid var(--border-soft);
   border-radius: 7px;
   min-width: 0;
@@ -327,11 +326,11 @@
 
 .frontmatter-field-card[data-expanded="true"] {
   border-color: var(--border-medium);
-  box-shadow: var(--shadow-control);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.02);
 }
 
 .frontmatter-field-card--fixed {
-  background: var(--metal-recess);
+  background: var(--input-bg);
   border-color: var(--border-medium);
   border-width: 1px;
   margin-top: 6px;
@@ -377,7 +376,7 @@
 }
 
 .frontmatter-field-examples code {
-  background: var(--metal-recess);
+  background: rgba(28, 28, 28, 0.045);
   border: 1px solid var(--border-medium);
   border-radius: 5px;
   color: var(--text);
@@ -408,7 +407,7 @@
 }
 
 .frontmatter-field-type {
-  background: var(--metal-recess);
+  background: rgba(28, 28, 28, 0.055);
   border: 1px solid var(--border);
   border-radius: 999px;
   color: var(--text-2);
@@ -419,7 +418,7 @@
 }
 
 .frontmatter-field-detail {
-  background: color-mix(in srgb, var(--surface-container) 34%, transparent);
+  background: rgba(0, 0, 0, 0.012);
   border-top: 1px solid var(--border);
   display: grid;
   gap: 10px;
@@ -477,7 +476,7 @@
 }
 
 .frontmatter-writing-example code {
-  background: var(--metal-recess);
+  background: rgba(28, 28, 28, 0.045);
   border: 1px solid var(--border);
   border-radius: 5px;
   color: var(--text);
@@ -511,7 +510,7 @@
 }
 
 .frontmatter-field-summary-example code {
-  background: var(--metal-recess);
+  background: rgba(28, 28, 28, 0.045);
   border: 1px solid var(--border);
   border-radius: 5px;
   color: var(--text);
@@ -540,8 +539,8 @@
 
 .frontmatter-choice-pill {
   align-items: center;
-  background: var(--metal-panel-soft);
-  border: 1px solid var(--border-soft);
+  background: var(--bg);
+  border: 1px solid var(--border);
   border-radius: 4px;
   color: var(--text);
   display: inline-flex;
