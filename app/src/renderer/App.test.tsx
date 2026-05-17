@@ -2787,6 +2787,7 @@ describe("App", () => {
     fireEvent.click(screen.getByRole("button", { name: /読書メモ/ }));
 
     expect(searchWorkspace).toHaveBeenCalledWith({ mode: "fullText", query: "一致" });
+    expect(searchWorkspace.mock.calls.at(-1)?.[0]).toStrictEqual({ mode: "fullText", query: "一致" });
     expect(readMarkdownFile).toHaveBeenCalledWith({ path: "読書メモ.md" });
   });
 
@@ -2832,6 +2833,7 @@ describe("App", () => {
     await waitFor(() => {
       expect(searchWorkspace).toHaveBeenCalledWith({ mode: "tag", query: "資料" });
     });
+    expect(searchWorkspace.mock.calls.at(-1)?.[0]).toStrictEqual({ mode: "tag", query: "資料" });
     expect((await screen.findAllByText("#資料")).length).toBeGreaterThan(0);
   });
 
@@ -2858,6 +2860,7 @@ describe("App", () => {
     await waitFor(() => {
       expect(searchWorkspace).toHaveBeenCalledWith({ mode: "fileName", query: "読書" });
     });
+    expect(searchWorkspace.mock.calls.at(-1)?.[0]).toStrictEqual({ mode: "fileName", query: "読書" });
     expect(await screen.findByText("読書メモ.md")).toBeInTheDocument();
   });
 
