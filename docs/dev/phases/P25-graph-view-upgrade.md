@@ -138,3 +138,8 @@ P25では、事前に固定した長い実施リストは置かない。
 - グラフビューの表示設定に配置モードを追加し、標準、放射、クラスタ、散布を切り替えられるようにした。初期値は標準のままとし、保存形式、IPC/preload API、Markdownデータ形式は変更しなかった。
 - 配置モード変更時だけ座標を再シードし、同じ配置モードでの再計算、力学シミュレーション、ドラッグ、選択、ホバー演出、ラベル、リンク表示は既存挙動を維持した。
 - `pnpm exec vitest run src/renderer/App.test.tsx src/renderer/graphLayout.test.ts src/renderer/hooks/useGraphSimulation.test.tsx src/renderer/hooks/useGraphCanvasInteractions.test.tsx src/renderer/hooks/useGraphPanelModel.test.tsx src/renderer/components/GraphControlSections.test.tsx src/renderer/components/GraphControls.test.tsx src/renderer/hooks/useGraphNodeInteractions.test.tsx`、`pnpm typecheck`、`pnpm test`、`git diff --check` が通過した。全体テストは78ファイル、533件が通過した。Electron実機での目視確認は未実施。
+
+### グラフ背景クリックでの選択解除
+
+- グラフビューのノード以外の背景をクリックした場合に、選択済みノードを解除するようにした。背景ドラッグによるパン、ノードクリック、ノードドラッグ、ホバー演出は維持した。
+- `pnpm exec vitest run src/renderer/hooks/useGraphViewportInteractions.test.tsx src/renderer/hooks/useGraphCanvasInteractions.test.tsx src/renderer/hooks/useGraphPanelModel.test.tsx src/renderer/components/GraphCanvas.test.tsx src/renderer/App.test.tsx`、`pnpm typecheck`、`pnpm test`、`git diff --check` が通過した。全体テストは78ファイル、535件が通過した。Electron実機での目視確認は未実施。

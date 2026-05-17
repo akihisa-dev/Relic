@@ -118,6 +118,28 @@ describe("useGraphCanvasInteractions", () => {
     expect(setZoom).toHaveBeenCalledWith(1.1);
   });
 
+  it("背景clickで選択を解除する", () => {
+    const { hook, setSelectedPath } = renderInteractions({ selectedPath: "A.md" });
+    const svgTarget = {
+      hasPointerCapture: vi.fn().mockReturnValue(true),
+      releasePointerCapture: vi.fn(),
+      setPointerCapture: vi.fn()
+    } as unknown as SVGSVGElement;
+
+    act(() => {
+      hook.result.current.graphHandlers.onPointerDown(makeEvent<SVGSVGElement>({
+        currentTarget: svgTarget,
+        pointerId: 2
+      }));
+      hook.result.current.graphHandlers.onPointerUp(makeEvent<SVGSVGElement>({
+        currentTarget: svgTarget,
+        pointerId: 2
+      }));
+    });
+
+    expect(setSelectedPath).toHaveBeenCalledWith(null);
+  });
+
   it("node clickでは選択だけ更新し、focus演出状態は変更しない", async () => {
     const { hook, onOpenFile, setFocusedPath, setSelectedPath } = renderInteractions();
 

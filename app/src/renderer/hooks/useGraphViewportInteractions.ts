@@ -10,6 +10,7 @@ import {
 import type { GraphPan, GraphViewBox } from "../graphLayout";
 
 interface GraphDragState {
+  moved: boolean;
   pointerId: number;
   startClientX: number;
   startClientY: number;
@@ -17,6 +18,7 @@ interface GraphDragState {
 }
 
 interface UseGraphViewportInteractionsInput {
+  onBackgroundClick?: () => void;
   setZoom: (value: number) => void;
   zoom: number;
 }
@@ -40,6 +42,7 @@ export interface GraphViewportInteractions {
 }
 
 export function useGraphViewportInteractions({
+  onBackgroundClick,
   setZoom,
   zoom
 }: UseGraphViewportInteractionsInput): GraphViewportInteractions {
@@ -104,6 +107,7 @@ export function useGraphViewportInteractions({
     if (target.closest(".graph-node-hit")) return;
 
     dragStateRef.current = {
+      moved: false,
       pointerId: event.pointerId,
       startClientX: event.clientX,
       startClientY: event.clientY,
@@ -119,6 +123,8 @@ export function useGraphViewportInteractions({
     if (!dragState || dragState.pointerId !== event.pointerId) return;
 
     const delta = getGraphDelta(event.clientX - dragState.startClientX, event.clientY - dragState.startClientY);
+    const moved = Math.hypot(event.clientX - dragState.startClientX, event.clientY - dragState.startClientY) > 3;
+    dragStateRef.current = { ...dragState, moved: dragState.moved || moved };
     setPan({
       x: dragState.startPan.x - delta.x,
       y: dragState.startPan.y - delta.y
@@ -134,6 +140,7 @@ export function useGraphViewportInteractions({
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
+    if (!dragState.moved) onBackgroundClick?.();
     setIsPanning(false);
   }
 
