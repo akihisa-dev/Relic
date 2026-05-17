@@ -327,7 +327,7 @@
 
 .sidebar-body {
   flex: 1;
-  margin-right: 6px;
+  margin-right: 0;
   overflow-y: auto;
   padding: 0 18px 18px;
 }
