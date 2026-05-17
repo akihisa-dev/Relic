@@ -197,8 +197,8 @@ function normalizeSearchWorkspaceArgs(args: unknown[]): SearchWorkspaceInput | n
   const first = args[0];
   const second = args[1];
   const third = args[2];
-  const firstMode = isSearchMode(first) ? first : null;
-  const secondMode = isSearchMode(second) ? second : null;
+  const firstMode = parseSearchMode(first);
+  const secondMode = parseSearchMode(second);
 
   if (typeof first === "string" && secondMode) {
     return {
@@ -231,8 +231,10 @@ function firstString(...values: unknown[]): string | null {
 
 function firstSearchMode(...values: unknown[]): SearchMode | null {
   for (const value of values) {
-    if (isSearchMode(value)) {
-      return value;
+    const mode = parseSearchMode(value);
+
+    if (mode) {
+      return mode;
     }
   }
 
@@ -240,11 +242,40 @@ function firstSearchMode(...values: unknown[]): SearchMode | null {
 }
 
 function isSearchMode(value: unknown): value is SearchMode {
-  return (
-    value === "fullText" ||
-    value === "fileName" ||
-    value === "tag" ||
-    value === "regex" ||
-    value === "frontmatter"
-  );
+  return parseSearchMode(value) === value;
+}
+
+function parseSearchMode(value: unknown): SearchMode | null {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const normalized = value.trim().toLocaleLowerCase();
+
+  if (normalized === "fulltext" || normalized === "full text" || value === "全文") {
+    return "fullText";
+  }
+
+  if (normalized === "filename" || normalized === "file name" || value === "ファイル名") {
+    return "fileName";
+  }
+
+  if (normalized === "tag" || value === "タグ") {
+    return "tag";
+  }
+
+  if (normalized === "regex" || normalized === "regular expression" || value === "正規表現") {
+    return "regex";
+  }
+
+  if (
+    normalized === "frontmatter" ||
+    normalized === "property" ||
+    value === "プロパティ" ||
+    value === "フロントマター"
+  ) {
+    return "frontmatter";
+  }
+
+  return null;
 }
