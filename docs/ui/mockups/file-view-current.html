@@ -359,6 +359,7 @@
     .files-search {
       display: grid;
       gap: 8px;
+      position: relative;
     }
 
     .files-search-input {
@@ -587,14 +588,6 @@
       position: relative;
     }
 
-    .main-area.is-placeholder {
-      grid-template-rows: 40px minmax(0, 1fr);
-    }
-
-    .main-area.is-placeholder .editor-layout {
-      display: none;
-    }
-
     .main-area-top-bar {
       align-items: center;
       background: transparent;
@@ -603,7 +596,7 @@
       gap: 8px;
       padding: 0 24px;
       position: relative;
-      z-index: 1;
+      z-index: 50;
     }
 
     .rename-bar-label {
@@ -944,29 +937,6 @@
       z-index: 1;
     }
 
-    .mock-placeholder {
-      align-content: center;
-      color: var(--text-2);
-      display: none;
-      gap: 10px;
-      justify-items: center;
-      min-height: 0;
-      padding: 32px;
-      position: relative;
-      text-align: center;
-      z-index: 1;
-    }
-
-    .mock-placeholder.is-visible {
-      display: grid;
-    }
-
-    .mock-placeholder-title {
-      color: var(--text);
-      font-size: 20px;
-      font-weight: 760;
-    }
-
     .mock-toast {
       background: var(--metal-sheen), var(--popup-bg);
       border: 1px solid var(--border-soft);
@@ -988,6 +958,59 @@
     .mock-toast.is-visible {
       opacity: 1;
       transform: translate(-50%, 0);
+    }
+
+    .mock-popover {
+      background: var(--metal-sheen), var(--popup-bg);
+      border: 1px solid var(--border-soft);
+      border-radius: 8px;
+      box-shadow: var(--shadow-panel);
+      display: none;
+      gap: 6px;
+      padding: 6px;
+      position: absolute;
+      z-index: 60;
+    }
+
+    .mock-popover.is-open {
+      display: grid;
+    }
+
+    .mock-popover button {
+      background: transparent;
+      border: 0;
+      box-shadow: none;
+      justify-content: flex-start;
+      min-height: 26px;
+      text-align: left;
+    }
+
+    .mock-popover input {
+      background: var(--metal-recess);
+      border: 1px solid var(--border-soft);
+      border-radius: 6px;
+      color: var(--text);
+      min-height: 28px;
+      min-width: 180px;
+      padding: 0 8px;
+    }
+
+    .search-mode-menu {
+      left: 0;
+      top: 38px;
+      width: 120px;
+    }
+
+    .topbar-popover {
+      left: 104px;
+      top: 34px;
+      width: 180px;
+    }
+
+    .rename-popover {
+      grid-template-columns: minmax(180px, 1fr) auto;
+      left: 24px;
+      top: 34px;
     }
 
     @media (max-width: 980px) {
@@ -1036,13 +1059,13 @@
 
     <div class="workspace">
       <nav class="rail" aria-label="ビュー切替">
-        <button class="rail-button active" type="button" title="ファイル" aria-label="ファイル" data-view="files">
+        <button class="rail-button active" type="button" title="ファイル" aria-label="ファイル" data-sidebar-toggle>
           <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M3 5a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5z"></path>
             <polyline points="12.75,8.75 10.25,11 12.75,13.25"></polyline>
           </svg>
         </button>
-        <button class="rail-button" type="button" title="ダッシュボード" aria-label="ダッシュボード" data-view="dashboard">
+        <button class="rail-button" type="button" title="ダッシュボード" aria-label="ダッシュボード">
           <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <rect x="3" y="3" width="5" height="5" rx="1.4"></rect>
             <rect x="12" y="3" width="5" height="5" rx="1.4"></rect>
@@ -1050,7 +1073,7 @@
             <path d="M12 16l1.5-3 1.7 2 1.8-4"></path>
           </svg>
         </button>
-        <button class="rail-button" type="button" title="グラフ" aria-label="グラフ" data-view="graph">
+        <button class="rail-button" type="button" title="グラフ" aria-label="グラフ">
           <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <circle cx="5" cy="6" r="2"></circle>
             <circle cx="14" cy="4" r="2"></circle>
@@ -1062,7 +1085,7 @@
             <line x1="6.2" y1="7.5" x2="13.8" y2="12.5"></line>
           </svg>
         </button>
-        <button class="rail-button" type="button" title="チャート" aria-label="チャート" data-view="charts">
+        <button class="rail-button" type="button" title="チャート" aria-label="チャート">
           <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <line x1="3" y1="16" x2="17" y2="16"></line>
             <line x1="5" y1="13" x2="5" y2="16"></line>
@@ -1072,7 +1095,7 @@
           </svg>
         </button>
         <div class="rail-separator"></div>
-        <button class="rail-button" type="button" title="ツール" aria-label="ツール" data-view="tools">
+        <button class="rail-button" type="button" title="ツール" aria-label="ツール">
           <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M5 15l4-4"></path>
             <path d="M11 5l4 4"></path>
@@ -1080,7 +1103,7 @@
             <path d="M4 16l3 1 1-3-3-3-3 1z"></path>
           </svg>
         </button>
-        <button class="rail-button" type="button" title="フロントマター" aria-label="フロントマター" data-view="frontmatter">
+        <button class="rail-button" type="button" title="フロントマター" aria-label="フロントマター">
           <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M5 4h10"></path>
             <path d="M5 9h10"></path>
@@ -1090,7 +1113,7 @@
             <path d="M3 14h.01"></path>
           </svg>
         </button>
-        <button class="rail-button" type="button" title="設定" aria-label="設定" data-view="settings">
+        <button class="rail-button" type="button" title="設定" aria-label="設定">
           <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <circle cx="10" cy="10" r="2.5"></circle>
             <path d="M10 2.5v2"></path>
@@ -1118,6 +1141,11 @@
               <div class="files-search-input">
                 <button class="files-search-mode-button" type="button" data-search-mode>名前</button>
                 <input value="" placeholder="検索" aria-label="検索" data-search-input>
+              </div>
+              <div class="mock-popover search-mode-menu" data-search-mode-menu>
+                <button type="button" data-search-mode-option="名前">名前</button>
+                <button type="button" data-search-mode-option="タグ">タグ</button>
+                <button type="button" data-search-mode-option="正規">正規</button>
               </div>
             </div>
 
@@ -1229,7 +1257,16 @@
       <main class="main-area" data-main-area>
         <div class="main-area-top-bar">
           <button class="rename-bar-label" type="button" data-active-file-label>Relicについて.md</button>
-          <button class="toolbar-btn" type="button" data-toast="移動先の選択を開きました">移動</button>
+          <div class="mock-popover rename-popover" data-rename-popover>
+            <input value="Relicについて.md" aria-label="ファイル名" data-rename-input>
+            <button type="button" data-rename-apply>変更</button>
+          </div>
+          <button class="toolbar-btn" type="button" data-move-toggle>移動</button>
+          <div class="mock-popover topbar-popover" data-move-popover>
+            <button type="button" data-move-target="drafts">drafts</button>
+            <button type="button" data-move-target="notes">notes</button>
+            <button type="button" data-move-target="root">root</button>
+          </div>
           <div class="main-area-top-actions">
             <button class="toolbar-btn" type="button" data-source-toggle>Src</button>
             <button class="toolbar-btn" type="button" data-split-toggle>分割</button>
@@ -1303,10 +1340,6 @@ Relicは、ローカルMarkdownを扱うための書き手向けワークスペ�
             </div>
           </aside>
         </div>
-        <section class="mock-placeholder" data-placeholder>
-          <div class="mock-placeholder-title" data-placeholder-title>Dashboard</div>
-          <div data-placeholder-body>このモックではレール切り替え、サイドバー開閉、タブ操作などの状態だけ確認できます。</div>
-        </section>
       </main>
     </div>
 
@@ -1362,20 +1395,14 @@ Relicは、ローカルMarkdownを扱うための書き手向けワークスペ�
       activeFile: "Relicについて.md",
       panelMode: "outline",
       split: false,
-      source: false,
-      view: "files"
+      source: false
     };
 
     const qs = (selector, root = document) => root.querySelector(selector);
     const qsa = (selector, root = document) => [...root.querySelectorAll(selector)];
 
-    const mainArea = qs("[data-main-area]");
     const sidebar = qs(".sidebar");
     const rightPanel = qs("[data-right-panel]");
-    const fileView = qs("[data-file-view]");
-    const placeholder = qs("[data-placeholder]");
-    const placeholderTitle = qs("[data-placeholder-title]");
-    const placeholderBody = qs("[data-placeholder-body]");
     const editor = qs("[data-editor]");
     const activeFileLabel = qs("[data-active-file-label]");
     const tabBar = qs("[data-tab-bar]");
@@ -1384,21 +1411,33 @@ Relicは、ローカルMarkdownを扱うための書き手向けワークスペ�
     const outlineList = qs("[data-outline-list]");
     const statusText = qs("[data-status-text]");
     const toastBox = qs("[data-toast-box]");
-
-    const viewLabels = {
-      dashboard: ["Dashboard", "カード、指標、最近の更新を確認するビューです。"],
-      graph: ["Graph", "ノードとリンクのキャンバスを確認するビューです。"],
-      charts: ["Charts", "Chronicleのバー、軸、名前列を確認するビューです。"],
-      tools: ["Tools", "ファイル加工ツールのサイドバーと実行面を確認するビューです。"],
-      frontmatter: ["Frontmatter", "フィールド定義と候補値カードを確認するビューです。"],
-      settings: ["Settings", "設定グループとフォーム面を確認するビューです。"]
-    };
+    const searchModeMenu = qs("[data-search-mode-menu]");
+    const renamePopover = qs("[data-rename-popover]");
+    const renameInput = qs("[data-rename-input]");
+    const movePopover = qs("[data-move-popover]");
 
     function showToast(message) {
       toastBox.textContent = message;
       toastBox.classList.add("is-visible");
       clearTimeout(showToast.timer);
       showToast.timer = setTimeout(() => toastBox.classList.remove("is-visible"), 1400);
+    }
+
+    function closePopovers(except = null) {
+      [searchModeMenu, renamePopover, movePopover].forEach((popover) => {
+        if (popover !== except) popover.classList.remove("is-open");
+      });
+    }
+
+    function togglePopover(popover) {
+      const willOpen = !popover.classList.contains("is-open");
+      closePopovers(willOpen ? popover : null);
+      popover.classList.toggle("is-open", willOpen);
+      if (popover === renamePopover && willOpen) {
+        renameInput.value = state.activeFile;
+        renameInput.focus();
+        renameInput.select();
+      }
     }
 
     function updateFileCount() {
@@ -1470,32 +1509,6 @@ Relicは、ローカルMarkdownを扱うための書き手向けワークスペ�
       updatePanel();
     }
 
-    function setView(view) {
-      const wasFiles = state.view === "files";
-      state.view = view;
-      qsa("[data-view]").forEach((button) => {
-        button.classList.toggle("active", button.dataset.view === view);
-      });
-      if (view === "files") {
-        mainArea.classList.remove("is-placeholder");
-        placeholder.classList.remove("is-visible");
-        sidebar.classList.toggle("is-closed", wasFiles && !sidebar.classList.contains("is-closed"));
-        fileView.hidden = false;
-        setActiveFile(state.activeFile);
-        statusText.textContent = "Markdown / Live Preview / UTF-8";
-        return;
-      }
-      const [title, body] = viewLabels[view];
-      activeFileLabel.textContent = title;
-      placeholderTitle.textContent = title;
-      placeholderBody.textContent = body;
-      mainArea.classList.add("is-placeholder");
-      placeholder.classList.add("is-visible");
-      sidebar.classList.add("is-closed");
-      rightPanel.classList.add("is-closed");
-      statusText.textContent = `${title} / mock interaction`;
-    }
-
     function applySearch(value) {
       const query = value.trim().toLowerCase();
       qsa(".file-tree-row-wrap").forEach((wrap) => {
@@ -1526,6 +1539,29 @@ Relicは、ローカルMarkdownを扱うための書き手向けワークスペ�
       showToast(`${folderName} を作成しました`);
     }
 
+    function renameActiveFile(rawName) {
+      const trimmed = rawName.trim();
+      if (!trimmed) {
+        showToast("ファイル名を入力してください");
+        return;
+      }
+      const nextName = trimmed.endsWith(".md") ? trimmed : `${trimmed}.md`;
+      const previousName = state.activeFile;
+      fileBodies[nextName] = fileBodies[previousName] ?? fallbackBody(nextName);
+      if (nextName !== previousName) delete fileBodies[previousName];
+      qsa(`[data-file-name="${CSS.escape(previousName)}"]`).forEach((button) => {
+        button.dataset.fileName = nextName;
+        qs(".file-tree-name", button).textContent = nextName;
+      });
+      qsa(`[data-tab="${CSS.escape(previousName)}"]`).forEach((tab) => {
+        tab.dataset.tab = nextName;
+        qs(".pane-tab-name", tab).textContent = nextName;
+      });
+      setActiveFile(nextName);
+      renamePopover.classList.remove("is-open");
+      showToast(`${previousName} を ${nextName} に変更しました`);
+    }
+
     document.addEventListener("click", (event) => {
       const tabTarget = event.target.closest("[data-tab]");
       if (tabTarget && !event.target.closest(".pane-tab-close")) {
@@ -1534,8 +1570,8 @@ Relicは、ローカルMarkdownを扱うための書き手向けワークスペ�
       }
       const target = event.target.closest("button");
       if (!target) return;
-      if (target.matches("[data-view]")) {
-        setView(target.dataset.view);
+      if (target.matches("[data-sidebar-toggle]")) {
+        sidebar.classList.toggle("is-closed");
         return;
       }
       if (target.matches("[data-folder-toggle]")) {
@@ -1563,6 +1599,23 @@ Relicは、ローカルMarkdownを扱うための書き手向けワークスペ�
         setPanelMode(target.dataset.panelMode);
         return;
       }
+      if (target.matches("[data-active-file-label]")) {
+        togglePopover(renamePopover);
+        return;
+      }
+      if (target.matches("[data-rename-apply]")) {
+        renameActiveFile(renameInput.value);
+        return;
+      }
+      if (target.matches("[data-move-toggle]")) {
+        togglePopover(movePopover);
+        return;
+      }
+      if (target.matches("[data-move-target]")) {
+        movePopover.classList.remove("is-open");
+        showToast(`${state.activeFile} を ${target.dataset.moveTarget} へ移動しました`);
+        return;
+      }
       if (target.matches("[data-source-toggle]")) {
         state.source = !state.source;
         target.classList.toggle("active", state.source);
@@ -1585,7 +1638,12 @@ Relicは、ローカルMarkdownを扱うための書き手向けワークスペ�
         return;
       }
       if (target.matches("[data-search-mode]")) {
-        target.textContent = target.textContent === "名前" ? "タグ" : target.textContent === "タグ" ? "正規" : "名前";
+        togglePopover(searchModeMenu);
+        return;
+      }
+      if (target.matches("[data-search-mode-option]")) {
+        qs("[data-search-mode]").textContent = target.dataset.searchModeOption;
+        searchModeMenu.classList.remove("is-open");
         return;
       }
       if (target.matches("[data-create-folder]")) {
@@ -1609,6 +1667,19 @@ Relicは、ローカルMarkdownを扱うための書き手向けワークスペ�
       }
       addFile(name);
       input.value = "";
+    });
+
+    renameInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") renameActiveFile(renameInput.value);
+      if (event.key === "Escape") renamePopover.classList.remove("is-open");
+    });
+
+    qsa("[data-move-target]").forEach((button) => {
+      button.addEventListener("click", (event) => {
+        event.stopPropagation();
+        movePopover.classList.remove("is-open");
+        showToast(`${state.activeFile} を ${button.dataset.moveTarget} へ移動しました`);
+      });
     });
 
     updateFileCount();
