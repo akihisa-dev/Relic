@@ -127,3 +127,8 @@ P25では、事前に固定した長い実施リストは置かない。
 - グラフビューの未選択ノードをクリックした場合は選択だけ行い、選択済みノードを改めてクリックした場合だけファイルを開くようにした。ダブルクリック判定は追加せず、EnterキーとSpaceキーは選択だけを行う。
 - クリック開始時点で選択済みだったかを判定し、初回クリックの `pointerDown` による選択更新ではファイルを開かないようにした。グラフビュー内のドラッグ、ホバー演出、余韻表示は維持した。
 - `pnpm exec vitest run src/renderer/hooks/useGraphNodeInteractions.test.tsx src/renderer/hooks/useGraphCanvasInteractions.test.tsx src/renderer/hooks/useGraphPanelModel.test.tsx src/renderer/components/GraphCanvas.test.tsx src/renderer/components/GraphCanvasLayers.test.tsx`、`pnpm typecheck`、`git diff --check` が通過した。Electron実機での目視確認は未実施。
+
+### グラフノード選択状態の明示
+
+- グラフビューの選択済みノードにアクセント色の外周リングを追加し、ホバー演出や関連ノード表示と区別して選択状態が残って見えるようにした。
+- `pnpm exec vitest run src/renderer/components/GraphCanvasLayers.test.tsx src/renderer/components/GraphCanvas.test.tsx src/renderer/hooks/useGraphNodeInteractions.test.tsx src/renderer/hooks/useGraphCanvasInteractions.test.tsx src/renderer/hooks/useGraphPanelModel.test.tsx`、`pnpm typecheck`、`git diff --check` が通過した。Electron実機での目視確認は未実施。

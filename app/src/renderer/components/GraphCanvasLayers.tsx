@@ -164,6 +164,15 @@ export function GraphNodeLayer({
             role="button"
             tabIndex={0}
           >
+            {isSelected ? (
+              <circle
+                aria-hidden="true"
+                className="graph-node-selection-ring"
+                cx={point.x}
+                cy={point.y}
+                r={radius + 5}
+              />
+            ) : null}
             <circle
               className={nodeClassName}
               cx={point.x}
