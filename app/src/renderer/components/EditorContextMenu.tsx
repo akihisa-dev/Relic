@@ -14,6 +14,7 @@ import {
   CodeBlockIcon,
   CopyIcon,
   CutIcon,
+  ExternalLinkIcon,
   HeadingIcon,
   HighlightIcon,
   HorizontalRuleIcon,
@@ -22,7 +23,6 @@ import {
   LinkIcon,
   OrderedListIcon,
   PasteIcon,
-  SelectAllIcon,
   StrikethroughIcon,
   TableIcon,
   UnderlineIcon
@@ -160,7 +160,7 @@ export function EditorContextMenu({
       <div className="tab-context-menu-separator" />
       <div className="editor-context-menu-section" role="group">
         <IconMenuButton
-          icon={<LinkIcon className="editor-context-menu-icon" size={16} />}
+          icon={<ExternalLinkIcon className="editor-context-menu-icon" size={16} />}
           label={t("toolbar.markdownLink")}
           onClick={() => runMarkdownAction(markdownActions.handleLink, false)}
         />
@@ -241,14 +241,18 @@ export function EditorContextMenu({
         ) : null}
       </div>
       <div className="tab-context-menu-separator" />
-      <IconMenuButton
-        icon={<SelectAllIcon className="editor-context-menu-icon" size={16} />}
-        label={t("editor.selectAll")}
+      <button
+        className="tab-context-menu-item editor-context-menu-text-item"
         onClick={() => {
           onSelectAll();
           onClose();
         }}
-      />
+        onMouseDown={(event) => event.preventDefault()}
+        role="menuitem"
+        type="button"
+      >
+        {t("editor.selectAll")}
+      </button>
     </div>,
     document.body
   );
