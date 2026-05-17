@@ -167,8 +167,8 @@
   height: 100%;
   min-width: 220px;
   overflow: hidden;
-  transition: width 280ms cubic-bezier(.22, 1, .36, 1), border-color 220ms ease, background-color 220ms ease;
-  will-change: width;
+  contain: paint;
+  transition: width 180ms cubic-bezier(.2, .8, .2, 1), border-color 160ms ease;
   width: 240px;
 }
 
@@ -185,7 +185,7 @@
   opacity: 1;
   transform: translateX(0) scaleX(1);
   transform-origin: right center;
-  transition: opacity 180ms ease, transform 240ms cubic-bezier(.22, 1, .36, 1);
+  transition: opacity 140ms ease, transform 180ms cubic-bezier(.2, .8, .2, 1);
 }
 
 .right-panel--closed > .sidebar-header,
