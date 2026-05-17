@@ -183,6 +183,7 @@ describe("Editor", () => {
 
     await waitFor(() => expect(viewRef.current).not.toBeNull());
     const view = viewRef.current!;
+    await waitFor(() => expect(view.state.doc.toString()).toBe("hello world"));
     const contentElement = view.dom.querySelector(".cm-content")!;
     view.dispatch({ selection: { anchor: 0, head: 5 } });
 
@@ -238,6 +239,35 @@ describe("Editor", () => {
 
     expect(await screen.findByRole("menuitem", { name: "Bold" })).toBeInTheDocument();
     expect(screen.getByRole("menuitem", { name: "Copy" })).toBeInTheDocument();
+  });
+
+  it("本文の右クリックメニューから選択範囲にMarkdown操作を適用できる", async () => {
+    const viewRef = createRef<EditorView | null>();
+    const onChange = vi.fn();
+
+    render(
+      <Editor
+        content="hello world"
+        onChange={onChange}
+        settings={{ ...settings, language: "ja" }}
+        viewRef={viewRef}
+      />
+    );
+
+    await waitFor(() => expect(viewRef.current).not.toBeNull());
+    const view = viewRef.current!;
+    const contentElement = view.dom.querySelector(".cm-content")!;
+    view.dispatch({ selection: { anchor: 0, head: 5 } });
+
+    fireEvent.contextMenu(contentElement, { clientX: 32, clientY: 32 });
+    expect(view.state.selection.main.empty).toBe(false);
+    const boldButton = await screen.findByRole("menuitem", { name: "Bold" });
+    fireEvent.mouseDown(boldButton);
+    fireEvent.click(boldButton);
+
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+    expect(onChange).toHaveBeenLastCalledWith("**hello** world");
+    expect(viewRef.current!.state.doc.toString()).toBe("**hello** world");
   });
 
   it("外側からcontentが更新されたら表示中の文書も同期する", async () => {

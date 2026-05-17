@@ -155,9 +155,9 @@ export function useEditorContextMenu({ viewRef }: UseEditorContextMenuInput) {
     view.focus();
   }, [viewRef]);
 
-  const prepareContextSelection = useCallback((): void => {
+  const prepareContextSelection = useCallback((): EditorView | null => {
     const view = viewRef.current;
-    if (!view || !contextMenu) return;
+    if (!view || !contextMenu) return null;
 
     view.dispatch({
       selection: {
@@ -166,6 +166,7 @@ export function useEditorContextMenu({ viewRef }: UseEditorContextMenuInput) {
       }
     });
     view.focus();
+    return view;
   }, [contextMenu, viewRef]);
 
   useEffect(() => {
