@@ -2,12 +2,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { MouseEvent as ReactMouseEvent } from "react";
 
 interface UseSidebarResizeInput {
+  direction?: "left" | "right";
   initialWidth: number;
   maxWidth: number;
   minWidth: number;
 }
 
 export function useSidebarResize({
+  direction = "right",
   initialWidth,
   maxWidth,
   minWidth
@@ -29,7 +31,9 @@ export function useSidebarResize({
   useEffect(() => {
     const handleMouseMove = (event: MouseEvent): void => {
       if (!sidebarResizingRef.current) return;
-      const delta = event.clientX - sidebarResizeStartXRef.current;
+      const delta = direction === "right"
+        ? event.clientX - sidebarResizeStartXRef.current
+        : sidebarResizeStartXRef.current - event.clientX;
       const next = Math.max(minWidth, Math.min(maxWidth, sidebarResizeStartWidthRef.current + delta));
       setSidebarWidth(next);
     };
@@ -45,7 +49,7 @@ export function useSidebarResize({
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseup", handleMouseUp);
     };
-  }, [maxWidth, minWidth]);
+  }, [direction, maxWidth, minWidth]);
 
   return {
     sidebarWidth,

@@ -1,5 +1,5 @@
 import type { EditorView } from "@codemirror/view";
-import type { Dispatch, MutableRefObject, ReactElement, ReactNode, SetStateAction } from "react";
+import type { Dispatch, MouseEvent as ReactMouseEvent, MutableRefObject, ReactElement, ReactNode, SetStateAction } from "react";
 
 import type { Backlink, EditorSettings, UserDefinedField } from "../../shared/ipc";
 import type { ResolvedWikiLink } from "../../shared/links";
@@ -20,6 +20,7 @@ interface AppEditorWorkspaceProps {
   frontmatterCandidates: Record<string, string[]>;
   isLoadingBacklinks: boolean;
   isRightPanelOpen: boolean;
+  isRightPanelResizing: boolean;
   isSourceMode: boolean;
   isSplit: boolean;
   isSplitClosing: boolean;
@@ -40,6 +41,7 @@ interface AppEditorWorkspaceProps {
   onOpenWikiLink: (target: string, heading?: string) => void;
   onOutlineHeadingClick: (heading: string) => void;
   onRenameFile: (path: string, name: string) => void;
+  onRightPanelResizeStart: (event: ReactMouseEvent) => void;
   onRevealTabFile?: (tabId: string) => void;
   onRightPanelViewButton: (view: RightPanelView) => void;
   onScrollTargetHandled: (pane: PaneId) => void;
@@ -60,6 +62,7 @@ interface AppEditorWorkspaceProps {
   rightEditorViewRef: MutableRefObject<EditorView | null>;
   rightPaneScrollHeading?: string;
   rightPanelView: RightPanelView;
+  rightPanelWidth: number;
   setLinkContextMenu: Dispatch<SetStateAction<AppLinkContextMenu | null>>;
   showRightPanelControls: boolean;
   userDefinedFields: UserDefinedField[];
@@ -75,6 +78,7 @@ export function AppEditorWorkspace({
   frontmatterCandidates,
   isLoadingBacklinks,
   isRightPanelOpen,
+  isRightPanelResizing,
   isSourceMode,
   isSplit,
   isSplitClosing,
@@ -95,6 +99,7 @@ export function AppEditorWorkspace({
   onOpenWikiLink,
   onOutlineHeadingClick,
   onRenameFile,
+  onRightPanelResizeStart,
   onRevealTabFile,
   onRightPanelViewButton,
   onScrollTargetHandled,
@@ -115,6 +120,7 @@ export function AppEditorWorkspace({
   rightEditorViewRef,
   rightPaneScrollHeading,
   rightPanelView,
+  rightPanelWidth,
   setLinkContextMenu,
   showRightPanelControls,
   userDefinedFields,
@@ -258,13 +264,16 @@ export function AppEditorWorkspace({
           backlinks={backlinks}
           isLoadingBacklinks={isLoadingBacklinks}
           isOpen={isRightPanelOpen}
+          isResizing={isRightPanelResizing}
           onOpenFile={onOpenFile}
           onOpenWikiLink={onOpenWikiLink}
           onOutlineHeadingClick={onOutlineHeadingClick}
+          onResizeStart={onRightPanelResizeStart}
           outlineHeadings={outlineHeadings}
           outgoingLinks={outgoingLinks}
           rightPanelView={rightPanelView}
           setLinkContextMenu={setLinkContextMenu}
+          width={rightPanelWidth}
         />
       </div>
     </main>
