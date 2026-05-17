@@ -291,12 +291,14 @@
 }
 
 .main-area-actions .toolbar-btn {
+  align-items: center;
   background: transparent;
   border-color: transparent;
   box-shadow: none;
-  min-width: 68px;
-  padding: 0 6px;
-  text-align: center;
+  display: inline-flex;
+  justify-content: center;
+  min-width: 34px;
+  padding: 0;
 }
 
 .main-area-actions .toolbar-btn:hover {

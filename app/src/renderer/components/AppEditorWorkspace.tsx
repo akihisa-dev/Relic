@@ -126,38 +126,42 @@ export function AppEditorWorkspace({
     <main className="main-area">
       <div className="main-area-actions">
         <button
+          aria-label={t("pane.sourceShort")}
           className={`toolbar-btn${isSourceMode ? " active" : ""}`}
           onClick={onSourceModeToggle}
           title={t("pane.sourceMode")}
           type="button"
         >
-          {t("pane.sourceShort")}
+          <SourceModeIcon />
         </button>
         <button
+          aria-label={t("pane.splitShort")}
           className={`toolbar-btn${isSplit ? " active" : ""}`}
           onClick={onSplitToggle}
           title={t("pane.split")}
           type="button"
         >
-          {t("pane.splitShort")}
+          <SplitViewIcon />
         </button>
         {showRightPanelControls ? (
           <>
             <button
+              aria-label={t("pane.outline")}
               className={`toolbar-btn${rightPanelView === "outline" && isRightPanelOpen ? " active" : ""}`}
               onClick={() => onRightPanelViewButton("outline")}
               title={t("pane.toggleOutline")}
               type="button"
             >
-              {t("pane.outline")}
+              <OutlineIcon />
             </button>
             <button
+              aria-label={t("pane.links")}
               className={`toolbar-btn${rightPanelView === "links" && isRightPanelOpen ? " active" : ""}`}
               onClick={() => onRightPanelViewButton("links")}
               title={t("pane.toggleLinks")}
               type="button"
             >
-              {t("pane.links")}
+              <LinksIcon />
             </button>
           </>
         ) : null}
@@ -260,5 +264,47 @@ export function AppEditorWorkspace({
         />
       </div>
     </main>
+  );
+}
+
+function SourceModeIcon(): ReactElement {
+  return (
+    <svg aria-hidden="true" fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.7" viewBox="0 0 20 20" width="18">
+      <polyline points="7.5,5.5 3.5,10 7.5,14.5" />
+      <polyline points="12.5,5.5 16.5,10 12.5,14.5" />
+      <line x1="10.8" x2="9.2" y1="4" y2="16" />
+    </svg>
+  );
+}
+
+function SplitViewIcon(): ReactElement {
+  return (
+    <svg aria-hidden="true" fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.7" viewBox="0 0 20 20" width="18">
+      <rect height="13" rx="2" width="14" x="3" y="4" />
+      <line x1="10" x2="10" y1="4" y2="17" />
+    </svg>
+  );
+}
+
+function OutlineIcon(): ReactElement {
+  return (
+    <svg aria-hidden="true" fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.7" viewBox="0 0 20 20" width="18">
+      <line x1="8" x2="16" y1="5" y2="5" />
+      <line x1="8" x2="14" y1="10" y2="10" />
+      <line x1="8" x2="15" y1="15" y2="15" />
+      <circle cx="4.5" cy="5" r="1" />
+      <circle cx="4.5" cy="10" r="1" />
+      <circle cx="4.5" cy="15" r="1" />
+    </svg>
+  );
+}
+
+function LinksIcon(): ReactElement {
+  return (
+    <svg aria-hidden="true" fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.7" viewBox="0 0 20 20" width="18">
+      <path d="M8.4 6.2l1-1a4 4 0 0 1 5.7 5.7l-1 1" />
+      <path d="M11.6 13.8l-1 1a4 4 0 1 1-5.7-5.7l1-1" />
+      <line x1="7.8" x2="12.2" y1="12.2" y2="7.8" />
+    </svg>
   );
 }
