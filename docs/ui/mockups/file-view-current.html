@@ -1,0 +1,1037 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Relic File View Current Mock</title>
+  <style>
+    :root {
+      --bg: #ffffff;
+      --rail-bg: rgba(255, 255, 255, 0.96);
+      --sidebar-bg: rgba(250, 250, 250, 0.96);
+      --popup-bg: rgba(255, 255, 255, 0.98);
+      --text: #1c1c1c;
+      --text-2: #5e5e5e;
+      --text-3: #8a8a8a;
+      --border: rgba(28, 28, 28, 0.1);
+      --border-soft: rgba(28, 28, 28, 0.13);
+      --border-medium: rgba(28, 28, 28, 0.2);
+      --btn-bg: rgba(255, 255, 255, 0.9);
+      --hover: rgba(28, 28, 28, 0.04);
+      --hover-strong: rgba(28, 28, 28, 0.1);
+      --input-bg: rgba(255, 255, 255, 0.72);
+      --accent: #00628c;
+      --accent-hover: #007caf;
+      --accent-soft: rgba(0, 98, 140, 0.08);
+      --accent-softer: rgba(0, 98, 140, 0.04);
+      --accent-ring: rgba(0, 98, 140, 0.16);
+      --link: #00628c;
+      --highlight: rgba(0, 98, 140, 0.12);
+      color: var(--text);
+      background: var(--bg);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Hiragino Sans", "Yu Gothic", sans-serif;
+      font-synthesis: none;
+      text-rendering: optimizeLegibility;
+    }
+
+    * {
+      box-sizing: border-box;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(28, 28, 28, 0.18) transparent;
+    }
+
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    button {
+      border: 1px solid var(--border-soft);
+      border-radius: 6px;
+      background: var(--btn-bg);
+      color: inherit;
+      cursor: default;
+      min-height: 28px;
+      padding: 0 10px;
+    }
+
+    .app-shell {
+      display: grid;
+      grid-template-rows: 38px minmax(0, 1fr) 28px;
+      height: 100vh;
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    .title-bar {
+      align-items: center;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      display: grid;
+      grid-template-columns: 96px minmax(0, 1fr) auto;
+      padding: 0 12px;
+    }
+
+    .window-dots {
+      display: flex;
+      gap: 8px;
+    }
+
+    .window-dot {
+      border: 1px solid rgba(28, 28, 28, 0.12);
+      border-radius: 999px;
+      height: 12px;
+      width: 12px;
+    }
+
+    .window-dot:nth-child(1) { background: #ff5f57; }
+    .window-dot:nth-child(2) { background: #ffbd2e; }
+    .window-dot:nth-child(3) { background: #28c840; }
+
+    .title-label {
+      color: var(--text-3);
+      font-size: 12px;
+      font-weight: 600;
+      text-align: center;
+    }
+
+    .workspace {
+      display: flex;
+      height: 100%;
+      min-height: 0;
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    .rail {
+      align-items: stretch;
+      background: var(--rail-bg);
+      border-right: 1px solid var(--border);
+      color: var(--text-3);
+      display: flex;
+      flex: 0 0 auto;
+      flex-direction: column;
+      gap: 8px;
+      overflow: hidden;
+      padding: 8px 8px 12px;
+      width: 48px;
+      z-index: 2;
+    }
+
+    .rail-button {
+      align-items: center;
+      background: transparent;
+      border: none;
+      color: inherit;
+      display: inline-flex;
+      height: 32px;
+      justify-content: center;
+      padding: 0 7px;
+      width: 100%;
+    }
+
+    .rail-button.open,
+    .rail-button.active {
+      border-radius: 6px;
+    }
+
+    .rail-button.open {
+      background: var(--hover);
+      color: var(--text);
+    }
+
+    .rail-button.active {
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+
+    .rail-icon {
+      font-size: 16px;
+      line-height: 1;
+    }
+
+    .rail-separator {
+      background: var(--border);
+      height: 1px;
+      width: 24px;
+    }
+
+    .rail-spacer {
+      flex: 1;
+      min-height: 16px;
+    }
+
+    .workspace-chip {
+      align-items: center;
+      background: var(--accent-softer);
+      border-radius: 8px;
+      color: var(--accent);
+      display: flex;
+      font-size: 10px;
+      font-weight: 700;
+      height: 32px;
+      justify-content: center;
+      width: 32px;
+    }
+
+    .sidebar {
+      background: var(--sidebar-bg);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex: 0 0 292px;
+      flex-direction: column;
+      height: 100%;
+      min-width: 180px;
+      overflow: hidden;
+      position: relative;
+      width: 292px;
+    }
+
+    .sidebar-header {
+      background: inherit;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      padding: 0 16px;
+    }
+
+    .pane-heading {
+      align-items: center;
+      color: var(--text-2);
+      display: flex;
+      font-size: 12px;
+      font-weight: 700;
+      gap: 8px;
+      letter-spacing: 0.02em;
+      padding: 10px 0;
+      text-transform: uppercase;
+    }
+
+    .sidebar-body {
+      flex: 1;
+      margin-right: 8px;
+      overflow-y: auto;
+      padding: 16px;
+    }
+
+    .sidebar-section {
+      display: grid;
+      gap: 12px;
+    }
+
+    .files-search {
+      display: grid;
+      gap: 8px;
+      position: relative;
+      z-index: 5;
+    }
+
+    .files-search-input {
+      align-items: center;
+      background: var(--input-bg);
+      border: 1px solid var(--border-soft);
+      border-radius: 6px;
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      min-height: 34px;
+      overflow: hidden;
+    }
+
+    .files-search-mode-button {
+      background: var(--hover);
+      border: 0;
+      border-radius: 0;
+      border-right: 1px solid var(--border);
+      color: var(--text-2);
+      font-size: 12px;
+      min-height: 34px;
+      padding: 0 9px;
+    }
+
+    .files-search-input input {
+      background: transparent;
+      border: 0;
+      color: var(--text);
+      min-height: 34px;
+      min-width: 0;
+      outline: none;
+      padding: 0 10px;
+      width: 100%;
+    }
+
+    .new-file-form {
+      display: grid;
+      gap: 8px;
+      grid-template-columns: minmax(0, 1fr) auto;
+    }
+
+    .text-input {
+      border: 1px solid var(--border-soft);
+      border-radius: 6px;
+      min-height: 30px;
+      min-width: 0;
+      padding: 0 10px;
+      width: 100%;
+    }
+
+    .primary-button {
+      background: var(--accent);
+      border-color: transparent;
+      color: white;
+    }
+
+    .secondary-button {
+      background: transparent;
+      border-color: var(--border-medium);
+      color: var(--text-2);
+    }
+
+    .pinned-section {
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+    }
+
+    .pinned-section-heading {
+      color: var(--text-3);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+    }
+
+    .file-tree {
+      display: grid;
+      gap: 2px;
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    .file-tree .file-tree {
+      border-left: 1px solid var(--border);
+      margin-left: 14px;
+      padding-left: 12px;
+    }
+
+    .file-tree-row-wrap {
+      align-items: center;
+      display: flex;
+      position: relative;
+    }
+
+    .file-tree .file-tree .file-tree-row-wrap::before {
+      background: var(--border);
+      content: "";
+      height: 1px;
+      left: -12px;
+      position: absolute;
+      top: 14px;
+      width: 8px;
+    }
+
+    .file-tree-row {
+      align-items: center;
+      background: transparent;
+      border: 0;
+      border-radius: 6px;
+      color: var(--text-2);
+      display: grid;
+      font-size: 13px;
+      gap: 6px;
+      grid-template-columns: 24px minmax(0, 1fr);
+      min-height: 28px;
+      padding: 0 8px;
+      text-align: left;
+      width: 100%;
+    }
+
+    .file-tree-row.file {
+      color: var(--text);
+    }
+
+    .file-tree-row.selected {
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+
+    .file-tree-icon {
+      align-items: center;
+      color: var(--text-3);
+      display: inline-flex;
+      font-size: 10px;
+      gap: 2px;
+      justify-content: center;
+      min-width: 24px;
+      text-align: center;
+    }
+
+    .file-tree-row.selected .file-tree-icon {
+      color: var(--accent);
+    }
+
+    .file-tree-folder-chevron {
+      display: inline-block;
+      font-size: 9px;
+      transform: rotate(90deg);
+    }
+
+    .file-tree-folder-icon {
+      border: 1.5px solid currentColor;
+      border-radius: 2px;
+      display: inline-block;
+      height: 10px;
+      position: relative;
+      width: 12px;
+    }
+
+    .file-tree-folder-icon::before {
+      background: var(--sidebar-bg);
+      border: 1.5px solid currentColor;
+      border-bottom: 0;
+      border-radius: 2px 2px 0 0;
+      content: "";
+      height: 4px;
+      left: -1.5px;
+      position: absolute;
+      top: -5px;
+      width: 7px;
+    }
+
+    .file-tree-file-dot {
+      font-size: 12px;
+      line-height: 1;
+    }
+
+    .file-tree-name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .workspace-actions {
+      border-top: 1px solid var(--border);
+      display: grid;
+      gap: 8px;
+      margin-top: 4px;
+      padding-top: 12px;
+    }
+
+    .main-area {
+      background: var(--bg);
+      display: grid;
+      flex: 1 1 auto;
+      grid-template-rows: 40px minmax(0, 1fr);
+      min-height: 0;
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    .main-area-top-bar {
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      gap: 8px;
+      padding: 0 12px;
+    }
+
+    .rename-bar-label {
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 5px;
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 500;
+      max-width: 320px;
+      min-height: 28px;
+      overflow: hidden;
+      padding: 0 8px;
+      text-align: left;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .main-area-top-actions {
+      align-items: center;
+      display: flex;
+      gap: 4px;
+      margin-left: auto;
+    }
+
+    .toolbar-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 5px;
+      color: var(--text-2);
+      font-size: 13px;
+      min-height: 26px;
+      padding: 0 7px;
+    }
+
+    .toolbar-btn.active {
+      background: var(--hover);
+      border-color: var(--border-soft);
+      color: var(--text);
+    }
+
+    .editor-layout {
+      display: flex;
+      height: 100%;
+      min-height: 0;
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    .editor-workspace {
+      display: grid;
+      flex: 1 1 auto;
+      grid-template-rows: auto minmax(0, 1fr);
+      min-height: 0;
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    .toolbar {
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-shrink: 0;
+      gap: 2px;
+      overflow: hidden;
+      padding: 4px 10px;
+      position: relative;
+      z-index: 30;
+    }
+
+    .toolbar-group {
+      align-items: center;
+      display: flex;
+      gap: 2px;
+    }
+
+    .toolbar-separator {
+      background: var(--border-medium);
+      height: 18px;
+      margin: 0 6px;
+      width: 1px;
+    }
+
+    .panes-container {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: minmax(0, 1fr);
+      height: 100%;
+      min-height: 0;
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    .pane {
+      display: grid;
+      grid-template-rows: 36px minmax(0, 1fr);
+      height: 100%;
+      min-height: 0;
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    .pane-tab-bar {
+      align-items: end;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      gap: 2px;
+      overflow-x: auto;
+      padding: 0 8px;
+      position: relative;
+    }
+
+    .pane-tab {
+      align-items: center;
+      border: 1px solid transparent;
+      border-bottom: 0;
+      border-radius: 6px 6px 0 0;
+      color: var(--text-3);
+      display: flex;
+      flex-shrink: 0;
+      font-size: 12px;
+      gap: 4px;
+      height: 30px;
+      max-width: 180px;
+      min-width: 80px;
+      padding: 0 8px;
+      user-select: none;
+    }
+
+    .pane-tab--active {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+      color: var(--text);
+    }
+
+    .pane-tab-name {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .pane-tab-close {
+      background: transparent;
+      border: 0;
+      border-radius: 4px;
+      color: var(--text-3);
+      font-size: 14px;
+      height: 18px;
+      min-height: 0;
+      padding: 0;
+      width: 18px;
+    }
+
+    .editor-surface {
+      display: grid;
+      grid-template-rows: minmax(0, 1fr) 24px;
+      height: 100%;
+      min-height: 0;
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    .editor-body {
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .mock-editor {
+      box-sizing: border-box;
+      color: var(--text);
+      font-family: "SF Mono", Menlo, Consolas, monospace;
+      font-size: 14px;
+      height: 100%;
+      line-height: 1.7;
+      overflow: auto;
+      padding: 28px 38px 48px;
+      white-space: pre-wrap;
+    }
+
+    .cm-line-heading {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Hiragino Sans", "Yu Gothic", sans-serif;
+      font-size: 25px;
+      font-weight: 700;
+      line-height: 1.35;
+    }
+
+    .cm-line-subheading {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Hiragino Sans", "Yu Gothic", sans-serif;
+      font-size: 21px;
+      font-weight: 700;
+      line-height: 1.35;
+    }
+
+    .cm-frontmatter-block {
+      color: var(--text-2);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Hiragino Sans", "Yu Gothic", sans-serif;
+      margin-bottom: 18px;
+    }
+
+    .cm-frontmatter-row {
+      align-items: flex-start;
+      display: grid;
+      gap: 12px;
+      grid-template-columns: 24px 180px minmax(0, 1fr) 24px;
+      min-height: 1.45em;
+      min-width: min(760px, 100%);
+    }
+
+    .cm-frontmatter-row-icon {
+      color: var(--text-3);
+      font-size: 16px;
+      text-align: center;
+    }
+
+    .cm-frontmatter-key {
+      color: var(--text-2);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .cm-frontmatter-pill {
+      align-items: center;
+      background: var(--hover);
+      border-radius: 999px;
+      color: var(--text);
+      display: inline-flex;
+      font-size: 0.92em;
+      gap: 4px;
+      line-height: 1.2;
+      margin-right: 6px;
+      padding: 1px 8px;
+    }
+
+    .cm-live-link,
+    .wikilink {
+      color: var(--link);
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
+    .cm-live-code {
+      background: rgba(27, 31, 35, 0.06);
+      border-radius: 3px;
+      font-family: Menlo, monospace;
+      font-size: 0.9em;
+      padding: 0.1em 0.2em;
+    }
+
+    .cm-live-blockquote {
+      border-left: 3px solid var(--border);
+      color: var(--text-2);
+      padding-left: 10px;
+    }
+
+    .editor-status {
+      align-items: center;
+      border-top: 1px solid var(--border);
+      color: var(--text-3);
+      display: flex;
+      font-size: 12px;
+      gap: 12px;
+      justify-content: flex-end;
+      padding: 0 12px;
+    }
+
+    .right-panel {
+      background: var(--popup-bg);
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex: 0 0 240px;
+      flex-direction: column;
+      height: 100%;
+      min-width: 220px;
+      overflow: hidden;
+      width: 240px;
+    }
+
+    .right-panel-content {
+      display: grid;
+      gap: 14px;
+    }
+
+    .outline-list,
+    .links-list {
+      display: grid;
+      gap: 6px;
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    .outline-list button,
+    .links-list button {
+      background: transparent;
+      border: 0;
+      color: var(--text-2);
+      font-size: 13px;
+      justify-content: flex-start;
+      min-height: 24px;
+      overflow: hidden;
+      padding: 0 4px;
+      text-align: left;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      width: 100%;
+    }
+
+    .outline-list .active-outline {
+      color: var(--accent);
+      font-weight: 650;
+    }
+
+    .status-bar {
+      align-items: center;
+      border-top: 1px solid var(--border);
+      color: var(--text-3);
+      display: flex;
+      font-size: 12px;
+      gap: 16px;
+      justify-content: space-between;
+      padding: 0 12px;
+    }
+
+    @media (max-width: 900px) {
+      .sidebar {
+        flex-basis: 248px;
+        width: 248px;
+      }
+
+      .right-panel {
+        display: none;
+      }
+
+      .mock-editor {
+        padding-inline: 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="title-bar">
+      <div class="window-dots" aria-hidden="true">
+        <span class="window-dot"></span>
+        <span class="window-dot"></span>
+        <span class="window-dot"></span>
+      </div>
+      <div class="title-label">Relic - sample-workspace</div>
+      <div></div>
+    </header>
+
+    <div class="workspace">
+      <nav class="rail" aria-label="ビュー切替">
+        <button class="rail-button active" type="button" title="ファイル"><span class="rail-icon">▤</span></button>
+        <button class="rail-button open" type="button" title="ダッシュボード"><span class="rail-icon">▦</span></button>
+        <button class="rail-button" type="button" title="グラフ"><span class="rail-icon">◎</span></button>
+        <button class="rail-button" type="button" title="チャート"><span class="rail-icon">◇</span></button>
+        <div class="rail-separator"></div>
+        <button class="rail-button" type="button" title="ファイル加工"><span class="rail-icon">⌘</span></button>
+        <button class="rail-button" type="button" title="フロントマター"><span class="rail-icon">#</span></button>
+        <button class="rail-button" type="button" title="設定"><span class="rail-icon">⚙</span></button>
+        <div class="rail-spacer"></div>
+        <div class="rail-separator"></div>
+        <div class="workspace-chip">R</div>
+      </nav>
+
+      <aside class="sidebar">
+        <div class="sidebar-header">
+          <div class="pane-heading">ファイル</div>
+        </div>
+        <div class="sidebar-body">
+          <div class="sidebar-section">
+            <div class="files-search">
+              <div class="files-search-input">
+                <button class="files-search-mode-button" type="button">名前</button>
+                <input value="" placeholder="検索" aria-label="検索">
+              </div>
+            </div>
+
+            <form class="new-file-form">
+              <input class="text-input" value="" placeholder="新規ファイル名">
+              <button class="primary-button" type="button">作成</button>
+            </form>
+            <button class="secondary-button" type="button">新規フォルダ</button>
+
+            <section class="pinned-section">
+              <div class="pinned-section-heading">Pinned</div>
+              <ul class="file-tree">
+                <li>
+                  <div class="file-tree-row-wrap">
+                    <button class="file-tree-row file selected" type="button">
+                      <span class="file-tree-icon"><span class="file-tree-file-dot">●</span></span>
+                      <span class="file-tree-name">Relicについて.md</span>
+                    </button>
+                  </div>
+                </li>
+                <li>
+                  <div class="file-tree-row-wrap">
+                    <button class="file-tree-row file" type="button">
+                      <span class="file-tree-icon"><span class="file-tree-file-dot">●</span></span>
+                      <span class="file-tree-name">今日のメモ.md</span>
+                    </button>
+                  </div>
+                </li>
+              </ul>
+            </section>
+
+            <ul class="file-tree">
+              <li>
+                <div class="file-tree-row-wrap">
+                  <button class="file-tree-row" type="button">
+                    <span class="file-tree-icon">
+                      <span class="file-tree-folder-chevron">▶</span>
+                      <span class="file-tree-folder-icon"></span>
+                    </span>
+                    <span class="file-tree-name">drafts</span>
+                  </button>
+                </div>
+                <ul class="file-tree">
+                  <li>
+                    <div class="file-tree-row-wrap">
+                      <button class="file-tree-row file" type="button">
+                        <span class="file-tree-icon"><span class="file-tree-file-dot">●</span></span>
+                        <span class="file-tree-name">長い原稿の構成.md</span>
+                      </button>
+                    </div>
+                  </li>
+                  <li>
+                    <div class="file-tree-row-wrap">
+                      <button class="file-tree-row file" type="button">
+                        <span class="file-tree-icon"><span class="file-tree-file-dot">●</span></span>
+                        <span class="file-tree-name">引用候補.md</span>
+                      </button>
+                    </div>
+                  </li>
+                </ul>
+              </li>
+              <li>
+                <div class="file-tree-row-wrap">
+                  <button class="file-tree-row" type="button">
+                    <span class="file-tree-icon">
+                      <span class="file-tree-folder-chevron">▶</span>
+                      <span class="file-tree-folder-icon"></span>
+                    </span>
+                    <span class="file-tree-name">notes</span>
+                  </button>
+                </div>
+                <ul class="file-tree">
+                  <li>
+                    <div class="file-tree-row-wrap">
+                      <button class="file-tree-row file" type="button">
+                        <span class="file-tree-icon"><span class="file-tree-file-dot">●</span></span>
+                        <span class="file-tree-name">リンクとタグ.md</span>
+                      </button>
+                    </div>
+                  </li>
+                  <li>
+                    <div class="file-tree-row-wrap">
+                      <button class="file-tree-row file" type="button">
+                        <span class="file-tree-icon"><span class="file-tree-file-dot">●</span></span>
+                        <span class="file-tree-name">Markdown整理.md</span>
+                      </button>
+                    </div>
+                  </li>
+                </ul>
+              </li>
+              <li>
+                <div class="file-tree-row-wrap">
+                  <button class="file-tree-row file" type="button">
+                    <span class="file-tree-icon"><span class="file-tree-file-dot">●</span></span>
+                    <span class="file-tree-name">README.md</span>
+                  </button>
+                </div>
+              </li>
+            </ul>
+
+            <div class="workspace-actions">
+              <button class="secondary-button" type="button">ワークスペースを作成</button>
+              <button class="secondary-button" type="button">フォルダを開く</button>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <main class="main-area">
+        <div class="main-area-top-bar">
+          <button class="rename-bar-label" type="button">Relicについて.md</button>
+          <button class="toolbar-btn" type="button">移動</button>
+          <div class="main-area-top-actions">
+            <button class="toolbar-btn" type="button">Src</button>
+            <button class="toolbar-btn" type="button">分割</button>
+            <button class="toolbar-btn active" type="button">見出し</button>
+            <button class="toolbar-btn" type="button">リンク</button>
+          </div>
+        </div>
+
+        <div class="editor-layout">
+          <div class="editor-workspace">
+            <div class="toolbar">
+              <div class="toolbar-group">
+                <button class="toolbar-btn" type="button">B</button>
+                <button class="toolbar-btn" type="button"><em>I</em></button>
+                <button class="toolbar-btn" type="button">S</button>
+                <button class="toolbar-btn" type="button">U</button>
+              </div>
+              <div class="toolbar-separator"></div>
+              <div class="toolbar-group">
+                <button class="toolbar-btn" type="button">H1</button>
+                <button class="toolbar-btn" type="button">H2</button>
+                <button class="toolbar-btn" type="button">・</button>
+                <button class="toolbar-btn" type="button">1.</button>
+              </div>
+              <div class="toolbar-separator"></div>
+              <div class="toolbar-group">
+                <button class="toolbar-btn" type="button">Link</button>
+                <button class="toolbar-btn" type="button">Code</button>
+                <button class="toolbar-btn" type="button">Quote</button>
+              </div>
+            </div>
+
+            <div class="panes-container">
+              <section class="pane pane--focused">
+                <div class="pane-tab-bar">
+                  <div class="pane-tab pane-tab--active">
+                    <span class="pane-tab-name">Relicについて.md</span>
+                    <button class="pane-tab-close" type="button">×</button>
+                  </div>
+                  <div class="pane-tab">
+                    <span class="pane-tab-name">今日のメモ.md</span>
+                    <button class="pane-tab-close" type="button">×</button>
+                  </div>
+                  <div class="pane-tab">
+                    <span class="pane-tab-name">リンクとタグ.md</span>
+                    <button class="pane-tab-close" type="button">×</button>
+                  </div>
+                </div>
+
+                <div class="editor-surface">
+                  <div class="editor-body">
+                    <div class="mock-editor">
+<div class="cm-frontmatter-block"><div class="cm-frontmatter-row"><span class="cm-frontmatter-row-icon">◆</span><span class="cm-frontmatter-key">status</span><span><span class="cm-frontmatter-pill">draft</span></span><span></span></div><div class="cm-frontmatter-row"><span class="cm-frontmatter-row-icon">◆</span><span class="cm-frontmatter-key">tags</span><span><span class="cm-frontmatter-pill">relic</span><span class="cm-frontmatter-pill">design</span></span><span></span></div></div><div class="cm-line-heading">Relicについて</div>
+
+Relicは、ローカルMarkdownを扱うための書き手向けワークスペースです。
+ファイルを開き、編集し、リンクでつなげながら文章を育てます。
+
+<span class="cm-line-subheading">今見えている状態</span>
+
+- 左にはワークスペースのファイルツリーがあります
+- 中央にはタブとエディタがあります
+- 右には見出しまたはリンクの補助パネルがあります
+
+内部リンクは <span class="wikilink">[[今日のメモ]]</span> のように表示されます。
+インラインコードは <span class="cm-live-code">frontmatter</span> のように薄い背景を持ちます。
+
+<span class="cm-live-blockquote">このモックは現状デザインを検討用に固定したものです。操作は想定していません。</span>
+                    </div>
+                  </div>
+                  <div class="editor-status">
+                    <span>1,248 文字</span>
+                    <span>214 words</span>
+                    <span>保存済み</span>
+                  </div>
+                </div>
+              </section>
+            </div>
+          </div>
+
+          <aside class="right-panel">
+            <div class="sidebar-header">
+              <div class="pane-heading">アウトライン</div>
+            </div>
+            <div class="sidebar-body">
+              <div class="right-panel-content">
+                <ul class="outline-list">
+                  <li><button class="active-outline" type="button">Relicについて</button></li>
+                  <li><button type="button">今見えている状態</button></li>
+                  <li><button type="button">リンクとタグ</button></li>
+                  <li><button type="button">次に書くこと</button></li>
+                </ul>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </main>
+    </div>
+
+    <footer class="status-bar">
+      <span>sample-workspace</span>
+      <span>Markdown / Live Preview / UTF-8</span>
+    </footer>
+  </div>
+</body>
+</html>
