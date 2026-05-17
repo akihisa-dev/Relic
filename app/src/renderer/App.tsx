@@ -515,6 +515,7 @@ export function App(): ReactElement {
             const setScrollHeading = focusedPane === "left" ? setLeftPaneScrollHeading : setRightPaneScrollHeading;
             setScrollHeading(heading);
           }}
+          onRenameFile={(path, name) => handleRenameTreeItem(path, "file", name)}
           onRevealTabFile={handleRevealTabFile}
           onRightPanelViewButton={handleRightPanelViewButton}
           onScrollTargetHandled={(pane) => {
