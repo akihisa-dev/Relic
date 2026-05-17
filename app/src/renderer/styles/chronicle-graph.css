@@ -278,6 +278,8 @@
   justify-content: center;
   min-height: 36px;
   padding: 0;
+  transform-origin: top right;
+  transition: background-color 140ms ease, border-color 140ms ease, box-shadow 180ms ease, color 140ms ease, transform 180ms cubic-bezier(.22, 1, .36, 1);
   width: 36px;
 }
 
@@ -285,6 +287,7 @@
   background: var(--hover);
   border-color: var(--border-medium);
   color: var(--text);
+  transform: translateY(-1px);
 }
 
 .graph-control-section {
@@ -331,6 +334,7 @@
   display: grid;
   gap: 8px;
   min-height: 0;
+  transform-origin: top right;
 }
 
 .graph-filters {
@@ -437,15 +441,26 @@
   border: 1px solid var(--border);
   border-radius: 6px;
   box-shadow: 0 12px 26px rgba(0, 0, 0, 0.12);
+  max-height: min(70vh, 560px);
   opacity: 0;
+  overflow: hidden;
   padding: 8px;
   pointer-events: none;
   position: absolute;
   right: 12px;
   top: 12px;
   transform: translateY(-4px);
-  transition: opacity 140ms ease, transform 140ms ease;
+  transition:
+    background-color 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    max-height 220ms cubic-bezier(.22, 1, .36, 1),
+    opacity 160ms ease,
+    padding 220ms cubic-bezier(.22, 1, .36, 1),
+    transform 180ms cubic-bezier(.22, 1, .36, 1),
+    width 220ms cubic-bezier(.22, 1, .36, 1);
   width: min(250px, calc(100% - 24px));
+  will-change: max-height, opacity, transform, width;
   z-index: 3;
 }
 
@@ -453,6 +468,7 @@
   background: transparent;
   border-color: transparent;
   box-shadow: none;
+  max-height: 36px;
   opacity: 1;
   padding: 0;
   pointer-events: auto;
@@ -465,6 +481,38 @@
   opacity: 1;
   pointer-events: auto;
   transform: translateY(0);
+}
+
+.graph-hover-settings:has(.graph-controls) .graph-controls {
+  animation: graph-controls-open 180ms cubic-bezier(.22, 1, .36, 1);
+}
+
+.graph-hover-settings:has(.graph-controls-minimized) .graph-controls-minimized {
+  animation: graph-controls-minimized-open 180ms cubic-bezier(.22, 1, .36, 1);
+}
+
+@keyframes graph-controls-open {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes graph-controls-minimized-open {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .graph-canvas {
