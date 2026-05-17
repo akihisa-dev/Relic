@@ -268,6 +268,16 @@ export function App(): ReactElement {
     maxWidth: 500,
     minWidth: 180
   });
+  const {
+    sidebarWidth: rightPanelWidth,
+    isSidebarResizing: isRightPanelResizing,
+    startSidebarResize: startRightPanelResize
+  } = useSidebarResize({
+    direction: "left",
+    initialWidth: 240,
+    maxWidth: 520,
+    minWidth: 220
+  });
 
   const leftEditorViewRef = useRef<EditorView | null>(null);
   const rightEditorViewRef = useRef<EditorView | null>(null);
@@ -493,6 +503,7 @@ export function App(): ReactElement {
           frontmatterCandidates={frontmatterCandidates}
           isLoadingBacklinks={isLoadingBacklinks}
           isRightPanelOpen={isRightPanelOpen}
+          isRightPanelResizing={isRightPanelResizing}
           isSourceMode={isSourceMode}
           isSplit={isSplit}
           isSplitClosing={isSplitClosing}
@@ -517,6 +528,7 @@ export function App(): ReactElement {
           }}
           onRenameFile={(path, name) => handleRenameTreeItem(path, "file", name)}
           onRevealTabFile={handleRevealTabFile}
+          onRightPanelResizeStart={startRightPanelResize}
           onRightPanelViewButton={handleRightPanelViewButton}
           onScrollTargetHandled={(pane) => {
             if (pane === "left") {
@@ -543,6 +555,7 @@ export function App(): ReactElement {
           rightEditorViewRef={rightEditorViewRef}
           rightPaneScrollHeading={rightPaneScrollHeading}
           rightPanelView={rightPanelView}
+          rightPanelWidth={rightPanelWidth}
           setLinkContextMenu={setLinkContextMenu}
           showRightPanelControls={featureToggles.rightPanel}
           userDefinedFields={userDefinedFields}

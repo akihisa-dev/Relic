@@ -1,4 +1,4 @@
-import type { Dispatch, ReactElement, SetStateAction } from "react";
+import type { Dispatch, MouseEvent as ReactMouseEvent, ReactElement, SetStateAction } from "react";
 
 import type { Backlink } from "../../shared/ipc";
 import type { ResolvedWikiLink } from "../../shared/links";
@@ -13,26 +13,32 @@ interface AppRightPanelProps {
   backlinks: Backlink[];
   isLoadingBacklinks: boolean;
   isOpen: boolean;
+  isResizing: boolean;
   onOpenFile: (path: string) => void;
   onOpenWikiLink: (target: string, heading?: string) => void;
   onOutlineHeadingClick: (heading: string) => void;
+  onResizeStart: (event: ReactMouseEvent) => void;
   outlineHeadings: OutlineHeading[];
   outgoingLinks: ResolvedWikiLink[];
   rightPanelView: RightPanelView;
   setLinkContextMenu: Dispatch<SetStateAction<AppLinkContextMenu | null>>;
+  width: number;
 }
 
 export function AppRightPanel({
   backlinks,
   isLoadingBacklinks,
   isOpen,
+  isResizing,
   onOpenFile,
   onOpenWikiLink,
   onOutlineHeadingClick,
+  onResizeStart,
   outlineHeadings,
   outgoingLinks,
   rightPanelView,
-  setLinkContextMenu
+  setLinkContextMenu,
+  width
 }: AppRightPanelProps): ReactElement {
   const t = useT();
 
@@ -40,8 +46,13 @@ export function AppRightPanel({
     <aside
       aria-label={rightPanelView === "outline" ? t("pane.outline") : t("pane.links")}
       aria-hidden={!isOpen}
-      className={`right-panel${isOpen ? "" : " right-panel--closed"}`}
+      className={`right-panel${isOpen ? "" : " right-panel--closed"}${isResizing ? " right-panel--resizing" : ""}`}
+      style={{ flexBasis: isOpen ? width : 0, width: isOpen ? width : 0 }}
     >
+      <div
+        className={`right-panel-resize-handle${isResizing ? " right-panel-resize-handle--active" : ""}`}
+        onMouseDown={onResizeStart}
+      />
       <div className={`sidebar-body right-panel-content right-panel-content--${rightPanelView}`}>
       {rightPanelView === "outline" ? (
         outlineHeadings.length > 0 ? (

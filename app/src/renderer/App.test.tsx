@@ -569,6 +569,44 @@ describe("App", () => {
     expect(useUiStore.getState().rightPanelView).toBe("outline");
   });
 
+  it("右パネル幅のドラッグ変更を最小220px・最大520pxに制限する", async () => {
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
+    });
+
+    const { container } = await renderApp();
+
+    await screen.findByText("Notes");
+    fireEvent.click(screen.getByRole("button", { name: "アウトライン" }));
+
+    const rightPanel = container.querySelector(".right-panel");
+    const resizeHandle = container.querySelector(".right-panel-resize-handle");
+
+    expect(rightPanel).toBeInstanceOf(HTMLElement);
+    expect(resizeHandle).toBeInstanceOf(HTMLElement);
+
+    fireEvent.mouseDown(resizeHandle as HTMLElement, { clientX: 500 });
+
+    expect(rightPanel).toHaveClass("right-panel--resizing");
+    expect(resizeHandle).toHaveClass("right-panel-resize-handle--active");
+
+    fireEvent.mouseMove(document, { clientX: -100 });
+
+    expect(rightPanel).toHaveStyle({ width: "520px" });
+
+    fireEvent.mouseUp(document);
+
+    expect(rightPanel).not.toHaveClass("right-panel--resizing");
+    expect(resizeHandle).not.toHaveClass("right-panel-resize-handle--active");
+
+    fireEvent.mouseDown(resizeHandle as HTMLElement, { clientX: 200 });
+    fireEvent.mouseMove(document, { clientX: 900 });
+
+    expect(rightPanel).toHaveStyle({ width: "220px" });
+
+    fireEvent.mouseUp(document);
+  });
+
   it("レールのフロントマターボタンから専用設定を開ける", async () => {
     window.relic = makeRelicApi({
       getUserDefinedFields: vi.fn().mockResolvedValue({
