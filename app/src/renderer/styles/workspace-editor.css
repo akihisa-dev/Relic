@@ -309,13 +309,15 @@
 }
 
 .main-area-actions .toolbar-btn.active {
-  background: transparent;
+  background: var(--accent-soft);
   border-color: transparent;
+  border-radius: 6px;
   box-shadow: none;
   color: var(--accent);
 }
 
 .main-area-actions .toolbar-btn.active:hover {
+  background: var(--accent-soft);
   color: var(--accent);
 }
 
