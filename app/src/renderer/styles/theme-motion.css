@@ -47,6 +47,21 @@
   --metal-control:
     linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(0, 0, 0, 0.12)),
     var(--btn-bg);
+  --metal-panel:
+    var(--metal-sheen),
+    color-mix(in srgb, var(--popup-bg) 82%, var(--surface-container-high) 18%);
+  --metal-panel-soft:
+    radial-gradient(ellipse at 18% 8%, rgba(255, 255, 255, 0.06), transparent 34%),
+    linear-gradient(150deg, color-mix(in srgb, var(--surface-container) 82%, transparent), color-mix(in srgb, var(--surface-container-low) 74%, transparent)),
+    var(--surface-container-low);
+  --metal-canvas:
+    radial-gradient(ellipse at 20% 8%, rgba(255, 255, 255, 0.05), transparent 36%),
+    linear-gradient(150deg, color-mix(in srgb, var(--surface-container) 78%, transparent), color-mix(in srgb, var(--surface-container-low) 82%, transparent) 48%, color-mix(in srgb, var(--surface-dim) 80%, transparent)),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.012) 0 1px, rgba(0, 0, 0, 0.03) 1px 2px),
+    var(--surface-container-low);
+  --metal-recess:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.16), rgba(255, 255, 255, 0.035)),
+    var(--input-bg);
   --shadow-panel:
     inset 0 1px 0 rgba(255, 255, 255, 0.1),
     inset 0 -1px 0 rgba(0, 0, 0, 0.42),
@@ -54,6 +69,15 @@
   --shadow-control:
     inset 0 1px 0 rgba(255, 255, 255, 0.1),
     inset 0 -1px 0 rgba(0, 0, 0, 0.24);
+  --shadow-layer:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.34),
+    0 8px 22px rgba(0, 0, 0, 0.22);
+  --shadow-canvas:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.035);
+  --chart-line-soft: rgba(255, 255, 255, 0.055);
+  --chart-line-medium: rgba(255, 255, 255, 0.14);
   color-scheme: dark;
 }
 
@@ -145,6 +169,21 @@
     --metal-control:
       linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(0, 0, 0, 0.12)),
       var(--btn-bg);
+    --metal-panel:
+      var(--metal-sheen),
+      color-mix(in srgb, var(--popup-bg) 82%, var(--surface-container-high) 18%);
+    --metal-panel-soft:
+      radial-gradient(ellipse at 18% 8%, rgba(255, 255, 255, 0.06), transparent 34%),
+      linear-gradient(150deg, color-mix(in srgb, var(--surface-container) 82%, transparent), color-mix(in srgb, var(--surface-container-low) 74%, transparent)),
+      var(--surface-container-low);
+    --metal-canvas:
+      radial-gradient(ellipse at 20% 8%, rgba(255, 255, 255, 0.05), transparent 36%),
+      linear-gradient(150deg, color-mix(in srgb, var(--surface-container) 78%, transparent), color-mix(in srgb, var(--surface-container-low) 82%, transparent) 48%, color-mix(in srgb, var(--surface-dim) 80%, transparent)),
+      repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.012) 0 1px, rgba(0, 0, 0, 0.03) 1px 2px),
+      var(--surface-container-low);
+    --metal-recess:
+      linear-gradient(180deg, rgba(0, 0, 0, 0.16), rgba(255, 255, 255, 0.035)),
+      var(--input-bg);
     --shadow-panel:
       inset 0 1px 0 rgba(255, 255, 255, 0.1),
       inset 0 -1px 0 rgba(0, 0, 0, 0.42),
@@ -152,6 +191,15 @@
     --shadow-control:
       inset 0 1px 0 rgba(255, 255, 255, 0.1),
       inset 0 -1px 0 rgba(0, 0, 0, 0.24);
+    --shadow-layer:
+      inset 0 1px 0 rgba(255, 255, 255, 0.08),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.34),
+      0 8px 22px rgba(0, 0, 0, 0.22);
+    --shadow-canvas:
+      inset 0 1px 0 rgba(255, 255, 255, 0.06),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.035);
+    --chart-line-soft: rgba(255, 255, 255, 0.055);
+    --chart-line-medium: rgba(255, 255, 255, 0.14);
   }
   :root:not([data-theme="light"]) input,
   :root:not([data-theme="light"]) select,

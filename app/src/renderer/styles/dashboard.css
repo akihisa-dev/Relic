@@ -54,9 +54,10 @@
 }
 
 .dashboard-metric {
-  background: var(--bg);
-  border: 1px solid var(--border);
+  background: var(--metal-panel);
+  border: 1px solid var(--border-soft);
   border-radius: 8px;
+  box-shadow: var(--shadow-layer);
   display: grid;
   gap: 8px;
   min-width: 0;
@@ -87,9 +88,10 @@
 }
 
 .dashboard-section {
-  background: var(--bg);
-  border: 1px solid var(--border);
+  background: var(--metal-panel);
+  border: 1px solid var(--border-soft);
   border-radius: 8px;
+  box-shadow: var(--shadow-layer);
   display: grid;
   gap: 14px;
   min-width: 0;
@@ -247,8 +249,8 @@
 }
 
 .dashboard-donut::after {
-  background: var(--bg);
-  border: 1px solid var(--border);
+  background: var(--metal-panel-soft);
+  border: 1px solid var(--border-soft);
   border-radius: 999px;
   content: "";
   inset: 24%;
@@ -312,9 +314,10 @@
 
 .dashboard-tag-map {
   aspect-ratio: 3 / 1;
-  background: var(--bg);
-  border: 1px solid var(--border);
+  background: var(--metal-canvas);
+  border: 1px solid var(--border-soft);
   border-radius: 8px;
+  box-shadow: var(--shadow-canvas);
   min-height: 300px;
   overflow: hidden;
   position: relative;
@@ -444,4 +447,3 @@
     min-height: 260px;
   }
 }
-

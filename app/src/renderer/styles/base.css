@@ -43,6 +43,21 @@
   --metal-control:
     linear-gradient(180deg, rgba(255, 255, 255, 0.38), rgba(0, 0, 0, 0.025)),
     var(--btn-bg);
+  --metal-panel:
+    var(--metal-sheen),
+    color-mix(in srgb, var(--popup-bg) 84%, var(--surface-container-high) 16%);
+  --metal-panel-soft:
+    radial-gradient(ellipse at 18% 8%, rgba(255, 255, 255, 0.32), transparent 34%),
+    linear-gradient(150deg, color-mix(in srgb, var(--surface) 88%, transparent), color-mix(in srgb, var(--surface-container) 74%, transparent)),
+    var(--surface-container-low);
+  --metal-canvas:
+    radial-gradient(ellipse at 20% 8%, rgba(255, 255, 255, 0.22), transparent 36%),
+    linear-gradient(150deg, color-mix(in srgb, var(--surface-container-low) 88%, transparent), color-mix(in srgb, var(--surface-container) 78%, transparent) 48%, color-mix(in srgb, var(--surface-container-high) 70%, transparent)),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.022) 0 1px, rgba(0, 0, 0, 0.007) 1px 2px),
+    var(--surface-container-low);
+  --metal-recess:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.026), rgba(255, 255, 255, 0.18)),
+    var(--input-bg);
   --shadow-panel:
     inset 0 1px 0 rgba(255, 255, 255, 0.76),
     inset 0 -1px 0 rgba(0, 0, 0, 0.05),
@@ -50,6 +65,15 @@
   --shadow-control:
     inset 0 1px 0 rgba(255, 255, 255, 0.58),
     inset 0 -1px 0 rgba(0, 0, 0, 0.04);
+  --shadow-layer:
+    inset 0 1px 0 rgba(255, 255, 255, 0.62),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.04),
+    0 8px 22px rgba(0, 0, 0, 0.045);
+  --shadow-canvas:
+    inset 0 1px 0 rgba(255, 255, 255, 0.48),
+    inset 0 0 0 1px rgba(28, 28, 28, 0.035);
+  --chart-line-soft: rgba(28, 28, 28, 0.045);
+  --chart-line-medium: rgba(28, 28, 28, 0.12);
   color: var(--text);
   background: var(--bg);
   font-family:
