@@ -255,7 +255,7 @@
 
 .panes-container--split .pane + .pane {
   animation: pane-split-in 220ms cubic-bezier(.18, 1.15, .28, 1);
-  border-left: 1px solid var(--border-medium);
+  border-left: 1px solid var(--border);
   transform-origin: right center;
 }
 
@@ -264,7 +264,6 @@
 }
 
 .pane {
-  background: var(--bg);
   display: grid;
   grid-template-rows: 36px minmax(0, 1fr);
   height: 100%;
@@ -294,7 +293,7 @@
 
 .pane-tab-bar {
   align-items: end;
-  background: var(--surface-recessed);
+  background: var(--sidebar-bg);
   border-bottom: 1px solid var(--border);
   display: flex;
   gap: 2px;
@@ -313,13 +312,13 @@
   border: 1px solid transparent;
   border-bottom: 0;
   border-radius: 6px 6px 0 0;
-  color: var(--text-2);
+  color: var(--text-3);
   cursor: default;
   display: flex;
   flex-shrink: 0;
   font-size: 12px;
   gap: 4px;
-  height: 29px;
+  height: 30px;
   max-width: 180px;
   min-width: 80px;
   padding: 0 8px;
@@ -339,9 +338,8 @@
 
 .pane-tab--active {
   animation: tab-select 180ms cubic-bezier(.18, 1.25, .28, 1);
-  background: var(--bg);
-  border-color: var(--border-medium);
-  box-shadow: inset 0 2px 0 var(--accent);
+  background: var(--accent-soft);
+  border-color: var(--accent);
   color: var(--text);
 }
 
@@ -420,7 +418,7 @@
 }
 
 .pane-tab-close:hover {
-  background: var(--hover-strong);
+  background: rgba(31, 35, 40, 0.1);
   color: var(--text);
 }
 
@@ -561,29 +559,12 @@
 /* ────────────────────────────────── */
 
 .editor-surface {
-  background: var(--bg);
   display: grid;
   grid-template-rows: minmax(0, 1fr) 24px;
   height: 100%;
   min-height: 0;
   min-width: 0;
   overflow: hidden;
-}
-
-.editor-body {
-  background: var(--bg);
-}
-
-.pane-status {
-  align-items: center;
-  background: var(--surface-recessed);
-  border-top: 1px solid var(--border);
-  color: var(--text-3);
-  display: flex;
-  font-size: 12px;
-  justify-content: flex-end;
-  min-width: 0;
-  padding: 0 12px;
 }
 
 .panel-tab-surface {
