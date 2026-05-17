@@ -67,6 +67,7 @@ function renderInteractions(overrides: Partial<Parameters<typeof useGraphCanvasI
       edges,
       focusedPath: null,
       forceSettings,
+      layoutMode: "standard",
       nodes,
       onOpenFile,
       selectedPath: null,

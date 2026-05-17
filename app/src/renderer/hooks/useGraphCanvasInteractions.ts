@@ -3,7 +3,7 @@ import type { MutableRefObject, RefObject } from "react";
 
 import type { WorkspaceGraphEdge, WorkspaceGraphNode } from "../../shared/ipc";
 import { collectRelatedGraphPaths } from "../graphLayout";
-import type { GraphForceSettings, GraphSimPoint, GraphViewBox } from "../graphLayout";
+import type { GraphForceSettings, GraphLayoutMode, GraphSimPoint, GraphViewBox } from "../graphLayout";
 import { useGraphNodeInteractions } from "./useGraphNodeInteractions";
 import type { GraphNodeHandlers } from "./useGraphNodeInteractions";
 import { useGraphSimulation } from "./useGraphSimulation";
@@ -14,6 +14,7 @@ interface UseGraphCanvasInteractionsInput {
   edges: WorkspaceGraphEdge[];
   focusedPath: string | null;
   forceSettings: GraphForceSettings;
+  layoutMode: GraphLayoutMode;
   nodes: WorkspaceGraphNode[];
   onOpenFile: (path: string) => void;
   selectedPath: string | null;
@@ -30,6 +31,7 @@ export function useGraphCanvasInteractions({
   edges,
   focusedPath,
   forceSettings,
+  layoutMode,
   nodes,
   onOpenFile,
   selectedPath,
@@ -51,6 +53,7 @@ export function useGraphCanvasInteractions({
   const simulation = useGraphSimulation({
     edges,
     forceSettings,
+    layoutMode,
     nodes,
     pauseSimulationRef: viewport.pauseSimulationRef,
     pinnedPathRef: pinnedPathRef as MutableRefObject<string | null>

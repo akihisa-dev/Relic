@@ -52,6 +52,10 @@ const forceSettings = {
   repelForce: 1
 };
 
+function distanceFromCenter(point: { x: number; y: number }): number {
+  return Math.hypot(point.x - GRAPH_WIDTH / 2, point.y - GRAPH_HEIGHT / 2);
+}
+
 describe("buildGraphViewBox", () => {
   it("zoomとpanを既存通りviewBoxへ反映する", () => {
     expect(buildGraphViewBox(1, { x: 0, y: 0 })).toEqual({
@@ -166,6 +170,61 @@ describe("graph query helpers", () => {
 });
 
 describe("graph layout simulation", () => {
+  it("4種類の配置モードでnodeをbounds内に置く", () => {
+    for (const layoutMode of ["standard", "radial", "cluster", "scatter"] as const) {
+      const points = layoutGraph(graph.nodes, graph.edges, forceSettings, layoutMode);
+
+      expect(points).toHaveLength(graph.nodes.length);
+      for (const point of points) {
+        expect(point.x).toBeGreaterThanOrEqual(GRAPH_PADDING);
+        expect(point.x).toBeLessThanOrEqual(GRAPH_WIDTH - GRAPH_PADDING);
+        expect(point.y).toBeGreaterThanOrEqual(GRAPH_PADDING);
+        expect(point.y).toBeLessThanOrEqual(GRAPH_HEIGHT - GRAPH_PADDING);
+      }
+    }
+  });
+
+  it("scatter配置は同じpathから安定した座標を作る", () => {
+    const first = layoutGraph(graph.nodes, graph.edges, forceSettings, "scatter");
+    const second = layoutGraph(graph.nodes, graph.edges, forceSettings, "scatter");
+
+    expect(second.map((point) => ({ path: point.path, x: point.x, y: point.y }))).toEqual(
+      first.map((point) => ({ path: point.path, x: point.x, y: point.y }))
+    );
+  });
+
+  it("radial配置はリンク数が多いnodeを内側寄りに置く", () => {
+    const points = layoutGraph(graph.nodes, graph.edges, forceSettings, "radial");
+    const hub = points.find((point) => point.path === "Beta.md");
+    const orphan = points.find((point) => point.path === "archive/Archive.md");
+
+    expect(hub).toBeDefined();
+    expect(orphan).toBeDefined();
+    expect(distanceFromCenter(hub!)).toBeLessThan(distanceFromCenter(orphan!));
+  });
+
+  it("cluster配置はリンクのまとまりごとに初期位置を分ける", () => {
+    const clusteredGraph: WorkspaceGraph = {
+      edges: [
+        { sourcePath: "A.md", targetPath: "B.md" },
+        { sourcePath: "C.md", targetPath: "D.md" }
+      ],
+      nodes: [
+        { folder: "", name: "A", path: "A.md", tags: [] },
+        { folder: "", name: "B", path: "B.md", tags: [] },
+        { folder: "", name: "C", path: "C.md", tags: [] },
+        { folder: "", name: "D", path: "D.md", tags: [] }
+      ]
+    };
+    const points = layoutGraph(clusteredGraph.nodes, clusteredGraph.edges, forceSettings, "cluster");
+    const firstCluster = points.filter((point) => point.path === "A.md" || point.path === "B.md");
+    const secondCluster = points.filter((point) => point.path === "C.md" || point.path === "D.md");
+    const firstCenterY = firstCluster.reduce((sum, point) => sum + point.y, 0) / firstCluster.length;
+    const secondCenterY = secondCluster.reduce((sum, point) => sum + point.y, 0) / secondCluster.length;
+
+    expect(Math.abs(firstCenterY - secondCenterY)).toBeGreaterThan(80);
+  });
+
   it("初期レイアウトとsimulation tickでnodeをbounds内に保ち、pinしたnodeは動かさない", () => {
     const points = layoutGraph(graph.nodes, graph.edges, forceSettings);
 

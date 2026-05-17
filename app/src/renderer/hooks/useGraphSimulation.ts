@@ -6,11 +6,12 @@ import {
   layoutGraph,
   tickGraphSimulation
 } from "../graphLayout";
-import type { GraphForceSettings, GraphSimPoint } from "../graphLayout";
+import type { GraphForceSettings, GraphLayoutMode, GraphSimPoint } from "../graphLayout";
 
 interface UseGraphSimulationInput {
   edges: WorkspaceGraphEdge[];
   forceSettings: GraphForceSettings;
+  layoutMode: GraphLayoutMode;
   nodes: WorkspaceGraphNode[];
   pauseSimulationRef: MutableRefObject<boolean>;
   pinnedPathRef: MutableRefObject<string | null>;
@@ -25,11 +26,13 @@ export interface GraphSimulationState {
 export function useGraphSimulation({
   edges,
   forceSettings,
+  layoutMode,
   nodes,
   pauseSimulationRef,
   pinnedPathRef
 }: UseGraphSimulationInput): GraphSimulationState {
   const pointsRef = useRef<GraphSimPoint[]>([]);
+  const layoutModeRef = useRef<GraphLayoutMode | null>(null);
   const [points, setPointsState] = useState<GraphSimPoint[]>([]);
 
   function setPoints(nextPoints: GraphSimPoint[]): void {
@@ -38,21 +41,23 @@ export function useGraphSimulation({
   }
 
   useEffect(() => {
-    const seedPoints = layoutGraph(nodes, edges, forceSettings);
+    const seedPoints = layoutGraph(nodes, edges, forceSettings, layoutMode);
     const existingPoints = new Map(pointsRef.current.map((point) => [point.path, point]));
+    const shouldReuseExistingPoints = layoutModeRef.current === layoutMode;
     const nextPoints = seedPoints.map((point) => {
       const existing = existingPoints.get(point.path);
       return {
         ...point,
-        vx: existing?.vx ?? 0,
-        vy: existing?.vy ?? 0,
-        x: existing?.x ?? point.x,
-        y: existing?.y ?? point.y
+        vx: shouldReuseExistingPoints ? existing?.vx ?? 0 : 0,
+        vy: shouldReuseExistingPoints ? existing?.vy ?? 0 : 0,
+        x: shouldReuseExistingPoints ? existing?.x ?? point.x : point.x,
+        y: shouldReuseExistingPoints ? existing?.y ?? point.y : point.y
       };
     });
 
+    layoutModeRef.current = layoutMode;
     setPoints(nextPoints);
-  }, [edges, forceSettings, nodes]);
+  }, [edges, forceSettings, layoutMode, nodes]);
 
   useEffect(() => {
     if (nodes.length === 0) return;

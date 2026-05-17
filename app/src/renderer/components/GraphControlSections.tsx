@@ -8,6 +8,7 @@ import {
   GRAPH_MAX_ZOOM,
   GRAPH_MIN_ZOOM
 } from "../graphLayout";
+import type { GraphLayoutMode } from "../graphLayout";
 import { useT } from "../i18n";
 import { useGraphStore, type GraphLinkFilter } from "../store/graphStore";
 
@@ -105,8 +106,10 @@ export function GraphGroupsSection({ isOpen, onToggle }: GraphSectionProps): Rea
 export function GraphDisplaySection({ isOpen, onToggle }: GraphSectionProps): ReactElement {
   const t = useT();
   const {
+    layoutMode,
     linkThickness,
     nodeSize,
+    setLayoutMode,
     setLinkThickness,
     setNodeSize,
     setShowArrows,
@@ -123,6 +126,15 @@ export function GraphDisplaySection({ isOpen, onToggle }: GraphSectionProps): Re
 
   return (
     <GraphControlSection isOpen={isOpen} label={t("graph.viewSettings")} onToggle={onToggle}>
+      <label className="setting-row">
+        <span>{t("graph.layoutMode")}</span>
+        <select onChange={(event) => setLayoutMode(event.target.value as GraphLayoutMode)} value={layoutMode}>
+          <option value="standard">{t("graph.layoutStandard")}</option>
+          <option value="radial">{t("graph.layoutRadial")}</option>
+          <option value="cluster">{t("graph.layoutCluster")}</option>
+          <option value="scatter">{t("graph.layoutScatter")}</option>
+        </select>
+      </label>
       <label className="setting-row"><span>{t("graph.zoom")}</span><input max="1.8" min="0.7" onChange={(event) => setZoom(clamp(Number(event.target.value), GRAPH_MIN_ZOOM, GRAPH_MAX_ZOOM))} step="0.1" type="range" value={zoom} /></label>
       <label className="setting-row"><span>{t("graph.nodeSize")}</span><input max="1.8" min="0.6" onChange={(event) => setNodeSize(Number(event.target.value))} step="0.1" type="range" value={nodeSize} /></label>
       <label className="setting-row"><span>{t("graph.linkThickness")}</span><input max="2.2" min="0.5" onChange={(event) => setLinkThickness(Number(event.target.value))} step="0.1" type="range" value={linkThickness} /></label>
