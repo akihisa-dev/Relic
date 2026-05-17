@@ -148,9 +148,9 @@
       width: 12px;
     }
 
-    .window-dot:nth-child(1) { background: #ff5f57; }
-    .window-dot:nth-child(2) { background: #ffbd2e; }
-    .window-dot:nth-child(3) { background: #28c840; }
+    .window-dot:nth-child(1),
+    .window-dot:nth-child(2),
+    .window-dot:nth-child(3) { background: #d8d8d8; }
 
     .title-label {
       color: var(--text-3);
@@ -276,14 +276,14 @@
         inset 12px 0 24px rgba(255, 255, 255, 0.14),
         0 10px 24px rgba(0, 0, 0, 0.05);
       display: flex;
-      flex: 0 0 292px;
+      flex: 0 0 clamp(280px, 19.5vw, 390px);
       flex-direction: column;
       height: calc(100% - 28px);
       margin: 14px 0 14px 8px;
       min-width: 180px;
       overflow: hidden;
       position: relative;
-      width: 292px;
+      width: clamp(280px, 19.5vw, 390px);
     }
 
     .sidebar.is-closed {
@@ -339,7 +339,6 @@
       gap: 8px;
       letter-spacing: 0.06em;
       padding: 18px 0;
-      text-transform: uppercase;
     }
 
     .pane-heading-count {
@@ -398,28 +397,18 @@
       width: 100%;
     }
 
-    .new-file-form {
-      display: grid;
-      gap: 8px;
-      grid-template-columns: minmax(0, 1fr) auto;
-    }
-
-    .new-file-form .text-input {
-      background: var(--metal-recess);
-      border: 1px solid var(--border-soft);
-      border-radius: 8px;
-      box-shadow: var(--shadow-control);
-    }
-
-    .primary-button {
-      background: linear-gradient(180deg, var(--accent-hover), var(--accent));
-      border-color: transparent;
-      color: white;
-    }
-
+    .primary-button,
     .secondary-button {
       background: transparent;
       border-color: var(--border-medium);
+      color: var(--accent);
+      font-size: 16px;
+      font-weight: 650;
+      min-height: 58px;
+      width: 100%;
+    }
+
+    .secondary-button {
       color: var(--text-2);
     }
 
@@ -753,13 +742,26 @@
 
     .mock-editor {
       color: var(--text);
-      font-family: "SF Mono", Menlo, Consolas, monospace;
-      font-size: 14px;
+      font-family: "Noto Sans JP", Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 15px;
       height: 100%;
-      line-height: 1.7;
+      line-height: 1.72;
       overflow: auto;
-      padding: 34px 44px 56px;
+      padding: 34px 44px 56px 124px;
+      position: relative;
       white-space: pre-wrap;
+    }
+
+    .mock-editor::before {
+      color: var(--text-3);
+      content: "1\A 2\A 3\A 4\A 5\A 6\A 7\A 8\A 9";
+      left: 24px;
+      line-height: 1.7;
+      position: absolute;
+      text-align: right;
+      top: 34px;
+      white-space: pre;
+      width: 28px;
     }
 
     .mock-editor.is-source {
@@ -774,7 +776,8 @@
     }
 
     .cm-line-heading {
-      font-size: 25px;
+      font-size: 26px;
+      margin-top: 6px;
     }
 
     .cm-line-subheading {
@@ -782,25 +785,21 @@
     }
 
     .cm-frontmatter-block {
-      background:
-        var(--metal-sheen),
-        color-mix(in srgb, var(--popup-bg) 84%, var(--surface-container-high) 16%);
-      border: 1px solid var(--border-soft);
-      border-radius: 10px;
-      box-shadow: var(--shadow-control);
       color: var(--text-2);
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Noto Sans JP", sans-serif;
-      margin-bottom: 20px;
-      padding: 10px 12px;
-      width: min(760px, 100%);
+      font-size: 15px;
+      margin-bottom: 14px;
+      max-width: 760px;
+      padding: 0;
+      width: min(100%, 760px);
     }
 
     .cm-frontmatter-row {
       align-items: flex-start;
       display: grid;
       gap: 12px;
-      grid-template-columns: 22px 150px minmax(0, 1fr);
-      min-height: 1.45em;
+      grid-template-columns: 22px minmax(130px, 34%) minmax(0, 1fr);
+      min-height: 28px;
     }
 
     .cm-frontmatter-row-icon {
@@ -811,23 +810,73 @@
 
     .cm-frontmatter-key {
       color: var(--text-2);
+      font-weight: 660;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
 
+    .cm-frontmatter-title {
+      color: var(--text);
+      font-size: 17px;
+      font-weight: 760;
+    }
+
     .cm-frontmatter-pill {
       align-items: center;
-      background: var(--hover);
-      border: 1px solid var(--border-soft);
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.58), rgba(255, 255, 255, 0.24)),
+        rgba(255, 255, 255, 0.34);
+      border: 1px solid rgba(255, 255, 255, 0.24);
       border-radius: 999px;
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.52),
+        0 8px 22px rgba(0, 0, 0, 0.025);
       color: var(--text);
       display: inline-flex;
       font-size: 0.92em;
       gap: 4px;
       line-height: 1.2;
       margin-right: 6px;
-      padding: 1px 8px;
+      min-width: 128px;
+      padding: 3px 10px;
+    }
+
+    .cm-frontmatter-pill.is-count,
+    .cm-frontmatter-pill.is-action {
+      justify-content: center;
+      min-width: 28px;
+      padding-inline: 8px;
+    }
+
+    .cm-frontmatter-add {
+      color: var(--text-3);
+      font-weight: 660;
+    }
+
+    .cm-frontmatter-values {
+      display: block;
+      height: 28px;
+      position: relative;
+    }
+
+    .cm-frontmatter-values .cm-frontmatter-pill {
+      position: absolute;
+    }
+
+    .cm-frontmatter-values .cm-frontmatter-pill:nth-child(1) {
+      left: 0;
+      top: -2px;
+    }
+
+    .cm-frontmatter-values .cm-frontmatter-pill:nth-child(2) {
+      left: 0;
+      top: 27px;
+    }
+
+    .cm-frontmatter-values .cm-frontmatter-pill:nth-child(3) {
+      left: 140px;
+      top: 27px;
     }
 
     .cm-live-link,
@@ -859,7 +908,7 @@
       display: flex;
       font-size: 12px;
       gap: 12px;
-      justify-content: flex-end;
+      justify-content: flex-start;
       padding: 0 12px;
     }
 
@@ -872,12 +921,12 @@
         inset 1px 0 0 rgba(255, 255, 255, 0.42),
         -8px 0 18px rgba(0, 0, 0, 0.035);
       display: flex;
-      flex: 0 0 252px;
+      flex: 0 0 clamp(220px, 16vw, 320px);
       flex-direction: column;
-      min-width: 220px;
+      min-width: 260px;
       overflow: hidden;
       position: relative;
-      width: 252px;
+      width: clamp(220px, 16vw, 320px);
     }
 
     .right-panel.is-closed {
@@ -1053,7 +1102,7 @@
         <span class="window-dot"></span>
         <span class="window-dot"></span>
       </div>
-      <div class="title-label">Relic - sample-workspace</div>
+      <div class="title-label"></div>
       <div></div>
     </header>
 
@@ -1133,14 +1182,14 @@
 
       <aside class="sidebar">
         <div class="sidebar-header">
-          <div class="pane-heading">Files <span class="pane-heading-count" data-file-count>12</span></div>
+          <div class="pane-heading">ファイル</div>
         </div>
         <div class="sidebar-body">
           <div class="sidebar-section">
             <div class="files-search">
               <div class="files-search-input">
-                <button class="files-search-mode-button" type="button" data-search-mode>名前</button>
-                <input value="" placeholder="検索" aria-label="検索" data-search-input>
+                <button class="files-search-mode-button" type="button" data-search-mode>全文</button>
+                <input value="" placeholder="全文で検索" aria-label="検索" data-search-input>
               </div>
               <div class="mock-popover search-mode-menu" data-search-mode-menu>
                 <button type="button" data-search-mode-option="名前">名前</button>
@@ -1150,32 +1199,9 @@
             </div>
 
             <form class="new-file-form" data-new-file-form>
-              <input class="text-input" value="" placeholder="新規ファイル名" data-new-file-input>
-              <button class="primary-button" type="submit">作成</button>
+              <button class="primary-button" type="submit">新規ファイル</button>
             </form>
-            <button class="secondary-button" type="button" data-create-folder>新規フォルダ</button>
-
-            <section class="pinned-section">
-              <div class="pinned-section-heading">Pinned</div>
-              <ul class="file-tree">
-                <li>
-                  <div class="file-tree-row-wrap">
-                    <button class="file-tree-row file selected" type="button" data-file-name="Relicについて.md">
-                      <span class="file-tree-icon"><span class="file-tree-file-dot">●</span></span>
-                      <span class="file-tree-name">Relicについて.md</span>
-                    </button>
-                  </div>
-                </li>
-                <li>
-                  <div class="file-tree-row-wrap">
-                    <button class="file-tree-row file" type="button" data-file-name="今日のメモ.md">
-                      <span class="file-tree-icon"><span class="file-tree-file-dot">●</span></span>
-                      <span class="file-tree-name">今日のメモ.md</span>
-                    </button>
-                  </div>
-                </li>
-              </ul>
-            </section>
+            <button class="secondary-button" type="button" data-create-folder>フォルダ作成</button>
 
             <ul class="file-tree">
               <li>
@@ -1185,23 +1211,15 @@
                       <span class="file-tree-folder-chevron">▶</span>
                       <span class="file-tree-folder-icon"></span>
                     </span>
-                    <span class="file-tree-name">drafts</span>
+                    <span class="file-tree-name">00-inbox</span>
                   </button>
                 </div>
                 <ul class="file-tree file-tree-children">
                   <li>
                     <div class="file-tree-row-wrap">
-                      <button class="file-tree-row file" type="button" data-file-name="長い原稿の構成.md">
-                        <span class="file-tree-icon"><span class="file-tree-file-dot">●</span></span>
-                        <span class="file-tree-name">長い原稿の構成.md</span>
-                      </button>
-                    </div>
-                  </li>
-                  <li>
-                    <div class="file-tree-row-wrap">
-                      <button class="file-tree-row file" type="button" data-file-name="引用候補.md">
-                        <span class="file-tree-icon"><span class="file-tree-file-dot">●</span></span>
-                        <span class="file-tree-name">引用候補.md</span>
+                      <button class="file-tree-row file" type="button" data-file-name="start-here">
+                        <span class="file-tree-icon"><span class="file-tree-file-dot">・</span></span>
+                        <span class="file-tree-name">start-here</span>
                       </button>
                     </div>
                   </li>
@@ -1214,23 +1232,44 @@
                       <span class="file-tree-folder-chevron">▶</span>
                       <span class="file-tree-folder-icon"></span>
                     </span>
-                    <span class="file-tree-name">notes</span>
+                    <span class="file-tree-name">01-links</span>
                   </button>
                 </div>
                 <ul class="file-tree file-tree-children">
                   <li>
                     <div class="file-tree-row-wrap">
-                      <button class="file-tree-row file" type="button" data-file-name="リンクとタグ.md">
-                        <span class="file-tree-icon"><span class="file-tree-file-dot">●</span></span>
-                        <span class="file-tree-name">リンクとタグ.md</span>
+                      <button class="file-tree-row" type="button" data-folder-toggle>
+                        <span class="file-tree-icon">
+                          <span class="file-tree-folder-chevron">▶</span>
+                          <span class="file-tree-folder-icon"></span>
+                        </span>
+                        <span class="file-tree-name">nested</span>
                       </button>
                     </div>
+                    <ul class="file-tree file-tree-children">
+                      <li>
+                        <div class="file-tree-row-wrap">
+                          <button class="file-tree-row file" type="button" data-file-name="deep-link">
+                            <span class="file-tree-icon"><span class="file-tree-file-dot">・</span></span>
+                            <span class="file-tree-name">deep-link</span>
+                          </button>
+                        </div>
+                      </li>
+                      <li>
+                        <div class="file-tree-row-wrap">
+                          <button class="file-tree-row file" type="button" data-file-name="wiki-link-target">
+                            <span class="file-tree-icon"><span class="file-tree-file-dot">・</span></span>
+                            <span class="file-tree-name">wiki-link-target</span>
+                          </button>
+                        </div>
+                      </li>
+                    </ul>
                   </li>
                   <li>
                     <div class="file-tree-row-wrap">
-                      <button class="file-tree-row file" type="button" data-file-name="Markdown整理.md">
-                        <span class="file-tree-icon"><span class="file-tree-file-dot">●</span></span>
-                        <span class="file-tree-name">Markdown整理.md</span>
+                      <button class="file-tree-row file" type="button" data-file-name="wiki-link-target">
+                        <span class="file-tree-icon"><span class="file-tree-file-dot">・</span></span>
+                        <span class="file-tree-name">wiki-link-target</span>
                       </button>
                     </div>
                   </li>
@@ -1238,39 +1277,74 @@
               </li>
               <li>
                 <div class="file-tree-row-wrap">
-                  <button class="file-tree-row file" type="button" data-file-name="README.md">
-                    <span class="file-tree-icon"><span class="file-tree-file-dot">●</span></span>
-                    <span class="file-tree-name">README.md</span>
+                  <button class="file-tree-row" type="button" data-folder-toggle>
+                    <span class="file-tree-icon">
+                      <span class="file-tree-folder-chevron">▶</span>
+                      <span class="file-tree-folder-icon"></span>
+                    </span>
+                    <span class="file-tree-name">02-frontmatter</span>
                   </button>
                 </div>
+                <ul class="file-tree file-tree-children">
+                  <li><div class="file-tree-row-wrap"><button class="file-tree-row file" type="button" data-file-name="all-fixed-fields"><span class="file-tree-icon"><span class="file-tree-file-dot">・</span></span><span class="file-tree-name">all-fixed-fields</span></button></div></li>
+                  <li><div class="file-tree-row-wrap"><button class="file-tree-row file" type="button" data-file-name="minimal-frontmatter"><span class="file-tree-icon"><span class="file-tree-file-dot">・</span></span><span class="file-tree-name">minimal-frontmatter</span></button></div></li>
+                  <li><div class="file-tree-row-wrap"><button class="file-tree-row file" type="button" data-file-name="no-frontmatter"><span class="file-tree-icon"><span class="file-tree-file-dot">・</span></span><span class="file-tree-name">no-frontmatter</span></button></div></li>
+                </ul>
+              </li>
+              <li>
+                <div class="file-tree-row-wrap">
+                  <button class="file-tree-row is-collapsed" type="button" data-folder-toggle>
+                    <span class="file-tree-icon"><span class="file-tree-folder-chevron">▶</span><span class="file-tree-folder-icon"></span></span>
+                    <span class="file-tree-name">03-chart</span>
+                  </button>
+                </div>
+                <ul class="file-tree file-tree-children is-collapsed"></ul>
+              </li>
+              <li>
+                <div class="file-tree-row-wrap">
+                  <button class="file-tree-row" type="button" data-folder-toggle>
+                    <span class="file-tree-icon"><span class="file-tree-folder-chevron">▶</span><span class="file-tree-folder-icon"></span></span>
+                    <span class="file-tree-name">04-markdown</span>
+                  </button>
+                </div>
+                <ul class="file-tree file-tree-children">
+                  <li><div class="file-tree-row-wrap"><button class="file-tree-row file" type="button" data-file-name="long-document"><span class="file-tree-icon"><span class="file-tree-file-dot">・</span></span><span class="file-tree-name">long-document</span></button></div></li>
+                  <li><div class="file-tree-row-wrap"><button class="file-tree-row file" type="button" data-file-name="preview-kitchen-sink"><span class="file-tree-icon"><span class="file-tree-file-dot">・</span></span><span class="file-tree-name">preview-kitchen-sink</span></button></div></li>
+                </ul>
+              </li>
+              <li>
+                <div class="file-tree-row-wrap">
+                  <button class="file-tree-row" type="button" data-folder-toggle>
+                    <span class="file-tree-icon"><span class="file-tree-folder-chevron">▶</span><span class="file-tree-folder-icon"></span></span>
+                    <span class="file-tree-name">05-search</span>
+                  </button>
+                </div>
+                <ul class="file-tree file-tree-children">
+                  <li><div class="file-tree-row-wrap"><button class="file-tree-row file selected" type="button" data-file-name="japanese-search"><span class="file-tree-icon"><span class="file-tree-file-dot">・</span></span><span class="file-tree-name">japanese-search</span></button></div></li>
+                </ul>
               </li>
             </ul>
-
-            <div class="workspace-actions">
-              <button class="secondary-button" type="button" data-toast="ワークスペース作成ダイアログを開きました">ワークスペースを作成</button>
-              <button class="secondary-button" type="button" data-toast="フォルダ選択を開きました">フォルダを開く</button>
-            </div>
           </div>
         </div>
       </aside>
 
       <main class="main-area" data-main-area>
         <div class="main-area-top-bar">
-          <button class="rename-bar-label" type="button" data-active-file-label>Relicについて.md</button>
+          <button class="rename-bar-label" type="button" data-active-file-label>japanese-search</button>
           <div class="mock-popover rename-popover" data-rename-popover>
-            <input value="Relicについて.md" aria-label="ファイル名" data-rename-input>
+            <input value="japanese-search" aria-label="ファイル名" data-rename-input>
             <button type="button" data-rename-apply>変更</button>
           </div>
           <button class="toolbar-btn" type="button" data-move-toggle>移動</button>
           <div class="mock-popover topbar-popover" data-move-popover>
-            <button type="button" data-move-target="drafts">drafts</button>
-            <button type="button" data-move-target="notes">notes</button>
+            <button type="button" data-move-target="00-inbox">00-inbox</button>
+            <button type="button" data-move-target="01-links">01-links</button>
             <button type="button" data-move-target="root">root</button>
           </div>
           <div class="main-area-top-actions">
-            <button class="toolbar-btn" type="button" data-source-toggle>Src</button>
+            <button class="toolbar-btn" type="button" data-source-toggle>ソース</button>
             <button class="toolbar-btn" type="button" data-split-toggle>分割</button>
-            <button class="toolbar-btn active" type="button" data-panel-mode="outline">見出し</button>
+            <button class="toolbar-btn active" type="button" data-panel-mode="outline">アウトライン</button>
             <button class="toolbar-btn" type="button" data-panel-mode="links">リンク</button>
           </div>
         </div>
@@ -1280,16 +1354,32 @@
             <div class="panes-container" data-panes>
               <section class="pane pane--focused">
                 <div class="pane-tab-bar" data-tab-bar>
-                  <div class="pane-tab pane-tab--active" data-tab="Relicについて.md">
-                    <span class="pane-tab-name">Relicについて.md</span>
+                  <div class="pane-tab pane-tab--active" data-tab="japanese-search">
+                    <span class="pane-tab-name">japanese-search</span>
                     <button class="pane-tab-close" type="button">×</button>
                   </div>
-                  <div class="pane-tab" data-tab="今日のメモ.md">
-                    <span class="pane-tab-name">今日のメモ.md</span>
+                  <div class="pane-tab" data-tab="deep-link">
+                    <span class="pane-tab-name">deep-link</span>
                     <button class="pane-tab-close" type="button">×</button>
                   </div>
-                  <div class="pane-tab" data-tab="リンクとタグ.md">
-                    <span class="pane-tab-name">リンクとタグ.md</span>
+                  <div class="pane-tab" data-tab="ダッシュボード">
+                    <span class="pane-tab-name">⌘ ダッシュボード</span>
+                    <button class="pane-tab-close" type="button">×</button>
+                  </div>
+                  <div class="pane-tab" data-tab="グラフ">
+                    <span class="pane-tab-name">⌘ グラフ</span>
+                    <button class="pane-tab-close" type="button">×</button>
+                  </div>
+                  <div class="pane-tab" data-tab="wiki-link-target">
+                    <span class="pane-tab-name">wiki-link-target</span>
+                    <button class="pane-tab-close" type="button">×</button>
+                  </div>
+                  <div class="pane-tab" data-tab="minimal-frontmatter">
+                    <span class="pane-tab-name">minimal-frontmatter</span>
+                    <button class="pane-tab-close" type="button">×</button>
+                  </div>
+                  <div class="pane-tab" data-tab="no-frontmatter">
+                    <span class="pane-tab-name">no-frontmatter</span>
                     <button class="pane-tab-close" type="button">×</button>
                   </div>
                 </div>
@@ -1297,27 +1387,15 @@
                 <div class="editor-surface">
                   <div class="editor-body">
                     <div class="mock-editor" data-editor>
-<div class="cm-frontmatter-block"><div class="cm-frontmatter-row"><span class="cm-frontmatter-row-icon">◆</span><span class="cm-frontmatter-key">status</span><span><span class="cm-frontmatter-pill">draft</span></span></div><div class="cm-frontmatter-row"><span class="cm-frontmatter-row-icon">◆</span><span class="cm-frontmatter-key">tags</span><span><span class="cm-frontmatter-pill">relic</span><span class="cm-frontmatter-pill">design</span></span></div></div><div class="cm-line-heading">Relicについて</div>
+<div class="cm-frontmatter-block"><div class="cm-frontmatter-row"><span class="cm-frontmatter-row-icon">⌄</span><span class="cm-frontmatter-title">プロパティ</span><span class="cm-frontmatter-pill is-count">1</span></div><div class="cm-frontmatter-row"><span class="cm-frontmatter-row-icon">≡</span><span class="cm-frontmatter-key">tags</span><span class="cm-frontmatter-values"><span class="cm-frontmatter-pill">search</span><span class="cm-frontmatter-pill">japanese</span><span class="cm-frontmatter-pill is-action">＋</span></span></div><div class="cm-frontmatter-row"><span class="cm-frontmatter-row-icon">＋</span><span class="cm-frontmatter-add">追加</span><span class="cm-frontmatter-add">プロパティを追加　＋</span></div></div><div class="cm-line-heading">日本語検索</div>
 
-Relicは、ローカルMarkdownを扱うための書き手向けワークスペースです。
-ファイルを開き、編集し、リンクでつなげながら文章を育てます。
+<strong>日本語検索確認用：文章管理と履歴確認。</strong>
 
-<span class="cm-line-subheading">今見えている状態</span>
-
-- 左にはワークスペースのファイルツリーがあります
-- 中央にはタブとエディタがあります
-- 右には見出しまたはリンクの補助パネルがあります
-
-内部リンクは <span class="wikilink">[[今日のメモ]]</span> のように表示されます。
-インラインコードは <span class="cm-live-code">frontmatter</span> のように薄い背景を持ちます。
-
-<span class="cm-live-blockquote">このメモは現状デザインを検討するためのサンプル本文です。</span>
+<strong>かな検索確認用：ひらがなのけんさく。</strong>
                     </div>
                   </div>
                   <div class="editor-status">
-                    <span>1,248 文字</span>
-                    <span>214 words</span>
-                    <span>保存済み</span>
+                    <span>84 文字 / 11 語</span>
                   </div>
                 </div>
               </section>
@@ -1326,15 +1404,12 @@ Relicは、ローカルMarkdownを扱うための書き手向けワークスペ�
 
           <aside class="right-panel" data-right-panel>
             <div class="sidebar-header">
-              <div class="pane-heading" data-panel-heading>Outline</div>
+              <div class="pane-heading" data-panel-heading>アウトライン</div>
             </div>
             <div class="sidebar-body">
               <div class="right-panel-content">
                 <ul class="outline-list" data-outline-list>
-                  <li><button class="active-outline" type="button">Relicについて</button></li>
-                  <li><button type="button">今見えている状態</button></li>
-                  <li><button type="button">リンクとタグ</button></li>
-                  <li><button type="button">次に書くこと</button></li>
+                  <li><button class="active-outline" type="button">日本語検索</button></li>
                 </ul>
               </div>
             </div>
@@ -1344,29 +1419,19 @@ Relicは、ローカルMarkdownを扱うための書き手向けワークスペ�
     </div>
 
     <footer class="status-bar">
-      <span>sample-workspace</span>
-      <span data-status-text>Markdown / Live Preview / UTF-8</span>
+      <span>Relic</span>
+      <span data-status-text>84 文字 / 11 語</span>
     </footer>
     <div class="mock-toast" data-toast-box></div>
   </div>
   <script>
     const fileBodies = {
-      "Relicについて.md": `<div class="cm-frontmatter-block"><div class="cm-frontmatter-row"><span class="cm-frontmatter-row-icon">◆</span><span class="cm-frontmatter-key">status</span><span><span class="cm-frontmatter-pill">draft</span></span></div><div class="cm-frontmatter-row"><span class="cm-frontmatter-row-icon">◆</span><span class="cm-frontmatter-key">tags</span><span><span class="cm-frontmatter-pill">relic</span><span class="cm-frontmatter-pill">design</span></span></div></div><div class="cm-line-heading">Relicについて</div>
+      "japanese-search": `<div class="cm-frontmatter-block"><div class="cm-frontmatter-row"><span class="cm-frontmatter-row-icon">⌄</span><span class="cm-frontmatter-title">プロパティ</span><span class="cm-frontmatter-pill is-count">1</span></div><div class="cm-frontmatter-row"><span class="cm-frontmatter-row-icon">≡</span><span class="cm-frontmatter-key">tags</span><span class="cm-frontmatter-values"><span class="cm-frontmatter-pill">search</span><span class="cm-frontmatter-pill">japanese</span><span class="cm-frontmatter-pill is-action">＋</span></span></div><div class="cm-frontmatter-row"><span class="cm-frontmatter-row-icon">＋</span><span class="cm-frontmatter-add">追加</span><span class="cm-frontmatter-add">プロパティを追加　＋</span></div></div><div class="cm-line-heading">日本語検索</div>
 
-Relicは、ローカルMarkdownを扱うための書き手向けワークスペースです。
-ファイルを開き、編集し、リンクでつなげながら文章を育てます。
+<strong>日本語検索確認用：文章管理と履歴確認。</strong>
 
-<span class="cm-line-subheading">今見えている状態</span>
-
-- 左にはワークスペースのファイルツリーがあります
-- 中央にはタブとエディタがあります
-- 右には見出しまたはリンクの補助パネルがあります
-
-内部リンクは <span class="wikilink">[[今日のメモ]]</span> のように表示されます。
-インラインコードは <span class="cm-live-code">frontmatter</span> のように薄い背景を持ちます。
-
-<span class="cm-live-blockquote">このメモは現状デザインを検討するためのサンプル本文です。</span>`,
-      "今日のメモ.md": `<div class="cm-line-heading">今日のメモ</div>
+<strong>かな検索確認用：ひらがなのけんさく。</strong>`,
+      "deep-link": `<div class="cm-line-heading">Deep Link</div>
 
 - ファイルビューの余白を見る
 - 右クリックメニューの高さを確認する
@@ -1375,9 +1440,9 @@ Relicは、ローカルMarkdownを扱うための書き手向けワークスペ�
 <span class="cm-line-subheading">次の確認</span>
 
 フォルダを閉じたり、検索したり、タブを閉じたりして画面の詰まりを確認します。`,
-      "リンクとタグ.md": `<div class="cm-line-heading">リンクとタグ</div>
+      "wiki-link-target": `<div class="cm-line-heading">Wiki Link Target</div>
 
-関連ノート: <span class="wikilink">[[Relicについて]]</span>
+関連ノート: <span class="wikilink">[[japanese-search]]</span>
 
 タグ:
 - relic
@@ -1392,7 +1457,7 @@ Relicは、ローカルMarkdownを扱うための書き手向けワークスペ�
 右クリックメニュー、タブ、サイドバー開閉の確認に使います。`;
 
     const state = {
-      activeFile: "Relicについて.md",
+      activeFile: "japanese-search",
       panelMode: "outline",
       split: false,
       source: false
@@ -1441,7 +1506,8 @@ Relicは、ローカルMarkdownを扱うための書き手向けワークスペ�
     }
 
     function updateFileCount() {
-      qs("[data-file-count]").textContent = String(qsa("[data-file-name]").length);
+      const count = qs("[data-file-count]");
+      if (count) count.textContent = String(qsa("[data-file-name]").length);
     }
 
     function setActiveFile(name) {
@@ -1478,18 +1544,15 @@ Relicは、ローカルMarkdownを扱うための書き手向けワークスペ�
 
     function updatePanel() {
       const linkItems = [
-        "今日のメモ.md",
-        "リンクとタグ.md",
-        "README.md"
+        "deep-link",
+        "wiki-link-target",
+        "minimal-frontmatter"
       ];
       const outlineItems = [
-        state.activeFile.replace(/\\.md$/, ""),
-        "今見えている状態",
-        "リンクとタグ",
-        "次に書くこと"
+        state.activeFile === "japanese-search" ? "日本語検索" : state.activeFile.replace(/\\.md$/, "")
       ];
       const items = state.panelMode === "links" ? linkItems : outlineItems;
-      panelHeading.textContent = state.panelMode === "links" ? "Links" : "Outline";
+      panelHeading.textContent = state.panelMode === "links" ? "リンク" : "アウトライン";
       outlineList.innerHTML = items.map((item, index) => (
         `<li><button class="${index === 0 ? "active-outline" : ""}" type="button">${item}</button></li>`
       )).join("");
@@ -1545,7 +1608,7 @@ Relicは、ローカルMarkdownを扱うための書き手向けワークスペ�
         showToast("ファイル名を入力してください");
         return;
       }
-      const nextName = trimmed.endsWith(".md") ? trimmed : `${trimmed}.md`;
+      const nextName = trimmed;
       const previousName = state.activeFile;
       fileBodies[nextName] = fileBodies[previousName] ?? fallbackBody(nextName);
       if (nextName !== previousName) delete fileBodies[previousName];
@@ -1659,14 +1722,8 @@ Relicは、ローカルMarkdownを扱うための書き手向けワークスペ�
 
     qs("[data-new-file-form]").addEventListener("submit", (event) => {
       event.preventDefault();
-      const input = qs("[data-new-file-input]");
-      const name = input.value.trim();
-      if (!name) {
-        showToast("ファイル名を入力してください");
-        return;
-      }
+      const name = `new-note-${qsa("[data-file-name]").length + 1}`;
       addFile(name);
-      input.value = "";
     });
 
     renameInput.addEventListener("keydown", (event) => {
