@@ -32,15 +32,8 @@ const IconChronicle = (): ReactElement => (
 );
 
 const IconGraph = (): ReactElement => (
-  <svg fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" viewBox="0 0 20 20" width="18">
-    <circle cx="5" cy="6" r="2" />
-    <circle cx="14" cy="4" r="2" />
-    <circle cx="15" cy="14" r="2" />
-    <circle cx="6" cy="15" r="2" />
-    <line x1="6.7" x2="12.2" y1="5.6" y2="4.4" />
-    <line x1="14.3" x2="14.8" y1="6" y2="12" />
-    <line x1="13.2" x2="7.8" y1="14.3" y2="14.8" />
-    <line x1="6.2" x2="13.8" y1="7.5" y2="12.5" />
+  <svg fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="18">
+    <path d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0 0a2.25 2.25 0 1 0 3.935 2.186 2.25 2.25 0 0 0-3.935-2.186Zm0-12.814a2.25 2.25 0 1 0 3.933-2.185 2.25 2.25 0 0 0-3.933 2.185Z" />
   </svg>
 );
 

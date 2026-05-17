@@ -94,21 +94,16 @@ function NewFolderIcon(): ReactElement {
 
 function ExpandAllFoldersIcon(): ReactElement {
   return (
-    <svg aria-hidden="true" fill="none" height="22" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 22 22" width="22">
-      <path d="M4 12.5h14" />
-      <path d="M7 8.5 11 4.5 15 8.5" />
-      <path d="M7 16.5 11 12.5 15 16.5" />
+    <svg aria-hidden="true" fill="none" height="22" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="22">
+      <path d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
     </svg>
   );
 }
 
 function CollapseAllFoldersIcon(): ReactElement {
   return (
-    <svg aria-hidden="true" fill="none" height="22" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 22 22" width="22">
-      <path d="M4 9.5h14" />
-      <path d="M4 14.5h14" />
-      <path d="M7 4.5 11 8.5 15 4.5" />
-      <path d="M7 19.5 11 15.5 15 19.5" />
+    <svg aria-hidden="true" fill="none" height="22" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="22">
+      <path d="M9 9V4.5M9 9H4.5M9 9 3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5 5.25 5.25" />
     </svg>
   );
 }
