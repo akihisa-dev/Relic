@@ -153,13 +153,13 @@
 .editor-file-title {
   box-sizing: border-box;
   color: var(--text);
-  font-size: 18px;
+  font-size: 34px;
   font-weight: 700;
-  line-height: 24px;
+  line-height: 44px;
   margin: 0 auto;
   min-width: 0;
   overflow: hidden;
-  padding: 12px 32px 4px;
+  padding: 36px 32px 14px;
   text-overflow: ellipsis;
   white-space: nowrap;
   width: 100%;
