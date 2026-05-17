@@ -38,16 +38,10 @@ export function AppRightPanel({
 
   return (
     <aside
+      aria-label={rightPanelView === "outline" ? t("pane.outline") : t("pane.links")}
       aria-hidden={!isOpen}
       className={`right-panel${isOpen ? "" : " right-panel--closed"}`}
     >
-      <div className="sidebar-header">
-        <div className="pane-heading">
-          {rightPanelView === "outline"
-            ? t("pane.outline")
-            : t("pane.links")}
-        </div>
-      </div>
       <div className={`sidebar-body right-panel-content right-panel-content--${rightPanelView}`}>
       {rightPanelView === "outline" ? (
         outlineHeadings.length > 0 ? (
