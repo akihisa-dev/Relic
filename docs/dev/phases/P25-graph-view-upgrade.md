@@ -115,3 +115,9 @@ P25では、事前に固定した長い実施リストは置かない。
 - グラフビュー右上のホバー操作パネルについて、最小化ボタンと展開パネルの切り替え時に、外枠の幅、最大高さ、余白、影、透明度、位置が連動して遷移するようCSSを調整した。
 - 展開時のパネル本体と最小化ボタンに短い出現アニメーションを追加し、低モーション設定では既存の短縮ルールへ含めるようにした。
 - `pnpm exec vitest run src/renderer/components/GraphControls.test.tsx src/renderer/components/GraphSidebar.test.tsx`、`pnpm typecheck`、`git diff --check` が通過した。Electron実機での目視確認は未実施。
+
+### グラフビュー演出改善
+
+- グラフビューのクリックとEnterキーによるファイルオープン挙動を維持したまま、ノードの常時呼吸、ホバー/キーボードフォーカス時の鼓動、接続リンクの光の伝播、ホバー解除後約1秒の余韻表示を追加した。
+- 演出用に `hoveredPath` と `afterglowPath` を分け、`motionPath` だけを伝播と鼓動のトリガーに使うようにした。低モーション設定では新規アニメーションも既存の短縮ルールへ含めた。
+- `pnpm exec vitest run src/renderer/components/GraphCanvasLayers.test.tsx src/renderer/components/GraphCanvas.test.tsx src/renderer/hooks/useGraphCanvasInteractions.test.tsx src/renderer/hooks/useGraphPanelModel.test.tsx`、`pnpm typecheck`、`git diff --check` が通過した。Electron実機での目視確認は未実施。

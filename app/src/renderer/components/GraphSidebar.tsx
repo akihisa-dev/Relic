@@ -24,9 +24,12 @@ export function GraphPanel({ activeFilePath, onOpenFile, workspaceId }: GraphPan
     focusedPath,
     graphCanvas,
     groupByPath,
+    isMotionAfterglow,
     isLoading,
     labelOpacity,
     linkThickness,
+    motionEpoch,
+    motionPath,
     nodeSize,
     selectedPath,
     showArrows,
@@ -54,9 +57,12 @@ export function GraphPanel({ activeFilePath, onOpenFile, workspaceId }: GraphPan
             edges={filteredGraph.edges}
             focusedPath={focusedPath}
             groupByPath={groupByPath}
+            isMotionAfterglow={isMotionAfterglow}
             isPanning={graphCanvas.isPanning}
             labelOpacity={labelOpacity}
             linkThickness={linkThickness}
+            motionEpoch={motionEpoch}
+            motionPath={motionPath}
             nodeSize={nodeSize}
             onGraphKeyDown={graphCanvas.graphHandlers.onKeyDown}
             onGraphPointerCancel={graphCanvas.graphHandlers.onPointerCancel}

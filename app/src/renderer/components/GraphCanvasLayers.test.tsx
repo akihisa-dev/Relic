@@ -24,7 +24,9 @@ function renderNodeLayer(overrides: Partial<Parameters<typeof GraphNodeLayer>[0]
   const props: Parameters<typeof GraphNodeLayer>[0] = {
     focusedPath: "A.md",
     groupByPath: new Map(),
+    isMotionAfterglow: false,
     labelOpacity: 1,
+    motionPath: null,
     nodeSize: 1,
     onNodeClick: vi.fn(),
     onNodeKeyDown: vi.fn(),
@@ -59,7 +61,10 @@ describe("GraphCanvasLayers", () => {
         <GraphEdgeLayer
           edges={[{ sourcePath: "A.md", targetPath: "C.md" }]}
           focusedPath="A.md"
+          isMotionAfterglow={false}
           linkThickness={1.2}
+          motionEpoch={1}
+          motionPath={null}
           pointByPath={pointByPath}
           showArrows
         />
@@ -73,6 +78,31 @@ describe("GraphCanvasLayers", () => {
     expect(edge).toHaveStyle({ strokeWidth: "1.92" });
   });
 
+  it("motionPathに接続するedgeへtrace overlayを描画する", () => {
+    const { container } = render(
+      <svg>
+        <GraphEdgeLayer
+          edges={[
+            { sourcePath: "A.md", targetPath: "C.md" },
+            { sourcePath: "B.md", targetPath: "D.md" }
+          ]}
+          focusedPath="A.md"
+          isMotionAfterglow={true}
+          linkThickness={1}
+          motionEpoch={4}
+          motionPath="A.md"
+          pointByPath={pointByPath}
+          showArrows={false}
+        />
+      </svg>
+    );
+
+    const traces = container.querySelectorAll("line.graph-edge-trace");
+    expect(traces).toHaveLength(1);
+    expect(traces[0]).toHaveClass("graph-edge-trace--afterglow");
+    expect(traces[0]).toHaveAttribute("pathLength", "1");
+  });
+
   it("node layerでselected/focused/related/dimmed classを既存通り付ける", () => {
     renderNodeLayer();
 
@@ -82,6 +112,15 @@ describe("GraphCanvasLayers", () => {
     expect(nodeCircle("C")).toHaveClass("graph-node--related");
     expect(nodeCircle("D")).toHaveClass("graph-node--dimmed");
     expect(screen.getByText("A")).toHaveClass("graph-label");
+  });
+
+  it("motionPathのnodeへmotion classとdelayを付ける", () => {
+    renderNodeLayer({ isMotionAfterglow: true, motionPath: "A.md" });
+
+    expect(nodeCircle("A")).toHaveClass("graph-node--motion");
+    expect(nodeCircle("A")).toHaveClass("graph-node--motion-afterglow");
+    expect(nodeCircle("A")).toHaveStyle({ animationDelay: "0s" });
+    expect(nodeCircle("C")).not.toHaveClass("graph-node--motion");
   });
 
   it("node layerのclick/key callbackを接続する", () => {

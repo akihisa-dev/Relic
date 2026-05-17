@@ -117,8 +117,8 @@ describe("useGraphCanvasInteractions", () => {
     expect(setZoom).toHaveBeenCalledWith(1.1);
   });
 
-  it("node clickで選択更新とopen callbackを呼ぶ", async () => {
-    const { hook, onOpenFile, setSelectedPath } = renderInteractions();
+  it("node clickで選択更新とopen callbackだけを呼ぶ", async () => {
+    const { hook, onOpenFile, setFocusedPath, setSelectedPath } = renderInteractions();
 
     await waitFor(() => {
       expect(hook.result.current.points[0]).toBeDefined();
@@ -130,6 +130,7 @@ describe("useGraphCanvasInteractions", () => {
 
     expect(setSelectedPath).toHaveBeenCalledWith("A.md");
     expect(onOpenFile).toHaveBeenCalledWith("A.md");
+    expect(setFocusedPath).not.toHaveBeenCalled();
   });
 
   it("Enter keyでopen、Space keyで選択のみを実行する", async () => {

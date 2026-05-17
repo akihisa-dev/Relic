@@ -10,9 +10,12 @@ export interface GraphCanvasProps {
   edges: WorkspaceGraphEdge[];
   focusedPath: string | null;
   groupByPath: Map<string, GraphGroup>;
+  isMotionAfterglow: boolean;
   isPanning: boolean;
   labelOpacity: number;
   linkThickness: number;
+  motionEpoch: number;
+  motionPath: string | null;
   nodeSize: number;
   onGraphKeyDown: (event: KeyboardEvent<SVGSVGElement>) => void;
   onGraphPointerCancel: (event: PointerEvent<SVGSVGElement>) => void;
@@ -41,9 +44,12 @@ export function GraphCanvas({
   edges,
   focusedPath,
   groupByPath,
+  isMotionAfterglow,
   isPanning,
   labelOpacity,
   linkThickness,
+  motionEpoch,
+  motionPath,
   nodeSize,
   onGraphKeyDown,
   onGraphPointerCancel,
@@ -88,14 +94,19 @@ export function GraphCanvas({
         <GraphEdgeLayer
           edges={edges}
           focusedPath={focusedPath}
+          isMotionAfterglow={isMotionAfterglow}
           linkThickness={linkThickness}
+          motionEpoch={motionEpoch}
+          motionPath={motionPath}
           pointByPath={pointByPath}
           showArrows={showArrows}
         />
         <GraphNodeLayer
           focusedPath={focusedPath}
           groupByPath={groupByPath}
+          isMotionAfterglow={isMotionAfterglow}
           labelOpacity={labelOpacity}
+          motionPath={motionPath}
           nodeSize={nodeSize}
           onNodeClick={onNodeClick}
           onNodeKeyDown={onNodeKeyDown}
