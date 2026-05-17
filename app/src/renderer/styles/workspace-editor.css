@@ -134,14 +134,13 @@
 
 .toolbar-btn.active {
   animation: toolbar-active-settle 160ms cubic-bezier(.18, 1.25, .28, 1);
-  background: var(--hover);
-  border-color: var(--border-soft);
-  box-shadow: inset 0 2px 0 var(--accent);
+  background: var(--surface-raised);
+  border-color: var(--border-medium);
   color: var(--text);
 }
 
 .main-area-top-actions .toolbar-btn.active {
-  box-shadow: none;
+  background: var(--surface-raised);
 }
 
 .toolbar-dropdown {
@@ -297,7 +296,7 @@
   background: var(--surface-recessed);
   border-bottom: 1px solid var(--border);
   display: flex;
-  gap: 2px;
+  gap: 0;
   overflow-x: auto;
   padding: 0 8px;
   position: relative;
@@ -310,9 +309,9 @@
 .pane-tab {
   align-items: center;
   animation: tab-enter 170ms cubic-bezier(.18, 1.25, .28, 1);
-  border: 1px solid transparent;
+  border: 1px solid var(--border);
   border-bottom: 0;
-  border-radius: 6px 6px 0 0;
+  border-radius: 5px 5px 0 0;
   color: var(--text-2);
   cursor: default;
   display: flex;
@@ -337,16 +336,19 @@
   will-change: max-width, min-width, opacity, padding, transform;
 }
 
+.pane-tab + .pane-tab {
+  margin-left: -1px;
+}
+
 .pane-tab--active {
   animation: tab-select 180ms cubic-bezier(.18, 1.25, .28, 1);
   background: var(--bg);
   border-color: var(--border-medium);
-  box-shadow: inset 0 2px 0 var(--accent);
   color: var(--text);
 }
 
 .pane-tab--gantt.pane-tab--active {
-  color: var(--accent);
+  color: var(--text);
 }
 
 .pane-tab--drop-before::before,
