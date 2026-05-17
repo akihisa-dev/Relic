@@ -30,8 +30,10 @@
 .app-shell::before {
   background-image:
     radial-gradient(circle at 16% 0%, rgba(255, 255, 255, 0.42), transparent 24%),
-    radial-gradient(ellipse at 82% 100%, rgba(0, 0, 0, 0.06), transparent 30%),
-    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.018) 0 1px, rgba(0, 0, 0, 0.008) 1px 2px);
+    radial-gradient(ellipse at 82% 100%, rgba(0, 0, 0, 0.075), transparent 30%),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.018) 0 1px, rgba(0, 0, 0, 0.008) 1px 2px),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.25' numOctaves='5' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)' opacity='.46'/%3E%3C/svg%3E");
+  background-size: cover, cover, auto, 130px 130px;
   content: "";
   inset: 0;
   opacity: 0.62;
@@ -228,9 +230,10 @@
 
 .sidebar {
   background:
-    radial-gradient(ellipse at 28% 12%, rgba(255, 255, 255, 0.34), transparent 36%),
-    linear-gradient(160deg, var(--surface-container-low), var(--surface-container) 54%, var(--surface-container-high)),
-    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.028) 0 1px, rgba(0, 0, 0, 0.012) 1px 2px),
+    radial-gradient(ellipse at 24% 12%, rgba(255, 255, 255, 0.42), transparent 34%),
+    linear-gradient(128deg, transparent 0 18%, rgba(255, 255, 255, 0.2) 30%, transparent 46%),
+    linear-gradient(160deg, rgba(255, 255, 255, 0.64), rgba(242, 242, 240, 0.36) 52%, rgba(210, 210, 208, 0.22)),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.08), rgba(0, 0, 0, 0.018)),
     var(--sidebar-bg);
   border: 1px solid rgba(255, 255, 255, 0.52);
   border-radius: 22px;
@@ -252,6 +255,22 @@
   will-change: width;
 }
 
+.sidebar::before {
+  background-image:
+    radial-gradient(ellipse at 64% 18%, rgba(255, 255, 255, 0.32), transparent 32%),
+    linear-gradient(126deg, transparent 0 22%, rgba(255, 255, 255, 0.18) 34%, transparent 48%),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.035) 0 1px, rgba(0, 0, 0, 0.014) 1px 2px),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.014) 0 1px, rgba(0, 0, 0, 0.008) 1px 2px),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.08' numOctaves='5' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='.34'/%3E%3C/svg%3E");
+  background-size: cover, cover, auto, auto, 96px 96px;
+  content: "";
+  inset: 0;
+  mix-blend-mode: overlay;
+  opacity: 0.42;
+  pointer-events: none;
+  position: absolute;
+}
+
 .sidebar--closed {
   border-color: transparent;
   margin-left: 0;
@@ -268,9 +287,11 @@
 .sidebar > .sidebar-header,
 .sidebar > .sidebar-body {
   opacity: 1;
+  position: relative;
   transform: translateX(0) scaleX(1);
   transform-origin: left center;
   transition: opacity 180ms ease, transform 240ms cubic-bezier(.22, 1, .36, 1);
+  z-index: 1;
 }
 
 .sidebar--closed > .sidebar-header,
@@ -302,7 +323,7 @@
   align-items: center;
   color: var(--text-3);
   display: flex;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   gap: 8px;
   letter-spacing: 0.06em;

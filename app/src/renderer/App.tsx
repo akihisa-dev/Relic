@@ -266,7 +266,7 @@ export function App(): ReactElement {
   });
 
   const { sidebarWidth, isSidebarResizing, startSidebarResize } = useSidebarResize({
-    initialWidth: 260,
+    initialWidth: 292,
     maxWidth: 500,
     minWidth: 180
   });
