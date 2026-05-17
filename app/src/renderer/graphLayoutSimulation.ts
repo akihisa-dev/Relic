@@ -8,34 +8,169 @@ import {
   clamp
 } from "./graphLayoutConstants";
 import { buildGraphStats, emptyNodeStats } from "./graphLayoutFilters";
-import type { GraphForceSettings, GraphPoint, GraphSimPoint } from "./graphLayoutTypes";
+import type { GraphForceSettings, GraphLayoutMode, GraphPoint, GraphSimPoint } from "./graphLayoutTypes";
 
 export function layoutGraph(
   nodes: WorkspaceGraphNode[],
   edges: WorkspaceGraphEdge[],
-  forceSettings: GraphForceSettings
+  forceSettings: GraphForceSettings,
+  layoutMode: GraphLayoutMode = "standard"
 ): GraphPoint[] {
   const stats = buildGraphStats(edges);
-  const initial = nodes.map((node, index) => {
+  const initial = buildLayoutSeed(nodes, edges, stats, layoutMode);
+
+  if (initial.length <= 1) {
+    return initial.map((node) => ({ ...node, x: GRAPH_CENTER_X, y: GRAPH_CENTER_Y }));
+  }
+
+  relaxGraphLayout(initial, edges, forceSettings);
+
+  return sortGraphPoints(initial);
+}
+
+function buildLayoutSeed(
+  nodes: WorkspaceGraphNode[],
+  edges: WorkspaceGraphEdge[],
+  stats: Map<string, { incoming: number; outgoing: number }>,
+  layoutMode: GraphLayoutMode
+): GraphPoint[] {
+  const points = nodes.map((node) => {
     const nodeStats = stats.get(node.path) ?? emptyNodeStats();
     const degree = nodeStats.incoming + nodeStats.outgoing;
-    const angle = (Math.PI * 2 * index) / Math.max(1, nodes.length) - Math.PI / 2;
-    const radius = Math.min(190, 96 + (index % 7) * 17);
 
     return {
       ...node,
       degree,
       incoming: nodeStats.incoming,
       outgoing: nodeStats.outgoing,
-      x: GRAPH_CENTER_X + Math.cos(angle) * radius,
-      y: GRAPH_CENTER_Y + Math.sin(angle) * radius
+      x: GRAPH_CENTER_X,
+      y: GRAPH_CENTER_Y
     };
   });
 
-  if (initial.length <= 1) {
-    return initial.map((node) => ({ ...node, x: GRAPH_CENTER_X, y: GRAPH_CENTER_Y }));
+  switch (layoutMode) {
+    case "radial":
+      seedRadialLayout(points);
+      break;
+    case "cluster":
+      seedClusterLayout(points, edges);
+      break;
+    case "scatter":
+      seedScatterLayout(points);
+      break;
+    case "standard":
+      seedStandardLayout(points);
+      break;
   }
 
+  return points;
+}
+
+function seedStandardLayout(points: GraphPoint[]): void {
+  points.forEach((point, index) => {
+    const angle = (Math.PI * 2 * index) / Math.max(1, points.length) - Math.PI / 2;
+    const radius = Math.min(190, 96 + (index % 7) * 17);
+    point.x = GRAPH_CENTER_X + Math.cos(angle) * radius;
+    point.y = GRAPH_CENTER_Y + Math.sin(angle) * radius;
+  });
+}
+
+function seedRadialLayout(points: GraphPoint[]): void {
+  const ranked = [...points].sort((a, b) => {
+    const degreeDiff = b.degree - a.degree;
+    return degreeDiff || a.path.localeCompare(b.path, "ja");
+  });
+  const maxRank = Math.max(1, ranked.length - 1);
+
+  ranked.forEach((point, rank) => {
+    const angle = (Math.PI * 2 * rank) / Math.max(1, ranked.length) - Math.PI / 2;
+    const radius = 58 + (rank / maxRank) * 198;
+    point.x = GRAPH_CENTER_X + Math.cos(angle) * radius;
+    point.y = GRAPH_CENTER_Y + Math.sin(angle) * radius;
+  });
+}
+
+function seedScatterLayout(points: GraphPoint[]): void {
+  const width = GRAPH_WIDTH - GRAPH_PADDING * 2;
+  const height = GRAPH_HEIGHT - GRAPH_PADDING * 2;
+
+  points.forEach((point) => {
+    const xHash = stableHash(`${point.path}:x`);
+    const yHash = stableHash(`${point.path}:y`);
+    point.x = GRAPH_PADDING + width * normalizeHash(xHash);
+    point.y = GRAPH_PADDING + height * normalizeHash(yHash);
+  });
+}
+
+function seedClusterLayout(points: GraphPoint[], edges: WorkspaceGraphEdge[]): void {
+  const pointByPath = new Map(points.map((point) => [point.path, point]));
+  const adjacency = new Map(points.map((point) => [point.path, new Set<string>()]));
+
+  edges.forEach((edge) => {
+    if (!pointByPath.has(edge.sourcePath) || !pointByPath.has(edge.targetPath)) return;
+    adjacency.get(edge.sourcePath)?.add(edge.targetPath);
+    adjacency.get(edge.targetPath)?.add(edge.sourcePath);
+  });
+
+  const visited = new Set<string>();
+  const components: GraphPoint[][] = [];
+  for (const point of points) {
+    if (visited.has(point.path)) continue;
+
+    const component: GraphPoint[] = [];
+    const stack = [point.path];
+    visited.add(point.path);
+
+    while (stack.length > 0) {
+      const path = stack.pop();
+      if (!path) continue;
+      const current = pointByPath.get(path);
+      if (current) component.push(current);
+
+      for (const nextPath of adjacency.get(path) ?? []) {
+        if (visited.has(nextPath)) continue;
+        visited.add(nextPath);
+        stack.push(nextPath);
+      }
+    }
+
+    components.push(component.sort((a, b) => a.path.localeCompare(b.path, "ja")));
+  }
+
+  components.sort((a, b) => (a[0]?.path ?? "").localeCompare(b[0]?.path ?? "", "ja"));
+  const centerRadius = components.length <= 1 ? 0 : 154;
+  components.forEach((component, componentIndex) => {
+    const centerAngle = (Math.PI * 2 * componentIndex) / Math.max(1, components.length) - Math.PI / 2;
+    const centerX = GRAPH_CENTER_X + Math.cos(centerAngle) * centerRadius;
+    const centerY = GRAPH_CENTER_Y + Math.sin(centerAngle) * centerRadius;
+    const nodeRadius = component.length <= 1 ? 0 : Math.min(92, 34 + component.length * 8);
+
+    component.forEach((point, nodeIndex) => {
+      const angle = (Math.PI * 2 * nodeIndex) / Math.max(1, component.length) - Math.PI / 2;
+      point.x = clamp(centerX + Math.cos(angle) * nodeRadius, GRAPH_PADDING, GRAPH_WIDTH - GRAPH_PADDING);
+      point.y = clamp(centerY + Math.sin(angle) * nodeRadius, GRAPH_PADDING, GRAPH_HEIGHT - GRAPH_PADDING);
+    });
+  });
+}
+
+function stableHash(value: string): number {
+  let hash = 2166136261;
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+}
+
+function normalizeHash(hash: number): number {
+  return hash / 0xffffffff;
+}
+
+function relaxGraphLayout(
+  initial: GraphPoint[],
+  edges: WorkspaceGraphEdge[],
+  forceSettings: GraphForceSettings
+): void {
   const linkedPairs = edges
     .map((edge) => ({
       sourceIndex: initial.findIndex((node) => node.path === edge.sourcePath),
@@ -87,8 +222,10 @@ export function layoutGraph(
       node.y = clamp(node.y + forces[i].y, GRAPH_PADDING, GRAPH_HEIGHT - GRAPH_PADDING);
     }
   }
+}
 
-  return initial.sort((a, b) => {
+function sortGraphPoints(points: GraphPoint[]): GraphPoint[] {
+  return points.sort((a, b) => {
     return a.path.localeCompare(b.path, "ja");
   });
 }

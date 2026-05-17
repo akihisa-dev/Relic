@@ -29,6 +29,7 @@ function renderSimulation(overrides: Partial<Parameters<typeof useGraphSimulatio
     initialProps: {
       edges,
       forceSettings,
+      layoutMode: "standard",
       nodes,
       pauseSimulationRef,
       pinnedPathRef,
@@ -80,6 +81,7 @@ describe("useGraphSimulation", () => {
     hook.rerender({
       edges: [...edges],
       forceSettings,
+      layoutMode: "standard",
       nodes: nodes.map((node) => ({ ...node })),
       pauseSimulationRef: { current: false },
       pinnedPathRef: { current: null }
@@ -92,6 +94,36 @@ describe("useGraphSimulation", () => {
         x: 123,
         y: 234
       });
+    });
+  });
+
+  it("layout mode変更時は新しい配置で再シードする", async () => {
+    const { hook } = renderSimulation();
+
+    await waitFor(() => {
+      expect(hook.result.current.points).toHaveLength(2);
+    });
+    act(() => {
+      hook.result.current.setPoints(hook.result.current.points.map((point) => point.path === "A.md"
+        ? { ...point, x: 123, y: 234, vx: 3, vy: 4 }
+        : point
+      ));
+    });
+    hook.rerender({
+      edges,
+      forceSettings,
+      layoutMode: "scatter",
+      nodes,
+      pauseSimulationRef: { current: false },
+      pinnedPathRef: { current: null }
+    });
+
+    await waitFor(() => {
+      const movedPoint = hook.result.current.points.find((point) => point.path === "A.md");
+      expect(movedPoint?.x).not.toBe(123);
+      expect(movedPoint?.y).not.toBe(234);
+      expect(movedPoint?.vx).toBe(0);
+      expect(movedPoint?.vy).toBe(0);
     });
   });
 

@@ -1,6 +1,7 @@
 import { create } from "zustand";
 
 import type { WorkspaceGraph } from "../../shared/ipc";
+import type { GraphLayoutMode } from "../graphLayout";
 
 export type GraphLinkFilter = "all" | "linked" | "unlinked";
 
@@ -20,6 +21,7 @@ interface GraphState {
   linkFilter: GraphLinkFilter;
   linkForce: number;
   linkDistance: number;
+  layoutMode: GraphLayoutMode;
   linkThickness: number;
   localGraphDepth: number;
   loadedWorkspaceId: string | null;
@@ -43,6 +45,7 @@ interface GraphState {
   setLinkDistance: (value: number) => void;
   setLinkForce: (value: number) => void;
   setLinkFilter: (value: GraphLinkFilter) => void;
+  setLayoutMode: (value: GraphLayoutMode) => void;
   setLinkThickness: (value: number) => void;
   setLocalGraphDepth: (value: number) => void;
   setMinDegree: (value: number) => void;
@@ -71,6 +74,7 @@ export const useGraphStore = create<GraphState>((set, get) => ({
   linkDistance: 118,
   linkFilter: "all",
   linkForce: 1,
+  layoutMode: "standard",
   linkThickness: 1,
   localGraphDepth: 0,
   loadedWorkspaceId: null,
@@ -120,6 +124,7 @@ export const useGraphStore = create<GraphState>((set, get) => ({
     linkDistance: 118,
     linkFilter: "all",
     linkForce: 1,
+    layoutMode: "standard",
     linkThickness: 1,
     localGraphDepth: 0,
     minDegree: 0,
@@ -137,6 +142,7 @@ export const useGraphStore = create<GraphState>((set, get) => ({
   setLinkDistance: (value) => set({ linkDistance: value }),
   setLinkForce: (value) => set({ linkForce: value }),
   setLinkFilter: (value) => set({ linkFilter: value }),
+  setLayoutMode: (value) => set({ layoutMode: value }),
   setLinkThickness: (value) => set({ linkThickness: value }),
   setLocalGraphDepth: (value) => set({ localGraphDepth: value }),
   setMinDegree: (value) => set({ minDegree: value }),

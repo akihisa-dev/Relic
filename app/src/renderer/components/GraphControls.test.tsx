@@ -13,6 +13,7 @@ function resetGraphStore(): void {
     graph: null,
     groups: [],
     isLoading: false,
+    layoutMode: "standard",
     linkDistance: 118,
     linkFilter: "all",
     linkForce: 1,

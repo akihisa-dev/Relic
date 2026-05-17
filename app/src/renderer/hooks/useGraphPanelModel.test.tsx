@@ -26,6 +26,7 @@ function resetGraphStore(overrides: Partial<ReturnType<typeof useGraphStore.getS
     graph: null,
     groups: [],
     isLoading: false,
+    layoutMode: "standard",
     linkDistance: 118,
     linkFilter: "all",
     linkForce: 1,

@@ -50,7 +50,7 @@ describe("App", () => {
     expect(await screen.findByRole("button", { name: /読書メモ/ })).toBeInTheDocument();
   });
 
-  it("レールからグラフビューを開き、検索と選択ノード詳細を表示できる", async () => {
+  it("レールからグラフビューを開き、検索とノード選択を実行できる", async () => {
     const getWorkspaceGraph = vi.fn().mockResolvedValue({
       ok: true,
       value: {
@@ -61,16 +61,17 @@ describe("App", () => {
         ]
       }
     });
+    const readMarkdownFile = vi.fn().mockResolvedValue({
+      ok: true,
+      value: { content: "A body", name: "A", path: "A.md" }
+    });
     window.relic = makeRelicApi({
       getWorkspaceGraph,
       getWorkspaceState: vi.fn().mockResolvedValue({
         ok: true,
         value: withWorkspace
       }),
-      readMarkdownFile: vi.fn().mockResolvedValue({
-        ok: true,
-        value: { content: "A body", name: "A", path: "A.md" }
-      })
+      readMarkdownFile
     });
 
     const { container } = await renderApp();
@@ -88,8 +89,8 @@ describe("App", () => {
     expect(screen.getByText("1 ノード / 0 リンク")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "A" }));
-    expect(await screen.findByText("A", { selector: ".pane-tab-name" })).toBeInTheDocument();
-    expect(screen.getByText("A body")).toBeInTheDocument();
+    await waitFor(() => expect(container.querySelector(".graph-node-selection-ring")).toBeInTheDocument());
+    expect(readMarkdownFile).not.toHaveBeenCalled();
   });
 
   it("ファイルツリーのノートをクリックするとタブが開く", async () => {

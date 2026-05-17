@@ -25,6 +25,7 @@ function resetGraphStore(): void {
     },
     groups: [],
     isLoading: false,
+    layoutMode: "standard",
     linkDistance: 118,
     linkFilter: "all",
     linkForce: 1,
@@ -107,6 +108,7 @@ describe("GraphControlSections", () => {
   it("display sectionで表示設定をstoreへ反映する", () => {
     renderSection(<GraphDisplaySection isOpen onToggle={vi.fn()} />);
 
+    fireEvent.change(screen.getByLabelText("配置"), { target: { value: "cluster" } });
     fireEvent.change(screen.getByLabelText("ズーム"), { target: { value: "1.5" } });
     fireEvent.change(screen.getByLabelText("ノードサイズ"), { target: { value: "1.4" } });
     fireEvent.change(screen.getByLabelText("リンク太さ"), { target: { value: "1.7" } });
@@ -116,6 +118,7 @@ describe("GraphControlSections", () => {
     fireEvent.click(screen.getByLabelText("孤立ノード"));
 
     expect(useGraphStore.getState()).toMatchObject({
+      layoutMode: "cluster",
       linkThickness: 1.7,
       nodeSize: 1.4,
       showArrows: true,

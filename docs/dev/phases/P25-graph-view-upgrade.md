@@ -132,3 +132,9 @@ P25では、事前に固定した長い実施リストは置かない。
 
 - グラフビューの選択済みノードにアクセント色の外周リングを追加し、ホバー演出や関連ノード表示と区別して選択状態が残って見えるようにした。
 - `pnpm exec vitest run src/renderer/components/GraphCanvasLayers.test.tsx src/renderer/components/GraphCanvas.test.tsx src/renderer/hooks/useGraphNodeInteractions.test.tsx src/renderer/hooks/useGraphCanvasInteractions.test.tsx src/renderer/hooks/useGraphPanelModel.test.tsx`、`pnpm typecheck`、`git diff --check` が通過した。Electron実機での目視確認は未実施。
+
+### グラフノード配置モード追加
+
+- グラフビューの表示設定に配置モードを追加し、標準、放射、クラスタ、散布を切り替えられるようにした。初期値は標準のままとし、保存形式、IPC/preload API、Markdownデータ形式は変更しなかった。
+- 配置モード変更時だけ座標を再シードし、同じ配置モードでの再計算、力学シミュレーション、ドラッグ、選択、ホバー演出、ラベル、リンク表示は既存挙動を維持した。
+- `pnpm exec vitest run src/renderer/App.test.tsx src/renderer/graphLayout.test.ts src/renderer/hooks/useGraphSimulation.test.tsx src/renderer/hooks/useGraphCanvasInteractions.test.tsx src/renderer/hooks/useGraphPanelModel.test.tsx src/renderer/components/GraphControlSections.test.tsx src/renderer/components/GraphControls.test.tsx src/renderer/hooks/useGraphNodeInteractions.test.tsx`、`pnpm typecheck`、`pnpm test`、`git diff --check` が通過した。全体テストは78ファイル、533件が通過した。Electron実機での目視確認は未実施。

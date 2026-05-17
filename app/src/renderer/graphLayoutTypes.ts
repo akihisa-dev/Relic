@@ -14,6 +14,8 @@ export interface GraphSimPoint extends GraphPoint {
   vy: number;
 }
 
+export type GraphLayoutMode = "standard" | "radial" | "cluster" | "scatter";
+
 export interface GraphViewModel {
   edges: WorkspaceGraphEdge[];
   nodes: WorkspaceGraphNode[];
