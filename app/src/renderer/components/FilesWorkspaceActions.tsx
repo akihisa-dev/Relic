@@ -95,7 +95,11 @@ function NewFolderIcon(): ReactElement {
 function ExpandAllFoldersIcon(): ReactElement {
   return (
     <svg aria-hidden="true" fill="none" height="22" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="22">
-      <path d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
+      <path d="M3 5h8" />
+      <path d="M3 12h8" />
+      <path d="M3 19h8" />
+      <path d="m15 8 3-3 3 3" />
+      <path d="m15 16 3 3 3-3" />
     </svg>
   );
 }
@@ -103,7 +107,11 @@ function ExpandAllFoldersIcon(): ReactElement {
 function CollapseAllFoldersIcon(): ReactElement {
   return (
     <svg aria-hidden="true" fill="none" height="22" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="22">
-      <path d="M9 9V4.5M9 9H4.5M9 9 3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5 5.25 5.25" />
+      <path d="M3 5h8" />
+      <path d="M3 12h8" />
+      <path d="M3 19h8" />
+      <path d="m15 5 3 3 3-3" />
+      <path d="m15 19 3-3 3 3" />
     </svg>
   );
 }
