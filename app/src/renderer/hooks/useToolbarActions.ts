@@ -53,6 +53,7 @@ export interface UseToolbarActionsResult {
   handleUnderline: () => void;
   linkUrl: string;
   setLinkUrl: (value: string) => void;
+  setTargetView: (view: EditorView | null) => void;
   setTableCols: (value: string) => void;
   setTableRows: (value: string) => void;
   showHeadingMenu: boolean;
@@ -97,6 +98,10 @@ export function useToolbarActions({
 
   const rememberTargetView = (): void => {
     lastTargetViewRef.current = getView();
+  };
+
+  const setTargetView = (view: EditorView | null): void => {
+    lastTargetViewRef.current = view;
   };
 
   const closePanel = (panel: ToolbarPanel, close: () => void, afterClose?: () => void): void => {
@@ -240,6 +245,7 @@ export function useToolbarActions({
     handleUnderline,
     linkUrl,
     setLinkUrl,
+    setTargetView,
     setTableCols,
     setTableRows,
     showHeadingMenu,

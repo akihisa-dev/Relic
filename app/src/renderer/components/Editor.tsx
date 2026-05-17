@@ -236,6 +236,7 @@ export function Editor({
       <EditorContextMenu
         contextMenu={contextMenu}
         markdownActions={markdownActions}
+        onAfterMarkdownAction={onEditorAction}
         onBeforeMarkdownAction={prepareContextSelection}
         onClose={closeContextMenu}
         onCopy={copySelection}
