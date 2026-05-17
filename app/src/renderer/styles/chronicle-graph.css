@@ -130,19 +130,27 @@
   border: 1px solid var(--border);
   border-radius: 6px;
   display: inline-flex;
+  flex: 0 0 auto;
   overflow: hidden;
 }
 
 .chronicle-source-button {
+  align-items: center;
   background: transparent;
   border: 0;
   border-left: 1px solid var(--border);
+  box-sizing: border-box;
   color: var(--text-2);
   cursor: pointer;
+  display: inline-flex;
+  flex: 0 0 auto;
   font-size: 12px;
   height: 26px;
+  justify-content: center;
+  line-height: 1;
   min-width: 70px;
   padding: 0 10px;
+  white-space: nowrap;
 }
 
 .chronicle-source-button:first-child {
