@@ -54,22 +54,21 @@ export function FilesCreateActions({
 
 function NewFileIcon(): ReactElement {
   return (
-    <svg aria-hidden="true" fill="none" height="20" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 20 20" width="20">
-      <path d="M5 3.5h6.5L15 7v9.5H5z" />
-      <path d="M11.5 3.5V7H15" />
-      <path d="M10 9.5v5" />
-      <path d="M7.5 12h5" />
+    <svg aria-hidden="true" fill="none" height="22" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 22 22" width="22">
+      <path d="M4.5 5.5h7.2l4.8 4.8v7.2h-12z" />
+      <path d="M11.7 5.5v4.8h4.8" />
+      <path d="M8.2 14.6 15 7.8l2 2-6.8 6.8-2.8.8z" />
     </svg>
   );
 }
 
 function NewFolderIcon(): ReactElement {
   return (
-    <svg aria-hidden="true" fill="none" height="20" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 20 20" width="20">
-      <path d="M2.8 6.5h5l1.4 1.7h8v7.3H2.8z" />
-      <path d="M2.8 6.5V5h5.4l1.3 1.5" />
-      <path d="M10 9.5v4.2" />
-      <path d="M7.9 11.6h4.2" />
+    <svg aria-hidden="true" fill="none" height="22" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 22 22" width="22">
+      <path d="M3.5 7h5l1.8 2h8.2v8.5h-15z" />
+      <path d="M3.5 7V5.5H9l1.5 1.5" />
+      <path d="M11 10.5v4" />
+      <path d="M9 12.5h4" />
     </svg>
   );
 }
