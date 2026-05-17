@@ -50,13 +50,16 @@ function IconMenuButton({ icon, label, onClick }: IconMenuButtonProps): ReactEle
     <button
       aria-label={label}
       className="tab-context-menu-item editor-context-menu-icon-button"
-      data-tooltip={label}
       onClick={onClick}
+      onMouseDown={(event) => event.preventDefault()}
       role="menuitem"
       title={label}
       type="button"
     >
       {icon}
+      <span aria-hidden="true" className="editor-context-menu-tooltip">
+        {label}
+      </span>
     </button>
   );
 }
@@ -89,30 +92,32 @@ export function EditorContextMenu({
       role="menu"
       style={{ left: contextMenu.x, position: "fixed", top: contextMenu.y, zIndex: 1000 }}
     >
-      <IconMenuButton
-        icon={<CopyIcon className="editor-context-menu-icon" size={16} />}
-        label={t("editor.copy")}
-        onClick={() => {
-          onCopy();
-          onClose();
-        }}
-      />
-      <IconMenuButton
-        icon={<CutIcon className="editor-context-menu-icon" size={16} />}
-        label={t("editor.cut")}
-        onClick={() => {
-          onCut();
-          onClose();
-        }}
-      />
-      <IconMenuButton
-        icon={<PasteIcon className="editor-context-menu-icon" size={16} />}
-        label={t("editor.paste")}
-        onClick={async () => {
-          await onPaste();
-          onClose();
-        }}
-      />
+      <div className="editor-context-menu-grid editor-context-menu-grid--clipboard" role="group">
+        <IconMenuButton
+          icon={<CopyIcon className="editor-context-menu-icon" size={16} />}
+          label={t("editor.copy")}
+          onClick={() => {
+            onCopy();
+            onClose();
+          }}
+        />
+        <IconMenuButton
+          icon={<CutIcon className="editor-context-menu-icon" size={16} />}
+          label={t("editor.cut")}
+          onClick={() => {
+            onCut();
+            onClose();
+          }}
+        />
+        <IconMenuButton
+          icon={<PasteIcon className="editor-context-menu-icon" size={16} />}
+          label={t("editor.paste")}
+          onClick={async () => {
+            await onPaste();
+            onClose();
+          }}
+        />
+      </div>
       <div className="tab-context-menu-separator" />
       <div className="editor-context-menu-section" role="group">
         <div className="editor-context-menu-grid editor-context-menu-grid--inline">
