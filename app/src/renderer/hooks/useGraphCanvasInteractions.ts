@@ -49,7 +49,11 @@ export function useGraphCanvasInteractions({
   viewBox: GraphViewBox;
 } {
   const pinnedPathRef = useRef<string | null>(null);
-  const viewport = useGraphViewportInteractions({ setZoom, zoom });
+  const viewport = useGraphViewportInteractions({
+    onBackgroundClick: () => setSelectedPath(null),
+    setZoom,
+    zoom
+  });
   const simulation = useGraphSimulation({
     edges,
     forceSettings,

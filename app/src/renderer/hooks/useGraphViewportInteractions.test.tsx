@@ -38,15 +38,17 @@ function makeEvent<T extends Element>(overrides: Partial<{
 }
 
 function renderViewport(zoom = 1) {
+  const onBackgroundClick = vi.fn();
   const setZoom = vi.fn();
   const hook = renderHook((props: { zoom: number }) => useGraphViewportInteractions({
+    onBackgroundClick,
     setZoom,
     zoom: props.zoom
   }), {
     initialProps: { zoom }
   });
 
-  return { hook, setZoom };
+  return { hook, onBackgroundClick, setZoom };
 }
 
 describe("useGraphViewportInteractions", () => {
@@ -75,7 +77,7 @@ describe("useGraphViewportInteractions", () => {
   });
 
   it("pointer dragでpanとpanning stateを更新する", () => {
-    const { hook } = renderViewport();
+    const { hook, onBackgroundClick } = renderViewport();
     const svgTarget = {
       getBoundingClientRect: () => ({ height: 520, width: 720 } as DOMRect),
       hasPointerCapture: vi.fn().mockReturnValue(true),
@@ -117,6 +119,29 @@ describe("useGraphViewportInteractions", () => {
 
     expect(hook.result.current.isPanning).toBe(false);
     expect(hook.result.current.pauseSimulationRef.current).toBe(false);
+    expect(onBackgroundClick).not.toHaveBeenCalled();
+  });
+
+  it("背景clickでは背景click callbackを呼ぶ", () => {
+    const { hook, onBackgroundClick } = renderViewport();
+    const svgTarget = {
+      hasPointerCapture: vi.fn().mockReturnValue(true),
+      releasePointerCapture: vi.fn(),
+      setPointerCapture: vi.fn()
+    } as unknown as SVGSVGElement;
+
+    act(() => {
+      hook.result.current.graphHandlers.onPointerDown(makeEvent<SVGSVGElement>({
+        currentTarget: svgTarget,
+        pointerId: 5
+      }));
+      hook.result.current.graphHandlers.onPointerUp(makeEvent<SVGSVGElement>({
+        currentTarget: svgTarget,
+        pointerId: 5
+      }));
+    });
+
+    expect(onBackgroundClick).toHaveBeenCalledTimes(1);
   });
 
   it("node hit上のpointer downではpanを開始しない", () => {
