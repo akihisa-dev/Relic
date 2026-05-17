@@ -58,7 +58,6 @@ function makeEvent<T extends Element>(overrides: Partial<{
 }
 
 function renderInteractions(overrides: Partial<Parameters<typeof useGraphCanvasInteractions>[0]> = {}) {
-  const onOpenFile = vi.fn();
   const setFocusedPath = vi.fn();
   const setSelectedPath = vi.fn();
   const setZoom = vi.fn();
@@ -68,7 +67,6 @@ function renderInteractions(overrides: Partial<Parameters<typeof useGraphCanvasI
       focusedPath: null,
       forceSettings,
       nodes,
-      onOpenFile,
       selectedPath: null,
       setFocusedPath,
       setSelectedPath,
@@ -78,7 +76,7 @@ function renderInteractions(overrides: Partial<Parameters<typeof useGraphCanvasI
     }
   });
 
-  return { hook, onOpenFile, setFocusedPath, setSelectedPath, setZoom };
+  return { hook, setFocusedPath, setSelectedPath, setZoom };
 }
 
 describe("useGraphCanvasInteractions", () => {
@@ -117,8 +115,8 @@ describe("useGraphCanvasInteractions", () => {
     expect(setZoom).toHaveBeenCalledWith(1.1);
   });
 
-  it("node clickで選択更新とopen callbackだけを呼ぶ", async () => {
-    const { hook, onOpenFile, setFocusedPath, setSelectedPath } = renderInteractions();
+  it("node clickでは選択だけ更新し、focus演出状態は変更しない", async () => {
+    const { hook, setFocusedPath, setSelectedPath } = renderInteractions();
 
     await waitFor(() => {
       expect(hook.result.current.points[0]).toBeDefined();
@@ -129,12 +127,11 @@ describe("useGraphCanvasInteractions", () => {
     });
 
     expect(setSelectedPath).toHaveBeenCalledWith("A.md");
-    expect(onOpenFile).toHaveBeenCalledWith("A.md");
     expect(setFocusedPath).not.toHaveBeenCalled();
   });
 
-  it("Enter keyでopen、Space keyで選択のみを実行する", async () => {
-    const { hook, onOpenFile, setSelectedPath } = renderInteractions();
+  it("Enter keyとSpace keyはいずれも選択のみを実行する", async () => {
+    const { hook, setSelectedPath } = renderInteractions();
 
     await waitFor(() => {
       expect(hook.result.current.points[0]).toBeDefined();
@@ -146,9 +143,7 @@ describe("useGraphCanvasInteractions", () => {
     });
 
     expect(setSelectedPath).toHaveBeenCalledWith("A.md");
-    expect(onOpenFile).toHaveBeenCalledWith("A.md");
     expect(setSelectedPath).toHaveBeenCalledWith("B.md");
-    expect(onOpenFile).toHaveBeenCalledTimes(1);
   });
 
   it("node drag中のmoveで対象node座標をbounds内で更新する", async () => {

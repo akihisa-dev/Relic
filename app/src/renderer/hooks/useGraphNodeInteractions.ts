@@ -20,7 +20,6 @@ interface GraphNodeDragState {
 
 interface UseGraphNodeInteractionsInput {
   getGraphDelta: (deltaX: number, deltaY: number) => GraphPan;
-  onOpenFile: (path: string) => void;
   pinnedPathRef: MutableRefObject<string | null>;
   pointsRef: MutableRefObject<GraphSimPoint[]>;
   setFocusedPath: (path: string | null | ((current: string | null) => string | null)) => void;
@@ -41,7 +40,6 @@ export interface GraphNodeHandlers {
 
 export function useGraphNodeInteractions({
   getGraphDelta,
-  onOpenFile,
   pinnedPathRef,
   pointsRef,
   setFocusedPath,
@@ -57,7 +55,6 @@ export function useGraphNodeInteractions({
       return;
     }
     setSelectedPath(point.path);
-    onOpenFile(point.path);
   }
 
   function handleNodePointerDown(event: PointerEvent<SVGGElement>, point: GraphPoint): void {
@@ -130,7 +127,6 @@ export function useGraphNodeInteractions({
     if (event.key === "Enter") {
       event.preventDefault();
       setSelectedPath(point.path);
-      onOpenFile(point.path);
     }
     if (event.key === " ") {
       event.preventDefault();
