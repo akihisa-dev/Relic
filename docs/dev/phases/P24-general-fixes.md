@@ -146,3 +146,10 @@ P24では、事前に固定した長い実施リストは置かない。
 - 実施: ファイルビューのプロパティ検索フィールドを登録済み候補から選ぶselectに変更し、renderer/mainとも未登録プロパティ検索を結果なしにした。固定プロパティ、予約名、日付レンジ入力、チャート読み取り・書き戻しから旧 `date:` 互換を外し、`plannedDate` / `actualDate` のみをチャート日付フィールドとして扱うようにした。`date` はカスタムプロパティ名として登録可能に戻し、検索・フロントマター仕様文書も更新した
 - 確認: `pnpm exec vitest run src/renderer/filesSidebarModel.test.ts src/renderer/components/FilesSidebarSearch.test.tsx src/renderer/App.test.tsx src/main/files/chronicle.test.ts src/renderer/ganttChartData.test.ts src/renderer/frontmatterSettingsModel.test.ts src/renderer/components/SettingsSidebar.test.tsx src/main/ipc/workspaceHandlerValidators.test.ts src/renderer/components/Editor.test.tsx -t "検索|search|date|Date|プロパティ|frontmatter|Frontmatter|chronicle|チャート|field|Field"`、`pnpm typecheck` が通過した
 - 残り: 実ワークスペースを開いたElectron実機で、プロパティ検索候補のselect表示と旧 `date:` のチャート非表示を目視確認する作業は未実施
+
+### フェーズ終了
+
+- 方向性: P24は、P23後の全般修正として扱った補助パネルUI、チャートビュー、検索、プロパティ/date整理までを完了範囲にして終了する
+- 実施: ユーザー指示によりP24を終了扱いにし、次フェーズをP25グラフビューアップグレードへ移す
+- 確認: P24終了時点の最終確認は、各修正単位の記録に従う
+- 残り: グラフビュー固有の改善はP25で扱う

@@ -72,6 +72,7 @@ describe("GraphControls", () => {
     await waitFor(() => {
       expect(window.relic?.getWorkspaceGraph).toHaveBeenCalledTimes(1);
     });
+    fireEvent.click(screen.getByTitle("展開"));
     fireEvent.click(screen.getByRole("button", { name: /フィルタ/ }));
 
     expect(screen.getByPlaceholderText("ファイル名・パス")).toBeInTheDocument();
@@ -83,10 +84,8 @@ describe("GraphControls", () => {
     expect(screen.getByRole("option", { name: "リンクあり" })).toBeInTheDocument();
   });
 
-  it("最小化と展開を既存文言で切り替える", () => {
+  it("初期表示は閉じた状態で、展開と最小化を既存文言で切り替える", () => {
     renderGraphControls();
-
-    fireEvent.click(screen.getByTitle("最小化"));
 
     expect(screen.getByTitle("展開")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "展開" }).querySelector("svg")).toBeInTheDocument();
@@ -103,6 +102,7 @@ describe("GraphControls", () => {
       expect(window.relic?.getWorkspaceGraph).toHaveBeenCalledTimes(1);
     });
 
+    fireEvent.click(screen.getByTitle("展開"));
     fireEvent.click(screen.getByTitle("再読み込み"));
 
     await waitFor(() => {
