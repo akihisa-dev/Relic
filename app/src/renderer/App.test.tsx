@@ -549,9 +549,9 @@ describe("App", () => {
     expect(useUiStore.getState().isRightPanelOpen).toBe(false);
     expect(useUiStore.getState().rightPanelView).toBe("outline");
 
-    const tabActions = document.querySelector(".pane-tab-actions");
-    expect(tabActions).toBeInstanceOf(HTMLElement);
-    expect(within(tabActions as HTMLElement).queryByRole("button", { name: "フロントマター" })).not.toBeInTheDocument();
+    const mainActions = document.querySelector(".main-area-actions");
+    expect(mainActions).toBeInstanceOf(HTMLElement);
+    expect(within(mainActions as HTMLElement).queryByRole("button", { name: "フロントマター" })).not.toBeInTheDocument();
 
     fireEvent.click(linksButton);
 

@@ -5,6 +5,7 @@ import type { Backlink, EditorSettings, UserDefinedField } from "../../shared/ip
 import type { ResolvedWikiLink } from "../../shared/links";
 import type { AppLinkContextMenu } from "../appLinks";
 import type { OutlineHeading } from "../editorDerivedState";
+import { useT } from "../i18n";
 import type { PaneId, PanelTabKind } from "../store/editorStore";
 import type { RightPanelView } from "../store/uiStore";
 import { AppRightPanel } from "./AppRightPanel";
@@ -119,8 +120,48 @@ export function AppEditorWorkspace({
   userDefinedFields,
   workspacePath
 }: AppEditorWorkspaceProps): ReactElement {
+  const t = useT();
+
   return (
     <main className="main-area">
+      <div className="main-area-actions">
+        <button
+          className={`toolbar-btn${isSourceMode ? " active" : ""}`}
+          onClick={onSourceModeToggle}
+          title={t("pane.sourceMode")}
+          type="button"
+        >
+          {t("pane.sourceShort")}
+        </button>
+        <button
+          className={`toolbar-btn${isSplit ? " active" : ""}`}
+          onClick={onSplitToggle}
+          title={t("pane.split")}
+          type="button"
+        >
+          {t("pane.splitShort")}
+        </button>
+        {showRightPanelControls ? (
+          <>
+            <button
+              className={`toolbar-btn${rightPanelView === "outline" && isRightPanelOpen ? " active" : ""}`}
+              onClick={() => onRightPanelViewButton("outline")}
+              title={t("pane.toggleOutline")}
+              type="button"
+            >
+              {t("pane.outline")}
+            </button>
+            <button
+              className={`toolbar-btn${rightPanelView === "links" && isRightPanelOpen ? " active" : ""}`}
+              onClick={() => onRightPanelViewButton("links")}
+              title={t("pane.toggleLinks")}
+              type="button"
+            >
+              {t("pane.links")}
+            </button>
+          </>
+        ) : null}
+      </div>
       <div className="editor-layout">
         <div className="editor-workspace">
           <div className={`panes-container${isSplit ? " panes-container--split" : ""}${isSplitClosing ? " panes-container--closing-split" : ""}`}>
@@ -132,8 +173,6 @@ export function AppEditorWorkspace({
               focusedPane={focusedPane}
               frontmatterCandidates={frontmatterCandidates}
               isSplitView={isSplit}
-              isRightPanelOpen={isRightPanelOpen}
-              isSplit={isSplit}
               pane="left"
               pinnedPaths={pinnedPaths}
               renderGanttChartTab={renderGanttChartTab}
@@ -157,17 +196,12 @@ export function AppEditorWorkspace({
               onOpenLink={onOpenLink}
               onOpenWikiLink={onOpenWikiLink}
               onRenameFile={onRenameFile}
-              onRightPanelViewButton={onRightPanelViewButton}
               onRevealTabFile={onRevealTabFile}
               onScrollTargetHandled={() => onScrollTargetHandled("left")}
               onTabClose={(tabId) => onTabClose("left", tabId)}
               onTabMove={onTabMove}
               onTabSelect={(tabId) => onTabSelect("left", tabId)}
               onTogglePinTab={onTogglePinTab}
-              onSourceModeToggle={onSourceModeToggle}
-              onSplitToggle={onSplitToggle}
-              rightPanelView={rightPanelView}
-              showRightPanelControls={showRightPanelControls}
             />
             {isSplit ? (
               <PaneView
@@ -178,8 +212,6 @@ export function AppEditorWorkspace({
                 focusedPane={focusedPane}
                 frontmatterCandidates={frontmatterCandidates}
                 isSplitView={isSplit}
-                isRightPanelOpen={isRightPanelOpen}
-                isSplit={isSplit}
                 pane="right"
                 pinnedPaths={pinnedPaths}
                 renderGanttChartTab={renderGanttChartTab}
@@ -203,17 +235,12 @@ export function AppEditorWorkspace({
                 onOpenLink={onOpenLink}
                 onOpenWikiLink={onOpenWikiLink}
                 onRenameFile={onRenameFile}
-                onRightPanelViewButton={onRightPanelViewButton}
                 onRevealTabFile={onRevealTabFile}
                 onScrollTargetHandled={() => onScrollTargetHandled("right")}
                 onTabClose={(tabId) => onTabClose("right", tabId)}
                 onTabMove={onTabMove}
                 onTabSelect={(tabId) => onTabSelect("right", tabId)}
                 onTogglePinTab={onTogglePinTab}
-                onSourceModeToggle={onSourceModeToggle}
-                onSplitToggle={onSplitToggle}
-                rightPanelView={rightPanelView}
-                showRightPanelControls={showRightPanelControls}
               />
             ) : null}
           </div>

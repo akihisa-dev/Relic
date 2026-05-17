@@ -10,6 +10,20 @@
   min-height: 0;
   min-width: 0;
   overflow: hidden;
+  position: relative;
+}
+
+.main-area-actions {
+  align-items: center;
+  background: var(--sidebar-bg);
+  display: flex;
+  gap: 8px;
+  min-height: 35px;
+  padding: 0 8px 0 12px;
+  position: absolute;
+  right: 0;
+  top: 0;
+  z-index: 18;
 }
 
 .editor-layout {
@@ -276,21 +290,7 @@
   position: relative;
 }
 
-.pane-tab-actions {
-  align-items: center;
-  background: var(--sidebar-bg);
-  display: flex;
-  flex: 0 0 auto;
-  gap: 8px;
-  margin-left: auto;
-  min-height: 35px;
-  padding-left: 12px;
-  position: sticky;
-  right: 0;
-  z-index: 8;
-}
-
-.pane-tab-actions .toolbar-btn {
+.main-area-actions .toolbar-btn {
   background: transparent;
   border-color: transparent;
   box-shadow: none;
@@ -299,14 +299,14 @@
   text-align: center;
 }
 
-.pane-tab-actions .toolbar-btn:hover {
+.main-area-actions .toolbar-btn:hover {
   background: transparent;
   border-color: transparent;
   box-shadow: none;
   color: var(--text);
 }
 
-.pane-tab-actions .toolbar-btn.active {
+.main-area-actions .toolbar-btn.active {
   background: transparent;
   border-color: transparent;
   box-shadow: none;
