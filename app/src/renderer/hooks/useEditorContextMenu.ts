@@ -7,6 +7,7 @@ import {
   readEditorClipboardForPaste,
   writeEditorClipboardText
 } from "../editorClipboard";
+import { setContextSelectionHighlightEffect } from "../editorContextSelectionHighlight";
 import {
   editorContextMenuPosition,
   type EditorContextMenuState
@@ -20,7 +21,10 @@ export function useEditorContextMenu({ viewRef }: UseEditorContextMenuInput) {
   const lastSelectionRef = useRef<{ from: number; text: string; to: number } | null>(null);
   const [contextMenu, setContextMenu] = useState<EditorContextMenuState | null>(null);
 
-  const closeContextMenu = useCallback((): void => setContextMenu(null), []);
+  const closeContextMenu = useCallback((): void => {
+    viewRef.current?.dispatch({ effects: setContextSelectionHighlightEffect.of(null) });
+    setContextMenu(null);
+  }, [viewRef]);
 
   const rememberSelection = useCallback((state: EditorState): void => {
     const selection = state.selection.main;
@@ -73,11 +77,15 @@ export function useEditorContextMenu({ viewRef }: UseEditorContextMenuInput) {
 
     if (selectionFrom !== selectionTo) {
       view.dispatch({
+        effects: setContextSelectionHighlightEffect.of({ from: selectionFrom, to: selectionTo }),
         selection: {
           anchor: selectionFrom,
           head: selectionTo
         }
       });
+      view.focus();
+    } else {
+      view.dispatch({ effects: setContextSelectionHighlightEffect.of(null) });
     }
 
     setContextMenu({

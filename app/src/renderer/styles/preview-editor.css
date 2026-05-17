@@ -240,6 +240,11 @@
 }
 .cm-live-highlight { background: var(--highlight); border-radius: 2px; }
 
+.cm-context-selection-highlight {
+  background: var(--highlight);
+  border-radius: 2px;
+}
+
 .cm-live-frontmatter {
   color: var(--text-3);
   font-family: Menlo, monospace;
