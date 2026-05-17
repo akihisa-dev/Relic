@@ -14,6 +14,7 @@ export const GRAPH_AFTERGLOW_DURATION_MS = 1000;
 
 interface UseGraphPanelModelInput {
   activeFilePath: string | null;
+  onOpenFile: (path: string) => void;
   workspaceId: string | null;
 }
 
@@ -37,6 +38,7 @@ export interface GraphPanelModel {
 
 export function useGraphPanelModel({
   activeFilePath,
+  onOpenFile,
   workspaceId
 }: UseGraphPanelModelInput): GraphPanelModel {
   const {
@@ -141,6 +143,7 @@ export function useGraphPanelModel({
     focusedPath,
     forceSettings,
     nodes: filteredGraph.nodes,
+    onOpenFile,
     selectedPath,
     setFocusedPath: setMotionFocusedPath,
     setSelectedPath,

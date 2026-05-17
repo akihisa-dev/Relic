@@ -11,10 +11,11 @@ export { buildGraphViewBox } from "../graphLayout";
 
 interface GraphPanelProps {
   activeFilePath: string | null;
+  onOpenFile: (path: string) => void;
   workspaceId: string | null;
 }
 
-export function GraphPanel({ activeFilePath, workspaceId }: GraphPanelProps): ReactElement {
+export function GraphPanel({ activeFilePath, onOpenFile, workspaceId }: GraphPanelProps): ReactElement {
   const t = useT();
   const floatingPanel = useGraphFloatingPanelPosition();
   const {
@@ -35,6 +36,7 @@ export function GraphPanel({ activeFilePath, workspaceId }: GraphPanelProps): Re
     showLabels
   } = useGraphPanelModel({
     activeFilePath,
+    onOpenFile,
     workspaceId
   });
 

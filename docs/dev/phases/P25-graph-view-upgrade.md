@@ -122,8 +122,8 @@ P25では、事前に固定した長い実施リストは置かない。
 - 演出用に `hoveredPath` と `afterglowPath` を分け、`motionPath` だけを伝播と鼓動のトリガーに使うようにした。低モーション設定では新規アニメーションも既存の短縮ルールへ含めた。
 - `pnpm exec vitest run src/renderer/components/GraphCanvasLayers.test.tsx src/renderer/components/GraphCanvas.test.tsx src/renderer/hooks/useGraphCanvasInteractions.test.tsx src/renderer/hooks/useGraphPanelModel.test.tsx`、`pnpm typecheck`、`git diff --check` が通過した。Electron実機での目視確認は未実施。
 
-### グラフノードのファイルオープン抑止
+### グラフノードの二段階クリック化
 
-- グラフビューのノードクリックとEnterキー操作からファイルオープン処理を外し、クリック、Enter、Spaceはいずれもノード選択だけを行うようにした。
-- `GraphPanel` から不要になった `onOpenFile` 経路を削除し、グラフビュー内のドラッグ、ホバー演出、選択状態は維持した。
+- グラフビューの未選択ノードをクリックした場合は選択だけ行い、選択済みノードを改めてクリックした場合だけファイルを開くようにした。ダブルクリック判定は追加せず、EnterキーとSpaceキーは選択だけを行う。
+- クリック開始時点で選択済みだったかを判定し、初回クリックの `pointerDown` による選択更新ではファイルを開かないようにした。グラフビュー内のドラッグ、ホバー演出、余韻表示は維持した。
 - `pnpm exec vitest run src/renderer/hooks/useGraphNodeInteractions.test.tsx src/renderer/hooks/useGraphCanvasInteractions.test.tsx src/renderer/hooks/useGraphPanelModel.test.tsx src/renderer/components/GraphCanvas.test.tsx src/renderer/components/GraphCanvasLayers.test.tsx`、`pnpm typecheck`、`git diff --check` が通過した。Electron実機での目視確認は未実施。
