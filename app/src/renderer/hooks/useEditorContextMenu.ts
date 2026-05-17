@@ -4,7 +4,6 @@ import type { MouseEvent as ReactMouseEvent, MutableRefObject } from "react";
 
 import {
   readEditorClipboardForPaste,
-  usesElectronNativeEditorMenu,
   writeEditorClipboardText
 } from "../editorClipboard";
 import {
@@ -25,7 +24,6 @@ export function useEditorContextMenu({ viewRef }: UseEditorContextMenuInput) {
   const openContextMenu = useCallback((event: MouseEvent, view: EditorView): boolean => {
     const target = event.target;
     if (target instanceof HTMLElement && target.closest(".cm-live-table")) return false;
-    if (usesElectronNativeEditorMenu()) return false;
 
     event.preventDefault();
     const position = editorContextMenuPosition(event.clientX, event.clientY);
@@ -136,6 +134,19 @@ export function useEditorContextMenu({ viewRef }: UseEditorContextMenuInput) {
     view.focus();
   }, [viewRef]);
 
+  const prepareContextSelection = useCallback((): void => {
+    const view = viewRef.current;
+    if (!view || !contextMenu) return;
+
+    view.dispatch({
+      selection: {
+        anchor: contextMenu.selectionFrom,
+        head: contextMenu.selectionTo
+      }
+    });
+    view.focus();
+  }, [contextMenu, viewRef]);
+
   useEffect(() => {
     if (!contextMenu) return;
     const handlePointerDown = (event: PointerEvent): void => {
@@ -164,6 +175,7 @@ export function useEditorContextMenu({ viewRef }: UseEditorContextMenuInput) {
     openContextMenu,
     openReactContextMenu,
     pasteClipboard,
+    prepareContextSelection,
     selectAll
   };
 }

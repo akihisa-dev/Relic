@@ -48,7 +48,3 @@ export async function readEditorClipboardForPaste(): Promise<string> {
 
   return "";
 }
-
-export function usesElectronNativeEditorMenu(): boolean {
-  return Boolean(window.relic?.readClipboardText && window.relic.writeClipboardText);
-}
