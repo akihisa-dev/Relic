@@ -6,32 +6,10 @@
   background: var(--bg);
   display: grid;
   flex: 1 1 auto;
-  grid-template-rows: 40px minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
   min-height: 0;
   min-width: 0;
   overflow: hidden;
-}
-
-.main-area-top-bar {
-  align-items: center;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  gap: 8px;
-  padding: 0 12px;
-  -webkit-app-region: drag;
-}
-
-.main-area-top-bar button,
-.main-area-top-bar input,
-.main-area-top-bar form {
-  -webkit-app-region: no-drag;
-}
-
-.main-area-top-actions {
-  align-items: center;
-  display: flex;
-  gap: 4px;
-  margin-left: auto;
 }
 
 .editor-layout {
@@ -138,10 +116,6 @@
   border-color: var(--border-soft);
   box-shadow: inset 0 2px 0 var(--accent);
   color: var(--text);
-}
-
-.main-area-top-actions .toolbar-btn.active {
-  box-shadow: none;
 }
 
 .toolbar-dropdown {
@@ -300,6 +274,20 @@
   overflow-x: auto;
   padding: 0 8px;
   position: relative;
+}
+
+.pane-tab-actions {
+  align-items: center;
+  background: var(--sidebar-bg);
+  display: flex;
+  flex: 0 0 auto;
+  gap: 4px;
+  margin-left: auto;
+  min-height: 35px;
+  padding-left: 12px;
+  position: sticky;
+  right: 0;
+  z-index: 8;
 }
 
 .pane-tab-bar::-webkit-scrollbar {

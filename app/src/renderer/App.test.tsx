@@ -549,9 +549,9 @@ describe("App", () => {
     expect(useUiStore.getState().isRightPanelOpen).toBe(false);
     expect(useUiStore.getState().rightPanelView).toBe("outline");
 
-    const topActions = document.querySelector(".main-area-top-actions");
-    expect(topActions).toBeInstanceOf(HTMLElement);
-    expect(within(topActions as HTMLElement).queryByRole("button", { name: "フロントマター" })).not.toBeInTheDocument();
+    const tabActions = document.querySelector(".pane-tab-actions");
+    expect(tabActions).toBeInstanceOf(HTMLElement);
+    expect(within(tabActions as HTMLElement).queryByRole("button", { name: "フロントマター" })).not.toBeInTheDocument();
 
     fireEvent.click(linksButton);
 
@@ -1825,18 +1825,7 @@ describe("App", () => {
     expect(removeWorkspace).toHaveBeenCalledWith({ workspaceId: "ws-1" });
   });
 
-  it("RenameBar からアクティブファイルをリネームする", async () => {
-    const renameMarkdownFile = vi.fn().mockResolvedValue({
-      ok: true,
-      value: {
-        file: { content: "本文テスト", name: "読書ログ", path: "読書ログ.md" },
-        workspaceState: {
-          ...withWorkspace,
-          fileTree: [{ name: "読書ログ", path: "読書ログ.md", type: "file" }]
-        }
-      }
-    });
-
+  it("本文上部にアクティブファイル名を本文外の表示として出す", async () => {
     window.relic = makeRelicApi({
       getWorkspaceState: vi.fn().mockResolvedValue({
         ok: true,
@@ -1848,23 +1837,17 @@ describe("App", () => {
       readMarkdownFile: vi.fn().mockResolvedValue({
         ok: true,
         value: { content: "本文テスト", name: "読書メモ", path: "読書メモ.md" }
-      }),
-      renameMarkdownFile
+      })
     });
 
     const { container } = await renderApp();
 
     fireEvent.click(await screen.findByRole("button", { name: /読書メモ/ }));
-    fireEvent.click(await screen.findByTitle("クリックして名前を変更"));
-    fireEvent.change(container.querySelector(".rename-bar-input") as HTMLInputElement, {
-      target: { value: "読書ログ" }
-    });
-    fireEvent.submit(container.querySelector(".rename-bar-form") as HTMLFormElement);
 
-    await waitFor(() => {
-      expect(renameMarkdownFile).toHaveBeenCalledWith({ newName: "読書ログ", path: "読書メモ.md" });
-    });
-    expect((await screen.findAllByText("読書ログ")).length).toBeGreaterThan(0);
+    const title = await screen.findByText("読書メモ", { selector: ".editor-file-title" });
+    expect(title).toBeInTheDocument();
+    expect(container.querySelector(".cm-content")).toHaveTextContent("本文テスト");
+    expect(container.querySelector(".cm-content")).not.toHaveTextContent("読書メモ");
   });
 
   it("ファイルツリーの右クリックメニューからインラインでリネームする", async () => {

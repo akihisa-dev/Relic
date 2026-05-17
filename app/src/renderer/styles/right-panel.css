@@ -100,58 +100,6 @@
 }
 
 /* ────────────────────────────────── */
-/* Rename bar                         */
-/* ────────────────────────────────── */
-
-.rename-bar-label {
-  animation: inline-control-in 150ms cubic-bezier(.18, 1.18, .28, 1);
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: 5px;
-  color: var(--text);
-  font-size: 13px;
-  font-weight: 500;
-  max-width: 320px;
-  min-height: 28px;
-  overflow: hidden;
-  padding: 0 8px;
-  text-align: left;
-  text-overflow: ellipsis;
-  transition: border-color 120ms ease, background-color 120ms ease, transform 120ms cubic-bezier(.18, 1.35, .28, 1);
-  white-space: nowrap;
-}
-
-.rename-bar-label:hover {
-  background: var(--hover);
-  border-color: rgba(31, 35, 40, 0.15);
-  transform: translateX(1px);
-}
-
-.rename-bar-form {
-  animation: inline-control-in 150ms cubic-bezier(.18, 1.18, .28, 1);
-  flex: 1;
-  max-width: 320px;
-  transform-origin: left center;
-}
-
-.rename-bar-input {
-  border: 1px solid var(--border-medium);
-  border-radius: 5px;
-  font-size: 13px;
-  min-height: 28px;
-  outline: none;
-  padding: 0 8px;
-  transition: border-color 140ms ease, box-shadow 140ms ease, transform 120ms cubic-bezier(.18, 1.35, .28, 1);
-  width: 100%;
-}
-
-.rename-bar-input:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 2px var(--accent-soft);
-  transform: scale(1.01);
-}
-
-/* ────────────────────────────────── */
 /* Right panel                        */
 /* ────────────────────────────────── */
 

@@ -8,11 +8,9 @@ import type { OutlineHeading } from "../editorDerivedState";
 import type { PaneId, PanelTabKind } from "../store/editorStore";
 import type { RightPanelView } from "../store/uiStore";
 import { AppRightPanel } from "./AppRightPanel";
-import { AppTopBar } from "./AppTopBar";
 import { PaneView } from "./PaneView";
 
 interface AppEditorWorkspaceProps {
-  activeFileName: string | null;
   allFilePaths: string[];
   backlinks: Backlink[];
   editorActionPulse: number;
@@ -35,13 +33,11 @@ interface AppEditorWorkspaceProps {
   onDuplicateTabFile?: (tabId: string) => void;
   onEditorAction: () => void;
   onFileSaved: () => void;
-  onMoveActiveFile: (destinationFolder: string) => void;
   onOpenFile: (path: string) => void;
   onOpenInOtherPane: (pane: PaneId, tabId: string) => void;
   onOpenLink: (href: string) => void;
   onOpenWikiLink: (target: string, heading?: string) => void;
   onOutlineHeadingClick: (heading: string) => void;
-  onRenameActiveFile: (name: string) => void;
   onRevealTabFile?: (tabId: string) => void;
   onRightPanelViewButton: (view: RightPanelView) => void;
   onScrollTargetHandled: (pane: PaneId) => void;
@@ -69,7 +65,6 @@ interface AppEditorWorkspaceProps {
 }
 
 export function AppEditorWorkspace({
-  activeFileName,
   allFilePaths,
   backlinks,
   editorActionPulse,
@@ -92,13 +87,11 @@ export function AppEditorWorkspace({
   onDuplicateTabFile,
   onEditorAction,
   onFileSaved,
-  onMoveActiveFile,
   onOpenFile,
   onOpenInOtherPane,
   onOpenLink,
   onOpenWikiLink,
   onOutlineHeadingClick,
-  onRenameActiveFile,
   onRevealTabFile,
   onRightPanelViewButton,
   onScrollTargetHandled,
@@ -126,20 +119,6 @@ export function AppEditorWorkspace({
 }: AppEditorWorkspaceProps): ReactElement {
   return (
     <main className="main-area">
-      <AppTopBar
-        activeFileName={activeFileName}
-        isRightPanelOpen={isRightPanelOpen}
-        isSourceMode={isSourceMode}
-        isSplit={isSplit}
-        onMoveActiveFile={onMoveActiveFile}
-        onRenameActiveFile={onRenameActiveFile}
-        onRightPanelViewButton={onRightPanelViewButton}
-        onSourceModeToggle={onSourceModeToggle}
-        onSplitToggle={onSplitToggle}
-        rightPanelView={rightPanelView}
-        showRightPanelControls={showRightPanelControls}
-      />
-
       <div className="editor-layout">
         <div className="editor-workspace">
           <div className={`panes-container${isSplit ? " panes-container--split" : ""}${isSplitClosing ? " panes-container--closing-split" : ""}`}>
@@ -151,6 +130,8 @@ export function AppEditorWorkspace({
               focusedPane={focusedPane}
               frontmatterCandidates={frontmatterCandidates}
               isSplitView={isSplit}
+              isRightPanelOpen={isRightPanelOpen}
+              isSplit={isSplit}
               pane="left"
               pinnedPaths={pinnedPaths}
               renderGanttChartTab={renderGanttChartTab}
@@ -173,12 +154,17 @@ export function AppEditorWorkspace({
               onOpenInOtherPane={(tabId) => onOpenInOtherPane("left", tabId)}
               onOpenLink={onOpenLink}
               onOpenWikiLink={onOpenWikiLink}
+              onRightPanelViewButton={onRightPanelViewButton}
               onRevealTabFile={onRevealTabFile}
               onScrollTargetHandled={() => onScrollTargetHandled("left")}
               onTabClose={(tabId) => onTabClose("left", tabId)}
               onTabMove={onTabMove}
               onTabSelect={(tabId) => onTabSelect("left", tabId)}
               onTogglePinTab={onTogglePinTab}
+              onSourceModeToggle={onSourceModeToggle}
+              onSplitToggle={onSplitToggle}
+              rightPanelView={rightPanelView}
+              showRightPanelControls={showRightPanelControls}
             />
             {isSplit ? (
               <PaneView
@@ -189,6 +175,8 @@ export function AppEditorWorkspace({
                 focusedPane={focusedPane}
                 frontmatterCandidates={frontmatterCandidates}
                 isSplitView={isSplit}
+                isRightPanelOpen={isRightPanelOpen}
+                isSplit={isSplit}
                 pane="right"
                 pinnedPaths={pinnedPaths}
                 renderGanttChartTab={renderGanttChartTab}
@@ -211,12 +199,17 @@ export function AppEditorWorkspace({
                 onOpenInOtherPane={(tabId) => onOpenInOtherPane("right", tabId)}
                 onOpenLink={onOpenLink}
                 onOpenWikiLink={onOpenWikiLink}
+                onRightPanelViewButton={onRightPanelViewButton}
                 onRevealTabFile={onRevealTabFile}
                 onScrollTargetHandled={() => onScrollTargetHandled("right")}
                 onTabClose={(tabId) => onTabClose("right", tabId)}
                 onTabMove={onTabMove}
                 onTabSelect={(tabId) => onTabSelect("right", tabId)}
                 onTogglePinTab={onTogglePinTab}
+                onSourceModeToggle={onSourceModeToggle}
+                onSplitToggle={onSplitToggle}
+                rightPanelView={rightPanelView}
+                showRightPanelControls={showRightPanelControls}
               />
             ) : null}
           </div>

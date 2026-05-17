@@ -6,6 +6,7 @@ import { useAutoSave } from "../hooks/useAutoSave";
 import { usePaneHeadingScroll } from "../hooks/usePaneHeadingScroll";
 import { usePaneTabInteractions } from "../hooks/usePaneTabInteractions";
 import { useEditorStore, type PaneId, type PanelTabKind } from "../store/editorStore";
+import type { RightPanelView } from "../store/uiStore";
 import { PaneContentSurface } from "./PaneContentSurface";
 import { PaneTabBar } from "./PaneTabBar";
 import { PaneTabContextMenu } from "./PaneTabContextMenu";
@@ -17,6 +18,8 @@ export interface PaneViewProps {
   editorSettings: EditorSettings;
   focusedPane: PaneId;
   frontmatterCandidates: Record<string, string[]>;
+  isRightPanelOpen: boolean;
+  isSplit: boolean;
   pane: PaneId;
   scrollTargetHeading?: string;
   typewriterMode: boolean;
@@ -32,7 +35,10 @@ export interface PaneViewProps {
   onOpenLink?: (href: string) => void;
   onOpenWikiLink?: (target: string, heading?: string) => void;
   onFileSaved?: (path: string) => void;
+  onRightPanelViewButton: (view: RightPanelView) => void;
   onScrollTargetHandled?: () => void;
+  onSourceModeToggle: () => void;
+  onSplitToggle: () => void;
   onTabClose: (tabId: string) => void;
   onTabMove: (fromPane: PaneId, toPane: PaneId, tabId: string, targetTabId?: string | null, position?: "before" | "after") => void;
   onTabSelect: (tabId: string) => void;
@@ -44,6 +50,8 @@ export interface PaneViewProps {
   onRevealTabFile?: (tabId: string) => void;
   onTogglePinTab?: (tabId: string) => void;
   pinnedPaths?: Set<string>;
+  rightPanelView: RightPanelView;
+  showRightPanelControls: boolean;
   isSplitView: boolean;
   sourceMode: boolean;
 }
@@ -55,6 +63,8 @@ export function PaneView({
   editorSettings,
   focusedPane,
   frontmatterCandidates,
+  isRightPanelOpen,
+  isSplit,
   pane,
   scrollTargetHeading,
   typewriterMode,
@@ -69,7 +79,10 @@ export function PaneView({
   onOpenLink,
   onOpenWikiLink,
   onFileSaved,
+  onRightPanelViewButton,
   onScrollTargetHandled,
+  onSourceModeToggle,
+  onSplitToggle,
   onTabClose,
   onTabMove,
   onTabSelect,
@@ -82,6 +95,8 @@ export function PaneView({
   onRevealTabFile,
   onTogglePinTab,
   pinnedPaths,
+  rightPanelView,
+  showRightPanelControls,
   isSplitView,
   sourceMode
 }: PaneViewProps): ReactElement {
@@ -130,6 +145,15 @@ export function PaneView({
         renderPanelTabIcon={renderPanelTabIcon}
         tabDropTarget={tabDropTarget}
         tabs={tabs}
+        showControls={focusedPane === pane}
+        isRightPanelOpen={isRightPanelOpen}
+        isSourceMode={sourceMode}
+        isSplit={isSplit}
+        onRightPanelViewButton={onRightPanelViewButton}
+        onSourceModeToggle={onSourceModeToggle}
+        onSplitToggle={onSplitToggle}
+        rightPanelView={rightPanelView}
+        showRightPanelControls={showRightPanelControls}
         onContextMenuOpen={openContextMenu}
         onTabBarDragLeave={handleTabBarDragLeave}
         onTabBarDragOver={handleTabBarDragOver}
