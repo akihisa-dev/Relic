@@ -300,15 +300,17 @@
 }
 
 .pane-tab-actions .toolbar-btn:hover {
-  background: color-mix(in srgb, var(--hover) 58%, transparent);
+  background: transparent;
   border-color: transparent;
   box-shadow: none;
+  color: var(--text);
 }
 
 .pane-tab-actions .toolbar-btn.active {
-  background: color-mix(in srgb, var(--hover) 72%, transparent);
+  background: transparent;
   border-color: transparent;
-  box-shadow: inset 0 -2px 0 var(--text);
+  box-shadow: none;
+  color: var(--text);
 }
 
 .pane-tab-bar::-webkit-scrollbar {
