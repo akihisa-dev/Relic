@@ -2835,6 +2835,58 @@ describe("App", () => {
     expect((await screen.findAllByText("#資料")).length).toBeGreaterThan(0);
   });
 
+  it("検索方法でファイル名を選ぶとファイル名検索に切り替える", async () => {
+    const searchWorkspace = vi.fn().mockResolvedValue({
+      ok: true,
+      value: [{ fileName: "読書メモ", lineNumber: null, lineText: "読書メモ.md", path: "読書メモ.md" }]
+    });
+
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace }),
+      searchWorkspace
+    });
+
+    await renderApp();
+
+    await screen.findByLabelText("ファイル検索");
+    fireEvent.click(screen.getByRole("button", { name: "検索方法" }));
+    fireEvent.click(await screen.findByRole("option", { name: "ファイル名" }));
+    fireEvent.change(screen.getByLabelText("ファイル検索"), {
+      target: { value: "読書" }
+    });
+
+    await waitFor(() => {
+      expect(searchWorkspace).toHaveBeenCalledWith({ mode: "fileName", query: "読書" });
+    });
+    expect(await screen.findByText("読書メモ.md")).toBeInTheDocument();
+  });
+
+  it("検索方法で正規表現を選ぶと正規表現検索に切り替える", async () => {
+    const searchWorkspace = vi.fn().mockResolvedValue({
+      ok: true,
+      value: [{ fileName: "読書メモ", lineNumber: 1, lineText: "# 読書メモ", path: "読書メモ.md" }]
+    });
+
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace }),
+      searchWorkspace
+    });
+
+    await renderApp();
+
+    await screen.findByLabelText("ファイル検索");
+    fireEvent.click(screen.getByRole("button", { name: "検索方法" }));
+    fireEvent.click(await screen.findByRole("option", { name: "正規表現" }));
+    fireEvent.change(screen.getByLabelText("ファイル検索"), {
+      target: { value: "^# " }
+    });
+
+    await waitFor(() => {
+      expect(searchWorkspace).toHaveBeenCalledWith({ mode: "regex", query: "^# " });
+    });
+    expect(await screen.findByText("1: # 読書メモ")).toBeInTheDocument();
+  });
+
   it("無効な正規表現の検索エラーを表示する", async () => {
     window.relic = makeRelicApi({
       getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace }),

@@ -10,8 +10,7 @@ import {
   type ReplaceInFileInput,
   searchAndReplaceChannel,
   type SearchAndReplaceInput,
-  searchWorkspaceChannel,
-  type SearchWorkspaceInput
+  searchWorkspaceChannel
 } from "../../shared/ipc";
 import { fail } from "../../shared/result";
 import { readBacklinks } from "../files/backlinks";
@@ -23,20 +22,27 @@ import {
   isPathInput,
   isReplaceInFileInput,
   isSearchAndReplaceInput,
-  isSearchWorkspaceInput
+  normalizeSearchWorkspaceInput
 } from "./fileHandlerValidators";
 
 export function registerFileSearchHandlers(): void {
-  ipcMain.handle(searchWorkspaceChannel, async (_event, input: SearchWorkspaceInput) => {
+  ipcMain.handle(searchWorkspaceChannel, async (_event, input: unknown) => {
     try {
-      if (!isSearchWorkspaceInput(input)) {
-        return fail("SEARCH_INVALID_INPUT", "検索語句を入力してください。");
+      const searchInput = normalizeSearchWorkspaceInput(input);
+
+      if (!searchInput) {
+        return fail("SEARCH_INVALID_INPUT", "検索リクエストが正しくありません。");
       }
 
       const context = await getActiveWorkspaceContext();
       if (!context.ok) return context;
 
-      return searchWorkspace(context.value.activeWorkspace.path, input.query, input.mode, input.frontmatterField);
+      return searchWorkspace(
+        context.value.activeWorkspace.path,
+        searchInput.query,
+        searchInput.mode,
+        searchInput.frontmatterField
+      );
     } catch (error) {
       return fail(
         "SEARCH_FAILED",
