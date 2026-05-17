@@ -17,7 +17,7 @@ interface GraphControlsProps {
 
 export function GraphControls({ onDragHandlePointerDown, workspaceId }: GraphControlsProps): ReactElement {
   const t = useT();
-  const [isMinimized, setIsMinimized] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(true);
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
   const {
     loadGraph,
