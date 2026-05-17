@@ -14,17 +14,23 @@ interface FilesCreateActionsProps {
   isCreatingFolder: boolean;
   onCreateFile: (event?: ReactMouseEvent<HTMLButtonElement>) => void;
   onCreateFolder: (event?: ReactMouseEvent<HTMLButtonElement>) => void;
+  onCollapseAllFolders: () => void;
+  onExpandAllFolders: () => void;
 }
 
 export function FilesCreateActions({
   isCreatingFile,
   isCreatingFolder,
   onCreateFile,
-  onCreateFolder
+  onCreateFolder,
+  onCollapseAllFolders,
+  onExpandAllFolders
 }: FilesCreateActionsProps): ReactElement {
   const t = useT();
   const createFileLabel = isCreatingFile ? t("common.running") : t("files.createNote");
   const createFolderLabel = isCreatingFolder ? t("common.running") : t("files.createFolder");
+  const expandAllLabel = t("files.expandAllFolders");
+  const collapseAllLabel = t("files.collapseAllFolders");
 
   return (
     <div className="files-create-actions">
@@ -48,6 +54,24 @@ export function FilesCreateActions({
       >
         <NewFolderIcon />
       </button>
+      <button
+        aria-label={expandAllLabel}
+        className="files-create-icon-button"
+        onClick={onExpandAllFolders}
+        title={expandAllLabel}
+        type="button"
+      >
+        <ExpandAllFoldersIcon />
+      </button>
+      <button
+        aria-label={collapseAllLabel}
+        className="files-create-icon-button"
+        onClick={onCollapseAllFolders}
+        title={collapseAllLabel}
+        type="button"
+      >
+        <CollapseAllFoldersIcon />
+      </button>
     </div>
   );
 }
@@ -69,6 +93,27 @@ function NewFolderIcon(): ReactElement {
       <path d="M3.5 7V5.5H9l1.5 1.5" />
       <path d="M11 10.5v4" />
       <path d="M9 12.5h4" />
+    </svg>
+  );
+}
+
+function ExpandAllFoldersIcon(): ReactElement {
+  return (
+    <svg aria-hidden="true" fill="none" height="22" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 22 22" width="22">
+      <path d="M4 12.5h14" />
+      <path d="M7 8.5 11 4.5 15 8.5" />
+      <path d="M7 16.5 11 12.5 15 16.5" />
+    </svg>
+  );
+}
+
+function CollapseAllFoldersIcon(): ReactElement {
+  return (
+    <svg aria-hidden="true" fill="none" height="22" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 22 22" width="22">
+      <path d="M4 9.5h14" />
+      <path d="M4 14.5h14" />
+      <path d="M7 4.5 11 8.5 15 4.5" />
+      <path d="M7 19.5 11 15.5 15 19.5" />
     </svg>
   );
 }
