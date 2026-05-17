@@ -159,11 +159,26 @@ export function EditorContextMenu({
       </div>
       <div className="tab-context-menu-separator" />
       <div className="editor-context-menu-section" role="group">
-        <IconMenuButton
-          icon={<ExternalLinkIcon className="editor-context-menu-icon" size={16} />}
-          label={t("toolbar.markdownLink")}
-          onClick={() => runMarkdownAction(markdownActions.handleLink, false)}
-        />
+        <div className="editor-context-menu-grid editor-context-menu-grid--insert">
+          <IconMenuButton
+            icon={<ExternalLinkIcon className="editor-context-menu-icon" size={16} />}
+            label={t("toolbar.markdownLink")}
+            onClick={() => runMarkdownAction(markdownActions.handleLink, false)}
+          />
+          <IconMenuButton
+            icon={<LinkIcon className="editor-context-menu-icon" size={16} />}
+            label={t("toolbar.internalLink")}
+            onClick={() => runMarkdownAction(markdownActions.handleInternalLink)}
+          />
+          <IconMenuButton
+            icon={<TableIcon className="editor-context-menu-icon" size={16} />}
+            label={t("toolbar.table")}
+            onClick={() => {
+              onBeforeMarkdownAction();
+              markdownActions.toggleTableDialog();
+            }}
+          />
+        </div>
         {markdownActions.showLinkDialog ? (
           <div className={toolbarPanelClass("editor-context-menu-inline-dialog", "link", markdownActions.closingPanel)}>
             <input
@@ -191,19 +206,6 @@ export function EditorContextMenu({
             </button>
           </div>
         ) : null}
-        <IconMenuButton
-          icon={<LinkIcon className="editor-context-menu-icon" size={16} />}
-          label={t("toolbar.internalLink")}
-          onClick={() => runMarkdownAction(markdownActions.handleInternalLink)}
-        />
-        <IconMenuButton
-          icon={<TableIcon className="editor-context-menu-icon" size={16} />}
-          label={t("toolbar.table")}
-          onClick={() => {
-            onBeforeMarkdownAction();
-            markdownActions.toggleTableDialog();
-          }}
-        />
         {markdownActions.showTableDialog ? (
           <div className={toolbarPanelClass("editor-context-menu-inline-dialog", "table", markdownActions.closingPanel)}>
             <input

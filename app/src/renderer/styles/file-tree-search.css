@@ -200,25 +200,9 @@
 }
 
 .file-tree-folder-icon {
-  border: 1.5px solid currentColor;
-  border-radius: 2px;
-  display: inline-block;
-  height: 10px;
-  position: relative;
-  width: 12px;
-}
-
-.file-tree-folder-icon::before {
-  background: var(--surface);
-  border: 1.5px solid currentColor;
-  border-bottom: 0;
-  border-radius: 2px 2px 0 0;
-  content: "";
-  height: 4px;
-  left: -1.5px;
-  position: absolute;
-  top: -5px;
-  width: 7px;
+  display: block;
+  height: 15px;
+  width: 15px;
 }
 
 .file-tree-file-dot {
