@@ -191,7 +191,7 @@ describe("App", () => {
     });
   });
 
-  it("ツールバーのMarkdownボタンを開いているタブへ反映する", async () => {
+  it("右クリックメニューのMarkdownボタンを開いているタブへ反映する", async () => {
     window.relic = makeRelicApi({
       getWorkspaceState: vi.fn().mockResolvedValue({
         ok: true,
@@ -206,7 +206,7 @@ describe("App", () => {
       })
     });
 
-    await renderApp();
+    const { container } = await renderApp();
 
     fireEvent.click(await screen.findByRole("button", { name: /読書メモ/ }));
 
@@ -214,7 +214,11 @@ describe("App", () => {
       expect(useEditorStore.getState().leftPane.activeTabId).not.toBeNull();
     });
 
-    fireEvent.click(screen.getByRole("button", { name: "太字" }));
+    const editorContent = container.querySelector(".cm-content");
+    expect(editorContent).not.toBeNull();
+    fireEvent.contextMenu(editorContent!, { clientX: 64, clientY: 64 });
+    const editorMenu = await screen.findByRole("menu");
+    fireEvent.click(within(editorMenu).getByRole("menuitem", { name: "太字" }));
 
     await waitFor(() => {
       const activeTabId = useEditorStore.getState().leftPane.activeTabId;

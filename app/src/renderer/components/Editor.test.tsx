@@ -215,7 +215,7 @@ describe("Editor", () => {
     });
   });
 
-  it("Electronでは本文の右クリックをネイティブメニューへ任せる", async () => {
+  it("Electronでも本文の右クリックでMarkdownメニューを表示する", async () => {
     const viewRef = createRef<EditorView | null>();
     window.relic = {
       readClipboardText: vi.fn(),
@@ -236,7 +236,8 @@ describe("Editor", () => {
 
     fireEvent.contextMenu(contentElement, { clientX: 32, clientY: 32 });
 
-    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+    expect(await screen.findByRole("menuitem", { name: "Bold" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "Copy" })).toBeInTheDocument();
   });
 
   it("外側からcontentが更新されたら表示中の文書も同期する", async () => {
