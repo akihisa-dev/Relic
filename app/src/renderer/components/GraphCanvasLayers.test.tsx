@@ -15,7 +15,7 @@ const pointByPath = new Map(points.map((point) => [point.path, point]));
 
 function nodeCircle(name: string): SVGCircleElement {
   const node = screen.getByRole("button", { name });
-  const circle = node.querySelector("circle");
+  const circle = node.querySelector("circle.graph-node");
   expect(circle).not.toBeNull();
   return circle as SVGCircleElement;
 }
@@ -104,13 +104,14 @@ describe("GraphCanvasLayers", () => {
   });
 
   it("node layerでselected/focused/related/dimmed classを既存通り付ける", () => {
-    renderNodeLayer();
+    const { container } = renderNodeLayer();
 
     expect(screen.getByRole("button", { name: "A" })).toHaveClass("graph-node-hit");
     expect(nodeCircle("A")).toHaveClass("graph-node--focused");
     expect(nodeCircle("B")).toHaveClass("graph-node--selected");
     expect(nodeCircle("C")).toHaveClass("graph-node--related");
     expect(nodeCircle("D")).toHaveClass("graph-node--dimmed");
+    expect(container.querySelector(".graph-node-selection-ring")).toBeInTheDocument();
     expect(screen.getByText("A")).toHaveClass("graph-label");
   });
 

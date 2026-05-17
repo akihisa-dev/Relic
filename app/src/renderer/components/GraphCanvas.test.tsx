@@ -57,7 +57,7 @@ function renderGraphCanvas(overrides: Partial<GraphCanvasProps> = {}): RenderRes
 
 function nodeCircle(name: string): SVGCircleElement {
   const node = screen.getByRole("button", { name });
-  const circle = node.querySelector("circle");
+  const circle = node.querySelector("circle.graph-node");
   expect(circle).not.toBeNull();
   return circle as SVGCircleElement;
 }

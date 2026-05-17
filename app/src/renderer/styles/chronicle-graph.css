@@ -610,6 +610,19 @@
   fill-opacity: 0.28;
 }
 
+.graph-node-selection-ring {
+  animation: graph-node-selection-ring 1.8s ease-in-out infinite;
+  fill: none;
+  pointer-events: none;
+  stroke: color-mix(in srgb, var(--accent) 78%, var(--text) 22%);
+  stroke-dasharray: 1.8 2.4;
+  stroke-linecap: round;
+  stroke-opacity: 0.86;
+  stroke-width: 1.9;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
 .graph-node {
   animation: graph-node-breathe 5.4s ease-in-out infinite;
   fill: var(--text-2);
@@ -623,10 +636,10 @@
 }
 
 .graph-node--selected {
-  fill: var(--text);
-  fill-opacity: 0.86;
-  stroke: var(--bg);
-  stroke-width: 2.4;
+  fill: color-mix(in srgb, var(--accent) 58%, var(--text) 42%);
+  fill-opacity: 0.96;
+  stroke: color-mix(in srgb, var(--bg) 54%, var(--accent) 46%);
+  stroke-width: 2.6;
 }
 
 .graph-node--focused {
@@ -670,6 +683,19 @@
 
   50% {
     transform: scale(1.035);
+  }
+}
+
+@keyframes graph-node-selection-ring {
+  0%,
+  100% {
+    stroke-opacity: 0.72;
+    transform: scale(0.98);
+  }
+
+  50% {
+    stroke-opacity: 1;
+    transform: scale(1.08);
   }
 }
 
