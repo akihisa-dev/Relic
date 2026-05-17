@@ -282,42 +282,32 @@ export function AppEditorWorkspace({
 
 function SourceModeIcon(): ReactElement {
   return (
-    <svg aria-hidden="true" fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.7" viewBox="0 0 20 20" width="18">
-      <polyline points="7.5,5.5 3.5,10 7.5,14.5" />
-      <polyline points="12.5,5.5 16.5,10 12.5,14.5" />
-      <line x1="10.8" x2="9.2" y1="4" y2="16" />
+    <svg aria-hidden="true" fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="18">
+      <path d="M17.25 6.75 22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3-4.5 16.5" />
     </svg>
   );
 }
 
 function SplitViewIcon(): ReactElement {
   return (
-    <svg aria-hidden="true" fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.7" viewBox="0 0 20 20" width="18">
-      <rect height="13" rx="2" width="14" x="3" y="4" />
-      <line x1="10" x2="10" y1="4" y2="17" />
+    <svg aria-hidden="true" fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="18">
+      <path d="M9 4.5v15m6-15v15m-10.875 0h15.75c.621 0 1.125-.504 1.125-1.125V5.625c0-.621-.504-1.125-1.125-1.125H4.125C3.504 4.5 3 5.004 3 5.625v12.75c0 .621.504 1.125 1.125 1.125Z" />
     </svg>
   );
 }
 
 function OutlineIcon(): ReactElement {
   return (
-    <svg aria-hidden="true" fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.7" viewBox="0 0 20 20" width="18">
-      <line x1="8" x2="16" y1="5" y2="5" />
-      <line x1="8" x2="14" y1="10" y2="10" />
-      <line x1="8" x2="15" y1="15" y2="15" />
-      <circle cx="4.5" cy="5" r="1" />
-      <circle cx="4.5" cy="10" r="1" />
-      <circle cx="4.5" cy="15" r="1" />
+    <svg aria-hidden="true" fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="18">
+      <path d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0ZM3.75 12h.007v.008H3.75V12Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm-.375 5.25h.007v.008H3.75v-.008Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
     </svg>
   );
 }
 
 function LinksIcon(): ReactElement {
   return (
-    <svg aria-hidden="true" fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.7" viewBox="0 0 20 20" width="18">
-      <path d="M8.4 6.2l1-1a4 4 0 0 1 5.7 5.7l-1 1" />
-      <path d="M11.6 13.8l-1 1a4 4 0 1 1-5.7-5.7l1-1" />
-      <line x1="7.8" x2="12.2" y1="12.2" y2="7.8" />
+    <svg aria-hidden="true" fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="18">
+      <path d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
     </svg>
   );
 }
