@@ -128,6 +128,7 @@ export function AppEditorWorkspace({
         <button
           aria-label={t("pane.sourceShort")}
           className={`toolbar-btn${isSourceMode ? " active" : ""}`}
+          data-tooltip={t("pane.sourceMode")}
           onClick={onSourceModeToggle}
           title={t("pane.sourceMode")}
           type="button"
@@ -137,6 +138,7 @@ export function AppEditorWorkspace({
         <button
           aria-label={t("pane.splitShort")}
           className={`toolbar-btn${isSplit ? " active" : ""}`}
+          data-tooltip={t("pane.split")}
           onClick={onSplitToggle}
           title={t("pane.split")}
           type="button"
@@ -148,6 +150,7 @@ export function AppEditorWorkspace({
             <button
               aria-label={t("pane.outline")}
               className={`toolbar-btn${rightPanelView === "outline" && isRightPanelOpen ? " active" : ""}`}
+              data-tooltip={t("pane.toggleOutline")}
               onClick={() => onRightPanelViewButton("outline")}
               title={t("pane.toggleOutline")}
               type="button"
@@ -157,6 +160,7 @@ export function AppEditorWorkspace({
             <button
               aria-label={t("pane.links")}
               className={`toolbar-btn${rightPanelView === "links" && isRightPanelOpen ? " active" : ""}`}
+              data-tooltip={t("pane.toggleLinks")}
               onClick={() => onRightPanelViewButton("links")}
               title={t("pane.toggleLinks")}
               type="button"
