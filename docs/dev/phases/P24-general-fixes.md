@@ -137,5 +137,5 @@ P24では、事前に固定した長い実施リストは置かない。
 
 - 方向性: ファイルビュー検索で検索語を入れても `検索語句を入力してください` になる問題を、検索処理本体ではなくIPC入力正規化の問題として直す。検索UI、検索モード、検索対象、保存形式は変えない
 - 実施: `workspace:search` の入力を正規形 `{ query, mode }` と互換形 `{ searchQuery, searchMode }` の両方から正規化する処理を追加し、handlerは正規化済み入力を検索本体へ渡すようにした。不正な構造のエラー文言は検索語句不足ではなく検索リクエスト不正に分けた。ファイル名検索と正規表現検索のrenderer経路テストも追加した
-- 確認: `pnpm exec vitest run src/main/ipc/fileHandlerValidators.test.ts src/main/files/search.test.ts src/renderer/components/FilesSidebarSearch.test.tsx src/renderer/App.test.tsx -t "検索|search"`、`pnpm typecheck`、`git diff --check` が通過した
+- 確認: `pnpm exec vitest run src/main/ipc/fileHandlerValidators.test.ts src/main/files/search.test.ts src/renderer/components/FilesSidebarSearch.test.tsx src/renderer/App.test.tsx -t "検索|search"`、`pnpm typecheck`、`git diff --check` が通過した。追加確認として、全文検索で本文中の `ファイルツリー` と部分語 `ファイル` が一致行を返すことを `src/main/files/search.test.ts` に固定し、`pnpm exec vitest run src/main/files/search.test.ts` が通過した
 - 残り: Electron実機で実ワークスペースを開いた状態の目視確認は未実施
