@@ -42,7 +42,6 @@ function makeEvent<T extends Element>(overrides: Partial<{
 
 function renderNodeInteractions() {
   const getGraphDelta = vi.fn((deltaX: number, deltaY: number): GraphPan => ({ x: deltaX, y: deltaY }));
-  const onOpenFile = vi.fn();
   const pinnedPathRef: MutableRefObject<string | null> = { current: null };
   const pointsRef: MutableRefObject<GraphSimPoint[]> = { current: points };
   const setFocusedPath = vi.fn();
@@ -52,7 +51,6 @@ function renderNodeInteractions() {
   const setSelectedPath = vi.fn();
   const hook = renderHook(() => useGraphNodeInteractions({
     getGraphDelta,
-    onOpenFile,
     pinnedPathRef,
     pointsRef,
     setFocusedPath,
@@ -63,7 +61,6 @@ function renderNodeInteractions() {
   return {
     getGraphDelta,
     hook,
-    onOpenFile,
     pinnedPathRef,
     pointsRef,
     setFocusedPath,
@@ -73,8 +70,8 @@ function renderNodeInteractions() {
 }
 
 describe("useGraphNodeInteractions", () => {
-  it("clickとkey操作で既存callbackを呼ぶ", () => {
-    const { hook, onOpenFile, setSelectedPath } = renderNodeInteractions();
+  it("clickとkey操作は選択だけを更新する", () => {
+    const { hook, setSelectedPath } = renderNodeInteractions();
     const point = points[0] as GraphPoint;
 
     act(() => {
@@ -84,9 +81,7 @@ describe("useGraphNodeInteractions", () => {
     });
 
     expect(setSelectedPath).toHaveBeenCalledWith("A.md");
-    expect(onOpenFile).toHaveBeenCalledWith("A.md");
     expect(setSelectedPath).toHaveBeenCalledWith("B.md");
-    expect(onOpenFile).toHaveBeenCalledTimes(2);
   });
 
   it("hover enter/leaveでfocused path更新を委譲する", () => {
@@ -139,7 +134,7 @@ describe("useGraphNodeInteractions", () => {
   });
 
   it("drag後のclickを抑止しpinned pathを解除する", () => {
-    const { hook, onOpenFile, pinnedPathRef } = renderNodeInteractions();
+    const { hook, pinnedPathRef, setSelectedPath } = renderNodeInteractions();
     const target = {
       hasPointerCapture: vi.fn().mockReturnValue(true),
       releasePointerCapture: vi.fn(),
@@ -167,6 +162,6 @@ describe("useGraphNodeInteractions", () => {
     });
 
     expect(pinnedPathRef.current).toBeNull();
-    expect(onOpenFile).not.toHaveBeenCalled();
+    expect(setSelectedPath).toHaveBeenCalledTimes(1);
   });
 });

@@ -48,17 +48,15 @@ function resetGraphStore(overrides: Partial<ReturnType<typeof useGraphStore.getS
 }
 
 function renderGraphPanelModel(overrides: Partial<Parameters<typeof useGraphPanelModel>[0]> = {}) {
-  const onOpenFile = vi.fn();
   const hook = renderHook((props: Parameters<typeof useGraphPanelModel>[0]) => useGraphPanelModel(props), {
     initialProps: {
       activeFilePath: null,
-      onOpenFile,
       workspaceId: "workspace-1",
       ...overrides
     }
   });
 
-  return { hook, onOpenFile };
+  return { hook };
 }
 
 describe("useGraphPanelModel", () => {
