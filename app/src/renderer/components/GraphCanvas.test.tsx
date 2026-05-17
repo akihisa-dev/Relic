@@ -18,9 +18,12 @@ function makeGraphCanvasProps(overrides: Partial<GraphCanvasProps> = {}): GraphC
     edges: [{ sourcePath: "A.md", targetPath: "C.md" }],
     focusedPath: "A.md",
     groupByPath: new Map(),
+    isMotionAfterglow: false,
     isPanning: false,
     labelOpacity: 1,
     linkThickness: 1,
+    motionEpoch: 0,
+    motionPath: null,
     nodeSize: 1,
     onGraphKeyDown: vi.fn(),
     onGraphPointerCancel: vi.fn(),
@@ -68,6 +71,12 @@ describe("GraphCanvas", () => {
     expect(screen.getByRole("button", { name: "A" })).toHaveClass("graph-node-hit");
     expect(nodeCircle("A")).toHaveClass("graph-node");
     expect(screen.getByText("A")).toHaveClass("graph-label");
+  });
+
+  it("motionPathがあるとtrace overlayを描画する", () => {
+    const { container } = renderGraphCanvas({ motionEpoch: 2, motionPath: "A.md" });
+
+    expect(container.querySelector("line.graph-edge-trace")).toBeInTheDocument();
   });
 
   it("showArrows=trueでmarker定義とmarkerEndを描画する", () => {

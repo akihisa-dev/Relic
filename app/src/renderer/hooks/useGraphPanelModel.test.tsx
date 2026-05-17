@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { WorkspaceGraph } from "../../shared/ipc";
 import { GRAPH_HEIGHT, GRAPH_WIDTH } from "../graphLayout";
 import { useGraphStore } from "../store/graphStore";
-import { useGraphPanelModel } from "./useGraphPanelModel";
+import { GRAPH_AFTERGLOW_DURATION_MS, useGraphPanelModel } from "./useGraphPanelModel";
 
 const graph: WorkspaceGraph = {
   edges: [
@@ -72,6 +72,7 @@ describe("useGraphPanelModel", () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     vi.unstubAllGlobals();
   });
 
@@ -111,6 +112,43 @@ describe("useGraphPanelModel", () => {
     });
 
     expect(hook.result.current.focusedPath).toBe("folder/Beta.md");
+    expect(hook.result.current.motionPath).toBe("folder/Beta.md");
+    expect(hook.result.current.isMotionAfterglow).toBe(false);
+  });
+
+  it("hover解除後はafterglowPathを一定時間だけfocusedPathとmotionPathに使う", () => {
+    vi.useFakeTimers();
+    resetGraphStore({
+      graph,
+      loadedWorkspaceId: "workspace-1"
+    });
+    const { hook } = renderGraphPanelModel();
+
+    act(() => {
+      hook.result.current.graphCanvas.nodeHandlers.onPointerEnter("folder/Beta.md");
+    });
+    const hoverEpoch = hook.result.current.motionEpoch;
+
+    act(() => {
+      hook.result.current.graphCanvas.nodeHandlers.onPointerLeave("folder/Beta.md");
+    });
+
+    expect(hook.result.current.focusedPath).toBe("folder/Beta.md");
+    expect(hook.result.current.motionPath).toBe("folder/Beta.md");
+    expect(hook.result.current.isMotionAfterglow).toBe(true);
+    expect(hook.result.current.motionEpoch).toBeGreaterThan(hoverEpoch);
+
+    act(() => {
+      vi.advanceTimersByTime(GRAPH_AFTERGLOW_DURATION_MS - 1);
+    });
+    expect(hook.result.current.motionPath).toBe("folder/Beta.md");
+
+    act(() => {
+      vi.advanceTimersByTime(1);
+    });
+    expect(hook.result.current.focusedPath).toBeNull();
+    expect(hook.result.current.motionPath).toBeNull();
+    expect(hook.result.current.isMotionAfterglow).toBe(false);
   });
 
   it("showLabels=falseのときlabelOpacityが0になる", () => {

@@ -1,4 +1,5 @@
-import type { KeyboardEvent, PointerEvent, ReactElement } from "react";
+import { Fragment } from "react";
+import type { CSSProperties, KeyboardEvent, PointerEvent, ReactElement } from "react";
 
 import type { WorkspaceGraphEdge } from "../../shared/ipc";
 import type { GraphPoint } from "../graphLayout";
@@ -21,12 +22,18 @@ export function GraphEdgeLayer({
   edges,
   focusedPath,
   linkThickness,
+  isMotionAfterglow,
+  motionEpoch,
+  motionPath,
   pointByPath,
   showArrows
 }: {
   edges: WorkspaceGraphEdge[];
   focusedPath: string | null;
+  isMotionAfterglow: boolean;
   linkThickness: number;
+  motionEpoch: number;
+  motionPath: string | null;
   pointByPath: Map<string, GraphPoint>;
   showArrows: boolean;
 }): ReactElement {
@@ -37,22 +44,39 @@ export function GraphEdgeLayer({
         const target = pointByPath.get(edge.targetPath);
         if (!source || !target) return null;
         const isFocused = focusedPath === edge.sourcePath || focusedPath === edge.targetPath;
+        const isMotionEdge = motionPath === edge.sourcePath || motionPath === edge.targetPath;
         const className = [
           "graph-edge",
           isFocused ? "graph-edge--selected" : "",
           focusedPath && !isFocused ? "graph-edge--dimmed" : ""
         ].filter(Boolean).join(" ");
         return (
-          <line
-            className={className}
-            key={`${edge.sourcePath}-${edge.targetPath}`}
-            markerEnd={showArrows ? `url(#${isFocused ? "graph-arrow-selected" : "graph-arrow"})` : undefined}
-            style={{ strokeWidth: (isFocused ? 1.6 : 0.9) * linkThickness }}
-            x1={source.x}
-            x2={target.x}
-            y1={source.y}
-            y2={target.y}
-          />
+          <Fragment key={`${edge.sourcePath}-${edge.targetPath}`}>
+            <line
+              className={className}
+              markerEnd={showArrows ? `url(#${isFocused ? "graph-arrow-selected" : "graph-arrow"})` : undefined}
+              style={{ strokeWidth: (isFocused ? 1.6 : 0.9) * linkThickness }}
+              x1={source.x}
+              x2={target.x}
+              y1={source.y}
+              y2={target.y}
+            />
+            {isMotionEdge ? (
+              <line
+                className={[
+                  "graph-edge-trace",
+                  isMotionAfterglow ? "graph-edge-trace--afterglow" : ""
+                ].filter(Boolean).join(" ")}
+                key={`${edge.sourcePath}-${edge.targetPath}-${motionEpoch}`}
+                pathLength={1}
+                style={{ strokeWidth: Math.max(1.4, 1.8 * linkThickness) }}
+                x1={source.x}
+                x2={target.x}
+                y1={source.y}
+                y2={target.y}
+              />
+            ) : null}
+          </Fragment>
         );
       })}
     </g>
@@ -62,7 +86,9 @@ export function GraphEdgeLayer({
 export function GraphNodeLayer({
   focusedPath,
   groupByPath,
+  isMotionAfterglow,
   labelOpacity,
+  motionPath,
   nodeSize,
   onNodeClick,
   onNodeKeyDown,
@@ -79,7 +105,9 @@ export function GraphNodeLayer({
 }: {
   focusedPath: string | null;
   groupByPath: Map<string, GraphGroup>;
+  isMotionAfterglow: boolean;
   labelOpacity: number;
+  motionPath: string | null;
   nodeSize: number;
   onNodeClick: (point: GraphPoint) => void;
   onNodeKeyDown: (event: KeyboardEvent<SVGGElement>, point: GraphPoint) => void;
@@ -96,10 +124,11 @@ export function GraphNodeLayer({
 }): ReactElement {
   return (
     <g className="graph-node-layer">
-      {points.map((point) => {
+      {points.map((point, index) => {
         const isSelected = point.path === selectedPath;
         const isRelated = relatedPaths.has(point.path);
         const isFocused = point.path === focusedPath;
+        const isMotionNode = point.path === motionPath;
         const group = groupByPath.get(point.path);
         const radius = Math.min(8, 2.6 + Math.sqrt(point.incoming) * 1.45) * nodeSize;
         const nodeClassName = [
@@ -107,9 +136,15 @@ export function GraphNodeLayer({
           isSelected ? "graph-node--selected" : "",
           isFocused && !isSelected ? "graph-node--focused" : "",
           focusedPath && !isRelated ? "graph-node--dimmed" : "",
-          focusedPath && isRelated && !isSelected && !isFocused ? "graph-node--related" : ""
+          focusedPath && isRelated && !isSelected && !isFocused ? "graph-node--related" : "",
+          isMotionNode ? "graph-node--motion" : "",
+          isMotionNode && isMotionAfterglow ? "graph-node--motion-afterglow" : ""
         ].filter(Boolean).join(" ");
         const labelClassName = focusedPath && !isRelated ? "graph-label graph-label--dimmed" : "graph-label";
+        const nodeStyle: CSSProperties = {
+          animationDelay: `${-(index % 9) * 0.44}s`,
+          ...(group ? { fill: group.color } : {})
+        };
 
         return (
           <g
@@ -117,6 +152,8 @@ export function GraphNodeLayer({
             className="graph-node-hit"
             key={point.path}
             onClick={() => onNodeClick(point)}
+            onBlur={() => onNodePointerLeave(point.path)}
+            onFocus={() => onNodePointerEnter(point.path)}
             onPointerEnter={() => onNodePointerEnter(point.path)}
             onPointerCancel={onNodePointerCancel}
             onPointerDown={(event) => onNodePointerDown(event, point)}
@@ -132,7 +169,7 @@ export function GraphNodeLayer({
               cx={point.x}
               cy={point.y}
               r={radius}
-              style={group ? { fill: group.color } : undefined}
+              style={nodeStyle}
             />
             {showLabels ? (
               <text className={labelClassName} style={{ opacity: labelOpacity }} x={point.x + radius + 5} y={point.y + 4}>{point.name}</text>

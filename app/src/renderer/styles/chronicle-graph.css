@@ -559,6 +559,23 @@
   stroke-opacity: 0.08;
 }
 
+.graph-edge-trace {
+  animation: graph-edge-trace-flow 720ms cubic-bezier(.22, 1, .36, 1) both;
+  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--accent) 54%, transparent));
+  pointer-events: none;
+  stroke: color-mix(in srgb, var(--accent) 72%, var(--text) 28%);
+  stroke-dasharray: 0.18 0.82;
+  stroke-dashoffset: 1;
+  stroke-linecap: round;
+  stroke-opacity: 0;
+}
+
+.graph-edge-trace--afterglow {
+  animation: graph-edge-trace-afterglow 1000ms ease-out both;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+}
+
 .graph-arrow-marker {
   fill: var(--text-3);
   fill-opacity: 0.46;
@@ -594,11 +611,14 @@
 }
 
 .graph-node {
+  animation: graph-node-breathe 5.4s ease-in-out infinite;
   fill: var(--text-2);
   fill-opacity: 0.58;
   stroke: var(--bg);
   stroke-opacity: 0.96;
   stroke-width: 1.8;
+  transform-box: fill-box;
+  transform-origin: center;
   transition: fill 140ms ease, fill-opacity 140ms ease, stroke 140ms ease, stroke-width 140ms ease;
 }
 
@@ -626,12 +646,82 @@
   stroke-opacity: 0.45;
 }
 
+.graph-node--motion {
+  animation: graph-node-heartbeat 880ms ease-in-out infinite;
+}
+
+.graph-node--motion-afterglow {
+  animation: graph-node-afterglow 1000ms ease-out both;
+}
+
 .graph-node-hit:hover .graph-node,
 .graph-node-hit:focus-visible .graph-node {
   fill: var(--text);
   fill-opacity: 0.84;
   stroke: var(--bg);
   stroke-width: 2.2;
+}
+
+@keyframes graph-node-breathe {
+  0%,
+  100% {
+    transform: scale(0.985);
+  }
+
+  50% {
+    transform: scale(1.035);
+  }
+}
+
+@keyframes graph-node-heartbeat {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 0 color-mix(in srgb, var(--accent) 0%, transparent));
+    transform: scale(1);
+  }
+
+  45% {
+    filter: drop-shadow(0 0 7px color-mix(in srgb, var(--accent) 52%, transparent));
+    transform: scale(1.18);
+  }
+}
+
+@keyframes graph-node-afterglow {
+  0% {
+    filter: drop-shadow(0 0 7px color-mix(in srgb, var(--accent) 48%, transparent));
+    transform: scale(1.16);
+  }
+
+  100% {
+    filter: drop-shadow(0 0 0 color-mix(in srgb, var(--accent) 0%, transparent));
+    transform: scale(1);
+  }
+}
+
+@keyframes graph-edge-trace-flow {
+  0% {
+    stroke-dashoffset: 1;
+    stroke-opacity: 0;
+  }
+
+  28% {
+    stroke-opacity: 0.76;
+  }
+
+  100% {
+    stroke-dashoffset: -1;
+    stroke-opacity: 0;
+  }
+}
+
+@keyframes graph-edge-trace-afterglow {
+  0% {
+    stroke-opacity: 0.48;
+  }
+
+  100% {
+    stroke-opacity: 0;
+  }
 }
 
 .graph-summary {
