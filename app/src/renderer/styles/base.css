@@ -91,14 +91,11 @@ body,
 }
 
 body {
-  background:
-    radial-gradient(circle at 38% 10%, rgba(255, 255, 255, 0.58), transparent 30%),
-    linear-gradient(145deg, #ffffff, #f4f4f4 36%, #e8e8e8 100%);
+  background: var(--aluminum-base);
 }
 
 #root {
-  display: grid;
-  place-items: center;
+  display: block;
 }
 
 button,

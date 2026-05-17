@@ -9,22 +9,20 @@
     linear-gradient(180deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0) 24%),
     repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.045) 0 1px, rgba(0, 0, 0, 0.012) 1px 2px),
     var(--aluminum-base);
-  border: 1px solid rgba(28, 28, 28, 0.12);
-  border-radius: 24px;
+  border: 0;
+  border-radius: 0;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
     inset 0 -1px 0 rgba(0, 0, 0, 0.08),
-    inset 0 0 28px rgba(255, 255, 255, 0.12),
-    0 26px 76px rgba(0, 0, 0, 0.11),
-    0 8px 24px rgba(0, 0, 0, 0.08);
+    inset 0 0 28px rgba(255, 255, 255, 0.12);
   display: grid;
   grid-template-rows: 38px minmax(0, 1fr) 28px;
-  height: min(84vh, 880px);
+  height: 100vh;
   min-width: 0;
   overflow: hidden;
   position: relative;
-  transform: translate(-1.2vw, 1vh);
-  width: min(92vw, 1440px);
+  transform: none;
+  width: 100vw;
 }
 
 .app-shell::before {
