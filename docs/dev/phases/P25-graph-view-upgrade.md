@@ -148,3 +148,7 @@ P25では、事前に固定した長い実施リストは置かない。
 
 - グラフビューの通常状態で、ノード、ラベル、リンクが背景に溶けすぎないよう、未選択・未ホバー時のリンク線、ノード塗り、ラベル色を一段濃くした。選択、ホバー、関連ノード、dim表示、配置、操作挙動は変更しなかった。
 - `pnpm exec vitest run src/renderer/components/GraphCanvas.test.tsx src/renderer/components/GraphCanvasLayers.test.tsx src/renderer/hooks/useGraphPanelModel.test.tsx`、`pnpm typecheck`、`pnpm test`、`git diff --check` が通過した。全体テストは78ファイル、535件が通過した。Electron実機での目視確認は未実施。
+
+### フェーズ終了
+
+- ユーザー指示によりP25を終了し、P26デザイン・UI刷新フェーズへ移行した。

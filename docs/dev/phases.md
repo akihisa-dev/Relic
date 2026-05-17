@@ -38,9 +38,9 @@ AIは `AI.md` と `docs/product/project.md` の次にこのファイルを読み
 ## 現在フェーズ
 
 ```yaml
-current: P25
-summary: グラフビューアップグレード
-checklist: phases/P25-graph-view-upgrade.md
+current: P26
+summary: デザイン・UI刷新
+checklist: phases/P26-design-ui-refresh.md
 ```
 
 ---
@@ -74,7 +74,8 @@ checklist: phases/P25-graph-view-upgrade.md
 | P22 | チャートビューアップグレード | done | `phases/P22-chart-view-upgrade.md`, `conventions.md`, `testing.md`, 必要に応じて `../spec/navigation.md`, `../ui/screens-macos.md`, `../ui/navigation.md`, `../ui/DESIGN.md`, `../architecture/overview.md` |
 | P23 | 大規模リファクタリング | done | `phases/P23-large-refactoring.md`, `conventions.md`, `testing.md`, 必要に応じて `../architecture/overview.md`, `../architecture/decisions.md`, `../spec/`, `../ui/` |
 | P24 | 全般修正 | done | `phases/P24-general-fixes.md`, `conventions.md`, `testing.md`, 必要に応じて `../spec/`, `../ui/`, `../architecture/overview.md` |
-| P25 | グラフビューアップグレード | current | `phases/P25-graph-view-upgrade.md`, `conventions.md`, `testing.md`, 必要に応じて `../spec/`, `../ui/`, `../architecture/overview.md` |
+| P25 | グラフビューアップグレード | done | `phases/P25-graph-view-upgrade.md`, `conventions.md`, `testing.md`, 必要に応じて `../spec/`, `../ui/`, `../architecture/overview.md` |
+| P26 | デザイン・UI刷新 | current | `phases/P26-design-ui-refresh.md`, `conventions.md`, `testing.md`, `../ui/DESIGN.md`, `../ui/screens-macos.md`, `../ui/navigation.md`, 必要に応じて `../spec/`, `../architecture/overview.md` |
 
 ### 取り下げた非正当フェーズ
 
