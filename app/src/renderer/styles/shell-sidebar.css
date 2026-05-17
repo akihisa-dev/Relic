@@ -30,8 +30,8 @@
     radial-gradient(circle at 16% 0%, rgba(255, 255, 255, 0.42), transparent 24%),
     radial-gradient(ellipse at 82% 100%, rgba(0, 0, 0, 0.075), transparent 30%),
     repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.018) 0 1px, rgba(0, 0, 0, 0.008) 1px 2px),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.25' numOctaves='5' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)' opacity='.46'/%3E%3C/svg%3E");
-  background-size: cover, cover, auto, 130px 130px;
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.014) 0 1px, rgba(0, 0, 0, 0.006) 1px 3px);
+  background-size: cover, cover, auto, auto;
   content: "";
   inset: 0;
   opacity: 0.62;
@@ -77,9 +77,9 @@
   overflow: hidden;
   padding: 22px 9px 18px;
   transition:
-    flex-basis 220ms cubic-bezier(.2, .8, .2, 1),
-    width 220ms cubic-bezier(.2, .8, .2, 1),
-    background-color 220ms cubic-bezier(.2, .8, .2, 1);
+    flex-basis 160ms cubic-bezier(.2, .8, .2, 1),
+    width 160ms cubic-bezier(.2, .8, .2, 1),
+    background-color 160ms ease;
   width: 58px;
   z-index: 2;
 }
@@ -252,8 +252,9 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.88),
     inset 0 -1px 0 rgba(0, 0, 0, 0.035),
     inset 1px 0 0 rgba(255, 255, 255, 0.34),
-    inset 18px 0 36px rgba(255, 255, 255, 0.18),
-    0 18px 42px rgba(0, 0, 0, 0.065);
+    inset 12px 0 24px rgba(255, 255, 255, 0.14),
+    0 10px 24px rgba(0, 0, 0, 0.05);
+  contain: paint;
   display: flex;
   flex: 0 0 auto;
   flex-direction: column;
@@ -262,8 +263,7 @@
   min-width: 180px;
   overflow: hidden;
   position: relative;
-  transition: width 280ms cubic-bezier(.22, 1, .36, 1), background-color 220ms ease, border-color 220ms ease;
-  will-change: width;
+  transition: width 180ms cubic-bezier(.2, .8, .2, 1), border-color 160ms ease;
 }
 
 .sidebar::before {
@@ -271,9 +271,8 @@
     radial-gradient(ellipse at 64% 18%, rgba(255, 255, 255, 0.32), transparent 32%),
     linear-gradient(126deg, transparent 0 22%, rgba(255, 255, 255, 0.18) 34%, transparent 48%),
     repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.035) 0 1px, rgba(0, 0, 0, 0.014) 1px 2px),
-    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.014) 0 1px, rgba(0, 0, 0, 0.008) 1px 2px),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.08' numOctaves='5' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='.34'/%3E%3C/svg%3E");
-  background-size: cover, cover, auto, auto, 96px 96px;
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.014) 0 1px, rgba(0, 0, 0, 0.008) 1px 2px);
+  background-size: cover, cover, auto, auto;
   content: "";
   inset: 0;
   mix-blend-mode: overlay;
@@ -301,7 +300,7 @@
   position: relative;
   transform: translateX(0) scaleX(1);
   transform-origin: left center;
-  transition: opacity 180ms ease, transform 240ms cubic-bezier(.22, 1, .36, 1);
+  transition: opacity 140ms ease, transform 180ms cubic-bezier(.2, .8, .2, 1);
   z-index: 1;
 }
 
