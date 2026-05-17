@@ -290,6 +290,14 @@
   z-index: 8;
 }
 
+.pane-tab-actions .toolbar-btn,
+.pane-tab-actions .toolbar-btn:hover,
+.pane-tab-actions .toolbar-btn.active {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+
 .pane-tab-bar::-webkit-scrollbar {
   display: none;
 }
