@@ -63,13 +63,8 @@ const IconDashboard = (): ReactElement => (
 );
 
 const IconSettings = (): ReactElement => (
-  <svg fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" viewBox="0 0 20 20" width="18">
-    <line x1="3" x2="17" y1="5" y2="5" />
-    <line x1="3" x2="17" y1="10" y2="10" />
-    <line x1="3" x2="17" y1="15" y2="15" />
-    <circle cx="7" cy="5" fill="currentColor" r="2" stroke="none" />
-    <circle cx="13" cy="10" fill="currentColor" r="2" stroke="none" />
-    <circle cx="7" cy="15" fill="currentColor" r="2" stroke="none" />
+  <svg fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="18">
+    <path d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75" />
   </svg>
 );
 
