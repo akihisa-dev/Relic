@@ -68,7 +68,6 @@ export function Toolbar({ fallbackViewRef, onEditorAction, viewRef }: ToolbarPro
       <ToolbarInsertGroup
         closingPanel={toolbar.closingPanel}
         linkUrl={toolbar.linkUrl}
-        onBlockId={toolbar.handleBlockId}
         onCloseLinkDialog={toolbar.closeLinkDialog}
         onInternalLink={toolbar.handleInternalLink}
         onLink={toolbar.handleLink}
