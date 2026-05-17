@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import type {
   SearchMode,
+  SearchWorkspaceInput,
   UserDefinedField,
   WorkspaceSearchResult,
   WorkspaceState
@@ -70,14 +71,14 @@ export function useWorkspaceSearchState({
     }
 
     let canceled = false;
+    const input: SearchWorkspaceInput =
+      searchMode === "frontmatter"
+        ? { frontmatterField: searchFrontmatterField, mode: searchMode, query: searchQuery }
+        : { mode: searchMode, query: searchQuery };
 
     setIsSearching(true);
     void window.relic
-      .searchWorkspace({
-        frontmatterField: searchMode === "frontmatter" ? searchFrontmatterField : undefined,
-        mode: searchMode,
-        query: searchQuery
-      })
+      .searchWorkspace(input)
       .then((result) => {
         if (canceled) return;
 

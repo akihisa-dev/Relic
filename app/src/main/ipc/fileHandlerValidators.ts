@@ -124,7 +124,11 @@ export function isSearchWorkspaceInput(input: unknown): input is SearchWorkspace
     "mode" in input &&
     typeof (input as { query?: unknown }).query === "string" &&
     isSearchMode((input as { mode?: unknown }).mode) &&
-    (!("frontmatterField" in input) || typeof (input as { frontmatterField?: unknown }).frontmatterField === "string")
+    (
+      !("frontmatterField" in input) ||
+      (input as { frontmatterField?: unknown }).frontmatterField === undefined ||
+      typeof (input as { frontmatterField?: unknown }).frontmatterField === "string"
+    )
   );
 }
 
@@ -172,17 +176,15 @@ export function normalizeSearchWorkspaceInput(input: unknown): SearchWorkspaceIn
   }
 
   if (
-    ("frontmatterField" in input && typeof record.frontmatterField !== "string") ||
-    ("field" in input && typeof record.field !== "string")
+    ("frontmatterField" in input &&
+      record.frontmatterField !== undefined &&
+      typeof record.frontmatterField !== "string") ||
+    ("field" in input && record.field !== undefined && typeof record.field !== "string")
   ) {
     return null;
   }
 
-  return {
-    frontmatterField: frontmatterField ?? undefined,
-    mode,
-    query
-  };
+  return frontmatterField === null ? { mode, query } : { frontmatterField, mode, query };
 }
 
 function normalizeSearchWorkspaceArgs(args: unknown[]): SearchWorkspaceInput | null {
