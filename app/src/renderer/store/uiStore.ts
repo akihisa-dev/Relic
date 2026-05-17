@@ -23,7 +23,7 @@ interface UiState {
 export const useUiStore = create<UiState>((set) => ({
   activeSidebarView: "files",
   isSidebarOpen: true,
-  isRightPanelOpen: true,
+  isRightPanelOpen: false,
   isTypewriterMode: false,
   rightPanelView: "outline",
   selectedGanttChartId: null,
