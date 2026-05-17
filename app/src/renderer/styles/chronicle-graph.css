@@ -266,19 +266,24 @@
 }
 
 .graph-controls-minimized {
-  background: var(--popup-bg);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  color: var(--text-2);
-  font-size: 15px;
-  height: 30px;
-  min-height: 30px;
+  align-items: center;
+  background: color-mix(in srgb, var(--popup-bg) 92%, var(--text) 8%);
+  border: 1px solid var(--border-medium);
+  border-radius: 7px;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.16);
+  color: var(--text);
+  cursor: pointer;
+  display: inline-flex;
+  height: 36px;
+  justify-content: center;
+  min-height: 36px;
   padding: 0;
-  width: 30px;
+  width: 36px;
 }
 
 .graph-controls-minimized:hover {
   background: var(--hover);
+  border-color: var(--border-medium);
   color: var(--text);
 }
 
@@ -448,8 +453,11 @@
   background: transparent;
   border-color: transparent;
   box-shadow: none;
+  opacity: 1;
   padding: 0;
-  width: 30px;
+  pointer-events: auto;
+  transform: translateY(0);
+  width: 36px;
 }
 
 .graph-panel:hover .graph-hover-settings,

@@ -125,3 +125,10 @@ P24では、事前に固定した長い実施リストは置かない。
 - 実施: `chronicle` 専用だったミニマップ表示・項目計算・ミニマップ操作をdateチャートでも使うようにした。ミニマップのアクセシブル名は年表専用ではなくチャート共通の文言に変更した。date軸では、年・月のセル枠を維持したまま、ラベル文字だけを横スクロール位置に追従させ、区間内で表示中の年月が分かるようにした
 - 確認: `pnpm exec vitest run src/renderer/components/ChronicleMinimap.test.tsx src/renderer/hooks/useChronicleChartModel.test.tsx src/renderer/hooks/useChronicleChartViewport.test.tsx src/renderer/App.test.tsx`、`pnpm exec vitest run src/renderer/chronicleTimelineAxis.test.ts src/renderer/components/ChronicleChartGrid.test.tsx src/renderer/App.test.tsx`、`pnpm typecheck`、`pnpm test`、`git diff --check` が通過した。全体テストは最終確認時点で78ファイル、519件が通過した
 - 残り: 実ワークスペースを開いたElectron実機目視は未実施
+
+### グラフ操作パネル最小状態の視認性改善
+
+- 方向性: グラフビュー右上のhover操作パネルだけを対象に、最小化後の復帰入口を見つけやすくする。既存のグラフ描画、保存形式、IPC/preload API、store状態構造は変えない
+- 実施: 最小化時の三点表示を三本線系SVGへ変更し、アクセシブル名とtitleは既存の「展開」のまま維持した。最小状態のパネルだけ常時表示にし、ボタンサイズ、枠、影、文字色を強めた。展開後の通常パネルは従来どおりhover/focus時に表示する
+- 確認: `pnpm exec vitest run src/renderer/components/GraphControls.test.tsx`、`pnpm typecheck`、`git diff --check` が通過した。開発版レンダラーでグラフビューを開き、最小化後の三本線ボタンがhoverなしで表示されることを確認した
+- 残り: Electron実機で実ワークスペースを開いた状態の目視確認は未実施

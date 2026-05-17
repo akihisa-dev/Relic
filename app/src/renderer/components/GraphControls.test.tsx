@@ -89,6 +89,7 @@ describe("GraphControls", () => {
     fireEvent.click(screen.getByTitle("最小化"));
 
     expect(screen.getByTitle("展開")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "展開" }).querySelector("svg")).toBeInTheDocument();
 
     fireEvent.click(screen.getByTitle("展開"));
 
