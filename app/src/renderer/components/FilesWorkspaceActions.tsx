@@ -23,26 +23,54 @@ export function FilesCreateActions({
   onCreateFolder
 }: FilesCreateActionsProps): ReactElement {
   const t = useT();
+  const createFileLabel = isCreatingFile ? t("common.running") : t("files.createNote");
+  const createFolderLabel = isCreatingFolder ? t("common.running") : t("files.createFolder");
 
   return (
-    <>
+    <div className="files-create-actions">
       <button
-        className="primary-button"
+        aria-label={createFileLabel}
+        className="files-create-icon-button"
         disabled={isCreatingFile}
         onClick={onCreateFile}
+        title={createFileLabel}
         type="button"
       >
-        {isCreatingFile ? t("common.running") : t("files.createNote")}
+        <NewFileIcon />
       </button>
       <button
-        className="secondary-button"
+        aria-label={createFolderLabel}
+        className="files-create-icon-button"
         disabled={isCreatingFolder}
         onClick={onCreateFolder}
+        title={createFolderLabel}
         type="button"
       >
-        {isCreatingFolder ? t("common.running") : t("files.createFolder")}
+        <NewFolderIcon />
       </button>
-    </>
+    </div>
+  );
+}
+
+function NewFileIcon(): ReactElement {
+  return (
+    <svg aria-hidden="true" fill="none" height="20" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 20 20" width="20">
+      <path d="M5 3.5h6.5L15 7v9.5H5z" />
+      <path d="M11.5 3.5V7H15" />
+      <path d="M10 9.5v5" />
+      <path d="M7.5 12h5" />
+    </svg>
+  );
+}
+
+function NewFolderIcon(): ReactElement {
+  return (
+    <svg aria-hidden="true" fill="none" height="20" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 20 20" width="20">
+      <path d="M2.8 6.5h5l1.4 1.7h8v7.3H2.8z" />
+      <path d="M2.8 6.5V5h5.4l1.3 1.5" />
+      <path d="M10 9.5v4.2" />
+      <path d="M7.9 11.6h4.2" />
+    </svg>
   );
 }
 
