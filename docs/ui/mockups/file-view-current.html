@@ -7,29 +7,60 @@
   <style>
     :root {
       --bg: #ffffff;
-      --rail-bg: rgba(255, 255, 255, 0.96);
-      --sidebar-bg: rgba(250, 250, 250, 0.96);
-      --popup-bg: rgba(255, 255, 255, 0.98);
+      --rail-bg: rgba(244, 244, 244, 0.74);
+      --sidebar-bg: rgba(244, 244, 244, 0.82);
+      --popup-bg: rgba(255, 255, 255, 0.88);
       --text: #1c1c1c;
       --text-2: #5e5e5e;
       --text-3: #8a8a8a;
-      --border: rgba(28, 28, 28, 0.1);
-      --border-soft: rgba(28, 28, 28, 0.13);
-      --border-medium: rgba(28, 28, 28, 0.2);
-      --btn-bg: rgba(255, 255, 255, 0.9);
-      --hover: rgba(28, 28, 28, 0.04);
-      --hover-strong: rgba(28, 28, 28, 0.1);
-      --input-bg: rgba(255, 255, 255, 0.72);
+      --border: rgba(28, 28, 28, 0.09);
+      --border-soft: rgba(28, 28, 28, 0.12);
+      --border-medium: rgba(28, 28, 28, 0.18);
+      --btn-bg: rgba(238, 238, 236, 0.52);
+      --hover: rgba(255, 255, 255, 0.24);
+      --hover-strong: rgba(28, 28, 28, 0.07);
+      --input-bg: rgba(238, 238, 236, 0.48);
       --accent: #00628c;
       --accent-hover: #007caf;
       --accent-soft: rgba(0, 98, 140, 0.08);
       --accent-softer: rgba(0, 98, 140, 0.04);
       --accent-ring: rgba(0, 98, 140, 0.16);
       --link: #00628c;
-      --highlight: rgba(0, 98, 140, 0.12);
+      --surface: #ffffff;
+      --surface-container-low: #fafafa;
+      --surface-container: #f4f4f4;
+      --surface-container-high: #eeeeee;
+      --surface-container-highest: #e8e8e8;
+      --aluminum-base: #f4f4f4;
+      --metal-sheen:
+        radial-gradient(ellipse at 22% 8%, rgba(255, 255, 255, 0.46), transparent 34%),
+        linear-gradient(145deg, rgba(255, 255, 255, 0.52), rgba(232, 232, 232, 0.58) 52%, rgba(212, 212, 212, 0.46)),
+        repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.04) 0 1px, rgba(0, 0, 0, 0.01) 1px 2px);
+      --metal-control:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.38), rgba(0, 0, 0, 0.025)),
+        var(--btn-bg);
+      --metal-canvas:
+        radial-gradient(ellipse at 20% 8%, rgba(255, 255, 255, 0.22), transparent 36%),
+        linear-gradient(150deg, color-mix(in srgb, var(--surface-container-low) 88%, transparent), color-mix(in srgb, var(--surface-container) 78%, transparent) 48%, color-mix(in srgb, var(--surface-container-high) 70%, transparent)),
+        repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.022) 0 1px, rgba(0, 0, 0, 0.007) 1px 2px),
+        var(--surface-container-low);
+      --metal-recess:
+        linear-gradient(180deg, rgba(0, 0, 0, 0.026), rgba(255, 255, 255, 0.18)),
+        var(--input-bg);
+      --shadow-panel:
+        inset 0 1px 0 rgba(255, 255, 255, 0.76),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.05),
+        0 18px 48px rgba(0, 0, 0, 0.08);
+      --shadow-control:
+        inset 0 1px 0 rgba(255, 255, 255, 0.58),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.04);
+      --shadow-layer:
+        inset 0 1px 0 rgba(255, 255, 255, 0.62),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.04),
+        0 8px 22px rgba(0, 0, 0, 0.045);
       color: var(--text);
-      background: var(--bg);
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Hiragino Sans", "Yu Gothic", sans-serif;
+      background: var(--aluminum-base);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Noto Sans JP", sans-serif;
       font-synthesis: none;
       text-rendering: optimizeLegibility;
     }
@@ -53,9 +84,10 @@
     }
 
     button {
+      background: var(--metal-control);
       border: 1px solid var(--border-soft);
-      border-radius: 6px;
-      background: var(--btn-bg);
+      border-radius: 8px;
+      box-shadow: var(--shadow-control);
       color: inherit;
       cursor: default;
       min-height: 28px;
@@ -63,20 +95,45 @@
     }
 
     .app-shell {
+      background:
+        radial-gradient(ellipse at 26% 16%, rgba(255, 255, 255, 0.34), transparent 34%),
+        linear-gradient(145deg, #f7f7f5, #e7e7e4 44%, #d4d4d0),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0) 24%),
+        repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.045) 0 1px, rgba(0, 0, 0, 0.012) 1px 2px),
+        var(--aluminum-base);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.72),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.08),
+        inset 0 0 28px rgba(255, 255, 255, 0.12);
       display: grid;
       grid-template-rows: 38px minmax(0, 1fr) 28px;
       height: 100vh;
-      min-width: 0;
       overflow: hidden;
+      position: relative;
+      width: 100vw;
+    }
+
+    .app-shell::before {
+      background-image:
+        radial-gradient(circle at 16% 0%, rgba(255, 255, 255, 0.42), transparent 24%),
+        radial-gradient(ellipse at 82% 100%, rgba(0, 0, 0, 0.075), transparent 30%),
+        repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.018) 0 1px, rgba(0, 0, 0, 0.008) 1px 2px),
+        repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.014) 0 1px, rgba(0, 0, 0, 0.006) 1px 3px);
+      content: "";
+      inset: 0;
+      opacity: 0.62;
+      pointer-events: none;
+      position: absolute;
     }
 
     .title-bar {
       align-items: center;
-      background: var(--bg);
       border-bottom: 1px solid var(--border);
       display: grid;
-      grid-template-columns: 96px minmax(0, 1fr) auto;
+      grid-template-columns: 96px minmax(0, 1fr) 96px;
       padding: 0 12px;
+      position: relative;
+      z-index: 1;
     }
 
     .window-dots {
@@ -104,62 +161,81 @@
 
     .workspace {
       display: flex;
-      height: 100%;
       min-height: 0;
       min-width: 0;
       overflow: hidden;
+      position: relative;
+      z-index: 1;
     }
 
     .rail {
       align-items: stretch;
       background: var(--rail-bg);
-      border-right: 1px solid var(--border);
+      box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.32);
       color: var(--text-3);
       display: flex;
-      flex: 0 0 auto;
+      flex: 0 0 58px;
       flex-direction: column;
-      gap: 8px;
+      gap: 0;
       overflow: hidden;
-      padding: 8px 8px 12px;
-      width: 48px;
+      padding: 22px 9px 18px;
+      width: 58px;
       z-index: 2;
     }
 
     .rail-button {
       align-items: center;
       background: transparent;
-      border: none;
+      border: 0;
+      box-shadow: none;
       color: inherit;
       display: inline-flex;
-      height: 32px;
-      justify-content: center;
-      padding: 0 7px;
+      gap: 12px;
+      height: 34px;
+      justify-content: flex-start;
+      overflow: hidden;
+      padding: 0;
       width: 100%;
     }
 
-    .rail-button.open,
+    .rail-button + .rail-button,
+    .rail-separator + .rail-button {
+      margin-top: 8px;
+    }
+
+    .rail-button > svg {
+      flex: 0 0 34px;
+      height: 18px;
+      width: 34px;
+    }
+
     .rail-button.active {
-      border-radius: 6px;
+      color: var(--accent);
+      position: relative;
+    }
+
+    .rail-button.active::after {
+      background: var(--accent);
+      border-radius: 999px;
+      bottom: 4px;
+      box-shadow: 0 0 0 4px rgba(0, 98, 140, 0.06);
+      content: "";
+      height: 6px;
+      left: 2px;
+      position: absolute;
+      width: 6px;
     }
 
     .rail-button.open {
-      background: var(--hover);
+      background: rgba(255, 255, 255, 0.18);
+      border-radius: 8px;
       color: var(--text);
-    }
-
-    .rail-button.active {
-      background: var(--accent-soft);
-      color: var(--accent);
-    }
-
-    .rail-icon {
-      font-size: 16px;
-      line-height: 1;
     }
 
     .rail-separator {
       background: var(--border);
       height: 1px;
+      margin-top: 3px;
       width: 24px;
     }
 
@@ -170,54 +246,99 @@
 
     .workspace-chip {
       align-items: center;
-      background: var(--accent-softer);
-      border-radius: 8px;
+      background: var(--metal-control);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      box-shadow: var(--shadow-control);
       color: var(--accent);
-      display: flex;
+      display: inline-flex;
       font-size: 10px;
       font-weight: 700;
-      height: 32px;
+      height: 16px;
       justify-content: center;
-      width: 32px;
+      margin-left: 9px;
+      width: 16px;
     }
 
     .sidebar {
-      background: var(--sidebar-bg);
-      border-right: 1px solid var(--border);
+      background:
+        radial-gradient(ellipse at 24% 12%, rgba(255, 255, 255, 0.42), transparent 34%),
+        linear-gradient(128deg, transparent 0 18%, rgba(255, 255, 255, 0.2) 30%, transparent 46%),
+        linear-gradient(160deg, rgba(255, 255, 255, 0.64), rgba(242, 242, 240, 0.36) 52%, rgba(210, 210, 208, 0.22)),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.08), rgba(0, 0, 0, 0.018)),
+        var(--sidebar-bg);
+      border: 1px solid rgba(255, 255, 255, 0.52);
+      border-radius: 22px;
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.88),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.035),
+        inset 1px 0 0 rgba(255, 255, 255, 0.34),
+        inset 12px 0 24px rgba(255, 255, 255, 0.14),
+        0 10px 24px rgba(0, 0, 0, 0.05);
       display: flex;
       flex: 0 0 292px;
       flex-direction: column;
-      height: 100%;
+      height: calc(100% - 28px);
+      margin: 14px 0 14px 8px;
       min-width: 180px;
       overflow: hidden;
       position: relative;
       width: 292px;
     }
 
-    .sidebar-header {
-      background: inherit;
-      border-bottom: 1px solid var(--border);
-      flex-shrink: 0;
-      padding: 0 16px;
+    .sidebar::before,
+    .main-area::before,
+    .right-panel::before {
+      background-image:
+        radial-gradient(ellipse at 64% 18%, rgba(255, 255, 255, 0.32), transparent 32%),
+        linear-gradient(126deg, transparent 0 22%, rgba(255, 255, 255, 0.18) 34%, transparent 48%),
+        repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.035) 0 1px, rgba(0, 0, 0, 0.014) 1px 2px),
+        repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.014) 0 1px, rgba(0, 0, 0, 0.008) 1px 2px);
+      content: "";
+      inset: 0;
+      mix-blend-mode: overlay;
+      opacity: 0.42;
+      pointer-events: none;
+      position: absolute;
     }
 
-    .pane-heading {
-      align-items: center;
-      color: var(--text-2);
-      display: flex;
-      font-size: 12px;
-      font-weight: 700;
-      gap: 8px;
-      letter-spacing: 0.02em;
-      padding: 10px 0;
-      text-transform: uppercase;
+    .sidebar-header,
+    .sidebar-body {
+      position: relative;
+      z-index: 1;
+    }
+
+    .sidebar-header {
+      flex-shrink: 0;
+      padding: 0 18px;
     }
 
     .sidebar-body {
       flex: 1;
-      margin-right: 8px;
+      min-height: 0;
       overflow-y: auto;
-      padding: 16px;
+      padding: 0 18px 18px;
+    }
+
+    .pane-heading {
+      align-items: center;
+      color: var(--text-3);
+      display: flex;
+      font-size: 11px;
+      font-weight: 700;
+      gap: 8px;
+      letter-spacing: 0.06em;
+      padding: 18px 0;
+      text-transform: uppercase;
+    }
+
+    .pane-heading-count {
+      color: var(--text-3);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0;
+      margin-left: auto;
+      text-transform: none;
     }
 
     .sidebar-section {
@@ -228,15 +349,14 @@
     .files-search {
       display: grid;
       gap: 8px;
-      position: relative;
-      z-index: 5;
     }
 
     .files-search-input {
       align-items: center;
-      background: var(--input-bg);
+      background: var(--metal-recess);
       border: 1px solid var(--border-soft);
-      border-radius: 6px;
+      border-radius: 8px;
+      box-shadow: var(--shadow-control);
       display: grid;
       grid-template-columns: auto minmax(0, 1fr);
       min-height: 34px;
@@ -248,13 +368,15 @@
       border: 0;
       border-radius: 0;
       border-right: 1px solid var(--border);
+      box-shadow: none;
       color: var(--text-2);
       font-size: 12px;
       min-height: 34px;
       padding: 0 9px;
     }
 
-    .files-search-input input {
+    .files-search-input input,
+    .text-input {
       background: transparent;
       border: 0;
       color: var(--text);
@@ -271,17 +393,15 @@
       grid-template-columns: minmax(0, 1fr) auto;
     }
 
-    .text-input {
+    .new-file-form .text-input {
+      background: var(--metal-recess);
       border: 1px solid var(--border-soft);
-      border-radius: 6px;
-      min-height: 30px;
-      min-width: 0;
-      padding: 0 10px;
-      width: 100%;
+      border-radius: 8px;
+      box-shadow: var(--shadow-control);
     }
 
     .primary-button {
-      background: var(--accent);
+      background: linear-gradient(180deg, var(--accent-hover), var(--accent));
       border-color: transparent;
       color: white;
     }
@@ -340,7 +460,8 @@
       align-items: center;
       background: transparent;
       border: 0;
-      border-radius: 6px;
+      border-radius: 8px;
+      box-shadow: none;
       color: var(--text-2);
       display: grid;
       font-size: 13px;
@@ -359,6 +480,7 @@
     .file-tree-row.selected {
       background: var(--accent-soft);
       color: var(--accent);
+      box-shadow: inset 2px 0 0 var(--accent);
     }
 
     .file-tree-icon {
@@ -392,7 +514,7 @@
     }
 
     .file-tree-folder-icon::before {
-      background: var(--sidebar-bg);
+      background: var(--surface-container);
       border: 1.5px solid currentColor;
       border-bottom: 0;
       border-radius: 2px 2px 0 0;
@@ -424,27 +546,43 @@
     }
 
     .main-area {
-      background: var(--bg);
+      background:
+        radial-gradient(ellipse at 18% 8%, rgba(255, 255, 255, 0.34), transparent 34%),
+        linear-gradient(145deg, var(--surface-container-low), var(--surface-container) 44%, var(--surface-container-highest)),
+        repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.038) 0 1px, rgba(0, 0, 0, 0.01) 1px 2px),
+        var(--surface-container);
+      border: 1px solid rgba(28, 28, 28, 0.1);
+      border-radius: 22px;
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.95),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.07),
+        -6px 0 16px rgba(0, 0, 0, 0.035),
+        0 12px 32px rgba(0, 0, 0, 0.06);
       display: grid;
       flex: 1 1 auto;
       grid-template-rows: 40px minmax(0, 1fr);
+      margin: 14px 14px 14px 8px;
       min-height: 0;
       min-width: 0;
       overflow: hidden;
+      position: relative;
     }
 
     .main-area-top-bar {
       align-items: center;
+      background: transparent;
       border-bottom: 1px solid var(--border);
       display: flex;
       gap: 8px;
-      padding: 0 12px;
+      padding: 0 24px;
+      position: relative;
+      z-index: 1;
     }
 
     .rename-bar-label {
       background: transparent;
       border: 1px solid transparent;
-      border-radius: 5px;
+      box-shadow: none;
       color: var(--text);
       font-size: 13px;
       font-weight: 500;
@@ -468,6 +606,7 @@
       background: transparent;
       border: 1px solid transparent;
       border-radius: 5px;
+      box-shadow: none;
       color: var(--text-2);
       font-size: 13px;
       min-height: 26px;
@@ -475,8 +614,9 @@
     }
 
     .toolbar-btn.active {
-      background: var(--hover);
+      background: var(--metal-control);
       border-color: var(--border-soft);
+      box-shadow: var(--shadow-control);
       color: var(--text);
     }
 
@@ -486,40 +626,17 @@
       min-height: 0;
       min-width: 0;
       overflow: hidden;
+      position: relative;
+      z-index: 1;
     }
 
     .editor-workspace {
       display: grid;
       flex: 1 1 auto;
-      grid-template-rows: auto minmax(0, 1fr);
+      grid-template-rows: minmax(0, 1fr);
       min-height: 0;
       min-width: 0;
       overflow: hidden;
-    }
-
-    .toolbar {
-      align-items: center;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      flex-shrink: 0;
-      gap: 2px;
-      overflow: hidden;
-      padding: 4px 10px;
-      position: relative;
-      z-index: 30;
-    }
-
-    .toolbar-group {
-      align-items: center;
-      display: flex;
-      gap: 2px;
-    }
-
-    .toolbar-separator {
-      background: var(--border-medium);
-      height: 18px;
-      margin: 0 6px;
-      width: 1px;
     }
 
     .panes-container {
@@ -535,7 +652,6 @@
     .pane {
       display: grid;
       grid-template-rows: 36px minmax(0, 1fr);
-      height: 100%;
       min-height: 0;
       min-width: 0;
       overflow: hidden;
@@ -543,12 +659,12 @@
 
     .pane-tab-bar {
       align-items: end;
-      background: var(--bg);
+      background: transparent;
       border-bottom: 1px solid var(--border);
       display: flex;
       gap: 2px;
       overflow-x: auto;
-      padding: 0 8px;
+      padding: 0 10px;
       position: relative;
     }
 
@@ -556,7 +672,7 @@
       align-items: center;
       border: 1px solid transparent;
       border-bottom: 0;
-      border-radius: 6px 6px 0 0;
+      border-radius: 8px 8px 0 0;
       color: var(--text-3);
       display: flex;
       flex-shrink: 0;
@@ -570,8 +686,9 @@
     }
 
     .pane-tab--active {
-      background: var(--accent-soft);
-      border-color: var(--accent);
+      background: var(--metal-sheen), var(--popup-bg);
+      border-color: var(--border-soft);
+      box-shadow: var(--shadow-control);
       color: var(--text);
     }
 
@@ -585,7 +702,7 @@
     .pane-tab-close {
       background: transparent;
       border: 0;
-      border-radius: 4px;
+      box-shadow: none;
       color: var(--text-3);
       font-size: 14px;
       height: 18px;
@@ -595,9 +712,9 @@
     }
 
     .editor-surface {
+      background: var(--metal-canvas);
       display: grid;
       grid-template-rows: minmax(0, 1fr) 24px;
-      height: 100%;
       min-height: 0;
       min-width: 0;
       overflow: hidden;
@@ -609,49 +726,56 @@
     }
 
     .mock-editor {
-      box-sizing: border-box;
       color: var(--text);
       font-family: "SF Mono", Menlo, Consolas, monospace;
       font-size: 14px;
       height: 100%;
       line-height: 1.7;
       overflow: auto;
-      padding: 28px 38px 48px;
+      padding: 34px 44px 56px;
       white-space: pre-wrap;
     }
 
-    .cm-line-heading {
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Hiragino Sans", "Yu Gothic", sans-serif;
-      font-size: 25px;
-      font-weight: 700;
+    .cm-line-heading,
+    .cm-line-subheading {
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Noto Sans JP", sans-serif;
+      font-weight: 760;
       line-height: 1.35;
+    }
+
+    .cm-line-heading {
+      font-size: 25px;
     }
 
     .cm-line-subheading {
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Hiragino Sans", "Yu Gothic", sans-serif;
-      font-size: 21px;
-      font-weight: 700;
-      line-height: 1.35;
+      font-size: 19px;
     }
 
     .cm-frontmatter-block {
+      background:
+        var(--metal-sheen),
+        color-mix(in srgb, var(--popup-bg) 84%, var(--surface-container-high) 16%);
+      border: 1px solid var(--border-soft);
+      border-radius: 10px;
+      box-shadow: var(--shadow-control);
       color: var(--text-2);
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Hiragino Sans", "Yu Gothic", sans-serif;
-      margin-bottom: 18px;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Noto Sans JP", sans-serif;
+      margin-bottom: 20px;
+      padding: 10px 12px;
+      width: min(760px, 100%);
     }
 
     .cm-frontmatter-row {
       align-items: flex-start;
       display: grid;
       gap: 12px;
-      grid-template-columns: 24px 180px minmax(0, 1fr) 24px;
+      grid-template-columns: 22px 150px minmax(0, 1fr);
       min-height: 1.45em;
-      min-width: min(760px, 100%);
     }
 
     .cm-frontmatter-row-icon {
       color: var(--text-3);
-      font-size: 16px;
+      font-size: 14px;
       text-align: center;
     }
 
@@ -665,6 +789,7 @@
     .cm-frontmatter-pill {
       align-items: center;
       background: var(--hover);
+      border: 1px solid var(--border-soft);
       border-radius: 999px;
       color: var(--text);
       display: inline-flex;
@@ -691,8 +816,9 @@
     }
 
     .cm-live-blockquote {
-      border-left: 3px solid var(--border);
+      border-left: 3px solid var(--border-medium);
       color: var(--text-2);
+      display: block;
       padding-left: 10px;
     }
 
@@ -708,26 +834,31 @@
     }
 
     .right-panel {
-      background: var(--popup-bg);
+      background:
+        var(--metal-sheen),
+        color-mix(in srgb, var(--popup-bg) 86%, var(--surface-container-high) 14%);
       border-left: 1px solid var(--border);
+      box-shadow:
+        inset 1px 0 0 rgba(255, 255, 255, 0.42),
+        -8px 0 18px rgba(0, 0, 0, 0.035);
       display: flex;
-      flex: 0 0 240px;
+      flex: 0 0 252px;
       flex-direction: column;
-      height: 100%;
       min-width: 220px;
       overflow: hidden;
-      width: 240px;
+      position: relative;
+      width: 252px;
     }
 
-    .right-panel-content {
+    .right-panel-content,
+    .outline-list,
+    .links-list {
       display: grid;
-      gap: 14px;
+      gap: 8px;
     }
 
     .outline-list,
     .links-list {
-      display: grid;
-      gap: 6px;
       list-style: none;
       margin: 0;
       padding: 0;
@@ -737,12 +868,12 @@
     .links-list button {
       background: transparent;
       border: 0;
+      box-shadow: none;
       color: var(--text-2);
-      font-size: 13px;
       justify-content: flex-start;
-      min-height: 24px;
+      min-height: 26px;
       overflow: hidden;
-      padding: 0 4px;
+      padding: 0 6px;
       text-align: left;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -751,7 +882,7 @@
 
     .outline-list .active-outline {
       color: var(--accent);
-      font-weight: 650;
+      font-weight: 680;
     }
 
     .status-bar {
@@ -763,9 +894,11 @@
       gap: 16px;
       justify-content: space-between;
       padding: 0 12px;
+      position: relative;
+      z-index: 1;
     }
 
-    @media (max-width: 900px) {
+    @media (max-width: 980px) {
       .sidebar {
         flex-basis: 248px;
         width: 248px;
@@ -777,6 +910,22 @@
 
       .mock-editor {
         padding-inline: 24px;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .rail {
+        flex-basis: 46px;
+        padding-inline: 6px;
+        width: 46px;
+      }
+
+      .sidebar {
+        display: none;
+      }
+
+      .main-area {
+        margin-left: 8px;
       }
     }
   </style>
@@ -795,14 +944,73 @@
 
     <div class="workspace">
       <nav class="rail" aria-label="ビュー切替">
-        <button class="rail-button active" type="button" title="ファイル"><span class="rail-icon">▤</span></button>
-        <button class="rail-button open" type="button" title="ダッシュボード"><span class="rail-icon">▦</span></button>
-        <button class="rail-button" type="button" title="グラフ"><span class="rail-icon">◎</span></button>
-        <button class="rail-button" type="button" title="チャート"><span class="rail-icon">◇</span></button>
+        <button class="rail-button active" type="button" title="ファイル" aria-label="ファイル">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 5a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5z"></path>
+            <polyline points="12.75,8.75 10.25,11 12.75,13.25"></polyline>
+          </svg>
+        </button>
+        <button class="rail-button" type="button" title="ダッシュボード" aria-label="ダッシュボード">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="3" width="5" height="5" rx="1.4"></rect>
+            <rect x="12" y="3" width="5" height="5" rx="1.4"></rect>
+            <rect x="3" y="12" width="5" height="5" rx="1.4"></rect>
+            <path d="M12 16l1.5-3 1.7 2 1.8-4"></path>
+          </svg>
+        </button>
+        <button class="rail-button" type="button" title="グラフ" aria-label="グラフ">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="5" cy="6" r="2"></circle>
+            <circle cx="14" cy="4" r="2"></circle>
+            <circle cx="15" cy="14" r="2"></circle>
+            <circle cx="6" cy="15" r="2"></circle>
+            <line x1="6.7" y1="5.6" x2="12.2" y2="4.4"></line>
+            <line x1="14.3" y1="6" x2="14.8" y2="12"></line>
+            <line x1="13.2" y1="14.3" x2="7.8" y2="14.8"></line>
+            <line x1="6.2" y1="7.5" x2="13.8" y2="12.5"></line>
+          </svg>
+        </button>
+        <button class="rail-button" type="button" title="チャート" aria-label="チャート">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="3" y1="16" x2="17" y2="16"></line>
+            <line x1="5" y1="13" x2="5" y2="16"></line>
+            <line x1="9" y1="9" x2="9" y2="16"></line>
+            <line x1="13" y1="5" x2="13" y2="16"></line>
+            <line x1="17" y1="11" x2="17" y2="16"></line>
+          </svg>
+        </button>
         <div class="rail-separator"></div>
-        <button class="rail-button" type="button" title="ファイル加工"><span class="rail-icon">⌘</span></button>
-        <button class="rail-button" type="button" title="フロントマター"><span class="rail-icon">#</span></button>
-        <button class="rail-button" type="button" title="設定"><span class="rail-icon">⚙</span></button>
+        <button class="rail-button" type="button" title="ツール" aria-label="ツール">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M5 15l4-4"></path>
+            <path d="M11 5l4 4"></path>
+            <path d="M13.5 3.5l3 3-2 2-3-3z"></path>
+            <path d="M4 16l3 1 1-3-3-3-3 1z"></path>
+          </svg>
+        </button>
+        <button class="rail-button" type="button" title="フロントマター" aria-label="フロントマター">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M5 4h10"></path>
+            <path d="M5 9h10"></path>
+            <path d="M5 14h6"></path>
+            <path d="M3 4h.01"></path>
+            <path d="M3 9h.01"></path>
+            <path d="M3 14h.01"></path>
+          </svg>
+        </button>
+        <button class="rail-button" type="button" title="設定" aria-label="設定">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="10" cy="10" r="2.5"></circle>
+            <path d="M10 2.5v2"></path>
+            <path d="M10 15.5v2"></path>
+            <path d="M2.5 10h2"></path>
+            <path d="M15.5 10h2"></path>
+            <path d="M4.7 4.7l1.4 1.4"></path>
+            <path d="M13.9 13.9l1.4 1.4"></path>
+            <path d="M15.3 4.7l-1.4 1.4"></path>
+            <path d="M6.1 13.9l-1.4 1.4"></path>
+          </svg>
+        </button>
         <div class="rail-spacer"></div>
         <div class="rail-separator"></div>
         <div class="workspace-chip">R</div>
@@ -810,7 +1018,7 @@
 
       <aside class="sidebar">
         <div class="sidebar-header">
-          <div class="pane-heading">ファイル</div>
+          <div class="pane-heading">Files <span class="pane-heading-count">12</span></div>
         </div>
         <div class="sidebar-body">
           <div class="sidebar-section">
@@ -940,28 +1148,6 @@
 
         <div class="editor-layout">
           <div class="editor-workspace">
-            <div class="toolbar">
-              <div class="toolbar-group">
-                <button class="toolbar-btn" type="button">B</button>
-                <button class="toolbar-btn" type="button"><em>I</em></button>
-                <button class="toolbar-btn" type="button">S</button>
-                <button class="toolbar-btn" type="button">U</button>
-              </div>
-              <div class="toolbar-separator"></div>
-              <div class="toolbar-group">
-                <button class="toolbar-btn" type="button">H1</button>
-                <button class="toolbar-btn" type="button">H2</button>
-                <button class="toolbar-btn" type="button">・</button>
-                <button class="toolbar-btn" type="button">1.</button>
-              </div>
-              <div class="toolbar-separator"></div>
-              <div class="toolbar-group">
-                <button class="toolbar-btn" type="button">Link</button>
-                <button class="toolbar-btn" type="button">Code</button>
-                <button class="toolbar-btn" type="button">Quote</button>
-              </div>
-            </div>
-
             <div class="panes-container">
               <section class="pane pane--focused">
                 <div class="pane-tab-bar">
@@ -982,7 +1168,7 @@
                 <div class="editor-surface">
                   <div class="editor-body">
                     <div class="mock-editor">
-<div class="cm-frontmatter-block"><div class="cm-frontmatter-row"><span class="cm-frontmatter-row-icon">◆</span><span class="cm-frontmatter-key">status</span><span><span class="cm-frontmatter-pill">draft</span></span><span></span></div><div class="cm-frontmatter-row"><span class="cm-frontmatter-row-icon">◆</span><span class="cm-frontmatter-key">tags</span><span><span class="cm-frontmatter-pill">relic</span><span class="cm-frontmatter-pill">design</span></span><span></span></div></div><div class="cm-line-heading">Relicについて</div>
+<div class="cm-frontmatter-block"><div class="cm-frontmatter-row"><span class="cm-frontmatter-row-icon">◆</span><span class="cm-frontmatter-key">status</span><span><span class="cm-frontmatter-pill">draft</span></span></div><div class="cm-frontmatter-row"><span class="cm-frontmatter-row-icon">◆</span><span class="cm-frontmatter-key">tags</span><span><span class="cm-frontmatter-pill">relic</span><span class="cm-frontmatter-pill">design</span></span></div></div><div class="cm-line-heading">Relicについて</div>
 
 Relicは、ローカルMarkdownを扱うための書き手向けワークスペースです。
 ファイルを開き、編集し、リンクでつなげながら文章を育てます。
@@ -996,7 +1182,7 @@ Relicは、ローカルMarkdownを扱うための書き手向けワークスペ�
 内部リンクは <span class="wikilink">[[今日のメモ]]</span> のように表示されます。
 インラインコードは <span class="cm-live-code">frontmatter</span> のように薄い背景を持ちます。
 
-<span class="cm-live-blockquote">このモックは現状デザインを検討用に固定したものです。操作は想定していません。</span>
+<span class="cm-live-blockquote">このメモは現状デザインを検討するためのサンプル本文です。</span>
                     </div>
                   </div>
                   <div class="editor-status">
@@ -1011,7 +1197,7 @@ Relicは、ローカルMarkdownを扱うための書き手向けワークスペ�
 
           <aside class="right-panel">
             <div class="sidebar-header">
-              <div class="pane-heading">アウトライン</div>
+              <div class="pane-heading">Outline</div>
             </div>
             <div class="sidebar-body">
               <div class="right-panel-content">
