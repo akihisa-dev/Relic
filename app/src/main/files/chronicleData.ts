@@ -100,9 +100,6 @@ export function updateChronicleDataForChartEdit(
         const nextDateRange = rangeToArray(nextStartDate, nextEndDate);
         next[fieldName] = nextDateRange;
 
-        if (kind === "planned" && Array.isArray(data.date)) {
-          next.date = [...nextDateRange];
-        }
       }
     }
 
@@ -117,10 +114,6 @@ export function updateChronicleDataForChartEdit(
     ...data,
     [fieldName]: rangeToArray(startDate, endDate)
   };
-
-  if (dateKind === "planned" && Array.isArray(data.date)) {
-    next.date = [...(next[fieldName] as string[])];
-  }
 
   const startYear = dateYear(startDate);
   const endYear = dateYear(endDate);
@@ -154,7 +147,7 @@ export function extractDateRange(markdown: string): DateRange | null {
 }
 
 function extractDateRangeFromData(data: Record<string, unknown>, kind: GanttChartDateKind): DateRange | null {
-  const value = kind === "planned" ? data.plannedDate ?? data.date : data.actualDate;
+  const value = kind === "planned" ? data.plannedDate : data.actualDate;
 
   if (!Array.isArray(value) || (value.length !== 1 && value.length !== 2)) return null;
   const dates = value.map(normalizeDateValue);
@@ -192,7 +185,7 @@ function dateKindOrder(kind: GanttChartDateKind | undefined): number {
 function normalizeDateFieldsForWrite(data: Record<string, unknown>): Record<string, unknown> {
   const next = { ...data };
 
-  for (const fieldName of ["date", "plannedDate", "actualDate"]) {
+  for (const fieldName of ["plannedDate", "actualDate"]) {
     const range = extractRawDateRangeFromData(data, fieldName);
     if (range) next[fieldName] = rangeToArray(range.startDate, range.endDate);
   }

@@ -43,6 +43,7 @@ export interface FilesSidebarProps {
   searchFocusRequest: number;
   searchFrontmatterCandidates: Record<string, string[]>;
   searchFrontmatterField: string;
+  searchFrontmatterFields: string[];
   searchMode: SearchMode;
   searchQuery: string;
   searchResults: WorkspaceSearchResult[];
@@ -82,6 +83,7 @@ export function FilesSidebar({
   searchFocusRequest,
   searchFrontmatterCandidates,
   searchFrontmatterField,
+  searchFrontmatterFields,
   searchMode,
   searchQuery,
   searchResults,
@@ -116,6 +118,7 @@ export function FilesSidebar({
             searchFocusRequest={searchFocusRequest}
             searchFrontmatterCandidates={searchFrontmatterCandidates}
             searchFrontmatterField={searchFrontmatterField}
+            searchFrontmatterFields={searchFrontmatterFields}
             searchMode={searchMode}
             searchQuery={searchQuery}
           />

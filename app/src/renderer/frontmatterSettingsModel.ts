@@ -39,7 +39,7 @@ export const FIELD_TYPE_DESCRIPTION_KEYS: Record<UserDefinedFieldType, Translati
   url: "settings.fieldTypeUrlDescription"
 };
 
-export const RESERVED_FIELD_NAMES = new Set(["aliases", "tags", "status", "chronicle", "date", "plannedDate", "actualDate"]);
+export const RESERVED_FIELD_NAMES = new Set(["aliases", "tags", "status", "chronicle", "plannedDate", "actualDate"]);
 
 export const FIXED_FIELDS: Array<{
   name: "actualDate" | "aliases" | "tags" | "status" | "chronicle" | "plannedDate";

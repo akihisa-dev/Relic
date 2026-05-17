@@ -28,6 +28,7 @@ describe("frontmatterSettingsModel", () => {
     const fields = [{ name: "phase", type: "text" as const }];
 
     expect(isFieldNameAvailable(fields, "deadline")).toBe(true);
+    expect(isFieldNameAvailable(fields, "date")).toBe(true);
     expect(isFieldNameAvailable(fields, "phase")).toBe(false);
     expect(isFieldNameAvailable(fields, "phase", 0)).toBe(true);
     expect(isFieldNameAvailable(fields, "tags")).toBe(false);

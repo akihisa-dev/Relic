@@ -13,6 +13,7 @@ function renderSearch(overrides: Partial<Parameters<typeof FilesSidebarSearch>[0
     searchFocusRequest: 0,
     searchFrontmatterCandidates: { status: ["Draft", "Done"] },
     searchFrontmatterField: "",
+    searchFrontmatterFields: ["aliases", "status", "tags"],
     searchMode: "fullText" as const,
     searchQuery: "",
     ...overrides
@@ -58,7 +59,9 @@ describe("FilesSidebarSearch", () => {
     expect(screen.getByLabelText("Property name")).toHaveValue("status");
     expect(document.querySelector('option[value="Draft"]')).toBeInTheDocument();
 
-    fireEvent.change(screen.getByLabelText("Property name"), { target: { value: "author" } });
-    expect(props.onSearchFrontmatterFieldChange).toHaveBeenCalledWith("author");
+    expect(screen.queryByRole("option", { name: "author" })).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("Property name"), { target: { value: "aliases" } });
+    expect(props.onSearchFrontmatterFieldChange).toHaveBeenCalledWith("aliases");
   });
 });

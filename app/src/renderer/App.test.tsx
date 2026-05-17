@@ -1079,7 +1079,7 @@ describe("App", () => {
     });
     const readMarkdownFile = vi.fn().mockResolvedValue({
       ok: true,
-      value: { content: "---\ndate: [2026-05-02, 2026-05-06]\n---\n# 実装タスク", name: "実装タスク", path: "tasks/implementation.md" }
+      value: { content: "---\nplannedDate: [2026-05-02, 2026-05-06]\n---\n# 実装タスク", name: "実装タスク", path: "tasks/implementation.md" }
     });
 
     window.relic = makeRelicApi({
@@ -1148,7 +1148,7 @@ describe("App", () => {
     const readMarkdownFile = vi.fn().mockResolvedValue({
       ok: true,
       value: {
-        content: "---\nchronicle: [2026]\ndate: [2026-05-01, 2026-05-05]\n---\n# 実装タスク",
+        content: "---\nchronicle: [2026]\nplannedDate: [2026-05-01, 2026-05-05]\n---\n# 実装タスク",
         name: "実装タスク",
         path: "tasks/implementation.md"
       }
@@ -1199,7 +1199,7 @@ describe("App", () => {
     window.dispatchEvent(pointerUp);
 
     await waitFor(() => expect(writeMarkdownFile).toHaveBeenCalledWith({
-      content: "---\nchronicle: [2026]\ndate: [2026-05-02, 2026-05-06]\nplannedDate: [2026-05-02, 2026-05-06]\n---\n# 実装タスク",
+      content: "---\nchronicle: [2026]\nplannedDate: [2026-05-02, 2026-05-06]\n---\n# 実装タスク",
       path: "tasks/implementation.md"
     }));
   });
@@ -2938,9 +2938,13 @@ describe("App", () => {
     });
 
     window.relic = makeRelicApi({
+      getFrontmatterValueCandidates: vi.fn().mockResolvedValue({
+        ok: true,
+        value: { date: ["2026-05-12"], status: ["draft"] }
+      }),
       getUserDefinedFields: vi.fn().mockResolvedValue({
         ok: true,
-        value: [{ choices: ["draft", "published"], name: "status", type: "select" }]
+        value: [{ choices: ["draft", "published"], name: "reviewer", type: "text" }]
       }),
       getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace }),
       searchWorkspace
@@ -2951,6 +2955,8 @@ describe("App", () => {
     await screen.findByLabelText("ファイル検索");
     fireEvent.click(screen.getByRole("button", { name: "検索方法" }));
     fireEvent.click(await screen.findByRole("option", { name: "プロパティ" }));
+    expect(screen.getByRole("option", { name: "reviewer" })).toBeInTheDocument();
+    expect(screen.queryByRole("option", { name: "date" })).not.toBeInTheDocument();
     fireEvent.change(screen.getByLabelText("プロパティ名"), {
       target: { value: "status" }
     });
