@@ -312,7 +312,11 @@
   background: transparent;
   border-color: transparent;
   box-shadow: none;
-  color: var(--text);
+  color: var(--accent);
+}
+
+.main-area-actions .toolbar-btn.active:hover {
+  color: var(--accent);
 }
 
 .pane-tab-bar::-webkit-scrollbar {
