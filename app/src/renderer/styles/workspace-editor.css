@@ -25,6 +25,20 @@
   position: relative;
 }
 
+.main-area::before {
+  background-image:
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.032) 0 1px, rgba(0, 0, 0, 0.011) 1px 2px),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.012) 0 1px, rgba(0, 0, 0, 0.007) 1px 2px),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.16' numOctaves='5' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='.34'/%3E%3C/svg%3E");
+  background-size: auto, auto, 96px 96px;
+  content: "";
+  inset: 0;
+  mix-blend-mode: multiply;
+  opacity: 0.46;
+  pointer-events: none;
+  position: absolute;
+}
+
 .main-area-top-bar {
   align-items: center;
   border-bottom: 1px solid var(--border);
@@ -33,6 +47,8 @@
   background: transparent;
   padding: 0 24px;
   -webkit-app-region: drag;
+  position: relative;
+  z-index: 1;
 }
 
 .main-area-top-bar button,
@@ -54,6 +70,8 @@
   min-height: 0;
   min-width: 0;
   overflow: hidden;
+  position: relative;
+  z-index: 1;
 }
 
 .editor-workspace {
