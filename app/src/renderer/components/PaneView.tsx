@@ -35,6 +35,7 @@ export interface PaneViewProps {
   onOpenLink?: (href: string) => void;
   onOpenWikiLink?: (target: string, heading?: string) => void;
   onFileSaved?: (path: string) => void;
+  onRenameFile: (path: string, name: string) => void;
   onRightPanelViewButton: (view: RightPanelView) => void;
   onScrollTargetHandled?: () => void;
   onSourceModeToggle: () => void;
@@ -79,6 +80,7 @@ export function PaneView({
   onOpenLink,
   onOpenWikiLink,
   onFileSaved,
+  onRenameFile,
   onRightPanelViewButton,
   onScrollTargetHandled,
   onSourceModeToggle,
@@ -197,6 +199,7 @@ export function PaneView({
         onEditorAction={onEditorAction}
         onOpenLink={onOpenLink}
         onOpenWikiLink={onOpenWikiLink}
+        onRenameFile={onRenameFile}
         onUpdateTabContent={updateTabContent}
       />
     </div>

@@ -38,6 +38,7 @@ interface AppEditorWorkspaceProps {
   onOpenLink: (href: string) => void;
   onOpenWikiLink: (target: string, heading?: string) => void;
   onOutlineHeadingClick: (heading: string) => void;
+  onRenameFile: (path: string, name: string) => void;
   onRevealTabFile?: (tabId: string) => void;
   onRightPanelViewButton: (view: RightPanelView) => void;
   onScrollTargetHandled: (pane: PaneId) => void;
@@ -92,6 +93,7 @@ export function AppEditorWorkspace({
   onOpenLink,
   onOpenWikiLink,
   onOutlineHeadingClick,
+  onRenameFile,
   onRevealTabFile,
   onRightPanelViewButton,
   onScrollTargetHandled,
@@ -154,6 +156,7 @@ export function AppEditorWorkspace({
               onOpenInOtherPane={(tabId) => onOpenInOtherPane("left", tabId)}
               onOpenLink={onOpenLink}
               onOpenWikiLink={onOpenWikiLink}
+              onRenameFile={onRenameFile}
               onRightPanelViewButton={onRightPanelViewButton}
               onRevealTabFile={onRevealTabFile}
               onScrollTargetHandled={() => onScrollTargetHandled("left")}
@@ -199,6 +202,7 @@ export function AppEditorWorkspace({
                 onOpenInOtherPane={(tabId) => onOpenInOtherPane("right", tabId)}
                 onOpenLink={onOpenLink}
                 onOpenWikiLink={onOpenWikiLink}
+                onRenameFile={onRenameFile}
                 onRightPanelViewButton={onRightPanelViewButton}
                 onRevealTabFile={onRevealTabFile}
                 onScrollTargetHandled={() => onScrollTargetHandled("right")}

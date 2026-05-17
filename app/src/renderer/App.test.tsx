@@ -1825,7 +1825,18 @@ describe("App", () => {
     expect(removeWorkspace).toHaveBeenCalledWith({ workspaceId: "ws-1" });
   });
 
-  it("本文上部にアクティブファイル名を本文外の表示として出す", async () => {
+  it("本文上部のファイル名は本文外の表示として出し、直接リネームできる", async () => {
+    const renameMarkdownFile = vi.fn().mockResolvedValue({
+      ok: true,
+      value: {
+        file: { content: "本文テスト", name: "読書ログ", path: "読書ログ.md" },
+        workspaceState: {
+          ...withWorkspace,
+          fileTree: [{ name: "読書ログ", path: "読書ログ.md", type: "file" }]
+        }
+      }
+    });
+
     window.relic = makeRelicApi({
       getWorkspaceState: vi.fn().mockResolvedValue({
         ok: true,
@@ -1837,7 +1848,8 @@ describe("App", () => {
       readMarkdownFile: vi.fn().mockResolvedValue({
         ok: true,
         value: { content: "本文テスト", name: "読書メモ", path: "読書メモ.md" }
-      })
+      }),
+      renameMarkdownFile
     });
 
     const { container } = await renderApp();
@@ -1848,6 +1860,16 @@ describe("App", () => {
     expect(title).toBeInTheDocument();
     expect(container.querySelector(".cm-content")).toHaveTextContent("本文テスト");
     expect(container.querySelector(".cm-content")).not.toHaveTextContent("読書メモ");
+
+    fireEvent.click(title);
+    fireEvent.change(container.querySelector(".editor-file-title-input") as HTMLInputElement, {
+      target: { value: "読書ログ" }
+    });
+    fireEvent.submit(container.querySelector(".editor-file-title-form") as HTMLFormElement);
+
+    await waitFor(() => {
+      expect(renameMarkdownFile).toHaveBeenCalledWith({ newName: "読書ログ", path: "読書メモ.md" });
+    });
   });
 
   it("ファイルツリーの右クリックメニューからインラインでリネームする", async () => {

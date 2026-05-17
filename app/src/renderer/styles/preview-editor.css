@@ -151,8 +151,13 @@
 }
 
 .editor-file-title {
+  appearance: none;
+  background: transparent;
+  border: 1px solid transparent;
   box-sizing: border-box;
   color: var(--text);
+  display: block;
+  font-family: inherit;
   font-size: 34px;
   font-weight: 700;
   line-height: 44px;
@@ -163,6 +168,21 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   width: 100%;
+}
+
+.editor-file-title-button {
+  cursor: text;
+  text-align: left;
+}
+
+.editor-file-title-form {
+  margin: 0 auto;
+  width: 100%;
+}
+
+.editor-file-title-input {
+  border-color: var(--accent);
+  outline: none;
 }
 
 .cm-editor-container {
