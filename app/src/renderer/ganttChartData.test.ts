@@ -116,7 +116,7 @@ describe("ganttChartData", () => {
     ]);
   });
 
-  it("plannedDate がない場合は既存通り date を planned として読む", async () => {
+  it("旧dateだけではplannedとして読まない", async () => {
     const fileTree: WorkspaceTreeNode[] = [{ name: "legacy-date", path: "tasks/legacy-date.md", type: "file" }];
     const readMarkdownFile = vi.fn(async ({ path }: { path: string }) => ({
       ok: true as const,
@@ -127,16 +127,7 @@ describe("ganttChartData", () => {
       }
     }));
 
-    await expect(readDateChartEntriesFromFiles(fileTree, readMarkdownFile)).resolves.toEqual([{
-      dateKind: "planned",
-      endLabel: "2026-06-01",
-      endValue: day("2026-06-01"),
-      fileName: "legacy-date",
-      path: "tasks/legacy-date.md",
-      startLabel: "2026-06-01",
-      startValue: day("2026-06-01"),
-      statuses: []
-    }]);
+    await expect(readDateChartEntriesFromFiles(fileTree, readMarkdownFile)).resolves.toEqual([]);
   });
 
   it("read失敗、frontmatterなし、不正日付、逆順日付は補完対象から除外する", async () => {
@@ -176,21 +167,21 @@ describe("ganttChartData", () => {
     }]);
   });
 
-  it("dateバー更新では legacy date と plannedDate を既存文字列形式で更新する", () => {
+  it("dateバー更新ではplannedDateだけを既存文字列形式で更新する", () => {
     expect(updateChartFrontmatter(
-      "---\nchronicle: [2026]\ndate: [2026-05-01, 2026-05-05]\n---\n# 実装タスク",
+      "---\nchronicle: [2026]\nplannedDate: [2026-05-01, 2026-05-05]\n---\n# 実装タスク",
       dateEditInput()
     )).toBe(
-      "---\nchronicle: [2026]\ndate: [2026-05-02, 2026-05-06]\nplannedDate: [2026-05-02, 2026-05-06]\n---\n# 実装タスク"
+      "---\nchronicle: [2026]\nplannedDate: [2026-05-02, 2026-05-06]\n---\n# 実装タスク"
     );
   });
 
   it("chronicleバー更新では date 系フィールドを年差分で連動更新する", () => {
     expect(updateChartFrontmatter(
-      "---\nchronicle: [2026]\ndate: [2026-02-28]\nplannedDate: [2026-02-28]\nactualDate: [2026-03-01, 2026-03-02]\n---\n# 実装タスク",
+      "---\nchronicle: [2026]\nplannedDate: [2026-02-28]\nactualDate: [2026-03-01, 2026-03-02]\n---\n# 実装タスク",
       chronicleEditInput()
     )).toBe(
-      "---\nchronicle: [2027]\ndate: [2027-02-28]\nplannedDate: [2027-02-28]\nactualDate: [2027-03-01, 2027-03-02]\n---\n# 実装タスク"
+      "---\nchronicle: [2027]\nplannedDate: [2027-02-28]\nactualDate: [2027-03-01, 2027-03-02]\n---\n# 実装タスク"
     );
   });
 
@@ -211,7 +202,7 @@ describe("ganttChartData", () => {
     const readMarkdownFile = vi.fn(async ({ path }: { path: string }) => ({
       ok: true as const,
       value: {
-        content: "---\nchronicle: [2026]\ndate: [2026-05-01, 2026-05-05]\n---\n# 実装タスク",
+        content: "---\nchronicle: [2026]\nplannedDate: [2026-05-01, 2026-05-05]\n---\n# 実装タスク",
         name: "実装タスク",
         path
       }
@@ -225,7 +216,7 @@ describe("ganttChartData", () => {
       writeMarkdownFile
     })).resolves.toEqual({ ok: true, value: charts });
     expect(writeMarkdownFile).toHaveBeenCalledWith({
-      content: "---\nchronicle: [2026]\ndate: [2026-05-02, 2026-05-06]\nplannedDate: [2026-05-02, 2026-05-06]\n---\n# 実装タスク",
+      content: "---\nchronicle: [2026]\nplannedDate: [2026-05-02, 2026-05-06]\n---\n# 実装タスク",
       path: "tasks/implementation.md"
     });
   });

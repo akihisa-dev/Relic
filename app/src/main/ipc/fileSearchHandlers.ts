@@ -12,7 +12,7 @@ import {
   type SearchAndReplaceInput,
   searchWorkspaceChannel
 } from "../../shared/ipc";
-import { fail } from "../../shared/result";
+import { fail, ok } from "../../shared/result";
 import { readBacklinks } from "../files/backlinks";
 import { readMarkdownFile } from "../files/markdownFiles";
 import { applySearchAndReplace, replaceInFile, searchAndReplace } from "../files/replace";
@@ -36,6 +36,17 @@ export function registerFileSearchHandlers(): void {
 
       const context = await getActiveWorkspaceContext();
       if (!context.ok) return context;
+
+      if (
+        searchInput.mode === "frontmatter" &&
+        searchInput.frontmatterField?.trim() &&
+        !isRegisteredFrontmatterSearchField(
+          searchInput.frontmatterField,
+          context.value.settings.userDefinedFields
+        )
+      ) {
+        return ok([]);
+      }
 
       return searchWorkspace(
         context.value.activeWorkspace.path,
@@ -162,4 +173,14 @@ export function registerFileSearchHandlers(): void {
       );
     }
   });
+}
+
+function isRegisteredFrontmatterSearchField(
+  field: string,
+  userDefinedFields: Array<{ name: string }>
+): boolean {
+  const fixedFields = new Set(["aliases", "tags", "status", "chronicle", "plannedDate", "actualDate"]);
+  const normalizedField = field.trim();
+
+  return fixedFields.has(normalizedField) || userDefinedFields.some((candidate) => candidate.name === normalizedField);
 }

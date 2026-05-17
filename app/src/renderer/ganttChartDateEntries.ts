@@ -35,7 +35,7 @@ export async function readDateChartEntriesFromFiles(
     const frontmatter = splitFrontmatterBlock(file.value.content);
     if (!frontmatter) return [];
 
-    const plannedRange = readChartDateRange(frontmatter.yaml, "plannedDate") ?? readChartDateRange(frontmatter.yaml, "date");
+    const plannedRange = readChartDateRange(frontmatter.yaml, "plannedDate");
     const actualRange = readChartDateRange(frontmatter.yaml, "actualDate");
     const statuses = readYamlArrayField(frontmatter.yaml, "status");
     const fileName = file.value.name || filePath.split("/").at(-1)?.replace(/\.md$/, "") || filePath;

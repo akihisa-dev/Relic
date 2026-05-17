@@ -12,7 +12,7 @@ export const frontmatterFieldNamePattern = /^[^#\s:][^\r\n:]*$/;
 export const fixedFrontmatterFieldNames = ["aliases", "tags", "status", "chronicle", "plannedDate", "actualDate"];
 
 export function isFixedDateRangeField(key: string): boolean {
-  return key === "date" || key === "plannedDate" || key === "actualDate";
+  return key === "plannedDate" || key === "actualDate";
 }
 
 export function shouldSerializeArrayAsFlowSequence(key: string, field?: UserDefinedField): boolean {

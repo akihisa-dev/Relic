@@ -8,6 +8,7 @@ import type {
   WorkspaceState
 } from "../../shared/ipc";
 import { fixedStatusValues } from "../../shared/status";
+import { knownFrontmatterSearchFields } from "../filesSidebarModel";
 
 interface UseWorkspaceSearchStateInput {
   setWorkspaceError: (message: string | null) => void;
@@ -27,6 +28,10 @@ export function useWorkspaceSearchState({
   const [searchError, setSearchError] = useState<string | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [workspaceFrontmatterCandidates, setWorkspaceFrontmatterCandidates] = useState<Record<string, string[]>>({});
+  const frontmatterSearchFields = useMemo(
+    () => knownFrontmatterSearchFields(userDefinedFields),
+    [userDefinedFields]
+  );
   const frontmatterCandidates = useMemo(() => {
     const result: Record<string, string[]> = { ...workspaceFrontmatterCandidates };
     result.status = [...fixedStatusValues];
@@ -37,6 +42,16 @@ export function useWorkspaceSearchState({
 
     return result;
   }, [userDefinedFields, workspaceFrontmatterCandidates]);
+
+  useEffect(() => {
+    if (
+      searchMode === "frontmatter" &&
+      searchFrontmatterField !== "" &&
+      !frontmatterSearchFields.includes(searchFrontmatterField)
+    ) {
+      setSearchFrontmatterField("");
+    }
+  }, [frontmatterSearchFields, searchFrontmatterField, searchMode]);
 
   useEffect(() => {
     if (!workspaceState?.activeWorkspace || !window.relic) {
@@ -101,6 +116,7 @@ export function useWorkspaceSearchState({
 
   return {
     frontmatterCandidates,
+    frontmatterSearchFields,
     isSearching,
     searchError,
     searchFrontmatterField,

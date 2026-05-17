@@ -60,15 +60,10 @@ function chartFrontmatterUpdates(yamlText: string, input: UpdateGanttChartEntryI
       [dateField]: rangeToStringArray(startDate, endDate)
     };
 
-    if (dateField === "plannedDate" && readYamlArrayField(yamlText, "date").length > 0) {
-      updates.date = updates.plannedDate;
-    }
-
     return updates;
   }
 
   const originalPlannedDate = readYamlArrayField(yamlText, "plannedDate");
-  const originalLegacyDate = readYamlArrayField(yamlText, "date");
   const originalActualDate = readYamlArrayField(yamlText, "actualDate");
   const originalStartYear = axisToYear(input.originalStartValue);
   const originalEndYear = axisToYear(input.originalEndValue);
@@ -94,11 +89,10 @@ function chartFrontmatterUpdates(yamlText: string, input: UpdateGanttChartEntryI
     return null;
   };
 
-  const plannedDate = shiftDateRange(originalPlannedDate.length > 0 ? originalPlannedDate : originalLegacyDate);
+  const plannedDate = shiftDateRange(originalPlannedDate);
   const actualDate = shiftDateRange(originalActualDate);
 
   if (plannedDate) updates.plannedDate = plannedDate;
-  if (plannedDate && originalLegacyDate.length > 0) updates.date = plannedDate;
   if (actualDate) updates.actualDate = actualDate;
 
   return updates;

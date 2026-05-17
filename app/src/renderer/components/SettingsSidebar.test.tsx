@@ -131,7 +131,7 @@ describe("FrontmatterSidebar", () => {
     expect(screen.getByText("Places this file on the timeline as a single year or range. Write a single year or range as the same one-line array.")).toBeInTheDocument();
     expect(screen.getByText("chronicle: [1185]")).toBeInTheDocument();
     expect(screen.getByText("chronicle: [1185, 1333]")).toBeInTheDocument();
-    expect(screen.getByText("The planned date or date range for this file. Write dates without times as the same one-line array for a single day or range. Legacy date is read as planned.")).toBeInTheDocument();
+    expect(screen.getByText("The planned date or date range for this file. Write dates without times as the same one-line array for a single day or range.")).toBeInTheDocument();
     expect(screen.getByText("plannedDate: [2026-05-12]")).toBeInTheDocument();
     expect(screen.getByText("plannedDate: [2026-05-12, 2026-05-20]")).toBeInTheDocument();
     expect(screen.getByText("The actual date or date range for this file. Write dates without times as the same one-line array for a single day or range.")).toBeInTheDocument();
@@ -151,7 +151,7 @@ describe("FrontmatterSidebar", () => {
 
     fireEvent.change(screen.getByPlaceholderText("Field name"), { target: { value: "date" } });
 
-    expect(screen.getByRole("button", { name: "Add" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Add" })).toBeEnabled();
 
     fireEvent.change(screen.getByPlaceholderText("Field name"), { target: { value: "plannedDate" } });
 

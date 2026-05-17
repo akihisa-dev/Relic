@@ -34,24 +34,21 @@ describe("extractChronicleRange", () => {
 
 describe("extractDateRange", () => {
   it("単日を1要素配列として読む", () => {
-    expect(extractDateRange("---\ndate: [2026-05-12]\n---\n# A")).toEqual({
+    expect(extractDateRange("---\nplannedDate: [2026-05-12]\n---\n# A")).toEqual({
       endDate: "2026-05-12",
       startDate: "2026-05-12"
     });
   });
 
   it("期間を2要素配列として読む", () => {
-    expect(extractDateRange("---\ndate: [2026-05-12, 2026-05-20]\n---\n# A")).toEqual({
+    expect(extractDateRange("---\nplannedDate: [2026-05-12, 2026-05-20]\n---\n# A")).toEqual({
       endDate: "2026-05-20",
       startDate: "2026-05-12"
     });
   });
 
-  it("plannedDateを計画dateとして優先して読む", () => {
-    expect(extractDateRange("---\ndate: [2026-05-12]\nplannedDate: [2026-05-20]\n---\n# A")).toEqual({
-      endDate: "2026-05-20",
-      startDate: "2026-05-20"
-    });
+  it("旧dateだけでは計画日として読まない", () => {
+    expect(extractDateRange("---\ndate: [2026-05-12]\n---\n# A")).toBeNull();
   });
 
   it("日付文字列形式が混ざっていても読む", () => {
@@ -62,8 +59,8 @@ describe("extractDateRange", () => {
   });
 
   it("不正な日付や逆順の期間は読まない", () => {
-    expect(extractDateRange("---\ndate: ['2026-02-31']\n---\n# A")).toBeNull();
-    expect(extractDateRange("---\ndate: [2026-05-20, 2026-05-12]\n---\n# A")).toBeNull();
+    expect(extractDateRange("---\nplannedDate: ['2026-02-31']\n---\n# A")).toBeNull();
+    expect(extractDateRange("---\nplannedDate: [2026-05-20, 2026-05-12]\n---\n# A")).toBeNull();
   });
 });
 
@@ -151,10 +148,10 @@ describe("readWorkspaceChronicle", () => {
 });
 
 describe("updateWorkspaceGanttChartEntry", () => {
-  it("chronicleバー移動時にchronicleとdateを連動して更新する", async () => {
+  it("chronicleバー移動時にchronicleとplannedDateを連動して更新する", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-chronicle-update-"));
     const filePath = path.join(workspacePath, "entry.md");
-    await writeFile(filePath, "---\nchronicle: [1185, 1333]\ndate: [2026-05-01, 2026-05-05]\n---\n# A\n", "utf8");
+    await writeFile(filePath, "---\nchronicle: [1185, 1333]\nplannedDate: [2026-05-01, 2026-05-05]\n---\n# A\n", "utf8");
 
     const result = await updateWorkspaceGanttChartEntry(
       workspacePath,
@@ -180,10 +177,10 @@ describe("updateWorkspaceGanttChartEntry", () => {
     expect(extractDateRange(updated)).toEqual({ endDate: "2027-05-05", startDate: "2027-05-01" });
   });
 
-  it("dateバーの長さ変更時にdateとchronicleを連動して更新する", async () => {
+  it("dateバーの長さ変更時にplannedDateとchronicleを連動して更新する", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-date-update-"));
     const filePath = path.join(workspacePath, "entry.md");
-    await writeFile(filePath, "---\nchronicle: [2026]\ndate: [2026-12-30]\n---\n# A\n", "utf8");
+    await writeFile(filePath, "---\nchronicle: [2026]\nplannedDate: [2026-12-30]\n---\n# A\n", "utf8");
 
     const result = await updateWorkspaceGanttChartEntry(
       workspacePath,
@@ -208,6 +205,7 @@ describe("updateWorkspaceGanttChartEntry", () => {
     expect(extractDateRange(updated)).toEqual({ endDate: "2027-01-02", startDate: "2026-12-30" });
     expect(extractChronicleRange(updated)).toEqual({ endYear: 2027, startYear: 2026 });
     expect(updated).toContain("plannedDate:");
+    expect(updated).not.toContain("\ndate:");
     expect(updated).not.toContain("&ref");
   });
 

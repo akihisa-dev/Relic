@@ -5,8 +5,7 @@ import type { SearchMode } from "../../shared/ipc";
 import {
   activeFileSearchModeLabel,
   fileSearchModeOptions,
-  frontmatterValueCandidatesForField,
-  knownFrontmatterSearchFields
+  frontmatterValueCandidatesForField
 } from "../filesSidebarModel";
 import { useT } from "../i18n";
 
@@ -18,6 +17,7 @@ interface FilesSidebarSearchProps {
   searchFocusRequest: number;
   searchFrontmatterCandidates: Record<string, string[]>;
   searchFrontmatterField: string;
+  searchFrontmatterFields: string[];
   searchMode: SearchMode;
   searchQuery: string;
 }
@@ -30,6 +30,7 @@ export function FilesSidebarSearch({
   searchFocusRequest,
   searchFrontmatterCandidates,
   searchFrontmatterField,
+  searchFrontmatterFields,
   searchMode,
   searchQuery
 }: FilesSidebarSearchProps): ReactElement {
@@ -37,10 +38,6 @@ export function FilesSidebarSearch({
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const searchShellRef = useRef<HTMLDivElement | null>(null);
   const t = useT();
-  const knownFrontmatterFields = useMemo(
-    () => knownFrontmatterSearchFields(searchFrontmatterCandidates),
-    [searchFrontmatterCandidates]
-  );
   const frontmatterValueCandidates = useMemo(
     () => frontmatterValueCandidatesForField(searchFrontmatterCandidates, searchFrontmatterField),
     [searchFrontmatterCandidates, searchFrontmatterField]
@@ -114,19 +111,17 @@ export function FilesSidebarSearch({
       ) : null}
       {searchMode === "frontmatter" ? (
         <div className="files-search-frontmatter">
-          <input
+          <select
             aria-label={t("files.searchFrontmatterField")}
             className="search-input"
-            list="files-search-frontmatter-fields"
             onChange={(event) => onSearchFrontmatterFieldChange(event.target.value)}
-            placeholder={t("files.searchFrontmatterField")}
             value={searchFrontmatterField}
-          />
-          <datalist id="files-search-frontmatter-fields">
-            {knownFrontmatterFields.map((field) => (
-              <option key={field} value={field} />
+          >
+            <option value="">{t("files.searchFrontmatterField")}</option>
+            {searchFrontmatterFields.map((field) => (
+              <option key={field} value={field}>{field}</option>
             ))}
-          </datalist>
+          </select>
           {frontmatterValueCandidates.length > 0 ? (
             <datalist id="files-search-frontmatter-values">
               {frontmatterValueCandidates.map((candidate) => (

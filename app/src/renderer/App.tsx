@@ -145,6 +145,7 @@ export function App(): ReactElement {
 
   const {
     frontmatterCandidates,
+    frontmatterSearchFields,
     isSearching,
     searchError,
     searchFrontmatterField,
@@ -474,6 +475,7 @@ export function App(): ReactElement {
           searchFocusRequest={fileSearchFocusRequest}
           searchFrontmatterCandidates={frontmatterCandidates}
           searchFrontmatterField={searchFrontmatterField}
+          searchFrontmatterFields={frontmatterSearchFields}
           searchMode={searchMode}
           searchQuery={searchQuery}
           searchResults={searchResults}

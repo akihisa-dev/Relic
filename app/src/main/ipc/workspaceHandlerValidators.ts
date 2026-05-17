@@ -21,7 +21,7 @@ const userDefinedFieldTypes: UserDefinedFieldType[] = [
   "url"
 ];
 const userDefinedFieldNamePattern = /^[^\s:][^\r\n:]*$/;
-const reservedUserDefinedFieldNames = new Set(["aliases", "tags", "status", "chronicle", "date", "plannedDate", "actualDate"]);
+const reservedUserDefinedFieldNames = new Set(["aliases", "tags", "status", "chronicle", "plannedDate", "actualDate"]);
 const ganttChartSources: GanttChartSource[] = ["chronicle", "date"];
 
 export function isUserDefinedFieldsInput(input: unknown): input is UserDefinedField[] {

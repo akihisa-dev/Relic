@@ -11,6 +11,7 @@ import {
 describe("workspaceHandlerValidators", () => {
   it("validates user defined fields and rejects duplicates or reserved names", () => {
     expect(isUserDefinedFieldsInput([{ name: "rating", type: "number" }])).toBe(true);
+    expect(isUserDefinedFieldsInput([{ name: "date", type: "date" }])).toBe(true);
     expect(isUserDefinedFieldsInput([{ name: "rating", type: "number" }, { name: "rating", type: "text" }])).toBe(false);
     expect(isUserDefinedFieldsInput([{ name: "tags", type: "text" }])).toBe(false);
     expect(isUserDefinedFieldsInput([{ name: "kind", type: "select", choices: ["a", "b"] }])).toBe(true);

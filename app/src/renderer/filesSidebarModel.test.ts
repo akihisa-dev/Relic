@@ -10,12 +10,11 @@ import {
 import { createTranslator } from "./i18n";
 
 describe("filesSidebarModel", () => {
-  it("builds known frontmatter fields from defaults and candidates", () => {
-    expect(knownFrontmatterSearchFields({
-      aliases: ["Alias"],
-      custom: ["A"],
-      status: ["Draft"]
-    })).toEqual(["aliases", "author", "custom", "date", "publish", "status", "tags", "url"]);
+  it("builds known frontmatter fields from fixed and registered custom fields", () => {
+    expect(knownFrontmatterSearchFields([
+      { name: "custom", type: "text" },
+      { name: "date", type: "date" }
+    ])).toEqual(["actualDate", "aliases", "chronicle", "custom", "date", "plannedDate", "status", "tags"]);
   });
 
   it("returns candidates only for a selected field", () => {

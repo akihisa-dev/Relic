@@ -1,14 +1,13 @@
-import type { SearchMode } from "../shared/ipc";
+import type { SearchMode, UserDefinedField } from "../shared/ipc";
 import type { Translator } from "./i18n";
 
-const defaultFrontmatterSearchFields = [
+const fixedFrontmatterSearchFields = [
   "tags",
   "aliases",
-  "date",
   "status",
-  "publish",
-  "url",
-  "author"
+  "chronicle",
+  "plannedDate",
+  "actualDate"
 ];
 
 export interface FileSearchModeOption {
@@ -16,13 +15,11 @@ export interface FileSearchModeOption {
   mode: SearchMode;
 }
 
-export function knownFrontmatterSearchFields(
-  candidates: Record<string, string[]>
-): string[] {
+export function knownFrontmatterSearchFields(userDefinedFields: UserDefinedField[]): string[] {
   return Array.from(
     new Set([
-      ...defaultFrontmatterSearchFields,
-      ...Object.keys(candidates)
+      ...fixedFrontmatterSearchFields,
+      ...userDefinedFields.map((field) => field.name)
     ])
   ).sort((a, b) => a.localeCompare(b, "ja"));
 }

@@ -55,13 +55,11 @@ describe("editorFrontmatterModel", () => {
       aliases: ["帝都", "王都"],
       chronicle: [1185, 1333],
       custom: ["A", "B"],
-      date: ["2026-05-12", "2026-05-20"],
       tags: ["資料"]
     }, [{ name: "custom", type: "multi-select" }])).toBe([
       "aliases: [\"帝都\", \"王都\"]",
       "chronicle: [1185, 1333]",
       "custom: [\"A\", \"B\"]",
-      "date: [2026-05-12, 2026-05-20]",
       "tags: [\"資料\"]"
     ].join("\n"));
   });
