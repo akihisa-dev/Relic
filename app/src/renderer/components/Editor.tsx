@@ -31,10 +31,14 @@ interface EditorProps {
   viewRef?: MutableRefObject<EditorView | null>;
 }
 
+const defaultAllFilePaths: string[] = [];
+const defaultFrontmatterCandidates: Record<string, string[]> = {};
+const defaultUserDefinedFields: UserDefinedField[] = [];
+
 export function Editor({
-  allFilePaths = [],
+  allFilePaths = defaultAllFilePaths,
   content,
-  frontmatterCandidates = {},
+  frontmatterCandidates = defaultFrontmatterCandidates,
   onChange,
   onEditorAction,
   onOpenLink,
@@ -42,7 +46,7 @@ export function Editor({
   settings,
   sourceMode = false,
   typewriterMode = false,
-  userDefinedFields = [],
+  userDefinedFields = defaultUserDefinedFields,
   viewRef
 }: EditorProps): ReactElement {
   const t = useT();

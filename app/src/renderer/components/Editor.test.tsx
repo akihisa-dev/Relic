@@ -9,6 +9,7 @@ import { createRef } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { defaultEditorSettings } from "../../shared/ipc";
+import { contextSelectionHighlightField } from "../editorContextSelectionHighlight";
 import {
   buildLivePreviewDecorations,
   buildTableDecorations,
@@ -261,11 +262,13 @@ describe("Editor", () => {
 
     fireEvent.contextMenu(contentElement, { clientX: 32, clientY: 32 });
     expect(view.state.selection.main.empty).toBe(false);
+    expect(viewRef.current!.state.field(contextSelectionHighlightField).size).toBe(1);
     const boldButton = await screen.findByRole("menuitem", { name: "Bold" });
     fireEvent.mouseDown(boldButton);
     fireEvent.click(boldButton);
 
     expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+    expect(viewRef.current!.state.field(contextSelectionHighlightField).size).toBe(0);
     expect(onChange).toHaveBeenLastCalledWith("**hello** world");
     expect(viewRef.current!.state.doc.toString()).toBe("**hello** world");
   });

@@ -8,6 +8,7 @@ import { GFM } from "@lezer/markdown";
 import type { RefObject } from "react";
 
 import type { EditorSettings, UserDefinedField } from "../shared/ipc";
+import { contextSelectionHighlightField } from "./editorContextSelectionHighlight";
 import { editorEditableCompartment } from "./editorEditable";
 import { createFrontmatterPropertiesField, frontmatterCollapsedField } from "./editorFrontmatter";
 import { buildLivePreviewDecorations, findClickableLinkAtPosition } from "./editorLivePreview";
@@ -107,6 +108,7 @@ export function buildExtensions(
     markdown({ extensions: GFM }),
     EditorView.lineWrapping,
     autocompletion({ override: [buildWikiLinkCompletionSource(allFilePaths)] }),
+    contextSelectionHighlightField,
     frontmatterCollapsedField,
     EditorView.domEventHandlers({
       click: (event, view) => {
