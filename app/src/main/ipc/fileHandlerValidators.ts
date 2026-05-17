@@ -129,41 +129,114 @@ export function isSearchWorkspaceInput(input: unknown): input is SearchWorkspace
 }
 
 export function normalizeSearchWorkspaceInput(input: unknown): SearchWorkspaceInput | null {
+  if (typeof input === "string") {
+    return { mode: "fullText", query: input };
+  }
+
+  if (Array.isArray(input)) {
+    return normalizeSearchWorkspaceArgs(input);
+  }
+
   if (typeof input !== "object" || input === null) {
     return null;
   }
 
   const record = input as {
+    field?: unknown;
     frontmatterField?: unknown;
+    keyword?: unknown;
     mode?: unknown;
     query?: unknown;
     searchMode?: unknown;
     searchQuery?: unknown;
+    searchTerm?: unknown;
+    term?: unknown;
+    text?: unknown;
+    type?: unknown;
+    value?: unknown;
   };
-  const query = typeof record.query === "string"
-    ? record.query
-    : typeof record.searchQuery === "string"
-      ? record.searchQuery
-      : null;
-  const mode = isSearchMode(record.mode)
-    ? record.mode
-    : isSearchMode(record.searchMode)
-      ? record.searchMode
-      : null;
+  const query = firstString(
+    record.query,
+    record.searchQuery,
+    record.searchTerm,
+    record.term,
+    record.keyword,
+    record.value,
+    record.text
+  );
+  const mode = firstSearchMode(record.mode, record.searchMode, record.type);
+  const frontmatterField = firstString(record.frontmatterField, record.field);
 
   if (query === null || mode === null) {
     return null;
   }
 
-  if ("frontmatterField" in input && typeof record.frontmatterField !== "string") {
+  if (
+    ("frontmatterField" in input && typeof record.frontmatterField !== "string") ||
+    ("field" in input && typeof record.field !== "string")
+  ) {
     return null;
   }
 
   return {
-    frontmatterField: typeof record.frontmatterField === "string" ? record.frontmatterField : undefined,
+    frontmatterField: frontmatterField ?? undefined,
     mode,
     query
   };
+}
+
+function normalizeSearchWorkspaceArgs(args: unknown[]): SearchWorkspaceInput | null {
+  if (args.length === 0) {
+    return null;
+  }
+
+  if (args.length === 1) {
+    return normalizeSearchWorkspaceInput(args[0]);
+  }
+
+  const first = args[0];
+  const second = args[1];
+  const third = args[2];
+  const firstMode = isSearchMode(first) ? first : null;
+  const secondMode = isSearchMode(second) ? second : null;
+
+  if (typeof first === "string" && secondMode) {
+    return {
+      frontmatterField: typeof third === "string" ? third : undefined,
+      mode: secondMode,
+      query: first
+    };
+  }
+
+  if (firstMode && typeof second === "string") {
+    return {
+      frontmatterField: typeof third === "string" ? third : undefined,
+      mode: firstMode,
+      query: second
+    };
+  }
+
+  return null;
+}
+
+function firstString(...values: unknown[]): string | null {
+  for (const value of values) {
+    if (typeof value === "string") {
+      return value;
+    }
+  }
+
+  return null;
+}
+
+function firstSearchMode(...values: unknown[]): SearchMode | null {
+  for (const value of values) {
+    if (isSearchMode(value)) {
+      return value;
+    }
+  }
+
+  return null;
 }
 
 function isSearchMode(value: unknown): value is SearchMode {

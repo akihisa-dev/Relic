@@ -26,9 +26,9 @@ import {
 } from "./fileHandlerValidators";
 
 export function registerFileSearchHandlers(): void {
-  ipcMain.handle(searchWorkspaceChannel, async (_event, input: unknown) => {
+  ipcMain.handle(searchWorkspaceChannel, async (_event, ...args: unknown[]) => {
     try {
-      const searchInput = normalizeSearchWorkspaceInput(input);
+      const searchInput = normalizeSearchWorkspaceInput(args.length === 1 ? args[0] : args);
 
       if (!searchInput) {
         return fail("SEARCH_INVALID_INPUT", "検索リクエストが正しくありません。");

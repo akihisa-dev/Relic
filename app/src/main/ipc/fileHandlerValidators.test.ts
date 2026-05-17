@@ -33,6 +33,25 @@ describe("fileHandlerValidators", () => {
       mode: "frontmatter",
       query: "draft"
     });
+    expect(normalizeSearchWorkspaceInput(["ファイル", "fullText"])).toEqual({
+      frontmatterField: undefined,
+      mode: "fullText",
+      query: "ファイル"
+    });
+    expect(normalizeSearchWorkspaceInput(["tag", "資料"])).toEqual({
+      frontmatterField: undefined,
+      mode: "tag",
+      query: "資料"
+    });
+    expect(normalizeSearchWorkspaceInput("ファイル")).toEqual({
+      mode: "fullText",
+      query: "ファイル"
+    });
+    expect(normalizeSearchWorkspaceInput({ searchTerm: "ファイル", type: "fullText" })).toEqual({
+      frontmatterField: undefined,
+      mode: "fullText",
+      query: "ファイル"
+    });
     expect(normalizeSearchWorkspaceInput({ searchMode: "unknown", searchQuery: "draft" })).toBeNull();
   });
 
