@@ -2,17 +2,27 @@ import type { DragEvent, ReactElement, ReactNode } from "react";
 
 import { paneTabLabel } from "../paneViewModel";
 import type { PaneId, PaneState, PanelTabKind, Tab } from "../store/editorStore";
+import type { RightPanelView } from "../store/uiStore";
 import { useT } from "../i18n";
 import type { PaneTabDropTarget } from "../hooks/usePaneTabInteractions";
 
 interface PaneTabBarProps {
   closingTabIds: Set<string>;
+  isRightPanelOpen: boolean;
+  isSourceMode: boolean;
+  isSplit: boolean;
   pane: PaneId;
   paneState: PaneState;
   renderPanelTabIcon: (panel: PanelTabKind) => ReactNode;
+  rightPanelView: RightPanelView;
+  showControls: boolean;
+  showRightPanelControls: boolean;
   tabDropTarget: PaneTabDropTarget | null;
   tabs: Record<string, Tab>;
   onContextMenuOpen: (tabId: string, x: number, y: number) => void;
+  onRightPanelViewButton: (view: RightPanelView) => void;
+  onSourceModeToggle: () => void;
+  onSplitToggle: () => void;
   onTabBarDragLeave: (e: DragEvent<HTMLElement>) => void;
   onTabBarDragOver: (e: DragEvent<HTMLElement>) => void;
   onTabClose: (tabId: string) => void;
@@ -25,12 +35,21 @@ interface PaneTabBarProps {
 
 export function PaneTabBar({
   closingTabIds,
+  isRightPanelOpen,
+  isSourceMode,
+  isSplit,
   pane,
   paneState,
   renderPanelTabIcon,
+  rightPanelView,
+  showControls,
+  showRightPanelControls,
   tabDropTarget,
   tabs,
   onContextMenuOpen,
+  onRightPanelViewButton,
+  onSourceModeToggle,
+  onSplitToggle,
   onTabBarDragLeave,
   onTabBarDragOver,
   onTabClose,
@@ -103,6 +122,46 @@ export function PaneTabBar({
           </div>
         );
       })}
+      {showControls ? (
+        <div className="pane-tab-actions">
+          <button
+            className={`toolbar-btn${isSourceMode ? " active" : ""}`}
+            onClick={onSourceModeToggle}
+            title={t("pane.sourceMode")}
+            type="button"
+          >
+            {t("pane.sourceShort")}
+          </button>
+          <button
+            className={`toolbar-btn${isSplit ? " active" : ""}`}
+            onClick={onSplitToggle}
+            title={t("pane.split")}
+            type="button"
+          >
+            {t("pane.splitShort")}
+          </button>
+          {showRightPanelControls ? (
+            <>
+              <button
+                className={`toolbar-btn${rightPanelView === "outline" && isRightPanelOpen ? " active" : ""}`}
+                onClick={() => onRightPanelViewButton("outline")}
+                title={t("pane.toggleOutline")}
+                type="button"
+              >
+                {t("pane.outline")}
+              </button>
+              <button
+                className={`toolbar-btn${rightPanelView === "links" && isRightPanelOpen ? " active" : ""}`}
+                onClick={() => onRightPanelViewButton("links")}
+                title={t("pane.toggleLinks")}
+                type="button"
+              >
+                {t("pane.links")}
+              </button>
+            </>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }

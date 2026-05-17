@@ -68,6 +68,8 @@ function renderPaneView(overrides: Partial<PaneViewProps> = {}): PaneViewProps {
     editorSettings: defaultEditorSettings,
     focusedPane: "left",
     frontmatterCandidates: {},
+    isRightPanelOpen: false,
+    isSplit: false,
     isSplitView: false,
     pane: "left",
     renderGanttChartTab: (chartId) => <div>Gantt {chartId}</div>,
@@ -88,14 +90,19 @@ function renderPaneView(overrides: Partial<PaneViewProps> = {}): PaneViewProps {
     onOpenInOtherPane: vi.fn(),
     onOpenLink: vi.fn(),
     onOpenWikiLink: vi.fn(),
+    onRightPanelViewButton: vi.fn(),
     onRevealTabFile: vi.fn(),
     onScrollTargetHandled: vi.fn(),
+    onSourceModeToggle: vi.fn(),
+    onSplitToggle: vi.fn(),
     onTabClose: vi.fn(),
     onTabMove: vi.fn(),
     onTabSelect: vi.fn(),
     onTogglePinTab: vi.fn(),
     pinnedPaths: new Set(),
+    rightPanelView: "outline",
     scrollTargetHeading: undefined,
+    showRightPanelControls: true,
     ...overrides
   };
 

@@ -196,11 +196,9 @@ export function App(): ReactElement {
     handleRemoveWorkspace,
     handleRenameWorkspace,
     handleSwitchWorkspace,
-    handleMoveActiveFile,
     handleMoveFile,
     handleMoveFolder,
     handleMoveTreeItems,
-    handleRenameActiveFile,
     handleRenameTreeItem,
     handleTogglePin,
     isCreatingFile,
@@ -487,7 +485,6 @@ export function App(): ReactElement {
         />
 
         <AppEditorWorkspace
-          activeFileName={activeFileTabInFocusedPane?.name ?? null}
           allFilePaths={existingMarkdownPaths}
           backlinks={backlinks}
           editorActionPulse={editorActionPulse}
@@ -510,7 +507,6 @@ export function App(): ReactElement {
           onDuplicateTabFile={handleDuplicateTabFile}
           onEditorAction={() => setEditorActionPulse((value) => value + 1)}
           onFileSaved={handleFileSaved}
-          onMoveActiveFile={handleMoveActiveFile}
           onOpenFile={handleOpenFile}
           onOpenInOtherPane={openFileInOtherPane}
           onOpenLink={handleOpenMarkdownLink}
@@ -519,7 +515,6 @@ export function App(): ReactElement {
             const setScrollHeading = focusedPane === "left" ? setLeftPaneScrollHeading : setRightPaneScrollHeading;
             setScrollHeading(heading);
           }}
-          onRenameActiveFile={handleRenameActiveFile}
           onRevealTabFile={handleRevealTabFile}
           onRightPanelViewButton={handleRightPanelViewButton}
           onScrollTargetHandled={(pane) => {

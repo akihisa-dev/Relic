@@ -144,8 +144,25 @@
 }
 
 .editor-body {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
   min-height: 0;
   overflow: hidden;
+}
+
+.editor-file-title {
+  box-sizing: border-box;
+  color: var(--text);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 24px;
+  margin: 0 auto;
+  min-width: 0;
+  overflow: hidden;
+  padding: 12px 32px 4px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 100%;
 }
 
 .cm-editor-container {
@@ -980,4 +997,3 @@
   transform: scaleX(1.45);
   transform-origin: center;
 }
-

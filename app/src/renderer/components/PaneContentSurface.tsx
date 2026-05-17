@@ -56,6 +56,12 @@ export function PaneContentSurface({
         className={`editor-surface${editorActionPulse > 0 ? ` editor-surface--action-${editorActionPulse % 2 === 0 ? "even" : "odd"}` : ""}`}
       >
         <div className="editor-body">
+          <div
+            className="editor-file-title"
+            style={{ maxWidth: editorSettings.maxWidth === "none" ? undefined : editorSettings.maxWidth }}
+          >
+            {activeTab.name}
+          </div>
           <Editor
             allFilePaths={allFilePaths}
             content={activeTab.content}

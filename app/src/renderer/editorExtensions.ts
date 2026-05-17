@@ -150,7 +150,7 @@ export function buildExtensions(
       ".cm-content": {
         maxWidth: settings.maxWidth === "none" ? "none" : settings.maxWidth,
         margin: "0 auto",
-        padding: "24px 32px"
+        padding: "8px 32px 24px"
       },
       ".cm-line": {
         overflowWrap: "anywhere",
