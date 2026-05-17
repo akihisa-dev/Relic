@@ -17,9 +17,9 @@
   align-items: center;
   background: var(--sidebar-bg);
   display: flex;
-  gap: 8px;
+  gap: 4px;
   min-height: 35px;
-  padding: 0 8px 0 12px;
+  padding: 0 8px 0 0;
   position: absolute;
   right: 0;
   top: 0;
@@ -297,7 +297,7 @@
   box-shadow: none;
   display: inline-flex;
   justify-content: center;
-  min-width: 34px;
+  min-width: 30px;
   padding: 0;
 }
 
