@@ -16,12 +16,15 @@ interface GraphNodeDragState {
   startClientX: number;
   startClientY: number;
   startPoint: GraphPan;
+  wasSelectedOnPointerDown: boolean;
 }
 
 interface UseGraphNodeInteractionsInput {
   getGraphDelta: (deltaX: number, deltaY: number) => GraphPan;
+  onOpenFile: (path: string) => void;
   pinnedPathRef: MutableRefObject<string | null>;
   pointsRef: MutableRefObject<GraphSimPoint[]>;
+  selectedPath: string | null;
   setFocusedPath: (path: string | null | ((current: string | null) => string | null)) => void;
   setPoints: (points: GraphSimPoint[]) => void;
   setSelectedPath: (path: string | null) => void;
@@ -40,18 +43,26 @@ export interface GraphNodeHandlers {
 
 export function useGraphNodeInteractions({
   getGraphDelta,
+  onOpenFile,
   pinnedPathRef,
   pointsRef,
+  selectedPath,
   setFocusedPath,
   setPoints,
   setSelectedPath
 }: UseGraphNodeInteractionsInput): GraphNodeHandlers {
+  const openSelectedClickRef = useRef(false);
   const suppressNodeClickRef = useRef(false);
   const nodeDragStateRef = useRef<GraphNodeDragState | null>(null);
 
   function handleNodeClick(point: GraphPoint): void {
     if (suppressNodeClickRef.current) {
       suppressNodeClickRef.current = false;
+      return;
+    }
+    if (openSelectedClickRef.current) {
+      openSelectedClickRef.current = false;
+      onOpenFile(point.path);
       return;
     }
     setSelectedPath(point.path);
@@ -67,8 +78,10 @@ export function useGraphNodeInteractions({
       pointerId: event.pointerId,
       startClientX: event.clientX,
       startClientY: event.clientY,
-      startPoint: { x: point.x, y: point.y }
+      startPoint: { x: point.x, y: point.y },
+      wasSelectedOnPointerDown: selectedPath === point.path
     };
+    openSelectedClickRef.current = selectedPath === point.path;
     pinnedPathRef.current = point.path;
     event.currentTarget.setPointerCapture(event.pointerId);
     setSelectedPath(point.path);
@@ -86,6 +99,7 @@ export function useGraphNodeInteractions({
     if (!moved && !dragState.moved) return;
 
     nodeDragStateRef.current = { ...dragState, moved: dragState.moved || moved };
+    openSelectedClickRef.current = false;
     const nextPosition = {
       x: clamp(dragState.startPoint.x + graphDelta.x, GRAPH_PADDING, GRAPH_WIDTH - GRAPH_PADDING),
       y: clamp(dragState.startPoint.y + graphDelta.y, GRAPH_PADDING, GRAPH_HEIGHT - GRAPH_PADDING)
@@ -108,6 +122,7 @@ export function useGraphNodeInteractions({
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
     suppressNodeClickRef.current = dragState.moved;
+    openSelectedClickRef.current = !dragState.moved && dragState.wasSelectedOnPointerDown;
     if (!dragState.moved) setSelectedPath(point.path);
   }
 
@@ -121,6 +136,7 @@ export function useGraphNodeInteractions({
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
+    openSelectedClickRef.current = false;
   }
 
   function handleNodeKeyDown(event: KeyboardEvent<SVGGElement>, point: GraphPoint): void {

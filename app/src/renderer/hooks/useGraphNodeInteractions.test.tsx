@@ -42,17 +42,23 @@ function makeEvent<T extends Element>(overrides: Partial<{
 
 function renderNodeInteractions() {
   const getGraphDelta = vi.fn((deltaX: number, deltaY: number): GraphPan => ({ x: deltaX, y: deltaY }));
+  const onOpenFile = vi.fn();
   const pinnedPathRef: MutableRefObject<string | null> = { current: null };
   const pointsRef: MutableRefObject<GraphSimPoint[]> = { current: points };
+  let selectedPath: string | null = null;
   const setFocusedPath = vi.fn();
   const setPoints = vi.fn((nextPoints: GraphSimPoint[]) => {
     pointsRef.current = nextPoints;
   });
-  const setSelectedPath = vi.fn();
+  const setSelectedPath = vi.fn((path: string | null) => {
+    selectedPath = path;
+  });
   const hook = renderHook(() => useGraphNodeInteractions({
     getGraphDelta,
+    onOpenFile,
     pinnedPathRef,
     pointsRef,
+    selectedPath,
     setFocusedPath,
     setPoints,
     setSelectedPath
@@ -61,6 +67,7 @@ function renderNodeInteractions() {
   return {
     getGraphDelta,
     hook,
+    onOpenFile,
     pinnedPathRef,
     pointsRef,
     setFocusedPath,
@@ -70,8 +77,8 @@ function renderNodeInteractions() {
 }
 
 describe("useGraphNodeInteractions", () => {
-  it("clickとkey操作は選択だけを更新する", () => {
-    const { hook, setSelectedPath } = renderNodeInteractions();
+  it("未選択nodeのclickとkey操作は選択だけを更新する", () => {
+    const { hook, onOpenFile, setSelectedPath } = renderNodeInteractions();
     const point = points[0] as GraphPoint;
 
     act(() => {
@@ -82,6 +89,34 @@ describe("useGraphNodeInteractions", () => {
 
     expect(setSelectedPath).toHaveBeenCalledWith("A.md");
     expect(setSelectedPath).toHaveBeenCalledWith("B.md");
+    expect(onOpenFile).not.toHaveBeenCalled();
+  });
+
+  it("選択済みnodeをもう一度clickするとファイルを開く", () => {
+    const { hook, onOpenFile, setSelectedPath } = renderNodeInteractions();
+    const point = points[0] as GraphPoint;
+    const target = {
+      hasPointerCapture: vi.fn().mockReturnValue(true),
+      releasePointerCapture: vi.fn(),
+      setPointerCapture: vi.fn()
+    } as unknown as SVGGElement;
+
+    act(() => {
+      hook.result.current.onPointerDown(makeEvent<SVGGElement>({ currentTarget: target, pointerId: 1 }), point);
+      hook.result.current.onPointerUp(makeEvent<SVGGElement>({ currentTarget: target, pointerId: 1 }), point);
+      hook.result.current.onClick(point);
+    });
+    expect(onOpenFile).not.toHaveBeenCalled();
+
+    hook.rerender();
+    act(() => {
+      hook.result.current.onPointerDown(makeEvent<SVGGElement>({ currentTarget: target, pointerId: 2 }), point);
+      hook.result.current.onPointerUp(makeEvent<SVGGElement>({ currentTarget: target, pointerId: 2 }), point);
+      hook.result.current.onClick(point);
+    });
+
+    expect(setSelectedPath).toHaveBeenCalledWith("A.md");
+    expect(onOpenFile).toHaveBeenCalledWith("A.md");
   });
 
   it("hover enter/leaveでfocused path更新を委譲する", () => {
@@ -134,7 +169,7 @@ describe("useGraphNodeInteractions", () => {
   });
 
   it("drag後のclickを抑止しpinned pathを解除する", () => {
-    const { hook, pinnedPathRef, setSelectedPath } = renderNodeInteractions();
+    const { hook, onOpenFile, pinnedPathRef, setSelectedPath } = renderNodeInteractions();
     const target = {
       hasPointerCapture: vi.fn().mockReturnValue(true),
       releasePointerCapture: vi.fn(),
@@ -163,5 +198,6 @@ describe("useGraphNodeInteractions", () => {
 
     expect(pinnedPathRef.current).toBeNull();
     expect(setSelectedPath).toHaveBeenCalledTimes(1);
+    expect(onOpenFile).not.toHaveBeenCalled();
   });
 });

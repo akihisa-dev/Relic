@@ -88,6 +88,7 @@ export function useAppTabRenderers({
       return (
         <GraphPanel
           activeFilePath={activeFilePathForGraph}
+          onOpenFile={handleOpenFile}
           workspaceId={workspaceState?.activeWorkspace?.id ?? null}
         />
       );
