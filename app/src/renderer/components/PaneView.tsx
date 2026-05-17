@@ -27,6 +27,7 @@ export interface PaneViewProps {
   renderPanelTab: (panel: PanelTabKind) => ReactNode;
   renderPanelTabIcon: (panel: PanelTabKind) => ReactNode;
   onCreateFile: (name: string) => void;
+  onEditorAction?: () => void;
   onFocus: () => void;
   onOpenLink?: (href: string) => void;
   onOpenWikiLink?: (target: string, heading?: string) => void;
@@ -76,6 +77,7 @@ export function PaneView({
   onCloseTabsToRight,
   onCloseAllTabs,
   onDuplicateTabFile,
+  onEditorAction,
   onOpenInOtherPane,
   onRevealTabFile,
   onTogglePinTab,
@@ -168,6 +170,7 @@ export function PaneView({
         viewRef={viewRef}
         workspacePath={workspacePath}
         onCreateFile={onCreateFile}
+        onEditorAction={onEditorAction}
         onOpenLink={onOpenLink}
         onOpenWikiLink={onOpenWikiLink}
         onUpdateTabContent={updateTabContent}
