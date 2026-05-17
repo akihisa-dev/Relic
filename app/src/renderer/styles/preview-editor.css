@@ -181,7 +181,7 @@
 }
 
 .editor-file-title-input {
-  border-color: var(--accent);
+  border-color: transparent;
   outline: none;
 }
 
