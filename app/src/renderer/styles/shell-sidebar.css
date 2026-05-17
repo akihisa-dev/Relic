@@ -3,18 +3,35 @@
 /* ────────────────────────────────── */
 
 .app-shell {
+  background:
+    var(--metal-sheen),
+    var(--aluminum-base);
   display: grid;
   grid-template-rows: 38px minmax(0, 1fr) 28px;
   height: 100vh;
   min-width: 0;
   overflow: hidden;
+  position: relative;
+}
+
+.app-shell::before {
+  background-image:
+    radial-gradient(ellipse at 82% 100%, rgba(0, 0, 0, 0.06), transparent 30%),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.018) 0 1px, rgba(0, 0, 0, 0.008) 1px 2px);
+  content: "";
+  inset: 0;
+  opacity: 0.62;
+  pointer-events: none;
+  position: absolute;
 }
 
 .title-bar {
   -webkit-app-region: drag;
-  background: var(--bg);
+  background: transparent;
   border-bottom: 1px solid var(--border);
   grid-column: 1 / -1;
+  position: relative;
+  z-index: 1;
 }
 
 
@@ -24,7 +41,9 @@
   min-height: 0;
   min-width: 0;
   overflow: hidden;
+  position: relative;
   -webkit-app-region: no-drag;
+  z-index: 1;
 }
 
 /* ────────────────────────────────── */
@@ -33,8 +52,11 @@
 
 .rail {
   align-items: stretch;
-  background: var(--rail-bg);
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.22), rgba(0, 0, 0, 0.018)),
+    var(--rail-bg);
   border-right: 1px solid var(--border);
+  box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.32);
   color: var(--text-3);
   display: flex;
   flex-direction: column;
@@ -56,6 +78,7 @@
   align-items: center;
   background: transparent;
   border: none;
+  box-shadow: none;
   color: inherit;
   display: inline-flex;
   gap: 10px;
@@ -69,6 +92,7 @@
 
 .rail-button:hover {
   background: var(--hover);
+  box-shadow: var(--shadow-control);
   color: var(--text);
 }
 
@@ -77,14 +101,17 @@
 }
 
 .rail-button.open {
-  background: var(--hover);
-  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
   color: var(--text);
 }
 
 .rail-button.active {
-  background: var(--accent-soft);
-  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.16);
+  border-radius: 8px;
+  box-shadow:
+    inset 2px 0 0 var(--accent),
+    var(--shadow-control);
   color: var(--accent);
 }
 
@@ -173,8 +200,15 @@
 /* ────────────────────────────────── */
 
 .sidebar {
-  background: var(--sidebar-bg);
+  background:
+    radial-gradient(ellipse at 28% 12%, rgba(255, 255, 255, 0.34), transparent 36%),
+    linear-gradient(160deg, var(--surface-container-low), var(--surface-container) 54%, var(--surface-container-high)),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.028) 0 1px, rgba(0, 0, 0, 0.012) 1px 2px),
+    var(--sidebar-bg);
   border-right: 1px solid var(--border);
+  box-shadow:
+    inset 1px 0 0 rgba(255, 255, 255, 0.34),
+    inset -1px 0 0 rgba(0, 0, 0, 0.035);
   display: flex;
   flex: 0 0 auto;
   flex-direction: column;
@@ -217,7 +251,7 @@
 }
 
 .sidebar-header {
-  background: inherit;
+  background: transparent;
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
   padding: 0 16px;
@@ -232,7 +266,7 @@
 
 .pane-heading {
   align-items: center;
-  color: var(--text-2);
+  color: var(--text-3);
   display: flex;
   font-size: 12px;
   font-weight: 700;
@@ -293,7 +327,8 @@
 }
 
 .workspace-switcher-item.active {
-  background: var(--accent-softer);
+  background: rgba(255, 255, 255, 0.16);
+  box-shadow: inset 2px 0 0 var(--accent);
 }
 
 .workspace-switcher-main {
@@ -321,9 +356,10 @@
 
 .workspace-switcher-icon {
   align-items: center;
-  background: var(--bg);
+  background: var(--metal-control);
   border: 1px solid var(--border);
   border-radius: 5px;
+  box-shadow: var(--shadow-control);
   color: var(--text-2);
   display: inline-flex;
   flex: 0 0 16px;
@@ -359,7 +395,7 @@
 }
 
 .workspace-switcher-input {
-  background: var(--bg);
+  background: var(--input-bg);
   border: 1px solid var(--accent-ring);
   border-radius: 5px;
   color: var(--text);

@@ -51,6 +51,7 @@
 
 .file-tree-row:hover {
   background: var(--hover);
+  box-shadow: var(--shadow-control);
   transform: translateX(1px);
 }
 
@@ -60,12 +61,15 @@
 
 .file-tree-row.selected {
   animation: file-tree-select 180ms cubic-bezier(.18, 1.25, .28, 1);
-  background: var(--accent-soft);
-  color: var(--accent);
+  background: rgba(255, 255, 255, 0.18);
+  box-shadow:
+    inset 2px 0 0 var(--accent),
+    var(--shadow-control);
+  color: var(--text);
 }
 
 .file-tree-row.selected .file-tree-icon {
-  color: var(--accent);
+  color: var(--text-3);
 }
 
 .file-tree-row.multi-selected .file-tree-icon {
@@ -234,7 +238,7 @@
 
 .file-tree-rename-input {
   animation: inline-control-in 150ms cubic-bezier(.18, 1.18, .28, 1);
-  background: var(--bg);
+  background: var(--input-bg);
   border: 1px solid var(--accent);
   border-radius: 4px;
   color: var(--text);
@@ -261,17 +265,24 @@
 /* ────────────────────────────────── */
 
 .primary-button {
-  background: var(--accent);
-  border-color: transparent;
-  color: white;
+  background: var(--metal-control);
+  border-color: var(--accent-ring);
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 98, 140, 0.08),
+    var(--shadow-control);
+  color: var(--accent);
 }
 .primary-button:hover {
-  background: var(--accent-hover);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.42), rgba(0, 98, 140, 0.035)),
+    var(--btn-bg);
+  border-color: var(--accent);
 }
 
 .secondary-button {
-  background: transparent;
+  background: var(--metal-control);
   border-color: var(--border-medium);
+  box-shadow: var(--shadow-control);
   color: var(--text-2);
 }
 
@@ -284,9 +295,12 @@
 
 .files-search-input {
   align-items: center;
-  background: var(--input-bg);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.28), rgba(0, 0, 0, 0.018)),
+    var(--input-bg);
   border: 1px solid var(--border-soft);
   border-radius: 6px;
+  box-shadow: var(--shadow-control);
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   min-height: 34px;
@@ -299,7 +313,7 @@
 }
 
 .files-search-mode-button {
-  background: var(--hover);
+  background: rgba(255, 255, 255, 0.12);
   border: 0;
   border-radius: 0;
   border-right: 1px solid var(--border);
@@ -321,10 +335,12 @@
 }
 
 .files-search-method-menu {
-  background: var(--popup-bg);
+  background:
+    var(--metal-sheen),
+    var(--popup-bg);
   border: 1px solid var(--border-soft);
   border-radius: 7px;
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--shadow-panel);
   display: grid;
   gap: 4px;
   left: 0;
@@ -357,6 +373,7 @@
 }
 
 .search-input {
+  background: var(--input-bg);
   border: 1px solid var(--border-soft);
   border-radius: 6px;
   min-height: 32px;
@@ -370,6 +387,7 @@
 }
 
 .search-mode-select {
+  background: var(--input-bg);
   border: 1px solid var(--border-soft);
   border-radius: 6px;
   min-height: 30px;
@@ -449,7 +467,7 @@
 }
 
 .search-result-button {
-  background: transparent;
+  background: rgba(255, 255, 255, 0.12);
   border: 1px solid var(--border);
   display: grid;
   gap: 3px;
@@ -468,6 +486,7 @@
 .search-result-button:hover {
   background: var(--hover);
   border-color: var(--accent-ring);
+  box-shadow: var(--shadow-control);
   transform: translateX(2px);
 }
 
@@ -509,8 +528,8 @@
 }
 
 .tag-pill {
-  background: rgba(18, 100, 163, 0.08);
-  border: 1px solid rgba(18, 100, 163, 0.18);
+  background: var(--accent-softer);
+  border: 1px solid var(--accent-ring);
   color: var(--link);
   min-width: 0;
   overflow: hidden;
@@ -525,6 +544,7 @@
 }
 
 .text-input {
+  background: var(--input-bg);
   border: 1px solid var(--border-soft);
   border-radius: 6px;
   min-height: 30px;
@@ -540,9 +560,12 @@
 }
 
 .new-file-form--primary {
-  background: var(--popup-bg);
+  background:
+    var(--metal-sheen),
+    var(--popup-bg);
   border: 1px solid var(--border);
   border-radius: 8px;
+  box-shadow: var(--shadow-control);
   padding: 8px;
 }
 
@@ -600,4 +623,3 @@
   border-radius: 6px;
   width: 130px;
 }
-

@@ -101,3 +101,4 @@ P26では、事前に固定した長い実施リストは置かない。
 
 - ユーザー指示によりP25を終了し、P26デザイン・UI刷新フェーズへ移行した。
 - ファイルビューの現状デザイン確認用として、静的モック `docs/ui/mockups/file-view-current.html` を追加した。アプリ本体のUI挙動は変更していない。
+- `docs/ui/DESIGN.md` を `Anodized Instrument` へ差し替え、ファイルビュー周辺のCSSへ配置・操作導線を変えずに金属質感、微細grain、浅いエッジハイライト、控えめなshadowを導入した。`pnpm typecheck`、`pnpm test`、`git diff --check` と開発用レンダラーのブラウザ表示で確認した。
