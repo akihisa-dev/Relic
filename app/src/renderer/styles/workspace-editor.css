@@ -15,7 +15,7 @@
 
 .main-area-actions {
   align-items: center;
-  background: var(--sidebar-bg);
+  background: transparent;
   display: flex;
   gap: 4px;
   min-height: 35px;
@@ -297,7 +297,7 @@
   box-shadow: none;
   display: inline-flex;
   justify-content: center;
-  min-width: 30px;
+  min-width: 28px;
   padding: 0;
 }
 
