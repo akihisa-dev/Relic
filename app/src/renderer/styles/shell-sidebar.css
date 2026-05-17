@@ -4,18 +4,32 @@
 
 .app-shell {
   background:
-    var(--metal-sheen),
+    radial-gradient(ellipse at 26% 16%, rgba(255, 255, 255, 0.34), transparent 34%),
+    linear-gradient(145deg, #f7f7f5, #e7e7e4 44%, #d4d4d0),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0) 24%),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.045) 0 1px, rgba(0, 0, 0, 0.012) 1px 2px),
     var(--aluminum-base);
+  border: 1px solid rgba(28, 28, 28, 0.12);
+  border-radius: 24px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.08),
+    inset 0 0 28px rgba(255, 255, 255, 0.12),
+    0 26px 76px rgba(0, 0, 0, 0.11),
+    0 8px 24px rgba(0, 0, 0, 0.08);
   display: grid;
   grid-template-rows: 38px minmax(0, 1fr) 28px;
-  height: 100vh;
+  height: min(84vh, 880px);
   min-width: 0;
   overflow: hidden;
   position: relative;
+  transform: translate(-1.2vw, 1vh);
+  width: min(92vw, 1440px);
 }
 
 .app-shell::before {
   background-image:
+    radial-gradient(circle at 16% 0%, rgba(255, 255, 255, 0.42), transparent 24%),
     radial-gradient(ellipse at 82% 100%, rgba(0, 0, 0, 0.06), transparent 30%),
     repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.018) 0 1px, rgba(0, 0, 0, 0.008) 1px 2px);
   content: "";
@@ -52,26 +66,29 @@
 
 .rail {
   align-items: stretch;
-  background:
-    linear-gradient(90deg, rgba(255, 255, 255, 0.22), rgba(0, 0, 0, 0.018)),
-    var(--rail-bg);
-  border-right: 1px solid var(--border);
+  background: var(--rail-bg);
+  border-right: 0;
   box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.32);
   color: var(--text-3);
   display: flex;
+  flex: 0 0 58px;
   flex-direction: column;
   gap: 8px;
   overflow: hidden;
-  padding: 8px 8px 12px;
-  transition: width 180ms ease;
-  width: 48px;
-  flex: 0 0 auto;
+  padding: 22px 9px 18px;
+  transition:
+    flex-basis 220ms cubic-bezier(.2, .8, .2, 1),
+    width 220ms cubic-bezier(.2, .8, .2, 1),
+    background-color 220ms cubic-bezier(.2, .8, .2, 1);
+  width: 58px;
   z-index: 2;
 }
 
 .rail:hover,
 .rail--workspace-editing {
-  width: 220px;
+  background: rgba(255, 255, 255, 0.08);
+  flex-basis: 170px;
+  width: 170px;
 }
 
 .rail-button {
@@ -81,18 +98,18 @@
   box-shadow: none;
   color: inherit;
   display: inline-flex;
-  gap: 10px;
-  height: 32px;
+  gap: 12px;
+  height: 34px;
   justify-content: flex-start;
   overflow: hidden;
-  padding: 0 7px;
+  padding: 0;
   transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease, transform 120ms cubic-bezier(.18, 1.4, .28, 1);
   width: 100%;
 }
 
 .rail-button:hover {
-  background: var(--hover);
-  box-shadow: var(--shadow-control);
+  background: transparent;
+  box-shadow: none;
   color: var(--text);
 }
 
@@ -107,12 +124,22 @@
 }
 
 .rail-button.active {
-  background: rgba(255, 255, 255, 0.16);
+  background: transparent;
   border-radius: 8px;
-  box-shadow:
-    inset 2px 0 0 var(--accent),
-    var(--shadow-control);
+  box-shadow: none;
   color: var(--accent);
+  position: relative;
+}
+
+.rail-button.active::after {
+  background: var(--accent);
+  border-radius: 999px;
+  bottom: 4px;
+  box-shadow: 0 0 0 4px rgba(0, 98, 140, 0.06);
+  content: "";
+  height: 6px;
+  position: absolute;
+  width: 6px;
 }
 
 .rail-tab-flight {
@@ -180,7 +207,7 @@
 
 .rail:hover .rail-button-label,
 .rail--workspace-editing .rail-button-label {
-  max-width: 150px;
+  max-width: 96px;
   opacity: 1;
 }
 
@@ -205,14 +232,19 @@
     linear-gradient(160deg, var(--surface-container-low), var(--surface-container) 54%, var(--surface-container-high)),
     repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.028) 0 1px, rgba(0, 0, 0, 0.012) 1px 2px),
     var(--sidebar-bg);
-  border-right: 1px solid var(--border);
+  border: 1px solid rgba(255, 255, 255, 0.52);
+  border-radius: 22px;
   box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.88),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.035),
     inset 1px 0 0 rgba(255, 255, 255, 0.34),
-    inset -1px 0 0 rgba(0, 0, 0, 0.035);
+    inset 18px 0 36px rgba(255, 255, 255, 0.18),
+    0 18px 42px rgba(0, 0, 0, 0.065);
   display: flex;
   flex: 0 0 auto;
   flex-direction: column;
-  height: 100%;
+  height: calc(100% - 28px);
+  margin: 14px 0 14px 8px;
   min-width: 180px;
   overflow: hidden;
   position: relative;
@@ -221,7 +253,9 @@
 }
 
 .sidebar--closed {
-  border-right-color: transparent;
+  border-color: transparent;
+  margin-left: 0;
+  margin-right: 0;
   min-width: 0;
   pointer-events: none;
 }
@@ -252,16 +286,16 @@
 
 .sidebar-header {
   background: transparent;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 0;
   flex-shrink: 0;
-  padding: 0 16px;
+  padding: 0 18px;
 }
 
 .sidebar-body {
   flex: 1;
-  margin-right: 8px;
+  margin-right: 6px;
   overflow-y: auto;
-  padding: 16px;
+  padding: 0 18px 18px;
 }
 
 .pane-heading {
@@ -271,8 +305,8 @@
   font-size: 12px;
   font-weight: 700;
   gap: 8px;
-  letter-spacing: 0.02em;
-  padding: 10px 0;
+  letter-spacing: 0.06em;
+  padding: 18px 0;
   text-transform: uppercase;
 }
 

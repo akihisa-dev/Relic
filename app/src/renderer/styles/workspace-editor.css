@@ -8,17 +8,21 @@
     linear-gradient(145deg, var(--surface-container-low), var(--surface-container) 44%, var(--surface-container-highest)),
     repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.038) 0 1px, rgba(0, 0, 0, 0.01) 1px 2px),
     var(--surface-container);
-  border-left: 1px solid rgba(255, 255, 255, 0.32);
+  border: 1px solid rgba(28, 28, 28, 0.1);
+  border-radius: 22px;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.74),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.05),
-    -8px 0 22px rgba(0, 0, 0, 0.035);
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.07),
+    -10px 0 24px rgba(0, 0, 0, 0.04),
+    0 22px 58px rgba(0, 0, 0, 0.085);
   display: grid;
   flex: 1 1 auto;
   grid-template-rows: 40px minmax(0, 1fr);
+  margin: 14px 14px 14px 12px;
   min-height: 0;
   min-width: 0;
   overflow: hidden;
+  position: relative;
 }
 
 .main-area-top-bar {
@@ -26,8 +30,8 @@
   border-bottom: 1px solid var(--border);
   display: flex;
   gap: 8px;
-  background: rgba(255, 255, 255, 0.12);
-  padding: 0 12px;
+  background: transparent;
+  padding: 0 24px;
   -webkit-app-region: drag;
 }
 
@@ -78,7 +82,7 @@
   display: flex;
   flex-shrink: 0;
   gap: 2px;
-  background: rgba(255, 255, 255, 0.1);
+  background: transparent;
   overflow: visible;
   padding: 4px 10px;
   position: relative;
@@ -293,7 +297,7 @@
 }
 
 .pane--focused .pane-tab-bar {
-  background: rgba(255, 255, 255, 0.14);
+  background: transparent;
 }
 
 .pane--focused .editor-surface--action-odd {
@@ -312,7 +316,7 @@
 
 .pane-tab-bar {
   align-items: end;
-  background: rgba(255, 255, 255, 0.08);
+  background: transparent;
   border-bottom: 1px solid var(--border);
   display: flex;
   gap: 2px;
@@ -357,9 +361,9 @@
 
 .pane-tab--active {
   animation: tab-select 180ms cubic-bezier(.18, 1.25, .28, 1);
-  background: rgba(255, 255, 255, 0.24);
+  background: rgba(255, 255, 255, 0.26);
   border-color: var(--border-soft);
-  box-shadow: inset 0 2px 0 var(--accent);
+  box-shadow: none;
   color: var(--text);
 }
 
@@ -497,7 +501,7 @@
 /* ────────────────────────────────── */
 
 .editor-surface {
-  background: rgba(255, 255, 255, 0.1);
+  background: transparent;
   display: grid;
   grid-template-rows: minmax(0, 1fr) 24px;
   height: 100%;
