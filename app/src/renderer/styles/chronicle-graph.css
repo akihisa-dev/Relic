@@ -543,16 +543,16 @@
 }
 
 .graph-edge {
-  stroke: var(--text-3);
-  stroke-opacity: 0.24;
-  stroke-width: 0.7;
+  stroke: var(--text-2);
+  stroke-opacity: 0.36;
+  stroke-width: 0.85;
   transition: stroke 140ms ease, stroke-opacity 140ms ease, stroke-width 140ms ease;
 }
 
 .graph-edge--selected {
   stroke: var(--text-2);
-  stroke-opacity: 0.58;
-  stroke-width: 1;
+  stroke-opacity: 0.68;
+  stroke-width: 1.1;
 }
 
 .graph-edge--dimmed {
@@ -596,7 +596,7 @@
 }
 
 .graph-label {
-  fill: var(--text-2);
+  fill: var(--text);
   font-size: 9px;
   pointer-events: none;
   paint-order: stroke;
@@ -626,7 +626,7 @@
 .graph-node {
   animation: graph-node-breathe 5.4s ease-in-out infinite;
   fill: var(--text-2);
-  fill-opacity: 0.58;
+  fill-opacity: 0.72;
   stroke: var(--bg);
   stroke-opacity: 0.96;
   stroke-width: 1.8;
