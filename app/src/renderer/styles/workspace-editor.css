@@ -554,7 +554,6 @@
 }
 
 .editor-context-menu-tooltip {
-  animation: tooltip-in 140ms ease;
   background: rgba(31, 35, 40, 0.92);
   border-radius: 5px;
   color: white;
@@ -569,14 +568,22 @@
   top: calc(100% + 7px);
   transform: translateX(-50%);
   transition: opacity 120ms ease, transform 120ms ease;
+  visibility: hidden;
   white-space: nowrap;
   z-index: 1001;
 }
 
 .editor-context-menu-icon-button:hover .editor-context-menu-tooltip,
 .editor-context-menu-icon-button:focus-visible .editor-context-menu-tooltip {
+  animation: tooltip-in 140ms ease;
   opacity: 1;
   transform: translateX(-50%) translateY(1px);
+  visibility: visible;
+}
+
+.editor-context-menu-text-item {
+  justify-content: center;
+  min-width: 100%;
 }
 
 .editor-context-menu-section {

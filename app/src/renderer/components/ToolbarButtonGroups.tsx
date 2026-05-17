@@ -13,6 +13,7 @@ import {
   BulletListIcon,
   CheckboxIcon,
   CodeBlockIcon,
+  ExternalLinkIcon,
   HeadingIcon,
   HighlightIcon,
   HorizontalRuleIcon,
@@ -210,7 +211,7 @@ export function ToolbarInsertGroup({
     <div className="toolbar-group">
       <div className="toolbar-inline-dialog-wrap">
         <ToolbarButton label={t("toolbar.markdownLink")} onClick={onLink} tooltip={t("toolbar.link")}>
-          <LinkIcon />
+          <ExternalLinkIcon />
         </ToolbarButton>
         {showLinkDialog ? (
           <div className={toolbarPanelClass("toolbar-inline-dialog", "link", closingPanel)}>
