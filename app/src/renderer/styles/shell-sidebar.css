@@ -75,7 +75,7 @@
   display: flex;
   flex: 0 0 58px;
   flex-direction: column;
-  gap: 8px;
+  gap: 0;
   overflow: hidden;
   padding: 22px 9px 18px;
   transition:
@@ -109,6 +109,15 @@
   width: 100%;
 }
 
+.rail-button + .rail-button,
+.rail-separator + .rail-button {
+  margin-top: 8px;
+}
+
+.rail-separator + .rail-button {
+  margin-top: 4px;
+}
+
 .rail-button:hover {
   background: transparent;
   box-shadow: none;
@@ -116,7 +125,9 @@
 }
 
 .rail-button > svg {
-  flex: 0 0 auto;
+  flex: 0 0 34px;
+  height: 18px;
+  width: 34px;
 }
 
 .rail-button.open {
@@ -140,6 +151,7 @@
   box-shadow: 0 0 0 4px rgba(0, 98, 140, 0.06);
   content: "";
   height: 6px;
+  left: 2px;
   position: absolute;
   width: 6px;
 }
@@ -216,6 +228,7 @@
 .rail-separator {
   background: var(--border);
   height: 1px;
+  margin-top: 3px;
   width: 24px;
 }
 
