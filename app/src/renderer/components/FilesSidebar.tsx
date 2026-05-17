@@ -125,8 +125,10 @@ export function FilesSidebar({
           <FilesCreateActions
             isCreatingFile={isCreatingFile}
             isCreatingFolder={isCreatingFolder}
+            onCollapseAllFolders={() => requestExpansion("collapse")}
             onCreateFile={onCreateFile}
             onCreateFolder={onCreateFolder}
+            onExpandAllFolders={() => requestExpansion("expand")}
           />
           {isFilteringFiles ? (
             <FilesSearchResults

@@ -458,6 +458,14 @@ describe("App", () => {
     fireEvent.click(await screen.findByRole("menuitem", { name: "すべてのフォルダを開く" }));
     expect(screen.getByRole("button", { name: /草稿/ })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /保管メモ/ })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "すべてのフォルダを閉じる" }));
+    expect(screen.queryByRole("button", { name: /読書メモ/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /保管メモ/ })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "すべてのフォルダを開く" }));
+    expect(screen.getByRole("button", { name: /草稿/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /保管メモ/ })).toBeInTheDocument();
   });
 
   it("開いているファイルをファイルツリーではハイライトしない", async () => {
