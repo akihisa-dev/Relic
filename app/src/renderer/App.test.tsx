@@ -536,14 +536,17 @@ describe("App", () => {
     const outlineButton = screen.getByRole("button", { name: "アウトライン" });
     const linksButton = screen.getByRole("button", { name: "リンク" });
 
-    fireEvent.click(outlineButton);
-
     expect(useUiStore.getState().isRightPanelOpen).toBe(false);
     expect(useUiStore.getState().rightPanelView).toBe("outline");
 
     fireEvent.click(outlineButton);
 
     expect(useUiStore.getState().isRightPanelOpen).toBe(true);
+    expect(useUiStore.getState().rightPanelView).toBe("outline");
+
+    fireEvent.click(outlineButton);
+
+    expect(useUiStore.getState().isRightPanelOpen).toBe(false);
     expect(useUiStore.getState().rightPanelView).toBe("outline");
 
     const topActions = document.querySelector(".main-area-top-actions");
