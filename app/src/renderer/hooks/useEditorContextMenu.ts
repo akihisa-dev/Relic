@@ -173,7 +173,7 @@ export function useEditorContextMenu({ viewRef }: UseEditorContextMenuInput) {
     if (!contextMenu) return;
     const handlePointerDown = (event: PointerEvent): void => {
       const target = event.target;
-      if (target instanceof HTMLElement && target.closest(".editor-context-menu")) return;
+      if (target instanceof Element && target.closest(".editor-context-menu")) return;
       closeContextMenu();
     };
     const handleKeyDown = (event: KeyboardEvent): void => {

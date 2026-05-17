@@ -270,6 +270,36 @@ describe("Editor", () => {
     expect(viewRef.current!.state.doc.toString()).toBe("**hello** world");
   });
 
+  it("本文の右クリックメニューからアイコンのSVGを押してもMarkdown操作を適用できる", async () => {
+    const viewRef = createRef<EditorView | null>();
+    const onChange = vi.fn();
+
+    render(
+      <Editor
+        content="hello world"
+        onChange={onChange}
+        settings={{ ...settings, language: "ja" }}
+        viewRef={viewRef}
+      />
+    );
+
+    await waitFor(() => expect(viewRef.current).not.toBeNull());
+    const view = viewRef.current!;
+    const contentElement = view.dom.querySelector(".cm-content")!;
+    view.dispatch({ selection: { anchor: 0, head: 5 } });
+
+    fireEvent.contextMenu(contentElement, { clientX: 32, clientY: 32 });
+    const boldButton = await screen.findByRole("menuitem", { name: "Bold" });
+    const boldPath = boldButton.querySelector("path")!;
+    fireEvent.pointerDown(boldPath);
+    fireEvent.mouseDown(boldPath);
+    fireEvent.click(boldPath);
+
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+    expect(onChange).toHaveBeenLastCalledWith("**hello** world");
+    expect(viewRef.current!.state.doc.toString()).toBe("**hello** world");
+  });
+
   it("外側からcontentが更新されたら表示中の文書も同期する", async () => {
     const viewRef = createRef<EditorView | null>();
     const { rerender } = render(
