@@ -141,6 +141,7 @@
 
 .right-panel-content {
   animation: right-panel-content-in 170ms cubic-bezier(.22, 1, .36, 1);
+  padding-top: 51px;
   transform-origin: right center;
 }
 
