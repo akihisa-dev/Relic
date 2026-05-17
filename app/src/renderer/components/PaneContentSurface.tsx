@@ -21,6 +21,7 @@ interface PaneContentSurfaceProps {
   viewRef: MutableRefObject<EditorView | null>;
   workspacePath?: string | null;
   onCreateFile: (name: string) => void;
+  onEditorAction?: () => void;
   onOpenLink?: (href: string) => void;
   onOpenWikiLink?: (target: string, heading?: string) => void;
   onUpdateTabContent: (tabId: string, content: string) => void;
@@ -40,6 +41,7 @@ export function PaneContentSurface({
   viewRef,
   workspacePath,
   onCreateFile,
+  onEditorAction,
   onOpenLink,
   onOpenWikiLink,
   onUpdateTabContent
@@ -67,6 +69,7 @@ export function PaneContentSurface({
             typewriterMode={typewriterMode}
             userDefinedFields={userDefinedFields}
             viewRef={viewRef}
+            onEditorAction={onEditorAction}
           />
         </div>
         <div className="pane-status">
