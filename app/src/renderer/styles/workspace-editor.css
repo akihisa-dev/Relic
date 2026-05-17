@@ -3,7 +3,16 @@
 /* ────────────────────────────────── */
 
 .main-area {
-  background: var(--bg);
+  background:
+    radial-gradient(ellipse at 18% 8%, rgba(255, 255, 255, 0.34), transparent 34%),
+    linear-gradient(145deg, var(--surface-container-low), var(--surface-container) 44%, var(--surface-container-highest)),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.038) 0 1px, rgba(0, 0, 0, 0.01) 1px 2px),
+    var(--surface-container);
+  border-left: 1px solid rgba(255, 255, 255, 0.32);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.74),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.05),
+    -8px 0 22px rgba(0, 0, 0, 0.035);
   display: grid;
   flex: 1 1 auto;
   grid-template-rows: 40px minmax(0, 1fr);
@@ -17,6 +26,7 @@
   border-bottom: 1px solid var(--border);
   display: flex;
   gap: 8px;
+  background: rgba(255, 255, 255, 0.12);
   padding: 0 12px;
   -webkit-app-region: drag;
 }
@@ -68,6 +78,7 @@
   display: flex;
   flex-shrink: 0;
   gap: 2px;
+  background: rgba(255, 255, 255, 0.1);
   overflow: visible;
   padding: 4px 10px;
   position: relative;
@@ -104,6 +115,7 @@
 .toolbar-btn:hover {
   background: var(--hover);
   border-color: var(--border-soft);
+  box-shadow: var(--shadow-control);
 }
 
 .toolbar-btn[data-tooltip]:hover::after,
@@ -134,9 +146,11 @@
 
 .toolbar-btn.active {
   animation: toolbar-active-settle 160ms cubic-bezier(.18, 1.25, .28, 1);
-  background: var(--hover);
+  background: var(--metal-control);
   border-color: var(--border-soft);
-  box-shadow: inset 0 2px 0 var(--accent);
+  box-shadow:
+    inset 0 2px 0 var(--accent),
+    var(--shadow-control);
   color: var(--text);
 }
 
@@ -150,10 +164,12 @@
 
 .toolbar-dropdown-menu {
   animation: toolbar-panel-in 150ms cubic-bezier(.18, 1.18, .28, 1);
-  background: var(--popup-bg);
+  background:
+    var(--metal-sheen),
+    var(--popup-bg);
   border: 1px solid var(--border-soft);
   border-radius: 8px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--shadow-panel);
   display: flex;
   flex-direction: column;
   left: 0;
@@ -193,10 +209,12 @@
 .toolbar-inline-dialog {
   align-items: center;
   animation: toolbar-panel-in 150ms cubic-bezier(.18, 1.18, .28, 1);
-  background: var(--popup-bg);
+  background:
+    var(--metal-sheen),
+    var(--popup-bg);
   border: 1px solid var(--border-soft);
   border-radius: 8px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--shadow-panel);
   display: flex;
   gap: 6px;
   left: 0;
@@ -212,6 +230,7 @@
 }
 
 .toolbar-input {
+  background: var(--input-bg);
   border: 1px solid var(--border-soft);
   border-radius: 5px;
   font-size: 13px;
@@ -274,7 +293,7 @@
 }
 
 .pane--focused .pane-tab-bar {
-  background: var(--bg);
+  background: rgba(255, 255, 255, 0.14);
 }
 
 .pane--focused .editor-surface--action-odd {
@@ -293,7 +312,7 @@
 
 .pane-tab-bar {
   align-items: end;
-  background: var(--sidebar-bg);
+  background: rgba(255, 255, 255, 0.08);
   border-bottom: 1px solid var(--border);
   display: flex;
   gap: 2px;
@@ -338,8 +357,9 @@
 
 .pane-tab--active {
   animation: tab-select 180ms cubic-bezier(.18, 1.25, .28, 1);
-  background: var(--accent-soft);
-  border-color: var(--accent);
+  background: rgba(255, 255, 255, 0.24);
+  border-color: var(--border-soft);
+  box-shadow: inset 0 2px 0 var(--accent);
   color: var(--text);
 }
 
@@ -418,7 +438,7 @@
 }
 
 .pane-tab-close:hover {
-  background: rgba(31, 35, 40, 0.1);
+  background: var(--hover-strong);
   color: var(--text);
 }
 
@@ -431,10 +451,12 @@
 /* ────────────────────────────────── */
 
 .tab-context-menu {
-  background: var(--popup-bg);
+  background:
+    var(--metal-sheen),
+    var(--popup-bg);
   border: 1px solid var(--border-soft);
   border-radius: 8px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--shadow-panel);
   display: flex;
   flex-direction: column;
   max-width: calc(100vw - 16px);
@@ -475,6 +497,7 @@
 /* ────────────────────────────────── */
 
 .editor-surface {
+  background: rgba(255, 255, 255, 0.1);
   display: grid;
   grid-template-rows: minmax(0, 1fr) 24px;
   height: 100%;
