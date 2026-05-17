@@ -132,3 +132,10 @@ P24では、事前に固定した長い実施リストは置かない。
 - 実施: 最小化時の三点表示を三本線系SVGへ変更し、アクセシブル名とtitleは既存の「展開」のまま維持した。最小状態のパネルだけ常時表示にし、ボタンサイズ、枠、影、文字色を強めた。展開後の通常パネルは従来どおりhover/focus時に表示する
 - 確認: `pnpm exec vitest run src/renderer/components/GraphControls.test.tsx`、`pnpm typecheck`、`git diff --check` が通過した。開発版レンダラーでグラフビューを開き、最小化後の三本線ボタンがhoverなしで表示されることを確認した
 - 残り: Electron実機で実ワークスペースを開いた状態の目視確認は未実施
+
+### ファイルビュー検索の入力エラー修正
+
+- 方向性: ファイルビュー検索で検索語を入れても `検索語句を入力してください` になる問題を、検索処理本体ではなくIPC入力正規化の問題として直す。検索UI、検索モード、検索対象、保存形式は変えない
+- 実施: `workspace:search` の入力を正規形 `{ query, mode }` と互換形 `{ searchQuery, searchMode }` の両方から正規化する処理を追加し、handlerは正規化済み入力を検索本体へ渡すようにした。不正な構造のエラー文言は検索語句不足ではなく検索リクエスト不正に分けた。ファイル名検索と正規表現検索のrenderer経路テストも追加した
+- 確認: `pnpm exec vitest run src/main/ipc/fileHandlerValidators.test.ts src/main/files/search.test.ts src/renderer/components/FilesSidebarSearch.test.tsx src/renderer/App.test.tsx -t "検索|search"`、`pnpm typecheck`、`git diff --check` が通過した
+- 残り: Electron実機で実ワークスペースを開いた状態の目視確認は未実施

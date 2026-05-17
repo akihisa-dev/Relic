@@ -7,6 +7,7 @@ import type {
   RenameMarkdownFileInput,
   ReplaceInFileInput,
   SearchAndReplaceInput,
+  SearchMode,
   SearchWorkspaceInput
 } from "../../shared/ipc";
 
@@ -122,11 +123,55 @@ export function isSearchWorkspaceInput(input: unknown): input is SearchWorkspace
     "query" in input &&
     "mode" in input &&
     typeof (input as { query?: unknown }).query === "string" &&
-    (!("frontmatterField" in input) || typeof (input as { frontmatterField?: unknown }).frontmatterField === "string") &&
-    ((input as { mode?: unknown }).mode === "fullText" ||
-      (input as { mode?: unknown }).mode === "fileName" ||
-      (input as { mode?: unknown }).mode === "tag" ||
-      (input as { mode?: unknown }).mode === "regex" ||
-      (input as { mode?: unknown }).mode === "frontmatter")
+    isSearchMode((input as { mode?: unknown }).mode) &&
+    (!("frontmatterField" in input) || typeof (input as { frontmatterField?: unknown }).frontmatterField === "string")
+  );
+}
+
+export function normalizeSearchWorkspaceInput(input: unknown): SearchWorkspaceInput | null {
+  if (typeof input !== "object" || input === null) {
+    return null;
+  }
+
+  const record = input as {
+    frontmatterField?: unknown;
+    mode?: unknown;
+    query?: unknown;
+    searchMode?: unknown;
+    searchQuery?: unknown;
+  };
+  const query = typeof record.query === "string"
+    ? record.query
+    : typeof record.searchQuery === "string"
+      ? record.searchQuery
+      : null;
+  const mode = isSearchMode(record.mode)
+    ? record.mode
+    : isSearchMode(record.searchMode)
+      ? record.searchMode
+      : null;
+
+  if (query === null || mode === null) {
+    return null;
+  }
+
+  if ("frontmatterField" in input && typeof record.frontmatterField !== "string") {
+    return null;
+  }
+
+  return {
+    frontmatterField: typeof record.frontmatterField === "string" ? record.frontmatterField : undefined,
+    mode,
+    query
+  };
+}
+
+function isSearchMode(value: unknown): value is SearchMode {
+  return (
+    value === "fullText" ||
+    value === "fileName" ||
+    value === "tag" ||
+    value === "regex" ||
+    value === "frontmatter"
   );
 }
