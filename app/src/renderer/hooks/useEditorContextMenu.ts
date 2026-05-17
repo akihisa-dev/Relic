@@ -1,4 +1,5 @@
 import { EditorView } from "@codemirror/view";
+import type { EditorState } from "@codemirror/state";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { MouseEvent as ReactMouseEvent, MutableRefObject } from "react";
 
@@ -21,6 +22,17 @@ export function useEditorContextMenu({ viewRef }: UseEditorContextMenuInput) {
 
   const closeContextMenu = useCallback((): void => setContextMenu(null), []);
 
+  const rememberSelection = useCallback((state: EditorState): void => {
+    const selection = state.selection.main;
+    if (selection.empty) return;
+
+    lastSelectionRef.current = {
+      from: selection.from,
+      text: state.sliceDoc(selection.from, selection.to),
+      to: selection.to
+    };
+  }, []);
+
   const openContextMenu = useCallback((event: MouseEvent, view: EditorView): boolean => {
     const target = event.target;
     if (target instanceof HTMLElement && target.closest(".cm-live-table")) return false;
@@ -34,7 +46,7 @@ export function useEditorContextMenu({ viewRef }: UseEditorContextMenuInput) {
     } catch {
       clickedPosition = null;
     }
-    let selectionFrom = selection.empty ? clickedPosition ?? selection.from : selection.from;
+    let selectionFrom = selection.from;
     let selectionTo = selection.empty ? selectionFrom : selection.to;
     let selectionText = "";
 
@@ -57,6 +69,15 @@ export function useEditorContextMenu({ viewRef }: UseEditorContextMenuInput) {
         text: selectionText,
         to: selection.to
       };
+    }
+
+    if (selectionFrom !== selectionTo) {
+      view.dispatch({
+        selection: {
+          anchor: selectionFrom,
+          head: selectionTo
+        }
+      });
     }
 
     setContextMenu({
@@ -172,6 +193,7 @@ export function useEditorContextMenu({ viewRef }: UseEditorContextMenuInput) {
     contextMenu,
     copySelection,
     cutSelection,
+    rememberSelection,
     openContextMenu,
     openReactContextMenu,
     pasteClipboard,

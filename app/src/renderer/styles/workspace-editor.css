@@ -610,6 +610,10 @@
   grid-template-columns: repeat(3, 34px);
 }
 
+.editor-context-menu-grid--insert {
+  grid-template-columns: repeat(3, 34px);
+}
+
 .editor-context-menu-inline-dialog {
   align-items: center;
   animation: toolbar-panel-in 150ms cubic-bezier(.18, 1.18, .28, 1);

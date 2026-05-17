@@ -96,6 +96,7 @@ export function buildExtensions(
   userDefinedFields: UserDefinedField[],
   frontmatterCandidates: Record<string, string[]>,
   onContextMenu: (event: MouseEvent, view: EditorView) => boolean,
+  onSelectionChange: (state: EditorState) => void,
   onOpenLinkRef: RefObject<((href: string) => void) | undefined>,
   onOpenWikiLinkRef: RefObject<((target: string, heading?: string) => void) | undefined>
 ) {
@@ -138,6 +139,7 @@ export function buildExtensions(
     }),
     EditorView.updateListener.of((update) => {
       if (update.docChanged) onChangeRef.current!(update.state.doc.toString());
+      if (update.selectionSet || update.docChanged) onSelectionChange(update.state);
     }),
     EditorView.theme({
       "&": {

@@ -63,6 +63,7 @@ export function Editor({
     openReactContextMenu,
     pasteClipboard,
     prepareContextSelection,
+    rememberSelection,
     selectAll
   } = useEditorContextMenu({ viewRef: internalViewRef });
   const markdownActions = useToolbarActions({
@@ -105,13 +106,19 @@ export function Editor({
     const handleContextMenu = (event: MouseEvent): void => {
       const view = internalViewRef.current;
       if (!view) return;
-      if (openContextMenu(event, view)) event.stopPropagation();
+      if (openContextMenu(event, view)) {
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+      }
     };
     const handleRightButtonDown = (event: MouseEvent): void => {
       if (event.button !== 2) return;
       const view = internalViewRef.current;
       if (!view) return;
-      if (openContextMenu(event, view)) event.stopPropagation();
+      if (openContextMenu(event, view)) {
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+      }
     };
 
     container.addEventListener(frontmatterDialogRequestEvent, handleFrontmatterDialogRequest);
@@ -143,6 +150,7 @@ export function Editor({
       userDefinedFieldsRef.current,
       frontmatterCandidatesRef.current,
       openContextMenu,
+      rememberSelection,
       onOpenLinkRef,
       onOpenWikiLinkRef
     );
@@ -201,6 +209,7 @@ export function Editor({
       userDefinedFieldsRef.current,
       frontmatterCandidatesRef.current,
       openContextMenu,
+      rememberSelection,
       onOpenLinkRef,
       onOpenWikiLinkRef
     );
@@ -210,7 +219,7 @@ export function Editor({
     internalViewRef.current = nextView;
 
     if (viewRef) viewRef.current = nextView;
-  }, [frontmatterCandidates, settings, sourceMode, typewriterMode, userDefinedFields, viewRef]);
+  }, [frontmatterCandidates, rememberSelection, settings, sourceMode, typewriterMode, userDefinedFields, viewRef]);
 
   return (
     <>
