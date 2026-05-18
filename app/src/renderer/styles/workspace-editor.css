@@ -11,22 +11,19 @@
   min-width: 0;
   overflow: hidden;
   position: relative;
-  --main-area-actions-width: 136px;
 }
 
 .main-area-actions {
   align-items: center;
   background: var(--bg);
   border-bottom: 1px solid var(--border);
+  border-left: 1px solid var(--border);
   display: flex;
   gap: 4px;
   justify-content: flex-end;
-  min-height: 35px;
+  min-height: 36px;
   padding: 0 8px;
-  position: absolute;
-  right: 0;
-  top: 0;
-  width: var(--main-area-actions-width);
+  width: 136px;
   z-index: 18;
 }
 
@@ -321,6 +318,16 @@
 /* Pane tab bar                        */
 /* ────────────────────────────────── */
 
+.pane-top-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+}
+
+.pane-top-row--with-actions {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
 .pane-tab-bar {
   align-items: end;
   background: var(--sidebar-bg);
@@ -330,11 +337,6 @@
   overflow-x: auto;
   padding: 0 8px;
   position: relative;
-}
-
-.panes-container:not(.panes-container--split) .pane-tab-bar,
-.panes-container--split .pane:last-child .pane-tab-bar {
-  padding-right: calc(var(--main-area-actions-width) + 8px);
 }
 
 .main-area-actions .toolbar-btn {

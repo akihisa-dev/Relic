@@ -11,6 +11,7 @@ import { PaneTabBar } from "./PaneTabBar";
 import { PaneTabContextMenu } from "./PaneTabContextMenu";
 
 export interface PaneViewProps {
+  actionSlot?: ReactNode;
   allFilePaths: string[];
   closingTabIds: Set<string>;
   editorActionPulse: number;
@@ -50,6 +51,7 @@ export interface PaneViewProps {
 }
 
 export function PaneView({
+  actionSlot,
   allFilePaths,
   closingTabIds,
   editorActionPulse,
@@ -125,23 +127,26 @@ export function PaneView({
       onFocusCapture={onFocus}
       onPointerDownCapture={onFocus}
     >
-      <PaneTabBar
-        closingTabIds={closingTabIds}
-        pane={pane}
-        paneState={paneState}
-        renderPanelTabIcon={renderPanelTabIcon}
-        tabDropTarget={tabDropTarget}
-        tabs={tabs}
-        onContextMenuOpen={openContextMenu}
-        onTabBarDragLeave={handleTabBarDragLeave}
-        onTabBarDragOver={handleTabBarDragOver}
-        onTabClose={onTabClose}
-        onTabDragEnd={handleTabDragEnd}
-        onTabDragOver={handleTabDragOver}
-        onTabDragStart={handleTabDragStart}
-        onTabDrop={handleTabDrop}
-        onTabSelect={onTabSelect}
-      />
+      <div className={`pane-top-row${actionSlot ? " pane-top-row--with-actions" : ""}`}>
+        <PaneTabBar
+          closingTabIds={closingTabIds}
+          pane={pane}
+          paneState={paneState}
+          renderPanelTabIcon={renderPanelTabIcon}
+          tabDropTarget={tabDropTarget}
+          tabs={tabs}
+          onContextMenuOpen={openContextMenu}
+          onTabBarDragLeave={handleTabBarDragLeave}
+          onTabBarDragOver={handleTabBarDragOver}
+          onTabClose={onTabClose}
+          onTabDragEnd={handleTabDragEnd}
+          onTabDragOver={handleTabDragOver}
+          onTabDragStart={handleTabDragStart}
+          onTabDrop={handleTabDrop}
+          onTabSelect={onTabSelect}
+        />
+        {actionSlot}
+      </div>
       <PaneTabContextMenu
         contextMenu={contextMenu}
         contextTab={contextTab}
