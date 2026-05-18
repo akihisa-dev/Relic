@@ -940,6 +940,7 @@
   overflow-x: auto;
   overflow-y: hidden;
   position: relative;
+  isolation: isolate;
 }
 
 .chronicle-chart:active {
@@ -953,10 +954,11 @@
 
 .chronicle-name-column {
   background: var(--bg);
+  box-shadow: 1px 0 0 var(--border);
   left: 0;
   position: sticky;
   top: 0;
-  z-index: 8;
+  z-index: 20;
 }
 
 .chronicle-name-header {
@@ -999,7 +1001,7 @@
   left: 0;
   position: absolute;
   top: 0;
-  z-index: 1;
+  z-index: 0;
 }
 
 .chronicle-axis {
@@ -1394,7 +1396,7 @@
 
 .chronicle-fill {
   align-items: center;
-  background: rgba(0, 124, 175, 0.18);
+  background: rgba(0, 124, 175, 0.28);
   border: 0;
   color: var(--text);
   cursor: grab;
@@ -1416,30 +1418,30 @@
 }
 
 .chronicle-fill:hover {
-  background: rgba(0, 124, 175, 0.26);
+  background: rgba(0, 124, 175, 0.36);
 }
 
 .chronicle-fill:active,
 .chronicle-fill--dragging {
-  background: rgba(0, 124, 175, 0.32);
+  background: rgba(0, 124, 175, 0.44);
   cursor: grabbing;
 }
 
 .chronicle-fill--planned {
-  background: rgba(0, 124, 175, 0.24);
+  background: rgba(0, 124, 175, 0.36);
 }
 
 .chronicle-fill--planned:hover {
-  background: rgba(0, 124, 175, 0.32);
+  background: rgba(0, 124, 175, 0.44);
 }
 
 .chronicle-fill--planned:active,
 .chronicle-fill--planned.chronicle-fill--dragging {
-  background: rgba(0, 124, 175, 0.38);
+  background: rgba(0, 124, 175, 0.52);
 }
 
 .chronicle-fill--actual {
-  background: rgba(224, 108, 0, 0.34);
+  background: rgba(224, 108, 0, 0.48);
 }
 
 .chronicle-fill--date {
@@ -1464,12 +1466,12 @@
 }
 
 .chronicle-fill--actual:hover {
-  background: rgba(224, 108, 0, 0.42);
+  background: rgba(224, 108, 0, 0.56);
 }
 
 .chronicle-fill--actual:active,
 .chronicle-fill--actual.chronicle-fill--dragging {
-  background: rgba(224, 108, 0, 0.5);
+  background: rgba(224, 108, 0, 0.64);
 }
 
 .chronicle-fill-label {
