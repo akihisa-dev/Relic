@@ -13,6 +13,7 @@ import {
   openGanttTabState,
   openPanelTabState,
   setTabActiveState,
+  toggleTabPinnedState,
   toggleSplitState,
   updateFileTabContentState,
   updateFileTabMetaState
@@ -23,6 +24,7 @@ export type PanelTabKind = "dashboard" | "tools" | "frontmatter" | "settings" | 
 export interface FileTab {
   content: string;
   id: string;
+  isPinned?: boolean;
   kind: "file";
   name: string;
   path: string;
@@ -30,6 +32,7 @@ export interface FileTab {
 
 export interface PanelTab {
   id: string;
+  isPinned?: boolean;
   kind: "panel";
   name: string;
   panel: PanelTabKind;
@@ -38,6 +41,7 @@ export interface PanelTab {
 export interface GanttTab {
   chartId: string;
   id: string;
+  isPinned?: boolean;
   kind: "gantt";
   name: string;
 }
@@ -70,6 +74,7 @@ interface EditorStore {
   setEditorSettings: (settings: EditorSettings) => void;
   setFocusedPane: (pane: PaneId) => void;
   setTabActive: (pane: PaneId, tabId: string) => void;
+  toggleTabPinned: (tabId: string) => void;
   toggleSplit: () => void;
   updateTabContent: (tabId: string, content: string) => void;
   updateTabMeta: (tabId: string, meta: Pick<FileTab, "name" | "path">) => void;
@@ -112,6 +117,12 @@ export const useEditorStore = create<EditorStore>((set) => ({
   setTabActive: (pane, tabId) => {
     set((state) => {
       return setTabActiveState(state, pane, tabId);
+    });
+  },
+
+  toggleTabPinned: (tabId) => {
+    set((state) => {
+      return toggleTabPinnedState(state, tabId);
     });
   },
 

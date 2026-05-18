@@ -54,7 +54,6 @@ interface AppEditorWorkspaceProps {
   onTogglePinTab?: (tabId: string) => void;
   outlineHeadings: OutlineHeading[];
   outgoingLinks: ResolvedWikiLink[];
-  pinnedPaths: Set<string>;
   renderGanttChartTab: (chartId: string) => ReactNode;
   renderPanelTab: (panel: PanelTabKind) => ReactNode;
   renderPanelTabIcon: (panel: PanelTabKind) => ReactNode;
@@ -112,7 +111,6 @@ export function AppEditorWorkspace({
   onTogglePinTab,
   outlineHeadings,
   outgoingLinks,
-  pinnedPaths,
   renderGanttChartTab,
   renderPanelTab,
   renderPanelTabIcon,
@@ -191,7 +189,6 @@ export function AppEditorWorkspace({
               frontmatterCandidates={frontmatterCandidates}
               isSplitView={isSplit}
               pane="left"
-              pinnedPaths={pinnedPaths}
               renderGanttChartTab={renderGanttChartTab}
               renderPanelTab={renderPanelTab}
               renderPanelTabIcon={renderPanelTabIcon}
@@ -231,7 +228,6 @@ export function AppEditorWorkspace({
                 frontmatterCandidates={frontmatterCandidates}
                 isSplitView={isSplit}
                 pane="right"
-                pinnedPaths={pinnedPaths}
                 renderGanttChartTab={renderGanttChartTab}
                 renderPanelTab={renderPanelTab}
                 renderPanelTabIcon={renderPanelTabIcon}

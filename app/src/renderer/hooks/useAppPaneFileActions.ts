@@ -8,7 +8,6 @@ import { joinWorkspacePath } from "../workspacePaths";
 interface UseAppPaneFileActionsInput {
   focusedPane: PaneId;
   handleDuplicateTreeFile: (path: string) => void;
-  handleTogglePin: (path: string) => void;
   isSplit: boolean;
   openFileInPane: (pane: PaneId, file: MarkdownFileContent) => void;
   openGanttChartInPane: (pane: PaneId, chart: { id: string; name: string }) => void;
@@ -28,7 +27,6 @@ function ensureMarkdownExtension(name: string): string {
 export function useAppPaneFileActions({
   focusedPane,
   handleDuplicateTreeFile,
-  handleTogglePin,
   isSplit,
   openFileInPane,
   openGanttChartInPane,
@@ -46,7 +44,6 @@ export function useAppPaneFileActions({
   handleRevealTabFile: (tabId: string) => void;
   handleRevealWorkspaceItem: (path: string) => void;
   handleSelectFolder: (node: Extract<WorkspaceTreeNode, { type: "folder" }>) => void;
-  handleTogglePinTab: (tabId: string) => void;
   openFileInOtherPane: (fromPane: PaneId, tabId: string) => void;
   openTreeFileInOtherPane: (path: string) => void;
   openWorkspacePathInOtherPane: (path: string, heading?: string) => void;
@@ -168,12 +165,6 @@ export function useAppPaneFileActions({
     handleRevealWorkspaceItem(tab.path);
   }, [handleRevealWorkspaceItem, tabs]);
 
-  const handleTogglePinTab = useCallback((tabId: string): void => {
-    const tab = tabs[tabId];
-    if (!tab || tab.kind !== "file") return;
-    handleTogglePin(tab.path);
-  }, [handleTogglePin, tabs]);
-
   const handleSelectFolder = useCallback(
     (node: Extract<WorkspaceTreeNode, { type: "folder" }>): void => {
       void node; // フェーズ2ではフォルダ選択は何もしない
@@ -188,7 +179,6 @@ export function useAppPaneFileActions({
     handleRevealTabFile,
     handleRevealWorkspaceItem,
     handleSelectFolder,
-    handleTogglePinTab,
     openFileInOtherPane,
     openTreeFileInOtherPane,
     openWorkspacePathInOtherPane

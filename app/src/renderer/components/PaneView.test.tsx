@@ -95,7 +95,6 @@ function renderPaneView(overrides: Partial<PaneViewProps> = {}): PaneViewProps {
     onTabMove: vi.fn(),
     onTabSelect: vi.fn(),
     onTogglePinTab: vi.fn(),
-    pinnedPaths: new Set(),
     scrollTargetHeading: undefined,
     ...overrides
   };
@@ -146,18 +145,15 @@ describe("PaneView", () => {
       { [fileTab.id]: fileTab },
       { activeTabId: fileTab.id, history: [fileTab.id], tabIds: [fileTab.id] }
     );
-    const props = renderPaneView({
-      isSplitView: true,
-      pinnedPaths: new Set([fileTab.path])
-    });
+    const props = renderPaneView({ isSplitView: true });
+
+    fireEvent.contextMenu(tabElement("Note"), { clientX: 50, clientY: 60 });
+    fireEvent.click(screen.getByRole("button", { name: "Pin" }));
+    expect(props.onTogglePinTab).toHaveBeenCalledWith(fileTab.id);
 
     fireEvent.contextMenu(tabElement("Note"), { clientX: 50, clientY: 60 });
     fireEvent.click(screen.getByRole("button", { name: "Duplicate" }));
     expect(props.onDuplicateTabFile).toHaveBeenCalledWith(fileTab.id);
-
-    fireEvent.contextMenu(tabElement("Note"), { clientX: 50, clientY: 60 });
-    fireEvent.click(screen.getByRole("button", { name: "Unpin" }));
-    expect(props.onTogglePinTab).toHaveBeenCalledWith(fileTab.id);
 
     fireEvent.contextMenu(tabElement("Note"), { clientX: 50, clientY: 60 });
     fireEvent.click(screen.getByRole("button", { name: "Copy path" }));
