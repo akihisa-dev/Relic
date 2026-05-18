@@ -160,6 +160,23 @@ export function buildVisibleDateGuideTicks(
     }));
 }
 
+export function buildVisibleChronicleGuideTicks(
+  axisStart: number,
+  axisEnd: number,
+  interval: number,
+  visibleRange: TimelineVisibleRange
+): ChartGuideTick[] {
+  const visibleStart = clamp(visibleRange.visibleStart, axisStart, axisEnd);
+  const visibleEnd = clamp(visibleRange.visibleEnd, visibleStart, axisEnd);
+  const majorTicks = new Set(buildChronicleTicks(visibleStart, visibleEnd, chronicleMajorGuideInterval(interval)));
+
+  return buildChronicleTicks(visibleStart, visibleEnd, chronicleMinorGuideInterval(interval))
+    .map((value) => ({
+      isMajor: majorTicks.has(value),
+      value
+    }));
+}
+
 export function buildChronicleTicks(axisStart: number, axisEnd: number, interval: number): number[] {
   const first = firstChronicleTickYear(axisToYear(axisStart), interval);
   const endYear = axisToYear(axisEnd);
@@ -313,6 +330,37 @@ export function buildVisibleDateAxisSegments(
     }
 
     cursor = next;
+  }
+
+  return segments;
+}
+
+export function buildVisibleChronicleAxisSegments(
+  axisStart: number,
+  axisEnd: number,
+  interval: number,
+  visibleRange: TimelineVisibleRange
+): DateAxisSegment[] {
+  const visibleStart = clamp(visibleRange.visibleStart, axisStart, axisEnd);
+  const visibleEnd = clamp(visibleRange.visibleEnd, visibleStart, axisEnd);
+  const segments: DateAxisSegment[] = [];
+  const first = firstChronicleTickYear(axisToYear(visibleStart), interval);
+  const endYear = axisToYear(visibleEnd);
+
+  for (let year = first; year <= endYear; year += interval) {
+    if (year === 0) continue;
+
+    const nextYear = year + interval;
+    const startValue = Math.max(axisStart, yearToAxis(year));
+    const endValue = Math.min(axisEnd, yearToAxis(nextYear) - 1);
+
+    if (endValue >= visibleStart && endValue >= startValue) {
+      segments.push({
+        endValue,
+        label: formatChronicleAxisSegmentLabel(year),
+        startValue
+      });
+    }
   }
 
   return segments;

@@ -4,7 +4,7 @@ import type { GanttChartSource } from "../../shared/ipc";
 import { currentDateDay } from "../chronicleTimeline";
 import {
   ROW_HEIGHT,
-  buildChronicleAxisSegments,
+  buildVisibleChronicleAxisSegments,
   buildVisibleDateAxisSegments,
   dateAxisFollowLabelOffset,
   timelineVisibleRange,
@@ -88,16 +88,21 @@ export function ChronicleAxis({
   axisEnd,
   axisStart,
   interval,
+  scrollLeft,
   unitWidth,
+  viewportWidth,
   width
 }: {
   axisEnd: number;
   axisStart: number;
   interval: number;
+  scrollLeft: number;
   unitWidth: number;
+  viewportWidth: number;
   width: number;
 }): ReactElement {
-  const segments = buildChronicleAxisSegments(axisStart, axisEnd, interval);
+  const visibleRange = timelineVisibleRange({ axisEnd, axisStart, scrollLeft, unitWidth, viewportWidth });
+  const segments = buildVisibleChronicleAxisSegments(axisStart, axisEnd, interval, visibleRange);
 
   return (
     <div className="chronicle-axis chronicle-axis--chronicle" style={{ width }}>
