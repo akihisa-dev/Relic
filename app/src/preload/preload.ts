@@ -17,6 +17,7 @@ import {
   getWorkspaceGraphChannel,
   getWorkspaceTagsChannel,
   getWorkspaceStateChannel,
+  workspaceChangedChannel,
   moveFolderChannel,
   moveItemToTrashChannel,
   moveMarkdownFileChannel,
@@ -81,6 +82,7 @@ import {
   type SearchAndReplaceMatch,
   type SearchWorkspaceInput,
   type SwitchWorkspaceInput,
+  type WorkspaceChangedEvent,
   type WorkspaceState,
   type WorkspaceGanttChart,
   type WorkspaceGraph,
@@ -192,7 +194,15 @@ const relicApi: RelicApi = {
   mergeFiles: (input: MergeFilesInput) =>
     ipcRenderer.invoke(mergeFilesChannel, input) as Promise<RelicResult<string>>,
   splitFileByHeading: (input: SplitFileByHeadingInput) =>
-    ipcRenderer.invoke(splitFileByHeadingChannel, input) as Promise<RelicResult<string[]>>
+    ipcRenderer.invoke(splitFileByHeadingChannel, input) as Promise<RelicResult<string[]>>,
+  onWorkspaceChanged: (callback: (event: WorkspaceChangedEvent) => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, payload: WorkspaceChangedEvent): void => {
+      callback(payload);
+    };
+
+    ipcRenderer.on(workspaceChangedChannel, listener);
+    return () => ipcRenderer.removeListener(workspaceChangedChannel, listener);
+  }
 };
 
 contextBridge.exposeInMainWorld("relic", relicApi);

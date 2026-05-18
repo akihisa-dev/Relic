@@ -1,5 +1,5 @@
 import type { EditorView } from "@codemirror/view";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactElement } from "react";
 
 import type { WorkspaceState } from "../shared/ipc";
@@ -246,6 +246,53 @@ export function App(): ReactElement {
   const handleFileSaved = useCallback((): void => {
     void reloadGanttCharts();
   }, [reloadGanttCharts]);
+
+  const refreshWorkspaceAfterExternalChange = useCallback(
+    async (workspaceId: string): Promise<void> => {
+      if (!window.relic) return;
+      if (workspaceState?.activeWorkspace?.id && workspaceState.activeWorkspace.id !== workspaceId) return;
+
+      const result = await window.relic.getWorkspaceState();
+      if (!result.ok) {
+        setWorkspaceError(result.error.message);
+        return;
+      }
+
+      if (result.value.activeWorkspace?.id !== workspaceId) return;
+
+      const nextFilePaths = collectMarkdownPaths(result.value.fileTree);
+      const nextFilePathSet = new Set(nextFilePaths);
+
+      for (const tabId of leftPane.tabIds) {
+        const tab = tabs[tabId];
+        if (tab?.kind === "file" && !nextFilePathSet.has(tab.path)) closeTab("left", tabId);
+      }
+
+      for (const tabId of rightPane.tabIds) {
+        const tab = tabs[tabId];
+        if (tab?.kind === "file" && !nextFilePathSet.has(tab.path)) closeTab("right", tabId);
+      }
+
+      setWorkspaceState(result.value);
+    },
+    [
+      closeTab,
+      leftPane.tabIds,
+      rightPane.tabIds,
+      setWorkspaceError,
+      setWorkspaceState,
+      tabs,
+      workspaceState?.activeWorkspace?.id
+    ]
+  );
+
+  useEffect(() => {
+    if (!window.relic?.onWorkspaceChanged) return undefined;
+
+    return window.relic.onWorkspaceChanged((event) => {
+      void refreshWorkspaceAfterExternalChange(event.workspaceId);
+    });
+  }, [refreshWorkspaceAfterExternalChange]);
 
   useAppTheme(editorSettings.theme);
 

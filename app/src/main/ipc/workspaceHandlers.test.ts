@@ -5,6 +5,7 @@ import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const electronMock = vi.hoisted(() => ({
+  getAllWindows: vi.fn().mockReturnValue([]),
   getPath: vi.fn(),
   handle: vi.fn(),
   showOpenDialog: vi.fn(),
@@ -13,6 +14,7 @@ const electronMock = vi.hoisted(() => ({
 
 vi.mock("electron", () => ({
   app: { getPath: electronMock.getPath },
+  BrowserWindow: { getAllWindows: electronMock.getAllWindows },
   dialog: {
     showOpenDialog: electronMock.showOpenDialog,
     showSaveDialog: electronMock.showSaveDialog

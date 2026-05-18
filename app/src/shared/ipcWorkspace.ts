@@ -17,6 +17,12 @@ export interface WorkspaceState {
   workspaces: WorkspaceSummary[];
 }
 
+export interface WorkspaceChangedEvent {
+  changedAt: string;
+  workspaceId: string;
+  workspacePath: string;
+}
+
 export interface CreateMarkdownFileInput {
   name: string;
 }
