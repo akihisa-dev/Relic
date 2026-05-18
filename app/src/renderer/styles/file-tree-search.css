@@ -583,12 +583,22 @@
 
 .workspace-action-button {
   align-items: center;
+  border-color: transparent;
   display: inline-flex;
   gap: 8px;
   justify-content: flex-start;
   min-height: 34px;
   padding: 0 12px;
   text-align: left;
+}
+
+.workspace-action-button:hover:not(:disabled) {
+  background: var(--hover);
+}
+
+.workspace-action-button:focus-visible {
+  box-shadow: 0 0 0 2px var(--accent-soft);
+  outline: none;
 }
 
 .workspace-action-button > svg {
