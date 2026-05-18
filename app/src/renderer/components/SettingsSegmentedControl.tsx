@@ -1,6 +1,7 @@
-import type { ReactElement } from "react";
+import type { ReactElement, ReactNode } from "react";
 
 export interface SettingsSegmentedOption<T extends string> {
+  icon?: ReactNode;
   label: string;
   value: T;
 }
@@ -26,6 +27,7 @@ export function SettingsSegmentedControl<T extends string>({
           onClick={() => onChange(option.value)}
           type="button"
         >
+          {option.icon ? <span className="settings-segmented-icon">{option.icon}</span> : null}
           {option.label}
         </button>
       ))}
