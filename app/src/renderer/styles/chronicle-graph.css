@@ -1141,7 +1141,6 @@
 
 .chronicle-axis-cell {
   align-items: center;
-  border-right: 1px solid var(--border);
   box-sizing: border-box;
   display: flex;
   inset-block: 0;
@@ -1157,6 +1156,14 @@
 
 .chronicle-axis--date .chronicle-axis-cell {
   padding: 0 2px;
+}
+
+.chronicle-axis > .chronicle-guide-lines {
+  z-index: 0;
+}
+
+.chronicle-axis-row {
+  z-index: 1;
 }
 
 .chronicle-axis--date .chronicle-axis-cell--follow {
