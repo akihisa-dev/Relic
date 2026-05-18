@@ -1063,7 +1063,6 @@
   box-shadow: 1px 0 0 var(--border);
   left: 0;
   position: sticky;
-  top: 0;
   z-index: 20;
 }
 
@@ -1071,6 +1070,9 @@
   background: var(--bg);
   box-sizing: border-box;
   height: 34px;
+  position: sticky;
+  top: 0;
+  z-index: 22;
 }
 
 .chronicle-name-header--date {
@@ -1116,7 +1118,9 @@
   display: block;
   font-size: 11px;
   min-height: 34px;
-  position: relative;
+  position: sticky;
+  top: 0;
+  z-index: 12;
 }
 
 .chronicle-axis-row {
