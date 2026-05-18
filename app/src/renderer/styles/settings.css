@@ -134,14 +134,32 @@
   background: var(--hover);
   border: 1px solid var(--border-soft);
   border-radius: 999px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
+  display: grid;
+  grid-template-columns: repeat(var(--settings-segmented-count), minmax(0, 1fr));
   justify-self: end;
   max-width: 100%;
   min-width: 0;
   padding: 4px;
+  position: relative;
   width: 100%;
+}
+
+.settings-segmented-indicator {
+  background: var(--bg);
+  border-radius: 999px;
+  bottom: 4px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  left: 4px;
+  pointer-events: none;
+  position: absolute;
+  top: 4px;
+  transform: translateX(calc(var(--settings-segmented-index) * 100%));
+  transition:
+    transform 180ms cubic-bezier(.2, .9, .22, 1),
+    background-color 140ms ease,
+    box-shadow 140ms ease;
+  width: calc((100% - 8px) / var(--settings-segmented-count));
+  z-index: 0;
 }
 
 .settings-segmented-button {
@@ -159,7 +177,9 @@
   min-height: 26px;
   min-width: 0;
   padding: 0 10px;
+  position: relative;
   white-space: nowrap;
+  z-index: 1;
 }
 
 .settings-segmented-icon {
@@ -168,13 +188,10 @@
 }
 
 .settings-segmented-button[aria-pressed="true"] {
-  background: var(--bg);
   color: var(--text);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
 }
 
 .settings-segmented-button:not([aria-pressed="true"]):hover {
-  background: var(--hover-strong);
   color: var(--text);
 }
 

@@ -1,4 +1,4 @@
-import type { ReactElement, ReactNode } from "react";
+import type { CSSProperties, ReactElement, ReactNode } from "react";
 
 export interface SettingsSegmentedOption<T extends string> {
   icon?: ReactNode;
@@ -17,8 +17,15 @@ export function SettingsSegmentedControl<T extends string>({
   options: SettingsSegmentedOption<T>[];
   value: T;
 }): ReactElement {
+  const selectedIndex = Math.max(0, options.findIndex((option) => option.value === value));
+  const style = {
+    "--settings-segmented-count": options.length,
+    "--settings-segmented-index": selectedIndex
+  } as CSSProperties;
+
   return (
-    <div aria-label={ariaLabel} className="settings-segmented" role="group">
+    <div aria-label={ariaLabel} className="settings-segmented" role="group" style={style}>
+      <span aria-hidden="true" className="settings-segmented-indicator" />
       {options.map((option) => (
         <button
           aria-pressed={option.value === value}
