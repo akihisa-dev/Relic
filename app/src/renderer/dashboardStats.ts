@@ -16,14 +16,15 @@ const chartColors = ["#00628c", "#1c1c1c", "#5e5e5e", "#8a8a8a", "#c6c6c6", "#e0
 
 export function buildDashboardStats(
   files: LoadedMarkdownFile[],
-  fileTree: WorkspaceTreeNode[]
+  fileTree: WorkspaceTreeNode[],
+  labels: { rootFolder: string } = { rootFolder: "Root" }
 ): DashboardStats {
   const folderCount = countFolders(fileTree);
   const parsedFiles = files.map((file) => {
     const tags = parseMarkdownTags(file.content).tags;
     const headings = (file.content.match(/^#{1,6}\s+\S.*$/gm) ?? []).length;
     const links = parseWikiLinks(file.content).length;
-    const folder = file.path.includes("/") ? file.path.split("/").slice(0, -1).join("/") : "Root";
+    const folder = file.path.includes("/") ? file.path.split("/").slice(0, -1).join("/") : labels.rootFolder;
     const words = file.content.split(/\s+/).filter(Boolean).length;
 
     return {

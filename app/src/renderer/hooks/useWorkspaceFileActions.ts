@@ -3,6 +3,11 @@ import { useWorkspaceFileMutationActions } from "./useWorkspaceFileMutationActio
 import { useWorkspaceFileOpenActions } from "./useWorkspaceFileOpenActions";
 import { useWorkspaceRegistryActions } from "./useWorkspaceRegistryActions";
 import type { WorkspaceFileActionsContext } from "./workspaceFileActionTypes";
+import type { Translator } from "../i18n";
+
+type UseWorkspaceFileActionsInput = WorkspaceFileActionsContext & {
+  t: Translator;
+};
 
 export function useWorkspaceFileActions({
   aliasesByPath,
@@ -18,14 +23,16 @@ export function useWorkspaceFileActions({
   setWorkspaceError,
   setWorkspaceState,
   tabs,
+  t,
   updateTabMeta,
   workspaceState
-}: WorkspaceFileActionsContext) {
+}: UseWorkspaceFileActionsInput) {
   const creationActions = useWorkspaceFileCreationActions({
     focusedPane,
     openFileInPane,
     setWorkspaceError,
     setWorkspaceState,
+    t,
     workspaceState
   });
   const openActions = useWorkspaceFileOpenActions({
@@ -55,6 +62,7 @@ export function useWorkspaceFileActions({
     rightPane,
     setWorkspaceError,
     setWorkspaceState,
+    t,
     tabs,
     updateTabMeta
   });

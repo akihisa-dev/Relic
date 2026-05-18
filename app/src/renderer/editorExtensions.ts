@@ -12,7 +12,8 @@ import { contextSelectionHighlightField } from "./editorContextSelectionHighligh
 import { editorEditableCompartment } from "./editorEditable";
 import { createFrontmatterPropertiesField, frontmatterCollapsedField } from "./editorFrontmatter";
 import { buildLivePreviewDecorations, findClickableLinkAtPosition } from "./editorLivePreview";
-import { livePreviewTableField } from "./editorTables";
+import { createLivePreviewTableField } from "./editorTables";
+import type { Translator } from "./i18n";
 
 function createLivePreviewPlugin(
   onOpenLinkRef: RefObject<((href: string) => void) | undefined>,
@@ -96,6 +97,7 @@ export function buildExtensions(
   allFilePaths: string[],
   userDefinedFields: UserDefinedField[],
   frontmatterCandidates: Record<string, string[]>,
+  t: Translator,
   onContextMenu: (event: MouseEvent, view: EditorView) => boolean,
   onSelectionChange: (state: EditorState) => void,
   onOpenLinkRef: RefObject<((href: string) => void) | undefined>,
@@ -167,8 +169,8 @@ export function buildExtensions(
     ...(settings.showLineNumbers ? [lineNumbers()] : []),
     ...(typewriterMode ? [typewriterExtension] : []),
     ...(!sourceMode ? [
-      createFrontmatterPropertiesField(userDefinedFields, frontmatterCandidates),
-      livePreviewTableField,
+      createFrontmatterPropertiesField(userDefinedFields, frontmatterCandidates, t),
+      createLivePreviewTableField(t),
       createLivePreviewPlugin(onOpenLinkRef, onOpenWikiLinkRef)
     ] : [])
   ];

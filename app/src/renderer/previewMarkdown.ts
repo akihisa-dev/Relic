@@ -4,6 +4,8 @@ import katex from "katex";
 import { marked, type Renderer } from "marked";
 import markedFootnote from "marked-footnote";
 
+import type { Translator } from "./i18n";
+
 export const maxEmbeddedFileLength = 20_000;
 
 export type EmbedState =
@@ -186,7 +188,8 @@ export function renderMarkdown(
   content: string,
   workspacePath: string | null | undefined,
   embeds: Map<string, EmbedState>,
-  renderEmbeds: boolean
+  renderEmbeds: boolean,
+  t: Translator
 ): string {
   const renderer = buildRenderer();
   const withEmbedPlaceholders = renderEmbeds
@@ -197,7 +200,7 @@ export function renderMarkdown(
           return `\n\n<div class="preview-file-embed preview-file-embed--error">${escapeHtml(match)}</div>\n\n`;
         }
 
-        return `\n\n${renderFileEmbed(target, embeds, workspacePath)}\n\n`;
+        return `\n\n${renderFileEmbed(target, embeds, workspacePath, t)}\n\n`;
       })
     : content.replace(/!\[\[([^\]\n]+)\]\]/g, "[[$1]]");
   const raw = marked.parse(withEmbedPlaceholders, { async: false, renderer }) as string;
@@ -219,12 +222,13 @@ export function renderMarkdown(
 export function renderFileEmbed(
   target: string,
   embeds: Map<string, EmbedState>,
-  workspacePath: string | null | undefined
+  workspacePath: string | null | undefined,
+  t: Translator
 ): string {
   const state = embeds.get(target) ?? { status: "loading" };
 
   if (state.status === "loading") {
-    return `<div class="preview-file-embed preview-file-embed--loading">${escapeHtml(target)} を読み込んでいます</div>`;
+    return `<div class="preview-file-embed preview-file-embed--loading">${escapeHtml(t("preview.embedLoading", { target }))}</div>`;
   }
 
   if (state.status === "error") {
@@ -232,10 +236,10 @@ export function renderFileEmbed(
   }
 
   if (state.status === "large") {
-    return `<div class="preview-file-embed preview-file-embed--large">${escapeHtml(state.name)} は大きいため全文表示しません</div>`;
+    return `<div class="preview-file-embed preview-file-embed--large">${escapeHtml(t("preview.embedLarge", { name: state.name }))}</div>`;
   }
 
-  const body = renderMarkdown(state.content, workspacePath, new Map(), false);
+  const body = renderMarkdown(state.content, workspacePath, new Map(), false, t);
 
   return `<section class="preview-file-embed"><div class="preview-file-embed-title">${escapeHtml(state.name)}</div><div class="preview-file-embed-body">${body}</div></section>`;
 }

@@ -13,6 +13,7 @@ import {
   createFrontmatterHeader,
   frontmatterRowForLine
 } from "./editorFrontmatterWidgetDom";
+import type { Translator } from "./i18n";
 
 const frontmatterCollapsedEffect = StateEffect.define<boolean>();
 
@@ -33,7 +34,8 @@ class FrontmatterPropertiesWidget extends WidgetType {
     private readonly userDefinedFields: UserDefinedField[],
     private readonly candidates: Record<string, string[]>,
     private readonly lineNumber: number,
-    private readonly collapsed: boolean
+    private readonly collapsed: boolean,
+    private readonly t: Translator
   ) {
     super();
   }
@@ -69,6 +71,7 @@ class FrontmatterPropertiesWidget extends WidgetType {
         block: this.block,
         candidates: this.candidates,
         lineNumber: this.lineNumber,
+        t: this.t,
         updateField: (editorView, key, value) => this.updateField(editorView, key, value),
         userDefinedFields: this.userDefinedFields,
         view
@@ -76,7 +79,7 @@ class FrontmatterPropertiesWidget extends WidgetType {
       if (row) {
         wrapper.append(row);
       } else if (this.lineNumber === this.block.endLine) {
-        wrapper.append(createFrontmatterAddRow(view));
+        wrapper.append(createFrontmatterAddRow(view, this.t));
       } else {
         wrapper.classList.add("cm-frontmatter-properties--spacer");
       }
@@ -86,7 +89,8 @@ class FrontmatterPropertiesWidget extends WidgetType {
     wrapper.append(createFrontmatterHeader({
       collapsed: this.collapsed,
       count: Object.keys(this.block.data).length,
-      onToggle: () => view.dispatch({ effects: frontmatterCollapsedEffect.of(!this.collapsed) })
+      onToggle: () => view.dispatch({ effects: frontmatterCollapsedEffect.of(!this.collapsed) }),
+      t: this.t
     }));
     return wrapper;
   }
@@ -124,7 +128,8 @@ class FrontmatterPropertiesWidget extends WidgetType {
 export function buildFrontmatterPropertiesDecorations(
   state: EditorState,
   userDefinedFields: UserDefinedField[] = [],
-  candidates: Record<string, string[]> = {}
+  candidates: Record<string, string[]> = {},
+  t: Translator
 ): DecorationSet {
   const block = findFrontmatterBlock(state);
   if (!block) return Decoration.none;
@@ -133,7 +138,7 @@ export function buildFrontmatterPropertiesDecorations(
   const ranges: { from: number; to: number; deco: Decoration }[] = [];
   for (let lineNumber = block.startLine; lineNumber <= block.endLine; lineNumber += 1) {
     const line = state.doc.line(lineNumber);
-    const widget = new FrontmatterPropertiesWidget(block, userDefinedFields, candidates, lineNumber, collapsed);
+    const widget = new FrontmatterPropertiesWidget(block, userDefinedFields, candidates, lineNumber, collapsed, t);
     ranges.push({
       from: line.from,
       to: line.to,
@@ -159,14 +164,16 @@ export function buildFrontmatterPropertiesDecorations(
 
 export function createFrontmatterPropertiesField(
   userDefinedFields: UserDefinedField[],
-  candidates: Record<string, string[]>
+  candidates: Record<string, string[]>,
+  t: Translator
 ): StateField<DecorationSet> {
   return StateField.define<DecorationSet>({
-    create: (state) => buildFrontmatterPropertiesDecorations(state, userDefinedFields, candidates),
+    create: (state) => buildFrontmatterPropertiesDecorations(state, userDefinedFields, candidates, t),
     update: (_decorations, transaction) => buildFrontmatterPropertiesDecorations(
       transaction.state,
       userDefinedFields,
-      candidates
+      candidates,
+      t
     ),
     provide: (field) => EditorView.decorations.from(field)
   });

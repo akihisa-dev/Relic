@@ -18,9 +18,13 @@ import {
 import { createLiveTableDragController } from "./editorTableWidgetDrag";
 import { showLiveTableMenu } from "./editorTableWidgetMenu";
 import { createLiveTableInteractionState } from "./editorTableWidgetState";
+import type { Translator } from "./i18n";
 
 export class TableWidget extends WidgetType {
-  constructor(private readonly block: TableBlock) {
+  constructor(
+    private readonly block: TableBlock,
+    private readonly t: Translator
+  ) {
     super();
   }
 
@@ -103,6 +107,7 @@ export class TableWidget extends WidgetType {
             event,
             focusCell,
             rowIndex,
+            t: this.t,
             updateRows,
             wrapper
           });
@@ -152,12 +157,12 @@ export class TableWidget extends WidgetType {
     });
 
     wrapper.append(table);
-    wrapper.append(this.coordinateHandle("column", "列を選択", state, drag.beginCoordinateDrag, wrapper));
-    wrapper.append(this.coordinateHandle("row", "行を選択", state, drag.beginCoordinateDrag, wrapper));
-    wrapper.append(createTableEdgeAddButton({ axis: "column-before", block: this.block, getFocusIndex: () => state.activeRow, getInsertIndex: () => state.activeCol }));
-    wrapper.append(createTableEdgeAddButton({ axis: "column-after", block: this.block, getFocusIndex: () => state.activeRow, getInsertIndex: () => state.activeCol + 1 }));
-    wrapper.append(createTableEdgeAddButton({ axis: "row-before", block: this.block, getFocusIndex: () => state.activeCol, getInsertIndex: () => Math.max(1, state.activeRow) }));
-    wrapper.append(createTableEdgeAddButton({ axis: "row-after", block: this.block, getFocusIndex: () => state.activeCol, getInsertIndex: () => state.activeRow + 1 }));
+    wrapper.append(this.coordinateHandle("column", this.t("editor.tableSelectColumn"), state, drag.beginCoordinateDrag, wrapper));
+    wrapper.append(this.coordinateHandle("row", this.t("editor.tableSelectRow"), state, drag.beginCoordinateDrag, wrapper));
+    wrapper.append(createTableEdgeAddButton({ axis: "column-before", block: this.block, getFocusIndex: () => state.activeRow, getInsertIndex: () => state.activeCol, t: this.t }));
+    wrapper.append(createTableEdgeAddButton({ axis: "column-after", block: this.block, getFocusIndex: () => state.activeRow, getInsertIndex: () => state.activeCol + 1, t: this.t }));
+    wrapper.append(createTableEdgeAddButton({ axis: "row-before", block: this.block, getFocusIndex: () => state.activeCol, getInsertIndex: () => Math.max(1, state.activeRow), t: this.t }));
+    wrapper.append(createTableEdgeAddButton({ axis: "row-after", block: this.block, getFocusIndex: () => state.activeCol, getInsertIndex: () => state.activeRow + 1, t: this.t }));
     wrapper.addEventListener("focusout", (event) => {
       state.clearIfFocusOutside((event as FocusEvent).relatedTarget);
     });
@@ -234,6 +239,7 @@ export class TableWidget extends WidgetType {
         event,
         focusCell: (rowIndex, colIndex) => focusTableWidgetCell(wrapper, rowIndex, colIndex),
         rowIndex: state.activeRow,
+        t: this.t,
         updateRows: (rows) => {
           const view = findTableWidgetView(wrapper);
           if (view) updateTableWidgetRows(view, this.block, rows);

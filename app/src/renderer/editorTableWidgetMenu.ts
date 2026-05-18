@@ -9,6 +9,7 @@ import {
   tableColumnCount,
   type TableBlock
 } from "./editorTableModel";
+import type { Translator } from "./i18n";
 
 type LiveTableClipboard =
   | { type: "row"; cells: string[] }
@@ -23,6 +24,7 @@ export function showLiveTableMenu({
   event,
   focusCell,
   rowIndex,
+  t,
   updateRows,
   wrapper
 }: {
@@ -31,6 +33,7 @@ export function showLiveTableMenu({
   event: MouseEvent;
   focusCell: (rowIndex: number, colIndex: number) => void;
   rowIndex: number;
+  t: Translator;
   updateRows: (rows: string[][]) => void;
   wrapper: HTMLElement;
 }): void {
@@ -69,30 +72,30 @@ export function showLiveTableMenu({
   };
 
   const colCount = tableColumnCount(block.rows);
-  addItem("行を上に追加", () => {
+  addItem(t("editor.tableAddRowAbove"), () => {
     updateRows(insertTableRow(block.rows, Math.max(1, rowIndex)));
     focusCell(Math.max(1, rowIndex), colIndex);
   }, rowIndex === 0);
-  addItem("行を下に追加", () => {
+  addItem(t("editor.tableAddRowBelow"), () => {
     updateRows(insertTableRow(block.rows, rowIndex + 1));
     focusCell(rowIndex + 1, colIndex);
   });
-  addItem("行を削除", () => {
+  addItem(t("editor.tableDeleteRow"), () => {
     updateRows(deleteTableRow(block.rows, rowIndex));
     focusCell(Math.max(1, Math.min(rowIndex, block.rows.length - 2)), colIndex);
   }, rowIndex === 0 || block.rows.length <= 2);
-  addItem("行を上へ移動", () => {
+  addItem(t("editor.tableMoveRowUp"), () => {
     updateRows(moveTableRow(block.rows, rowIndex, -1));
     focusCell(rowIndex - 1, colIndex);
   }, rowIndex <= 1);
-  addItem("行を下へ移動", () => {
+  addItem(t("editor.tableMoveRowDown"), () => {
     updateRows(moveTableRow(block.rows, rowIndex, 1));
     focusCell(rowIndex + 1, colIndex);
   }, rowIndex === 0 || rowIndex >= block.rows.length - 1);
-  addItem("行をコピー", () => {
+  addItem(t("editor.tableCopyRow"), () => {
     liveTableClipboard = { type: "row", cells: [...block.rows[rowIndex]] };
   });
-  addItem("コピーした行を下に貼り付け", () => {
+  addItem(t("editor.tablePasteCopiedRowBelow"), () => {
     if (liveTableClipboard?.type !== "row") return;
     const rows = block.rows.map((row) => [...row]);
     rows.splice(rowIndex + 1, 0, Array.from({ length: colCount }, (_, i) => liveTableClipboard?.cells[i] ?? ""));
@@ -102,38 +105,38 @@ export function showLiveTableMenu({
 
   separator();
 
-  addItem("列を左に追加", () => {
+  addItem(t("editor.tableAddColumnLeft"), () => {
     updateRows(insertTableColumn(block.rows, colIndex));
     focusCell(rowIndex, colIndex);
   });
-  addItem("列を右に追加", () => {
+  addItem(t("editor.tableAddColumnRight"), () => {
     updateRows(insertTableColumn(block.rows, colIndex + 1));
     focusCell(rowIndex, colIndex + 1);
   });
-  addItem("列を削除", () => {
+  addItem(t("editor.tableDeleteColumn"), () => {
     updateRows(deleteTableColumn(block.rows, colIndex));
     focusCell(rowIndex, Math.max(0, colIndex - 1));
   }, colCount <= 1);
-  addItem("列を左へ移動", () => {
+  addItem(t("editor.tableMoveColumnLeft"), () => {
     updateRows(moveTableColumn(block.rows, colIndex, -1));
     focusCell(rowIndex, colIndex - 1);
   }, colIndex <= 0);
-  addItem("列を右へ移動", () => {
+  addItem(t("editor.tableMoveColumnRight"), () => {
     updateRows(moveTableColumn(block.rows, colIndex, 1));
     focusCell(rowIndex, colIndex + 1);
   }, colIndex >= colCount - 1);
-  addItem("列を昇順に並べ替え", () => {
+  addItem(t("editor.tableSortColumnAsc"), () => {
     updateRows(sortTableByColumn(block.rows, colIndex, "asc"));
     focusCell(Math.min(1, block.rows.length - 1), colIndex);
   });
-  addItem("列を降順に並べ替え", () => {
+  addItem(t("editor.tableSortColumnDesc"), () => {
     updateRows(sortTableByColumn(block.rows, colIndex, "desc"));
     focusCell(Math.min(1, block.rows.length - 1), colIndex);
   });
-  addItem("列をコピー", () => {
+  addItem(t("editor.tableCopyColumn"), () => {
     liveTableClipboard = { type: "column", cells: block.rows.map((row) => row[colIndex] ?? "") };
   });
-  addItem("コピーした列を右に貼り付け", () => {
+  addItem(t("editor.tablePasteCopiedColumnRight"), () => {
     if (liveTableClipboard?.type !== "column") return;
     const rows = block.rows.map((row, rowIndex) => {
       const next = [...row];

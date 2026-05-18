@@ -1,6 +1,7 @@
 import type { ReactElement } from "react";
 
 import type { FrontmatterDialogRequest } from "../editorFrontmatter";
+import type { Translator } from "../i18n";
 
 interface EditorFrontmatterDialogProps {
   candidates: string[];
@@ -9,6 +10,7 @@ interface EditorFrontmatterDialogProps {
   onCancel: () => void;
   onSubmit: () => void;
   onValueChange: (value: string) => void;
+  t: Translator;
   value: string;
 }
 
@@ -19,6 +21,7 @@ export function EditorFrontmatterDialog({
   onCancel,
   onSubmit,
   onValueChange,
+  t,
   value
 }: EditorFrontmatterDialogProps): ReactElement | null {
   if (!dialog) return null;
@@ -26,7 +29,7 @@ export function EditorFrontmatterDialog({
   return (
     <div className="frontmatter-add-dialog" role="dialog" aria-modal="true">
       <div className="frontmatter-add-dialog-title">
-        {dialog.type === "property" ? "プロパティを追加" : `${dialog.key} に値を追加`}
+        {dialog.type === "property" ? t("frontmatter.addProperty") : t("frontmatter.addValueToField", { field: dialog.key })}
       </div>
       <input
         autoFocus
@@ -37,7 +40,7 @@ export function EditorFrontmatterDialog({
           if (event.key === "Enter") event.preventDefault();
           if (event.key === "Escape") onCancel();
         }}
-        placeholder={dialog.type === "property" ? "プロパティ名" : "値"}
+        placeholder={dialog.type === "property" ? t("frontmatter.propertyName") : t("frontmatter.value")}
         type="text"
         value={value}
       />
@@ -50,8 +53,8 @@ export function EditorFrontmatterDialog({
       ) : null}
       {error ? <div className="frontmatter-add-dialog-error">{error}</div> : null}
       <div className="frontmatter-add-dialog-actions">
-        <button onClick={onCancel} type="button">キャンセル</button>
-        <button onClick={onSubmit} type="button">追加</button>
+        <button onClick={onCancel} type="button">{t("common.cancel")}</button>
+        <button onClick={onSubmit} type="button">{t("frontmatter.addField")}</button>
       </div>
     </div>
   );

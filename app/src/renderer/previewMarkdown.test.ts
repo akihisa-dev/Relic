@@ -6,6 +6,9 @@ import {
   renderMarkdown,
   toggleNthCheckbox
 } from "./previewMarkdown";
+import { createTranslator } from "./i18n";
+
+const t = createTranslator("ja");
 
 describe("previewMarkdown", () => {
   it("Markdownファイルとして読める埋め込み先へ正規化する", () => {
@@ -33,7 +36,8 @@ describe("previewMarkdown", () => {
       "[[Note#Heading|Alias]]\n\n- [x] Done\n\n<script>alert(1)</script>",
       null,
       new Map(),
-      true
+      true,
+      t
     );
 
     expect(html).toContain('class="wikilink"');
@@ -48,7 +52,8 @@ describe("previewMarkdown", () => {
       "![[Parent]]",
       null,
       new Map([["Parent.md", { status: "loaded", content: "# Parent\n\n![[Child]]", name: "Parent" }]]),
-      true
+      true,
+      t
     );
 
     expect(html).toContain("preview-file-embed");

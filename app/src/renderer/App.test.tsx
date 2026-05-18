@@ -1093,7 +1093,7 @@ describe("App", () => {
     expect(container.querySelector('.chronicle-file-name[title="tasks/planned-only.md"]')).toHaveTextContent("計画だけ");
     expect(container.querySelector('.chronicle-file-name[title="tasks/actual-only.md"]')).toHaveTextContent("実行だけ");
 
-    fireEvent.change(screen.getByLabelText("status"), { target: { value: "完了" } });
+    fireEvent.change(screen.getByLabelText("ステータス"), { target: { value: "完了" } });
 
     expect(container.querySelectorAll(".chronicle-file-name")).toHaveLength(1);
     expect(container.querySelector('.chronicle-file-name[title="tasks/planned-only.md"]')).not.toBeInTheDocument();

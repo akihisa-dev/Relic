@@ -17,6 +17,7 @@ import {
   requestFrontmatterDialog,
   scalarInputValue
 } from "./editorFrontmatterModel";
+import type { Translator } from "./i18n";
 
 export type FrontmatterFieldUpdater = (view: EditorView, key: string, value: unknown) => void;
 
@@ -24,6 +25,7 @@ export function createFrontmatterValueInput({
   candidates,
   field,
   key,
+  t,
   updateField,
   value,
   view
@@ -31,6 +33,7 @@ export function createFrontmatterValueInput({
   candidates: Record<string, string[]>;
   field?: UserDefinedField;
   key: string;
+  t: Translator;
   updateField: FrontmatterFieldUpdater;
   value: unknown;
   view: EditorView;
@@ -51,7 +54,8 @@ export function createFrontmatterValueInput({
       view,
       key,
       Array.isArray(value) ? value : value === null || value === undefined ? [] : [value],
-      updateField
+      updateField,
+      t
     );
   }
   if (isEditableScalar(value)) return scalarInput(view, key, value, field, candidates, updateField);
@@ -268,7 +272,8 @@ function arrayInput(
   view: EditorView,
   key: string,
   value: unknown[],
-  updateField: FrontmatterFieldUpdater
+  updateField: FrontmatterFieldUpdater,
+  t: Translator
 ): HTMLElement {
   const wrap = document.createElement("div");
   wrap.className = "cm-frontmatter-pills";
@@ -293,7 +298,7 @@ function arrayInput(
 
     const removeButton = document.createElement("button");
     removeButton.className = "cm-frontmatter-pill-remove";
-    removeButton.title = "値を削除";
+    removeButton.title = t("frontmatter.removeValue");
     removeButton.type = "button";
     removeButton.textContent = "×";
     removeButton.addEventListener("click", () => {
@@ -306,7 +311,7 @@ function arrayInput(
 
   const addButton = document.createElement("button");
   addButton.className = "cm-frontmatter-pill-add";
-  addButton.title = "値を追加";
+  addButton.title = t("frontmatter.addValue");
   addButton.type = "button";
   addButton.textContent = "+";
   isolateFrontmatterWidgetControl(addButton);

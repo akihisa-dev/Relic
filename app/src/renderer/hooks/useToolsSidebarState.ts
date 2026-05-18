@@ -45,11 +45,11 @@ export interface UseToolsSidebarStateResult {
 }
 
 export function useToolsSidebarState(workspacePath: string | null, t: Translator): UseToolsSidebarStateResult {
-  const [titleListDraft, setTitleListDraft] = useState(createDefaultTitleListDraft);
+  const [titleListDraft, setTitleListDraft] = useState(() => createDefaultTitleListDraft(t));
   const [titleListStatus, setTitleListStatus] = useState<string | null>(null);
-  const [tocDraft, setTocDraft] = useState(createDefaultTocDraft);
+  const [tocDraft, setTocDraft] = useState(() => createDefaultTocDraft(t));
   const [tocStatus, setTocStatus] = useState<string | null>(null);
-  const [mergeDraft, setMergeDraft] = useState(createDefaultMergeFilesDraft);
+  const [mergeDraft, setMergeDraft] = useState(() => createDefaultMergeFilesDraft(t));
   const [mergeStatus, setMergeStatus] = useState<string | null>(null);
   const [splitDraft, setSplitDraft] = useState(createDefaultSplitFileDraft);
   const [splitStatus, setSplitStatus] = useState<string | null>(null);
@@ -71,28 +71,28 @@ export function useToolsSidebarState(workspacePath: string | null, t: Translator
     if (!workspacePath) return;
     setTitleListStatus(t("common.running"));
     const result = await window.relic!.generateTitleList(buildTitleListInput(titleListDraft, t));
-    setTitleListStatus(resultStatus(result, String));
+    setTitleListStatus(resultStatus(result, t, String));
   };
 
   const handleGenerateToc = async (): Promise<void> => {
     if (!workspacePath) return;
     setTocStatus(t("common.running"));
     const result = await window.relic!.generateTableOfContents(buildTocInput(tocDraft, t));
-    setTocStatus(resultStatus(result, String));
+    setTocStatus(resultStatus(result, t, String));
   };
 
   const handleMergeFiles = async (): Promise<void> => {
     if (!workspacePath) return;
     setMergeStatus(t("tools.processing"));
     const result = await window.relic!.mergeFiles(buildMergeFilesInput(mergeDraft, t));
-    setMergeStatus(resultStatus(result, String));
+    setMergeStatus(resultStatus(result, t, String));
   };
 
   const handleSplitFile = async (): Promise<void> => {
     if (!workspacePath || !splitDraft.sourcePath) return;
     setSplitStatus(t("tools.processing"));
     const result = await window.relic!.splitFileByHeading(buildSplitFileInput(splitDraft));
-    setSplitStatus(splitResultStatus(result));
+    setSplitStatus(splitResultStatus(result, t));
   };
 
   return {

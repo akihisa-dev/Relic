@@ -88,6 +88,7 @@ export function Editor({
     updateFrontmatterDialogValue
   } = useEditorFrontmatterDialog({
     frontmatterCandidates,
+    t,
     viewRef: internalViewRef
   });
 
@@ -153,6 +154,7 @@ export function Editor({
       allFilePathsRef.current,
       userDefinedFieldsRef.current,
       frontmatterCandidatesRef.current,
+      t,
       openContextMenu,
       rememberSelection,
       onOpenLinkRef,
@@ -212,6 +214,7 @@ export function Editor({
       allFilePathsRef.current,
       userDefinedFieldsRef.current,
       frontmatterCandidatesRef.current,
+      t,
       openContextMenu,
       rememberSelection,
       onOpenLinkRef,
@@ -223,7 +226,7 @@ export function Editor({
     internalViewRef.current = nextView;
 
     if (viewRef) viewRef.current = nextView;
-  }, [frontmatterCandidates, rememberSelection, settings, sourceMode, typewriterMode, userDefinedFields, viewRef]);
+  }, [frontmatterCandidates, rememberSelection, settings, sourceMode, t, typewriterMode, userDefinedFields, viewRef]);
 
   return (
     <>
@@ -235,6 +238,7 @@ export function Editor({
         onCancel={closeFrontmatterDialog}
         onSubmit={submitFrontmatterDialog}
         onValueChange={updateFrontmatterDialogValue}
+        t={t}
         value={frontmatterDialogValue}
       />
       <EditorContextMenu

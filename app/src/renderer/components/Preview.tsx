@@ -3,6 +3,7 @@ import type { MouseEvent, ReactElement } from "react";
 
 import type { EditorSettings } from "../../shared/ipc";
 import { usePreviewEmbeds } from "../hooks/usePreviewEmbeds";
+import { useT } from "../i18n";
 import { renderMarkdown, slugifyHeading, toggleNthCheckbox } from "../previewMarkdown";
 
 export { normalizeEmbedTarget } from "../previewMarkdown";
@@ -34,10 +35,11 @@ export function Preview({
 }: PreviewProps): ReactElement {
   const containerRef = useRef<HTMLDivElement>(null);
   const embeds = usePreviewEmbeds(content, workspacePath);
+  const t = useT();
 
   const html = useMemo(() => {
-    return renderMarkdown(content, workspacePath, embeds, true);
-  }, [content, embeds, workspacePath]);
+    return renderMarkdown(content, workspacePath, embeds, true, t);
+  }, [content, embeds, t, workspacePath]);
 
   useEffect(() => {
     if (!scrollTargetHeading || !containerRef.current) return;

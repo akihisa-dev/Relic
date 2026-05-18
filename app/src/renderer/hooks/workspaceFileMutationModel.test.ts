@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { PaneState, Tab } from "../store/editorStore";
+import { createTranslator } from "../i18n";
 import {
   deleteTreeItemMessage,
   getActiveFileTab,
@@ -17,6 +18,7 @@ const tabs: Record<string, Tab> = {
   "tab-b": { content: "", id: "tab-b", kind: "file", name: "B", path: "docs/nested/B.md" },
   "tab-c": { id: "tab-c", kind: "panel", name: "設定", panel: "settings" }
 };
+const t = createTranslator("ja");
 
 describe("workspaceFileMutationModel", () => {
   it("active file tabだけを取り出す", () => {
@@ -33,8 +35,8 @@ describe("workspaceFileMutationModel", () => {
   });
 
   it("削除確認文言を既存文言で作る", () => {
-    expect(deleteTreeItemMessage("docs", "folder")).toContain("フォルダをゴミ箱に移動しますか？");
-    expect(deleteTreeItemMessage("docs/A.md", "file")).toBe("「A」をゴミ箱に移動しますか？");
+    expect(deleteTreeItemMessage("docs", "folder", t)).toContain("フォルダをゴミ箱に移動しますか？");
+    expect(deleteTreeItemMessage("docs/A.md", "file", t)).toBe("「A」をゴミ箱に移動しますか？");
   });
 
   it("削除対象に含まれるfile tab close対象を左右ペイン別に返す", () => {

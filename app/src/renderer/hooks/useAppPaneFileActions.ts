@@ -109,7 +109,7 @@ export function useAppPaneFileActions({
 
   const handleCreateFileInFolder = useCallback((folderPath: string): void => {
     if (!window.relic) return;
-    const fileName = window.prompt(t("files.newNoteName"), "Untitled.md");
+    const fileName = window.prompt(t("files.newNoteName"), t("files.defaultNewNoteName"));
     if (fileName === null) return;
     const trimmedFileName = fileName.trim();
     if (!trimmedFileName) return;
@@ -129,7 +129,7 @@ export function useAppPaneFileActions({
 
   const handleCreateFolderInFolder = useCallback((folderPath: string): void => {
     if (!window.relic) return;
-    const folderName = window.prompt(t("files.newFolderName"), "New Folder");
+    const folderName = window.prompt(t("files.newFolderName"), t("files.defaultNewFolderName"));
     if (folderName === null) return;
     const trimmedFolderName = folderName.trim();
     if (!trimmedFolderName) return;

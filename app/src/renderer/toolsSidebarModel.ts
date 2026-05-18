@@ -40,32 +40,32 @@ export interface SplitFileDraft {
   sourcePath: string;
 }
 
-export function createDefaultTitleListDraft(): TitleListDraft {
+export function createDefaultTitleListDraft(t: Translator): TitleListDraft {
   return {
     filterFolder: "",
     outputFolder: "",
-    outputName: "Title List",
+    outputName: t("tools.titleListDefaultName"),
     sortBy: "name"
   };
 }
 
-export function createDefaultTocDraft(): TocDraft {
+export function createDefaultTocDraft(t: Translator): TocDraft {
   return {
     includeSubfolders: true,
     outputFolder: "",
-    outputName: "Table of Contents",
+    outputName: t("tools.tocDefaultName"),
     targetFolder: ""
   };
 }
 
-export function createDefaultMergeFilesDraft(): MergeFilesDraft {
+export function createDefaultMergeFilesDraft(t: Translator): MergeFilesDraft {
   return {
     filterType: "all",
     filterValue: "",
     frontmatterField: "",
     insertFilenameHeading: true,
     outputFolder: "",
-    outputName: "Merged Result",
+    outputName: t("tools.mergeDefaultName"),
     sortBy: "name"
   };
 }
@@ -116,14 +116,16 @@ export function buildSplitFileInput(draft: SplitFileDraft): SplitFileByHeadingIn
   };
 }
 
-export function resultStatus<T>(result: RelicResult<T>, formatValue: (value: T) => string): string {
-  return result.ok ? `Done: ${formatValue(result.value)}` : `Error: ${result.error.message}`;
+export function resultStatus<T>(result: RelicResult<T>, t: Translator, formatValue: (value: T) => string): string {
+  return result.ok
+    ? `${t("tools.statusDone")}: ${formatValue(result.value)}`
+    : `${t("tools.statusError")}: ${result.error.message}`;
 }
 
-export function splitResultStatus(result: RelicResult<string[]>): string {
-  return resultStatus(result, (value) => `${value.length} file(s) created`);
+export function splitResultStatus(result: RelicResult<string[]>, t: Translator): string {
+  return resultStatus(result, t, (value) => t("tools.splitResultCreated", { count: value.length }));
 }
 
 export function isToolStatusError(status: string | null): boolean {
-  return status?.startsWith("Error") ?? false;
+  return status?.startsWith("Error") || status?.startsWith("エラー") || false;
 }

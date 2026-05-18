@@ -39,9 +39,10 @@ export function DashboardPanel({ fileTree, onOpenFile, userDefinedFields, worksp
 
   useEffect(() => {
     const relic = window.relic;
+    const dashboardLabels = { rootFolder: t("dashboard.rootFolder") };
 
     if (!workspaceId || !relic) {
-      setStats(buildDashboardStats([], fileTree));
+      setStats(buildDashboardStats([], fileTree, dashboardLabels));
       return;
     }
 
@@ -59,7 +60,8 @@ export function DashboardPanel({ fileTree, onOpenFile, userDefinedFields, worksp
 
       setStats(buildDashboardStats(
         results.flatMap((result) => result.ok ? [result.value] : []),
-        fileTree
+        fileTree,
+        dashboardLabels
       ));
     }).finally(() => {
       if (!canceled) setIsLoading(false);
@@ -68,7 +70,7 @@ export function DashboardPanel({ fileTree, onOpenFile, userDefinedFields, worksp
     return () => {
       canceled = true;
     };
-  }, [filePaths, fileTree, refreshToken, workspaceId]);
+  }, [filePaths, fileTree, refreshToken, t, workspaceId]);
 
   const maxFolderCount = Math.max(0, ...(stats?.folderDistribution.map((item) => item.count) ?? []));
   const topFiles = stats?.files.slice(0, 8) ?? [];

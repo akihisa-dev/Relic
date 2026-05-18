@@ -2,9 +2,10 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { defaultEditorSettings } from "../../shared/ipc";
+import { I18nProvider } from "../i18n";
 import { Preview, normalizeEmbedTarget } from "./Preview";
 
-const settings = defaultEditorSettings;
+const settings = { ...defaultEditorSettings, language: "ja" as const };
 
 describe("Preview", () => {
   afterEach(() => {
@@ -158,7 +159,11 @@ describe("Preview", () => {
       })
     } as unknown as typeof window.relic;
 
-    render(<Preview content="![[巨大ノート]]" settings={settings} />);
+    render(
+      <I18nProvider language="ja">
+        <Preview content="![[巨大ノート]]" settings={settings} />
+      </I18nProvider>
+    );
 
     expect(await screen.findByText("巨大ノート は大きいため全文表示しません")).toBeInTheDocument();
   });

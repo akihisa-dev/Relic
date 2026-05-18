@@ -10,14 +10,17 @@ import {
   frontmatterFieldNamePattern,
   type FrontmatterDialogRequest
 } from "../editorFrontmatter";
+import type { Translator } from "../i18n";
 
 interface UseEditorFrontmatterDialogInput {
   frontmatterCandidates: Record<string, string[]>;
+  t: Translator;
   viewRef: MutableRefObject<EditorView | null>;
 }
 
 export function useEditorFrontmatterDialog({
   frontmatterCandidates,
+  t,
   viewRef
 }: UseEditorFrontmatterDialogInput) {
   const [frontmatterDialog, setFrontmatterDialog] = useState<FrontmatterDialogRequest | null>(null);
@@ -47,18 +50,18 @@ export function useEditorFrontmatterDialog({
     if (!view || !frontmatterDialog) return;
 
     if (!value) {
-      setFrontmatterDialogError("入力してください");
+      setFrontmatterDialogError(t("frontmatter.enterValue"));
       return;
     }
 
     if (frontmatterDialog.type === "property") {
       const block = findFrontmatterBlock(view.state);
       if (!frontmatterFieldNamePattern.test(value)) {
-        setFrontmatterDialogError("プロパティ名に使えない文字があります");
+        setFrontmatterDialogError(t("frontmatter.invalidPropertyName"));
         return;
       }
       if (block && Object.prototype.hasOwnProperty.call(block.data, value)) {
-        setFrontmatterDialogError("同じプロパティが既にあります");
+        setFrontmatterDialogError(t("frontmatter.duplicateProperty"));
         return;
       }
       appendFrontmatterField(view, value);
@@ -67,7 +70,7 @@ export function useEditorFrontmatterDialog({
     }
 
     closeFrontmatterDialog();
-  }, [closeFrontmatterDialog, frontmatterDialog, frontmatterDialogValue, viewRef]);
+  }, [closeFrontmatterDialog, frontmatterDialog, frontmatterDialogValue, t, viewRef]);
 
   const frontmatterDialogCandidates = frontmatterDialog?.type === "array-value" && frontmatterDialog.key !== "aliases"
     ? frontmatterDialogCandidatesFor(frontmatterDialog.key, frontmatterCandidates)

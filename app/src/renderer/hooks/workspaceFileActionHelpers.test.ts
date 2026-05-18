@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { WorkspaceState, WorkspaceTreeNode } from "../../shared/ipc";
+import { createTranslator } from "../i18n";
 import type { Tab } from "../store/editorStore";
 import {
   buildFolderTabPathUpdates,
@@ -12,6 +13,8 @@ import {
   nextUniqueFolderName,
   removeCoveredItems
 } from "./workspaceFileActionHelpers";
+
+const t = createTranslator("ja");
 
 function workspaceState(fileTree: WorkspaceTreeNode[]): WorkspaceState {
   return {
@@ -63,8 +66,8 @@ describe("workspaceFileActionHelpers", () => {
       { name: "新規フォルダ", path: "新規フォルダ", type: "folder", children: [] }
     ]);
 
-    expect(nextUniqueFileName(state)).toBe("新規ファイル 3");
-    expect(nextUniqueFolderName(state)).toBe("新規フォルダ 2");
+    expect(nextUniqueFileName(state, t)).toBe("新規ファイル 3");
+    expect(nextUniqueFolderName(state, t)).toBe("新規フォルダ 2");
   });
 
   it("作成後のMarkdown pathを末尾一致で探す", () => {
