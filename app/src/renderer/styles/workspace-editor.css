@@ -474,16 +474,23 @@
 }
 
 .pane-tab-close {
+  align-items: center;
   background: transparent;
   border: 0;
   border-radius: 4px;
   color: var(--text-3);
-  font-size: 14px;
+  display: inline-flex;
   height: 18px;
+  justify-content: center;
   min-height: 0;
   padding: 0;
   transition: background-color 120ms ease, color 120ms ease, transform 120ms cubic-bezier(.18, 1.4, .28, 1);
   width: 18px;
+}
+
+.pane-tab-close > svg {
+  height: 14px;
+  width: 14px;
 }
 
 .pane-tab-close:hover {

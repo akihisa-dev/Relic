@@ -18,7 +18,6 @@ interface PaneTabContextMenuProps {
   onOpenInOtherPane: (tabId: string) => void;
   onRevealTabFile?: (tabId: string) => void;
   onTabClose: (tabId: string) => void;
-  onTabSelect: (tabId: string) => void;
   onTogglePinTab?: (tabId: string) => void;
 }
 
@@ -35,7 +34,6 @@ export function PaneTabContextMenu({
   onOpenInOtherPane,
   onRevealTabFile,
   onTabClose,
-  onTabSelect,
   onTogglePinTab
 }: PaneTabContextMenuProps): ReactElement | null {
   const t = useT();
@@ -52,16 +50,6 @@ export function PaneTabContextMenu({
     >
       {contextTab ? (
         <>
-          <button
-            className="tab-context-menu-item"
-            onClick={() => {
-              onTabSelect(contextMenu.tabId);
-              onClose();
-            }}
-            type="button"
-          >
-            {t("files.open")}
-          </button>
           {contextTabIsFile && onDuplicateTabFile ? (
             <button
               className="tab-context-menu-item"
@@ -135,13 +123,14 @@ export function PaneTabContextMenu({
         </>
       ) : null}
       <button
-        className="tab-context-menu-item"
+        className="tab-context-menu-item tab-context-menu-item--icon"
         onClick={() => {
           onTabClose(contextMenu.tabId);
           onClose();
         }}
         type="button"
       >
+        <CloseIcon />
         {t("pane.closeTab")}
       </button>
       <button
@@ -176,5 +165,15 @@ export function PaneTabContextMenu({
         {t("pane.closeAllTabs")}
       </button>
     </div>
+  );
+}
+
+function CloseIcon(): ReactElement {
+  return (
+    <svg aria-hidden="true" className="tab-context-menu-icon" fill="none" height="16" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="16">
+      <circle cx="12" cy="12" r="10" />
+      <path d="m15 9-6 6" />
+      <path d="m9 9 6 6" />
+    </svg>
   );
 }
