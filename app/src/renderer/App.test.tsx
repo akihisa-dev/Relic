@@ -1535,7 +1535,7 @@ describe("App", () => {
 
     await renderApp();
 
-    fireEvent.click(await screen.findByRole("button", { name: "新規ワークスペースを作成" }));
+    fireEvent.click(await screen.findByRole("button", { name: "新規ワークスペース" }));
 
     expect(createNewWorkspace).toHaveBeenCalledTimes(1);
     expect(await screen.findByText("Drafts")).toBeInTheDocument();

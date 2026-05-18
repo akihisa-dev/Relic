@@ -73,7 +73,7 @@
   "files.createNote": "新規ファイル",
   "files.createNoteShort": "作成",
   "files.noMarkdownFiles": "Markdownファイルはまだありません。",
-  "files.createNewWorkspace": "新規ワークスペースを作成",
+  "files.createNewWorkspace": "新規ワークスペース",
   "files.creatingWorkspace": "作成中…",
   "files.copyPath": "パスをコピー",
   "files.copyMarkdownLink": "Markdownリンクをコピー",

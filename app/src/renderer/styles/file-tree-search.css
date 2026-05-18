@@ -585,7 +585,10 @@
   align-items: center;
   display: inline-flex;
   gap: 8px;
-  justify-content: center;
+  justify-content: flex-start;
+  min-height: 34px;
+  padding: 0 12px;
+  text-align: left;
 }
 
 .workspace-action-button > svg {
