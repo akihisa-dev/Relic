@@ -115,6 +115,13 @@ describe("GraphCanvasLayers", () => {
     expect(screen.getByText("A")).toHaveClass("graph-label");
   });
 
+  it("node radiusは入出リンク合計の接続数に応じて大きくする", () => {
+    renderNodeLayer({ focusedPath: null, relatedPaths: new Set(), selectedPath: null });
+
+    expect(Number(nodeCircle("A").getAttribute("r"))).toBeGreaterThan(Number(nodeCircle("B").getAttribute("r")));
+    expect(Number(nodeCircle("C").getAttribute("r"))).toBeGreaterThan(Number(nodeCircle("D").getAttribute("r")));
+  });
+
   it("motionPathのnodeへmotion classとdelayを付ける", () => {
     renderNodeLayer({ isMotionAfterglow: true, motionPath: "A.md" });
 

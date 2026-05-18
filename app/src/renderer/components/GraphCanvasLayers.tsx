@@ -130,7 +130,7 @@ export function GraphNodeLayer({
         const isFocused = point.path === focusedPath;
         const isMotionNode = point.path === motionPath;
         const group = groupByPath.get(point.path);
-        const radius = Math.min(8, 2.6 + Math.sqrt(point.incoming) * 1.45) * nodeSize;
+        const radius = Math.min(8, 2.6 + Math.sqrt(point.degree) * 1.45) * nodeSize;
         const nodeClassName = [
           "graph-node",
           isSelected ? "graph-node--selected" : "",
