@@ -19,6 +19,11 @@ export interface ChartGuideTick {
   value: number;
 }
 
+export interface TimelineVisibleRange {
+  visibleEnd: number;
+  visibleStart: number;
+}
+
 export function timelineBounds(
   entries: GanttChartEntry[],
   tickInterval: number,
@@ -105,6 +110,54 @@ export function buildGuideTicks(
     isMajor: majorTicks.has(value),
     value
   }));
+}
+
+export function timelineVisibleRange({
+  axisEnd,
+  axisStart,
+  overscanUnits = 14,
+  scrollLeft,
+  unitWidth,
+  viewportWidth
+}: {
+  axisEnd: number;
+  axisStart: number;
+  overscanUnits?: number;
+  scrollLeft: number;
+  unitWidth: number;
+  viewportWidth: number;
+}): TimelineVisibleRange {
+  const safeUnitWidth = Math.max(1, unitWidth);
+  const safeViewportWidth = Math.max(1, viewportWidth);
+  const visibleStart = clamp(
+    Math.floor(axisStart + scrollLeft / safeUnitWidth) - overscanUnits,
+    axisStart,
+    axisEnd
+  );
+  const visibleEnd = clamp(
+    Math.ceil(axisStart + (scrollLeft + safeViewportWidth) / safeUnitWidth) + overscanUnits,
+    visibleStart,
+    axisEnd
+  );
+
+  return { visibleEnd, visibleStart };
+}
+
+export function buildVisibleDateGuideTicks(
+  axisStart: number,
+  axisEnd: number,
+  scale: DateScale,
+  visibleRange: TimelineVisibleRange
+): ChartGuideTick[] {
+  const visibleStart = clamp(visibleRange.visibleStart, axisStart, axisEnd);
+  const visibleEnd = clamp(visibleRange.visibleEnd, visibleStart, axisEnd);
+  const majorTicks = new Set(buildDateTicks(visibleStart, visibleEnd, dateMajorGuideUnit(scale)));
+
+  return buildDateTicks(visibleStart, visibleEnd, dateGuideUnit(scale))
+    .map((value) => ({
+      isMajor: majorTicks.has(value),
+      value
+    }));
 }
 
 export function buildChronicleTicks(axisStart: number, axisEnd: number, interval: number): number[] {
@@ -222,6 +275,36 @@ export function buildDateAxisSegments(
     const endValue = Math.min(axisEnd, next - 1);
 
     if (endValue >= startValue) {
+      segments.push({
+        endValue,
+        label: formatDateAxisSegmentLabel(cursor, unit),
+        startValue
+      });
+    }
+
+    cursor = next;
+  }
+
+  return segments;
+}
+
+export function buildVisibleDateAxisSegments(
+  axisStart: number,
+  axisEnd: number,
+  visibleRange: TimelineVisibleRange,
+  unit: DateAxisSegmentUnit
+): DateAxisSegment[] {
+  const visibleStart = clamp(visibleRange.visibleStart, axisStart, axisEnd);
+  const visibleEnd = clamp(visibleRange.visibleEnd, visibleStart, axisEnd);
+  const segments: DateAxisSegment[] = [];
+  let cursor = startOfDateUnit(visibleStart, unit);
+
+  while (cursor <= visibleEnd) {
+    const next = nextDateUnit(cursor, unit);
+    const startValue = Math.max(axisStart, cursor);
+    const endValue = Math.min(axisEnd, next - 1);
+
+    if (endValue >= visibleStart && endValue >= startValue) {
       segments.push({
         endValue,
         label: formatDateAxisSegmentLabel(cursor, unit),

@@ -84,6 +84,7 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdate
         axisEnd={model.axisEnd}
         axisStart={model.axisStart}
         chartRef={viewport.chartRef}
+        chartViewportWidth={viewport.chartViewportWidth}
         chronicleOffscreenIndicators={viewportState.chronicleOffscreenIndicators}
         dateAxisHeight={model.dateAxisHeight}
         dateOffscreenIndicators={viewportState.dateOffscreenIndicators}

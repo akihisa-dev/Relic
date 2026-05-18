@@ -3,7 +3,9 @@ import type { PointerEvent, ReactElement, RefObject, UIEvent } from "react";
 import type { GanttChartEntry, GanttChartEntryEditKind, GanttChartSource, WorkspaceGanttChart } from "../../shared/ipc";
 import {
   DATE_SCALES,
+  buildVisibleDateGuideTicks,
   chronicleAxisTickInterval,
+  timelineVisibleRange,
   type ChartGuideTick,
   type ChartRow,
   type DateOffscreenIndicator,
@@ -26,6 +28,7 @@ export interface ChronicleChartGridProps {
   axisEnd: number;
   axisStart: number;
   chartRef: RefObject<HTMLDivElement | null>;
+  chartViewportWidth: number;
   chronicleOffscreenIndicators: { left: DateOffscreenIndicator | null; right: DateOffscreenIndicator | null };
   dateAxisHeight: number;
   dateOffscreenIndicators: { left: DateOffscreenIndicator | null; right: DateOffscreenIndicator | null };
@@ -55,6 +58,7 @@ export function ChronicleChartGrid({
   axisEnd,
   axisStart,
   chartRef,
+  chartViewportWidth,
   chronicleOffscreenIndicators,
   dateAxisHeight,
   dateOffscreenIndicators,
@@ -78,6 +82,22 @@ export function ChronicleChartGrid({
   if (!activeChart) {
     return <div className="frontmatter-field-empty">{t("chronicle.empty")}</div>;
   }
+
+  const timelineViewportWidth = Math.max(1, chartViewportWidth - nameColumnWidth);
+  const visibleGuideTicks = activeSource === "date" && dateScale
+    ? buildVisibleDateGuideTicks(
+        axisStart,
+        axisEnd,
+        dateScale,
+        timelineVisibleRange({
+          axisEnd,
+          axisStart,
+          scrollLeft,
+          unitWidth,
+          viewportWidth: timelineViewportWidth
+        })
+      )
+    : guideTicks;
 
   return (
     <div
@@ -117,6 +137,7 @@ export function ChronicleChartGrid({
               scale={dateScale ?? DATE_SCALES[0]}
               scrollLeft={scrollLeft}
               unitWidth={unitWidth}
+              viewportWidth={timelineViewportWidth}
               width={timelineWidth}
             />
           ) : (
@@ -134,7 +155,7 @@ export function ChronicleChartGrid({
             axisStart={axisStart}
             dateScale={dateScale}
             dragPreview={dragPreview}
-            guideTicks={guideTicks}
+            guideTicks={visibleGuideTicks}
             onStartEntryEdit={onStartEntryEdit}
             rows={rows}
             scrollLeft={scrollLeft}

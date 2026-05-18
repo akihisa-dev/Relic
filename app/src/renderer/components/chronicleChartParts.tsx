@@ -5,8 +5,9 @@ import { currentDateDay } from "../chronicleTimeline";
 import {
   ROW_HEIGHT,
   buildChronicleAxisSegments,
-  buildDateAxisSegments,
+  buildVisibleDateAxisSegments,
   dateAxisFollowLabelOffset,
+  timelineVisibleRange,
   type ChartGuideTick,
   type DateOffscreenIndicator,
   type DateScale
@@ -19,6 +20,7 @@ export function DateAxis({
   scrollLeft,
   scale,
   unitWidth,
+  viewportWidth,
   width
 }: {
   axisEnd: number;
@@ -26,11 +28,13 @@ export function DateAxis({
   scrollLeft: number;
   scale: DateScale;
   unitWidth: number;
+  viewportWidth: number;
   width: number;
 }): ReactElement {
-  const years = buildDateAxisSegments(axisStart, axisEnd, "year");
-  const months = buildDateAxisSegments(axisStart, axisEnd, "month");
-  const units = buildDateAxisSegments(axisStart, axisEnd, scale.unit);
+  const visibleRange = timelineVisibleRange({ axisEnd, axisStart, scrollLeft, unitWidth, viewportWidth });
+  const years = buildVisibleDateAxisSegments(axisStart, axisEnd, visibleRange, "year");
+  const months = buildVisibleDateAxisSegments(axisStart, axisEnd, visibleRange, "month");
+  const units = buildVisibleDateAxisSegments(axisStart, axisEnd, visibleRange, scale.unit);
   const rows = scale.unit === "day"
     ? [
         { followsScroll: true, key: "year", segments: years },
