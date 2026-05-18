@@ -74,10 +74,16 @@ export function GraphCanvas({
   viewBox
 }: GraphCanvasProps): ReactElement {
   const pointByPath = useMemo(() => new Map(points.map((point) => [point.path, point])), [points]);
+  const isLargeGraph = points.length > 220 || edges.length > 520;
+  const svgClassName = [
+    "graph-svg",
+    isPanning ? "graph-svg--panning" : "",
+    isLargeGraph ? "graph-svg--large" : ""
+  ].filter(Boolean).join(" ");
 
   return (
     <svg
-      className={isPanning ? "graph-svg graph-svg--panning" : "graph-svg"}
+      className={svgClassName}
       onKeyDown={onGraphKeyDown}
       onPointerCancel={onGraphPointerCancel}
       onPointerDown={onGraphPointerDown}

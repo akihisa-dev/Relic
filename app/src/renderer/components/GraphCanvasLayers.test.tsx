@@ -143,4 +143,29 @@ describe("GraphCanvasLayers", () => {
     expect(onNodeClick).toHaveBeenCalledWith(expect.objectContaining({ path: "A.md" }));
     expect(onNodeKeyDown).toHaveBeenCalledWith(expect.objectContaining({ key: "Enter" }), expect.objectContaining({ path: "A.md" }));
   });
+
+  it("大規模グラフでは通常nodeの常時ラベルを省き、注目nodeだけ表示する", () => {
+    const manyPoints = Array.from({ length: 181 }, (_, index): GraphPoint => ({
+      degree: 0,
+      folder: "",
+      incoming: 0,
+      name: `N${index}`,
+      outgoing: 0,
+      path: `N${index}.md`,
+      tags: [],
+      x: index,
+      y: index
+    }));
+
+    renderNodeLayer({
+      focusedPath: "N0.md",
+      points: manyPoints,
+      relatedPaths: new Set(["N0.md", "N1.md"]),
+      selectedPath: null
+    });
+
+    expect(screen.getByText("N0")).toHaveClass("graph-label");
+    expect(screen.getByText("N1")).toHaveClass("graph-label");
+    expect(screen.queryByText("N2")).not.toBeInTheDocument();
+  });
 });

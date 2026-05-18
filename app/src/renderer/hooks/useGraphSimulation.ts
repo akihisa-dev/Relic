@@ -3,6 +3,7 @@ import type { MutableRefObject } from "react";
 
 import type { WorkspaceGraphEdge, WorkspaceGraphNode } from "../../shared/ipc";
 import {
+  GRAPH_LIVE_SIMULATION_NODE_LIMIT,
   layoutGraph,
   tickGraphSimulation
 } from "../graphLayout";
@@ -61,6 +62,7 @@ export function useGraphSimulation({
 
   useEffect(() => {
     if (nodes.length === 0) return;
+    if (nodes.length > GRAPH_LIVE_SIMULATION_NODE_LIMIT) return;
 
     let frameId = 0;
 

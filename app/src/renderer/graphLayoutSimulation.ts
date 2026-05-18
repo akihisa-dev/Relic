@@ -67,9 +67,13 @@ function buildLayoutSeed(
 }
 
 function seedStandardLayout(points: GraphPoint[]): void {
+  const radiusBase = Math.min(GRAPH_WIDTH, GRAPH_HEIGHT) * 0.18;
+  const radiusStep = Math.min(GRAPH_WIDTH, GRAPH_HEIGHT) * 0.032;
+  const maxRadius = Math.min(GRAPH_WIDTH, GRAPH_HEIGHT) * 0.42;
+
   points.forEach((point, index) => {
     const angle = (Math.PI * 2 * index) / Math.max(1, points.length) - Math.PI / 2;
-    const radius = Math.min(190, 96 + (index % 7) * 17);
+    const radius = Math.min(maxRadius, radiusBase + (index % 11) * radiusStep);
     point.x = GRAPH_CENTER_X + Math.cos(angle) * radius;
     point.y = GRAPH_CENTER_Y + Math.sin(angle) * radius;
   });
@@ -81,10 +85,12 @@ function seedRadialLayout(points: GraphPoint[]): void {
     return degreeDiff || a.path.localeCompare(b.path, "ja");
   });
   const maxRank = Math.max(1, ranked.length - 1);
+  const minRadius = Math.min(GRAPH_WIDTH, GRAPH_HEIGHT) * 0.08;
+  const radiusRange = Math.min(GRAPH_WIDTH, GRAPH_HEIGHT) * 0.38;
 
   ranked.forEach((point, rank) => {
     const angle = (Math.PI * 2 * rank) / Math.max(1, ranked.length) - Math.PI / 2;
-    const radius = 58 + (rank / maxRank) * 198;
+    const radius = minRadius + (rank / maxRank) * radiusRange;
     point.x = GRAPH_CENTER_X + Math.cos(angle) * radius;
     point.y = GRAPH_CENTER_Y + Math.sin(angle) * radius;
   });
@@ -138,12 +144,15 @@ function seedClusterLayout(points: GraphPoint[], edges: WorkspaceGraphEdge[]): v
   }
 
   components.sort((a, b) => (a[0]?.path ?? "").localeCompare(b[0]?.path ?? "", "ja"));
-  const centerRadius = components.length <= 1 ? 0 : 154;
+  const centerRadius = components.length <= 1 ? 0 : Math.min(GRAPH_WIDTH, GRAPH_HEIGHT) * 0.28;
   components.forEach((component, componentIndex) => {
     const centerAngle = (Math.PI * 2 * componentIndex) / Math.max(1, components.length) - Math.PI / 2;
     const centerX = GRAPH_CENTER_X + Math.cos(centerAngle) * centerRadius;
     const centerY = GRAPH_CENTER_Y + Math.sin(centerAngle) * centerRadius;
-    const nodeRadius = component.length <= 1 ? 0 : Math.min(92, 34 + component.length * 8);
+    const nodeRadius = component.length <= 1 ? 0 : Math.min(
+      Math.min(GRAPH_WIDTH, GRAPH_HEIGHT) * 0.18,
+      Math.min(GRAPH_WIDTH, GRAPH_HEIGHT) * 0.05 + component.length * 8
+    );
 
     component.forEach((point, nodeIndex) => {
       const angle = (Math.PI * 2 * nodeIndex) / Math.max(1, component.length) - Math.PI / 2;
@@ -171,14 +180,16 @@ function relaxGraphLayout(
   edges: WorkspaceGraphEdge[],
   forceSettings: GraphForceSettings
 ): void {
+  const indexByPath = new Map(initial.map((node, index) => [node.path, index]));
   const linkedPairs = edges
     .map((edge) => ({
-      sourceIndex: initial.findIndex((node) => node.path === edge.sourcePath),
-      targetIndex: initial.findIndex((node) => node.path === edge.targetPath)
+      sourceIndex: indexByPath.get(edge.sourcePath) ?? -1,
+      targetIndex: indexByPath.get(edge.targetPath) ?? -1
     }))
     .filter((edge) => edge.sourceIndex >= 0 && edge.targetIndex >= 0);
+  const tickCount = initial.length > 420 ? 18 : initial.length > 220 ? 36 : 96;
 
-  for (let tick = 0; tick < 96; tick += 1) {
+  for (let tick = 0; tick < tickCount; tick += 1) {
     const forces = initial.map(() => ({ x: 0, y: 0 }));
 
     for (let i = 0; i < initial.length; i += 1) {

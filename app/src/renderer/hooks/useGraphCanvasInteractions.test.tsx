@@ -101,8 +101,8 @@ describe("useGraphCanvasInteractions", () => {
 
     expect(hook.result.current.points.map((point) => point.path)).toEqual(["A.md", "B.md"]);
     expect(hook.result.current.viewBox).toEqual({
-      height: 520,
-      width: 720,
+      height: GRAPH_HEIGHT,
+      width: GRAPH_WIDTH,
       x: 0,
       y: 0
     });

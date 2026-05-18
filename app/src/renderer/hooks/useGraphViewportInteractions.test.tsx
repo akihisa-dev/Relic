@@ -1,6 +1,7 @@
 import { act, renderHook } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
+import { GRAPH_HEIGHT, GRAPH_WIDTH } from "../graphLayout";
 import { useGraphViewportInteractions } from "./useGraphViewportInteractions";
 
 function makeEvent<T extends Element>(overrides: Partial<{
@@ -79,7 +80,7 @@ describe("useGraphViewportInteractions", () => {
   it("pointer dragでpanとpanning stateを更新する", () => {
     const { hook, onBackgroundClick } = renderViewport();
     const svgTarget = {
-      getBoundingClientRect: () => ({ height: 520, width: 720 } as DOMRect),
+      getBoundingClientRect: () => ({ height: GRAPH_HEIGHT, width: GRAPH_WIDTH } as DOMRect),
       hasPointerCapture: vi.fn().mockReturnValue(true),
       releasePointerCapture: vi.fn(),
       setPointerCapture: vi.fn()

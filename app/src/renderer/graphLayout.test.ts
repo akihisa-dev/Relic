@@ -59,17 +59,17 @@ function distanceFromCenter(point: { x: number; y: number }): number {
 describe("buildGraphViewBox", () => {
   it("zoomとpanを既存通りviewBoxへ反映する", () => {
     expect(buildGraphViewBox(1, { x: 0, y: 0 })).toEqual({
-      height: 520,
-      width: 720,
+      height: GRAPH_HEIGHT,
+      width: GRAPH_WIDTH,
       x: 0,
       y: 0
     });
 
     const panned = buildGraphViewBox(1.8, { x: 48, y: -32 });
-    expect(panned.width).toBeCloseTo(400);
-    expect(panned.height).toBeCloseTo(288.889);
-    expect(panned.x).toBeCloseTo(208);
-    expect(panned.y).toBeCloseTo(83.556);
+    expect(panned.width).toBeCloseTo(GRAPH_WIDTH / 1.8);
+    expect(panned.height).toBeCloseTo(GRAPH_HEIGHT / 1.8);
+    expect(panned.x).toBeCloseTo((GRAPH_WIDTH - GRAPH_WIDTH / 1.8) / 2 + 48);
+    expect(panned.y).toBeCloseTo((GRAPH_HEIGHT - GRAPH_HEIGHT / 1.8) / 2 - 32);
   });
 
   it("zoomをグラフ表示範囲内に丸める", () => {

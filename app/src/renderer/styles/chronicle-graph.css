@@ -555,9 +555,11 @@
   background: var(--bg);
   border: none;
   border-radius: 0;
+  height: 100%;
   min-height: 0;
   overflow: hidden;
   position: relative;
+  width: 100%;
 }
 
 [data-theme="dark"] .graph-canvas {
@@ -602,6 +604,17 @@
 
 .graph-svg--panning {
   cursor: grabbing;
+}
+
+.graph-svg--large .graph-edge,
+.graph-svg--large .graph-node,
+.graph-svg--large .graph-label {
+  filter: none;
+  transition: none;
+}
+
+.graph-svg--large .graph-node {
+  animation: none;
 }
 
 .graph-edge {
