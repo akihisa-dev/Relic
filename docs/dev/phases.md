@@ -38,9 +38,9 @@ AIは `AI.md` と `docs/product/project.md` の次にこのファイルを読み
 ## 現在フェーズ
 
 ```yaml
-current: P26
-summary: デザイン・UI刷新
-checklist: phases/P26-design-ui-refresh.md
+current: P27
+summary: 不具合修正・パフォーマンス改善
+checklist: phases/P27-bugfix-performance.md
 ```
 
 ---
@@ -75,7 +75,8 @@ checklist: phases/P26-design-ui-refresh.md
 | P23 | 大規模リファクタリング | done | `phases/P23-large-refactoring.md`, `conventions.md`, `testing.md`, 必要に応じて `../architecture/overview.md`, `../architecture/decisions.md`, `../spec/`, `../ui/` |
 | P24 | 全般修正 | done | `phases/P24-general-fixes.md`, `conventions.md`, `testing.md`, 必要に応じて `../spec/`, `../ui/`, `../architecture/overview.md` |
 | P25 | グラフビューアップグレード | done | `phases/P25-graph-view-upgrade.md`, `conventions.md`, `testing.md`, 必要に応じて `../spec/`, `../ui/`, `../architecture/overview.md` |
-| P26 | デザイン・UI刷新 | current | `phases/P26-design-ui-refresh.md`, `conventions.md`, `testing.md`, `../ui/DESIGN.md`, `../ui/screens-macos.md`, `../ui/navigation.md`, 必要に応じて `../spec/`, `../architecture/overview.md` |
+| P26 | デザイン・UI刷新 | done | `phases/P26-design-ui-refresh.md`, `conventions.md`, `testing.md`, `../ui/DESIGN.md`, `../ui/screens-macos.md`, `../ui/navigation.md`, 必要に応じて `../spec/`, `../architecture/overview.md` |
+| P27 | 不具合修正・パフォーマンス改善 | current | `phases/P27-bugfix-performance.md`, `conventions.md`, `testing.md`, 必要に応じて `../spec/`, `../ui/`, `../architecture/overview.md` |
 
 ### 取り下げた非正当フェーズ
 
