@@ -1,4 +1,5 @@
 import type { WorkspaceTreeNode } from "../../shared/ipc";
+import type { Translator } from "../i18n";
 import type { FileTab, PaneId, PaneState, Tab } from "../store/editorStore";
 import { displayNameFromPath, joinWorkspacePath, parentFolderOf } from "../workspacePaths";
 import { matchesAnyTreeItemPath, matchesTreeItemPath } from "./workspaceFileActionHelpers";
@@ -43,15 +44,13 @@ export function renamedFolderPath(path: string, newName: string): string {
   return joinWorkspacePath(parentFolderOf(path), newName);
 }
 
-export function deleteTreeItemMessage(path: string, type: WorkspaceTreeNode["type"]): string {
+export function deleteTreeItemMessage(path: string, type: WorkspaceTreeNode["type"], t: Translator): string {
   const name = displayNameFromPath(path);
-  return type === "folder"
-    ? `「${name}」フォルダをゴミ箱に移動しますか？フォルダ内のノートやファイルも一緒に移動されます。`
-    : `「${name}」をゴミ箱に移動しますか？`;
+  return type === "folder" ? t("files.deleteFolderConfirm", { name }) : t("files.deleteFileConfirm", { name });
 }
 
-export function deleteTreeItemsMessage(itemCount: number): string {
-  return `${itemCount}件の項目をゴミ箱に移動しますか？フォルダを含む場合、フォルダ内のノートやファイルも一緒に移動されます。`;
+export function deleteTreeItemsMessage(itemCount: number, t: Translator): string {
+  return t("files.deleteItemsConfirm", { count: itemCount });
 }
 
 export function tabCloseTargetsForTreeItem({

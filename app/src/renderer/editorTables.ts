@@ -3,6 +3,7 @@ import { Decoration, EditorView, type DecorationSet } from "@codemirror/view";
 
 import { findTableBlocks } from "./editorTableModel";
 import { TableWidget } from "./editorTableWidget";
+import type { Translator } from "./i18n";
 
 export {
   deleteTableColumn,
@@ -25,14 +26,14 @@ export {
   type TableBlock
 } from "./editorTableModel";
 
-export function buildTableDecorations(state: Parameters<typeof findTableBlocks>[0]): DecorationSet {
+export function buildTableDecorations(state: Parameters<typeof findTableBlocks>[0], t: Translator): DecorationSet {
   const ranges: { from: number; to: number; deco: Decoration }[] = [];
 
   for (const block of findTableBlocks(state)) {
     ranges.push({
       from: block.from,
       to: block.to,
-      deco: Decoration.replace({ widget: new TableWidget(block), block: true })
+      deco: Decoration.replace({ widget: new TableWidget(block, t), block: true })
     });
   }
 
@@ -44,8 +45,10 @@ export function buildTableDecorations(state: Parameters<typeof findTableBlocks>[
   );
 }
 
-export const livePreviewTableField = StateField.define<DecorationSet>({
-  create: (state) => buildTableDecorations(state),
-  update: (_decorations, transaction) => buildTableDecorations(transaction.state),
-  provide: (field) => EditorView.decorations.from(field)
-});
+export function createLivePreviewTableField(t: Translator): StateField<DecorationSet> {
+  return StateField.define<DecorationSet>({
+    create: (state) => buildTableDecorations(state, t),
+    update: (_decorations, transaction) => buildTableDecorations(transaction.state, t),
+    provide: (field) => EditorView.decorations.from(field)
+  });
+}

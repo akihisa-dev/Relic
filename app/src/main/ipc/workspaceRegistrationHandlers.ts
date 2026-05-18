@@ -16,6 +16,7 @@ import {
   type WorkspaceState
 } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
+import { getMainTranslator } from "../i18n";
 import { readAppSettings, writeAppSettings } from "../settings/appSettings";
 import { readWorkspaceSettings, writeWorkspaceSettings } from "../settings/workspaceSettings";
 import {
@@ -51,9 +52,10 @@ export function registerWorkspaceRegistrationHandlers(): void {
 
   ipcMain.handle(openWorkspaceChannel, async (): Promise<RelicResult<WorkspaceState>> => {
     try {
+      const t = await getMainTranslator();
       const selection = await dialog.showOpenDialog({
-        buttonLabel: "開く",
-        message: "Relicで使うワークスペースフォルダを選んでください。",
+        buttonLabel: t("dialogs.openWorkspaceButton"),
+        message: t("dialogs.openWorkspaceMessage"),
         properties: ["openDirectory", "createDirectory"]
       });
 
@@ -82,10 +84,11 @@ export function registerWorkspaceRegistrationHandlers(): void {
 
   ipcMain.handle(createNewWorkspaceChannel, async (): Promise<RelicResult<WorkspaceState>> => {
     try {
+      const t = await getMainTranslator();
       const selection = await dialog.showSaveDialog({
-        buttonLabel: "ここに作成",
-        message: "新しいワークスペースの場所と名前を指定してください。",
-        nameFieldLabel: "ワークスペース名",
+        buttonLabel: t("dialogs.createWorkspaceButton"),
+        message: t("dialogs.createWorkspaceMessage"),
+        nameFieldLabel: t("dialogs.workspaceName"),
         showsTagField: false
       });
 

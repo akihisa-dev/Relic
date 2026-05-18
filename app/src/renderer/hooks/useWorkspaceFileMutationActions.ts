@@ -1,6 +1,7 @@
 import { useCallback } from "react";
 
 import type { WorkspaceState, WorkspaceTreeNode } from "../../shared/ipc";
+import type { Translator } from "../i18n";
 import {
   buildFolderTabPathUpdates,
   getMovableTreeItems,
@@ -39,8 +40,9 @@ export function useWorkspaceFileMutationActions({
   setWorkspaceError,
   setWorkspaceState,
   tabs,
-  updateTabMeta
-}: WorkspaceFileMutationInput) {
+  updateTabMeta,
+  t
+}: WorkspaceFileMutationInput & { t: Translator }) {
   const handleMoveFile = useCallback((path: string, destFolder: string): void => {
     if (!window.relic) return;
 
@@ -220,7 +222,7 @@ export function useWorkspaceFileMutationActions({
   const handleDeleteActiveFile = useCallback((): void => {
     const activeFile = getActiveFileTab({ focusedPane, leftPane, rightPane, tabs });
     if (!activeFile || !window.relic) return;
-    if (!window.confirm(`「${activeFile.tab.name}」をゴミ箱に移動しますか？`)) return;
+    if (!window.confirm(t("files.deleteFileConfirm", { name: activeFile.tab.name }))) return;
     void window.relic.moveItemToTrash({ path: activeFile.tab.path, type: "file" }).then((result) => {
       if (result.ok) {
         closeTab(focusedPane, activeFile.tabId);
@@ -229,13 +231,13 @@ export function useWorkspaceFileMutationActions({
         setWorkspaceError(result.error.message);
       }
     });
-  }, [closeTab, focusedPane, leftPane, rightPane, setWorkspaceError, setWorkspaceState, tabs]);
+  }, [closeTab, focusedPane, leftPane, rightPane, setWorkspaceError, setWorkspaceState, t, tabs]);
 
   const handleDeleteTreeItem = useCallback(
     (path: string, type: WorkspaceTreeNode["type"]): void => {
       if (!window.relic) return;
 
-      const message = deleteTreeItemMessage(path, type);
+      const message = deleteTreeItemMessage(path, type, t);
       if (!window.confirm(message)) return;
 
       void window.relic.moveItemToTrash({ path, type }).then((result) => {
@@ -249,7 +251,7 @@ export function useWorkspaceFileMutationActions({
         }
       });
     },
-    [closeTab, leftPane, rightPane, setWorkspaceError, setWorkspaceState, tabs]
+    [closeTab, leftPane, rightPane, setWorkspaceError, setWorkspaceState, t, tabs]
   );
 
   const handleDeleteTreeItems = useCallback(
@@ -258,7 +260,7 @@ export function useWorkspaceFileMutationActions({
 
       const deletableItems = removeCoveredItems(items);
       const itemCount = deletableItems.length;
-      const message = deleteTreeItemsMessage(itemCount);
+      const message = deleteTreeItemsMessage(itemCount, t);
       if (!window.confirm(message)) return;
 
       void (async () => {
@@ -279,7 +281,7 @@ export function useWorkspaceFileMutationActions({
         if (nextWorkspaceState) setWorkspaceState(nextWorkspaceState);
       })();
     },
-    [closeTab, leftPane, rightPane, setWorkspaceError, setWorkspaceState, tabs]
+    [closeTab, leftPane, rightPane, setWorkspaceError, setWorkspaceState, t, tabs]
   );
 
   return {

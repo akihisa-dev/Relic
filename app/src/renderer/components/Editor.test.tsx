@@ -17,8 +17,9 @@ import {
   Editor,
   findClickableLinkAtPosition
 } from "./Editor";
+import { createTranslator, I18nProvider } from "../i18n";
 
-const settings = defaultEditorSettings;
+const settings = { ...defaultEditorSettings, language: "ja" as const };
 
 async function collectLivePreviewClasses(content: string, cursor: number, hasFocus = true): Promise<Set<string>> {
   const state = EditorState.create({
@@ -51,7 +52,7 @@ async function collectLivePreviewWidgets(content: string, cursor: number, hasFoc
 
   const widgets: string[] = [];
   void hasFocus;
-  buildTableDecorations(state).between(0, state.doc.length, (_from, _to, value) => {
+  buildTableDecorations(state, createTranslator("ja")).between(0, state.doc.length, (_from, _to, value) => {
     const widget = (value as unknown as { spec?: { widget?: { constructor?: { name?: string } } } }).spec?.widget;
     if (widget?.constructor?.name) widgets.push(widget.constructor.name);
   });
@@ -466,12 +467,14 @@ describe("Editor", () => {
     const viewRef = createRef<EditorView | null>();
     const onChange = vi.fn();
     const { container } = render(
-      <Editor
-        content={"---\nversion: v1.0\naliases: [帝都オルスター, 帝都]\n---\n# 本文"}
-        onChange={onChange}
-        settings={settings}
-        viewRef={viewRef}
-      />
+      <I18nProvider language="ja">
+        <Editor
+          content={"---\nversion: v1.0\naliases: [帝都オルスター, 帝都]\n---\n# 本文"}
+          onChange={onChange}
+          settings={settings}
+          viewRef={viewRef}
+        />
+      </I18nProvider>
     );
 
     await waitFor(() => expect(container.querySelector(".cm-frontmatter-properties")).not.toBeNull());
@@ -1173,12 +1176,14 @@ describe("Editor", () => {
     const viewRef = createRef<EditorView | null>();
 
     const { container, getByText } = render(
-      <Editor
-        content={"| A | B |\n| --- | --- |\n| x | y |\n| z | w |"}
-        onChange={vi.fn()}
-        settings={settings}
-        viewRef={viewRef}
-      />
+      <I18nProvider language="ja">
+        <Editor
+          content={"| A | B |\n| --- | --- |\n| x | y |\n| z | w |"}
+          onChange={vi.fn()}
+          settings={settings}
+          viewRef={viewRef}
+        />
+      </I18nProvider>
     );
 
     await waitFor(() => expect(container.querySelector('.cm-live-table-cell-input[data-row="1"][data-col="1"]')).not.toBeNull());
@@ -1198,12 +1203,14 @@ describe("Editor", () => {
     const viewRef = createRef<EditorView | null>();
 
     const { container, getByText } = render(
-      <Editor
-        content={"| A | B |\n| --- | --- |\n| 2 | b |\n| 10 | a |"}
-        onChange={vi.fn()}
-        settings={settings}
-        viewRef={viewRef}
-      />
+      <I18nProvider language="ja">
+        <Editor
+          content={"| A | B |\n| --- | --- |\n| 2 | b |\n| 10 | a |"}
+          onChange={vi.fn()}
+          settings={settings}
+          viewRef={viewRef}
+        />
+      </I18nProvider>
     );
 
     await waitFor(() => expect(container.querySelector('td[data-row="1"][data-column="0"]')).not.toBeNull());

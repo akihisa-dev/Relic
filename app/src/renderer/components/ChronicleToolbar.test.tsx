@@ -66,7 +66,7 @@ describe("ChronicleToolbar", () => {
       activeSource: "date"
     });
 
-    fireEvent.change(screen.getByLabelText("status"), { target: { value: "完了" } });
+    fireEvent.change(screen.getByLabelText("ステータス"), { target: { value: "完了" } });
     fireEvent.click(screen.getByRole("button", { name: "今日" }));
 
     expect(props.setStatusFilter).toHaveBeenCalledWith("完了");

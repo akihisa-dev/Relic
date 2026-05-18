@@ -221,6 +221,7 @@ export function App(): ReactElement {
     setWorkspaceError,
     setWorkspaceState,
     tabs,
+    t,
     updateTabMeta,
     workspaceState
   });

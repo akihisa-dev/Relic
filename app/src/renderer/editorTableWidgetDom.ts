@@ -6,6 +6,7 @@ import {
   insertTableRow,
   type TableBlock
 } from "./editorTableModel";
+import type { Translator } from "./i18n";
 
 export type TableEdgeAddAxis = "column-before" | "column-after" | "row-before" | "row-after";
 
@@ -41,20 +42,22 @@ export function createTableEdgeAddButton({
   axis,
   block,
   getFocusIndex,
-  getInsertIndex
+  getInsertIndex,
+  t
 }: {
   axis: TableEdgeAddAxis;
   block: TableBlock;
   getFocusIndex: () => number;
   getInsertIndex: () => number;
+  t: Translator;
 }): HTMLButtonElement {
   const button = document.createElement("button");
   button.type = "button";
   button.className = `cm-live-table-add cm-live-table-add--${axis}`;
   button.textContent = "+";
   button.title = axis.startsWith("column")
-    ? axis.endsWith("before") ? "Add column before" : "Add column after"
-    : axis.endsWith("before") ? "Add row before" : "Add row after";
+    ? axis.endsWith("before") ? t("editor.tableAddColumnLeft") : t("editor.tableAddColumnRight")
+    : axis.endsWith("before") ? t("editor.tableAddRowAbove") : t("editor.tableAddRowBelow");
   button.addEventListener("click", (event) => {
     event.preventDefault();
     event.stopPropagation();

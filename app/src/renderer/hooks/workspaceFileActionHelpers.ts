@@ -1,4 +1,5 @@
 import type { WorkspaceState, WorkspaceTreeNode } from "../../shared/ipc";
+import type { Translator } from "../i18n";
 import type { Tab } from "../store/editorStore";
 import { displayNameFromPath } from "../workspacePaths";
 
@@ -23,7 +24,7 @@ export function removeCoveredItems(items: WorkspaceTreeItem[]): WorkspaceTreeIte
   });
 }
 
-export function nextUniqueFileName(workspaceState: WorkspaceState | null): string {
+export function nextUniqueFileName(workspaceState: WorkspaceState | null, t: Translator): string {
   const existing = new Set<string>();
 
   walkWorkspaceTree(workspaceState?.fileTree ?? [], (node) => {
@@ -31,12 +32,13 @@ export function nextUniqueFileName(workspaceState: WorkspaceState | null): strin
   });
 
   for (let i = 1; ; i += 1) {
-    const name = i === 1 ? "新規ファイル" : `新規ファイル ${i}`;
+    const baseName = t("files.createNote");
+    const name = i === 1 ? baseName : `${baseName} ${i}`;
     if (!existing.has(`${name}.md`)) return name;
   }
 }
 
-export function nextUniqueFolderName(workspaceState: WorkspaceState | null): string {
+export function nextUniqueFolderName(workspaceState: WorkspaceState | null, t: Translator): string {
   const existing = new Set<string>();
 
   walkWorkspaceTree(workspaceState?.fileTree ?? [], (node) => {
@@ -44,7 +46,8 @@ export function nextUniqueFolderName(workspaceState: WorkspaceState | null): str
   });
 
   for (let i = 1; ; i += 1) {
-    const name = i === 1 ? "新規フォルダ" : `新規フォルダ ${i}`;
+    const baseName = t("files.defaultNewFolderName");
+    const name = i === 1 ? baseName : `${baseName} ${i}`;
     if (!existing.has(name)) return name;
   }
 }

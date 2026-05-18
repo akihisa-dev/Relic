@@ -12,27 +12,30 @@ import {
   isolateFrontmatterWidgetControl,
   type FrontmatterFieldUpdater
 } from "./editorFrontmatterWidgetInputs";
+import type { Translator } from "./i18n";
 
 export function createFrontmatterHeader({
   collapsed,
   count,
-  onToggle
+  onToggle,
+  t
 }: {
   collapsed: boolean;
   count: number;
   onToggle: () => void;
+  t: Translator;
 }): HTMLElement {
   const header = document.createElement("button");
   header.className = "cm-frontmatter-header";
   header.ariaExpanded = String(!collapsed);
-  header.title = collapsed ? "プロパティを開く" : "プロパティを閉じる";
+  header.title = collapsed ? t("frontmatter.openProperties") : t("frontmatter.closeProperties");
   header.type = "button";
 
   const icon = document.createElement("span");
   icon.className = "cm-frontmatter-toggle";
   icon.textContent = "⌄";
   const title = document.createElement("span");
-  title.textContent = "プロパティ";
+  title.textContent = t("frontmatter.properties");
   const countElement = document.createElement("span");
   countElement.className = "cm-frontmatter-count";
   countElement.textContent = String(count);
@@ -46,7 +49,7 @@ export function createFrontmatterHeader({
   return header;
 }
 
-export function createFrontmatterAddRow(view: EditorView): HTMLElement {
+export function createFrontmatterAddRow(view: EditorView, t: Translator): HTMLElement {
   const row = document.createElement("div");
   row.className = "cm-frontmatter-row cm-frontmatter-add-row";
 
@@ -56,15 +59,15 @@ export function createFrontmatterAddRow(view: EditorView): HTMLElement {
 
   const label = document.createElement("span");
   label.className = "cm-frontmatter-key";
-  label.textContent = "追加";
+  label.textContent = t("frontmatter.addField");
 
   const help = document.createElement("span");
   help.className = "cm-frontmatter-add-help";
-  help.textContent = "プロパティを追加";
+  help.textContent = t("frontmatter.addProperty");
 
   const button = document.createElement("button");
   button.className = "cm-frontmatter-add";
-  button.title = "プロパティを追加";
+  button.title = t("frontmatter.addProperty");
   button.type = "button";
   button.textContent = "+";
   isolateFrontmatterWidgetControl(button);
@@ -82,6 +85,7 @@ export function frontmatterRowForLine({
   block,
   candidates,
   lineNumber,
+  t,
   updateField,
   userDefinedFields,
   view
@@ -89,6 +93,7 @@ export function frontmatterRowForLine({
   block: FrontmatterBlock;
   candidates: Record<string, string[]>;
   lineNumber: number;
+  t: Translator;
   updateField: FrontmatterFieldUpdater;
   userDefinedFields: UserDefinedField[];
   view: EditorView;
@@ -104,6 +109,7 @@ export function frontmatterRowForLine({
   return createFrontmatterRow({
     candidates,
     key: entry.key,
+    t,
     updateField,
     userDefinedFields,
     value: block.data[entry.key],
@@ -114,6 +120,7 @@ export function frontmatterRowForLine({
 function createFrontmatterRow({
   candidates,
   key,
+  t,
   updateField,
   userDefinedFields,
   value,
@@ -121,6 +128,7 @@ function createFrontmatterRow({
 }: {
   candidates: Record<string, string[]>;
   key: string;
+  t: Translator;
   updateField: FrontmatterFieldUpdater;
   userDefinedFields: UserDefinedField[];
   value: unknown;
@@ -142,13 +150,14 @@ function createFrontmatterRow({
     candidates,
     field,
     key,
+    t,
     updateField,
     value,
     view
   });
   const removeButton = document.createElement("button");
   removeButton.className = "cm-frontmatter-remove";
-  removeButton.title = "プロパティを削除";
+  removeButton.title = t("frontmatter.removeProperty");
   removeButton.type = "button";
   removeButton.textContent = "×";
   removeButton.addEventListener("click", () => updateField(view, key, undefined));
