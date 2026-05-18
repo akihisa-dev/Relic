@@ -1429,8 +1429,8 @@
 }
 
 .chronicle-minimap-window {
-  background: rgba(28, 28, 28, 0.045);
-  border: 1px solid rgba(28, 28, 28, 0.38);
+  background: color-mix(in srgb, var(--bg) 28%, transparent);
+  border: 1px solid color-mix(in srgb, var(--text) 44%, transparent);
   border-radius: 999px;
   bottom: -2px;
   box-sizing: border-box;
