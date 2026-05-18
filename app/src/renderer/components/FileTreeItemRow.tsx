@@ -96,15 +96,25 @@ export function FileTreeItemRow({
       </button>
       {onTogglePin ? (
         <button
+          aria-label={isPinned ? t("files.unpinSidebar") : t("files.pinSidebar")}
           className={`file-tree-pin-btn${isPinned ? " pinned" : ""}`}
           onClick={(e) => { e.stopPropagation(); onTogglePin(node.path); }}
           title={isPinned ? t("files.unpin") : t("files.pin")}
           type="button"
         >
-          📌
+          <PinFileIcon />
         </button>
       ) : null}
     </div>
+  );
+}
+
+function PinFileIcon(): ReactElement {
+  return (
+    <svg aria-hidden="true" fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="14">
+      <path d="M12 17v5" />
+      <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z" />
+    </svg>
   );
 }
 

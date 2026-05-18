@@ -107,13 +107,17 @@
 }
 
 .file-tree-pin-btn {
+  align-items: center;
   background: none;
   border: none;
+  color: var(--attention);
   cursor: pointer;
   display: none;
-  font-size: 10px;
+  height: 24px;
+  justify-content: center;
   opacity: 0.5;
-  padding: 0 4px;
+  padding: 0;
+  width: 24px;
 }
 
 .file-tree-pin-btn.pinned {
