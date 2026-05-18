@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 
 import type { GanttChartSource, WorkspaceGanttChart } from "../../shared/ipc";
@@ -53,6 +53,7 @@ export interface ChronicleChartModel {
   nameColumnWidth: number;
   query: string;
   rows: ChartRow[];
+  refreshRowOrder: () => void;
   selectChart: (chart: WorkspaceGanttChart) => void;
   setQuery: Dispatch<SetStateAction<string>>;
   setSortKey: Dispatch<SetStateAction<ChronicleSortKey>>;
@@ -84,16 +85,38 @@ export function useChronicleChartModel({
   const [query, setQuery] = useState("");
   const [sortKey, setSortKey] = useState<ChronicleSortKey>("start-asc");
   const [statusFilter, setStatusFilter] = useState("");
+  const [rowOrderKeys, setRowOrderKeys] = useState<string[]>([]);
+  const rowOrderResetKeyRef = useRef<string | null>(null);
   const activeChart = chart ?? availableCharts.find((candidate) => candidate.id === selectedGanttChartId) ?? availableCharts[0] ?? null;
   const activeSource = activeChart && isGanttChartSource(activeChart.source) ? activeChart.source : "chronicle";
   const allEntries = visibleEntries(activeChart);
   const statusOptions = useMemo(() => statusValuesForEntries(allEntries), [allEntries]);
   const tickInterval = 1;
   const dateScale = activeSource === "date" ? DATE_SCALES[0] : null;
-  const rows = useMemo(
-    () => sortRows(filterRows(buildChartRows(allEntries, activeSource), query, activeSource === "date" ? statusFilter : ""), sortKey),
-    [activeSource, allEntries, query, sortKey, statusFilter]
+  const filteredRows = useMemo(
+    () => filterRows(buildChartRows(allEntries, activeSource), query, activeSource === "date" ? statusFilter : ""),
+    [activeSource, allEntries, query, statusFilter]
   );
+  const sortedRows = useMemo(
+    () => sortRows(filteredRows, sortKey),
+    [filteredRows, sortKey]
+  );
+  const rows = useMemo(
+    () => orderRowsByKeys(filteredRows, rowOrderKeys, sortedRows),
+    [filteredRows, rowOrderKeys, sortedRows]
+  );
+  const refreshRowOrder = useCallback((): void => {
+    setRowOrderKeys(sortedRows.map((row) => row.key));
+  }, [sortedRows]);
+  const rowOrderResetKey = `${activeChart?.id ?? "none"}:${activeSource}:${query}:${statusFilter}`;
+
+  useEffect(() => {
+    if (rowOrderResetKeyRef.current === rowOrderResetKey) return;
+
+    rowOrderResetKeyRef.current = rowOrderResetKey;
+    setRowOrderKeys(sortedRows.map((row) => row.key));
+  }, [rowOrderResetKey, sortedRows]);
+
   const entries = useMemo(() => rows.flatMap((row) => row.entries), [rows]);
   const computedBounds = timelineBounds(entries, tickInterval, activeSource, dateScale);
   const boundsKey = `${activeChart?.id ?? "none"}:${activeSource}:${query}`;
@@ -147,6 +170,7 @@ export function useChronicleChartModel({
     minimapItems,
     nameColumnWidth,
     query,
+    refreshRowOrder,
     rows,
     selectChart,
     setQuery,
@@ -160,6 +184,20 @@ export function useChronicleChartModel({
     timelineWidth,
     unitWidth
   };
+}
+
+function orderRowsByKeys(rows: ChartRow[], orderKeys: string[], fallbackRows: ChartRow[]): ChartRow[] {
+  if (orderKeys.length === 0) return fallbackRows;
+
+  const rowsByKey = new Map(rows.map((row) => [row.key, row]));
+  const orderedRows = orderKeys.flatMap((key) => {
+    const row = rowsByKey.get(key);
+    return row ? [row] : [];
+  });
+  const orderedKeys = new Set(orderKeys);
+  const newRows = fallbackRows.filter((row) => !orderedKeys.has(row.key));
+
+  return [...orderedRows, ...newRows];
 }
 
 export function buildChronicleViewportState({

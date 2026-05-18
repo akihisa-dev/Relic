@@ -105,6 +105,50 @@ describe("useChronicleChartModel", () => {
     expect(result.current.rows.map((row) => row.path)).toEqual(["tasks/implementation.md"]);
   });
 
+  it("更新操作までは既存の行順を維持する", async () => {
+    const firstChart = chart({
+      entries: [
+        entry({ fileName: "A", path: "a.md", startValue: 10, endValue: 10 }),
+        entry({ fileName: "B", path: "b.md", startValue: 20, endValue: 20 })
+      ],
+      id: "chronicle",
+      name: "chronicle",
+      source: "chronicle"
+    });
+    const { rerender, result } = renderHook(
+      ({ activeChart }) => useChronicleChartModel({ chart: activeChart, charts: [] }),
+      { initialProps: { activeChart: firstChart } }
+    );
+
+    expect(result.current.rows.map((row) => row.path)).toEqual(["a.md", "b.md"]);
+
+    act(() => {
+      result.current.setSortKey("start-desc");
+    });
+
+    expect(result.current.rows.map((row) => row.path)).toEqual(["a.md", "b.md"]);
+
+    act(() => {
+      result.current.refreshRowOrder();
+    });
+
+    expect(result.current.rows.map((row) => row.path)).toEqual(["b.md", "a.md"]);
+
+    rerender({
+      activeChart: {
+        ...firstChart,
+        entries: [
+          entry({ fileName: "A", path: "a.md", startValue: 30, endValue: 30 }),
+          entry({ fileName: "B", path: "b.md", startValue: 5, endValue: 5 })
+        ]
+      }
+    });
+
+    await waitFor(() => {
+      expect(result.current.rows.map((row) => row.path)).toEqual(["b.md", "a.md"]);
+    });
+  });
+
   it("date表示で無効なstatus filterになった場合は空へ戻す", async () => {
     const dateChart = chart({
       entries: [
