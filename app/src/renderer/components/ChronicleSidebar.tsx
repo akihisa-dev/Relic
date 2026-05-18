@@ -120,9 +120,6 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdate
         verticalMinimapViewport={verticalViewportState.verticalMinimapViewport}
         verticalOffscreenIndicators={verticalViewportState.verticalOffscreenIndicators}
       />
-      <div className="chronicle-summary">
-        {model.activeChart ? t("chronicle.summary", { count: model.rows.length, source: model.activeChart.source }) : t("chronicle.title")}
-      </div>
     </div>
   );
 }

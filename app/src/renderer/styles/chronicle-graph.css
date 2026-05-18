@@ -1756,18 +1756,6 @@
   right: 3px;
 }
 
-.chronicle-summary {
-  bottom: 20px;
-  color: var(--text-3);
-  font-size: 12px;
-  line-height: 1.4;
-  pointer-events: none;
-  position: absolute;
-  right: 20px;
-  text-align: right;
-  z-index: 6;
-}
-
 @media (max-width: 760px) {
   .frontmatter-field-add {
     grid-template-columns: minmax(0, 1fr);
