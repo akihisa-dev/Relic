@@ -158,6 +158,19 @@
   transform: none;
 }
 
+.file-tree-row.file.drag-over {
+  background: transparent;
+}
+
+.file-tree:has(> .file-tree-item > .file-tree-row-wrap .file-tree-row.file.drag-over) {
+  background: var(--accent-soft);
+  border-radius: 6px;
+}
+
+.file-tree .file-tree:has(> .file-tree-item > .file-tree-row-wrap .file-tree-row.file.drag-over) {
+  border-left-color: var(--accent);
+}
+
 .file-tree-row.dragging {
   cursor: grabbing;
 }
