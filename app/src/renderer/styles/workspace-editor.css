@@ -21,7 +21,7 @@
   display: flex;
   gap: 4px;
   justify-content: flex-end;
-  min-height: 36px;
+  min-height: 42px;
   padding: 0 8px;
   width: 136px;
   z-index: 18;
@@ -292,7 +292,7 @@
 
 .pane {
   display: grid;
-  grid-template-rows: 36px minmax(0, 1fr);
+  grid-template-rows: 42px minmax(0, 1fr);
   height: 100%;
   min-height: 0;
   min-width: 0;
@@ -329,13 +329,14 @@
 }
 
 .pane-tab-bar {
-  align-items: end;
+  align-items: flex-start;
   background: var(--sidebar-bg);
   border-bottom: 1px solid var(--border);
   display: flex;
   gap: 2px;
   overflow-x: auto;
-  padding: 0 8px;
+  overflow-y: hidden;
+  padding: 5px 8px 0;
   position: relative;
 }
 
