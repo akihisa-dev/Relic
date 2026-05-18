@@ -581,6 +581,17 @@
   padding-top: 12px;
 }
 
+.workspace-action-button {
+  align-items: center;
+  display: inline-flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.workspace-action-button > svg {
+  flex: 0 0 auto;
+}
+
 .workspace-empty {
   display: grid;
   gap: 14px;

@@ -127,19 +127,21 @@ export function FilesWorkspaceActions({
   return (
     <div className="workspace-actions">
       <button
-        className="secondary-button"
+        className="secondary-button workspace-action-button"
         disabled={isOpeningWorkspace || isCreatingWorkspace}
         onClick={onOpenWorkspace}
         type="button"
       >
+        <OpenWorkspaceIcon />
         {isOpeningWorkspace ? t("files.opening") : t("files.openFolder")}
       </button>
       <button
-        className="secondary-button"
+        className="secondary-button workspace-action-button"
         disabled={isOpeningWorkspace || isCreatingWorkspace}
         onClick={onCreateWorkspace}
         type="button"
       >
+        <CreateWorkspaceIcon />
         {isCreatingWorkspace ? t("files.creatingWorkspace") : t("files.createNewWorkspace")}
       </button>
     </div>
@@ -162,22 +164,43 @@ export function FilesWorkspaceEmpty({
       </div>
       <div className="workspace-empty-actions">
         <button
-          className="primary-button"
+          className="primary-button workspace-action-button"
           disabled={isOpeningWorkspace || isCreatingWorkspace}
           onClick={onOpenWorkspace}
           type="button"
         >
+          <OpenWorkspaceIcon />
           {isOpeningWorkspace ? t("files.opening") : t("files.openFolder")}
         </button>
         <button
-          className="secondary-button"
+          className="secondary-button workspace-action-button"
           disabled={isOpeningWorkspace || isCreatingWorkspace}
           onClick={onCreateWorkspace}
           type="button"
         >
+          <CreateWorkspaceIcon />
           {isCreatingWorkspace ? t("files.creatingWorkspace") : t("files.createNewWorkspace")}
         </button>
       </div>
     </div>
+  );
+}
+
+function OpenWorkspaceIcon(): ReactElement {
+  return (
+    <svg aria-hidden="true" fill="none" height="20" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="20">
+      <path d="M12 7v14" />
+      <path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z" />
+    </svg>
+  );
+}
+
+function CreateWorkspaceIcon(): ReactElement {
+  return (
+    <svg aria-hidden="true" fill="none" height="20" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="20">
+      <path d="M12 7v6" />
+      <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20" />
+      <path d="M9 10h6" />
+    </svg>
   );
 }

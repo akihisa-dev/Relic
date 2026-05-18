@@ -1513,7 +1513,7 @@ describe("App", () => {
 
     await renderApp();
 
-    fireEvent.click(await screen.findByRole("button", { name: "フォルダを開く" }));
+    fireEvent.click(await screen.findByRole("button", { name: "ワークスペースを開く" }));
 
     expect(openWorkspace).toHaveBeenCalledTimes(1);
     expect(await screen.findByText("Notes")).toBeInTheDocument();
