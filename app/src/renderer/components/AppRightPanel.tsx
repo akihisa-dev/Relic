@@ -1,4 +1,4 @@
-import type { Dispatch, MouseEvent as ReactMouseEvent, ReactElement, SetStateAction } from "react";
+import type { Dispatch, MouseEvent as ReactMouseEvent, ReactElement, ReactNode, SetStateAction } from "react";
 
 import type { Backlink } from "../../shared/ipc";
 import type { ResolvedWikiLink } from "../../shared/links";
@@ -10,6 +10,7 @@ import type { RightPanelView } from "../store/uiStore";
 import { fixedMenuPosition } from "./RailNavigation";
 
 interface AppRightPanelProps {
+  actionSlot?: ReactNode;
   backlinks: Backlink[];
   isLoadingBacklinks: boolean;
   isOpen: boolean;
@@ -26,6 +27,7 @@ interface AppRightPanelProps {
 }
 
 export function AppRightPanel({
+  actionSlot,
   backlinks,
   isLoadingBacklinks,
   isOpen,
@@ -53,6 +55,11 @@ export function AppRightPanel({
         className={`right-panel-resize-handle${isResizing ? " right-panel-resize-handle--active" : ""}`}
         onMouseDown={onResizeStart}
       />
+      {actionSlot ? (
+        <div className="right-panel-actions-row">
+          {actionSlot}
+        </div>
+      ) : null}
       <div className={`sidebar-body right-panel-content right-panel-content--${rightPanelView}`}>
       {rightPanelView === "outline" ? (
         outlineHeadings.length > 0 ? (
