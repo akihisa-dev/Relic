@@ -6,12 +6,14 @@ import {
   CHRONICLE_NAME_COLUMN_WIDTH,
   DATE_NAME_COLUMN_WIDTH,
   DATE_SCALES,
+  ROW_HEIGHT,
   TICK_WIDTH,
   buildChartRows,
   buildGuideTicks,
   buildTicks,
   chartsForView,
   chronicleUnitWidth,
+  clamp,
   dateAxisHeightForScale,
   dateOffscreenBarIndicators,
   dateUnitWidth,
@@ -73,6 +75,8 @@ export interface ChronicleViewportState {
   minimapViewport: { leftPercent: number; widthPercent: number };
   visibleEndValue: number;
   visibleStartValue: number;
+  verticalMinimapViewport: { heightPercent: number; topPercent: number };
+  verticalOffscreenIndicators: { bottom: { count: number; targetIndex: number } | null; top: { count: number; targetIndex: number } | null };
 }
 
 export function useChronicleChartModel({
@@ -232,6 +236,53 @@ export function buildChronicleViewportState({
       : { left: null, right: null },
     minimapViewport: minimapViewportRange(axisStart, axisEnd, visibleStartValue, visibleEndValue),
     visibleEndValue,
-    visibleStartValue
+    visibleStartValue,
+    verticalMinimapViewport: { heightPercent: 100, topPercent: 0 },
+    verticalOffscreenIndicators: { bottom: null, top: null }
+  };
+}
+
+export function buildChronicleVerticalViewportState({
+  chartViewportHeight,
+  dateAxisHeight,
+  rowCount,
+  scrollTop
+}: {
+  chartViewportHeight: number;
+  dateAxisHeight: number;
+  rowCount: number;
+  scrollTop: number;
+}): {
+  verticalMinimapViewport: { heightPercent: number; topPercent: number };
+  verticalOffscreenIndicators: { bottom: { count: number; targetIndex: number } | null; top: { count: number; targetIndex: number } | null };
+} {
+  if (rowCount <= 0) {
+    return {
+      verticalMinimapViewport: { heightPercent: 100, topPercent: 0 },
+      verticalOffscreenIndicators: { bottom: null, top: null }
+    };
+  }
+
+  const visibleRowAreaHeight = Math.max(1, chartViewportHeight - dateAxisHeight);
+  const visibleRowCount = Math.max(1, Math.floor(visibleRowAreaHeight / ROW_HEIGHT));
+  const maxStartIndex = Math.max(0, rowCount - visibleRowCount);
+  const visibleStartIndex = clamp(Math.floor(scrollTop / ROW_HEIGHT), 0, maxStartIndex);
+  const visibleEndIndex = Math.min(rowCount - 1, visibleStartIndex + visibleRowCount - 1);
+  const hiddenTopCount = visibleStartIndex;
+  const hiddenBottomCount = Math.max(0, rowCount - visibleEndIndex - 1);
+  const heightPercent = clamp((visibleRowCount / rowCount) * 100, 4, 100);
+  const maxTopPercent = 100 - heightPercent;
+  const topPercent = maxStartIndex === 0 ? 0 : clamp((visibleStartIndex / maxStartIndex) * maxTopPercent, 0, maxTopPercent);
+
+  return {
+    verticalMinimapViewport: { heightPercent, topPercent },
+    verticalOffscreenIndicators: {
+      bottom: hiddenBottomCount > 0
+        ? { count: hiddenBottomCount, targetIndex: Math.min(rowCount - 1, visibleEndIndex + 1) }
+        : null,
+      top: hiddenTopCount > 0
+        ? { count: hiddenTopCount, targetIndex: Math.max(0, visibleStartIndex - visibleRowCount) }
+        : null
+    }
   };
 }

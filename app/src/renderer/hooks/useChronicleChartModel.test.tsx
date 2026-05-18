@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 
 import type { GanttChartEntry, WorkspaceGanttChart } from "../../shared/ipc";
 import { useUiStore } from "../store/uiStore";
-import { useChronicleChartModel } from "./useChronicleChartModel";
+import { buildChronicleVerticalViewportState, useChronicleChartModel } from "./useChronicleChartModel";
 
 function entry(overrides: Partial<GanttChartEntry> = {}): GanttChartEntry {
   return {
@@ -171,6 +171,21 @@ describe("useChronicleChartModel", () => {
 
     await waitFor(() => {
       expect(result.current.statusFilter).toBe("");
+    });
+  });
+
+  it("縦方向の表示範囲と画面外件数を計算する", () => {
+    expect(buildChronicleVerticalViewportState({
+      chartViewportHeight: 194,
+      dateAxisHeight: 42,
+      rowCount: 20,
+      scrollTop: 38 * 5
+    })).toEqual({
+      verticalMinimapViewport: { heightPercent: 20, topPercent: 25 },
+      verticalOffscreenIndicators: {
+        bottom: { count: 11, targetIndex: 9 },
+        top: { count: 5, targetIndex: 1 }
+      }
     });
   });
 });

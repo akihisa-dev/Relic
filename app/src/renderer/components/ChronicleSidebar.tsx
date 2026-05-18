@@ -3,7 +3,7 @@ import type { ReactElement } from "react";
 
 import type { UpdateGanttChartEntryInput, WorkspaceGanttChart } from "../../shared/ipc";
 import { useT } from "../i18n";
-import { buildChronicleViewportState, useChronicleChartModel } from "../hooks/useChronicleChartModel";
+import { buildChronicleVerticalViewportState, buildChronicleViewportState, useChronicleChartModel } from "../hooks/useChronicleChartModel";
 import { useChronicleChartViewport } from "../hooks/useChronicleChartViewport";
 import { useChronicleEntryDrag } from "../hooks/useChronicleEntryDrag";
 import { ChronicleChartGrid } from "./ChronicleChartGrid";
@@ -47,6 +47,17 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdate
     model.unitWidth,
     viewport.chartViewportWidth,
     viewport.scrollLeft
+  ]);
+  const verticalViewportState = useMemo(() => buildChronicleVerticalViewportState({
+    chartViewportHeight: viewport.chartViewportHeight,
+    dateAxisHeight: model.dateAxisHeight,
+    rowCount: model.rows.length,
+    scrollTop: viewport.scrollTop
+  }), [
+    model.dateAxisHeight,
+    model.rows.length,
+    viewport.chartViewportHeight,
+    viewport.scrollTop
   ]);
   const entryDrag = useChronicleEntryDrag({
     activeSource: model.activeSource,
@@ -95,6 +106,8 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdate
         nameColumnWidth={model.nameColumnWidth}
         onChartPointerDown={viewport.startChartPan}
         onChartScroll={viewport.handleChartScroll}
+        onVerticalJump={viewport.scrollToRowIndex}
+        onVerticalMinimapPointerDown={viewport.handleVerticalMinimapPointer}
         onJump={viewport.scrollToTimelineValue}
         onOpenFile={onOpenFile}
         onStartEntryEdit={entryDrag.startEntryEdit}
@@ -103,6 +116,9 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdate
         tickInterval={model.tickInterval}
         timelineWidth={model.timelineWidth}
         unitWidth={model.unitWidth}
+        verticalMinimapRef={viewport.verticalMinimapRef}
+        verticalMinimapViewport={verticalViewportState.verticalMinimapViewport}
+        verticalOffscreenIndicators={verticalViewportState.verticalOffscreenIndicators}
       />
       <div className="chronicle-summary">
         {model.activeChart ? t("chronicle.summary", { count: model.rows.length, source: model.activeChart.source }) : t("chronicle.title")}

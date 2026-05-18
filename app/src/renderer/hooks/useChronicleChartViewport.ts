@@ -3,6 +3,7 @@ import type { PointerEvent, RefObject, UIEvent } from "react";
 
 import type { GanttChartEntry, GanttChartSource, WorkspaceGanttChart } from "../../shared/ipc";
 import {
+  ROW_HEIGHT,
   chronicleNavigationTarget,
   clamp,
   dateNavigationTarget
@@ -20,15 +21,20 @@ interface UseChronicleChartViewportInput {
 
 export interface ChronicleChartViewport {
   chartRef: RefObject<HTMLDivElement | null>;
+  chartViewportHeight: number;
   chartViewportWidth: number;
   handleChartScroll: (event: UIEvent<HTMLDivElement>) => void;
   handleMinimapPointer: (event: PointerEvent<HTMLDivElement>) => void;
+  handleVerticalMinimapPointer: (event: PointerEvent<HTMLDivElement>) => void;
   minimapRef: RefObject<HTMLDivElement | null>;
   scrollLeft: number;
+  scrollToRowIndex: (rowIndex: number) => void;
   scrollToChronicleFocus: () => void;
   scrollToTimelineValue: (value: number) => void;
   scrollToToday: () => void;
+  scrollTop: number;
   startChartPan: (event: PointerEvent<HTMLDivElement>) => void;
+  verticalMinimapRef: RefObject<HTMLDivElement | null>;
 }
 
 export function useChronicleChartViewport({
@@ -41,19 +47,24 @@ export function useChronicleChartViewport({
   unitWidth
 }: UseChronicleChartViewportInput): ChronicleChartViewport {
   const [scrollLeft, setScrollLeft] = useState(0);
+  const [scrollTop, setScrollTop] = useState(0);
+  const [chartViewportHeight, setChartViewportHeight] = useState(420);
   const [chartViewportWidth, setChartViewportWidth] = useState(720);
   const chartRef = useRef<HTMLDivElement | null>(null);
   const minimapRef = useRef<HTMLDivElement | null>(null);
+  const verticalMinimapRef = useRef<HTMLDivElement | null>(null);
   const previousAxisStartRef = useRef<number | null>(null);
   const initialDateScrollKeyRef = useRef<string | null>(null);
   const initialChronicleScrollKeyRef = useRef<string | null>(null);
 
-  const updateChartViewportWidth = useCallback((): void => {
+  const updateChartViewportSize = useCallback((): void => {
     const chartElement = chartRef.current;
     if (!chartElement) return;
 
     const nextWidth = chartElement.clientWidth || chartElement.getBoundingClientRect().width || 720;
+    const nextHeight = chartElement.clientHeight || chartElement.getBoundingClientRect().height || 420;
     setChartViewportWidth(nextWidth);
+    setChartViewportHeight(nextHeight);
   }, []);
 
   const scrollToTimelineValue = useCallback((value: number): void => {
@@ -83,11 +94,12 @@ export function useChronicleChartViewport({
 
   const handleChartScroll = useCallback((event: UIEvent<HTMLDivElement>): void => {
     setScrollLeft(event.currentTarget.scrollLeft);
+    setScrollTop(event.currentTarget.scrollTop);
   }, []);
 
   const startChartPan = useCallback((event: PointerEvent<HTMLDivElement>): void => {
     if (event.button > 0) return;
-    if (event.target instanceof Element && event.target.closest(".chronicle-fill, .chronicle-file-name, .chronicle-offscreen-jump")) return;
+    if (event.target instanceof Element && event.target.closest(".chronicle-fill, .chronicle-file-name, .chronicle-offscreen-jump, .chronicle-vertical-offscreen-jump, .chronicle-vertical-minimap")) return;
 
     const chartElement = event.currentTarget;
     const startClientX = event.clientX;
@@ -156,21 +168,74 @@ export function useChronicleChartViewport({
     window.addEventListener("pointercancel", stop);
   }, [axisEnd, axisStart, scrollToTimelineValue]);
 
+  const scrollToRowIndex = useCallback((rowIndex: number): void => {
+    const chartElement = chartRef.current;
+    if (!chartElement) return;
+
+    const maxScrollTop = Math.max(0, chartElement.scrollHeight - (chartElement.clientHeight || chartViewportHeight));
+    const targetScrollTop = clamp(rowIndex * ROW_HEIGHT, 0, maxScrollTop);
+
+    chartElement.scrollTop = targetScrollTop;
+    setScrollTop(targetScrollTop);
+  }, [chartViewportHeight]);
+
+  const handleVerticalMinimapPointer = useCallback((event: PointerEvent<HTMLDivElement>): void => {
+    if (event.button > 0) return;
+
+    const minimapElement = verticalMinimapRef.current;
+    if (!minimapElement) return;
+
+    const scrollFromClientY = (clientY: number): void => {
+      const chartElement = chartRef.current;
+      if (!chartElement) return;
+
+      const rect = minimapElement.getBoundingClientRect();
+      const ratio = rect.height > 0 ? clamp((clientY - rect.top) / rect.height, 0, 1) : 0;
+      const maxScrollTop = Math.max(0, chartElement.scrollHeight - (chartElement.clientHeight || chartViewportHeight));
+      const nextScrollTop = ratio * maxScrollTop;
+
+      chartElement.scrollTop = nextScrollTop;
+      setScrollTop(nextScrollTop);
+    };
+
+    event.preventDefault();
+    scrollFromClientY(event.clientY);
+
+    if (minimapElement.setPointerCapture) {
+      minimapElement.setPointerCapture(event.pointerId);
+    }
+
+    const move = (moveEvent: globalThis.PointerEvent): void => scrollFromClientY(moveEvent.clientY);
+    const stop = (): void => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", stop);
+      window.removeEventListener("pointercancel", stop);
+
+      if (minimapElement.hasPointerCapture?.(event.pointerId)) {
+        minimapElement.releasePointerCapture(event.pointerId);
+      }
+    };
+
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", stop);
+    window.addEventListener("pointercancel", stop);
+  }, [chartViewportHeight]);
+
   useLayoutEffect(() => {
-    updateChartViewportWidth();
+    updateChartViewportSize();
 
     const chartElement = chartRef.current;
     if (!chartElement) return;
 
     if (typeof ResizeObserver !== "undefined") {
-      const observer = new ResizeObserver(updateChartViewportWidth);
+      const observer = new ResizeObserver(updateChartViewportSize);
       observer.observe(chartElement);
       return () => observer.disconnect();
     }
 
-    window.addEventListener("resize", updateChartViewportWidth);
-    return () => window.removeEventListener("resize", updateChartViewportWidth);
-  }, [activeChart?.id, updateChartViewportWidth]);
+    window.addEventListener("resize", updateChartViewportSize);
+    return () => window.removeEventListener("resize", updateChartViewportSize);
+  }, [activeChart?.id, updateChartViewportSize]);
 
   useLayoutEffect(() => {
     const previousAxisStart = previousAxisStartRef.current;
@@ -213,14 +278,19 @@ export function useChronicleChartViewport({
 
   return {
     chartRef,
+    chartViewportHeight,
     chartViewportWidth,
     handleChartScroll,
     handleMinimapPointer,
+    handleVerticalMinimapPointer,
     minimapRef,
     scrollLeft,
+    scrollToRowIndex,
     scrollToChronicleFocus,
     scrollToTimelineValue,
     scrollToToday,
-    startChartPan
+    scrollTop,
+    startChartPan,
+    verticalMinimapRef
   };
 }

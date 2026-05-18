@@ -1,4 +1,4 @@
-import type { ReactElement } from "react";
+import type { PointerEvent, ReactElement, RefObject } from "react";
 
 import type { GanttChartSource } from "../../shared/ipc";
 import { currentDateDay } from "../chronicleTimeline";
@@ -282,6 +282,78 @@ export function TimelineOffscreenJumpButtons({
           {indicators.right.count} →
         </button>
       ) : null}
+    </div>
+  );
+}
+
+export function VerticalOffscreenJumpButtons({
+  indicators,
+  onJump,
+  t
+}: {
+  indicators: { bottom: { count: number; targetIndex: number } | null; top: { count: number; targetIndex: number } | null };
+  onJump: (rowIndex: number) => void;
+  t: Translator;
+}): ReactElement | null {
+  if (!indicators.top && !indicators.bottom) return null;
+
+  return (
+    <div className="chronicle-vertical-offscreen-jumps">
+      {indicators.top ? (
+        <button
+          aria-label={t("chronicle.offscreenAbove", { count: indicators.top.count })}
+          className="chronicle-vertical-offscreen-jump chronicle-vertical-offscreen-jump--top"
+          onClick={() => onJump(indicators.top?.targetIndex ?? 0)}
+          title={t("chronicle.offscreenAbove", { count: indicators.top.count })}
+          type="button"
+        >
+          ↑ {indicators.top.count}
+        </button>
+      ) : null}
+      {indicators.bottom ? (
+        <button
+          aria-label={t("chronicle.offscreenBelow", { count: indicators.bottom.count })}
+          className="chronicle-vertical-offscreen-jump chronicle-vertical-offscreen-jump--bottom"
+          onClick={() => onJump(indicators.bottom?.targetIndex ?? 0)}
+          title={t("chronicle.offscreenBelow", { count: indicators.bottom.count })}
+          type="button"
+        >
+          {indicators.bottom.count} ↓
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+export function VerticalMinimap({
+  label,
+  minimapRef,
+  onPointerDown,
+  viewport
+}: {
+  label: string;
+  minimapRef: RefObject<HTMLDivElement | null>;
+  onPointerDown: (event: PointerEvent<HTMLDivElement>) => void;
+  viewport: { heightPercent: number; topPercent: number };
+}): ReactElement {
+  return (
+    <div className="chronicle-vertical-minimap">
+      <div
+        aria-label={label}
+        className="chronicle-vertical-minimap-track"
+        onPointerDown={onPointerDown}
+        ref={minimapRef}
+        role="slider"
+        tabIndex={0}
+      >
+        <span
+          className="chronicle-vertical-minimap-window"
+          style={{
+            height: `${viewport.heightPercent}%`,
+            top: `${viewport.topPercent}%`
+          }}
+        />
+      </div>
     </div>
   );
 }

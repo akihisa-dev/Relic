@@ -26,16 +26,22 @@ function chart(source: GanttChartSource = "chronicle"): WorkspaceGanttChart {
   };
 }
 
-function makeDiv({ clientWidth, left = 0, scrollWidth, width = clientWidth }: {
+function makeDiv({ clientHeight = 200, clientWidth, height = clientHeight, left = 0, scrollHeight = clientHeight, scrollWidth, top = 0, width = clientWidth }: {
+  clientHeight?: number;
   clientWidth: number;
+  height?: number;
   left?: number;
+  scrollHeight?: number;
   scrollWidth: number;
+  top?: number;
   width?: number;
 }): HTMLDivElement {
   const element = document.createElement("div");
+  Object.defineProperty(element, "clientHeight", { configurable: true, value: clientHeight });
   Object.defineProperty(element, "clientWidth", { configurable: true, value: clientWidth });
+  Object.defineProperty(element, "scrollHeight", { configurable: true, value: scrollHeight });
   Object.defineProperty(element, "scrollWidth", { configurable: true, value: scrollWidth });
-  element.getBoundingClientRect = () => ({ left, width } as DOMRect);
+  element.getBoundingClientRect = () => ({ height, left, top, width } as DOMRect);
   element.setPointerCapture = vi.fn();
   element.hasPointerCapture = vi.fn().mockReturnValue(true);
   element.releasePointerCapture = vi.fn();
@@ -45,6 +51,7 @@ function makeDiv({ clientWidth, left = 0, scrollWidth, width = clientWidth }: {
 function makePointerEvent<T extends Element>(overrides: Partial<{
   button: number;
   clientX: number;
+  clientY: number;
   currentTarget: T;
   pointerId: number;
   preventDefault: () => void;
@@ -53,6 +60,7 @@ function makePointerEvent<T extends Element>(overrides: Partial<{
   return {
     button: 0,
     clientX: 0,
+    clientY: 0,
     pointerId: 1,
     preventDefault: vi.fn(),
     target: overrides.currentTarget,
@@ -165,5 +173,24 @@ describe("useChronicleChartViewport", () => {
 
     expect(chartElement.scrollLeft).toBe(430);
     expect(hook.result.current.scrollLeft).toBe(430);
+  });
+
+  it("縦minimap pointer操作で行方向へscrollする", () => {
+    const { hook } = renderViewport();
+    const chartElement = makeDiv({ clientHeight: 200, clientWidth: 200, scrollHeight: 1000, scrollWidth: 1000 });
+    const minimapElement = makeDiv({ clientHeight: 100, clientWidth: 12, height: 100, scrollWidth: 12 });
+    (hook.result.current.chartRef as MutableRefObject<HTMLDivElement | null>).current = chartElement;
+    (hook.result.current.verticalMinimapRef as MutableRefObject<HTMLDivElement | null>).current = minimapElement;
+
+    act(() => {
+      hook.result.current.handleVerticalMinimapPointer(makePointerEvent<HTMLDivElement>({
+        clientY: 50,
+        currentTarget: minimapElement,
+        target: minimapElement
+      }));
+    });
+
+    expect(chartElement.scrollTop).toBe(400);
+    expect(hook.result.current.scrollTop).toBe(400);
   });
 });

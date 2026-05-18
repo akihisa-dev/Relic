@@ -20,7 +20,9 @@ import {
   ChronicleAxis,
   DateAxis,
   DateOffscreenJumpButtons,
-  TimelineOffscreenJumpButtons
+  TimelineOffscreenJumpButtons,
+  VerticalMinimap,
+  VerticalOffscreenJumpButtons
 } from "./chronicleChartParts";
 
 export interface ChronicleChartGridProps {
@@ -46,11 +48,16 @@ export interface ChronicleChartGridProps {
     entry: GanttChartEntry,
     kind: GanttChartEntryEditKind
   ) => void;
+  onVerticalJump: (rowIndex: number) => void;
+  onVerticalMinimapPointerDown: (event: PointerEvent<HTMLDivElement>) => void;
   rows: ChartRow[];
   scrollLeft: number;
   tickInterval: number;
   timelineWidth: number;
   unitWidth: number;
+  verticalMinimapRef: RefObject<HTMLDivElement | null>;
+  verticalMinimapViewport: { heightPercent: number; topPercent: number };
+  verticalOffscreenIndicators: { bottom: { count: number; targetIndex: number } | null; top: { count: number; targetIndex: number } | null };
 }
 
 export function ChronicleChartGrid({
@@ -72,11 +79,16 @@ export function ChronicleChartGrid({
   onJump,
   onOpenFile,
   onStartEntryEdit,
+  onVerticalJump,
+  onVerticalMinimapPointerDown,
   rows,
   scrollLeft,
   tickInterval,
   timelineWidth,
-  unitWidth
+  unitWidth,
+  verticalMinimapRef,
+  verticalMinimapViewport,
+  verticalOffscreenIndicators
 }: ChronicleChartGridProps): ReactElement {
   const t = useT();
 
@@ -119,6 +131,17 @@ export function ChronicleChartGrid({
           t={t}
         />
       ) : null}
+      <VerticalOffscreenJumpButtons
+        indicators={verticalOffscreenIndicators}
+        onJump={onVerticalJump}
+        t={t}
+      />
+      <VerticalMinimap
+        label={t("chronicle.verticalMinimap")}
+        minimapRef={verticalMinimapRef}
+        onPointerDown={onVerticalMinimapPointerDown}
+        viewport={verticalMinimapViewport}
+      />
       <div className="chronicle-grid" style={{ width: nameColumnWidth + timelineWidth }}>
         <ChronicleNameColumn
           activeSource={activeSource}

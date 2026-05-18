@@ -65,11 +65,16 @@ function renderGrid(overrides: Partial<ChronicleChartGridProps> = {}) {
     onJump: vi.fn(),
     onOpenFile: vi.fn(),
     onStartEntryEdit: vi.fn(),
+    onVerticalJump: vi.fn(),
+    onVerticalMinimapPointerDown: vi.fn(),
     rows: buildChartRows(entries, activeSource),
     scrollLeft: 0,
     tickInterval,
     timelineWidth: 720,
     unitWidth: activeSource === "date" ? 22 : 36,
+    verticalMinimapRef: createRef<HTMLDivElement>(),
+    verticalMinimapViewport: { heightPercent: 100, topPercent: 0 },
+    verticalOffscreenIndicators: { bottom: null, top: null },
     ...overrides
   };
 
@@ -251,5 +256,27 @@ describe("ChronicleChartGrid", () => {
     renderGrid({ activeChart: null, rows: [] });
 
     expect(screen.getByText("このガントチャートに表示できるファイルはまだありません。")).toHaveClass("frontmatter-field-empty");
+  });
+
+  it("縦方向の画面外件数とミニマップを描画してcallbackへつなぐ", () => {
+    const { container, props } = renderGrid({
+      verticalMinimapViewport: { heightPercent: 24, topPercent: 36 },
+      verticalOffscreenIndicators: {
+        bottom: { count: 42, targetIndex: 20 },
+        top: { count: 8, targetIndex: 0 }
+      }
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "上に8件のファイルがあります" }));
+    fireEvent.click(screen.getByRole("button", { name: "下に42件のファイルがあります" }));
+    fireEvent.pointerDown(screen.getByRole("slider", { name: "縦方向ミニマップ" }));
+
+    expect(props.onVerticalJump).toHaveBeenCalledWith(0);
+    expect(props.onVerticalJump).toHaveBeenCalledWith(20);
+    expect(props.onVerticalMinimapPointerDown).toHaveBeenCalledTimes(1);
+    expect(container.querySelector(".chronicle-vertical-minimap-window")).toHaveStyle({
+      height: "24%",
+      top: "36%"
+    });
   });
 });
