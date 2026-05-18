@@ -15,6 +15,12 @@ const sampleFile2 = {
   path: "別ファイル.md"
 };
 
+const sampleFile3 = {
+  content: "# 第三",
+  name: "第三",
+  path: "第三.md"
+};
+
 function resetStore(): void {
   useEditorStore.setState({
     editorSettings: defaultEditorSettings,
@@ -213,6 +219,43 @@ describe("editorStore", () => {
     state = useEditorStore.getState();
     expect(state.tabs[secondTabId].isPinned).toBe(false);
     expect(state.leftPane.tabIds).toEqual([secondTabId, firstTabId]);
+  });
+
+  it("ピン留めタブは単発close以外の一括closeに巻き込まれない", () => {
+    useEditorStore.getState().openFileInPane("left", sampleFile);
+    useEditorStore.getState().openFileInPane("left", sampleFile2);
+    useEditorStore.getState().openFileInPane("left", sampleFile3);
+
+    let state = useEditorStore.getState();
+    const [firstTabId, secondTabId, thirdTabId] = state.leftPane.tabIds;
+    useEditorStore.getState().toggleTabPinned(secondTabId);
+
+    useEditorStore.getState().closeOtherTabs("left", thirdTabId);
+    state = useEditorStore.getState();
+    expect(state.leftPane.tabIds).toEqual([secondTabId, thirdTabId]);
+    expect(state.tabs[secondTabId]).toBeDefined();
+    expect(state.tabs[firstTabId]).toBeUndefined();
+
+    useEditorStore.getState().openFileInPane("left", sampleFile);
+    state = useEditorStore.getState();
+    const reopenedFirstTabId = state.leftPane.tabIds.find((id) => id !== secondTabId && id !== thirdTabId)!;
+
+    useEditorStore.getState().closeTabsToRight("left", secondTabId);
+    state = useEditorStore.getState();
+    expect(state.leftPane.tabIds).toEqual([secondTabId]);
+    expect(state.tabs[reopenedFirstTabId]).toBeUndefined();
+    expect(state.tabs[thirdTabId]).toBeUndefined();
+
+    useEditorStore.getState().openFileInPane("left", sampleFile);
+    useEditorStore.getState().closeAllTabsInPane("left");
+    state = useEditorStore.getState();
+    expect(state.leftPane.tabIds).toEqual([secondTabId]);
+    expect(state.tabs[secondTabId]).toBeDefined();
+
+    useEditorStore.getState().closeTab("left", secondTabId);
+    state = useEditorStore.getState();
+    expect(state.leftPane.tabIds).toHaveLength(0);
+    expect(state.tabs[secondTabId]).toBeUndefined();
   });
 
   it("分割表示中にタブを左右ペイン間で移動できる", () => {

@@ -129,6 +129,7 @@ describe("PaneView", () => {
     const props = renderPaneView();
 
     expect(within(tabElement("Note")).getByTestId("pane-tab-pin-icon")).toBeInTheDocument();
+    expect(tabElement("Note").firstElementChild).toBe(within(tabElement("Note")).getByTestId("pane-tab-pin-icon"));
     expect(within(tabElement("Second")).queryByTestId("pane-tab-pin-icon")).toBeNull();
 
     fireEvent.click(tabElement("Second"));
