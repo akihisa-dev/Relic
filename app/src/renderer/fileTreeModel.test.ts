@@ -12,7 +12,9 @@ import {
   movableItemsForDestination,
   moveItemsToDestination,
   normalizeDestinationFolder,
+  parseFileTreeDragPayload,
   resolveRenameCommit,
+  serializeFileTreeDragPayload,
   shouldUseSelectedFileTreeItems
 } from "./fileTreeModel";
 
@@ -75,6 +77,18 @@ describe("fileTreeModel", () => {
     expect(shouldUseSelectedFileTreeItems(false, selectedItems)).toBe(false);
     expect(fileTreeOperationItems(node, selectedItems, true)).toEqual(selectedItems);
     expect(fileTreeOperationItems(node, selectedItems, false)).toEqual([{ path: "Root.md", type: "file" }]);
+  });
+
+  it("serializes and parses file tree drag payloads", () => {
+    const items = [
+      { path: "Root.md", type: "file" as const },
+      { path: "Folder", type: "folder" as const }
+    ];
+
+    expect(parseFileTreeDragPayload(serializeFileTreeDragPayload(items))).toEqual(items);
+    expect(parseFileTreeDragPayload(JSON.stringify({ path: "Root.md", type: "file" }))).toEqual([{ path: "Root.md", type: "file" }]);
+    expect(parseFileTreeDragPayload("")).toEqual([]);
+    expect(parseFileTreeDragPayload("{")).toEqual([]);
   });
 
   it("calculates added and child motion paths", () => {

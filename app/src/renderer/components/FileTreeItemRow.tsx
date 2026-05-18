@@ -1,4 +1,4 @@
-import type { Dispatch, MouseEvent, ReactElement, RefObject, SetStateAction } from "react";
+import type { Dispatch, DragEvent, MouseEvent, ReactElement, RefObject, SetStateAction } from "react";
 
 import type { WorkspaceTreeNode } from "../../shared/ipc";
 import { useT } from "../i18n";
@@ -8,6 +8,8 @@ interface FileTreeItemRowProps {
   cancelRename: () => void;
   inputRef: RefObject<HTMLInputElement | null>;
   isAppearing?: boolean;
+  isDragging?: boolean;
+  isDragOver?: boolean;
   isExpanded: boolean;
   isOpen?: boolean;
   isPinned?: boolean;
@@ -17,6 +19,11 @@ interface FileTreeItemRowProps {
   node: WorkspaceTreeNode;
   onActivate: (event: MouseEvent<HTMLButtonElement>) => void;
   onContextMenu: (event: MouseEvent<HTMLButtonElement>) => void;
+  onDragEnd: (event: DragEvent<HTMLButtonElement>) => void;
+  onDragLeave: (event: DragEvent<HTMLButtonElement>) => void;
+  onDragOver: (event: DragEvent<HTMLButtonElement>) => void;
+  onDragStart: (event: DragEvent<HTMLButtonElement>) => void;
+  onDrop: (event: DragEvent<HTMLButtonElement>) => void;
   onStartRename: () => void;
   onTogglePin?: (path: string) => void;
   renameDraft: string;
@@ -29,6 +36,8 @@ export function FileTreeItemRow({
   commitRename,
   inputRef,
   isAppearing,
+  isDragging,
+  isDragOver,
   isExpanded,
   isOpen,
   isPinned,
@@ -38,6 +47,11 @@ export function FileTreeItemRow({
   node,
   onActivate,
   onContextMenu,
+  onDragEnd,
+  onDragLeave,
+  onDragOver,
+  onDragStart,
+  onDrop,
   onStartRename,
   onTogglePin,
   renameDraft,
@@ -50,10 +64,15 @@ export function FileTreeItemRow({
   return (
     <div className="file-tree-row-wrap">
       <button
-        className={`file-tree-row ${node.type}${isOpen ? " open" : ""}${isSelected ? " selected" : ""}${useSelectedItems ? " multi-selected" : ""}${isAppearing ? " file-tree-row--appearing" : ""}${isRemoving ? " file-tree-row--removing" : ""}`}
+        className={`file-tree-row ${node.type}${isOpen ? " open" : ""}${isSelected ? " selected" : ""}${useSelectedItems ? " multi-selected" : ""}${isDragging ? " dragging" : ""}${isDragOver ? " drag-over" : ""}${isAppearing ? " file-tree-row--appearing" : ""}${isRemoving ? " file-tree-row--removing" : ""}`}
         data-node-path={node.path}
         data-node-type={node.type}
-        draggable={false}
+        draggable={!isRenaming}
+        onDragEnd={onDragEnd}
+        onDragLeave={onDragLeave}
+        onDragOver={onDragOver}
+        onDragStart={onDragStart}
+        onDrop={onDrop}
         onContextMenu={onContextMenu}
         onDoubleClick={(e) => {
           e.preventDefault();

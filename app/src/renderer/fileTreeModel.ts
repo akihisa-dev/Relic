@@ -14,6 +14,12 @@ export type FileTreeMoveItem = {
   type: WorkspaceTreeNode["type"];
 };
 
+export const FILE_TREE_DRAG_MIME = "application/x-relic-file-tree-items";
+
+interface FileTreeDragPayload {
+  items: FileTreeMoveItem[];
+}
+
 export interface FileTreeMoveHandlers {
   onMoveFile?: (path: string, destFolder: string) => void;
   onMoveFolder?: (path: string, destFolder: string) => void;
@@ -85,6 +91,23 @@ export function fileTreeOperationItems(
   return useSelectedItems ? selectedItems : [{ path: node.path, type: node.type }];
 }
 
+export function serializeFileTreeDragPayload(items: FileTreeMoveItem[]): string {
+  return JSON.stringify({ items } satisfies FileTreeDragPayload);
+}
+
+export function parseFileTreeDragPayload(value: string): FileTreeMoveItem[] {
+  if (!value) return [];
+
+  try {
+    const parsed: unknown = JSON.parse(value);
+    if (isFileTreeMoveItem(parsed)) return [parsed];
+    if (!isRecord(parsed) || !Array.isArray(parsed.items)) return [];
+    return parsed.items.filter(isFileTreeMoveItem);
+  } catch {
+    return [];
+  }
+}
+
 export function normalizeDestinationFolder(folder: string): string {
   return folder.trim().replace(/\\/g, "/").replace(/^\/+|\/+$/g, "");
 }
@@ -116,6 +139,16 @@ export function moveItemsToDestination(
   const [item] = movableItems;
   if (item.type === "file") handlers.onMoveFile?.(item.path, destinationFolder);
   else handlers.onMoveFolder?.(item.path, destinationFolder);
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function isFileTreeMoveItem(value: unknown): value is FileTreeMoveItem {
+  return isRecord(value)
+    && typeof value.path === "string"
+    && (value.type === "file" || value.type === "folder");
 }
 
 export function contextMenuPosition(x: number, y: number): { x: number; y: number } {

@@ -2296,7 +2296,7 @@ describe("App", () => {
     confirmSpy.mockRestore();
   });
 
-  it("ファイルとフォルダはドラッグ&ドロップで移動しない", async () => {
+  it("ファイルとフォルダはフォルダ行へのドラッグ&ドロップで移動できる", async () => {
     const movedWorkspaceState = {
       ...withWorkspace,
       fileTree: [
@@ -2344,7 +2344,7 @@ describe("App", () => {
       dataTransfer: { effectAllowed: "move", setData: vi.fn() }
     });
 
-    expect(fileRow).not.toHaveClass("dragging");
+    expect(fileRow).toHaveClass("dragging");
 
     fireEvent.drop(archiveRow, {
       dataTransfer: { getData: () => JSON.stringify({ path: "note.md", type: "file" }) }
@@ -2354,7 +2354,9 @@ describe("App", () => {
 
     expect(fileRow).not.toHaveClass("dragging");
 
-    expect(moveMarkdownFile).not.toHaveBeenCalled();
+    await waitFor(() => {
+      expect(moveMarkdownFile).toHaveBeenCalledWith({ destinationFolder: "archive", path: "note.md" });
+    });
 
     fireEvent.dragStart(draftsRow, {
       dataTransfer: { effectAllowed: "move", setData: vi.fn() }
@@ -2363,7 +2365,9 @@ describe("App", () => {
       dataTransfer: { getData: () => JSON.stringify({ path: "drafts", type: "folder" }) }
     });
 
-    expect(moveFolder).not.toHaveBeenCalled();
+    await waitFor(() => {
+      expect(moveFolder).toHaveBeenCalledWith({ destinationFolder: "archive", path: "drafts" });
+    });
   });
 
   it("展開済みフォルダ内の余白へドロップしても移動しない", async () => {
@@ -2605,7 +2609,7 @@ describe("App", () => {
     expect(readMarkdownFile).not.toHaveBeenCalled();
   });
 
-  it("複数選択したファイルとフォルダもドラッグ移動しない", async () => {
+  it("複数選択したファイルとフォルダをドラッグ&ドロップでまとめて移動できる", async () => {
     const movedWorkspaceState = {
       ...withWorkspace,
       fileTree: [
@@ -2659,14 +2663,18 @@ describe("App", () => {
     });
     const payload = setData.mock.calls[0]?.[1] as string | undefined;
 
-    expect(payload).toBeUndefined();
+    expect(payload).toBeDefined();
 
     fireEvent.drop(archiveRow, {
-      dataTransfer: { getData: () => "" }
+      dataTransfer: { getData: () => payload ?? "" }
     });
 
-    expect(moveMarkdownFile).not.toHaveBeenCalled();
-    expect(moveFolder).not.toHaveBeenCalled();
+    await waitFor(() => {
+      expect(moveMarkdownFile).toHaveBeenCalledWith({ destinationFolder: "archive", path: "note.md" });
+    });
+    await waitFor(() => {
+      expect(moveFolder).toHaveBeenCalledWith({ destinationFolder: "archive", path: "drafts" });
+    });
   });
 
   it("複数選択したファイルとフォルダをまとめてゴミ箱に移動できる", async () => {
