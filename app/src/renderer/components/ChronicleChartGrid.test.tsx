@@ -52,6 +52,7 @@ function renderGrid(overrides: Partial<ChronicleChartGridProps> = {}) {
     axisEnd: bounds.axisEnd,
     axisStart: bounds.axisStart,
     chartRef: createRef<HTMLDivElement>(),
+    chartViewportWidth: 720,
     chronicleOffscreenIndicators: { left: null, right: null },
     dateAxisHeight: activeSource === "date" ? 69 : 34,
     dateOffscreenIndicators: { left: null, right: null },
@@ -161,6 +162,7 @@ describe("ChronicleChartGrid", () => {
       activeSource: "date",
       axisEnd: day("2026-06-30"),
       axisStart,
+      chartViewportWidth: 720,
       scrollLeft: 220,
       timelineWidth: 1342
     });
@@ -174,6 +176,41 @@ describe("ChronicleChartGrid", () => {
     expect(monthLabel).toHaveTextContent("05");
     expect(monthLabel).toHaveStyle({ transform: "translateX(226px)" });
     expect(dayLabel).toBeNull();
+  });
+
+  it("dateの長期間表示では画面外の日単位DOMを描画しない", () => {
+    const axisStart = day("2020-01-01");
+    const axisEnd = day("2030-12-31");
+    const dateChart = chart({
+      entries: [
+        entry({
+          dateKind: "planned",
+          endLabel: "2026-05-20",
+          endValue: day("2026-05-20"),
+          fileName: "実装タスク",
+          path: "tasks/implementation.md",
+          startLabel: "2026-05-01",
+          startValue: day("2026-05-01")
+        })
+      ],
+      id: "date",
+      name: "date",
+      source: "date"
+    });
+    const { container } = renderGrid({
+      activeChart: dateChart,
+      activeSource: "date",
+      axisEnd,
+      axisStart,
+      chartViewportWidth: 720,
+      scrollLeft: (day("2026-05-01") - axisStart) * 22,
+      timelineWidth: (axisEnd - axisStart + 1) * 22
+    });
+    const dayCells = container.querySelectorAll(".chronicle-axis--date .chronicle-axis-row:nth-child(3) .chronicle-axis-cell");
+    const guideLines = container.querySelectorAll(".chronicle-guide-line");
+
+    expect(dayCells.length).toBeLessThan(80);
+    expect(guideLines.length).toBeLessThan(80);
   });
 
   it("active chartなしでは既存empty表示を出す", () => {
