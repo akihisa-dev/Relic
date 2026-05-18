@@ -606,17 +606,6 @@
   cursor: grabbing;
 }
 
-.graph-svg--large .graph-edge,
-.graph-svg--large .graph-node,
-.graph-svg--large .graph-label {
-  filter: none;
-  transition: none;
-}
-
-.graph-svg--large .graph-node {
-  animation: none;
-}
-
 .graph-edge {
   filter: drop-shadow(0 0 1px color-mix(in srgb, var(--graph-edge) 34%, transparent));
   stroke: var(--graph-edge);
@@ -756,6 +745,18 @@
   fill-opacity: 0.92;
   stroke: var(--graph-node-stroke);
   stroke-width: 2.2;
+}
+
+.graph-svg--large .graph-edge:not(.graph-edge--selected),
+.graph-svg--large .graph-label {
+  filter: none;
+  transition: none;
+}
+
+.graph-svg--large .graph-node:not(.graph-node--selected):not(.graph-node--focused):not(.graph-node--related):not(.graph-node--motion) {
+  animation: none;
+  filter: none;
+  transition: none;
 }
 
 @keyframes graph-node-breathe {

@@ -3,7 +3,8 @@ import type { MutableRefObject } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { WorkspaceGraphEdge, WorkspaceGraphNode } from "../../shared/ipc";
-import { GRAPH_LIVE_SIMULATION_NODE_LIMIT, type GraphForceSettings } from "../graphLayout";
+import { GRAPH_WORKER_SIMULATION_NODE_THRESHOLD, type GraphForceSettings, type GraphSimPoint } from "../graphLayout";
+import type { GraphSimulationWorkerResponse } from "../graphSimulationWorkerTypes";
 import { useGraphSimulation } from "./useGraphSimulation";
 
 const nodes: WorkspaceGraphNode[] = [
@@ -42,14 +43,36 @@ function renderSimulation(overrides: Partial<Parameters<typeof useGraphSimulatio
 
 describe("useGraphSimulation", () => {
   let frameCallbacks: FrameRequestCallback[];
+  let workerInstances: MockGraphSimulationWorker[];
+
+  class MockGraphSimulationWorker {
+    onerror: ((event: ErrorEvent) => void) | null = null;
+    onmessage: ((event: MessageEvent<GraphSimulationWorkerResponse>) => void) | null = null;
+    postMessage = vi.fn();
+    terminate = vi.fn();
+
+    constructor() {
+      workerInstances.push(this);
+    }
+
+    emitResponse(points: GraphSimPoint[], runId = 1): void {
+      this.onmessage?.({ data: { points, runId } } as MessageEvent<GraphSimulationWorkerResponse>);
+    }
+
+    emitError(): void {
+      this.onerror?.(new ErrorEvent("error"));
+    }
+  }
 
   beforeEach(() => {
     frameCallbacks = [];
+    workerInstances = [];
     vi.stubGlobal("requestAnimationFrame", vi.fn((callback: FrameRequestCallback) => {
       frameCallbacks.push(callback);
       return frameCallbacks.length;
     }));
     vi.stubGlobal("cancelAnimationFrame", vi.fn());
+    vi.stubGlobal("Worker", undefined);
   });
 
   afterEach(() => {
@@ -161,8 +184,9 @@ describe("useGraphSimulation", () => {
     expect(after?.y).toBe(before?.y);
   });
 
-  it("大規模グラフでは常時RAF simulationを開始しない", async () => {
-    const manyNodes = Array.from({ length: GRAPH_LIVE_SIMULATION_NODE_LIMIT + 1 }, (_, index) => ({
+  it("大規模グラフではworkerへsimulation tickを依頼し、返却pointsを反映する", async () => {
+    vi.stubGlobal("Worker", MockGraphSimulationWorker);
+    const manyNodes = Array.from({ length: GRAPH_WORKER_SIMULATION_NODE_THRESHOLD + 1 }, (_, index) => ({
       folder: "",
       name: `N${index}`,
       path: `N${index}.md`,
@@ -174,6 +198,74 @@ describe("useGraphSimulation", () => {
     await waitFor(() => {
       expect(hook.result.current.points).toHaveLength(manyNodes.length);
     });
-    expect(window.requestAnimationFrame).not.toHaveBeenCalled();
+
+    act(() => {
+      frameCallbacks[0]?.(0);
+    });
+
+    expect(workerInstances).toHaveLength(1);
+    expect(workerInstances[0].postMessage).toHaveBeenCalledWith(expect.objectContaining({
+      edges: [],
+      forceSettings,
+      pinnedPath: null,
+      runId: 1
+    }));
+
+    const nextPoints = hook.result.current.points.map((point, index) => index === 0
+      ? { ...point, x: point.x + 10 }
+      : point
+    );
+    act(() => {
+      workerInstances[0].emitResponse(nextPoints, 1);
+    });
+
+    expect(hook.result.current.points[0].x).toBe(nextPoints[0].x);
+  });
+
+  it("worker error後はmain-thread simulationへfallbackする", async () => {
+    vi.stubGlobal("Worker", MockGraphSimulationWorker);
+    const manyNodes = Array.from({ length: GRAPH_WORKER_SIMULATION_NODE_THRESHOLD + 1 }, (_, index) => ({
+      folder: "",
+      name: `N${index}`,
+      path: `N${index}.md`,
+      tags: []
+    }));
+
+    const { hook } = renderSimulation({ edges: [], nodes: manyNodes });
+
+    await waitFor(() => {
+      expect(hook.result.current.points).toHaveLength(manyNodes.length);
+    });
+    act(() => {
+      frameCallbacks[0]?.(0);
+      workerInstances[0].emitError();
+    });
+    const beforeFallback = hook.result.current.points;
+
+    act(() => {
+      frameCallbacks[1]?.(16);
+    });
+
+    expect(workerInstances[0].terminate).toHaveBeenCalled();
+    expect(hook.result.current.points).not.toBe(beforeFallback);
+  });
+
+  it("unmount時にworkerをterminateする", async () => {
+    vi.stubGlobal("Worker", MockGraphSimulationWorker);
+    const manyNodes = Array.from({ length: GRAPH_WORKER_SIMULATION_NODE_THRESHOLD + 1 }, (_, index) => ({
+      folder: "",
+      name: `N${index}`,
+      path: `N${index}.md`,
+      tags: []
+    }));
+
+    const { hook } = renderSimulation({ edges: [], nodes: manyNodes });
+
+    await waitFor(() => {
+      expect(workerInstances).toHaveLength(1);
+    });
+    hook.unmount();
+
+    expect(workerInstances[0].terminate).toHaveBeenCalled();
   });
 });

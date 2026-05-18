@@ -3,11 +3,17 @@ import type { MutableRefObject } from "react";
 
 import type { WorkspaceGraphEdge, WorkspaceGraphNode } from "../../shared/ipc";
 import {
-  GRAPH_LIVE_SIMULATION_NODE_LIMIT,
+  GRAPH_SIMULATION_THROTTLE_FRAME_INTERVAL,
+  GRAPH_SIMULATION_THROTTLE_NODE_THRESHOLD,
+  GRAPH_WORKER_SIMULATION_NODE_THRESHOLD,
   layoutGraph,
   tickGraphSimulation
 } from "../graphLayout";
 import type { GraphForceSettings, GraphLayoutMode, GraphSimPoint } from "../graphLayout";
+import type {
+  GraphSimulationWorkerRequest,
+  GraphSimulationWorkerResponse
+} from "../graphSimulationWorkerTypes";
 
 interface UseGraphSimulationInput {
   edges: WorkspaceGraphEdge[];
@@ -22,6 +28,24 @@ export interface GraphSimulationState {
   points: GraphSimPoint[];
   pointsRef: MutableRefObject<GraphSimPoint[]>;
   setPoints: (points: GraphSimPoint[]) => void;
+}
+
+function createGraphSimulationWorker(): Worker | null {
+  if (typeof Worker === "undefined") return null;
+
+  try {
+    return new Worker(new URL("../workers/graphSimulationWorker.ts", import.meta.url), {
+      type: "module"
+    });
+  } catch {
+    return null;
+  }
+}
+
+function graphSimulationFrameInterval(nodeCount: number): number {
+  return nodeCount > GRAPH_SIMULATION_THROTTLE_NODE_THRESHOLD
+    ? GRAPH_SIMULATION_THROTTLE_FRAME_INTERVAL
+    : 1;
 }
 
 export function useGraphSimulation({
@@ -62,9 +86,32 @@ export function useGraphSimulation({
 
   useEffect(() => {
     if (nodes.length === 0) return;
-    if (nodes.length > GRAPH_LIVE_SIMULATION_NODE_LIMIT) return;
 
     let frameId = 0;
+    let frameCount = 0;
+    let isActive = true;
+    let latestRunId = 0;
+    let workerBusy = false;
+    let worker = nodes.length > GRAPH_WORKER_SIMULATION_NODE_THRESHOLD
+      ? createGraphSimulationWorker()
+      : null;
+    const frameInterval = graphSimulationFrameInterval(nodes.length);
+
+    if (worker) {
+      worker.onmessage = (event: MessageEvent<GraphSimulationWorkerResponse>) => {
+        if (!isActive) return;
+        workerBusy = false;
+        if (event.data.runId !== latestRunId) return;
+        if (pauseSimulationRef.current) return;
+        setPoints(event.data.points);
+      };
+      worker.onerror = () => {
+        if (!isActive) return;
+        worker?.terminate();
+        worker = null;
+        workerBusy = false;
+      };
+    }
 
     function tick(): void {
       if (pauseSimulationRef.current) {
@@ -72,19 +119,41 @@ export function useGraphSimulation({
         return;
       }
 
-      const nextPoints = tickGraphSimulation(
-        pointsRef.current,
-        edges,
-        forceSettings,
-        pinnedPathRef.current
-      );
-      setPoints(nextPoints);
+      frameCount += 1;
+      if (frameCount % frameInterval === 0) {
+        if (worker) {
+          if (!workerBusy) {
+            latestRunId += 1;
+            workerBusy = true;
+            const request: GraphSimulationWorkerRequest = {
+              edges,
+              forceSettings,
+              pinnedPath: pinnedPathRef.current,
+              points: pointsRef.current,
+              runId: latestRunId
+            };
+            worker.postMessage(request);
+          }
+        } else {
+          const nextPoints = tickGraphSimulation(
+            pointsRef.current,
+            edges,
+            forceSettings,
+            pinnedPathRef.current
+          );
+          setPoints(nextPoints);
+        }
+      }
 
       frameId = window.requestAnimationFrame(tick);
     }
 
     frameId = window.requestAnimationFrame(tick);
-    return () => window.cancelAnimationFrame(frameId);
+    return () => {
+      isActive = false;
+      window.cancelAnimationFrame(frameId);
+      worker?.terminate();
+    };
   }, [edges, forceSettings, nodes.length, pauseSimulationRef, pinnedPathRef]);
 
   return {
