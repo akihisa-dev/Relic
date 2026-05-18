@@ -11,18 +11,22 @@
   min-width: 0;
   overflow: hidden;
   position: relative;
+  --main-area-actions-width: 136px;
 }
 
 .main-area-actions {
   align-items: center;
-  background: transparent;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
   display: flex;
   gap: 4px;
+  justify-content: flex-end;
   min-height: 35px;
-  padding: 0 8px 0 0;
+  padding: 0 8px;
   position: absolute;
   right: 0;
   top: 0;
+  width: var(--main-area-actions-width);
   z-index: 18;
 }
 
@@ -326,6 +330,11 @@
   overflow-x: auto;
   padding: 0 8px;
   position: relative;
+}
+
+.panes-container:not(.panes-container--split) .pane-tab-bar,
+.panes-container--split .pane:last-child .pane-tab-bar {
+  padding-right: calc(var(--main-area-actions-width) + 8px);
 }
 
 .main-area-actions .toolbar-btn {
