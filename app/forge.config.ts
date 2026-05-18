@@ -4,6 +4,7 @@ import { VitePlugin } from "@electron-forge/plugin-vite";
 
 const config = {
   packagerConfig: {
+    asar: true,
     appBundleId: "app.relic.desktop",
     icon: "assets/icon",
     name: "Relic",
