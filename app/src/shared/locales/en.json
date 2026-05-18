@@ -52,6 +52,7 @@
   "chronicle.searchPlaceholder": "File name, path, or value",
   "chronicle.resizeEnd": "Resize bar end",
   "chronicle.resizeStart": "Resize bar start",
+  "chronicle.refreshOrder": "Refresh sort order",
   "chronicle.source": "Chart type",
   "chronicle.summary": "{{source}} / {{count}} files",
   "chronicle.title": "Charts",

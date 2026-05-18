@@ -23,6 +23,7 @@ function renderToolbar(overrides: Partial<ChronicleToolbarProps> = {}) {
     activeSource: "chronicle",
     availableCharts: [chronicleChart, dateChart],
     query: "",
+    refreshRowOrder: vi.fn(),
     scrollToToday: vi.fn(),
     selectChart: vi.fn(),
     setQuery: vi.fn(),
@@ -53,10 +54,12 @@ describe("ChronicleToolbar", () => {
     fireEvent.click(screen.getByRole("button", { name: "date" }));
     fireEvent.change(screen.getByPlaceholderText("ファイル名・パス・値"), { target: { value: "鎌倉" } });
     fireEvent.change(screen.getByDisplayValue("開始順（昇順）"), { target: { value: "name-desc" } });
+    fireEvent.click(screen.getByRole("button", { name: "並び順を更新" }));
 
     expect(props.selectChart).toHaveBeenCalledWith(expect.objectContaining({ id: "date" }));
     expect(props.setQuery).toHaveBeenCalledWith("鎌倉");
     expect(props.setSortKey).toHaveBeenCalledWith("name-desc");
+    expect(props.refreshRowOrder).toHaveBeenCalledTimes(1);
     expect(container.querySelector(".chronicle-actions")).toBeNull();
   });
 

@@ -62,6 +62,7 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdate
         activeSource={model.activeSource}
         availableCharts={model.availableCharts}
         query={model.query}
+        refreshRowOrder={model.refreshRowOrder}
         scrollToToday={viewport.scrollToToday}
         selectChart={model.selectChart}
         setQuery={model.setQuery}

@@ -118,7 +118,7 @@
   border-bottom: 1px solid var(--border);
   display: grid;
   gap: 10px;
-  grid-template-columns: auto minmax(160px, 220px) minmax(160px, 220px) minmax(130px, 190px) auto;
+  grid-template-columns: auto minmax(160px, 220px) minmax(160px, 220px) 28px minmax(130px, 190px) auto;
   justify-content: start;
   min-height: 40px;
   padding: 5px 12px;
@@ -197,6 +197,25 @@
 .chronicle-search input:focus {
   border-color: var(--accent);
   outline: none;
+}
+
+.chronicle-icon-button {
+  align-items: center;
+  background: var(--bg);
+  border: 1px solid var(--border-soft);
+  border-radius: 6px;
+  color: var(--text-2);
+  cursor: pointer;
+  display: inline-flex;
+  height: 26px;
+  justify-content: center;
+  padding: 0;
+  width: 28px;
+}
+
+.chronicle-icon-button:hover {
+  background: var(--hover);
+  color: var(--text);
 }
 
 .graph-sidebar {
@@ -993,7 +1012,7 @@
   min-height: 0;
   min-width: 0;
   overflow-x: auto;
-  overflow-y: hidden;
+  overflow-y: auto;
   position: relative;
   isolation: isolate;
 }
