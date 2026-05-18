@@ -1,8 +1,15 @@
-import type { MouseEvent, ReactElement } from "react";
+import { useState } from "react";
+import type { DragEvent, MouseEvent, ReactElement } from "react";
 
 import type { WorkspaceTreeNode } from "../../shared/ipc";
 import {
   childMotionPathsForAppearingFolder,
+  FILE_TREE_DRAG_MIME,
+  fileTreeOperationItems,
+  movableItemsForDestination,
+  moveItemsToDestination,
+  parseFileTreeDragPayload,
+  serializeFileTreeDragPayload,
   shouldUseSelectedFileTreeItems,
   type FileTreeExpansionAction,
   type FileTreeExpansionRequest,
@@ -96,6 +103,8 @@ export function FileTreeItem({
   const isSelected = selectedPaths.has(node.path);
   const isOpen = node.type === "file" && openFilePaths?.has(node.path);
   const useSelectedItems = shouldUseSelectedFileTreeItems(isSelected, selectedItems);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
 
   const openNode = (): void => {
     closeContextMenu();
@@ -128,6 +137,65 @@ export function FileTreeItem({
     openContextMenu(event.clientX, event.clientY);
   };
 
+  const dragItemsForNode = (): FileTreeMoveItem[] => (
+    fileTreeOperationItems(node, selectedItems, useSelectedItems)
+  );
+
+  const handleDragStart = (event: DragEvent<HTMLButtonElement>): void => {
+    if (isRenaming) {
+      event.preventDefault();
+      return;
+    }
+
+    const items = dragItemsForNode();
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData(FILE_TREE_DRAG_MIME, serializeFileTreeDragPayload(items));
+    setIsDragging(true);
+  };
+
+  const handleDragEnd = (): void => {
+    setIsDragging(false);
+    setIsDragOver(false);
+  };
+
+  const draggedItemsFromEvent = (event: DragEvent<HTMLButtonElement>): FileTreeMoveItem[] => (
+    parseFileTreeDragPayload(event.dataTransfer.getData(FILE_TREE_DRAG_MIME))
+  );
+
+  const canDropOnNode = (event: DragEvent<HTMLButtonElement>): boolean => {
+    if (node.type !== "folder") return false;
+    const draggedItems = draggedItemsFromEvent(event);
+    if (draggedItems.length > 0) {
+      return movableItemsForDestination(draggedItems, node.path).length > 0;
+    }
+
+    return Array.from(event.dataTransfer.types).includes(FILE_TREE_DRAG_MIME);
+  };
+
+  const handleDragOver = (event: DragEvent<HTMLButtonElement>): void => {
+    if (!canDropOnNode(event)) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (): void => {
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (event: DragEvent<HTMLButtonElement>): void => {
+    setIsDragOver(false);
+    if (node.type !== "folder") return;
+
+    const items = draggedItemsFromEvent(event);
+    if (movableItemsForDestination(items, node.path).length === 0) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    setIsExpanded(true);
+    moveItemsToDestination(items, node.path, { onMoveFile, onMoveFolder, onMoveItems });
+  };
+
   return (
     <li className="file-tree-item">
       <FileTreeItemRow
@@ -135,6 +203,8 @@ export function FileTreeItem({
         commitRename={commitRename}
         inputRef={inputRef}
         isAppearing={isAppearing}
+        isDragging={isDragging}
+        isDragOver={isDragOver}
         isExpanded={isExpanded}
         isOpen={isOpen}
         isPinned={isPinned}
@@ -144,6 +214,11 @@ export function FileTreeItem({
         node={node}
         onActivate={activateNode}
         onContextMenu={openContextMenuForNode}
+        onDragEnd={handleDragEnd}
+        onDragLeave={handleDragLeave}
+        onDragOver={handleDragOver}
+        onDragStart={handleDragStart}
+        onDrop={handleDrop}
         onStartRename={startRename}
         onTogglePin={onTogglePin}
         renameDraft={renameDraft}
