@@ -2,7 +2,7 @@ import { Fragment } from "react";
 import type { CSSProperties, KeyboardEvent, PointerEvent, ReactElement } from "react";
 
 import type { WorkspaceGraphEdge } from "../../shared/ipc";
-import type { GraphPoint } from "../graphLayout";
+import { GRAPH_VISIBLE_LABEL_NODE_LIMIT, type GraphPoint } from "../graphLayout";
 import type { GraphGroup } from "../store/graphStore";
 
 export function GraphArrowMarkers(): ReactElement {
@@ -141,6 +141,12 @@ export function GraphNodeLayer({
           isMotionNode && isMotionAfterglow ? "graph-node--motion-afterglow" : ""
         ].filter(Boolean).join(" ");
         const labelClassName = focusedPath && !isRelated ? "graph-label graph-label--dimmed" : "graph-label";
+        const shouldShowLabel = showLabels && (
+          points.length <= GRAPH_VISIBLE_LABEL_NODE_LIMIT ||
+          isSelected ||
+          isFocused ||
+          (focusedPath !== null && isRelated)
+        );
         const nodeStyle: CSSProperties = {
           animationDelay: `${-(index % 9) * 0.44}s`,
           ...(group ? { fill: group.color } : {})
@@ -180,7 +186,7 @@ export function GraphNodeLayer({
               r={radius}
               style={nodeStyle}
             />
-            {showLabels ? (
+            {shouldShowLabel ? (
               <text className={labelClassName} style={{ opacity: labelOpacity }} x={point.x + radius + 5} y={point.y + 4}>{point.name}</text>
             ) : null}
           </g>

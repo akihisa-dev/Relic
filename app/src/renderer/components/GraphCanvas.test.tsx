@@ -3,7 +3,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import type { RenderResult } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
-import type { GraphPoint } from "../graphLayout";
+import { GRAPH_HEIGHT, GRAPH_WIDTH, type GraphPoint } from "../graphLayout";
 import { GraphCanvas, type GraphCanvasProps } from "./GraphCanvas";
 
 const points: GraphPoint[] = [
@@ -45,7 +45,7 @@ function makeGraphCanvasProps(overrides: Partial<GraphCanvasProps> = {}): GraphC
     showArrows: false,
     showLabels: true,
     svgRef: createRef<SVGSVGElement>(),
-    viewBox: { height: 520, width: 720, x: 0, y: 0 },
+    viewBox: { height: GRAPH_HEIGHT, width: GRAPH_WIDTH, x: 0, y: 0 },
     ...overrides
   };
 }
@@ -85,6 +85,23 @@ describe("GraphCanvas", () => {
     expect(container.querySelector("marker#graph-arrow")).toBeInTheDocument();
     expect(container.querySelector("marker#graph-arrow-selected")).toBeInTheDocument();
     expect(container.querySelector("line.graph-edge")).toHaveAttribute("marker-end", "url(#graph-arrow-selected)");
+  });
+
+  it("大規模グラフでは軽量表示classを付ける", () => {
+    const manyPoints = Array.from({ length: 221 }, (_, index): GraphPoint => ({
+      degree: 0,
+      folder: "",
+      incoming: 0,
+      name: `N${index}`,
+      outgoing: 0,
+      path: `N${index}.md`,
+      tags: [],
+      x: index,
+      y: index
+    }));
+    const { container } = renderGraphCanvas({ points: manyPoints });
+
+    expect(container.querySelector("svg.graph-svg")).toHaveClass("graph-svg--large");
   });
 
   it("selected、focused、related、dimmedのnode classを既存通り付ける", () => {

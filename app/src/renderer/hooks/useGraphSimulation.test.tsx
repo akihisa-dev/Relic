@@ -3,7 +3,7 @@ import type { MutableRefObject } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { WorkspaceGraphEdge, WorkspaceGraphNode } from "../../shared/ipc";
-import type { GraphForceSettings } from "../graphLayout";
+import { GRAPH_LIVE_SIMULATION_NODE_LIMIT, type GraphForceSettings } from "../graphLayout";
 import { useGraphSimulation } from "./useGraphSimulation";
 
 const nodes: WorkspaceGraphNode[] = [
@@ -159,5 +159,21 @@ describe("useGraphSimulation", () => {
     const after = hook.result.current.points.find((point) => point.path === "A.md");
     expect(after?.x).toBe(before?.x);
     expect(after?.y).toBe(before?.y);
+  });
+
+  it("大規模グラフでは常時RAF simulationを開始しない", async () => {
+    const manyNodes = Array.from({ length: GRAPH_LIVE_SIMULATION_NODE_LIMIT + 1 }, (_, index) => ({
+      folder: "",
+      name: `N${index}`,
+      path: `N${index}.md`,
+      tags: []
+    }));
+
+    const { hook } = renderSimulation({ edges: [], nodes: manyNodes });
+
+    await waitFor(() => {
+      expect(hook.result.current.points).toHaveLength(manyNodes.length);
+    });
+    expect(window.requestAnimationFrame).not.toHaveBeenCalled();
   });
 });
