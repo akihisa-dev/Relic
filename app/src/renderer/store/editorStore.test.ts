@@ -196,6 +196,25 @@ describe("editorStore", () => {
     expect(state.leftPane.activeTabId).toBe(secondTabId);
   });
 
+  it("タブをピン留めすると左側に固定し、解除すると通常タブへ戻す", () => {
+    useEditorStore.getState().openFileInPane("left", sampleFile);
+    useEditorStore.getState().openFileInPane("left", sampleFile2);
+
+    const [firstTabId, secondTabId] = useEditorStore.getState().leftPane.tabIds;
+
+    useEditorStore.getState().toggleTabPinned(secondTabId);
+
+    let state = useEditorStore.getState();
+    expect(state.tabs[secondTabId].isPinned).toBe(true);
+    expect(state.leftPane.tabIds).toEqual([secondTabId, firstTabId]);
+
+    useEditorStore.getState().toggleTabPinned(secondTabId);
+
+    state = useEditorStore.getState();
+    expect(state.tabs[secondTabId].isPinned).toBe(false);
+    expect(state.leftPane.tabIds).toEqual([secondTabId, firstTabId]);
+  });
+
   it("分割表示中にタブを左右ペイン間で移動できる", () => {
     useEditorStore.getState().openFileInPane("left", sampleFile);
     useEditorStore.getState().openFileInPane("left", sampleFile2);

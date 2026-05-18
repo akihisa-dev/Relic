@@ -62,7 +62,7 @@ export function PaneTabContextMenu({
               {t("files.duplicate")}
             </button>
           ) : null}
-          {contextTabIsFile && onTogglePinTab ? (
+          {onTogglePinTab ? (
             <button
               className="tab-context-menu-item tab-context-menu-item--icon"
               onClick={() => {

@@ -25,9 +25,10 @@ export function openFileTabState(
   const paneState = state[paneKey];
 
   if (existing) {
+    const nextPane = activateTab(ensureTabInPane(paneState, existing.id), existing.id);
     return {
       focusedPane: pane,
-      [paneKey]: activateTab(ensureTabInPane(paneState, existing.id), existing.id)
+      [paneKey]: reorderPinnedTabs(nextPane, state.tabs)
     };
   }
 
@@ -58,10 +59,12 @@ export function openPanelTabState(
     ? state.tabs
     : { ...state.tabs, [id]: { id, kind: "panel" as const, name, panel } satisfies PanelTab };
 
+  const nextPane = activateTab(ensureTabInPane(paneState, id), id);
+
   return {
     focusedPane: pane,
     tabs: nextTabs,
-    [paneKey]: activateTab(ensureTabInPane(paneState, id), id)
+    [paneKey]: reorderPinnedTabs(nextPane, nextTabs)
   };
 }
 
@@ -78,10 +81,12 @@ export function openGanttTabState(
     ? { ...state.tabs, [id]: { ...existing, name: chart.name } }
     : { ...state.tabs, [id]: { chartId: chart.id, id, kind: "gantt" as const, name: chart.name } satisfies GanttTab };
 
+  const nextPane = activateTab(ensureTabInPane(paneState, id), id);
+
   return {
     focusedPane: pane,
     tabs: nextTabs,
-    [paneKey]: activateTab(ensureTabInPane(paneState, id), id)
+    [paneKey]: reorderPinnedTabs(nextPane, nextTabs)
   };
 }
 
@@ -163,14 +168,16 @@ export function toggleSplitState(state: EditorStoreModelState): Partial<EditorSt
         ? lastRightActiveId
         : state.leftPane.activeTabId;
 
+    const nextLeftPane = {
+      activeTabId: newActiveId,
+      history: [...state.leftPane.history, ...state.rightPane.history],
+      tabIds: mergedTabIds
+    };
+
     return {
       isSplit: false,
       focusedPane: "left",
-      leftPane: {
-        activeTabId: newActiveId,
-        history: [...state.leftPane.history, ...state.rightPane.history],
-        tabIds: mergedTabIds
-      },
+      leftPane: reorderPinnedTabs(nextLeftPane, state.tabs),
       rightPane: emptyPane()
     };
   }
@@ -297,33 +304,55 @@ export function moveTabState(
     .filter((id) => nextToIds.includes(id));
 
   if (fromPane === toPane) {
+    const nextPane = {
+      activeTabId: tabId,
+      history: [...fromState.history.filter((id) => id !== tabId), tabId],
+      tabIds: nextToIds
+    };
+
     return {
       focusedPane: toPane,
-      [toKey]: {
-        activeTabId: tabId,
-        history: [...fromState.history.filter((id) => id !== tabId), tabId],
-        tabIds: nextToIds
-      }
+      [toKey]: reorderPinnedTabs(nextPane, state.tabs)
     };
   }
 
+  const nextFromPane = {
+    activeTabId: nextFromActive,
+    history: nextFromHistory,
+    tabIds: nextFromIds
+  };
+  const nextToPane = {
+    activeTabId: tabId,
+    history: nextToHistory,
+    tabIds: nextToIds
+  };
+
   return {
     focusedPane: toPane,
-    [fromKey]: {
-      activeTabId: nextFromActive,
-      history: nextFromHistory,
-      tabIds: nextFromIds
-    },
-    [toKey]: {
-      activeTabId: tabId,
-      history: nextToHistory,
-      tabIds: nextToIds
-    }
+    [fromKey]: reorderPinnedTabs(nextFromPane, state.tabs),
+    [toKey]: reorderPinnedTabs(nextToPane, state.tabs)
   };
 }
 
 export function closeAllTabsState(): Pick<EditorStoreModelState, "leftPane" | "rightPane" | "tabs"> {
   return { tabs: {}, leftPane: emptyPane(), rightPane: emptyPane() };
+}
+
+export function toggleTabPinnedState(
+  state: EditorStoreModelState,
+  tabId: string
+): Partial<EditorStoreModelState> | EditorStoreModelState {
+  const tab = state.tabs[tabId];
+  if (!tab) return state;
+
+  const nextTab = { ...tab, isPinned: !tab.isPinned } satisfies Tab;
+  const nextTabs = { ...state.tabs, [tabId]: nextTab };
+
+  return {
+    tabs: nextTabs,
+    leftPane: reorderPinnedTabs(state.leftPane, nextTabs),
+    rightPane: reorderPinnedTabs(state.rightPane, nextTabs)
+  };
 }
 
 export function activateTab(pane: PaneState, tabId: string): PaneState {
@@ -340,6 +369,16 @@ export function ensureTabInPane(pane: PaneState, tabId: string): PaneState {
   return {
     ...pane,
     tabIds: [...pane.tabIds, tabId]
+  };
+}
+
+function reorderPinnedTabs(pane: PaneState, tabs: Record<string, Tab>): PaneState {
+  return {
+    ...pane,
+    tabIds: [
+      ...pane.tabIds.filter((id) => tabs[id]?.isPinned),
+      ...pane.tabIds.filter((id) => !tabs[id]?.isPinned)
+    ]
   };
 }
 

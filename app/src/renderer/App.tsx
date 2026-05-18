@@ -83,6 +83,7 @@ export function App(): ReactElement {
     setEditorSettings,
     setFocusedPane,
     setTabActive,
+    toggleTabPinned,
     toggleSplit,
     updateTabContent,
     updateTabMeta
@@ -298,14 +299,12 @@ export function App(): ReactElement {
     handleRevealTabFile,
     handleRevealWorkspaceItem,
     handleSelectFolder,
-    handleTogglePinTab,
     openFileInOtherPane,
     openTreeFileInOtherPane,
     openWorkspacePathInOtherPane
   } = useAppPaneFileActions({
     focusedPane,
     handleDuplicateTreeFile,
-    handleTogglePin,
     isSplit,
     openFileInPane,
     openGanttChartInPane,
@@ -544,10 +543,9 @@ export function App(): ReactElement {
           onTabClose={closeTabWithMotion}
           onTabMove={moveTab}
           onTabSelect={setTabActive}
-          onTogglePinTab={handleTogglePinTab}
+          onTogglePinTab={toggleTabPinned}
           outlineHeadings={outlineHeadings}
           outgoingLinks={outgoingLinks}
-          pinnedPaths={pinnedPathSet}
           renderGanttChartTab={renderGanttChartTab}
           renderPanelTab={renderPanelTab}
           renderPanelTabIcon={renderPanelTabIcon}

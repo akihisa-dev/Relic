@@ -131,14 +131,6 @@ describe("App", () => {
       }
     });
     const revealWorkspaceItem = vi.fn().mockResolvedValue({ ok: true, value: undefined });
-    const togglePin = vi.fn().mockResolvedValue({
-      ok: true,
-      value: {
-        ...withWorkspace,
-        fileTree: [{ name: "読書メモ", path: "読書メモ.md", type: "file" }],
-        pinnedPaths: ["読書メモ.md"]
-      }
-    });
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, "clipboard", {
       configurable: true,
@@ -158,8 +150,7 @@ describe("App", () => {
         ok: true,
         value: { content: "本文テスト", name: "読書メモ", path: "読書メモ.md" }
       }),
-      revealWorkspaceItem,
-      togglePin
+      revealWorkspaceItem
     });
 
     const { container } = await renderApp();
@@ -180,9 +171,8 @@ describe("App", () => {
 
     fireEvent.contextMenu(tab!);
     fireEvent.click(await screen.findByRole("button", { name: "ピン留め" }));
-    await waitFor(() => {
-      expect(togglePin).toHaveBeenCalledWith("読書メモ.md");
-    });
+    fireEvent.contextMenu(tab!);
+    expect(await screen.findByRole("button", { name: "ピン留めを解除" })).toBeInTheDocument();
 
     fireEvent.contextMenu(tab!);
     fireEvent.click(await screen.findByRole("button", { name: "ファイルの場所を表示" }));

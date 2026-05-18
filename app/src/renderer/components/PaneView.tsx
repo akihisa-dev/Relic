@@ -45,7 +45,6 @@ export interface PaneViewProps {
   onOpenInOtherPane: (tabId: string) => void;
   onRevealTabFile?: (tabId: string) => void;
   onTogglePinTab?: (tabId: string) => void;
-  pinnedPaths?: Set<string>;
   isSplitView: boolean;
   sourceMode: boolean;
 }
@@ -85,7 +84,6 @@ export function PaneView({
   onOpenInOtherPane,
   onRevealTabFile,
   onTogglePinTab,
-  pinnedPaths,
   isSplitView,
   sourceMode
 }: PaneViewProps): ReactElement {
@@ -105,7 +103,7 @@ export function PaneView({
     tabDropTarget
   } = usePaneTabInteractions({ onTabMove, pane });
   const contextTab = contextMenu ? tabs[contextMenu.tabId] : null;
-  const contextTabIsPinned = contextTab?.kind === "file" ? pinnedPaths?.has(contextTab.path) : false;
+  const contextTabIsPinned = Boolean(contextTab?.isPinned);
 
   useAutoSave(
     activeTab?.kind === "file" ? activeTab.content : "",
