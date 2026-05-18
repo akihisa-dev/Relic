@@ -1,4 +1,4 @@
-import { createContext, useContext } from "react";
+import { createContext, useContext, useMemo } from "react";
 import type { ReactNode } from "react";
 
 import type { AppLanguage } from "../shared/ipc";
@@ -19,7 +19,9 @@ export function I18nProvider({
   children: ReactNode;
   language: AppLanguage;
 }): ReactNode {
-  return <I18nContext.Provider value={createTranslator(language)}>{children}</I18nContext.Provider>;
+  const translator = useMemo(() => createTranslator(language), [language]);
+
+  return <I18nContext.Provider value={translator}>{children}</I18nContext.Provider>;
 }
 
 export function useT(): Translator {
