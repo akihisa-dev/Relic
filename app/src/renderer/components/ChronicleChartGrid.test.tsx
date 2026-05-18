@@ -207,10 +207,10 @@ describe("ChronicleChartGrid", () => {
       timelineWidth: (axisEnd - axisStart + 1) * 22
     });
     const dayCells = container.querySelectorAll(".chronicle-axis--date .chronicle-axis-row:nth-child(3) .chronicle-axis-cell");
-    const guideLines = container.querySelectorAll(".chronicle-guide-line");
+    const trackGuideLines = container.querySelectorAll(".chronicle-tracks .chronicle-guide-line");
 
     expect(dayCells.length).toBeLessThan(80);
-    expect(guideLines.length).toBeLessThan(80);
+    expect(trackGuideLines.length).toBeLessThan(80);
   });
 
   it("chronicleの長期間表示では画面外の年代DOMを描画しない", () => {
@@ -241,10 +241,10 @@ describe("ChronicleChartGrid", () => {
       timelineWidth: (axisEnd - axisStart + 1) * 36
     });
     const yearCells = container.querySelectorAll(".chronicle-axis--chronicle .chronicle-axis-cell");
-    const guideLines = container.querySelectorAll(".chronicle-guide-line");
+    const trackGuideLines = container.querySelectorAll(".chronicle-tracks .chronicle-guide-line");
 
     expect(yearCells.length).toBeLessThan(80);
-    expect(guideLines.length).toBeLessThan(80);
+    expect(trackGuideLines.length).toBeLessThan(80);
   });
 
   it("active chartなしでは既存empty表示を出す", () => {

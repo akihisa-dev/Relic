@@ -5,7 +5,9 @@ import { currentDateDay } from "../chronicleTimeline";
 import {
   ROW_HEIGHT,
   buildVisibleChronicleAxisSegments,
+  buildVisibleChronicleGuideTicks,
   buildVisibleDateAxisSegments,
+  buildVisibleDateGuideTicks,
   dateAxisFollowLabelOffset,
   timelineVisibleRange,
   type ChartGuideTick,
@@ -50,6 +52,14 @@ export function DateAxis({
 
   return (
     <div className="chronicle-axis chronicle-axis--date" style={{ width }}>
+      <ChartGuideLines
+        axisStart={axisStart}
+        dateScale={scale}
+        rowCount={0}
+        source="date"
+        ticks={buildVisibleDateGuideTicks(axisStart, axisEnd, scale, visibleRange)}
+        unitWidth={unitWidth}
+      />
       {rows.map((row, rowIndex) => (
         <div
           className={`chronicle-axis-row${rowIndex < rows.length - 1 ? " chronicle-axis-row--divider" : ""}`}
@@ -103,9 +113,18 @@ export function ChronicleAxis({
 }): ReactElement {
   const visibleRange = timelineVisibleRange({ axisEnd, axisStart, scrollLeft, unitWidth, viewportWidth });
   const segments = buildVisibleChronicleAxisSegments(axisStart, axisEnd, interval, visibleRange);
+  const guideTicks = buildVisibleChronicleGuideTicks(axisStart, axisEnd, interval, visibleRange);
 
   return (
     <div className="chronicle-axis chronicle-axis--chronicle" style={{ width }}>
+      <ChartGuideLines
+        axisStart={axisStart}
+        dateScale={null}
+        rowCount={0}
+        source="chronicle"
+        ticks={guideTicks}
+        unitWidth={unitWidth}
+      />
       <div className="chronicle-axis-row chronicle-axis-row--chronicle">
         {segments.map((segment) => (
           <span
