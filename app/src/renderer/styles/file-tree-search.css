@@ -152,29 +152,25 @@
 }
 
 .file-tree-row.drag-over {
-  background: var(--accent-softer);
-  box-shadow: inset 2px 0 0 var(--accent);
+  background: var(--accent-soft);
+  box-shadow: none;
   outline: none;
-  transform: translateX(1px);
+  transform: none;
 }
 
 .file-tree-row.dragging {
-  background: var(--accent-soft);
-  color: var(--accent);
-  opacity: 0.78;
-  transform: translateX(3px) scale(1.012);
+  cursor: grabbing;
 }
 
 .file-tree--drag-over {
-  background: var(--accent-softer);
-  border-radius: 6px;
-  box-shadow: inset 1px 0 0 var(--accent-ring);
+  background: transparent;
+  box-shadow: none;
 }
 
 .file-tree .file-tree.file-tree--drag-over {
-  border-left-color: var(--accent);
-  padding-left: 16px;
-  transform: translateX(1px);
+  border-left-color: var(--border);
+  padding-left: 12px;
+  transform: none;
 }
 
 .file-tree-icon {

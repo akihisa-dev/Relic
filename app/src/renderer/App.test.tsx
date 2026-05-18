@@ -2422,7 +2422,7 @@ describe("App", () => {
     expect(moveMarkdownFile).not.toHaveBeenCalled();
   });
 
-  it("フォルダ内のファイル行へドロップしても移動しない", async () => {
+  it("ファイル行へドロップするとそのファイルと同じ親フォルダへ移動する", async () => {
     const moveMarkdownFile = vi.fn().mockResolvedValue({
       ok: true,
       value: {
@@ -2458,11 +2458,19 @@ describe("App", () => {
     fireEvent.dragStart(noteRow, {
       dataTransfer: { effectAllowed: "move", setData: vi.fn() }
     });
+    fireEvent.dragOver(oldRow, {
+      dataTransfer: { getData: () => JSON.stringify({ path: "note.md", type: "file" }) }
+    });
+
+    expect(oldRow).toHaveClass("drag-over");
+
     fireEvent.drop(oldRow, {
       dataTransfer: { getData: () => JSON.stringify({ path: "note.md", type: "file" }) }
     });
 
-    expect(moveMarkdownFile).not.toHaveBeenCalled();
+    await waitFor(() => {
+      expect(moveMarkdownFile).toHaveBeenCalledWith({ destinationFolder: "archive", path: "note.md" });
+    });
   });
 
   it("空フォルダの内容エリアへドロップしても移動しない", async () => {

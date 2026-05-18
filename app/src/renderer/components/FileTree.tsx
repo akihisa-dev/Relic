@@ -18,6 +18,7 @@ import {
 import { useFileTreeItemState } from "../hooks/useFileTreeItemState";
 import { useFileTreeMotion } from "../hooks/useFileTreeMotion";
 import { useT } from "../i18n";
+import { parentFolderOf } from "../workspacePaths";
 import { FileTreeContextMenu } from "./FileTreeContextMenu";
 import { FileTreeItemRow } from "./FileTreeItemRow";
 
@@ -162,14 +163,18 @@ export function FileTreeItem({
     parseFileTreeDragPayload(event.dataTransfer.getData(FILE_TREE_DRAG_MIME))
   );
 
+  const dropDestinationForNode = (): string => (
+    node.type === "folder" ? node.path : parentFolderOf(node.path)
+  );
+
   const canDropOnNode = (event: DragEvent<HTMLButtonElement>): boolean => {
-    if (node.type !== "folder") return false;
+    const destinationFolder = dropDestinationForNode();
     const draggedItems = draggedItemsFromEvent(event);
     if (draggedItems.length > 0) {
-      return movableItemsForDestination(draggedItems, node.path).length > 0;
+      return movableItemsForDestination(draggedItems, destinationFolder).length > 0;
     }
 
-    return Array.from(event.dataTransfer.types).includes(FILE_TREE_DRAG_MIME);
+    return Array.from(event.dataTransfer.types ?? []).includes(FILE_TREE_DRAG_MIME);
   };
 
   const handleDragOver = (event: DragEvent<HTMLButtonElement>): void => {
@@ -185,15 +190,15 @@ export function FileTreeItem({
 
   const handleDrop = (event: DragEvent<HTMLButtonElement>): void => {
     setIsDragOver(false);
-    if (node.type !== "folder") return;
 
     const items = draggedItemsFromEvent(event);
-    if (movableItemsForDestination(items, node.path).length === 0) return;
+    const destinationFolder = dropDestinationForNode();
+    if (movableItemsForDestination(items, destinationFolder).length === 0) return;
 
     event.preventDefault();
     event.stopPropagation();
-    setIsExpanded(true);
-    moveItemsToDestination(items, node.path, { onMoveFile, onMoveFolder, onMoveItems });
+    if (node.type === "folder") setIsExpanded(true);
+    moveItemsToDestination(items, destinationFolder, { onMoveFile, onMoveFolder, onMoveItems });
   };
 
   return (
