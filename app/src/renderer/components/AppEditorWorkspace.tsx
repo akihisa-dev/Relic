@@ -182,7 +182,7 @@ export function AppEditorWorkspace({
         <div className="editor-workspace">
           <div className={`panes-container${isSplit ? " panes-container--split" : ""}${isSplitClosing ? " panes-container--closing-split" : ""}`}>
             <PaneView
-              actionSlot={isSplit ? undefined : paneActions}
+              actionSlot={!isSplit && !isRightPanelOpen ? paneActions : undefined}
               allFilePaths={allFilePaths}
               closingTabIds={leftClosingTabIds}
               editorActionPulse={focusedPane === "left" ? editorActionPulse : 0}
@@ -222,7 +222,7 @@ export function AppEditorWorkspace({
             />
             {isSplit ? (
               <PaneView
-                actionSlot={paneActions}
+                actionSlot={isRightPanelOpen ? undefined : paneActions}
                 allFilePaths={allFilePaths}
                 closingTabIds={rightClosingTabIds}
                 editorActionPulse={focusedPane === "right" ? editorActionPulse : 0}
@@ -265,6 +265,7 @@ export function AppEditorWorkspace({
         </div>
 
         <AppRightPanel
+          actionSlot={isRightPanelOpen ? paneActions : undefined}
           backlinks={backlinks}
           isLoadingBacklinks={isLoadingBacklinks}
           isOpen={isRightPanelOpen}

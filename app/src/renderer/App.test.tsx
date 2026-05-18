@@ -541,18 +541,16 @@ describe("App", () => {
 
     await screen.findByText("Notes");
 
-    const outlineButton = screen.getByRole("button", { name: "アウトライン" });
-    const linksButton = screen.getByRole("button", { name: "リンク" });
-
     expect(useUiStore.getState().isRightPanelOpen).toBe(false);
     expect(useUiStore.getState().rightPanelView).toBe("outline");
 
-    fireEvent.click(outlineButton);
+    fireEvent.click(screen.getByRole("button", { name: "アウトライン" }));
 
     expect(useUiStore.getState().isRightPanelOpen).toBe(true);
     expect(useUiStore.getState().rightPanelView).toBe("outline");
+    expect(container.querySelector(".right-panel-actions-row")).toBeInTheDocument();
 
-    fireEvent.click(outlineButton);
+    fireEvent.click(screen.getByRole("button", { name: "アウトライン" }));
 
     expect(useUiStore.getState().isRightPanelOpen).toBe(false);
     expect(useUiStore.getState().rightPanelView).toBe("outline");
@@ -561,17 +559,17 @@ describe("App", () => {
     expect(mainActions).toBeInstanceOf(HTMLElement);
     expect(within(mainActions as HTMLElement).queryByRole("button", { name: "フロントマター" })).not.toBeInTheDocument();
 
-    fireEvent.click(linksButton);
+    fireEvent.click(screen.getByRole("button", { name: "リンク" }));
 
     expect(useUiStore.getState().isRightPanelOpen).toBe(true);
     expect(useUiStore.getState().rightPanelView).toBe("links");
 
-    fireEvent.click(linksButton);
+    fireEvent.click(screen.getByRole("button", { name: "リンク" }));
 
     expect(useUiStore.getState().isRightPanelOpen).toBe(false);
     expect(useUiStore.getState().rightPanelView).toBe("links");
 
-    fireEvent.click(outlineButton);
+    fireEvent.click(screen.getByRole("button", { name: "アウトライン" }));
 
     expect(useUiStore.getState().isRightPanelOpen).toBe(true);
     expect(useUiStore.getState().rightPanelView).toBe("outline");
