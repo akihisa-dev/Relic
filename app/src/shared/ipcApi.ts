@@ -43,6 +43,7 @@ import type {
   SearchAndReplaceMatch,
   SearchWorkspaceInput,
   SwitchWorkspaceInput,
+  WorkspaceChangedEvent,
   WorkspaceGraph,
   WorkspaceSearchResult,
   WorkspaceState,
@@ -107,4 +108,5 @@ export interface RelicApi {
   saveFrontmatterTemplates: (input: FrontmatterTemplate[]) => Promise<RelicResult<void>>;
   mergeFiles: (input: MergeFilesInput) => Promise<RelicResult<string>>;
   splitFileByHeading: (input: SplitFileByHeadingInput) => Promise<RelicResult<string[]>>;
+  onWorkspaceChanged: (callback: (event: WorkspaceChangedEvent) => void) => () => void;
 }

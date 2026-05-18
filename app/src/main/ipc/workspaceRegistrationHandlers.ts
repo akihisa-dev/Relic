@@ -27,6 +27,7 @@ import {
   removeWorkspaceRegistration,
   renameWorkspaceRegistration
 } from "../workspace/workspaceService";
+import { syncWorkspaceWatcher } from "../workspace/workspaceWatcher";
 import { ipcErrorDetails } from "./activeWorkspace";
 import {
   isRenameWorkspaceInput,
@@ -39,6 +40,7 @@ export function registerWorkspaceRegistrationHandlers(): void {
   ipcMain.handle(getWorkspaceStateChannel, async (): Promise<RelicResult<WorkspaceState>> => {
     try {
       const settings = await readAppSettings(app.getPath("userData"));
+      syncWorkspaceWatcher(settings);
 
       return ok(await buildWorkspaceState(settings));
     } catch (error) {
@@ -61,6 +63,7 @@ export function registerWorkspaceRegistrationHandlers(): void {
 
       if (selection.canceled || selection.filePaths.length === 0) {
         const settings = await readAppSettings(app.getPath("userData"));
+        syncWorkspaceWatcher(settings);
 
         return ok(await buildWorkspaceState(settings));
       }
@@ -71,6 +74,7 @@ export function registerWorkspaceRegistrationHandlers(): void {
       const settings = await readAppSettings(app.getPath("userData"));
       const nextSettings = addOrActivateWorkspace(settings, workspace);
       await writeAppSettings(app.getPath("userData"), nextSettings);
+      syncWorkspaceWatcher(nextSettings);
 
       return ok(await buildWorkspaceState(nextSettings));
     } catch (error) {
@@ -94,6 +98,7 @@ export function registerWorkspaceRegistrationHandlers(): void {
 
       if (selection.canceled || !selection.filePath) {
         const settings = await readAppSettings(app.getPath("userData"));
+        syncWorkspaceWatcher(settings);
 
         return ok(await buildWorkspaceState(settings));
       }
@@ -105,6 +110,7 @@ export function registerWorkspaceRegistrationHandlers(): void {
       const settings = await readAppSettings(app.getPath("userData"));
       const nextSettings = addOrActivateWorkspace(settings, workspace);
       await writeAppSettings(app.getPath("userData"), nextSettings);
+      syncWorkspaceWatcher(nextSettings);
 
       return ok(await buildWorkspaceState(nextSettings));
     } catch (error) {
@@ -174,6 +180,7 @@ export function registerWorkspaceRegistrationHandlers(): void {
 
         await prepareWorkspace(activeWorkspace.path);
         await writeAppSettings(app.getPath("userData"), nextSettings.value);
+        syncWorkspaceWatcher(nextSettings.value);
 
         return ok(await buildWorkspaceState(nextSettings.value));
       } catch (error) {
@@ -202,6 +209,7 @@ export function registerWorkspaceRegistrationHandlers(): void {
         }
 
         await writeAppSettings(app.getPath("userData"), nextSettings.value);
+        syncWorkspaceWatcher(nextSettings.value);
 
         return ok(await buildWorkspaceState(nextSettings.value));
       } catch (error) {
@@ -242,6 +250,7 @@ export function registerWorkspaceRegistrationHandlers(): void {
         }
 
         await writeAppSettings(app.getPath("userData"), renameResult.value.nextSettings);
+        syncWorkspaceWatcher(renameResult.value.nextSettings);
 
         return ok(await buildWorkspaceState(renameResult.value.nextSettings));
       } catch (error) {

@@ -6,6 +6,7 @@ import { registerEditorHandlers } from "./ipc/editorHandlers";
 import { registerFileHandlers } from "./ipc/fileHandlers";
 import { registerToolHandlers } from "./ipc/toolHandlers";
 import { registerWorkspaceHandlers } from "./ipc/workspaceHandlers";
+import { stopWorkspaceWatcher } from "./workspace/workspaceWatcher";
 
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string | undefined;
 declare const MAIN_WINDOW_VITE_NAME: string;
@@ -131,4 +132,8 @@ app.on("window-all-closed", () => {
   if (process.platform !== "darwin") {
     app.quit();
   }
+});
+
+app.on("before-quit", () => {
+  stopWorkspaceWatcher();
 });

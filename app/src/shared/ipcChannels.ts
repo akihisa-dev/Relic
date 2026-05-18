@@ -12,6 +12,7 @@ export const saveWorkspaceGanttChartsChannel = "workspace:saveGanttCharts";
 export const updateGanttChartEntryChannel = "workspace:updateGanttChartEntry";
 export const getFrontmatterValueCandidatesChannel = "workspace:getFrontmatterValueCandidates";
 export const getWorkspaceStateChannel = "workspace:getState";
+export const workspaceChangedChannel = "workspace:changed";
 export const moveItemToTrashChannel = "workspace:moveItemToTrash";
 export const openWorkspaceChannel = "workspace:open";
 export const readMarkdownFileChannel = "workspace:readMarkdownFile";

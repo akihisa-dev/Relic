@@ -97,6 +97,7 @@ export function makeRelicApi(overrides: Partial<typeof window.relic> = {}): type
     moveFolder: vi.fn(),
     moveItemToTrash: vi.fn(),
     moveMarkdownFile: vi.fn(),
+    onWorkspaceChanged: vi.fn().mockReturnValue(vi.fn()),
     openWorkspace: vi.fn(),
     readClipboardText: vi.fn().mockReturnValue(""),
     readMarkdownFile: vi.fn(),
