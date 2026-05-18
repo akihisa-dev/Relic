@@ -474,11 +474,11 @@
 }
 
 .pane-tab-pin-icon {
-  color: var(--text-3);
+  color: var(--attention);
 }
 
 .pane-tab--active .pane-tab-pin-icon {
-  color: var(--accent);
+  color: var(--attention);
 }
 
 .pane-tab-close {
