@@ -111,26 +111,75 @@ export function ChronicleChartGrid({
       : guideTicks;
 
   return (
-    <div
-      className="chronicle-chart"
-      onPointerDown={onChartPointerDown}
-      onScroll={onChartScroll}
-      ref={chartRef}
-    >
-      {activeSource === "date" ? (
-        <DateOffscreenJumpButtons
-          indicators={dateOffscreenIndicators}
-          onJump={onJump}
-          t={t}
-        />
-      ) : activeSource === "chronicle" ? (
-        <TimelineOffscreenJumpButtons
-          indicators={chronicleOffscreenIndicators}
-          leftOffset={nameColumnWidth}
-          onJump={onJump}
-          t={t}
-        />
-      ) : null}
+    <div className="chronicle-chart-layout">
+      <div
+        className="chronicle-chart"
+        onPointerDown={onChartPointerDown}
+        onScroll={onChartScroll}
+        ref={chartRef}
+      >
+        {activeSource === "date" ? (
+          <DateOffscreenJumpButtons
+            indicators={dateOffscreenIndicators}
+            onJump={onJump}
+            t={t}
+          />
+        ) : activeSource === "chronicle" ? (
+          <TimelineOffscreenJumpButtons
+            indicators={chronicleOffscreenIndicators}
+            leftOffset={nameColumnWidth}
+            onJump={onJump}
+            t={t}
+          />
+        ) : null}
+        <div className="chronicle-grid" style={{ width: nameColumnWidth + timelineWidth }}>
+          <ChronicleNameColumn
+            activeSource={activeSource}
+            dateAxisHeight={dateAxisHeight}
+            nameColumnWidth={nameColumnWidth}
+            onJump={onJump}
+            onOpenFile={onOpenFile}
+            rows={rows}
+          />
+          <div className="chronicle-timeline" style={{ marginLeft: nameColumnWidth, width: timelineWidth }}>
+            {activeSource === "date" ? (
+              <DateAxis
+                axisEnd={axisEnd}
+                axisStart={axisStart}
+                scale={dateScale ?? DATE_SCALES[0]}
+                scrollLeft={scrollLeft}
+                unitWidth={unitWidth}
+                viewportWidth={timelineViewportWidth}
+                width={timelineWidth}
+              />
+            ) : (
+              <ChronicleAxis
+                axisEnd={axisEnd}
+                axisStart={axisStart}
+                interval={chronicleAxisTickInterval(tickInterval)}
+                scrollLeft={scrollLeft}
+                unitWidth={unitWidth}
+                viewportWidth={timelineViewportWidth}
+                width={timelineWidth}
+              />
+            )}
+            <ChronicleTracks
+              activeSource={activeSource}
+              axisEnd={axisEnd}
+              axisStart={axisStart}
+              dateScale={dateScale}
+              dragPreview={dragPreview}
+              guideTicks={visibleGuideTicks}
+              onStartEntryEdit={onStartEntryEdit}
+              rows={rows}
+              scrollLeft={scrollLeft}
+              timelineWidth={timelineWidth}
+              unitWidth={unitWidth}
+            />
+          </div>
+        </div>
+      </div>
+      <aside className="chronicle-vertical-panel">
       <VerticalOffscreenJumpButtons
         indicators={verticalOffscreenIndicators}
         onJump={onVerticalJump}
@@ -142,52 +191,7 @@ export function ChronicleChartGrid({
         onPointerDown={onVerticalMinimapPointerDown}
         viewport={verticalMinimapViewport}
       />
-      <div className="chronicle-grid" style={{ width: nameColumnWidth + timelineWidth }}>
-        <ChronicleNameColumn
-          activeSource={activeSource}
-          dateAxisHeight={dateAxisHeight}
-          nameColumnWidth={nameColumnWidth}
-          onJump={onJump}
-          onOpenFile={onOpenFile}
-          rows={rows}
-        />
-        <div className="chronicle-timeline" style={{ marginLeft: nameColumnWidth, width: timelineWidth }}>
-          {activeSource === "date" ? (
-            <DateAxis
-              axisEnd={axisEnd}
-              axisStart={axisStart}
-              scale={dateScale ?? DATE_SCALES[0]}
-              scrollLeft={scrollLeft}
-              unitWidth={unitWidth}
-              viewportWidth={timelineViewportWidth}
-              width={timelineWidth}
-            />
-          ) : (
-            <ChronicleAxis
-              axisEnd={axisEnd}
-              axisStart={axisStart}
-              interval={chronicleAxisTickInterval(tickInterval)}
-              scrollLeft={scrollLeft}
-              unitWidth={unitWidth}
-              viewportWidth={timelineViewportWidth}
-              width={timelineWidth}
-            />
-          )}
-          <ChronicleTracks
-            activeSource={activeSource}
-            axisEnd={axisEnd}
-            axisStart={axisStart}
-            dateScale={dateScale}
-            dragPreview={dragPreview}
-            guideTicks={visibleGuideTicks}
-            onStartEntryEdit={onStartEntryEdit}
-            rows={rows}
-            scrollLeft={scrollLeft}
-            timelineWidth={timelineWidth}
-            unitWidth={unitWidth}
-          />
-        </div>
-      </div>
+      </aside>
     </div>
   );
 }
