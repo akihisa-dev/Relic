@@ -1343,7 +1343,7 @@ describe("App", () => {
     if (!(panes instanceof HTMLElement)) throw new Error("panes container was not rendered");
     expect(panes).toHaveClass("panes-container--split");
 
-    fireEvent.click(splitButton);
+    fireEvent.click(screen.getByRole("button", { name: "分割" }));
     expect(panes).toHaveClass("panes-container--closing-split");
   });
 

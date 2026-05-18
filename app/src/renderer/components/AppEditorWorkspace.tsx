@@ -127,59 +127,62 @@ export function AppEditorWorkspace({
   workspacePath
 }: AppEditorWorkspaceProps): ReactElement {
   const t = useT();
+  const paneActions = (
+    <div className="main-area-actions">
+      <button
+        aria-label={t("pane.sourceShort")}
+        className={`toolbar-btn${isSourceMode ? " active" : ""}`}
+        data-tooltip={t("pane.sourceMode")}
+        onClick={onSourceModeToggle}
+        title={t("pane.sourceMode")}
+        type="button"
+      >
+        <SourceModeIcon />
+      </button>
+      <button
+        aria-label={t("pane.splitShort")}
+        className={`toolbar-btn${isSplit ? " active" : ""}`}
+        data-tooltip={t("pane.split")}
+        onClick={onSplitToggle}
+        title={t("pane.split")}
+        type="button"
+      >
+        <SplitViewIcon />
+      </button>
+      {showRightPanelControls ? (
+        <>
+          <button
+            aria-label={t("pane.outline")}
+            className={`toolbar-btn${rightPanelView === "outline" && isRightPanelOpen ? " active" : ""}`}
+            data-tooltip={t("pane.toggleOutline")}
+            onClick={() => onRightPanelViewButton("outline")}
+            title={t("pane.toggleOutline")}
+            type="button"
+          >
+            <OutlineIcon />
+          </button>
+          <button
+            aria-label={t("pane.links")}
+            className={`toolbar-btn${rightPanelView === "links" && isRightPanelOpen ? " active" : ""}`}
+            data-tooltip={t("pane.toggleLinks")}
+            onClick={() => onRightPanelViewButton("links")}
+            title={t("pane.toggleLinks")}
+            type="button"
+          >
+            <LinksIcon />
+          </button>
+        </>
+      ) : null}
+    </div>
+  );
 
   return (
     <main className="main-area">
-      <div className="main-area-actions">
-        <button
-          aria-label={t("pane.sourceShort")}
-          className={`toolbar-btn${isSourceMode ? " active" : ""}`}
-          data-tooltip={t("pane.sourceMode")}
-          onClick={onSourceModeToggle}
-          title={t("pane.sourceMode")}
-          type="button"
-        >
-          <SourceModeIcon />
-        </button>
-        <button
-          aria-label={t("pane.splitShort")}
-          className={`toolbar-btn${isSplit ? " active" : ""}`}
-          data-tooltip={t("pane.split")}
-          onClick={onSplitToggle}
-          title={t("pane.split")}
-          type="button"
-        >
-          <SplitViewIcon />
-        </button>
-        {showRightPanelControls ? (
-          <>
-            <button
-              aria-label={t("pane.outline")}
-              className={`toolbar-btn${rightPanelView === "outline" && isRightPanelOpen ? " active" : ""}`}
-              data-tooltip={t("pane.toggleOutline")}
-              onClick={() => onRightPanelViewButton("outline")}
-              title={t("pane.toggleOutline")}
-              type="button"
-            >
-              <OutlineIcon />
-            </button>
-            <button
-              aria-label={t("pane.links")}
-              className={`toolbar-btn${rightPanelView === "links" && isRightPanelOpen ? " active" : ""}`}
-              data-tooltip={t("pane.toggleLinks")}
-              onClick={() => onRightPanelViewButton("links")}
-              title={t("pane.toggleLinks")}
-              type="button"
-            >
-              <LinksIcon />
-            </button>
-          </>
-        ) : null}
-      </div>
       <div className="editor-layout">
         <div className="editor-workspace">
           <div className={`panes-container${isSplit ? " panes-container--split" : ""}${isSplitClosing ? " panes-container--closing-split" : ""}`}>
             <PaneView
+              actionSlot={isSplit ? undefined : paneActions}
               allFilePaths={allFilePaths}
               closingTabIds={leftClosingTabIds}
               editorActionPulse={focusedPane === "left" ? editorActionPulse : 0}
@@ -219,6 +222,7 @@ export function AppEditorWorkspace({
             />
             {isSplit ? (
               <PaneView
+                actionSlot={paneActions}
                 allFilePaths={allFilePaths}
                 closingTabIds={rightClosingTabIds}
                 editorActionPulse={focusedPane === "right" ? editorActionPulse : 0}
