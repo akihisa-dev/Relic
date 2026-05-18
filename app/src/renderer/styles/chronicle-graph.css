@@ -1068,6 +1068,7 @@
 
 .chronicle-name-header {
   background: var(--bg);
+  box-shadow: 0 1px 0 var(--border);
   box-sizing: border-box;
   height: 34px;
   position: sticky;
@@ -1115,6 +1116,7 @@
 .chronicle-axis {
   color: var(--text-3);
   background: var(--bg);
+  box-shadow: 0 1px 0 var(--border);
   display: block;
   font-size: 11px;
   min-height: 34px;
