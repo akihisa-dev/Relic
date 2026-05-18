@@ -205,9 +205,18 @@
   width: 15px;
 }
 
-.file-tree-file-dot {
-  font-size: 12px;
-  line-height: 1;
+.file-tree-file-icon {
+  display: block;
+  height: 16px;
+  width: 16px;
+}
+
+.file-tree-file-accessible-dot {
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  position: absolute;
+  width: 1px;
 }
 
 .file-tree-name {

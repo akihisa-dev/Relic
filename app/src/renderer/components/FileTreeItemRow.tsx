@@ -70,7 +70,10 @@ export function FileTreeItemRow({
               <FolderStateIcon isExpanded={isExpanded} />
             </>
           ) : (
-            <span className="file-tree-file-dot">·</span>
+            <>
+              <span className="file-tree-file-accessible-dot">·</span>
+              <FileTypeIcon />
+            </>
           )}
         </span>
         {isRenaming ? (
@@ -102,6 +105,27 @@ export function FileTreeItemRow({
         </button>
       ) : null}
     </div>
+  );
+}
+
+function FileTypeIcon(): ReactElement {
+  return (
+    <svg
+      aria-hidden="true"
+      className="file-tree-file-icon"
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="1"
+      viewBox="0 0 24 24"
+    >
+      <path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z" />
+      <path d="M14 2v5a1 1 0 0 0 1 1h5" />
+      <path d="M11 18h2" />
+      <path d="M12 12v6" />
+      <path d="M9 13v-.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 .5.5v.5" />
+    </svg>
   );
 }
 
