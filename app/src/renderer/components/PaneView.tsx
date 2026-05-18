@@ -160,7 +160,6 @@ export function PaneView({
         onOpenInOtherPane={onOpenInOtherPane}
         onRevealTabFile={onRevealTabFile}
         onTabClose={onTabClose}
-        onTabSelect={onTabSelect}
         onTogglePinTab={onTogglePinTab}
       />
       <PaneContentSurface

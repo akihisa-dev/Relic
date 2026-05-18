@@ -152,10 +152,6 @@ describe("PaneView", () => {
     });
 
     fireEvent.contextMenu(tabElement("Note"), { clientX: 50, clientY: 60 });
-    fireEvent.click(screen.getByRole("button", { name: "Open" }));
-    expect(props.onTabSelect).toHaveBeenCalledWith(fileTab.id);
-
-    fireEvent.contextMenu(tabElement("Note"), { clientX: 50, clientY: 60 });
     fireEvent.click(screen.getByRole("button", { name: "Duplicate" }));
     expect(props.onDuplicateTabFile).toHaveBeenCalledWith(fileTab.id);
 

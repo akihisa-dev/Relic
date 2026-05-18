@@ -90,6 +90,7 @@ export function PaneTabBar({
             ) : null}
             <span className="pane-tab-name">{paneTabLabel(tab, t)}</span>
             <button
+              aria-label={t("pane.closeTab")}
               className="pane-tab-close"
               onClick={(e) => {
                 e.stopPropagation();
@@ -98,12 +99,22 @@ export function PaneTabBar({
               title={t("pane.closeTab")}
               type="button"
             >
-              ×
+              <CloseIcon />
             </button>
           </div>
         );
       })}
     </div>
+  );
+}
+
+function CloseIcon(): ReactElement {
+  return (
+    <svg aria-hidden="true" fill="none" height="20" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="20">
+      <circle cx="12" cy="12" r="10" />
+      <path d="m15 9-6 6" />
+      <path d="m9 9 6 6" />
+    </svg>
   );
 }
 
