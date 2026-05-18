@@ -203,9 +203,11 @@ export function closeOtherTabsState(
 ): Partial<EditorStoreModelState> {
   const paneKey = paneKeyFor(pane);
   const otherPane = state[otherPaneKeyFor(pane)];
+  const paneState = state[paneKey];
 
-  const removedIds = state[paneKey].tabIds.filter(
-    (id) => id !== tabId && !otherPane.tabIds.includes(id)
+  const nextTabIds = paneState.tabIds.filter((id) => id === tabId || state.tabs[id]?.isPinned);
+  const removedIds = paneState.tabIds.filter(
+    (id) => !nextTabIds.includes(id) && !otherPane.tabIds.includes(id)
   );
   const nextTabs = removedIds.reduce((acc, id) => omit(acc, id), state.tabs);
 
@@ -213,8 +215,8 @@ export function closeOtherTabsState(
     tabs: nextTabs,
     [paneKey]: {
       activeTabId: tabId,
-      history: [tabId],
-      tabIds: [tabId]
+      history: [...paneState.history.filter((id) => nextTabIds.includes(id) && id !== tabId), tabId],
+      tabIds: reorderPinnedTabs({ ...paneState, activeTabId: tabId, tabIds: nextTabIds }, nextTabs).tabIds
     }
   };
 }
@@ -229,8 +231,12 @@ export function closeTabsToRightState(
   const paneState = state[paneKey];
 
   const idx = paneState.tabIds.indexOf(tabId);
-  const nextTabIds = idx === -1 ? paneState.tabIds : paneState.tabIds.slice(0, idx + 1);
-  const removedIds = paneState.tabIds.slice(idx + 1).filter((id) => !otherPane.tabIds.includes(id));
+  const nextTabIds = idx === -1
+    ? paneState.tabIds
+    : paneState.tabIds.filter((id, index) => index <= idx || state.tabs[id]?.isPinned);
+  const removedIds = paneState.tabIds.filter(
+    (id) => !nextTabIds.includes(id) && !otherPane.tabIds.includes(id)
+  );
   const nextTabs = removedIds.reduce((acc, id) => omit(acc, id), state.tabs);
 
   const activeWasRemoved = paneState.activeTabId !== null && !nextTabIds.includes(paneState.activeTabId);
@@ -239,11 +245,11 @@ export function closeTabsToRightState(
 
   return {
     tabs: nextTabs,
-    [paneKey]: {
+    [paneKey]: reorderPinnedTabs({
       activeTabId: nextActiveTabId,
       history: nextHistory,
       tabIds: nextTabIds
-    }
+    }, nextTabs)
   };
 }
 
@@ -253,13 +259,20 @@ export function closeAllTabsInPaneState(
 ): Partial<EditorStoreModelState> {
   const paneKey = paneKeyFor(pane);
   const otherPane = state[otherPaneKeyFor(pane)];
+  const paneState = state[paneKey];
 
-  const removedIds = state[paneKey].tabIds.filter((id) => !otherPane.tabIds.includes(id));
+  const nextTabIds = paneState.tabIds.filter((id) => state.tabs[id]?.isPinned);
+  const removedIds = paneState.tabIds.filter((id) => !nextTabIds.includes(id) && !otherPane.tabIds.includes(id));
   const nextTabs = removedIds.reduce((acc, id) => omit(acc, id), state.tabs);
+  const nextHistory = paneState.history.filter((id) => nextTabIds.includes(id));
 
   return {
     tabs: nextTabs,
-    [paneKey]: emptyPane()
+    [paneKey]: {
+      activeTabId: nextHistory.at(-1) ?? nextTabIds.at(-1) ?? null,
+      history: nextHistory,
+      tabIds: nextTabIds
+    }
   };
 }
 

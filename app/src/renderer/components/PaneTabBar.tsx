@@ -79,6 +79,11 @@ export function PaneTabBar({
             onDragEnd={onTabDragEnd}
             onDrop={(e) => onTabDrop(e, tabId)}
           >
+            {tab.isPinned ? (
+              <span className="pane-tab-icon pane-tab-pin-icon" aria-hidden="true" data-testid="pane-tab-pin-icon">
+                <PinTabIcon />
+              </span>
+            ) : null}
             {tab.kind === "panel" ? (
               <span className="pane-tab-icon" aria-hidden="true">
                 {renderPanelTabIcon(tab.panel)}
@@ -86,11 +91,6 @@ export function PaneTabBar({
             ) : tab.kind === "gantt" ? (
               <span className="pane-tab-icon" aria-hidden="true">
                 <GanttTabIcon />
-              </span>
-            ) : null}
-            {tab.isPinned ? (
-              <span className="pane-tab-icon pane-tab-pin-icon" aria-hidden="true" data-testid="pane-tab-pin-icon">
-                <PinTabIcon />
               </span>
             ) : null}
             <span className="pane-tab-name">{paneTabLabel(tab, t)}</span>

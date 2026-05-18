@@ -133,25 +133,25 @@ export function usePaneTabMotion({
     const paneState = pane === "left" ? leftPane : rightPane;
     closeTabsWithMotion(
       pane,
-      paneState.tabIds.filter((id) => id !== tabId),
+      paneState.tabIds.filter((id) => id !== tabId && !tabs[id]?.isPinned),
       () => closeOtherTabs(pane, tabId)
     );
-  }, [closeOtherTabs, closeTabsWithMotion, leftPane, rightPane]);
+  }, [closeOtherTabs, closeTabsWithMotion, leftPane, rightPane, tabs]);
 
   const closeTabsToRightWithMotion = useCallback((pane: PaneId, tabId: string): void => {
     const paneState = pane === "left" ? leftPane : rightPane;
     const tabIndex = paneState.tabIds.indexOf(tabId);
     closeTabsWithMotion(
       pane,
-      tabIndex === -1 ? [] : paneState.tabIds.slice(tabIndex + 1),
+      tabIndex === -1 ? [] : paneState.tabIds.slice(tabIndex + 1).filter((id) => !tabs[id]?.isPinned),
       () => closeTabsToRight(pane, tabId)
     );
-  }, [closeTabsToRight, closeTabsWithMotion, leftPane, rightPane]);
+  }, [closeTabsToRight, closeTabsWithMotion, leftPane, rightPane, tabs]);
 
   const closeAllTabsInPaneWithMotion = useCallback((pane: PaneId): void => {
     const paneState = pane === "left" ? leftPane : rightPane;
-    closeTabsWithMotion(pane, paneState.tabIds, () => closeAllTabsInPane(pane));
-  }, [closeAllTabsInPane, closeTabsWithMotion, leftPane, rightPane]);
+    closeTabsWithMotion(pane, paneState.tabIds.filter((id) => !tabs[id]?.isPinned), () => closeAllTabsInPane(pane));
+  }, [closeAllTabsInPane, closeTabsWithMotion, leftPane, rightPane, tabs]);
 
   return {
     closeAllTabsInPaneWithMotion,
