@@ -3,6 +3,7 @@ import type { PointerEvent, ReactElement, RefObject, UIEvent } from "react";
 import type { GanttChartEntry, GanttChartEntryEditKind, GanttChartSource, WorkspaceGanttChart } from "../../shared/ipc";
 import {
   DATE_SCALES,
+  buildVisibleChronicleGuideTicks,
   buildVisibleDateGuideTicks,
   chronicleAxisTickInterval,
   timelineVisibleRange,
@@ -84,20 +85,18 @@ export function ChronicleChartGrid({
   }
 
   const timelineViewportWidth = Math.max(1, chartViewportWidth - nameColumnWidth);
+  const visibleRange = timelineVisibleRange({
+    axisEnd,
+    axisStart,
+    scrollLeft,
+    unitWidth,
+    viewportWidth: timelineViewportWidth
+  });
   const visibleGuideTicks = activeSource === "date" && dateScale
-    ? buildVisibleDateGuideTicks(
-        axisStart,
-        axisEnd,
-        dateScale,
-        timelineVisibleRange({
-          axisEnd,
-          axisStart,
-          scrollLeft,
-          unitWidth,
-          viewportWidth: timelineViewportWidth
-        })
-      )
-    : guideTicks;
+    ? buildVisibleDateGuideTicks(axisStart, axisEnd, dateScale, visibleRange)
+    : activeSource === "chronicle"
+      ? buildVisibleChronicleGuideTicks(axisStart, axisEnd, chronicleAxisTickInterval(tickInterval), visibleRange)
+      : guideTicks;
 
   return (
     <div
@@ -145,7 +144,9 @@ export function ChronicleChartGrid({
               axisEnd={axisEnd}
               axisStart={axisStart}
               interval={chronicleAxisTickInterval(tickInterval)}
+              scrollLeft={scrollLeft}
               unitWidth={unitWidth}
+              viewportWidth={timelineViewportWidth}
               width={timelineWidth}
             />
           )}

@@ -213,6 +213,40 @@ describe("ChronicleChartGrid", () => {
     expect(guideLines.length).toBeLessThan(80);
   });
 
+  it("chronicleの長期間表示では画面外の年代DOMを描画しない", () => {
+    const axisStart = -3000;
+    const axisEnd = 3000;
+    const chronicleChart = chart({
+      entries: [
+        entry({
+          endLabel: "1000",
+          endValue: 999,
+          fileName: "長期史",
+          path: "history/long.md",
+          startLabel: "-1000",
+          startValue: -1000
+        })
+      ],
+      id: "chronicle",
+      name: "chronicle",
+      source: "chronicle"
+    });
+    const { container } = renderGrid({
+      activeChart: chronicleChart,
+      activeSource: "chronicle",
+      axisEnd,
+      axisStart,
+      chartViewportWidth: 720,
+      scrollLeft: 3000 * 36,
+      timelineWidth: (axisEnd - axisStart + 1) * 36
+    });
+    const yearCells = container.querySelectorAll(".chronicle-axis--chronicle .chronicle-axis-cell");
+    const guideLines = container.querySelectorAll(".chronicle-guide-line");
+
+    expect(yearCells.length).toBeLessThan(80);
+    expect(guideLines.length).toBeLessThan(80);
+  });
+
   it("active chartなしでは既存empty表示を出す", () => {
     renderGrid({ activeChart: null, rows: [] });
 
