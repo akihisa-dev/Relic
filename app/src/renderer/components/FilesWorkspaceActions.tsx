@@ -37,6 +37,7 @@ export function FilesCreateActions({
       <button
         aria-label={createFileLabel}
         className="files-create-icon-button"
+        data-tooltip={createFileLabel}
         disabled={isCreatingFile}
         onClick={onCreateFile}
         title={createFileLabel}
@@ -47,6 +48,7 @@ export function FilesCreateActions({
       <button
         aria-label={createFolderLabel}
         className="files-create-icon-button"
+        data-tooltip={createFolderLabel}
         disabled={isCreatingFolder}
         onClick={onCreateFolder}
         title={createFolderLabel}
@@ -57,6 +59,7 @@ export function FilesCreateActions({
       <button
         aria-label={expandAllLabel}
         className="files-create-icon-button"
+        data-tooltip={expandAllLabel}
         onClick={onExpandAllFolders}
         title={expandAllLabel}
         type="button"
@@ -66,6 +69,7 @@ export function FilesCreateActions({
       <button
         aria-label={collapseAllLabel}
         className="files-create-icon-button"
+        data-tooltip={collapseAllLabel}
         onClick={onCollapseAllFolders}
         title={collapseAllLabel}
         type="button"
