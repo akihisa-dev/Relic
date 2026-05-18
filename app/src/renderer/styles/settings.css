@@ -133,14 +133,14 @@
   align-items: stretch;
   background: var(--hover);
   border: 1px solid var(--border-soft);
-  border-radius: 8px;
+  border-radius: 999px;
   display: flex;
   flex-wrap: wrap;
-  gap: 2px;
+  gap: 4px;
   justify-self: end;
   max-width: 100%;
   min-width: 0;
-  padding: 2px;
+  padding: 4px;
   width: 100%;
 }
 
@@ -148,7 +148,7 @@
   align-items: center;
   background: transparent;
   border: 0;
-  border-radius: 6px;
+  border-radius: 999px;
   color: var(--text-2);
   display: inline-flex;
   flex: 1 1 auto;
@@ -156,9 +156,9 @@
   font-weight: 600;
   gap: 4px;
   justify-content: center;
-  min-height: 28px;
+  min-height: 26px;
   min-width: 0;
-  padding: 0 6px;
+  padding: 0 10px;
   white-space: nowrap;
 }
 
