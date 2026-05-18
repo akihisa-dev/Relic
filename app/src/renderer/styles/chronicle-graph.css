@@ -930,6 +930,18 @@
 }
 
 .chronicle-chart {
+  --chronicle-actual-fill: rgba(224, 108, 0, 0.48);
+  --chronicle-actual-fill-active: rgba(224, 108, 0, 0.64);
+  --chronicle-actual-fill-hover: rgba(224, 108, 0, 0.56);
+  --chronicle-fill: rgba(0, 124, 175, 0.28);
+  --chronicle-fill-active: rgba(0, 124, 175, 0.44);
+  --chronicle-fill-hover: rgba(0, 124, 175, 0.36);
+  --chronicle-grid-line-major: rgba(28, 28, 28, 0.15);
+  --chronicle-grid-line-minor: rgba(28, 28, 28, 0.055);
+  --chronicle-grid-line-row: rgba(28, 28, 28, 0.06);
+  --chronicle-planned-fill: rgba(0, 124, 175, 0.36);
+  --chronicle-planned-fill-active: rgba(0, 124, 175, 0.52);
+  --chronicle-planned-fill-hover: rgba(0, 124, 175, 0.44);
   border: 1px solid var(--border);
   border-radius: 7px;
   cursor: grab;
@@ -941,6 +953,38 @@
   overflow-y: hidden;
   position: relative;
   isolation: isolate;
+}
+
+[data-theme="dark"] .chronicle-chart {
+  --chronicle-actual-fill: rgba(224, 108, 0, 0.68);
+  --chronicle-actual-fill-active: rgba(224, 108, 0, 0.82);
+  --chronicle-actual-fill-hover: rgba(224, 108, 0, 0.76);
+  --chronicle-fill: rgba(0, 124, 175, 0.52);
+  --chronicle-fill-active: rgba(0, 124, 175, 0.68);
+  --chronicle-fill-hover: rgba(0, 124, 175, 0.6);
+  --chronicle-grid-line-major: rgba(255, 255, 255, 0.2);
+  --chronicle-grid-line-minor: rgba(255, 255, 255, 0.09);
+  --chronicle-grid-line-row: rgba(255, 255, 255, 0.12);
+  --chronicle-planned-fill: rgba(0, 124, 175, 0.62);
+  --chronicle-planned-fill-active: rgba(0, 124, 175, 0.78);
+  --chronicle-planned-fill-hover: rgba(0, 124, 175, 0.7);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .chronicle-chart {
+    --chronicle-actual-fill: rgba(224, 108, 0, 0.68);
+    --chronicle-actual-fill-active: rgba(224, 108, 0, 0.82);
+    --chronicle-actual-fill-hover: rgba(224, 108, 0, 0.76);
+    --chronicle-fill: rgba(0, 124, 175, 0.52);
+    --chronicle-fill-active: rgba(0, 124, 175, 0.68);
+    --chronicle-fill-hover: rgba(0, 124, 175, 0.6);
+    --chronicle-grid-line-major: rgba(255, 255, 255, 0.2);
+    --chronicle-grid-line-minor: rgba(255, 255, 255, 0.09);
+    --chronicle-grid-line-row: rgba(255, 255, 255, 0.12);
+    --chronicle-planned-fill: rgba(0, 124, 175, 0.62);
+    --chronicle-planned-fill-active: rgba(0, 124, 175, 0.78);
+    --chronicle-planned-fill-hover: rgba(0, 124, 175, 0.7);
+  }
 }
 
 .chronicle-chart:active {
@@ -1233,7 +1277,7 @@
 }
 
 .chronicle-guide-line {
-  background: rgba(28, 28, 28, 0.055);
+  background: var(--chronicle-grid-line-minor);
   bottom: 0;
   position: absolute;
   top: 0;
@@ -1241,35 +1285,35 @@
 }
 
 .chronicle-guide-line--minor {
-  background: rgba(28, 28, 28, 0.055);
+  background: var(--chronicle-grid-line-minor);
 }
 
 .chronicle-guide-line--major {
-  background: rgba(28, 28, 28, 0.15);
+  background: var(--chronicle-grid-line-major);
 }
 
 .chronicle-guide-lines--date .chronicle-guide-line--minor {
-  background: rgba(28, 28, 28, 0.026);
+  background: color-mix(in srgb, var(--chronicle-grid-line-minor) 58%, transparent);
 }
 
 .chronicle-guide-lines--date-month .chronicle-guide-line--minor {
-  background: rgba(28, 28, 28, 0.022);
+  background: color-mix(in srgb, var(--chronicle-grid-line-minor) 50%, transparent);
 }
 
 .chronicle-guide-lines--date .chronicle-guide-line--major {
-  background: rgba(28, 28, 28, 0.105);
+  background: color-mix(in srgb, var(--chronicle-grid-line-major) 70%, transparent);
 }
 
 .chronicle-guide-lines--chronicle .chronicle-guide-line--minor {
-  background: rgba(28, 28, 28, 0.038);
+  background: color-mix(in srgb, var(--chronicle-grid-line-minor) 70%, transparent);
 }
 
 .chronicle-guide-lines--chronicle .chronicle-guide-line--major {
-  background: rgba(28, 28, 28, 0.19);
+  background: var(--chronicle-grid-line-major);
 }
 
 .chronicle-guide-row-line {
-  background: rgba(28, 28, 28, 0.06);
+  background: var(--chronicle-grid-line-row);
   height: 1px;
   left: 0;
   position: absolute;
@@ -1277,7 +1321,7 @@
 }
 
 .chronicle-guide-lines--date .chronicle-guide-row-line {
-  background: rgba(28, 28, 28, 0.045);
+  background: color-mix(in srgb, var(--chronicle-grid-line-row) 75%, transparent);
 }
 
 .chronicle-today-line {
@@ -1396,7 +1440,7 @@
 
 .chronicle-fill {
   align-items: center;
-  background: rgba(0, 124, 175, 0.28);
+  background: var(--chronicle-fill);
   border: 0;
   color: var(--text);
   cursor: grab;
@@ -1418,30 +1462,30 @@
 }
 
 .chronicle-fill:hover {
-  background: rgba(0, 124, 175, 0.36);
+  background: var(--chronicle-fill-hover);
 }
 
 .chronicle-fill:active,
 .chronicle-fill--dragging {
-  background: rgba(0, 124, 175, 0.44);
+  background: var(--chronicle-fill-active);
   cursor: grabbing;
 }
 
 .chronicle-fill--planned {
-  background: rgba(0, 124, 175, 0.36);
+  background: var(--chronicle-planned-fill);
 }
 
 .chronicle-fill--planned:hover {
-  background: rgba(0, 124, 175, 0.44);
+  background: var(--chronicle-planned-fill-hover);
 }
 
 .chronicle-fill--planned:active,
 .chronicle-fill--planned.chronicle-fill--dragging {
-  background: rgba(0, 124, 175, 0.52);
+  background: var(--chronicle-planned-fill-active);
 }
 
 .chronicle-fill--actual {
-  background: rgba(224, 108, 0, 0.48);
+  background: var(--chronicle-actual-fill);
 }
 
 .chronicle-fill--date {
@@ -1466,12 +1510,12 @@
 }
 
 .chronicle-fill--actual:hover {
-  background: rgba(224, 108, 0, 0.56);
+  background: var(--chronicle-actual-fill-hover);
 }
 
 .chronicle-fill--actual:active,
 .chronicle-fill--actual.chronicle-fill--dragging {
-  background: rgba(224, 108, 0, 0.64);
+  background: var(--chronicle-actual-fill-active);
 }
 
 .chronicle-fill-label {
