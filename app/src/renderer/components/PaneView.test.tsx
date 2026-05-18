@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import type { MutableRefObject } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { EditorView } from "@codemirror/view";
@@ -123,10 +123,13 @@ afterEach(() => {
 describe("PaneView", () => {
   it("selects and closes tabs from the tab bar", () => {
     setPaneState(
-      { [fileTab.id]: fileTab, [secondFileTab.id]: secondFileTab },
+      { [fileTab.id]: { ...fileTab, isPinned: true }, [secondFileTab.id]: secondFileTab },
       { activeTabId: fileTab.id, history: [fileTab.id], tabIds: [fileTab.id, secondFileTab.id] }
     );
     const props = renderPaneView();
+
+    expect(within(tabElement("Note")).getByTestId("pane-tab-pin-icon")).toBeInTheDocument();
+    expect(within(tabElement("Second")).queryByTestId("pane-tab-pin-icon")).toBeNull();
 
     fireEvent.click(tabElement("Second"));
     expect(props.onTabSelect).toHaveBeenCalledWith(secondFileTab.id);
