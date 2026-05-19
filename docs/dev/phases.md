@@ -38,9 +38,9 @@ AIは `AI.md` と `docs/product/project.md` の次にこのファイルを読み
 ## 現在フェーズ
 
 ```yaml
-current: P27
-summary: 不具合修正・パフォーマンス改善
-checklist: phases/P27-bugfix-performance.md
+current: P28
+summary: グラフビュー安定化
+checklist: phases/P28-graph-view-stabilization.md
 ```
 
 ---
@@ -76,7 +76,8 @@ checklist: phases/P27-bugfix-performance.md
 | P24 | 全般修正 | done | `phases/P24-general-fixes.md`, `conventions.md`, `testing.md`, 必要に応じて `../spec/`, `../ui/`, `../architecture/overview.md` |
 | P25 | グラフビューアップグレード | done | `phases/P25-graph-view-upgrade.md`, `conventions.md`, `testing.md`, 必要に応じて `../spec/`, `../ui/`, `../architecture/overview.md` |
 | P26 | デザイン・UI刷新 | done | `phases/P26-design-ui-refresh.md`, `conventions.md`, `testing.md`, `../ui/DESIGN.md`, `../ui/screens-macos.md`, `../ui/navigation.md`, 必要に応じて `../spec/`, `../architecture/overview.md` |
-| P27 | 不具合修正・パフォーマンス改善 | current | `phases/P27-bugfix-performance.md`, `conventions.md`, `testing.md`, 必要に応じて `../spec/`, `../ui/`, `../architecture/overview.md` |
+| P27 | 不具合修正・パフォーマンス改善 | done | `phases/P27-bugfix-performance.md`, `conventions.md`, `testing.md`, 必要に応じて `../spec/`, `../ui/`, `../architecture/overview.md` |
+| P28 | グラフビュー安定化 | current | `phases/P28-graph-view-stabilization.md`, `conventions.md`, `testing.md`, 必要に応じて `../spec/`, `../ui/`, `../architecture/overview.md` |
 
 ### 取り下げた非正当フェーズ
 
