@@ -6,7 +6,6 @@ import { layoutGraph, tickGraphSimulation } from "../graphLayout";
 import type { GraphForceSettings, GraphLayoutMode, GraphSimPoint } from "../graphLayout";
 
 interface UseGraphSimulationInput {
-  animationEpoch: number;
   edges: WorkspaceGraphEdge[];
   forceSettings: GraphForceSettings;
   layoutMode: GraphLayoutMode;
@@ -22,7 +21,6 @@ export interface GraphSimulationState {
 }
 
 export function useGraphSimulation({
-  animationEpoch = 0,
   edges,
   forceSettings,
   layoutMode,
@@ -32,7 +30,6 @@ export function useGraphSimulation({
 }: UseGraphSimulationInput): GraphSimulationState {
   const pointsRef = useRef<GraphSimPoint[]>([]);
   const forceSettingsKeyRef = useRef<string | null>(null);
-  const settledAnimationEpochRef = useRef(animationEpoch);
   const layoutModeRef = useRef<GraphLayoutMode | null>(null);
   const [points, setPointsState] = useState<GraphSimPoint[]>([]);
 
@@ -65,31 +62,6 @@ export function useGraphSimulation({
     layoutModeRef.current = layoutMode;
     setPoints(nextPoints);
   }, [edges, forceSettings, layoutMode, nodes, pauseSimulationRef, pinnedPathRef]);
-
-  useEffect(() => {
-    if (settledAnimationEpochRef.current === animationEpoch) return;
-    settledAnimationEpochRef.current = animationEpoch;
-    if (typeof window === "undefined" || pointsRef.current.length <= 1) return;
-
-    let frameId = 0;
-    let frame = 0;
-    let isDisposed = false;
-
-    function step(): void {
-      if (isDisposed) return;
-      if (!pauseSimulationRef.current) {
-        setPoints(tickGraphSimulation(pointsRef.current, edges, forceSettings, pinnedPathRef.current, 2));
-      }
-      frame += 1;
-      if (frame < 90) frameId = window.requestAnimationFrame(step);
-    }
-
-    frameId = window.requestAnimationFrame(step);
-    return () => {
-      isDisposed = true;
-      window.cancelAnimationFrame(frameId);
-    };
-  }, [animationEpoch, edges, forceSettings, pauseSimulationRef, pinnedPathRef]);
 
   return {
     points,

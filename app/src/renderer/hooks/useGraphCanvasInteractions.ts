@@ -11,7 +11,6 @@ import { useGraphViewportInteractions } from "./useGraphViewportInteractions";
 import type { GraphHandlers } from "./useGraphViewportInteractions";
 
 interface UseGraphCanvasInteractionsInput {
-  animationEpoch: number;
   edges: WorkspaceGraphEdge[];
   focusedPath: string | null;
   forceSettings: GraphForceSettings;
@@ -29,7 +28,6 @@ export type { GraphHandlers } from "./useGraphViewportInteractions";
 export type { GraphNodeHandlers } from "./useGraphNodeInteractions";
 
 export function useGraphCanvasInteractions({
-  animationEpoch,
   edges,
   focusedPath,
   forceSettings,
@@ -54,7 +52,6 @@ export function useGraphCanvasInteractions({
   const pinnedPathRef = useRef<string | null>(null);
   const pauseSimulationRef = useRef(false);
   const simulation = useGraphSimulation({
-    animationEpoch,
     edges,
     forceSettings,
     layoutMode,
