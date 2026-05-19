@@ -56,13 +56,13 @@ function renderGraphCanvas(overrides: Partial<GraphCanvasProps> = {}): RenderRes
 }
 
 describe("GraphCanvas", () => {
-  it("Pixi screen sizeからviewBox transformを作りdevicePixelRatioで二重に縮小しない", () => {
+  it("Pixi screen sizeから等倍viewBox transformを作りnodeを楕円化しない", () => {
     const transform = buildGraphViewBoxTransform(1200, 720, { height: 900, width: 1600, x: 0, y: 0 });
 
     expect(transform.scaleX).toBeCloseTo(0.75);
-    expect(transform.scaleY).toBeCloseTo(0.8);
+    expect(transform.scaleY).toBeCloseTo(0.75);
     expect(transform.x).toBeCloseTo(0);
-    expect(transform.y).toBeCloseTo(0);
+    expect(transform.y).toBeCloseTo(22.5);
   });
 
   it("Pixi rendererのhostを描画しnode/edge件数を属性へ反映する", () => {

@@ -77,6 +77,7 @@ interface PixiGraphRuntime {
   resizeObserver: ResizeObserver | null;
   root: Container;
   Text: typeof import("pixi.js").Text;
+  viewScale: number;
   viewBoxTransformKey: string | null;
 }
 
@@ -232,6 +233,7 @@ export function GraphCanvas({
           resizeObserver,
           root,
           Text: pixi.Text,
+          viewScale: 1,
           viewBoxTransformKey: null
         };
         initializedApp.stage.on("globalpointermove", (event) => {
@@ -273,6 +275,7 @@ export function GraphCanvas({
     const host = hostRef.current;
     if (!runtime || !host || !isReady) return;
 
+    applyGraphViewBox(runtime, latestViewBoxRef.current);
     drawGraph(runtime, buildGraphRenderState({
       edges,
       focusedPath,
@@ -299,7 +302,6 @@ export function GraphCanvas({
       onNodePointerUp,
       showArrows
     });
-    applyGraphViewBox(runtime, latestViewBoxRef.current);
     runtime.app.render();
   }, [
     edges,
@@ -330,6 +332,7 @@ export function GraphCanvas({
     const runtime = pixiRef.current;
     if (!runtime || !isReady) return;
     if (applyGraphViewBox(runtime, viewBox)) {
+      updateLabelFontSize(runtime);
       runtime.app.render();
     }
   }, [isReady, viewBox]);
@@ -434,8 +437,8 @@ function drawMotionEdge(layer: Graphics, edge: GraphRenderEdge, isAfterglow: boo
 function drawNode(layer: Graphics, node: GraphRenderNode): void {
   if (node.ringVisible) {
     layer
-      .circle(node.x, node.y, node.radius + 5)
-      .stroke({ alpha: 0.9, color: node.strokeColor, width: 1.9 });
+      .circle(node.x, node.y, node.radius + 2.8)
+      .stroke({ alpha: 0.56, color: node.strokeColor, width: 1.05 });
   }
 
   layer
@@ -521,7 +524,7 @@ function updateLabelLayer(runtime: PixiGraphRuntime, state: GraphRenderState): v
         style: {
           fill: state.palette.text,
           fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
-          fontSize: 9
+          fontSize: graphLabelWorldFontSize(runtime.viewScale)
         },
         text: node.name
       });
@@ -532,9 +535,21 @@ function updateLabelLayer(runtime: PixiGraphRuntime, state: GraphRenderState): v
     label.text = node.name;
     label.alpha = node.labelAlpha;
     label.style.fill = state.palette.text;
+    label.style.fontSize = graphLabelWorldFontSize(runtime.viewScale);
     label.x = node.x + node.radius + 5;
     label.y = node.y - 6;
   });
+}
+
+function updateLabelFontSize(runtime: PixiGraphRuntime): void {
+  for (const label of runtime.labelsByPath.values()) {
+    label.style.fontSize = graphLabelWorldFontSize(runtime.viewScale);
+  }
+}
+
+function graphLabelWorldFontSize(viewScale: number): number {
+  const safeScale = Math.max(0.001, viewScale);
+  return Math.min(32, Math.max(0.75, 10 / safeScale));
 }
 
 function applyGraphViewBox(runtime: PixiGraphRuntime, viewBox: GraphViewBox): boolean {
@@ -551,6 +566,7 @@ function applyGraphViewBox(runtime: PixiGraphRuntime, viewBox: GraphViewBox): bo
 
   runtime.root.scale.set(transform.scaleX, transform.scaleY);
   runtime.root.position.set(transform.x, transform.y);
+  runtime.viewScale = transform.scaleX;
   runtime.viewBoxTransformKey = transformKey;
   return true;
 }
@@ -560,14 +576,13 @@ export function buildGraphViewBoxTransform(
   height: number,
   viewBox: GraphViewBox
 ): GraphViewBoxTransform {
-  const scaleX = width / viewBox.width;
-  const scaleY = height / viewBox.height;
+  const scale = Math.min(width / viewBox.width, height / viewBox.height);
 
   return {
-    scaleX,
-    scaleY,
-    x: -viewBox.x * scaleX,
-    y: -viewBox.y * scaleY
+    scaleX: scale,
+    scaleY: scale,
+    x: (width - viewBox.width * scale) / 2 - viewBox.x * scale,
+    y: (height - viewBox.height * scale) / 2 - viewBox.y * scale
   };
 }
 

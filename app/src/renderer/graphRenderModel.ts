@@ -68,11 +68,11 @@ export interface GraphRenderState {
 export const defaultGraphRenderPalette: GraphRenderPalette = {
   accent: 0x00628c,
   background: 0xffffff,
-  line: 0xb6babd,
-  lineFocused: 0x7a7d80,
-  node: 0x696d70,
-  nodeFocused: 0x4b4f52,
-  nodeSelected: 0x3f5f6e,
+  line: 0xc7cacc,
+  lineFocused: 0x8c9296,
+  node: 0x8f9498,
+  nodeFocused: 0x646a70,
+  nodeSelected: 0x4f6f7d,
   text: 0x1c1c1c
 };
 
@@ -111,9 +111,9 @@ export function buildGraphRenderState({
   const nodeSelected = palette.nodeSelected;
   const edgeColor = palette.line;
   const edgeSelected = palette.lineFocused;
-  const dimmedEdgeAlpha = isLargeGraph ? 0.14 : 0.18;
-  const normalEdgeAlpha = isLargeGraph ? 0.2 : 0.3;
-  const focusedEdgeAlpha = isLargeGraph ? 0.48 : 0.56;
+  const dimmedEdgeAlpha = isLargeGraph ? 0.045 : 0.075;
+  const normalEdgeAlpha = isLargeGraph ? 0.085 : 0.16;
+  const focusedEdgeAlpha = isLargeGraph ? 0.34 : 0.44;
 
   return {
     edges: edges.flatMap((edge) => {
@@ -129,7 +129,7 @@ export function buildGraphRenderState({
         isFocused,
         isMotion,
         sourcePath: edge.sourcePath,
-        strokeWidth: (isFocused ? 1.05 : isLargeGraph ? 0.5 : 0.68) * linkThickness,
+        strokeWidth: Math.min(isFocused ? 0.82 : 0.46, (isFocused ? 0.74 : isLargeGraph ? 0.3 : 0.42) * linkThickness),
         targetPath: edge.targetPath,
         x1: source.x,
         x2: target.x,
@@ -145,9 +145,9 @@ export function buildGraphRenderState({
       const isMotion = point.path === motionPath;
       const group = groupByPath.get(point.path);
       const isDimmed = !!focusedPath && !isRelated;
-      const radiusBase = isLargeGraph ? 1.45 : 2.15;
-      const radiusDegreeScale = isLargeGraph ? 0.58 : 1.05;
-      const radiusMax = isLargeGraph ? 4.6 : 7.2;
+      const radiusBase = isLargeGraph ? 1.05 : 1.75;
+      const radiusDegreeScale = isLargeGraph ? 0.42 : 0.78;
+      const radiusMax = isLargeGraph ? 3.25 : 5.8;
       const radius = Math.min(radiusMax, radiusBase + Math.sqrt(point.degree) * radiusDegreeScale) * nodeSize;
       const labelVisible = showLabels && (
         points.length <= GRAPH_VISIBLE_LABEL_NODE_LIMIT ||
@@ -168,7 +168,7 @@ export function buildGraphRenderState({
 
       return {
         degree: point.degree,
-        fillAlpha: isDimmed ? 0.46 : isSelected ? 0.98 : isFocused ? 0.94 : isRelated && focusedPath ? 0.84 : isLargeGraph ? 0.82 : 0.9,
+        fillAlpha: isDimmed ? 0.18 : isSelected ? 0.9 : isFocused ? 0.84 : isRelated && focusedPath ? 0.7 : isLargeGraph ? 0.58 : 0.72,
         fillColor,
         folder: point.folder,
         incoming: point.incoming,
@@ -177,16 +177,16 @@ export function buildGraphRenderState({
         isMotion,
         isRelated,
         isSelected,
-        labelAlpha: isDimmed ? Math.min(0.44, labelOpacity) : labelOpacity,
+        labelAlpha: isDimmed ? Math.min(0.18, labelOpacity) : isLargeGraph ? Math.min(0.72, labelOpacity) : labelOpacity,
         labelVisible,
         name: point.name,
         path: point.path,
         radius,
         ringVisible: isSelected,
         outgoing: point.outgoing,
-        strokeAlpha: isSelected ? 0.82 : isFocused ? 0.4 : isLargeGraph ? 0.06 : 0.22,
+        strokeAlpha: isSelected ? 0.48 : isFocused ? 0.28 : isLargeGraph ? 0.035 : 0.12,
         strokeColor: isSelected ? mixColor(nodeSelected, palette.background, 0.72) : palette.background,
-        strokeWidth: isSelected ? 1.6 : isFocused ? 0.9 : isLargeGraph ? 0.3 : 0.72,
+        strokeWidth: isSelected ? 0.86 : isFocused ? 0.58 : isLargeGraph ? 0.18 : 0.42,
         tags: point.tags,
         vx: velocity.vx,
         vy: velocity.vy,

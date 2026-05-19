@@ -10,8 +10,8 @@ import {
 import type { GraphPan, GraphViewBox } from "./graphLayoutTypes";
 import type { GraphPoint } from "./graphLayoutTypes";
 
-const graphFitPaddingMin = 96;
-const graphFitPaddingMax = 240;
+const graphFitPaddingMin = 64;
+const graphFitPaddingMax = 168;
 const graphFitMinWidth = 520;
 const graphFitMinHeight = 360;
 const graphFitAspectRatio = GRAPH_WIDTH / GRAPH_HEIGHT;
@@ -59,7 +59,7 @@ export function buildGraphFitViewBox(points: GraphPoint[]): GraphViewBox {
   const boundsWidth = Math.max(1, maxX - minX);
   const boundsHeight = Math.max(1, maxY - minY);
   const boundsMax = Math.max(boundsWidth, boundsHeight);
-  const padding = clamp(boundsMax * 0.16, graphFitPaddingMin, graphFitPaddingMax);
+  const padding = clamp(boundsMax * 0.1, graphFitPaddingMin, graphFitPaddingMax);
   let width = Math.max(graphFitMinWidth, boundsWidth + padding * 2);
   let height = Math.max(graphFitMinHeight, boundsHeight + padding * 2);
 

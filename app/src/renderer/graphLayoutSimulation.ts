@@ -107,8 +107,8 @@ function buildLayoutSeed(
 }
 
 function seedStandardLayout(points: GraphPoint[]): void {
-  const spacing = Math.min(GRAPH_WIDTH, GRAPH_HEIGHT) * 0.018;
-  const jitterRadius = Math.min(GRAPH_WIDTH, GRAPH_HEIGHT) * 0.018;
+  const spacing = Math.min(GRAPH_WIDTH, GRAPH_HEIGHT) * 0.014;
+  const jitterRadius = Math.min(GRAPH_WIDTH, GRAPH_HEIGHT) * 0.012;
 
   points.forEach((point, index) => {
     const radius = spacing * Math.sqrt(index + 1);
@@ -321,18 +321,18 @@ function runD3GraphSimulation(
 }
 
 function buildD3ForceProfile(nodeCount: number, forceSettings: GraphForceSettings): D3ForceProfile {
-  const density = Math.min(3.45, Math.sqrt(Math.max(1, nodeCount / 180)));
-  const radiusScale = Math.min(1.08, Math.max(0.68, Math.sqrt(Math.max(1, nodeCount)) / 34));
+  const density = Math.min(3.8, Math.sqrt(Math.max(1, nodeCount / 150)));
+  const radiusScale = Math.min(1, Math.max(0.62, Math.sqrt(Math.max(1, nodeCount)) / 38));
 
   return {
-    axisStrength: 0.026 * forceSettings.centerForce,
-    centerStrength: 0.16,
-    chargeStrength: (-34 * forceSettings.repelForce) / density,
-    collideStrength: 0.09 / Math.sqrt(density),
-    containmentRadius: Math.min(GRAPH_WIDTH, GRAPH_HEIGHT) * 0.33 * radiusScale,
-    containmentStrength: 0.014 * forceSettings.centerForce * density,
-    linkDistance: forceSettings.linkDistance / Math.min(2.75, density),
-    linkStrength: 0.038 * forceSettings.linkForce * Math.min(1.35, density)
+    axisStrength: 0.034 * forceSettings.centerForce,
+    centerStrength: 0.19,
+    chargeStrength: (-24 * forceSettings.repelForce) / density,
+    collideStrength: 0.075 / Math.sqrt(density),
+    containmentRadius: Math.min(GRAPH_WIDTH, GRAPH_HEIGHT) * 0.29 * radiusScale,
+    containmentStrength: 0.02 * forceSettings.centerForce * density,
+    linkDistance: forceSettings.linkDistance / Math.min(3.3, density),
+    linkStrength: 0.046 * forceSettings.linkForce * Math.min(1.5, density)
   };
 }
 
