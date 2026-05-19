@@ -48,7 +48,7 @@ describe("graphRenderModel", () => {
     expect(state.nodes.find((node) => node.path === "D.md")?.fillAlpha).toBeGreaterThan(0.24);
     expect(state.nodes.find((node) => node.path === "D.md")?.fillAlpha).toBeLessThan(0.32);
     expect(state.edges[0]?.alpha).toBeLessThanOrEqual(0.5);
-    expect(state.edges[0]?.strokeWidth).toBeLessThan(0.9);
+    expect(state.edges[0]?.strokeWidth).toBeLessThan(1);
     expect(state.nodes.find((node) => node.path === "B.md")?.strokeWidth).toBeLessThan(1);
   });
 

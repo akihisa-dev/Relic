@@ -70,6 +70,10 @@ export function useGraphSimulation({
     setPointsState(nextPoints);
   }
 
+  function updateSimulationPoints(nextPoints: GraphSimPoint[]): void {
+    pointsRef.current = nextPoints;
+  }
+
   useEffect(() => {
     const seedPoints = layoutGraph(nodes, edges, forceSettings, layoutMode);
     const existingPoints = new Map(pointsRef.current.map((point) => [point.path, point]));
@@ -110,7 +114,7 @@ export function useGraphSimulation({
         if (event.data.runId !== latestRunId) return;
         if (pauseSimulationRef.current) return;
         workerResponseCount += 1;
-        setPoints(event.data.points);
+        updateSimulationPoints(event.data.points);
       };
       worker.onerror = () => {
         if (!isActive) return;
@@ -149,7 +153,7 @@ export function useGraphSimulation({
             forceSettings,
             pinnedPathRef.current
           );
-          setPoints(nextPoints);
+          updateSimulationPoints(nextPoints);
         }
       }
 

@@ -155,19 +155,21 @@ describe("useGraphSimulation", () => {
     });
   });
 
-  it("RAF tickでsimulationを更新する", async () => {
+  it("RAF tickでReact stateを更新せず描画用pointsRefを更新する", async () => {
     const { hook } = renderSimulation();
 
     await waitFor(() => {
       expect(hook.result.current.points).toHaveLength(2);
     });
-    const before = hook.result.current.points;
+    const beforeState = hook.result.current.points;
+    const beforeRef = hook.result.current.pointsRef.current;
 
     act(() => {
       frameCallbacks[0]?.(0);
     });
 
-    expect(hook.result.current.points).not.toBe(before);
+    expect(hook.result.current.points).toBe(beforeState);
+    expect(hook.result.current.pointsRef.current).not.toBe(beforeRef);
     expect(window.requestAnimationFrame).toHaveBeenCalledTimes(2);
   });
 
@@ -226,7 +228,8 @@ describe("useGraphSimulation", () => {
       workerInstances[0].emitResponse(nextPoints, 1);
     });
 
-    expect(hook.result.current.points[0].x).toBe(nextPoints[0].x);
+    expect(hook.result.current.points[0].x).not.toBe(nextPoints[0].x);
+    expect(hook.result.current.pointsRef.current[0].x).toBe(nextPoints[0].x);
   });
 
   it("worker error後はmain-thread simulationへfallbackする", async () => {
@@ -248,13 +251,15 @@ describe("useGraphSimulation", () => {
       workerInstances[0].emitError();
     });
     const beforeFallback = hook.result.current.points;
+    const beforeFallbackRef = hook.result.current.pointsRef.current;
 
     act(() => {
       frameCallbacks[1]?.(16);
     });
 
     expect(workerInstances[0].terminate).toHaveBeenCalled();
-    expect(hook.result.current.points).not.toBe(beforeFallback);
+    expect(hook.result.current.points).toBe(beforeFallback);
+    expect(hook.result.current.pointsRef.current).not.toBe(beforeFallbackRef);
   });
 
   it("unmount時にworkerをterminateする", async () => {

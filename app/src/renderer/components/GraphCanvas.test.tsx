@@ -40,6 +40,7 @@ function makeGraphCanvasProps(overrides: Partial<GraphCanvasProps> = {}): GraphC
     onNodePointerMove: vi.fn(),
     onNodePointerUp: vi.fn(),
     points,
+    pointsRef: { current: points.map((point) => ({ ...point, vx: 0, vy: 0 })) },
     relatedPaths: new Set(["A.md", "C.md"]),
     selectedPath: "B.md",
     showArrows: false,
