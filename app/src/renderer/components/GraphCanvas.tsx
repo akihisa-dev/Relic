@@ -632,8 +632,8 @@ function updateLabelLayer(runtime: PixiGraphRuntime, state: GraphRenderState): v
     label.style.fill = state.palette.text;
     label.style.fontSize = 10;
     label.scale.set(graphLabelScreenScale(runtime.viewScale));
-    label.x = node.x + node.radius + 5;
-    label.y = node.y - 6;
+    label.x = node.x + node.radius + 2;
+    label.y = node.y - 3;
   });
 }
 
