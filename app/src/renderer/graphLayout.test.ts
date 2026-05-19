@@ -56,6 +56,15 @@ function distanceFromCenter(point: { x: number; y: number }): number {
   return Math.hypot(point.x - GRAPH_WIDTH / 2, point.y - GRAPH_HEIGHT / 2);
 }
 
+function pointBounds(points: { x: number; y: number }[]): { height: number; width: number } {
+  const xs = points.map((point) => point.x);
+  const ys = points.map((point) => point.y);
+  return {
+    height: Math.max(...ys) - Math.min(...ys),
+    width: Math.max(...xs) - Math.min(...xs)
+  };
+}
+
 describe("buildGraphViewBox", () => {
   it("zoomとpanを既存通りviewBoxへ反映する", () => {
     expect(buildGraphViewBox(1, { x: 0, y: 0 })).toEqual({
@@ -75,6 +84,21 @@ describe("buildGraphViewBox", () => {
   it("zoomをグラフ表示範囲内に丸める", () => {
     expect(buildGraphViewBox(999, { x: 0, y: 0 }).width).toBeCloseTo(GRAPH_WIDTH / GRAPH_MAX_ZOOM);
     expect(buildGraphViewBox(0, { x: 0, y: 0 }).width).toBeCloseTo(GRAPH_WIDTH / GRAPH_MIN_ZOOM);
+  });
+
+  it("points指定時はグラフ塊にfitしたviewBoxを作る", () => {
+    const points = [
+      { ...graph.nodes[0], degree: 0, incoming: 0, outgoing: 0, x: 720, y: 420 },
+      { ...graph.nodes[1], degree: 0, incoming: 0, outgoing: 0, x: 880, y: 480 }
+    ];
+    const fit = buildGraphViewBox(1, { x: 0, y: 0 }, points);
+
+    expect(fit.width).toBeLessThan(GRAPH_WIDTH);
+    expect(fit.height).toBeLessThan(GRAPH_HEIGHT);
+    expect(fit.x).toBeLessThan(720);
+    expect(fit.x + fit.width).toBeGreaterThan(880);
+    expect(fit.y).toBeLessThan(420);
+    expect(fit.y + fit.height).toBeGreaterThan(480);
   });
 });
 
@@ -275,14 +299,14 @@ describe("graph layout simulation", () => {
     ]);
   });
 
-  it("1000 node規模でもd3-force layoutをbounds内に生成する", () => {
+  it("1000 node / 1980 link規模でも矩形外枠に張り付かない自然なクラウドを生成する", () => {
     const largeNodes = Array.from({ length: 1000 }, (_, index): WorkspaceGraphNode => ({
       folder: index % 5 === 0 ? "group" : "",
       name: `N${index}`,
       path: `N${index}.md`,
       tags: []
     }));
-    const largeEdges = Array.from({ length: 1400 }, (_, index) => ({
+    const largeEdges = Array.from({ length: 1980 }, (_, index) => ({
       sourcePath: `N${index % largeNodes.length}.md`,
       targetPath: `N${(index * 7 + 13) % largeNodes.length}.md`
     }));
@@ -292,17 +316,20 @@ describe("graph layout simulation", () => {
 
     expect(next).toHaveLength(1000);
     for (const point of next) {
-      expect(point.x).toBeGreaterThanOrEqual(GRAPH_PADDING);
-      expect(point.x).toBeLessThanOrEqual(GRAPH_WIDTH - GRAPH_PADDING);
-      expect(point.y).toBeGreaterThanOrEqual(GRAPH_PADDING);
-      expect(point.y).toBeLessThanOrEqual(GRAPH_HEIGHT - GRAPH_PADDING);
+      expect(Number.isFinite(point.x)).toBe(true);
+      expect(Number.isFinite(point.y)).toBe(true);
     }
     const pinnedToFrameCount = next.filter((point) => (
-      point.x <= GRAPH_PADDING + 1 ||
-      point.x >= GRAPH_WIDTH - GRAPH_PADDING - 1 ||
-      point.y <= GRAPH_PADDING + 1 ||
-      point.y >= GRAPH_HEIGHT - GRAPH_PADDING - 1
+      Math.abs(point.x - GRAPH_PADDING) <= 1 ||
+      Math.abs(point.x - (GRAPH_WIDTH - GRAPH_PADDING)) <= 1 ||
+      Math.abs(point.y - GRAPH_PADDING) <= 1 ||
+      Math.abs(point.y - (GRAPH_HEIGHT - GRAPH_PADDING)) <= 1
     )).length;
-    expect(pinnedToFrameCount).toBeLessThan(250);
+    const bounds = pointBounds(next);
+    const aspectRatio = bounds.width / bounds.height;
+
+    expect(pinnedToFrameCount).toBeLessThan(12);
+    expect(aspectRatio).toBeGreaterThan(0.72);
+    expect(aspectRatio).toBeLessThan(1.42);
   });
 });

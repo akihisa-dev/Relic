@@ -5,6 +5,11 @@ import type { GraphGroup } from "./store/graphStore";
 export interface GraphRenderPalette {
   accent: number;
   background: number;
+  line: number;
+  lineFocused: number;
+  node: number;
+  nodeFocused: number;
+  nodeSelected: number;
   text: number;
 }
 
@@ -63,6 +68,11 @@ export interface GraphRenderState {
 export const defaultGraphRenderPalette: GraphRenderPalette = {
   accent: 0x00628c,
   background: 0xffffff,
+  line: 0xb9bec2,
+  lineFocused: 0x6f7478,
+  node: 0x666a6d,
+  nodeFocused: 0x333638,
+  nodeSelected: 0x2f6176,
   text: 0x1c1c1c
 };
 
@@ -95,12 +105,12 @@ export function buildGraphRenderState({
 }): GraphRenderState {
   const pointByPath = new Map(points.map((point) => [point.path, point]));
   const isLargeGraph = points.length > 220 || edges.length > 520;
-  const nodeFill = mixColor(palette.accent, palette.text, 0.62);
-  const nodeFocused = mixColor(palette.accent, palette.text, 0.72);
-  const nodeRelated = mixColor(palette.accent, palette.text, 0.64);
-  const nodeSelected = mixColor(palette.accent, palette.text, 0.78);
-  const edgeColor = mixColor(palette.accent, palette.text, 0.66);
-  const edgeSelected = mixColor(palette.accent, palette.text, 0.82);
+  const nodeFill = palette.node;
+  const nodeFocused = palette.nodeFocused;
+  const nodeRelated = mixColor(palette.nodeFocused, palette.accent, 0.72);
+  const nodeSelected = palette.nodeSelected;
+  const edgeColor = palette.line;
+  const edgeSelected = palette.lineFocused;
 
   return {
     edges: edges.flatMap((edge) => {
@@ -111,12 +121,12 @@ export function buildGraphRenderState({
       const isFocused = focusedPath === edge.sourcePath || focusedPath === edge.targetPath;
       const isMotion = motionPath === edge.sourcePath || motionPath === edge.targetPath;
       return [{
-        alpha: focusedPath && !isFocused ? 0.08 : isFocused ? 0.76 : 0.46,
+        alpha: focusedPath && !isFocused ? 0.05 : isFocused ? 0.62 : isLargeGraph ? 0.24 : 0.32,
         color: isFocused ? edgeSelected : edgeColor,
         isFocused,
         isMotion,
         sourcePath: edge.sourcePath,
-        strokeWidth: (isFocused ? 1.6 : 0.9) * linkThickness,
+        strokeWidth: (isFocused ? 1.25 : isLargeGraph ? 0.55 : 0.7) * linkThickness,
         targetPath: edge.targetPath,
         x1: source.x,
         x2: target.x,
@@ -132,7 +142,10 @@ export function buildGraphRenderState({
       const isMotion = point.path === motionPath;
       const group = groupByPath.get(point.path);
       const isDimmed = !!focusedPath && !isRelated;
-      const radius = Math.min(8, 2.6 + Math.sqrt(point.degree) * 1.45) * nodeSize;
+      const radiusBase = isLargeGraph ? 1.45 : 2.15;
+      const radiusDegreeScale = isLargeGraph ? 0.58 : 1.05;
+      const radiusMax = isLargeGraph ? 4.6 : 7.2;
+      const radius = Math.min(radiusMax, radiusBase + Math.sqrt(point.degree) * radiusDegreeScale) * nodeSize;
       const labelVisible = showLabels && (
         points.length <= GRAPH_VISIBLE_LABEL_NODE_LIMIT ||
         isSelected ||
@@ -152,7 +165,7 @@ export function buildGraphRenderState({
 
       return {
         degree: point.degree,
-        fillAlpha: isDimmed ? 0.2 : isSelected ? 0.96 : isFocused ? 0.9 : isRelated && focusedPath ? 0.92 : 0.82,
+        fillAlpha: isDimmed ? 0.18 : isSelected ? 0.98 : isFocused ? 0.96 : isRelated && focusedPath ? 0.9 : isLargeGraph ? 0.86 : 0.9,
         fillColor,
         folder: point.folder,
         incoming: point.incoming,
@@ -168,9 +181,9 @@ export function buildGraphRenderState({
         radius,
         ringVisible: isSelected,
         outgoing: point.outgoing,
-        strokeAlpha: isDimmed ? 0.45 : 0.98,
+        strokeAlpha: isSelected ? 0.88 : isFocused ? 0.58 : isLargeGraph ? 0.08 : 0.26,
         strokeColor: isSelected ? mixColor(nodeSelected, palette.background, 0.72) : palette.background,
-        strokeWidth: isSelected ? 2.4 : isFocused ? 2.2 : 1.6,
+        strokeWidth: isSelected ? 1.8 : isFocused ? 1.2 : isLargeGraph ? 0.35 : 0.8,
         tags: point.tags,
         vx: velocity.vx,
         vy: velocity.vy,
@@ -205,6 +218,11 @@ export function readGraphPalette(element: HTMLElement | null): GraphRenderPalett
   return {
     accent: parseGraphColor(styles.getPropertyValue("--accent"), defaultGraphRenderPalette.accent),
     background: parseGraphColor(styles.getPropertyValue("--bg"), defaultGraphRenderPalette.background),
+    line: parseGraphColor(styles.getPropertyValue("--graph-line"), defaultGraphRenderPalette.line),
+    lineFocused: parseGraphColor(styles.getPropertyValue("--graph-line-focused"), defaultGraphRenderPalette.lineFocused),
+    node: parseGraphColor(styles.getPropertyValue("--graph-node"), defaultGraphRenderPalette.node),
+    nodeFocused: parseGraphColor(styles.getPropertyValue("--graph-node-focused"), defaultGraphRenderPalette.nodeFocused),
+    nodeSelected: parseGraphColor(styles.getPropertyValue("--graph-node-selected"), defaultGraphRenderPalette.nodeSelected),
     text: parseGraphColor(styles.getPropertyValue("--text"), defaultGraphRenderPalette.text)
   };
 }
