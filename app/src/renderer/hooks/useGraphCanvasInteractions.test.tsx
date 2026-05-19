@@ -118,7 +118,7 @@ describe("useGraphCanvasInteractions", () => {
       hook.result.current.graphHandlers.onWheel(makeEvent<HTMLDivElement>({ deltaY: -100 }));
     });
 
-    expect(setZoom).toHaveBeenCalledWith(1.1);
+    expect(setZoom).toHaveBeenCalledWith(1.15);
   });
 
   it("背景clickで選択を解除する", () => {
