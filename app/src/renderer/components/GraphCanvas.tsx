@@ -159,6 +159,7 @@ export function GraphCanvas({
 
     async function initPixi(): Promise<void> {
       try {
+        await import("pixi.js/unsafe-eval");
         const pixi = await import("pixi.js");
         app = new pixi.Application();
         await app.init({
