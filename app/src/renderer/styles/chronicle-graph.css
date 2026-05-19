@@ -258,10 +258,6 @@
   min-width: 0;
 }
 
-.graph-topbar-title .hover-menu-drag-handle {
-  margin-bottom: 0;
-}
-
 .graph-topbar-actions {
   display: inline-flex;
   gap: 4px;

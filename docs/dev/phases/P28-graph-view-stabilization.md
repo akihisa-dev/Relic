@@ -84,3 +84,4 @@ P28では、事前に固定した長い実施リストは置かない。
 - Obsidianの拡大表示に合わせて、通常リンクの画面上線幅とノード半径の基準値を上げ、線とノードが細く小さく見えすぎないよう調整した。
 - hoverだけで接続線が濃く太くなる挙動とmotion線を外し、線の強調は選択済みノード由来に限定した。
 - 開発版Electronでの目視確認は未実施。今回の変更は描画モデル、layout、GraphCanvas関連テスト、型チェック、全Vitest、diff checkで確認した。
+- グラフ設定メニューのドラッグ移動を廃止し、Obsidian基準に合わせて右上固定表示へ戻した。`pnpm exec vitest run src/renderer/components/GraphControls.test.tsx src/renderer/components/GraphSidebar.test.tsx src/renderer/App.test.tsx`、`pnpm typecheck`、`pnpm test`、`git diff --check` が通過した。
