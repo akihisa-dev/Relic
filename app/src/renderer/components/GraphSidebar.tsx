@@ -79,6 +79,7 @@ export function GraphPanel({ activeFilePath, onOpenFile, workspaceId }: GraphPan
             onNodePointerMove={graphCanvas.nodeHandlers.onPointerMove}
             onNodePointerUp={graphCanvas.nodeHandlers.onPointerUp}
             points={graphCanvas.points}
+            pointsRef={graphCanvas.pointsRef}
             relatedPaths={graphCanvas.relatedPaths}
             selectedPath={selectedPath}
             showArrows={showArrows}

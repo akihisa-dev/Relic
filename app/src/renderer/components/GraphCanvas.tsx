@@ -10,7 +10,7 @@ import type {
 import type { Application, Container, FederatedPointerEvent, Graphics, Text } from "pixi.js";
 
 import type { WorkspaceGraphEdge } from "../../shared/ipc";
-import type { GraphPoint, GraphViewBox } from "../graphLayout";
+import type { GraphPoint, GraphSimPoint, GraphViewBox } from "../graphLayout";
 import {
   buildGraphRenderState,
   defaultGraphRenderPalette,
@@ -55,6 +55,7 @@ export interface GraphCanvasProps {
   onNodePointerMove: (event: GraphNodePointerEvent) => void;
   onNodePointerUp: (event: GraphNodePointerEvent, point: GraphPoint) => void;
   points: GraphPoint[];
+  pointsRef: MutableRefObject<GraphSimPoint[]>;
   relatedPaths: Set<string>;
   selectedPath: string | null;
   showArrows: boolean;
@@ -74,6 +75,7 @@ interface PixiGraphRuntime {
   motionLayer: Graphics;
   nodeHitByPath: Map<string, GraphNodeHit>;
   nodeLayer: Graphics;
+  renderedPointsByPath: Map<string, GraphSimPoint>;
   resizeObserver: ResizeObserver | null;
   root: Container;
   Text: typeof import("pixi.js").Text;
@@ -98,6 +100,20 @@ interface PixiGraphInteractionOptions {
   onNodePointerMove: (event: GraphNodePointerEvent) => void;
   onNodePointerUp: (event: GraphNodePointerEvent, point: GraphPoint) => void;
   showArrows: boolean;
+}
+
+interface GraphCanvasRenderInput {
+  edges: WorkspaceGraphEdge[];
+  focusedPath: string | null;
+  groupByPath: Map<string, GraphGroup>;
+  labelOpacity: number;
+  linkThickness: number;
+  motionPath: string | null;
+  nodeSize: number;
+  palette: GraphRenderState["palette"];
+  relatedPaths: Set<string>;
+  selectedPath: string | null;
+  showLabels: boolean;
 }
 
 export function GraphCanvas({
@@ -126,6 +142,7 @@ export function GraphCanvas({
   onNodePointerMove,
   onNodePointerUp,
   points,
+  pointsRef,
   relatedPaths,
   selectedPath,
   showArrows,
@@ -138,6 +155,20 @@ export function GraphCanvas({
   const activePointerPointRef = useRef<GraphPoint | null>(null);
   const latestPointsRef = useRef(points);
   const latestViewBoxRef = useRef(viewBox);
+  const latestRenderInputRef = useRef<GraphCanvasRenderInput>({
+    edges,
+    focusedPath,
+    groupByPath,
+    labelOpacity,
+    linkThickness,
+    motionPath,
+    nodeSize,
+    palette: defaultGraphRenderPalette,
+    relatedPaths,
+    selectedPath,
+    showLabels
+  });
+  const latestInteractionOptionsRef = useRef<PixiGraphInteractionOptions | null>(null);
   const [isReady, setIsReady] = useState(false);
   const [pixiError, setPixiError] = useState<string | null>(null);
   const renderState = useMemo(() => buildGraphRenderState({
@@ -148,15 +179,41 @@ export function GraphCanvas({
     linkThickness,
     motionPath,
     nodeSize,
-    palette: defaultGraphRenderPalette,
+    palette: latestRenderInputRef.current.palette,
     points,
     relatedPaths,
     selectedPath,
     showLabels
   }), [edges, focusedPath, groupByPath, labelOpacity, linkThickness, motionPath, nodeSize, points, relatedPaths, selectedPath, showLabels]);
 
-  latestPointsRef.current = points;
+  latestPointsRef.current = pointsRef.current.length > 0 ? pointsRef.current : points;
   latestViewBoxRef.current = viewBox;
+  latestRenderInputRef.current = {
+    edges,
+    focusedPath,
+    groupByPath,
+    labelOpacity,
+    linkThickness,
+    motionPath,
+    nodeSize,
+    palette: defaultGraphRenderPalette,
+    relatedPaths,
+    selectedPath,
+    showLabels
+  };
+  latestInteractionOptionsRef.current = {
+    activePointerPointRef,
+    isMotionAfterglow,
+    motionEpoch,
+    onNodeClick,
+    onNodePointerCancel,
+    onNodePointerDown,
+    onNodePointerEnter,
+    onNodePointerLeave,
+    onNodePointerMove,
+    onNodePointerUp,
+    showArrows
+  };
 
   useEffect(() => {
     const host = hostRef.current;
@@ -230,6 +287,7 @@ export function GraphCanvas({
           motionLayer,
           nodeHitByPath: new Map(),
           nodeLayer,
+          renderedPointsByPath: new Map(),
           resizeObserver,
           root,
           Text: pixi.Text,
@@ -275,66 +333,64 @@ export function GraphCanvas({
     const host = hostRef.current;
     if (!runtime || !host || !isReady) return;
 
-    applyGraphViewBox(runtime, latestViewBoxRef.current);
-    drawGraph(runtime, buildGraphRenderState({
-      edges,
-      focusedPath,
-      groupByPath,
-      labelOpacity,
-      linkThickness,
-      motionPath,
-      nodeSize,
-      palette: readGraphPalette(host),
-      points,
-      relatedPaths,
-      selectedPath,
-      showLabels
-    }), {
-      activePointerPointRef,
-      isMotionAfterglow,
-      motionEpoch,
-      onNodeClick,
-      onNodePointerCancel,
-      onNodePointerDown,
-      onNodePointerEnter,
-      onNodePointerLeave,
-      onNodePointerMove,
-      onNodePointerUp,
-      showArrows
-    });
-    runtime.app.render();
+    latestRenderInputRef.current = {
+      ...latestRenderInputRef.current,
+      palette: readGraphPalette(host)
+    };
   }, [
-    edges,
+    isReady,
     focusedPath,
     groupByPath,
-    isMotionAfterglow,
-    isReady,
     labelOpacity,
     linkThickness,
-    motionEpoch,
     motionPath,
     nodeSize,
-    onNodeClick,
-    onNodePointerCancel,
-    onNodePointerDown,
-    onNodePointerEnter,
-    onNodePointerLeave,
-    onNodePointerMove,
-    onNodePointerUp,
-    points,
     relatedPaths,
     selectedPath,
-    showArrows,
     showLabels
   ]);
 
   useEffect(() => {
+    if (!isReady) return;
+
+    let frameId = 0;
+    let isDisposed = false;
+
+    function drawFrame(): void {
+      const runtime = pixiRef.current;
+      const options = latestInteractionOptionsRef.current;
+      if (!runtime || !options) {
+        if (!isDisposed) frameId = window.requestAnimationFrame(drawFrame);
+        return;
+      }
+
+      applyGraphViewBox(runtime, latestViewBoxRef.current);
+      const renderPoints = interpolateGraphFramePoints(
+        runtime,
+        pointsRef.current,
+        options.activePointerPointRef.current?.path ?? null
+      );
+      drawGraph(runtime, buildGraphRenderState({
+        ...latestRenderInputRef.current,
+        points: renderPoints,
+        viewScale: runtime.viewScale
+      }), options);
+      runtime.app.render();
+      if (!isDisposed) frameId = window.requestAnimationFrame(drawFrame);
+    }
+
+    frameId = window.requestAnimationFrame(drawFrame);
+    return () => {
+      isDisposed = true;
+      window.cancelAnimationFrame(frameId);
+    };
+  }, [isReady, pointsRef]);
+
+  useEffect(() => {
     const runtime = pixiRef.current;
     if (!runtime || !isReady) return;
-    if (applyGraphViewBox(runtime, viewBox)) {
-      updateLabelFontSize(runtime);
-      runtime.app.render();
-    }
+    applyGraphViewBox(runtime, latestViewBoxRef.current);
+    updateLabelFontSize(runtime);
   }, [isReady, viewBox]);
 
   function setSurfaceElement(element: HTMLDivElement | null): void {
@@ -445,6 +501,43 @@ function drawNode(layer: Graphics, node: GraphRenderNode): void {
     .circle(node.x, node.y, node.radius)
     .fill({ alpha: node.fillAlpha, color: node.fillColor })
     .stroke({ alpha: node.strokeAlpha, color: node.strokeColor, width: node.strokeWidth });
+}
+
+function interpolateGraphFramePoints(
+  runtime: PixiGraphRuntime,
+  targetPoints: GraphSimPoint[],
+  immediatePath: string | null
+): GraphSimPoint[] {
+  const targetPaths = new Set(targetPoints.map((point) => point.path));
+  for (const path of runtime.renderedPointsByPath.keys()) {
+    if (!targetPaths.has(path)) runtime.renderedPointsByPath.delete(path);
+  }
+
+  if (runtime.renderedPointsByPath.size === 0) {
+    targetPoints.forEach((point) => runtime.renderedPointsByPath.set(point.path, point));
+    return targetPoints;
+  }
+
+  const interpolation = 0.34;
+  return targetPoints.map((point) => {
+    const previous = runtime.renderedPointsByPath.get(point.path);
+    if (!previous || point.path === immediatePath) {
+      runtime.renderedPointsByPath.set(point.path, point);
+      return point;
+    }
+
+    const dx = point.x - previous.x;
+    const dy = point.y - previous.y;
+    const nextPoint = Math.hypot(dx, dy) < 0.05
+      ? point
+      : {
+        ...point,
+        x: previous.x + dx * interpolation,
+        y: previous.y + dy * interpolation
+      };
+    runtime.renderedPointsByPath.set(point.path, nextPoint);
+    return nextPoint;
+  });
 }
 
 function updateHitLayer(

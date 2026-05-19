@@ -44,6 +44,7 @@ export function useGraphCanvasInteractions({
   isPanning: boolean;
   nodeHandlers: GraphNodeHandlers;
   points: GraphSimPoint[];
+  pointsRef: MutableRefObject<GraphSimPoint[]>;
   relatedPaths: Set<string>;
   surfaceRef: RefObject<HTMLDivElement | null>;
   viewBox: GraphViewBox;
@@ -88,6 +89,7 @@ export function useGraphCanvasInteractions({
     isPanning: viewport.isPanning,
     nodeHandlers,
     points: simulation.points,
+    pointsRef: simulation.pointsRef,
     relatedPaths,
     surfaceRef: viewport.surfaceRef,
     viewBox: viewport.viewBox

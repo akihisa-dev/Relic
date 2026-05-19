@@ -88,7 +88,8 @@ export function buildGraphRenderState({
   points,
   relatedPaths,
   selectedPath,
-  showLabels
+  showLabels,
+  viewScale = 1
 }: {
   edges: WorkspaceGraphEdge[];
   focusedPath: string | null;
@@ -102,9 +103,12 @@ export function buildGraphRenderState({
   relatedPaths: Set<string>;
   selectedPath: string | null;
   showLabels: boolean;
+  viewScale?: number;
 }): GraphRenderState {
   const pointByPath = new Map(points.map((point) => [point.path, point]));
   const isLargeGraph = points.length > 220 || edges.length > 520;
+  const screenScale = clampViewScale(viewScale);
+  const inverseScale = 1 / screenScale;
   const nodeFill = palette.node;
   const nodeFocused = palette.nodeFocused;
   const nodeRelated = mixColor(palette.nodeFocused, palette.node, 0.74);
@@ -129,7 +133,10 @@ export function buildGraphRenderState({
         isFocused,
         isMotion,
         sourcePath: edge.sourcePath,
-        strokeWidth: Math.min(isFocused ? 0.92 : 0.62, (isFocused ? 0.84 : isLargeGraph ? 0.42 : 0.52) * linkThickness),
+        strokeWidth: Math.min(
+          isFocused ? 1.25 : 0.82,
+          Math.max(isFocused ? 0.62 : 0.42, (isFocused ? 0.92 : isLargeGraph ? 0.5 : 0.62) * linkThickness)
+        ) * inverseScale,
         targetPath: edge.targetPath,
         x1: source.x,
         x2: target.x,
@@ -148,7 +155,8 @@ export function buildGraphRenderState({
       const radiusBase = isLargeGraph ? 1.05 : 1.75;
       const radiusDegreeScale = isLargeGraph ? 0.42 : 0.78;
       const radiusMax = isLargeGraph ? 3.25 : 5.8;
-      const radius = Math.min(radiusMax, radiusBase + Math.sqrt(point.degree) * radiusDegreeScale) * nodeSize;
+      const screenRadius = Math.min(radiusMax, radiusBase + Math.sqrt(point.degree) * radiusDegreeScale) * nodeSize;
+      const radius = screenRadius * inverseScale;
       const labelVisible = showLabels && (
         points.length <= GRAPH_VISIBLE_LABEL_NODE_LIMIT ||
         isSelected ||
@@ -186,7 +194,7 @@ export function buildGraphRenderState({
         outgoing: point.outgoing,
         strokeAlpha: isSelected ? 0.56 : isFocused ? 0.34 : isLargeGraph ? 0.08 : 0.16,
         strokeColor: isSelected ? mixColor(nodeSelected, palette.background, 0.72) : palette.background,
-        strokeWidth: isSelected ? 0.86 : isFocused ? 0.58 : isLargeGraph ? 0.18 : 0.42,
+        strokeWidth: (isSelected ? 0.96 : isFocused ? 0.68 : isLargeGraph ? 0.28 : 0.48) * inverseScale,
         tags: point.tags,
         vx: velocity.vx,
         vy: velocity.vy,
@@ -196,6 +204,11 @@ export function buildGraphRenderState({
     }),
     palette
   };
+}
+
+function clampViewScale(value: number): number {
+  if (!Number.isFinite(value) || value <= 0) return 1;
+  return Math.min(12, Math.max(0.08, value));
 }
 
 export function parseGraphColor(value: string, fallback: number): number {
