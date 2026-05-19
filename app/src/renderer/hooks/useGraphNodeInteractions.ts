@@ -38,7 +38,6 @@ interface UseGraphNodeInteractionsInput {
   pinnedPathRef: MutableRefObject<string | null>;
   pointsRef: MutableRefObject<GraphSimPoint[]>;
   selectedPath: string | null;
-  setFocusedPath: (path: string | null | ((current: string | null) => string | null)) => void;
   setPoints: (points: GraphSimPoint[]) => void;
   setSelectedPath: (path: string | null) => void;
 }
@@ -60,7 +59,6 @@ export function useGraphNodeInteractions({
   pinnedPathRef,
   pointsRef,
   selectedPath,
-  setFocusedPath,
   setPoints,
   setSelectedPath
 }: UseGraphNodeInteractionsInput): GraphNodeHandlers {
@@ -168,8 +166,8 @@ export function useGraphNodeInteractions({
     onKeyDown: handleNodeKeyDown,
     onPointerCancel: handleNodePointerCancel,
     onPointerDown: handleNodePointerDown,
-    onPointerEnter: setFocusedPath,
-    onPointerLeave: (path) => setFocusedPath((current) => current === path ? null : current),
+    onPointerEnter: () => undefined,
+    onPointerLeave: () => undefined,
     onPointerMove: handleNodePointerMove,
     onPointerUp: handleNodePointerEnd
   };

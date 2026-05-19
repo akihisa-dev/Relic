@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo } from "react";
 
 import {
   buildFilteredGraph,
@@ -9,8 +9,6 @@ import type { GraphForceSettings, GraphViewModel } from "../graphLayout";
 import type { GraphGroup } from "../store/graphStore";
 import { useGraphStore } from "../store/graphStore";
 import { useGraphCanvasInteractions } from "./useGraphCanvasInteractions";
-
-export const GRAPH_AFTERGLOW_DURATION_MS = 1000;
 
 interface UseGraphPanelModelInput {
   activeFilePath: string | null;
@@ -69,52 +67,9 @@ export function useGraphPanelModel({
     textFadeThreshold,
     zoom
   } = useGraphStore();
-  const [hoveredPath, setHoveredPath] = useState<string | null>(null);
-  const hoveredPathRef = useRef<string | null>(null);
-  const afterglowTimerRef = useRef<number | null>(null);
-  const [afterglowPath, setAfterglowPath] = useState<string | null>(null);
-  const [motionEpoch, setMotionEpoch] = useState(0);
-
-  const clearAfterglowTimer = useCallback((): void => {
-    if (afterglowTimerRef.current === null) return;
-    window.clearTimeout(afterglowTimerRef.current);
-    afterglowTimerRef.current = null;
-  }, []);
-
-  useEffect(() => () => clearAfterglowTimer(), [clearAfterglowTimer]);
-
   useEffect(() => {
     loadGraph(workspaceId);
   }, [loadGraph, workspaceId]);
-
-  const setMotionFocusedPath = useCallback((next: string | null | ((current: string | null) => string | null)): void => {
-    const current = hoveredPathRef.current;
-    const resolved = typeof next === "function" ? next(current) : next;
-    if (resolved === current) return;
-
-    clearAfterglowTimer();
-    if (resolved) {
-      hoveredPathRef.current = resolved;
-      setHoveredPath(resolved);
-      setAfterglowPath(null);
-      setMotionEpoch((epoch) => epoch + 1);
-      return;
-    }
-
-    hoveredPathRef.current = null;
-    setHoveredPath(null);
-    if (!current) {
-      setAfterglowPath(null);
-      return;
-    }
-
-    setAfterglowPath(current);
-    setMotionEpoch((epoch) => epoch + 1);
-    afterglowTimerRef.current = window.setTimeout(() => {
-      setAfterglowPath((path) => path === current ? null : path);
-      afterglowTimerRef.current = null;
-    }, GRAPH_AFTERGLOW_DURATION_MS);
-  }, [clearAfterglowTimer]);
 
   const filteredGraph = useMemo<GraphViewModel>(() => buildFilteredGraph({
     activeFilePath,
@@ -127,8 +82,8 @@ export function useGraphPanelModel({
     showOrphans,
     tagFilter
   }), [activeFilePath, folderFilter, graph, linkFilter, localGraphDepth, minDegree, query, showOrphans, tagFilter]);
-  const motionPath = hoveredPath ?? afterglowPath;
-  const focusedPath = motionPath ?? selectedPath;
+  const motionPath = null;
+  const focusedPath = selectedPath;
   const labelOpacity = showLabels
     ? clamp((zoom - textFadeThreshold + 0.5) / 0.5, 0.18, 1)
     : 0;
@@ -147,7 +102,6 @@ export function useGraphPanelModel({
     nodes: filteredGraph.nodes,
     onOpenFile,
     selectedPath,
-    setFocusedPath: setMotionFocusedPath,
     setSelectedPath,
     setZoom,
     zoom
@@ -159,11 +113,11 @@ export function useGraphPanelModel({
     focusedPath,
     graphCanvas,
     groupByPath,
-    isMotionAfterglow: !hoveredPath && !!afterglowPath,
+    isMotionAfterglow: false,
     isLoading,
     labelOpacity,
     linkThickness,
-    motionEpoch,
+    motionEpoch: 0,
     motionPath,
     nodeSize,
     selectedPath,

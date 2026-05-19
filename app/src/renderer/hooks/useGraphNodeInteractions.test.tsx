@@ -46,7 +46,6 @@ function renderNodeInteractions() {
   const pinnedPathRef: MutableRefObject<string | null> = { current: null };
   const pointsRef: MutableRefObject<GraphSimPoint[]> = { current: points };
   let selectedPath: string | null = null;
-  const setFocusedPath = vi.fn();
   const setPoints = vi.fn((nextPoints: GraphSimPoint[]) => {
     pointsRef.current = nextPoints;
   });
@@ -59,7 +58,6 @@ function renderNodeInteractions() {
     pinnedPathRef,
     pointsRef,
     selectedPath,
-    setFocusedPath,
     setPoints,
     setSelectedPath
   }));
@@ -70,7 +68,6 @@ function renderNodeInteractions() {
     onOpenFile,
     pinnedPathRef,
     pointsRef,
-    setFocusedPath,
     setPoints,
     setSelectedPath
   };
@@ -119,18 +116,16 @@ describe("useGraphNodeInteractions", () => {
     expect(onOpenFile).toHaveBeenCalledWith("A.md");
   });
 
-  it("hover enter/leaveでfocused path更新を委譲する", () => {
-    const { hook, setFocusedPath } = renderNodeInteractions();
+  it("hover enter/leaveではfocused pathを更新しない", () => {
+    const { hook } = renderNodeInteractions();
 
     act(() => {
       hook.result.current.onPointerEnter("A.md");
       hook.result.current.onPointerLeave("A.md");
     });
 
-    expect(setFocusedPath).toHaveBeenCalledWith("A.md");
-    const updater = setFocusedPath.mock.calls[1][0] as (current: string | null) => string | null;
-    expect(updater("A.md")).toBeNull();
-    expect(updater("B.md")).toBe("B.md");
+    expect(hook.result.current.onPointerEnter("A.md")).toBeUndefined();
+    expect(hook.result.current.onPointerLeave("A.md")).toBeUndefined();
   });
 
   it("drag中のmoveで対象node座標をbounds内にclampする", () => {

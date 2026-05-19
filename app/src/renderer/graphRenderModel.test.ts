@@ -119,7 +119,7 @@ describe("graphRenderModel", () => {
     expect(state.edges[0]?.alpha).toBeLessThan(0.36);
   });
 
-  it("大規模グラフでは選択だけで常時ラベルを出さずhover近傍だけを表示する", () => {
+  it("大規模グラフでは読めるズーム距離でhoverなしでもラベルを表示する", () => {
     const manyPoints = Array.from({ length: 221 }, (_, index): GraphPoint => ({
       degree: 0,
       folder: "",
@@ -162,12 +162,37 @@ describe("graphRenderModel", () => {
       points: manyPoints,
       relatedPaths: new Set(["N0.md", "N1.md"]),
       selectedPath: null,
-      showLabels: true
+      showLabels: true,
+      viewScale: 1
     });
 
-    expect(hoveredState.nodes.find((node) => node.path === "N0.md")?.labelVisible).toBe(true);
-    expect(hoveredState.nodes.find((node) => node.path === "N1.md")?.labelVisible).toBe(true);
+    expect(hoveredState.nodes.find((node) => node.path === "N0.md")?.labelVisible).toBe(false);
+    expect(hoveredState.nodes.find((node) => node.path === "N1.md")?.labelVisible).toBe(false);
     expect(hoveredState.nodes.find((node) => node.path === "N2.md")?.labelVisible).toBe(false);
+
+    const spacedPoints = manyPoints.map((point, index) => ({
+      ...point,
+      x: (index % 20) * 14,
+      y: Math.floor(index / 20) * 10
+    }));
+    const zoomedState = buildGraphRenderState({
+      edges: [],
+      focusedPath: null,
+      groupByPath: new Map(),
+      labelOpacity: 1,
+      linkThickness: 1,
+      motionPath: null,
+      nodeSize: 1,
+      points: spacedPoints,
+      relatedPaths: new Set(),
+      selectedPath: "N0.md",
+      showLabels: true,
+      viewScale: 3
+    });
+
+    expect(zoomedState.nodes.find((node) => node.path === "N0.md")?.labelVisible).toBe(true);
+    expect(zoomedState.nodes.some((node) => node.labelVisible)).toBe(true);
+    expect(zoomedState.nodes.filter((node) => node.labelVisible).length).toBeLessThan(zoomedState.nodes.length);
   });
 
   it("ズーム時のnode radiusをObsidian風のベタ丸サイズへ拡大する", () => {
