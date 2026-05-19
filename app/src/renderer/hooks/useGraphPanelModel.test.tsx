@@ -2,7 +2,7 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { WorkspaceGraph } from "../../shared/ipc";
-import { GRAPH_HEIGHT, GRAPH_WIDTH } from "../graphLayout";
+import { buildGraphViewBox } from "../graphLayout";
 import { useGraphStore } from "../store/graphStore";
 import { GRAPH_AFTERGLOW_DURATION_MS, useGraphPanelModel } from "./useGraphPanelModel";
 
@@ -193,7 +193,8 @@ describe("useGraphPanelModel", () => {
       showArrows: true,
       showLabels: true
     });
-    expect(hook.result.current.graphCanvas.viewBox.width).toBeCloseTo(GRAPH_WIDTH / 1.5);
-    expect(hook.result.current.graphCanvas.viewBox.height).toBeCloseTo(GRAPH_HEIGHT / 1.5);
+    const expectedViewBox = buildGraphViewBox(1.5, { x: 0, y: 0 }, hook.result.current.graphCanvas.points);
+    expect(hook.result.current.graphCanvas.viewBox.width).toBeCloseTo(expectedViewBox.width);
+    expect(hook.result.current.graphCanvas.viewBox.height).toBeCloseTo(expectedViewBox.height);
   });
 });

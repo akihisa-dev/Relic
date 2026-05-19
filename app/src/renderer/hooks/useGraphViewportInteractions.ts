@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { KeyboardEvent, MutableRefObject, PointerEvent, RefObject, WheelEvent } from "react";
 
 import {
@@ -7,7 +7,7 @@ import {
   GRAPH_MAX_ZOOM,
   GRAPH_MIN_ZOOM
 } from "../graphLayout";
-import type { GraphPan, GraphViewBox } from "../graphLayout";
+import type { GraphPan, GraphPoint, GraphViewBox } from "../graphLayout";
 
 interface GraphDragState {
   moved: boolean;
@@ -18,7 +18,10 @@ interface GraphDragState {
 }
 
 interface UseGraphViewportInteractionsInput {
+  fitKey?: string;
   onBackgroundClick?: () => void;
+  pauseSimulationRef?: MutableRefObject<boolean>;
+  points?: GraphPoint[];
   setZoom: (value: number) => void;
   zoom: number;
 }
@@ -42,16 +45,24 @@ export interface GraphViewportInteractions {
 }
 
 export function useGraphViewportInteractions({
+  fitKey = "",
   onBackgroundClick,
+  pauseSimulationRef: providedPauseSimulationRef,
+  points = [],
   setZoom,
   zoom
 }: UseGraphViewportInteractionsInput): GraphViewportInteractions {
   const surfaceRef = useRef<HTMLDivElement | null>(null);
   const dragStateRef = useRef<GraphDragState | null>(null);
-  const pauseSimulationRef = useRef(false);
+  const internalPauseSimulationRef = useRef(false);
+  const pauseSimulationRef = providedPauseSimulationRef ?? internalPauseSimulationRef;
   const [isPanning, setIsPanning] = useState(false);
   const [pan, setPan] = useState<GraphPan>({ x: 0, y: 0 });
-  const viewBox = buildGraphViewBox(zoom, pan);
+  const viewBox = buildGraphViewBox(zoom, pan, points);
+
+  useEffect(() => {
+    setPan({ x: 0, y: 0 });
+  }, [fitKey]);
 
   function getGraphDelta(deltaX: number, deltaY: number): GraphPan {
     const bounds = surfaceRef.current?.getBoundingClientRect();

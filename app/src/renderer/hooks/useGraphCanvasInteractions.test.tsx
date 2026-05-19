@@ -100,12 +100,15 @@ describe("useGraphCanvasInteractions", () => {
     });
 
     expect(hook.result.current.points.map((point) => point.path)).toEqual(["A.md", "B.md"]);
-    expect(hook.result.current.viewBox).toEqual({
-      height: GRAPH_HEIGHT,
-      width: GRAPH_WIDTH,
-      x: 0,
-      y: 0
-    });
+    const xs = hook.result.current.points.map((point) => point.x);
+    const ys = hook.result.current.points.map((point) => point.y);
+    const viewBox = hook.result.current.viewBox;
+    expect(viewBox.width).toBeLessThan(GRAPH_WIDTH);
+    expect(viewBox.height).toBeLessThan(GRAPH_HEIGHT);
+    expect(viewBox.x).toBeLessThanOrEqual(Math.min(...xs));
+    expect(viewBox.x + viewBox.width).toBeGreaterThanOrEqual(Math.max(...xs));
+    expect(viewBox.y).toBeLessThanOrEqual(Math.min(...ys));
+    expect(viewBox.y + viewBox.height).toBeGreaterThanOrEqual(Math.max(...ys));
   });
 
   it("wheel操作でzoom更新callbackを呼ぶ", () => {

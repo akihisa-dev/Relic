@@ -49,18 +49,27 @@ export function useGraphCanvasInteractions({
   viewBox: GraphViewBox;
 } {
   const pinnedPathRef = useRef<string | null>(null);
-  const viewport = useGraphViewportInteractions({
-    onBackgroundClick: () => setSelectedPath(null),
-    setZoom,
-    zoom
-  });
+  const pauseSimulationRef = useRef(false);
   const simulation = useGraphSimulation({
     edges,
     forceSettings,
     layoutMode,
     nodes,
-    pauseSimulationRef: viewport.pauseSimulationRef,
+    pauseSimulationRef,
     pinnedPathRef: pinnedPathRef as MutableRefObject<string | null>
+  });
+  const fitKey = useMemo(() => {
+    const nodeKey = nodes.map((node) => node.path).join("\u0000");
+    const edgeKey = edges.map((edge) => `${edge.sourcePath}->${edge.targetPath}`).join("\u0000");
+    return `${layoutMode}\u0000${nodeKey}\u0000${edgeKey}`;
+  }, [edges, layoutMode, nodes]);
+  const viewport = useGraphViewportInteractions({
+    fitKey,
+    onBackgroundClick: () => setSelectedPath(null),
+    pauseSimulationRef,
+    points: simulation.points,
+    setZoom,
+    zoom
   });
   const nodeHandlers = useGraphNodeInteractions({
     getGraphDelta: viewport.getGraphDelta,
