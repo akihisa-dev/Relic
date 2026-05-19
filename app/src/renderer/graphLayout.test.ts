@@ -325,10 +325,12 @@ describe("graph layout simulation", () => {
       Math.abs(point.y - GRAPH_PADDING) <= 1 ||
       Math.abs(point.y - (GRAPH_HEIGHT - GRAPH_PADDING)) <= 1
     )).length;
+    const centerCount = next.filter((point) => distanceFromCenter(point) < Math.min(GRAPH_WIDTH, GRAPH_HEIGHT) * 0.22).length;
     const bounds = pointBounds(next);
     const aspectRatio = bounds.width / bounds.height;
 
     expect(pinnedToFrameCount).toBeLessThan(12);
+    expect(centerCount).toBeGreaterThan(100);
     expect(aspectRatio).toBeGreaterThan(0.72);
     expect(aspectRatio).toBeLessThan(1.42);
   });

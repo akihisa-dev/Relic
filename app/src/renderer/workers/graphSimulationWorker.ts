@@ -5,9 +5,9 @@ import type {
 } from "../graphSimulationWorkerTypes";
 
 self.onmessage = (event: MessageEvent<GraphSimulationWorkerRequest>): void => {
-  const { edges, forceSettings, pinnedPath, points, runId } = event.data;
+  const { edges, forceSettings, pinnedPath, points, runId, tickCount = 1 } = event.data;
   const response: GraphSimulationWorkerResponse = {
-    points: tickGraphSimulation(points, edges, forceSettings, pinnedPath),
+    points: tickGraphSimulation(points, edges, forceSettings, pinnedPath, tickCount),
     runId
   };
 

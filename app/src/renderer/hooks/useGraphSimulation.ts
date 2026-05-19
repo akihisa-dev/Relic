@@ -48,6 +48,11 @@ function graphSimulationFrameInterval(nodeCount: number): number {
     : 1;
 }
 
+function graphSimulationWorkerTickCount(nodeCount: number, responseCount: number): number {
+  if (nodeCount <= GRAPH_SIMULATION_THROTTLE_NODE_THRESHOLD) return 1;
+  return responseCount < 10 ? 2 : 1;
+}
+
 export function useGraphSimulation({
   edges,
   forceSettings,
@@ -91,6 +96,7 @@ export function useGraphSimulation({
     let frameCount = 0;
     let isActive = true;
     let latestRunId = 0;
+    let workerResponseCount = 0;
     let workerBusy = false;
     let worker = nodes.length > GRAPH_WORKER_SIMULATION_NODE_THRESHOLD
       ? createGraphSimulationWorker()
@@ -103,6 +109,7 @@ export function useGraphSimulation({
         workerBusy = false;
         if (event.data.runId !== latestRunId) return;
         if (pauseSimulationRef.current) return;
+        workerResponseCount += 1;
         setPoints(event.data.points);
       };
       worker.onerror = () => {
@@ -130,7 +137,8 @@ export function useGraphSimulation({
               forceSettings,
               pinnedPath: pinnedPathRef.current,
               points: pointsRef.current,
-              runId: latestRunId
+              runId: latestRunId,
+              tickCount: graphSimulationWorkerTickCount(nodes.length, workerResponseCount)
             };
             worker.postMessage(request);
           }
