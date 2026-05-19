@@ -239,6 +239,7 @@
   height: 100%;
   min-height: 0;
   min-width: 0;
+  overflow: hidden;
   position: relative;
 }
 
@@ -370,16 +371,25 @@
 .graph-controls {
   display: grid;
   gap: 0;
+  max-height: 100%;
   min-height: 0;
+  overflow: hidden;
   transform-origin: top right;
 }
 
 .graph-filters {
   display: grid;
   gap: 0;
-  max-height: none;
-  overflow: visible;
+  max-height: 100%;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
   padding-right: 0;
+  scrollbar-width: none;
+}
+
+.graph-filters::-webkit-scrollbar {
+  display: none;
 }
 
 .graph-search {
@@ -551,9 +561,12 @@
   border: 1px solid var(--border);
   border-radius: 7px;
   box-shadow: 0 12px 26px rgba(0, 0, 0, 0.12);
-  max-height: none;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+  max-height: calc(100% - 24px);
+  min-height: 0;
   opacity: 1;
-  overflow: visible;
+  overflow: hidden;
   padding: 8px 10px;
   pointer-events: auto;
   position: absolute;
@@ -580,6 +593,7 @@
   box-shadow: none;
   max-height: none;
   opacity: 1;
+  overflow: visible;
   padding: 0;
   pointer-events: auto;
   transform: translateY(0);

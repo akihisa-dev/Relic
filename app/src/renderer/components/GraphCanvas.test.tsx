@@ -156,6 +156,9 @@ describe("GraphCanvas", () => {
       viewScale: 1
     });
     const start = buildGraphRevealState(state, 0);
+    const firstNodeFrame = buildGraphRevealState(state, 13);
+    const secondNodeFrame = buildGraphRevealState(state, 27);
+    const firstLinkFrame = buildGraphRevealState(state, 72);
     const end = buildGraphRevealState(state, 2000);
 
     expect(start.nodes.every((node) => node.fillAlpha === 0 && node.radius === 0)).toBe(true);
@@ -165,6 +168,14 @@ describe("GraphCanvas", () => {
       x2: start.edges[0]?.x1,
       y2: start.edges[0]?.y1
     });
+    expect(firstNodeFrame.nodes[0]?.fillAlpha).toBeGreaterThan(0);
+    expect(firstNodeFrame.nodes[1]?.fillAlpha).toBe(0);
+    expect(secondNodeFrame.nodes[1]?.fillAlpha).toBeGreaterThan(0);
+    expect(secondNodeFrame.nodes[2]?.fillAlpha).toBe(0);
+    expect(secondNodeFrame.edges[0]?.alpha).toBe(0);
+    expect(firstLinkFrame.nodes[2]?.fillAlpha).toBeGreaterThan(0);
+    expect(firstLinkFrame.edges[0]?.alpha).toBeGreaterThan(0);
+    expect(firstLinkFrame.edges[0]?.x2).toBeLessThan(state.edges[0]?.x2 ?? 0);
     expect(end.nodes[0]?.fillAlpha).toBeCloseTo(state.nodes[0]?.fillAlpha ?? 0);
     expect(end.nodes[0]?.radius).toBeCloseTo(state.nodes[0]?.radius ?? 0);
     expect(end.edges[0]?.alpha).toBeCloseTo(state.edges[0]?.alpha ?? 0);

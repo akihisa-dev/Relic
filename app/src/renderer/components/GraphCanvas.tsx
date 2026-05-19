@@ -517,18 +517,17 @@ function updateGraphRevealFrame(
   return { elapsedMs };
 }
 
-const graphRevealNodeWaveMs = 950;
-const graphRevealNodeFadeMs = 260;
-const graphRevealEdgeDelayMs = 120;
-const graphRevealEdgeFadeMs = 360;
-const graphRevealTotalMs = graphRevealNodeWaveMs + graphRevealNodeFadeMs + graphRevealEdgeDelayMs + graphRevealEdgeFadeMs;
+const graphRevealNodeStepMs = 14;
+const graphRevealNodeFadeMs = 12;
+const graphRevealEdgeDelayMs = 3;
+const graphRevealEdgeFadeMs = 80;
+const graphRevealTotalMs = 15000;
 
 export function buildGraphRevealState(state: GraphRenderState, elapsedMs: number): GraphRenderState {
-  const nodeCount = Math.max(1, state.nodes.length - 1);
   const nodeIndexByPath = new Map(state.nodes.map((node, index) => [node.path, index]));
   const nodeProgressByPath = new Map<string, number>();
   const nodes = state.nodes.map((node, index) => {
-    const startMs = (index / nodeCount) * graphRevealNodeWaveMs;
+    const startMs = index * graphRevealNodeStepMs;
     const progress = easeOutCubic(clampUnit((elapsedMs - startMs) / graphRevealNodeFadeMs));
     nodeProgressByPath.set(node.path, progress);
     return {
@@ -545,8 +544,7 @@ export function buildGraphRevealState(state: GraphRenderState, elapsedMs: number
     const targetProgress = nodeProgressByPath.get(edge.targetPath) ?? 0;
     const sourceIndex = nodeIndexByPath.get(edge.sourcePath) ?? 0;
     const targetIndex = nodeIndexByPath.get(edge.targetPath) ?? 0;
-    const edgeRank = Math.max(sourceIndex, targetIndex, 0) / nodeCount;
-    const startMs = edgeRank * graphRevealNodeWaveMs + graphRevealEdgeDelayMs;
+    const startMs = Math.max(sourceIndex, targetIndex, 0) * graphRevealNodeStepMs + graphRevealEdgeDelayMs;
     const progress = easeOutCubic(clampUnit((elapsedMs - startMs) / graphRevealEdgeFadeMs)) * Math.min(sourceProgress, targetProgress);
     return {
       ...edge,
