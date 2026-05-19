@@ -89,3 +89,4 @@ P27では、事前に固定した長い実施リストは置かない。
 - グラフビュー描画をSVG/React DOMからPixiJS Canvas/WebGL hostへ移し、force simulationをd3-forceへ置き換えた。既存のグラフデータ生成、リンク解析、IPC/preload/store/保存形式、操作パネルは変更していない。1000ノード合成グラフのbounds確認を含む `pnpm test`（80ファイル・551テスト）、`pnpm typecheck`、`git diff --check` は通過した。開発版Electronの実機目視は未実施。
 - macOSの `Relicを起動.command` から開発版Electronを起動すると、Electron Forgeの対話型進捗UIが即終了して `ELIFECYCLE` だけが表示されることがあったため、起動時だけ `CI=1` を付けて非対話進捗モードにした。`.command` 経路で開発版Electronが起動維持されることを確認した。
 - PixiJS初期化時にRelicのCSP下で `unsafe-eval` エラーが出てグラフが描画されないため、CSPは緩めず `pixi.js/unsafe-eval` のeval回避polyfillをPixi本体より先に読み込むようにした。`pnpm typecheck`、`pnpm test`（80ファイル・551テスト）、`git diff --check` は通過し、開発版Electronの起動維持まで確認した。画面全体の新規スクリーンショット取得は未実施。
+- PixiJS描画でRetina環境のrendererサイズをresolutionで二重補正してグラフが左上に小さく描かれていたため、rendererのscreenサイズをそのままviewBox変換に使うようにした。1000ノード級のd3-forceも密度に応じて反発・リンク距離・中心力を内部調整し、外枠へ張り付くノードを抑えた。`pnpm typecheck`、`pnpm test`（80ファイル・552テスト）、`git diff --check` は通過し、開発版Electronの起動維持まで確認した。

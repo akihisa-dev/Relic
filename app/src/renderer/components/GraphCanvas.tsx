@@ -22,6 +22,13 @@ import {
 import type { GraphGroup } from "../store/graphStore";
 import type { GraphNodePointerEvent } from "../hooks/useGraphNodeInteractions";
 
+export interface GraphViewBoxTransform {
+  scaleX: number;
+  scaleY: number;
+  x: number;
+  y: number;
+}
+
 export interface GraphCanvasProps {
   edges: WorkspaceGraphEdge[];
   focusedPath: string | null;
@@ -523,13 +530,30 @@ function updateLabelLayer(runtime: PixiGraphRuntime, state: GraphRenderState): v
 }
 
 function applyGraphViewBox(runtime: PixiGraphRuntime, viewBox: GraphViewBox): void {
-  const width = runtime.app.renderer.width / runtime.app.renderer.resolution;
-  const height = runtime.app.renderer.height / runtime.app.renderer.resolution;
+  const transform = buildGraphViewBoxTransform(
+    runtime.app.renderer.screen.width,
+    runtime.app.renderer.screen.height,
+    viewBox
+  );
+
+  runtime.root.scale.set(transform.scaleX, transform.scaleY);
+  runtime.root.position.set(transform.x, transform.y);
+}
+
+export function buildGraphViewBoxTransform(
+  width: number,
+  height: number,
+  viewBox: GraphViewBox
+): GraphViewBoxTransform {
   const scaleX = width / viewBox.width;
   const scaleY = height / viewBox.height;
 
-  runtime.root.scale.set(scaleX, scaleY);
-  runtime.root.position.set(-viewBox.x * scaleX, -viewBox.y * scaleY);
+  return {
+    scaleX,
+    scaleY,
+    x: -viewBox.x * scaleX,
+    y: -viewBox.y * scaleY
+  };
 }
 
 function renderNodeToGraphPoint(node: GraphRenderNode): GraphPoint {

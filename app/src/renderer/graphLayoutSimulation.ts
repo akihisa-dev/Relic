@@ -33,6 +33,15 @@ interface D3GraphLink extends SimulationLinkDatum<D3GraphPoint> {
   target: string | D3GraphPoint;
 }
 
+interface D3ForceProfile {
+  axisStrength: number;
+  centerStrength: number;
+  chargeStrength: number;
+  collideStrength: number;
+  linkDistance: number;
+  linkStrength: number;
+}
+
 export function layoutGraph(
   nodes: WorkspaceGraphNode[],
   edges: WorkspaceGraphEdge[],
@@ -258,21 +267,22 @@ function runD3GraphSimulation(
   const links: D3GraphLink[] = edges
     .filter((edge) => visiblePaths.has(edge.sourcePath) && visiblePaths.has(edge.targetPath))
     .map((edge) => ({ source: edge.sourcePath, target: edge.targetPath }));
+  const profile = buildD3ForceProfile(points.length, forceSettings);
 
   const simulation = forceSimulation<D3GraphPoint>(nodes)
     .alpha(alpha)
     .alphaMin(0.001)
     .alphaDecay(0.035)
     .velocityDecay(0.34)
-    .force("charge", forceManyBody<D3GraphPoint>().strength(-78 * forceSettings.repelForce).theta(0.88))
+    .force("charge", forceManyBody<D3GraphPoint>().strength(profile.chargeStrength).theta(0.88))
     .force("link", forceLink<D3GraphPoint, D3GraphLink>(links)
       .id((node) => node.id)
-      .distance(forceSettings.linkDistance)
-      .strength(0.052 * forceSettings.linkForce))
-    .force("center", forceCenter<D3GraphPoint>(GRAPH_CENTER_X, GRAPH_CENTER_Y).strength(0.018 * forceSettings.centerForce))
-    .force("x", forceX<D3GraphPoint>(GRAPH_CENTER_X).strength(0.012 * forceSettings.centerForce))
-    .force("y", forceY<D3GraphPoint>(GRAPH_CENTER_Y).strength(0.012 * forceSettings.centerForce))
-    .force("collide", forceCollide<D3GraphPoint>().radius((node) => Math.min(18, 7 + Math.sqrt(node.degree) * 1.8)).strength(0.22))
+      .distance(profile.linkDistance)
+      .strength(profile.linkStrength))
+    .force("center", forceCenter<D3GraphPoint>(GRAPH_CENTER_X, GRAPH_CENTER_Y).strength(profile.centerStrength))
+    .force("x", forceX<D3GraphPoint>(GRAPH_CENTER_X).strength(profile.axisStrength))
+    .force("y", forceY<D3GraphPoint>(GRAPH_CENTER_Y).strength(profile.axisStrength))
+    .force("collide", forceCollide<D3GraphPoint>().radius((node) => Math.min(18, 7 + Math.sqrt(node.degree) * 1.8)).strength(profile.collideStrength))
     .stop();
 
   simulation.tick(tickCount);
@@ -297,4 +307,17 @@ function runD3GraphSimulation(
       y: isPinned ? points.find((point) => point.path === node.path)?.y ?? y : y
     };
   });
+}
+
+function buildD3ForceProfile(nodeCount: number, forceSettings: GraphForceSettings): D3ForceProfile {
+  const density = Math.min(3.6, Math.sqrt(Math.max(1, nodeCount / 120)));
+
+  return {
+    axisStrength: 0.014 * forceSettings.centerForce * density,
+    centerStrength: 0.022 * forceSettings.centerForce * density,
+    chargeStrength: (-70 * forceSettings.repelForce) / density,
+    collideStrength: 0.22 / Math.sqrt(density),
+    linkDistance: forceSettings.linkDistance / Math.min(2.6, density),
+    linkStrength: 0.052 * forceSettings.linkForce * Math.min(1.6, density)
+  };
 }

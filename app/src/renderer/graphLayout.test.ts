@@ -297,5 +297,12 @@ describe("graph layout simulation", () => {
       expect(point.y).toBeGreaterThanOrEqual(GRAPH_PADDING);
       expect(point.y).toBeLessThanOrEqual(GRAPH_HEIGHT - GRAPH_PADDING);
     }
+    const pinnedToFrameCount = next.filter((point) => (
+      point.x <= GRAPH_PADDING + 1 ||
+      point.x >= GRAPH_WIDTH - GRAPH_PADDING - 1 ||
+      point.y <= GRAPH_PADDING + 1 ||
+      point.y >= GRAPH_HEIGHT - GRAPH_PADDING - 1
+    )).length;
+    expect(pinnedToFrameCount).toBeLessThan(250);
   });
 });
