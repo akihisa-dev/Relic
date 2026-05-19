@@ -15,7 +15,7 @@ const points: GraphPoint[] = [
 ];
 
 describe("graphRenderModel", () => {
-  it("hover focused/related/dimmed状態を描画モデルへ反映し、selectedでは強調しない", () => {
+  it("hover focused/related状態を保持しても描画の濃淡は変えず、selectedでは強調しない", () => {
     const state = buildGraphRenderState({
       edges: [{ sourcePath: "A.md", targetPath: "C.md" }],
       focusedPath: "A.md",
@@ -44,15 +44,17 @@ describe("graphRenderModel", () => {
     });
     expect(state.nodes.find((node) => node.path === "B.md")).toMatchObject({ isSelected: false, ringVisible: false });
     expect(state.nodes.find((node) => node.path === "C.md")).toMatchObject({ isRelated: true });
-    expect(state.nodes.find((node) => node.path === "D.md")).toMatchObject({ isDimmed: true });
-    expect(state.nodes.find((node) => node.path === "D.md")?.fillAlpha).toBeGreaterThan(0.9);
-    expect(state.nodes.find((node) => node.path === "D.md")?.fillColor).not.toBe(defaultGraphRenderPalette.node);
-    expect(state.edges[0]?.alpha).toBeGreaterThan(0.5);
-    expect(state.edges[0]?.strokeWidth).toBeCloseTo(1.18);
+    expect(state.nodes.find((node) => node.path === "D.md")).toMatchObject({ isDimmed: false });
+    expect(state.nodes.find((node) => node.path === "A.md")?.fillColor).toBe(defaultGraphRenderPalette.node);
+    expect(state.nodes.find((node) => node.path === "C.md")?.fillColor).toBe(defaultGraphRenderPalette.node);
+    expect(state.nodes.find((node) => node.path === "D.md")?.fillAlpha).toBe(0.96);
+    expect(state.nodes.find((node) => node.path === "D.md")?.fillColor).toBe(defaultGraphRenderPalette.node);
+    expect(state.edges[0]?.alpha).toBe(0.32);
+    expect(state.edges[0]?.strokeWidth).toBeCloseTo(0.78);
     expect(state.nodes.find((node) => node.path === "B.md")?.strokeWidth).toBe(0);
   });
 
-  it("hoverで接続線を強調する", () => {
+  it("hoverしても接続線の色、太さ、透明度を変えない", () => {
     const state = buildGraphRenderState({
       edges: [{ sourcePath: "A.md", targetPath: "C.md" }],
       focusedPath: "A.md",
@@ -69,11 +71,11 @@ describe("graphRenderModel", () => {
     });
 
     expect(state.edges[0]).toMatchObject({
-      alpha: 0.58,
-      color: defaultGraphRenderPalette.lineFocused,
+      alpha: 0.32,
+      color: defaultGraphRenderPalette.line,
       isFocused: true,
       isMotion: false,
-      strokeWidth: 1.18
+      strokeWidth: 0.78
     });
   });
 

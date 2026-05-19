@@ -110,17 +110,9 @@ export function buildGraphRenderState({
   const screenScale = clampViewScale(viewScale);
   const inverseScale = 1 / screenScale;
   const nodeFill = palette.node;
-  const nodeFocused = palette.nodeFocused;
-  const nodeRelated = mixColor(palette.nodeFocused, palette.node, 0.82);
-  const nodeSelected = palette.nodeSelected;
-  const nodeDimmed = mixColor(nodeFill, palette.background, 0.28);
   const edgeColor = palette.line;
-  const edgeSelected = palette.lineFocused;
-  const dimmedEdgeAlpha = isLargeGraph ? 0.14 : 0.16;
   const normalEdgeAlpha = isLargeGraph ? 0.3 : 0.32;
-  const focusedEdgeAlpha = isLargeGraph ? 0.54 : 0.58;
   const baseEdgeScreenWidth = isLargeGraph ? 0.62 : 0.78;
-  const focusedEdgeScreenWidth = isLargeGraph ? 1.05 : 1.18;
   const visibleLabelPaths = buildVisibleLabelPaths({
     isLargeGraph,
     points,
@@ -137,12 +129,12 @@ export function buildGraphRenderState({
 
       const isFocused = focusedPath === edge.sourcePath || focusedPath === edge.targetPath;
       return [{
-        alpha: focusedPath && !isFocused ? dimmedEdgeAlpha : isFocused ? focusedEdgeAlpha : normalEdgeAlpha,
-        color: isFocused ? edgeSelected : edgeColor,
+        alpha: normalEdgeAlpha,
+        color: edgeColor,
         isFocused,
         isMotion: false,
         sourcePath: edge.sourcePath,
-        strokeWidth: (isFocused ? focusedEdgeScreenWidth : baseEdgeScreenWidth) * linkThickness * inverseScale,
+        strokeWidth: baseEdgeScreenWidth * linkThickness * inverseScale,
         targetPath: edge.targetPath,
         x1: source.x,
         x2: target.x,
@@ -157,7 +149,7 @@ export function buildGraphRenderState({
       const isFocused = point.path === focusedPath;
       const isMotion = point.path === motionPath;
       const group = groupByPath.get(point.path);
-      const isDimmed = !!focusedPath && !isRelated;
+      const isDimmed = false;
       const zoomNodeScale = Math.min(2.2, Math.max(0.82, Math.sqrt(screenScale)));
       const screenRadius = Math.min(7.2, Math.max(1.8, (isLargeGraph ? 2.25 : 3.1) * nodeSize * zoomNodeScale));
       const radius = screenRadius * inverseScale;
@@ -166,17 +158,11 @@ export function buildGraphRenderState({
       let fillColor = nodeFill;
       if (group) {
         fillColor = parseGraphColor(group.color, nodeFill);
-      } else if (isDimmed) {
-        fillColor = nodeDimmed;
-      } else if (isFocused) {
-        fillColor = nodeFocused;
-      } else if (isRelated && focusedPath) {
-        fillColor = nodeRelated;
       }
 
       return {
         degree: point.degree,
-        fillAlpha: isDimmed ? 0.96 : isFocused ? 1 : isRelated && focusedPath ? 0.98 : isLargeGraph ? 0.96 : 0.96,
+        fillAlpha: isLargeGraph ? 0.96 : 0.96,
         fillColor,
         folder: point.folder,
         incoming: point.incoming,
@@ -185,7 +171,7 @@ export function buildGraphRenderState({
         isMotion,
         isRelated,
         isSelected,
-        labelAlpha: isDimmed ? Math.min(0.24, labelOpacity) : isLargeGraph ? Math.min(0.72, labelOpacity) : labelOpacity,
+        labelAlpha: isLargeGraph ? Math.min(0.72, labelOpacity) : labelOpacity,
         labelVisible,
         name: point.name,
         path: point.path,
@@ -305,25 +291,6 @@ export function readGraphPalette(element: HTMLElement | null): GraphRenderPalett
     nodeFocused: parseGraphColor(styles.getPropertyValue("--graph-node-focused"), defaultGraphRenderPalette.nodeFocused),
     nodeSelected: parseGraphColor(styles.getPropertyValue("--graph-node-selected"), defaultGraphRenderPalette.nodeSelected),
     text: parseGraphColor(styles.getPropertyValue("--text"), defaultGraphRenderPalette.text)
-  };
-}
-
-function mixColor(first: number, second: number, firstWeight: number): number {
-  const secondWeight = 1 - firstWeight;
-  const firstRgb = numberToRgb(first);
-  const secondRgb = numberToRgb(second);
-  return rgbToNumber(
-    Math.round(firstRgb.r * firstWeight + secondRgb.r * secondWeight),
-    Math.round(firstRgb.g * firstWeight + secondRgb.g * secondWeight),
-    Math.round(firstRgb.b * firstWeight + secondRgb.b * secondWeight)
-  );
-}
-
-function numberToRgb(value: number): { b: number; g: number; r: number } {
-  return {
-    b: value & 0xff,
-    g: (value >> 8) & 0xff,
-    r: (value >> 16) & 0xff
   };
 }
 
