@@ -174,6 +174,7 @@
   "graph.searchPlaceholder": "ファイル名・パス",
   "graph.selectNode": "ノードを選択してください。",
   "graph.showOrphans": "孤立ノード",
+  "graph.startAnimation": "アニメーション開始",
   "graph.summary": "{{nodes}} ノード / {{edges}} リンク",
   "graph.tag": "タグ",
   "graph.textFade": "ラベルフェード",

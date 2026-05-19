@@ -7,6 +7,7 @@ import { GraphControls } from "./GraphControls";
 
 function resetGraphStore(): void {
   useGraphStore.setState({
+    animationEpoch: 0,
     centerForce: 1,
     error: null,
     folderFilter: "",

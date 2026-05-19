@@ -16,6 +16,7 @@ interface GraphState {
   folderFilter: string;
   graph: WorkspaceGraph | null;
   groups: GraphGroup[];
+  animationEpoch: number;
   centerForce: number;
   isLoading: boolean;
   linkFilter: GraphLinkFilter;
@@ -40,6 +41,7 @@ interface GraphState {
   loadGraph: (workspaceId: string | null, force?: boolean) => void;
   removeGroup: (id: string) => void;
   resetFilters: () => void;
+  startAnimation: () => void;
   setCenterForce: (value: number) => void;
   setFolderFilter: (value: string) => void;
   setLinkDistance: (value: number) => void;
@@ -69,6 +71,7 @@ export const useGraphStore = create<GraphState>((set, get) => ({
   folderFilter: "",
   graph: null,
   groups: [],
+  animationEpoch: 0,
   centerForce: 1,
   isLoading: false,
   linkDistance: 118,
@@ -137,6 +140,7 @@ export const useGraphStore = create<GraphState>((set, get) => ({
     textFadeThreshold: 0.85
   }),
   removeGroup: (id) => set((state) => ({ groups: state.groups.filter((group) => group.id !== id) })),
+  startAnimation: () => set((state) => ({ animationEpoch: state.animationEpoch + 1 })),
   setCenterForce: (value) => set({ centerForce: value }),
   setFolderFilter: (value) => set({ folderFilter: value }),
   setLinkDistance: (value) => set({ linkDistance: value }),

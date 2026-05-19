@@ -65,7 +65,8 @@ export function useGraphPanelModel({
     showOrphans,
     tagFilter,
     textFadeThreshold,
-    zoom
+    zoom,
+    animationEpoch
   } = useGraphStore();
   const [hoveredPath, setHoveredPath] = useState<string | null>(null);
   useEffect(() => {
@@ -96,6 +97,7 @@ export function useGraphPanelModel({
     repelForce
   }), [centerForce, linkDistance, linkForce, repelForce]);
   const graphCanvas = useGraphCanvasInteractions({
+    animationEpoch,
     edges: filteredGraph.edges,
     focusedPath,
     forceSettings,

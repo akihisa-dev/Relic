@@ -20,6 +20,7 @@ const graph: WorkspaceGraph = {
 
 function resetGraphStore(overrides: Partial<ReturnType<typeof useGraphStore.getState>> = {}): void {
   useGraphStore.setState({
+    animationEpoch: 0,
     centerForce: 1,
     error: null,
     folderFilter: "",

@@ -370,9 +370,9 @@
 .graph-filters {
   display: grid;
   gap: 0;
-  max-height: min(52vh, 420px);
-  overflow: auto;
-  padding-right: 2px;
+  max-height: none;
+  overflow: visible;
+  padding-right: 0;
 }
 
 .graph-search {
@@ -506,6 +506,24 @@
   width: 100%;
 }
 
+.graph-animation-button {
+  background: #8b5cf6;
+  border: 1px solid #8b5cf6;
+  border-radius: 5px;
+  color: white;
+  cursor: pointer;
+  font-size: 12px;
+  min-height: 32px;
+  width: 100%;
+}
+
+.graph-animation-button:hover,
+.graph-group-heading .graph-mini-button:hover {
+  background: #7c3aed;
+  border-color: #7c3aed;
+  color: white;
+}
+
 .graph-mini-button--icon {
   font-size: 14px;
   min-width: 24px;
@@ -526,9 +544,9 @@
   border: 1px solid var(--border);
   border-radius: 7px;
   box-shadow: 0 12px 26px rgba(0, 0, 0, 0.12);
-  max-height: min(70vh, 560px);
+  max-height: none;
   opacity: 1;
-  overflow: hidden;
+  overflow: visible;
   padding: 8px 10px;
   pointer-events: auto;
   position: absolute;

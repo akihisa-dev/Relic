@@ -13,6 +13,7 @@ import {
 
 function resetGraphStore(): void {
   useGraphStore.setState({
+    animationEpoch: 0,
     centerForce: 1,
     error: null,
     folderFilter: "",
@@ -109,6 +110,7 @@ describe("GraphControlSections", () => {
     fireEvent.change(screen.getByLabelText("ズーム"), { target: { value: "1.5" } });
     fireEvent.change(screen.getByLabelText("ノードサイズ"), { target: { value: "1.4" } });
     fireEvent.change(screen.getByLabelText("リンク太さ"), { target: { value: "1.7" } });
+    fireEvent.click(screen.getByRole("button", { name: "アニメーション開始" }));
     fireEvent.change(screen.getByLabelText("ラベルフェード"), { target: { value: "1.2" } });
     fireEvent.click(screen.getByLabelText("ラベル"));
     fireEvent.click(screen.getByLabelText("矢印"));
@@ -118,6 +120,7 @@ describe("GraphControlSections", () => {
     expect(screen.getByLabelText("リンク太さ")).toHaveAttribute("min", "1");
     expect(useGraphStore.getState()).toMatchObject({
       layoutMode: "cluster",
+      animationEpoch: 1,
       linkThickness: 1.7,
       nodeSize: 1.4,
       showArrows: true,
