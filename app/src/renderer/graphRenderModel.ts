@@ -121,6 +121,13 @@ export function buildGraphRenderState({
   const focusedEdgeAlpha = isLargeGraph ? 0.54 : 0.58;
   const baseEdgeScreenWidth = isLargeGraph ? 1.55 : 1.65;
   const focusedEdgeScreenWidth = isLargeGraph ? 1.85 : 1.95;
+  const visibleLabelPaths = buildVisibleLabelPaths({
+    isLargeGraph,
+    points,
+    screenScale,
+    selectedPath,
+    showLabels
+  });
 
   return {
     edges: edges.flatMap((edge) => {
@@ -154,10 +161,7 @@ export function buildGraphRenderState({
       const zoomNodeScale = Math.min(1.75, Math.max(0.72, Math.sqrt(screenScale)));
       const screenRadius = Math.min(13.5, Math.max(5.4, (isLargeGraph ? 7.45 : 7.6) * nodeSize * zoomNodeScale));
       const radius = screenRadius * inverseScale;
-      const labelVisible = showLabels && (
-        (!isLargeGraph && points.length <= GRAPH_VISIBLE_LABEL_NODE_LIMIT) ||
-        (!!motionPath && (isFocused || isRelated))
-      );
+      const labelVisible = visibleLabelPaths.has(point.path);
       const velocity = point as Partial<Pick<GraphRenderPoint, "vx" | "vy">>;
       let fillColor = nodeFill;
       if (group) {
@@ -202,6 +206,71 @@ export function buildGraphRenderState({
     }),
     palette
   };
+}
+
+function buildVisibleLabelPaths({
+  isLargeGraph,
+  points,
+  screenScale,
+  selectedPath,
+  showLabels
+}: {
+  isLargeGraph: boolean;
+  points: GraphPoint[];
+  screenScale: number;
+  selectedPath: string | null;
+  showLabels: boolean;
+}): Set<string> {
+  if (!showLabels) return new Set<string>();
+  if (!isLargeGraph && points.length <= GRAPH_VISIBLE_LABEL_NODE_LIMIT) {
+    return new Set(points.map((point) => point.path));
+  }
+  if (screenScale < 2.6) return new Set<string>();
+
+  const fontSize = graphLabelScreenFontSize(screenScale);
+  const screenRadius = Math.min(13.5, Math.max(5.4, 7.45 * Math.min(1.75, Math.max(0.72, Math.sqrt(screenScale)))));
+  const occupied: Array<{ bottom: number; left: number; right: number; top: number }> = [];
+  const visible = new Set<string>();
+  const candidates = [...points].sort((a, b) => {
+    if (a.path === selectedPath) return -1;
+    if (b.path === selectedPath) return 1;
+    const degreeDiff = b.degree - a.degree;
+    return degreeDiff || a.path.localeCompare(b.path, "ja");
+  });
+
+  for (const point of candidates) {
+    const width = Math.max(24, point.name.length * fontSize * 0.58);
+    const height = fontSize * 1.18;
+    const centerX = point.x * screenScale;
+    const top = point.y * screenScale + screenRadius + 2;
+    const rect = {
+      bottom: top + height + 10,
+      left: centerX - width / 2 - 10,
+      right: centerX + width / 2 + 10,
+      top: top - 6
+    };
+
+    if (occupied.some((current) => rectanglesOverlap(rect, current))) continue;
+    occupied.push(rect);
+    visible.add(point.path);
+  }
+
+  return visible;
+}
+
+function rectanglesOverlap(
+  first: { bottom: number; left: number; right: number; top: number },
+  second: { bottom: number; left: number; right: number; top: number }
+): boolean {
+  return first.left < second.right &&
+    first.right > second.left &&
+    first.top < second.bottom &&
+    first.bottom > second.top;
+}
+
+function graphLabelScreenFontSize(viewScale: number): number {
+  const safeScale = Math.max(0.001, viewScale);
+  return Math.min(30, Math.max(10, 10 * Math.sqrt(safeScale)));
 }
 
 function clampViewScale(value: number): number {

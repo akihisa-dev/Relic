@@ -1,10 +1,10 @@
-import { act, renderHook, waitFor } from "@testing-library/react";
+import { renderHook, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { WorkspaceGraph } from "../../shared/ipc";
 import { buildGraphViewBox } from "../graphLayout";
 import { useGraphStore } from "../store/graphStore";
-import { GRAPH_AFTERGLOW_DURATION_MS, useGraphPanelModel } from "./useGraphPanelModel";
+import { useGraphPanelModel } from "./useGraphPanelModel";
 
 const graph: WorkspaceGraph = {
   edges: [
@@ -64,8 +64,6 @@ function renderGraphPanelModel(overrides: Partial<Parameters<typeof useGraphPane
 
 describe("useGraphPanelModel", () => {
   beforeEach(() => {
-    vi.stubGlobal("requestAnimationFrame", vi.fn(() => 1));
-    vi.stubGlobal("cancelAnimationFrame", vi.fn());
     window.relic = {
       getWorkspaceGraph: vi.fn().mockResolvedValue({ ok: true, value: graph })
     } as unknown as typeof window.relic;
@@ -73,7 +71,6 @@ describe("useGraphPanelModel", () => {
   });
 
   afterEach(() => {
-    vi.useRealTimers();
     vi.unstubAllGlobals();
   });
 
@@ -98,7 +95,7 @@ describe("useGraphPanelModel", () => {
     expect(hook.result.current.filteredGraph.edges).toEqual([]);
   });
 
-  it("hoveredPathがある場合はselectedPathよりfocusedPathに優先される", () => {
+  it("hoverではfocusedPathとmotionPathを変更しない", () => {
     resetGraphStore({
       graph,
       loadedWorkspaceId: "workspace-1",
@@ -108,48 +105,13 @@ describe("useGraphPanelModel", () => {
 
     expect(hook.result.current.focusedPath).toBe("Alpha.md");
 
-    act(() => {
-      hook.result.current.graphCanvas.nodeHandlers.onPointerEnter("folder/Beta.md");
-    });
+    hook.result.current.graphCanvas.nodeHandlers.onPointerEnter("folder/Beta.md");
+    hook.result.current.graphCanvas.nodeHandlers.onPointerLeave("folder/Beta.md");
 
-    expect(hook.result.current.focusedPath).toBe("folder/Beta.md");
-    expect(hook.result.current.motionPath).toBe("folder/Beta.md");
-    expect(hook.result.current.isMotionAfterglow).toBe(false);
-  });
-
-  it("hover解除後はafterglowPathを一定時間だけfocusedPathとmotionPathに使う", () => {
-    vi.useFakeTimers();
-    resetGraphStore({
-      graph,
-      loadedWorkspaceId: "workspace-1"
-    });
-    const { hook } = renderGraphPanelModel();
-
-    act(() => {
-      hook.result.current.graphCanvas.nodeHandlers.onPointerEnter("folder/Beta.md");
-    });
-    const hoverEpoch = hook.result.current.motionEpoch;
-
-    act(() => {
-      hook.result.current.graphCanvas.nodeHandlers.onPointerLeave("folder/Beta.md");
-    });
-
-    expect(hook.result.current.focusedPath).toBe("folder/Beta.md");
-    expect(hook.result.current.motionPath).toBe("folder/Beta.md");
-    expect(hook.result.current.isMotionAfterglow).toBe(true);
-    expect(hook.result.current.motionEpoch).toBeGreaterThan(hoverEpoch);
-
-    act(() => {
-      vi.advanceTimersByTime(GRAPH_AFTERGLOW_DURATION_MS - 1);
-    });
-    expect(hook.result.current.motionPath).toBe("folder/Beta.md");
-
-    act(() => {
-      vi.advanceTimersByTime(1);
-    });
-    expect(hook.result.current.focusedPath).toBeNull();
+    expect(hook.result.current.focusedPath).toBe("Alpha.md");
     expect(hook.result.current.motionPath).toBeNull();
     expect(hook.result.current.isMotionAfterglow).toBe(false);
+    expect(hook.result.current.motionEpoch).toBe(0);
   });
 
   it("showLabels=falseのときlabelOpacityが0になる", () => {
