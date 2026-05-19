@@ -128,13 +128,12 @@ export function buildGraphRenderState({
       const target = pointByPath.get(edge.targetPath);
       if (!source || !target) return [];
 
-      const isFocused = focusedPath === edge.sourcePath || focusedPath === edge.targetPath;
-      const isMotion = motionPath === edge.sourcePath || motionPath === edge.targetPath;
+      const isFocused = selectedPath === edge.sourcePath || selectedPath === edge.targetPath;
       return [{
-        alpha: focusedPath && !isFocused ? dimmedEdgeAlpha : isFocused ? focusedEdgeAlpha : normalEdgeAlpha,
+        alpha: selectedPath && !isFocused ? dimmedEdgeAlpha : isFocused ? focusedEdgeAlpha : normalEdgeAlpha,
         color: isFocused ? edgeSelected : edgeColor,
         isFocused,
-        isMotion,
+        isMotion: false,
         sourcePath: edge.sourcePath,
         strokeWidth: (isFocused ? focusedEdgeScreenWidth : baseEdgeScreenWidth) * linkThickness * inverseScale,
         targetPath: edge.targetPath,
