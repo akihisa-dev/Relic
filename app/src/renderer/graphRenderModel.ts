@@ -125,7 +125,7 @@ export function buildGraphRenderState({
     isLargeGraph,
     points,
     screenScale,
-    selectedPath,
+    focusedPath,
     showLabels
   });
 
@@ -135,9 +135,9 @@ export function buildGraphRenderState({
       const target = pointByPath.get(edge.targetPath);
       if (!source || !target) return [];
 
-      const isFocused = selectedPath === edge.sourcePath || selectedPath === edge.targetPath;
+      const isFocused = focusedPath === edge.sourcePath || focusedPath === edge.targetPath;
       return [{
-        alpha: selectedPath && !isFocused ? dimmedEdgeAlpha : isFocused ? focusedEdgeAlpha : normalEdgeAlpha,
+        alpha: focusedPath && !isFocused ? dimmedEdgeAlpha : isFocused ? focusedEdgeAlpha : normalEdgeAlpha,
         color: isFocused ? edgeSelected : edgeColor,
         isFocused,
         isMotion: false,
@@ -152,7 +152,7 @@ export function buildGraphRenderState({
     }),
     isLargeGraph,
     nodes: points.map((point) => {
-      const isSelected = point.path === selectedPath;
+      const isSelected = false;
       const isRelated = relatedPaths.has(point.path);
       const isFocused = point.path === focusedPath;
       const isMotion = point.path === motionPath;
@@ -168,8 +168,6 @@ export function buildGraphRenderState({
         fillColor = parseGraphColor(group.color, nodeFill);
       } else if (isDimmed) {
         fillColor = nodeDimmed;
-      } else if (isSelected) {
-        fillColor = nodeSelected;
       } else if (isFocused) {
         fillColor = nodeFocused;
       } else if (isRelated && focusedPath) {
@@ -178,7 +176,7 @@ export function buildGraphRenderState({
 
       return {
         degree: point.degree,
-        fillAlpha: isDimmed ? 0.96 : isSelected ? 1 : isFocused ? 1 : isRelated && focusedPath ? 0.98 : isLargeGraph ? 0.96 : 0.96,
+        fillAlpha: isDimmed ? 0.96 : isFocused ? 1 : isRelated && focusedPath ? 0.98 : isLargeGraph ? 0.96 : 0.96,
         fillColor,
         folder: point.folder,
         incoming: point.incoming,
@@ -195,7 +193,7 @@ export function buildGraphRenderState({
         ringVisible: false,
         outgoing: point.outgoing,
         strokeAlpha: 0,
-        strokeColor: isSelected ? mixColor(nodeSelected, palette.background, 0.72) : palette.background,
+        strokeColor: palette.background,
         strokeWidth: 0,
         tags: point.tags,
         vx: velocity.vx,
@@ -212,13 +210,13 @@ function buildVisibleLabelPaths({
   isLargeGraph,
   points,
   screenScale,
-  selectedPath,
+  focusedPath,
   showLabels
 }: {
+  focusedPath: string | null;
   isLargeGraph: boolean;
   points: GraphPoint[];
   screenScale: number;
-  selectedPath: string | null;
   showLabels: boolean;
 }): Set<string> {
   if (!showLabels) return new Set<string>();
@@ -232,8 +230,8 @@ function buildVisibleLabelPaths({
   const occupied: Array<{ bottom: number; left: number; right: number; top: number }> = [];
   const visible = new Set<string>();
   const candidates = [...points].sort((a, b) => {
-    if (a.path === selectedPath) return -1;
-    if (b.path === selectedPath) return 1;
+    if (a.path === focusedPath) return -1;
+    if (b.path === focusedPath) return 1;
     const degreeDiff = b.degree - a.degree;
     return degreeDiff || a.path.localeCompare(b.path, "ja");
   });
@@ -270,7 +268,7 @@ function rectanglesOverlap(
 
 function graphLabelScreenFontSize(viewScale: number): number {
   const safeScale = Math.max(0.001, viewScale);
-  return Math.min(30, Math.max(10, 10 * Math.sqrt(safeScale)));
+  return Math.min(13, Math.max(4.5, 5 * Math.pow(safeScale, 0.8)));
 }
 
 function clampViewScale(value: number): number {

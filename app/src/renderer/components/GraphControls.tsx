@@ -16,8 +16,13 @@ interface GraphControlsProps {
 
 export function GraphControls({ workspaceId }: GraphControlsProps): ReactElement {
   const t = useT();
-  const [isMinimized, setIsMinimized] = useState(true);
-  const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
+  const [isMinimized, setIsMinimized] = useState(false);
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({
+    display: true,
+    filter: true,
+    forces: true,
+    groups: true
+  });
   const {
     loadGraph,
     resetFilters

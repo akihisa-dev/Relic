@@ -465,14 +465,14 @@
   border-radius: 6px;
   box-shadow: 0 12px 26px rgba(0, 0, 0, 0.12);
   max-height: min(70vh, 560px);
-  opacity: 0;
+  opacity: 1;
   overflow: hidden;
   padding: 8px;
-  pointer-events: none;
+  pointer-events: auto;
   position: absolute;
   right: 12px;
   top: 12px;
-  transform: translateY(-4px);
+  transform: translateY(0);
   transition:
     background-color 180ms ease,
     border-color 180ms ease,
@@ -494,16 +494,9 @@
   max-height: 36px;
   opacity: 1;
   padding: 0;
-  pointer-events: none;
-  transform: translateY(0);
-  width: 36px;
-}
-
-.graph-panel:hover .graph-hover-settings,
-.graph-panel:focus-within .graph-hover-settings {
-  opacity: 1;
   pointer-events: auto;
   transform: translateY(0);
+  width: 36px;
 }
 
 .graph-hover-settings:has(.graph-controls) .graph-controls {
