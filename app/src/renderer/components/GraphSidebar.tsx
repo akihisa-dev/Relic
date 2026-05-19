@@ -83,7 +83,7 @@ export function GraphPanel({ activeFilePath, onOpenFile, workspaceId }: GraphPan
             selectedPath={selectedPath}
             showArrows={showArrows}
             showLabels={showLabels}
-            svgRef={graphCanvas.svgRef}
+            surfaceRef={graphCanvas.surfaceRef}
             viewBox={graphCanvas.viewBox}
           />
         )}

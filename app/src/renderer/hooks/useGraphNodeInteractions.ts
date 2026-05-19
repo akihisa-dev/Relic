@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import type { KeyboardEvent, MutableRefObject, PointerEvent } from "react";
+import type { KeyboardEvent, MutableRefObject } from "react";
 
 import {
   clamp,
@@ -8,6 +8,19 @@ import {
   GRAPH_WIDTH
 } from "../graphLayout";
 import type { GraphPan, GraphPoint, GraphSimPoint } from "../graphLayout";
+
+export interface GraphNodePointerEvent {
+  button: number;
+  clientX: number;
+  clientY: number;
+  currentTarget?: {
+    hasPointerCapture?: (pointerId: number) => boolean;
+    releasePointerCapture?: (pointerId: number) => void;
+    setPointerCapture?: (pointerId: number) => void;
+  };
+  pointerId: number;
+  stopPropagation: () => void;
+}
 
 interface GraphNodeDragState {
   moved: boolean;
@@ -32,13 +45,13 @@ interface UseGraphNodeInteractionsInput {
 
 export interface GraphNodeHandlers {
   onClick: (point: GraphPoint) => void;
-  onKeyDown: (event: KeyboardEvent<SVGGElement>, point: GraphPoint) => void;
-  onPointerCancel: (event: PointerEvent<SVGGElement>) => void;
-  onPointerDown: (event: PointerEvent<SVGGElement>, point: GraphPoint) => void;
+  onKeyDown: (event: KeyboardEvent<HTMLDivElement>, point: GraphPoint) => void;
+  onPointerCancel: (event: GraphNodePointerEvent) => void;
+  onPointerDown: (event: GraphNodePointerEvent, point: GraphPoint) => void;
   onPointerEnter: (path: string) => void;
   onPointerLeave: (path: string) => void;
-  onPointerMove: (event: PointerEvent<SVGGElement>) => void;
-  onPointerUp: (event: PointerEvent<SVGGElement>, point: GraphPoint) => void;
+  onPointerMove: (event: GraphNodePointerEvent) => void;
+  onPointerUp: (event: GraphNodePointerEvent, point: GraphPoint) => void;
 }
 
 export function useGraphNodeInteractions({
@@ -68,7 +81,7 @@ export function useGraphNodeInteractions({
     setSelectedPath(point.path);
   }
 
-  function handleNodePointerDown(event: PointerEvent<SVGGElement>, point: GraphPoint): void {
+  function handleNodePointerDown(event: GraphNodePointerEvent, point: GraphPoint): void {
     if (event.button !== 0) return;
 
     event.stopPropagation();
@@ -83,11 +96,11 @@ export function useGraphNodeInteractions({
     };
     openSelectedClickRef.current = selectedPath === point.path;
     pinnedPathRef.current = point.path;
-    event.currentTarget.setPointerCapture(event.pointerId);
+    event.currentTarget?.setPointerCapture?.(event.pointerId);
     setSelectedPath(point.path);
   }
 
-  function handleNodePointerMove(event: PointerEvent<SVGGElement>): void {
+  function handleNodePointerMove(event: GraphNodePointerEvent): void {
     const dragState = nodeDragStateRef.current;
     if (!dragState || dragState.pointerId !== event.pointerId) return;
 
@@ -111,35 +124,35 @@ export function useGraphNodeInteractions({
     setPoints(nextPoints);
   }
 
-  function handleNodePointerEnd(event: PointerEvent<SVGGElement>, point: GraphPoint): void {
+  function handleNodePointerEnd(event: GraphNodePointerEvent, point: GraphPoint): void {
     const dragState = nodeDragStateRef.current;
     if (!dragState || dragState.pointerId !== event.pointerId) return;
 
     event.stopPropagation();
     nodeDragStateRef.current = null;
     pinnedPathRef.current = null;
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-      event.currentTarget.releasePointerCapture(event.pointerId);
+    if (event.currentTarget?.hasPointerCapture?.(event.pointerId)) {
+      event.currentTarget.releasePointerCapture?.(event.pointerId);
     }
     suppressNodeClickRef.current = dragState.moved;
     openSelectedClickRef.current = !dragState.moved && dragState.wasSelectedOnPointerDown;
     if (!dragState.moved) setSelectedPath(point.path);
   }
 
-  function handleNodePointerCancel(event: PointerEvent<SVGGElement>): void {
+  function handleNodePointerCancel(event: GraphNodePointerEvent): void {
     const dragState = nodeDragStateRef.current;
     if (!dragState || dragState.pointerId !== event.pointerId) return;
 
     event.stopPropagation();
     nodeDragStateRef.current = null;
     pinnedPathRef.current = null;
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-      event.currentTarget.releasePointerCapture(event.pointerId);
+    if (event.currentTarget?.hasPointerCapture?.(event.pointerId)) {
+      event.currentTarget.releasePointerCapture?.(event.pointerId);
     }
     openSelectedClickRef.current = false;
   }
 
-  function handleNodeKeyDown(event: KeyboardEvent<SVGGElement>, point: GraphPoint): void {
+  function handleNodeKeyDown(event: KeyboardEvent<HTMLDivElement>, point: GraphPoint): void {
     if (event.key === "Enter") {
       event.preventDefault();
       setSelectedPath(point.path);

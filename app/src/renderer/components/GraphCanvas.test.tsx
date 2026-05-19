@@ -44,7 +44,7 @@ function makeGraphCanvasProps(overrides: Partial<GraphCanvasProps> = {}): GraphC
     selectedPath: "B.md",
     showArrows: false,
     showLabels: true,
-    svgRef: createRef<SVGSVGElement>(),
+    surfaceRef: createRef<HTMLDivElement>(),
     viewBox: { height: GRAPH_HEIGHT, width: GRAPH_WIDTH, x: 0, y: 0 },
     ...overrides
   };
@@ -55,36 +55,15 @@ function renderGraphCanvas(overrides: Partial<GraphCanvasProps> = {}): RenderRes
   return { ...render(<GraphCanvas {...props} />), props };
 }
 
-function nodeCircle(name: string): SVGCircleElement {
-  const node = screen.getByRole("button", { name });
-  const circle = node.querySelector("circle.graph-node");
-  expect(circle).not.toBeNull();
-  return circle as SVGCircleElement;
-}
-
 describe("GraphCanvas", () => {
-  it("edgeとnodeを既存class名で描画する", () => {
-    const { container } = renderGraphCanvas();
+  it("Pixi rendererのhostを描画しnode/edge件数を属性へ反映する", () => {
+    renderGraphCanvas();
 
-    expect(container.querySelector("svg.graph-svg")).toBeInTheDocument();
-    expect(container.querySelector(".graph-edge-layer .graph-edge")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "A" })).toHaveClass("graph-node-hit");
-    expect(nodeCircle("A")).toHaveClass("graph-node");
-    expect(screen.getByText("A")).toHaveClass("graph-label");
-  });
-
-  it("motionPathがあるとtrace overlayを描画する", () => {
-    const { container } = renderGraphCanvas({ motionEpoch: 2, motionPath: "A.md" });
-
-    expect(container.querySelector("line.graph-edge-trace")).toBeInTheDocument();
-  });
-
-  it("showArrows=trueでmarker定義とmarkerEndを描画する", () => {
-    const { container } = renderGraphCanvas({ showArrows: true });
-
-    expect(container.querySelector("marker#graph-arrow")).toBeInTheDocument();
-    expect(container.querySelector("marker#graph-arrow-selected")).toBeInTheDocument();
-    expect(container.querySelector("line.graph-edge")).toHaveAttribute("marker-end", "url(#graph-arrow-selected)");
+    const surface = screen.getByRole("img", { name: "Graph" });
+    expect(surface).toHaveClass("graph-pixi-surface");
+    expect(surface).toHaveAttribute("data-renderer", "pixi");
+    expect(surface).toHaveAttribute("data-node-count", "4");
+    expect(surface).toHaveAttribute("data-edge-count", "1");
   });
 
   it("大規模グラフでは軽量表示classを付ける", () => {
@@ -99,30 +78,34 @@ describe("GraphCanvas", () => {
       x: index,
       y: index
     }));
-    const { container } = renderGraphCanvas({ points: manyPoints });
 
-    expect(container.querySelector("svg.graph-svg")).toHaveClass("graph-svg--large");
+    renderGraphCanvas({ points: manyPoints });
+
+    expect(screen.getByRole("img", { name: "Graph" })).toHaveClass("graph-pixi-surface--large");
   });
 
-  it("selected、focused、related、dimmedのnode classを既存通り付ける", () => {
-    renderGraphCanvas();
+  it("surface上のkeyboard、pointer、wheel callbackを接続する", () => {
+    const onGraphKeyDown = vi.fn();
+    const onGraphPointerDown = vi.fn();
+    const onGraphWheel = vi.fn();
+    renderGraphCanvas({ onGraphKeyDown, onGraphPointerDown, onGraphWheel });
 
-    expect(nodeCircle("A")).toHaveClass("graph-node--focused");
-    expect(nodeCircle("B")).toHaveClass("graph-node--selected");
-    expect(nodeCircle("C")).toHaveClass("graph-node--related");
-    expect(nodeCircle("D")).toHaveClass("graph-node--dimmed");
+    const surface = screen.getByRole("img", { name: "Graph" });
+    fireEvent.keyDown(surface, { key: "ArrowRight" });
+    fireEvent.pointerDown(surface, { button: 0, pointerId: 1 });
+    fireEvent.wheel(surface, { deltaY: -100 });
+
+    expect(onGraphKeyDown).toHaveBeenCalledWith(expect.objectContaining({ key: "ArrowRight" }));
+    expect(onGraphPointerDown).toHaveBeenCalled();
+    expect(onGraphWheel).toHaveBeenCalledWith(expect.objectContaining({ deltaY: -100 }));
   });
 
-  it("node clickとEnter keyで渡したcallbackを呼ぶ", () => {
-    const onNodeClick = vi.fn();
+  it("Enter keyではfocused nodeのkey handlerを呼ぶ", () => {
     const onNodeKeyDown = vi.fn();
-    renderGraphCanvas({ onNodeClick, onNodeKeyDown });
+    renderGraphCanvas({ focusedPath: "A.md", onNodeKeyDown });
 
-    const node = screen.getByRole("button", { name: "A" });
-    fireEvent.click(node);
-    fireEvent.keyDown(node, { key: "Enter" });
+    fireEvent.keyDown(screen.getByRole("img", { name: "Graph" }), { key: "Enter" });
 
-    expect(onNodeClick).toHaveBeenCalledWith(expect.objectContaining({ path: "A.md" }));
     expect(onNodeKeyDown).toHaveBeenCalledWith(expect.objectContaining({ key: "Enter" }), expect.objectContaining({ path: "A.md" }));
   });
 });

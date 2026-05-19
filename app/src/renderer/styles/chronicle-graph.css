@@ -543,15 +543,6 @@
 }
 
 .graph-canvas {
-  --graph-edge: color-mix(in srgb, var(--accent) 66%, var(--text) 34%);
-  --graph-edge-selected: color-mix(in srgb, var(--accent) 82%, var(--text) 18%);
-  --graph-node-fill: color-mix(in srgb, var(--accent) 62%, var(--text) 38%);
-  --graph-node-focused: color-mix(in srgb, var(--accent) 72%, var(--text) 28%);
-  --graph-node-related: color-mix(in srgb, var(--accent) 64%, var(--text) 36%);
-  --graph-node-selected: color-mix(in srgb, var(--accent) 78%, var(--text) 22%);
-  --graph-node-stroke: var(--bg);
-  --graph-node-glow: color-mix(in srgb, var(--accent) 38%, transparent);
-  --graph-selection-ring: color-mix(in srgb, var(--accent) 82%, var(--text) 18%);
   background: var(--bg);
   border: none;
   border-radius: 0;
@@ -562,276 +553,33 @@
   width: 100%;
 }
 
-[data-theme="dark"] .graph-canvas {
-  --graph-edge: color-mix(in srgb, var(--text) 56%, transparent);
-  --graph-edge-selected: color-mix(in srgb, var(--text) 82%, var(--accent) 18%);
-  --graph-node-fill: color-mix(in srgb, var(--text) 86%, white 14%);
-  --graph-node-focused: color-mix(in srgb, var(--text) 94%, white 6%);
-  --graph-node-related: color-mix(in srgb, var(--text) 90%, var(--accent) 10%);
-  --graph-node-selected: color-mix(in srgb, var(--text) 82%, var(--accent) 18%);
-  --graph-node-stroke: color-mix(in srgb, var(--bg) 72%, transparent);
-  --graph-node-glow: color-mix(in srgb, var(--text) 52%, transparent);
-  --graph-selection-ring: color-mix(in srgb, var(--text) 86%, var(--accent) 14%);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .graph-canvas {
-    --graph-edge: color-mix(in srgb, var(--text) 56%, transparent);
-    --graph-edge-selected: color-mix(in srgb, var(--text) 82%, var(--accent) 18%);
-    --graph-node-fill: color-mix(in srgb, var(--text) 86%, white 14%);
-    --graph-node-focused: color-mix(in srgb, var(--text) 94%, white 6%);
-    --graph-node-related: color-mix(in srgb, var(--text) 90%, var(--accent) 10%);
-    --graph-node-selected: color-mix(in srgb, var(--text) 82%, var(--accent) 18%);
-    --graph-node-stroke: color-mix(in srgb, var(--bg) 72%, transparent);
-    --graph-node-glow: color-mix(in srgb, var(--text) 52%, transparent);
-    --graph-selection-ring: color-mix(in srgb, var(--text) 86%, var(--accent) 14%);
-  }
-}
-
-.graph-canvas svg {
+.graph-pixi-surface {
+  cursor: grab;
   display: block;
   height: 100%;
   min-height: 0;
+  outline: none;
+  position: relative;
+  touch-action: none;
+  user-select: none;
   width: 100%;
 }
 
-.graph-svg {
-  cursor: grab;
-  outline: none;
-  touch-action: none;
-  user-select: none;
-}
-
-.graph-svg--panning {
+.graph-pixi-surface--panning {
   cursor: grabbing;
 }
 
-.graph-edge {
-  filter: drop-shadow(0 0 1px color-mix(in srgb, var(--graph-edge) 34%, transparent));
-  stroke: var(--graph-edge);
-  stroke-linecap: round;
-  stroke-opacity: 0.46;
-  stroke-width: 0.85;
-  transition: stroke 140ms ease, stroke-opacity 140ms ease, stroke-width 140ms ease, filter 140ms ease;
+.graph-pixi-canvas {
+  display: block;
+  height: 100%;
+  width: 100%;
 }
 
-.graph-edge--selected {
-  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--graph-edge-selected) 44%, transparent));
-  stroke: var(--graph-edge-selected);
-  stroke-opacity: 0.76;
-  stroke-width: 1.1;
-}
-
-.graph-edge--dimmed {
-  stroke-opacity: 0.08;
-}
-
-.graph-edge-trace {
-  animation: graph-edge-trace-flow 720ms cubic-bezier(.22, 1, .36, 1) both;
-  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--accent) 54%, transparent));
-  pointer-events: none;
-  stroke: color-mix(in srgb, var(--accent) 72%, var(--text) 28%);
-  stroke-dasharray: 0.18 0.82;
-  stroke-dashoffset: 1;
-  stroke-linecap: round;
-  stroke-opacity: 0;
-}
-
-.graph-edge-trace--afterglow {
-  animation: graph-edge-trace-afterglow 1000ms ease-out both;
-  stroke-dasharray: 1;
-  stroke-dashoffset: 0;
-}
-
-.graph-arrow-marker {
-  fill: var(--graph-edge);
-  fill-opacity: 0.52;
-}
-
-.graph-arrow-marker--selected {
-  fill: var(--graph-edge-selected);
-  fill-opacity: 0.78;
-}
-
-.graph-node-hit {
-  cursor: grab;
-  outline: none;
-}
-
-.graph-node-hit:active {
-  cursor: grabbing;
-}
-
-.graph-label {
-  fill: var(--text);
-  font-size: 9px;
-  pointer-events: none;
-  paint-order: stroke;
-  stroke: var(--bg);
-  stroke-linejoin: round;
-  stroke-width: 4px;
-  transition: fill-opacity 140ms ease;
-}
-
-.graph-label--dimmed {
-  fill-opacity: 0.28;
-}
-
-.graph-node-selection-ring {
-  animation: graph-node-selection-ring 1.8s ease-in-out infinite;
-  fill: none;
-  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--graph-selection-ring) 42%, transparent));
-  pointer-events: none;
-  stroke: var(--graph-selection-ring);
-  stroke-dasharray: 2.2 2.2;
-  stroke-linecap: round;
-  stroke-opacity: 0.9;
-  stroke-width: 1.9;
-  transform-box: fill-box;
-  transform-origin: center;
-}
-
-.graph-node {
-  animation: graph-node-breathe 5.4s ease-in-out infinite;
-  filter: drop-shadow(0 0 5px var(--graph-node-glow));
-  fill: var(--graph-node-fill);
-  fill-opacity: 0.82;
-  stroke: var(--graph-node-stroke);
-  stroke-opacity: 0.98;
-  stroke-width: 1.6;
-  transform-box: fill-box;
-  transform-origin: center;
-  transition: fill 140ms ease, fill-opacity 140ms ease, stroke 140ms ease, stroke-width 140ms ease, filter 140ms ease;
-}
-
-.graph-node--selected {
-  filter: drop-shadow(0 0 9px color-mix(in srgb, var(--graph-node-selected) 58%, transparent));
-  fill: var(--graph-node-selected);
-  fill-opacity: 0.96;
-  stroke: color-mix(in srgb, var(--graph-node-selected) 72%, var(--bg) 28%);
-  stroke-width: 2.4;
-}
-
-.graph-node--focused {
-  filter: drop-shadow(0 0 8px color-mix(in srgb, var(--graph-node-focused) 52%, transparent));
-  fill: var(--graph-node-focused);
-  fill-opacity: 0.9;
-  stroke: var(--graph-node-stroke);
-  stroke-width: 2.2;
-}
-
-.graph-node--related {
-  fill: var(--graph-node-related);
-  fill-opacity: 0.92;
-}
-
-.graph-node--dimmed {
-  fill-opacity: 0.2;
-  stroke-opacity: 0.45;
-}
-
-.graph-node--motion {
-  animation: graph-node-heartbeat 880ms ease-in-out infinite;
-}
-
-.graph-node--motion-afterglow {
-  animation: graph-node-afterglow 1000ms ease-out both;
-}
-
-.graph-node-hit:hover .graph-node,
-.graph-node-hit:focus-visible .graph-node {
-  filter: drop-shadow(0 0 8px color-mix(in srgb, var(--graph-node-focused) 54%, transparent));
-  fill: var(--graph-node-focused);
-  fill-opacity: 0.92;
-  stroke: var(--graph-node-stroke);
-  stroke-width: 2.2;
-}
-
-.graph-svg--large .graph-edge:not(.graph-edge--selected),
-.graph-svg--large .graph-label {
-  filter: none;
-  transition: none;
-}
-
-.graph-svg--large .graph-node:not(.graph-node--selected):not(.graph-node--focused):not(.graph-node--related):not(.graph-node--motion) {
-  animation: none;
-  filter: none;
-  transition: none;
-}
-
-@keyframes graph-node-breathe {
-  0%,
-  100% {
-    transform: scale(0.985);
-  }
-
-  50% {
-    transform: scale(1.035);
-  }
-}
-
-@keyframes graph-node-selection-ring {
-  0%,
-  100% {
-    stroke-opacity: 0.72;
-    transform: scale(0.98);
-  }
-
-  50% {
-    stroke-opacity: 1;
-    transform: scale(1.08);
-  }
-}
-
-@keyframes graph-node-heartbeat {
-  0%,
-  100% {
-    filter: drop-shadow(0 0 0 color-mix(in srgb, var(--accent) 0%, transparent));
-    transform: scale(1);
-  }
-
-  45% {
-    filter: drop-shadow(0 0 7px color-mix(in srgb, var(--accent) 52%, transparent));
-    transform: scale(1.18);
-  }
-}
-
-@keyframes graph-node-afterglow {
-  0% {
-    filter: drop-shadow(0 0 7px color-mix(in srgb, var(--accent) 48%, transparent));
-    transform: scale(1.16);
-  }
-
-  100% {
-    filter: drop-shadow(0 0 0 color-mix(in srgb, var(--accent) 0%, transparent));
-    transform: scale(1);
-  }
-}
-
-@keyframes graph-edge-trace-flow {
-  0% {
-    stroke-dashoffset: 1;
-    stroke-opacity: 0;
-  }
-
-  28% {
-    stroke-opacity: 0.76;
-  }
-
-  100% {
-    stroke-dashoffset: -1;
-    stroke-opacity: 0;
-  }
-}
-
-@keyframes graph-edge-trace-afterglow {
-  0% {
-    stroke-opacity: 0.48;
-  }
-
-  100% {
-    stroke-opacity: 0;
-  }
+.graph-renderer-error {
+  color: var(--text-3);
+  font-size: 12px;
+  inset: 16px;
+  position: absolute;
 }
 
 .graph-summary {

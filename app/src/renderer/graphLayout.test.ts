@@ -274,4 +274,28 @@ describe("graph layout simulation", () => {
       }
     ]);
   });
+
+  it("1000 node規模でもd3-force layoutをbounds内に生成する", () => {
+    const largeNodes = Array.from({ length: 1000 }, (_, index): WorkspaceGraphNode => ({
+      folder: index % 5 === 0 ? "group" : "",
+      name: `N${index}`,
+      path: `N${index}.md`,
+      tags: []
+    }));
+    const largeEdges = Array.from({ length: 1400 }, (_, index) => ({
+      sourcePath: `N${index % largeNodes.length}.md`,
+      targetPath: `N${(index * 7 + 13) % largeNodes.length}.md`
+    }));
+
+    const points = layoutGraph(largeNodes, largeEdges, forceSettings, "standard");
+    const next = tickGraphSimulation(points.map((point) => ({ ...point, vx: 0, vy: 0 })), largeEdges, forceSettings, null);
+
+    expect(next).toHaveLength(1000);
+    for (const point of next) {
+      expect(point.x).toBeGreaterThanOrEqual(GRAPH_PADDING);
+      expect(point.x).toBeLessThanOrEqual(GRAPH_WIDTH - GRAPH_PADDING);
+      expect(point.y).toBeGreaterThanOrEqual(GRAPH_PADDING);
+      expect(point.y).toBeLessThanOrEqual(GRAPH_HEIGHT - GRAPH_PADDING);
+    }
+  });
 });

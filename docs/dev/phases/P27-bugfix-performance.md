@@ -86,3 +86,4 @@ P27では、事前に固定した長い実施リストは置かない。
 - グラフビューの仮想描画領域を広げ、初期配置も領域比率に合わせて拡散するようにした。大規模グラフでは常時simulation、全ラベル常時描画、ノード/エッジの重い演出を抑え、500ノード級でも操作不能になりにくくした。グラフデータ生成、リンク解析、IPC/store/保存形式は変更していない。
 - グラフビューの大規模simulationをrenderer側Web Workerへ移し、worker非対応時はmain-thread tickへ戻るようにした。大規模時も選択・フォーカス・関連ノードの演出は残し、無関係ノードの重い常時演出は抑える。Canvas/WebGL化、グラフデータ生成、リンク解析、IPC/preload/store/保存形式は変更していない。
 - Electron Forgeのパッケージ設定でasar生成を有効化し、macOS / Windowsのsafe build検査が要求する `app.asar` が生成されるようにした。アプリ本体の実行コード、IPC/preload/store/保存形式は変更していない。
+- グラフビュー描画をSVG/React DOMからPixiJS Canvas/WebGL hostへ移し、force simulationをd3-forceへ置き換えた。既存のグラフデータ生成、リンク解析、IPC/preload/store/保存形式、操作パネルは変更していない。1000ノード合成グラフのbounds確認を含む `pnpm test`（80ファイル・551テスト）、`pnpm typecheck`、`git diff --check` は通過した。開発版Electronの実機目視は未実施。

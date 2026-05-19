@@ -50,7 +50,7 @@ describe("App", () => {
     expect(await screen.findByRole("button", { name: /読書メモ/ })).toBeInTheDocument();
   });
 
-  it("レールからグラフビューを開き、検索とノード選択を実行できる", async () => {
+  it("レールからグラフビューを開き、検索結果をPixi描画hostへ反映できる", async () => {
     const getWorkspaceGraph = vi.fn().mockResolvedValue({
       ok: true,
       value: {
@@ -85,11 +85,15 @@ describe("App", () => {
     expect(container.querySelector(".graph-panel")).toContainElement(screen.getByPlaceholderText("ファイル名・パス"));
     expect(await screen.findByText("2 ノード / 1 リンク")).toBeInTheDocument();
 
+    const graphSurface = screen.getByRole("img", { name: "Graph" });
+    expect(graphSurface).toHaveAttribute("data-renderer", "pixi");
+    expect(graphSurface).toHaveAttribute("data-node-count", "2");
+    expect(graphSurface).toHaveAttribute("data-edge-count", "1");
+
     fireEvent.change(screen.getByPlaceholderText("ファイル名・パス"), { target: { value: "A" } });
     expect(screen.getByText("1 ノード / 0 リンク")).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: "A" }));
-    await waitFor(() => expect(container.querySelector(".graph-node-selection-ring")).toBeInTheDocument());
+    expect(graphSurface).toHaveAttribute("data-node-count", "1");
+    expect(graphSurface).toHaveAttribute("data-edge-count", "0");
     expect(readMarkdownFile).not.toHaveBeenCalled();
   });
 
