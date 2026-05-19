@@ -119,6 +119,8 @@ export function buildGraphRenderState({
   const dimmedEdgeAlpha = isLargeGraph ? 0.14 : 0.16;
   const normalEdgeAlpha = isLargeGraph ? 0.3 : 0.32;
   const focusedEdgeAlpha = isLargeGraph ? 0.54 : 0.58;
+  const baseEdgeScreenWidth = isLargeGraph ? 1.55 : 1.65;
+  const focusedEdgeScreenWidth = isLargeGraph ? 1.85 : 1.95;
 
   return {
     edges: edges.flatMap((edge) => {
@@ -134,10 +136,7 @@ export function buildGraphRenderState({
         isFocused,
         isMotion,
         sourcePath: edge.sourcePath,
-        strokeWidth: Math.min(
-          isFocused ? 1.28 : 1.04,
-          Math.max(isFocused ? 0.76 : 0.62, (isFocused ? 0.96 : isLargeGraph ? 0.78 : 0.82) * linkThickness)
-        ) * inverseScale,
+        strokeWidth: (isFocused ? focusedEdgeScreenWidth : baseEdgeScreenWidth) * linkThickness * inverseScale,
         targetPath: edge.targetPath,
         x1: source.x,
         x2: target.x,
@@ -154,7 +153,7 @@ export function buildGraphRenderState({
       const group = groupByPath.get(point.path);
       const isDimmed = !!focusedPath && !isRelated;
       const zoomNodeScale = Math.min(1.75, Math.max(0.72, Math.sqrt(screenScale)));
-      const screenRadius = Math.min(11, Math.max(3.6, (isLargeGraph ? 5.05 : 5.2) * nodeSize * zoomNodeScale));
+      const screenRadius = Math.min(13.5, Math.max(5.4, (isLargeGraph ? 7.45 : 7.6) * nodeSize * zoomNodeScale));
       const radius = screenRadius * inverseScale;
       const labelVisible = showLabels && (
         (!isLargeGraph && points.length <= GRAPH_VISIBLE_LABEL_NODE_LIMIT) ||
