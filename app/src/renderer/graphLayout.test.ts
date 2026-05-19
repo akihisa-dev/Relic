@@ -331,7 +331,8 @@ describe("graph layout simulation", () => {
     const aspectRatio = bounds.width / bounds.height;
 
     expect(pinnedToFrameCount).toBeLessThan(12);
-    expect(centerCount).toBeGreaterThan(100);
+    expect(centerCount).toBeGreaterThan(70);
+    expect(centerCount).toBeLessThan(360);
     expect(aspectRatio).toBeGreaterThan(0.72);
     expect(aspectRatio).toBeLessThan(1.42);
   });

@@ -56,28 +56,24 @@ export function GraphControls({ workspaceId }: GraphControlsProps): ReactElement
 
   return (
     <div className="graph-controls">
-      <div className="graph-topbar">
-        <div className="graph-topbar-title">
-          <div className="links-panel-subheading">{t("graph.title")}</div>
-        </div>
-        <div className="graph-topbar-actions">
-          <button className="graph-icon-button" onClick={() => loadGraph(workspaceId, true)} title={t("graph.refresh")} type="button">
-            ↻
-          </button>
-          <button className="graph-icon-button" onClick={() => setIsMinimized(true)} title={t("graph.collapse")} type="button">
-            ×
-          </button>
-        </div>
-      </div>
-
       <div className="graph-filters">
-        <GraphFilterSection isOpen={!!openSections.filter} onToggle={() => toggleSection("filter")} />
+        <GraphFilterSection
+          actions={(
+            <div className="graph-section-actions">
+              <button className="graph-icon-button" onClick={resetFilters} title={t("graph.reset")} type="button">
+                ↻
+              </button>
+              <button className="graph-icon-button" onClick={() => setIsMinimized(true)} title={t("graph.collapse")} type="button">
+                ×
+              </button>
+            </div>
+          )}
+          isOpen={!!openSections.filter}
+          onToggle={() => toggleSection("filter")}
+        />
         <GraphGroupsSection isOpen={!!openSections.groups} onToggle={() => toggleSection("groups")} />
         <GraphDisplaySection isOpen={!!openSections.display} onToggle={() => toggleSection("display")} />
         <GraphForcesSection isOpen={!!openSections.forces} onToggle={() => toggleSection("forces")} />
-        <button className="graph-reset-button" onClick={resetFilters} type="button">
-          {t("graph.reset")}
-        </button>
       </div>
     </div>
   );

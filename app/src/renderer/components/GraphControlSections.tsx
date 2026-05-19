@@ -1,75 +1,59 @@
-import { useMemo } from "react";
 import type { ReactElement, ReactNode } from "react";
 
 import {
-  buildGraphFolders,
-  buildGraphTags,
   clamp,
   GRAPH_MAX_ZOOM,
   GRAPH_MIN_ZOOM
 } from "../graphLayout";
 import type { GraphLayoutMode } from "../graphLayout";
 import { useT } from "../i18n";
-import { useGraphStore, type GraphLinkFilter } from "../store/graphStore";
+import { useGraphStore } from "../store/graphStore";
 
 interface GraphSectionProps {
+  actions?: ReactNode;
   isOpen: boolean;
   onToggle: () => void;
 }
 
-export function GraphFilterSection({ isOpen, onToggle }: GraphSectionProps): ReactElement {
+export function GraphFilterSection({ actions, isOpen, onToggle }: GraphSectionProps): ReactElement {
   const t = useT();
   const {
-    folderFilter,
-    graph,
-    linkFilter,
     localGraphDepth,
     minDegree,
     query,
-    setFolderFilter,
-    setLinkFilter,
     setLocalGraphDepth,
     setMinDegree,
     setQuery,
-    setTagFilter,
-    tagFilter
+    setShowOrphans,
+    showOrphans
   } = useGraphStore();
-  const folders = useMemo(() => buildGraphFolders(graph), [graph]);
-  const tags = useMemo(() => buildGraphTags(graph), [graph]);
 
   return (
-    <GraphControlSection isOpen={isOpen} label={t("graph.filter")} onToggle={onToggle}>
+    <GraphControlSection actions={actions} isOpen={isOpen} label={t("graph.filter")} onToggle={onToggle}>
       <label className="graph-search">
-        <span>{t("graph.search")}</span>
         <input onChange={(event) => setQuery(event.target.value)} placeholder={t("graph.searchPlaceholder")} type="search" value={query} />
       </label>
-      <label className="setting-row">
-        <span>{t("graph.folder")}</span>
-        <select onChange={(event) => setFolderFilter(event.target.value)} value={folderFilter}>
-          <option value="">{t("graph.allFolders")}</option>
-          {folders.map((folder) => <option key={folder} value={folder}>{folder}</option>)}
-        </select>
-      </label>
-      <label className="setting-row">
+      <label className="setting-row graph-toggle-row">
         <span>{t("graph.tag")}</span>
-        <select onChange={(event) => setTagFilter(event.target.value)} value={tagFilter}>
-          <option value="">{t("graph.allTags")}</option>
-          {tags.map((tag) => <option key={tag} value={tag}>{tag}</option>)}
-        </select>
+        <input disabled type="checkbox" />
       </label>
-      <label className="setting-row">
-        <span>{t("graph.links")}</span>
-        <select onChange={(event) => setLinkFilter(event.target.value as GraphLinkFilter)} value={linkFilter}>
-          <option value="all">{t("graph.linksAll")}</option>
-          <option value="linked">{t("graph.linksLinked")}</option>
-          <option value="unlinked">{t("graph.linksUnlinked")}</option>
-        </select>
+      <label className="setting-row graph-toggle-row">
+        <span>添付書類</span>
+        <input disabled type="checkbox" />
       </label>
-      <label className="setting-row">
+      <label className="setting-row graph-toggle-row">
+        <span>存在するファイルのみ表示</span>
+        <input disabled type="checkbox" />
+      </label>
+      <label className="setting-row graph-toggle-row">
+        <span>オーファン</span>
+        <input checked={showOrphans} onChange={(event) => setShowOrphans(event.target.checked)} type="checkbox" />
+      </label>
+      <label className="setting-row graph-number-row">
         <span>{t("graph.minLinks")}</span>
         <input max="20" min="0" onChange={(event) => setMinDegree(Number(event.target.value))} type="number" value={minDegree} />
       </label>
-      <label className="setting-row">
+      <label className="setting-row graph-number-row">
         <span>{t("graph.localDepth")}</span>
         <input max="3" min="0" onChange={(event) => setLocalGraphDepth(Number(event.target.value))} type="number" value={localGraphDepth} />
       </label>
@@ -89,7 +73,6 @@ export function GraphGroupsSection({ isOpen, onToggle }: GraphSectionProps): Rea
   return (
     <GraphControlSection isOpen={isOpen} label={t("graph.groups")} onToggle={onToggle}>
       <div className="graph-group-heading">
-        <span>{t("graph.groups")}</span>
         <button className="graph-mini-button" onClick={addGroup} type="button">{t("graph.groupAdd")}</button>
       </div>
       {groups.map((group) => (
@@ -171,10 +154,12 @@ export function GraphForcesSection({ isOpen, onToggle }: GraphSectionProps): Rea
 
 export function GraphControlSection({
   children,
+  actions,
   isOpen,
   label,
   onToggle
 }: {
+  actions?: ReactNode;
   children: ReactNode;
   isOpen: boolean;
   label: string;
@@ -182,10 +167,13 @@ export function GraphControlSection({
 }): ReactElement {
   return (
     <div className="graph-control-section">
-      <button className="graph-control-section-title" onClick={onToggle} type="button">
-        <span>{isOpen ? "⌄" : "›"}</span>
-        <span>{label}</span>
-      </button>
+      <div className="graph-control-section-heading">
+        <button className="graph-control-section-title" onClick={onToggle} type="button">
+          <span>{isOpen ? "⌄" : "›"}</span>
+          <span>{label}</span>
+        </button>
+        {actions}
+      </div>
       {isOpen ? <div className="graph-control-section-body settings-stack">{children}</div> : null}
     </div>
   );

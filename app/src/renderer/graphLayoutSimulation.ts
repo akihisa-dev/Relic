@@ -221,7 +221,7 @@ function relaxGraphLayout(
   edges: WorkspaceGraphEdge[],
   forceSettings: GraphForceSettings
 ): void {
-  const tickCount = initial.length > 700 ? 10 : initial.length > 420 ? 14 : initial.length > 220 ? 26 : 72;
+  const tickCount = initial.length > 700 ? 26 : initial.length > 420 ? 34 : initial.length > 220 ? 48 : 90;
   const relaxed = runD3GraphSimulation(
     initial.map((point) => ({ ...point, vx: 0, vy: 0 })),
     edges,
@@ -327,12 +327,12 @@ function buildD3ForceProfile(nodeCount: number, forceSettings: GraphForceSetting
   return {
     axisStrength: 0.012 * forceSettings.centerForce,
     centerStrength: 0.08,
-    chargeStrength: (-34 * forceSettings.repelForce) / density,
+    chargeStrength: (-56 * forceSettings.repelForce) / density,
     collideStrength: 0.04 / Math.sqrt(density),
-    containmentRadius: Math.min(GRAPH_WIDTH, GRAPH_HEIGHT) * 0.45 * radiusScale,
-    containmentStrength: 0.01 * forceSettings.centerForce * density,
+    containmentRadius: Math.min(GRAPH_WIDTH, GRAPH_HEIGHT) * 0.58 * radiusScale,
+    containmentStrength: 0.008 * forceSettings.centerForce * density,
     linkDistance: forceSettings.linkDistance / Math.min(2.3, density * 0.78),
-    linkStrength: 0.028 * forceSettings.linkForce * Math.min(1.35, density)
+    linkStrength: 0.018 * forceSettings.linkForce * Math.min(1.25, density)
   };
 }
 
