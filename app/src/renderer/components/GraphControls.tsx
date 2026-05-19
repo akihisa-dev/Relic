@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { PointerEvent, ReactElement } from "react";
+import type { ReactElement } from "react";
 
 import { useT } from "../i18n";
 import { useGraphStore } from "../store/graphStore";
@@ -11,11 +11,10 @@ import {
 } from "./GraphControlSections";
 
 interface GraphControlsProps {
-  onDragHandlePointerDown?: (event: PointerEvent<HTMLElement>) => void;
   workspaceId: string | null;
 }
 
-export function GraphControls({ onDragHandlePointerDown, workspaceId }: GraphControlsProps): ReactElement {
+export function GraphControls({ workspaceId }: GraphControlsProps): ReactElement {
   const t = useT();
   const [isMinimized, setIsMinimized] = useState(true);
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
@@ -54,17 +53,6 @@ export function GraphControls({ onDragHandlePointerDown, workspaceId }: GraphCon
     <div className="graph-controls">
       <div className="graph-topbar">
         <div className="graph-topbar-title">
-          {onDragHandlePointerDown ? (
-            <button
-              aria-label={t("graph.dragHandle")}
-              className="hover-menu-drag-handle"
-              onPointerDown={onDragHandlePointerDown}
-              title={t("graph.dragHandle")}
-              type="button"
-            >
-              <span />
-            </button>
-          ) : null}
           <div className="links-panel-subheading">{t("graph.title")}</div>
         </div>
         <div className="graph-topbar-actions">

@@ -1,7 +1,6 @@
 import type { ReactElement } from "react";
 
 import { buildGraphViewBox } from "../graphLayout";
-import { useGraphFloatingPanelPosition } from "../hooks/useGraphFloatingPanelPosition";
 import { useGraphPanelModel } from "../hooks/useGraphPanelModel";
 import { useT } from "../i18n";
 import { GraphCanvas } from "./GraphCanvas";
@@ -17,7 +16,6 @@ interface GraphPanelProps {
 
 export function GraphPanel({ activeFilePath, onOpenFile, workspaceId }: GraphPanelProps): ReactElement {
   const t = useT();
-  const floatingPanel = useGraphFloatingPanelPosition();
   const {
     error,
     filteredGraph,
@@ -42,8 +40,8 @@ export function GraphPanel({ activeFilePath, onOpenFile, workspaceId }: GraphPan
 
   return (
     <div className="graph-panel">
-      <div className="graph-hover-settings" ref={floatingPanel.panelRef} style={floatingPanel.style}>
-        <GraphControls onDragHandlePointerDown={floatingPanel.onPointerDown} workspaceId={workspaceId} />
+      <div className="graph-hover-settings">
+        <GraphControls workspaceId={workspaceId} />
       </div>
       <div className="graph-canvas" aria-label={t("graph.title")}>
         {isLoading ? (
