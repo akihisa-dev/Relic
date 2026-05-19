@@ -46,13 +46,13 @@ describe("graphRenderModel", () => {
     expect(state.nodes.find((node) => node.path === "C.md")).toMatchObject({ isRelated: true });
     expect(state.nodes.find((node) => node.path === "D.md")).toMatchObject({ isDimmed: true });
     expect(state.nodes.find((node) => node.path === "D.md")?.fillAlpha).toBeGreaterThan(0.24);
-    expect(state.nodes.find((node) => node.path === "D.md")?.fillAlpha).toBeLessThan(0.32);
+    expect(state.nodes.find((node) => node.path === "D.md")?.fillAlpha).toBeLessThanOrEqual(0.32);
     expect(state.edges[0]?.alpha).toBeLessThanOrEqual(0.5);
     expect(state.edges[0]?.strokeWidth).toBeLessThan(1);
     expect(state.nodes.find((node) => node.path === "B.md")?.strokeWidth).toBeLessThan(1);
   });
 
-  it("group colorと接続数由来のnode radiusを反映する", () => {
+  it("group colorと均一なnode radiusを反映する", () => {
     const state = buildGraphRenderState({
       edges: [],
       focusedPath: null,
@@ -70,7 +70,7 @@ describe("graphRenderModel", () => {
     const grouped = state.nodes.find((node) => node.path === "A.md");
     const orphan = state.nodes.find((node) => node.path === "B.md");
     expect(grouped?.fillColor).toBe(0x8b5cf6);
-    expect(grouped?.radius).toBeGreaterThan(orphan?.radius ?? 0);
+    expect(grouped?.radius).toBe(orphan?.radius);
   });
 
   it("default paletteは通常node/linkをObsidian風のneutral grayで描く", () => {
@@ -94,7 +94,7 @@ describe("graphRenderModel", () => {
     expect(state.edges[0]?.alpha).toBeLessThan(0.36);
   });
 
-  it("大規模グラフでは通常nodeの常時ラベルを省く", () => {
+  it("大規模グラフでは選択だけで常時ラベルを出さずhover近傍だけを表示する", () => {
     const manyPoints = Array.from({ length: 221 }, (_, index): GraphPoint => ({
       degree: 0,
       folder: "",
@@ -116,16 +116,33 @@ describe("graphRenderModel", () => {
       nodeSize: 1,
       points: manyPoints,
       relatedPaths: new Set(["N0.md", "N1.md"]),
+      selectedPath: "N0.md",
+      showLabels: true
+    });
+
+    expect(state.nodes.find((node) => node.path === "N0.md")?.labelVisible).toBe(false);
+    expect(state.nodes.find((node) => node.path === "N1.md")?.labelVisible).toBe(false);
+    expect(state.nodes.find((node) => node.path === "N2.md")?.labelVisible).toBe(false);
+    expect(state.nodes.find((node) => node.path === "N2.md")?.radius).toBeCloseTo(3.05);
+    expect(state.nodes.find((node) => node.path === "N2.md")?.strokeAlpha).toBe(0);
+
+    const hoveredState = buildGraphRenderState({
+      edges: [],
+      focusedPath: "N0.md",
+      groupByPath: new Map(),
+      labelOpacity: 1,
+      linkThickness: 1,
+      motionPath: "N0.md",
+      nodeSize: 1,
+      points: manyPoints,
+      relatedPaths: new Set(["N0.md", "N1.md"]),
       selectedPath: null,
       showLabels: true
     });
 
-    expect(state.nodes.find((node) => node.path === "N0.md")?.labelVisible).toBe(true);
-    expect(state.nodes.find((node) => node.path === "N1.md")?.labelVisible).toBe(true);
-    expect(state.nodes.find((node) => node.path === "N2.md")?.labelVisible).toBe(false);
-    expect(state.nodes.find((node) => node.path === "N2.md")?.radius).toBeLessThan(1.2);
-    expect(state.nodes.find((node) => node.path === "N2.md")?.strokeAlpha).toBeGreaterThan(0.06);
-    expect(state.nodes.find((node) => node.path === "N2.md")?.strokeAlpha).toBeLessThan(0.1);
+    expect(hoveredState.nodes.find((node) => node.path === "N0.md")?.labelVisible).toBe(true);
+    expect(hoveredState.nodes.find((node) => node.path === "N1.md")?.labelVisible).toBe(true);
+    expect(hoveredState.nodes.find((node) => node.path === "N2.md")?.labelVisible).toBe(false);
   });
 
   it("CSS color文字列をPixi用numberへ変換する", () => {

@@ -221,7 +221,7 @@ function relaxGraphLayout(
   edges: WorkspaceGraphEdge[],
   forceSettings: GraphForceSettings
 ): void {
-  const tickCount = initial.length > 700 ? 2 : initial.length > 420 ? 6 : initial.length > 220 ? 18 : 72;
+  const tickCount = initial.length > 700 ? 10 : initial.length > 420 ? 14 : initial.length > 220 ? 26 : 72;
   const relaxed = runD3GraphSimulation(
     initial.map((point) => ({ ...point, vx: 0, vy: 0 })),
     edges,
@@ -293,7 +293,7 @@ function runD3GraphSimulation(
     .force("x", forceX<D3GraphPoint>(GRAPH_CENTER_X).strength(profile.axisStrength))
     .force("y", forceY<D3GraphPoint>(GRAPH_CENTER_Y).strength(profile.axisStrength))
     .force("contain", forceCircularContainment(profile.containmentRadius, profile.containmentStrength))
-    .force("collide", forceCollide<D3GraphPoint>().radius((node) => Math.min(10, 3.4 + Math.sqrt(node.degree) * 0.95)).strength(profile.collideStrength))
+    .force("collide", forceCollide<D3GraphPoint>().radius(4.8).strength(profile.collideStrength))
     .stop();
 
   simulation.tick(tickCount);
@@ -327,12 +327,12 @@ function buildD3ForceProfile(nodeCount: number, forceSettings: GraphForceSetting
   return {
     axisStrength: 0.034 * forceSettings.centerForce,
     centerStrength: 0.19,
-    chargeStrength: (-24 * forceSettings.repelForce) / density,
-    collideStrength: 0.075 / Math.sqrt(density),
-    containmentRadius: Math.min(GRAPH_WIDTH, GRAPH_HEIGHT) * 0.29 * radiusScale,
-    containmentStrength: 0.02 * forceSettings.centerForce * density,
-    linkDistance: forceSettings.linkDistance / Math.min(3.3, density),
-    linkStrength: 0.046 * forceSettings.linkForce * Math.min(1.5, density)
+    chargeStrength: (-18 * forceSettings.repelForce) / density,
+    collideStrength: 0.07 / Math.sqrt(density),
+    containmentRadius: Math.min(GRAPH_WIDTH, GRAPH_HEIGHT) * 0.32 * radiusScale,
+    containmentStrength: 0.018 * forceSettings.centerForce * density,
+    linkDistance: forceSettings.linkDistance / Math.min(4.2, density * 1.18),
+    linkStrength: 0.054 * forceSettings.linkForce * Math.min(1.65, density)
   };
 }
 

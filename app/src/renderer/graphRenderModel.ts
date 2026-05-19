@@ -115,9 +115,9 @@ export function buildGraphRenderState({
   const nodeSelected = palette.nodeSelected;
   const edgeColor = palette.line;
   const edgeSelected = palette.lineFocused;
-  const dimmedEdgeAlpha = isLargeGraph ? 0.075 : 0.1;
-  const normalEdgeAlpha = isLargeGraph ? 0.16 : 0.22;
-  const focusedEdgeAlpha = isLargeGraph ? 0.42 : 0.5;
+  const dimmedEdgeAlpha = isLargeGraph ? 0.1 : 0.12;
+  const normalEdgeAlpha = isLargeGraph ? 0.22 : 0.24;
+  const focusedEdgeAlpha = isLargeGraph ? 0.46 : 0.5;
 
   return {
     edges: edges.flatMap((edge) => {
@@ -134,8 +134,8 @@ export function buildGraphRenderState({
         isMotion,
         sourcePath: edge.sourcePath,
         strokeWidth: Math.min(
-          isFocused ? 1.25 : 0.82,
-          Math.max(isFocused ? 0.62 : 0.42, (isFocused ? 0.92 : isLargeGraph ? 0.5 : 0.62) * linkThickness)
+          isFocused ? 1.2 : 0.86,
+          Math.max(isFocused ? 0.62 : 0.48, (isFocused ? 0.88 : isLargeGraph ? 0.62 : 0.64) * linkThickness)
         ) * inverseScale,
         targetPath: edge.targetPath,
         x1: source.x,
@@ -152,16 +152,11 @@ export function buildGraphRenderState({
       const isMotion = point.path === motionPath;
       const group = groupByPath.get(point.path);
       const isDimmed = !!focusedPath && !isRelated;
-      const radiusBase = isLargeGraph ? 1.05 : 1.75;
-      const radiusDegreeScale = isLargeGraph ? 0.42 : 0.78;
-      const radiusMax = isLargeGraph ? 3.25 : 5.8;
-      const screenRadius = Math.min(radiusMax, radiusBase + Math.sqrt(point.degree) * radiusDegreeScale) * nodeSize;
+      const screenRadius = (isLargeGraph ? 3.05 : 3.2) * nodeSize;
       const radius = screenRadius * inverseScale;
       const labelVisible = showLabels && (
-        points.length <= GRAPH_VISIBLE_LABEL_NODE_LIMIT ||
-        isSelected ||
-        isFocused ||
-        (!!focusedPath && isRelated)
+        (!isLargeGraph && points.length <= GRAPH_VISIBLE_LABEL_NODE_LIMIT) ||
+        (!!motionPath && (isFocused || isRelated))
       );
       const velocity = point as Partial<Pick<GraphRenderPoint, "vx" | "vy">>;
       const fillColor = group
@@ -176,7 +171,7 @@ export function buildGraphRenderState({
 
       return {
         degree: point.degree,
-        fillAlpha: isDimmed ? 0.26 : isSelected ? 0.94 : isFocused ? 0.9 : isRelated && focusedPath ? 0.78 : isLargeGraph ? 0.76 : 0.82,
+        fillAlpha: isDimmed ? 0.32 : isSelected ? 0.9 : isFocused ? 0.9 : isRelated && focusedPath ? 0.8 : isLargeGraph ? 0.88 : 0.86,
         fillColor,
         folder: point.folder,
         incoming: point.incoming,
@@ -185,16 +180,16 @@ export function buildGraphRenderState({
         isMotion,
         isRelated,
         isSelected,
-        labelAlpha: isDimmed ? Math.min(0.24, labelOpacity) : isLargeGraph ? Math.min(0.82, labelOpacity) : labelOpacity,
+        labelAlpha: isDimmed ? Math.min(0.24, labelOpacity) : isLargeGraph ? Math.min(0.72, labelOpacity) : labelOpacity,
         labelVisible,
         name: point.name,
         path: point.path,
         radius,
-        ringVisible: isSelected,
+        ringVisible: isSelected && !isLargeGraph,
         outgoing: point.outgoing,
-        strokeAlpha: isSelected ? 0.56 : isFocused ? 0.34 : isLargeGraph ? 0.08 : 0.16,
+        strokeAlpha: isSelected ? 0.2 : isFocused ? 0.26 : isLargeGraph ? 0 : 0.1,
         strokeColor: isSelected ? mixColor(nodeSelected, palette.background, 0.72) : palette.background,
-        strokeWidth: (isSelected ? 0.96 : isFocused ? 0.68 : isLargeGraph ? 0.28 : 0.48) * inverseScale,
+        strokeWidth: (isSelected ? 0.48 : isFocused ? 0.54 : isLargeGraph ? 0 : 0.34) * inverseScale,
         tags: point.tags,
         vx: velocity.vx,
         vy: velocity.vy,
