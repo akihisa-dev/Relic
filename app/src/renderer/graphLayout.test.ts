@@ -82,7 +82,7 @@ describe("buildGraphViewBox", () => {
   });
 
   it("zoomをグラフ表示範囲内に丸める", () => {
-    expect(GRAPH_MAX_ZOOM).toBe(28);
+    expect(GRAPH_MAX_ZOOM).toBe(80);
     expect(buildGraphViewBox(999, { x: 0, y: 0 }).width).toBeCloseTo(GRAPH_WIDTH / GRAPH_MAX_ZOOM);
     expect(buildGraphViewBox(0, { x: 0, y: 0 }).width).toBeCloseTo(GRAPH_WIDTH / GRAPH_MIN_ZOOM);
   });

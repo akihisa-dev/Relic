@@ -86,3 +86,4 @@ P28では、事前に固定した長い実施リストは置かない。
 - 開発版Electronでの目視確認は未実施。今回の変更は描画モデル、layout、GraphCanvas関連テスト、型チェック、全Vitest、diff checkで確認した。
 - グラフ設定メニューのドラッグ移動を廃止し、Obsidian基準に合わせて右上固定表示へ戻した。`pnpm exec vitest run src/renderer/components/GraphControls.test.tsx src/renderer/components/GraphSidebar.test.tsx src/renderer/App.test.tsx`、`pnpm typecheck`、`pnpm test`、`git diff --check` が通過した。
 - 最大ズーム上限を28へ引き上げ、Pixiラベル位置をノードへ近づけた。`pnpm exec vitest run src/renderer/graphLayout.test.ts src/renderer/components/GraphCanvas.test.tsx src/renderer/graphRenderModel.test.ts`、`pnpm typecheck`、`pnpm test`、`git diff --check` が通過した。
+- 最大ズーム上限を80へ再調整し、ズーム時のラベル画面サイズを拡大する補正へ変更したうえで、ラベルをノード直下中央へ配置した。`pnpm exec vitest run src/renderer/graphLayout.test.ts src/renderer/components/GraphCanvas.test.tsx src/renderer/graphRenderModel.test.ts`、`pnpm typecheck`、`pnpm test`、`git diff --check` が通過した。
