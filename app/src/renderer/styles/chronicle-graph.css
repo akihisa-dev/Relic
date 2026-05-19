@@ -322,6 +322,12 @@
   border-top: none;
 }
 
+.graph-control-section-heading {
+  align-items: center;
+  display: flex;
+  min-height: 38px;
+}
+
 .graph-control-section-title {
   align-items: center;
   background: transparent;
@@ -332,8 +338,9 @@
   font-size: 12px;
   gap: 8px;
   justify-content: flex-start;
-  min-height: 38px;
+  min-height: 32px;
   padding: 0 4px;
+  flex: 1 1 auto;
   text-align: left;
 }
 
@@ -344,7 +351,7 @@
 .graph-control-section-body {
   display: grid;
   gap: 0;
-  padding: 0 4px 10px;
+  padding: 0 4px 12px;
 }
 
 .graph-control-section-body .setting-row {
@@ -355,7 +362,7 @@
 
 .graph-controls {
   display: grid;
-  gap: 8px;
+  gap: 0;
   min-height: 0;
   transform-origin: top right;
 }
@@ -370,7 +377,6 @@
 
 .graph-search {
   display: grid;
-  gap: 6px;
   font-size: 12px;
 }
 
@@ -385,9 +391,63 @@
   border-radius: 6px;
   box-sizing: border-box;
   color: var(--text);
-  min-height: 30px;
-  padding: 0 8px;
+  min-height: 32px;
+  padding: 0 10px;
   width: 100%;
+}
+
+.graph-section-actions {
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 6px;
+}
+
+.graph-toggle-row {
+  grid-template-columns: minmax(0, 1fr) auto !important;
+}
+
+.graph-toggle-row input[type="checkbox"] {
+  appearance: none;
+  background: color-mix(in srgb, var(--text-3) 28%, transparent);
+  border: 1px solid color-mix(in srgb, var(--text-3) 26%, transparent);
+  border-radius: 999px;
+  cursor: pointer;
+  height: 18px;
+  margin: 0;
+  position: relative;
+  transition: background-color 120ms ease, border-color 120ms ease;
+  width: 34px;
+}
+
+.graph-toggle-row input[type="checkbox"]::after {
+  background: var(--bg);
+  border-radius: 50%;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+  content: "";
+  height: 14px;
+  left: 1px;
+  position: absolute;
+  top: 1px;
+  transition: transform 120ms ease;
+  width: 14px;
+}
+
+.graph-toggle-row input[type="checkbox"]:checked {
+  background: #8b5cf6;
+  border-color: #8b5cf6;
+}
+
+.graph-toggle-row input[type="checkbox"]:checked::after {
+  transform: translateX(16px);
+}
+
+.graph-toggle-row input[type="checkbox"]:disabled {
+  cursor: default;
+  opacity: 0.75;
+}
+
+.graph-number-row {
+  grid-template-columns: minmax(0, 1fr) 118px !important;
 }
 
 .graph-filters input[type="range"] {
@@ -400,13 +460,7 @@
 }
 
 .graph-group-heading {
-  align-items: center;
-  color: var(--text-3);
-  display: flex;
-  font-size: 12px;
-  font-weight: 600;
-  justify-content: space-between;
-  min-width: 0;
+  display: grid;
 }
 
 .graph-group-row {
@@ -444,6 +498,14 @@
   padding: 0 7px;
 }
 
+.graph-group-heading .graph-mini-button {
+  background: #8b5cf6;
+  border-color: #8b5cf6;
+  color: white;
+  min-height: 32px;
+  width: 100%;
+}
+
 .graph-mini-button--icon {
   font-size: 14px;
   min-width: 24px;
@@ -462,12 +524,12 @@
 .graph-hover-settings {
   background: var(--popup-bg);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 7px;
   box-shadow: 0 12px 26px rgba(0, 0, 0, 0.12);
   max-height: min(70vh, 560px);
   opacity: 1;
   overflow: hidden;
-  padding: 8px;
+  padding: 8px 10px;
   pointer-events: auto;
   position: absolute;
   right: 12px;
@@ -482,7 +544,7 @@
     padding 220ms cubic-bezier(.22, 1, .36, 1),
     transform 180ms cubic-bezier(.22, 1, .36, 1),
     width 220ms cubic-bezier(.22, 1, .36, 1);
-  width: min(250px, calc(100% - 24px));
+  width: min(248px, calc(100% - 24px));
   will-change: max-height, opacity, transform, width;
   z-index: 3;
 }

@@ -59,25 +59,22 @@ describe("GraphControlSections", () => {
     resetGraphStore();
   });
 
-  it("filter sectionは検索、folder/tag/link、minDegree、localDepthを表示してstoreを更新する", () => {
+  it("filter sectionはObsidian風の検索、toggle、minDegree、localDepthを表示してstoreを更新する", () => {
     renderSection(<GraphFilterSection isOpen onToggle={vi.fn()} />);
 
     fireEvent.change(screen.getByPlaceholderText("ファイル名・パス"), { target: { value: "Alpha" } });
-    fireEvent.change(screen.getByLabelText("フォルダ"), { target: { value: "folder" } });
-    fireEvent.change(screen.getByLabelText("タグ"), { target: { value: "作業" } });
-    fireEvent.change(screen.getByLabelText("リンク"), { target: { value: "linked" } });
+    fireEvent.click(screen.getByLabelText("オーファン"));
     fireEvent.change(screen.getByLabelText("最小リンク数"), { target: { value: "2" } });
     fireEvent.change(screen.getByLabelText("ローカル深さ"), { target: { value: "1" } });
 
-    expect(screen.getByRole("option", { name: "folder" })).toBeInTheDocument();
-    expect(screen.getByRole("option", { name: "作業" })).toBeInTheDocument();
+    expect(screen.getByLabelText("タグ")).toBeDisabled();
+    expect(screen.getByLabelText("添付書類")).toBeDisabled();
+    expect(screen.getByLabelText("存在するファイルのみ表示")).toBeDisabled();
     expect(useGraphStore.getState()).toMatchObject({
-      folderFilter: "folder",
-      linkFilter: "linked",
       localGraphDepth: 1,
       minDegree: 2,
       query: "Alpha",
-      tagFilter: "作業"
+      showOrphans: false
     });
   });
 

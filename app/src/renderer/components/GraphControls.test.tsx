@@ -67,7 +67,7 @@ describe("GraphControls", () => {
     });
   });
 
-  it("初期表示で検索入力、folder/tag/link条件を表示する", async () => {
+  it("初期表示でObsidian風の検索とfilter toggleを表示する", async () => {
     renderGraphControls();
 
     await waitFor(() => {
@@ -75,12 +75,10 @@ describe("GraphControls", () => {
     });
 
     expect(screen.getByPlaceholderText("ファイル名・パス")).toBeInTheDocument();
-    expect(screen.getByLabelText("フォルダ")).toBeInTheDocument();
-    expect(screen.getByRole("option", { name: "folder" })).toBeInTheDocument();
-    expect(screen.getByLabelText("タグ")).toBeInTheDocument();
-    expect(screen.getByRole("option", { name: "資料" })).toBeInTheDocument();
-    expect(screen.getByLabelText("リンク")).toBeInTheDocument();
-    expect(screen.getByRole("option", { name: "リンクあり" })).toBeInTheDocument();
+    expect(screen.getByLabelText("タグ")).toBeDisabled();
+    expect(screen.getByLabelText("添付書類")).toBeDisabled();
+    expect(screen.getByLabelText("存在するファイルのみ表示")).toBeDisabled();
+    expect(screen.getByLabelText("オーファン")).toBeChecked();
   });
 
   it("初期表示は開いた状態で、最小化と展開を既存文言で切り替える", () => {
@@ -94,17 +92,20 @@ describe("GraphControls", () => {
     expect(screen.getByRole("button", { name: "展開" }).querySelector("svg")).toBeInTheDocument();
   });
 
-  it("再読み込みボタンでgraph読込を再実行する", async () => {
+  it("リセットボタンでgraph設定を初期化する", async () => {
+    useGraphStore.setState({ minDegree: 4, query: "A", showOrphans: false });
     renderGraphControls();
 
     await waitFor(() => {
       expect(window.relic?.getWorkspaceGraph).toHaveBeenCalledTimes(1);
     });
 
-    fireEvent.click(screen.getByTitle("再読み込み"));
+    fireEvent.click(screen.getByTitle("リセット"));
 
-    await waitFor(() => {
-      expect(window.relic?.getWorkspaceGraph).toHaveBeenCalledTimes(2);
+    expect(useGraphStore.getState()).toMatchObject({
+      minDegree: 0,
+      query: "",
+      showOrphans: true
     });
   });
 });
