@@ -59,6 +59,7 @@ function makeEvent<T extends Element>(overrides: Partial<{
 
 function renderInteractions(overrides: Partial<Parameters<typeof useGraphCanvasInteractions>[0]> = {}) {
   const onOpenFile = vi.fn();
+  const setFocusedPath = vi.fn();
   const setSelectedPath = vi.fn();
   const setZoom = vi.fn();
   const hook = renderHook((props: Parameters<typeof useGraphCanvasInteractions>[0]) => useGraphCanvasInteractions(props), {
@@ -70,6 +71,7 @@ function renderInteractions(overrides: Partial<Parameters<typeof useGraphCanvasI
       nodes,
       onOpenFile,
       selectedPath: null,
+      setFocusedPath,
       setSelectedPath,
       setZoom,
       zoom: 1,
@@ -77,7 +79,7 @@ function renderInteractions(overrides: Partial<Parameters<typeof useGraphCanvasI
     }
   });
 
-  return { hook, onOpenFile, setSelectedPath, setZoom };
+  return { hook, onOpenFile, setFocusedPath, setSelectedPath, setZoom };
 }
 
 describe("useGraphCanvasInteractions", () => {
@@ -142,7 +144,7 @@ describe("useGraphCanvasInteractions", () => {
   });
 
   it("node clickでは選択だけ更新し、focus演出状態は変更しない", async () => {
-    const { hook, onOpenFile, setSelectedPath } = renderInteractions();
+    const { hook, onOpenFile, setFocusedPath, setSelectedPath } = renderInteractions();
 
     await waitFor(() => {
       expect(hook.result.current.points[0]).toBeDefined();
@@ -153,6 +155,7 @@ describe("useGraphCanvasInteractions", () => {
     });
 
     expect(setSelectedPath).toHaveBeenCalledWith("A.md");
+    expect(setFocusedPath).not.toHaveBeenCalled();
     expect(onOpenFile).not.toHaveBeenCalled();
   });
 

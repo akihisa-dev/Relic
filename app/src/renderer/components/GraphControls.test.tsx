@@ -67,14 +67,12 @@ describe("GraphControls", () => {
     });
   });
 
-  it("フィルタsectionを開くと検索入力、folder/tag/link条件を表示する", async () => {
+  it("初期表示で検索入力、folder/tag/link条件を表示する", async () => {
     renderGraphControls();
 
     await waitFor(() => {
       expect(window.relic?.getWorkspaceGraph).toHaveBeenCalledTimes(1);
     });
-    fireEvent.click(screen.getByTitle("展開"));
-    fireEvent.click(screen.getByRole("button", { name: /フィルタ/ }));
 
     expect(screen.getByPlaceholderText("ファイル名・パス")).toBeInTheDocument();
     expect(screen.getByLabelText("フォルダ")).toBeInTheDocument();
@@ -85,15 +83,15 @@ describe("GraphControls", () => {
     expect(screen.getByRole("option", { name: "リンクあり" })).toBeInTheDocument();
   });
 
-  it("初期表示は閉じた状態で、展開と最小化を既存文言で切り替える", () => {
+  it("初期表示は開いた状態で、最小化と展開を既存文言で切り替える", () => {
     renderGraphControls();
+
+    expect(screen.getByTitle("最小化")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTitle("最小化"));
 
     expect(screen.getByTitle("展開")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "展開" }).querySelector("svg")).toBeInTheDocument();
-
-    fireEvent.click(screen.getByTitle("展開"));
-
-    expect(screen.getByTitle("最小化")).toBeInTheDocument();
   });
 
   it("再読み込みボタンでgraph読込を再実行する", async () => {
@@ -103,7 +101,6 @@ describe("GraphControls", () => {
       expect(window.relic?.getWorkspaceGraph).toHaveBeenCalledTimes(1);
     });
 
-    fireEvent.click(screen.getByTitle("展開"));
     fireEvent.click(screen.getByTitle("再読み込み"));
 
     await waitFor(() => {

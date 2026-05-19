@@ -18,6 +18,7 @@ interface UseGraphCanvasInteractionsInput {
   nodes: WorkspaceGraphNode[];
   onOpenFile: (path: string) => void;
   selectedPath: string | null;
+  setFocusedPath: (path: string | null | ((current: string | null) => string | null)) => void;
   setSelectedPath: (path: string | null) => void;
   setZoom: (value: number) => void;
   zoom: number;
@@ -34,6 +35,7 @@ export function useGraphCanvasInteractions({
   nodes,
   onOpenFile,
   selectedPath,
+  setFocusedPath,
   setSelectedPath,
   setZoom,
   zoom
@@ -76,6 +78,7 @@ export function useGraphCanvasInteractions({
     pinnedPathRef: pinnedPathRef as MutableRefObject<string | null>,
     pointsRef: simulation.pointsRef,
     selectedPath,
+    setFocusedPath,
     setPoints: simulation.setPoints,
     setSelectedPath
   });

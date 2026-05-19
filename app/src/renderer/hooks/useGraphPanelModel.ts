@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import {
   buildFilteredGraph,
@@ -67,6 +67,7 @@ export function useGraphPanelModel({
     textFadeThreshold,
     zoom
   } = useGraphStore();
+  const [hoveredPath, setHoveredPath] = useState<string | null>(null);
   useEffect(() => {
     loadGraph(workspaceId);
   }, [loadGraph, workspaceId]);
@@ -82,8 +83,8 @@ export function useGraphPanelModel({
     showOrphans,
     tagFilter
   }), [activeFilePath, folderFilter, graph, linkFilter, localGraphDepth, minDegree, query, showOrphans, tagFilter]);
-  const motionPath = null;
-  const focusedPath = selectedPath;
+  const motionPath = hoveredPath;
+  const focusedPath = hoveredPath;
   const labelOpacity = showLabels
     ? clamp((zoom - textFadeThreshold + 0.5) / 0.5, 0.18, 1)
     : 0;
@@ -102,6 +103,7 @@ export function useGraphPanelModel({
     nodes: filteredGraph.nodes,
     onOpenFile,
     selectedPath,
+    setFocusedPath: setHoveredPath,
     setSelectedPath,
     setZoom,
     zoom

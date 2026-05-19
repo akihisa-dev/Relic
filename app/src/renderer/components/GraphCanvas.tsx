@@ -649,7 +649,7 @@ function updateLabelFontSize(runtime: PixiGraphRuntime): void {
 
 function graphLabelScreenScale(viewScale: number): number {
   const safeScale = Math.max(0.001, viewScale);
-  const targetScreenFontSize = Math.min(30, Math.max(10, 10 * Math.sqrt(safeScale)));
+  const targetScreenFontSize = Math.min(13, Math.max(4.5, 5 * Math.pow(safeScale, 0.8)));
   return targetScreenFontSize / (10 * safeScale);
 }
 

@@ -79,9 +79,7 @@ describe("App", () => {
 
     expect(getWorkspaceGraph).toHaveBeenCalled();
     expect(await screen.findByText("グラフ", { selector: ".pane-tab-name" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "展開" })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "展開" }));
-    fireEvent.click(screen.getByRole("button", { name: /フィルタ/ }));
+    expect(screen.getByTitle("最小化")).toBeInTheDocument();
     expect(container.querySelector(".graph-panel")).toContainElement(screen.getByPlaceholderText("ファイル名・パス"));
     expect(await screen.findByText("2 ノード / 1 リンク")).toBeInTheDocument();
 
