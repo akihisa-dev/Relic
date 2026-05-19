@@ -15,7 +15,7 @@ const points: GraphPoint[] = [
 ];
 
 describe("graphRenderModel", () => {
-  it("hover focused/related状態を保持しても描画の濃淡は変えず、selectedでは強調しない", () => {
+  it("hover focused/related状態を描画モデルへ持ち込まず、selectedでも強調しない", () => {
     const state = buildGraphRenderState({
       edges: [{ sourcePath: "A.md", targetPath: "C.md" }],
       focusedPath: "A.md",
@@ -32,18 +32,18 @@ describe("graphRenderModel", () => {
     });
 
     expect(state.edges).toHaveLength(1);
-    expect(state.edges[0]).toMatchObject({ isFocused: true, isMotion: false, sourcePath: "A.md", targetPath: "C.md" });
+    expect(state.edges[0]).toMatchObject({ isFocused: false, isMotion: false, sourcePath: "A.md", targetPath: "C.md" });
     expect(state.nodes.find((node) => node.path === "A.md")).toMatchObject({
       degree: 1,
       folder: "",
       incoming: 0,
-      isFocused: true,
+      isFocused: false,
       labelVisible: true,
       outgoing: 1,
       tags: []
     });
     expect(state.nodes.find((node) => node.path === "B.md")).toMatchObject({ isSelected: false, ringVisible: false });
-    expect(state.nodes.find((node) => node.path === "C.md")).toMatchObject({ isRelated: true });
+    expect(state.nodes.find((node) => node.path === "C.md")).toMatchObject({ isRelated: false });
     expect(state.nodes.find((node) => node.path === "D.md")).toMatchObject({ isDimmed: false });
     expect(state.nodes.find((node) => node.path === "A.md")?.fillColor).toBe(defaultGraphRenderPalette.node);
     expect(state.nodes.find((node) => node.path === "C.md")?.fillColor).toBe(defaultGraphRenderPalette.node);
@@ -54,8 +54,8 @@ describe("graphRenderModel", () => {
     expect(state.nodes.find((node) => node.path === "B.md")?.strokeWidth).toBe(0);
   });
 
-  it("hoverしても接続線の色、太さ、透明度を変えない", () => {
-    const state = buildGraphRenderState({
+  it("hoverしてもnode/link/labelの描画値を変えない", () => {
+    const hoveredState = buildGraphRenderState({
       edges: [{ sourcePath: "A.md", targetPath: "C.md" }],
       focusedPath: "A.md",
       groupByPath: new Map(),
@@ -69,14 +69,49 @@ describe("graphRenderModel", () => {
       selectedPath: null,
       showLabels: true
     });
+    const normalState = buildGraphRenderState({
+      edges: [{ sourcePath: "A.md", targetPath: "C.md" }],
+      focusedPath: null,
+      groupByPath: new Map(),
+      labelOpacity: 1,
+      linkThickness: 1,
+      motionPath: null,
+      nodeSize: 1,
+      palette: defaultGraphRenderPalette,
+      points,
+      relatedPaths: new Set(),
+      selectedPath: null,
+      showLabels: true
+    });
 
-    expect(state.edges[0]).toMatchObject({
+    expect(hoveredState.edges[0]).toMatchObject({
       alpha: 0.32,
       color: defaultGraphRenderPalette.line,
-      isFocused: true,
+      isFocused: false,
       isMotion: false,
       strokeWidth: 0.78
     });
+    expect(hoveredState.edges.map(({ alpha, color, strokeWidth, x1, x2, y1, y2 }) => ({ alpha, color, strokeWidth, x1, x2, y1, y2 })))
+      .toEqual(normalState.edges.map(({ alpha, color, strokeWidth, x1, x2, y1, y2 }) => ({ alpha, color, strokeWidth, x1, x2, y1, y2 })));
+    expect(hoveredState.nodes.map(({ fillAlpha, fillColor, labelAlpha, labelVisible, radius, strokeAlpha, strokeColor, strokeWidth }) => ({
+      fillAlpha,
+      fillColor,
+      labelAlpha,
+      labelVisible,
+      radius,
+      strokeAlpha,
+      strokeColor,
+      strokeWidth
+    }))).toEqual(normalState.nodes.map(({ fillAlpha, fillColor, labelAlpha, labelVisible, radius, strokeAlpha, strokeColor, strokeWidth }) => ({
+      fillAlpha,
+      fillColor,
+      labelAlpha,
+      labelVisible,
+      radius,
+      strokeAlpha,
+      strokeColor,
+      strokeWidth
+    })));
   });
 
   it("group colorと均一なnode radiusを反映する", () => {
@@ -191,10 +226,25 @@ describe("graphRenderModel", () => {
       showLabels: true,
       viewScale: 3
     });
+    const hoveredZoomedState = buildGraphRenderState({
+      edges: [],
+      focusedPath: "N17.md",
+      groupByPath: new Map(),
+      labelOpacity: 1,
+      linkThickness: 1,
+      motionPath: "N17.md",
+      nodeSize: 1,
+      points: spacedPoints,
+      relatedPaths: new Set(["N17.md"]),
+      selectedPath: null,
+      showLabels: true,
+      viewScale: 3
+    });
 
     expect(zoomedState.nodes.find((node) => node.path === "N0.md")?.labelVisible).toBe(true);
     expect(zoomedState.nodes.some((node) => node.labelVisible)).toBe(true);
     expect(zoomedState.nodes.filter((node) => node.labelVisible).length).toBeLessThan(zoomedState.nodes.length);
+    expect(hoveredZoomedState.nodes.map((node) => node.labelVisible)).toEqual(zoomedState.nodes.map((node) => node.labelVisible));
   });
 
   it("ズーム時のnode radiusをObsidian風のベタ丸サイズへ拡大する", () => {

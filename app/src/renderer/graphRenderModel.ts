@@ -117,7 +117,6 @@ export function buildGraphRenderState({
     isLargeGraph,
     points,
     screenScale,
-    focusedPath,
     showLabels
   });
 
@@ -127,11 +126,10 @@ export function buildGraphRenderState({
       const target = pointByPath.get(edge.targetPath);
       if (!source || !target) return [];
 
-      const isFocused = focusedPath === edge.sourcePath || focusedPath === edge.targetPath;
       return [{
         alpha: normalEdgeAlpha,
         color: edgeColor,
-        isFocused,
+        isFocused: false,
         isMotion: false,
         sourcePath: edge.sourcePath,
         strokeWidth: baseEdgeScreenWidth * linkThickness * inverseScale,
@@ -145,9 +143,6 @@ export function buildGraphRenderState({
     isLargeGraph,
     nodes: points.map((point) => {
       const isSelected = false;
-      const isRelated = relatedPaths.has(point.path);
-      const isFocused = point.path === focusedPath;
-      const isMotion = point.path === motionPath;
       const group = groupByPath.get(point.path);
       const isDimmed = false;
       const zoomNodeScale = Math.min(2.2, Math.max(0.82, Math.sqrt(screenScale)));
@@ -167,9 +162,9 @@ export function buildGraphRenderState({
         folder: point.folder,
         incoming: point.incoming,
         isDimmed,
-        isFocused,
-        isMotion,
-        isRelated,
+        isFocused: false,
+        isMotion: false,
+        isRelated: false,
         isSelected,
         labelAlpha: isLargeGraph ? Math.min(0.72, labelOpacity) : labelOpacity,
         labelVisible,
@@ -196,10 +191,8 @@ function buildVisibleLabelPaths({
   isLargeGraph,
   points,
   screenScale,
-  focusedPath,
   showLabels
 }: {
-  focusedPath: string | null;
   isLargeGraph: boolean;
   points: GraphPoint[];
   screenScale: number;
@@ -216,8 +209,6 @@ function buildVisibleLabelPaths({
   const occupied: Array<{ bottom: number; left: number; right: number; top: number }> = [];
   const visible = new Set<string>();
   const candidates = [...points].sort((a, b) => {
-    if (a.path === focusedPath) return -1;
-    if (b.path === focusedPath) return 1;
     const degreeDiff = b.degree - a.degree;
     return degreeDiff || a.path.localeCompare(b.path, "ja");
   });
