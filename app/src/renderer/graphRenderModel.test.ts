@@ -45,8 +45,9 @@ describe("graphRenderModel", () => {
     expect(state.nodes.find((node) => node.path === "B.md")).toMatchObject({ isSelected: true, ringVisible: true });
     expect(state.nodes.find((node) => node.path === "C.md")).toMatchObject({ isRelated: true });
     expect(state.nodes.find((node) => node.path === "D.md")).toMatchObject({ isDimmed: true });
-    expect(state.nodes.find((node) => node.path === "D.md")?.fillAlpha).toBeLessThan(0.24);
-    expect(state.edges[0]?.alpha).toBeLessThan(0.5);
+    expect(state.nodes.find((node) => node.path === "D.md")?.fillAlpha).toBeGreaterThan(0.24);
+    expect(state.nodes.find((node) => node.path === "D.md")?.fillAlpha).toBeLessThan(0.32);
+    expect(state.edges[0]?.alpha).toBeLessThanOrEqual(0.5);
     expect(state.edges[0]?.strokeWidth).toBeLessThan(0.9);
     expect(state.nodes.find((node) => node.path === "B.md")?.strokeWidth).toBeLessThan(1);
   });
@@ -123,7 +124,8 @@ describe("graphRenderModel", () => {
     expect(state.nodes.find((node) => node.path === "N1.md")?.labelVisible).toBe(true);
     expect(state.nodes.find((node) => node.path === "N2.md")?.labelVisible).toBe(false);
     expect(state.nodes.find((node) => node.path === "N2.md")?.radius).toBeLessThan(1.2);
-    expect(state.nodes.find((node) => node.path === "N2.md")?.strokeAlpha).toBeLessThan(0.05);
+    expect(state.nodes.find((node) => node.path === "N2.md")?.strokeAlpha).toBeGreaterThan(0.06);
+    expect(state.nodes.find((node) => node.path === "N2.md")?.strokeAlpha).toBeLessThan(0.1);
   });
 
   it("CSS color文字列をPixi用numberへ変換する", () => {

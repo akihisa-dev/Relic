@@ -68,11 +68,11 @@ export interface GraphRenderState {
 export const defaultGraphRenderPalette: GraphRenderPalette = {
   accent: 0x00628c,
   background: 0xffffff,
-  line: 0xc7cacc,
-  lineFocused: 0x8c9296,
-  node: 0x8f9498,
-  nodeFocused: 0x646a70,
-  nodeSelected: 0x4f6f7d,
+  line: 0xb9bdc0,
+  lineFocused: 0x7e858a,
+  node: 0x6f7478,
+  nodeFocused: 0x4f565c,
+  nodeSelected: 0x476a79,
   text: 0x1c1c1c
 };
 
@@ -111,9 +111,9 @@ export function buildGraphRenderState({
   const nodeSelected = palette.nodeSelected;
   const edgeColor = palette.line;
   const edgeSelected = palette.lineFocused;
-  const dimmedEdgeAlpha = isLargeGraph ? 0.045 : 0.075;
-  const normalEdgeAlpha = isLargeGraph ? 0.085 : 0.16;
-  const focusedEdgeAlpha = isLargeGraph ? 0.34 : 0.44;
+  const dimmedEdgeAlpha = isLargeGraph ? 0.075 : 0.1;
+  const normalEdgeAlpha = isLargeGraph ? 0.16 : 0.22;
+  const focusedEdgeAlpha = isLargeGraph ? 0.42 : 0.5;
 
   return {
     edges: edges.flatMap((edge) => {
@@ -129,7 +129,7 @@ export function buildGraphRenderState({
         isFocused,
         isMotion,
         sourcePath: edge.sourcePath,
-        strokeWidth: Math.min(isFocused ? 0.82 : 0.46, (isFocused ? 0.74 : isLargeGraph ? 0.3 : 0.42) * linkThickness),
+        strokeWidth: Math.min(isFocused ? 0.92 : 0.62, (isFocused ? 0.84 : isLargeGraph ? 0.42 : 0.52) * linkThickness),
         targetPath: edge.targetPath,
         x1: source.x,
         x2: target.x,
@@ -168,7 +168,7 @@ export function buildGraphRenderState({
 
       return {
         degree: point.degree,
-        fillAlpha: isDimmed ? 0.18 : isSelected ? 0.9 : isFocused ? 0.84 : isRelated && focusedPath ? 0.7 : isLargeGraph ? 0.58 : 0.72,
+        fillAlpha: isDimmed ? 0.26 : isSelected ? 0.94 : isFocused ? 0.9 : isRelated && focusedPath ? 0.78 : isLargeGraph ? 0.76 : 0.82,
         fillColor,
         folder: point.folder,
         incoming: point.incoming,
@@ -177,14 +177,14 @@ export function buildGraphRenderState({
         isMotion,
         isRelated,
         isSelected,
-        labelAlpha: isDimmed ? Math.min(0.18, labelOpacity) : isLargeGraph ? Math.min(0.72, labelOpacity) : labelOpacity,
+        labelAlpha: isDimmed ? Math.min(0.24, labelOpacity) : isLargeGraph ? Math.min(0.82, labelOpacity) : labelOpacity,
         labelVisible,
         name: point.name,
         path: point.path,
         radius,
         ringVisible: isSelected,
         outgoing: point.outgoing,
-        strokeAlpha: isSelected ? 0.48 : isFocused ? 0.28 : isLargeGraph ? 0.035 : 0.12,
+        strokeAlpha: isSelected ? 0.56 : isFocused ? 0.34 : isLargeGraph ? 0.08 : 0.16,
         strokeColor: isSelected ? mixColor(nodeSelected, palette.background, 0.72) : palette.background,
         strokeWidth: isSelected ? 0.86 : isFocused ? 0.58 : isLargeGraph ? 0.18 : 0.42,
         tags: point.tags,
