@@ -32,7 +32,7 @@ describe("graphRenderModel", () => {
     });
 
     expect(state.edges).toHaveLength(1);
-    expect(state.edges[0]).toMatchObject({ isFocused: true, sourcePath: "A.md", targetPath: "C.md" });
+    expect(state.edges[0]).toMatchObject({ isFocused: false, isMotion: false, sourcePath: "A.md", targetPath: "C.md" });
     expect(state.nodes.find((node) => node.path === "A.md")).toMatchObject({
       degree: 1,
       folder: "",
@@ -48,8 +48,33 @@ describe("graphRenderModel", () => {
     expect(state.nodes.find((node) => node.path === "D.md")?.fillAlpha).toBeGreaterThan(0.9);
     expect(state.nodes.find((node) => node.path === "D.md")?.fillColor).not.toBe(defaultGraphRenderPalette.node);
     expect(state.edges[0]?.alpha).toBeLessThanOrEqual(0.58);
-    expect(state.edges[0]?.strokeWidth).toBeCloseTo(1.95);
+    expect(state.edges[0]?.strokeWidth).toBeCloseTo(1.65);
     expect(state.nodes.find((node) => node.path === "B.md")?.strokeWidth).toBe(0);
+  });
+
+  it("hoverだけでは接続線を強調しない", () => {
+    const state = buildGraphRenderState({
+      edges: [{ sourcePath: "A.md", targetPath: "C.md" }],
+      focusedPath: "A.md",
+      groupByPath: new Map(),
+      labelOpacity: 1,
+      linkThickness: 1,
+      motionPath: "A.md",
+      nodeSize: 1,
+      palette: defaultGraphRenderPalette,
+      points,
+      relatedPaths: new Set(["A.md", "C.md"]),
+      selectedPath: null,
+      showLabels: true
+    });
+
+    expect(state.edges[0]).toMatchObject({
+      alpha: 0.32,
+      color: defaultGraphRenderPalette.line,
+      isFocused: false,
+      isMotion: false,
+      strokeWidth: 1.65
+    });
   });
 
   it("group colorと均一なnode radiusを反映する", () => {
