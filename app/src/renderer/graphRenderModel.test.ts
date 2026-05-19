@@ -42,14 +42,14 @@ describe("graphRenderModel", () => {
       outgoing: 1,
       tags: []
     });
-    expect(state.nodes.find((node) => node.path === "B.md")).toMatchObject({ isSelected: true, ringVisible: true });
+    expect(state.nodes.find((node) => node.path === "B.md")).toMatchObject({ isSelected: true, ringVisible: false });
     expect(state.nodes.find((node) => node.path === "C.md")).toMatchObject({ isRelated: true });
     expect(state.nodes.find((node) => node.path === "D.md")).toMatchObject({ isDimmed: true });
-    expect(state.nodes.find((node) => node.path === "D.md")?.fillAlpha).toBeGreaterThan(0.24);
-    expect(state.nodes.find((node) => node.path === "D.md")?.fillAlpha).toBeLessThanOrEqual(0.32);
-    expect(state.edges[0]?.alpha).toBeLessThanOrEqual(0.5);
-    expect(state.edges[0]?.strokeWidth).toBeLessThan(1);
-    expect(state.nodes.find((node) => node.path === "B.md")?.strokeWidth).toBeLessThan(1);
+    expect(state.nodes.find((node) => node.path === "D.md")?.fillAlpha).toBeGreaterThan(0.9);
+    expect(state.nodes.find((node) => node.path === "D.md")?.fillColor).not.toBe(defaultGraphRenderPalette.node);
+    expect(state.edges[0]?.alpha).toBeLessThanOrEqual(0.58);
+    expect(state.edges[0]?.strokeWidth).toBeLessThan(1.3);
+    expect(state.nodes.find((node) => node.path === "B.md")?.strokeWidth).toBe(0);
   });
 
   it("group colorと均一なnode radiusを反映する", () => {
@@ -123,7 +123,7 @@ describe("graphRenderModel", () => {
     expect(state.nodes.find((node) => node.path === "N0.md")?.labelVisible).toBe(false);
     expect(state.nodes.find((node) => node.path === "N1.md")?.labelVisible).toBe(false);
     expect(state.nodes.find((node) => node.path === "N2.md")?.labelVisible).toBe(false);
-    expect(state.nodes.find((node) => node.path === "N2.md")?.radius).toBeCloseTo(3.05);
+    expect(state.nodes.find((node) => node.path === "N2.md")?.radius).toBeCloseTo(5.05);
     expect(state.nodes.find((node) => node.path === "N2.md")?.strokeAlpha).toBe(0);
 
     const hoveredState = buildGraphRenderState({
@@ -143,6 +143,41 @@ describe("graphRenderModel", () => {
     expect(hoveredState.nodes.find((node) => node.path === "N0.md")?.labelVisible).toBe(true);
     expect(hoveredState.nodes.find((node) => node.path === "N1.md")?.labelVisible).toBe(true);
     expect(hoveredState.nodes.find((node) => node.path === "N2.md")?.labelVisible).toBe(false);
+  });
+
+  it("ズーム時のnode radiusをObsidian風のベタ丸サイズへ拡大する", () => {
+    const normal = buildGraphRenderState({
+      edges: [],
+      focusedPath: null,
+      groupByPath: new Map(),
+      labelOpacity: 1,
+      linkThickness: 1,
+      motionPath: null,
+      nodeSize: 1,
+      points,
+      relatedPaths: new Set(),
+      selectedPath: null,
+      showLabels: true,
+      viewScale: 1
+    });
+    const zoomed = buildGraphRenderState({
+      edges: [],
+      focusedPath: null,
+      groupByPath: new Map(),
+      labelOpacity: 1,
+      linkThickness: 1,
+      motionPath: null,
+      nodeSize: 1,
+      points,
+      relatedPaths: new Set(),
+      selectedPath: null,
+      showLabels: true,
+      viewScale: 2.56
+    });
+
+    expect(normal.nodes[0]?.radius).toBeCloseTo(5.2);
+    expect(zoomed.nodes[0]?.radius * 2.56).toBeCloseTo(8.32);
+    expect(zoomed.nodes[0]?.strokeWidth).toBe(0);
   });
 
   it("CSS color文字列をPixi用numberへ変換する", () => {
