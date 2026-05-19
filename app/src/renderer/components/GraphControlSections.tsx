@@ -103,6 +103,7 @@ export function GraphDisplaySection({ isOpen, onToggle }: GraphSectionProps): Re
     showArrows,
     showLabels,
     showOrphans,
+    startAnimation,
     textFadeThreshold,
     zoom
   } = useGraphStore();
@@ -121,6 +122,7 @@ export function GraphDisplaySection({ isOpen, onToggle }: GraphSectionProps): Re
       <label className="setting-row"><span>{t("graph.zoom")}</span><input max={GRAPH_MAX_ZOOM} min={GRAPH_MIN_ZOOM} onChange={(event) => setZoom(clamp(Number(event.target.value), GRAPH_MIN_ZOOM, GRAPH_MAX_ZOOM))} step="0.1" type="range" value={zoom} /></label>
       <label className="setting-row"><span>{t("graph.nodeSize")}</span><input max="1.8" min="1" onChange={(event) => setNodeSize(Number(event.target.value))} step="0.1" type="range" value={nodeSize} /></label>
       <label className="setting-row"><span>{t("graph.linkThickness")}</span><input max="2.2" min="1" onChange={(event) => setLinkThickness(Number(event.target.value))} step="0.1" type="range" value={linkThickness} /></label>
+      <button className="graph-animation-button" onClick={startAnimation} type="button">{t("graph.startAnimation")}</button>
       <label className="setting-row"><span>{t("graph.textFade")}</span><input max="1.6" min="0.4" onChange={(event) => setTextFadeThreshold(Number(event.target.value))} step="0.1" type="range" value={textFadeThreshold} /></label>
       <label className="setting-row"><span>{t("graph.labels")}</span><input checked={showLabels} onChange={(event) => setShowLabels(event.target.checked)} type="checkbox" /></label>
       <label className="setting-row"><span>{t("graph.arrows")}</span><input checked={showArrows} onChange={(event) => setShowArrows(event.target.checked)} type="checkbox" /></label>
