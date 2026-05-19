@@ -306,6 +306,13 @@
   width: 36px;
 }
 
+.graph-controls-minimized-stack {
+  display: grid;
+  gap: 10px;
+  justify-items: end;
+  width: 36px;
+}
+
 .graph-controls-minimized:hover {
   background: var(--hover);
   border-color: var(--border-medium);
@@ -567,11 +574,11 @@
   z-index: 3;
 }
 
-.graph-hover-settings:has(.graph-controls-minimized) {
+.graph-hover-settings:has(.graph-controls-minimized-stack) {
   background: transparent;
   border-color: transparent;
   box-shadow: none;
-  max-height: 36px;
+  max-height: none;
   opacity: 1;
   padding: 0;
   pointer-events: auto;
@@ -583,7 +590,7 @@
   animation: graph-controls-open 180ms cubic-bezier(.22, 1, .36, 1);
 }
 
-.graph-hover-settings:has(.graph-controls-minimized) .graph-controls-minimized {
+.graph-hover-settings:has(.graph-controls-minimized-stack) .graph-controls-minimized {
   animation: graph-controls-minimized-open 180ms cubic-bezier(.22, 1, .36, 1);
 }
 

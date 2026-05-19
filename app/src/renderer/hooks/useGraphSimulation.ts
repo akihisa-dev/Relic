@@ -32,7 +32,7 @@ export function useGraphSimulation({
 }: UseGraphSimulationInput): GraphSimulationState {
   const pointsRef = useRef<GraphSimPoint[]>([]);
   const forceSettingsKeyRef = useRef<string | null>(null);
-  const animationEpochRef = useRef(animationEpoch);
+  const settledAnimationEpochRef = useRef(animationEpoch);
   const layoutModeRef = useRef<GraphLayoutMode | null>(null);
   const [points, setPointsState] = useState<GraphSimPoint[]>([]);
 
@@ -44,7 +44,6 @@ export function useGraphSimulation({
   useEffect(() => {
     const forceSettingsKey = buildForceSettingsKey(forceSettings);
     const didForceSettingsChange = forceSettingsKeyRef.current !== null && forceSettingsKeyRef.current !== forceSettingsKey;
-    const didStartAnimation = animationEpochRef.current !== animationEpoch;
     const seedPoints = layoutGraph(nodes, edges, forceSettings, layoutMode);
     const existingPoints = new Map(pointsRef.current.map((point) => [point.path, point]));
     const shouldReuseExistingPoints = layoutModeRef.current === layoutMode;
@@ -58,15 +57,39 @@ export function useGraphSimulation({
         y: shouldReuseExistingPoints ? existing?.y ?? point.y : point.y
       };
     });
-    const nextPoints = (didForceSettingsChange || didStartAnimation) && !pauseSimulationRef.current
-      ? tickGraphSimulation(reusedPoints, edges, forceSettings, pinnedPathRef.current, didStartAnimation ? 72 : 36)
+    const nextPoints = didForceSettingsChange && !pauseSimulationRef.current
+      ? tickGraphSimulation(reusedPoints, edges, forceSettings, pinnedPathRef.current, 36)
       : reusedPoints;
 
     forceSettingsKeyRef.current = forceSettingsKey;
-    animationEpochRef.current = animationEpoch;
     layoutModeRef.current = layoutMode;
     setPoints(nextPoints);
-  }, [animationEpoch, edges, forceSettings, layoutMode, nodes, pauseSimulationRef, pinnedPathRef]);
+  }, [edges, forceSettings, layoutMode, nodes, pauseSimulationRef, pinnedPathRef]);
+
+  useEffect(() => {
+    if (settledAnimationEpochRef.current === animationEpoch) return;
+    settledAnimationEpochRef.current = animationEpoch;
+    if (typeof window === "undefined" || pointsRef.current.length <= 1) return;
+
+    let frameId = 0;
+    let frame = 0;
+    let isDisposed = false;
+
+    function step(): void {
+      if (isDisposed) return;
+      if (!pauseSimulationRef.current) {
+        setPoints(tickGraphSimulation(pointsRef.current, edges, forceSettings, pinnedPathRef.current, 2));
+      }
+      frame += 1;
+      if (frame < 90) frameId = window.requestAnimationFrame(step);
+    }
+
+    frameId = window.requestAnimationFrame(step);
+    return () => {
+      isDisposed = true;
+      window.cancelAnimationFrame(frameId);
+    };
+  }, [animationEpoch, edges, forceSettings, pauseSimulationRef, pinnedPathRef]);
 
   return {
     points,
