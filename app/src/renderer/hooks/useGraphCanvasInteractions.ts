@@ -45,7 +45,7 @@ export function useGraphCanvasInteractions({
   nodeHandlers: GraphNodeHandlers;
   points: GraphSimPoint[];
   relatedPaths: Set<string>;
-  svgRef: RefObject<SVGSVGElement | null>;
+  surfaceRef: RefObject<HTMLDivElement | null>;
   viewBox: GraphViewBox;
 } {
   const pinnedPathRef = useRef<string | null>(null);
@@ -80,7 +80,7 @@ export function useGraphCanvasInteractions({
     nodeHandlers,
     points: simulation.points,
     relatedPaths,
-    svgRef: viewport.svgRef,
+    surfaceRef: viewport.surfaceRef,
     viewBox: viewport.viewBox
   };
 }

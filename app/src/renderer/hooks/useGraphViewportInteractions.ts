@@ -24,12 +24,12 @@ interface UseGraphViewportInteractionsInput {
 }
 
 export interface GraphHandlers {
-  onKeyDown: (event: KeyboardEvent<SVGSVGElement>) => void;
-  onPointerCancel: (event: PointerEvent<SVGSVGElement>) => void;
-  onPointerDown: (event: PointerEvent<SVGSVGElement>) => void;
-  onPointerMove: (event: PointerEvent<SVGSVGElement>) => void;
-  onPointerUp: (event: PointerEvent<SVGSVGElement>) => void;
-  onWheel: (event: WheelEvent<SVGSVGElement>) => void;
+  onKeyDown: (event: KeyboardEvent<HTMLDivElement>) => void;
+  onPointerCancel: (event: PointerEvent<HTMLDivElement>) => void;
+  onPointerDown: (event: PointerEvent<HTMLDivElement>) => void;
+  onPointerMove: (event: PointerEvent<HTMLDivElement>) => void;
+  onPointerUp: (event: PointerEvent<HTMLDivElement>) => void;
+  onWheel: (event: WheelEvent<HTMLDivElement>) => void;
 }
 
 export interface GraphViewportInteractions {
@@ -37,7 +37,7 @@ export interface GraphViewportInteractions {
   graphHandlers: GraphHandlers;
   isPanning: boolean;
   pauseSimulationRef: MutableRefObject<boolean>;
-  svgRef: RefObject<SVGSVGElement | null>;
+  surfaceRef: RefObject<HTMLDivElement | null>;
   viewBox: GraphViewBox;
 }
 
@@ -46,7 +46,7 @@ export function useGraphViewportInteractions({
   setZoom,
   zoom
 }: UseGraphViewportInteractionsInput): GraphViewportInteractions {
-  const svgRef = useRef<SVGSVGElement | null>(null);
+  const surfaceRef = useRef<HTMLDivElement | null>(null);
   const dragStateRef = useRef<GraphDragState | null>(null);
   const pauseSimulationRef = useRef(false);
   const [isPanning, setIsPanning] = useState(false);
@@ -54,7 +54,7 @@ export function useGraphViewportInteractions({
   const viewBox = buildGraphViewBox(zoom, pan);
 
   function getGraphDelta(deltaX: number, deltaY: number): GraphPan {
-    const bounds = svgRef.current?.getBoundingClientRect();
+    const bounds = surfaceRef.current?.getBoundingClientRect();
     if (!bounds || bounds.width === 0 || bounds.height === 0) return { x: deltaX, y: deltaY };
     return {
       x: deltaX * (viewBox.width / bounds.width),
@@ -62,13 +62,13 @@ export function useGraphViewportInteractions({
     };
   }
 
-  function handleGraphWheel(event: WheelEvent<SVGSVGElement>): void {
+  function handleGraphWheel(event: WheelEvent<HTMLDivElement>): void {
     event.preventDefault();
     const nextZoom = clamp(zoom - event.deltaY * 0.001, GRAPH_MIN_ZOOM, GRAPH_MAX_ZOOM);
     setZoom(Number(nextZoom.toFixed(2)));
   }
 
-  function handleGraphKeyDown(event: KeyboardEvent<SVGSVGElement>): void {
+  function handleGraphKeyDown(event: KeyboardEvent<HTMLDivElement>): void {
     const panStep = (event.shiftKey ? 72 : 28) / zoom;
     if (event.key === "+" || event.key === "=") {
       event.preventDefault();
@@ -101,10 +101,8 @@ export function useGraphViewportInteractions({
     }
   }
 
-  function handleGraphPointerDown(event: PointerEvent<SVGSVGElement>): void {
+  function handleGraphPointerDown(event: PointerEvent<HTMLDivElement>): void {
     if (event.button !== 0) return;
-    const target = event.target as Element;
-    if (target.closest(".graph-node-hit")) return;
 
     dragStateRef.current = {
       moved: false,
@@ -118,7 +116,7 @@ export function useGraphViewportInteractions({
     setIsPanning(true);
   }
 
-  function handleGraphPointerMove(event: PointerEvent<SVGSVGElement>): void {
+  function handleGraphPointerMove(event: PointerEvent<HTMLDivElement>): void {
     const dragState = dragStateRef.current;
     if (!dragState || dragState.pointerId !== event.pointerId) return;
 
@@ -131,7 +129,7 @@ export function useGraphViewportInteractions({
     });
   }
 
-  function handleGraphPointerEnd(event: PointerEvent<SVGSVGElement>): void {
+  function handleGraphPointerEnd(event: PointerEvent<HTMLDivElement>): void {
     const dragState = dragStateRef.current;
     if (!dragState || dragState.pointerId !== event.pointerId) return;
 
@@ -156,7 +154,7 @@ export function useGraphViewportInteractions({
     },
     isPanning,
     pauseSimulationRef,
-    svgRef,
+    surfaceRef,
     viewBox
   };
 }

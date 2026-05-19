@@ -112,7 +112,7 @@ describe("useGraphCanvasInteractions", () => {
     const { hook, setZoom } = renderInteractions();
 
     act(() => {
-      hook.result.current.graphHandlers.onWheel(makeEvent<SVGSVGElement>({ deltaY: -100 }));
+      hook.result.current.graphHandlers.onWheel(makeEvent<HTMLDivElement>({ deltaY: -100 }));
     });
 
     expect(setZoom).toHaveBeenCalledWith(1.1);
@@ -120,19 +120,19 @@ describe("useGraphCanvasInteractions", () => {
 
   it("背景clickで選択を解除する", () => {
     const { hook, setSelectedPath } = renderInteractions({ selectedPath: "A.md" });
-    const svgTarget = {
+    const surfaceTarget = {
       hasPointerCapture: vi.fn().mockReturnValue(true),
       releasePointerCapture: vi.fn(),
       setPointerCapture: vi.fn()
-    } as unknown as SVGSVGElement;
+    } as unknown as HTMLDivElement;
 
     act(() => {
-      hook.result.current.graphHandlers.onPointerDown(makeEvent<SVGSVGElement>({
-        currentTarget: svgTarget,
+      hook.result.current.graphHandlers.onPointerDown(makeEvent<HTMLDivElement>({
+        currentTarget: surfaceTarget,
         pointerId: 2
       }));
-      hook.result.current.graphHandlers.onPointerUp(makeEvent<SVGSVGElement>({
-        currentTarget: svgTarget,
+      hook.result.current.graphHandlers.onPointerUp(makeEvent<HTMLDivElement>({
+        currentTarget: surfaceTarget,
         pointerId: 2
       }));
     });
@@ -164,8 +164,8 @@ describe("useGraphCanvasInteractions", () => {
     });
 
     act(() => {
-      hook.result.current.nodeHandlers.onKeyDown(makeEvent<SVGGElement>({ key: "Enter" }), hook.result.current.points[0]);
-      hook.result.current.nodeHandlers.onKeyDown(makeEvent<SVGGElement>({ key: " " }), hook.result.current.points[1]);
+      hook.result.current.nodeHandlers.onKeyDown(makeEvent<HTMLDivElement>({ key: "Enter" }), hook.result.current.points[0]);
+      hook.result.current.nodeHandlers.onKeyDown(makeEvent<HTMLDivElement>({ key: " " }), hook.result.current.points[1]);
     });
 
     expect(setSelectedPath).toHaveBeenCalledWith("A.md");
@@ -185,15 +185,15 @@ describe("useGraphCanvasInteractions", () => {
       hasPointerCapture: vi.fn().mockReturnValue(true),
       releasePointerCapture: vi.fn(),
       setPointerCapture: vi.fn()
-    } as unknown as SVGGElement;
-    const svgTarget = {
+    } as unknown as HTMLDivElement;
+    const surfaceTarget = {
       getBoundingClientRect: () => ({ height: 520, width: 720 } as DOMRect)
-    } as unknown as SVGSVGElement;
-    (hook.result.current.svgRef as { current: SVGSVGElement | null }).current = svgTarget;
+    } as unknown as HTMLDivElement;
+    (hook.result.current.surfaceRef as { current: HTMLDivElement | null }).current = surfaceTarget;
 
     act(() => {
       hook.result.current.nodeHandlers.onPointerDown(
-        makeEvent<SVGGElement>({
+        makeEvent<HTMLDivElement>({
           clientX: 10,
           clientY: 10,
           currentTarget: nodeTarget,
@@ -202,7 +202,7 @@ describe("useGraphCanvasInteractions", () => {
         firstPoint
       );
       hook.result.current.nodeHandlers.onPointerMove(
-        makeEvent<SVGGElement>({
+        makeEvent<HTMLDivElement>({
           clientX: 5000,
           clientY: 5000,
           currentTarget: nodeTarget,

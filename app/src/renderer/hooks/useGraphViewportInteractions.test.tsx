@@ -57,7 +57,7 @@ describe("useGraphViewportInteractions", () => {
     const { hook, setZoom } = renderViewport();
 
     act(() => {
-      hook.result.current.graphHandlers.onWheel(makeEvent<SVGSVGElement>({ deltaY: -100 }));
+      hook.result.current.graphHandlers.onWheel(makeEvent<HTMLDivElement>({ deltaY: -100 }));
     });
 
     expect(setZoom).toHaveBeenCalledWith(1.1);
@@ -67,10 +67,10 @@ describe("useGraphViewportInteractions", () => {
     const { hook, setZoom } = renderViewport();
 
     act(() => {
-      hook.result.current.graphHandlers.onKeyDown(makeEvent<SVGSVGElement>({ key: "=" }));
+      hook.result.current.graphHandlers.onKeyDown(makeEvent<HTMLDivElement>({ key: "=" }));
     });
     act(() => {
-      hook.result.current.graphHandlers.onKeyDown(makeEvent<SVGSVGElement>({ key: "ArrowRight" }));
+      hook.result.current.graphHandlers.onKeyDown(makeEvent<HTMLDivElement>({ key: "ArrowRight" }));
     });
 
     expect(setZoom).toHaveBeenCalledWith(1.1);
@@ -79,19 +79,19 @@ describe("useGraphViewportInteractions", () => {
 
   it("pointer dragでpanとpanning stateを更新する", () => {
     const { hook, onBackgroundClick } = renderViewport();
-    const svgTarget = {
+    const surfaceTarget = {
       getBoundingClientRect: () => ({ height: GRAPH_HEIGHT, width: GRAPH_WIDTH } as DOMRect),
       hasPointerCapture: vi.fn().mockReturnValue(true),
       releasePointerCapture: vi.fn(),
       setPointerCapture: vi.fn()
-    } as unknown as SVGSVGElement;
-    (hook.result.current.svgRef as { current: SVGSVGElement | null }).current = svgTarget;
+    } as unknown as HTMLDivElement;
+    (hook.result.current.surfaceRef as { current: HTMLDivElement | null }).current = surfaceTarget;
 
     act(() => {
-      hook.result.current.graphHandlers.onPointerDown(makeEvent<SVGSVGElement>({
+      hook.result.current.graphHandlers.onPointerDown(makeEvent<HTMLDivElement>({
         clientX: 10,
         clientY: 20,
-        currentTarget: svgTarget,
+        currentTarget: surfaceTarget,
         pointerId: 4
       }));
     });
@@ -100,10 +100,10 @@ describe("useGraphViewportInteractions", () => {
     expect(hook.result.current.pauseSimulationRef.current).toBe(true);
 
     act(() => {
-      hook.result.current.graphHandlers.onPointerMove(makeEvent<SVGSVGElement>({
+      hook.result.current.graphHandlers.onPointerMove(makeEvent<HTMLDivElement>({
         clientX: 110,
         clientY: 70,
-        currentTarget: svgTarget,
+        currentTarget: surfaceTarget,
         pointerId: 4
       }));
     });
@@ -112,8 +112,8 @@ describe("useGraphViewportInteractions", () => {
     expect(hook.result.current.viewBox.y).toBe(-50);
 
     act(() => {
-      hook.result.current.graphHandlers.onPointerUp(makeEvent<SVGSVGElement>({
-        currentTarget: svgTarget,
+      hook.result.current.graphHandlers.onPointerUp(makeEvent<HTMLDivElement>({
+        currentTarget: surfaceTarget,
         pointerId: 4
       }));
     });
@@ -125,36 +125,23 @@ describe("useGraphViewportInteractions", () => {
 
   it("背景clickでは背景click callbackを呼ぶ", () => {
     const { hook, onBackgroundClick } = renderViewport();
-    const svgTarget = {
+    const surfaceTarget = {
       hasPointerCapture: vi.fn().mockReturnValue(true),
       releasePointerCapture: vi.fn(),
       setPointerCapture: vi.fn()
-    } as unknown as SVGSVGElement;
+    } as unknown as HTMLDivElement;
 
     act(() => {
-      hook.result.current.graphHandlers.onPointerDown(makeEvent<SVGSVGElement>({
-        currentTarget: svgTarget,
+      hook.result.current.graphHandlers.onPointerDown(makeEvent<HTMLDivElement>({
+        currentTarget: surfaceTarget,
         pointerId: 5
       }));
-      hook.result.current.graphHandlers.onPointerUp(makeEvent<SVGSVGElement>({
-        currentTarget: svgTarget,
+      hook.result.current.graphHandlers.onPointerUp(makeEvent<HTMLDivElement>({
+        currentTarget: surfaceTarget,
         pointerId: 5
       }));
     });
 
     expect(onBackgroundClick).toHaveBeenCalledTimes(1);
-  });
-
-  it("node hit上のpointer downではpanを開始しない", () => {
-    const { hook } = renderViewport();
-
-    act(() => {
-      hook.result.current.graphHandlers.onPointerDown(makeEvent<SVGSVGElement>({
-        target: { closest: vi.fn().mockReturnValue(document.createElement("g")) } as unknown as Element
-      }));
-    });
-
-    expect(hook.result.current.isPanning).toBe(false);
-    expect(hook.result.current.pauseSimulationRef.current).toBe(false);
   });
 });

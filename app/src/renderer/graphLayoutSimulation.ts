@@ -1,5 +1,15 @@
 import type { WorkspaceGraphEdge, WorkspaceGraphNode } from "../shared/ipc";
 import {
+  forceCenter,
+  forceCollide,
+  forceLink,
+  forceManyBody,
+  forceSimulation,
+  forceX,
+  forceY
+} from "d3-force";
+import type { SimulationLinkDatum, SimulationNodeDatum } from "d3-force";
+import {
   GRAPH_CENTER_X,
   GRAPH_CENTER_Y,
   GRAPH_HEIGHT,
@@ -9,6 +19,19 @@ import {
 } from "./graphLayoutConstants";
 import { buildGraphStats, emptyNodeStats } from "./graphLayoutFilters";
 import type { GraphForceSettings, GraphLayoutMode, GraphPoint, GraphSimPoint } from "./graphLayoutTypes";
+
+type D3GraphPoint = Omit<GraphSimPoint, "vx" | "vy"> & SimulationNodeDatum & {
+  fx?: number | null;
+  fy?: number | null;
+  id: string;
+  vx: number;
+  vy: number;
+};
+
+interface D3GraphLink extends SimulationLinkDatum<D3GraphPoint> {
+  source: string | D3GraphPoint;
+  target: string | D3GraphPoint;
+}
 
 export function layoutGraph(
   nodes: WorkspaceGraphNode[],
@@ -180,59 +203,20 @@ function relaxGraphLayout(
   edges: WorkspaceGraphEdge[],
   forceSettings: GraphForceSettings
 ): void {
-  const indexByPath = new Map(initial.map((node, index) => [node.path, index]));
-  const linkedPairs = edges
-    .map((edge) => ({
-      sourceIndex: indexByPath.get(edge.sourcePath) ?? -1,
-      targetIndex: indexByPath.get(edge.targetPath) ?? -1
-    }))
-    .filter((edge) => edge.sourceIndex >= 0 && edge.targetIndex >= 0);
   const tickCount = initial.length > 420 ? 18 : initial.length > 220 ? 36 : 96;
+  const relaxed = runD3GraphSimulation(
+    initial.map((point) => ({ ...point, vx: 0, vy: 0 })),
+    edges,
+    forceSettings,
+    null,
+    tickCount,
+    0.68
+  );
 
-  for (let tick = 0; tick < tickCount; tick += 1) {
-    const forces = initial.map(() => ({ x: 0, y: 0 }));
-
-    for (let i = 0; i < initial.length; i += 1) {
-      for (let j = i + 1; j < initial.length; j += 1) {
-        const dx = initial[j].x - initial[i].x || 0.01;
-        const dy = initial[j].y - initial[i].y || 0.01;
-        const distanceSquared = Math.max(64, dx * dx + dy * dy);
-        const distance = Math.sqrt(distanceSquared);
-        const strength = (1550 * forceSettings.repelForce) / distanceSquared;
-        const fx = (dx / distance) * strength;
-        const fy = (dy / distance) * strength;
-        forces[i].x -= fx;
-        forces[i].y -= fy;
-        forces[j].x += fx;
-        forces[j].y += fy;
-      }
-    }
-
-    for (const edge of linkedPairs) {
-      const source = initial[edge.sourceIndex];
-      const target = initial[edge.targetIndex];
-      const dx = target.x - source.x || 0.01;
-      const dy = target.y - source.y || 0.01;
-      const distance = Math.max(1, Math.sqrt(dx * dx + dy * dy));
-      const preferred = forceSettings.linkDistance;
-      const strength = (distance - preferred) * 0.014 * forceSettings.linkForce;
-      const fx = (dx / distance) * strength;
-      const fy = (dy / distance) * strength;
-      forces[edge.sourceIndex].x += fx;
-      forces[edge.sourceIndex].y += fy;
-      forces[edge.targetIndex].x -= fx;
-      forces[edge.targetIndex].y -= fy;
-    }
-
-    for (let i = 0; i < initial.length; i += 1) {
-      const node = initial[i];
-      const centerStrength = 0.016 * forceSettings.centerForce;
-      forces[i].x += (GRAPH_CENTER_X - node.x) * centerStrength;
-      forces[i].y += (GRAPH_CENTER_Y - node.y) * centerStrength;
-      node.x = clamp(node.x + forces[i].x, GRAPH_PADDING, GRAPH_WIDTH - GRAPH_PADDING);
-      node.y = clamp(node.y + forces[i].y, GRAPH_PADDING, GRAPH_HEIGHT - GRAPH_PADDING);
-    }
-  }
+  relaxed.forEach((point, index) => {
+    initial[index].x = point.x;
+    initial[index].y = point.y;
+  });
 }
 
 function sortGraphPoints(points: GraphPoint[]): GraphPoint[] {
@@ -249,65 +233,68 @@ export function tickGraphSimulation(
 ): GraphSimPoint[] {
   if (points.length <= 1) return points;
 
-  const next = points.map((point) => ({ ...point }));
-  const indexByPath = new Map(next.map((point, index) => [point.path, index]));
-  const forces = next.map(() => ({ x: 0, y: 0 }));
-  const pinnedIndex = pinnedPath ? indexByPath.get(pinnedPath) : undefined;
+  return runD3GraphSimulation(points, edges, forceSettings, pinnedPath, 1, 0.24);
+}
 
-  for (let i = 0; i < next.length; i += 1) {
-    for (let j = i + 1; j < next.length; j += 1) {
-      const dx = next[j].x - next[i].x || 0.01;
-      const dy = next[j].y - next[i].y || 0.01;
-      const distanceSquared = Math.max(81, dx * dx + dy * dy);
-      const distance = Math.sqrt(distanceSquared);
-      const strength = (1320 * forceSettings.repelForce) / distanceSquared;
-      const fx = (dx / distance) * strength;
-      const fy = (dy / distance) * strength;
-      forces[i].x -= fx;
-      forces[i].y -= fy;
-      forces[j].x += fx;
-      forces[j].y += fy;
-    }
-  }
+function runD3GraphSimulation(
+  points: GraphSimPoint[],
+  edges: WorkspaceGraphEdge[],
+  forceSettings: GraphForceSettings,
+  pinnedPath: string | null,
+  tickCount: number,
+  alpha: number
+): GraphSimPoint[] {
+  const visiblePaths = new Set(points.map((point) => point.path));
+  const nodes: D3GraphPoint[] = points.map((point) => ({
+    ...point,
+    fx: point.path === pinnedPath ? point.x : null,
+    fy: point.path === pinnedPath ? point.y : null,
+    id: point.path,
+    vx: point.path === pinnedPath ? 0 : point.vx ?? 0,
+    vy: point.path === pinnedPath ? 0 : point.vy ?? 0,
+    x: point.x,
+    y: point.y
+  }));
+  const links: D3GraphLink[] = edges
+    .filter((edge) => visiblePaths.has(edge.sourcePath) && visiblePaths.has(edge.targetPath))
+    .map((edge) => ({ source: edge.sourcePath, target: edge.targetPath }));
 
-  for (const edge of edges) {
-    const sourceIndex = indexByPath.get(edge.sourcePath);
-    const targetIndex = indexByPath.get(edge.targetPath);
-    if (sourceIndex === undefined || targetIndex === undefined) continue;
+  const simulation = forceSimulation<D3GraphPoint>(nodes)
+    .alpha(alpha)
+    .alphaMin(0.001)
+    .alphaDecay(0.035)
+    .velocityDecay(0.34)
+    .force("charge", forceManyBody<D3GraphPoint>().strength(-78 * forceSettings.repelForce).theta(0.88))
+    .force("link", forceLink<D3GraphPoint, D3GraphLink>(links)
+      .id((node) => node.id)
+      .distance(forceSettings.linkDistance)
+      .strength(0.052 * forceSettings.linkForce))
+    .force("center", forceCenter<D3GraphPoint>(GRAPH_CENTER_X, GRAPH_CENTER_Y).strength(0.018 * forceSettings.centerForce))
+    .force("x", forceX<D3GraphPoint>(GRAPH_CENTER_X).strength(0.012 * forceSettings.centerForce))
+    .force("y", forceY<D3GraphPoint>(GRAPH_CENTER_Y).strength(0.012 * forceSettings.centerForce))
+    .force("collide", forceCollide<D3GraphPoint>().radius((node) => Math.min(18, 7 + Math.sqrt(node.degree) * 1.8)).strength(0.22))
+    .stop();
 
-    const source = next[sourceIndex];
-    const target = next[targetIndex];
-    const dx = target.x - source.x || 0.01;
-    const dy = target.y - source.y || 0.01;
-    const distance = Math.max(1, Math.sqrt(dx * dx + dy * dy));
-    const strength = (distance - forceSettings.linkDistance) * 0.018 * forceSettings.linkForce;
-    const fx = (dx / distance) * strength;
-    const fy = (dy / distance) * strength;
-    forces[sourceIndex].x += fx;
-    forces[sourceIndex].y += fy;
-    forces[targetIndex].x -= fx;
-    forces[targetIndex].y -= fy;
-  }
+  simulation.tick(tickCount);
+  simulation.stop();
 
-  for (let i = 0; i < next.length; i += 1) {
-    const point = next[i];
-    if (i === pinnedIndex) {
-      point.vx = 0;
-      point.vy = 0;
-      continue;
-    }
+  return nodes.map((node) => {
+    const x = clamp(node.x ?? GRAPH_CENTER_X, GRAPH_PADDING, GRAPH_WIDTH - GRAPH_PADDING);
+    const y = clamp(node.y ?? GRAPH_CENTER_Y, GRAPH_PADDING, GRAPH_HEIGHT - GRAPH_PADDING);
+    const isPinned = node.path === pinnedPath;
 
-    const centerStrength = 0.0055 * forceSettings.centerForce;
-    forces[i].x += (GRAPH_CENTER_X - point.x) * centerStrength;
-    forces[i].y += (GRAPH_CENTER_Y - point.y) * centerStrength;
-    point.vx = (point.vx + forces[i].x) * 0.76;
-    point.vy = (point.vy + forces[i].y) * 0.76;
-    point.x = clamp(point.x + point.vx, GRAPH_PADDING, GRAPH_WIDTH - GRAPH_PADDING);
-    point.y = clamp(point.y + point.vy, GRAPH_PADDING, GRAPH_HEIGHT - GRAPH_PADDING);
-
-    if (point.x === GRAPH_PADDING || point.x === GRAPH_WIDTH - GRAPH_PADDING) point.vx = 0;
-    if (point.y === GRAPH_PADDING || point.y === GRAPH_HEIGHT - GRAPH_PADDING) point.vy = 0;
-  }
-
-  return next;
+    return {
+      degree: node.degree,
+      folder: node.folder,
+      incoming: node.incoming,
+      name: node.name,
+      outgoing: node.outgoing,
+      path: node.path,
+      tags: node.tags,
+      vx: isPinned || x === GRAPH_PADDING || x === GRAPH_WIDTH - GRAPH_PADDING ? 0 : node.vx ?? 0,
+      vy: isPinned || y === GRAPH_PADDING || y === GRAPH_HEIGHT - GRAPH_PADDING ? 0 : node.vy ?? 0,
+      x: isPinned ? points.find((point) => point.path === node.path)?.x ?? x : x,
+      y: isPinned ? points.find((point) => point.path === node.path)?.y ?? y : y
+    };
+  });
 }
