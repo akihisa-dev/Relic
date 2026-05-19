@@ -17,6 +17,7 @@ interface UseGraphPanelModelInput {
 }
 
 export interface GraphPanelModel {
+  animationEpoch: number;
   error: string | null;
   filteredGraph: GraphViewModel;
   focusedPath: string | null;
@@ -97,7 +98,6 @@ export function useGraphPanelModel({
     repelForce
   }), [centerForce, linkDistance, linkForce, repelForce]);
   const graphCanvas = useGraphCanvasInteractions({
-    animationEpoch,
     edges: filteredGraph.edges,
     focusedPath,
     forceSettings,
@@ -112,6 +112,7 @@ export function useGraphPanelModel({
   });
 
   return {
+    animationEpoch,
     error,
     filteredGraph,
     focusedPath,

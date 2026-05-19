@@ -4,7 +4,9 @@ import type { RenderResult } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { GRAPH_HEIGHT, GRAPH_WIDTH, type GraphPoint } from "../graphLayout";
+import { buildGraphRenderState } from "../graphRenderModel";
 import {
+  buildGraphRevealState,
   buildGraphLabelPlacement,
   buildGraphNodeHitRadius,
   buildGraphViewBoxTransform,
@@ -21,6 +23,7 @@ const points: GraphPoint[] = [
 
 function makeGraphCanvasProps(overrides: Partial<GraphCanvasProps> = {}): GraphCanvasProps {
   return {
+    animationEpoch: 0,
     edges: [{ sourcePath: "A.md", targetPath: "C.md" }],
     focusedPath: "A.md",
     groupByPath: new Map(),
@@ -135,5 +138,38 @@ describe("GraphCanvas", () => {
   it("hit判定半径をズーム後の画面サイズ基準で作る", () => {
     expect(buildGraphNodeHitRadius(12, 1)).toBe(16);
     expect(buildGraphNodeHitRadius(0.3, 40)).toBe(0.4);
+  });
+
+  it("animation開始時は空の状態からnodeとlinkを順に表示するreveal stateを作る", () => {
+    const state = buildGraphRenderState({
+      edges: [{ sourcePath: "A.md", targetPath: "C.md" }],
+      focusedPath: null,
+      groupByPath: new Map(),
+      labelOpacity: 1,
+      linkThickness: 1,
+      motionPath: null,
+      nodeSize: 1,
+      points,
+      relatedPaths: new Set(),
+      selectedPath: null,
+      showLabels: true,
+      viewScale: 1
+    });
+    const start = buildGraphRevealState(state, 0);
+    const end = buildGraphRevealState(state, 2000);
+
+    expect(start.nodes.every((node) => node.fillAlpha === 0 && node.radius === 0)).toBe(true);
+    expect(start.edges[0]).toMatchObject({
+      alpha: 0,
+      strokeWidth: 0,
+      x2: start.edges[0]?.x1,
+      y2: start.edges[0]?.y1
+    });
+    expect(end.nodes[0]?.fillAlpha).toBeCloseTo(state.nodes[0]?.fillAlpha ?? 0);
+    expect(end.nodes[0]?.radius).toBeCloseTo(state.nodes[0]?.radius ?? 0);
+    expect(end.edges[0]?.alpha).toBeCloseTo(state.edges[0]?.alpha ?? 0);
+    expect(end.edges[0]?.strokeWidth).toBeCloseTo(state.edges[0]?.strokeWidth ?? 0);
+    expect(end.edges[0]?.x2).toBeCloseTo(state.edges[0]?.x2 ?? 0);
+    expect(end.edges[0]?.y2).toBeCloseTo(state.edges[0]?.y2 ?? 0);
   });
 });

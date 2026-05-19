@@ -64,7 +64,6 @@ function renderInteractions(overrides: Partial<Parameters<typeof useGraphCanvasI
   const setZoom = vi.fn();
   const hook = renderHook((props: Parameters<typeof useGraphCanvasInteractions>[0]) => useGraphCanvasInteractions(props), {
     initialProps: {
-      animationEpoch: 0,
       edges,
       focusedPath: null,
       forceSettings,

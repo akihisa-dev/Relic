@@ -27,7 +27,6 @@ function renderSimulation(overrides: Partial<Parameters<typeof useGraphSimulatio
   const pinnedPathRef: MutableRefObject<string | null> = { current: null };
   const hook = renderHook((props: Parameters<typeof useGraphSimulation>[0]) => useGraphSimulation(props), {
     initialProps: {
-      animationEpoch: 0,
       edges,
       forceSettings,
       layoutMode: "standard",
@@ -65,7 +64,6 @@ describe("useGraphSimulation", () => {
       ));
     });
     hook.rerender({
-      animationEpoch: 0,
       edges: [...edges],
       forceSettings,
       layoutMode: "standard",
@@ -97,7 +95,6 @@ describe("useGraphSimulation", () => {
       ));
     });
     hook.rerender({
-      animationEpoch: 0,
       edges,
       forceSettings,
       layoutMode: "scatter",
@@ -131,41 +128,8 @@ describe("useGraphSimulation", () => {
       })));
     });
     hook.rerender({
-      animationEpoch: 0,
       edges,
       forceSettings: { ...forceSettings, linkDistance: 60, repelForce: 1.6 },
-      layoutMode: "standard",
-      nodes,
-      pauseSimulationRef,
-      pinnedPathRef
-    });
-
-    await waitFor(() => {
-      const [a, b] = hook.result.current.points;
-      expect(a?.x).not.toBe(700);
-      expect(b?.x).not.toBe(900);
-    });
-  });
-
-  it("animation epoch更新時は既存座標から短時間settleして反映する", async () => {
-    const { hook, pauseSimulationRef, pinnedPathRef } = renderSimulation();
-
-    await waitFor(() => {
-      expect(hook.result.current.points).toHaveLength(2);
-    });
-    act(() => {
-      hook.result.current.setPoints(hook.result.current.points.map((point, index) => ({
-        ...point,
-        vx: 0,
-        vy: 0,
-        x: index === 0 ? 700 : 900,
-        y: 450
-      })));
-    });
-    hook.rerender({
-      animationEpoch: 1,
-      edges,
-      forceSettings,
       layoutMode: "standard",
       nodes,
       pauseSimulationRef,

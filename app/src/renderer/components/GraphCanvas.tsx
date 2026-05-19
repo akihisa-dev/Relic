@@ -29,7 +29,12 @@ export interface GraphViewBoxTransform {
   y: number;
 }
 
+interface GraphRevealFrame {
+  elapsedMs: number;
+}
+
 export interface GraphCanvasProps {
+  animationEpoch: number;
   edges: WorkspaceGraphEdge[];
   focusedPath: string | null;
   groupByPath: Map<string, GraphGroup>;
@@ -76,6 +81,8 @@ interface PixiGraphRuntime {
   nodeHitByPath: Map<string, GraphNodeHit>;
   nodeLayer: Graphics;
   renderedPointsByPath: Map<string, GraphSimPoint>;
+  revealEpoch: number;
+  revealStartedAtMs: number | null;
   resizeObserver: ResizeObserver | null;
   root: Container;
   Text: typeof import("pixi.js").Text;
@@ -90,6 +97,7 @@ interface GraphNodeHit extends Graphics {
 
 interface PixiGraphInteractionOptions {
   activePointerPointRef: MutableRefObject<GraphPoint | null>;
+  animationEpoch: number;
   isMotionAfterglow: boolean;
   motionEpoch: number;
   onNodeClick: (point: GraphPoint) => void;
@@ -117,6 +125,7 @@ interface GraphCanvasRenderInput {
 }
 
 export function GraphCanvas({
+  animationEpoch,
   edges,
   focusedPath,
   groupByPath,
@@ -203,6 +212,7 @@ export function GraphCanvas({
   };
   latestInteractionOptionsRef.current = {
     activePointerPointRef,
+    animationEpoch,
     isMotionAfterglow,
     motionEpoch,
     onNodeClick,
@@ -288,6 +298,8 @@ export function GraphCanvas({
           nodeHitByPath: new Map(),
           nodeLayer,
           renderedPointsByPath: new Map(),
+          revealEpoch: latestInteractionOptionsRef.current?.animationEpoch ?? 0,
+          revealStartedAtMs: null,
           resizeObserver,
           root,
           Text: pixi.Text,
@@ -370,11 +382,13 @@ export function GraphCanvas({
         pointsRef.current,
         options.activePointerPointRef.current?.path ?? null
       );
+      const nowMs = typeof performance === "undefined" ? Date.now() : performance.now();
+      const revealFrame = updateGraphRevealFrame(runtime, options.animationEpoch, nowMs);
       drawGraph(runtime, buildGraphRenderState({
         ...latestRenderInputRef.current,
         points: renderPoints,
         viewScale: runtime.viewScale
-      }), options);
+      }), options, revealFrame);
       runtime.app.render();
       if (!isDisposed) frameId = window.requestAnimationFrame(drawFrame);
     }
@@ -439,20 +453,22 @@ export function GraphCanvas({
 function drawGraph(
   runtime: PixiGraphRuntime,
   state: GraphRenderState,
-  options: PixiGraphInteractionOptions
+  options: PixiGraphInteractionOptions,
+  revealFrame: GraphRevealFrame | null
 ): void {
+  const drawableState = revealFrame ? buildGraphRevealState(state, revealFrame.elapsedMs) : state;
   runtime.interactionOptions = options;
   runtime.edgeLayer.clear();
   runtime.motionLayer.clear();
   runtime.nodeLayer.clear();
 
-  state.edges.forEach((edge) => drawEdge(runtime.edgeLayer, edge, options.showArrows));
-  state.edges
+  drawableState.edges.forEach((edge) => drawEdge(runtime.edgeLayer, edge, options.showArrows));
+  drawableState.edges
     .filter((edge) => edge.isMotion)
     .forEach((edge, index) => drawMotionEdge(runtime.motionLayer, edge, options.isMotionAfterglow, options.motionEpoch + index));
-  state.nodes.forEach((node) => drawNode(runtime.nodeLayer, node));
-  updateHitLayer(runtime, state.nodes, options);
-  updateLabelLayer(runtime, state);
+  drawableState.nodes.forEach((node) => drawNode(runtime.nodeLayer, node));
+  updateHitLayer(runtime, drawableState.nodes, options);
+  updateLabelLayer(runtime, drawableState);
 }
 
 function drawEdge(layer: Graphics, edge: GraphRenderEdge, showArrows: boolean): void {
@@ -479,7 +495,77 @@ function drawEdge(layer: Graphics, edge: GraphRenderEdge, showArrows: boolean): 
       baseX + normalX, baseY + normalY,
       baseX - normalX, baseY - normalY
     ], true)
-    .fill({ alpha: edge.isFocused ? 0.78 : 0.52, color: edge.color });
+    .fill({ alpha: Math.min(edge.alpha, edge.isFocused ? 0.78 : 0.52), color: edge.color });
+}
+
+function updateGraphRevealFrame(
+  runtime: PixiGraphRuntime,
+  animationEpoch: number,
+  nowMs: number
+): GraphRevealFrame | null {
+  if (runtime.revealEpoch !== animationEpoch) {
+    runtime.revealEpoch = animationEpoch;
+    runtime.revealStartedAtMs = nowMs;
+  }
+  if (runtime.revealStartedAtMs === null) return null;
+
+  const elapsedMs = nowMs - runtime.revealStartedAtMs;
+  if (elapsedMs >= graphRevealTotalMs) {
+    runtime.revealStartedAtMs = null;
+    return null;
+  }
+  return { elapsedMs };
+}
+
+const graphRevealNodeWaveMs = 950;
+const graphRevealNodeFadeMs = 260;
+const graphRevealEdgeDelayMs = 120;
+const graphRevealEdgeFadeMs = 360;
+const graphRevealTotalMs = graphRevealNodeWaveMs + graphRevealNodeFadeMs + graphRevealEdgeDelayMs + graphRevealEdgeFadeMs;
+
+export function buildGraphRevealState(state: GraphRenderState, elapsedMs: number): GraphRenderState {
+  const nodeCount = Math.max(1, state.nodes.length - 1);
+  const nodeIndexByPath = new Map(state.nodes.map((node, index) => [node.path, index]));
+  const nodeProgressByPath = new Map<string, number>();
+  const nodes = state.nodes.map((node, index) => {
+    const startMs = (index / nodeCount) * graphRevealNodeWaveMs;
+    const progress = easeOutCubic(clampUnit((elapsedMs - startMs) / graphRevealNodeFadeMs));
+    nodeProgressByPath.set(node.path, progress);
+    return {
+      ...node,
+      fillAlpha: node.fillAlpha * progress,
+      labelAlpha: node.labelAlpha * clampUnit((progress - 0.62) / 0.38),
+      radius: node.radius * progress,
+      strokeAlpha: node.strokeAlpha * progress,
+      strokeWidth: node.strokeWidth * progress
+    };
+  });
+  const edges = state.edges.map((edge) => {
+    const sourceProgress = nodeProgressByPath.get(edge.sourcePath) ?? 0;
+    const targetProgress = nodeProgressByPath.get(edge.targetPath) ?? 0;
+    const sourceIndex = nodeIndexByPath.get(edge.sourcePath) ?? 0;
+    const targetIndex = nodeIndexByPath.get(edge.targetPath) ?? 0;
+    const edgeRank = Math.max(sourceIndex, targetIndex, 0) / nodeCount;
+    const startMs = edgeRank * graphRevealNodeWaveMs + graphRevealEdgeDelayMs;
+    const progress = easeOutCubic(clampUnit((elapsedMs - startMs) / graphRevealEdgeFadeMs)) * Math.min(sourceProgress, targetProgress);
+    return {
+      ...edge,
+      alpha: edge.alpha * progress,
+      strokeWidth: edge.strokeWidth * progress,
+      x2: edge.x1 + (edge.x2 - edge.x1) * progress,
+      y2: edge.y1 + (edge.y2 - edge.y1) * progress
+    };
+  });
+  return { ...state, edges, nodes };
+}
+
+function clampUnit(value: number): number {
+  if (!Number.isFinite(value)) return 0;
+  return Math.min(1, Math.max(0, value));
+}
+
+function easeOutCubic(value: number): number {
+  return 1 - Math.pow(1 - value, 3);
 }
 
 function drawMotionEdge(layer: Graphics, edge: GraphRenderEdge, isAfterglow: boolean, epoch: number): void {

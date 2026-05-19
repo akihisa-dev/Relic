@@ -17,6 +17,7 @@ interface GraphPanelProps {
 export function GraphPanel({ activeFilePath, onOpenFile, workspaceId }: GraphPanelProps): ReactElement {
   const t = useT();
   const {
+    animationEpoch,
     error,
     filteredGraph,
     focusedPath,
@@ -52,6 +53,7 @@ export function GraphPanel({ activeFilePath, onOpenFile, workspaceId }: GraphPan
           <div className="frontmatter-field-empty">{t("graph.empty")}</div>
         ) : (
           <GraphCanvas
+            animationEpoch={animationEpoch}
             edges={filteredGraph.edges}
             focusedPath={focusedPath}
             groupByPath={groupByPath}
