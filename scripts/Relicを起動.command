@@ -16,7 +16,7 @@ if ! command -v pnpm >/dev/null 2>&1; then
   exit 1
 fi
 
-pnpm start
+CI=1 pnpm start
 
 echo ""
 echo "Relic が終了しました。Enterキーを押すと閉じます。"

@@ -87,3 +87,4 @@ P27では、事前に固定した長い実施リストは置かない。
 - グラフビューの大規模simulationをrenderer側Web Workerへ移し、worker非対応時はmain-thread tickへ戻るようにした。大規模時も選択・フォーカス・関連ノードの演出は残し、無関係ノードの重い常時演出は抑える。Canvas/WebGL化、グラフデータ生成、リンク解析、IPC/preload/store/保存形式は変更していない。
 - Electron Forgeのパッケージ設定でasar生成を有効化し、macOS / Windowsのsafe build検査が要求する `app.asar` が生成されるようにした。アプリ本体の実行コード、IPC/preload/store/保存形式は変更していない。
 - グラフビュー描画をSVG/React DOMからPixiJS Canvas/WebGL hostへ移し、force simulationをd3-forceへ置き換えた。既存のグラフデータ生成、リンク解析、IPC/preload/store/保存形式、操作パネルは変更していない。1000ノード合成グラフのbounds確認を含む `pnpm test`（80ファイル・551テスト）、`pnpm typecheck`、`git diff --check` は通過した。開発版Electronの実機目視は未実施。
+- macOSの `Relicを起動.command` から開発版Electronを起動すると、Electron Forgeの対話型進捗UIが即終了して `ELIFECYCLE` だけが表示されることがあったため、起動時だけ `CI=1` を付けて非対話進捗モードにした。`.command` 経路で開発版Electronが起動維持されることを確認した。
