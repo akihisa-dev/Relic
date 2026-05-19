@@ -325,14 +325,14 @@ function buildD3ForceProfile(nodeCount: number, forceSettings: GraphForceSetting
   const radiusScale = Math.min(1, Math.max(0.62, Math.sqrt(Math.max(1, nodeCount)) / 38));
 
   return {
-    axisStrength: 0.034 * forceSettings.centerForce,
-    centerStrength: 0.19,
-    chargeStrength: (-18 * forceSettings.repelForce) / density,
-    collideStrength: 0.07 / Math.sqrt(density),
-    containmentRadius: Math.min(GRAPH_WIDTH, GRAPH_HEIGHT) * 0.32 * radiusScale,
-    containmentStrength: 0.018 * forceSettings.centerForce * density,
-    linkDistance: forceSettings.linkDistance / Math.min(4.2, density * 1.18),
-    linkStrength: 0.054 * forceSettings.linkForce * Math.min(1.65, density)
+    axisStrength: 0.012 * forceSettings.centerForce,
+    centerStrength: 0.08,
+    chargeStrength: (-34 * forceSettings.repelForce) / density,
+    collideStrength: 0.04 / Math.sqrt(density),
+    containmentRadius: Math.min(GRAPH_WIDTH, GRAPH_HEIGHT) * 0.45 * radiusScale,
+    containmentStrength: 0.01 * forceSettings.centerForce * density,
+    linkDistance: forceSettings.linkDistance / Math.min(2.3, density * 0.78),
+    linkStrength: 0.028 * forceSettings.linkForce * Math.min(1.35, density)
   };
 }
 

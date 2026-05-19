@@ -48,7 +48,7 @@ describe("graphRenderModel", () => {
     expect(state.nodes.find((node) => node.path === "D.md")?.fillAlpha).toBeGreaterThan(0.9);
     expect(state.nodes.find((node) => node.path === "D.md")?.fillColor).not.toBe(defaultGraphRenderPalette.node);
     expect(state.edges[0]?.alpha).toBeGreaterThan(0.5);
-    expect(state.edges[0]?.strokeWidth).toBeCloseTo(1.95);
+    expect(state.edges[0]?.strokeWidth).toBeCloseTo(1.18);
     expect(state.nodes.find((node) => node.path === "B.md")?.strokeWidth).toBe(0);
   });
 
@@ -73,7 +73,7 @@ describe("graphRenderModel", () => {
       color: defaultGraphRenderPalette.lineFocused,
       isFocused: true,
       isMotion: false,
-      strokeWidth: 1.95
+      strokeWidth: 1.18
     });
   });
 
@@ -148,7 +148,7 @@ describe("graphRenderModel", () => {
     expect(state.nodes.find((node) => node.path === "N0.md")?.labelVisible).toBe(false);
     expect(state.nodes.find((node) => node.path === "N1.md")?.labelVisible).toBe(false);
     expect(state.nodes.find((node) => node.path === "N2.md")?.labelVisible).toBe(false);
-    expect(state.nodes.find((node) => node.path === "N2.md")?.radius).toBeCloseTo(7.45);
+    expect(state.nodes.find((node) => node.path === "N2.md")?.radius).toBeCloseTo(2.25);
     expect(state.nodes.find((node) => node.path === "N2.md")?.strokeAlpha).toBe(0);
 
     const hoveredState = buildGraphRenderState({
@@ -225,8 +225,8 @@ describe("graphRenderModel", () => {
       viewScale: 2.56
     });
 
-    expect(normal.nodes[0]?.radius).toBeCloseTo(7.6);
-    expect(zoomed.nodes[0]?.radius * 2.56).toBeCloseTo(12.16);
+    expect(normal.nodes[0]?.radius).toBeCloseTo(3.1);
+    expect(zoomed.nodes[0]?.radius * 2.56).toBeCloseTo(4.96);
     expect(zoomed.nodes[0]?.strokeWidth).toBe(0);
   });
 
