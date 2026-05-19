@@ -119,8 +119,8 @@ export function buildGraphRenderState({
   const dimmedEdgeAlpha = isLargeGraph ? 0.14 : 0.16;
   const normalEdgeAlpha = isLargeGraph ? 0.3 : 0.32;
   const focusedEdgeAlpha = isLargeGraph ? 0.54 : 0.58;
-  const baseEdgeScreenWidth = isLargeGraph ? 1.55 : 1.65;
-  const focusedEdgeScreenWidth = isLargeGraph ? 1.85 : 1.95;
+  const baseEdgeScreenWidth = isLargeGraph ? 0.62 : 0.78;
+  const focusedEdgeScreenWidth = isLargeGraph ? 1.05 : 1.18;
   const visibleLabelPaths = buildVisibleLabelPaths({
     isLargeGraph,
     points,
@@ -158,8 +158,8 @@ export function buildGraphRenderState({
       const isMotion = point.path === motionPath;
       const group = groupByPath.get(point.path);
       const isDimmed = !!focusedPath && !isRelated;
-      const zoomNodeScale = Math.min(1.75, Math.max(0.72, Math.sqrt(screenScale)));
-      const screenRadius = Math.min(13.5, Math.max(5.4, (isLargeGraph ? 7.45 : 7.6) * nodeSize * zoomNodeScale));
+      const zoomNodeScale = Math.min(2.2, Math.max(0.82, Math.sqrt(screenScale)));
+      const screenRadius = Math.min(7.2, Math.max(1.8, (isLargeGraph ? 2.25 : 3.1) * nodeSize * zoomNodeScale));
       const radius = screenRadius * inverseScale;
       const labelVisible = visibleLabelPaths.has(point.path);
       const velocity = point as Partial<Pick<GraphRenderPoint, "vx" | "vy">>;
@@ -226,7 +226,7 @@ function buildVisibleLabelPaths({
   if (screenScale < 2.6) return new Set<string>();
 
   const fontSize = graphLabelScreenFontSize(screenScale);
-  const screenRadius = Math.min(13.5, Math.max(5.4, 7.45 * Math.min(1.75, Math.max(0.72, Math.sqrt(screenScale)))));
+  const screenRadius = Math.min(7.2, Math.max(1.8, 2.25 * Math.min(2.2, Math.max(0.82, Math.sqrt(screenScale)))));
   const occupied: Array<{ bottom: number; left: number; right: number; top: number }> = [];
   const visible = new Set<string>();
   const candidates = [...points].sort((a, b) => {
