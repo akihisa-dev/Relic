@@ -4,7 +4,13 @@ import type { RenderResult } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { GRAPH_HEIGHT, GRAPH_WIDTH, type GraphPoint } from "../graphLayout";
-import { buildGraphLabelPlacement, buildGraphViewBoxTransform, GraphCanvas, type GraphCanvasProps } from "./GraphCanvas";
+import {
+  buildGraphLabelPlacement,
+  buildGraphNodeHitRadius,
+  buildGraphViewBoxTransform,
+  GraphCanvas,
+  type GraphCanvasProps
+} from "./GraphCanvas";
 
 const points: GraphPoint[] = [
   { degree: 1, folder: "", incoming: 0, name: "A", outgoing: 1, path: "A.md", tags: [], x: 80, y: 90 },
@@ -124,5 +130,10 @@ describe("GraphCanvas", () => {
       x: 120,
       y: 92.5
     });
+  });
+
+  it("hit判定半径をズーム後の画面サイズ基準で作る", () => {
+    expect(buildGraphNodeHitRadius(12, 1)).toBe(16);
+    expect(buildGraphNodeHitRadius(0.3, 40)).toBe(0.4);
   });
 });

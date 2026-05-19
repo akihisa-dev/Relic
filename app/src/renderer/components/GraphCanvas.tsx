@@ -589,7 +589,7 @@ function updateHitLayer(
 
     hit.relicNode = node;
     hit.position.set(node.x, node.y);
-    const hitRadius = Math.round(Math.max(12, node.radius + 7) * 10) / 10;
+    const hitRadius = buildGraphNodeHitRadius(node.radius, runtime.viewScale);
     if (hit.relicHitRadius !== hitRadius) {
       hit.clear()
         .circle(0, 0, hitRadius)
@@ -597,6 +597,12 @@ function updateHitLayer(
       hit.relicHitRadius = hitRadius;
     }
   });
+}
+
+export function buildGraphNodeHitRadius(nodeRadius: number, viewScale: number): number {
+  const safeScale = Math.max(0.001, viewScale);
+  const screenRadius = nodeRadius * safeScale;
+  return Math.round((Math.max(10, screenRadius + 4) / safeScale) * 10) / 10;
 }
 
 function updateLabelLayer(runtime: PixiGraphRuntime, state: GraphRenderState): void {

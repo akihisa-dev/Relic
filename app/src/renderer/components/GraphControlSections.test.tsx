@@ -117,6 +117,8 @@ describe("GraphControlSections", () => {
     fireEvent.click(screen.getByLabelText("矢印"));
     fireEvent.click(screen.getByLabelText("孤立ノード"));
 
+    expect(screen.getByLabelText("ノードサイズ")).toHaveAttribute("min", "1");
+    expect(screen.getByLabelText("リンク太さ")).toHaveAttribute("min", "1");
     expect(useGraphStore.getState()).toMatchObject({
       layoutMode: "cluster",
       linkThickness: 1.7,
