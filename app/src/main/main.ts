@@ -11,11 +11,18 @@ import { stopWorkspaceWatcher } from "./workspace/workspaceWatcher";
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string | undefined;
 declare const MAIN_WINDOW_VITE_NAME: string;
 
+const APP_ID = "app.relic.desktop";
+
+if (process.platform === "win32") {
+  app.setAppUserModelId(APP_ID);
+}
 
 function createWindow(): void {
   const isMac = process.platform === "darwin";
+  const icon = isMac ? undefined : path.join(app.getAppPath(), "assets", "icon.ico");
   const windowOptions: BrowserWindowConstructorOptions = {
     height: 820,
+    icon,
     minHeight: 640,
     minWidth: 960,
     title: "Relic",
