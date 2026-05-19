@@ -480,8 +480,8 @@ function drawEdge(layer: Graphics, edge: GraphRenderEdge, showArrows: boolean): 
   if (!showArrows) return;
 
   const angle = Math.atan2(edge.y2 - edge.y1, edge.x2 - edge.x1);
-  const arrowLength = edge.isFocused ? 9 : 7;
-  const arrowWidth = edge.isFocused ? 5 : 4;
+  const arrowLength = 7;
+  const arrowWidth = 4;
   const tipX = edge.x2;
   const tipY = edge.y2;
   const baseX = tipX - Math.cos(angle) * arrowLength;
@@ -495,7 +495,7 @@ function drawEdge(layer: Graphics, edge: GraphRenderEdge, showArrows: boolean): 
       baseX + normalX, baseY + normalY,
       baseX - normalX, baseY - normalY
     ], true)
-    .fill({ alpha: Math.min(edge.alpha, edge.isFocused ? 0.78 : 0.52), color: edge.color });
+    .fill({ alpha: Math.min(edge.alpha, 0.52), color: edge.color });
 }
 
 function updateGraphRevealFrame(
