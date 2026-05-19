@@ -55,12 +55,23 @@ function renderViewport(zoom = 1) {
 describe("useGraphViewportInteractions", () => {
   it("wheel操作でzoom更新callbackを呼ぶ", () => {
     const { hook, setZoom } = renderViewport();
+    const surfaceTarget = {
+      getBoundingClientRect: () => ({ height: GRAPH_HEIGHT, left: 0, top: 0, width: GRAPH_WIDTH } as DOMRect)
+    } as unknown as HTMLDivElement;
+    (hook.result.current.surfaceRef as { current: HTMLDivElement | null }).current = surfaceTarget;
 
     act(() => {
-      hook.result.current.graphHandlers.onWheel(makeEvent<HTMLDivElement>({ deltaY: -100 }));
+      hook.result.current.graphHandlers.onWheel(makeEvent<HTMLDivElement>({
+        clientX: GRAPH_WIDTH * 0.75,
+        clientY: GRAPH_HEIGHT * 0.5,
+        deltaY: -100
+      }));
     });
 
-    expect(setZoom).toHaveBeenCalledWith(1.1);
+    expect(setZoom).toHaveBeenCalledWith(1.15);
+    hook.rerender({ zoom: 1.15 });
+    expect(hook.result.current.viewBox.x + hook.result.current.viewBox.width * 0.75).toBeCloseTo(GRAPH_WIDTH * 0.75);
+    expect(hook.result.current.viewBox.y + hook.result.current.viewBox.height * 0.5).toBeCloseTo(GRAPH_HEIGHT * 0.5);
   });
 
   it("key操作でzoomとpanを更新する", () => {

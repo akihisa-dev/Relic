@@ -75,8 +75,22 @@ export function useGraphViewportInteractions({
 
   function handleGraphWheel(event: WheelEvent<HTMLDivElement>): void {
     event.preventDefault();
-    const nextZoom = clamp(zoom - event.deltaY * 0.001, GRAPH_MIN_ZOOM, GRAPH_MAX_ZOOM);
-    setZoom(Number(nextZoom.toFixed(2)));
+    const nextZoom = Number(clamp(zoom * Math.exp(-event.deltaY * 0.0014), GRAPH_MIN_ZOOM, GRAPH_MAX_ZOOM).toFixed(2));
+    const bounds = surfaceRef.current?.getBoundingClientRect();
+
+    if (bounds && bounds.width > 0 && bounds.height > 0 && nextZoom !== zoom) {
+      const ratioX = clamp((event.clientX - bounds.left) / bounds.width, 0, 1);
+      const ratioY = clamp((event.clientY - bounds.top) / bounds.height, 0, 1);
+      const nextViewBoxWithoutPan = buildGraphViewBox(nextZoom, { x: 0, y: 0 }, points);
+      const anchorX = viewBox.x + ratioX * viewBox.width;
+      const anchorY = viewBox.y + ratioY * viewBox.height;
+      setPan({
+        x: anchorX - ratioX * nextViewBoxWithoutPan.width - nextViewBoxWithoutPan.x,
+        y: anchorY - ratioY * nextViewBoxWithoutPan.height - nextViewBoxWithoutPan.y
+      });
+    }
+
+    setZoom(nextZoom);
   }
 
   function handleGraphKeyDown(event: KeyboardEvent<HTMLDivElement>): void {
