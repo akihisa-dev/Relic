@@ -4,7 +4,7 @@ import type { RenderResult } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { GRAPH_HEIGHT, GRAPH_WIDTH, type GraphPoint } from "../graphLayout";
-import { buildGraphViewBoxTransform, GraphCanvas, type GraphCanvasProps } from "./GraphCanvas";
+import { buildGraphLabelPlacement, buildGraphViewBoxTransform, GraphCanvas, type GraphCanvasProps } from "./GraphCanvas";
 
 const points: GraphPoint[] = [
   { degree: 1, folder: "", incoming: 0, name: "A", outgoing: 1, path: "A.md", tags: [], x: 80, y: 90 },
@@ -117,5 +117,12 @@ describe("GraphCanvas", () => {
     fireEvent.keyDown(screen.getByRole("img", { name: "Graph" }), { key: "Enter" });
 
     expect(onNodeKeyDown).toHaveBeenCalledWith(expect.objectContaining({ key: "Enter" }), expect.objectContaining({ path: "A.md" }));
+  });
+
+  it("labelをnode直下の中央近くへ配置する", () => {
+    expect(buildGraphLabelPlacement({ radius: 12, x: 120, y: 80 }, 4)).toEqual({
+      x: 120,
+      y: 92.5
+    });
   });
 });

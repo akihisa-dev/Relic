@@ -622,6 +622,7 @@ function updateLabelLayer(runtime: PixiGraphRuntime, state: GraphRenderState): v
         },
         text: node.name
       });
+      label.anchor.set(0.5, 0);
       label.eventMode = "none";
       runtime.labelLayer.addChild(label);
       runtime.labelsByPath.set(node.path, label);
@@ -632,8 +633,9 @@ function updateLabelLayer(runtime: PixiGraphRuntime, state: GraphRenderState): v
     label.style.fill = state.palette.text;
     label.style.fontSize = 10;
     label.scale.set(graphLabelScreenScale(runtime.viewScale));
-    label.x = node.x + node.radius + 2;
-    label.y = node.y - 3;
+    const placement = buildGraphLabelPlacement(node, runtime.viewScale);
+    label.x = placement.x;
+    label.y = placement.y;
   });
 }
 
@@ -647,7 +649,19 @@ function updateLabelFontSize(runtime: PixiGraphRuntime): void {
 
 function graphLabelScreenScale(viewScale: number): number {
   const safeScale = Math.max(0.001, viewScale);
-  return Math.min(6, Math.max(0.04, 1 / safeScale));
+  const targetScreenFontSize = Math.min(34, Math.max(10, 10 * Math.sqrt(safeScale)));
+  return targetScreenFontSize / (10 * safeScale);
+}
+
+export function buildGraphLabelPlacement(
+  node: Pick<GraphRenderNode, "radius" | "x" | "y">,
+  viewScale: number
+): { x: number; y: number } {
+  const safeScale = Math.max(0.001, viewScale);
+  return {
+    x: node.x,
+    y: node.y + node.radius + 2 / safeScale
+  };
 }
 
 function graphLabelTextureResolution(viewScale: number): number {
