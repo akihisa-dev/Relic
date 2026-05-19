@@ -221,7 +221,7 @@ function relaxGraphLayout(
   edges: WorkspaceGraphEdge[],
   forceSettings: GraphForceSettings
 ): void {
-  const tickCount = initial.length > 420 ? 18 : initial.length > 220 ? 36 : 96;
+  const tickCount = initial.length > 700 ? 2 : initial.length > 420 ? 6 : initial.length > 220 ? 18 : 72;
   const relaxed = runD3GraphSimulation(
     initial.map((point) => ({ ...point, vx: 0, vy: 0 })),
     edges,
@@ -247,11 +247,12 @@ export function tickGraphSimulation(
   points: GraphSimPoint[],
   edges: WorkspaceGraphEdge[],
   forceSettings: GraphForceSettings,
-  pinnedPath: string | null
+  pinnedPath: string | null,
+  tickCount = 1
 ): GraphSimPoint[] {
   if (points.length <= 1) return points;
 
-  return runD3GraphSimulation(points, edges, forceSettings, pinnedPath, 1, 0.24);
+  return runD3GraphSimulation(points, edges, forceSettings, pinnedPath, tickCount, tickCount > 1 ? 0.32 : 0.24);
 }
 
 function runD3GraphSimulation(
@@ -320,18 +321,18 @@ function runD3GraphSimulation(
 }
 
 function buildD3ForceProfile(nodeCount: number, forceSettings: GraphForceSettings): D3ForceProfile {
-  const density = Math.min(3.2, Math.sqrt(Math.max(1, nodeCount / 160)));
-  const radiusScale = Math.min(1.18, Math.max(0.72, Math.sqrt(Math.max(1, nodeCount)) / 32));
+  const density = Math.min(3.45, Math.sqrt(Math.max(1, nodeCount / 180)));
+  const radiusScale = Math.min(1.08, Math.max(0.68, Math.sqrt(Math.max(1, nodeCount)) / 34));
 
   return {
-    axisStrength: 0.0035 * forceSettings.centerForce,
-    centerStrength: 0.34,
-    chargeStrength: (-58 * forceSettings.repelForce) / density,
-    collideStrength: 0.12 / Math.sqrt(density),
-    containmentRadius: Math.min(GRAPH_WIDTH, GRAPH_HEIGHT) * 0.36 * radiusScale,
-    containmentStrength: 0.018 * forceSettings.centerForce * density,
-    linkDistance: forceSettings.linkDistance / Math.min(2.35, density),
-    linkStrength: 0.045 * forceSettings.linkForce * Math.min(1.45, density)
+    axisStrength: 0.026 * forceSettings.centerForce,
+    centerStrength: 0.16,
+    chargeStrength: (-34 * forceSettings.repelForce) / density,
+    collideStrength: 0.09 / Math.sqrt(density),
+    containmentRadius: Math.min(GRAPH_WIDTH, GRAPH_HEIGHT) * 0.33 * radiusScale,
+    containmentStrength: 0.014 * forceSettings.centerForce * density,
+    linkDistance: forceSettings.linkDistance / Math.min(2.75, density),
+    linkStrength: 0.038 * forceSettings.linkForce * Math.min(1.35, density)
   };
 }
 

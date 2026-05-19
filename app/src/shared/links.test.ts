@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  createWikiLinkResolver,
   normalizeWikiLinkTarget,
   parseWikiLinks,
   resolveMarkdownLinkPath,
@@ -118,6 +119,13 @@ describe("resolveWikiLinks", () => {
         path: "A.md"
       })
     ]);
+  });
+
+  it("同じpath集合とalias集合を再利用するresolverを作れる", () => {
+    const resolve = createWikiLinkResolver(["A.md", "notes/B.md"], { "notes/B.md": ["bee"] });
+
+    expect(resolve("[[A]] [[bee]]", "source.md").map((link) => link.path)).toEqual(["A.md", "notes/B.md"]);
+    expect(resolve("[[B]]", "notes/source.md").map((link) => link.path)).toEqual(["notes/B.md"]);
   });
 });
 

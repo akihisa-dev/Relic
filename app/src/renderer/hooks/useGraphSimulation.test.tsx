@@ -3,7 +3,12 @@ import type { MutableRefObject } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { WorkspaceGraphEdge, WorkspaceGraphNode } from "../../shared/ipc";
-import { GRAPH_WORKER_SIMULATION_NODE_THRESHOLD, type GraphForceSettings, type GraphSimPoint } from "../graphLayout";
+import {
+  GRAPH_SIMULATION_THROTTLE_NODE_THRESHOLD,
+  GRAPH_WORKER_SIMULATION_NODE_THRESHOLD,
+  type GraphForceSettings,
+  type GraphSimPoint
+} from "../graphLayout";
 import type { GraphSimulationWorkerResponse } from "../graphSimulationWorkerTypes";
 import { useGraphSimulation } from "./useGraphSimulation";
 
@@ -186,7 +191,7 @@ describe("useGraphSimulation", () => {
 
   it("大規模グラフではworkerへsimulation tickを依頼し、返却pointsを反映する", async () => {
     vi.stubGlobal("Worker", MockGraphSimulationWorker);
-    const manyNodes = Array.from({ length: GRAPH_WORKER_SIMULATION_NODE_THRESHOLD + 1 }, (_, index) => ({
+    const manyNodes = Array.from({ length: GRAPH_SIMULATION_THROTTLE_NODE_THRESHOLD + 1 }, (_, index) => ({
       folder: "",
       name: `N${index}`,
       path: `N${index}.md`,
@@ -201,6 +206,7 @@ describe("useGraphSimulation", () => {
 
     act(() => {
       frameCallbacks[0]?.(0);
+      frameCallbacks[1]?.(16);
     });
 
     expect(workerInstances).toHaveLength(1);
@@ -208,7 +214,8 @@ describe("useGraphSimulation", () => {
       edges: [],
       forceSettings,
       pinnedPath: null,
-      runId: 1
+      runId: 1,
+      tickCount: 2
     }));
 
     const nextPoints = hook.result.current.points.map((point, index) => index === 0

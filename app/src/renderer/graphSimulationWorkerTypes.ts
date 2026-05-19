@@ -7,6 +7,7 @@ export interface GraphSimulationWorkerRequest {
   pinnedPath: string | null;
   points: GraphSimPoint[];
   runId: number;
+  tickCount?: number;
 }
 
 export interface GraphSimulationWorkerResponse {

@@ -77,9 +77,11 @@ interface PixiGraphRuntime {
   resizeObserver: ResizeObserver | null;
   root: Container;
   Text: typeof import("pixi.js").Text;
+  viewBoxTransformKey: string | null;
 }
 
 interface GraphNodeHit extends Graphics {
+  relicHitRadius?: number;
   relicNode?: GraphRenderNode;
 }
 
@@ -229,7 +231,8 @@ export function GraphCanvas({
           nodeLayer,
           resizeObserver,
           root,
-          Text: pixi.Text
+          Text: pixi.Text,
+          viewBoxTransformKey: null
         };
         initializedApp.stage.on("globalpointermove", (event) => {
           pixiRef.current?.interactionOptions?.onNodePointerMove(toGraphNodePointerEvent(event));
@@ -296,7 +299,7 @@ export function GraphCanvas({
       onNodePointerUp,
       showArrows
     });
-    applyGraphViewBox(runtime, viewBox);
+    applyGraphViewBox(runtime, latestViewBoxRef.current);
     runtime.app.render();
   }, [
     edges,
@@ -320,15 +323,15 @@ export function GraphCanvas({
     relatedPaths,
     selectedPath,
     showArrows,
-    showLabels,
-    viewBox
+    showLabels
   ]);
 
   useEffect(() => {
     const runtime = pixiRef.current;
     if (!runtime || !isReady) return;
-    applyGraphViewBox(runtime, viewBox);
-    runtime.app.render();
+    if (applyGraphViewBox(runtime, viewBox)) {
+      runtime.app.render();
+    }
   }, [isReady, viewBox]);
 
   function setSurfaceElement(element: HTMLDivElement | null): void {
@@ -421,11 +424,11 @@ function drawEdge(layer: Graphics, edge: GraphRenderEdge, showArrows: boolean): 
 }
 
 function drawMotionEdge(layer: Graphics, edge: GraphRenderEdge, isAfterglow: boolean, epoch: number): void {
-  const alpha = isAfterglow ? Math.max(0.18, 0.38 - (epoch % 3) * 0.04) : 0.7;
+  const alpha = isAfterglow ? Math.max(0.14, 0.26 - (epoch % 3) * 0.03) : 0.42;
   layer
     .moveTo(edge.x1, edge.y1)
     .lineTo(edge.x2, edge.y2)
-    .stroke({ alpha, color: edge.color, width: Math.max(1.4, edge.strokeWidth * 1.7) });
+    .stroke({ alpha, color: edge.color, width: Math.max(1, edge.strokeWidth * 1.28) });
 }
 
 function drawNode(layer: Graphics, node: GraphRenderNode): void {
@@ -489,9 +492,14 @@ function updateHitLayer(
     }
 
     hit.relicNode = node;
-    hit.clear()
-      .circle(node.x, node.y, Math.max(12, node.radius + 6))
-      .fill({ alpha: 0.001, color: 0xffffff });
+    hit.position.set(node.x, node.y);
+    const hitRadius = Math.round(Math.max(12, node.radius + 7) * 10) / 10;
+    if (hit.relicHitRadius !== hitRadius) {
+      hit.clear()
+        .circle(0, 0, hitRadius)
+        .fill({ alpha: 0.001, color: 0xffffff });
+      hit.relicHitRadius = hitRadius;
+    }
   });
 }
 
@@ -529,15 +537,22 @@ function updateLabelLayer(runtime: PixiGraphRuntime, state: GraphRenderState): v
   });
 }
 
-function applyGraphViewBox(runtime: PixiGraphRuntime, viewBox: GraphViewBox): void {
+function applyGraphViewBox(runtime: PixiGraphRuntime, viewBox: GraphViewBox): boolean {
+  const screenWidth = runtime.app.renderer.screen.width;
+  const screenHeight = runtime.app.renderer.screen.height;
+  const transformKey = `${screenWidth}:${screenHeight}:${viewBox.x}:${viewBox.y}:${viewBox.width}:${viewBox.height}`;
+  if (runtime.viewBoxTransformKey === transformKey) return false;
+
   const transform = buildGraphViewBoxTransform(
-    runtime.app.renderer.screen.width,
-    runtime.app.renderer.screen.height,
+    screenWidth,
+    screenHeight,
     viewBox
   );
 
   runtime.root.scale.set(transform.scaleX, transform.scaleY);
   runtime.root.position.set(transform.x, transform.y);
+  runtime.viewBoxTransformKey = transformKey;
+  return true;
 }
 
 export function buildGraphViewBoxTransform(

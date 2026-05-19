@@ -99,10 +99,17 @@ export function resolveWikiLinks(
   existingMarkdownPaths: Iterable<string>,
   aliasesByPath: AliasIndex = {}
 ): ResolvedWikiLink[] {
+  return createWikiLinkResolver(existingMarkdownPaths, aliasesByPath)(markdown, sourcePath);
+}
+
+export function createWikiLinkResolver(
+  existingMarkdownPaths: Iterable<string>,
+  aliasesByPath: AliasIndex = {}
+): (markdown: string, sourcePath: string) => ResolvedWikiLink[] {
   const existingPaths = new Set([...existingMarkdownPaths].map(normalizePathSegments));
   const aliasTargets = buildAliasTargetMap(aliasesByPath);
 
-  return parseWikiLinks(markdown).map((wikiLink) => {
+  return (markdown, sourcePath) => parseWikiLinks(markdown).map((wikiLink) => {
     const resolvedPath = resolveWikiLinkPath(wikiLink.target, sourcePath);
     const aliasPath = existingPaths.has(resolvedPath) ? null : aliasTargets.get(aliasKey(wikiLink.target)) ?? null;
     const path = aliasPath ?? resolvedPath;

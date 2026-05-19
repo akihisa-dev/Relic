@@ -45,6 +45,8 @@ describe("graphRenderModel", () => {
     expect(state.nodes.find((node) => node.path === "B.md")).toMatchObject({ isSelected: true, ringVisible: true });
     expect(state.nodes.find((node) => node.path === "C.md")).toMatchObject({ isRelated: true });
     expect(state.nodes.find((node) => node.path === "D.md")).toMatchObject({ isDimmed: true });
+    expect(state.nodes.find((node) => node.path === "D.md")?.fillAlpha).toBeGreaterThan(0.4);
+    expect(state.edges[0]?.alpha).toBeLessThan(0.6);
   });
 
   it("group colorと接続数由来のnode radiusを反映する", () => {
