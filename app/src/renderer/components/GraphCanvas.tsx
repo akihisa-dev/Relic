@@ -521,10 +521,11 @@ function updateLabelLayer(runtime: PixiGraphRuntime, state: GraphRenderState): v
     let label = runtime.labelsByPath.get(node.path);
     if (!label) {
       label = new runtime.Text({
+        resolution: graphLabelTextureResolution(runtime.viewScale),
         style: {
           fill: state.palette.text,
           fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
-          fontSize: graphLabelWorldFontSize(runtime.viewScale)
+          fontSize: 10
         },
         text: node.name
       });
@@ -534,8 +535,10 @@ function updateLabelLayer(runtime: PixiGraphRuntime, state: GraphRenderState): v
     }
     label.text = node.name;
     label.alpha = node.labelAlpha;
+    label.resolution = graphLabelTextureResolution(runtime.viewScale);
     label.style.fill = state.palette.text;
-    label.style.fontSize = graphLabelWorldFontSize(runtime.viewScale);
+    label.style.fontSize = 10;
+    label.scale.set(graphLabelScreenScale(runtime.viewScale));
     label.x = node.x + node.radius + 5;
     label.y = node.y - 6;
   });
@@ -543,13 +546,20 @@ function updateLabelLayer(runtime: PixiGraphRuntime, state: GraphRenderState): v
 
 function updateLabelFontSize(runtime: PixiGraphRuntime): void {
   for (const label of runtime.labelsByPath.values()) {
-    label.style.fontSize = graphLabelWorldFontSize(runtime.viewScale);
+    label.resolution = graphLabelTextureResolution(runtime.viewScale);
+    label.style.fontSize = 10;
+    label.scale.set(graphLabelScreenScale(runtime.viewScale));
   }
 }
 
-function graphLabelWorldFontSize(viewScale: number): number {
+function graphLabelScreenScale(viewScale: number): number {
   const safeScale = Math.max(0.001, viewScale);
-  return Math.min(32, Math.max(0.75, 10 / safeScale));
+  return Math.min(6, Math.max(0.04, 1 / safeScale));
+}
+
+function graphLabelTextureResolution(viewScale: number): number {
+  const deviceScale = typeof window === "undefined" ? 1 : window.devicePixelRatio || 1;
+  return Math.min(12, Math.max(deviceScale, deviceScale * Math.max(1, viewScale)));
 }
 
 function applyGraphViewBox(runtime: PixiGraphRuntime, viewBox: GraphViewBox): boolean {
