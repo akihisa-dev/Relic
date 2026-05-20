@@ -4,7 +4,11 @@ import { describe, expect, it, vi } from "vitest";
 
 import { GRAPH_HEIGHT, GRAPH_PADDING, GRAPH_WIDTH } from "../graphLayout";
 import type { GraphForceSettings, GraphPan, GraphPoint, GraphSimPoint } from "../graphLayout";
-import { useGraphNodeInteractions } from "./useGraphNodeInteractions";
+import {
+  collectGraphNeighborhoodPaths,
+  relaxGraphNeighborhood,
+  useGraphNodeInteractions
+} from "./useGraphNodeInteractions";
 
 const points: GraphSimPoint[] = [
   { degree: 1, folder: "", incoming: 0, name: "A", outgoing: 1, path: "A.md", tags: [], vx: 0, vy: 0, x: 80, y: 90 },
@@ -219,6 +223,35 @@ describe("useGraphNodeInteractions", () => {
     const neighbor = pointsRef.current.find((point) => point.path === "B.md");
     expect(neighbor?.x).not.toBe(160);
     expect(neighbor?.y).not.toBe(130);
+  });
+
+  it("局所relaxは2 hop外のnodeを動かさない", () => {
+    const localPoints: GraphSimPoint[] = [
+      ...points,
+      { degree: 0, folder: "", incoming: 0, name: "C", outgoing: 0, path: "C.md", tags: [], vx: 0, vy: 0, x: 400, y: 400 },
+      { degree: 0, folder: "", incoming: 0, name: "D", outgoing: 0, path: "D.md", tags: [], vx: 0, vy: 0, x: 520, y: 420 }
+    ];
+    const localEdges = [
+      { sourcePath: "A.md", targetPath: "B.md" },
+      { sourcePath: "C.md", targetPath: "D.md" }
+    ];
+    const neighborhoodPaths = collectGraphNeighborhoodPaths(localEdges, "A.md", 2);
+
+    const relaxed = relaxGraphNeighborhood(
+      localPoints,
+      localEdges,
+      forceSettings,
+      neighborhoodPaths,
+      "A.md",
+      { x: 140, y: 140 },
+      2
+    );
+
+    expect(neighborhoodPaths).toEqual(new Set(["A.md", "B.md"]));
+    expect(relaxed.find((point) => point.path === "A.md")).toMatchObject({ x: 140, y: 140 });
+    expect(relaxed.find((point) => point.path === "B.md")?.x).not.toBe(160);
+    expect(relaxed.find((point) => point.path === "C.md")).toBe(localPoints[2]);
+    expect(relaxed.find((point) => point.path === "D.md")).toBe(localPoints[3]);
   });
 
   it("drag後のclickを抑止しpinned pathを解除してsettleを始める", () => {

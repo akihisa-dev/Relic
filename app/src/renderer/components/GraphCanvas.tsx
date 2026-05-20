@@ -21,6 +21,7 @@ import {
 } from "../graphRenderModel";
 import type { GraphGroup } from "../store/graphStore";
 import type { GraphNodePointerEvent } from "../hooks/useGraphNodeInteractions";
+import type { GraphViewportController } from "../hooks/useGraphViewportInteractions";
 
 export interface GraphViewBoxTransform {
   scaleX: number;
@@ -32,6 +33,8 @@ export interface GraphViewBoxTransform {
 interface GraphRevealFrame {
   elapsedMs: number;
 }
+
+export type GraphRenderReason = "camera" | "geometry" | "reveal" | "style";
 
 export interface GraphCanvasProps {
   animationEpoch: number;
@@ -66,6 +69,7 @@ export interface GraphCanvasProps {
   showArrows: boolean;
   showLabels: boolean;
   surfaceRef: RefObject<HTMLDivElement | null>;
+  viewportController: GraphViewportController;
   viewBox: GraphViewBox;
 }
 
@@ -80,6 +84,8 @@ interface PixiGraphRuntime {
   motionLayer: Graphics;
   nodeHitByPath: Map<string, GraphNodeHit>;
   nodeLayer: Graphics;
+  pendingFrame: number | null;
+  pendingReasons: Set<GraphRenderReason>;
   renderedPointsByPath: Map<string, GraphSimPoint>;
   revealEpoch: number;
   revealStartedAtMs: number | null;
@@ -87,6 +93,7 @@ interface PixiGraphRuntime {
   root: Container;
   Text: typeof import("pixi.js").Text;
   viewScale: number;
+  viewScaleBucket: string;
   viewBoxTransformKey: string | null;
 }
 
@@ -157,6 +164,7 @@ export function GraphCanvas({
   showArrows,
   showLabels,
   surfaceRef,
+  viewportController,
   viewBox
 }: GraphCanvasProps): ReactElement {
   const hostRef = useRef<HTMLDivElement | null>(null);
@@ -178,6 +186,7 @@ export function GraphCanvas({
     showLabels
   });
   const latestInteractionOptionsRef = useRef<PixiGraphInteractionOptions | null>(null);
+  const viewBoxScaleKeyRef = useRef(`${viewBox.width}:${viewBox.height}`);
   const [isReady, setIsReady] = useState(false);
   const [pixiError, setPixiError] = useState<string | null>(null);
   const renderState = useMemo(() => buildGraphRenderState({
@@ -196,7 +205,7 @@ export function GraphCanvas({
   }), [edges, focusedPath, groupByPath, labelOpacity, linkThickness, motionPath, nodeSize, points, relatedPaths, selectedPath, showLabels]);
 
   latestPointsRef.current = pointsRef.current.length > 0 ? pointsRef.current : points;
-  latestViewBoxRef.current = viewBox;
+  latestViewBoxRef.current = viewportController.liveViewBoxRef.current ?? viewBox;
   latestRenderInputRef.current = {
     edges,
     focusedPath,
@@ -224,6 +233,56 @@ export function GraphCanvas({
     onNodePointerUp,
     showArrows
   };
+
+  function scheduleRender(reason: GraphRenderReason): void {
+    const runtime = pixiRef.current;
+    if (!runtime) return;
+
+    runtime.pendingReasons.add(reason);
+    if (runtime.pendingFrame !== null) return;
+
+    runtime.pendingFrame = window.requestAnimationFrame(renderScheduledFrame);
+  }
+
+  function renderScheduledFrame(): void {
+    const runtime = pixiRef.current;
+    const options = latestInteractionOptionsRef.current;
+    if (!runtime || !options) return;
+
+    const reasons = new Set(runtime.pendingReasons);
+    runtime.pendingReasons.clear();
+    runtime.pendingFrame = null;
+    applyGraphViewBox(runtime, latestViewBoxRef.current);
+    const nextScaleBucket = graphViewScaleBucket(runtime.viewScale);
+    if (runtime.viewScaleBucket !== nextScaleBucket) {
+      runtime.viewScaleBucket = nextScaleBucket;
+      reasons.add("style");
+    }
+
+    if (runtime.revealEpoch !== options.animationEpoch) {
+      reasons.add("reveal");
+    }
+
+    const shouldRedrawLayers = graphRenderReasonsNeedLayerRedraw(reasons);
+    let revealFrame: GraphRevealFrame | null = null;
+    if (shouldRedrawLayers) {
+      const renderPoints = interpolateGraphFramePoints(
+        runtime,
+        pointsRef.current,
+        options.activePointerPointRef.current?.path ?? null
+      );
+      const nowMs = typeof performance === "undefined" ? Date.now() : performance.now();
+      revealFrame = updateGraphRevealFrame(runtime, options.animationEpoch, nowMs);
+      drawGraph(runtime, buildGraphRenderState({
+        ...latestRenderInputRef.current,
+        points: renderPoints,
+        viewScale: runtime.viewScale
+      }), options, revealFrame);
+    }
+
+    runtime.app.render();
+    if (revealFrame) scheduleRender("reveal");
+  }
 
   useEffect(() => {
     const host = hostRef.current;
@@ -277,8 +336,7 @@ export function GraphCanvas({
           initializedApp.stage.hitArea = new pixi.Rectangle(0, 0, width, height);
           const runtime = pixiRef.current;
           if (runtime) {
-            applyGraphViewBox(runtime, latestViewBoxRef.current);
-            runtime.app.render();
+            scheduleRender("style");
           }
         };
         resize();
@@ -297,6 +355,8 @@ export function GraphCanvas({
           motionLayer,
           nodeHitByPath: new Map(),
           nodeLayer,
+          pendingFrame: null,
+          pendingReasons: new Set(),
           renderedPointsByPath: new Map(),
           revealEpoch: latestInteractionOptionsRef.current?.animationEpoch ?? 0,
           revealStartedAtMs: null,
@@ -304,6 +364,7 @@ export function GraphCanvas({
           root,
           Text: pixi.Text,
           viewScale: 1,
+          viewScaleBucket: graphViewScaleBucket(1),
           viewBoxTransformKey: null
         };
         initializedApp.stage.on("globalpointermove", (event) => {
@@ -318,6 +379,7 @@ export function GraphCanvas({
         });
         setPixiError(null);
         setIsReady(true);
+        scheduleRender("geometry");
       } catch (error) {
         if (isDisposed) return;
         setPixiError(error instanceof Error ? error.message : String(error));
@@ -330,6 +392,9 @@ export function GraphCanvas({
       isDisposed = true;
       const runtime = pixiRef.current;
       pixiRef.current = null;
+      if (runtime?.pendingFrame !== null && runtime?.pendingFrame !== undefined) {
+        window.cancelAnimationFrame(runtime.pendingFrame);
+      }
       runtime?.resizeObserver?.disconnect();
       try {
         app?.destroy(true);
@@ -349,6 +414,7 @@ export function GraphCanvas({
       ...latestRenderInputRef.current,
       palette: readGraphPalette(host)
     };
+    scheduleRender("style");
   }, [
     isReady,
     focusedPath,
@@ -364,48 +430,30 @@ export function GraphCanvas({
 
   useEffect(() => {
     if (!isReady) return;
-
-    let frameId = 0;
-    let isDisposed = false;
-
-    function drawFrame(): void {
-      const runtime = pixiRef.current;
-      const options = latestInteractionOptionsRef.current;
-      if (!runtime || !options) {
-        if (!isDisposed) frameId = window.requestAnimationFrame(drawFrame);
-        return;
-      }
-
-      applyGraphViewBox(runtime, latestViewBoxRef.current);
-      const renderPoints = interpolateGraphFramePoints(
-        runtime,
-        pointsRef.current,
-        options.activePointerPointRef.current?.path ?? null
-      );
-      const nowMs = typeof performance === "undefined" ? Date.now() : performance.now();
-      const revealFrame = updateGraphRevealFrame(runtime, options.animationEpoch, nowMs);
-      drawGraph(runtime, buildGraphRenderState({
-        ...latestRenderInputRef.current,
-        points: renderPoints,
-        viewScale: runtime.viewScale
-      }), options, revealFrame);
-      runtime.app.render();
-      if (!isDisposed) frameId = window.requestAnimationFrame(drawFrame);
-    }
-
-    frameId = window.requestAnimationFrame(drawFrame);
-    return () => {
-      isDisposed = true;
-      window.cancelAnimationFrame(frameId);
-    };
-  }, [isReady, pointsRef]);
+    scheduleRender("geometry");
+  }, [edges, isReady, points, pointsRef]);
 
   useEffect(() => {
-    const runtime = pixiRef.current;
-    if (!runtime || !isReady) return;
-    applyGraphViewBox(runtime, latestViewBoxRef.current);
-    updateLabelFontSize(runtime);
+    if (!isReady) return;
+    latestViewBoxRef.current = viewBox;
+    const nextScaleKey = `${viewBox.width}:${viewBox.height}`;
+    const reason: GraphRenderReason = viewBoxScaleKeyRef.current === nextScaleKey ? "camera" : "style";
+    viewBoxScaleKeyRef.current = nextScaleKey;
+    scheduleRender(reason);
   }, [isReady, viewBox]);
+
+  useEffect(() => {
+    if (!isReady) return;
+    scheduleRender("reveal");
+  }, [animationEpoch, isReady]);
+
+  useEffect(() => {
+    if (!isReady) return undefined;
+    return viewportController.subscribe(() => {
+      latestViewBoxRef.current = viewportController.liveViewBoxRef.current;
+      scheduleRender("camera");
+    });
+  }, [isReady, viewportController]);
 
   function setSurfaceElement(element: HTMLDivElement | null): void {
     hostRef.current = element;
@@ -448,6 +496,10 @@ export function GraphCanvas({
       {pixiError ? <div className="graph-renderer-error">{pixiError}</div> : null}
     </div>
   );
+}
+
+export function graphRenderReasonsNeedLayerRedraw(reasons: ReadonlySet<GraphRenderReason>): boolean {
+  return reasons.has("geometry") || reasons.has("style") || reasons.has("reveal");
 }
 
 function drawGraph(
@@ -729,14 +781,6 @@ function updateLabelLayer(runtime: PixiGraphRuntime, state: GraphRenderState): v
   });
 }
 
-function updateLabelFontSize(runtime: PixiGraphRuntime): void {
-  for (const label of runtime.labelsByPath.values()) {
-    label.resolution = graphLabelTextureResolution(runtime.viewScale);
-    label.style.fontSize = 10;
-    label.scale.set(graphLabelScreenScale(runtime.viewScale));
-  }
-}
-
 function graphLabelScreenScale(viewScale: number): number {
   const safeScale = Math.max(0.001, viewScale);
   const targetScreenFontSize = Math.min(13, Math.max(4.5, 5 * Math.pow(safeScale, 0.8)));
@@ -757,6 +801,15 @@ export function buildGraphLabelPlacement(
 function graphLabelTextureResolution(viewScale: number): number {
   const deviceScale = typeof window === "undefined" ? 1 : window.devicePixelRatio || 1;
   return Math.min(12, Math.max(deviceScale, deviceScale * Math.max(1, viewScale)));
+}
+
+export function graphViewScaleBucket(viewScale: number): string {
+  const safeScale = Math.max(0.001, viewScale);
+  if (safeScale < 0.8) return "far";
+  if (safeScale < 1.6) return "default";
+  if (safeScale < 2.6) return "near";
+  if (safeScale < 4.2) return "label";
+  return "detail";
 }
 
 function applyGraphViewBox(runtime: PixiGraphRuntime, viewBox: GraphViewBox): boolean {
