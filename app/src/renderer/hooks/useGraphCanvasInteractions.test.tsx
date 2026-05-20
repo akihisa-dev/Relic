@@ -89,6 +89,7 @@ describe("useGraphCanvasInteractions", () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     vi.unstubAllGlobals();
   });
 
@@ -111,13 +112,9 @@ describe("useGraphCanvasInteractions", () => {
     expect(viewBox.y + viewBox.height).toBeGreaterThanOrEqual(Math.max(...ys));
   });
 
-  it("wheel操作を次の描画フレームでzoom更新callbackへ反映する", () => {
+  it("wheel操作を短いdebounce後にzoom更新callbackへ反映する", () => {
+    vi.useFakeTimers();
     const { hook, setZoom } = renderInteractions();
-    let frameCallback: FrameRequestCallback | null = null;
-    vi.stubGlobal("requestAnimationFrame", vi.fn((callback: FrameRequestCallback) => {
-      frameCallback = callback;
-      return 1;
-    }));
 
     act(() => {
       hook.result.current.graphHandlers.onWheel(makeEvent<HTMLDivElement>({ deltaY: -100 }));
@@ -125,7 +122,7 @@ describe("useGraphCanvasInteractions", () => {
 
     expect(setZoom).not.toHaveBeenCalled();
     act(() => {
-      frameCallback?.(16);
+      vi.advanceTimersByTime(80);
     });
 
     expect(setZoom).toHaveBeenCalledWith(1.1503);

@@ -76,8 +76,7 @@ export function useGraphViewportInteractions({
   const viewportSnapshotRef = useRef<GraphViewportSnapshot>({ pan, zoom });
   const pendingWheelViewportRef = useRef<GraphViewportSnapshot | null>(null);
   const pendingPanViewportRef = useRef<GraphViewportSnapshot | null>(null);
-  const wheelFrameRef = useRef<number | null>(null);
-  const panFrameRef = useRef<number | null>(null);
+  const wheelCommitTimeoutRef = useRef<number | null>(null);
 
   if (!viewportControllerRef.current) {
     viewportControllerRef.current = {
@@ -87,7 +86,8 @@ export function useGraphViewportInteractions({
   }
 
   viewportSnapshotRef.current = { pan, zoom };
-  liveViewBoxRef.current = viewBox;
+  const pendingViewport = pendingWheelViewportRef.current ?? pendingPanViewportRef.current;
+  liveViewBoxRef.current = pendingViewport ? buildGraphViewBox(pendingViewport.zoom, pendingViewport.pan, points) : viewBox;
 
   useEffect(() => {
     setPan({ x: 0, y: 0 });
@@ -121,18 +121,14 @@ export function useGraphViewportInteractions({
 
   function cancelPendingWheelViewport(): void {
     pendingWheelViewportRef.current = null;
-    if (wheelFrameRef.current !== null) {
-      window.cancelAnimationFrame(wheelFrameRef.current);
-      wheelFrameRef.current = null;
+    if (wheelCommitTimeoutRef.current !== null) {
+      window.clearTimeout(wheelCommitTimeoutRef.current);
+      wheelCommitTimeoutRef.current = null;
     }
   }
 
   function cancelPendingPanViewport(): void {
     pendingPanViewportRef.current = null;
-    if (panFrameRef.current !== null) {
-      window.cancelAnimationFrame(panFrameRef.current);
-      panFrameRef.current = null;
-    }
   }
 
   function applyViewportSnapshot(snapshot: GraphViewportSnapshot): void {
@@ -172,29 +168,15 @@ export function useGraphViewportInteractions({
     if (!pending) return;
 
     pendingWheelViewportRef.current = null;
-    wheelFrameRef.current = null;
+    wheelCommitTimeoutRef.current = null;
     applyViewportSnapshot(pending);
   }
 
   function scheduleWheelViewportCommit(): void {
-    if (wheelFrameRef.current !== null) return;
-    wheelFrameRef.current = window.requestAnimationFrame(commitPendingWheelViewport);
-  }
-
-  function commitPendingPanViewport(): void {
-    const pending = pendingPanViewportRef.current;
-    if (!pending) return;
-
-    pendingPanViewportRef.current = null;
-    panFrameRef.current = null;
-    viewportSnapshotRef.current = pending;
-    notifyLiveViewport(pending);
-    setPan(pending.pan);
-  }
-
-  function schedulePanViewportCommit(): void {
-    if (panFrameRef.current !== null) return;
-    panFrameRef.current = window.requestAnimationFrame(commitPendingPanViewport);
+    if (wheelCommitTimeoutRef.current !== null) {
+      window.clearTimeout(wheelCommitTimeoutRef.current);
+    }
+    wheelCommitTimeoutRef.current = window.setTimeout(commitPendingWheelViewport, 80);
   }
 
   function handleGraphWheel(event: WheelEvent<HTMLDivElement>): void {
@@ -293,7 +275,6 @@ export function useGraphViewportInteractions({
       zoom: viewportSnapshotRef.current.zoom
     };
     notifyLiveViewport(pendingPanViewportRef.current);
-    schedulePanViewportCommit();
   }
 
   function handleGraphPointerEnd(event: PointerEvent<HTMLDivElement>): void {
