@@ -11,7 +11,6 @@ import type {
   WorkspaceState
 } from "../../shared/ipc";
 import { GanttChartView } from "../components/ChronicleSidebar";
-import { DashboardPanel } from "../components/DashboardPanel";
 import { FrontmatterSidebar } from "../components/FrontmatterSidebar";
 import { SettingsSidebar } from "../components/SettingsSidebar";
 import { ToolsSidebar } from "../components/ToolsSidebar";
@@ -57,17 +56,6 @@ export function useAppTabRenderers({
   ), [ganttCharts, handleOpenFile, handleUpdateGanttChartEntry]);
 
   const renderPanelTab = useCallback((panel: PanelTabKind): ReactNode => {
-    if (panel === "dashboard") {
-      return (
-        <DashboardPanel
-          fileTree={workspaceState?.fileTree ?? []}
-          onOpenFile={handleOpenFile}
-          userDefinedFields={userDefinedFields}
-          workspaceId={workspaceState?.activeWorkspace?.id ?? null}
-        />
-      );
-    }
-
     if (panel === "tools") {
       return <ToolsSidebar workspacePath={workspaceState?.activeWorkspace?.path ?? null} />;
     }
