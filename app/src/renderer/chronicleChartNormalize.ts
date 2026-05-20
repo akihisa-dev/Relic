@@ -1,9 +1,9 @@
 import type { GanttChartEntry, MarkdownFileContent, WorkspaceGanttChart, WorkspaceTreeNode } from "../shared/ipc";
 
-export function normalizeWorkspaceGanttCharts(value: unknown): WorkspaceGanttChart[] {
+export function normalizeWorkspaceChronicle(value: unknown): WorkspaceGanttChart[] {
   if (!Array.isArray(value)) return [];
 
-  if (value.every(isWorkspaceGanttChart)) return fixedWorkspaceGanttCharts(value);
+  if (value.every(isWorkspaceChronicle)) return fixedWorkspaceChronicle(value);
 
   const legacyEntries = value.flatMap((entry): GanttChartEntry[] => {
     if (typeof entry !== "object" || entry === null) return [];
@@ -27,21 +27,21 @@ export function normalizeWorkspaceGanttCharts(value: unknown): WorkspaceGanttCha
   });
 
   return legacyEntries.length > 0
-    ? fixedWorkspaceGanttCharts([{ entries: legacyEntries, filePaths: legacyEntries.map((entry) => entry.path), id: "chronicle", name: "chronicle", source: "chronicle" }])
-    : fixedWorkspaceGanttCharts([]);
+    ? fixedWorkspaceChronicle([{ entries: legacyEntries, filePaths: legacyEntries.map((entry) => entry.path), id: "chronicle", name: "chronicle", source: "chronicle" }])
+    : fixedWorkspaceChronicle([]);
 }
 
-export async function normalizeWorkspaceGanttChartsWithFiles(
+export async function normalizeWorkspaceChronicleWithFiles(
   value: unknown,
   fileTree: WorkspaceTreeNode[],
   readMarkdownFile: (input: { path: string }) => Promise<{ ok: true; value: MarkdownFileContent } | { ok: false }>
 ): Promise<WorkspaceGanttChart[]> {
   void fileTree;
   void readMarkdownFile;
-  return normalizeWorkspaceGanttCharts(value);
+  return normalizeWorkspaceChronicle(value);
 }
 
-function fixedWorkspaceGanttCharts(charts: WorkspaceGanttChart[]): WorkspaceGanttChart[] {
+function fixedWorkspaceChronicle(charts: WorkspaceGanttChart[]): WorkspaceGanttChart[] {
   const chronicle = charts.find((chart) => chart.source === "chronicle" || chart.id === "chronicle");
 
   return [
@@ -55,7 +55,7 @@ function fixedWorkspaceGanttCharts(charts: WorkspaceGanttChart[]): WorkspaceGant
   ];
 }
 
-function isWorkspaceGanttChart(value: unknown): value is WorkspaceGanttChart {
+function isWorkspaceChronicle(value: unknown): value is WorkspaceGanttChart {
   if (typeof value !== "object" || value === null) return false;
 
   const chart = value as Record<string, unknown>;

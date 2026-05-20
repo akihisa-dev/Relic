@@ -5,7 +5,7 @@ import type { GanttChartEntry, GanttChartSettings, UpdateGanttChartEntryInput, W
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { collectMarkdownPaths } from "../../shared/workspaceTree";
 import {
-  collectGanttEntriesForMarkdown,
+  collectChronicleEntriesForMarkdown,
   sortChronicleEntries,
   updateChronicleDataForChartEdit
 } from "./chronicleData";
@@ -31,7 +31,7 @@ export async function readWorkspaceChronicle(
       if (!absolutePath.ok) continue;
 
       const content = await readFile(absolutePath.value, "utf8");
-      const fileEntries = collectGanttEntriesForMarkdown(relativePath, content);
+      const fileEntries = collectChronicleEntriesForMarkdown(relativePath, content);
       entriesBySource.chronicle.push(...fileEntries.chronicle);
     }
 

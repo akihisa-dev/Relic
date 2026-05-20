@@ -30,7 +30,7 @@ import { useSidebarFileInteractions } from "./hooks/useSidebarFileInteractions";
 import { useSplitCloseMotion } from "./hooks/useSplitCloseMotion";
 import { useWorkspaceAliases } from "./hooks/useWorkspaceAliases";
 import { useWorkspaceFileActions } from "./hooks/useWorkspaceFileActions";
-import { useWorkspaceGanttCharts } from "./hooks/useWorkspaceGanttCharts";
+import { useWorkspaceChronicle } from "./hooks/useWorkspaceChronicle";
 import { useWorkspaceRenameRailHold } from "./hooks/useWorkspaceRenameRailHold";
 import { useWorkspaceSearchState } from "./hooks/useWorkspaceSearchState";
 import { useEditorStore } from "./store/editorStore";
@@ -102,7 +102,7 @@ export function App(): ReactElement {
     toggleSidebar: toggleSidebarState,
     toggleTypewriterMode
   } = useUiStore();
-  const hasOpenGanttChart = useMemo(
+  const hasOpenChronicle = useMemo(
     () => Object.values(tabs).some((tab) => tab.kind === "gantt"),
     [tabs]
   );
@@ -172,8 +172,8 @@ export function App(): ReactElement {
     [workspaceState?.fileTree]
   );
   const aliasesByPath = useWorkspaceAliases({ setWorkspaceError, workspaceState });
-  const { ganttCharts, handleUpdateGanttChartEntry, reloadGanttCharts } = useWorkspaceGanttCharts({
-    hasOpenGanttChart,
+  const { chronicleCharts, handleUpdateChronicleEntry, reloadChronicle } = useWorkspaceChronicle({
+    hasOpenChronicle,
     setWorkspaceError,
     tabs,
     updateTabContent,
@@ -244,8 +244,8 @@ export function App(): ReactElement {
   });
 
   const handleFileSaved = useCallback((): void => {
-    void reloadGanttCharts();
-  }, [reloadGanttCharts]);
+    void reloadChronicle();
+  }, [reloadChronicle]);
 
   const refreshWorkspaceAfterExternalChange = useCallback(
     async (workspaceId: string): Promise<void> => {
@@ -439,16 +439,16 @@ export function App(): ReactElement {
     tabs
   });
 
-  const { renderGanttChartTab, renderPanelTab } = useAppTabRenderers({
+  const { renderChronicleTab, renderPanelTab } = useAppTabRenderers({
     appInfo,
     editorSettings,
     featureToggles,
-    ganttCharts,
+    chronicleCharts,
     handleOpenFile,
     handleSaveFeatureToggles,
     handleSaveSettings,
     handleSaveUserDefinedFields,
-    handleUpdateGanttChartEntry,
+    handleUpdateChronicleEntry,
     userDefinedFields,
     workspaceState
   });
@@ -592,7 +592,7 @@ export function App(): ReactElement {
           onTogglePinTab={toggleTabPinned}
           outlineHeadings={outlineHeadings}
           outgoingLinks={outgoingLinks}
-          renderGanttChartTab={renderGanttChartTab}
+          renderChronicleTab={renderChronicleTab}
           renderPanelTab={renderPanelTab}
           renderPanelTabIcon={renderPanelTabIcon}
           rightClosingTabIds={rightClosingTabIds}

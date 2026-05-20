@@ -24,7 +24,7 @@ export interface PaneViewProps {
   userDefinedFields: UserDefinedField[];
   workspacePath?: string | null;
   viewRef: MutableRefObject<EditorView | null>;
-  renderGanttChartTab: (chartId: string) => ReactNode;
+  renderChronicleTab: (chartId: string) => ReactNode;
   renderPanelTab: (panel: PanelTabKind) => ReactNode;
   renderPanelTabIcon: (panel: PanelTabKind) => ReactNode;
   onCreateFile: (name: string) => void;
@@ -63,7 +63,7 @@ export function PaneView({
   userDefinedFields,
   workspacePath,
   viewRef,
-  renderGanttChartTab,
+  renderChronicleTab,
   renderPanelTab,
   renderPanelTabIcon,
   onCreateFile,
@@ -166,7 +166,7 @@ export function PaneView({
         editorActionPulse={editorActionPulse}
         editorSettings={editorSettings}
         frontmatterCandidates={frontmatterCandidates}
-        renderGanttChartTab={renderGanttChartTab}
+        renderChronicleTab={renderChronicleTab}
         renderPanelTab={renderPanelTab}
         sourceMode={sourceMode}
         typewriterMode={typewriterMode}

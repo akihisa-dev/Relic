@@ -1,10 +1,10 @@
 import type { UpdateGanttChartEntryInput } from "../shared/ipc";
 import { axisToYear, rangeToStringArray } from "../shared/chartTime";
 
-export function updateChartFrontmatter(content: string, input: UpdateGanttChartEntryInput): string {
+export function updateChronicleFrontmatter(content: string, input: UpdateGanttChartEntryInput): string {
   const frontmatter = splitFrontmatterBlock(content);
   const yamlText = frontmatter?.yaml ?? "";
-  const updates = chartFrontmatterUpdates(yamlText, input);
+  const updates = chronicleFrontmatterUpdates(yamlText, input);
   const nextYaml = Object.entries(updates).reduce(
     (yaml, [field, values]) => setYamlArrayField(yaml, field, values),
     yamlText
@@ -47,7 +47,7 @@ export function readYamlArrayField(yamlText: string, field: string): string[] {
     .filter(Boolean);
 }
 
-function chartFrontmatterUpdates(yamlText: string, input: UpdateGanttChartEntryInput): Record<string, string[]> {
+function chronicleFrontmatterUpdates(yamlText: string, input: UpdateGanttChartEntryInput): Record<string, string[]> {
   void yamlText;
   const start = Math.min(input.startValue, input.endValue);
   const end = Math.max(input.startValue, input.endValue);

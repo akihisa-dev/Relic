@@ -90,7 +90,7 @@ export function PaneTabBar({
               </span>
             ) : tab.kind === "gantt" ? (
               <span className="pane-tab-icon" aria-hidden="true">
-                <GanttTabIcon />
+                <ChronicleTabIcon />
               </span>
             ) : null}
             <span className="pane-tab-name">{paneTabLabel(tab, t)}</span>
@@ -132,7 +132,7 @@ function PinTabIcon(): ReactElement {
   );
 }
 
-function GanttTabIcon(): ReactElement {
+function ChronicleTabIcon(): ReactElement {
   return (
     <svg fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="14">
       <path d="M3 3v16a2 2 0 0 0 2 2h16" />

@@ -10,14 +10,14 @@ import { ChronicleChartGrid } from "./ChronicleChartGrid";
 import { ChronicleMinimap } from "./ChronicleMinimap";
 import { ChronicleToolbar } from "./ChronicleToolbar";
 
-interface GanttChartViewProps {
+interface ChronicleViewProps {
   chart?: WorkspaceGanttChart | null;
   charts?: WorkspaceGanttChart[];
   onOpenFile: (path: string) => void;
   onUpdateEntry?: (input: UpdateGanttChartEntryInput) => Promise<void> | void;
 }
 
-export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdateEntry }: GanttChartViewProps): ReactElement {
+export function ChronicleView({ chart = null, charts = [], onOpenFile, onUpdateEntry }: ChronicleViewProps): ReactElement {
   const t = useT();
   const model = useChronicleChartModel({ chart, charts });
   const viewport = useChronicleChartViewport({
