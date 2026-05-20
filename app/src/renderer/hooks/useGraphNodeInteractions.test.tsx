@@ -3,13 +3,20 @@ import type { MutableRefObject } from "react";
 import { describe, expect, it, vi } from "vitest";
 
 import { GRAPH_HEIGHT, GRAPH_PADDING, GRAPH_WIDTH } from "../graphLayout";
-import type { GraphPan, GraphPoint, GraphSimPoint } from "../graphLayout";
+import type { GraphForceSettings, GraphPan, GraphPoint, GraphSimPoint } from "../graphLayout";
 import { useGraphNodeInteractions } from "./useGraphNodeInteractions";
 
 const points: GraphSimPoint[] = [
   { degree: 1, folder: "", incoming: 0, name: "A", outgoing: 1, path: "A.md", tags: [], vx: 0, vy: 0, x: 80, y: 90 },
   { degree: 1, folder: "", incoming: 1, name: "B", outgoing: 0, path: "B.md", tags: [], vx: 0, vy: 0, x: 160, y: 130 }
 ];
+const edges = [{ sourcePath: "A.md", targetPath: "B.md" }];
+const forceSettings: GraphForceSettings = {
+  centerForce: 1,
+  linkDistance: 118,
+  linkForce: 1,
+  repelForce: 1
+};
 
 function makeEvent<T extends Element>(overrides: Partial<{
   button: number;
@@ -54,6 +61,8 @@ function renderNodeInteractions() {
     selectedPath = path;
   });
   const hook = renderHook(() => useGraphNodeInteractions({
+    edges,
+    forceSettings,
     getGraphDelta,
     onOpenFile,
     pinnedPathRef,
@@ -77,6 +86,10 @@ function renderNodeInteractions() {
 }
 
 describe("useGraphNodeInteractions", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it("未選択nodeのclickとkey操作は選択だけを更新する", () => {
     const { hook, onOpenFile, setSelectedPath } = renderNodeInteractions();
     const point = points[0] as GraphPoint;
@@ -135,6 +148,11 @@ describe("useGraphNodeInteractions", () => {
 
   it("drag中のmoveで対象node座標をbounds内にclampする", () => {
     const { hook, pinnedPathRef, pointsRef, setPoints, setSelectedPath } = renderNodeInteractions();
+    let frameCallback: FrameRequestCallback | null = null;
+    vi.spyOn(window, "requestAnimationFrame").mockImplementation((callback) => {
+      frameCallback = callback;
+      return 1;
+    });
     const target = {
       hasPointerCapture: vi.fn().mockReturnValue(true),
       releasePointerCapture: vi.fn(),
@@ -163,13 +181,53 @@ describe("useGraphNodeInteractions", () => {
     });
 
     const movedPoint = pointsRef.current.find((point) => point.path === "A.md");
-    expect(setPoints).toHaveBeenCalledTimes(1);
+    expect(setPoints).not.toHaveBeenCalled();
     expect(movedPoint?.x).toBe(GRAPH_WIDTH - GRAPH_PADDING);
     expect(movedPoint?.y).toBe(GRAPH_HEIGHT - GRAPH_PADDING);
+
+    act(() => {
+      frameCallback?.(16);
+    });
+
+    expect(setPoints).toHaveBeenCalledTimes(1);
   });
 
-  it("drag後のclickを抑止しpinned pathを解除する", () => {
+  it("drag中は隣接nodeも局所simulationで反応する", () => {
+    const { hook, pointsRef } = renderNodeInteractions();
+    vi.spyOn(window, "requestAnimationFrame").mockImplementation(() => 1);
+    const target = {
+      hasPointerCapture: vi.fn().mockReturnValue(true),
+      releasePointerCapture: vi.fn(),
+      setPointerCapture: vi.fn()
+    } as unknown as SVGGElement;
+
+    act(() => {
+      hook.result.current.onPointerDown(makeEvent<SVGGElement>({
+        clientX: 10,
+        clientY: 10,
+        currentTarget: target,
+        pointerId: 8
+      }), points[0]);
+      hook.result.current.onPointerMove(makeEvent<SVGGElement>({
+        clientX: 80,
+        clientY: 30,
+        currentTarget: target,
+        pointerId: 8
+      }));
+    });
+
+    const neighbor = pointsRef.current.find((point) => point.path === "B.md");
+    expect(neighbor?.x).not.toBe(160);
+    expect(neighbor?.y).not.toBe(130);
+  });
+
+  it("drag後のclickを抑止しpinned pathを解除してsettleを始める", () => {
     const { hook, onOpenFile, pinnedPathRef, setSelectedPath } = renderNodeInteractions();
+    const frameCallbacks: FrameRequestCallback[] = [];
+    vi.spyOn(window, "requestAnimationFrame").mockImplementation((callback) => {
+      frameCallbacks.push(callback);
+      return frameCallbacks.length;
+    });
     const target = {
       hasPointerCapture: vi.fn().mockReturnValue(true),
       releasePointerCapture: vi.fn(),
@@ -199,5 +257,6 @@ describe("useGraphNodeInteractions", () => {
     expect(pinnedPathRef.current).toBeNull();
     expect(setSelectedPath).toHaveBeenCalledTimes(1);
     expect(onOpenFile).not.toHaveBeenCalled();
+    expect(frameCallbacks.length).toBeGreaterThan(0);
   });
 });
