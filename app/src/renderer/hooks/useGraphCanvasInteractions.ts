@@ -73,6 +73,8 @@ export function useGraphCanvasInteractions({
     zoom
   });
   const nodeHandlers = useGraphNodeInteractions({
+    edges,
+    forceSettings,
     getGraphDelta: viewport.getGraphDelta,
     onOpenFile,
     pinnedPathRef: pinnedPathRef as MutableRefObject<string | null>,
