@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type {
   KeyboardEvent,
   MutableRefObject,
@@ -75,15 +75,18 @@ export interface GraphCanvasProps {
 
 interface PixiGraphRuntime {
   app: Application;
-  edgeLayer: Graphics;
+  edgeGraphicsByKey: Map<string, GraphEdgeGraphic>;
+  edgeLayer: Container;
   Graphics: typeof import("pixi.js").Graphics;
   hitLayer: Container;
   interactionOptions: PixiGraphInteractionOptions | null;
   labelLayer: Container;
-  labelsByPath: Map<string, Text>;
+  labelsByPath: Map<string, GraphLabelText>;
+  motionLayerSignature: string | null;
   motionLayer: Graphics;
+  nodeGraphicsByPath: Map<string, GraphNodeGraphic>;
   nodeHitByPath: Map<string, GraphNodeHit>;
-  nodeLayer: Graphics;
+  nodeLayer: Container;
   pendingFrame: number | null;
   pendingReasons: Set<GraphRenderReason>;
   renderedPointsByPath: Map<string, GraphSimPoint>;
@@ -99,7 +102,20 @@ interface PixiGraphRuntime {
 
 interface GraphNodeHit extends Graphics {
   relicHitRadius?: number;
+  relicHitSignature?: string;
   relicNode?: GraphRenderNode;
+}
+
+interface GraphNodeGraphic extends Graphics {
+  relicSignature?: string;
+}
+
+interface GraphEdgeGraphic extends Graphics {
+  relicSignature?: string;
+}
+
+interface GraphLabelText extends Text {
+  relicSignature?: string;
 }
 
 interface PixiGraphInteractionOptions {
@@ -189,20 +205,7 @@ export function GraphCanvas({
   const viewBoxScaleKeyRef = useRef(`${viewBox.width}:${viewBox.height}`);
   const [isReady, setIsReady] = useState(false);
   const [pixiError, setPixiError] = useState<string | null>(null);
-  const renderState = useMemo(() => buildGraphRenderState({
-    edges,
-    focusedPath,
-    groupByPath,
-    labelOpacity,
-    linkThickness,
-    motionPath,
-    nodeSize,
-    palette: latestRenderInputRef.current.palette,
-    points,
-    relatedPaths,
-    selectedPath,
-    showLabels
-  }), [edges, focusedPath, groupByPath, labelOpacity, linkThickness, motionPath, nodeSize, points, relatedPaths, selectedPath, showLabels]);
+  const isLargeGraph = points.length > 220 || edges.length > 520;
 
   latestPointsRef.current = pointsRef.current.length > 0 ? pointsRef.current : points;
   latestViewBoxRef.current = viewportController.liveViewBoxRef.current ?? viewBox;
@@ -317,9 +320,9 @@ export function GraphCanvas({
         currentHost.appendChild(app.canvas);
 
         const root = new pixi.Container();
-        const edgeLayer = new pixi.Graphics();
+        const edgeLayer = new pixi.Container();
         const motionLayer = new pixi.Graphics();
-        const nodeLayer = new pixi.Graphics();
+        const nodeLayer = new pixi.Container();
         const hitLayer = new pixi.Container();
         const labelLayer = new pixi.Container();
 
@@ -346,13 +349,16 @@ export function GraphCanvas({
 
         pixiRef.current = {
           app: initializedApp,
+          edgeGraphicsByKey: new Map(),
           edgeLayer,
           Graphics: pixi.Graphics,
           hitLayer,
           interactionOptions: null,
           labelLayer,
           labelsByPath: new Map(),
+          motionLayerSignature: null,
           motionLayer,
+          nodeGraphicsByPath: new Map(),
           nodeHitByPath: new Map(),
           nodeLayer,
           pendingFrame: null,
@@ -473,15 +479,15 @@ export function GraphCanvas({
   const className = [
     "graph-pixi-surface",
     isPanning ? "graph-pixi-surface--panning" : "",
-    renderState.isLargeGraph ? "graph-pixi-surface--large" : ""
+    isLargeGraph ? "graph-pixi-surface--large" : ""
   ].filter(Boolean).join(" ");
 
   return (
     <div
       aria-label="Graph"
       className={className}
-      data-edge-count={renderState.edges.length}
-      data-node-count={renderState.nodes.length}
+      data-edge-count={edges.length}
+      data-node-count={points.length}
       data-renderer="pixi"
       onKeyDown={handleKeyDown}
       onPointerCancel={onGraphPointerCancel}
@@ -510,17 +516,122 @@ function drawGraph(
 ): void {
   const drawableState = revealFrame ? buildGraphRevealState(state, revealFrame.elapsedMs) : state;
   runtime.interactionOptions = options;
-  runtime.edgeLayer.clear();
-  runtime.motionLayer.clear();
-  runtime.nodeLayer.clear();
 
-  drawableState.edges.forEach((edge) => drawEdge(runtime.edgeLayer, edge, options.showArrows));
-  drawableState.edges
-    .filter((edge) => edge.isMotion)
-    .forEach((edge, index) => drawMotionEdge(runtime.motionLayer, edge, options.isMotionAfterglow, options.motionEpoch + index));
-  drawableState.nodes.forEach((node) => drawNode(runtime.nodeLayer, node));
+  updateEdgeLayer(runtime, drawableState.edges, options.showArrows);
+  updateMotionLayer(runtime, drawableState.edges, options);
+  updateNodeLayer(runtime, drawableState.nodes);
   updateHitLayer(runtime, drawableState.nodes, options);
   updateLabelLayer(runtime, drawableState);
+}
+
+function updateEdgeLayer(
+  runtime: PixiGraphRuntime,
+  edges: GraphRenderEdge[],
+  showArrows: boolean
+): void {
+  const nextKeys = new Set(edges.map(graphEdgeKey));
+
+  for (const [key, graphic] of runtime.edgeGraphicsByKey) {
+    if (nextKeys.has(key)) continue;
+    runtime.edgeLayer.removeChild(graphic);
+    graphic.destroy();
+    runtime.edgeGraphicsByKey.delete(key);
+  }
+
+  edges.forEach((edge) => {
+    const key = graphEdgeKey(edge);
+    let graphic = runtime.edgeGraphicsByKey.get(key);
+    if (!graphic) {
+      graphic = new runtime.Graphics() as GraphEdgeGraphic;
+      runtime.edgeLayer.addChild(graphic);
+      runtime.edgeGraphicsByKey.set(key, graphic);
+    }
+
+    const signature = buildGraphEdgeDrawSignature(edge, showArrows);
+    if (graphic.relicSignature === signature) return;
+
+    graphic.clear();
+    drawEdge(graphic, edge, showArrows);
+    graphic.relicSignature = signature;
+  });
+}
+
+function updateMotionLayer(
+  runtime: PixiGraphRuntime,
+  edges: GraphRenderEdge[],
+  options: PixiGraphInteractionOptions
+): void {
+  const motionEdges = edges.filter((edge) => edge.isMotion);
+  const signature = motionEdges
+    .map((edge, index) => `${buildGraphEdgeDrawSignature(edge, false)}:${options.isMotionAfterglow}:${options.motionEpoch + index}`)
+    .join("|");
+  if (runtime.motionLayerSignature === signature) return;
+
+  runtime.motionLayer.clear();
+  motionEdges.forEach((edge, index) => drawMotionEdge(runtime.motionLayer, edge, options.isMotionAfterglow, options.motionEpoch + index));
+  runtime.motionLayerSignature = signature;
+}
+
+function updateNodeLayer(runtime: PixiGraphRuntime, nodes: GraphRenderNode[]): void {
+  const nextPaths = new Set(nodes.map((node) => node.path));
+
+  for (const [path, graphic] of runtime.nodeGraphicsByPath) {
+    if (nextPaths.has(path)) continue;
+    runtime.nodeLayer.removeChild(graphic);
+    graphic.destroy();
+    runtime.nodeGraphicsByPath.delete(path);
+  }
+
+  nodes.forEach((node) => {
+    let graphic = runtime.nodeGraphicsByPath.get(node.path);
+    if (!graphic) {
+      graphic = new runtime.Graphics() as GraphNodeGraphic;
+      runtime.nodeLayer.addChild(graphic);
+      runtime.nodeGraphicsByPath.set(node.path, graphic);
+    }
+
+    const signature = buildGraphNodeDrawSignature(node);
+    if (graphic.relicSignature === signature) return;
+
+    graphic.clear();
+    drawNode(graphic, node);
+    graphic.relicSignature = signature;
+  });
+}
+
+export function graphEdgeKey(edge: Pick<GraphRenderEdge, "sourcePath" | "targetPath">): string {
+  return `${edge.sourcePath}\u0000${edge.targetPath}`;
+}
+
+export function buildGraphEdgeDrawSignature(edge: GraphRenderEdge, showArrows: boolean): string {
+  return [
+    roundGraphDrawValue(edge.x1),
+    roundGraphDrawValue(edge.y1),
+    roundGraphDrawValue(edge.x2),
+    roundGraphDrawValue(edge.y2),
+    roundGraphDrawValue(edge.alpha),
+    edge.color,
+    roundGraphDrawValue(edge.strokeWidth),
+    showArrows ? 1 : 0
+  ].join(":");
+}
+
+export function buildGraphNodeDrawSignature(node: GraphRenderNode): string {
+  return [
+    roundGraphDrawValue(node.x),
+    roundGraphDrawValue(node.y),
+    roundGraphDrawValue(node.radius),
+    roundGraphDrawValue(node.fillAlpha),
+    node.fillColor,
+    node.ringVisible ? 1 : 0,
+    roundGraphDrawValue(node.strokeAlpha),
+    node.strokeColor,
+    roundGraphDrawValue(node.strokeWidth)
+  ].join(":");
+}
+
+function roundGraphDrawValue(value: number): number {
+  return Math.round(value * 100) / 100;
 }
 
 function drawEdge(layer: Graphics, edge: GraphRenderEdge, showArrows: boolean): void {
@@ -724,13 +835,15 @@ function updateHitLayer(
     }
 
     hit.relicNode = node;
-    hit.position.set(node.x, node.y);
     const hitRadius = buildGraphNodeHitRadius(node.radius, runtime.viewScale);
-    if (hit.relicHitRadius !== hitRadius) {
+    const hitSignature = `${roundGraphDrawValue(node.x)}:${roundGraphDrawValue(node.y)}:${hitRadius}`;
+    if (hit.relicHitSignature !== hitSignature) {
+      hit.position.set(node.x, node.y);
       hit.clear()
         .circle(0, 0, hitRadius)
         .fill({ alpha: 0.001, color: 0xffffff });
       hit.relicHitRadius = hitRadius;
+      hit.relicHitSignature = hitSignature;
     }
   });
 }
@@ -763,12 +876,15 @@ function updateLabelLayer(runtime: PixiGraphRuntime, state: GraphRenderState): v
           fontSize: 10
         },
         text: node.name
-      });
+      }) as GraphLabelText;
       label.anchor.set(0.5, 0);
       label.eventMode = "none";
       runtime.labelLayer.addChild(label);
       runtime.labelsByPath.set(node.path, label);
     }
+    const signature = buildGraphLabelDrawSignature(node, runtime.viewScale, state.palette.text);
+    if (label.relicSignature === signature) return;
+
     label.text = node.name;
     label.alpha = node.labelAlpha;
     label.resolution = graphLabelTextureResolution(runtime.viewScale);
@@ -778,7 +894,20 @@ function updateLabelLayer(runtime: PixiGraphRuntime, state: GraphRenderState): v
     const placement = buildGraphLabelPlacement(node, runtime.viewScale);
     label.x = placement.x;
     label.y = placement.y;
+    label.relicSignature = signature;
   });
+}
+
+function buildGraphLabelDrawSignature(node: GraphRenderNode, viewScale: number, textColor: number): string {
+  const placement = buildGraphLabelPlacement(node, viewScale);
+  return [
+    node.name,
+    roundGraphDrawValue(node.labelAlpha),
+    roundGraphDrawValue(viewScale),
+    textColor,
+    roundGraphDrawValue(placement.x),
+    roundGraphDrawValue(placement.y)
+  ].join(":");
 }
 
 function graphLabelScreenScale(viewScale: number): number {

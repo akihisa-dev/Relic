@@ -10,7 +10,10 @@ import {
   buildGraphLabelPlacement,
   buildGraphNodeHitRadius,
   buildGraphViewBoxTransform,
+  buildGraphEdgeDrawSignature,
+  buildGraphNodeDrawSignature,
   GraphCanvas,
+  graphEdgeKey,
   graphRenderReasonsNeedLayerRedraw,
   graphViewScaleBucket,
   type GraphCanvasProps
@@ -151,6 +154,33 @@ describe("GraphCanvas", () => {
     expect(graphRenderReasonsNeedLayerRedraw(new Set(["geometry"]))).toBe(true);
     expect(graphRenderReasonsNeedLayerRedraw(new Set(["style"]))).toBe(true);
     expect(graphRenderReasonsNeedLayerRedraw(new Set(["reveal"]))).toBe(true);
+  });
+
+  it("edge/nodeのretained描画用signatureは実描画値が変わった時だけ変わる", () => {
+    const state = buildGraphRenderState({
+      edges: [{ sourcePath: "A.md", targetPath: "C.md" }],
+      focusedPath: null,
+      groupByPath: new Map(),
+      labelOpacity: 1,
+      linkThickness: 1,
+      motionPath: null,
+      nodeSize: 1,
+      points,
+      relatedPaths: new Set(),
+      selectedPath: null,
+      showLabels: true,
+      viewScale: 1
+    });
+    const edge = state.edges[0]!;
+    const node = state.nodes[0]!;
+
+    expect(graphEdgeKey(edge)).toBe("A.md\u0000C.md");
+    expect(buildGraphEdgeDrawSignature(edge, false)).toBe(buildGraphEdgeDrawSignature({ ...edge, isFocused: true }, false));
+    expect(buildGraphEdgeDrawSignature(edge, false)).not.toBe(buildGraphEdgeDrawSignature({ ...edge, x2: edge.x2 + 2 }, false));
+    expect(buildGraphEdgeDrawSignature(edge, false)).not.toBe(buildGraphEdgeDrawSignature(edge, true));
+    expect(buildGraphNodeDrawSignature(node)).toBe(buildGraphNodeDrawSignature({ ...node, isFocused: true }));
+    expect(buildGraphNodeDrawSignature(node)).not.toBe(buildGraphNodeDrawSignature({ ...node, x: node.x + 2 }));
+    expect(buildGraphNodeDrawSignature(node)).not.toBe(buildGraphNodeDrawSignature({ ...node, radius: node.radius + 1 }));
   });
 
   it("zoom scaleを粗いbucketへ丸めてLOD再計算頻度を抑える", () => {
