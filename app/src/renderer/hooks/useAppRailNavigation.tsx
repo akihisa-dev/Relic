@@ -107,8 +107,7 @@ export function useAppRailNavigation({
     if (
       activeSidebarView !== "tools" &&
       activeSidebarView !== "frontmatter" &&
-      activeSidebarView !== "settings" &&
-      activeSidebarView !== "graph"
+      activeSidebarView !== "settings"
     ) {
       return;
     }

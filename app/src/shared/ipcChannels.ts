@@ -7,7 +7,6 @@ export const getBacklinksChannel = "workspace:getBacklinks";
 export const getWorkspaceTagsChannel = "workspace:getTags";
 export const getWorkspaceAliasesChannel = "workspace:getAliases";
 export const getWorkspaceChronicleChannel = "workspace:getChronicle";
-export const getWorkspaceGraphChannel = "workspace:getGraph";
 export const saveWorkspaceGanttChartsChannel = "workspace:saveGanttCharts";
 export const updateGanttChartEntryChannel = "workspace:updateGanttChartEntry";
 export const getFrontmatterValueCandidatesChannel = "workspace:getFrontmatterValueCandidates";

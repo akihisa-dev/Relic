@@ -1,0 +1,219 @@
+/* ─── Chronicle ─── */
+.chronicle-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  position: relative;
+  width: 100%;
+}
+
+.chronicle-panel-header {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.chronicle-actions {
+  align-items: center;
+  display: inline-flex;
+  gap: 8px;
+}
+
+.chronicle-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.chronicle-create {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.chronicle-sidebar-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.chronicle-sidebar-item {
+  align-items: stretch;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 30px;
+  overflow: hidden;
+}
+
+.chronicle-sidebar-item.active {
+  border-color: var(--accent);
+}
+
+.chronicle-sidebar-open,
+.chronicle-sidebar-delete {
+  background: var(--bg);
+  border: 0;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.chronicle-sidebar-open {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+  min-width: 0;
+  padding: 8px 10px;
+  text-align: left;
+}
+
+.chronicle-sidebar-open span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chronicle-sidebar-open span:last-child {
+  color: var(--text-3);
+  font-size: 11px;
+}
+
+.chronicle-sidebar-delete {
+  border-left: 1px solid var(--border);
+  color: var(--text-2);
+  font-size: 14px;
+}
+
+.chronicle-sidebar-delete:disabled {
+  color: var(--text-3);
+  cursor: default;
+  opacity: 0.45;
+}
+
+.chronicle-sidebar-detail {
+  border-top: 1px solid var(--border);
+  display: grid;
+  gap: 8px;
+  grid-template-rows: minmax(0, 1fr);
+  min-height: 0;
+  padding-top: 12px;
+}
+
+.chronicle-file-select {
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.chronicle-toolbar {
+  align-items: center;
+  background: color-mix(in srgb, var(--bg) 92%, var(--hover));
+  border-bottom: 1px solid var(--border);
+  display: grid;
+  gap: 10px;
+  grid-template-columns: auto minmax(160px, 220px) minmax(160px, 220px) 28px minmax(130px, 190px) auto;
+  justify-content: start;
+  min-height: 40px;
+  padding: 5px 12px;
+  z-index: 7;
+}
+
+.chronicle-source-buttons {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  display: inline-flex;
+  flex: 0 0 auto;
+  overflow: hidden;
+}
+
+.chronicle-source-button {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-left: 1px solid var(--border);
+  box-sizing: border-box;
+  color: var(--text-2);
+  cursor: pointer;
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: 12px;
+  height: 26px;
+  justify-content: center;
+  line-height: 1;
+  min-width: 70px;
+  padding: 0 10px;
+  white-space: nowrap;
+}
+
+.chronicle-source-button:first-child {
+  border-left: 0;
+}
+
+.chronicle-source-button:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+
+.chronicle-source-button.active {
+  background: var(--text);
+  color: var(--bg);
+  font-weight: 600;
+}
+
+.chronicle-search {
+  align-items: center;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 7px;
+}
+
+.chronicle-search span {
+  color: var(--text-3);
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.chronicle-search input {
+  background: var(--bg);
+  border: 1px solid var(--border-soft);
+  border-radius: 6px;
+  box-sizing: border-box;
+  color: var(--text);
+  height: 26px;
+  min-width: 0;
+  padding: 0 8px;
+  width: 100%;
+}
+
+.chronicle-search input:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.chronicle-icon-button {
+  align-items: center;
+  background: var(--bg);
+  border: 1px solid var(--border-soft);
+  border-radius: 6px;
+  color: var(--text-2);
+  cursor: pointer;
+  display: inline-flex;
+  height: 26px;
+  justify-content: center;
+  padding: 0;
+  width: 28px;
+}
+
+.chronicle-icon-button:hover {
+  background: var(--hover);
+  color: var(--text);
+}
