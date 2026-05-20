@@ -111,8 +111,9 @@ export function buildGraphRenderState({
   const inverseScale = 1 / screenScale;
   const nodeFill = palette.node;
   const edgeColor = palette.line;
-  const normalEdgeAlpha = isLargeGraph ? 0.3 : 0.32;
-  const baseEdgeScreenWidth = isLargeGraph ? 0.62 : 0.78;
+  const edgeLod = graphRenderLod(screenScale);
+  const normalEdgeAlpha = isLargeGraph ? 0.18 + edgeLod * 0.16 : 0.32;
+  const baseEdgeScreenWidth = isLargeGraph ? 0.42 + edgeLod * 0.26 : 0.78;
   const visibleLabelPaths = buildVisibleLabelPaths({
     isLargeGraph,
     points,
@@ -145,8 +146,7 @@ export function buildGraphRenderState({
       const isSelected = false;
       const group = groupByPath.get(point.path);
       const isDimmed = false;
-      const zoomNodeScale = Math.min(2.2, Math.max(0.82, Math.sqrt(screenScale)));
-      const screenRadius = Math.min(7.2, Math.max(1.8, (isLargeGraph ? 2.25 : 3.1) * nodeSize * zoomNodeScale));
+      const screenRadius = graphNodeScreenRadius({ isLargeGraph, nodeSize, screenScale });
       const radius = screenRadius * inverseScale;
       const labelVisible = visibleLabelPaths.has(point.path);
       const velocity = point as Partial<Pick<GraphRenderPoint, "vx" | "vy">>;
@@ -157,7 +157,7 @@ export function buildGraphRenderState({
 
       return {
         degree: point.degree,
-        fillAlpha: isLargeGraph ? 0.96 : 0.96,
+        fillAlpha: isLargeGraph ? 0.82 + edgeLod * 0.14 : 0.96,
         fillColor,
         folder: point.folder,
         incoming: point.incoming,
@@ -205,7 +205,7 @@ function buildVisibleLabelPaths({
   if (screenScale < 2.6) return new Set<string>();
 
   const fontSize = graphLabelScreenFontSize(screenScale);
-  const screenRadius = Math.min(7.2, Math.max(1.8, 2.25 * Math.min(2.2, Math.max(0.82, Math.sqrt(screenScale)))));
+  const screenRadius = graphNodeScreenRadius({ isLargeGraph, nodeSize: 1, screenScale });
   const occupied: Array<{ bottom: number; left: number; right: number; top: number }> = [];
   const visible = new Set<string>();
   const candidates = [...points].sort((a, b) => {
@@ -246,6 +246,25 @@ function rectanglesOverlap(
 function graphLabelScreenFontSize(viewScale: number): number {
   const safeScale = Math.max(0.001, viewScale);
   return Math.min(13, Math.max(4.5, 5 * Math.pow(safeScale, 0.8)));
+}
+
+function graphNodeScreenRadius({
+  isLargeGraph,
+  nodeSize,
+  screenScale
+}: {
+  isLargeGraph: boolean;
+  nodeSize: number;
+  screenScale: number;
+}): number {
+  const zoomNodeScale = Math.min(2.2, Math.max(0.82, Math.sqrt(screenScale)));
+  const baseRadius = isLargeGraph ? 2.25 : 3.1;
+  const largeGraphDensityScale = isLargeGraph ? 0.78 + graphRenderLod(screenScale) * 0.22 : 1;
+  return Math.min(7.2, Math.max(1.8, baseRadius * nodeSize * zoomNodeScale * largeGraphDensityScale));
+}
+
+function graphRenderLod(screenScale: number): number {
+  return Math.min(1, Math.max(0, (screenScale - 0.55) / 3.2));
 }
 
 function clampViewScale(value: number): number {

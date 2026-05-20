@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
 import path from "node:path";
 
 import type { WorkspaceGraph } from "../../shared/ipc";
@@ -6,7 +6,7 @@ import { createWikiLinkResolver, resolveMarkdownLinkPath } from "../../shared/li
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { parseMarkdownTags } from "../../shared/tags";
 import { collectMarkdownPaths } from "../../shared/workspaceTree";
-import { readWorkspaceAliases } from "./aliases";
+import { extractAliases } from "./aliases";
 import { readWorkspaceFileTree } from "./fileTree";
 import { resolveWorkspaceRelativePath } from "./paths";
 
@@ -16,17 +16,26 @@ interface GraphFileEntry {
 }
 
 const graphReadConcurrency = 48;
+const graphCacheByWorkspacePath = new Map<string, {
+  result: WorkspaceGraph;
+  signature: string;
+}>();
 
 export async function readWorkspaceGraph(workspacePath: string): Promise<RelicResult<WorkspaceGraph>> {
   try {
     const fileTree = await readWorkspaceFileTree(workspacePath);
     const markdownPaths = collectMarkdownPaths(fileTree);
-    const aliasesResult = await readWorkspaceAliases(workspacePath);
-    const aliasesByPath = aliasesResult.ok ? aliasesResult.value : {};
+    const signature = await buildGraphSignature(workspacePath, markdownPaths);
+    const cached = graphCacheByWorkspacePath.get(workspacePath);
+    if (cached?.signature === signature) {
+      return ok(cached.result);
+    }
+
+    const entries = await readMarkdownEntries(workspacePath, markdownPaths);
+    const aliasesByPath = buildAliasesByPath(entries);
     const existingMarkdownPaths = new Set(markdownPaths);
     const resolveWikiLinks = createWikiLinkResolver(markdownPaths, aliasesByPath);
     const edges = new Map<string, { sourcePath: string; targetPath: string }>();
-    const entries = await readMarkdownEntries(workspacePath, markdownPaths);
 
     const nodes = [];
 
@@ -60,12 +69,14 @@ export async function readWorkspaceGraph(workspacePath: string): Promise<RelicRe
       }
     }
 
-    return ok({
+    const result: WorkspaceGraph = {
       edges: [...edges.values()].sort((a, b) =>
         `${a.sourcePath}/${a.targetPath}`.localeCompare(`${b.sourcePath}/${b.targetPath}`, "ja")
       ),
       nodes: nodes.sort((a, b) => a.path.localeCompare(b.path, "ja"))
-    });
+    };
+    graphCacheByWorkspacePath.set(workspacePath, { result, signature });
+    return ok(result);
   } catch (error) {
     return fail(
       "WORKSPACE_GRAPH_FAILED",
@@ -73,6 +84,45 @@ export async function readWorkspaceGraph(workspacePath: string): Promise<RelicRe
       error instanceof Error ? error.message : String(error)
     );
   }
+}
+
+async function buildGraphSignature(workspacePath: string, markdownPaths: string[]): Promise<string> {
+  const entries: string[] = Array.from({ length: markdownPaths.length }, () => "");
+  let nextIndex = 0;
+
+  async function readNext(): Promise<void> {
+    while (nextIndex < markdownPaths.length) {
+      const index = nextIndex;
+      nextIndex += 1;
+      const relativePath = markdownPaths[index];
+      const absolutePath = resolveWorkspaceRelativePath(workspacePath, relativePath);
+      if (!absolutePath.ok) {
+        entries[index] = `${relativePath}\u0000invalid`;
+        continue;
+      }
+
+      const fileStat = await stat(absolutePath.value);
+      entries[index] = `${relativePath}\u0000${fileStat.size}\u0000${fileStat.mtimeMs}`;
+    }
+  }
+
+  await Promise.all(
+    Array.from({ length: Math.min(graphReadConcurrency, Math.max(1, markdownPaths.length)) }, () => readNext())
+  );
+  return entries.join("\u0001");
+}
+
+function buildAliasesByPath(entries: Array<GraphFileEntry | null>): Record<string, string[]> {
+  const aliasesByPath: Record<string, string[]> = {};
+  for (const entry of entries) {
+    if (!entry) continue;
+
+    const aliases = extractAliases(entry.content);
+    if (aliases.length > 0) {
+      aliasesByPath[entry.sourcePath] = aliases;
+    }
+  }
+  return aliasesByPath;
 }
 
 async function readMarkdownEntries(workspacePath: string, markdownPaths: string[]): Promise<Array<GraphFileEntry | null>> {
