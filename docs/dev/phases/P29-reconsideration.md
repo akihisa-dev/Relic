@@ -73,3 +73,7 @@ P29では、事前に固定した長い実施リストは置かない。
 
 - ユーザー指示により、左レールのダッシュボード入口、ダッシュボードパネルタブ、rendererのダッシュボード集計・表示・関連テスト、ダッシュボード用localeとCSSを削除した。
 - ツールとフロントマターで共用していた見出しスタイルだけを `settings.css` へ移し、`pnpm typecheck`、`pnpm test`、`git diff --check` が通過した。全体テストは65ファイル、478件が通過した。
+
+### アプリ目的の再定義
+
+- ユーザー指示により、Relicの目的を「創作設定の作成、保管、閲覧のためのアプリ」として再定義し、`docs/product/project.md`、`docs/product/principles.md`、`README.md` に反映した。
