@@ -4,7 +4,7 @@ import { axisToYear, rangeToArray, yearToAxis } from "../../shared/chartTime";
 import type { GanttChartEntry, UpdateGanttChartEntryInput } from "../../shared/ipc";
 import { parseFrontmatter } from "./frontmatter";
 
-export function collectGanttEntriesForMarkdown(
+export function collectChronicleEntriesForMarkdown(
   relativePath: string,
   content: string
 ): Record<"chronicle", GanttChartEntry[]> {

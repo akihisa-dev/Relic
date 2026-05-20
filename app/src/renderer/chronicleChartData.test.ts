@@ -2,11 +2,11 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { UpdateGanttChartEntryInput } from "../shared/ipc";
 import {
-  normalizeWorkspaceGanttCharts,
-  normalizeWorkspaceGanttChartsWithFiles,
-  updateChartFrontmatter,
-  updateGanttChartEntryFallback
-} from "./ganttChartData";
+  normalizeWorkspaceChronicle,
+  normalizeWorkspaceChronicleWithFiles,
+  updateChronicleFrontmatter,
+  updateChronicleEntryFallback
+} from "./chronicleChartData";
 
 function chronicleEditInput(overrides: Partial<UpdateGanttChartEntryInput> = {}): UpdateGanttChartEntryInput {
   return {
@@ -21,9 +21,9 @@ function chronicleEditInput(overrides: Partial<UpdateGanttChartEntryInput> = {})
   };
 }
 
-describe("ganttChartData", () => {
+describe("chronicleChartData", () => {
   it("旧形式 chronicle 配列を現行Chronicleへ正規化する", () => {
-    const charts = normalizeWorkspaceGanttCharts([
+    const charts = normalizeWorkspaceChronicle([
       { endYear: 1333, fileName: "鎌倉時代", path: "history/kamakura.md", startYear: 1185 }
     ]);
 
@@ -47,7 +47,7 @@ describe("ganttChartData", () => {
 
   it("Markdown補完は行わず、mainから返ったChronicleを正規化する", async () => {
     const readMarkdownFile = vi.fn();
-    const charts = await normalizeWorkspaceGanttChartsWithFiles(
+    const charts = await normalizeWorkspaceChronicleWithFiles(
       [{ entries: [], filePaths: [], id: "chronicle", name: "Chronicle", source: "chronicle" }],
       [],
       readMarkdownFile
@@ -58,7 +58,7 @@ describe("ganttChartData", () => {
   });
 
   it("chronicleバー更新ではchronicleだけを更新する", () => {
-    expect(updateChartFrontmatter(
+    expect(updateChronicleFrontmatter(
       "---\nchronicle: [2026]\nstatus: [未着手]\n---\n# 実装タスク",
       chronicleEditInput()
     )).toBe(
@@ -67,7 +67,7 @@ describe("ganttChartData", () => {
   });
 
   it("frontmatter がないカードにもChronicle用プロパティを追加する", () => {
-    expect(updateChartFrontmatter("# 実装タスク", chronicleEditInput())).toBe(
+    expect(updateChronicleFrontmatter("# 実装タスク", chronicleEditInput())).toBe(
       "---\nchronicle: [2027]\n---\n# 実装タスク"
     );
   });
@@ -91,7 +91,7 @@ describe("ganttChartData", () => {
     const writeMarkdownFile = vi.fn(async () => ({ ok: true as const, value: undefined }));
     const getWorkspaceChronicle = vi.fn(async () => ({ ok: true as const, value: charts }));
 
-    await expect(updateGanttChartEntryFallback(chronicleEditInput(), {
+    await expect(updateChronicleEntryFallback(chronicleEditInput(), {
       getWorkspaceChronicle,
       readMarkdownFile,
       writeMarkdownFile

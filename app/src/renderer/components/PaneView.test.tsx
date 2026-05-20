@@ -70,7 +70,7 @@ function renderPaneView(overrides: Partial<PaneViewProps> = {}): PaneViewProps {
     frontmatterCandidates: {},
     isSplitView: false,
     pane: "left",
-    renderGanttChartTab: (chartId) => <div>Gantt {chartId}</div>,
+    renderChronicleTab: (chartId) => <div>Chronicle {chartId}</div>,
     renderPanelTab: (panel) => <div>Panel {panel}</div>,
     renderPanelTabIcon: () => <svg data-testid="panel-tab-icon" />,
     sourceMode: false,
@@ -188,7 +188,7 @@ describe("PaneView", () => {
     expect(props.onCloseAllTabs).toHaveBeenCalled();
   });
 
-  it("renders file, panel, gantt, and empty pane surfaces", () => {
+  it("renders file, panel, Chronicle, and empty pane surfaces", () => {
     setPaneState(
       { [fileTab.id]: fileTab },
       { activeTabId: fileTab.id, history: [fileTab.id], tabIds: [fileTab.id] }
@@ -211,7 +211,7 @@ describe("PaneView", () => {
       { activeTabId: ganttTab.id, history: [ganttTab.id], tabIds: [ganttTab.id] }
     );
     renderPaneView();
-    expect(screen.getByText("Gantt chronicle")).toBeInTheDocument();
+    expect(screen.getByText("Chronicle chronicle")).toBeInTheDocument();
 
     cleanup();
     setPaneState({}, emptyPane());

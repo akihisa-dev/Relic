@@ -10,7 +10,7 @@ import type {
   WorkspaceGanttChart,
   WorkspaceState
 } from "../../shared/ipc";
-import { GanttChartView } from "../components/ChronicleSidebar";
+import { ChronicleView } from "../components/ChronicleSidebar";
 import { FrontmatterSidebar } from "../components/FrontmatterSidebar";
 import { SettingsSidebar } from "../components/SettingsSidebar";
 import { ToolsSidebar } from "../components/ToolsSidebar";
@@ -20,12 +20,12 @@ interface UseAppTabRenderersInput {
   appInfo: AppInfo | null;
   editorSettings: EditorSettings;
   featureToggles: FeatureToggles;
-  ganttCharts: WorkspaceGanttChart[];
+  chronicleCharts: WorkspaceGanttChart[];
   handleOpenFile: (path: string) => void;
   handleSaveFeatureToggles: (toggles: FeatureToggles) => void;
   handleSaveSettings: (settings: EditorSettings) => void;
   handleSaveUserDefinedFields: (fields: UserDefinedField[]) => void;
-  handleUpdateGanttChartEntry: (input: UpdateGanttChartEntryInput) => Promise<void> | void;
+  handleUpdateChronicleEntry: (input: UpdateGanttChartEntryInput) => Promise<void> | void;
   userDefinedFields: UserDefinedField[];
   workspaceState: WorkspaceState | null;
 }
@@ -34,26 +34,26 @@ export function useAppTabRenderers({
   appInfo,
   editorSettings,
   featureToggles,
-  ganttCharts,
+  chronicleCharts,
   handleOpenFile,
   handleSaveFeatureToggles,
   handleSaveSettings,
   handleSaveUserDefinedFields,
-  handleUpdateGanttChartEntry,
+  handleUpdateChronicleEntry,
   userDefinedFields,
   workspaceState
 }: UseAppTabRenderersInput): {
-  renderGanttChartTab: (chartId: string) => ReactNode;
+  renderChronicleTab: (chartId: string) => ReactNode;
   renderPanelTab: (panel: PanelTabKind) => ReactNode;
 } {
-  const renderGanttChartTab = useCallback((chartId: string): ReactNode => (
-    <GanttChartView
-      chart={chartId === "charts" ? null : ganttCharts.find((chart) => chart.id === chartId) ?? null}
-      charts={chartId === "charts" ? ganttCharts : undefined}
+  const renderChronicleTab = useCallback((chartId: string): ReactNode => (
+    <ChronicleView
+      chart={chartId === "charts" ? null : chronicleCharts.find((chart) => chart.id === chartId) ?? null}
+      charts={chartId === "charts" ? chronicleCharts : undefined}
       onOpenFile={handleOpenFile}
-      onUpdateEntry={handleUpdateGanttChartEntry}
+      onUpdateEntry={handleUpdateChronicleEntry}
     />
-  ), [ganttCharts, handleOpenFile, handleUpdateGanttChartEntry]);
+  ), [chronicleCharts, handleOpenFile, handleUpdateChronicleEntry]);
 
   const renderPanelTab = useCallback((panel: PanelTabKind): ReactNode => {
     if (panel === "tools") {
@@ -91,7 +91,7 @@ export function useAppTabRenderers({
   ]);
 
   return {
-    renderGanttChartTab,
+    renderChronicleTab,
     renderPanelTab
   };
 }

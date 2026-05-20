@@ -6,55 +6,55 @@ import type {
   WorkspaceState
 } from "../../shared/ipc";
 import {
-  normalizeWorkspaceGanttCharts,
-  normalizeWorkspaceGanttChartsWithFiles,
-  updateGanttChartEntryFallback
-} from "../ganttChartData";
+  normalizeWorkspaceChronicle,
+  normalizeWorkspaceChronicleWithFiles,
+  updateChronicleEntryFallback
+} from "../chronicleChartData";
 import type { Tab } from "../store/editorStore";
 
-interface UseWorkspaceGanttChartsInput {
-  hasOpenGanttChart: boolean;
+interface UseWorkspaceChronicleInput {
+  hasOpenChronicle: boolean;
   setWorkspaceError: (message: string | null) => void;
   tabs: Record<string, Tab>;
   updateTabContent: (tabId: string, content: string) => void;
   workspaceState: WorkspaceState | null;
 }
 
-export function useWorkspaceGanttCharts({
-  hasOpenGanttChart,
+export function useWorkspaceChronicle({
+  hasOpenChronicle,
   setWorkspaceError,
   tabs,
   updateTabContent,
   workspaceState
-}: UseWorkspaceGanttChartsInput): {
-  ganttCharts: WorkspaceGanttChart[];
-  handleUpdateGanttChartEntry: (input: UpdateGanttChartEntryInput) => Promise<void>;
-  reloadGanttCharts: () => Promise<void>;
+}: UseWorkspaceChronicleInput): {
+  chronicleCharts: WorkspaceGanttChart[];
+  handleUpdateChronicleEntry: (input: UpdateGanttChartEntryInput) => Promise<void>;
+  reloadChronicle: () => Promise<void>;
 } {
-  const [ganttCharts, setGanttCharts] = useState<WorkspaceGanttChart[]>([]);
+  const [chronicleCharts, setChronicleCharts] = useState<WorkspaceGanttChart[]>([]);
 
-  const reloadGanttCharts = useCallback(async (): Promise<void> => {
+  const reloadChronicle = useCallback(async (): Promise<void> => {
     if (!workspaceState?.activeWorkspace || !window.relic) {
-      setGanttCharts([]);
+      setChronicleCharts([]);
       return;
     }
 
     const result = await window.relic.getWorkspaceChronicle();
 
     if (result.ok) {
-      const normalized = hasOpenGanttChart
-        ? await normalizeWorkspaceGanttChartsWithFiles(result.value, workspaceState.fileTree, window.relic.readMarkdownFile)
-        : normalizeWorkspaceGanttCharts(result.value);
-      setGanttCharts(normalized);
+      const normalized = hasOpenChronicle
+        ? await normalizeWorkspaceChronicleWithFiles(result.value, workspaceState.fileTree, window.relic.readMarkdownFile)
+        : normalizeWorkspaceChronicle(result.value);
+      setChronicleCharts(normalized);
     } else {
-      setGanttCharts([]);
+      setChronicleCharts([]);
       setWorkspaceError(result.error.message);
     }
-  }, [hasOpenGanttChart, setWorkspaceError, workspaceState?.activeWorkspace?.id, workspaceState?.fileTree]);
+  }, [hasOpenChronicle, setWorkspaceError, workspaceState?.activeWorkspace?.id, workspaceState?.fileTree]);
 
   useEffect(() => {
     if (!workspaceState?.activeWorkspace || !window.relic) {
-      setGanttCharts([]);
+      setChronicleCharts([]);
       return;
     }
 
@@ -64,9 +64,9 @@ export function useWorkspaceGanttCharts({
       if (canceled) return;
 
       if (result.ok) {
-        setGanttCharts(normalizeWorkspaceGanttCharts(result.value));
+        setChronicleCharts(normalizeWorkspaceChronicle(result.value));
       } else {
-        setGanttCharts([]);
+        setChronicleCharts([]);
         setWorkspaceError(result.error.message);
       }
     });
@@ -77,21 +77,21 @@ export function useWorkspaceGanttCharts({
   }, [setWorkspaceError, workspaceState?.activeWorkspace?.id, workspaceState?.fileTree]);
 
   useEffect(() => {
-    if (!hasOpenGanttChart) return;
-    void reloadGanttCharts();
-  }, [hasOpenGanttChart, reloadGanttCharts]);
+    if (!hasOpenChronicle) return;
+    void reloadChronicle();
+  }, [hasOpenChronicle, reloadChronicle]);
 
-  const handleUpdateGanttChartEntry = useCallback(async (input: UpdateGanttChartEntryInput): Promise<void> => {
+  const handleUpdateChronicleEntry = useCallback(async (input: UpdateGanttChartEntryInput): Promise<void> => {
     if (!window.relic) return;
 
     const relic = window.relic;
     const updateEntry = (relic as Partial<typeof relic>).updateGanttChartEntry;
     const result = typeof updateEntry === "function"
-      ? await updateEntry(input).catch(() => updateGanttChartEntryFallback(input, relic))
-      : await updateGanttChartEntryFallback(input, relic);
+      ? await updateEntry(input).catch(() => updateChronicleEntryFallback(input, relic))
+      : await updateChronicleEntryFallback(input, relic);
 
     if (result.ok) {
-      setGanttCharts(await normalizeWorkspaceGanttChartsWithFiles(result.value, workspaceState?.fileTree ?? [], relic.readMarkdownFile));
+      setChronicleCharts(await normalizeWorkspaceChronicleWithFiles(result.value, workspaceState?.fileTree ?? [], relic.readMarkdownFile));
       const updatedFile = await relic.readMarkdownFile({ path: input.path });
 
       if (updatedFile.ok) {
@@ -107,8 +107,8 @@ export function useWorkspaceGanttCharts({
   }, [setWorkspaceError, tabs, updateTabContent, workspaceState?.fileTree]);
 
   return {
-    ganttCharts,
-    handleUpdateGanttChartEntry,
-    reloadGanttCharts
+    chronicleCharts,
+    handleUpdateChronicleEntry,
+    reloadChronicle
   };
 }
