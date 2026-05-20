@@ -19,7 +19,7 @@ import {
   updateFileTabMetaState
 } from "./editorStoreModel";
 
-export type PanelTabKind = "dashboard" | "tools" | "frontmatter" | "settings" | "graph";
+export type PanelTabKind = "dashboard" | "tools" | "frontmatter" | "settings";
 
 export interface FileTab {
   content: string;

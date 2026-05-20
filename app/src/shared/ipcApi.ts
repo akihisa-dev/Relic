@@ -44,7 +44,6 @@ import type {
   SearchWorkspaceInput,
   SwitchWorkspaceInput,
   WorkspaceChangedEvent,
-  WorkspaceGraph,
   WorkspaceSearchResult,
   WorkspaceState,
   WorkspaceTagSummary,
@@ -67,7 +66,6 @@ export interface RelicApi {
   getEditorSettings: () => Promise<RelicResult<EditorSettings>>;
   getWorkspaceAliases: () => Promise<RelicResult<AliasIndex>>;
   getWorkspaceChronicle: () => Promise<RelicResult<WorkspaceGanttChart[]>>;
-  getWorkspaceGraph: () => Promise<RelicResult<WorkspaceGraph>>;
   getFrontmatterValueCandidates: () => Promise<RelicResult<Record<string, string[]>>>;
   getWorkspaceTags: () => Promise<RelicResult<WorkspaceTagSummary[]>>;
   getWorkspaceState: () => Promise<RelicResult<WorkspaceState>>;

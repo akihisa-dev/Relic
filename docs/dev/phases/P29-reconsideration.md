@@ -63,3 +63,8 @@ P29では、事前に固定した長い実施リストは置かない。
 
 - ユーザー指示により、P28グラフビュー安定化フェーズを終了し、P29再考フェーズを開始した。
 - ユーザー指示により、ダッシュボードとグラフビュー削除前の状態へ戻した。依存を入れ直し、`pnpm typecheck`、`pnpm test`、`git diff --check` が通過した。
+
+### グラフビュー削除
+
+- ユーザー指示により、左レールのグラフ入口、グラフパネルタブ、rendererのグラフ描画・操作・store・worker・関連テスト、main/preload/sharedのグラフIPC/API、グラフ用locale、グラフ専用依存の `d3-force`、`pixi.js`、`@types/d3-force` を削除した。
+- Chronicle用CSSだけを `chronicle.css` として残し、`pnpm typecheck`、`pnpm test`、`git diff --check` が通過した。全体テストは67ファイル、485件が通過した。
