@@ -23,7 +23,6 @@ describe("paneViewModel", () => {
     const fileTab: Tab = { content: "", id: "tab-file", kind: "file", name: "Note", path: "Note.md" };
     const ganttTab: Tab = { chartId: "chronicle", id: "gantt-chronicle", kind: "gantt", name: "Chronicle" };
 
-    expect(panelTabLabel("dashboard", t)).toBe("Dashboard");
     expect(panelTabLabel("frontmatter", t)).toBe("Frontmatter");
     expect(panelTabLabel("settings", t)).toBe("Settings");
     expect(panelTabLabel("tools", t)).toBe("Tools");

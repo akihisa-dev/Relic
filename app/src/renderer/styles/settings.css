@@ -25,6 +25,15 @@
   margin: 0;
 }
 
+.settings-page-kicker {
+  color: var(--text-3);
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0;
+  margin: 0;
+  text-transform: uppercase;
+}
+
 .settings-group {
   background: var(--bg);
   border: 1px solid var(--border);
