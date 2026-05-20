@@ -167,7 +167,7 @@ export function useAppPaneFileActions({
 
   const handleSelectFolder = useCallback(
     (node: Extract<WorkspaceTreeNode, { type: "folder" }>): void => {
-      void node; // フェーズ2ではフォルダ選択は何もしない
+      void node; // フェーズ2ではカードフォルダ選択は何もしない
     },
     []
   );

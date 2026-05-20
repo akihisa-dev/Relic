@@ -7,9 +7,9 @@ import { replaceFileLinks, replaceFolderLinks } from "./linkUpdaterModel";
 import { resolveWorkspaceRelativePath } from "./paths";
 
 /**
- * ファイルリネーム後、ワークスペース内の内部リンクを一括更新する。
- * - basename-only リンク（[[ファイル名]]）：同じフォルダ内のファイルからのリンクを更新
- * - パス付きリンク（[[フォルダ/ファイル名]]）：任意のファイルからのリンクを更新
+ * カードリネーム後、カードブック内の内部リンクを一括更新する。
+ * - basename-only リンク（[[カード名]]）：同じカードフォルダ内のカードからのリンクを更新
+ * - パス付きリンク（[[カードフォルダ/カード名]]）：任意のカードからのリンクを更新
  */
 export async function updateLinksForFileRename(
   workspacePath: string,
@@ -60,8 +60,8 @@ export async function updateLinksForFileRename(
 }
 
 /**
- * フォルダリネーム後、パス付き内部リンクを一括更新する。
- * basename-only リンクはフォルダ内ファイル同士の相対関係が保たれるため更新不要。
+ * カードフォルダリネーム後、パス付き内部リンクを一括更新する。
+ * basename-only リンクはカードフォルダ内カード同士の相対関係が保たれるため更新不要。
  */
 export async function updateLinksForFolderRename(
   workspacePath: string,

@@ -66,7 +66,7 @@ export function registerFileSearchHandlers(): void {
   ipcMain.handle(readMarkdownFileChannel, async (_event, input: ReadMarkdownFileInput) => {
     try {
       if (!isPathInput(input)) {
-        return fail("FILE_READ_INVALID_INPUT", "ファイルパスを指定してください。");
+        return fail("FILE_READ_INVALID_INPUT", "カードパスを指定してください。");
       }
 
       const context = await getActiveWorkspaceContext();
@@ -76,7 +76,7 @@ export function registerFileSearchHandlers(): void {
     } catch (error) {
       return fail(
         "FILE_READ_FAILED",
-        "ファイルを読み込めませんでした。",
+        "カードを読み込めませんでした。",
         ipcErrorDetails(error)
       );
     }
@@ -85,7 +85,7 @@ export function registerFileSearchHandlers(): void {
   ipcMain.handle(getBacklinksChannel, async (_event, input: GetBacklinksInput) => {
     try {
       if (!isPathInput(input)) {
-        return fail("BACKLINKS_INVALID_INPUT", "バックリンクを確認するファイルを指定してください。");
+        return fail("BACKLINKS_INVALID_INPUT", "バックリンクを確認するカードを指定してください。");
       }
 
       const context = await getActiveWorkspaceContext();
@@ -179,7 +179,7 @@ function isRegisteredFrontmatterSearchField(
   field: string,
   userDefinedFields: Array<{ name: string }>
 ): boolean {
-  const fixedFields = new Set(["aliases", "tags", "status", "chronicle", "plannedDate", "actualDate"]);
+  const fixedFields = new Set(["aliases", "tags", "status", "chronicle"]);
   const normalizedField = field.trim();
 
   return fixedFields.has(normalizedField) || userDefinedFields.some((candidate) => candidate.name === normalizedField);

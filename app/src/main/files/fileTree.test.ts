@@ -20,7 +20,7 @@ describe("readWorkspaceFileTree", () => {
     );
   });
 
-  it("フォルダとMarkdownファイルだけをワークスペース相対パスで返す", async () => {
+  it("カードフォルダとMarkdownカードだけをカードブック相対パスで返す", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-tree-"));
     temporaryPaths.push(workspacePath);
 

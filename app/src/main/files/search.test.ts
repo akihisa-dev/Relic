@@ -39,31 +39,31 @@ describe("searchWorkspace", () => {
   it("全文検索で本文中の日本語部分一致を返す", async () => {
     const workspacePath = await createSearchWorkspace();
 
-    await expect(searchWorkspace(workspacePath, "ファイルツリー", "fullText")).resolves.toEqual({
+    await expect(searchWorkspace(workspacePath, "カードツリー", "fullText")).resolves.toEqual({
       ok: true,
       value: [
         {
           fileName: "deep-link",
           lineNumber: 4,
-          lineText: "ファイルツリーのフォルダ開閉、リンク解決、検索確認です。",
+          lineText: "カードツリーのカードフォルダ開閉、リンク解決、検索確認です。",
           path: "deep-link.md"
         }
       ]
     });
-    await expect(searchWorkspace(workspacePath, "ファイル", "fullText")).resolves.toEqual({
+    await expect(searchWorkspace(workspacePath, "カード", "fullText")).resolves.toEqual({
       ok: true,
       value: [
         {
           fileName: "deep-link",
           lineNumber: 4,
-          lineText: "ファイルツリーのフォルダ開閉、リンク解決、検索確認です。",
+          lineText: "カードツリーのカードフォルダ開閉、リンク解決、検索確認です。",
           path: "deep-link.md"
         }
       ]
     });
   });
 
-  it("ファイル名検索でファイル名に一致するノートを返す", async () => {
+  it("カード名検索でカード名に一致するノートを返す", async () => {
     const workspacePath = await createSearchWorkspace();
 
     await expect(searchWorkspace(workspacePath, "nested", "fileName")).resolves.toMatchObject({
@@ -72,7 +72,7 @@ describe("searchWorkspace", () => {
     });
   });
 
-  it("ファイル名検索でaliasesに一致するノートを返す", async () => {
+  it("カード名検索でaliasesに一致するノートを返す", async () => {
     const workspacePath = await createSearchWorkspace();
 
     await expect(searchWorkspace(workspacePath, "別名", "fileName")).resolves.toMatchObject({
@@ -110,7 +110,7 @@ describe("searchWorkspace", () => {
     });
   });
 
-  it("フロントマターフィルターで構造的に絞り込む", async () => {
+  it("プロパティフィルターで構造的に絞り込む", async () => {
     const workspacePath = await createSearchWorkspace();
 
     await expect(searchWorkspace(workspacePath, "draft", "frontmatter", "status")).resolves.toEqual({
@@ -126,7 +126,7 @@ describe("searchWorkspace", () => {
     });
   });
 
-  it("フロントマターの配列フィールドも絞り込める", async () => {
+  it("プロパティの配列フィールドも絞り込める", async () => {
     const workspacePath = await createSearchWorkspace();
 
     await expect(searchWorkspace(workspacePath, "自分", "frontmatter", "author")).resolves.toMatchObject({
@@ -147,7 +147,7 @@ describe("searchWorkspace", () => {
     await writeFile(path.join(workspacePath, "folder", "nested.md"), "#資料\n別本文", "utf8");
     await writeFile(
       path.join(workspacePath, "deep-link.md"),
-      "---\ntags: [links]\n---\nファイルツリーのフォルダ開閉、リンク解決、検索確認です。",
+      "---\ntags: [links]\n---\nカードツリーのカードフォルダ開閉、リンク解決、検索確認です。",
       "utf8"
     );
     await writeFile(path.join(workspacePath, "image.txt"), "ドラフト", "utf8");

@@ -10,7 +10,7 @@
 
 ライブプレビューはCodeMirror 6を中心に実装する。ただし、Markdown解析・HTML安全化・KaTeX連携などは専用ライブラリを組み合わせ、CodeMirrorだけで無理に完結させない。
 
-Markdownプレビューでは `marked` でHTMLを生成し、`marked-footnote` で脚注を追加し、`DOMPurify` で安全化する。コードブロックのハイライトには `highlight.js`、数式表示には `KaTeX` を使う。フロントマターのYAML読み書きには `js-yaml` を使う。
+Markdownプレビューでは `marked` でHTMLを生成し、`marked-footnote` で脚注を追加し、`DOMPurify` で安全化する。コードブロックのハイライトには `highlight.js`、数式表示には `KaTeX` を使う。プロパティのYAML読み書きには `js-yaml` を使う。
 
 ---
 
@@ -51,7 +51,7 @@ marked-footnote           # 脚注拡張
 dompurify                 # HTML安全化
 highlight.js              # コードブロックのシンタックスハイライト
 katex                     # 数式表示
-js-yaml                   # フロントマターYAML処理
+js-yaml                   # プロパティYAML処理
 ```
 
 主な実装位置:
@@ -59,7 +59,7 @@ js-yaml                   # フロントマターYAML処理
 - `app/src/renderer/editorExtensions.ts`: CodeMirror拡張、Markdown言語サポート、内部リンク補完、リンククリック処理
 - `app/src/renderer/editorLivePreview.ts`: ライブプレビュー装飾
 - `app/src/renderer/previewMarkdown.ts`: marked / marked-footnote / DOMPurify / highlight.js / KaTeX によるプレビューHTML生成
-- `app/src/main/files/frontmatter.ts`、`app/src/renderer/editorFrontmatterModel.ts`: `js-yaml` によるフロントマター解析・書き戻し
+- `app/src/main/files/frontmatter.ts`、`app/src/renderer/editorFrontmatterModel.ts`: `js-yaml` によるプロパティ解析・書き戻し
 
 ---
 

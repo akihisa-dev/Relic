@@ -29,7 +29,7 @@ export async function replaceInFile(
   }
 
   if (path.extname(relativePath) !== ".md") {
-    return fail("FILE_TYPE_UNSUPPORTED", "Markdownファイルだけを対象にできます。");
+    return fail("FILE_TYPE_UNSUPPORTED", "Markdownカードだけを対象にできます。");
   }
 
   const regex = buildReplacementRegex(searchQuery, isRegex);

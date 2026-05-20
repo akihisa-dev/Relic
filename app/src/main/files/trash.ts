@@ -13,7 +13,7 @@ export async function moveWorkspaceItemToTrash(
   trashItem: TrashItem
 ): Promise<RelicResult<{ path: string }>> {
   if (type === "file" && path.extname(relativePath) !== ".md") {
-    return fail("FILE_TYPE_UNSUPPORTED", "Markdownファイルだけをゴミ箱に移動できます。");
+    return fail("FILE_TYPE_UNSUPPORTED", "Markdownカードだけをゴミ箱に移動できます。");
   }
 
   const absolutePath = resolveWorkspaceRelativePath(workspacePath, relativePath);
@@ -26,11 +26,11 @@ export async function moveWorkspaceItemToTrash(
     const itemStats = await stat(absolutePath.value);
 
     if (type === "file" && !itemStats.isFile()) {
-      return fail("TRASH_NOT_FILE", "ファイルだけをゴミ箱に移動できます。");
+      return fail("TRASH_NOT_FILE", "カードだけをゴミ箱に移動できます。");
     }
 
     if (type === "folder" && !itemStats.isDirectory()) {
-      return fail("TRASH_NOT_FOLDER", "フォルダだけをゴミ箱に移動できます。");
+      return fail("TRASH_NOT_FOLDER", "カードフォルダだけをゴミ箱に移動できます。");
     }
 
     await trashItem(absolutePath.value);

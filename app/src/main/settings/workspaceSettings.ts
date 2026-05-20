@@ -13,8 +13,7 @@ export interface WorkspaceSettings {
 }
 
 export const defaultGanttCharts: GanttChartSettings[] = [
-  { filePaths: [], id: "chronicle", name: "chronicle", source: "chronicle" },
-  { filePaths: [], id: "date", name: "date", source: "date" }
+  { filePaths: [], id: "chronicle", name: "Chronicle", source: "chronicle" }
 ];
 
 const defaultWorkspaceSettings: WorkspaceSettings = {
@@ -91,11 +90,12 @@ function parseGanttChartFilePaths(raw: unknown): string[] | undefined {
 }
 
 function isGanttChartSource(value: unknown): value is GanttChartSource {
-  return value === "chronicle" || value === "date";
+  return value === "chronicle";
 }
 
 function defaultGanttChartName(source: GanttChartSource): string {
-  return source === "date" ? "日付ガント" : "年表";
+  void source;
+  return "Chronicle";
 }
 
 export async function writeWorkspaceSettings(

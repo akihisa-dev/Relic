@@ -20,7 +20,7 @@ describe("readFrontmatterValueCandidates", () => {
     );
   });
 
-  it("ワークスペース内Markdownのフロントマター値を候補として集める", async () => {
+  it("カードブック内Markdownのプロパティ値を候補として集める", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-frontmatter-candidates-"));
     temporaryPaths.push(workspacePath);
     await mkdir(path.join(workspacePath, "folder"));

@@ -16,7 +16,7 @@ export async function createFolder(
   name: string,
   parentFolder = ""
 ): Promise<RelicResult<CreatedFolder>> {
-  const validatedName = validateBaseName(name, "フォルダ名を入力してください。");
+  const validatedName = validateBaseName(name, "カードフォルダ名を入力してください。");
 
   if (!validatedName.ok) {
     return validatedName;
@@ -41,12 +41,12 @@ export async function createFolder(
     });
   } catch (error) {
     if (isFileExistsError(error)) {
-      return fail("FOLDER_ALREADY_EXISTS", "同じ名前のフォルダまたはファイルがすでにあります。");
+      return fail("FOLDER_ALREADY_EXISTS", "同じ名前のカードフォルダまたはカードがすでにあります。");
     }
 
     return fail(
       "FOLDER_CREATE_FAILED",
-      "フォルダを作成できませんでした。",
+      "カードフォルダを作成できませんでした。",
       errorDetails(error)
     );
   }
@@ -63,7 +63,7 @@ export async function renameFolder(
     return sourcePath;
   }
 
-  const validatedName = validateBaseName(newName, "フォルダ名を入力してください。");
+  const validatedName = validateBaseName(newName, "カードフォルダ名を入力してください。");
 
   if (!validatedName.ok) {
     return validatedName;
@@ -81,14 +81,14 @@ export async function renameFolder(
   }
 
   if (await pathExists(destinationPath.value)) {
-    return fail("FOLDER_ALREADY_EXISTS", "同じ名前のフォルダまたはファイルがすでにあります。");
+    return fail("FOLDER_ALREADY_EXISTS", "同じ名前のカードフォルダまたはカードがすでにあります。");
   }
 
   try {
     const sourceStats = await stat(sourcePath.value);
 
     if (!sourceStats.isDirectory()) {
-      return fail("FOLDER_RENAME_NOT_DIRECTORY", "フォルダだけをリネームできます。");
+      return fail("FOLDER_RENAME_NOT_DIRECTORY", "カードフォルダだけをリネームできます。");
     }
 
     await rename(sourcePath.value, destinationPath.value);
@@ -100,7 +100,7 @@ export async function renameFolder(
   } catch (error) {
     return fail(
       "FOLDER_RENAME_FAILED",
-      "フォルダ名を変更できませんでした。",
+      "カードフォルダ名を変更できませんでした。",
       errorDetails(error)
     );
   }
@@ -134,14 +134,14 @@ export async function moveFolder(
   }
 
   if (await pathExists(destinationPath.value)) {
-    return fail("FOLDER_ALREADY_EXISTS", "移動先に同じ名前のフォルダまたはファイルがすでにあります。");
+    return fail("FOLDER_ALREADY_EXISTS", "移動先に同じ名前のカードフォルダまたはカードがすでにあります。");
   }
 
   try {
     const sourceStats = await stat(sourcePath.value);
 
     if (!sourceStats.isDirectory()) {
-      return fail("FOLDER_MOVE_NOT_DIRECTORY", "フォルダだけを移動できます。");
+      return fail("FOLDER_MOVE_NOT_DIRECTORY", "カードフォルダだけを移動できます。");
     }
 
     await rename(sourcePath.value, destinationPath.value);
@@ -151,7 +151,7 @@ export async function moveFolder(
   } catch (error) {
     return fail(
       "FOLDER_MOVE_FAILED",
-      "フォルダを移動できませんでした。",
+      "カードフォルダを移動できませんでした。",
       errorDetails(error)
     );
   }

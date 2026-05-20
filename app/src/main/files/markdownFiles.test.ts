@@ -15,14 +15,14 @@ import {
 } from "./markdownFiles";
 
 describe("normalizeMarkdownFileName", () => {
-  it("拡張子なしのファイル名に .md を付与する", () => {
+  it("拡張子なしのカード名に .md を付与する", () => {
     expect(normalizeMarkdownFileName("読書メモ")).toEqual({
       ok: true,
       value: "読書メモ.md"
     });
   });
 
-  it("スラッシュを含むファイル名を拒否する", () => {
+  it("スラッシュを含むカード名を拒否する", () => {
     expect(normalizeMarkdownFileName("notes/読書メモ").ok).toBe(false);
   });
 });
@@ -41,7 +41,7 @@ describe("createMarkdownFile", () => {
     );
   });
 
-  it("Markdownファイルを空の本文で作成する", async () => {
+  it("Markdownカードを空の本文で作成する", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-create-file-"));
     temporaryPaths.push(workspacePath);
 
@@ -54,7 +54,7 @@ describe("createMarkdownFile", () => {
     await expect(readFile(path.join(workspacePath, "読書メモ.md"), "utf8")).resolves.toBe("");
   });
 
-  it("同名ファイルがある場合は上書きしない", async () => {
+  it("同名カードがある場合は上書きしない", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-create-file-"));
     temporaryPaths.push(workspacePath);
 
@@ -82,7 +82,7 @@ describe("createMarkdownFileAtPath", () => {
     );
   });
 
-  it("ワークスペース相対パスにMarkdownファイルを作成する", async () => {
+  it("カードブック相対パスにMarkdownカードを作成する", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-create-linked-file-"));
     temporaryPaths.push(workspacePath);
 
@@ -97,7 +97,7 @@ describe("createMarkdownFileAtPath", () => {
     await expect(readFile(path.join(workspacePath, "folder", "新規ノート.md"), "utf8")).resolves.toBe("");
   });
 
-  it("ワークスペース外とMarkdown以外への作成を拒否する", async () => {
+  it("カードブック外とMarkdown以外への作成を拒否する", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-create-linked-file-"));
     temporaryPaths.push(workspacePath);
 
@@ -124,7 +124,7 @@ describe("readMarkdownFile", () => {
     );
   });
 
-  it("ワークスペース内のMarkdownファイルを読み込む", async () => {
+  it("カードブック内のMarkdownカードを読み込む", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-read-file-"));
     temporaryPaths.push(workspacePath);
 
@@ -140,7 +140,7 @@ describe("readMarkdownFile", () => {
     });
   });
 
-  it("Markdown以外とワークスペース外への参照を拒否する", async () => {
+  it("Markdown以外とカードブック外への参照を拒否する", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-read-file-"));
     temporaryPaths.push(workspacePath);
 
@@ -167,7 +167,7 @@ describe("renameMarkdownFile", () => {
     );
   });
 
-  it("Markdownファイル名を変更する", async () => {
+  it("Markdownカード名を変更する", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-rename-file-"));
     temporaryPaths.push(workspacePath);
 
@@ -184,7 +184,7 @@ describe("renameMarkdownFile", () => {
     await expect(readFile(path.join(workspacePath, "after.md"), "utf8")).resolves.toBe("# Before");
   });
 
-  it("同名ファイルがある場合は上書きしない", async () => {
+  it("同名カードがある場合は上書きしない", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-rename-file-"));
     temporaryPaths.push(workspacePath);
 
@@ -198,7 +198,7 @@ describe("renameMarkdownFile", () => {
     await expect(readFile(path.join(workspacePath, "after.md"), "utf8")).resolves.toBe("after");
   });
 
-  it("Markdown以外とワークスペース外への参照を拒否する", async () => {
+  it("Markdown以外とカードブック外への参照を拒否する", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-rename-file-"));
     temporaryPaths.push(workspacePath);
 
@@ -225,7 +225,7 @@ describe("duplicateMarkdownFile", () => {
     );
   });
 
-  it("同じフォルダにMarkdownファイルを複製する", async () => {
+  it("同じカードフォルダにMarkdownカードを複製する", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-duplicate-file-"));
     temporaryPaths.push(workspacePath);
 
@@ -259,7 +259,7 @@ describe("duplicateMarkdownFile", () => {
     });
   });
 
-  it("Markdown以外とワークスペース外への参照を拒否する", async () => {
+  it("Markdown以外とカードブック外への参照を拒否する", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-duplicate-file-"));
     temporaryPaths.push(workspacePath);
 
@@ -286,7 +286,7 @@ describe("moveMarkdownFile", () => {
     );
   });
 
-  it("Markdownファイルを別フォルダへ移動する", async () => {
+  it("Markdownカードを別カードフォルダへ移動する", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-move-file-"));
     temporaryPaths.push(workspacePath);
 
@@ -304,7 +304,7 @@ describe("moveMarkdownFile", () => {
     await expect(readFile(path.join(workspacePath, "archive/note.md"), "utf8")).resolves.toBe("# Note");
   });
 
-  it("移動先に同名ファイルがある場合は上書きしない", async () => {
+  it("移動先に同名カードがある場合は上書きしない", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-move-file-"));
     temporaryPaths.push(workspacePath);
 

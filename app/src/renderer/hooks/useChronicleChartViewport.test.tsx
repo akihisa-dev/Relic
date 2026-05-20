@@ -156,25 +156,6 @@ describe("useChronicleChartViewport", () => {
     expect(hook.result.current.scrollLeft).toBe(430);
   });
 
-  it("date sourceでもminimap pointer操作でtimeline値へscrollする", () => {
-    const { hook } = renderViewport("date");
-    const chartElement = makeDiv({ clientWidth: 200, scrollWidth: 1000 });
-    const minimapElement = makeDiv({ clientWidth: 100, scrollWidth: 100, width: 100 });
-    (hook.result.current.chartRef as MutableRefObject<HTMLDivElement | null>).current = chartElement;
-    (hook.result.current.minimapRef as MutableRefObject<HTMLDivElement | null>).current = minimapElement;
-
-    act(() => {
-      hook.result.current.handleMinimapPointer(makePointerEvent<HTMLDivElement>({
-        clientX: 50,
-        currentTarget: minimapElement,
-        target: minimapElement
-      }));
-    });
-
-    expect(chartElement.scrollLeft).toBe(430);
-    expect(hook.result.current.scrollLeft).toBe(430);
-  });
-
   it("縦minimap pointer操作で行方向へscrollする", () => {
     const { hook } = renderViewport();
     const chartElement = makeDiv({ clientHeight: 200, clientWidth: 200, scrollHeight: 1000, scrollWidth: 1000 });

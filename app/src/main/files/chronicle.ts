@@ -7,14 +7,13 @@ import { collectMarkdownPaths } from "../../shared/workspaceTree";
 import {
   collectGanttEntriesForMarkdown,
   sortChronicleEntries,
-  sortDateEntries,
   updateChronicleDataForChartEdit
 } from "./chronicleData";
 import { readWorkspaceFileTree } from "./fileTree";
 import { updateFrontmatter } from "./frontmatter";
 import { resolveWorkspaceRelativePath } from "./paths";
 
-export { extractChronicleRange, extractDateRange } from "./chronicleData";
+export { extractChronicleRange } from "./chronicleData";
 
 export async function readWorkspaceChronicle(
   workspacePath: string,
@@ -23,8 +22,7 @@ export async function readWorkspaceChronicle(
   try {
     const fileTree = await readWorkspaceFileTree(workspacePath);
     const entriesBySource: Record<GanttChartSettings["source"], GanttChartEntry[]> = {
-      chronicle: [],
-      date: []
+      chronicle: []
     };
 
     for (const relativePath of collectMarkdownPaths(fileTree)) {
@@ -35,12 +33,10 @@ export async function readWorkspaceChronicle(
       const content = await readFile(absolutePath.value, "utf8");
       const fileEntries = collectGanttEntriesForMarkdown(relativePath, content);
       entriesBySource.chronicle.push(...fileEntries.chronicle);
-      entriesBySource.date.push(...fileEntries.date);
     }
 
     const sortedEntriesBySource = {
-      chronicle: sortChronicleEntries(entriesBySource.chronicle),
-      date: sortDateEntries(entriesBySource.date)
+      chronicle: sortChronicleEntries(entriesBySource.chronicle)
     };
 
     return ok(charts.map((chart) => ({
@@ -69,7 +65,7 @@ export async function updateWorkspaceGanttChartEntry(
     }
 
     if (path.extname(absolutePath.value) !== ".md") {
-      return fail("GANTT_ENTRY_NOT_MARKDOWN", "Markdownファイル以外は更新できません。");
+      return fail("GANTT_ENTRY_NOT_MARKDOWN", "Markdown形式のカード以外は更新できません。");
     }
 
     const content = await readFile(absolutePath.value, "utf8");
@@ -83,7 +79,7 @@ export async function updateWorkspaceGanttChartEntry(
   } catch (error) {
     return fail(
       "GANTT_ENTRY_UPDATE_FAILED",
-      "チャートの変更をファイルへ保存できませんでした。",
+      "Chronicleの変更をカードへ保存できませんでした。",
       error instanceof Error ? error.message : String(error)
     );
   }

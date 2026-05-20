@@ -168,7 +168,7 @@ describe("PaneView", () => {
     expect(writeText).toHaveBeenCalledWith("[[Folder/Note]]");
 
     fireEvent.contextMenu(tabElement("Note"), { clientX: 50, clientY: 60 });
-    fireEvent.click(screen.getByRole("button", { name: "Show in folder" }));
+    fireEvent.click(screen.getByRole("button", { name: "Show card location" }));
     expect(props.onRevealTabFile).toHaveBeenCalledWith(fileTab.id);
 
     fireEvent.contextMenu(tabElement("Note"), { clientX: 50, clientY: 60 });
@@ -216,8 +216,8 @@ describe("PaneView", () => {
     cleanup();
     setPaneState({}, emptyPane());
     const props = renderPaneView();
-    expect(screen.getByText("No files")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Create New File" }));
+    expect(screen.getByText("No cards")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Create New Card" }));
     expect(props.onCreateFile).toHaveBeenCalledWith("");
   });
 });

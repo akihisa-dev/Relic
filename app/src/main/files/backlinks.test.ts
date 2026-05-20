@@ -20,7 +20,7 @@ describe("readBacklinks", () => {
     );
   });
 
-  it("対象ファイルを参照しているMarkdownファイルを一覧にする", async () => {
+  it("対象カードを参照しているMarkdownカードを一覧にする", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-backlinks-"));
     temporaryPaths.push(workspacePath);
     await mkdir(path.join(workspacePath, "folder"));
@@ -53,7 +53,7 @@ describe("readBacklinks", () => {
   });
 
 
-  it("Markdown以外とワークスペース外への参照を拒否する", async () => {
+  it("Markdown以外とカードブック外への参照を拒否する", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-backlinks-"));
     temporaryPaths.push(workspacePath);
 

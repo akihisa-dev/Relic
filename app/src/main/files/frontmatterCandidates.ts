@@ -41,7 +41,7 @@ export async function readFrontmatterValueCandidates(
   } catch (error) {
     return fail(
       "FRONTMATTER_VALUE_CANDIDATES_READ_FAILED",
-      "フロントマター候補を読み込めませんでした。",
+      "プロパティ候補を読み込めませんでした。",
       error instanceof Error ? error.message : String(error)
     );
   }

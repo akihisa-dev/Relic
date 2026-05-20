@@ -27,7 +27,7 @@ describe("replaceInFile", () => {
     await expect(readFile(path.join(ws, "note.md"), "utf8")).resolves.toBe("baz bar baz");
   });
 
-  it("一致なしの場合はファイルを変更せず件数0を返す", async () => {
+  it("一致なしの場合はカードを変更せず件数0を返す", async () => {
     const ws = await mkdtemp(path.join(os.tmpdir(), "relic-replace-"));
     temporaryPaths.push(ws);
 
@@ -72,7 +72,7 @@ describe("searchAndReplace", () => {
     );
   });
 
-  it("ワークスペース内の一致行を一覧にする", async () => {
+  it("カードブック内の一致行を一覧にする", async () => {
     const ws = await mkdtemp(path.join(os.tmpdir(), "relic-replace-"));
     temporaryPaths.push(ws);
 
@@ -100,7 +100,7 @@ describe("applySearchAndReplace", () => {
     );
   });
 
-  it("全ファイルに置換を適用して件数を返す", async () => {
+  it("全カードに置換を適用して件数を返す", async () => {
     const ws = await mkdtemp(path.join(os.tmpdir(), "relic-replace-"));
     temporaryPaths.push(ws);
     await mkdir(path.join(ws, "sub"));

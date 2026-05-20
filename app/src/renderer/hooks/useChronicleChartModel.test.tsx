@@ -34,10 +34,9 @@ describe("useChronicleChartModel", () => {
 
   it("selected id がない場合は先頭chartをfallbackにする", async () => {
     const chronicleChart = chart();
-    const dateChart = chart({ id: "date", name: "date", source: "date" });
     const { result } = renderHook(() => useChronicleChartModel({
       chart: null,
-      charts: [chronicleChart, dateChart]
+      charts: [chronicleChart]
     }));
 
     expect(result.current.activeChart?.id).toBe("chronicle");
@@ -49,60 +48,54 @@ describe("useChronicleChartModel", () => {
 
   it("chart選択時にstore選択と固定単位を維持する", () => {
     const chronicleChart = chart();
-    const dateChart = chart({ id: "date", name: "date", source: "date" });
     const { result } = renderHook(() => useChronicleChartModel({
       chart: null,
-      charts: [chronicleChart, dateChart]
+      charts: [chronicleChart]
     }));
 
     act(() => {
-      result.current.selectChart(dateChart);
+      result.current.selectChart(chronicleChart);
     });
 
-    expect(useUiStore.getState().selectedGanttChartId).toBe("date");
-    expect(result.current.activeSource).toBe("date");
+    expect(useUiStore.getState().selectedGanttChartId).toBe("chronicle");
+    expect(result.current.activeSource).toBe("chronicle");
     expect(result.current.minimapItems).toHaveLength(1);
     expect(result.current.tickInterval).toBe(1);
-    expect(result.current.dateScale?.unit).toBe("day");
+    expect(result.current.axisHeight).toBe(34);
   });
 
-  it("query/status filter と sort state からrowsを導出する", () => {
-    const dateChart = chart({
+  it("query と sort state からrowsを導出する", () => {
+    const chronicleChart = chart({
       entries: [
         entry({
-          dateKind: "planned",
-          endLabel: "2026-05-05",
-          endValue: 20_848,
+          endLabel: "1185",
+          endValue: 1184,
           fileName: "実装タスク",
           path: "tasks/implementation.md",
-          startLabel: "2026-05-01",
-          startValue: 20_844,
-          statuses: ["完了"]
+          startLabel: "1185",
+          startValue: 1184
         }),
         entry({
-          dateKind: "planned",
-          endLabel: "2026-05-09",
-          endValue: 20_852,
+          endLabel: "1333",
+          endValue: 1332,
           fileName: "調査タスク",
           path: "tasks/research.md",
-          startLabel: "2026-05-07",
-          startValue: 20_850,
-          statuses: ["進行中"]
+          startLabel: "1333",
+          startValue: 1332
         })
       ],
-      id: "date",
-      name: "date",
-      source: "date"
+      id: "chronicle",
+      name: "Chronicle",
+      source: "chronicle"
     });
-    const { result } = renderHook(() => useChronicleChartModel({ chart: dateChart, charts: [] }));
+    const { result } = renderHook(() => useChronicleChartModel({ chart: chronicleChart, charts: [] }));
 
     act(() => {
       result.current.setQuery("tasks");
-      result.current.setStatusFilter("完了");
       result.current.setSortKey("name-desc");
     });
 
-    expect(result.current.rows.map((row) => row.path)).toEqual(["tasks/implementation.md"]);
+    expect(result.current.rows.map((row) => row.path)).toEqual(["tasks/research.md", "tasks/implementation.md"]);
   });
 
   it("更新操作までは既存の行順を維持する", async () => {
@@ -149,35 +142,10 @@ describe("useChronicleChartModel", () => {
     });
   });
 
-  it("date表示で無効なstatus filterになった場合は空へ戻す", async () => {
-    const dateChart = chart({
-      entries: [
-        entry({
-          dateKind: "planned",
-          fileName: "実装タスク",
-          path: "tasks/implementation.md",
-          statuses: ["完了"]
-        })
-      ],
-      id: "date",
-      name: "date",
-      source: "date"
-    });
-    const { result } = renderHook(() => useChronicleChartModel({ chart: dateChart, charts: [] }));
-
-    act(() => {
-      result.current.setStatusFilter("存在しない");
-    });
-
-    await waitFor(() => {
-      expect(result.current.statusFilter).toBe("");
-    });
-  });
-
   it("縦方向の表示範囲と画面外件数を計算する", () => {
     expect(buildChronicleVerticalViewportState({
+      axisHeight: 42,
       chartViewportHeight: 194,
-      dateAxisHeight: 42,
       rowCount: 20,
       scrollTop: 38 * 5
     })).toEqual({

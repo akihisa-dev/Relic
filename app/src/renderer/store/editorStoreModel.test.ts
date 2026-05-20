@@ -35,7 +35,7 @@ function applyState(
 }
 
 describe("editorStoreModel", () => {
-  it("同じファイルpathのタブは新規作成せず対象ペインへ追加する", () => {
+  it("同じカードpathのタブは新規作成せず対象ペインへ追加する", () => {
     const opened = applyState(baseState(), openFileTabState(baseState(), "left", sampleFile, "tab-a"));
     const reopened = applyState(opened, openFileTabState(opened, "right", sampleFile, "tab-b"));
 

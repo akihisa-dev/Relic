@@ -18,10 +18,9 @@ describe("workspaceHandlerValidators", () => {
     expect(isUserDefinedFieldsInput([{ name: "kind", type: "select", choices: [1] }])).toBe(false);
   });
 
-  it("validates the two required gantt chart sources", () => {
+  it("validates the required chronicle chart source", () => {
     expect(isGanttChartsInput([
-      { id: "chronicle", name: "Chronicle", source: "chronicle" },
-      { id: "date", name: "Date", source: "date", filePaths: ["a.md"] }
+      { id: "chronicle", name: "Chronicle", source: "chronicle", filePaths: ["a.md"] }
     ])).toBe(true);
     expect(isGanttChartsInput([
       { id: "a", name: "A", source: "chronicle" },
@@ -36,7 +35,7 @@ describe("workspaceHandlerValidators", () => {
       originalEndValue: 2,
       originalStartValue: 1,
       path: "Note.md",
-      source: "date",
+      source: "chronicle",
       startValue: 2
     })).toBe(true);
     expect(isUpdateGanttChartEntryInput({
@@ -45,7 +44,7 @@ describe("workspaceHandlerValidators", () => {
       originalEndValue: 2,
       originalStartValue: 1,
       path: "Note.md",
-      source: "date",
+      source: "chronicle",
       startValue: 2
     })).toBe(false);
     expect(isFrontmatterTemplatesInput([{ fieldNames: ["status"], name: "Basic" }])).toBe(true);

@@ -9,7 +9,6 @@ import {
   firstArrayValue,
   inputTypeFor,
   isEditableScalar,
-  isFixedDateRangeField,
   isSingleValueField,
   parseChronicleYearInput,
   parseDateInput,
@@ -39,14 +38,6 @@ export function createFrontmatterValueInput({
   view: EditorView;
 }): HTMLElement {
   if (key === "chronicle") return chronicleInput(view, key, Array.isArray(value) ? value : [], updateField);
-  if (isFixedDateRangeField(key)) {
-    return dateRangeInput(
-      view,
-      key,
-      Array.isArray(value) ? value : value === null || value === undefined ? [] : [value],
-      updateField
-    );
-  }
   if (field?.type === "boolean") return booleanInput(view, key, firstArrayValue(value), updateField, true);
   if (isSingleValueField(field)) return scalarInput(view, key, firstArrayValue(value), field, candidates, updateField, true);
   if (field?.type === "multi-select" || key === "aliases" || key === "tags" || Array.isArray(value)) {
@@ -218,48 +209,6 @@ function chronicleInput(
     }
 
     updateField(view, key, startYear <= endYear ? [startYear, endYear] : [endYear, startYear]);
-  };
-
-  startInput.addEventListener("change", commit);
-  endInput.addEventListener("change", commit);
-  wrap.append(startInput, endInput);
-  return wrap;
-}
-
-function dateRangeInput(
-  view: EditorView,
-  key: string,
-  value: unknown[],
-  updateField: FrontmatterFieldUpdater
-): HTMLElement {
-  const wrap = document.createElement("span");
-  wrap.className = "cm-frontmatter-input-wrap cm-frontmatter-date-range";
-
-  const startInput = document.createElement("input");
-  startInput.className = "cm-frontmatter-input";
-  startInput.type = "date";
-  startInput.value = dateInputValue(value[0]);
-
-  const endInput = document.createElement("input");
-  endInput.className = "cm-frontmatter-input";
-  endInput.type = "date";
-  endInput.value = value.length > 1 ? dateInputValue(value[1]) : "";
-
-  const commit = (): void => {
-    const startDate = parseDateInput(startInput.value);
-    const endDate = parseDateInput(endInput.value);
-
-    if (startDate === null) {
-      updateField(view, key, undefined);
-      return;
-    }
-
-    if (endDate === null || endDate === startDate) {
-      updateField(view, key, [startDate]);
-      return;
-    }
-
-    updateField(view, key, startDate <= endDate ? [startDate, endDate] : [endDate, startDate]);
   };
 
   startInput.addEventListener("change", commit);

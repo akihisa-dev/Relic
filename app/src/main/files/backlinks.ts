@@ -14,7 +14,7 @@ export async function readBacklinks(
   targetRelativePath: string
 ): Promise<RelicResult<Backlink[]>> {
   if (path.extname(targetRelativePath) !== ".md") {
-    return fail("FILE_TYPE_UNSUPPORTED", "Markdownファイルだけバックリンクを確認できます。");
+    return fail("FILE_TYPE_UNSUPPORTED", "Markdownカードだけバックリンクを確認できます。");
   }
 
   const targetPath = resolveWorkspaceRelativePath(workspacePath, targetRelativePath);

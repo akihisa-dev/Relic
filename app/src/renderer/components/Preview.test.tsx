@@ -100,7 +100,7 @@ describe("Preview", () => {
     expect(screen.getByText("図")).toBeInTheDocument();
   });
 
-  it("Obsidian形式の画像埋め込みをファイル埋め込みとして扱わない", () => {
+  it("Obsidian形式の画像埋め込みをカード埋め込みとして扱わない", () => {
     window.relic = {
       readMarkdownFile: vi.fn()
     } as unknown as typeof window.relic;
@@ -131,7 +131,7 @@ describe("Preview", () => {
     expect(screen.getByText("外部")).toBeInTheDocument();
   });
 
-  it("ファイル埋め込みを一段階だけ読み込んで表示する", async () => {
+  it("カード埋め込みを一段階だけ読み込んで表示する", async () => {
     window.relic = {
       readMarkdownFile: vi.fn().mockResolvedValue({
         ok: true,
@@ -151,7 +151,7 @@ describe("Preview", () => {
     expect(window.relic!.readMarkdownFile).toHaveBeenCalledTimes(1);
   });
 
-  it("大きすぎる埋め込みファイルは全文表示しない", async () => {
+  it("大きすぎる埋め込みカードは全文表示しない", async () => {
     window.relic = {
       readMarkdownFile: vi.fn().mockResolvedValue({
         ok: true,
@@ -170,7 +170,7 @@ describe("Preview", () => {
 });
 
 describe("normalizeEmbedTarget", () => {
-  it("Markdownファイルとして読める埋め込み先へ正規化する", () => {
+  it("Markdownカードとして読める埋め込み先へ正規化する", () => {
     expect(normalizeEmbedTarget("Folder/Note")).toBe("Folder/Note.md");
     expect(normalizeEmbedTarget("Folder/Note.md#見出し")).toBe("Folder/Note.md");
     expect(normalizeEmbedTarget("Folder/image.png")).toBeNull();

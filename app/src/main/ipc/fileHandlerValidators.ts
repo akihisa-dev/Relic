@@ -258,7 +258,7 @@ function parseSearchMode(value: unknown): SearchMode | null {
     return "fullText";
   }
 
-  if (normalized === "filename" || normalized === "file name" || value === "ファイル名") {
+  if (normalized === "filename" || normalized === "file name" || value === "カード名") {
     return "fileName";
   }
 
@@ -274,7 +274,7 @@ function parseSearchMode(value: unknown): SearchMode | null {
     normalized === "frontmatter" ||
     normalized === "property" ||
     value === "プロパティ" ||
-    value === "フロントマター"
+    value === "プロパティ"
   ) {
     return "frontmatter";
   }

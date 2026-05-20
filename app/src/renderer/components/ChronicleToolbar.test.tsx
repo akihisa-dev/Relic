@@ -17,11 +17,10 @@ function chart(overrides: Partial<WorkspaceGanttChart> = {}): WorkspaceGanttChar
 
 function renderToolbar(overrides: Partial<ChronicleToolbarProps> = {}) {
   const chronicleChart = chart();
-  const dateChart = chart({ id: "date", name: "date", source: "date" });
   const props: ChronicleToolbarProps = {
     activeChart: chronicleChart,
     activeSource: "chronicle",
-    availableCharts: [chronicleChart, dateChart],
+    availableCharts: [chronicleChart],
     query: "",
     refreshRowOrder: vi.fn(),
     scrollToToday: vi.fn(),
@@ -51,28 +50,13 @@ describe("ChronicleToolbar", () => {
 
     expect(container.querySelector(".chronicle-toolbar")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "chronicle" })).toHaveClass("active");
-    fireEvent.click(screen.getByRole("button", { name: "date" }));
-    fireEvent.change(screen.getByPlaceholderText("ファイル名・パス・値"), { target: { value: "鎌倉" } });
+    fireEvent.change(screen.getByPlaceholderText("カード名・パス・値"), { target: { value: "鎌倉" } });
     fireEvent.change(screen.getByDisplayValue("開始順（昇順）"), { target: { value: "name-desc" } });
     fireEvent.click(screen.getByRole("button", { name: "並び順を更新" }));
 
-    expect(props.selectChart).toHaveBeenCalledWith(expect.objectContaining({ id: "date" }));
     expect(props.setQuery).toHaveBeenCalledWith("鎌倉");
     expect(props.setSortKey).toHaveBeenCalledWith("name-desc");
     expect(props.refreshRowOrder).toHaveBeenCalledTimes(1);
     expect(container.querySelector(".chronicle-actions")).toBeNull();
-  });
-
-  it("date sourceではstatus filterと今日buttonを表示する", () => {
-    const { props } = renderToolbar({
-      activeChart: chart({ id: "date", name: "date", source: "date" }),
-      activeSource: "date"
-    });
-
-    fireEvent.change(screen.getByLabelText("ステータス"), { target: { value: "完了" } });
-    fireEvent.click(screen.getByRole("button", { name: "今日" }));
-
-    expect(props.setStatusFilter).toHaveBeenCalledWith("完了");
-    expect(props.scrollToToday).toHaveBeenCalledTimes(1);
   });
 });

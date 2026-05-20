@@ -37,7 +37,7 @@ describe("FilesSidebarSearch", () => {
   it("changes query and search mode from the menu", () => {
     const props = renderSearch();
 
-    fireEvent.change(screen.getByLabelText("File search"), { target: { value: "note" } });
+    fireEvent.change(screen.getByLabelText("Card search"), { target: { value: "note" } });
     expect(props.onSearchQueryChange).toHaveBeenCalledWith("note");
 
     fireEvent.click(screen.getByRole("button", { name: "Search method" }));
@@ -53,7 +53,7 @@ describe("FilesSidebarSearch", () => {
       searchFrontmatterField: "status",
       searchMode: "frontmatter"
     });
-    const fileSearchInput = screen.getByLabelText("File search");
+    const fileSearchInput = screen.getByLabelText("Card search");
 
     expect(fileSearchInput).toHaveAttribute("list", "files-search-frontmatter-values");
     expect(screen.getByLabelText("Property name")).toHaveValue("status");

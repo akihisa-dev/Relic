@@ -139,7 +139,7 @@ describe("FileTree", () => {
     expect(writeText).toHaveBeenCalledWith("[[Root]]");
 
     openContextMenu("Root");
-    fireEvent.click(screen.getByRole("menuitem", { name: "Show in folder" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Show card location" }));
     expect(onRevealItem).toHaveBeenCalledWith("Root.md");
 
     openContextMenu("Root");
@@ -148,7 +148,7 @@ describe("FileTree", () => {
 
     openContextMenu("Root");
     fireEvent.click(screen.getByRole("menuitem", { name: "Move..." }));
-    expect(promptSpy).toHaveBeenCalledWith("Destination folder", "");
+    expect(promptSpy).toHaveBeenCalledWith("Destination card folder", "");
     expect(onMoveFile).toHaveBeenCalledWith("Root.md", "Archive");
 
     openContextMenu("Root");
@@ -168,19 +168,19 @@ describe("FileTree", () => {
     });
 
     openContextMenu("Folder");
-    fireEvent.click(screen.getByRole("menuitem", { name: "New file here" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "New card here" }));
     expect(onCreateFileInFolder).toHaveBeenCalledWith("Folder");
 
     openContextMenu("Folder");
-    fireEvent.click(screen.getByRole("menuitem", { name: "Create folder here" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Create card folder here" }));
     expect(onCreateFolderInFolder).toHaveBeenCalledWith("Folder");
 
     openContextMenu("Folder");
-    fireEvent.click(screen.getByRole("menuitem", { name: "Expand this folder" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Expand this card folder" }));
     expect(onRequestExpansion).toHaveBeenCalledWith("expand", "Folder");
 
     openContextMenu("Folder");
-    fireEvent.click(screen.getByRole("menuitem", { name: "Collapse all folders" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Collapse all card folders" }));
     expect(onRequestExpansion).toHaveBeenCalledWith("collapse");
   });
 

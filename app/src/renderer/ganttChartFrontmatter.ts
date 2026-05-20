@@ -1,5 +1,5 @@
 import type { UpdateGanttChartEntryInput } from "../shared/ipc";
-import { axisToYear, dayToDate, isDateString, rangeToStringArray, shiftDateYears } from "../shared/chartTime";
+import { axisToYear, rangeToStringArray } from "../shared/chartTime";
 
 export function updateChartFrontmatter(content: string, input: UpdateGanttChartEntryInput): string {
   const frontmatter = splitFrontmatterBlock(content);
@@ -48,54 +48,15 @@ export function readYamlArrayField(yamlText: string, field: string): string[] {
 }
 
 function chartFrontmatterUpdates(yamlText: string, input: UpdateGanttChartEntryInput): Record<string, string[]> {
+  void yamlText;
   const start = Math.min(input.startValue, input.endValue);
   const end = Math.max(input.startValue, input.endValue);
-
-  if (input.source === "date") {
-    const startDate = dayToDate(start);
-    const endDate = dayToDate(end);
-    const dateField = input.dateKind === "actual" ? "actualDate" : "plannedDate";
-    const updates: Record<string, string[]> = {
-      chronicle: rangeToStringArray(dateYear(startDate), dateYear(endDate)),
-      [dateField]: rangeToStringArray(startDate, endDate)
-    };
-
-    return updates;
-  }
-
-  const originalPlannedDate = readYamlArrayField(yamlText, "plannedDate");
-  const originalActualDate = readYamlArrayField(yamlText, "actualDate");
-  const originalStartYear = axisToYear(input.originalStartValue);
-  const originalEndYear = axisToYear(input.originalEndValue);
   const startYear = axisToYear(start);
   const endYear = axisToYear(end);
-  const updates: Record<string, string[]> = {
+
+  return {
     chronicle: rangeToStringArray(startYear, endYear)
   };
-
-  const shiftDateRange = (values: string[]): string[] | null => {
-    if (values.length !== 1 && values.length !== 2) return null;
-
-    const startDate = values[0];
-    const endDate = values[1] ?? startDate;
-
-    if (isDateString(startDate) && isDateString(endDate)) {
-      return rangeToStringArray(
-        shiftDateYears(startDate, startYear - originalStartYear),
-        shiftDateYears(endDate, endYear - originalEndYear)
-      );
-    }
-
-    return null;
-  };
-
-  const plannedDate = shiftDateRange(originalPlannedDate);
-  const actualDate = shiftDateRange(originalActualDate);
-
-  if (plannedDate) updates.plannedDate = plannedDate;
-  if (actualDate) updates.actualDate = actualDate;
-
-  return updates;
 }
 
 function setYamlArrayField(yamlText: string, field: string, values: string[]): string {
@@ -107,10 +68,6 @@ function setYamlArrayField(yamlText: string, field: string, values: string[]): s
   }
 
   return `${yamlText}${yamlText.endsWith("\n") || yamlText.length === 0 ? "" : "\n"}${line}`;
-}
-
-function dateYear(value: string): number {
-  return Number(value.slice(0, 4));
 }
 
 function escapeRegExp(value: string): string {

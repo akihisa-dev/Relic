@@ -36,6 +36,11 @@ export function ChronicleToolbar({
   statusOptions
 }: ChronicleToolbarProps): ReactElement {
   const t = useT();
+  void activeSource;
+  void scrollToToday;
+  void setStatusFilter;
+  void statusFilter;
+  void statusOptions;
 
   return (
     <div className="chronicle-toolbar">
@@ -79,28 +84,6 @@ export function ChronicleToolbar({
       >
         <RefreshIcon />
       </button>
-      {activeSource === "date" && statusOptions.length > 0 ? (
-        <label className="chronicle-search chronicle-status-filter">
-          <span>{t("chronicle.status")}</span>
-          <select onChange={(event) => setStatusFilter(event.target.value)} value={statusFilter}>
-            <option value="">{t("chronicle.statusAll")}</option>
-            {statusOptions.map((status) => (
-              <option key={status} value={status}>{status}</option>
-            ))}
-          </select>
-        </label>
-      ) : null}
-      {activeSource === "date" ? (
-        <div className="chronicle-actions">
-          <button
-            className="chronicle-today-button"
-            onClick={scrollToToday}
-            type="button"
-          >
-            {t("chronicle.today")}
-          </button>
-        </div>
-      ) : null}
     </div>
   );
 }

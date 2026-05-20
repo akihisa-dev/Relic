@@ -35,7 +35,7 @@ describe("workspaceFileMutationModel", () => {
   });
 
   it("削除確認文言を既存文言で作る", () => {
-    expect(deleteTreeItemMessage("docs", "folder", t)).toContain("フォルダをゴミ箱に移動しますか？");
+    expect(deleteTreeItemMessage("docs", "folder", t)).toContain("カードフォルダをゴミ箱に移動しますか？");
     expect(deleteTreeItemMessage("docs/A.md", "file", t)).toBe("「A」をゴミ箱に移動しますか？");
   });
 

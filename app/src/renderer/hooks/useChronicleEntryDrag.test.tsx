@@ -6,14 +6,12 @@ import { useChronicleEntryDrag } from "./useChronicleEntryDrag";
 
 function entry(overrides: Partial<GanttChartEntry> = {}): GanttChartEntry {
   return {
-    dateKind: "planned",
-    endLabel: "2026-05-03",
+    endLabel: "1333",
     endValue: 12,
     fileName: "実装タスク",
     path: "tasks/implementation.md",
-    startLabel: "2026-05-01",
+    startLabel: "1185",
     startValue: 10,
-    statuses: ["完了"],
     ...overrides
   };
 }
@@ -47,9 +45,9 @@ function makePointerDown(overrides: Partial<{
 async function runEdit(kind: GanttChartEntryEditKind, clientX: number) {
   const onUpdateEntry = vi.fn();
   const hook = renderHook(() => useChronicleEntryDrag({
-    activeSource: "date",
+    activeSource: "chronicle",
     onUpdateEntry,
-    resetKey: "date",
+    resetKey: "chronicle",
     unitWidth: 10
   }));
 
@@ -57,7 +55,10 @@ async function runEdit(kind: GanttChartEntryEditKind, clientX: number) {
     hook.result.current.startEntryEdit(makePointerDown(), entry(), kind);
   });
   act(() => {
-    window.dispatchEvent(new MouseEvent("pointerup", { clientX }));
+    const pointerUp = new Event("pointerup") as PointerEvent;
+    Object.defineProperty(pointerUp, "clientX", { value: clientX });
+    Object.defineProperty(pointerUp, "timeStamp", { value: 16 });
+    window.dispatchEvent(pointerUp);
   });
 
   await waitFor(() => {
@@ -75,7 +76,7 @@ describe("useChronicleEntryDrag", () => {
       originalEndValue: 12,
       originalStartValue: 10,
       path: "tasks/implementation.md",
-      source: "date",
+      source: "chronicle",
       startValue: 11
     }));
     await expect(runEdit("resize-start", 20)).resolves.toHaveBeenCalledWith(expect.objectContaining({
@@ -84,7 +85,7 @@ describe("useChronicleEntryDrag", () => {
       startValue: 12
     }));
     await expect(runEdit("resize-end", 20)).resolves.toHaveBeenCalledWith(expect.objectContaining({
-      endValue: 14,
+      endValue: 15,
       kind: "resize-end",
       startValue: 10
     }));
@@ -98,8 +99,8 @@ describe("useChronicleEntryDrag", () => {
 
   it("callbackがない場合はdragを開始しない", () => {
     const hook = renderHook(() => useChronicleEntryDrag({
-      activeSource: "date",
-      resetKey: "date",
+      activeSource: "chronicle",
+      resetKey: "chronicle",
       unitWidth: 10
     }));
     const preventDefault = vi.fn();

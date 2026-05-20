@@ -68,21 +68,21 @@ export function registerWorkspacePreferenceHandlers(): void {
       const settings = await readAppSettings(app.getPath("userData"));
       return ok(settings.frontmatterTemplates);
     } catch (error) {
-      return fail("FRONTMATTER_TEMPLATES_READ_FAILED", "フロントマターテンプレートを読み込めませんでした。", ipcErrorDetails(error));
+      return fail("FRONTMATTER_TEMPLATES_READ_FAILED", "プロパティテンプレートを読み込めませんでした。", ipcErrorDetails(error));
     }
   });
 
   ipcMain.handle(saveFrontmatterTemplatesChannel, async (_event, input: FrontmatterTemplate[]): Promise<RelicResult<void>> => {
     try {
       if (!isFrontmatterTemplatesInput(input)) {
-        return fail("FRONTMATTER_TEMPLATES_INVALID_INPUT", "フロントマターテンプレートの値が正しくありません。");
+        return fail("FRONTMATTER_TEMPLATES_INVALID_INPUT", "プロパティテンプレートの値が正しくありません。");
       }
 
       const settings = await readAppSettings(app.getPath("userData"));
       await writeAppSettings(app.getPath("userData"), { ...settings, frontmatterTemplates: input });
       return ok(undefined);
     } catch (error) {
-      return fail("FRONTMATTER_TEMPLATES_SAVE_FAILED", "フロントマターテンプレートを保存できませんでした。", ipcErrorDetails(error));
+      return fail("FRONTMATTER_TEMPLATES_SAVE_FAILED", "プロパティテンプレートを保存できませんでした。", ipcErrorDetails(error));
     }
   });
 }

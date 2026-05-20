@@ -65,7 +65,7 @@ describe("toolsSidebarModel", () => {
       sourcePath: "Book.md"
     });
     expect(resultStatus(ok("out.md"), t, String)).toBe("Done: out.md");
-    expect(splitResultStatus(ok(["a.md", "b.md"]), t)).toBe("Done: 2 file(s) created");
+    expect(splitResultStatus(ok(["a.md", "b.md"]), t)).toBe("Done: 2 card(s) created");
     expect(resultStatus(fail("X", "Bad"), t, String)).toBe("Error: Bad");
     expect(isToolStatusError("Error: Bad")).toBe(true);
     expect(isToolStatusError("Done: out.md")).toBe(false);

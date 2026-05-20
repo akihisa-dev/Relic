@@ -20,7 +20,7 @@ describe("moveWorkspaceItemToTrash", () => {
     );
   });
 
-  it("Markdownファイルをゴミ箱へ移動する境界を呼び出す", async () => {
+  it("Markdownカードをゴミ箱へ移動する境界を呼び出す", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-trash-"));
     temporaryPaths.push(workspacePath);
     const trashItem = vi.fn().mockResolvedValue(undefined);
@@ -38,7 +38,7 @@ describe("moveWorkspaceItemToTrash", () => {
     expect(trashItem).toHaveBeenCalledWith(path.join(workspacePath, "note.md"));
   });
 
-  it("フォルダをゴミ箱へ移動する境界を呼び出す", async () => {
+  it("カードフォルダをゴミ箱へ移動する境界を呼び出す", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-trash-"));
     temporaryPaths.push(workspacePath);
     const trashItem = vi.fn().mockResolvedValue(undefined);
@@ -54,7 +54,7 @@ describe("moveWorkspaceItemToTrash", () => {
     expect(trashItem).toHaveBeenCalledWith(path.join(workspacePath, "資料"));
   });
 
-  it("ワークスペース外・Markdown以外・種別違いを拒否する", async () => {
+  it("カードブック外・Markdown以外・種別違いを拒否する", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-trash-"));
     temporaryPaths.push(workspacePath);
     const trashItem = vi.fn().mockResolvedValue(undefined);

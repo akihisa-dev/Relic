@@ -290,18 +290,12 @@
 }
 
 .chronicle-chart {
-  --chronicle-actual-fill: rgba(224, 108, 0, 0.48);
-  --chronicle-actual-fill-active: rgba(224, 108, 0, 0.64);
-  --chronicle-actual-fill-hover: rgba(224, 108, 0, 0.56);
   --chronicle-fill: rgba(0, 124, 175, 0.28);
   --chronicle-fill-active: rgba(0, 124, 175, 0.44);
   --chronicle-fill-hover: rgba(0, 124, 175, 0.36);
   --chronicle-grid-line-major: rgba(28, 28, 28, 0.15);
   --chronicle-grid-line-minor: rgba(28, 28, 28, 0.055);
   --chronicle-grid-line-row: rgba(28, 28, 28, 0.06);
-  --chronicle-planned-fill: rgba(0, 124, 175, 0.36);
-  --chronicle-planned-fill-active: rgba(0, 124, 175, 0.52);
-  --chronicle-planned-fill-hover: rgba(0, 124, 175, 0.44);
   border: 1px solid var(--border);
   border-radius: 7px;
   cursor: grab;
@@ -315,34 +309,22 @@
 }
 
 [data-theme="dark"] .chronicle-chart {
-  --chronicle-actual-fill: rgba(224, 108, 0, 0.68);
-  --chronicle-actual-fill-active: rgba(224, 108, 0, 0.82);
-  --chronicle-actual-fill-hover: rgba(224, 108, 0, 0.76);
   --chronicle-fill: rgba(0, 124, 175, 0.52);
   --chronicle-fill-active: rgba(0, 124, 175, 0.68);
   --chronicle-fill-hover: rgba(0, 124, 175, 0.6);
   --chronicle-grid-line-major: rgba(255, 255, 255, 0.2);
   --chronicle-grid-line-minor: rgba(255, 255, 255, 0.09);
   --chronicle-grid-line-row: rgba(255, 255, 255, 0.12);
-  --chronicle-planned-fill: rgba(0, 124, 175, 0.62);
-  --chronicle-planned-fill-active: rgba(0, 124, 175, 0.78);
-  --chronicle-planned-fill-hover: rgba(0, 124, 175, 0.7);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .chronicle-chart {
-    --chronicle-actual-fill: rgba(224, 108, 0, 0.68);
-    --chronicle-actual-fill-active: rgba(224, 108, 0, 0.82);
-    --chronicle-actual-fill-hover: rgba(224, 108, 0, 0.76);
     --chronicle-fill: rgba(0, 124, 175, 0.52);
     --chronicle-fill-active: rgba(0, 124, 175, 0.68);
     --chronicle-fill-hover: rgba(0, 124, 175, 0.6);
     --chronicle-grid-line-major: rgba(255, 255, 255, 0.2);
     --chronicle-grid-line-minor: rgba(255, 255, 255, 0.09);
     --chronicle-grid-line-row: rgba(255, 255, 255, 0.12);
-    --chronicle-planned-fill: rgba(0, 124, 175, 0.62);
-    --chronicle-planned-fill-active: rgba(0, 124, 175, 0.78);
-    --chronicle-planned-fill-hover: rgba(0, 124, 175, 0.7);
   }
 }
 
@@ -373,17 +355,6 @@
   z-index: 22;
 }
 
-.chronicle-name-header--date {
-  align-items: end;
-  border-bottom: 1px solid var(--border);
-  color: var(--text-3);
-  display: grid;
-  font-size: 11px;
-  font-weight: 700;
-  grid-template-columns: minmax(0, 1fr) 96px 96px;
-  padding: 0 12px 8px;
-}
-
 .chronicle-name-header--chronicle {
   align-items: end;
   border-bottom: 1px solid var(--border);
@@ -396,10 +367,6 @@
 }
 
 .chronicle-name-header--chronicle span {
-  text-align: left;
-}
-
-.chronicle-name-header--date span {
   text-align: left;
 }
 
@@ -451,21 +418,12 @@
   white-space: nowrap;
 }
 
-.chronicle-axis--date .chronicle-axis-cell {
-  padding: 0 2px;
-}
-
 .chronicle-axis > .chronicle-guide-lines {
   z-index: 0;
 }
 
 .chronicle-axis-row {
   z-index: 1;
-}
-
-.chronicle-axis--date .chronicle-axis-cell--follow {
-  justify-content: flex-start;
-  padding: 0;
 }
 
 .chronicle-axis-cell-label {
@@ -507,10 +465,6 @@
   grid-template-columns: minmax(0, 1fr);
 }
 
-.chronicle-file-name-row--date {
-  grid-template-columns: minmax(0, 1fr) 96px 96px;
-}
-
 .chronicle-file-name-row--chronicle {
   grid-template-columns: minmax(0, 1fr) 96px;
 }
@@ -520,8 +474,7 @@
 }
 
 .chronicle-file-name,
-.chronicle-file-remove,
-.chronicle-date-kind {
+.chronicle-file-remove {
   background: var(--bg);
   border: 0;
   border-bottom: 1px solid var(--border);
@@ -543,26 +496,6 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   width: 100%;
-}
-
-.chronicle-date-summary {
-  align-items: center;
-  background: var(--bg);
-  border-bottom: 1px solid var(--border);
-  border-left: 1px solid var(--border-soft);
-  box-sizing: border-box;
-  color: var(--text-2);
-  display: flex;
-  font-size: 11px;
-  font-weight: 650;
-  height: 38px;
-  justify-content: flex-start;
-  min-width: 0;
-  overflow: hidden;
-  padding: 0 12px;
-  text-align: left;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .chronicle-year-summary {
@@ -591,30 +524,6 @@
 .chronicle-year-summary:hover {
   background: var(--hover);
   color: var(--text);
-}
-
-.chronicle-date-summary--planned {
-  color: rgb(0, 98, 140);
-}
-
-.chronicle-date-summary--actual {
-  color: rgb(174, 78, 0);
-}
-
-.chronicle-date-kind {
-  align-items: center;
-  border-left: 1px solid var(--border-soft);
-  display: flex;
-  font-weight: 700;
-  justify-content: center;
-}
-
-.chronicle-date-kind--planned {
-  color: rgb(0, 98, 140);
-}
-
-.chronicle-date-kind--actual {
-  color: rgb(174, 78, 0);
 }
 
 .chronicle-file-name--empty {
@@ -924,51 +833,9 @@
   cursor: grabbing;
 }
 
-.chronicle-fill--planned {
-  background: var(--chronicle-planned-fill);
-}
-
-.chronicle-fill--planned:hover {
-  background: var(--chronicle-planned-fill-hover);
-}
-
-.chronicle-fill--planned:active,
-.chronicle-fill--planned.chronicle-fill--dragging {
-  background: var(--chronicle-planned-fill-active);
-}
-
-.chronicle-fill--actual {
-  background: var(--chronicle-actual-fill);
-}
-
-.chronicle-fill--date {
-  border-radius: 2px;
-}
-
-.chronicle-fill--date .chronicle-fill-label {
-  display: none;
-}
-
-.chronicle-fill--date.chronicle-fill--planned {
-  z-index: 3;
-}
-
-.chronicle-fill--date.chronicle-fill--actual {
-  z-index: 4;
-}
-
 .chronicle-fill--chronicle .chronicle-fill-label {
   background: color-mix(in srgb, var(--bg) 72%, transparent);
   border-radius: 4px;
-}
-
-.chronicle-fill--actual:hover {
-  background: var(--chronicle-actual-fill-hover);
-}
-
-.chronicle-fill--actual:active,
-.chronicle-fill--actual.chronicle-fill--dragging {
-  background: var(--chronicle-actual-fill-active);
 }
 
 .chronicle-fill-label {
@@ -977,25 +844,6 @@
   left: 7px;
   padding: 0 7px;
   position: absolute;
-  z-index: 1;
-}
-
-.chronicle-fill-status {
-  background: rgba(255, 255, 255, 0.86);
-  border: 1px solid rgba(174, 78, 0, 0.24);
-  border-radius: 4px;
-  box-sizing: border-box;
-  color: rgb(96, 42, 0);
-  display: block;
-  font-size: 11px;
-  font-weight: 700;
-  line-height: 16px;
-  overflow: visible;
-  padding: 0 6px;
-  pointer-events: none;
-  position: absolute;
-  top: 0;
-  white-space: nowrap;
   z-index: 1;
 }
 
@@ -1018,10 +866,6 @@
   top: 4px;
   transition: opacity 120ms ease;
   width: 2px;
-}
-
-.chronicle-fill--actual .chronicle-fill-resize::after {
-  background: rgba(174, 78, 0, 0.48);
 }
 
 .chronicle-fill:hover .chronicle-fill-resize::after,

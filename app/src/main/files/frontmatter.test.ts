@@ -7,7 +7,7 @@ import {
 } from "./frontmatter";
 
 describe("parseFrontmatter", () => {
-  it("フロントマターを解析する", () => {
+  it("プロパティを解析する", () => {
     const content = "---\ntitle: Hello\ntags: [a, b]\n---\n本文";
     const result = parseFrontmatter(content);
 
@@ -15,7 +15,7 @@ describe("parseFrontmatter", () => {
     expect(result.body).toBe("本文");
   });
 
-  it("CRLFのフロントマターを本文先頭に改行を残さず解析する", () => {
+  it("CRLFのプロパティを本文先頭に改行を残さず解析する", () => {
     const content = "---\r\ntitle: Hello\r\n---\r\n本文";
     const result = parseFrontmatter(content);
 
@@ -23,7 +23,7 @@ describe("parseFrontmatter", () => {
     expect(result.body).toBe("本文");
   });
 
-  it("フロントマターがなければ空dataと全体をbodyとして返す", () => {
+  it("プロパティがなければ空dataと全体をbodyとして返す", () => {
     const content = "# タイトル\n本文";
     const result = parseFrontmatter(content);
 
@@ -45,7 +45,7 @@ describe("parseFrontmatter", () => {
     expect(result.data).toEqual({});
   });
 
-  it("空のフロントマターは空dataを返す", () => {
+  it("空のプロパティは空dataを返す", () => {
     const content = "---\n---\n本文";
     const result = parseFrontmatter(content);
 
@@ -55,7 +55,7 @@ describe("parseFrontmatter", () => {
 });
 
 describe("writeFrontmatter", () => {
-  it("dataからフロントマター付きコンテンツを生成する", () => {
+  it("dataからプロパティ付きコンテンツを生成する", () => {
     const result = writeFrontmatter("本文", { title: "Hello", tags: ["a", "b"] });
 
     expect(result).toContain("---\n");
@@ -71,7 +71,7 @@ describe("writeFrontmatter", () => {
 });
 
 describe("updateFrontmatter", () => {
-  it("既存フロントマターを更新する", () => {
+  it("既存プロパティを更新する", () => {
     const content = "---\ntitle: Old\n---\n本文";
     const result = updateFrontmatter(content, (data) => ({ ...data, title: "New" }));
     const parsed = parseFrontmatter(result);
@@ -80,7 +80,7 @@ describe("updateFrontmatter", () => {
     expect(parsed.body).toBe("本文");
   });
 
-  it("フロントマターがない場合に新規作成する", () => {
+  it("プロパティがない場合に新規作成する", () => {
     const content = "本文";
     const result = updateFrontmatter(content, (data) => ({ ...data, tags: ["x"] }));
     const parsed = parseFrontmatter(result);

@@ -345,7 +345,7 @@ describe("Editor", () => {
     expect(container.querySelector(".cm-line")).toHaveStyle({ whiteSpace: "pre-wrap" });
   });
 
-  it("[[ 入力時のファイル名補完候補を作る", () => {
+  it("[[ 入力時のカード名補完候補を作る", () => {
     const source = buildWikiLinkCompletionSource([
       "読書メモ.md",
       "folder/読書メモ.md",
@@ -454,7 +454,7 @@ describe("Editor", () => {
     ]));
   });
 
-  it("先頭フロントマターは水平線にせずメタデータとして薄く表示する", async () => {
+  it("先頭プロパティは水平線にせずメタデータとして薄く表示する", async () => {
     const content = "---\nstatus: draft\n---\n# 本文";
     const classes = await collectLivePreviewClasses(content, content.length, false);
     const widgets = await collectInlineLivePreviewWidgets(content, content.length, false);
@@ -463,7 +463,7 @@ describe("Editor", () => {
     expect(widgets).not.toContain("HorizontalRuleWidget");
   });
 
-  it("先頭フロントマターをプロパティフォームとしてDOM表示する", async () => {
+  it("先頭プロパティをプロパティフォームとしてDOM表示する", async () => {
     const viewRef = createRef<EditorView | null>();
     const onChange = vi.fn();
     const { container } = render(
@@ -493,7 +493,7 @@ describe("Editor", () => {
     expect(viewRef.current?.state.doc.toString()).toContain("---\nversion: v1.1");
   });
 
-  it("ソースモードではフロントマターをフォーム化せずMarkdown構文のまま表示する", async () => {
+  it("ソースモードではプロパティをフォーム化せずMarkdown構文のまま表示する", async () => {
     const { container } = render(
       <Editor
         content={"---\nversion: v1.0\n---\n# 本文"}
@@ -534,7 +534,7 @@ describe("Editor", () => {
     expect(container.textContent).toContain("version: v1.0");
   });
 
-  it("プロパティフォーム化したフロントマターも通常の行番号ガターに表示する", async () => {
+  it("プロパティフォーム化したプロパティも通常の行番号ガターに表示する", async () => {
     const { container } = render(
       <Editor
         content={"---\nversion: v1.0\nupdated: 2026-03-24\naliases:\n  - test\n---\n# 本文"}
@@ -588,7 +588,7 @@ describe("Editor", () => {
     expect(container.querySelectorAll(".cm-frontmatter-row")).toHaveLength(3);
   });
 
-  it("プロパティフォームから既存フロントマターにプロパティを追加できる", async () => {
+  it("プロパティフォームから既存プロパティにプロパティを追加できる", async () => {
     const viewRef = createRef<EditorView | null>();
     const onChange = vi.fn();
     const { container } = render(
@@ -616,7 +616,7 @@ describe("Editor", () => {
     expect(viewRef.current?.state.doc.toString()).toContain("---\nversion: v1.0\nstatus:\n---");
   });
 
-  it("フロントマターがない本文に新規作成入口を重ねない", async () => {
+  it("プロパティがない本文に新規作成入口を重ねない", async () => {
     const viewRef = createRef<EditorView | null>();
     const onChange = vi.fn();
     const { container } = render(
@@ -637,7 +637,7 @@ describe("Editor", () => {
     expect(viewRef.current?.state.doc.toString()).toBe("# 本文");
   });
 
-  it("未完了のフロントマター記法には新規作成入口を重ねない", async () => {
+  it("未完了のプロパティ記法には新規作成入口を重ねない", async () => {
     const { container } = render(
       <Editor
         content={"---\nstatus: draft\n# 本文"}
@@ -742,12 +742,12 @@ describe("Editor", () => {
     expect(viewRef.current?.state.doc.toString()).not.toContain("tags:\n  -");
   });
 
-  it("aliases入力では他ファイル由来の候補を表示しない", async () => {
+  it("aliases入力では他カード由来の候補を表示しない", async () => {
     const { container } = render(
       <Editor
         content={"---\naliases: [自分の別名]\ntags: [資料]\n---\n# 本文"}
         frontmatterCandidates={{
-          aliases: ["他ファイルの別名"],
+          aliases: ["他カードの別名"],
           tags: ["下書き"]
         }}
         onChange={vi.fn()}
@@ -796,28 +796,23 @@ describe("Editor", () => {
     expect(viewRef.current?.state.doc.toString()).toContain("chronicle: [1185, 1333]");
   });
 
-  it("plannedDateプロパティは年月日の単日・期間を1行配列として編集する", async () => {
+  it("日付入力能力のプロパティは年月日を1行配列として編集する", async () => {
     const viewRef = createRef<EditorView | null>();
     const { container } = render(
       <Editor
-        content={"---\nplannedDate:\n---\n# 本文"}
+        content={"---\n公開日:\n---\n# 本文"}
         onChange={vi.fn()}
         settings={settings}
+        userDefinedFields={[{ name: "公開日", type: "date" }]}
         viewRef={viewRef}
       />
     );
 
-    await waitFor(() => expect(container.querySelector(".cm-frontmatter-date-range")).not.toBeNull());
-    const inputs = Array.from(container.querySelectorAll(".cm-frontmatter-date-range .cm-frontmatter-input")) as HTMLInputElement[];
-    fireEvent.change(inputs[0], { target: { value: "2026-05-12" } });
+    await waitFor(() => expect(container.querySelector('input[type="date"]')).not.toBeNull());
+    const input = container.querySelector('input[type="date"]') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "2026-05-12" } });
 
-    expect(viewRef.current?.state.doc.toString()).toContain("plannedDate: [2026-05-12]");
-
-    await waitFor(() => expect(container.querySelector(".cm-frontmatter-date-range")).not.toBeNull());
-    const nextInputs = Array.from(container.querySelectorAll(".cm-frontmatter-date-range .cm-frontmatter-input")) as HTMLInputElement[];
-    fireEvent.change(nextInputs[1], { target: { value: "2026-05-20" } });
-
-    expect(viewRef.current?.state.doc.toString()).toContain("plannedDate: [2026-05-12, 2026-05-20]");
+    expect(viewRef.current?.state.doc.toString()).toMatch(/公開日: \["?2026-05-12"?]/);
   });
 
   it("プロパティ編集時にYAMLのコメント行とフィールド順をできるだけ保つ", async () => {

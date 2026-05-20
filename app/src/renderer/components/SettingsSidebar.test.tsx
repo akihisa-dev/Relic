@@ -104,7 +104,7 @@ describe("FrontmatterSidebar", () => {
     expect(screen.getByText("source: [https://example.com]")).toBeInTheDocument();
   });
 
-  it("aliasesとtagsとstatusとchronicleと計画/実行dateを固定プロパティとして表示し、カスタムプロパティには追加しない", () => {
+  it("aliasesとtagsとstatusとchronicleを固定プロパティとして表示し、カスタムプロパティには追加しない", () => {
     const onUserDefinedFieldsSave = vi.fn();
 
     renderFrontmatterSidebar({ onUserDefinedFieldsSave });
@@ -115,28 +115,20 @@ describe("FrontmatterSidebar", () => {
     expect(screen.getByText("tags")).not.toBeNull();
     expect(screen.getByText("status")).not.toBeNull();
     expect(screen.getByText("chronicle")).not.toBeNull();
-    expect(screen.getByText("plannedDate")).not.toBeNull();
-    expect(screen.getByText("actualDate")).not.toBeNull();
-    expect(screen.getByText("At the very top of the Markdown file, make a settings block that starts with --- and ends with ---. Write each property inside that block on its own line.")).toBeInTheDocument();
+    expect(screen.getByText("At the very top of the card, make a property block that starts with --- and ends with ---. Write each property inside that block on its own line.")).toBeInTheDocument();
     expect(screen.getByText((_, element) => element?.tagName === "CODE" && element.textContent === "---\nproperty: [value]\n---\nStart writing here")).toBeInTheDocument();
-    expect(screen.getByText("Alternative names that can link to this file. Used for link resolution and file name search. Write one or many values as the same one-line array.")).toBeInTheDocument();
+    expect(screen.getByText("Alternative names that can link to this card. Used for link resolution and card name search. Write one or many values as the same one-line array.")).toBeInTheDocument();
     expect(screen.getByText("aliases: [Capital]")).toBeInTheDocument();
     expect(screen.getByText("aliases: [Capital, Old Capital]")).toBeInTheDocument();
-    expect(screen.getByText("Tags that classify this file. Used for tag lists, tag search, and tag filtering. Write one or many values as the same one-line array.")).toBeInTheDocument();
+    expect(screen.getByText("Tags that classify this card. Used for tag lists, tag search, and tag filtering. Write one or many values as the same one-line array.")).toBeInTheDocument();
     expect(screen.getByText("tags: [source]")).toBeInTheDocument();
     expect(screen.getByText("tags: [source, draft]")).toBeInTheDocument();
-    expect(screen.getByText("The status of this file for date chart workflows. Choose exactly one fixed option and write it as a one-item inline array.")).toBeInTheDocument();
+    expect(screen.getByText("The status of this card. Choose exactly one fixed option and write it as a one-item inline array.")).toBeInTheDocument();
     expect(screen.getByText("status: [未着手]")).toBeInTheDocument();
     expect(screen.queryByText("status: [進行中, 完了]")).toBeNull();
-    expect(screen.getByText("Places this file on the timeline as a single year or range. Write a single year or range as the same one-line array.")).toBeInTheDocument();
+    expect(screen.getByText("Places this card on Chronicle as a single year or range. Write a single year or range as the same one-line array.")).toBeInTheDocument();
     expect(screen.getByText("chronicle: [1185]")).toBeInTheDocument();
     expect(screen.getByText("chronicle: [1185, 1333]")).toBeInTheDocument();
-    expect(screen.getByText("The planned date or date range for this file. Write dates without times as the same one-line array for a single day or range.")).toBeInTheDocument();
-    expect(screen.getByText("plannedDate: [2026-05-12]")).toBeInTheDocument();
-    expect(screen.getByText("plannedDate: [2026-05-12, 2026-05-20]")).toBeInTheDocument();
-    expect(screen.getByText("The actual date or date range for this file. Write dates without times as the same one-line array for a single day or range.")).toBeInTheDocument();
-    expect(screen.getByText("actualDate: [2026-05-12]")).toBeInTheDocument();
-    expect(screen.getByText("actualDate: [2026-05-12, 2026-05-20]")).toBeInTheDocument();
     fireEvent.change(screen.getByPlaceholderText("Field name"), { target: { value: "aliases" } });
 
     expect(screen.getByRole("button", { name: "Add" })).toBeDisabled();
@@ -152,14 +144,6 @@ describe("FrontmatterSidebar", () => {
     fireEvent.change(screen.getByPlaceholderText("Field name"), { target: { value: "date" } });
 
     expect(screen.getByRole("button", { name: "Add" })).toBeEnabled();
-
-    fireEvent.change(screen.getByPlaceholderText("Field name"), { target: { value: "plannedDate" } });
-
-    expect(screen.getByRole("button", { name: "Add" })).toBeDisabled();
-
-    fireEvent.change(screen.getByPlaceholderText("Field name"), { target: { value: "actualDate" } });
-
-    expect(screen.getByRole("button", { name: "Add" })).toBeDisabled();
 
     fireEvent.change(screen.getByPlaceholderText("Field name"), { target: { value: "status" } });
 
@@ -191,7 +175,7 @@ describe("FrontmatterSidebar", () => {
   it("テンプレート管理を表示しない", () => {
     renderFrontmatterSidebar();
 
-    expect(screen.queryByText("Frontmatter templates")).toBeNull();
+    expect(screen.queryByText("Property templates")).toBeNull();
     expect(screen.queryByPlaceholderText("Template name")).toBeNull();
   });
 });
@@ -243,7 +227,7 @@ describe("SettingsSidebar", () => {
     const onFeatureTogglesSave = vi.fn();
     renderSettingsSidebar({ onFeatureTogglesSave });
 
-    fireEvent.click(screen.getByLabelText("File tools"));
+    fireEvent.click(screen.getByLabelText("Card tools"));
 
     expect(onFeatureTogglesSave).toHaveBeenCalledWith(expect.objectContaining({ tools: false }));
   });

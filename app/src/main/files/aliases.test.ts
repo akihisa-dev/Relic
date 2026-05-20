@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { extractAliases } from "./aliases";
 
 describe("extractAliases", () => {
-  it("フロントマターのaliasesを別名として読む", () => {
+  it("プロパティのaliasesを別名として読む", () => {
     expect(extractAliases("---\naliases:\n  - a\n  - α\n---\n# A")).toEqual(["a", "α"]);
   });
 

@@ -21,8 +21,8 @@ const userDefinedFieldTypes: UserDefinedFieldType[] = [
   "url"
 ];
 const userDefinedFieldNamePattern = /^[^\s:][^\r\n:]*$/;
-const reservedUserDefinedFieldNames = new Set(["aliases", "tags", "status", "chronicle", "plannedDate", "actualDate"]);
-const ganttChartSources: GanttChartSource[] = ["chronicle", "date"];
+const reservedUserDefinedFieldNames = new Set(["aliases", "tags", "status", "chronicle"]);
+const ganttChartSources: GanttChartSource[] = ["chronicle"];
 
 export function isUserDefinedFieldsInput(input: unknown): input is UserDefinedField[] {
   if (!Array.isArray(input)) return false;
@@ -49,7 +49,7 @@ export function isUserDefinedFieldsInput(input: unknown): input is UserDefinedFi
 }
 
 export function isGanttChartsInput(input: unknown): input is GanttChartSettings[] {
-  if (!Array.isArray(input) || input.length !== 2) return false;
+  if (!Array.isArray(input) || input.length !== 1) return false;
 
   const sources = new Set<GanttChartSource>();
 
@@ -81,7 +81,6 @@ export function isUpdateGanttChartEntryInput(input: unknown): input is UpdateGan
   return (
     typeof candidate.path === "string" &&
     ganttChartSources.includes(candidate.source as GanttChartSource) &&
-    (!("dateKind" in candidate) || candidate.dateKind === "planned" || candidate.dateKind === "actual") &&
     (candidate.kind === "move" || candidate.kind === "resize-start" || candidate.kind === "resize-end") &&
     Number.isInteger(candidate.originalStartValue) &&
     Number.isInteger(candidate.originalEndValue) &&

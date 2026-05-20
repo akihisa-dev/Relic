@@ -5,9 +5,7 @@ const fixedFrontmatterSearchFields = [
   "tags",
   "aliases",
   "status",
-  "chronicle",
-  "plannedDate",
-  "actualDate"
+  "chronicle"
 ];
 
 export interface FileSearchModeOption {

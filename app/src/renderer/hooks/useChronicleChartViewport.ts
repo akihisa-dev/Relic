@@ -5,8 +5,7 @@ import type { GanttChartEntry, GanttChartSource, WorkspaceGanttChart } from "../
 import {
   ROW_HEIGHT,
   chronicleNavigationTarget,
-  clamp,
-  dateNavigationTarget
+  clamp
 } from "../chronicleTimeline";
 
 interface UseChronicleChartViewportInput {
@@ -54,7 +53,6 @@ export function useChronicleChartViewport({
   const minimapRef = useRef<HTMLDivElement | null>(null);
   const verticalMinimapRef = useRef<HTMLDivElement | null>(null);
   const previousAxisStartRef = useRef<number | null>(null);
-  const initialDateScrollKeyRef = useRef<string | null>(null);
   const initialChronicleScrollKeyRef = useRef<string | null>(null);
 
   const updateChartViewportSize = useCallback((): void => {
@@ -84,7 +82,8 @@ export function useChronicleChartViewport({
   }, [axisStart, chartViewportWidth, nameColumnWidth, unitWidth]);
 
   const scrollToToday = useCallback((): void => {
-    scrollToTimelineValue(dateNavigationTarget(entries, axisStart, axisEnd));
+    const target = chronicleNavigationTarget(entries, axisStart, axisEnd);
+    if (target !== null) scrollToTimelineValue(target);
   }, [axisEnd, axisStart, entries, scrollToTimelineValue]);
 
   const scrollToChronicleFocus = useCallback((): void => {
@@ -255,16 +254,6 @@ export function useChronicleChartViewport({
     chartElement.scrollLeft = nextScrollLeft;
     setScrollLeft(nextScrollLeft);
   }, [axisStart, unitWidth]);
-
-  useLayoutEffect(() => {
-    if (activeSource !== "date" || !activeChart) return;
-
-    const key = activeChart.id;
-    if (initialDateScrollKeyRef.current === key) return;
-
-    initialDateScrollKeyRef.current = key;
-    scrollToToday();
-  }, [activeChart, activeSource, scrollToToday]);
 
   useLayoutEffect(() => {
     if (activeSource !== "chronicle" || !activeChart) return;

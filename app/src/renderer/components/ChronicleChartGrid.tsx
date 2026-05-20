@@ -2,15 +2,11 @@ import type { PointerEvent, ReactElement, RefObject, UIEvent } from "react";
 
 import type { GanttChartEntry, GanttChartEntryEditKind, GanttChartSource, WorkspaceGanttChart } from "../../shared/ipc";
 import {
-  DATE_SCALES,
   buildVisibleChronicleGuideTicks,
-  buildVisibleDateGuideTicks,
   chronicleAxisTickInterval,
   timelineVisibleRange,
   type ChartGuideTick,
   type ChartRow,
-  type DateOffscreenIndicator,
-  type DateScale,
   type DragPreview
 } from "../chronicleTimeline";
 import { useT } from "../i18n";
@@ -18,8 +14,6 @@ import { ChronicleNameColumn } from "./ChronicleNameColumn";
 import { ChronicleTracks } from "./ChronicleTracks";
 import {
   ChronicleAxis,
-  DateAxis,
-  DateOffscreenJumpButtons,
   TimelineOffscreenJumpButtons,
   VerticalMinimap,
   VerticalOffscreenJumpButtons
@@ -32,10 +26,8 @@ export interface ChronicleChartGridProps {
   axisStart: number;
   chartRef: RefObject<HTMLDivElement | null>;
   chartViewportWidth: number;
-  chronicleOffscreenIndicators: { left: DateOffscreenIndicator | null; right: DateOffscreenIndicator | null };
-  dateAxisHeight: number;
-  dateOffscreenIndicators: { left: DateOffscreenIndicator | null; right: DateOffscreenIndicator | null };
-  dateScale: DateScale | null;
+  chronicleOffscreenIndicators: ChronicleChartGridOffscreenIndicators;
+  axisHeight: number;
   dragPreview: DragPreview | null;
   guideTicks: ChartGuideTick[];
   nameColumnWidth: number;
@@ -63,14 +55,12 @@ export interface ChronicleChartGridProps {
 export function ChronicleChartGrid({
   activeChart,
   activeSource,
+  axisHeight,
   axisEnd,
   axisStart,
   chartRef,
   chartViewportWidth,
   chronicleOffscreenIndicators,
-  dateAxisHeight,
-  dateOffscreenIndicators,
-  dateScale,
   dragPreview,
   guideTicks,
   nameColumnWidth,
@@ -91,6 +81,8 @@ export function ChronicleChartGrid({
   verticalOffscreenIndicators
 }: ChronicleChartGridProps): ReactElement {
   const t = useT();
+  void activeSource;
+  void guideTicks;
 
   if (!activeChart) {
     return <div className="frontmatter-field-empty">{t("chronicle.empty")}</div>;
@@ -104,11 +96,12 @@ export function ChronicleChartGrid({
     unitWidth,
     viewportWidth: timelineViewportWidth
   });
-  const visibleGuideTicks = activeSource === "date" && dateScale
-    ? buildVisibleDateGuideTicks(axisStart, axisEnd, dateScale, visibleRange)
-    : activeSource === "chronicle"
-      ? buildVisibleChronicleGuideTicks(axisStart, axisEnd, chronicleAxisTickInterval(tickInterval), visibleRange)
-      : guideTicks;
+  const visibleGuideTicks = buildVisibleChronicleGuideTicks(
+    axisStart,
+    axisEnd,
+    chronicleAxisTickInterval(tickInterval),
+    visibleRange
+  );
 
   return (
     <div className="chronicle-chart-layout">
@@ -118,56 +111,35 @@ export function ChronicleChartGrid({
         onScroll={onChartScroll}
         ref={chartRef}
       >
-        {activeSource === "date" ? (
-          <DateOffscreenJumpButtons
-            indicators={dateOffscreenIndicators}
-            onJump={onJump}
-            t={t}
-          />
-        ) : activeSource === "chronicle" ? (
-          <TimelineOffscreenJumpButtons
-            indicators={chronicleOffscreenIndicators}
-            leftOffset={nameColumnWidth}
-            onJump={onJump}
-            t={t}
-          />
-        ) : null}
+        <TimelineOffscreenJumpButtons
+          indicators={chronicleOffscreenIndicators}
+          leftOffset={nameColumnWidth}
+          onJump={onJump}
+          t={t}
+        />
         <div className="chronicle-grid" style={{ width: nameColumnWidth + timelineWidth }}>
           <ChronicleNameColumn
             activeSource={activeSource}
-            dateAxisHeight={dateAxisHeight}
+            axisHeight={axisHeight}
             nameColumnWidth={nameColumnWidth}
             onJump={onJump}
             onOpenFile={onOpenFile}
             rows={rows}
           />
           <div className="chronicle-timeline" style={{ marginLeft: nameColumnWidth, width: timelineWidth }}>
-            {activeSource === "date" ? (
-              <DateAxis
-                axisEnd={axisEnd}
-                axisStart={axisStart}
-                scale={dateScale ?? DATE_SCALES[0]}
-                scrollLeft={scrollLeft}
-                unitWidth={unitWidth}
-                viewportWidth={timelineViewportWidth}
-                width={timelineWidth}
-              />
-            ) : (
-              <ChronicleAxis
-                axisEnd={axisEnd}
-                axisStart={axisStart}
-                interval={chronicleAxisTickInterval(tickInterval)}
-                scrollLeft={scrollLeft}
-                unitWidth={unitWidth}
-                viewportWidth={timelineViewportWidth}
-                width={timelineWidth}
-              />
-            )}
+            <ChronicleAxis
+              axisEnd={axisEnd}
+              axisStart={axisStart}
+              interval={chronicleAxisTickInterval(tickInterval)}
+              scrollLeft={scrollLeft}
+              unitWidth={unitWidth}
+              viewportWidth={timelineViewportWidth}
+              width={timelineWidth}
+            />
             <ChronicleTracks
               activeSource={activeSource}
               axisEnd={axisEnd}
               axisStart={axisStart}
-              dateScale={dateScale}
               dragPreview={dragPreview}
               guideTicks={visibleGuideTicks}
               onStartEntryEdit={onStartEntryEdit}
@@ -195,3 +167,8 @@ export function ChronicleChartGrid({
     </div>
   );
 }
+
+type ChronicleChartGridOffscreenIndicators = {
+  left: { count: number; targetValue: number } | null;
+  right: { count: number; targetValue: number } | null;
+};

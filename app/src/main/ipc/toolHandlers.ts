@@ -32,7 +32,7 @@ export function registerToolHandlers(): void {
 
         return await mergeFiles(input);
       } catch (error) {
-        return fail("MERGE_FAILED", "ファイルのマージに失敗しました。", ipcErrorDetails(error));
+        return fail("MERGE_FAILED", "カードのマージに失敗しました。", ipcErrorDetails(error));
       }
     }
   );
@@ -47,7 +47,7 @@ export function registerToolHandlers(): void {
 
         return await splitFileByHeading(input);
       } catch (error) {
-        return fail("SPLIT_FAILED", "ファイルの分割に失敗しました。", ipcErrorDetails(error));
+        return fail("SPLIT_FAILED", "カードの分割に失敗しました。", ipcErrorDetails(error));
       }
     }
   );
