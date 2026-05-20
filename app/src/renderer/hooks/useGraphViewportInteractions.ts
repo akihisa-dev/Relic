@@ -17,6 +17,11 @@ interface GraphDragState {
   startPan: GraphPan;
 }
 
+interface GraphViewportSnapshot {
+  pan: GraphPan;
+  zoom: number;
+}
+
 interface UseGraphViewportInteractionsInput {
   fitKey?: string;
   onBackgroundClick?: () => void;
@@ -59,10 +64,24 @@ export function useGraphViewportInteractions({
   const [isPanning, setIsPanning] = useState(false);
   const [pan, setPan] = useState<GraphPan>({ x: 0, y: 0 });
   const viewBox = buildGraphViewBox(zoom, pan, points);
+  const viewportSnapshotRef = useRef<GraphViewportSnapshot>({ pan, zoom });
+  const pendingWheelViewportRef = useRef<GraphViewportSnapshot | null>(null);
+  const wheelFrameRef = useRef<number | null>(null);
+
+  viewportSnapshotRef.current = { pan, zoom };
 
   useEffect(() => {
     setPan({ x: 0, y: 0 });
+    pendingWheelViewportRef.current = null;
+    if (wheelFrameRef.current !== null) {
+      window.cancelAnimationFrame(wheelFrameRef.current);
+      wheelFrameRef.current = null;
+    }
   }, [fitKey]);
+
+  useEffect(() => () => {
+    if (wheelFrameRef.current !== null) window.cancelAnimationFrame(wheelFrameRef.current);
+  }, []);
 
   function getGraphDelta(deltaX: number, deltaY: number): GraphPan {
     const bounds = surfaceRef.current?.getBoundingClientRect();
@@ -73,36 +92,78 @@ export function useGraphViewportInteractions({
     };
   }
 
+  function flushPendingWheelViewport(): GraphViewportSnapshot {
+    const pending = pendingWheelViewportRef.current;
+    if (!pending) return viewportSnapshotRef.current;
+
+    pendingWheelViewportRef.current = null;
+    if (wheelFrameRef.current !== null) {
+      window.cancelAnimationFrame(wheelFrameRef.current);
+      wheelFrameRef.current = null;
+    }
+    viewportSnapshotRef.current = pending;
+    setPan(pending.pan);
+    setZoom(pending.zoom);
+    return pending;
+  }
+
+  function commitPendingWheelViewport(): void {
+    const pending = pendingWheelViewportRef.current;
+    if (!pending) return;
+
+    pendingWheelViewportRef.current = null;
+    wheelFrameRef.current = null;
+    viewportSnapshotRef.current = pending;
+    setPan(pending.pan);
+    setZoom(pending.zoom);
+  }
+
+  function scheduleWheelViewportCommit(): void {
+    if (wheelFrameRef.current !== null) return;
+    wheelFrameRef.current = window.requestAnimationFrame(commitPendingWheelViewport);
+  }
+
   function handleGraphWheel(event: WheelEvent<HTMLDivElement>): void {
     event.preventDefault();
-    const nextZoom = Number(clamp(zoom * Math.exp(-event.deltaY * 0.0014), GRAPH_MIN_ZOOM, GRAPH_MAX_ZOOM).toFixed(2));
+    const currentViewport = pendingWheelViewportRef.current ?? viewportSnapshotRef.current;
+    const currentViewBox = buildGraphViewBox(currentViewport.zoom, currentViewport.pan, points);
+    const nextZoom = Number(clamp(currentViewport.zoom * Math.exp(-event.deltaY * 0.0014), GRAPH_MIN_ZOOM, GRAPH_MAX_ZOOM).toFixed(4));
     const bounds = surfaceRef.current?.getBoundingClientRect();
 
-    if (bounds && bounds.width > 0 && bounds.height > 0 && nextZoom !== zoom) {
+    if (bounds && bounds.width > 0 && bounds.height > 0 && nextZoom !== currentViewport.zoom) {
       const ratioX = clamp((event.clientX - bounds.left) / bounds.width, 0, 1);
       const ratioY = clamp((event.clientY - bounds.top) / bounds.height, 0, 1);
       const nextViewBoxWithoutPan = buildGraphViewBox(nextZoom, { x: 0, y: 0 }, points);
-      const anchorX = viewBox.x + ratioX * viewBox.width;
-      const anchorY = viewBox.y + ratioY * viewBox.height;
-      setPan({
-        x: anchorX - ratioX * nextViewBoxWithoutPan.width - nextViewBoxWithoutPan.x,
-        y: anchorY - ratioY * nextViewBoxWithoutPan.height - nextViewBoxWithoutPan.y
-      });
+      const anchorX = currentViewBox.x + ratioX * currentViewBox.width;
+      const anchorY = currentViewBox.y + ratioY * currentViewBox.height;
+      pendingWheelViewportRef.current = {
+        pan: {
+          x: anchorX - ratioX * nextViewBoxWithoutPan.width - nextViewBoxWithoutPan.x,
+          y: anchorY - ratioY * nextViewBoxWithoutPan.height - nextViewBoxWithoutPan.y
+        },
+        zoom: nextZoom
+      };
+    } else {
+      pendingWheelViewportRef.current = {
+        pan: currentViewport.pan,
+        zoom: nextZoom
+      };
     }
 
-    setZoom(nextZoom);
+    scheduleWheelViewportCommit();
   }
 
   function handleGraphKeyDown(event: KeyboardEvent<HTMLDivElement>): void {
-    const panStep = (event.shiftKey ? 72 : 28) / zoom;
+    const currentViewport = flushPendingWheelViewport();
+    const panStep = (event.shiftKey ? 72 : 28) / currentViewport.zoom;
     if (event.key === "+" || event.key === "=") {
       event.preventDefault();
-      setZoom(Number(clamp(zoom + 0.1, GRAPH_MIN_ZOOM, GRAPH_MAX_ZOOM).toFixed(2)));
+      setZoom(Number(clamp(currentViewport.zoom + 0.1, GRAPH_MIN_ZOOM, GRAPH_MAX_ZOOM).toFixed(2)));
       return;
     }
     if (event.key === "-") {
       event.preventDefault();
-      setZoom(Number(clamp(zoom - 0.1, GRAPH_MIN_ZOOM, GRAPH_MAX_ZOOM).toFixed(2)));
+      setZoom(Number(clamp(currentViewport.zoom - 0.1, GRAPH_MIN_ZOOM, GRAPH_MAX_ZOOM).toFixed(2)));
       return;
     }
     if (event.key === "ArrowUp") {
@@ -129,12 +190,13 @@ export function useGraphViewportInteractions({
   function handleGraphPointerDown(event: PointerEvent<HTMLDivElement>): void {
     if (event.button !== 0) return;
 
+    const currentViewport = flushPendingWheelViewport();
     dragStateRef.current = {
       moved: false,
       pointerId: event.pointerId,
       startClientX: event.clientX,
       startClientY: event.clientY,
-      startPan: pan
+      startPan: currentViewport.pan
     };
     pauseSimulationRef.current = true;
     event.currentTarget.setPointerCapture(event.pointerId);

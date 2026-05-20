@@ -111,14 +111,24 @@ describe("useGraphCanvasInteractions", () => {
     expect(viewBox.y + viewBox.height).toBeGreaterThanOrEqual(Math.max(...ys));
   });
 
-  it("wheel操作でzoom更新callbackを呼ぶ", () => {
+  it("wheel操作を次の描画フレームでzoom更新callbackへ反映する", () => {
     const { hook, setZoom } = renderInteractions();
+    let frameCallback: FrameRequestCallback | null = null;
+    vi.stubGlobal("requestAnimationFrame", vi.fn((callback: FrameRequestCallback) => {
+      frameCallback = callback;
+      return 1;
+    }));
 
     act(() => {
       hook.result.current.graphHandlers.onWheel(makeEvent<HTMLDivElement>({ deltaY: -100 }));
     });
 
-    expect(setZoom).toHaveBeenCalledWith(1.15);
+    expect(setZoom).not.toHaveBeenCalled();
+    act(() => {
+      frameCallback?.(16);
+    });
+
+    expect(setZoom).toHaveBeenCalledWith(1.1503);
   });
 
   it("背景clickで選択を解除する", () => {
