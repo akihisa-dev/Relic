@@ -66,21 +66,21 @@ export function useGraphViewportInteractions({
   const viewBox = buildGraphViewBox(zoom, pan, points);
   const viewportSnapshotRef = useRef<GraphViewportSnapshot>({ pan, zoom });
   const pendingWheelViewportRef = useRef<GraphViewportSnapshot | null>(null);
+  const pendingPanViewportRef = useRef<GraphViewportSnapshot | null>(null);
   const wheelFrameRef = useRef<number | null>(null);
+  const panFrameRef = useRef<number | null>(null);
 
   viewportSnapshotRef.current = { pan, zoom };
 
   useEffect(() => {
     setPan({ x: 0, y: 0 });
-    pendingWheelViewportRef.current = null;
-    if (wheelFrameRef.current !== null) {
-      window.cancelAnimationFrame(wheelFrameRef.current);
-      wheelFrameRef.current = null;
-    }
+    cancelPendingWheelViewport();
+    cancelPendingPanViewport();
   }, [fitKey]);
 
   useEffect(() => () => {
-    if (wheelFrameRef.current !== null) window.cancelAnimationFrame(wheelFrameRef.current);
+    cancelPendingWheelViewport();
+    cancelPendingPanViewport();
   }, []);
 
   function getGraphDelta(deltaX: number, deltaY: number): GraphPan {
@@ -92,19 +92,50 @@ export function useGraphViewportInteractions({
     };
   }
 
-  function flushPendingWheelViewport(): GraphViewportSnapshot {
-    const pending = pendingWheelViewportRef.current;
-    if (!pending) return viewportSnapshotRef.current;
-
+  function cancelPendingWheelViewport(): void {
     pendingWheelViewportRef.current = null;
     if (wheelFrameRef.current !== null) {
       window.cancelAnimationFrame(wheelFrameRef.current);
       wheelFrameRef.current = null;
     }
+  }
+
+  function cancelPendingPanViewport(): void {
+    pendingPanViewportRef.current = null;
+    if (panFrameRef.current !== null) {
+      window.cancelAnimationFrame(panFrameRef.current);
+      panFrameRef.current = null;
+    }
+  }
+
+  function applyViewportSnapshot(snapshot: GraphViewportSnapshot): void {
+    viewportSnapshotRef.current = snapshot;
+    setPan(snapshot.pan);
+    setZoom(snapshot.zoom);
+  }
+
+  function flushPendingWheelViewport(): GraphViewportSnapshot {
+    const pending = pendingWheelViewportRef.current;
+    if (!pending) return viewportSnapshotRef.current;
+
+    cancelPendingWheelViewport();
+    applyViewportSnapshot(pending);
+    return pending;
+  }
+
+  function flushPendingPanViewport(): GraphViewportSnapshot {
+    const pending = pendingPanViewportRef.current;
+    if (!pending) return viewportSnapshotRef.current;
+
+    cancelPendingPanViewport();
     viewportSnapshotRef.current = pending;
     setPan(pending.pan);
-    setZoom(pending.zoom);
     return pending;
+  }
+
+  function flushPendingViewport(): GraphViewportSnapshot {
+    flushPendingWheelViewport();
+    return flushPendingPanViewport();
   }
 
   function commitPendingWheelViewport(): void {
@@ -113,14 +144,27 @@ export function useGraphViewportInteractions({
 
     pendingWheelViewportRef.current = null;
     wheelFrameRef.current = null;
-    viewportSnapshotRef.current = pending;
-    setPan(pending.pan);
-    setZoom(pending.zoom);
+    applyViewportSnapshot(pending);
   }
 
   function scheduleWheelViewportCommit(): void {
     if (wheelFrameRef.current !== null) return;
     wheelFrameRef.current = window.requestAnimationFrame(commitPendingWheelViewport);
+  }
+
+  function commitPendingPanViewport(): void {
+    const pending = pendingPanViewportRef.current;
+    if (!pending) return;
+
+    pendingPanViewportRef.current = null;
+    panFrameRef.current = null;
+    viewportSnapshotRef.current = pending;
+    setPan(pending.pan);
+  }
+
+  function schedulePanViewportCommit(): void {
+    if (panFrameRef.current !== null) return;
+    panFrameRef.current = window.requestAnimationFrame(commitPendingPanViewport);
   }
 
   function handleGraphWheel(event: WheelEvent<HTMLDivElement>): void {
@@ -154,7 +198,7 @@ export function useGraphViewportInteractions({
   }
 
   function handleGraphKeyDown(event: KeyboardEvent<HTMLDivElement>): void {
-    const currentViewport = flushPendingWheelViewport();
+    const currentViewport = flushPendingViewport();
     const panStep = (event.shiftKey ? 72 : 28) / currentViewport.zoom;
     if (event.key === "+" || event.key === "=") {
       event.preventDefault();
@@ -190,7 +234,7 @@ export function useGraphViewportInteractions({
   function handleGraphPointerDown(event: PointerEvent<HTMLDivElement>): void {
     if (event.button !== 0) return;
 
-    const currentViewport = flushPendingWheelViewport();
+    const currentViewport = flushPendingViewport();
     dragStateRef.current = {
       moved: false,
       pointerId: event.pointerId,
@@ -210,16 +254,21 @@ export function useGraphViewportInteractions({
     const delta = getGraphDelta(event.clientX - dragState.startClientX, event.clientY - dragState.startClientY);
     const moved = Math.hypot(event.clientX - dragState.startClientX, event.clientY - dragState.startClientY) > 3;
     dragStateRef.current = { ...dragState, moved: dragState.moved || moved };
-    setPan({
-      x: dragState.startPan.x - delta.x,
-      y: dragState.startPan.y - delta.y
-    });
+    pendingPanViewportRef.current = {
+      pan: {
+        x: dragState.startPan.x - delta.x,
+        y: dragState.startPan.y - delta.y
+      },
+      zoom: viewportSnapshotRef.current.zoom
+    };
+    schedulePanViewportCommit();
   }
 
   function handleGraphPointerEnd(event: PointerEvent<HTMLDivElement>): void {
     const dragState = dragStateRef.current;
     if (!dragState || dragState.pointerId !== event.pointerId) return;
 
+    flushPendingPanViewport();
     dragStateRef.current = null;
     pauseSimulationRef.current = false;
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
@@ -229,11 +278,24 @@ export function useGraphViewportInteractions({
     setIsPanning(false);
   }
 
+  function handleGraphPointerCancel(event: PointerEvent<HTMLDivElement>): void {
+    const dragState = dragStateRef.current;
+    if (!dragState || dragState.pointerId !== event.pointerId) return;
+
+    cancelPendingPanViewport();
+    dragStateRef.current = null;
+    pauseSimulationRef.current = false;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    setIsPanning(false);
+  }
+
   return {
     getGraphDelta,
     graphHandlers: {
       onKeyDown: handleGraphKeyDown,
-      onPointerCancel: handleGraphPointerEnd,
+      onPointerCancel: handleGraphPointerCancel,
       onPointerDown: handleGraphPointerDown,
       onPointerMove: handleGraphPointerMove,
       onPointerUp: handleGraphPointerEnd,

@@ -185,7 +185,8 @@ describe("graphRenderModel", () => {
     expect(state.nodes.find((node) => node.path === "N0.md")?.labelVisible).toBe(false);
     expect(state.nodes.find((node) => node.path === "N1.md")?.labelVisible).toBe(false);
     expect(state.nodes.find((node) => node.path === "N2.md")?.labelVisible).toBe(false);
-    expect(state.nodes.find((node) => node.path === "N2.md")?.radius).toBeCloseTo(2.25);
+    expect(state.nodes.find((node) => node.path === "N2.md")?.radius).toBeCloseTo(1.82);
+    expect(state.nodes.find((node) => node.path === "N2.md")?.fillAlpha).toBeLessThan(0.9);
     expect(state.nodes.find((node) => node.path === "N2.md")?.strokeAlpha).toBe(0);
 
     const hoveredState = buildGraphRenderState({
@@ -245,6 +246,53 @@ describe("graphRenderModel", () => {
     expect(zoomedState.nodes.some((node) => node.labelVisible)).toBe(true);
     expect(zoomedState.nodes.filter((node) => node.labelVisible).length).toBeLessThan(zoomedState.nodes.length);
     expect(hoveredZoomedState.nodes.map((node) => node.labelVisible)).toEqual(zoomedState.nodes.map((node) => node.labelVisible));
+  });
+
+  it("大規模グラフではズームに応じてlinkとnodeをLOD調整する", () => {
+    const manyPoints = Array.from({ length: 230 }, (_, index): GraphPoint => ({
+      degree: index < 2 ? 1 : 0,
+      folder: "",
+      incoming: index === 1 ? 1 : 0,
+      name: `N${index}`,
+      outgoing: index === 0 ? 1 : 0,
+      path: `N${index}.md`,
+      tags: [],
+      x: index,
+      y: index
+    }));
+    const farState = buildGraphRenderState({
+      edges: [{ sourcePath: "N0.md", targetPath: "N1.md" }],
+      focusedPath: null,
+      groupByPath: new Map(),
+      labelOpacity: 1,
+      linkThickness: 1,
+      motionPath: null,
+      nodeSize: 1,
+      points: manyPoints,
+      relatedPaths: new Set(),
+      selectedPath: null,
+      showLabels: true,
+      viewScale: 0.7
+    });
+    const nearState = buildGraphRenderState({
+      edges: [{ sourcePath: "N0.md", targetPath: "N1.md" }],
+      focusedPath: null,
+      groupByPath: new Map(),
+      labelOpacity: 1,
+      linkThickness: 1,
+      motionPath: null,
+      nodeSize: 1,
+      points: manyPoints,
+      relatedPaths: new Set(),
+      selectedPath: null,
+      showLabels: true,
+      viewScale: 3
+    });
+
+    expect(farState.edges[0]?.alpha).toBeLessThan(nearState.edges[0]?.alpha ?? 0);
+    expect((farState.edges[0]?.strokeWidth ?? 0) * 0.7).toBeLessThan((nearState.edges[0]?.strokeWidth ?? 0) * 3);
+    expect(farState.nodes[0]?.fillAlpha).toBeLessThan(nearState.nodes[0]?.fillAlpha ?? 0);
+    expect((farState.nodes[0]?.radius ?? 0) * 0.7).toBeLessThan((nearState.nodes[0]?.radius ?? 0) * 3);
   });
 
   it("ズーム時のnode radiusをObsidian風のベタ丸サイズへ拡大する", () => {

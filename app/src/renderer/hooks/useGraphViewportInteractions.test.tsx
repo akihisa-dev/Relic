@@ -1,5 +1,5 @@
 import { act, renderHook } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { GRAPH_HEIGHT, GRAPH_WIDTH } from "../graphLayout";
 import { useGraphViewportInteractions } from "./useGraphViewportInteractions";
@@ -53,6 +53,10 @@ function renderViewport(zoom = 1) {
 }
 
 describe("useGraphViewportInteractions", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it("wheel操作を次の描画フレームでzoom更新callbackへ反映する", () => {
     const { hook, setZoom } = renderViewport();
     let frameCallback: FrameRequestCallback | null = null;
@@ -140,8 +144,13 @@ describe("useGraphViewportInteractions", () => {
     expect(hook.result.current.viewBox.x).toBe(28);
   });
 
-  it("pointer dragでpanとpanning stateを更新する", () => {
+  it("pointer dragのpan更新を次の描画フレームにまとめる", () => {
     const { hook, onBackgroundClick } = renderViewport();
+    let frameCallback: FrameRequestCallback | null = null;
+    const requestAnimationFrameSpy = vi.spyOn(window, "requestAnimationFrame").mockImplementation((callback) => {
+      frameCallback = callback;
+      return 10;
+    });
     const surfaceTarget = {
       getBoundingClientRect: () => ({ height: GRAPH_HEIGHT, width: GRAPH_WIDTH } as DOMRect),
       hasPointerCapture: vi.fn().mockReturnValue(true),
@@ -171,6 +180,14 @@ describe("useGraphViewportInteractions", () => {
       }));
     });
 
+    expect(requestAnimationFrameSpy).toHaveBeenCalledTimes(1);
+    expect(hook.result.current.viewBox.x).toBe(0);
+    expect(hook.result.current.viewBox.y).toBe(0);
+
+    act(() => {
+      frameCallback?.(16);
+    });
+
     expect(hook.result.current.viewBox.x).toBe(-100);
     expect(hook.result.current.viewBox.y).toBe(-50);
 
@@ -181,6 +198,91 @@ describe("useGraphViewportInteractions", () => {
       }));
     });
 
+    expect(hook.result.current.isPanning).toBe(false);
+    expect(hook.result.current.pauseSimulationRef.current).toBe(false);
+    expect(onBackgroundClick).not.toHaveBeenCalled();
+  });
+
+  it("連続pointer moveを1フレームにまとめて最後のpanだけを反映する", () => {
+    const { hook } = renderViewport();
+    let frameCallback: FrameRequestCallback | null = null;
+    const requestAnimationFrameSpy = vi.spyOn(window, "requestAnimationFrame").mockImplementation((callback) => {
+      frameCallback = callback;
+      return 11;
+    });
+    const surfaceTarget = {
+      getBoundingClientRect: () => ({ height: GRAPH_HEIGHT, width: GRAPH_WIDTH } as DOMRect),
+      hasPointerCapture: vi.fn().mockReturnValue(true),
+      releasePointerCapture: vi.fn(),
+      setPointerCapture: vi.fn()
+    } as unknown as HTMLDivElement;
+    (hook.result.current.surfaceRef as { current: HTMLDivElement | null }).current = surfaceTarget;
+
+    act(() => {
+      hook.result.current.graphHandlers.onPointerDown(makeEvent<HTMLDivElement>({
+        clientX: 10,
+        clientY: 20,
+        currentTarget: surfaceTarget,
+        pointerId: 6
+      }));
+      hook.result.current.graphHandlers.onPointerMove(makeEvent<HTMLDivElement>({
+        clientX: 60,
+        clientY: 40,
+        currentTarget: surfaceTarget,
+        pointerId: 6
+      }));
+      hook.result.current.graphHandlers.onPointerMove(makeEvent<HTMLDivElement>({
+        clientX: 210,
+        clientY: 120,
+        currentTarget: surfaceTarget,
+        pointerId: 6
+      }));
+    });
+
+    expect(requestAnimationFrameSpy).toHaveBeenCalledTimes(1);
+    expect(hook.result.current.viewBox.x).toBe(0);
+
+    act(() => {
+      frameCallback?.(16);
+    });
+
+    expect(hook.result.current.viewBox.x).toBe(-200);
+    expect(hook.result.current.viewBox.y).toBe(-100);
+  });
+
+  it("pointer cancelではpending panを破棄して背景clickを呼ばない", () => {
+    const { hook, onBackgroundClick } = renderViewport();
+    const cancelAnimationFrameSpy = vi.spyOn(window, "cancelAnimationFrame").mockImplementation(() => undefined);
+    vi.spyOn(window, "requestAnimationFrame").mockImplementation(() => 12);
+    const surfaceTarget = {
+      getBoundingClientRect: () => ({ height: GRAPH_HEIGHT, width: GRAPH_WIDTH } as DOMRect),
+      hasPointerCapture: vi.fn().mockReturnValue(true),
+      releasePointerCapture: vi.fn(),
+      setPointerCapture: vi.fn()
+    } as unknown as HTMLDivElement;
+    (hook.result.current.surfaceRef as { current: HTMLDivElement | null }).current = surfaceTarget;
+
+    act(() => {
+      hook.result.current.graphHandlers.onPointerDown(makeEvent<HTMLDivElement>({
+        clientX: 10,
+        clientY: 20,
+        currentTarget: surfaceTarget,
+        pointerId: 7
+      }));
+      hook.result.current.graphHandlers.onPointerMove(makeEvent<HTMLDivElement>({
+        clientX: 110,
+        clientY: 70,
+        currentTarget: surfaceTarget,
+        pointerId: 7
+      }));
+      hook.result.current.graphHandlers.onPointerCancel(makeEvent<HTMLDivElement>({
+        currentTarget: surfaceTarget,
+        pointerId: 7
+      }));
+    });
+
+    expect(cancelAnimationFrameSpy).toHaveBeenCalledWith(12);
+    expect(hook.result.current.viewBox.x).toBe(0);
     expect(hook.result.current.isPanning).toBe(false);
     expect(hook.result.current.pauseSimulationRef.current).toBe(false);
     expect(onBackgroundClick).not.toHaveBeenCalled();

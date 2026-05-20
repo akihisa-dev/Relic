@@ -109,6 +109,7 @@ export const useGraphStore = create<GraphState>((set, get) => ({
 
     const current = get();
     if (!force && current.loadedWorkspaceId === workspaceId && current.graph) return;
+    if (!force && current.loadedWorkspaceId === workspaceId && current.isLoading) return;
 
     set({ error: null, isLoading: true, loadedWorkspaceId: workspaceId });
     void window.relic.getWorkspaceGraph().then((result) => {
