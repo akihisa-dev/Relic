@@ -56,6 +56,12 @@ function renderNodeInteractions() {
   const onOpenFile = vi.fn();
   const pinnedPathRef: MutableRefObject<string | null> = { current: null };
   const pointsRef: MutableRefObject<GraphSimPoint[]> = { current: points };
+  const geometryController = {
+    changedPathsRef: { current: new Set<string>() },
+    livePointsRef: pointsRef,
+    notifyChanged: vi.fn(),
+    subscribe: vi.fn()
+  };
   let selectedPath: string | null = null;
   const setFocusedPath = vi.fn();
   const setPoints = vi.fn((nextPoints: GraphSimPoint[]) => {
@@ -68,6 +74,7 @@ function renderNodeInteractions() {
     edges,
     forceSettings,
     getGraphDelta,
+    geometryController,
     onOpenFile,
     pinnedPathRef,
     pointsRef,
@@ -79,6 +86,7 @@ function renderNodeInteractions() {
 
   return {
     getGraphDelta,
+    geometryController,
     hook,
     onOpenFile,
     pinnedPathRef,
@@ -151,12 +159,7 @@ describe("useGraphNodeInteractions", () => {
   });
 
   it("drag中のmoveで対象node座標をbounds内にclampする", () => {
-    const { hook, pinnedPathRef, pointsRef, setPoints, setSelectedPath } = renderNodeInteractions();
-    let frameCallback: FrameRequestCallback | null = null;
-    vi.spyOn(window, "requestAnimationFrame").mockImplementation((callback) => {
-      frameCallback = callback;
-      return 1;
-    });
+    const { geometryController, hook, pinnedPathRef, pointsRef, setPoints, setSelectedPath } = renderNodeInteractions();
     const target = {
       hasPointerCapture: vi.fn().mockReturnValue(true),
       releasePointerCapture: vi.fn(),
@@ -186,14 +189,9 @@ describe("useGraphNodeInteractions", () => {
 
     const movedPoint = pointsRef.current.find((point) => point.path === "A.md");
     expect(setPoints).not.toHaveBeenCalled();
+    expect(geometryController.notifyChanged).toHaveBeenCalledWith(new Set(["A.md", "B.md"]));
     expect(movedPoint?.x).toBe(GRAPH_WIDTH - GRAPH_PADDING);
     expect(movedPoint?.y).toBe(GRAPH_HEIGHT - GRAPH_PADDING);
-
-    act(() => {
-      frameCallback?.(16);
-    });
-
-    expect(setPoints).toHaveBeenCalledTimes(1);
   });
 
   it("drag中は隣接nodeも局所simulationで反応する", () => {
@@ -255,7 +253,7 @@ describe("useGraphNodeInteractions", () => {
   });
 
   it("drag後のclickを抑止しpinned pathを解除してsettleを始める", () => {
-    const { hook, onOpenFile, pinnedPathRef, setSelectedPath } = renderNodeInteractions();
+    const { geometryController, hook, onOpenFile, pinnedPathRef, setPoints, setSelectedPath } = renderNodeInteractions();
     const frameCallbacks: FrameRequestCallback[] = [];
     vi.spyOn(window, "requestAnimationFrame").mockImplementation((callback) => {
       frameCallbacks.push(callback);
@@ -291,5 +289,14 @@ describe("useGraphNodeInteractions", () => {
     expect(setSelectedPath).toHaveBeenCalledTimes(1);
     expect(onOpenFile).not.toHaveBeenCalled();
     expect(frameCallbacks.length).toBeGreaterThan(0);
+    expect(setPoints).toHaveBeenCalledTimes(1);
+    act(() => {
+      for (let index = 0; index < 8; index += 1) {
+        const callback = frameCallbacks.shift();
+        callback?.(16);
+      }
+    });
+    expect(geometryController.notifyChanged).toHaveBeenCalledWith(new Set(["A.md", "B.md"]));
+    expect(setPoints).toHaveBeenCalledTimes(2);
   });
 });

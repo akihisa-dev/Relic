@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 
 import {
   buildFilteredGraph,
@@ -69,7 +69,6 @@ export function useGraphPanelModel({
     zoom,
     animationEpoch
   } = useGraphStore();
-  const [hoveredPath, setHoveredPath] = useState<string | null>(null);
   useEffect(() => {
     loadGraph(workspaceId);
   }, [loadGraph, workspaceId]);
@@ -85,8 +84,8 @@ export function useGraphPanelModel({
     showOrphans,
     tagFilter
   }), [activeFilePath, folderFilter, graph, linkFilter, localGraphDepth, minDegree, query, showOrphans, tagFilter]);
-  const motionPath = hoveredPath;
-  const focusedPath = hoveredPath;
+  const motionPath = null;
+  const focusedPath = null;
   const labelOpacity = showLabels
     ? clamp((zoom - textFadeThreshold + 0.5) / 0.5, 0.18, 1)
     : 0;
@@ -99,13 +98,14 @@ export function useGraphPanelModel({
   }), [centerForce, linkDistance, linkForce, repelForce]);
   const graphCanvas = useGraphCanvasInteractions({
     edges: filteredGraph.edges,
+    fitKey: `${layoutMode}\u0000${filteredGraph.signature}`,
     focusedPath,
     forceSettings,
     layoutMode,
     nodes: filteredGraph.nodes,
     onOpenFile,
     selectedPath,
-    setFocusedPath: setHoveredPath,
+    setFocusedPath: ignoreGraphHover,
     setSelectedPath,
     setZoom,
     zoom
@@ -129,4 +129,8 @@ export function useGraphPanelModel({
     showArrows,
     showLabels
   };
+}
+
+function ignoreGraphHover(): void {
+  return undefined;
 }

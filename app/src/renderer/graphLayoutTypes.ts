@@ -19,6 +19,7 @@ export type GraphLayoutMode = "standard" | "radial" | "cluster" | "scatter";
 export interface GraphViewModel {
   edges: WorkspaceGraphEdge[];
   nodes: WorkspaceGraphNode[];
+  signature: string;
 }
 
 export interface GraphForceSettings {

@@ -6,6 +6,7 @@ import { describe, expect, it, vi } from "vitest";
 import { GRAPH_HEIGHT, GRAPH_WIDTH, type GraphPoint } from "../graphLayout";
 import { buildGraphRenderState } from "../graphRenderModel";
 import {
+  buildGraphRenderCache,
   buildGraphRevealState,
   buildGraphLabelPlacement,
   buildGraphNodeHitRadius,
@@ -16,6 +17,7 @@ import {
   graphEdgeKey,
   graphRenderReasonsNeedLayerRedraw,
   graphViewScaleBucket,
+  updateGraphRenderCacheGeometry,
   type GraphCanvasProps
 } from "./GraphCanvas";
 
@@ -31,6 +33,12 @@ function makeGraphCanvasProps(overrides: Partial<GraphCanvasProps> = {}): GraphC
     animationEpoch: 0,
     edges: [{ sourcePath: "A.md", targetPath: "C.md" }],
     focusedPath: "A.md",
+    geometryController: {
+      changedPathsRef: { current: new Set() },
+      livePointsRef: { current: points.map((point) => ({ ...point, vx: 0, vy: 0 })) },
+      notifyChanged: vi.fn(),
+      subscribe: () => () => undefined
+    },
     groupByPath: new Map(),
     isMotionAfterglow: false,
     isPanning: false,
@@ -183,6 +191,37 @@ describe("GraphCanvas", () => {
     expect(buildGraphNodeDrawSignature(node)).not.toBe(buildGraphNodeDrawSignature({ ...node, radius: node.radius + 1 }));
   });
 
+  it("geometry patchでは変更nodeとincident edgeだけをrender cache上で更新する", () => {
+    const state = buildGraphRenderState({
+      edges: [
+        { sourcePath: "A.md", targetPath: "C.md" },
+        { sourcePath: "B.md", targetPath: "D.md" }
+      ],
+      focusedPath: null,
+      groupByPath: new Map(),
+      labelOpacity: 1,
+      linkThickness: 1,
+      motionPath: null,
+      nodeSize: 1,
+      points,
+      relatedPaths: new Set(),
+      selectedPath: null,
+      showLabels: true,
+      viewScale: 1
+    });
+    const cache = buildGraphRenderCache(state);
+    const patch = updateGraphRenderCacheGeometry(cache, points.map((point) => point.path === "A.md"
+      ? { ...point, vx: 0, vy: 0, x: point.x + 40 }
+      : { ...point, vx: 0, vy: 0 }
+    ), new Set(["A.md"]));
+
+    expect(patch.nodes.map((node) => node.path)).toEqual(["A.md"]);
+    expect(patch.edges.map((edge) => graphEdgeKey(edge))).toEqual(["A.md\u0000C.md"]);
+    expect(cache.nodesByPath.get("A.md")?.x).toBe(120);
+    expect(cache.edgesByKey.get("A.md\u0000C.md")?.x1).toBe(120);
+    expect(cache.edgesByKey.get("B.md\u0000D.md")?.x1).toBe(state.edges[1]?.x1);
+  });
+
   it("zoom scaleを粗いbucketへ丸めてLOD再計算頻度を抑える", () => {
     expect(graphViewScaleBucket(0.6)).toBe("far");
     expect(graphViewScaleBucket(1)).toBe("default");
@@ -233,5 +272,29 @@ describe("GraphCanvas", () => {
     expect(end.edges[0]?.strokeWidth).toBeCloseTo(state.edges[0]?.strokeWidth ?? 0);
     expect(end.edges[0]?.x2).toBeCloseTo(state.edges[0]?.x2 ?? 0);
     expect(end.edges[0]?.y2).toBeCloseTo(state.edges[0]?.y2 ?? 0);
+  });
+
+  it("大規模revealでは全nodeを短い一括fadeとして扱う", () => {
+    const state = buildGraphRenderState({
+      edges: [{ sourcePath: "A.md", targetPath: "C.md" }],
+      focusedPath: null,
+      groupByPath: new Map(),
+      labelOpacity: 1,
+      linkThickness: 1,
+      motionPath: null,
+      nodeSize: 1,
+      points,
+      relatedPaths: new Set(),
+      selectedPath: null,
+      showLabels: true,
+      viewScale: 1
+    });
+    const frame = buildGraphRevealState(state, 90, true);
+
+    expect(frame.nodes[0]?.fillAlpha).toBeGreaterThan(0);
+    expect(frame.nodes[1]?.fillAlpha).toBeGreaterThan(0);
+    expect(frame.nodes[2]?.fillAlpha).toBeGreaterThan(0);
+    expect(frame.edges[0]?.alpha).toBeGreaterThan(0);
+    expect(frame.edges[0]?.x2).toBeLessThan(state.edges[0]?.x2 ?? 0);
   });
 });
