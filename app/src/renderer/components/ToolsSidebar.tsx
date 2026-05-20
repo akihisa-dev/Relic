@@ -37,7 +37,7 @@ export function ToolsSidebar({ workspacePath }: { workspacePath: string | null }
   return (
     <div className="settings-page tools-settings-page">
       <header className="settings-page-header">
-        <p className="settings-page-kicker">{t("nav.tools")}</p>
+        <p className="dashboard-kicker">{t("nav.tools")}</p>
         <h2>{t("tools.tools")}</h2>
       </header>
       {!workspacePath ? (

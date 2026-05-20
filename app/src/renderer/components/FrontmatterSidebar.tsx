@@ -20,7 +20,7 @@ export function FrontmatterSidebar({
   return (
     <div className="settings-page frontmatter-settings-section">
       <header className="settings-page-header">
-        <p className="settings-page-kicker">{t("nav.frontmatter")}</p>
+        <p className="dashboard-kicker">{t("nav.frontmatter")}</p>
         <h2>{t("settings.frontmatterProperties")}</h2>
       </header>
 
