@@ -1,5 +1,3 @@
-import { useMemo } from "react";
-
 import type { Backlink, WorkspaceTreeNode } from "../../shared/ipc";
 import { resolveWikiLinks, type AliasIndex, type ResolvedWikiLink } from "../../shared/links";
 import {
@@ -31,7 +29,6 @@ export function useActiveDocumentContext({
   setWorkspaceError,
   tabs
 }: UseActiveDocumentContextInput): {
-  activeFilePathForGraph: string | null;
   activeFileTabInFocusedPane: FileTab | null;
   backlinks: Backlink[];
   isLoadingBacklinks: boolean;
@@ -43,19 +40,6 @@ export function useActiveDocumentContext({
     { leftPane, rightPane },
     tabs
   );
-  const activeFilePathForGraph = useMemo(() => {
-    const paneOrder = focusedPane === "left" ? [leftPane, rightPane] : [rightPane, leftPane];
-    for (const pane of paneOrder) {
-      for (const tabId of [...pane.history].reverse()) {
-        const tab = tabs[tabId];
-        if (tab?.kind === "file") return tab.path;
-      }
-    }
-    for (const tab of Object.values(tabs)) {
-      if (tab.kind === "file") return tab.path;
-    }
-    return null;
-  }, [focusedPane, leftPane, rightPane, tabs]);
   const outlineHeadings = activeFileTabInFocusedPane
     ? extractOutlineHeadings(activeFileTabInFocusedPane.content)
     : [];
@@ -70,7 +54,6 @@ export function useActiveDocumentContext({
   });
 
   return {
-    activeFilePathForGraph,
     activeFileTabInFocusedPane,
     backlinks,
     isLoadingBacklinks,

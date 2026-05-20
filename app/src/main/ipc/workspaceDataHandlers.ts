@@ -4,7 +4,6 @@ import {
   getFrontmatterValueCandidatesChannel,
   getWorkspaceAliasesChannel,
   getWorkspaceChronicleChannel,
-  getWorkspaceGraphChannel,
   getWorkspaceTagsChannel,
   saveWorkspaceGanttChartsChannel,
   updateGanttChartEntryChannel
@@ -13,7 +12,6 @@ import { fail } from "../../shared/result";
 import { readWorkspaceAliases } from "../files/aliases";
 import { readWorkspaceChronicle, updateWorkspaceGanttChartEntry } from "../files/chronicle";
 import { readFrontmatterValueCandidates } from "../files/frontmatterCandidates";
-import { readWorkspaceGraph } from "../files/graph";
 import { readWorkspaceTags } from "../files/tags";
 import { readWorkspaceSettings, writeWorkspaceSettings } from "../settings/workspaceSettings";
 import { getActiveWorkspaceContext, ipcErrorDetails } from "./activeWorkspace";
@@ -82,21 +80,6 @@ export function registerWorkspaceDataHandlers(): void {
       return fail(
         "WORKSPACE_CHRONICLE_FAILED",
         "年表を読み込めませんでした。",
-        ipcErrorDetails(error)
-      );
-    }
-  });
-
-  ipcMain.handle(getWorkspaceGraphChannel, async () => {
-    try {
-      const context = await getActiveWorkspaceContext();
-      if (!context.ok) return context;
-
-      return readWorkspaceGraph(context.value.activeWorkspace.path);
-    } catch (error) {
-      return fail(
-        "WORKSPACE_GRAPH_FAILED",
-        "グラフを読み込めませんでした。",
         ipcErrorDetails(error)
       );
     }

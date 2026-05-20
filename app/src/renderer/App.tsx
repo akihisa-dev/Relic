@@ -379,7 +379,6 @@ export function App(): ReactElement {
   );
 
   const {
-    activeFilePathForGraph,
     activeFileTabInFocusedPane,
     backlinks,
     isLoadingBacklinks,
@@ -441,7 +440,6 @@ export function App(): ReactElement {
   });
 
   const { renderGanttChartTab, renderPanelTab } = useAppTabRenderers({
-    activeFilePathForGraph,
     appInfo,
     editorSettings,
     featureToggles,

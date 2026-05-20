@@ -78,7 +78,6 @@ describe("appShellModel", () => {
     expect(labels).toEqual({
       dashboard: "Dashboard",
       frontmatter: "Frontmatter",
-      graph: "Graph",
       settings: "Settings",
       tools: "Tools"
     });
@@ -88,7 +87,6 @@ describe("appShellModel", () => {
     const railViews: AppRailView[] = [
       { icon: null, id: "files", label: "Files" },
       { icon: null, id: "dashboard", label: "Dashboard" },
-      { icon: null, id: "graph", label: "Graph" },
       { icon: null, id: "tools", label: "Tools" },
       { icon: null, id: "frontmatter", label: "Frontmatter" },
       { icon: null, id: "chronicle", label: "Chronicle" },
@@ -102,8 +100,8 @@ describe("appShellModel", () => {
     });
     const split = splitRailViews(enabled);
 
-    expect(enabled.map((view) => view.id)).toEqual(["files", "dashboard", "graph", "chronicle", "settings"]);
-    expect(split.primaryRailViews.map((view) => view.id)).toEqual(["files", "dashboard", "graph"]);
+    expect(enabled.map((view) => view.id)).toEqual(["files", "dashboard", "chronicle", "settings"]);
+    expect(split.primaryRailViews.map((view) => view.id)).toEqual(["files", "dashboard"]);
     expect(split.chartRailView?.id).toBe("chronicle");
     expect(split.panelRailViews.map((view) => view.id)).toEqual(["settings"]);
   });

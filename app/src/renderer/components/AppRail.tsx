@@ -74,7 +74,7 @@ export function AppRail({
           className={primaryRailButtonClass(view, activePanelTabIds, openPanelTabIds, activeSidebarView, isSidebarOpen)}
           key={view.id}
           onClick={(event) => {
-            if (view.id === "graph" || view.id === "dashboard") {
+            if (view.id === "dashboard") {
               onPanelButton(view.id, view.label, event);
               return;
             }
@@ -148,7 +148,7 @@ function primaryRailButtonClass(
   activeSidebarView: SidebarView,
   isSidebarOpen: boolean
 ): string {
-  if (view.id === "graph" || view.id === "dashboard") {
+  if (view.id === "dashboard") {
     return `rail-button${activePanelTabIds.has(view.id) ? " active" : openPanelTabIds.has(view.id) ? " open" : ""}`;
   }
 

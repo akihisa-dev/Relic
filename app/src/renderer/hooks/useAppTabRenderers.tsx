@@ -13,13 +13,11 @@ import type {
 import { GanttChartView } from "../components/ChronicleSidebar";
 import { DashboardPanel } from "../components/DashboardPanel";
 import { FrontmatterSidebar } from "../components/FrontmatterSidebar";
-import { GraphPanel } from "../components/GraphSidebar";
 import { SettingsSidebar } from "../components/SettingsSidebar";
 import { ToolsSidebar } from "../components/ToolsSidebar";
 import type { PanelTabKind } from "../store/editorStore";
 
 interface UseAppTabRenderersInput {
-  activeFilePathForGraph: string | null;
   appInfo: AppInfo | null;
   editorSettings: EditorSettings;
   featureToggles: FeatureToggles;
@@ -34,7 +32,6 @@ interface UseAppTabRenderersInput {
 }
 
 export function useAppTabRenderers({
-  activeFilePathForGraph,
   appInfo,
   editorSettings,
   featureToggles,
@@ -84,16 +81,6 @@ export function useAppTabRenderers({
       );
     }
 
-    if (panel === "graph") {
-      return (
-        <GraphPanel
-          activeFilePath={activeFilePathForGraph}
-          onOpenFile={handleOpenFile}
-          workspaceId={workspaceState?.activeWorkspace?.id ?? null}
-        />
-      );
-    }
-
     return (
       <SettingsSidebar
         appInfo={appInfo}
@@ -104,7 +91,6 @@ export function useAppTabRenderers({
       />
     );
   }, [
-    activeFilePathForGraph,
     appInfo,
     editorSettings,
     featureToggles,
