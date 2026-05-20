@@ -13,7 +13,7 @@ export function resolveWorkspaceRelativePath(
   const normalizedInput = relativePath.replace(/\\/g, "/");
 
   if (path.posix.isAbsolute(normalizedInput) || path.win32.isAbsolute(normalizedInput)) {
-    return fail("WORKSPACE_PATH_INVALID", "ワークスペース内の相対パスを指定してください。");
+    return fail("WORKSPACE_PATH_INVALID", "カードブック内の相対パスを指定してください。");
   }
 
   const normalizedRelativePath = normalizedInput.split("/").join(path.sep);
@@ -25,7 +25,7 @@ export function resolveWorkspaceRelativePath(
     relativeFromWorkspace.startsWith("..") ||
     path.isAbsolute(relativeFromWorkspace)
   ) {
-    return fail("WORKSPACE_PATH_OUTSIDE", "ワークスペース外のファイルは開けません。");
+    return fail("WORKSPACE_PATH_OUTSIDE", "カードブック外のカードは開けません。");
   }
 
   return ok(absolutePath);

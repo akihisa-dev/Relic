@@ -71,7 +71,7 @@ describe("resolveWikiLinkPath", () => {
     expect(resolveWikiLinkPath("参照先", "folder/source.md")).toBe("folder/参照先.md");
   });
 
-  it("パス付きリンクはワークスペース相対として解決する", () => {
+  it("パス付きリンクはカードブック相対として解決する", () => {
     expect(resolveWikiLinkPath("archive/参照先", "folder/source.md")).toBe("archive/参照先.md");
   });
 });
@@ -91,7 +91,7 @@ describe("resolveMarkdownLinkPath", () => {
     });
   });
 
-  it("外部URLはワークスペース内リンクとして扱わない", () => {
+  it("外部URLはカードブック内リンクとして扱わない", () => {
     expect(resolveMarkdownLinkPath("https://example.com", "source.md")).toBeNull();
   });
 });

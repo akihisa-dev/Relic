@@ -28,7 +28,7 @@ export function registerEditorHandlers(): void {
         const state = toWorkspaceState(settings);
 
         if (!state.activeWorkspace) {
-          return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
+          return fail("WORKSPACE_NOT_SELECTED", "先にカードブックを開いてください。");
         }
 
         const resolved = resolveWorkspaceRelativePath(state.activeWorkspace.path, input.path);
@@ -38,7 +38,7 @@ export function registerEditorHandlers(): void {
         }
 
         if (path.extname(resolved.value) !== ".md") {
-          return fail("FILE_WRITE_NOT_MARKDOWN", "Markdownファイル以外は書き込めません。");
+          return fail("FILE_WRITE_NOT_MARKDOWN", "Markdown形式のカード以外は書き込めません。");
         }
 
         await writeFile(resolved.value, input.content, "utf8");
@@ -47,7 +47,7 @@ export function registerEditorHandlers(): void {
       } catch (error) {
         return fail(
           "FILE_WRITE_FAILED",
-          "ファイルを保存できませんでした。",
+          "カードを保存できませんでした。",
           error instanceof Error ? error.message : String(error)
         );
       }

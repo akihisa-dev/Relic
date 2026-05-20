@@ -7,13 +7,13 @@ import {
 } from "./workspacePaths";
 
 describe("workspacePaths", () => {
-  it("ワークスペース相対パスを結合する", () => {
+  it("カードブック相対パスを結合する", () => {
     expect(joinWorkspacePath("", "note.md")).toBe("note.md");
     expect(joinWorkspacePath("folder", "note.md")).toBe("folder/note.md");
     expect(joinWorkspacePath("/folder\\child/", "\\note.md")).toBe("folder/child/note.md");
   });
 
-  it("親フォルダを返す", () => {
+  it("親カードフォルダを返す", () => {
     expect(parentFolderOf("note.md")).toBe("");
     expect(parentFolderOf("folder/note.md")).toBe("folder");
     expect(parentFolderOf("a/b/note.md")).toBe("a/b");

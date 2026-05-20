@@ -6,7 +6,7 @@ import { resolveWorkspaceRelativePath, toWorkspaceRelativePath } from "./paths";
 import { pathExists } from "./fileSystem";
 
 export function normalizeMarkdownFileName(name: string): RelicResult<string> {
-  const validatedName = validateBaseName(name, "ファイル名を入力してください。");
+  const validatedName = validateBaseName(name, "カード名を入力してください。");
 
   if (!validatedName.ok) {
     return validatedName;

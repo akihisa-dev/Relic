@@ -37,8 +37,7 @@ describe("workspaceSettings", () => {
 
     await writeWorkspaceSettings(userDataPath, "ws-1", {
       ganttCharts: [
-        { filePaths: ["history/kamakura.md"], id: "chronicle", name: "歴史", source: "chronicle" },
-        { filePaths: [], id: "schedule", name: "予定", source: "date" }
+        { filePaths: ["history/kamakura.md"], id: "chronicle", name: "歴史", source: "chronicle" }
       ],
       pinnedPaths: ["notes/readme.md", "docs"],
       workspacePath: "/Users/test/notes"
@@ -46,8 +45,7 @@ describe("workspaceSettings", () => {
 
     const settings = await readWorkspaceSettings(userDataPath, "ws-1");
     expect(settings.ganttCharts).toEqual([
-      { filePaths: ["history/kamakura.md"], id: "chronicle", name: "chronicle", source: "chronicle" },
-      { filePaths: [], id: "date", name: "date", source: "date" }
+      { filePaths: ["history/kamakura.md"], id: "chronicle", name: "Chronicle", source: "chronicle" }
     ]);
     expect(settings.pinnedPaths).toEqual(["notes/readme.md", "docs"]);
     expect(settings.workspacePath).toBe("/Users/test/notes");

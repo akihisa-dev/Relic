@@ -43,7 +43,7 @@ export function addOrActivateWorkspace(
 
 export function activateWorkspace(settings: AppSettings, workspaceId: string): RelicResult<AppSettings> {
   if (!settings.workspaces.some((workspace) => workspace.id === workspaceId)) {
-    return fail("WORKSPACE_NOT_FOUND", "登録済みワークスペースが見つかりませんでした。");
+    return fail("WORKSPACE_NOT_FOUND", "登録済みカードブックが見つかりませんでした。");
   }
 
   return ok({
@@ -57,7 +57,7 @@ export function removeWorkspaceRegistration(
   workspaceId: string
 ): RelicResult<AppSettings> {
   if (!settings.workspaces.some((workspace) => workspace.id === workspaceId)) {
-    return fail("WORKSPACE_NOT_FOUND", "登録済みワークスペースが見つかりませんでした。");
+    return fail("WORKSPACE_NOT_FOUND", "登録済みカードブックが見つかりませんでした。");
   }
 
   const workspaces = settings.workspaces.filter((workspace) => workspace.id !== workspaceId);
@@ -84,7 +84,7 @@ export async function renameWorkspaceRegistration(
   workspaceId: string,
   name: string
 ): Promise<RelicResult<RenamedWorkspaceRegistration>> {
-  const validatedName = validateBaseName(name, "ワークスペース名を入力してください。");
+  const validatedName = validateBaseName(name, "カードブック名を入力してください。");
 
   if (!validatedName.ok) {
     return validatedName;
@@ -93,7 +93,7 @@ export async function renameWorkspaceRegistration(
   const workspace = settings.workspaces.find((item) => item.id === workspaceId);
 
   if (!workspace) {
-    return fail("WORKSPACE_NOT_FOUND", "登録済みワークスペースが見つかりませんでした。");
+    return fail("WORKSPACE_NOT_FOUND", "登録済みカードブックが見つかりませんでした。");
   }
 
   const nextPath = path.join(path.dirname(workspace.path), validatedName.value);
@@ -111,7 +111,7 @@ export async function renameWorkspaceRegistration(
     const sourceStats = await stat(workspace.path);
 
     if (!sourceStats.isDirectory()) {
-      return fail("WORKSPACE_RENAME_NOT_DIRECTORY", "ワークスペースフォルダが見つかりませんでした。");
+      return fail("WORKSPACE_RENAME_NOT_DIRECTORY", "カードブック用ディレクトリが見つかりませんでした。");
     }
 
     let targetIsSourceDirectory = false;
@@ -119,7 +119,7 @@ export async function renameWorkspaceRegistration(
     try {
       const targetStats = await stat(nextWorkspace.path);
       if (sourceStats.dev !== targetStats.dev || sourceStats.ino !== targetStats.ino) {
-        return fail("WORKSPACE_ALREADY_EXISTS", "同じ名前のフォルダがすでにあります。");
+        return fail("WORKSPACE_ALREADY_EXISTS", "同じ名前のカードフォルダがすでにあります。");
       }
       targetIsSourceDirectory = true;
     } catch (error) {
@@ -155,7 +155,7 @@ export async function renameWorkspaceRegistration(
   } catch (error) {
     return fail(
       "WORKSPACE_RENAME_FAILED",
-      "ワークスペース名を変更できませんでした。",
+      "カードブック名を変更できませんでした。",
       error instanceof Error ? error.message : String(error)
     );
   }

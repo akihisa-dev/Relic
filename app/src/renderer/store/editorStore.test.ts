@@ -10,9 +10,9 @@ const sampleFile = {
 };
 
 const sampleFile2 = {
-  content: "# 別ファイル",
-  name: "別ファイル",
-  path: "別ファイル.md"
+  content: "# 別カード",
+  name: "別カード",
+  path: "別カード.md"
 };
 
 const sampleFile3 = {
@@ -35,7 +35,7 @@ function resetStore(): void {
 describe("editorStore", () => {
   afterEach(resetStore);
 
-  it("ファイルを左ペインで開くとタブが追加されアクティブになる", () => {
+  it("カードを左ペインで開くとタブが追加されアクティブになる", () => {
     const { openFileInPane, leftPane, tabs } = useEditorStore.getState();
 
     openFileInPane("left", sampleFile);
@@ -53,7 +53,7 @@ describe("editorStore", () => {
     void tabs;
   });
 
-  it("同じパスのファイルを再度開くとタブが重複しない", () => {
+  it("同じパスのカードを再度開くとタブが重複しない", () => {
     const { openFileInPane } = useEditorStore.getState();
 
     openFileInPane("left", sampleFile);
@@ -127,7 +127,7 @@ describe("editorStore", () => {
     expect(useEditorStore.getState().isSplit).toBe(false);
   });
 
-  it("ファイルを開いた状態で分割すると右ペインにも同じタブが表示される", () => {
+  it("カードを開いた状態で分割すると右ペインにも同じタブが表示される", () => {
     useEditorStore.getState().openFileInPane("left", sampleFile);
 
     const activeTabId = useEditorStore.getState().leftPane.activeTabId!;
@@ -142,7 +142,7 @@ describe("editorStore", () => {
     expect(state.rightPane.tabIds).toEqual([activeTabId]);
   });
 
-  it("すでに開いているファイルを別ペインで開くと、そのペインのタブ列にも表示される", () => {
+  it("すでに開いているカードを別ペインで開くと、そのペインのタブ列にも表示される", () => {
     useEditorStore.getState().openFileInPane("left", sampleFile);
     const tabId = useEditorStore.getState().leftPane.activeTabId!;
 

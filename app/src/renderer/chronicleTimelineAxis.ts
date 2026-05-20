@@ -1,14 +1,10 @@
 import type { GanttChartEntry, GanttChartSource } from "../shared/ipc";
-import { axisToYear, dateToDay, yearToAxis } from "../shared/chartTime";
+import { axisToYear, yearToAxis } from "../shared/chartTime";
 import {
-  DATE_SCALES,
-  LABEL_HORIZONTAL_PADDING,
-  type DateAxisSegmentUnit,
-  type DateScale,
-  type DateScaleUnit
+  LABEL_HORIZONTAL_PADDING
 } from "./chronicleTimelineConstants";
 
-export interface DateAxisSegment {
+export interface ChronicleAxisSegment {
   endValue: number;
   label: string;
   startValue: number;
@@ -26,20 +22,10 @@ export interface TimelineVisibleRange {
 
 export function timelineBounds(
   entries: GanttChartEntry[],
-  tickInterval: number,
-  source: GanttChartSource,
-  dateScale: DateScale | null
+  tickInterval: number
 ): { axisEnd: number; axisStart: number } {
   if (entries.length === 0) {
-    const today = source === "date" ? currentDateDay() : 1;
-    if (source === "date" && dateScale) {
-      const start = previousDateUnit(today, dateScale.unit);
-      let end = start;
-      for (let i = 0; i < 8; i += 1) end = nextDateUnit(end, dateScale.unit);
-
-      return { axisEnd: end - 1, axisStart: start };
-    }
-
+    const today = 1;
     return {
       axisEnd: today + tickInterval * 4,
       axisStart: today - tickInterval
@@ -48,21 +34,11 @@ export function timelineBounds(
 
   const starts = entries.map((entry) => entry.startValue);
   const ends = entries.map((entry) => entry.endValue);
-  const today = source === "date" ? currentDateDay() : null;
-  const min = Math.min(...starts, ...(today === null ? [] : [today]));
-  const max = Math.max(...ends, ...(today === null ? [] : [today]));
-  const padding = source === "date"
-    ? Math.max(3, Math.ceil((max - min + 1) * 0.18))
-    : Math.max(1, Math.ceil((max - min + 1) * 0.06));
+  const min = Math.min(...starts);
+  const max = Math.max(...ends);
+  const padding = Math.max(1, Math.ceil((max - min + 1) * 0.06));
   const paddedStart = min - padding;
   const paddedEnd = max + padding;
-
-  if (source === "date" && dateScale) {
-    return {
-      axisEnd: nextDateUnit(paddedEnd, dateScale.unit) - 1,
-      axisStart: previousDateUnit(paddedStart, dateScale.unit)
-    };
-  }
 
   const boundsInterval = chronicleAxisTickInterval(tickInterval);
   const startYear = Math.floor(axisToYear(paddedStart) / boundsInterval) * boundsInterval - boundsInterval;
@@ -77,12 +53,8 @@ export function timelineBounds(
 export function buildTicks(
   axisStart: number,
   axisEnd: number,
-  interval: number,
-  source: GanttChartSource,
-  dateScale: DateScale | null
+  interval: number
 ): number[] {
-  if (source === "date") return buildDateTicks(axisStart, axisEnd, dateGuideUnit(dateScale ?? DATE_SCALES[0]));
-
   return buildChronicleTicks(axisStart, axisEnd, chronicleAxisTickInterval(interval));
 }
 
@@ -90,26 +62,15 @@ export function buildGuideTicks(
   axisStart: number,
   axisEnd: number,
   ticks: number[],
-  interval: number,
-  source: GanttChartSource,
-  dateScale: DateScale | null
+  interval: number
 ): ChartGuideTick[] {
-  if (source !== "date") {
-    const majorTicks = new Set(buildChronicleTicks(axisStart, axisEnd, chronicleMajorGuideInterval(interval)));
-    return buildChronicleTicks(axisStart, axisEnd, chronicleMinorGuideInterval(interval))
-      .map((value) => ({
-        isMajor: majorTicks.has(value),
-        value
-      }));
-  }
-
-  if (!dateScale) return ticks.map((value) => ({ isMajor: false, value }));
-
-  const majorTicks = new Set(buildDateTicks(axisStart, axisEnd, dateMajorGuideUnit(dateScale)));
-  return ticks.map((value) => ({
-    isMajor: majorTicks.has(value),
-    value
-  }));
+  void ticks;
+  const majorTicks = new Set(buildChronicleTicks(axisStart, axisEnd, chronicleMajorGuideInterval(interval)));
+  return buildChronicleTicks(axisStart, axisEnd, chronicleMinorGuideInterval(interval))
+    .map((value) => ({
+      isMajor: majorTicks.has(value),
+      value
+    }));
 }
 
 export function timelineVisibleRange({
@@ -141,23 +102,6 @@ export function timelineVisibleRange({
   );
 
   return { visibleEnd, visibleStart };
-}
-
-export function buildVisibleDateGuideTicks(
-  axisStart: number,
-  axisEnd: number,
-  scale: DateScale,
-  visibleRange: TimelineVisibleRange
-): ChartGuideTick[] {
-  const visibleStart = clamp(visibleRange.visibleStart, axisStart, axisEnd);
-  const visibleEnd = clamp(visibleRange.visibleEnd, visibleStart, axisEnd);
-  const majorTicks = new Set(buildDateTicks(visibleStart, visibleEnd, dateMajorGuideUnit(scale)));
-
-  return buildDateTicks(visibleStart, visibleEnd, dateGuideUnit(scale))
-    .map((value) => ({
-      isMajor: majorTicks.has(value),
-      value
-    }));
 }
 
 export function buildVisibleChronicleGuideTicks(
@@ -209,40 +153,14 @@ export function chronicleMinorGuideInterval(interval: number): number {
   return interval === 100 ? 10 : interval;
 }
 
-export function buildDateTicks(axisStart: number, axisEnd: number, unit: DateAxisSegmentUnit): number[] {
-  const ticks: number[] = [];
-  let cursor = previousDateUnit(axisStart, unit);
-
-  while (cursor <= axisEnd) {
-    if (cursor >= axisStart) ticks.push(cursor);
-    cursor = nextDateUnit(cursor, unit);
-  }
-
-  return ticks;
-}
-
-export function dateGuideUnit(scale: DateScale): DateAxisSegmentUnit {
-  return "day";
-}
-
-export function dateMajorGuideUnit(scale: DateScale): DateAxisSegmentUnit {
-  return "month";
-}
-
-export function formatRange(entry: GanttChartEntry, source: GanttChartSource, dateScale: DateScale | null): string {
-  if (source !== "date" || !dateScale) {
-    if (entry.startValue === entry.endValue) return entry.startLabel;
-    return `${entry.startLabel} 〜 ${entry.endLabel}`;
-  }
-
-  const start = formatDateLabel(entry.startLabel, dateScale.unit);
-  const end = formatDateLabel(entry.endLabel, dateScale.unit);
-
-  if (start === end) return start;
-  return `${start} 〜 ${end}`;
+export function formatRange(entry: GanttChartEntry, source: GanttChartSource): string {
+  void source;
+  if (entry.startValue === entry.endValue) return entry.startLabel;
+  return `${entry.startLabel} 〜 ${entry.endLabel}`;
 }
 
 export function formatAxisValue(value: number, source: GanttChartSource): string {
+  void source;
   const year = axisToYear(value);
   return year < 0 ? `−${Math.abs(year)}` : String(year);
 }
@@ -251,88 +169,8 @@ export function labelWidthForText(text: string): number {
   return text.length * 8 + LABEL_HORIZONTAL_PADDING;
 }
 
-export function dateAxisFollowLabelOffset({
-  axisStart,
-  scrollLeft,
-  segment,
-  unitWidth
-}: {
-  axisStart: number;
-  scrollLeft: number;
-  segment: DateAxisSegment;
-  unitWidth: number;
-}): number {
-  const segmentLeft = (segment.startValue - axisStart) * unitWidth;
-  const segmentWidth = Math.max(1, (segment.endValue - segment.startValue + 1) * unitWidth);
-  const labelWidth = Math.min(segmentWidth, labelWidthForText(segment.label));
-  const maxOffset = Math.max(0, segmentWidth - labelWidth);
-
-  return clamp(scrollLeft - segmentLeft + 6, 0, maxOffset);
-}
-
-export function currentDateDay(): number {
-  return dateToDay(new Date().toISOString().slice(0, 10));
-}
-
 export function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
-}
-
-export function buildDateAxisSegments(
-  axisStart: number,
-  axisEnd: number,
-  unit: DateAxisSegmentUnit
-): DateAxisSegment[] {
-  const segments: DateAxisSegment[] = [];
-  let cursor = startOfDateUnit(axisStart, unit);
-
-  while (cursor <= axisEnd) {
-    const next = nextDateUnit(cursor, unit);
-    const startValue = Math.max(axisStart, cursor);
-    const endValue = Math.min(axisEnd, next - 1);
-
-    if (endValue >= startValue) {
-      segments.push({
-        endValue,
-        label: formatDateAxisSegmentLabel(cursor, unit),
-        startValue
-      });
-    }
-
-    cursor = next;
-  }
-
-  return segments;
-}
-
-export function buildVisibleDateAxisSegments(
-  axisStart: number,
-  axisEnd: number,
-  visibleRange: TimelineVisibleRange,
-  unit: DateAxisSegmentUnit
-): DateAxisSegment[] {
-  const visibleStart = clamp(visibleRange.visibleStart, axisStart, axisEnd);
-  const visibleEnd = clamp(visibleRange.visibleEnd, visibleStart, axisEnd);
-  const segments: DateAxisSegment[] = [];
-  let cursor = startOfDateUnit(visibleStart, unit);
-
-  while (cursor <= visibleEnd) {
-    const next = nextDateUnit(cursor, unit);
-    const startValue = Math.max(axisStart, cursor);
-    const endValue = Math.min(axisEnd, next - 1);
-
-    if (endValue >= visibleStart && endValue >= startValue) {
-      segments.push({
-        endValue,
-        label: formatDateAxisSegmentLabel(cursor, unit),
-        startValue
-      });
-    }
-
-    cursor = next;
-  }
-
-  return segments;
 }
 
 export function buildVisibleChronicleAxisSegments(
@@ -340,10 +178,10 @@ export function buildVisibleChronicleAxisSegments(
   axisEnd: number,
   interval: number,
   visibleRange: TimelineVisibleRange
-): DateAxisSegment[] {
+): ChronicleAxisSegment[] {
   const visibleStart = clamp(visibleRange.visibleStart, axisStart, axisEnd);
   const visibleEnd = clamp(visibleRange.visibleEnd, visibleStart, axisEnd);
-  const segments: DateAxisSegment[] = [];
+  const segments: ChronicleAxisSegment[] = [];
   const first = firstChronicleTickYear(axisToYear(visibleStart), interval);
   const endYear = axisToYear(visibleEnd);
 
@@ -366,8 +204,8 @@ export function buildVisibleChronicleAxisSegments(
   return segments;
 }
 
-export function buildChronicleAxisSegments(axisStart: number, axisEnd: number, interval: number): DateAxisSegment[] {
-  const segments: DateAxisSegment[] = [];
+export function buildChronicleAxisSegments(axisStart: number, axisEnd: number, interval: number): ChronicleAxisSegment[] {
+  const segments: ChronicleAxisSegment[] = [];
   const first = firstChronicleTickYear(axisToYear(axisStart), interval);
   const endYear = axisToYear(axisEnd);
 
@@ -390,66 +228,15 @@ export function buildChronicleAxisSegments(axisStart: number, axisEnd: number, i
   return segments;
 }
 
-export function startOfDateUnit(value: number, unit: DateAxisSegmentUnit): number {
-  const date = new Date(value * 86_400_000);
-  if (unit === "day") return value;
-
-  const month = unit === "year"
-    ? 0
-    : date.getUTCMonth();
-
-  return dateToDay(`${date.getUTCFullYear()}-${String(month + 1).padStart(2, "0")}-01`);
-}
-
-export function nextDateUnit(value: number, unit: DateAxisSegmentUnit): number {
-  const date = new Date(value * 86_400_000);
-
-  if (unit === "day") return value + 1;
-
-  if (unit === "month") {
-    date.setUTCMonth(date.getUTCMonth() + 1, 1);
-  } else {
-    date.setUTCFullYear(date.getUTCFullYear() + 1, 0, 1);
-  }
-
-  return Math.floor(date.getTime() / 86_400_000);
-}
-
-export function previousDateUnit(value: number, unit: DateAxisSegmentUnit): number {
-  return startOfDateUnit(value, unit);
-}
-
-export function dateUnitWidth(scale: DateScale | null): number {
-  return 22;
-}
-
 export function chronicleUnitWidth(interval: number, tickWidth: number): number {
   if (interval === 1) return tickWidth / 2;
   return tickWidth / interval;
-}
-
-export function dateAxisHeightForScale(scale: DateScale | null): number {
-  return 69;
-}
-
-export function formatDateAxisSegmentLabel(value: number, unit: DateAxisSegmentUnit): string {
-  const date = new Date(value * 86_400_000);
-  const year = date.getUTCFullYear();
-  const month = date.getUTCMonth() + 1;
-
-  if (unit === "year") return String(year);
-  if (unit === "day") return String(date.getUTCDate()).padStart(2, "0");
-  return String(month).padStart(2, "0");
 }
 
 export function formatChronicleAxisSegmentLabel(year: number): string {
   return year < 0 ? `−${Math.abs(year)}` : String(year);
 }
 
-export function formatDateLabel(value: string, unit: DateScaleUnit): string {
-  return value.slice(8, 10);
-}
-
 export function isGanttChartSource(value: unknown): value is GanttChartSource {
-  return value === "chronicle" || value === "date";
+  return value === "chronicle";
 }

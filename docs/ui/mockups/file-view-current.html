@@ -789,19 +789,17 @@
         <span class="window-dot"></span>
         <span class="window-dot"></span>
       </div>
-      <div class="title-label">Relic - sample-workspace</div>
+      <div class="title-label">Relic - sample-cardbook</div>
       <div></div>
     </header>
 
     <div class="workspace">
       <nav class="rail" aria-label="ビュー切替">
-        <button class="rail-button active" type="button" title="ファイル"><span class="rail-icon">▤</span></button>
-        <button class="rail-button open" type="button" title="ダッシュボード"><span class="rail-icon">▦</span></button>
-        <button class="rail-button" type="button" title="グラフ"><span class="rail-icon">◎</span></button>
-        <button class="rail-button" type="button" title="チャート"><span class="rail-icon">◇</span></button>
+        <button class="rail-button active" type="button" title="カード"><span class="rail-icon">▤</span></button>
+        <button class="rail-button" type="button" title="Chronicle"><span class="rail-icon">◇</span></button>
         <div class="rail-separator"></div>
-        <button class="rail-button" type="button" title="ファイル加工"><span class="rail-icon">⌘</span></button>
-        <button class="rail-button" type="button" title="フロントマター"><span class="rail-icon">#</span></button>
+        <button class="rail-button" type="button" title="カード加工"><span class="rail-icon">⌘</span></button>
+        <button class="rail-button" type="button" title="プロパティ"><span class="rail-icon">#</span></button>
         <button class="rail-button" type="button" title="設定"><span class="rail-icon">⚙</span></button>
         <div class="rail-spacer"></div>
         <div class="rail-separator"></div>
@@ -810,7 +808,7 @@
 
       <aside class="sidebar">
         <div class="sidebar-header">
-          <div class="pane-heading">ファイル</div>
+          <div class="pane-heading">カード</div>
         </div>
         <div class="sidebar-body">
           <div class="sidebar-section">
@@ -822,10 +820,10 @@
             </div>
 
             <form class="new-file-form">
-              <input class="text-input" value="" placeholder="新規ファイル名">
+              <input class="text-input" value="" placeholder="新規カード名">
               <button class="primary-button" type="button">作成</button>
             </form>
-            <button class="secondary-button" type="button">新規フォルダ</button>
+            <button class="secondary-button" type="button">新規カードフォルダ</button>
 
             <section class="pinned-section">
               <div class="pinned-section-heading">Pinned</div>
@@ -919,8 +917,8 @@
             </ul>
 
             <div class="workspace-actions">
-              <button class="secondary-button" type="button">ワークスペースを作成</button>
-              <button class="secondary-button" type="button">フォルダを開く</button>
+              <button class="secondary-button" type="button">カードブックを作成</button>
+              <button class="secondary-button" type="button">カードフォルダを開く</button>
             </div>
           </div>
         </div>
@@ -984,17 +982,17 @@
                     <div class="mock-editor">
 <div class="cm-frontmatter-block"><div class="cm-frontmatter-row"><span class="cm-frontmatter-row-icon">◆</span><span class="cm-frontmatter-key">status</span><span><span class="cm-frontmatter-pill">draft</span></span><span></span></div><div class="cm-frontmatter-row"><span class="cm-frontmatter-row-icon">◆</span><span class="cm-frontmatter-key">tags</span><span><span class="cm-frontmatter-pill">relic</span><span class="cm-frontmatter-pill">design</span></span><span></span></div></div><div class="cm-line-heading">Relicについて</div>
 
-Relicは、ローカルMarkdownを扱うための書き手向けワークスペースです。
-ファイルを開き、編集し、リンクでつなげながら文章を育てます。
+Relicは、創作設定カードを作成、保管、閲覧するためのカードブックです。
+カードを開き、編集し、リンクでつなげながら設定を育てます。
 
 <span class="cm-line-subheading">今見えている状態</span>
 
-- 左にはワークスペースのファイルツリーがあります
+- 左にはカードブックのカードツリーがあります
 - 中央にはタブとエディタがあります
 - 右には見出しまたはリンクの補助パネルがあります
 
 内部リンクは <span class="wikilink">[[今日のメモ]]</span> のように表示されます。
-インラインコードは <span class="cm-live-code">frontmatter</span> のように薄い背景を持ちます。
+インラインコードは <span class="cm-live-code">properties</span> のように薄い背景を持ちます。
 
 <span class="cm-live-blockquote">このモックは現状デザインを検討用に固定したものです。操作は想定していません。</span>
                     </div>

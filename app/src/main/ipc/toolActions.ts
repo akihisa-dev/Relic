@@ -155,7 +155,7 @@ export async function generateTableOfContents(
 async function getToolWorkspaceContext(): Promise<RelicResult<ToolWorkspaceContext>> {
   const settings = await readAppSettings(app.getPath("userData"));
   const state = toWorkspaceState(settings);
-  if (!state.activeWorkspace) return fail("NO_WORKSPACE", "ワークスペースが選択されていません。");
+  if (!state.activeWorkspace) return fail("NO_WORKSPACE", "カードブックが選択されていません。");
 
   return ok({ workspacePath: state.activeWorkspace.path });
 }
@@ -350,7 +350,7 @@ function safeOutputName(name: string): RelicResult<string> {
     path.posix.isAbsolute(normalized) ||
     path.win32.isAbsolute(trimmed)
   ) {
-    return fail("TOOL_OUTPUT_NAME_INVALID", "出力ファイル名が無効です。");
+    return fail("TOOL_OUTPUT_NAME_INVALID", "出力カード名が無効です。");
   }
 
   return ok(trimmed);

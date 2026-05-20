@@ -26,7 +26,7 @@ export async function getActiveWorkspaceContext(): Promise<RelicResult<ActiveWor
   const state = toWorkspaceState(settings);
 
   if (!state.activeWorkspace) {
-    return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
+    return fail("WORKSPACE_NOT_SELECTED", "先にカードブックを開いてください。");
   }
 
   return {

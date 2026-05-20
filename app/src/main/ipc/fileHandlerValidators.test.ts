@@ -27,10 +27,10 @@ describe("fileHandlerValidators", () => {
     expect(normalizeSearchWorkspaceInput({
       frontmatterField: undefined,
       mode: "fullText",
-      query: "ファイル"
+      query: "カード"
     })).toEqual({
       mode: "fullText",
-      query: "ファイル"
+      query: "カード"
     });
     expect(normalizeSearchWorkspaceInput({
       frontmatterField: "status",
@@ -41,19 +41,19 @@ describe("fileHandlerValidators", () => {
       mode: "frontmatter",
       query: "draft"
     });
-    expect(normalizeSearchWorkspaceInput(["ファイル", "fullText"])).toEqual({
+    expect(normalizeSearchWorkspaceInput(["カード", "fullText"])).toEqual({
       frontmatterField: undefined,
       mode: "fullText",
-      query: "ファイル"
+      query: "カード"
     });
-    expect(normalizeSearchWorkspaceInput(["ファイル", "全文"])).toEqual({
+    expect(normalizeSearchWorkspaceInput(["カード", "全文"])).toEqual({
       frontmatterField: undefined,
       mode: "fullText",
-      query: "ファイル"
+      query: "カード"
     });
-    expect(normalizeSearchWorkspaceInput({ mode: "全文", query: "ファイル" })).toEqual({
+    expect(normalizeSearchWorkspaceInput({ mode: "全文", query: "カード" })).toEqual({
       mode: "fullText",
-      query: "ファイル"
+      query: "カード"
     });
     expect(normalizeSearchWorkspaceInput(["tag", "資料"])).toEqual({
       frontmatterField: undefined,
@@ -65,13 +65,13 @@ describe("fileHandlerValidators", () => {
       mode: "tag",
       query: "資料"
     });
-    expect(normalizeSearchWorkspaceInput("ファイル")).toEqual({
+    expect(normalizeSearchWorkspaceInput("カード")).toEqual({
       mode: "fullText",
-      query: "ファイル"
+      query: "カード"
     });
-    expect(normalizeSearchWorkspaceInput({ searchTerm: "ファイル", type: "fullText" })).toEqual({
+    expect(normalizeSearchWorkspaceInput({ searchTerm: "カード", type: "fullText" })).toEqual({
       mode: "fullText",
-      query: "ファイル"
+      query: "カード"
     });
     expect(normalizeSearchWorkspaceInput({ searchMode: "unknown", searchQuery: "draft" })).toBeNull();
   });

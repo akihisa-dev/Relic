@@ -25,7 +25,7 @@ const emptyPane = (activeTabId: string | null = null): PaneState => ({
 const tabs: Record<string, Tab> = {
   "gantt-charts": { chartId: "charts", id: "gantt-charts", kind: "gantt", name: "Chronicle" },
   "gantt-custom": { chartId: "custom", id: "gantt-custom", kind: "gantt", name: "Custom" },
-  "panel-frontmatter": { id: "panel-frontmatter", kind: "panel", name: "Frontmatter", panel: "frontmatter" },
+  "panel-frontmatter": { id: "panel-frontmatter", kind: "panel", name: "Properties", panel: "frontmatter" },
   "panel-tools": { id: "panel-tools", kind: "panel", name: "Tools", panel: "tools" },
   "tab-note": { content: "Note", id: "tab-note", kind: "file", name: "Note", path: "Folder/Note.md" }
 };
@@ -76,7 +76,7 @@ describe("appShellModel", () => {
     const labels = panelLabelsForTranslator(createTranslator("en"));
 
     expect(labels).toEqual({
-      frontmatter: "Frontmatter",
+      frontmatter: "Properties",
       settings: "Settings",
       tools: "Tools"
     });
@@ -86,7 +86,7 @@ describe("appShellModel", () => {
     const railViews: AppRailView[] = [
       { icon: null, id: "files", label: "Files" },
       { icon: null, id: "tools", label: "Tools" },
-      { icon: null, id: "frontmatter", label: "Frontmatter" },
+      { icon: null, id: "frontmatter", label: "Properties" },
       { icon: null, id: "chronicle", label: "Chronicle" },
       { icon: null, id: "settings", label: "Settings" }
     ];

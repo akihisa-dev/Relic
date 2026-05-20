@@ -49,12 +49,12 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdate
     viewport.scrollLeft
   ]);
   const verticalViewportState = useMemo(() => buildChronicleVerticalViewportState({
+    axisHeight: model.axisHeight,
     chartViewportHeight: viewport.chartViewportHeight,
-    dateAxisHeight: model.dateAxisHeight,
     rowCount: model.rows.length,
     scrollTop: viewport.scrollTop
   }), [
-    model.dateAxisHeight,
+    model.axisHeight,
     model.rows.length,
     viewport.chartViewportHeight,
     viewport.scrollTop
@@ -98,9 +98,7 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdate
         chartRef={viewport.chartRef}
         chartViewportWidth={viewport.chartViewportWidth}
         chronicleOffscreenIndicators={viewportState.chronicleOffscreenIndicators}
-        dateAxisHeight={model.dateAxisHeight}
-        dateOffscreenIndicators={viewportState.dateOffscreenIndicators}
-        dateScale={model.dateScale}
+        axisHeight={model.axisHeight}
         dragPreview={entryDrag.dragPreview}
         guideTicks={model.guideTicks}
         nameColumnWidth={model.nameColumnWidth}

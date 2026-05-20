@@ -46,7 +46,7 @@ export function registerWorkspaceRegistrationHandlers(): void {
     } catch (error) {
       return fail(
         "WORKSPACE_STATE_FAILED",
-        "ワークスペース情報を読み込めませんでした。",
+        "カードブック情報を読み込めませんでした。",
         ipcErrorDetails(error)
       );
     }
@@ -80,7 +80,7 @@ export function registerWorkspaceRegistrationHandlers(): void {
     } catch (error) {
       return fail(
         "WORKSPACE_OPEN_FAILED",
-        "ワークスペースを開けませんでした。フォルダの権限や保存場所を確認してください。",
+        "カードブックを開けませんでした。カードフォルダの権限や保存場所を確認してください。",
         ipcErrorDetails(error)
       );
     }
@@ -116,7 +116,7 @@ export function registerWorkspaceRegistrationHandlers(): void {
     } catch (error) {
       return fail(
         "WORKSPACE_CREATE_FAILED",
-        "ワークスペースを作成できませんでした。",
+        "カードブックを作成できませんでした。",
         ipcErrorDetails(error)
       );
     }
@@ -132,7 +132,7 @@ export function registerWorkspaceRegistrationHandlers(): void {
       const activeWorkspace = settings.workspaces.find((ws) => ws.id === settings.lastWorkspaceId);
 
       if (!activeWorkspace) {
-        return fail("TOGGLE_PIN_NO_WORKSPACE", "アクティブなワークスペースがありません。");
+        return fail("TOGGLE_PIN_NO_WORKSPACE", "アクティブなカードブックがありません。");
       }
 
       const wsSettings = await readWorkspaceSettings(app.getPath("userData"), activeWorkspace.id);
@@ -160,7 +160,7 @@ export function registerWorkspaceRegistrationHandlers(): void {
     async (_event, input: SwitchWorkspaceInput): Promise<RelicResult<WorkspaceState>> => {
       try {
         if (!isSwitchWorkspaceInput(input)) {
-          return fail("WORKSPACE_SWITCH_INVALID_INPUT", "ワークスペースを選択してください。");
+          return fail("WORKSPACE_SWITCH_INVALID_INPUT", "カードブックを選択してください。");
         }
 
         const settings = await readAppSettings(app.getPath("userData"));
@@ -175,7 +175,7 @@ export function registerWorkspaceRegistrationHandlers(): void {
         );
 
         if (!activeWorkspace) {
-          return fail("WORKSPACE_NOT_FOUND", "登録済みワークスペースが見つかりませんでした。");
+          return fail("WORKSPACE_NOT_FOUND", "登録済みカードブックが見つかりませんでした。");
         }
 
         await prepareWorkspace(activeWorkspace.path);
@@ -186,7 +186,7 @@ export function registerWorkspaceRegistrationHandlers(): void {
       } catch (error) {
         return fail(
           "WORKSPACE_SWITCH_FAILED",
-          "ワークスペースを切り替えられませんでした。",
+          "カードブックを切り替えられませんでした。",
           ipcErrorDetails(error)
         );
       }
@@ -198,7 +198,7 @@ export function registerWorkspaceRegistrationHandlers(): void {
     async (_event, input: RemoveWorkspaceInput): Promise<RelicResult<WorkspaceState>> => {
       try {
         if (!isWorkspaceIdInput(input)) {
-          return fail("WORKSPACE_REMOVE_INVALID_INPUT", "ワークスペースを選択してください。");
+          return fail("WORKSPACE_REMOVE_INVALID_INPUT", "カードブックを選択してください。");
         }
 
         const settings = await readAppSettings(app.getPath("userData"));
@@ -215,7 +215,7 @@ export function registerWorkspaceRegistrationHandlers(): void {
       } catch (error) {
         return fail(
           "WORKSPACE_REMOVE_FAILED",
-          "ワークスペースを一覧から削除できませんでした。",
+          "カードブックを一覧から削除できませんでした。",
           ipcErrorDetails(error)
         );
       }
@@ -227,7 +227,7 @@ export function registerWorkspaceRegistrationHandlers(): void {
     async (_event, input: RenameWorkspaceInput): Promise<RelicResult<WorkspaceState>> => {
       try {
         if (!isRenameWorkspaceInput(input)) {
-          return fail("WORKSPACE_RENAME_INVALID_INPUT", "ワークスペース名を入力してください。");
+          return fail("WORKSPACE_RENAME_INVALID_INPUT", "カードブック名を入力してください。");
         }
 
         const settings = await readAppSettings(app.getPath("userData"));
@@ -256,7 +256,7 @@ export function registerWorkspaceRegistrationHandlers(): void {
       } catch (error) {
         return fail(
           "WORKSPACE_RENAME_FAILED",
-          "ワークスペース名を変更できませんでした。",
+          "カードブック名を変更できませんでした。",
           ipcErrorDetails(error)
         );
       }

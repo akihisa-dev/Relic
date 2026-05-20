@@ -20,7 +20,7 @@ describe("createFolder", () => {
     );
   });
 
-  it("フォルダを作成する", async () => {
+  it("カードフォルダを作成する", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-create-folder-"));
     temporaryPaths.push(workspacePath);
 
@@ -33,7 +33,7 @@ describe("createFolder", () => {
     expect((await stat(path.join(workspacePath, "資料"))).isDirectory()).toBe(true);
   });
 
-  it("スラッシュを含むフォルダ名を拒否する", async () => {
+  it("スラッシュを含むカードフォルダ名を拒否する", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-create-folder-"));
     temporaryPaths.push(workspacePath);
 
@@ -42,7 +42,7 @@ describe("createFolder", () => {
     expect(result.ok).toBe(false);
   });
 
-  it("親フォルダを指定して配下にフォルダを作成する", async () => {
+  it("親カードフォルダを指定して配下にカードフォルダを作成する", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-create-folder-"));
     temporaryPaths.push(workspacePath);
 
@@ -57,7 +57,7 @@ describe("createFolder", () => {
     expect((await stat(path.join(workspacePath, "資料", "下書き"))).isDirectory()).toBe(true);
   });
 
-  it("親フォルダがワークスペース外を指す場合は作成しない", async () => {
+  it("親カードフォルダがカードブック外を指す場合は作成しない", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-create-folder-"));
     temporaryPaths.push(workspacePath);
 
@@ -66,7 +66,7 @@ describe("createFolder", () => {
     });
   });
 
-  it("同名フォルダや同名ファイルがある場合は作成しない", async () => {
+  it("同名カードフォルダや同名カードがある場合は作成しない", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-create-folder-"));
     temporaryPaths.push(workspacePath);
 
@@ -92,7 +92,7 @@ describe("renameFolder", () => {
     );
   });
 
-  it("フォルダ名を変更する", async () => {
+  it("カードフォルダ名を変更する", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-rename-folder-"));
     temporaryPaths.push(workspacePath);
 
@@ -110,7 +110,7 @@ describe("renameFolder", () => {
     );
   });
 
-  it("同名フォルダや同名ファイルがある場合は上書きしない", async () => {
+  it("同名カードフォルダや同名カードがある場合は上書きしない", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-rename-folder-"));
     temporaryPaths.push(workspacePath);
 
@@ -126,7 +126,7 @@ describe("renameFolder", () => {
     });
   });
 
-  it("ワークスペース外への参照とフォルダ以外を拒否する", async () => {
+  it("カードブック外への参照とカードフォルダ以外を拒否する", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-rename-folder-"));
     temporaryPaths.push(workspacePath);
 
@@ -155,7 +155,7 @@ describe("moveFolder", () => {
     );
   });
 
-  it("フォルダを別フォルダへ移動する", async () => {
+  it("カードフォルダを別カードフォルダへ移動する", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-move-folder-"));
     temporaryPaths.push(workspacePath);
 
@@ -173,7 +173,7 @@ describe("moveFolder", () => {
     await expect(readFile(path.join(workspacePath, "archive", "資料", "note.md"), "utf8")).resolves.toBe("# Note");
   });
 
-  it("移動先に同名フォルダがある場合は上書きしない", async () => {
+  it("移動先に同名カードフォルダがある場合は上書きしない", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-move-folder-"));
     temporaryPaths.push(workspacePath);
 

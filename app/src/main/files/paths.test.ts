@@ -9,14 +9,14 @@ import {
 } from "./paths";
 
 describe("resolveWorkspaceRelativePath", () => {
-  it("ワークスペース内の相対パスを絶対パスへ解決する", () => {
+  it("カードブック内の相対パスを絶対パスへ解決する", () => {
     expect(resolveWorkspaceRelativePath("/tmp/relic-notes", "notes/idea.md")).toEqual({
       ok: true,
       value: path.join("/tmp/relic-notes", "notes", "idea.md")
     });
   });
 
-  it("絶対パスとワークスペース外への参照を拒否する", () => {
+  it("絶対パスとカードブック外への参照を拒否する", () => {
     expect(resolveWorkspaceRelativePath("/tmp/relic-notes", "/tmp/other.md").ok).toBe(false);
     expect(resolveWorkspaceRelativePath("/tmp/relic-notes", "C:\\Users\\test\\note.md").ok).toBe(false);
     expect(resolveWorkspaceRelativePath("/tmp/relic-notes", "\\\\server\\share\\note.md").ok).toBe(false);
@@ -25,7 +25,7 @@ describe("resolveWorkspaceRelativePath", () => {
 });
 
 describe("resolveWorkspaceRelativePathOrRoot", () => {
-  it("空文字とドットをワークスペース直下として扱う", () => {
+  it("空文字とドットをカードブック直下として扱う", () => {
     expect(resolveWorkspaceRelativePathOrRoot("/tmp/relic-notes", "")).toEqual({
       ok: true,
       value: "/tmp/relic-notes"
@@ -36,14 +36,14 @@ describe("resolveWorkspaceRelativePathOrRoot", () => {
     });
   });
 
-  it("ワークスペース外への参照は拒否する", () => {
+  it("カードブック外への参照は拒否する", () => {
     expect(resolveWorkspaceRelativePathOrRoot("/tmp/relic-notes", "../other").ok).toBe(false);
     expect(resolveWorkspaceRelativePathOrRoot("/tmp/relic-notes", "/tmp/other").ok).toBe(false);
   });
 });
 
 describe("toWorkspaceRelativePath", () => {
-  it("OS のパス区切りをワークスペース相対パスの区切りへ正規化する", () => {
+  it("OS のパス区切りをカードブック相対パスの区切りへ正規化する", () => {
     expect(toWorkspaceRelativePath(path.join("notes", "idea.md"))).toBe("notes/idea.md");
   });
 });

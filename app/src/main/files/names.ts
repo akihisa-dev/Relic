@@ -14,7 +14,7 @@ export function validateBaseName(name: string, emptyMessage: string): RelicResul
   }
 
   if (path.basename(trimmedName) !== trimmedName) {
-    return fail("FILE_NAME_INVALID", "名前にフォルダ区切りは使えません。");
+    return fail("FILE_NAME_INVALID", "名前にカードフォルダ区切りは使えません。");
   }
 
   return ok(trimmedName);

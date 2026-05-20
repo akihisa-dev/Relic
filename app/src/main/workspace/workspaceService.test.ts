@@ -36,7 +36,7 @@ describe("workspaceService", () => {
     );
   });
 
-  it("ワークスペース準備時に専用フォルダを作成しない", async () => {
+  it("カードブック準備時に専用カードフォルダを作成しない", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-workspace-"));
     temporaryPaths.push(workspacePath);
 
@@ -51,7 +51,7 @@ describe("workspaceService", () => {
     });
   });
 
-  it("同じパスのワークスペースを重複登録せずアクティブにする", () => {
+  it("同じパスのカードブックを重複登録せずアクティブにする", () => {
     const workspace = createWorkspaceSummary("/tmp/relic-notes");
     const firstSettings = addOrActivateWorkspace(
       { ...baseSettings, lastWorkspaceId: null, workspaces: [] },
@@ -63,7 +63,7 @@ describe("workspaceService", () => {
     expect(toWorkspaceState(nextSettings).activeWorkspace).toEqual(workspace);
   });
 
-  it("登録済みワークスペースをアクティブに切り替える", () => {
+  it("登録済みカードブックをアクティブに切り替える", () => {
     const firstWorkspace = createWorkspaceSummary("/tmp/relic-notes-1");
     const secondWorkspace = createWorkspaceSummary("/tmp/relic-notes-2");
 
@@ -84,7 +84,7 @@ describe("workspaceService", () => {
     });
   });
 
-  it("未登録ワークスペースへの切り替えを拒否する", () => {
+  it("未登録カードブックへの切り替えを拒否する", () => {
     expect(
       activateWorkspace(
         { ...baseSettings, lastWorkspaceId: null, workspaces: [] },
@@ -93,7 +93,7 @@ describe("workspaceService", () => {
     ).toBe(false);
   });
 
-  it("登録済みワークスペースを一覧から外し、アクティブなら次の候補へ移る", () => {
+  it("登録済みカードブックを一覧から外し、アクティブなら次の候補へ移る", () => {
     const firstWorkspace = createWorkspaceSummary("/tmp/relic-notes-1");
     const secondWorkspace = createWorkspaceSummary("/tmp/relic-notes-2");
     const settings = {
@@ -114,7 +114,7 @@ describe("workspaceService", () => {
     });
   });
 
-  it("登録済みワークスペースのフォルダ名を変更する", async () => {
+  it("登録済みカードブックのカードフォルダ名を変更する", async () => {
     const parentPath = await mkdtemp(path.join(os.tmpdir(), "relic-workspace-parent-"));
     temporaryPaths.push(parentPath);
     const workspacePath = path.join(parentPath, "relic-notes");
@@ -145,7 +145,7 @@ describe("workspaceService", () => {
     await expect(stat(path.join(parentPath, "小説メモ"))).resolves.toBeTruthy();
   });
 
-  it("登録済みワークスペースの大文字小文字だけの名前変更を許可する", async () => {
+  it("登録済みカードブックの大文字小文字だけの名前変更を許可する", async () => {
     const parentPath = await mkdtemp(path.join(os.tmpdir(), "relic-workspace-parent-"));
     temporaryPaths.push(parentPath);
     const workspacePath = path.join(parentPath, "Relic Notes");
@@ -175,7 +175,7 @@ describe("workspaceService", () => {
     });
   });
 
-  it("空のワークスペース名は拒否する", async () => {
+  it("空のカードブック名は拒否する", async () => {
     const workspace = createWorkspaceSummary("/tmp/relic-notes");
     const result = await renameWorkspaceRegistration(
       { ...baseSettings, lastWorkspaceId: workspace.id, workspaces: [workspace] },

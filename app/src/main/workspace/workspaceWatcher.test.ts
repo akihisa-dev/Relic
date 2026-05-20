@@ -29,14 +29,14 @@ function appSettings(overrides: Partial<AppSettings> = {}): AppSettings {
 }
 
 describe("workspaceWatcher", () => {
-  it("監視対象としてアクティブワークスペースのIDとパスを返す", () => {
+  it("監視対象としてアクティブカードブックのIDとパスを返す", () => {
     expect(activeWorkspaceWatchTarget(appSettings())).toEqual({
       id: "ws-1",
       path: "/tmp/notes"
     });
   });
 
-  it("アクティブワークスペースがない場合は監視対象を返さない", () => {
+  it("アクティブカードブックがない場合は監視対象を返さない", () => {
     expect(activeWorkspaceWatchTarget(appSettings({ lastWorkspaceId: null }))).toBeNull();
     expect(activeWorkspaceWatchTarget(appSettings({ lastWorkspaceId: "missing" }))).toBeNull();
   });

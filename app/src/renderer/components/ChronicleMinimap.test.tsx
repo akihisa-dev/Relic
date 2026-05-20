@@ -44,22 +44,13 @@ describe("ChronicleMinimap", () => {
     const { container, props } = renderMinimap();
 
     expect(screen.getByText("全体")).toHaveClass("chronicle-minimap-label");
-    expect(screen.getByRole("slider", { name: "チャートミニマップ" })).toHaveClass("chronicle-minimap");
+    expect(screen.getByRole("slider", { name: "Chronicleミニマップ" })).toHaveClass("chronicle-minimap");
     expect(container.querySelectorAll(".chronicle-minimap-item")).toHaveLength(2);
     expect(container.querySelector(".chronicle-minimap-window")).toHaveStyle({ left: "25%", width: "30%" });
 
-    fireEvent.pointerDown(screen.getByRole("slider", { name: "チャートミニマップ" }));
+    fireEvent.pointerDown(screen.getByRole("slider", { name: "Chronicleミニマップ" }));
 
     expect(props.onMinimapPointerDown).toHaveBeenCalledTimes(1);
-  });
-
-  it("date chartでも同じminimapを描画する", () => {
-    const { container } = renderMinimap({
-      activeChart: chart({ id: "date", name: "date", source: "date" })
-    });
-
-    expect(screen.getByRole("slider", { name: "チャートミニマップ" })).toBeInTheDocument();
-    expect(container.querySelectorAll(".chronicle-minimap-item")).toHaveLength(2);
   });
 
   it("active chartなし、itemなしでは描画しない", () => {

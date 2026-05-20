@@ -11,7 +11,7 @@ import { createTranslator } from "./i18n";
 const t = createTranslator("ja");
 
 describe("previewMarkdown", () => {
-  it("Markdownファイルとして読める埋め込み先へ正規化する", () => {
+  it("Markdownカードとして読める埋め込み先へ正規化する", () => {
     expect(normalizeEmbedTarget("Folder/Note")).toBe("Folder/Note.md");
     expect(normalizeEmbedTarget("Folder/Note.md#見出し")).toBe("Folder/Note.md");
     expect(normalizeEmbedTarget("Folder/Note^block")).toBe("Folder/Note.md");

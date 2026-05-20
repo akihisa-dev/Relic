@@ -3,9 +3,8 @@ import type { Dispatch, SetStateAction } from "react";
 
 import type { GanttChartSource, WorkspaceGanttChart } from "../../shared/ipc";
 import {
+  CHRONICLE_AXIS_HEIGHT,
   CHRONICLE_NAME_COLUMN_WIDTH,
-  DATE_NAME_COLUMN_WIDTH,
-  DATE_SCALES,
   ROW_HEIGHT,
   TICK_WIDTH,
   buildChartRows,
@@ -14,9 +13,6 @@ import {
   chartsForView,
   chronicleUnitWidth,
   clamp,
-  dateAxisHeightForScale,
-  dateOffscreenBarIndicators,
-  dateUnitWidth,
   filterRows,
   isGanttChartSource,
   minimapItemsForEntries,
@@ -29,8 +25,7 @@ import {
   type ChartGuideTick,
   type ChartRow,
   type ChronicleSortKey,
-  type DateOffscreenIndicator,
-  type DateScale,
+  type TimelineOffscreenIndicator,
   type MinimapItem
 } from "../chronicleTimeline";
 import { useUiStore } from "../store/uiStore";
@@ -47,8 +42,7 @@ export interface ChronicleChartModel {
   availableCharts: WorkspaceGanttChart[];
   axisEnd: number;
   axisStart: number;
-  dateAxisHeight: number;
-  dateScale: DateScale | null;
+  axisHeight: number;
   entries: ReturnType<typeof visibleEntries>;
   guideTicks: ChartGuideTick[];
   minimapItems: MinimapItem[];
@@ -70,8 +64,7 @@ export interface ChronicleChartModel {
 }
 
 export interface ChronicleViewportState {
-  chronicleOffscreenIndicators: { left: DateOffscreenIndicator | null; right: DateOffscreenIndicator | null };
-  dateOffscreenIndicators: { left: DateOffscreenIndicator | null; right: DateOffscreenIndicator | null };
+  chronicleOffscreenIndicators: { left: TimelineOffscreenIndicator | null; right: TimelineOffscreenIndicator | null };
   minimapViewport: { leftPercent: number; widthPercent: number };
   visibleEndValue: number;
   visibleStartValue: number;
@@ -96,10 +89,9 @@ export function useChronicleChartModel({
   const allEntries = visibleEntries(activeChart);
   const statusOptions = useMemo(() => statusValuesForEntries(allEntries), [allEntries]);
   const tickInterval = 1;
-  const dateScale = activeSource === "date" ? DATE_SCALES[0] : null;
   const filteredRows = useMemo(
-    () => filterRows(buildChartRows(allEntries, activeSource), query, activeSource === "date" ? statusFilter : ""),
-    [activeSource, allEntries, query, statusFilter]
+    () => filterRows(buildChartRows(allEntries, activeSource), query, ""),
+    [activeSource, allEntries, query]
   );
   const sortedRows = useMemo(
     () => sortRows(filteredRows, sortKey),
@@ -122,22 +114,22 @@ export function useChronicleChartModel({
   }, [rowOrderResetKey, sortedRows]);
 
   const entries = useMemo(() => rows.flatMap((row) => row.entries), [rows]);
-  const computedBounds = timelineBounds(entries, tickInterval, activeSource, dateScale);
+  const computedBounds = timelineBounds(entries, tickInterval);
   const boundsKey = `${activeChart?.id ?? "none"}:${activeSource}:${query}`;
   const { axisEnd, axisStart } = useStableTimelineBounds(computedBounds, boundsKey);
   const axisSpan = Math.max(1, axisEnd - axisStart + 1);
-  const unitWidth = activeSource === "date" ? dateUnitWidth(dateScale) : chronicleUnitWidth(tickInterval, TICK_WIDTH);
-  const nameColumnWidth = activeSource === "date" ? DATE_NAME_COLUMN_WIDTH : CHRONICLE_NAME_COLUMN_WIDTH;
+  const unitWidth = chronicleUnitWidth(tickInterval, TICK_WIDTH);
+  const nameColumnWidth = CHRONICLE_NAME_COLUMN_WIDTH;
   const timelineWidth = Math.max(720, axisSpan * unitWidth);
   const ticks = useMemo(
-    () => buildTicks(axisStart, axisEnd, tickInterval, activeSource, dateScale),
-    [activeSource, axisEnd, axisStart, dateScale, tickInterval]
+    () => buildTicks(axisStart, axisEnd, tickInterval),
+    [axisEnd, axisStart, tickInterval]
   );
   const guideTicks = useMemo(
-    () => buildGuideTicks(axisStart, axisEnd, ticks, tickInterval, activeSource, dateScale),
-    [activeSource, axisEnd, axisStart, dateScale, tickInterval, ticks]
+    () => buildGuideTicks(axisStart, axisEnd, ticks, tickInterval),
+    [axisEnd, axisStart, tickInterval, ticks]
   );
-  const dateAxisHeight = activeSource === "date" ? dateAxisHeightForScale(dateScale) : 34;
+  const axisHeight = CHRONICLE_AXIS_HEIGHT;
   const minimapItems = useMemo(
     () => minimapItemsForEntries(entries, axisStart, axisEnd),
     [axisEnd, axisStart, entries]
@@ -156,19 +148,13 @@ export function useChronicleChartModel({
     setSelectedGanttChartId(fallbackId);
   }, [availableCharts, chart, selectedGanttChartId, setSelectedGanttChartId]);
 
-  useEffect(() => {
-    if (activeSource !== "date" || statusFilter === "" || statusOptions.includes(statusFilter)) return;
-    setStatusFilter("");
-  }, [activeSource, statusFilter, statusOptions]);
-
   return {
     activeChart,
     activeSource,
     availableCharts,
     axisEnd,
+    axisHeight,
     axisStart,
-    dateAxisHeight,
-    dateScale,
     entries,
     guideTicks,
     minimapItems,
@@ -231,9 +217,6 @@ export function buildChronicleViewportState({
     chronicleOffscreenIndicators: activeSource === "chronicle"
       ? timelineOffscreenBarIndicators(entries, visibleStartValue, visibleEndValue)
       : { left: null, right: null },
-    dateOffscreenIndicators: activeSource === "date"
-      ? dateOffscreenBarIndicators(entries, visibleStartValue, visibleEndValue)
-      : { left: null, right: null },
     minimapViewport: minimapViewportRange(axisStart, axisEnd, visibleStartValue, visibleEndValue),
     visibleEndValue,
     visibleStartValue,
@@ -243,13 +226,13 @@ export function buildChronicleViewportState({
 }
 
 export function buildChronicleVerticalViewportState({
+  axisHeight,
   chartViewportHeight,
-  dateAxisHeight,
   rowCount,
   scrollTop
 }: {
+  axisHeight: number;
   chartViewportHeight: number;
-  dateAxisHeight: number;
   rowCount: number;
   scrollTop: number;
 }): {
@@ -263,7 +246,7 @@ export function buildChronicleVerticalViewportState({
     };
   }
 
-  const visibleRowAreaHeight = Math.max(1, chartViewportHeight - dateAxisHeight);
+  const visibleRowAreaHeight = Math.max(1, chartViewportHeight - axisHeight);
   const visibleRowCount = Math.max(1, Math.floor(visibleRowAreaHeight / ROW_HEIGHT));
   const maxStartIndex = Math.max(0, rowCount - visibleRowCount);
   const visibleStartIndex = clamp(Math.floor(scrollTop / ROW_HEIGHT), 0, maxStartIndex);

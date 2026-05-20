@@ -15,7 +15,7 @@ describe("updateLinksForFileRename", () => {
     );
   });
 
-  it("同フォルダ内ファイルの basename-only リンクを更新する", async () => {
+  it("同カードフォルダ内カードの basename-only リンクを更新する", async () => {
     const ws = await mkdtemp(path.join(os.tmpdir(), "relic-link-updater-"));
     temporaryPaths.push(ws);
 
@@ -89,7 +89,7 @@ describe("updateLinksForFileRename", () => {
     await expect(readFile(path.join(ws, "source.md"), "utf8")).resolves.toBe("![[new]]");
   });
 
-  it("別のファイルへのリンクは更新しない", async () => {
+  it("別のカードへのリンクは更新しない", async () => {
     const ws = await mkdtemp(path.join(os.tmpdir(), "relic-link-updater-"));
     temporaryPaths.push(ws);
 
@@ -112,7 +112,7 @@ describe("updateLinksForFolderRename", () => {
     );
   });
 
-  it("パス付きリンクのフォルダ部分を更新する", async () => {
+  it("パス付きリンクのカードフォルダ部分を更新する", async () => {
     const ws = await mkdtemp(path.join(os.tmpdir(), "relic-link-updater-"));
     temporaryPaths.push(ws);
     await mkdir(path.join(ws, "new-folder"));

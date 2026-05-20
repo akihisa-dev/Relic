@@ -4,8 +4,6 @@ import type { PointerEvent } from "react";
 import type { GanttChartEntry, GanttChartEntryEditKind, GanttChartSource, UpdateGanttChartEntryInput } from "../../shared/ipc";
 import {
   createAdaptiveChroniclePointerDelta,
-  createStablePointerDelta,
-  dateKindPatch,
   type DragPreview
 } from "../chronicleTimeline";
 
@@ -51,9 +49,7 @@ export function useChronicleEntryDrag({
     const originalEndValue = entry.endValue;
     const startClientX = event.clientX;
     const target = event.currentTarget;
-    const dragDelta = activeSource === "chronicle"
-      ? createAdaptiveChroniclePointerDelta(startClientX, unitWidth, event.timeStamp)
-      : createStablePointerDelta(startClientX, unitWidth);
+    const dragDelta = createAdaptiveChroniclePointerDelta(startClientX, unitWidth, event.timeStamp);
     let currentPreviewRange = { endValue: originalEndValue, startValue: originalStartValue };
 
     if (target.setPointerCapture) {
@@ -96,7 +92,6 @@ export function useChronicleEntryDrag({
       setDragPreview({
         path: entry.path,
         source: activeSource,
-        ...dateKindPatch(entry),
         ...nextRange
       });
     };
@@ -124,7 +119,6 @@ export function useChronicleEntryDrag({
         originalEndValue,
         originalStartValue,
         path: entry.path,
-        ...dateKindPatch(entry),
         source: activeSource,
         startValue: nextRange.startValue
       })).finally(() => setDragPreview(null));
@@ -141,7 +135,6 @@ export function useChronicleEntryDrag({
       endValue: entry.endValue,
       path: entry.path,
       source: activeSource,
-      ...dateKindPatch(entry),
       startValue: entry.startValue
     });
     window.addEventListener("pointermove", move);

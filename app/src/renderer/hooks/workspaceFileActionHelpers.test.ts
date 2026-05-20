@@ -26,7 +26,7 @@ function workspaceState(fileTree: WorkspaceTreeNode[]): WorkspaceState {
 }
 
 describe("workspaceFileActionHelpers", () => {
-  it("フォルダ配下に含まれる項目を重複対象から除外する", () => {
+  it("カードフォルダ配下に含まれる項目を重複対象から除外する", () => {
     expect(removeCoveredItems([
       { path: "A", type: "folder" },
       { path: "A/note.md", type: "file" },
@@ -38,7 +38,7 @@ describe("workspaceFileActionHelpers", () => {
     ]);
   });
 
-  it("移動先自身と子孫フォルダへの移動を除外する", () => {
+  it("移動先自身と子孫カードフォルダへの移動を除外する", () => {
     expect(getMovableTreeItems([
       { path: "A", type: "folder" },
       { path: "B", type: "folder" },
@@ -51,23 +51,23 @@ describe("workspaceFileActionHelpers", () => {
     expect(getMovableTreeItems([{ path: "A", type: "folder" }], "A")).toEqual([]);
   });
 
-  it("rootに存在する名前を避けて次の新規ファイル名とフォルダ名を返す", () => {
+  it("rootに存在する名前を避けて次の新規カード名とカードフォルダ名を返す", () => {
     const state = workspaceState([
-      { name: "新規ファイル.md", path: "新規ファイル.md", type: "file" },
-      { name: "新規ファイル 2.md", path: "新規ファイル 2.md", type: "file" },
+      { name: "新規カード.md", path: "新規カード.md", type: "file" },
+      { name: "新規カード 2.md", path: "新規カード 2.md", type: "file" },
       {
         children: [
-          { name: "新規フォルダ", path: "Parent/新規フォルダ", type: "folder", children: [] }
+          { name: "新規カードフォルダ", path: "Parent/新規カードフォルダ", type: "folder", children: [] }
         ],
         name: "Parent",
         path: "Parent",
         type: "folder"
       },
-      { name: "新規フォルダ", path: "新規フォルダ", type: "folder", children: [] }
+      { name: "新規カードフォルダ", path: "新規カードフォルダ", type: "folder", children: [] }
     ]);
 
-    expect(nextUniqueFileName(state, t)).toBe("新規ファイル 3");
-    expect(nextUniqueFolderName(state, t)).toBe("新規フォルダ 2");
+    expect(nextUniqueFileName(state, t)).toBe("新規カード 3");
+    expect(nextUniqueFolderName(state, t)).toBe("新規カードフォルダ 2");
   });
 
   it("作成後のMarkdown pathを末尾一致で探す", () => {
@@ -86,7 +86,7 @@ describe("workspaceFileActionHelpers", () => {
     expect(findCreatedMarkdownPath(tree, "Missing.md")).toBeNull();
   });
 
-  it("フォルダ移動後の配下タブ更新を組み立てる", () => {
+  it("カードフォルダ移動後の配下タブ更新を組み立てる", () => {
     const tabs: Record<string, Tab> = {
       "tab-a": { content: "", id: "tab-a", kind: "file", name: "One", path: "A/One.md" },
       "tab-b": { content: "", id: "tab-b", kind: "file", name: "Two", path: "A/Nested/Two.md" },

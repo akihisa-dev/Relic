@@ -1,4 +1,4 @@
-import type { GanttChartEntry, WorkspaceGanttChart } from "../shared/ipc";
+import type { GanttChartEntry, MarkdownFileContent, WorkspaceGanttChart, WorkspaceTreeNode } from "../shared/ipc";
 
 export function normalizeWorkspaceGanttCharts(value: unknown): WorkspaceGanttChart[] {
   if (!Array.isArray(value)) return [];
@@ -31,24 +31,26 @@ export function normalizeWorkspaceGanttCharts(value: unknown): WorkspaceGanttCha
     : fixedWorkspaceGanttCharts([]);
 }
 
+export async function normalizeWorkspaceGanttChartsWithFiles(
+  value: unknown,
+  fileTree: WorkspaceTreeNode[],
+  readMarkdownFile: (input: { path: string }) => Promise<{ ok: true; value: MarkdownFileContent } | { ok: false }>
+): Promise<WorkspaceGanttChart[]> {
+  void fileTree;
+  void readMarkdownFile;
+  return normalizeWorkspaceGanttCharts(value);
+}
+
 function fixedWorkspaceGanttCharts(charts: WorkspaceGanttChart[]): WorkspaceGanttChart[] {
   const chronicle = charts.find((chart) => chart.source === "chronicle" || chart.id === "chronicle");
-  const date = charts.find((chart) => chart.source === "date" || chart.id === "date");
 
   return [
     {
       entries: chronicle?.entries ?? [],
       filePaths: chronicle?.filePaths ?? [],
       id: "chronicle",
-      name: "chronicle",
+      name: "Chronicle",
       source: "chronicle"
-    },
-    {
-      entries: date?.entries ?? [],
-      filePaths: date?.filePaths ?? [],
-      id: "date",
-      name: "date",
-      source: "date"
     }
   ];
 }
@@ -60,7 +62,7 @@ function isWorkspaceGanttChart(value: unknown): value is WorkspaceGanttChart {
   return (
     typeof chart.id === "string" &&
     typeof chart.name === "string" &&
-    (chart.source === "chronicle" || chart.source === "date") &&
+    chart.source === "chronicle" &&
     Array.isArray(chart.entries) &&
     (!("filePaths" in chart) || Array.isArray(chart.filePaths))
   );

@@ -29,13 +29,13 @@ describe("ToolsSidebar", () => {
     vi.restoreAllMocks();
   });
 
-  it("ワークスペースがない場合はツールを実行しない", () => {
+  it("カードブックがない場合はツールを実行しない", () => {
     const generateTitleList = vi.fn();
     window.relic = makeRelicApi({ generateTitleList });
 
     renderToolsSidebar("en", null);
 
-    expect(screen.getByText("Open a workspace first.")).toBeInTheDocument();
+    expect(screen.getByText("Open a cardbook first.")).toBeInTheDocument();
     expect(generateTitleList).not.toHaveBeenCalled();
   });
 
@@ -47,10 +47,10 @@ describe("ToolsSidebar", () => {
     renderToolsSidebar("en");
 
     const titleList = sectionBlock("Title List");
-    fireEvent.change(within(titleList).getByLabelText("Folder"), { target: { value: "Drafts" } });
+    fireEvent.change(within(titleList).getByLabelText("Card folder"), { target: { value: "Drafts" } });
     fireEvent.change(within(titleList).getByLabelText("Sort"), { target: { value: "mtime" } });
-    fireEvent.change(within(titleList).getByLabelText("Output folder"), { target: { value: "Indexes" } });
-    fireEvent.change(within(titleList).getByLabelText("File name"), { target: { value: "Titles" } });
+    fireEvent.change(within(titleList).getByLabelText("Output card folder"), { target: { value: "Indexes" } });
+    fireEvent.change(within(titleList).getByLabelText("Card name"), { target: { value: "Titles" } });
     fireEvent.click(within(titleList).getByRole("button", { name: "Create" }));
 
     await waitFor(() => {
@@ -64,10 +64,10 @@ describe("ToolsSidebar", () => {
     expect(await screen.findByText("Done: Title List.md")).toBeInTheDocument();
 
     const toc = sectionBlock("Table of Contents");
-    fireEvent.change(within(toc).getByLabelText("Folder"), { target: { value: "Docs" } });
-    fireEvent.click(within(toc).getByLabelText("Include subfolders"));
-    fireEvent.change(within(toc).getByLabelText("Output folder"), { target: { value: "Indexes" } });
-    fireEvent.change(within(toc).getByLabelText("File name"), { target: { value: "Contents" } });
+    fireEvent.change(within(toc).getByLabelText("Card folder"), { target: { value: "Docs" } });
+    fireEvent.click(within(toc).getByLabelText("Include card folders"));
+    fireEvent.change(within(toc).getByLabelText("Output card folder"), { target: { value: "Indexes" } });
+    fireEvent.change(within(toc).getByLabelText("Card name"), { target: { value: "Contents" } });
     fireEvent.click(within(toc).getByRole("button", { name: "Create" }));
 
     await waitFor(() => {
@@ -80,15 +80,15 @@ describe("ToolsSidebar", () => {
     });
   });
 
-  it("フロントマター条件を指定してマージできる", async () => {
+  it("プロパティ条件を指定してマージできる", async () => {
     const mergeFiles = vi.fn().mockResolvedValue({ ok: true, value: "merged.md" });
     window.relic = makeRelicApi({ mergeFiles });
 
     renderToolsSidebar("ja");
 
     fireEvent.change(screen.getByLabelText("フィルター"), { target: { value: "frontmatter" } });
-    fireEvent.change(screen.getByLabelText("フロントマターフィールド"), { target: { value: "status" } });
-    fireEvent.change(screen.getByLabelText("フロントマター値"), { target: { value: "draft" } });
+    fireEvent.change(screen.getByLabelText("プロパティフィールド"), { target: { value: "status" } });
+    fireEvent.change(screen.getByLabelText("プロパティ値"), { target: { value: "draft" } });
     fireEvent.click(screen.getByRole("button", { name: "条件指定マージ" }));
 
     await waitFor(() => {
@@ -110,9 +110,9 @@ describe("ToolsSidebar", () => {
     fireEvent.click(within(split).getByRole("button", { name: "Split by Heading" }));
     expect(splitFileByHeading).not.toHaveBeenCalled();
 
-    fireEvent.change(within(split).getByLabelText("Source file"), { target: { value: "Book.md" } });
+    fireEvent.change(within(split).getByLabelText("Source card"), { target: { value: "Book.md" } });
     fireEvent.change(within(split).getByLabelText("Heading level"), { target: { value: "3" } });
-    fireEvent.change(within(split).getByLabelText("Output folder"), { target: { value: "Chapters" } });
+    fireEvent.change(within(split).getByLabelText("Output card folder"), { target: { value: "Chapters" } });
     fireEvent.click(within(split).getByRole("button", { name: "Split by Heading" }));
 
     await waitFor(() => {
@@ -122,6 +122,6 @@ describe("ToolsSidebar", () => {
         sourcePath: "Book.md"
       });
     });
-    expect(await screen.findByText("Done: 2 file(s) created")).toBeInTheDocument();
+    expect(await screen.findByText("Done: 2 card(s) created")).toBeInTheDocument();
   });
 });

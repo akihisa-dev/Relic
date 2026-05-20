@@ -42,12 +42,12 @@ export async function createMarkdownFile(
     });
   } catch (error) {
     if (isFileExistsError(error)) {
-      return fail("FILE_ALREADY_EXISTS", "同じ名前のファイルがすでにあります。別名を入力してください。");
+      return fail("FILE_ALREADY_EXISTS", "同じ名前のカードがすでにあります。別名を入力してください。");
     }
 
     return fail(
       "FILE_CREATE_FAILED",
-      "ファイルを作成できませんでした。",
+      "カードを作成できませんでした。",
       errorDetails(error)
     );
   }
@@ -60,7 +60,7 @@ export async function createMarkdownFileAtPath(
   const normalizedRelativePath = toWorkspaceRelativePath(relativePath.replace(/\\/g, "/"));
 
   if (path.extname(normalizedRelativePath) !== ".md") {
-    return fail("FILE_TYPE_UNSUPPORTED", "Markdownファイルだけを作成できます。");
+    return fail("FILE_TYPE_UNSUPPORTED", "Markdownカードだけを作成できます。");
   }
 
   const normalizedName = normalizeMarkdownFileName(path.basename(normalizedRelativePath));
@@ -70,7 +70,7 @@ export async function createMarkdownFileAtPath(
   }
 
   if (normalizedName.value !== path.basename(normalizedRelativePath)) {
-    return fail("FILE_NAME_INVALID", "Markdownファイル名を指定してください。");
+    return fail("FILE_NAME_INVALID", "Markdownカード名を指定してください。");
   }
 
   const absoluteFilePath = resolveWorkspaceRelativePath(workspacePath, normalizedRelativePath);
@@ -89,12 +89,12 @@ export async function createMarkdownFileAtPath(
     return readMarkdownFile(workspacePath, normalizedRelativePath);
   } catch (error) {
     if (isFileExistsError(error)) {
-      return fail("FILE_ALREADY_EXISTS", "同じ名前のファイルがすでにあります。");
+      return fail("FILE_ALREADY_EXISTS", "同じ名前のカードがすでにあります。");
     }
 
     return fail(
       "FILE_CREATE_FAILED",
-      "ファイルを作成できませんでした。",
+      "カードを作成できませんでした。",
       errorDetails(error)
     );
   }
@@ -105,7 +105,7 @@ export async function readMarkdownFile(
   relativePath: string
 ): Promise<RelicResult<MarkdownFileContent>> {
   if (path.extname(relativePath) !== ".md") {
-    return fail("FILE_TYPE_UNSUPPORTED", "Markdownファイルだけを開けます。");
+    return fail("FILE_TYPE_UNSUPPORTED", "Markdownカードだけを開けます。");
   }
 
   const absoluteFilePath = resolveWorkspaceRelativePath(workspacePath, relativePath);
@@ -125,7 +125,7 @@ export async function readMarkdownFile(
   } catch (error) {
     return fail(
       "FILE_READ_FAILED",
-      "ファイルを読み込めませんでした。",
+      "カードを読み込めませんでした。",
       errorDetails(error)
     );
   }
@@ -137,7 +137,7 @@ export async function renameMarkdownFile(
   newName: string
 ): Promise<RelicResult<MarkdownFileContent>> {
   if (path.extname(relativePath) !== ".md") {
-    return fail("FILE_TYPE_UNSUPPORTED", "Markdownファイルだけをリネームできます。");
+    return fail("FILE_TYPE_UNSUPPORTED", "Markdownカードだけをリネームできます。");
   }
 
   const absoluteSourcePath = resolveWorkspaceRelativePath(workspacePath, relativePath);
@@ -163,7 +163,7 @@ export async function renameMarkdownFile(
   }
 
   if (await pathExists(absoluteDestinationPath.value)) {
-    return fail("FILE_ALREADY_EXISTS", "同じ名前のファイルがすでにあります。別名を入力してください。");
+    return fail("FILE_ALREADY_EXISTS", "同じ名前のカードがすでにあります。別名を入力してください。");
   }
 
   try {
@@ -174,7 +174,7 @@ export async function renameMarkdownFile(
   } catch (error) {
     return fail(
       "FILE_RENAME_FAILED",
-      "ファイル名を変更できませんでした。",
+      "カード名を変更できませんでした。",
       errorDetails(error)
     );
   }
@@ -186,7 +186,7 @@ export async function moveMarkdownFile(
   destinationFolder: string
 ): Promise<RelicResult<MarkdownFileContent>> {
   if (path.extname(relativePath) !== ".md") {
-    return fail("FILE_TYPE_UNSUPPORTED", "Markdownファイルだけを移動できます。");
+    return fail("FILE_TYPE_UNSUPPORTED", "Markdownカードだけを移動できます。");
   }
 
   const absoluteSourcePath = resolveWorkspaceRelativePath(workspacePath, relativePath);
@@ -208,7 +208,7 @@ export async function moveMarkdownFile(
   }
 
   if (await pathExists(absoluteDestinationPath.value)) {
-    return fail("FILE_ALREADY_EXISTS", "移動先に同じ名前のファイルがすでにあります。");
+    return fail("FILE_ALREADY_EXISTS", "移動先に同じ名前のカードがすでにあります。");
   }
 
   try {
@@ -219,7 +219,7 @@ export async function moveMarkdownFile(
   } catch (error) {
     return fail(
       "FILE_MOVE_FAILED",
-      "ファイルを移動できませんでした。",
+      "カードを移動できませんでした。",
       errorDetails(error)
     );
   }
@@ -230,7 +230,7 @@ export async function duplicateMarkdownFile(
   relativePath: string
 ): Promise<RelicResult<MarkdownFileContent>> {
   if (path.extname(relativePath) !== ".md") {
-    return fail("FILE_TYPE_UNSUPPORTED", "Markdownファイルだけを複製できます。");
+    return fail("FILE_TYPE_UNSUPPORTED", "Markdownカードだけを複製できます。");
   }
 
   const sourcePath = resolveWorkspaceRelativePath(workspacePath, relativePath);
@@ -257,7 +257,7 @@ export async function duplicateMarkdownFile(
   } catch (error) {
     return fail(
       "FILE_DUPLICATE_FAILED",
-      "ファイルを複製できませんでした。",
+      "カードを複製できませんでした。",
       errorDetails(error)
     );
   }

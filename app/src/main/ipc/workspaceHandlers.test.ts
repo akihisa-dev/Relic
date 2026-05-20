@@ -49,7 +49,7 @@ describe("workspaceHandlers", () => {
     );
   });
 
-  it("起動時のワークスペース状態でアクティブワークスペースのファイルツリーを復元する", async () => {
+  it("起動時のカードブック状態でアクティブカードブックのカードツリーを復元する", async () => {
     const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-user-data-"));
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-workspace-"));
     temporaryPaths.push(userDataPath, workspacePath);

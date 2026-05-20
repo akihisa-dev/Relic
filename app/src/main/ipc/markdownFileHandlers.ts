@@ -39,7 +39,7 @@ export function registerMarkdownFileHandlers(): void {
     async (_event, input: CreateMarkdownFileInput): Promise<RelicResult<WorkspaceState>> => {
       try {
         if (!isCreateMarkdownFileInput(input)) {
-          return fail("FILE_CREATE_INVALID_INPUT", "ファイル名を入力してください。");
+          return fail("FILE_CREATE_INVALID_INPUT", "カード名を入力してください。");
         }
 
         const context = await getActiveWorkspaceContext();
@@ -55,7 +55,7 @@ export function registerMarkdownFileHandlers(): void {
       } catch (error) {
         return fail(
           "FILE_CREATE_FAILED",
-          "ファイルを作成できませんでした。",
+          "カードを作成できませんでした。",
           ipcErrorDetails(error)
         );
       }
@@ -67,7 +67,7 @@ export function registerMarkdownFileHandlers(): void {
     async (_event, input: CreateLinkedMarkdownFileInput) => {
       try {
         if (!isPathInput(input)) {
-          return fail("FILE_CREATE_INVALID_INPUT", "作成するファイルを指定してください。");
+          return fail("FILE_CREATE_INVALID_INPUT", "作成するカードを指定してください。");
         }
 
         const context = await getActiveWorkspaceContext();
@@ -86,7 +86,7 @@ export function registerMarkdownFileHandlers(): void {
       } catch (error) {
         return fail(
           "FILE_CREATE_FAILED",
-          "ファイルを作成できませんでした。",
+          "カードを作成できませんでした。",
           ipcErrorDetails(error)
         );
       }
@@ -96,7 +96,7 @@ export function registerMarkdownFileHandlers(): void {
   ipcMain.handle(duplicateMarkdownFileChannel, async (_event, input: DuplicateMarkdownFileInput) => {
     try {
       if (!isPathInput(input)) {
-        return fail("FILE_DUPLICATE_INVALID_INPUT", "複製するファイルを選択してください。");
+        return fail("FILE_DUPLICATE_INVALID_INPUT", "複製するカードを選択してください。");
       }
 
       const context = await getActiveWorkspaceContext();
@@ -115,7 +115,7 @@ export function registerMarkdownFileHandlers(): void {
     } catch (error) {
       return fail(
         "FILE_DUPLICATE_FAILED",
-        "ファイルを複製できませんでした。",
+        "カードを複製できませんでした。",
         ipcErrorDetails(error)
       );
     }
@@ -124,7 +124,7 @@ export function registerMarkdownFileHandlers(): void {
   ipcMain.handle(renameMarkdownFileChannel, async (_event, input: RenameMarkdownFileInput) => {
     try {
       if (!isRenameMarkdownFileInput(input)) {
-        return fail("FILE_RENAME_INVALID_INPUT", "変更後のファイル名を入力してください。");
+        return fail("FILE_RENAME_INVALID_INPUT", "変更後のカード名を入力してください。");
       }
 
       const context = await getActiveWorkspaceContext();
@@ -147,7 +147,7 @@ export function registerMarkdownFileHandlers(): void {
     } catch (error) {
       return fail(
         "FILE_RENAME_FAILED",
-        "ファイル名を変更できませんでした。",
+        "カード名を変更できませんでした。",
         ipcErrorDetails(error)
       );
     }
@@ -156,7 +156,7 @@ export function registerMarkdownFileHandlers(): void {
   ipcMain.handle(moveMarkdownFileChannel, async (_event, input: MoveMarkdownFileInput) => {
     try {
       if (!isMoveMarkdownFileInput(input)) {
-        return fail("FILE_MOVE_INVALID_INPUT", "移動先フォルダを指定してください。");
+        return fail("FILE_MOVE_INVALID_INPUT", "移動先カードフォルダを指定してください。");
       }
 
       const context = await getActiveWorkspaceContext();
@@ -179,7 +179,7 @@ export function registerMarkdownFileHandlers(): void {
     } catch (error) {
       return fail(
         "FILE_MOVE_FAILED",
-        "ファイルを移動できませんでした。",
+        "カードを移動できませんでした。",
         ipcErrorDetails(error)
       );
     }
@@ -207,7 +207,7 @@ export function registerMarkdownFileHandlers(): void {
       } catch (error) {
         return fail(
           "REVEAL_FAILED",
-          "ファイルの場所を表示できませんでした。",
+          "カードの場所を表示できませんでした。",
           ipcErrorDetails(error)
         );
       }

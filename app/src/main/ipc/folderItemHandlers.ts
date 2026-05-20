@@ -29,7 +29,7 @@ export function registerFolderItemHandlers(): void {
     async (_event, input: CreateFolderInput): Promise<RelicResult<WorkspaceState>> => {
       try {
         if (!isNameInput(input)) {
-          return fail("FOLDER_CREATE_INVALID_INPUT", "フォルダ名を入力してください。");
+          return fail("FOLDER_CREATE_INVALID_INPUT", "カードフォルダ名を入力してください。");
         }
 
         const context = await getActiveWorkspaceContext();
@@ -45,7 +45,7 @@ export function registerFolderItemHandlers(): void {
       } catch (error) {
         return fail(
           "FOLDER_CREATE_FAILED",
-          "フォルダを作成できませんでした。",
+          "カードフォルダを作成できませんでした。",
           ipcErrorDetails(error)
         );
       }
@@ -55,7 +55,7 @@ export function registerFolderItemHandlers(): void {
   ipcMain.handle(moveFolderChannel, async (_event, input: MoveFolderInput) => {
     try {
       if (!isMoveFolderInput(input)) {
-        return fail("FOLDER_MOVE_INVALID_INPUT", "移動先フォルダを指定してください。");
+        return fail("FOLDER_MOVE_INVALID_INPUT", "移動先カードフォルダを指定してください。");
       }
 
       const context = await getActiveWorkspaceContext();
@@ -75,7 +75,7 @@ export function registerFolderItemHandlers(): void {
     } catch (error) {
       return fail(
         "FOLDER_MOVE_FAILED",
-        "フォルダを移動できませんでした。",
+        "カードフォルダを移動できませんでした。",
         ipcErrorDetails(error)
       );
     }
@@ -84,7 +84,7 @@ export function registerFolderItemHandlers(): void {
   ipcMain.handle(renameFolderChannel, async (_event, input: RenameFolderInput) => {
     try {
       if (!isRenameFolderInput(input)) {
-        return fail("FOLDER_RENAME_INVALID_INPUT", "変更後のフォルダ名を入力してください。");
+        return fail("FOLDER_RENAME_INVALID_INPUT", "変更後のカードフォルダ名を入力してください。");
       }
 
       const context = await getActiveWorkspaceContext();
@@ -100,7 +100,7 @@ export function registerFolderItemHandlers(): void {
     } catch (error) {
       return fail(
         "FOLDER_RENAME_FAILED",
-        "フォルダ名を変更できませんでした。",
+        "カードフォルダ名を変更できませんでした。",
         ipcErrorDetails(error)
       );
     }

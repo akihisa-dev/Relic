@@ -45,7 +45,7 @@ export function registerWorkspaceDataHandlers(): void {
     } catch (error) {
       return fail(
         "FRONTMATTER_VALUE_CANDIDATES_READ_FAILED",
-        "フロントマター候補を読み込めませんでした。",
+        "プロパティ候補を読み込めませんでした。",
         ipcErrorDetails(error)
       );
     }
@@ -121,7 +121,7 @@ export function registerWorkspaceDataHandlers(): void {
   ipcMain.handle(updateGanttChartEntryChannel, async (_event, input: unknown) => {
     try {
       if (!isUpdateGanttChartEntryInput(input)) {
-        return fail("GANTT_ENTRY_UPDATE_INVALID_INPUT", "チャートの変更内容が正しくありません。");
+        return fail("GANTT_ENTRY_UPDATE_INVALID_INPUT", "Chronicleの変更内容が正しくありません。");
       }
 
       const context = await getActiveWorkspaceContext();
@@ -135,7 +135,7 @@ export function registerWorkspaceDataHandlers(): void {
     } catch (error) {
       return fail(
         "GANTT_ENTRY_UPDATE_FAILED",
-        "チャートの変更を保存できませんでした。",
+        "Chronicleの変更を保存できませんでした。",
         ipcErrorDetails(error)
       );
     }

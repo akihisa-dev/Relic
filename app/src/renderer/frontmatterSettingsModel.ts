@@ -39,10 +39,10 @@ export const FIELD_TYPE_DESCRIPTION_KEYS: Record<UserDefinedFieldType, Translati
   url: "settings.fieldTypeUrlDescription"
 };
 
-export const RESERVED_FIELD_NAMES = new Set(["aliases", "tags", "status", "chronicle", "plannedDate", "actualDate"]);
+export const RESERVED_FIELD_NAMES = new Set(["aliases", "tags", "status", "chronicle"]);
 
 export const FIXED_FIELDS: Array<{
-  name: "actualDate" | "aliases" | "tags" | "status" | "chronicle" | "plannedDate";
+  name: "aliases" | "tags" | "status" | "chronicle";
   descriptionKey: TranslationKey;
   examples: TranslationKey[];
 }> = [
@@ -65,16 +65,6 @@ export const FIXED_FIELDS: Array<{
     name: "chronicle",
     descriptionKey: "settings.fixedFieldChronicleDescription",
     examples: ["settings.fixedFieldChronicleSingleExample", "settings.fixedFieldChronicleRangeExample"]
-  },
-  {
-    name: "plannedDate",
-    descriptionKey: "settings.fixedFieldPlannedDateDescription",
-    examples: ["settings.fixedFieldPlannedDateSingleExample", "settings.fixedFieldPlannedDateRangeExample"]
-  },
-  {
-    name: "actualDate",
-    descriptionKey: "settings.fixedFieldActualDateDescription",
-    examples: ["settings.fixedFieldActualDateSingleExample", "settings.fixedFieldActualDateRangeExample"]
   }
 ];
 

@@ -20,7 +20,7 @@ describe("readWorkspaceTags", () => {
     );
   });
 
-  it("ワークスペース内Markdownのfrontmatter tagsだけを集計する", async () => {
+  it("カードブック内Markdownのfrontmatter tagsだけを集計する", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-tags-"));
     temporaryPaths.push(workspacePath);
     await mkdir(path.join(workspacePath, "folder"));
