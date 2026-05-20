@@ -8,7 +8,7 @@ import { useGraphNodeInteractions } from "./useGraphNodeInteractions";
 import type { GraphNodeHandlers } from "./useGraphNodeInteractions";
 import { useGraphSimulation } from "./useGraphSimulation";
 import { useGraphViewportInteractions } from "./useGraphViewportInteractions";
-import type { GraphHandlers } from "./useGraphViewportInteractions";
+import type { GraphHandlers, GraphViewportController } from "./useGraphViewportInteractions";
 
 interface UseGraphCanvasInteractionsInput {
   edges: WorkspaceGraphEdge[];
@@ -47,6 +47,7 @@ export function useGraphCanvasInteractions({
   pointsRef: MutableRefObject<GraphSimPoint[]>;
   relatedPaths: Set<string>;
   surfaceRef: RefObject<HTMLDivElement | null>;
+  viewportController: GraphViewportController;
   viewBox: GraphViewBox;
 } {
   const pinnedPathRef = useRef<string | null>(null);
@@ -94,6 +95,7 @@ export function useGraphCanvasInteractions({
     pointsRef: simulation.pointsRef,
     relatedPaths,
     surfaceRef: viewport.surfaceRef,
+    viewportController: viewport.viewportController,
     viewBox: viewport.viewBox
   };
 }

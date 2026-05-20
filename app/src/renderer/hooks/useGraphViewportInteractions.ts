@@ -40,12 +40,18 @@ export interface GraphHandlers {
   onWheel: (event: WheelEvent<HTMLDivElement>) => void;
 }
 
+export interface GraphViewportController {
+  liveViewBoxRef: MutableRefObject<GraphViewBox>;
+  subscribe: (listener: () => void) => () => void;
+}
+
 export interface GraphViewportInteractions {
   getGraphDelta: (deltaX: number, deltaY: number) => GraphPan;
   graphHandlers: GraphHandlers;
   isPanning: boolean;
   pauseSimulationRef: MutableRefObject<boolean>;
   surfaceRef: RefObject<HTMLDivElement | null>;
+  viewportController: GraphViewportController;
   viewBox: GraphViewBox;
 }
 
@@ -64,13 +70,24 @@ export function useGraphViewportInteractions({
   const [isPanning, setIsPanning] = useState(false);
   const [pan, setPan] = useState<GraphPan>({ x: 0, y: 0 });
   const viewBox = buildGraphViewBox(zoom, pan, points);
+  const liveViewBoxRef = useRef<GraphViewBox>(viewBox);
+  const viewportListenersRef = useRef(new Set<() => void>());
+  const viewportControllerRef = useRef<GraphViewportController | null>(null);
   const viewportSnapshotRef = useRef<GraphViewportSnapshot>({ pan, zoom });
   const pendingWheelViewportRef = useRef<GraphViewportSnapshot | null>(null);
   const pendingPanViewportRef = useRef<GraphViewportSnapshot | null>(null);
   const wheelFrameRef = useRef<number | null>(null);
   const panFrameRef = useRef<number | null>(null);
 
+  if (!viewportControllerRef.current) {
+    viewportControllerRef.current = {
+      liveViewBoxRef,
+      subscribe: subscribeViewport
+    };
+  }
+
   viewportSnapshotRef.current = { pan, zoom };
+  liveViewBoxRef.current = viewBox;
 
   useEffect(() => {
     setPan({ x: 0, y: 0 });
@@ -92,6 +109,16 @@ export function useGraphViewportInteractions({
     };
   }
 
+  function notifyLiveViewport(snapshot: GraphViewportSnapshot): void {
+    liveViewBoxRef.current = buildGraphViewBox(snapshot.zoom, snapshot.pan, points);
+    viewportListenersRef.current.forEach((listener) => listener());
+  }
+
+  function subscribeViewport(listener: () => void): () => void {
+    viewportListenersRef.current.add(listener);
+    return () => viewportListenersRef.current.delete(listener);
+  }
+
   function cancelPendingWheelViewport(): void {
     pendingWheelViewportRef.current = null;
     if (wheelFrameRef.current !== null) {
@@ -110,6 +137,7 @@ export function useGraphViewportInteractions({
 
   function applyViewportSnapshot(snapshot: GraphViewportSnapshot): void {
     viewportSnapshotRef.current = snapshot;
+    notifyLiveViewport(snapshot);
     setPan(snapshot.pan);
     setZoom(snapshot.zoom);
   }
@@ -129,6 +157,7 @@ export function useGraphViewportInteractions({
 
     cancelPendingPanViewport();
     viewportSnapshotRef.current = pending;
+    notifyLiveViewport(pending);
     setPan(pending.pan);
     return pending;
   }
@@ -159,6 +188,7 @@ export function useGraphViewportInteractions({
     pendingPanViewportRef.current = null;
     panFrameRef.current = null;
     viewportSnapshotRef.current = pending;
+    notifyLiveViewport(pending);
     setPan(pending.pan);
   }
 
@@ -194,6 +224,7 @@ export function useGraphViewportInteractions({
       };
     }
 
+    notifyLiveViewport(pendingWheelViewportRef.current);
     scheduleWheelViewportCommit();
   }
 
@@ -261,6 +292,7 @@ export function useGraphViewportInteractions({
       },
       zoom: viewportSnapshotRef.current.zoom
     };
+    notifyLiveViewport(pendingPanViewportRef.current);
     schedulePanViewportCommit();
   }
 
@@ -283,6 +315,7 @@ export function useGraphViewportInteractions({
     if (!dragState || dragState.pointerId !== event.pointerId) return;
 
     cancelPendingPanViewport();
+    notifyLiveViewport(viewportSnapshotRef.current);
     dragStateRef.current = null;
     pauseSimulationRef.current = false;
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
@@ -304,6 +337,7 @@ export function useGraphViewportInteractions({
     isPanning,
     pauseSimulationRef,
     surfaceRef,
+    viewportController: viewportControllerRef.current,
     viewBox
   };
 }

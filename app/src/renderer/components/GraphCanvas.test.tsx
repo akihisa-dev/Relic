@@ -11,6 +11,8 @@ import {
   buildGraphNodeHitRadius,
   buildGraphViewBoxTransform,
   GraphCanvas,
+  graphRenderReasonsNeedLayerRedraw,
+  graphViewScaleBucket,
   type GraphCanvasProps
 } from "./GraphCanvas";
 
@@ -55,6 +57,10 @@ function makeGraphCanvasProps(overrides: Partial<GraphCanvasProps> = {}): GraphC
     showArrows: false,
     showLabels: true,
     surfaceRef: createRef<HTMLDivElement>(),
+    viewportController: {
+      liveViewBoxRef: { current: { height: GRAPH_HEIGHT, width: GRAPH_WIDTH, x: 0, y: 0 } },
+      subscribe: () => () => undefined
+    },
     viewBox: { height: GRAPH_HEIGHT, width: GRAPH_WIDTH, x: 0, y: 0 },
     ...overrides
   };
@@ -138,6 +144,21 @@ describe("GraphCanvas", () => {
   it("hit判定半径をズーム後の画面サイズ基準で作る", () => {
     expect(buildGraphNodeHitRadius(12, 1)).toBe(16);
     expect(buildGraphNodeHitRadius(0.3, 40)).toBe(0.4);
+  });
+
+  it("camera-only dirtyではnode/link/label layerを再描画しない", () => {
+    expect(graphRenderReasonsNeedLayerRedraw(new Set(["camera"]))).toBe(false);
+    expect(graphRenderReasonsNeedLayerRedraw(new Set(["geometry"]))).toBe(true);
+    expect(graphRenderReasonsNeedLayerRedraw(new Set(["style"]))).toBe(true);
+    expect(graphRenderReasonsNeedLayerRedraw(new Set(["reveal"]))).toBe(true);
+  });
+
+  it("zoom scaleを粗いbucketへ丸めてLOD再計算頻度を抑える", () => {
+    expect(graphViewScaleBucket(0.6)).toBe("far");
+    expect(graphViewScaleBucket(1)).toBe("default");
+    expect(graphViewScaleBucket(2)).toBe("near");
+    expect(graphViewScaleBucket(3)).toBe("label");
+    expect(graphViewScaleBucket(5)).toBe("detail");
   });
 
   it("animation開始時は空の状態からnodeとlinkを順に表示するreveal stateを作る", () => {

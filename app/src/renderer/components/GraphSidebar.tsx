@@ -85,6 +85,7 @@ export function GraphPanel({ activeFilePath, onOpenFile, workspaceId }: GraphPan
             showArrows={showArrows}
             showLabels={showLabels}
             surfaceRef={graphCanvas.surfaceRef}
+            viewportController={graphCanvas.viewportController}
             viewBox={graphCanvas.viewBox}
           />
         )}

@@ -91,6 +91,30 @@ describe("useGraphViewportInteractions", () => {
     cancelAnimationFrameSpy.mockRestore();
   });
 
+  it("wheel操作中はReact state確定前にlive viewportを通知する", () => {
+    const { hook, setZoom } = renderViewport();
+    vi.spyOn(window, "requestAnimationFrame").mockImplementation(() => 1);
+    const listener = vi.fn();
+    const surfaceTarget = {
+      getBoundingClientRect: () => ({ height: GRAPH_HEIGHT, left: 0, top: 0, width: GRAPH_WIDTH } as DOMRect)
+    } as unknown as HTMLDivElement;
+    (hook.result.current.surfaceRef as { current: HTMLDivElement | null }).current = surfaceTarget;
+    const unsubscribe = hook.result.current.viewportController.subscribe(listener);
+
+    act(() => {
+      hook.result.current.graphHandlers.onWheel(makeEvent<HTMLDivElement>({
+        clientX: GRAPH_WIDTH * 0.5,
+        clientY: GRAPH_HEIGHT * 0.5,
+        deltaY: -100
+      }));
+    });
+
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(setZoom).not.toHaveBeenCalled();
+    expect(hook.result.current.viewportController.liveViewBoxRef.current.width).toBeLessThan(GRAPH_WIDTH);
+    unsubscribe();
+  });
+
   it("連続wheel操作を1フレームにまとめてzoom更新callbackを1回だけ呼ぶ", () => {
     const { hook, setZoom } = renderViewport();
     let frameCallback: FrameRequestCallback | null = null;

@@ -5,8 +5,7 @@ import {
   clamp,
   GRAPH_HEIGHT,
   GRAPH_PADDING,
-  GRAPH_WIDTH,
-  tickGraphSimulation
+  GRAPH_WIDTH
 } from "../graphLayout";
 import type { GraphForceSettings, GraphPan, GraphPoint, GraphSimPoint } from "../graphLayout";
 import type { WorkspaceGraphEdge } from "../../shared/ipc";
@@ -26,6 +25,7 @@ export interface GraphNodePointerEvent {
 
 interface GraphNodeDragState {
   moved: boolean;
+  neighborhoodPaths: Set<string>;
   path: string;
   pointerId: number;
   startClientX: number;
@@ -75,6 +75,7 @@ export function useGraphNodeInteractions({
   const nodeDragStateRef = useRef<GraphNodeDragState | null>(null);
   const nodeFrameRef = useRef<number | null>(null);
   const settleFrameRef = useRef<number | null>(null);
+  const settlePathsRef = useRef<Set<string>>(new Set());
   const settleTicksLeftRef = useRef(0);
 
   function commitPointsFrame(): void {
@@ -95,6 +96,7 @@ export function useGraphNodeInteractions({
 
   function stopSettle(): void {
     settleTicksLeftRef.current = 0;
+    settlePathsRef.current = new Set();
     if (settleFrameRef.current !== null) {
       window.cancelAnimationFrame(settleFrameRef.current);
       settleFrameRef.current = null;
@@ -105,7 +107,7 @@ export function useGraphNodeInteractions({
     settleFrameRef.current = null;
     if (settleTicksLeftRef.current <= 0) return;
 
-    pointsRef.current = tickGraphSimulation(pointsRef.current, edges, forceSettings, pinnedPathRef.current, 2);
+    pointsRef.current = relaxGraphNeighborhood(pointsRef.current, edges, forceSettings, settlePathsRef.current, pinnedPathRef.current, null, 2);
     setPoints(pointsRef.current);
     settleTicksLeftRef.current -= 1;
     if (settleTicksLeftRef.current > 0) {
@@ -113,8 +115,9 @@ export function useGraphNodeInteractions({
     }
   }
 
-  function startSettle(tickFrames: number): void {
+  function startSettle(paths: Set<string>, tickFrames: number): void {
     stopSettle();
+    settlePathsRef.current = new Set(paths);
     settleTicksLeftRef.current = tickFrames;
     settleFrameRef.current = window.requestAnimationFrame(runSettleFrame);
   }
@@ -137,8 +140,10 @@ export function useGraphNodeInteractions({
 
     event.stopPropagation();
     stopSettle();
+    const neighborhoodPaths = collectGraphNeighborhoodPaths(edges, point.path, 2);
     nodeDragStateRef.current = {
       moved: false,
+      neighborhoodPaths,
       path: point.path,
       pointerId: event.pointerId,
       startClientX: event.clientX,
@@ -169,11 +174,7 @@ export function useGraphNodeInteractions({
       x: clamp(dragState.startPoint.x + graphDelta.x, GRAPH_PADDING, GRAPH_WIDTH - GRAPH_PADDING),
       y: clamp(dragState.startPoint.y + graphDelta.y, GRAPH_PADDING, GRAPH_HEIGHT - GRAPH_PADDING)
     };
-    const draggedPoints = pointsRef.current.map((point) => point.path === dragState.path
-      ? { ...point, vx: 0, vy: 0, x: nextPosition.x, y: nextPosition.y }
-      : point
-    );
-    pointsRef.current = tickGraphSimulation(draggedPoints, edges, forceSettings, dragState.path, 1);
+    pointsRef.current = relaxGraphNeighborhood(pointsRef.current, edges, forceSettings, dragState.neighborhoodPaths, dragState.path, nextPosition, 1);
     schedulePointsCommit();
   }
 
@@ -193,7 +194,7 @@ export function useGraphNodeInteractions({
     if (!dragState.moved) setSelectedPath(point.path);
     if (dragState.moved) {
       setPoints(pointsRef.current);
-      startSettle(8);
+      startSettle(dragState.neighborhoodPaths, 8);
     }
   }
 
@@ -233,4 +234,115 @@ export function useGraphNodeInteractions({
     onPointerMove: handleNodePointerMove,
     onPointerUp: handleNodePointerEnd
   };
+}
+
+export function collectGraphNeighborhoodPaths(
+  edges: WorkspaceGraphEdge[],
+  rootPath: string,
+  depth: number
+): Set<string> {
+  const adjacency = new Map<string, Set<string>>();
+  for (const edge of edges) {
+    if (!adjacency.has(edge.sourcePath)) adjacency.set(edge.sourcePath, new Set());
+    if (!adjacency.has(edge.targetPath)) adjacency.set(edge.targetPath, new Set());
+    adjacency.get(edge.sourcePath)?.add(edge.targetPath);
+    adjacency.get(edge.targetPath)?.add(edge.sourcePath);
+  }
+
+  const visited = new Set([rootPath]);
+  let frontier = new Set([rootPath]);
+  for (let distance = 0; distance < depth; distance += 1) {
+    const next = new Set<string>();
+    for (const path of frontier) {
+      for (const neighbor of adjacency.get(path) ?? []) {
+        if (visited.has(neighbor)) continue;
+        visited.add(neighbor);
+        next.add(neighbor);
+      }
+    }
+    frontier = next;
+    if (frontier.size === 0) break;
+  }
+  return visited;
+}
+
+export function relaxGraphNeighborhood(
+  points: GraphSimPoint[],
+  edges: WorkspaceGraphEdge[],
+  forceSettings: GraphForceSettings,
+  neighborhoodPaths: Set<string>,
+  pinnedPath: string | null,
+  pinnedPosition: GraphPan | null,
+  iterations: number
+): GraphSimPoint[] {
+  if (neighborhoodPaths.size === 0) return points;
+
+  const pointByPath = new Map<string, GraphSimPoint>();
+  for (const point of points) {
+    pointByPath.set(point.path, neighborhoodPaths.has(point.path) ? { ...point } : point);
+  }
+
+  if (pinnedPath && pinnedPosition) {
+    const pinned = pointByPath.get(pinnedPath);
+    if (pinned) {
+      pinned.x = pinnedPosition.x;
+      pinned.y = pinnedPosition.y;
+      pinned.vx = 0;
+      pinned.vy = 0;
+    }
+  }
+
+  const localEdges = edges.filter((edge) =>
+    neighborhoodPaths.has(edge.sourcePath) &&
+    neighborhoodPaths.has(edge.targetPath) &&
+    pointByPath.has(edge.sourcePath) &&
+    pointByPath.has(edge.targetPath)
+  );
+  const tickCount = Math.max(1, iterations);
+  const targetDistance = Math.min(180, Math.max(36, forceSettings.linkDistance));
+  const linkStrength = 0.045 * forceSettings.linkForce;
+  const centerStrength = 0.0025 * forceSettings.centerForce;
+
+  for (let tick = 0; tick < tickCount; tick += 1) {
+    for (const edge of localEdges) {
+      const source = pointByPath.get(edge.sourcePath);
+      const target = pointByPath.get(edge.targetPath);
+      if (!source || !target) continue;
+
+      const dx = target.x - source.x;
+      const dy = target.y - source.y;
+      const distance = Math.max(0.001, Math.hypot(dx, dy));
+      const correction = (distance - targetDistance) * linkStrength;
+      const offsetX = (dx / distance) * correction;
+      const offsetY = (dy / distance) * correction;
+      moveLocalPoint(source, pinnedPath, offsetX, offsetY);
+      moveLocalPoint(target, pinnedPath, -offsetX, -offsetY);
+    }
+
+    for (const path of neighborhoodPaths) {
+      if (path === pinnedPath) continue;
+      const point = pointByPath.get(path);
+      if (!point) continue;
+
+      const centerPullX = (GRAPH_WIDTH / 2 - point.x) * centerStrength;
+      const centerPullY = (GRAPH_HEIGHT / 2 - point.y) * centerStrength;
+      point.x = clamp(point.x + centerPullX, GRAPH_PADDING, GRAPH_WIDTH - GRAPH_PADDING);
+      point.y = clamp(point.y + centerPullY, GRAPH_PADDING, GRAPH_HEIGHT - GRAPH_PADDING);
+      point.vx = centerPullX;
+      point.vy = centerPullY;
+    }
+  }
+
+  return points.map((point) => {
+    const nextPoint = pointByPath.get(point.path) ?? point;
+    return neighborhoodPaths.has(point.path) ? nextPoint : point;
+  });
+}
+
+function moveLocalPoint(point: GraphSimPoint, pinnedPath: string | null, offsetX: number, offsetY: number): void {
+  if (point.path === pinnedPath) return;
+  point.x = clamp(point.x + offsetX, GRAPH_PADDING, GRAPH_WIDTH - GRAPH_PADDING);
+  point.y = clamp(point.y + offsetY, GRAPH_PADDING, GRAPH_HEIGHT - GRAPH_PADDING);
+  point.vx = offsetX;
+  point.vy = offsetY;
 }
