@@ -6,6 +6,7 @@ import {
   type WorkspaceState
 } from "../shared/ipc";
 import { useEditorStore } from "../renderer/store/editorStore";
+import { useGraphStore } from "../renderer/store/graphStore";
 import { useUiStore } from "../renderer/store/uiStore";
 
 export const testWorkspaceState: WorkspaceState = {
@@ -34,6 +35,31 @@ export function resetRendererStores(): void {
     leftPane: { activeTabId: null, history: [], tabIds: [] },
     rightPane: { activeTabId: null, history: [], tabIds: [] },
     tabs: {}
+  });
+  useGraphStore.setState({
+    centerForce: 1,
+    error: null,
+    folderFilter: "",
+    graph: null,
+    groups: [],
+    isLoading: false,
+    linkDistance: 118,
+    linkFilter: "all",
+    linkForce: 1,
+    linkThickness: 1,
+    loadedWorkspaceId: null,
+    localGraphDepth: 0,
+    minDegree: 0,
+    nodeSize: 1,
+    query: "",
+    repelForce: 1,
+    selectedPath: null,
+    showArrows: false,
+    showLabels: true,
+    showOrphans: true,
+    tagFilter: "",
+    textFadeThreshold: 0.85,
+    zoom: 1
   });
   useUiStore.setState({
     activeSidebarView: "files",
@@ -64,6 +90,7 @@ export function makeRelicApi(overrides: Partial<typeof window.relic> = {}): type
     getUserDefinedFields: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     getWorkspaceAliases: vi.fn().mockResolvedValue({ ok: true, value: {} }),
     getWorkspaceChronicle: vi.fn().mockResolvedValue({ ok: true, value: [] }),
+    getWorkspaceGraph: vi.fn().mockResolvedValue({ ok: true, value: { edges: [], nodes: [] } }),
     getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: { activeWorkspace: null, fileTree: [], pinnedPaths: [], workspaces: [] } }),
     getWorkspaceTags: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     mergeFiles: vi.fn().mockResolvedValue({ ok: true, value: "merged.md" }),

@@ -30,7 +30,9 @@ export function openFilePathsForTabs(tabs: Record<string, Tab>): Set<string> {
 
 export function panelLabelsForTranslator(t: Translator): Record<PanelTabKind, string> {
   return {
+    dashboard: t("nav.dashboard"),
     frontmatter: t("nav.frontmatter"),
+    graph: t("nav.graph"),
     settings: t("nav.settings"),
     tools: t("nav.tools")
   };
@@ -97,10 +99,12 @@ export function splitRailViews<TView extends Pick<AppRailView, "id">>(
     chartRailView: views.find((view) => view.id === "chronicle"),
     panelRailViews: views.filter((view) =>
       view.id !== "files" &&
+      view.id !== "dashboard" &&
+      view.id !== "graph" &&
       view.id !== "chronicle"
     ),
     primaryRailViews: views.filter((view) =>
-      view.id === "files"
+      view.id === "files" || view.id === "dashboard" || view.id === "graph"
     )
   };
 }

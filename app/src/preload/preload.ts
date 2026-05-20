@@ -14,6 +14,7 @@ import {
   getFrontmatterValueCandidatesChannel,
   getWorkspaceAliasesChannel,
   getWorkspaceChronicleChannel,
+  getWorkspaceGraphChannel,
   getWorkspaceTagsChannel,
   getWorkspaceStateChannel,
   workspaceChangedChannel,
@@ -84,6 +85,7 @@ import {
   type WorkspaceChangedEvent,
   type WorkspaceState,
   type WorkspaceGanttChart,
+  type WorkspaceGraph,
   type WorkspaceSearchResult,
   type WorkspaceTagSummary,
   type WriteMarkdownFileInput
@@ -119,6 +121,8 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(getWorkspaceAliasesChannel) as Promise<RelicResult<AliasIndex>>,
   getWorkspaceChronicle: () =>
     ipcRenderer.invoke(getWorkspaceChronicleChannel) as Promise<RelicResult<WorkspaceGanttChart[]>>,
+  getWorkspaceGraph: () =>
+    ipcRenderer.invoke(getWorkspaceGraphChannel) as Promise<RelicResult<WorkspaceGraph>>,
   getFrontmatterValueCandidates: () =>
     ipcRenderer.invoke(getFrontmatterValueCandidatesChannel) as Promise<RelicResult<Record<string, string[]>>>,
   getWorkspaceTags: () =>

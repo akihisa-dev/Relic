@@ -11,12 +11,15 @@ import type {
   WorkspaceState
 } from "../../shared/ipc";
 import { GanttChartView } from "../components/ChronicleSidebar";
+import { DashboardPanel } from "../components/DashboardPanel";
 import { FrontmatterSidebar } from "../components/FrontmatterSidebar";
+import { GraphPanel } from "../components/GraphSidebar";
 import { SettingsSidebar } from "../components/SettingsSidebar";
 import { ToolsSidebar } from "../components/ToolsSidebar";
 import type { PanelTabKind } from "../store/editorStore";
 
 interface UseAppTabRenderersInput {
+  activeFilePathForGraph: string | null;
   appInfo: AppInfo | null;
   editorSettings: EditorSettings;
   featureToggles: FeatureToggles;
@@ -31,6 +34,7 @@ interface UseAppTabRenderersInput {
 }
 
 export function useAppTabRenderers({
+  activeFilePathForGraph,
   appInfo,
   editorSettings,
   featureToggles,
@@ -56,6 +60,17 @@ export function useAppTabRenderers({
   ), [ganttCharts, handleOpenFile, handleUpdateGanttChartEntry]);
 
   const renderPanelTab = useCallback((panel: PanelTabKind): ReactNode => {
+    if (panel === "dashboard") {
+      return (
+        <DashboardPanel
+          fileTree={workspaceState?.fileTree ?? []}
+          onOpenFile={handleOpenFile}
+          userDefinedFields={userDefinedFields}
+          workspaceId={workspaceState?.activeWorkspace?.id ?? null}
+        />
+      );
+    }
+
     if (panel === "tools") {
       return <ToolsSidebar workspacePath={workspaceState?.activeWorkspace?.path ?? null} />;
     }
@@ -65,6 +80,16 @@ export function useAppTabRenderers({
         <FrontmatterSidebar
           onUserDefinedFieldsSave={handleSaveUserDefinedFields}
           userDefinedFields={userDefinedFields}
+        />
+      );
+    }
+
+    if (panel === "graph") {
+      return (
+        <GraphPanel
+          activeFilePath={activeFilePathForGraph}
+          onOpenFile={handleOpenFile}
+          workspaceId={workspaceState?.activeWorkspace?.id ?? null}
         />
       );
     }
@@ -79,6 +104,7 @@ export function useAppTabRenderers({
       />
     );
   }, [
+    activeFilePathForGraph,
     appInfo,
     editorSettings,
     featureToggles,
@@ -86,6 +112,7 @@ export function useAppTabRenderers({
     handleSaveFeatureToggles,
     handleSaveSettings,
     handleSaveUserDefinedFields,
+    userDefinedFields,
     workspaceState
   ]);
 
