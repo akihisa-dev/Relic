@@ -27,7 +27,7 @@ export function buildFilteredGraph({
   showOrphans,
   tagFilter
 }: BuildFilteredGraphInput): GraphViewModel {
-  if (!graph) return { edges: [], nodes: [] };
+  if (!graph) return { edges: [], nodes: [], signature: "empty" };
 
   const graphStats = buildGraphStats(graph.edges);
   const normalizedQuery = query.trim().toLocaleLowerCase();
@@ -57,7 +57,21 @@ export function buildFilteredGraph({
     : nodePaths;
   const edges = graph.edges.filter((edge) => localNodePaths.has(edge.sourcePath) && localNodePaths.has(edge.targetPath));
 
-  return { edges, nodes: nodes.filter((node) => localNodePaths.has(node.path)) };
+  const visibleNodes = nodes.filter((node) => localNodePaths.has(node.path));
+  return {
+    edges,
+    nodes: visibleNodes,
+    signature: buildGraphViewSignature(visibleNodes, edges)
+  };
+}
+
+function buildGraphViewSignature(nodes: WorkspaceGraphNode[], edges: WorkspaceGraphEdge[]): string {
+  return [
+    nodes.length,
+    edges.length,
+    nodes.map((node) => node.path).join("\u0000"),
+    edges.map((edge) => `${edge.sourcePath}->${edge.targetPath}`).join("\u0000")
+  ].join("\u0001");
 }
 
 export function collectRelatedGraphPaths(edges: WorkspaceGraphEdge[], focusedPath: string | null): Set<string> {

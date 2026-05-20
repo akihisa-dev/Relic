@@ -15,9 +15,17 @@ interface UseGraphSimulationInput {
 }
 
 export interface GraphSimulationState {
+  geometryController: GraphGeometryController;
   points: GraphSimPoint[];
   pointsRef: MutableRefObject<GraphSimPoint[]>;
   setPoints: (points: GraphSimPoint[]) => void;
+}
+
+export interface GraphGeometryController {
+  changedPathsRef: MutableRefObject<Set<string> | null>;
+  livePointsRef: MutableRefObject<GraphSimPoint[]>;
+  notifyChanged: (paths: Set<string> | null) => void;
+  subscribe: (listener: () => void) => () => void;
 }
 
 export function useGraphSimulation({
@@ -29,13 +37,42 @@ export function useGraphSimulation({
   pinnedPathRef
 }: UseGraphSimulationInput): GraphSimulationState {
   const pointsRef = useRef<GraphSimPoint[]>([]);
+  const changedPathsRef = useRef<Set<string> | null>(null);
+  const geometryListenersRef = useRef(new Set<() => void>());
+  const geometryControllerRef = useRef<GraphGeometryController | null>(null);
   const forceSettingsKeyRef = useRef<string | null>(null);
   const layoutModeRef = useRef<GraphLayoutMode | null>(null);
   const [points, setPointsState] = useState<GraphSimPoint[]>([]);
 
+  if (!geometryControllerRef.current) {
+    geometryControllerRef.current = {
+      changedPathsRef,
+      livePointsRef: pointsRef,
+      notifyChanged,
+      subscribe
+    };
+  }
+
   function setPoints(nextPoints: GraphSimPoint[]): void {
     pointsRef.current = nextPoints;
     setPointsState(nextPoints);
+    notifyChanged(null);
+  }
+
+  function notifyChanged(paths: Set<string> | null): void {
+    if (paths === null) {
+      changedPathsRef.current = null;
+    } else if (paths.size > 0 && changedPathsRef.current !== null) {
+      const nextPaths = changedPathsRef.current ?? new Set<string>();
+      paths.forEach((path) => nextPaths.add(path));
+      changedPathsRef.current = nextPaths;
+    }
+    geometryListenersRef.current.forEach((listener) => listener());
+  }
+
+  function subscribe(listener: () => void): () => void {
+    geometryListenersRef.current.add(listener);
+    return () => geometryListenersRef.current.delete(listener);
   }
 
   useEffect(() => {
@@ -64,6 +101,7 @@ export function useGraphSimulation({
   }, [edges, forceSettings, layoutMode, nodes, pauseSimulationRef, pinnedPathRef]);
 
   return {
+    geometryController: geometryControllerRef.current,
     points,
     pointsRef,
     setPoints

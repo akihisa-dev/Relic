@@ -9,6 +9,7 @@ import {
 } from "../graphLayout";
 import type { GraphForceSettings, GraphPan, GraphPoint, GraphSimPoint } from "../graphLayout";
 import type { WorkspaceGraphEdge } from "../../shared/ipc";
+import type { GraphGeometryController } from "./useGraphSimulation";
 
 export interface GraphNodePointerEvent {
   button: number;
@@ -38,6 +39,7 @@ interface UseGraphNodeInteractionsInput {
   edges: WorkspaceGraphEdge[];
   forceSettings: GraphForceSettings;
   getGraphDelta: (deltaX: number, deltaY: number) => GraphPan;
+  geometryController: GraphGeometryController;
   onOpenFile: (path: string) => void;
   pinnedPathRef: MutableRefObject<string | null>;
   pointsRef: MutableRefObject<GraphSimPoint[]>;
@@ -62,6 +64,7 @@ export function useGraphNodeInteractions({
   edges,
   forceSettings,
   getGraphDelta,
+  geometryController,
   onOpenFile,
   pinnedPathRef,
   pointsRef,
@@ -73,26 +76,9 @@ export function useGraphNodeInteractions({
   const openSelectedClickRef = useRef(false);
   const suppressNodeClickRef = useRef(false);
   const nodeDragStateRef = useRef<GraphNodeDragState | null>(null);
-  const nodeFrameRef = useRef<number | null>(null);
   const settleFrameRef = useRef<number | null>(null);
   const settlePathsRef = useRef<Set<string>>(new Set());
   const settleTicksLeftRef = useRef(0);
-
-  function commitPointsFrame(): void {
-    nodeFrameRef.current = null;
-    setPoints(pointsRef.current);
-  }
-
-  function schedulePointsCommit(): void {
-    if (nodeFrameRef.current !== null) return;
-    nodeFrameRef.current = window.requestAnimationFrame(commitPointsFrame);
-  }
-
-  function cancelPointsCommit(): void {
-    if (nodeFrameRef.current === null) return;
-    window.cancelAnimationFrame(nodeFrameRef.current);
-    nodeFrameRef.current = null;
-  }
 
   function stopSettle(): void {
     settleTicksLeftRef.current = 0;
@@ -108,10 +94,12 @@ export function useGraphNodeInteractions({
     if (settleTicksLeftRef.current <= 0) return;
 
     pointsRef.current = relaxGraphNeighborhood(pointsRef.current, edges, forceSettings, settlePathsRef.current, pinnedPathRef.current, null, 2);
-    setPoints(pointsRef.current);
+    geometryController.notifyChanged(settlePathsRef.current);
     settleTicksLeftRef.current -= 1;
     if (settleTicksLeftRef.current > 0) {
       settleFrameRef.current = window.requestAnimationFrame(runSettleFrame);
+    } else {
+      setPoints(pointsRef.current);
     }
   }
 
@@ -175,7 +163,7 @@ export function useGraphNodeInteractions({
       y: clamp(dragState.startPoint.y + graphDelta.y, GRAPH_PADDING, GRAPH_HEIGHT - GRAPH_PADDING)
     };
     pointsRef.current = relaxGraphNeighborhood(pointsRef.current, edges, forceSettings, dragState.neighborhoodPaths, dragState.path, nextPosition, 1);
-    schedulePointsCommit();
+    geometryController.notifyChanged(dragState.neighborhoodPaths);
   }
 
   function handleNodePointerEnd(event: GraphNodePointerEvent, point: GraphPoint): void {
@@ -185,7 +173,6 @@ export function useGraphNodeInteractions({
     event.stopPropagation();
     nodeDragStateRef.current = null;
     pinnedPathRef.current = null;
-    cancelPointsCommit();
     if (event.currentTarget?.hasPointerCapture?.(event.pointerId)) {
       event.currentTarget.releasePointerCapture?.(event.pointerId);
     }
@@ -205,8 +192,8 @@ export function useGraphNodeInteractions({
     event.stopPropagation();
     nodeDragStateRef.current = null;
     pinnedPathRef.current = null;
-    cancelPointsCommit();
     stopSettle();
+    geometryController.notifyChanged(null);
     if (event.currentTarget?.hasPointerCapture?.(event.pointerId)) {
       event.currentTarget.releasePointerCapture?.(event.pointerId);
     }

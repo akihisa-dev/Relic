@@ -22,6 +22,7 @@ import {
 import type { GraphGroup } from "../store/graphStore";
 import type { GraphNodePointerEvent } from "../hooks/useGraphNodeInteractions";
 import type { GraphViewportController } from "../hooks/useGraphViewportInteractions";
+import type { GraphGeometryController } from "../hooks/useGraphSimulation";
 
 export interface GraphViewBoxTransform {
   scaleX: number;
@@ -41,6 +42,7 @@ export interface GraphCanvasProps {
   edges: WorkspaceGraphEdge[];
   focusedPath: string | null;
   groupByPath: Map<string, GraphGroup>;
+  geometryController: GraphGeometryController;
   isMotionAfterglow: boolean;
   isPanning: boolean;
   labelOpacity: number;
@@ -89,6 +91,7 @@ interface PixiGraphRuntime {
   nodeLayer: Container;
   pendingFrame: number | null;
   pendingReasons: Set<GraphRenderReason>;
+  renderCache: GraphRenderCache | null;
   renderedPointsByPath: Map<string, GraphSimPoint>;
   revealEpoch: number;
   revealStartedAtMs: number | null;
@@ -116,6 +119,18 @@ interface GraphEdgeGraphic extends Graphics {
 
 interface GraphLabelText extends Text {
   relicSignature?: string;
+}
+
+export interface GraphRenderCache {
+  edgesByKey: Map<string, GraphRenderEdge>;
+  incidentEdgeKeysByPath: Map<string, Set<string>>;
+  nodesByPath: Map<string, GraphRenderNode>;
+  state: GraphRenderState;
+}
+
+export interface GraphRenderGeometryPatch {
+  edges: GraphRenderEdge[];
+  nodes: GraphRenderNode[];
 }
 
 interface PixiGraphInteractionOptions {
@@ -151,6 +166,7 @@ export function GraphCanvas({
   animationEpoch,
   edges,
   focusedPath,
+  geometryController,
   groupByPath,
   isMotionAfterglow,
   isPanning,
@@ -217,7 +233,7 @@ export function GraphCanvas({
     linkThickness,
     motionPath,
     nodeSize,
-    palette: defaultGraphRenderPalette,
+    palette: latestRenderInputRef.current.palette,
     relatedPaths,
     selectedPath,
     showLabels
@@ -269,18 +285,31 @@ export function GraphCanvas({
     const shouldRedrawLayers = graphRenderReasonsNeedLayerRedraw(reasons);
     let revealFrame: GraphRevealFrame | null = null;
     if (shouldRedrawLayers) {
-      const renderPoints = interpolateGraphFramePoints(
-        runtime,
-        pointsRef.current,
-        options.activePointerPointRef.current?.path ?? null
-      );
       const nowMs = typeof performance === "undefined" ? Date.now() : performance.now();
-      revealFrame = updateGraphRevealFrame(runtime, options.animationEpoch, nowMs);
-      drawGraph(runtime, buildGraphRenderState({
-        ...latestRenderInputRef.current,
-        points: renderPoints,
-        viewScale: runtime.viewScale
-      }), options, revealFrame);
+      const revealTotalMs = shouldUseLargeGraphReveal(geometryController.livePointsRef.current.length, latestRenderInputRef.current.edges.length)
+        ? graphLargeRevealTotalMs
+        : graphRevealTotalMs;
+      revealFrame = updateGraphRevealFrame(runtime, options.animationEpoch, nowMs, revealTotalMs);
+      const changedPaths = geometryController.changedPathsRef.current;
+      geometryController.changedPathsRef.current = new Set();
+      if (graphRenderReasonsNeedFullRebuild(reasons) || !runtime.renderCache || changedPaths === null || revealFrame) {
+        const renderPoints = interpolateGraphFramePoints(
+          runtime,
+          geometryController.livePointsRef.current,
+          options.activePointerPointRef.current?.path ?? null
+        );
+        drawGraph(runtime, buildGraphRenderState({
+          ...latestRenderInputRef.current,
+          points: renderPoints,
+          viewScale: runtime.viewScale
+        }), options, revealFrame, shouldUseLargeGraphReveal(renderPoints.length, latestRenderInputRef.current.edges.length));
+      } else if (changedPaths.size > 0) {
+        drawGraphGeometryPatch(runtime, updateGraphRenderCacheGeometry(
+          runtime.renderCache,
+          geometryController.livePointsRef.current,
+          changedPaths
+        ), options);
+      }
     }
 
     runtime.app.render();
@@ -363,6 +392,7 @@ export function GraphCanvas({
           nodeLayer,
           pendingFrame: null,
           pendingReasons: new Set(),
+          renderCache: null,
           renderedPointsByPath: new Map(),
           revealEpoch: latestInteractionOptionsRef.current?.animationEpoch ?? 0,
           revealStartedAtMs: null,
@@ -423,21 +453,23 @@ export function GraphCanvas({
     scheduleRender("style");
   }, [
     isReady,
-    focusedPath,
     groupByPath,
     labelOpacity,
     linkThickness,
-    motionPath,
     nodeSize,
-    relatedPaths,
-    selectedPath,
+    showArrows,
     showLabels
   ]);
 
   useEffect(() => {
     if (!isReady) return;
+    scheduleRender("style");
+  }, [edges, isReady]);
+
+  useEffect(() => {
+    if (!isReady) return;
     scheduleRender("geometry");
-  }, [edges, isReady, points, pointsRef]);
+  }, [isReady, points]);
 
   useEffect(() => {
     if (!isReady) return;
@@ -460,6 +492,13 @@ export function GraphCanvas({
       scheduleRender("camera");
     });
   }, [isReady, viewportController]);
+
+  useEffect(() => {
+    if (!isReady) return undefined;
+    return geometryController.subscribe(() => {
+      scheduleRender("geometry");
+    });
+  }, [geometryController, isReady]);
 
   function setSurfaceElement(element: HTMLDivElement | null): void {
     hostRef.current = element;
@@ -508,34 +547,136 @@ export function graphRenderReasonsNeedLayerRedraw(reasons: ReadonlySet<GraphRend
   return reasons.has("geometry") || reasons.has("style") || reasons.has("reveal");
 }
 
+export function graphRenderReasonsNeedFullRebuild(reasons: ReadonlySet<GraphRenderReason>): boolean {
+  return reasons.has("style") || reasons.has("reveal");
+}
+
 function drawGraph(
   runtime: PixiGraphRuntime,
   state: GraphRenderState,
   options: PixiGraphInteractionOptions,
-  revealFrame: GraphRevealFrame | null
+  revealFrame: GraphRevealFrame | null,
+  useLargeReveal: boolean
 ): void {
-  const drawableState = revealFrame ? buildGraphRevealState(state, revealFrame.elapsedMs) : state;
+  const drawableState = revealFrame ? buildGraphRevealState(state, revealFrame.elapsedMs, useLargeReveal) : state;
+  runtime.renderCache = buildGraphRenderCache(drawableState);
   runtime.interactionOptions = options;
 
-  updateEdgeLayer(runtime, drawableState.edges, options.showArrows);
+  updateEdgeLayer(runtime, drawableState.edges, options.showArrows, true);
   updateMotionLayer(runtime, drawableState.edges, options);
-  updateNodeLayer(runtime, drawableState.nodes);
-  updateHitLayer(runtime, drawableState.nodes, options);
-  updateLabelLayer(runtime, drawableState);
+  updateNodeLayer(runtime, drawableState.nodes, true);
+  updateHitLayer(runtime, drawableState.nodes, options, true);
+  updateLabelLayer(runtime, drawableState, true);
+}
+
+function drawGraphGeometryPatch(
+  runtime: PixiGraphRuntime,
+  patch: GraphRenderGeometryPatch,
+  options: PixiGraphInteractionOptions
+): void {
+  runtime.interactionOptions = options;
+  updateEdgeLayer(runtime, patch.edges, options.showArrows, false);
+  updateNodeLayer(runtime, patch.nodes, false);
+  updateHitLayer(runtime, patch.nodes, options, false);
+  updateLabelLayerPatch(runtime, patch.nodes);
+}
+
+export function buildGraphRenderCache(state: GraphRenderState): GraphRenderCache {
+  const edgesByKey = new Map<string, GraphRenderEdge>();
+  const incidentEdgeKeysByPath = new Map<string, Set<string>>();
+  const nodesByPath = new Map<string, GraphRenderNode>();
+
+  state.nodes.forEach((node) => nodesByPath.set(node.path, node));
+  state.edges.forEach((edge) => {
+    const key = graphEdgeKey(edge);
+    edgesByKey.set(key, edge);
+    addIncidentEdgeKey(incidentEdgeKeysByPath, edge.sourcePath, key);
+    addIncidentEdgeKey(incidentEdgeKeysByPath, edge.targetPath, key);
+  });
+
+  return {
+    edgesByKey,
+    incidentEdgeKeysByPath,
+    nodesByPath,
+    state
+  };
+}
+
+export function updateGraphRenderCacheGeometry(
+  cache: GraphRenderCache,
+  points: GraphSimPoint[],
+  changedPaths: ReadonlySet<string>
+): GraphRenderGeometryPatch {
+  const changedPointByPath = new Map<string, GraphSimPoint>();
+  for (const point of points) {
+    if (changedPaths.has(point.path)) changedPointByPath.set(point.path, point);
+  }
+
+  const changedNodes: GraphRenderNode[] = [];
+  for (const [path, point] of changedPointByPath) {
+    const previousNode = cache.nodesByPath.get(path);
+    if (!previousNode) continue;
+    const nextNode = {
+      ...previousNode,
+      vx: point.vx,
+      vy: point.vy,
+      x: point.x,
+      y: point.y
+    };
+    cache.nodesByPath.set(path, nextNode);
+    changedNodes.push(nextNode);
+  }
+
+  const changedEdgeKeys = new Set<string>();
+  for (const path of changedPointByPath.keys()) {
+    cache.incidentEdgeKeysByPath.get(path)?.forEach((key) => changedEdgeKeys.add(key));
+  }
+
+  const changedEdges: GraphRenderEdge[] = [];
+  for (const key of changedEdgeKeys) {
+    const edge = cache.edgesByKey.get(key);
+    if (!edge) continue;
+    const source = cache.nodesByPath.get(edge.sourcePath);
+    const target = cache.nodesByPath.get(edge.targetPath);
+    if (!source || !target) continue;
+    const nextEdge = {
+      ...edge,
+      x1: source.x,
+      x2: target.x,
+      y1: source.y,
+      y2: target.y
+    };
+    cache.edgesByKey.set(key, nextEdge);
+    changedEdges.push(nextEdge);
+  }
+
+  return {
+    edges: changedEdges,
+    nodes: changedNodes
+  };
+}
+
+function addIncidentEdgeKey(target: Map<string, Set<string>>, path: string, edgeKey: string): void {
+  const keys = target.get(path) ?? new Set<string>();
+  keys.add(edgeKey);
+  target.set(path, keys);
 }
 
 function updateEdgeLayer(
   runtime: PixiGraphRuntime,
   edges: GraphRenderEdge[],
-  showArrows: boolean
+  showArrows: boolean,
+  removeMissing: boolean
 ): void {
   const nextKeys = new Set(edges.map(graphEdgeKey));
 
-  for (const [key, graphic] of runtime.edgeGraphicsByKey) {
-    if (nextKeys.has(key)) continue;
-    runtime.edgeLayer.removeChild(graphic);
-    graphic.destroy();
-    runtime.edgeGraphicsByKey.delete(key);
+  if (removeMissing) {
+    for (const [key, graphic] of runtime.edgeGraphicsByKey) {
+      if (nextKeys.has(key)) continue;
+      runtime.edgeLayer.removeChild(graphic);
+      graphic.destroy();
+      runtime.edgeGraphicsByKey.delete(key);
+    }
   }
 
   edges.forEach((edge) => {
@@ -572,14 +713,16 @@ function updateMotionLayer(
   runtime.motionLayerSignature = signature;
 }
 
-function updateNodeLayer(runtime: PixiGraphRuntime, nodes: GraphRenderNode[]): void {
+function updateNodeLayer(runtime: PixiGraphRuntime, nodes: GraphRenderNode[], removeMissing: boolean): void {
   const nextPaths = new Set(nodes.map((node) => node.path));
 
-  for (const [path, graphic] of runtime.nodeGraphicsByPath) {
-    if (nextPaths.has(path)) continue;
-    runtime.nodeLayer.removeChild(graphic);
-    graphic.destroy();
-    runtime.nodeGraphicsByPath.delete(path);
+  if (removeMissing) {
+    for (const [path, graphic] of runtime.nodeGraphicsByPath) {
+      if (nextPaths.has(path)) continue;
+      runtime.nodeLayer.removeChild(graphic);
+      graphic.destroy();
+      runtime.nodeGraphicsByPath.delete(path);
+    }
   }
 
   nodes.forEach((node) => {
@@ -664,7 +807,8 @@ function drawEdge(layer: Graphics, edge: GraphRenderEdge, showArrows: boolean): 
 function updateGraphRevealFrame(
   runtime: PixiGraphRuntime,
   animationEpoch: number,
-  nowMs: number
+  nowMs: number,
+  totalMs: number
 ): GraphRevealFrame | null {
   if (runtime.revealEpoch !== animationEpoch) {
     runtime.revealEpoch = animationEpoch;
@@ -673,7 +817,7 @@ function updateGraphRevealFrame(
   if (runtime.revealStartedAtMs === null) return null;
 
   const elapsedMs = nowMs - runtime.revealStartedAtMs;
-  if (elapsedMs >= graphRevealTotalMs) {
+  if (elapsedMs >= totalMs) {
     runtime.revealStartedAtMs = null;
     return null;
   }
@@ -685,8 +829,15 @@ const graphRevealNodeFadeMs = 12;
 const graphRevealEdgeDelayMs = 3;
 const graphRevealEdgeFadeMs = 80;
 const graphRevealTotalMs = 15000;
+const graphLargeRevealTotalMs = 180;
 
-export function buildGraphRevealState(state: GraphRenderState, elapsedMs: number): GraphRenderState {
+function shouldUseLargeGraphReveal(nodeCount: number, edgeCount: number): boolean {
+  return nodeCount > 220 || edgeCount > 520;
+}
+
+export function buildGraphRevealState(state: GraphRenderState, elapsedMs: number, useLargeReveal = false): GraphRenderState {
+  if (useLargeReveal) return buildLargeGraphRevealState(state, elapsedMs);
+
   const nodeIndexByPath = new Map(state.nodes.map((node, index) => [node.path, index]));
   const nodeProgressByPath = new Map<string, number>();
   const nodes = state.nodes.map((node, index) => {
@@ -718,6 +869,28 @@ export function buildGraphRevealState(state: GraphRenderState, elapsedMs: number
     };
   });
   return { ...state, edges, nodes };
+}
+
+function buildLargeGraphRevealState(state: GraphRenderState, elapsedMs: number): GraphRenderState {
+  const progress = easeOutCubic(clampUnit(elapsedMs / graphLargeRevealTotalMs));
+  return {
+    ...state,
+    edges: state.edges.map((edge) => ({
+      ...edge,
+      alpha: edge.alpha * progress,
+      strokeWidth: edge.strokeWidth * progress,
+      x2: edge.x1 + (edge.x2 - edge.x1) * progress,
+      y2: edge.y1 + (edge.y2 - edge.y1) * progress
+    })),
+    nodes: state.nodes.map((node) => ({
+      ...node,
+      fillAlpha: node.fillAlpha * progress,
+      labelAlpha: node.labelAlpha * progress,
+      radius: node.radius * progress,
+      strokeAlpha: node.strokeAlpha * progress,
+      strokeWidth: node.strokeWidth * progress
+    }))
+  };
 }
 
 function clampUnit(value: number): number {
@@ -790,15 +963,18 @@ function interpolateGraphFramePoints(
 function updateHitLayer(
   runtime: PixiGraphRuntime,
   nodes: GraphRenderNode[],
-  options: PixiGraphInteractionOptions
+  options: PixiGraphInteractionOptions,
+  removeMissing: boolean
 ): void {
   const nextPaths = new Set(nodes.map((node) => node.path));
 
-  for (const [path, hit] of runtime.nodeHitByPath) {
-    if (nextPaths.has(path)) continue;
-    runtime.hitLayer.removeChild(hit);
-    hit.destroy();
-    runtime.nodeHitByPath.delete(path);
+  if (removeMissing) {
+    for (const [path, hit] of runtime.nodeHitByPath) {
+      if (nextPaths.has(path)) continue;
+      runtime.hitLayer.removeChild(hit);
+      hit.destroy();
+      runtime.nodeHitByPath.delete(path);
+    }
   }
 
   nodes.forEach((node) => {
@@ -854,48 +1030,68 @@ export function buildGraphNodeHitRadius(nodeRadius: number, viewScale: number): 
   return Math.round((Math.max(10, screenRadius + 4) / safeScale) * 10) / 10;
 }
 
-function updateLabelLayer(runtime: PixiGraphRuntime, state: GraphRenderState): void {
+function updateLabelLayer(runtime: PixiGraphRuntime, state: GraphRenderState, removeMissing: boolean): void {
   const visibleNodes = state.nodes.filter((node) => node.labelVisible);
   const visiblePaths = new Set(visibleNodes.map((node) => node.path));
 
-  for (const [path, label] of runtime.labelsByPath) {
-    if (visiblePaths.has(path)) continue;
-    runtime.labelLayer.removeChild(label);
-    label.destroy();
-    runtime.labelsByPath.delete(path);
+  if (removeMissing) {
+    for (const [path, label] of runtime.labelsByPath) {
+      if (visiblePaths.has(path)) continue;
+      runtime.labelLayer.removeChild(label);
+      label.destroy();
+      runtime.labelsByPath.delete(path);
+    }
   }
 
-  visibleNodes.forEach((node) => {
-    let label = runtime.labelsByPath.get(node.path);
-    if (!label) {
-      label = new runtime.Text({
-        resolution: graphLabelTextureResolution(runtime.viewScale),
-        style: {
-          fill: state.palette.text,
-          fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
-          fontSize: 10
-        },
-        text: node.name
-      }) as GraphLabelText;
-      label.anchor.set(0.5, 0);
-      label.eventMode = "none";
-      runtime.labelLayer.addChild(label);
-      runtime.labelsByPath.set(node.path, label);
-    }
-    const signature = buildGraphLabelDrawSignature(node, runtime.viewScale, state.palette.text);
-    if (label.relicSignature === signature) return;
+  visibleNodes.forEach((node) => updateGraphLabel(runtime, node, state.palette.text));
+}
 
-    label.text = node.name;
-    label.alpha = node.labelAlpha;
-    label.resolution = graphLabelTextureResolution(runtime.viewScale);
-    label.style.fill = state.palette.text;
-    label.style.fontSize = 10;
-    label.scale.set(graphLabelScreenScale(runtime.viewScale));
-    const placement = buildGraphLabelPlacement(node, runtime.viewScale);
-    label.x = placement.x;
-    label.y = placement.y;
-    label.relicSignature = signature;
-  });
+function updateLabelLayerPatch(runtime: PixiGraphRuntime, nodes: GraphRenderNode[]): void {
+  const textColor = runtime.renderCache?.state.palette.text ?? defaultGraphRenderPalette.text;
+  nodes
+    .filter((node) => node.labelVisible || runtime.labelsByPath.has(node.path))
+    .forEach((node) => updateGraphLabel(runtime, node, textColor));
+}
+
+function updateGraphLabel(runtime: PixiGraphRuntime, node: GraphRenderNode, textColor: number): void {
+  if (!node.labelVisible) {
+    const existingLabel = runtime.labelsByPath.get(node.path);
+    if (!existingLabel) return;
+    runtime.labelLayer.removeChild(existingLabel);
+    existingLabel.destroy();
+    runtime.labelsByPath.delete(node.path);
+    return;
+  }
+
+  let label = runtime.labelsByPath.get(node.path);
+  if (!label) {
+    label = new runtime.Text({
+      resolution: graphLabelTextureResolution(runtime.viewScale),
+      style: {
+        fill: textColor,
+        fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
+        fontSize: 10
+      },
+      text: node.name
+    }) as GraphLabelText;
+    label.anchor.set(0.5, 0);
+    label.eventMode = "none";
+    runtime.labelLayer.addChild(label);
+    runtime.labelsByPath.set(node.path, label);
+  }
+  const signature = buildGraphLabelDrawSignature(node, runtime.viewScale, textColor);
+  if (label.relicSignature === signature) return;
+
+  label.text = node.name;
+  label.alpha = node.labelAlpha;
+  label.resolution = graphLabelTextureResolution(runtime.viewScale);
+  label.style.fill = textColor;
+  label.style.fontSize = 10;
+  label.scale.set(graphLabelScreenScale(runtime.viewScale));
+  const placement = buildGraphLabelPlacement(node, runtime.viewScale);
+  label.x = placement.x;
+  label.y = placement.y;
+  label.relicSignature = signature;
 }
 
 function buildGraphLabelDrawSignature(node: GraphRenderNode, viewScale: number, textColor: number): string {

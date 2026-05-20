@@ -181,4 +181,30 @@ describe("useGraphSimulation", () => {
     expect(hook.result.current.points).toBe(nextPoints);
     expect(hook.result.current.pointsRef.current).toBe(nextPoints);
   });
+
+  it("geometry controllerで全体更新と局所更新を通知する", async () => {
+    const { hook } = renderSimulation();
+    const listener = vi.fn();
+
+    await waitFor(() => {
+      expect(hook.result.current.points).toHaveLength(2);
+    });
+    const unsubscribe = hook.result.current.geometryController.subscribe(listener);
+    hook.result.current.geometryController.changedPathsRef.current = new Set();
+
+    act(() => {
+      hook.result.current.geometryController.notifyChanged(new Set(["A.md"]));
+    });
+
+    expect(hook.result.current.geometryController.changedPathsRef.current).toEqual(new Set(["A.md"]));
+    expect(listener).toHaveBeenCalledTimes(1);
+
+    act(() => {
+      hook.result.current.setPoints(hook.result.current.points);
+    });
+
+    expect(hook.result.current.geometryController.changedPathsRef.current).toBeNull();
+    expect(listener).toHaveBeenCalledTimes(2);
+    unsubscribe();
+  });
 });

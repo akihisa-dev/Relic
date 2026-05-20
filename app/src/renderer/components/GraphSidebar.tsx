@@ -56,6 +56,7 @@ export function GraphPanel({ activeFilePath, onOpenFile, workspaceId }: GraphPan
             animationEpoch={animationEpoch}
             edges={filteredGraph.edges}
             focusedPath={focusedPath}
+            geometryController={graphCanvas.geometryController}
             groupByPath={groupByPath}
             isMotionAfterglow={isMotionAfterglow}
             isPanning={graphCanvas.isPanning}

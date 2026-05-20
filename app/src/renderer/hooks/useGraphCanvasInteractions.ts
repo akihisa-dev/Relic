@@ -1,4 +1,4 @@
-import { useMemo, useRef } from "react";
+import { useRef } from "react";
 import type { MutableRefObject, RefObject } from "react";
 
 import type { WorkspaceGraphEdge, WorkspaceGraphNode } from "../../shared/ipc";
@@ -7,11 +7,13 @@ import type { GraphForceSettings, GraphLayoutMode, GraphSimPoint, GraphViewBox }
 import { useGraphNodeInteractions } from "./useGraphNodeInteractions";
 import type { GraphNodeHandlers } from "./useGraphNodeInteractions";
 import { useGraphSimulation } from "./useGraphSimulation";
+import type { GraphGeometryController } from "./useGraphSimulation";
 import { useGraphViewportInteractions } from "./useGraphViewportInteractions";
 import type { GraphHandlers, GraphViewportController } from "./useGraphViewportInteractions";
 
 interface UseGraphCanvasInteractionsInput {
   edges: WorkspaceGraphEdge[];
+  fitKey?: string;
   focusedPath: string | null;
   forceSettings: GraphForceSettings;
   layoutMode: GraphLayoutMode;
@@ -29,6 +31,7 @@ export type { GraphNodeHandlers } from "./useGraphNodeInteractions";
 
 export function useGraphCanvasInteractions({
   edges,
+  fitKey: providedFitKey,
   focusedPath,
   forceSettings,
   layoutMode,
@@ -41,6 +44,7 @@ export function useGraphCanvasInteractions({
   zoom
 }: UseGraphCanvasInteractionsInput): {
   graphHandlers: GraphHandlers;
+  geometryController: GraphGeometryController;
   isPanning: boolean;
   nodeHandlers: GraphNodeHandlers;
   points: GraphSimPoint[];
@@ -60,11 +64,7 @@ export function useGraphCanvasInteractions({
     pauseSimulationRef,
     pinnedPathRef: pinnedPathRef as MutableRefObject<string | null>
   });
-  const fitKey = useMemo(() => {
-    const nodeKey = nodes.map((node) => node.path).join("\u0000");
-    const edgeKey = edges.map((edge) => `${edge.sourcePath}->${edge.targetPath}`).join("\u0000");
-    return `${layoutMode}\u0000${nodeKey}\u0000${edgeKey}`;
-  }, [edges, layoutMode, nodes]);
+  const fitKey = providedFitKey ?? `${layoutMode}\u0000${nodes.length}\u0000${edges.length}`;
   const viewport = useGraphViewportInteractions({
     fitKey,
     onBackgroundClick: () => setSelectedPath(null),
@@ -77,6 +77,7 @@ export function useGraphCanvasInteractions({
     edges,
     forceSettings,
     getGraphDelta: viewport.getGraphDelta,
+    geometryController: simulation.geometryController,
     onOpenFile,
     pinnedPathRef: pinnedPathRef as MutableRefObject<string | null>,
     pointsRef: simulation.pointsRef,
@@ -85,10 +86,11 @@ export function useGraphCanvasInteractions({
     setPoints: simulation.setPoints,
     setSelectedPath
   });
-  const relatedPaths = useMemo(() => collectRelatedGraphPaths(edges, focusedPath), [edges, focusedPath]);
+  const relatedPaths = focusedPath ? collectRelatedGraphPaths(edges, focusedPath) : emptyRelatedPaths;
 
   return {
     graphHandlers: viewport.graphHandlers,
+    geometryController: simulation.geometryController,
     isPanning: viewport.isPanning,
     nodeHandlers,
     points: simulation.points,
@@ -99,3 +101,5 @@ export function useGraphCanvasInteractions({
     viewBox: viewport.viewBox
   };
 }
+
+const emptyRelatedPaths = new Set<string>();

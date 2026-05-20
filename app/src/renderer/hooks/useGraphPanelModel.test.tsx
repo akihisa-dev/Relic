@@ -96,7 +96,7 @@ describe("useGraphPanelModel", () => {
     expect(hook.result.current.filteredGraph.edges).toEqual([]);
   });
 
-  it("hoverでfocusedPathとmotionPathを更新し、選択状態は描画focusに使わない", () => {
+  it("hoverではReact描画状態を更新せず、選択状態も描画focusに使わない", () => {
     resetGraphStore({
       graph,
       loadedWorkspaceId: "workspace-1",
@@ -110,8 +110,8 @@ describe("useGraphPanelModel", () => {
       hook.result.current.graphCanvas.nodeHandlers.onPointerEnter("folder/Beta.md");
     });
 
-    expect(hook.result.current.focusedPath).toBe("folder/Beta.md");
-    expect(hook.result.current.motionPath).toBe("folder/Beta.md");
+    expect(hook.result.current.focusedPath).toBeNull();
+    expect(hook.result.current.motionPath).toBeNull();
     expect(hook.result.current.isMotionAfterglow).toBe(false);
     expect(hook.result.current.motionEpoch).toBe(0);
 
