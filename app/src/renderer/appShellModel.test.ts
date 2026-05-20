@@ -25,7 +25,6 @@ const emptyPane = (activeTabId: string | null = null): PaneState => ({
 const tabs: Record<string, Tab> = {
   "gantt-charts": { chartId: "charts", id: "gantt-charts", kind: "gantt", name: "Chronicle" },
   "gantt-custom": { chartId: "custom", id: "gantt-custom", kind: "gantt", name: "Custom" },
-  "panel-dashboard": { id: "panel-dashboard", kind: "panel", name: "Dashboard", panel: "dashboard" },
   "panel-tools": { id: "panel-tools", kind: "panel", name: "Tools", panel: "tools" },
   "tab-note": { content: "Note", id: "tab-note", kind: "file", name: "Note", path: "Folder/Note.md" }
 };
@@ -50,23 +49,23 @@ describe("appShellModel", () => {
 
   it("collects open file paths and panel tab ids", () => {
     expect(openFilePathsForTabs(tabs)).toEqual(new Set(["Folder/Note.md"]));
-    expect(openPanelTabIdsForTabs(tabs)).toEqual(new Set(["dashboard", "tools"]));
+    expect(openPanelTabIdsForTabs(tabs)).toEqual(new Set(["tools"]));
   });
 
   it("detects active panel and chart tabs from panes", () => {
     expect(activePanelTabIdsForPanes(
-      emptyPane("panel-dashboard"),
+      emptyPane("panel-tools"),
       emptyPane("gantt-charts"),
       tabs
-    )).toEqual(new Set(["dashboard"]));
+    )).toEqual(new Set(["tools"]));
     expect(isChartTabOpenInTabs(tabs)).toBe(true);
     expect(isChartTabActiveInPanes(
-      emptyPane("panel-dashboard"),
+      emptyPane("panel-tools"),
       emptyPane("gantt-charts"),
       tabs
     )).toBe(true);
     expect(isChartTabActiveInPanes(
-      emptyPane("panel-dashboard"),
+      emptyPane("panel-tools"),
       emptyPane("gantt-custom"),
       tabs
     )).toBe(false);
@@ -76,9 +75,7 @@ describe("appShellModel", () => {
     const labels = panelLabelsForTranslator(createTranslator("en"));
 
     expect(labels).toEqual({
-      dashboard: "Dashboard",
       frontmatter: "Frontmatter",
-      graph: "Graph",
       settings: "Settings",
       tools: "Tools"
     });
@@ -87,8 +84,6 @@ describe("appShellModel", () => {
   it("filters and splits rail views without changing order", () => {
     const railViews: AppRailView[] = [
       { icon: null, id: "files", label: "Files" },
-      { icon: null, id: "dashboard", label: "Dashboard" },
-      { icon: null, id: "graph", label: "Graph" },
       { icon: null, id: "tools", label: "Tools" },
       { icon: null, id: "frontmatter", label: "Frontmatter" },
       { icon: null, id: "chronicle", label: "Chronicle" },
@@ -102,8 +97,8 @@ describe("appShellModel", () => {
     });
     const split = splitRailViews(enabled);
 
-    expect(enabled.map((view) => view.id)).toEqual(["files", "dashboard", "graph", "chronicle", "settings"]);
-    expect(split.primaryRailViews.map((view) => view.id)).toEqual(["files", "dashboard", "graph"]);
+    expect(enabled.map((view) => view.id)).toEqual(["files", "chronicle", "settings"]);
+    expect(split.primaryRailViews.map((view) => view.id)).toEqual(["files"]);
     expect(split.chartRailView?.id).toBe("chronicle");
     expect(split.panelRailViews.map((view) => view.id)).toEqual(["settings"]);
   });

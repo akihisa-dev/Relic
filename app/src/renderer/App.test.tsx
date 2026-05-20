@@ -50,51 +50,6 @@ describe("App", () => {
     expect(await screen.findByRole("button", { name: /読書メモ/ })).toBeInTheDocument();
   });
 
-  it("レールからグラフビューを開き、検索結果をPixi描画hostへ反映できる", async () => {
-    const getWorkspaceGraph = vi.fn().mockResolvedValue({
-      ok: true,
-      value: {
-        edges: [{ sourcePath: "A.md", targetPath: "B.md" }],
-        nodes: [
-          { folder: "", name: "A", path: "A.md", tags: ["資料"] },
-          { folder: "", name: "B", path: "B.md", tags: [] }
-        ]
-      }
-    });
-    const readMarkdownFile = vi.fn().mockResolvedValue({
-      ok: true,
-      value: { content: "A body", name: "A", path: "A.md" }
-    });
-    window.relic = makeRelicApi({
-      getWorkspaceGraph,
-      getWorkspaceState: vi.fn().mockResolvedValue({
-        ok: true,
-        value: withWorkspace
-      }),
-      readMarkdownFile
-    });
-
-    const { container } = await renderApp();
-    fireEvent.click(await screen.findByRole("button", { name: "グラフ" }));
-
-    expect(getWorkspaceGraph).toHaveBeenCalled();
-    expect(await screen.findByText("グラフ", { selector: ".pane-tab-name" })).toBeInTheDocument();
-    expect(screen.getByTitle("最小化")).toBeInTheDocument();
-    expect(container.querySelector(".graph-panel")).toContainElement(screen.getByPlaceholderText("ファイル名・パス"));
-    expect(await screen.findByText("2 ノード / 1 リンク")).toBeInTheDocument();
-
-    const graphSurface = screen.getByRole("img", { name: "Graph" });
-    expect(graphSurface).toHaveAttribute("data-renderer", "pixi");
-    expect(graphSurface).toHaveAttribute("data-node-count", "2");
-    expect(graphSurface).toHaveAttribute("data-edge-count", "1");
-
-    fireEvent.change(screen.getByPlaceholderText("ファイル名・パス"), { target: { value: "A" } });
-    expect(screen.getByText("1 ノード / 0 リンク")).toBeInTheDocument();
-    expect(graphSurface).toHaveAttribute("data-node-count", "1");
-    expect(graphSurface).toHaveAttribute("data-edge-count", "0");
-    expect(readMarkdownFile).not.toHaveBeenCalled();
-  });
-
   it("ファイルツリーのノートをクリックするとタブが開く", async () => {
     window.relic = makeRelicApi({
       getWorkspaceState: vi.fn().mockResolvedValue({

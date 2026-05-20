@@ -71,14 +71,9 @@ export function AppRail({
       {primaryRailViews.map((view) => (
         <button
           aria-label={view.label}
-          className={primaryRailButtonClass(view, activePanelTabIds, openPanelTabIds, activeSidebarView, isSidebarOpen)}
+          className={primaryRailButtonClass(view, activeSidebarView, isSidebarOpen)}
           key={view.id}
           onClick={(event) => {
-            if (view.id === "graph" || view.id === "dashboard") {
-              onPanelButton(view.id, view.label, event);
-              return;
-            }
-
             if (view.id === "files" && activeSidebarView === "files" && isSidebarOpen) {
               onCloseSidebar();
               return;
@@ -143,14 +138,8 @@ export function AppRail({
 
 function primaryRailButtonClass(
   view: AppRailView,
-  activePanelTabIds: Set<PanelTabKind>,
-  openPanelTabIds: Set<PanelTabKind>,
   activeSidebarView: SidebarView,
   isSidebarOpen: boolean
 ): string {
-  if (view.id === "graph" || view.id === "dashboard") {
-    return `rail-button${activePanelTabIds.has(view.id) ? " active" : openPanelTabIds.has(view.id) ? " open" : ""}`;
-  }
-
   return `rail-button${view.id === activeSidebarView && isSidebarOpen ? " active" : ""}`;
 }

@@ -139,23 +139,6 @@ export interface WorkspaceTagSummary {
   tag: string;
 }
 
-export interface WorkspaceGraphNode {
-  folder: string;
-  name: string;
-  path: string;
-  tags: string[];
-}
-
-export interface WorkspaceGraphEdge {
-  sourcePath: string;
-  targetPath: string;
-}
-
-export interface WorkspaceGraph {
-  edges: WorkspaceGraphEdge[];
-  nodes: WorkspaceGraphNode[];
-}
-
 export interface WorkspaceSearchResult {
   fileName: string;
   lineNumber: number | null;

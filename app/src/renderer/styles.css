@@ -2,9 +2,8 @@
 @import "./styles/shell-sidebar.css";
 @import "./styles/file-tree-search.css";
 @import "./styles/workspace-editor.css";
-@import "./styles/dashboard.css";
 @import "./styles/preview-editor.css";
 @import "./styles/right-panel.css";
 @import "./styles/settings.css";
-@import "./styles/chronicle-graph.css";
+@import "./styles/chronicle.css";
 @import "./styles/theme-motion.css";
