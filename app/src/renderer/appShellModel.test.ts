@@ -25,7 +25,7 @@ const emptyPane = (activeTabId: string | null = null): PaneState => ({
 const tabs: Record<string, Tab> = {
   "timeline-charts": { chartId: "charts", id: "timeline-charts", kind: "timeline", name: "Timeline" },
   "timeline-custom": { chartId: "custom", id: "timeline-custom", kind: "timeline", name: "Custom" },
-  "panel-timeline-settings": { id: "panel-timeline-settings", kind: "panel", name: "Timeline Settings", panel: "timeline-settings" },
+  "panel-calendar-settings": { id: "panel-calendar-settings", kind: "panel", name: "Calendar Settings", panel: "calendar-settings" },
   "panel-frontmatter": { id: "panel-frontmatter", kind: "panel", name: "Properties", panel: "frontmatter" },
   "panel-tools": { id: "panel-tools", kind: "panel", name: "Tools", panel: "tools" },
   "tab-note": { content: "Note", id: "tab-note", kind: "card", name: "Note", path: "CardFolder/Note.md" }
@@ -51,7 +51,7 @@ describe("appShellModel", () => {
 
   it("collects open card paths and panel tab ids", () => {
     expect(openCardPathsForTabs(tabs)).toEqual(new Set(["CardFolder/Note.md"]));
-    expect(openPanelTabIdsForTabs(tabs)).toEqual(new Set(["timeline-settings", "frontmatter", "tools"]));
+    expect(openPanelTabIdsForTabs(tabs)).toEqual(new Set(["calendar-settings", "frontmatter", "tools"]));
   });
 
   it("detects active panel and chart tabs from panes", () => {
@@ -77,7 +77,7 @@ describe("appShellModel", () => {
     const labels = panelLabelsForTranslator(createTranslator("en"));
 
     expect(labels).toEqual({
-      "timeline-settings": "Timeline Settings",
+      "calendar-settings": "Calendar Settings",
       frontmatter: "Properties",
       settings: "Settings",
       tools: "Tools"
@@ -90,7 +90,7 @@ describe("appShellModel", () => {
       { icon: null, id: "tools", label: "Tools" },
       { icon: null, id: "frontmatter", label: "Properties" },
       { icon: null, id: "timeline", label: "Timeline" },
-      { icon: null, id: "timeline-settings", label: "Timeline Settings" },
+      { icon: null, id: "calendar-settings", label: "Calendar Settings" },
       { icon: null, id: "settings", label: "Settings" }
     ];
 
@@ -101,9 +101,9 @@ describe("appShellModel", () => {
     });
     const split = splitRailViews(enabled);
 
-    expect(enabled.map((view) => view.id)).toEqual(["cards", "timeline", "timeline-settings", "settings"]);
+    expect(enabled.map((view) => view.id)).toEqual(["cards", "timeline", "calendar-settings", "settings"]);
     expect(split.primaryRailViews.map((view) => view.id)).toEqual(["cards"]);
     expect(split.chartRailView?.id).toBe("timeline");
-    expect(split.panelRailViews.map((view) => view.id)).toEqual(["timeline-settings", "settings"]);
+    expect(split.panelRailViews.map((view) => view.id)).toEqual(["calendar-settings", "settings"]);
   });
 });

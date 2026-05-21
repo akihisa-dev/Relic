@@ -10,7 +10,7 @@ import type {
   CardbookTimelineChart,
   CardbookState
 } from "../../shared/ipc";
-import { TimelineSettingsSidebar } from "../components/TimelineSettingsSidebar";
+import { CalendarSettingsSidebar } from "../components/CalendarSettingsSidebar";
 import { TimelineView } from "../components/TimelineSidebar";
 import { FrontmatterSidebar } from "../components/FrontmatterSidebar";
 import { SettingsSidebar } from "../components/SettingsSidebar";
@@ -70,8 +70,8 @@ export function useAppTabRenderers({
       );
     }
 
-    if (panel === "timeline-settings") {
-      return <TimelineSettingsSidebar />;
+    if (panel === "calendar-settings") {
+      return <CalendarSettingsSidebar />;
     }
 
     return (

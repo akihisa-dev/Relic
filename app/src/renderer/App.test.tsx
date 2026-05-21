@@ -593,7 +593,7 @@ describe("App", () => {
     expect(useEditorStore.getState().tabs["panel-frontmatter"]).toBeDefined();
   });
 
-  it("レールの年表設定ボタンから専用画面を開ける", async () => {
+  it("レールの暦設定ボタンから専用画面を開ける", async () => {
     window.relic = makeRelicApi({
       getCardbookState: vi.fn().mockResolvedValue({ ok: true, value: withCardbook })
     });
@@ -602,16 +602,16 @@ describe("App", () => {
 
     await screen.findByText("Notes");
 
-    fireEvent.click(screen.getByRole("button", { name: "年表設定" }));
+    fireEvent.click(screen.getByRole("button", { name: "暦設定" }));
 
     const activeTabId = useEditorStore.getState().leftPane.activeTabId;
-    expect(activeTabId).toBe("panel-timeline-settings");
+    expect(activeTabId).toBe("panel-calendar-settings");
     expect(useEditorStore.getState().tabs[activeTabId!]).toMatchObject({
       kind: "panel",
-      panel: "timeline-settings"
+      panel: "calendar-settings"
     });
-    expect(screen.getByRole("heading", { name: "年表設定" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "年表設定" })).toHaveClass("active");
+    expect(screen.getByRole("heading", { name: "暦設定" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "暦設定" })).toHaveClass("active");
   });
 
   it("レールのTimelineボタンからtimelineを持つカードを表示できる", async () => {

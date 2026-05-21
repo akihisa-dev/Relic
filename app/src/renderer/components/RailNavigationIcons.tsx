@@ -52,6 +52,6 @@ export const sidebarViewDefs: Array<{ id: RailViewId; labelKey: TranslationKey; 
   { id: "tools", labelKey: "nav.tools", icon: <IconTools /> },
   { id: "frontmatter", labelKey: "nav.frontmatter", icon: <IconFrontmatter /> },
   { id: "timeline", labelKey: "nav.timeline", icon: <IconTimeline /> },
-  { id: "timeline-settings", labelKey: "nav.timelineSettings", icon: <IconTimeline /> },
+  { id: "calendar-settings", labelKey: "nav.calendarSettings", icon: <IconTimeline /> },
   { id: "settings", labelKey: "nav.settings", icon: <IconSettings /> }
 ];

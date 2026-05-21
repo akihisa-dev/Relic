@@ -24,7 +24,7 @@ describe("paneViewModel", () => {
     const timelineTab: Tab = { chartId: "timeline", id: "timeline-timeline", kind: "timeline", name: "Timeline" };
 
     expect(panelTabLabel("frontmatter", t)).toBe("Properties");
-    expect(panelTabLabel("timeline-settings", t)).toBe("Timeline Settings");
+    expect(panelTabLabel("calendar-settings", t)).toBe("Calendar Settings");
     expect(panelTabLabel("settings", t)).toBe("Settings");
     expect(panelTabLabel("tools", t)).toBe("Tools");
     expect(paneTabLabel(panelTab, t)).toBe("Properties");
