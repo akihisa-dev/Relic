@@ -30,7 +30,7 @@ export function openCardPathsForTabs(tabs: Record<string, Tab>): Set<string> {
 
 export function panelLabelsForTranslator(t: Translator): Record<PanelTabKind, string> {
   return {
-    "timeline-settings": t("nav.timelineSettings"),
+    "calendar-settings": t("nav.calendarSettings"),
     frontmatter: t("nav.frontmatter"),
     settings: t("nav.settings"),
     tools: t("nav.tools")

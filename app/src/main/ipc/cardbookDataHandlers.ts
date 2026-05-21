@@ -88,7 +88,7 @@ export function registerCardbookDataHandlers(): void {
   ipcMain.handle(saveCardbookTimelineChartsChannel, async (_event, input: unknown) => {
     try {
       if (!isTimelineChartsInput(input)) {
-        return fail("INVALID_TIMELINE_CHARTS", "年表設定が正しくありません。");
+        return fail("INVALID_TIMELINE_CHARTS", "暦設定が正しくありません。");
       }
 
       const context = await getActiveCardbookContext();
@@ -112,7 +112,7 @@ export function registerCardbookDataHandlers(): void {
     } catch (error) {
       return fail(
         "CARDBOOK_TIMELINE_SAVE_FAILED",
-        "年表設定を保存できませんでした。",
+        "暦設定を保存できませんでした。",
         ipcErrorDetails(error)
       );
     }

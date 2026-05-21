@@ -19,7 +19,7 @@ import {
   updateCardTabMetaState
 } from "./editorStoreModel";
 
-export type PanelTabKind = "tools" | "frontmatter" | "timeline-settings" | "settings";
+export type PanelTabKind = "tools" | "frontmatter" | "calendar-settings" | "settings";
 
 export interface CardTab {
   content: string;
