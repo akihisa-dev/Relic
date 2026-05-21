@@ -38,9 +38,9 @@ AIは `AI.md` と `docs/product/project.md` の次にこのファイルを読み
 ## 現在フェーズ
 
 ```yaml
-current: P29
-summary: 再考
-checklist: phases/P29-reconsideration.md
+current: P30
+summary: 再構成・再実装
+checklist: phases/P30-user-directed-work.md
 ```
 
 ---
@@ -78,7 +78,8 @@ checklist: phases/P29-reconsideration.md
 | P26 | デザイン・UI刷新 | done | `phases/P26-design-ui-refresh.md`, `conventions.md`, `testing.md`, `../ui/DESIGN.md`, `../ui/screens-macos.md`, `../ui/navigation.md`, 必要に応じて `../spec/`, `../architecture/overview.md` |
 | P27 | 不具合修正・パフォーマンス改善 | done | `phases/P27-bugfix-performance.md`, `conventions.md`, `testing.md`, 必要に応じて `../spec/`, `../ui/`, `../architecture/overview.md` |
 | P28 | グラフビュー安定化 | done | `phases/P28-graph-view-stabilization.md`, `conventions.md`, `testing.md`, 必要に応じて `../spec/`, `../ui/`, `../architecture/overview.md` |
-| P29 | 再考 | current | `phases/P29-reconsideration.md`, 必要に応じて `../spec/`, `../product/PLAN.md`, `../product/principles.md`, `../ui/`, `../architecture/overview.md`, `conventions.md`, `testing.md` |
+| P29 | 再考 | done | `phases/P29-reconsideration.md`, 必要に応じて `../spec/`, `../product/PLAN.md`, `../product/principles.md`, `../ui/`, `../architecture/overview.md`, `conventions.md`, `testing.md` |
+| P30 | 再構成・再実装 | current | `phases/P30-user-directed-work.md`, 必要に応じて `../spec/`, `../product/PLAN.md`, `../product/principles.md`, `../ui/`, `../architecture/overview.md`, `conventions.md`, `testing.md` |
 
 ### 取り下げた非正当フェーズ
 
