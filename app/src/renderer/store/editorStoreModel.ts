@@ -1,5 +1,5 @@
-import type { EditorSettings, MarkdownFileContent } from "../../shared/ipc";
-import type { FileTab, GanttTab, PaneId, PaneState, PanelTab, PanelTabKind, Tab } from "./editorStore";
+import type { EditorSettings, MarkdownCardContent } from "../../shared/ipc";
+import type { CardTab, TimelineTab, PaneId, PaneState, PanelTab, PanelTabKind, Tab } from "./editorStore";
 
 export interface EditorStoreModelState {
   editorSettings: EditorSettings;
@@ -14,13 +14,13 @@ export function emptyPane(): PaneState {
   return { activeTabId: null, history: [], tabIds: [] };
 }
 
-export function openFileTabState(
+export function openCardTabState(
   state: EditorStoreModelState,
   pane: PaneId,
-  file: MarkdownFileContent,
+  card: MarkdownCardContent,
   id: string
 ): Partial<EditorStoreModelState> {
-  const existing = Object.values(state.tabs).find((tab) => tab.kind === "file" && tab.path === file.path);
+  const existing = Object.values(state.tabs).find((tab) => tab.kind === "card" && tab.path === card.path);
   const paneKey = paneKeyFor(pane);
   const paneState = state[paneKey];
 
@@ -32,7 +32,7 @@ export function openFileTabState(
     };
   }
 
-  const newTab: FileTab = { content: file.content, id, kind: "file", name: file.name, path: file.path };
+  const newTab: CardTab = { content: card.content, id, kind: "card", name: card.name, path: card.path };
 
   return {
     focusedPane: pane,
@@ -68,18 +68,18 @@ export function openPanelTabState(
   };
 }
 
-export function openGanttTabState(
+export function openTimelineTabState(
   state: EditorStoreModelState,
   pane: PaneId,
   chart: { id: string; name: string }
 ): Partial<EditorStoreModelState> {
-  const id = `gantt-${chart.id}`;
+  const id = `timeline-${chart.id}`;
   const paneKey = paneKeyFor(pane);
   const paneState = state[paneKey];
   const existing = state.tabs[id];
   const nextTabs = existing
     ? { ...state.tabs, [id]: { ...existing, name: chart.name } }
-    : { ...state.tabs, [id]: { chartId: chart.id, id, kind: "gantt" as const, name: chart.name } satisfies GanttTab };
+    : { ...state.tabs, [id]: { chartId: chart.id, id, kind: "timeline" as const, name: chart.name } satisfies TimelineTab };
 
   const nextPane = activateTab(ensureTabInPane(paneState, id), id);
 
@@ -134,24 +134,24 @@ export function setTabActiveState(
   };
 }
 
-export function updateFileTabContentState(
+export function updateCardTabContentState(
   state: EditorStoreModelState,
   tabId: string,
   content: string
 ): Partial<EditorStoreModelState> | EditorStoreModelState {
   const tab = state.tabs[tabId];
-  if (tab?.kind !== "file") return state;
+  if (tab?.kind !== "card") return state;
 
   return { tabs: { ...state.tabs, [tabId]: { ...tab, content } } };
 }
 
-export function updateFileTabMetaState(
+export function updateCardTabMetaState(
   state: EditorStoreModelState,
   tabId: string,
-  meta: Pick<FileTab, "name" | "path">
+  meta: Pick<CardTab, "name" | "path">
 ): Partial<EditorStoreModelState> | EditorStoreModelState {
   const tab = state.tabs[tabId];
-  if (tab?.kind !== "file") return state;
+  if (tab?.kind !== "card") return state;
 
   return { tabs: { ...state.tabs, [tabId]: { ...tab, ...meta } } };
 }

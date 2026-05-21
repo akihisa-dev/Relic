@@ -11,7 +11,7 @@ AIがコードを書く際は、まずこのカードで実装境界を確認し
 - 対象OSは macOS / Windows とする
 - 仕様は `docs/spec/`、画面構成は `docs/ui/`、データ構造は `docs/architecture/data-model.md`、技術スタックは `docs/tech/stack.md` を正とする
 - 開発位置とフェーズ順は `docs/dev/phases.md` に従う
-- ファイルシステム・ネットワーク・設定保存に触る処理はメインプロセスに置く
+- カードシステム・ネットワーク・設定保存に触る処理はメインプロセスに置く
 - UI・エディタ・一時的な画面状態はレンダラープロセスに置く
 - レンダラーからOS機能へ直接アクセスしない。必ずpreloadで公開したAPIとIPCを通す
 - ユーザーのカードを勝手に独自形式へ変換しない
@@ -31,15 +31,15 @@ AIがコードを書く際は、まずこのカードで実装境界を確認し
 |------|------|
 | `docs/` | 計画・仕様・設計・開発メモ |
 | `app/` | Electron / React アプリ本体 |
-| `app/src/main/` | Electronメインプロセス。カード操作・設定保存・検索/リンク/タグ/Chronicle生成・IPCハンドラ |
-| `app/src/main/workspace/` | カードブック登録・切り替え・復元 |
-| `app/src/main/files/` | カード・カードフォルダ操作、検索、リンク、タグ、Chronicleなどカードブック内データの読み取りと生成 |
-| `app/src/main/ipc/` | preload APIに接続するIPCハンドラ、active workspace取得、入力検証 |
+| `app/src/main/` | Electronメインプロセス。カード操作・設定保存・検索/リンク/タグ/Timeline生成・IPCハンドラ |
+| `app/src/main/cardbook/` | カードブック登録・切り替え・復元 |
+| `app/src/main/cards/` | カード・カードフォルダ操作、検索、リンク、タグ、Timelineなどカードブック内データの読み取りと生成 |
+| `app/src/main/ipc/` | preload APIに接続するIPCハンドラ、active cardbook取得、入力検証 |
 | `app/src/main/settings/` | アプリ設定・カードブック設定 |
 | `app/src/preload/` | レンダラーへ公開する安全なAPI |
 | `app/src/renderer/` | React UI・CodeMirror・画面状態 |
 | `app/src/renderer/components/` | Reactコンポーネント。画面部品、パネルタブ、カードサイドバー、エディタ周辺UI |
-| `app/src/renderer/hooks/` | renderer側のUI操作、カード操作連携、Chronicle操作などのReact hook |
+| `app/src/renderer/hooks/` | renderer側のUI操作、カード操作連携、Timeline操作などのReact hook |
 | `app/src/renderer/store/` | Zustandによるタブ、ペイン、サイドバー、右パネルなどのUI状態 |
 | `app/src/renderer/locales/` | UI文言の辞書 |
 | `app/src/shared/` | メイン / レンダラーで共有する型・定数・純粋関数 |
@@ -53,13 +53,13 @@ AIがコードを書く際は、まずこのカードで実装境界を確認し
 
 | 対象 | 形式 | 例 |
 |------|------|----|
-| Reactコンポーネント | PascalCase | `FileTree.tsx` |
-| TypeScriptカード | camelCase | `workspaceStore.ts` |
-| 型・interface | PascalCase | `Workspace`, `MarkdownFile` |
-| 関数 | camelCase | `openWorkspace` |
+| Reactコンポーネント | PascalCase | `CardTree.tsx` |
+| TypeScriptカード | camelCase | `cardbookStore.ts` |
+| 型・interface | PascalCase | `Cardbook`, `MarkdownCard` |
+| 関数 | camelCase | `openCardbook` |
 | 定数 | camelCase または UPPER_SNAKE_CASE | `defaultEditorSettings`, `MAX_FRONTMATTER_FIELDS` |
-| IPCチャンネル定数 | camelCase + `Channel` | `openWorkspaceChannel` |
-| テストファイル | 対象ファイル名 + `.test.ts` | `linkParser.test.ts` |
+| IPCチャンネル定数 | camelCase + `Channel` | `openCardbookChannel` |
+| テストカード | 対象カード名 + `.test.ts` | `linkParser.test.ts` |
 
 UIに表示する日本語文言は、後から集約できるようにコンポーネント内へ散らしすぎない。
 
@@ -81,7 +81,7 @@ UIに表示する日本語文言は、後から集約できるようにコンポ
 
 ## Electron / IPC
 
-- メインプロセスは、ファイルシステム、検索・リンク・タグ・Chronicle用データ生成、アプリ設定の責務を持つ
+- メインプロセスは、カードシステム、検索・リンク・タグ・Timeline用データ生成、アプリ設定の責務を持つ
 - レンダラーは、画面表示とユーザー操作の責務を持つ
 - preloadで公開するAPIは、仕様上の操作単位に限定する
 - レンダラーから任意のカードパスを直接操作できる汎用APIを作らない
@@ -104,7 +104,7 @@ UIに表示する日本語文言は、後から集約できるようにコンポ
 ## React / UI
 
 - 画面は `docs/ui/screens-macos.md` のコンポーネント単位に分ける
-- メインエリアは、カードタブ・パネルタブ・Chronicleタブをタブ式に管理する
+- メインエリアは、カードタブ・パネルタブ・Timelineタブをタブ式に管理する
 - カードツリーと検索はカードサイドバー内、設定や補助機能はパネルタブとして扱う
 - UI状態と永続化データを混ぜない
 - React状態管理にはZustandを使う。ただし、タブ・ペイン・サイドバー・右パネル・アクティブカードブック・UI設定反映などの横断的UI状態に限定する
@@ -149,7 +149,7 @@ UIに表示する日本語文言は、後から集約できるようにコンポ
 - サイドバー表示では `.md` 拡張子を隠す
 - 作成時は `.md` 拡張子を自動付与する
 - サイドバーの主要管理対象は `.md` カードとカードフォルダにする
-- Markdown画像記法は本文から参照される補助表現として扱い、画像ファイル単体を主要管理対象にしない
+- Markdown画像記法は本文から参照される補助表現として扱い、画像カード単体を主要管理対象にしない
 - PDFなど、Markdown本文の添付画像ではない形式はサイドバーに表示しない
 - カードブック準備時にRelic専用の必須カードフォルダを自動作成しない
 - Markdown本文から参照される画像記法は専用添付カードフォルダを前提にせず、ライブプレビューでは画像プレースホルダーとして扱う
@@ -164,7 +164,7 @@ UIに表示する日本語文言は、後から集約できるようにコンポ
 
 ## 検索・リンク・タグ
 
-- 検索・リンク・タグ・Chronicle用データは、必要なタイミングでメインプロセス側がカードブック内のMarkdownを読み取って生成する
+- 検索・リンク・タグ・Timeline用データは、必要なタイミングでメインプロセス側がカードブック内のMarkdownを読み取って生成する
 - 専用の永続インデックスカードやカードブック内のRelic管理カードを作らない
 - カード保存・作成・削除・リネーム・移動後は、次の読み取り時に現在のカードを正として扱う
 - 検索・リンク・タグの対象は現在のカードブック内に限定する
@@ -177,7 +177,7 @@ UIに表示する日本語文言は、後から集約できるようにコンポ
 - レンダラーへ公開する機能は `preload` の `window.relic` API に限定し、Node.js APIを直接公開しない
 - IPCハンドラは入力型を検証し、カード操作は現在のカードブック内に限定する
 - 外部URLを開く処理は許可リスト方式にする
-- MarkdownプレビューはHTMLをサニタイズし、画像記法はプレースホルダー化する。外部URLやローカル画像ファイルを実画像として読み込まない
+- MarkdownプレビューはHTMLをサニタイズし、画像記法はプレースホルダー化する。外部URLやローカル画像カードを実画像として読み込まない
 - `.env`、`.npmrc`、秘密鍵、証明書、ローカルAI/エディタ設定はリポジトリ管理に含めない
 - 依存関係監査は外部 registry に依存情報を送るため、実行前にユーザーの明示許可を得る
 
@@ -188,9 +188,9 @@ UIに表示する日本語文言は、後から集約できるようにコンポ
 - アプリ設定とカードブック設定を分ける
 - 設定はElectronの `userData` 配下にJSONで保存し、`app/src/main/settings/` の自前設定サービスで読み書きする
 - アプリ設定は `app-settings.json` に保存する
-- カードブック設定は `workspaces/{workspaceId}.json` に保存する
+- カードブック設定は `cardbooks/{cardbookId}.json` に保存する
 - アプリ設定にはテーマ・エディタ表示設定・機能トグル・前回カードブックなどを保存する
-- カードブック設定にはカードブックパス、ピン留め、Chronicleなど、カードブック固有の値を保存する
+- カードブック設定にはカードブックパス、ピン留め、Timelineなど、カードブック固有の値を保存する
 - 機能トグルは料金モデルと結びつけない
 - 機能トグル対象はカード加工ツール / プロパティ / 右パネルに限定する
 

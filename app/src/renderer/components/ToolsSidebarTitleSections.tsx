@@ -24,12 +24,12 @@ export function TitleListToolSection({
       <div className="links-panel-subheading">{t("tools.titleList")}</div>
       <div className="search-block">
         <label className="setting-row">
-          <span>{t("tools.filterFolder")}</span>
+          <span>{t("tools.filterCardFolder")}</span>
           <input
-            onChange={(e) => onUpdate("filterFolder", e.target.value)}
+            onChange={(e) => onUpdate("filterCardFolder", e.target.value)}
             placeholder={t("tools.placeholderAll")}
             type="text"
-            value={draft.filterFolder}
+            value={draft.filterCardFolder}
           />
         </label>
         <label className="setting-row">
@@ -43,16 +43,16 @@ export function TitleListToolSection({
           </select>
         </label>
         <label className="setting-row">
-          <span>{t("tools.outputFolder")}</span>
+          <span>{t("tools.outputCardFolder")}</span>
           <input
-            onChange={(e) => onUpdate("outputFolder", e.target.value)}
+            onChange={(e) => onUpdate("outputCardFolder", e.target.value)}
             placeholder={t("tools.placeholderRoot")}
             type="text"
-            value={draft.outputFolder}
+            value={draft.outputCardFolder}
           />
         </label>
         <label className="setting-row">
-          <span>{t("tools.fileName")}</span>
+          <span>{t("tools.cardName")}</span>
           <input
             onChange={(e) => onUpdate("outputName", e.target.value)}
             type="text"
@@ -86,33 +86,33 @@ export function TocToolSection({
       <div className="links-panel-subheading">{t("tools.tableOfContents")}</div>
       <div className="search-block">
         <label className="setting-row">
-          <span>{t("tools.filterFolder")}</span>
+          <span>{t("tools.filterCardFolder")}</span>
           <input
-            onChange={(e) => onUpdate("targetFolder", e.target.value)}
+            onChange={(e) => onUpdate("targetCardFolder", e.target.value)}
             placeholder={t("tools.placeholderRoot")}
             type="text"
-            value={draft.targetFolder}
+            value={draft.targetCardFolder}
           />
         </label>
         <label className="setting-row">
-          <span>{t("tools.includeSubfolders")}</span>
+          <span>{t("tools.includeSubcardFolders")}</span>
           <input
-            checked={draft.includeSubfolders}
-            onChange={(e) => onUpdate("includeSubfolders", e.target.checked)}
+            checked={draft.includeSubcardFolders}
+            onChange={(e) => onUpdate("includeSubcardFolders", e.target.checked)}
             type="checkbox"
           />
         </label>
         <label className="setting-row">
-          <span>{t("tools.outputFolder")}</span>
+          <span>{t("tools.outputCardFolder")}</span>
           <input
-            onChange={(e) => onUpdate("outputFolder", e.target.value)}
+            onChange={(e) => onUpdate("outputCardFolder", e.target.value)}
             placeholder={t("tools.placeholderRoot")}
             type="text"
-            value={draft.outputFolder}
+            value={draft.outputCardFolder}
           />
         </label>
         <label className="setting-row">
-          <span>{t("tools.fileName")}</span>
+          <span>{t("tools.cardName")}</span>
           <input
             onChange={(e) => onUpdate("outputName", e.target.value)}
             type="text"

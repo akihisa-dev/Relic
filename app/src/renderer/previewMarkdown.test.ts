@@ -12,10 +12,10 @@ const t = createTranslator("ja");
 
 describe("previewMarkdown", () => {
   it("Markdownカードとして読める埋め込み先へ正規化する", () => {
-    expect(normalizeEmbedTarget("Folder/Note")).toBe("Folder/Note.md");
-    expect(normalizeEmbedTarget("Folder/Note.md#見出し")).toBe("Folder/Note.md");
-    expect(normalizeEmbedTarget("Folder/Note^block")).toBe("Folder/Note.md");
-    expect(normalizeEmbedTarget("Folder/image.png")).toBeNull();
+    expect(normalizeEmbedTarget("CardFolder/Note")).toBe("CardFolder/Note.md");
+    expect(normalizeEmbedTarget("CardFolder/Note.md#見出し")).toBe("CardFolder/Note.md");
+    expect(normalizeEmbedTarget("CardFolder/Note^block")).toBe("CardFolder/Note.md");
+    expect(normalizeEmbedTarget("CardFolder/image.png")).toBeNull();
     expect(normalizeEmbedTarget("../secret")).toBeNull();
     expect(normalizeEmbedTarget("https://example.com/note.md")).toBeNull();
   });
@@ -56,7 +56,7 @@ describe("previewMarkdown", () => {
       t
     );
 
-    expect(html).toContain("preview-file-embed");
+    expect(html).toContain("preview-card-embed");
     expect(html).toContain("Parent");
     expect(html).toContain('class="wikilink"');
     expect(html).toContain('data-target="Child"');

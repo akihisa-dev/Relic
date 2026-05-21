@@ -9,7 +9,7 @@ export type FrontmatterDialogRequest =
 
 export const frontmatterDialogRequestEvent = "relic-frontmatter-dialog-request";
 export const frontmatterFieldNamePattern = /^[^#\s:][^\r\n:]*$/;
-export const fixedFrontmatterFieldNames = ["aliases", "tags", "status", "chronicle"];
+export const fixedFrontmatterFieldNames = ["aliases", "tags", "status", "timeline"];
 
 export function isFixedDateRangeField(key: string): boolean {
   void key;
@@ -17,7 +17,7 @@ export function isFixedDateRangeField(key: string): boolean {
 }
 
 export function shouldSerializeArrayAsFlowSequence(key: string, field?: UserDefinedField): boolean {
-  return isFixedDateRangeField(key) || key === "aliases" || key === "tags" || key === "chronicle" || Boolean(field);
+  return isFixedDateRangeField(key) || key === "aliases" || key === "tags" || key === "timeline" || Boolean(field);
 }
 
 export function isSingleValueField(field?: UserDefinedField): boolean {
@@ -92,14 +92,14 @@ export function parseScalarValue(value: string, field?: UserDefinedField): unkno
   return value;
 }
 
-export function parseChronicleYearInput(value: string): number | null {
+export function parseTimelineYearInput(value: string): number | null {
   const trimmed = value.trim();
   if (!/^-?\d+$/.test(trimmed)) return null;
   const year = Number(trimmed);
   return Number.isInteger(year) && year !== 0 ? year : null;
 }
 
-export function chronicleInputValue(value: unknown): string {
+export function timelineInputValue(value: unknown): string {
   return typeof value === "number" && Number.isInteger(value) && value !== 0 ? String(value) : "";
 }
 

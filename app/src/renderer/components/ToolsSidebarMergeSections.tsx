@@ -2,10 +2,10 @@ import type { ReactElement } from "react";
 
 import type { MergeFilterType, MergeSortBy, SplitHeadingLevel } from "../../shared/ipc";
 import { useT } from "../i18n";
-import type { MergeFilesDraft, SplitFileDraft } from "../toolsSidebarModel";
+import type { MergeCardsDraft, SplitCardDraft } from "../toolsSidebarModel";
 import { ToolStatus } from "./ToolStatus";
 
-export function MergeFilesToolSection({
+export function MergeCardsToolSection({
   draft,
   onMerge,
   onFilterTypeChange,
@@ -13,11 +13,11 @@ export function MergeFilesToolSection({
   onUpdate,
   status
 }: {
-  draft: MergeFilesDraft;
+  draft: MergeCardsDraft;
   onMerge: () => void;
   onFilterTypeChange: (value: MergeFilterType) => void;
   onSortByChange: (value: MergeSortBy) => void;
-  onUpdate: <K extends keyof MergeFilesDraft>(key: K, value: MergeFilesDraft[K]) => void;
+  onUpdate: <K extends keyof MergeCardsDraft>(key: K, value: MergeCardsDraft[K]) => void;
   status: string | null;
 }): ReactElement {
   const t = useT();
@@ -33,7 +33,7 @@ export function MergeFilesToolSection({
             value={draft.filterType}
           >
             <option value="all">{t("tools.filterAll")}</option>
-            <option value="folder">{t("tools.filterFolder")}</option>
+            <option value="cardFolder">{t("tools.filterCardFolder")}</option>
             <option value="tag">{t("tools.filterTag")}</option>
             <option value="frontmatter">{t("tools.filterFrontmatter")}</option>
           </select>
@@ -61,10 +61,10 @@ export function MergeFilesToolSection({
           </>
         ) : draft.filterType !== "all" && (
           <label className="setting-row">
-            <span>{draft.filterType === "folder" ? t("tools.folderName") : t("tools.tagName")}</span>
+            <span>{draft.filterType === "cardFolder" ? t("tools.cardFolderName") : t("tools.tagName")}</span>
             <input
               onChange={(e) => onUpdate("filterValue", e.target.value)}
-              placeholder={draft.filterType === "folder" ? t("tools.placeholderFolderExample") : t("tools.placeholderTagExample")}
+              placeholder={draft.filterType === "cardFolder" ? t("tools.placeholderCardFolderExample") : t("tools.placeholderTagExample")}
               type="text"
               value={draft.filterValue}
             />
@@ -82,24 +82,24 @@ export function MergeFilesToolSection({
           </select>
         </label>
         <label className="setting-row">
-          <span>{t("tools.fileNameHeading")}</span>
+          <span>{t("tools.cardNameHeading")}</span>
           <input
-            checked={draft.insertFilenameHeading}
-            onChange={(e) => onUpdate("insertFilenameHeading", e.target.checked)}
+            checked={draft.insertCardNameHeading}
+            onChange={(e) => onUpdate("insertCardNameHeading", e.target.checked)}
             type="checkbox"
           />
         </label>
         <label className="setting-row">
-          <span>{t("tools.outputFolder")}</span>
+          <span>{t("tools.outputCardFolder")}</span>
           <input
-            onChange={(e) => onUpdate("outputFolder", e.target.value)}
+            onChange={(e) => onUpdate("outputCardFolder", e.target.value)}
             placeholder={t("tools.placeholderRoot")}
             type="text"
-            value={draft.outputFolder}
+            value={draft.outputCardFolder}
           />
         </label>
         <label className="setting-row">
-          <span>{t("tools.fileName")}</span>
+          <span>{t("tools.cardName")}</span>
           <input
             onChange={(e) => onUpdate("outputName", e.target.value)}
             type="text"
@@ -115,17 +115,17 @@ export function MergeFilesToolSection({
   );
 }
 
-export function SplitFileToolSection({
+export function SplitCardToolSection({
   draft,
   onSplit,
   onSplitLevelChange,
   onUpdate,
   status
 }: {
-  draft: SplitFileDraft;
+  draft: SplitCardDraft;
   onSplit: () => void;
   onSplitLevelChange: (value: SplitHeadingLevel) => void;
-  onUpdate: <K extends keyof SplitFileDraft>(key: K, value: SplitFileDraft[K]) => void;
+  onUpdate: <K extends keyof SplitCardDraft>(key: K, value: SplitCardDraft[K]) => void;
   status: string | null;
 }): ReactElement {
   const t = useT();
@@ -135,7 +135,7 @@ export function SplitFileToolSection({
       <div className="links-panel-subheading">{t("tools.splitByHeading")}</div>
       <div className="search-block">
         <label className="setting-row">
-          <span>{t("tools.sourceFile")}</span>
+          <span>{t("tools.sourceCard")}</span>
           <input
             onChange={(e) => onUpdate("sourcePath", e.target.value)}
             placeholder={t("tools.placeholderSourceExample")}
@@ -155,12 +155,12 @@ export function SplitFileToolSection({
           </select>
         </label>
         <label className="setting-row">
-          <span>{t("tools.outputFolder")}</span>
+          <span>{t("tools.outputCardFolder")}</span>
           <input
-            onChange={(e) => onUpdate("outputFolder", e.target.value)}
+            onChange={(e) => onUpdate("outputCardFolder", e.target.value)}
             placeholder={t("tools.placeholderRoot")}
             type="text"
-            value={draft.outputFolder}
+            value={draft.outputCardFolder}
           />
         </label>
         <button className="primary-button" onClick={onSplit} type="button">

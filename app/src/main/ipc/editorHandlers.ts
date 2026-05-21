@@ -4,34 +4,34 @@ import {
   getEditorSettingsChannel,
   saveEditorSettingsChannel,
   type EditorSettings,
-  writeMarkdownFileChannel,
-  type WriteMarkdownFileInput
+  writeMarkdownCardChannel,
+  type WriteMarkdownCardInput
 } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
-import { readMarkdownFile } from "../files/markdownFiles";
+import { readMarkdownCard } from "../cards/markdownCards";
 import { writeFile } from "node:fs/promises";
 import path from "node:path";
-import { resolveWorkspaceRelativePath } from "../files/paths";
+import { resolveCardbookRelativePath } from "../cards/paths";
 import { readAppSettings, writeAppSettings } from "../settings/appSettings";
-import { toWorkspaceState } from "../workspace/workspaceService";
+import { toCardbookState } from "../cardbook/cardbookService";
 
 export function registerEditorHandlers(): void {
   ipcMain.handle(
-    writeMarkdownFileChannel,
-    async (_event, input: WriteMarkdownFileInput): Promise<RelicResult<void>> => {
+    writeMarkdownCardChannel,
+    async (_event, input: WriteMarkdownCardInput): Promise<RelicResult<void>> => {
       try {
-        if (!isWriteMarkdownFileInput(input)) {
+        if (!isWriteMarkdownCardInput(input)) {
           return fail("FILE_WRITE_INVALID_INPUT", "パスと内容を指定してください。");
         }
 
         const settings = await readAppSettings(app.getPath("userData"));
-        const state = toWorkspaceState(settings);
+        const state = toCardbookState(settings);
 
-        if (!state.activeWorkspace) {
-          return fail("WORKSPACE_NOT_SELECTED", "先にカードブックを開いてください。");
+        if (!state.activeCardbook) {
+          return fail("CARDBOOK_NOT_SELECTED", "先にカードブックを開いてください。");
         }
 
-        const resolved = resolveWorkspaceRelativePath(state.activeWorkspace.path, input.path);
+        const resolved = resolveCardbookRelativePath(state.activeCardbook.path, input.path);
 
         if (!resolved.ok) {
           return resolved;
@@ -94,7 +94,7 @@ export function registerEditorHandlers(): void {
   );
 }
 
-function isWriteMarkdownFileInput(input: unknown): input is WriteMarkdownFileInput {
+function isWriteMarkdownCardInput(input: unknown): input is WriteMarkdownCardInput {
   return (
     typeof input === "object" &&
     input !== null &&

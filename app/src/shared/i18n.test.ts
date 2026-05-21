@@ -6,15 +6,15 @@ import { describe, expect, it } from "vitest";
 import en from "./locales/en.json";
 import ja from "./locales/ja.json";
 
-function sourceFiles(dir: string): string[] {
+function sourceCards(dir: string): string[] {
   return readdirSync(dir).flatMap((name) => {
-    const filePath = path.join(dir, name);
-    const stat = statSync(filePath);
+    const cardPath = path.join(dir, name);
+    const stat = statSync(cardPath);
 
-    if (stat.isDirectory()) return sourceFiles(filePath);
-    if (!/\.(ts|tsx)$/.test(filePath) || /\.test\./.test(filePath)) return [];
+    if (stat.isDirectory()) return sourceCards(cardPath);
+    if (!/\.(ts|tsx)$/.test(cardPath) || /\.test\./.test(cardPath)) return [];
 
-    return [filePath];
+    return [cardPath];
   });
 }
 
@@ -25,15 +25,15 @@ describe("i18n dictionaries", () => {
 
   it("does not reference missing literal translation keys", () => {
     const keys = new Set(Object.keys(en));
-    const missing: Array<{ filePath: string; key: string }> = [];
+    const missing: Array<{ cardPath: string; key: string }> = [];
     const translationCallPattern = /\bt\(\s*["']([^"']+)["']/g;
 
-    for (const filePath of sourceFiles(path.join(process.cwd(), "src"))) {
-      const source = readFileSync(filePath, "utf8");
+    for (const cardPath of sourceCards(path.join(process.cwd(), "src"))) {
+      const source = readFileSync(cardPath, "utf8");
       let match: RegExpExecArray | null;
 
       while ((match = translationCallPattern.exec(source))) {
-        if (!keys.has(match[1])) missing.push({ filePath, key: match[1] });
+        if (!keys.has(match[1])) missing.push({ cardPath, key: match[1] });
       }
     }
 

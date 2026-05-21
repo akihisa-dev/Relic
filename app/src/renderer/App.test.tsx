@@ -6,7 +6,7 @@ import {
   installMatchMediaMock,
   makeRelicApi,
   resetRendererStores,
-  testWorkspaceState as withWorkspace
+  testCardbookState as withCardbook
 } from "../test/rendererTestUtils";
 import { App } from "./App";
 import { useEditorStore } from "./store/editorStore";
@@ -36,11 +36,11 @@ describe("App", () => {
 
   it("カードブックを開くとカードツリーが表示される", async () => {
     window.relic = makeRelicApi({
-      getWorkspaceState: vi.fn().mockResolvedValue({
+      getCardbookState: vi.fn().mockResolvedValue({
         ok: true,
         value: {
-          ...withWorkspace,
-          fileTree: [{ name: "読書メモ", path: "読書メモ.md", type: "file" }]
+          ...withCardbook,
+          cardTree: [{ name: "読書メモ", path: "読書メモ.md", type: "card" }]
         }
       })
     });
@@ -52,14 +52,14 @@ describe("App", () => {
 
   it("カードツリーのノートをクリックするとタブが開く", async () => {
     window.relic = makeRelicApi({
-      getWorkspaceState: vi.fn().mockResolvedValue({
+      getCardbookState: vi.fn().mockResolvedValue({
         ok: true,
         value: {
-          ...withWorkspace,
-          fileTree: [{ name: "読書メモ", path: "読書メモ.md", type: "file" }]
+          ...withCardbook,
+          cardTree: [{ name: "読書メモ", path: "読書メモ.md", type: "card" }]
         }
       }),
-      readMarkdownFile: vi.fn().mockResolvedValue({
+      readMarkdownCard: vi.fn().mockResolvedValue({
         ok: true,
         value: { content: "本文テスト", name: "読書メモ", path: "読書メモ.md" }
       })
@@ -69,25 +69,25 @@ describe("App", () => {
 
     fireEvent.click(await screen.findByRole("button", { name: /読書メモ/ }));
 
-    expect(window.relic!.readMarkdownFile).toHaveBeenCalledWith({ path: "読書メモ.md" });
+    expect(window.relic!.readMarkdownCard).toHaveBeenCalledWith({ path: "読書メモ.md" });
     expect(await screen.findByText("読書メモ", { selector: ".pane-tab-name" })).toBeInTheDocument();
   });
 
   it("タブの右クリックメニューから複製・ピン留め・コピー・場所表示を実行する", async () => {
-    const duplicateMarkdownFile = vi.fn().mockResolvedValue({
+    const duplicateMarkdownCard = vi.fn().mockResolvedValue({
       ok: true,
       value: {
-        file: { content: "本文テスト", name: "読書メモ のコピー", path: "読書メモ のコピー.md" },
-        workspaceState: {
-          ...withWorkspace,
-          fileTree: [
-            { name: "読書メモ", path: "読書メモ.md", type: "file" },
-            { name: "読書メモ のコピー", path: "読書メモ のコピー.md", type: "file" }
+        card: { content: "本文テスト", name: "読書メモ のコピー", path: "読書メモ のコピー.md" },
+        cardbookState: {
+          ...withCardbook,
+          cardTree: [
+            { name: "読書メモ", path: "読書メモ.md", type: "card" },
+            { name: "読書メモ のコピー", path: "読書メモ のコピー.md", type: "card" }
           ]
         }
       }
     });
-    const revealWorkspaceItem = vi.fn().mockResolvedValue({ ok: true, value: undefined });
+    const revealCardbookItem = vi.fn().mockResolvedValue({ ok: true, value: undefined });
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, "clipboard", {
       configurable: true,
@@ -95,19 +95,19 @@ describe("App", () => {
     });
 
     window.relic = makeRelicApi({
-      duplicateMarkdownFile,
-      getWorkspaceState: vi.fn().mockResolvedValue({
+      duplicateMarkdownCard,
+      getCardbookState: vi.fn().mockResolvedValue({
         ok: true,
         value: {
-          ...withWorkspace,
-          fileTree: [{ name: "読書メモ", path: "読書メモ.md", type: "file" }]
+          ...withCardbook,
+          cardTree: [{ name: "読書メモ", path: "読書メモ.md", type: "card" }]
         }
       }),
-      readMarkdownFile: vi.fn().mockResolvedValue({
+      readMarkdownCard: vi.fn().mockResolvedValue({
         ok: true,
         value: { content: "本文テスト", name: "読書メモ", path: "読書メモ.md" }
       }),
-      revealWorkspaceItem
+      revealCardbookItem
     });
 
     const { container } = await renderApp();
@@ -123,7 +123,7 @@ describe("App", () => {
     fireEvent.contextMenu(tab!);
     fireEvent.click(await screen.findByRole("button", { name: "複製" }));
     await waitFor(() => {
-      expect(duplicateMarkdownFile).toHaveBeenCalledWith({ path: "読書メモ.md" });
+      expect(duplicateMarkdownCard).toHaveBeenCalledWith({ path: "読書メモ.md" });
     });
 
     fireEvent.contextMenu(tab!);
@@ -134,20 +134,20 @@ describe("App", () => {
     fireEvent.contextMenu(tab!);
     fireEvent.click(await screen.findByRole("button", { name: "カードの場所を表示" }));
     await waitFor(() => {
-      expect(revealWorkspaceItem).toHaveBeenCalledWith({ path: "読書メモ.md" });
+      expect(revealCardbookItem).toHaveBeenCalledWith({ path: "読書メモ.md" });
     });
   });
 
   it("右クリックメニューのMarkdownボタンを開いているタブへ反映する", async () => {
     window.relic = makeRelicApi({
-      getWorkspaceState: vi.fn().mockResolvedValue({
+      getCardbookState: vi.fn().mockResolvedValue({
         ok: true,
         value: {
-          ...withWorkspace,
-          fileTree: [{ name: "読書メモ", path: "読書メモ.md", type: "file" }]
+          ...withCardbook,
+          cardTree: [{ name: "読書メモ", path: "読書メモ.md", type: "card" }]
         }
       }),
-      readMarkdownFile: vi.fn().mockResolvedValue({
+      readMarkdownCard: vi.fn().mockResolvedValue({
         ok: true,
         value: { content: "本文テスト", name: "読書メモ", path: "読書メモ.md" }
       })
@@ -171,21 +171,21 @@ describe("App", () => {
       const activeTabId = useEditorStore.getState().leftPane.activeTabId;
       expect(activeTabId).not.toBeNull();
       const tab = useEditorStore.getState().tabs[activeTabId!];
-      expect(tab?.kind).toBe("file");
-      if (tab?.kind === "file") expect(tab.content).toContain("**");
+      expect(tab?.kind).toBe("card");
+      if (tab?.kind === "card") expect(tab.content).toContain("**");
     });
   });
 
   it("カードツリーで開いているノートを再選択するとタブをアクティブにする", async () => {
     window.relic = makeRelicApi({
-      getWorkspaceState: vi.fn().mockResolvedValue({
+      getCardbookState: vi.fn().mockResolvedValue({
         ok: true,
         value: {
-          ...withWorkspace,
-          fileTree: [{ name: "読書メモ", path: "読書メモ.md", type: "file" }]
+          ...withCardbook,
+          cardTree: [{ name: "読書メモ", path: "読書メモ.md", type: "card" }]
         }
       }),
-      readMarkdownFile: vi.fn().mockResolvedValue({
+      readMarkdownCard: vi.fn().mockResolvedValue({
         ok: true,
         value: { content: "本文テスト", name: "読書メモ", path: "読書メモ.md" }
       })
@@ -193,8 +193,8 @@ describe("App", () => {
 
     const { container } = await renderApp();
 
-    const fileButton = await screen.findByRole("button", { name: /読書メモ/ });
-    fireEvent.click(fileButton);
+    const cardButton = await screen.findByRole("button", { name: /読書メモ/ });
+    fireEvent.click(cardButton);
     expect(container.querySelector(".rail-tab-flight--open")).toBeInTheDocument();
 
     await waitFor(() => {
@@ -202,7 +202,7 @@ describe("App", () => {
     });
     const openedTabId = useEditorStore.getState().leftPane.activeTabId;
 
-    fireEvent.click(fileButton);
+    fireEvent.click(cardButton);
     expect(container.querySelector(".rail-tab-flight--close")).not.toBeInTheDocument();
 
     await waitFor(() => {
@@ -212,14 +212,14 @@ describe("App", () => {
 
   it("カードタブを閉じるとその場で下へ消える表示を出す", async () => {
     window.relic = makeRelicApi({
-      getWorkspaceState: vi.fn().mockResolvedValue({
+      getCardbookState: vi.fn().mockResolvedValue({
         ok: true,
         value: {
-          ...withWorkspace,
-          fileTree: [{ name: "読書メモ", path: "読書メモ.md", type: "file" }]
+          ...withCardbook,
+          cardTree: [{ name: "読書メモ", path: "読書メモ.md", type: "card" }]
         }
       }),
-      readMarkdownFile: vi.fn().mockResolvedValue({
+      readMarkdownCard: vi.fn().mockResolvedValue({
         ok: true,
         value: { content: "本文テスト", name: "読書メモ", path: "読書メモ.md" }
       })
@@ -242,27 +242,27 @@ describe("App", () => {
   });
 
   it("カード読み込み完了前に再クリックすると開く操作を取り消す", async () => {
-    let resolveRead: (value: Awaited<ReturnType<NonNullable<typeof window.relic>["readMarkdownFile"]>>) => void = () => {};
-    const readMarkdownFile = vi.fn().mockReturnValue(new Promise((resolve) => {
+    let resolveRead: (value: Awaited<ReturnType<NonNullable<typeof window.relic>["readMarkdownCard"]>>) => void = () => {};
+    const readMarkdownCard = vi.fn().mockReturnValue(new Promise((resolve) => {
       resolveRead = resolve;
     }));
 
     window.relic = makeRelicApi({
-      getWorkspaceState: vi.fn().mockResolvedValue({
+      getCardbookState: vi.fn().mockResolvedValue({
         ok: true,
         value: {
-          ...withWorkspace,
-          fileTree: [{ name: "読書メモ", path: "読書メモ.md", type: "file" }]
+          ...withCardbook,
+          cardTree: [{ name: "読書メモ", path: "読書メモ.md", type: "card" }]
         }
       }),
-      readMarkdownFile
+      readMarkdownCard
     });
 
     await renderApp();
 
-    const fileButton = await screen.findByRole("button", { name: /読書メモ/ });
-    fireEvent.click(fileButton);
-    fireEvent.click(fileButton);
+    const cardButton = await screen.findByRole("button", { name: /読書メモ/ });
+    fireEvent.click(cardButton);
+    fireEvent.click(cardButton);
 
     resolveRead({
       ok: true,
@@ -270,7 +270,7 @@ describe("App", () => {
     });
 
     await waitFor(() => {
-      expect(readMarkdownFile).toHaveBeenCalledTimes(1);
+      expect(readMarkdownCard).toHaveBeenCalledTimes(1);
     });
     await Promise.resolve();
 
@@ -279,17 +279,17 @@ describe("App", () => {
 
   it("複数カードを開いた後でもカードツリー再クリックで対象タブをアクティブにする", async () => {
     window.relic = makeRelicApi({
-      getWorkspaceState: vi.fn().mockResolvedValue({
+      getCardbookState: vi.fn().mockResolvedValue({
         ok: true,
         value: {
-          ...withWorkspace,
-          fileTree: [
-            { name: "読書メモ", path: "読書メモ.md", type: "file" },
-            { name: "日記", path: "日記.md", type: "file" }
+          ...withCardbook,
+          cardTree: [
+            { name: "読書メモ", path: "読書メモ.md", type: "card" },
+            { name: "日記", path: "日記.md", type: "card" }
           ]
         }
       }),
-      readMarkdownFile: vi.fn().mockImplementation(({ path }: { path: string }) => Promise.resolve({
+      readMarkdownCard: vi.fn().mockImplementation(({ path }: { path: string }) => Promise.resolve({
         ok: true,
         value: { content: "本文テスト", name: path.replace(/\.md$/, ""), path }
       }))
@@ -297,40 +297,40 @@ describe("App", () => {
 
     await renderApp();
 
-    const firstFileButton = await screen.findByRole("button", { name: /読書メモ/ });
-    const secondFileButton = await screen.findByRole("button", { name: /日記/ });
+    const firstCardButton = await screen.findByRole("button", { name: /読書メモ/ });
+    const secondCardButton = await screen.findByRole("button", { name: /日記/ });
 
-    fireEvent.click(firstFileButton);
+    fireEvent.click(firstCardButton);
     await waitFor(() => {
-      expect(Object.values(useEditorStore.getState().tabs).some((tab) => tab.kind === "file" && tab.path === "読書メモ.md")).toBe(true);
+      expect(Object.values(useEditorStore.getState().tabs).some((tab) => tab.kind === "card" && tab.path === "読書メモ.md")).toBe(true);
     });
 
-    fireEvent.click(secondFileButton);
+    fireEvent.click(secondCardButton);
     await waitFor(() => {
-      expect(Object.values(useEditorStore.getState().tabs).some((tab) => tab.kind === "file" && tab.path === "日記.md")).toBe(true);
+      expect(Object.values(useEditorStore.getState().tabs).some((tab) => tab.kind === "card" && tab.path === "日記.md")).toBe(true);
     });
 
-    fireEvent.click(firstFileButton);
+    fireEvent.click(firstCardButton);
 
     const state = useEditorStore.getState();
-    const firstTabId = Object.values(state.tabs).find((tab) => tab.kind === "file" && tab.path === "読書メモ.md")?.id;
+    const firstTabId = Object.values(state.tabs).find((tab) => tab.kind === "card" && tab.path === "読書メモ.md")?.id;
     expect(firstTabId).toBeTruthy();
     expect(state.leftPane.activeTabId).toBe(firstTabId);
-    expect(Object.values(useEditorStore.getState().tabs).some((tab) => tab.kind === "file" && tab.path === "日記.md")).toBe(true);
+    expect(Object.values(useEditorStore.getState().tabs).some((tab) => tab.kind === "card" && tab.path === "日記.md")).toBe(true);
   });
 
   it("カードツリーのカードフォルダを開閉できる", async () => {
     window.relic = makeRelicApi({
-      getWorkspaceState: vi.fn().mockResolvedValue({
+      getCardbookState: vi.fn().mockResolvedValue({
         ok: true,
         value: {
-          ...withWorkspace,
-          fileTree: [
+          ...withCardbook,
+          cardTree: [
             {
-              children: [{ name: "読書メモ", path: "資料/読書メモ.md", type: "file" }],
+              children: [{ name: "読書メモ", path: "資料/読書メモ.md", type: "card" }],
               name: "資料",
               path: "資料",
-              type: "folder"
+              type: "cardFolder"
             }
           ]
         }
@@ -339,44 +339,44 @@ describe("App", () => {
 
     await renderApp();
 
-    const folderButton = await screen.findByRole("button", { name: /資料/ });
+    const cardFolderButton = await screen.findByRole("button", { name: /資料/ });
     expect(screen.getByRole("button", { name: /読書メモ/ })).toBeInTheDocument();
 
-    fireEvent.click(folderButton);
+    fireEvent.click(cardFolderButton);
 
     expect(screen.queryByRole("button", { name: /読書メモ/ })).not.toBeInTheDocument();
 
-    fireEvent.click(folderButton);
+    fireEvent.click(cardFolderButton);
 
     expect(screen.getByRole("button", { name: /読書メモ/ })).toBeInTheDocument();
   });
 
   it("カードフォルダ右クリックメニューからカードフォルダ以下と全体を一括開閉できる", async () => {
     window.relic = makeRelicApi({
-      getWorkspaceState: vi.fn().mockResolvedValue({
+      getCardbookState: vi.fn().mockResolvedValue({
         ok: true,
         value: {
-          ...withWorkspace,
-          fileTree: [
+          ...withCardbook,
+          cardTree: [
             {
               children: [
                 {
-                  children: [{ name: "草稿", path: "資料/下書き/草稿.md", type: "file" }],
+                  children: [{ name: "草稿", path: "資料/下書き/草稿.md", type: "card" }],
                   name: "下書き",
                   path: "資料/下書き",
-                  type: "folder"
+                  type: "cardFolder"
                 },
-                { name: "読書メモ", path: "資料/読書メモ.md", type: "file" }
+                { name: "読書メモ", path: "資料/読書メモ.md", type: "card" }
               ],
               name: "資料",
               path: "資料",
-              type: "folder"
+              type: "cardFolder"
             },
             {
-              children: [{ name: "保管メモ", path: "保管/保管メモ.md", type: "file" }],
+              children: [{ name: "保管メモ", path: "保管/保管メモ.md", type: "card" }],
               name: "保管",
               path: "保管",
-              type: "folder"
+              type: "cardFolder"
             }
           ]
         }
@@ -385,23 +385,23 @@ describe("App", () => {
 
     await renderApp();
 
-    const folderButton = await screen.findByRole("button", { name: /資料/ });
+    const cardFolderButton = await screen.findByRole("button", { name: /資料/ });
 
-    fireEvent.contextMenu(folderButton);
+    fireEvent.contextMenu(cardFolderButton);
     fireEvent.click(await screen.findByRole("menuitem", { name: "このカードフォルダ以下を閉じる" }));
     expect(screen.queryByRole("button", { name: /読書メモ/ })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /保管メモ/ })).toBeInTheDocument();
 
-    fireEvent.contextMenu(folderButton);
+    fireEvent.contextMenu(cardFolderButton);
     fireEvent.click(await screen.findByRole("menuitem", { name: "このカードフォルダ以下を開く" }));
     expect(screen.getByRole("button", { name: /草稿/ })).toBeInTheDocument();
 
-    fireEvent.contextMenu(folderButton);
+    fireEvent.contextMenu(cardFolderButton);
     fireEvent.click(await screen.findByRole("menuitem", { name: "すべてのカードフォルダを閉じる" }));
     expect(screen.queryByRole("button", { name: /読書メモ/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /保管メモ/ })).not.toBeInTheDocument();
 
-    fireEvent.contextMenu(folderButton);
+    fireEvent.contextMenu(cardFolderButton);
     fireEvent.click(await screen.findByRole("menuitem", { name: "すべてのカードフォルダを開く" }));
     expect(screen.getByRole("button", { name: /草稿/ })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /保管メモ/ })).toBeInTheDocument();
@@ -417,14 +417,14 @@ describe("App", () => {
 
   it("開いているカードをカードツリーではハイライトしない", async () => {
     window.relic = makeRelicApi({
-      getWorkspaceState: vi.fn().mockResolvedValue({
+      getCardbookState: vi.fn().mockResolvedValue({
         ok: true,
         value: {
-          ...withWorkspace,
-          fileTree: [{ name: "読書メモ", path: "読書メモ.md", type: "file" }]
+          ...withCardbook,
+          cardTree: [{ name: "読書メモ", path: "読書メモ.md", type: "card" }]
         }
       }),
-      readMarkdownFile: vi.fn().mockResolvedValue({
+      readMarkdownCard: vi.fn().mockResolvedValue({
         ok: true,
         value: { content: "本文テスト", name: "読書メモ", path: "読書メモ.md" }
       })
@@ -432,19 +432,19 @@ describe("App", () => {
 
     await renderApp();
 
-    const fileButton = await screen.findByRole("button", { name: /読書メモ/ });
-    fireEvent.click(fileButton);
+    const cardButton = await screen.findByRole("button", { name: /読書メモ/ });
+    fireEvent.click(cardButton);
 
     await waitFor(() => {
       expect(useEditorStore.getState().leftPane.activeTabId).not.toBeNull();
     });
-    expect(fileButton).not.toHaveClass("active");
-    expect(fileButton).toHaveClass("open");
+    expect(cardButton).not.toHaveClass("active");
+    expect(cardButton).toHaveClass("open");
   });
 
   it("サイドバー幅のドラッグ変更を最小180px・最大500pxに制限する", async () => {
     window.relic = makeRelicApi({
-      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
+      getCardbookState: vi.fn().mockResolvedValue({ ok: true, value: withCardbook })
     });
 
     const { container } = await renderApp();
@@ -481,7 +481,7 @@ describe("App", () => {
 
   it("右パネルのアウトライン・リンクボタンを閉じた後も再度開ける", async () => {
     window.relic = makeRelicApi({
-      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
+      getCardbookState: vi.fn().mockResolvedValue({ ok: true, value: withCardbook })
     });
 
     const { container } = await renderApp();
@@ -524,7 +524,7 @@ describe("App", () => {
 
   it("右パネル幅のドラッグ変更を最小220px・最大520pxに制限する", async () => {
     window.relic = makeRelicApi({
-      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
+      getCardbookState: vi.fn().mockResolvedValue({ ok: true, value: withCardbook })
     });
 
     const { container } = await renderApp();
@@ -566,7 +566,7 @@ describe("App", () => {
         ok: true,
         value: [{ name: "category", type: "select", choices: ["draft", "done"] }]
       }),
-      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
+      getCardbookState: vi.fn().mockResolvedValue({ ok: true, value: withCardbook })
     });
 
     const { container } = await renderApp();
@@ -593,54 +593,75 @@ describe("App", () => {
     expect(useEditorStore.getState().tabs["panel-frontmatter"]).toBeDefined();
   });
 
-  it("レールのChronicleボタンからchronicleを持つカードを表示できる", async () => {
-    const updateGanttChartEntry = vi.fn().mockResolvedValue({ ok: true, value: [] });
+  it("レールの年表設定ボタンから専用画面を開ける", async () => {
+    window.relic = makeRelicApi({
+      getCardbookState: vi.fn().mockResolvedValue({ ok: true, value: withCardbook })
+    });
+
+    await renderApp();
+
+    await screen.findByText("Notes");
+
+    fireEvent.click(screen.getByRole("button", { name: "年表設定" }));
+
+    const activeTabId = useEditorStore.getState().leftPane.activeTabId;
+    expect(activeTabId).toBe("panel-timeline-settings");
+    expect(useEditorStore.getState().tabs[activeTabId!]).toMatchObject({
+      kind: "panel",
+      panel: "timeline-settings"
+    });
+    expect(screen.getByRole("heading", { name: "年表設定" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "年表設定" })).toHaveClass("active");
+  });
+
+  it("レールのTimelineボタンからtimelineを持つカードを表示できる", async () => {
+    const updateTimelineChartEntry = vi.fn().mockResolvedValue({ ok: true, value: [] });
 
     window.relic = makeRelicApi({
-      getWorkspaceChronicle: vi.fn().mockResolvedValue({
+      getCardbookTimeline: vi.fn().mockResolvedValue({
         ok: true,
         value: [{
           entries: [{
             endLabel: "1333",
             endValue: 1332,
-            fileName: "鎌倉時代",
+            cardName: "鎌倉時代",
             path: "history/kamakura.md",
             startLabel: "1185",
             startValue: 1184
           }],
-          filePaths: ["history/kamakura.md"],
-          id: "chronicle",
+          cardPaths: ["history/kamakura.md"],
+          id: "timeline",
           name: "年表",
-          source: "chronicle"
+          source: "timeline"
         }]
       }),
-      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace }),
-      readMarkdownFile: vi.fn().mockResolvedValue({
+      getCardbookState: vi.fn().mockResolvedValue({ ok: true, value: withCardbook }),
+      readMarkdownCard: vi.fn().mockResolvedValue({
         ok: true,
         value: {
-          content: "---\nchronicle: [1186, 1334]\n---\n# 鎌倉時代",
+          content: "---\ntimeline: [1186, 1334]\n---\n# 鎌倉時代",
           name: "鎌倉時代",
           path: "history/kamakura.md"
         }
       }),
-      updateGanttChartEntry
+      updateTimelineChartEntry
     });
 
     const renderResult = await renderApp();
 
     await screen.findByText("Notes");
 
-    fireEvent.click(screen.getByRole("button", { name: "Chronicle" }));
-    fireEvent.click(renderResult.container.querySelector(".chronicle-source-button")!);
+    fireEvent.click(screen.getByRole("button", { name: "年表" }));
+    fireEvent.click(renderResult.container.querySelector(".timeline-source-button")!);
 
     const activeTabId = useEditorStore.getState().leftPane.activeTabId;
-    expect(activeTabId).toBe("gantt-charts");
+    expect(activeTabId).toBe("timeline-charts");
     expect(useEditorStore.getState().tabs[activeTabId!]).toMatchObject({
       chartId: "charts",
-      kind: "gantt"
+      kind: "timeline"
     });
     expect(useUiStore.getState().isSidebarOpen).toBe(false);
-    expect(renderResult.container.querySelector(".chronicle-sidebar")).toBeNull();
+    expect(renderResult.container.querySelector(".timeline-sidebar")).toBeNull();
     expect(screen.getAllByText("鎌倉時代").length).toBeGreaterThan(0);
     expect(screen.getByText("1185 〜 1333")).toBeInTheDocument();
     expect(screen.getByText("年代")).toBeInTheDocument();
@@ -649,26 +670,26 @@ describe("App", () => {
       "title",
       "この年代へ移動"
     );
-    expect(renderResult.container.querySelector(".chronicle-minimap")).toBeInTheDocument();
-    expect(renderResult.container.querySelector(".chronicle-minimap-item")).toBeInTheDocument();
-    expect(renderResult.container.querySelector(".chronicle-actions")).toBeNull();
+    expect(renderResult.container.querySelector(".timeline-minimap")).toBeInTheDocument();
+    expect(renderResult.container.querySelector(".timeline-minimap-item")).toBeInTheDocument();
+    expect(renderResult.container.querySelector(".timeline-actions")).toBeNull();
     expect(screen.queryByText("計画")).not.toBeInTheDocument();
     expect(screen.queryByText("実行")).not.toBeInTheDocument();
-    expect(renderResult.container.querySelectorAll(".chronicle-guide-line").length).toBeGreaterThan(0);
-    expect(renderResult.container.querySelectorAll(".chronicle-guide-line--major").length).toBeGreaterThan(0);
-    expect(renderResult.container.querySelectorAll(".chronicle-guide-line").length).toBeGreaterThan(
-      renderResult.container.querySelectorAll(".chronicle-guide-line--major").length
+    expect(renderResult.container.querySelectorAll(".timeline-guide-line").length).toBeGreaterThan(0);
+    expect(renderResult.container.querySelectorAll(".timeline-guide-line--major").length).toBeGreaterThan(0);
+    expect(renderResult.container.querySelectorAll(".timeline-guide-line").length).toBeGreaterThan(
+      renderResult.container.querySelectorAll(".timeline-guide-line--major").length
     );
-    const oneYearAxisLabels = Array.from(renderResult.container.querySelectorAll(".chronicle-axis--chronicle .chronicle-axis-cell"))
+    const oneYearAxisLabels = Array.from(renderResult.container.querySelectorAll(".timeline-axis--timeline .timeline-axis-cell"))
       .map((element) => Number(element.textContent?.replace("−", "-") ?? Number.NaN));
     expect(oneYearAxisLabels.length).toBeGreaterThan(0);
     expect(oneYearAxisLabels.slice(1, 5).every((label, index) => label - oneYearAxisLabels[index] === 1)).toBe(true);
-    expect(renderResult.container.querySelectorAll(".chronicle-guide-line").length).toBeGreaterThan(
-      renderResult.container.querySelectorAll(".chronicle-guide-line--major").length
+    expect(renderResult.container.querySelectorAll(".timeline-guide-line").length).toBeGreaterThan(
+      renderResult.container.querySelectorAll(".timeline-guide-line--major").length
     );
-    expect(renderResult.container.querySelectorAll(".chronicle-guide-row-line").length).toBeGreaterThan(0);
+    expect(renderResult.container.querySelectorAll(".timeline-guide-row-line").length).toBeGreaterThan(0);
 
-    const fill = renderResult.container.querySelector(".chronicle-fill") as HTMLElement;
+    const fill = renderResult.container.querySelector(".timeline-fill") as HTMLElement;
     const pointerDown = new Event("pointerdown", { bubbles: true }) as PointerEvent;
     Object.defineProperty(pointerDown, "button", { value: 0 });
     Object.defineProperty(pointerDown, "clientX", { value: 0 });
@@ -679,59 +700,59 @@ describe("App", () => {
     Object.defineProperty(pointerUp, "pointerId", { value: 1 });
     window.dispatchEvent(pointerUp);
 
-    await waitFor(() => expect(updateGanttChartEntry).toHaveBeenCalledWith({
+    await waitFor(() => expect(updateTimelineChartEntry).toHaveBeenCalledWith({
       endValue: 1333,
       kind: "move",
       originalEndValue: 1332,
       originalStartValue: 1184,
       path: "history/kamakura.md",
-      source: "chronicle",
+      source: "timeline",
       startValue: 1185
     }));
   });
 
-  it("Chronicleバー編集は低速ドラッグで1年単位の細かな変更にする", async () => {
-    const updateGanttChartEntry = vi.fn().mockResolvedValue({ ok: true, value: [] });
+  it("Timelineバー編集は低速ドラッグで1年単位の細かな変更にする", async () => {
+    const updateTimelineChartEntry = vi.fn().mockResolvedValue({ ok: true, value: [] });
 
     window.relic = makeRelicApi({
-      getWorkspaceChronicle: vi.fn().mockResolvedValue({
+      getCardbookTimeline: vi.fn().mockResolvedValue({
         ok: true,
         value: [{
           entries: [{
             endLabel: "1333",
             endValue: 1332,
-            fileName: "鎌倉時代",
+            cardName: "鎌倉時代",
             path: "history/kamakura.md",
             startLabel: "1185",
             startValue: 1184
           }],
-          filePaths: ["history/kamakura.md"],
-          id: "chronicle",
+          cardPaths: ["history/kamakura.md"],
+          id: "timeline",
           name: "年表",
-          source: "chronicle"
+          source: "timeline"
         }]
       }),
-      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace }),
-      readMarkdownFile: vi.fn().mockResolvedValue({
+      getCardbookState: vi.fn().mockResolvedValue({ ok: true, value: withCardbook }),
+      readMarkdownCard: vi.fn().mockResolvedValue({
         ok: true,
         value: {
-          content: "---\nchronicle: [1210, 1358]\n---\n# 鎌倉時代",
+          content: "---\ntimeline: [1210, 1358]\n---\n# 鎌倉時代",
           name: "鎌倉時代",
           path: "history/kamakura.md"
         }
       }),
-      updateGanttChartEntry
+      updateTimelineChartEntry
     });
 
     const { container } = await renderApp();
 
     await screen.findByText("Notes");
 
-    fireEvent.click(screen.getByRole("button", { name: "Chronicle" }));
-    fireEvent.click(container.querySelector(".chronicle-source-button")!);
-    expect(container.querySelector(".chronicle-actions")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "年表" }));
+    fireEvent.click(container.querySelector(".timeline-source-button")!);
+    expect(container.querySelector(".timeline-actions")).toBeNull();
 
-    const fill = container.querySelector(".chronicle-fill") as HTMLElement;
+    const fill = container.querySelector(".timeline-fill") as HTMLElement;
     const pointerDown = new Event("pointerdown", { bubbles: true }) as PointerEvent;
     Object.defineProperty(pointerDown, "button", { value: 0 });
     Object.defineProperty(pointerDown, "clientX", { value: 0 });
@@ -748,59 +769,59 @@ describe("App", () => {
     Object.defineProperty(pointerUp, "pointerId", { value: 1 });
     window.dispatchEvent(pointerUp);
 
-    await waitFor(() => expect(updateGanttChartEntry).toHaveBeenCalledWith({
+    await waitFor(() => expect(updateTimelineChartEntry).toHaveBeenCalledWith({
       endValue: 1333,
       kind: "move",
       originalEndValue: 1332,
       originalStartValue: 1184,
       path: "history/kamakura.md",
-      source: "chronicle",
+      source: "timeline",
       startValue: 1185
     }));
   });
 
-  it("Chronicleバー編集は高速ドラッグで大きく移動する", async () => {
-    const updateGanttChartEntry = vi.fn().mockResolvedValue({ ok: true, value: [] });
+  it("Timelineバー編集は高速ドラッグで大きく移動する", async () => {
+    const updateTimelineChartEntry = vi.fn().mockResolvedValue({ ok: true, value: [] });
 
     window.relic = makeRelicApi({
-      getWorkspaceChronicle: vi.fn().mockResolvedValue({
+      getCardbookTimeline: vi.fn().mockResolvedValue({
         ok: true,
         value: [{
           entries: [{
             endLabel: "1333",
             endValue: 1332,
-            fileName: "鎌倉時代",
+            cardName: "鎌倉時代",
             path: "history/kamakura.md",
             startLabel: "1185",
             startValue: 1184
           }],
-          filePaths: ["history/kamakura.md"],
-          id: "chronicle",
+          cardPaths: ["history/kamakura.md"],
+          id: "timeline",
           name: "年表",
-          source: "chronicle"
+          source: "timeline"
         }]
       }),
-      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace }),
-      readMarkdownFile: vi.fn().mockResolvedValue({
+      getCardbookState: vi.fn().mockResolvedValue({ ok: true, value: withCardbook }),
+      readMarkdownCard: vi.fn().mockResolvedValue({
         ok: true,
         value: {
-          content: "---\nchronicle: [1210, 1358]\n---\n# 鎌倉時代",
+          content: "---\ntimeline: [1210, 1358]\n---\n# 鎌倉時代",
           name: "鎌倉時代",
           path: "history/kamakura.md"
         }
       }),
-      updateGanttChartEntry
+      updateTimelineChartEntry
     });
 
     const { container } = await renderApp();
 
     await screen.findByText("Notes");
 
-    fireEvent.click(screen.getByRole("button", { name: "Chronicle" }));
-    fireEvent.click(container.querySelector(".chronicle-source-button")!);
-    expect(container.querySelector(".chronicle-actions")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "年表" }));
+    fireEvent.click(container.querySelector(".timeline-source-button")!);
+    expect(container.querySelector(".timeline-actions")).toBeNull();
 
-    const fill = container.querySelector(".chronicle-fill") as HTMLElement;
+    const fill = container.querySelector(".timeline-fill") as HTMLElement;
     const pointerDown = new Event("pointerdown", { bubbles: true }) as PointerEvent;
     Object.defineProperty(pointerDown, "button", { value: 0 });
     Object.defineProperty(pointerDown, "clientX", { value: 0 });
@@ -811,46 +832,46 @@ describe("App", () => {
     Object.defineProperty(pointerUp, "pointerId", { value: 1 });
     window.dispatchEvent(pointerUp);
 
-    await waitFor(() => expect(updateGanttChartEntry).toHaveBeenCalledWith({
+    await waitFor(() => expect(updateTimelineChartEntry).toHaveBeenCalledWith({
       endValue: 1335,
       kind: "move",
       originalEndValue: 1332,
       originalStartValue: 1184,
       path: "history/kamakura.md",
-      source: "chronicle",
+      source: "timeline",
       startValue: 1187
     }));
   });
 
-  it("Chronicle面を掴んで横スクロールできる", async () => {
+  it("Timeline面を掴んで横スクロールできる", async () => {
     window.relic = makeRelicApi({
-      getWorkspaceChronicle: vi.fn().mockResolvedValue({
+      getCardbookTimeline: vi.fn().mockResolvedValue({
         ok: true,
         value: [{
           entries: [{
             endLabel: "2026-06-20",
             endValue: 20624,
-            fileName: "長い予定",
+            cardName: "長い予定",
             path: "tasks/long.md",
             startLabel: "2026-05-01",
             startValue: 20574
           }],
-          filePaths: [],
-          id: "chronicle",
-          name: "Chronicle",
-          source: "chronicle"
+          cardPaths: [],
+          id: "timeline",
+          name: "Timeline",
+          source: "timeline"
         }]
       }),
-      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
+      getCardbookState: vi.fn().mockResolvedValue({ ok: true, value: withCardbook })
     });
 
     const { container } = await renderApp();
 
     await screen.findByText("Notes");
 
-    fireEvent.click(screen.getByRole("button", { name: "Chronicle" }));
+    fireEvent.click(screen.getByRole("button", { name: "年表" }));
 
-    const chart = container.querySelector(".chronicle-chart") as HTMLDivElement;
+    const chart = container.querySelector(".timeline-chart") as HTMLDivElement;
     Object.defineProperty(chart, "scrollLeft", { configurable: true, value: 120, writable: true });
 
     const pointerDown = new Event("pointerdown", { bubbles: true }) as PointerEvent;
@@ -873,19 +894,19 @@ describe("App", () => {
 
   it("旧形式の年表データが返っても年表タブを表示できる", async () => {
     window.relic = makeRelicApi({
-      getWorkspaceChronicle: vi.fn().mockResolvedValue({
+      getCardbookTimeline: vi.fn().mockResolvedValue({
         ok: true,
-        value: [{ endYear: 1333, fileName: "鎌倉時代", path: "history/kamakura.md", startYear: 1185 }]
+        value: [{ endYear: 1333, cardName: "鎌倉時代", path: "history/kamakura.md", startYear: 1185 }]
       }),
-      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
+      getCardbookState: vi.fn().mockResolvedValue({ ok: true, value: withCardbook })
     });
 
     const { container } = await renderApp();
 
     await screen.findByText("Notes");
 
-    fireEvent.click(screen.getByRole("button", { name: "Chronicle" }));
-    fireEvent.click(container.querySelector(".chronicle-source-button")!);
+    fireEvent.click(screen.getByRole("button", { name: "年表" }));
+    fireEvent.click(container.querySelector(".timeline-source-button")!);
 
     expect(screen.getAllByText("鎌倉時代").length).toBeGreaterThan(0);
     expect(screen.getByText("1185 〜 1333")).toBeInTheDocument();
@@ -893,7 +914,7 @@ describe("App", () => {
 
   it("画面タブ名は言語変更に追従する", async () => {
     window.relic = makeRelicApi({
-      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
+      getCardbookState: vi.fn().mockResolvedValue({ ok: true, value: withCardbook })
     });
 
     await renderApp();
@@ -913,7 +934,7 @@ describe("App", () => {
 
   it("別の画面タブを開いた後でも開いているレールボタンを押すと対象タブをアクティブにする", async () => {
     window.relic = makeRelicApi({
-      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
+      getCardbookState: vi.fn().mockResolvedValue({ ok: true, value: withCardbook })
     });
 
     await renderApp();
@@ -942,7 +963,7 @@ describe("App", () => {
 
   it("分割表示を閉じると退場反応を通る", async () => {
     window.relic = makeRelicApi({
-      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
+      getCardbookState: vi.fn().mockResolvedValue({ ok: true, value: withCardbook })
     });
 
     const { container } = await renderApp();
@@ -960,7 +981,7 @@ describe("App", () => {
 
   it("右上の分割ボタン横でソースモードを切り替えられる", async () => {
     window.relic = makeRelicApi({
-      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
+      getCardbookState: vi.fn().mockResolvedValue({ ok: true, value: withCardbook })
     });
 
     await renderApp();
@@ -975,10 +996,10 @@ describe("App", () => {
 
   it("サイドバーが閉じていてもショートカットで対象ビューを開ける", async () => {
     window.relic = makeRelicApi({
-      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
+      getCardbookState: vi.fn().mockResolvedValue({ ok: true, value: withCardbook })
     });
     useUiStore.setState({
-      activeSidebarView: "files",
+      activeSidebarView: "cards",
       isRightPanelOpen: true,
       isSidebarOpen: false,
       isTypewriterMode: false,
@@ -992,7 +1013,7 @@ describe("App", () => {
     fireEvent.keyDown(window, { key: "f", metaKey: true });
 
     expect(useUiStore.getState().isSidebarOpen).toBe(true);
-    expect(useUiStore.getState().activeSidebarView).toBe("files");
+    expect(useUiStore.getState().activeSidebarView).toBe("cards");
     await waitFor(() => {
       expect(screen.getByLabelText("カード検索")).toHaveFocus();
     });
@@ -1004,50 +1025,50 @@ describe("App", () => {
     fireEvent.keyDown(window, { key: "n", metaKey: true });
 
     expect(useUiStore.getState().isSidebarOpen).toBe(true);
-    expect(useUiStore.getState().activeSidebarView).toBe("files");
+    expect(useUiStore.getState().activeSidebarView).toBe("cards");
   });
 
   it("カードボタンでカードサイドバーを開閉できる", async () => {
     window.relic = makeRelicApi({
-      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
+      getCardbookState: vi.fn().mockResolvedValue({ ok: true, value: withCardbook })
     });
 
     await renderApp();
 
-    const fileButton = await screen.findByRole("button", { name: "カード" });
+    const cardButton = await screen.findByRole("button", { name: "カード" });
 
     expect(useUiStore.getState().isSidebarOpen).toBe(true);
-    expect(fileButton).toHaveClass("active");
+    expect(cardButton).toHaveClass("active");
 
-    fireEvent.click(fileButton);
+    fireEvent.click(cardButton);
 
     expect(useUiStore.getState().isSidebarOpen).toBe(false);
-    expect(fileButton).not.toHaveClass("active");
+    expect(cardButton).not.toHaveClass("active");
 
-    fireEvent.click(fileButton);
+    fireEvent.click(cardButton);
 
     expect(useUiStore.getState().isSidebarOpen).toBe(true);
-    expect(useUiStore.getState().activeSidebarView).toBe("files");
-    expect(fileButton).toHaveClass("active");
+    expect(useUiStore.getState().activeSidebarView).toBe("cards");
+    expect(cardButton).toHaveClass("active");
   });
 
   it("新規カードボタンから名前なしでカードを作成する", async () => {
-    const createMarkdownFile = vi.fn().mockResolvedValue({
+    const createMarkdownCard = vi.fn().mockResolvedValue({
       ok: true,
       value: {
-        ...withWorkspace,
-        fileTree: [{ name: "新規カード", path: "新規カード.md", type: "file" }]
+        ...withCardbook,
+        cardTree: [{ name: "新規カード", path: "新規カード.md", type: "card" }]
       }
     });
-    const readMarkdownFile = vi.fn().mockResolvedValue({
+    const readMarkdownCard = vi.fn().mockResolvedValue({
       ok: true,
       value: { content: "", name: "新規カード", path: "新規カード.md" }
     });
 
     window.relic = makeRelicApi({
-      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace }),
-      createMarkdownFile,
-      readMarkdownFile
+      getCardbookState: vi.fn().mockResolvedValue({ ok: true, value: withCardbook }),
+      createMarkdownCard,
+      readMarkdownCard
     });
 
     await renderApp();
@@ -1055,32 +1076,32 @@ describe("App", () => {
     fireEvent.click(await screen.findByRole("button", { name: "新規カード" }));
 
     expect(document.querySelector(".rail-tab-flight--open")).toBeInTheDocument();
-    expect(createMarkdownFile).toHaveBeenCalledWith({ name: "新規カード" });
+    expect(createMarkdownCard).toHaveBeenCalledWith({ name: "新規カード" });
     expect((await screen.findAllByText("新規カード")).length).toBeGreaterThan(0);
     await waitFor(() => {
       expect(screen.getAllByRole("button", { name: /新規カード/ }).some((button) => (
-        button.classList.contains("file-tree-row--appearing")
+        button.classList.contains("card-tree-row--appearing")
       ))).toBe(true);
     });
   });
 
   it("メインパネルの新規カード作成は名前入力なしで作成する", async () => {
-    const createMarkdownFile = vi.fn().mockResolvedValue({
+    const createMarkdownCard = vi.fn().mockResolvedValue({
       ok: true,
       value: {
-        ...withWorkspace,
-        fileTree: [{ name: "新規カード", path: "新規カード.md", type: "file" }]
+        ...withCardbook,
+        cardTree: [{ name: "新規カード", path: "新規カード.md", type: "card" }]
       }
     });
-    const readMarkdownFile = vi.fn().mockResolvedValue({
+    const readMarkdownCard = vi.fn().mockResolvedValue({
       ok: true,
       value: { content: "", name: "新規カード", path: "新規カード.md" }
     });
 
     window.relic = makeRelicApi({
-      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace }),
-      createMarkdownFile,
-      readMarkdownFile
+      getCardbookState: vi.fn().mockResolvedValue({ ok: true, value: withCardbook }),
+      createMarkdownCard,
+      readMarkdownCard
     });
 
     await renderApp();
@@ -1088,28 +1109,28 @@ describe("App", () => {
     expect(screen.queryByLabelText("カード名を入力")).not.toBeInTheDocument();
     fireEvent.click(await screen.findByRole("button", { name: "新規カードを作成" }));
 
-    expect(createMarkdownFile).toHaveBeenCalledWith({ name: "新規カード" });
+    expect(createMarkdownCard).toHaveBeenCalledWith({ name: "新規カード" });
     await waitFor(() => {
       expect(useEditorStore.getState().leftPane.activeTabId).not.toBeNull();
     });
     const activeTabId = useEditorStore.getState().leftPane.activeTabId;
     const tab = useEditorStore.getState().tabs[activeTabId!];
-    expect(tab?.kind).toBe("file");
-    if (tab?.kind === "file") expect(tab.path).toBe("新規カード.md");
+    expect(tab?.kind).toBe("card");
+    if (tab?.kind === "card") expect(tab.path).toBe("新規カード.md");
   });
 
   it("新規カードフォルダボタンから名前なしでカードフォルダを作成する", async () => {
-    const createFolder = vi.fn().mockResolvedValue({
+    const createCardFolder = vi.fn().mockResolvedValue({
       ok: true,
       value: {
-        ...withWorkspace,
-        fileTree: [{ children: [], name: "新規カードフォルダ", path: "新規カードフォルダ", type: "folder" }]
+        ...withCardbook,
+        cardTree: [{ children: [], name: "新規カードフォルダ", path: "新規カードフォルダ", type: "cardFolder" }]
       }
     });
 
     window.relic = makeRelicApi({
-      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace }),
-      createFolder
+      getCardbookState: vi.fn().mockResolvedValue({ ok: true, value: withCardbook }),
+      createCardFolder
     });
 
     await renderApp();
@@ -1117,60 +1138,60 @@ describe("App", () => {
     fireEvent.click(await screen.findByRole("button", { name: "カードフォルダ作成" }));
 
     expect(document.querySelector(".sidebar-create-flight")).toBeInTheDocument();
-    expect(createFolder).toHaveBeenCalledWith({ name: "新規カードフォルダ" });
+    expect(createCardFolder).toHaveBeenCalledWith({ name: "新規カードフォルダ" });
     expect(await screen.findByRole("button", { name: /新規カードフォルダ/ })).toBeInTheDocument();
   });
 
   it("カードブックを開くボタンから既存カードフォルダを登録する", async () => {
-    const openWorkspace = vi.fn().mockResolvedValue({
+    const openCardbook = vi.fn().mockResolvedValue({
       ok: true,
       value: {
-        activeWorkspace: { id: "ws-1", name: "Notes", path: "/tmp/Notes" },
-        fileTree: [{ name: "index", path: "index.md", type: "file" }],
+        activeCardbook: { id: "ws-1", name: "Notes", path: "/tmp/Notes" },
+        cardTree: [{ name: "index", path: "index.md", type: "card" }],
         pinnedPaths: [],
-        workspaces: [{ id: "ws-1", name: "Notes", path: "/tmp/Notes" }]
+        cardbooks: [{ id: "ws-1", name: "Notes", path: "/tmp/Notes" }]
       }
     });
 
-    window.relic = makeRelicApi({ openWorkspace });
+    window.relic = makeRelicApi({ openCardbook });
 
     await renderApp();
 
     fireEvent.click(await screen.findByRole("button", { name: "カードブックを開く" }));
 
-    expect(openWorkspace).toHaveBeenCalledTimes(1);
+    expect(openCardbook).toHaveBeenCalledTimes(1);
     expect(await screen.findByText("Notes")).toBeInTheDocument();
     expect(await screen.findByRole("button", { name: /index/ })).toBeInTheDocument();
   });
 
   it("新規カードブック作成ボタンからカードブックを登録する", async () => {
-    const createNewWorkspace = vi.fn().mockResolvedValue({
+    const createNewCardbook = vi.fn().mockResolvedValue({
       ok: true,
       value: {
-        activeWorkspace: { id: "ws-new", name: "Drafts", path: "/tmp/Drafts" },
-        fileTree: [],
+        activeCardbook: { id: "ws-new", name: "Drafts", path: "/tmp/Drafts" },
+        cardTree: [],
         pinnedPaths: [],
-        workspaces: [{ id: "ws-new", name: "Drafts", path: "/tmp/Drafts" }]
+        cardbooks: [{ id: "ws-new", name: "Drafts", path: "/tmp/Drafts" }]
       }
     });
 
-    window.relic = makeRelicApi({ createNewWorkspace });
+    window.relic = makeRelicApi({ createNewCardbook });
 
     await renderApp();
 
     fireEvent.click(await screen.findByRole("button", { name: "新規カードブック" }));
 
-    expect(createNewWorkspace).toHaveBeenCalledTimes(1);
+    expect(createNewCardbook).toHaveBeenCalledTimes(1);
     expect(await screen.findByText("Drafts")).toBeInTheDocument();
   });
 
   it("登録済みカードブックをクリックして切り替える", async () => {
-    const switchWorkspace = vi.fn().mockResolvedValue({
+    const switchCardbook = vi.fn().mockResolvedValue({
       ok: true,
       value: {
-        activeWorkspace: { id: "ws-2", name: "Archive", path: "/tmp/Archive" },
-        fileTree: [{ name: "old", path: "old.md", type: "file" }],
-        workspaces: [
+        activeCardbook: { id: "ws-2", name: "Archive", path: "/tmp/Archive" },
+        cardTree: [{ name: "old", path: "old.md", type: "card" }],
+        cardbooks: [
           { id: "ws-1", name: "Notes", path: "/tmp/Notes" },
           { id: "ws-2", name: "Archive", path: "/tmp/Archive" }
         ]
@@ -1178,18 +1199,18 @@ describe("App", () => {
     });
 
     window.relic = makeRelicApi({
-      getWorkspaceState: vi.fn().mockResolvedValue({
+      getCardbookState: vi.fn().mockResolvedValue({
         ok: true,
         value: {
-          activeWorkspace: { id: "ws-1", name: "Notes", path: "/tmp/Notes" },
-          fileTree: [],
-          workspaces: [
+          activeCardbook: { id: "ws-1", name: "Notes", path: "/tmp/Notes" },
+          cardTree: [],
+          cardbooks: [
             { id: "ws-1", name: "Notes", path: "/tmp/Notes" },
             { id: "ws-2", name: "Archive", path: "/tmp/Archive" }
           ]
         }
       }),
-      switchWorkspace
+      switchCardbook
     });
 
     await renderApp();
@@ -1197,32 +1218,32 @@ describe("App", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Notes" }));
     fireEvent.click(await screen.findByRole("button", { name: "Archive" }));
 
-    expect(switchWorkspace).toHaveBeenCalledWith({ workspaceId: "ws-2" });
+    expect(switchCardbook).toHaveBeenCalledWith({ cardbookId: "ws-2" });
     expect(await screen.findByRole("button", { name: /old/ })).toBeInTheDocument();
   });
 
   it("左レールのカードブック名をダブルクリックで変更する", async () => {
-    const renameWorkspace = vi.fn().mockResolvedValue({
+    const renameCardbook = vi.fn().mockResolvedValue({
       ok: true,
       value: {
-        activeWorkspace: { id: "ws-1", name: "Renamed", path: "/tmp/Renamed" },
-        fileTree: [],
+        activeCardbook: { id: "ws-1", name: "Renamed", path: "/tmp/Renamed" },
+        cardTree: [],
         pinnedPaths: [],
-        workspaces: [{ id: "ws-1", name: "Renamed", path: "/tmp/Renamed" }]
+        cardbooks: [{ id: "ws-1", name: "Renamed", path: "/tmp/Renamed" }]
       }
     });
 
     window.relic = makeRelicApi({
-      getWorkspaceState: vi.fn().mockResolvedValue({
+      getCardbookState: vi.fn().mockResolvedValue({
         ok: true,
         value: {
-          activeWorkspace: { id: "ws-1", name: "Notes", path: "/tmp/Notes" },
-          fileTree: [],
+          activeCardbook: { id: "ws-1", name: "Notes", path: "/tmp/Notes" },
+          cardTree: [],
           pinnedPaths: [],
-          workspaces: [{ id: "ws-1", name: "Notes", path: "/tmp/Notes" }]
+          cardbooks: [{ id: "ws-1", name: "Notes", path: "/tmp/Notes" }]
         }
       }),
-      renameWorkspace
+      renameCardbook
     });
 
     await renderApp();
@@ -1232,32 +1253,32 @@ describe("App", () => {
     fireEvent.keyDown(screen.getByLabelText("名前を変更"), { key: "Enter" });
 
     await waitFor(() => {
-      expect(renameWorkspace).toHaveBeenCalledWith({ name: "Renamed", workspaceId: "ws-1" });
+      expect(renameCardbook).toHaveBeenCalledWith({ name: "Renamed", cardbookId: "ws-1" });
     });
   });
 
   it("左レールのカードブック名変更後は少しレールを開いたままにする", async () => {
-    const renameWorkspace = vi.fn().mockResolvedValue({
+    const renameCardbook = vi.fn().mockResolvedValue({
       ok: true,
       value: {
-        activeWorkspace: { id: "ws-1", name: "Renamed", path: "/tmp/Renamed" },
-        fileTree: [],
+        activeCardbook: { id: "ws-1", name: "Renamed", path: "/tmp/Renamed" },
+        cardTree: [],
         pinnedPaths: [],
-        workspaces: [{ id: "ws-1", name: "Renamed", path: "/tmp/Renamed" }]
+        cardbooks: [{ id: "ws-1", name: "Renamed", path: "/tmp/Renamed" }]
       }
     });
 
     window.relic = makeRelicApi({
-      getWorkspaceState: vi.fn().mockResolvedValue({
+      getCardbookState: vi.fn().mockResolvedValue({
         ok: true,
         value: {
-          activeWorkspace: { id: "ws-1", name: "Notes", path: "/tmp/Notes" },
-          fileTree: [],
+          activeCardbook: { id: "ws-1", name: "Notes", path: "/tmp/Notes" },
+          cardTree: [],
           pinnedPaths: [],
-          workspaces: [{ id: "ws-1", name: "Notes", path: "/tmp/Notes" }]
+          cardbooks: [{ id: "ws-1", name: "Notes", path: "/tmp/Notes" }]
         }
       }),
-      renameWorkspace
+      renameCardbook
     });
 
     await renderApp();
@@ -1268,24 +1289,24 @@ describe("App", () => {
     fireEvent.keyDown(screen.getByLabelText("名前を変更"), { key: "Enter" });
 
     await waitFor(() => {
-      expect(renameWorkspace).toHaveBeenCalledWith({ name: "Renamed", workspaceId: "ws-1" });
+      expect(renameCardbook).toHaveBeenCalledWith({ name: "Renamed", cardbookId: "ws-1" });
     });
-    expect(rail).toHaveClass("rail--workspace-editing");
+    expect(rail).toHaveClass("rail--cardbook-editing");
 
     await waitFor(() => {
-      expect(rail).not.toHaveClass("rail--workspace-editing");
+      expect(rail).not.toHaveClass("rail--cardbook-editing");
     }, { timeout: 1500 });
   });
 
   it("左レールのカードブック名変更中はレールを開いたままにする", async () => {
     window.relic = makeRelicApi({
-      getWorkspaceState: vi.fn().mockResolvedValue({
+      getCardbookState: vi.fn().mockResolvedValue({
         ok: true,
         value: {
-          activeWorkspace: { id: "ws-1", name: "Notes", path: "/tmp/Notes" },
-          fileTree: [],
+          activeCardbook: { id: "ws-1", name: "Notes", path: "/tmp/Notes" },
+          cardTree: [],
           pinnedPaths: [],
-          workspaces: [{ id: "ws-1", name: "Notes", path: "/tmp/Notes" }]
+          cardbooks: [{ id: "ws-1", name: "Notes", path: "/tmp/Notes" }]
         }
       })
     });
@@ -1295,35 +1316,35 @@ describe("App", () => {
     const rail = screen.getByRole("navigation");
     fireEvent.doubleClick(await screen.findByRole("button", { name: "Notes" }));
 
-    expect(rail).toHaveClass("rail--workspace-editing");
+    expect(rail).toHaveClass("rail--cardbook-editing");
 
     fireEvent.keyDown(screen.getByLabelText("名前を変更"), { key: "Escape" });
 
-    expect(rail).not.toHaveClass("rail--workspace-editing");
+    expect(rail).not.toHaveClass("rail--cardbook-editing");
   });
 
   it("左レールのカードブック名変更でIME確定中のEnterではリネーム確定しない", async () => {
-    const renameWorkspace = vi.fn().mockResolvedValue({
+    const renameCardbook = vi.fn().mockResolvedValue({
       ok: true,
       value: {
-        activeWorkspace: { id: "ws-1", name: "小説メモ", path: "/tmp/小説メモ" },
-        fileTree: [],
+        activeCardbook: { id: "ws-1", name: "小説メモ", path: "/tmp/小説メモ" },
+        cardTree: [],
         pinnedPaths: [],
-        workspaces: [{ id: "ws-1", name: "小説メモ", path: "/tmp/小説メモ" }]
+        cardbooks: [{ id: "ws-1", name: "小説メモ", path: "/tmp/小説メモ" }]
       }
     });
 
     window.relic = makeRelicApi({
-      getWorkspaceState: vi.fn().mockResolvedValue({
+      getCardbookState: vi.fn().mockResolvedValue({
         ok: true,
         value: {
-          activeWorkspace: { id: "ws-1", name: "Notes", path: "/tmp/Notes" },
-          fileTree: [],
+          activeCardbook: { id: "ws-1", name: "Notes", path: "/tmp/Notes" },
+          cardTree: [],
           pinnedPaths: [],
-          workspaces: [{ id: "ws-1", name: "Notes", path: "/tmp/Notes" }]
+          cardbooks: [{ id: "ws-1", name: "Notes", path: "/tmp/Notes" }]
         }
       }),
-      renameWorkspace
+      renameCardbook
     });
 
     await renderApp();
@@ -1333,37 +1354,37 @@ describe("App", () => {
     fireEvent.change(input, { target: { value: "小説メモ" } });
     fireEvent.keyDown(input, { isComposing: true, key: "Enter" });
 
-    expect(renameWorkspace).not.toHaveBeenCalled();
+    expect(renameCardbook).not.toHaveBeenCalled();
 
     fireEvent.keyDown(input, { key: "Enter" });
 
     await waitFor(() => {
-      expect(renameWorkspace).toHaveBeenCalledWith({ name: "小説メモ", workspaceId: "ws-1" });
+      expect(renameCardbook).toHaveBeenCalledWith({ name: "小説メモ", cardbookId: "ws-1" });
     });
   });
 
   it("左レールのカードブック名変更でIME確定後のkeyCode 229のEnterは確定する", async () => {
-    const renameWorkspace = vi.fn().mockResolvedValue({
+    const renameCardbook = vi.fn().mockResolvedValue({
       ok: true,
       value: {
-        activeWorkspace: { id: "ws-1", name: "小説メモ", path: "/tmp/小説メモ" },
-        fileTree: [],
+        activeCardbook: { id: "ws-1", name: "小説メモ", path: "/tmp/小説メモ" },
+        cardTree: [],
         pinnedPaths: [],
-        workspaces: [{ id: "ws-1", name: "小説メモ", path: "/tmp/小説メモ" }]
+        cardbooks: [{ id: "ws-1", name: "小説メモ", path: "/tmp/小説メモ" }]
       }
     });
 
     window.relic = makeRelicApi({
-      getWorkspaceState: vi.fn().mockResolvedValue({
+      getCardbookState: vi.fn().mockResolvedValue({
         ok: true,
         value: {
-          activeWorkspace: { id: "ws-1", name: "Notes", path: "/tmp/Notes" },
-          fileTree: [],
+          activeCardbook: { id: "ws-1", name: "Notes", path: "/tmp/Notes" },
+          cardTree: [],
           pinnedPaths: [],
-          workspaces: [{ id: "ws-1", name: "Notes", path: "/tmp/Notes" }]
+          cardbooks: [{ id: "ws-1", name: "Notes", path: "/tmp/Notes" }]
         }
       }),
-      renameWorkspace
+      renameCardbook
     });
 
     await renderApp();
@@ -1374,32 +1395,32 @@ describe("App", () => {
     fireEvent.keyDown(input, { key: "Enter", keyCode: 229 });
 
     await waitFor(() => {
-      expect(renameWorkspace).toHaveBeenCalledWith({ name: "小説メモ", workspaceId: "ws-1" });
+      expect(renameCardbook).toHaveBeenCalledWith({ name: "小説メモ", cardbookId: "ws-1" });
     });
   });
 
   it("左レールのカードブック名変更で文字確定Enterのkeyupではリネーム確定しない", async () => {
-    const renameWorkspace = vi.fn().mockResolvedValue({
+    const renameCardbook = vi.fn().mockResolvedValue({
       ok: true,
       value: {
-        activeWorkspace: { id: "ws-1", name: "小説メモ", path: "/tmp/小説メモ" },
-        fileTree: [],
+        activeCardbook: { id: "ws-1", name: "小説メモ", path: "/tmp/小説メモ" },
+        cardTree: [],
         pinnedPaths: [],
-        workspaces: [{ id: "ws-1", name: "小説メモ", path: "/tmp/小説メモ" }]
+        cardbooks: [{ id: "ws-1", name: "小説メモ", path: "/tmp/小説メモ" }]
       }
     });
 
     window.relic = makeRelicApi({
-      getWorkspaceState: vi.fn().mockResolvedValue({
+      getCardbookState: vi.fn().mockResolvedValue({
         ok: true,
         value: {
-          activeWorkspace: { id: "ws-1", name: "Notes", path: "/tmp/Notes" },
-          fileTree: [],
+          activeCardbook: { id: "ws-1", name: "Notes", path: "/tmp/Notes" },
+          cardTree: [],
           pinnedPaths: [],
-          workspaces: [{ id: "ws-1", name: "Notes", path: "/tmp/Notes" }]
+          cardbooks: [{ id: "ws-1", name: "Notes", path: "/tmp/Notes" }]
         }
       }),
-      renameWorkspace
+      renameCardbook
     });
 
     await renderApp();
@@ -1409,37 +1430,37 @@ describe("App", () => {
     fireEvent.change(input, { target: { value: "小説メモ" } });
     fireEvent.compositionStart(input);
     fireEvent.keyDown(input, { isComposing: true, key: "Enter" });
-    expect(renameWorkspace).not.toHaveBeenCalled();
+    expect(renameCardbook).not.toHaveBeenCalled();
 
     fireEvent.compositionEnd(input);
     fireEvent.keyUp(input, { key: "Enter" });
 
-    expect(renameWorkspace).not.toHaveBeenCalled();
+    expect(renameCardbook).not.toHaveBeenCalled();
 
     fireEvent.keyDown(input, { key: "Enter" });
 
     await waitFor(() => {
-      expect(renameWorkspace).toHaveBeenCalledWith({ name: "小説メモ", workspaceId: "ws-1" });
+      expect(renameCardbook).toHaveBeenCalledWith({ name: "小説メモ", cardbookId: "ws-1" });
     });
   });
 
   it("左レールのカードブック名変更が失敗してもリネーム状態を終了する", async () => {
-    const renameWorkspace = vi.fn().mockResolvedValue({
+    const renameCardbook = vi.fn().mockResolvedValue({
       ok: false,
-      error: { code: "WORKSPACE_RENAME_FAILED", message: "カードブック名を変更できませんでした。" }
+      error: { code: "CARDBOOK_RENAME_FAILED", message: "カードブック名を変更できませんでした。" }
     });
 
     window.relic = makeRelicApi({
-      getWorkspaceState: vi.fn().mockResolvedValue({
+      getCardbookState: vi.fn().mockResolvedValue({
         ok: true,
         value: {
-          activeWorkspace: { id: "ws-1", name: "Notes", path: "/tmp/Notes" },
-          fileTree: [],
+          activeCardbook: { id: "ws-1", name: "Notes", path: "/tmp/Notes" },
+          cardTree: [],
           pinnedPaths: [],
-          workspaces: [{ id: "ws-1", name: "Notes", path: "/tmp/Notes" }]
+          cardbooks: [{ id: "ws-1", name: "Notes", path: "/tmp/Notes" }]
         }
       }),
-      renameWorkspace
+      renameCardbook
     });
 
     await renderApp();
@@ -1455,22 +1476,22 @@ describe("App", () => {
   });
 
   it("左レールのカードブック右クリックメニューから一覧削除する", async () => {
-    const removeWorkspace = vi.fn().mockResolvedValue({
+    const removeCardbook = vi.fn().mockResolvedValue({
       ok: true,
-      value: { activeWorkspace: null, fileTree: [], pinnedPaths: [], workspaces: [] }
+      value: { activeCardbook: null, cardTree: [], pinnedPaths: [], cardbooks: [] }
     });
 
     window.relic = makeRelicApi({
-      getWorkspaceState: vi.fn().mockResolvedValue({
+      getCardbookState: vi.fn().mockResolvedValue({
         ok: true,
         value: {
-          activeWorkspace: { id: "ws-1", name: "Notes", path: "/tmp/Notes" },
-          fileTree: [],
+          activeCardbook: { id: "ws-1", name: "Notes", path: "/tmp/Notes" },
+          cardTree: [],
           pinnedPaths: [],
-          workspaces: [{ id: "ws-1", name: "Notes", path: "/tmp/Notes" }]
+          cardbooks: [{ id: "ws-1", name: "Notes", path: "/tmp/Notes" }]
         }
       }),
-      removeWorkspace
+      removeCardbook
     });
 
     await renderApp();
@@ -1479,77 +1500,77 @@ describe("App", () => {
     const menu = await screen.findByRole("menu");
     fireEvent.click(within(menu).getByRole("menuitem", { name: "Notes を一覧から削除" }));
 
-    expect(removeWorkspace).toHaveBeenCalledWith({ workspaceId: "ws-1" });
+    expect(removeCardbook).toHaveBeenCalledWith({ cardbookId: "ws-1" });
   });
 
   it("本文上部のカード名は本文外の表示として出し、直接リネームできる", async () => {
-    const renameMarkdownFile = vi.fn().mockResolvedValue({
+    const renameMarkdownCard = vi.fn().mockResolvedValue({
       ok: true,
       value: {
-        file: { content: "本文テスト", name: "読書ログ", path: "読書ログ.md" },
-        workspaceState: {
-          ...withWorkspace,
-          fileTree: [{ name: "読書ログ", path: "読書ログ.md", type: "file" }]
+        card: { content: "本文テスト", name: "読書ログ", path: "読書ログ.md" },
+        cardbookState: {
+          ...withCardbook,
+          cardTree: [{ name: "読書ログ", path: "読書ログ.md", type: "card" }]
         }
       }
     });
 
     window.relic = makeRelicApi({
-      getWorkspaceState: vi.fn().mockResolvedValue({
+      getCardbookState: vi.fn().mockResolvedValue({
         ok: true,
         value: {
-          ...withWorkspace,
-          fileTree: [{ name: "読書メモ", path: "読書メモ.md", type: "file" }]
+          ...withCardbook,
+          cardTree: [{ name: "読書メモ", path: "読書メモ.md", type: "card" }]
         }
       }),
-      readMarkdownFile: vi.fn().mockResolvedValue({
+      readMarkdownCard: vi.fn().mockResolvedValue({
         ok: true,
         value: { content: "本文テスト", name: "読書メモ", path: "読書メモ.md" }
       }),
-      renameMarkdownFile
+      renameMarkdownCard
     });
 
     const { container } = await renderApp();
 
     fireEvent.click(await screen.findByRole("button", { name: /読書メモ/ }));
 
-    const title = await screen.findByText("読書メモ", { selector: ".editor-file-title" });
+    const title = await screen.findByText("読書メモ", { selector: ".editor-card-title" });
     expect(title).toBeInTheDocument();
     expect(container.querySelector(".cm-content")).toHaveTextContent("本文テスト");
     expect(container.querySelector(".cm-content")).not.toHaveTextContent("読書メモ");
 
     fireEvent.click(title);
-    fireEvent.change(container.querySelector(".editor-file-title-input") as HTMLInputElement, {
+    fireEvent.change(container.querySelector(".editor-card-title-input") as HTMLInputElement, {
       target: { value: "読書ログ" }
     });
-    fireEvent.submit(container.querySelector(".editor-file-title-form") as HTMLFormElement);
+    fireEvent.submit(container.querySelector(".editor-card-title-form") as HTMLFormElement);
 
     await waitFor(() => {
-      expect(renameMarkdownFile).toHaveBeenCalledWith({ newName: "読書ログ", path: "読書メモ.md" });
+      expect(renameMarkdownCard).toHaveBeenCalledWith({ newName: "読書ログ", path: "読書メモ.md" });
     });
   });
 
   it("カードツリーの右クリックメニューからインラインでリネームする", async () => {
-    const renameMarkdownFile = vi.fn().mockResolvedValue({
+    const renameMarkdownCard = vi.fn().mockResolvedValue({
       ok: true,
       value: {
-        file: { content: "本文テスト", name: "読書ログ", path: "読書ログ.md" },
-        workspaceState: {
-          ...withWorkspace,
-          fileTree: [{ name: "読書ログ", path: "読書ログ.md", type: "file" }]
+        card: { content: "本文テスト", name: "読書ログ", path: "読書ログ.md" },
+        cardbookState: {
+          ...withCardbook,
+          cardTree: [{ name: "読書ログ", path: "読書ログ.md", type: "card" }]
         }
       }
     });
 
     window.relic = makeRelicApi({
-      getWorkspaceState: vi.fn().mockResolvedValue({
+      getCardbookState: vi.fn().mockResolvedValue({
         ok: true,
         value: {
-          ...withWorkspace,
-          fileTree: [{ name: "読書メモ", path: "読書メモ.md", type: "file" }]
+          ...withCardbook,
+          cardTree: [{ name: "読書メモ", path: "読書メモ.md", type: "card" }]
         }
       }),
-      renameMarkdownFile
+      renameMarkdownCard
     });
 
     await renderApp();
@@ -1560,32 +1581,32 @@ describe("App", () => {
     fireEvent.keyDown(screen.getByLabelText("名前を変更"), { key: "Enter" });
 
     await waitFor(() => {
-      expect(renameMarkdownFile).toHaveBeenCalledWith({ newName: "読書ログ", path: "読書メモ.md" });
+      expect(renameMarkdownCard).toHaveBeenCalledWith({ newName: "読書ログ", path: "読書メモ.md" });
     });
   });
 
   it("カードツリーの右クリックメニューからカードを複製する", async () => {
-    const duplicateMarkdownFile = vi.fn().mockResolvedValue({
+    const duplicateMarkdownCard = vi.fn().mockResolvedValue({
       ok: true,
       value: {
-        file: { content: "本文テスト", name: "読書メモ のコピー", path: "読書メモ のコピー.md" },
-        workspaceState: {
-          ...withWorkspace,
-          fileTree: [
-            { name: "読書メモ", path: "読書メモ.md", type: "file" },
-            { name: "読書メモ のコピー", path: "読書メモ のコピー.md", type: "file" }
+        card: { content: "本文テスト", name: "読書メモ のコピー", path: "読書メモ のコピー.md" },
+        cardbookState: {
+          ...withCardbook,
+          cardTree: [
+            { name: "読書メモ", path: "読書メモ.md", type: "card" },
+            { name: "読書メモ のコピー", path: "読書メモ のコピー.md", type: "card" }
           ]
         }
       }
     });
 
     window.relic = makeRelicApi({
-      duplicateMarkdownFile,
-      getWorkspaceState: vi.fn().mockResolvedValue({
+      duplicateMarkdownCard,
+      getCardbookState: vi.fn().mockResolvedValue({
         ok: true,
         value: {
-          ...withWorkspace,
-          fileTree: [{ name: "読書メモ", path: "読書メモ.md", type: "file" }]
+          ...withCardbook,
+          cardTree: [{ name: "読書メモ", path: "読書メモ.md", type: "card" }]
         }
       })
     });
@@ -1596,25 +1617,25 @@ describe("App", () => {
     fireEvent.click(await screen.findByRole("menuitem", { name: "複製" }));
 
     await waitFor(() => {
-      expect(duplicateMarkdownFile).toHaveBeenCalledWith({ path: "読書メモ.md" });
+      expect(duplicateMarkdownCard).toHaveBeenCalledWith({ path: "読書メモ.md" });
     });
     await waitFor(() => {
       expect(screen.getAllByRole("button", { name: /読書メモ のコピー/ }).some((button) => (
-        button.classList.contains("file-tree-row--appearing")
+        button.classList.contains("card-tree-row--appearing")
       ))).toBe(true);
     });
   });
 
   it("カードツリーの右クリックメニューから開く・ピン留め・パスコピーを実行する", async () => {
-    const readMarkdownFile = vi.fn().mockResolvedValue({
+    const readMarkdownCard = vi.fn().mockResolvedValue({
       ok: true,
       value: { content: "本文テスト", name: "読書メモ", path: "読書メモ.md" }
     });
     const togglePin = vi.fn().mockResolvedValue({
       ok: true,
       value: {
-        ...withWorkspace,
-        fileTree: [{ name: "読書メモ", path: "読書メモ.md", type: "file" }],
+        ...withCardbook,
+        cardTree: [{ name: "読書メモ", path: "読書メモ.md", type: "card" }],
         pinnedPaths: ["読書メモ.md"]
       }
     });
@@ -1625,21 +1646,21 @@ describe("App", () => {
     });
 
     window.relic = makeRelicApi({
-      getWorkspaceState: vi.fn().mockResolvedValue({
+      getCardbookState: vi.fn().mockResolvedValue({
         ok: true,
         value: {
-          ...withWorkspace,
-          fileTree: [{ name: "読書メモ", path: "読書メモ.md", type: "file" }]
+          ...withCardbook,
+          cardTree: [{ name: "読書メモ", path: "読書メモ.md", type: "card" }]
         }
       }),
-      readMarkdownFile,
+      readMarkdownCard,
       togglePin
     });
 
     await renderApp();
 
-    const fileRow = await screen.findByRole("button", { name: /読書メモ/ });
-    fireEvent.contextMenu(fileRow);
+    const cardRow = await screen.findByRole("button", { name: /読書メモ/ });
+    fireEvent.contextMenu(cardRow);
 
     expect(await screen.findByRole("menuitem", { name: "開く" })).toBeInTheDocument();
     expect(screen.getByRole("menuitem", { name: "ピン留め" })).toBeInTheDocument();
@@ -1649,64 +1670,64 @@ describe("App", () => {
 
     expect(writeText).toHaveBeenCalledWith("読書メモ.md");
 
-    fireEvent.contextMenu(fileRow);
+    fireEvent.contextMenu(cardRow);
     fireEvent.click(await screen.findByRole("menuitem", { name: "ピン留め" }));
 
     await waitFor(() => {
       expect(togglePin).toHaveBeenCalledWith("読書メモ.md");
     });
 
-    fireEvent.contextMenu(fileRow);
+    fireEvent.contextMenu(cardRow);
     fireEvent.click(await screen.findByRole("menuitem", { name: "開く" }));
 
     await waitFor(() => {
-      expect(readMarkdownFile).toHaveBeenCalledWith({ path: "読書メモ.md" });
+      expect(readMarkdownCard).toHaveBeenCalledWith({ path: "読書メモ.md" });
     });
   });
 
   it("カードツリーの右クリックメニューから作成・移動・Markdownリンクコピー・場所表示を実行する", async () => {
-    const createLinkedMarkdownFile = vi.fn().mockResolvedValue({
+    const createLinkedMarkdownCard = vi.fn().mockResolvedValue({
       ok: true,
       value: {
-        file: { content: "", name: "新規メモ", path: "資料/新規メモ.md" },
-        workspaceState: {
-          ...withWorkspace,
-          fileTree: [
+        card: { content: "", name: "新規メモ", path: "資料/新規メモ.md" },
+        cardbookState: {
+          ...withCardbook,
+          cardTree: [
             {
-              children: [{ name: "新規メモ", path: "資料/新規メモ.md", type: "file" }],
+              children: [{ name: "新規メモ", path: "資料/新規メモ.md", type: "card" }],
               name: "資料",
               path: "資料",
-              type: "folder"
+              type: "cardFolder"
             }
           ]
         }
       }
     });
-    const createFolder = vi.fn().mockResolvedValue({
+    const createCardFolder = vi.fn().mockResolvedValue({
       ok: true,
       value: {
-        ...withWorkspace,
-        fileTree: [
+        ...withCardbook,
+        cardTree: [
           {
             children: [
-              { children: [], name: "下書き", path: "資料/下書き", type: "folder" },
-              { name: "読書メモ", path: "資料/読書メモ.md", type: "file" }
+              { children: [], name: "下書き", path: "資料/下書き", type: "cardFolder" },
+              { name: "読書メモ", path: "資料/読書メモ.md", type: "card" }
             ],
             name: "資料",
             path: "資料",
-            type: "folder"
+            type: "cardFolder"
           }
         ]
       }
     });
-    const moveMarkdownFile = vi.fn().mockResolvedValue({
+    const moveMarkdownCard = vi.fn().mockResolvedValue({
       ok: true,
       value: {
-        file: { content: "本文", name: "読書メモ", path: "archive/読書メモ.md" },
-        workspaceState: withWorkspace
+        card: { content: "本文", name: "読書メモ", path: "archive/読書メモ.md" },
+        cardbookState: withCardbook
       }
     });
-    const revealWorkspaceItem = vi.fn().mockResolvedValue({ ok: true, value: undefined });
+    const revealCardbookItem = vi.fn().mockResolvedValue({ ok: true, value: undefined });
     const writeText = vi.fn().mockResolvedValue(undefined);
     const promptSpy = vi.spyOn(window, "prompt");
     Object.defineProperty(navigator, "clipboard", {
@@ -1715,60 +1736,60 @@ describe("App", () => {
     });
 
     window.relic = makeRelicApi({
-      createFolder,
-      createLinkedMarkdownFile,
-      getWorkspaceState: vi.fn().mockResolvedValue({
+      createCardFolder,
+      createLinkedMarkdownCard,
+      getCardbookState: vi.fn().mockResolvedValue({
         ok: true,
         value: {
-          ...withWorkspace,
-          fileTree: [
+          ...withCardbook,
+          cardTree: [
             {
-              children: [{ name: "読書メモ", path: "資料/読書メモ.md", type: "file" }],
+              children: [{ name: "読書メモ", path: "資料/読書メモ.md", type: "card" }],
               name: "資料",
               path: "資料",
-              type: "folder"
+              type: "cardFolder"
             }
           ]
         }
       }),
-      moveMarkdownFile,
-      revealWorkspaceItem
+      moveMarkdownCard,
+      revealCardbookItem
     });
 
     await renderApp();
 
-    const folderRow = await screen.findByRole("button", { name: /資料/ });
+    const cardFolderRow = await screen.findByRole("button", { name: /資料/ });
     promptSpy.mockReturnValueOnce("新規メモ");
-    fireEvent.contextMenu(folderRow);
+    fireEvent.contextMenu(cardFolderRow);
     fireEvent.click(await screen.findByRole("menuitem", { name: "ここに新規カード" }));
     await waitFor(() => {
-      expect(createLinkedMarkdownFile).toHaveBeenCalledWith({ path: "資料/新規メモ.md" });
+      expect(createLinkedMarkdownCard).toHaveBeenCalledWith({ path: "資料/新規メモ.md" });
     });
 
     promptSpy.mockReturnValueOnce("下書き");
-    fireEvent.contextMenu(folderRow);
+    fireEvent.contextMenu(cardFolderRow);
     fireEvent.click(await screen.findByRole("menuitem", { name: "ここにカードフォルダ作成" }));
     await waitFor(() => {
-      expect(createFolder).toHaveBeenCalledWith({ name: "下書き", parentFolder: "資料" });
+      expect(createCardFolder).toHaveBeenCalledWith({ name: "下書き", parentCardFolder: "資料" });
     });
 
-    const fileRow = await screen.findByRole("button", { name: /読書メモ/ });
-    fireEvent.contextMenu(fileRow);
+    const cardRow = await screen.findByRole("button", { name: /読書メモ/ });
+    fireEvent.contextMenu(cardRow);
     fireEvent.click(await screen.findByRole("menuitem", { name: "Markdownリンクをコピー" }));
     expect(writeText).toHaveBeenCalledWith("[[資料/読書メモ]]");
 
-    fireEvent.contextMenu(fileRow);
+    fireEvent.contextMenu(cardRow);
     fireEvent.click(await screen.findByRole("menuitem", { name: "カードの場所を表示" }));
     await waitFor(() => {
-      expect(revealWorkspaceItem).toHaveBeenCalledWith({ path: "資料/読書メモ.md" });
+      expect(revealCardbookItem).toHaveBeenCalledWith({ path: "資料/読書メモ.md" });
     });
 
     promptSpy.mockReturnValueOnce("archive");
-    fireEvent.contextMenu(fileRow);
+    fireEvent.contextMenu(cardRow);
     fireEvent.click(await screen.findByRole("menuitem", { name: "移動…" }));
     await waitFor(() => {
-      expect(moveMarkdownFile).toHaveBeenCalledWith({
-        destinationFolder: "archive",
+      expect(moveMarkdownCard).toHaveBeenCalledWith({
+        destinationCardFolder: "archive",
         path: "資料/読書メモ.md"
       });
     });
@@ -1778,11 +1799,11 @@ describe("App", () => {
 
   it("カードツリーの右クリックメニューを画面基準で表示する", async () => {
     window.relic = makeRelicApi({
-      getWorkspaceState: vi.fn().mockResolvedValue({
+      getCardbookState: vi.fn().mockResolvedValue({
         ok: true,
         value: {
-          ...withWorkspace,
-          fileTree: [{ name: "読書メモ", path: "読書メモ.md", type: "file" }]
+          ...withCardbook,
+          cardTree: [{ name: "読書メモ", path: "読書メモ.md", type: "card" }]
         }
       })
     });
@@ -1796,7 +1817,7 @@ describe("App", () => {
 
     const menu = await screen.findByRole("menu");
 
-    expect(menu).toHaveClass("file-tree-context-menu");
+    expect(menu).toHaveClass("card-tree-context-menu");
     expect(menu.parentElement).toBe(document.body);
     expect(menu).toHaveStyle({ position: "fixed" });
     expect(Number.parseInt((menu as HTMLElement).style.left, 10)).toBeGreaterThan(0);
@@ -1804,30 +1825,30 @@ describe("App", () => {
   });
 
   it("コマンドパレットからアクティブカードを複製する", async () => {
-    const duplicateMarkdownFile = vi.fn().mockResolvedValue({
+    const duplicateMarkdownCard = vi.fn().mockResolvedValue({
       ok: true,
       value: {
-        file: { content: "本文テスト", name: "読書メモ のコピー", path: "読書メモ のコピー.md" },
-        workspaceState: {
-          ...withWorkspace,
-          fileTree: [
-            { name: "読書メモ", path: "読書メモ.md", type: "file" },
-            { name: "読書メモ のコピー", path: "読書メモ のコピー.md", type: "file" }
+        card: { content: "本文テスト", name: "読書メモ のコピー", path: "読書メモ のコピー.md" },
+        cardbookState: {
+          ...withCardbook,
+          cardTree: [
+            { name: "読書メモ", path: "読書メモ.md", type: "card" },
+            { name: "読書メモ のコピー", path: "読書メモ のコピー.md", type: "card" }
           ]
         }
       }
     });
 
     window.relic = makeRelicApi({
-      duplicateMarkdownFile,
-      getWorkspaceState: vi.fn().mockResolvedValue({
+      duplicateMarkdownCard,
+      getCardbookState: vi.fn().mockResolvedValue({
         ok: true,
         value: {
-          ...withWorkspace,
-          fileTree: [{ name: "読書メモ", path: "読書メモ.md", type: "file" }]
+          ...withCardbook,
+          cardTree: [{ name: "読書メモ", path: "読書メモ.md", type: "card" }]
         }
       }),
-      readMarkdownFile: vi.fn().mockResolvedValue({
+      readMarkdownCard: vi.fn().mockResolvedValue({
         ok: true,
         value: { content: "本文テスト", name: "読書メモ", path: "読書メモ.md" }
       })
@@ -1840,13 +1861,13 @@ describe("App", () => {
     fireEvent.click(await screen.findByText("カードを複製: 読書メモ"));
 
     await waitFor(() => {
-      expect(duplicateMarkdownFile).toHaveBeenCalledWith({ path: "読書メモ.md" });
+      expect(duplicateMarkdownCard).toHaveBeenCalledWith({ path: "読書メモ.md" });
     });
   });
 
   it("コマンドパレットを閉じると退場反応を通る", async () => {
     window.relic = makeRelicApi({
-      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
+      getCardbookState: vi.fn().mockResolvedValue({ ok: true, value: withCardbook })
     });
 
     const { container } = await renderApp();
@@ -1867,7 +1888,7 @@ describe("App", () => {
 
   it("クイックスイッチャーを閉じると退場反応を通る", async () => {
     window.relic = makeRelicApi({
-      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
+      getCardbookState: vi.fn().mockResolvedValue({ ok: true, value: withCardbook })
     });
 
     const { container } = await renderApp();
@@ -1887,19 +1908,19 @@ describe("App", () => {
   });
 
   it("コマンドパレットからアクティブカードをゴミ箱に移動する", async () => {
-    const moveItemToTrash = vi.fn().mockResolvedValue({ ok: true, value: withWorkspace });
+    const moveItemToTrash = vi.fn().mockResolvedValue({ ok: true, value: withCardbook });
     const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
 
     window.relic = makeRelicApi({
-      getWorkspaceState: vi.fn().mockResolvedValue({
+      getCardbookState: vi.fn().mockResolvedValue({
         ok: true,
         value: {
-          ...withWorkspace,
-          fileTree: [{ name: "読書メモ", path: "読書メモ.md", type: "file" }]
+          ...withCardbook,
+          cardTree: [{ name: "読書メモ", path: "読書メモ.md", type: "card" }]
         }
       }),
       moveItemToTrash,
-      readMarkdownFile: vi.fn().mockResolvedValue({
+      readMarkdownCard: vi.fn().mockResolvedValue({
         ok: true,
         value: { content: "本文テスト", name: "読書メモ", path: "読書メモ.md" }
       })
@@ -1912,7 +1933,7 @@ describe("App", () => {
     fireEvent.click(await screen.findByText("カードを削除: 読書メモ"));
 
     await waitFor(() => {
-      expect(moveItemToTrash).toHaveBeenCalledWith({ path: "読書メモ.md", type: "file" });
+      expect(moveItemToTrash).toHaveBeenCalledWith({ path: "読書メモ.md", type: "card" });
     });
     expect(confirmSpy).toHaveBeenCalled();
 
@@ -1920,112 +1941,112 @@ describe("App", () => {
   });
 
   it("カードとカードフォルダはカードフォルダ行へのドラッグ&ドロップで移動できる", async () => {
-    const movedWorkspaceState = {
-      ...withWorkspace,
-      fileTree: [
+    const movedCardbookState = {
+      ...withCardbook,
+      cardTree: [
         {
-          children: [{ name: "note", path: "archive/note.md", type: "file" }],
+          children: [{ name: "note", path: "archive/note.md", type: "card" }],
           name: "archive",
           path: "archive",
-          type: "folder"
+          type: "cardFolder"
         },
-        { children: [], name: "drafts", path: "drafts", type: "folder" }
+        { children: [], name: "drafts", path: "drafts", type: "cardFolder" }
       ]
     };
-    const moveMarkdownFile = vi.fn().mockResolvedValue({
+    const moveMarkdownCard = vi.fn().mockResolvedValue({
       ok: true,
       value: {
-        file: { content: "# Note", name: "note", path: "archive/note.md" },
-        workspaceState: movedWorkspaceState
+        card: { content: "# Note", name: "note", path: "archive/note.md" },
+        cardbookState: movedCardbookState
       }
     });
-    const moveFolder = vi.fn().mockResolvedValue({ ok: true, value: movedWorkspaceState });
+    const moveCardFolder = vi.fn().mockResolvedValue({ ok: true, value: movedCardbookState });
 
     window.relic = makeRelicApi({
-      getWorkspaceState: vi.fn().mockResolvedValue({
+      getCardbookState: vi.fn().mockResolvedValue({
         ok: true,
         value: {
-          ...withWorkspace,
-          fileTree: [
-            { name: "note", path: "note.md", type: "file" },
-            { children: [], name: "drafts", path: "drafts", type: "folder" },
-            { children: [], name: "archive", path: "archive", type: "folder" }
+          ...withCardbook,
+          cardTree: [
+            { name: "note", path: "note.md", type: "card" },
+            { children: [], name: "drafts", path: "drafts", type: "cardFolder" },
+            { children: [], name: "archive", path: "archive", type: "cardFolder" }
           ]
         }
       }),
-      moveFolder,
-      moveMarkdownFile
+      moveCardFolder,
+      moveMarkdownCard
     });
 
     await renderApp();
 
-    const fileRow = await screen.findByRole("button", { name: /note/ });
+    const cardRow = await screen.findByRole("button", { name: /note/ });
     const draftsRow = await screen.findByRole("button", { name: /drafts/ });
     const archiveRow = await screen.findByRole("button", { name: /archive/ });
 
-    fireEvent.dragStart(fileRow, {
+    fireEvent.dragStart(cardRow, {
       dataTransfer: { effectAllowed: "move", setData: vi.fn() }
     });
 
-    expect(fileRow).toHaveClass("dragging");
+    expect(cardRow).toHaveClass("dragging");
 
     fireEvent.drop(archiveRow, {
-      dataTransfer: { getData: () => JSON.stringify({ path: "note.md", type: "file" }) }
+      dataTransfer: { getData: () => JSON.stringify({ path: "note.md", type: "card" }) }
     });
 
-    fireEvent.dragEnd(fileRow);
+    fireEvent.dragEnd(cardRow);
 
-    expect(fileRow).not.toHaveClass("dragging");
+    expect(cardRow).not.toHaveClass("dragging");
 
     await waitFor(() => {
-      expect(moveMarkdownFile).toHaveBeenCalledWith({ destinationFolder: "archive", path: "note.md" });
+      expect(moveMarkdownCard).toHaveBeenCalledWith({ destinationCardFolder: "archive", path: "note.md" });
     });
 
     fireEvent.dragStart(draftsRow, {
       dataTransfer: { effectAllowed: "move", setData: vi.fn() }
     });
     fireEvent.drop(archiveRow, {
-      dataTransfer: { getData: () => JSON.stringify({ path: "drafts", type: "folder" }) }
+      dataTransfer: { getData: () => JSON.stringify({ path: "drafts", type: "cardFolder" }) }
     });
 
     await waitFor(() => {
-      expect(moveFolder).toHaveBeenCalledWith({ destinationFolder: "archive", path: "drafts" });
+      expect(moveCardFolder).toHaveBeenCalledWith({ destinationCardFolder: "archive", path: "drafts" });
     });
   });
 
   it("展開済みカードフォルダ内の余白へドロップしても移動しない", async () => {
-    const moveMarkdownFile = vi.fn().mockResolvedValue({
+    const moveMarkdownCard = vi.fn().mockResolvedValue({
       ok: true,
       value: {
-        file: { content: "# Note", name: "note", path: "archive/note.md" },
-        workspaceState: withWorkspace
+        card: { content: "# Note", name: "note", path: "archive/note.md" },
+        cardbookState: withCardbook
       }
     });
 
     window.relic = makeRelicApi({
-      getWorkspaceState: vi.fn().mockResolvedValue({
+      getCardbookState: vi.fn().mockResolvedValue({
         ok: true,
         value: {
-          ...withWorkspace,
-          fileTree: [
-            { name: "note", path: "note.md", type: "file" },
+          ...withCardbook,
+          cardTree: [
+            { name: "note", path: "note.md", type: "card" },
             {
-              children: [{ name: "old", path: "archive/old.md", type: "file" }],
+              children: [{ name: "old", path: "archive/old.md", type: "card" }],
               name: "archive",
               path: "archive",
-              type: "folder"
+              type: "cardFolder"
             }
           ]
         }
       }),
-      moveMarkdownFile
+      moveMarkdownCard
     });
 
     const { container } = await renderApp();
 
     const noteRow = await screen.findByRole("button", { name: /note/ });
     const archiveRow = await screen.findByRole("button", { name: /archive/ });
-    const archiveTree = archiveRow.closest("li")?.querySelector("ul.file-tree");
+    const archiveTree = archiveRow.closest("li")?.querySelector("ul.card-tree");
 
     expect(archiveTree).not.toBeNull();
 
@@ -2033,44 +2054,44 @@ describe("App", () => {
       dataTransfer: { effectAllowed: "move", setData: vi.fn() }
     });
     fireEvent.dragOver(archiveTree ?? container, {
-      dataTransfer: { getData: () => JSON.stringify({ path: "note.md", type: "file" }) }
+      dataTransfer: { getData: () => JSON.stringify({ path: "note.md", type: "card" }) }
     });
 
-    expect(archiveTree).not.toHaveClass("file-tree--drag-over");
+    expect(archiveTree).not.toHaveClass("card-tree--drag-over");
 
     fireEvent.drop(archiveTree ?? container, {
-      dataTransfer: { getData: () => JSON.stringify({ path: "note.md", type: "file" }) }
+      dataTransfer: { getData: () => JSON.stringify({ path: "note.md", type: "card" }) }
     });
 
-    expect(moveMarkdownFile).not.toHaveBeenCalled();
+    expect(moveMarkdownCard).not.toHaveBeenCalled();
   });
 
   it("カード行へドロップするとそのカードと同じ親カードフォルダへ移動する", async () => {
-    const moveMarkdownFile = vi.fn().mockResolvedValue({
+    const moveMarkdownCard = vi.fn().mockResolvedValue({
       ok: true,
       value: {
-        file: { content: "# Note", name: "note", path: "archive/note.md" },
-        workspaceState: withWorkspace
+        card: { content: "# Note", name: "note", path: "archive/note.md" },
+        cardbookState: withCardbook
       }
     });
 
     window.relic = makeRelicApi({
-      getWorkspaceState: vi.fn().mockResolvedValue({
+      getCardbookState: vi.fn().mockResolvedValue({
         ok: true,
         value: {
-          ...withWorkspace,
-          fileTree: [
-            { name: "note", path: "note.md", type: "file" },
+          ...withCardbook,
+          cardTree: [
+            { name: "note", path: "note.md", type: "card" },
             {
-              children: [{ name: "old", path: "archive/old.md", type: "file" }],
+              children: [{ name: "old", path: "archive/old.md", type: "card" }],
               name: "archive",
               path: "archive",
-              type: "folder"
+              type: "cardFolder"
             }
           ]
         }
       }),
-      moveMarkdownFile
+      moveMarkdownCard
     });
 
     await renderApp();
@@ -2082,48 +2103,48 @@ describe("App", () => {
       dataTransfer: { effectAllowed: "move", setData: vi.fn() }
     });
     fireEvent.dragOver(oldRow, {
-      dataTransfer: { getData: () => JSON.stringify({ path: "note.md", type: "file" }) }
+      dataTransfer: { getData: () => JSON.stringify({ path: "note.md", type: "card" }) }
     });
 
     expect(oldRow).toHaveClass("drag-over");
 
     fireEvent.drop(oldRow, {
-      dataTransfer: { getData: () => JSON.stringify({ path: "note.md", type: "file" }) }
+      dataTransfer: { getData: () => JSON.stringify({ path: "note.md", type: "card" }) }
     });
 
     await waitFor(() => {
-      expect(moveMarkdownFile).toHaveBeenCalledWith({ destinationFolder: "archive", path: "note.md" });
+      expect(moveMarkdownCard).toHaveBeenCalledWith({ destinationCardFolder: "archive", path: "note.md" });
     });
   });
 
   it("空カードフォルダの内容エリアへドロップしても移動しない", async () => {
-    const moveMarkdownFile = vi.fn().mockResolvedValue({
+    const moveMarkdownCard = vi.fn().mockResolvedValue({
       ok: true,
       value: {
-        file: { content: "# Note", name: "note", path: "archive/note.md" },
-        workspaceState: withWorkspace
+        card: { content: "# Note", name: "note", path: "archive/note.md" },
+        cardbookState: withCardbook
       }
     });
 
     window.relic = makeRelicApi({
-      getWorkspaceState: vi.fn().mockResolvedValue({
+      getCardbookState: vi.fn().mockResolvedValue({
         ok: true,
         value: {
-          ...withWorkspace,
-          fileTree: [
-            { name: "note", path: "note.md", type: "file" },
-            { children: [], name: "archive", path: "archive", type: "folder" }
+          ...withCardbook,
+          cardTree: [
+            { name: "note", path: "note.md", type: "card" },
+            { children: [], name: "archive", path: "archive", type: "cardFolder" }
           ]
         }
       }),
-      moveMarkdownFile
+      moveMarkdownCard
     });
 
     const { container } = await renderApp();
 
     const noteRow = await screen.findByRole("button", { name: /note/ });
     const archiveRow = await screen.findByRole("button", { name: /archive/ });
-    const archiveTree = archiveRow.closest("li")?.querySelector("ul.file-tree");
+    const archiveTree = archiveRow.closest("li")?.querySelector("ul.card-tree");
 
     expect(archiveTree).not.toBeNull();
 
@@ -2131,47 +2152,47 @@ describe("App", () => {
       dataTransfer: { effectAllowed: "move", setData: vi.fn() }
     });
     fireEvent.dragOver(archiveTree ?? container, {
-      dataTransfer: { getData: () => JSON.stringify({ path: "note.md", type: "file" }) }
+      dataTransfer: { getData: () => JSON.stringify({ path: "note.md", type: "card" }) }
     });
 
-    expect(archiveTree).not.toHaveClass("file-tree--drag-over");
+    expect(archiveTree).not.toHaveClass("card-tree--drag-over");
 
     fireEvent.drop(archiveTree ?? container, {
-      dataTransfer: { getData: () => JSON.stringify({ path: "note.md", type: "file" }) }
+      dataTransfer: { getData: () => JSON.stringify({ path: "note.md", type: "card" }) }
     });
 
-    expect(moveMarkdownFile).not.toHaveBeenCalled();
+    expect(moveMarkdownCard).not.toHaveBeenCalled();
   });
 
   it("同じ親カードフォルダや子孫カードフォルダへはドラッグ移動しない", async () => {
-    const moveFolder = vi.fn();
-    const moveMarkdownFile = vi.fn();
+    const moveCardFolder = vi.fn();
+    const moveMarkdownCard = vi.fn();
 
     window.relic = makeRelicApi({
-      getWorkspaceState: vi.fn().mockResolvedValue({
+      getCardbookState: vi.fn().mockResolvedValue({
         ok: true,
         value: {
-          ...withWorkspace,
-          fileTree: [
+          ...withCardbook,
+          cardTree: [
             {
               children: [
-                { name: "note", path: "archive/note.md", type: "file" },
+                { name: "note", path: "archive/note.md", type: "card" },
                 {
                   children: [],
                   name: "child",
                   path: "archive/child",
-                  type: "folder"
+                  type: "cardFolder"
                 }
               ],
               name: "archive",
               path: "archive",
-              type: "folder"
+              type: "cardFolder"
             }
           ]
         }
       }),
-      moveFolder,
-      moveMarkdownFile
+      moveCardFolder,
+      moveMarkdownCard
     });
 
     await renderApp();
@@ -2180,35 +2201,35 @@ describe("App", () => {
     const childRow = await screen.findByRole("button", { name: /child/ });
 
     fireEvent.drop(archiveRow, {
-      dataTransfer: { getData: () => JSON.stringify({ path: "archive/note.md", type: "file" }) }
+      dataTransfer: { getData: () => JSON.stringify({ path: "archive/note.md", type: "card" }) }
     });
     fireEvent.drop(childRow, {
-      dataTransfer: { getData: () => JSON.stringify({ path: "archive", type: "folder" }) }
+      dataTransfer: { getData: () => JSON.stringify({ path: "archive", type: "cardFolder" }) }
     });
 
-    expect(moveMarkdownFile).not.toHaveBeenCalled();
-    expect(moveFolder).not.toHaveBeenCalled();
+    expect(moveMarkdownCard).not.toHaveBeenCalled();
+    expect(moveCardFolder).not.toHaveBeenCalled();
   });
 
   it("カードとカードフォルダを複数選択できる", async () => {
-    const readMarkdownFile = vi.fn().mockResolvedValue({
+    const readMarkdownCard = vi.fn().mockResolvedValue({
       ok: true,
       value: { content: "本文", name: "note", path: "note.md" }
     });
 
     window.relic = makeRelicApi({
-      getWorkspaceState: vi.fn().mockResolvedValue({
+      getCardbookState: vi.fn().mockResolvedValue({
         ok: true,
         value: {
-          ...withWorkspace,
-          fileTree: [
-            { name: "note", path: "note.md", type: "file" },
-            { children: [], name: "drafts", path: "drafts", type: "folder" },
-            { children: [], name: "archive", path: "archive", type: "folder" }
+          ...withCardbook,
+          cardTree: [
+            { name: "note", path: "note.md", type: "card" },
+            { children: [], name: "drafts", path: "drafts", type: "cardFolder" },
+            { children: [], name: "archive", path: "archive", type: "cardFolder" }
           ]
         }
       }),
-      readMarkdownFile
+      readMarkdownCard
     });
 
     await renderApp();
@@ -2237,47 +2258,47 @@ describe("App", () => {
 
     fireEvent.click(noteRow);
 
-    expect(readMarkdownFile).not.toHaveBeenCalled();
+    expect(readMarkdownCard).not.toHaveBeenCalled();
   });
 
   it("複数選択したカードとカードフォルダをドラッグ&ドロップでまとめて移動できる", async () => {
-    const movedWorkspaceState = {
-      ...withWorkspace,
-      fileTree: [
+    const movedCardbookState = {
+      ...withCardbook,
+      cardTree: [
         {
           children: [
-            { name: "note", path: "archive/note.md", type: "file" },
-            { children: [], name: "drafts", path: "archive/drafts", type: "folder" }
+            { name: "note", path: "archive/note.md", type: "card" },
+            { children: [], name: "drafts", path: "archive/drafts", type: "cardFolder" }
           ],
           name: "archive",
           path: "archive",
-          type: "folder"
+          type: "cardFolder"
         }
       ]
     };
-    const moveMarkdownFile = vi.fn().mockResolvedValue({
+    const moveMarkdownCard = vi.fn().mockResolvedValue({
       ok: true,
       value: {
-        file: { content: "# Note", name: "note", path: "archive/note.md" },
-        workspaceState: movedWorkspaceState
+        card: { content: "# Note", name: "note", path: "archive/note.md" },
+        cardbookState: movedCardbookState
       }
     });
-    const moveFolder = vi.fn().mockResolvedValue({ ok: true, value: movedWorkspaceState });
+    const moveCardFolder = vi.fn().mockResolvedValue({ ok: true, value: movedCardbookState });
 
     window.relic = makeRelicApi({
-      getWorkspaceState: vi.fn().mockResolvedValue({
+      getCardbookState: vi.fn().mockResolvedValue({
         ok: true,
         value: {
-          ...withWorkspace,
-          fileTree: [
-            { name: "note", path: "note.md", type: "file" },
-            { children: [], name: "drafts", path: "drafts", type: "folder" },
-            { children: [], name: "archive", path: "archive", type: "folder" }
+          ...withCardbook,
+          cardTree: [
+            { name: "note", path: "note.md", type: "card" },
+            { children: [], name: "drafts", path: "drafts", type: "cardFolder" },
+            { children: [], name: "archive", path: "archive", type: "cardFolder" }
           ]
         }
       }),
-      moveFolder,
-      moveMarkdownFile
+      moveCardFolder,
+      moveMarkdownCard
     });
 
     await renderApp();
@@ -2301,25 +2322,25 @@ describe("App", () => {
     });
 
     await waitFor(() => {
-      expect(moveMarkdownFile).toHaveBeenCalledWith({ destinationFolder: "archive", path: "note.md" });
+      expect(moveMarkdownCard).toHaveBeenCalledWith({ destinationCardFolder: "archive", path: "note.md" });
     });
     await waitFor(() => {
-      expect(moveFolder).toHaveBeenCalledWith({ destinationFolder: "archive", path: "drafts" });
+      expect(moveCardFolder).toHaveBeenCalledWith({ destinationCardFolder: "archive", path: "drafts" });
     });
   });
 
   it("複数選択したカードとカードフォルダをまとめてゴミ箱に移動できる", async () => {
-    const moveItemToTrash = vi.fn().mockResolvedValue({ ok: true, value: withWorkspace });
+    const moveItemToTrash = vi.fn().mockResolvedValue({ ok: true, value: withCardbook });
     const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
 
     window.relic = makeRelicApi({
-      getWorkspaceState: vi.fn().mockResolvedValue({
+      getCardbookState: vi.fn().mockResolvedValue({
         ok: true,
         value: {
-          ...withWorkspace,
-          fileTree: [
-            { name: "note", path: "note.md", type: "file" },
-            { children: [], name: "drafts", path: "drafts", type: "folder" }
+          ...withCardbook,
+          cardTree: [
+            { name: "note", path: "note.md", type: "card" },
+            { children: [], name: "drafts", path: "drafts", type: "cardFolder" }
           ]
         }
       }),
@@ -2336,11 +2357,11 @@ describe("App", () => {
     fireEvent.contextMenu(noteRow);
     fireEvent.click(await screen.findByRole("menuitem", { name: "選択した項目をゴミ箱に移動" }));
 
-    expect(noteRow).toHaveClass("file-tree-row--removing");
+    expect(noteRow).toHaveClass("card-tree-row--removing");
 
     await waitFor(() => {
-      expect(moveItemToTrash).toHaveBeenCalledWith({ path: "note.md", type: "file" });
-      expect(moveItemToTrash).toHaveBeenCalledWith({ path: "drafts", type: "folder" });
+      expect(moveItemToTrash).toHaveBeenCalledWith({ path: "note.md", type: "card" });
+      expect(moveItemToTrash).toHaveBeenCalledWith({ path: "drafts", type: "cardFolder" });
     });
     expect(confirmSpy).toHaveBeenCalledWith(expect.stringContaining("2件"));
 
@@ -2353,10 +2374,10 @@ describe("App", () => {
       .mockResolvedValueOnce({
         ok: true,
         value: {
-          ...withWorkspace,
-          fileTree: [
-            { name: "読書メモ", path: "読書メモ.md", type: "file" },
-            { children: [], name: "資料", path: "資料", type: "folder" }
+          ...withCardbook,
+          cardTree: [
+            { name: "読書メモ", path: "読書メモ.md", type: "card" },
+            { children: [], name: "資料", path: "資料", type: "cardFolder" }
           ],
           pinnedPaths: ["読書メモ.md", "資料"]
         }
@@ -2364,23 +2385,23 @@ describe("App", () => {
       .mockResolvedValueOnce({
         ok: true,
         value: {
-          ...withWorkspace,
-          fileTree: [
-            { name: "読書メモ", path: "読書メモ.md", type: "file" },
-            { children: [], name: "資料", path: "資料", type: "folder" }
+          ...withCardbook,
+          cardTree: [
+            { name: "読書メモ", path: "読書メモ.md", type: "card" },
+            { children: [], name: "資料", path: "資料", type: "cardFolder" }
           ],
           pinnedPaths: []
         }
       });
 
     window.relic = makeRelicApi({
-      getWorkspaceState: vi.fn().mockResolvedValue({
+      getCardbookState: vi.fn().mockResolvedValue({
         ok: true,
         value: {
-          ...withWorkspace,
-          fileTree: [
-            { name: "読書メモ", path: "読書メモ.md", type: "file" },
-            { children: [], name: "資料", path: "資料", type: "folder" }
+          ...withCardbook,
+          cardTree: [
+            { name: "読書メモ", path: "読書メモ.md", type: "card" },
+            { children: [], name: "資料", path: "資料", type: "cardFolder" }
           ],
           pinnedPaths: []
         }
@@ -2425,7 +2446,7 @@ describe("App", () => {
 
   it("カードモードの検索方法ボタンで検索方法候補を表示する", async () => {
     window.relic = makeRelicApi({
-      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
+      getCardbookState: vi.fn().mockResolvedValue({ ok: true, value: withCardbook })
     });
 
     await renderApp();
@@ -2443,26 +2464,26 @@ describe("App", () => {
   });
 
   it("検索語句を入力すると検索結果を表示し、クリックでカードを開く", async () => {
-    const searchWorkspace = vi.fn().mockResolvedValue({
+    const searchCardbook = vi.fn().mockResolvedValue({
       ok: true,
       value: [
         {
-          fileName: "読書メモ",
+          cardName: "読書メモ",
           lineNumber: 3,
           lineText: "一致した行",
           path: "読書メモ.md"
         }
       ]
     });
-    const readMarkdownFile = vi.fn().mockResolvedValue({
+    const readMarkdownCard = vi.fn().mockResolvedValue({
       ok: true,
       value: { content: "一致した行", name: "読書メモ", path: "読書メモ.md" }
     });
 
     window.relic = makeRelicApi({
-      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace }),
-      readMarkdownFile,
-      searchWorkspace
+      getCardbookState: vi.fn().mockResolvedValue({ ok: true, value: withCardbook }),
+      readMarkdownCard,
+      searchCardbook
     });
 
     await renderApp();
@@ -2474,15 +2495,15 @@ describe("App", () => {
     expect(await screen.findByText("3: 一致した行")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /読書メモ/ }));
 
-    expect(searchWorkspace).toHaveBeenCalledWith({ mode: "fullText", query: "一致" });
-    expect(searchWorkspace.mock.calls.at(-1)?.[0]).toStrictEqual({ mode: "fullText", query: "一致" });
-    expect(readMarkdownFile).toHaveBeenCalledWith({ path: "読書メモ.md" });
+    expect(searchCardbook).toHaveBeenCalledWith({ mode: "fullText", query: "一致" });
+    expect(searchCardbook.mock.calls.at(-1)?.[0]).toStrictEqual({ mode: "fullText", query: "一致" });
+    expect(readMarkdownCard).toHaveBeenCalledWith({ path: "読書メモ.md" });
   });
 
   it("検索中は読み込み反応を表示する", async () => {
     window.relic = makeRelicApi({
-      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace }),
-      searchWorkspace: vi.fn().mockReturnValue(new Promise(() => undefined))
+      getCardbookState: vi.fn().mockResolvedValue({ ok: true, value: withCardbook }),
+      searchCardbook: vi.fn().mockReturnValue(new Promise(() => undefined))
     });
 
     await renderApp();
@@ -2496,14 +2517,14 @@ describe("App", () => {
   });
 
   it("検索方法でタグを選ぶとタグ検索に切り替える", async () => {
-    const searchWorkspace = vi.fn().mockResolvedValue({
+    const searchCardbook = vi.fn().mockResolvedValue({
       ok: true,
-      value: [{ fileName: "資料ノート", lineNumber: null, lineText: "#資料", path: "資料ノート.md" }]
+      value: [{ cardName: "資料ノート", lineNumber: null, lineText: "#資料", path: "資料ノート.md" }]
     });
 
     window.relic = makeRelicApi({
-      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace }),
-      searchWorkspace
+      getCardbookState: vi.fn().mockResolvedValue({ ok: true, value: withCardbook }),
+      searchCardbook
     });
 
     await renderApp();
@@ -2519,21 +2540,21 @@ describe("App", () => {
     });
 
     await waitFor(() => {
-      expect(searchWorkspace).toHaveBeenCalledWith({ mode: "tag", query: "資料" });
+      expect(searchCardbook).toHaveBeenCalledWith({ mode: "tag", query: "資料" });
     });
-    expect(searchWorkspace.mock.calls.at(-1)?.[0]).toStrictEqual({ mode: "tag", query: "資料" });
+    expect(searchCardbook.mock.calls.at(-1)?.[0]).toStrictEqual({ mode: "tag", query: "資料" });
     expect((await screen.findAllByText("#資料")).length).toBeGreaterThan(0);
   });
 
   it("検索方法でカード名を選ぶとカード名検索に切り替える", async () => {
-    const searchWorkspace = vi.fn().mockResolvedValue({
+    const searchCardbook = vi.fn().mockResolvedValue({
       ok: true,
-      value: [{ fileName: "読書メモ", lineNumber: null, lineText: "読書メモ.md", path: "読書メモ.md" }]
+      value: [{ cardName: "読書メモ", lineNumber: null, lineText: "読書メモ.md", path: "読書メモ.md" }]
     });
 
     window.relic = makeRelicApi({
-      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace }),
-      searchWorkspace
+      getCardbookState: vi.fn().mockResolvedValue({ ok: true, value: withCardbook }),
+      searchCardbook
     });
 
     await renderApp();
@@ -2546,21 +2567,21 @@ describe("App", () => {
     });
 
     await waitFor(() => {
-      expect(searchWorkspace).toHaveBeenCalledWith({ mode: "fileName", query: "読書" });
+      expect(searchCardbook).toHaveBeenCalledWith({ mode: "cardName", query: "読書" });
     });
-    expect(searchWorkspace.mock.calls.at(-1)?.[0]).toStrictEqual({ mode: "fileName", query: "読書" });
+    expect(searchCardbook.mock.calls.at(-1)?.[0]).toStrictEqual({ mode: "cardName", query: "読書" });
     expect(await screen.findByText("読書メモ.md")).toBeInTheDocument();
   });
 
   it("検索方法で正規表現を選ぶと正規表現検索に切り替える", async () => {
-    const searchWorkspace = vi.fn().mockResolvedValue({
+    const searchCardbook = vi.fn().mockResolvedValue({
       ok: true,
-      value: [{ fileName: "読書メモ", lineNumber: 1, lineText: "# 読書メモ", path: "読書メモ.md" }]
+      value: [{ cardName: "読書メモ", lineNumber: 1, lineText: "# 読書メモ", path: "読書メモ.md" }]
     });
 
     window.relic = makeRelicApi({
-      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace }),
-      searchWorkspace
+      getCardbookState: vi.fn().mockResolvedValue({ ok: true, value: withCardbook }),
+      searchCardbook
     });
 
     await renderApp();
@@ -2573,15 +2594,15 @@ describe("App", () => {
     });
 
     await waitFor(() => {
-      expect(searchWorkspace).toHaveBeenCalledWith({ mode: "regex", query: "^# " });
+      expect(searchCardbook).toHaveBeenCalledWith({ mode: "regex", query: "^# " });
     });
     expect(await screen.findByText("1: # 読書メモ")).toBeInTheDocument();
   });
 
   it("無効な正規表現の検索エラーを表示する", async () => {
     window.relic = makeRelicApi({
-      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace }),
-      searchWorkspace: vi.fn().mockResolvedValue({
+      getCardbookState: vi.fn().mockResolvedValue({ ok: true, value: withCardbook }),
+      searchCardbook: vi.fn().mockResolvedValue({
         ok: false,
         error: { code: "SEARCH_REGEX_INVALID", message: "正規表現が正しくありません。" }
       })
@@ -2601,8 +2622,8 @@ describe("App", () => {
 
   it("トーストを閉じると退場反応を通る", async () => {
     window.relic = makeRelicApi({
-      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace }),
-      createMarkdownFile: vi.fn().mockResolvedValue({
+      getCardbookState: vi.fn().mockResolvedValue({ ok: true, value: withCardbook }),
+      createMarkdownCard: vi.fn().mockResolvedValue({
         ok: false,
         error: { code: "CREATE_FAILED", message: "カードを作成できませんでした。" }
       })
@@ -2620,9 +2641,9 @@ describe("App", () => {
   });
 
   it("プロパティ検索で field と値を渡す", async () => {
-    const searchWorkspace = vi.fn().mockResolvedValue({
+    const searchCardbook = vi.fn().mockResolvedValue({
       ok: true,
-      value: [{ fileName: "読書メモ", lineNumber: null, lineText: "status: draft", path: "読書メモ.md" }]
+      value: [{ cardName: "読書メモ", lineNumber: null, lineText: "status: draft", path: "読書メモ.md" }]
     });
 
     window.relic = makeRelicApi({
@@ -2634,8 +2655,8 @@ describe("App", () => {
         ok: true,
         value: [{ choices: ["draft", "published"], name: "reviewer", type: "text" }]
       }),
-      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace }),
-      searchWorkspace
+      getCardbookState: vi.fn().mockResolvedValue({ ok: true, value: withCardbook }),
+      searchCardbook
     });
 
     await renderApp();
@@ -2653,7 +2674,7 @@ describe("App", () => {
     });
 
     await waitFor(() => {
-      expect(searchWorkspace).toHaveBeenCalledWith({
+      expect(searchCardbook).toHaveBeenCalledWith({
         frontmatterField: "status",
         mode: "frontmatter",
         query: "draft"
@@ -2663,7 +2684,7 @@ describe("App", () => {
   });
 
   it("右パネルにアウトゴーイングリンクを表示する", async () => {
-    const readMarkdownFile = vi.fn(({ path }: { path: string }) => Promise.resolve({
+    const readMarkdownCard = vi.fn(({ path }: { path: string }) => Promise.resolve({
       ok: true as const,
       value:
         path === "埋め込み.md"
@@ -2676,14 +2697,14 @@ describe("App", () => {
     }));
 
     window.relic = makeRelicApi({
-      getWorkspaceState: vi.fn().mockResolvedValue({
+      getCardbookState: vi.fn().mockResolvedValue({
         ok: true,
         value: {
-          ...withWorkspace,
-          fileTree: [{ name: "読書メモ", path: "読書メモ.md", type: "file" }]
+          ...withCardbook,
+          cardTree: [{ name: "読書メモ", path: "読書メモ.md", type: "card" }]
         }
       }),
-      readMarkdownFile
+      readMarkdownCard
     });
 
     await renderApp();
@@ -2697,7 +2718,7 @@ describe("App", () => {
   });
 
   it("右パネルのリンクを右クリックしてコピーと場所表示を実行する", async () => {
-    const revealWorkspaceItem = vi.fn().mockResolvedValue({ ok: true, value: undefined });
+    const revealCardbookItem = vi.fn().mockResolvedValue({ ok: true, value: undefined });
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, "clipboard", {
       configurable: true,
@@ -2705,21 +2726,21 @@ describe("App", () => {
     });
 
     window.relic = makeRelicApi({
-      getWorkspaceState: vi.fn().mockResolvedValue({
+      getCardbookState: vi.fn().mockResolvedValue({
         ok: true,
         value: {
-          ...withWorkspace,
-          fileTree: [
-            { name: "読書メモ", path: "読書メモ.md", type: "file" },
-            { name: "参照先", path: "参照先.md", type: "file" }
+          ...withCardbook,
+          cardTree: [
+            { name: "読書メモ", path: "読書メモ.md", type: "card" },
+            { name: "参照先", path: "参照先.md", type: "card" }
           ]
         }
       }),
-      readMarkdownFile: vi.fn().mockResolvedValue({
+      readMarkdownCard: vi.fn().mockResolvedValue({
         ok: true,
         value: { content: "[[参照先|表示名]]", name: "読書メモ", path: "読書メモ.md" }
       }),
-      revealWorkspaceItem
+      revealCardbookItem
     });
 
     await renderApp();
@@ -2738,12 +2759,12 @@ describe("App", () => {
     fireEvent.contextMenu(screen.getByRole("button", { name: "表示名" }));
     fireEvent.click(await screen.findByRole("menuitem", { name: "カードの場所を表示" }));
     await waitFor(() => {
-      expect(revealWorkspaceItem).toHaveBeenCalledWith({ path: "参照先.md" });
+      expect(revealCardbookItem).toHaveBeenCalledWith({ path: "参照先.md" });
     });
   });
 
   it("右パネルにバックリンクを表示し、クリックすると参照元を開く", async () => {
-    const readMarkdownFile = vi.fn(({ path }: { path: string }) => Promise.resolve({
+    const readMarkdownCard = vi.fn(({ path }: { path: string }) => Promise.resolve({
       ok: true as const,
       value:
         path === "source.md"
@@ -2756,17 +2777,17 @@ describe("App", () => {
         ok: true,
         value: [{ count: 2, sourceName: "source", sourcePath: "source.md" }]
       }),
-      getWorkspaceState: vi.fn().mockResolvedValue({
+      getCardbookState: vi.fn().mockResolvedValue({
         ok: true,
         value: {
-          ...withWorkspace,
-          fileTree: [
-            { name: "target", path: "target.md", type: "file" },
-            { name: "source", path: "source.md", type: "file" }
+          ...withCardbook,
+          cardTree: [
+            { name: "target", path: "target.md", type: "card" },
+            { name: "source", path: "source.md", type: "card" }
           ]
         }
       }),
-      readMarkdownFile
+      readMarkdownCard
     });
 
     await renderApp();
@@ -2777,36 +2798,36 @@ describe("App", () => {
     expect(await screen.findByText("バックリンク")).toBeInTheDocument();
     fireEvent.click(await screen.findByRole("button", { name: "source" }));
 
-    expect(readMarkdownFile).toHaveBeenCalledWith({ path: "source.md" });
+    expect(readMarkdownCard).toHaveBeenCalledWith({ path: "source.md" });
   });
 
   it("未作成リンクをクリックすると同じカードフォルダにカードを作成して開く", async () => {
-    const readMarkdownFile = vi.fn(({ path }: { path: string }) => Promise.resolve(
-      path === "folder/読書メモ.md"
+    const readMarkdownCard = vi.fn(({ path }: { path: string }) => Promise.resolve(
+      path === "cardFolder/読書メモ.md"
         ? {
             ok: true as const,
-            value: { content: "[[新規ノート]]", name: "読書メモ", path: "folder/読書メモ.md" }
+            value: { content: "[[新規ノート]]", name: "読書メモ", path: "cardFolder/読書メモ.md" }
           }
         : {
             ok: false as const,
             error: { code: "FILE_READ_FAILED", message: "カードを読み込めませんでした。" }
           }
     ));
-    const createLinkedMarkdownFile = vi.fn().mockResolvedValue({
+    const createLinkedMarkdownCard = vi.fn().mockResolvedValue({
       ok: true,
       value: {
-        file: { content: "", name: "新規ノート", path: "folder/新規ノート.md" },
-        workspaceState: {
-          ...withWorkspace,
-          fileTree: [
+        card: { content: "", name: "新規ノート", path: "cardFolder/新規ノート.md" },
+        cardbookState: {
+          ...withCardbook,
+          cardTree: [
             {
               children: [
-                { name: "読書メモ", path: "folder/読書メモ.md", type: "file" },
-                { name: "新規ノート", path: "folder/新規ノート.md", type: "file" }
+                { name: "読書メモ", path: "cardFolder/読書メモ.md", type: "card" },
+                { name: "新規ノート", path: "cardFolder/新規ノート.md", type: "card" }
               ],
-              name: "folder",
-              path: "folder",
-              type: "folder"
+              name: "cardFolder",
+              path: "cardFolder",
+              type: "cardFolder"
             }
           ]
         }
@@ -2814,22 +2835,22 @@ describe("App", () => {
     });
 
     window.relic = makeRelicApi({
-      createLinkedMarkdownFile,
-      getWorkspaceState: vi.fn().mockResolvedValue({
+      createLinkedMarkdownCard,
+      getCardbookState: vi.fn().mockResolvedValue({
         ok: true,
         value: {
-          ...withWorkspace,
-          fileTree: [
+          ...withCardbook,
+          cardTree: [
             {
-              children: [{ name: "読書メモ", path: "folder/読書メモ.md", type: "file" }],
-              name: "folder",
-              path: "folder",
-              type: "folder"
+              children: [{ name: "読書メモ", path: "cardFolder/読書メモ.md", type: "card" }],
+              name: "cardFolder",
+              path: "cardFolder",
+              type: "cardFolder"
             }
           ]
         }
       }),
-      readMarkdownFile
+      readMarkdownCard
     });
 
     await renderApp();
@@ -2839,7 +2860,7 @@ describe("App", () => {
     fireEvent.click(await screen.findByRole("button", { name: "新規ノート" }));
 
     await waitFor(() => {
-      expect(createLinkedMarkdownFile).toHaveBeenCalledWith({ path: "folder/新規ノート.md" });
+      expect(createLinkedMarkdownCard).toHaveBeenCalledWith({ path: "cardFolder/新規ノート.md" });
     });
     expect((await screen.findAllByText("新規ノート")).length).toBeGreaterThan(0);
   });
@@ -2847,7 +2868,7 @@ describe("App", () => {
   it("機能トグル tools=false でナビから Tools ビューが非表示になる", async () => {
     window.relic = makeRelicApi({
       getFeatureToggles: vi.fn().mockResolvedValue({ ok: true, value: { ...defaultFeatureToggles, tools: false } }),
-      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
+      getCardbookState: vi.fn().mockResolvedValue({ ok: true, value: withCardbook })
     });
 
     await renderApp();

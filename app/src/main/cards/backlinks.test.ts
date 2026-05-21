@@ -1,0 +1,67 @@
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+
+import { afterEach, describe, expect, it } from "vitest";
+
+import { readBacklinks } from "./backlinks";
+
+describe("readBacklinks", () => {
+  const temporaryPaths: string[] = [];
+
+  afterEach(async () => {
+    await Promise.all(
+      temporaryPaths.splice(0).map((temporaryPath) =>
+        rm(temporaryPath, {
+          force: true,
+          recursive: true
+        })
+      )
+    );
+  });
+
+  it("対象カードを参照しているMarkdownカードを一覧にする", async () => {
+    const cardbookPath = await mkdtemp(path.join(os.tmpdir(), "relic-backlinks-"));
+    temporaryPaths.push(cardbookPath);
+    await mkdir(path.join(cardbookPath, "cardFolder"));
+    await writeFile(path.join(cardbookPath, "target.md"), "# Target", "utf8");
+    await writeFile(path.join(cardbookPath, "source.md"), "[[target]]\n[[target|もう一度]]", "utf8");
+    await writeFile(path.join(cardbookPath, "cardFolder", "nested.md"), "[[../target]]", "utf8");
+    await writeFile(path.join(cardbookPath, "ignored.md"), "```md\n[[target]]\n```", "utf8");
+
+    await expect(readBacklinks(cardbookPath, "target.md")).resolves.toEqual({
+      ok: true,
+      value: [
+        { count: 1, sourceName: "nested", sourcePath: "cardFolder/nested.md" },
+        { count: 2, sourceName: "source", sourcePath: "source.md" }
+      ]
+    });
+  });
+
+  it("aliases経由のリンクもバックリンクとして扱う", async () => {
+    const cardbookPath = await mkdtemp(path.join(os.tmpdir(), "relic-backlinks-"));
+    temporaryPaths.push(cardbookPath);
+    await writeFile(path.join(cardbookPath, "A.md"), "---\naliases: [a, α]\n---\n# A", "utf8");
+    await writeFile(path.join(cardbookPath, "source.md"), "[[a]]\n[[α]]", "utf8");
+
+    await expect(readBacklinks(cardbookPath, "A.md")).resolves.toEqual({
+      ok: true,
+      value: [
+        { count: 2, sourceName: "source", sourcePath: "source.md" }
+      ]
+    });
+  });
+
+
+  it("Markdown以外とカードブック外への参照を拒否する", async () => {
+    const cardbookPath = await mkdtemp(path.join(os.tmpdir(), "relic-backlinks-"));
+    temporaryPaths.push(cardbookPath);
+
+    await expect(readBacklinks(cardbookPath, "image.png")).resolves.toMatchObject({
+      ok: false
+    });
+    await expect(readBacklinks(cardbookPath, "../outside.md")).resolves.toMatchObject({
+      ok: false
+    });
+  });
+});

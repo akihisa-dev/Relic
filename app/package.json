@@ -1,7 +1,7 @@
 {
   "name": "relic",
   "version": "0.0.0",
-  "description": "Relic is a Markdown knowledge workspace.",
+  "description": "Relic is a Markdown knowledge cardbook.",
   "main": ".vite/build/main.js",
   "private": true,
   "packageManager": "pnpm@10.10.0",

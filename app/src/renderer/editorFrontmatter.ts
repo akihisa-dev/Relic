@@ -5,7 +5,7 @@ import { findFrontmatterBlock, findTopLevelYamlFieldEntries } from "./editorFron
 export {
   availableFieldNames,
   choicesFor,
-  chronicleInputValue,
+  timelineInputValue,
   dateInputValue,
   fieldFor,
   findFrontmatterBlock,
@@ -22,7 +22,7 @@ export {
   isFixedDateRangeField,
   isSingleValueField,
   isYamlFlowSequence,
-  parseChronicleYearInput,
+  parseTimelineYearInput,
   parseDateInput,
   parseScalarValue,
   requestFrontmatterDialog,

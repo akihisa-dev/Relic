@@ -25,14 +25,14 @@ describe("parseWikiLinks", () => {
   });
 
   it("エイリアス・見出し・ブロック参照を分解する", () => {
-    expect(parseWikiLinks("[[folder/note#見出し|表示名]] [[note^abc123]]")).toEqual([
+    expect(parseWikiLinks("[[cardFolder/note#見出し|表示名]] [[note^abc123]]")).toEqual([
       {
         alias: "表示名",
         blockId: null,
         heading: "見出し",
         kind: "link",
-        raw: "[[folder/note#見出し|表示名]]",
-        target: "folder/note.md"
+        raw: "[[cardFolder/note#見出し|表示名]]",
+        target: "cardFolder/note.md"
       },
       {
         alias: null,
@@ -45,7 +45,7 @@ describe("parseWikiLinks", () => {
     ]);
   });
 
-  it("ファイル埋め込みをリンクと区別する", () => {
+  it("カード埋め込みをリンクと区別する", () => {
     expect(parseWikiLinks("![[埋め込み]]")[0]).toMatchObject({
       kind: "embed",
       target: "埋め込み.md"
@@ -61,30 +61,30 @@ describe("parseWikiLinks", () => {
 
 describe("normalizeWikiLinkTarget", () => {
   it(".md拡張子を補完し、区切り文字を正規化する", () => {
-    expect(normalizeWikiLinkTarget("folder\\note")).toBe("folder/note.md");
+    expect(normalizeWikiLinkTarget("cardFolder\\note")).toBe("cardFolder/note.md");
     expect(normalizeWikiLinkTarget("note.md")).toBe("note.md");
   });
 });
 
 describe("resolveWikiLinkPath", () => {
-  it("パスなしリンクはリンク元と同じフォルダに解決する", () => {
-    expect(resolveWikiLinkPath("参照先", "folder/source.md")).toBe("folder/参照先.md");
+  it("パスなしリンクはリンク元と同じカードフォルダに解決する", () => {
+    expect(resolveWikiLinkPath("参照先", "cardFolder/source.md")).toBe("cardFolder/参照先.md");
   });
 
   it("パス付きリンクはカードブック相対として解決する", () => {
-    expect(resolveWikiLinkPath("archive/参照先", "folder/source.md")).toBe("archive/参照先.md");
+    expect(resolveWikiLinkPath("archive/参照先", "cardFolder/source.md")).toBe("archive/参照先.md");
   });
 });
 
 describe("resolveMarkdownLinkPath", () => {
-  it("相対Markdownリンクをリンク元ファイル基準で解決する", () => {
+  it("相対Markdownリンクをリンク元カード基準で解決する", () => {
     expect(resolveMarkdownLinkPath("./child.md#決定事項", "notes/source.md")).toEqual({
       heading: "決定事項",
       path: "notes/child.md"
     });
   });
 
-  it(".md拡張子なしの相対リンクもMarkdownファイルとして解決する", () => {
+  it(".md拡張子なしの相対リンクもMarkdownカードとして解決する", () => {
     expect(resolveMarkdownLinkPath("../drafts/企画", "notes/current/source.md")).toEqual({
       heading: null,
       path: "notes/drafts/企画.md"

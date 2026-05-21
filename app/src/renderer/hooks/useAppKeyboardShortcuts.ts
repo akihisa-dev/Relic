@@ -6,12 +6,12 @@ interface UseAppKeyboardShortcutsInput {
   closeTab: (pane: PaneId, tabId: string) => void;
   focusedPane: PaneId;
   leftPane: PaneState;
-  requestFileSearchFocus: () => void;
+  requestCardSearchFocus: () => void;
   rightPane: PaneState;
-  setIsCreatingFile: (isCreating: boolean) => void;
+  setIsCreatingCard: (isCreating: boolean) => void;
   setShowCommandPalette: (updater: boolean | ((current: boolean) => boolean)) => void;
   setShowQuickSwitcher: (updater: boolean | ((current: boolean) => boolean)) => void;
-  setSidebarView: (view: "files") => void;
+  setSidebarView: (view: "cards") => void;
   toggleRightPanel: () => void;
   toggleSidebar: () => void;
   toggleSplit: () => void;
@@ -22,9 +22,9 @@ export function useAppKeyboardShortcuts({
   closeTab,
   focusedPane,
   leftPane,
-  requestFileSearchFocus,
+  requestCardSearchFocus,
   rightPane,
-  setIsCreatingFile,
+  setIsCreatingCard,
   setShowCommandPalette,
   setShowQuickSwitcher,
   setSidebarView,
@@ -60,11 +60,11 @@ export function useAppKeyboardShortcuts({
         if (paneState.activeTabId) closeTab(focusedPane, paneState.activeTabId);
       } else if (event.key === "f") {
         event.preventDefault();
-        requestFileSearchFocus();
+        requestCardSearchFocus();
       } else if (event.key === "n" && !event.shiftKey) {
         event.preventDefault();
-        setSidebarView("files");
-        setIsCreatingFile(true);
+        setSidebarView("cards");
+        setIsCreatingCard(true);
       } else if (event.key === "T" && event.shiftKey) {
         event.preventDefault();
         toggleTypewriterMode();
@@ -78,9 +78,9 @@ export function useAppKeyboardShortcuts({
     closeTab,
     focusedPane,
     leftPane,
-    requestFileSearchFocus,
+    requestCardSearchFocus,
     rightPane,
-    setIsCreatingFile,
+    setIsCreatingCard,
     setShowCommandPalette,
     setShowQuickSwitcher,
     setSidebarView,

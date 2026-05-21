@@ -3,12 +3,12 @@ import { describe, expect, it } from "vitest";
 import { fail, ok } from "../shared/result";
 import { createTranslator } from "./i18n";
 import {
-  buildMergeFilesInput,
-  buildSplitFileInput,
+  buildMergeCardsInput,
+  buildSplitCardInput,
   buildTitleListInput,
   buildTocInput,
-  createDefaultMergeFilesDraft,
-  createDefaultSplitFileDraft,
+  createDefaultMergeCardsDraft,
+  createDefaultSplitCardDraft,
   createDefaultTitleListDraft,
   createDefaultTocDraft,
   isToolStatusError,
@@ -21,47 +21,47 @@ const t = createTranslator("en");
 describe("toolsSidebarModel", () => {
   it("builds title list and toc inputs with existing fallback defaults", () => {
     expect(buildTitleListInput(createDefaultTitleListDraft(t), t)).toEqual({
-      filterFolder: undefined,
-      outputFolder: ".",
+      filterCardFolder: undefined,
+      outputCardFolder: ".",
       outputName: "Title List",
       sortBy: "name"
     });
     expect(buildTocInput(createDefaultTocDraft(t), t)).toEqual({
-      includeSubfolders: true,
-      outputFolder: ".",
+      includeSubcardFolders: true,
+      outputCardFolder: ".",
       outputName: "Table of Contents",
-      targetFolder: "."
+      targetCardFolder: "."
     });
   });
 
   it("builds merge input with frontmatter field only for frontmatter filter", () => {
     const draft = {
-      ...createDefaultMergeFilesDraft(t),
+      ...createDefaultMergeCardsDraft(t),
       filterType: "frontmatter" as const,
       filterValue: "draft",
       frontmatterField: "status",
       outputName: ""
     };
 
-    expect(buildMergeFilesInput(draft, t)).toEqual({
+    expect(buildMergeCardsInput(draft, t)).toEqual({
       filterType: "frontmatter",
       filterValue: "draft",
       frontmatterField: "status",
-      insertFilenameHeading: true,
-      outputFolder: ".",
+      insertCardNameHeading: true,
+      outputCardFolder: ".",
       outputName: "Merged Result",
       sortBy: "name"
     });
-    expect(buildMergeFilesInput({ ...draft, filterType: "tag" }, t).frontmatterField).toBeUndefined();
+    expect(buildMergeCardsInput({ ...draft, filterType: "tag" }, t).frontmatterField).toBeUndefined();
   });
 
   it("builds split input and formats statuses", () => {
-    expect(buildSplitFileInput({
-      ...createDefaultSplitFileDraft(),
+    expect(buildSplitCardInput({
+      ...createDefaultSplitCardDraft(),
       sourcePath: "Book.md"
     })).toEqual({
       headingLevel: 2,
-      outputFolder: ".",
+      outputCardFolder: ".",
       sourcePath: "Book.md"
     });
     expect(resultStatus(ok("out.md"), t, String)).toBe("Done: out.md");

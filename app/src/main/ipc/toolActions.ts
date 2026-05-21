@@ -6,44 +6,44 @@ import { app } from "electron";
 import {
   type GenerateTableOfContentsInput,
   type GenerateTitleListInput,
-  type MergeFilesInput,
-  type SplitFileByHeadingInput,
-  type WorkspaceTreeNode
+  type MergeCardsInput,
+  type SplitCardByHeadingInput,
+  type CardbookTreeNode
 } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { parseMarkdownTags } from "../../shared/tags";
-import { readWorkspaceFileTree } from "../files/fileTree";
-import { parseFrontmatter } from "../files/frontmatter";
-import { resolveWorkspaceRelativePath, resolveWorkspaceRelativePathOrRoot } from "../files/paths";
+import { readCardbookCardTree } from "../cards/cardTree";
+import { parseFrontmatter } from "../cards/frontmatter";
+import { resolveCardbookRelativePath, resolveCardbookRelativePathOrRoot } from "../cards/paths";
 import { readAppSettings } from "../settings/appSettings";
-import { toWorkspaceState } from "../workspace/workspaceService";
+import { toCardbookState } from "../cardbook/cardbookService";
 
-interface ToolWorkspaceContext {
-  workspacePath: string;
+interface ToolCardbookContext {
+  cardbookPath: string;
 }
 
-interface FileCandidate {
+interface CardCandidate {
   ctime: number;
   mtime: number;
   relPath: string;
 }
 
-export async function mergeFiles(input: MergeFilesInput): Promise<RelicResult<string>> {
-  const context = await getToolWorkspaceContext();
+export async function mergeCards(input: MergeCardsInput): Promise<RelicResult<string>> {
+  const context = await getToolCardbookContext();
   if (!context.ok) return context;
 
-  const { workspacePath } = context.value;
-  const fileTree = await readWorkspaceFileTree(workspacePath);
-  const candidates = await collectMergeCandidates(workspacePath, fileTree);
-  const filtered = await filterMergeCandidates(workspacePath, candidates, input);
+  const { cardbookPath } = context.value;
+  const cardTree = await readCardbookCardTree(cardbookPath);
+  const candidates = await collectMergeCandidates(cardbookPath, cardTree);
+  const filtered = await filterMergeCandidates(cardbookPath, candidates, input);
 
   sortMergeCandidates(filtered, input.sortBy);
 
   const parts: string[] = [];
-  for (const file of filtered) {
-    const content = await readFile(path.join(workspacePath, file.relPath), "utf-8");
-    const name = file.relPath.split("/").at(-1)?.replace(/\.md$/, "") ?? file.relPath;
-    if (input.insertFilenameHeading) {
+  for (const card of filtered) {
+    const content = await readFile(path.join(cardbookPath, card.relPath), "utf-8");
+    const name = card.relPath.split("/").at(-1)?.replace(/\.md$/, "") ?? card.relPath;
+    if (input.insertCardNameHeading) {
       parts.push(`# ${name}\n\n${content.trim()}`);
     } else {
       parts.push(content.trim());
@@ -51,24 +51,24 @@ export async function mergeFiles(input: MergeFilesInput): Promise<RelicResult<st
   }
 
   const merged = parts.join("\n\n---\n\n") + "\n";
-  const outputDir = resolveWorkspaceRelativePathOrRoot(workspacePath, input.outputFolder);
+  const outputDir = resolveCardbookRelativePathOrRoot(cardbookPath, input.outputCardFolder);
   if (!outputDir.ok) return outputDir;
   const outputName = safeOutputName(input.outputName || "merged");
   if (!outputName.ok) return outputName;
 
   await mkdir(outputDir.value, { recursive: true });
-  const outputPath = await uniqueFilePath(outputDir.value, outputName.value);
+  const outputPath = await uniqueCardPath(outputDir.value, outputName.value);
   await writeFile(outputPath, merged, "utf-8");
 
-  return ok(path.relative(workspacePath, outputPath));
+  return ok(path.relative(cardbookPath, outputPath));
 }
 
-export async function splitFileByHeading(input: SplitFileByHeadingInput): Promise<RelicResult<string[]>> {
-  const context = await getToolWorkspaceContext();
+export async function splitCardByHeading(input: SplitCardByHeadingInput): Promise<RelicResult<string[]>> {
+  const context = await getToolCardbookContext();
   if (!context.ok) return context;
 
-  const { workspacePath } = context.value;
-  const absSource = resolveWorkspaceRelativePath(workspacePath, input.sourcePath);
+  const { cardbookPath } = context.value;
+  const absSource = resolveCardbookRelativePath(cardbookPath, input.sourcePath);
   if (!absSource.ok) return absSource;
   const content = await readFile(absSource.value, "utf-8");
   const sections = splitMarkdownSections(content, input.headingLevel);
@@ -77,7 +77,7 @@ export async function splitFileByHeading(input: SplitFileByHeadingInput): Promis
     return fail("SPLIT_NO_HEADINGS", `H${input.headingLevel} の見出しが見つかりませんでした。`);
   }
 
-  const outputDir = resolveWorkspaceRelativePathOrRoot(workspacePath, input.outputFolder);
+  const outputDir = resolveCardbookRelativePathOrRoot(cardbookPath, input.outputCardFolder);
   if (!outputDir.ok) return outputDir;
 
   await mkdir(outputDir.value, { recursive: true });
@@ -88,22 +88,22 @@ export async function splitFileByHeading(input: SplitFileByHeadingInput): Promis
       .replace(/[/\\:*?"<>|]/g, "_")
       .replace(/\s+/g, " ")
       .trim() || "untitled";
-    const outPath = await uniqueFilePath(outputDir.value, safeName);
+    const outPath = await uniqueCardPath(outputDir.value, safeName);
     const sectionContent = section.lines.join("\n").trimEnd() + "\n";
     await writeFile(outPath, sectionContent, "utf-8");
-    created.push(path.relative(workspacePath, outPath));
+    created.push(path.relative(cardbookPath, outPath));
   }
 
   return ok(created);
 }
 
 export async function generateTitleList(input: GenerateTitleListInput): Promise<RelicResult<string>> {
-  const context = await getToolWorkspaceContext();
+  const context = await getToolCardbookContext();
   if (!context.ok) return context;
 
-  const { workspacePath } = context.value;
-  const fileTree = await readWorkspaceFileTree(workspacePath);
-  const collected = await collectTitleListFiles(workspacePath, fileTree, input.filterFolder);
+  const { cardbookPath } = context.value;
+  const cardTree = await readCardbookCardTree(cardbookPath);
+  const collected = await collectTitleListCards(cardbookPath, cardTree, input.filterCardFolder);
 
   if (input.sortBy === "mtime") {
     collected.sort((a, b) => b.mtime - a.mtime);
@@ -111,67 +111,67 @@ export async function generateTitleList(input: GenerateTitleListInput): Promise<
     collected.sort((a, b) => a.name.localeCompare(b.name, "ja"));
   }
 
-  const lines = collected.map((file) => `- [[${file.name}]]`);
+  const lines = collected.map((card) => `- [[${card.name}]]`);
   const content = lines.join("\n") + "\n";
 
-  const outputDir = resolveWorkspaceRelativePathOrRoot(workspacePath, input.outputFolder);
+  const outputDir = resolveCardbookRelativePathOrRoot(cardbookPath, input.outputCardFolder);
   if (!outputDir.ok) return outputDir;
   const outputName = safeOutputName(input.outputName);
   if (!outputName.ok) return outputName;
 
   await mkdir(outputDir.value, { recursive: true });
-  const outputPath = await uniqueFilePath(outputDir.value, outputName.value);
+  const outputPath = await uniqueCardPath(outputDir.value, outputName.value);
   await writeFile(outputPath, content, "utf-8");
 
-  return ok(path.relative(workspacePath, outputPath));
+  return ok(path.relative(cardbookPath, outputPath));
 }
 
 export async function generateTableOfContents(
   input: GenerateTableOfContentsInput
 ): Promise<RelicResult<string>> {
-  const context = await getToolWorkspaceContext();
+  const context = await getToolCardbookContext();
   if (!context.ok) return context;
 
-  const { workspacePath } = context.value;
-  const targetAbsPath = resolveWorkspaceRelativePathOrRoot(workspacePath, input.targetFolder);
+  const { cardbookPath } = context.value;
+  const targetAbsPath = resolveCardbookRelativePathOrRoot(cardbookPath, input.targetCardFolder);
   if (!targetAbsPath.ok) return targetAbsPath;
   const lines: string[] = [];
 
-  await collectTableOfContentsLines(targetAbsPath.value, input.targetFolder, 0, input.includeSubfolders, lines);
+  await collectTableOfContentsLines(targetAbsPath.value, input.targetCardFolder, 0, input.includeSubcardFolders, lines);
 
   const content = lines.join("\n") + "\n";
-  const outputDir = resolveWorkspaceRelativePathOrRoot(workspacePath, input.outputFolder);
+  const outputDir = resolveCardbookRelativePathOrRoot(cardbookPath, input.outputCardFolder);
   if (!outputDir.ok) return outputDir;
   const outputName = safeOutputName(input.outputName);
   if (!outputName.ok) return outputName;
 
   await mkdir(outputDir.value, { recursive: true });
-  const outputPath = await uniqueFilePath(outputDir.value, outputName.value);
+  const outputPath = await uniqueCardPath(outputDir.value, outputName.value);
   await writeFile(outputPath, content, "utf-8");
 
-  return ok(path.relative(workspacePath, outputPath));
+  return ok(path.relative(cardbookPath, outputPath));
 }
 
-async function getToolWorkspaceContext(): Promise<RelicResult<ToolWorkspaceContext>> {
+async function getToolCardbookContext(): Promise<RelicResult<ToolCardbookContext>> {
   const settings = await readAppSettings(app.getPath("userData"));
-  const state = toWorkspaceState(settings);
-  if (!state.activeWorkspace) return fail("NO_WORKSPACE", "カードブックが選択されていません。");
+  const state = toCardbookState(settings);
+  if (!state.activeCardbook) return fail("NO_CARDBOOK", "カードブックが選択されていません。");
 
-  return ok({ workspacePath: state.activeWorkspace.path });
+  return ok({ cardbookPath: state.activeCardbook.path });
 }
 
 async function collectMergeCandidates(
-  workspacePath: string,
-  nodes: WorkspaceTreeNode[]
-): Promise<FileCandidate[]> {
-  const candidates: FileCandidate[] = [];
+  cardbookPath: string,
+  nodes: CardbookTreeNode[]
+): Promise<CardCandidate[]> {
+  const candidates: CardCandidate[] = [];
 
-  async function collect(items: WorkspaceTreeNode[]): Promise<void> {
+  async function collect(items: CardbookTreeNode[]): Promise<void> {
     for (const node of items) {
-      if (node.type === "folder") {
+      if (node.type === "cardFolder") {
         await collect(node.children);
       } else {
-        const absPath = path.join(workspacePath, node.path);
+        const absPath = path.join(cardbookPath, node.path);
         const s = await stat(absPath);
         candidates.push({ relPath: node.path, mtime: s.mtimeMs, ctime: s.birthtimeMs });
       }
@@ -183,21 +183,21 @@ async function collectMergeCandidates(
 }
 
 async function filterMergeCandidates(
-  workspacePath: string,
-  candidates: FileCandidate[],
-  input: MergeFilesInput
-): Promise<FileCandidate[]> {
-  if (input.filterType === "folder" && input.filterValue) {
-    return candidates.filter((file) =>
-      file.relPath.startsWith(input.filterValue + "/") || file.relPath.startsWith(input.filterValue)
+  cardbookPath: string,
+  candidates: CardCandidate[],
+  input: MergeCardsInput
+): Promise<CardCandidate[]> {
+  if (input.filterType === "cardFolder" && input.filterValue) {
+    return candidates.filter((card) =>
+      card.relPath.startsWith(input.filterValue + "/") || card.relPath.startsWith(input.filterValue)
     );
   }
 
   if (input.filterType === "tag" && input.filterValue) {
-    const tagFiltered: FileCandidate[] = [];
+    const tagFiltered: CardCandidate[] = [];
     const tag = input.filterValue.trim().replace(/^#/, "");
     for (const candidate of candidates) {
-      const content = await readFile(path.join(workspacePath, candidate.relPath), "utf-8");
+      const content = await readFile(path.join(cardbookPath, candidate.relPath), "utf-8");
       if (parseMarkdownTags(content).tags.includes(tag)) {
         tagFiltered.push(candidate);
       }
@@ -206,13 +206,13 @@ async function filterMergeCandidates(
   }
 
   if (input.filterType === "frontmatter") {
-    const frontmatterFiltered: FileCandidate[] = [];
+    const frontmatterFiltered: CardCandidate[] = [];
     const field = input.frontmatterField?.trim() ?? "";
     const value = input.filterValue.trim();
 
     if (field && value) {
       for (const candidate of candidates) {
-        const content = await readFile(path.join(workspacePath, candidate.relPath), "utf-8");
+        const content = await readFile(path.join(cardbookPath, candidate.relPath), "utf-8");
         const { data } = parseFrontmatter(content);
 
         if (matchesFrontmatterField(data[field], value)) {
@@ -227,7 +227,7 @@ async function filterMergeCandidates(
   return candidates;
 }
 
-function sortMergeCandidates(candidates: FileCandidate[], sortBy: MergeFilesInput["sortBy"]): void {
+function sortMergeCandidates(candidates: CardCandidate[], sortBy: MergeCardsInput["sortBy"]): void {
   if (sortBy === "mtime") candidates.sort((a, b) => b.mtime - a.mtime);
   else if (sortBy === "ctime") candidates.sort((a, b) => b.ctime - a.ctime);
   else candidates.sort((a, b) => a.relPath.localeCompare(b.relPath, "ja"));
@@ -252,31 +252,31 @@ function splitMarkdownSections(content: string, headingLevel: number): { title: 
   return sections;
 }
 
-async function collectTitleListFiles(
-  workspacePath: string,
-  nodes: WorkspaceTreeNode[],
-  filterFolder: string | undefined
+async function collectTitleListCards(
+  cardbookPath: string,
+  nodes: CardbookTreeNode[],
+  filterCardFolder: string | undefined
 ): Promise<{ name: string; path: string; mtime: number }[]> {
   const collected: { name: string; path: string; mtime: number }[] = [];
 
-  async function collectFiles(items: WorkspaceTreeNode[], folderRelPath: string): Promise<void> {
+  async function collectCards(items: CardbookTreeNode[], cardFolderRelPath: string): Promise<void> {
     for (const node of items) {
-      if (node.type === "folder") {
-        if (!filterFolder || folderRelPath === filterFolder || node.path === filterFolder) {
-          await collectFiles(node.children, node.path);
-        } else if (!filterFolder) {
-          await collectFiles(node.children, node.path);
+      if (node.type === "cardFolder") {
+        if (!filterCardFolder || cardFolderRelPath === filterCardFolder || node.path === filterCardFolder) {
+          await collectCards(node.children, node.path);
+        } else if (!filterCardFolder) {
+          await collectCards(node.children, node.path);
         }
       } else {
-        if (filterFolder && !node.path.startsWith(filterFolder + "/") && node.path !== filterFolder) continue;
-        const absPath = path.join(workspacePath, node.path);
+        if (filterCardFolder && !node.path.startsWith(filterCardFolder + "/") && node.path !== filterCardFolder) continue;
+        const absPath = path.join(cardbookPath, node.path);
         const s = await stat(absPath);
         collected.push({ name: node.name.replace(/\.md$/, ""), path: node.path, mtime: s.mtimeMs });
       }
     }
   }
 
-  await collectFiles(nodes, "");
+  await collectCards(nodes, "");
   return collected;
 }
 
@@ -284,7 +284,7 @@ async function collectTableOfContentsLines(
   dirPath: string,
   relBase: string,
   indent: number,
-  includeSubfolders: boolean,
+  includeSubcardFolders: boolean,
   lines: string[]
 ): Promise<void> {
   const entries = await readdir(dirPath, { withFileTypes: true });
@@ -295,13 +295,13 @@ async function collectTableOfContentsLines(
   for (const entry of entries) {
     const prefix = "  ".repeat(indent) + "- ";
     if (entry.isDirectory()) {
-      if (includeSubfolders) {
+      if (includeSubcardFolders) {
         lines.push(`${prefix}**${entry.name}/**`);
         await collectTableOfContentsLines(
           path.join(dirPath, entry.name),
           path.join(relBase, entry.name),
           indent + 1,
-          includeSubfolders,
+          includeSubcardFolders,
           lines
         );
       }
@@ -356,7 +356,7 @@ function safeOutputName(name: string): RelicResult<string> {
   return ok(trimmed);
 }
 
-async function uniqueFilePath(dir: string, name: string): Promise<string> {
+async function uniqueCardPath(dir: string, name: string): Promise<string> {
   const ext = name.endsWith(".md") ? "" : ".md";
   const base = name.replace(/\.md$/, "");
   let candidate = path.join(dir, `${base}${ext}`);

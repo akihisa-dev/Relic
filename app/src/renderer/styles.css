@@ -1,9 +1,9 @@
 @import "./styles/base.css";
 @import "./styles/shell-sidebar.css";
-@import "./styles/file-tree-search.css";
-@import "./styles/workspace-editor.css";
+@import "./styles/card-tree-search.css";
+@import "./styles/cardbook-editor.css";
 @import "./styles/preview-editor.css";
 @import "./styles/right-panel.css";
 @import "./styles/settings.css";
-@import "./styles/chronicle.css";
+@import "./styles/timeline.css";
 @import "./styles/theme-motion.css";

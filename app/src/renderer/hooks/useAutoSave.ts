@@ -19,7 +19,7 @@ export function useAutoSave(
     timerRef.current = setTimeout(() => {
       isSavingRef.current = true;
 
-      void window.relic!.writeMarkdownFile({ content, path })
+      void window.relic!.writeMarkdownCard({ content, path })
         .then((result) => {
           if (result.ok) onSaved?.(path);
         })

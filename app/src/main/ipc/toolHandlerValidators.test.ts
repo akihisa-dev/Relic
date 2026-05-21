@@ -3,63 +3,63 @@ import { describe, expect, it } from "vitest";
 import {
   isGenerateTableOfContentsInput,
   isGenerateTitleListInput,
-  isMergeFilesInput,
-  isSplitFileByHeadingInput
+  isMergeCardsInput,
+  isSplitCardByHeadingInput
 } from "./toolHandlerValidators";
 
 describe("toolHandlerValidators", () => {
   it("validates title list and table of contents inputs", () => {
     expect(isGenerateTitleListInput({
-      filterFolder: "Notes",
-      outputFolder: "",
+      filterCardFolder: "Notes",
+      outputCardFolder: "",
       outputName: "Titles",
       sortBy: "mtime"
     })).toBe(true);
     expect(isGenerateTitleListInput({
-      outputFolder: "",
+      outputCardFolder: "",
       outputName: "Titles",
       sortBy: "ctime"
     })).toBe(false);
     expect(isGenerateTableOfContentsInput({
-      includeSubfolders: true,
-      outputFolder: "",
+      includeSubcardFolders: true,
+      outputCardFolder: "",
       outputName: "Toc",
-      targetFolder: "Notes"
+      targetCardFolder: "Notes"
     })).toBe(true);
     expect(isGenerateTableOfContentsInput({
-      includeSubfolders: "true",
-      outputFolder: "",
+      includeSubcardFolders: "true",
+      outputCardFolder: "",
       outputName: "Toc",
-      targetFolder: "Notes"
+      targetCardFolder: "Notes"
     })).toBe(false);
   });
 
   it("validates merge and split inputs", () => {
-    expect(isMergeFilesInput({
+    expect(isMergeCardsInput({
       filterType: "frontmatter",
       filterValue: "draft",
       frontmatterField: "status",
-      insertFilenameHeading: true,
-      outputFolder: "",
+      insertCardNameHeading: true,
+      outputCardFolder: "",
       outputName: "Merged",
       sortBy: "ctime"
     })).toBe(true);
-    expect(isMergeFilesInput({
+    expect(isMergeCardsInput({
       filterType: "all",
       filterValue: "",
-      insertFilenameHeading: true,
-      outputFolder: "",
+      insertCardNameHeading: true,
+      outputCardFolder: "",
       outputName: "Merged",
       sortBy: "created"
     })).toBe(false);
-    expect(isSplitFileByHeadingInput({
+    expect(isSplitCardByHeadingInput({
       headingLevel: 2,
-      outputFolder: "Split",
+      outputCardFolder: "Split",
       sourcePath: "Source.md"
     })).toBe(true);
-    expect(isSplitFileByHeadingInput({
+    expect(isSplitCardByHeadingInput({
       headingLevel: 4,
-      outputFolder: "Split",
+      outputCardFolder: "Split",
       sourcePath: "Source.md"
     })).toBe(false);
   });

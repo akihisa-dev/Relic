@@ -24,7 +24,7 @@ interface UseAppRailNavigationInput {
   featureToggles: FeatureToggles;
   focusedPane: PaneId;
   leftPane: PaneState;
-  openGanttChartInPane: (pane: PaneId, chart: { id: string; name: string }) => void;
+  openTimelineChartInPane: (pane: PaneId, chart: { id: string; name: string }) => void;
   openPanelInPane: (pane: PaneId, panel: PanelTabKind, label: string) => void;
   rightPane: PaneState;
   setSidebarView: (view: SidebarView) => void;
@@ -63,7 +63,7 @@ export function useAppRailNavigation({
   featureToggles,
   focusedPane,
   leftPane,
-  openGanttChartInPane,
+  openTimelineChartInPane,
   openPanelInPane,
   rightPane,
   setSidebarView,
@@ -113,7 +113,7 @@ export function useAppRailNavigation({
     }
 
     openPanelInPane(focusedPane, activeSidebarView, panelLabels[activeSidebarView]);
-    setSidebarView("files");
+    setSidebarView("cards");
   }, [activeSidebarView, focusedPane, openPanelInPane, panelLabels, setSidebarView]);
 
   const renderPanelTabIcon = useCallback((panel: PanelTabKind): ReactNode => (
@@ -159,7 +159,7 @@ export function useAppRailNavigation({
 
   const handleRailChartButton = useCallback((label: string, event: MouseEvent<HTMLButtonElement>): void => {
     const railRect = event.currentTarget.getBoundingClientRect();
-    const tabId = "gantt-charts";
+    const tabId = "timeline-charts";
     const editorState = useEditorStore.getState();
     const openedPanes: PaneId[] = [
       ...(editorState.leftPane.tabIds.includes(tabId) ? ["left" as const] : []),
@@ -174,13 +174,13 @@ export function useAppRailNavigation({
     }
 
     closeSidebar();
-    openGanttChartInPane(focusedPane, { id: "charts", name: label });
+    openTimelineChartInPane(focusedPane, { id: "charts", name: label });
     showRailOpenFlight(label, railRect);
   }, [
     clearRailTabFlight,
     closeSidebar,
     focusedPane,
-    openGanttChartInPane,
+    openTimelineChartInPane,
     setTabActive,
     showRailOpenFlight
   ]);

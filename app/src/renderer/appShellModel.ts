@@ -1,4 +1,4 @@
-import type { FeatureToggles, WorkspaceState } from "../shared/ipc";
+import type { FeatureToggles, CardbookState } from "../shared/ipc";
 import type { Translator } from "./i18n";
 import type { PaneState, PanelTabKind, Tab } from "./store/editorStore";
 import type { SidebarView } from "./store/uiStore";
@@ -11,25 +11,26 @@ export interface AppRailView<TIcon = unknown> {
   label: string;
 }
 
-export function registeredWorkspacesForState(
-  workspaceState: WorkspaceState | null
-): WorkspaceState["workspaces"] {
-  if (!workspaceState) return [];
-  if (workspaceState.workspaces.length > 0) return workspaceState.workspaces;
+export function registeredCardbooksForState(
+  cardbookState: CardbookState | null
+): CardbookState["cardbooks"] {
+  if (!cardbookState) return [];
+  if (cardbookState.cardbooks.length > 0) return cardbookState.cardbooks;
 
-  return workspaceState.activeWorkspace ? [workspaceState.activeWorkspace] : [];
+  return cardbookState.activeCardbook ? [cardbookState.activeCardbook] : [];
 }
 
-export function openFilePathsForTabs(tabs: Record<string, Tab>): Set<string> {
+export function openCardPathsForTabs(tabs: Record<string, Tab>): Set<string> {
   return new Set(
     Object.values(tabs)
-      .filter((tab) => tab.kind === "file")
+      .filter((tab) => tab.kind === "card")
       .map((tab) => tab.path)
   );
 }
 
 export function panelLabelsForTranslator(t: Translator): Record<PanelTabKind, string> {
   return {
+    "timeline-settings": t("nav.timelineSettings"),
     frontmatter: t("nav.frontmatter"),
     settings: t("nav.settings"),
     tools: t("nav.tools")
@@ -58,7 +59,7 @@ export function activePanelTabIdsForPanes(
 }
 
 export function isChartTabOpenInTabs(tabs: Record<string, Tab>, chartId = "charts"): boolean {
-  return Object.values(tabs).some((tab) => tab.kind === "gantt" && tab.chartId === chartId);
+  return Object.values(tabs).some((tab) => tab.kind === "timeline" && tab.chartId === chartId);
 }
 
 export function isChartTabActiveInPanes(
@@ -70,7 +71,7 @@ export function isChartTabActiveInPanes(
   return [leftPane.activeTabId, rightPane.activeTabId].some((tabId) => {
     const tab = tabId ? tabs[tabId] : null;
 
-    return tab?.kind === "gantt" && tab.chartId === chartId;
+    return tab?.kind === "timeline" && tab.chartId === chartId;
   });
 }
 
@@ -94,13 +95,13 @@ export function splitRailViews<TView extends Pick<AppRailView, "id">>(
   primaryRailViews: TView[];
 } {
   return {
-    chartRailView: views.find((view) => view.id === "chronicle"),
+    chartRailView: views.find((view) => view.id === "timeline"),
     panelRailViews: views.filter((view) =>
-      view.id !== "files" &&
-      view.id !== "chronicle"
+      view.id !== "cards" &&
+      view.id !== "timeline"
     ),
     primaryRailViews: views.filter((view) =>
-      view.id === "files"
+      view.id === "cards"
     )
   };
 }

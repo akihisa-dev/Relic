@@ -1,0 +1,69 @@
+import { readFile } from "node:fs/promises";
+
+import { fail, ok, type RelicResult } from "../../shared/result";
+import { collectMarkdownCardPaths } from "../../shared/cardbookTree";
+import { parseFrontmatter } from "./frontmatter";
+import { readCardbookCardTree } from "./cardTree";
+import { resolveCardbookRelativePath } from "./paths";
+
+export async function readFrontmatterValueCandidates(
+  cardbookPath: string
+): Promise<RelicResult<Record<string, string[]>>> {
+  try {
+    const cardTree = await readCardbookCardTree(cardbookPath);
+    const valuesByField = new Map<string, Set<string>>();
+
+    for (const relativePath of collectMarkdownCardPaths(cardTree)) {
+      const absolutePath = resolveCardbookRelativePath(cardbookPath, relativePath);
+
+      if (!absolutePath.ok) continue;
+
+      const content = await readFile(absolutePath.value, "utf8");
+      const { data } = parseFrontmatter(content);
+
+      for (const [fieldName, value] of Object.entries(data)) {
+        const fieldValues = valuesByField.get(fieldName) ?? new Set<string>();
+        const values = stringifyCandidateValues(value);
+
+        for (const item of values) fieldValues.add(item);
+        valuesByField.set(fieldName, fieldValues);
+      }
+    }
+
+    return ok(Object.fromEntries(
+      [...valuesByField.entries()]
+        .sort(([a], [b]) => a.localeCompare(b, "ja"))
+        .map(([fieldName, values]) => [
+          fieldName,
+          [...values].sort((a, b) => a.localeCompare(b, "ja"))
+        ])
+    ));
+  } catch (error) {
+    return fail(
+      "FRONTMATTER_VALUE_CANDIDATES_READ_FAILED",
+      "プロパティ候補を読み込めませんでした。",
+      error instanceof Error ? error.message : String(error)
+    );
+  }
+}
+
+function stringifyCandidateValues(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.flatMap((item) => stringifyCandidateValues(item));
+  }
+
+  if (value instanceof Date) {
+    return [value.toISOString().slice(0, 10)];
+  }
+
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    return trimmed ? [trimmed] : [];
+  }
+
+  if (typeof value === "number" || typeof value === "boolean") {
+    return [String(value)];
+  }
+
+  return [];
+}

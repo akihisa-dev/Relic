@@ -14,9 +14,9 @@ interface PaneTabContextMenuProps {
   onCloseAllTabs: () => void;
   onCloseOtherTabs: (tabId: string) => void;
   onCloseTabsToRight: (tabId: string) => void;
-  onDuplicateTabFile?: (tabId: string) => void;
+  onDuplicateTabCard?: (tabId: string) => void;
   onOpenInOtherPane: (tabId: string) => void;
-  onRevealTabFile?: (tabId: string) => void;
+  onRevealTabCard?: (tabId: string) => void;
   onTabClose: (tabId: string) => void;
   onTogglePinTab?: (tabId: string) => void;
 }
@@ -30,9 +30,9 @@ export function PaneTabContextMenu({
   onCloseAllTabs,
   onCloseOtherTabs,
   onCloseTabsToRight,
-  onDuplicateTabFile,
+  onDuplicateTabCard,
   onOpenInOtherPane,
-  onRevealTabFile,
+  onRevealTabCard,
   onTabClose,
   onTogglePinTab
 }: PaneTabContextMenuProps): ReactElement | null {
@@ -40,7 +40,7 @@ export function PaneTabContextMenu({
 
   if (!contextMenu) return null;
 
-  const contextTabIsFile = contextTab?.kind === "file";
+  const contextTabIsCard = contextTab?.kind === "card";
 
   return (
     <div
@@ -50,16 +50,16 @@ export function PaneTabContextMenu({
     >
       {contextTab ? (
         <>
-          {contextTabIsFile && onDuplicateTabFile ? (
+          {contextTabIsCard && onDuplicateTabCard ? (
             <button
               className="tab-context-menu-item"
               onClick={() => {
-                onDuplicateTabFile(contextMenu.tabId);
+                onDuplicateTabCard(contextMenu.tabId);
                 onClose();
               }}
               type="button"
             >
-              {t("files.duplicate")}
+              {t("cards.duplicate")}
             </button>
           ) : null}
           {onTogglePinTab ? (
@@ -72,10 +72,10 @@ export function PaneTabContextMenu({
               type="button"
             >
               {isPinned ? <PinOffIcon /> : <PinIcon />}
-              {isPinned ? t("files.unpin") : t("files.pin")}
+              {isPinned ? t("cards.unpin") : t("cards.pin")}
             </button>
           ) : null}
-          {contextTabIsFile ? (
+          {contextTabIsCard ? (
             <>
               <button
                 className="tab-context-menu-item"
@@ -85,7 +85,7 @@ export function PaneTabContextMenu({
                 }}
                 type="button"
               >
-                {t("files.copyPath")}
+                {t("cards.copyPath")}
               </button>
               <button
                 className="tab-context-menu-item"
@@ -95,20 +95,20 @@ export function PaneTabContextMenu({
                 }}
                 type="button"
               >
-                {t("files.copyMarkdownLink")}
+                {t("cards.copyMarkdownLink")}
               </button>
             </>
           ) : null}
-          {contextTabIsFile && onRevealTabFile ? (
+          {contextTabIsCard && onRevealTabCard ? (
             <button
               className="tab-context-menu-item"
               onClick={() => {
-                onRevealTabFile(contextMenu.tabId);
+                onRevealTabCard(contextMenu.tabId);
                 onClose();
               }}
               type="button"
             >
-              {t("files.revealInFinder")}
+              {t("cards.revealInFinder")}
             </button>
           ) : null}
           {isSplitView ? (

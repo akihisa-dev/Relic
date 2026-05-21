@@ -1,34 +1,34 @@
-export type GanttChartSource = "chronicle";
+export type TimelineChartSource = "timeline";
 
-export interface GanttChartSettings {
-  filePaths?: string[];
+export interface TimelineChartSettings {
+  cardPaths?: string[];
   id: string;
   name: string;
-  source: GanttChartSource;
+  source: TimelineChartSource;
 }
 
-export interface GanttChartEntry {
+export interface TimelineChartEntry {
   endLabel: string;
   endValue: number;
-  fileName: string;
+  cardName: string;
   path: string;
   startLabel: string;
   startValue: number;
   statuses?: string[];
 }
 
-export interface WorkspaceGanttChart extends GanttChartSettings {
-  entries: GanttChartEntry[];
+export interface CardbookTimelineChart extends TimelineChartSettings {
+  entries: TimelineChartEntry[];
 }
 
-export type GanttChartEntryEditKind = "move" | "resize-start" | "resize-end";
+export type TimelineChartEntryEditKind = "move" | "resize-start" | "resize-end";
 
-export interface UpdateGanttChartEntryInput {
+export interface UpdateTimelineChartEntryInput {
   endValue: number;
-  kind: GanttChartEntryEditKind;
+  kind: TimelineChartEntryEditKind;
   originalEndValue: number;
   originalStartValue: number;
   path: string;
-  source: GanttChartSource;
+  source: TimelineChartSource;
   startValue: number;
 }
