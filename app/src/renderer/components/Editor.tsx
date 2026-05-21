@@ -17,7 +17,7 @@ export { buildWikiLinkCompletionSource } from "../editorExtensions";
 export { buildLivePreviewDecorations, findClickableLinkAtPosition } from "../editorLivePreview";
 export { buildTableDecorations } from "../editorTables";
 interface EditorProps {
-  allFilePaths?: string[];
+  allCardPaths?: string[];
   content: string;
   frontmatterCandidates?: Record<string, string[]>;
   onChange: (content: string) => void;
@@ -31,12 +31,12 @@ interface EditorProps {
   viewRef?: MutableRefObject<EditorView | null>;
 }
 
-const defaultAllFilePaths: string[] = [];
+const defaultAllCardPaths: string[] = [];
 const defaultFrontmatterCandidates: Record<string, string[]> = {};
 const defaultUserDefinedFields: UserDefinedField[] = [];
 
 export function Editor({
-  allFilePaths = defaultAllFilePaths,
+  allCardPaths = defaultAllCardPaths,
   content,
   frontmatterCandidates = defaultFrontmatterCandidates,
   onChange,
@@ -55,7 +55,7 @@ export function Editor({
   const onChangeRef = useRef(onChange);
   const onOpenLinkRef = useRef(onOpenLink);
   const onOpenWikiLinkRef = useRef(onOpenWikiLink);
-  const allFilePathsRef = useRef(allFilePaths);
+  const allCardPathsRef = useRef(allCardPaths);
   const frontmatterCandidatesRef = useRef(frontmatterCandidates);
   const userDefinedFieldsRef = useRef(userDefinedFields);
   const {
@@ -95,7 +95,7 @@ export function Editor({
   onChangeRef.current = onChange;
   onOpenLinkRef.current = onOpenLink;
   onOpenWikiLinkRef.current = onOpenWikiLink;
-  allFilePathsRef.current = allFilePaths;
+  allCardPathsRef.current = allCardPaths;
   frontmatterCandidatesRef.current = frontmatterCandidates;
   userDefinedFieldsRef.current = userDefinedFields;
 
@@ -151,7 +151,7 @@ export function Editor({
       typewriterMode,
       sourceMode,
       onChangeRef,
-      allFilePathsRef.current,
+      allCardPathsRef.current,
       userDefinedFieldsRef.current,
       frontmatterCandidatesRef.current,
       t,
@@ -211,7 +211,7 @@ export function Editor({
       typewriterMode,
       sourceMode,
       onChangeRef,
-      allFilePathsRef.current,
+      allCardPathsRef.current,
       userDefinedFieldsRef.current,
       frontmatterCandidatesRef.current,
       t,

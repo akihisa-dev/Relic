@@ -1,9 +1,9 @@
 import type { AliasIndex } from "./links";
 import type { RelicResult } from "./result";
 import type {
-  GanttChartSettings,
-  UpdateGanttChartEntryInput,
-  WorkspaceGanttChart
+  TimelineChartSettings,
+  UpdateTimelineChartEntryInput,
+  CardbookTimelineChart
 } from "./ipcCharts";
 import type {
   EditorSettings,
@@ -14,88 +14,88 @@ import type {
 import type {
   GenerateTableOfContentsInput,
   GenerateTitleListInput,
-  MergeFilesInput,
-  SplitFileByHeadingInput
+  MergeCardsInput,
+  SplitCardByHeadingInput
 } from "./ipcTools";
 import type {
   AppInfo,
   Backlink,
-  CreateFolderInput,
-  CreateLinkedMarkdownFileInput,
-  CreateLinkedMarkdownFileResult,
-  CreateMarkdownFileInput,
-  DuplicateMarkdownFileInput,
+  CreateCardFolderInput,
+  CreateLinkedMarkdownCardInput,
+  CreateLinkedMarkdownCardResult,
+  CreateMarkdownCardInput,
+  DuplicateMarkdownCardInput,
   GetBacklinksInput,
-  MarkdownFileContent,
-  MoveFolderInput,
+  MarkdownCardContent,
+  MoveCardFolderInput,
   MoveItemToTrashInput,
-  MoveMarkdownFileInput,
-  ReadMarkdownFileInput,
-  RemoveWorkspaceInput,
-  RenameFolderInput,
-  RenameMarkdownFileInput,
-  RenameMarkdownFileResult,
-  RenameWorkspaceInput,
-  ReplaceInFileInput,
-  ReplaceInFileResult,
-  RevealWorkspaceItemInput,
+  MoveMarkdownCardInput,
+  ReadMarkdownCardInput,
+  RemoveCardbookInput,
+  RenameCardFolderInput,
+  RenameMarkdownCardInput,
+  RenameMarkdownCardResult,
+  RenameCardbookInput,
+  ReplaceInCardInput,
+  ReplaceInCardResult,
+  RevealCardbookItemInput,
   SearchAndReplaceInput,
   SearchAndReplaceMatch,
-  SearchWorkspaceInput,
-  SwitchWorkspaceInput,
-  WorkspaceChangedEvent,
-  WorkspaceSearchResult,
-  WorkspaceState,
-  WorkspaceTagSummary,
-  WriteMarkdownFileInput
-} from "./ipcWorkspace";
+  SearchCardbookInput,
+  SwitchCardbookInput,
+  CardbookChangedEvent,
+  CardbookSearchResult,
+  CardbookState,
+  CardbookTagSummary,
+  WriteMarkdownCardInput
+} from "./ipcCardbook";
 
 export interface RelicApi {
-  createNewWorkspace: () => Promise<RelicResult<WorkspaceState>>;
-  togglePin: (path: string) => Promise<RelicResult<WorkspaceState>>;
-  createFolder: (input: CreateFolderInput) => Promise<RelicResult<WorkspaceState>>;
-  createLinkedMarkdownFile: (
-    input: CreateLinkedMarkdownFileInput
-  ) => Promise<RelicResult<CreateLinkedMarkdownFileResult>>;
-  createMarkdownFile: (input: CreateMarkdownFileInput) => Promise<RelicResult<WorkspaceState>>;
-  duplicateMarkdownFile: (
-    input: DuplicateMarkdownFileInput
-  ) => Promise<RelicResult<RenameMarkdownFileResult>>;
+  createNewCardbook: () => Promise<RelicResult<CardbookState>>;
+  togglePin: (path: string) => Promise<RelicResult<CardbookState>>;
+  createCardFolder: (input: CreateCardFolderInput) => Promise<RelicResult<CardbookState>>;
+  createLinkedMarkdownCard: (
+    input: CreateLinkedMarkdownCardInput
+  ) => Promise<RelicResult<CreateLinkedMarkdownCardResult>>;
+  createMarkdownCard: (input: CreateMarkdownCardInput) => Promise<RelicResult<CardbookState>>;
+  duplicateMarkdownCard: (
+    input: DuplicateMarkdownCardInput
+  ) => Promise<RelicResult<RenameMarkdownCardResult>>;
   getBacklinks: (input: GetBacklinksInput) => Promise<RelicResult<Backlink[]>>;
   getAppInfo: () => Promise<RelicResult<AppInfo>>;
   getEditorSettings: () => Promise<RelicResult<EditorSettings>>;
-  getWorkspaceAliases: () => Promise<RelicResult<AliasIndex>>;
-  getWorkspaceChronicle: () => Promise<RelicResult<WorkspaceGanttChart[]>>;
+  getCardbookAliases: () => Promise<RelicResult<AliasIndex>>;
+  getCardbookTimeline: () => Promise<RelicResult<CardbookTimelineChart[]>>;
   getFrontmatterValueCandidates: () => Promise<RelicResult<Record<string, string[]>>>;
-  getWorkspaceTags: () => Promise<RelicResult<WorkspaceTagSummary[]>>;
-  getWorkspaceState: () => Promise<RelicResult<WorkspaceState>>;
-  moveFolder: (input: MoveFolderInput) => Promise<RelicResult<WorkspaceState>>;
-  moveItemToTrash: (input: MoveItemToTrashInput) => Promise<RelicResult<WorkspaceState>>;
-  moveMarkdownFile: (
-    input: MoveMarkdownFileInput
-  ) => Promise<RelicResult<RenameMarkdownFileResult>>;
-  openWorkspace: () => Promise<RelicResult<WorkspaceState>>;
-  readMarkdownFile: (input: ReadMarkdownFileInput) => Promise<RelicResult<MarkdownFileContent>>;
+  getCardbookTags: () => Promise<RelicResult<CardbookTagSummary[]>>;
+  getCardbookState: () => Promise<RelicResult<CardbookState>>;
+  moveCardFolder: (input: MoveCardFolderInput) => Promise<RelicResult<CardbookState>>;
+  moveItemToTrash: (input: MoveItemToTrashInput) => Promise<RelicResult<CardbookState>>;
+  moveMarkdownCard: (
+    input: MoveMarkdownCardInput
+  ) => Promise<RelicResult<RenameMarkdownCardResult>>;
+  openCardbook: () => Promise<RelicResult<CardbookState>>;
+  readMarkdownCard: (input: ReadMarkdownCardInput) => Promise<RelicResult<MarkdownCardContent>>;
   readClipboardText: () => string;
-  removeWorkspace: (input: RemoveWorkspaceInput) => Promise<RelicResult<WorkspaceState>>;
-  renameWorkspace: (input: RenameWorkspaceInput) => Promise<RelicResult<WorkspaceState>>;
-  renameMarkdownFile: (
-    input: RenameMarkdownFileInput
-  ) => Promise<RelicResult<RenameMarkdownFileResult>>;
-  renameFolder: (input: RenameFolderInput) => Promise<RelicResult<WorkspaceState>>;
-  revealWorkspaceItem: (input: RevealWorkspaceItemInput) => Promise<RelicResult<void>>;
-  applySearchAndReplace: (input: SearchAndReplaceInput) => Promise<RelicResult<ReplaceInFileResult>>;
-  replaceInFile: (input: ReplaceInFileInput) => Promise<RelicResult<ReplaceInFileResult>>;
+  removeCardbook: (input: RemoveCardbookInput) => Promise<RelicResult<CardbookState>>;
+  renameCardbook: (input: RenameCardbookInput) => Promise<RelicResult<CardbookState>>;
+  renameMarkdownCard: (
+    input: RenameMarkdownCardInput
+  ) => Promise<RelicResult<RenameMarkdownCardResult>>;
+  renameCardFolder: (input: RenameCardFolderInput) => Promise<RelicResult<CardbookState>>;
+  revealCardbookItem: (input: RevealCardbookItemInput) => Promise<RelicResult<void>>;
+  applySearchAndReplace: (input: SearchAndReplaceInput) => Promise<RelicResult<ReplaceInCardResult>>;
+  replaceInCard: (input: ReplaceInCardInput) => Promise<RelicResult<ReplaceInCardResult>>;
   saveEditorSettings: (input: EditorSettings) => Promise<RelicResult<void>>;
   searchAndReplace: (
     input: SearchAndReplaceInput
   ) => Promise<RelicResult<SearchAndReplaceMatch[]>>;
-  searchWorkspace: (input: SearchWorkspaceInput) => Promise<RelicResult<WorkspaceSearchResult[]>>;
-  switchWorkspace: (input: SwitchWorkspaceInput) => Promise<RelicResult<WorkspaceState>>;
-  writeMarkdownFile: (input: WriteMarkdownFileInput) => Promise<RelicResult<void>>;
+  searchCardbook: (input: SearchCardbookInput) => Promise<RelicResult<CardbookSearchResult[]>>;
+  switchCardbook: (input: SwitchCardbookInput) => Promise<RelicResult<CardbookState>>;
+  writeMarkdownCard: (input: WriteMarkdownCardInput) => Promise<RelicResult<void>>;
   writeClipboardText: (text: string) => void;
-  saveWorkspaceGanttCharts: (input: GanttChartSettings[]) => Promise<RelicResult<WorkspaceGanttChart[]>>;
-  updateGanttChartEntry: (input: UpdateGanttChartEntryInput) => Promise<RelicResult<WorkspaceGanttChart[]>>;
+  saveCardbookTimelineCharts: (input: TimelineChartSettings[]) => Promise<RelicResult<CardbookTimelineChart[]>>;
+  updateTimelineChartEntry: (input: UpdateTimelineChartEntryInput) => Promise<RelicResult<CardbookTimelineChart[]>>;
   generateTitleList: (input: GenerateTitleListInput) => Promise<RelicResult<string>>;
   generateTableOfContents: (input: GenerateTableOfContentsInput) => Promise<RelicResult<string>>;
   getFeatureToggles: () => Promise<RelicResult<FeatureToggles>>;
@@ -104,7 +104,7 @@ export interface RelicApi {
   saveUserDefinedFields: (input: UserDefinedField[]) => Promise<RelicResult<void>>;
   getFrontmatterTemplates: () => Promise<RelicResult<FrontmatterTemplate[]>>;
   saveFrontmatterTemplates: (input: FrontmatterTemplate[]) => Promise<RelicResult<void>>;
-  mergeFiles: (input: MergeFilesInput) => Promise<RelicResult<string>>;
-  splitFileByHeading: (input: SplitFileByHeadingInput) => Promise<RelicResult<string[]>>;
-  onWorkspaceChanged: (callback: (event: WorkspaceChangedEvent) => void) => () => void;
+  mergeCards: (input: MergeCardsInput) => Promise<RelicResult<string>>;
+  splitCardByHeading: (input: SplitCardByHeadingInput) => Promise<RelicResult<string[]>>;
+  onCardbookChanged: (callback: (event: CardbookChangedEvent) => void) => () => void;
 }

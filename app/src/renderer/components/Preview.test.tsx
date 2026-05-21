@@ -92,7 +92,7 @@ describe("Preview", () => {
       <Preview
         content="![図](attachments/diagram.png)"
         settings={settings}
-        workspacePath="/tmp/relic workspace"
+        cardbookPath="/tmp/relic cardbook"
       />
     );
 
@@ -102,20 +102,20 @@ describe("Preview", () => {
 
   it("Obsidian形式の画像埋め込みをカード埋め込みとして扱わない", () => {
     window.relic = {
-      readMarkdownFile: vi.fn()
+      readMarkdownCard: vi.fn()
     } as unknown as typeof window.relic;
 
     render(
       <Preview
         content="![[diagram.png]]"
         settings={settings}
-        workspacePath="/tmp/relic workspace"
+        cardbookPath="/tmp/relic cardbook"
       />
     );
 
     expect(screen.queryByRole("img")).not.toBeInTheDocument();
     expect(screen.getByText("![[diagram.png]]")).toBeInTheDocument();
-    expect(window.relic!.readMarkdownFile).not.toHaveBeenCalled();
+    expect(window.relic!.readMarkdownCard).not.toHaveBeenCalled();
   });
 
   it("外部URL画像は初期対象外として画像表示しない", () => {
@@ -123,7 +123,7 @@ describe("Preview", () => {
       <Preview
         content="![外部](https://example.com/image.png)"
         settings={settings}
-        workspacePath="/tmp/relic"
+        cardbookPath="/tmp/relic"
       />
     );
 
@@ -133,7 +133,7 @@ describe("Preview", () => {
 
   it("カード埋め込みを一段階だけ読み込んで表示する", async () => {
     window.relic = {
-      readMarkdownFile: vi.fn().mockResolvedValue({
+      readMarkdownCard: vi.fn().mockResolvedValue({
         ok: true,
         value: {
           content: "# 埋め込み先\n\n本文\n\n![[さらに奥]]",
@@ -145,15 +145,15 @@ describe("Preview", () => {
 
     render(<Preview content="前\n\n![[埋め込み先]]\n\n後" settings={settings} />);
 
-    expect(window.relic!.readMarkdownFile).toHaveBeenCalledWith({ path: "埋め込み先.md" });
+    expect(window.relic!.readMarkdownCard).toHaveBeenCalledWith({ path: "埋め込み先.md" });
     expect(await screen.findByRole("heading", { level: 1, name: "埋め込み先" })).toBeInTheDocument();
     expect(screen.getByText("本文")).toBeInTheDocument();
-    expect(window.relic!.readMarkdownFile).toHaveBeenCalledTimes(1);
+    expect(window.relic!.readMarkdownCard).toHaveBeenCalledTimes(1);
   });
 
   it("大きすぎる埋め込みカードは全文表示しない", async () => {
     window.relic = {
-      readMarkdownFile: vi.fn().mockResolvedValue({
+      readMarkdownCard: vi.fn().mockResolvedValue({
         ok: true,
         value: { content: "a".repeat(20_001), name: "巨大ノート", path: "巨大ノート.md" }
       })
@@ -171,9 +171,9 @@ describe("Preview", () => {
 
 describe("normalizeEmbedTarget", () => {
   it("Markdownカードとして読める埋め込み先へ正規化する", () => {
-    expect(normalizeEmbedTarget("Folder/Note")).toBe("Folder/Note.md");
-    expect(normalizeEmbedTarget("Folder/Note.md#見出し")).toBe("Folder/Note.md");
-    expect(normalizeEmbedTarget("Folder/image.png")).toBeNull();
+    expect(normalizeEmbedTarget("CardFolder/Note")).toBe("CardFolder/Note.md");
+    expect(normalizeEmbedTarget("CardFolder/Note.md#見出し")).toBe("CardFolder/Note.md");
+    expect(normalizeEmbedTarget("CardFolder/image.png")).toBeNull();
     expect(normalizeEmbedTarget("../secret")).toBeNull();
     expect(normalizeEmbedTarget("https://example.com/note.md")).toBeNull();
   });

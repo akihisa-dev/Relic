@@ -5,10 +5,10 @@ import { makeRelicApi } from "../../test/rendererTestUtils";
 import { I18nProvider } from "../i18n";
 import { ToolsSidebar } from "./ToolsSidebar";
 
-function renderToolsSidebar(language: "en" | "ja" = "en", workspacePath: string | null = "/tmp/notes") {
+function renderToolsSidebar(language: "en" | "ja" = "en", cardbookPath: string | null = "/tmp/notes") {
   return render(
     <I18nProvider language={language}>
-      <ToolsSidebar workspacePath={workspacePath} />
+      <ToolsSidebar cardbookPath={cardbookPath} />
     </I18nProvider>
   );
 }
@@ -55,8 +55,8 @@ describe("ToolsSidebar", () => {
 
     await waitFor(() => {
       expect(generateTitleList).toHaveBeenCalledWith({
-        filterFolder: "Drafts",
-        outputFolder: "Indexes",
+        filterCardFolder: "Drafts",
+        outputCardFolder: "Indexes",
         outputName: "Titles",
         sortBy: "mtime"
       });
@@ -72,17 +72,17 @@ describe("ToolsSidebar", () => {
 
     await waitFor(() => {
       expect(generateTableOfContents).toHaveBeenCalledWith({
-        includeSubfolders: false,
-        outputFolder: "Indexes",
+        includeSubcardFolders: false,
+        outputCardFolder: "Indexes",
         outputName: "Contents",
-        targetFolder: "Docs"
+        targetCardFolder: "Docs"
       });
     });
   });
 
   it("プロパティ条件を指定してマージできる", async () => {
-    const mergeFiles = vi.fn().mockResolvedValue({ ok: true, value: "merged.md" });
-    window.relic = makeRelicApi({ mergeFiles });
+    const mergeCards = vi.fn().mockResolvedValue({ ok: true, value: "merged.md" });
+    window.relic = makeRelicApi({ mergeCards });
 
     renderToolsSidebar("ja");
 
@@ -92,7 +92,7 @@ describe("ToolsSidebar", () => {
     fireEvent.click(screen.getByRole("button", { name: "条件指定マージ" }));
 
     await waitFor(() => {
-      expect(mergeFiles).toHaveBeenCalledWith(expect.objectContaining({
+      expect(mergeCards).toHaveBeenCalledWith(expect.objectContaining({
         filterType: "frontmatter",
         filterValue: "draft",
         frontmatterField: "status"
@@ -101,14 +101,14 @@ describe("ToolsSidebar", () => {
   });
 
   it("ソース指定時だけ見出し分割を実行する", async () => {
-    const splitFileByHeading = vi.fn().mockResolvedValue({ ok: true, value: ["A.md", "B.md"] });
-    window.relic = makeRelicApi({ splitFileByHeading });
+    const splitCardByHeading = vi.fn().mockResolvedValue({ ok: true, value: ["A.md", "B.md"] });
+    window.relic = makeRelicApi({ splitCardByHeading });
 
     renderToolsSidebar("en");
 
     const split = sectionBlock("Split by Heading");
     fireEvent.click(within(split).getByRole("button", { name: "Split by Heading" }));
-    expect(splitFileByHeading).not.toHaveBeenCalled();
+    expect(splitCardByHeading).not.toHaveBeenCalled();
 
     fireEvent.change(within(split).getByLabelText("Source card"), { target: { value: "Book.md" } });
     fireEvent.change(within(split).getByLabelText("Heading level"), { target: { value: "3" } });
@@ -116,9 +116,9 @@ describe("ToolsSidebar", () => {
     fireEvent.click(within(split).getByRole("button", { name: "Split by Heading" }));
 
     await waitFor(() => {
-      expect(splitFileByHeading).toHaveBeenCalledWith({
+      expect(splitCardByHeading).toHaveBeenCalledWith({
         headingLevel: 3,
-        outputFolder: "Chapters",
+        outputCardFolder: "Chapters",
         sourcePath: "Book.md"
       });
     });

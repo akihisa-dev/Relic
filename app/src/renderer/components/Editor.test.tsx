@@ -348,7 +348,7 @@ describe("Editor", () => {
   it("[[ 入力時のカード名補完候補を作る", () => {
     const source = buildWikiLinkCompletionSource([
       "読書メモ.md",
-      "folder/読書メモ.md",
+      "cardFolder/読書メモ.md",
       "資料.md"
     ]);
     const result = source({
@@ -360,7 +360,7 @@ describe("Editor", () => {
       from: 2,
       options: expect.arrayContaining([
         { apply: "読書メモ]]", label: "読書メモ" },
-        { apply: "folder/読書メモ]]", label: "folder/読書メモ" },
+        { apply: "cardFolder/読書メモ]]", label: "cardFolder/読書メモ" },
         { apply: "資料]]", label: "資料" }
       ])
     });
@@ -772,28 +772,28 @@ describe("Editor", () => {
     expect((container.querySelector(".frontmatter-add-dialog-input") as HTMLInputElement).getAttribute("list")).not.toBeNull();
   });
 
-  it("chronicleプロパティは1行配列として編集する", async () => {
+  it("timelineプロパティは1行配列として編集する", async () => {
     const viewRef = createRef<EditorView | null>();
     const { container } = render(
       <Editor
-        content={"---\nchronicle:\n---\n# 本文"}
+        content={"---\ntimeline:\n---\n# 本文"}
         onChange={vi.fn()}
         settings={settings}
         viewRef={viewRef}
       />
     );
 
-    await waitFor(() => expect(container.querySelector(".cm-frontmatter-chronicle")).not.toBeNull());
-    const inputs = Array.from(container.querySelectorAll(".cm-frontmatter-chronicle .cm-frontmatter-input")) as HTMLInputElement[];
+    await waitFor(() => expect(container.querySelector(".cm-frontmatter-timeline")).not.toBeNull());
+    const inputs = Array.from(container.querySelectorAll(".cm-frontmatter-timeline .cm-frontmatter-input")) as HTMLInputElement[];
     fireEvent.change(inputs[0], { target: { value: "1185" } });
 
-    expect(viewRef.current?.state.doc.toString()).toContain("chronicle: [1185]");
+    expect(viewRef.current?.state.doc.toString()).toContain("timeline: [1185]");
 
-    await waitFor(() => expect(container.querySelector(".cm-frontmatter-chronicle")).not.toBeNull());
-    const nextInputs = Array.from(container.querySelectorAll(".cm-frontmatter-chronicle .cm-frontmatter-input")) as HTMLInputElement[];
+    await waitFor(() => expect(container.querySelector(".cm-frontmatter-timeline")).not.toBeNull());
+    const nextInputs = Array.from(container.querySelectorAll(".cm-frontmatter-timeline .cm-frontmatter-input")) as HTMLInputElement[];
     fireEvent.change(nextInputs[1], { target: { value: "1333" } });
 
-    expect(viewRef.current?.state.doc.toString()).toContain("chronicle: [1185, 1333]");
+    expect(viewRef.current?.state.doc.toString()).toContain("timeline: [1185, 1333]");
   });
 
   it("日付入力能力のプロパティは年月日を1行配列として編集する", async () => {

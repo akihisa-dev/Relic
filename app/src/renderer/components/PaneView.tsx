@@ -12,7 +12,7 @@ import { PaneTabContextMenu } from "./PaneTabContextMenu";
 
 export interface PaneViewProps {
   actionSlot?: ReactNode;
-  allFilePaths: string[];
+  allCardPaths: string[];
   closingTabIds: Set<string>;
   editorActionPulse: number;
   editorSettings: EditorSettings;
@@ -22,18 +22,18 @@ export interface PaneViewProps {
   scrollTargetHeading?: string;
   typewriterMode: boolean;
   userDefinedFields: UserDefinedField[];
-  workspacePath?: string | null;
+  cardbookPath?: string | null;
   viewRef: MutableRefObject<EditorView | null>;
-  renderChronicleTab: (chartId: string) => ReactNode;
+  renderTimelineTab: (chartId: string) => ReactNode;
   renderPanelTab: (panel: PanelTabKind) => ReactNode;
   renderPanelTabIcon: (panel: PanelTabKind) => ReactNode;
-  onCreateFile: (name: string) => void;
+  onCreateCard: (name: string) => void;
   onEditorAction?: () => void;
   onFocus: () => void;
   onOpenLink?: (href: string) => void;
   onOpenWikiLink?: (target: string, heading?: string) => void;
-  onFileSaved?: (path: string) => void;
-  onRenameFile: (path: string, name: string) => void;
+  onCardSaved?: (path: string) => void;
+  onRenameCard: (path: string, name: string) => void;
   onScrollTargetHandled?: () => void;
   onTabClose: (tabId: string) => void;
   onTabMove: (fromPane: PaneId, toPane: PaneId, tabId: string, targetTabId?: string | null, position?: "before" | "after") => void;
@@ -41,9 +41,9 @@ export interface PaneViewProps {
   onCloseOtherTabs: (tabId: string) => void;
   onCloseTabsToRight: (tabId: string) => void;
   onCloseAllTabs: () => void;
-  onDuplicateTabFile?: (tabId: string) => void;
+  onDuplicateTabCard?: (tabId: string) => void;
   onOpenInOtherPane: (tabId: string) => void;
-  onRevealTabFile?: (tabId: string) => void;
+  onRevealTabCard?: (tabId: string) => void;
   onTogglePinTab?: (tabId: string) => void;
   isSplitView: boolean;
   sourceMode: boolean;
@@ -51,7 +51,7 @@ export interface PaneViewProps {
 
 export function PaneView({
   actionSlot,
-  allFilePaths,
+  allCardPaths,
   closingTabIds,
   editorActionPulse,
   editorSettings,
@@ -61,17 +61,17 @@ export function PaneView({
   scrollTargetHeading,
   typewriterMode,
   userDefinedFields,
-  workspacePath,
+  cardbookPath,
   viewRef,
-  renderChronicleTab,
+  renderTimelineTab,
   renderPanelTab,
   renderPanelTabIcon,
-  onCreateFile,
+  onCreateCard,
   onFocus,
   onOpenLink,
   onOpenWikiLink,
-  onFileSaved,
-  onRenameFile,
+  onCardSaved,
+  onRenameCard,
   onScrollTargetHandled,
   onTabClose,
   onTabMove,
@@ -79,10 +79,10 @@ export function PaneView({
   onCloseOtherTabs,
   onCloseTabsToRight,
   onCloseAllTabs,
-  onDuplicateTabFile,
+  onDuplicateTabCard,
   onEditorAction,
   onOpenInOtherPane,
-  onRevealTabFile,
+  onRevealTabCard,
   onTogglePinTab,
   isSplitView,
   sourceMode
@@ -106,10 +106,10 @@ export function PaneView({
   const contextTabIsPinned = Boolean(contextTab?.isPinned);
 
   useAutoSave(
-    activeTab?.kind === "file" ? activeTab.content : "",
-    activeTab?.kind === "file" ? activeTab.path : null,
-    activeTab?.kind === "file",
-    onFileSaved
+    activeTab?.kind === "card" ? activeTab.content : "",
+    activeTab?.kind === "card" ? activeTab.path : null,
+    activeTab?.kind === "card",
+    onCardSaved
   );
 
   usePaneHeadingScroll({
@@ -154,30 +154,30 @@ export function PaneView({
         onCloseAllTabs={onCloseAllTabs}
         onCloseOtherTabs={onCloseOtherTabs}
         onCloseTabsToRight={onCloseTabsToRight}
-        onDuplicateTabFile={onDuplicateTabFile}
+        onDuplicateTabCard={onDuplicateTabCard}
         onOpenInOtherPane={onOpenInOtherPane}
-        onRevealTabFile={onRevealTabFile}
+        onRevealTabCard={onRevealTabCard}
         onTabClose={onTabClose}
         onTogglePinTab={onTogglePinTab}
       />
       <PaneContentSurface
         activeTab={activeTab}
-        allFilePaths={allFilePaths}
+        allCardPaths={allCardPaths}
         editorActionPulse={editorActionPulse}
         editorSettings={editorSettings}
         frontmatterCandidates={frontmatterCandidates}
-        renderChronicleTab={renderChronicleTab}
+        renderTimelineTab={renderTimelineTab}
         renderPanelTab={renderPanelTab}
         sourceMode={sourceMode}
         typewriterMode={typewriterMode}
         userDefinedFields={userDefinedFields}
         viewRef={viewRef}
-        workspacePath={workspacePath}
-        onCreateFile={onCreateFile}
+        cardbookPath={cardbookPath}
+        onCreateCard={onCreateCard}
         onEditorAction={onEditorAction}
         onOpenLink={onOpenLink}
         onOpenWikiLink={onOpenWikiLink}
-        onRenameFile={onRenameFile}
+        onRenameCard={onRenameCard}
         onUpdateTabContent={updateTabContent}
       />
     </div>

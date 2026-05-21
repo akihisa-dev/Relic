@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 
-import { extractEmbedTargets, maxEmbeddedFileLength, type EmbedState } from "../previewMarkdown";
+import { extractEmbedTargets, maxEmbeddedCardLength, type EmbedState } from "../previewMarkdown";
 
-export function usePreviewEmbeds(content: string, workspacePath: string | null | undefined): Map<string, EmbedState> {
+export function usePreviewEmbeds(content: string, cardbookPath: string | null | undefined): Map<string, EmbedState> {
   const [embeds, setEmbeds] = useState<Map<string, EmbedState>>(new Map());
 
   useEffect(() => {
@@ -18,13 +18,13 @@ export function usePreviewEmbeds(content: string, workspacePath: string | null |
 
     void Promise.all(
       targets.map(async (target) => {
-        const result = await window.relic!.readMarkdownFile({ path: target });
+        const result = await window.relic!.readMarkdownCard({ path: target });
 
         if (!result.ok) {
           return [target, { status: "error", message: result.error.message } as EmbedState] as const;
         }
 
-        if (result.value.content.length > maxEmbeddedFileLength) {
+        if (result.value.content.length > maxEmbeddedCardLength) {
           return [target, { status: "large", name: result.value.name } as EmbedState] as const;
         }
 
@@ -40,7 +40,7 @@ export function usePreviewEmbeds(content: string, workspacePath: string | null |
     return () => {
       canceled = true;
     };
-  }, [content, workspacePath]);
+  }, [content, cardbookPath]);
 
   return embeds;
 }

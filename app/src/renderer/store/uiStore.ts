@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-export type SidebarView = "files" | "settings" | "tools" | "frontmatter" | "chronicle";
+export type SidebarView = "cards" | "settings" | "tools" | "frontmatter" | "timeline";
 export type RightPanelView = "outline" | "links";
 
 interface UiState {
@@ -9,10 +9,10 @@ interface UiState {
   isRightPanelOpen: boolean;
   isTypewriterMode: boolean;
   rightPanelView: RightPanelView;
-  selectedGanttChartId: string | null;
+  selectedTimelineChartId: string | null;
   closeSidebar: () => void;
   openSidebar: () => void;
-  setSelectedGanttChartId: (chartId: string | null) => void;
+  setSelectedTimelineChartId: (chartId: string | null) => void;
   setSidebarView: (view: SidebarView) => void;
   toggleSidebar: () => void;
   toggleRightPanel: () => void;
@@ -21,15 +21,15 @@ interface UiState {
 }
 
 export const useUiStore = create<UiState>((set) => ({
-  activeSidebarView: "files",
+  activeSidebarView: "cards",
   isSidebarOpen: true,
   isRightPanelOpen: false,
   isTypewriterMode: false,
   rightPanelView: "outline",
-  selectedGanttChartId: null,
+  selectedTimelineChartId: null,
   closeSidebar: () => set({ isSidebarOpen: false }),
   openSidebar: () => set({ isSidebarOpen: true }),
-  setSelectedGanttChartId: (chartId) => set({ selectedGanttChartId: chartId }),
+  setSelectedTimelineChartId: (chartId) => set({ selectedTimelineChartId: chartId }),
   setSidebarView: (view) =>
     set({
       activeSidebarView: view,

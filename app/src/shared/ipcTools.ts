@@ -1,35 +1,35 @@
 export interface GenerateTitleListInput {
-  filterFolder?: string;
+  filterCardFolder?: string;
   filterTag?: string;
-  outputFolder: string;
+  outputCardFolder: string;
   outputName: string;
   sortBy: "name" | "mtime";
 }
 
 export interface GenerateTableOfContentsInput {
-  includeSubfolders: boolean;
-  outputFolder: string;
+  includeSubcardFolders: boolean;
+  outputCardFolder: string;
   outputName: string;
-  targetFolder: string;
+  targetCardFolder: string;
 }
 
-export type MergeFilterType = "folder" | "frontmatter" | "tag" | "all";
+export type MergeFilterType = "cardFolder" | "frontmatter" | "tag" | "all";
 export type MergeSortBy = "name" | "mtime" | "ctime";
 
-export interface MergeFilesInput {
+export interface MergeCardsInput {
   frontmatterField?: string;
   filterType: MergeFilterType;
   filterValue: string;
-  insertFilenameHeading: boolean;
-  outputFolder: string;
+  insertCardNameHeading: boolean;
+  outputCardFolder: string;
   outputName: string;
   sortBy: MergeSortBy;
 }
 
 export type SplitHeadingLevel = 1 | 2 | 3;
 
-export interface SplitFileByHeadingInput {
+export interface SplitCardByHeadingInput {
   headingLevel: SplitHeadingLevel;
-  outputFolder: string;
+  outputCardFolder: string;
   sourcePath: string;
 }

@@ -7,7 +7,7 @@ describe("useAutoSave", () => {
   beforeEach(() => {
     vi.useFakeTimers();
     window.relic = {
-      writeMarkdownFile: vi.fn().mockResolvedValue({ ok: true, value: undefined })
+      writeMarkdownCard: vi.fn().mockResolvedValue({ ok: true, value: undefined })
     } as unknown as typeof window.relic;
   });
 
@@ -16,14 +16,14 @@ describe("useAutoSave", () => {
     vi.clearAllMocks();
   });
 
-  it("1秒後に writeMarkdownFile を呼ぶ", async () => {
+  it("1秒後に writeMarkdownCard を呼ぶ", async () => {
     renderHook(() => useAutoSave("# メモ", "memo.md", true));
 
-    expect(window.relic!.writeMarkdownFile).not.toHaveBeenCalled();
+    expect(window.relic!.writeMarkdownCard).not.toHaveBeenCalled();
 
     await vi.advanceTimersByTimeAsync(1000);
 
-    expect(window.relic!.writeMarkdownFile).toHaveBeenCalledWith({
+    expect(window.relic!.writeMarkdownCard).toHaveBeenCalledWith({
       content: "# メモ",
       path: "memo.md"
     });
@@ -48,12 +48,12 @@ describe("useAutoSave", () => {
     rerender({ content: "改稿" });
     await vi.advanceTimersByTimeAsync(500);
 
-    expect(window.relic!.writeMarkdownFile).not.toHaveBeenCalled();
+    expect(window.relic!.writeMarkdownCard).not.toHaveBeenCalled();
 
     await vi.advanceTimersByTimeAsync(500);
 
-    expect(window.relic!.writeMarkdownFile).toHaveBeenCalledTimes(1);
-    expect(window.relic!.writeMarkdownFile).toHaveBeenCalledWith({
+    expect(window.relic!.writeMarkdownCard).toHaveBeenCalledTimes(1);
+    expect(window.relic!.writeMarkdownCard).toHaveBeenCalledWith({
       content: "改稿",
       path: "memo.md"
     });
@@ -64,7 +64,7 @@ describe("useAutoSave", () => {
 
     await vi.advanceTimersByTimeAsync(2000);
 
-    expect(window.relic!.writeMarkdownFile).not.toHaveBeenCalled();
+    expect(window.relic!.writeMarkdownCard).not.toHaveBeenCalled();
   });
 
   it("path が null のとき保存しない", async () => {
@@ -72,7 +72,7 @@ describe("useAutoSave", () => {
 
     await vi.advanceTimersByTimeAsync(2000);
 
-    expect(window.relic!.writeMarkdownFile).not.toHaveBeenCalled();
+    expect(window.relic!.writeMarkdownCard).not.toHaveBeenCalled();
   });
 
   it("アンマウント時にタイマーをキャンセルして保存しない", async () => {
@@ -82,6 +82,6 @@ describe("useAutoSave", () => {
     unmount();
     await vi.advanceTimersByTimeAsync(1000);
 
-    expect(window.relic!.writeMarkdownFile).not.toHaveBeenCalled();
+    expect(window.relic!.writeMarkdownCard).not.toHaveBeenCalled();
   });
 });

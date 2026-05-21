@@ -2,34 +2,34 @@ import { clipboard, contextBridge, ipcRenderer } from "electron";
 
 import {
   applySearchAndReplaceChannel,
-  createNewWorkspaceChannel,
+  createNewCardbookChannel,
   togglePinChannel,
-  createFolderChannel,
-  createLinkedMarkdownFileChannel,
-  createMarkdownFileChannel,
-  duplicateMarkdownFileChannel,
+  createCardFolderChannel,
+  createLinkedMarkdownCardChannel,
+  createMarkdownCardChannel,
+  duplicateMarkdownCardChannel,
   getBacklinksChannel,
   getAppInfoChannel,
   getEditorSettingsChannel,
   getFrontmatterValueCandidatesChannel,
-  getWorkspaceAliasesChannel,
-  getWorkspaceChronicleChannel,
-  getWorkspaceTagsChannel,
-  getWorkspaceStateChannel,
-  workspaceChangedChannel,
-  moveFolderChannel,
+  getCardbookAliasesChannel,
+  getCardbookTimelineChannel,
+  getCardbookTagsChannel,
+  getCardbookStateChannel,
+  cardbookChangedChannel,
+  moveCardFolderChannel,
   moveItemToTrashChannel,
-  moveMarkdownFileChannel,
-  openWorkspaceChannel,
-  readMarkdownFileChannel,
-  removeWorkspaceChannel,
-  renameWorkspaceChannel,
-  renameFolderChannel,
-  renameMarkdownFileChannel,
-  replaceInFileChannel,
-  revealWorkspaceItemChannel,
-  saveWorkspaceGanttChartsChannel,
-  updateGanttChartEntryChannel,
+  moveMarkdownCardChannel,
+  openCardbookChannel,
+  readMarkdownCardChannel,
+  removeCardbookChannel,
+  renameCardbookChannel,
+  renameCardFolderChannel,
+  renameMarkdownCardChannel,
+  replaceInCardChannel,
+  revealCardbookItemChannel,
+  saveCardbookTimelineChartsChannel,
+  updateTimelineChartEntryChannel,
   saveEditorSettingsChannel,
   generateTitleListChannel,
   type GenerateTitleListInput,
@@ -44,133 +44,133 @@ import {
   type FeatureToggles,
   type FrontmatterTemplate,
   type UserDefinedField,
-  mergeFilesChannel,
-  type MergeFilesInput,
-  splitFileByHeadingChannel,
-  type SplitFileByHeadingInput,
+  mergeCardsChannel,
+  type MergeCardsInput,
+  splitCardByHeadingChannel,
+  type SplitCardByHeadingInput,
   searchAndReplaceChannel,
-  searchWorkspaceChannel,
-  switchWorkspaceChannel,
-  writeMarkdownFileChannel,
+  searchCardbookChannel,
+  switchCardbookChannel,
+  writeMarkdownCardChannel,
   type AppInfo,
-  type CreateFolderInput,
-  type CreateLinkedMarkdownFileInput,
-  type CreateLinkedMarkdownFileResult,
-  type CreateMarkdownFileInput,
-  type DuplicateMarkdownFileInput,
+  type CreateCardFolderInput,
+  type CreateLinkedMarkdownCardInput,
+  type CreateLinkedMarkdownCardResult,
+  type CreateMarkdownCardInput,
+  type DuplicateMarkdownCardInput,
   type EditorSettings,
   type Backlink,
   type GetBacklinksInput,
-  type GanttChartSettings,
-  type UpdateGanttChartEntryInput,
-  type MarkdownFileContent,
-  type MoveFolderInput,
+  type TimelineChartSettings,
+  type UpdateTimelineChartEntryInput,
+  type MarkdownCardContent,
+  type MoveCardFolderInput,
   type MoveItemToTrashInput,
-  type MoveMarkdownFileInput,
+  type MoveMarkdownCardInput,
   type RelicApi,
-  type ReadMarkdownFileInput,
-  type RemoveWorkspaceInput,
-  type RenameWorkspaceInput,
-  type RenameFolderInput,
-  type RenameMarkdownFileInput,
-  type RenameMarkdownFileResult,
-  type ReplaceInFileInput,
-  type ReplaceInFileResult,
-  type RevealWorkspaceItemInput,
+  type ReadMarkdownCardInput,
+  type RemoveCardbookInput,
+  type RenameCardbookInput,
+  type RenameCardFolderInput,
+  type RenameMarkdownCardInput,
+  type RenameMarkdownCardResult,
+  type ReplaceInCardInput,
+  type ReplaceInCardResult,
+  type RevealCardbookItemInput,
   type SearchAndReplaceInput,
   type SearchAndReplaceMatch,
-  type SearchWorkspaceInput,
-  type SwitchWorkspaceInput,
-  type WorkspaceChangedEvent,
-  type WorkspaceState,
-  type WorkspaceGanttChart,
-  type WorkspaceSearchResult,
-  type WorkspaceTagSummary,
-  type WriteMarkdownFileInput
+  type SearchCardbookInput,
+  type SwitchCardbookInput,
+  type CardbookChangedEvent,
+  type CardbookState,
+  type CardbookTimelineChart,
+  type CardbookSearchResult,
+  type CardbookTagSummary,
+  type WriteMarkdownCardInput
 } from "../shared/ipc";
 import type { RelicResult } from "../shared/result";
 import type { AliasIndex } from "../shared/links";
 
 const relicApi: RelicApi = {
   applySearchAndReplace: (input: SearchAndReplaceInput) =>
-    ipcRenderer.invoke(applySearchAndReplaceChannel, input) as Promise<RelicResult<ReplaceInFileResult>>,
-  createNewWorkspace: () =>
-    ipcRenderer.invoke(createNewWorkspaceChannel) as Promise<RelicResult<WorkspaceState>>,
+    ipcRenderer.invoke(applySearchAndReplaceChannel, input) as Promise<RelicResult<ReplaceInCardResult>>,
+  createNewCardbook: () =>
+    ipcRenderer.invoke(createNewCardbookChannel) as Promise<RelicResult<CardbookState>>,
   togglePin: (path: string) =>
-    ipcRenderer.invoke(togglePinChannel, path) as Promise<RelicResult<WorkspaceState>>,
-  createFolder: (input: CreateFolderInput) =>
-    ipcRenderer.invoke(createFolderChannel, input) as Promise<RelicResult<WorkspaceState>>,
-  createLinkedMarkdownFile: (input: CreateLinkedMarkdownFileInput) =>
-    ipcRenderer.invoke(createLinkedMarkdownFileChannel, input) as Promise<
-      RelicResult<CreateLinkedMarkdownFileResult>
+    ipcRenderer.invoke(togglePinChannel, path) as Promise<RelicResult<CardbookState>>,
+  createCardFolder: (input: CreateCardFolderInput) =>
+    ipcRenderer.invoke(createCardFolderChannel, input) as Promise<RelicResult<CardbookState>>,
+  createLinkedMarkdownCard: (input: CreateLinkedMarkdownCardInput) =>
+    ipcRenderer.invoke(createLinkedMarkdownCardChannel, input) as Promise<
+      RelicResult<CreateLinkedMarkdownCardResult>
     >,
-  createMarkdownFile: (input: CreateMarkdownFileInput) =>
-    ipcRenderer.invoke(createMarkdownFileChannel, input) as Promise<RelicResult<WorkspaceState>>,
-  duplicateMarkdownFile: (input: DuplicateMarkdownFileInput) =>
-    ipcRenderer.invoke(duplicateMarkdownFileChannel, input) as Promise<
-      RelicResult<RenameMarkdownFileResult>
+  createMarkdownCard: (input: CreateMarkdownCardInput) =>
+    ipcRenderer.invoke(createMarkdownCardChannel, input) as Promise<RelicResult<CardbookState>>,
+  duplicateMarkdownCard: (input: DuplicateMarkdownCardInput) =>
+    ipcRenderer.invoke(duplicateMarkdownCardChannel, input) as Promise<
+      RelicResult<RenameMarkdownCardResult>
     >,
   getBacklinks: (input: GetBacklinksInput) =>
     ipcRenderer.invoke(getBacklinksChannel, input) as Promise<RelicResult<Backlink[]>>,
   getAppInfo: () => ipcRenderer.invoke(getAppInfoChannel) as Promise<RelicResult<AppInfo>>,
   getEditorSettings: () =>
     ipcRenderer.invoke(getEditorSettingsChannel) as Promise<RelicResult<EditorSettings>>,
-  getWorkspaceAliases: () =>
-    ipcRenderer.invoke(getWorkspaceAliasesChannel) as Promise<RelicResult<AliasIndex>>,
-  getWorkspaceChronicle: () =>
-    ipcRenderer.invoke(getWorkspaceChronicleChannel) as Promise<RelicResult<WorkspaceGanttChart[]>>,
+  getCardbookAliases: () =>
+    ipcRenderer.invoke(getCardbookAliasesChannel) as Promise<RelicResult<AliasIndex>>,
+  getCardbookTimeline: () =>
+    ipcRenderer.invoke(getCardbookTimelineChannel) as Promise<RelicResult<CardbookTimelineChart[]>>,
   getFrontmatterValueCandidates: () =>
     ipcRenderer.invoke(getFrontmatterValueCandidatesChannel) as Promise<RelicResult<Record<string, string[]>>>,
-  getWorkspaceTags: () =>
-    ipcRenderer.invoke(getWorkspaceTagsChannel) as Promise<RelicResult<WorkspaceTagSummary[]>>,
-  getWorkspaceState: () =>
-    ipcRenderer.invoke(getWorkspaceStateChannel) as Promise<RelicResult<WorkspaceState>>,
-  moveFolder: (input: MoveFolderInput) =>
-    ipcRenderer.invoke(moveFolderChannel, input) as Promise<RelicResult<WorkspaceState>>,
+  getCardbookTags: () =>
+    ipcRenderer.invoke(getCardbookTagsChannel) as Promise<RelicResult<CardbookTagSummary[]>>,
+  getCardbookState: () =>
+    ipcRenderer.invoke(getCardbookStateChannel) as Promise<RelicResult<CardbookState>>,
+  moveCardFolder: (input: MoveCardFolderInput) =>
+    ipcRenderer.invoke(moveCardFolderChannel, input) as Promise<RelicResult<CardbookState>>,
   moveItemToTrash: (input: MoveItemToTrashInput) =>
-    ipcRenderer.invoke(moveItemToTrashChannel, input) as Promise<RelicResult<WorkspaceState>>,
-  moveMarkdownFile: (input: MoveMarkdownFileInput) =>
-    ipcRenderer.invoke(moveMarkdownFileChannel, input) as Promise<
-      RelicResult<RenameMarkdownFileResult>
+    ipcRenderer.invoke(moveItemToTrashChannel, input) as Promise<RelicResult<CardbookState>>,
+  moveMarkdownCard: (input: MoveMarkdownCardInput) =>
+    ipcRenderer.invoke(moveMarkdownCardChannel, input) as Promise<
+      RelicResult<RenameMarkdownCardResult>
     >,
-  openWorkspace: () =>
-    ipcRenderer.invoke(openWorkspaceChannel) as Promise<RelicResult<WorkspaceState>>,
-  readMarkdownFile: (input: ReadMarkdownFileInput) =>
-    ipcRenderer.invoke(readMarkdownFileChannel, input) as Promise<RelicResult<MarkdownFileContent>>,
+  openCardbook: () =>
+    ipcRenderer.invoke(openCardbookChannel) as Promise<RelicResult<CardbookState>>,
+  readMarkdownCard: (input: ReadMarkdownCardInput) =>
+    ipcRenderer.invoke(readMarkdownCardChannel, input) as Promise<RelicResult<MarkdownCardContent>>,
   readClipboardText: () => clipboard.readText(),
-  removeWorkspace: (input: RemoveWorkspaceInput) =>
-    ipcRenderer.invoke(removeWorkspaceChannel, input) as Promise<RelicResult<WorkspaceState>>,
-  renameWorkspace: (input: RenameWorkspaceInput) =>
-    ipcRenderer.invoke(renameWorkspaceChannel, input) as Promise<RelicResult<WorkspaceState>>,
-  renameMarkdownFile: (input: RenameMarkdownFileInput) =>
-    ipcRenderer.invoke(renameMarkdownFileChannel, input) as Promise<
-      RelicResult<RenameMarkdownFileResult>
+  removeCardbook: (input: RemoveCardbookInput) =>
+    ipcRenderer.invoke(removeCardbookChannel, input) as Promise<RelicResult<CardbookState>>,
+  renameCardbook: (input: RenameCardbookInput) =>
+    ipcRenderer.invoke(renameCardbookChannel, input) as Promise<RelicResult<CardbookState>>,
+  renameMarkdownCard: (input: RenameMarkdownCardInput) =>
+    ipcRenderer.invoke(renameMarkdownCardChannel, input) as Promise<
+      RelicResult<RenameMarkdownCardResult>
     >,
-  renameFolder: (input: RenameFolderInput) =>
-    ipcRenderer.invoke(renameFolderChannel, input) as Promise<RelicResult<WorkspaceState>>,
-  revealWorkspaceItem: (input: RevealWorkspaceItemInput) =>
-    ipcRenderer.invoke(revealWorkspaceItemChannel, input) as Promise<RelicResult<void>>,
-  replaceInFile: (input: ReplaceInFileInput) =>
-    ipcRenderer.invoke(replaceInFileChannel, input) as Promise<RelicResult<ReplaceInFileResult>>,
+  renameCardFolder: (input: RenameCardFolderInput) =>
+    ipcRenderer.invoke(renameCardFolderChannel, input) as Promise<RelicResult<CardbookState>>,
+  revealCardbookItem: (input: RevealCardbookItemInput) =>
+    ipcRenderer.invoke(revealCardbookItemChannel, input) as Promise<RelicResult<void>>,
+  replaceInCard: (input: ReplaceInCardInput) =>
+    ipcRenderer.invoke(replaceInCardChannel, input) as Promise<RelicResult<ReplaceInCardResult>>,
   saveEditorSettings: (input: EditorSettings) =>
     ipcRenderer.invoke(saveEditorSettingsChannel, input) as Promise<RelicResult<void>>,
   searchAndReplace: (input: SearchAndReplaceInput) =>
     ipcRenderer.invoke(searchAndReplaceChannel, input) as Promise<
       RelicResult<SearchAndReplaceMatch[]>
     >,
-  searchWorkspace: (input: SearchWorkspaceInput) =>
-    ipcRenderer.invoke(searchWorkspaceChannel, input) as Promise<
-      RelicResult<WorkspaceSearchResult[]>
+  searchCardbook: (input: SearchCardbookInput) =>
+    ipcRenderer.invoke(searchCardbookChannel, input) as Promise<
+      RelicResult<CardbookSearchResult[]>
     >,
-  switchWorkspace: (input: SwitchWorkspaceInput) =>
-    ipcRenderer.invoke(switchWorkspaceChannel, input) as Promise<RelicResult<WorkspaceState>>,
-  writeMarkdownFile: (input: WriteMarkdownFileInput) =>
-    ipcRenderer.invoke(writeMarkdownFileChannel, input) as Promise<RelicResult<void>>,
+  switchCardbook: (input: SwitchCardbookInput) =>
+    ipcRenderer.invoke(switchCardbookChannel, input) as Promise<RelicResult<CardbookState>>,
+  writeMarkdownCard: (input: WriteMarkdownCardInput) =>
+    ipcRenderer.invoke(writeMarkdownCardChannel, input) as Promise<RelicResult<void>>,
   writeClipboardText: (text: string) => clipboard.writeText(text),
-  saveWorkspaceGanttCharts: (input: GanttChartSettings[]) =>
-    ipcRenderer.invoke(saveWorkspaceGanttChartsChannel, input) as Promise<RelicResult<WorkspaceGanttChart[]>>,
-  updateGanttChartEntry: (input: UpdateGanttChartEntryInput) =>
-    ipcRenderer.invoke(updateGanttChartEntryChannel, input) as Promise<RelicResult<WorkspaceGanttChart[]>>,
+  saveCardbookTimelineCharts: (input: TimelineChartSettings[]) =>
+    ipcRenderer.invoke(saveCardbookTimelineChartsChannel, input) as Promise<RelicResult<CardbookTimelineChart[]>>,
+  updateTimelineChartEntry: (input: UpdateTimelineChartEntryInput) =>
+    ipcRenderer.invoke(updateTimelineChartEntryChannel, input) as Promise<RelicResult<CardbookTimelineChart[]>>,
   generateTitleList: (input: GenerateTitleListInput) =>
     ipcRenderer.invoke(generateTitleListChannel, input) as Promise<RelicResult<string>>,
   generateTableOfContents: (input: GenerateTableOfContentsInput) =>
@@ -187,17 +187,17 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(getFrontmatterTemplatesChannel) as Promise<RelicResult<FrontmatterTemplate[]>>,
   saveFrontmatterTemplates: (input: FrontmatterTemplate[]) =>
     ipcRenderer.invoke(saveFrontmatterTemplatesChannel, input) as Promise<RelicResult<void>>,
-  mergeFiles: (input: MergeFilesInput) =>
-    ipcRenderer.invoke(mergeFilesChannel, input) as Promise<RelicResult<string>>,
-  splitFileByHeading: (input: SplitFileByHeadingInput) =>
-    ipcRenderer.invoke(splitFileByHeadingChannel, input) as Promise<RelicResult<string[]>>,
-  onWorkspaceChanged: (callback: (event: WorkspaceChangedEvent) => void) => {
-    const listener = (_event: Electron.IpcRendererEvent, payload: WorkspaceChangedEvent): void => {
+  mergeCards: (input: MergeCardsInput) =>
+    ipcRenderer.invoke(mergeCardsChannel, input) as Promise<RelicResult<string>>,
+  splitCardByHeading: (input: SplitCardByHeadingInput) =>
+    ipcRenderer.invoke(splitCardByHeadingChannel, input) as Promise<RelicResult<string[]>>,
+  onCardbookChanged: (callback: (event: CardbookChangedEvent) => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, payload: CardbookChangedEvent): void => {
       callback(payload);
     };
 
-    ipcRenderer.on(workspaceChangedChannel, listener);
-    return () => ipcRenderer.removeListener(workspaceChangedChannel, listener);
+    ipcRenderer.on(cardbookChangedChannel, listener);
+    return () => ipcRenderer.removeListener(cardbookChangedChannel, listener);
   }
 };
 

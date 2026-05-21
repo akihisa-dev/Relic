@@ -20,15 +20,16 @@ const t = createTranslator("en");
 describe("paneViewModel", () => {
   it("labels panel tabs through translations and other tabs by name", () => {
     const panelTab: Tab = { id: "panel-frontmatter", kind: "panel", name: "ignored", panel: "frontmatter" };
-    const fileTab: Tab = { content: "", id: "tab-file", kind: "file", name: "Note", path: "Note.md" };
-    const ganttTab: Tab = { chartId: "chronicle", id: "gantt-chronicle", kind: "gantt", name: "Chronicle" };
+    const cardTab: Tab = { content: "", id: "tab-card", kind: "card", name: "Note", path: "Note.md" };
+    const timelineTab: Tab = { chartId: "timeline", id: "timeline-timeline", kind: "timeline", name: "Timeline" };
 
     expect(panelTabLabel("frontmatter", t)).toBe("Properties");
+    expect(panelTabLabel("timeline-settings", t)).toBe("Timeline Settings");
     expect(panelTabLabel("settings", t)).toBe("Settings");
     expect(panelTabLabel("tools", t)).toBe("Tools");
     expect(paneTabLabel(panelTab, t)).toBe("Properties");
-    expect(paneTabLabel(fileTab, t)).toBe("Note");
-    expect(paneTabLabel(ganttTab, t)).toBe("Chronicle");
+    expect(paneTabLabel(cardTab, t)).toBe("Note");
+    expect(paneTabLabel(timelineTab, t)).toBe("Timeline");
     expect(paneTabLabel(null, t)).toBe("");
   });
 
@@ -37,9 +38,9 @@ describe("paneViewModel", () => {
     expect(textCount("  ")).toEqual({ chars: 2, words: 0 });
   });
 
-  it("formats Markdown links from file tab paths", () => {
-    expect(markdownLinkForPaneTabPath("Folder/Note.md")).toBe("[[Folder/Note]]");
-    expect(markdownLinkForPaneTabPath("Folder/Note.markdown")).toBe("[[Folder/Note.markdown]]");
+  it("formats Markdown links from card tab paths", () => {
+    expect(markdownLinkForPaneTabPath("CardFolder/Note.md")).toBe("[[CardFolder/Note]]");
+    expect(markdownLinkForPaneTabPath("CardFolder/Note.markdown")).toBe("[[CardFolder/Note.markdown]]");
   });
 
   it("serializes and parses tab drag payloads", () => {

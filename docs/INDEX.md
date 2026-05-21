@@ -1,6 +1,6 @@
 # docs/INDEX.md
 
-このファイルはドキュメント群の索引です。
+このカードはドキュメント群の索引です。
 AIのセッション開始時は、`../AI.md` から [product/project.md](product/project.md)、[dev/phases.md](dev/phases.md) の順に進みます。
 
 ---
@@ -30,7 +30,7 @@ AIのセッション開始時は、`../AI.md` から [product/project.md](produc
 
 ## ドキュメントマップ
 
-| ファイル | 内容 |
+| カード | 内容 |
 |----------|------|
 | [_rules.md](_rules.md) | ドキュメント作成・管理の全体ルール |
 | [product/project.md](product/project.md) | 内部向けプロジェクト概要。AIがプロジェクト前提を把握する入口 |

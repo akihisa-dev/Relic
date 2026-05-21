@@ -4,13 +4,13 @@ import * as yaml from "js-yaml";
 import type { UserDefinedField } from "../shared/ipc";
 import {
   choicesFor,
-  chronicleInputValue,
+  timelineInputValue,
   dateInputValue,
   firstArrayValue,
   inputTypeFor,
   isEditableScalar,
   isSingleValueField,
-  parseChronicleYearInput,
+  parseTimelineYearInput,
   parseDateInput,
   parseScalarValue,
   requestFrontmatterDialog,
@@ -37,7 +37,7 @@ export function createFrontmatterValueInput({
   value: unknown;
   view: EditorView;
 }): HTMLElement {
-  if (key === "chronicle") return chronicleInput(view, key, Array.isArray(value) ? value : [], updateField);
+  if (key === "timeline") return timelineInput(view, key, Array.isArray(value) ? value : [], updateField);
   if (field?.type === "boolean") return booleanInput(view, key, firstArrayValue(value), updateField, true);
   if (isSingleValueField(field)) return scalarInput(view, key, firstArrayValue(value), field, candidates, updateField, true);
   if (field?.type === "multi-select" || key === "aliases" || key === "tags" || Array.isArray(value)) {
@@ -174,29 +174,29 @@ function booleanInput(
   return label;
 }
 
-function chronicleInput(
+function timelineInput(
   view: EditorView,
   key: string,
   value: unknown[],
   updateField: FrontmatterFieldUpdater
 ): HTMLElement {
   const wrap = document.createElement("span");
-  wrap.className = "cm-frontmatter-input-wrap cm-frontmatter-chronicle";
+  wrap.className = "cm-frontmatter-input-wrap cm-frontmatter-timeline";
 
   const startInput = document.createElement("input");
   startInput.className = "cm-frontmatter-input";
   startInput.type = "number";
-  startInput.value = chronicleInputValue(value[0]);
+  startInput.value = timelineInputValue(value[0]);
 
   const endInput = document.createElement("input");
   endInput.className = "cm-frontmatter-input";
   endInput.placeholder = "end";
   endInput.type = "number";
-  endInput.value = value.length > 1 ? chronicleInputValue(value[1]) : "";
+  endInput.value = value.length > 1 ? timelineInputValue(value[1]) : "";
 
   const commit = (): void => {
-    const startYear = parseChronicleYearInput(startInput.value);
-    const endYear = parseChronicleYearInput(endInput.value);
+    const startYear = parseTimelineYearInput(startInput.value);
+    const endYear = parseTimelineYearInput(endInput.value);
 
     if (startYear === null) {
       updateField(view, key, undefined);

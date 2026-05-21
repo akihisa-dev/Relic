@@ -4,7 +4,7 @@ import type { TranslationKey } from "../i18n";
 import type { PanelTabKind } from "../store/editorStore";
 import type { SidebarView } from "../store/uiStore";
 
-export const IconFiles = (_props: { sidebarOpen?: boolean } = {}): ReactElement => (
+export const IconCards = (_props: { sidebarOpen?: boolean } = {}): ReactElement => (
   <svg fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="18">
     <path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z" />
     <path d="M14 2v5a1 1 0 0 0 1 1h5" />
@@ -30,7 +30,7 @@ const IconFrontmatter = (): ReactElement => (
   </svg>
 );
 
-const IconChronicle = (): ReactElement => (
+const IconTimeline = (): ReactElement => (
   <svg fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="18">
     <path d="M3 3v16a2 2 0 0 0 2 2h16" />
     <rect height="4" rx="1" width="9" x="7" y="13" />
@@ -48,9 +48,10 @@ const IconSettings = (): ReactElement => (
 type RailViewId = SidebarView | PanelTabKind;
 
 export const sidebarViewDefs: Array<{ id: RailViewId; labelKey: TranslationKey; icon: ReactElement }> = [
-  { id: "files", labelKey: "nav.files", icon: <IconFiles /> },
+  { id: "cards", labelKey: "nav.cards", icon: <IconCards /> },
   { id: "tools", labelKey: "nav.tools", icon: <IconTools /> },
   { id: "frontmatter", labelKey: "nav.frontmatter", icon: <IconFrontmatter /> },
-  { id: "chronicle", labelKey: "nav.chronicle", icon: <IconChronicle /> },
+  { id: "timeline", labelKey: "nav.timeline", icon: <IconTimeline /> },
+  { id: "timeline-settings", labelKey: "nav.timelineSettings", icon: <IconTimeline /> },
   { id: "settings", labelKey: "nav.settings", icon: <IconSettings /> }
 ];

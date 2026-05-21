@@ -6,40 +6,40 @@ import type { AliasIndex } from "../../shared/links";
 
 interface QuickSwitcherProps {
   aliasesByPath?: AliasIndex;
-  filePaths: string[];
+  cardPaths: string[];
   onClose: () => void;
   onSelect: (path: string) => void;
 }
 
-function matchingAlias(filePath: string, query: string, aliasesByPath: AliasIndex): string | null {
+function matchingAlias(cardPath: string, query: string, aliasesByPath: AliasIndex): string | null {
   if (!query) return null;
 
-  return aliasesByPath[filePath]?.find((alias) => alias.toLowerCase().includes(query.toLowerCase())) ?? null;
+  return aliasesByPath[cardPath]?.find((alias) => alias.toLowerCase().includes(query.toLowerCase())) ?? null;
 }
 
-function matchesQuery(filePath: string, query: string, aliasesByPath: AliasIndex): boolean {
+function matchesQuery(cardPath: string, query: string, aliasesByPath: AliasIndex): boolean {
   if (!query) return true;
 
-  const basename = filePath.split("/").at(-1)?.replace(/\.md$/, "") ?? filePath;
+  const basename = cardPath.split("/").at(-1)?.replace(/\.md$/, "") ?? cardPath;
 
   return basename.toLowerCase().includes(query.toLowerCase()) ||
-    filePath.toLowerCase().includes(query.toLowerCase()) ||
-    matchingAlias(filePath, query, aliasesByPath) !== null;
+    cardPath.toLowerCase().includes(query.toLowerCase()) ||
+    matchingAlias(cardPath, query, aliasesByPath) !== null;
 }
 
-function getBasename(filePath: string): string {
-  return filePath.split("/").at(-1)?.replace(/\.md$/, "") ?? filePath;
+function getBasename(cardPath: string): string {
+  return cardPath.split("/").at(-1)?.replace(/\.md$/, "") ?? cardPath;
 }
 
-function getDirPath(filePath: string): string {
-  const parts = filePath.split("/");
+function getDirPath(cardPath: string): string {
+  const parts = cardPath.split("/");
 
   parts.pop();
 
   return parts.join("/");
 }
 
-export function QuickSwitcher({ aliasesByPath = {}, filePaths, onClose, onSelect }: QuickSwitcherProps): ReactElement {
+export function QuickSwitcher({ aliasesByPath = {}, cardPaths, onClose, onSelect }: QuickSwitcherProps): ReactElement {
   const t = useT();
   const [isClosing, setIsClosing] = useState(false);
   const [query, setQuery] = useState("");
@@ -47,7 +47,7 @@ export function QuickSwitcher({ aliasesByPath = {}, filePaths, onClose, onSelect
   const closeTimerRef = useRef<number | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const filtered = filePaths.filter((p) => matchesQuery(p, query, aliasesByPath)).slice(0, 50);
+  const filtered = cardPaths.filter((p) => matchesQuery(p, query, aliasesByPath)).slice(0, 50);
 
   const basenames = filtered.map(getBasename);
   const duplicates = new Set(basenames.filter((b, i) => basenames.indexOf(b) !== i));
@@ -85,8 +85,8 @@ export function QuickSwitcher({ aliasesByPath = {}, filePaths, onClose, onSelect
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [requestClose]);
 
-  const select = (filePath: string): void => {
-    onSelect(filePath);
+  const select = (cardPath: string): void => {
+    onSelect(cardPath);
     requestClose();
   };
 
@@ -113,21 +113,21 @@ export function QuickSwitcher({ aliasesByPath = {}, filePaths, onClose, onSelect
           value={query}
         />
         <ul className="command-list">
-          {filtered.map((filePath, i) => {
-            const basename = getBasename(filePath);
+          {filtered.map((cardPath, i) => {
+            const basename = getBasename(cardPath);
             const showPath = duplicates.has(basename);
-            const alias = matchingAlias(filePath, query, aliasesByPath);
+            const alias = matchingAlias(cardPath, query, aliasesByPath);
 
             return (
               <li
                 className={`command-item${i === selectedIndex ? " command-item--selected" : ""}`}
-                key={filePath}
-                onClick={() => select(filePath)}
+                key={cardPath}
+                onClick={() => select(cardPath)}
                 onMouseEnter={() => setSelectedIndex(i)}
               >
                 <span className="command-label">{basename}</span>
                 {alias || showPath ? (
-                  <span className="command-shortcut">{alias ? `alias: ${alias}` : getDirPath(filePath)}</span>
+                  <span className="command-shortcut">{alias ? `alias: ${alias}` : getDirPath(cardPath)}</span>
                 ) : null}
               </li>
             );

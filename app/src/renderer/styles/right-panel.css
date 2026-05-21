@@ -309,7 +309,7 @@
   }
 }
 
-@keyframes file-tree-expand {
+@keyframes card-tree-expand {
   from {
     opacity: 0;
     transform: translateY(-4px) scaleY(0.96);
@@ -320,7 +320,7 @@
   }
 }
 
-@keyframes file-tree-select {
+@keyframes card-tree-select {
   0% {
     transform: translateX(0) scale(0.99);
   }
@@ -332,7 +332,7 @@
   }
 }
 
-@keyframes file-tree-appear {
+@keyframes card-tree-appear {
   0% {
     opacity: 0;
     transform: translateX(-4px);
@@ -343,7 +343,7 @@
   }
 }
 
-@keyframes file-tree-remove {
+@keyframes card-tree-remove {
   0% {
     opacity: 1;
     transform: translateX(0) scale(1);

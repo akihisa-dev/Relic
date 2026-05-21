@@ -59,7 +59,7 @@ js-yaml                   # プロパティYAML処理
 - `app/src/renderer/editorExtensions.ts`: CodeMirror拡張、Markdown言語サポート、内部リンク補完、リンククリック処理
 - `app/src/renderer/editorLivePreview.ts`: ライブプレビュー装飾
 - `app/src/renderer/previewMarkdown.ts`: marked / marked-footnote / DOMPurify / highlight.js / KaTeX によるプレビューHTML生成
-- `app/src/main/files/frontmatter.ts`、`app/src/renderer/editorFrontmatterModel.ts`: `js-yaml` によるプロパティ解析・書き戻し
+- `app/src/main/cards/frontmatter.ts`、`app/src/renderer/editorFrontmatterModel.ts`: `js-yaml` によるプロパティ解析・書き戻し
 
 ---
 

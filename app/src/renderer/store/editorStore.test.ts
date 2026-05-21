@@ -3,19 +3,19 @@ import { afterEach, describe, expect, it } from "vitest";
 import { defaultEditorSettings } from "../../shared/ipc";
 import { useEditorStore } from "./editorStore";
 
-const sampleFile = {
+const sampleCard = {
   content: "# テスト",
   name: "テスト",
   path: "テスト.md"
 };
 
-const sampleFile2 = {
+const sampleCard2 = {
   content: "# 別カード",
   name: "別カード",
   path: "別カード.md"
 };
 
-const sampleFile3 = {
+const sampleCard3 = {
   content: "# 第三",
   name: "第三",
   path: "第三.md"
@@ -36,9 +36,9 @@ describe("editorStore", () => {
   afterEach(resetStore);
 
   it("カードを左ペインで開くとタブが追加されアクティブになる", () => {
-    const { openFileInPane, leftPane, tabs } = useEditorStore.getState();
+    const { openCardInPane, leftPane, tabs } = useEditorStore.getState();
 
-    openFileInPane("left", sampleFile);
+    openCardInPane("left", sampleCard);
 
     const state = useEditorStore.getState();
 
@@ -46,18 +46,18 @@ describe("editorStore", () => {
     expect(state.leftPane.activeTabId).toBeTruthy();
     const tabId = state.leftPane.activeTabId!;
     expect(state.tabs[tabId].name).toBe("テスト");
-    expect(state.tabs[tabId].kind).toBe("file");
-    if (state.tabs[tabId].kind === "file") expect(state.tabs[tabId].path).toBe("テスト.md");
+    expect(state.tabs[tabId].kind).toBe("card");
+    if (state.tabs[tabId].kind === "card") expect(state.tabs[tabId].path).toBe("テスト.md");
 
     void leftPane;
     void tabs;
   });
 
   it("同じパスのカードを再度開くとタブが重複しない", () => {
-    const { openFileInPane } = useEditorStore.getState();
+    const { openCardInPane } = useEditorStore.getState();
 
-    openFileInPane("left", sampleFile);
-    openFileInPane("left", sampleFile);
+    openCardInPane("left", sampleCard);
+    openCardInPane("left", sampleCard);
 
     const state = useEditorStore.getState();
 
@@ -65,10 +65,10 @@ describe("editorStore", () => {
   });
 
   it("タブを閉じると履歴ベースで直前のタブがアクティブになる", () => {
-    const { openFileInPane } = useEditorStore.getState();
+    const { openCardInPane } = useEditorStore.getState();
 
-    openFileInPane("left", sampleFile);
-    openFileInPane("left", sampleFile2);
+    openCardInPane("left", sampleCard);
+    openCardInPane("left", sampleCard2);
 
     const afterOpen = useEditorStore.getState();
     const [firstTabId] = afterOpen.leftPane.tabIds;
@@ -84,9 +84,9 @@ describe("editorStore", () => {
   });
 
   it("最後のタブを閉じるとアクティブタブが null になる", () => {
-    const { openFileInPane } = useEditorStore.getState();
+    const { openCardInPane } = useEditorStore.getState();
 
-    openFileInPane("left", sampleFile);
+    openCardInPane("left", sampleCard);
 
     const { leftPane } = useEditorStore.getState();
     const tabId = leftPane.activeTabId!;
@@ -100,9 +100,9 @@ describe("editorStore", () => {
   });
 
   it("タブの内容を更新できる", () => {
-    const { openFileInPane } = useEditorStore.getState();
+    const { openCardInPane } = useEditorStore.getState();
 
-    openFileInPane("left", sampleFile);
+    openCardInPane("left", sampleCard);
 
     const { leftPane, updateTabContent } = useEditorStore.getState();
     const tabId = leftPane.activeTabId!;
@@ -111,8 +111,8 @@ describe("editorStore", () => {
 
     const state = useEditorStore.getState();
 
-    expect(state.tabs[tabId].kind).toBe("file");
-    if (state.tabs[tabId].kind === "file") expect(state.tabs[tabId].content).toBe("更新された内容");
+    expect(state.tabs[tabId].kind).toBe("card");
+    if (state.tabs[tabId].kind === "card") expect(state.tabs[tabId].content).toBe("更新された内容");
   });
 
   it("分割表示をトグルできる", () => {
@@ -128,7 +128,7 @@ describe("editorStore", () => {
   });
 
   it("カードを開いた状態で分割すると右ペインにも同じタブが表示される", () => {
-    useEditorStore.getState().openFileInPane("left", sampleFile);
+    useEditorStore.getState().openCardInPane("left", sampleCard);
 
     const activeTabId = useEditorStore.getState().leftPane.activeTabId!;
 
@@ -143,18 +143,18 @@ describe("editorStore", () => {
   });
 
   it("すでに開いているカードを別ペインで開くと、そのペインのタブ列にも表示される", () => {
-    useEditorStore.getState().openFileInPane("left", sampleFile);
+    useEditorStore.getState().openCardInPane("left", sampleCard);
     const tabId = useEditorStore.getState().leftPane.activeTabId!;
 
     useEditorStore.getState().toggleSplit();
-    useEditorStore.getState().openFileInPane("right", sampleFile);
+    useEditorStore.getState().openCardInPane("right", sampleCard);
 
     const state = useEditorStore.getState();
 
     expect(state.leftPane.tabIds).toContain(tabId);
     expect(state.rightPane.tabIds).toContain(tabId);
     expect(state.rightPane.activeTabId).toBe(tabId);
-    expect(Object.values(state.tabs).filter((tab) => tab.kind === "file" && tab.path === sampleFile.path)).toHaveLength(1);
+    expect(Object.values(state.tabs).filter((tab) => tab.kind === "card" && tab.path === sampleCard.path)).toHaveLength(1);
   });
 
   it("画面タブを開くと安定したIDでアクティブになる", () => {
@@ -175,7 +175,7 @@ describe("editorStore", () => {
 
   it("分割解除時に右ペインのタブが閉じられる", () => {
     useEditorStore.getState().toggleSplit();
-    useEditorStore.getState().openFileInPane("right", sampleFile2);
+    useEditorStore.getState().openCardInPane("right", sampleCard2);
 
     expect(useEditorStore.getState().rightPane.tabIds).toHaveLength(1);
 
@@ -188,8 +188,8 @@ describe("editorStore", () => {
   });
 
   it("同じペイン内でタブを並べ替えられる", () => {
-    useEditorStore.getState().openFileInPane("left", sampleFile);
-    useEditorStore.getState().openFileInPane("left", sampleFile2);
+    useEditorStore.getState().openCardInPane("left", sampleCard);
+    useEditorStore.getState().openCardInPane("left", sampleCard2);
 
     const stateBeforeMove = useEditorStore.getState();
     const [firstTabId, secondTabId] = stateBeforeMove.leftPane.tabIds;
@@ -203,8 +203,8 @@ describe("editorStore", () => {
   });
 
   it("タブをピン留めすると左側に固定し、解除すると通常タブへ戻す", () => {
-    useEditorStore.getState().openFileInPane("left", sampleFile);
-    useEditorStore.getState().openFileInPane("left", sampleFile2);
+    useEditorStore.getState().openCardInPane("left", sampleCard);
+    useEditorStore.getState().openCardInPane("left", sampleCard2);
 
     const [firstTabId, secondTabId] = useEditorStore.getState().leftPane.tabIds;
 
@@ -222,9 +222,9 @@ describe("editorStore", () => {
   });
 
   it("ピン留めタブは単発close以外の一括closeに巻き込まれない", () => {
-    useEditorStore.getState().openFileInPane("left", sampleFile);
-    useEditorStore.getState().openFileInPane("left", sampleFile2);
-    useEditorStore.getState().openFileInPane("left", sampleFile3);
+    useEditorStore.getState().openCardInPane("left", sampleCard);
+    useEditorStore.getState().openCardInPane("left", sampleCard2);
+    useEditorStore.getState().openCardInPane("left", sampleCard3);
 
     let state = useEditorStore.getState();
     const [firstTabId, secondTabId, thirdTabId] = state.leftPane.tabIds;
@@ -236,7 +236,7 @@ describe("editorStore", () => {
     expect(state.tabs[secondTabId]).toBeDefined();
     expect(state.tabs[firstTabId]).toBeUndefined();
 
-    useEditorStore.getState().openFileInPane("left", sampleFile);
+    useEditorStore.getState().openCardInPane("left", sampleCard);
     state = useEditorStore.getState();
     const reopenedFirstTabId = state.leftPane.tabIds.find((id) => id !== secondTabId && id !== thirdTabId)!;
 
@@ -246,7 +246,7 @@ describe("editorStore", () => {
     expect(state.tabs[reopenedFirstTabId]).toBeUndefined();
     expect(state.tabs[thirdTabId]).toBeUndefined();
 
-    useEditorStore.getState().openFileInPane("left", sampleFile);
+    useEditorStore.getState().openCardInPane("left", sampleCard);
     useEditorStore.getState().closeAllTabsInPane("left");
     state = useEditorStore.getState();
     expect(state.leftPane.tabIds).toEqual([secondTabId]);
@@ -259,8 +259,8 @@ describe("editorStore", () => {
   });
 
   it("分割表示中にタブを左右ペイン間で移動できる", () => {
-    useEditorStore.getState().openFileInPane("left", sampleFile);
-    useEditorStore.getState().openFileInPane("left", sampleFile2);
+    useEditorStore.getState().openCardInPane("left", sampleCard);
+    useEditorStore.getState().openCardInPane("left", sampleCard2);
     useEditorStore.getState().toggleSplit();
 
     const stateBeforeMove = useEditorStore.getState();
@@ -278,8 +278,8 @@ describe("editorStore", () => {
   });
 
   it("closeAllTabs で全タブが削除される", () => {
-    useEditorStore.getState().openFileInPane("left", sampleFile);
-    useEditorStore.getState().openFileInPane("left", sampleFile2);
+    useEditorStore.getState().openCardInPane("left", sampleCard);
+    useEditorStore.getState().openCardInPane("left", sampleCard2);
 
     useEditorStore.getState().closeAllTabs();
 

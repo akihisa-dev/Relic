@@ -3,4 +3,4 @@ export * from "./ipcChannels";
 export * from "./ipcCharts";
 export * from "./ipcSettings";
 export * from "./ipcTools";
-export * from "./ipcWorkspace";
+export * from "./ipcCardbook";

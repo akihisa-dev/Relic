@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  parseChronicleYearInput,
+  parseTimelineYearInput,
   parseDateInput,
   serializeData,
   serializeDataPreservingYaml,
@@ -53,12 +53,12 @@ describe("editorFrontmatterModel", () => {
   it("固定フィールドと登録済みフィールドを1行配列として書き戻す", () => {
     expect(serializeData({
       aliases: ["帝都", "王都"],
-      chronicle: [1185, 1333],
+      timeline: [1185, 1333],
       custom: ["A", "B"],
       tags: ["資料"]
     }, [{ name: "custom", type: "multi-select" }])).toBe([
       "aliases: [\"帝都\", \"王都\"]",
-      "chronicle: [1185, 1333]",
+      "timeline: [1185, 1333]",
       "custom: [\"A\", \"B\"]",
       "tags: [\"資料\"]"
     ].join("\n"));
@@ -71,11 +71,11 @@ describe("editorFrontmatterModel", () => {
     expect(parseDateInput("not-date")).toBeNull();
   });
 
-  it("chronicle入力は0以外の整数だけ受け付ける", () => {
-    expect(parseChronicleYearInput("1185")).toBe(1185);
-    expect(parseChronicleYearInput("-300")).toBe(-300);
-    expect(parseChronicleYearInput("0")).toBeNull();
-    expect(parseChronicleYearInput("1.5")).toBeNull();
-    expect(parseChronicleYearInput("year")).toBeNull();
+  it("timeline入力は0以外の整数だけ受け付ける", () => {
+    expect(parseTimelineYearInput("1185")).toBe(1185);
+    expect(parseTimelineYearInput("-300")).toBe(-300);
+    expect(parseTimelineYearInput("0")).toBeNull();
+    expect(parseTimelineYearInput("1.5")).toBeNull();
+    expect(parseTimelineYearInput("year")).toBeNull();
   });
 });

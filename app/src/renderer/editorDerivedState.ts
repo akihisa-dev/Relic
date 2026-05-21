@@ -1,4 +1,4 @@
-import type { FileTab, PaneId, PaneState, Tab } from "./store/editorStore";
+import type { CardTab, PaneId, PaneState, Tab } from "./store/editorStore";
 
 export interface OutlineHeading {
   level: number;
@@ -15,14 +15,14 @@ export function getActiveTabInPane(
   return paneState.activeTabId ? tabs[paneState.activeTabId] ?? null : null;
 }
 
-export function getActiveFileTabInPane(
+export function getActiveCardTabInPane(
   pane: PaneId,
   panes: { leftPane: PaneState; rightPane: PaneState },
   tabs: Record<string, Tab>
-): FileTab | null {
+): CardTab | null {
   const tab = getActiveTabInPane(pane, panes, tabs);
 
-  return tab?.kind === "file" ? tab : null;
+  return tab?.kind === "card" ? tab : null;
 }
 
 export function extractOutlineHeadings(content: string): OutlineHeading[] {

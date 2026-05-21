@@ -15,7 +15,7 @@ interface AppRightPanelProps {
   isLoadingBacklinks: boolean;
   isOpen: boolean;
   isResizing: boolean;
-  onOpenFile: (path: string) => void;
+  onOpenCard: (path: string) => void;
   onOpenWikiLink: (target: string, heading?: string) => void;
   onOutlineHeadingClick: (heading: string) => void;
   onResizeStart: (event: ReactMouseEvent) => void;
@@ -32,7 +32,7 @@ export function AppRightPanel({
   isLoadingBacklinks,
   isOpen,
   isResizing,
-  onOpenFile,
+  onOpenCard,
   onOpenWikiLink,
   onOutlineHeadingClick,
   onResizeStart,
@@ -138,13 +138,13 @@ export function AppRightPanel({
                     </span>
                     <button
                       className="links-list-target"
-                      onClick={() => onOpenFile(backlink.sourcePath)}
+                      onClick={() => onOpenCard(backlink.sourcePath)}
                       onContextMenu={(event) => {
                         event.preventDefault();
                         event.stopPropagation();
                         setLinkContextMenu({
                           markdownLink: markdownLinkForPath(backlink.sourcePath),
-                          openKind: "file",
+                          openKind: "card",
                           path: backlink.sourcePath,
                           ...fixedMenuPosition(event.clientX, event.clientY)
                         });

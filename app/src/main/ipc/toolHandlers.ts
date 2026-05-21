@@ -3,34 +3,34 @@ import { ipcMain } from "electron";
 import {
   generateTableOfContentsChannel,
   generateTitleListChannel,
-  mergeFilesChannel,
-  splitFileByHeadingChannel
+  mergeCardsChannel,
+  splitCardByHeadingChannel
 } from "../../shared/ipc";
 import { fail, type RelicResult } from "../../shared/result";
-import { ipcErrorDetails } from "./activeWorkspace";
+import { ipcErrorDetails } from "./activeCardbook";
 import {
   generateTableOfContents,
   generateTitleList,
-  mergeFiles,
-  splitFileByHeading
+  mergeCards,
+  splitCardByHeading
 } from "./toolActions";
 import {
   isGenerateTableOfContentsInput,
   isGenerateTitleListInput,
-  isMergeFilesInput,
-  isSplitFileByHeadingInput
+  isMergeCardsInput,
+  isSplitCardByHeadingInput
 } from "./toolHandlerValidators";
 
 export function registerToolHandlers(): void {
   ipcMain.handle(
-    mergeFilesChannel,
+    mergeCardsChannel,
     async (_event, input: unknown): Promise<RelicResult<string>> => {
       try {
-        if (!isMergeFilesInput(input)) {
+        if (!isMergeCardsInput(input)) {
           return fail("MERGE_INVALID_INPUT", "マージ条件が無効です。");
         }
 
-        return await mergeFiles(input);
+        return await mergeCards(input);
       } catch (error) {
         return fail("MERGE_FAILED", "カードのマージに失敗しました。", ipcErrorDetails(error));
       }
@@ -38,14 +38,14 @@ export function registerToolHandlers(): void {
   );
 
   ipcMain.handle(
-    splitFileByHeadingChannel,
+    splitCardByHeadingChannel,
     async (_event, input: unknown): Promise<RelicResult<string[]>> => {
       try {
-        if (!isSplitFileByHeadingInput(input)) {
+        if (!isSplitCardByHeadingInput(input)) {
           return fail("SPLIT_INVALID_INPUT", "分割条件が無効です。");
         }
 
-        return await splitFileByHeading(input);
+        return await splitCardByHeading(input);
       } catch (error) {
         return fail("SPLIT_FAILED", "カードの分割に失敗しました。", ipcErrorDetails(error));
       }

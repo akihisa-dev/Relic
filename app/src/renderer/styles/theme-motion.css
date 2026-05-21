@@ -59,7 +59,7 @@
   color: var(--text-2);
 }
 
-[data-theme="dark"] .new-file-form--primary {
+[data-theme="dark"] .new-card-form--primary {
   background: rgba(255, 255, 255, 0.04);
 }
 
@@ -114,7 +114,7 @@
   :root:not([data-theme="light"]) .secondary-button {
     color: var(--text-2);
   }
-  :root:not([data-theme="light"]) .new-file-form--primary {
+  :root:not([data-theme="light"]) .new-card-form--primary {
     background: rgba(255, 255, 255, 0.04);
   }
   :root:not([data-theme="light"]) .frontmatter-format-guide,
@@ -189,10 +189,10 @@
   .pane-tab-close,
   .rail-tab-flight,
   .sidebar-create-flight,
-  .file-tree,
-  .file-tree-row,
-  .file-tree-row--appearing,
-  .file-tree-row--removing,
+  .card-tree,
+  .card-tree-row,
+  .card-tree-row--appearing,
+  .card-tree-row--removing,
   .modal-overlay,
   .modal-overlay--closing,
   .command-palette,
@@ -213,7 +213,7 @@
   .toolbar-inline-dialog,
   .toolbar-panel--closing,
   .toolbar-btn.active,
-  .file-tree-rename-input,
+  .card-tree-rename-input,
   .pane--focused .editor-surface--action-odd,
   .pane--focused .editor-surface--action-even,
   .cm-frontmatter-properties,
@@ -230,7 +230,7 @@
   }
 
   button,
-  .file-tree-icon,
+  .card-tree-icon,
   .outline-item,
   .links-list-item,
   .toolbar-dropdown-item,
@@ -252,7 +252,7 @@
 }
 
 
-.chronicle-sort select {
+.timeline-sort select {
   background: var(--bg);
   border: 1px solid var(--border-soft);
   border-radius: 6px;
@@ -264,7 +264,7 @@
   width: 100%;
 }
 
-.chronicle-sort select:focus {
+.timeline-sort select:focus {
   border-color: var(--accent);
   outline: none;
 }
