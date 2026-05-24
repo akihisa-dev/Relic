@@ -620,6 +620,7 @@ describe("App", () => {
     expect(screen.getByRole("button", { name: "暦設定" })).toHaveClass("active");
     expect(screen.getByDisplayValue("王国暦")).toBeInTheDocument();
     expect(screen.getByDisplayValue("帝国暦")).toBeInTheDocument();
+    expect(screen.getByText("帝国暦1年 = 王国暦100年")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "暦設定" }));
 

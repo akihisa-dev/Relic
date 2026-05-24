@@ -707,6 +707,14 @@
   max-width: 160px;
 }
 
+.chronicle-calendar-preview {
+  color: var(--text-2);
+  font-size: 12px;
+  grid-column: 2 / -1;
+  line-height: 1.4;
+  min-height: 18px;
+}
+
 @container (max-width: 640px) {
   .setting-row {
     align-items: start;
@@ -756,5 +764,9 @@
   .chronicle-calendar-row > span:first-child,
   .chronicle-calendar-row > span:last-child {
     min-height: 20px;
+  }
+
+  .chronicle-calendar-preview {
+    grid-column: 1;
   }
 }
