@@ -238,6 +238,9 @@ describe("SettingsSidebar", () => {
 
     fireEvent.change(screen.getByDisplayValue("16"), { target: { value: "18" } });
     expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ fontSize: 18 }));
+
+    fireEvent.click(screen.getByRole("button", { name: "DD/MM/YYYY" }));
+    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ frontmatterDateFormat: "dmy" }));
   });
 
   it("機能トグルを既存のFeatureToggles形式で保存する", () => {

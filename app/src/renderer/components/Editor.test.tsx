@@ -820,6 +820,26 @@ describe("Editor", () => {
     expect(viewRef.current?.state.doc.toString()).toContain("plannedDate: [2026-05-12, 2026-05-20]");
   });
 
+  it("plannedDateプロパティは設定した日付順で入力でき、保存はYYYY-MM-DDに揃える", async () => {
+    const viewRef = createRef<EditorView | null>();
+    const { container } = render(
+      <Editor
+        content={"---\nplannedDate: [2026-05-12]\n---\n# 本文"}
+        onChange={vi.fn()}
+        settings={{ ...settings, frontmatterDateFormat: "dmy" }}
+        viewRef={viewRef}
+      />
+    );
+
+    await waitFor(() => expect(container.querySelector(".cm-frontmatter-date-range")).not.toBeNull());
+    const inputs = Array.from(container.querySelectorAll(".cm-frontmatter-date-range .cm-frontmatter-input")) as HTMLInputElement[];
+    expect(inputs[0].type).toBe("text");
+    expect(inputs[0].value).toBe("12/05/2026");
+    fireEvent.change(inputs[1], { target: { value: "20/05/2026" } });
+
+    expect(viewRef.current?.state.doc.toString()).toContain("plannedDate: [2026-05-12, 2026-05-20]");
+  });
+
   it("プロパティ編集時にYAMLのコメント行とフィールド順をできるだけ保つ", async () => {
     const viewRef = createRef<EditorView | null>();
     const { container } = render(
@@ -939,7 +959,8 @@ describe("Editor", () => {
     expect(viewRef.current?.state.doc.toString()).toContain("category: [\"review\"]");
 
     const dateInput = Array.from(container.querySelectorAll(".cm-frontmatter-input"))
-      .find((input) => (input as HTMLInputElement).type === "date") as HTMLInputElement;
+      .find((input) => (input as HTMLInputElement).value === "2026-03-29") as HTMLInputElement;
+    expect(dateInput.type).toBe("text");
     expect(dateInput.value).toBe("2026-03-29");
     fireEvent.change(dateInput, { target: { value: "2026-04-01" } });
     expect(viewRef.current?.state.doc.toString()).toContain("updated: [\"2026-04-01\"]");

@@ -1,11 +1,13 @@
 import { EditorView } from "@codemirror/view";
 import * as yaml from "js-yaml";
 
-import type { UserDefinedField } from "../shared/ipc";
+import type { FrontmatterDateFormat, UserDefinedField } from "../shared/ipc";
 import {
   choicesFor,
   chronicleInputValue,
   dateInputValue,
+  formatDateForInput,
+  inputPlaceholderForDateFormat,
   firstArrayValue,
   inputTypeFor,
   isChronicleField,
@@ -13,7 +15,7 @@ import {
   isFixedDateRangeField,
   isSingleValueField,
   parseChronicleYearInput,
-  parseDateInput,
+  parseDateInputForFormat,
   parseScalarValue,
   requestFrontmatterDialog,
   scalarInputValue
@@ -24,6 +26,7 @@ export type FrontmatterFieldUpdater = (view: EditorView, key: string, value: unk
 
 export function createFrontmatterValueInput({
   candidates,
+  dateFormat,
   field,
   key,
   t,
@@ -32,6 +35,7 @@ export function createFrontmatterValueInput({
   view
 }: {
   candidates: Record<string, string[]>;
+  dateFormat: FrontmatterDateFormat;
   field?: UserDefinedField;
   key: string;
   t: Translator;
@@ -45,11 +49,14 @@ export function createFrontmatterValueInput({
       view,
       key,
       Array.isArray(value) ? value : value === null || value === undefined ? [] : [value],
-      updateField
+      updateField,
+      dateFormat
     );
   }
   if (field?.type === "boolean") return booleanInput(view, key, firstArrayValue(value), updateField, true);
-  if (isSingleValueField(field)) return scalarInput(view, key, firstArrayValue(value), field, candidates, updateField, true);
+  if (isSingleValueField(field)) {
+    return scalarInput(view, key, firstArrayValue(value), field, candidates, updateField, dateFormat, true);
+  }
   if (field?.type === "multi-select" || key === "aliases" || key === "tags" || Array.isArray(value)) {
     return arrayInput(
       view,
@@ -59,7 +66,7 @@ export function createFrontmatterValueInput({
       t
     );
   }
-  if (isEditableScalar(value)) return scalarInput(view, key, value, field, candidates, updateField);
+  if (isEditableScalar(value)) return scalarInput(view, key, value, field, candidates, updateField, dateFormat);
 
   return complexValueInput(view, key, value, updateField);
 }
@@ -71,6 +78,7 @@ function scalarInput(
   field: UserDefinedField | undefined,
   candidates: Record<string, string[]>,
   updateField: FrontmatterFieldUpdater,
+  dateFormat: FrontmatterDateFormat,
   writeAsArray = false
 ): HTMLElement {
   if (field?.type === "select") return selectInput(view, key, value, field, candidates, updateField, writeAsArray);
@@ -79,11 +87,21 @@ function scalarInput(
   wrap.className = "cm-frontmatter-input-wrap";
   const input = document.createElement("input");
   input.className = "cm-frontmatter-input";
-  input.type = inputTypeFor(field);
-  input.value = scalarInputValue(value, field);
+  input.type = field?.type === "date" && dateFormat === "system" ? "date" : inputTypeFor(field);
+  input.value = field?.type === "date"
+    ? formatDateForInput(dateInputValue(value), dateFormat)
+    : scalarInputValue(value, field);
+  if (field?.type === "date" && dateFormat !== "system") configureDateTextInput(input, dateFormat);
   const datalist = createDatalist(input, key, choicesFor(key, field, candidates));
 
   input.addEventListener("change", () => {
+    if (field?.type === "date") {
+      const nextValue = parseDateTextInput(input, dateFormat);
+      if (nextValue === null) return;
+      updateField(view, key, writeAsArray && nextValue !== undefined ? [nextValue] : nextValue);
+      return;
+    }
+
     const nextValue = parseScalarValue(input.value, field);
     updateField(view, key, writeAsArray && nextValue !== undefined ? [nextValue] : nextValue);
   });
@@ -231,31 +249,36 @@ function dateRangeInput(
   view: EditorView,
   key: string,
   value: unknown[],
-  updateField: FrontmatterFieldUpdater
+  updateField: FrontmatterFieldUpdater,
+  dateFormat: FrontmatterDateFormat
 ): HTMLElement {
   const wrap = document.createElement("span");
   wrap.className = "cm-frontmatter-input-wrap cm-frontmatter-date-range";
 
   const startInput = document.createElement("input");
   startInput.className = "cm-frontmatter-input";
-  startInput.type = "date";
-  startInput.value = dateInputValue(value[0]);
+  startInput.type = dateFormat === "system" ? "date" : "text";
+  startInput.value = formatDateForInput(dateInputValue(value[0]), dateFormat);
+  if (dateFormat !== "system") configureDateTextInput(startInput, dateFormat);
 
   const endInput = document.createElement("input");
   endInput.className = "cm-frontmatter-input";
-  endInput.type = "date";
-  endInput.value = value.length > 1 ? dateInputValue(value[1]) : "";
+  endInput.type = dateFormat === "system" ? "date" : "text";
+  endInput.value = formatDateForInput(value.length > 1 ? dateInputValue(value[1]) : "", dateFormat);
+  if (dateFormat !== "system") configureDateTextInput(endInput, dateFormat);
 
   const commit = (): void => {
-    const startDate = parseDateInput(startInput.value);
-    const endDate = parseDateInput(endInput.value);
+    const startDate = parseDateTextInput(startInput, dateFormat);
+    const endDate = parseDateTextInput(endInput, dateFormat);
 
-    if (startDate === null) {
+    if (startDate === undefined) {
       updateField(view, key, undefined);
       return;
     }
 
-    if (endDate === null || endDate === startDate) {
+    if (startDate === null || endDate === null) return;
+
+    if (endDate === undefined || endDate === startDate) {
       updateField(view, key, [startDate]);
       return;
     }
@@ -267,6 +290,31 @@ function dateRangeInput(
   endInput.addEventListener("change", commit);
   wrap.append(startInput, endInput);
   return wrap;
+}
+
+function configureDateTextInput(input: HTMLInputElement, dateFormat: FrontmatterDateFormat): void {
+  input.inputMode = "numeric";
+  input.pattern = dateFormat === "ymd"
+    ? "\\d{4}-\\d{2}-\\d{2}"
+    : "\\d{2}/\\d{2}/\\d{4}";
+  input.placeholder = inputPlaceholderForDateFormat(dateFormat);
+}
+
+function parseDateTextInput(input: HTMLInputElement, dateFormat: FrontmatterDateFormat): string | null | undefined {
+  const rawValue = input.value.trim();
+  if (rawValue === "") {
+    input.removeAttribute("aria-invalid");
+    return undefined;
+  }
+
+  const parsedValue = parseDateInputForFormat(rawValue, dateFormat);
+  if (parsedValue === null) {
+    input.setAttribute("aria-invalid", "true");
+    return null;
+  }
+
+  input.removeAttribute("aria-invalid");
+  return parsedValue;
 }
 
 function arrayInput(

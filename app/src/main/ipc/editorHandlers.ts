@@ -113,6 +113,10 @@ function isEditorSettings(input: unknown): input is EditorSettings {
   return (
     (s.font === "system" || s.font === "mincho" || s.font === "mono") &&
     typeof s.fontSize === "number" &&
+    (s.frontmatterDateFormat === "ymd" ||
+      s.frontmatterDateFormat === "system" ||
+      s.frontmatterDateFormat === "mdy" ||
+      s.frontmatterDateFormat === "dmy") &&
     typeof s.lineHeight === "number" &&
     (s.maxWidth === "550px" || s.maxWidth === "660px" || s.maxWidth === "800px" || s.maxWidth === "none") &&
     typeof s.showLineNumbers === "boolean" &&

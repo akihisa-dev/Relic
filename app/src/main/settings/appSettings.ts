@@ -82,6 +82,11 @@ function parseEditorSettings(raw: unknown): EditorSettings {
   return {
     font: s.font === "mincho" || s.font === "mono" ? s.font : "system",
     fontSize: typeof s.fontSize === "number" && s.fontSize > 0 ? s.fontSize : defaultEditorSettings.fontSize,
+    frontmatterDateFormat: s.frontmatterDateFormat === "system" ||
+      s.frontmatterDateFormat === "mdy" ||
+      s.frontmatterDateFormat === "dmy"
+      ? s.frontmatterDateFormat
+      : "ymd",
     language: s.language === "ja" ? "ja" : s.language === "system" ? "system" : "en",
     lineHeight: typeof s.lineHeight === "number" && s.lineHeight > 0 ? s.lineHeight : defaultEditorSettings.lineHeight,
     maxWidth: s.maxWidth === "550px" || s.maxWidth === "800px" || s.maxWidth === "none" ? s.maxWidth : "660px",
