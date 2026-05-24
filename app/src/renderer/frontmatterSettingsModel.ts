@@ -41,19 +41,19 @@ export const FIELD_TYPE_DESCRIPTION_KEYS: Record<UserDefinedFieldType, Translati
 
 export const RESERVED_FIELD_NAMES = new Set(["aliases", "tags", "status", ...chronicleCalendarIds, "plannedDate", "actualDate"]);
 
-type FixedFieldDefinition = {
+export type FixedFieldDefinition = {
   name: "actualDate" | "aliases" | "tags" | "status" | ChronicleCalendarId | "plannedDate";
   descriptionKey: TranslationKey;
   examples: TranslationKey[];
 };
 
-const CHRONICLE_FIXED_FIELDS: FixedFieldDefinition[] = chronicleCalendarIds.map((name) => ({
+export const CHRONICLE_FIXED_FIELDS: FixedFieldDefinition[] = chronicleCalendarIds.map((name) => ({
   name,
   descriptionKey: "settings.fixedFieldChronicleDescription",
   examples: ["settings.fixedFieldChronicleSingleExample", "settings.fixedFieldChronicleRangeExample"]
 }));
 
-export const FIXED_FIELDS: FixedFieldDefinition[] = [
+export const STANDARD_FIXED_FIELDS: FixedFieldDefinition[] = [
   {
     name: "aliases",
     descriptionKey: "settings.fixedFieldAliasesDescription",
@@ -69,7 +69,6 @@ export const FIXED_FIELDS: FixedFieldDefinition[] = [
     descriptionKey: "settings.fixedFieldStatusDescription",
     examples: ["settings.fixedFieldStatusSingleExample"]
   },
-  ...CHRONICLE_FIXED_FIELDS,
   {
     name: "plannedDate",
     descriptionKey: "settings.fixedFieldPlannedDateDescription",
@@ -80,6 +79,12 @@ export const FIXED_FIELDS: FixedFieldDefinition[] = [
     descriptionKey: "settings.fixedFieldActualDateDescription",
     examples: ["settings.fixedFieldActualDateSingleExample", "settings.fixedFieldActualDateRangeExample"]
   }
+];
+
+export const FIXED_FIELDS: FixedFieldDefinition[] = [
+  ...STANDARD_FIXED_FIELDS.slice(0, 3),
+  ...CHRONICLE_FIXED_FIELDS,
+  ...STANDARD_FIXED_FIELDS.slice(3)
 ];
 
 export function needsChoices(type: UserDefinedFieldType): boolean {
