@@ -106,7 +106,7 @@ Markdown本文に書かれた `![alt](path)` 記法。Relicは画像管理アプ
 |-----------|------|
 | editorSettings | テーマ、言語、エディタフォント、フォントサイズ、行間、最大幅、行番号、スペルチェック |
 | featureToggles | ファイル加工ツール・フロントマター・右パネルのオン/オフ |
-| userDefinedFields | Relicが入力能力を認識するフロントマターフィールドの一覧 |
+| userDefinedFields | Relicが入力能力を認識するカスタムフロントマターフィールドの一覧 |
 | frontmatterTemplates | アプリ設定に保存されるフロントマターテンプレート定義（現行UIでは管理画面なし） |
 | lastWorkspaceId | 前回開いていたワークスペースのID |
 | workspaces | アプリに登録済みのワークスペース一覧 |
@@ -122,6 +122,7 @@ Markdown本文に書かれた `![alt](path)` 記法。Relicは画像管理アプ
 | workspacePath | 対象ワークスペースのパス |
 | pinnedPaths | ファイルサイドバーでピン留めしているワークスペース相対パス |
 | ganttCharts | 年表 / 日付チャートの対象ファイル設定 |
+| chronicleCalendars | `chronicle0` の暦名、`chronicle1`〜`chronicle9` の暦名とメイン暦開始年 |
 
 ---
 
@@ -145,7 +146,7 @@ Markdown本文に書かれた `![alt](path)` 記法。Relicは画像管理アプ
 
 | 種類 | 内容 |
 |------|------|
-| 年表チャート | `chronicle` プロパティから生成する年または期間の表示行 |
+| 年表チャート | `chronicle0`〜`chronicle9` プロパティと暦設定から生成する年または期間の表示行 |
 | 日付チャート | `plannedDate` / `actualDate` と互換用 `date` プロパティから生成する日付または期間の表示行 |
 
 ---

@@ -81,7 +81,7 @@
 |------|------|
 | ファイルタブ | Markdownファイルを編集する |
 | パネルタブ | ファイル加工、フロントマター設定、設定を表示する |
-| チャートタブ | `chronicle` をもとに年表、`plannedDate` / `actualDate` をもとにカレンダーを表示する |
+| チャートタブ | `chronicle0`〜`chronicle9` と暦設定をもとに年表、`plannedDate` / `actualDate` をもとにカレンダーを表示する |
 
 ### タブ行アクション
 
