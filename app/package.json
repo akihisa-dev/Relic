@@ -1,6 +1,6 @@
 {
   "name": "relic",
-  "version": "0.0.44",
+  "version": "0.0.45",
   "description": "Relic is a Markdown knowledge workspace.",
   "main": ".vite/build/main.js",
   "private": true,

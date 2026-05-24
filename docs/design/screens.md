@@ -2,6 +2,9 @@
 
 デスクトップ版の画面一覧と各画面の構成。
 
+この文書では、画面内に「何をどこへ置くか」を定義する。
+ナビゲーション要素の機能仕様は [../features/navigation.md](../features/navigation.md)、画面遷移やビュー切り替えの流れは [navigation.md](navigation.md) を正とする。
+
 ---
 
 ## 基本レイアウト原則
