@@ -1,7 +1,7 @@
 import type { MouseEvent, ReactElement } from "react";
 
 import type { WorkspaceState } from "../../shared/ipc";
-import type { AppRailView } from "../appShellModel";
+import { chartIdForRailView, type AppRailView, type AppRailViewId } from "../appShellModel";
 import type { PanelTabKind } from "../store/editorStore";
 import type { SidebarView } from "../store/uiStore";
 import { IconFiles, RailWorkspaceSwitcher } from "./RailNavigation";
@@ -10,13 +10,12 @@ interface AppRailProps {
   activePanelTabIds: Set<PanelTabKind>;
   activeSidebarView: SidebarView;
   activeWorkspaceId: string | null;
-  chartRailView?: AppRailView<ReactElement>;
-  isChartTabActive: boolean;
-  isChartTabOpen: boolean;
+  activeChartIds: Set<string>;
+  chartRailViews: Array<AppRailView<ReactElement>>;
   isSidebarOpen: boolean;
   isWorkspaceRenameActive: boolean;
   isWorkspaceRenameHoldingRail: boolean;
-  onChartButton: (label: string, event: MouseEvent<HTMLButtonElement>) => void;
+  onChartButton: (view: AppRailViewId, label: string, event: MouseEvent<HTMLButtonElement>) => void;
   onCloseSidebar: () => void;
   onPanelButton: (panel: PanelTabKind, label: string, event: MouseEvent<HTMLButtonElement>) => void;
   onRemoveWorkspace: (id: string) => void;
@@ -26,6 +25,7 @@ interface AppRailProps {
   onSetSidebarView: (view: SidebarView) => void;
   onSwitchWorkspace: (id: string) => void;
   openPanelTabIds: Set<PanelTabKind>;
+  openChartIds: Set<string>;
   panelRailViews: Array<AppRailView<ReactElement>>;
   primaryRailViews: Array<AppRailView<ReactElement>>;
   registeredWorkspaces: WorkspaceState["workspaces"];
@@ -39,9 +39,8 @@ export function AppRail({
   activePanelTabIds,
   activeSidebarView,
   activeWorkspaceId,
-  chartRailView,
-  isChartTabActive,
-  isChartTabOpen,
+  activeChartIds,
+  chartRailViews,
   isSidebarOpen,
   isWorkspaceRenameActive,
   isWorkspaceRenameHoldingRail,
@@ -54,6 +53,7 @@ export function AppRail({
   onRenameWorkspace,
   onSetSidebarView,
   onSwitchWorkspace,
+  openChartIds,
   openPanelTabIds,
   panelRailViews,
   primaryRailViews,
@@ -88,18 +88,19 @@ export function AppRail({
           <span className="rail-button-label">{view.label}</span>
         </button>
       ))}
-      {chartRailView ? (
+      {chartRailViews.map((view) => (
         <button
-          aria-label={chartRailView.label}
-          className={`rail-button${isChartTabActive ? " active" : isChartTabOpen ? " open" : ""}`}
-          onClick={(event) => onChartButton(chartRailView.label, event)}
-          title={chartRailView.label}
+          aria-label={view.label}
+          className={chartRailButtonClass(view, activeChartIds, openChartIds)}
+          key={view.id}
+          onClick={(event) => onChartButton(view.id, view.label, event)}
+          title={view.label}
           type="button"
         >
-          {chartRailView.icon}
-          <span className="rail-button-label">{chartRailView.label}</span>
+          {view.icon}
+          <span className="rail-button-label">{view.label}</span>
         </button>
-      ) : null}
+      ))}
       <div className="rail-separator" />
       {panelRailViews.map((view) => (
         <button
@@ -134,6 +135,16 @@ export function AppRail({
       ) : null}
     </nav>
   );
+}
+
+function chartRailButtonClass(
+  view: AppRailView,
+  activeChartIds: Set<string>,
+  openChartIds: Set<string>
+): string {
+  const chartId = chartIdForRailView(view.id);
+
+  return `rail-button${chartId && activeChartIds.has(chartId) ? " active" : chartId && openChartIds.has(chartId) ? " open" : ""}`;
 }
 
 function primaryRailButtonClass(

@@ -11,6 +11,13 @@ export interface AppRailView<TIcon = unknown> {
   label: string;
 }
 
+export function chartIdForRailView(id: AppRailViewId): string | null {
+  if (id === "chronicle") return "chronicle";
+  if (id === "calendar") return "date";
+
+  return null;
+}
+
 export function registeredWorkspacesForState(
   workspaceState: WorkspaceState | null
 ): WorkspaceState["workspaces"] {
@@ -61,6 +68,14 @@ export function isChartTabOpenInTabs(tabs: Record<string, Tab>, chartId = "chart
   return Object.values(tabs).some((tab) => tab.kind === "gantt" && tab.chartId === chartId);
 }
 
+export function openChartIdsForTabs(tabs: Record<string, Tab>): Set<string> {
+  return new Set(
+    Object.values(tabs)
+      .filter((tab): tab is Extract<Tab, { kind: "gantt" }> => tab.kind === "gantt")
+      .map((tab) => tab.chartId)
+  );
+}
+
 export function isChartTabActiveInPanes(
   leftPane: Pick<PaneState, "activeTabId">,
   rightPane: Pick<PaneState, "activeTabId">,
@@ -72,6 +87,19 @@ export function isChartTabActiveInPanes(
 
     return tab?.kind === "gantt" && tab.chartId === chartId;
   });
+}
+
+export function activeChartIdsForPanes(
+  leftPane: Pick<PaneState, "activeTabId">,
+  rightPane: Pick<PaneState, "activeTabId">,
+  tabs: Record<string, Tab>
+): Set<string> {
+  return new Set(
+    [leftPane.activeTabId, rightPane.activeTabId]
+      .map((tabId) => (tabId ? tabs[tabId] : null))
+      .filter((tab): tab is Extract<Tab, { kind: "gantt" }> => tab?.kind === "gantt")
+      .map((tab) => tab.chartId)
+  );
 }
 
 export function enabledRailViewsForFeatures<TView extends Pick<AppRailView, "id">>(
@@ -89,15 +117,15 @@ export function enabledRailViewsForFeatures<TView extends Pick<AppRailView, "id"
 export function splitRailViews<TView extends Pick<AppRailView, "id">>(
   views: TView[]
 ): {
-  chartRailView: TView | undefined;
+  chartRailViews: TView[];
   panelRailViews: TView[];
   primaryRailViews: TView[];
 } {
   return {
-    chartRailView: views.find((view) => view.id === "chronicle"),
+    chartRailViews: views.filter((view) => chartIdForRailView(view.id) !== null),
     panelRailViews: views.filter((view) =>
       view.id !== "files" &&
-      view.id !== "chronicle"
+      chartIdForRailView(view.id) === null
     ),
     primaryRailViews: views.filter((view) =>
       view.id === "files"

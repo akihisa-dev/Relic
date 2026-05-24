@@ -2,10 +2,13 @@ import { describe, expect, it } from "vitest";
 
 import { defaultFeatureToggles, type WorkspaceState } from "../shared/ipc";
 import {
+  activeChartIdsForPanes,
   activePanelTabIdsForPanes,
+  chartIdForRailView,
   enabledRailViewsForFeatures,
   isChartTabActiveInPanes,
   isChartTabOpenInTabs,
+  openChartIdsForTabs,
   openFilePathsForTabs,
   openPanelTabIdsForTabs,
   panelLabelsForTranslator,
@@ -24,7 +27,7 @@ const emptyPane = (activeTabId: string | null = null): PaneState => ({
 
 const tabs: Record<string, Tab> = {
   "gantt-charts": { chartId: "charts", id: "gantt-charts", kind: "gantt", name: "Chronicle" },
-  "gantt-custom": { chartId: "custom", id: "gantt-custom", kind: "gantt", name: "Custom" },
+  "gantt-date": { chartId: "date", id: "gantt-date", kind: "gantt", name: "Calendar" },
   "panel-frontmatter": { id: "panel-frontmatter", kind: "panel", name: "Frontmatter", panel: "frontmatter" },
   "panel-tools": { id: "panel-tools", kind: "panel", name: "Tools", panel: "tools" },
   "tab-note": { content: "Note", id: "tab-note", kind: "file", name: "Note", path: "Folder/Note.md" }
@@ -60,6 +63,12 @@ describe("appShellModel", () => {
       tabs
     )).toEqual(new Set(["frontmatter"]));
     expect(isChartTabOpenInTabs(tabs)).toBe(true);
+    expect(openChartIdsForTabs(tabs)).toEqual(new Set(["charts", "date"]));
+    expect(activeChartIdsForPanes(
+      emptyPane("panel-frontmatter"),
+      emptyPane("gantt-date"),
+      tabs
+    )).toEqual(new Set(["date"]));
     expect(isChartTabActiveInPanes(
       emptyPane("panel-frontmatter"),
       emptyPane("gantt-charts"),
@@ -67,7 +76,7 @@ describe("appShellModel", () => {
     )).toBe(true);
     expect(isChartTabActiveInPanes(
       emptyPane("panel-frontmatter"),
-      emptyPane("gantt-custom"),
+      emptyPane("gantt-date"),
       tabs
     )).toBe(false);
   });
@@ -87,7 +96,8 @@ describe("appShellModel", () => {
       { icon: null, id: "files", label: "Files" },
       { icon: null, id: "tools", label: "Tools" },
       { icon: null, id: "frontmatter", label: "Frontmatter" },
-      { icon: null, id: "chronicle", label: "Chronicle" },
+      { icon: null, id: "chronicle", label: "Timeline" },
+      { icon: null, id: "calendar", label: "Calendar" },
       { icon: null, id: "settings", label: "Settings" }
     ];
 
@@ -98,9 +108,11 @@ describe("appShellModel", () => {
     });
     const split = splitRailViews(enabled);
 
-    expect(enabled.map((view) => view.id)).toEqual(["files", "chronicle", "settings"]);
+    expect(enabled.map((view) => view.id)).toEqual(["files", "chronicle", "calendar", "settings"]);
     expect(split.primaryRailViews.map((view) => view.id)).toEqual(["files"]);
-    expect(split.chartRailView?.id).toBe("chronicle");
+    expect(split.chartRailViews.map((view) => view.id)).toEqual(["chronicle", "calendar"]);
     expect(split.panelRailViews.map((view) => view.id)).toEqual(["settings"]);
+    expect(chartIdForRailView("chronicle")).toBe("chronicle");
+    expect(chartIdForRailView("calendar")).toBe("date");
   });
 });

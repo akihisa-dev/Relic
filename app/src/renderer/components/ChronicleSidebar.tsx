@@ -69,13 +69,10 @@ export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdate
   return (
     <div className="chronicle-panel">
       <ChronicleToolbar
-        activeChart={model.activeChart}
         activeSource={model.activeSource}
-        availableCharts={model.availableCharts}
         query={model.query}
         refreshRowOrder={model.refreshRowOrder}
         scrollToToday={viewport.scrollToToday}
-        selectChart={model.selectChart}
         setQuery={model.setQuery}
         setSortKey={model.setSortKey}
         setStatusFilter={model.setStatusFilter}

@@ -118,54 +118,11 @@
   border-bottom: 1px solid var(--border);
   display: grid;
   gap: 10px;
-  grid-template-columns: auto minmax(160px, 220px) minmax(160px, 220px) 28px minmax(130px, 190px) auto;
+  grid-template-columns: minmax(160px, 220px) minmax(160px, 220px) 28px minmax(130px, 190px) auto;
   justify-content: start;
   min-height: 40px;
   padding: 5px 12px;
   z-index: 7;
-}
-
-.chronicle-source-buttons {
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  display: inline-flex;
-  flex: 0 0 auto;
-  overflow: hidden;
-}
-
-.chronicle-source-button {
-  align-items: center;
-  background: transparent;
-  border: 0;
-  border-left: 1px solid var(--border);
-  box-sizing: border-box;
-  color: var(--text-2);
-  cursor: pointer;
-  display: inline-flex;
-  flex: 0 0 auto;
-  font-size: 12px;
-  height: 26px;
-  justify-content: center;
-  line-height: 1;
-  min-width: 70px;
-  padding: 0 10px;
-  white-space: nowrap;
-}
-
-.chronicle-source-button:first-child {
-  border-left: 0;
-}
-
-.chronicle-source-button:hover {
-  background: var(--hover);
-  color: var(--text);
-}
-
-.chronicle-source-button.active {
-  background: var(--text);
-  color: var(--bg);
-  font-weight: 600;
 }
 
 .chronicle-search {
