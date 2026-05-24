@@ -1,4 +1,4 @@
-# dev/conventions.md
+# development/coding-rules.md
 
 このファイルはコーディング規約を定義するドキュメントです。
 AIがコードを書く際は、まずこのファイルで実装境界を確認し、詳細仕様は該当ドキュメントへ戻って確認します。
@@ -9,15 +9,15 @@ AIがコードを書く際は、まずこのファイルで実装境界を確認
 
 - TypeScriptで実装する
 - 対象OSは macOS / Windows とする
-- 仕様は `docs/spec/`、画面構成は `docs/ui/`、データ構造は `docs/architecture/data-model.md`、技術スタックは `docs/tech/stack.md` を正とする
-- 開発位置とフェーズ順は `docs/dev/phases.md` に従う
+- 仕様は `docs/features/`、画面構成は `docs/design/`、データ構造は `docs/engineering/data-model.md`、技術スタックは `docs/engineering/stack.md` を正とする
+- 開発位置とフェーズ順は `docs/development/phases.md` に従う
 - ファイルシステム・ネットワーク・設定保存に触る処理はメインプロセスに置く
 - UI・エディタ・一時的な画面状態はレンダラープロセスに置く
 - レンダラーからOS機能へ直接アクセスしない。必ずpreloadで公開したAPIとIPCを通す
 - ユーザーのMarkdownファイルを勝手に独自形式へ変換しない
 - Markdown本文へRelic専用の不可視メタデータを埋め込まない
 - 追加機能より、ローカルMarkdownファイルを安全に読み書きできることを優先する
-- 未決定事項がある場合は実装で推定せず、`docs/dev/open-questions.md` に追加する
+- 未決定事項がある場合は実装で推定せず、`docs/development/questions.md` に追加する
 
 ---
 
@@ -31,16 +31,16 @@ AIがコードを書く際は、まずこのファイルで実装境界を確認
 |------|------|
 | `docs/` | 計画・仕様・設計・開発メモ |
 | `app/` | Electron / React アプリ本体 |
-| `app/src/main/` | Electronメインプロセス。ファイル操作・設定保存・検索/リンク/タグ/チャート/グラフ生成・IPCハンドラ |
+| `app/src/main/` | Electronメインプロセス。ファイル操作・設定保存・検索/リンク/タグ/チャート生成・IPCハンドラ |
 | `app/src/main/workspace/` | ワークスペース登録・切り替え・復元 |
-| `app/src/main/files/` | Markdownファイル・フォルダ操作、検索、リンク、タグ、年表、グラフなどワークスペース内データの読み取りと生成 |
+| `app/src/main/files/` | Markdownファイル・フォルダ操作、検索、リンク、タグ、年表などワークスペース内データの読み取りと生成 |
 | `app/src/main/ipc/` | preload APIに接続するIPCハンドラ、active workspace取得、入力検証 |
 | `app/src/main/settings/` | アプリ設定・ワークスペース設定 |
 | `app/src/preload/` | レンダラーへ公開する安全なAPI |
 | `app/src/renderer/` | React UI・CodeMirror・画面状態 |
 | `app/src/renderer/components/` | Reactコンポーネント。画面部品、パネルタブ、ファイルサイドバー、エディタ周辺UI |
-| `app/src/renderer/hooks/` | renderer側のUI操作、ファイル操作連携、チャート/グラフ操作などのReact hook |
-| `app/src/renderer/store/` | Zustandによるタブ、ペイン、サイドバー、右パネル、グラフ表示状態などのUI状態 |
+| `app/src/renderer/hooks/` | renderer側のUI操作、ファイル操作連携、チャート操作などのReact hook |
+| `app/src/renderer/store/` | Zustandによるタブ、ペイン、サイドバー、右パネルなどのUI状態 |
 | `app/src/renderer/locales/` | UI文言の辞書 |
 | `app/src/shared/` | メイン / レンダラーで共有する型・定数・純粋関数 |
 | `app/src/test/` | テスト共通ユーティリティ |
@@ -81,7 +81,7 @@ UIに表示する日本語文言は、後から集約できるようにコンポ
 
 ## Electron / IPC
 
-- メインプロセスは、ファイルシステム、検索・リンク・タグ・年表・グラフ用データ生成、アプリ設定の責務を持つ
+- メインプロセスは、ファイルシステム、検索・リンク・タグ・年表用データ生成、アプリ設定の責務を持つ
 - レンダラーは、画面表示とユーザー操作の責務を持つ
 - preloadで公開するAPIは、仕様上の操作単位に限定する
 - レンダラーから任意のファイルパスを直接操作できる汎用APIを作らない
@@ -103,7 +103,7 @@ UIに表示する日本語文言は、後から集約できるようにコンポ
 
 ## React / UI
 
-- 画面は `docs/ui/screens-macos.md` のコンポーネント単位に分ける
+- 画面は `docs/design/screens.md` のコンポーネント単位に分ける
 - メインエリアは、ファイルタブ・パネルタブ・チャートタブをタブ式に管理する
 - ファイルツリーと検索はファイルサイドバー内、設定や補助機能はパネルタブとして扱う
 - UI状態と永続化データを混ぜない
@@ -120,7 +120,7 @@ UIに表示する日本語文言は、後から集約できるようにコンポ
 
 ## デザイン実装
 
-- 色・タイポグラフィ・スペーシング・モーションは `docs/ui/DESIGN.md` を参照する
+- 色・タイポグラフィ・スペーシング・モーションは `docs/design/system.md` を参照する
 - アクセントカラーのユーザー指定を実装しない
 - テーマはライト / ダーク / システム追従を扱う
 - 設定などの補助画面は、メインエリアのパネルタブとして開く
@@ -136,7 +136,7 @@ UIに表示する日本語文言は、後から集約できるようにコンポ
 - Markdown解析・HTML安全化・KaTeX連携などは専用ライブラリを組み合わせ、CodeMirrorだけで無理に完結させない
 - 自動保存はエディタ変更から直接ファイルへ即時書き込みせず、入力停止後1秒の仕様を守る
 - ライブプレビューでは、カーソルまたは選択範囲が触れている装飾範囲だけMarkdown記法を表示し、レンダリング自体は維持する
-- CommonMarkとObsidian互換拡張は `docs/spec/markdown.md` の範囲を実装対象にする
+- CommonMarkとObsidian互換拡張は `docs/features/markdown.md` の範囲を実装対象にする
 - HTMLタグは、下線のための `<u>` 以外はプレーンテキストとして扱う
 - Markdown画像記法は画像プレースホルダーとして扱い、実画像はワークスペース内相対パスでも外部URLでも読み込まない
 - 画像記法はMarkdown本文の補助表現として扱い、画像管理機能を作らない
@@ -164,7 +164,7 @@ UIに表示する日本語文言は、後から集約できるようにコンポ
 
 ## 検索・リンク・タグ
 
-- 検索・リンク・タグ・グラフ・年表用データは、必要なタイミングでメインプロセス側がワークスペース内のMarkdownを読み取って生成する
+- 検索・リンク・タグ・年表用データは、必要なタイミングでメインプロセス側がワークスペース内のMarkdownを読み取って生成する
 - 専用の永続インデックスファイルやワークスペース内のRelic管理ファイルを作らない
 - ファイル保存・作成・削除・リネーム・移動後は、次の読み取り時に現在のMarkdownファイルを正として扱う
 - 検索・リンク・タグの対象は現在のワークスペース内に限定する
@@ -206,7 +206,7 @@ UIに表示する日本語文言は、後から集約できるようにコンポ
 
 ## ドキュメント更新
 
-- 仕様変更を伴う実装をした場合は、該当する `docs/spec/` または `docs/architecture/` も更新する
-- 技術選定を変更・追加した場合は、`docs/tech/` と必要に応じて `docs/architecture/decisions.md` を更新する
-- 未決定の問いが生まれたら `docs/dev/open-questions.md` に追加する
-- 作業区切り時の文書更新は `AGENTS.md` と `docs/dev/phases.md` の現在フェーズ規則に従う。作業記録は現在フェーズ正本へ書く
+- 仕様変更を伴う実装をした場合は、該当する `docs/features/` または `docs/engineering/` も更新する
+- 技術選定を変更・追加した場合は、`docs/engineering/` と必要に応じて `docs/engineering/decisions.md` を更新する
+- 未決定の問いが生まれたら `docs/development/questions.md` に追加する
+- 作業区切り時の文書更新は `AGENTS.md` と `docs/development/phases.md` の現在フェーズ規則に従う。作業記録は現在フェーズ正本へ書く

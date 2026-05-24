@@ -1,4 +1,4 @@
-# spec/editor.md
+# features/editor.md
 
 エディタ機能の詳細仕様書。テキスト編集に関わるモード・表示・操作の振る舞いを定義する。
 

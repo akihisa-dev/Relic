@@ -1,4 +1,4 @@
-# spec/links-and-tags.md
+# features/links.md
 
 このファイルは内部リンク・バックリンク・タグ機能の詳細仕様書です。
 `[[...]]` リンク・バックリンク一覧・フロントマター `tags:` による整理・オートコンプリートなど、
@@ -69,7 +69,7 @@
 
 ## フロントマター（YAML）
 
-フロントマターの詳細仕様は [spec/frontmatter.md](frontmatter.md) を参照。
+フロントマターの詳細仕様は [frontmatter.md](frontmatter.md) を参照。
 
 - ファイル先頭の `---` ブロックをフロントマターとして認識する
 - `tags:` フィールドはRelicの固定プロパティとしてタグ検索・タグ一覧に使われる（詳細は frontmatter.md 参照）

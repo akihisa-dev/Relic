@@ -1,4 +1,4 @@
-# tech/editor-engine.md
+# engineering/editor-engine.md
 
 エディタエンジンの選定調査・決定を記録するドキュメント。
 
