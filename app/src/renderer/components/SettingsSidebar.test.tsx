@@ -114,6 +114,11 @@ describe("FrontmatterSidebar", () => {
     expect(screen.getByText("aliases")).not.toBeNull();
     expect(screen.getByText("tags")).not.toBeNull();
     expect(screen.getByText("status")).not.toBeNull();
+    expect(screen.getByRole("button", { name: "chronicle0-chronicle9 10 fields" })).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByText("chronicle0")).toBeNull();
+    expect(screen.queryByText("chronicle9")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "chronicle0-chronicle9 10 fields" }));
+    expect(screen.getByRole("button", { name: "chronicle0-chronicle9 10 fields" })).toHaveAttribute("aria-expanded", "true");
     expect(screen.getByText("chronicle0")).not.toBeNull();
     expect(screen.getByText("chronicle9")).not.toBeNull();
     expect(screen.getByText("plannedDate")).not.toBeNull();
