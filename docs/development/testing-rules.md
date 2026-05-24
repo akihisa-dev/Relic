@@ -107,11 +107,22 @@ cd app
 pnpm verify
 ```
 
+型チェック、テスト、Markdownを含む差分の空白・改行確認までまとめる場合は `verify:full` を使う。
+
+```sh
+cd app
+pnpm verify:full
+```
+
 Markdown差分の空白・改行確認はリポジトリルートで実行する。
 
 ```sh
 git diff --check
 ```
+
+`verify:full` は `git -C .. diff --check` を実行するため、`app/` 配下からでもリポジトリルートの差分を確認できる。
+
+`app/out/` 配下のパッケージ版アプリは、ユーザーが配布ビルド確認を明示した場合以外、通常の開発検証対象にしない。
 
 必要に応じて、対象テスト、監視実行、カバレッジ取得のコマンドを追加する。
 
