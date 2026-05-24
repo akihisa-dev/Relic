@@ -191,4 +191,4 @@ pnpm build:win:safe
 - 技術スタック: [docs/engineering/stack.md](docs/engineering/stack.md)
 - 開発規約・テスト方針・バージョン管理: [docs/development/coding-rules.md](docs/development/coding-rules.md), [docs/development/testing-rules.md](docs/development/testing-rules.md), [docs/development/versioning-rules.md](docs/development/versioning-rules.md)
 
-旧フェーズ文書と旧日誌の履歴は `docs/development/phases/P00.md` に統合済みです。現行の仕様・設計判断は上記の正本文書を参照します。
+旧フェーズ文書と旧日誌の履歴は `docs/development/phases/P0.md` に統合済みです。現行の仕様・設計判断は上記の正本文書を参照します。
