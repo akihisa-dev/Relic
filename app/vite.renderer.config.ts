@@ -11,9 +11,6 @@ export default mergeConfig(baseConfig, {
           if (!id.includes("node_modules")) return undefined;
 
           if (id.includes("@codemirror")) return "codemirror";
-          if (id.includes("pixi.js") || id.includes("@pixi") || id.includes("d3-force") || id.includes("d3-quadtree") || id.includes("d3-timer") || id.includes("d3-dispatch")) {
-            return "graph-renderer";
-          }
           if (id.includes("katex") || id.includes("highlight.js") || id.includes("dompurify") || id.includes("marked")) {
             return "markdown-preview";
           }
