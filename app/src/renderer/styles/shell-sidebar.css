@@ -18,7 +18,7 @@
 }
 
 
-.cardbook {
+.workspace {
   display: flex;
   height: 100%;
   min-height: 0;
@@ -48,7 +48,7 @@
 }
 
 .rail:hover,
-.rail--cardbook-editing {
+.rail--workspace-editing {
   width: 220px;
 }
 
@@ -152,7 +152,7 @@
 }
 
 .rail:hover .rail-button-label,
-.rail--cardbook-editing .rail-button-label {
+.rail--workspace-editing .rail-button-label {
   max-width: 150px;
   opacity: 1;
 }
@@ -261,7 +261,7 @@
   width: 100%;
 }
 
-.cardbook-name {
+.workspace-name {
   flex: 1;
   font-size: 14px;
   font-weight: 600;
@@ -270,7 +270,7 @@
   white-space: nowrap;
 }
 
-.cardbook-switcher {
+.workspace-switcher {
   display: grid;
   gap: 4px;
   overflow: hidden;
@@ -278,12 +278,12 @@
   width: 32px;
 }
 
-.rail:hover .cardbook-switcher,
-.rail--cardbook-editing .cardbook-switcher {
+.rail:hover .workspace-switcher,
+.rail--workspace-editing .workspace-switcher {
   width: 100%;
 }
 
-.cardbook-switcher-item {
+.workspace-switcher-item {
   align-items: center;
   border-radius: 8px;
   display: grid;
@@ -292,11 +292,11 @@
   width: 100%;
 }
 
-.cardbook-switcher-item.active {
+.workspace-switcher-item.active {
   background: var(--accent-softer);
 }
 
-.cardbook-switcher-main {
+.workspace-switcher-main {
   align-items: center;
   background: transparent;
   border: 0;
@@ -311,15 +311,15 @@
   width: 100%;
 }
 
-.cardbook-switcher-main:hover {
+.workspace-switcher-main:hover {
   background: var(--hover);
 }
 
-.cardbook-switcher-main--editing {
+.workspace-switcher-main--editing {
   border-radius: 6px;
 }
 
-.cardbook-switcher-icon {
+.workspace-switcher-icon {
   align-items: center;
   background: var(--bg);
   border: 1px solid var(--border);
@@ -335,13 +335,13 @@
   width: 16px;
 }
 
-.cardbook-switcher-item.active .cardbook-switcher-icon {
+.workspace-switcher-item.active .workspace-switcher-icon {
   background: var(--accent-soft);
   border-color: var(--accent-ring);
   color: var(--accent);
 }
 
-.cardbook-switcher-name {
+.workspace-switcher-name {
   color: var(--text);
   font-size: 13px;
   font-weight: 600;
@@ -353,12 +353,12 @@
   white-space: nowrap;
 }
 
-.rail:hover .cardbook-switcher-name,
-.rail--cardbook-editing .cardbook-switcher-name {
+.rail:hover .workspace-switcher-name,
+.rail--workspace-editing .workspace-switcher-name {
   opacity: 1;
 }
 
-.cardbook-switcher-input {
+.workspace-switcher-input {
   background: var(--bg);
   border: 1px solid var(--accent-ring);
   border-radius: 5px;
@@ -370,7 +370,7 @@
   width: 100%;
 }
 
-.cardbook-switcher-remove {
+.workspace-switcher-remove {
   background: transparent;
   border: 0;
   color: var(--text-3);
@@ -383,12 +383,12 @@
   width: 24px;
 }
 
-.rail:hover .cardbook-switcher-remove,
-.rail--cardbook-editing .cardbook-switcher-remove {
+.rail:hover .workspace-switcher-remove,
+.rail--workspace-editing .workspace-switcher-remove {
   opacity: 1;
 }
 
-.cardbook-switcher-remove:hover {
+.workspace-switcher-remove:hover {
   background: var(--hover);
   color: var(--text);
 }

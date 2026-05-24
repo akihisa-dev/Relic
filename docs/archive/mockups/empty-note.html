@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Empty note mockup</title>
+  <link rel="stylesheet" href="mockups.css">
+</head>
+<body>
+  <div class="window">
+    <header class="titlebar">
+      <div class="traffic">
+        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        <span class="app-name">Relic</span>
+      </div>
+      <nav class="tabs"></nav>
+      <div class="title-actions">
+        <span>main</span>
+        <span>保存済み</span>
+      </div>
+    </header>
+
+    <div class="body">
+      <aside class="sidebar">
+        <nav class="rail">
+          <button class="rail-button active" title="Files">F</button>
+          <button class="rail-button" title="Search">S</button>
+          <button class="rail-button" title="Git">G</button>
+          <button class="rail-button" title="Settings">●</button>
+        </nav>
+
+        <section class="side-content">
+          <div class="workspace">
+            <p class="eyebrow">Workspace</p>
+            <div class="workspace-name">
+              <span>Novel Notes</span>
+              <span class="badge">Local</span>
+            </div>
+          </div>
+
+          <div class="side-scroll">
+            <div class="section-title">Pinned</div>
+            <div class="list-item">📄 世界観</div>
+            <div class="list-item">📄 登場人物</div>
+            <div class="section-title">Files</div>
+            <div class="list-item">▸ attachments</div>
+            <div class="list-item">▾ drafts</div>
+            <div class="list-item">　📄 第一章</div>
+            <div class="list-item">　📄 第二章</div>
+            <div class="list-item">▸ templates</div>
+          </div>
+        </section>
+      </aside>
+
+      <main class="main">
+        <div class="toolbar">
+          <div class="tool-group">
+            <button class="icon-button">B</button>
+            <button class="icon-button">I</button>
+            <button class="icon-button">H1</button>
+          </div>
+          <div class="tool-group">
+            <button class="primary-button">新規ノート</button>
+          </div>
+        </div>
+
+        <section class="empty-editor">
+          <div class="empty-panel">
+            <p class="eyebrow">No open tabs</p>
+            <h1>新しいノートを作成</h1>
+            <p>タブが0枚のときは、メインエリアに新規ノート作成画面を表示する。</p>
+            <div class="card-grid">
+              <div class="action-card">
+                <strong>空のノート</strong>
+                <span>現在のフォルダに `.md` ファイルを作成</span>
+              </div>
+              <div class="action-card">
+                <strong>テンプレートから作成</strong>
+                <span>`templates/` 内の雛形を選択</span>
+              </div>
+              <div class="action-card">
+                <strong>クイックスイッチャー</strong>
+                <span>既存ノートをファイル名で開く</span>
+              </div>
+              <div class="action-card">
+                <strong>最近のノート</strong>
+                <span>直近で開いたファイルを復元</span>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <footer class="statusbar">
+      <div class="status-group"><span>0 tabs</span><span>Novel Notes</span></div>
+      <div class="status-group"><span>Markdown</span><span>保存済み</span></div>
+    </footer>
+  </div>
+  <script src="mockup-nav.js"></script>
+</body>
+</html>

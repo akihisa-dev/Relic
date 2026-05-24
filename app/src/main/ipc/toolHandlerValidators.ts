@@ -1,8 +1,8 @@
 import type {
   GenerateTableOfContentsInput,
   GenerateTitleListInput,
-  MergeCardsInput,
-  SplitCardByHeadingInput
+  MergeFilesInput,
+  SplitFileByHeadingInput
 } from "../../shared/ipc";
 
 function isRecord(input: unknown): input is Record<string, unknown> {
@@ -20,9 +20,9 @@ function hasOptionalString(input: Record<string, unknown>, key: string): boolean
 export function isGenerateTitleListInput(input: unknown): input is GenerateTitleListInput {
   return (
     isRecord(input) &&
-    hasOptionalString(input, "filterCardFolder") &&
+    hasOptionalString(input, "filterFolder") &&
     hasOptionalString(input, "filterTag") &&
-    hasString(input, "outputCardFolder") &&
+    hasString(input, "outputFolder") &&
     hasString(input, "outputName") &&
     (input.sortBy === "name" || input.sortBy === "mtime")
   );
@@ -31,34 +31,34 @@ export function isGenerateTitleListInput(input: unknown): input is GenerateTitle
 export function isGenerateTableOfContentsInput(input: unknown): input is GenerateTableOfContentsInput {
   return (
     isRecord(input) &&
-    typeof input.includeSubcardFolders === "boolean" &&
-    hasString(input, "outputCardFolder") &&
+    typeof input.includeSubfolders === "boolean" &&
+    hasString(input, "outputFolder") &&
     hasString(input, "outputName") &&
-    hasString(input, "targetCardFolder")
+    hasString(input, "targetFolder")
   );
 }
 
-export function isMergeCardsInput(input: unknown): input is MergeCardsInput {
+export function isMergeFilesInput(input: unknown): input is MergeFilesInput {
   return (
     isRecord(input) &&
     hasOptionalString(input, "frontmatterField") &&
-    (input.filterType === "cardFolder" ||
+    (input.filterType === "folder" ||
       input.filterType === "frontmatter" ||
       input.filterType === "tag" ||
       input.filterType === "all") &&
     hasString(input, "filterValue") &&
-    typeof input.insertCardNameHeading === "boolean" &&
-    hasString(input, "outputCardFolder") &&
+    typeof input.insertFilenameHeading === "boolean" &&
+    hasString(input, "outputFolder") &&
     hasString(input, "outputName") &&
     (input.sortBy === "name" || input.sortBy === "mtime" || input.sortBy === "ctime")
   );
 }
 
-export function isSplitCardByHeadingInput(input: unknown): input is SplitCardByHeadingInput {
+export function isSplitFileByHeadingInput(input: unknown): input is SplitFileByHeadingInput {
   return (
     isRecord(input) &&
     (input.headingLevel === 1 || input.headingLevel === 2 || input.headingLevel === 3) &&
-    hasString(input, "outputCardFolder") &&
+    hasString(input, "outputFolder") &&
     hasString(input, "sourcePath")
   );
 }

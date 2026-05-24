@@ -11,25 +11,25 @@ import {
   type FrontmatterTemplate,
   type UserDefinedField,
   type UserDefinedFieldType,
-  type CardbookSummary
+  type WorkspaceSummary
 } from "../../shared/ipc";
 
 export interface AppSettings {
   editorSettings: EditorSettings;
   featureToggles: FeatureToggles;
   frontmatterTemplates: FrontmatterTemplate[];
-  lastCardbookId: string | null;
+  lastWorkspaceId: string | null;
   userDefinedFields: UserDefinedField[];
-  cardbooks: CardbookSummary[];
+  workspaces: WorkspaceSummary[];
 }
 
 const defaultAppSettings: AppSettings = {
   editorSettings: defaultEditorSettings,
   featureToggles: defaultFeatureToggles,
   frontmatterTemplates: defaultFrontmatterTemplates,
-  lastCardbookId: null,
+  lastWorkspaceId: null,
   userDefinedFields: defaultUserDefinedFields,
-  cardbooks: []
+  workspaces: []
 };
 
 export function getAppSettingsPath(userDataPath: string): string {
@@ -47,15 +47,15 @@ export async function readAppSettings(userDataPath: string): Promise<AppSettings
       editorSettings: parseEditorSettings(parsedSettings.editorSettings),
       featureToggles: parseFeatureToggles(parsedSettings.featureToggles),
       frontmatterTemplates: parseFrontmatterTemplates(parsedSettings.frontmatterTemplates),
-      lastCardbookId:
-        typeof parsedSettings.lastCardbookId === "string" ? parsedSettings.lastCardbookId : null,
+      lastWorkspaceId:
+        typeof parsedSettings.lastWorkspaceId === "string" ? parsedSettings.lastWorkspaceId : null,
       userDefinedFields: parseUserDefinedFields(parsedSettings.userDefinedFields),
-      cardbooks: Array.isArray(parsedSettings.cardbooks)
-        ? parsedSettings.cardbooks.filter(isCardbookSummary)
+      workspaces: Array.isArray(parsedSettings.workspaces)
+        ? parsedSettings.workspaces.filter(isWorkspaceSummary)
         : []
     };
   } catch (error) {
-    if (isMissingCardError(error)) {
+    if (isMissingFileError(error)) {
       return defaultAppSettings;
     }
 
@@ -116,7 +116,7 @@ const VALID_FIELD_TYPES: UserDefinedFieldType[] = [
   "url"
 ];
 const FIELD_NAME_PATTERN = /^[^\s:][^\r\n:]*$/;
-const RESERVED_FIELD_NAMES = new Set(["aliases", "tags", "status", "timeline"]);
+const RESERVED_FIELD_NAMES = new Set(["aliases", "tags", "status", "chronicle", "plannedDate", "actualDate"]);
 
 function parseUserDefinedFields(raw: unknown): UserDefinedField[] {
   if (!Array.isArray(raw)) return defaultUserDefinedFields;
@@ -177,7 +177,7 @@ function parseFrontmatterTemplates(raw: unknown): FrontmatterTemplate[] {
   return result;
 }
 
-function isCardbookSummary(value: unknown): value is CardbookSummary {
+function isWorkspaceSummary(value: unknown): value is WorkspaceSummary {
   if (typeof value !== "object" || value === null) {
     return false;
   }
@@ -191,7 +191,7 @@ function isCardbookSummary(value: unknown): value is CardbookSummary {
   );
 }
 
-function isMissingCardError(error: unknown): boolean {
+function isMissingFileError(error: unknown): boolean {
   return (
     typeof error === "object" &&
     error !== null &&

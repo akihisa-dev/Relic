@@ -6,13 +6,13 @@ import type { TranslationKey } from "../i18n";
 type Translate = (key: TranslationKey, params?: Record<string, string>) => string;
 
 interface UseCommandPaletteCommandsInput {
-  activeCardName: string | null;
-  handleDeleteActiveCard: () => void;
-  handleDuplicateActiveCard: () => void;
-  requestCardSearchFocus: () => void;
-  setIsCreatingCard: (isCreating: boolean) => void;
+  activeFileName: string | null;
+  handleDeleteActiveFile: () => void;
+  handleDuplicateActiveFile: () => void;
+  requestFileSearchFocus: () => void;
+  setIsCreatingFile: (isCreating: boolean) => void;
   setShowQuickSwitcher: (isShown: boolean) => void;
-  setSidebarView: (view: "cards" | "settings") => void;
+  setSidebarView: (view: "files" | "settings") => void;
   t: Translate;
   toggleRightPanel: () => void;
   toggleSidebar: () => void;
@@ -21,11 +21,11 @@ interface UseCommandPaletteCommandsInput {
 }
 
 export function useCommandPaletteCommands({
-  activeCardName,
-  handleDeleteActiveCard,
-  handleDuplicateActiveCard,
-  requestCardSearchFocus,
-  setIsCreatingCard,
+  activeFileName,
+  handleDeleteActiveFile,
+  handleDuplicateActiveFile,
+  requestFileSearchFocus,
+  setIsCreatingFile,
   setShowQuickSwitcher,
   setSidebarView,
   t,
@@ -40,13 +40,13 @@ export function useCommandPaletteCommands({
         id: "new-note",
         label: t("pane.createNote"),
         shortcut: "⌘N",
-        action: () => { setSidebarView("cards"); setIsCreatingCard(true); }
+        action: () => { setSidebarView("files"); setIsCreatingFile(true); }
       },
       {
         id: "search",
         label: t("command.search"),
         shortcut: "⌘F",
-        action: requestCardSearchFocus
+        action: requestFileSearchFocus
       },
       {
         id: "quick-switcher",
@@ -78,24 +78,24 @@ export function useCommandPaletteCommands({
         shortcut: "⌘⇧T",
         action: toggleTypewriterMode
       },
-      ...(activeCardName
+      ...(activeFileName
         ? [
             {
-              id: "rename-card",
-              label: t("command.renameCard", { name: activeCardName }),
+              id: "rename-file",
+              label: t("command.renameFile", { name: activeFileName }),
               action: () => {
-                setSidebarView("cards");
+                setSidebarView("files");
               }
             },
             {
-              id: "duplicate-card",
-              label: t("command.duplicateCard", { name: activeCardName }),
-              action: handleDuplicateActiveCard
+              id: "duplicate-file",
+              label: t("command.duplicateFile", { name: activeFileName }),
+              action: handleDuplicateActiveFile
             },
             {
-              id: "delete-card",
-              label: t("command.deleteCard", { name: activeCardName }),
-              action: handleDeleteActiveCard
+              id: "delete-file",
+              label: t("command.deleteFile", { name: activeFileName }),
+              action: handleDeleteActiveFile
             }
           ]
         : []),
@@ -106,11 +106,11 @@ export function useCommandPaletteCommands({
       }
     ],
     [
-      activeCardName,
-      handleDeleteActiveCard,
-      handleDuplicateActiveCard,
-      requestCardSearchFocus,
-      setIsCreatingCard,
+      activeFileName,
+      handleDeleteActiveFile,
+      handleDuplicateActiveFile,
+      requestFileSearchFocus,
+      setIsCreatingFile,
       setShowQuickSwitcher,
       setSidebarView,
       t,

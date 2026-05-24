@@ -1,23 +1,23 @@
 import { useEffect, useState } from "react";
 
-import type { Backlink, CardbookTreeNode } from "../../shared/ipc";
+import type { Backlink, WorkspaceTreeNode } from "../../shared/ipc";
 
 interface UseBacklinksStateInput {
-  activeCardPath: string | null;
-  cardTree: CardbookTreeNode[] | undefined;
-  setCardbookError: (message: string | null) => void;
+  activeFilePath: string | null;
+  fileTree: WorkspaceTreeNode[] | undefined;
+  setWorkspaceError: (message: string | null) => void;
 }
 
 export function useBacklinksState({
-  activeCardPath,
-  cardTree,
-  setCardbookError
+  activeFilePath,
+  fileTree,
+  setWorkspaceError
 }: UseBacklinksStateInput) {
   const [backlinks, setBacklinks] = useState<Backlink[]>([]);
   const [isLoadingBacklinks, setIsLoadingBacklinks] = useState(false);
 
   useEffect(() => {
-    if (!activeCardPath || !window.relic) {
+    if (!activeFilePath || !window.relic) {
       setBacklinks([]);
       return;
     }
@@ -26,7 +26,7 @@ export function useBacklinksState({
     setIsLoadingBacklinks(true);
 
     void window.relic
-      .getBacklinks({ path: activeCardPath })
+      .getBacklinks({ path: activeFilePath })
       .then((result) => {
         if (canceled) return;
 
@@ -34,7 +34,7 @@ export function useBacklinksState({
           setBacklinks(result.value);
         } else {
           setBacklinks([]);
-          setCardbookError(result.error.message);
+          setWorkspaceError(result.error.message);
         }
       })
       .finally(() => {
@@ -44,7 +44,7 @@ export function useBacklinksState({
     return () => {
       canceled = true;
     };
-  }, [activeCardPath, cardTree, setCardbookError]);
+  }, [activeFilePath, fileTree, setWorkspaceError]);
 
   return {
     backlinks,

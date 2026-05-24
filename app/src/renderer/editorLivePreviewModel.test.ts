@@ -48,12 +48,12 @@ describe("editorLivePreviewModel", () => {
   });
 
   it("wiki linkのクリック位置からtargetとheadingを返す", () => {
-    const state = EditorState.create({ doc: "See [[CardFolder/Note#Intro|Alias]]" });
+    const state = EditorState.create({ doc: "See [[Folder/Note#Intro|Alias]]" });
     const position = state.doc.toString().indexOf("Alias");
 
     expect(findClickableLinkAtPosition(state.doc, position)).toEqual({
       heading: "Intro",
-      target: "CardFolder/Note",
+      target: "Folder/Note",
       type: "wiki"
     });
   });

@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Split view mockup</title>
+  <link rel="stylesheet" href="mockups.css">
+</head>
+<body>
+  <div class="window">
+    <header class="titlebar">
+      <div class="traffic">
+        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        <span class="app-name">Relic</span>
+      </div>
+      <nav class="tabs">
+        <div class="tab active">第一章.md</div>
+        <div class="tab">登場人物.md</div>
+      </nav>
+      <div class="title-actions">
+        <span>main</span>
+        <span>同期OFF</span>
+      </div>
+    </header>
+
+    <div class="body">
+      <aside class="sidebar">
+        <nav class="rail">
+          <button class="rail-button active" title="Files">F</button>
+          <button class="rail-button" title="Search">S</button>
+          <button class="rail-button" title="Git">G</button>
+          <button class="rail-button" title="Settings">●</button>
+        </nav>
+        <section class="side-content">
+          <div class="workspace">
+            <p class="eyebrow">Workspace</p>
+            <div class="workspace-name"><span>Novel Notes</span><span class="badge">Split</span></div>
+          </div>
+          <div class="side-scroll">
+            <div class="list-item active">📄 第一章</div>
+            <div class="list-item">📄 登場人物</div>
+            <div class="list-item">📄 年表</div>
+            <div class="list-item">📄 用語集</div>
+          </div>
+        </section>
+      </aside>
+
+      <main class="main">
+        <div class="toolbar">
+          <div class="tool-group">
+            <button class="icon-button active">分割</button>
+            <button class="icon-button">解除</button>
+          </div>
+          <div class="tool-group">
+            <button class="icon-button">Outline</button>
+            <button class="icon-button">Links</button>
+          </div>
+        </div>
+
+        <section class="split-layout">
+          <div class="pane">
+            <div class="pane-tabs">
+              <div class="pane-tab active">第一章.md</div>
+              <div class="pane-tab">世界観.md</div>
+            </div>
+            <div class="editor-shell">
+              <article class="editor-page">
+                <h1>第一章</h1>
+                <p>霧の深い朝、主人公は古い駅舎で一冊の手帳を見つける。</p>
+                <p><span class="link">[[登場人物]]</span> へのリンクをクリックすると、左ペインのタブ履歴とは独立して開く。</p>
+              </article>
+            </div>
+          </div>
+
+          <div class="pane">
+            <div class="pane-tabs">
+              <div class="pane-tab active">登場人物.md</div>
+              <div class="pane-tab">年表.md</div>
+            </div>
+            <div class="editor-shell">
+              <article class="editor-page">
+                <h1>登場人物</h1>
+                <h2>主人公</h2>
+                <p>古い町の記録を集めている編集者。右ペインは独立したタブ列を持つ。</p>
+              </article>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <footer class="statusbar">
+      <div class="status-group"><span>2 panes</span><span>左ペイン active</span></div>
+      <div class="status-group"><span>1,248文字</span><span>保存済み</span></div>
+    </footer>
+  </div>
+  <script src="mockup-nav.js"></script>
+</body>
+</html>

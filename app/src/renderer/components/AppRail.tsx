@@ -1,72 +1,72 @@
 import type { MouseEvent, ReactElement } from "react";
 
-import type { CardbookState } from "../../shared/ipc";
+import type { WorkspaceState } from "../../shared/ipc";
 import type { AppRailView } from "../appShellModel";
 import type { PanelTabKind } from "../store/editorStore";
 import type { SidebarView } from "../store/uiStore";
-import { IconCards, RailCardbookSwitcher } from "./RailNavigation";
+import { IconFiles, RailWorkspaceSwitcher } from "./RailNavigation";
 
 interface AppRailProps {
   activePanelTabIds: Set<PanelTabKind>;
   activeSidebarView: SidebarView;
-  activeCardbookId: string | null;
+  activeWorkspaceId: string | null;
   chartRailView?: AppRailView<ReactElement>;
   isChartTabActive: boolean;
   isChartTabOpen: boolean;
   isSidebarOpen: boolean;
-  isCardbookRenameActive: boolean;
-  isCardbookRenameHoldingRail: boolean;
+  isWorkspaceRenameActive: boolean;
+  isWorkspaceRenameHoldingRail: boolean;
   onChartButton: (label: string, event: MouseEvent<HTMLButtonElement>) => void;
   onCloseSidebar: () => void;
   onPanelButton: (panel: PanelTabKind, label: string, event: MouseEvent<HTMLButtonElement>) => void;
-  onRemoveCardbook: (id: string) => void;
+  onRemoveWorkspace: (id: string) => void;
   onRenameActiveChange: (isActive: boolean) => void;
   onRenameComplete: () => void;
-  onRenameCardbook: (id: string, currentName: string) => Promise<boolean>;
+  onRenameWorkspace: (id: string, currentName: string) => Promise<boolean>;
   onSetSidebarView: (view: SidebarView) => void;
-  onSwitchCardbook: (id: string) => void;
+  onSwitchWorkspace: (id: string) => void;
   openPanelTabIds: Set<PanelTabKind>;
   panelRailViews: Array<AppRailView<ReactElement>>;
   primaryRailViews: Array<AppRailView<ReactElement>>;
-  registeredCardbooks: CardbookState["cardbooks"];
+  registeredWorkspaces: WorkspaceState["workspaces"];
   renameLabel: string;
-  removeCardbookLabel: (name: string) => string;
+  removeWorkspaceLabel: (name: string) => string;
   viewSwitcherLabel: string;
-  cardbooksLabel: string;
+  workspacesLabel: string;
 }
 
 export function AppRail({
   activePanelTabIds,
   activeSidebarView,
-  activeCardbookId,
+  activeWorkspaceId,
   chartRailView,
   isChartTabActive,
   isChartTabOpen,
   isSidebarOpen,
-  isCardbookRenameActive,
-  isCardbookRenameHoldingRail,
+  isWorkspaceRenameActive,
+  isWorkspaceRenameHoldingRail,
   onChartButton,
   onCloseSidebar,
   onPanelButton,
-  onRemoveCardbook,
+  onRemoveWorkspace,
   onRenameActiveChange,
   onRenameComplete,
-  onRenameCardbook,
+  onRenameWorkspace,
   onSetSidebarView,
-  onSwitchCardbook,
+  onSwitchWorkspace,
   openPanelTabIds,
   panelRailViews,
   primaryRailViews,
-  registeredCardbooks,
+  registeredWorkspaces,
   renameLabel,
-  removeCardbookLabel,
+  removeWorkspaceLabel,
   viewSwitcherLabel,
-  cardbooksLabel
+  workspacesLabel
 }: AppRailProps): ReactElement {
   return (
     <nav
       aria-label={viewSwitcherLabel}
-      className={`rail${isCardbookRenameActive || isCardbookRenameHoldingRail ? " rail--cardbook-editing" : ""}`}
+      className={`rail${isWorkspaceRenameActive || isWorkspaceRenameHoldingRail ? " rail--workspace-editing" : ""}`}
     >
       {primaryRailViews.map((view) => (
         <button
@@ -74,7 +74,7 @@ export function AppRail({
           className={primaryRailButtonClass(view, activeSidebarView, isSidebarOpen)}
           key={view.id}
           onClick={() => {
-            if (view.id === "cards" && activeSidebarView === "cards" && isSidebarOpen) {
+            if (view.id === "files" && activeSidebarView === "files" && isSidebarOpen) {
               onCloseSidebar();
               return;
             }
@@ -84,7 +84,7 @@ export function AppRail({
           title={view.label}
           type="button"
         >
-          {view.id === "cards" ? <IconCards sidebarOpen={isSidebarOpen} /> : view.icon}
+          {view.id === "files" ? <IconFiles sidebarOpen={isSidebarOpen} /> : view.icon}
           <span className="rail-button-label">{view.label}</span>
         </button>
       ))}
@@ -114,21 +114,21 @@ export function AppRail({
           <span className="rail-button-label">{view.label}</span>
         </button>
       ))}
-      {registeredCardbooks.length > 0 ? (
+      {registeredWorkspaces.length > 0 ? (
         <>
           <div className="rail-spacer" />
           <div className="rail-separator" />
-          <RailCardbookSwitcher
-            activeCardbookId={activeCardbookId}
-            ariaLabel={cardbooksLabel}
+          <RailWorkspaceSwitcher
+            activeWorkspaceId={activeWorkspaceId}
+            ariaLabel={workspacesLabel}
             onRenameActiveChange={onRenameActiveChange}
             onRenameComplete={onRenameComplete}
-            onRemoveCardbook={onRemoveCardbook}
-            onRenameCardbook={onRenameCardbook}
-            onSwitchCardbook={onSwitchCardbook}
+            onRemoveWorkspace={onRemoveWorkspace}
+            onRenameWorkspace={onRenameWorkspace}
+            onSwitchWorkspace={onSwitchWorkspace}
             renameLabel={renameLabel}
-            removeLabel={removeCardbookLabel}
-            cardbooks={registeredCardbooks}
+            removeLabel={removeWorkspaceLabel}
+            workspaces={registeredWorkspaces}
           />
         </>
       ) : null}

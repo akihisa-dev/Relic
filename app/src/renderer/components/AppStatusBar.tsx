@@ -2,15 +2,15 @@ import type { ReactElement } from "react";
 
 import { useT } from "../i18n";
 import { textCount } from "../paneViewModel";
-import type { CardTab } from "../store/editorStore";
+import type { FileTab } from "../store/editorStore";
 
 interface AppStatusBarProps {
-  activeCardTab: CardTab | null;
+  activeFileTab: FileTab | null;
 }
 
-export function AppStatusBar({ activeCardTab }: AppStatusBarProps): ReactElement {
+export function AppStatusBar({ activeFileTab }: AppStatusBarProps): ReactElement {
   const t = useT();
-  const count = textCount(activeCardTab?.content ?? "");
+  const count = textCount(activeFileTab?.content ?? "");
 
   return (
     <footer className="status-bar">

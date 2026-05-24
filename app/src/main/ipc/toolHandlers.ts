@@ -3,51 +3,51 @@ import { ipcMain } from "electron";
 import {
   generateTableOfContentsChannel,
   generateTitleListChannel,
-  mergeCardsChannel,
-  splitCardByHeadingChannel
+  mergeFilesChannel,
+  splitFileByHeadingChannel
 } from "../../shared/ipc";
 import { fail, type RelicResult } from "../../shared/result";
-import { ipcErrorDetails } from "./activeCardbook";
+import { ipcErrorDetails } from "./activeWorkspace";
 import {
   generateTableOfContents,
   generateTitleList,
-  mergeCards,
-  splitCardByHeading
+  mergeFiles,
+  splitFileByHeading
 } from "./toolActions";
 import {
   isGenerateTableOfContentsInput,
   isGenerateTitleListInput,
-  isMergeCardsInput,
-  isSplitCardByHeadingInput
+  isMergeFilesInput,
+  isSplitFileByHeadingInput
 } from "./toolHandlerValidators";
 
 export function registerToolHandlers(): void {
   ipcMain.handle(
-    mergeCardsChannel,
+    mergeFilesChannel,
     async (_event, input: unknown): Promise<RelicResult<string>> => {
       try {
-        if (!isMergeCardsInput(input)) {
+        if (!isMergeFilesInput(input)) {
           return fail("MERGE_INVALID_INPUT", "マージ条件が無効です。");
         }
 
-        return await mergeCards(input);
+        return await mergeFiles(input);
       } catch (error) {
-        return fail("MERGE_FAILED", "カードのマージに失敗しました。", ipcErrorDetails(error));
+        return fail("MERGE_FAILED", "ファイルのマージに失敗しました。", ipcErrorDetails(error));
       }
     }
   );
 
   ipcMain.handle(
-    splitCardByHeadingChannel,
+    splitFileByHeadingChannel,
     async (_event, input: unknown): Promise<RelicResult<string[]>> => {
       try {
-        if (!isSplitCardByHeadingInput(input)) {
+        if (!isSplitFileByHeadingInput(input)) {
           return fail("SPLIT_INVALID_INPUT", "分割条件が無効です。");
         }
 
-        return await splitCardByHeading(input);
+        return await splitFileByHeading(input);
       } catch (error) {
-        return fail("SPLIT_FAILED", "カードの分割に失敗しました。", ipcErrorDetails(error));
+        return fail("SPLIT_FAILED", "ファイルの分割に失敗しました。", ipcErrorDetails(error));
       }
     }
   );

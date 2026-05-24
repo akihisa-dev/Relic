@@ -4,41 +4,41 @@ import {
   getEditorSettingsChannel,
   saveEditorSettingsChannel,
   type EditorSettings,
-  writeMarkdownCardChannel,
-  type WriteMarkdownCardInput
+  writeMarkdownFileChannel,
+  type WriteMarkdownFileInput
 } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
-import { readMarkdownCard } from "../cards/markdownCards";
+import { readMarkdownFile } from "../files/markdownFiles";
 import { writeFile } from "node:fs/promises";
 import path from "node:path";
-import { resolveCardbookRelativePath } from "../cards/paths";
+import { resolveWorkspaceRelativePath } from "../files/paths";
 import { readAppSettings, writeAppSettings } from "../settings/appSettings";
-import { toCardbookState } from "../cardbook/cardbookService";
+import { toWorkspaceState } from "../workspace/workspaceService";
 
 export function registerEditorHandlers(): void {
   ipcMain.handle(
-    writeMarkdownCardChannel,
-    async (_event, input: WriteMarkdownCardInput): Promise<RelicResult<void>> => {
+    writeMarkdownFileChannel,
+    async (_event, input: WriteMarkdownFileInput): Promise<RelicResult<void>> => {
       try {
-        if (!isWriteMarkdownCardInput(input)) {
+        if (!isWriteMarkdownFileInput(input)) {
           return fail("FILE_WRITE_INVALID_INPUT", "パスと内容を指定してください。");
         }
 
         const settings = await readAppSettings(app.getPath("userData"));
-        const state = toCardbookState(settings);
+        const state = toWorkspaceState(settings);
 
-        if (!state.activeCardbook) {
-          return fail("CARDBOOK_NOT_SELECTED", "先にカードブックを開いてください。");
+        if (!state.activeWorkspace) {
+          return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
         }
 
-        const resolved = resolveCardbookRelativePath(state.activeCardbook.path, input.path);
+        const resolved = resolveWorkspaceRelativePath(state.activeWorkspace.path, input.path);
 
         if (!resolved.ok) {
           return resolved;
         }
 
         if (path.extname(resolved.value) !== ".md") {
-          return fail("FILE_WRITE_NOT_MARKDOWN", "Markdown形式のカード以外は書き込めません。");
+          return fail("FILE_WRITE_NOT_MARKDOWN", "Markdownファイル以外は書き込めません。");
         }
 
         await writeFile(resolved.value, input.content, "utf8");
@@ -47,7 +47,7 @@ export function registerEditorHandlers(): void {
       } catch (error) {
         return fail(
           "FILE_WRITE_FAILED",
-          "カードを保存できませんでした。",
+          "ファイルを保存できませんでした。",
           error instanceof Error ? error.message : String(error)
         );
       }
@@ -94,7 +94,7 @@ export function registerEditorHandlers(): void {
   );
 }
 
-function isWriteMarkdownCardInput(input: unknown): input is WriteMarkdownCardInput {
+function isWriteMarkdownFileInput(input: unknown): input is WriteMarkdownFileInput {
   return (
     typeof input === "object" &&
     input !== null &&

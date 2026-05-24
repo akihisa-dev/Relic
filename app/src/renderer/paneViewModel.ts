@@ -15,7 +15,6 @@ export interface TextCount {
 
 export function panelTabLabel(panel: PanelTabKind, t: Translator): string {
   if (panel === "frontmatter") return t("nav.frontmatter");
-  if (panel === "calendar-settings") return t("nav.calendarSettings");
   if (panel === "settings") return t("nav.settings");
   return t("nav.tools");
 }

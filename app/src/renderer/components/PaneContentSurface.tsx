@@ -10,48 +10,48 @@ import { Editor } from "./Editor";
 
 interface PaneContentSurfaceProps {
   activeTab: Tab | null | undefined;
-  allCardPaths: string[];
+  allFilePaths: string[];
   editorActionPulse: number;
   editorSettings: EditorSettings;
   frontmatterCandidates: Record<string, string[]>;
-  renderTimelineTab: (chartId: string) => ReactNode;
+  renderGanttChartTab: (chartId: string) => ReactNode;
   renderPanelTab: (panel: PanelTabKind) => ReactNode;
   sourceMode: boolean;
   typewriterMode: boolean;
   userDefinedFields: UserDefinedField[];
   viewRef: MutableRefObject<EditorView | null>;
-  cardbookPath?: string | null;
-  onCreateCard: (name: string) => void;
+  workspacePath?: string | null;
+  onCreateFile: (name: string) => void;
   onEditorAction?: () => void;
   onOpenLink?: (href: string) => void;
   onOpenWikiLink?: (target: string, heading?: string) => void;
-  onRenameCard: (path: string, name: string) => void;
+  onRenameFile: (path: string, name: string) => void;
   onUpdateTabContent: (tabId: string, content: string) => void;
 }
 
 export function PaneContentSurface({
   activeTab,
-  allCardPaths,
+  allFilePaths,
   editorActionPulse,
   editorSettings,
   frontmatterCandidates,
-  renderTimelineTab,
+  renderGanttChartTab,
   renderPanelTab,
   sourceMode,
   typewriterMode,
   userDefinedFields,
   viewRef,
-  cardbookPath,
-  onCreateCard,
+  workspacePath,
+  onCreateFile,
   onEditorAction,
   onOpenLink,
   onOpenWikiLink,
-  onRenameCard,
+  onRenameFile,
   onUpdateTabContent
 }: PaneContentSurfaceProps): ReactElement {
   const t = useT();
 
-  if (activeTab?.kind === "card") {
+  if (activeTab?.kind === "file") {
     const { chars, words } = textCount(activeTab.content);
 
     return (
@@ -59,13 +59,13 @@ export function PaneContentSurface({
         className={`editor-surface${editorActionPulse > 0 ? ` editor-surface--action-${editorActionPulse % 2 === 0 ? "even" : "odd"}` : ""}`}
       >
         <div className="editor-body">
-          <EditableCardTitle
+          <EditableFileTitle
             maxWidth={editorSettings.maxWidth === "none" ? undefined : editorSettings.maxWidth}
             name={activeTab.name}
-            onRename={(name) => onRenameCard(activeTab.path, name)}
+            onRename={(name) => onRenameFile(activeTab.path, name)}
           />
           <Editor
-            allCardPaths={allCardPaths}
+            allFilePaths={allFilePaths}
             content={activeTab.content}
             frontmatterCandidates={frontmatterCandidates}
             key={activeTab.id}
@@ -97,11 +97,11 @@ export function PaneContentSurface({
     );
   }
 
-  if (activeTab?.kind === "timeline") {
+  if (activeTab?.kind === "gantt") {
     return (
       <div className="editor-surface panel-tab-surface">
         <div className="panel-tab-body">
-          {renderTimelineTab(activeTab.chartId)}
+          {renderGanttChartTab(activeTab.chartId)}
         </div>
       </div>
     );
@@ -111,12 +111,12 @@ export function PaneContentSurface({
     <div className="empty-pane">
       <div className="empty-pane-copy">
         <p className="empty-pane-kicker">{t("pane.emptyKicker")}</p>
-        <p className="empty-pane-message">{t("pane.noCards")}</p>
+        <p className="empty-pane-message">{t("pane.noFiles")}</p>
       </div>
-      {cardbookPath ? (
+      {workspacePath ? (
         <div className="empty-pane-form">
-          <button className="primary-button" onClick={() => onCreateCard("")} type="button">
-            {t("pane.createCard")}
+          <button className="primary-button" onClick={() => onCreateFile("")} type="button">
+            {t("pane.createFile")}
           </button>
         </div>
       ) : null}
@@ -124,13 +124,13 @@ export function PaneContentSurface({
   );
 }
 
-interface EditableCardTitleProps {
+interface EditableFileTitleProps {
   maxWidth?: string;
   name: string;
   onRename: (name: string) => void;
 }
 
-function EditableCardTitle({ maxWidth, name, onRename }: EditableCardTitleProps): ReactElement {
+function EditableFileTitle({ maxWidth, name, onRename }: EditableFileTitleProps): ReactElement {
   const [draft, setDraft] = useState(name);
   const [editing, setEditing] = useState(false);
 
@@ -154,7 +154,7 @@ function EditableCardTitle({ maxWidth, name, onRename }: EditableCardTitleProps)
   if (editing) {
     return (
       <form
-        className="editor-card-title-form"
+        className="editor-file-title-form"
         onSubmit={(event: FormEvent<HTMLFormElement>) => {
           event.preventDefault();
           commit();
@@ -163,7 +163,7 @@ function EditableCardTitle({ maxWidth, name, onRename }: EditableCardTitleProps)
       >
         <input
           autoFocus
-          className="editor-card-title editor-card-title-input"
+          className="editor-file-title editor-file-title-input"
           onBlur={commit}
           onChange={(event) => setDraft(event.target.value)}
           onKeyDown={(event: KeyboardEvent<HTMLInputElement>) => {
@@ -180,7 +180,7 @@ function EditableCardTitle({ maxWidth, name, onRename }: EditableCardTitleProps)
 
   return (
     <button
-      className="editor-card-title editor-card-title-button"
+      className="editor-file-title editor-file-title-button"
       onClick={() => setEditing(true)}
       style={{ maxWidth }}
       type="button"
