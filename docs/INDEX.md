@@ -52,7 +52,6 @@ AIのセッション開始時は、`../AGENTS.md` から [product/project.md](pr
 | [ui/DESIGN.md](ui/DESIGN.md) | デザインシステム。カラーパレット・タイポグラフィ・スペーシング・コンポーネント定義 |
 | [ui/screens-macos.md](ui/screens-macos.md) | macOSの画面一覧と構成 |
 | [ui/navigation.md](ui/navigation.md) | 画面遷移フロー |
-| [archive/mockups/index.html](archive/mockups/index.html) | アーカイブ済みの静的画面モック。現行仕様判断では参照しない |
 | [assets/](assets/) | ロゴ案などの設計・検討素材 |
 | [journal/_template.md](journal/_template.md) | 開発日誌のエントリーテンプレート |
 
