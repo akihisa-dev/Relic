@@ -187,4 +187,4 @@ pnpm build:win:safe
 - 技術スタック: [docs/tech/stack.md](docs/tech/stack.md)
 - 開発規約・テスト方針: [docs/dev/conventions.md](docs/dev/conventions.md), [docs/dev/testing.md](docs/dev/testing.md)
 
-`docs/journal/` と `docs/archive/` は履歴資料です。現行の仕様・設計判断は、上記の正本文書を参照します。
+旧フェーズ文書と旧日誌の履歴は `docs/dev/phases/P00.md` に統合済みです。現行の仕様・設計判断は上記の正本文書を参照します。
