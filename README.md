@@ -113,11 +113,19 @@ cd app
 pnpm verify
 ```
 
+コードや文書の差分確認までまとめて行う場合:
+
+```sh
+cd app
+pnpm verify:full
+```
+
 個別に実行する場合:
 
 ```sh
 pnpm typecheck
 pnpm test
+git -C .. diff --check
 ```
 
 OS別のテストエイリアス:
@@ -126,6 +134,8 @@ OS別のテストエイリアス:
 pnpm test:mac
 pnpm test:win
 ```
+
+`verify:full` は `pnpm verify` の後に、リポジトリルートの `git diff --check` を実行します。`app/out/` 配下のパッケージ版アプリは、配布ビルド確認を明示した場合だけ確認対象にします。
 
 ---
 
