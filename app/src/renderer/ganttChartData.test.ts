@@ -116,7 +116,7 @@ describe("ganttChartData", () => {
     ]);
   });
 
-  it("旧dateだけではplannedとして読まない", async () => {
+  it("dateだけではplannedとして読まない", async () => {
     const fileTree: WorkspaceTreeNode[] = [{ name: "legacy-date", path: "tasks/legacy-date.md", type: "file" }];
     const readMarkdownFile = vi.fn(async ({ path }: { path: string }) => ({
       ok: true as const,

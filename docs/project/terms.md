@@ -183,7 +183,7 @@ Markdown記法をそのままテキストとして表示するモード。レン
 ---
 
 ### 固定プロパティ
-Relicが意味を知っているフロントマターキー。`aliases`、`tags`、`status`、`chronicle0`〜`chronicle9`、`plannedDate`、`actualDate` を指す。互換用の `date` は日付チャートで読み取るが、固定プロパティではないためカスタムプロパティとして登録できる。
+Relicが意味を知っているフロントマターキー。`aliases`、`tags`、`status`、`chronicle0`〜`chronicle9`、`plannedDate`、`actualDate` を指す。
 
 | Obsidian | VS Code |
 |---|---|
@@ -401,7 +401,7 @@ Markdownファイル以外の補助画面をメインエリア内に開くタブ
 ---
 
 ### 日付チャート
-`plannedDate`、`actualDate`、互換用 `date` から生成するチャート表示。予定と実績を同じファイル行に表示し、`status` による絞り込みも扱う。
+`plannedDate` と `actualDate` から生成するチャート表示。予定と実績を同じファイル行に表示し、`status` による絞り込みも扱う。
 
 | Obsidian | VS Code |
 |---|---|
