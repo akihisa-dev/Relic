@@ -5,6 +5,7 @@ import type { GanttChartEntry, GanttChartEntryEditKind, GanttChartSource, Update
 import {
   createAdaptiveChroniclePointerDelta,
   createStablePointerDelta,
+  chronicleCalendarPatch,
   dateKindPatch,
   type DragPreview
 } from "../chronicleTimeline";
@@ -96,6 +97,7 @@ export function useChronicleEntryDrag({
       setDragPreview({
         path: entry.path,
         source: activeSource,
+        ...chronicleCalendarPatch(entry),
         ...dateKindPatch(entry),
         ...nextRange
       });
@@ -124,6 +126,7 @@ export function useChronicleEntryDrag({
         originalEndValue,
         originalStartValue,
         path: entry.path,
+        ...chronicleCalendarPatch(entry),
         ...dateKindPatch(entry),
         source: activeSource,
         startValue: nextRange.startValue
@@ -141,6 +144,7 @@ export function useChronicleEntryDrag({
       endValue: entry.endValue,
       path: entry.path,
       source: activeSource,
+      ...chronicleCalendarPatch(entry),
       ...dateKindPatch(entry),
       startValue: entry.startValue
     });

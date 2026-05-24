@@ -10,7 +10,8 @@ import {
   type ReplaceInFileInput,
   searchAndReplaceChannel,
   type SearchAndReplaceInput,
-  searchWorkspaceChannel
+  searchWorkspaceChannel,
+  chronicleCalendarIds
 } from "../../shared/ipc";
 import { fail, ok } from "../../shared/result";
 import { readBacklinks } from "../files/backlinks";
@@ -179,7 +180,7 @@ function isRegisteredFrontmatterSearchField(
   field: string,
   userDefinedFields: Array<{ name: string }>
 ): boolean {
-  const fixedFields = new Set(["aliases", "tags", "status", "chronicle", "plannedDate", "actualDate"]);
+  const fixedFields = new Set(["aliases", "tags", "status", ...chronicleCalendarIds, "plannedDate", "actualDate"]);
   const normalizedField = field.trim();
 
   return fixedFields.has(normalizedField) || userDefinedFields.some((candidate) => candidate.name === normalizedField);

@@ -14,7 +14,25 @@ describe("filesSidebarModel", () => {
     expect(knownFrontmatterSearchFields([
       { name: "custom", type: "text" },
       { name: "date", type: "date" }
-    ])).toEqual(["actualDate", "aliases", "chronicle", "custom", "date", "plannedDate", "status", "tags"]);
+    ])).toEqual([
+      "actualDate",
+      "aliases",
+      "chronicle0",
+      "chronicle1",
+      "chronicle2",
+      "chronicle3",
+      "chronicle4",
+      "chronicle5",
+      "chronicle6",
+      "chronicle7",
+      "chronicle8",
+      "chronicle9",
+      "custom",
+      "date",
+      "plannedDate",
+      "status",
+      "tags"
+    ]);
   });
 
   it("returns candidates only for a selected field", () => {

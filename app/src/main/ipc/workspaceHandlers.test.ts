@@ -25,6 +25,7 @@ vi.mock("electron", () => ({
 import {
   defaultEditorSettings,
   defaultFeatureToggles,
+  defaultChronicleCalendars,
   defaultFrontmatterTemplates,
   defaultUserDefinedFields,
   getWorkspaceStateChannel
@@ -72,6 +73,7 @@ describe("workspaceHandlers", () => {
     );
     await writeAppSettings(userDataPath, settings);
     await writeWorkspaceSettings(userDataPath, workspace.id, {
+      chronicleCalendars: defaultChronicleCalendars,
       ganttCharts: defaultGanttCharts,
       pinnedPaths: ["読書メモ.md"],
       workspacePath

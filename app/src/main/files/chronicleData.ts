@@ -1,7 +1,14 @@
 import path from "node:path";
 
 import { axisToYear, dateToDay, dayToDate, rangeToArray, shiftDateYears, yearToAxis } from "../../shared/chartTime";
-import type { GanttChartDateKind, GanttChartEntry, UpdateGanttChartEntryInput } from "../../shared/ipc";
+import {
+  defaultChronicleCalendars,
+  type ChronicleCalendarId,
+  type ChronicleCalendarSettings,
+  type GanttChartDateKind,
+  type GanttChartEntry,
+  type UpdateGanttChartEntryInput
+} from "../../shared/ipc";
 import { parseFrontmatter } from "./frontmatter";
 
 export interface DateRange {
@@ -11,27 +18,33 @@ export interface DateRange {
 
 export function collectGanttEntriesForMarkdown(
   relativePath: string,
-  content: string
+  content: string,
+  calendars: ChronicleCalendarSettings[] = defaultChronicleCalendars
 ): Record<"chronicle" | "date", GanttChartEntry[]> {
   const entriesBySource: Record<"chronicle" | "date", GanttChartEntry[]> = {
     chronicle: [],
     date: []
   };
   const fileName = path.basename(relativePath, ".md");
-  const range = extractChronicleRange(content);
+  const frontmatter = parseFrontmatter(content);
+  const range = extractFirstChronicleRangeFromData(frontmatter.data, calendars);
 
   if (range) {
+    const startValue = yearToAxis(calendarYearToMainYear(range.calendar, range.startYear));
+    const endValue = yearToAxis(calendarYearToMainYear(range.calendar, range.endYear));
     entriesBySource.chronicle.push({
-      endLabel: formatYear(range.endYear),
-      endValue: yearToAxis(range.endYear),
+      chronicleCalendarId: range.calendar.id,
+      chronicleCalendarName: range.calendar.name,
+      chronicleCalendarStartYear: calendarMainStartYear(range.calendar),
+      endLabel: formatCalendarYear(range.calendar, range.endYear),
+      endValue,
       fileName,
       path: relativePath,
-      startLabel: formatYear(range.startYear),
-      startValue: yearToAxis(range.startYear)
+      startLabel: formatCalendarYear(range.calendar, range.startYear),
+      startValue
     });
   }
 
-  const frontmatter = parseFrontmatter(content);
   const dateRanges: Array<{ kind: GanttChartDateKind; range: DateRange }> = [];
   const plannedDateRange = extractDateRangeFromData(frontmatter.data, "planned");
   const actualDateRange = extractDateRangeFromData(frontmatter.data, "actual");
@@ -76,7 +89,8 @@ export function sortDateEntries(entries: GanttChartEntry[]): GanttChartEntry[] {
 
 export function updateChronicleDataForChartEdit(
   data: Record<string, unknown>,
-  input: UpdateGanttChartEntryInput
+  input: UpdateGanttChartEntryInput,
+  calendars: ChronicleCalendarSettings[] = defaultChronicleCalendars
 ): Record<string, unknown> {
   const start = Math.min(input.startValue, input.endValue);
   const end = Math.max(input.startValue, input.endValue);
@@ -86,9 +100,13 @@ export function updateChronicleDataForChartEdit(
     const originalEndYear = axisToYear(input.originalEndValue);
     const startYear = axisToYear(start);
     const endYear = axisToYear(end);
+    const calendar = calendarById(calendars, input.chronicleCalendarId ?? "chronicle0");
+    const fieldName = calendar?.id ?? "chronicle0";
+    const nextStartYear = calendar ? mainYearToCalendarYear(calendar, startYear) : startYear;
+    const nextEndYear = calendar ? mainYearToCalendarYear(calendar, endYear) : endYear;
     const next: Record<string, unknown> = {
       ...data,
-      chronicle: rangeToArray(startYear, endYear)
+      [fieldName]: rangeToArray(nextStartYear, nextEndYear)
     };
     for (const kind of ["planned", "actual"] as const) {
       const dateRange = extractDateRangeFromData(data, kind);
@@ -117,18 +135,40 @@ export function updateChronicleDataForChartEdit(
 
   const startYear = dateYear(startDate);
   const endYear = dateYear(endDate);
-  next.chronicle = rangeToArray(startYear, endYear);
+  next.chronicle0 = rangeToArray(startYear, endYear);
 
   return normalizeDateFieldsForWrite(next);
 }
 
-export function extractChronicleRange(markdown: string): { endYear: number; startYear: number } | null {
+export function extractChronicleRange(
+  markdown: string,
+  calendars: ChronicleCalendarSettings[] = defaultChronicleCalendars
+): { endYear: number; startYear: number } | null {
   const { data } = parseFrontmatter(markdown);
-  return extractChronicleRangeFromData(data);
+  const range = extractFirstChronicleRangeFromData(data, calendars);
+  if (!range) return null;
+
+  return { endYear: range.endYear, startYear: range.startYear };
 }
 
-function extractChronicleRangeFromData(data: Record<string, unknown>): { endYear: number; startYear: number } | null {
-  const value = data.chronicle;
+function extractFirstChronicleRangeFromData(
+  data: Record<string, unknown>,
+  calendars: ChronicleCalendarSettings[]
+): { calendar: ChronicleCalendarSettings; endYear: number; startYear: number } | null {
+  for (const calendar of calendars) {
+    const range = extractChronicleRangeFromData(data, calendar.id);
+
+    if (range) return { ...range, calendar };
+  }
+
+  return null;
+}
+
+function extractChronicleRangeFromData(
+  data: Record<string, unknown>,
+  fieldName: ChronicleCalendarId
+): { endYear: number; startYear: number } | null {
+  const value = data[fieldName];
 
   if (!Array.isArray(value) || (value.length !== 1 && value.length !== 2)) return null;
   if (!value.every(isValidChronicleYear)) return null;
@@ -216,6 +256,25 @@ function isValidChronicleYear(value: unknown): value is number {
   return typeof value === "number" && Number.isInteger(value) && value !== 0;
 }
 
+function calendarById(
+  calendars: ChronicleCalendarSettings[],
+  id: ChronicleCalendarId
+): ChronicleCalendarSettings | null {
+  return calendars.find((calendar) => calendar.id === id) ?? null;
+}
+
+function calendarMainStartYear(calendar: ChronicleCalendarSettings): number {
+  return calendar.id === "chronicle0" ? 1 : calendar.startYear ?? 1;
+}
+
+function calendarYearToMainYear(calendar: ChronicleCalendarSettings, year: number): number {
+  return calendarMainStartYear(calendar) + year - 1;
+}
+
+function mainYearToCalendarYear(calendar: ChronicleCalendarSettings, mainYear: number): number {
+  return mainYear - calendarMainStartYear(calendar) + 1;
+}
+
 function normalizeDateValue(value: unknown): string | null {
   if (value instanceof Date) {
     return Number.isNaN(value.getTime()) ? null : value.toISOString().slice(0, 10);
@@ -235,4 +294,8 @@ function normalizeDateValue(value: unknown): string | null {
 
 function formatYear(year: number): string {
   return year < 0 ? `−${Math.abs(year)}` : String(year);
+}
+
+function formatCalendarYear(calendar: ChronicleCalendarSettings, year: number): string {
+  return `${calendar.name} ${formatYear(year)}`;
 }

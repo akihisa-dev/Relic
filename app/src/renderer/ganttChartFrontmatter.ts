@@ -56,7 +56,7 @@ function chartFrontmatterUpdates(yamlText: string, input: UpdateGanttChartEntryI
     const endDate = dayToDate(end);
     const dateField = input.dateKind === "actual" ? "actualDate" : "plannedDate";
     const updates: Record<string, string[]> = {
-      chronicle: rangeToStringArray(dateYear(startDate), dateYear(endDate)),
+      chronicle0: rangeToStringArray(dateYear(startDate), dateYear(endDate)),
       [dateField]: rangeToStringArray(startDate, endDate)
     };
 
@@ -69,8 +69,9 @@ function chartFrontmatterUpdates(yamlText: string, input: UpdateGanttChartEntryI
   const originalEndYear = axisToYear(input.originalEndValue);
   const startYear = axisToYear(start);
   const endYear = axisToYear(end);
+  const fieldName = input.chronicleCalendarId ?? "chronicle0";
   const updates: Record<string, string[]> = {
-    chronicle: rangeToStringArray(startYear, endYear)
+    [fieldName]: rangeToStringArray(startYear, endYear)
   };
 
   const shiftDateRange = (values: string[]): string[] | null => {

@@ -1,5 +1,5 @@
 import type { GanttChartDateKind, GanttChartEntry, GanttChartSource, WorkspaceGanttChart } from "../shared/ipc";
-import { dayToDate } from "../shared/chartTime";
+import { axisToYear, dayToDate } from "../shared/chartTime";
 import { fixedStatusValues } from "../shared/status";
 import { formatAxisValue } from "./chronicleTimelineAxis";
 import type { Translator } from "./i18n";
@@ -13,6 +13,7 @@ export interface ChartRow {
 }
 
 export interface DragPreview {
+  chronicleCalendarId?: GanttChartEntry["chronicleCalendarId"];
   dateKind?: GanttChartDateKind;
   endValue: number;
   path: string;
@@ -157,6 +158,13 @@ export function dateSummaryForRow(row: ChartRow, kind: GanttChartDateKind): stri
 }
 
 export function chronicleSummaryForRow(row: ChartRow): string {
+  if (row.entries.length === 1) {
+    const entry = row.entries[0];
+    if (entry.chronicleCalendarName) {
+      return entry.startLabel === entry.endLabel ? entry.startLabel : `${entry.startLabel}-${entry.endLabel}`;
+    }
+  }
+
   const start = Math.min(...row.entries.map((entry) => entry.startValue));
   const end = Math.max(...row.entries.map((entry) => entry.endValue));
   const startLabel = formatAxisValue(start, "chronicle");
@@ -178,6 +186,10 @@ export function dateKindPatch(entry: GanttChartEntry): { dateKind: GanttChartDat
   return entry.dateKind ? { dateKind: entry.dateKind } : {};
 }
 
+export function chronicleCalendarPatch(entry: GanttChartEntry): { chronicleCalendarId: NonNullable<GanttChartEntry["chronicleCalendarId"]> } | Record<string, never> {
+  return entry.chronicleCalendarId ? { chronicleCalendarId: entry.chronicleCalendarId } : {};
+}
+
 export function isPreviewForEntry(
   entry: GanttChartEntry,
   preview: DragPreview | null,
@@ -187,6 +199,7 @@ export function isPreviewForEntry(
     preview &&
       preview.path === entry.path &&
       preview.source === source &&
+      (preview.chronicleCalendarId ?? "chronicle0") === (entry.chronicleCalendarId ?? "chronicle0") &&
       (preview.dateKind ?? "planned") === (entry.dateKind ?? "planned")
   );
 }
@@ -195,15 +208,16 @@ export function previewEntryForDrag(entry: GanttChartEntry, preview: DragPreview
   if (
     !preview ||
     preview.path !== entry.path ||
+    (preview.chronicleCalendarId ?? "chronicle0") !== (entry.chronicleCalendarId ?? "chronicle0") ||
     (preview.dateKind ?? "planned") !== (entry.dateKind ?? "planned")
   ) return entry;
 
   const startLabel = preview.source === "date"
     ? dayToDate(preview.startValue)
-    : formatAxisValue(preview.startValue, "chronicle");
+    : formatEntryCalendarLabel(entry, preview.startValue);
   const endLabel = preview.source === "date"
     ? dayToDate(preview.endValue)
-    : formatAxisValue(preview.endValue, "chronicle");
+    : formatEntryCalendarLabel(entry, preview.endValue);
 
   return {
     ...entry,
@@ -212,6 +226,15 @@ export function previewEntryForDrag(entry: GanttChartEntry, preview: DragPreview
     startLabel,
     startValue: preview.startValue
   };
+}
+
+function formatEntryCalendarLabel(entry: GanttChartEntry, value: number): string {
+  const name = entry.chronicleCalendarName;
+  const startYear = entry.chronicleCalendarStartYear ?? 1;
+  const year = axisToYear(value) - startYear + 1;
+  const label = year < 0 ? `−${Math.abs(year)}` : String(year);
+
+  return name ? `${name} ${label}` : formatAxisValue(value, "chronicle");
 }
 
 export function formatDateKindLabel(kind: GanttChartDateKind | undefined, t: Translator): string {

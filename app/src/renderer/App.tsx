@@ -30,6 +30,7 @@ import { useSidebarFileInteractions } from "./hooks/useSidebarFileInteractions";
 import { useSplitCloseMotion } from "./hooks/useSplitCloseMotion";
 import { useWorkspaceAliases } from "./hooks/useWorkspaceAliases";
 import { useWorkspaceFileActions } from "./hooks/useWorkspaceFileActions";
+import { useWorkspaceChronicleCalendars } from "./hooks/useWorkspaceChronicleCalendars";
 import { useWorkspaceGanttCharts } from "./hooks/useWorkspaceGanttCharts";
 import { useWorkspaceRenameRailHold } from "./hooks/useWorkspaceRenameRailHold";
 import { useWorkspaceSearchState } from "./hooks/useWorkspaceSearchState";
@@ -177,6 +178,11 @@ export function App(): ReactElement {
     setWorkspaceError,
     tabs,
     updateTabContent,
+    workspaceState
+  });
+  const { chronicleCalendars, handleSaveChronicleCalendars } = useWorkspaceChronicleCalendars({
+    onSaved: () => { void reloadGanttCharts(); },
+    setWorkspaceError,
     workspaceState
   });
 
@@ -441,10 +447,12 @@ export function App(): ReactElement {
 
   const { renderGanttChartTab, renderPanelTab } = useAppTabRenderers({
     appInfo,
+    chronicleCalendars,
     editorSettings,
     featureToggles,
     ganttCharts,
     handleOpenFile,
+    handleSaveChronicleCalendars,
     handleSaveFeatureToggles,
     handleSaveSettings,
     handleSaveUserDefinedFields,

@@ -19,7 +19,7 @@ import {
   updateFileTabMetaState
 } from "./editorStoreModel";
 
-export type PanelTabKind = "tools" | "frontmatter" | "settings";
+export type PanelTabKind = "tools" | "frontmatter" | "chronicleSettings" | "settings";
 
 export interface FileTab {
   content: string;

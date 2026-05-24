@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   isFrontmatterTemplatesInput,
+  isChronicleCalendarsInput,
   isGanttChartsInput,
   isRenameWorkspaceInput,
   isUpdateGanttChartEntryInput,
@@ -14,6 +15,7 @@ describe("workspaceHandlerValidators", () => {
     expect(isUserDefinedFieldsInput([{ name: "date", type: "date" }])).toBe(true);
     expect(isUserDefinedFieldsInput([{ name: "rating", type: "number" }, { name: "rating", type: "text" }])).toBe(false);
     expect(isUserDefinedFieldsInput([{ name: "tags", type: "text" }])).toBe(false);
+    expect(isUserDefinedFieldsInput([{ name: "chronicle0", type: "number" }])).toBe(false);
     expect(isUserDefinedFieldsInput([{ name: "kind", type: "select", choices: ["a", "b"] }])).toBe(true);
     expect(isUserDefinedFieldsInput([{ name: "kind", type: "select", choices: [1] }])).toBe(false);
   });
@@ -50,6 +52,19 @@ describe("workspaceHandlerValidators", () => {
     })).toBe(false);
     expect(isFrontmatterTemplatesInput([{ fieldNames: ["status"], name: "Basic" }])).toBe(true);
     expect(isFrontmatterTemplatesInput([{ fieldNames: [], name: "Basic" }])).toBe(false);
+  });
+
+  it("validates chronicle calendar settings", () => {
+    expect(isChronicleCalendarsInput([
+      { id: "chronicle0", name: "Main" },
+      { id: "chronicle1", name: "Sub", startYear: 100 }
+    ])).toBe(true);
+    expect(isChronicleCalendarsInput([{ id: "chronicle1", name: "Sub", startYear: 100 }])).toBe(false);
+    expect(isChronicleCalendarsInput([{ id: "chronicle0", name: "" }])).toBe(false);
+    expect(isChronicleCalendarsInput([
+      { id: "chronicle0", name: "Main" },
+      { id: "chronicle1", name: "Sub", startYear: 0 }
+    ])).toBe(false);
   });
 
   it("validates workspace rename input", () => {

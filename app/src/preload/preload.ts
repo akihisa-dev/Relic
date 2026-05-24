@@ -14,6 +14,7 @@ import {
   getFrontmatterValueCandidatesChannel,
   getWorkspaceAliasesChannel,
   getWorkspaceChronicleChannel,
+  getWorkspaceChronicleCalendarsChannel,
   getWorkspaceTagsChannel,
   getWorkspaceStateChannel,
   workspaceChangedChannel,
@@ -29,6 +30,7 @@ import {
   replaceInFileChannel,
   revealWorkspaceItemChannel,
   saveWorkspaceGanttChartsChannel,
+  saveWorkspaceChronicleCalendarsChannel,
   updateGanttChartEntryChannel,
   saveEditorSettingsChannel,
   generateTitleListChannel,
@@ -60,6 +62,7 @@ import {
   type DuplicateMarkdownFileInput,
   type EditorSettings,
   type Backlink,
+  type ChronicleCalendarSettings,
   type GetBacklinksInput,
   type GanttChartSettings,
   type UpdateGanttChartEntryInput,
@@ -119,6 +122,8 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(getWorkspaceAliasesChannel) as Promise<RelicResult<AliasIndex>>,
   getWorkspaceChronicle: () =>
     ipcRenderer.invoke(getWorkspaceChronicleChannel) as Promise<RelicResult<WorkspaceGanttChart[]>>,
+  getWorkspaceChronicleCalendars: () =>
+    ipcRenderer.invoke(getWorkspaceChronicleCalendarsChannel) as Promise<RelicResult<ChronicleCalendarSettings[]>>,
   getFrontmatterValueCandidates: () =>
     ipcRenderer.invoke(getFrontmatterValueCandidatesChannel) as Promise<RelicResult<Record<string, string[]>>>,
   getWorkspaceTags: () =>
@@ -167,6 +172,8 @@ const relicApi: RelicApi = {
   writeMarkdownFile: (input: WriteMarkdownFileInput) =>
     ipcRenderer.invoke(writeMarkdownFileChannel, input) as Promise<RelicResult<void>>,
   writeClipboardText: (text: string) => clipboard.writeText(text),
+  saveWorkspaceChronicleCalendars: (input: ChronicleCalendarSettings[]) =>
+    ipcRenderer.invoke(saveWorkspaceChronicleCalendarsChannel, input) as Promise<RelicResult<ChronicleCalendarSettings[]>>,
   saveWorkspaceGanttCharts: (input: GanttChartSettings[]) =>
     ipcRenderer.invoke(saveWorkspaceGanttChartsChannel, input) as Promise<RelicResult<WorkspaceGanttChart[]>>,
   updateGanttChartEntry: (input: UpdateGanttChartEntryInput) =>

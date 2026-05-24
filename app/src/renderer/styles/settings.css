@@ -624,6 +624,41 @@
   grid-column: 1 / -1;
 }
 
+.chronicle-settings-page {
+  container-type: inline-size;
+}
+
+.chronicle-calendar-list {
+  display: grid;
+  gap: 8px;
+}
+
+.chronicle-calendar-row {
+  align-items: center;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 92px minmax(160px, 1fr) minmax(120px, 160px) auto;
+}
+
+.chronicle-calendar-row--main {
+  grid-template-columns: 92px minmax(160px, 1fr) minmax(150px, auto);
+}
+
+.chronicle-calendar-row > span:first-child {
+  color: var(--text-2);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.chronicle-calendar-row > span:last-child {
+  color: var(--text-2);
+  font-size: 12px;
+}
+
+.chronicle-calendar-start-input {
+  max-width: 160px;
+}
+
 @container (max-width: 640px) {
   .setting-row {
     align-items: start;
@@ -662,5 +697,16 @@
   .frontmatter-field-label {
     align-items: start;
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .chronicle-calendar-row,
+  .chronicle-calendar-row--main {
+    align-items: stretch;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .chronicle-calendar-row > span:first-child,
+  .chronicle-calendar-row > span:last-child {
+    min-height: 20px;
   }
 }

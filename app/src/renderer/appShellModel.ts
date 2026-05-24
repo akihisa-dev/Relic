@@ -37,6 +37,7 @@ export function openFilePathsForTabs(tabs: Record<string, Tab>): Set<string> {
 
 export function panelLabelsForTranslator(t: Translator): Record<PanelTabKind, string> {
   return {
+    chronicleSettings: t("nav.chronicleSettings"),
     frontmatter: t("nav.frontmatter"),
     settings: t("nav.settings"),
     tools: t("nav.tools")

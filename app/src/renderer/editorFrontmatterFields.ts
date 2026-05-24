@@ -1,6 +1,6 @@
 import { EditorView } from "@codemirror/view";
 
-import type { UserDefinedField } from "../shared/ipc";
+import { chronicleCalendarIds, type ChronicleCalendarId, type UserDefinedField } from "../shared/ipc";
 import { fixedStatusValues } from "../shared/status";
 
 export type FrontmatterDialogRequest =
@@ -9,14 +9,14 @@ export type FrontmatterDialogRequest =
 
 export const frontmatterDialogRequestEvent = "relic-frontmatter-dialog-request";
 export const frontmatterFieldNamePattern = /^[^#\s:][^\r\n:]*$/;
-export const fixedFrontmatterFieldNames = ["aliases", "tags", "status", "chronicle", "plannedDate", "actualDate"];
+export const fixedFrontmatterFieldNames = ["aliases", "tags", "status", ...chronicleCalendarIds, "plannedDate", "actualDate"];
 
 export function isFixedDateRangeField(key: string): boolean {
   return key === "plannedDate" || key === "actualDate";
 }
 
 export function shouldSerializeArrayAsFlowSequence(key: string, field?: UserDefinedField): boolean {
-  return isFixedDateRangeField(key) || key === "aliases" || key === "tags" || key === "chronicle" || Boolean(field);
+  return isFixedDateRangeField(key) || key === "aliases" || key === "tags" || isChronicleField(key) || Boolean(field);
 }
 
 export function isSingleValueField(field?: UserDefinedField): boolean {
@@ -34,8 +34,13 @@ export function isEditableScalar(value: unknown): boolean {
 export function fieldFor(key: string, userDefinedFields: UserDefinedField[]): UserDefinedField | undefined {
   if (key === "aliases" || key === "tags") return { name: key, type: "multi-select" };
   if (key === "status") return { name: key, type: "select", choices: [...fixedStatusValues] };
+  if (isChronicleField(key)) return { name: key, type: "number" };
   if (isFixedDateRangeField(key)) return { name: key, type: "date" };
   return userDefinedFields.find((field) => field.name === key);
+}
+
+export function isChronicleField(key: string): key is ChronicleCalendarId {
+  return chronicleCalendarIds.includes(key as ChronicleCalendarId);
 }
 
 export function choicesFor(

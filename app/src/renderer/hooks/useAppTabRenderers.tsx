@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 
 import type {
   AppInfo,
+  ChronicleCalendarSettings,
   EditorSettings,
   FeatureToggles,
   UpdateGanttChartEntryInput,
@@ -11,6 +12,7 @@ import type {
   WorkspaceState
 } from "../../shared/ipc";
 import { GanttChartView } from "../components/ChronicleSidebar";
+import { ChronicleSettingsPanel } from "../components/ChronicleSettingsPanel";
 import { FrontmatterSidebar } from "../components/FrontmatterSidebar";
 import { SettingsSidebar } from "../components/SettingsSidebar";
 import { ToolsSidebar } from "../components/ToolsSidebar";
@@ -18,11 +20,13 @@ import type { PanelTabKind } from "../store/editorStore";
 
 interface UseAppTabRenderersInput {
   appInfo: AppInfo | null;
+  chronicleCalendars: ChronicleCalendarSettings[];
   editorSettings: EditorSettings;
   featureToggles: FeatureToggles;
   ganttCharts: WorkspaceGanttChart[];
   handleOpenFile: (path: string) => void;
   handleSaveFeatureToggles: (toggles: FeatureToggles) => void;
+  handleSaveChronicleCalendars: (calendars: ChronicleCalendarSettings[]) => void;
   handleSaveSettings: (settings: EditorSettings) => void;
   handleSaveUserDefinedFields: (fields: UserDefinedField[]) => void;
   handleUpdateGanttChartEntry: (input: UpdateGanttChartEntryInput) => Promise<void> | void;
@@ -32,11 +36,13 @@ interface UseAppTabRenderersInput {
 
 export function useAppTabRenderers({
   appInfo,
+  chronicleCalendars,
   editorSettings,
   featureToggles,
   ganttCharts,
   handleOpenFile,
   handleSaveFeatureToggles,
+  handleSaveChronicleCalendars,
   handleSaveSettings,
   handleSaveUserDefinedFields,
   handleUpdateGanttChartEntry,
@@ -69,6 +75,15 @@ export function useAppTabRenderers({
       );
     }
 
+    if (panel === "chronicleSettings") {
+      return (
+        <ChronicleSettingsPanel
+          calendars={chronicleCalendars}
+          onSave={handleSaveChronicleCalendars}
+        />
+      );
+    }
+
     return (
       <SettingsSidebar
         appInfo={appInfo}
@@ -80,10 +95,12 @@ export function useAppTabRenderers({
     );
   }, [
     appInfo,
+    chronicleCalendars,
     editorSettings,
     featureToggles,
     handleOpenFile,
     handleSaveFeatureToggles,
+    handleSaveChronicleCalendars,
     handleSaveSettings,
     handleSaveUserDefinedFields,
     userDefinedFields,

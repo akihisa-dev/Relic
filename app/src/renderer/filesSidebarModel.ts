@@ -1,11 +1,11 @@
-import type { SearchMode, UserDefinedField } from "../shared/ipc";
+import { chronicleCalendarIds, type SearchMode, type UserDefinedField } from "../shared/ipc";
 import type { Translator } from "./i18n";
 
 const fixedFrontmatterSearchFields = [
   "tags",
   "aliases",
   "status",
-  "chronicle",
+  ...chronicleCalendarIds,
   "plannedDate",
   "actualDate"
 ];

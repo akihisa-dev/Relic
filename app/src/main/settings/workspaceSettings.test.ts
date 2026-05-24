@@ -4,6 +4,7 @@ import path from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
+import { defaultChronicleCalendars } from "../../shared/ipc";
 import {
   defaultGanttCharts,
   getWorkspaceSettingsPath,
@@ -27,6 +28,7 @@ describe("workspaceSettings", () => {
     const settings = await readWorkspaceSettings(userDataPath, "workspace-id");
 
     expect(settings.pinnedPaths).toEqual([]);
+    expect(settings.chronicleCalendars).toEqual(defaultChronicleCalendars);
     expect(settings.ganttCharts).toEqual(defaultGanttCharts);
     expect(settings.workspacePath).toBe("");
   });
@@ -36,6 +38,10 @@ describe("workspaceSettings", () => {
     temporaryPaths.push(userDataPath);
 
     await writeWorkspaceSettings(userDataPath, "ws-1", {
+      chronicleCalendars: [
+        { id: "chronicle0", name: "王国暦" },
+        { id: "chronicle1", name: "帝国暦", startYear: 100 }
+      ],
       ganttCharts: [
         { filePaths: ["history/kamakura.md"], id: "chronicle", name: "歴史", source: "chronicle" },
         { filePaths: [], id: "schedule", name: "予定", source: "date" }
@@ -45,6 +51,10 @@ describe("workspaceSettings", () => {
     });
 
     const settings = await readWorkspaceSettings(userDataPath, "ws-1");
+    expect(settings.chronicleCalendars).toEqual([
+      { id: "chronicle0", name: "王国暦" },
+      { id: "chronicle1", name: "帝国暦", startYear: 100 }
+    ]);
     expect(settings.ganttCharts).toEqual([
       { filePaths: ["history/kamakura.md"], id: "chronicle", name: "chronicle", source: "chronicle" },
       { filePaths: [], id: "date", name: "date", source: "date" }

@@ -593,6 +593,40 @@ describe("App", () => {
     expect(useEditorStore.getState().tabs["panel-frontmatter"]).toBeDefined();
   });
 
+  it("レールの暦設定ボタンから専用設定を開ける", async () => {
+    window.relic = makeRelicApi({
+      getWorkspaceChronicleCalendars: vi.fn().mockResolvedValue({
+        ok: true,
+        value: [
+          { id: "chronicle0", name: "王国暦" },
+          { id: "chronicle1", name: "帝国暦", startYear: 100 }
+        ]
+      }),
+      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
+    });
+
+    await renderApp();
+
+    await screen.findByText("Notes");
+
+    fireEvent.click(screen.getByRole("button", { name: "暦設定" }));
+
+    const activeTabId = useEditorStore.getState().leftPane.activeTabId;
+    expect(activeTabId).toBe("panel-chronicleSettings");
+    expect(useEditorStore.getState().tabs[activeTabId!]).toMatchObject({
+      kind: "panel",
+      panel: "chronicleSettings"
+    });
+    expect(screen.getByRole("button", { name: "暦設定" })).toHaveClass("active");
+    expect(screen.getByDisplayValue("王国暦")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("帝国暦")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "暦設定" }));
+
+    expect(useEditorStore.getState().leftPane.activeTabId).toBe("panel-chronicleSettings");
+    expect(useEditorStore.getState().tabs["panel-chronicleSettings"]).toBeDefined();
+  });
+
   it("レールのチャートボタンからchronicleを持つファイルを表示できる", async () => {
     const updateGanttChartEntry = vi.fn().mockResolvedValue({ ok: true, value: [] });
 
@@ -618,7 +652,7 @@ describe("App", () => {
       readMarkdownFile: vi.fn().mockResolvedValue({
         ok: true,
         value: {
-          content: "---\nchronicle: [1186, 1334]\n---\n# 鎌倉時代",
+          content: "---\nchronicle0: [1186, 1334]\n---\n# 鎌倉時代",
           name: "鎌倉時代",
           path: "history/kamakura.md"
         }
@@ -714,7 +748,7 @@ describe("App", () => {
       readMarkdownFile: vi.fn().mockResolvedValue({
         ok: true,
         value: {
-          content: "---\nchronicle: [1210, 1358]\n---\n# 鎌倉時代",
+          content: "---\nchronicle0: [1210, 1358]\n---\n# 鎌倉時代",
           name: "鎌倉時代",
           path: "history/kamakura.md"
         }
@@ -782,7 +816,7 @@ describe("App", () => {
       readMarkdownFile: vi.fn().mockResolvedValue({
         ok: true,
         value: {
-          content: "---\nchronicle: [1210, 1358]\n---\n# 鎌倉時代",
+          content: "---\nchronicle0: [1210, 1358]\n---\n# 鎌倉時代",
           name: "鎌倉時代",
           path: "history/kamakura.md"
         }
@@ -1141,7 +1175,7 @@ describe("App", () => {
     const readMarkdownFile = vi.fn().mockResolvedValue({
       ok: true,
       value: {
-        content: "---\nchronicle: [2026]\nplannedDate: [2026-05-01, 2026-05-05]\n---\n# 実装タスク",
+        content: "---\nchronicle0: [2026]\nplannedDate: [2026-05-01, 2026-05-05]\n---\n# 実装タスク",
         name: "実装タスク",
         path: "tasks/implementation.md"
       }
@@ -1191,7 +1225,7 @@ describe("App", () => {
     window.dispatchEvent(pointerUp);
 
     await waitFor(() => expect(writeMarkdownFile).toHaveBeenCalledWith({
-      content: "---\nchronicle: [2026]\nplannedDate: [2026-05-02, 2026-05-06]\n---\n# 実装タスク",
+      content: "---\nchronicle0: [2026]\nplannedDate: [2026-05-02, 2026-05-06]\n---\n# 実装タスク",
       path: "tasks/implementation.md"
     }));
   });

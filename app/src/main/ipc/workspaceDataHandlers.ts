@@ -4,7 +4,9 @@ import {
   getFrontmatterValueCandidatesChannel,
   getWorkspaceAliasesChannel,
   getWorkspaceChronicleChannel,
+  getWorkspaceChronicleCalendarsChannel,
   getWorkspaceTagsChannel,
+  saveWorkspaceChronicleCalendarsChannel,
   saveWorkspaceGanttChartsChannel,
   updateGanttChartEntryChannel
 } from "../../shared/ipc";
@@ -16,6 +18,7 @@ import { readWorkspaceTags } from "../files/tags";
 import { readWorkspaceSettings, writeWorkspaceSettings } from "../settings/workspaceSettings";
 import { getActiveWorkspaceContext, ipcErrorDetails } from "./activeWorkspace";
 import {
+  isChronicleCalendarsInput,
   isGanttChartsInput,
   isUpdateGanttChartEntryInput
 } from "./workspaceHandlerValidators";
@@ -75,7 +78,7 @@ export function registerWorkspaceDataHandlers(): void {
         context.value.userDataPath,
         context.value.activeWorkspace.id
       );
-      return readWorkspaceChronicle(context.value.activeWorkspace.path, workspaceSettings.ganttCharts);
+      return readWorkspaceChronicle(context.value.activeWorkspace.path, workspaceSettings.ganttCharts, workspaceSettings.chronicleCalendars);
     } catch (error) {
       return fail(
         "WORKSPACE_CHRONICLE_FAILED",
@@ -108,11 +111,62 @@ export function registerWorkspaceDataHandlers(): void {
         }))
       });
 
-      return readWorkspaceChronicle(context.value.activeWorkspace.path, input);
+      return readWorkspaceChronicle(context.value.activeWorkspace.path, input, workspaceSettings.chronicleCalendars);
     } catch (error) {
       return fail(
         "WORKSPACE_GANTT_SAVE_FAILED",
         "年表設定を保存できませんでした。",
+        ipcErrorDetails(error)
+      );
+    }
+  });
+
+  ipcMain.handle(getWorkspaceChronicleCalendarsChannel, async () => {
+    try {
+      const context = await getActiveWorkspaceContext();
+      if (!context.ok) return context;
+
+      const workspaceSettings = await readWorkspaceSettings(
+        context.value.userDataPath,
+        context.value.activeWorkspace.id
+      );
+      return { ok: true as const, value: workspaceSettings.chronicleCalendars };
+    } catch (error) {
+      return fail(
+        "WORKSPACE_CHRONICLE_CALENDARS_FAILED",
+        "暦設定を読み込めませんでした。",
+        ipcErrorDetails(error)
+      );
+    }
+  });
+
+  ipcMain.handle(saveWorkspaceChronicleCalendarsChannel, async (_event, input: unknown) => {
+    try {
+      if (!isChronicleCalendarsInput(input)) {
+        return fail("INVALID_CHRONICLE_CALENDARS", "暦設定が正しくありません。");
+      }
+
+      const context = await getActiveWorkspaceContext();
+      if (!context.ok) return context;
+
+      const workspaceSettings = await readWorkspaceSettings(
+        context.value.userDataPath,
+        context.value.activeWorkspace.id
+      );
+      await writeWorkspaceSettings(context.value.userDataPath, context.value.activeWorkspace.id, {
+        ...workspaceSettings,
+        chronicleCalendars: input.map((calendar) => ({
+          id: calendar.id,
+          name: calendar.name.trim(),
+          ...(calendar.id === "chronicle0" ? {} : { startYear: calendar.startYear })
+        }))
+      });
+
+      return { ok: true as const, value: input };
+    } catch (error) {
+      return fail(
+        "WORKSPACE_CHRONICLE_CALENDARS_SAVE_FAILED",
+        "暦設定を保存できませんでした。",
         ipcErrorDetails(error)
       );
     }
@@ -131,7 +185,12 @@ export function registerWorkspaceDataHandlers(): void {
         context.value.userDataPath,
         context.value.activeWorkspace.id
       );
-      return updateWorkspaceGanttChartEntry(context.value.activeWorkspace.path, workspaceSettings.ganttCharts, input);
+      return updateWorkspaceGanttChartEntry(
+        context.value.activeWorkspace.path,
+        workspaceSettings.ganttCharts,
+        input,
+        workspaceSettings.chronicleCalendars
+      );
     } catch (error) {
       return fail(
         "GANTT_ENTRY_UPDATE_FAILED",

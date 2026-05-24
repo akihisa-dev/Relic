@@ -169,25 +169,25 @@ describe("ganttChartData", () => {
 
   it("dateバー更新ではplannedDateだけを既存文字列形式で更新する", () => {
     expect(updateChartFrontmatter(
-      "---\nchronicle: [2026]\nplannedDate: [2026-05-01, 2026-05-05]\n---\n# 実装タスク",
+      "---\nchronicle0: [2026]\nplannedDate: [2026-05-01, 2026-05-05]\n---\n# 実装タスク",
       dateEditInput()
     )).toBe(
-      "---\nchronicle: [2026]\nplannedDate: [2026-05-02, 2026-05-06]\n---\n# 実装タスク"
+      "---\nchronicle0: [2026]\nplannedDate: [2026-05-02, 2026-05-06]\n---\n# 実装タスク"
     );
   });
 
   it("chronicleバー更新では date 系フィールドを年差分で連動更新する", () => {
     expect(updateChartFrontmatter(
-      "---\nchronicle: [2026]\nplannedDate: [2026-02-28]\nactualDate: [2026-03-01, 2026-03-02]\n---\n# 実装タスク",
+      "---\nchronicle0: [2026]\nplannedDate: [2026-02-28]\nactualDate: [2026-03-01, 2026-03-02]\n---\n# 実装タスク",
       chronicleEditInput()
     )).toBe(
-      "---\nchronicle: [2027]\nplannedDate: [2027-02-28]\nactualDate: [2027-03-01, 2027-03-02]\n---\n# 実装タスク"
+      "---\nchronicle0: [2027]\nplannedDate: [2027-02-28]\nactualDate: [2027-03-01, 2027-03-02]\n---\n# 実装タスク"
     );
   });
 
   it("frontmatter がないファイルにも既存形式の chart frontmatter を追加する", () => {
     expect(updateChartFrontmatter("# 実装タスク", dateEditInput())).toBe(
-      "---\nchronicle: [2026]\nplannedDate: [2026-05-02, 2026-05-06]\n---\n# 実装タスク"
+      "---\nchronicle0: [2026]\nplannedDate: [2026-05-02, 2026-05-06]\n---\n# 実装タスク"
     );
   });
 
@@ -216,7 +216,7 @@ describe("ganttChartData", () => {
       writeMarkdownFile
     })).resolves.toEqual({ ok: true, value: charts });
     expect(writeMarkdownFile).toHaveBeenCalledWith({
-      content: "---\nchronicle: [2026]\nplannedDate: [2026-05-02, 2026-05-06]\n---\n# 実装タスク",
+      content: "---\nchronicle: [2026]\nplannedDate: [2026-05-02, 2026-05-06]\nchronicle0: [2026]\n---\n# 実装タスク",
       path: "tasks/implementation.md"
     });
   });

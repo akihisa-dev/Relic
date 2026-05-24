@@ -24,6 +24,7 @@ describe("paneViewModel", () => {
     const ganttTab: Tab = { chartId: "chronicle", id: "gantt-chronicle", kind: "gantt", name: "Chronicle" };
 
     expect(panelTabLabel("frontmatter", t)).toBe("Frontmatter");
+    expect(panelTabLabel("chronicleSettings", t)).toBe("Calendar Settings");
     expect(panelTabLabel("settings", t)).toBe("Settings");
     expect(panelTabLabel("tools", t)).toBe("Tools");
     expect(paneTabLabel(panelTab, t)).toBe("Frontmatter");
