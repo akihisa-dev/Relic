@@ -1,7 +1,7 @@
 import { StateEffect, StateField, type EditorState } from "@codemirror/state";
 import { Decoration, EditorView, WidgetType, type DecorationSet } from "@codemirror/view";
 
-import type { UserDefinedField } from "../shared/ipc";
+import type { FrontmatterDateFormat, UserDefinedField } from "../shared/ipc";
 import { setEditorEditable } from "./editorEditable";
 import {
   findFrontmatterBlock,
@@ -35,7 +35,8 @@ class FrontmatterPropertiesWidget extends WidgetType {
     private readonly candidates: Record<string, string[]>,
     private readonly lineNumber: number,
     private readonly collapsed: boolean,
-    private readonly t: Translator
+    private readonly t: Translator,
+    private readonly dateFormat: FrontmatterDateFormat
   ) {
     super();
   }
@@ -45,7 +46,8 @@ class FrontmatterPropertiesWidget extends WidgetType {
       this.block.to === other.block.to &&
       JSON.stringify(this.block.data) === JSON.stringify(other.block.data) &&
       this.lineNumber === other.lineNumber &&
-      this.collapsed === other.collapsed;
+      this.collapsed === other.collapsed &&
+      this.dateFormat === other.dateFormat;
   }
 
   toDOM(view: EditorView): HTMLElement {
@@ -74,7 +76,8 @@ class FrontmatterPropertiesWidget extends WidgetType {
         t: this.t,
         updateField: (editorView, key, value) => this.updateField(editorView, key, value),
         userDefinedFields: this.userDefinedFields,
-        view
+        view,
+        dateFormat: this.dateFormat
       });
       if (row) {
         wrapper.append(row);
@@ -129,7 +132,8 @@ export function buildFrontmatterPropertiesDecorations(
   state: EditorState,
   userDefinedFields: UserDefinedField[] = [],
   candidates: Record<string, string[]> = {},
-  t: Translator
+  t: Translator,
+  dateFormat: FrontmatterDateFormat
 ): DecorationSet {
   const block = findFrontmatterBlock(state);
   if (!block) return Decoration.none;
@@ -138,7 +142,7 @@ export function buildFrontmatterPropertiesDecorations(
   const ranges: { from: number; to: number; deco: Decoration }[] = [];
   for (let lineNumber = block.startLine; lineNumber <= block.endLine; lineNumber += 1) {
     const line = state.doc.line(lineNumber);
-    const widget = new FrontmatterPropertiesWidget(block, userDefinedFields, candidates, lineNumber, collapsed, t);
+    const widget = new FrontmatterPropertiesWidget(block, userDefinedFields, candidates, lineNumber, collapsed, t, dateFormat);
     ranges.push({
       from: line.from,
       to: line.to,
@@ -165,15 +169,17 @@ export function buildFrontmatterPropertiesDecorations(
 export function createFrontmatterPropertiesField(
   userDefinedFields: UserDefinedField[],
   candidates: Record<string, string[]>,
-  t: Translator
+  t: Translator,
+  dateFormat: FrontmatterDateFormat
 ): StateField<DecorationSet> {
   return StateField.define<DecorationSet>({
-    create: (state) => buildFrontmatterPropertiesDecorations(state, userDefinedFields, candidates, t),
+    create: (state) => buildFrontmatterPropertiesDecorations(state, userDefinedFields, candidates, t, dateFormat),
     update: (_decorations, transaction) => buildFrontmatterPropertiesDecorations(
       transaction.state,
       userDefinedFields,
       candidates,
-      t
+      t,
+      dateFormat
     ),
     provide: (field) => EditorView.decorations.from(field)
   });

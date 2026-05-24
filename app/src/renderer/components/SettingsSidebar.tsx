@@ -143,6 +143,20 @@ export function SettingsSidebar({
               type="checkbox"
             />
           </label>
+          <div className="setting-row">
+            <span>{t("settings.frontmatterDateFormat")}</span>
+            <SettingsSegmentedControl
+              ariaLabel={t("settings.frontmatterDateFormat")}
+              onChange={(value) => update("frontmatterDateFormat", value)}
+              options={[
+                { label: t("settings.frontmatterDateFormatYmd"), value: "ymd" },
+                { label: t("settings.frontmatterDateFormatMdy"), value: "mdy" },
+                { label: t("settings.frontmatterDateFormatDmy"), value: "dmy" },
+                { label: t("settings.frontmatterDateFormatSystem"), value: "system" }
+              ]}
+              value={draft.frontmatterDateFormat}
+            />
+          </div>
         </div>
       </section>
 

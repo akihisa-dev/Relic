@@ -169,7 +169,7 @@ export function buildExtensions(
     ...(settings.showLineNumbers ? [lineNumbers()] : []),
     ...(typewriterMode ? [typewriterExtension] : []),
     ...(!sourceMode ? [
-      createFrontmatterPropertiesField(userDefinedFields, frontmatterCandidates, t),
+      createFrontmatterPropertiesField(userDefinedFields, frontmatterCandidates, t, settings.frontmatterDateFormat),
       createLivePreviewTableField(t),
       createLivePreviewPlugin(onOpenLinkRef, onOpenWikiLinkRef)
     ] : [])

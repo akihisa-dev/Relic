@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  formatDateForInput,
+  inputPlaceholderForDateFormat,
   parseChronicleYearInput,
   parseDateInput,
+  parseDateInputForFormat,
   serializeData,
   serializeDataPreservingYaml,
   type FrontmatterBlock
@@ -69,6 +72,18 @@ describe("editorFrontmatterModel", () => {
     expect(parseDateInput("2026-02-30")).toBeNull();
     expect(parseDateInput("2026-5-20")).toBeNull();
     expect(parseDateInput("not-date")).toBeNull();
+  });
+
+  it("フロントマター日付入力は設定した表示順で表示し、保存用にはYYYY-MM-DDへ戻す", () => {
+    expect(formatDateForInput("2026-05-20", "ymd")).toBe("2026-05-20");
+    expect(formatDateForInput("2026-05-20", "mdy")).toBe("05/20/2026");
+    expect(formatDateForInput("2026-05-20", "dmy")).toBe("20/05/2026");
+    expect(formatDateForInput("2026-05-20", "system")).toBe("2026-05-20");
+    expect(parseDateInputForFormat("05/20/2026", "mdy")).toBe("2026-05-20");
+    expect(parseDateInputForFormat("20/05/2026", "dmy")).toBe("2026-05-20");
+    expect(parseDateInputForFormat("2026-05-20", "mdy")).toBe("2026-05-20");
+    expect(parseDateInputForFormat("20/05/2026", "ymd")).toBeNull();
+    expect(inputPlaceholderForDateFormat("mdy")).toBe("MM/DD/YYYY");
   });
 
   it("chronicle入力は0以外の整数だけ受け付ける", () => {

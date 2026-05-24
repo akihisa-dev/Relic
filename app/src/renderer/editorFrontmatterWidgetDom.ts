@@ -1,6 +1,6 @@
 import { EditorView } from "@codemirror/view";
 
-import type { UserDefinedField } from "../shared/ipc";
+import type { FrontmatterDateFormat, UserDefinedField } from "../shared/ipc";
 import {
   fieldFor,
   findTopLevelYamlFieldEntries,
@@ -88,10 +88,12 @@ export function frontmatterRowForLine({
   t,
   updateField,
   userDefinedFields,
-  view
+  view,
+  dateFormat
 }: {
   block: FrontmatterBlock;
   candidates: Record<string, string[]>;
+  dateFormat: FrontmatterDateFormat;
   lineNumber: number;
   t: Translator;
   updateField: FrontmatterFieldUpdater;
@@ -108,6 +110,7 @@ export function frontmatterRowForLine({
 
   return createFrontmatterRow({
     candidates,
+    dateFormat,
     key: entry.key,
     t,
     updateField,
@@ -124,9 +127,11 @@ function createFrontmatterRow({
   updateField,
   userDefinedFields,
   value,
-  view
+  view,
+  dateFormat
 }: {
   candidates: Record<string, string[]>;
+  dateFormat: FrontmatterDateFormat;
   key: string;
   t: Translator;
   updateField: FrontmatterFieldUpdater;
@@ -148,6 +153,7 @@ function createFrontmatterRow({
   const field = fieldFor(key, userDefinedFields);
   const input = createFrontmatterValueInput({
     candidates,
+    dateFormat,
     field,
     key,
     t,

@@ -1,6 +1,6 @@
 import { EditorView } from "@codemirror/view";
 
-import { chronicleCalendarIds, type ChronicleCalendarId, type UserDefinedField } from "../shared/ipc";
+import { chronicleCalendarIds, type ChronicleCalendarId, type FrontmatterDateFormat, type UserDefinedField } from "../shared/ipc";
 import { fixedStatusValues } from "../shared/status";
 
 export type FrontmatterDialogRequest =
@@ -70,7 +70,7 @@ export function availableFieldNames(
 }
 
 export function inputTypeFor(field?: UserDefinedField): string {
-  if (field?.type === "date") return "date";
+  if (field?.type === "date") return "text";
   if (field?.type === "datetime") return "datetime-local";
   if (field?.type === "time") return "time";
   if (field?.type === "number") return "number";
@@ -118,6 +118,35 @@ export function parseDateInput(value: string): string | null {
 export function dateInputValue(value: unknown): string {
   if (value instanceof Date) return value.toISOString().slice(0, 10);
   return typeof value === "string" && parseDateInput(value) !== null ? value : "";
+}
+
+export function formatDateForInput(value: string, format: FrontmatterDateFormat): string {
+  const normalized = parseDateInput(value);
+  if (normalized === null) return "";
+  if (format === "mdy") return `${normalized.slice(5, 7)}/${normalized.slice(8, 10)}/${normalized.slice(0, 4)}`;
+  if (format === "dmy") return `${normalized.slice(8, 10)}/${normalized.slice(5, 7)}/${normalized.slice(0, 4)}`;
+  return normalized;
+}
+
+export function parseDateInputForFormat(value: string, format: FrontmatterDateFormat): string | null {
+  const trimmed = value.trim();
+  const isoValue = parseDateInput(trimmed);
+  if (isoValue !== null) return isoValue;
+  if (format === "system" || format === "ymd") return null;
+
+  const match = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(trimmed);
+  if (!match) return null;
+
+  const [, first, second, year] = match;
+  const month = format === "mdy" ? first : second;
+  const day = format === "mdy" ? second : first;
+  return parseDateInput(`${year}-${month}-${day}`);
+}
+
+export function inputPlaceholderForDateFormat(format: FrontmatterDateFormat): string {
+  if (format === "mdy") return "MM/DD/YYYY";
+  if (format === "dmy") return "DD/MM/YYYY";
+  return "YYYY-MM-DD";
 }
 
 export function requestFrontmatterDialog(view: EditorView, detail: FrontmatterDialogRequest): void {
