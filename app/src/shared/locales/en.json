@@ -226,6 +226,8 @@
   "settings.fieldTypeTimeDescription": "For times without a date, such as start or end times.",
   "chronicleSettings.addSubCalendar": "Add sub-calendar",
   "chronicleSettings.calendarName": "Calendar name",
+  "chronicleSettings.conversionPreview": "{{subName}} year 1 = {{mainName}} year {{startYear}}",
+  "chronicleSettings.conversionPreviewUnavailable": "Enter a start year to preview the conversion.",
   "chronicleSettings.mainCalendar": "Main calendar",
   "chronicleSettings.mainStartsAtOne": "Starts at year 1",
   "chronicleSettings.noSubCalendars": "No sub-calendars yet.",

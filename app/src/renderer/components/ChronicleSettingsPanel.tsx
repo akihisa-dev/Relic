@@ -121,6 +121,9 @@ export function ChronicleSettingsPanel({
                 >
                   {t("common.delete")}
                 </button>
+                <div className="chronicle-calendar-preview">
+                  {previewForSubCalendar(t, mainDraft, draft)}
+                </div>
               </div>
             ))}
           </div>
@@ -164,4 +167,22 @@ function parseDrafts(drafts: ChronicleCalendarDraft[]): ChronicleCalendarSetting
   }
 
   return parsed.sort((a, b) => chronicleCalendarIds.indexOf(a.id) - chronicleCalendarIds.indexOf(b.id));
+}
+
+function previewForSubCalendar(
+  t: ReturnType<typeof useT>,
+  mainDraft: ChronicleCalendarDraft,
+  draft: ChronicleCalendarDraft
+): string {
+  const startYear = Number(draft.startYear);
+
+  if (!Number.isInteger(startYear) || startYear < 1) {
+    return t("chronicleSettings.conversionPreviewUnavailable");
+  }
+
+  return t("chronicleSettings.conversionPreview", {
+    mainName: mainDraft.name.trim() || t("chronicleSettings.mainCalendar"),
+    startYear,
+    subName: draft.name.trim() || draft.id
+  });
 }
