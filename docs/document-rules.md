@@ -26,7 +26,7 @@
 | `features/` | 機能の振る舞い・詳細仕様 |
 | `design/` | 画面構成、画面遷移、デザインシステム |
 | `engineering/` | アーキテクチャ、データモデル、技術選定、設計判断 |
-| `development/` | フェーズ管理、開発規約、未決定事項、テスト方針 |
+| `development/` | フェーズ管理、開発規約、未決定事項、テスト方針、バージョン管理 |
 
 新しいドキュメントを作る前に [development/phases.md](development/phases.md) と [INDEX.md](INDEX.md) を確認し、既存文書への追記で足りるか判断する。
 新規ファイルを作成したら [INDEX.md](INDEX.md) のドキュメントマップに追記する。
