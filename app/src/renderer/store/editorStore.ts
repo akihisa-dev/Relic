@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-import { defaultEditorSettings, type EditorSettings, type MarkdownCardContent } from "../../shared/ipc";
+import { defaultEditorSettings, type EditorSettings, type MarkdownFileContent } from "../../shared/ipc";
 import {
   closeAllTabsInPaneState,
   closeAllTabsState,
@@ -9,23 +9,23 @@ import {
   closeTabsToRightState,
   emptyPane,
   moveTabState,
-  openCardTabState,
-  openTimelineTabState,
+  openFileTabState,
+  openGanttTabState,
   openPanelTabState,
   setTabActiveState,
   toggleTabPinnedState,
   toggleSplitState,
-  updateCardTabContentState,
-  updateCardTabMetaState
+  updateFileTabContentState,
+  updateFileTabMetaState
 } from "./editorStoreModel";
 
-export type PanelTabKind = "tools" | "frontmatter" | "calendar-settings" | "settings";
+export type PanelTabKind = "tools" | "frontmatter" | "settings";
 
-export interface CardTab {
+export interface FileTab {
   content: string;
   id: string;
   isPinned?: boolean;
-  kind: "card";
+  kind: "file";
   name: string;
   path: string;
 }
@@ -38,15 +38,15 @@ export interface PanelTab {
   panel: PanelTabKind;
 }
 
-export interface TimelineTab {
+export interface GanttTab {
   chartId: string;
   id: string;
   isPinned?: boolean;
-  kind: "timeline";
+  kind: "gantt";
   name: string;
 }
 
-export type Tab = CardTab | TimelineTab | PanelTab;
+export type Tab = FileTab | GanttTab | PanelTab;
 export type PaneId = "left" | "right";
 
 export interface PaneState {
@@ -68,8 +68,8 @@ interface EditorStore {
   closeTabsToRight: (pane: PaneId, tabId: string) => void;
   closeAllTabsInPane: (pane: PaneId) => void;
   moveTab: (fromPane: PaneId, toPane: PaneId, tabId: string, targetTabId?: string | null, position?: "before" | "after") => void;
-  openCardInPane: (pane: PaneId, card: MarkdownCardContent) => void;
-  openTimelineChartInPane: (pane: PaneId, chart: { id: string; name: string }) => void;
+  openFileInPane: (pane: PaneId, file: MarkdownFileContent) => void;
+  openGanttChartInPane: (pane: PaneId, chart: { id: string; name: string }) => void;
   openPanelInPane: (pane: PaneId, panel: PanelTabKind, name: string) => void;
   setEditorSettings: (settings: EditorSettings) => void;
   setFocusedPane: (pane: PaneId) => void;
@@ -77,7 +77,7 @@ interface EditorStore {
   toggleTabPinned: (tabId: string) => void;
   toggleSplit: () => void;
   updateTabContent: (tabId: string, content: string) => void;
-  updateTabMeta: (tabId: string, meta: Pick<CardTab, "name" | "path">) => void;
+  updateTabMeta: (tabId: string, meta: Pick<FileTab, "name" | "path">) => void;
   closeAllTabs: () => void;
 }
 
@@ -89,10 +89,10 @@ export const useEditorStore = create<EditorStore>((set) => ({
   rightPane: emptyPane(),
   tabs: {},
 
-  openCardInPane: (pane, card) => {
+  openFileInPane: (pane, file) => {
     const id = `tab-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     set((state) => {
-      return openCardTabState(state, pane, card, id);
+      return openFileTabState(state, pane, file, id);
     });
   },
 
@@ -102,9 +102,9 @@ export const useEditorStore = create<EditorStore>((set) => ({
     });
   },
 
-  openTimelineChartInPane: (pane, chart) => {
+  openGanttChartInPane: (pane, chart) => {
     set((state) => {
-      return openTimelineTabState(state, pane, chart);
+      return openGanttTabState(state, pane, chart);
     });
   },
 
@@ -128,13 +128,13 @@ export const useEditorStore = create<EditorStore>((set) => ({
 
   updateTabContent: (tabId, content) => {
     set((state) => {
-      return updateCardTabContentState(state, tabId, content);
+      return updateFileTabContentState(state, tabId, content);
     });
   },
 
   updateTabMeta: (tabId, meta) => {
     set((state) => {
-      return updateCardTabMetaState(state, tabId, meta);
+      return updateFileTabMetaState(state, tabId, meta);
     });
   },
 

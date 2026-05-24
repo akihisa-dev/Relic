@@ -1,7 +1,7 @@
 export interface AppLinkContextMenu {
   heading?: string;
   markdownLink: string;
-  openKind: "card" | "wiki";
+  openKind: "file" | "wiki";
   path: string;
   target?: string;
   x: number;

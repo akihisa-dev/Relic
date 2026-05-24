@@ -15,7 +15,7 @@ interface PreviewProps {
   onScrollTargetHandled?: () => void;
   scrollTargetHeading?: string;
   settings: EditorSettings;
-  cardbookPath?: string | null;
+  workspacePath?: string | null;
 }
 
 const fontFamilyMap: Record<EditorSettings["font"], string> = {
@@ -31,15 +31,15 @@ export function Preview({
   onScrollTargetHandled,
   scrollTargetHeading,
   settings,
-  cardbookPath
+  workspacePath
 }: PreviewProps): ReactElement {
   const containerRef = useRef<HTMLDivElement>(null);
-  const embeds = usePreviewEmbeds(content, cardbookPath);
+  const embeds = usePreviewEmbeds(content, workspacePath);
   const t = useT();
 
   const html = useMemo(() => {
-    return renderMarkdown(content, cardbookPath, embeds, true, t);
-  }, [content, embeds, t, cardbookPath]);
+    return renderMarkdown(content, workspacePath, embeds, true, t);
+  }, [content, embeds, t, workspacePath]);
 
   useEffect(() => {
     if (!scrollTargetHeading || !containerRef.current) return;

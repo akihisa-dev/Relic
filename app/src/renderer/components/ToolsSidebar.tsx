@@ -3,19 +3,19 @@ import type { ReactElement } from "react";
 import { useT } from "../i18n";
 import { useToolsSidebarState } from "../hooks/useToolsSidebarState";
 import {
-  MergeCardsToolSection,
-  SplitCardToolSection,
+  MergeFilesToolSection,
+  SplitFileToolSection,
   TitleListToolSection,
   TocToolSection
 } from "./ToolsSidebarSections";
 
-export function ToolsSidebar({ cardbookPath }: { cardbookPath: string | null }): ReactElement {
+export function ToolsSidebar({ workspacePath }: { workspacePath: string | null }): ReactElement {
   const t = useT();
   const {
     handleGenerateTitleList,
     handleGenerateToc,
-    handleMergeCards,
-    handleSplitCard,
+    handleMergeFiles,
+    handleSplitFile,
     mergeDraft,
     mergeStatus,
     setMergeDraftField,
@@ -32,7 +32,7 @@ export function ToolsSidebar({ cardbookPath }: { cardbookPath: string | null }):
     titleListStatus,
     tocDraft,
     tocStatus
-  } = useToolsSidebarState(cardbookPath, t);
+  } = useToolsSidebarState(workspacePath, t);
 
   return (
     <div className="settings-page tools-settings-page">
@@ -40,8 +40,8 @@ export function ToolsSidebar({ cardbookPath }: { cardbookPath: string | null }):
         <p className="settings-page-kicker">{t("nav.tools")}</p>
         <h2>{t("tools.tools")}</h2>
       </header>
-      {!cardbookPath ? (
-        <div className="empty-note">{t("tools.cardbookRequired")}</div>
+      {!workspacePath ? (
+        <div className="empty-note">{t("tools.workspaceRequired")}</div>
       ) : (
         <>
           <TitleListToolSection
@@ -57,17 +57,17 @@ export function ToolsSidebar({ cardbookPath }: { cardbookPath: string | null }):
             onUpdate={setTocDraftField}
             status={tocStatus}
           />
-          <MergeCardsToolSection
+          <MergeFilesToolSection
             draft={mergeDraft}
             onFilterTypeChange={setMergeFilterType}
-            onMerge={handleMergeCards}
+            onMerge={handleMergeFiles}
             onSortByChange={setMergeSortBy}
             onUpdate={setMergeDraftField}
             status={mergeStatus}
           />
-          <SplitCardToolSection
+          <SplitFileToolSection
             draft={splitDraft}
-            onSplit={handleSplitCard}
+            onSplit={handleSplitFile}
             onSplitLevelChange={setSplitLevel}
             onUpdate={setSplitDraftField}
             status={splitStatus}

@@ -1,0 +1,76 @@
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+
+import { afterEach, describe, expect, it, vi } from "vitest";
+
+import { moveWorkspaceItemToTrash } from "./trash";
+
+describe("moveWorkspaceItemToTrash", () => {
+  const temporaryPaths: string[] = [];
+
+  afterEach(async () => {
+    await Promise.all(
+      temporaryPaths.splice(0).map((temporaryPath) =>
+        rm(temporaryPath, {
+          force: true,
+          recursive: true
+        })
+      )
+    );
+  });
+
+  it("Markdownファイルをゴミ箱へ移動する境界を呼び出す", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-trash-"));
+    temporaryPaths.push(workspacePath);
+    const trashItem = vi.fn().mockResolvedValue(undefined);
+
+    await writeFile(path.join(workspacePath, "note.md"), "# Note", "utf8");
+
+    await expect(
+      moveWorkspaceItemToTrash(workspacePath, "note.md", "file", trashItem)
+    ).resolves.toEqual({
+      ok: true,
+      value: {
+        path: "note.md"
+      }
+    });
+    expect(trashItem).toHaveBeenCalledWith(path.join(workspacePath, "note.md"));
+  });
+
+  it("フォルダをゴミ箱へ移動する境界を呼び出す", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-trash-"));
+    temporaryPaths.push(workspacePath);
+    const trashItem = vi.fn().mockResolvedValue(undefined);
+
+    await mkdir(path.join(workspacePath, "資料"));
+
+    await expect(moveWorkspaceItemToTrash(workspacePath, "資料", "folder", trashItem)).resolves.toEqual({
+      ok: true,
+      value: {
+        path: "資料"
+      }
+    });
+    expect(trashItem).toHaveBeenCalledWith(path.join(workspacePath, "資料"));
+  });
+
+  it("ワークスペース外・Markdown以外・種別違いを拒否する", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-trash-"));
+    temporaryPaths.push(workspacePath);
+    const trashItem = vi.fn().mockResolvedValue(undefined);
+
+    await writeFile(path.join(workspacePath, "image.png"), "", "utf8");
+    await writeFile(path.join(workspacePath, "note.md"), "", "utf8");
+
+    await expect(
+      moveWorkspaceItemToTrash(workspacePath, "../outside.md", "file", trashItem)
+    ).resolves.toMatchObject({ ok: false });
+    await expect(
+      moveWorkspaceItemToTrash(workspacePath, "image.png", "file", trashItem)
+    ).resolves.toMatchObject({ ok: false });
+    await expect(
+      moveWorkspaceItemToTrash(workspacePath, "note.md", "folder", trashItem)
+    ).resolves.toMatchObject({ ok: false });
+    expect(trashItem).not.toHaveBeenCalled();
+  });
+});

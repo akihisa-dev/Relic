@@ -9,15 +9,14 @@ export type FrontmatterDialogRequest =
 
 export const frontmatterDialogRequestEvent = "relic-frontmatter-dialog-request";
 export const frontmatterFieldNamePattern = /^[^#\s:][^\r\n:]*$/;
-export const fixedFrontmatterFieldNames = ["aliases", "tags", "status", "timeline"];
+export const fixedFrontmatterFieldNames = ["aliases", "tags", "status", "chronicle", "plannedDate", "actualDate"];
 
 export function isFixedDateRangeField(key: string): boolean {
-  void key;
-  return false;
+  return key === "plannedDate" || key === "actualDate";
 }
 
 export function shouldSerializeArrayAsFlowSequence(key: string, field?: UserDefinedField): boolean {
-  return isFixedDateRangeField(key) || key === "aliases" || key === "tags" || key === "timeline" || Boolean(field);
+  return isFixedDateRangeField(key) || key === "aliases" || key === "tags" || key === "chronicle" || Boolean(field);
 }
 
 export function isSingleValueField(field?: UserDefinedField): boolean {
@@ -35,6 +34,7 @@ export function isEditableScalar(value: unknown): boolean {
 export function fieldFor(key: string, userDefinedFields: UserDefinedField[]): UserDefinedField | undefined {
   if (key === "aliases" || key === "tags") return { name: key, type: "multi-select" };
   if (key === "status") return { name: key, type: "select", choices: [...fixedStatusValues] };
+  if (isFixedDateRangeField(key)) return { name: key, type: "date" };
   return userDefinedFields.find((field) => field.name === key);
 }
 
@@ -92,14 +92,14 @@ export function parseScalarValue(value: string, field?: UserDefinedField): unkno
   return value;
 }
 
-export function parseTimelineYearInput(value: string): number | null {
+export function parseChronicleYearInput(value: string): number | null {
   const trimmed = value.trim();
   if (!/^-?\d+$/.test(trimmed)) return null;
   const year = Number(trimmed);
   return Number.isInteger(year) && year !== 0 ? year : null;
 }
 
-export function timelineInputValue(value: unknown): string {
+export function chronicleInputValue(value: unknown): string {
   return typeof value === "number" && Number.isInteger(value) && value !== 0 ? String(value) : "";
 }
 

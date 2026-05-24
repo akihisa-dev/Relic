@@ -1,49 +1,49 @@
 import type {
   GenerateTableOfContentsInput,
   GenerateTitleListInput,
-  MergeCardsInput,
+  MergeFilesInput,
   MergeFilterType,
   MergeSortBy,
-  SplitCardByHeadingInput,
+  SplitFileByHeadingInput,
   SplitHeadingLevel
 } from "../shared/ipc";
 import type { RelicResult } from "../shared/result";
 import type { Translator } from "./i18n";
 
 export interface TitleListDraft {
-  filterCardFolder: string;
-  outputCardFolder: string;
+  filterFolder: string;
+  outputFolder: string;
   outputName: string;
   sortBy: "name" | "mtime";
 }
 
 export interface TocDraft {
-  includeSubcardFolders: boolean;
-  outputCardFolder: string;
+  includeSubfolders: boolean;
+  outputFolder: string;
   outputName: string;
-  targetCardFolder: string;
+  targetFolder: string;
 }
 
-export interface MergeCardsDraft {
+export interface MergeFilesDraft {
   filterType: MergeFilterType;
   filterValue: string;
   frontmatterField: string;
-  insertCardNameHeading: boolean;
-  outputCardFolder: string;
+  insertFilenameHeading: boolean;
+  outputFolder: string;
   outputName: string;
   sortBy: MergeSortBy;
 }
 
-export interface SplitCardDraft {
+export interface SplitFileDraft {
   headingLevel: SplitHeadingLevel;
-  outputCardFolder: string;
+  outputFolder: string;
   sourcePath: string;
 }
 
 export function createDefaultTitleListDraft(t: Translator): TitleListDraft {
   return {
-    filterCardFolder: "",
-    outputCardFolder: "",
+    filterFolder: "",
+    outputFolder: "",
     outputName: t("tools.titleListDefaultName"),
     sortBy: "name"
   };
@@ -51,37 +51,37 @@ export function createDefaultTitleListDraft(t: Translator): TitleListDraft {
 
 export function createDefaultTocDraft(t: Translator): TocDraft {
   return {
-    includeSubcardFolders: true,
-    outputCardFolder: "",
+    includeSubfolders: true,
+    outputFolder: "",
     outputName: t("tools.tocDefaultName"),
-    targetCardFolder: ""
+    targetFolder: ""
   };
 }
 
-export function createDefaultMergeCardsDraft(t: Translator): MergeCardsDraft {
+export function createDefaultMergeFilesDraft(t: Translator): MergeFilesDraft {
   return {
     filterType: "all",
     filterValue: "",
     frontmatterField: "",
-    insertCardNameHeading: true,
-    outputCardFolder: "",
+    insertFilenameHeading: true,
+    outputFolder: "",
     outputName: t("tools.mergeDefaultName"),
     sortBy: "name"
   };
 }
 
-export function createDefaultSplitCardDraft(): SplitCardDraft {
+export function createDefaultSplitFileDraft(): SplitFileDraft {
   return {
     headingLevel: 2,
-    outputCardFolder: "",
+    outputFolder: "",
     sourcePath: ""
   };
 }
 
 export function buildTitleListInput(draft: TitleListDraft, t: Translator): GenerateTitleListInput {
   return {
-    filterCardFolder: draft.filterCardFolder || undefined,
-    outputCardFolder: draft.outputCardFolder || ".",
+    filterFolder: draft.filterFolder || undefined,
+    outputFolder: draft.outputFolder || ".",
     outputName: draft.outputName || t("tools.titleListDefaultName"),
     sortBy: draft.sortBy
   };
@@ -89,29 +89,29 @@ export function buildTitleListInput(draft: TitleListDraft, t: Translator): Gener
 
 export function buildTocInput(draft: TocDraft, t: Translator): GenerateTableOfContentsInput {
   return {
-    includeSubcardFolders: draft.includeSubcardFolders,
-    outputCardFolder: draft.outputCardFolder || ".",
+    includeSubfolders: draft.includeSubfolders,
+    outputFolder: draft.outputFolder || ".",
     outputName: draft.outputName || t("tools.tocDefaultName"),
-    targetCardFolder: draft.targetCardFolder || "."
+    targetFolder: draft.targetFolder || "."
   };
 }
 
-export function buildMergeCardsInput(draft: MergeCardsDraft, t: Translator): MergeCardsInput {
+export function buildMergeFilesInput(draft: MergeFilesDraft, t: Translator): MergeFilesInput {
   return {
     frontmatterField: draft.filterType === "frontmatter" ? draft.frontmatterField : undefined,
     filterType: draft.filterType,
     filterValue: draft.filterValue,
-    insertCardNameHeading: draft.insertCardNameHeading,
-    outputCardFolder: draft.outputCardFolder || ".",
+    insertFilenameHeading: draft.insertFilenameHeading,
+    outputFolder: draft.outputFolder || ".",
     outputName: draft.outputName || t("tools.mergeDefaultName"),
     sortBy: draft.sortBy
   };
 }
 
-export function buildSplitCardInput(draft: SplitCardDraft): SplitCardByHeadingInput {
+export function buildSplitFileInput(draft: SplitFileDraft): SplitFileByHeadingInput {
   return {
     headingLevel: draft.headingLevel,
-    outputCardFolder: draft.outputCardFolder || ".",
+    outputFolder: draft.outputFolder || ".",
     sourcePath: draft.sourcePath
   };
 }

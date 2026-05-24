@@ -5,7 +5,7 @@ import type { ToastMessage } from "../components/AppOverlays";
 export function useAppToast(): {
   closeToast: () => void;
   isToastClosing: boolean;
-  setCardbookError: (message: string | null) => void;
+  setWorkspaceError: (message: string | null) => void;
   showToast: (text: string, type?: "error" | "info") => void;
   toastMessage: ToastMessage | null;
 } {
@@ -48,14 +48,14 @@ export function useAppToast(): {
     };
   }, []);
 
-  const setCardbookError = useCallback((message: string | null) => {
+  const setWorkspaceError = useCallback((message: string | null) => {
     if (message) showToast(message, "error");
   }, [showToast]);
 
   return {
     closeToast,
     isToastClosing,
-    setCardbookError,
+    setWorkspaceError,
     showToast,
     toastMessage
   };

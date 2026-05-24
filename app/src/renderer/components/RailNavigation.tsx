@@ -1,3 +1,3 @@
-export { IconCards, sidebarViewDefs } from "./RailNavigationIcons";
-export { RailCardbookSwitcher } from "./RailCardbookSwitcher";
+export { IconFiles, sidebarViewDefs } from "./RailNavigationIcons";
+export { RailWorkspaceSwitcher } from "./RailWorkspaceSwitcher";
 export { fixedMenuPosition } from "./railNavigationModel";

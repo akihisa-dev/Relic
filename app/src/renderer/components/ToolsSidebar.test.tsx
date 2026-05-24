@@ -5,10 +5,10 @@ import { makeRelicApi } from "../../test/rendererTestUtils";
 import { I18nProvider } from "../i18n";
 import { ToolsSidebar } from "./ToolsSidebar";
 
-function renderToolsSidebar(language: "en" | "ja" = "en", cardbookPath: string | null = "/tmp/notes") {
+function renderToolsSidebar(language: "en" | "ja" = "en", workspacePath: string | null = "/tmp/notes") {
   return render(
     <I18nProvider language={language}>
-      <ToolsSidebar cardbookPath={cardbookPath} />
+      <ToolsSidebar workspacePath={workspacePath} />
     </I18nProvider>
   );
 }
@@ -29,13 +29,13 @@ describe("ToolsSidebar", () => {
     vi.restoreAllMocks();
   });
 
-  it("カードブックがない場合はツールを実行しない", () => {
+  it("ワークスペースがない場合はツールを実行しない", () => {
     const generateTitleList = vi.fn();
     window.relic = makeRelicApi({ generateTitleList });
 
     renderToolsSidebar("en", null);
 
-    expect(screen.getByText("Open a cardbook first.")).toBeInTheDocument();
+    expect(screen.getByText("Open a workspace first.")).toBeInTheDocument();
     expect(generateTitleList).not.toHaveBeenCalled();
   });
 
@@ -47,16 +47,16 @@ describe("ToolsSidebar", () => {
     renderToolsSidebar("en");
 
     const titleList = sectionBlock("Title List");
-    fireEvent.change(within(titleList).getByLabelText("Card folder"), { target: { value: "Drafts" } });
+    fireEvent.change(within(titleList).getByLabelText("Folder"), { target: { value: "Drafts" } });
     fireEvent.change(within(titleList).getByLabelText("Sort"), { target: { value: "mtime" } });
-    fireEvent.change(within(titleList).getByLabelText("Output card folder"), { target: { value: "Indexes" } });
-    fireEvent.change(within(titleList).getByLabelText("Card name"), { target: { value: "Titles" } });
+    fireEvent.change(within(titleList).getByLabelText("Output folder"), { target: { value: "Indexes" } });
+    fireEvent.change(within(titleList).getByLabelText("File name"), { target: { value: "Titles" } });
     fireEvent.click(within(titleList).getByRole("button", { name: "Create" }));
 
     await waitFor(() => {
       expect(generateTitleList).toHaveBeenCalledWith({
-        filterCardFolder: "Drafts",
-        outputCardFolder: "Indexes",
+        filterFolder: "Drafts",
+        outputFolder: "Indexes",
         outputName: "Titles",
         sortBy: "mtime"
       });
@@ -64,35 +64,35 @@ describe("ToolsSidebar", () => {
     expect(await screen.findByText("Done: Title List.md")).toBeInTheDocument();
 
     const toc = sectionBlock("Table of Contents");
-    fireEvent.change(within(toc).getByLabelText("Card folder"), { target: { value: "Docs" } });
-    fireEvent.click(within(toc).getByLabelText("Include card folders"));
-    fireEvent.change(within(toc).getByLabelText("Output card folder"), { target: { value: "Indexes" } });
-    fireEvent.change(within(toc).getByLabelText("Card name"), { target: { value: "Contents" } });
+    fireEvent.change(within(toc).getByLabelText("Folder"), { target: { value: "Docs" } });
+    fireEvent.click(within(toc).getByLabelText("Include subfolders"));
+    fireEvent.change(within(toc).getByLabelText("Output folder"), { target: { value: "Indexes" } });
+    fireEvent.change(within(toc).getByLabelText("File name"), { target: { value: "Contents" } });
     fireEvent.click(within(toc).getByRole("button", { name: "Create" }));
 
     await waitFor(() => {
       expect(generateTableOfContents).toHaveBeenCalledWith({
-        includeSubcardFolders: false,
-        outputCardFolder: "Indexes",
+        includeSubfolders: false,
+        outputFolder: "Indexes",
         outputName: "Contents",
-        targetCardFolder: "Docs"
+        targetFolder: "Docs"
       });
     });
   });
 
-  it("プロパティ条件を指定してマージできる", async () => {
-    const mergeCards = vi.fn().mockResolvedValue({ ok: true, value: "merged.md" });
-    window.relic = makeRelicApi({ mergeCards });
+  it("フロントマター条件を指定してマージできる", async () => {
+    const mergeFiles = vi.fn().mockResolvedValue({ ok: true, value: "merged.md" });
+    window.relic = makeRelicApi({ mergeFiles });
 
     renderToolsSidebar("ja");
 
     fireEvent.change(screen.getByLabelText("フィルター"), { target: { value: "frontmatter" } });
-    fireEvent.change(screen.getByLabelText("プロパティフィールド"), { target: { value: "status" } });
-    fireEvent.change(screen.getByLabelText("プロパティ値"), { target: { value: "draft" } });
+    fireEvent.change(screen.getByLabelText("フロントマターフィールド"), { target: { value: "status" } });
+    fireEvent.change(screen.getByLabelText("フロントマター値"), { target: { value: "draft" } });
     fireEvent.click(screen.getByRole("button", { name: "条件指定マージ" }));
 
     await waitFor(() => {
-      expect(mergeCards).toHaveBeenCalledWith(expect.objectContaining({
+      expect(mergeFiles).toHaveBeenCalledWith(expect.objectContaining({
         filterType: "frontmatter",
         filterValue: "draft",
         frontmatterField: "status"
@@ -101,27 +101,27 @@ describe("ToolsSidebar", () => {
   });
 
   it("ソース指定時だけ見出し分割を実行する", async () => {
-    const splitCardByHeading = vi.fn().mockResolvedValue({ ok: true, value: ["A.md", "B.md"] });
-    window.relic = makeRelicApi({ splitCardByHeading });
+    const splitFileByHeading = vi.fn().mockResolvedValue({ ok: true, value: ["A.md", "B.md"] });
+    window.relic = makeRelicApi({ splitFileByHeading });
 
     renderToolsSidebar("en");
 
     const split = sectionBlock("Split by Heading");
     fireEvent.click(within(split).getByRole("button", { name: "Split by Heading" }));
-    expect(splitCardByHeading).not.toHaveBeenCalled();
+    expect(splitFileByHeading).not.toHaveBeenCalled();
 
-    fireEvent.change(within(split).getByLabelText("Source card"), { target: { value: "Book.md" } });
+    fireEvent.change(within(split).getByLabelText("Source file"), { target: { value: "Book.md" } });
     fireEvent.change(within(split).getByLabelText("Heading level"), { target: { value: "3" } });
-    fireEvent.change(within(split).getByLabelText("Output card folder"), { target: { value: "Chapters" } });
+    fireEvent.change(within(split).getByLabelText("Output folder"), { target: { value: "Chapters" } });
     fireEvent.click(within(split).getByRole("button", { name: "Split by Heading" }));
 
     await waitFor(() => {
-      expect(splitCardByHeading).toHaveBeenCalledWith({
+      expect(splitFileByHeading).toHaveBeenCalledWith({
         headingLevel: 3,
-        outputCardFolder: "Chapters",
+        outputFolder: "Chapters",
         sourcePath: "Book.md"
       });
     });
-    expect(await screen.findByText("Done: 2 card(s) created")).toBeInTheDocument();
+    expect(await screen.findByText("Done: 2 file(s) created")).toBeInTheDocument();
   });
 });

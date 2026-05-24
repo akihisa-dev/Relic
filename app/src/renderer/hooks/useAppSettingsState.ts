@@ -4,7 +4,7 @@ import type {
   AppInfo,
   EditorSettings,
   FrontmatterTemplate,
-  CardbookState
+  WorkspaceState
 } from "../../shared/ipc";
 import {
   defaultFeatureToggles,
@@ -16,14 +16,14 @@ import {
 
 interface UseAppSettingsStateInput {
   setEditorSettings: (settings: EditorSettings) => void;
-  setCardbookError: (message: string | null) => void;
-  setCardbookState: (state: CardbookState) => void;
+  setWorkspaceError: (message: string | null) => void;
+  setWorkspaceState: (state: WorkspaceState) => void;
 }
 
 export function useAppSettingsState({
   setEditorSettings,
-  setCardbookError,
-  setCardbookState
+  setWorkspaceError,
+  setWorkspaceState
 }: UseAppSettingsStateInput) {
   const [appInfo, setAppInfo] = useState<AppInfo | null>(null);
   const [featureToggles, setFeatureToggles] = useState<FeatureToggles>(defaultFeatureToggles);
@@ -38,12 +38,12 @@ export function useAppSettingsState({
       if (result.ok) setAppInfo(result.value);
     });
 
-    void window.relic?.getCardbookState().then((result) => {
+    void window.relic?.getWorkspaceState().then((result) => {
       if (canceled) return;
       if (result.ok) {
-        setCardbookState(result.value);
+        setWorkspaceState(result.value);
       } else {
-        setCardbookError(result.error.message);
+        setWorkspaceError(result.error.message);
       }
     });
 
@@ -68,7 +68,7 @@ export function useAppSettingsState({
     });
 
     return () => { canceled = true; };
-  }, [setEditorSettings, setCardbookError, setCardbookState]);
+  }, [setEditorSettings, setWorkspaceError, setWorkspaceState]);
 
   const handleSaveSettings = useCallback(
     (settings: EditorSettings): void => {

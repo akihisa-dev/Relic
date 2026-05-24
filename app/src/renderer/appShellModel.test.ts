@@ -1,15 +1,15 @@
 import { describe, expect, it } from "vitest";
 
-import { defaultFeatureToggles, type CardbookState } from "../shared/ipc";
+import { defaultFeatureToggles, type WorkspaceState } from "../shared/ipc";
 import {
   activePanelTabIdsForPanes,
   enabledRailViewsForFeatures,
   isChartTabActiveInPanes,
   isChartTabOpenInTabs,
-  openCardPathsForTabs,
+  openFilePathsForTabs,
   openPanelTabIdsForTabs,
   panelLabelsForTranslator,
-  registeredCardbooksForState,
+  registeredWorkspacesForState,
   splitRailViews,
   type AppRailView
 } from "./appShellModel";
@@ -23,52 +23,51 @@ const emptyPane = (activeTabId: string | null = null): PaneState => ({
 });
 
 const tabs: Record<string, Tab> = {
-  "timeline-charts": { chartId: "charts", id: "timeline-charts", kind: "timeline", name: "Timeline" },
-  "timeline-custom": { chartId: "custom", id: "timeline-custom", kind: "timeline", name: "Custom" },
-  "panel-calendar-settings": { id: "panel-calendar-settings", kind: "panel", name: "Calendar Settings", panel: "calendar-settings" },
-  "panel-frontmatter": { id: "panel-frontmatter", kind: "panel", name: "Properties", panel: "frontmatter" },
+  "gantt-charts": { chartId: "charts", id: "gantt-charts", kind: "gantt", name: "Chronicle" },
+  "gantt-custom": { chartId: "custom", id: "gantt-custom", kind: "gantt", name: "Custom" },
+  "panel-frontmatter": { id: "panel-frontmatter", kind: "panel", name: "Frontmatter", panel: "frontmatter" },
   "panel-tools": { id: "panel-tools", kind: "panel", name: "Tools", panel: "tools" },
-  "tab-note": { content: "Note", id: "tab-note", kind: "card", name: "Note", path: "CardFolder/Note.md" }
+  "tab-note": { content: "Note", id: "tab-note", kind: "file", name: "Note", path: "Folder/Note.md" }
 };
 
 describe("appShellModel", () => {
-  it("returns registered cardbooks with an active cardbook fallback", () => {
-    const activeCardbook = { id: "ws-1", name: "Notes", path: "/tmp/Notes" };
-    const cardbookState: CardbookState = {
-      activeCardbook,
-      cardTree: [],
+  it("returns registered workspaces with an active workspace fallback", () => {
+    const activeWorkspace = { id: "ws-1", name: "Notes", path: "/tmp/Notes" };
+    const workspaceState: WorkspaceState = {
+      activeWorkspace,
+      fileTree: [],
       pinnedPaths: [],
-      cardbooks: []
+      workspaces: []
     };
 
-    expect(registeredCardbooksForState(null)).toEqual([]);
-    expect(registeredCardbooksForState(cardbookState)).toEqual([activeCardbook]);
-    expect(registeredCardbooksForState({
-      ...cardbookState,
-      cardbooks: [{ id: "ws-2", name: "Work", path: "/tmp/Work" }]
+    expect(registeredWorkspacesForState(null)).toEqual([]);
+    expect(registeredWorkspacesForState(workspaceState)).toEqual([activeWorkspace]);
+    expect(registeredWorkspacesForState({
+      ...workspaceState,
+      workspaces: [{ id: "ws-2", name: "Work", path: "/tmp/Work" }]
     })).toEqual([{ id: "ws-2", name: "Work", path: "/tmp/Work" }]);
   });
 
-  it("collects open card paths and panel tab ids", () => {
-    expect(openCardPathsForTabs(tabs)).toEqual(new Set(["CardFolder/Note.md"]));
-    expect(openPanelTabIdsForTabs(tabs)).toEqual(new Set(["calendar-settings", "frontmatter", "tools"]));
+  it("collects open file paths and panel tab ids", () => {
+    expect(openFilePathsForTabs(tabs)).toEqual(new Set(["Folder/Note.md"]));
+    expect(openPanelTabIdsForTabs(tabs)).toEqual(new Set(["frontmatter", "tools"]));
   });
 
   it("detects active panel and chart tabs from panes", () => {
     expect(activePanelTabIdsForPanes(
       emptyPane("panel-frontmatter"),
-      emptyPane("timeline-charts"),
+      emptyPane("gantt-charts"),
       tabs
     )).toEqual(new Set(["frontmatter"]));
     expect(isChartTabOpenInTabs(tabs)).toBe(true);
     expect(isChartTabActiveInPanes(
       emptyPane("panel-frontmatter"),
-      emptyPane("timeline-charts"),
+      emptyPane("gantt-charts"),
       tabs
     )).toBe(true);
     expect(isChartTabActiveInPanes(
       emptyPane("panel-frontmatter"),
-      emptyPane("timeline-custom"),
+      emptyPane("gantt-custom"),
       tabs
     )).toBe(false);
   });
@@ -77,8 +76,7 @@ describe("appShellModel", () => {
     const labels = panelLabelsForTranslator(createTranslator("en"));
 
     expect(labels).toEqual({
-      "calendar-settings": "Calendar Settings",
-      frontmatter: "Properties",
+      frontmatter: "Frontmatter",
       settings: "Settings",
       tools: "Tools"
     });
@@ -86,11 +84,10 @@ describe("appShellModel", () => {
 
   it("filters and splits rail views without changing order", () => {
     const railViews: AppRailView[] = [
-      { icon: null, id: "cards", label: "Cards" },
+      { icon: null, id: "files", label: "Files" },
       { icon: null, id: "tools", label: "Tools" },
-      { icon: null, id: "frontmatter", label: "Properties" },
-      { icon: null, id: "timeline", label: "Timeline" },
-      { icon: null, id: "calendar-settings", label: "Calendar Settings" },
+      { icon: null, id: "frontmatter", label: "Frontmatter" },
+      { icon: null, id: "chronicle", label: "Chronicle" },
       { icon: null, id: "settings", label: "Settings" }
     ];
 
@@ -101,9 +98,9 @@ describe("appShellModel", () => {
     });
     const split = splitRailViews(enabled);
 
-    expect(enabled.map((view) => view.id)).toEqual(["cards", "timeline", "calendar-settings", "settings"]);
-    expect(split.primaryRailViews.map((view) => view.id)).toEqual(["cards"]);
-    expect(split.chartRailView?.id).toBe("timeline");
-    expect(split.panelRailViews.map((view) => view.id)).toEqual(["calendar-settings", "settings"]);
+    expect(enabled.map((view) => view.id)).toEqual(["files", "chronicle", "settings"]);
+    expect(split.primaryRailViews.map((view) => view.id)).toEqual(["files"]);
+    expect(split.chartRailView?.id).toBe("chronicle");
+    expect(split.panelRailViews.map((view) => view.id)).toEqual(["settings"]);
   });
 });

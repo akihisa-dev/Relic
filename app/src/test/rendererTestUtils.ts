@@ -3,16 +3,16 @@ import { vi } from "vitest";
 import {
   defaultEditorSettings,
   defaultFeatureToggles,
-  type CardbookState
+  type WorkspaceState
 } from "../shared/ipc";
 import { useEditorStore } from "../renderer/store/editorStore";
 import { useUiStore } from "../renderer/store/uiStore";
 
-export const testCardbookState: CardbookState = {
-  activeCardbook: { id: "ws-1", name: "Notes", path: "/tmp/Notes" },
-  cardTree: [],
+export const testWorkspaceState: WorkspaceState = {
+  activeWorkspace: { id: "ws-1", name: "Notes", path: "/tmp/Notes" },
+  fileTree: [],
   pinnedPaths: [],
-  cardbooks: []
+  workspaces: []
 };
 
 export function installMatchMediaMock(): void {
@@ -36,23 +36,23 @@ export function resetRendererStores(): void {
     tabs: {}
   });
   useUiStore.setState({
-    activeSidebarView: "cards",
+    activeSidebarView: "files",
     isRightPanelOpen: false,
     isSidebarOpen: true,
     isTypewriterMode: false,
     rightPanelView: "outline",
-    selectedTimelineChartId: null
+    selectedGanttChartId: null
   });
 }
 
 export function makeRelicApi(overrides: Partial<typeof window.relic> = {}): typeof window.relic {
   return {
     applySearchAndReplace: vi.fn(),
-    createCardFolder: vi.fn(),
-    createLinkedMarkdownCard: vi.fn(),
-    createMarkdownCard: vi.fn(),
-    createNewCardbook: vi.fn().mockResolvedValue({ ok: true, value: { activeCardbook: null, cardTree: [], pinnedPaths: [], cardbooks: [] } }),
-    duplicateMarkdownCard: vi.fn(),
+    createFolder: vi.fn(),
+    createLinkedMarkdownFile: vi.fn(),
+    createMarkdownFile: vi.fn(),
+    createNewWorkspace: vi.fn().mockResolvedValue({ ok: true, value: { activeWorkspace: null, fileTree: [], pinnedPaths: [], workspaces: [] } }),
+    duplicateMarkdownFile: vi.fn(),
     generateTableOfContents: vi.fn(),
     generateTitleList: vi.fn(),
     getAppInfo: vi.fn().mockResolvedValue({ ok: true, value: { name: "Relic", platform: "darwin", version: "0.0.0" } }),
@@ -62,45 +62,45 @@ export function makeRelicApi(overrides: Partial<typeof window.relic> = {}): type
     getFrontmatterTemplates: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     getFrontmatterValueCandidates: vi.fn().mockResolvedValue({ ok: true, value: {} }),
     getUserDefinedFields: vi.fn().mockResolvedValue({ ok: true, value: [] }),
-    getCardbookAliases: vi.fn().mockResolvedValue({ ok: true, value: {} }),
-    getCardbookTimeline: vi.fn().mockResolvedValue({ ok: true, value: [] }),
-    getCardbookState: vi.fn().mockResolvedValue({ ok: true, value: { activeCardbook: null, cardTree: [], pinnedPaths: [], cardbooks: [] } }),
-    getCardbookTags: vi.fn().mockResolvedValue({ ok: true, value: [] }),
-    mergeCards: vi.fn().mockResolvedValue({ ok: true, value: "merged.md" }),
-    moveCardFolder: vi.fn(),
+    getWorkspaceAliases: vi.fn().mockResolvedValue({ ok: true, value: {} }),
+    getWorkspaceChronicle: vi.fn().mockResolvedValue({ ok: true, value: [] }),
+    getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: { activeWorkspace: null, fileTree: [], pinnedPaths: [], workspaces: [] } }),
+    getWorkspaceTags: vi.fn().mockResolvedValue({ ok: true, value: [] }),
+    mergeFiles: vi.fn().mockResolvedValue({ ok: true, value: "merged.md" }),
+    moveFolder: vi.fn(),
     moveItemToTrash: vi.fn(),
-    moveMarkdownCard: vi.fn(),
-    onCardbookChanged: vi.fn().mockReturnValue(vi.fn()),
-    openCardbook: vi.fn(),
+    moveMarkdownFile: vi.fn(),
+    onWorkspaceChanged: vi.fn().mockReturnValue(vi.fn()),
+    openWorkspace: vi.fn(),
     readClipboardText: vi.fn().mockReturnValue(""),
-    readMarkdownCard: vi.fn(),
-    removeCardbook: vi.fn().mockResolvedValue({ ok: true, value: { activeCardbook: null, cardTree: [], pinnedPaths: [], cardbooks: [] } }),
-    renameCardFolder: vi.fn(),
-    renameMarkdownCard: vi.fn(),
-    renameCardbook: vi.fn().mockResolvedValue({
+    readMarkdownFile: vi.fn(),
+    removeWorkspace: vi.fn().mockResolvedValue({ ok: true, value: { activeWorkspace: null, fileTree: [], pinnedPaths: [], workspaces: [] } }),
+    renameFolder: vi.fn(),
+    renameMarkdownFile: vi.fn(),
+    renameWorkspace: vi.fn().mockResolvedValue({
       ok: true,
       value: {
-        activeCardbook: { id: "ws-1", name: "Renamed", path: "/tmp/Renamed" },
-        cardTree: [],
+        activeWorkspace: { id: "ws-1", name: "Renamed", path: "/tmp/Renamed" },
+        fileTree: [],
         pinnedPaths: [],
-        cardbooks: [{ id: "ws-1", name: "Renamed", path: "/tmp/Renamed" }]
+        workspaces: [{ id: "ws-1", name: "Renamed", path: "/tmp/Renamed" }]
       }
     }),
-    replaceInCard: vi.fn(),
-    revealCardbookItem: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
+    replaceInFile: vi.fn(),
+    revealWorkspaceItem: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
     saveEditorSettings: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
     saveFeatureToggles: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
     saveFrontmatterTemplates: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
     saveUserDefinedFields: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
-    saveCardbookTimelineCharts: vi.fn().mockResolvedValue({ ok: true, value: [] }),
+    saveWorkspaceGanttCharts: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     searchAndReplace: vi.fn(),
-    searchCardbook: vi.fn().mockResolvedValue({ ok: true, value: [] }),
-    splitCardByHeading: vi.fn().mockResolvedValue({ ok: true, value: [] }),
-    switchCardbook: vi.fn(),
-    togglePin: vi.fn().mockResolvedValue({ ok: true, value: { activeCardbook: null, cardTree: [], pinnedPaths: [], cardbooks: [] } }),
-    updateTimelineChartEntry: vi.fn().mockResolvedValue({ ok: true, value: [] }),
+    searchWorkspace: vi.fn().mockResolvedValue({ ok: true, value: [] }),
+    splitFileByHeading: vi.fn().mockResolvedValue({ ok: true, value: [] }),
+    switchWorkspace: vi.fn(),
+    togglePin: vi.fn().mockResolvedValue({ ok: true, value: { activeWorkspace: null, fileTree: [], pinnedPaths: [], workspaces: [] } }),
+    updateGanttChartEntry: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     writeClipboardText: vi.fn(),
-    writeMarkdownCard: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
+    writeMarkdownFile: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
     ...overrides
   } as typeof window.relic;
 }

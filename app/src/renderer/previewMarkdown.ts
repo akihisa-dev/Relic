@@ -6,7 +6,7 @@ import markedFootnote from "marked-footnote";
 
 import type { Translator } from "./i18n";
 
-export const maxEmbeddedCardLength = 20_000;
+export const maxEmbeddedFileLength = 20_000;
 
 export type EmbedState =
   | { status: "loading" }
@@ -186,7 +186,7 @@ export function extractEmbedTargets(content: string): string[] {
 
 export function renderMarkdown(
   content: string,
-  cardbookPath: string | null | undefined,
+  workspacePath: string | null | undefined,
   embeds: Map<string, EmbedState>,
   renderEmbeds: boolean,
   t: Translator
@@ -197,10 +197,10 @@ export function renderMarkdown(
         const target = normalizeEmbedTarget(rawTarget);
 
         if (!target) {
-          return `\n\n<div class="preview-card-embed preview-card-embed--error">${escapeHtml(match)}</div>\n\n`;
+          return `\n\n<div class="preview-file-embed preview-file-embed--error">${escapeHtml(match)}</div>\n\n`;
         }
 
-        return `\n\n${renderCardEmbed(target, embeds, cardbookPath, t)}\n\n`;
+        return `\n\n${renderFileEmbed(target, embeds, workspacePath, t)}\n\n`;
       })
     : content.replace(/!\[\[([^\]\n]+)\]\]/g, "[[$1]]");
   const raw = marked.parse(withEmbedPlaceholders, { async: false, renderer }) as string;
@@ -219,27 +219,27 @@ export function renderMarkdown(
   return sanitized;
 }
 
-export function renderCardEmbed(
+export function renderFileEmbed(
   target: string,
   embeds: Map<string, EmbedState>,
-  cardbookPath: string | null | undefined,
+  workspacePath: string | null | undefined,
   t: Translator
 ): string {
   const state = embeds.get(target) ?? { status: "loading" };
 
   if (state.status === "loading") {
-    return `<div class="preview-card-embed preview-card-embed--loading">${escapeHtml(t("preview.embedLoading", { target }))}</div>`;
+    return `<div class="preview-file-embed preview-file-embed--loading">${escapeHtml(t("preview.embedLoading", { target }))}</div>`;
   }
 
   if (state.status === "error") {
-    return `<div class="preview-card-embed preview-card-embed--error">${escapeHtml(state.message)}</div>`;
+    return `<div class="preview-file-embed preview-file-embed--error">${escapeHtml(state.message)}</div>`;
   }
 
   if (state.status === "large") {
-    return `<div class="preview-card-embed preview-card-embed--large">${escapeHtml(t("preview.embedLarge", { name: state.name }))}</div>`;
+    return `<div class="preview-file-embed preview-file-embed--large">${escapeHtml(t("preview.embedLarge", { name: state.name }))}</div>`;
   }
 
-  const body = renderMarkdown(state.content, cardbookPath, new Map(), false, t);
+  const body = renderMarkdown(state.content, workspacePath, new Map(), false, t);
 
-  return `<section class="preview-card-embed"><div class="preview-card-embed-title">${escapeHtml(state.name)}</div><div class="preview-card-embed-body">${body}</div></section>`;
+  return `<section class="preview-file-embed"><div class="preview-file-embed-title">${escapeHtml(state.name)}</div><div class="preview-file-embed-body">${body}</div></section>`;
 }

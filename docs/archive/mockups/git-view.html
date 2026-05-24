@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Git view mockup</title>
+  <link rel="stylesheet" href="mockups.css">
+</head>
+<body>
+  <div class="window">
+    <header class="titlebar">
+      <div class="traffic">
+        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        <span class="app-name">タイトルバー</span>
+      </div>
+      <nav class="tabs">
+        <div class="tab active">タブ</div>
+        <div class="tab">タブ</div>
+      </nav>
+      <div class="title-actions">
+        <span>ブランチ表示</span>
+        <span>同期状態</span>
+      </div>
+    </header>
+
+    <div class="body">
+      <aside class="sidebar">
+        <nav class="rail">
+          <span class="rail-label">ビュー切替レール</span>
+          <button class="rail-button" title="Files">F</button>
+          <button class="rail-button" title="Search">S</button>
+          <button class="rail-button active" title="Git">G</button>
+          <button class="rail-button" title="Settings">●</button>
+        </nav>
+
+        <section class="side-content">
+          <div class="side-header">
+            <p class="eyebrow">Sidebar view</p>
+            <div class="workspace-name">
+              <span>Gitビュー</span>
+              <span class="badge">Git</span>
+            </div>
+          </div>
+
+          <div class="side-scroll">
+            <div class="section-title">同期操作</div>
+            <div class="list-item active">手動同期エリア</div>
+            <div class="field">コミットメッセージ入力</div>
+            <div class="list-item">プル操作</div>
+            <div class="list-item">コミット + プッシュ操作</div>
+            <div class="section-title">コミット履歴</div>
+            <div class="commit-item active">コミット項目 <span class="muted">選択中</span></div>
+            <div class="commit-item">コミット項目 <span class="muted">日時</span></div>
+            <div class="commit-item">コミット項目 <span class="muted">作者</span></div>
+            <div class="section-title">ブランチ / タグ</div>
+            <div class="list-item">ブランチ切替</div>
+            <div class="list-item">Gitタグ一覧</div>
+          </div>
+        </section>
+      </aside>
+
+      <main class="main">
+        <div class="toolbar">
+          <div class="tool-group">
+            <span class="mock-label">ツールバー</span>
+            <button class="icon-button active">Diff</button>
+            <button class="icon-button">履歴</button>
+            <button class="icon-button">タグ</button>
+          </div>
+          <div class="tool-group">
+            <button class="primary-button">プッシュ</button>
+          </div>
+        </div>
+
+        <div class="editor-layout">
+          <article class="editor-shell">
+            <div class="editor-page">
+              <p><span class="mock-label">Diffビュー</span> <span class="badge">変更確認</span></p>
+              <h1>左右差分表示</h1>
+              <p>コミット履歴を選択したとき、変更前後を確認するための領域です。</p>
+              <p>この領域はエディタ本体と同じメインエリア内に表示する想定です。</p>
+              <h2>変更前 / 変更後</h2>
+              <p><span class="link">差分ハイライト</span> は情報表示なので小さく使います。</p>
+            </div>
+          </article>
+
+          <aside class="right-panel">
+            <div class="panel-title"><span>右パネル</span><span>Links</span></div>
+            <div class="list-item active">リンクパネル</div>
+            <div class="list-item">バックリンク一覧</div>
+            <div class="list-item">アウトゴーイングリンク一覧</div>
+          </aside>
+        </div>
+      </main>
+    </div>
+
+    <footer class="statusbar">
+      <div class="status-group"><span>ステータスバー</span><span>Git状態</span></div>
+      <div class="status-group"><span>ブランチ名</span><span>保存状態</span></div>
+    </footer>
+  </div>
+  <script src="mockup-nav.js"></script>
+</body>
+</html>

@@ -19,13 +19,13 @@ interface AppOverlaysProps {
   closeToast: () => void;
   commands: Command[];
   existingMarkdownPaths: string[];
-  handleOpenCard: (path: string) => void;
+  handleOpenFile: (path: string) => void;
   handleOpenWikiLink: (target: string, heading?: string) => void;
-  handleRevealCardbookItem: (path: string) => void;
+  handleRevealWorkspaceItem: (path: string) => void;
   isSplit: boolean;
   isToastClosing: boolean;
   linkContextMenu: AppLinkContextMenu | null;
-  openCardbookPathInOtherPane: (path: string, heading?: string) => void;
+  openWorkspacePathInOtherPane: (path: string, heading?: string) => void;
   railTabFlight: RailTabFlight | null;
   setLinkContextMenu: Dispatch<SetStateAction<AppLinkContextMenu | null>>;
   setShowCommandPalette: (isShown: boolean) => void;
@@ -41,13 +41,13 @@ export function AppOverlays({
   closeToast,
   commands,
   existingMarkdownPaths,
-  handleOpenCard,
+  handleOpenFile,
   handleOpenWikiLink,
-  handleRevealCardbookItem,
+  handleRevealWorkspaceItem,
   isSplit,
   isToastClosing,
   linkContextMenu,
-  openCardbookPathInOtherPane,
+  openWorkspacePathInOtherPane,
   railTabFlight,
   setLinkContextMenu,
   setShowCommandPalette,
@@ -112,9 +112,9 @@ export function AppOverlays({
       {showQuickSwitcher ? (
         <QuickSwitcher
           aliasesByPath={aliasesByPath}
-          cardPaths={existingMarkdownPaths}
+          filePaths={existingMarkdownPaths}
           onClose={() => setShowQuickSwitcher(false)}
-          onSelect={handleOpenCard}
+          onSelect={handleOpenFile}
         />
       ) : null}
 
@@ -131,20 +131,20 @@ export function AppOverlays({
               if (linkContextMenu.openKind === "wiki" && linkContextMenu.target) {
                 handleOpenWikiLink(linkContextMenu.target, linkContextMenu.heading);
               } else {
-                handleOpenCard(linkContextMenu.path);
+                handleOpenFile(linkContextMenu.path);
               }
               setLinkContextMenu(null);
             }}
             role="menuitem"
             type="button"
           >
-            {t("cards.open")}
+            {t("files.open")}
           </button>
           {isSplit ? (
             <button
               className="tab-context-menu-item"
               onClick={() => {
-                openCardbookPathInOtherPane(linkContextMenu.path, linkContextMenu.heading);
+                openWorkspacePathInOtherPane(linkContextMenu.path, linkContextMenu.heading);
                 setLinkContextMenu(null);
               }}
               role="menuitem"
@@ -162,7 +162,7 @@ export function AppOverlays({
             role="menuitem"
             type="button"
           >
-            {t("cards.copyMarkdownLink")}
+            {t("files.copyMarkdownLink")}
           </button>
           <button
             className="tab-context-menu-item"
@@ -173,18 +173,18 @@ export function AppOverlays({
             role="menuitem"
             type="button"
           >
-            {t("cards.copyPath")}
+            {t("files.copyPath")}
           </button>
           <button
             className="tab-context-menu-item"
             onClick={() => {
-              handleRevealCardbookItem(linkContextMenu.path);
+              handleRevealWorkspaceItem(linkContextMenu.path);
               setLinkContextMenu(null);
             }}
             role="menuitem"
             type="button"
           >
-            {t("cards.revealInFinder")}
+            {t("files.revealInFinder")}
           </button>
         </div>
       ) : null}

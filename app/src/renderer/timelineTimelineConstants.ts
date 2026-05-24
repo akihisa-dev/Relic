@@ -1,9 +1,0 @@
-export const ROW_HEIGHT = 38;
-export const TIMELINE_NAME_COLUMN_WIDTH = 300;
-export const TIMELINE_AXIS_HEIGHT = 34;
-export const TICK_WIDTH = 72;
-export const LABEL_HORIZONTAL_PADDING = 14;
-export const TIMELINE_FINE_DRAG_SPEED = 0.18;
-export const TIMELINE_FAST_DRAG_SPEED = 1.4;
-export const TIMELINE_FINE_DRAG_MULTIPLIER = 0.65;
-export const TIMELINE_FAST_DRAG_MULTIPLIER = 1.35;

@@ -5,13 +5,12 @@ import type {
   AppInfo,
   EditorSettings,
   FeatureToggles,
-  UpdateTimelineChartEntryInput,
+  UpdateGanttChartEntryInput,
   UserDefinedField,
-  CardbookTimelineChart,
-  CardbookState
+  WorkspaceGanttChart,
+  WorkspaceState
 } from "../../shared/ipc";
-import { CalendarSettingsSidebar } from "../components/CalendarSettingsSidebar";
-import { TimelineView } from "../components/TimelineSidebar";
+import { GanttChartView } from "../components/ChronicleSidebar";
 import { FrontmatterSidebar } from "../components/FrontmatterSidebar";
 import { SettingsSidebar } from "../components/SettingsSidebar";
 import { ToolsSidebar } from "../components/ToolsSidebar";
@@ -21,44 +20,44 @@ interface UseAppTabRenderersInput {
   appInfo: AppInfo | null;
   editorSettings: EditorSettings;
   featureToggles: FeatureToggles;
-  timelineCharts: CardbookTimelineChart[];
-  handleOpenCard: (path: string) => void;
+  ganttCharts: WorkspaceGanttChart[];
+  handleOpenFile: (path: string) => void;
   handleSaveFeatureToggles: (toggles: FeatureToggles) => void;
   handleSaveSettings: (settings: EditorSettings) => void;
   handleSaveUserDefinedFields: (fields: UserDefinedField[]) => void;
-  handleUpdateTimelineEntry: (input: UpdateTimelineChartEntryInput) => Promise<void> | void;
+  handleUpdateGanttChartEntry: (input: UpdateGanttChartEntryInput) => Promise<void> | void;
   userDefinedFields: UserDefinedField[];
-  cardbookState: CardbookState | null;
+  workspaceState: WorkspaceState | null;
 }
 
 export function useAppTabRenderers({
   appInfo,
   editorSettings,
   featureToggles,
-  timelineCharts,
-  handleOpenCard,
+  ganttCharts,
+  handleOpenFile,
   handleSaveFeatureToggles,
   handleSaveSettings,
   handleSaveUserDefinedFields,
-  handleUpdateTimelineEntry,
+  handleUpdateGanttChartEntry,
   userDefinedFields,
-  cardbookState
+  workspaceState
 }: UseAppTabRenderersInput): {
-  renderTimelineTab: (chartId: string) => ReactNode;
+  renderGanttChartTab: (chartId: string) => ReactNode;
   renderPanelTab: (panel: PanelTabKind) => ReactNode;
 } {
-  const renderTimelineTab = useCallback((chartId: string): ReactNode => (
-    <TimelineView
-      chart={chartId === "charts" ? null : timelineCharts.find((chart) => chart.id === chartId) ?? null}
-      charts={chartId === "charts" ? timelineCharts : undefined}
-      onOpenCard={handleOpenCard}
-      onUpdateEntry={handleUpdateTimelineEntry}
+  const renderGanttChartTab = useCallback((chartId: string): ReactNode => (
+    <GanttChartView
+      chart={chartId === "charts" ? null : ganttCharts.find((chart) => chart.id === chartId) ?? null}
+      charts={chartId === "charts" ? ganttCharts : undefined}
+      onOpenFile={handleOpenFile}
+      onUpdateEntry={handleUpdateGanttChartEntry}
     />
-  ), [timelineCharts, handleOpenCard, handleUpdateTimelineEntry]);
+  ), [ganttCharts, handleOpenFile, handleUpdateGanttChartEntry]);
 
   const renderPanelTab = useCallback((panel: PanelTabKind): ReactNode => {
     if (panel === "tools") {
-      return <ToolsSidebar cardbookPath={cardbookState?.activeCardbook?.path ?? null} />;
+      return <ToolsSidebar workspacePath={workspaceState?.activeWorkspace?.path ?? null} />;
     }
 
     if (panel === "frontmatter") {
@@ -68,10 +67,6 @@ export function useAppTabRenderers({
           userDefinedFields={userDefinedFields}
         />
       );
-    }
-
-    if (panel === "calendar-settings") {
-      return <CalendarSettingsSidebar />;
     }
 
     return (
@@ -87,16 +82,16 @@ export function useAppTabRenderers({
     appInfo,
     editorSettings,
     featureToggles,
-    handleOpenCard,
+    handleOpenFile,
     handleSaveFeatureToggles,
     handleSaveSettings,
     handleSaveUserDefinedFields,
     userDefinedFields,
-    cardbookState
+    workspaceState
   ]);
 
   return {
-    renderTimelineTab,
+    renderGanttChartTab,
     renderPanelTab
   };
 }

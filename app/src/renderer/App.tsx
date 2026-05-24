@@ -2,21 +2,21 @@ import type { EditorView } from "@codemirror/view";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactElement } from "react";
 
-import type { CardbookState } from "../shared/ipc";
+import type { WorkspaceState } from "../shared/ipc";
 import type { AppLinkContextMenu } from "./appLinks";
 import {
-  openCardPathsForTabs,
-  registeredCardbooksForState,
+  openFilePathsForTabs,
+  registeredWorkspacesForState,
 } from "./appShellModel";
-import { AppEditorCardbook } from "./components/AppEditorCardbook";
-import { AppCardsSidebar } from "./components/AppCardsSidebar";
+import { AppEditorWorkspace } from "./components/AppEditorWorkspace";
+import { AppFilesSidebar } from "./components/AppFilesSidebar";
 import { AppOverlays } from "./components/AppOverlays";
 import { AppRail } from "./components/AppRail";
 import { AppStatusBar } from "./components/AppStatusBar";
 import { createTranslator, I18nProvider } from "./i18n";
 import { useActiveDocumentContext } from "./hooks/useActiveDocumentContext";
 import { useAppKeyboardShortcuts } from "./hooks/useAppKeyboardShortcuts";
-import { useAppPaneCardActions } from "./hooks/useAppPaneCardActions";
+import { useAppPaneFileActions } from "./hooks/useAppPaneFileActions";
 import { useAppRailNavigation } from "./hooks/useAppRailNavigation";
 import { useAppSettingsState } from "./hooks/useAppSettingsState";
 import { useAppTabRenderers } from "./hooks/useAppTabRenderers";
@@ -26,22 +26,22 @@ import { useCommandPaletteCommands } from "./hooks/useCommandPaletteCommands";
 import { usePaneTabMotion } from "./hooks/usePaneTabMotion";
 import { useRailFlights } from "./hooks/useRailFlights";
 import { useSidebarResize } from "./hooks/useSidebarResize";
-import { useSidebarCardInteractions } from "./hooks/useSidebarCardInteractions";
+import { useSidebarFileInteractions } from "./hooks/useSidebarFileInteractions";
 import { useSplitCloseMotion } from "./hooks/useSplitCloseMotion";
-import { useCardbookAliases } from "./hooks/useCardbookAliases";
-import { useCardbookCardActions } from "./hooks/useCardbookCardActions";
-import { useCardbookTimeline } from "./hooks/useCardbookTimeline";
-import { useCardbookRenameRailHold } from "./hooks/useCardbookRenameRailHold";
-import { useCardbookSearchState } from "./hooks/useCardbookSearchState";
+import { useWorkspaceAliases } from "./hooks/useWorkspaceAliases";
+import { useWorkspaceFileActions } from "./hooks/useWorkspaceFileActions";
+import { useWorkspaceGanttCharts } from "./hooks/useWorkspaceGanttCharts";
+import { useWorkspaceRenameRailHold } from "./hooks/useWorkspaceRenameRailHold";
+import { useWorkspaceSearchState } from "./hooks/useWorkspaceSearchState";
 import { useEditorStore } from "./store/editorStore";
 import { useUiStore, type RightPanelView } from "./store/uiStore";
-import { collectMarkdownCardPaths } from "./cardbookPaths";
+import { collectMarkdownPaths } from "./workspacePaths";
 import "./styles.css";
 
 export function App(): ReactElement {
-  const [cardbookState, setCardbookState] = useState<CardbookState | null>(null);
+  const [workspaceState, setWorkspaceState] = useState<WorkspaceState | null>(null);
   const [linkContextMenu, setLinkContextMenu] = useState<AppLinkContextMenu | null>(null);
-  const { closeToast, isToastClosing, setCardbookError, toastMessage } = useAppToast();
+  const { closeToast, isToastClosing, setWorkspaceError, toastMessage } = useAppToast();
   const [leftPaneScrollHeading, setLeftPaneScrollHeading] = useState<string | undefined>(undefined);
   const [rightPaneScrollHeading, setRightPaneScrollHeading] = useState<string | undefined>(undefined);
   const [editorActionPulse, setEditorActionPulse] = useState(0);
@@ -54,15 +54,15 @@ export function App(): ReactElement {
     showSidebarCreateFlight,
     sidebarCreateFlight
   } = useRailFlights();
-  const [cardSearchFocusRequest, setCardSearchFocusRequest] = useState(0);
-  const [cardSelectionCount, setCardSelectionCount] = useState(0);
+  const [fileSearchFocusRequest, setFileSearchFocusRequest] = useState(0);
+  const [fileSelectionCount, setFileSelectionCount] = useState(0);
   const [isSourceMode, setIsSourceMode] = useState(false);
   const {
-    holdCardbookRailAfterRename,
-    isCardbookRenameActive,
-    isCardbookRenameHoldingRail,
-    setIsCardbookRenameActive
-  } = useCardbookRenameRailHold();
+    holdWorkspaceRailAfterRename,
+    isWorkspaceRenameActive,
+    isWorkspaceRenameHoldingRail,
+    setIsWorkspaceRenameActive
+  } = useWorkspaceRenameRailHold();
 
   const {
     editorSettings,
@@ -77,8 +77,8 @@ export function App(): ReactElement {
     closeTabsToRight,
     closeAllTabsInPane,
     moveTab,
-    openCardInPane,
-    openTimelineChartInPane,
+    openFileInPane,
+    openGanttChartInPane,
     openPanelInPane,
     setEditorSettings,
     setFocusedPane,
@@ -102,8 +102,8 @@ export function App(): ReactElement {
     toggleSidebar: toggleSidebarState,
     toggleTypewriterMode
   } = useUiStore();
-  const hasOpenTimeline = useMemo(
-    () => Object.values(tabs).some((tab) => tab.kind === "timeline"),
+  const hasOpenGanttChart = useMemo(
+    () => Object.values(tabs).some((tab) => tab.kind === "gantt"),
     [tabs]
   );
   const { isSplitClosing, toggleSplitWithMotion } = useSplitCloseMotion(isSplit, toggleSplit);
@@ -126,9 +126,9 @@ export function App(): ReactElement {
   });
 
   const toggleSidebar = useCallback((): void => {
-    if (isCardbookRenameActive) return;
+    if (isWorkspaceRenameActive) return;
     toggleSidebarState();
-  }, [isCardbookRenameActive, toggleSidebarState]);
+  }, [isWorkspaceRenameActive, toggleSidebarState]);
 
   const t = useMemo(() => createTranslator(editorSettings.language), [editorSettings.language]);
   const {
@@ -140,8 +140,8 @@ export function App(): ReactElement {
     userDefinedFields
   } = useAppSettingsState({
     setEditorSettings,
-    setCardbookError,
-    setCardbookState
+    setWorkspaceError,
+    setWorkspaceState
   });
 
   const {
@@ -156,143 +156,143 @@ export function App(): ReactElement {
     setSearchFrontmatterField,
     setSearchMode,
     setSearchQuery
-  } = useCardbookSearchState({
-    setCardbookError,
+  } = useWorkspaceSearchState({
+    setWorkspaceError,
     userDefinedFields,
-    cardbookState
+    workspaceState
   });
 
-  const requestCardSearchFocus = useCallback((): void => {
-    setSidebarView("cards");
-    setCardSearchFocusRequest((current) => current + 1);
+  const requestFileSearchFocus = useCallback((): void => {
+    setSidebarView("files");
+    setFileSearchFocusRequest((current) => current + 1);
   }, [setSidebarView]);
 
   const existingMarkdownPaths = useMemo(
-    () => collectMarkdownCardPaths(cardbookState?.cardTree ?? []),
-    [cardbookState?.cardTree]
+    () => collectMarkdownPaths(workspaceState?.fileTree ?? []),
+    [workspaceState?.fileTree]
   );
-  const aliasesByPath = useCardbookAliases({ setCardbookError, cardbookState });
-  const { timelineCharts, handleUpdateTimelineEntry, reloadTimeline } = useCardbookTimeline({
-    hasOpenTimeline,
-    setCardbookError,
+  const aliasesByPath = useWorkspaceAliases({ setWorkspaceError, workspaceState });
+  const { ganttCharts, handleUpdateGanttChartEntry, reloadGanttCharts } = useWorkspaceGanttCharts({
+    hasOpenGanttChart,
+    setWorkspaceError,
     tabs,
     updateTabContent,
-    cardbookState
+    workspaceState
   });
 
   const {
-    handleDeleteActiveCard,
+    handleDeleteActiveFile,
     handleDeleteTreeItem,
     handleDeleteTreeItems,
-    handleDuplicateActiveCard,
-    handleDuplicateTreeCard,
-    handleCreateCard,
-    handleCreateCardFolder,
-    handleCreateNewCardbook,
+    handleDuplicateActiveFile,
+    handleDuplicateTreeFile,
+    handleCreateFile,
+    handleCreateFolder,
+    handleCreateNewWorkspace,
     handleCreateNoteFromPane,
-    handleOpenCard,
+    handleOpenFile,
     handleOpenMarkdownLink,
     handleOpenWikiLink,
-    handleOpenCardbook,
-    handleRemoveCardbook,
-    handleRenameCardbook,
-    handleSwitchCardbook,
-    handleMoveCard,
-    handleMoveCardFolder,
+    handleOpenWorkspace,
+    handleRemoveWorkspace,
+    handleRenameWorkspace,
+    handleSwitchWorkspace,
+    handleMoveFile,
+    handleMoveFolder,
     handleMoveTreeItems,
     handleRenameTreeItem,
     handleTogglePin,
-    isCreatingCard,
-    isCreatingCardFolder,
-    isCreatingCardbook,
-    isOpeningCardbook,
-    setIsCreatingCard
-  } = useCardbookCardActions({
+    isCreatingFile,
+    isCreatingFolder,
+    isCreatingWorkspace,
+    isOpeningWorkspace,
+    setIsCreatingFile
+  } = useWorkspaceFileActions({
     aliasesByPath,
     closeAllTabs,
     closeTab,
     existingMarkdownPaths,
     focusedPane,
     leftPane,
-    openCardInPane,
+    openFileInPane,
     rightPane,
     setLeftPaneScrollHeading,
     setRightPaneScrollHeading,
-    setCardbookError,
-    setCardbookState,
+    setWorkspaceError,
+    setWorkspaceState,
     tabs,
     t,
     updateTabMeta,
-    cardbookState
+    workspaceState
   });
 
   const {
-    handleCreateCardFromSidebar,
-    handleCreateCardFolderFromSidebar,
-    handleSidebarOpenCard
-  } = useSidebarCardInteractions({
+    handleCreateFileFromSidebar,
+    handleCreateFolderFromSidebar,
+    handleSidebarOpenFile
+  } = useSidebarFileInteractions({
     focusedPane,
-    handleCreateCard,
-    handleCreateCardFolder,
-    handleOpenCard,
-    openCardInPane,
+    handleCreateFile,
+    handleCreateFolder,
+    handleOpenFile,
+    openFileInPane,
     setTabActive,
-    setCardbookError,
+    setWorkspaceError,
     showRailTabFlight,
     showSidebarCreateFlight,
     t
   });
 
-  const handleCardSaved = useCallback((): void => {
-    void reloadTimeline();
-  }, [reloadTimeline]);
+  const handleFileSaved = useCallback((): void => {
+    void reloadGanttCharts();
+  }, [reloadGanttCharts]);
 
-  const refreshCardbookAfterExternalChange = useCallback(
-    async (cardbookId: string): Promise<void> => {
+  const refreshWorkspaceAfterExternalChange = useCallback(
+    async (workspaceId: string): Promise<void> => {
       if (!window.relic) return;
-      if (cardbookState?.activeCardbook?.id && cardbookState.activeCardbook.id !== cardbookId) return;
+      if (workspaceState?.activeWorkspace?.id && workspaceState.activeWorkspace.id !== workspaceId) return;
 
-      const result = await window.relic.getCardbookState();
+      const result = await window.relic.getWorkspaceState();
       if (!result.ok) {
-        setCardbookError(result.error.message);
+        setWorkspaceError(result.error.message);
         return;
       }
 
-      if (result.value.activeCardbook?.id !== cardbookId) return;
+      if (result.value.activeWorkspace?.id !== workspaceId) return;
 
-      const nextCardPaths = collectMarkdownCardPaths(result.value.cardTree);
-      const nextCardPathSet = new Set(nextCardPaths);
+      const nextFilePaths = collectMarkdownPaths(result.value.fileTree);
+      const nextFilePathSet = new Set(nextFilePaths);
 
       for (const tabId of leftPane.tabIds) {
         const tab = tabs[tabId];
-        if (tab?.kind === "card" && !nextCardPathSet.has(tab.path)) closeTab("left", tabId);
+        if (tab?.kind === "file" && !nextFilePathSet.has(tab.path)) closeTab("left", tabId);
       }
 
       for (const tabId of rightPane.tabIds) {
         const tab = tabs[tabId];
-        if (tab?.kind === "card" && !nextCardPathSet.has(tab.path)) closeTab("right", tabId);
+        if (tab?.kind === "file" && !nextFilePathSet.has(tab.path)) closeTab("right", tabId);
       }
 
-      setCardbookState(result.value);
+      setWorkspaceState(result.value);
     },
     [
       closeTab,
       leftPane.tabIds,
       rightPane.tabIds,
-      setCardbookError,
-      setCardbookState,
+      setWorkspaceError,
+      setWorkspaceState,
       tabs,
-      cardbookState?.activeCardbook?.id
+      workspaceState?.activeWorkspace?.id
     ]
   );
 
   useEffect(() => {
-    if (!window.relic?.onCardbookChanged) return undefined;
+    if (!window.relic?.onWorkspaceChanged) return undefined;
 
-    return window.relic.onCardbookChanged((event) => {
-      void refreshCardbookAfterExternalChange(event.cardbookId);
+    return window.relic.onWorkspaceChanged((event) => {
+      void refreshWorkspaceAfterExternalChange(event.workspaceId);
     });
-  }, [refreshCardbookAfterExternalChange]);
+  }, [refreshWorkspaceAfterExternalChange]);
 
   useAppTheme(editorSettings.theme);
 
@@ -300,9 +300,9 @@ export function App(): ReactElement {
     closeTab: closeTabWithMotion,
     focusedPane,
     leftPane,
-    requestCardSearchFocus,
+    requestFileSearchFocus,
     rightPane,
-    setIsCreatingCard,
+    setIsCreatingFile,
     setShowCommandPalette,
     setShowQuickSwitcher,
     setSidebarView,
@@ -341,45 +341,45 @@ export function App(): ReactElement {
   }, [isRightPanelOpen, rightPanelView, setRightPanelView, toggleRightPanel]);
 
   const {
-    handleCreateCardInCardFolder,
-    handleCreateCardFolderInCardFolder,
-    handleDuplicateTabCard,
-    handleRevealTabCard,
-    handleRevealCardbookItem,
-    handleSelectCardFolder,
-    openCardInOtherPane,
-    openTreeCardInOtherPane,
-    openCardbookPathInOtherPane
-  } = useAppPaneCardActions({
+    handleCreateFileInFolder,
+    handleCreateFolderInFolder,
+    handleDuplicateTabFile,
+    handleRevealTabFile,
+    handleRevealWorkspaceItem,
+    handleSelectFolder,
+    openFileInOtherPane,
+    openTreeFileInOtherPane,
+    openWorkspacePathInOtherPane
+  } = useAppPaneFileActions({
     focusedPane,
-    handleDuplicateTreeCard,
+    handleDuplicateTreeFile,
     isSplit,
-    openCardInPane,
-    openTimelineChartInPane,
+    openFileInPane,
+    openGanttChartInPane,
     openPanelInPane,
     setLeftPaneScrollHeading,
     setRightPaneScrollHeading,
-    setCardbookError,
-    setCardbookState,
+    setWorkspaceError,
+    setWorkspaceState,
     t,
     tabs
   });
 
-  const registeredCardbooks = useMemo(
-    () => registeredCardbooksForState(cardbookState),
-    [cardbookState]
+  const registeredWorkspaces = useMemo(
+    () => registeredWorkspacesForState(workspaceState),
+    [workspaceState]
   );
   const pinnedPathSet = useMemo(
-    () => new Set(cardbookState?.pinnedPaths ?? []),
-    [cardbookState?.pinnedPaths]
+    () => new Set(workspaceState?.pinnedPaths ?? []),
+    [workspaceState?.pinnedPaths]
   );
-  const openCardPathSet = useMemo(
-    () => openCardPathsForTabs(tabs),
+  const openFilePathSet = useMemo(
+    () => openFilePathsForTabs(tabs),
     [tabs]
   );
 
   const {
-    activeCardTabInFocusedPane,
+    activeFileTabInFocusedPane,
     backlinks,
     isLoadingBacklinks,
     outlineHeadings,
@@ -387,20 +387,20 @@ export function App(): ReactElement {
   } = useActiveDocumentContext({
     aliasesByPath,
     existingMarkdownPaths,
-    cardTree: cardbookState?.cardTree,
+    fileTree: workspaceState?.fileTree,
     focusedPane,
     leftPane,
     rightPane,
-    setCardbookError,
+    setWorkspaceError,
     tabs
   });
 
   const commands = useCommandPaletteCommands({
-    activeCardName: activeCardTabInFocusedPane?.name ?? null,
-    handleDeleteActiveCard,
-    handleDuplicateActiveCard,
-    requestCardSearchFocus,
-    setIsCreatingCard,
+    activeFileName: activeFileTabInFocusedPane?.name ?? null,
+    handleDeleteActiveFile,
+    handleDuplicateActiveFile,
+    requestFileSearchFocus,
+    setIsCreatingFile,
     setShowQuickSwitcher,
     setSidebarView,
     t,
@@ -429,7 +429,7 @@ export function App(): ReactElement {
     featureToggles,
     focusedPane,
     leftPane,
-    openTimelineChartInPane,
+    openGanttChartInPane,
     openPanelInPane,
     rightPane,
     setSidebarView,
@@ -439,18 +439,18 @@ export function App(): ReactElement {
     tabs
   });
 
-  const { renderTimelineTab, renderPanelTab } = useAppTabRenderers({
+  const { renderGanttChartTab, renderPanelTab } = useAppTabRenderers({
     appInfo,
     editorSettings,
     featureToggles,
-    timelineCharts,
-    handleOpenCard,
+    ganttCharts,
+    handleOpenFile,
     handleSaveFeatureToggles,
     handleSaveSettings,
     handleSaveUserDefinedFields,
-    handleUpdateTimelineEntry,
+    handleUpdateGanttChartEntry,
     userDefinedFields,
-    cardbookState
+    workspaceState
   });
 
   // ──────────────────
@@ -461,86 +461,86 @@ export function App(): ReactElement {
     <I18nProvider language={editorSettings.language}>
     <div className="app-shell">
       <div className="title-bar" />
-      <div className="cardbook">
+      <div className="workspace">
         <AppRail
           activePanelTabIds={activePanelTabIds}
           activeSidebarView={activeSidebarView}
-          activeCardbookId={cardbookState?.activeCardbook?.id ?? null}
+          activeWorkspaceId={workspaceState?.activeWorkspace?.id ?? null}
           chartRailView={chartRailView}
           isChartTabActive={isChartTabActive}
           isChartTabOpen={isChartTabOpen}
           isSidebarOpen={isSidebarOpen}
-          isCardbookRenameActive={isCardbookRenameActive}
-          isCardbookRenameHoldingRail={isCardbookRenameHoldingRail}
+          isWorkspaceRenameActive={isWorkspaceRenameActive}
+          isWorkspaceRenameHoldingRail={isWorkspaceRenameHoldingRail}
           onChartButton={handleRailChartButton}
           onCloseSidebar={closeSidebar}
           onPanelButton={handleRailPanelButton}
-          onRemoveCardbook={handleRemoveCardbook}
-          onRenameActiveChange={setIsCardbookRenameActive}
-          onRenameComplete={holdCardbookRailAfterRename}
-          onRenameCardbook={handleRenameCardbook}
+          onRemoveWorkspace={handleRemoveWorkspace}
+          onRenameActiveChange={setIsWorkspaceRenameActive}
+          onRenameComplete={holdWorkspaceRailAfterRename}
+          onRenameWorkspace={handleRenameWorkspace}
           onSetSidebarView={setSidebarView}
-          onSwitchCardbook={handleSwitchCardbook}
+          onSwitchWorkspace={handleSwitchWorkspace}
           openPanelTabIds={openPanelTabIds}
           panelRailViews={panelRailViews}
           primaryRailViews={primaryRailViews}
-          registeredCardbooks={registeredCardbooks}
-          renameLabel={t("cards.rename")}
-          removeCardbookLabel={(name) => t("cards.removeCardbook", { name })}
+          registeredWorkspaces={registeredWorkspaces}
+          renameLabel={t("files.rename")}
+          removeWorkspaceLabel={(name) => t("files.removeWorkspace", { name })}
           viewSwitcherLabel={t("nav.viewSwitcher")}
-          cardbooksLabel={t("cards.registeredCardbooks")}
+          workspacesLabel={t("files.registeredWorkspaces")}
         />
 
-        <AppCardsSidebar
+        <AppFilesSidebar
           activeSidebarView={activeSidebarView}
-          cardSelectionCount={cardSelectionCount}
-          isCreatingCard={isCreatingCard}
-          isCreatingCardFolder={isCreatingCardFolder}
-          isCreatingCardbook={isCreatingCardbook}
-          isOpeningCardbook={isOpeningCardbook}
+          fileSelectionCount={fileSelectionCount}
+          isCreatingFile={isCreatingFile}
+          isCreatingFolder={isCreatingFolder}
+          isCreatingWorkspace={isCreatingWorkspace}
+          isOpeningWorkspace={isOpeningWorkspace}
           isSearching={isSearching}
           isSidebarOpen={isSidebarOpen}
           isSidebarResizing={isSidebarResizing}
-          onCreateCard={handleCreateCardFromSidebar}
-          onCreateCardInCardFolder={handleCreateCardInCardFolder}
-          onCreateCardFolder={handleCreateCardFolderFromSidebar}
-          onCreateCardFolderInCardFolder={handleCreateCardFolderInCardFolder}
-          onCreateCardbook={handleCreateNewCardbook}
+          onCreateFile={handleCreateFileFromSidebar}
+          onCreateFileInFolder={handleCreateFileInFolder}
+          onCreateFolder={handleCreateFolderFromSidebar}
+          onCreateFolderInFolder={handleCreateFolderInFolder}
+          onCreateWorkspace={handleCreateNewWorkspace}
           onDeleteItem={handleDeleteTreeItem}
           onDeleteItems={handleDeleteTreeItems}
-          onDuplicateCard={handleDuplicateTreeCard}
-          onMoveCard={handleMoveCard}
-          onMoveCardFolder={handleMoveCardFolder}
+          onDuplicateFile={handleDuplicateTreeFile}
+          onMoveFile={handleMoveFile}
+          onMoveFolder={handleMoveFolder}
           onMoveItems={handleMoveTreeItems}
-          onOpenCard={handleSidebarOpenCard}
-          onOpenInOtherPane={isSplit ? openTreeCardInOtherPane : undefined}
-          onOpenCardbook={handleOpenCardbook}
-          onRevealItem={handleRevealCardbookItem}
+          onOpenFile={handleSidebarOpenFile}
+          onOpenInOtherPane={isSplit ? openTreeFileInOtherPane : undefined}
+          onOpenWorkspace={handleOpenWorkspace}
+          onRevealItem={handleRevealWorkspaceItem}
           onRenameItem={handleRenameTreeItem}
           onSearchFrontmatterFieldChange={setSearchFrontmatterField}
           onSearchModeChange={setSearchMode}
           onSearchQueryChange={setSearchQuery}
-          onSelectCardFolder={handleSelectCardFolder}
-          onSelectedCountChange={setCardSelectionCount}
+          onSelectFolder={handleSelectFolder}
+          onSelectedCountChange={setFileSelectionCount}
           onTogglePin={handleTogglePin}
-          openCardPaths={openCardPathSet}
+          openFilePaths={openFilePathSet}
           searchError={searchError}
-          searchFocusRequest={cardSearchFocusRequest}
+          searchFocusRequest={fileSearchFocusRequest}
           searchFrontmatterCandidates={frontmatterCandidates}
           searchFrontmatterField={searchFrontmatterField}
           searchFrontmatterFields={frontmatterSearchFields}
           searchMode={searchMode}
           searchQuery={searchQuery}
           searchResults={searchResults}
-          selectedCountLabel={t("cards.selectedCount", { count: cardSelectionCount })}
+          selectedCountLabel={t("files.selectedCount", { count: fileSelectionCount })}
           sidebarViews={sidebarViews}
           sidebarWidth={sidebarWidth}
           startSidebarResize={startSidebarResize}
-          cardbookState={cardbookState}
+          workspaceState={workspaceState}
         />
 
-        <AppEditorCardbook
-          allCardPaths={existingMarkdownPaths}
+        <AppEditorWorkspace
+          allFilePaths={existingMarkdownPaths}
           backlinks={backlinks}
           editorActionPulse={editorActionPulse}
           editorSettings={editorSettings}
@@ -559,20 +559,20 @@ export function App(): ReactElement {
           onCloseAllTabsInPane={closeAllTabsInPaneWithMotion}
           onCloseOtherTabs={closeOtherTabsWithMotion}
           onCloseTabsToRight={closeTabsToRightWithMotion}
-          onCreateCard={handleCreateNoteFromPane}
-          onDuplicateTabCard={handleDuplicateTabCard}
+          onCreateFile={handleCreateNoteFromPane}
+          onDuplicateTabFile={handleDuplicateTabFile}
           onEditorAction={() => setEditorActionPulse((value) => value + 1)}
-          onCardSaved={handleCardSaved}
-          onOpenCard={handleOpenCard}
-          onOpenInOtherPane={openCardInOtherPane}
+          onFileSaved={handleFileSaved}
+          onOpenFile={handleOpenFile}
+          onOpenInOtherPane={openFileInOtherPane}
           onOpenLink={handleOpenMarkdownLink}
           onOpenWikiLink={handleOpenWikiLink}
           onOutlineHeadingClick={(heading) => {
             const setScrollHeading = focusedPane === "left" ? setLeftPaneScrollHeading : setRightPaneScrollHeading;
             setScrollHeading(heading);
           }}
-          onRenameCard={(path, name) => handleRenameTreeItem(path, "card", name)}
-          onRevealTabCard={handleRevealTabCard}
+          onRenameFile={(path, name) => handleRenameTreeItem(path, "file", name)}
+          onRevealTabFile={handleRevealTabFile}
           onRightPanelResizeStart={startRightPanelResize}
           onRightPanelViewButton={handleRightPanelViewButton}
           onScrollTargetHandled={(pane) => {
@@ -592,7 +592,7 @@ export function App(): ReactElement {
           onTogglePinTab={toggleTabPinned}
           outlineHeadings={outlineHeadings}
           outgoingLinks={outgoingLinks}
-          renderTimelineTab={renderTimelineTab}
+          renderGanttChartTab={renderGanttChartTab}
           renderPanelTab={renderPanelTab}
           renderPanelTabIcon={renderPanelTabIcon}
           rightClosingTabIds={rightClosingTabIds}
@@ -603,24 +603,24 @@ export function App(): ReactElement {
           setLinkContextMenu={setLinkContextMenu}
           showRightPanelControls={featureToggles.rightPanel}
           userDefinedFields={userDefinedFields}
-          cardbookPath={cardbookState?.activeCardbook?.path}
+          workspacePath={workspaceState?.activeWorkspace?.path}
         />
       </div>
 
-      <AppStatusBar activeCardTab={activeCardTabInFocusedPane} />
+      <AppStatusBar activeFileTab={activeFileTabInFocusedPane} />
 
       <AppOverlays
         aliasesByPath={aliasesByPath}
         closeToast={closeToast}
         commands={commands}
         existingMarkdownPaths={existingMarkdownPaths}
-        handleOpenCard={handleOpenCard}
+        handleOpenFile={handleOpenFile}
         handleOpenWikiLink={handleOpenWikiLink}
-        handleRevealCardbookItem={handleRevealCardbookItem}
+        handleRevealWorkspaceItem={handleRevealWorkspaceItem}
         isSplit={isSplit}
         isToastClosing={isToastClosing}
         linkContextMenu={linkContextMenu}
-        openCardbookPathInOtherPane={openCardbookPathInOtherPane}
+        openWorkspacePathInOtherPane={openWorkspacePathInOtherPane}
         railTabFlight={railTabFlight}
         setLinkContextMenu={setLinkContextMenu}
         setShowCommandPalette={setShowCommandPalette}

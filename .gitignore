@@ -37,7 +37,7 @@ out/
 
 # テスト
 coverage/
-test-cardbooks/
+test-workspaces/
 
 # webpack
 .webpack/
@@ -73,9 +73,9 @@ known_hosts
 
 # Relic / Electron のローカル実行データ
 app-settings.json
-cardbooks/*.json
+workspaces/*.json
 relic-user-data/
-Relic Test Cardbook/
+Relic Test Workspace/
 
 # ローカルAI/エディタ設定
 .claude/settings.local.json

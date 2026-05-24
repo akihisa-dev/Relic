@@ -51,17 +51,17 @@ const fontFamilyMap: Record<EditorSettings["font"], string> = {
   mono: "Menlo, monospace",
   system: '-apple-system, BlinkMacSystemFont, "Hiragino Sans", sans-serif'
 };
-export function buildWikiLinkCompletionSource(allCardPaths: string[]) {
+export function buildWikiLinkCompletionSource(allFilePaths: string[]) {
   const basenameMap = new Map<string, string[]>();
 
-  for (const cardPath of allCardPaths) {
-    const basename = cardPath.split("/").at(-1)?.replace(/\.md$/, "") ?? "";
+  for (const filePath of allFilePaths) {
+    const basename = filePath.split("/").at(-1)?.replace(/\.md$/, "") ?? "";
 
     if (!basename) continue;
 
     if (!basenameMap.has(basename)) basenameMap.set(basename, []);
 
-    basenameMap.get(basename)!.push(cardPath);
+    basenameMap.get(basename)!.push(filePath);
   }
 
   return (context: CompletionContext): CompletionResult | null => {
@@ -75,8 +75,8 @@ export function buildWikiLinkCompletionSource(allCardPaths: string[]) {
       if (paths.length === 1) {
         options.push({ apply: `${basename}]]`, label: basename });
       } else {
-        for (const cardPath of paths) {
-          const label = cardPath.replace(/\.md$/, "");
+        for (const filePath of paths) {
+          const label = filePath.replace(/\.md$/, "");
           options.push({ apply: `${label}]]`, label });
         }
       }
@@ -94,7 +94,7 @@ export function buildExtensions(
   typewriterMode: boolean,
   sourceMode: boolean,
   onChangeRef: RefObject<(c: string) => void>,
-  allCardPaths: string[],
+  allFilePaths: string[],
   userDefinedFields: UserDefinedField[],
   frontmatterCandidates: Record<string, string[]>,
   t: Translator,
@@ -109,7 +109,7 @@ export function buildExtensions(
     editorEditableCompartment.of(EditorView.editable.of(true)),
     markdown({ extensions: GFM }),
     EditorView.lineWrapping,
-    autocompletion({ override: [buildWikiLinkCompletionSource(allCardPaths)] }),
+    autocompletion({ override: [buildWikiLinkCompletionSource(allFilePaths)] }),
     contextSelectionHighlightField,
     frontmatterCollapsedField,
     EditorView.domEventHandlers({

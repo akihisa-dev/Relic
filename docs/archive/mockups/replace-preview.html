@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Replace preview mockup</title>
+  <link rel="stylesheet" href="mockups.css">
+</head>
+<body>
+  <div class="window">
+    <header class="titlebar">
+      <div class="traffic">
+        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        <span class="app-name">Relic</span>
+      </div>
+      <nav class="tabs">
+        <div class="tab active">世界観.md</div>
+      </nav>
+      <div class="title-actions">
+        <span>main</span>
+        <span>保存済み</span>
+      </div>
+    </header>
+
+    <div class="body">
+      <aside class="sidebar">
+        <nav class="rail">
+          <button class="rail-button" title="Files">F</button>
+          <button class="rail-button active" title="Search">S</button>
+          <button class="rail-button" title="Git">G</button>
+          <button class="rail-button" title="Settings">●</button>
+        </nav>
+        <section class="side-content">
+          <div class="side-header">
+            <p class="eyebrow">Search</p>
+            <div class="workspace-name"><span>一括置換</span><span class="badge">Preview</span></div>
+          </div>
+          <div class="side-scroll">
+            <div class="field">検索: 港町</div>
+            <div class="field">置換: 旧港</div>
+            <div class="segmented">
+              <div class="segment">ファイル内</div>
+              <div class="segment active">全ファイル</div>
+            </div>
+            <div class="section-title">対象</div>
+            <div class="result-item active">3ファイル / 7箇所</div>
+          </div>
+        </section>
+      </aside>
+
+      <main class="main">
+        <div class="toolbar">
+          <div class="tool-group"><span class="mock-label">一括置換プレビュー</span></div>
+          <div class="tool-group"><button class="primary-button">確認して実行</button></div>
+        </div>
+
+        <section class="tool-surface">
+          <div class="panel-box">
+            <div class="panel-box-header"><span>変更一覧</span><span class="muted">実行前に確認</span></div>
+            <div class="panel-box-body">
+              <div class="preview-list">
+                <div class="preview-row"><span>世界観.md</span><span>2箇所</span></div>
+                <div class="preview-row"><span>第一章.md</span><span>4箇所</span></div>
+                <div class="preview-row"><span>地名一覧.md</span><span>1箇所</span></div>
+                <div class="preview-row"><span>フロントマター内</span><span>検索対象に含む</span></div>
+                <div class="preview-row"><span>コードブロック</span><span>置換対象外</span></div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <footer class="statusbar">
+      <div class="status-group"><span>Replace preview</span><span>7 matches</span></div>
+      <div class="status-group"><span>未実行</span></div>
+    </footer>
+  </div>
+  <script src="mockup-nav.js"></script>
+</body>
+</html>

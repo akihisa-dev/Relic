@@ -3,10 +3,10 @@ import path from "node:path";
 
 import { registerAppHandlers } from "./ipc/appHandlers";
 import { registerEditorHandlers } from "./ipc/editorHandlers";
-import { registerCardHandlers } from "./ipc/cardHandlers";
+import { registerFileHandlers } from "./ipc/fileHandlers";
 import { registerToolHandlers } from "./ipc/toolHandlers";
-import { registerCardbookHandlers } from "./ipc/cardbookHandlers";
-import { stopCardbookWatcher } from "./cardbook/cardbookWatcher";
+import { registerWorkspaceHandlers } from "./ipc/workspaceHandlers";
+import { stopWorkspaceWatcher } from "./workspace/workspaceWatcher";
 
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string | undefined;
 declare const MAIN_WINDOW_VITE_NAME: string;
@@ -103,7 +103,7 @@ function isAllowedAppNavigation(url: string): boolean {
     return true;
   }
 
-  return url.startsWith("card://");
+  return url.startsWith("file://");
 }
 
 function isAllowedExternalUrl(url: string): boolean {
@@ -122,9 +122,9 @@ function isAllowedExternalUrl(url: string): boolean {
 app.whenReady().then(() => {
   registerAppHandlers();
   registerEditorHandlers();
-  registerCardHandlers();
+  registerFileHandlers();
   registerToolHandlers();
-  registerCardbookHandlers();
+  registerWorkspaceHandlers();
   createWindow();
 
 
@@ -142,5 +142,5 @@ app.on("window-all-closed", () => {
 });
 
 app.on("before-quit", () => {
-  stopCardbookWatcher();
+  stopWorkspaceWatcher();
 });

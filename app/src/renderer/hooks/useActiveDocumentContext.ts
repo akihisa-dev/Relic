@@ -1,60 +1,60 @@
-import type { Backlink, CardbookTreeNode } from "../../shared/ipc";
+import type { Backlink, WorkspaceTreeNode } from "../../shared/ipc";
 import { resolveWikiLinks, type AliasIndex, type ResolvedWikiLink } from "../../shared/links";
 import {
   extractOutlineHeadings,
-  getActiveCardTabInPane,
+  getActiveFileTabInPane,
   type OutlineHeading
 } from "../editorDerivedState";
-import type { CardTab, PaneId, PaneState, Tab } from "../store/editorStore";
+import type { FileTab, PaneId, PaneState, Tab } from "../store/editorStore";
 import { useBacklinksState } from "./useBacklinksState";
 
 interface UseActiveDocumentContextInput {
   aliasesByPath: AliasIndex;
   existingMarkdownPaths: string[];
-  cardTree: CardbookTreeNode[] | undefined;
+  fileTree: WorkspaceTreeNode[] | undefined;
   focusedPane: PaneId;
   leftPane: PaneState;
   rightPane: PaneState;
-  setCardbookError: (message: string | null) => void;
+  setWorkspaceError: (message: string | null) => void;
   tabs: Record<string, Tab>;
 }
 
 export function useActiveDocumentContext({
   aliasesByPath,
   existingMarkdownPaths,
-  cardTree,
+  fileTree,
   focusedPane,
   leftPane,
   rightPane,
-  setCardbookError,
+  setWorkspaceError,
   tabs
 }: UseActiveDocumentContextInput): {
-  activeCardTabInFocusedPane: CardTab | null;
+  activeFileTabInFocusedPane: FileTab | null;
   backlinks: Backlink[];
   isLoadingBacklinks: boolean;
   outlineHeadings: OutlineHeading[];
   outgoingLinks: ResolvedWikiLink[];
 } {
-  const activeCardTabInFocusedPane = getActiveCardTabInPane(
+  const activeFileTabInFocusedPane = getActiveFileTabInPane(
     focusedPane,
     { leftPane, rightPane },
     tabs
   );
-  const outlineHeadings = activeCardTabInFocusedPane
-    ? extractOutlineHeadings(activeCardTabInFocusedPane.content)
+  const outlineHeadings = activeFileTabInFocusedPane
+    ? extractOutlineHeadings(activeFileTabInFocusedPane.content)
     : [];
-  const outgoingLinks = activeCardTabInFocusedPane
-    ? resolveWikiLinks(activeCardTabInFocusedPane.content, activeCardTabInFocusedPane.path, existingMarkdownPaths, aliasesByPath)
+  const outgoingLinks = activeFileTabInFocusedPane
+    ? resolveWikiLinks(activeFileTabInFocusedPane.content, activeFileTabInFocusedPane.path, existingMarkdownPaths, aliasesByPath)
     : [];
 
   const { backlinks, isLoadingBacklinks } = useBacklinksState({
-    activeCardPath: activeCardTabInFocusedPane?.path ?? null,
-    cardTree,
-    setCardbookError
+    activeFilePath: activeFileTabInFocusedPane?.path ?? null,
+    fileTree,
+    setWorkspaceError
   });
 
   return {
-    activeCardTabInFocusedPane,
+    activeFileTabInFocusedPane,
     backlinks,
     isLoadingBacklinks,
     outlineHeadings,

@@ -10,18 +10,18 @@ import { PaneView, type PaneViewProps } from "./PaneView";
 
 const emptyPane = (): PaneState => ({ activeTabId: null, history: [], tabIds: [] });
 
-const cardTab: Tab = {
+const fileTab: Tab = {
   content: "hello world",
-  id: "tab-card",
-  kind: "card",
+  id: "tab-file",
+  kind: "file",
   name: "Note",
-  path: "CardFolder/Note.md"
+  path: "Folder/Note.md"
 };
 
-const secondCardTab: Tab = {
+const secondFileTab: Tab = {
   content: "second",
   id: "tab-second",
-  kind: "card",
+  kind: "file",
   name: "Second",
   path: "Second.md"
 };
@@ -33,11 +33,11 @@ const panelTab: Tab = {
   panel: "frontmatter"
 };
 
-const timelineTab: Tab = {
-  chartId: "timeline",
-  id: "timeline-timeline",
-  kind: "timeline",
-  name: "Timeline"
+const ganttTab: Tab = {
+  chartId: "chronicle",
+  id: "gantt-chronicle",
+  kind: "gantt",
+  name: "Chronicle"
 };
 
 function resetStore(): void {
@@ -62,7 +62,7 @@ function setPaneState(tabs: Record<string, Tab>, leftPane: PaneState, rightPane:
 
 function renderPaneView(overrides: Partial<PaneViewProps> = {}): PaneViewProps {
   const props: PaneViewProps = {
-    allCardPaths: [],
+    allFilePaths: [],
     closingTabIds: new Set(),
     editorActionPulse: 0,
     editorSettings: defaultEditorSettings,
@@ -70,26 +70,26 @@ function renderPaneView(overrides: Partial<PaneViewProps> = {}): PaneViewProps {
     frontmatterCandidates: {},
     isSplitView: false,
     pane: "left",
-    renderTimelineTab: (chartId) => <div>Timeline {chartId}</div>,
+    renderGanttChartTab: (chartId) => <div>Gantt {chartId}</div>,
     renderPanelTab: (panel) => <div>Panel {panel}</div>,
     renderPanelTabIcon: () => <svg data-testid="panel-tab-icon" />,
     sourceMode: false,
     typewriterMode: false,
     userDefinedFields: [],
     viewRef: { current: null } as MutableRefObject<EditorView | null>,
-    cardbookPath: "/cardbook",
+    workspacePath: "/workspace",
     onCloseAllTabs: vi.fn(),
     onCloseOtherTabs: vi.fn(),
     onCloseTabsToRight: vi.fn(),
-    onCreateCard: vi.fn(),
-    onDuplicateTabCard: vi.fn(),
-    onCardSaved: vi.fn(),
+    onCreateFile: vi.fn(),
+    onDuplicateTabFile: vi.fn(),
+    onFileSaved: vi.fn(),
     onFocus: vi.fn(),
     onOpenInOtherPane: vi.fn(),
     onOpenLink: vi.fn(),
     onOpenWikiLink: vi.fn(),
-    onRenameCard: vi.fn(),
-    onRevealTabCard: vi.fn(),
+    onRenameFile: vi.fn(),
+    onRevealTabFile: vi.fn(),
     onScrollTargetHandled: vi.fn(),
     onTabClose: vi.fn(),
     onTabMove: vi.fn(),
@@ -123,8 +123,8 @@ afterEach(() => {
 describe("PaneView", () => {
   it("selects and closes tabs from the tab bar", () => {
     setPaneState(
-      { [cardTab.id]: { ...cardTab, isPinned: true }, [secondCardTab.id]: secondCardTab },
-      { activeTabId: cardTab.id, history: [cardTab.id], tabIds: [cardTab.id, secondCardTab.id] }
+      { [fileTab.id]: { ...fileTab, isPinned: true }, [secondFileTab.id]: secondFileTab },
+      { activeTabId: fileTab.id, history: [fileTab.id], tabIds: [fileTab.id, secondFileTab.id] }
     );
     const props = renderPaneView();
 
@@ -133,65 +133,65 @@ describe("PaneView", () => {
     expect(within(tabElement("Second")).queryByTestId("pane-tab-pin-icon")).toBeNull();
 
     fireEvent.click(tabElement("Second"));
-    expect(props.onTabSelect).toHaveBeenCalledWith(secondCardTab.id);
+    expect(props.onTabSelect).toHaveBeenCalledWith(secondFileTab.id);
 
     fireEvent.click(screen.getAllByTitle("Close tab")[1]);
-    expect(props.onTabClose).toHaveBeenCalledWith(secondCardTab.id);
+    expect(props.onTabClose).toHaveBeenCalledWith(secondFileTab.id);
   });
 
-  it("runs card tab context menu actions without changing menu labels or clipboard text", () => {
+  it("runs file tab context menu actions without changing menu labels or clipboard text", () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, "clipboard", {
       configurable: true,
       value: { writeText }
     });
     setPaneState(
-      { [cardTab.id]: cardTab },
-      { activeTabId: cardTab.id, history: [cardTab.id], tabIds: [cardTab.id] }
+      { [fileTab.id]: fileTab },
+      { activeTabId: fileTab.id, history: [fileTab.id], tabIds: [fileTab.id] }
     );
     const props = renderPaneView({ isSplitView: true });
 
     fireEvent.contextMenu(tabElement("Note"), { clientX: 50, clientY: 60 });
     fireEvent.click(screen.getByRole("button", { name: "Pin" }));
-    expect(props.onTogglePinTab).toHaveBeenCalledWith(cardTab.id);
+    expect(props.onTogglePinTab).toHaveBeenCalledWith(fileTab.id);
 
     fireEvent.contextMenu(tabElement("Note"), { clientX: 50, clientY: 60 });
     fireEvent.click(screen.getByRole("button", { name: "Duplicate" }));
-    expect(props.onDuplicateTabCard).toHaveBeenCalledWith(cardTab.id);
+    expect(props.onDuplicateTabFile).toHaveBeenCalledWith(fileTab.id);
 
     fireEvent.contextMenu(tabElement("Note"), { clientX: 50, clientY: 60 });
     fireEvent.click(screen.getByRole("button", { name: "Copy path" }));
-    expect(writeText).toHaveBeenCalledWith(cardTab.path);
+    expect(writeText).toHaveBeenCalledWith(fileTab.path);
 
     fireEvent.contextMenu(tabElement("Note"), { clientX: 50, clientY: 60 });
     fireEvent.click(screen.getByRole("button", { name: "Copy Markdown link" }));
-    expect(writeText).toHaveBeenCalledWith("[[CardFolder/Note]]");
+    expect(writeText).toHaveBeenCalledWith("[[Folder/Note]]");
 
     fireEvent.contextMenu(tabElement("Note"), { clientX: 50, clientY: 60 });
-    fireEvent.click(screen.getByRole("button", { name: "Show card location" }));
-    expect(props.onRevealTabCard).toHaveBeenCalledWith(cardTab.id);
+    fireEvent.click(screen.getByRole("button", { name: "Show in folder" }));
+    expect(props.onRevealTabFile).toHaveBeenCalledWith(fileTab.id);
 
     fireEvent.contextMenu(tabElement("Note"), { clientX: 50, clientY: 60 });
     fireEvent.click(screen.getByRole("button", { name: "Open in Other Pane" }));
-    expect(props.onOpenInOtherPane).toHaveBeenCalledWith(cardTab.id);
+    expect(props.onOpenInOtherPane).toHaveBeenCalledWith(fileTab.id);
 
     fireEvent.contextMenu(tabElement("Note"), { clientX: 50, clientY: 60 });
     fireEvent.click(screen.getByRole("button", { name: "Close Other Tabs" }));
-    expect(props.onCloseOtherTabs).toHaveBeenCalledWith(cardTab.id);
+    expect(props.onCloseOtherTabs).toHaveBeenCalledWith(fileTab.id);
 
     fireEvent.contextMenu(tabElement("Note"), { clientX: 50, clientY: 60 });
     fireEvent.click(screen.getByRole("button", { name: "Close Tabs to the Right" }));
-    expect(props.onCloseTabsToRight).toHaveBeenCalledWith(cardTab.id);
+    expect(props.onCloseTabsToRight).toHaveBeenCalledWith(fileTab.id);
 
     fireEvent.contextMenu(tabElement("Note"), { clientX: 50, clientY: 60 });
     fireEvent.click(screen.getByRole("button", { name: "Close All Tabs" }));
     expect(props.onCloseAllTabs).toHaveBeenCalled();
   });
 
-  it("renders card, panel, Timeline, and empty pane surfaces", () => {
+  it("renders file, panel, gantt, and empty pane surfaces", () => {
     setPaneState(
-      { [cardTab.id]: cardTab },
-      { activeTabId: cardTab.id, history: [cardTab.id], tabIds: [cardTab.id] }
+      { [fileTab.id]: fileTab },
+      { activeTabId: fileTab.id, history: [fileTab.id], tabIds: [fileTab.id] }
     );
     renderPaneView();
     expect(screen.getByText("11 characters / 2 words")).toBeInTheDocument();
@@ -207,17 +207,17 @@ describe("PaneView", () => {
 
     cleanup();
     setPaneState(
-      { [timelineTab.id]: timelineTab },
-      { activeTabId: timelineTab.id, history: [timelineTab.id], tabIds: [timelineTab.id] }
+      { [ganttTab.id]: ganttTab },
+      { activeTabId: ganttTab.id, history: [ganttTab.id], tabIds: [ganttTab.id] }
     );
     renderPaneView();
-    expect(screen.getByText("Timeline timeline")).toBeInTheDocument();
+    expect(screen.getByText("Gantt chronicle")).toBeInTheDocument();
 
     cleanup();
     setPaneState({}, emptyPane());
     const props = renderPaneView();
-    expect(screen.getByText("No cards")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Create New Card" }));
-    expect(props.onCreateCard).toHaveBeenCalledWith("");
+    expect(screen.getByText("No files")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Create New File" }));
+    expect(props.onCreateFile).toHaveBeenCalledWith("");
   });
 });
