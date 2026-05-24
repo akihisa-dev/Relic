@@ -1,4 +1,4 @@
-# spec/file-tools.md
+# features/tools.md
 
 ファイル加工ツールの仕様書。既存ファイルを変更せず、結果は必ず新規ファイルとして出力する。
 

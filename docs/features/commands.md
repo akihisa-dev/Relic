@@ -1,4 +1,4 @@
-# spec/command-palette.md
+# features/commands.md
 
 コマンドパレットとクイックスイッチャーの仕様。
 

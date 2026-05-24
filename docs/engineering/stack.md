@@ -1,4 +1,4 @@
-# tech/stack.md
+# engineering/stack.md
 
 プロジェクトの技術スタック詳細。選定済みのもののみ記載。
 
@@ -12,15 +12,13 @@
 |---------|------|------|
 | 言語 | TypeScript 5.8 | 型安全な開発のため |
 | デスクトップフレームワーク | Electron 36 | macOS / Windows 向けデスクトップアプリを Web 技術で構築 |
-| エディタエンジン | CodeMirror 6 | 詳細は [tech/editor-engine.md](editor-engine.md) |
+| エディタエンジン | CodeMirror 6 | 詳細は [editor-engine.md](editor-engine.md) |
 | Markdownパーサー | marked | プレビューHTML生成に使用 |
 | Markdown脚注拡張 | marked-footnote | 脚注記法をmarkedへ追加 |
 | HTML安全化 | DOMPurify | MarkdownプレビューのHTMLをサニタイズ |
 | シンタックスハイライト | highlight.js | コードブロックのハイライトに使用 |
 | 数式表示 | KaTeX | Markdown内の数式表示に使用 |
 | YAML処理 | js-yaml | フロントマターの読み書きに使用 |
-| グラフ力学計算 | d3-force | グラフビューのforce simulationに使用 |
-| グラフ描画 | PixiJS 8 | グラフビューのCanvas/WebGL描画に使用 |
 | クラウド同期フォルダ対応 | ネイティブファイルシステム経由 | iCloud Drive / OneDrive / Dropbox などを、OS上のローカルフォルダとして直接読み書き。各クラウドサービスのAPI連携は持たない |
 | UIフレームワーク | React 19 | レンダラーUIを構築 |
 | React状態管理 | Zustand | 横断的UI状態に限定して使用。ファイル内容・検索結果・設定永続化は入れない |

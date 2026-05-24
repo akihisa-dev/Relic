@@ -1,4 +1,4 @@
-# spec/frontmatter.md
+# features/frontmatter.md
 
 フロントマター機能の詳細仕様書。
 Markdownファイルに付与する構造化メタデータの考え方、入力補助、表示、追加・削除の振る舞いを定義する。

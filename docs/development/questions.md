@@ -1,4 +1,4 @@
-# dev/open-questions.md
+# development/questions.md
 
 未決定事項の正本。
 仕様書・設計書・UI文書には未決定事項を書かず、ここに集約する。
