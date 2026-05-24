@@ -15,7 +15,7 @@ AIのセッション開始時は、`../AGENTS.md` から [project/overview.md](p
 | デザイン | `docs/design/` | 画面構成、画面遷移、デザインシステム |
 | エンジニアリング | `docs/engineering/` | アーキテクチャ、データモデル、技術選定、設計判断 |
 | 開発運用 | `docs/development/` | フェーズ、開発規約、検証方針、未決定事項 |
-| 履歴 | `docs/development/phases/P0.md` の「作業記録」 | 旧フェーズ文書と旧日誌から、今後の判断に必要な履歴だけを統合した記録。現在の作業記録も同じ見出しに追記する |
+| 履歴 | `docs/development/phases/P0.md` 以降の各フェーズ正本の「作業記録」 | 旧フェーズ文書と旧日誌から統合した過去記録はP0に残し、現在の作業記録は現在フェーズ正本に追記する |
 
 現行実装と文書の整合を確認する場合は、現行正本を実装に合わせて更新する。
 統合済み履歴は、過去記録としての意味を保つため、現行仕様に合わせた書き換え対象にしない。
@@ -40,7 +40,8 @@ AIのセッション開始時は、`../AGENTS.md` から [project/overview.md](p
 | [engineering/stack.md](engineering/stack.md) | 技術スタック |
 | [engineering/editor-engine.md](engineering/editor-engine.md) | エディタエンジン選定 |
 | [development/phases.md](development/phases.md) | 開発フェーズ管理の正本。現在位置と読む文書を判断する入口 |
-| [development/phases/P0.md](development/phases/P0.md) | 現在フェーズ正本。作業記録には、現在の記録と旧フェーズ文書・旧日誌から統合した過去記録を含む |
+| [development/phases/P0.md](development/phases/P0.md) | P0正本。開発環境再構築フェーズの記録と、旧フェーズ文書・旧日誌から統合した過去記録を含む |
+| [development/phases/P1.md](development/phases/P1.md) | 現在フェーズ正本。暦設定の実装フェーズの対象範囲、ルール、作業記録 |
 | [development/questions.md](development/questions.md) | 未決定事項の正本 |
 | [development/coding-rules.md](development/coding-rules.md) | コーディング規約 |
 | [development/testing-rules.md](development/testing-rules.md) | テスト方針 |
