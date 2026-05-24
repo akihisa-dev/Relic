@@ -51,7 +51,7 @@ describe("extractDateRange", () => {
     });
   });
 
-  it("旧dateだけでは計画日として読まない", () => {
+  it("dateだけでは計画日として読まない", () => {
     expect(extractDateRange("---\ndate: [2026-05-12]\n---\n# A")).toBeNull();
   });
 
