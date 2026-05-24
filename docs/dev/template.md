@@ -13,9 +13,7 @@
 | パス | 役割 |
 |------|------|
 | `README.md` | 人間向けの入口。概要、起動、検証、配布手順を書く |
-| `AGENTS.md` | AIエージェント向けの薄い入口。実ルールへの案内だけを書く |
-| `AI.md` | AI共通ルールの正本 |
-| `CLAUDE.md` | Claude系ツール向け互換入口。独自ルールを書かない |
+| `AGENTS.md` | AIエージェント向けの共通ルール |
 | `SECURITY.md` | セキュリティ方針 |
 | `app/` | アプリ本体 |
 | `docs/` | 文書群 |
@@ -45,7 +43,7 @@
 
 AIは以下の順で読む。
 
-1. `AI.md`
+1. `AGENTS.md`
 2. `docs/product/project.md`
 3. `docs/dev/phases.md`
 4. `docs/dev/phases.md` が指定する現在フェーズの正本文書
