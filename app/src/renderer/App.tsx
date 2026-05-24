@@ -412,11 +412,11 @@ export function App(): ReactElement {
 
   const {
     activePanelTabIds,
-    chartRailView,
+    activeChartIds,
+    chartRailViews,
     handleRailChartButton,
     handleRailPanelButton,
-    isChartTabActive,
-    isChartTabOpen,
+    openChartIds,
     openPanelTabIds,
     panelRailViews,
     primaryRailViews,
@@ -466,9 +466,8 @@ export function App(): ReactElement {
           activePanelTabIds={activePanelTabIds}
           activeSidebarView={activeSidebarView}
           activeWorkspaceId={workspaceState?.activeWorkspace?.id ?? null}
-          chartRailView={chartRailView}
-          isChartTabActive={isChartTabActive}
-          isChartTabOpen={isChartTabOpen}
+          activeChartIds={activeChartIds}
+          chartRailViews={chartRailViews}
           isSidebarOpen={isSidebarOpen}
           isWorkspaceRenameActive={isWorkspaceRenameActive}
           isWorkspaceRenameHoldingRail={isWorkspaceRenameHoldingRail}
@@ -481,6 +480,7 @@ export function App(): ReactElement {
           onRenameWorkspace={handleRenameWorkspace}
           onSetSidebarView={setSidebarView}
           onSwitchWorkspace={handleSwitchWorkspace}
+          openChartIds={openChartIds}
           openPanelTabIds={openPanelTabIds}
           panelRailViews={panelRailViews}
           primaryRailViews={primaryRailViews}

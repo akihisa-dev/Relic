@@ -630,13 +630,12 @@ describe("App", () => {
 
     await screen.findByText("Notes");
 
-    fireEvent.click(screen.getByRole("button", { name: "チャート" }));
-    fireEvent.click(renderResult.container.querySelector(".chronicle-source-button")!);
+    fireEvent.click(screen.getByRole("button", { name: "年表" }));
 
     const activeTabId = useEditorStore.getState().leftPane.activeTabId;
-    expect(activeTabId).toBe("gantt-charts");
+    expect(activeTabId).toBe("gantt-chronicle");
     expect(useEditorStore.getState().tabs[activeTabId!]).toMatchObject({
-      chartId: "charts",
+      chartId: "chronicle",
       kind: "gantt"
     });
     expect(useUiStore.getState().isSidebarOpen).toBe(false);
@@ -727,8 +726,7 @@ describe("App", () => {
 
     await screen.findByText("Notes");
 
-    fireEvent.click(screen.getByRole("button", { name: "チャート" }));
-    fireEvent.click(container.querySelector(".chronicle-source-button")!);
+    fireEvent.click(screen.getByRole("button", { name: "年表" }));
     expect(container.querySelector(".chronicle-actions")).toBeNull();
 
     const fill = container.querySelector(".chronicle-fill") as HTMLElement;
@@ -796,8 +794,7 @@ describe("App", () => {
 
     await screen.findByText("Notes");
 
-    fireEvent.click(screen.getByRole("button", { name: "チャート" }));
-    fireEvent.click(container.querySelector(".chronicle-source-button")!);
+    fireEvent.click(screen.getByRole("button", { name: "年表" }));
     expect(container.querySelector(".chronicle-actions")).toBeNull();
 
     const fill = container.querySelector(".chronicle-fill") as HTMLElement;
@@ -870,10 +867,9 @@ describe("App", () => {
 
     await screen.findByText("Notes");
 
-    fireEvent.click(screen.getByRole("button", { name: "チャート" }));
-    fireEvent.click(container.querySelectorAll(".chronicle-source-button")[1]);
+    fireEvent.click(screen.getByRole("button", { name: "カレンダー" }));
 
-    expect(useEditorStore.getState().leftPane.activeTabId).toBe("gantt-charts");
+    expect(useEditorStore.getState().leftPane.activeTabId).toBe("gantt-date");
     expect(container.querySelectorAll(".chronicle-file-name")).toHaveLength(1);
     expect(screen.getByText("計画")).toBeInTheDocument();
     expect(screen.getByText("実行")).toBeInTheDocument();
@@ -895,9 +891,9 @@ describe("App", () => {
     expect(container.querySelectorAll(".chronicle-guide-row-line").length).toBeGreaterThan(0);
 
     fireEvent.click(screen.getByRole("button", { name: "フロントマター" }));
-    fireEvent.click(screen.getByRole("button", { name: "チャート" }));
+    fireEvent.click(screen.getByRole("button", { name: "カレンダー" }));
 
-    expect(container.querySelector(".chronicle-source-button.active")).toHaveTextContent("date");
+    expect(screen.getByRole("button", { name: "カレンダー" })).toHaveClass("active");
     expect(container.querySelector('.chronicle-fill[data-date-kind="actual"]')).toBeInTheDocument();
   });
 
@@ -927,8 +923,7 @@ describe("App", () => {
 
     await screen.findByText("Notes");
 
-    fireEvent.click(screen.getByRole("button", { name: "チャート" }));
-    fireEvent.click(container.querySelectorAll(".chronicle-source-button")[1]);
+    fireEvent.click(screen.getByRole("button", { name: "カレンダー" }));
 
     const chart = container.querySelector(".chronicle-chart") as HTMLDivElement;
     Object.defineProperty(chart, "scrollLeft", { configurable: true, value: 120, writable: true });
@@ -984,8 +979,7 @@ describe("App", () => {
 
     await screen.findByText("Notes");
 
-    fireEvent.click(screen.getByRole("button", { name: "チャート" }));
-    fireEvent.click(container.querySelectorAll(".chronicle-source-button")[1]);
+    fireEvent.click(screen.getByRole("button", { name: "カレンダー" }));
 
     await waitFor(() => expect(container.querySelectorAll(".chronicle-file-name")).toHaveLength(1));
     expect(screen.getByText("計画")).toBeInTheDocument();
@@ -1041,8 +1035,7 @@ describe("App", () => {
 
     await screen.findByText("Notes");
 
-    fireEvent.click(screen.getByRole("button", { name: "チャート" }));
-    fireEvent.click(container.querySelectorAll(".chronicle-source-button")[1]);
+    fireEvent.click(screen.getByRole("button", { name: "カレンダー" }));
 
     await waitFor(() => expect(container.querySelectorAll(".chronicle-file-name")).toHaveLength(2));
     expect(container.querySelectorAll('.chronicle-fill[data-date-kind="planned"]')).toHaveLength(1);
@@ -1111,8 +1104,7 @@ describe("App", () => {
 
     await screen.findByText("Notes");
 
-    fireEvent.click(screen.getByRole("button", { name: "チャート" }));
-    fireEvent.click(container.querySelectorAll(".chronicle-source-button")[1]);
+    fireEvent.click(screen.getByRole("button", { name: "カレンダー" }));
 
     const fill = container.querySelector(".chronicle-fill") as HTMLElement;
     fireEvent.click(fill);
@@ -1185,8 +1177,7 @@ describe("App", () => {
 
     await screen.findByText("Notes");
 
-    fireEvent.click(screen.getByRole("button", { name: "チャート" }));
-    fireEvent.click(container.querySelectorAll(".chronicle-source-button")[1]);
+    fireEvent.click(screen.getByRole("button", { name: "カレンダー" }));
 
     const fill = container.querySelector(".chronicle-fill") as HTMLElement;
     const pointerDown = new Event("pointerdown", { bubbles: true }) as PointerEvent;
@@ -1218,8 +1209,7 @@ describe("App", () => {
 
     await screen.findByText("Notes");
 
-    fireEvent.click(screen.getByRole("button", { name: "チャート" }));
-    fireEvent.click(container.querySelector(".chronicle-source-button")!);
+    fireEvent.click(screen.getByRole("button", { name: "年表" }));
 
     expect(screen.getAllByText("鎌倉時代").length).toBeGreaterThan(0);
     expect(screen.getByText("1185 〜 1333")).toBeInTheDocument();

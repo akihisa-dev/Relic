@@ -4,13 +4,15 @@ import type { MouseEvent, ReactElement, ReactNode } from "react";
 import type { FeatureToggles } from "../../shared/ipc";
 import {
   activePanelTabIdsForPanes,
+  activeChartIdsForPanes,
+  chartIdForRailView,
   enabledRailViewsForFeatures,
-  isChartTabActiveInPanes,
-  isChartTabOpenInTabs,
+  openChartIdsForTabs,
   openPanelTabIdsForTabs,
   panelLabelsForTranslator,
   splitRailViews,
-  type AppRailView
+  type AppRailView,
+  type AppRailViewId
 } from "../appShellModel";
 import { sidebarViewDefs } from "../components/RailNavigation";
 import type { Translator } from "../i18n";
@@ -43,11 +45,11 @@ interface UseAppRailNavigationInput {
 
 export interface UseAppRailNavigationResult {
   activePanelTabIds: Set<PanelTabKind>;
-  chartRailView?: AppRailView<ReactElement>;
-  handleRailChartButton: (label: string, event: MouseEvent<HTMLButtonElement>) => void;
+  activeChartIds: Set<string>;
+  chartRailViews: Array<AppRailView<ReactElement>>;
+  handleRailChartButton: (view: AppRailViewId, label: string, event: MouseEvent<HTMLButtonElement>) => void;
   handleRailPanelButton: (panel: PanelTabKind, label: string, event: MouseEvent<HTMLButtonElement>) => void;
-  isChartTabActive: boolean;
-  isChartTabOpen: boolean;
+  openChartIds: Set<string>;
   openPanelTabIds: Set<PanelTabKind>;
   panelLabels: Record<PanelTabKind, string>;
   panelRailViews: Array<AppRailView<ReactElement>>;
@@ -82,23 +84,20 @@ export function useAppRailNavigation({
   );
   const panelLabels = useMemo(() => panelLabelsForTranslator(t), [t]);
   const openPanelTabIds = useMemo(() => openPanelTabIdsForTabs(tabs), [tabs]);
+  const openChartIds = useMemo(() => openChartIdsForTabs(tabs), [tabs]);
   const activePanelTabIds = useMemo(
     () => activePanelTabIdsForPanes(leftPane, rightPane, tabs),
     [leftPane, rightPane, tabs]
   );
-  const isChartTabOpen = useMemo(
-    () => isChartTabOpenInTabs(tabs),
-    [tabs]
-  );
-  const isChartTabActive = useMemo(
-    () => isChartTabActiveInPanes(leftPane, rightPane, tabs),
+  const activeChartIds = useMemo(
+    () => activeChartIdsForPanes(leftPane, rightPane, tabs),
     [leftPane, rightPane, tabs]
   );
   const enabledRailViews = useMemo(
     () => enabledRailViewsForFeatures(sidebarViews, featureToggles),
     [featureToggles, sidebarViews]
   );
-  const { chartRailView, panelRailViews, primaryRailViews } = useMemo(
+  const { chartRailViews, panelRailViews, primaryRailViews } = useMemo(
     () => splitRailViews(enabledRailViews),
     [enabledRailViews]
   );
@@ -157,9 +156,12 @@ export function useAppRailNavigation({
     showRailOpenFlight(label, railRect);
   }, [clearRailTabFlight, focusedPane, openPanelInPane, setTabActive, showRailOpenFlight]);
 
-  const handleRailChartButton = useCallback((label: string, event: MouseEvent<HTMLButtonElement>): void => {
+  const handleRailChartButton = useCallback((view: AppRailViewId, label: string, event: MouseEvent<HTMLButtonElement>): void => {
+    const chartId = chartIdForRailView(view);
+    if (!chartId) return;
+
     const railRect = event.currentTarget.getBoundingClientRect();
-    const tabId = "gantt-charts";
+    const tabId = `gantt-${chartId}`;
     const editorState = useEditorStore.getState();
     const openedPanes: PaneId[] = [
       ...(editorState.leftPane.tabIds.includes(tabId) ? ["left" as const] : []),
@@ -174,7 +176,7 @@ export function useAppRailNavigation({
     }
 
     closeSidebar();
-    openGanttChartInPane(focusedPane, { id: "charts", name: label });
+    openGanttChartInPane(focusedPane, { id: chartId, name: label });
     showRailOpenFlight(label, railRect);
   }, [
     clearRailTabFlight,
@@ -187,11 +189,11 @@ export function useAppRailNavigation({
 
   return {
     activePanelTabIds,
-    chartRailView,
+    activeChartIds,
+    chartRailViews,
     handleRailChartButton,
     handleRailPanelButton,
-    isChartTabActive,
-    isChartTabOpen,
+    openChartIds,
     openPanelTabIds,
     panelLabels,
     panelRailViews,

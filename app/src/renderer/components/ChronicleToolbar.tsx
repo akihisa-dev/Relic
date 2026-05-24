@@ -1,17 +1,14 @@
 import type { Dispatch, ReactElement, SetStateAction } from "react";
 
-import type { GanttChartSource, WorkspaceGanttChart } from "../../shared/ipc";
+import type { GanttChartSource } from "../../shared/ipc";
 import type { ChronicleSortKey } from "../chronicleTimeline";
 import { useT } from "../i18n";
 
 export interface ChronicleToolbarProps {
-  activeChart: WorkspaceGanttChart | null;
   activeSource: GanttChartSource;
-  availableCharts: WorkspaceGanttChart[];
   refreshRowOrder: () => void;
   query: string;
   scrollToToday: () => void;
-  selectChart: (chart: WorkspaceGanttChart) => void;
   setQuery: Dispatch<SetStateAction<string>>;
   setSortKey: Dispatch<SetStateAction<ChronicleSortKey>>;
   setStatusFilter: Dispatch<SetStateAction<string>>;
@@ -21,13 +18,10 @@ export interface ChronicleToolbarProps {
 }
 
 export function ChronicleToolbar({
-  activeChart,
   activeSource,
-  availableCharts,
   refreshRowOrder,
   query,
   scrollToToday,
-  selectChart,
   setQuery,
   setSortKey,
   setStatusFilter,
@@ -39,19 +33,6 @@ export function ChronicleToolbar({
 
   return (
     <div className="chronicle-toolbar">
-      <div className="chronicle-source-buttons" aria-label={t("chronicle.source")}>
-        {availableCharts.map((candidate) => (
-          <button
-            aria-pressed={candidate.id === activeChart?.id}
-            className={`chronicle-source-button${candidate.id === activeChart?.id ? " active" : ""}`}
-            key={candidate.id}
-            onClick={() => selectChart(candidate)}
-            type="button"
-          >
-            {candidate.source}
-          </button>
-        ))}
-      </div>
       <label className="chronicle-search">
         <span>{t("chronicle.search")}</span>
         <input
