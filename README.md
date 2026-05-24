@@ -1,79 +1,32 @@
 # Relic
 
-Relicは、創作設定の作成、保管、閲覧のためのアプリです。
+Relicは、ローカルMarkdownを扱うデスクトップアプリです。
 
-物語・世界観・キャラクター・用語・出来事などの設定情報をローカルMarkdownとして扱い、作成・整理・検索・閲覧をデスクトップアプリ内で行えるようにすることを目的にしています。
-RelicではMarkdownファイルを「カード」、ワークスペースを「カードブック」、フォルダを「カードフォルダ」と呼びます。
+現在はリブート直後の `0.0.1` として、既存アプリを保ちながら文書構造と開発方針を整理しています。
 
 > ステータス: 開発中
 
 ---
 
-## 対象ユーザー
+## 現在の呼び方
 
-- 物語、世界観、キャラクター、用語、出来事などの創作設定を整理したい人
-- 創作設定をプレーンテキストとして長く残したい人
-- 設定資料を作成し、保管し、必要なときに読み返せる道具がほしい人
-- ローカルフォルダやクラウド同期フォルダを、自分で管理できる形のまま使いたい人
+アプリ本体の名称は、現時点では次を正とします。
 
----
+- ワークスペース
+- ファイル
+- フォルダ
 
-## 現在の主な機能
-
-- Markdownエディタ（ライブプレビュー）
-- ローカルカードブック管理
-- カード / カードフォルダの作成、リネーム、移動、複製、削除、ピン留め
-- タブ、左右分割表示、右パネル
-- 内部リンク `[[...]]`
-- バックリンク / アウトゴーイングリンク
-- アウトライン表示
-- プロパティ編集補助
-- プロパティ設定（固定プロパティ確認・カスタムプロパティ入力能力）
-- プロパティ `tags:` によるタグ扱い
-- 全文検索、カード名検索、タグ検索、プロパティ検索、正規表現検索
-- クイックスイッチャー
-- コマンドパレット
-- Chronicle
-- カード加工ツール（マージ、分割、タイトル一覧、目次生成）
-- ライト / ダーク / システム追従テーマ
-
----
-
-## プラットフォーム
-
-- macOS
-- Windows
-
-RelicはElectronアプリです。OS固有処理は必要な箇所だけに限定し、通常のファイル操作は各OSのローカルフォルダとして扱います。
-
----
-
-## 技術スタック
-
-- TypeScript
-- Electron
-- React
-- CodeMirror 6
-- Zustand
-- Vitest
-- Electron Forge
-- pnpm
-
-詳細は [docs/tech/stack.md](docs/tech/stack.md) を参照してください。
+過去の名称変更案は採用していません。
 
 ---
 
 ## リポジトリ構成
 
 - `app/`: Electron / React アプリ本体
-- `docs/`: 計画・仕様・設計・開発メモ
-- `docs/product/`: Relic固有のプロダクト前提
+- `docs/`: 現在の開発文書
 - `scripts/`: 起動・ビルドなどの補助スクリプト
-- `AI.md`: AIエージェント向けの共通ルール
-- `AGENTS.md`: AIエージェント向けの入口。実ルールは `AI.md` を参照
-- `CLAUDE.md`: Claude Code向けの入口。実ルールは `AI.md` を参照
-- `SECURITY.md`: 秘密情報と認証情報の扱いに関する方針
-- `README.md`: 対外的なプロジェクト説明
+- `AGENTS.md`: AIエージェントと開発運用の唯一のルール文書
+- `SECURITY.md`: 秘密情報と認証情報の扱い
 
 ---
 
@@ -87,16 +40,7 @@ pnpm install
 pnpm start
 ```
 
-OS別の起動エイリアス:
-
-```sh
-pnpm start:mac
-pnpm start:win
-```
-
-`start:mac` / `start:win` は同じElectron開発起動をOS別名で呼ぶためのエイリアスです。実行するOS上で使います。
-
-ターミナル操作を避けたい場合は、`scripts/` 配下の補助スクリプトで開発版を起動できます。
+補助スクリプトでも開発版を起動できます。
 
 - macOS: `scripts/Relicを起動.command`
 - Windows: `scripts/Relicを起動.bat`
@@ -105,89 +49,23 @@ pnpm start:win
 
 ## 検証
 
-型チェックとテストをまとめて実行します。
-
 ```sh
 cd app
-pnpm verify
-```
-
-個別に実行する場合:
-
-```sh
 pnpm typecheck
 pnpm test
 ```
 
-OS別のテストエイリアス:
+まとめて実行する場合:
 
 ```sh
-pnpm test:mac
-pnpm test:win
+pnpm verify
 ```
-
----
-
-## Macビルド
-
-```sh
-cd app
-pnpm build:mac:safe
-```
-
-補助スクリプトを使う場合は `scripts/Relicをビルド.command` を実行します。このスクリプトも `build:mac:safe` を実行します。
-
-`build:mac:safe` は以下を順に実行します。
-
-1. `clean:out` で `app/out` を削除
-2. `package:mac` で unpacked app を生成
-3. `check:mac:safe` で成果物を検証
-
-検証内容:
-
-- 必須: `out/Relic-darwin-*/Relic.app/Contents/MacOS/Relic`
-- 必須: `out/Relic-darwin-*/Relic.app/Contents/Resources/app.asar`
-- 禁止: `Setup*.exe` / `Update.exe` / `*.nupkg` / `RELEASES`
-
----
-
-## Windowsビルド
-
-Windows版はインストーラーを使わず、ZIP展開後に `Relic.exe` を直接起動する運用です。
-
-```sh
-cd app
-pnpm build:win:safe
-```
-
-補助スクリプトを使う場合は `scripts/Relicをビルド.bat` を実行します。このスクリプトも `build:win:safe` を実行します。
-
-`build:win:safe` は以下を順に実行します。
-
-1. `clean:out` で `app/out` を削除
-2. `package:win` で unpacked app を生成
-3. `check:win:safe` で成果物を検証
-
-検証内容:
-
-- 必須: `out/Relic-win32-x64/Relic.exe`
-- 必須: `out/Relic-win32-x64/resources/app.asar`
-- 禁止: `Setup*.exe` / `Update.exe` / `*.nupkg` / `RELEASES`
-
-配布する場合は、`out/Relic-win32-x64/` フォルダをそのまま配布するかZIP化します。
 
 ---
 
 ## ドキュメント
 
-- 文書索引・分類: [docs/INDEX.md](docs/INDEX.md)
-- 現在の開発フェーズ: [docs/dev/phases.md](docs/dev/phases.md)
-- プロジェクト概要: [docs/product/project.md](docs/product/project.md)
-- 用語集: [docs/product/glossary.md](docs/product/glossary.md)
-- 仕様書: [docs/spec](docs/spec)
-- UI文書: [docs/ui](docs/ui)
-- アーキテクチャ: [docs/architecture](docs/architecture)
-- 技術スタック: [docs/tech/stack.md](docs/tech/stack.md)
-- 開発規約・テスト方針: [docs/dev/conventions.md](docs/dev/conventions.md), [docs/dev/testing.md](docs/dev/testing.md)
-
-`docs/journal/` と `docs/archive/` は履歴資料です。現行の仕様・設計判断は、上記の正本文書を参照します。
+- 文書索引: `docs/INDEX.md`
+- プロジェクト概要: `docs/product/project.md`
+- フェーズ一覧: `docs/dev/phases.md`
+- 現在フェーズ: `docs/dev/phases/P00.md`
