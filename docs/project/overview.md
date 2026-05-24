@@ -63,7 +63,7 @@ Relicは、創作設定の作成、保管、閲覧のためのアプリ。
 - `docs/features/`: 機能仕様
 - `docs/design/`: 画面構成、遷移、デザインシステム
 - `docs/engineering/`: アーキテクチャ、データモデル、技術選定
-- `docs/development/`: フェーズ、開発規約、検証方針、未決定事項
+- `docs/development/`: フェーズ、開発規約、検証方針、未決定事項、バージョン管理
 - `scripts/`: 起動・ビルドなどの補助スクリプト
 - `AGENTS.md`: AIエージェント向けの共通行動規約
 - `README.md`: 対外的なプロジェクト説明
