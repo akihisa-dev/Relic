@@ -175,7 +175,7 @@ export function SettingsSidebar({
       <section className="settings-group">
         <div className="links-panel-subheading">{t("settings.sectionAppInfo")}</div>
         <div className="settings-info">
-          <div>Relic {appInfo?.version ?? "0.0.0"}</div>
+          <div>Relic {appInfo?.version ?? "0.0.1"}</div>
           <div>{appInfo?.platform ?? "-"}</div>
         </div>
       </section>

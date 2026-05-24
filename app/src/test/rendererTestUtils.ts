@@ -55,7 +55,7 @@ export function makeRelicApi(overrides: Partial<typeof window.relic> = {}): type
     duplicateMarkdownFile: vi.fn(),
     generateTableOfContents: vi.fn(),
     generateTitleList: vi.fn(),
-    getAppInfo: vi.fn().mockResolvedValue({ ok: true, value: { name: "Relic", platform: "darwin", version: "0.0.0" } }),
+    getAppInfo: vi.fn().mockResolvedValue({ ok: true, value: { name: "Relic", platform: "darwin", version: "0.0.1" } }),
     getBacklinks: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     getEditorSettings: vi.fn().mockResolvedValue({ ok: true, value: { ...defaultEditorSettings, language: "ja" } }),
     getFeatureToggles: vi.fn().mockResolvedValue({ ok: true, value: defaultFeatureToggles }),
