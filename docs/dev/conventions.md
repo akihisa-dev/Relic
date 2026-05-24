@@ -209,4 +209,4 @@ UIに表示する日本語文言は、後から集約できるようにコンポ
 - 仕様変更を伴う実装をした場合は、該当する `docs/spec/` または `docs/architecture/` も更新する
 - 技術選定を変更・追加した場合は、`docs/tech/` と必要に応じて `docs/architecture/decisions.md` を更新する
 - 未決定の問いが生まれたら `docs/dev/open-questions.md` に追加する
-- 作業区切り時の文書更新は `AGENTS.md` と `docs/dev/phases.md` の現在フェーズ規則に従う。`docs/journal/` は、ユーザー指示またはフェーズ区切り時だけ更新する
+- 作業区切り時の文書更新は `AGENTS.md` と `docs/dev/phases.md` の現在フェーズ規則に従う。作業記録は現在フェーズ正本へ書く
