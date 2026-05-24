@@ -772,11 +772,11 @@ describe("Editor", () => {
     expect((container.querySelector(".frontmatter-add-dialog-input") as HTMLInputElement).getAttribute("list")).not.toBeNull();
   });
 
-  it("chronicleプロパティは1行配列として編集する", async () => {
+  it("chronicle0プロパティは1行配列として編集する", async () => {
     const viewRef = createRef<EditorView | null>();
     const { container } = render(
       <Editor
-        content={"---\nchronicle:\n---\n# 本文"}
+        content={"---\nchronicle0:\n---\n# 本文"}
         onChange={vi.fn()}
         settings={settings}
         viewRef={viewRef}
@@ -787,13 +787,13 @@ describe("Editor", () => {
     const inputs = Array.from(container.querySelectorAll(".cm-frontmatter-chronicle .cm-frontmatter-input")) as HTMLInputElement[];
     fireEvent.change(inputs[0], { target: { value: "1185" } });
 
-    expect(viewRef.current?.state.doc.toString()).toContain("chronicle: [1185]");
+    expect(viewRef.current?.state.doc.toString()).toContain("chronicle0: [1185]");
 
     await waitFor(() => expect(container.querySelector(".cm-frontmatter-chronicle")).not.toBeNull());
     const nextInputs = Array.from(container.querySelectorAll(".cm-frontmatter-chronicle .cm-frontmatter-input")) as HTMLInputElement[];
     fireEvent.change(nextInputs[1], { target: { value: "1333" } });
 
-    expect(viewRef.current?.state.doc.toString()).toContain("chronicle: [1185, 1333]");
+    expect(viewRef.current?.state.doc.toString()).toContain("chronicle0: [1185, 1333]");
   });
 
   it("plannedDateプロパティは年月日の単日・期間を1行配列として編集する", async () => {

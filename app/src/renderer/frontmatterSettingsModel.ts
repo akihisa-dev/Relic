@@ -1,4 +1,4 @@
-import type { UserDefinedField, UserDefinedFieldType } from "../shared/ipc";
+import { chronicleCalendarIds, type ChronicleCalendarId, type UserDefinedField, type UserDefinedFieldType } from "../shared/ipc";
 import type { TranslationKey, Translator } from "./i18n";
 
 export const FIELD_TYPES: UserDefinedFieldType[] = [
@@ -39,13 +39,21 @@ export const FIELD_TYPE_DESCRIPTION_KEYS: Record<UserDefinedFieldType, Translati
   url: "settings.fieldTypeUrlDescription"
 };
 
-export const RESERVED_FIELD_NAMES = new Set(["aliases", "tags", "status", "chronicle", "plannedDate", "actualDate"]);
+export const RESERVED_FIELD_NAMES = new Set(["aliases", "tags", "status", ...chronicleCalendarIds, "plannedDate", "actualDate"]);
 
-export const FIXED_FIELDS: Array<{
-  name: "actualDate" | "aliases" | "tags" | "status" | "chronicle" | "plannedDate";
+type FixedFieldDefinition = {
+  name: "actualDate" | "aliases" | "tags" | "status" | ChronicleCalendarId | "plannedDate";
   descriptionKey: TranslationKey;
   examples: TranslationKey[];
-}> = [
+};
+
+const CHRONICLE_FIXED_FIELDS: FixedFieldDefinition[] = chronicleCalendarIds.map((name) => ({
+  name,
+  descriptionKey: "settings.fixedFieldChronicleDescription",
+  examples: ["settings.fixedFieldChronicleSingleExample", "settings.fixedFieldChronicleRangeExample"]
+}));
+
+export const FIXED_FIELDS: FixedFieldDefinition[] = [
   {
     name: "aliases",
     descriptionKey: "settings.fixedFieldAliasesDescription",
@@ -61,11 +69,7 @@ export const FIXED_FIELDS: Array<{
     descriptionKey: "settings.fixedFieldStatusDescription",
     examples: ["settings.fixedFieldStatusSingleExample"]
   },
-  {
-    name: "chronicle",
-    descriptionKey: "settings.fixedFieldChronicleDescription",
-    examples: ["settings.fixedFieldChronicleSingleExample", "settings.fixedFieldChronicleRangeExample"]
-  },
+  ...CHRONICLE_FIXED_FIELDS,
   {
     name: "plannedDate",
     descriptionKey: "settings.fixedFieldPlannedDateDescription",

@@ -1,4 +1,6 @@
 import type {
+  ChronicleCalendarSettings,
+  ChronicleCalendarId,
   FrontmatterTemplate,
   GanttChartSettings,
   GanttChartSource,
@@ -8,6 +10,7 @@ import type {
   UserDefinedField,
   UserDefinedFieldType
 } from "../../shared/ipc";
+import { chronicleCalendarIds as validChronicleCalendarIds } from "../../shared/ipc";
 
 const userDefinedFieldTypes: UserDefinedFieldType[] = [
   "text",
@@ -21,7 +24,7 @@ const userDefinedFieldTypes: UserDefinedFieldType[] = [
   "url"
 ];
 const userDefinedFieldNamePattern = /^[^\s:][^\r\n:]*$/;
-const reservedUserDefinedFieldNames = new Set(["aliases", "tags", "status", "chronicle", "plannedDate", "actualDate"]);
+const reservedUserDefinedFieldNames = new Set(["aliases", "tags", "status", ...validChronicleCalendarIds, "plannedDate", "actualDate"]);
 const ganttChartSources: GanttChartSource[] = ["chronicle", "date"];
 
 export function isUserDefinedFieldsInput(input: unknown): input is UserDefinedField[] {
@@ -81,6 +84,7 @@ export function isUpdateGanttChartEntryInput(input: unknown): input is UpdateGan
   return (
     typeof candidate.path === "string" &&
     ganttChartSources.includes(candidate.source as GanttChartSource) &&
+    (!("chronicleCalendarId" in candidate) || isChronicleCalendarId(candidate.chronicleCalendarId)) &&
     (!("dateKind" in candidate) || candidate.dateKind === "planned" || candidate.dateKind === "actual") &&
     (candidate.kind === "move" || candidate.kind === "resize-start" || candidate.kind === "resize-end") &&
     Number.isInteger(candidate.originalStartValue) &&
@@ -89,6 +93,27 @@ export function isUpdateGanttChartEntryInput(input: unknown): input is UpdateGan
     Number.isInteger(endValue) &&
     startValue <= endValue
   );
+}
+
+export function isChronicleCalendarsInput(input: unknown): input is ChronicleCalendarSettings[] {
+  if (!Array.isArray(input)) return false;
+
+  const ids = new Set<ChronicleCalendarId>();
+  let hasMain = false;
+
+  return input.every((calendar) => {
+    if (typeof calendar !== "object" || calendar === null) return false;
+
+    const candidate = calendar as Record<string, unknown>;
+    if (!isChronicleCalendarId(candidate.id)) return false;
+    if (ids.has(candidate.id)) return false;
+    ids.add(candidate.id);
+    if (candidate.id === "chronicle0") hasMain = true;
+    if (typeof candidate.name !== "string" || candidate.name.trim() === "") return false;
+    if (candidate.id === "chronicle0") return !("startYear" in candidate);
+
+    return Number.isInteger(candidate.startYear) && Number(candidate.startYear) >= 1;
+  }) && hasMain;
 }
 
 export function isFrontmatterTemplatesInput(input: unknown): input is FrontmatterTemplate[] {
@@ -135,4 +160,8 @@ export function isRenameWorkspaceInput(input: unknown): input is RenameWorkspace
     typeof (input as { workspaceId?: unknown }).workspaceId === "string" &&
     typeof (input as { name?: unknown }).name === "string"
   );
+}
+
+function isChronicleCalendarId(value: unknown): value is ChronicleCalendarId {
+  return typeof value === "string" && validChronicleCalendarIds.includes(value as ChronicleCalendarId);
 }

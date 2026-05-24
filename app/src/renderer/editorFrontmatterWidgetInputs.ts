@@ -8,6 +8,7 @@ import {
   dateInputValue,
   firstArrayValue,
   inputTypeFor,
+  isChronicleField,
   isEditableScalar,
   isFixedDateRangeField,
   isSingleValueField,
@@ -38,7 +39,7 @@ export function createFrontmatterValueInput({
   value: unknown;
   view: EditorView;
 }): HTMLElement {
-  if (key === "chronicle") return chronicleInput(view, key, Array.isArray(value) ? value : [], updateField);
+  if (isChronicleField(key)) return chronicleInput(view, key, Array.isArray(value) ? value : [], updateField);
   if (isFixedDateRangeField(key)) {
     return dateRangeInput(
       view,

@@ -104,7 +104,7 @@ describe("FrontmatterSidebar", () => {
     expect(screen.getByText("source: [https://example.com]")).toBeInTheDocument();
   });
 
-  it("aliasesとtagsとstatusとchronicleと計画/実行dateを固定プロパティとして表示し、カスタムプロパティには追加しない", () => {
+  it("aliasesとtagsとstatusとchronicle0〜9と計画/実行dateを固定プロパティとして表示し、カスタムプロパティには追加しない", () => {
     const onUserDefinedFieldsSave = vi.fn();
 
     renderFrontmatterSidebar({ onUserDefinedFieldsSave });
@@ -114,7 +114,8 @@ describe("FrontmatterSidebar", () => {
     expect(screen.getByText("aliases")).not.toBeNull();
     expect(screen.getByText("tags")).not.toBeNull();
     expect(screen.getByText("status")).not.toBeNull();
-    expect(screen.getByText("chronicle")).not.toBeNull();
+    expect(screen.getByText("chronicle0")).not.toBeNull();
+    expect(screen.getByText("chronicle9")).not.toBeNull();
     expect(screen.getByText("plannedDate")).not.toBeNull();
     expect(screen.getByText("actualDate")).not.toBeNull();
     expect(screen.getByText("At the very top of the Markdown file, make a settings block that starts with --- and ends with ---. Write each property inside that block on its own line.")).toBeInTheDocument();
@@ -128,9 +129,9 @@ describe("FrontmatterSidebar", () => {
     expect(screen.getByText("The status of this file for date chart workflows. Choose exactly one fixed option and write it as a one-item inline array.")).toBeInTheDocument();
     expect(screen.getByText("status: [未着手]")).toBeInTheDocument();
     expect(screen.queryByText("status: [進行中, 完了]")).toBeNull();
-    expect(screen.getByText("Places this file on the timeline as a single year or range. Write a single year or range as the same one-line array.")).toBeInTheDocument();
-    expect(screen.getByText("chronicle: [1185]")).toBeInTheDocument();
-    expect(screen.getByText("chronicle: [1185, 1333]")).toBeInTheDocument();
+    expect(screen.getAllByText("Places this file on the timeline as a single year or range. Write a single year or range as the same one-line array.").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("chronicle0: [1185]").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("chronicle0: [1185, 1333]").length).toBeGreaterThan(0);
     expect(screen.getByText("The planned date or date range for this file. Write dates without times as the same one-line array for a single day or range.")).toBeInTheDocument();
     expect(screen.getByText("plannedDate: [2026-05-12]")).toBeInTheDocument();
     expect(screen.getByText("plannedDate: [2026-05-12, 2026-05-20]")).toBeInTheDocument();
@@ -145,7 +146,7 @@ describe("FrontmatterSidebar", () => {
 
     expect(screen.getByRole("button", { name: "Add" })).toBeDisabled();
 
-    fireEvent.change(screen.getByPlaceholderText("Field name"), { target: { value: "chronicle" } });
+    fireEvent.change(screen.getByPlaceholderText("Field name"), { target: { value: "chronicle0" } });
 
     expect(screen.getByRole("button", { name: "Add" })).toBeDisabled();
 

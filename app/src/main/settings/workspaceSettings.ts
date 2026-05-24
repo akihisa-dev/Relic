@@ -2,11 +2,16 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import {
+  chronicleCalendarIds,
+  defaultChronicleCalendars,
+  type ChronicleCalendarId,
+  type ChronicleCalendarSettings,
   type GanttChartSettings,
   type GanttChartSource
 } from "../../shared/ipc";
 
 export interface WorkspaceSettings {
+  chronicleCalendars: ChronicleCalendarSettings[];
   ganttCharts: GanttChartSettings[];
   pinnedPaths: string[];
   workspacePath: string;
@@ -18,6 +23,7 @@ export const defaultGanttCharts: GanttChartSettings[] = [
 ];
 
 const defaultWorkspaceSettings: WorkspaceSettings = {
+  chronicleCalendars: defaultChronicleCalendars,
   ganttCharts: defaultGanttCharts,
   pinnedPaths: [],
   workspacePath: ""
@@ -38,6 +44,7 @@ export async function readWorkspaceSettings(
     const parsed = JSON.parse(raw) as Partial<WorkspaceSettings>;
 
     return {
+      chronicleCalendars: parseChronicleCalendars(parsed.chronicleCalendars),
       ganttCharts: parseGanttCharts(parsed.ganttCharts),
       pinnedPaths: Array.isArray(parsed.pinnedPaths)
         ? parsed.pinnedPaths.filter((p) => typeof p === "string")
@@ -51,6 +58,37 @@ export async function readWorkspaceSettings(
 
     throw error;
   }
+}
+
+export function parseChronicleCalendars(raw: unknown): ChronicleCalendarSettings[] {
+  if (!Array.isArray(raw)) return defaultChronicleCalendars;
+
+  const used = new Set<ChronicleCalendarId>();
+  const parsed = raw.flatMap((item): ChronicleCalendarSettings[] => {
+    if (typeof item !== "object" || item === null) return [];
+
+    const candidate = item as Record<string, unknown>;
+    const id = typeof candidate.id === "string" && isChronicleCalendarId(candidate.id)
+      ? candidate.id
+      : null;
+    const name = typeof candidate.name === "string" ? candidate.name.trim() : "";
+
+    if (!id || used.has(id) || !name) return [];
+    used.add(id);
+
+    if (id === "chronicle0") return [{ id, name }];
+
+    return Number.isInteger(candidate.startYear) && Number(candidate.startYear) >= 1
+      ? [{ id, name, startYear: Number(candidate.startYear) }]
+      : [];
+  });
+
+  const main = parsed.find((calendar) => calendar.id === "chronicle0") ?? defaultChronicleCalendars[0];
+  const subs = parsed
+    .filter((calendar) => calendar.id !== "chronicle0")
+    .sort((a, b) => chronicleCalendarIds.indexOf(a.id) - chronicleCalendarIds.indexOf(b.id));
+
+  return [main, ...subs];
 }
 
 export function parseGanttCharts(raw: unknown): GanttChartSettings[] {
@@ -92,6 +130,10 @@ function parseGanttChartFilePaths(raw: unknown): string[] | undefined {
 
 function isGanttChartSource(value: unknown): value is GanttChartSource {
   return value === "chronicle" || value === "date";
+}
+
+function isChronicleCalendarId(value: string): value is ChronicleCalendarId {
+  return chronicleCalendarIds.includes(value as ChronicleCalendarId);
 }
 
 function defaultGanttChartName(source: GanttChartSource): string {

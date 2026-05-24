@@ -53,12 +53,12 @@ describe("editorFrontmatterModel", () => {
   it("固定フィールドと登録済みフィールドを1行配列として書き戻す", () => {
     expect(serializeData({
       aliases: ["帝都", "王都"],
-      chronicle: [1185, 1333],
+      chronicle0: [1185, 1333],
       custom: ["A", "B"],
       tags: ["資料"]
     }, [{ name: "custom", type: "multi-select" }])).toBe([
       "aliases: [\"帝都\", \"王都\"]",
-      "chronicle: [1185, 1333]",
+      "chronicle0: [1185, 1333]",
       "custom: [\"A\", \"B\"]",
       "tags: [\"資料\"]"
     ].join("\n"));

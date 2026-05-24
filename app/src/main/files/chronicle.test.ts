@@ -8,27 +8,31 @@ import { extractChronicleRange, extractDateRange, readWorkspaceChronicle, update
 
 describe("extractChronicleRange", () => {
   it("単年を1要素配列として読む", () => {
-    expect(extractChronicleRange("---\nchronicle: [1185]\n---\n# A")).toEqual({
+    expect(extractChronicleRange("---\nchronicle0: [1185]\n---\n# A")).toEqual({
       endYear: 1185,
       startYear: 1185
     });
   });
 
   it("期間を2要素配列として読む", () => {
-    expect(extractChronicleRange("---\nchronicle: [-300, 250]\n---\n# A")).toEqual({
+    expect(extractChronicleRange("---\nchronicle0: [-300, 250]\n---\n# A")).toEqual({
       endYear: 250,
       startYear: -300
     });
   });
 
   it("0年や逆順の期間は読まない", () => {
-    expect(extractChronicleRange("---\nchronicle: [0]\n---\n# A")).toBeNull();
-    expect(extractChronicleRange("---\nchronicle: [1333, 1185]\n---\n# A")).toBeNull();
+    expect(extractChronicleRange("---\nchronicle0: [0]\n---\n# A")).toBeNull();
+    expect(extractChronicleRange("---\nchronicle0: [1333, 1185]\n---\n# A")).toBeNull();
   });
 
   it("配列以外や3要素以上の配列は読まない", () => {
-    expect(extractChronicleRange("---\nchronicle: 1185\n---\n# A")).toBeNull();
-    expect(extractChronicleRange("---\nchronicle: [1185, 1333, 1600]\n---\n# A")).toBeNull();
+    expect(extractChronicleRange("---\nchronicle0: 1185\n---\n# A")).toBeNull();
+    expect(extractChronicleRange("---\nchronicle0: [1185, 1333, 1600]\n---\n# A")).toBeNull();
+  });
+
+  it("廃止したchronicleは読まない", () => {
+    expect(extractChronicleRange("---\nchronicle: [1185]\n---\n# A")).toBeNull();
   });
 });
 
@@ -65,6 +69,61 @@ describe("extractDateRange", () => {
 });
 
 describe("readWorkspaceChronicle", () => {
+  it("chronicle0と設定済みサブ暦を同じ年表へ換算して読む", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-chronicle-calendar-chart-"));
+    await writeFile(
+      path.join(workspacePath, "main.md"),
+      "---\nchronicle0: [10]\n---\n# Main\n",
+      "utf8"
+    );
+    await writeFile(
+      path.join(workspacePath, "sub.md"),
+      "---\nchronicle1: [3]\n---\n# Sub\n",
+      "utf8"
+    );
+    await writeFile(
+      path.join(workspacePath, "legacy.md"),
+      "---\nchronicle: [10]\n---\n# Legacy\n",
+      "utf8"
+    );
+
+    const result = await readWorkspaceChronicle(
+      workspacePath,
+      [
+        { filePaths: [], id: "chronicle", name: "chronicle", source: "chronicle" },
+        { filePaths: [], id: "date", name: "date", source: "date" }
+      ],
+      [
+        { id: "chronicle0", name: "王国暦" },
+        { id: "chronicle1", name: "帝国暦", startYear: 100 }
+      ]
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    expect(result.value.find((chart) => chart.source === "chronicle")?.entries).toMatchObject([
+      {
+        chronicleCalendarId: "chronicle0",
+        endLabel: "王国暦 10",
+        endValue: 9,
+        fileName: "main",
+        path: "main.md",
+        startLabel: "王国暦 10",
+        startValue: 9
+      },
+      {
+        chronicleCalendarId: "chronicle1",
+        endLabel: "帝国暦 3",
+        endValue: 101,
+        fileName: "sub",
+        path: "sub.md",
+        startLabel: "帝国暦 3",
+        startValue: 101
+      }
+    ]);
+  });
+
   it("dateチャートにplannedDateとactualDateを1ファイル2行として読む", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-date-chart-"));
     await writeFile(
@@ -148,10 +207,10 @@ describe("readWorkspaceChronicle", () => {
 });
 
 describe("updateWorkspaceGanttChartEntry", () => {
-  it("chronicleバー移動時にchronicleとplannedDateを連動して更新する", async () => {
+  it("chronicle0バー移動時にchronicle0とplannedDateを連動して更新する", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-chronicle-update-"));
     const filePath = path.join(workspacePath, "entry.md");
-    await writeFile(filePath, "---\nchronicle: [1185, 1333]\nplannedDate: [2026-05-01, 2026-05-05]\n---\n# A\n", "utf8");
+    await writeFile(filePath, "---\nchronicle0: [1185, 1333]\nplannedDate: [2026-05-01, 2026-05-05]\n---\n# A\n", "utf8");
 
     const result = await updateWorkspaceGanttChartEntry(
       workspacePath,
@@ -177,10 +236,45 @@ describe("updateWorkspaceGanttChartEntry", () => {
     expect(extractDateRange(updated)).toEqual({ endDate: "2027-05-05", startDate: "2027-05-01" });
   });
 
-  it("dateバーの長さ変更時にplannedDateとchronicleを連動して更新する", async () => {
+  it("サブ暦バー移動時は元のchronicleNへサブ暦年で書き戻す", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-sub-chronicle-update-"));
+    const filePath = path.join(workspacePath, "entry.md");
+    await writeFile(filePath, "---\nchronicle1: [3]\nplannedDate: [2026-05-01]\n---\n# A\n", "utf8");
+
+    const result = await updateWorkspaceGanttChartEntry(
+      workspacePath,
+      [
+        { filePaths: [], id: "chronicle", name: "chronicle", source: "chronicle" },
+        { filePaths: [], id: "date", name: "date", source: "date" }
+      ],
+      {
+        chronicleCalendarId: "chronicle1",
+        endValue: 102,
+        kind: "move",
+        originalEndValue: 101,
+        originalStartValue: 101,
+        path: "entry.md",
+        source: "chronicle",
+        startValue: 102
+      },
+      [
+        { id: "chronicle0", name: "王国暦" },
+        { id: "chronicle1", name: "帝国暦", startYear: 100 }
+      ]
+    );
+
+    expect(result.ok).toBe(true);
+
+    const updated = await readFile(filePath, "utf8");
+    expect(updated).toContain("chronicle1: [4]");
+    expect(updated).not.toContain("chronicle0:");
+    expect(extractDateRange(updated)).toEqual({ endDate: "2027-05-01", startDate: "2027-05-01" });
+  });
+
+  it("dateバーの長さ変更時にplannedDateとchronicle0を連動して更新する", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-date-update-"));
     const filePath = path.join(workspacePath, "entry.md");
-    await writeFile(filePath, "---\nchronicle: [2026]\nplannedDate: [2026-12-30]\n---\n# A\n", "utf8");
+    await writeFile(filePath, "---\nchronicle0: [2026]\nplannedDate: [2026-12-30]\n---\n# A\n", "utf8");
 
     const result = await updateWorkspaceGanttChartEntry(
       workspacePath,
@@ -212,7 +306,7 @@ describe("updateWorkspaceGanttChartEntry", () => {
   it("actualDateバーの長さ変更時にactualDateとchronicleを連動して更新する", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-actual-date-update-"));
     const filePath = path.join(workspacePath, "entry.md");
-    await writeFile(filePath, "---\nchronicle: [2026]\nplannedDate: [2026-05-01]\nactualDate: [2026-05-02]\n---\n# A\n", "utf8");
+    await writeFile(filePath, "---\nchronicle0: [2026]\nplannedDate: [2026-05-01]\nactualDate: [2026-05-02]\n---\n# A\n", "utf8");
 
     const result = await updateWorkspaceGanttChartEntry(
       workspacePath,

@@ -48,7 +48,7 @@ export function writeFrontmatter(body: string, data: Record<string, unknown>): s
     return body;
   }
 
-  const yamlText = yaml.dump(data, { lineWidth: -1, quotingType: '"', forceQuotes: false });
+  const yamlText = yaml.dump(data, { flowLevel: 1, lineWidth: -1, quotingType: '"', forceQuotes: false });
 
   return `${DELIMITER}\n${yamlText}${DELIMITER}\n${body}`;
 }

@@ -1,7 +1,14 @@
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-import type { GanttChartEntry, GanttChartSettings, UpdateGanttChartEntryInput, WorkspaceGanttChart } from "../../shared/ipc";
+import {
+  defaultChronicleCalendars,
+  type ChronicleCalendarSettings,
+  type GanttChartEntry,
+  type GanttChartSettings,
+  type UpdateGanttChartEntryInput,
+  type WorkspaceGanttChart
+} from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { collectMarkdownPaths } from "../../shared/workspaceTree";
 import {
@@ -18,7 +25,8 @@ export { extractChronicleRange, extractDateRange } from "./chronicleData";
 
 export async function readWorkspaceChronicle(
   workspacePath: string,
-  charts: GanttChartSettings[]
+  charts: GanttChartSettings[],
+  calendars: ChronicleCalendarSettings[] = defaultChronicleCalendars
 ): Promise<RelicResult<WorkspaceGanttChart[]>> {
   try {
     const fileTree = await readWorkspaceFileTree(workspacePath);
@@ -33,7 +41,7 @@ export async function readWorkspaceChronicle(
       if (!absolutePath.ok) continue;
 
       const content = await readFile(absolutePath.value, "utf8");
-      const fileEntries = collectGanttEntriesForMarkdown(relativePath, content);
+      const fileEntries = collectGanttEntriesForMarkdown(relativePath, content, calendars);
       entriesBySource.chronicle.push(...fileEntries.chronicle);
       entriesBySource.date.push(...fileEntries.date);
     }
@@ -59,7 +67,8 @@ export async function readWorkspaceChronicle(
 export async function updateWorkspaceGanttChartEntry(
   workspacePath: string,
   charts: GanttChartSettings[],
-  input: UpdateGanttChartEntryInput
+  input: UpdateGanttChartEntryInput,
+  calendars: ChronicleCalendarSettings[] = defaultChronicleCalendars
 ): Promise<RelicResult<WorkspaceGanttChart[]>> {
   try {
     const absolutePath = resolveWorkspaceRelativePath(workspacePath, input.path);
@@ -74,12 +83,12 @@ export async function updateWorkspaceGanttChartEntry(
 
     const content = await readFile(absolutePath.value, "utf8");
     const nextContent = updateFrontmatter(content, (data) =>
-      updateChronicleDataForChartEdit(data, input)
+      updateChronicleDataForChartEdit(data, input, calendars)
     );
 
     await writeFile(absolutePath.value, nextContent, "utf8");
 
-    return readWorkspaceChronicle(workspacePath, charts);
+    return readWorkspaceChronicle(workspacePath, charts, calendars);
   } catch (error) {
     return fail(
       "GANTT_ENTRY_UPDATE_FAILED",
