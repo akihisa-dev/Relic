@@ -9,6 +9,7 @@ function renderResults(overrides: Partial<Parameters<typeof FilesSearchResults>[
     error: null,
     frontmatterField: "",
     isSearching: false,
+    limitNotice: null,
     mode: "fullText" as const,
     onOpenFile: vi.fn(),
     query: "note",
@@ -62,5 +63,12 @@ describe("FilesSearchResults", () => {
     cleanup();
     renderResults({ query: "missing", results: [] });
     expect(screen.getByText("No matches.")).toBeInTheDocument();
+  });
+
+  it("shows search limit notices", () => {
+    renderResults({ limitNotice: { skippedLargeFiles: 2, truncated: true } });
+
+    expect(screen.getByText(/Only some results are shown/)).toBeInTheDocument();
+    expect(screen.getByText(/2 large file/)).toBeInTheDocument();
   });
 });

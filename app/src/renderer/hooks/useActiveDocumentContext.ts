@@ -9,6 +9,8 @@ import { isLargeMarkdownContent } from "../largeMarkdown";
 import type { FileTab, PaneId, PaneState, Tab } from "../store/editorStore";
 import { useBacklinksState } from "./useBacklinksState";
 
+export const maxOutgoingLinks = 1000;
+
 interface UseActiveDocumentContextInput {
   aliasesByPath: AliasIndex;
   existingMarkdownPaths: string[];
@@ -35,6 +37,7 @@ export function useActiveDocumentContext({
   isLoadingBacklinks: boolean;
   outlineHeadings: OutlineHeading[];
   outgoingLinks: ResolvedWikiLink[];
+  outgoingLinksLimited: boolean;
 } {
   const activeFileTabInFocusedPane = getActiveFileTabInPane(
     focusedPane,
@@ -47,9 +50,13 @@ export function useActiveDocumentContext({
   const outlineHeadings = activeFileTabInFocusedPane && !isLargeMarkdown
     ? extractOutlineHeadings(activeFileTabInFocusedPane.content)
     : [];
-  const outgoingLinks = activeFileTabInFocusedPane && !isLargeMarkdown
+  const allOutgoingLinks = activeFileTabInFocusedPane && !isLargeMarkdown
     ? resolveWikiLinks(activeFileTabInFocusedPane.content, activeFileTabInFocusedPane.path, existingMarkdownPaths, aliasesByPath)
     : [];
+  const outgoingLinksLimited = allOutgoingLinks.length > maxOutgoingLinks;
+  const outgoingLinks = outgoingLinksLimited
+    ? allOutgoingLinks.slice(0, maxOutgoingLinks)
+    : allOutgoingLinks;
 
   const { backlinks, isLoadingBacklinks } = useBacklinksState({
     activeFilePath: activeFileTabInFocusedPane && !isLargeMarkdown ? activeFileTabInFocusedPane.path : null,
@@ -62,6 +69,7 @@ export function useActiveDocumentContext({
     backlinks,
     isLoadingBacklinks,
     outlineHeadings,
-    outgoingLinks
+    outgoingLinks,
+    outgoingLinksLimited
   };
 }

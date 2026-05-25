@@ -40,8 +40,16 @@ export function movedFolderPath(path: string, destFolder: string): string {
   return joinWorkspacePath(destFolder, displayNameFromPath(path));
 }
 
+export function movedFilePath(path: string, destFolder: string): string {
+  return joinWorkspacePath(destFolder, displayNameFromPath(path));
+}
+
 export function renamedFolderPath(path: string, newName: string): string {
   return joinWorkspacePath(parentFolderOf(path), newName);
+}
+
+export function renamedFilePath(path: string, newName: string): string {
+  return joinWorkspacePath(parentFolderOf(path), newName.endsWith(".md") ? newName : `${newName}.md`);
 }
 
 export function deleteTreeItemMessage(path: string, type: WorkspaceTreeNode["type"], t: Translator): string {

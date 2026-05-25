@@ -4,6 +4,7 @@ import type { FileTab, PaneId, PaneState, Tab } from "../store/editorStore";
 
 export interface WorkspaceFileActionsContext {
   aliasesByPath: AliasIndex;
+  beforeMutateWorkspaceItems?: (items: Array<{ path: string; type: "file" | "folder" }>) => Promise<boolean> | boolean;
   closeAllTabs: () => void;
   closeTab: (pane: PaneId, tabId: string) => void;
   existingMarkdownPaths: string[];

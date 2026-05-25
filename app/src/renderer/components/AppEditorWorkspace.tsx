@@ -55,6 +55,7 @@ interface AppEditorWorkspaceProps {
   onTogglePinTab?: (tabId: string) => void;
   outlineHeadings: OutlineHeading[];
   outgoingLinks: ResolvedWikiLink[];
+  outgoingLinksLimited: boolean;
   renderGanttChartTab: (chartId: string) => ReactNode;
   renderPanelTab: (panel: PanelTabKind) => ReactNode;
   renderPanelTabIcon: (panel: PanelTabKind) => ReactNode;
@@ -113,6 +114,7 @@ export function AppEditorWorkspace({
   onTogglePinTab,
   outlineHeadings,
   outgoingLinks,
+  outgoingLinksLimited,
   renderGanttChartTab,
   renderPanelTab,
   renderPanelTabIcon,
@@ -276,6 +278,7 @@ export function AppEditorWorkspace({
           onResizeStart={onRightPanelResizeStart}
           outlineHeadings={outlineHeadings}
           outgoingLinks={outgoingLinks}
+          outgoingLinksLimited={outgoingLinksLimited}
           rightPanelView={rightPanelView}
           setLinkContextMenu={setLinkContextMenu}
           width={rightPanelWidth}

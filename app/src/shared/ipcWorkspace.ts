@@ -85,6 +85,19 @@ export interface MoveFolderInput {
   path: string;
 }
 
+export type LinkUpdateImpactKind = "file" | "folder";
+
+export interface LinkUpdateImpactInput {
+  kind: LinkUpdateImpactKind;
+  newPath: string;
+  oldPath: string;
+}
+
+export interface LinkUpdateImpact {
+  fileCount: number;
+  linkCount: number;
+}
+
 export interface ReplaceInFileInput {
   isRegex: boolean;
   path: string;
@@ -144,6 +157,12 @@ export interface WorkspaceSearchResult {
   lineNumber: number | null;
   lineText: string;
   path: string;
+}
+
+export interface WorkspaceSearchResultSet {
+  results: WorkspaceSearchResult[];
+  skippedLargeFiles: number;
+  truncated: boolean;
 }
 
 export interface WriteMarkdownFileInput {

@@ -204,6 +204,23 @@ export function findFrontmatterLineRange(doc: Text): { end: number; start: numbe
   return null;
 }
 
+export function hasInvalidFrontmatterYaml(content: string): boolean {
+  const normalized = content.replace(/\r\n/g, "\n");
+  const lines = normalized.split("\n");
+  if (lines.length < 2 || lines[0].trim() !== "---") return false;
+
+  const endIndex = lines.findIndex((line, index) => index > 0 && line.trim() === "---");
+  if (endIndex === -1) return true;
+
+  const yamlText = lines.slice(1, endIndex).join("\n");
+  try {
+    const parsed = yaml.load(yamlText);
+    return parsed !== null && parsed !== undefined && (typeof parsed !== "object" || Array.isArray(parsed));
+  } catch {
+    return true;
+  }
+}
+
 export function findFrontmatterBlock(state: EditorState): FrontmatterBlock | null {
   const range = findFrontmatterLineRange(state.doc);
   if (!range) return null;

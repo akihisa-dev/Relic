@@ -7,6 +7,8 @@ import {
   type CreateMarkdownFileInput,
   duplicateMarkdownFileChannel,
   type DuplicateMarkdownFileInput,
+  getLinkUpdateImpactChannel,
+  type LinkUpdateImpactInput,
   moveMarkdownFileChannel,
   type MoveMarkdownFileInput,
   renameMarkdownFileChannel,
@@ -23,6 +25,7 @@ import {
   moveMarkdownFile,
   renameMarkdownFile
 } from "../files/markdownFiles";
+import { readLinkUpdateImpact } from "../files/linkUpdater";
 import { resolveWorkspaceRelativePath } from "../files/paths";
 import { getActiveWorkspaceContext, ipcErrorDetails } from "./activeWorkspace";
 import {
@@ -34,6 +37,35 @@ import {
 import { buildWorkspaceState } from "./workspaceState";
 
 export function registerMarkdownFileHandlers(): void {
+  ipcMain.handle(getLinkUpdateImpactChannel, async (_event, input: LinkUpdateImpactInput) => {
+    try {
+      if (
+        !input ||
+        (input.kind !== "file" && input.kind !== "folder") ||
+        typeof input.oldPath !== "string" ||
+        typeof input.newPath !== "string"
+      ) {
+        return fail("LINK_UPDATE_IMPACT_INVALID_INPUT", "リンク更新の確認対象が正しくありません。");
+      }
+
+      const context = await getActiveWorkspaceContext();
+      if (!context.ok) return context;
+
+      return readLinkUpdateImpact(
+        context.value.activeWorkspace.path,
+        input.kind,
+        input.oldPath,
+        input.newPath
+      );
+    } catch (error) {
+      return fail(
+        "LINK_UPDATE_IMPACT_FAILED",
+        "リンク更新の影響件数を確認できませんでした。",
+        ipcErrorDetails(error)
+      );
+    }
+  });
+
   ipcMain.handle(
     createMarkdownFileChannel,
     async (_event, input: CreateMarkdownFileInput): Promise<RelicResult<WorkspaceState>> => {

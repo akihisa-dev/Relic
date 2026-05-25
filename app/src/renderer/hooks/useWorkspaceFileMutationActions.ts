@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 
+import type { LinkUpdateImpactKind } from "../../shared/ipcWorkspace";
 import type { WorkspaceState, WorkspaceTreeNode } from "../../shared/ipc";
 import type { Translator } from "../i18n";
 import {
@@ -12,7 +13,9 @@ import {
   deleteTreeItemMessage,
   deleteTreeItemsMessage,
   getActiveFileTab,
+  movedFilePath,
   movedFolderPath,
+  renamedFilePath,
   renamedFolderPath,
   tabCloseTargetsForTreeItem,
   tabCloseTargetsForTreeItems
@@ -20,6 +23,7 @@ import {
 
 type WorkspaceFileMutationInput = Pick<
   WorkspaceFileActionsContext,
+  | "beforeMutateWorkspaceItems"
   | "closeTab"
   | "focusedPane"
   | "leftPane"
@@ -31,7 +35,11 @@ type WorkspaceFileMutationInput = Pick<
   | "updateTabMeta"
 >;
 
+const linkUpdateImpactFileThreshold = 30;
+const linkUpdateImpactLinkThreshold = 100;
+
 export function useWorkspaceFileMutationActions({
+  beforeMutateWorkspaceItems,
   closeTab,
   focusedPane,
   leftPane,
@@ -43,10 +51,47 @@ export function useWorkspaceFileMutationActions({
   updateTabMeta,
   t
 }: WorkspaceFileMutationInput & { t: Translator }) {
+  const ensureCanMutateItems = useCallback(
+    async (items: Array<{ path: string; type: "file" | "folder" }>): Promise<boolean> => {
+      if (!beforeMutateWorkspaceItems) return true;
+      return Promise.resolve(beforeMutateWorkspaceItems(items));
+    },
+    [beforeMutateWorkspaceItems]
+  );
+
+  const confirmLinkUpdateImpact = useCallback(
+    async (kind: LinkUpdateImpactKind, oldPath: string, newPath: string): Promise<boolean> => {
+      if (!window.relic || oldPath === newPath) return true;
+
+      const result = await window.relic.getLinkUpdateImpact({ kind, newPath, oldPath });
+      if (!result.ok) {
+        setWorkspaceError(result.error.message);
+        return false;
+      }
+
+      if (
+        result.value.fileCount < linkUpdateImpactFileThreshold &&
+        result.value.linkCount < linkUpdateImpactLinkThreshold
+      ) {
+        return true;
+      }
+
+      return window.confirm(t("links.updateImpactConfirm", {
+        files: result.value.fileCount,
+        links: result.value.linkCount
+      }));
+    },
+    [setWorkspaceError, t]
+  );
+
   const handleMoveFile = useCallback((path: string, destFolder: string): void => {
     if (!window.relic) return;
 
-    void window.relic.moveMarkdownFile({ destinationFolder: destFolder, path }).then((result) => {
+    void (async () => {
+      if (!await ensureCanMutateItems([{ path, type: "file" }])) return;
+      if (!await confirmLinkUpdateImpact("file", path, movedFilePath(path, destFolder))) return;
+
+      const result = await window.relic!.moveMarkdownFile({ destinationFolder: destFolder, path });
       if (result.ok) {
         const oldTab = Object.entries(tabs).find(([, tab]) => tab.kind === "file" && tab.path === path);
 
@@ -55,13 +100,17 @@ export function useWorkspaceFileMutationActions({
       } else {
         setWorkspaceError(result.error.message);
       }
-    });
-  }, [setWorkspaceError, setWorkspaceState, tabs, updateTabMeta]);
+    })();
+  }, [confirmLinkUpdateImpact, ensureCanMutateItems, setWorkspaceError, setWorkspaceState, tabs, updateTabMeta]);
 
   const handleMoveFolder = useCallback((path: string, destFolder: string): void => {
     if (!window.relic) return;
 
-    void window.relic.moveFolder({ destinationFolder: destFolder, path }).then((result) => {
+    void (async () => {
+      if (!await ensureCanMutateItems([{ path, type: "folder" }])) return;
+      if (!await confirmLinkUpdateImpact("folder", path, movedFolderPath(path, destFolder))) return;
+
+      const result = await window.relic!.moveFolder({ destinationFolder: destFolder, path });
       if (result.ok) {
         const nextFolderPath = movedFolderPath(path, destFolder);
 
@@ -71,8 +120,8 @@ export function useWorkspaceFileMutationActions({
       } else {
         setWorkspaceError(result.error.message);
       }
-    });
-  }, [setWorkspaceError, setWorkspaceState, tabs, updateTabMeta]);
+    })();
+  }, [confirmLinkUpdateImpact, ensureCanMutateItems, setWorkspaceError, setWorkspaceState, tabs, updateTabMeta]);
 
   const handleMoveTreeItems = useCallback(
     (items: Array<{ path: string; type: WorkspaceTreeNode["type"] }>, destFolder: string): void => {
@@ -83,8 +132,11 @@ export function useWorkspaceFileMutationActions({
       if (movableItems.length === 0) return;
 
       void (async () => {
+        if (!await ensureCanMutateItems(movableItems)) return;
+
         for (const item of movableItems) {
           if (item.type === "file") {
+            if (!await confirmLinkUpdateImpact("file", item.path, movedFilePath(item.path, destFolder))) return;
             const result = await window.relic!.moveMarkdownFile({ destinationFolder: destFolder, path: item.path });
             if (!result.ok) {
               setWorkspaceError(result.error.message);
@@ -98,6 +150,7 @@ export function useWorkspaceFileMutationActions({
             continue;
           }
 
+          if (!await confirmLinkUpdateImpact("folder", item.path, movedFolderPath(item.path, destFolder))) return;
           const result = await window.relic!.moveFolder({ destinationFolder: destFolder, path: item.path });
           if (!result.ok) {
             setWorkspaceError(result.error.message);
@@ -112,7 +165,7 @@ export function useWorkspaceFileMutationActions({
         }
       })();
     },
-    [setWorkspaceError, setWorkspaceState, tabs, updateTabMeta]
+    [confirmLinkUpdateImpact, ensureCanMutateItems, setWorkspaceError, setWorkspaceState, tabs, updateTabMeta]
   );
 
   const handleMoveActiveFile = useCallback(
@@ -121,18 +174,20 @@ export function useWorkspaceFileMutationActions({
 
       if (!activeFile || !window.relic) return;
 
-      void window.relic
-        .moveMarkdownFile({ destinationFolder, path: activeFile.tab.path })
-        .then((result) => {
+      void (async () => {
+        if (!await ensureCanMutateItems([{ path: activeFile.tab.path, type: "file" }])) return;
+        if (!await confirmLinkUpdateImpact("file", activeFile.tab.path, movedFilePath(activeFile.tab.path, destinationFolder))) return;
+
+        const result = await window.relic!.moveMarkdownFile({ destinationFolder, path: activeFile.tab.path });
           if (result.ok) {
             updateTabMeta(activeFile.tabId, { name: result.value.file.name, path: result.value.file.path });
             setWorkspaceState(result.value.workspaceState);
           } else {
             setWorkspaceError(result.error.message);
           }
-        });
+        })();
     },
-    [focusedPane, leftPane, rightPane, setWorkspaceError, setWorkspaceState, tabs, updateTabMeta]
+    [confirmLinkUpdateImpact, ensureCanMutateItems, focusedPane, leftPane, rightPane, setWorkspaceError, setWorkspaceState, tabs, updateTabMeta]
   );
 
   const handleRenameActiveFile = useCallback(
@@ -141,18 +196,20 @@ export function useWorkspaceFileMutationActions({
 
       if (!activeFile || !window.relic) return;
 
-      void window.relic
-        .renameMarkdownFile({ newName, path: activeFile.tab.path })
-        .then((result) => {
+      void (async () => {
+        if (!await ensureCanMutateItems([{ path: activeFile.tab.path, type: "file" }])) return;
+        if (!await confirmLinkUpdateImpact("file", activeFile.tab.path, renamedFilePath(activeFile.tab.path, newName))) return;
+
+        const result = await window.relic!.renameMarkdownFile({ newName, path: activeFile.tab.path });
           if (result.ok) {
             updateTabMeta(activeFile.tabId, { name: result.value.file.name, path: result.value.file.path });
             setWorkspaceState(result.value.workspaceState);
           } else {
             setWorkspaceError(result.error.message);
           }
-        });
+        })();
     },
-    [focusedPane, leftPane, rightPane, setWorkspaceError, setWorkspaceState, tabs, updateTabMeta]
+    [confirmLinkUpdateImpact, ensureCanMutateItems, focusedPane, leftPane, rightPane, setWorkspaceError, setWorkspaceState, tabs, updateTabMeta]
   );
 
   const handleRenameTreeItem = useCallback(
@@ -160,7 +217,11 @@ export function useWorkspaceFileMutationActions({
       if (!window.relic) return;
 
       if (type === "file") {
-        void window.relic.renameMarkdownFile({ newName, path }).then((result) => {
+        void (async () => {
+          if (!await ensureCanMutateItems([{ path, type: "file" }])) return;
+          if (!await confirmLinkUpdateImpact("file", path, renamedFilePath(path, newName))) return;
+
+          const result = await window.relic!.renameMarkdownFile({ newName, path });
           if (result.ok) {
             Object.entries(tabs)
               .filter(([, tab]) => tab.kind === "file" && tab.path === path)
@@ -171,11 +232,15 @@ export function useWorkspaceFileMutationActions({
           } else {
             setWorkspaceError(result.error.message);
           }
-        });
+        })();
         return;
       }
 
-      void window.relic.renameFolder({ newName, path }).then((result) => {
+      void (async () => {
+        if (!await ensureCanMutateItems([{ path, type: "folder" }])) return;
+        if (!await confirmLinkUpdateImpact("folder", path, renamedFolderPath(path, newName))) return;
+
+        const result = await window.relic!.renameFolder({ newName, path });
         if (result.ok) {
           const nextFolderPath = renamedFolderPath(path, newName);
 
@@ -185,53 +250,62 @@ export function useWorkspaceFileMutationActions({
         } else {
           setWorkspaceError(result.error.message);
         }
-      });
+      })();
     },
-    [setWorkspaceError, setWorkspaceState, tabs, updateTabMeta]
+    [confirmLinkUpdateImpact, ensureCanMutateItems, setWorkspaceError, setWorkspaceState, tabs, updateTabMeta]
   );
 
   const handleDuplicateActiveFile = useCallback((): void => {
     const activeFile = getActiveFileTab({ focusedPane, leftPane, rightPane, tabs });
     if (!activeFile || !window.relic) return;
-    void window.relic.duplicateMarkdownFile({ path: activeFile.tab.path }).then((result) => {
+    void (async () => {
+      if (!await ensureCanMutateItems([{ path: activeFile.tab.path, type: "file" }])) return;
+
+      const result = await window.relic!.duplicateMarkdownFile({ path: activeFile.tab.path });
       if (result.ok) {
         setWorkspaceState(result.value.workspaceState);
         openFileInPane(focusedPane, result.value.file);
       } else {
         setWorkspaceError(result.error.message);
       }
-    });
-  }, [focusedPane, leftPane, openFileInPane, rightPane, setWorkspaceError, setWorkspaceState, tabs]);
+    })();
+  }, [ensureCanMutateItems, focusedPane, leftPane, openFileInPane, rightPane, setWorkspaceError, setWorkspaceState, tabs]);
 
   const handleDuplicateTreeFile = useCallback(
     (path: string): void => {
       if (!window.relic) return;
 
-      void window.relic.duplicateMarkdownFile({ path }).then((result) => {
+      void (async () => {
+        if (!await ensureCanMutateItems([{ path, type: "file" }])) return;
+
+        const result = await window.relic!.duplicateMarkdownFile({ path });
         if (result.ok) {
           setWorkspaceState(result.value.workspaceState);
           openFileInPane(focusedPane, result.value.file);
         } else {
           setWorkspaceError(result.error.message);
         }
-      });
+      })();
     },
-    [focusedPane, openFileInPane, setWorkspaceError, setWorkspaceState]
+    [ensureCanMutateItems, focusedPane, openFileInPane, setWorkspaceError, setWorkspaceState]
   );
 
   const handleDeleteActiveFile = useCallback((): void => {
     const activeFile = getActiveFileTab({ focusedPane, leftPane, rightPane, tabs });
     if (!activeFile || !window.relic) return;
     if (!window.confirm(t("files.deleteFileConfirm", { name: activeFile.tab.name }))) return;
-    void window.relic.moveItemToTrash({ path: activeFile.tab.path, type: "file" }).then((result) => {
+    void (async () => {
+      if (!await ensureCanMutateItems([{ path: activeFile.tab.path, type: "file" }])) return;
+
+      const result = await window.relic!.moveItemToTrash({ path: activeFile.tab.path, type: "file" });
       if (result.ok) {
         closeTab(focusedPane, activeFile.tabId);
         setWorkspaceState(result.value);
       } else {
         setWorkspaceError(result.error.message);
       }
-    });
-  }, [closeTab, focusedPane, leftPane, rightPane, setWorkspaceError, setWorkspaceState, t, tabs]);
+    })();
+  }, [closeTab, ensureCanMutateItems, focusedPane, leftPane, rightPane, setWorkspaceError, setWorkspaceState, t, tabs]);
 
   const handleDeleteTreeItem = useCallback(
     (path: string, type: WorkspaceTreeNode["type"]): void => {
@@ -240,7 +314,10 @@ export function useWorkspaceFileMutationActions({
       const message = deleteTreeItemMessage(path, type, t);
       if (!window.confirm(message)) return;
 
-      void window.relic.moveItemToTrash({ path, type }).then((result) => {
+      void (async () => {
+        if (!await ensureCanMutateItems([{ path, type }])) return;
+
+        const result = await window.relic!.moveItemToTrash({ path, type });
         if (result.ok) {
           const item = { path, type };
           tabCloseTargetsForTreeItem({ item, leftPane, rightPane, tabs })
@@ -249,9 +326,9 @@ export function useWorkspaceFileMutationActions({
         } else {
           setWorkspaceError(result.error.message);
         }
-      });
+      })();
     },
-    [closeTab, leftPane, rightPane, setWorkspaceError, setWorkspaceState, t, tabs]
+    [closeTab, ensureCanMutateItems, leftPane, rightPane, setWorkspaceError, setWorkspaceState, t, tabs]
   );
 
   const handleDeleteTreeItems = useCallback(
@@ -264,6 +341,8 @@ export function useWorkspaceFileMutationActions({
       if (!window.confirm(message)) return;
 
       void (async () => {
+        if (!await ensureCanMutateItems(deletableItems)) return;
+
         let nextWorkspaceState: WorkspaceState | null = null;
 
         for (const item of deletableItems) {
@@ -281,7 +360,7 @@ export function useWorkspaceFileMutationActions({
         if (nextWorkspaceState) setWorkspaceState(nextWorkspaceState);
       })();
     },
-    [closeTab, leftPane, rightPane, setWorkspaceError, setWorkspaceState, t, tabs]
+    [closeTab, ensureCanMutateItems, leftPane, rightPane, setWorkspaceError, setWorkspaceState, t, tabs]
   );
 
   return {

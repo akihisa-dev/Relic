@@ -21,6 +21,7 @@ interface AppRightPanelProps {
   onResizeStart: (event: ReactMouseEvent) => void;
   outlineHeadings: OutlineHeading[];
   outgoingLinks: ResolvedWikiLink[];
+  outgoingLinksLimited: boolean;
   rightPanelView: RightPanelView;
   setLinkContextMenu: Dispatch<SetStateAction<AppLinkContextMenu | null>>;
   width: number;
@@ -38,6 +39,7 @@ export function AppRightPanel({
   onResizeStart,
   outlineHeadings,
   outgoingLinks,
+  outgoingLinksLimited,
   rightPanelView,
   setLinkContextMenu,
   width
@@ -82,6 +84,9 @@ export function AppRightPanel({
         <div className="links-panel-stack">
           <div className="links-panel-section">
             <div className="links-panel-subheading">{t("links.outgoing")}</div>
+            {outgoingLinksLimited ? (
+              <div className="list-loading-note">{t("links.outgoingLimited")}</div>
+            ) : null}
             {outgoingLinks.length > 0 ? (
               <ul className="links-list">
                 {outgoingLinks.map((link, index) => (
