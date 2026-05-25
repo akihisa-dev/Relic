@@ -211,6 +211,17 @@ export class TableWidget extends WidgetType {
             }
             updateTableWidgetRows(view, this.block, rows);
             focusCell(nextRow, nextCol);
+          } else if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+            const nextRow = event.key === "ArrowUp" ? rowIndex - 1 : rowIndex + 1;
+            if (nextRow < 0 || nextRow >= rowCount) return;
+            event.preventDefault();
+            focusCell(nextRow, colIndex);
+          } else if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+            if (!canMoveHorizontallyWithArrow(input, event.key)) return;
+            const nextCol = event.key === "ArrowLeft" ? colIndex - 1 : colIndex + 1;
+            if (nextCol < 0 || nextCol >= colCount) return;
+            event.preventDefault();
+            focusCell(rowIndex, nextCol);
           }
         });
         td.append(input);
@@ -390,4 +401,13 @@ function clearSelectedRange(rows: string[][], range: SelectedRange): string[][] 
     }
     return next;
   });
+}
+
+function canMoveHorizontallyWithArrow(input: HTMLInputElement, key: "ArrowLeft" | "ArrowRight"): boolean {
+  if (input.selectionStart === null || input.selectionEnd === null) return input.value.length === 0;
+  if (input.selectionStart !== input.selectionEnd) return false;
+
+  return key === "ArrowLeft"
+    ? input.selectionStart === 0
+    : input.selectionEnd === input.value.length;
 }

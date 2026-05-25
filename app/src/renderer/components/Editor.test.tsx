@@ -1468,6 +1468,62 @@ describe("Editor", () => {
     expect(viewRef.current?.state.doc.toString()).toBe("| A | B |\n| --- | --- |\n| x | y |\n|  |  |");
   });
 
+  it("ライブプレビューの表で上下左右キーから隣セルへ移動する", async () => {
+    const { container } = render(
+      <Editor
+        content={"| A | B |\n| --- | --- |\n| x | y |\n| z | w |"}
+        onChange={vi.fn()}
+        settings={settings}
+      />
+    );
+
+    await waitFor(() => expect(container.querySelector(".cm-live-table-cell-input")).not.toBeNull());
+    const input = container.querySelector('.cm-live-table-cell-input[data-row="1"][data-col="0"]') as HTMLInputElement;
+
+    input.focus();
+    input.setSelectionRange(input.value.length, input.value.length);
+    fireEvent.keyDown(input, { key: "ArrowRight" });
+    await waitFor(() => {
+      expect(document.activeElement).toBe(container.querySelector('.cm-live-table-cell-input[data-row="1"][data-col="1"]'));
+    });
+
+    fireEvent.keyDown(document.activeElement as HTMLInputElement, { key: "ArrowDown" });
+    await waitFor(() => {
+      expect(document.activeElement).toBe(container.querySelector('.cm-live-table-cell-input[data-row="2"][data-col="1"]'));
+    });
+
+    const bottomRight = document.activeElement as HTMLInputElement;
+    bottomRight.setSelectionRange(0, 0);
+    fireEvent.keyDown(bottomRight, { key: "ArrowLeft" });
+    await waitFor(() => {
+      expect(document.activeElement).toBe(container.querySelector('.cm-live-table-cell-input[data-row="2"][data-col="0"]'));
+    });
+
+    fireEvent.keyDown(document.activeElement as HTMLInputElement, { key: "ArrowUp" });
+    await waitFor(() => {
+      expect(document.activeElement).toBe(container.querySelector('.cm-live-table-cell-input[data-row="1"][data-col="0"]'));
+    });
+  });
+
+  it("ライブプレビューの表で左右キーはセル内カーソルが端にない場合はセル移動しない", async () => {
+    const { container } = render(
+      <Editor
+        content={"| A | B |\n| --- | --- |\n| text | y |"}
+        onChange={vi.fn()}
+        settings={settings}
+      />
+    );
+
+    await waitFor(() => expect(container.querySelector(".cm-live-table-cell-input")).not.toBeNull());
+    const input = container.querySelector('.cm-live-table-cell-input[data-row="1"][data-col="0"]') as HTMLInputElement;
+
+    input.focus();
+    input.setSelectionRange(2, 2);
+    fireEvent.keyDown(input, { key: "ArrowRight" });
+
+    expect(document.activeElement).toBe(input);
+  });
+
   it("ライブプレビューの表で側面の追加ボタンから選択行列の後ろに追加できる", async () => {
     const viewRef = createRef<EditorView | null>();
 
