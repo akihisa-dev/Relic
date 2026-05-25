@@ -1,15 +1,22 @@
 import { EditorState } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { MutableRefObject, ReactElement } from "react";
 
-import type { EditorSettings, UserDefinedField } from "../../shared/ipc";
+import { chronicleCalendarIds, type EditorSettings, type UserDefinedField } from "../../shared/ipc";
 import { buildExtensions, destroyEditorView } from "../editorExtensions";
-import { frontmatterDialogRequestEvent, type FrontmatterDialogRequest } from "../editorFrontmatter";
+import {
+  appendOrCreateFrontmatterField,
+  canAppendOrCreateFrontmatterField,
+  findFrontmatterBlock,
+  fixedFrontmatterFieldNames,
+  frontmatterDialogRequestEvent,
+  type FrontmatterDialogRequest
+} from "../editorFrontmatter";
 import { useEditorContextMenu } from "../hooks/useEditorContextMenu";
 import { useEditorFrontmatterDialog } from "../hooks/useEditorFrontmatterDialog";
 import { useToolbarActions } from "../hooks/useToolbarActions";
-import { useT } from "../i18n";
+import { useT, type Translator } from "../i18n";
 import { EditorContextMenu } from "./EditorContextMenu";
 import { EditorFrontmatterDialog } from "./EditorFrontmatterDialog";
 
@@ -34,6 +41,24 @@ interface EditorProps {
 const defaultAllFilePaths: string[] = [];
 const defaultFrontmatterCandidates: Record<string, string[]> = {};
 const defaultUserDefinedFields: UserDefinedField[] = [];
+const basicFixedFieldNames = ["aliases", "tags", "status"] as const;
+const dateFixedFieldNames = ["plannedDate", "actualDate"] as const;
+
+interface FrontmatterPropertyMenuGroup {
+  id: string;
+  label: string;
+  options: FrontmatterPropertyMenuOption[];
+}
+
+interface FrontmatterPropertyMenuOption {
+  key: string;
+  label: string;
+}
+
+interface FrontmatterPropertyMenuState {
+  groups: FrontmatterPropertyMenuGroup[];
+  unavailable: boolean;
+}
 
 export function Editor({
   allFilePaths = defaultAllFilePaths,
@@ -51,6 +76,8 @@ export function Editor({
 }: EditorProps): ReactElement {
   const t = useT();
   const containerRef = useRef<HTMLDivElement>(null);
+  const frontmatterButtonRef = useRef<HTMLButtonElement>(null);
+  const frontmatterMenuRef = useRef<HTMLDivElement>(null);
   const internalViewRef = useRef<EditorView | null>(null);
   const onChangeRef = useRef(onChange);
   const onOpenLinkRef = useRef(onOpenLink);
@@ -58,6 +85,7 @@ export function Editor({
   const allFilePathsRef = useRef(allFilePaths);
   const frontmatterCandidatesRef = useRef(frontmatterCandidates);
   const userDefinedFieldsRef = useRef(userDefinedFields);
+  const [frontmatterPropertyMenu, setFrontmatterPropertyMenu] = useState<FrontmatterPropertyMenuState | null>(null);
   const {
     closeContextMenu,
     contextMenu,
@@ -98,6 +126,26 @@ export function Editor({
   allFilePathsRef.current = allFilePaths;
   frontmatterCandidatesRef.current = frontmatterCandidates;
   userDefinedFieldsRef.current = userDefinedFields;
+
+  const toggleFrontmatterPropertyMenu = (): void => {
+    const view = internalViewRef.current;
+    if (!view) return;
+
+    if (frontmatterPropertyMenu) {
+      setFrontmatterPropertyMenu(null);
+      return;
+    }
+
+    setFrontmatterPropertyMenu(buildFrontmatterPropertyMenuState(view, t));
+  };
+
+  const addFrontmatterProperty = (key: string): void => {
+    const view = internalViewRef.current;
+    if (!view) return;
+
+    appendOrCreateFrontmatterField(view, key);
+    setFrontmatterPropertyMenu(null);
+  };
 
   useEffect(() => {
     const container = containerRef.current;
@@ -142,6 +190,29 @@ export function Editor({
       container.removeEventListener("contextmenu", handleContextMenu, true);
     };
   }, [openContextMenu, openFrontmatterDialog]);
+
+  useEffect(() => {
+    if (!frontmatterPropertyMenu) return;
+
+    const closeOnPointerDown = (event: PointerEvent): void => {
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+      if (frontmatterButtonRef.current?.contains(target)) return;
+      if (frontmatterMenuRef.current?.contains(target)) return;
+      setFrontmatterPropertyMenu(null);
+    };
+    const closeOnEscape = (event: KeyboardEvent): void => {
+      if (event.key === "Escape") setFrontmatterPropertyMenu(null);
+    };
+
+    document.addEventListener("pointerdown", closeOnPointerDown);
+    document.addEventListener("keydown", closeOnEscape);
+
+    return () => {
+      document.removeEventListener("pointerdown", closeOnPointerDown);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [frontmatterPropertyMenu]);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -230,7 +301,49 @@ export function Editor({
 
   return (
     <>
-      <div className="cm-editor-container" onContextMenuCapture={openReactContextMenu} ref={containerRef} />
+      <div className="cm-editor-shell">
+        <div className="cm-editor-container" onContextMenuCapture={openReactContextMenu} ref={containerRef} />
+        <button
+          aria-expanded={frontmatterPropertyMenu ? "true" : "false"}
+          aria-haspopup="menu"
+          aria-label={t("frontmatter.addProperty")}
+          className="editor-frontmatter-add-button"
+          onClick={toggleFrontmatterPropertyMenu}
+          ref={frontmatterButtonRef}
+          title={t("frontmatter.addProperty")}
+          type="button"
+        >
+          +
+        </button>
+        {frontmatterPropertyMenu ? (
+          <div className="editor-frontmatter-add-menu" ref={frontmatterMenuRef} role="menu">
+            <div className="editor-frontmatter-add-menu-title">{t("frontmatter.addProperty")}</div>
+            {frontmatterPropertyMenu.unavailable ? (
+              <div className="editor-frontmatter-add-menu-empty">{t("frontmatter.fixYamlBeforeAdding")}</div>
+            ) : frontmatterPropertyMenu.groups.length === 0 ? (
+              <div className="editor-frontmatter-add-menu-empty">{t("frontmatter.noAvailableProperties")}</div>
+            ) : (
+              frontmatterPropertyMenu.groups.map((group) => (
+                <div className="editor-frontmatter-add-menu-group" key={group.id}>
+                  <div className="editor-frontmatter-add-menu-group-label">{group.label}</div>
+                  {group.options.map((option) => (
+                    <button
+                      className="editor-frontmatter-add-menu-item"
+                      key={option.key}
+                      onClick={() => addFrontmatterProperty(option.key)}
+                      role="menuitem"
+                      type="button"
+                    >
+                      <span>{option.label}</span>
+                      <code>{option.key}</code>
+                    </button>
+                  ))}
+                </div>
+              ))
+            )}
+          </div>
+        ) : null}
+      </div>
       <EditorFrontmatterDialog
         candidates={frontmatterDialogCandidates}
         dialog={frontmatterDialog}
@@ -254,4 +367,57 @@ export function Editor({
       />
     </>
   );
+}
+
+function buildFrontmatterPropertyMenuState(view: EditorView, t: Translator): FrontmatterPropertyMenuState {
+  if (!canAppendOrCreateFrontmatterField(view)) {
+    return { groups: [], unavailable: true };
+  }
+
+  const usedKeys = new Set(Object.keys(findFrontmatterBlock(view.state)?.data ?? {}));
+  const availableKeys = new Set(fixedFrontmatterFieldNames.filter((key) => !usedKeys.has(key)));
+  const groups = [
+    frontmatterPropertyGroup(
+      "date",
+      t("frontmatter.propertyGroupDate"),
+      dateFixedFieldNames.filter((key) => availableKeys.has(key)),
+      t
+    ),
+    frontmatterPropertyGroup(
+      "basic",
+      t("frontmatter.propertyGroupBasic"),
+      basicFixedFieldNames.filter((key) => availableKeys.has(key)),
+      t
+    ),
+    frontmatterPropertyGroup(
+      "chronicle",
+      t("frontmatter.propertyGroupChronicle"),
+      chronicleCalendarIds.filter((key) => availableKeys.has(key)),
+      t
+    )
+  ].filter((group) => group.options.length > 0);
+
+  return { groups, unavailable: false };
+}
+
+function frontmatterPropertyGroup(
+  id: string,
+  label: string,
+  keys: readonly string[],
+  t: Translator
+): FrontmatterPropertyMenuGroup {
+  return {
+    id,
+    label,
+    options: keys.map((key) => ({ key, label: frontmatterPropertyLabel(key, t) }))
+  };
+}
+
+function frontmatterPropertyLabel(key: string, t: Translator): string {
+  if (key === "aliases") return t("frontmatter.propertyAliases");
+  if (key === "tags") return t("frontmatter.propertyTags");
+  if (key === "status") return t("frontmatter.propertyStatus");
+  if (key === "plannedDate") return t("frontmatter.propertyPlannedDate");
+  if (key === "actualDate") return t("frontmatter.propertyActualDate");
+  return key;
 }
