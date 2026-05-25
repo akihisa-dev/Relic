@@ -935,6 +935,30 @@ describe("Editor", () => {
     expect(viewRef.current?.state.doc.toString()).toContain("plannedDate: [2026-05-12, 2026-05-20]");
   });
 
+  it("plannedDateプロパティは逆順の期間を書き戻さない", async () => {
+    const viewRef = createRef<EditorView | null>();
+    const { container } = render(
+      <I18nProvider language="ja">
+        <Editor
+          content={"---\nplannedDate: [2026-05-12]\n---\n# 本文"}
+          onChange={vi.fn()}
+          settings={settings}
+          viewRef={viewRef}
+        />
+      </I18nProvider>
+    );
+
+    await expandFrontmatter(container);
+    await waitFor(() => expect(container.querySelector(".cm-frontmatter-date-range")).not.toBeNull());
+    const inputs = Array.from(container.querySelectorAll(".cm-frontmatter-date-range .cm-frontmatter-input")) as HTMLInputElement[];
+    fireEvent.change(inputs[1], { target: { value: "2026-05-01" } });
+
+    expect(viewRef.current?.state.doc.toString()).toContain("plannedDate: [2026-05-12]");
+    expect(viewRef.current?.state.doc.toString()).not.toContain("plannedDate: [2026-05-01, 2026-05-12]");
+    expect(container.querySelector(".cm-frontmatter-input-error")?.textContent).toBe("開始日は終了日以前にしてください。");
+    expect(inputs[0].getAttribute("aria-invalid")).toBe("true");
+  });
+
   it("プロパティ編集時にYAMLのコメント行とフィールド順をできるだけ保つ", async () => {
     const viewRef = createRef<EditorView | null>();
     const { container } = render(

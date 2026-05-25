@@ -50,7 +50,8 @@ export function createFrontmatterValueInput({
       key,
       Array.isArray(value) ? value : value === null || value === undefined ? [] : [value],
       updateField,
-      dateFormat
+      dateFormat,
+      t
     );
   }
   if (field?.type === "boolean") return booleanInput(view, key, firstArrayValue(value), updateField, true);
@@ -297,7 +298,8 @@ function dateRangeInput(
   key: string,
   value: unknown[],
   updateField: FrontmatterFieldUpdater,
-  dateFormat: FrontmatterDateFormat
+  dateFormat: FrontmatterDateFormat,
+  t: Translator
 ): HTMLElement {
   const wrap = document.createElement("span");
   wrap.className = "cm-frontmatter-input-wrap cm-frontmatter-date-range";
@@ -314,28 +316,58 @@ function dateRangeInput(
   endInput.value = formatDateForInput(value.length > 1 ? dateInputValue(value[1]) : "", dateFormat);
   if (dateFormat !== "system") configureDateTextInput(endInput, dateFormat);
 
-  const commit = (): void => {
-    const startDate = parseDateTextInput(startInput, dateFormat);
-    const endDate = parseDateTextInput(endInput, dateFormat);
+  const error = document.createElement("span");
+  error.className = "cm-frontmatter-input-error";
 
-    if (startDate === undefined) {
-      updateField(view, key, undefined);
+  const setRangeError = (message: string | null): void => {
+    if (!message) {
+      startInput.removeAttribute("aria-invalid");
+      endInput.removeAttribute("aria-invalid");
+      error.textContent = "";
       return;
     }
 
-    if (startDate === null || endDate === null) return;
+    startInput.setAttribute("aria-invalid", "true");
+    endInput.setAttribute("aria-invalid", "true");
+    error.textContent = message;
+  };
+
+  const commit = (write: boolean): void => {
+    const startDate = parseDateTextInput(startInput, dateFormat);
+    const endDate = parseDateTextInput(endInput, dateFormat);
+
+    if (startDate === null || endDate === null) {
+      error.textContent = "";
+      return;
+    }
+
+    if (startDate === undefined) {
+      setRangeError(null);
+      if (write) updateField(view, key, undefined);
+      return;
+    }
+
+    if (endDate !== undefined && startDate > endDate) {
+      setRangeError(t("frontmatter.invalidDateRange"));
+      return;
+    }
+
+    setRangeError(null);
+
+    if (!write) return;
 
     if (endDate === undefined || endDate === startDate) {
       updateField(view, key, [startDate]);
       return;
     }
 
-    updateField(view, key, startDate <= endDate ? [startDate, endDate] : [endDate, startDate]);
+    updateField(view, key, [startDate, endDate]);
   };
 
-  startInput.addEventListener("change", commit);
-  endInput.addEventListener("change", commit);
-  wrap.append(startInput, endInput);
+  startInput.addEventListener("change", () => commit(true));
+  endInput.addEventListener("change", () => commit(true));
+  wrap.append(startInput, endInput, error);
+  commit(false);
   return wrap;
 }
 
