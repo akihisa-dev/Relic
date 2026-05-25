@@ -76,7 +76,7 @@ export function ChronicleSettingsPanel({
       </header>
 
       <section className="settings-group chronicle-settings-group">
-        <div className="frontmatter-field-group-label">{t("chronicleSettings.mainCalendar")}</div>
+        <div className="chronicle-calendar-section-label">{t("chronicleSettings.mainCalendar")}</div>
         <label className="chronicle-calendar-row chronicle-calendar-row--main">
           <span>{mainDraft.id}</span>
           <input
@@ -87,12 +87,20 @@ export function ChronicleSettingsPanel({
           />
           <span>{t("chronicleSettings.mainStartsAtOne")}</span>
         </label>
-      </section>
 
-      <section className="settings-group chronicle-settings-group">
-        <div className="frontmatter-field-group-label">{t("chronicleSettings.subCalendars")}</div>
+        <div className="chronicle-calendar-section-heading">
+          <span>{t("chronicleSettings.subCalendars")}</span>
+          <button
+            className="frontmatter-field-add-btn chronicle-calendar-add-btn"
+            disabled={!nextSubId}
+            onClick={addSubCalendar}
+            type="button"
+          >
+            {t("chronicleSettings.addSubCalendar")}
+          </button>
+        </div>
         {subDrafts.length === 0 ? (
-          <div className="frontmatter-field-empty">{t("chronicleSettings.noSubCalendars")}</div>
+          <div className="chronicle-calendar-empty">{t("chronicleSettings.noSubCalendars")}</div>
         ) : (
           <div className="chronicle-calendar-list">
             {subDrafts.map((draft) => (
@@ -132,14 +140,6 @@ export function ChronicleSettingsPanel({
             ))}
           </div>
         )}
-        <button
-          className="frontmatter-field-add-btn"
-          disabled={!nextSubId}
-          onClick={addSubCalendar}
-          type="button"
-        >
-          {t("chronicleSettings.addSubCalendar")}
-        </button>
       </section>
     </div>
   );
