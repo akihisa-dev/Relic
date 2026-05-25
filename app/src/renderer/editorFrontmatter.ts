@@ -1,6 +1,6 @@
 import type { EditorView } from "@codemirror/view";
 
-import { findFrontmatterBlock, findTopLevelYamlFieldEntries } from "./editorFrontmatterModel";
+import { findFrontmatterBlock, findFrontmatterLineRange, findTopLevelYamlFieldEntries } from "./editorFrontmatterModel";
 
 export {
   availableFieldNames,
@@ -50,6 +50,32 @@ export function appendFrontmatterField(view: EditorView, key: string): void {
   const closeLine = view.state.doc.line(block.endLine);
   view.dispatch({
     changes: { from: closeLine.from, insert: `${key}:\n` }
+  });
+}
+
+export function canAppendOrCreateFrontmatterField(view: EditorView): boolean {
+  if (findFrontmatterBlock(view.state)) return true;
+  if (view.state.doc.lines > 0 && view.state.doc.line(1).text.trim() === "---") return false;
+
+  return findFrontmatterLineRange(view.state.doc) === null;
+}
+
+export function appendOrCreateFrontmatterField(view: EditorView, key: string): void {
+  const block = findFrontmatterBlock(view.state);
+
+  if (block) {
+    appendFrontmatterField(view, key);
+    return;
+  }
+
+  if (view.state.doc.lines > 0 && view.state.doc.line(1).text.trim() === "---") return;
+  if (findFrontmatterLineRange(view.state.doc) !== null) return;
+
+  view.dispatch({
+    changes: {
+      from: 0,
+      insert: `---\n${key}:\n---\n`
+    }
   });
 }
 

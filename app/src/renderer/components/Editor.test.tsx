@@ -569,7 +569,7 @@ describe("Editor", () => {
     );
 
     await waitFor(() => expect(container.querySelector(".cm-frontmatter-properties")).not.toBeNull());
-    expect(container.querySelectorAll(".cm-frontmatter-row")).toHaveLength(3);
+    expect(container.querySelectorAll(".cm-frontmatter-row")).toHaveLength(2);
 
     fireEvent.click(container.querySelector(".cm-frontmatter-header") as HTMLButtonElement);
 
@@ -585,15 +585,15 @@ describe("Editor", () => {
     await waitFor(() => {
       expect(container.querySelector(".cm-frontmatter-properties")?.getAttribute("data-collapsed")).toBe("false");
     });
-    expect(container.querySelectorAll(".cm-frontmatter-row")).toHaveLength(3);
+    expect(container.querySelectorAll(".cm-frontmatter-row")).toHaveLength(2);
   });
 
-  it("プロパティフォームから既存フロントマターにプロパティを追加できる", async () => {
+  it("常設プラスボタンから既存フロントマターに固定プロパティを追加できる", async () => {
     const viewRef = createRef<EditorView | null>();
     const onChange = vi.fn();
     const { container } = render(
       <Editor
-        content={"---\nversion: v1.0\n---\n# 本文"}
+        content={"---\nversion: v1.0\nplannedDate:\n---\n# 本文"}
         onChange={onChange}
         settings={settings}
         viewRef={viewRef}
@@ -602,21 +602,17 @@ describe("Editor", () => {
 
     await waitFor(() => expect(container.querySelector(".cm-frontmatter-properties")).not.toBeNull());
 
-    fireEvent.click(container.querySelector(".cm-frontmatter-add") as HTMLButtonElement);
-    const input = container.querySelector(".frontmatter-add-dialog-input") as HTMLInputElement;
-    fireEvent.change(input, { target: { value: "status" } });
-    fireEvent.keyDown(input, { key: "Enter" });
+    fireEvent.click(container.querySelector(".editor-frontmatter-add-button") as HTMLButtonElement);
+    const items = Array.from(container.querySelectorAll(".editor-frontmatter-add-menu-item"));
+    expect(items.some((item) => item.textContent?.includes("plannedDate"))).toBe(false);
+    const actualDateItem = items.find((item) => item.textContent?.includes("actualDate")) as HTMLButtonElement;
+    fireEvent.click(actualDateItem);
 
-    expect(onChange).not.toHaveBeenCalled();
-    expect(viewRef.current?.state.doc.toString()).toBe("---\nversion: v1.0\n---\n# 本文");
-
-    fireEvent.click(container.querySelector(".frontmatter-add-dialog-actions button:last-child") as HTMLButtonElement);
-
-    expect(onChange).toHaveBeenLastCalledWith(expect.stringContaining("status:"));
-    expect(viewRef.current?.state.doc.toString()).toContain("---\nversion: v1.0\nstatus:\n---");
+    expect(onChange).toHaveBeenLastCalledWith(expect.stringContaining("actualDate:"));
+    expect(viewRef.current?.state.doc.toString()).toContain("---\nversion: v1.0\nplannedDate:\nactualDate:\n---");
   });
 
-  it("フロントマターがない本文に新規作成入口を重ねない", async () => {
+  it("常設プラスボタンからフロントマターを新規作成できる", async () => {
     const viewRef = createRef<EditorView | null>();
     const onChange = vi.fn();
     const { container } = render(
@@ -633,21 +629,37 @@ describe("Editor", () => {
 
     expect(container.querySelector(".cm-frontmatter-starter")).toBeNull();
     expect(container.querySelector(".cm-frontmatter-add-input")).toBeNull();
-    expect(onChange).not.toHaveBeenCalled();
-    expect(viewRef.current?.state.doc.toString()).toBe("# 本文");
+
+    fireEvent.click(container.querySelector(".editor-frontmatter-add-button") as HTMLButtonElement);
+    const plannedDateItem = Array.from(container.querySelectorAll(".editor-frontmatter-add-menu-item"))
+      .find((item) => item.textContent?.includes("plannedDate")) as HTMLButtonElement;
+    fireEvent.click(plannedDateItem);
+
+    expect(onChange).toHaveBeenLastCalledWith(expect.stringContaining("plannedDate:"));
+    expect(viewRef.current?.state.doc.toString()).toBe("---\nplannedDate:\n---\n# 本文");
   });
 
-  it("未完了のフロントマター記法には新規作成入口を重ねない", async () => {
+  it("未完了のフロントマター記法にはプロパティを追加しない", async () => {
+    const viewRef = createRef<EditorView | null>();
+    const onChange = vi.fn();
     const { container } = render(
       <Editor
         content={"---\nstatus: draft\n# 本文"}
-        onChange={vi.fn()}
+        onChange={onChange}
         settings={settings}
+        viewRef={viewRef}
       />
     );
 
     await waitFor(() => expect(container.querySelector(".cm-editor")).not.toBeNull());
     expect(container.querySelector(".cm-frontmatter-starter")).toBeNull();
+
+    fireEvent.click(container.querySelector(".editor-frontmatter-add-button") as HTMLButtonElement);
+
+    expect(container.querySelector(".editor-frontmatter-add-menu-empty")).not.toBeNull();
+    expect(container.querySelector(".editor-frontmatter-add-menu-item")).toBeNull();
+    expect(onChange).not.toHaveBeenCalled();
+    expect(viewRef.current?.state.doc.toString()).toBe("---\nstatus: draft\n# 本文");
   });
 
   it("プロパティフォームからプロパティを削除できる", async () => {
@@ -667,6 +679,25 @@ describe("Editor", () => {
 
     expect(onChange).toHaveBeenLastCalledWith(expect.not.stringContaining("version:"));
     expect(viewRef.current?.state.doc.toString()).toContain("status: draft");
+  });
+
+  it("複数行プロパティを削除しても隣のプロパティは残す", async () => {
+    const viewRef = createRef<EditorView | null>();
+    const { container } = render(
+      <Editor
+        content={"---\ntags:\n  - 資料\n  - 下書き\nplannedDate: [2026-05-25]\n---\n# 本文"}
+        onChange={vi.fn()}
+        settings={settings}
+        viewRef={viewRef}
+      />
+    );
+
+    await waitFor(() => expect(container.querySelector(".cm-frontmatter-remove")).not.toBeNull());
+    fireEvent.click(container.querySelector(".cm-frontmatter-remove") as HTMLButtonElement);
+
+    expect(viewRef.current?.state.doc.toString()).not.toContain("tags:");
+    expect(viewRef.current?.state.doc.toString()).not.toContain("- 資料");
+    expect(viewRef.current?.state.doc.toString()).toContain("plannedDate: [2026-05-25]");
   });
 
   it("配列プロパティの値を個別に編集・削除できる", async () => {

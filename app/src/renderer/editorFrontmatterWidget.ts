@@ -9,7 +9,6 @@ import {
   type FrontmatterBlock
 } from "./editorFrontmatterModel";
 import {
-  createFrontmatterAddRow,
   createFrontmatterHeader,
   frontmatterRowForLine
 } from "./editorFrontmatterWidgetDom";
@@ -81,8 +80,6 @@ class FrontmatterPropertiesWidget extends WidgetType {
       });
       if (row) {
         wrapper.append(row);
-      } else if (this.lineNumber === this.block.endLine) {
-        wrapper.append(createFrontmatterAddRow(view, this.t));
       } else {
         wrapper.classList.add("cm-frontmatter-properties--spacer");
       }

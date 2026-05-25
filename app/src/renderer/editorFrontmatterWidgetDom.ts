@@ -4,12 +4,10 @@ import type { FrontmatterDateFormat, UserDefinedField } from "../shared/ipc";
 import {
   fieldFor,
   findTopLevelYamlFieldEntries,
-  requestFrontmatterDialog,
   type FrontmatterBlock
 } from "./editorFrontmatterModel";
 import {
   createFrontmatterValueInput,
-  isolateFrontmatterWidgetControl,
   type FrontmatterFieldUpdater
 } from "./editorFrontmatterWidgetInputs";
 import type { Translator } from "./i18n";
@@ -47,38 +45,6 @@ export function createFrontmatterHeader({
   });
 
   return header;
-}
-
-export function createFrontmatterAddRow(view: EditorView, t: Translator): HTMLElement {
-  const row = document.createElement("div");
-  row.className = "cm-frontmatter-row cm-frontmatter-add-row";
-
-  const icon = document.createElement("span");
-  icon.className = "cm-frontmatter-row-icon";
-  icon.textContent = "+";
-
-  const label = document.createElement("span");
-  label.className = "cm-frontmatter-key";
-  label.textContent = t("frontmatter.addField");
-
-  const help = document.createElement("span");
-  help.className = "cm-frontmatter-add-help";
-  help.textContent = t("frontmatter.addProperty");
-
-  const button = document.createElement("button");
-  button.className = "cm-frontmatter-add";
-  button.title = t("frontmatter.addProperty");
-  button.type = "button";
-  button.textContent = "+";
-  isolateFrontmatterWidgetControl(button);
-
-  button.addEventListener("click", (event) => {
-    event.preventDefault();
-    requestFrontmatterDialog(view, { type: "property" });
-  });
-
-  row.append(icon, label, help, button);
-  return row;
 }
 
 export function frontmatterRowForLine({
