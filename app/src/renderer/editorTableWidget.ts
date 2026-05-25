@@ -18,6 +18,14 @@ import {
 } from "./editorTableWidgetDom";
 import { createLiveTableDragController } from "./editorTableWidgetDrag";
 import { showLiveTableMenu } from "./editorTableWidgetMenu";
+import {
+  canMoveHorizontallyWithArrow,
+  clearSelectedRange,
+  parsePastedTableCells,
+  selectedRangeFromDataset,
+  selectedRangeText,
+  withPastedTableCells
+} from "./editorTableWidgetModel";
 import { createLiveTableInteractionState } from "./editorTableWidgetState";
 import type { Translator } from "./i18n";
 
@@ -217,7 +225,12 @@ export class TableWidget extends WidgetType {
             event.preventDefault();
             focusCell(nextRow, colIndex);
           } else if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
-            if (!canMoveHorizontallyWithArrow(input, event.key)) return;
+            if (!canMoveHorizontallyWithArrow({
+              key: event.key,
+              selectionEnd: input.selectionEnd,
+              selectionStart: input.selectionStart,
+              value: input.value
+            })) return;
             const nextCol = event.key === "ArrowLeft" ? colIndex - 1 : colIndex + 1;
             if (nextCol < 0 || nextCol >= colCount) return;
             event.preventDefault();
@@ -338,76 +351,4 @@ export class TableWidget extends WidgetType {
     });
     return button;
   }
-}
-
-function parsePastedTableCells(text: string): string[][] | null {
-  if (!text.includes("\t") && !text.includes("\n") && !text.includes("\r")) return null;
-
-  const normalized = text.replace(/\r\n?/g, "\n");
-  const lines = normalized.endsWith("\n") ? normalized.slice(0, -1).split("\n") : normalized.split("\n");
-  const rows = lines.map((line) => line.split("\t"));
-
-  if (rows.length === 1 && rows[0].length === 1) return null;
-
-  return rows;
-}
-
-function withPastedTableCells(rows: string[][], startRow: number, startCol: number, pastedRows: string[][]): string[][] {
-  const nextRows = rows.map((row) => [...row]);
-  const colCount = tableColumnCount(nextRows);
-
-  for (let rowOffset = 0; rowOffset < pastedRows.length; rowOffset += 1) {
-    const targetRow = startRow + rowOffset;
-    while (targetRow >= nextRows.length) {
-      nextRows.push(Array.from({ length: colCount }, () => ""));
-    }
-
-    for (let colOffset = 0; colOffset < pastedRows[rowOffset].length; colOffset += 1) {
-      nextRows[targetRow][startCol + colOffset] = pastedRows[rowOffset][colOffset];
-    }
-  }
-
-  return nextRows;
-}
-
-interface SelectedRange {
-  fromCol: number;
-  fromRow: number;
-  toCol: number;
-  toRow: number;
-}
-
-function selectedRangeFromDataset(value?: string): SelectedRange | null {
-  if (!value) return null;
-  const [fromRow, fromCol, toRow, toCol] = value.split(":").map(Number);
-  if ([fromRow, fromCol, toRow, toCol].some((part) => !Number.isInteger(part))) return null;
-  return { fromCol, fromRow, toCol, toRow };
-}
-
-function selectedRangeText(rows: string[][], range: SelectedRange): string {
-  return Array.from({ length: range.toRow - range.fromRow + 1 }, (_, rowOffset) => {
-    const row = rows[range.fromRow + rowOffset] ?? [];
-    return Array.from({ length: range.toCol - range.fromCol + 1 }, (_, colOffset) => row[range.fromCol + colOffset] ?? "").join("\t");
-  }).join("\n");
-}
-
-function clearSelectedRange(rows: string[][], range: SelectedRange): string[][] {
-  return rows.map((row, rowIndex) => {
-    if (rowIndex < range.fromRow || rowIndex > range.toRow) return [...row];
-
-    const next = [...row];
-    for (let colIndex = range.fromCol; colIndex <= range.toCol; colIndex += 1) {
-      next[colIndex] = "";
-    }
-    return next;
-  });
-}
-
-function canMoveHorizontallyWithArrow(input: HTMLInputElement, key: "ArrowLeft" | "ArrowRight"): boolean {
-  if (input.selectionStart === null || input.selectionEnd === null) return input.value.length === 0;
-  if (input.selectionStart !== input.selectionEnd) return false;
-
-  return key === "ArrowLeft"
-    ? input.selectionStart === 0
-    : input.selectionEnd === input.value.length;
 }
