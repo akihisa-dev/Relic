@@ -1,5 +1,6 @@
 import { WidgetType } from "@codemirror/view";
 
+import { writeEditorClipboardText } from "./editorClipboard";
 import {
   insertTableRow,
   moveTableColumnTo,
@@ -39,16 +40,57 @@ export class TableWidget extends WidgetType {
   toDOM(): HTMLElement {
     const wrapper = document.createElement("div");
     wrapper.className = "cm-live-table";
+    wrapper.tabIndex = -1;
     const table = document.createElement("table");
     const colCount = tableColumnCount(this.block.rows);
     const rowCount = this.block.rows.length;
     const state = createLiveTableInteractionState(wrapper, rowCount, colCount);
+    let rangeSelection: { endCol: number; endRow: number; moved: boolean; startCol: number; startRow: number } | null = null;
     const focusCell = (rowIndex: number, colIndex: number): void => {
       focusTableWidgetCell(wrapper, rowIndex, colIndex);
     };
     const updateRows = (rows: string[][]): void => {
       const view = findTableWidgetView(wrapper);
       if (view) updateTableWidgetRows(view, this.block, rows);
+    };
+    const startRangeSelection = (event: MouseEvent | PointerEvent, rowIndex: number, colIndex: number): void => {
+      if (event.button !== 0) return;
+      if (wrapper.dataset.dragAxis) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+      rangeSelection = {
+        endCol: colIndex,
+        endRow: rowIndex,
+        moved: false,
+        startCol: colIndex,
+        startRow: rowIndex
+      };
+      state.markActive("cell", rowIndex, colIndex);
+      state.setAddAffordance(rowIndex, colIndex);
+      wrapper.focus();
+      const endRangeSelection = (): void => {
+        if (!rangeSelection) return;
+        const selection = rangeSelection;
+        rangeSelection = null;
+        if (selection.moved) {
+          state.markRange(selection.startRow, selection.startCol, selection.endRow, selection.endCol);
+          wrapper.focus();
+        } else {
+          focusCell(rowIndex, colIndex);
+        }
+        document.removeEventListener("pointerup", endRangeSelection);
+        document.removeEventListener("mouseup", endRangeSelection);
+      };
+      document.addEventListener("pointerup", endRangeSelection);
+      document.addEventListener("mouseup", endRangeSelection);
+    };
+    const extendRangeSelection = (rowIndex: number, colIndex: number): void => {
+      if (!rangeSelection) return;
+      rangeSelection.endRow = rowIndex;
+      rangeSelection.endCol = colIndex;
+      rangeSelection.moved = rangeSelection.moved || rowIndex !== rangeSelection.startRow || colIndex !== rangeSelection.startCol;
+      state.markRange(rangeSelection.startRow, rangeSelection.startCol, rowIndex, colIndex);
     };
     const drag = createLiveTableDragController({
       colCount,
@@ -81,6 +123,16 @@ export class TableWidget extends WidgetType {
           event.preventDefault();
           event.stopPropagation();
           drag.moveDraggedSelection(rowIndex, colIndex);
+        });
+        td.addEventListener("pointerdown", (event) => startRangeSelection(event, rowIndex, colIndex));
+        td.addEventListener("mousedown", (event) => {
+          if (typeof window.PointerEvent === "function") return;
+          startRangeSelection(event, rowIndex, colIndex);
+        });
+        td.addEventListener("pointerenter", () => extendRangeSelection(rowIndex, colIndex));
+        td.addEventListener("mouseenter", () => {
+          if (typeof window.PointerEvent === "function") return;
+          extendRangeSelection(rowIndex, colIndex);
         });
 
         const input = document.createElement("input");
@@ -178,8 +230,18 @@ export class TableWidget extends WidgetType {
     wrapper.addEventListener("focusout", (event) => {
       state.clearIfFocusOutside((event as FocusEvent).relatedTarget);
     });
-    wrapper.addEventListener("mouseleave", () => {
+    wrapper.addEventListener("mouseleave", (event) => {
+      if (event.relatedTarget instanceof Node && wrapper.contains(event.relatedTarget)) return;
       if (!wrapper.dataset.dragAxis) state.clearAffordance();
+    });
+    wrapper.addEventListener("keydown", (event) => {
+      if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== "c") return;
+      const range = selectedRangeFromDataset(wrapper.dataset.selectedRange);
+      if (!range) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+      void writeEditorClipboardText(selectedRangeText(this.block.rows, range));
     });
     wrapper.addEventListener("dragover", (event) => {
       if (wrapper.dataset.dragAxis) event.preventDefault();
@@ -291,4 +353,25 @@ function withPastedTableCells(rows: string[][], startRow: number, startCol: numb
   }
 
   return nextRows;
+}
+
+interface SelectedRange {
+  fromCol: number;
+  fromRow: number;
+  toCol: number;
+  toRow: number;
+}
+
+function selectedRangeFromDataset(value?: string): SelectedRange | null {
+  if (!value) return null;
+  const [fromRow, fromCol, toRow, toCol] = value.split(":").map(Number);
+  if ([fromRow, fromCol, toRow, toCol].some((part) => !Number.isInteger(part))) return null;
+  return { fromCol, fromRow, toCol, toRow };
+}
+
+function selectedRangeText(rows: string[][], range: SelectedRange): string {
+  return Array.from({ length: range.toRow - range.fromRow + 1 }, (_, rowOffset) => {
+    const row = rows[range.fromRow + rowOffset] ?? [];
+    return Array.from({ length: range.toCol - range.fromCol + 1 }, (_, colOffset) => row[range.fromCol + colOffset] ?? "").join("\t");
+  }).join("\n");
 }
