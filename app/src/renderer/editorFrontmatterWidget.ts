@@ -17,7 +17,7 @@ import type { Translator } from "./i18n";
 const frontmatterCollapsedEffect = StateEffect.define<boolean>();
 
 export const frontmatterCollapsedField = StateField.define<boolean>({
-  create: () => false,
+  create: () => true,
   update: (value, transaction) => {
     for (const effect of transaction.effects) {
       if (effect.is(frontmatterCollapsedEffect)) return effect.value;
