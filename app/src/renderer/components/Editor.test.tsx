@@ -1652,6 +1652,31 @@ describe("Editor", () => {
     await waitFor(() => expect(writeText).toHaveBeenCalledWith("x\ty\nz\tw"));
   });
 
+  it("ライブプレビューの表で選択範囲をDeleteするとセル内容だけ消す", async () => {
+    const viewRef = createRef<EditorView | null>();
+
+    const { container } = render(
+      <Editor
+        content={"| A | B | C |\n| --- | --- | --- |\n| x | y | keep |\n| z | w | stay |"}
+        onChange={vi.fn()}
+        settings={settings}
+        viewRef={viewRef}
+      />
+    );
+
+    await waitFor(() => expect(container.querySelector('td[data-row="1"][data-column="0"]')).not.toBeNull());
+    const startCell = container.querySelector('td[data-row="1"][data-column="0"]') as HTMLTableCellElement;
+    const endCell = container.querySelector('td[data-row="2"][data-column="1"]') as HTMLTableCellElement;
+    const table = container.querySelector(".cm-live-table") as HTMLElement;
+
+    fireEvent.mouseDown(startCell, { button: 0 });
+    fireEvent.mouseEnter(endCell);
+    fireEvent.mouseUp(document);
+    fireEvent.keyDown(table, { key: "Delete" });
+
+    expect(viewRef.current?.state.doc.toString()).toBe("| A | B | C |\n| --- | --- | --- |\n|  |  | keep |\n|  |  | stay |");
+  });
+
   it("ライブプレビューの表で右クリックメニューから列をソートできる", async () => {
     const viewRef = createRef<EditorView | null>();
 

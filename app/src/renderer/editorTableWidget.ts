@@ -231,13 +231,21 @@ export class TableWidget extends WidgetType {
       state.clearIfFocusOutside((event as FocusEvent).relatedTarget);
     });
     wrapper.addEventListener("keydown", (event) => {
-      if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== "c") return;
       const range = selectedRangeFromDataset(wrapper.dataset.selectedRange);
       if (!range) return;
 
-      event.preventDefault();
-      event.stopPropagation();
-      void writeEditorClipboardText(selectedRangeText(this.block.rows, range));
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "c") {
+        event.preventDefault();
+        event.stopPropagation();
+        void writeEditorClipboardText(selectedRangeText(this.block.rows, range));
+        return;
+      }
+
+      if (event.key === "Backspace" || event.key === "Delete") {
+        event.preventDefault();
+        event.stopPropagation();
+        updateRows(clearSelectedRange(this.block.rows, range));
+      }
     });
     wrapper.addEventListener("dragover", (event) => {
       if (wrapper.dataset.dragAxis) event.preventDefault();
@@ -370,4 +378,16 @@ function selectedRangeText(rows: string[][], range: SelectedRange): string {
     const row = rows[range.fromRow + rowOffset] ?? [];
     return Array.from({ length: range.toCol - range.fromCol + 1 }, (_, colOffset) => row[range.fromCol + colOffset] ?? "").join("\t");
   }).join("\n");
+}
+
+function clearSelectedRange(rows: string[][], range: SelectedRange): string[][] {
+  return rows.map((row, rowIndex) => {
+    if (rowIndex < range.fromRow || rowIndex > range.toRow) return [...row];
+
+    const next = [...row];
+    for (let colIndex = range.fromCol; colIndex <= range.toCol; colIndex += 1) {
+      next[colIndex] = "";
+    }
+    return next;
+  });
 }
