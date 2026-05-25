@@ -222,6 +222,229 @@ describe("App", () => {
     if (tab?.kind === "file") expect(tab.content).toBe("保存に失敗しても残る本文");
   });
 
+  it("未編集の開きタブは外部変更を自動反映する", async () => {
+    let workspaceChanged: Parameters<NonNullable<typeof window.relic>["onWorkspaceChanged"]>[0] = () => undefined;
+    const readMarkdownFile = vi.fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        value: { content: "外部変更前", name: "読書メモ", path: "読書メモ.md" }
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        value: { content: "外部で更新された本文", name: "読書メモ", path: "読書メモ.md" }
+      });
+
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [{ name: "読書メモ", path: "読書メモ.md", type: "file" }]
+        }
+      }),
+      onWorkspaceChanged: vi.fn((callback) => {
+        workspaceChanged = callback;
+        return vi.fn();
+      }),
+      readMarkdownFile
+    });
+
+    await renderApp();
+    fireEvent.click(await screen.findByRole("button", { name: /読書メモ/ }));
+
+    await waitFor(() => expect(useEditorStore.getState().leftPane.activeTabId).not.toBeNull());
+    const activeTabId = useEditorStore.getState().leftPane.activeTabId!;
+
+    act(() => {
+      workspaceChanged({ changedAt: new Date().toISOString(), workspaceId: "ws-1", workspacePath: "/tmp/Notes" });
+    });
+
+    await waitFor(() => {
+      const tab = useEditorStore.getState().tabs[activeTabId];
+      expect(tab?.kind).toBe("file");
+      if (tab?.kind === "file") {
+        expect(tab.content).toBe("外部で更新された本文");
+        expect(tab.savedContent).toBe("外部で更新された本文");
+        expect(tab.externalConflict).toBeUndefined();
+      }
+    });
+  });
+
+  it("編集中の開きタブは外部変更と衝突させ自動保存を止める", async () => {
+    let workspaceChanged: Parameters<NonNullable<typeof window.relic>["onWorkspaceChanged"]>[0] = () => undefined;
+    const writeMarkdownFile = vi.fn().mockResolvedValue({ ok: true, value: undefined });
+    const readMarkdownFile = vi.fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        value: { content: "外部変更前", name: "読書メモ", path: "読書メモ.md" }
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        value: { content: "外部で更新された本文", name: "読書メモ", path: "読書メモ.md" }
+      });
+
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [{ name: "読書メモ", path: "読書メモ.md", type: "file" }]
+        }
+      }),
+      onWorkspaceChanged: vi.fn((callback) => {
+        workspaceChanged = callback;
+        return vi.fn();
+      }),
+      readMarkdownFile,
+      writeMarkdownFile
+    });
+
+    await renderApp();
+    fireEvent.click(await screen.findByRole("button", { name: /読書メモ/ }));
+    await waitFor(() => expect(useEditorStore.getState().leftPane.activeTabId).not.toBeNull());
+
+    const activeTabId = useEditorStore.getState().leftPane.activeTabId!;
+
+    act(() => {
+      useEditorStore.getState().updateTabContent(activeTabId, "Relic側の編集中本文");
+    });
+    act(() => {
+      workspaceChanged({ changedAt: new Date().toISOString(), workspaceId: "ws-1", workspacePath: "/tmp/Notes" });
+    });
+
+    expect(await screen.findByText("このファイルは外部で変更されました。自動保存を一時停止しています。")).toBeInTheDocument();
+    expect(await screen.findByText("読書メモ は外部で変更されたため、自動保存を一時停止しました。")).toHaveClass("toast--error");
+    expect(writeMarkdownFile).not.toHaveBeenCalled();
+
+    const tab = useEditorStore.getState().tabs[activeTabId];
+    expect(tab?.kind).toBe("file");
+    if (tab?.kind === "file") {
+      expect(tab.content).toBe("Relic側の編集中本文");
+      expect(tab.savedContent).toBe("外部変更前");
+      expect(tab.externalConflict?.content).toBe("外部で更新された本文");
+    }
+  });
+
+  it("衝突通知帯から外部版を読み込める", async () => {
+    let workspaceChanged: Parameters<NonNullable<typeof window.relic>["onWorkspaceChanged"]>[0] = () => undefined;
+    const readMarkdownFile = vi.fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        value: { content: "外部変更前", name: "読書メモ", path: "読書メモ.md" }
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        value: { content: "外部で更新された本文", name: "読書メモ", path: "読書メモ.md" }
+      });
+
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [{ name: "読書メモ", path: "読書メモ.md", type: "file" }]
+        }
+      }),
+      onWorkspaceChanged: vi.fn((callback) => {
+        workspaceChanged = callback;
+        return vi.fn();
+      }),
+      readMarkdownFile
+    });
+
+    await renderApp();
+    fireEvent.click(await screen.findByRole("button", { name: /読書メモ/ }));
+    await waitFor(() => expect(useEditorStore.getState().leftPane.activeTabId).not.toBeNull());
+
+    const activeTabId = useEditorStore.getState().leftPane.activeTabId!;
+
+    act(() => {
+      useEditorStore.getState().updateTabContent(activeTabId, "Relic側の編集中本文");
+      workspaceChanged({ changedAt: new Date().toISOString(), workspaceId: "ws-1", workspacePath: "/tmp/Notes" });
+    });
+
+    fireEvent.click(await screen.findByRole("button", { name: "外部版を読み込む" }));
+
+    await waitFor(() => {
+      const tab = useEditorStore.getState().tabs[activeTabId];
+      expect(tab?.kind).toBe("file");
+      if (tab?.kind === "file") {
+        expect(tab.content).toBe("外部で更新された本文");
+        expect(tab.savedContent).toBe("外部で更新された本文");
+        expect(tab.externalConflict).toBeUndefined();
+      }
+    });
+    expect(screen.queryByText("このファイルは外部で変更されました。自動保存を一時停止しています。")).not.toBeInTheDocument();
+  });
+
+  it("衝突通知帯からRelic版を保存し失敗時は衝突を維持する", async () => {
+    let workspaceChanged: Parameters<NonNullable<typeof window.relic>["onWorkspaceChanged"]>[0] = () => undefined;
+    const writeMarkdownFile = vi.fn()
+      .mockResolvedValueOnce({
+        ok: false,
+        error: { code: "FILE_WRITE_FAILED", message: "ファイルを保存できませんでした。" }
+      })
+      .mockResolvedValueOnce({ ok: true, value: undefined });
+    const readMarkdownFile = vi.fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        value: { content: "外部変更前", name: "読書メモ", path: "読書メモ.md" }
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        value: { content: "外部で更新された本文", name: "読書メモ", path: "読書メモ.md" }
+      });
+
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [{ name: "読書メモ", path: "読書メモ.md", type: "file" }]
+        }
+      }),
+      onWorkspaceChanged: vi.fn((callback) => {
+        workspaceChanged = callback;
+        return vi.fn();
+      }),
+      readMarkdownFile,
+      writeMarkdownFile
+    });
+
+    await renderApp();
+    fireEvent.click(await screen.findByRole("button", { name: /読書メモ/ }));
+    await waitFor(() => expect(useEditorStore.getState().leftPane.activeTabId).not.toBeNull());
+
+    const activeTabId = useEditorStore.getState().leftPane.activeTabId!;
+
+    act(() => {
+      useEditorStore.getState().updateTabContent(activeTabId, "Relic側の編集中本文");
+      workspaceChanged({ changedAt: new Date().toISOString(), workspaceId: "ws-1", workspacePath: "/tmp/Notes" });
+    });
+
+    fireEvent.click(await screen.findByRole("button", { name: "Relic版を保存" }));
+
+    await waitFor(() => expect(writeMarkdownFile).toHaveBeenCalledWith({
+      content: "Relic側の編集中本文",
+      path: "読書メモ.md"
+    }));
+    expect(await screen.findByText("ファイルを保存できませんでした。")).toHaveClass("toast--error");
+    expect(screen.getByText("このファイルは外部で変更されました。自動保存を一時停止しています。")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Relic版を保存" }));
+
+    await waitFor(() => {
+      const tab = useEditorStore.getState().tabs[activeTabId];
+      expect(tab?.kind).toBe("file");
+      if (tab?.kind === "file") {
+        expect(tab.content).toBe("Relic側の編集中本文");
+        expect(tab.savedContent).toBe("Relic側の編集中本文");
+        expect(tab.externalConflict).toBeUndefined();
+      }
+    });
+    expect(screen.queryByText("このファイルは外部で変更されました。自動保存を一時停止しています。")).not.toBeInTheDocument();
+  });
+
   it("ファイルツリーで開いているノートを再選択するとタブをアクティブにする", async () => {
     window.relic = makeRelicApi({
       getWorkspaceState: vi.fn().mockResolvedValue({

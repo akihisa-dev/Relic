@@ -37,7 +37,7 @@ export function syncWorkspaceWatcher(settings: AppSettings): void {
 
   try {
     workspaceWatcher = watch(target.path, { recursive: true }, (eventType) => {
-      if (eventType !== "rename") return;
+      if (!shouldNotifyWorkspaceChangeEvent(eventType)) return;
       scheduleWorkspaceChangedNotification(target);
     });
     workspaceWatcher.on("error", () => stopWorkspaceWatcher());
@@ -45,6 +45,10 @@ export function syncWorkspaceWatcher(settings: AppSettings): void {
   } catch {
     stopWorkspaceWatcher();
   }
+}
+
+export function shouldNotifyWorkspaceChangeEvent(eventType: string): boolean {
+  return eventType === "rename" || eventType === "change";
 }
 
 export function stopWorkspaceWatcher(): void {

@@ -88,9 +88,9 @@ describe("workspaceFileActionHelpers", () => {
 
   it("フォルダ移動後の配下タブ更新を組み立てる", () => {
     const tabs: Record<string, Tab> = {
-      "tab-a": { content: "", id: "tab-a", kind: "file", name: "One", path: "A/One.md" },
-      "tab-b": { content: "", id: "tab-b", kind: "file", name: "Two", path: "A/Nested/Two.md" },
-      "tab-c": { content: "", id: "tab-c", kind: "file", name: "Other", path: "Other.md" },
+      "tab-a": { content: "", id: "tab-a", kind: "file", name: "One", path: "A/One.md", savedContent: "" },
+      "tab-b": { content: "", id: "tab-b", kind: "file", name: "Two", path: "A/Nested/Two.md", savedContent: "" },
+      "tab-c": { content: "", id: "tab-c", kind: "file", name: "Other", path: "Other.md", savedContent: "" },
       "panel-tools": { id: "panel-tools", kind: "panel", name: "Tools", panel: "tools" }
     };
 

@@ -15,7 +15,8 @@ const fileTab: Tab = {
   id: "tab-file",
   kind: "file",
   name: "Note",
-  path: "Folder/Note.md"
+  path: "Folder/Note.md",
+  savedContent: "hello world"
 };
 
 const secondFileTab: Tab = {
@@ -23,7 +24,8 @@ const secondFileTab: Tab = {
   id: "tab-second",
   kind: "file",
   name: "Second",
-  path: "Second.md"
+  path: "Second.md",
+  savedContent: "second"
 };
 
 const panelTab: Tab = {

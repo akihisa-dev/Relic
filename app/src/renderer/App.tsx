@@ -70,8 +70,10 @@ export function App(): ReactElement {
     focusedPane,
     isSplit,
     leftPane,
+    markTabSaved,
     rightPane,
     tabs,
+    setTabExternalConflict,
     closeAllTabs,
     closeTab,
     closeOtherTabs,
@@ -87,6 +89,7 @@ export function App(): ReactElement {
     toggleTabPinned,
     toggleSplit,
     updateTabContent,
+    updateTabFromExternal,
     updateTabMeta
   } = useEditorStore();
 
@@ -279,15 +282,53 @@ export function App(): ReactElement {
         if (tab?.kind === "file" && !nextFilePathSet.has(tab.path)) closeTab("right", tabId);
       }
 
+      for (const [tabId, tab] of Object.entries(tabs)) {
+        if (tab.kind !== "file" || !nextFilePathSet.has(tab.path)) continue;
+
+        const fileResult = await window.relic.readMarkdownFile({ path: tab.path });
+
+        if (!fileResult.ok) {
+          setWorkspaceError(fileResult.error.message);
+          continue;
+        }
+
+        const currentTab = useEditorStore.getState().tabs[tabId];
+        if (currentTab?.kind !== "file") continue;
+
+        const externalContent = fileResult.value.content;
+
+        if (externalContent === currentTab.savedContent) continue;
+
+        if (externalContent === currentTab.content) {
+          markTabSaved(tabId, externalContent);
+          continue;
+        }
+
+        if (currentTab.content === currentTab.savedContent) {
+          updateTabFromExternal(tabId, externalContent);
+          continue;
+        }
+
+        const shouldNotify = currentTab.externalConflict?.content !== externalContent;
+        setTabExternalConflict(tabId, externalContent);
+        if (shouldNotify) {
+          setWorkspaceError(t("pane.externalConflictToast", { name: currentTab.name }));
+        }
+      }
+
       setWorkspaceState(result.value);
     },
     [
       closeTab,
       leftPane.tabIds,
+      markTabSaved,
       rightPane.tabIds,
+      setTabExternalConflict,
       setWorkspaceError,
       setWorkspaceState,
       tabs,
+      t,
+      updateTabFromExternal,
       workspaceState?.activeWorkspace?.id
     ]
   );

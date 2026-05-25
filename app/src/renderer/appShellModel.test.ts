@@ -30,7 +30,7 @@ const tabs: Record<string, Tab> = {
   "gantt-date": { chartId: "date", id: "gantt-date", kind: "gantt", name: "Calendar" },
   "panel-frontmatter": { id: "panel-frontmatter", kind: "panel", name: "Frontmatter", panel: "frontmatter" },
   "panel-tools": { id: "panel-tools", kind: "panel", name: "Tools", panel: "tools" },
-  "tab-note": { content: "Note", id: "tab-note", kind: "file", name: "Note", path: "Folder/Note.md" }
+  "tab-note": { content: "Note", id: "tab-note", kind: "file", name: "Note", path: "Folder/Note.md", savedContent: "Note" }
 };
 
 describe("appShellModel", () => {

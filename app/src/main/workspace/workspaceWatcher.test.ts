@@ -11,7 +11,7 @@ import {
   defaultUserDefinedFields
 } from "../../shared/ipc";
 import type { AppSettings } from "../settings/appSettings";
-import { activeWorkspaceWatchTarget } from "./workspaceWatcher";
+import { activeWorkspaceWatchTarget, shouldNotifyWorkspaceChangeEvent } from "./workspaceWatcher";
 
 function appSettings(overrides: Partial<AppSettings> = {}): AppSettings {
   return {
@@ -39,5 +39,11 @@ describe("workspaceWatcher", () => {
   it("アクティブワークスペースがない場合は監視対象を返さない", () => {
     expect(activeWorkspaceWatchTarget(appSettings({ lastWorkspaceId: null }))).toBeNull();
     expect(activeWorkspaceWatchTarget(appSettings({ lastWorkspaceId: "missing" }))).toBeNull();
+  });
+
+  it("ファイル作成削除と本文変更をワークスペース変更通知の対象にする", () => {
+    expect(shouldNotifyWorkspaceChangeEvent("rename")).toBe(true);
+    expect(shouldNotifyWorkspaceChangeEvent("change")).toBe(true);
+    expect(shouldNotifyWorkspaceChangeEvent("unknown")).toBe(false);
   });
 });

@@ -71,8 +71,8 @@ describe("editorStoreModel", () => {
       leftPane: { activeTabId: "tab-a", history: ["tab-a"], tabIds: ["tab-a"] },
       rightPane: { activeTabId: "tab-b", history: ["tab-b"], tabIds: ["tab-b"] },
       tabs: {
-        "tab-a": { content: "a", id: "tab-a", kind: "file", name: "A", path: "A.md" },
-        "tab-b": { content: "b", id: "tab-b", kind: "file", name: "B", path: "B.md" }
+        "tab-a": { content: "a", id: "tab-a", kind: "file", name: "A", path: "A.md", savedContent: "a" },
+        "tab-b": { content: "b", id: "tab-b", kind: "file", name: "B", path: "B.md", savedContent: "b" }
       }
     };
 

@@ -20,7 +20,7 @@ const t = createTranslator("en");
 describe("paneViewModel", () => {
   it("labels panel tabs through translations and other tabs by name", () => {
     const panelTab: Tab = { id: "panel-frontmatter", kind: "panel", name: "ignored", panel: "frontmatter" };
-    const fileTab: Tab = { content: "", id: "tab-file", kind: "file", name: "Note", path: "Note.md" };
+    const fileTab: Tab = { content: "", id: "tab-file", kind: "file", name: "Note", path: "Note.md", savedContent: "" };
     const ganttTab: Tab = { chartId: "chronicle", id: "gantt-chronicle", kind: "gantt", name: "Chronicle" };
 
     expect(panelTabLabel("frontmatter", t)).toBe("Frontmatter");
