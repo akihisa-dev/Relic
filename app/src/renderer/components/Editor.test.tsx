@@ -1491,6 +1491,31 @@ describe("Editor", () => {
     expect(viewRef.current?.state.doc.toString()).toBe("| A |  | B |\n| --- | --- | --- |\n| x |  | y |\n|  |  |  |");
   });
 
+  it("ライブプレビューの表で追加ボタンへ移動してもボタンが消えずクリックできる", async () => {
+    const viewRef = createRef<EditorView | null>();
+
+    const { container } = render(
+      <Editor
+        content={"| A | B |\n| --- | --- |\n| x | y |"}
+        onChange={vi.fn()}
+        settings={settings}
+        viewRef={viewRef}
+      />
+    );
+
+    await waitFor(() => expect(container.querySelector('.cm-live-table-cell-input[data-row="1"][data-col="1"]')).not.toBeNull());
+    const table = container.querySelector(".cm-live-table") as HTMLElement;
+    const input = container.querySelector('.cm-live-table-cell-input[data-row="1"][data-col="1"]') as HTMLInputElement;
+    const addButton = container.querySelector(".cm-live-table-add--row-after") as HTMLButtonElement;
+
+    fireEvent.mouseEnter(input);
+    fireEvent.mouseLeave(table, { relatedTarget: addButton });
+    expect(table.dataset.canAddRowAfter).toBe("true");
+
+    fireEvent.click(addButton);
+    expect(viewRef.current?.state.doc.toString()).toBe("| A | B |\n| --- | --- |\n| x | y |\n|  |  |");
+  });
+
   it("ライブプレビューの表で追加ボタンはヘッダーと端セルに触れた時だけ出す", async () => {
     const { container } = render(
       <Editor
@@ -1569,6 +1594,62 @@ describe("Editor", () => {
     fireEvent.click(getByText("行を下へ移動"));
 
     expect(viewRef.current?.state.doc.toString()).toBe("| B | A |\n| --- | --- |\n| w | z |\n| y | x |");
+  });
+
+  it("ライブプレビューの表メニューは画面に固定表示して切れにくくする", async () => {
+    const { container, getByText } = render(
+      <I18nProvider language="ja">
+        <Editor
+          content={"| A | B |\n| --- | --- |\n| x | y |"}
+          onChange={vi.fn()}
+          settings={settings}
+        />
+      </I18nProvider>
+    );
+
+    await waitFor(() => expect(container.querySelector('td[data-row="1"][data-column="0"]')).not.toBeNull());
+    fireEvent.contextMenu(container.querySelector('td[data-row="1"][data-column="0"]') as HTMLTableCellElement, {
+      clientX: 1200,
+      clientY: 900
+    });
+
+    const menu = getByText("行を下に追加").closest(".cm-live-table-menu") as HTMLElement;
+    expect(menu).not.toBeNull();
+    expect(menu.style.position).toBe("fixed");
+    expect(Number.parseFloat(menu.style.left)).toBeGreaterThanOrEqual(8);
+    expect(Number.parseFloat(menu.style.top)).toBeGreaterThanOrEqual(8);
+  });
+
+  it("ライブプレビューの表セルをドラッグして範囲選択し、TSVとしてコピーできる", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: {
+        writeText
+      }
+    });
+
+    const { container } = render(
+      <Editor
+        content={"| A | B |\n| --- | --- |\n| x | y |\n| z | w |"}
+        onChange={vi.fn()}
+        settings={settings}
+      />
+    );
+
+    await waitFor(() => expect(container.querySelector('td[data-row="1"][data-column="0"]')).not.toBeNull());
+    const startCell = container.querySelector('td[data-row="1"][data-column="0"]') as HTMLTableCellElement;
+    const endCell = container.querySelector('td[data-row="2"][data-column="1"]') as HTMLTableCellElement;
+    const table = container.querySelector(".cm-live-table") as HTMLElement;
+
+    fireEvent.mouseDown(startCell, { button: 0 });
+    fireEvent.mouseEnter(endCell);
+    fireEvent.mouseUp(document);
+
+    expect(container.querySelectorAll(".cm-live-table-selected")).toHaveLength(4);
+
+    fireEvent.keyDown(table, { key: "c", metaKey: true });
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith("x\ty\nz\tw"));
   });
 
   it("ライブプレビューの表で右クリックメニューから列をソートできる", async () => {

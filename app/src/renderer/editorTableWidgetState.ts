@@ -6,6 +6,7 @@ export interface LiveTableInteractionState {
   clearAffordance: () => void;
   clearIfFocusOutside: (relatedTarget?: EventTarget | null) => void;
   markActive: (axis: LiveTableActiveAxis, rowIndex: number, colIndex: number) => void;
+  markRange: (startRow: number, startCol: number, endRow: number, endCol: number) => void;
   positionControls: () => void;
   setAddAffordance: (rowIndex: number, colIndex: number) => void;
 }
@@ -48,9 +49,13 @@ export function createLiveTableInteractionState(
     wrapper.querySelectorAll(".cm-live-table-active").forEach((element) => {
       element.classList.remove("cm-live-table-active");
     });
+    wrapper.querySelectorAll(".cm-live-table-selected").forEach((element) => {
+      element.classList.remove("cm-live-table-selected");
+    });
     delete wrapper.dataset.activeAxis;
     delete wrapper.dataset.activeRow;
     delete wrapper.dataset.activeCol;
+    delete wrapper.dataset.selectedRange;
     clearAffordance();
   };
 
@@ -84,6 +89,9 @@ export function createLiveTableInteractionState(
       wrapper.querySelectorAll(".cm-live-table-active").forEach((element) => {
         element.classList.remove("cm-live-table-active");
       });
+      wrapper.querySelectorAll(".cm-live-table-selected").forEach((element) => {
+        element.classList.remove("cm-live-table-selected");
+      });
       const selector = axis === "column"
         ? `[data-column="${colIndex}"]`
         : axis === "row"
@@ -95,6 +103,34 @@ export function createLiveTableInteractionState(
       wrapper.dataset.activeAxis = axis;
       wrapper.dataset.activeRow = String(rowIndex);
       wrapper.dataset.activeCol = String(colIndex);
+      delete wrapper.dataset.selectedRange;
+    },
+    markRange: (startRow: number, startCol: number, endRow: number, endCol: number): void => {
+      activeRow = endRow;
+      activeCol = endCol;
+      positionControls();
+      wrapper.querySelectorAll(".cm-live-table-active").forEach((element) => {
+        element.classList.remove("cm-live-table-active");
+      });
+      wrapper.querySelectorAll(".cm-live-table-selected").forEach((element) => {
+        element.classList.remove("cm-live-table-selected");
+      });
+
+      const fromRow = Math.min(startRow, endRow);
+      const toRow = Math.max(startRow, endRow);
+      const fromCol = Math.min(startCol, endCol);
+      const toCol = Math.max(startCol, endCol);
+
+      for (let rowIndex = fromRow; rowIndex <= toRow; rowIndex += 1) {
+        for (let colIndex = fromCol; colIndex <= toCol; colIndex += 1) {
+          wrapper.querySelector(`[data-row="${rowIndex}"][data-column="${colIndex}"]`)?.classList.add("cm-live-table-selected");
+        }
+      }
+
+      wrapper.dataset.activeAxis = "cell";
+      wrapper.dataset.activeRow = String(endRow);
+      wrapper.dataset.activeCol = String(endCol);
+      wrapper.dataset.selectedRange = `${fromRow}:${fromCol}:${toRow}:${toCol}`;
     },
     positionControls,
     setAddAffordance: (rowIndex: number, colIndex: number): void => {

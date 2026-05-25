@@ -883,6 +883,11 @@
   box-shadow: inset 0 0 0 1px var(--accent);
 }
 
+.cm-live-table-selected {
+  background: var(--accent-softer);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
 .cm-live-table-handle,
 .cm-live-table-add {
   align-items: center;
@@ -897,6 +902,7 @@
   min-height: 0;
   opacity: 0;
   padding: 0;
+  pointer-events: none;
   position: absolute;
   transition: opacity 120ms ease;
   z-index: 2;
@@ -916,6 +922,7 @@
 .cm-live-table[data-drag-axis="column"] .cm-live-table-handle--column,
 .cm-live-table[data-drag-axis="row"] .cm-live-table-handle--row {
   opacity: 1;
+  pointer-events: auto;
 }
 
 .cm-live-table[data-can-add-column-before="true"] .cm-live-table-add--column-before,
@@ -923,6 +930,7 @@
 .cm-live-table[data-can-add-row-before="true"] .cm-live-table-add--row-before,
 .cm-live-table[data-can-add-row-after="true"] .cm-live-table-add--row-after {
   opacity: 1;
+  pointer-events: auto;
 }
 
 .cm-live-table-handle {
@@ -1061,9 +1069,11 @@
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
   display: flex;
   flex-direction: column;
+  max-height: calc(100vh - 16px);
   min-width: 190px;
+  overflow: auto;
   padding: 6px;
-  position: absolute;
+  position: fixed;
   z-index: 10;
 }
 

@@ -37,13 +37,13 @@ export function showLiveTableMenu({
   updateRows: (rows: string[][]) => void;
   wrapper: HTMLElement;
 }): void {
-  wrapper.querySelector(".cm-live-table-menu")?.remove();
+  document.querySelectorAll(".cm-live-table-menu").forEach((element) => element.remove());
 
   const menu = document.createElement("div");
   menu.className = "cm-live-table-menu";
-  const rect = wrapper.getBoundingClientRect();
-  menu.style.left = `${event.clientX - rect.left}px`;
-  menu.style.top = `${event.clientY - rect.top}px`;
+  menu.style.left = `${event.clientX}px`;
+  menu.style.position = "fixed";
+  menu.style.top = `${event.clientY}px`;
 
   const addItem = (
     label: string,
@@ -59,7 +59,7 @@ export function showLiveTableMenu({
       clickEvent.stopPropagation();
       if (!disabled) {
         action();
-        menu.remove();
+        removeMenu();
       }
     });
     menu.append(button);
@@ -147,12 +147,34 @@ export function showLiveTableMenu({
     focusCell(rowIndex, colIndex + 1);
   }, liveTableClipboard?.type !== "column");
 
-  wrapper.append(menu);
+  const removeMenu = (): void => {
+    menu.remove();
+    document.removeEventListener("mousedown", dismiss);
+    document.removeEventListener("keydown", dismissOnEscape);
+  };
   const dismiss = (dismissEvent: MouseEvent): void => {
     if (!menu.contains(dismissEvent.target as Node)) {
-      menu.remove();
-      document.removeEventListener("mousedown", dismiss);
+      removeMenu();
     }
   };
-  requestAnimationFrame(() => document.addEventListener("mousedown", dismiss));
+  const dismissOnEscape = (dismissEvent: KeyboardEvent): void => {
+    if (dismissEvent.key === "Escape") removeMenu();
+  };
+
+  document.body.append(menu);
+  clampMenuToViewport(menu, event.clientX, event.clientY);
+  requestAnimationFrame(() => {
+    document.addEventListener("mousedown", dismiss);
+    document.addEventListener("keydown", dismissOnEscape);
+  });
+}
+
+function clampMenuToViewport(menu: HTMLElement, x: number, y: number): void {
+  const margin = 8;
+  const rect = menu.getBoundingClientRect();
+  const maxLeft = Math.max(margin, window.innerWidth - rect.width - margin);
+  const maxTop = Math.max(margin, window.innerHeight - rect.height - margin);
+
+  menu.style.left = `${Math.min(Math.max(margin, x), maxLeft)}px`;
+  menu.style.top = `${Math.min(Math.max(margin, y), maxTop)}px`;
 }
