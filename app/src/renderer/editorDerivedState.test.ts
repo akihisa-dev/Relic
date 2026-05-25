@@ -8,8 +8,8 @@ describe("editorDerivedState", () => {
     const leftPane: PaneState = { activeTabId: "left-tab", history: ["left-tab"], tabIds: ["left-tab"] };
     const rightPane: PaneState = { activeTabId: "right-tab", history: ["right-tab"], tabIds: ["right-tab"] };
     const tabs: Record<string, Tab> = {
-      "left-tab": { content: "# Left", id: "left-tab", kind: "file", name: "Left", path: "left.md" },
-      "right-tab": { content: "# Right", id: "right-tab", kind: "file", name: "Right", path: "right.md" }
+      "left-tab": { content: "# Left", id: "left-tab", kind: "file", name: "Left", path: "left.md", savedContent: "# Left" },
+      "right-tab": { content: "# Right", id: "right-tab", kind: "file", name: "Right", path: "right.md", savedContent: "# Right" }
     };
 
     expect(getActiveFileTabInPane("left", { leftPane, rightPane }, tabs)?.path).toBe("left.md");

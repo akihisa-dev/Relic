@@ -47,7 +47,10 @@ describe("editorStore", () => {
     const tabId = state.leftPane.activeTabId!;
     expect(state.tabs[tabId].name).toBe("テスト");
     expect(state.tabs[tabId].kind).toBe("file");
-    if (state.tabs[tabId].kind === "file") expect(state.tabs[tabId].path).toBe("テスト.md");
+    if (state.tabs[tabId].kind === "file") {
+      expect(state.tabs[tabId].path).toBe("テスト.md");
+      expect(state.tabs[tabId].savedContent).toBe("# テスト");
+    }
 
     void leftPane;
     void tabs;
@@ -112,7 +115,70 @@ describe("editorStore", () => {
     const state = useEditorStore.getState();
 
     expect(state.tabs[tabId].kind).toBe("file");
-    if (state.tabs[tabId].kind === "file") expect(state.tabs[tabId].content).toBe("更新された内容");
+    if (state.tabs[tabId].kind === "file") {
+      expect(state.tabs[tabId].content).toBe("更新された内容");
+      expect(state.tabs[tabId].savedContent).toBe("# テスト");
+    }
+  });
+
+  it("保存成功扱いで保存基準を更新できる", () => {
+    useEditorStore.getState().openFileInPane("left", sampleFile);
+    const tabId = useEditorStore.getState().leftPane.activeTabId!;
+
+    useEditorStore.getState().updateTabContent(tabId, "更新された内容");
+    useEditorStore.getState().markTabSaved(tabId, "更新された内容");
+
+    const tab = useEditorStore.getState().tabs[tabId];
+
+    expect(tab.kind).toBe("file");
+    if (tab.kind === "file") {
+      expect(tab.content).toBe("更新された内容");
+      expect(tab.savedContent).toBe("更新された内容");
+      expect(tab.externalConflict).toBeUndefined();
+    }
+  });
+
+  it("外部変更の衝突を記録し外部版で解決できる", () => {
+    useEditorStore.getState().openFileInPane("left", sampleFile);
+    const tabId = useEditorStore.getState().leftPane.activeTabId!;
+
+    useEditorStore.getState().updateTabContent(tabId, "Relic側の編集中本文");
+    useEditorStore.getState().setTabExternalConflict(tabId, "外部版");
+
+    let tab = useEditorStore.getState().tabs[tabId];
+    expect(tab.kind).toBe("file");
+    if (tab.kind === "file") {
+      expect(tab.content).toBe("Relic側の編集中本文");
+      expect(tab.savedContent).toBe("# テスト");
+      expect(tab.externalConflict?.content).toBe("外部版");
+    }
+
+    useEditorStore.getState().resolveTabExternalConflict(tabId, "external");
+    tab = useEditorStore.getState().tabs[tabId];
+    expect(tab.kind).toBe("file");
+    if (tab.kind === "file") {
+      expect(tab.content).toBe("外部版");
+      expect(tab.savedContent).toBe("外部版");
+      expect(tab.externalConflict).toBeUndefined();
+    }
+  });
+
+  it("外部変更の衝突をRelic版保存成功として解決できる", () => {
+    useEditorStore.getState().openFileInPane("left", sampleFile);
+    const tabId = useEditorStore.getState().leftPane.activeTabId!;
+
+    useEditorStore.getState().updateTabContent(tabId, "Relic側の編集中本文");
+    useEditorStore.getState().setTabExternalConflict(tabId, "外部版");
+    useEditorStore.getState().resolveTabExternalConflict(tabId, "relic");
+
+    const tab = useEditorStore.getState().tabs[tabId];
+
+    expect(tab.kind).toBe("file");
+    if (tab.kind === "file") {
+      expect(tab.content).toBe("Relic側の編集中本文");
+      expect(tab.savedContent).toBe("Relic側の編集中本文");
+      expect(tab.externalConflict).toBeUndefined();
+    }
   });
 
   it("分割表示をトグルできる", () => {

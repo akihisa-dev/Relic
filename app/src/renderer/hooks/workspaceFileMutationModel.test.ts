@@ -14,8 +14,8 @@ import {
 const leftPane: PaneState = { activeTabId: "tab-a", history: ["tab-a"], tabIds: ["tab-a", "tab-b"] };
 const rightPane: PaneState = { activeTabId: "tab-c", history: ["tab-c"], tabIds: ["tab-c"] };
 const tabs: Record<string, Tab> = {
-  "tab-a": { content: "", id: "tab-a", kind: "file", name: "A", path: "docs/A.md" },
-  "tab-b": { content: "", id: "tab-b", kind: "file", name: "B", path: "docs/nested/B.md" },
+  "tab-a": { content: "", id: "tab-a", kind: "file", name: "A", path: "docs/A.md", savedContent: "" },
+  "tab-b": { content: "", id: "tab-b", kind: "file", name: "B", path: "docs/nested/B.md", savedContent: "" },
   "tab-c": { id: "tab-c", kind: "panel", name: "設定", panel: "settings" }
 };
 const t = createTranslator("ja");

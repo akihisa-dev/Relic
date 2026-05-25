@@ -23,9 +23,11 @@ interface PaneContentSurfaceProps {
   workspacePath?: string | null;
   onCreateFile: (name: string) => void;
   onEditorAction?: () => void;
+  onLoadExternalVersion: () => void;
   onOpenLink?: (href: string) => void;
   onOpenWikiLink?: (target: string, heading?: string) => void;
   onRenameFile: (path: string, name: string) => void;
+  onSaveRelicVersion: () => void;
   onUpdateTabContent: (tabId: string, content: string) => void;
 }
 
@@ -44,9 +46,11 @@ export function PaneContentSurface({
   workspacePath,
   onCreateFile,
   onEditorAction,
+  onLoadExternalVersion,
   onOpenLink,
   onOpenWikiLink,
   onRenameFile,
+  onSaveRelicVersion,
   onUpdateTabContent
 }: PaneContentSurfaceProps): ReactElement {
   const t = useT();
@@ -64,6 +68,23 @@ export function PaneContentSurface({
             name={activeTab.name}
             onRename={(name) => onRenameFile(activeTab.path, name)}
           />
+          {activeTab.externalConflict ? (
+            <div
+              className="editor-conflict-banner"
+              role="status"
+              style={{ maxWidth: editorSettings.maxWidth === "none" ? undefined : editorSettings.maxWidth }}
+            >
+              <span>{t("pane.externalConflict")}</span>
+              <div className="editor-conflict-actions">
+                <button className="secondary-button" onClick={onLoadExternalVersion} type="button">
+                  {t("pane.loadExternalVersion")}
+                </button>
+                <button className="secondary-button" onClick={onSaveRelicVersion} type="button">
+                  {t("pane.saveRelicVersion")}
+                </button>
+              </div>
+            </div>
+          ) : null}
           <Editor
             allFilePaths={allFilePaths}
             content={activeTab.content}

@@ -145,7 +145,7 @@
 
 .editor-body {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr);
   min-height: 0;
   overflow: hidden;
 }
@@ -183,6 +183,29 @@
 .editor-file-title-input {
   border-color: transparent;
   outline: none;
+}
+
+.editor-conflict-banner {
+  align-items: center;
+  background: color-mix(in srgb, var(--warning, #b7791f) 12%, var(--bg));
+  border: 1px solid color-mix(in srgb, var(--warning, #b7791f) 35%, var(--border));
+  border-radius: 6px;
+  box-sizing: border-box;
+  color: var(--text);
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  line-height: 1.5;
+  margin: 0 auto 10px;
+  max-width: 660px;
+  padding: 8px 10px;
+  width: calc(100% - 64px);
+}
+
+.editor-conflict-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 6px;
 }
 
 .cm-editor-shell {

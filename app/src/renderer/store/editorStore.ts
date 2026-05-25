@@ -10,12 +10,16 @@ import {
   emptyPane,
   moveTabState,
   openFileTabState,
+  markFileTabSavedState,
   openGanttTabState,
   openPanelTabState,
+  resolveFileTabExternalConflictState,
   setTabActiveState,
+  setFileTabExternalConflictState,
   toggleTabPinnedState,
   toggleSplitState,
   updateFileTabContentState,
+  updateFileTabFromExternalState,
   updateFileTabMetaState
 } from "./editorStoreModel";
 
@@ -23,11 +27,15 @@ export type PanelTabKind = "tools" | "frontmatter" | "chronicleSettings" | "sett
 
 export interface FileTab {
   content: string;
+  externalConflict?: {
+    content: string;
+  };
   id: string;
   isPinned?: boolean;
   kind: "file";
   name: string;
   path: string;
+  savedContent: string;
 }
 
 export interface PanelTab {
@@ -68,15 +76,19 @@ interface EditorStore {
   closeTabsToRight: (pane: PaneId, tabId: string) => void;
   closeAllTabsInPane: (pane: PaneId) => void;
   moveTab: (fromPane: PaneId, toPane: PaneId, tabId: string, targetTabId?: string | null, position?: "before" | "after") => void;
+  markTabSaved: (tabId: string, content: string) => void;
   openFileInPane: (pane: PaneId, file: MarkdownFileContent) => void;
   openGanttChartInPane: (pane: PaneId, chart: { id: string; name: string }) => void;
   openPanelInPane: (pane: PaneId, panel: PanelTabKind, name: string) => void;
+  resolveTabExternalConflict: (tabId: string, choice: "external" | "relic") => void;
+  setTabExternalConflict: (tabId: string, content: string) => void;
   setEditorSettings: (settings: EditorSettings) => void;
   setFocusedPane: (pane: PaneId) => void;
   setTabActive: (pane: PaneId, tabId: string) => void;
   toggleTabPinned: (tabId: string) => void;
   toggleSplit: () => void;
   updateTabContent: (tabId: string, content: string) => void;
+  updateTabFromExternal: (tabId: string, content: string) => void;
   updateTabMeta: (tabId: string, meta: Pick<FileTab, "name" | "path">) => void;
   closeAllTabs: () => void;
 }
@@ -167,6 +179,30 @@ export const useEditorStore = create<EditorStore>((set) => ({
   moveTab: (fromPane, toPane, tabId, targetTabId = null, position = "after") => {
     set((state) => {
       return moveTabState(state, fromPane, toPane, tabId, targetTabId, position);
+    });
+  },
+
+  markTabSaved: (tabId, content) => {
+    set((state) => {
+      return markFileTabSavedState(state, tabId, content);
+    });
+  },
+
+  setTabExternalConflict: (tabId, content) => {
+    set((state) => {
+      return setFileTabExternalConflictState(state, tabId, content);
+    });
+  },
+
+  resolveTabExternalConflict: (tabId, choice) => {
+    set((state) => {
+      return resolveFileTabExternalConflictState(state, tabId, choice);
+    });
+  },
+
+  updateTabFromExternal: (tabId, content) => {
+    set((state) => {
+      return updateFileTabFromExternalState(state, tabId, content);
     });
   },
 

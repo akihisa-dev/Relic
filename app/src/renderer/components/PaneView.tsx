@@ -89,7 +89,14 @@ export function PaneView({
   isSplitView,
   sourceMode
 }: PaneViewProps): ReactElement {
-  const { leftPane, rightPane, tabs, updateTabContent } = useEditorStore();
+  const {
+    leftPane,
+    markTabSaved,
+    resolveTabExternalConflict,
+    rightPane,
+    tabs,
+    updateTabContent
+  } = useEditorStore();
   const paneState = pane === "left" ? leftPane : rightPane;
   const activeTab = paneState.activeTabId ? tabs[paneState.activeTabId] : null;
   const {
@@ -110,10 +117,36 @@ export function PaneView({
   useAutoSave(
     activeTab?.kind === "file" ? activeTab.content : "",
     activeTab?.kind === "file" ? activeTab.path : null,
-    activeTab?.kind === "file",
-    onFileSaved,
+    activeTab?.kind === "file" && !activeTab.externalConflict,
+    () => {
+      if (activeTab?.kind !== "file") return;
+      markTabSaved(activeTab.id, activeTab.content);
+      onFileSaved?.(activeTab.path);
+    },
     onFileSaveError
   );
+
+  const loadExternalVersion = (): void => {
+    if (activeTab?.kind !== "file") return;
+    resolveTabExternalConflict(activeTab.id, "external");
+  };
+
+  const saveRelicVersion = (): void => {
+    if (activeTab?.kind !== "file" || !window.relic) return;
+
+    void window.relic.writeMarkdownFile({ content: activeTab.content, path: activeTab.path }).then((result) => {
+      if (result.ok) {
+        resolveTabExternalConflict(activeTab.id, "relic");
+        markTabSaved(activeTab.id, activeTab.content);
+        onFileSaved?.(activeTab.path);
+        return;
+      }
+
+      onFileSaveError?.(result.error.message);
+    }).catch((error) => {
+      onFileSaveError?.(error instanceof Error ? error.message : String(error));
+    });
+  };
 
   usePaneHeadingScroll({
     onScrollTargetHandled,
@@ -178,9 +211,11 @@ export function PaneView({
         workspacePath={workspacePath}
         onCreateFile={onCreateFile}
         onEditorAction={onEditorAction}
+        onLoadExternalVersion={loadExternalVersion}
         onOpenLink={onOpenLink}
         onOpenWikiLink={onOpenWikiLink}
         onRenameFile={onRenameFile}
+        onSaveRelicVersion={saveRelicVersion}
         onUpdateTabContent={updateTabContent}
       />
     </div>
