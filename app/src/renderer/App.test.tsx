@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { defaultEditorSettings, defaultFeatureToggles } from "../shared/ipc";
@@ -174,6 +174,52 @@ describe("App", () => {
       expect(tab?.kind).toBe("file");
       if (tab?.kind === "file") expect(tab.content).toContain("**");
     });
+  });
+
+  it("自動保存に失敗した場合は本文を維持してエラーを表示する", async () => {
+    const writeMarkdownFile = vi.fn().mockResolvedValue({
+      ok: false,
+      error: { code: "FILE_WRITE_FAILED", message: "ファイルを保存できませんでした。" }
+    });
+
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [{ name: "読書メモ", path: "読書メモ.md", type: "file" }]
+        }
+      }),
+      readMarkdownFile: vi.fn().mockResolvedValue({
+        ok: true,
+        value: { content: "本文テスト", name: "読書メモ", path: "読書メモ.md" }
+      }),
+      writeMarkdownFile
+    });
+
+    await renderApp();
+
+    fireEvent.click(await screen.findByRole("button", { name: /読書メモ/ }));
+
+    await waitFor(() => {
+      expect(useEditorStore.getState().leftPane.activeTabId).not.toBeNull();
+    });
+
+    const activeTabId = useEditorStore.getState().leftPane.activeTabId!;
+
+    act(() => {
+      useEditorStore.getState().updateTabContent(activeTabId, "保存に失敗しても残る本文");
+    });
+
+    await waitFor(() => expect(writeMarkdownFile).toHaveBeenCalledWith({
+      content: "保存に失敗しても残る本文",
+      path: "読書メモ.md"
+    }), { timeout: 2000 });
+
+    expect(await screen.findByText("ファイルを保存できませんでした。")).toHaveClass("toast--error");
+    const tab = useEditorStore.getState().tabs[activeTabId];
+    expect(tab?.kind).toBe("file");
+    if (tab?.kind === "file") expect(tab.content).toBe("保存に失敗しても残る本文");
   });
 
   it("ファイルツリーで開いているノートを再選択するとタブをアクティブにする", async () => {

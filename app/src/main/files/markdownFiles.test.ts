@@ -11,7 +11,8 @@ import {
   moveMarkdownFile,
   normalizeMarkdownFileName,
   readMarkdownFile,
-  renameMarkdownFile
+  renameMarkdownFile,
+  writeMarkdownFileContent
 } from "./markdownFiles";
 
 describe("normalizeMarkdownFileName", () => {
@@ -148,6 +149,46 @@ describe("readMarkdownFile", () => {
       ok: false
     });
     await expect(readMarkdownFile(workspacePath, "../outside.md")).resolves.toMatchObject({
+      ok: false
+    });
+  });
+});
+
+describe("writeMarkdownFileContent", () => {
+  const temporaryPaths: string[] = [];
+
+  afterEach(async () => {
+    await Promise.all(
+      temporaryPaths.splice(0).map((temporaryPath) =>
+        rm(temporaryPath, {
+          force: true,
+          recursive: true
+        })
+      )
+    );
+  });
+
+  it("Markdownファイルを安全書き込み経由で更新する", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-write-file-"));
+    temporaryPaths.push(workspacePath);
+
+    await writeFile(path.join(workspacePath, "読書メモ.md"), "old", "utf8");
+
+    await expect(writeMarkdownFileContent(workspacePath, "読書メモ.md", "new")).resolves.toEqual({
+      ok: true,
+      value: undefined
+    });
+    await expect(readFile(path.join(workspacePath, "読書メモ.md"), "utf8")).resolves.toBe("new");
+  });
+
+  it("Markdown以外とワークスペース外への書き込みを拒否する", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-write-file-"));
+    temporaryPaths.push(workspacePath);
+
+    await expect(writeMarkdownFileContent(workspacePath, "image.png", "new")).resolves.toMatchObject({
+      ok: false
+    });
+    await expect(writeMarkdownFileContent(workspacePath, "../outside.md", "new")).resolves.toMatchObject({
       ok: false
     });
   });
