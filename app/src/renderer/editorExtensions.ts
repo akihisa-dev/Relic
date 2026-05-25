@@ -107,6 +107,9 @@ export function buildExtensions(
   onOpenLinkRef: RefObject<((href: string) => void) | undefined>,
   onOpenWikiLinkRef: RefObject<((target: string, heading?: string) => void) | undefined>
 ) {
+  const constrainedContentWidth = settings.maxWidth === "none" ? null : settings.maxWidth;
+  const centerLineNumberColumn = settings.showLineNumbers && constrainedContentWidth !== null;
+
   return [
     history(),
     keymap.of([...defaultKeymap, ...historyKeymap]),
@@ -176,10 +179,22 @@ export function buildExtensions(
         lineHeight: String(settings.lineHeight),
         height: "100%"
       },
-      ".cm-scroller": { overflow: "auto" },
+      ".cm-scroller": {
+        overflow: "auto",
+        ...(centerLineNumberColumn ? { justifyContent: "center" } : {})
+      },
+      ".cm-gutters": {
+        flexShrink: "0",
+        ...(centerLineNumberColumn ? { left: "auto" } : {})
+      },
       ".cm-content": {
+        boxSizing: "border-box",
+        ...(centerLineNumberColumn ? {
+          flex: `0 1 ${constrainedContentWidth}`,
+          width: constrainedContentWidth
+        } : {}),
         maxWidth: settings.maxWidth === "none" ? "none" : settings.maxWidth,
-        margin: "0 auto",
+        margin: centerLineNumberColumn ? "0" : "0 auto",
         padding: "8px 32px 24px"
       },
       ".cm-line": {
