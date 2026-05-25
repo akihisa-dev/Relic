@@ -102,6 +102,19 @@ async function collectInlineLivePreviewWidgetClasses(content: string, cursor: nu
   return classes;
 }
 
+async function expandFrontmatter(container: HTMLElement): Promise<void> {
+  await waitFor(() => expect(container.querySelector(".cm-frontmatter-header")).not.toBeNull());
+  const properties = container.querySelector(".cm-frontmatter-properties");
+
+  if (properties?.getAttribute("data-collapsed") === "true") {
+    fireEvent.click(container.querySelector(".cm-frontmatter-header") as HTMLButtonElement);
+  }
+
+  await waitFor(() => {
+    expect(container.querySelector(".cm-frontmatter-properties")?.getAttribute("data-collapsed")).toBe("false");
+  });
+}
+
 describe("Editor", () => {
   afterEach(() => {
     window.relic = undefined;
@@ -480,6 +493,11 @@ describe("Editor", () => {
     await waitFor(() => expect(container.querySelector(".cm-frontmatter-properties")).not.toBeNull());
     expect(container.textContent).toContain("プロパティ");
     expect((container.querySelector(".cm-frontmatter-properties") as HTMLElement).contentEditable).toBe("false");
+    expect(container.querySelector(".cm-frontmatter-properties")?.getAttribute("data-collapsed")).toBe("true");
+    expect(container.querySelectorAll(".cm-frontmatter-row")).toHaveLength(0);
+
+    await expandFrontmatter(container);
+
     expect(container.textContent).toContain("version");
     expect(Array.from(container.querySelectorAll(".cm-frontmatter-pill-value")).map((input) => (input as HTMLInputElement).value)).toEqual([
       "帝都オルスター",
@@ -569,16 +587,8 @@ describe("Editor", () => {
     );
 
     await waitFor(() => expect(container.querySelector(".cm-frontmatter-properties")).not.toBeNull());
-    expect(container.querySelectorAll(".cm-frontmatter-row")).toHaveLength(2);
-
-    fireEvent.click(container.querySelector(".cm-frontmatter-header") as HTMLButtonElement);
-
-    await waitFor(() => {
-      expect(container.querySelector(".cm-frontmatter-properties")?.getAttribute("data-collapsed")).toBe("true");
-    });
+    expect(container.querySelector(".cm-frontmatter-properties")?.getAttribute("data-collapsed")).toBe("true");
     expect(container.querySelectorAll(".cm-frontmatter-row")).toHaveLength(0);
-    expect(onChange).not.toHaveBeenCalled();
-    expect(viewRef.current?.state.doc.toString()).toBe("---\nversion: v1.0\nstatus: draft\n---\n# 本文");
 
     fireEvent.click(container.querySelector(".cm-frontmatter-header") as HTMLButtonElement);
 
@@ -586,6 +596,15 @@ describe("Editor", () => {
       expect(container.querySelector(".cm-frontmatter-properties")?.getAttribute("data-collapsed")).toBe("false");
     });
     expect(container.querySelectorAll(".cm-frontmatter-row")).toHaveLength(2);
+    expect(onChange).not.toHaveBeenCalled();
+    expect(viewRef.current?.state.doc.toString()).toBe("---\nversion: v1.0\nstatus: draft\n---\n# 本文");
+
+    fireEvent.click(container.querySelector(".cm-frontmatter-header") as HTMLButtonElement);
+
+    await waitFor(() => {
+      expect(container.querySelector(".cm-frontmatter-properties")?.getAttribute("data-collapsed")).toBe("true");
+    });
+    expect(container.querySelectorAll(".cm-frontmatter-row")).toHaveLength(0);
   });
 
   it("常設プラスボタンから既存フロントマターに固定プロパティを追加できる", async () => {
@@ -674,6 +693,7 @@ describe("Editor", () => {
       />
     );
 
+    await expandFrontmatter(container);
     await waitFor(() => expect(container.querySelector(".cm-frontmatter-remove")).not.toBeNull());
     fireEvent.click(container.querySelector(".cm-frontmatter-remove") as HTMLButtonElement);
 
@@ -692,6 +712,7 @@ describe("Editor", () => {
       />
     );
 
+    await expandFrontmatter(container);
     await waitFor(() => expect(container.querySelector(".cm-frontmatter-remove")).not.toBeNull());
     fireEvent.click(container.querySelector(".cm-frontmatter-remove") as HTMLButtonElement);
 
@@ -711,6 +732,7 @@ describe("Editor", () => {
       />
     );
 
+    await expandFrontmatter(container);
     await waitFor(() => expect(container.querySelector(".cm-frontmatter-pill-value")).not.toBeNull());
     const values = Array.from(container.querySelectorAll(".cm-frontmatter-pill-value")) as HTMLInputElement[];
     fireEvent.change(values[0], { target: { value: "idea" } });
@@ -735,6 +757,7 @@ describe("Editor", () => {
       />
     );
 
+    await expandFrontmatter(container);
     fireEvent.click(container.querySelector(".cm-frontmatter-pill-add") as HTMLButtonElement);
     const input = container.querySelector(".frontmatter-add-dialog-input") as HTMLInputElement;
     fireEvent.change(input, { target: { value: "review" } });
@@ -758,6 +781,7 @@ describe("Editor", () => {
       />
     );
 
+    await expandFrontmatter(container);
     await waitFor(() => expect(container.querySelector(".cm-frontmatter-pill-value")).not.toBeNull());
     const values = Array.from(container.querySelectorAll(".cm-frontmatter-pill-value")) as HTMLInputElement[];
     fireEvent.change(values[0], { target: { value: "王都" } });
@@ -786,7 +810,7 @@ describe("Editor", () => {
       />
     );
 
-    await waitFor(() => expect(container.querySelector(".cm-frontmatter-properties")).not.toBeNull());
+    await expandFrontmatter(container);
 
     const rows = Array.from(container.querySelectorAll(".cm-frontmatter-row"));
     const aliasRow = rows.find((row) => row.querySelector(".cm-frontmatter-key")?.textContent === "aliases") as HTMLElement;
@@ -814,6 +838,7 @@ describe("Editor", () => {
       />
     );
 
+    await expandFrontmatter(container);
     await waitFor(() => expect(container.querySelector(".cm-frontmatter-chronicle")).not.toBeNull());
     const inputs = Array.from(container.querySelectorAll(".cm-frontmatter-chronicle .cm-frontmatter-input")) as HTMLInputElement[];
     fireEvent.change(inputs[0], { target: { value: "1185" } });
@@ -838,12 +863,16 @@ describe("Editor", () => {
       />
     );
 
+    await expandFrontmatter(container);
+    await expandFrontmatter(container);
+    await expandFrontmatter(container);
     await waitFor(() => expect(container.querySelector(".cm-frontmatter-date-range")).not.toBeNull());
     const inputs = Array.from(container.querySelectorAll(".cm-frontmatter-date-range .cm-frontmatter-input")) as HTMLInputElement[];
     fireEvent.change(inputs[0], { target: { value: "2026-05-12" } });
 
     expect(viewRef.current?.state.doc.toString()).toContain("plannedDate: [2026-05-12]");
 
+    await expandFrontmatter(container);
     await waitFor(() => expect(container.querySelector(".cm-frontmatter-date-range")).not.toBeNull());
     const nextInputs = Array.from(container.querySelectorAll(".cm-frontmatter-date-range .cm-frontmatter-input")) as HTMLInputElement[];
     fireEvent.change(nextInputs[1], { target: { value: "2026-05-20" } });
@@ -862,6 +891,7 @@ describe("Editor", () => {
       />
     );
 
+    await expandFrontmatter(container);
     await waitFor(() => expect(container.querySelector(".cm-frontmatter-date-range")).not.toBeNull());
     const inputs = Array.from(container.querySelectorAll(".cm-frontmatter-date-range .cm-frontmatter-input")) as HTMLInputElement[];
     expect(inputs[0].type).toBe("text");
@@ -883,6 +913,7 @@ describe("Editor", () => {
       />
     );
 
+    await expandFrontmatter(container);
     await waitFor(() => expect(container.querySelector(".cm-frontmatter-input")).not.toBeNull());
     const input = container.querySelector(".cm-frontmatter-input") as HTMLInputElement;
     fireEvent.change(input, { target: { value: "review" } });
@@ -909,6 +940,7 @@ describe("Editor", () => {
       />
     );
 
+    await expandFrontmatter(container);
     await waitFor(() => expect(container.querySelector(".cm-frontmatter-input")).not.toBeNull());
     const input = container.querySelector(".cm-frontmatter-input") as HTMLInputElement;
     fireEvent.change(input, { target: { value: "New title" } });
@@ -927,6 +959,7 @@ describe("Editor", () => {
       />
     );
 
+    await expandFrontmatter(container);
     await waitFor(() => expect(container.querySelector(".cm-frontmatter-yaml-input")).not.toBeNull());
     expect(container.textContent).toContain("meta");
     expect(container.querySelectorAll(".cm-frontmatter-row:not(.cm-frontmatter-add-row) .cm-frontmatter-input")).toHaveLength(1);
@@ -954,6 +987,7 @@ describe("Editor", () => {
       />
     );
 
+    await expandFrontmatter(container);
     await waitFor(() => expect(container.querySelector(".cm-frontmatter-yaml-input")).not.toBeNull());
     const yamlInput = container.querySelector(".cm-frontmatter-yaml-input") as HTMLTextAreaElement;
     fireEvent.change(yamlInput, { target: { value: "source: [web" } });
@@ -980,7 +1014,7 @@ describe("Editor", () => {
       />
     );
 
-    await waitFor(() => expect(container.querySelector(".cm-frontmatter-properties")).not.toBeNull());
+    await expandFrontmatter(container);
     const categorySelect = Array.from(container.querySelectorAll("select.cm-frontmatter-input"))
       .find((select) => (select as HTMLSelectElement).value === "draft") as HTMLSelectElement;
     const statusOptions = Array.from(categorySelect.querySelectorAll("option"))
@@ -1013,7 +1047,7 @@ describe("Editor", () => {
       />
     );
 
-    await waitFor(() => expect(container.querySelector(".cm-frontmatter-properties")).not.toBeNull());
+    await expandFrontmatter(container);
     expect(container.querySelector(".cm-frontmatter-pill-add")).toBeNull();
 
     const input = container.querySelector("select.cm-frontmatter-input") as HTMLSelectElement;
@@ -1042,7 +1076,7 @@ describe("Editor", () => {
       />
     );
 
-    await waitFor(() => expect(container.querySelector(".cm-frontmatter-properties")).not.toBeNull());
+    await expandFrontmatter(container);
 
     const inputs = Array.from(container.querySelectorAll(".cm-frontmatter-input")) as HTMLInputElement[];
     expect(inputs.some((input) => input.type === "datetime-local")).toBe(true);
