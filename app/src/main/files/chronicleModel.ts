@@ -2,7 +2,7 @@ import { rangeToArray } from "../../shared/chartTime";
 import type {
   ChronicleCalendarId,
   ChronicleCalendarSettings,
-  GanttChartDateKind
+  ChartDateKind
 } from "../../shared/ipc";
 
 export interface DateRange {
@@ -42,7 +42,7 @@ export function extractChronicleRangeFromData(
   return { endYear, startYear };
 }
 
-export function extractDateRangeFromData(data: Record<string, unknown>, kind: GanttChartDateKind): DateRange | null {
+export function extractDateRangeFromData(data: Record<string, unknown>, kind: ChartDateKind): DateRange | null {
   return extractRawDateRangeFromData(data, dateFieldNameForKind(kind));
 }
 
@@ -72,11 +72,11 @@ export function normalizeDateFieldsForWrite(data: Record<string, unknown>): Reco
   return next;
 }
 
-export function dateFieldNameForKind(kind: GanttChartDateKind): "actualDate" | "plannedDate" {
+export function dateFieldNameForKind(kind: ChartDateKind): "actualDate" | "plannedDate" {
   return kind === "actual" ? "actualDate" : "plannedDate";
 }
 
-export function dateKindOrder(kind: GanttChartDateKind | undefined): number {
+export function dateKindOrder(kind: ChartDateKind | undefined): number {
   if (kind === "actual") return 1;
   return 0;
 }

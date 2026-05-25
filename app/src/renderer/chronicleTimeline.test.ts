@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { GanttChartEntry } from "../shared/ipc";
+import type { ChartEntry } from "../shared/ipc";
 import {
   DATE_SCALES,
   buildChartRows,
@@ -28,7 +28,7 @@ import {
 const day = (value: string): number =>
   Math.floor(new Date(`${value}T00:00:00.000Z`).getTime() / 86_400_000);
 
-function entry(overrides: Partial<GanttChartEntry>): GanttChartEntry {
+function entry(overrides: Partial<ChartEntry>): ChartEntry {
   return {
     endLabel: "1333",
     endValue: 1332,

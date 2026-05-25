@@ -4,9 +4,9 @@ import { axisToYear, dateToDay, dayToDate, rangeToArray, shiftDateYears, yearToA
 import {
   defaultChronicleCalendars,
   type ChronicleCalendarSettings,
-  type GanttChartDateKind,
-  type GanttChartEntry,
-  type UpdateGanttChartEntryInput
+  type ChartDateKind,
+  type ChartEntry,
+  type UpdateChartEntryInput
 } from "../../shared/ipc";
 import { parseFrontmatter } from "./frontmatter";
 import {
@@ -24,12 +24,12 @@ import {
   type DateRange
 } from "./chronicleModel";
 
-export function collectGanttEntriesForMarkdown(
+export function collectChartEntriesForMarkdown(
   relativePath: string,
   content: string,
   calendars: ChronicleCalendarSettings[] = defaultChronicleCalendars
-): Record<"chronicle" | "date", GanttChartEntry[]> {
-  const entriesBySource: Record<"chronicle" | "date", GanttChartEntry[]> = {
+): Record<"chronicle" | "date", ChartEntry[]> {
+  const entriesBySource: Record<"chronicle" | "date", ChartEntry[]> = {
     chronicle: [],
     date: []
   };
@@ -53,7 +53,7 @@ export function collectGanttEntriesForMarkdown(
     });
   }
 
-  const dateRanges: Array<{ kind: GanttChartDateKind; range: DateRange }> = [];
+  const dateRanges: Array<{ kind: ChartDateKind; range: DateRange }> = [];
   const plannedDateRange = extractDateRangeFromData(frontmatter.data, "planned");
   const actualDateRange = extractDateRangeFromData(frontmatter.data, "actual");
   const statuses = extractStatusValues(frontmatter.data);
@@ -77,7 +77,7 @@ export function collectGanttEntriesForMarkdown(
   return entriesBySource;
 }
 
-export function sortChronicleEntries(entries: GanttChartEntry[]): GanttChartEntry[] {
+export function sortChronicleEntries(entries: ChartEntry[]): ChartEntry[] {
   return [...entries].sort((a, b) =>
     a.startValue - b.startValue ||
       a.endValue - b.endValue ||
@@ -85,7 +85,7 @@ export function sortChronicleEntries(entries: GanttChartEntry[]): GanttChartEntr
   );
 }
 
-export function sortDateEntries(entries: GanttChartEntry[]): GanttChartEntry[] {
+export function sortDateEntries(entries: ChartEntry[]): ChartEntry[] {
   return [...entries].sort((a, b) =>
     a.fileName.localeCompare(b.fileName, "ja") ||
       a.path.localeCompare(b.path, "ja") ||
@@ -97,7 +97,7 @@ export function sortDateEntries(entries: GanttChartEntry[]): GanttChartEntry[] {
 
 export function updateChronicleDataForChartEdit(
   data: Record<string, unknown>,
-  input: UpdateGanttChartEntryInput,
+  input: UpdateChartEntryInput,
   calendars: ChronicleCalendarSettings[] = defaultChronicleCalendars
 ): Record<string, unknown> {
   const start = Math.min(input.startValue, input.endValue);

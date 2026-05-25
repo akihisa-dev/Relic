@@ -3,9 +3,9 @@ import { describe, expect, it } from "vitest";
 import {
   isFrontmatterTemplatesInput,
   isChronicleCalendarsInput,
-  isGanttChartsInput,
+  isChartsInput,
   isRenameWorkspaceInput,
-  isUpdateGanttChartEntryInput,
+  isUpdateChartEntryInput,
   isUserDefinedFieldsInput
 } from "./workspaceHandlerValidators";
 
@@ -20,19 +20,19 @@ describe("workspaceHandlerValidators", () => {
     expect(isUserDefinedFieldsInput([{ name: "kind", type: "select", choices: [1] }])).toBe(false);
   });
 
-  it("validates the two required gantt chart sources", () => {
-    expect(isGanttChartsInput([
+  it("validates the two required chart chart sources", () => {
+    expect(isChartsInput([
       { id: "chronicle", name: "Chronicle", source: "chronicle" },
       { id: "date", name: "Date", source: "date", filePaths: ["a.md"] }
     ])).toBe(true);
-    expect(isGanttChartsInput([
+    expect(isChartsInput([
       { id: "a", name: "A", source: "chronicle" },
       { id: "b", name: "B", source: "chronicle" }
     ])).toBe(false);
   });
 
-  it("validates gantt entry edits and frontmatter templates", () => {
-    expect(isUpdateGanttChartEntryInput({
+  it("validates chart entry edits and frontmatter templates", () => {
+    expect(isUpdateChartEntryInput({
       chronicleCalendarId: "chronicle1",
       chronicleCalendarStartYear: 100,
       endValue: 3,
@@ -43,7 +43,7 @@ describe("workspaceHandlerValidators", () => {
       source: "chronicle",
       startValue: 2
     })).toBe(true);
-    expect(isUpdateGanttChartEntryInput({
+    expect(isUpdateChartEntryInput({
       chronicleCalendarId: "chronicle1",
       chronicleCalendarStartYear: 0,
       endValue: 3,
@@ -54,7 +54,7 @@ describe("workspaceHandlerValidators", () => {
       source: "chronicle",
       startValue: 2
     })).toBe(false);
-    expect(isUpdateGanttChartEntryInput({
+    expect(isUpdateChartEntryInput({
       endValue: 1,
       kind: "move",
       originalEndValue: 2,

@@ -26,8 +26,8 @@ const emptyPane = (activeTabId: string | null = null): PaneState => ({
 });
 
 const tabs: Record<string, Tab> = {
-  "gantt-charts": { chartId: "charts", id: "gantt-charts", kind: "gantt", name: "Chronicle" },
-  "gantt-date": { chartId: "date", id: "gantt-date", kind: "gantt", name: "Calendar" },
+  "chart-charts": { chartId: "charts", id: "chart-charts", kind: "chart", name: "Chronicle" },
+  "chart-date": { chartId: "date", id: "chart-date", kind: "chart", name: "Calendar" },
   "panel-frontmatter": { id: "panel-frontmatter", kind: "panel", name: "Frontmatter", panel: "frontmatter" },
   "panel-tools": { id: "panel-tools", kind: "panel", name: "Tools", panel: "tools" },
   "tab-note": { content: "Note", id: "tab-note", kind: "file", name: "Note", path: "Folder/Note.md", savedContent: "Note" }
@@ -59,24 +59,24 @@ describe("appShellModel", () => {
   it("detects active panel and chart tabs from panes", () => {
     expect(activePanelTabIdsForPanes(
       emptyPane("panel-frontmatter"),
-      emptyPane("gantt-charts"),
+      emptyPane("chart-charts"),
       tabs
     )).toEqual(new Set(["frontmatter"]));
     expect(isChartTabOpenInTabs(tabs)).toBe(true);
     expect(openChartIdsForTabs(tabs)).toEqual(new Set(["charts", "date"]));
     expect(activeChartIdsForPanes(
       emptyPane("panel-frontmatter"),
-      emptyPane("gantt-date"),
+      emptyPane("chart-date"),
       tabs
     )).toEqual(new Set(["date"]));
     expect(isChartTabActiveInPanes(
       emptyPane("panel-frontmatter"),
-      emptyPane("gantt-charts"),
+      emptyPane("chart-charts"),
       tabs
     )).toBe(true);
     expect(isChartTabActiveInPanes(
       emptyPane("panel-frontmatter"),
-      emptyPane("gantt-date"),
+      emptyPane("chart-date"),
       tabs
     )).toBe(false);
   });

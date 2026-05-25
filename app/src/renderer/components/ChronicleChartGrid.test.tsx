@@ -2,7 +2,7 @@ import { createRef } from "react";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
-import type { GanttChartEntry, WorkspaceGanttChart } from "../../shared/ipc";
+import type { ChartEntry, WorkspaceChart } from "../../shared/ipc";
 import {
   DATE_SCALES,
   buildChartRows,
@@ -16,7 +16,7 @@ import { ChronicleChartGrid, type ChronicleChartGridProps } from "./ChronicleCha
 const day = (value: string): number =>
   Math.floor(new Date(`${value}T00:00:00.000Z`).getTime() / 86_400_000);
 
-function entry(overrides: Partial<GanttChartEntry> = {}): GanttChartEntry {
+function entry(overrides: Partial<ChartEntry> = {}): ChartEntry {
   return {
     endLabel: "1333",
     endValue: 1332,
@@ -28,7 +28,7 @@ function entry(overrides: Partial<GanttChartEntry> = {}): GanttChartEntry {
   };
 }
 
-function chart(overrides: Partial<WorkspaceGanttChart> = {}): WorkspaceGanttChart {
+function chart(overrides: Partial<WorkspaceChart> = {}): WorkspaceChart {
   return {
     entries: [entry()],
     id: "chronicle",

@@ -21,7 +21,7 @@ describe("paneViewModel", () => {
   it("labels panel tabs through translations and other tabs by name", () => {
     const panelTab: Tab = { id: "panel-frontmatter", kind: "panel", name: "ignored", panel: "frontmatter" };
     const fileTab: Tab = { content: "", id: "tab-file", kind: "file", name: "Note", path: "Note.md", savedContent: "" };
-    const ganttTab: Tab = { chartId: "chronicle", id: "gantt-chronicle", kind: "gantt", name: "Chronicle" };
+    const chartTab: Tab = { chartId: "chronicle", id: "chart-chronicle", kind: "chart", name: "Chronicle" };
 
     expect(panelTabLabel("frontmatter", t)).toBe("Frontmatter");
     expect(panelTabLabel("chronicleSettings", t)).toBe("Calendar Settings");
@@ -29,7 +29,7 @@ describe("paneViewModel", () => {
     expect(panelTabLabel("tools", t)).toBe("Tools");
     expect(paneTabLabel(panelTab, t)).toBe("Frontmatter");
     expect(paneTabLabel(fileTab, t)).toBe("Note");
-    expect(paneTabLabel(ganttTab, t)).toBe("Chronicle");
+    expect(paneTabLabel(chartTab, t)).toBe("Chronicle");
     expect(paneTabLabel(null, t)).toBe("");
   });
 

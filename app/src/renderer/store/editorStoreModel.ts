@@ -1,5 +1,5 @@
 import type { EditorSettings, MarkdownFileContent } from "../../shared/ipc";
-import type { FileTab, GanttTab, PaneId, PaneState, PanelTab, PanelTabKind, Tab } from "./editorStore";
+import type { FileTab, ChartTab, PaneId, PaneState, PanelTab, PanelTabKind, Tab } from "./editorStore";
 
 export interface EditorStoreModelState {
   editorSettings: EditorSettings;
@@ -75,18 +75,18 @@ export function openPanelTabState(
   };
 }
 
-export function openGanttTabState(
+export function openChartTabState(
   state: EditorStoreModelState,
   pane: PaneId,
   chart: { id: string; name: string }
 ): Partial<EditorStoreModelState> {
-  const id = `gantt-${chart.id}`;
+  const id = `chart-${chart.id}`;
   const paneKey = paneKeyFor(pane);
   const paneState = state[paneKey];
   const existing = state.tabs[id];
   const nextTabs = existing
     ? { ...state.tabs, [id]: { ...existing, name: chart.name } }
-    : { ...state.tabs, [id]: { chartId: chart.id, id, kind: "gantt" as const, name: chart.name } satisfies GanttTab };
+    : { ...state.tabs, [id]: { chartId: chart.id, id, kind: "chart" as const, name: chart.name } satisfies ChartTab };
 
   const nextPane = activateTab(ensureTabInPane(paneState, id), id);
 

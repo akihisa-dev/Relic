@@ -2,10 +2,10 @@ import { act, renderHook } from "@testing-library/react";
 import type { MutableRefObject } from "react";
 import { describe, expect, it, vi } from "vitest";
 
-import type { GanttChartEntry, GanttChartSource, WorkspaceGanttChart } from "../../shared/ipc";
+import type { ChartEntry, ChartSource, WorkspaceChart } from "../../shared/ipc";
 import { useChronicleChartViewport } from "./useChronicleChartViewport";
 
-function entry(overrides: Partial<GanttChartEntry> = {}): GanttChartEntry {
+function entry(overrides: Partial<ChartEntry> = {}): ChartEntry {
   return {
     endLabel: "11",
     endValue: 11,
@@ -17,7 +17,7 @@ function entry(overrides: Partial<GanttChartEntry> = {}): GanttChartEntry {
   };
 }
 
-function chart(source: GanttChartSource = "chronicle"): WorkspaceGanttChart {
+function chart(source: ChartSource = "chronicle"): WorkspaceChart {
   return {
     entries: [entry()],
     id: source,
@@ -68,7 +68,7 @@ function makePointerEvent<T extends Element>(overrides: Partial<{
   } as never;
 }
 
-function renderViewport(activeSource: GanttChartSource = "chronicle") {
+function renderViewport(activeSource: ChartSource = "chronicle") {
   const hook = renderHook(() => useChronicleChartViewport({
     activeChart: chart(activeSource),
     activeSource,

@@ -2,9 +2,9 @@ import type { AliasIndex } from "./links";
 import type { RelicResult } from "./result";
 import type {
   ChronicleCalendarSettings,
-  GanttChartSettings,
-  UpdateGanttChartEntryInput,
-  WorkspaceGanttChart
+  ChartSettings,
+  UpdateChartEntryInput,
+  WorkspaceChart
 } from "./ipcCharts";
 import type {
   EditorSettings,
@@ -77,7 +77,7 @@ export interface RelicApi {
   getAppInfo: () => Promise<RelicResult<AppInfo>>;
   getEditorSettings: () => Promise<RelicResult<EditorSettings>>;
   getWorkspaceAliases: () => Promise<RelicResult<AliasIndex>>;
-  getWorkspaceChronicle: () => Promise<RelicResult<WorkspaceGanttChart[]>>;
+  getWorkspaceCharts: () => Promise<RelicResult<WorkspaceChart[]>>;
   getWorkspaceChronicleCalendars: () => Promise<RelicResult<ChronicleCalendarSettings[]>>;
   getFrontmatterValueCandidates: () => Promise<RelicResult<Record<string, string[]>>>;
   getWorkspaceTags: () => Promise<RelicResult<WorkspaceTagSummary[]>>;
@@ -109,8 +109,8 @@ export interface RelicApi {
   writeMarkdownFile: (input: WriteMarkdownFileInput) => Promise<RelicResult<void>>;
   writeClipboardText: (text: string) => void;
   saveWorkspaceChronicleCalendars: (input: ChronicleCalendarSettings[]) => Promise<RelicResult<ChronicleCalendarSettings[]>>;
-  saveWorkspaceGanttCharts: (input: GanttChartSettings[]) => Promise<RelicResult<WorkspaceGanttChart[]>>;
-  updateGanttChartEntry: (input: UpdateGanttChartEntryInput) => Promise<RelicResult<WorkspaceGanttChart[]>>;
+  saveWorkspaceCharts: (input: ChartSettings[]) => Promise<RelicResult<WorkspaceChart[]>>;
+  updateChartEntry: (input: UpdateChartEntryInput) => Promise<RelicResult<WorkspaceChart[]>>;
   generateTitleList: (input: GenerateTitleListInput) => Promise<RelicResult<string>>;
   generateTableOfContents: (input: GenerateTableOfContentsInput) => Promise<RelicResult<string>>;
   getFeatureToggles: () => Promise<RelicResult<FeatureToggles>>;

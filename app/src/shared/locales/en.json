@@ -14,7 +14,7 @@
   "common.save": "Save",
   "common.none": "-",
   "common.running": "Working...",
-  "chronicle.empty": "No files can be shown in this Gantt chart yet.",
+  "chronicle.empty": "No files can be shown in this chart yet.",
   "chronicle.actualDate": "Actual",
   "chronicle.dragHandle": "Move chart menu",
   "chronicle.jumpToPeriod": "Jump to this period",

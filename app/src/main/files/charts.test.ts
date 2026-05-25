@@ -4,7 +4,7 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { extractChronicleRange, extractDateRange, readWorkspaceChronicle, updateWorkspaceGanttChartEntry } from "./chronicle";
+import { extractChronicleRange, extractDateRange, readWorkspaceCharts, updateWorkspaceChartEntry } from "./charts";
 
 describe("extractChronicleRange", () => {
   it("単年を1要素配列として読む", () => {
@@ -69,7 +69,7 @@ describe("extractDateRange", () => {
   });
 });
 
-describe("readWorkspaceChronicle", () => {
+describe("readWorkspaceCharts", () => {
   it("chronicle0と設定済みサブ暦を同じ年表へ換算して読む", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-chronicle-calendar-chart-"));
     await writeFile(
@@ -103,7 +103,7 @@ describe("readWorkspaceChronicle", () => {
       "utf8"
     );
 
-    const result = await readWorkspaceChronicle(
+    const result = await readWorkspaceCharts(
       workspacePath,
       [
         { filePaths: [], id: "chronicle", name: "chronicle", source: "chronicle" },
@@ -168,7 +168,7 @@ describe("readWorkspaceChronicle", () => {
       "utf8"
     );
 
-    const result = await readWorkspaceChronicle(
+    const result = await readWorkspaceCharts(
       workspacePath,
       [
         { filePaths: [], id: "chronicle", name: "chronicle", source: "chronicle" },
@@ -210,7 +210,7 @@ describe("readWorkspaceChronicle", () => {
       "utf8"
     );
 
-    const result = await readWorkspaceChronicle(
+    const result = await readWorkspaceCharts(
       workspacePath,
       [
         { filePaths: [], id: "chronicle", name: "chronicle", source: "chronicle" },
@@ -242,13 +242,13 @@ describe("readWorkspaceChronicle", () => {
   });
 });
 
-describe("updateWorkspaceGanttChartEntry", () => {
+describe("updateWorkspaceChartEntry", () => {
   it("chronicle0バー移動時にchronicle0とplannedDateを連動して更新する", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-chronicle-update-"));
     const filePath = path.join(workspacePath, "entry.md");
     await writeFile(filePath, "---\nchronicle0: [1185, 1333]\nplannedDate: [2026-05-01, 2026-05-05]\n---\n# A\n", "utf8");
 
-    const result = await updateWorkspaceGanttChartEntry(
+    const result = await updateWorkspaceChartEntry(
       workspacePath,
       [
         { filePaths: [], id: "chronicle", name: "chronicle", source: "chronicle" },
@@ -277,7 +277,7 @@ describe("updateWorkspaceGanttChartEntry", () => {
     const filePath = path.join(workspacePath, "entry.md");
     await writeFile(filePath, "---\nchronicle1: [3]\nplannedDate: [2026-05-01]\n---\n# A\n", "utf8");
 
-    const result = await updateWorkspaceGanttChartEntry(
+    const result = await updateWorkspaceChartEntry(
       workspacePath,
       [
         { filePaths: [], id: "chronicle", name: "chronicle", source: "chronicle" },
@@ -312,7 +312,7 @@ describe("updateWorkspaceGanttChartEntry", () => {
     const filePath = path.join(workspacePath, "entry.md");
     await writeFile(filePath, "---\nchronicle1: [3]\nplannedDate: [2026-05-01]\n---\n# A\n", "utf8");
 
-    const result = await updateWorkspaceGanttChartEntry(
+    const result = await updateWorkspaceChartEntry(
       workspacePath,
       [
         { filePaths: [], id: "chronicle", name: "chronicle", source: "chronicle" },
@@ -347,7 +347,7 @@ describe("updateWorkspaceGanttChartEntry", () => {
     const filePath = path.join(workspacePath, "entry.md");
     await writeFile(filePath, "---\nchronicle0: [2026]\nplannedDate: [2026-12-30]\n---\n# A\n", "utf8");
 
-    const result = await updateWorkspaceGanttChartEntry(
+    const result = await updateWorkspaceChartEntry(
       workspacePath,
       [
         { filePaths: [], id: "chronicle", name: "chronicle", source: "chronicle" },
@@ -389,7 +389,7 @@ describe("updateWorkspaceGanttChartEntry", () => {
       ""
     ].join("\n"), "utf8");
 
-    const result = await updateWorkspaceGanttChartEntry(
+    const result = await updateWorkspaceChartEntry(
       workspacePath,
       [
         { filePaths: [], id: "chronicle", name: "chronicle", source: "chronicle" },
@@ -426,7 +426,7 @@ describe("updateWorkspaceGanttChartEntry", () => {
     const original = "---\n: invalid: yaml:\n---\n# A\n";
     await writeFile(filePath, original, "utf8");
 
-    const result = await updateWorkspaceGanttChartEntry(
+    const result = await updateWorkspaceChartEntry(
       workspacePath,
       [
         { filePaths: [], id: "chronicle", name: "chronicle", source: "chronicle" },
@@ -454,7 +454,7 @@ describe("updateWorkspaceGanttChartEntry", () => {
     const filePath = path.join(workspacePath, "entry.md");
     await writeFile(filePath, "---\nchronicle0: [2026]\nplannedDate: [2026-05-01]\nactualDate: [2026-05-02]\n---\n# A\n", "utf8");
 
-    const result = await updateWorkspaceGanttChartEntry(
+    const result = await updateWorkspaceChartEntry(
       workspacePath,
       [
         { filePaths: [], id: "chronicle", name: "chronicle", source: "chronicle" },

@@ -6,16 +6,16 @@ import type {
   ChronicleCalendarSettings,
   EditorSettings,
   FeatureToggles,
-  UpdateGanttChartEntryInput,
+  UpdateChartEntryInput,
   UserDefinedField,
-  WorkspaceGanttChart,
+  WorkspaceChart,
   WorkspaceState
 } from "../../shared/ipc";
-import { GanttChartView } from "../components/ChronicleSidebar";
+import { ChartView } from "../components/ChartPanel";
 import { ChronicleSettingsPanel } from "../components/ChronicleSettingsPanel";
-import { FrontmatterSidebar } from "../components/FrontmatterSidebar";
-import { SettingsSidebar } from "../components/SettingsSidebar";
-import { ToolsSidebar } from "../components/ToolsSidebar";
+import { FrontmatterPanel } from "../components/FrontmatterPanel";
+import { SettingsPanel } from "../components/SettingsPanel";
+import { ToolsPanel } from "../components/ToolsPanel";
 import type { PanelTabKind } from "../store/editorStore";
 
 interface UseAppTabRenderersInput {
@@ -23,13 +23,13 @@ interface UseAppTabRenderersInput {
   chronicleCalendars: ChronicleCalendarSettings[];
   editorSettings: EditorSettings;
   featureToggles: FeatureToggles;
-  ganttCharts: WorkspaceGanttChart[];
+  charts: WorkspaceChart[];
   handleOpenFile: (path: string) => void;
   handleSaveFeatureToggles: (toggles: FeatureToggles) => void;
   handleSaveChronicleCalendars: (calendars: ChronicleCalendarSettings[]) => void;
   handleSaveSettings: (settings: EditorSettings) => void;
   handleSaveUserDefinedFields: (fields: UserDefinedField[]) => void;
-  handleUpdateGanttChartEntry: (input: UpdateGanttChartEntryInput) => Promise<void> | void;
+  handleUpdateChartEntry: (input: UpdateChartEntryInput) => Promise<void> | void;
   userDefinedFields: UserDefinedField[];
   workspaceState: WorkspaceState | null;
 }
@@ -39,36 +39,36 @@ export function useAppTabRenderers({
   chronicleCalendars,
   editorSettings,
   featureToggles,
-  ganttCharts,
+  charts,
   handleOpenFile,
   handleSaveFeatureToggles,
   handleSaveChronicleCalendars,
   handleSaveSettings,
   handleSaveUserDefinedFields,
-  handleUpdateGanttChartEntry,
+  handleUpdateChartEntry,
   userDefinedFields,
   workspaceState
 }: UseAppTabRenderersInput): {
-  renderGanttChartTab: (chartId: string) => ReactNode;
+  renderChartTab: (chartId: string) => ReactNode;
   renderPanelTab: (panel: PanelTabKind) => ReactNode;
 } {
-  const renderGanttChartTab = useCallback((chartId: string): ReactNode => (
-    <GanttChartView
-      chart={chartId === "charts" ? null : ganttCharts.find((chart) => chart.id === chartId) ?? null}
-      charts={chartId === "charts" ? ganttCharts : undefined}
+  const renderChartTab = useCallback((chartId: string): ReactNode => (
+    <ChartView
+      chart={chartId === "charts" ? null : charts.find((chart) => chart.id === chartId) ?? null}
+      charts={chartId === "charts" ? charts : undefined}
       onOpenFile={handleOpenFile}
-      onUpdateEntry={handleUpdateGanttChartEntry}
+      onUpdateEntry={handleUpdateChartEntry}
     />
-  ), [ganttCharts, handleOpenFile, handleUpdateGanttChartEntry]);
+  ), [charts, handleOpenFile, handleUpdateChartEntry]);
 
   const renderPanelTab = useCallback((panel: PanelTabKind): ReactNode => {
     if (panel === "tools") {
-      return <ToolsSidebar workspacePath={workspaceState?.activeWorkspace?.path ?? null} />;
+      return <ToolsPanel workspacePath={workspaceState?.activeWorkspace?.path ?? null} />;
     }
 
     if (panel === "frontmatter") {
       return (
-        <FrontmatterSidebar
+        <FrontmatterPanel
           onUserDefinedFieldsSave={handleSaveUserDefinedFields}
           userDefinedFields={userDefinedFields}
         />
@@ -85,7 +85,7 @@ export function useAppTabRenderers({
     }
 
     return (
-      <SettingsSidebar
+      <SettingsPanel
         appInfo={appInfo}
         featureToggles={featureToggles}
         onFeatureTogglesSave={handleSaveFeatureToggles}
@@ -108,7 +108,7 @@ export function useAppTabRenderers({
   ]);
 
   return {
-    renderGanttChartTab,
+    renderChartTab,
     renderPanelTab
   };
 }

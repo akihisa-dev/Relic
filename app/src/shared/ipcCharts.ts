@@ -1,5 +1,5 @@
-export type GanttChartSource = "chronicle" | "date";
-export type GanttChartDateKind = "actual" | "planned";
+export type ChartSource = "chronicle" | "date";
+export type ChartDateKind = "actual" | "planned";
 export type ChronicleCalendarId =
   | "chronicle0"
   | "chronicle1"
@@ -35,18 +35,18 @@ export const defaultChronicleCalendars: ChronicleCalendarSettings[] = [
   { id: "chronicle0", name: "メイン暦" }
 ];
 
-export interface GanttChartSettings {
+export interface ChartSettings {
   filePaths?: string[];
   id: string;
   name: string;
-  source: GanttChartSource;
+  source: ChartSource;
 }
 
-export interface GanttChartEntry {
+export interface ChartEntry {
   chronicleCalendarId?: ChronicleCalendarId;
   chronicleCalendarName?: string;
   chronicleCalendarStartYear?: number;
-  dateKind?: GanttChartDateKind;
+  dateKind?: ChartDateKind;
   endLabel: string;
   endValue: number;
   fileName: string;
@@ -56,21 +56,21 @@ export interface GanttChartEntry {
   statuses?: string[];
 }
 
-export interface WorkspaceGanttChart extends GanttChartSettings {
-  entries: GanttChartEntry[];
+export interface WorkspaceChart extends ChartSettings {
+  entries: ChartEntry[];
 }
 
-export type GanttChartEntryEditKind = "move" | "resize-start" | "resize-end";
+export type ChartEntryEditKind = "move" | "resize-start" | "resize-end";
 
-export interface UpdateGanttChartEntryInput {
+export interface UpdateChartEntryInput {
   chronicleCalendarId?: ChronicleCalendarId;
   chronicleCalendarStartYear?: number;
-  dateKind?: GanttChartDateKind;
+  dateKind?: ChartDateKind;
   endValue: number;
-  kind: GanttChartEntryEditKind;
+  kind: ChartEntryEditKind;
   originalEndValue: number;
   originalStartValue: number;
   path: string;
-  source: GanttChartSource;
+  source: ChartSource;
   startValue: number;
 }

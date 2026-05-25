@@ -1,11 +1,11 @@
 import type { PointerEventHandler, ReactElement, RefObject } from "react";
 
-import type { WorkspaceGanttChart } from "../../shared/ipc";
+import type { WorkspaceChart } from "../../shared/ipc";
 import type { MinimapItem } from "../chronicleTimeline";
 import { useT } from "../i18n";
 
 export interface ChronicleMinimapProps {
-  activeChart: WorkspaceGanttChart | null;
+  activeChart: WorkspaceChart | null;
   minimapItems: MinimapItem[];
   minimapRef: RefObject<HTMLDivElement | null>;
   minimapViewport: { leftPercent: number; widthPercent: number };

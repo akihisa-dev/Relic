@@ -1,11 +1,11 @@
-import type { GanttChartDateKind, GanttChartEntry, GanttChartSource, WorkspaceGanttChart } from "../shared/ipc";
+import type { ChartDateKind, ChartEntry, ChartSource, WorkspaceChart } from "../shared/ipc";
 import { axisToYear, dayToDate } from "../shared/chartTime";
 import { fixedStatusValues } from "../shared/status";
 import { formatAxisValue } from "./chronicleTimelineAxis";
 import type { Translator } from "./i18n";
 
 export interface ChartRow {
-  entries: GanttChartEntry[];
+  entries: ChartEntry[];
   fileName: string;
   key: string;
   path: string;
@@ -13,27 +13,27 @@ export interface ChartRow {
 }
 
 export interface DragPreview {
-  chronicleCalendarId?: GanttChartEntry["chronicleCalendarId"];
-  dateKind?: GanttChartDateKind;
+  chronicleCalendarId?: ChartEntry["chronicleCalendarId"];
+  dateKind?: ChartDateKind;
   endValue: number;
   path: string;
-  source: GanttChartSource;
+  source: ChartSource;
   startValue: number;
 }
 
 export type ChronicleSortKey = "start-asc" | "start-desc" | "name-asc" | "name-desc";
 
-export function visibleEntries(chart: WorkspaceGanttChart | null): GanttChartEntry[] {
+export function visibleEntries(chart: WorkspaceChart | null): ChartEntry[] {
   if (!chart) return [];
   return chart.entries;
 }
 
-export function chartsForView(chart: WorkspaceGanttChart | null, charts: WorkspaceGanttChart[]): WorkspaceGanttChart[] {
+export function chartsForView(chart: WorkspaceChart | null, charts: WorkspaceChart[]): WorkspaceChart[] {
   if (chart) return [chart];
   return charts;
 }
 
-export function buildChartRows(entries: GanttChartEntry[], source: GanttChartSource): ChartRow[] {
+export function buildChartRows(entries: ChartEntry[], source: ChartSource): ChartRow[] {
   if (source !== "date") {
     return entries.map((entry) => ({
       entries: [entry],
@@ -124,11 +124,11 @@ export function rowCenterValue(row: ChartRow): number {
   return (rowStartValue(row) + rowEndValue(row)) / 2;
 }
 
-export function sortDateRowEntries(entries: GanttChartEntry[]): GanttChartEntry[] {
+export function sortDateRowEntries(entries: ChartEntry[]): ChartEntry[] {
   return [...entries].sort((a, b) => dateKindOrder(a.dateKind) - dateKindOrder(b.dateKind));
 }
 
-export function dateKindOrder(kind: GanttChartDateKind | undefined): number {
+export function dateKindOrder(kind: ChartDateKind | undefined): number {
   return kind === "actual" ? 1 : 0;
 }
 
@@ -136,18 +136,18 @@ export function mergeStatuses(current: string[], next: string[]): string[] {
   return [...new Set([...current, ...next])];
 }
 
-export function statusValuesForEntries(entries: GanttChartEntry[]): string[] {
+export function statusValuesForEntries(entries: ChartEntry[]): string[] {
   void entries;
   return [...fixedStatusValues];
 }
 
-export function statusLabelForEntry(entry: GanttChartEntry): string {
+export function statusLabelForEntry(entry: ChartEntry): string {
   return (entry.statuses ?? [])
     .filter((status) => status.trim() !== "")
     .join(" / ");
 }
 
-export function dateSummaryForRow(row: ChartRow, kind: GanttChartDateKind): string {
+export function dateSummaryForRow(row: ChartRow, kind: ChartDateKind): string {
   const entry = row.entries.find((candidate) => (candidate.dateKind ?? "planned") === kind);
   if (!entry) return "";
 
@@ -178,15 +178,15 @@ export function formatDateSummaryLabel(value: string, omitYear: boolean): string
   return omitYear ? normalized.slice(5) : normalized;
 }
 
-export function entryKey(entry: GanttChartEntry): string {
+export function entryKey(entry: ChartEntry): string {
   return `${entry.path}:${entry.dateKind ?? "default"}`;
 }
 
-export function dateKindPatch(entry: GanttChartEntry): { dateKind: GanttChartDateKind } | Record<string, never> {
+export function dateKindPatch(entry: ChartEntry): { dateKind: ChartDateKind } | Record<string, never> {
   return entry.dateKind ? { dateKind: entry.dateKind } : {};
 }
 
-export function chronicleCalendarPatch(entry: GanttChartEntry): Pick<GanttChartEntry, "chronicleCalendarId" | "chronicleCalendarStartYear"> {
+export function chronicleCalendarPatch(entry: ChartEntry): Pick<ChartEntry, "chronicleCalendarId" | "chronicleCalendarStartYear"> {
   return {
     ...(entry.chronicleCalendarId ? { chronicleCalendarId: entry.chronicleCalendarId } : {}),
     ...(entry.chronicleCalendarStartYear ? { chronicleCalendarStartYear: entry.chronicleCalendarStartYear } : {})
@@ -194,9 +194,9 @@ export function chronicleCalendarPatch(entry: GanttChartEntry): Pick<GanttChartE
 }
 
 export function isPreviewForEntry(
-  entry: GanttChartEntry,
+  entry: ChartEntry,
   preview: DragPreview | null,
-  source: GanttChartSource
+  source: ChartSource
 ): boolean {
   return Boolean(
     preview &&
@@ -207,7 +207,7 @@ export function isPreviewForEntry(
   );
 }
 
-export function previewEntryForDrag(entry: GanttChartEntry, preview: DragPreview | null): GanttChartEntry {
+export function previewEntryForDrag(entry: ChartEntry, preview: DragPreview | null): ChartEntry {
   if (
     !preview ||
     preview.path !== entry.path ||
@@ -231,7 +231,7 @@ export function previewEntryForDrag(entry: GanttChartEntry, preview: DragPreview
   };
 }
 
-function formatEntryCalendarLabel(entry: GanttChartEntry, value: number): string {
+function formatEntryCalendarLabel(entry: ChartEntry, value: number): string {
   const name = entry.chronicleCalendarName;
   const startYear = entry.chronicleCalendarStartYear ?? 1;
   const year = axisToYear(value) - startYear + 1;
@@ -240,6 +240,6 @@ function formatEntryCalendarLabel(entry: GanttChartEntry, value: number): string
   return name ? `${name} ${label}` : formatAxisValue(value, "chronicle");
 }
 
-export function formatDateKindLabel(kind: GanttChartDateKind | undefined, t: Translator): string {
+export function formatDateKindLabel(kind: ChartDateKind | undefined, t: Translator): string {
   return kind === "actual" ? t("chronicle.actualDate") : t("chronicle.plannedDate");
 }

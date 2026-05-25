@@ -1007,10 +1007,10 @@ describe("App", () => {
   });
 
   it("レールのチャートボタンからchronicleを持つファイルを表示できる", async () => {
-    const updateGanttChartEntry = vi.fn().mockResolvedValue({ ok: true, value: [] });
+    const updateChartEntry = vi.fn().mockResolvedValue({ ok: true, value: [] });
 
     window.relic = makeRelicApi({
-      getWorkspaceChronicle: vi.fn().mockResolvedValue({
+      getWorkspaceCharts: vi.fn().mockResolvedValue({
         ok: true,
         value: [{
           entries: [{
@@ -1036,7 +1036,7 @@ describe("App", () => {
           path: "history/kamakura.md"
         }
       }),
-      updateGanttChartEntry
+      updateChartEntry
     });
 
     const renderResult = await renderApp();
@@ -1046,10 +1046,10 @@ describe("App", () => {
     fireEvent.click(screen.getByRole("button", { name: "年表" }));
 
     const activeTabId = useEditorStore.getState().leftPane.activeTabId;
-    expect(activeTabId).toBe("gantt-chronicle");
+    expect(activeTabId).toBe("chart-chronicle");
     expect(useEditorStore.getState().tabs[activeTabId!]).toMatchObject({
       chartId: "chronicle",
-      kind: "gantt"
+      kind: "chart"
     });
     expect(useUiStore.getState().isSidebarOpen).toBe(false);
     expect(renderResult.container.querySelector(".chronicle-sidebar")).toBeNull();
@@ -1091,7 +1091,7 @@ describe("App", () => {
     Object.defineProperty(pointerUp, "pointerId", { value: 1 });
     window.dispatchEvent(pointerUp);
 
-    await waitFor(() => expect(updateGanttChartEntry).toHaveBeenCalledWith({
+    await waitFor(() => expect(updateChartEntry).toHaveBeenCalledWith({
       endValue: 1333,
       kind: "move",
       originalEndValue: 1332,
@@ -1103,10 +1103,10 @@ describe("App", () => {
   });
 
   it("chronicleチャートのバー編集は低速ドラッグで1年単位の細かな変更にする", async () => {
-    const updateGanttChartEntry = vi.fn().mockResolvedValue({ ok: true, value: [] });
+    const updateChartEntry = vi.fn().mockResolvedValue({ ok: true, value: [] });
 
     window.relic = makeRelicApi({
-      getWorkspaceChronicle: vi.fn().mockResolvedValue({
+      getWorkspaceCharts: vi.fn().mockResolvedValue({
         ok: true,
         value: [{
           entries: [{
@@ -1132,7 +1132,7 @@ describe("App", () => {
           path: "history/kamakura.md"
         }
       }),
-      updateGanttChartEntry
+      updateChartEntry
     });
 
     const { container } = await renderApp();
@@ -1159,7 +1159,7 @@ describe("App", () => {
     Object.defineProperty(pointerUp, "pointerId", { value: 1 });
     window.dispatchEvent(pointerUp);
 
-    await waitFor(() => expect(updateGanttChartEntry).toHaveBeenCalledWith({
+    await waitFor(() => expect(updateChartEntry).toHaveBeenCalledWith({
       endValue: 1333,
       kind: "move",
       originalEndValue: 1332,
@@ -1171,10 +1171,10 @@ describe("App", () => {
   });
 
   it("chronicleチャートのバー編集は高速ドラッグで大きく移動する", async () => {
-    const updateGanttChartEntry = vi.fn().mockResolvedValue({ ok: true, value: [] });
+    const updateChartEntry = vi.fn().mockResolvedValue({ ok: true, value: [] });
 
     window.relic = makeRelicApi({
-      getWorkspaceChronicle: vi.fn().mockResolvedValue({
+      getWorkspaceCharts: vi.fn().mockResolvedValue({
         ok: true,
         value: [{
           entries: [{
@@ -1200,7 +1200,7 @@ describe("App", () => {
           path: "history/kamakura.md"
         }
       }),
-      updateGanttChartEntry
+      updateChartEntry
     });
 
     const { container } = await renderApp();
@@ -1221,7 +1221,7 @@ describe("App", () => {
     Object.defineProperty(pointerUp, "pointerId", { value: 1 });
     window.dispatchEvent(pointerUp);
 
-    await waitFor(() => expect(updateGanttChartEntry).toHaveBeenCalledWith({
+    await waitFor(() => expect(updateChartEntry).toHaveBeenCalledWith({
       endValue: 1335,
       kind: "move",
       originalEndValue: 1332,
@@ -1232,9 +1232,9 @@ describe("App", () => {
     }));
   });
 
-  it("dateチャートは表示対象が空でも日付ガントを表示する", async () => {
+  it("dateチャートは表示対象が空でも日付チャートを表示する", async () => {
     window.relic = makeRelicApi({
-      getWorkspaceChronicle: vi.fn().mockResolvedValue({
+      getWorkspaceCharts: vi.fn().mockResolvedValue({
         ok: true,
         value: [{
           entries: [{
@@ -1282,7 +1282,7 @@ describe("App", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "カレンダー" }));
 
-    expect(useEditorStore.getState().leftPane.activeTabId).toBe("gantt-date");
+    expect(useEditorStore.getState().leftPane.activeTabId).toBe("chart-date");
     expect(container.querySelectorAll(".chronicle-file-name")).toHaveLength(1);
     expect(screen.getByText("計画")).toBeInTheDocument();
     expect(screen.getByText("実行")).toBeInTheDocument();
@@ -1312,7 +1312,7 @@ describe("App", () => {
 
   it("チャート面を掴んで横スクロールできる", async () => {
     window.relic = makeRelicApi({
-      getWorkspaceChronicle: vi.fn().mockResolvedValue({
+      getWorkspaceCharts: vi.fn().mockResolvedValue({
         ok: true,
         value: [{
           entries: [{
@@ -1361,7 +1361,7 @@ describe("App", () => {
 
   it("main側がdate行を返さない場合もMarkdownからplannedDateとactualDateを補完する", async () => {
     window.relic = makeRelicApi({
-      getWorkspaceChronicle: vi.fn().mockResolvedValue({
+      getWorkspaceCharts: vi.fn().mockResolvedValue({
         ok: true,
         value: [{
           entries: [],
@@ -1412,7 +1412,7 @@ describe("App", () => {
 
   it("main側がdate行を返さない場合も片方だけあるplannedDateまたはactualDateを補完する", async () => {
     window.relic = makeRelicApi({
-      getWorkspaceChronicle: vi.fn().mockResolvedValue({
+      getWorkspaceCharts: vi.fn().mockResolvedValue({
         ok: true,
         value: [{
           entries: [],
@@ -1466,7 +1466,7 @@ describe("App", () => {
   });
 
   it("チャートバーはクリックでファイルを開かずドラッグで日付範囲を更新する", async () => {
-    const updateGanttChartEntry = vi.fn().mockResolvedValue({
+    const updateChartEntry = vi.fn().mockResolvedValue({
       ok: true,
       value: [{
         entries: [{
@@ -1490,7 +1490,7 @@ describe("App", () => {
     });
 
     window.relic = makeRelicApi({
-      getWorkspaceChronicle: vi.fn().mockResolvedValue({
+      getWorkspaceCharts: vi.fn().mockResolvedValue({
         ok: true,
         value: [{
           entries: [{
@@ -1510,7 +1510,7 @@ describe("App", () => {
       }),
       getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace }),
       readMarkdownFile,
-      updateGanttChartEntry
+      updateChartEntry
     });
 
     const { container } = await renderApp();
@@ -1538,7 +1538,7 @@ describe("App", () => {
     Object.defineProperty(pointerUp, "pointerId", { value: 1 });
     window.dispatchEvent(pointerUp);
 
-    await waitFor(() => expect(updateGanttChartEntry).toHaveBeenCalledWith({
+    await waitFor(() => expect(updateChartEntry).toHaveBeenCalledWith({
       endValue: 20579,
       kind: "move",
       originalEndValue: 20578,
@@ -1551,13 +1551,13 @@ describe("App", () => {
   });
 
   it("チャートバーの保存に失敗した場合はエラーを表示する", async () => {
-    const updateGanttChartEntry = vi.fn().mockResolvedValue({
-      error: { code: "GANTT_ENTRY_UPDATE_FAILED", message: "チャートの変更を保存できませんでした。" },
+    const updateChartEntry = vi.fn().mockResolvedValue({
+      error: { code: "CHART_ENTRY_UPDATE_FAILED", message: "チャートの変更を保存できませんでした。" },
       ok: false
     });
 
     window.relic = makeRelicApi({
-      getWorkspaceChronicle: vi.fn().mockResolvedValue({
+      getWorkspaceCharts: vi.fn().mockResolvedValue({
         ok: true,
         value: [{
           entries: [{
@@ -1576,7 +1576,7 @@ describe("App", () => {
         }]
       }),
       getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace }),
-      updateGanttChartEntry
+      updateChartEntry
     });
 
     const { container } = await renderApp();
@@ -1611,7 +1611,7 @@ describe("App", () => {
     const writeMarkdownFile = vi.fn().mockResolvedValue({ ok: true, value: undefined });
 
     window.relic = makeRelicApi({
-      getWorkspaceChronicle: vi.fn().mockResolvedValue({
+      getWorkspaceCharts: vi.fn().mockResolvedValue({
         ok: true,
         value: [{
           entries: [{
@@ -1631,7 +1631,7 @@ describe("App", () => {
       }),
       getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace }),
       readMarkdownFile,
-      updateGanttChartEntry: undefined,
+      updateChartEntry: undefined,
       writeMarkdownFile
     } as Partial<typeof window.relic>);
 
@@ -1660,7 +1660,7 @@ describe("App", () => {
 
   it("旧形式の年表データが返っても年表タブを表示できる", async () => {
     window.relic = makeRelicApi({
-      getWorkspaceChronicle: vi.fn().mockResolvedValue({
+      getWorkspaceCharts: vi.fn().mockResolvedValue({
         ok: true,
         value: [{ endYear: 1333, fileName: "鎌倉時代", path: "history/kamakura.md", startYear: 1185 }]
       }),

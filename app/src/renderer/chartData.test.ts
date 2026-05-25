@@ -1,18 +1,18 @@
 import { describe, expect, it, vi } from "vitest";
 
-import type { UpdateGanttChartEntryInput, WorkspaceTreeNode } from "../shared/ipc";
+import type { UpdateChartEntryInput, WorkspaceTreeNode } from "../shared/ipc";
 import {
-  normalizeWorkspaceGanttCharts,
-  normalizeWorkspaceGanttChartsWithFiles,
+  normalizeWorkspaceCharts,
+  normalizeWorkspaceChartsWithFiles,
   readDateChartEntriesFromFiles,
   updateChartFrontmatter,
-  updateGanttChartEntryFallback
-} from "./ganttChartData";
+  updateChartEntryFallback
+} from "./chartData";
 
 const day = (value: string): number =>
   Math.floor(new Date(`${value}T00:00:00.000Z`).getTime() / 86_400_000);
 
-function dateEditInput(overrides: Partial<UpdateGanttChartEntryInput> = {}): UpdateGanttChartEntryInput {
+function dateEditInput(overrides: Partial<UpdateChartEntryInput> = {}): UpdateChartEntryInput {
   return {
     dateKind: "planned",
     endValue: day("2026-05-06"),
@@ -26,7 +26,7 @@ function dateEditInput(overrides: Partial<UpdateGanttChartEntryInput> = {}): Upd
   };
 }
 
-function chronicleEditInput(overrides: Partial<UpdateGanttChartEntryInput> = {}): UpdateGanttChartEntryInput {
+function chronicleEditInput(overrides: Partial<UpdateChartEntryInput> = {}): UpdateChartEntryInput {
   return {
     endValue: 2026,
     kind: "move",
@@ -39,9 +39,9 @@ function chronicleEditInput(overrides: Partial<UpdateGanttChartEntryInput> = {})
   };
 }
 
-describe("ganttChartData", () => {
+describe("chartData", () => {
   it("旧形式 chronicle 配列を現行チャートへ正規化する", () => {
-    const charts = normalizeWorkspaceGanttCharts([
+    const charts = normalizeWorkspaceCharts([
       { endYear: 1333, fileName: "鎌倉時代", path: "history/kamakura.md", startYear: 1185 }
     ]);
 
@@ -86,7 +86,7 @@ describe("ganttChartData", () => {
       }
     }));
 
-    const charts = await normalizeWorkspaceGanttChartsWithFiles(
+    const charts = await normalizeWorkspaceChartsWithFiles(
       [{ entries: [], filePaths: [], id: "date", name: "date", source: "date" }],
       fileTree,
       readMarkdownFile
@@ -233,10 +233,10 @@ describe("ganttChartData", () => {
       }
     }));
     const writeMarkdownFile = vi.fn(async () => ({ ok: true as const, value: undefined }));
-    const getWorkspaceChronicle = vi.fn(async () => ({ ok: true as const, value: charts }));
+    const getWorkspaceCharts = vi.fn(async () => ({ ok: true as const, value: charts }));
 
-    await expect(updateGanttChartEntryFallback(dateEditInput(), {
-      getWorkspaceChronicle,
+    await expect(updateChartEntryFallback(dateEditInput(), {
+      getWorkspaceCharts,
       readMarkdownFile,
       writeMarkdownFile
     })).resolves.toEqual({ ok: true, value: charts });
@@ -256,10 +256,10 @@ describe("ganttChartData", () => {
       }
     }));
     const writeMarkdownFile = vi.fn(async () => ({ ok: true as const, value: undefined }));
-    const getWorkspaceChronicle = vi.fn(async () => ({ ok: true as const, value: [] }));
+    const getWorkspaceCharts = vi.fn(async () => ({ ok: true as const, value: [] }));
 
-    await expect(updateGanttChartEntryFallback(dateEditInput(), {
-      getWorkspaceChronicle,
+    await expect(updateChartEntryFallback(dateEditInput(), {
+      getWorkspaceCharts,
       readMarkdownFile,
       writeMarkdownFile
     })).resolves.toMatchObject({
@@ -286,9 +286,9 @@ describe("ganttChartData", () => {
       }
     }));
     const writeMarkdownFile = vi.fn(async () => ({ ok: true as const, value: undefined }));
-    const getWorkspaceChronicle = vi.fn(async () => ({ ok: true as const, value: charts }));
+    const getWorkspaceCharts = vi.fn(async () => ({ ok: true as const, value: charts }));
 
-    await expect(updateGanttChartEntryFallback(chronicleEditInput({
+    await expect(updateChartEntryFallback(chronicleEditInput({
       chronicleCalendarId: "chronicle1",
       chronicleCalendarStartYear: 100,
       endValue: 102,
@@ -296,7 +296,7 @@ describe("ganttChartData", () => {
       originalStartValue: 101,
       startValue: 102
     }), {
-      getWorkspaceChronicle,
+      getWorkspaceCharts,
       readMarkdownFile,
       writeMarkdownFile
     })).resolves.toEqual({ ok: true, value: charts });

@@ -35,10 +35,10 @@ const panelTab: Tab = {
   panel: "frontmatter"
 };
 
-const ganttTab: Tab = {
+const chartTab: Tab = {
   chartId: "chronicle",
-  id: "gantt-chronicle",
-  kind: "gantt",
+  id: "chart-chronicle",
+  kind: "chart",
   name: "Chronicle"
 };
 
@@ -72,7 +72,7 @@ function renderPaneView(overrides: Partial<PaneViewProps> = {}): PaneViewProps {
     frontmatterCandidates: {},
     isSplitView: false,
     pane: "left",
-    renderGanttChartTab: (chartId) => <div>Gantt {chartId}</div>,
+    renderChartTab: (chartId) => <div>Chart {chartId}</div>,
     renderPanelTab: (panel) => <div>Panel {panel}</div>,
     renderPanelTabIcon: () => <svg data-testid="panel-tab-icon" />,
     sourceMode: false,
@@ -190,7 +190,7 @@ describe("PaneView", () => {
     expect(props.onCloseAllTabs).toHaveBeenCalled();
   });
 
-  it("renders file, panel, gantt, and empty pane surfaces", () => {
+  it("renders file, panel, chart, and empty pane surfaces", () => {
     setPaneState(
       { [fileTab.id]: fileTab },
       { activeTabId: fileTab.id, history: [fileTab.id], tabIds: [fileTab.id] }
@@ -209,11 +209,11 @@ describe("PaneView", () => {
 
     cleanup();
     setPaneState(
-      { [ganttTab.id]: ganttTab },
-      { activeTabId: ganttTab.id, history: [ganttTab.id], tabIds: [ganttTab.id] }
+      { [chartTab.id]: chartTab },
+      { activeTabId: chartTab.id, history: [chartTab.id], tabIds: [chartTab.id] }
     );
     renderPaneView();
-    expect(screen.getByText("Gantt chronicle")).toBeInTheDocument();
+    expect(screen.getByText("Chart chronicle")).toBeInTheDocument();
 
     cleanup();
     setPaneState({}, emptyPane());

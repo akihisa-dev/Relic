@@ -31,7 +31,7 @@ import {
   getWorkspaceStateChannel
 } from "../../shared/ipc";
 import { writeAppSettings } from "../settings/appSettings";
-import { defaultGanttCharts, writeWorkspaceSettings } from "../settings/workspaceSettings";
+import { defaultCharts, writeWorkspaceSettings } from "../settings/workspaceSettings";
 import { addOrActivateWorkspace, createWorkspaceSummary } from "../workspace/workspaceService";
 import { registerWorkspaceHandlers } from "./workspaceHandlers";
 
@@ -74,7 +74,7 @@ describe("workspaceHandlers", () => {
     await writeAppSettings(userDataPath, settings);
     await writeWorkspaceSettings(userDataPath, workspace.id, {
       chronicleCalendars: defaultChronicleCalendars,
-      ganttCharts: defaultGanttCharts,
+      charts: defaultCharts,
       pinnedPaths: ["読書メモ.md"],
       workspacePath
     });

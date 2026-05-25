@@ -13,7 +13,7 @@ import {
   getEditorSettingsChannel,
   getFrontmatterValueCandidatesChannel,
   getWorkspaceAliasesChannel,
-  getWorkspaceChronicleChannel,
+  getWorkspaceChartsChannel,
   getWorkspaceChronicleCalendarsChannel,
   getLinkUpdateImpactChannel,
   getWorkspaceTagsChannel,
@@ -32,9 +32,9 @@ import {
   renameMarkdownFileChannel,
   replaceInFileChannel,
   revealWorkspaceItemChannel,
-  saveWorkspaceGanttChartsChannel,
+  saveWorkspaceChartsChannel,
   saveWorkspaceChronicleCalendarsChannel,
-  updateGanttChartEntryChannel,
+  updateChartEntryChannel,
   saveEditorSettingsChannel,
   generateTitleListChannel,
   type GenerateTitleListInput,
@@ -67,10 +67,10 @@ import {
   type Backlink,
   type ChronicleCalendarSettings,
   type GetBacklinksInput,
-  type GanttChartSettings,
+  type ChartSettings,
   type LinkUpdateImpact,
   type LinkUpdateImpactInput,
-  type UpdateGanttChartEntryInput,
+  type UpdateChartEntryInput,
   type MarkdownFileContent,
   type MoveFolderInput,
   type MoveItemToTrashInput,
@@ -93,7 +93,7 @@ import {
   type WindowCloseRequestEvent,
   type WindowCloseResponseInput,
   type WorkspaceState,
-  type WorkspaceGanttChart,
+  type WorkspaceChart,
   type WorkspaceSearchResultSet,
   type WorkspaceTagSummary,
   type WriteMarkdownFileInput
@@ -127,8 +127,8 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(getEditorSettingsChannel) as Promise<RelicResult<EditorSettings>>,
   getWorkspaceAliases: () =>
     ipcRenderer.invoke(getWorkspaceAliasesChannel) as Promise<RelicResult<AliasIndex>>,
-  getWorkspaceChronicle: () =>
-    ipcRenderer.invoke(getWorkspaceChronicleChannel) as Promise<RelicResult<WorkspaceGanttChart[]>>,
+  getWorkspaceCharts: () =>
+    ipcRenderer.invoke(getWorkspaceChartsChannel) as Promise<RelicResult<WorkspaceChart[]>>,
   getWorkspaceChronicleCalendars: () =>
     ipcRenderer.invoke(getWorkspaceChronicleCalendarsChannel) as Promise<RelicResult<ChronicleCalendarSettings[]>>,
   getFrontmatterValueCandidates: () =>
@@ -183,10 +183,10 @@ const relicApi: RelicApi = {
   writeClipboardText: (text: string) => clipboard.writeText(text),
   saveWorkspaceChronicleCalendars: (input: ChronicleCalendarSettings[]) =>
     ipcRenderer.invoke(saveWorkspaceChronicleCalendarsChannel, input) as Promise<RelicResult<ChronicleCalendarSettings[]>>,
-  saveWorkspaceGanttCharts: (input: GanttChartSettings[]) =>
-    ipcRenderer.invoke(saveWorkspaceGanttChartsChannel, input) as Promise<RelicResult<WorkspaceGanttChart[]>>,
-  updateGanttChartEntry: (input: UpdateGanttChartEntryInput) =>
-    ipcRenderer.invoke(updateGanttChartEntryChannel, input) as Promise<RelicResult<WorkspaceGanttChart[]>>,
+  saveWorkspaceCharts: (input: ChartSettings[]) =>
+    ipcRenderer.invoke(saveWorkspaceChartsChannel, input) as Promise<RelicResult<WorkspaceChart[]>>,
+  updateChartEntry: (input: UpdateChartEntryInput) =>
+    ipcRenderer.invoke(updateChartEntryChannel, input) as Promise<RelicResult<WorkspaceChart[]>>,
   generateTitleList: (input: GenerateTitleListInput) =>
     ipcRenderer.invoke(generateTitleListChannel, input) as Promise<RelicResult<string>>,
   generateTableOfContents: (input: GenerateTableOfContentsInput) =>

@@ -1,12 +1,12 @@
-import type { UpdateGanttChartEntryInput, WorkspaceGanttChart } from "../shared/ipc";
+import type { UpdateChartEntryInput, WorkspaceChart } from "../shared/ipc";
 import type { RelicResult } from "../shared/result";
 import { updateChartFrontmatterContent } from "../shared/chartFrontmatterUpdate";
-import type { GanttChartEntryFallbackApi } from "./ganttChartApi";
+import type { ChartEntryFallbackApi } from "./chartApi";
 
-export async function updateGanttChartEntryFallback(
-  input: UpdateGanttChartEntryInput,
-  relic: GanttChartEntryFallbackApi
-): Promise<RelicResult<WorkspaceGanttChart[]>> {
+export async function updateChartEntryFallback(
+  input: UpdateChartEntryInput,
+  relic: ChartEntryFallbackApi
+): Promise<RelicResult<WorkspaceChart[]>> {
   const file = await relic.readMarkdownFile({ path: input.path });
 
   if (!file.ok) return { error: file.error, ok: false };
@@ -25,7 +25,7 @@ export async function updateGanttChartEntryFallback(
 
   if (!write.ok) return { error: write.error, ok: false };
 
-  const charts = await relic.getWorkspaceChronicle();
+  const charts = await relic.getWorkspaceCharts();
 
   if (!charts.ok) return { error: charts.error, ok: false };
 

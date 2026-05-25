@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { GanttChartEntry } from "../shared/ipc";
+import type { ChartEntry } from "../shared/ipc";
 import {
   buildChartRows,
   dateKindPatch,
@@ -11,7 +11,7 @@ import {
   statusValuesForEntries
 } from "./chronicleTimelineRows";
 
-function entry(overrides: Partial<GanttChartEntry> = {}): GanttChartEntry {
+function entry(overrides: Partial<ChartEntry> = {}): ChartEntry {
   return {
     endLabel: "2026-05-05",
     endValue: 20_848,

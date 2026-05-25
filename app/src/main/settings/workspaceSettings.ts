@@ -6,25 +6,29 @@ import {
   defaultChronicleCalendars,
   type ChronicleCalendarId,
   type ChronicleCalendarSettings,
-  type GanttChartSettings,
-  type GanttChartSource
+  type ChartSettings,
+  type ChartSource
 } from "../../shared/ipc";
 
 export interface WorkspaceSettings {
   chronicleCalendars: ChronicleCalendarSettings[];
-  ganttCharts: GanttChartSettings[];
+  charts: ChartSettings[];
   pinnedPaths: string[];
   workspacePath: string;
 }
 
-export const defaultGanttCharts: GanttChartSettings[] = [
+type PersistedWorkspaceSettings = Partial<WorkspaceSettings> & {
+  ganttCharts?: unknown;
+};
+
+export const defaultCharts: ChartSettings[] = [
   { filePaths: [], id: "chronicle", name: "chronicle", source: "chronicle" },
   { filePaths: [], id: "date", name: "date", source: "date" }
 ];
 
 const defaultWorkspaceSettings: WorkspaceSettings = {
   chronicleCalendars: defaultChronicleCalendars,
-  ganttCharts: defaultGanttCharts,
+  charts: defaultCharts,
   pinnedPaths: [],
   workspacePath: ""
 };
@@ -41,11 +45,11 @@ export async function readWorkspaceSettings(
 
   try {
     const raw = await readFile(settingsPath, "utf8");
-    const parsed = JSON.parse(raw) as Partial<WorkspaceSettings>;
+    const parsed = JSON.parse(raw) as PersistedWorkspaceSettings;
 
     return {
       chronicleCalendars: parseChronicleCalendars(parsed.chronicleCalendars),
-      ganttCharts: parseGanttCharts(parsed.ganttCharts),
+      charts: parseCharts(parsed.charts ?? parsed.ganttCharts),
       pinnedPaths: Array.isArray(parsed.pinnedPaths)
         ? parsed.pinnedPaths.filter((p) => typeof p === "string")
         : [],
@@ -93,10 +97,10 @@ export function parseChronicleCalendars(raw: unknown): ChronicleCalendarSettings
   return [main, ...subs];
 }
 
-export function parseGanttCharts(raw: unknown): GanttChartSettings[] {
-  if (!Array.isArray(raw)) return defaultGanttCharts;
+export function parseCharts(raw: unknown): ChartSettings[] {
+  if (!Array.isArray(raw)) return defaultCharts;
 
-  const parsed = raw.flatMap((chart): GanttChartSettings[] => {
+  const parsed = raw.flatMap((chart): ChartSettings[] => {
     if (typeof chart !== "object" || chart === null) return [];
 
     const candidate = chart as Record<string, unknown>;
@@ -104,17 +108,17 @@ export function parseGanttCharts(raw: unknown): GanttChartSettings[] {
     const name = typeof candidate.name === "string" ? candidate.name.trim() : "";
     const source = candidate.source;
 
-    if (!id || !isGanttChartSource(source)) return [];
+    if (!id || !isChartSource(source)) return [];
 
     return [{
-      filePaths: parseGanttChartFilePaths(candidate.filePaths),
+      filePaths: parseChartFilePaths(candidate.filePaths),
       id,
-      name: name || defaultGanttChartName(source),
+      name: name || defaultChartName(source),
       source
     }];
   });
 
-  return defaultGanttCharts.map((defaultChart) => {
+  return defaultCharts.map((defaultChart) => {
     const saved = parsed.find((chart) => chart.id === defaultChart.id || chart.source === defaultChart.source);
 
     return {
@@ -124,13 +128,13 @@ export function parseGanttCharts(raw: unknown): GanttChartSettings[] {
   });
 }
 
-function parseGanttChartFilePaths(raw: unknown): string[] | undefined {
+function parseChartFilePaths(raw: unknown): string[] | undefined {
   if (!Array.isArray(raw)) return undefined;
 
   return Array.from(new Set(raw.filter((path) => typeof path === "string")));
 }
 
-function isGanttChartSource(value: unknown): value is GanttChartSource {
+function isChartSource(value: unknown): value is ChartSource {
   return value === "chronicle" || value === "date";
 }
 
@@ -138,8 +142,8 @@ function isChronicleCalendarId(value: string): value is ChronicleCalendarId {
   return chronicleCalendarIds.includes(value as ChronicleCalendarId);
 }
 
-function defaultGanttChartName(source: GanttChartSource): string {
-  return source === "date" ? "日付ガント" : "年表";
+function defaultChartName(source: ChartSource): string {
+  return source === "date" ? "日付チャート" : "年表";
 }
 
 export async function writeWorkspaceSettings(

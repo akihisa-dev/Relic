@@ -1,7 +1,7 @@
 import type { ReactElement } from "react";
 
 import { useT } from "../i18n";
-import type { TitleListDraft, TocDraft } from "../toolsSidebarModel";
+import type { TitleListDraft, TocDraft } from "../toolsPanelModel";
 import { ToolStatus } from "./ToolStatus";
 
 export function TitleListToolSection({

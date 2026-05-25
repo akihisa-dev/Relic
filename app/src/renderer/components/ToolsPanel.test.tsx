@@ -3,12 +3,12 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { makeRelicApi } from "../../test/rendererTestUtils";
 import { I18nProvider } from "../i18n";
-import { ToolsSidebar } from "./ToolsSidebar";
+import { ToolsPanel } from "./ToolsPanel";
 
-function renderToolsSidebar(language: "en" | "ja" = "en", workspacePath: string | null = "/tmp/notes") {
+function renderToolsPanel(language: "en" | "ja" = "en", workspacePath: string | null = "/tmp/notes") {
   return render(
     <I18nProvider language={language}>
-      <ToolsSidebar workspacePath={workspacePath} />
+      <ToolsPanel workspacePath={workspacePath} />
     </I18nProvider>
   );
 }
@@ -23,7 +23,7 @@ function sectionBlock(heading: string): HTMLElement {
   return block as HTMLElement;
 }
 
-describe("ToolsSidebar", () => {
+describe("ToolsPanel", () => {
   afterEach(() => {
     cleanup();
     vi.restoreAllMocks();
@@ -33,7 +33,7 @@ describe("ToolsSidebar", () => {
     const generateTitleList = vi.fn();
     window.relic = makeRelicApi({ generateTitleList });
 
-    renderToolsSidebar("en", null);
+    renderToolsPanel("en", null);
 
     expect(screen.getByText("Open a workspace first.")).toBeInTheDocument();
     expect(generateTitleList).not.toHaveBeenCalled();
@@ -44,7 +44,7 @@ describe("ToolsSidebar", () => {
     const generateTableOfContents = vi.fn().mockResolvedValue({ ok: true, value: "Toc.md" });
     window.relic = makeRelicApi({ generateTableOfContents, generateTitleList });
 
-    renderToolsSidebar("en");
+    renderToolsPanel("en");
 
     const titleList = sectionBlock("Title List");
     fireEvent.change(within(titleList).getByLabelText("Folder"), { target: { value: "Drafts" } });
@@ -84,7 +84,7 @@ describe("ToolsSidebar", () => {
     const mergeFiles = vi.fn().mockResolvedValue({ ok: true, value: "merged.md" });
     window.relic = makeRelicApi({ mergeFiles });
 
-    renderToolsSidebar("ja");
+    renderToolsPanel("ja");
 
     fireEvent.change(screen.getByLabelText("フィルター"), { target: { value: "frontmatter" } });
     fireEvent.change(screen.getByLabelText("フロントマターフィールド"), { target: { value: "status" } });
@@ -104,7 +104,7 @@ describe("ToolsSidebar", () => {
     const splitFileByHeading = vi.fn().mockResolvedValue({ ok: true, value: ["A.md", "B.md"] });
     window.relic = makeRelicApi({ splitFileByHeading });
 
-    renderToolsSidebar("en");
+    renderToolsPanel("en");
 
     const split = sectionBlock("Split by Heading");
     fireEvent.click(within(split).getByRole("button", { name: "Split by Heading" }));

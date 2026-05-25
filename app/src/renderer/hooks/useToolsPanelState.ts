@@ -17,11 +17,11 @@ import {
   type SplitFileDraft,
   type TitleListDraft,
   type TocDraft
-} from "../toolsSidebarModel";
+} from "../toolsPanelModel";
 
 type DraftSetter<T> = <K extends keyof T>(key: K, value: T[K]) => void;
 
-export interface UseToolsSidebarStateResult {
+export interface UseToolsPanelStateResult {
   handleGenerateTitleList: () => Promise<void>;
   handleGenerateToc: () => Promise<void>;
   handleMergeFiles: () => Promise<void>;
@@ -44,7 +44,7 @@ export interface UseToolsSidebarStateResult {
   tocStatus: string | null;
 }
 
-export function useToolsSidebarState(workspacePath: string | null, t: Translator): UseToolsSidebarStateResult {
+export function useToolsPanelState(workspacePath: string | null, t: Translator): UseToolsPanelStateResult {
   const [titleListDraft, setTitleListDraft] = useState(() => createDefaultTitleListDraft(t));
   const [titleListStatus, setTitleListStatus] = useState<string | null>(null);
   const [tocDraft, setTocDraft] = useState(() => createDefaultTocDraft(t));

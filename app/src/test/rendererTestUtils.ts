@@ -41,7 +41,7 @@ export function resetRendererStores(): void {
     isSidebarOpen: true,
     isTypewriterMode: false,
     rightPanelView: "outline",
-    selectedGanttChartId: null
+    selectedChartId: null
   });
 }
 
@@ -64,7 +64,7 @@ export function makeRelicApi(overrides: Partial<typeof window.relic> = {}): type
     getLinkUpdateImpact: vi.fn().mockResolvedValue({ ok: true, value: { fileCount: 0, linkCount: 0 } }),
     getUserDefinedFields: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     getWorkspaceAliases: vi.fn().mockResolvedValue({ ok: true, value: {} }),
-    getWorkspaceChronicle: vi.fn().mockResolvedValue({ ok: true, value: [] }),
+    getWorkspaceCharts: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     getWorkspaceChronicleCalendars: vi.fn().mockResolvedValue({ ok: true, value: [{ id: "chronicle0", name: "メイン暦" }] }),
     getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: { activeWorkspace: null, fileTree: [], pinnedPaths: [], workspaces: [] } }),
     getWorkspaceTags: vi.fn().mockResolvedValue({ ok: true, value: [] }),
@@ -97,13 +97,13 @@ export function makeRelicApi(overrides: Partial<typeof window.relic> = {}): type
     saveFrontmatterTemplates: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
     saveUserDefinedFields: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
     saveWorkspaceChronicleCalendars: vi.fn().mockResolvedValue({ ok: true, value: [{ id: "chronicle0", name: "メイン暦" }] }),
-    saveWorkspaceGanttCharts: vi.fn().mockResolvedValue({ ok: true, value: [] }),
+    saveWorkspaceCharts: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     searchAndReplace: vi.fn(),
     searchWorkspace: vi.fn().mockResolvedValue({ ok: true, value: { results: [], skippedLargeFiles: 0, truncated: false } }),
     splitFileByHeading: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     switchWorkspace: vi.fn(),
     togglePin: vi.fn().mockResolvedValue({ ok: true, value: { activeWorkspace: null, fileTree: [], pinnedPaths: [], workspaces: [] } }),
-    updateGanttChartEntry: vi.fn().mockResolvedValue({ ok: true, value: [] }),
+    updateChartEntry: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     writeClipboardText: vi.fn(),
     writeMarkdownFile: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
     ...overrides

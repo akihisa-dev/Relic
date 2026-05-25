@@ -1,6 +1,6 @@
 import type { ReactElement } from "react";
 
-import { isToolStatusError } from "../toolsSidebarModel";
+import { isToolStatusError } from "../toolsPanelModel";
 
 export function ToolStatus({ status }: { status: string | null }): ReactElement | null {
   if (!status) return null;

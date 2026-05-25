@@ -4,16 +4,16 @@ import path from "node:path";
 import {
   defaultChronicleCalendars,
   type ChronicleCalendarSettings,
-  type GanttChartEntry,
-  type GanttChartSettings,
-  type UpdateGanttChartEntryInput,
-  type WorkspaceGanttChart
+  type ChartEntry,
+  type ChartSettings,
+  type UpdateChartEntryInput,
+  type WorkspaceChart
 } from "../../shared/ipc";
 import { updateChartFrontmatterContent } from "../../shared/chartFrontmatterUpdate";
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { collectMarkdownPaths } from "../../shared/workspaceTree";
 import {
-  collectGanttEntriesForMarkdown,
+  collectChartEntriesForMarkdown,
   sortChronicleEntries,
   sortDateEntries
 } from "./chronicleData";
@@ -22,14 +22,14 @@ import { resolveWorkspaceRelativePath } from "./paths";
 
 export { extractChronicleRange, extractDateRange } from "./chronicleData";
 
-export async function readWorkspaceChronicle(
+export async function readWorkspaceCharts(
   workspacePath: string,
-  charts: GanttChartSettings[],
+  charts: ChartSettings[],
   calendars: ChronicleCalendarSettings[] = defaultChronicleCalendars
-): Promise<RelicResult<WorkspaceGanttChart[]>> {
+): Promise<RelicResult<WorkspaceChart[]>> {
   try {
     const fileTree = await readWorkspaceFileTree(workspacePath);
-    const entriesBySource: Record<GanttChartSettings["source"], GanttChartEntry[]> = {
+    const entriesBySource: Record<ChartSettings["source"], ChartEntry[]> = {
       chronicle: [],
       date: []
     };
@@ -40,7 +40,7 @@ export async function readWorkspaceChronicle(
       if (!absolutePath.ok) continue;
 
       const content = await readFile(absolutePath.value, "utf8");
-      const fileEntries = collectGanttEntriesForMarkdown(relativePath, content, calendars);
+      const fileEntries = collectChartEntriesForMarkdown(relativePath, content, calendars);
       entriesBySource.chronicle.push(...fileEntries.chronicle);
       entriesBySource.date.push(...fileEntries.date);
     }
@@ -57,18 +57,18 @@ export async function readWorkspaceChronicle(
   } catch (error) {
     return fail(
       "CHRONICLE_READ_FAILED",
-      "年表を読み込めませんでした。",
+      "チャートを読み込めませんでした。",
       error instanceof Error ? error.message : String(error)
     );
   }
 }
 
-export async function updateWorkspaceGanttChartEntry(
+export async function updateWorkspaceChartEntry(
   workspacePath: string,
-  charts: GanttChartSettings[],
-  input: UpdateGanttChartEntryInput,
+  charts: ChartSettings[],
+  input: UpdateChartEntryInput,
   calendars: ChronicleCalendarSettings[] = defaultChronicleCalendars
-): Promise<RelicResult<WorkspaceGanttChart[]>> {
+): Promise<RelicResult<WorkspaceChart[]>> {
   try {
     const absolutePath = resolveWorkspaceRelativePath(workspacePath, input.path);
 
@@ -77,7 +77,7 @@ export async function updateWorkspaceGanttChartEntry(
     }
 
     if (path.extname(absolutePath.value) !== ".md") {
-      return fail("GANTT_ENTRY_NOT_MARKDOWN", "Markdownファイル以外は更新できません。");
+      return fail("CHART_ENTRY_NOT_MARKDOWN", "Markdownファイル以外は更新できません。");
     }
 
     const content = await readFile(absolutePath.value, "utf8");
@@ -87,10 +87,10 @@ export async function updateWorkspaceGanttChartEntry(
 
     await writeFile(absolutePath.value, nextContent.value, "utf8");
 
-    return readWorkspaceChronicle(workspacePath, charts, calendars);
+    return readWorkspaceCharts(workspacePath, charts, calendars);
   } catch (error) {
     return fail(
-      "GANTT_ENTRY_UPDATE_FAILED",
+      "CHART_ENTRY_UPDATE_FAILED",
       "チャートの変更をファイルへ保存できませんでした。",
       error instanceof Error ? error.message : String(error)
     );

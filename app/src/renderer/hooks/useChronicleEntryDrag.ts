@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { PointerEvent } from "react";
 
-import type { GanttChartEntry, GanttChartEntryEditKind, GanttChartSource, UpdateGanttChartEntryInput } from "../../shared/ipc";
+import type { ChartEntry, ChartEntryEditKind, ChartSource, UpdateChartEntryInput } from "../../shared/ipc";
 import {
   createAdaptiveChroniclePointerDelta,
   createStablePointerDelta,
@@ -11,8 +11,8 @@ import {
 } from "../chronicleTimeline";
 
 interface UseChronicleEntryDragInput {
-  activeSource: GanttChartSource;
-  onUpdateEntry?: (input: UpdateGanttChartEntryInput) => Promise<void> | void;
+  activeSource: ChartSource;
+  onUpdateEntry?: (input: UpdateChartEntryInput) => Promise<void> | void;
   resetKey: string | null;
   unitWidth: number;
 }
@@ -21,8 +21,8 @@ export interface ChronicleEntryDrag {
   dragPreview: DragPreview | null;
   startEntryEdit: (
     event: PointerEvent<HTMLElement>,
-    entry: GanttChartEntry,
-    kind: GanttChartEntryEditKind
+    entry: ChartEntry,
+    kind: ChartEntryEditKind
   ) => void;
 }
 
@@ -40,8 +40,8 @@ export function useChronicleEntryDrag({
 
   const startEntryEdit = useCallback((
     event: PointerEvent<HTMLElement>,
-    entry: GanttChartEntry,
-    kind: GanttChartEntryEditKind
+    entry: ChartEntry,
+    kind: ChartEntryEditKind
   ): void => {
     if (event.button > 0 || !onUpdateEntry) return;
 

@@ -7,7 +7,7 @@ import { FrontmatterFieldAddForm } from "./FrontmatterFieldAddForm";
 import { FrontmatterFieldList } from "./FrontmatterFieldList";
 import { FrontmatterFixedFields } from "./FrontmatterFixedFields";
 
-export function FrontmatterSidebar({
+export function FrontmatterPanel({
   userDefinedFields,
   onUserDefinedFieldsSave
 }: {

@@ -16,7 +16,7 @@ interface PaneContentSurfaceProps {
   editorActionPulse: number;
   editorSettings: EditorSettings;
   frontmatterCandidates: Record<string, string[]>;
-  renderGanttChartTab: (chartId: string) => ReactNode;
+  renderChartTab: (chartId: string) => ReactNode;
   renderPanelTab: (panel: PanelTabKind) => ReactNode;
   sourceMode: boolean;
   typewriterMode: boolean;
@@ -39,7 +39,7 @@ export function PaneContentSurface({
   editorActionPulse,
   editorSettings,
   frontmatterCandidates,
-  renderGanttChartTab,
+  renderChartTab,
   renderPanelTab,
   sourceMode,
   typewriterMode,
@@ -140,11 +140,11 @@ export function PaneContentSurface({
     );
   }
 
-  if (activeTab?.kind === "gantt") {
+  if (activeTab?.kind === "chart") {
     return (
       <div className="editor-surface panel-tab-surface">
         <div className="panel-tab-body">
-          {renderGanttChartTab(activeTab.chartId)}
+          {renderChartTab(activeTab.chartId)}
         </div>
       </div>
     );

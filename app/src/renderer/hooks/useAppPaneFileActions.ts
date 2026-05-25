@@ -10,7 +10,7 @@ interface UseAppPaneFileActionsInput {
   handleDuplicateTreeFile: (path: string) => void;
   isSplit: boolean;
   openFileInPane: (pane: PaneId, file: MarkdownFileContent) => void;
-  openGanttChartInPane: (pane: PaneId, chart: { id: string; name: string }) => void;
+  openChartInPane: (pane: PaneId, chart: { id: string; name: string }) => void;
   openPanelInPane: (pane: PaneId, panel: PanelTabKind, name: string) => void;
   setLeftPaneScrollHeading: (heading: string | undefined) => void;
   setRightPaneScrollHeading: (heading: string | undefined) => void;
@@ -29,7 +29,7 @@ export function useAppPaneFileActions({
   handleDuplicateTreeFile,
   isSplit,
   openFileInPane,
-  openGanttChartInPane,
+  openChartInPane,
   openPanelInPane,
   setLeftPaneScrollHeading,
   setRightPaneScrollHeading,
@@ -57,9 +57,9 @@ export function useAppPaneFileActions({
     } else if (tab.kind === "panel") {
       openPanelInPane(otherPane, tab.panel, tab.name);
     } else {
-      openGanttChartInPane(otherPane, { id: tab.chartId, name: tab.name });
+      openChartInPane(otherPane, { id: tab.chartId, name: tab.name });
     }
-  }, [tabs, isSplit, openFileInPane, openGanttChartInPane, openPanelInPane]);
+  }, [tabs, isSplit, openFileInPane, openChartInPane, openPanelInPane]);
 
   const openTreeFileInOtherPane = useCallback((path: string): void => {
     if (!window.relic || !isSplit) return;

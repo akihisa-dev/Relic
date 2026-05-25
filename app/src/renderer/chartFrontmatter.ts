@@ -1,7 +1,7 @@
-import type { UpdateGanttChartEntryInput } from "../shared/ipc";
+import type { UpdateChartEntryInput } from "../shared/ipc";
 import { updateChartFrontmatterContent, splitFrontmatterBlock } from "../shared/chartFrontmatterUpdate";
 
-export function updateChartFrontmatter(content: string, input: UpdateGanttChartEntryInput): string {
+export function updateChartFrontmatter(content: string, input: UpdateChartEntryInput): string {
   const result = updateChartFrontmatterContent(content, input);
   if (!result.ok) throw new Error(result.error.message);
   return result.value;

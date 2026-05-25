@@ -3,10 +3,10 @@ import { describe, expect, it, vi } from "vitest";
 
 import { defaultEditorSettings, defaultFeatureToggles, type UserDefinedField } from "../../shared/ipc";
 import { I18nProvider } from "../i18n";
-import { FrontmatterSidebar } from "./FrontmatterSidebar";
-import { SettingsSidebar } from "./SettingsSidebar";
+import { FrontmatterPanel } from "./FrontmatterPanel";
+import { SettingsPanel } from "./SettingsPanel";
 
-function renderFrontmatterSidebar({
+function renderFrontmatterPanel({
   userDefinedFields = [],
   onUserDefinedFieldsSave = vi.fn()
 }: {
@@ -15,7 +15,7 @@ function renderFrontmatterSidebar({
 } = {}) {
   render(
     <I18nProvider language="en">
-      <FrontmatterSidebar
+      <FrontmatterPanel
         onUserDefinedFieldsSave={onUserDefinedFieldsSave}
         userDefinedFields={userDefinedFields}
       />
@@ -23,9 +23,9 @@ function renderFrontmatterSidebar({
   );
 }
 
-describe("FrontmatterSidebar", () => {
+describe("FrontmatterPanel", () => {
   it("入力タイプを通常の名前で表示する", () => {
-    renderFrontmatterSidebar({
+    renderFrontmatterPanel({
       userDefinedFields: [
         { name: "published", type: "boolean" },
         { name: "characters", type: "multi-select" }
@@ -37,7 +37,7 @@ describe("FrontmatterSidebar", () => {
   });
 
   it("主要な入力タイプを選べる", () => {
-    renderFrontmatterSidebar();
+    renderFrontmatterPanel();
 
     expect(Array.from(screen.getByLabelText("Input type").querySelectorAll("option")).map((option) => option.textContent)).toEqual([
       "Text",
@@ -57,7 +57,7 @@ describe("FrontmatterSidebar", () => {
   it("フィールドを追加できる", () => {
     const onUserDefinedFieldsSave = vi.fn();
 
-    renderFrontmatterSidebar({ onUserDefinedFieldsSave });
+    renderFrontmatterPanel({ onUserDefinedFieldsSave });
 
     fireEvent.change(screen.getByPlaceholderText("Field name"), { target: { value: "deadline" } });
     fireEvent.change(screen.getByLabelText("Input type"), { target: { value: "date" } });
@@ -69,7 +69,7 @@ describe("FrontmatterSidebar", () => {
   it("フィールド名は入力途中で保存せず、確定時に保存する", () => {
     const onUserDefinedFieldsSave = vi.fn();
 
-    renderFrontmatterSidebar({
+    renderFrontmatterPanel({
       onUserDefinedFieldsSave,
       userDefinedFields: [{ name: "status", type: "text" }]
     });
@@ -88,7 +88,7 @@ describe("FrontmatterSidebar", () => {
   });
 
   it("カスタムプロパティの入力タイプごとに書き方を表示する", () => {
-    renderFrontmatterSidebar({
+    renderFrontmatterPanel({
       userDefinedFields: [
         { name: "characters", type: "multi-select", choices: ["Alice", "Bob"] },
         { name: "published", type: "boolean" }
@@ -107,7 +107,7 @@ describe("FrontmatterSidebar", () => {
   it("aliasesとtagsとstatusとchronicle0〜9と計画/実行dateを固定プロパティとして表示し、カスタムプロパティには追加しない", () => {
     const onUserDefinedFieldsSave = vi.fn();
 
-    renderFrontmatterSidebar({ onUserDefinedFieldsSave });
+    renderFrontmatterPanel({ onUserDefinedFieldsSave });
 
     expect(screen.getByText("Fixed properties")).not.toBeNull();
     expect(screen.getByText("Custom properties")).not.toBeNull();
@@ -175,7 +175,7 @@ describe("FrontmatterSidebar", () => {
   it("候補をチップとして追加・削除できる", () => {
     const onUserDefinedFieldsSave = vi.fn();
 
-    renderFrontmatterSidebar({
+    renderFrontmatterPanel({
       onUserDefinedFieldsSave,
       userDefinedFields: [{ choices: ["draft"], name: "phase", type: "select" }]
     });
@@ -195,15 +195,15 @@ describe("FrontmatterSidebar", () => {
   });
 
   it("テンプレート管理を表示しない", () => {
-    renderFrontmatterSidebar();
+    renderFrontmatterPanel();
 
     expect(screen.queryByText("Frontmatter templates")).toBeNull();
     expect(screen.queryByPlaceholderText("Template name")).toBeNull();
   });
 });
 
-describe("SettingsSidebar", () => {
-  function renderSettingsSidebar({
+describe("SettingsPanel", () => {
+  function renderSettingsPanel({
     language = "en",
     onFeatureTogglesSave = vi.fn(),
     onSave = vi.fn(),
@@ -216,7 +216,7 @@ describe("SettingsSidebar", () => {
   } = {}) {
     render(
       <I18nProvider language={language}>
-        <SettingsSidebar
+        <SettingsPanel
           appInfo={{ name: "Relic", platform, version: "1.2.3" }}
           featureToggles={defaultFeatureToggles}
           onFeatureTogglesSave={onFeatureTogglesSave}
@@ -228,7 +228,7 @@ describe("SettingsSidebar", () => {
   }
 
   it("設定タブをセクション化して表示する", () => {
-    renderSettingsSidebar();
+    renderSettingsPanel();
 
     expect(screen.getByRole("heading", { name: "Settings" })).toBeInTheDocument();
     expect(screen.getByText("Appearance")).toBeInTheDocument();
@@ -239,7 +239,7 @@ describe("SettingsSidebar", () => {
   });
 
   it("macOSではフォント選択肢をmacOSの元フォント名で表示する", () => {
-    renderSettingsSidebar({ platform: "darwin" });
+    renderSettingsPanel({ platform: "darwin" });
 
     expect(screen.getByRole("button", { name: "System font" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Hiragino Sans" })).toBeInTheDocument();
@@ -248,7 +248,7 @@ describe("SettingsSidebar", () => {
   });
 
   it("Windowsではフォント選択肢をWindowsの元フォント名で表示する", () => {
-    renderSettingsSidebar({ platform: "win32" });
+    renderSettingsPanel({ platform: "win32" });
 
     expect(screen.getByRole("button", { name: "System font" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Yu Gothic" })).toBeInTheDocument();
@@ -257,7 +257,7 @@ describe("SettingsSidebar", () => {
   });
 
   it("日本語UIではフォント選択肢をローカライズした元フォント名で表示する", () => {
-    renderSettingsSidebar({ language: "ja", platform: "win32" });
+    renderSettingsPanel({ language: "ja", platform: "win32" });
 
     expect(screen.getByRole("button", { name: "システムフォント" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "游ゴシック" })).toBeInTheDocument();
@@ -267,7 +267,7 @@ describe("SettingsSidebar", () => {
 
   it("設定変更時に既存のEditorSettings形式で保存する", () => {
     const onSave = vi.fn();
-    renderSettingsSidebar({ onSave });
+    renderSettingsPanel({ onSave });
 
     fireEvent.click(screen.getByRole("button", { name: "Hiragino Sans" }));
     expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ font: "gothic" }));
@@ -284,7 +284,7 @@ describe("SettingsSidebar", () => {
 
   it("機能トグルを既存のFeatureToggles形式で保存する", () => {
     const onFeatureTogglesSave = vi.fn();
-    renderSettingsSidebar({ onFeatureTogglesSave });
+    renderSettingsPanel({ onFeatureTogglesSave });
 
     fireEvent.click(screen.getByLabelText("File tools"));
 

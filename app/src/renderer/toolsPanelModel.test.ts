@@ -14,11 +14,11 @@ import {
   isToolStatusError,
   resultStatus,
   splitResultStatus
-} from "./toolsSidebarModel";
+} from "./toolsPanelModel";
 
 const t = createTranslator("en");
 
-describe("toolsSidebarModel", () => {
+describe("toolsPanelModel", () => {
   it("builds title list and toc inputs with existing fallback defaults", () => {
     expect(buildTitleListInput(createDefaultTitleListDraft(t), t)).toEqual({
       filterFolder: undefined,

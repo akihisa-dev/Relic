@@ -1,6 +1,6 @@
 import type { ReactElement } from "react";
 
-import type { GanttChartSource } from "../../shared/ipc";
+import type { ChartSource } from "../../shared/ipc";
 import {
   chronicleSummaryForRow,
   dateSummaryForRow,
@@ -17,7 +17,7 @@ export function ChronicleNameColumn({
   onOpenFile,
   rows
 }: {
-  activeSource: GanttChartSource;
+  activeSource: ChartSource;
   dateAxisHeight: number;
   nameColumnWidth: number;
   onJump: (value: number) => void;

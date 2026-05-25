@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import type { ReactElement } from "react";
 
-import type { UpdateGanttChartEntryInput, WorkspaceGanttChart } from "../../shared/ipc";
+import type { UpdateChartEntryInput, WorkspaceChart } from "../../shared/ipc";
 import { useT } from "../i18n";
 import { buildChronicleVerticalViewportState, buildChronicleViewportState, useChronicleChartModel } from "../hooks/useChronicleChartModel";
 import { useChronicleChartViewport } from "../hooks/useChronicleChartViewport";
@@ -10,14 +10,14 @@ import { ChronicleChartGrid } from "./ChronicleChartGrid";
 import { ChronicleMinimap } from "./ChronicleMinimap";
 import { ChronicleToolbar } from "./ChronicleToolbar";
 
-interface GanttChartViewProps {
-  chart?: WorkspaceGanttChart | null;
-  charts?: WorkspaceGanttChart[];
+interface ChartViewProps {
+  chart?: WorkspaceChart | null;
+  charts?: WorkspaceChart[];
   onOpenFile: (path: string) => void;
-  onUpdateEntry?: (input: UpdateGanttChartEntryInput) => Promise<void> | void;
+  onUpdateEntry?: (input: UpdateChartEntryInput) => Promise<void> | void;
 }
 
-export function GanttChartView({ chart = null, charts = [], onOpenFile, onUpdateEntry }: GanttChartViewProps): ReactElement {
+export function ChartView({ chart = null, charts = [], onOpenFile, onUpdateEntry }: ChartViewProps): ReactElement {
   const t = useT();
   const model = useChronicleChartModel({ chart, charts });
   const viewport = useChronicleChartViewport({

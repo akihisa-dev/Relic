@@ -2,7 +2,7 @@ import type { ReactElement } from "react";
 
 import type { MergeFilterType, MergeSortBy, SplitHeadingLevel } from "../../shared/ipc";
 import { useT } from "../i18n";
-import type { MergeFilesDraft, SplitFileDraft } from "../toolsSidebarModel";
+import type { MergeFilesDraft, SplitFileDraft } from "../toolsPanelModel";
 import { ToolStatus } from "./ToolStatus";
 
 export function MergeFilesToolSection({

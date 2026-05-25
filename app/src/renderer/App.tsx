@@ -32,7 +32,7 @@ import { useSplitCloseMotion } from "./hooks/useSplitCloseMotion";
 import { useWorkspaceAliases } from "./hooks/useWorkspaceAliases";
 import { useWorkspaceFileActions } from "./hooks/useWorkspaceFileActions";
 import { useWorkspaceChronicleCalendars } from "./hooks/useWorkspaceChronicleCalendars";
-import { useWorkspaceGanttCharts } from "./hooks/useWorkspaceGanttCharts";
+import { useWorkspaceCharts } from "./hooks/useWorkspaceCharts";
 import { useWorkspaceRenameRailHold } from "./hooks/useWorkspaceRenameRailHold";
 import { useWorkspaceSearchState } from "./hooks/useWorkspaceSearchState";
 import { matchesAnyTreeItemPath } from "./hooks/workspaceFileActionHelpers";
@@ -83,7 +83,7 @@ export function App(): ReactElement {
     closeAllTabsInPane,
     moveTab,
     openFileInPane,
-    openGanttChartInPane,
+    openChartInPane,
     openPanelInPane,
     setEditorSettings,
     setFocusedPane,
@@ -108,8 +108,8 @@ export function App(): ReactElement {
     toggleSidebar: toggleSidebarState,
     toggleTypewriterMode
   } = useUiStore();
-  const hasOpenGanttChart = useMemo(
-    () => Object.values(tabs).some((tab) => tab.kind === "gantt"),
+  const hasOpenChart = useMemo(
+    () => Object.values(tabs).some((tab) => tab.kind === "chart"),
     [tabs]
   );
   const { isSplitClosing, toggleSplitWithMotion } = useSplitCloseMotion(isSplit, toggleSplit);
@@ -162,22 +162,22 @@ export function App(): ReactElement {
     [workspaceState?.fileTree]
   );
   const aliasesByPath = useWorkspaceAliases({ setWorkspaceError, workspaceState });
-  const { ganttCharts, handleUpdateGanttChartEntry, reloadGanttCharts } = useWorkspaceGanttCharts({
-    hasOpenGanttChart,
+  const { charts, handleUpdateChartEntry, reloadCharts } = useWorkspaceCharts({
+    hasOpenChart,
     setWorkspaceError,
     tabs,
     updateTabContent,
     workspaceState
   });
   const { chronicleCalendars, handleSaveChronicleCalendars } = useWorkspaceChronicleCalendars({
-    onSaved: () => { void reloadGanttCharts(); },
+    onSaved: () => { void reloadCharts(); },
     setWorkspaceError,
     workspaceState
   });
 
   const handleFileSaved = useCallback((): void => {
-    void reloadGanttCharts();
-  }, [reloadGanttCharts]);
+    void reloadCharts();
+  }, [reloadCharts]);
 
   const { flushTabsBeforeClose, saveStatusByTabId } = useEditorAutoSave({
     conflictCloseBlockedMessage: t("pane.externalConflictCloseBlocked"),
@@ -475,7 +475,7 @@ export function App(): ReactElement {
     handleDuplicateTreeFile,
     isSplit,
     openFileInPane,
-    openGanttChartInPane,
+    openChartInPane,
     openPanelInPane,
     setLeftPaneScrollHeading,
     setRightPaneScrollHeading,
@@ -550,7 +550,7 @@ export function App(): ReactElement {
     featureToggles,
     focusedPane,
     leftPane,
-    openGanttChartInPane,
+    openChartInPane,
     openPanelInPane,
     rightPane,
     setSidebarView,
@@ -560,18 +560,18 @@ export function App(): ReactElement {
     tabs
   });
 
-  const { renderGanttChartTab, renderPanelTab } = useAppTabRenderers({
+  const { renderChartTab, renderPanelTab } = useAppTabRenderers({
     appInfo,
     chronicleCalendars,
     editorSettings,
     featureToggles,
-    ganttCharts,
+    charts,
     handleOpenFile,
     handleSaveChronicleCalendars,
     handleSaveFeatureToggles,
     handleSaveSettings,
     handleSaveUserDefinedFields,
-    handleUpdateGanttChartEntry,
+    handleUpdateChartEntry,
     userDefinedFields,
     workspaceState
   });
@@ -718,7 +718,7 @@ export function App(): ReactElement {
           outlineHeadings={outlineHeadings}
           outgoingLinks={outgoingLinks}
           outgoingLinksLimited={outgoingLinksLimited}
-          renderGanttChartTab={renderGanttChartTab}
+          renderChartTab={renderChartTab}
           renderPanelTab={renderPanelTab}
           renderPanelTabIcon={renderPanelTabIcon}
           rightClosingTabIds={rightClosingTabIds}
