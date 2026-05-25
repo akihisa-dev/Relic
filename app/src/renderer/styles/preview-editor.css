@@ -188,6 +188,7 @@
 .cm-editor-shell {
   flex: 1;
   height: 100%;
+  isolation: isolate;
   min-height: 0;
   min-width: 0;
   position: relative;
@@ -234,7 +235,7 @@
   right: 16px;
   top: 12px;
   width: 32px;
-  z-index: 20;
+  z-index: 1301;
 }
 
 .editor-frontmatter-add-button:hover,
@@ -262,7 +263,7 @@
   right: 16px;
   top: 50px;
   width: min(300px, calc(100% - 32px));
-  z-index: 21;
+  z-index: 1300;
 }
 
 .editor-frontmatter-add-menu-title {
