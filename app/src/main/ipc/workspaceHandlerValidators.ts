@@ -2,11 +2,11 @@ import type {
   ChronicleCalendarSettings,
   ChronicleCalendarId,
   FrontmatterTemplate,
-  GanttChartSettings,
-  GanttChartSource,
+  ChartSettings,
+  ChartSource,
   RenameWorkspaceInput,
   SwitchWorkspaceInput,
-  UpdateGanttChartEntryInput,
+  UpdateChartEntryInput,
   UserDefinedField,
   UserDefinedFieldType
 } from "../../shared/ipc";
@@ -25,7 +25,7 @@ const userDefinedFieldTypes: UserDefinedFieldType[] = [
 ];
 const userDefinedFieldNamePattern = /^[^\s:][^\r\n:]*$/;
 const reservedUserDefinedFieldNames = new Set(["aliases", "tags", "status", ...validChronicleCalendarIds, "plannedDate", "actualDate"]);
-const ganttChartSources: GanttChartSource[] = ["chronicle", "date"];
+const chartSources: ChartSource[] = ["chronicle", "date"];
 
 export function isUserDefinedFieldsInput(input: unknown): input is UserDefinedField[] {
   if (!Array.isArray(input)) return false;
@@ -51,10 +51,10 @@ export function isUserDefinedFieldsInput(input: unknown): input is UserDefinedFi
   });
 }
 
-export function isGanttChartsInput(input: unknown): input is GanttChartSettings[] {
+export function isChartsInput(input: unknown): input is ChartSettings[] {
   if (!Array.isArray(input) || input.length !== 2) return false;
 
-  const sources = new Set<GanttChartSource>();
+  const sources = new Set<ChartSource>();
 
   return input.every((chart) => {
     if (typeof chart !== "object" || chart === null) return false;
@@ -62,17 +62,17 @@ export function isGanttChartsInput(input: unknown): input is GanttChartSettings[
     const candidate = chart as Record<string, unknown>;
     if (typeof candidate.id !== "string" || candidate.id.trim() === "") return false;
     if (typeof candidate.name !== "string" || candidate.name.trim() === "") return false;
-    if (!ganttChartSources.includes(candidate.source as GanttChartSource)) return false;
-    if (sources.has(candidate.source as GanttChartSource)) return false;
+    if (!chartSources.includes(candidate.source as ChartSource)) return false;
+    if (sources.has(candidate.source as ChartSource)) return false;
     if ("filePaths" in candidate && !Array.isArray(candidate.filePaths)) return false;
     if (Array.isArray(candidate.filePaths) && !candidate.filePaths.every((path) => typeof path === "string")) return false;
 
-    sources.add(candidate.source as GanttChartSource);
+    sources.add(candidate.source as ChartSource);
     return true;
   });
 }
 
-export function isUpdateGanttChartEntryInput(input: unknown): input is UpdateGanttChartEntryInput {
+export function isUpdateChartEntryInput(input: unknown): input is UpdateChartEntryInput {
   if (typeof input !== "object" || input === null) return false;
 
   const candidate = input as Record<string, unknown>;
@@ -83,7 +83,7 @@ export function isUpdateGanttChartEntryInput(input: unknown): input is UpdateGan
 
   return (
     typeof candidate.path === "string" &&
-    ganttChartSources.includes(candidate.source as GanttChartSource) &&
+    chartSources.includes(candidate.source as ChartSource) &&
     (!("chronicleCalendarId" in candidate) || isChronicleCalendarId(candidate.chronicleCalendarId)) &&
     (!("chronicleCalendarStartYear" in candidate) || (Number.isInteger(candidate.chronicleCalendarStartYear) && Number(candidate.chronicleCalendarStartYear) >= 1)) &&
     (!("dateKind" in candidate) || candidate.dateKind === "planned" || candidate.dateKind === "actual") &&

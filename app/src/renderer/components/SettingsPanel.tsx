@@ -21,7 +21,7 @@ function getEditorFontLabelKeys(platform?: NodeJS.Platform): { gothic: Translati
   };
 }
 
-export function SettingsSidebar({
+export function SettingsPanel({
   appInfo,
   settings,
   featureToggles,

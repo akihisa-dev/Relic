@@ -1,11 +1,11 @@
 import type { Dispatch, ReactElement, SetStateAction } from "react";
 
-import type { GanttChartSource } from "../../shared/ipc";
+import type { ChartSource } from "../../shared/ipc";
 import type { ChronicleSortKey } from "../chronicleTimeline";
 import { useT } from "../i18n";
 
 export interface ChronicleToolbarProps {
-  activeSource: GanttChartSource;
+  activeSource: ChartSource;
   refreshRowOrder: () => void;
   query: string;
   scrollToToday: () => void;

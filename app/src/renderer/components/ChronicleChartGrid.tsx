@@ -1,6 +1,6 @@
 import type { PointerEvent, ReactElement, RefObject, UIEvent } from "react";
 
-import type { GanttChartEntry, GanttChartEntryEditKind, GanttChartSource, WorkspaceGanttChart } from "../../shared/ipc";
+import type { ChartEntry, ChartEntryEditKind, ChartSource, WorkspaceChart } from "../../shared/ipc";
 import {
   DATE_SCALES,
   buildVisibleChronicleGuideTicks,
@@ -26,8 +26,8 @@ import {
 } from "./chronicleChartParts";
 
 export interface ChronicleChartGridProps {
-  activeChart: WorkspaceGanttChart | null;
-  activeSource: GanttChartSource;
+  activeChart: WorkspaceChart | null;
+  activeSource: ChartSource;
   axisEnd: number;
   axisStart: number;
   chartRef: RefObject<HTMLDivElement | null>;
@@ -45,8 +45,8 @@ export interface ChronicleChartGridProps {
   onOpenFile: (path: string) => void;
   onStartEntryEdit: (
     event: PointerEvent<HTMLElement>,
-    entry: GanttChartEntry,
-    kind: GanttChartEntryEditKind
+    entry: ChartEntry,
+    kind: ChartEntryEditKind
   ) => void;
   onVerticalJump: (rowIndex: number) => void;
   onVerticalMinimapPointerDown: (event: PointerEvent<HTMLDivElement>) => void;

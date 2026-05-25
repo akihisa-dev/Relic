@@ -1,7 +1,7 @@
 import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import type { PointerEvent, RefObject, UIEvent } from "react";
 
-import type { GanttChartEntry, GanttChartSource, WorkspaceGanttChart } from "../../shared/ipc";
+import type { ChartEntry, ChartSource, WorkspaceChart } from "../../shared/ipc";
 import {
   ROW_HEIGHT,
   chronicleNavigationTarget,
@@ -10,11 +10,11 @@ import {
 } from "../chronicleTimeline";
 
 interface UseChronicleChartViewportInput {
-  activeChart: WorkspaceGanttChart | null;
-  activeSource: GanttChartSource;
+  activeChart: WorkspaceChart | null;
+  activeSource: ChartSource;
   axisEnd: number;
   axisStart: number;
-  entries: GanttChartEntry[];
+  entries: ChartEntry[];
   nameColumnWidth: number;
   unitWidth: number;
 }

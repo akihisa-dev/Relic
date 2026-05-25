@@ -121,7 +121,7 @@ Markdown本文に書かれた `![alt](path)` 記法。Relicは画像管理アプ
 |-----------|------|
 | workspacePath | 対象ワークスペースのパス |
 | pinnedPaths | ファイルサイドバーでピン留めしているワークスペース相対パス |
-| ganttCharts | 年表 / 日付チャートの対象ファイル設定 |
+| charts | 年表 / 日付チャートの対象ファイル設定 |
 | chronicleCalendars | `chronicle0` の暦名、`chronicle1`〜`chronicle9` の暦名とメイン暦開始年 |
 
 `chronicleCalendars` のサブ暦では、暦名とメイン暦開始年をそれぞれ未設定にできる。

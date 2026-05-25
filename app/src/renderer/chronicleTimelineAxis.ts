@@ -1,4 +1,4 @@
-import type { GanttChartEntry, GanttChartSource } from "../shared/ipc";
+import type { ChartEntry, ChartSource } from "../shared/ipc";
 import { axisToYear, dateToDay, yearToAxis } from "../shared/chartTime";
 import {
   DATE_SCALES,
@@ -25,9 +25,9 @@ export interface TimelineVisibleRange {
 }
 
 export function timelineBounds(
-  entries: GanttChartEntry[],
+  entries: ChartEntry[],
   tickInterval: number,
-  source: GanttChartSource,
+  source: ChartSource,
   dateScale: DateScale | null
 ): { axisEnd: number; axisStart: number } {
   if (entries.length === 0) {
@@ -78,7 +78,7 @@ export function buildTicks(
   axisStart: number,
   axisEnd: number,
   interval: number,
-  source: GanttChartSource,
+  source: ChartSource,
   dateScale: DateScale | null
 ): number[] {
   if (source === "date") return buildDateTicks(axisStart, axisEnd, dateGuideUnit(dateScale ?? DATE_SCALES[0]));
@@ -91,7 +91,7 @@ export function buildGuideTicks(
   axisEnd: number,
   ticks: number[],
   interval: number,
-  source: GanttChartSource,
+  source: ChartSource,
   dateScale: DateScale | null
 ): ChartGuideTick[] {
   if (source !== "date") {
@@ -229,7 +229,7 @@ export function dateMajorGuideUnit(scale: DateScale): DateAxisSegmentUnit {
   return "month";
 }
 
-export function formatRange(entry: GanttChartEntry, source: GanttChartSource, dateScale: DateScale | null): string {
+export function formatRange(entry: ChartEntry, source: ChartSource, dateScale: DateScale | null): string {
   if (source !== "date" || !dateScale) {
     if (entry.startValue === entry.endValue) return entry.startLabel;
     return `${entry.startLabel} 〜 ${entry.endLabel}`;
@@ -242,7 +242,7 @@ export function formatRange(entry: GanttChartEntry, source: GanttChartSource, da
   return `${start} 〜 ${end}`;
 }
 
-export function formatAxisValue(value: number, source: GanttChartSource): string {
+export function formatAxisValue(value: number, source: ChartSource): string {
   const year = axisToYear(value);
   return year < 0 ? `−${Math.abs(year)}` : String(year);
 }
@@ -450,6 +450,6 @@ export function formatDateLabel(value: string, unit: DateScaleUnit): string {
   return value.slice(8, 10);
 }
 
-export function isGanttChartSource(value: unknown): value is GanttChartSource {
+export function isChartSource(value: unknown): value is ChartSource {
   return value === "chronicle" || value === "date";
 }

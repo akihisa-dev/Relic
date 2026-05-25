@@ -1,10 +1,10 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
-import type { GanttChartEntry, GanttChartEntryEditKind } from "../../shared/ipc";
+import type { ChartEntry, ChartEntryEditKind } from "../../shared/ipc";
 import { useChronicleEntryDrag } from "./useChronicleEntryDrag";
 
-function entry(overrides: Partial<GanttChartEntry> = {}): GanttChartEntry {
+function entry(overrides: Partial<ChartEntry> = {}): ChartEntry {
   return {
     dateKind: "planned",
     endLabel: "2026-05-03",
@@ -44,7 +44,7 @@ function makePointerDown(overrides: Partial<{
   } as never;
 }
 
-async function runEdit(kind: GanttChartEntryEditKind, clientX: number) {
+async function runEdit(kind: ChartEntryEditKind, clientX: number) {
   const onUpdateEntry = vi.fn();
   const hook = renderHook(() => useChronicleEntryDrag({
     activeSource: "date",

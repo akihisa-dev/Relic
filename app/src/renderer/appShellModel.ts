@@ -66,13 +66,13 @@ export function activePanelTabIdsForPanes(
 }
 
 export function isChartTabOpenInTabs(tabs: Record<string, Tab>, chartId = "charts"): boolean {
-  return Object.values(tabs).some((tab) => tab.kind === "gantt" && tab.chartId === chartId);
+  return Object.values(tabs).some((tab) => tab.kind === "chart" && tab.chartId === chartId);
 }
 
 export function openChartIdsForTabs(tabs: Record<string, Tab>): Set<string> {
   return new Set(
     Object.values(tabs)
-      .filter((tab): tab is Extract<Tab, { kind: "gantt" }> => tab.kind === "gantt")
+      .filter((tab): tab is Extract<Tab, { kind: "chart" }> => tab.kind === "chart")
       .map((tab) => tab.chartId)
   );
 }
@@ -86,7 +86,7 @@ export function isChartTabActiveInPanes(
   return [leftPane.activeTabId, rightPane.activeTabId].some((tabId) => {
     const tab = tabId ? tabs[tabId] : null;
 
-    return tab?.kind === "gantt" && tab.chartId === chartId;
+    return tab?.kind === "chart" && tab.chartId === chartId;
   });
 }
 
@@ -98,7 +98,7 @@ export function activeChartIdsForPanes(
   return new Set(
     [leftPane.activeTabId, rightPane.activeTabId]
       .map((tabId) => (tabId ? tabs[tabId] : null))
-      .filter((tab): tab is Extract<Tab, { kind: "gantt" }> => tab?.kind === "gantt")
+      .filter((tab): tab is Extract<Tab, { kind: "chart" }> => tab?.kind === "chart")
       .map((tab) => tab.chartId)
   );
 }

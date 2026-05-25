@@ -1,6 +1,6 @@
 import type { CSSProperties, PointerEvent, ReactElement } from "react";
 
-import type { GanttChartEntry, GanttChartEntryEditKind, GanttChartSource } from "../../shared/ipc";
+import type { ChartEntry, ChartEntryEditKind, ChartSource } from "../../shared/ipc";
 import {
   ROW_HEIGHT,
   dateFillHeight,
@@ -33,7 +33,7 @@ export function ChronicleTracks({
   timelineWidth,
   unitWidth
 }: {
-  activeSource: GanttChartSource;
+  activeSource: ChartSource;
   axisEnd: number;
   axisStart: number;
   dateScale: DateScale | null;
@@ -41,8 +41,8 @@ export function ChronicleTracks({
   guideTicks: ChartGuideTick[];
   onStartEntryEdit: (
     event: PointerEvent<HTMLElement>,
-    entry: GanttChartEntry,
-    kind: GanttChartEntryEditKind
+    entry: ChartEntry,
+    kind: ChartEntryEditKind
   ) => void;
   rows: ChartRow[];
   scrollLeft: number;
@@ -97,15 +97,15 @@ function ChronicleEntryBar({
   scrollLeft,
   unitWidth
 }: {
-  activeSource: GanttChartSource;
+  activeSource: ChartSource;
   axisStart: number;
   dateScale: DateScale | null;
   dragPreview: DragPreview | null;
-  entry: GanttChartEntry;
+  entry: ChartEntry;
   onStartEntryEdit: (
     event: PointerEvent<HTMLElement>,
-    entry: GanttChartEntry,
-    kind: GanttChartEntryEditKind
+    entry: ChartEntry,
+    kind: ChartEntryEditKind
   ) => void;
   rowIndex: number;
   scrollLeft: number;

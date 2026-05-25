@@ -56,7 +56,7 @@ interface AppEditorWorkspaceProps {
   outlineHeadings: OutlineHeading[];
   outgoingLinks: ResolvedWikiLink[];
   outgoingLinksLimited: boolean;
-  renderGanttChartTab: (chartId: string) => ReactNode;
+  renderChartTab: (chartId: string) => ReactNode;
   renderPanelTab: (panel: PanelTabKind) => ReactNode;
   renderPanelTabIcon: (panel: PanelTabKind) => ReactNode;
   rightClosingTabIds: Set<string>;
@@ -115,7 +115,7 @@ export function AppEditorWorkspace({
   outlineHeadings,
   outgoingLinks,
   outgoingLinksLimited,
-  renderGanttChartTab,
+  renderChartTab,
   renderPanelTab,
   renderPanelTabIcon,
   rightClosingTabIds,
@@ -193,7 +193,7 @@ export function AppEditorWorkspace({
               frontmatterCandidates={frontmatterCandidates}
               isSplitView={isSplit}
               pane="left"
-              renderGanttChartTab={renderGanttChartTab}
+              renderChartTab={renderChartTab}
               renderPanelTab={renderPanelTab}
               renderPanelTabIcon={renderPanelTabIcon}
               scrollTargetHeading={leftPaneScrollHeading}
@@ -233,7 +233,7 @@ export function AppEditorWorkspace({
                 frontmatterCandidates={frontmatterCandidates}
                 isSplitView={isSplit}
                 pane="right"
-                renderGanttChartTab={renderGanttChartTab}
+                renderChartTab={renderChartTab}
                 renderPanelTab={renderPanelTab}
                 renderPanelTabIcon={renderPanelTabIcon}
                 scrollTargetHeading={rightPaneScrollHeading}

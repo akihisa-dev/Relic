@@ -11,7 +11,7 @@ import {
   moveTabState,
   openFileTabState,
   markFileTabSavedState,
-  openGanttTabState,
+  openChartTabState,
   openPanelTabState,
   resolveFileTabExternalConflictState,
   setTabActiveState,
@@ -46,15 +46,15 @@ export interface PanelTab {
   panel: PanelTabKind;
 }
 
-export interface GanttTab {
+export interface ChartTab {
   chartId: string;
   id: string;
   isPinned?: boolean;
-  kind: "gantt";
+  kind: "chart";
   name: string;
 }
 
-export type Tab = FileTab | GanttTab | PanelTab;
+export type Tab = FileTab | ChartTab | PanelTab;
 export type PaneId = "left" | "right";
 
 export interface PaneState {
@@ -78,7 +78,7 @@ interface EditorStore {
   moveTab: (fromPane: PaneId, toPane: PaneId, tabId: string, targetTabId?: string | null, position?: "before" | "after") => void;
   markTabSaved: (tabId: string, content: string) => void;
   openFileInPane: (pane: PaneId, file: MarkdownFileContent) => void;
-  openGanttChartInPane: (pane: PaneId, chart: { id: string; name: string }) => void;
+  openChartInPane: (pane: PaneId, chart: { id: string; name: string }) => void;
   openPanelInPane: (pane: PaneId, panel: PanelTabKind, name: string) => void;
   resolveTabExternalConflict: (tabId: string, choice: "external" | "relic") => void;
   setTabExternalConflict: (tabId: string, content: string) => void;
@@ -114,9 +114,9 @@ export const useEditorStore = create<EditorStore>((set) => ({
     });
   },
 
-  openGanttChartInPane: (pane, chart) => {
+  openChartInPane: (pane, chart) => {
     set((state) => {
-      return openGanttTabState(state, pane, chart);
+      return openChartTabState(state, pane, chart);
     });
   },
 

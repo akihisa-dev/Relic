@@ -26,7 +26,7 @@ interface UseAppRailNavigationInput {
   featureToggles: FeatureToggles;
   focusedPane: PaneId;
   leftPane: PaneState;
-  openGanttChartInPane: (pane: PaneId, chart: { id: string; name: string }) => void;
+  openChartInPane: (pane: PaneId, chart: { id: string; name: string }) => void;
   openPanelInPane: (pane: PaneId, panel: PanelTabKind, label: string) => void;
   rightPane: PaneState;
   setSidebarView: (view: SidebarView) => void;
@@ -65,7 +65,7 @@ export function useAppRailNavigation({
   featureToggles,
   focusedPane,
   leftPane,
-  openGanttChartInPane,
+  openChartInPane,
   openPanelInPane,
   rightPane,
   setSidebarView,
@@ -161,7 +161,7 @@ export function useAppRailNavigation({
     if (!chartId) return;
 
     const railRect = event.currentTarget.getBoundingClientRect();
-    const tabId = `gantt-${chartId}`;
+    const tabId = `chart-${chartId}`;
     const editorState = useEditorStore.getState();
     const openedPanes: PaneId[] = [
       ...(editorState.leftPane.tabIds.includes(tabId) ? ["left" as const] : []),
@@ -176,13 +176,13 @@ export function useAppRailNavigation({
     }
 
     closeSidebar();
-    openGanttChartInPane(focusedPane, { id: chartId, name: label });
+    openChartInPane(focusedPane, { id: chartId, name: label });
     showRailOpenFlight(label, railRect);
   }, [
     clearRailTabFlight,
     closeSidebar,
     focusedPane,
-    openGanttChartInPane,
+    openChartInPane,
     setTabActive,
     showRailOpenFlight
   ]);

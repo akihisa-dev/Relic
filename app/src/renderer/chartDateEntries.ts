@@ -1,16 +1,16 @@
-import type { GanttChartEntry, WorkspaceGanttChart, WorkspaceTreeNode } from "../shared/ipc";
+import type { ChartEntry, WorkspaceChart, WorkspaceTreeNode } from "../shared/ipc";
 import { dateToDay, isDateString } from "../shared/chartTime";
 import { collectMarkdownPaths } from "../shared/workspaceTree";
-import type { GanttChartFileReader } from "./ganttChartApi";
-import { splitFrontmatterBlock, readYamlArrayField } from "./ganttChartFrontmatter";
-import { normalizeWorkspaceGanttCharts } from "./ganttChartNormalize";
+import type { ChartFileReader } from "./chartApi";
+import { splitFrontmatterBlock, readYamlArrayField } from "./chartFrontmatter";
+import { normalizeWorkspaceCharts } from "./chartNormalize";
 
-export async function normalizeWorkspaceGanttChartsWithFiles(
+export async function normalizeWorkspaceChartsWithFiles(
   value: unknown,
   fileTree: WorkspaceTreeNode[],
-  readMarkdownFile: GanttChartFileReader
-): Promise<WorkspaceGanttChart[]> {
-  const charts = normalizeWorkspaceGanttCharts(value);
+  readMarkdownFile: ChartFileReader
+): Promise<WorkspaceChart[]> {
+  const charts = normalizeWorkspaceCharts(value);
   const dateEntries = await readDateChartEntriesFromFiles(fileTree, readMarkdownFile);
 
   if (dateEntries.length === 0) return charts;
@@ -24,10 +24,10 @@ export async function normalizeWorkspaceGanttChartsWithFiles(
 
 export async function readDateChartEntriesFromFiles(
   fileTree: WorkspaceTreeNode[],
-  readMarkdownFile: GanttChartFileReader
-): Promise<GanttChartEntry[]> {
+  readMarkdownFile: ChartFileReader
+): Promise<ChartEntry[]> {
   const paths = collectMarkdownPaths(fileTree);
-  const entries = await Promise.all(paths.map(async (filePath): Promise<GanttChartEntry[]> => {
+  const entries = await Promise.all(paths.map(async (filePath): Promise<ChartEntry[]> => {
     const file = await readMarkdownFile({ path: filePath });
 
     if (!file?.ok) return [];
@@ -39,7 +39,7 @@ export async function readDateChartEntriesFromFiles(
     const actualRange = readChartDateRange(frontmatter.yaml, "actualDate");
     const statuses = readYamlArrayField(frontmatter.yaml, "status");
     const fileName = file.value.name || filePath.split("/").at(-1)?.replace(/\.md$/, "") || filePath;
-    const result: GanttChartEntry[] = [];
+    const result: ChartEntry[] = [];
 
     if (plannedRange) {
       result.push(dateRangeToEntry(filePath, fileName, "planned", plannedRange, statuses));
@@ -69,7 +69,7 @@ function dateRangeToEntry(
   dateKind: "actual" | "planned",
   range: { endDate: string; startDate: string },
   statuses: string[] = []
-): GanttChartEntry {
+): ChartEntry {
   return {
     dateKind,
     endLabel: range.endDate,
@@ -106,6 +106,6 @@ function normalizeChartDateValue(value: string): string | null {
   return Number.isNaN(date.getTime()) ? null : date.toISOString().slice(0, 10);
 }
 
-function dateKindOrderForRenderer(kind: GanttChartEntry["dateKind"]): number {
+function dateKindOrderForRenderer(kind: ChartEntry["dateKind"]): number {
   return kind === "actual" ? 1 : 0;
 }

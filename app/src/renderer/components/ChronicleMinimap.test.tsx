@@ -2,11 +2,11 @@ import { createRef } from "react";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
-import type { WorkspaceGanttChart } from "../../shared/ipc";
+import type { WorkspaceChart } from "../../shared/ipc";
 import { I18nProvider } from "../i18n";
 import { ChronicleMinimap, type ChronicleMinimapProps } from "./ChronicleMinimap";
 
-function chart(overrides: Partial<WorkspaceGanttChart> = {}): WorkspaceGanttChart {
+function chart(overrides: Partial<WorkspaceChart> = {}): WorkspaceChart {
   return {
     entries: [],
     id: "chronicle",

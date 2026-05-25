@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 
-import type { GanttChartSource, WorkspaceGanttChart } from "../../shared/ipc";
+import type { ChartSource, WorkspaceChart } from "../../shared/ipc";
 import {
   CHRONICLE_NAME_COLUMN_WIDTH,
   DATE_NAME_COLUMN_WIDTH,
@@ -18,7 +18,7 @@ import {
   dateOffscreenBarIndicators,
   dateUnitWidth,
   filterRows,
-  isGanttChartSource,
+  isChartSource,
   minimapItemsForEntries,
   minimapViewportRange,
   sortRows,
@@ -37,14 +37,14 @@ import { useUiStore } from "../store/uiStore";
 import { useStableTimelineBounds } from "./useStableTimelineBounds";
 
 interface UseChronicleChartModelInput {
-  chart: WorkspaceGanttChart | null;
-  charts: WorkspaceGanttChart[];
+  chart: WorkspaceChart | null;
+  charts: WorkspaceChart[];
 }
 
 export interface ChronicleChartModel {
-  activeChart: WorkspaceGanttChart | null;
-  activeSource: GanttChartSource;
-  availableCharts: WorkspaceGanttChart[];
+  activeChart: WorkspaceChart | null;
+  activeSource: ChartSource;
+  availableCharts: WorkspaceChart[];
   axisEnd: number;
   axisStart: number;
   dateAxisHeight: number;
@@ -56,7 +56,7 @@ export interface ChronicleChartModel {
   query: string;
   rows: ChartRow[];
   refreshRowOrder: () => void;
-  selectChart: (chart: WorkspaceGanttChart) => void;
+  selectChart: (chart: WorkspaceChart) => void;
   setQuery: Dispatch<SetStateAction<string>>;
   setSortKey: Dispatch<SetStateAction<ChronicleSortKey>>;
   setStatusFilter: Dispatch<SetStateAction<string>>;
@@ -84,15 +84,15 @@ export function useChronicleChartModel({
   charts
 }: UseChronicleChartModelInput): ChronicleChartModel {
   const availableCharts = useMemo(() => chartsForView(chart, charts), [chart, charts]);
-  const selectedGanttChartId = useUiStore((state) => state.selectedGanttChartId);
-  const setSelectedGanttChartId = useUiStore((state) => state.setSelectedGanttChartId);
+  const selectedChartId = useUiStore((state) => state.selectedChartId);
+  const setSelectedChartId = useUiStore((state) => state.setSelectedChartId);
   const [query, setQuery] = useState("");
   const [sortKey, setSortKey] = useState<ChronicleSortKey>("start-asc");
   const [statusFilter, setStatusFilter] = useState("");
   const [rowOrderKeys, setRowOrderKeys] = useState<string[]>([]);
   const rowOrderResetKeyRef = useRef<string | null>(null);
-  const activeChart = chart ?? availableCharts.find((candidate) => candidate.id === selectedGanttChartId) ?? availableCharts[0] ?? null;
-  const activeSource = activeChart && isGanttChartSource(activeChart.source) ? activeChart.source : "chronicle";
+  const activeChart = chart ?? availableCharts.find((candidate) => candidate.id === selectedChartId) ?? availableCharts[0] ?? null;
+  const activeSource = activeChart && isChartSource(activeChart.source) ? activeChart.source : "chronicle";
   const allEntries = visibleEntries(activeChart);
   const statusOptions = useMemo(() => statusValuesForEntries(allEntries), [allEntries]);
   const tickInterval = 1;
@@ -142,19 +142,19 @@ export function useChronicleChartModel({
     () => minimapItemsForEntries(entries, axisStart, axisEnd),
     [axisEnd, axisStart, entries]
   );
-  const selectChart = useCallback((nextChart: WorkspaceGanttChart): void => {
-    setSelectedGanttChartId(nextChart.id);
-  }, [setSelectedGanttChartId]);
+  const selectChart = useCallback((nextChart: WorkspaceChart): void => {
+    setSelectedChartId(nextChart.id);
+  }, [setSelectedChartId]);
 
   useEffect(() => {
     if (chart) return;
 
     const fallbackId = availableCharts[0]?.id ?? null;
-    if (selectedGanttChartId && availableCharts.some((candidate) => candidate.id === selectedGanttChartId)) return;
-    if (selectedGanttChartId === fallbackId) return;
+    if (selectedChartId && availableCharts.some((candidate) => candidate.id === selectedChartId)) return;
+    if (selectedChartId === fallbackId) return;
 
-    setSelectedGanttChartId(fallbackId);
-  }, [availableCharts, chart, selectedGanttChartId, setSelectedGanttChartId]);
+    setSelectedChartId(fallbackId);
+  }, [availableCharts, chart, selectedChartId, setSelectedChartId]);
 
   useEffect(() => {
     if (activeSource !== "date" || statusFilter === "" || statusOptions.includes(statusFilter)) return;
@@ -214,7 +214,7 @@ export function buildChronicleViewportState({
   scrollLeft,
   unitWidth
 }: {
-  activeSource: GanttChartSource;
+  activeSource: ChartSource;
   axisEnd: number;
   axisStart: number;
   chartViewportWidth: number;

@@ -1,4 +1,4 @@
-import type { GanttChartEntry } from "../shared/ipc";
+import type { ChartEntry } from "../shared/ipc";
 import { clamp, currentDateDay } from "./chronicleTimelineAxis";
 import { entryKey } from "./chronicleTimelineRows";
 
@@ -14,7 +14,7 @@ export interface MinimapItem {
 }
 
 export function timelineOffscreenBarIndicators(
-  entries: GanttChartEntry[],
+  entries: ChartEntry[],
   visibleStartValue: number,
   visibleEndValue: number
 ): { left: DateOffscreenIndicator | null; right: DateOffscreenIndicator | null } {
@@ -29,7 +29,7 @@ export function timelineOffscreenBarIndicators(
   };
 }
 
-export function minimapItemsForEntries(entries: GanttChartEntry[], axisStart: number, axisEnd: number): MinimapItem[] {
+export function minimapItemsForEntries(entries: ChartEntry[], axisStart: number, axisEnd: number): MinimapItem[] {
   const span = Math.max(1, axisEnd - axisStart + 1);
 
   return entries.map((entry) => ({
@@ -52,7 +52,7 @@ export function minimapViewportRange(
   return { leftPercent, widthPercent };
 }
 
-export function chronicleNavigationTarget(entries: GanttChartEntry[], axisStart: number, axisEnd: number): number | null {
+export function chronicleNavigationTarget(entries: ChartEntry[], axisStart: number, axisEnd: number): number | null {
   if (entries.length === 0) return null;
 
   const sortedMidpoints = entries
@@ -64,7 +64,7 @@ export function chronicleNavigationTarget(entries: GanttChartEntry[], axisStart:
 }
 
 export function dateOffscreenBarIndicators(
-  entries: GanttChartEntry[],
+  entries: ChartEntry[],
   visibleStartValue: number,
   visibleEndValue: number
 ): { left: DateOffscreenIndicator | null; right: DateOffscreenIndicator | null } {
@@ -79,7 +79,7 @@ export function dateOffscreenBarIndicators(
   };
 }
 
-export function dateNavigationTarget(entries: GanttChartEntry[], axisStart: number, axisEnd: number): number {
+export function dateNavigationTarget(entries: ChartEntry[], axisStart: number, axisEnd: number): number {
   const today = currentDateDay();
   if (today >= axisStart && today <= axisEnd) return today;
   if (entries.length === 0) return clamp(today, axisStart, axisEnd);

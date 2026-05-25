@@ -1,11 +1,11 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it } from "vitest";
 
-import type { GanttChartEntry, WorkspaceGanttChart } from "../../shared/ipc";
+import type { ChartEntry, WorkspaceChart } from "../../shared/ipc";
 import { useUiStore } from "../store/uiStore";
 import { buildChronicleVerticalViewportState, useChronicleChartModel } from "./useChronicleChartModel";
 
-function entry(overrides: Partial<GanttChartEntry> = {}): GanttChartEntry {
+function entry(overrides: Partial<ChartEntry> = {}): ChartEntry {
   return {
     endLabel: "1333",
     endValue: 1332,
@@ -17,7 +17,7 @@ function entry(overrides: Partial<GanttChartEntry> = {}): GanttChartEntry {
   };
 }
 
-function chart(overrides: Partial<WorkspaceGanttChart> = {}): WorkspaceGanttChart {
+function chart(overrides: Partial<WorkspaceChart> = {}): WorkspaceChart {
   return {
     entries: [entry()],
     id: "chronicle",
@@ -29,7 +29,7 @@ function chart(overrides: Partial<WorkspaceGanttChart> = {}): WorkspaceGanttChar
 
 describe("useChronicleChartModel", () => {
   beforeEach(() => {
-    useUiStore.setState({ selectedGanttChartId: null });
+    useUiStore.setState({ selectedChartId: null });
   });
 
   it("selected id がない場合は先頭chartをfallbackにする", async () => {
@@ -43,7 +43,7 @@ describe("useChronicleChartModel", () => {
     expect(result.current.activeChart?.id).toBe("chronicle");
 
     await waitFor(() => {
-      expect(useUiStore.getState().selectedGanttChartId).toBe("chronicle");
+      expect(useUiStore.getState().selectedChartId).toBe("chronicle");
     });
   });
 
@@ -59,7 +59,7 @@ describe("useChronicleChartModel", () => {
       result.current.selectChart(dateChart);
     });
 
-    expect(useUiStore.getState().selectedGanttChartId).toBe("date");
+    expect(useUiStore.getState().selectedChartId).toBe("date");
     expect(result.current.activeSource).toBe("date");
     expect(result.current.minimapItems).toHaveLength(1);
     expect(result.current.tickInterval).toBe(1);

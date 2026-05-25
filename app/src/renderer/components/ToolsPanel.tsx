@@ -1,15 +1,15 @@
 import type { ReactElement } from "react";
 
 import { useT } from "../i18n";
-import { useToolsSidebarState } from "../hooks/useToolsSidebarState";
+import { useToolsPanelState } from "../hooks/useToolsPanelState";
 import {
   MergeFilesToolSection,
   SplitFileToolSection,
   TitleListToolSection,
   TocToolSection
-} from "./ToolsSidebarSections";
+} from "./ToolsPanelSections";
 
-export function ToolsSidebar({ workspacePath }: { workspacePath: string | null }): ReactElement {
+export function ToolsPanel({ workspacePath }: { workspacePath: string | null }): ReactElement {
   const t = useT();
   const {
     handleGenerateTitleList,
@@ -32,7 +32,7 @@ export function ToolsSidebar({ workspacePath }: { workspacePath: string | null }
     titleListStatus,
     tocDraft,
     tocStatus
-  } = useToolsSidebarState(workspacePath, t);
+  } = useToolsPanelState(workspacePath, t);
 
   return (
     <div className="settings-page tools-settings-page">

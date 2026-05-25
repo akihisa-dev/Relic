@@ -5,8 +5,8 @@ import {
   defaultChronicleCalendars,
   type ChronicleCalendarId,
   type ChronicleCalendarSettings,
-  type GanttChartDateKind,
-  type UpdateGanttChartEntryInput
+  type ChartDateKind,
+  type UpdateChartEntryInput
 } from "./ipcCharts";
 import { fail, ok, type RelicResult } from "./result";
 
@@ -19,7 +19,7 @@ interface FrontmatterBlock {
 
 export function updateChartFrontmatterContent(
   content: string,
-  input: UpdateGanttChartEntryInput,
+  input: UpdateChartEntryInput,
   calendars: ChronicleCalendarSettings[] = defaultChronicleCalendars
 ): RelicResult<string> {
   const frontmatter = splitFrontmatterBlock(content);
@@ -87,7 +87,7 @@ function parseYamlObject(yamlText: string): RelicResult<Record<string, unknown>>
 
 function chartFrontmatterUpdates(
   data: Record<string, unknown>,
-  input: UpdateGanttChartEntryInput,
+  input: UpdateChartEntryInput,
   calendars: ChronicleCalendarSettings[]
 ): RelicResult<Record<string, string[]>> {
   const start = Math.min(input.startValue, input.endValue);
@@ -134,7 +134,7 @@ function chartFrontmatterUpdates(
 }
 
 function calendarForInput(
-  input: UpdateGanttChartEntryInput,
+  input: UpdateChartEntryInput,
   calendars: ChronicleCalendarSettings[]
 ): RelicResult<{ id: ChronicleCalendarId; startYear: number }> {
   const id = input.chronicleCalendarId ?? "chronicle0";
@@ -206,7 +206,7 @@ function trailingComment(line: string): string {
   return match ? match[1] : "";
 }
 
-function extractDateRangeFromData(data: Record<string, unknown>, kind: GanttChartDateKind): { endDate: string; startDate: string } | null {
+function extractDateRangeFromData(data: Record<string, unknown>, kind: ChartDateKind): { endDate: string; startDate: string } | null {
   const value = kind === "planned" ? data.plannedDate : data.actualDate;
 
   if (!Array.isArray(value) || (value.length !== 1 && value.length !== 2)) return null;
@@ -234,7 +234,7 @@ function normalizeDateValue(value: unknown): string | null {
   return Number.isNaN(fallbackDate.getTime()) ? null : fallbackDate.toISOString().slice(0, 10);
 }
 
-function dateFieldNameForKind(kind: GanttChartDateKind): "actualDate" | "plannedDate" {
+function dateFieldNameForKind(kind: ChartDateKind): "actualDate" | "plannedDate" {
   return kind === "actual" ? "actualDate" : "plannedDate";
 }
 

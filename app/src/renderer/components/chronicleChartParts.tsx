@@ -1,6 +1,6 @@
 import type { PointerEvent, ReactElement, RefObject } from "react";
 
-import type { GanttChartSource } from "../../shared/ipc";
+import type { ChartSource } from "../../shared/ipc";
 import { currentDateDay } from "../chronicleTimeline";
 import {
   ROW_HEIGHT,
@@ -154,7 +154,7 @@ export function ChartGuideLines({
   axisStart: number;
   dateScale: DateScale | null;
   rowCount: number;
-  source: GanttChartSource;
+  source: ChartSource;
   ticks: ChartGuideTick[];
   unitWidth: number;
 }): ReactElement {

@@ -1,11 +1,11 @@
-import type { GanttChartEntry, WorkspaceGanttChart } from "../shared/ipc";
+import type { ChartEntry, WorkspaceChart } from "../shared/ipc";
 
-export function normalizeWorkspaceGanttCharts(value: unknown): WorkspaceGanttChart[] {
+export function normalizeWorkspaceCharts(value: unknown): WorkspaceChart[] {
   if (!Array.isArray(value)) return [];
 
-  if (value.every(isWorkspaceGanttChart)) return fixedWorkspaceGanttCharts(value);
+  if (value.every(isWorkspaceChart)) return fixedWorkspaceCharts(value);
 
-  const legacyEntries = value.flatMap((entry): GanttChartEntry[] => {
+  const legacyEntries = value.flatMap((entry): ChartEntry[] => {
     if (typeof entry !== "object" || entry === null) return [];
 
     const candidate = entry as Record<string, unknown>;
@@ -27,11 +27,11 @@ export function normalizeWorkspaceGanttCharts(value: unknown): WorkspaceGanttCha
   });
 
   return legacyEntries.length > 0
-    ? fixedWorkspaceGanttCharts([{ entries: legacyEntries, filePaths: legacyEntries.map((entry) => entry.path), id: "chronicle", name: "chronicle", source: "chronicle" }])
-    : fixedWorkspaceGanttCharts([]);
+    ? fixedWorkspaceCharts([{ entries: legacyEntries, filePaths: legacyEntries.map((entry) => entry.path), id: "chronicle", name: "chronicle", source: "chronicle" }])
+    : fixedWorkspaceCharts([]);
 }
 
-function fixedWorkspaceGanttCharts(charts: WorkspaceGanttChart[]): WorkspaceGanttChart[] {
+function fixedWorkspaceCharts(charts: WorkspaceChart[]): WorkspaceChart[] {
   const chronicle = charts.find((chart) => chart.source === "chronicle" || chart.id === "chronicle");
   const date = charts.find((chart) => chart.source === "date" || chart.id === "date");
 
@@ -53,7 +53,7 @@ function fixedWorkspaceGanttCharts(charts: WorkspaceGanttChart[]): WorkspaceGant
   ];
 }
 
-function isWorkspaceGanttChart(value: unknown): value is WorkspaceGanttChart {
+function isWorkspaceChart(value: unknown): value is WorkspaceChart {
   if (typeof value !== "object" || value === null) return false;
 
   const chart = value as Record<string, unknown>;

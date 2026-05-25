@@ -9,10 +9,10 @@ interface UiState {
   isRightPanelOpen: boolean;
   isTypewriterMode: boolean;
   rightPanelView: RightPanelView;
-  selectedGanttChartId: string | null;
+  selectedChartId: string | null;
   closeSidebar: () => void;
   openSidebar: () => void;
-  setSelectedGanttChartId: (chartId: string | null) => void;
+  setSelectedChartId: (chartId: string | null) => void;
   setSidebarView: (view: SidebarView) => void;
   toggleSidebar: () => void;
   toggleRightPanel: () => void;
@@ -26,10 +26,10 @@ export const useUiStore = create<UiState>((set) => ({
   isRightPanelOpen: false,
   isTypewriterMode: false,
   rightPanelView: "outline",
-  selectedGanttChartId: null,
+  selectedChartId: null,
   closeSidebar: () => set({ isSidebarOpen: false }),
   openSidebar: () => set({ isSidebarOpen: true }),
-  setSelectedGanttChartId: (chartId) => set({ selectedGanttChartId: chartId }),
+  setSelectedChartId: (chartId) => set({ selectedChartId: chartId }),
   setSidebarView: (view) =>
     set({
       activeSidebarView: view,

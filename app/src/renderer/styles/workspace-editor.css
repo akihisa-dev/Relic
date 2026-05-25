@@ -412,7 +412,7 @@
   color: var(--text);
 }
 
-.pane-tab--gantt.pane-tab--active {
+.pane-tab--chart.pane-tab--active {
   color: var(--accent);
 }
 
