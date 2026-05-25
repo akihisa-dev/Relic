@@ -218,7 +218,7 @@
 .editor-frontmatter-add-button {
   align-items: center;
   appearance: none;
-  background: var(--surface);
+  background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 999px;
   box-shadow: 0 6px 18px var(--shadow);
@@ -240,7 +240,7 @@
 
 .editor-frontmatter-add-button:hover,
 .editor-frontmatter-add-button[aria-expanded="true"] {
-  background: var(--surface-2);
+  background: var(--hover);
   border-color: var(--accent);
 }
 
@@ -249,7 +249,7 @@
 }
 
 .editor-frontmatter-add-menu {
-  background: var(--surface);
+  background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 8px;
   box-shadow: 0 18px 42px var(--shadow);
@@ -306,7 +306,7 @@
 
 .editor-frontmatter-add-menu-item:hover,
 .editor-frontmatter-add-menu-item:focus-visible {
-  background: var(--surface-2);
+  background: var(--hover);
   border-color: var(--border);
   outline: none;
 }
