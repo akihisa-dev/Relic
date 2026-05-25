@@ -139,6 +139,9 @@ export function buildFrontmatterPropertiesDecorations(
   const ranges: { from: number; to: number; deco: Decoration }[] = [];
   for (let lineNumber = block.startLine; lineNumber <= block.endLine; lineNumber += 1) {
     const line = state.doc.line(lineNumber);
+
+    if (collapsed && lineNumber !== block.startLine) continue;
+
     const widget = new FrontmatterPropertiesWidget(block, userDefinedFields, candidates, lineNumber, collapsed, t, dateFormat);
     ranges.push({
       from: line.from,
@@ -147,17 +150,14 @@ export function buildFrontmatterPropertiesDecorations(
         ? Decoration.replace({ widget })
         : Decoration.widget({ widget })
     });
+  }
 
-    if (collapsed && lineNumber !== block.startLine) {
-      ranges.push({
-        from: line.from,
-        to: line.from,
-        deco: Decoration.line({
-          attributes: { "aria-hidden": "true" },
-          class: "cm-frontmatter-line-collapsed"
-        })
-      });
-    }
+  if (collapsed && block.endLine > block.startLine) {
+    ranges.push({
+      from: state.doc.line(block.startLine).to,
+      to: state.doc.line(block.endLine).to,
+      deco: Decoration.replace({})
+    });
   }
 
   return Decoration.set(ranges.map((range) => range.deco.range(range.from, range.to)), true);

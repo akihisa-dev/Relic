@@ -552,7 +552,7 @@ describe("Editor", () => {
     expect(container.textContent).toContain("version: v1.0");
   });
 
-  it("プロパティフォーム化したフロントマターも通常の行番号ガターに表示する", async () => {
+  it("折りたたみ中のフロントマターは行番号の空白も畳み、展開時は通常の行番号ガターに表示する", async () => {
     const { container } = render(
       <Editor
         content={"---\nversion: v1.0\nupdated: 2026-03-24\naliases:\n  - test\n---\n# 本文"}
@@ -562,6 +562,12 @@ describe("Editor", () => {
     );
 
     await waitFor(() => expect(container.querySelector(".cm-frontmatter-properties")).not.toBeNull());
+    const collapsedLineNumbers = Array.from(container.querySelectorAll(".cm-gutterElement")).map((line) => line.textContent);
+
+    expect(collapsedLineNumbers).toEqual(expect.arrayContaining(["1", "7"]));
+    expect(collapsedLineNumbers).not.toEqual(expect.arrayContaining(["2", "3", "4", "5", "6"]));
+
+    await expandFrontmatter(container);
 
     expect(Array.from(container.querySelectorAll(".cm-gutterElement")).map((line) => line.textContent)).toEqual(expect.arrayContaining([
       "1",
