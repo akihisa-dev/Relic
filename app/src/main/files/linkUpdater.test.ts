@@ -4,7 +4,7 @@ import path from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import { updateLinksForFileRename, updateLinksForFolderRename } from "./linkUpdater";
+import { readLinkUpdateImpact, updateLinksForFileRename, updateLinksForFolderRename } from "./linkUpdater";
 
 describe("updateLinksForFileRename", () => {
   const temporaryPaths: string[] = [];
@@ -75,6 +75,22 @@ describe("updateLinksForFileRename", () => {
     await updateLinksForFileRename(ws, "old.md", "new.md");
 
     await expect(readFile(path.join(ws, "source.md"), "utf8")).resolves.toBe(original);
+  });
+
+  it("リンク更新の影響件数はコードブロック内リンクを数えない", async () => {
+    const ws = await mkdtemp(path.join(os.tmpdir(), "relic-link-updater-"));
+    temporaryPaths.push(ws);
+
+    await writeFile(path.join(ws, "source.md"), "[[old]]\n```\n[[old]]\n```", "utf8");
+    await writeFile(path.join(ws, "new.md"), "", "utf8");
+
+    await expect(readLinkUpdateImpact(ws, "file", "old.md", "new.md")).resolves.toEqual({
+      ok: true,
+      value: {
+        fileCount: 1,
+        linkCount: 1
+      }
+    });
   });
 
   it("埋め込みリンク ![[...]] も更新する", async () => {

@@ -15,6 +15,7 @@ import {
   getWorkspaceAliasesChannel,
   getWorkspaceChronicleChannel,
   getWorkspaceChronicleCalendarsChannel,
+  getLinkUpdateImpactChannel,
   getWorkspaceTagsChannel,
   getWorkspaceStateChannel,
   workspaceChangedChannel,
@@ -67,6 +68,8 @@ import {
   type ChronicleCalendarSettings,
   type GetBacklinksInput,
   type GanttChartSettings,
+  type LinkUpdateImpact,
+  type LinkUpdateImpactInput,
   type UpdateGanttChartEntryInput,
   type MarkdownFileContent,
   type MoveFolderInput,
@@ -91,7 +94,7 @@ import {
   type WindowCloseResponseInput,
   type WorkspaceState,
   type WorkspaceGanttChart,
-  type WorkspaceSearchResult,
+  type WorkspaceSearchResultSet,
   type WorkspaceTagSummary,
   type WriteMarkdownFileInput
 } from "../shared/ipc";
@@ -134,6 +137,8 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(getWorkspaceTagsChannel) as Promise<RelicResult<WorkspaceTagSummary[]>>,
   getWorkspaceState: () =>
     ipcRenderer.invoke(getWorkspaceStateChannel) as Promise<RelicResult<WorkspaceState>>,
+  getLinkUpdateImpact: (input: LinkUpdateImpactInput) =>
+    ipcRenderer.invoke(getLinkUpdateImpactChannel, input) as Promise<RelicResult<LinkUpdateImpact>>,
   moveFolder: (input: MoveFolderInput) =>
     ipcRenderer.invoke(moveFolderChannel, input) as Promise<RelicResult<WorkspaceState>>,
   moveItemToTrash: (input: MoveItemToTrashInput) =>
@@ -169,7 +174,7 @@ const relicApi: RelicApi = {
     >,
   searchWorkspace: (input: SearchWorkspaceInput) =>
     ipcRenderer.invoke(searchWorkspaceChannel, input) as Promise<
-      RelicResult<WorkspaceSearchResult[]>
+      RelicResult<WorkspaceSearchResultSet>
     >,
   switchWorkspace: (input: SwitchWorkspaceInput) =>
     ipcRenderer.invoke(switchWorkspaceChannel, input) as Promise<RelicResult<WorkspaceState>>,

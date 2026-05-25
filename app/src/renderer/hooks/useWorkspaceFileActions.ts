@@ -7,12 +7,14 @@ import type { Translator } from "../i18n";
 
 type UseWorkspaceFileActionsInput = WorkspaceFileActionsContext & {
   beforeCloseAllTabs?: () => Promise<boolean> | boolean;
+  beforeMutateWorkspaceItems?: WorkspaceFileActionsContext["beforeMutateWorkspaceItems"];
   t: Translator;
 };
 
 export function useWorkspaceFileActions({
   aliasesByPath,
   beforeCloseAllTabs,
+  beforeMutateWorkspaceItems,
   closeAllTabs,
   closeTab,
   existingMarkdownPaths,
@@ -58,6 +60,7 @@ export function useWorkspaceFileActions({
     setWorkspaceState
   });
   const mutationActions = useWorkspaceFileMutationActions({
+    beforeMutateWorkspaceItems,
     closeTab,
     focusedPane,
     leftPane,

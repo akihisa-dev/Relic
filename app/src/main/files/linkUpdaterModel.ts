@@ -8,9 +8,28 @@ export function replaceFileLinks(
   newBaseName: string,
   newPathWithoutExt: string
 ): string {
+  return replaceFileLinksWithCount(
+    content,
+    sourcePath,
+    oldRelativePath,
+    oldBaseName,
+    newBaseName,
+    newPathWithoutExt
+  ).content;
+}
+
+export function replaceFileLinksWithCount(
+  content: string,
+  sourcePath: string,
+  oldRelativePath: string,
+  oldBaseName: string,
+  newBaseName: string,
+  newPathWithoutExt: string
+): { content: string; count: number } {
   const maskedContent = maskFencedCodeBlocks(content);
   let result = content;
   let offset = 0;
+  let count = 0;
 
   const pattern = /(!)?\[\[([^\]\n]+)\]\]/g;
 
@@ -38,9 +57,10 @@ export function replaceFileLinks(
     const matchStart = match.index! + offset;
     result = result.slice(0, matchStart) + newRawLink + result.slice(matchStart + rawLink.length);
     offset += newRawLink.length - rawLink.length;
+    count += 1;
   }
 
-  return result;
+  return { content: result, count };
 }
 
 export function replaceFolderLinks(
@@ -48,9 +68,18 @@ export function replaceFolderLinks(
   oldFolderRelativePath: string,
   newFolderRelativePath: string
 ): string {
+  return replaceFolderLinksWithCount(content, oldFolderRelativePath, newFolderRelativePath).content;
+}
+
+export function replaceFolderLinksWithCount(
+  content: string,
+  oldFolderRelativePath: string,
+  newFolderRelativePath: string
+): { content: string; count: number } {
   const maskedContent = maskFencedCodeBlocks(content);
   let result = content;
   let offset = 0;
+  let count = 0;
 
   const oldPrefix = oldFolderRelativePath + "/";
   const newPrefix = newFolderRelativePath + "/";
@@ -84,9 +113,10 @@ export function replaceFolderLinks(
     const matchStart = match.index! + offset;
     result = result.slice(0, matchStart) + newRawLink + result.slice(matchStart + rawLink.length);
     offset += newRawLink.length - rawLink.length;
+    count += 1;
   }
 
-  return result;
+  return { content: result, count };
 }
 
 interface ParsedWikiLinkBody {

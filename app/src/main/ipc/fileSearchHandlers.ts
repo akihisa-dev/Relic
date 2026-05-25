@@ -46,7 +46,7 @@ export function registerFileSearchHandlers(): void {
           context.value.settings.userDefinedFields
         )
       ) {
-        return ok([]);
+        return ok({ results: [], skippedLargeFiles: 0, truncated: false });
       }
 
       return searchWorkspace(

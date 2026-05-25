@@ -7,6 +7,7 @@ interface FilesSearchResultsProps {
   error: string | null;
   frontmatterField: string;
   isSearching: boolean;
+  limitNotice: { skippedLargeFiles: number; truncated: boolean } | null;
   mode: SearchMode;
   onOpenFile: (path: string, event?: MouseEvent<HTMLButtonElement>) => void;
   query: string;
@@ -17,6 +18,7 @@ export function FilesSearchResults({
   error,
   frontmatterField,
   isSearching,
+  limitNotice,
   mode,
   onOpenFile,
   query,
@@ -33,6 +35,14 @@ export function FilesSearchResults({
       <div className="links-panel-subheading">
         {t("files.searchResults", { count: results.length })}
       </div>
+      {limitNotice ? (
+        <div className="list-loading-note">
+          {[
+            limitNotice.truncated ? t("search.truncated") : null,
+            limitNotice.skippedLargeFiles > 0 ? t("search.skippedLargeFiles", { count: limitNotice.skippedLargeFiles }) : null
+          ].filter(Boolean).join(" ")}
+        </div>
+      ) : null}
       {results.length > 0 ? (
         <ul className="search-results">
           {results.map((result, index) => (

@@ -11,6 +11,7 @@ export {
   findFrontmatterBlock,
   findFrontmatterLineRange,
   findTopLevelYamlFieldEntries,
+  hasInvalidFrontmatterYaml,
   findYamlInlineComment,
   findYamlScalarQuote,
   fixedFrontmatterFieldNames,

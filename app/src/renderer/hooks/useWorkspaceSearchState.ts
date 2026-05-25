@@ -25,6 +25,7 @@ export function useWorkspaceSearchState({
   const [searchMode, setSearchMode] = useState<SearchMode>("fullText");
   const [searchFrontmatterField, setSearchFrontmatterField] = useState("");
   const [searchResults, setSearchResults] = useState<WorkspaceSearchResult[]>([]);
+  const [searchLimitNotice, setSearchLimitNotice] = useState<{ skippedLargeFiles: number; truncated: boolean } | null>(null);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [workspaceFrontmatterCandidates, setWorkspaceFrontmatterCandidates] = useState<Record<string, string[]>>({});
@@ -80,6 +81,7 @@ export function useWorkspaceSearchState({
   useEffect(() => {
     if (!workspaceState?.activeWorkspace || !window.relic || searchQuery.trim() === "") {
       setSearchResults([]);
+      setSearchLimitNotice(null);
       setSearchError(null);
       setIsSearching(false);
       return;
@@ -98,10 +100,16 @@ export function useWorkspaceSearchState({
         if (canceled) return;
 
         if (result.ok) {
-          setSearchResults(result.value);
+          setSearchResults(result.value.results);
+          setSearchLimitNotice(
+            result.value.truncated || result.value.skippedLargeFiles > 0
+              ? { skippedLargeFiles: result.value.skippedLargeFiles, truncated: result.value.truncated }
+              : null
+          );
           setSearchError(null);
         } else {
           setSearchResults([]);
+          setSearchLimitNotice(null);
           setSearchError(result.error.message);
         }
       })
@@ -119,6 +127,7 @@ export function useWorkspaceSearchState({
     frontmatterSearchFields,
     isSearching,
     searchError,
+    searchLimitNotice,
     searchFrontmatterField,
     searchMode,
     searchQuery,
@@ -128,6 +137,7 @@ export function useWorkspaceSearchState({
     setSearchQuery
   };
 }
+
 
 function mergeCandidates(...lists: string[][]): string[] {
   return [...new Set(lists.flat().filter((item) => item.trim() !== ""))]

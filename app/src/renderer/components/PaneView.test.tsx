@@ -222,4 +222,22 @@ describe("PaneView", () => {
     fireEvent.click(screen.getByRole("button", { name: "Create New File" }));
     expect(props.onCreateFile).toHaveBeenCalledWith("");
   });
+
+  it("shows a warning for unreadable frontmatter while keeping the editor editable", () => {
+    setPaneState(
+      {
+        [fileTab.id]: {
+          ...fileTab,
+          content: "---\ntitle: [broken\n---\nEditable body",
+          savedContent: "---\ntitle: [broken\n---\nEditable body"
+        }
+      },
+      { activeTabId: fileTab.id, history: [fileTab.id], tabIds: [fileTab.id] }
+    );
+
+    renderPaneView();
+
+    expect(screen.getByText("Frontmatter cannot be read. Editing and saving can continue.")).toBeInTheDocument();
+    expect(screen.getByText("Editable body")).toBeInTheDocument();
+  });
 });

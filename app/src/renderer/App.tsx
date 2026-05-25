@@ -35,6 +35,7 @@ import { useWorkspaceChronicleCalendars } from "./hooks/useWorkspaceChronicleCal
 import { useWorkspaceGanttCharts } from "./hooks/useWorkspaceGanttCharts";
 import { useWorkspaceRenameRailHold } from "./hooks/useWorkspaceRenameRailHold";
 import { useWorkspaceSearchState } from "./hooks/useWorkspaceSearchState";
+import { matchesAnyTreeItemPath } from "./hooks/workspaceFileActionHelpers";
 import { useEditorStore, type PaneId } from "./store/editorStore";
 import { useUiStore, type RightPanelView } from "./store/uiStore";
 import { collectMarkdownPaths } from "./workspacePaths";
@@ -138,6 +139,7 @@ export function App(): ReactElement {
     isSearching,
     searchError,
     searchFrontmatterField,
+    searchLimitNotice,
     searchMode,
     searchQuery,
     searchResults,
@@ -221,6 +223,17 @@ export function App(): ReactElement {
     return true;
     })();
   }, [flushTabsBeforeClose, setWorkspaceError]);
+  const ensureCanMutateWorkspaceItems = useCallback((
+    items: Array<{ path: string; type: "file" | "folder" }>
+  ): Promise<boolean> | boolean => {
+    const currentTabs = useEditorStore.getState().tabs;
+    const targetTabIds = Object.entries(currentTabs)
+      .filter(([, tab]) => tab.kind === "file" && matchesAnyTreeItemPath(tab.path, items))
+      .map(([tabId]) => tabId);
+
+    if (targetTabIds.length === 0) return true;
+    return ensureCanCloseTabs(focusedPane, targetTabIds);
+  }, [ensureCanCloseTabs, focusedPane]);
 
   const {
     handleDeleteActiveFile,
@@ -252,6 +265,7 @@ export function App(): ReactElement {
   } = useWorkspaceFileActions({
     aliasesByPath,
     beforeCloseAllTabs: ensureCanCloseAllTabs,
+    beforeMutateWorkspaceItems: ensureCanMutateWorkspaceItems,
     closeAllTabs,
     closeTab,
     existingMarkdownPaths,
@@ -489,7 +503,8 @@ export function App(): ReactElement {
     backlinks,
     isLoadingBacklinks,
     outlineHeadings,
-    outgoingLinks
+    outgoingLinks,
+    outgoingLinksLimited
   } = useActiveDocumentContext({
     aliasesByPath,
     existingMarkdownPaths,
@@ -637,6 +652,7 @@ export function App(): ReactElement {
           searchFrontmatterCandidates={frontmatterCandidates}
           searchFrontmatterField={searchFrontmatterField}
           searchFrontmatterFields={frontmatterSearchFields}
+          searchLimitNotice={searchLimitNotice}
           searchMode={searchMode}
           searchQuery={searchQuery}
           searchResults={searchResults}
@@ -701,6 +717,7 @@ export function App(): ReactElement {
           onTogglePinTab={toggleTabPinned}
           outlineHeadings={outlineHeadings}
           outgoingLinks={outgoingLinks}
+          outgoingLinksLimited={outgoingLinksLimited}
           renderGanttChartTab={renderGanttChartTab}
           renderPanelTab={renderPanelTab}
           renderPanelTabIcon={renderPanelTabIcon}

@@ -2,17 +2,31 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 
 import { collectMarkdownPaths } from "../../shared/workspaceTree";
+import type { LinkUpdateImpact, LinkUpdateImpactKind } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { atomicWriteTextFile } from "./atomicWrite";
 import { errorDetails } from "./fileSystem";
 import { readWorkspaceFileTree } from "./fileTree";
-import { replaceFileLinks, replaceFolderLinks } from "./linkUpdaterModel";
+import { replaceFileLinksWithCount, replaceFolderLinksWithCount } from "./linkUpdaterModel";
 import { resolveExistingWorkspacePath } from "./paths";
 
 interface LinkUpdatePatch {
   absolutePath: string;
+  linkCount: number;
   nextContent: string;
   previousContent: string;
+}
+
+export async function readLinkUpdateImpact(
+  workspacePath: string,
+  kind: LinkUpdateImpactKind,
+  oldPath: string,
+  newPath: string
+): Promise<RelicResult<LinkUpdateImpact>> {
+  const patches = await buildLinkUpdatePatches(workspacePath, kind, oldPath, newPath);
+  if (!patches.ok) return patches;
+
+  return ok(summarizeLinkUpdatePatches(patches.value));
 }
 
 /**
@@ -27,44 +41,10 @@ export async function updateLinksForFileRename(
 ): Promise<RelicResult<void>> {
   if (oldRelativePath === newRelativePath) return ok(undefined);
 
-  const fileTree = await readWorkspaceFileTree(workspacePath);
-  const markdownPaths = collectMarkdownPaths(fileTree);
+  const patches = await buildLinkUpdatePatches(workspacePath, "file", oldRelativePath, newRelativePath);
+  if (!patches.ok) return patches;
 
-  const oldBaseName = path.basename(oldRelativePath, ".md");
-  const newBaseName = path.basename(newRelativePath, ".md");
-  const newPathWithoutExt = newRelativePath.replace(/\.md$/, "");
-  const patches: LinkUpdatePatch[] = [];
-
-  for (const sourcePath of markdownPaths) {
-    const absoluteSourcePath = await resolveExistingWorkspacePath(workspacePath, sourcePath);
-    if (!absoluteSourcePath.ok) return absoluteSourcePath;
-
-    let content: string;
-    try {
-      content = await readFile(absoluteSourcePath.value, "utf8");
-    } catch (err) {
-      return fail("LINK_UPDATE_READ_FAILED", "内部リンク更新のためにファイルを読み込めませんでした。", errorDetails(err));
-    }
-
-    const updatedContent = replaceFileLinks(
-      content,
-      sourcePath,
-      oldRelativePath,
-      oldBaseName,
-      newBaseName,
-      newPathWithoutExt
-    );
-
-    if (updatedContent !== content) {
-      patches.push({
-        absolutePath: absoluteSourcePath.value,
-        nextContent: updatedContent,
-        previousContent: content
-      });
-    }
-  }
-
-  return applyLinkUpdatePatches(patches);
+  return applyLinkUpdatePatches(patches.value);
 }
 
 /**
@@ -78,9 +58,26 @@ export async function updateLinksForFolderRename(
 ): Promise<RelicResult<void>> {
   if (oldFolderRelativePath === newFolderRelativePath) return ok(undefined);
 
+  const patches = await buildLinkUpdatePatches(workspacePath, "folder", oldFolderRelativePath, newFolderRelativePath);
+  if (!patches.ok) return patches;
+
+  return applyLinkUpdatePatches(patches.value);
+}
+
+async function buildLinkUpdatePatches(
+  workspacePath: string,
+  kind: LinkUpdateImpactKind,
+  oldPath: string,
+  newPath: string
+): Promise<RelicResult<LinkUpdatePatch[]>> {
+  if (oldPath === newPath) return ok([]);
+
   const fileTree = await readWorkspaceFileTree(workspacePath);
   const markdownPaths = collectMarkdownPaths(fileTree);
   const patches: LinkUpdatePatch[] = [];
+  const oldBaseName = path.basename(oldPath, ".md");
+  const newBaseName = path.basename(newPath, ".md");
+  const newPathWithoutExt = newPath.replace(/\.md$/, "");
 
   for (const sourcePath of markdownPaths) {
     const absoluteSourcePath = await resolveExistingWorkspacePath(workspacePath, sourcePath);
@@ -93,22 +90,35 @@ export async function updateLinksForFolderRename(
       return fail("LINK_UPDATE_READ_FAILED", "内部リンク更新のためにファイルを読み込めませんでした。", errorDetails(err));
     }
 
-    const updatedContent = replaceFolderLinks(
-      content,
-      oldFolderRelativePath,
-      newFolderRelativePath
-    );
+    const replacement = kind === "file"
+      ? replaceFileLinksWithCount(
+        content,
+        sourcePath,
+        oldPath,
+        oldBaseName,
+        newBaseName,
+        newPathWithoutExt
+      )
+      : replaceFolderLinksWithCount(content, oldPath, newPath);
 
-    if (updatedContent !== content) {
+    if (replacement.content !== content) {
       patches.push({
         absolutePath: absoluteSourcePath.value,
-        nextContent: updatedContent,
+        linkCount: replacement.count,
+        nextContent: replacement.content,
         previousContent: content
       });
     }
   }
 
-  return applyLinkUpdatePatches(patches);
+  return ok(patches);
+}
+
+function summarizeLinkUpdatePatches(patches: LinkUpdatePatch[]): LinkUpdateImpact {
+  return {
+    fileCount: patches.length,
+    linkCount: patches.reduce((sum, patch) => sum + patch.linkCount, 0)
+  };
 }
 
 async function applyLinkUpdatePatches(patches: LinkUpdatePatch[]): Promise<RelicResult<void>> {

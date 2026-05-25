@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import type { FormEvent, KeyboardEvent, MutableRefObject, ReactElement, ReactNode } from "react";
 
 import type { EditorSettings, UserDefinedField } from "../../shared/ipc";
+import { hasInvalidFrontmatterYaml } from "../editorFrontmatter";
 import { isLargeMarkdownContent } from "../largeMarkdown";
 import { textCount } from "../paneViewModel";
 import type { PanelTabKind, Tab } from "../store/editorStore";
@@ -59,6 +60,7 @@ export function PaneContentSurface({
   if (activeTab?.kind === "file") {
     const { chars, words } = textCount(activeTab.content);
     const isLargeMarkdown = isLargeMarkdownContent(activeTab.content);
+    const hasInvalidFrontmatter = hasInvalidFrontmatterYaml(activeTab.content);
 
     return (
       <div
@@ -94,6 +96,15 @@ export function PaneContentSurface({
               style={{ maxWidth: editorSettings.maxWidth === "none" ? undefined : editorSettings.maxWidth }}
             >
               <span>{t("pane.largeMarkdown")}</span>
+            </div>
+          ) : null}
+          {hasInvalidFrontmatter ? (
+            <div
+              className="editor-conflict-banner"
+              role="status"
+              style={{ maxWidth: editorSettings.maxWidth === "none" ? undefined : editorSettings.maxWidth }}
+            >
+              <span>{t("frontmatter.invalidYamlBanner")}</span>
             </div>
           ) : null}
           <Editor

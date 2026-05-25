@@ -44,6 +44,7 @@ export interface FilesSidebarProps {
   searchFrontmatterCandidates: Record<string, string[]>;
   searchFrontmatterField: string;
   searchFrontmatterFields: string[];
+  searchLimitNotice: { skippedLargeFiles: number; truncated: boolean } | null;
   searchMode: SearchMode;
   searchQuery: string;
   searchResults: WorkspaceSearchResult[];
@@ -84,6 +85,7 @@ export function FilesSidebar({
   searchFrontmatterCandidates,
   searchFrontmatterField,
   searchFrontmatterFields,
+  searchLimitNotice,
   searchMode,
   searchQuery,
   searchResults,
@@ -135,6 +137,7 @@ export function FilesSidebar({
               error={searchError}
               frontmatterField={searchFrontmatterField}
               isSearching={isSearching}
+              limitNotice={searchLimitNotice}
               mode={searchMode}
               onOpenFile={onOpenFile}
               query={searchQuery}

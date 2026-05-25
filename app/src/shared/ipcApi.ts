@@ -27,6 +27,8 @@ import type {
   CreateMarkdownFileInput,
   DuplicateMarkdownFileInput,
   GetBacklinksInput,
+  LinkUpdateImpact,
+  LinkUpdateImpactInput,
   MarkdownFileContent,
   MoveFolderInput,
   MoveItemToTrashInput,
@@ -45,7 +47,7 @@ import type {
   SearchWorkspaceInput,
   SwitchWorkspaceInput,
   WorkspaceChangedEvent,
-  WorkspaceSearchResult,
+  WorkspaceSearchResultSet,
   WorkspaceState,
   WorkspaceTagSummary,
   WriteMarkdownFileInput
@@ -80,6 +82,7 @@ export interface RelicApi {
   getFrontmatterValueCandidates: () => Promise<RelicResult<Record<string, string[]>>>;
   getWorkspaceTags: () => Promise<RelicResult<WorkspaceTagSummary[]>>;
   getWorkspaceState: () => Promise<RelicResult<WorkspaceState>>;
+  getLinkUpdateImpact: (input: LinkUpdateImpactInput) => Promise<RelicResult<LinkUpdateImpact>>;
   moveFolder: (input: MoveFolderInput) => Promise<RelicResult<WorkspaceState>>;
   moveItemToTrash: (input: MoveItemToTrashInput) => Promise<RelicResult<WorkspaceState>>;
   moveMarkdownFile: (
@@ -101,7 +104,7 @@ export interface RelicApi {
   searchAndReplace: (
     input: SearchAndReplaceInput
   ) => Promise<RelicResult<SearchAndReplaceMatch[]>>;
-  searchWorkspace: (input: SearchWorkspaceInput) => Promise<RelicResult<WorkspaceSearchResult[]>>;
+  searchWorkspace: (input: SearchWorkspaceInput) => Promise<RelicResult<WorkspaceSearchResultSet>>;
   switchWorkspace: (input: SwitchWorkspaceInput) => Promise<RelicResult<WorkspaceState>>;
   writeMarkdownFile: (input: WriteMarkdownFileInput) => Promise<RelicResult<void>>;
   writeClipboardText: (text: string) => void;

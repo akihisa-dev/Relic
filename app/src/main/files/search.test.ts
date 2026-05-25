@@ -4,7 +4,7 @@ import path from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import { searchWorkspace } from "./search";
+import { searchWorkspace, workspaceSearchMaxFileBytes, workspaceSearchMaxResults } from "./search";
 
 describe("searchWorkspace", () => {
   const temporaryPaths: string[] = [];
@@ -25,14 +25,12 @@ describe("searchWorkspace", () => {
 
     await expect(searchWorkspace(workspacePath, "ドラフト", "fullText")).resolves.toEqual({
       ok: true,
-      value: [
-        {
-          fileName: "読書メモ",
-          lineNumber: 8,
-          lineText: "本文ドラフト",
-          path: "読書メモ.md"
-        }
-      ]
+      value: searchResultSet([{
+        fileName: "読書メモ",
+        lineNumber: 8,
+        lineText: "本文ドラフト",
+        path: "読書メモ.md"
+      }])
     });
   });
 
@@ -41,25 +39,21 @@ describe("searchWorkspace", () => {
 
     await expect(searchWorkspace(workspacePath, "ファイルツリー", "fullText")).resolves.toEqual({
       ok: true,
-      value: [
-        {
-          fileName: "deep-link",
-          lineNumber: 4,
-          lineText: "ファイルツリーのフォルダ開閉、リンク解決、検索確認です。",
-          path: "deep-link.md"
-        }
-      ]
+      value: searchResultSet([{
+        fileName: "deep-link",
+        lineNumber: 4,
+        lineText: "ファイルツリーのフォルダ開閉、リンク解決、検索確認です。",
+        path: "deep-link.md"
+      }])
     });
     await expect(searchWorkspace(workspacePath, "ファイル", "fullText")).resolves.toEqual({
       ok: true,
-      value: [
-        {
-          fileName: "deep-link",
-          lineNumber: 4,
-          lineText: "ファイルツリーのフォルダ開閉、リンク解決、検索確認です。",
-          path: "deep-link.md"
-        }
-      ]
+      value: searchResultSet([{
+        fileName: "deep-link",
+        lineNumber: 4,
+        lineText: "ファイルツリーのフォルダ開閉、リンク解決、検索確認です。",
+        path: "deep-link.md"
+      }])
     });
   });
 
@@ -68,7 +62,7 @@ describe("searchWorkspace", () => {
 
     await expect(searchWorkspace(workspacePath, "nested", "fileName")).resolves.toMatchObject({
       ok: true,
-      value: [{ fileName: "nested", lineNumber: null, path: "folder/nested.md" }]
+      value: { results: [{ fileName: "nested", lineNumber: null, path: "folder/nested.md" }] }
     });
   });
 
@@ -77,7 +71,7 @@ describe("searchWorkspace", () => {
 
     await expect(searchWorkspace(workspacePath, "別名", "fileName")).resolves.toMatchObject({
       ok: true,
-      value: [{ fileName: "読書メモ", lineText: "alias: 別名メモ", path: "読書メモ.md" }]
+      value: { results: [{ fileName: "読書メモ", lineText: "alias: 別名メモ", path: "読書メモ.md" }] }
     });
   });
 
@@ -86,9 +80,9 @@ describe("searchWorkspace", () => {
 
     await expect(searchWorkspace(workspacePath, "#資料", "tag")).resolves.toMatchObject({
       ok: true,
-      value: [
+      value: { results: [
         { fileName: "読書メモ", path: "読書メモ.md" }
-      ]
+      ] }
     });
   });
 
@@ -98,7 +92,7 @@ describe("searchWorkspace", () => {
     const result = await searchWorkspace(workspacePath, "^# ", "regex");
 
     expect(result).toMatchObject({ ok: true });
-    expect(result.ok ? result.value : []).toContainEqual({
+    expect(result.ok ? result.value.results : []).toContainEqual({
       fileName: "読書メモ",
       lineNumber: 7,
       lineText: "# 読書メモ",
@@ -115,14 +109,12 @@ describe("searchWorkspace", () => {
 
     await expect(searchWorkspace(workspacePath, "draft", "frontmatter", "status")).resolves.toEqual({
       ok: true,
-      value: [
-        {
-          fileName: "読書メモ",
-          lineNumber: null,
-          lineText: "status: draft",
-          path: "読書メモ.md"
-        }
-      ]
+      value: searchResultSet([{
+        fileName: "読書メモ",
+        lineNumber: null,
+        lineText: "status: draft",
+        path: "読書メモ.md"
+      }])
     });
   });
 
@@ -131,8 +123,45 @@ describe("searchWorkspace", () => {
 
     await expect(searchWorkspace(workspacePath, "自分", "frontmatter", "author")).resolves.toMatchObject({
       ok: true,
-      value: [{ fileName: "読書メモ", path: "読書メモ.md" }]
+      value: { results: [{ fileName: "読書メモ", path: "読書メモ.md" }] }
     });
+  });
+
+  it("検索結果が多い場合は500件で打ち切る", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-search-limit-"));
+    temporaryPaths.push(workspacePath);
+
+    await Promise.all(
+      Array.from({ length: workspaceSearchMaxResults + 1 }, (_, index) =>
+        writeFile(path.join(workspacePath, `note-${index}.md`), "needle", "utf8")
+      )
+    );
+
+    const result = await searchWorkspace(workspacePath, "needle", "fullText");
+
+    expect(result).toMatchObject({ ok: true });
+    if (!result.ok) return;
+    expect(result.value.results).toHaveLength(workspaceSearchMaxResults);
+    expect(result.value.truncated).toBe(true);
+  });
+
+  it("2MiBを超えるMarkdownは検索対象から外す", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-search-large-"));
+    temporaryPaths.push(workspacePath);
+    await writeFile(path.join(workspacePath, "large.md"), `${"x".repeat(workspaceSearchMaxFileBytes + 1)}needle`, "utf8");
+    await writeFile(path.join(workspacePath, "small.md"), "needle", "utf8");
+
+    const result = await searchWorkspace(workspacePath, "needle", "fullText");
+
+    expect(result).toMatchObject({ ok: true });
+    if (!result.ok) return;
+    expect(result.value.results).toEqual([{
+      fileName: "small",
+      lineNumber: 1,
+      lineText: "needle",
+      path: "small.md"
+    }]);
+    expect(result.value.skippedLargeFiles).toBe(1);
   });
 
   async function createSearchWorkspace(): Promise<string> {
@@ -155,3 +184,7 @@ describe("searchWorkspace", () => {
     return workspacePath;
   }
 });
+
+function searchResultSet(results: unknown[]) {
+  return { results, skippedLargeFiles: 0, truncated: false };
+}
