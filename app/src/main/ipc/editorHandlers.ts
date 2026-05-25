@@ -8,10 +8,7 @@ import {
   type WriteMarkdownFileInput
 } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
-import { readMarkdownFile } from "../files/markdownFiles";
-import { writeFile } from "node:fs/promises";
-import path from "node:path";
-import { resolveWorkspaceRelativePath } from "../files/paths";
+import { writeMarkdownFileContent } from "../files/markdownFiles";
 import { readAppSettings, writeAppSettings } from "../settings/appSettings";
 import { toWorkspaceState } from "../workspace/workspaceService";
 
@@ -31,19 +28,7 @@ export function registerEditorHandlers(): void {
           return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
         }
 
-        const resolved = resolveWorkspaceRelativePath(state.activeWorkspace.path, input.path);
-
-        if (!resolved.ok) {
-          return resolved;
-        }
-
-        if (path.extname(resolved.value) !== ".md") {
-          return fail("FILE_WRITE_NOT_MARKDOWN", "Markdownファイル以外は書き込めません。");
-        }
-
-        await writeFile(resolved.value, input.content, "utf8");
-
-        return ok(undefined);
+        return writeMarkdownFileContent(state.activeWorkspace.path, input.path, input.content);
       } catch (error) {
         return fail(
           "FILE_WRITE_FAILED",

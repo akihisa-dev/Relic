@@ -570,6 +570,7 @@ export function App(): ReactElement {
           onCreateFile={handleCreateNoteFromPane}
           onDuplicateTabFile={handleDuplicateTabFile}
           onEditorAction={() => setEditorActionPulse((value) => value + 1)}
+          onFileSaveError={setWorkspaceError}
           onFileSaved={handleFileSaved}
           onOpenFile={handleOpenFile}
           onOpenInOtherPane={openFileInOtherPane}

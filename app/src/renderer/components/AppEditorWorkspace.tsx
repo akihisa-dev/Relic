@@ -35,6 +35,7 @@ interface AppEditorWorkspaceProps {
   onDuplicateTabFile?: (tabId: string) => void;
   onEditorAction: () => void;
   onFileSaved: () => void;
+  onFileSaveError: (message: string) => void;
   onOpenFile: (path: string) => void;
   onOpenInOtherPane: (pane: PaneId, tabId: string) => void;
   onOpenLink: (href: string) => void;
@@ -92,6 +93,7 @@ export function AppEditorWorkspace({
   onDuplicateTabFile,
   onEditorAction,
   onFileSaved,
+  onFileSaveError,
   onOpenFile,
   onOpenInOtherPane,
   onOpenLink,
@@ -204,6 +206,7 @@ export function AppEditorWorkspace({
               onCreateFile={onCreateFile}
               onDuplicateTabFile={onDuplicateTabFile}
               onEditorAction={onEditorAction}
+              onFileSaveError={onFileSaveError}
               onFileSaved={onFileSaved}
               onFocus={() => onSetFocusedPane("left")}
               onOpenInOtherPane={(tabId) => onOpenInOtherPane("left", tabId)}
@@ -243,6 +246,7 @@ export function AppEditorWorkspace({
                 onCreateFile={onCreateFile}
                 onDuplicateTabFile={onDuplicateTabFile}
                 onEditorAction={onEditorAction}
+                onFileSaveError={onFileSaveError}
                 onFileSaved={onFileSaved}
                 onFocus={() => onSetFocusedPane("right")}
                 onOpenInOtherPane={(tabId) => onOpenInOtherPane("right", tabId)}

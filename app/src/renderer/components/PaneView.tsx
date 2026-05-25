@@ -33,6 +33,7 @@ export interface PaneViewProps {
   onOpenLink?: (href: string) => void;
   onOpenWikiLink?: (target: string, heading?: string) => void;
   onFileSaved?: (path: string) => void;
+  onFileSaveError?: (message: string) => void;
   onRenameFile: (path: string, name: string) => void;
   onScrollTargetHandled?: () => void;
   onTabClose: (tabId: string) => void;
@@ -71,6 +72,7 @@ export function PaneView({
   onOpenLink,
   onOpenWikiLink,
   onFileSaved,
+  onFileSaveError,
   onRenameFile,
   onScrollTargetHandled,
   onTabClose,
@@ -109,7 +111,8 @@ export function PaneView({
     activeTab?.kind === "file" ? activeTab.content : "",
     activeTab?.kind === "file" ? activeTab.path : null,
     activeTab?.kind === "file",
-    onFileSaved
+    onFileSaved,
+    onFileSaveError
   );
 
   usePaneHeadingScroll({

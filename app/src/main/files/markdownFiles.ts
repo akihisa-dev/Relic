@@ -3,6 +3,7 @@ import path from "node:path";
 
 import type { MarkdownFileContent } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
+import { atomicWriteTextFile } from "./atomicWrite";
 import { errorDetails, isFileExistsError, pathExists } from "./fileSystem";
 import { updateLinksForFileRename } from "./linkUpdater";
 import {
@@ -126,6 +127,34 @@ export async function readMarkdownFile(
     return fail(
       "FILE_READ_FAILED",
       "ファイルを読み込めませんでした。",
+      errorDetails(error)
+    );
+  }
+}
+
+export async function writeMarkdownFileContent(
+  workspacePath: string,
+  relativePath: string,
+  content: string
+): Promise<RelicResult<void>> {
+  const absoluteFilePath = resolveWorkspaceRelativePath(workspacePath, relativePath);
+
+  if (!absoluteFilePath.ok) {
+    return absoluteFilePath;
+  }
+
+  if (path.extname(absoluteFilePath.value) !== ".md") {
+    return fail("FILE_WRITE_NOT_MARKDOWN", "Markdownファイル以外は書き込めません。");
+  }
+
+  try {
+    await atomicWriteTextFile(absoluteFilePath.value, content);
+
+    return ok(undefined);
+  } catch (error) {
+    return fail(
+      "FILE_WRITE_FAILED",
+      "ファイルを保存できませんでした。",
       errorDetails(error)
     );
   }
