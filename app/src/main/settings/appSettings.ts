@@ -80,7 +80,7 @@ function parseEditorSettings(raw: unknown): EditorSettings {
   const s = raw as Record<string, unknown>;
 
   return {
-    font: s.font === "mincho" || s.font === "mono" ? s.font : "system",
+    font: s.font === "gothic" || s.font === "mincho" || s.font === "mono" ? s.font : "system",
     fontSize: typeof s.fontSize === "number" && s.fontSize > 0 ? s.fontSize : defaultEditorSettings.fontSize,
     frontmatterDateFormat: s.frontmatterDateFormat === "system" ||
       s.frontmatterDateFormat === "mdy" ||

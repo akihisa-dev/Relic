@@ -19,9 +19,10 @@ interface PreviewProps {
 }
 
 const fontFamilyMap: Record<EditorSettings["font"], string> = {
-  mincho: '"Hiragino Mincho ProN", serif',
-  mono: "Menlo, monospace",
-  system: '-apple-system, BlinkMacSystemFont, "Hiragino Sans", sans-serif'
+  gothic: '"Hiragino Sans", "Yu Gothic", "Meiryo", sans-serif',
+  mincho: '"Hiragino Mincho ProN", "Yu Mincho", "MS Mincho", serif',
+  mono: 'Menlo, Consolas, "Courier New", monospace',
+  system: '-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif'
 };
 
 export function Preview({
