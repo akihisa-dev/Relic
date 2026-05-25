@@ -9,16 +9,15 @@ import {
   type UpdateGanttChartEntryInput,
   type WorkspaceGanttChart
 } from "../../shared/ipc";
+import { updateChartFrontmatterContent } from "../../shared/chartFrontmatterUpdate";
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { collectMarkdownPaths } from "../../shared/workspaceTree";
 import {
   collectGanttEntriesForMarkdown,
   sortChronicleEntries,
-  sortDateEntries,
-  updateChronicleDataForChartEdit
+  sortDateEntries
 } from "./chronicleData";
 import { readWorkspaceFileTree } from "./fileTree";
-import { updateFrontmatter } from "./frontmatter";
 import { resolveWorkspaceRelativePath } from "./paths";
 
 export { extractChronicleRange, extractDateRange } from "./chronicleData";
@@ -82,11 +81,11 @@ export async function updateWorkspaceGanttChartEntry(
     }
 
     const content = await readFile(absolutePath.value, "utf8");
-    const nextContent = updateFrontmatter(content, (data) =>
-      updateChronicleDataForChartEdit(data, input, calendars)
-    );
+    const nextContent = updateChartFrontmatterContent(content, input, calendars);
 
-    await writeFile(absolutePath.value, nextContent, "utf8");
+    if (!nextContent.ok) return nextContent;
+
+    await writeFile(absolutePath.value, nextContent.value, "utf8");
 
     return readWorkspaceChronicle(workspacePath, charts, calendars);
   } catch (error) {

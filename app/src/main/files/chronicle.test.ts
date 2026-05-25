@@ -374,6 +374,81 @@ describe("updateWorkspaceGanttChartEntry", () => {
     expect(updated).not.toContain("&ref");
   });
 
+  it("チャート書き戻し時に対象外フィールド、コメント、並びを保持する", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-chart-preserve-frontmatter-"));
+    const filePath = path.join(workspacePath, "entry.md");
+    await writeFile(filePath, [
+      "---",
+      "# keep comment",
+      "custom:",
+      "  - value",
+      "chronicle0: [2026] # keep year note",
+      "plannedDate: [2026-12-30] # keep date note",
+      "---",
+      "# A",
+      ""
+    ].join("\n"), "utf8");
+
+    const result = await updateWorkspaceGanttChartEntry(
+      workspacePath,
+      [
+        { filePaths: [], id: "chronicle", name: "chronicle", source: "chronicle" },
+        { filePaths: [], id: "date", name: "date", source: "date" }
+      ],
+      {
+        endValue: 20820,
+        kind: "resize-end",
+        originalEndValue: 20817,
+        originalStartValue: 20817,
+        path: "entry.md",
+        source: "date",
+        startValue: 20817
+      }
+    );
+
+    expect(result.ok).toBe(true);
+    await expect(readFile(filePath, "utf8")).resolves.toBe([
+      "---",
+      "# keep comment",
+      "custom:",
+      "  - value",
+      "chronicle0: [2026, 2027] # keep year note",
+      "plannedDate: [2026-12-30, 2027-01-02] # keep date note",
+      "---",
+      "# A",
+      ""
+    ].join("\n"));
+  });
+
+  it("壊れたfrontmatterにはチャート書き戻しをしない", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-chart-invalid-frontmatter-"));
+    const filePath = path.join(workspacePath, "entry.md");
+    const original = "---\n: invalid: yaml:\n---\n# A\n";
+    await writeFile(filePath, original, "utf8");
+
+    const result = await updateWorkspaceGanttChartEntry(
+      workspacePath,
+      [
+        { filePaths: [], id: "chronicle", name: "chronicle", source: "chronicle" },
+        { filePaths: [], id: "date", name: "date", source: "date" }
+      ],
+      {
+        endValue: 20820,
+        kind: "resize-end",
+        originalEndValue: 20817,
+        originalStartValue: 20817,
+        path: "entry.md",
+        source: "date",
+        startValue: 20817
+      }
+    );
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error.code).toBe("CHART_FRONTMATTER_INVALID");
+    await expect(readFile(filePath, "utf8")).resolves.toBe(original);
+  });
+
   it("actualDateバーの長さ変更時にactualDateとchronicleを連動して更新する", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-actual-date-update-"));
     const filePath = path.join(workspacePath, "entry.md");

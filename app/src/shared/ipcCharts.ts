@@ -64,6 +64,7 @@ export type GanttChartEntryEditKind = "move" | "resize-start" | "resize-end";
 
 export interface UpdateGanttChartEntryInput {
   chronicleCalendarId?: ChronicleCalendarId;
+  chronicleCalendarStartYear?: number;
   dateKind?: GanttChartDateKind;
   endValue: number;
   kind: GanttChartEntryEditKind;

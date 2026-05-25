@@ -186,8 +186,11 @@ export function dateKindPatch(entry: GanttChartEntry): { dateKind: GanttChartDat
   return entry.dateKind ? { dateKind: entry.dateKind } : {};
 }
 
-export function chronicleCalendarPatch(entry: GanttChartEntry): { chronicleCalendarId: NonNullable<GanttChartEntry["chronicleCalendarId"]> } | Record<string, never> {
-  return entry.chronicleCalendarId ? { chronicleCalendarId: entry.chronicleCalendarId } : {};
+export function chronicleCalendarPatch(entry: GanttChartEntry): Pick<GanttChartEntry, "chronicleCalendarId" | "chronicleCalendarStartYear"> {
+  return {
+    ...(entry.chronicleCalendarId ? { chronicleCalendarId: entry.chronicleCalendarId } : {}),
+    ...(entry.chronicleCalendarStartYear ? { chronicleCalendarStartYear: entry.chronicleCalendarStartYear } : {})
+  };
 }
 
 export function isPreviewForEntry(

@@ -185,9 +185,34 @@ describe("ganttChartData", () => {
     );
   });
 
-  it("frontmatter がないファイルにも既存形式の chart frontmatter を追加する", () => {
-    expect(updateChartFrontmatter("# 実装タスク", dateEditInput())).toBe(
-      "---\nchronicle0: [2026]\nplannedDate: [2026-05-02, 2026-05-06]\n---\n# 実装タスク"
+  it("チャート更新では対象外フィールド、コメント、並びを保持する", () => {
+    expect(updateChartFrontmatter(
+      [
+        "---",
+        "# keep comment",
+        "custom:",
+        "  - value",
+        "chronicle0: [2026] # keep year note",
+        "plannedDate: [2026-05-01, 2026-05-05] # keep date note",
+        "---",
+        "# 実装タスク"
+      ].join("\n"),
+      dateEditInput()
+    )).toBe([
+      "---",
+      "# keep comment",
+      "custom:",
+      "  - value",
+      "chronicle0: [2026] # keep year note",
+      "plannedDate: [2026-05-02, 2026-05-06] # keep date note",
+      "---",
+      "# 実装タスク"
+    ].join("\n"));
+  });
+
+  it("frontmatter がないファイルには chart frontmatter を追加しない", () => {
+    expect(() => updateChartFrontmatter("# 実装タスク", dateEditInput())).toThrow(
+      "チャート対象のフロントマターが見つからないため、変更を保存できませんでした。"
     );
   });
 
@@ -217,6 +242,66 @@ describe("ganttChartData", () => {
     })).resolves.toEqual({ ok: true, value: charts });
     expect(writeMarkdownFile).toHaveBeenCalledWith({
       content: "---\nchronicle: [2026]\nplannedDate: [2026-05-02, 2026-05-06]\nchronicle0: [2026]\n---\n# 実装タスク",
+      path: "tasks/implementation.md"
+    });
+  });
+
+  it("fallbackは壊れたfrontmatterへ書き込まない", async () => {
+    const readMarkdownFile = vi.fn(async ({ path }: { path: string }) => ({
+      ok: true as const,
+      value: {
+        content: "---\n: invalid: yaml:\n---\n# 実装タスク",
+        name: "実装タスク",
+        path
+      }
+    }));
+    const writeMarkdownFile = vi.fn(async () => ({ ok: true as const, value: undefined }));
+    const getWorkspaceChronicle = vi.fn(async () => ({ ok: true as const, value: [] }));
+
+    await expect(updateGanttChartEntryFallback(dateEditInput(), {
+      getWorkspaceChronicle,
+      readMarkdownFile,
+      writeMarkdownFile
+    })).resolves.toMatchObject({
+      error: { code: "CHART_FRONTMATTER_INVALID" },
+      ok: false
+    });
+    expect(writeMarkdownFile).not.toHaveBeenCalled();
+  });
+
+  it("fallbackはサブ暦開始年を使って元のchronicleNへ書き戻す", async () => {
+    const charts = [{
+      entries: [],
+      filePaths: [],
+      id: "chronicle",
+      name: "chronicle",
+      source: "chronicle" as const
+    }];
+    const readMarkdownFile = vi.fn(async ({ path }: { path: string }) => ({
+      ok: true as const,
+      value: {
+        content: "---\nchronicle1: [3]\nplannedDate: [2026-05-01]\n---\n# 実装タスク",
+        name: "実装タスク",
+        path
+      }
+    }));
+    const writeMarkdownFile = vi.fn(async () => ({ ok: true as const, value: undefined }));
+    const getWorkspaceChronicle = vi.fn(async () => ({ ok: true as const, value: charts }));
+
+    await expect(updateGanttChartEntryFallback(chronicleEditInput({
+      chronicleCalendarId: "chronicle1",
+      chronicleCalendarStartYear: 100,
+      endValue: 102,
+      originalEndValue: 101,
+      originalStartValue: 101,
+      startValue: 102
+    }), {
+      getWorkspaceChronicle,
+      readMarkdownFile,
+      writeMarkdownFile
+    })).resolves.toEqual({ ok: true, value: charts });
+    expect(writeMarkdownFile).toHaveBeenCalledWith({
+      content: "---\nchronicle1: [4]\nplannedDate: [2027-05-01]\n---\n# 実装タスク",
       path: "tasks/implementation.md"
     });
   });

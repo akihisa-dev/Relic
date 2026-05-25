@@ -1172,6 +1172,55 @@ describe("App", () => {
     }));
   });
 
+  it("チャートバーの保存に失敗した場合はエラーを表示する", async () => {
+    const updateGanttChartEntry = vi.fn().mockResolvedValue({
+      error: { code: "GANTT_ENTRY_UPDATE_FAILED", message: "チャートの変更を保存できませんでした。" },
+      ok: false
+    });
+
+    window.relic = makeRelicApi({
+      getWorkspaceChronicle: vi.fn().mockResolvedValue({
+        ok: true,
+        value: [{
+          entries: [{
+            dateKind: "planned",
+            endLabel: "2026-05-05",
+            endValue: 20578,
+            fileName: "実装タスク",
+            path: "tasks/implementation.md",
+            startLabel: "2026-05-01",
+            startValue: 20574
+          }],
+          filePaths: [],
+          id: "date",
+          name: "date",
+          source: "date"
+        }]
+      }),
+      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace }),
+      updateGanttChartEntry
+    });
+
+    const { container } = await renderApp();
+
+    await screen.findByText("Notes");
+
+    fireEvent.click(screen.getByRole("button", { name: "カレンダー" }));
+
+    const fill = container.querySelector(".chronicle-fill") as HTMLElement;
+    const pointerDown = new Event("pointerdown", { bubbles: true }) as PointerEvent;
+    Object.defineProperty(pointerDown, "button", { value: 0 });
+    Object.defineProperty(pointerDown, "clientX", { value: 0 });
+    Object.defineProperty(pointerDown, "pointerId", { value: 1 });
+    fill.dispatchEvent(pointerDown);
+    const pointerUp = new Event("pointerup") as PointerEvent;
+    Object.defineProperty(pointerUp, "clientX", { value: 15 });
+    Object.defineProperty(pointerUp, "pointerId", { value: 1 });
+    window.dispatchEvent(pointerUp);
+
+    expect(await screen.findByText("チャートの変更を保存できませんでした。")).toHaveClass("toast--error");
+  });
+
   it("チャート更新専用IPCが使えない場合も既存のファイル読み書きでバー変更を保存する", async () => {
     const readMarkdownFile = vi.fn().mockResolvedValue({
       ok: true,
