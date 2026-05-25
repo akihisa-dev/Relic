@@ -161,61 +161,16 @@ export function EditorContextMenu({
       <div className="editor-context-menu-section" role="group">
         <div className="editor-context-menu-grid editor-context-menu-grid--inline">
           <IconMenuButton icon={<BoldIcon className="editor-context-menu-icon" size={16} />} label={t("toolbar.bold")} onClick={() => runEditorCommand((view) => wrapSelection(view, "**", "**", placeholderText))} />
-          <IconMenuButton icon={<ItalicIcon className="editor-context-menu-icon" size={16} />} label={t("toolbar.italic")} onClick={() => runEditorCommand((view) => wrapSelection(view, "*", "*", placeholderText))} />
-          <IconMenuButton icon={<StrikethroughIcon className="editor-context-menu-icon" size={16} />} label={t("toolbar.strikethrough")} onClick={() => runEditorCommand((view) => wrapSelection(view, "~~", "~~", placeholderText))} />
           <IconMenuButton icon={<HighlightIcon className="editor-context-menu-icon" size={16} />} label={t("toolbar.highlight")} onClick={() => runEditorCommand((view) => wrapSelection(view, "==", "==", placeholderText))} />
-          <IconMenuButton icon={<UnderlineIcon className="editor-context-menu-icon" size={16} />} label={t("toolbar.underline")} onClick={() => runEditorCommand((view) => wrapSelection(view, "<u>", "</u>", placeholderText))} />
-          <IconMenuButton icon={<InlineCodeIcon className="editor-context-menu-icon" size={16} />} label={t("toolbar.inlineCode")} onClick={() => runEditorCommand((view) => wrapSelection(view, "`", "`", placeholderText))} />
-        </div>
-      </div>
-      <div className="tab-context-menu-separator" />
-      <div className="editor-context-menu-section" role="group">
-        <div className="editor-context-menu-grid editor-context-menu-grid--heading">
-          {TOOLBAR_HEADING_LEVELS.map((level) => (
-            <IconMenuButton
-              icon={<HeadingIcon className="editor-context-menu-icon" level={level} size={16} />}
-              key={level}
-              label={`H${level}`}
-              onClick={() => runHeadingAction(level)}
-            />
-          ))}
-        </div>
-      </div>
-      <div className="editor-context-menu-section" role="group">
-        <div className="editor-context-menu-grid">
-          <IconMenuButton icon={<BlockquoteIcon className="editor-context-menu-icon" size={16} />} label={t("toolbar.blockquote")} onClick={() => runEditorCommand((view) => insertAtLineStart(view, "> ", placeholderText))} />
-          <IconMenuButton icon={<CodeBlockIcon className="editor-context-menu-icon" size={16} />} label={t("toolbar.codeBlock")} onClick={() => runEditorCommand((view) => insertBlock(view, "```\n\n```"))} />
-          <IconMenuButton icon={<HorizontalRuleIcon className="editor-context-menu-icon" size={16} />} label={t("toolbar.horizontalRule")} onClick={() => runEditorCommand((view) => insertBlock(view, "---"))} />
-        </div>
-      </div>
-      <div className="tab-context-menu-separator" />
-      <div className="editor-context-menu-section" role="group">
-        <div className="editor-context-menu-grid">
-          <IconMenuButton icon={<BulletListIcon className="editor-context-menu-icon" size={16} />} label={t("toolbar.bulletList")} onClick={() => runEditorCommand((view) => insertAtLineStart(view, "- ", placeholderText))} />
-          <IconMenuButton icon={<OrderedListIcon className="editor-context-menu-icon" size={16} />} label={t("toolbar.orderedList")} onClick={() => runEditorCommand((view) => insertAtLineStart(view, "1. ", placeholderText))} />
-          <IconMenuButton icon={<CheckboxIcon className="editor-context-menu-icon" size={16} />} label={t("toolbar.checkbox")} onClick={() => runEditorCommand((view) => insertAtLineStart(view, "- [ ] ", placeholderText))} />
-        </div>
-      </div>
-      <div className="tab-context-menu-separator" />
-      <div className="editor-context-menu-section" role="group">
-        <div className="editor-context-menu-grid editor-context-menu-grid--insert">
-          <IconMenuButton
-            icon={<ExternalLinkIcon className="editor-context-menu-icon" size={16} />}
-            label={t("toolbar.markdownLink")}
-            onClick={() => runMarkdownAction(markdownActions.handleLink, false)}
-          />
           <IconMenuButton
             icon={<LinkIcon className="editor-context-menu-icon" size={16} />}
             label={t("toolbar.internalLink")}
             onClick={() => runEditorCommand(insertInternalLink)}
           />
           <IconMenuButton
-            icon={<TableIcon className="editor-context-menu-icon" size={16} />}
-            label={t("toolbar.table")}
-            onClick={() => {
-              markdownActions.setTargetView(onBeforeMarkdownAction());
-              markdownActions.toggleTableDialog();
-            }}
+            icon={<ExternalLinkIcon className="editor-context-menu-icon" size={16} />}
+            label={t("toolbar.markdownLink")}
+            onClick={() => runMarkdownAction(markdownActions.handleLink, false)}
           />
         </div>
         {markdownActions.showLinkDialog ? (
@@ -245,6 +200,45 @@ export function EditorContextMenu({
             </button>
           </div>
         ) : null}
+      </div>
+      <div className="tab-context-menu-separator" />
+      <div className="editor-context-menu-section" role="group">
+        <div className="editor-context-menu-grid">
+          <IconMenuButton icon={<BulletListIcon className="editor-context-menu-icon" size={16} />} label={t("toolbar.bulletList")} onClick={() => runEditorCommand((view) => insertAtLineStart(view, "- ", placeholderText))} />
+          <IconMenuButton icon={<OrderedListIcon className="editor-context-menu-icon" size={16} />} label={t("toolbar.orderedList")} onClick={() => runEditorCommand((view) => insertAtLineStart(view, "1. ", placeholderText))} />
+          <IconMenuButton icon={<CheckboxIcon className="editor-context-menu-icon" size={16} />} label={t("toolbar.checkbox")} onClick={() => runEditorCommand((view) => insertAtLineStart(view, "- [ ] ", placeholderText))} />
+        </div>
+      </div>
+      <div className="tab-context-menu-separator" />
+      <div className="editor-context-menu-section" role="group">
+        <div className="editor-context-menu-grid editor-context-menu-grid--heading">
+          {TOOLBAR_HEADING_LEVELS.map((level) => (
+            <IconMenuButton
+              icon={<HeadingIcon className="editor-context-menu-icon" level={level} size={16} />}
+              key={level}
+              label={`H${level}`}
+              onClick={() => runHeadingAction(level)}
+            />
+          ))}
+        </div>
+        <div className="editor-context-menu-grid">
+          <IconMenuButton icon={<BlockquoteIcon className="editor-context-menu-icon" size={16} />} label={t("toolbar.blockquote")} onClick={() => runEditorCommand((view) => insertAtLineStart(view, "> ", placeholderText))} />
+          <IconMenuButton icon={<CodeBlockIcon className="editor-context-menu-icon" size={16} />} label={t("toolbar.codeBlock")} onClick={() => runEditorCommand((view) => insertBlock(view, "```\n\n```"))} />
+          <IconMenuButton icon={<HorizontalRuleIcon className="editor-context-menu-icon" size={16} />} label={t("toolbar.horizontalRule")} onClick={() => runEditorCommand((view) => insertBlock(view, "---"))} />
+        </div>
+      </div>
+      <div className="tab-context-menu-separator" />
+      <div className="editor-context-menu-section" role="group">
+        <div className="editor-context-menu-grid editor-context-menu-grid--insert">
+          <IconMenuButton
+            icon={<TableIcon className="editor-context-menu-icon" size={16} />}
+            label={t("toolbar.table")}
+            onClick={() => {
+              markdownActions.setTargetView(onBeforeMarkdownAction());
+              markdownActions.toggleTableDialog();
+            }}
+          />
+        </div>
         {markdownActions.showTableDialog ? (
           <div className={toolbarPanelClass("editor-context-menu-inline-dialog", "table", markdownActions.closingPanel)}>
             <input
@@ -282,6 +276,15 @@ export function EditorContextMenu({
             </button>
           </div>
         ) : null}
+      </div>
+      <div className="tab-context-menu-separator" />
+      <div className="editor-context-menu-section" role="group">
+        <div className="editor-context-menu-grid editor-context-menu-grid--inline">
+          <IconMenuButton icon={<ItalicIcon className="editor-context-menu-icon" size={16} />} label={t("toolbar.italic")} onClick={() => runEditorCommand((view) => wrapSelection(view, "*", "*", placeholderText))} />
+          <IconMenuButton icon={<StrikethroughIcon className="editor-context-menu-icon" size={16} />} label={t("toolbar.strikethrough")} onClick={() => runEditorCommand((view) => wrapSelection(view, "~~", "~~", placeholderText))} />
+          <IconMenuButton icon={<UnderlineIcon className="editor-context-menu-icon" size={16} />} label={t("toolbar.underline")} onClick={() => runEditorCommand((view) => wrapSelection(view, "<u>", "</u>", placeholderText))} />
+          <IconMenuButton icon={<InlineCodeIcon className="editor-context-menu-icon" size={16} />} label={t("toolbar.inlineCode")} onClick={() => runEditorCommand((view) => wrapSelection(view, "`", "`", placeholderText))} />
+        </div>
       </div>
       <div className="tab-context-menu-separator" />
       <button

@@ -115,6 +115,18 @@ export class TableWidget extends WidgetType {
         input.addEventListener("blur", updateCell);
         input.addEventListener("blur", (event) => state.clearIfFocusOutside((event as FocusEvent).relatedTarget));
         input.addEventListener("change", updateCell);
+        input.addEventListener("paste", (event) => {
+          const text = event.clipboardData?.getData("text/plain") ?? "";
+          const pastedRows = parsePastedTableCells(text);
+          if (!pastedRows) return;
+
+          event.preventDefault();
+          event.stopPropagation();
+          const view = findTableWidgetView(input);
+          if (!view) return;
+          updateTableWidgetRows(view, this.block, withPastedTableCells(this.block.rows, rowIndex, colIndex, pastedRows));
+          focusCell(rowIndex, colIndex);
+        });
         input.addEventListener("keydown", (event) => {
           if (event.key === "Enter") {
             event.preventDefault();
@@ -249,4 +261,34 @@ export class TableWidget extends WidgetType {
     });
     return button;
   }
+}
+
+function parsePastedTableCells(text: string): string[][] | null {
+  if (!text.includes("\t") && !text.includes("\n") && !text.includes("\r")) return null;
+
+  const normalized = text.replace(/\r\n?/g, "\n");
+  const lines = normalized.endsWith("\n") ? normalized.slice(0, -1).split("\n") : normalized.split("\n");
+  const rows = lines.map((line) => line.split("\t"));
+
+  if (rows.length === 1 && rows[0].length === 1) return null;
+
+  return rows;
+}
+
+function withPastedTableCells(rows: string[][], startRow: number, startCol: number, pastedRows: string[][]): string[][] {
+  const nextRows = rows.map((row) => [...row]);
+  const colCount = tableColumnCount(nextRows);
+
+  for (let rowOffset = 0; rowOffset < pastedRows.length; rowOffset += 1) {
+    const targetRow = startRow + rowOffset;
+    while (targetRow >= nextRows.length) {
+      nextRows.push(Array.from({ length: colCount }, () => ""));
+    }
+
+    for (let colOffset = 0; colOffset < pastedRows[rowOffset].length; colOffset += 1) {
+      nextRows[targetRow][startCol + colOffset] = pastedRows[rowOffset][colOffset];
+    }
+  }
+
+  return nextRows;
 }
