@@ -245,8 +245,9 @@ function chronicleInput(
   const commit = (write: boolean): void => {
     const startRaw = startInput.value.trim();
     const endRaw = endInput.value.trim();
-    const startYear = parseChronicleYearInput(startRaw);
-    const endYear = parseChronicleYearInput(endRaw);
+    const allowZeroOrNegative = key !== "chronicle0";
+    const startYear = parseChronicleYearInput(startRaw, allowZeroOrNegative);
+    const endYear = parseChronicleYearInput(endRaw, allowZeroOrNegative);
 
     if (!startRaw && !endRaw) {
       setError(null);
@@ -260,7 +261,7 @@ function chronicleInput(
     }
 
     if (startYear === null || (endRaw && endYear === null)) {
-      setError(t("frontmatter.invalidChronicleYear"));
+      setError(t(allowZeroOrNegative ? "frontmatter.invalidSubChronicleYear" : "frontmatter.invalidChronicleYear"));
       return;
     }
 

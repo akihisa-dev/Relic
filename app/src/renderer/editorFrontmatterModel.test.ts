@@ -93,4 +93,12 @@ describe("editorFrontmatterModel", () => {
     expect(parseChronicleYearInput("1.5")).toBeNull();
     expect(parseChronicleYearInput("year")).toBeNull();
   });
+
+  it("サブ暦のchronicle入力は0以下の整数も受け付ける", () => {
+    expect(parseChronicleYearInput("-300", true)).toBe(-300);
+    expect(parseChronicleYearInput("0", true)).toBe(0);
+    expect(parseChronicleYearInput("1185", true)).toBe(1185);
+    expect(parseChronicleYearInput("1.5", true)).toBeNull();
+    expect(parseChronicleYearInput("year", true)).toBeNull();
+  });
 });
