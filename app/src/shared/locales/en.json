@@ -381,6 +381,7 @@
   "frontmatter.chronicleStartRequired": "Enter a start year before saving an end year.",
   "frontmatter.invalidChronicleRange": "Start year must be earlier than or equal to end year.",
   "frontmatter.invalidChronicleYear": "Enter a whole number of 1 or higher.",
+  "frontmatter.invalidDateRange": "Start date must be earlier than or equal to end date.",
   "frontmatter.value": "Value",
   "frontmatter.enterValue": "Enter a value.",
   "frontmatter.invalidPropertyName": "The property name contains unsupported characters.",
