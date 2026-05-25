@@ -862,6 +862,30 @@ describe("Editor", () => {
     expect(viewRef.current?.state.doc.toString()).toContain("chronicle0: [1185, 1333]");
   });
 
+  it("chronicle0プロパティは不正な年や逆順の期間を書き戻さない", async () => {
+    const viewRef = createRef<EditorView | null>();
+    const { container } = render(
+      <I18nProvider language="ja">
+        <Editor
+          content={"---\nchronicle0: [1185]\n---\n# 本文"}
+          onChange={vi.fn()}
+          settings={settings}
+          viewRef={viewRef}
+        />
+      </I18nProvider>
+    );
+
+    await expandFrontmatter(container);
+    await waitFor(() => expect(container.querySelector(".cm-frontmatter-chronicle")).not.toBeNull());
+    const inputs = Array.from(container.querySelectorAll(".cm-frontmatter-chronicle .cm-frontmatter-input")) as HTMLInputElement[];
+    fireEvent.change(inputs[1], { target: { value: "1000" } });
+
+    expect(viewRef.current?.state.doc.toString()).toContain("chronicle0: [1185]");
+    expect(viewRef.current?.state.doc.toString()).not.toContain("chronicle0: [1000, 1185]");
+    expect(container.querySelector(".cm-frontmatter-input-error")?.textContent).toBe("開始年は終了年以下にしてください。");
+    expect(inputs[0].getAttribute("aria-invalid")).toBe("true");
+  });
+
   it("plannedDateプロパティは年月日の単日・期間を1行配列として編集する", async () => {
     const viewRef = createRef<EditorView | null>();
     const { container } = render(

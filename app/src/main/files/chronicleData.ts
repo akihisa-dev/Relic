@@ -156,6 +156,8 @@ function extractFirstChronicleRangeFromData(
   calendars: ChronicleCalendarSettings[]
 ): { calendar: ChronicleCalendarSettings; endYear: number; startYear: number } | null {
   for (const calendar of calendars) {
+    if (!isChronicleCalendarActive(calendar)) continue;
+
     const range = extractChronicleRangeFromData(data, calendar.id);
 
     if (range) return { ...range, calendar };
@@ -253,7 +255,12 @@ function dateYear(value: string): number {
 }
 
 function isValidChronicleYear(value: unknown): value is number {
-  return typeof value === "number" && Number.isInteger(value) && value !== 0;
+  return typeof value === "number" && Number.isInteger(value) && value >= 1;
+}
+
+function isChronicleCalendarActive(calendar: ChronicleCalendarSettings): boolean {
+  return calendar.id === "chronicle0" ||
+    (Number.isInteger(calendar.startYear) && Number(calendar.startYear) >= 1);
 }
 
 function calendarById(
@@ -297,5 +304,5 @@ function formatYear(year: number): string {
 }
 
 function formatCalendarYear(calendar: ChronicleCalendarSettings, year: number): string {
-  return `${calendar.name} ${formatYear(year)}`;
+  return `${calendar.name.trim() || calendar.id} ${formatYear(year)}`;
 }

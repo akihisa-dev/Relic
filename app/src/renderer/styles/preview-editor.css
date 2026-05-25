@@ -527,7 +527,8 @@
   transform: translateY(-1px);
 }
 
-.cm-frontmatter-add-input[aria-invalid="true"] {
+.cm-frontmatter-add-input[aria-invalid="true"],
+.cm-frontmatter-input[aria-invalid="true"] {
   box-shadow: inset 0 -1px 0 var(--error);
   color: var(--error);
 }
@@ -545,6 +546,13 @@
   display: grid;
   gap: 6px;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.cm-frontmatter-input-error {
+  color: var(--error);
+  font-size: 12px;
+  grid-column: 1 / -1;
+  line-height: 1.35;
 }
 
 .cm-frontmatter-yaml-input {

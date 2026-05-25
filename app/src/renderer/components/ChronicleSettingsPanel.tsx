@@ -107,11 +107,12 @@ export function ChronicleSettingsPanel({
                 />
                 <input
                   aria-label={t("chronicleSettings.startYear")}
+                  aria-invalid={chronicleStartYearError(t, draft) ? "true" : undefined}
                   className="setting-custom-field-input chronicle-calendar-start-input"
-                  min={1}
+                  inputMode="numeric"
                   onBlur={() => commit(drafts)}
                   onChange={(event) => updateDraft(draft.id, { startYear: event.target.value })}
-                  type="number"
+                  type="text"
                   value={draft.startYear}
                 />
                 <button
@@ -124,6 +125,9 @@ export function ChronicleSettingsPanel({
                 <div className="chronicle-calendar-preview">
                   {previewForSubCalendar(t, mainDraft, draft)}
                 </div>
+                {chronicleStartYearError(t, draft) ? (
+                  <div className="chronicle-calendar-error">{chronicleStartYearError(t, draft)}</div>
+                ) : null}
               </div>
             ))}
           </div>
@@ -145,7 +149,7 @@ function draftsForCalendars(calendars: ChronicleCalendarSettings[]): ChronicleCa
   return calendars.map((calendar) => ({
     id: calendar.id,
     name: calendar.name,
-    startYear: calendar.id === "chronicle0" ? "1" : String(calendar.startYear ?? 1)
+    startYear: calendar.id === "chronicle0" ? "1" : calendar.startYear === undefined ? "" : String(calendar.startYear)
   }));
 }
 
@@ -154,9 +158,13 @@ function parseDrafts(drafts: ChronicleCalendarDraft[]): ChronicleCalendarSetting
 
   for (const draft of drafts) {
     const name = draft.name.trim();
-    if (!name) return null;
 
     if (draft.id === "chronicle0") {
+      parsed.push({ id: draft.id, name });
+      continue;
+    }
+
+    if (draft.startYear.trim() === "") {
       parsed.push({ id: draft.id, name });
       continue;
     }
@@ -169,6 +177,15 @@ function parseDrafts(drafts: ChronicleCalendarDraft[]): ChronicleCalendarSetting
   return parsed.sort((a, b) => chronicleCalendarIds.indexOf(a.id) - chronicleCalendarIds.indexOf(b.id));
 }
 
+function chronicleStartYearError(
+  t: ReturnType<typeof useT>,
+  draft: ChronicleCalendarDraft
+): string | null {
+  if (draft.startYear.trim() === "") return null;
+  const startYear = Number(draft.startYear);
+  return Number.isInteger(startYear) && startYear >= 1 ? null : t("chronicleSettings.invalidStartYear");
+}
+
 function previewForSubCalendar(
   t: ReturnType<typeof useT>,
   mainDraft: ChronicleCalendarDraft,
@@ -176,13 +193,24 @@ function previewForSubCalendar(
 ): string {
   const startYear = Number(draft.startYear);
 
-  if (!Number.isInteger(startYear) || startYear < 1) {
+  if (draft.startYear.trim() === "" || !Number.isInteger(startYear) || startYear < 1) {
     return t("chronicleSettings.conversionPreviewUnavailable");
   }
 
+  const mainName = mainDraft.name.trim() || mainDraft.id;
+  const subName = draft.name.trim();
+
+  if (!subName) {
+    return t("chronicleSettings.conversionPreviewFallback", {
+      mainName,
+      startYear,
+      subId: draft.id
+    });
+  }
+
   return t("chronicleSettings.conversionPreview", {
-    mainName: mainDraft.name.trim() || t("chronicleSettings.mainCalendar"),
+    mainName,
     startYear,
-    subName: draft.name.trim() || draft.id
+    subName
   });
 }

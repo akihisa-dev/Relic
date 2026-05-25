@@ -59,8 +59,13 @@ describe("workspaceHandlerValidators", () => {
       { id: "chronicle0", name: "Main" },
       { id: "chronicle1", name: "Sub", startYear: 100 }
     ])).toBe(true);
+    expect(isChronicleCalendarsInput([
+      { id: "chronicle0", name: "Main" },
+      { id: "chronicle1", name: "Sub" },
+      { id: "chronicle2", name: "", startYear: 100 }
+    ])).toBe(true);
     expect(isChronicleCalendarsInput([{ id: "chronicle1", name: "Sub", startYear: 100 }])).toBe(false);
-    expect(isChronicleCalendarsInput([{ id: "chronicle0", name: "" }])).toBe(false);
+    expect(isChronicleCalendarsInput([{ id: "chronicle0", name: "" }])).toBe(true);
     expect(isChronicleCalendarsInput([
       { id: "chronicle0", name: "Main" },
       { id: "chronicle1", name: "Sub", startYear: 0 }

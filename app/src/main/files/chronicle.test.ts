@@ -15,14 +15,15 @@ describe("extractChronicleRange", () => {
   });
 
   it("期間を2要素配列として読む", () => {
-    expect(extractChronicleRange("---\nchronicle0: [-300, 250]\n---\n# A")).toEqual({
-      endYear: 250,
-      startYear: -300
+    expect(extractChronicleRange("---\nchronicle0: [1185, 1333]\n---\n# A")).toEqual({
+      endYear: 1333,
+      startYear: 1185
     });
   });
 
-  it("0年や逆順の期間は読まない", () => {
+  it("0年、マイナス年、逆順の期間は読まない", () => {
     expect(extractChronicleRange("---\nchronicle0: [0]\n---\n# A")).toBeNull();
+    expect(extractChronicleRange("---\nchronicle0: [-300]\n---\n# A")).toBeNull();
     expect(extractChronicleRange("---\nchronicle0: [1333, 1185]\n---\n# A")).toBeNull();
   });
 
@@ -86,6 +87,16 @@ describe("readWorkspaceChronicle", () => {
       "---\nchronicle: [10]\n---\n# Legacy\n",
       "utf8"
     );
+    await writeFile(
+      path.join(workspacePath, "unstarted-sub.md"),
+      "---\nchronicle2: [5]\n---\n# Unstarted\n",
+      "utf8"
+    );
+    await writeFile(
+      path.join(workspacePath, "unnamed-sub.md"),
+      "---\nchronicle3: [2]\n---\n# Unnamed\n",
+      "utf8"
+    );
 
     const result = await readWorkspaceChronicle(
       workspacePath,
@@ -95,7 +106,9 @@ describe("readWorkspaceChronicle", () => {
       ],
       [
         { id: "chronicle0", name: "王国暦" },
-        { id: "chronicle1", name: "帝国暦", startYear: 100 }
+        { id: "chronicle1", name: "帝国暦", startYear: 100 },
+        { id: "chronicle2", name: "未開始暦" },
+        { id: "chronicle3", name: "", startYear: 200 }
       ]
     );
 
@@ -120,6 +133,15 @@ describe("readWorkspaceChronicle", () => {
         path: "sub.md",
         startLabel: "帝国暦 3",
         startValue: 101
+      },
+      {
+        chronicleCalendarId: "chronicle3",
+        endLabel: "chronicle3 2",
+        endValue: 200,
+        fileName: "unnamed-sub",
+        path: "unnamed-sub.md",
+        startLabel: "chronicle3 2",
+        startValue: 200
       }
     ]);
   });

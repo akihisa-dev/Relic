@@ -99,13 +99,16 @@ export function parseScalarValue(value: string, field?: UserDefinedField): unkno
 
 export function parseChronicleYearInput(value: string): number | null {
   const trimmed = value.trim();
-  if (!/^-?\d+$/.test(trimmed)) return null;
+  if (!/^\d+$/.test(trimmed)) return null;
   const year = Number(trimmed);
-  return Number.isInteger(year) && year !== 0 ? year : null;
+  return Number.isInteger(year) && year >= 1 ? year : null;
 }
 
 export function chronicleInputValue(value: unknown): string {
-  return typeof value === "number" && Number.isInteger(value) && value !== 0 ? String(value) : "";
+  if (value === null || value === undefined) return "";
+  if (typeof value === "number") return Number.isInteger(value) ? String(value) : "";
+  if (typeof value === "string") return value;
+  return "";
 }
 
 export function parseDateInput(value: string): string | null {

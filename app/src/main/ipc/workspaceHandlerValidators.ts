@@ -109,10 +109,11 @@ export function isChronicleCalendarsInput(input: unknown): input is ChronicleCal
     if (ids.has(candidate.id)) return false;
     ids.add(candidate.id);
     if (candidate.id === "chronicle0") hasMain = true;
-    if (typeof candidate.name !== "string" || candidate.name.trim() === "") return false;
+    if (typeof candidate.name !== "string") return false;
     if (candidate.id === "chronicle0") return !("startYear" in candidate);
 
-    return Number.isInteger(candidate.startYear) && Number(candidate.startYear) >= 1;
+    return !("startYear" in candidate) ||
+      (Number.isInteger(candidate.startYear) && Number(candidate.startYear) >= 1);
   }) && hasMain;
 }
 

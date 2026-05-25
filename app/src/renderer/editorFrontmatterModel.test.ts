@@ -88,7 +88,7 @@ describe("editorFrontmatterModel", () => {
 
   it("chronicle入力は0以外の整数だけ受け付ける", () => {
     expect(parseChronicleYearInput("1185")).toBe(1185);
-    expect(parseChronicleYearInput("-300")).toBe(-300);
+    expect(parseChronicleYearInput("-300")).toBeNull();
     expect(parseChronicleYearInput("0")).toBeNull();
     expect(parseChronicleYearInput("1.5")).toBeNull();
     expect(parseChronicleYearInput("year")).toBeNull();
