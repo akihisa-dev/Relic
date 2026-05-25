@@ -461,6 +461,26 @@ describe("Editor", () => {
     expect(container.querySelector(".cm-line")).toHaveStyle({ whiteSpace: "pre-wrap" });
   });
 
+  it("行番号を表示するときは本文幅と行番号を同じ列として中央に置く", async () => {
+    const { container } = render(
+      <Editor
+        content={"# 見出し\n\n本文"}
+        onChange={vi.fn()}
+        settings={{ ...settings, maxWidth: "660px", showLineNumbers: true }}
+      />
+    );
+
+    await waitFor(() => expect(container.querySelector(".cm-gutters")).not.toBeNull());
+
+    expect(container.querySelector(".cm-scroller")).toHaveStyle({ justifyContent: "center" });
+    expect(container.querySelector(".cm-gutters")).toHaveStyle({ left: "auto" });
+    expect(container.querySelector(".cm-content")).toHaveStyle({
+      margin: "0",
+      maxWidth: "660px",
+      width: "660px"
+    });
+  });
+
   it("[[ 入力時のファイル名補完候補を作る", () => {
     const source = buildWikiLinkCompletionSource([
       "読書メモ.md",
