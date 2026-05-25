@@ -23,6 +23,7 @@ import { useAppTabRenderers } from "./hooks/useAppTabRenderers";
 import { useAppTheme } from "./hooks/useAppTheme";
 import { useAppToast } from "./hooks/useAppToast";
 import { useCommandPaletteCommands } from "./hooks/useCommandPaletteCommands";
+import { useEditorAutoSave } from "./hooks/useEditorAutoSave";
 import { usePaneTabMotion } from "./hooks/usePaneTabMotion";
 import { useRailFlights } from "./hooks/useRailFlights";
 import { useSidebarResize } from "./hooks/useSidebarResize";
@@ -34,7 +35,7 @@ import { useWorkspaceChronicleCalendars } from "./hooks/useWorkspaceChronicleCal
 import { useWorkspaceGanttCharts } from "./hooks/useWorkspaceGanttCharts";
 import { useWorkspaceRenameRailHold } from "./hooks/useWorkspaceRenameRailHold";
 import { useWorkspaceSearchState } from "./hooks/useWorkspaceSearchState";
-import { useEditorStore } from "./store/editorStore";
+import { useEditorStore, type PaneId } from "./store/editorStore";
 import { useUiStore, type RightPanelView } from "./store/uiStore";
 import { collectMarkdownPaths } from "./workspacePaths";
 import "./styles.css";
@@ -111,23 +112,6 @@ export function App(): ReactElement {
     [tabs]
   );
   const { isSplitClosing, toggleSplitWithMotion } = useSplitCloseMotion(isSplit, toggleSplit);
-  const {
-    closeAllTabsInPaneWithMotion,
-    closeOtherTabsWithMotion,
-    closeTabWithMotion,
-    closeTabsToRightWithMotion,
-    leftClosingTabIds,
-    rightClosingTabIds
-  } = usePaneTabMotion({
-    closeAllTabsInPane,
-    closeOtherTabs,
-    closeTab,
-    closeTabsToRight,
-    leftPane,
-    rightPane,
-    showRailTabFlight,
-    tabs
-  });
 
   const toggleSidebar = useCallback((): void => {
     if (isWorkspaceRenameActive) return;
@@ -189,6 +173,55 @@ export function App(): ReactElement {
     workspaceState
   });
 
+  const handleFileSaved = useCallback((): void => {
+    void reloadGanttCharts();
+  }, [reloadGanttCharts]);
+
+  const { flushTabsBeforeClose, saveStatusByTabId } = useEditorAutoSave({
+    conflictCloseBlockedMessage: t("pane.externalConflictCloseBlocked"),
+    onSaved: handleFileSaved,
+    onSaveError: setWorkspaceError,
+    tabs
+  });
+  const ensureCanCloseTabs = useCallback((_pane: PaneId, tabIds: string[]): Promise<boolean> | boolean => {
+    const currentTabs = useEditorStore.getState().tabs;
+    const needsSaveCheck = tabIds.some((tabId) => {
+      const tab = currentTabs[tabId];
+      return tab?.kind === "file" && (Boolean(tab.externalConflict) || tab.content !== tab.savedContent);
+    });
+
+    if (!needsSaveCheck) return true;
+
+    return (async () => {
+    const result = await flushTabsBeforeClose(tabIds);
+    if (!result.ok) {
+      setWorkspaceError(result.message ?? "ファイルを保存できませんでした。");
+      return false;
+    }
+
+    return true;
+    })();
+  }, [flushTabsBeforeClose, setWorkspaceError]);
+  const ensureCanCloseAllTabs = useCallback((): Promise<boolean> | boolean => {
+    const currentTabs = useEditorStore.getState().tabs;
+    const tabIds = Object.keys(currentTabs);
+    const needsSaveCheck = Object.values(currentTabs).some((tab) => {
+      return tab.kind === "file" && (Boolean(tab.externalConflict) || tab.content !== tab.savedContent);
+    });
+
+    if (!needsSaveCheck) return true;
+
+    return (async () => {
+    const result = await flushTabsBeforeClose(tabIds);
+    if (!result.ok) {
+      setWorkspaceError(result.message ?? "ファイルを保存できませんでした。");
+      return false;
+    }
+
+    return true;
+    })();
+  }, [flushTabsBeforeClose, setWorkspaceError]);
+
   const {
     handleDeleteActiveFile,
     handleDeleteTreeItem,
@@ -218,6 +251,7 @@ export function App(): ReactElement {
     setIsCreatingFile
   } = useWorkspaceFileActions({
     aliasesByPath,
+    beforeCloseAllTabs: ensureCanCloseAllTabs,
     closeAllTabs,
     closeTab,
     existingMarkdownPaths,
@@ -252,9 +286,24 @@ export function App(): ReactElement {
     t
   });
 
-  const handleFileSaved = useCallback((): void => {
-    void reloadGanttCharts();
-  }, [reloadGanttCharts]);
+  const {
+    closeAllTabsInPaneWithMotion,
+    closeOtherTabsWithMotion,
+    closeTabWithMotion,
+    closeTabsToRightWithMotion,
+    leftClosingTabIds,
+    rightClosingTabIds
+  } = usePaneTabMotion({
+    beforeCloseTabs: ensureCanCloseTabs,
+    closeAllTabsInPane,
+    closeOtherTabs,
+    closeTab,
+    closeTabsToRight,
+    leftPane,
+    rightPane,
+    showRailTabFlight,
+    tabs
+  });
 
   const refreshWorkspaceAfterExternalChange = useCallback(
     async (workspaceId: string): Promise<void> => {
@@ -340,6 +389,16 @@ export function App(): ReactElement {
       void refreshWorkspaceAfterExternalChange(event.workspaceId);
     });
   }, [refreshWorkspaceAfterExternalChange]);
+
+  useEffect(() => {
+    if (!window.relic?.onWindowCloseRequested) return undefined;
+
+    return window.relic.onWindowCloseRequested((event) => {
+      void Promise.resolve(ensureCanCloseAllTabs()).then((ok) => {
+        window.relic?.respondToWindowCloseRequest({ ok, requestId: event.requestId });
+      });
+    });
+  }, [ensureCanCloseAllTabs]);
 
   useAppTheme(editorSettings.theme);
 
@@ -657,7 +716,10 @@ export function App(): ReactElement {
         />
       </div>
 
-      <AppStatusBar activeFileTab={activeFileTabInFocusedPane} />
+      <AppStatusBar
+        activeFileTab={activeFileTabInFocusedPane}
+        saveStatus={activeFileTabInFocusedPane ? saveStatusByTabId[activeFileTabInFocusedPane.id] : undefined}
+      />
 
       <AppOverlays
         aliasesByPath={aliasesByPath}

@@ -13,6 +13,10 @@ interface WorkspaceWatchTarget {
 let workspaceWatcher: FSWatcher | null = null;
 let watchedTarget: WorkspaceWatchTarget | null = null;
 let notifyTimer: NodeJS.Timeout | null = null;
+let firstPendingNotifyAt: number | null = null;
+
+export const workspaceChangeNotifyDelayMs = 500;
+export const workspaceChangeMaxNotifyDelayMs = 2000;
 
 export function activeWorkspaceWatchTarget(settings: AppSettings): WorkspaceWatchTarget | null {
   if (!settings.lastWorkspaceId) return null;
@@ -56,6 +60,7 @@ export function stopWorkspaceWatcher(): void {
     clearTimeout(notifyTimer);
     notifyTimer = null;
   }
+  firstPendingNotifyAt = null;
 
   workspaceWatcher?.close();
   workspaceWatcher = null;
@@ -63,12 +68,26 @@ export function stopWorkspaceWatcher(): void {
 }
 
 function scheduleWorkspaceChangedNotification(target: WorkspaceWatchTarget): void {
+  const now = Date.now();
+  firstPendingNotifyAt ??= now;
+
   if (notifyTimer) clearTimeout(notifyTimer);
+
+  const delay = workspaceChangeNotificationDelay(firstPendingNotifyAt, now);
 
   notifyTimer = setTimeout(() => {
     notifyTimer = null;
+    firstPendingNotifyAt = null;
     notifyWorkspaceChanged(target);
-  }, 200);
+  }, delay);
+}
+
+export function workspaceChangeNotificationDelay(firstEventAt: number, now: number): number {
+  const elapsed = now - firstEventAt;
+
+  if (elapsed >= workspaceChangeMaxNotifyDelayMs) return 0;
+
+  return Math.min(workspaceChangeNotifyDelayMs, workspaceChangeMaxNotifyDelayMs - elapsed);
 }
 
 function notifyWorkspaceChanged(target: WorkspaceWatchTarget): void {

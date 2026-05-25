@@ -5,9 +5,12 @@ import type { WorkspaceFileActionsContext } from "./workspaceFileActionTypes";
 type WorkspaceRegistryInput = Pick<
   WorkspaceFileActionsContext,
   "closeAllTabs" | "setWorkspaceError" | "setWorkspaceState"
->;
+> & {
+  beforeCloseAllTabs?: () => Promise<boolean> | boolean;
+};
 
 export function useWorkspaceRegistryActions({
+  beforeCloseAllTabs,
   closeAllTabs,
   setWorkspaceError,
   setWorkspaceState
@@ -16,66 +19,78 @@ export function useWorkspaceRegistryActions({
   const [isCreatingWorkspace, setIsCreatingWorkspace] = useState(false);
 
   const handleOpenWorkspace = useCallback((): void => {
-    if (!window.relic) return;
+    const relic = window.relic;
+    if (!relic) return;
 
-    setIsOpeningWorkspace(true);
-    setWorkspaceError(null);
+    runAfterCloseCheck(beforeCloseAllTabs, () => {
+      setIsOpeningWorkspace(true);
+      setWorkspaceError(null);
 
-    void window.relic
-      .openWorkspace()
-      .then((result) => {
-        if (result.ok) {
-          setWorkspaceState(result.value);
-        } else {
-          setWorkspaceError(result.error.message);
-        }
-      })
-      .finally(() => setIsOpeningWorkspace(false));
-  }, [setWorkspaceError, setWorkspaceState]);
+      void relic
+        .openWorkspace()
+        .then((result) => {
+          if (result.ok) {
+            setWorkspaceState(result.value);
+          } else {
+            setWorkspaceError(result.error.message);
+          }
+        })
+        .finally(() => setIsOpeningWorkspace(false));
+    });
+  }, [beforeCloseAllTabs, setWorkspaceError, setWorkspaceState]);
 
   const handleCreateNewWorkspace = useCallback((): void => {
-    if (!window.relic) return;
+    const relic = window.relic;
+    if (!relic) return;
 
-    setIsCreatingWorkspace(true);
-    setWorkspaceError(null);
+    runAfterCloseCheck(beforeCloseAllTabs, () => {
+      setIsCreatingWorkspace(true);
+      setWorkspaceError(null);
 
-    void window.relic
-      .createNewWorkspace()
-      .then((result) => {
+      void relic
+        .createNewWorkspace()
+        .then((result) => {
+          if (result.ok) {
+            setWorkspaceState(result.value);
+          } else {
+            setWorkspaceError(result.error.message);
+          }
+        })
+        .finally(() => setIsCreatingWorkspace(false));
+    });
+  }, [beforeCloseAllTabs, setWorkspaceError, setWorkspaceState]);
+
+  const handleSwitchWorkspace = useCallback((workspaceId: string): void => {
+    const relic = window.relic;
+    if (!relic) return;
+
+    runAfterCloseCheck(beforeCloseAllTabs, () => {
+      void relic.switchWorkspace({ workspaceId }).then((result) => {
         if (result.ok) {
           setWorkspaceState(result.value);
+          closeAllTabs();
         } else {
           setWorkspaceError(result.error.message);
         }
-      })
-      .finally(() => setIsCreatingWorkspace(false));
-  }, [setWorkspaceError, setWorkspaceState]);
-
-  const handleSwitchWorkspace = useCallback((workspaceId: string): void => {
-    if (!window.relic) return;
-
-    void window.relic.switchWorkspace({ workspaceId }).then((result) => {
-      if (result.ok) {
-        setWorkspaceState(result.value);
-        closeAllTabs();
-      } else {
-        setWorkspaceError(result.error.message);
-      }
+      });
     });
-  }, [closeAllTabs, setWorkspaceError, setWorkspaceState]);
+  }, [beforeCloseAllTabs, closeAllTabs, setWorkspaceError, setWorkspaceState]);
 
   const handleRemoveWorkspace = useCallback((workspaceId: string): void => {
-    if (!window.relic) return;
+    const relic = window.relic;
+    if (!relic) return;
 
-    void window.relic.removeWorkspace({ workspaceId }).then((result) => {
-      if (result.ok) {
-        setWorkspaceState(result.value);
-        closeAllTabs();
-      } else {
-        setWorkspaceError(result.error.message);
-      }
+    runAfterCloseCheck(beforeCloseAllTabs, () => {
+      void relic.removeWorkspace({ workspaceId }).then((result) => {
+        if (result.ok) {
+          setWorkspaceState(result.value);
+          closeAllTabs();
+        } else {
+          setWorkspaceError(result.error.message);
+        }
+      });
     });
-  }, [closeAllTabs, setWorkspaceError, setWorkspaceState]);
+  }, [beforeCloseAllTabs, closeAllTabs, setWorkspaceError, setWorkspaceState]);
 
   const handleRenameWorkspace = useCallback(async (workspaceId: string, name: string): Promise<boolean> => {
     if (!window.relic) return false;
@@ -116,4 +131,20 @@ export function useWorkspaceRegistryActions({
     isCreatingWorkspace,
     isOpeningWorkspace
   };
+}
+
+function runAfterCloseCheck(
+  beforeCloseAllTabs: (() => Promise<boolean> | boolean) | undefined,
+  action: () => void
+): void {
+  const canClose = beforeCloseAllTabs?.() ?? true;
+
+  if (typeof canClose === "boolean") {
+    if (canClose) action();
+    return;
+  }
+
+  void canClose.then((result) => {
+    if (result) action();
+  });
 }

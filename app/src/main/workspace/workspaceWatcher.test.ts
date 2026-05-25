@@ -11,7 +11,13 @@ import {
   defaultUserDefinedFields
 } from "../../shared/ipc";
 import type { AppSettings } from "../settings/appSettings";
-import { activeWorkspaceWatchTarget, shouldNotifyWorkspaceChangeEvent } from "./workspaceWatcher";
+import {
+  activeWorkspaceWatchTarget,
+  shouldNotifyWorkspaceChangeEvent,
+  workspaceChangeNotificationDelay,
+  workspaceChangeNotifyDelayMs,
+  workspaceChangeMaxNotifyDelayMs
+} from "./workspaceWatcher";
 
 function appSettings(overrides: Partial<AppSettings> = {}): AppSettings {
   return {
@@ -45,5 +51,11 @@ describe("workspaceWatcher", () => {
     expect(shouldNotifyWorkspaceChangeEvent("rename")).toBe(true);
     expect(shouldNotifyWorkspaceChangeEvent("change")).toBe(true);
     expect(shouldNotifyWorkspaceChangeEvent("unknown")).toBe(false);
+  });
+
+  it("連続イベントは静かな時間を待ちつつ最大待ち時間を超えない", () => {
+    expect(workspaceChangeNotificationDelay(1000, 1000)).toBe(workspaceChangeNotifyDelayMs);
+    expect(workspaceChangeNotificationDelay(1000, 2600)).toBe(400);
+    expect(workspaceChangeNotificationDelay(1000, 1000 + workspaceChangeMaxNotifyDelayMs)).toBe(0);
   });
 });

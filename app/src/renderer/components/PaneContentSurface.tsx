@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import type { FormEvent, KeyboardEvent, MutableRefObject, ReactElement, ReactNode } from "react";
 
 import type { EditorSettings, UserDefinedField } from "../../shared/ipc";
+import { isLargeMarkdownContent } from "../largeMarkdown";
 import { textCount } from "../paneViewModel";
 import type { PanelTabKind, Tab } from "../store/editorStore";
 import { useT } from "../i18n";
@@ -57,6 +58,7 @@ export function PaneContentSurface({
 
   if (activeTab?.kind === "file") {
     const { chars, words } = textCount(activeTab.content);
+    const isLargeMarkdown = isLargeMarkdownContent(activeTab.content);
 
     return (
       <div
@@ -85,6 +87,15 @@ export function PaneContentSurface({
               </div>
             </div>
           ) : null}
+          {isLargeMarkdown ? (
+            <div
+              className="editor-conflict-banner"
+              role="status"
+              style={{ maxWidth: editorSettings.maxWidth === "none" ? undefined : editorSettings.maxWidth }}
+            >
+              <span>{t("pane.largeMarkdown")}</span>
+            </div>
+          ) : null}
           <Editor
             allFilePaths={allFilePaths}
             content={activeTab.content}
@@ -94,7 +105,7 @@ export function PaneContentSurface({
             onOpenLink={onOpenLink}
             onOpenWikiLink={onOpenWikiLink}
             settings={editorSettings}
-            sourceMode={sourceMode}
+            sourceMode={sourceMode || isLargeMarkdown}
             typewriterMode={typewriterMode}
             userDefinedFields={userDefinedFields}
             viewRef={viewRef}

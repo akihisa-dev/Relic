@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Menu, shell, type BrowserWindowConstructorOptions } from "electron";
+import { app, BrowserWindow, Menu, ipcMain, shell, type BrowserWindowConstructorOptions } from "electron";
 import path from "node:path";
 
 import { registerAppHandlers } from "./ipc/appHandlers";
@@ -6,12 +6,16 @@ import { registerEditorHandlers } from "./ipc/editorHandlers";
 import { registerFileHandlers } from "./ipc/fileHandlers";
 import { registerToolHandlers } from "./ipc/toolHandlers";
 import { registerWorkspaceHandlers } from "./ipc/workspaceHandlers";
+import { windowCloseRequestedChannel, windowCloseResponseChannel, type WindowCloseResponseInput } from "../shared/ipc";
 import { stopWorkspaceWatcher } from "./workspace/workspaceWatcher";
 
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string | undefined;
 declare const MAIN_WINDOW_VITE_NAME: string;
 
 const APP_ID = "app.relic.desktop";
+const CLOSE_CONFIRM_TIMEOUT_MS = 5000;
+
+const approvedWindowCloseIds = new WeakSet<BrowserWindow>();
 
 if (process.platform === "win32") {
   app.setAppUserModelId(APP_ID);
@@ -46,6 +50,7 @@ function createWindow(): void {
 
   configureWindowSecurity(mainWindow);
   configureEditorContextMenu(mainWindow);
+  configureWindowCloseProtection(mainWindow);
 
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
     void mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
@@ -54,6 +59,40 @@ function createWindow(): void {
       path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`)
     );
   }
+}
+
+function configureWindowCloseProtection(window: BrowserWindow): void {
+  window.on("close", (event) => {
+    if (approvedWindowCloseIds.has(window)) {
+      approvedWindowCloseIds.delete(window);
+      return;
+    }
+
+    if (window.webContents.isDestroyed()) return;
+
+    event.preventDefault();
+
+    const requestId = `close-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    let settled = false;
+    const timer = setTimeout(() => {
+      if (settled || window.isDestroyed()) return;
+      settled = true;
+    }, CLOSE_CONFIRM_TIMEOUT_MS);
+
+    ipcMain.once(windowCloseResponseChannel, (_event, input: WindowCloseResponseInput) => {
+      if (settled || input.requestId !== requestId) return;
+
+      settled = true;
+      clearTimeout(timer);
+
+      if (!input.ok || window.isDestroyed()) return;
+
+      approvedWindowCloseIds.add(window);
+      window.close();
+    });
+
+    window.webContents.send(windowCloseRequestedChannel, { requestId });
+  });
 }
 
 function configureEditorContextMenu(window: BrowserWindow): void {

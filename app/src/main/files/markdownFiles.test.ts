@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
@@ -152,6 +152,19 @@ describe("readMarkdownFile", () => {
       ok: false
     });
   });
+
+  it("シンボリックリンク経由で実体がワークスペース外のMarkdown読み込みを拒否する", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-read-file-"));
+    const outsidePath = await mkdtemp(path.join(os.tmpdir(), "relic-outside-file-"));
+    temporaryPaths.push(workspacePath, outsidePath);
+
+    await writeFile(path.join(outsidePath, "outside.md"), "outside", "utf8");
+    await symlink(path.join(outsidePath, "outside.md"), path.join(workspacePath, "linked.md"));
+
+    await expect(readMarkdownFile(workspacePath, "linked.md")).resolves.toMatchObject({
+      ok: false
+    });
+  });
 });
 
 describe("writeMarkdownFileContent", () => {
@@ -191,6 +204,20 @@ describe("writeMarkdownFileContent", () => {
     await expect(writeMarkdownFileContent(workspacePath, "../outside.md", "new")).resolves.toMatchObject({
       ok: false
     });
+  });
+
+  it("シンボリックリンク経由で実体がワークスペース外のMarkdown書き込みを拒否する", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-write-file-"));
+    const outsidePath = await mkdtemp(path.join(os.tmpdir(), "relic-outside-file-"));
+    temporaryPaths.push(workspacePath, outsidePath);
+
+    await writeFile(path.join(outsidePath, "outside.md"), "outside", "utf8");
+    await symlink(path.join(outsidePath, "outside.md"), path.join(workspacePath, "linked.md"));
+
+    await expect(writeMarkdownFileContent(workspacePath, "linked.md", "new")).resolves.toMatchObject({
+      ok: false
+    });
+    await expect(readFile(path.join(outsidePath, "outside.md"), "utf8")).resolves.toBe("outside");
   });
 });
 

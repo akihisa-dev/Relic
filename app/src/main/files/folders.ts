@@ -5,7 +5,12 @@ import { fail, ok, type RelicResult } from "../../shared/result";
 import { errorDetails, isFileExistsError, pathExists } from "./fileSystem";
 import { updateLinksForFolderRename } from "./linkUpdater";
 import { validateBaseName } from "./names";
-import { resolveWorkspaceRelativePath, toWorkspaceRelativePath } from "./paths";
+import {
+  resolveExistingWorkspacePath,
+  resolveExistingWorkspacePathOrRoot,
+  resolveNewWorkspacePath,
+  toWorkspaceRelativePath
+} from "./paths";
 
 export interface CreatedFolder {
   path: string;
@@ -27,7 +32,9 @@ export async function createFolder(
     normalizedParentFolder === "" ? validatedName.value : `${normalizedParentFolder}/${validatedName.value}`
   );
   const parentPath =
-    normalizedParentFolder === "" ? ok(workspacePath) : resolveWorkspaceRelativePath(workspacePath, normalizedParentFolder);
+    normalizedParentFolder === ""
+      ? await resolveExistingWorkspacePathOrRoot(workspacePath, "")
+      : await resolveExistingWorkspacePath(workspacePath, normalizedParentFolder);
 
   if (!parentPath.ok) {
     return parentPath;
@@ -57,7 +64,7 @@ export async function renameFolder(
   relativePath: string,
   newName: string
 ): Promise<RelicResult<{ path: string }>> {
-  const sourcePath = resolveWorkspaceRelativePath(workspacePath, relativePath);
+  const sourcePath = await resolveExistingWorkspacePath(workspacePath, relativePath);
 
   if (!sourcePath.ok) {
     return sourcePath;
@@ -70,7 +77,7 @@ export async function renameFolder(
   }
 
   const nextRelativePath = toWorkspaceRelativePath(path.join(path.dirname(relativePath), validatedName.value));
-  const destinationPath = resolveWorkspaceRelativePath(workspacePath, nextRelativePath);
+  const destinationPath = await resolveNewWorkspacePath(workspacePath, nextRelativePath);
 
   if (!destinationPath.ok) {
     return destinationPath;
@@ -92,7 +99,11 @@ export async function renameFolder(
     }
 
     await rename(sourcePath.value, destinationPath.value);
-    await updateLinksForFolderRename(workspacePath, relativePath, nextRelativePath);
+    const links = await updateLinksForFolderRename(workspacePath, relativePath, nextRelativePath);
+    if (!links.ok) {
+      await rename(destinationPath.value, sourcePath.value).catch(() => undefined);
+      return links;
+    }
 
     return ok({
       path: nextRelativePath
@@ -111,7 +122,7 @@ export async function moveFolder(
   relativePath: string,
   destinationFolder: string
 ): Promise<RelicResult<{ path: string }>> {
-  const sourcePath = resolveWorkspaceRelativePath(workspacePath, relativePath);
+  const sourcePath = await resolveExistingWorkspacePath(workspacePath, relativePath);
 
   if (!sourcePath.ok) {
     return sourcePath;
@@ -127,7 +138,7 @@ export async function moveFolder(
     return ok({ path: relativePath });
   }
 
-  const destinationPath = resolveWorkspaceRelativePath(workspacePath, nextRelativePath);
+  const destinationPath = await resolveNewWorkspacePath(workspacePath, nextRelativePath);
 
   if (!destinationPath.ok) {
     return destinationPath;
@@ -145,7 +156,11 @@ export async function moveFolder(
     }
 
     await rename(sourcePath.value, destinationPath.value);
-    await updateLinksForFolderRename(workspacePath, relativePath, nextRelativePath);
+    const links = await updateLinksForFolderRename(workspacePath, relativePath, nextRelativePath);
+    if (!links.ok) {
+      await rename(destinationPath.value, sourcePath.value).catch(() => undefined);
+      return links;
+    }
 
     return ok({ path: nextRelativePath });
   } catch (error) {

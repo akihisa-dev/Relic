@@ -71,6 +71,7 @@ export function makeRelicApi(overrides: Partial<typeof window.relic> = {}): type
     moveFolder: vi.fn(),
     moveItemToTrash: vi.fn(),
     moveMarkdownFile: vi.fn(),
+    onWindowCloseRequested: vi.fn().mockReturnValue(vi.fn()),
     onWorkspaceChanged: vi.fn().mockReturnValue(vi.fn()),
     openWorkspace: vi.fn(),
     readClipboardText: vi.fn().mockReturnValue(""),
@@ -88,6 +89,7 @@ export function makeRelicApi(overrides: Partial<typeof window.relic> = {}): type
       }
     }),
     replaceInFile: vi.fn(),
+    respondToWindowCloseRequest: vi.fn(),
     revealWorkspaceItem: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
     saveEditorSettings: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
     saveFeatureToggles: vi.fn().mockResolvedValue({ ok: true, value: undefined }),

@@ -1,10 +1,19 @@
-import { readFile, writeFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
 
 import { collectMarkdownPaths } from "../../shared/workspaceTree";
+import { fail, ok, type RelicResult } from "../../shared/result";
+import { atomicWriteTextFile } from "./atomicWrite";
+import { errorDetails } from "./fileSystem";
 import { readWorkspaceFileTree } from "./fileTree";
 import { replaceFileLinks, replaceFolderLinks } from "./linkUpdaterModel";
-import { resolveWorkspaceRelativePath } from "./paths";
+import { resolveExistingWorkspacePath } from "./paths";
+
+interface LinkUpdatePatch {
+  absolutePath: string;
+  nextContent: string;
+  previousContent: string;
+}
 
 /**
  * ファイルリネーム後、ワークスペース内の内部リンクを一括更新する。
@@ -15,8 +24,8 @@ export async function updateLinksForFileRename(
   workspacePath: string,
   oldRelativePath: string,
   newRelativePath: string
-): Promise<void> {
-  if (oldRelativePath === newRelativePath) return;
+): Promise<RelicResult<void>> {
+  if (oldRelativePath === newRelativePath) return ok(undefined);
 
   const fileTree = await readWorkspaceFileTree(workspacePath);
   const markdownPaths = collectMarkdownPaths(fileTree);
@@ -24,20 +33,17 @@ export async function updateLinksForFileRename(
   const oldBaseName = path.basename(oldRelativePath, ".md");
   const newBaseName = path.basename(newRelativePath, ".md");
   const newPathWithoutExt = newRelativePath.replace(/\.md$/, "");
+  const patches: LinkUpdatePatch[] = [];
 
   for (const sourcePath of markdownPaths) {
-    const absoluteSourcePath = resolveWorkspaceRelativePath(workspacePath, sourcePath);
-    if (!absoluteSourcePath.ok) continue;
+    const absoluteSourcePath = await resolveExistingWorkspacePath(workspacePath, sourcePath);
+    if (!absoluteSourcePath.ok) return absoluteSourcePath;
 
     let content: string;
     try {
       content = await readFile(absoluteSourcePath.value, "utf8");
     } catch (err) {
-      const code = (err as NodeJS.ErrnoException).code;
-      if (code !== "ENOENT") {
-        console.error(`[linkUpdater] readFile failed: ${absoluteSourcePath.value}`, err);
-      }
-      continue;
+      return fail("LINK_UPDATE_READ_FAILED", "内部リンク更新のためにファイルを読み込めませんでした。", errorDetails(err));
     }
 
     const updatedContent = replaceFileLinks(
@@ -50,13 +56,15 @@ export async function updateLinksForFileRename(
     );
 
     if (updatedContent !== content) {
-      try {
-        await writeFile(absoluteSourcePath.value, updatedContent, "utf8");
-      } catch (err) {
-        console.error(`[linkUpdater] writeFile failed: ${absoluteSourcePath.value}`, err);
-      }
+      patches.push({
+        absolutePath: absoluteSourcePath.value,
+        nextContent: updatedContent,
+        previousContent: content
+      });
     }
   }
+
+  return applyLinkUpdatePatches(patches);
 }
 
 /**
@@ -67,25 +75,22 @@ export async function updateLinksForFolderRename(
   workspacePath: string,
   oldFolderRelativePath: string,
   newFolderRelativePath: string
-): Promise<void> {
-  if (oldFolderRelativePath === newFolderRelativePath) return;
+): Promise<RelicResult<void>> {
+  if (oldFolderRelativePath === newFolderRelativePath) return ok(undefined);
 
   const fileTree = await readWorkspaceFileTree(workspacePath);
   const markdownPaths = collectMarkdownPaths(fileTree);
+  const patches: LinkUpdatePatch[] = [];
 
   for (const sourcePath of markdownPaths) {
-    const absoluteSourcePath = resolveWorkspaceRelativePath(workspacePath, sourcePath);
-    if (!absoluteSourcePath.ok) continue;
+    const absoluteSourcePath = await resolveExistingWorkspacePath(workspacePath, sourcePath);
+    if (!absoluteSourcePath.ok) return absoluteSourcePath;
 
     let content: string;
     try {
       content = await readFile(absoluteSourcePath.value, "utf8");
     } catch (err) {
-      const code = (err as NodeJS.ErrnoException).code;
-      if (code !== "ENOENT") {
-        console.error(`[linkUpdater] readFile failed: ${absoluteSourcePath.value}`, err);
-      }
-      continue;
+      return fail("LINK_UPDATE_READ_FAILED", "内部リンク更新のためにファイルを読み込めませんでした。", errorDetails(err));
     }
 
     const updatedContent = replaceFolderLinks(
@@ -95,11 +100,32 @@ export async function updateLinksForFolderRename(
     );
 
     if (updatedContent !== content) {
-      try {
-        await writeFile(absoluteSourcePath.value, updatedContent, "utf8");
-      } catch (err) {
-        console.error(`[linkUpdater] writeFile failed: ${absoluteSourcePath.value}`, err);
-      }
+      patches.push({
+        absolutePath: absoluteSourcePath.value,
+        nextContent: updatedContent,
+        previousContent: content
+      });
     }
+  }
+
+  return applyLinkUpdatePatches(patches);
+}
+
+async function applyLinkUpdatePatches(patches: LinkUpdatePatch[]): Promise<RelicResult<void>> {
+  const applied: LinkUpdatePatch[] = [];
+
+  try {
+    for (const patch of patches) {
+      await atomicWriteTextFile(patch.absolutePath, patch.nextContent);
+      applied.push(patch);
+    }
+
+    return ok(undefined);
+  } catch (error) {
+    for (const patch of applied.reverse()) {
+      await atomicWriteTextFile(patch.absolutePath, patch.previousContent).catch(() => undefined);
+    }
+
+    return fail("LINK_UPDATE_WRITE_FAILED", "内部リンクを更新できませんでした。", errorDetails(error));
   }
 }
