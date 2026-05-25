@@ -1509,7 +1509,7 @@ describe("Editor", () => {
     const addButton = container.querySelector(".cm-live-table-add--row-after") as HTMLButtonElement;
 
     fireEvent.mouseEnter(input);
-    fireEvent.mouseLeave(table, { relatedTarget: addButton });
+    fireEvent.mouseLeave(table);
     expect(table.dataset.canAddRowAfter).toBe("true");
 
     fireEvent.click(addButton);
