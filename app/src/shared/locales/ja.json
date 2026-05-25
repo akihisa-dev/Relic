@@ -374,6 +374,8 @@
   "frontmatter.propertyStatus": "状態",
   "frontmatter.propertyTags": "タグ",
   "frontmatter.propertyName": "プロパティ名",
+  "frontmatter.rangeEnd": "終了",
+  "frontmatter.rangeStart": "開始",
   "frontmatter.value": "値",
   "frontmatter.enterValue": "入力してください",
   "frontmatter.invalidPropertyName": "プロパティ名に使えない文字があります",
