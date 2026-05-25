@@ -33,14 +33,27 @@ describe("workspaceHandlerValidators", () => {
 
   it("validates gantt entry edits and frontmatter templates", () => {
     expect(isUpdateGanttChartEntryInput({
+      chronicleCalendarId: "chronicle1",
+      chronicleCalendarStartYear: 100,
       endValue: 3,
       kind: "move",
       originalEndValue: 2,
       originalStartValue: 1,
       path: "Note.md",
-      source: "date",
+      source: "chronicle",
       startValue: 2
     })).toBe(true);
+    expect(isUpdateGanttChartEntryInput({
+      chronicleCalendarId: "chronicle1",
+      chronicleCalendarStartYear: 0,
+      endValue: 3,
+      kind: "move",
+      originalEndValue: 2,
+      originalStartValue: 1,
+      path: "Note.md",
+      source: "chronicle",
+      startValue: 2
+    })).toBe(false);
     expect(isUpdateGanttChartEntryInput({
       endValue: 1,
       kind: "move",

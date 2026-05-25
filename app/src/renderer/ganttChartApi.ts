@@ -4,4 +4,4 @@ export type GanttChartFileReader = Pick<RelicApi, "readMarkdownFile">["readMarkd
 export type GanttChartEntryFallbackApi = Pick<
   RelicApi,
   "getWorkspaceChronicle" | "readMarkdownFile" | "writeMarkdownFile"
->;
+> & Partial<Pick<RelicApi, "getWorkspaceChronicleCalendars">>;

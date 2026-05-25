@@ -85,6 +85,7 @@ export function isUpdateGanttChartEntryInput(input: unknown): input is UpdateGan
     typeof candidate.path === "string" &&
     ganttChartSources.includes(candidate.source as GanttChartSource) &&
     (!("chronicleCalendarId" in candidate) || isChronicleCalendarId(candidate.chronicleCalendarId)) &&
+    (!("chronicleCalendarStartYear" in candidate) || (Number.isInteger(candidate.chronicleCalendarStartYear) && Number(candidate.chronicleCalendarStartYear) >= 1)) &&
     (!("dateKind" in candidate) || candidate.dateKind === "planned" || candidate.dateKind === "actual") &&
     (candidate.kind === "move" || candidate.kind === "resize-start" || candidate.kind === "resize-end") &&
     Number.isInteger(candidate.originalStartValue) &&
