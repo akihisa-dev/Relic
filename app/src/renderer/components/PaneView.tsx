@@ -2,7 +2,6 @@ import { EditorView } from "@codemirror/view";
 import type { MutableRefObject, ReactElement, ReactNode } from "react";
 
 import type { EditorSettings, UserDefinedField } from "../../shared/ipc";
-import { useAutoSave } from "../hooks/useAutoSave";
 import { usePaneHeadingScroll } from "../hooks/usePaneHeadingScroll";
 import { usePaneTabInteractions } from "../hooks/usePaneTabInteractions";
 import { useEditorStore, type PaneId, type PanelTabKind } from "../store/editorStore";
@@ -113,18 +112,6 @@ export function PaneView({
   } = usePaneTabInteractions({ onTabMove, pane });
   const contextTab = contextMenu ? tabs[contextMenu.tabId] : null;
   const contextTabIsPinned = Boolean(contextTab?.isPinned);
-
-  useAutoSave(
-    activeTab?.kind === "file" ? activeTab.content : "",
-    activeTab?.kind === "file" ? activeTab.path : null,
-    activeTab?.kind === "file" && !activeTab.externalConflict,
-    () => {
-      if (activeTab?.kind !== "file") return;
-      markTabSaved(activeTab.id, activeTab.content);
-      onFileSaved?.(activeTab.path);
-    },
-    onFileSaveError
-  );
 
   const loadExternalVersion = (): void => {
     if (activeTab?.kind !== "file") return;

@@ -12,7 +12,11 @@ import {
   normalizeMarkdownFileName,
   renamedMarkdownPath
 } from "./markdownFilePaths";
-import { resolveWorkspaceRelativePath, toWorkspaceRelativePath } from "./paths";
+import {
+  resolveExistingWorkspacePath,
+  resolveNewWorkspacePath,
+  toWorkspaceRelativePath
+} from "./paths";
 
 export interface CreatedMarkdownFile {
   path: string;
@@ -30,10 +34,14 @@ export async function createMarkdownFile(
     return normalizedName;
   }
 
-  const absoluteFilePath = path.join(workspacePath, normalizedName.value);
+  const absoluteFilePath = await resolveNewWorkspacePath(workspacePath, normalizedName.value);
+
+  if (!absoluteFilePath.ok) {
+    return absoluteFilePath;
+  }
 
   try {
-    await writeFile(absoluteFilePath, "", {
+    await writeFile(absoluteFilePath.value, "", {
       encoding: "utf8",
       flag: "wx"
     });
@@ -74,7 +82,7 @@ export async function createMarkdownFileAtPath(
     return fail("FILE_NAME_INVALID", "Markdownファイル名を指定してください。");
   }
 
-  const absoluteFilePath = resolveWorkspaceRelativePath(workspacePath, normalizedRelativePath);
+  const absoluteFilePath = await resolveNewWorkspacePath(workspacePath, normalizedRelativePath);
 
   if (!absoluteFilePath.ok) {
     return absoluteFilePath;
@@ -109,7 +117,7 @@ export async function readMarkdownFile(
     return fail("FILE_TYPE_UNSUPPORTED", "Markdownファイルだけを開けます。");
   }
 
-  const absoluteFilePath = resolveWorkspaceRelativePath(workspacePath, relativePath);
+  const absoluteFilePath = await resolveExistingWorkspacePath(workspacePath, relativePath);
 
   if (!absoluteFilePath.ok) {
     return absoluteFilePath;
@@ -137,7 +145,7 @@ export async function writeMarkdownFileContent(
   relativePath: string,
   content: string
 ): Promise<RelicResult<void>> {
-  const absoluteFilePath = resolveWorkspaceRelativePath(workspacePath, relativePath);
+  const absoluteFilePath = await resolveExistingWorkspacePath(workspacePath, relativePath);
 
   if (!absoluteFilePath.ok) {
     return absoluteFilePath;
@@ -169,7 +177,7 @@ export async function renameMarkdownFile(
     return fail("FILE_TYPE_UNSUPPORTED", "Markdownファイルだけをリネームできます。");
   }
 
-  const absoluteSourcePath = resolveWorkspaceRelativePath(workspacePath, relativePath);
+  const absoluteSourcePath = await resolveExistingWorkspacePath(workspacePath, relativePath);
 
   if (!absoluteSourcePath.ok) {
     return absoluteSourcePath;
@@ -181,7 +189,7 @@ export async function renameMarkdownFile(
     return nextRelativePath;
   }
 
-  const absoluteDestinationPath = resolveWorkspaceRelativePath(workspacePath, nextRelativePath.value);
+  const absoluteDestinationPath = await resolveNewWorkspacePath(workspacePath, nextRelativePath.value);
 
   if (!absoluteDestinationPath.ok) {
     return absoluteDestinationPath;
@@ -197,7 +205,11 @@ export async function renameMarkdownFile(
 
   try {
     await rename(absoluteSourcePath.value, absoluteDestinationPath.value);
-    await updateLinksForFileRename(workspacePath, relativePath, nextRelativePath.value);
+    const links = await updateLinksForFileRename(workspacePath, relativePath, nextRelativePath.value);
+    if (!links.ok) {
+      await rename(absoluteDestinationPath.value, absoluteSourcePath.value).catch(() => undefined);
+      return links;
+    }
 
     return readMarkdownFile(workspacePath, nextRelativePath.value);
   } catch (error) {
@@ -218,7 +230,7 @@ export async function moveMarkdownFile(
     return fail("FILE_TYPE_UNSUPPORTED", "Markdownファイルだけを移動できます。");
   }
 
-  const absoluteSourcePath = resolveWorkspaceRelativePath(workspacePath, relativePath);
+  const absoluteSourcePath = await resolveExistingWorkspacePath(workspacePath, relativePath);
 
   if (!absoluteSourcePath.ok) {
     return absoluteSourcePath;
@@ -230,7 +242,7 @@ export async function moveMarkdownFile(
     return readMarkdownFile(workspacePath, relativePath);
   }
 
-  const absoluteDestinationPath = resolveWorkspaceRelativePath(workspacePath, nextRelativePath);
+  const absoluteDestinationPath = await resolveNewWorkspacePath(workspacePath, nextRelativePath);
 
   if (!absoluteDestinationPath.ok) {
     return absoluteDestinationPath;
@@ -242,7 +254,11 @@ export async function moveMarkdownFile(
 
   try {
     await rename(absoluteSourcePath.value, absoluteDestinationPath.value);
-    await updateLinksForFileRename(workspacePath, relativePath, nextRelativePath);
+    const links = await updateLinksForFileRename(workspacePath, relativePath, nextRelativePath);
+    if (!links.ok) {
+      await rename(absoluteDestinationPath.value, absoluteSourcePath.value).catch(() => undefined);
+      return links;
+    }
 
     return readMarkdownFile(workspacePath, nextRelativePath);
   } catch (error) {
@@ -262,7 +278,7 @@ export async function duplicateMarkdownFile(
     return fail("FILE_TYPE_UNSUPPORTED", "Markdownファイルだけを複製できます。");
   }
 
-  const sourcePath = resolveWorkspaceRelativePath(workspacePath, relativePath);
+  const sourcePath = await resolveExistingWorkspacePath(workspacePath, relativePath);
 
   if (!sourcePath.ok) {
     return sourcePath;
@@ -271,7 +287,7 @@ export async function duplicateMarkdownFile(
   try {
     const content = await readFile(sourcePath.value, "utf8");
     const destinationRelativePath = await createCopyRelativePath(workspacePath, relativePath);
-    const destinationPath = resolveWorkspaceRelativePath(workspacePath, destinationRelativePath);
+    const destinationPath = await resolveNewWorkspacePath(workspacePath, destinationRelativePath);
 
     if (!destinationPath.ok) {
       return destinationPath;

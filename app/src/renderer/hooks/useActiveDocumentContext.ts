@@ -5,6 +5,7 @@ import {
   getActiveFileTabInPane,
   type OutlineHeading
 } from "../editorDerivedState";
+import { isLargeMarkdownContent } from "../largeMarkdown";
 import type { FileTab, PaneId, PaneState, Tab } from "../store/editorStore";
 import { useBacklinksState } from "./useBacklinksState";
 
@@ -40,15 +41,18 @@ export function useActiveDocumentContext({
     { leftPane, rightPane },
     tabs
   );
-  const outlineHeadings = activeFileTabInFocusedPane
+  const isLargeMarkdown = activeFileTabInFocusedPane
+    ? isLargeMarkdownContent(activeFileTabInFocusedPane.content)
+    : false;
+  const outlineHeadings = activeFileTabInFocusedPane && !isLargeMarkdown
     ? extractOutlineHeadings(activeFileTabInFocusedPane.content)
     : [];
-  const outgoingLinks = activeFileTabInFocusedPane
+  const outgoingLinks = activeFileTabInFocusedPane && !isLargeMarkdown
     ? resolveWikiLinks(activeFileTabInFocusedPane.content, activeFileTabInFocusedPane.path, existingMarkdownPaths, aliasesByPath)
     : [];
 
   const { backlinks, isLoadingBacklinks } = useBacklinksState({
-    activeFilePath: activeFileTabInFocusedPane?.path ?? null,
+    activeFilePath: activeFileTabInFocusedPane && !isLargeMarkdown ? activeFileTabInFocusedPane.path : null,
     fileTree,
     setWorkspaceError
   });

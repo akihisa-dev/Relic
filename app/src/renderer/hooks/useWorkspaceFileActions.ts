@@ -6,11 +6,13 @@ import type { WorkspaceFileActionsContext } from "./workspaceFileActionTypes";
 import type { Translator } from "../i18n";
 
 type UseWorkspaceFileActionsInput = WorkspaceFileActionsContext & {
+  beforeCloseAllTabs?: () => Promise<boolean> | boolean;
   t: Translator;
 };
 
 export function useWorkspaceFileActions({
   aliasesByPath,
+  beforeCloseAllTabs,
   closeAllTabs,
   closeTab,
   existingMarkdownPaths,
@@ -50,6 +52,7 @@ export function useWorkspaceFileActions({
     tabs
   });
   const registryActions = useWorkspaceRegistryActions({
+    beforeCloseAllTabs,
     closeAllTabs,
     setWorkspaceError,
     setWorkspaceState

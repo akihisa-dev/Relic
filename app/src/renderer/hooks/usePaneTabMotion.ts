@@ -9,6 +9,7 @@ const TAB_CLOSE_MOTION_MS = 180;
 const paneTabMotionKey = (pane: PaneId, tabId: string): string => `${pane}:${tabId}`;
 
 interface UsePaneTabMotionInput {
+  beforeCloseTabs?: (pane: PaneId, tabIds: string[]) => Promise<boolean> | boolean;
   closeAllTabsInPane: (pane: PaneId) => void;
   closeOtherTabs: (pane: PaneId, tabId: string) => void;
   closeTab: (pane: PaneId, tabId: string) => void;
@@ -27,7 +28,8 @@ export function usePaneTabMotion({
   leftPane,
   rightPane,
   showRailTabFlight,
-  tabs
+  tabs,
+  beforeCloseTabs
 }: UsePaneTabMotionInput): {
   closeAllTabsInPaneWithMotion: (pane: PaneId) => void;
   closeOtherTabsWithMotion: (pane: PaneId, tabId: string) => void;
@@ -83,6 +85,9 @@ export function usePaneTabMotion({
     const key = paneTabMotionKey(pane, tabId);
     if (closingPaneTabs.has(key)) return;
 
+    void Promise.resolve(beforeCloseTabs?.(pane, [tabId]) ?? true).then((canClose) => {
+      if (!canClose) return;
+
     setClosingPaneTabs((current) => {
       if (current.has(key)) return current;
       return new Set(current).add(key);
@@ -94,7 +99,8 @@ export function usePaneTabMotion({
       closeTab(pane, tabId);
       clearClosingPaneTabs([key]);
     }, TAB_CLOSE_MOTION_MS);
-  }, [clearClosingPaneTabs, closeTab, closingPaneTabs, startTabCloseFlight]);
+    });
+  }, [beforeCloseTabs, clearClosingPaneTabs, closeTab, closingPaneTabs, startTabCloseFlight]);
 
   const closeTabsWithMotion = useCallback((pane: PaneId, tabIds: string[], closeAction: () => void): void => {
     const targetKeys = tabIds
@@ -103,6 +109,9 @@ export function usePaneTabMotion({
       .filter((key) => !closingPaneTabs.has(key));
 
     if (targetKeys.length === 0) return;
+
+    void Promise.resolve(beforeCloseTabs?.(pane, tabIds) ?? true).then((canClose) => {
+      if (!canClose) return;
 
     setClosingPaneTabs((current) => {
       const next = new Set(current);
@@ -118,7 +127,8 @@ export function usePaneTabMotion({
     for (const key of targetKeys) {
       closeMotionTimersRef.current[key] = timer;
     }
-  }, [clearClosingPaneTabs, closingPaneTabs, tabs]);
+    });
+  }, [beforeCloseTabs, clearClosingPaneTabs, closingPaneTabs, tabs]);
 
   const leftClosingTabIds = useMemo(
     () => new Set(leftPane.tabIds.filter((tabId) => closingPaneTabs.has(paneTabMotionKey("left", tabId)))),

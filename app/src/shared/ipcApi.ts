@@ -51,6 +51,15 @@ import type {
   WriteMarkdownFileInput
 } from "./ipcWorkspace";
 
+export interface WindowCloseRequestEvent {
+  requestId: string;
+}
+
+export interface WindowCloseResponseInput {
+  ok: boolean;
+  requestId: string;
+}
+
 export interface RelicApi {
   createNewWorkspace: () => Promise<RelicResult<WorkspaceState>>;
   togglePin: (path: string) => Promise<RelicResult<WorkspaceState>>;
@@ -110,4 +119,6 @@ export interface RelicApi {
   mergeFiles: (input: MergeFilesInput) => Promise<RelicResult<string>>;
   splitFileByHeading: (input: SplitFileByHeadingInput) => Promise<RelicResult<string[]>>;
   onWorkspaceChanged: (callback: (event: WorkspaceChangedEvent) => void) => () => void;
+  onWindowCloseRequested: (callback: (event: WindowCloseRequestEvent) => void) => () => void;
+  respondToWindowCloseRequest: (input: WindowCloseResponseInput) => void;
 }

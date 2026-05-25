@@ -222,6 +222,111 @@ describe("App", () => {
     if (tab?.kind === "file") expect(tab.content).toBe("保存に失敗しても残る本文");
   });
 
+  it("ステータスバーに保存状態を表示する", async () => {
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [{ name: "読書メモ", path: "読書メモ.md", type: "file" }]
+        }
+      }),
+      readMarkdownFile: vi.fn().mockResolvedValue({
+        ok: true,
+        value: { content: "本文テスト", name: "読書メモ", path: "読書メモ.md" }
+      })
+    });
+
+    await renderApp();
+    fireEvent.click(await screen.findByRole("button", { name: /読書メモ/ }));
+
+    expect(await screen.findByText("保存済み")).toBeInTheDocument();
+
+    const activeTabId = useEditorStore.getState().leftPane.activeTabId!;
+    act(() => {
+      useEditorStore.getState().updateTabContent(activeTabId, "未保存の本文");
+    });
+
+    expect(await screen.findByText("未保存")).toBeInTheDocument();
+  });
+
+  it("未保存タブを閉じる前に即時保存する", async () => {
+    const writeMarkdownFile = vi.fn().mockResolvedValue({ ok: true, value: undefined });
+
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [{ name: "読書メモ", path: "読書メモ.md", type: "file" }]
+        }
+      }),
+      readMarkdownFile: vi.fn().mockResolvedValue({
+        ok: true,
+        value: { content: "本文テスト", name: "読書メモ", path: "読書メモ.md" }
+      }),
+      writeMarkdownFile
+    });
+
+    await renderApp();
+    fireEvent.click(await screen.findByRole("button", { name: /読書メモ/ }));
+    await waitFor(() => expect(useEditorStore.getState().leftPane.activeTabId).not.toBeNull());
+
+    const activeTabId = useEditorStore.getState().leftPane.activeTabId!;
+    act(() => {
+      useEditorStore.getState().updateTabContent(activeTabId, "閉じる前に保存する本文");
+    });
+
+    const tab = (await screen.findByText("読書メモ", { selector: ".pane-tab-name" })).closest(".pane-tab");
+    fireEvent.click(within(tab as HTMLElement).getByTitle("タブを閉じる"));
+
+    await waitFor(() => expect(writeMarkdownFile).toHaveBeenCalledWith({
+      content: "閉じる前に保存する本文",
+      path: "読書メモ.md"
+    }));
+    await waitFor(() => expect(useEditorStore.getState().leftPane.activeTabId).toBeNull());
+  });
+
+  it("閉じる前保存に失敗した場合はタブと本文を維持する", async () => {
+    const writeMarkdownFile = vi.fn().mockResolvedValue({
+      ok: false,
+      error: { code: "FILE_WRITE_FAILED", message: "ファイルを保存できませんでした。" }
+    });
+
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [{ name: "読書メモ", path: "読書メモ.md", type: "file" }]
+        }
+      }),
+      readMarkdownFile: vi.fn().mockResolvedValue({
+        ok: true,
+        value: { content: "本文テスト", name: "読書メモ", path: "読書メモ.md" }
+      }),
+      writeMarkdownFile
+    });
+
+    await renderApp();
+    fireEvent.click(await screen.findByRole("button", { name: /読書メモ/ }));
+    await waitFor(() => expect(useEditorStore.getState().leftPane.activeTabId).not.toBeNull());
+
+    const activeTabId = useEditorStore.getState().leftPane.activeTabId!;
+    act(() => {
+      useEditorStore.getState().updateTabContent(activeTabId, "保存できない本文");
+    });
+
+    const tab = (await screen.findByText("読書メモ", { selector: ".pane-tab-name" })).closest(".pane-tab");
+    fireEvent.click(within(tab as HTMLElement).getByTitle("タブを閉じる"));
+
+    expect(await screen.findByText("ファイルを保存できませんでした。")).toHaveClass("toast--error");
+    expect(useEditorStore.getState().leftPane.activeTabId).toBe(activeTabId);
+    const latestTab = useEditorStore.getState().tabs[activeTabId];
+    expect(latestTab?.kind).toBe("file");
+    if (latestTab?.kind === "file") expect(latestTab.content).toBe("保存できない本文");
+  });
+
   it("未編集の開きタブは外部変更を自動反映する", async () => {
     let workspaceChanged: Parameters<NonNullable<typeof window.relic>["onWorkspaceChanged"]>[0] = () => undefined;
     const readMarkdownFile = vi.fn()
