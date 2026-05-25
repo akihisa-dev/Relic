@@ -2,8 +2,24 @@ import { useEffect, useState } from "react";
 import type { ReactElement } from "react";
 
 import { type AppInfo, type EditorSettings, type FeatureToggles } from "../../shared/ipc";
-import { useT } from "../i18n";
+import { type TranslationKey, useT } from "../i18n";
 import { SettingsSegmentedControl } from "./SettingsSegmentedControl";
+
+function getEditorFontLabelKeys(platform?: NodeJS.Platform): { gothic: TranslationKey; mincho: TranslationKey; mono: TranslationKey } {
+  if (platform === "win32") {
+    return {
+      gothic: "settings.fontGothicWindows",
+      mincho: "settings.fontMinchoWindows",
+      mono: "settings.fontMonoWindows"
+    };
+  }
+
+  return {
+    gothic: "settings.fontGothicMac",
+    mincho: "settings.fontMinchoMac",
+    mono: "settings.fontMonoMac"
+  };
+}
 
 export function SettingsSidebar({
   appInfo,
@@ -21,6 +37,7 @@ export function SettingsSidebar({
   const [draft, setDraft] = useState<EditorSettings>(settings);
   const [togglesDraft, setTogglesDraft] = useState<FeatureToggles>(featureToggles);
   const t = useT();
+  const fontLabelKeys = getEditorFontLabelKeys(appInfo?.platform);
 
   useEffect(() => {
     setDraft(settings);
@@ -84,8 +101,9 @@ export function SettingsSidebar({
               onChange={(value) => update("font", value)}
               options={[
                 { label: t("settings.fontSystem"), value: "system" },
-                { label: t("settings.fontMincho"), value: "mincho" },
-                { label: "Menlo", value: "mono" }
+                { label: t(fontLabelKeys.gothic), value: "gothic" },
+                { label: t(fontLabelKeys.mincho), value: "mincho" },
+                { label: t(fontLabelKeys.mono), value: "mono" }
               ]}
               value={draft.font}
             />

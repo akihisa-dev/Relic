@@ -35,7 +35,7 @@ export const defaultFeatureToggles: FeatureToggles = {
   rightPanel: true
 };
 
-export type EditorFont = "system" | "mincho" | "mono";
+export type EditorFont = "system" | "gothic" | "mincho" | "mono";
 export type EditorMaxWidth = "550px" | "660px" | "800px" | "none";
 export type FrontmatterDateFormat = "dmy" | "mdy" | "system" | "ymd";
 

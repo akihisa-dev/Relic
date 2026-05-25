@@ -96,7 +96,7 @@ function isEditorSettings(input: unknown): input is EditorSettings {
   const s = input as Record<string, unknown>;
 
   return (
-    (s.font === "system" || s.font === "mincho" || s.font === "mono") &&
+    (s.font === "system" || s.font === "gothic" || s.font === "mincho" || s.font === "mono") &&
     typeof s.fontSize === "number" &&
     (s.frontmatterDateFormat === "ymd" ||
       s.frontmatterDateFormat === "system" ||

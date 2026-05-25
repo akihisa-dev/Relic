@@ -204,16 +204,20 @@ describe("FrontmatterSidebar", () => {
 
 describe("SettingsSidebar", () => {
   function renderSettingsSidebar({
+    language = "en",
     onFeatureTogglesSave = vi.fn(),
-    onSave = vi.fn()
+    onSave = vi.fn(),
+    platform = "darwin"
   }: {
+    language?: "en" | "ja";
     onFeatureTogglesSave?: (toggles: typeof defaultFeatureToggles) => void;
     onSave?: (settings: typeof defaultEditorSettings) => void;
+    platform?: NodeJS.Platform;
   } = {}) {
     render(
-      <I18nProvider language="en">
+      <I18nProvider language={language}>
         <SettingsSidebar
-          appInfo={{ name: "Relic", platform: "darwin", version: "1.2.3" }}
+          appInfo={{ name: "Relic", platform, version: "1.2.3" }}
           featureToggles={defaultFeatureToggles}
           onFeatureTogglesSave={onFeatureTogglesSave}
           onSave={onSave}
@@ -234,9 +238,39 @@ describe("SettingsSidebar", () => {
     expect(screen.getByText("Relic 1.2.3")).toBeInTheDocument();
   });
 
+  it("macOSではフォント選択肢をmacOSの元フォント名で表示する", () => {
+    renderSettingsSidebar({ platform: "darwin" });
+
+    expect(screen.getByRole("button", { name: "System font" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Hiragino Sans" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Hiragino Mincho ProN" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Menlo" })).toBeInTheDocument();
+  });
+
+  it("Windowsではフォント選択肢をWindowsの元フォント名で表示する", () => {
+    renderSettingsSidebar({ platform: "win32" });
+
+    expect(screen.getByRole("button", { name: "System font" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Yu Gothic" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Yu Mincho" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Consolas" })).toBeInTheDocument();
+  });
+
+  it("日本語UIではフォント選択肢をローカライズした元フォント名で表示する", () => {
+    renderSettingsSidebar({ language: "ja", platform: "win32" });
+
+    expect(screen.getByRole("button", { name: "システムフォント" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "游ゴシック" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "游明朝" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Consolas" })).toBeInTheDocument();
+  });
+
   it("設定変更時に既存のEditorSettings形式で保存する", () => {
     const onSave = vi.fn();
     renderSettingsSidebar({ onSave });
+
+    fireEvent.click(screen.getByRole("button", { name: "Hiragino Sans" }));
+    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ font: "gothic" }));
 
     fireEvent.click(screen.getByRole("button", { name: "Dark" }));
     expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ theme: "dark" }));
