@@ -31,6 +31,7 @@ function createWindow(): void {
     minWidth: 960,
     title: "Relic",
     width: 1240,
+    autoHideMenuBar: process.platform === "win32",
     ...(isMac
       ? {
           titleBarStyle: "hiddenInset",
