@@ -836,17 +836,21 @@ describe("Editor", () => {
   it("chronicle0プロパティは1行配列として編集する", async () => {
     const viewRef = createRef<EditorView | null>();
     const { container } = render(
-      <Editor
-        content={"---\nchronicle0:\n---\n# 本文"}
-        onChange={vi.fn()}
-        settings={settings}
-        viewRef={viewRef}
-      />
+      <I18nProvider language="ja">
+        <Editor
+          content={"---\nchronicle0:\n---\n# 本文"}
+          onChange={vi.fn()}
+          settings={settings}
+          viewRef={viewRef}
+        />
+      </I18nProvider>
     );
 
     await expandFrontmatter(container);
     await waitFor(() => expect(container.querySelector(".cm-frontmatter-chronicle")).not.toBeNull());
     const inputs = Array.from(container.querySelectorAll(".cm-frontmatter-chronicle .cm-frontmatter-input")) as HTMLInputElement[];
+    expect(inputs[0].placeholder).toBe("開始");
+    expect(inputs[1].placeholder).toBe("終了");
     fireEvent.change(inputs[0], { target: { value: "1185" } });
 
     expect(viewRef.current?.state.doc.toString()).toContain("chronicle0: [1185]");

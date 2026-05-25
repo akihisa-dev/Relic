@@ -43,7 +43,7 @@ export function createFrontmatterValueInput({
   value: unknown;
   view: EditorView;
 }): HTMLElement {
-  if (isChronicleField(key)) return chronicleInput(view, key, Array.isArray(value) ? value : [], updateField);
+  if (isChronicleField(key)) return chronicleInput(view, key, Array.isArray(value) ? value : [], updateField, t);
   if (isFixedDateRangeField(key)) {
     return dateRangeInput(
       view,
@@ -206,19 +206,21 @@ function chronicleInput(
   view: EditorView,
   key: string,
   value: unknown[],
-  updateField: FrontmatterFieldUpdater
+  updateField: FrontmatterFieldUpdater,
+  t: Translator
 ): HTMLElement {
   const wrap = document.createElement("span");
   wrap.className = "cm-frontmatter-input-wrap cm-frontmatter-chronicle";
 
   const startInput = document.createElement("input");
   startInput.className = "cm-frontmatter-input";
+  startInput.placeholder = t("frontmatter.rangeStart");
   startInput.type = "number";
   startInput.value = chronicleInputValue(value[0]);
 
   const endInput = document.createElement("input");
   endInput.className = "cm-frontmatter-input";
-  endInput.placeholder = "end";
+  endInput.placeholder = t("frontmatter.rangeEnd");
   endInput.type = "number";
   endInput.value = value.length > 1 ? chronicleInputValue(value[1]) : "";
 

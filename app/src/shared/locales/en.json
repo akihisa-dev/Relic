@@ -374,6 +374,8 @@
   "frontmatter.propertyStatus": "Status",
   "frontmatter.propertyTags": "Tags",
   "frontmatter.propertyName": "Property name",
+  "frontmatter.rangeEnd": "End",
+  "frontmatter.rangeStart": "Start",
   "frontmatter.value": "Value",
   "frontmatter.enterValue": "Enter a value.",
   "frontmatter.invalidPropertyName": "The property name contains unsupported characters.",
