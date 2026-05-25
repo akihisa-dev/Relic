@@ -715,6 +715,18 @@
   min-height: 18px;
 }
 
+.chronicle-calendar-error {
+  color: var(--error);
+  font-size: 12px;
+  grid-column: 2 / -1;
+  line-height: 1.4;
+}
+
+.chronicle-calendar-start-input[aria-invalid="true"] {
+  border-color: var(--error);
+  outline-color: var(--error-bg);
+}
+
 @container (max-width: 640px) {
   .setting-row {
     align-items: start;

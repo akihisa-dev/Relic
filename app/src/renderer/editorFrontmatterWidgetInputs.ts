@@ -214,19 +214,63 @@ function chronicleInput(
 
   const startInput = document.createElement("input");
   startInput.className = "cm-frontmatter-input";
+  startInput.inputMode = "numeric";
   startInput.placeholder = t("frontmatter.rangeStart");
-  startInput.type = "number";
+  startInput.type = "text";
   startInput.value = chronicleInputValue(value[0]);
 
   const endInput = document.createElement("input");
   endInput.className = "cm-frontmatter-input";
+  endInput.inputMode = "numeric";
   endInput.placeholder = t("frontmatter.rangeEnd");
-  endInput.type = "number";
+  endInput.type = "text";
   endInput.value = value.length > 1 ? chronicleInputValue(value[1]) : "";
+  const error = document.createElement("span");
+  error.className = "cm-frontmatter-input-error";
 
-  const commit = (): void => {
-    const startYear = parseChronicleYearInput(startInput.value);
-    const endYear = parseChronicleYearInput(endInput.value);
+  const setError = (message: string | null): void => {
+    if (!message) {
+      startInput.removeAttribute("aria-invalid");
+      endInput.removeAttribute("aria-invalid");
+      error.textContent = "";
+      return;
+    }
+
+    startInput.setAttribute("aria-invalid", "true");
+    endInput.setAttribute("aria-invalid", "true");
+    error.textContent = message;
+  };
+
+  const commit = (write: boolean): void => {
+    const startRaw = startInput.value.trim();
+    const endRaw = endInput.value.trim();
+    const startYear = parseChronicleYearInput(startRaw);
+    const endYear = parseChronicleYearInput(endRaw);
+
+    if (!startRaw && !endRaw) {
+      setError(null);
+      if (write) updateField(view, key, undefined);
+      return;
+    }
+
+    if (!startRaw) {
+      setError(t("frontmatter.chronicleStartRequired"));
+      return;
+    }
+
+    if (startYear === null || (endRaw && endYear === null)) {
+      setError(t("frontmatter.invalidChronicleYear"));
+      return;
+    }
+
+    if (endYear !== null && startYear > endYear) {
+      setError(t("frontmatter.invalidChronicleRange"));
+      return;
+    }
+
+    setError(null);
+
+    if (!write) return;
 
     if (startYear === null) {
       updateField(view, key, undefined);
@@ -238,12 +282,13 @@ function chronicleInput(
       return;
     }
 
-    updateField(view, key, startYear <= endYear ? [startYear, endYear] : [endYear, startYear]);
+    updateField(view, key, [startYear, endYear]);
   };
 
-  startInput.addEventListener("change", commit);
-  endInput.addEventListener("change", commit);
-  wrap.append(startInput, endInput);
+  startInput.addEventListener("change", () => commit(true));
+  endInput.addEventListener("change", () => commit(true));
+  wrap.append(startInput, endInput, error);
+  commit(false);
   return wrap;
 }
 

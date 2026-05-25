@@ -73,14 +73,16 @@ export function parseChronicleCalendars(raw: unknown): ChronicleCalendarSettings
       : null;
     const name = typeof candidate.name === "string" ? candidate.name.trim() : "";
 
-    if (!id || used.has(id) || !name) return [];
+    if (!id || used.has(id) || typeof candidate.name !== "string") return [];
     used.add(id);
 
     if (id === "chronicle0") return [{ id, name }];
 
+    if (!("startYear" in candidate)) return [{ id, name }];
+
     return Number.isInteger(candidate.startYear) && Number(candidate.startYear) >= 1
       ? [{ id, name, startYear: Number(candidate.startYear) }]
-      : [];
+      : [{ id, name }];
   });
 
   const main = parsed.find((calendar) => calendar.id === "chronicle0") ?? defaultChronicleCalendars[0];

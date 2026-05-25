@@ -124,6 +124,10 @@ Markdown本文に書かれた `![alt](path)` 記法。Relicは画像管理アプ
 | ganttCharts | 年表 / 日付チャートの対象ファイル設定 |
 | chronicleCalendars | `chronicle0` の暦名、`chronicle1`〜`chronicle9` の暦名とメイン暦開始年 |
 
+`chronicleCalendars` のサブ暦では、暦名とメイン暦開始年をそれぞれ未設定にできる。
+サブ暦のメイン暦開始年が未設定の場合、そのサブ暦の `chronicleN` は年表に表示しない。
+サブ暦名が未設定でメイン暦開始年がある場合は、年表では `chronicleN` を暦名として表示する。
+
 ---
 
 ## タブと画面状態
