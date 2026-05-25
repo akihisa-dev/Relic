@@ -10,6 +10,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { defaultEditorSettings } from "../../shared/ipc";
 import { contextSelectionHighlightField } from "../editorContextSelectionHighlight";
+import { isListInputEvent } from "../editorListInput";
 import {
   buildLivePreviewDecorations,
   buildTableDecorations,
@@ -315,6 +316,108 @@ describe("Editor", () => {
     expect(screen.queryByRole("menu")).not.toBeInTheDocument();
     expect(onChange).toHaveBeenLastCalledWith("**hello** world");
     expect(viewRef.current!.state.doc.toString()).toBe("**hello** world");
+  });
+
+  it("本文の右クリックメニューはよく使う操作から表示する", async () => {
+    const viewRef = createRef<EditorView | null>();
+
+    render(
+      <Editor
+        content="hello world"
+        onChange={vi.fn()}
+        settings={{ ...settings, language: "ja" }}
+        viewRef={viewRef}
+      />
+    );
+
+    await waitFor(() => expect(viewRef.current).not.toBeNull());
+    const contentElement = viewRef.current!.dom.querySelector(".cm-content")!;
+
+    fireEvent.contextMenu(contentElement, { clientX: 32, clientY: 32 });
+    await screen.findByRole("menuitem", { name: "Copy" });
+
+    const labels = screen.getAllByRole("menuitem").map((item) => item.getAttribute("aria-label") ?? item.textContent);
+    expect(labels.slice(0, 10)).toEqual([
+      "Copy",
+      "Cut",
+      "Paste",
+      "Bold",
+      "Highlight",
+      "Internal link",
+      "Markdown link",
+      "Bulleted list",
+      "Numbered list",
+      "Checkbox"
+    ]);
+  });
+
+  it("リスト行でEnterを押すと次の項目を作り、空項目ではリストを終了する", async () => {
+    const viewRef = createRef<EditorView | null>();
+
+    render(
+      <Editor
+        content={"- item\n1. first\n- [x] done\n- "}
+        onChange={vi.fn()}
+        settings={settings}
+        viewRef={viewRef}
+      />
+    );
+
+    await waitFor(() => expect(viewRef.current).not.toBeNull());
+    const view = viewRef.current!;
+    const contentElement = view.dom.querySelector(".cm-content")!;
+
+    view.dispatch({ selection: { anchor: 6 } });
+    fireEvent.keyDown(contentElement, { key: "Enter" });
+    expect(view.state.doc.toString()).toBe("- item\n- \n1. first\n- [x] done\n- ");
+
+    view.dispatch({ selection: { anchor: view.state.doc.toString().indexOf("first") + "first".length } });
+    fireEvent.keyDown(contentElement, { key: "Enter" });
+    expect(view.state.doc.toString()).toBe("- item\n- \n1. first\n2. \n- [x] done\n- ");
+
+    view.dispatch({ selection: { anchor: view.state.doc.toString().indexOf("done") + "done".length } });
+    fireEvent.keyDown(contentElement, { key: "Enter" });
+    expect(view.state.doc.toString()).toBe("- item\n- \n1. first\n2. \n- [x] done\n- [ ] \n- ");
+
+    view.dispatch({ selection: { anchor: view.state.doc.length } });
+    fireEvent.keyDown(contentElement, { key: "Enter" });
+    expect(view.state.doc.toString()).toBe("- item\n- \n1. first\n2. \n- [x] done\n- [ ] \n");
+  });
+
+  it("TabとShift+Tabで選択中のリスト行を段下げ・段上げする", async () => {
+    const viewRef = createRef<EditorView | null>();
+
+    render(
+      <Editor
+        content={"- one\n- two\nplain"}
+        onChange={vi.fn()}
+        settings={settings}
+        viewRef={viewRef}
+      />
+    );
+
+    await waitFor(() => expect(viewRef.current).not.toBeNull());
+    const view = viewRef.current!;
+    const contentElement = view.dom.querySelector(".cm-content")!;
+
+    view.dispatch({ selection: { anchor: 0, head: "- one\n- two".length } });
+    fireEvent.keyDown(contentElement, { key: "Tab" });
+    expect(view.state.doc.toString()).toBe("  - one\n  - two\nplain");
+
+    view.dispatch({ selection: { anchor: 0, head: "  - one\n  - two".length } });
+    fireEvent.keyDown(contentElement, { key: "Tab", shiftKey: true });
+    expect(view.state.doc.toString()).toBe("- one\n- two\nplain");
+  });
+
+  it("IME変換中のEnterではリスト入力補助を実行しない", () => {
+    const composingEvent = new KeyboardEvent("keydown", { key: "Enter" });
+    Object.defineProperty(composingEvent, "isComposing", { value: true });
+    const imeProcessEvent = new KeyboardEvent("keydown", { key: "Enter" });
+    Object.defineProperty(imeProcessEvent, "keyCode", { value: 229 });
+
+    expect(isListInputEvent(composingEvent, { composing: false } as EditorView)).toBe(false);
+    expect(isListInputEvent(imeProcessEvent, { composing: false } as EditorView)).toBe(false);
+    expect(isListInputEvent(new KeyboardEvent("keydown", { key: "Enter" }), { composing: true } as EditorView)).toBe(false);
   });
 
   it("外側からcontentが更新されたら表示中の文書も同期する", async () => {
@@ -1240,6 +1343,81 @@ describe("Editor", () => {
     fireEvent.change(input, { target: { value: "Name" } });
 
     expect(viewRef.current?.state.doc.toString()).toBe("| Name | B |\n| --- | --- |\n| x | y |");
+  });
+
+  it("ライブプレビューの表セルにTSVを貼り付けると複数セルへ展開する", async () => {
+    const viewRef = createRef<EditorView | null>();
+
+    const { container } = render(
+      <Editor
+        content={"| A | B |\n| --- | --- |\n| x | y |"}
+        onChange={vi.fn()}
+        settings={settings}
+        viewRef={viewRef}
+      />
+    );
+
+    await waitFor(() => expect(container.querySelector(".cm-live-table-cell-input")).not.toBeNull());
+    const input = container.querySelector('.cm-live-table-cell-input[data-row="1"][data-col="0"]') as HTMLInputElement;
+
+    fireEvent.paste(input, {
+      clipboardData: {
+        getData: () => "left\tright\nnext\tlast"
+      }
+    });
+
+    expect(viewRef.current?.state.doc.toString()).toBe("| A | B |\n| --- | --- |\n| left | right |\n| next | last |");
+  });
+
+  it("ライブプレビューの表セルへの貼り付けが既存列を超える場合は列を追加する", async () => {
+    const viewRef = createRef<EditorView | null>();
+
+    const { container } = render(
+      <Editor
+        content={"| A | B |\n| --- | --- |\n| x | y |"}
+        onChange={vi.fn()}
+        settings={settings}
+        viewRef={viewRef}
+      />
+    );
+
+    await waitFor(() => expect(container.querySelector(".cm-live-table-cell-input")).not.toBeNull());
+    const input = container.querySelector('.cm-live-table-cell-input[data-row="1"][data-col="1"]') as HTMLInputElement;
+
+    fireEvent.paste(input, {
+      clipboardData: {
+        getData: () => "right\textra"
+      }
+    });
+
+    expect(viewRef.current?.state.doc.toString()).toBe("| A | B |  |\n| --- | --- | --- |\n| x | right | extra |");
+  });
+
+  it("ライブプレビューの表セルへの単一テキスト貼り付けは表展開しない", async () => {
+    const viewRef = createRef<EditorView | null>();
+
+    const { container } = render(
+      <Editor
+        content={"| A | B |\n| --- | --- |\n| x | y |"}
+        onChange={vi.fn()}
+        settings={settings}
+        viewRef={viewRef}
+      />
+    );
+
+    await waitFor(() => expect(container.querySelector(".cm-live-table-cell-input")).not.toBeNull());
+    const input = container.querySelector('.cm-live-table-cell-input[data-row="1"][data-col="0"]') as HTMLInputElement;
+    const event = new Event("paste", { bubbles: true, cancelable: true });
+    Object.defineProperty(event, "clipboardData", {
+      value: {
+        getData: () => "single"
+      }
+    });
+
+    input.dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(false);
+    expect(viewRef.current?.state.doc.toString()).toBe("| A | B |\n| --- | --- |\n| x | y |");
   });
 
   it("ライブプレビューの表でEnterを押すと下のセルへ移動する", async () => {

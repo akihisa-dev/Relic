@@ -11,6 +11,7 @@ import type { EditorSettings, UserDefinedField } from "../shared/ipc";
 import { contextSelectionHighlightField } from "./editorContextSelectionHighlight";
 import { editorEditableCompartment } from "./editorEditable";
 import { createFrontmatterPropertiesField, frontmatterCollapsedField } from "./editorFrontmatter";
+import { handleMarkdownListEnter, indentMarkdownListSelection, isListInputEvent } from "./editorListInput";
 import { buildLivePreviewDecorations, findClickableLinkAtPosition } from "./editorLivePreview";
 import { createLivePreviewTableField } from "./editorTables";
 import type { Translator } from "./i18n";
@@ -51,6 +52,8 @@ const fontFamilyMap: Record<EditorSettings["font"], string> = {
   mono: "Menlo, monospace",
   system: '-apple-system, BlinkMacSystemFont, "Hiragino Sans", sans-serif'
 };
+const composingViews = new WeakSet<EditorView>();
+
 export function buildWikiLinkCompletionSource(allFilePaths: string[]) {
   const basenameMap = new Map<string, string[]>();
 
@@ -113,6 +116,26 @@ export function buildExtensions(
     contextSelectionHighlightField,
     frontmatterCollapsedField,
     EditorView.domEventHandlers({
+      keydown: (event, view) => {
+        if (composingViews.has(view) || !isListInputEvent(event, view)) return false;
+        if (event.key === "Enter" && handleMarkdownListEnter(view)) {
+          event.preventDefault();
+          return true;
+        }
+        if (event.key === "Tab" && indentMarkdownListSelection(view, event.shiftKey ? -1 : 1)) {
+          event.preventDefault();
+          return true;
+        }
+        return false;
+      },
+      compositionstart: (_event, view) => {
+        composingViews.add(view);
+        return false;
+      },
+      compositionend: (_event, view) => {
+        composingViews.delete(view);
+        return false;
+      },
       click: (event, view) => {
         const target = event.target;
         if (!(target instanceof HTMLElement) || !target.closest(".cm-live-link")) return false;
