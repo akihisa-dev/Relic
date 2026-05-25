@@ -83,6 +83,11 @@ describe("readWorkspaceChronicle", () => {
       "utf8"
     );
     await writeFile(
+      path.join(workspacePath, "sub-before.md"),
+      "---\nchronicle1: [-2, 0]\n---\n# Sub before\n",
+      "utf8"
+    );
+    await writeFile(
       path.join(workspacePath, "legacy.md"),
       "---\nchronicle: [10]\n---\n# Legacy\n",
       "utf8"
@@ -124,6 +129,15 @@ describe("readWorkspaceChronicle", () => {
         path: "main.md",
         startLabel: "王国暦 10",
         startValue: 9
+      },
+      {
+        chronicleCalendarId: "chronicle1",
+        endLabel: "帝国暦 0",
+        endValue: 98,
+        fileName: "sub-before",
+        path: "sub-before.md",
+        startLabel: "帝国暦 −2",
+        startValue: 96
       },
       {
         chronicleCalendarId: "chronicle1",
@@ -291,6 +305,41 @@ describe("updateWorkspaceGanttChartEntry", () => {
     expect(updated).toContain("chronicle1: [4]");
     expect(updated).not.toContain("chronicle0:");
     expect(extractDateRange(updated)).toEqual({ endDate: "2027-05-01", startDate: "2027-05-01" });
+  });
+
+  it("サブ暦バー移動時は0以下のサブ暦年も元のchronicleNへ書き戻す", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-sub-chronicle-negative-update-"));
+    const filePath = path.join(workspacePath, "entry.md");
+    await writeFile(filePath, "---\nchronicle1: [3]\nplannedDate: [2026-05-01]\n---\n# A\n", "utf8");
+
+    const result = await updateWorkspaceGanttChartEntry(
+      workspacePath,
+      [
+        { filePaths: [], id: "chronicle", name: "chronicle", source: "chronicle" },
+        { filePaths: [], id: "date", name: "date", source: "date" }
+      ],
+      {
+        chronicleCalendarId: "chronicle1",
+        endValue: 97,
+        kind: "move",
+        originalEndValue: 101,
+        originalStartValue: 101,
+        path: "entry.md",
+        source: "chronicle",
+        startValue: 97
+      },
+      [
+        { id: "chronicle0", name: "王国暦" },
+        { id: "chronicle1", name: "帝国暦", startYear: 100 }
+      ]
+    );
+
+    expect(result.ok).toBe(true);
+
+    const updated = await readFile(filePath, "utf8");
+    expect(updated).toContain("chronicle1: [-1]");
+    expect(updated).not.toContain("chronicle0:");
+    expect(extractDateRange(updated)).toEqual({ endDate: "2022-05-01", startDate: "2022-05-01" });
   });
 
   it("dateバーの長さ変更時にplannedDateとchronicle0を連動して更新する", async () => {

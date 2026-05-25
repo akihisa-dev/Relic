@@ -97,11 +97,11 @@ export function parseScalarValue(value: string, field?: UserDefinedField): unkno
   return value;
 }
 
-export function parseChronicleYearInput(value: string): number | null {
+export function parseChronicleYearInput(value: string, allowZeroOrNegative = false): number | null {
   const trimmed = value.trim();
-  if (!/^\d+$/.test(trimmed)) return null;
+  if (!(allowZeroOrNegative ? /^-?\d+$/.test(trimmed) : /^\d+$/.test(trimmed))) return null;
   const year = Number(trimmed);
-  return Number.isInteger(year) && year >= 1 ? year : null;
+  return Number.isInteger(year) && (allowZeroOrNegative || year >= 1) ? year : null;
 }
 
 export function chronicleInputValue(value: unknown): string {

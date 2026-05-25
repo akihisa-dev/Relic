@@ -381,6 +381,7 @@
   "frontmatter.chronicleStartRequired": "終了年だけでは保存できません。開始年を入力してください。",
   "frontmatter.invalidChronicleRange": "開始年は終了年以下にしてください。",
   "frontmatter.invalidChronicleYear": "年は1以上の整数で入力してください。",
+  "frontmatter.invalidSubChronicleYear": "年は整数で入力してください。",
   "frontmatter.invalidDateRange": "開始日は終了日以前にしてください。",
   "frontmatter.value": "値",
   "frontmatter.enterValue": "入力してください",

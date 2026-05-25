@@ -886,6 +886,56 @@ describe("Editor", () => {
     expect(inputs[0].getAttribute("aria-invalid")).toBe("true");
   });
 
+  it("サブ暦のchronicleプロパティは0以下の整数も書き戻す", async () => {
+    const viewRef = createRef<EditorView | null>();
+    const { container } = render(
+      <I18nProvider language="ja">
+        <Editor
+          content={"---\nchronicle1:\n---\n# 本文"}
+          onChange={vi.fn()}
+          settings={settings}
+          viewRef={viewRef}
+        />
+      </I18nProvider>
+    );
+
+    await expandFrontmatter(container);
+    await waitFor(() => expect(container.querySelector(".cm-frontmatter-chronicle")).not.toBeNull());
+    const inputs = Array.from(container.querySelectorAll(".cm-frontmatter-chronicle .cm-frontmatter-input")) as HTMLInputElement[];
+    fireEvent.change(inputs[0], { target: { value: "-2" } });
+
+    expect(viewRef.current?.state.doc.toString()).toContain("chronicle1: [-2]");
+
+    await waitFor(() => expect(container.querySelector(".cm-frontmatter-chronicle")).not.toBeNull());
+    const nextInputs = Array.from(container.querySelectorAll(".cm-frontmatter-chronicle .cm-frontmatter-input")) as HTMLInputElement[];
+    fireEvent.change(nextInputs[1], { target: { value: "0" } });
+
+    expect(viewRef.current?.state.doc.toString()).toContain("chronicle1: [-2, 0]");
+  });
+
+  it("サブ暦のchronicleプロパティは小数を書き戻さない", async () => {
+    const viewRef = createRef<EditorView | null>();
+    const { container } = render(
+      <I18nProvider language="ja">
+        <Editor
+          content={"---\nchronicle1: [-2]\n---\n# 本文"}
+          onChange={vi.fn()}
+          settings={settings}
+          viewRef={viewRef}
+        />
+      </I18nProvider>
+    );
+
+    await expandFrontmatter(container);
+    await waitFor(() => expect(container.querySelector(".cm-frontmatter-chronicle")).not.toBeNull());
+    const inputs = Array.from(container.querySelectorAll(".cm-frontmatter-chronicle .cm-frontmatter-input")) as HTMLInputElement[];
+    fireEvent.change(inputs[0], { target: { value: "1.5" } });
+
+    expect(viewRef.current?.state.doc.toString()).toContain("chronicle1: [-2]");
+    expect(container.querySelector(".cm-frontmatter-input-error")?.textContent).toBe("年は整数で入力してください。");
+    expect(inputs[0].getAttribute("aria-invalid")).toBe("true");
+  });
+
   it("plannedDateプロパティは年月日の単日・期間を1行配列として編集する", async () => {
     const viewRef = createRef<EditorView | null>();
     const { container } = render(

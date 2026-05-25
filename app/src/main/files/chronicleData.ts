@@ -173,7 +173,7 @@ function extractChronicleRangeFromData(
   const value = data[fieldName];
 
   if (!Array.isArray(value) || (value.length !== 1 && value.length !== 2)) return null;
-  if (!value.every(isValidChronicleYear)) return null;
+  if (!value.every((year) => isValidChronicleYear(year, fieldName !== "chronicle0"))) return null;
 
   const startYear = value[0];
   const endYear = value.length === 1 ? startYear : value[1];
@@ -254,8 +254,8 @@ function dateYear(value: string): number {
   return Number(value.slice(0, 4));
 }
 
-function isValidChronicleYear(value: unknown): value is number {
-  return typeof value === "number" && Number.isInteger(value) && value >= 1;
+function isValidChronicleYear(value: unknown, allowZeroOrNegative: boolean): value is number {
+  return typeof value === "number" && Number.isInteger(value) && (allowZeroOrNegative || value >= 1);
 }
 
 function isChronicleCalendarActive(calendar: ChronicleCalendarSettings): boolean {
