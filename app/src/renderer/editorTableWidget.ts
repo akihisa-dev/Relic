@@ -230,10 +230,6 @@ export class TableWidget extends WidgetType {
     wrapper.addEventListener("focusout", (event) => {
       state.clearIfFocusOutside((event as FocusEvent).relatedTarget);
     });
-    wrapper.addEventListener("mouseleave", (event) => {
-      if (event.relatedTarget instanceof Node && wrapper.contains(event.relatedTarget)) return;
-      if (!wrapper.dataset.dragAxis) state.clearAffordance();
-    });
     wrapper.addEventListener("keydown", (event) => {
       if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== "c") return;
       const range = selectedRangeFromDataset(wrapper.dataset.selectedRange);
