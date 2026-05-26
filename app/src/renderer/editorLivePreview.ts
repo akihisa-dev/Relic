@@ -10,8 +10,15 @@ import {
   type InlineMatch,
   type SourceRevealRange
 } from "./editorLivePreviewModel";
-import { CheckboxWidget, HorizontalRuleWidget, InlineFormatWidget, ListMarkerWidget } from "./editorLivePreviewWidgets";
+import {
+  CheckboxWidget,
+  HorizontalRuleWidget,
+  InlineFormatWidget,
+  ListMarkerWidget,
+  MermaidBlockWidget
+} from "./editorLivePreviewWidgets";
 import { findTableBlocks } from "./editorTables";
+import { isMermaidLanguage } from "./mermaidPreview";
 
 export { findClickableLinkAtPosition, type ClickableLinkAtPosition } from "./editorLivePreviewModel";
 
@@ -66,6 +73,12 @@ export function buildLivePreviewDecorations(
     }
   }
 
+  function addBlockWidget(from: number, to: number, widget: WidgetType) {
+    if (from < to && !selectionTouches(from, to)) {
+      ranges.push({ from, to, deco: Decoration.replace({ block: true, widget }) });
+    }
+  }
+
   function addInlineFormat(lineFrom: number, match: InlineMatch, text: string) {
     if (!selectionTouches(match.from, match.to)) {
       const link = match.className === "cm-live-link"
@@ -107,6 +120,20 @@ export function buildLivePreviewDecorations(
     return inFencedCode;
   }
 
+  function findClosingFenceLine(startLineNumber: number): number | null {
+    for (let currentLine = startLineNumber + 1; currentLine <= doc.lines; currentLine += 1) {
+      if (/^\s*```/.test(doc.line(currentLine).text)) return currentLine;
+    }
+
+    return null;
+  }
+
+  function codeBlockSource(startLineNumber: number, closingLineNumber: number): string {
+    if (closingLineNumber <= startLineNumber + 1) return "";
+
+    return doc.sliceString(doc.line(startLineNumber + 1).from, doc.line(closingLineNumber - 1).to);
+  }
+
   for (const { from: visFrom, to: visTo } of view.visibleRanges) {
     let lineNumber = doc.lineAt(visFrom).number;
     let inFencedCode = startsInsideFencedCode(lineNumber);
@@ -126,7 +153,24 @@ export function buildLivePreviewDecorations(
         continue;
       }
 
-      if (/^\s*```/.test(text)) {
+      const fenceMatch = /^\s*```\s*([^\s`]*)?/.exec(text);
+      if (fenceMatch) {
+        if (!inFencedCode && isMermaidLanguage(fenceMatch[1])) {
+          const closingLineNumber = findClosingFenceLine(lineNumber);
+
+          if (closingLineNumber) {
+            const blockFrom = line.from;
+            const blockTo = doc.line(closingLineNumber).to;
+
+            if (!selectionTouches(blockFrom, blockTo)) {
+              addBlockWidget(blockFrom, blockTo, new MermaidBlockWidget(codeBlockSource(lineNumber, closingLineNumber)));
+            }
+
+            lineNumber = closingLineNumber + 1;
+            continue;
+          }
+        }
+
         addSourceReveal(line.from, line.to);
         addReplace(line.from, line.to);
         inFencedCode = !inFencedCode;

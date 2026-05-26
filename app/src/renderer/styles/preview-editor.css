@@ -44,6 +44,39 @@
   padding: 0;
 }
 
+.preview-mermaid {
+  box-sizing: border-box;
+  margin: 0.8em 0;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.preview-mermaid pre {
+  background: rgba(31, 35, 40, 0.04);
+  border-radius: 6px;
+  margin: 0;
+  overflow-x: auto;
+  padding: 12px 16px;
+}
+
+.preview-mermaid code {
+  background: none;
+  font-family: Menlo, monospace;
+  font-size: 0.875em;
+  padding: 0;
+}
+
+.preview-mermaid-svg {
+  min-width: max-content;
+  padding: 12px 16px;
+}
+
+.preview-mermaid-svg svg {
+  display: block;
+  height: auto;
+  max-width: 100%;
+}
+
 .preview-body blockquote {
   border-left: 3px solid rgba(31, 35, 40, 0.2);
   color: var(--text-3);
