@@ -23,7 +23,7 @@ export function useAppToast(): {
       setToastMessage(null);
       setIsToastClosing(false);
       toastCloseTimerRef.current = null;
-    }, 170);
+    }, 130);
   }, [isToastClosing, toastMessage]);
 
   const showToast = useCallback((text: string, type: "error" | "info" = "error") => {
@@ -37,7 +37,7 @@ export function useAppToast(): {
         setToastMessage(null);
         setIsToastClosing(false);
         toastCloseTimerRef.current = null;
-      }, 170);
+      }, 130);
     }, 4000);
   }, []);
 

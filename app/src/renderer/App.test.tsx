@@ -590,7 +590,7 @@ describe("App", () => {
     });
   });
 
-  it("ファイルタブを閉じるとその場で下へ消える表示を出す", async () => {
+  it("ファイルタブを閉じるとその場で静かに退場する", async () => {
     window.relic = makeRelicApi({
       getWorkspaceState: vi.fn().mockResolvedValue({
         ok: true,
@@ -614,10 +614,41 @@ describe("App", () => {
     fireEvent.click(within(tab as HTMLElement).getByTitle("タブを閉じる"));
 
     await waitFor(() => {
-      expect(container.querySelector(".rail-tab-flight--close")).toBeInTheDocument();
+      expect(container.querySelector(".pane-tab--closing")).toBeInTheDocument();
+    });
+    expect(container.querySelector(".rail-tab-flight--close")).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(container.querySelector(".pane-tab--closing")).not.toBeInTheDocument();
     });
     await waitFor(() => {
       expect(useEditorStore.getState().leftPane.activeTabId).toBeNull();
+    });
+  });
+
+  it("ファイル以外のタブを閉じても同じ退場反応を通る", async () => {
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
+    });
+
+    const { container } = await renderApp();
+
+    await screen.findByText("Notes");
+    fireEvent.click(screen.getByRole("button", { name: "設定" }));
+
+    const tab = container.querySelector('.pane-tab[data-tab-id="panel-settings"]');
+    expect(tab).toBeInstanceOf(HTMLElement);
+
+    fireEvent.click(within(tab as HTMLElement).getByTitle("タブを閉じる"));
+
+    await waitFor(() => {
+      expect(container.querySelector(".pane-tab--closing")).toBeInTheDocument();
+    });
+    expect(container.querySelector(".rail-tab-flight--close")).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(container.querySelector(".pane-tab--closing")).not.toBeInTheDocument();
+    });
+    await waitFor(() => {
+      expect(useEditorStore.getState().tabs["panel-settings"]).toBeUndefined();
     });
   });
 

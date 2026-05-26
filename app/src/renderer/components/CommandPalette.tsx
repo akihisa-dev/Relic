@@ -48,7 +48,7 @@ export function CommandPalette({ commands, onClose }: CommandPaletteProps): Reac
     closeTimerRef.current = window.setTimeout(() => {
       onClose();
       closeTimerRef.current = null;
-    }, 170);
+    }, 130);
   };
 
   useEffect(() => {

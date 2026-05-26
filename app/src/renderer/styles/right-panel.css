@@ -3,7 +3,7 @@
 /* ────────────────────────────────── */
 
 .links-panel-stack {
-  animation: right-panel-content-in 170ms cubic-bezier(.22, 1, .36, 1);
+  animation: right-panel-content-in var(--motion-normal) var(--ease-enter);
   display: grid;
   gap: 18px;
 }
@@ -29,13 +29,13 @@
 
 .links-list-item {
   align-items: center;
-  animation: list-result-in 170ms cubic-bezier(.22, 1, .36, 1);
+  animation: list-result-in var(--motion-normal) var(--ease-enter);
   display: grid;
   gap: 6px;
   grid-template-columns: auto minmax(0, 1fr);
   min-width: 0;
   transform-origin: left center;
-  transition: transform 120ms cubic-bezier(.18, 1.35, .28, 1);
+  transition: transform var(--motion-fast) var(--ease-press);
 }
 
 .links-list-item:hover {
@@ -113,7 +113,11 @@
   min-width: 220px;
   overflow: hidden;
   position: relative;
-  transition: width 280ms cubic-bezier(.22, 1, .36, 1), border-color 220ms ease, background-color 220ms ease;
+  transition:
+    flex-basis var(--motion-slow) var(--ease-enter),
+    width var(--motion-slow) var(--ease-enter),
+    border-color var(--motion-normal) var(--ease-standard),
+    background-color var(--motion-normal) var(--ease-standard);
   will-change: width;
   width: 240px;
 }
@@ -128,7 +132,9 @@
 
 .right-panel--resizing {
   border-left-color: var(--accent);
-  transition: background-color 120ms ease, border-color 120ms ease;
+  transition:
+    background-color var(--motion-fast) var(--ease-standard),
+    border-color var(--motion-fast) var(--ease-standard);
 }
 
 .right-panel-resize-handle {
@@ -137,7 +143,10 @@
   left: 0;
   position: absolute;
   top: 0;
-  transition: background-color 120ms ease, box-shadow 120ms ease, transform 120ms cubic-bezier(.18, 1.35, .28, 1);
+  transition:
+    background-color var(--motion-fast) var(--ease-standard),
+    box-shadow var(--motion-fast) var(--ease-standard),
+    transform var(--motion-fast) var(--ease-press);
   width: 8px;
   z-index: 22;
 }
@@ -162,17 +171,20 @@
   opacity: 1;
   transform: translateX(0) scaleX(1);
   transform-origin: right center;
-  transition: opacity 180ms ease, transform 240ms cubic-bezier(.22, 1, .36, 1);
+  transition:
+    opacity var(--motion-normal) var(--ease-standard) 60ms,
+    transform var(--motion-normal) var(--ease-enter) 60ms;
 }
 
 .right-panel--closed > .sidebar-header,
 .right-panel--closed > .sidebar-body {
   opacity: 0;
+  transition-delay: 0ms;
   transform: translateX(12px) scaleX(0.97);
 }
 
 .right-panel-content {
-  animation: right-panel-content-in 170ms cubic-bezier(.22, 1, .36, 1);
+  animation: right-panel-content-in var(--motion-normal) var(--ease-enter);
   padding-top: 32px;
   transform-origin: right center;
 }
@@ -206,7 +218,7 @@
     opacity: 0;
     padding-left: 0;
     padding-right: 0;
-    transform: scaleX(0.74) scaleY(0.92) translateY(3px);
+    transform: scaleX(0.88) translateY(2px);
   }
   to {
     max-width: 180px;
@@ -214,16 +226,13 @@
     opacity: 1;
     padding-left: 8px;
     padding-right: 8px;
-    transform: scale(1) translateY(0);
+    transform: scaleX(1) translateY(0);
   }
 }
 
 @keyframes tab-select {
   0% {
     transform: translateY(1px) scale(0.985);
-  }
-  68% {
-    transform: translateY(-1px) scale(1.012);
   }
   100% {
     transform: translateY(0) scale(1);
@@ -305,10 +314,7 @@
 
 @keyframes file-tree-select {
   0% {
-    transform: translateX(0) scale(0.99);
-  }
-  64% {
-    transform: translateX(2px) scale(1.01);
+    transform: translateX(0) scale(0.995);
   }
   100% {
     transform: translateX(0) scale(1);
@@ -322,7 +328,7 @@
   }
   58% {
     box-shadow: inset 0 0 0 1px var(--accent-ring);
-    transform: translateX(2px) scale(1.006);
+    transform: translateX(1px) scale(1);
   }
   100% {
     box-shadow: inset 0 0 0 0 transparent;
@@ -395,9 +401,6 @@
 @keyframes command-item-select {
   0% {
     transform: translateX(0) scale(0.995);
-  }
-  64% {
-    transform: translateX(2px) scale(1.004);
   }
   100% {
     transform: translateX(0) scale(1);
@@ -523,9 +526,6 @@
   0% {
     transform: translateY(1px) scale(0.985);
   }
-  68% {
-    transform: translateY(-1px) scale(1.012);
-  }
   100% {
     transform: translateY(0) scale(1);
   }
@@ -549,7 +549,7 @@
   }
   42% {
     box-shadow: inset 0 0 0 2px var(--accent-soft);
-    transform: scale(0.997);
+    transform: scale(0.998);
   }
   100% {
     box-shadow: inset 0 0 0 0 transparent;
@@ -564,7 +564,7 @@
   }
   42% {
     box-shadow: inset 0 0 0 2px var(--accent-soft);
-    transform: scale(0.997);
+    transform: scale(0.998);
   }
   100% {
     box-shadow: inset 0 0 0 0 transparent;
@@ -644,10 +644,10 @@
 
 @keyframes loading-dot-pulse {
   0%, 100% {
-    transform: scale(0.82);
+    transform: scale(0.9);
   }
   50% {
-    transform: scale(1.18);
+    transform: scale(1.08);
   }
 }
 
@@ -661,7 +661,7 @@
 }
 
 .outline-list {
-  animation: right-panel-content-in 170ms cubic-bezier(.22, 1, .36, 1);
+  animation: right-panel-content-in var(--motion-normal) var(--ease-enter);
   display: grid;
   gap: 2px;
   list-style: none;
@@ -678,7 +678,10 @@
   overflow: hidden;
   padding: 4px 8px;
   text-overflow: ellipsis;
-  transition: background-color 120ms ease, color 120ms ease, transform 120ms cubic-bezier(.18, 1.35, .28, 1);
+  transition:
+    background-color var(--motion-fast) var(--ease-standard),
+    color var(--motion-fast) var(--ease-standard),
+    transform var(--motion-fast) var(--ease-press);
   white-space: nowrap;
 }
 
@@ -786,7 +789,7 @@
 /* ─── Modal (Command Palette / Quick Switcher) ─── */
 .modal-overlay {
   align-items: flex-start;
-  animation: modal-overlay-in 160ms ease;
+  animation: modal-overlay-in var(--motion-normal) var(--ease-standard);
   background: rgba(0, 0, 0, 0.35);
   bottom: 0;
   display: flex;
@@ -801,7 +804,7 @@
 
 .command-palette,
 .quick-switcher {
-  animation: modal-surface-in 180ms cubic-bezier(.18, 1.18, .28, 1);
+  animation: modal-surface-in var(--motion-normal) var(--ease-enter);
   background: var(--sidebar-bg);
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -813,12 +816,12 @@
 }
 
 .modal-overlay--closing {
-  animation: modal-overlay-out 160ms ease forwards;
+  animation: modal-overlay-out var(--motion-fast) var(--ease-exit) forwards;
 }
 
 .command-palette--closing,
 .quick-switcher--closing {
-  animation: modal-surface-out 160ms cubic-bezier(.4, 0, .2, 1) forwards;
+  animation: modal-surface-out var(--motion-fast) var(--ease-exit) forwards;
 }
 
 .command-palette-input {
@@ -847,7 +850,10 @@
   justify-content: space-between;
   padding: 8px 16px;
   transform-origin: center;
-  transition: background-color 120ms ease, color 120ms ease, transform 120ms cubic-bezier(.18, 1.35, .28, 1);
+  transition:
+    background-color var(--motion-fast) var(--ease-standard),
+    color var(--motion-fast) var(--ease-standard),
+    transform var(--motion-fast) var(--ease-press);
 }
 
 .command-item:hover {
@@ -859,7 +865,7 @@
 }
 
 .command-item--selected {
-  animation: command-item-select 150ms cubic-bezier(.18, 1.25, .28, 1);
+  animation: command-item-select var(--motion-fast) var(--ease-press);
   background: var(--hover);
 }
 

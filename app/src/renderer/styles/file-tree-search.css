@@ -15,15 +15,15 @@
   margin-left: 14px;
   padding-left: 12px;
   transition:
-    background-color 220ms ease,
-    border-color 220ms ease,
-    box-shadow 220ms ease,
-    padding-left 220ms cubic-bezier(.22, 1, .36, 1),
-    transform 220ms cubic-bezier(.22, 1, .36, 1);
+    background-color var(--motion-normal) var(--ease-standard),
+    border-color var(--motion-normal) var(--ease-standard),
+    box-shadow var(--motion-normal) var(--ease-standard),
+    padding-left var(--motion-normal) var(--ease-enter),
+    transform var(--motion-normal) var(--ease-enter);
 }
 
 .file-tree--expanding {
-  animation: file-tree-expand 180ms cubic-bezier(.22, 1, .36, 1);
+  animation: file-tree-expand var(--motion-normal) var(--ease-enter);
   transform-origin: top left;
 }
 
@@ -42,10 +42,10 @@
   text-align: left;
   transform-origin: left center;
   transition:
-    background-color 140ms ease,
-    color 140ms ease,
-    outline-color 140ms ease,
-    transform 140ms cubic-bezier(.18, 1.35, .28, 1);
+    background-color var(--motion-fast) var(--ease-standard),
+    color var(--motion-fast) var(--ease-standard),
+    outline-color var(--motion-fast) var(--ease-standard),
+    transform var(--motion-fast) var(--ease-press);
   width: 100%;
 }
 
@@ -59,13 +59,13 @@
 }
 
 .file-tree-row.selected {
-  animation: file-tree-select 180ms cubic-bezier(.18, 1.25, .28, 1);
+  animation: file-tree-select var(--motion-fast) var(--ease-press);
   background: var(--accent-soft);
   color: var(--accent);
 }
 
 .file-tree-row--opening {
-  animation: file-tree-open-connect 220ms cubic-bezier(.18, 1.25, .28, 1);
+  animation: file-tree-open-connect var(--motion-normal) var(--ease-press);
   background: var(--accent-soft);
   color: var(--accent);
 }
@@ -88,11 +88,11 @@
 }
 
 .file-tree-row--appearing {
-  animation: file-tree-appear 260ms cubic-bezier(.22, 1, .36, 1);
+  animation: file-tree-appear var(--motion-slow) var(--ease-enter);
 }
 
 .file-tree-row--removing {
-  animation: file-tree-remove 180ms cubic-bezier(.4, 0, .2, 1);
+  animation: file-tree-remove var(--motion-normal) var(--ease-exit);
 }
 
 .file-tree-row-wrap {
@@ -205,7 +205,9 @@
   justify-content: center;
   min-width: 24px;
   text-align: center;
-  transition: color 140ms ease, transform 160ms cubic-bezier(.18, 1.35, .28, 1);
+  transition:
+    color var(--motion-fast) var(--ease-standard),
+    transform var(--motion-normal) var(--ease-enter);
 }
 
 .file-tree-icon--folder {
@@ -219,7 +221,7 @@
 .file-tree-folder-chevron {
   display: inline-block;
   font-size: 9px;
-  transition: transform 160ms cubic-bezier(.18, 1.35, .28, 1);
+  transition: transform var(--motion-normal) var(--ease-enter);
 }
 
 .file-tree-folder-icon {
@@ -249,7 +251,7 @@
 }
 
 .file-tree-rename-input {
-  animation: inline-control-in 150ms cubic-bezier(.18, 1.18, .28, 1);
+  animation: inline-control-in var(--motion-normal) var(--ease-enter);
   background: var(--bg);
   border: 1px solid var(--accent);
   border-radius: 4px;
@@ -257,7 +259,10 @@
   font: inherit;
   min-width: 0;
   padding: 2px 4px;
-  transition: border-color 140ms ease, box-shadow 140ms ease, transform 120ms cubic-bezier(.18, 1.35, .28, 1);
+  transition:
+    border-color var(--motion-fast) var(--ease-standard),
+    box-shadow var(--motion-fast) var(--ease-standard),
+    transform var(--motion-fast) var(--ease-press);
   width: 100%;
 }
 
@@ -309,13 +314,20 @@
   justify-content: center;
   padding: 0;
   position: relative;
-  transition: background-color 140ms ease, color 140ms ease;
+  transition:
+    background-color var(--motion-fast) var(--ease-standard),
+    color var(--motion-fast) var(--ease-standard),
+    transform var(--motion-fast) var(--ease-press);
   width: 34px;
 }
 
 .files-create-icon-button:hover {
   background: var(--hover);
   color: var(--text);
+}
+
+.files-create-icon-button:active {
+  transform: translateY(1px) scale(0.985);
 }
 
 .files-create-icon-button:disabled {
@@ -481,12 +493,12 @@
 }
 
 .search-result-item {
-  animation: list-result-in 170ms cubic-bezier(.22, 1, .36, 1);
+  animation: list-result-in var(--motion-normal) var(--ease-enter);
   transform-origin: left center;
 }
 
 .list-loading-note {
-  animation: loading-note-in 170ms cubic-bezier(.22, 1, .36, 1);
+  animation: loading-note-in var(--motion-normal) var(--ease-enter);
   border: 1px solid var(--border);
   border-radius: 6px;
   color: var(--text-3);
@@ -531,10 +543,10 @@
   text-align: left;
   transform-origin: left center;
   transition:
-    background-color 140ms ease,
-    border-color 140ms ease,
-    color 140ms ease,
-    transform 120ms cubic-bezier(.18, 1.35, .28, 1);
+    background-color var(--motion-fast) var(--ease-standard),
+    border-color var(--motion-fast) var(--ease-standard),
+    color var(--motion-fast) var(--ease-standard),
+    transform var(--motion-fast) var(--ease-press);
   width: 100%;
 }
 
@@ -549,7 +561,7 @@
 }
 
 .search-result-button--opening {
-  animation: file-tree-open-connect 220ms cubic-bezier(.18, 1.25, .28, 1);
+  animation: file-tree-open-connect var(--motion-normal) var(--ease-press);
   background: var(--accent-soft);
   border-color: var(--accent-ring);
 }

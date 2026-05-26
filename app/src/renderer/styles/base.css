@@ -26,6 +26,14 @@
   --error-bg: #ffdad6;
   --highlight: rgba(0, 98, 140, 0.12);
   --success: #217a3c;
+  --motion-fast: 120ms;
+  --motion-normal: 200ms;
+  --motion-slow: 300ms;
+  --motion-slower: 400ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-enter: cubic-bezier(0, 0, 0.2, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  --ease-press: cubic-bezier(0.2, 0, 0.2, 1);
   color: var(--text);
   background: var(--bg);
   font-family:
@@ -83,11 +91,11 @@ button {
   padding: 0 10px;
   transform-origin: 50% 65%;
   transition:
-    background-color 140ms ease,
-    border-color 140ms ease,
-    color 140ms ease,
-    opacity 140ms ease,
-    transform 120ms cubic-bezier(.18, 1.4, .28, 1);
+    background-color var(--motion-fast) var(--ease-standard),
+    border-color var(--motion-fast) var(--ease-standard),
+    color var(--motion-fast) var(--ease-standard),
+    opacity var(--motion-fast) var(--ease-standard),
+    transform var(--motion-fast) var(--ease-press);
 }
 
 button:disabled {
@@ -95,5 +103,5 @@ button:disabled {
 }
 
 button:not(:disabled):active {
-  transform: translateY(1px) scale(0.975);
+  transform: translateY(1px) scale(0.985);
 }

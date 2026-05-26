@@ -25,7 +25,7 @@ export function useSplitCloseMotion(
       toggleSplit();
       setIsSplitClosing(false);
       splitCloseTimerRef.current = null;
-    }, 190);
+    }, 210);
   }, [isSplit, isSplitClosing, toggleSplit]);
 
   useEffect(() => {
