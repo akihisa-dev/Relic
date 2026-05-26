@@ -25,7 +25,7 @@
 }
 
 .title-bar-pane-tabs {
-  -webkit-app-region: no-drag;
+  -webkit-app-region: drag;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   min-width: 0;
@@ -50,11 +50,17 @@
 }
 
 .title-bar .pane-tab-bar {
+  -webkit-app-region: drag;
   align-items: flex-end;
   background: var(--accent);
   border-bottom: 0;
   height: 100%;
   padding: 4px 8px 0;
+}
+
+.title-bar .pane-tab,
+.title-bar .pane-tab-close {
+  -webkit-app-region: no-drag;
 }
 
 .title-bar .pane-tab--active {
