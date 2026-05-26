@@ -575,6 +575,40 @@ describe("Editor", () => {
     ]));
   });
 
+  it("ライブプレビューでmermaidコードブロックを専用Widget表示する", async () => {
+    const widgets = await collectInlineLivePreviewWidgets([
+      "```mermaid",
+      "graph TD; A-->B",
+      "```"
+    ].join("\n"), 0, false);
+
+    expect(widgets).toContain("MermaidBlockWidget");
+  });
+
+  it("ライブプレビューでカーソルがmermaidブロック内にある場合はソース表示を維持する", async () => {
+    const content = [
+      "```mermaid",
+      "graph TD; A-->B",
+      "```"
+    ].join("\n");
+    const widgets = await collectInlineLivePreviewWidgets(content, content.indexOf("A-->B"), true);
+
+    expect(widgets).not.toContain("MermaidBlockWidget");
+  });
+
+  it("ライブプレビューで通常コードブロックはmermaid専用Widgetにしない", async () => {
+    const content = [
+      "```js",
+      "const value = 1;",
+      "```"
+    ].join("\n");
+    const widgets = await collectInlineLivePreviewWidgets(content, 0, false);
+    const classes = await collectLivePreviewClasses(content, content.length, false);
+
+    expect(widgets).not.toContain("MermaidBlockWidget");
+    expect(classes).toContain("cm-live-code-block");
+  });
+
   it("ライブプレビューでリスト・チェックボックス・水平線をウィジェット表示する", async () => {
     const widgets = await collectInlineLivePreviewWidgets([
       "- item",

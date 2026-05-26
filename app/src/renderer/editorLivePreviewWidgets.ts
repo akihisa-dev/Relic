@@ -1,5 +1,7 @@
 import { WidgetType } from "@codemirror/view";
 
+import { buildMermaidFallback, renderMermaidElement } from "./mermaidPreview";
+
 export class ListMarkerWidget extends WidgetType {
   constructor(
     private readonly label: string,
@@ -103,5 +105,25 @@ export class HorizontalRuleWidget extends WidgetType {
     const hr = document.createElement("hr");
     hr.className = "cm-live-hr";
     return hr;
+  }
+}
+
+export class MermaidBlockWidget extends WidgetType {
+  readonly className = "cm-live-mermaid";
+
+  constructor(private readonly source: string) {
+    super();
+  }
+
+  eq(other: MermaidBlockWidget): boolean {
+    return this.source === other.source;
+  }
+
+  toDOM(): HTMLElement {
+    const container = document.createElement("div");
+    container.className = "preview-mermaid cm-live-mermaid";
+    container.append(buildMermaidFallback(this.source));
+    void renderMermaidElement(container, this.source);
+    return container;
   }
 }

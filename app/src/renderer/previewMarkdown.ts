@@ -5,6 +5,7 @@ import { marked, type Renderer } from "marked";
 import markedFootnote from "marked-footnote";
 
 import type { Translator } from "./i18n";
+import { isMermaidLanguage } from "./mermaidPreview";
 
 export const maxEmbeddedFileLength = 20_000;
 
@@ -135,6 +136,12 @@ function buildRenderer(): Renderer {
   const renderer = new marked.Renderer();
 
   renderer.code = ({ lang, text }) => {
+    if (isMermaidLanguage(lang)) {
+      const escaped = escapeHtml(text);
+
+      return `<div class="preview-mermaid"><pre><code class="language-mermaid">${escaped}</code></pre></div>`;
+    }
+
     const language = lang && hljs.getLanguage(lang) ? lang : "plaintext";
     const highlighted = hljs.highlight(text, { language }).value;
 

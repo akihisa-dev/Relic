@@ -4,6 +4,7 @@ import type { MouseEvent, ReactElement } from "react";
 import type { EditorSettings } from "../../shared/ipc";
 import { usePreviewEmbeds } from "../hooks/usePreviewEmbeds";
 import { useT } from "../i18n";
+import { renderMermaidElements } from "../mermaidPreview";
 import { renderMarkdown, slugifyHeading, toggleNthCheckbox } from "../previewMarkdown";
 
 export { normalizeEmbedTarget } from "../previewMarkdown";
@@ -41,6 +42,10 @@ export function Preview({
   const html = useMemo(() => {
     return renderMarkdown(content, workspacePath, embeds, true, t);
   }, [content, embeds, t, workspacePath]);
+
+  useEffect(() => {
+    if (containerRef.current) renderMermaidElements(containerRef.current);
+  }, [html]);
 
   useEffect(() => {
     if (!scrollTargetHeading || !containerRef.current) return;

@@ -47,6 +47,21 @@ describe("previewMarkdown", () => {
     expect(html).not.toContain("<script");
   });
 
+  it("mermaidコードブロックを図表示用HTMLとして残す", () => {
+    const html = renderMarkdown(
+      "```mermaid\ngraph TD; A-->B\n```",
+      null,
+      new Map(),
+      true,
+      t
+    );
+
+    expect(html).toContain('class="preview-mermaid"');
+    expect(html).toContain('class="language-mermaid"');
+    expect(html).toContain("graph TD; A--&gt;B");
+    expect(html).not.toContain("hljs language-mermaid");
+  });
+
   it("埋め込みHTMLは一段階だけ描画する", () => {
     const html = renderMarkdown(
       "![[Parent]]",
