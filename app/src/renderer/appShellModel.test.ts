@@ -14,6 +14,7 @@ import {
   panelLabelsForTranslator,
   registeredWorkspacesForState,
   splitRailViews,
+  titleBarLeftOffset,
   type AppRailView
 } from "./appShellModel";
 import { createTranslator } from "./i18n";
@@ -90,6 +91,11 @@ describe("appShellModel", () => {
       settings: "Settings",
       tools: "Tools"
     });
+  });
+
+  it("keeps title bar tabs aligned to the reserved sidebar edge", () => {
+    expect(titleBarLeftOffset(88, 48, 260)).toBe(308);
+    expect(titleBarLeftOffset(88, 48, 20)).toBe(88);
   });
 
   it("filters and splits rail views without changing order", () => {

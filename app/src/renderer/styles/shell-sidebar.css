@@ -12,7 +12,7 @@
 
 .title-bar {
   -webkit-app-region: drag;
-  background: var(--accent);
+  background: var(--title-bar-bg);
   display: grid;
   grid-column: 1 / -1;
   grid-template-columns: var(--title-bar-left-offset, 88px) minmax(0, 1fr) var(--title-bar-action-width, 136px);
@@ -52,7 +52,7 @@
 .title-bar .pane-tab-bar {
   -webkit-app-region: drag;
   align-items: flex-end;
-  background: var(--accent);
+  background: var(--title-bar-bg);
   border-bottom: 0;
   height: 100%;
   padding: 4px 8px 0;
@@ -83,7 +83,7 @@
 }
 
 .title-bar .main-area-actions {
-  background: var(--accent);
+  background: var(--title-bar-bg);
   border-bottom: 0;
   border-left: 1px solid rgba(255, 255, 255, 0.18);
   color: rgba(255, 255, 255, 0.78);

@@ -22,6 +22,7 @@
   --accent-soft: rgba(23, 155, 208, 0.16);
   --accent-softer: rgba(23, 155, 208, 0.09);
   --accent-ring: rgba(23, 155, 208, 0.3);
+  --title-bar-bg: #00628c;
   --link: #179bd0;
   --attention: #ff5722;
   --attention-hover: #e64d1f;
@@ -95,6 +96,7 @@
     --accent-soft: rgba(23, 155, 208, 0.16);
     --accent-softer: rgba(23, 155, 208, 0.09);
     --accent-ring: rgba(23, 155, 208, 0.3);
+    --title-bar-bg: #00628c;
     --link: #179bd0;
     --attention: #ff5722;
     --attention-hover: #e64d1f;

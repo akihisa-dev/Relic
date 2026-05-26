@@ -18,6 +18,7 @@
   --accent-soft: rgba(0, 98, 140, 0.08);
   --accent-softer: rgba(0, 98, 140, 0.04);
   --accent-ring: rgba(0, 98, 140, 0.16);
+  --title-bar-bg: var(--accent);
   --link: #00628c;
   --attention: #ff5722;
   --attention-hover: #e64d1f;

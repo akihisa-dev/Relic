@@ -7,6 +7,7 @@ import type { AppLinkContextMenu } from "./appLinks";
 import {
   openFilePathsForTabs,
   registeredWorkspacesForState,
+  titleBarLeftOffset,
 } from "./appShellModel";
 import { AppEditorWorkspace } from "./components/AppEditorWorkspace";
 import { AppFilesSidebar } from "./components/AppFilesSidebar";
@@ -581,9 +582,10 @@ export function App(): ReactElement {
     userDefinedFields,
     workspaceState
   });
-  const titleBarLeftOffset = Math.max(
+  const titleBarLeftOffsetWidth = titleBarLeftOffset(
     TITLE_BAR_TRAFFIC_LIGHT_SPACE,
-    RAIL_WIDTH + (isSidebarOpen ? sidebarWidth : 0)
+    RAIL_WIDTH,
+    sidebarWidth
   );
 
   // ──────────────────
@@ -598,7 +600,7 @@ export function App(): ReactElement {
         isSourceMode={isSourceMode}
         isSplit={isSplit}
         leftClosingTabIds={leftClosingTabIds}
-        leftOffsetWidth={titleBarLeftOffset}
+        leftOffsetWidth={titleBarLeftOffsetWidth}
         leftPane={leftPane}
         onCloseAllTabsInPane={closeAllTabsInPaneWithMotion}
         onCloseOtherTabs={closeOtherTabsWithMotion}

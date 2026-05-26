@@ -11,6 +11,14 @@ export interface AppRailView<TIcon = unknown> {
   label: string;
 }
 
+export function titleBarLeftOffset(
+  trafficLightSpace: number,
+  railWidth: number,
+  sidebarWidth: number
+): number {
+  return Math.max(trafficLightSpace, railWidth + sidebarWidth);
+}
+
 export function chartIdForRailView(id: AppRailViewId): string | null {
   if (id === "chronicle") return "chronicle";
   if (id === "calendar") return "date";
