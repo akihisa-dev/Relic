@@ -51,9 +51,25 @@
 }
 
 .title-bar .pane-tab-bar {
+  align-items: flex-end;
   background: var(--bg);
   height: 100%;
-  padding-top: 7px;
+  padding: 4px 8px 0;
+}
+
+.title-bar .pane-tab--active {
+  height: 33px;
+}
+
+.title-bar .pane-tab--active::after {
+  background: var(--bg);
+  bottom: -1px;
+  content: "";
+  height: 2px;
+  left: 0;
+  position: absolute;
+  right: 0;
+  z-index: 3;
 }
 
 .title-bar .main-area-actions {
