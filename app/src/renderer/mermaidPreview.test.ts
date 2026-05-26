@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { encodeMermaidSourceAttribute } from "./mermaidSourceAttribute";
+
 const { initializeMock, renderMock } = vi.hoisted(() => ({
   initializeMock: vi.fn(),
   renderMock: vi.fn()
@@ -50,6 +52,24 @@ describe("mermaidPreview", () => {
 
     await vi.waitFor(() => {
       expect(renderMock).toHaveBeenCalledWith(expect.stringMatching(/^relic-mermaid-/), "from-dataset");
+    });
+  });
+
+  it("renderMermaidElementsはエンコード済みdata-mermaid-sourceを復元して描画する", async () => {
+    const { renderMermaidElements } = await loadMermaidPreviewModule();
+    renderMock.mockResolvedValueOnce({ svg: "<svg><text>ok</text></svg>" });
+    const container = document.createElement("div");
+    const source = 'graph TD; A["<script>"]-->"B"';
+    container.innerHTML = [
+      `<div class="preview-mermaid" data-mermaid-source="${encodeMermaidSourceAttribute(source)}">`,
+      '<pre><code class="language-mermaid">from-code</code></pre>',
+      "</div>"
+    ].join("");
+
+    renderMermaidElements(container);
+
+    await vi.waitFor(() => {
+      expect(renderMock).toHaveBeenCalledWith(expect.stringMatching(/^relic-mermaid-/), source);
     });
   });
 

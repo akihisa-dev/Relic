@@ -1,5 +1,7 @@
 import DOMPurify from "dompurify";
 
+import { decodeMermaidSourceAttribute } from "./mermaidSourceAttribute";
+
 type MermaidTheme = "default" | "dark";
 
 let initializedTheme: MermaidTheme | null = null;
@@ -42,7 +44,9 @@ export function renderMermaidElements(root: ParentNode): void {
   const diagrams = root.querySelectorAll<HTMLElement>(".preview-mermaid");
 
   diagrams.forEach((diagram) => {
-    const source = diagram.dataset.mermaidSource ?? diagram.querySelector("code")?.textContent;
+    const source = diagram.dataset.mermaidSource !== undefined
+      ? decodeMermaidSourceAttribute(diagram.dataset.mermaidSource)
+      : diagram.querySelector("code")?.textContent;
     if (!source) return;
     void renderMermaidElement(diagram, source);
   });

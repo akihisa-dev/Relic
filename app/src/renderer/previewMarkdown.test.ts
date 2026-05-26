@@ -7,6 +7,7 @@ import {
   toggleNthCheckbox
 } from "./previewMarkdown";
 import { createTranslator } from "./i18n";
+import { decodeMermaidSourceAttribute, encodeMermaidSourceAttribute } from "./mermaidSourceAttribute";
 
 const t = createTranslator("ja");
 
@@ -62,7 +63,10 @@ describe("previewMarkdown", () => {
     expect(html).not.toContain("hljs language-mermaid");
 
     const document = new DOMParser().parseFromString(html, "text/html");
-    expect(document.querySelector<HTMLElement>(".preview-mermaid")?.dataset.mermaidSource).toBe("graph TD; A-->B");
+    const sourceAttribute = document.querySelector<HTMLElement>(".preview-mermaid")?.dataset.mermaidSource;
+
+    expect(sourceAttribute).toBe(encodeMermaidSourceAttribute("graph TD; A-->B"));
+    expect(decodeMermaidSourceAttribute(sourceAttribute ?? "")).toBe("graph TD; A-->B");
   });
 
   it("通常コードブロックはmermaid図表示用HTMLにしない", () => {
@@ -90,7 +94,9 @@ describe("previewMarkdown", () => {
 
     expect(html).toContain('class="preview-mermaid"');
     const document = new DOMParser().parseFromString(html, "text/html");
-    expect(document.querySelector<HTMLElement>(".preview-mermaid")?.dataset.mermaidSource).toBe("graph TD; A-->B");
+    const sourceAttribute = document.querySelector<HTMLElement>(".preview-mermaid")?.dataset.mermaidSource;
+
+    expect(decodeMermaidSourceAttribute(sourceAttribute ?? "")).toBe("graph TD; A-->B");
   });
 
   it("mermaid言語指定後に追加文字列があっても図表示用HTMLとして扱う", () => {
@@ -104,7 +110,9 @@ describe("previewMarkdown", () => {
 
     expect(html).toContain('class="preview-mermaid"');
     const document = new DOMParser().parseFromString(html, "text/html");
-    expect(document.querySelector<HTMLElement>(".preview-mermaid")?.dataset.mermaidSource).toBe("graph TD; A-->B");
+    const sourceAttribute = document.querySelector<HTMLElement>(".preview-mermaid")?.dataset.mermaidSource;
+
+    expect(decodeMermaidSourceAttribute(sourceAttribute ?? "")).toBe("graph TD; A-->B");
   });
 
   it("mermaidソースをHTML属性として安全に保持する", () => {
@@ -118,8 +126,13 @@ describe("previewMarkdown", () => {
     );
     const document = new DOMParser().parseFromString(html, "text/html");
     const container = document.querySelector<HTMLElement>(".preview-mermaid");
+    const sourceAttribute = container?.dataset.mermaidSource ?? "";
 
-    expect(container?.dataset.mermaidSource).toBe(source);
+    expect(sourceAttribute).toBe(encodeMermaidSourceAttribute(source));
+    expect(sourceAttribute).not.toContain("<");
+    expect(sourceAttribute).not.toContain(">");
+    expect(sourceAttribute).not.toContain('"');
+    expect(decodeMermaidSourceAttribute(sourceAttribute)).toBe(source);
     expect(container?.getAttribute("onmouseover")).toBeNull();
     expect(container?.querySelector("code")?.textContent).toBe(source);
   });
