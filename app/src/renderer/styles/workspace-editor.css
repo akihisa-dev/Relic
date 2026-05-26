@@ -399,7 +399,12 @@
 }
 
 .title-bar .pane-tab {
-  color: rgba(255, 255, 255, 0.72);
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.26);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    0 -1px 0 rgba(0, 0, 0, 0.04);
+  color: rgba(255, 255, 255, 0.84);
 }
 
 .pane-tab:hover:not(.pane-tab--active):not(.pane-tab--closing) {
@@ -408,8 +413,21 @@
 }
 
 .title-bar .pane-tab:hover:not(.pane-tab--active):not(.pane-tab--closing) {
-  background: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.36);
   color: #ffffff;
+}
+
+.title-bar .pane-tab--active {
+  color: var(--text);
+}
+
+.title-bar .pane-tab .pane-tab-close {
+  color: rgba(255, 255, 255, 0.64);
+}
+
+.title-bar .pane-tab--active .pane-tab-close {
+  color: var(--text-3);
 }
 
 .pane-tab--active {
