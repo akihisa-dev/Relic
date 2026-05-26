@@ -108,7 +108,6 @@ export function buildExtensions(
   onOpenWikiLinkRef: RefObject<((target: string, heading?: string) => void) | undefined>
 ) {
   const constrainedContentWidth = settings.maxWidth === "none" ? null : settings.maxWidth;
-  const centerLineNumberColumn = settings.showLineNumbers && constrainedContentWidth !== null;
 
   return [
     history(),
@@ -180,21 +179,15 @@ export function buildExtensions(
         height: "100%"
       },
       ".cm-scroller": {
-        overflow: "auto",
-        ...(centerLineNumberColumn ? { justifyContent: "center" } : {})
+        overflow: "auto"
       },
       ".cm-gutters": {
-        flexShrink: "0",
-        ...(centerLineNumberColumn ? { left: "auto" } : {})
+        flexShrink: "0"
       },
       ".cm-content": {
         boxSizing: "border-box",
-        ...(centerLineNumberColumn ? {
-          flex: `0 1 ${constrainedContentWidth}`,
-          width: constrainedContentWidth
-        } : {}),
         maxWidth: settings.maxWidth === "none" ? "none" : settings.maxWidth,
-        margin: centerLineNumberColumn ? "0" : "0 auto",
+        margin: "0 auto",
         padding: "8px 32px 24px"
       },
       ".cm-line": {

@@ -461,7 +461,7 @@ describe("Editor", () => {
     expect(container.querySelector(".cm-line")).toHaveStyle({ whiteSpace: "pre-wrap" });
   });
 
-  it("行番号を表示するときは本文幅と行番号を同じ列として中央に置く", async () => {
+  it("行番号を表示するときも本文だけを設定幅で中央に置く", async () => {
     const { container } = render(
       <Editor
         content={"# 見出し\n\n本文"}
@@ -472,12 +472,11 @@ describe("Editor", () => {
 
     await waitFor(() => expect(container.querySelector(".cm-gutters")).not.toBeNull());
 
-    expect(container.querySelector(".cm-scroller")).toHaveStyle({ justifyContent: "center" });
-    expect(container.querySelector(".cm-gutters")).toHaveStyle({ left: "auto" });
+    expect(container.querySelector(".cm-scroller")).not.toHaveStyle({ justifyContent: "center" });
+    expect(container.querySelector(".cm-gutters")).not.toHaveStyle({ left: "auto" });
     expect(container.querySelector(".cm-content")).toHaveStyle({
-      margin: "0",
-      maxWidth: "660px",
-      width: "660px"
+      margin: "0 auto",
+      maxWidth: "660px"
     });
   });
 
