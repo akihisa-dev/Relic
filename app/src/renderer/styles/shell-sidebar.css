@@ -12,8 +12,7 @@
 
 .title-bar {
   -webkit-app-region: drag;
-  background: var(--bg);
-  border-bottom: 1px solid var(--border);
+  background: var(--accent);
   display: grid;
   grid-column: 1 / -1;
   grid-template-columns: var(--title-bar-left-offset, 88px) minmax(0, 1fr) var(--title-bar-action-width, 136px);
@@ -42,7 +41,7 @@
 }
 
 .title-bar-pane + .title-bar-pane {
-  border-left: 1px solid var(--border);
+  border-left: 1px solid rgba(255, 255, 255, 0.18);
 }
 
 .title-bar-actions {
@@ -52,12 +51,16 @@
 
 .title-bar .pane-tab-bar {
   align-items: flex-end;
-  background: var(--bg);
+  background: var(--accent);
+  border-bottom: 0;
   height: 100%;
   padding: 4px 8px 0;
 }
 
 .title-bar .pane-tab--active {
+  background: var(--bg);
+  border-color: transparent;
+  box-shadow: none;
   height: 33px;
 }
 
@@ -73,6 +76,10 @@
 }
 
 .title-bar .main-area-actions {
+  background: var(--accent);
+  border-bottom: 0;
+  border-left: 1px solid rgba(255, 255, 255, 0.18);
+  color: rgba(255, 255, 255, 0.78);
   height: 100%;
   min-height: 0;
   width: 100%;
