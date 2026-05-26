@@ -10,6 +10,7 @@ interface FilesSearchResultsProps {
   limitNotice: { skippedLargeFiles: number; truncated: boolean } | null;
   mode: SearchMode;
   onOpenFile: (path: string, event?: MouseEvent<HTMLButtonElement>) => void;
+  openingFilePath?: string | null;
   query: string;
   results: WorkspaceSearchResult[];
 }
@@ -21,6 +22,7 @@ export function FilesSearchResults({
   limitNotice,
   mode,
   onOpenFile,
+  openingFilePath,
   query,
   results
 }: FilesSearchResultsProps): ReactElement {
@@ -48,7 +50,7 @@ export function FilesSearchResults({
           {results.map((result, index) => (
             <li className="search-result-item" key={`${result.path}-${result.lineNumber}-${index}`}>
               <button
-                className="search-result-button"
+                className={`search-result-button${openingFilePath === result.path ? " search-result-button--opening" : ""}`}
                 onClick={(event) => onOpenFile(result.path, event)}
                 title={result.path}
                 type="button"

@@ -41,6 +41,7 @@ export interface FileTreeProps {
   onOpenFile: (path: string, event?: MouseEvent<HTMLButtonElement>) => void;
   onOpenInOtherPane?: (path: string) => void;
   onRequestExpansion?: (action: FileTreeExpansionAction, scopePath?: string) => void;
+  openingFilePath?: string | null;
   openFilePaths?: Set<string>;
   onRevealItem?: (path: string) => void;
   onRenameItem?: (path: string, type: WorkspaceTreeNode["type"], newName: string) => void;
@@ -74,6 +75,7 @@ export function FileTreeItem({
   onOpenFile,
   onOpenInOtherPane,
   onRequestExpansion,
+  openingFilePath,
   openFilePaths,
   onRevealItem,
   onRenameItem,
@@ -103,6 +105,7 @@ export function FileTreeItem({
   } = useFileTreeItemState({ expansionRequest, node, onRenameItem });
   const isSelected = selectedPaths.has(node.path);
   const isOpen = node.type === "file" && openFilePaths?.has(node.path);
+  const isOpening = node.type === "file" && openingFilePath === node.path;
   const useSelectedItems = shouldUseSelectedFileTreeItems(isSelected, selectedItems);
   const [isDragging, setIsDragging] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -212,6 +215,7 @@ export function FileTreeItem({
         isDragOver={isDragOver}
         isExpanded={isExpanded}
         isOpen={isOpen}
+        isOpening={isOpening}
         isPinned={isPinned}
         isRemoving={isRemoving}
         isRenaming={isRenaming}
@@ -271,6 +275,7 @@ export function FileTreeItem({
           onOpenFile={onOpenFile}
           onOpenInOtherPane={onOpenInOtherPane}
           onRequestExpansion={onRequestExpansion}
+          openingFilePath={openingFilePath}
           openFilePaths={openFilePaths}
           onRevealItem={onRevealItem}
           onRenameItem={onRenameItem}
@@ -303,6 +308,7 @@ export function FileTree({
   onOpenFile,
   onOpenInOtherPane,
   onRequestExpansion,
+  openingFilePath,
   openFilePaths,
   onRevealItem,
   onRenameItem,
@@ -343,6 +349,7 @@ export function FileTree({
           onOpenFile={onOpenFile}
           onOpenInOtherPane={onOpenInOtherPane}
           onRequestExpansion={onRequestExpansion}
+          openingFilePath={openingFilePath}
           openFilePaths={openFilePaths}
           onRevealItem={onRevealItem}
           onRenameItem={onRenameItem}

@@ -12,6 +12,7 @@ interface FileTreeItemRowProps {
   isDragOver?: boolean;
   isExpanded: boolean;
   isOpen?: boolean;
+  isOpening?: boolean;
   isPinned?: boolean;
   isRemoving: boolean;
   isRenaming: boolean;
@@ -40,6 +41,7 @@ export function FileTreeItemRow({
   isDragOver,
   isExpanded,
   isOpen,
+  isOpening,
   isPinned,
   isRemoving,
   isRenaming,
@@ -64,7 +66,7 @@ export function FileTreeItemRow({
   return (
     <div className="file-tree-row-wrap">
       <button
-        className={`file-tree-row ${node.type}${isOpen ? " open" : ""}${isSelected ? " selected" : ""}${useSelectedItems ? " multi-selected" : ""}${isDragging ? " dragging" : ""}${isDragOver ? " drag-over" : ""}${isAppearing ? " file-tree-row--appearing" : ""}${isRemoving ? " file-tree-row--removing" : ""}`}
+        className={`file-tree-row ${node.type}${isOpen ? " open" : ""}${isOpening ? " file-tree-row--opening" : ""}${isSelected ? " selected" : ""}${useSelectedItems ? " multi-selected" : ""}${isDragging ? " dragging" : ""}${isDragOver ? " drag-over" : ""}${isAppearing ? " file-tree-row--appearing" : ""}${isRemoving ? " file-tree-row--removing" : ""}`}
         data-node-path={node.path}
         data-node-type={node.type}
         draggable={!isRenaming}

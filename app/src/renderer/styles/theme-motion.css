@@ -191,6 +191,7 @@
   .sidebar-create-flight,
   .file-tree,
   .file-tree-row,
+  .file-tree-row--opening,
   .file-tree-row--appearing,
   .file-tree-row--removing,
   .modal-overlay,
@@ -224,6 +225,7 @@
   .list-loading-note::before,
   .list-loading-note::after,
   .search-result-item,
+  .search-result-button--opening,
   .links-list-item {
     animation-duration: 1ms;
     transition-duration: 1ms;

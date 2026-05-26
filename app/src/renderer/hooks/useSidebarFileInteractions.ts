@@ -1,10 +1,9 @@
-import { useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { MouseEvent } from "react";
 
 import type { MarkdownFileContent } from "../../shared/ipc";
 import type { Translator } from "../i18n";
 import { useEditorStore, type PaneId } from "../store/editorStore";
-import { displayNameFromPath } from "../workspacePaths";
 import type { RailTabFlight, SidebarCreateFlight } from "./useRailFlights";
 
 interface UseSidebarFileInteractionsInput {
@@ -12,6 +11,7 @@ interface UseSidebarFileInteractionsInput {
   handleCreateFile: () => void;
   handleCreateFolder: () => void;
   handleOpenFile: (path: string) => void;
+  onFileOpenMotion: () => void;
   openFileInPane: (pane: PaneId, file: MarkdownFileContent) => void;
   setTabActive: (pane: PaneId, tabId: string) => void;
   setWorkspaceError: (message: string | null) => void;
@@ -25,6 +25,7 @@ export function useSidebarFileInteractions({
   handleCreateFile,
   handleCreateFolder,
   handleOpenFile,
+  onFileOpenMotion,
   openFileInPane,
   setTabActive,
   setWorkspaceError,
@@ -35,34 +36,44 @@ export function useSidebarFileInteractions({
   handleCreateFileFromSidebar: (event?: MouseEvent<HTMLButtonElement>) => void;
   handleCreateFolderFromSidebar: (event?: MouseEvent<HTMLButtonElement>) => void;
   handleSidebarOpenFile: (path: string, event?: MouseEvent<HTMLButtonElement>) => void;
+  openingFilePath: string | null;
 } {
   const pendingSidebarFileOpenTokensRef = useRef<Record<string, number>>({});
   const sidebarFileOpenTokenRef = useRef(0);
+  const openingFileTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [openingFilePath, setOpeningFilePath] = useState<string | null>(null);
+
+  const markOpeningFile = useCallback((path: string): void => {
+    if (openingFileTimerRef.current) clearTimeout(openingFileTimerRef.current);
+    setOpeningFilePath(path);
+    openingFileTimerRef.current = setTimeout(() => {
+      setOpeningFilePath(null);
+      openingFileTimerRef.current = null;
+    }, 240);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (openingFileTimerRef.current) clearTimeout(openingFileTimerRef.current);
+    };
+  }, []);
 
   const handleSidebarOpenFile = useCallback((path: string, event?: MouseEvent<HTMLButtonElement>): void => {
     if (!event) {
+      markOpeningFile(path);
       handleOpenFile(path);
+      onFileOpenMotion();
       return;
     }
 
-    const rowRect = event.currentTarget.getBoundingClientRect();
     const editorState = useEditorStore.getState();
     const targetPane = editorState.focusedPane;
     const paneState = targetPane === "left" ? editorState.leftPane : editorState.rightPane;
-    const tabBar = document.querySelector(`.pane${targetPane === "left" ? "" : ":last-child"} .pane-tab-bar`) ?? document.querySelector(".pane-tab-bar");
-    const tabBarRect = tabBar?.getBoundingClientRect();
     const pendingToken = pendingSidebarFileOpenTokensRef.current[path];
 
     if (pendingToken) {
       delete pendingSidebarFileOpenTokensRef.current[path];
-      showRailTabFlight({
-        direction: "close",
-        fromX: (tabBarRect?.left ?? rowRect.left + rowRect.width + 120) + 48,
-        fromY: (tabBarRect?.top ?? rowRect.top) + 15,
-        label: displayNameFromPath(path),
-        toX: rowRect.left + rowRect.width / 2,
-        toY: rowRect.top + rowRect.height / 2
-      });
+      setOpeningFilePath(null);
       return;
     }
 
@@ -73,24 +84,18 @@ export function useSidebarFileInteractions({
     const openTabInPane = openTabIdInPane ? editorState.tabs[openTabIdInPane] : null;
 
     if (openTabIdInPane && openTabInPane?.kind === "file") {
+      markOpeningFile(path);
       setTabActive(targetPane, openTabIdInPane);
+      onFileOpenMotion();
       return;
     }
 
     const existingTab = Object.values(editorState.tabs).find((tab) => tab.kind === "file" && tab.path === path);
-    const label = existingTab?.name ?? displayNameFromPath(path);
-
-    showRailTabFlight({
-      direction: "open",
-      fromX: rowRect.left + rowRect.width / 2,
-      fromY: rowRect.top + rowRect.height / 2,
-      label,
-      toX: (tabBarRect?.left ?? rowRect.left + rowRect.width + 120) + 48,
-      toY: (tabBarRect?.top ?? rowRect.top) + 15
-    });
+    markOpeningFile(path);
 
     if (existingTab?.kind === "file") {
       openFileInPane(targetPane, { content: existingTab.content, name: existingTab.name, path: existingTab.path });
+      onFileOpenMotion();
       return;
     }
 
@@ -105,11 +110,12 @@ export function useSidebarFileInteractions({
       delete pendingSidebarFileOpenTokensRef.current[path];
       if (result.ok) {
         openFileInPane(targetPane, result.value);
+        onFileOpenMotion();
       } else {
         setWorkspaceError(result.error.message);
       }
     });
-  }, [handleOpenFile, openFileInPane, setTabActive, setWorkspaceError, showRailTabFlight]);
+  }, [handleOpenFile, markOpeningFile, onFileOpenMotion, openFileInPane, setTabActive, setWorkspaceError]);
 
   const handleCreateFileFromSidebar = useCallback((event?: MouseEvent<HTMLButtonElement>): void => {
     if (event) {
@@ -151,6 +157,7 @@ export function useSidebarFileInteractions({
   return {
     handleCreateFileFromSidebar,
     handleCreateFolderFromSidebar,
-    handleSidebarOpenFile
+    handleSidebarOpenFile,
+    openingFilePath
   };
 }
