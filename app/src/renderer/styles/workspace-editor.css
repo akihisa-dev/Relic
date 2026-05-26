@@ -446,6 +446,14 @@
   color: var(--text);
 }
 
+.title-bar .pane-tab--active {
+  background: var(--bg);
+  border-color: var(--bg);
+  border-bottom-color: var(--bg);
+  box-shadow: none;
+  color: var(--text);
+}
+
 .pane-tab--drop-before::before,
 .pane-tab--drop-after::after,
 .pane-tab-bar--drop-end::after {
