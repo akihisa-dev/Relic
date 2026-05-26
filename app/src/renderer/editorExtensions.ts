@@ -182,7 +182,8 @@ export function buildExtensions(
         overflow: "auto"
       },
       ".cm-gutters": {
-        flexShrink: "0"
+        flexShrink: "0",
+        padding: "8px 0 24px"
       },
       ".cm-content": {
         boxSizing: "border-box",

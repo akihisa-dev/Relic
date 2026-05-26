@@ -474,6 +474,7 @@ describe("Editor", () => {
 
     expect(container.querySelector(".cm-scroller")).not.toHaveStyle({ justifyContent: "center" });
     expect(container.querySelector(".cm-gutters")).not.toHaveStyle({ left: "auto" });
+    expect(container.querySelector(".cm-gutters")).toHaveStyle({ padding: "8px 0 24px" });
     expect(container.querySelector(".cm-content")).toHaveStyle({
       margin: "0 auto",
       maxWidth: "660px"
