@@ -873,7 +873,7 @@ describe("App", () => {
 
     expect(useUiStore.getState().isRightPanelOpen).toBe(true);
     expect(useUiStore.getState().rightPanelView).toBe("outline");
-    expect(container.querySelector(".right-panel-actions-row")).toBeInTheDocument();
+    expect(container.querySelector(".title-bar--right-panel-open .main-area-actions")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "アウトライン" }));
 

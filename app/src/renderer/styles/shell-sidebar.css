@@ -14,7 +14,57 @@
   -webkit-app-region: drag;
   background: var(--bg);
   border-bottom: 1px solid var(--border);
+  display: grid;
   grid-column: 1 / -1;
+  grid-template-columns: var(--title-bar-left-offset, 88px) minmax(0, 1fr) var(--title-bar-action-width, 136px);
+  min-width: 0;
+  overflow: hidden;
+}
+
+.title-bar-drag-area {
+  min-width: 0;
+}
+
+.title-bar-pane-tabs {
+  -webkit-app-region: no-drag;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+}
+
+.title-bar-pane-tabs--split {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.title-bar-pane {
+  display: grid;
+  min-width: 0;
+}
+
+.title-bar-pane + .title-bar-pane {
+  border-left: 1px solid var(--border);
+}
+
+.title-bar-actions {
+  -webkit-app-region: no-drag;
+  min-width: 0;
+}
+
+.title-bar .pane-tab-bar {
+  background: var(--bg);
+  height: 100%;
+  padding-top: 7px;
+}
+
+.title-bar .main-area-actions {
+  height: 100%;
+  min-height: 0;
+  width: 100%;
+}
+
+.title-bar--right-panel-open .main-area-actions {
+  justify-content: flex-start;
+  padding-left: 24px;
 }
 
 
