@@ -32,9 +32,14 @@ const IconFrontmatter = (): ReactElement => (
 
 const IconChronicle = (): ReactElement => (
   <svg fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="18">
-    <path d="M3 3v16a2 2 0 0 0 2 2h16" />
-    <rect height="4" rx="1" width="9" x="7" y="13" />
-    <rect height="4" rx="1" width="12" x="7" y="5" />
+    <path d="M4 12h.01" />
+    <path d="M4 16h.01" />
+    <path d="M4 20h.01" />
+    <path d="M4 4h.01" />
+    <path d="M4 8h.01" />
+    <path d="M9.414 13.414a2 2 0 0 0 1.414.586H19a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1h-8.172a2 2 0 0 0-1.414.586L8 12z" />
+    <path d="M9.414 21.414a2 2 0 0 0 1.414.586H19a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1h-8.172a2 2 0 0 0-1.414.586L8 20z" />
+    <path d="M9.414 5.414A2 2 0 0 0 10.828 6H19a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1h-8.172a2 2 0 0 0-1.414.586L8 4z" />
   </svg>
 );
 
@@ -54,14 +59,10 @@ const IconCalendar = (): ReactElement => (
 
 const IconChronicleSettings = (): ReactElement => (
   <svg fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="18">
-    <path d="M4 19V5" />
-    <path d="M20 19V5" />
-    <path d="M8 7h8" />
-    <path d="M8 12h8" />
-    <path d="M8 17h8" />
-    <circle cx="4" cy="7" r="1.5" />
-    <circle cx="20" cy="12" r="1.5" />
-    <circle cx="4" cy="17" r="1.5" />
+    <path d="M15.707 21.293a1 1 0 0 1-1.414 0l-1.586-1.586a1 1 0 0 1 0-1.414l5.586-5.586a1 1 0 0 1 1.414 0l1.586 1.586a1 1 0 0 1 0 1.414z" />
+    <path d="m18 13-1.375-6.874a1 1 0 0 0-.746-.776L3.235 2.028a1 1 0 0 0-1.207 1.207L5.35 15.879a1 1 0 0 0 .776.746L13 18" />
+    <path d="m2.3 2.3 7.286 7.286" />
+    <circle cx="11" cy="11" r="2" />
   </svg>
 );
 
