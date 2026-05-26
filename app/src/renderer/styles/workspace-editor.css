@@ -335,6 +335,7 @@
   background: transparent;
   border-color: transparent;
   box-shadow: none;
+  color: inherit;
   display: inline-flex;
   justify-content: center;
   min-width: 28px;
@@ -342,14 +343,14 @@
 }
 
 .main-area-actions .toolbar-btn:hover {
-  background: transparent;
+  background: rgba(255, 255, 255, 0.14);
   border-color: transparent;
   box-shadow: none;
-  color: var(--text);
+  color: #ffffff;
 }
 
 .main-area-actions .toolbar-btn.active {
-  background: var(--accent-soft);
+  background: rgba(255, 255, 255, 0.92);
   border-color: transparent;
   border-radius: 6px;
   box-shadow: none;
@@ -357,7 +358,7 @@
 }
 
 .main-area-actions .toolbar-btn.active:hover {
-  background: var(--accent-soft);
+  background: #ffffff;
   color: var(--accent);
 }
 
@@ -397,9 +398,18 @@
   will-change: max-width, min-width, opacity, padding, transform;
 }
 
+.title-bar .pane-tab {
+  color: rgba(255, 255, 255, 0.72);
+}
+
 .pane-tab:hover:not(.pane-tab--active):not(.pane-tab--closing) {
   background: var(--hover);
   color: var(--text-2);
+}
+
+.title-bar .pane-tab:hover:not(.pane-tab--active):not(.pane-tab--closing) {
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
 }
 
 .pane-tab--active {
