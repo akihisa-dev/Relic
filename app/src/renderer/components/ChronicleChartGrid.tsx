@@ -1,6 +1,6 @@
 import type { PointerEvent, ReactElement, RefObject, UIEvent } from "react";
 
-import type { ChartEntry, ChartEntryEditKind, ChartSource, WorkspaceChart } from "../../shared/ipc";
+import type { ChronicleCalendarSettings, ChartEntry, ChartEntryEditKind, ChartSource, WorkspaceChart } from "../../shared/ipc";
 import {
   DATE_SCALES,
   buildVisibleChronicleGuideTicks,
@@ -33,6 +33,7 @@ export interface ChronicleChartGridProps {
   chartRef: RefObject<HTMLDivElement | null>;
   chartViewportWidth: number;
   chronicleOffscreenIndicators: { left: DateOffscreenIndicator | null; right: DateOffscreenIndicator | null };
+  chronicleCalendars: ChronicleCalendarSettings[];
   dateAxisHeight: number;
   dateOffscreenIndicators: { left: DateOffscreenIndicator | null; right: DateOffscreenIndicator | null };
   dateScale: DateScale | null;
@@ -68,6 +69,7 @@ export function ChronicleChartGrid({
   chartRef,
   chartViewportWidth,
   chronicleOffscreenIndicators,
+  chronicleCalendars,
   dateAxisHeight,
   dateOffscreenIndicators,
   dateScale,
@@ -135,6 +137,7 @@ export function ChronicleChartGrid({
         <div className="chronicle-grid" style={{ width: nameColumnWidth + timelineWidth }}>
           <ChronicleNameColumn
             activeSource={activeSource}
+            chronicleCalendars={chronicleCalendars}
             dateAxisHeight={dateAxisHeight}
             nameColumnWidth={nameColumnWidth}
             onJump={onJump}
@@ -156,6 +159,7 @@ export function ChronicleChartGrid({
               <ChronicleAxis
                 axisEnd={axisEnd}
                 axisStart={axisStart}
+                calendars={chronicleCalendars}
                 interval={chronicleAxisTickInterval(tickInterval)}
                 scrollLeft={scrollLeft}
                 unitWidth={unitWidth}

@@ -1,4 +1,9 @@
-import type { ChartEntry, ChartSource } from "../shared/ipc";
+import {
+  defaultChronicleCalendars,
+  type ChronicleCalendarSettings,
+  type ChartEntry,
+  type ChartSource
+} from "../shared/ipc";
 import { axisToYear, dateToDay, yearToAxis } from "../shared/chartTime";
 import {
   DATE_SCALES,
@@ -231,8 +236,11 @@ export function dateMajorGuideUnit(scale: DateScale): DateAxisSegmentUnit {
 
 export function formatRange(entry: ChartEntry, source: ChartSource, dateScale: DateScale | null): string {
   if (source !== "date" || !dateScale) {
-    if (entry.startValue === entry.endValue) return entry.startLabel;
-    return `${entry.startLabel} 〜 ${entry.endLabel}`;
+    const startLabel = chronicleLabelWithoutCalendarName(entry.startLabel, entry.chronicleCalendarName);
+    const endLabel = chronicleLabelWithoutCalendarName(entry.endLabel, entry.chronicleCalendarName);
+
+    if (entry.startValue === entry.endValue) return startLabel;
+    return `${startLabel} 〜 ${endLabel}`;
   }
 
   const start = formatDateLabel(entry.startLabel, dateScale.unit);
@@ -428,6 +436,32 @@ export function chronicleUnitWidth(interval: number, tickWidth: number): number 
   return tickWidth / interval;
 }
 
+export function activeChronicleAxisCalendars(calendars: ChronicleCalendarSettings[]): ChronicleCalendarSettings[] {
+  const mainCalendar = calendars.find((calendar) => calendar.id === "chronicle0") ?? defaultChronicleCalendars[0];
+  const subCalendars = calendars.filter((calendar) =>
+    calendar.id !== "chronicle0" &&
+      Number.isInteger(calendar.startYear) &&
+      Number(calendar.startYear) >= 1
+  );
+
+  return [
+    { ...mainCalendar, name: mainCalendar.name.trim() || mainCalendar.id },
+    ...subCalendars.map((calendar) => ({
+      ...calendar,
+      name: calendar.name.trim() || calendar.id
+    }))
+  ];
+}
+
+export function chronicleAxisHeightForCalendars(calendars: ChronicleCalendarSettings[]): number {
+  return Math.max(34, activeChronicleAxisCalendars(calendars).length * 24);
+}
+
+export function formatChronicleCalendarAxisLabel(calendar: ChronicleCalendarSettings, mainYear: number): string {
+  const year = calendar.id === "chronicle0" ? mainYear : mainYear - (calendar.startYear ?? 1) + 1;
+  return formatChronicleAxisSegmentLabel(year);
+}
+
 export function dateAxisHeightForScale(scale: DateScale | null): number {
   return 69;
 }
@@ -444,6 +478,14 @@ export function formatDateAxisSegmentLabel(value: number, unit: DateAxisSegmentU
 
 export function formatChronicleAxisSegmentLabel(year: number): string {
   return year < 0 ? `−${Math.abs(year)}` : String(year);
+}
+
+function chronicleLabelWithoutCalendarName(label: string, calendarName: string | undefined): string {
+  const name = calendarName?.trim();
+  if (!name) return label;
+
+  const trimmed = label.trim();
+  return trimmed.startsWith(`${name} `) ? trimmed.slice(name.length + 1) : trimmed;
 }
 
 export function formatDateLabel(value: string, unit: DateScaleUnit): string {

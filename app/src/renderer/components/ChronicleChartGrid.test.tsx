@@ -3,6 +3,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import type { ChartEntry, WorkspaceChart } from "../../shared/ipc";
+import { defaultChronicleCalendars } from "../../shared/ipc";
 import {
   DATE_SCALES,
   buildChartRows,
@@ -54,12 +55,13 @@ function renderGrid(overrides: Partial<ChronicleChartGridProps> = {}) {
     chartRef: createRef<HTMLDivElement>(),
     chartViewportWidth: 720,
     chronicleOffscreenIndicators: { left: null, right: null },
+    chronicleCalendars: defaultChronicleCalendars,
     dateAxisHeight: activeSource === "date" ? 69 : 34,
     dateOffscreenIndicators: { left: null, right: null },
     dateScale,
     dragPreview: null,
     guideTicks: buildGuideTicks(bounds.axisStart, bounds.axisEnd, ticks, tickInterval, activeSource, dateScale),
-    nameColumnWidth: activeSource === "date" ? 430 : 300,
+    nameColumnWidth: activeSource === "date" ? 430 : 420,
     onChartPointerDown: vi.fn(),
     onChartScroll: vi.fn(),
     onJump: vi.fn(),
@@ -93,7 +95,7 @@ describe("ChronicleChartGrid", () => {
     const { container, props } = renderGrid();
 
     expect(container.querySelector(".chronicle-chart")).toBeInTheDocument();
-    expect(container.querySelector(".chronicle-name-column")).toHaveStyle({ width: "300px" });
+    expect(container.querySelector(".chronicle-name-column")).toHaveStyle({ width: "420px" });
     expect(container.querySelector(".chronicle-name-header--chronicle")).toBeInTheDocument();
     expect(container.querySelector(".chronicle-axis--chronicle")).toBeInTheDocument();
     expect(container.querySelector(".chronicle-fill--chronicle")).toBeInTheDocument();
@@ -105,6 +107,47 @@ describe("ChronicleChartGrid", () => {
     expect(props.onOpenFile).toHaveBeenCalledWith("history/kamakura.md");
     expect(props.onJump).toHaveBeenCalledWith(expect.any(Number));
     expect(props.onChartPointerDown).toHaveBeenCalledTimes(1);
+  });
+
+  it("chronicleの横軸に設定済みのメイン暦とサブ暦を段で表示し、バーには暦名を出さない", () => {
+    const { container } = renderGrid({
+      activeChart: chart({
+        entries: [
+          entry({
+            chronicleCalendarId: "chronicle1",
+            chronicleCalendarName: "帝国暦",
+            chronicleCalendarStartYear: 100,
+            endLabel: "帝国暦 22",
+            endValue: 120,
+            startLabel: "帝国暦 21",
+            startValue: 119
+          })
+        ]
+      }),
+      chronicleCalendars: [
+        { id: "chronicle0", name: "王国暦" },
+        { id: "chronicle1", name: "帝国暦", startYear: 100 }
+      ],
+      dateAxisHeight: 48,
+      rows: buildChartRows([
+        entry({
+          chronicleCalendarId: "chronicle1",
+          chronicleCalendarName: "帝国暦",
+          chronicleCalendarStartYear: 100,
+          endLabel: "帝国暦 22",
+          endValue: 120,
+          startLabel: "帝国暦 21",
+          startValue: 119
+        })
+      ], "chronicle")
+    });
+
+    expect(container.querySelectorAll(".chronicle-axis--chronicle .chronicle-axis-row")).toHaveLength(2);
+    expect(container.querySelector(".chronicle-name-header--chronicle")).toHaveTextContent("王国暦");
+    expect(container.querySelector(".chronicle-name-header--chronicle")).toHaveTextContent("帝国暦");
+    expect(container.querySelector(".chronicle-year-summary")).toHaveTextContent("帝国暦 21-22");
+    expect(container.querySelector(".chronicle-fill-label")).toHaveTextContent("21 〜 22");
+    expect(container.querySelector(".chronicle-fill-label")).not.toHaveTextContent("帝国暦");
   });
 
   it("dateのplanned/actual列とstatus badgeを既存class名で描画する", () => {

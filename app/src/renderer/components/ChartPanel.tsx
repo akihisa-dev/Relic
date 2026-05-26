@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import type { ReactElement } from "react";
 
-import type { UpdateChartEntryInput, WorkspaceChart } from "../../shared/ipc";
+import type { ChronicleCalendarSettings, UpdateChartEntryInput, WorkspaceChart } from "../../shared/ipc";
 import { useT } from "../i18n";
 import { buildChronicleVerticalViewportState, buildChronicleViewportState, useChronicleChartModel } from "../hooks/useChronicleChartModel";
 import { useChronicleChartViewport } from "../hooks/useChronicleChartViewport";
@@ -13,13 +13,14 @@ import { ChronicleToolbar } from "./ChronicleToolbar";
 interface ChartViewProps {
   chart?: WorkspaceChart | null;
   charts?: WorkspaceChart[];
+  chronicleCalendars: ChronicleCalendarSettings[];
   onOpenFile: (path: string) => void;
   onUpdateEntry?: (input: UpdateChartEntryInput) => Promise<void> | void;
 }
 
-export function ChartView({ chart = null, charts = [], onOpenFile, onUpdateEntry }: ChartViewProps): ReactElement {
+export function ChartView({ chart = null, charts = [], chronicleCalendars, onOpenFile, onUpdateEntry }: ChartViewProps): ReactElement {
   const t = useT();
-  const model = useChronicleChartModel({ chart, charts });
+  const model = useChronicleChartModel({ chart, charts, chronicleCalendars });
   const viewport = useChronicleChartViewport({
     activeChart: model.activeChart,
     activeSource: model.activeSource,
@@ -95,6 +96,7 @@ export function ChartView({ chart = null, charts = [], onOpenFile, onUpdateEntry
         chartRef={viewport.chartRef}
         chartViewportWidth={viewport.chartViewportWidth}
         chronicleOffscreenIndicators={viewportState.chronicleOffscreenIndicators}
+        chronicleCalendars={chronicleCalendars}
         dateAxisHeight={model.dateAxisHeight}
         dateOffscreenIndicators={viewportState.dateOffscreenIndicators}
         dateScale={model.dateScale}

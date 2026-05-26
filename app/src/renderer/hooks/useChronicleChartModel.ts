@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 
-import type { ChartSource, WorkspaceChart } from "../../shared/ipc";
+import type { ChronicleCalendarSettings, ChartSource, WorkspaceChart } from "../../shared/ipc";
 import {
   CHRONICLE_NAME_COLUMN_WIDTH,
   DATE_NAME_COLUMN_WIDTH,
   DATE_SCALES,
   ROW_HEIGHT,
   TICK_WIDTH,
+  chronicleAxisHeightForCalendars,
   buildChartRows,
   buildGuideTicks,
   buildTicks,
@@ -39,6 +40,7 @@ import { useStableTimelineBounds } from "./useStableTimelineBounds";
 interface UseChronicleChartModelInput {
   chart: WorkspaceChart | null;
   charts: WorkspaceChart[];
+  chronicleCalendars: ChronicleCalendarSettings[];
 }
 
 export interface ChronicleChartModel {
@@ -81,7 +83,8 @@ export interface ChronicleViewportState {
 
 export function useChronicleChartModel({
   chart,
-  charts
+  charts,
+  chronicleCalendars
 }: UseChronicleChartModelInput): ChronicleChartModel {
   const availableCharts = useMemo(() => chartsForView(chart, charts), [chart, charts]);
   const selectedChartId = useUiStore((state) => state.selectedChartId);
@@ -137,7 +140,7 @@ export function useChronicleChartModel({
     () => buildGuideTicks(axisStart, axisEnd, ticks, tickInterval, activeSource, dateScale),
     [activeSource, axisEnd, axisStart, dateScale, tickInterval, ticks]
   );
-  const dateAxisHeight = activeSource === "date" ? dateAxisHeightForScale(dateScale) : 34;
+  const dateAxisHeight = activeSource === "date" ? dateAxisHeightForScale(dateScale) : chronicleAxisHeightForCalendars(chronicleCalendars);
   const minimapItems = useMemo(
     () => minimapItemsForEntries(entries, axisStart, axisEnd),
     [axisEnd, axisStart, entries]

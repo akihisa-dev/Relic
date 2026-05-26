@@ -2,6 +2,7 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import type { ChartEntry, WorkspaceChart } from "../../shared/ipc";
+import { defaultChronicleCalendars } from "../../shared/ipc";
 import { useUiStore } from "../store/uiStore";
 import { buildChronicleVerticalViewportState, useChronicleChartModel } from "./useChronicleChartModel";
 
@@ -37,7 +38,8 @@ describe("useChronicleChartModel", () => {
     const dateChart = chart({ id: "date", name: "date", source: "date" });
     const { result } = renderHook(() => useChronicleChartModel({
       chart: null,
-      charts: [chronicleChart, dateChart]
+      charts: [chronicleChart, dateChart],
+      chronicleCalendars: defaultChronicleCalendars
     }));
 
     expect(result.current.activeChart?.id).toBe("chronicle");
@@ -52,7 +54,8 @@ describe("useChronicleChartModel", () => {
     const dateChart = chart({ id: "date", name: "date", source: "date" });
     const { result } = renderHook(() => useChronicleChartModel({
       chart: null,
-      charts: [chronicleChart, dateChart]
+      charts: [chronicleChart, dateChart],
+      chronicleCalendars: defaultChronicleCalendars
     }));
 
     act(() => {
@@ -94,7 +97,7 @@ describe("useChronicleChartModel", () => {
       name: "date",
       source: "date"
     });
-    const { result } = renderHook(() => useChronicleChartModel({ chart: dateChart, charts: [] }));
+    const { result } = renderHook(() => useChronicleChartModel({ chart: dateChart, charts: [], chronicleCalendars: defaultChronicleCalendars }));
 
     act(() => {
       result.current.setQuery("tasks");
@@ -116,7 +119,7 @@ describe("useChronicleChartModel", () => {
       source: "chronicle"
     });
     const { rerender, result } = renderHook(
-      ({ activeChart }) => useChronicleChartModel({ chart: activeChart, charts: [] }),
+      ({ activeChart }) => useChronicleChartModel({ chart: activeChart, charts: [], chronicleCalendars: defaultChronicleCalendars }),
       { initialProps: { activeChart: firstChart } }
     );
 
@@ -163,7 +166,7 @@ describe("useChronicleChartModel", () => {
       name: "date",
       source: "date"
     });
-    const { result } = renderHook(() => useChronicleChartModel({ chart: dateChart, charts: [] }));
+    const { result } = renderHook(() => useChronicleChartModel({ chart: dateChart, charts: [], chronicleCalendars: defaultChronicleCalendars }));
 
     act(() => {
       result.current.setStatusFilter("存在しない");
@@ -172,6 +175,21 @@ describe("useChronicleChartModel", () => {
     await waitFor(() => {
       expect(result.current.statusFilter).toBe("");
     });
+  });
+
+  it("chronicle表示では設定済み暦の段数に合わせて横軸の高さを確保する", () => {
+    const { result } = renderHook(() => useChronicleChartModel({
+      chart: chart(),
+      charts: [],
+      chronicleCalendars: [
+        { id: "chronicle0", name: "王国暦" },
+        { id: "chronicle1", name: "帝国暦", startYear: 100 },
+        { id: "chronicle2", name: "辺境暦", startYear: 300 }
+      ]
+    }));
+
+    expect(result.current.dateAxisHeight).toBe(72);
+    expect(result.current.nameColumnWidth).toBe(420);
   });
 
   it("縦方向の表示範囲と画面外件数を計算する", () => {
