@@ -60,6 +60,68 @@ describe("previewMarkdown", () => {
     expect(html).toContain('class="language-mermaid"');
     expect(html).toContain("graph TD; A--&gt;B");
     expect(html).not.toContain("hljs language-mermaid");
+
+    const document = new DOMParser().parseFromString(html, "text/html");
+    expect(document.querySelector<HTMLElement>(".preview-mermaid")?.dataset.mermaidSource).toBe("graph TD; A-->B");
+  });
+
+  it("通常コードブロックはmermaid図表示用HTMLにしない", () => {
+    const html = renderMarkdown(
+      "```js\nconst value = 1;\n```",
+      null,
+      new Map(),
+      true,
+      t
+    );
+
+    expect(html).toContain("hljs language-js");
+    expect(html).not.toContain('class="preview-mermaid"');
+    expect(html).not.toContain("data-mermaid-source");
+  });
+
+  it("大文字・空白つきのmermaid言語指定を図表示用HTMLとして扱う", () => {
+    const html = renderMarkdown(
+      "``` Mermaid \ngraph TD; A-->B\n```",
+      null,
+      new Map(),
+      true,
+      t
+    );
+
+    expect(html).toContain('class="preview-mermaid"');
+    const document = new DOMParser().parseFromString(html, "text/html");
+    expect(document.querySelector<HTMLElement>(".preview-mermaid")?.dataset.mermaidSource).toBe("graph TD; A-->B");
+  });
+
+  it("mermaid言語指定後に追加文字列があっても図表示用HTMLとして扱う", () => {
+    const html = renderMarkdown(
+      "```mermaid something\ngraph TD; A-->B\n```",
+      null,
+      new Map(),
+      true,
+      t
+    );
+
+    expect(html).toContain('class="preview-mermaid"');
+    const document = new DOMParser().parseFromString(html, "text/html");
+    expect(document.querySelector<HTMLElement>(".preview-mermaid")?.dataset.mermaidSource).toBe("graph TD; A-->B");
+  });
+
+  it("mermaidソースをHTML属性として安全に保持する", () => {
+    const source = 'graph TD; A["<script>"]-->"B" onmouseover="alert(1)"';
+    const html = renderMarkdown(
+      `\`\`\`mermaid\n${source}\n\`\`\``,
+      null,
+      new Map(),
+      true,
+      t
+    );
+    const document = new DOMParser().parseFromString(html, "text/html");
+    const container = document.querySelector<HTMLElement>(".preview-mermaid");
+
+    expect(container?.dataset.mermaidSource).toBe(source);
+    expect(container?.getAttribute("onmouseover")).toBeNull();
+    expect(container?.querySelector("code")?.textContent).toBe(source);
   });
 
   it("埋め込みHTMLは一段階だけ描画する", () => {

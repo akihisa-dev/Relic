@@ -110,6 +110,26 @@ export function escapeHtml(value: string): string {
     .replace(/"/g, "&quot;");
 }
 
+function escapeHtmlAttribute(value: string): string {
+  return escapeHtml(value).replace(/'/g, "&#39;");
+}
+
+function restoreMermaidSourceAttributes(html: string): string {
+  const template = document.createElement("template");
+  template.innerHTML = html;
+
+  template.content.querySelectorAll<HTMLElement>(".preview-mermaid").forEach((diagram) => {
+    if (diagram.dataset.mermaidSource !== undefined) return;
+
+    const source = diagram.querySelector("code")?.textContent;
+    if (source === undefined) return;
+
+    diagram.setAttribute("data-mermaid-source", source);
+  });
+
+  return template.innerHTML;
+}
+
 export function normalizeEmbedTarget(target: string): string | null {
   const normalized = target.trim().split("#")[0].split("^")[0].replace(/\\/g, "/");
 
@@ -138,8 +158,9 @@ function buildRenderer(): Renderer {
   renderer.code = ({ lang, text }) => {
     if (isMermaidLanguage(lang)) {
       const escaped = escapeHtml(text);
+      const sourceAttribute = escapeHtmlAttribute(text);
 
-      return `<div class="preview-mermaid"><pre><code class="language-mermaid">${escaped}</code></pre></div>`;
+      return `<div class="preview-mermaid" data-mermaid-source="${sourceAttribute}"><pre><code class="language-mermaid">${escaped}</code></pre></div>`;
     }
 
     const language = lang && hljs.getLanguage(lang) ? lang : "plaintext";
@@ -220,10 +241,10 @@ export function renderMarkdown(
     '<input checked type="checkbox" class="preview-checkbox">'
   );
   const sanitized = DOMPurify.sanitize(withCheckboxes, {
-    ADD_ATTR: ["checked", "class", "data-target", "id"]
+    ADD_ATTR: ["checked", "class", "data-mermaid-source", "data-target", "id"]
   });
 
-  return sanitized;
+  return restoreMermaidSourceAttributes(sanitized);
 }
 
 export function renderFileEmbed(
