@@ -49,7 +49,12 @@ async function loadMermaid(): Promise<MermaidModule> {
   const mermaid = (await import("mermaid")).default;
 
   if (!initialized) {
-    mermaid.initialize({ securityLevel: "strict", startOnLoad: false });
+    mermaid.initialize({
+      htmlLabels: false,
+      flowchart: { htmlLabels: false },
+      securityLevel: "strict",
+      startOnLoad: false
+    });
     initialized = true;
   }
 

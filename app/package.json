@@ -1,6 +1,6 @@
 {
   "name": "relic",
-  "version": "0.0.107",
+  "version": "0.0.108",
   "description": "Relic is a desktop app for creating, storing, and browsing creative setting notes.",
   "main": ".vite/build/main.js",
   "private": true,
