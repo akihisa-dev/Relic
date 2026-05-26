@@ -585,6 +585,27 @@ describe("Editor", () => {
     expect(widgets).toContain("MermaidBlockWidget");
   });
 
+  it("ライブプレビューでmermaidコードブロックを開いてもエディタが落ちない", async () => {
+    const viewRef = createRef<EditorView | null>();
+    const { container } = render(
+      <Editor
+        content={[
+          "# Mermaid",
+          "",
+          "```mermaid",
+          "graph TD; A-->B",
+          "```"
+        ].join("\n")}
+        onChange={vi.fn()}
+        settings={settings}
+        viewRef={viewRef}
+      />
+    );
+
+    await waitFor(() => expect(viewRef.current).not.toBeNull());
+    await waitFor(() => expect(container.querySelector(".cm-live-mermaid")).not.toBeNull());
+  });
+
   it("ライブプレビューでカーソルがmermaidブロック内にある場合はソース表示を維持する", async () => {
     const content = [
       "```mermaid",

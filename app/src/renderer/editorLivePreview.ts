@@ -73,12 +73,6 @@ export function buildLivePreviewDecorations(
     }
   }
 
-  function addBlockWidget(from: number, to: number, widget: WidgetType) {
-    if (from < to && !selectionTouches(from, to)) {
-      ranges.push({ from, to, deco: Decoration.replace({ block: true, widget }) });
-    }
-  }
-
   function addInlineFormat(lineFrom: number, match: InlineMatch, text: string) {
     if (!selectionTouches(match.from, match.to)) {
       const link = match.className === "cm-live-link"
@@ -163,7 +157,12 @@ export function buildLivePreviewDecorations(
             const blockTo = doc.line(closingLineNumber).to;
 
             if (!selectionTouches(blockFrom, blockTo)) {
-              addBlockWidget(blockFrom, blockTo, new MermaidBlockWidget(codeBlockSource(lineNumber, closingLineNumber)));
+              addWidget(line.from, line.to, new MermaidBlockWidget(codeBlockSource(lineNumber, closingLineNumber)));
+
+              for (let hiddenLineNumber = lineNumber + 1; hiddenLineNumber <= closingLineNumber; hiddenLineNumber += 1) {
+                const hiddenLine = doc.line(hiddenLineNumber);
+                addReplace(hiddenLine.from, hiddenLine.to);
+              }
             }
 
             lineNumber = closingLineNumber + 1;

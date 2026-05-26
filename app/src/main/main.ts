@@ -7,6 +7,7 @@ import { registerFileHandlers } from "./ipc/fileHandlers";
 import { registerToolHandlers } from "./ipc/toolHandlers";
 import { registerWorkspaceHandlers } from "./ipc/workspaceHandlers";
 import { windowCloseRequestedChannel, windowCloseResponseChannel, type WindowCloseResponseInput } from "../shared/ipc";
+import { devServerLoadUrls, loadDevServerUrlWithRetry } from "./devServerLoader";
 import { stopWorkspaceWatcher } from "./workspace/workspaceWatcher";
 
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string | undefined;
@@ -16,6 +17,7 @@ const APP_ID = "app.relic.desktop";
 const CLOSE_CONFIRM_TIMEOUT_MS = 5000;
 
 const approvedWindowCloseIds = new WeakSet<BrowserWindow>();
+let mainWindow: BrowserWindow | null = null;
 
 if (process.platform === "win32") {
   app.setAppUserModelId(APP_ID);
@@ -47,16 +49,23 @@ function createWindow(): void {
       webSecurity: true
     }
   };
-  const mainWindow = new BrowserWindow(windowOptions);
+  const window = new BrowserWindow(windowOptions);
+  mainWindow = window;
 
-  configureWindowSecurity(mainWindow);
-  configureEditorContextMenu(mainWindow);
-  configureWindowCloseProtection(mainWindow);
+  configureWindowSecurity(window);
+  configureEditorContextMenu(window);
+  configureWindowCloseProtection(window);
+
+  window.on("closed", () => {
+    if (mainWindow === window) {
+      mainWindow = null;
+    }
+  });
 
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
-    void mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
+    void loadDevServerUrlWithRetry(window, devServerLoadUrls(MAIN_WINDOW_VITE_DEV_SERVER_URL));
   } else {
-    void mainWindow.loadFile(
+    void window.loadFile(
       path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`)
     );
   }
@@ -139,8 +148,8 @@ function configureWindowSecurity(window: BrowserWindow): void {
 }
 
 function isAllowedAppNavigation(url: string): boolean {
-  if (MAIN_WINDOW_VITE_DEV_SERVER_URL && url.startsWith(MAIN_WINDOW_VITE_DEV_SERVER_URL)) {
-    return true;
+  if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
+    return devServerLoadUrls(MAIN_WINDOW_VITE_DEV_SERVER_URL).some((devServerUrl) => url.startsWith(devServerUrl));
   }
 
   return url.startsWith("file://");
