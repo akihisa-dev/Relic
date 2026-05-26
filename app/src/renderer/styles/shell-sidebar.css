@@ -61,6 +61,7 @@
   background: var(--bg);
   border-color: transparent;
   box-shadow: none;
+  color: var(--text);
   height: 33px;
 }
 
