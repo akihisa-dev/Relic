@@ -407,6 +407,22 @@
   color: rgba(255, 255, 255, 0.84);
 }
 
+.title-bar .pane-tab-bar--fit .pane-tab {
+  flex: 1 1 0;
+  max-width: 180px;
+  min-width: 44px;
+  padding-left: 6px;
+  padding-right: 5px;
+}
+
+.title-bar .pane-tab-bar--fit .pane-tab-name {
+  min-width: 0;
+}
+
+.title-bar .pane-tab-bar--fit .pane-tab-close {
+  flex: 0 0 18px;
+}
+
 .pane-tab:hover:not(.pane-tab--active):not(.pane-tab--closing) {
   background: var(--hover);
   color: var(--text-2);

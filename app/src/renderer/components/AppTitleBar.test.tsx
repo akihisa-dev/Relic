@@ -25,6 +25,17 @@ const secondFileTab: Tab = {
   savedContent: "second"
 };
 
+function makeFileTab(id: string, name: string): Tab {
+  return {
+    content: name,
+    id,
+    kind: "file",
+    name,
+    path: `${name}.md`,
+    savedContent: name
+  };
+}
+
 function renderTitleBar(overrides: Partial<Parameters<typeof AppTitleBar>[0]> = {}): Parameters<typeof AppTitleBar>[0] {
   const tabs: Record<string, Tab> = {
     [fileTab.id]: { ...fileTab, isPinned: true },
@@ -93,6 +104,28 @@ describe("AppTitleBar", () => {
 
     fireEvent.click(screen.getAllByTitle("Close tab")[1]);
     expect(props.onTabClose).toHaveBeenCalledWith("left", secondFileTab.id);
+  });
+
+  it("renders title bar tabs in a shrinking tab strip instead of requiring horizontal scrolling", () => {
+    const manyTabs = Object.fromEntries(
+      Array.from({ length: 12 }, (_, index) => {
+        const tab = makeFileTab(`tab-${index}`, `Long note ${index}`);
+        return [tab.id, tab];
+      })
+    );
+    const tabIds = Object.keys(manyTabs);
+
+    renderTitleBar({
+      leftPane: { activeTabId: tabIds[0], history: [tabIds[0]], tabIds },
+      tabs: manyTabs
+    });
+
+    const tabBar = document.querySelector(".title-bar .pane-tab-bar");
+    const tabs = document.querySelectorAll(".title-bar .pane-tab");
+
+    expect(tabBar).toBeInstanceOf(HTMLElement);
+    expect(tabBar).toHaveClass("pane-tab-bar--fit");
+    expect(tabs).toHaveLength(12);
   });
 
   it("runs file tab context menu actions without changing menu labels or clipboard text", () => {

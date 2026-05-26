@@ -41,12 +41,13 @@ export function PaneTabBar({
   onTabSelect
 }: PaneTabBarProps): ReactElement {
   const t = useT();
+  const shouldFitTabs = paneState.tabIds.length > 1;
 
   void pane;
 
   return (
     <div
-      className={`pane-tab-bar${tabDropTarget?.tabId === null ? " pane-tab-bar--drop-end" : ""}`}
+      className={`pane-tab-bar${shouldFitTabs ? " pane-tab-bar--fit" : ""}${tabDropTarget?.tabId === null ? " pane-tab-bar--drop-end" : ""}`}
       onDragLeave={onTabBarDragLeave}
       onDragOver={onTabBarDragOver}
       onDrop={(e) => onTabDrop(e, null)}
