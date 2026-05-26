@@ -236,6 +236,15 @@ describe("SettingsPanel", () => {
     expect(screen.getByText("Features")).toBeInTheDocument();
     expect(screen.getByText("App Info")).toBeInTheDocument();
     expect(screen.getByText("Relic 1.2.3")).toBeInTheDocument();
+    expect(screen.getByText("macOS")).toBeInTheDocument();
+    expect(screen.queryByText("darwin")).not.toBeInTheDocument();
+  });
+
+  it("アプリ情報では内部プラットフォーム名ではなくユーザー向けOS名を表示する", () => {
+    renderSettingsPanel({ platform: "win32" });
+
+    expect(screen.getByText("Windows")).toBeInTheDocument();
+    expect(screen.queryByText("win32")).not.toBeInTheDocument();
   });
 
   it("macOSではフォント選択肢をmacOSの元フォント名で表示する", () => {

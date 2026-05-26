@@ -21,6 +21,18 @@ function getEditorFontLabelKeys(platform?: NodeJS.Platform): { gothic: Translati
   };
 }
 
+function formatPlatformLabel(platform?: NodeJS.Platform): string {
+  if (!platform) return "-";
+
+  const labels: Partial<Record<NodeJS.Platform, string>> = {
+    darwin: "macOS",
+    linux: "Linux",
+    win32: "Windows"
+  };
+
+  return labels[platform] ?? platform;
+}
+
 export function SettingsPanel({
   appInfo,
   settings,
@@ -208,7 +220,7 @@ export function SettingsPanel({
         <div className="links-panel-subheading">{t("settings.sectionAppInfo")}</div>
         <div className="settings-info">
           <div>Relic {appInfo?.version ?? "0.0.0"}</div>
-          <div>{appInfo?.platform ?? "-"}</div>
+          <div>{formatPlatformLabel(appInfo?.platform)}</div>
         </div>
       </section>
     </div>
