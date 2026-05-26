@@ -161,7 +161,12 @@ export function chronicleSummaryForRow(row: ChartRow): string {
   if (row.entries.length === 1) {
     const entry = row.entries[0];
     if (entry.chronicleCalendarName) {
-      return entry.startLabel === entry.endLabel ? entry.startLabel : `${entry.startLabel}-${entry.endLabel}`;
+      const calendarName = entry.chronicleCalendarName.trim();
+      const start = chronicleYearLabelWithoutCalendarName(entry.startLabel, calendarName);
+      const end = chronicleYearLabelWithoutCalendarName(entry.endLabel, calendarName);
+      const range = start === end ? start : `${start}-${end}`;
+
+      return calendarName ? `${calendarName} ${range}` : range;
     }
   }
 
@@ -171,6 +176,13 @@ export function chronicleSummaryForRow(row: ChartRow): string {
   const endLabel = formatAxisValue(end, "chronicle");
 
   return startLabel === endLabel ? startLabel : `${startLabel}-${endLabel}`;
+}
+
+function chronicleYearLabelWithoutCalendarName(label: string, calendarName: string): string {
+  const trimmed = label.trim();
+  return calendarName && trimmed.startsWith(`${calendarName} `)
+    ? trimmed.slice(calendarName.length + 1)
+    : trimmed;
 }
 
 export function formatDateSummaryLabel(value: string, omitYear: boolean): string {

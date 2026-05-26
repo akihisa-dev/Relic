@@ -1,7 +1,8 @@
 import type { ReactElement } from "react";
 
-import type { ChartSource } from "../../shared/ipc";
+import type { ChronicleCalendarSettings, ChartSource } from "../../shared/ipc";
 import {
+  activeChronicleAxisCalendars,
   chronicleSummaryForRow,
   dateSummaryForRow,
   rowCenterValue,
@@ -11,6 +12,7 @@ import { useT } from "../i18n";
 
 export function ChronicleNameColumn({
   activeSource,
+  chronicleCalendars,
   dateAxisHeight,
   nameColumnWidth,
   onJump,
@@ -18,6 +20,7 @@ export function ChronicleNameColumn({
   rows
 }: {
   activeSource: ChartSource;
+  chronicleCalendars: ChronicleCalendarSettings[];
   dateAxisHeight: number;
   nameColumnWidth: number;
   onJump: (value: number) => void;
@@ -25,6 +28,8 @@ export function ChronicleNameColumn({
   rows: ChartRow[];
 }): ReactElement {
   const t = useT();
+  const axisCalendars = activeChronicleAxisCalendars(chronicleCalendars);
+  const chronicleHeaderRowHeight = axisCalendars.length === 1 ? 34 : 24;
 
   return (
     <div className="chronicle-name-column" style={{ width: nameColumnWidth }}>
@@ -36,10 +41,16 @@ export function ChronicleNameColumn({
             <span>{t("chronicle.actualDate")}</span>
           </>
         ) : (
-          <>
-            <span />
-            <span>{t("chronicle.period")}</span>
-          </>
+          axisCalendars.map((calendar, index) => (
+            <div
+              className={`chronicle-name-axis-row${index < axisCalendars.length - 1 ? " chronicle-name-axis-row--divider" : ""}`}
+              key={`chronicle-name-axis-${calendar.id}`}
+              style={{ height: chronicleHeaderRowHeight }}
+            >
+              <span>{index === 0 ? t("chronicle.period") : ""}</span>
+              <span title={calendar.name}>{calendar.name}</span>
+            </div>
+          ))
         )}
       </div>
       {rows.length === 0 ? (
