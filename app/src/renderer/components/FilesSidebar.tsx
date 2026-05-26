@@ -38,6 +38,7 @@ export interface FilesSidebarProps {
   onSearchModeChange: (mode: SearchMode) => void;
   onSearchQueryChange: (query: string) => void;
   onTogglePin: (path: string) => void;
+  openingFilePath?: string | null;
   openFilePaths?: Set<string>;
   searchError: string | null;
   searchFocusRequest: number;
@@ -79,6 +80,7 @@ export function FilesSidebar({
   onSearchModeChange,
   onSearchQueryChange,
   onTogglePin,
+  openingFilePath,
   openFilePaths,
   searchError,
   searchFocusRequest,
@@ -140,6 +142,7 @@ export function FilesSidebar({
               limitNotice={searchLimitNotice}
               mode={searchMode}
               onOpenFile={onOpenFile}
+              openingFilePath={openingFilePath}
               query={searchQuery}
               results={searchResults}
             />
@@ -163,6 +166,7 @@ export function FilesSidebar({
               onSelectFolder={onSelectFolder}
               onSelectItem={handleSelectItem}
               onTogglePin={onTogglePin}
+              openingFilePath={openingFilePath}
               openFilePaths={openFilePaths}
               pinnedPaths={pinnedPaths}
               selectedItems={selectedItems}

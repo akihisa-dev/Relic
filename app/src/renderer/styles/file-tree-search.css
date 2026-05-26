@@ -64,6 +64,16 @@
   color: var(--accent);
 }
 
+.file-tree-row--opening {
+  animation: file-tree-open-connect 220ms cubic-bezier(.18, 1.25, .28, 1);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.file-tree-row--opening .file-tree-icon {
+  color: var(--accent);
+}
+
 .file-tree-row.selected .file-tree-icon {
   color: var(--accent);
 }
@@ -536,6 +546,12 @@
 
 .search-result-button:active {
   transform: translateY(1px) scale(0.99);
+}
+
+.search-result-button--opening {
+  animation: file-tree-open-connect 220ms cubic-bezier(.18, 1.25, .28, 1);
+  background: var(--accent-soft);
+  border-color: var(--accent-ring);
 }
 
 .search-result-title,

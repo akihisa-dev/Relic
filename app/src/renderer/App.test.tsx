@@ -573,7 +573,8 @@ describe("App", () => {
 
     const fileButton = await screen.findByRole("button", { name: /読書メモ/ });
     fireEvent.click(fileButton);
-    expect(container.querySelector(".rail-tab-flight--open")).toBeInTheDocument();
+    expect(fileButton).toHaveClass("file-tree-row--opening");
+    expect(container.querySelector(".rail-tab-flight--open")).not.toBeInTheDocument();
 
     await waitFor(() => {
       expect(useEditorStore.getState().leftPane.activeTabId).not.toBeNull();
@@ -581,6 +582,7 @@ describe("App", () => {
     const openedTabId = useEditorStore.getState().leftPane.activeTabId;
 
     fireEvent.click(fileButton);
+    expect(fileButton).toHaveClass("file-tree-row--opening");
     expect(container.querySelector(".rail-tab-flight--close")).not.toBeInTheDocument();
 
     await waitFor(() => {

@@ -290,12 +290,14 @@ export function App(): ReactElement {
   const {
     handleCreateFileFromSidebar,
     handleCreateFolderFromSidebar,
-    handleSidebarOpenFile
+    handleSidebarOpenFile,
+    openingFilePath
   } = useSidebarFileInteractions({
     focusedPane,
     handleCreateFile,
     handleCreateFolder,
     handleOpenFile,
+    onFileOpenMotion: () => setEditorActionPulse((value) => value + 1),
     openFileInPane,
     setTabActive,
     setWorkspaceError,
@@ -681,6 +683,7 @@ export function App(): ReactElement {
           onSelectFolder={handleSelectFolder}
           onSelectedCountChange={setFileSelectionCount}
           onTogglePin={handleTogglePin}
+          openingFilePath={openingFilePath}
           openFilePaths={openFilePathSet}
           searchError={searchError}
           searchFocusRequest={fileSearchFocusRequest}
