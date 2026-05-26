@@ -1,6 +1,8 @@
 import DOMPurify from "dompurify";
 
-let initialized = false;
+type MermaidTheme = "default" | "dark";
+
+let initializedTheme: MermaidTheme | null = null;
 let renderId = 0;
 
 type MermaidModule = typeof import("mermaid").default;
@@ -30,7 +32,8 @@ export async function renderMermaidElement(container: HTMLElement, source: strin
     diagram.className = "preview-mermaid-svg";
     diagram.innerHTML = sanitized;
     container.append(diagram);
-  } catch {
+  } catch (error) {
+    console.warn("Mermaid diagram rendering failed.", error);
     container.replaceChildren(buildMermaidFallback(source));
   }
 }
@@ -47,16 +50,27 @@ export function renderMermaidElements(root: ParentNode): void {
 
 async function loadMermaid(): Promise<MermaidModule> {
   const mermaid = (await import("mermaid")).default;
+  const theme = getPreferredMermaidTheme();
 
-  if (!initialized) {
+  if (initializedTheme !== theme) {
     mermaid.initialize({
+      theme,
       htmlLabels: false,
       flowchart: { htmlLabels: false },
       securityLevel: "strict",
       startOnLoad: false
     });
-    initialized = true;
+    initializedTheme = theme;
   }
 
   return mermaid;
+}
+
+function getPreferredMermaidTheme(): MermaidTheme {
+  const rootTheme = document.documentElement.getAttribute("data-theme");
+
+  if (rootTheme === "dark") return "dark";
+  if (rootTheme === "light") return "default";
+
+  return window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "default";
 }

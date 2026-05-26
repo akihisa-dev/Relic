@@ -45,7 +45,7 @@ export function Preview({
 
   useEffect(() => {
     if (containerRef.current) renderMermaidElements(containerRef.current);
-  }, [html]);
+  }, [html, settings.theme]);
 
   useEffect(() => {
     if (!scrollTargetHeading || !containerRef.current) return;
