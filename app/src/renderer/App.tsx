@@ -13,6 +13,7 @@ import { AppFilesSidebar } from "./components/AppFilesSidebar";
 import { AppOverlays } from "./components/AppOverlays";
 import { AppRail } from "./components/AppRail";
 import { AppStatusBar } from "./components/AppStatusBar";
+import { AppTitleBar } from "./components/AppTitleBar";
 import { createTranslator, I18nProvider } from "./i18n";
 import { useActiveDocumentContext } from "./hooks/useActiveDocumentContext";
 import { useAppKeyboardShortcuts } from "./hooks/useAppKeyboardShortcuts";
@@ -40,6 +41,9 @@ import { useEditorStore, type PaneId } from "./store/editorStore";
 import { useUiStore, type RightPanelView } from "./store/uiStore";
 import { collectMarkdownPaths } from "./workspacePaths";
 import "./styles.css";
+
+const RAIL_WIDTH = 48;
+const TITLE_BAR_TRAFFIC_LIGHT_SPACE = 88;
 
 export function App(): ReactElement {
   const [workspaceState, setWorkspaceState] = useState<WorkspaceState | null>(null);
@@ -575,6 +579,10 @@ export function App(): ReactElement {
     userDefinedFields,
     workspaceState
   });
+  const titleBarLeftOffset = Math.max(
+    TITLE_BAR_TRAFFIC_LIGHT_SPACE,
+    RAIL_WIDTH + (isSidebarOpen ? sidebarWidth : 0)
+  );
 
   // ──────────────────
   // レンダリング
@@ -583,7 +591,34 @@ export function App(): ReactElement {
   return (
     <I18nProvider language={editorSettings.language}>
     <div className="app-shell">
-      <div className="title-bar" />
+      <AppTitleBar
+        isRightPanelOpen={isRightPanelOpen}
+        isSourceMode={isSourceMode}
+        isSplit={isSplit}
+        leftClosingTabIds={leftClosingTabIds}
+        leftOffsetWidth={titleBarLeftOffset}
+        leftPane={leftPane}
+        onCloseAllTabsInPane={closeAllTabsInPaneWithMotion}
+        onCloseOtherTabs={closeOtherTabsWithMotion}
+        onCloseTabsToRight={closeTabsToRightWithMotion}
+        onDuplicateTabFile={handleDuplicateTabFile}
+        onOpenInOtherPane={openFileInOtherPane}
+        onRevealTabFile={handleRevealTabFile}
+        onRightPanelViewButton={handleRightPanelViewButton}
+        onSourceModeToggle={() => setIsSourceMode((value) => !value)}
+        onSplitToggle={toggleSplitWithMotion}
+        onTabClose={closeTabWithMotion}
+        onTabMove={moveTab}
+        onTabSelect={setTabActive}
+        onTogglePinTab={toggleTabPinned}
+        renderPanelTabIcon={renderPanelTabIcon}
+        rightClosingTabIds={rightClosingTabIds}
+        rightPane={rightPane}
+        rightPanelView={rightPanelView}
+        rightPanelWidth={rightPanelWidth}
+        showRightPanelControls={featureToggles.rightPanel}
+        tabs={tabs}
+      />
       <div className="workspace">
         <AppRail
           activePanelTabIds={activePanelTabIds}
@@ -677,19 +712,13 @@ export function App(): ReactElement {
           isSplit={isSplit}
           isSplitClosing={isSplitClosing}
           isTypewriterMode={isTypewriterMode}
-          leftClosingTabIds={leftClosingTabIds}
           leftEditorViewRef={leftEditorViewRef}
           leftPaneScrollHeading={leftPaneScrollHeading}
-          onCloseAllTabsInPane={closeAllTabsInPaneWithMotion}
-          onCloseOtherTabs={closeOtherTabsWithMotion}
-          onCloseTabsToRight={closeTabsToRightWithMotion}
           onCreateFile={handleCreateNoteFromPane}
-          onDuplicateTabFile={handleDuplicateTabFile}
           onEditorAction={() => setEditorActionPulse((value) => value + 1)}
           onFileSaveError={setWorkspaceError}
           onFileSaved={handleFileSaved}
           onOpenFile={handleOpenFile}
-          onOpenInOtherPane={openFileInOtherPane}
           onOpenLink={handleOpenMarkdownLink}
           onOpenWikiLink={handleOpenWikiLink}
           onOutlineHeadingClick={(heading) => {
@@ -697,9 +726,7 @@ export function App(): ReactElement {
             setScrollHeading(heading);
           }}
           onRenameFile={(path, name) => handleRenameTreeItem(path, "file", name)}
-          onRevealTabFile={handleRevealTabFile}
           onRightPanelResizeStart={startRightPanelResize}
-          onRightPanelViewButton={handleRightPanelViewButton}
           onScrollTargetHandled={(pane) => {
             if (pane === "left") {
               setLeftPaneScrollHeading(undefined);
@@ -709,25 +736,16 @@ export function App(): ReactElement {
             setRightPaneScrollHeading(undefined);
           }}
           onSetFocusedPane={setFocusedPane}
-          onSourceModeToggle={() => setIsSourceMode((value) => !value)}
-          onSplitToggle={toggleSplitWithMotion}
-          onTabClose={closeTabWithMotion}
-          onTabMove={moveTab}
-          onTabSelect={setTabActive}
-          onTogglePinTab={toggleTabPinned}
           outlineHeadings={outlineHeadings}
           outgoingLinks={outgoingLinks}
           outgoingLinksLimited={outgoingLinksLimited}
           renderChartTab={renderChartTab}
           renderPanelTab={renderPanelTab}
-          renderPanelTabIcon={renderPanelTabIcon}
-          rightClosingTabIds={rightClosingTabIds}
           rightEditorViewRef={rightEditorViewRef}
           rightPaneScrollHeading={rightPaneScrollHeading}
           rightPanelView={rightPanelView}
           rightPanelWidth={rightPanelWidth}
           setLinkContextMenu={setLinkContextMenu}
-          showRightPanelControls={featureToggles.rightPanel}
           userDefinedFields={userDefinedFields}
           workspacePath={workspaceState?.activeWorkspace?.path}
         />

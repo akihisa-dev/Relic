@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import type { MutableRefObject } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { EditorView } from "@codemirror/view";
@@ -17,15 +17,6 @@ const fileTab: Tab = {
   name: "Note",
   path: "Folder/Note.md",
   savedContent: "hello world"
-};
-
-const secondFileTab: Tab = {
-  content: "second",
-  id: "tab-second",
-  kind: "file",
-  name: "Second",
-  path: "Second.md",
-  savedContent: "second"
 };
 
 const panelTab: Tab = {
@@ -65,7 +56,6 @@ function setPaneState(tabs: Record<string, Tab>, leftPane: PaneState, rightPane:
 function renderPaneView(overrides: Partial<PaneViewProps> = {}): PaneViewProps {
   const props: PaneViewProps = {
     allFilePaths: [],
-    closingTabIds: new Set(),
     editorActionPulse: 0,
     editorSettings: defaultEditorSettings,
     focusedPane: "left",
@@ -74,29 +64,18 @@ function renderPaneView(overrides: Partial<PaneViewProps> = {}): PaneViewProps {
     pane: "left",
     renderChartTab: (chartId) => <div>Chart {chartId}</div>,
     renderPanelTab: (panel) => <div>Panel {panel}</div>,
-    renderPanelTabIcon: () => <svg data-testid="panel-tab-icon" />,
     sourceMode: false,
     typewriterMode: false,
     userDefinedFields: [],
     viewRef: { current: null } as MutableRefObject<EditorView | null>,
     workspacePath: "/workspace",
-    onCloseAllTabs: vi.fn(),
-    onCloseOtherTabs: vi.fn(),
-    onCloseTabsToRight: vi.fn(),
     onCreateFile: vi.fn(),
-    onDuplicateTabFile: vi.fn(),
     onFileSaved: vi.fn(),
     onFocus: vi.fn(),
-    onOpenInOtherPane: vi.fn(),
     onOpenLink: vi.fn(),
     onOpenWikiLink: vi.fn(),
     onRenameFile: vi.fn(),
-    onRevealTabFile: vi.fn(),
     onScrollTargetHandled: vi.fn(),
-    onTabClose: vi.fn(),
-    onTabMove: vi.fn(),
-    onTabSelect: vi.fn(),
-    onTogglePinTab: vi.fn(),
     scrollTargetHeading: undefined,
     ...overrides
   };
@@ -110,12 +89,6 @@ function renderPaneView(overrides: Partial<PaneViewProps> = {}): PaneViewProps {
   return props;
 }
 
-function tabElement(name: string): HTMLElement {
-  const tab = screen.getByText(name, { selector: ".pane-tab-name" }).closest(".pane-tab");
-  expect(tab).toBeInstanceOf(HTMLElement);
-  return tab as HTMLElement;
-}
-
 afterEach(() => {
   cleanup();
   resetStore();
@@ -123,73 +96,6 @@ afterEach(() => {
 });
 
 describe("PaneView", () => {
-  it("selects and closes tabs from the tab bar", () => {
-    setPaneState(
-      { [fileTab.id]: { ...fileTab, isPinned: true }, [secondFileTab.id]: secondFileTab },
-      { activeTabId: fileTab.id, history: [fileTab.id], tabIds: [fileTab.id, secondFileTab.id] }
-    );
-    const props = renderPaneView();
-
-    expect(within(tabElement("Note")).getByTestId("pane-tab-pin-icon")).toBeInTheDocument();
-    expect(tabElement("Note").firstElementChild).toBe(within(tabElement("Note")).getByTestId("pane-tab-pin-icon"));
-    expect(within(tabElement("Second")).queryByTestId("pane-tab-pin-icon")).toBeNull();
-
-    fireEvent.click(tabElement("Second"));
-    expect(props.onTabSelect).toHaveBeenCalledWith(secondFileTab.id);
-
-    fireEvent.click(screen.getAllByTitle("Close tab")[1]);
-    expect(props.onTabClose).toHaveBeenCalledWith(secondFileTab.id);
-  });
-
-  it("runs file tab context menu actions without changing menu labels or clipboard text", () => {
-    const writeText = vi.fn().mockResolvedValue(undefined);
-    Object.defineProperty(navigator, "clipboard", {
-      configurable: true,
-      value: { writeText }
-    });
-    setPaneState(
-      { [fileTab.id]: fileTab },
-      { activeTabId: fileTab.id, history: [fileTab.id], tabIds: [fileTab.id] }
-    );
-    const props = renderPaneView({ isSplitView: true });
-
-    fireEvent.contextMenu(tabElement("Note"), { clientX: 50, clientY: 60 });
-    fireEvent.click(screen.getByRole("button", { name: "Pin" }));
-    expect(props.onTogglePinTab).toHaveBeenCalledWith(fileTab.id);
-
-    fireEvent.contextMenu(tabElement("Note"), { clientX: 50, clientY: 60 });
-    fireEvent.click(screen.getByRole("button", { name: "Duplicate" }));
-    expect(props.onDuplicateTabFile).toHaveBeenCalledWith(fileTab.id);
-
-    fireEvent.contextMenu(tabElement("Note"), { clientX: 50, clientY: 60 });
-    fireEvent.click(screen.getByRole("button", { name: "Copy path" }));
-    expect(writeText).toHaveBeenCalledWith(fileTab.path);
-
-    fireEvent.contextMenu(tabElement("Note"), { clientX: 50, clientY: 60 });
-    fireEvent.click(screen.getByRole("button", { name: "Copy Markdown link" }));
-    expect(writeText).toHaveBeenCalledWith("[[Folder/Note]]");
-
-    fireEvent.contextMenu(tabElement("Note"), { clientX: 50, clientY: 60 });
-    fireEvent.click(screen.getByRole("button", { name: "Show in folder" }));
-    expect(props.onRevealTabFile).toHaveBeenCalledWith(fileTab.id);
-
-    fireEvent.contextMenu(tabElement("Note"), { clientX: 50, clientY: 60 });
-    fireEvent.click(screen.getByRole("button", { name: "Open in Other Pane" }));
-    expect(props.onOpenInOtherPane).toHaveBeenCalledWith(fileTab.id);
-
-    fireEvent.contextMenu(tabElement("Note"), { clientX: 50, clientY: 60 });
-    fireEvent.click(screen.getByRole("button", { name: "Close Other Tabs" }));
-    expect(props.onCloseOtherTabs).toHaveBeenCalledWith(fileTab.id);
-
-    fireEvent.contextMenu(tabElement("Note"), { clientX: 50, clientY: 60 });
-    fireEvent.click(screen.getByRole("button", { name: "Close Tabs to the Right" }));
-    expect(props.onCloseTabsToRight).toHaveBeenCalledWith(fileTab.id);
-
-    fireEvent.contextMenu(tabElement("Note"), { clientX: 50, clientY: 60 });
-    fireEvent.click(screen.getByRole("button", { name: "Close All Tabs" }));
-    expect(props.onCloseAllTabs).toHaveBeenCalled();
-  });
-
   it("renders file, panel, chart, and empty pane surfaces", () => {
     setPaneState(
       { [fileTab.id]: fileTab },
@@ -205,7 +111,6 @@ describe("PaneView", () => {
     );
     renderPaneView();
     expect(screen.getByText("Panel frontmatter")).toBeInTheDocument();
-    expect(screen.getByTestId("panel-tab-icon")).toBeInTheDocument();
 
     cleanup();
     setPaneState(
