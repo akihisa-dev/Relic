@@ -43,7 +43,8 @@ AIのセッション開始時は、`../AGENTS.md` から [project/overview.md](p
 | [development/phases/P0.md](development/phases/P0.md) | P0正本。開発環境再構築フェーズの記録と、旧フェーズ文書・旧日誌から統合した過去記録を含む |
 | [development/phases/P1.md](development/phases/P1.md) | P1正本。暦設定の実装フェーズの対象範囲、ルール、作業記録 |
 | [development/phases/P2.md](development/phases/P2.md) | P2正本。マークダウンエディタとファイルビュー関連フェーズの対象範囲、ルール、作業記録 |
-| [development/phases/P3.md](development/phases/P3.md) | 現在フェーズ正本。UI/UX改善フェーズの対象範囲、ルール、作業記録 |
+| [development/phases/P3.md](development/phases/P3.md) | P3正本。UI/UX改善フェーズの対象範囲、ルール、作業記録 |
+| [development/phases/P4.md](development/phases/P4.md) | 現在フェーズ正本。機能追加フェーズの対象範囲、ルール、作業記録 |
 | [development/questions.md](development/questions.md) | 未決定事項の正本 |
 | [development/coding-rules.md](development/coding-rules.md) | コーディング規約 |
 | [development/testing-rules.md](development/testing-rules.md) | テスト方針 |
