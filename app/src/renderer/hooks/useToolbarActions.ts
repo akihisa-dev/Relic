@@ -112,7 +112,7 @@ export function useToolbarActions({
       afterClose?.();
       setClosingPanel(null);
       closePanelTimerRef.current = null;
-    }, 160);
+    }, 130);
   };
 
   const closeHeadingMenu = (): void => closePanel("heading", () => setShowHeadingMenu(false));

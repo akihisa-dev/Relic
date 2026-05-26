@@ -66,7 +66,7 @@ export function QuickSwitcher({ aliasesByPath = {}, filePaths, onClose, onSelect
     closeTimerRef.current = window.setTimeout(() => {
       onClose();
       closeTimerRef.current = null;
-    }, 170);
+    }, 130);
   };
 
   useEffect(() => {

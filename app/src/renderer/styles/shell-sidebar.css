@@ -121,7 +121,7 @@
   gap: 8px;
   overflow: hidden;
   padding: 8px 8px 12px;
-  transition: width 180ms ease;
+  transition: width var(--motion-normal) var(--ease-standard);
   width: 48px;
   flex: 0 0 auto;
   z-index: 2;
@@ -143,7 +143,11 @@
   justify-content: flex-start;
   overflow: hidden;
   padding: 0 7px;
-  transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease, transform 120ms cubic-bezier(.18, 1.4, .28, 1);
+  transition:
+    background-color var(--motion-fast) var(--ease-standard),
+    border-color var(--motion-fast) var(--ease-standard),
+    color var(--motion-fast) var(--ease-standard),
+    transform var(--motion-fast) var(--ease-press);
   width: 100%;
 }
 
@@ -188,11 +192,11 @@
 }
 
 .rail-tab-flight--open {
-  animation: rail-tab-flight-open 340ms cubic-bezier(.2, .9, .18, 1) forwards;
+  animation: rail-tab-flight-open var(--motion-slow) var(--ease-enter) forwards;
 }
 
 .rail-tab-flight--close {
-  animation: rail-tab-flight-close 340ms cubic-bezier(.16, .68, .2, 1) forwards;
+  animation: rail-tab-flight-close var(--motion-normal) var(--ease-exit) forwards;
   border-radius: 6px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
   transform-origin: center bottom;
@@ -215,7 +219,7 @@
   top: 0;
   white-space: nowrap;
   z-index: 10000;
-  animation: sidebar-create-flight 300ms cubic-bezier(.2, .9, .18, 1) forwards;
+  animation: sidebar-create-flight var(--motion-slow) var(--ease-enter) forwards;
 }
 
 .rail-button-label {
@@ -227,7 +231,9 @@
   opacity: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  transition: max-width 160ms ease, opacity 120ms ease;
+  transition:
+    max-width var(--motion-normal) var(--ease-standard),
+    opacity var(--motion-fast) var(--ease-standard);
   white-space: nowrap;
 }
 
@@ -262,7 +268,10 @@
   min-width: 180px;
   overflow: hidden;
   position: relative;
-  transition: width 280ms cubic-bezier(.22, 1, .36, 1), background-color 220ms ease, border-color 220ms ease;
+  transition:
+    width var(--motion-slow) var(--ease-enter),
+    background-color var(--motion-normal) var(--ease-standard),
+    border-color var(--motion-normal) var(--ease-standard);
   will-change: width;
 }
 
@@ -274,7 +283,9 @@
 
 .sidebar--resizing {
   border-right-color: var(--accent);
-  transition: background-color 120ms ease, border-color 120ms ease;
+  transition:
+    background-color var(--motion-fast) var(--ease-standard),
+    border-color var(--motion-fast) var(--ease-standard);
 }
 
 .sidebar > .sidebar-header,
@@ -282,17 +293,20 @@
   opacity: 1;
   transform: translateX(0) scaleX(1);
   transform-origin: left center;
-  transition: opacity 180ms ease, transform 240ms cubic-bezier(.22, 1, .36, 1);
+  transition:
+    opacity var(--motion-normal) var(--ease-standard) 60ms,
+    transform var(--motion-normal) var(--ease-enter) 60ms;
 }
 
 .sidebar--closed > .sidebar-header,
 .sidebar--closed > .sidebar-body {
   opacity: 0;
+  transition-delay: 0ms;
   transform: translateX(-12px) scaleX(0.97);
 }
 
 .sidebar-view-content {
-  animation: sidebar-view-in 170ms cubic-bezier(.22, 1, .36, 1);
+  animation: sidebar-view-in var(--motion-normal) var(--ease-enter);
   transform-origin: left center;
 }
 
@@ -429,7 +443,7 @@
   opacity: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  transition: opacity 120ms ease;
+  transition: opacity var(--motion-fast) var(--ease-standard);
   white-space: nowrap;
 }
 
@@ -459,7 +473,11 @@
   min-height: 0;
   opacity: 0;
   padding: 0;
-  transition: opacity 120ms ease, color 120ms ease, background-color 120ms ease;
+  transition:
+    opacity var(--motion-fast) var(--ease-standard),
+    color var(--motion-fast) var(--ease-standard),
+    background-color var(--motion-fast) var(--ease-standard),
+    transform var(--motion-fast) var(--ease-press);
   width: 24px;
 }
 
@@ -471,4 +489,8 @@
 .workspace-switcher-remove:hover {
   background: var(--hover);
   color: var(--text);
+}
+
+.workspace-switcher-remove:active {
+  transform: translateY(1px) scale(0.985);
 }

@@ -322,7 +322,6 @@ export function App(): ReactElement {
     closeTabsToRight,
     leftPane,
     rightPane,
-    showRailTabFlight,
     tabs
   });
 

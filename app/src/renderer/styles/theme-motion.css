@@ -155,7 +155,7 @@
 
 .toast {
   align-items: center;
-  animation: toast-in 180ms cubic-bezier(.18, 1.2, .28, 1);
+  animation: toast-in var(--motion-normal) var(--ease-enter);
   background: var(--popup-bg);
   backdrop-filter: blur(12px);
   border: 1px solid var(--border-soft);
@@ -176,7 +176,7 @@
 .toast--error { border-left: 3px solid var(--error); color: var(--error); }
 .toast--info { border-left: 3px solid var(--text-3); color: var(--text); }
 .toast--closing {
-  animation: toast-out 160ms cubic-bezier(.4, 0, .2, 1) forwards;
+  animation: toast-out var(--motion-fast) var(--ease-exit) forwards;
 }
 
 .error-note {
@@ -212,6 +212,8 @@
   .links-panel-stack,
   .sidebar,
   .sidebar-resize-handle,
+  .workspace-switcher-name,
+  .workspace-switcher-remove,
   .toolbar-dropdown-menu,
   .toolbar-inline-dialog,
   .toolbar-panel--closing,
@@ -250,7 +252,14 @@
   .cm-frontmatter-checkbox,
   .cm-frontmatter-remove,
   .cm-frontmatter-pill-remove,
+  .cm-frontmatter-pill-add,
   .search-result-button {
+    transition-duration: 1ms;
+  }
+
+  .settings-segmented-indicator,
+  .settings-segmented-button,
+  .frontmatter-field-collapse-summary::before {
     transition-duration: 1ms;
   }
 }

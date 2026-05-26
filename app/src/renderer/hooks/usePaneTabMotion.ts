@@ -2,9 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { PaneId, PaneState, Tab } from "../store/editorStore";
 import { useEditorStore } from "../store/editorStore";
-import type { RailTabFlight } from "./useRailFlights";
 
-const TAB_CLOSE_MOTION_MS = 180;
+const TAB_CLOSE_MOTION_MS = 210;
 
 const paneTabMotionKey = (pane: PaneId, tabId: string): string => `${pane}:${tabId}`;
 
@@ -16,7 +15,6 @@ interface UsePaneTabMotionInput {
   closeTabsToRight: (pane: PaneId, tabId: string) => void;
   leftPane: PaneState;
   rightPane: PaneState;
-  showRailTabFlight: (flight: RailTabFlight, duration?: number) => void;
   tabs: Record<string, Tab>;
 }
 
@@ -27,7 +25,6 @@ export function usePaneTabMotion({
   closeTabsToRight,
   leftPane,
   rightPane,
-  showRailTabFlight,
   tabs,
   beforeCloseTabs
 }: UsePaneTabMotionInput): {
@@ -60,25 +57,6 @@ export function usePaneTabMotion({
     }
   }, []);
 
-  const startTabCloseFlight = useCallback((tabId: string): void => {
-    const tab = useEditorStore.getState().tabs[tabId];
-    if (!tab) return;
-
-    const tabElement = document.querySelector<HTMLElement>(`.pane-tab[data-tab-id="${tabId}"]`);
-    if (!tabElement) return;
-
-    const tabRect = tabElement.getBoundingClientRect();
-
-    showRailTabFlight({
-      direction: "close",
-      fromX: tabRect.left + tabRect.width / 2,
-      fromY: tabRect.top + tabRect.height / 2,
-      label: tab.name,
-      toX: tabRect.left + tabRect.width / 2,
-      toY: tabRect.top + tabRect.height / 2 + 2
-    }, 260);
-  }, [showRailTabFlight]);
-
   const closeTabWithMotion = useCallback((pane: PaneId, tabId: string): void => {
     if (!useEditorStore.getState().tabs[tabId]) return;
 
@@ -93,14 +71,12 @@ export function usePaneTabMotion({
       return new Set(current).add(key);
     });
 
-    startTabCloseFlight(tabId);
-
     closeMotionTimersRef.current[key] = setTimeout(() => {
       closeTab(pane, tabId);
       clearClosingPaneTabs([key]);
     }, TAB_CLOSE_MOTION_MS);
     });
-  }, [beforeCloseTabs, clearClosingPaneTabs, closeTab, closingPaneTabs, startTabCloseFlight]);
+  }, [beforeCloseTabs, clearClosingPaneTabs, closeTab, closingPaneTabs]);
 
   const closeTabsWithMotion = useCallback((pane: PaneId, tabIds: string[], closeAction: () => void): void => {
     const targetKeys = tabIds

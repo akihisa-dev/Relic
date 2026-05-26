@@ -424,7 +424,7 @@
 }
 
 .cm-frontmatter-properties {
-  animation: frontmatter-panel-in 180ms cubic-bezier(.22, 1, .36, 1);
+  animation: frontmatter-panel-in var(--motion-normal) var(--ease-enter);
   align-items: flex-start;
   color: var(--text);
   display: inline-flex;
@@ -457,7 +457,9 @@
   min-height: 0;
   padding: 0;
   transform-origin: left center;
-  transition: color 140ms ease, transform 120ms cubic-bezier(.18, 1.35, .28, 1);
+  transition:
+    color var(--motion-fast) var(--ease-standard),
+    transform var(--motion-fast) var(--ease-press);
 }
 
 .cm-frontmatter-header:hover {
@@ -473,7 +475,9 @@
   color: var(--text-3);
   display: inline-flex;
   transform: rotate(0deg);
-  transition: color 140ms ease, transform 170ms cubic-bezier(.18, 1.35, .28, 1);
+  transition:
+    color var(--motion-fast) var(--ease-standard),
+    transform var(--motion-normal) var(--ease-enter);
   width: 14px;
 }
 
@@ -488,14 +492,16 @@
 
 .cm-frontmatter-row {
   align-items: flex-start;
-  animation: frontmatter-row-in 170ms cubic-bezier(.22, 1, .36, 1);
+  animation: frontmatter-row-in var(--motion-normal) var(--ease-enter);
   display: grid;
   gap: 12px;
   grid-template-columns: 24px 180px minmax(0, 1fr) 24px;
   min-height: 1.45em;
   min-width: min(760px, 100%);
   transform-origin: left center;
-  transition: background-color 120ms ease, transform 120ms cubic-bezier(.18, 1.35, .28, 1);
+  transition:
+    background-color var(--motion-fast) var(--ease-standard),
+    transform var(--motion-fast) var(--ease-press);
 }
 
 .cm-frontmatter-row:hover {
@@ -515,12 +521,14 @@
   color: var(--text-3);
   font-size: 16px;
   text-align: center;
-  transition: color 140ms ease, transform 140ms cubic-bezier(.18, 1.35, .28, 1);
+  transition:
+    color var(--motion-fast) var(--ease-standard),
+    transform var(--motion-fast) var(--ease-press);
 }
 
 .cm-frontmatter-row:hover .cm-frontmatter-row-icon {
   color: var(--accent);
-  transform: scale(1.08);
+  transform: scale(1.04);
 }
 
 .cm-frontmatter-key {
@@ -540,7 +548,10 @@
   outline: none;
   line-height: 1.35;
   padding: 0;
-  transition: color 140ms ease, box-shadow 140ms ease, transform 120ms cubic-bezier(.18, 1.35, .28, 1);
+  transition:
+    color var(--motion-fast) var(--ease-standard),
+    box-shadow var(--motion-fast) var(--ease-standard),
+    transform var(--motion-fast) var(--ease-press);
 }
 
 .cm-frontmatter-input:focus,
@@ -589,7 +600,10 @@
   outline: none;
   padding: 2px 0;
   resize: vertical;
-  transition: box-shadow 140ms ease, color 140ms ease, transform 120ms cubic-bezier(.18, 1.35, .28, 1);
+  transition:
+    box-shadow var(--motion-fast) var(--ease-standard),
+    color var(--motion-fast) var(--ease-standard),
+    transform var(--motion-fast) var(--ease-press);
   width: 100%;
 }
 
@@ -614,11 +628,11 @@
 
 .cm-frontmatter-checkbox {
   accent-color: var(--accent);
-  transition: transform 120ms cubic-bezier(.18, 1.35, .28, 1);
+  transition: transform var(--motion-fast) var(--ease-press);
 }
 
 .cm-frontmatter-checkbox:active {
-  transform: scale(0.86);
+  transform: scale(0.94);
 }
 
 .cm-frontmatter-remove {
@@ -632,7 +646,10 @@
   height: 24px;
   justify-content: center;
   padding: 0;
-  transition: background-color 120ms ease, color 120ms ease, transform 120ms cubic-bezier(.18, 1.35, .28, 1);
+  transition:
+    background-color var(--motion-fast) var(--ease-standard),
+    color var(--motion-fast) var(--ease-standard),
+    transform var(--motion-fast) var(--ease-press);
   width: 24px;
 }
 
@@ -642,7 +659,7 @@
 }
 
 .cm-frontmatter-remove:active {
-  transform: scale(0.82);
+  transform: scale(0.94);
 }
 
 .cm-frontmatter-add {
@@ -656,7 +673,10 @@
   height: 24px;
   justify-content: center;
   padding: 0;
-  transition: background-color 120ms ease, color 120ms ease, transform 120ms cubic-bezier(.18, 1.35, .28, 1);
+  transition:
+    background-color var(--motion-fast) var(--ease-standard),
+    color var(--motion-fast) var(--ease-standard),
+    transform var(--motion-fast) var(--ease-press);
   width: 24px;
 }
 
@@ -666,7 +686,7 @@
 }
 
 .cm-frontmatter-add:active {
-  transform: scale(0.82);
+  transform: scale(0.94);
 }
 
 .cm-frontmatter-pills {
@@ -679,7 +699,7 @@
 
 .cm-frontmatter-pill {
   align-items: center;
-  animation: frontmatter-pill-in 160ms cubic-bezier(.18, 1.25, .28, 1);
+  animation: frontmatter-pill-in var(--motion-normal) var(--ease-enter);
   background: var(--hover);
   border-radius: 999px;
   color: var(--text);
@@ -690,7 +710,9 @@
   line-height: 1.2;
   padding: 1px 4px 1px 8px;
   transform-origin: left center;
-  transition: background-color 120ms ease, transform 120ms cubic-bezier(.18, 1.35, .28, 1);
+  transition:
+    background-color var(--motion-fast) var(--ease-standard),
+    transform var(--motion-fast) var(--ease-press);
 }
 
 .cm-frontmatter-pill:hover {
@@ -706,7 +728,9 @@
   min-width: 24px;
   outline: none;
   padding: 0;
-  transition: box-shadow 140ms ease, transform 120ms cubic-bezier(.18, 1.35, .28, 1);
+  transition:
+    box-shadow var(--motion-fast) var(--ease-standard),
+    transform var(--motion-fast) var(--ease-press);
   width: min(18ch, 100%);
 }
 
@@ -721,7 +745,10 @@
   height: 18px;
   justify-content: center;
   padding: 0;
-  transition: background-color 120ms ease, color 120ms ease, transform 120ms cubic-bezier(.18, 1.35, .28, 1);
+  transition:
+    background-color var(--motion-fast) var(--ease-standard),
+    color var(--motion-fast) var(--ease-standard),
+    transform var(--motion-fast) var(--ease-press);
   width: 18px;
 }
 
@@ -731,7 +758,7 @@
 }
 
 .cm-frontmatter-pill-remove:active {
-  transform: scale(0.82);
+  transform: scale(0.94);
 }
 
 .cm-frontmatter-pill-input {
@@ -800,7 +827,10 @@
   justify-content: center;
   min-height: 20px;
   padding: 0;
-  transition: background-color 120ms ease, color 120ms ease, transform 120ms cubic-bezier(.18, 1.35, .28, 1);
+  transition:
+    background-color var(--motion-fast) var(--ease-standard),
+    color var(--motion-fast) var(--ease-standard),
+    transform var(--motion-fast) var(--ease-press);
   width: 20px;
 }
 
@@ -810,7 +840,7 @@
 }
 
 .cm-frontmatter-pill-add:active {
-  transform: scale(0.82);
+  transform: scale(0.94);
 }
 
 .cm-live-table {
@@ -1161,7 +1191,10 @@
   position: absolute;
   right: 0;
   top: 0;
-  transition: background-color 120ms ease, box-shadow 120ms ease, transform 120ms cubic-bezier(.18, 1.35, .28, 1);
+  transition:
+    background-color var(--motion-fast) var(--ease-standard),
+    box-shadow var(--motion-fast) var(--ease-standard),
+    transform var(--motion-fast) var(--ease-press);
   width: 8px;
   z-index: 20;
 }
