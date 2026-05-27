@@ -1,4 +1,4 @@
-export type MermaidDirection = "TD" | "LR";
+export type MermaidDirection = "TD" | "LR" | "TB" | "BT" | "RL";
 export type MermaidNodeShape = "rectangle" | "diamond" | "circle";
 
 export interface MermaidNode {
@@ -23,7 +23,16 @@ export interface MermaidMarkdownBlock {
   from: number;
   index: number;
   source: string;
+  sourceHash: string;
   to: number;
+}
+
+export interface MermaidMarkdownBlockReference {
+  blockFrom: number;
+  blockIndex: number;
+  blockTo: number;
+  source: string;
+  sourceHash: string;
 }
 
 export type MermaidFlowchartParseResult =
@@ -42,6 +51,8 @@ interface MarkdownLine {
 }
 
 const nodeIdPattern = "[A-Za-z_][A-Za-z0-9_-]*";
+const supportedMermaidDirections: MermaidDirection[] = ["TD", "LR", "TB", "BT", "RL"];
+const directionPattern = supportedMermaidDirections.join("|");
 const nodeIdRegex = new RegExp(`^${nodeIdPattern}$`);
 const edgeRegex = /^(.+?)\s*-->\s*(?:\|([^|]*)\|\s*)?(.+)$/;
 const rectangleRegex = new RegExp(`^(${nodeIdPattern})\\s*\\[([^\\]]*)\\]$`);
@@ -60,15 +71,17 @@ export function findMermaidMarkdownBlocks(markdown: string): MermaidMarkdownBloc
       const closingLine = lines[closingIndex];
       if (!/^\s*```\s*$/.test(closingLine.text)) continue;
 
-      const sourceFrom = lines[index + 1]?.start ?? openingLine.contentEnd;
-      const sourceTo = closingIndex > index + 1
+      const contentFrom = lines[index + 1]?.start ?? openingLine.contentEnd;
+      const contentTo = closingIndex > index + 1
         ? lines[closingIndex - 1].contentEnd
-        : sourceFrom;
+        : contentFrom;
+      const source = markdown.slice(contentFrom, contentTo);
 
       blocks.push({
         from: openingLine.start,
         index: blocks.length,
-        source: markdown.slice(sourceFrom, sourceTo),
+        source,
+        sourceHash: hashMermaidSource(source),
         to: closingLine.contentEnd
       });
       index = closingIndex;
@@ -83,7 +96,7 @@ export function parseMermaidFlowchart(source: string): MermaidFlowchartParseResu
   const statements = mermaidStatements(source);
   if (statements.length === 0) return { ok: false, reason: "empty" };
 
-  const headerMatch = /^(?:flowchart|graph)\s+(TD|LR)$/.exec(statements[0]);
+  const headerMatch = new RegExp(`^(?:flowchart|graph)\\s+(${directionPattern})$`).exec(statements[0]);
   if (!headerMatch) return { ok: false, reason: "unsupported" };
 
   const nodes = new Map<string, ParsedMermaidNode>();
@@ -138,12 +151,27 @@ export function buildMermaidSource(model: MermaidFlowchartModel): string {
   ].join("\n");
 }
 
+export function hashMermaidSource(source: string): string {
+  let hash = 0x811c9dc5;
+
+  for (let index = 0; index < source.length; index += 1) {
+    hash ^= source.charCodeAt(index);
+    hash = Math.imul(hash, 0x01000193);
+  }
+
+  return (hash >>> 0).toString(16).padStart(8, "0");
+}
+
+export function formatMermaidMarkdownBlock(source: string): string {
+  return `\`\`\`mermaid\n${source}\n\`\`\``;
+}
+
 export function replaceMermaidMarkdownBlock(
   markdown: string,
   block: Pick<MermaidMarkdownBlock, "from" | "to">,
   source: string
 ): string {
-  return `${markdown.slice(0, block.from)}\`\`\`mermaid\n${source}\n\`\`\`${markdown.slice(block.to)}`;
+  return `${markdown.slice(0, block.from)}${formatMermaidMarkdownBlock(source)}${markdown.slice(block.to)}`;
 }
 
 export function appendMermaidMarkdownBlock(markdown: string, source: string): string {
@@ -156,6 +184,27 @@ export function appendMermaidMarkdownBlock(markdown: string, source: string): st
         : "\n\n";
 
   return `${markdown}${separator}\`\`\`mermaid\n${source}\n\`\`\`\n`;
+}
+
+export function resolveMermaidMarkdownBlock(
+  blocks: MermaidMarkdownBlock[],
+  reference: MermaidMarkdownBlockReference
+): MermaidMarkdownBlock | null {
+  const indexedBlock = blocks[reference.blockIndex];
+  if (indexedBlock && mermaidBlockSourceMatches(indexedBlock, reference)) return indexedBlock;
+
+  const nearbyBlocks = blocks
+    .map((block) => ({ block, distance: mermaidBlockDistance(block, reference) }))
+    .filter(({ block, distance }) => (
+      distance <= 400 && mermaidSourcesLookRelated(block.source, reference.source)
+    ))
+    .sort((left, right) => left.distance - right.distance);
+  const nearestDistance = nearbyBlocks[0]?.distance;
+  const nearestBlocks = nearbyBlocks.filter(({ distance }) => distance === nearestDistance);
+  if (nearestBlocks.length === 1) return nearestBlocks[0].block;
+
+  const exactSourceBlocks = blocks.filter((block) => block.source === reference.source);
+  return exactSourceBlocks.length === 1 ? exactSourceBlocks[0] : null;
 }
 
 export function createEmptyMermaidFlowchart(direction: MermaidDirection = "TD"): MermaidFlowchartModel {
@@ -280,6 +329,44 @@ function markdownLines(markdown: string): MarkdownLine[] {
   }
 
   return lines;
+}
+
+function mermaidBlockSourceMatches(
+  block: MermaidMarkdownBlock,
+  reference: MermaidMarkdownBlockReference
+): boolean {
+  return block.source === reference.source || block.sourceHash === reference.sourceHash;
+}
+
+function mermaidBlockDistance(
+  block: MermaidMarkdownBlock,
+  reference: MermaidMarkdownBlockReference
+): number {
+  if (block.from <= reference.blockTo && block.to >= reference.blockFrom) return 0;
+
+  return Math.min(
+    Math.abs(block.from - reference.blockFrom),
+    Math.abs(block.to - reference.blockTo)
+  );
+}
+
+function mermaidSourcesLookRelated(left: string, right: string): boolean {
+  if (left === right) return true;
+
+  const leftTokens = mermaidSourceTokens(left);
+  const rightTokens = mermaidSourceTokens(right);
+  if (leftTokens.size === 0 || rightTokens.size === 0) return false;
+
+  let shared = 0;
+  leftTokens.forEach((token) => {
+    if (rightTokens.has(token)) shared += 1;
+  });
+
+  return shared / Math.max(leftTokens.size, rightTokens.size) > 0.55;
+}
+
+function mermaidSourceTokens(source: string): Set<string> {
+  return new Set(source.split(/[^A-Za-z0-9_\-\u3040-\u30ff\u3400-\u9fff]+/u).filter(Boolean));
 }
 
 function shapeSource(shape: MermaidNodeShape, label: string): string {

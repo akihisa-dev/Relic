@@ -41,15 +41,18 @@ interface MermaidVisualEditorProps {
     from: number;
     to: number;
   };
+  externalError?: string | null;
   filePath: string;
-  onChange: (source: string) => void;
+  onChange: (source: string) => boolean | void;
   source: string;
 }
 
 const shapeOptions: MermaidNodeShape[] = ["rectangle", "diamond", "circle"];
+const directionOptions: MermaidDirection[] = ["TD", "LR", "TB", "BT", "RL"];
 
 export function MermaidVisualEditor({
   blockRange,
+  externalError,
   filePath,
   onChange,
   source
@@ -61,6 +64,7 @@ export function MermaidVisualEditor({
   const [nodeIdDraft, setNodeIdDraft] = useState("");
   const [nodeIdError, setNodeIdError] = useState<string | null>(null);
   const [connectionDraft, setConnectionDraft] = useState<NewConnectionDraft | null>(null);
+  const [savedSource, setSavedSource] = useState<string | null>(null);
   const lastWrittenSourceRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -72,6 +76,7 @@ export function MermaidVisualEditor({
     setNodeIdDraft("");
     setNodeIdError(null);
     setConnectionDraft(null);
+    setSavedSource(null);
   }, [source]);
 
   const parseResult = useMemo(() => parseMermaidFlowchart(workingSource), [workingSource]);
@@ -113,14 +118,18 @@ export function MermaidVisualEditor({
     }
   }, [model, selection]);
 
-  const commitSource = (nextSource: string): void => {
+  const commitSource = (nextSource: string): boolean => {
+    const result = onChange(nextSource);
+    if (result === false) return false;
+
     lastWrittenSourceRef.current = nextSource;
     setWorkingSource(nextSource);
-    onChange(nextSource);
+    setSavedSource(nextSource);
+    return true;
   };
 
-  const commitModel = (nextModel: MermaidFlowchartModel): void => {
-    commitSource(buildMermaidSource(nextModel));
+  const commitModel = (nextModel: MermaidFlowchartModel): boolean => {
+    return commitSource(buildMermaidSource(nextModel));
   };
 
   const updateDirection = (direction: MermaidDirection): void => {
@@ -158,10 +167,11 @@ export function MermaidVisualEditor({
       return;
     }
 
-    commitModel({
+    const didSave = commitModel({
       ...model,
       nodes: [...model.nodes, { id, label, shape: nodeDraft.shape }]
     });
+    if (!didSave) return;
     setNodeDraft(null);
     setSelection({ id, type: "node" });
   };
@@ -169,13 +179,14 @@ export function MermaidVisualEditor({
   const deleteSelectedNode = (): void => {
     if (!model || !selectedNode) return;
 
-    commitModel({
+    const didSave = commitModel({
       ...model,
       connections: model.connections.filter((connection) => (
         connection.from !== selectedNode.id && connection.to !== selectedNode.id
       )),
       nodes: model.nodes.filter((node) => node.id !== selectedNode.id)
     });
+    if (!didSave) return;
     setSelection(null);
   };
 
@@ -202,7 +213,7 @@ export function MermaidVisualEditor({
       return;
     }
 
-    commitModel({
+    const didSave = commitModel({
       ...model,
       connections: model.connections.map((connection) => ({
         ...connection,
@@ -213,6 +224,7 @@ export function MermaidVisualEditor({
         node.id === selectedNode.id ? { ...node, id: nextId } : node
       ))
     });
+    if (!didSave) return;
     setSelection({ id: nextId, type: "node" });
     setNodeIdError(null);
   };
@@ -259,10 +271,11 @@ export function MermaidVisualEditor({
       return;
     }
 
-    commitModel({
+    const didSave = commitModel({
       ...model,
       connections: [...model.connections, nextConnection]
     });
+    if (!didSave) return;
     setSelection({ index: model.connections.length, type: "connection" });
     setConnectionDraft(null);
   };
@@ -270,10 +283,11 @@ export function MermaidVisualEditor({
   const deleteSelectedConnection = (): void => {
     if (!model || selection?.type !== "connection") return;
 
-    commitModel({
+    const didSave = commitModel({
       ...model,
       connections: model.connections.filter((_connection, index) => index !== selection.index)
     });
+    if (!didSave) return;
     setSelection(null);
   };
 
@@ -294,7 +308,9 @@ export function MermaidVisualEditor({
   };
 
   const handleSourceChange = (event: ChangeEvent<HTMLTextAreaElement>): void => {
-    commitSource(event.target.value);
+    const didSave = commitSource(event.target.value);
+    if (!didSave) return;
+
     setSelection(null);
     setNodeDraft(null);
     setNodeIdDraft("");
@@ -312,7 +328,11 @@ export function MermaidVisualEditor({
         <div className="mermaid-visual-context">
           <span>{filePath}</span>
           <span>{t("mermaidEditor.blockRange", { from: blockRange.from, to: blockRange.to })}</span>
-          <strong>{t("mermaidEditor.savedToMarkdown")}</strong>
+          {externalError ? (
+            <strong className="mermaid-visual-context-error" role="alert">{externalError}</strong>
+          ) : savedSource === workingSource ? (
+            <strong>{t("mermaidEditor.savedToMarkdown")}</strong>
+          ) : null}
         </div>
       </header>
 
@@ -393,8 +413,9 @@ export function MermaidVisualEditor({
               onChange={(event) => updateDirection(event.target.value as MermaidDirection)}
               value={model?.direction ?? "TD"}
             >
-              <option value="TD">TD</option>
-              <option value="LR">LR</option>
+              {directionOptions.map((direction) => (
+                <option key={direction} value={direction}>{direction}</option>
+              ))}
             </select>
           </label>
         </div>
@@ -439,6 +460,7 @@ function MermaidRenderedPreview({
   source: string;
 }): ReactElement {
   const previewRef = useRef<HTMLDivElement>(null);
+  const renderRequestIdRef = useRef(0);
   const selectionKey = selection?.type === "node"
     ? `node:${selection.id}`
     : selection?.type === "connection"
@@ -450,15 +472,20 @@ function MermaidRenderedPreview({
     const container = previewRef.current;
     if (!container) return;
 
-    let cancelled = false;
+    const requestId = renderRequestIdRef.current + 1;
+    renderRequestIdRef.current = requestId;
+    let active = true;
     container.replaceChildren(buildMermaidFallback(source));
-    void renderMermaidElement(container, source).then((handle) => {
-      if (cancelled || !handle || !model) return;
-      wireMermaidPreviewSelection(container, model, selection, connectionDraft, onNodeSelect, onConnectionSelect);
-    });
+    const timeoutId = window.setTimeout(() => {
+      void renderMermaidElement(container, source).then((handle) => {
+        if (!active || renderRequestIdRef.current !== requestId || !handle || !model) return;
+        wireMermaidPreviewSelection(container, model, selection, connectionDraft, onNodeSelect, onConnectionSelect);
+      });
+    }, 120);
 
     return () => {
-      cancelled = true;
+      active = false;
+      window.clearTimeout(timeoutId);
     };
   }, [connectionDraftKey, model, onConnectionSelect, onNodeSelect, selectionKey, source]);
 

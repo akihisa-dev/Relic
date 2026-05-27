@@ -19,6 +19,7 @@ import {
   MermaidBlockWidget
 } from "./editorLivePreviewWidgets";
 import { findTableBlocks } from "./editorTables";
+import { findMermaidMarkdownBlocks } from "./mermaidFlowchart";
 import { isMermaidLanguage } from "./mermaidPreview";
 
 export { findClickableLinkAtPosition, type ClickableLinkAtPosition } from "./editorLivePreviewModel";
@@ -34,6 +35,9 @@ export function buildLivePreviewDecorations(
 
   const ranges: { from: number; to: number; deco: Decoration }[] = [];
   const tableBlocks = findTableBlocks(state);
+  const mermaidBlockIndexByFrom = new Map(
+    findMermaidMarkdownBlocks(doc.toString()).map((block) => [block.from, block.index])
+  );
   const frontmatterLineRange = findFrontmatterLineRange(doc);
   const sourceRevealRanges: SourceRevealRange[] = [];
 
@@ -161,12 +165,6 @@ export function buildLivePreviewDecorations(
           if (closingLineNumber) {
             const blockFrom = line.from;
             const blockTo = doc.line(closingLineNumber).to;
-            const sourceFrom = closingLineNumber > lineNumber + 1
-              ? doc.line(lineNumber + 1).from
-              : line.to;
-            const sourceTo = closingLineNumber > lineNumber + 1
-              ? doc.line(closingLineNumber - 1).to
-              : sourceFrom;
             const editCursor = closingLineNumber > lineNumber + 1
               ? doc.line(lineNumber + 1).from
               : line.to;
@@ -177,10 +175,9 @@ export function buildLivePreviewDecorations(
                 line.to,
                 new MermaidBlockWidget(
                   codeBlockSource(lineNumber, closingLineNumber),
+                  mermaidBlockIndexByFrom.get(blockFrom) ?? 0,
                   blockFrom,
                   blockTo,
-                  sourceFrom,
-                  sourceTo,
                   editCursor
                 )
               );

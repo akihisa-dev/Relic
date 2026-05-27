@@ -87,7 +87,7 @@ describe("App", () => {
     expect(screen.queryByRole("button", { name: "Mermaid編集" })).toBeNull();
 
     await waitFor(() => expect(container.querySelector(".cm-live-mermaid-visual-edit-button")).not.toBeNull());
-    expect(container.querySelector(".cm-live-mermaid-visual-edit-button")?.textContent).toBe("Mermaidを編集");
+    expect(container.querySelector(".cm-live-mermaid-visual-edit-button")?.textContent).toBe("Mermaidを図で編集");
   });
 
   it("ファイルツリーのノートをクリックするとタブが開く", async () => {

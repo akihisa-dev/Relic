@@ -90,6 +90,10 @@
   font-weight: 600;
 }
 
+.mermaid-visual-context-error {
+  color: var(--danger, #b42318) !important;
+}
+
 .mermaid-editor-page-header {
   margin-bottom: 14px;
 }

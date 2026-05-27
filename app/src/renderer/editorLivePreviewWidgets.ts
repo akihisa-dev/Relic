@@ -2,6 +2,7 @@ import { WidgetType } from "@codemirror/view";
 import type { EditorView } from "@codemirror/view";
 
 import { enterMermaidSourceEdit } from "./editorMermaidEditState";
+import { hashMermaidSource } from "./mermaidFlowchart";
 import { dispatchMermaidVisualEditRequest } from "./mermaidVisualEditEvent";
 import { buildMermaidFallback, renderMermaidElement, type MermaidRenderHandle } from "./mermaidPreview";
 
@@ -116,10 +117,9 @@ export class MermaidBlockWidget extends WidgetType {
 
   constructor(
     private readonly source: string,
+    private readonly blockIndex: number,
     private readonly blockFrom: number,
     private readonly blockTo: number,
-    private readonly sourceFrom: number,
-    private readonly sourceTo: number,
     private readonly editCursor: number
   ) {
     super();
@@ -127,10 +127,9 @@ export class MermaidBlockWidget extends WidgetType {
 
   eq(other: MermaidBlockWidget): boolean {
     return this.source === other.source &&
+      this.blockIndex === other.blockIndex &&
       this.blockFrom === other.blockFrom &&
       this.blockTo === other.blockTo &&
-      this.sourceFrom === other.sourceFrom &&
-      this.sourceTo === other.sourceTo &&
       this.editCursor === other.editCursor;
   }
 
@@ -173,19 +172,19 @@ export class MermaidBlockWidget extends WidgetType {
     const visualEditButton = document.createElement("button");
     visualEditButton.type = "button";
     visualEditButton.className = "cm-live-mermaid-visual-edit-button";
-    visualEditButton.textContent = "Mermaidを編集";
-    visualEditButton.setAttribute("aria-label", "このMermaidブロックを編集");
+    visualEditButton.textContent = "Mermaidを図で編集";
+    visualEditButton.setAttribute("aria-label", "このMermaidブロックを図から編集");
     visualEditButton.addEventListener("click", (event) => {
       event.preventDefault();
       event.stopPropagation();
       event.stopImmediatePropagation();
       dispatchMermaidVisualEditRequest(container, {
+        blockIndex: this.blockIndex,
         blockFrom: this.blockFrom,
         blockTo: this.blockTo,
         editCursor: this.editCursor,
         source: this.source,
-        sourceFrom: this.sourceFrom,
-        sourceTo: this.sourceTo
+        sourceHash: hashMermaidSource(this.source)
       });
     });
     toolbar.append(fitButton, visualEditButton, editButton);

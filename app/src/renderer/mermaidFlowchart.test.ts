@@ -4,8 +4,10 @@ import {
   appendMermaidMarkdownBlock,
   buildMermaidSource,
   findMermaidMarkdownBlocks,
+  hashMermaidSource,
   parseMermaidFlowchart,
-  replaceMermaidMarkdownBlock
+  replaceMermaidMarkdownBlock,
+  resolveMermaidMarkdownBlock
 } from "./mermaidFlowchart";
 
 const reproductionMermaid = [
@@ -91,6 +93,29 @@ describe("mermaidFlowchart", () => {
     ]);
   });
 
+  it("TD/LR/TB/BT/RLを解析できる", () => {
+    for (const direction of ["TD", "LR", "TB", "BT", "RL"] as const) {
+      const result = parseMermaidFlowchart(`flowchart ${direction}\n  A[Start]`);
+
+      expect(result.ok).toBe(true);
+      if (!result.ok) continue;
+      expect(result.model.direction).toBe(direction);
+    }
+  });
+
+  it("graphは読み取り、保存時にflowchartへ正規化する", () => {
+    const result = parseMermaidFlowchart("graph RL\n  A[Start] --> B{Next}");
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(buildMermaidSource(result.model)).toBe([
+      "flowchart RL",
+      "  A[Start]",
+      "  B{Next}",
+      "  A --> B"
+    ].join("\n"));
+  });
+
   it("接続行に書かれた既存ノード形状をMermaidモデルへ変換する", () => {
     const result = parseMermaidFlowchart([
       "flowchart LR",
@@ -160,6 +185,54 @@ describe("mermaidFlowchart", () => {
     const next = replaceMermaidMarkdownBlock(markdown, block, "flowchart LR\n  node1[後]");
 
     expect(next).toBe("前\n\n```mermaid\nflowchart LR\n  node1[後]\n```\n\n後");
+  });
+
+  it("Markdownブロックをhashと位置情報から再特定する", () => {
+    const markdown = [
+      "# Note",
+      "",
+      "```mermaid",
+      "flowchart TD",
+      "  A[One]",
+      "```",
+      "",
+      "```mermaid",
+      "flowchart TD",
+      "  B[Two]",
+      "```"
+    ].join("\n");
+    const blocks = findMermaidMarkdownBlocks(markdown);
+
+    expect(resolveMermaidMarkdownBlock(blocks, {
+      blockFrom: blocks[1].from,
+      blockIndex: 1,
+      blockTo: blocks[1].to,
+      source: blocks[1].source,
+      sourceHash: hashMermaidSource(blocks[1].source)
+    })?.source).toBe("flowchart TD\n  B[Two]");
+  });
+
+  it("対象ブロックが一意に決まらない場合は再特定しない", () => {
+    const markdown = [
+      "```mermaid",
+      "flowchart TD",
+      "  B[Two]",
+      "```",
+      "",
+      "```mermaid",
+      "flowchart TD",
+      "  B[Two]",
+      "```"
+    ].join("\n");
+    const blocks = findMermaidMarkdownBlocks(markdown);
+
+    expect(resolveMermaidMarkdownBlock(blocks, {
+      blockFrom: 1000,
+      blockIndex: 9,
+      blockTo: 1100,
+      source: "flowchart TD\n  B[Two]",
+      sourceHash: hashMermaidSource("flowchart TD\n  B[Two]")
+    })).toBeNull();
   });
 
   it("Markdown末尾へ新しいmermaidコードブロックを追加する", () => {
