@@ -39,7 +39,6 @@ export async function renderMermaidElement(container: HTMLElement, source: strin
     diagram.className = "preview-mermaid-svg";
     diagram.innerHTML = sanitized;
     applyMermaidSvgIntrinsicSize(diagram);
-    diagram.addEventListener("click", () => openMermaidZoomOverlay(diagram));
     container.append(buildMermaidExpandButton(diagram), diagram);
   } catch (error) {
     console.warn("Mermaid diagram rendering failed.", error);
@@ -187,10 +186,13 @@ function openMermaidZoomOverlay(diagram: HTMLElement): void {
     const clampedZoom = Math.round(Math.min(mermaidZoomMax, Math.max(mermaidZoomMin, nextZoom)) * 100) / 100;
 
     if (anchor && clampedZoom !== previousZoom) {
-      const rect = content.getBoundingClientRect();
-      const zoomRatio = clampedZoom / previousZoom;
-      offsetX = Math.round((offsetX - (anchor.clientX - rect.left) * (zoomRatio - 1)) * 100) / 100;
-      offsetY = Math.round((offsetY - (anchor.clientY - rect.top) * (zoomRatio - 1)) * 100) / 100;
+      const rect = viewport.getBoundingClientRect();
+      const mouseX = anchor.clientX - rect.left;
+      const mouseY = anchor.clientY - rect.top;
+      const contentX = (mouseX - offsetX) / previousZoom;
+      const contentY = (mouseY - offsetY) / previousZoom;
+      offsetX = Math.round((mouseX - contentX * clampedZoom) * 100) / 100;
+      offsetY = Math.round((mouseY - contentY * clampedZoom) * 100) / 100;
     }
 
     zoom = clampedZoom;
@@ -205,8 +207,6 @@ function openMermaidZoomOverlay(diagram: HTMLElement): void {
   };
   closeCurrentMermaidOverlay = close;
 
-  const handleZoomIn = () => setZoom(zoom + mermaidZoomStep);
-  const handleZoomOut = () => setZoom(zoom - mermaidZoomStep);
   const handleReset = () => {
     zoom = 1;
     offsetX = 0;
@@ -214,12 +214,10 @@ function openMermaidZoomOverlay(diagram: HTMLElement): void {
     updateTransform();
   };
 
-  const zoomOutButton = buildOverlayButton("縮小", "Mermaid図を縮小", handleZoomOut);
   const resetButton = buildOverlayButton("リセット", "Mermaid図の拡大率と位置をリセット", handleReset);
-  const zoomInButton = buildOverlayButton("拡大", "Mermaid図を拡大", handleZoomIn);
   const closeButton = buildOverlayButton("閉じる", "Mermaid拡大表示を閉じる", close);
 
-  toolbar.append(zoomOutButton, resetButton, zoomInButton, zoomStatus, closeButton);
+  toolbar.append(resetButton, zoomStatus, closeButton);
   surface.append(toolbar, viewport);
   overlay.append(surface);
 
