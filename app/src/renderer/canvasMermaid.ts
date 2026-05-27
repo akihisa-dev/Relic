@@ -11,6 +11,7 @@ export interface CanvasNode {
 
 export interface CanvasEdge {
   from: string;
+  label?: string;
   to: string;
 }
 
@@ -51,7 +52,7 @@ interface MarkdownLine {
 
 const nodeIdPattern = "[A-Za-z_][A-Za-z0-9_-]*";
 const nodeIdRegex = new RegExp(`^${nodeIdPattern}$`);
-const edgeRegex = /^(.+?)\s*-->\s*(.+)$/;
+const edgeRegex = /^(.+?)\s*-->\s*(?:\|([^|]*)\|\s*)?(.+)$/;
 const rectangleRegex = new RegExp(`^(${nodeIdPattern})\\s*\\[([^\\]]*)\\]$`);
 const diamondRegex = new RegExp(`^(${nodeIdPattern})\\s*\\{([^}]*)\\}$`);
 const circleRegex = new RegExp(`^(${nodeIdPattern})\\s*\\(\\(([^)]*)\\)\\)$`);
@@ -100,20 +101,22 @@ export function parseCanvasMermaid(source: string): CanvasParseResult {
   const edges: CanvasEdge[] = [];
 
   for (const statement of statements.slice(1)) {
-    const node = parseNodeToken(statement);
-    if (node) {
-      if (!upsertCanvasNode(nodes, node)) return { ok: false, reason: "unsupported" };
-      continue;
-    }
-
-    const edgeMatch = edgeRegex.exec(statement);
-    if (edgeMatch) {
-      const from = parseNodeToken(edgeMatch[1]);
-      const to = parseNodeToken(edgeMatch[2]);
+    const edge = parseEdgeStatement(statement);
+    if (edge) {
+      const from = parseNodeToken(edge.from);
+      const to = parseNodeToken(edge.to);
       if (!from || !to) return { ok: false, reason: "unsupported" };
       if (!upsertCanvasNode(nodes, from)) return { ok: false, reason: "unsupported" };
       if (!upsertCanvasNode(nodes, to)) return { ok: false, reason: "unsupported" };
-      edges.push({ from: from.id, to: to.id });
+      edges.push(edge.label === undefined
+        ? { from: from.id, to: to.id }
+        : { from: from.id, label: edge.label, to: to.id });
+      continue;
+    }
+
+    const node = parseNodeToken(statement);
+    if (node) {
+      if (!upsertCanvasNode(nodes, node)) return { ok: false, reason: "unsupported" };
       continue;
     }
 
@@ -138,7 +141,11 @@ export function buildCanvasMermaidSource(diagram: CanvasDiagram): string {
   const lines = [
     `flowchart ${diagram.direction}`,
     ...diagram.nodes.map((node) => `  ${node.id}${shapeSource(node.shape, safeMermaidLabel(node.label))}`),
-    ...diagram.edges.map((edge) => `  ${edge.from} --> ${edge.to}`)
+    ...diagram.edges.map((edge) => (
+      edge.label === undefined
+        ? `  ${edge.from} --> ${edge.to}`
+        : `  ${edge.from} -->|${safeMermaidEdgeLabel(edge.label)}| ${edge.to}`
+    ))
   ];
 
   if (diagram.nodes.length > 0) {
@@ -187,6 +194,18 @@ export function nextCanvasNodeId(nodes: Pick<CanvasNode, "id">[]): string {
   return `node${number}`;
 }
 
+function parseEdgeStatement(statement: string): { from: string; label?: string; to: string } | null {
+  const edgeMatch = edgeRegex.exec(statement);
+  if (!edgeMatch) return null;
+
+  const label = edgeMatch[2];
+  if (label !== undefined && (label.trim().length === 0 || !isSafeMermaidLabel(label))) return null;
+
+  return label === undefined
+    ? { from: edgeMatch[1], to: edgeMatch[3] }
+    : { from: edgeMatch[1], label, to: edgeMatch[3] };
+}
+
 function parseNodeToken(token: string): ParsedCanvasNode | null {
   const trimmed = token.trim();
 
@@ -213,6 +232,7 @@ function parseNodeToken(token: string): ParsedCanvasNode | null {
 
 function parseNodeMatch(match: RegExpExecArray, shape: CanvasShape): ParsedCanvasNode | null {
   if (!nodeIdRegex.test(match[1])) return null;
+  if (!isSafeMermaidLabel(match[2])) return null;
   return {
     explicit: true,
     id: match[1],
@@ -337,4 +357,13 @@ function shapeSource(shape: CanvasShape, label: string): string {
 
 function safeMermaidLabel(label: string): string {
   return label.replace(/[()[\]{}|]/g, " ").replace(/\s+/g, " ").trim() || "Node";
+}
+
+function safeMermaidEdgeLabel(label: string): string {
+  const safeLabel = label.replace(/[<>|]/g, " ");
+  return safeLabel.trim().length > 0 ? safeLabel : "Label";
+}
+
+function isSafeMermaidLabel(label: string): boolean {
+  return !/[<>]/.test(label);
 }
