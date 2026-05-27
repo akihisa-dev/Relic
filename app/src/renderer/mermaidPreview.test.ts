@@ -44,6 +44,28 @@ function dispatchWheelEvent(target: HTMLElement, init: WheelEventInit) {
   return event;
 }
 
+function createAttachedContainer(): HTMLDivElement {
+  const container = document.createElement("div");
+  document.body.append(container);
+  return container;
+}
+
+async function flushAnimationFrame() {
+  await new Promise<void>((resolve) => {
+    window.requestAnimationFrame(() => resolve());
+  });
+}
+
+function createDeferred<T>() {
+  let resolve!: (value: T | PromiseLike<T>) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((promiseResolve, promiseReject) => {
+    resolve = promiseResolve;
+    reject = promiseReject;
+  });
+  return { promise, reject, resolve };
+}
+
 beforeEach(() => {
   initializeMock.mockReset();
   renderMock.mockReset();
@@ -52,6 +74,10 @@ beforeEach(() => {
   Object.defineProperty(window, "matchMedia", {
     configurable: true,
     value: vi.fn().mockReturnValue({ matches: false })
+  });
+  Object.defineProperty(globalThis, "ResizeObserver", {
+    configurable: true,
+    value: undefined
   });
 });
 
@@ -139,7 +165,7 @@ describe("mermaidPreview", () => {
   it("不正なmermaidソースでも例外で落とさずエラーUIを表示する", async () => {
     const { renderMermaidElement } = await loadMermaidPreviewModule();
     const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
-    const container = document.createElement("div");
+    const container = createAttachedContainer();
     renderMock.mockRejectedValueOnce(new Error("parse failed"));
 
     await expect(renderMermaidElement(container, "invalid <source>")).resolves.toBeNull();
@@ -156,7 +182,7 @@ describe("mermaidPreview", () => {
 
   it("SVG描画成功時に本文内パン・ズームviewportを構成しhandleを返す", async () => {
     const { renderMermaidElement } = await loadMermaidPreviewModule();
-    const container = document.createElement("div");
+    const container = createAttachedContainer();
     renderMock.mockResolvedValueOnce({ svg: '<svg viewBox="0 0 640 320"><text>ok</text></svg>' });
 
     const handle = await renderMermaidElement(container, "graph TD; A-->B");
@@ -167,6 +193,9 @@ describe("mermaidPreview", () => {
 
     expect(typeof handle?.fitToViewport).toBe("function");
     expect(viewport).not.toBeNull();
+    expect(viewport?.tabIndex).toBe(0);
+    expect(viewport?.getAttribute("aria-label")).toContain("+で拡大");
+    expect(viewport?.getAttribute("aria-label")).toContain("Shift+矢印キー");
     expect(content?.contains(container.querySelector(".preview-mermaid-svg"))).toBe(true);
     expect(content?.style.transform).toBe("translate(0px, 0px) scale(1)");
     expect(container.querySelector(".preview-mermaid-expand-button")).toBeNull();
@@ -177,7 +206,7 @@ describe("mermaidPreview", () => {
 
   it("fitToViewportはviewport内に収まる倍率と中央寄せへ戻す", async () => {
     const { renderMermaidElement } = await loadMermaidPreviewModule();
-    const container = document.createElement("div");
+    const container = createAttachedContainer();
     renderMock.mockResolvedValueOnce({ svg: '<svg viewBox="0 0 640 320"><text>ok</text></svg>' });
 
     const handle = await renderMermaidElement(container, "graph TD; A-->B");
@@ -194,9 +223,32 @@ describe("mermaidPreview", () => {
     expect(content?.style.transform).toBe("translate(24px, 62px) scale(0.55)");
   });
 
+  it("キーボード操作でズームとパンを変更できる", async () => {
+    const { renderMermaidElement } = await loadMermaidPreviewModule();
+    const container = createAttachedContainer();
+    renderMock.mockResolvedValueOnce({ svg: '<svg viewBox="0 0 640 320"><text>ok</text></svg>' });
+
+    await renderMermaidElement(container, "graph TD; A-->B");
+
+    const viewport = container.querySelector<HTMLElement>(".preview-mermaid-panzoom-viewport");
+    const content = container.querySelector<HTMLElement>(".preview-mermaid-panzoom-content");
+
+    fireEvent.keyDown(viewport as HTMLElement, { key: "+" });
+    await flushAnimationFrame();
+    expect(content?.style.transform).toBe("translate(0px, 0px) scale(1.12)");
+
+    fireEvent.keyDown(viewport as HTMLElement, { key: "ArrowRight" });
+    await flushAnimationFrame();
+    expect(content?.style.transform).toBe("translate(-48px, 0px) scale(1.12)");
+
+    fireEvent.keyDown(viewport as HTMLElement, { key: "ArrowDown", shiftKey: true });
+    await flushAnimationFrame();
+    expect(content?.style.transform).toBe("translate(-48px, -144px) scale(1.12)");
+  });
+
   it("SVGクリックではズームせずオーバーレイも開かない", async () => {
     const { renderMermaidElement } = await loadMermaidPreviewModule();
-    const container = document.createElement("div");
+    const container = createAttachedContainer();
     renderMock.mockResolvedValueOnce({ svg: '<svg viewBox="0 0 640 320"><text>ok</text></svg>' });
 
     await renderMermaidElement(container, "graph TD; A-->B");
@@ -210,7 +262,7 @@ describe("mermaidPreview", () => {
 
   it("本文内viewportの通常ホイールで倍率式に拡大率を変更し伝播を止める", async () => {
     const { renderMermaidElement } = await loadMermaidPreviewModule();
-    const container = document.createElement("div");
+    const container = createAttachedContainer();
     const parentWheel = vi.fn();
     container.addEventListener("wheel", parentWheel);
     renderMock.mockResolvedValueOnce({ svg: '<svg viewBox="0 0 640 320"><text>ok</text></svg>' });
@@ -221,12 +273,14 @@ describe("mermaidPreview", () => {
     const content = container.querySelector<HTMLElement>(".preview-mermaid-panzoom-content");
 
     const zoomInEvent = dispatchWheelEvent(viewport as HTMLElement, { ctrlKey: false, deltaY: -1 });
+    await flushAnimationFrame();
 
     expect(zoomInEvent.defaultPrevented).toBe(true);
     expect(parentWheel).not.toHaveBeenCalled();
     expect(content?.style.transform).toBe("translate(0px, 0px) scale(1.12)");
 
     const zoomOutEvent = dispatchWheelEvent(viewport as HTMLElement, { deltaY: 1 });
+    await flushAnimationFrame();
 
     expect(zoomOutEvent.defaultPrevented).toBe(true);
     expect(content?.style.transform).toBe("translate(0px, 0px) scale(1)");
@@ -234,7 +288,7 @@ describe("mermaidPreview", () => {
 
   it("本文内viewportのホイールズームはマウス位置を中心に表示位置を調整する", async () => {
     const { renderMermaidElement } = await loadMermaidPreviewModule();
-    const container = document.createElement("div");
+    const container = createAttachedContainer();
     renderMock.mockResolvedValueOnce({ svg: '<svg viewBox="0 0 640 320"><text>ok</text></svg>' });
 
     await renderMermaidElement(container, "graph TD; A-->B");
@@ -254,13 +308,14 @@ describe("mermaidPreview", () => {
     });
 
     dispatchWheelEvent(viewport as HTMLElement, { clientX: 60, clientY: 70, deltaY: -1 });
+    await flushAnimationFrame();
 
     expect(content?.style.transform).toBe("translate(-6px, -6px) scale(1.12)");
   });
 
   it("本文内viewportのホイールズームは下限と上限を超えない", async () => {
     const { renderMermaidElement } = await loadMermaidPreviewModule();
-    const container = document.createElement("div");
+    const container = createAttachedContainer();
     renderMock.mockResolvedValueOnce({ svg: '<svg viewBox="0 0 640 320"><text>ok</text></svg>' });
 
     await renderMermaidElement(container, "graph TD; A-->B");
@@ -271,19 +326,51 @@ describe("mermaidPreview", () => {
     for (let i = 0; i < 30; i += 1) {
       dispatchWheelEvent(viewport as HTMLElement, { deltaY: -1 });
     }
+    await flushAnimationFrame();
 
     expect(content?.style.transform).toBe("translate(0px, 0px) scale(4)");
 
     for (let i = 0; i < 30; i += 1) {
       dispatchWheelEvent(viewport as HTMLElement, { deltaY: 1 });
     }
+    await flushAnimationFrame();
 
     expect(content?.style.transform).toBe("translate(0px, 0px) scale(0.4)");
   });
 
+  it("ホイールズームのtransform更新をrequestAnimationFrameでまとめる", async () => {
+    const callbacks: FrameRequestCallback[] = [];
+    const raf = vi.spyOn(window, "requestAnimationFrame").mockImplementation((callback) => {
+      callbacks.push(callback);
+      return callbacks.length;
+    });
+    const cancelRaf = vi.spyOn(window, "cancelAnimationFrame").mockImplementation(() => undefined);
+    const { renderMermaidElement } = await loadMermaidPreviewModule();
+    const container = createAttachedContainer();
+    renderMock.mockResolvedValueOnce({ svg: '<svg viewBox="0 0 640 320"><text>ok</text></svg>' });
+
+    await renderMermaidElement(container, "graph TD; A-->B");
+
+    const content = container.querySelector<HTMLElement>(".preview-mermaid-panzoom-content");
+    const viewport = container.querySelector<HTMLElement>(".preview-mermaid-panzoom-viewport");
+    callbacks.shift()?.(0);
+
+    dispatchWheelEvent(viewport as HTMLElement, { deltaY: -1 });
+    dispatchWheelEvent(viewport as HTMLElement, { deltaY: -1 });
+
+    expect(content?.style.transform).toBe("translate(0px, 0px) scale(1)");
+    expect(callbacks).toHaveLength(1);
+
+    callbacks.shift()?.(16);
+
+    expect(content?.style.transform).toBe("translate(0px, 0px) scale(1.25)");
+    raf.mockRestore();
+    cancelRaf.mockRestore();
+  });
+
   it("本文内viewportのドラッグ移動で表示位置を変更する", async () => {
     const { renderMermaidElement } = await loadMermaidPreviewModule();
-    const container = document.createElement("div");
+    const container = createAttachedContainer();
     renderMock.mockResolvedValueOnce({ svg: '<svg viewBox="0 0 640 320"><text>ok</text></svg>' });
 
     await renderMermaidElement(container, "graph TD; A-->B");
@@ -293,6 +380,7 @@ describe("mermaidPreview", () => {
 
     dispatchPointerEvent(viewport as HTMLElement, "pointerdown", { button: 0, clientX: 10, clientY: 20 });
     dispatchPointerEvent(viewport as HTMLElement, "pointermove", { clientX: 40, clientY: 65 });
+    await flushAnimationFrame();
 
     expect(content?.style.transform).toBe("translate(30px, 45px) scale(1)");
 
@@ -302,7 +390,7 @@ describe("mermaidPreview", () => {
 
   it("本文内viewportはpointercancelでドラッグ状態を解除する", async () => {
     const { renderMermaidElement } = await loadMermaidPreviewModule();
-    const container = document.createElement("div");
+    const container = createAttachedContainer();
     renderMock.mockResolvedValueOnce({ svg: '<svg viewBox="0 0 640 320"><text>ok</text></svg>' });
 
     await renderMermaidElement(container, "graph TD; A-->B");
@@ -314,6 +402,138 @@ describe("mermaidPreview", () => {
 
     dispatchPointerEvent(viewport as HTMLElement, "pointercancel", {});
     expect(viewport?.classList.contains("preview-mermaid-panzoom-viewport--dragging")).toBe(false);
+  });
+
+  it("ResizeObserverは手動操作前だけviewportサイズ変更後に全体表示へ戻す", async () => {
+    let resizeCallback: ResizeObserverCallback = () => undefined;
+    class MockResizeObserver {
+      constructor(callback: ResizeObserverCallback) {
+        resizeCallback = callback;
+      }
+
+      observe = vi.fn();
+      unobserve = vi.fn();
+      disconnect = vi.fn();
+    }
+    Object.defineProperty(globalThis, "ResizeObserver", {
+      configurable: true,
+      value: MockResizeObserver
+    });
+    const { renderMermaidElement } = await loadMermaidPreviewModule();
+    const container = createAttachedContainer();
+    renderMock.mockResolvedValueOnce({ svg: '<svg viewBox="0 0 640 320"><text>ok</text></svg>' });
+
+    await renderMermaidElement(container, "graph TD; A-->B");
+
+    const viewport = container.querySelector<HTMLElement>(".preview-mermaid-panzoom-viewport");
+    const content = container.querySelector<HTMLElement>(".preview-mermaid-panzoom-content");
+
+    Object.defineProperty(viewport, "clientWidth", { configurable: true, value: 400 });
+    Object.defineProperty(viewport, "clientHeight", { configurable: true, value: 300 });
+    Object.defineProperty(content, "scrollWidth", { configurable: true, value: 640 });
+    Object.defineProperty(content, "scrollHeight", { configurable: true, value: 320 });
+
+    resizeCallback?.([], {} as ResizeObserver);
+    await flushAnimationFrame();
+
+    expect(content?.style.transform).toBe("translate(24px, 62px) scale(0.55)");
+  });
+
+  it("手動操作後のResizeObserverでは勝手に全体表示へ戻さない", async () => {
+    let resizeCallback: ResizeObserverCallback = () => undefined;
+    class MockResizeObserver {
+      constructor(callback: ResizeObserverCallback) {
+        resizeCallback = callback;
+      }
+
+      observe = vi.fn();
+      unobserve = vi.fn();
+      disconnect = vi.fn();
+    }
+    Object.defineProperty(globalThis, "ResizeObserver", {
+      configurable: true,
+      value: MockResizeObserver
+    });
+    const { renderMermaidElement } = await loadMermaidPreviewModule();
+    const container = createAttachedContainer();
+    renderMock.mockResolvedValueOnce({ svg: '<svg viewBox="0 0 640 320"><text>ok</text></svg>' });
+
+    const handle = await renderMermaidElement(container, "graph TD; A-->B");
+
+    const viewport = container.querySelector<HTMLElement>(".preview-mermaid-panzoom-viewport");
+    const content = container.querySelector<HTMLElement>(".preview-mermaid-panzoom-content");
+
+    Object.defineProperty(viewport, "clientWidth", { configurable: true, value: 400 });
+    Object.defineProperty(viewport, "clientHeight", { configurable: true, value: 300 });
+    Object.defineProperty(content, "scrollWidth", { configurable: true, value: 640 });
+    Object.defineProperty(content, "scrollHeight", { configurable: true, value: 320 });
+
+    handle?.fitToViewport();
+    dispatchWheelEvent(viewport as HTMLElement, { deltaY: -1 });
+    await flushAnimationFrame();
+    const transformedByUser = content?.style.transform;
+
+    Object.defineProperty(viewport, "clientWidth", { configurable: true, value: 800 });
+    resizeCallback?.([], {} as ResizeObserver);
+    await flushAnimationFrame();
+
+    expect(content?.style.transform).toBe(transformedByUser);
+  });
+
+  it("古いrender結果が後から解決しても新しい内容を上書きしない", async () => {
+    const oldRender = createDeferred<{ svg: string }>();
+    const { renderMermaidElement } = await loadMermaidPreviewModule();
+    const container = createAttachedContainer();
+    renderMock.mockImplementation((_id: string, source: string) => {
+      if (source === "old") return oldRender.promise;
+      return Promise.resolve({ svg: '<svg viewBox="0 0 640 320"><text>new</text></svg>' });
+    });
+
+    const oldResult = renderMermaidElement(container, "old");
+    await vi.waitFor(() => {
+      expect(renderMock).toHaveBeenCalledWith(expect.stringMatching(/^relic-mermaid-/), "old");
+    });
+
+    await renderMermaidElement(container, "new");
+    expect(container.textContent).toContain("new");
+
+    oldRender.resolve({ svg: '<svg viewBox="0 0 640 320"><text>old</text></svg>' });
+    await expect(oldResult).resolves.toBeNull();
+
+    expect(container.textContent).toContain("new");
+    expect(container.textContent).not.toContain("old");
+  });
+
+  it("containerがDOMから外れた場合は描画結果を反映しない", async () => {
+    const deferredRender = createDeferred<{ svg: string }>();
+    const { renderMermaidElement } = await loadMermaidPreviewModule();
+    const container = createAttachedContainer();
+    container.textContent = "before";
+    renderMock.mockReturnValueOnce(deferredRender.promise);
+
+    const result = renderMermaidElement(container, "graph TD; A-->B");
+    await vi.waitFor(() => {
+      expect(renderMock).toHaveBeenCalled();
+    });
+    container.remove();
+    deferredRender.resolve({ svg: '<svg viewBox="0 0 640 320"><text>after</text></svg>' });
+
+    await expect(result).resolves.toBeNull();
+    expect(container.textContent).toBe("before");
+  });
+
+  it("Mermaid SVGはDOMPurifyでサニタイズしてから表示する", async () => {
+    const { renderMermaidElement } = await loadMermaidPreviewModule();
+    const container = createAttachedContainer();
+    renderMock.mockResolvedValueOnce({
+      svg: '<svg viewBox="0 0 640 320"><script>alert(1)</script><text onload="alert(1)">ok</text></svg>'
+    });
+
+    await renderMermaidElement(container, "graph TD; A-->B");
+
+    expect(container.querySelector("script")).toBeNull();
+    expect(container.querySelector("[onload]")).toBeNull();
+    expect(container.textContent).toContain("ok");
   });
 
   it("本文内viewportはスクロールバーではなくパン操作を前提にする", async () => {
