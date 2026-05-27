@@ -13,14 +13,13 @@ import {
 import { mermaidEditRangeField } from "./editorMermaidEditState";
 import {
   CheckboxWidget,
+  DiagramBlockWidget,
   HorizontalRuleWidget,
   InlineFormatWidget,
-  ListMarkerWidget,
-  MermaidBlockWidget
+  ListMarkerWidget
 } from "./editorLivePreviewWidgets";
 import { findTableBlocks } from "./editorTables";
-import { findMermaidMarkdownBlocks } from "./mermaidFlowchart";
-import { isMermaidLanguage } from "./mermaidPreview";
+import { diagramLanguageFor } from "./mermaidPreview";
 
 export { findClickableLinkAtPosition, type ClickableLinkAtPosition } from "./editorLivePreviewModel";
 
@@ -35,9 +34,6 @@ export function buildLivePreviewDecorations(
 
   const ranges: { from: number; to: number; deco: Decoration }[] = [];
   const tableBlocks = findTableBlocks(state);
-  const mermaidBlockIndexByFrom = new Map(
-    findMermaidMarkdownBlocks(doc.toString()).map((block) => [block.from, block.index])
-  );
   const frontmatterLineRange = findFrontmatterLineRange(doc);
   const sourceRevealRanges: SourceRevealRange[] = [];
 
@@ -79,7 +75,7 @@ export function buildLivePreviewDecorations(
     }
   }
 
-  function isMermaidSourceEditing(from: number, to: number): boolean {
+  function isDiagramSourceEditing(from: number, to: number): boolean {
     return Boolean(mermaidEditRange && mermaidEditRange.from <= from && mermaidEditRange.to >= to);
   }
 
@@ -159,7 +155,9 @@ export function buildLivePreviewDecorations(
 
       const fenceMatch = /^\s*```\s*([^\s`]*)?/.exec(text);
       if (fenceMatch) {
-        if (!inFencedCode && isMermaidLanguage(fenceMatch[1])) {
+        const diagramLanguage = diagramLanguageFor(fenceMatch[1]);
+
+        if (!inFencedCode && diagramLanguage) {
           const closingLineNumber = findClosingFenceLine(lineNumber);
 
           if (closingLineNumber) {
@@ -169,13 +167,13 @@ export function buildLivePreviewDecorations(
               ? doc.line(lineNumber + 1).from
               : line.to;
 
-            if (!isMermaidSourceEditing(blockFrom, blockTo)) {
+            if (!isDiagramSourceEditing(blockFrom, blockTo)) {
               addWidget(
                 line.from,
                 line.to,
-                new MermaidBlockWidget(
+                new DiagramBlockWidget(
                   codeBlockSource(lineNumber, closingLineNumber),
-                  mermaidBlockIndexByFrom.get(blockFrom) ?? 0,
+                  diagramLanguage,
                   blockFrom,
                   blockTo,
                   editCursor

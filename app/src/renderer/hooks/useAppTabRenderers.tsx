@@ -14,7 +14,6 @@ import type {
 import { ChartView } from "../components/ChartPanel";
 import { ChronicleSettingsPanel } from "../components/ChronicleSettingsPanel";
 import { FrontmatterPanel } from "../components/FrontmatterPanel";
-import { MermaidEditorPanel } from "../components/MermaidEditorPanel";
 import { SettingsPanel } from "../components/SettingsPanel";
 import { ToolsPanel } from "../components/ToolsPanel";
 import type { PanelTabKind } from "../store/editorStore";
@@ -75,10 +74,6 @@ export function useAppTabRenderers({
           userDefinedFields={userDefinedFields}
         />
       );
-    }
-
-    if (panel === "mermaidEditor") {
-      return <MermaidEditorPanel />;
     }
 
     if (panel === "chronicleSettings") {

@@ -2,6 +2,7 @@ import DOMPurify from "dompurify";
 
 import { decodeMermaidSourceAttribute } from "./mermaidSourceAttribute";
 
+export type DiagramLanguage = "d2" | "mermaid";
 type MermaidTheme = "default" | "dark";
 
 const mermaidZoomMin = 0.4;
@@ -13,64 +14,84 @@ const mermaidKeyboardLargePanStep = 144;
 let initializedTheme: MermaidTheme | null = null;
 let renderId = 0;
 let renderTokenId = 0;
-const activeRenderStates = new WeakMap<HTMLElement, MermaidRenderState>();
+const activeRenderStates = new WeakMap<HTMLElement, DiagramRenderState>();
 
 type MermaidModule = typeof import("mermaid").default;
+type D2Renderer = InstanceType<(typeof import("@terrastruct/d2"))["D2"]>;
 
-export type MermaidRenderHandle = {
+export type DiagramRenderHandle = {
   fitToViewport: () => void;
 };
+export type MermaidRenderHandle = DiagramRenderHandle;
 
-type MermaidRenderState =
-  | { source: string; status: "rendering"; token: number }
-  | { handle: MermaidRenderHandle; source: string; status: "rendered"; token: number }
-  | { error: unknown; source: string; status: "error"; token: number }
-  | { reason: "detached" | "superseded"; source: string; status: "stale"; token: number };
+type DiagramRenderState =
+  | { language: DiagramLanguage; source: string; status: "rendering"; token: number }
+  | { handle: DiagramRenderHandle; language: DiagramLanguage; source: string; status: "rendered"; token: number }
+  | { error: unknown; language: DiagramLanguage; source: string; status: "error"; token: number }
+  | { language: DiagramLanguage; reason: "detached" | "superseded"; source: string; status: "stale"; token: number };
 
-type MermaidRenderContext = {
+type DiagramRenderContext = {
   canApplyResult: () => boolean;
   markError: (error: unknown) => void;
-  markRendered: (handle: MermaidRenderHandle) => void;
+  markRendered: (handle: DiagramRenderHandle) => void;
 };
 
-export function isMermaidLanguage(lang: string | undefined | null): boolean {
-  return lang?.trim().split(/\s+/, 1)[0]?.toLowerCase() === "mermaid";
+let d2RendererPromise: Promise<D2Renderer> | null = null;
+
+export function diagramLanguageFor(lang: string | undefined | null): DiagramLanguage | null {
+  const token = lang?.trim().split(/\s+/, 1)[0]?.toLowerCase();
+
+  if (token === "mermaid") return "mermaid";
+  if (token === "d2") return "d2";
+  return null;
 }
 
-export function buildMermaidFallback(source: string): HTMLElement {
+export function isMermaidLanguage(lang: string | undefined | null): boolean {
+  return diagramLanguageFor(lang) === "mermaid";
+}
+
+export function isD2Language(lang: string | undefined | null): boolean {
+  return diagramLanguageFor(lang) === "d2";
+}
+
+export function buildDiagramFallback(language: DiagramLanguage, source: string): HTMLElement {
   const pre = document.createElement("pre");
   const code = document.createElement("code");
-  code.className = "language-mermaid";
+  code.className = `language-${language}`;
   code.textContent = source;
   pre.append(code);
   return pre;
 }
 
-export function buildMermaidError(source: string, error: unknown): HTMLElement {
+export function buildMermaidFallback(source: string): HTMLElement {
+  return buildDiagramFallback("mermaid", source);
+}
+
+export function buildDiagramError(language: DiagramLanguage, source: string, error: unknown): HTMLElement {
   const panel = document.createElement("div");
-  panel.className = "preview-mermaid-error";
+  panel.className = "preview-diagram-error preview-mermaid-error";
 
   const title = document.createElement("div");
-  title.className = "preview-mermaid-error-title";
-  title.textContent = "Mermaidをレンダリングできませんでした";
+  title.className = "preview-diagram-error-title preview-mermaid-error-title";
+  title.textContent = `${diagramLabel(language)}をレンダリングできませんでした`;
 
   const message = document.createElement("div");
-  message.className = "preview-mermaid-error-message";
+  message.className = "preview-diagram-error-message preview-mermaid-error-message";
   message.textContent = "構文を確認してください。";
 
   const sourceDetails = document.createElement("details");
-  sourceDetails.className = "preview-mermaid-error-details";
+  sourceDetails.className = "preview-diagram-error-details preview-mermaid-error-details";
   const sourceSummary = document.createElement("summary");
   sourceSummary.textContent = "元ソースを表示";
   const sourcePre = document.createElement("pre");
   const sourceCode = document.createElement("code");
-  sourceCode.className = "language-mermaid";
+  sourceCode.className = `language-${language}`;
   sourceCode.textContent = source;
   sourcePre.append(sourceCode);
   sourceDetails.append(sourceSummary, sourcePre);
 
   const errorDetails = document.createElement("details");
-  errorDetails.className = "preview-mermaid-error-details";
+  errorDetails.className = "preview-diagram-error-details preview-mermaid-error-details";
   const errorSummary = document.createElement("summary");
   errorSummary.textContent = "詳細エラー";
   const errorPre = document.createElement("pre");
@@ -81,16 +102,19 @@ export function buildMermaidError(source: string, error: unknown): HTMLElement {
   return panel;
 }
 
-export async function renderMermaidElement(
+export function buildMermaidError(source: string, error: unknown): HTMLElement {
+  return buildDiagramError("mermaid", source, error);
+}
+
+export async function renderDiagramElement(
   container: HTMLElement,
+  language: DiagramLanguage,
   source: string
-): Promise<MermaidRenderHandle | null> {
-  const renderContext = beginMermaidRender(container, source);
+): Promise<DiagramRenderHandle | null> {
+  const renderContext = beginDiagramRender(container, language, source);
 
   try {
-    const mermaid = await loadMermaid();
-    const id = `relic-mermaid-${renderId++}`;
-    const { svg } = await mermaid.render(id, source);
+    const svg = await renderDiagramSvg(language, source);
     if (!renderContext.canApplyResult()) return null;
 
     const sanitized = DOMPurify.sanitize(svg, { USE_PROFILES: { svg: true, svgFilters: true } });
@@ -98,37 +122,64 @@ export async function renderMermaidElement(
 
     container.replaceChildren();
     const diagram = document.createElement("div");
-    diagram.className = "preview-mermaid-svg";
+    diagram.className = `preview-diagram-svg preview-${language}-svg`;
+    if (language === "mermaid") diagram.classList.add("preview-mermaid-svg");
     diagram.innerHTML = sanitized;
-    applyMermaidSvgIntrinsicSize(diagram);
+    applyDiagramSvgIntrinsicSize(diagram);
 
     const viewport = document.createElement("div");
-    viewport.className = "preview-mermaid-panzoom-viewport";
+    viewport.className = "preview-diagram-panzoom-viewport preview-mermaid-panzoom-viewport";
     viewport.tabIndex = 0;
     viewport.setAttribute(
       "aria-label",
-      "Mermaid図。+で拡大、-で縮小、0またはfで全体表示、矢印キーで移動、Shift+矢印キーで大きく移動できます。"
+      `${diagramLabel(language)}図。+で拡大、-で縮小、0またはfで全体表示、矢印キーで移動、Shift+矢印キーで大きく移動できます。`
     );
     const content = document.createElement("div");
-    content.className = "preview-mermaid-panzoom-content";
+    content.className = "preview-diagram-panzoom-content preview-mermaid-panzoom-content";
     content.append(diagram);
     viewport.append(content);
-    const handle = initializeMermaidPanZoom(viewport, content);
+    const handle = initializeDiagramPanZoom(viewport, content);
     container.append(viewport);
     renderContext.markRendered(handle);
     return handle;
   } catch (error) {
     if (!renderContext.canApplyResult()) return null;
 
-    console.warn("Mermaid diagram rendering failed.", error);
-    container.replaceChildren(buildMermaidError(source, error));
+    console.warn(`${diagramLabel(language)} diagram rendering failed.`, error);
+    container.replaceChildren(buildDiagramError(language, source, error));
     renderContext.markError(error);
     return null;
   }
 }
 
+export async function renderMermaidElement(
+  container: HTMLElement,
+  source: string
+): Promise<MermaidRenderHandle | null> {
+  return renderDiagramElement(container, "mermaid", source);
+}
+
+export function renderDiagramElements(root: ParentNode): void {
+  const diagrams = root.querySelectorAll<HTMLElement>(".preview-diagram");
+
+  diagrams.forEach((diagram) => {
+    const language = diagramLanguageFor(diagram.dataset.diagramLanguage) ??
+      (diagram.classList.contains("preview-mermaid") ? "mermaid" : null) ??
+      (diagram.classList.contains("preview-d2") ? "d2" : null);
+    if (!language) return;
+
+    const source = diagram.dataset.diagramSource !== undefined
+      ? decodeMermaidSourceAttribute(diagram.dataset.diagramSource)
+      : language === "mermaid" && diagram.dataset.mermaidSource !== undefined
+        ? decodeMermaidSourceAttribute(diagram.dataset.mermaidSource)
+        : diagram.querySelector("code")?.textContent;
+    if (!source) return;
+    void renderDiagramElement(diagram, language, source);
+  });
+}
+
 export function renderMermaidElements(root: ParentNode): void {
-  const diagrams = root.querySelectorAll<HTMLElement>(".preview-mermaid");
+  const diagrams = root.querySelectorAll<HTMLElement>(".preview-mermaid:not(.preview-diagram)");
 
   diagrams.forEach((diagram) => {
     const source = diagram.dataset.mermaidSource !== undefined
@@ -137,6 +188,8 @@ export function renderMermaidElements(root: ParentNode): void {
     if (!source) return;
     void renderMermaidElement(diagram, source);
   });
+
+  renderDiagramElements(root);
 }
 
 async function loadMermaid(): Promise<MermaidModule> {
@@ -157,15 +210,44 @@ async function loadMermaid(): Promise<MermaidModule> {
   return mermaid;
 }
 
-function beginMermaidRender(container: HTMLElement, source: string): MermaidRenderContext {
+async function loadD2(): Promise<D2Renderer> {
+  if (!d2RendererPromise) {
+    d2RendererPromise = import("@terrastruct/d2").then(({ D2 }) => new D2());
+  }
+
+  return d2RendererPromise;
+}
+
+async function renderDiagramSvg(language: DiagramLanguage, source: string): Promise<string> {
+  if (language === "mermaid") {
+    const mermaid = await loadMermaid();
+    const id = `relic-mermaid-${renderId++}`;
+    const { svg } = await mermaid.render(id, source);
+    return svg;
+  }
+
+  const d2 = await loadD2();
+  const compileOptions = { layout: "dagre" } as unknown as Omit<import("@terrastruct/d2").CompileRequest, "fs">;
+  const result = await d2.compile(source, compileOptions);
+  return await d2.render(result.diagram, {
+    ...(result.renderOptions ?? {}),
+    noXMLTag: true
+  });
+}
+
+function beginDiagramRender(
+  container: HTMLElement,
+  language: DiagramLanguage,
+  source: string
+): DiagramRenderContext {
   const token = ++renderTokenId;
-  setMermaidRenderState(container, { source, status: "rendering", token });
+  setDiagramRenderState(container, { language, source, status: "rendering", token });
 
   const isCurrentRender = () => activeRenderStates.get(container)?.token === token;
 
   const markStaleIfCurrent = (reason: "detached" | "superseded") => {
     if (!isCurrentRender()) return;
-    setMermaidRenderState(container, { reason, source, status: "stale", token });
+    setDiagramRenderState(container, { language, reason, source, status: "stale", token });
   };
 
   return {
@@ -186,18 +268,27 @@ function beginMermaidRender(container: HTMLElement, source: string): MermaidRend
     },
     markError: (error) => {
       if (!isCurrentRender()) return;
-      setMermaidRenderState(container, { error, source, status: "error", token });
+      setDiagramRenderState(container, { error, language, source, status: "error", token });
     },
     markRendered: (handle) => {
       if (!isCurrentRender()) return;
-      setMermaidRenderState(container, { handle, source, status: "rendered", token });
+      setDiagramRenderState(container, { handle, language, source, status: "rendered", token });
     }
   };
 }
 
-function setMermaidRenderState(container: HTMLElement, state: MermaidRenderState): void {
+function setDiagramRenderState(container: HTMLElement, state: DiagramRenderState): void {
   activeRenderStates.set(container, state);
-  container.dataset.mermaidRenderStatus = state.status;
+  container.dataset.diagramRenderStatus = state.status;
+  if (state.language === "mermaid") {
+    container.dataset.mermaidRenderStatus = state.status;
+  } else {
+    delete container.dataset.mermaidRenderStatus;
+  }
+}
+
+function diagramLabel(language: DiagramLanguage): string {
+  return language === "d2" ? "D2" : "Mermaid";
 }
 
 function getPreferredMermaidTheme(): MermaidTheme {
@@ -209,7 +300,7 @@ function getPreferredMermaidTheme(): MermaidTheme {
   return window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "default";
 }
 
-function applyMermaidSvgIntrinsicSize(diagram: HTMLElement): void {
+function applyDiagramSvgIntrinsicSize(diagram: HTMLElement): void {
   const svg = diagram.querySelector<SVGSVGElement>("svg");
   if (!svg) return;
 
@@ -242,7 +333,7 @@ function parseSvgViewBox(value: string | null): { width: number; height: number 
   return { width, height };
 }
 
-function initializeMermaidPanZoom(viewport: HTMLElement, content: HTMLElement): MermaidRenderHandle {
+function initializeDiagramPanZoom(viewport: HTMLElement, content: HTMLElement): DiagramRenderHandle {
   let zoom = 1;
   let offsetX = 0;
   let offsetY = 0;
@@ -375,7 +466,7 @@ function initializeMermaidPanZoom(viewport: HTMLElement, content: HTMLElement): 
     dragStartY = event.clientY;
     dragOriginX = offsetX;
     dragOriginY = offsetY;
-    viewport.classList.add("preview-mermaid-panzoom-viewport--dragging");
+    viewport.classList.add("preview-diagram-panzoom-viewport--dragging", "preview-mermaid-panzoom-viewport--dragging");
     viewport.setPointerCapture?.(event.pointerId);
   });
   viewport.addEventListener("pointermove", (event) => {
@@ -465,7 +556,7 @@ function initializeMermaidPanZoom(viewport: HTMLElement, content: HTMLElement): 
     if (!isDragging) return;
 
     isDragging = false;
-    viewport.classList.remove("preview-mermaid-panzoom-viewport--dragging");
+    viewport.classList.remove("preview-diagram-panzoom-viewport--dragging", "preview-mermaid-panzoom-viewport--dragging");
     releaseActivePointerCapture(pointerId);
     activePointerId = null;
   }

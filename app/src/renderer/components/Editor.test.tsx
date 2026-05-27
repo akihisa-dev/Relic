@@ -4,7 +4,7 @@ import { ensureSyntaxTree } from "@codemirror/language";
 import { EditorState } from "@codemirror/state";
 import type { EditorView } from "@codemirror/view";
 import { GFM } from "@lezer/markdown";
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { createRef } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -575,14 +575,24 @@ describe("Editor", () => {
     ]));
   });
 
-  it("ライブプレビューでmermaidコードブロックを専用Widget表示する", async () => {
+  it("ライブプレビューでmermaidコードブロックを図Widget表示する", async () => {
     const widgets = await collectInlineLivePreviewWidgets([
       "```mermaid",
       "graph TD; A-->B",
       "```"
     ].join("\n"), 0, false);
 
-    expect(widgets).toContain("MermaidBlockWidget");
+    expect(widgets).toContain("DiagramBlockWidget");
+  });
+
+  it("ライブプレビューでd2コードブロックを図Widget表示する", async () => {
+    const widgets = await collectInlineLivePreviewWidgets([
+      "```d2",
+      "x -> y",
+      "```"
+    ].join("\n"), 0, false);
+
+    expect(widgets).toContain("DiagramBlockWidget");
   });
 
   it("ライブプレビューでmermaidコードブロックを開いてもエディタが落ちない", async () => {
@@ -603,10 +613,10 @@ describe("Editor", () => {
     );
 
     await waitFor(() => expect(viewRef.current).not.toBeNull());
-    await waitFor(() => expect(container.querySelector(".cm-live-mermaid")).not.toBeNull());
+    await waitFor(() => expect(container.querySelector(".cm-live-diagram")).not.toBeNull());
   });
 
-  it("ライブプレビューでカーソルがmermaidブロック内にあるだけでは図表示を維持する", async () => {
+  it("ライブプレビューでカーソルが図ブロック内にあるだけでは図表示を維持する", async () => {
     const content = [
       "```mermaid",
       "graph TD; A-->B",
@@ -614,10 +624,10 @@ describe("Editor", () => {
     ].join("\n");
     const widgets = await collectInlineLivePreviewWidgets(content, content.indexOf("A-->B"), true);
 
-    expect(widgets).toContain("MermaidBlockWidget");
+    expect(widgets).toContain("DiagramBlockWidget");
   });
 
-  it("Mermaid Widget操作ではソース表示へ戻らず、ソースを編集ボタンでだけソース表示にする", async () => {
+  it("図Widget操作ではソース表示へ戻らず、ソースを編集ボタンでだけソース表示にする", async () => {
     const viewRef = createRef<EditorView | null>();
     const content = [
       "# Mermaid",
@@ -637,206 +647,36 @@ describe("Editor", () => {
       />
     );
 
-    await waitFor(() => expect(container.querySelector(".cm-live-mermaid")).not.toBeNull());
+    await waitFor(() => expect(container.querySelector(".cm-live-diagram")).not.toBeNull());
 
-    const mermaidWidget = container.querySelector(".cm-live-mermaid") as HTMLElement;
+    const diagramWidget = container.querySelector(".cm-live-diagram") as HTMLElement;
 
-    fireEvent.click(mermaidWidget);
-    fireEvent.wheel(mermaidWidget, { deltaY: -1 });
-    fireEvent.pointerDown(mermaidWidget, { button: 0, clientX: 10, clientY: 20 });
-    fireEvent.pointerMove(mermaidWidget, { clientX: 40, clientY: 60 });
-    fireEvent.pointerUp(mermaidWidget);
-    fireEvent.click(mermaidWidget);
+    fireEvent.click(diagramWidget);
+    fireEvent.wheel(diagramWidget, { deltaY: -1 });
+    fireEvent.pointerDown(diagramWidget, { button: 0, clientX: 10, clientY: 20 });
+    fireEvent.pointerMove(diagramWidget, { clientX: 40, clientY: 60 });
+    fireEvent.pointerUp(diagramWidget);
+    fireEvent.click(diagramWidget);
 
-    expect(container.querySelector(".cm-live-mermaid")).not.toBeNull();
-    expect(container.querySelector(".cm-live-mermaid-fit-button")).not.toBeNull();
-    expect(container.querySelector(".cm-live-mermaid-visual-edit-button")).not.toBeNull();
-    expect(container.querySelector(".cm-live-mermaid-edit-button")).not.toBeNull();
+    expect(container.querySelector(".cm-live-diagram")).not.toBeNull();
+    expect(container.querySelector(".cm-live-diagram-fit-button")).not.toBeNull();
+    expect(container.querySelector(".cm-live-mermaid-visual-edit-button")).toBeNull();
+    expect(container.querySelector(".cm-live-diagram-edit-button")).not.toBeNull();
 
-    fireEvent.click(container.querySelector(".cm-live-mermaid-fit-button") as HTMLButtonElement);
-    expect(container.querySelector(".cm-live-mermaid")).not.toBeNull();
+    fireEvent.click(container.querySelector(".cm-live-diagram-fit-button") as HTMLButtonElement);
+    expect(container.querySelector(".cm-live-diagram")).not.toBeNull();
 
-    fireEvent.click(container.querySelector(".cm-live-mermaid-edit-button") as HTMLButtonElement);
+    fireEvent.click(container.querySelector(".cm-live-diagram-edit-button") as HTMLButtonElement);
 
-    await waitFor(() => expect(container.querySelector(".cm-live-mermaid")).toBeNull());
+    await waitFor(() => expect(container.querySelector(".cm-live-diagram")).toBeNull());
     expect(viewRef.current?.state.selection.main.head).toBe(content.indexOf("graph TD"));
 
     viewRef.current?.dispatch({ selection: { anchor: content.length } });
 
-    await waitFor(() => expect(container.querySelector(".cm-live-mermaid")).not.toBeNull());
+    await waitFor(() => expect(container.querySelector(".cm-live-diagram")).not.toBeNull());
   });
 
-  it("Mermaid WidgetのMermaid編集ボタンから対象ブロックだけを書き換える", async () => {
-    const viewRef = createRef<EditorView | null>();
-    const onChange = vi.fn();
-    const content = [
-      "# Mermaid",
-      "",
-      "```mermaid",
-      "flowchart TD",
-      "  node1[人物]",
-      "```",
-      "",
-      "```mermaid",
-      "flowchart TD",
-      "  node9[別ブロック]",
-      "```"
-    ].join("\n");
-    const { container } = render(
-      <Editor
-        content={content}
-        filePath="setting.md"
-        onChange={onChange}
-        settings={settings}
-        viewRef={viewRef}
-      />
-    );
-
-    await waitFor(() => expect(container.querySelector(".cm-live-mermaid-visual-edit-button")).not.toBeNull());
-
-    fireEvent.click(container.querySelector(".cm-live-mermaid-visual-edit-button") as HTMLButtonElement);
-    await waitFor(() => expect(container.querySelector(".mermaid-editor-popover")).not.toBeNull());
-
-    const popover = container.querySelector(".mermaid-editor-popover") as HTMLElement;
-    fireEvent.click(within(popover).getByRole("button", { name: /ノード追加|Add node/ }));
-    fireEvent.change(within(popover).getByLabelText("ID"), { target: { value: "node2" } });
-    fireEvent.change(within(popover).getByLabelText(/ラベル|Label/), { target: { value: "Node 2" } });
-    fireEvent.click(within(popover).getByRole("button", { name: /^追加$|^Add$/ }));
-
-    await waitFor(() => expect(onChange).toHaveBeenLastCalledWith(expect.stringContaining("node2[Node 2]")));
-    expect(onChange).toHaveBeenLastCalledWith(expect.stringContaining("node9[別ブロック]"));
-    expect(onChange).toHaveBeenLastCalledWith(expect.not.stringContaining("%% relic:canvas"));
-  });
-
-  it("複数Mermaidブロックでは開いた対象ブロックだけを書き換える", async () => {
-    const viewRef = createRef<EditorView | null>();
-    const onChange = vi.fn();
-    const content = [
-      "# Mermaid",
-      "",
-      "```mermaid",
-      "flowchart TD",
-      "  node1[人物]",
-      "```",
-      "",
-      "```mermaid",
-      "flowchart TD",
-      "  node9[別ブロック]",
-      "```"
-    ].join("\n");
-    const { container } = render(
-      <Editor
-        content={content}
-        filePath="setting.md"
-        onChange={onChange}
-        settings={settings}
-        viewRef={viewRef}
-      />
-    );
-
-    await waitFor(() => expect(container.querySelectorAll(".cm-live-mermaid-visual-edit-button")).toHaveLength(2));
-
-    fireEvent.click(container.querySelectorAll(".cm-live-mermaid-visual-edit-button")[1] as HTMLButtonElement);
-    await waitFor(() => expect(container.querySelector(".mermaid-editor-popover")).not.toBeNull());
-
-    const popover = container.querySelector(".mermaid-editor-popover") as HTMLElement;
-    fireEvent.click(within(popover).getByRole("button", { name: /ノード追加|Add node/ }));
-    fireEvent.change(within(popover).getByLabelText("ID"), { target: { value: "node10" } });
-    fireEvent.change(within(popover).getByLabelText(/ラベル|Label/), { target: { value: "Second" } });
-    fireEvent.click(within(popover).getByRole("button", { name: /^追加$|^Add$/ }));
-
-    await waitFor(() => expect(onChange).toHaveBeenLastCalledWith(expect.stringContaining("node10[Second]")));
-    const updated = onChange.mock.calls.at(-1)?.[0] as string;
-    expect(updated).toContain("node1[人物]");
-    expect(updated.indexOf("node1[人物]")).toBeLessThan(updated.indexOf("node9[別ブロック]"));
-    expect(updated.indexOf("node10[Second]")).toBeGreaterThan(updated.indexOf("node9[別ブロック]"));
-  });
-
-  it("セッション中に対象外本文が変わっても対象ブロックを再特定して更新する", async () => {
-    const viewRef = createRef<EditorView | null>();
-    const onChange = vi.fn();
-    const content = [
-      "# Mermaid",
-      "",
-      "```mermaid",
-      "flowchart TD",
-      "  node1[人物]",
-      "```",
-      "",
-      "本文"
-    ].join("\n");
-    const { container } = render(
-      <Editor
-        content={content}
-        filePath="setting.md"
-        onChange={onChange}
-        settings={settings}
-        viewRef={viewRef}
-      />
-    );
-
-    await waitFor(() => expect(container.querySelector(".cm-live-mermaid-visual-edit-button")).not.toBeNull());
-
-    fireEvent.click(container.querySelector(".cm-live-mermaid-visual-edit-button") as HTMLButtonElement);
-    await waitFor(() => expect(container.querySelector(".mermaid-editor-popover")).not.toBeNull());
-
-    viewRef.current?.dispatch({ changes: { from: 0, insert: "前置き\n\n" } });
-    onChange.mockClear();
-
-    const popover = container.querySelector(".mermaid-editor-popover") as HTMLElement;
-    fireEvent.click(within(popover).getByRole("button", { name: /ノード追加|Add node/ }));
-    fireEvent.change(within(popover).getByLabelText("ID"), { target: { value: "node2" } });
-    fireEvent.change(within(popover).getByLabelText(/ラベル|Label/), { target: { value: "Node 2" } });
-    fireEvent.click(within(popover).getByRole("button", { name: /^追加$|^Add$/ }));
-
-    await waitFor(() => expect(onChange).toHaveBeenLastCalledWith(expect.stringContaining("node2[Node 2]")));
-    expect(onChange.mock.calls.at(-1)?.[0]).toMatch(/^前置き\n\n# Mermaid/);
-  });
-
-  it("対象ブロックが削除された場合はMarkdownを書き換えず安全停止する", async () => {
-    const viewRef = createRef<EditorView | null>();
-    const onChange = vi.fn();
-    const content = [
-      "```mermaid",
-      "flowchart TD",
-      "  node1[人物]",
-      "```",
-      "",
-      "```mermaid",
-      "flowchart TD",
-      "  node9[別ブロック]",
-      "```"
-    ].join("\n");
-    const { container } = render(
-      <Editor
-        content={content}
-        filePath="setting.md"
-        onChange={onChange}
-        settings={settings}
-        viewRef={viewRef}
-      />
-    );
-
-    await waitFor(() => expect(container.querySelector(".cm-live-mermaid-visual-edit-button")).not.toBeNull());
-
-    fireEvent.click(container.querySelector(".cm-live-mermaid-visual-edit-button") as HTMLButtonElement);
-    await waitFor(() => expect(container.querySelector(".mermaid-editor-popover")).not.toBeNull());
-
-    const currentDoc = viewRef.current?.state.doc.toString() ?? "";
-    const secondBlockFrom = currentDoc.indexOf("\n\n```mermaid");
-    viewRef.current?.dispatch({ changes: { from: 0, to: secondBlockFrom + 2 } });
-    onChange.mockClear();
-
-    const popover = container.querySelector(".mermaid-editor-popover") as HTMLElement;
-    fireEvent.click(within(popover).getByRole("button", { name: /ノード追加|Add node/ }));
-    fireEvent.change(within(popover).getByLabelText("ID"), { target: { value: "node2" } });
-    fireEvent.click(within(popover).getByRole("button", { name: /^追加$|^Add$/ }));
-
-    expect(onChange).not.toHaveBeenCalled();
-    expect(await within(popover).findByText(/対象ブロック|target block/i)).toBeInTheDocument();
-  });
-
-  it("ライブプレビューで通常コードブロックはmermaid専用Widgetにしない", async () => {
+  it("ライブプレビューで通常コードブロックは図Widgetにしない", async () => {
     const content = [
       "```js",
       "const value = 1;",
@@ -845,7 +685,7 @@ describe("Editor", () => {
     const widgets = await collectInlineLivePreviewWidgets(content, 0, false);
     const classes = await collectLivePreviewClasses(content, content.length, false);
 
-    expect(widgets).not.toContain("MermaidBlockWidget");
+    expect(widgets).not.toContain("DiagramBlockWidget");
     expect(classes).toContain("cm-live-code-block");
   });
 
