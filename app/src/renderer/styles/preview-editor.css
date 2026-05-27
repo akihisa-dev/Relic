@@ -47,8 +47,9 @@
 .preview-mermaid {
   box-sizing: border-box;
   margin: 0.8em 0;
+  max-height: min(520px, 62vh);
   max-width: 100%;
-  overflow-x: auto;
+  overflow: auto;
   position: relative;
 }
 
@@ -88,14 +89,22 @@
   color: var(--text);
   font-size: 12px;
   min-height: 26px;
+  opacity: 0.52;
   padding: 0 9px;
   position: sticky;
   right: 8px;
   top: 8px;
+  transition: background-color 0.12s ease, border-color 0.12s ease, opacity 0.12s ease;
   z-index: 1;
 }
 
-.preview-mermaid-expand-button:hover {
+.preview-mermaid:hover .preview-mermaid-expand-button,
+.preview-mermaid-expand-button:focus-visible {
+  opacity: 1;
+}
+
+.preview-mermaid-expand-button:hover,
+.preview-mermaid-expand-button:focus-visible {
   background: var(--hover);
   border-color: var(--border-medium);
 }
