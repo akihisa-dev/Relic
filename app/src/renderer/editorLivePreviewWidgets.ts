@@ -1,5 +1,7 @@
 import { WidgetType } from "@codemirror/view";
+import type { EditorView } from "@codemirror/view";
 
+import { enterMermaidSourceEdit } from "./editorMermaidEditState";
 import { buildMermaidFallback, renderMermaidElement } from "./mermaidPreview";
 
 export class ListMarkerWidget extends WidgetType {
@@ -111,19 +113,64 @@ export class HorizontalRuleWidget extends WidgetType {
 export class MermaidBlockWidget extends WidgetType {
   readonly className = "cm-live-mermaid";
 
-  constructor(private readonly source: string) {
+  constructor(
+    private readonly source: string,
+    private readonly blockFrom: number,
+    private readonly blockTo: number,
+    private readonly editCursor: number
+  ) {
     super();
   }
 
   eq(other: MermaidBlockWidget): boolean {
-    return this.source === other.source;
+    return this.source === other.source &&
+      this.blockFrom === other.blockFrom &&
+      this.blockTo === other.blockTo &&
+      this.editCursor === other.editCursor;
   }
 
-  toDOM(): HTMLElement {
+  toDOM(view: EditorView): HTMLElement {
     const container = document.createElement("div");
     container.className = "preview-mermaid cm-live-mermaid";
-    container.append(buildMermaidFallback(this.source));
-    void renderMermaidElement(container, this.source);
+
+    const toolbar = document.createElement("div");
+    toolbar.className = "cm-live-mermaid-toolbar";
+    const editButton = document.createElement("button");
+    editButton.type = "button";
+    editButton.className = "cm-live-mermaid-edit-button";
+    editButton.textContent = "ソースを編集";
+    editButton.setAttribute("aria-label", "Mermaidソースを編集");
+    editButton.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      enterMermaidSourceEdit(
+        view,
+        { from: this.blockFrom, to: this.blockTo },
+        this.editCursor
+      );
+    });
+    toolbar.append(editButton);
+
+    const diagram = document.createElement("div");
+    diagram.className = "cm-live-mermaid-diagram";
+    diagram.append(buildMermaidFallback(this.source));
+    void renderMermaidElement(diagram, this.source);
+    container.append(toolbar, diagram);
     return container;
+  }
+
+  ignoreEvent(event: Event): boolean {
+    return [
+      "click",
+      "dblclick",
+      "dragstart",
+      "mousedown",
+      "pointercancel",
+      "pointerdown",
+      "pointermove",
+      "pointerup",
+      "wheel"
+    ].includes(event.type);
   }
 }

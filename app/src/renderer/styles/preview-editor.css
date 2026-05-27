@@ -80,6 +80,28 @@
   max-width: none;
 }
 
+.cm-live-mermaid-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 6px;
+}
+
+.cm-live-mermaid-edit-button {
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  border: 1px solid var(--border);
+  color: var(--text-3);
+  font-size: 12px;
+  min-height: 26px;
+  padding: 0 9px;
+}
+
+.cm-live-mermaid-edit-button:hover,
+.cm-live-mermaid-edit-button:focus-visible {
+  background: var(--hover);
+  border-color: var(--border-medium);
+  color: var(--text);
+}
+
 .preview-mermaid-panzoom-viewport {
   border: 1px solid var(--border);
   border-radius: 6px;

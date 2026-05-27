@@ -10,6 +10,7 @@ import {
   type InlineMatch,
   type SourceRevealRange
 } from "./editorLivePreviewModel";
+import { mermaidEditRangeField } from "./editorMermaidEditState";
 import {
   CheckboxWidget,
   HorizontalRuleWidget,
@@ -29,6 +30,7 @@ export function buildLivePreviewDecorations(
   const { state } = view;
   const doc = state.doc;
   const editorHasFocus = typeof view.hasFocus === "boolean" ? view.hasFocus : true;
+  const mermaidEditRange = state.field(mermaidEditRangeField, false);
 
   const ranges: { from: number; to: number; deco: Decoration }[] = [];
   const tableBlocks = findTableBlocks(state);
@@ -71,6 +73,10 @@ export function buildLivePreviewDecorations(
     if (from < to && !shouldRevealSource(from, to)) {
       ranges.push({ from, to, deco: Decoration.replace({ widget }) });
     }
+  }
+
+  function isMermaidSourceEditing(from: number, to: number): boolean {
+    return Boolean(mermaidEditRange && mermaidEditRange.from <= from && mermaidEditRange.to >= to);
   }
 
   function addInlineFormat(lineFrom: number, match: InlineMatch, text: string) {
@@ -155,9 +161,21 @@ export function buildLivePreviewDecorations(
           if (closingLineNumber) {
             const blockFrom = line.from;
             const blockTo = doc.line(closingLineNumber).to;
+            const editCursor = closingLineNumber > lineNumber + 1
+              ? doc.line(lineNumber + 1).from
+              : line.to;
 
-            if (!selectionTouches(blockFrom, blockTo)) {
-              addWidget(line.from, line.to, new MermaidBlockWidget(codeBlockSource(lineNumber, closingLineNumber)));
+            if (!isMermaidSourceEditing(blockFrom, blockTo)) {
+              addWidget(
+                line.from,
+                line.to,
+                new MermaidBlockWidget(
+                  codeBlockSource(lineNumber, closingLineNumber),
+                  blockFrom,
+                  blockTo,
+                  editCursor
+                )
+              );
 
               for (let hiddenLineNumber = lineNumber + 1; hiddenLineNumber <= closingLineNumber; hiddenLineNumber += 1) {
                 const hiddenLine = doc.line(hiddenLineNumber);
