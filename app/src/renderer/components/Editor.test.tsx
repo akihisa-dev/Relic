@@ -649,7 +649,11 @@ describe("Editor", () => {
     fireEvent.click(mermaidWidget);
 
     expect(container.querySelector(".cm-live-mermaid")).not.toBeNull();
+    expect(container.querySelector(".cm-live-mermaid-fit-button")).not.toBeNull();
     expect(container.querySelector(".cm-live-mermaid-edit-button")).not.toBeNull();
+
+    fireEvent.click(container.querySelector(".cm-live-mermaid-fit-button") as HTMLButtonElement);
+    expect(container.querySelector(".cm-live-mermaid")).not.toBeNull();
 
     fireEvent.click(container.querySelector(".cm-live-mermaid-edit-button") as HTMLButtonElement);
 

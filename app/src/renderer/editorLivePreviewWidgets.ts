@@ -2,7 +2,7 @@ import { WidgetType } from "@codemirror/view";
 import type { EditorView } from "@codemirror/view";
 
 import { enterMermaidSourceEdit } from "./editorMermaidEditState";
-import { buildMermaidFallback, renderMermaidElement } from "./mermaidPreview";
+import { buildMermaidFallback, renderMermaidElement, type MermaidRenderHandle } from "./mermaidPreview";
 
 export class ListMarkerWidget extends WidgetType {
   constructor(
@@ -133,8 +133,22 @@ export class MermaidBlockWidget extends WidgetType {
     const container = document.createElement("div");
     container.className = "preview-mermaid cm-live-mermaid";
 
+    let mermaidHandle: MermaidRenderHandle | null = null;
     const toolbar = document.createElement("div");
     toolbar.className = "cm-live-mermaid-toolbar";
+    const fitButton = document.createElement("button");
+    fitButton.type = "button";
+    fitButton.className = "cm-live-mermaid-fit-button";
+    fitButton.textContent = "全体表示";
+    fitButton.setAttribute("aria-label", "Mermaid図を全体表示");
+    fitButton.disabled = true;
+    fitButton.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      mermaidHandle?.fitToViewport();
+    });
+
     const editButton = document.createElement("button");
     editButton.type = "button";
     editButton.className = "cm-live-mermaid-edit-button";
@@ -150,12 +164,15 @@ export class MermaidBlockWidget extends WidgetType {
         this.editCursor
       );
     });
-    toolbar.append(editButton);
+    toolbar.append(fitButton, editButton);
 
     const diagram = document.createElement("div");
     diagram.className = "cm-live-mermaid-diagram";
     diagram.append(buildMermaidFallback(this.source));
-    void renderMermaidElement(diagram, this.source);
+    void renderMermaidElement(diagram, this.source).then((handle) => {
+      mermaidHandle = handle;
+      fitButton.disabled = !handle;
+    });
     container.append(toolbar, diagram);
     return container;
   }
