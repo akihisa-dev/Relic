@@ -10,6 +10,6 @@ export function decodeMermaidSourceAttribute(value: string): string {
   try {
     return decodeURIComponent(value.slice(mermaidSourceAttributePrefix.length));
   } catch {
-    return value;
+    return "";
   }
 }
