@@ -54,6 +54,18 @@ describe("App", () => {
     expect(await screen.findByRole("button", { name: /読書メモ/ })).toBeInTheDocument();
   });
 
+  it("左レールからキャンバスビューを開く", async () => {
+    window.relic = makeRelicApi();
+
+    await renderApp();
+
+    fireEvent.click(await screen.findByRole("button", { name: "キャンバス" }));
+
+    expect(await screen.findByText("キャンバス", { selector: ".pane-tab-name" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "四角" })).toBeInTheDocument();
+    expect(screen.getByText(/flowchart TD/)).toBeInTheDocument();
+  });
+
   it("ファイルツリーのノートをクリックするとタブが開く", async () => {
     window.relic = makeRelicApi({
       getWorkspaceState: vi.fn().mockResolvedValue({

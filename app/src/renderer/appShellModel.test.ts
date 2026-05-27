@@ -86,6 +86,7 @@ describe("appShellModel", () => {
     const labels = panelLabelsForTranslator(createTranslator("en"));
 
     expect(labels).toEqual({
+      canvas: "Canvas",
       chronicleSettings: "Calendar Settings",
       frontmatter: "Frontmatter",
       settings: "Settings",
@@ -103,6 +104,7 @@ describe("appShellModel", () => {
       { icon: null, id: "files", label: "Files" },
       { icon: null, id: "tools", label: "Tools" },
       { icon: null, id: "frontmatter", label: "Frontmatter" },
+      { icon: null, id: "canvas", label: "Canvas" },
       { icon: null, id: "chronicle", label: "Timeline" },
       { icon: null, id: "calendar", label: "Calendar" },
       { icon: null, id: "chronicleSettings", label: "Calendar Settings" },
@@ -116,10 +118,10 @@ describe("appShellModel", () => {
     });
     const split = splitRailViews(enabled);
 
-    expect(enabled.map((view) => view.id)).toEqual(["files", "chronicle", "calendar", "chronicleSettings", "settings"]);
+    expect(enabled.map((view) => view.id)).toEqual(["files", "canvas", "chronicle", "calendar", "chronicleSettings", "settings"]);
     expect(split.primaryRailViews.map((view) => view.id)).toEqual(["files"]);
     expect(split.chartRailViews.map((view) => view.id)).toEqual(["chronicle", "calendar"]);
-    expect(split.panelRailViews.map((view) => view.id)).toEqual(["chronicleSettings", "settings"]);
+    expect(split.panelRailViews.map((view) => view.id)).toEqual(["canvas", "chronicleSettings", "settings"]);
     expect(chartIdForRailView("chronicle")).toBe("chronicle");
     expect(chartIdForRailView("calendar")).toBe("date");
   });

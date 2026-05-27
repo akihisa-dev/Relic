@@ -152,9 +152,10 @@ export function useAppRailNavigation({
       return;
     }
 
-    openPanelInPane(focusedPane, panel, label);
-    showRailOpenFlight(label, railRect);
-  }, [clearRailTabFlight, focusedPane, openPanelInPane, setTabActive, showRailOpenFlight]);
+    const panelLabel = panelLabels[panel];
+    openPanelInPane(focusedPane, panel, panelLabel);
+    showRailOpenFlight(panelLabel, railRect);
+  }, [clearRailTabFlight, focusedPane, openPanelInPane, panelLabels, setTabActive, showRailOpenFlight]);
 
   const handleRailChartButton = useCallback((view: AppRailViewId, label: string, event: MouseEvent<HTMLButtonElement>): void => {
     const chartId = chartIdForRailView(view);
