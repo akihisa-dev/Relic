@@ -606,7 +606,7 @@ describe("Editor", () => {
     await waitFor(() => expect(container.querySelector(".cm-live-mermaid")).not.toBeNull());
   });
 
-  it("ライブプレビューでカーソルがmermaidブロック内にある場合はソース表示を維持する", async () => {
+  it("ライブプレビューでカーソルがmermaidブロック内にあるだけでは図表示を維持する", async () => {
     const content = [
       "```mermaid",
       "graph TD; A-->B",
@@ -614,7 +614,51 @@ describe("Editor", () => {
     ].join("\n");
     const widgets = await collectInlineLivePreviewWidgets(content, content.indexOf("A-->B"), true);
 
-    expect(widgets).not.toContain("MermaidBlockWidget");
+    expect(widgets).toContain("MermaidBlockWidget");
+  });
+
+  it("Mermaid Widget操作ではソース表示へ戻らず、ソースを編集ボタンでだけソース表示にする", async () => {
+    const viewRef = createRef<EditorView | null>();
+    const content = [
+      "# Mermaid",
+      "",
+      "```mermaid",
+      "graph TD; A-->B",
+      "```",
+      "",
+      "本文"
+    ].join("\n");
+    const { container } = render(
+      <Editor
+        content={content}
+        onChange={vi.fn()}
+        settings={settings}
+        viewRef={viewRef}
+      />
+    );
+
+    await waitFor(() => expect(container.querySelector(".cm-live-mermaid")).not.toBeNull());
+
+    const mermaidWidget = container.querySelector(".cm-live-mermaid") as HTMLElement;
+
+    fireEvent.click(mermaidWidget);
+    fireEvent.wheel(mermaidWidget, { deltaY: -1 });
+    fireEvent.pointerDown(mermaidWidget, { button: 0, clientX: 10, clientY: 20 });
+    fireEvent.pointerMove(mermaidWidget, { clientX: 40, clientY: 60 });
+    fireEvent.pointerUp(mermaidWidget);
+    fireEvent.click(mermaidWidget);
+
+    expect(container.querySelector(".cm-live-mermaid")).not.toBeNull();
+    expect(container.querySelector(".cm-live-mermaid-edit-button")).not.toBeNull();
+
+    fireEvent.click(container.querySelector(".cm-live-mermaid-edit-button") as HTMLButtonElement);
+
+    await waitFor(() => expect(container.querySelector(".cm-live-mermaid")).toBeNull());
+    expect(viewRef.current?.state.selection.main.head).toBe(content.indexOf("graph TD"));
+
+    viewRef.current?.dispatch({ selection: { anchor: content.length } });
+
+    await waitFor(() => expect(container.querySelector(".cm-live-mermaid")).not.toBeNull());
   });
 
   it("ライブプレビューで通常コードブロックはmermaid専用Widgetにしない", async () => {

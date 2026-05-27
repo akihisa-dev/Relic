@@ -160,12 +160,22 @@ function initializeMermaidPanZoom(viewport: HTMLElement, content: HTMLElement): 
 
   viewport.addEventListener("wheel", (event) => {
     event.preventDefault();
+    event.stopPropagation();
     setZoom(zoom + (event.deltaY < 0 ? mermaidZoomStep : -mermaidZoomStep), event);
+  });
+  viewport.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+  });
+  viewport.addEventListener("dblclick", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
   });
   viewport.addEventListener("pointerdown", (event) => {
     if (event.button !== 0) return;
 
     event.preventDefault();
+    event.stopPropagation();
     isDragging = true;
     activePointerId = event.pointerId;
     dragStartX = event.clientX;
@@ -179,15 +189,25 @@ function initializeMermaidPanZoom(viewport: HTMLElement, content: HTMLElement): 
     if (!isDragging) return;
 
     event.preventDefault();
+    event.stopPropagation();
     offsetX = dragOriginX + event.clientX - dragStartX;
     offsetY = dragOriginY + event.clientY - dragStartY;
     updateTransform();
   });
   viewport.addEventListener("pointerup", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
     stopDragging(event.pointerId);
   });
-  viewport.addEventListener("pointercancel", (event) => stopDragging(event.pointerId));
-  viewport.addEventListener("dragstart", (event) => event.preventDefault());
+  viewport.addEventListener("pointercancel", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    stopDragging(event.pointerId);
+  });
+  viewport.addEventListener("dragstart", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+  });
   updateTransform();
 
   function stopDragging(pointerId: number): void {
