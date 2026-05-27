@@ -289,6 +289,72 @@ describe("mermaidPreview", () => {
     expect(container.textContent).toContain("d2");
   });
 
+  it("複数D2ブロックの描画はD2 workerの応答が混ざらないよう直列化する", async () => {
+    const firstCompile = createDeferred<{ diagram: { id: string }; renderOptions: Record<string, never> }>();
+    const firstRender = createDeferred<string>();
+    const secondCompile = createDeferred<{ diagram: { id: string }; renderOptions: Record<string, never> }>();
+    const secondRender = createDeferred<string>();
+    const { renderDiagramElement } = await loadMermaidPreviewModule();
+    const firstContainer = createAttachedContainer();
+    const secondContainer = createAttachedContainer();
+    compileD2Mock
+      .mockReturnValueOnce(firstCompile.promise)
+      .mockReturnValueOnce(secondCompile.promise);
+    renderD2Mock
+      .mockReturnValueOnce(firstRender.promise)
+      .mockReturnValueOnce(secondRender.promise);
+
+    const firstResult = renderDiagramElement(firstContainer, "d2", "a -> b");
+    const secondResult = renderDiagramElement(secondContainer, "d2", "c -> d");
+
+    await vi.waitFor(() => {
+      expect(compileD2Mock).toHaveBeenCalledTimes(1);
+    });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(compileD2Mock).toHaveBeenCalledWith("a -> b", { layout: "dagre" });
+    expect(compileD2Mock).toHaveBeenCalledTimes(1);
+
+    firstCompile.resolve({ diagram: { id: "first" }, renderOptions: {} });
+    await vi.waitFor(() => {
+      expect(renderD2Mock).toHaveBeenCalledWith({ id: "first" }, { noXMLTag: true });
+    });
+    firstRender.resolve('<svg viewBox="0 0 120 80"><text>first</text></svg>');
+    await firstResult;
+
+    await vi.waitFor(() => {
+      expect(compileD2Mock).toHaveBeenCalledTimes(2);
+    });
+    expect(compileD2Mock).toHaveBeenLastCalledWith("c -> d", { layout: "dagre" });
+
+    secondCompile.resolve({ diagram: { id: "second" }, renderOptions: {} });
+    await vi.waitFor(() => {
+      expect(renderD2Mock).toHaveBeenLastCalledWith({ id: "second" }, { noXMLTag: true });
+    });
+    secondRender.resolve('<svg viewBox="0 0 120 80"><text>second</text></svg>');
+    await secondResult;
+
+    expect(firstContainer.querySelector(".preview-d2-svg svg")?.textContent).toBe("first");
+    expect(secondContainer.querySelector(".preview-d2-svg svg")?.textContent).toBe("second");
+  });
+
+  it("D2 rendererがSVG文字列を返さない場合はエラー表示にする", async () => {
+    const { renderDiagramElement } = await loadMermaidPreviewModule();
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const container = createAttachedContainer();
+    compileD2Mock.mockResolvedValueOnce({
+      diagram: { root: true },
+      renderOptions: {}
+    });
+    renderD2Mock.mockResolvedValueOnce({ root: true });
+
+    await expect(renderDiagramElement(container, "d2", "x -> y")).resolves.toBeNull();
+
+    expect(container.dataset.diagramRenderStatus).toBe("error");
+    expect(container.querySelector(".preview-diagram-error")).not.toBeNull();
+    expect(container.textContent).toContain("D2 renderer did not return SVG text.");
+    warn.mockRestore();
+  });
+
   it("fitToViewportはviewport内に収まる倍率と中央寄せへ戻す", async () => {
     const { renderMermaidElement } = await loadMermaidPreviewModule();
     const container = createAttachedContainer();
