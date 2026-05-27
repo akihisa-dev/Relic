@@ -171,6 +171,7 @@ describe("mermaidPreview", () => {
     await expect(renderMermaidElement(container, "invalid <source>")).resolves.toBeNull();
 
     expect(warn).toHaveBeenCalled();
+    expect(container.dataset.mermaidRenderStatus).toBe("error");
     expect(container.querySelector(".preview-mermaid-error")).not.toBeNull();
     expect(container.textContent).toContain("Mermaidをレンダリングできませんでした");
     expect(container.textContent).toContain("構文を確認してください。");
@@ -192,6 +193,7 @@ describe("mermaidPreview", () => {
     const svg = container.querySelector<SVGSVGElement>(".preview-mermaid-svg svg");
 
     expect(typeof handle?.fitToViewport).toBe("function");
+    expect(container.dataset.mermaidRenderStatus).toBe("rendered");
     expect(viewport).not.toBeNull();
     expect(viewport?.tabIndex).toBe(0);
     expect(viewport?.getAttribute("aria-label")).toContain("+で拡大");
@@ -490,11 +492,13 @@ describe("mermaidPreview", () => {
     });
 
     const oldResult = renderMermaidElement(container, "old");
+    expect(container.dataset.mermaidRenderStatus).toBe("rendering");
     await vi.waitFor(() => {
       expect(renderMock).toHaveBeenCalledWith(expect.stringMatching(/^relic-mermaid-/), "old");
     });
 
     await renderMermaidElement(container, "new");
+    expect(container.dataset.mermaidRenderStatus).toBe("rendered");
     expect(container.textContent).toContain("new");
 
     oldRender.resolve({ svg: '<svg viewBox="0 0 640 320"><text>old</text></svg>' });
@@ -519,6 +523,7 @@ describe("mermaidPreview", () => {
     deferredRender.resolve({ svg: '<svg viewBox="0 0 640 320"><text>after</text></svg>' });
 
     await expect(result).resolves.toBeNull();
+    expect(container.dataset.mermaidRenderStatus).toBe("stale");
     expect(container.textContent).toBe("before");
   });
 
