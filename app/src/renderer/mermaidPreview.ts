@@ -13,12 +13,24 @@ const mermaidKeyboardLargePanStep = 144;
 let initializedTheme: MermaidTheme | null = null;
 let renderId = 0;
 let renderTokenId = 0;
-const activeRenderTokens = new WeakMap<HTMLElement, number>();
+const activeRenderStates = new WeakMap<HTMLElement, MermaidRenderState>();
 
 type MermaidModule = typeof import("mermaid").default;
 
 export type MermaidRenderHandle = {
   fitToViewport: () => void;
+};
+
+type MermaidRenderState =
+  | { source: string; status: "rendering"; token: number }
+  | { handle: MermaidRenderHandle; source: string; status: "rendered"; token: number }
+  | { error: unknown; source: string; status: "error"; token: number }
+  | { reason: "detached" | "superseded"; source: string; status: "stale"; token: number };
+
+type MermaidRenderContext = {
+  canApplyResult: () => boolean;
+  markError: (error: unknown) => void;
+  markRendered: (handle: MermaidRenderHandle) => void;
 };
 
 export function isMermaidLanguage(lang: string | undefined | null): boolean {
@@ -73,19 +85,16 @@ export async function renderMermaidElement(
   container: HTMLElement,
   source: string
 ): Promise<MermaidRenderHandle | null> {
-  const renderToken = ++renderTokenId;
-  activeRenderTokens.set(container, renderToken);
-
-  const canApplyRenderResult = () => activeRenderTokens.get(container) === renderToken && container.isConnected;
+  const renderContext = beginMermaidRender(container, source);
 
   try {
     const mermaid = await loadMermaid();
     const id = `relic-mermaid-${renderId++}`;
     const { svg } = await mermaid.render(id, source);
-    if (!canApplyRenderResult()) return null;
+    if (!renderContext.canApplyResult()) return null;
 
     const sanitized = DOMPurify.sanitize(svg, { USE_PROFILES: { svg: true, svgFilters: true } });
-    if (!canApplyRenderResult()) return null;
+    if (!renderContext.canApplyResult()) return null;
 
     container.replaceChildren();
     const diagram = document.createElement("div");
@@ -106,12 +115,14 @@ export async function renderMermaidElement(
     viewport.append(content);
     const handle = initializeMermaidPanZoom(viewport, content);
     container.append(viewport);
+    renderContext.markRendered(handle);
     return handle;
   } catch (error) {
-    if (!canApplyRenderResult()) return null;
+    if (!renderContext.canApplyResult()) return null;
 
     console.warn("Mermaid diagram rendering failed.", error);
     container.replaceChildren(buildMermaidError(source, error));
+    renderContext.markError(error);
     return null;
   }
 }
@@ -144,6 +155,49 @@ async function loadMermaid(): Promise<MermaidModule> {
   }
 
   return mermaid;
+}
+
+function beginMermaidRender(container: HTMLElement, source: string): MermaidRenderContext {
+  const token = ++renderTokenId;
+  setMermaidRenderState(container, { source, status: "rendering", token });
+
+  const isCurrentRender = () => activeRenderStates.get(container)?.token === token;
+
+  const markStaleIfCurrent = (reason: "detached" | "superseded") => {
+    if (!isCurrentRender()) return;
+    setMermaidRenderState(container, { reason, source, status: "stale", token });
+  };
+
+  return {
+    canApplyResult: () => {
+      const current = activeRenderStates.get(container);
+
+      if (current?.token !== token || current.status !== "rendering") {
+        markStaleIfCurrent("superseded");
+        return false;
+      }
+
+      if (!container.isConnected) {
+        markStaleIfCurrent("detached");
+        return false;
+      }
+
+      return true;
+    },
+    markError: (error) => {
+      if (!isCurrentRender()) return;
+      setMermaidRenderState(container, { error, source, status: "error", token });
+    },
+    markRendered: (handle) => {
+      if (!isCurrentRender()) return;
+      setMermaidRenderState(container, { handle, source, status: "rendered", token });
+    }
+  };
+}
+
+function setMermaidRenderState(container: HTMLElement, state: MermaidRenderState): void {
+  activeRenderStates.set(container, state);
+  container.dataset.mermaidRenderStatus = state.status;
 }
 
 function getPreferredMermaidTheme(): MermaidTheme {
