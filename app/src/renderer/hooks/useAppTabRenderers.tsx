@@ -11,6 +11,7 @@ import type {
   WorkspaceChart,
   WorkspaceState
 } from "../../shared/ipc";
+import { CanvasPanel } from "../components/CanvasPanel";
 import { ChartView } from "../components/ChartPanel";
 import { ChronicleSettingsPanel } from "../components/ChronicleSettingsPanel";
 import { FrontmatterPanel } from "../components/FrontmatterPanel";
@@ -74,6 +75,10 @@ export function useAppTabRenderers({
           userDefinedFields={userDefinedFields}
         />
       );
+    }
+
+    if (panel === "canvas") {
+      return <CanvasPanel />;
     }
 
     if (panel === "chronicleSettings") {

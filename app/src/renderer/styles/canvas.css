@@ -1,0 +1,185 @@
+.canvas-page {
+  min-width: 0;
+}
+
+.canvas-page-header {
+  margin-bottom: 14px;
+}
+
+.canvas-toolbar {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.canvas-toolbar .secondary-button.active {
+  background: color-mix(in srgb, var(--accent) 14%, var(--bg));
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  color: var(--text);
+}
+
+.canvas-workspace {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: minmax(360px, 1fr) minmax(240px, 300px);
+  min-height: 0;
+}
+
+.canvas-stage {
+  background:
+    linear-gradient(color-mix(in srgb, var(--border) 42%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--border) 42%, transparent) 1px, transparent 1px),
+    var(--bg);
+  background-size: 24px 24px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-sizing: border-box;
+  min-height: 520px;
+  overflow: hidden;
+  position: relative;
+}
+
+.canvas-edges {
+  height: 100%;
+  inset: 0;
+  overflow: visible;
+  pointer-events: none;
+  position: absolute;
+  width: 100%;
+}
+
+.canvas-edges line {
+  marker-end: url("#canvas-arrow");
+  stroke: var(--text-3);
+  stroke-linecap: round;
+  stroke-width: 2;
+}
+
+.canvas-edges marker path {
+  fill: var(--text-3);
+}
+
+.canvas-node {
+  align-items: center;
+  background: color-mix(in srgb, var(--bg) 88%, var(--accent) 12%);
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border));
+  box-sizing: border-box;
+  color: var(--text);
+  cursor: grab;
+  display: flex;
+  font: inherit;
+  height: 58px;
+  justify-content: center;
+  line-height: 1.2;
+  max-width: 128px;
+  min-width: 128px;
+  overflow-wrap: anywhere;
+  padding: 8px 12px;
+  position: absolute;
+  text-align: center;
+  user-select: none;
+  width: 128px;
+}
+
+.canvas-node:active {
+  cursor: grabbing;
+}
+
+.canvas-node--rectangle {
+  border-radius: 6px;
+}
+
+.canvas-node--diamond {
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+  padding-inline: 22px;
+}
+
+.canvas-node--circle {
+  border-radius: 999px;
+}
+
+.canvas-node--selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.canvas-node--connecting {
+  background: color-mix(in srgb, var(--accent) 20%, var(--bg));
+}
+
+.canvas-inspector {
+  align-self: stretch;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  padding: 14px;
+}
+
+.canvas-field {
+  display: grid;
+  gap: 6px;
+}
+
+.canvas-field span,
+.canvas-source-heading {
+  color: var(--text-3);
+  font-size: 12px;
+}
+
+.canvas-field input,
+.canvas-field select {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  box-sizing: border-box;
+  color: var(--text);
+  font: inherit;
+  min-height: 32px;
+  padding: 6px 8px;
+  width: 100%;
+}
+
+.canvas-empty-selection {
+  color: var(--text-3);
+  font-size: 13px;
+  padding-block: 4px;
+}
+
+.canvas-source-block {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.canvas-source-block pre {
+  background: color-mix(in srgb, var(--text) 5%, var(--bg));
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-sizing: border-box;
+  margin: 0;
+  max-height: 260px;
+  overflow: auto;
+  padding: 10px;
+}
+
+.canvas-source-block code {
+  font-family: Menlo, monospace;
+  font-size: 12px;
+  white-space: pre;
+}
+
+@media (max-width: 920px) {
+  .canvas-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .canvas-stage {
+    min-height: 420px;
+  }
+}

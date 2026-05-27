@@ -24,6 +24,7 @@ describe("paneViewModel", () => {
     const chartTab: Tab = { chartId: "chronicle", id: "chart-chronicle", kind: "chart", name: "Chronicle" };
 
     expect(panelTabLabel("frontmatter", t)).toBe("Frontmatter");
+    expect(panelTabLabel("canvas", t)).toBe("Canvas");
     expect(panelTabLabel("chronicleSettings", t)).toBe("Calendar Settings");
     expect(panelTabLabel("settings", t)).toBe("Settings");
     expect(panelTabLabel("tools", t)).toBe("Tools");
