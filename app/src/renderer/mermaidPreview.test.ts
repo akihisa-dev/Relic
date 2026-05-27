@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+
 import { fireEvent } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -188,7 +190,7 @@ describe("mermaidPreview", () => {
     expect(document.querySelector(".preview-mermaid-overlay")).toBeNull();
   });
 
-  it("SVGクリックでオーバーレイを開き、Escで閉じる", async () => {
+  it("SVGクリックではオーバーレイを開かない", async () => {
     const { renderMermaidElement } = await loadMermaidPreviewModule();
     const container = document.createElement("div");
     renderMock.mockResolvedValueOnce({ svg: '<svg viewBox="0 0 640 320"><text>ok</text></svg>' });
@@ -197,14 +199,10 @@ describe("mermaidPreview", () => {
 
     fireEvent.click(container.querySelector(".preview-mermaid-svg") as HTMLElement);
 
-    expect(document.querySelector(".preview-mermaid-overlay")).not.toBeNull();
-
-    fireEvent.keyDown(document, { key: "Escape" });
-
     expect(document.querySelector(".preview-mermaid-overlay")).toBeNull();
   });
 
-  it("ズームイン・ズームアウト・リセットで拡大率を変更する", async () => {
+  it("拡大ビューはズームボタンを出さずリセットで視点を初期化する", async () => {
     const { renderMermaidElement } = await loadMermaidPreviewModule();
     const container = document.createElement("div");
     renderMock.mockResolvedValueOnce({ svg: '<svg viewBox="0 0 640 320"><text>ok</text></svg>' });
@@ -214,8 +212,7 @@ describe("mermaidPreview", () => {
     fireEvent.click(container.querySelector(".preview-mermaid-expand-button") as HTMLButtonElement);
 
     const content = document.querySelector<HTMLElement>(".preview-mermaid-overlay-content");
-    const zoomInButton = document.querySelector<HTMLButtonElement>('[aria-label="Mermaid図を拡大"]');
-    const zoomOutButton = document.querySelector<HTMLButtonElement>('[aria-label="Mermaid図を縮小"]');
+    const viewport = document.querySelector<HTMLElement>(".preview-mermaid-overlay-viewport");
     const resetButton = document.querySelector<HTMLButtonElement>(
       '[aria-label="Mermaid図の拡大率と位置をリセット"]'
     );
@@ -224,20 +221,19 @@ describe("mermaidPreview", () => {
     expect(content?.style.transform).toBe("translate(0px, 0px) scale(1)");
     expect(zoomStatus?.getAttribute("aria-label")).toBe("現在の拡大率");
     expect(zoomStatus?.textContent).toBe("100%");
-    expect(zoomInButton?.type).toBe("button");
-    expect(zoomOutButton?.type).toBe("button");
+    expect(document.querySelector('[aria-label="Mermaid図を拡大"]')).toBeNull();
+    expect(document.querySelector('[aria-label="Mermaid図を縮小"]')).toBeNull();
     expect(resetButton?.type).toBe("button");
 
-    fireEvent.click(zoomInButton as HTMLButtonElement);
-    expect(content?.style.transform).toBe("translate(0px, 0px) scale(1.2)");
+    dispatchWheelEvent(viewport as HTMLElement, { deltaY: -1 });
+    dispatchPointerEvent(viewport as HTMLElement, "pointerdown", { button: 0, clientX: 10, clientY: 20 });
+    dispatchPointerEvent(viewport as HTMLElement, "pointermove", { clientX: 40, clientY: 65 });
+    expect(content?.style.transform).toBe("translate(30px, 45px) scale(1.2)");
     expect(zoomStatus?.textContent).toBe("120%");
 
-    fireEvent.click(zoomOutButton as HTMLButtonElement);
-    expect(content?.style.transform).toBe("translate(0px, 0px) scale(1)");
-
-    fireEvent.click(zoomInButton as HTMLButtonElement);
     fireEvent.click(resetButton as HTMLButtonElement);
     expect(content?.style.transform).toBe("translate(0px, 0px) scale(1)");
+    expect(zoomStatus?.textContent).toBe("100%");
   });
 
   it("通常ホイールで拡大率を変更しpreventDefaultする", async () => {
@@ -274,9 +270,9 @@ describe("mermaidPreview", () => {
 
     const viewport = document.querySelector<HTMLElement>(".preview-mermaid-overlay-viewport");
     const content = document.querySelector<HTMLElement>(".preview-mermaid-overlay-content");
-    vi.spyOn(content as HTMLElement, "getBoundingClientRect").mockReturnValue({
-      bottom: 220,
-      height: 200,
+    vi.spyOn(viewport as HTMLElement, "getBoundingClientRect").mockReturnValue({
+      bottom: 300,
+      height: 300,
       left: 10,
       right: 410,
       top: 20,
@@ -356,6 +352,16 @@ describe("mermaidPreview", () => {
 
     dispatchPointerEvent(viewport as HTMLElement, "pointercancel", {});
     expect(viewport?.classList.contains("preview-mermaid-overlay-viewport--dragging")).toBe(false);
+  });
+
+  it("拡大ビューviewportはスクロールバーではなくパン操作を前提にする", async () => {
+    const css = readFileSync("src/renderer/styles/preview-editor.css", "utf8");
+
+    expect(css).toMatch(/\.preview-mermaid-overlay-viewport\s*{[^}]*overflow:\s*hidden;/s);
+    expect(css).toMatch(/\.preview-mermaid-overlay-viewport\s*{[^}]*cursor:\s*grab;/s);
+    expect(css).toMatch(/\.preview-mermaid-overlay-viewport--dragging\s*{[^}]*cursor:\s*grabbing;/s);
+    expect(css).toMatch(/\.preview-mermaid-overlay-viewport\s*{[^}]*user-select:\s*none;/s);
+    expect(css).not.toMatch(/\.preview-mermaid-overlay-viewport\s*{[^}]*overflow:\s*(auto|scroll);/s);
   });
 
   it("閉じた後に元のフォーカスへ戻す", async () => {
