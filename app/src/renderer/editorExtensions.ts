@@ -13,7 +13,7 @@ import { editorEditableCompartment } from "./editorEditable";
 import { createFrontmatterPropertiesField, frontmatterCollapsedField } from "./editorFrontmatter";
 import { handleMarkdownListEnter, indentMarkdownListSelection, isListInputEvent } from "./editorListInput";
 import { buildLivePreviewDecorations, findClickableLinkAtPosition } from "./editorLivePreview";
-import { mermaidEditRangeField } from "./editorMermaidEditState";
+import { diagramEditRangeField } from "./editorDiagramEditState";
 import { createLivePreviewTableField } from "./editorTables";
 import type { Translator } from "./i18n";
 
@@ -204,7 +204,7 @@ export function buildExtensions(
     ...(typewriterMode ? [typewriterExtension] : []),
     ...(!sourceMode ? [
       createFrontmatterPropertiesField(userDefinedFields, frontmatterCandidates, t, settings.frontmatterDateFormat),
-      mermaidEditRangeField,
+      diagramEditRangeField,
       createLivePreviewTableField(t),
       createLivePreviewPlugin(onOpenLinkRef, onOpenWikiLinkRef)
     ] : [])

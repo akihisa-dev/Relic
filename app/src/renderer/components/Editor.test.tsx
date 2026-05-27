@@ -595,6 +595,19 @@ describe("Editor", () => {
     expect(widgets).toContain("DiagramBlockWidget");
   });
 
+  it("4連バッククォートの中にある3連バッククォートdiagramは図Widgetにしない", async () => {
+    const content = [
+      "````markdown",
+      "```mermaid",
+      "graph TD; A-->B",
+      "```",
+      "````"
+    ].join("\n");
+    const widgets = await collectInlineLivePreviewWidgets(content, content.indexOf("graph TD"), false);
+
+    expect(widgets).not.toContain("DiagramBlockWidget");
+  });
+
   it("ライブプレビューでmermaidコードブロックを開いてもエディタが落ちない", async () => {
     const viewRef = createRef<EditorView | null>();
     const { container } = render(
@@ -660,7 +673,6 @@ describe("Editor", () => {
 
     expect(container.querySelector(".cm-live-diagram")).not.toBeNull();
     expect(container.querySelector(".cm-live-diagram-fit-button")).not.toBeNull();
-    expect(container.querySelector(".cm-live-mermaid-visual-edit-button")).toBeNull();
     expect(container.querySelector(".cm-live-diagram-edit-button")).not.toBeNull();
 
     fireEvent.click(container.querySelector(".cm-live-diagram-fit-button") as HTMLButtonElement);
@@ -670,6 +682,38 @@ describe("Editor", () => {
 
     await waitFor(() => expect(container.querySelector(".cm-live-diagram")).toBeNull());
     expect(viewRef.current?.state.selection.main.head).toBe(content.indexOf("graph TD"));
+
+    viewRef.current?.dispatch({ selection: { anchor: content.length } });
+
+    await waitFor(() => expect(container.querySelector(".cm-live-diagram")).not.toBeNull());
+  });
+
+  it("D2のソースを編集ボタンでD2コードブロックをソース表示に戻す", async () => {
+    const viewRef = createRef<EditorView | null>();
+    const content = [
+      "# D2",
+      "",
+      "```d2",
+      "x -> y",
+      "```",
+      "",
+      "本文"
+    ].join("\n");
+    const { container } = render(
+      <Editor
+        content={content}
+        onChange={vi.fn()}
+        settings={settings}
+        viewRef={viewRef}
+      />
+    );
+
+    await waitFor(() => expect(container.querySelector(".cm-live-diagram")).not.toBeNull());
+
+    fireEvent.click(container.querySelector(".cm-live-diagram-edit-button") as HTMLButtonElement);
+
+    await waitFor(() => expect(container.querySelector(".cm-live-diagram")).toBeNull());
+    expect(viewRef.current?.state.selection.main.head).toBe(content.indexOf("x -> y"));
 
     viewRef.current?.dispatch({ selection: { anchor: content.length } });
 

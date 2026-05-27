@@ -44,16 +44,14 @@
   padding: 0;
 }
 
-.preview-diagram,
-.preview-mermaid {
+.preview-diagram {
   box-sizing: border-box;
   margin: 0.8em 0;
   max-width: 100%;
   position: relative;
 }
 
-.preview-diagram pre,
-.preview-mermaid pre {
+.preview-diagram pre {
   background: rgba(31, 35, 40, 0.04);
   border-radius: 6px;
   margin: 0;
@@ -62,16 +60,14 @@
   user-select: text;
 }
 
-.preview-diagram code,
-.preview-mermaid code {
+.preview-diagram code {
   background: none;
   font-family: Menlo, monospace;
   font-size: 0.875em;
   padding: 0;
 }
 
-.preview-diagram-svg,
-.preview-mermaid-svg {
+.preview-diagram-svg {
   cursor: default;
   display: inline-block;
   max-width: none;
@@ -79,8 +75,7 @@
   width: max-content;
 }
 
-.preview-diagram-svg svg,
-.preview-mermaid-svg svg {
+.preview-diagram-svg svg {
   display: block;
   height: auto;
   max-width: none;
@@ -119,8 +114,7 @@
   opacity: 0.5;
 }
 
-.preview-diagram-error,
-.preview-mermaid-error {
+.preview-diagram-error {
   background: color-mix(in srgb, var(--danger, #b42318) 7%, var(--bg));
   border: 1px solid color-mix(in srgb, var(--danger, #b42318) 26%, var(--border));
   border-radius: 6px;
@@ -129,41 +123,35 @@
   user-select: text;
 }
 
-.preview-diagram-error-title,
-.preview-mermaid-error-title {
+.preview-diagram-error-title {
   font-weight: 600;
   margin-bottom: 4px;
 }
 
-.preview-diagram-error-message,
-.preview-mermaid-error-message {
+.preview-diagram-error-message {
   color: var(--text-3);
   font-size: 13px;
   margin-bottom: 8px;
 }
 
-.preview-diagram-error-details,
-.preview-mermaid-error-details {
+.preview-diagram-error-details {
   margin-top: 8px;
 }
 
-.preview-diagram-error-details summary,
-.preview-mermaid-error-details summary {
+.preview-diagram-error-details summary {
   color: var(--text-3);
   cursor: pointer;
   font-size: 12px;
 }
 
-.preview-diagram-error-details pre,
-.preview-mermaid-error-details pre {
+.preview-diagram-error-details pre {
   margin-top: 8px;
   max-height: 240px;
   overflow: auto;
   user-select: text;
 }
 
-.preview-diagram-error-copy-button,
-.preview-mermaid-error-copy-button {
+.preview-diagram-error-copy-button {
   display: block;
   font-size: 12px;
   margin-left: auto;
@@ -172,8 +160,7 @@
   padding: 0 8px;
 }
 
-.preview-diagram-panzoom-viewport,
-.preview-mermaid-panzoom-viewport {
+.preview-diagram-panzoom-viewport {
   border: 1px solid var(--border);
   border-radius: 6px;
   box-sizing: border-box;
@@ -187,20 +174,16 @@
   width: 100%;
 }
 
-.preview-diagram-panzoom-viewport--dragging,
-.preview-mermaid-panzoom-viewport--dragging {
+.preview-diagram-panzoom-viewport--dragging {
   cursor: default;
 }
 
 .preview-diagram-panzoom-viewport--dragging .preview-diagram-panzoom-content,
-.preview-diagram-panzoom-viewport--dragging .preview-diagram-svg,
-.preview-mermaid-panzoom-viewport--dragging .preview-mermaid-panzoom-content,
-.preview-mermaid-panzoom-viewport--dragging .preview-mermaid-svg {
+.preview-diagram-panzoom-viewport--dragging .preview-diagram-svg {
   cursor: default;
 }
 
-.preview-diagram-panzoom-content,
-.preview-mermaid-panzoom-content {
+.preview-diagram-panzoom-content {
   cursor: default;
   left: 0;
   position: absolute;

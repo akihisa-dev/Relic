@@ -4,7 +4,7 @@ import type { MouseEvent, ReactElement } from "react";
 import type { EditorSettings } from "../../shared/ipc";
 import { usePreviewEmbeds } from "../hooks/usePreviewEmbeds";
 import { useT } from "../i18n";
-import { renderDiagramElements } from "../mermaidPreview";
+import { renderDiagramElements } from "../diagramPreview";
 import { renderMarkdown, slugifyHeading, toggleNthCheckbox } from "../previewMarkdown";
 
 export { normalizeEmbedTarget } from "../previewMarkdown";
