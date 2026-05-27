@@ -14,7 +14,7 @@ export interface TextCount {
 }
 
 export function panelTabLabel(panel: PanelTabKind, t: Translator): string {
-  if (panel === "canvas") return t("nav.canvas");
+  if (panel === "mermaidEditor") return t("nav.mermaidEditor");
   if (panel === "chronicleSettings") return t("nav.chronicleSettings");
   if (panel === "frontmatter") return t("nav.frontmatter");
   if (panel === "settings") return t("nav.settings");

@@ -1,24 +1,22 @@
-export type CanvasDirection = "TD" | "LR";
-export type CanvasShape = "rectangle" | "diamond" | "circle";
+export type MermaidDirection = "TD" | "LR";
+export type MermaidNodeShape = "rectangle" | "diamond" | "circle";
 
-export interface CanvasNode {
+export interface MermaidNode {
   id: string;
   label: string;
-  shape: CanvasShape;
-  x: number;
-  y: number;
+  shape: MermaidNodeShape;
 }
 
-export interface CanvasEdge {
+export interface MermaidConnection {
   from: string;
   label?: string;
   to: string;
 }
 
-export interface CanvasDiagram {
-  direction: CanvasDirection;
-  edges: CanvasEdge[];
-  nodes: CanvasNode[];
+export interface MermaidFlowchartModel {
+  connections: MermaidConnection[];
+  direction: MermaidDirection;
+  nodes: MermaidNode[];
 }
 
 export interface MermaidMarkdownBlock {
@@ -28,18 +26,11 @@ export interface MermaidMarkdownBlock {
   to: number;
 }
 
-export type CanvasParseResult =
-  | { diagram: CanvasDiagram; ok: true }
+export type MermaidFlowchartParseResult =
+  | { model: MermaidFlowchartModel; ok: true }
   | { ok: false; reason: "empty" | "unsupported" };
 
-interface RelicCanvasMetadata {
-  nodes?: Record<string, {
-    x?: unknown;
-    y?: unknown;
-  }>;
-}
-
-interface ParsedCanvasNode extends Omit<CanvasNode, "x" | "y"> {
+interface ParsedMermaidNode extends MermaidNode {
   explicit: boolean;
 }
 
@@ -56,7 +47,6 @@ const edgeRegex = /^(.+?)\s*-->\s*(?:\|([^|]*)\|\s*)?(.+)$/;
 const rectangleRegex = new RegExp(`^(${nodeIdPattern})\\s*\\[([^\\]]*)\\]$`);
 const diamondRegex = new RegExp(`^(${nodeIdPattern})\\s*\\{([^}]*)\\}$`);
 const circleRegex = new RegExp(`^(${nodeIdPattern})\\s*\\(\\(([^)]*)\\)\\)$`);
-const relicCanvasMetadataPrefix = "%% relic:canvas ";
 
 export function findMermaidMarkdownBlocks(markdown: string): MermaidMarkdownBlock[] {
   const lines = markdownLines(markdown);
@@ -89,70 +79,63 @@ export function findMermaidMarkdownBlocks(markdown: string): MermaidMarkdownBloc
   return blocks;
 }
 
-export function parseCanvasMermaid(source: string): CanvasParseResult {
-  const metadata = parseRelicCanvasMetadata(source);
+export function parseMermaidFlowchart(source: string): MermaidFlowchartParseResult {
   const statements = mermaidStatements(source);
   if (statements.length === 0) return { ok: false, reason: "empty" };
 
   const headerMatch = /^(?:flowchart|graph)\s+(TD|LR)$/.exec(statements[0]);
   if (!headerMatch) return { ok: false, reason: "unsupported" };
 
-  const nodes = new Map<string, ParsedCanvasNode>();
-  const edges: CanvasEdge[] = [];
+  const nodes = new Map<string, ParsedMermaidNode>();
+  const connections: MermaidConnection[] = [];
 
   for (const statement of statements.slice(1)) {
-    const edge = parseEdgeStatement(statement);
-    if (edge) {
-      const from = parseNodeToken(edge.from);
-      const to = parseNodeToken(edge.to);
+    const connection = parseConnectionStatement(statement);
+    if (connection) {
+      const from = parseNodeToken(connection.from);
+      const to = parseNodeToken(connection.to);
       if (!from || !to) return { ok: false, reason: "unsupported" };
-      if (!upsertCanvasNode(nodes, from)) return { ok: false, reason: "unsupported" };
-      if (!upsertCanvasNode(nodes, to)) return { ok: false, reason: "unsupported" };
-      edges.push(edge.label === undefined
+      if (!upsertMermaidNode(nodes, from)) return { ok: false, reason: "unsupported" };
+      if (!upsertMermaidNode(nodes, to)) return { ok: false, reason: "unsupported" };
+      connections.push(connection.label === undefined
         ? { from: from.id, to: to.id }
-        : { from: from.id, label: edge.label, to: to.id });
+        : { from: from.id, label: connection.label, to: to.id });
       continue;
     }
 
     const node = parseNodeToken(statement);
     if (node) {
-      if (!upsertCanvasNode(nodes, node)) return { ok: false, reason: "unsupported" };
+      if (!upsertMermaidNode(nodes, node)) return { ok: false, reason: "unsupported" };
       continue;
     }
 
     return { ok: false, reason: "unsupported" };
   }
 
-  if (edges.some((edge) => !nodes.has(edge.from) || !nodes.has(edge.to))) {
+  if (connections.some((connection) => !nodes.has(connection.from) || !nodes.has(connection.to))) {
     return { ok: false, reason: "unsupported" };
   }
 
   return {
-    diagram: {
-      direction: headerMatch[1] as CanvasDirection,
-      edges,
-      nodes: layoutNodes(Array.from(nodes.values()), headerMatch[1] as CanvasDirection, metadata)
+    model: {
+      connections,
+      direction: headerMatch[1] as MermaidDirection,
+      nodes: Array.from(nodes.values()).map(({ explicit: _explicit, ...node }) => node)
     },
     ok: true
   };
 }
 
-export function buildCanvasMermaidSource(diagram: CanvasDiagram): string {
-  const lines = [
-    `flowchart ${diagram.direction}`,
-    ...diagram.nodes.map((node) => `  ${node.id}${shapeSource(node.shape, safeMermaidLabel(node.label))}`),
-    ...diagram.edges.map((edge) => (
-      edge.label === undefined
-        ? `  ${edge.from} --> ${edge.to}`
-        : `  ${edge.from} -->|${safeMermaidEdgeLabel(edge.label)}| ${edge.to}`
+export function buildMermaidSource(model: MermaidFlowchartModel): string {
+  return [
+    `flowchart ${model.direction}`,
+    ...model.nodes.map((node) => `  ${node.id}${shapeSource(node.shape, safeMermaidLabel(node.label))}`),
+    ...model.connections.map((connection) => (
+      connection.label === undefined || connection.label.trim().length === 0
+        ? `  ${connection.from} --> ${connection.to}`
+        : `  ${connection.from} -->|${safeMermaidConnectionLabel(connection.label)}| ${connection.to}`
     ))
-  ];
-
-  if (diagram.nodes.length > 0) {
-    lines.push("", `${relicCanvasMetadataPrefix}${JSON.stringify(buildRelicCanvasMetadata(diagram))}`);
-  }
-
-  return lines.join("\n");
+  ].join("\n");
 }
 
 export function replaceMermaidMarkdownBlock(
@@ -175,15 +158,15 @@ export function appendMermaidMarkdownBlock(markdown: string, source: string): st
   return `${markdown}${separator}\`\`\`mermaid\n${source}\n\`\`\`\n`;
 }
 
-export function createEmptyCanvasDiagram(direction: CanvasDirection = "TD"): CanvasDiagram {
+export function createEmptyMermaidFlowchart(direction: MermaidDirection = "TD"): MermaidFlowchartModel {
   return {
+    connections: [],
     direction,
-    edges: [],
     nodes: []
   };
 }
 
-export function nextCanvasNodeId(nodes: Pick<CanvasNode, "id">[]): string {
+export function nextMermaidNodeId(nodes: Pick<MermaidNode, "id">[]): string {
   const usedIds = new Set(nodes.map((node) => node.id));
   let number = nodes.reduce((max, node) => {
     const match = /^node(\d+)$/.exec(node.id);
@@ -194,19 +177,27 @@ export function nextCanvasNodeId(nodes: Pick<CanvasNode, "id">[]): string {
   return `node${number}`;
 }
 
-function parseEdgeStatement(statement: string): { from: string; label?: string; to: string } | null {
-  const edgeMatch = edgeRegex.exec(statement);
-  if (!edgeMatch) return null;
+export function isValidMermaidNodeId(id: string): boolean {
+  return nodeIdRegex.test(id);
+}
 
-  const label = edgeMatch[2];
+export function mermaidConnectionKey(connection: MermaidConnection): string {
+  return `${connection.from}->${connection.label ?? ""}->${connection.to}`;
+}
+
+function parseConnectionStatement(statement: string): { from: string; label?: string; to: string } | null {
+  const connectionMatch = edgeRegex.exec(statement);
+  if (!connectionMatch) return null;
+
+  const label = connectionMatch[2];
   if (label !== undefined && (label.trim().length === 0 || !isSafeMermaidLabel(label))) return null;
 
   return label === undefined
-    ? { from: edgeMatch[1], to: edgeMatch[3] }
-    : { from: edgeMatch[1], label, to: edgeMatch[3] };
+    ? { from: connectionMatch[1], to: connectionMatch[3] }
+    : { from: connectionMatch[1], label, to: connectionMatch[3] };
 }
 
-function parseNodeToken(token: string): ParsedCanvasNode | null {
+function parseNodeToken(token: string): ParsedMermaidNode | null {
   const trimmed = token.trim();
 
   const rectangleMatch = rectangleRegex.exec(trimmed);
@@ -230,7 +221,7 @@ function parseNodeToken(token: string): ParsedCanvasNode | null {
   return null;
 }
 
-function parseNodeMatch(match: RegExpExecArray, shape: CanvasShape): ParsedCanvasNode | null {
+function parseNodeMatch(match: RegExpExecArray, shape: MermaidNodeShape): ParsedMermaidNode | null {
   if (!nodeIdRegex.test(match[1])) return null;
   if (!isSafeMermaidLabel(match[2])) return null;
   return {
@@ -241,7 +232,7 @@ function parseNodeMatch(match: RegExpExecArray, shape: CanvasShape): ParsedCanva
   };
 }
 
-function upsertCanvasNode(nodes: Map<string, ParsedCanvasNode>, node: ParsedCanvasNode): boolean {
+function upsertMermaidNode(nodes: Map<string, ParsedMermaidNode>, node: ParsedMermaidNode): boolean {
   const current = nodes.get(node.id);
   if (!current) {
     nodes.set(node.id, node);
@@ -258,69 +249,12 @@ function upsertCanvasNode(nodes: Map<string, ParsedCanvasNode>, node: ParsedCanv
   return current.label === node.label && current.shape === node.shape;
 }
 
-function layoutNodes(
-  nodes: ParsedCanvasNode[],
-  direction: CanvasDirection,
-  metadata: RelicCanvasMetadata | null
-): CanvasNode[] {
-  return nodes.map((node, index) => {
-    const column = direction === "LR" ? index % 4 : index % 3;
-    const row = direction === "LR" ? Math.floor(index / 4) : Math.floor(index / 3);
-    const position = metadata?.nodes?.[node.id];
-    const x = typeof position?.x === "number" && Number.isFinite(position.x)
-      ? Math.max(12, position.x)
-      : 72 + column * (direction === "LR" ? 172 : 188);
-    const y = typeof position?.y === "number" && Number.isFinite(position.y)
-      ? Math.max(12, position.y)
-      : 72 + row * 112;
-
-    return {
-      id: node.id,
-      label: node.label,
-      shape: node.shape,
-      x,
-      y
-    };
-  });
-}
-
 function mermaidStatements(source: string): string[] {
   return source
     .split(/\r?\n/)
     .flatMap((line) => line.split(";"))
     .map((line) => line.trim())
     .filter((line) => line.length > 0 && !line.startsWith("%%"));
-}
-
-function parseRelicCanvasMetadata(source: string): RelicCanvasMetadata | null {
-  const metadataLine = source
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .find((line) => line.startsWith(relicCanvasMetadataPrefix));
-
-  if (!metadataLine) return null;
-
-  try {
-    const parsed = JSON.parse(metadataLine.slice(relicCanvasMetadataPrefix.length)) as unknown;
-    if (!parsed || typeof parsed !== "object") return null;
-    return parsed as RelicCanvasMetadata;
-  } catch {
-    return null;
-  }
-}
-
-function buildRelicCanvasMetadata(diagram: CanvasDiagram): RelicCanvasMetadata {
-  return {
-    nodes: Object.fromEntries(
-      diagram.nodes.map((node) => [
-        node.id,
-        {
-          x: Math.round(node.x),
-          y: Math.round(node.y)
-        }
-      ])
-    )
-  };
 }
 
 function markdownLines(markdown: string): MarkdownLine[] {
@@ -348,7 +282,7 @@ function markdownLines(markdown: string): MarkdownLine[] {
   return lines;
 }
 
-function shapeSource(shape: CanvasShape, label: string): string {
+function shapeSource(shape: MermaidNodeShape, label: string): string {
   if (shape === "diamond") return `{${label}}`;
   if (shape === "circle") return `((${label}))`;
 
@@ -359,7 +293,7 @@ function safeMermaidLabel(label: string): string {
   return label.replace(/[()[\]{}|]/g, " ").replace(/\s+/g, " ").trim() || "Node";
 }
 
-function safeMermaidEdgeLabel(label: string): string {
+function safeMermaidConnectionLabel(label: string): string {
   const safeLabel = label.replace(/[<>|]/g, " ");
   return safeLabel.trim().length > 0 ? safeLabel : "Label";
 }

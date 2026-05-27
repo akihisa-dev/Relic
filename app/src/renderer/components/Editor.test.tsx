@@ -4,7 +4,7 @@ import { ensureSyntaxTree } from "@codemirror/language";
 import { EditorState } from "@codemirror/state";
 import type { EditorView } from "@codemirror/view";
 import { GFM } from "@lezer/markdown";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { createRef } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -650,7 +650,7 @@ describe("Editor", () => {
 
     expect(container.querySelector(".cm-live-mermaid")).not.toBeNull();
     expect(container.querySelector(".cm-live-mermaid-fit-button")).not.toBeNull();
-    expect(container.querySelector(".cm-live-mermaid-canvas-button")).not.toBeNull();
+    expect(container.querySelector(".cm-live-mermaid-visual-edit-button")).not.toBeNull();
     expect(container.querySelector(".cm-live-mermaid-edit-button")).not.toBeNull();
 
     fireEvent.click(container.querySelector(".cm-live-mermaid-fit-button") as HTMLButtonElement);
@@ -666,7 +666,7 @@ describe("Editor", () => {
     await waitFor(() => expect(container.querySelector(".cm-live-mermaid")).not.toBeNull());
   });
 
-  it("Mermaid Widgetのキャンバス編集ボタンから対象ブロックだけを書き換える", async () => {
+  it("Mermaid WidgetのMermaid編集ボタンから対象ブロックだけを書き換える", async () => {
     const viewRef = createRef<EditorView | null>();
     const onChange = vi.fn();
     const content = [
@@ -692,19 +692,20 @@ describe("Editor", () => {
       />
     );
 
-    await waitFor(() => expect(container.querySelector(".cm-live-mermaid-canvas-button")).not.toBeNull());
+    await waitFor(() => expect(container.querySelector(".cm-live-mermaid-visual-edit-button")).not.toBeNull());
 
-    fireEvent.click(container.querySelector(".cm-live-mermaid-canvas-button") as HTMLButtonElement);
-    await waitFor(() => expect(container.querySelector(".canvas-popover")).not.toBeNull());
+    fireEvent.click(container.querySelector(".cm-live-mermaid-visual-edit-button") as HTMLButtonElement);
+    await waitFor(() => expect(container.querySelector(".mermaid-editor-popover")).not.toBeNull());
 
-    const rectangleButton = Array.from(container.querySelectorAll<HTMLButtonElement>(".canvas-toolbar button"))
-      .find((button) => button.textContent === "四角" || button.textContent === "Rectangle");
-    expect(rectangleButton).not.toBeUndefined();
-    fireEvent.click(rectangleButton as HTMLButtonElement);
+    const popover = container.querySelector(".mermaid-editor-popover") as HTMLElement;
+    fireEvent.click(within(popover).getByRole("button", { name: /ノード追加|Add node/ }));
+    fireEvent.change(within(popover).getByLabelText("ID"), { target: { value: "node2" } });
+    fireEvent.change(within(popover).getByLabelText(/ラベル|Label/), { target: { value: "Node 2" } });
+    fireEvent.click(within(popover).getByRole("button", { name: /^追加$|^Add$/ }));
 
     await waitFor(() => expect(onChange).toHaveBeenLastCalledWith(expect.stringContaining("node2[Node 2]")));
     expect(onChange).toHaveBeenLastCalledWith(expect.stringContaining("node9[別ブロック]"));
-    expect(onChange).toHaveBeenLastCalledWith(expect.stringContaining("%% relic:canvas"));
+    expect(onChange).toHaveBeenLastCalledWith(expect.not.stringContaining("%% relic:canvas"));
   });
 
   it("ライブプレビューで通常コードブロックはmermaid専用Widgetにしない", async () => {

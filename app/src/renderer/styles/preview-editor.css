@@ -67,7 +67,7 @@
 }
 
 .preview-mermaid-svg {
-  cursor: grab;
+  cursor: default;
   display: inline-block;
   max-width: none;
   padding: 12px 16px;
@@ -89,7 +89,7 @@
 }
 
 .cm-live-mermaid-fit-button,
-.cm-live-mermaid-canvas-button,
+.cm-live-mermaid-visual-edit-button,
 .cm-live-mermaid-edit-button {
   background: color-mix(in srgb, var(--bg) 88%, transparent);
   border: 1px solid var(--border);
@@ -101,8 +101,8 @@
 
 .cm-live-mermaid-fit-button:hover,
 .cm-live-mermaid-fit-button:focus-visible,
-.cm-live-mermaid-canvas-button:hover,
-.cm-live-mermaid-canvas-button:focus-visible,
+.cm-live-mermaid-visual-edit-button:hover,
+.cm-live-mermaid-visual-edit-button:focus-visible,
 .cm-live-mermaid-edit-button:hover,
 .cm-live-mermaid-edit-button:focus-visible {
   background: var(--hover);
@@ -111,7 +111,7 @@
 }
 
 .cm-live-mermaid-fit-button:disabled,
-.cm-live-mermaid-canvas-button:disabled,
+.cm-live-mermaid-visual-edit-button:disabled,
 .cm-live-mermaid-edit-button:disabled {
   cursor: default;
   opacity: 0.5;
@@ -156,7 +156,7 @@
   border: 1px solid var(--border);
   border-radius: 6px;
   box-sizing: border-box;
-  cursor: grab;
+  cursor: default;
   height: min(520px, 62vh);
   min-height: 240px;
   overflow: hidden;
@@ -167,16 +167,16 @@
 }
 
 .preview-mermaid-panzoom-viewport--dragging {
-  cursor: grabbing;
+  cursor: default;
 }
 
 .preview-mermaid-panzoom-viewport--dragging .preview-mermaid-panzoom-content,
 .preview-mermaid-panzoom-viewport--dragging .preview-mermaid-svg {
-  cursor: grabbing;
+  cursor: default;
 }
 
 .preview-mermaid-panzoom-content {
-  cursor: grab;
+  cursor: default;
   left: 0;
   position: absolute;
   top: 0;

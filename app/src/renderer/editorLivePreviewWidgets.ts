@@ -2,7 +2,7 @@ import { WidgetType } from "@codemirror/view";
 import type { EditorView } from "@codemirror/view";
 
 import { enterMermaidSourceEdit } from "./editorMermaidEditState";
-import { dispatchMermaidCanvasEditRequest } from "./mermaidCanvasEditEvent";
+import { dispatchMermaidVisualEditRequest } from "./mermaidVisualEditEvent";
 import { buildMermaidFallback, renderMermaidElement, type MermaidRenderHandle } from "./mermaidPreview";
 
 export class ListMarkerWidget extends WidgetType {
@@ -170,16 +170,16 @@ export class MermaidBlockWidget extends WidgetType {
       );
     });
 
-    const canvasButton = document.createElement("button");
-    canvasButton.type = "button";
-    canvasButton.className = "cm-live-mermaid-canvas-button";
-    canvasButton.textContent = "キャンバスで編集";
-    canvasButton.setAttribute("aria-label", "このMermaidブロックをキャンバスで編集");
-    canvasButton.addEventListener("click", (event) => {
+    const visualEditButton = document.createElement("button");
+    visualEditButton.type = "button";
+    visualEditButton.className = "cm-live-mermaid-visual-edit-button";
+    visualEditButton.textContent = "Mermaidを編集";
+    visualEditButton.setAttribute("aria-label", "このMermaidブロックを編集");
+    visualEditButton.addEventListener("click", (event) => {
       event.preventDefault();
       event.stopPropagation();
       event.stopImmediatePropagation();
-      dispatchMermaidCanvasEditRequest(container, {
+      dispatchMermaidVisualEditRequest(container, {
         blockFrom: this.blockFrom,
         blockTo: this.blockTo,
         editCursor: this.editCursor,
@@ -188,7 +188,7 @@ export class MermaidBlockWidget extends WidgetType {
         sourceTo: this.sourceTo
       });
     });
-    toolbar.append(fitButton, canvasButton, editButton);
+    toolbar.append(fitButton, visualEditButton, editButton);
 
     const diagram = document.createElement("div");
     diagram.className = "cm-live-mermaid-diagram";
