@@ -81,11 +81,14 @@
 }
 
 .cm-live-mermaid-toolbar {
+  align-items: center;
   display: flex;
+  gap: 6px;
   justify-content: flex-end;
   margin-bottom: 6px;
 }
 
+.cm-live-mermaid-fit-button,
 .cm-live-mermaid-edit-button {
   background: color-mix(in srgb, var(--bg) 88%, transparent);
   border: 1px solid var(--border);
@@ -95,11 +98,54 @@
   padding: 0 9px;
 }
 
+.cm-live-mermaid-fit-button:hover,
+.cm-live-mermaid-fit-button:focus-visible,
 .cm-live-mermaid-edit-button:hover,
 .cm-live-mermaid-edit-button:focus-visible {
   background: var(--hover);
   border-color: var(--border-medium);
   color: var(--text);
+}
+
+.cm-live-mermaid-fit-button:disabled,
+.cm-live-mermaid-edit-button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.preview-mermaid-error {
+  background: color-mix(in srgb, var(--danger, #b42318) 7%, var(--bg));
+  border: 1px solid color-mix(in srgb, var(--danger, #b42318) 26%, var(--border));
+  border-radius: 6px;
+  color: var(--text);
+  padding: 12px 14px;
+}
+
+.preview-mermaid-error-title {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.preview-mermaid-error-message {
+  color: var(--text-3);
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+.preview-mermaid-error-details {
+  margin-top: 8px;
+}
+
+.preview-mermaid-error-details summary {
+  color: var(--text-3);
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.preview-mermaid-error-details pre {
+  margin-top: 8px;
+  max-height: 240px;
+  overflow: auto;
 }
 
 .preview-mermaid-panzoom-viewport {

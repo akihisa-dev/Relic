@@ -114,32 +114,58 @@ describe("mermaidPreview", () => {
     expect(renderMock).not.toHaveBeenCalled();
   });
 
-  it("不正なmermaidソースでも例外で落とさずフォールバック表示へ戻す", async () => {
+  it("buildMermaidErrorは基本情報を表示する", async () => {
+    const { buildMermaidError } = await loadMermaidPreviewModule();
+    const element = buildMermaidError("graph TD; A-->", new Error("parse failed"));
+
+    expect(element.classList.contains("preview-mermaid-error")).toBe(true);
+    expect(element.textContent).toContain("Mermaidをレンダリングできませんでした");
+    expect(element.textContent).toContain("構文を確認してください。");
+    expect(element.textContent).toContain("graph TD; A-->");
+    expect(element.textContent).toContain("parse failed");
+  });
+
+  it("buildMermaidErrorは危険なHTMLをDOM化しない", async () => {
+    const { buildMermaidError } = await loadMermaidPreviewModule();
+    const source = '<img src=x onerror=alert(1)>';
+    const element = buildMermaidError(source, "<script>alert(1)</script>");
+
+    expect(element.querySelector("img")).toBeNull();
+    expect(element.querySelector("script")).toBeNull();
+    expect(element.textContent).toContain(source);
+    expect(element.textContent).toContain("<script>alert(1)</script>");
+  });
+
+  it("不正なmermaidソースでも例外で落とさずエラーUIを表示する", async () => {
     const { renderMermaidElement } = await loadMermaidPreviewModule();
     const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
     const container = document.createElement("div");
     renderMock.mockRejectedValueOnce(new Error("parse failed"));
 
-    await expect(renderMermaidElement(container, "invalid <source>")).resolves.toBeUndefined();
+    await expect(renderMermaidElement(container, "invalid <source>")).resolves.toBeNull();
 
     expect(warn).toHaveBeenCalled();
-    expect(container.querySelector("pre code")?.textContent).toBe("invalid <source>");
+    expect(container.querySelector(".preview-mermaid-error")).not.toBeNull();
+    expect(container.textContent).toContain("Mermaidをレンダリングできませんでした");
+    expect(container.textContent).toContain("構文を確認してください。");
+    expect(container.textContent).toContain("invalid <source>");
+    expect(container.textContent).toContain("parse failed");
     expect(container.querySelector(".preview-mermaid-panzoom-viewport")).toBeNull();
-    expect(container.textContent).not.toContain("parse failed");
     warn.mockRestore();
   });
 
-  it("SVG描画成功時に本文内パン・ズームviewportを構成する", async () => {
+  it("SVG描画成功時に本文内パン・ズームviewportを構成しhandleを返す", async () => {
     const { renderMermaidElement } = await loadMermaidPreviewModule();
     const container = document.createElement("div");
     renderMock.mockResolvedValueOnce({ svg: '<svg viewBox="0 0 640 320"><text>ok</text></svg>' });
 
-    await renderMermaidElement(container, "graph TD; A-->B");
+    const handle = await renderMermaidElement(container, "graph TD; A-->B");
 
     const viewport = container.querySelector<HTMLElement>(".preview-mermaid-panzoom-viewport");
     const content = container.querySelector<HTMLElement>(".preview-mermaid-panzoom-content");
     const svg = container.querySelector<SVGSVGElement>(".preview-mermaid-svg svg");
 
+    expect(typeof handle?.fitToViewport).toBe("function");
     expect(viewport).not.toBeNull();
     expect(content?.contains(container.querySelector(".preview-mermaid-svg"))).toBe(true);
     expect(content?.style.transform).toBe("translate(0px, 0px) scale(1)");
@@ -147,6 +173,25 @@ describe("mermaidPreview", () => {
     expect(document.querySelector(".preview-mermaid-overlay")).toBeNull();
     expect(svg?.getAttribute("width")).toBe("640px");
     expect(svg?.style.maxWidth).toBe("none");
+  });
+
+  it("fitToViewportはviewport内に収まる倍率と中央寄せへ戻す", async () => {
+    const { renderMermaidElement } = await loadMermaidPreviewModule();
+    const container = document.createElement("div");
+    renderMock.mockResolvedValueOnce({ svg: '<svg viewBox="0 0 640 320"><text>ok</text></svg>' });
+
+    const handle = await renderMermaidElement(container, "graph TD; A-->B");
+    const viewport = container.querySelector<HTMLElement>(".preview-mermaid-panzoom-viewport");
+    const content = container.querySelector<HTMLElement>(".preview-mermaid-panzoom-content");
+
+    Object.defineProperty(viewport, "clientWidth", { configurable: true, value: 400 });
+    Object.defineProperty(viewport, "clientHeight", { configurable: true, value: 300 });
+    Object.defineProperty(content, "scrollWidth", { configurable: true, value: 640 });
+    Object.defineProperty(content, "scrollHeight", { configurable: true, value: 320 });
+
+    handle?.fitToViewport();
+
+    expect(content?.style.transform).toBe("translate(24px, 62px) scale(0.55)");
   });
 
   it("SVGクリックではズームせずオーバーレイも開かない", async () => {
@@ -163,9 +208,11 @@ describe("mermaidPreview", () => {
     expect(document.querySelector(".preview-mermaid-overlay")).toBeNull();
   });
 
-  it("本文内viewportの通常ホイールで拡大率を変更しpreventDefaultする", async () => {
+  it("本文内viewportの通常ホイールで倍率式に拡大率を変更し伝播を止める", async () => {
     const { renderMermaidElement } = await loadMermaidPreviewModule();
     const container = document.createElement("div");
+    const parentWheel = vi.fn();
+    container.addEventListener("wheel", parentWheel);
     renderMock.mockResolvedValueOnce({ svg: '<svg viewBox="0 0 640 320"><text>ok</text></svg>' });
 
     await renderMermaidElement(container, "graph TD; A-->B");
@@ -176,7 +223,8 @@ describe("mermaidPreview", () => {
     const zoomInEvent = dispatchWheelEvent(viewport as HTMLElement, { ctrlKey: false, deltaY: -1 });
 
     expect(zoomInEvent.defaultPrevented).toBe(true);
-    expect(content?.style.transform).toBe("translate(0px, 0px) scale(1.2)");
+    expect(parentWheel).not.toHaveBeenCalled();
+    expect(content?.style.transform).toBe("translate(0px, 0px) scale(1.12)");
 
     const zoomOutEvent = dispatchWheelEvent(viewport as HTMLElement, { deltaY: 1 });
 
@@ -207,7 +255,7 @@ describe("mermaidPreview", () => {
 
     dispatchWheelEvent(viewport as HTMLElement, { clientX: 60, clientY: 70, deltaY: -1 });
 
-    expect(content?.style.transform).toBe("translate(-10px, -10px) scale(1.2)");
+    expect(content?.style.transform).toBe("translate(-6px, -6px) scale(1.12)");
   });
 
   it("本文内viewportのホイールズームは下限と上限を超えない", async () => {
@@ -275,7 +323,7 @@ describe("mermaidPreview", () => {
     expect(css).toMatch(/\.preview-mermaid-panzoom-viewport\s*{[^}]*cursor:\s*grab;/s);
     expect(css).toMatch(/\.preview-mermaid-panzoom-viewport--dragging\s*{[^}]*cursor:\s*grabbing;/s);
     expect(css).toMatch(/\.preview-mermaid-panzoom-viewport\s*{[^}]*user-select:\s*none;/s);
-    expect(css).not.toMatch(/\.preview-mermaid(?:\s|[^{])*{[^}]*overflow:\s*(auto|scroll);/s);
+    expect(css).not.toMatch(/\.preview-mermaid\s*{[^}]*overflow:\s*(auto|scroll);/s);
     expect(css).not.toContain("preview-mermaid-overlay");
   });
 

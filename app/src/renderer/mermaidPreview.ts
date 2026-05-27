@@ -6,12 +6,16 @@ type MermaidTheme = "default" | "dark";
 
 const mermaidZoomMin = 0.4;
 const mermaidZoomMax = 4;
-const mermaidZoomStep = 0.2;
+const mermaidZoomFactor = 1.12;
 
 let initializedTheme: MermaidTheme | null = null;
 let renderId = 0;
 
 type MermaidModule = typeof import("mermaid").default;
+
+export type MermaidRenderHandle = {
+  fitToViewport: () => void;
+};
 
 export function isMermaidLanguage(lang: string | undefined | null): boolean {
   return lang?.trim().split(/\s+/, 1)[0]?.toLowerCase() === "mermaid";
@@ -26,7 +30,45 @@ export function buildMermaidFallback(source: string): HTMLElement {
   return pre;
 }
 
-export async function renderMermaidElement(container: HTMLElement, source: string): Promise<void> {
+export function buildMermaidError(source: string, error: unknown): HTMLElement {
+  const panel = document.createElement("div");
+  panel.className = "preview-mermaid-error";
+
+  const title = document.createElement("div");
+  title.className = "preview-mermaid-error-title";
+  title.textContent = "Mermaidをレンダリングできませんでした";
+
+  const message = document.createElement("div");
+  message.className = "preview-mermaid-error-message";
+  message.textContent = "構文を確認してください。";
+
+  const sourceDetails = document.createElement("details");
+  sourceDetails.className = "preview-mermaid-error-details";
+  const sourceSummary = document.createElement("summary");
+  sourceSummary.textContent = "元ソースを表示";
+  const sourcePre = document.createElement("pre");
+  const sourceCode = document.createElement("code");
+  sourceCode.className = "language-mermaid";
+  sourceCode.textContent = source;
+  sourcePre.append(sourceCode);
+  sourceDetails.append(sourceSummary, sourcePre);
+
+  const errorDetails = document.createElement("details");
+  errorDetails.className = "preview-mermaid-error-details";
+  const errorSummary = document.createElement("summary");
+  errorSummary.textContent = "詳細エラー";
+  const errorPre = document.createElement("pre");
+  errorPre.textContent = error instanceof Error ? error.message : String(error);
+  errorDetails.append(errorSummary, errorPre);
+
+  panel.append(title, message, sourceDetails, errorDetails);
+  return panel;
+}
+
+export async function renderMermaidElement(
+  container: HTMLElement,
+  source: string
+): Promise<MermaidRenderHandle | null> {
   try {
     const mermaid = await loadMermaid();
     const id = `relic-mermaid-${renderId++}`;
@@ -45,11 +87,16 @@ export async function renderMermaidElement(container: HTMLElement, source: strin
     content.className = "preview-mermaid-panzoom-content";
     content.append(diagram);
     viewport.append(content);
-    initializeMermaidPanZoom(viewport, content);
+    const handle = initializeMermaidPanZoom(viewport, content);
     container.append(viewport);
+    window.requestAnimationFrame(() => {
+      handle.fitToViewport();
+    });
+    return handle;
   } catch (error) {
     console.warn("Mermaid diagram rendering failed.", error);
-    container.replaceChildren(buildMermaidFallback(source));
+    container.replaceChildren(buildMermaidError(source, error));
+    return null;
   }
 }
 
@@ -125,7 +172,7 @@ function parseSvgViewBox(value: string | null): { width: number; height: number 
   return { width, height };
 }
 
-function initializeMermaidPanZoom(viewport: HTMLElement, content: HTMLElement): void {
+function initializeMermaidPanZoom(viewport: HTMLElement, content: HTMLElement): MermaidRenderHandle {
   let zoom = 1;
   let offsetX = 0;
   let offsetY = 0;
@@ -138,6 +185,34 @@ function initializeMermaidPanZoom(viewport: HTMLElement, content: HTMLElement): 
 
   const updateTransform = () => {
     content.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${zoom})`;
+  };
+
+  const fitToViewport = () => {
+    const padding = 24;
+    const viewportWidth = viewport.clientWidth;
+    const viewportHeight = viewport.clientHeight;
+    const contentRect = content.getBoundingClientRect();
+    const contentWidth = content.scrollWidth || contentRect.width;
+    const contentHeight = content.scrollHeight || contentRect.height;
+
+    if (viewportWidth <= 0 || viewportHeight <= 0 || contentWidth <= 0 || contentHeight <= 0) return;
+
+    const availableWidth = viewportWidth - padding * 2;
+    const availableHeight = viewportHeight - padding * 2;
+    if (availableWidth <= 0 || availableHeight <= 0) return;
+
+    const fitZoom = Math.round(Math.min(
+      mermaidZoomMax,
+      Math.max(
+        mermaidZoomMin,
+        Math.min(availableWidth / contentWidth, availableHeight / contentHeight, 1)
+      )
+    ) * 100) / 100;
+
+    zoom = fitZoom;
+    offsetX = Math.round(((viewportWidth - contentWidth * fitZoom) / 2) * 100) / 100;
+    offsetY = Math.round(((viewportHeight - contentHeight * fitZoom) / 2) * 100) / 100;
+    updateTransform();
   };
 
   const setZoom = (nextZoom: number, anchor?: { clientX: number; clientY: number }) => {
@@ -161,7 +236,7 @@ function initializeMermaidPanZoom(viewport: HTMLElement, content: HTMLElement): 
   viewport.addEventListener("wheel", (event) => {
     event.preventDefault();
     event.stopPropagation();
-    setZoom(zoom + (event.deltaY < 0 ? mermaidZoomStep : -mermaidZoomStep), event);
+    setZoom(event.deltaY < 0 ? zoom * mermaidZoomFactor : zoom / mermaidZoomFactor, event);
   });
   viewport.addEventListener("click", (event) => {
     event.preventDefault();
@@ -209,6 +284,7 @@ function initializeMermaidPanZoom(viewport: HTMLElement, content: HTMLElement): 
     event.stopPropagation();
   });
   updateTransform();
+  return { fitToViewport };
 
   function stopDragging(pointerId: number): void {
     if (!isDragging) return;
