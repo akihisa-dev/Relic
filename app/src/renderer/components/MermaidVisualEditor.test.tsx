@@ -153,6 +153,19 @@ describe("MermaidVisualEditor", () => {
     expect(node).not.toHaveAttribute("style", expect.stringContaining("left"));
   });
 
+  it("パン/ズームしてもsource更新をしない", async () => {
+    const { container, onChange } = renderEditor("flowchart TD\n  node1[人物]");
+
+    await waitFor(() => expect(container.querySelector(".preview-mermaid-panzoom-viewport")).not.toBeNull());
+    const viewport = container.querySelector(".preview-mermaid-panzoom-viewport") as HTMLElement;
+    fireEvent.wheel(viewport, { deltaY: -1 });
+    fireEvent.pointerDown(viewport, { button: 0, clientX: 10, clientY: 10, pointerId: 1 });
+    fireEvent.pointerMove(viewport, { clientX: 40, clientY: 50, pointerId: 1 });
+    fireEvent.pointerUp(viewport, { pointerId: 1 });
+
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
   it("ノード追加でsourceを更新し、relic metadataは出力しない", () => {
     const { onChange } = renderEditor("flowchart TD");
 
@@ -231,18 +244,40 @@ describe("MermaidVisualEditor", () => {
     expect(onChange).toHaveBeenLastCalledWith(expect.not.stringContaining("node1 -->"));
   });
 
-  it("TD/LR切り替えでsourceの先頭行を更新する", () => {
+  it("TD/LR/TB/BT/RL切り替えでsourceの先頭行を更新する", () => {
     const { onChange } = renderEditor("flowchart TD\n  node1[人物]");
 
-    fireEvent.change(screen.getByLabelText("方向"), { target: { value: "LR" } });
+    expect(screen.getByLabelText("方向")).toHaveTextContent("RL");
+    fireEvent.change(screen.getByLabelText("方向"), { target: { value: "RL" } });
 
-    expect(onChange).toHaveBeenLastCalledWith(expect.stringMatching(/^flowchart LR/));
+    expect(onChange).toHaveBeenLastCalledWith(expect.stringMatching(/^flowchart RL/));
+  });
+
+  it("Markdownへ反映された後だけ保存済みを表示する", () => {
+    renderEditor("flowchart TD");
+
+    expect(screen.queryByText("Markdownへ反映済み")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "ノード追加" }));
+    fireEvent.change(screen.getByLabelText("ID"), { target: { value: "place" } });
+    fireEvent.click(screen.getByRole("button", { name: "追加" }));
+
+    expect(screen.getByText("Markdownへ反映済み")).toBeInTheDocument();
+  });
+
+  it("Markdown反映に失敗した場合は保存済みにせず警告を表示する", () => {
+    renderEditor("flowchart TD", vi.fn(() => false));
+
+    fireEvent.click(screen.getByRole("button", { name: "ノード追加" }));
+    fireEvent.change(screen.getByLabelText("ID"), { target: { value: "place" } });
+    fireEvent.click(screen.getByRole("button", { name: "追加" }));
+
+    expect(screen.queryByText("Markdownへ反映済み")).toBeNull();
   });
 
   it("ソース編集後に対応可能ならビジュアル編集を再有効化する", async () => {
     const { container, onChange } = renderEditor("sequenceDiagram\nAlice->>Bob: Hi");
 
-    expect(screen.getByText(/ビジュアル編集に対応していません/)).toBeInTheDocument();
+    expect(screen.getByText(/図から編集できません/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "ノード追加" })).toBeDisabled();
 
     fireEvent.change(screen.getByLabelText("Mermaidソース"), {

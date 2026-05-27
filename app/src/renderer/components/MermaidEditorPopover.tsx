@@ -9,14 +9,16 @@ interface MermaidEditorPopoverProps {
     from: number;
     to: number;
   };
+  conflictMessage?: string | null;
   filePath: string;
-  onChange: (source: string) => void;
+  onChange: (source: string) => boolean | void;
   onClose: () => void;
   source: string;
 }
 
 export function MermaidEditorPopover({
   blockRange,
+  conflictMessage,
   filePath,
   onChange,
   onClose,
@@ -51,7 +53,17 @@ export function MermaidEditorPopover({
       <section
         aria-label={t("mermaidEditor.title")}
         className="mermaid-editor-popover"
+        onClick={(event) => event.stopPropagation()}
+        onDoubleClick={(event) => event.stopPropagation()}
+        onKeyDown={(event) => {
+          event.stopPropagation();
+          if (event.key === "Escape") onClose();
+        }}
+        onPointerCancel={(event) => event.stopPropagation()}
         onPointerDown={(event) => event.stopPropagation()}
+        onPointerMove={(event) => event.stopPropagation()}
+        onPointerUp={(event) => event.stopPropagation()}
+        onWheel={(event) => event.stopPropagation()}
         ref={panelRef}
       >
         <header className="mermaid-editor-popover-header">
@@ -71,6 +83,7 @@ export function MermaidEditorPopover({
         </header>
         <MermaidVisualEditor
           blockRange={blockRange}
+          externalError={conflictMessage}
           filePath={filePath}
           onChange={onChange}
           source={source}

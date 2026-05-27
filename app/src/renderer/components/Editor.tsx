@@ -17,6 +17,12 @@ import { useEditorContextMenu } from "../hooks/useEditorContextMenu";
 import { useEditorFrontmatterDialog } from "../hooks/useEditorFrontmatterDialog";
 import { useToolbarActions } from "../hooks/useToolbarActions";
 import { useT, type Translator } from "../i18n";
+import {
+  findMermaidMarkdownBlocks,
+  formatMermaidMarkdownBlock,
+  hashMermaidSource,
+  resolveMermaidMarkdownBlock
+} from "../mermaidFlowchart";
 import { mermaidVisualEditRequestEvent, type MermaidVisualEditRequest } from "../mermaidVisualEditEvent";
 import { EditorContextMenu } from "./EditorContextMenu";
 import { EditorFrontmatterDialog } from "./EditorFrontmatterDialog";
@@ -64,6 +70,7 @@ interface FrontmatterPropertyMenuState {
 }
 
 type MermaidVisualEditSession = MermaidVisualEditRequest & {
+  conflictMessage: string | null;
   filePath: string;
 };
 
@@ -95,6 +102,7 @@ export function Editor({
   const userDefinedFieldsRef = useRef(userDefinedFields);
   const [frontmatterPropertyMenu, setFrontmatterPropertyMenu] = useState<FrontmatterPropertyMenuState | null>(null);
   const [mermaidVisualEditSession, setMermaidVisualEditSession] = useState<MermaidVisualEditSession | null>(null);
+  const mermaidVisualEditSessionRef = useRef<MermaidVisualEditSession | null>(null);
   const {
     closeContextMenu,
     contextMenu,
@@ -135,6 +143,7 @@ export function Editor({
   allFilePathsRef.current = allFilePaths;
   frontmatterCandidatesRef.current = frontmatterCandidates;
   userDefinedFieldsRef.current = userDefinedFields;
+  mermaidVisualEditSessionRef.current = mermaidVisualEditSession;
 
   const toggleFrontmatterPropertyMenu = (): void => {
     const view = internalViewRef.current;
@@ -170,7 +179,11 @@ export function Editor({
       if (!detail || !filePath) return;
 
       event.stopPropagation();
-      setMermaidVisualEditSession({ ...detail, filePath });
+      setMermaidVisualEditSession({
+        ...detail,
+        conflictMessage: null,
+        filePath
+      });
     };
     const handleContextMenu = (event: MouseEvent): void => {
       const view = internalViewRef.current;
@@ -317,25 +330,48 @@ export function Editor({
     if (viewRef) viewRef.current = nextView;
   }, [frontmatterCandidates, rememberSelection, settings, sourceMode, t, typewriterMode, userDefinedFields, viewRef]);
 
-  const updateMermaidVisualSource = (source: string): void => {
+  const updateMermaidVisualSource = (source: string): boolean => {
     const view = internalViewRef.current;
-    if (!view || !mermaidVisualEditSession) return;
+    const session = mermaidVisualEditSessionRef.current;
+    if (!view || !session) return false;
 
-    const { sourceFrom, sourceTo } = mermaidVisualEditSession;
-    const delta = source.length - (sourceTo - sourceFrom);
+    const markdown = view.state.doc.toString();
+    const blocks = findMermaidMarkdownBlocks(markdown);
+    const targetBlock = resolveMermaidMarkdownBlock(blocks, session);
+    if (!targetBlock) {
+      setMermaidVisualEditSession({
+        ...session,
+        conflictMessage: t("mermaidEditor.targetChanged")
+      });
+      return false;
+    }
+
+    const replacement = formatMermaidMarkdownBlock(source);
     view.dispatch({
       changes: {
-        from: sourceFrom,
-        insert: source,
-        to: sourceTo
+        from: targetBlock.from,
+        insert: replacement,
+        to: targetBlock.to
       }
     });
+
+    const nextBlocks = findMermaidMarkdownBlocks(view.state.doc.toString());
+    const nextSourceHash = hashMermaidSource(source);
+    const nextBlock = nextBlocks.find((block) => (
+      block.from === targetBlock.from && block.sourceHash === nextSourceHash
+    )) ?? nextBlocks.find((block) => (
+      block.index === targetBlock.index && block.sourceHash === nextSourceHash
+    ));
     setMermaidVisualEditSession({
-      ...mermaidVisualEditSession,
-      blockTo: mermaidVisualEditSession.blockTo + delta,
+      ...session,
+      blockFrom: nextBlock?.from ?? targetBlock.from,
+      blockIndex: nextBlock?.index ?? targetBlock.index,
+      blockTo: nextBlock?.to ?? targetBlock.from + replacement.length,
+      conflictMessage: null,
       source,
-      sourceTo: sourceFrom + source.length
+      sourceHash: nextSourceHash
     });
+    return true;
   };
 
   return (
@@ -411,6 +447,7 @@ export function Editor({
             to: mermaidVisualEditSession.blockTo
           }}
           filePath={mermaidVisualEditSession.filePath}
+          conflictMessage={mermaidVisualEditSession.conflictMessage}
           onChange={updateMermaidVisualSource}
           onClose={() => setMermaidVisualEditSession(null)}
           source={mermaidVisualEditSession.source}
