@@ -73,6 +73,21 @@ describe("mermaidPreview", () => {
     });
   });
 
+  it("renderMermaidElementsは壊れたdata-mermaid-sourceを描画に渡さない", async () => {
+    const { renderMermaidElements } = await loadMermaidPreviewModule();
+    const container = document.createElement("div");
+    container.innerHTML = [
+      '<div class="preview-mermaid" data-mermaid-source="uri:%E0%A4%A">',
+      '<pre><code class="language-mermaid">from-code</code></pre>',
+      "</div>"
+    ].join("");
+
+    renderMermaidElements(container);
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(renderMock).not.toHaveBeenCalled();
+  });
+
   it("不正なmermaidソースでも例外で落とさずフォールバック表示へ戻す", async () => {
     const { renderMermaidElement } = await loadMermaidPreviewModule();
     const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
