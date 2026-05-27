@@ -7,9 +7,13 @@ type MermaidTheme = "default" | "dark";
 const mermaidZoomMin = 0.4;
 const mermaidZoomMax = 4;
 const mermaidZoomFactor = 1.12;
+const mermaidKeyboardPanStep = 48;
+const mermaidKeyboardLargePanStep = 144;
 
 let initializedTheme: MermaidTheme | null = null;
 let renderId = 0;
+let renderTokenId = 0;
+const activeRenderTokens = new WeakMap<HTMLElement, number>();
 
 type MermaidModule = typeof import("mermaid").default;
 
@@ -69,11 +73,19 @@ export async function renderMermaidElement(
   container: HTMLElement,
   source: string
 ): Promise<MermaidRenderHandle | null> {
+  const renderToken = ++renderTokenId;
+  activeRenderTokens.set(container, renderToken);
+
+  const canApplyRenderResult = () => activeRenderTokens.get(container) === renderToken && container.isConnected;
+
   try {
     const mermaid = await loadMermaid();
     const id = `relic-mermaid-${renderId++}`;
     const { svg } = await mermaid.render(id, source);
+    if (!canApplyRenderResult()) return null;
+
     const sanitized = DOMPurify.sanitize(svg, { USE_PROFILES: { svg: true, svgFilters: true } });
+    if (!canApplyRenderResult()) return null;
 
     container.replaceChildren();
     const diagram = document.createElement("div");
@@ -83,17 +95,21 @@ export async function renderMermaidElement(
 
     const viewport = document.createElement("div");
     viewport.className = "preview-mermaid-panzoom-viewport";
+    viewport.tabIndex = 0;
+    viewport.setAttribute(
+      "aria-label",
+      "Mermaid図。+で拡大、-で縮小、0またはfで全体表示、矢印キーで移動、Shift+矢印キーで大きく移動できます。"
+    );
     const content = document.createElement("div");
     content.className = "preview-mermaid-panzoom-content";
     content.append(diagram);
     viewport.append(content);
     const handle = initializeMermaidPanZoom(viewport, content);
     container.append(viewport);
-    window.requestAnimationFrame(() => {
-      handle.fitToViewport();
-    });
     return handle;
   } catch (error) {
+    if (!canApplyRenderResult()) return null;
+
     console.warn("Mermaid diagram rendering failed.", error);
     container.replaceChildren(buildMermaidError(source, error));
     return null;
@@ -182,9 +198,28 @@ function initializeMermaidPanZoom(viewport: HTMLElement, content: HTMLElement): 
   let dragOriginX = 0;
   let dragOriginY = 0;
   let activePointerId: number | null = null;
+  let hasUserTransformed = false;
+  let transformFrameId: number | null = null;
 
-  const updateTransform = () => {
+  const applyTransform = () => {
     content.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${zoom})`;
+  };
+
+  const updateTransformNow = () => {
+    if (transformFrameId !== null) {
+      window.cancelAnimationFrame(transformFrameId);
+      transformFrameId = null;
+    }
+    applyTransform();
+  };
+
+  const scheduleTransformUpdate = () => {
+    if (transformFrameId !== null) return;
+
+    transformFrameId = window.requestAnimationFrame(() => {
+      transformFrameId = null;
+      applyTransform();
+    });
   };
 
   const fitToViewport = () => {
@@ -212,7 +247,8 @@ function initializeMermaidPanZoom(viewport: HTMLElement, content: HTMLElement): 
     zoom = fitZoom;
     offsetX = Math.round(((viewportWidth - contentWidth * fitZoom) / 2) * 100) / 100;
     offsetY = Math.round(((viewportHeight - contentHeight * fitZoom) / 2) * 100) / 100;
-    updateTransform();
+    hasUserTransformed = false;
+    updateTransformNow();
   };
 
   const setZoom = (nextZoom: number, anchor?: { clientX: number; clientY: number }) => {
@@ -230,8 +266,36 @@ function initializeMermaidPanZoom(viewport: HTMLElement, content: HTMLElement): 
     }
 
     zoom = clampedZoom;
-    updateTransform();
+    hasUserTransformed = true;
+    scheduleTransformUpdate();
   };
+
+  const panBy = (deltaX: number, deltaY: number) => {
+    offsetX = Math.round((offsetX + deltaX) * 100) / 100;
+    offsetY = Math.round((offsetY + deltaY) * 100) / 100;
+    hasUserTransformed = true;
+    scheduleTransformUpdate();
+  };
+
+  const getViewportCenter = () => {
+    const rect = viewport.getBoundingClientRect();
+    return {
+      clientX: rect.left + rect.width / 2,
+      clientY: rect.top + rect.height / 2
+    };
+  };
+
+  const resizeObserver = typeof ResizeObserver !== "undefined"
+    ? new ResizeObserver(() => {
+        if (hasUserTransformed) return;
+
+        window.requestAnimationFrame(() => {
+          if (!hasUserTransformed && viewport.isConnected) fitToViewport();
+        });
+      })
+    : null;
+
+  resizeObserver?.observe(viewport);
 
   viewport.addEventListener("wheel", (event) => {
     event.preventDefault();
@@ -267,7 +331,8 @@ function initializeMermaidPanZoom(viewport: HTMLElement, content: HTMLElement): 
     event.stopPropagation();
     offsetX = dragOriginX + event.clientX - dragStartX;
     offsetY = dragOriginY + event.clientY - dragStartY;
-    updateTransform();
+    hasUserTransformed = true;
+    scheduleTransformUpdate();
   });
   viewport.addEventListener("pointerup", (event) => {
     event.preventDefault();
@@ -283,7 +348,63 @@ function initializeMermaidPanZoom(viewport: HTMLElement, content: HTMLElement): 
     event.preventDefault();
     event.stopPropagation();
   });
-  updateTransform();
+  viewport.addEventListener("keydown", (event) => {
+    if (event.metaKey || event.ctrlKey || event.altKey) return;
+
+    const panStep = event.shiftKey ? mermaidKeyboardLargePanStep : mermaidKeyboardPanStep;
+
+    if (event.key === "+" || event.key === "=") {
+      event.preventDefault();
+      event.stopPropagation();
+      setZoom(zoom * mermaidZoomFactor, getViewportCenter());
+      return;
+    }
+
+    if (event.key === "-" || event.key === "_") {
+      event.preventDefault();
+      event.stopPropagation();
+      setZoom(zoom / mermaidZoomFactor, getViewportCenter());
+      return;
+    }
+
+    if (event.key === "0" || event.key.toLowerCase() === "f") {
+      event.preventDefault();
+      event.stopPropagation();
+      fitToViewport();
+      return;
+    }
+
+    if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      event.stopPropagation();
+      panBy(panStep, 0);
+      return;
+    }
+
+    if (event.key === "ArrowRight") {
+      event.preventDefault();
+      event.stopPropagation();
+      panBy(-panStep, 0);
+      return;
+    }
+
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      event.stopPropagation();
+      panBy(0, panStep);
+      return;
+    }
+
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      event.stopPropagation();
+      panBy(0, -panStep);
+    }
+  });
+  updateTransformNow();
+  window.requestAnimationFrame(() => {
+    if (!hasUserTransformed && viewport.isConnected) fitToViewport();
+  });
   return { fitToViewport };
 
   function stopDragging(pointerId: number): void {
