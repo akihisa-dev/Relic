@@ -91,6 +91,7 @@ function buildMermaidExpandButton(diagram: HTMLElement): HTMLButtonElement {
   button.type = "button";
   button.className = "preview-mermaid-expand-button";
   button.textContent = "拡大";
+  button.title = "Mermaid図を拡大表示";
   button.setAttribute("aria-label", "Mermaid図を拡大表示");
   button.addEventListener("click", (event) => {
     event.preventDefault();
@@ -152,6 +153,7 @@ function openMermaidZoomOverlay(diagram: HTMLElement): void {
 
   const zoomStatus = document.createElement("span");
   zoomStatus.className = "preview-mermaid-zoom-status";
+  zoomStatus.setAttribute("aria-label", "現在の拡大率");
   zoomStatus.setAttribute("aria-live", "polite");
 
   const viewport = document.createElement("div");
