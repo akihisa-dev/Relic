@@ -38,6 +38,10 @@ interface RelicCanvasMetadata {
   }>;
 }
 
+interface ParsedCanvasNode extends Omit<CanvasNode, "x" | "y"> {
+  explicit: boolean;
+}
+
 interface MarkdownLine {
   contentEnd: number;
   end: number;
@@ -47,7 +51,7 @@ interface MarkdownLine {
 
 const nodeIdPattern = "[A-Za-z_][A-Za-z0-9_-]*";
 const nodeIdRegex = new RegExp(`^${nodeIdPattern}$`);
-const edgeRegex = new RegExp(`^(${nodeIdPattern})\\s*-->\\s*(${nodeIdPattern})$`);
+const edgeRegex = /^(.+?)\s*-->\s*(.+)$/;
 const rectangleRegex = new RegExp(`^(${nodeIdPattern})\\s*\\[([^\\]]*)\\]$`);
 const diamondRegex = new RegExp(`^(${nodeIdPattern})\\s*\\{([^}]*)\\}$`);
 const circleRegex = new RegExp(`^(${nodeIdPattern})\\s*\\(\\(([^)]*)\\)\\)$`);
@@ -86,29 +90,30 @@ export function findMermaidMarkdownBlocks(markdown: string): MermaidMarkdownBloc
 
 export function parseCanvasMermaid(source: string): CanvasParseResult {
   const metadata = parseRelicCanvasMetadata(source);
-  const lines = source
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter((line) => line.length > 0 && !line.startsWith(relicCanvasMetadataPrefix));
-  if (lines.length === 0) return { ok: false, reason: "empty" };
+  const statements = mermaidStatements(source);
+  if (statements.length === 0) return { ok: false, reason: "empty" };
 
-  const headerMatch = /^flowchart\s+(TD|LR)$/.exec(lines[0]);
+  const headerMatch = /^(?:flowchart|graph)\s+(TD|LR)$/.exec(statements[0]);
   if (!headerMatch) return { ok: false, reason: "unsupported" };
 
-  const nodes = new Map<string, Omit<CanvasNode, "x" | "y">>();
+  const nodes = new Map<string, ParsedCanvasNode>();
   const edges: CanvasEdge[] = [];
 
-  for (const line of lines.slice(1)) {
-    const node = parseNodeLine(line);
+  for (const statement of statements.slice(1)) {
+    const node = parseNodeToken(statement);
     if (node) {
-      if (nodes.has(node.id)) return { ok: false, reason: "unsupported" };
-      nodes.set(node.id, node);
+      if (!upsertCanvasNode(nodes, node)) return { ok: false, reason: "unsupported" };
       continue;
     }
 
-    const edgeMatch = edgeRegex.exec(line);
+    const edgeMatch = edgeRegex.exec(statement);
     if (edgeMatch) {
-      edges.push({ from: edgeMatch[1], to: edgeMatch[2] });
+      const from = parseNodeToken(edgeMatch[1]);
+      const to = parseNodeToken(edgeMatch[2]);
+      if (!from || !to) return { ok: false, reason: "unsupported" };
+      if (!upsertCanvasNode(nodes, from)) return { ok: false, reason: "unsupported" };
+      if (!upsertCanvasNode(nodes, to)) return { ok: false, reason: "unsupported" };
+      edges.push({ from: from.id, to: to.id });
       continue;
     }
 
@@ -182,26 +187,59 @@ export function nextCanvasNodeId(nodes: Pick<CanvasNode, "id">[]): string {
   return `node${number}`;
 }
 
-function parseNodeLine(line: string): Omit<CanvasNode, "x" | "y"> | null {
-  const rectangleMatch = rectangleRegex.exec(line);
+function parseNodeToken(token: string): ParsedCanvasNode | null {
+  const trimmed = token.trim();
+
+  const rectangleMatch = rectangleRegex.exec(trimmed);
   if (rectangleMatch) return parseNodeMatch(rectangleMatch, "rectangle");
 
-  const diamondMatch = diamondRegex.exec(line);
+  const diamondMatch = diamondRegex.exec(trimmed);
   if (diamondMatch) return parseNodeMatch(diamondMatch, "diamond");
 
-  const circleMatch = circleRegex.exec(line);
+  const circleMatch = circleRegex.exec(trimmed);
   if (circleMatch) return parseNodeMatch(circleMatch, "circle");
+
+  if (nodeIdRegex.test(trimmed)) {
+    return {
+      explicit: false,
+      id: trimmed,
+      label: trimmed,
+      shape: "rectangle"
+    };
+  }
 
   return null;
 }
 
-function parseNodeMatch(match: RegExpExecArray, shape: CanvasShape): Omit<CanvasNode, "x" | "y"> | null {
+function parseNodeMatch(match: RegExpExecArray, shape: CanvasShape): ParsedCanvasNode | null {
   if (!nodeIdRegex.test(match[1])) return null;
-  return { id: match[1], label: match[2], shape };
+  return {
+    explicit: true,
+    id: match[1],
+    label: match[2],
+    shape
+  };
+}
+
+function upsertCanvasNode(nodes: Map<string, ParsedCanvasNode>, node: ParsedCanvasNode): boolean {
+  const current = nodes.get(node.id);
+  if (!current) {
+    nodes.set(node.id, node);
+    return true;
+  }
+
+  if (!node.explicit) return true;
+
+  if (!current.explicit) {
+    nodes.set(node.id, node);
+    return true;
+  }
+
+  return current.label === node.label && current.shape === node.shape;
 }
 
 function layoutNodes(
-  nodes: Array<Omit<CanvasNode, "x" | "y">>,
+  nodes: ParsedCanvasNode[],
   direction: CanvasDirection,
   metadata: RelicCanvasMetadata | null
 ): CanvasNode[] {
@@ -217,11 +255,21 @@ function layoutNodes(
       : 72 + row * 112;
 
     return {
-      ...node,
+      id: node.id,
+      label: node.label,
+      shape: node.shape,
       x,
       y
     };
   });
+}
+
+function mermaidStatements(source: string): string[] {
+  return source
+    .split(/\r?\n/)
+    .flatMap((line) => line.split(";"))
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0 && !line.startsWith("%%"));
 }
 
 function parseRelicCanvasMetadata(source: string): RelicCanvasMetadata | null {

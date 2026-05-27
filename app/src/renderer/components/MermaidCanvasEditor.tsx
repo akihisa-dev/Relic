@@ -45,8 +45,10 @@ export function MermaidCanvasEditor({
 }: MermaidCanvasEditorProps): ReactElement {
   const t = useT();
   const parseResult = useMemo(() => parseCanvasMermaid(source), [source]);
-  const [diagram, setDiagram] = useState<CanvasDiagram | null>(null);
-  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const isEmptyMermaid = !parseResult.ok && parseResult.reason === "empty";
+  const initialDiagram = parseResult.ok ? parseResult.diagram : isEmptyMermaid ? createEmptyCanvasDiagram() : null;
+  const [diagram, setDiagram] = useState<CanvasDiagram | null>(initialDiagram);
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(initialDiagram?.nodes[0]?.id ?? null);
   const [selectedEdgeKey, setSelectedEdgeKey] = useState<string | null>(null);
   const [connectStartId, setConnectStartId] = useState<string | null>(null);
   const [mode, setMode] = useState<CanvasMode>("select");
@@ -54,7 +56,6 @@ export function MermaidCanvasEditor({
   const diagramRef = useRef<CanvasDiagram | null>(null);
   const lastWrittenSourceRef = useRef<string | null>(null);
 
-  const isEmptyMermaid = !parseResult.ok && parseResult.reason === "empty";
   const isUnsupportedMermaid = !parseResult.ok && parseResult.reason !== "empty";
   const isEditable = Boolean(diagram && (parseResult.ok || isEmptyMermaid));
   const selectedNode = diagram?.nodes.find((node) => node.id === selectedNodeId) ?? null;
