@@ -55,9 +55,34 @@ describe("App", () => {
   });
 
   it("左レールからキャンバスビューを開く", async () => {
-    window.relic = makeRelicApi();
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [{ name: "設定", path: "設定.md", type: "file" }]
+        }
+      }),
+      readMarkdownFile: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          content: [
+            "```mermaid",
+            "flowchart TD",
+            "  node1[人物]",
+            "```"
+          ].join("\n"),
+          name: "設定",
+          path: "設定.md"
+        }
+      })
+    });
 
-    await renderApp();
+    const { container } = await renderApp();
+
+    await screen.findByText("設定", { selector: ".file-tree-name" });
+    fireEvent.click(container.querySelector('[data-node-path="設定.md"]') as Element);
+    expect(await screen.findByText("設定", { selector: ".pane-tab-name" })).toBeInTheDocument();
 
     fireEvent.click(await screen.findByRole("button", { name: "キャンバス" }));
 

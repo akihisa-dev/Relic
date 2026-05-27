@@ -6,6 +6,47 @@
   margin-bottom: 14px;
 }
 
+.canvas-target {
+  color: var(--text-3);
+  font-size: 13px;
+  margin: 4px 0 0;
+}
+
+.canvas-state-banner {
+  align-items: center;
+  background: color-mix(in srgb, var(--text) 4%, var(--bg));
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-2);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding: 10px 12px;
+}
+
+.canvas-block-picker {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.canvas-block-picker span {
+  color: var(--text-3);
+  font-size: 12px;
+}
+
+.canvas-block-picker select {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--text);
+  font: inherit;
+  min-height: 32px;
+  padding: 6px 8px;
+}
+
 .canvas-toolbar {
   align-items: center;
   display: flex;
@@ -41,20 +82,30 @@
   position: relative;
 }
 
+.canvas-stage--readonly {
+  opacity: 0.78;
+}
+
 .canvas-edges {
   height: 100%;
   inset: 0;
   overflow: visible;
-  pointer-events: none;
   position: absolute;
   width: 100%;
 }
 
 .canvas-edges line {
   marker-end: url("#canvas-arrow");
+  cursor: pointer;
+  pointer-events: stroke;
   stroke: var(--text-3);
   stroke-linecap: round;
   stroke-width: 2;
+}
+
+.canvas-edges line.canvas-edge--selected {
+  stroke: var(--accent);
+  stroke-width: 3;
 }
 
 .canvas-edges marker path {
