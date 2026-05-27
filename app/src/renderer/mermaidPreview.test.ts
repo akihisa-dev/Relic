@@ -36,6 +36,12 @@ function dispatchPointerEvent(target: HTMLElement, type: string, init: {
   target.dispatchEvent(event);
 }
 
+function dispatchWheelEvent(target: HTMLElement, init: WheelEventInit) {
+  const event = new WheelEvent("wheel", { bubbles: true, cancelable: true, ...init });
+  target.dispatchEvent(event);
+  return event;
+}
+
 beforeEach(() => {
   initializeMock.mockReset();
   renderMock.mockReset();
@@ -234,7 +240,7 @@ describe("mermaidPreview", () => {
     expect(content?.style.transform).toBe("translate(0px, 0px) scale(1)");
   });
 
-  it("Ctrl + ホイールで拡大率を変更する", async () => {
+  it("通常ホイールで拡大率を変更しpreventDefaultする", async () => {
     const { renderMermaidElement } = await loadMermaidPreviewModule();
     const container = document.createElement("div");
     renderMock.mockResolvedValueOnce({ svg: '<svg viewBox="0 0 640 320"><text>ok</text></svg>' });
@@ -246,11 +252,71 @@ describe("mermaidPreview", () => {
     const viewport = document.querySelector<HTMLElement>(".preview-mermaid-overlay-viewport");
     const content = document.querySelector<HTMLElement>(".preview-mermaid-overlay-content");
 
-    fireEvent.wheel(viewport as HTMLElement, { ctrlKey: true, deltaY: -1 });
+    const zoomInEvent = dispatchWheelEvent(viewport as HTMLElement, { ctrlKey: false, deltaY: -1 });
+
+    expect(zoomInEvent.defaultPrevented).toBe(true);
     expect(content?.style.transform).toBe("translate(0px, 0px) scale(1.2)");
 
-    fireEvent.wheel(viewport as HTMLElement, { ctrlKey: false, deltaY: -1 });
-    expect(content?.style.transform).toBe("translate(0px, 0px) scale(1.2)");
+    const zoomOutEvent = dispatchWheelEvent(viewport as HTMLElement, { deltaY: 1 });
+
+    expect(zoomOutEvent.defaultPrevented).toBe(true);
+    expect(content?.style.transform).toBe("translate(0px, 0px) scale(1)");
+  });
+
+  it("ホイールズームはマウス位置を中心に表示位置を調整する", async () => {
+    const { renderMermaidElement } = await loadMermaidPreviewModule();
+    const container = document.createElement("div");
+    renderMock.mockResolvedValueOnce({ svg: '<svg viewBox="0 0 640 320"><text>ok</text></svg>' });
+
+    await renderMermaidElement(container, "graph TD; A-->B");
+
+    fireEvent.click(container.querySelector(".preview-mermaid-expand-button") as HTMLButtonElement);
+
+    const viewport = document.querySelector<HTMLElement>(".preview-mermaid-overlay-viewport");
+    const content = document.querySelector<HTMLElement>(".preview-mermaid-overlay-content");
+    vi.spyOn(content as HTMLElement, "getBoundingClientRect").mockReturnValue({
+      bottom: 220,
+      height: 200,
+      left: 10,
+      right: 410,
+      top: 20,
+      width: 400,
+      x: 10,
+      y: 20,
+      toJSON: () => ({})
+    });
+
+    dispatchWheelEvent(viewport as HTMLElement, { clientX: 60, clientY: 70, deltaY: -1 });
+
+    expect(content?.style.transform).toBe("translate(-10px, -10px) scale(1.2)");
+  });
+
+  it("ホイールズームは下限と上限を超えない", async () => {
+    const { renderMermaidElement } = await loadMermaidPreviewModule();
+    const container = document.createElement("div");
+    renderMock.mockResolvedValueOnce({ svg: '<svg viewBox="0 0 640 320"><text>ok</text></svg>' });
+
+    await renderMermaidElement(container, "graph TD; A-->B");
+
+    fireEvent.click(container.querySelector(".preview-mermaid-expand-button") as HTMLButtonElement);
+
+    const viewport = document.querySelector<HTMLElement>(".preview-mermaid-overlay-viewport");
+    const content = document.querySelector<HTMLElement>(".preview-mermaid-overlay-content");
+    const zoomStatus = document.querySelector<HTMLElement>(".preview-mermaid-zoom-status");
+
+    for (let i = 0; i < 30; i += 1) {
+      dispatchWheelEvent(viewport as HTMLElement, { deltaY: -1 });
+    }
+
+    expect(content?.style.transform).toBe("translate(0px, 0px) scale(4)");
+    expect(zoomStatus?.textContent).toBe("400%");
+
+    for (let i = 0; i < 30; i += 1) {
+      dispatchWheelEvent(viewport as HTMLElement, { deltaY: 1 });
+    }
+
+    expect(content?.style.transform).toBe("translate(0px, 0px) scale(0.4)");
+    expect(zoomStatus?.textContent).toBe("40%");
   });
 
   it("ドラッグ移動で表示位置を変更する", async () => {
@@ -271,6 +337,24 @@ describe("mermaidPreview", () => {
     expect(content?.style.transform).toBe("translate(30px, 45px) scale(1)");
 
     dispatchPointerEvent(viewport as HTMLElement, "pointerup", {});
+    expect(viewport?.classList.contains("preview-mermaid-overlay-viewport--dragging")).toBe(false);
+  });
+
+  it("pointercancelでドラッグ状態を解除する", async () => {
+    const { renderMermaidElement } = await loadMermaidPreviewModule();
+    const container = document.createElement("div");
+    renderMock.mockResolvedValueOnce({ svg: '<svg viewBox="0 0 640 320"><text>ok</text></svg>' });
+
+    await renderMermaidElement(container, "graph TD; A-->B");
+
+    fireEvent.click(container.querySelector(".preview-mermaid-expand-button") as HTMLButtonElement);
+
+    const viewport = document.querySelector<HTMLElement>(".preview-mermaid-overlay-viewport");
+
+    dispatchPointerEvent(viewport as HTMLElement, "pointerdown", { button: 0, clientX: 10, clientY: 20 });
+    expect(viewport?.classList.contains("preview-mermaid-overlay-viewport--dragging")).toBe(true);
+
+    dispatchPointerEvent(viewport as HTMLElement, "pointercancel", {});
     expect(viewport?.classList.contains("preview-mermaid-overlay-viewport--dragging")).toBe(false);
   });
 
