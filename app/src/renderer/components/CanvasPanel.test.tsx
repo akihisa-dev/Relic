@@ -6,6 +6,15 @@ import { I18nProvider } from "../i18n";
 import { CanvasPanel } from "./CanvasPanel";
 import { MermaidCanvasEditor } from "./MermaidCanvasEditor";
 
+const reproductionMermaid = [
+  "flowchart TD",
+  "  A[設定を作る] --> B[Markdownに保存する]",
+  "  B --> C[Relicで開く]",
+  "  C --> D{mermaidコードブロック?}",
+  "  D -->|はい| E[図として表示]",
+  "  D -->|いいえ| F[通常のコードブロック]"
+].join("\n");
+
 function renderWithI18n(ui: ReactElement) {
   return render(
     <I18nProvider language="ja">
@@ -36,6 +45,24 @@ describe("MermaidCanvasEditor", () => {
     expect(screen.getByRole("button", { name: "A" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "B" })).toBeInTheDocument();
     expect(container.querySelector(".canvas-edges line")).not.toBeNull();
+  });
+
+  it("ラベル付き接続を含む既存Mermaid図を編集可能なキャンバスとして表示する", () => {
+    const { container } = renderWithI18n(
+      <MermaidCanvasEditor
+        blockRange={{ from: 0, to: reproductionMermaid.length }}
+        filePath="setting.md"
+        onChange={vi.fn()}
+        source={reproductionMermaid}
+      />
+    );
+
+    expect(screen.queryByText(/対応範囲外/)).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "設定を作る" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Markdownに保存する" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "mermaidコードブロック?" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "四角" })).not.toBeDisabled();
+    expect(container.querySelector(".canvas-source-block code")?.textContent).toContain("D -->|はい| E");
   });
 
   it("ノード追加とラベル編集をMermaid sourceとして返す", () => {

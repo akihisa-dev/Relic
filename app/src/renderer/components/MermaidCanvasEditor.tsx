@@ -345,7 +345,11 @@ export function MermaidCanvasEditor({
               </label>
             </>
           ) : selectedEdge ? (
-            <div className="canvas-empty-selection">{`${selectedEdge.from} --> ${selectedEdge.to}`}</div>
+            <div className="canvas-empty-selection">
+              {selectedEdge.label === undefined
+                ? `${selectedEdge.from} --> ${selectedEdge.to}`
+                : `${selectedEdge.from} -->|${selectedEdge.label}| ${selectedEdge.to}`}
+            </div>
           ) : (
             <div className="canvas-empty-selection">{t("canvas.emptySelection")}</div>
           )}
@@ -360,5 +364,5 @@ export function MermaidCanvasEditor({
 }
 
 function edgeKey(edge: CanvasEdge): string {
-  return `${edge.from}->${edge.to}`;
+  return `${edge.from}->${edge.label ?? ""}->${edge.to}`;
 }
