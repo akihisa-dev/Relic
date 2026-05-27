@@ -17,16 +17,8 @@ import { useEditorContextMenu } from "../hooks/useEditorContextMenu";
 import { useEditorFrontmatterDialog } from "../hooks/useEditorFrontmatterDialog";
 import { useToolbarActions } from "../hooks/useToolbarActions";
 import { useT, type Translator } from "../i18n";
-import {
-  findMermaidMarkdownBlocks,
-  formatMermaidMarkdownBlock,
-  hashMermaidSource,
-  resolveMermaidMarkdownBlock
-} from "../mermaidFlowchart";
-import { mermaidVisualEditRequestEvent, type MermaidVisualEditRequest } from "../mermaidVisualEditEvent";
 import { EditorContextMenu } from "./EditorContextMenu";
 import { EditorFrontmatterDialog } from "./EditorFrontmatterDialog";
-import { MermaidEditorPopover } from "./MermaidEditorPopover";
 
 export { buildWikiLinkCompletionSource } from "../editorExtensions";
 export { buildLivePreviewDecorations, findClickableLinkAtPosition } from "../editorLivePreview";
@@ -69,15 +61,9 @@ interface FrontmatterPropertyMenuState {
   unavailable: boolean;
 }
 
-type MermaidVisualEditSession = MermaidVisualEditRequest & {
-  conflictMessage: string | null;
-  filePath: string;
-};
-
 export function Editor({
   allFilePaths = defaultAllFilePaths,
   content,
-  filePath,
   frontmatterCandidates = defaultFrontmatterCandidates,
   onChange,
   onEditorAction,
@@ -101,8 +87,6 @@ export function Editor({
   const frontmatterCandidatesRef = useRef(frontmatterCandidates);
   const userDefinedFieldsRef = useRef(userDefinedFields);
   const [frontmatterPropertyMenu, setFrontmatterPropertyMenu] = useState<FrontmatterPropertyMenuState | null>(null);
-  const [mermaidVisualEditSession, setMermaidVisualEditSession] = useState<MermaidVisualEditSession | null>(null);
-  const mermaidVisualEditSessionRef = useRef<MermaidVisualEditSession | null>(null);
   const {
     closeContextMenu,
     contextMenu,
@@ -143,7 +127,6 @@ export function Editor({
   allFilePathsRef.current = allFilePaths;
   frontmatterCandidatesRef.current = frontmatterCandidates;
   userDefinedFieldsRef.current = userDefinedFields;
-  mermaidVisualEditSessionRef.current = mermaidVisualEditSession;
 
   const toggleFrontmatterPropertyMenu = (): void => {
     const view = internalViewRef.current;
@@ -174,17 +157,6 @@ export function Editor({
       if (!detail) return;
       openFrontmatterDialog(detail);
     };
-    const handleMermaidVisualEditRequest = (event: Event): void => {
-      const detail = (event as CustomEvent<MermaidVisualEditRequest>).detail;
-      if (!detail || !filePath) return;
-
-      event.stopPropagation();
-      setMermaidVisualEditSession({
-        ...detail,
-        conflictMessage: null,
-        filePath
-      });
-    };
     const handleContextMenu = (event: MouseEvent): void => {
       const view = internalViewRef.current;
       if (!view) return;
@@ -204,7 +176,6 @@ export function Editor({
     };
 
     container.addEventListener(frontmatterDialogRequestEvent, handleFrontmatterDialogRequest);
-    container.addEventListener(mermaidVisualEditRequestEvent, handleMermaidVisualEditRequest);
     container.addEventListener("pointerdown", handleRightButtonDown, true);
     container.addEventListener("mousedown", handleRightButtonDown, true);
     container.addEventListener("mouseup", handleRightButtonDown, true);
@@ -213,14 +184,13 @@ export function Editor({
 
     return () => {
       container.removeEventListener(frontmatterDialogRequestEvent, handleFrontmatterDialogRequest);
-      container.removeEventListener(mermaidVisualEditRequestEvent, handleMermaidVisualEditRequest);
       container.removeEventListener("pointerdown", handleRightButtonDown, true);
       container.removeEventListener("mousedown", handleRightButtonDown, true);
       container.removeEventListener("mouseup", handleRightButtonDown, true);
       container.removeEventListener("auxclick", handleRightButtonDown, true);
       container.removeEventListener("contextmenu", handleContextMenu, true);
     };
-  }, [filePath, openContextMenu, openFrontmatterDialog]);
+  }, [openContextMenu, openFrontmatterDialog]);
 
   useEffect(() => {
     if (!frontmatterPropertyMenu) return;
@@ -330,50 +300,6 @@ export function Editor({
     if (viewRef) viewRef.current = nextView;
   }, [frontmatterCandidates, rememberSelection, settings, sourceMode, t, typewriterMode, userDefinedFields, viewRef]);
 
-  const updateMermaidVisualSource = (source: string): boolean => {
-    const view = internalViewRef.current;
-    const session = mermaidVisualEditSessionRef.current;
-    if (!view || !session) return false;
-
-    const markdown = view.state.doc.toString();
-    const blocks = findMermaidMarkdownBlocks(markdown);
-    const targetBlock = resolveMermaidMarkdownBlock(blocks, session);
-    if (!targetBlock) {
-      setMermaidVisualEditSession({
-        ...session,
-        conflictMessage: t("mermaidEditor.targetChanged")
-      });
-      return false;
-    }
-
-    const replacement = formatMermaidMarkdownBlock(source);
-    view.dispatch({
-      changes: {
-        from: targetBlock.from,
-        insert: replacement,
-        to: targetBlock.to
-      }
-    });
-
-    const nextBlocks = findMermaidMarkdownBlocks(view.state.doc.toString());
-    const nextSourceHash = hashMermaidSource(source);
-    const nextBlock = nextBlocks.find((block) => (
-      block.from === targetBlock.from && block.sourceHash === nextSourceHash
-    )) ?? nextBlocks.find((block) => (
-      block.index === targetBlock.index && block.sourceHash === nextSourceHash
-    ));
-    setMermaidVisualEditSession({
-      ...session,
-      blockFrom: nextBlock?.from ?? targetBlock.from,
-      blockIndex: nextBlock?.index ?? targetBlock.index,
-      blockTo: nextBlock?.to ?? targetBlock.from + replacement.length,
-      conflictMessage: null,
-      source,
-      sourceHash: nextSourceHash
-    });
-    return true;
-  };
-
   return (
     <>
       <div className="cm-editor-shell">
@@ -440,19 +366,6 @@ export function Editor({
         onPaste={pasteClipboard}
         onSelectAll={selectAll}
       />
-      {mermaidVisualEditSession ? (
-        <MermaidEditorPopover
-          blockRange={{
-            from: mermaidVisualEditSession.blockFrom,
-            to: mermaidVisualEditSession.blockTo
-          }}
-          filePath={mermaidVisualEditSession.filePath}
-          conflictMessage={mermaidVisualEditSession.conflictMessage}
-          onChange={updateMermaidVisualSource}
-          onClose={() => setMermaidVisualEditSession(null)}
-          source={mermaidVisualEditSession.source}
-        />
-      ) : null}
     </>
   );
 }

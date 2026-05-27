@@ -2,9 +2,12 @@ import { WidgetType } from "@codemirror/view";
 import type { EditorView } from "@codemirror/view";
 
 import { enterMermaidSourceEdit } from "./editorMermaidEditState";
-import { hashMermaidSource } from "./mermaidFlowchart";
-import { dispatchMermaidVisualEditRequest } from "./mermaidVisualEditEvent";
-import { buildMermaidFallback, renderMermaidElement, type MermaidRenderHandle } from "./mermaidPreview";
+import {
+  buildDiagramFallback,
+  renderDiagramElement,
+  type DiagramLanguage,
+  type DiagramRenderHandle
+} from "./mermaidPreview";
 
 export class ListMarkerWidget extends WidgetType {
   constructor(
@@ -112,12 +115,12 @@ export class HorizontalRuleWidget extends WidgetType {
   }
 }
 
-export class MermaidBlockWidget extends WidgetType {
-  readonly className = "cm-live-mermaid";
+export class DiagramBlockWidget extends WidgetType {
+  readonly className = "cm-live-diagram";
 
   constructor(
     private readonly source: string,
-    private readonly blockIndex: number,
+    private readonly language: DiagramLanguage,
     private readonly blockFrom: number,
     private readonly blockTo: number,
     private readonly editCursor: number
@@ -125,9 +128,9 @@ export class MermaidBlockWidget extends WidgetType {
     super();
   }
 
-  eq(other: MermaidBlockWidget): boolean {
+  eq(other: DiagramBlockWidget): boolean {
     return this.source === other.source &&
-      this.blockIndex === other.blockIndex &&
+      this.language === other.language &&
       this.blockFrom === other.blockFrom &&
       this.blockTo === other.blockTo &&
       this.editCursor === other.editCursor;
@@ -135,29 +138,30 @@ export class MermaidBlockWidget extends WidgetType {
 
   toDOM(view: EditorView): HTMLElement {
     const container = document.createElement("div");
-    container.className = "preview-mermaid cm-live-mermaid";
+    container.className = `preview-diagram preview-${this.language} cm-live-diagram`;
 
-    let mermaidHandle: MermaidRenderHandle | null = null;
+    let diagramHandle: DiagramRenderHandle | null = null;
+    const label = this.language === "d2" ? "D2" : "Mermaid";
     const toolbar = document.createElement("div");
-    toolbar.className = "cm-live-mermaid-toolbar";
+    toolbar.className = "cm-live-diagram-toolbar";
     const fitButton = document.createElement("button");
     fitButton.type = "button";
-    fitButton.className = "cm-live-mermaid-fit-button";
+    fitButton.className = "cm-live-diagram-fit-button";
     fitButton.textContent = "全体表示";
-    fitButton.setAttribute("aria-label", "Mermaid図を全体表示");
+    fitButton.setAttribute("aria-label", `${label}図を全体表示`);
     fitButton.disabled = true;
     fitButton.addEventListener("click", (event) => {
       event.preventDefault();
       event.stopPropagation();
       event.stopImmediatePropagation();
-      mermaidHandle?.fitToViewport();
+      diagramHandle?.fitToViewport();
     });
 
     const editButton = document.createElement("button");
     editButton.type = "button";
-    editButton.className = "cm-live-mermaid-edit-button";
+    editButton.className = "cm-live-diagram-edit-button";
     editButton.textContent = "ソースを編集";
-    editButton.setAttribute("aria-label", "Mermaidソースを編集");
+    editButton.setAttribute("aria-label", `${label}ソースを編集`);
     editButton.addEventListener("click", (event) => {
       event.preventDefault();
       event.stopPropagation();
@@ -169,31 +173,13 @@ export class MermaidBlockWidget extends WidgetType {
       );
     });
 
-    const visualEditButton = document.createElement("button");
-    visualEditButton.type = "button";
-    visualEditButton.className = "cm-live-mermaid-visual-edit-button";
-    visualEditButton.textContent = "Mermaidを図で編集";
-    visualEditButton.setAttribute("aria-label", "このMermaidブロックを図から編集");
-    visualEditButton.addEventListener("click", (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      event.stopImmediatePropagation();
-      dispatchMermaidVisualEditRequest(container, {
-        blockIndex: this.blockIndex,
-        blockFrom: this.blockFrom,
-        blockTo: this.blockTo,
-        editCursor: this.editCursor,
-        source: this.source,
-        sourceHash: hashMermaidSource(this.source)
-      });
-    });
-    toolbar.append(fitButton, visualEditButton, editButton);
+    toolbar.append(fitButton, editButton);
 
     const diagram = document.createElement("div");
-    diagram.className = "cm-live-mermaid-diagram";
-    diagram.append(buildMermaidFallback(this.source));
-    void renderMermaidElement(diagram, this.source).then((handle) => {
-      mermaidHandle = handle;
+    diagram.className = "cm-live-diagram-body";
+    diagram.append(buildDiagramFallback(this.language, this.source));
+    void renderDiagramElement(diagram, this.language, this.source).then((handle) => {
+      diagramHandle = handle;
       fitButton.disabled = !handle;
     });
     container.append(toolbar, diagram);

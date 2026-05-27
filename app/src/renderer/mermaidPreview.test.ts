@@ -5,8 +5,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { encodeMermaidSourceAttribute } from "./mermaidSourceAttribute";
 
-const { initializeMock, renderMock } = vi.hoisted(() => ({
+const { compileD2Mock, initializeMock, renderD2Mock, renderMock } = vi.hoisted(() => ({
+  compileD2Mock: vi.fn(),
   initializeMock: vi.fn(),
+  renderD2Mock: vi.fn(),
   renderMock: vi.fn()
 }));
 
@@ -14,6 +16,13 @@ vi.mock("mermaid", () => ({
   default: {
     initialize: initializeMock,
     render: renderMock
+  }
+}));
+
+vi.mock("@terrastruct/d2", () => ({
+  D2: class {
+    compile = compileD2Mock;
+    render = renderD2Mock;
   }
 }));
 
@@ -67,7 +76,9 @@ function createDeferred<T>() {
 }
 
 beforeEach(() => {
+  compileD2Mock.mockReset();
   initializeMock.mockReset();
+  renderD2Mock.mockReset();
   renderMock.mockReset();
   document.body.replaceChildren();
   document.documentElement.removeAttribute("data-theme");
@@ -83,17 +94,20 @@ beforeEach(() => {
 
 describe("mermaidPreview", () => {
   it("mermaid言語指定を大文字・空白・追加文字列込みで判定する", async () => {
-    const { isMermaidLanguage } = await loadMermaidPreviewModule();
+    const { diagramLanguageFor, isD2Language, isMermaidLanguage } = await loadMermaidPreviewModule();
 
     expect(isMermaidLanguage(" Mermaid ")).toBe(true);
     expect(isMermaidLanguage("mermaid something")).toBe(true);
+    expect(isD2Language(" D2 ")).toBe(true);
+    expect(diagramLanguageFor("d2 sketch")).toBe("d2");
     expect(isMermaidLanguage("js")).toBe(false);
+    expect(diagramLanguageFor("js")).toBeNull();
   });
 
   it("renderMermaidElementsはdata-mermaid-sourceを優先して描画する", async () => {
     const { renderMermaidElements } = await loadMermaidPreviewModule();
     renderMock.mockResolvedValueOnce({ svg: "<svg><text>ok</text></svg>" });
-    const container = document.createElement("div");
+    const container = createAttachedContainer();
     container.innerHTML = [
       '<div class="preview-mermaid" data-mermaid-source="from-dataset">',
       '<pre><code class="language-mermaid">from-code</code></pre>',
@@ -110,7 +124,7 @@ describe("mermaidPreview", () => {
   it("renderMermaidElementsはエンコード済みdata-mermaid-sourceを復元して描画する", async () => {
     const { renderMermaidElements } = await loadMermaidPreviewModule();
     renderMock.mockResolvedValueOnce({ svg: "<svg><text>ok</text></svg>" });
-    const container = document.createElement("div");
+    const container = createAttachedContainer();
     const source = 'graph TD; A["<script>"]-->"B"';
     container.innerHTML = [
       `<div class="preview-mermaid" data-mermaid-source="${encodeMermaidSourceAttribute(source)}">`,
@@ -138,6 +152,31 @@ describe("mermaidPreview", () => {
 
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect(renderMock).not.toHaveBeenCalled();
+  });
+
+  it("renderDiagramElementsはD2コードブロックを描画する", async () => {
+    const { renderDiagramElements } = await loadMermaidPreviewModule();
+    compileD2Mock.mockResolvedValueOnce({
+      diagram: { root: true },
+      renderOptions: { pad: 12 }
+    });
+    renderD2Mock.mockResolvedValueOnce('<svg viewBox="0 0 120 80"><text>D2</text></svg>');
+    const container = createAttachedContainer();
+    container.innerHTML = [
+      '<div class="preview-diagram preview-d2" data-diagram-language="d2" data-diagram-source="x -&gt; y">',
+      '<pre><code class="language-d2">from-code</code></pre>',
+      "</div>"
+    ].join("");
+
+    renderDiagramElements(container);
+
+    await vi.waitFor(() => {
+      expect(compileD2Mock).toHaveBeenCalledWith("x -> y", { layout: "dagre" });
+      expect(renderD2Mock).toHaveBeenCalledWith({ root: true }, { noXMLTag: true, pad: 12 });
+    });
+    await vi.waitFor(() => {
+      expect(container.querySelector(".preview-d2-svg svg")?.textContent).toBe("D2");
+    });
   });
 
   it("buildMermaidErrorは基本情報を表示する", async () => {
@@ -204,6 +243,28 @@ describe("mermaidPreview", () => {
     expect(document.querySelector(".preview-mermaid-overlay")).toBeNull();
     expect(svg?.getAttribute("width")).toBe("640px");
     expect(svg?.style.maxWidth).toBe("none");
+  });
+
+  it("D2 SVG描画成功時も本文内パン・ズームviewportを構成する", async () => {
+    const { renderDiagramElement } = await loadMermaidPreviewModule();
+    const container = createAttachedContainer();
+    compileD2Mock.mockResolvedValueOnce({
+      diagram: { root: true },
+      renderOptions: {}
+    });
+    renderD2Mock.mockResolvedValueOnce(
+      '<svg viewBox="0 0 120 80"><script>alert(1)</script><text onload="alert(1)">d2</text></svg>'
+    );
+
+    const handle = await renderDiagramElement(container, "d2", "x -> y");
+
+    expect(typeof handle?.fitToViewport).toBe("function");
+    expect(container.dataset.diagramRenderStatus).toBe("rendered");
+    expect(container.dataset.mermaidRenderStatus).toBeUndefined();
+    expect(container.querySelector(".preview-d2-svg svg")).not.toBeNull();
+    expect(container.querySelector("script")).toBeNull();
+    expect(container.querySelector("[onload]")).toBeNull();
+    expect(container.textContent).toContain("d2");
   });
 
   it("fitToViewportはviewport内に収まる倍率と中央寄せへ戻す", async () => {

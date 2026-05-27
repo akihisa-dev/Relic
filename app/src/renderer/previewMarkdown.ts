@@ -5,7 +5,7 @@ import { marked, type Renderer } from "marked";
 import markedFootnote from "marked-footnote";
 
 import type { Translator } from "./i18n";
-import { isMermaidLanguage } from "./mermaidPreview";
+import { diagramLanguageFor } from "./mermaidPreview";
 import { encodeMermaidSourceAttribute } from "./mermaidSourceAttribute";
 
 export const maxEmbeddedFileLength = 20_000;
@@ -117,7 +117,7 @@ function escapeHtmlAttribute(value: string): string {
 
 function sanitizePreviewHtml(html: string): string {
   return DOMPurify.sanitize(html, {
-    ADD_ATTR: ["checked", "class", "data-mermaid-source", "data-target", "id"]
+    ADD_ATTR: ["checked", "class", "data-diagram-language", "data-diagram-source", "data-mermaid-source", "data-target", "id"]
   });
 }
 
@@ -147,11 +147,15 @@ function buildRenderer(): Renderer {
   const renderer = new marked.Renderer();
 
   renderer.code = ({ lang, text }) => {
-    if (isMermaidLanguage(lang)) {
+    const diagramLanguage = diagramLanguageFor(lang);
+    if (diagramLanguage) {
       const escaped = escapeHtml(text);
       const sourceAttribute = escapeHtmlAttribute(encodeMermaidSourceAttribute(text));
+      const mermaidSourceAttribute = diagramLanguage === "mermaid"
+        ? ` data-mermaid-source="${sourceAttribute}"`
+        : "";
 
-      return `<div class="preview-mermaid" data-mermaid-source="${sourceAttribute}"><pre><code class="language-mermaid">${escaped}</code></pre></div>`;
+      return `<div class="preview-diagram preview-${diagramLanguage}" data-diagram-language="${diagramLanguage}" data-diagram-source="${sourceAttribute}"${mermaidSourceAttribute}><pre><code class="language-${diagramLanguage}">${escaped}</code></pre></div>`;
     }
 
     const language = lang && hljs.getLanguage(lang) ? lang : "plaintext";

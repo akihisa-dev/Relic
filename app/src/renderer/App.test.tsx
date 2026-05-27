@@ -54,7 +54,7 @@ describe("App", () => {
     expect(await screen.findByRole("button", { name: /読書メモ/ })).toBeInTheDocument();
   });
 
-  it("Mermaid編集は左レールではなくMermaidブロックから開く", async () => {
+  it("Mermaid/D2図ブロックは表示され、図編集入口は出さない", async () => {
     window.relic = makeRelicApi({
       getWorkspaceState: vi.fn().mockResolvedValue({
         ok: true,
@@ -70,6 +70,10 @@ describe("App", () => {
             "```mermaid",
             "flowchart TD",
             "  node1[人物]",
+            "```",
+            "",
+            "```d2",
+            "node1 -> node2",
             "```"
           ].join("\n"),
           name: "設定",
@@ -86,8 +90,9 @@ describe("App", () => {
 
     expect(screen.queryByRole("button", { name: "Mermaid編集" })).toBeNull();
 
-    await waitFor(() => expect(container.querySelector(".cm-live-mermaid-visual-edit-button")).not.toBeNull());
-    expect(container.querySelector(".cm-live-mermaid-visual-edit-button")?.textContent).toBe("Mermaidを図で編集");
+    await waitFor(() => expect(container.querySelectorAll(".cm-live-diagram")).toHaveLength(2));
+    expect(container.querySelector(".cm-live-diagram-edit-button")?.textContent).toBe("ソースを編集");
+    expect(container.querySelector(".cm-live-mermaid-visual-edit-button")).toBeNull();
   });
 
   it("ファイルツリーのノートをクリックするとタブが開く", async () => {

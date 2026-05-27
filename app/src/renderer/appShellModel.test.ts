@@ -88,7 +88,6 @@ describe("appShellModel", () => {
     expect(labels).toEqual({
       chronicleSettings: "Calendar Settings",
       frontmatter: "Frontmatter",
-      mermaidEditor: "Mermaid editor",
       settings: "Settings",
       tools: "Tools"
     });

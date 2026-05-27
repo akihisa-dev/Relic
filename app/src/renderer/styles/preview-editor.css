@@ -44,6 +44,7 @@
   padding: 0;
 }
 
+.preview-diagram,
 .preview-mermaid {
   box-sizing: border-box;
   margin: 0.8em 0;
@@ -51,6 +52,7 @@
   position: relative;
 }
 
+.preview-diagram pre,
 .preview-mermaid pre {
   background: rgba(31, 35, 40, 0.04);
   border-radius: 6px;
@@ -59,6 +61,7 @@
   padding: 12px 16px;
 }
 
+.preview-diagram code,
 .preview-mermaid code {
   background: none;
   font-family: Menlo, monospace;
@@ -66,6 +69,7 @@
   padding: 0;
 }
 
+.preview-diagram-svg,
 .preview-mermaid-svg {
   cursor: default;
   display: inline-block;
@@ -74,13 +78,14 @@
   width: max-content;
 }
 
+.preview-diagram-svg svg,
 .preview-mermaid-svg svg {
   display: block;
   height: auto;
   max-width: none;
 }
 
-.cm-live-mermaid-toolbar {
+.cm-live-diagram-toolbar {
   align-items: center;
   display: flex;
   gap: 6px;
@@ -88,9 +93,8 @@
   margin-bottom: 6px;
 }
 
-.cm-live-mermaid-fit-button,
-.cm-live-mermaid-visual-edit-button,
-.cm-live-mermaid-edit-button {
+.cm-live-diagram-fit-button,
+.cm-live-diagram-edit-button {
   background: color-mix(in srgb, var(--bg) 88%, transparent);
   border: 1px solid var(--border);
   color: var(--text-3);
@@ -99,24 +103,22 @@
   padding: 0 9px;
 }
 
-.cm-live-mermaid-fit-button:hover,
-.cm-live-mermaid-fit-button:focus-visible,
-.cm-live-mermaid-visual-edit-button:hover,
-.cm-live-mermaid-visual-edit-button:focus-visible,
-.cm-live-mermaid-edit-button:hover,
-.cm-live-mermaid-edit-button:focus-visible {
+.cm-live-diagram-fit-button:hover,
+.cm-live-diagram-fit-button:focus-visible,
+.cm-live-diagram-edit-button:hover,
+.cm-live-diagram-edit-button:focus-visible {
   background: var(--hover);
   border-color: var(--border-medium);
   color: var(--text);
 }
 
-.cm-live-mermaid-fit-button:disabled,
-.cm-live-mermaid-visual-edit-button:disabled,
-.cm-live-mermaid-edit-button:disabled {
+.cm-live-diagram-fit-button:disabled,
+.cm-live-diagram-edit-button:disabled {
   cursor: default;
   opacity: 0.5;
 }
 
+.preview-diagram-error,
 .preview-mermaid-error {
   background: color-mix(in srgb, var(--danger, #b42318) 7%, var(--bg));
   border: 1px solid color-mix(in srgb, var(--danger, #b42318) 26%, var(--border));
@@ -125,33 +127,39 @@
   padding: 12px 14px;
 }
 
+.preview-diagram-error-title,
 .preview-mermaid-error-title {
   font-weight: 600;
   margin-bottom: 4px;
 }
 
+.preview-diagram-error-message,
 .preview-mermaid-error-message {
   color: var(--text-3);
   font-size: 13px;
   margin-bottom: 8px;
 }
 
+.preview-diagram-error-details,
 .preview-mermaid-error-details {
   margin-top: 8px;
 }
 
+.preview-diagram-error-details summary,
 .preview-mermaid-error-details summary {
   color: var(--text-3);
   cursor: pointer;
   font-size: 12px;
 }
 
+.preview-diagram-error-details pre,
 .preview-mermaid-error-details pre {
   margin-top: 8px;
   max-height: 240px;
   overflow: auto;
 }
 
+.preview-diagram-panzoom-viewport,
 .preview-mermaid-panzoom-viewport {
   border: 1px solid var(--border);
   border-radius: 6px;
@@ -166,15 +174,19 @@
   width: 100%;
 }
 
+.preview-diagram-panzoom-viewport--dragging,
 .preview-mermaid-panzoom-viewport--dragging {
   cursor: default;
 }
 
+.preview-diagram-panzoom-viewport--dragging .preview-diagram-panzoom-content,
+.preview-diagram-panzoom-viewport--dragging .preview-diagram-svg,
 .preview-mermaid-panzoom-viewport--dragging .preview-mermaid-panzoom-content,
 .preview-mermaid-panzoom-viewport--dragging .preview-mermaid-svg {
   cursor: default;
 }
 
+.preview-diagram-panzoom-content,
 .preview-mermaid-panzoom-content {
   cursor: default;
   left: 0;

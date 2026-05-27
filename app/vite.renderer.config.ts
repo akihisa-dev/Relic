@@ -52,6 +52,7 @@ export default mergeConfig(baseConfig, {
         manualChunks(id: string) {
           if (!id.includes("node_modules")) return undefined;
 
+          if (id.includes("@terrastruct/d2")) return "d2-preview";
           if (isMermaidPreviewDependency(id)) return "mermaid-preview";
           if (id.includes("@codemirror")) return "codemirror";
           if (id.includes("katex") || id.includes("highlight.js") || id.includes("dompurify") || id.includes("marked")) {

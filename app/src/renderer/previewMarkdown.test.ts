@@ -57,16 +57,41 @@ describe("previewMarkdown", () => {
       t
     );
 
-    expect(html).toContain('class="preview-mermaid"');
+    expect(html).toContain('class="preview-diagram preview-mermaid"');
+    expect(html).toContain('data-diagram-language="mermaid"');
     expect(html).toContain('class="language-mermaid"');
     expect(html).toContain("graph TD; A--&gt;B");
     expect(html).not.toContain("hljs language-mermaid");
 
     const document = new DOMParser().parseFromString(html, "text/html");
-    const sourceAttribute = document.querySelector<HTMLElement>(".preview-mermaid")?.dataset.mermaidSource;
+    const container = document.querySelector<HTMLElement>(".preview-diagram");
+    const sourceAttribute = container?.dataset.diagramSource;
 
     expect(sourceAttribute).toBe(encodeMermaidSourceAttribute("graph TD; A-->B"));
     expect(decodeMermaidSourceAttribute(sourceAttribute ?? "")).toBe("graph TD; A-->B");
+    expect(container?.dataset.mermaidSource).toBe(sourceAttribute);
+  });
+
+  it("d2コードブロックを図表示用HTMLとして残す", () => {
+    const html = renderMarkdown(
+      "```d2\nuser -> app: opens\n```",
+      null,
+      new Map(),
+      true,
+      t
+    );
+
+    expect(html).toContain('class="preview-diagram preview-d2"');
+    expect(html).toContain('data-diagram-language="d2"');
+    expect(html).toContain('class="language-d2"');
+    expect(html).toContain("user -&gt; app: opens");
+    expect(html).not.toContain("hljs language-d2");
+
+    const document = new DOMParser().parseFromString(html, "text/html");
+    const container = document.querySelector<HTMLElement>(".preview-diagram");
+
+    expect(container?.dataset.diagramSource).toBe(encodeMermaidSourceAttribute("user -> app: opens"));
+    expect(container?.dataset.mermaidSource).toBeUndefined();
   });
 
   it("通常コードブロックはmermaid図表示用HTMLにしない", () => {
@@ -79,8 +104,9 @@ describe("previewMarkdown", () => {
     );
 
     expect(html).toContain("hljs language-js");
-    expect(html).not.toContain('class="preview-mermaid"');
+    expect(html).not.toContain('class="preview-diagram');
     expect(html).not.toContain("data-mermaid-source");
+    expect(html).not.toContain("data-diagram-source");
   });
 
   it("大文字・空白つきのmermaid言語指定を図表示用HTMLとして扱う", () => {
@@ -92,9 +118,9 @@ describe("previewMarkdown", () => {
       t
     );
 
-    expect(html).toContain('class="preview-mermaid"');
+    expect(html).toContain('class="preview-diagram preview-mermaid"');
     const document = new DOMParser().parseFromString(html, "text/html");
-    const sourceAttribute = document.querySelector<HTMLElement>(".preview-mermaid")?.dataset.mermaidSource;
+    const sourceAttribute = document.querySelector<HTMLElement>(".preview-diagram")?.dataset.diagramSource;
 
     expect(decodeMermaidSourceAttribute(sourceAttribute ?? "")).toBe("graph TD; A-->B");
   });
@@ -108,9 +134,9 @@ describe("previewMarkdown", () => {
       t
     );
 
-    expect(html).toContain('class="preview-mermaid"');
+    expect(html).toContain('class="preview-diagram preview-mermaid"');
     const document = new DOMParser().parseFromString(html, "text/html");
-    const sourceAttribute = document.querySelector<HTMLElement>(".preview-mermaid")?.dataset.mermaidSource;
+    const sourceAttribute = document.querySelector<HTMLElement>(".preview-diagram")?.dataset.diagramSource;
 
     expect(decodeMermaidSourceAttribute(sourceAttribute ?? "")).toBe("graph TD; A-->B");
   });
@@ -125,8 +151,8 @@ describe("previewMarkdown", () => {
       t
     );
     const document = new DOMParser().parseFromString(html, "text/html");
-    const container = document.querySelector<HTMLElement>(".preview-mermaid");
-    const sourceAttribute = container?.dataset.mermaidSource ?? "";
+    const container = document.querySelector<HTMLElement>(".preview-diagram");
+    const sourceAttribute = container?.dataset.diagramSource ?? "";
 
     expect(sourceAttribute).toBe(encodeMermaidSourceAttribute(source));
     expect(sourceAttribute).not.toContain("<");
