@@ -34,7 +34,9 @@ describe("canvasMermaid", () => {
       "  node2{分岐}",
       "  node3((終端))",
       "  node1 --> node2",
-      "  node2 --> node3"
+      "  node2 --> node3",
+      "",
+      "%% relic:canvas {\"nodes\":{\"node2\":{\"x\":320,\"y\":180}}}"
     ].join("\n"));
 
     expect(result.ok).toBe(true);
@@ -45,6 +47,7 @@ describe("canvasMermaid", () => {
       ["node2", "分岐", "diamond"],
       ["node3", "終端", "circle"]
     ]);
+    expect(result.diagram.nodes.find((node) => node.id === "node2")).toMatchObject({ x: 320, y: 180 });
     expect(result.diagram.edges).toEqual([
       { from: "node1", to: "node2" },
       { from: "node2", to: "node3" }
@@ -81,6 +84,13 @@ describe("canvasMermaid", () => {
       ]
     });
 
-    expect(source).toBe("flowchart TD\n  node1[人物]\n  node2{分岐}\n  node1 --> node2");
+    expect(source).toBe([
+      "flowchart TD",
+      "  node1[人物]",
+      "  node2{分岐}",
+      "  node1 --> node2",
+      "",
+      "%% relic:canvas {\"nodes\":{\"node1\":{\"x\":0,\"y\":0},\"node2\":{\"x\":0,\"y\":0}}}"
+    ].join("\n"));
   });
 });

@@ -54,7 +54,7 @@ describe("App", () => {
     expect(await screen.findByRole("button", { name: /読書メモ/ })).toBeInTheDocument();
   });
 
-  it("左レールからキャンバスビューを開く", async () => {
+  it("キャンバスは左レールではなくMermaidブロックから開く", async () => {
     window.relic = makeRelicApi({
       getWorkspaceState: vi.fn().mockResolvedValue({
         ok: true,
@@ -84,11 +84,10 @@ describe("App", () => {
     fireEvent.click(container.querySelector('[data-node-path="設定.md"]') as Element);
     expect(await screen.findByText("設定", { selector: ".pane-tab-name" })).toBeInTheDocument();
 
-    fireEvent.click(await screen.findByRole("button", { name: "キャンバス" }));
+    expect(screen.queryByRole("button", { name: "キャンバス" })).toBeNull();
 
-    expect(await screen.findByText("キャンバス", { selector: ".pane-tab-name" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "四角" })).toBeInTheDocument();
-    expect(screen.getByText(/flowchart TD/)).toBeInTheDocument();
+    await waitFor(() => expect(container.querySelector(".cm-live-mermaid-canvas-button")).not.toBeNull());
+    expect(container.querySelector(".cm-live-mermaid-canvas-button")?.textContent).toBe("キャンバスで編集");
   });
 
   it("ファイルツリーのノートをクリックするとタブが開く", async () => {

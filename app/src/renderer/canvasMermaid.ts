@@ -31,6 +31,13 @@ export type CanvasParseResult =
   | { diagram: CanvasDiagram; ok: true }
   | { ok: false; reason: "empty" | "unsupported" };
 
+interface RelicCanvasMetadata {
+  nodes?: Record<string, {
+    x?: unknown;
+    y?: unknown;
+  }>;
+}
+
 interface MarkdownLine {
   contentEnd: number;
   end: number;
@@ -44,6 +51,7 @@ const edgeRegex = new RegExp(`^(${nodeIdPattern})\\s*-->\\s*(${nodeIdPattern})$`
 const rectangleRegex = new RegExp(`^(${nodeIdPattern})\\s*\\[([^\\]]*)\\]$`);
 const diamondRegex = new RegExp(`^(${nodeIdPattern})\\s*\\{([^}]*)\\}$`);
 const circleRegex = new RegExp(`^(${nodeIdPattern})\\s*\\(\\(([^)]*)\\)\\)$`);
+const relicCanvasMetadataPrefix = "%% relic:canvas ";
 
 export function findMermaidMarkdownBlocks(markdown: string): MermaidMarkdownBlock[] {
   const lines = markdownLines(markdown);
@@ -77,7 +85,11 @@ export function findMermaidMarkdownBlocks(markdown: string): MermaidMarkdownBloc
 }
 
 export function parseCanvasMermaid(source: string): CanvasParseResult {
-  const lines = source.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  const metadata = parseRelicCanvasMetadata(source);
+  const lines = source
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0 && !line.startsWith(relicCanvasMetadataPrefix));
   if (lines.length === 0) return { ok: false, reason: "empty" };
 
   const headerMatch = /^flowchart\s+(TD|LR)$/.exec(lines[0]);
@@ -111,18 +123,24 @@ export function parseCanvasMermaid(source: string): CanvasParseResult {
     diagram: {
       direction: headerMatch[1] as CanvasDirection,
       edges,
-      nodes: layoutNodes(Array.from(nodes.values()), headerMatch[1] as CanvasDirection)
+      nodes: layoutNodes(Array.from(nodes.values()), headerMatch[1] as CanvasDirection, metadata)
     },
     ok: true
   };
 }
 
 export function buildCanvasMermaidSource(diagram: CanvasDiagram): string {
-  return [
+  const lines = [
     `flowchart ${diagram.direction}`,
     ...diagram.nodes.map((node) => `  ${node.id}${shapeSource(node.shape, safeMermaidLabel(node.label))}`),
     ...diagram.edges.map((edge) => `  ${edge.from} --> ${edge.to}`)
-  ].join("\n");
+  ];
+
+  if (diagram.nodes.length > 0) {
+    lines.push("", `${relicCanvasMetadataPrefix}${JSON.stringify(buildRelicCanvasMetadata(diagram))}`);
+  }
+
+  return lines.join("\n");
 }
 
 export function replaceMermaidMarkdownBlock(
@@ -182,17 +200,59 @@ function parseNodeMatch(match: RegExpExecArray, shape: CanvasShape): Omit<Canvas
   return { id: match[1], label: match[2], shape };
 }
 
-function layoutNodes(nodes: Array<Omit<CanvasNode, "x" | "y">>, direction: CanvasDirection): CanvasNode[] {
+function layoutNodes(
+  nodes: Array<Omit<CanvasNode, "x" | "y">>,
+  direction: CanvasDirection,
+  metadata: RelicCanvasMetadata | null
+): CanvasNode[] {
   return nodes.map((node, index) => {
     const column = direction === "LR" ? index % 4 : index % 3;
     const row = direction === "LR" ? Math.floor(index / 4) : Math.floor(index / 3);
+    const position = metadata?.nodes?.[node.id];
+    const x = typeof position?.x === "number" && Number.isFinite(position.x)
+      ? Math.max(12, position.x)
+      : 72 + column * (direction === "LR" ? 172 : 188);
+    const y = typeof position?.y === "number" && Number.isFinite(position.y)
+      ? Math.max(12, position.y)
+      : 72 + row * 112;
 
     return {
       ...node,
-      x: 72 + column * (direction === "LR" ? 172 : 188),
-      y: 72 + row * 112
+      x,
+      y
     };
   });
+}
+
+function parseRelicCanvasMetadata(source: string): RelicCanvasMetadata | null {
+  const metadataLine = source
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .find((line) => line.startsWith(relicCanvasMetadataPrefix));
+
+  if (!metadataLine) return null;
+
+  try {
+    const parsed = JSON.parse(metadataLine.slice(relicCanvasMetadataPrefix.length)) as unknown;
+    if (!parsed || typeof parsed !== "object") return null;
+    return parsed as RelicCanvasMetadata;
+  } catch {
+    return null;
+  }
+}
+
+function buildRelicCanvasMetadata(diagram: CanvasDiagram): RelicCanvasMetadata {
+  return {
+    nodes: Object.fromEntries(
+      diagram.nodes.map((node) => [
+        node.id,
+        {
+          x: Math.round(node.x),
+          y: Math.round(node.y)
+        }
+      ])
+    )
+  };
 }
 
 function markdownLines(markdown: string): MarkdownLine[] {
