@@ -15,6 +15,7 @@ let initializedTheme: MermaidTheme | null = null;
 let renderId = 0;
 let renderTokenId = 0;
 const activeRenderStates = new WeakMap<HTMLElement, DiagramRenderState>();
+let d2RenderQueue: Promise<void> = Promise.resolve();
 
 type MermaidModule = typeof import("mermaid").default;
 type D2Renderer = InstanceType<(typeof import("@terrastruct/d2"))["D2"]>;
@@ -227,13 +228,33 @@ async function renderDiagramSvg(language: DiagramLanguage, source: string): Prom
     return svg;
   }
 
+  return enqueueD2Render(source);
+}
+
+function enqueueD2Render(source: string): Promise<string> {
+  const renderTask = d2RenderQueue.then(() => renderD2Svg(source));
+  d2RenderQueue = renderTask.then(
+    () => undefined,
+    () => undefined
+  );
+
+  return renderTask;
+}
+
+async function renderD2Svg(source: string): Promise<string> {
   const d2 = await loadD2();
   const compileOptions = { layout: "dagre" } as unknown as Omit<import("@terrastruct/d2").CompileRequest, "fs">;
   const result = await d2.compile(source, compileOptions);
-  return await d2.render(result.diagram, {
+  const svg = await d2.render(result.diagram, {
     ...(result.renderOptions ?? {}),
     noXMLTag: true
   });
+
+  if (typeof svg !== "string") {
+    throw new Error("D2 renderer did not return SVG text.");
+  }
+
+  return svg;
 }
 
 function beginDiagramRender(
