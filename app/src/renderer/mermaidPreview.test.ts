@@ -188,6 +188,8 @@ describe("mermaidPreview", () => {
     expect(element.textContent).toContain("構文を確認してください。");
     expect(element.textContent).toContain("graph TD; A-->");
     expect(element.textContent).toContain("parse failed");
+    expect(element.textContent).toContain("元ソースをコピー");
+    expect(element.textContent).toContain("詳細エラーをコピー");
   });
 
   it("buildMermaidErrorは危険なHTMLをDOM化しない", async () => {
@@ -199,6 +201,26 @@ describe("mermaidPreview", () => {
     expect(element.querySelector("script")).toBeNull();
     expect(element.textContent).toContain(source);
     expect(element.textContent).toContain("<script>alert(1)</script>");
+  });
+
+  it("diagramエラーの元ソースと詳細エラーをクリップボードへコピーできる", async () => {
+    const { buildDiagramError } = await loadMermaidPreviewModule();
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText }
+    });
+
+    const element = buildDiagramError("d2", "x -> y", new Error("compile failed"));
+    const buttons = element.querySelectorAll<HTMLButtonElement>(".preview-diagram-error-copy-button");
+
+    fireEvent.click(buttons[0]);
+    fireEvent.click(buttons[1]);
+
+    await vi.waitFor(() => {
+      expect(writeText).toHaveBeenCalledWith("x -> y");
+      expect(writeText).toHaveBeenCalledWith("compile failed");
+    });
   });
 
   it("不正なmermaidソースでも例外で落とさずエラーUIを表示する", async () => {
@@ -610,8 +632,17 @@ describe("mermaidPreview", () => {
     expect(css).not.toMatch(/\.preview-mermaid[^}]*cursor:\s*grab/s);
     expect(css).not.toMatch(/\.preview-mermaid[^}]*cursor:\s*grabbing/s);
     expect(css).toMatch(/\.preview-mermaid-panzoom-viewport\s*{[^}]*user-select:\s*none;/s);
+    expect(css).toMatch(/\.preview-diagram-error,\s*\.preview-mermaid-error\s*{[^}]*user-select:\s*text;/s);
+    expect(css).toMatch(/\.preview-diagram-error-details pre,\s*\.preview-mermaid-error-details pre\s*{[^}]*user-select:\s*text;/s);
     expect(css).not.toMatch(/\.preview-mermaid\s*{[^}]*overflow:\s*(auto|scroll);/s);
     expect(css).not.toContain("preview-mermaid-overlay");
+  });
+
+  it("D2ブラウザレンダラーに必要なCSPを許可する", () => {
+    const html = readFileSync("index.html", "utf8");
+
+    expect(html).toContain("script-src 'self' 'wasm-unsafe-eval' 'unsafe-eval'");
+    expect(html).toContain("worker-src 'self' blob:");
   });
 
   it("通常コードブロックにはMermaidパン・ズームUIを追加しない", async () => {
