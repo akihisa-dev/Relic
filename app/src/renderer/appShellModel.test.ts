@@ -86,9 +86,9 @@ describe("appShellModel", () => {
     const labels = panelLabelsForTranslator(createTranslator("en"));
 
     expect(labels).toEqual({
-      canvas: "Canvas",
       chronicleSettings: "Calendar Settings",
       frontmatter: "Frontmatter",
+      mermaidEditor: "Mermaid editor",
       settings: "Settings",
       tools: "Tools"
     });

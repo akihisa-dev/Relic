@@ -541,12 +541,13 @@ describe("mermaidPreview", () => {
     expect(container.textContent).toContain("ok");
   });
 
-  it("本文内viewportはスクロールバーではなくパン操作を前提にする", async () => {
+  it("本文内viewportはスクロールバーではなくパン操作を前提にし、grabカーソルは使わない", async () => {
     const css = readFileSync("src/renderer/styles/preview-editor.css", "utf8");
 
     expect(css).toMatch(/\.preview-mermaid-panzoom-viewport\s*{[^}]*overflow:\s*hidden;/s);
-    expect(css).toMatch(/\.preview-mermaid-panzoom-viewport\s*{[^}]*cursor:\s*grab;/s);
-    expect(css).toMatch(/\.preview-mermaid-panzoom-viewport--dragging\s*{[^}]*cursor:\s*grabbing;/s);
+    expect(css).toMatch(/\.preview-mermaid-panzoom-viewport\s*{[^}]*cursor:\s*default;/s);
+    expect(css).not.toMatch(/\.preview-mermaid[^}]*cursor:\s*grab/s);
+    expect(css).not.toMatch(/\.preview-mermaid[^}]*cursor:\s*grabbing/s);
     expect(css).toMatch(/\.preview-mermaid-panzoom-viewport\s*{[^}]*user-select:\s*none;/s);
     expect(css).not.toMatch(/\.preview-mermaid\s*{[^}]*overflow:\s*(auto|scroll);/s);
     expect(css).not.toContain("preview-mermaid-overlay");

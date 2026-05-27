@@ -2,9 +2,9 @@ import { useEffect, useRef } from "react";
 import type { ReactElement } from "react";
 
 import { useT } from "../i18n";
-import { MermaidCanvasEditor } from "./MermaidCanvasEditor";
+import { MermaidVisualEditor } from "./MermaidVisualEditor";
 
-interface CanvasPopoverProps {
+interface MermaidEditorPopoverProps {
   blockRange: {
     from: number;
     to: number;
@@ -15,13 +15,13 @@ interface CanvasPopoverProps {
   source: string;
 }
 
-export function CanvasPopover({
+export function MermaidEditorPopover({
   blockRange,
   filePath,
   onChange,
   onClose,
   source
-}: CanvasPopoverProps): ReactElement {
+}: MermaidEditorPopoverProps): ReactElement {
   const t = useT();
   const panelRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -42,34 +42,34 @@ export function CanvasPopover({
   return (
     <div
       aria-modal="true"
-      className="canvas-popover-backdrop"
+      className="mermaid-editor-popover-backdrop"
       onPointerDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
       role="dialog"
     >
       <section
-        aria-label={t("canvas.popoverTitle")}
-        className="canvas-popover"
+        aria-label={t("mermaidEditor.title")}
+        className="mermaid-editor-popover"
         onPointerDown={(event) => event.stopPropagation()}
         ref={panelRef}
       >
-        <header className="canvas-popover-header">
+        <header className="mermaid-editor-popover-header">
           <div>
-            <p className="settings-page-kicker">{t("nav.canvas")}</p>
-            <h2>{t("canvas.popoverTitle")}</h2>
+            <p className="settings-page-kicker">{t("nav.mermaidEditor")}</p>
+            <h2>{t("mermaidEditor.title")}</h2>
           </div>
           <button
-            aria-label={t("canvas.close")}
+            aria-label={t("mermaidEditor.close")}
             className="secondary-button"
             onClick={onClose}
             ref={closeButtonRef}
             type="button"
           >
-            {t("canvas.close")}
+            {t("mermaidEditor.close")}
           </button>
         </header>
-        <MermaidCanvasEditor
+        <MermaidVisualEditor
           blockRange={blockRange}
           filePath={filePath}
           onChange={onChange}

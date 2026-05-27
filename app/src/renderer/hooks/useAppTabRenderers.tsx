@@ -11,10 +11,10 @@ import type {
   WorkspaceChart,
   WorkspaceState
 } from "../../shared/ipc";
-import { CanvasPanel } from "../components/CanvasPanel";
 import { ChartView } from "../components/ChartPanel";
 import { ChronicleSettingsPanel } from "../components/ChronicleSettingsPanel";
 import { FrontmatterPanel } from "../components/FrontmatterPanel";
+import { MermaidEditorPanel } from "../components/MermaidEditorPanel";
 import { SettingsPanel } from "../components/SettingsPanel";
 import { ToolsPanel } from "../components/ToolsPanel";
 import type { PanelTabKind } from "../store/editorStore";
@@ -77,8 +77,8 @@ export function useAppTabRenderers({
       );
     }
 
-    if (panel === "canvas") {
-      return <CanvasPanel />;
+    if (panel === "mermaidEditor") {
+      return <MermaidEditorPanel />;
     }
 
     if (panel === "chronicleSettings") {

@@ -17,10 +17,10 @@ import { useEditorContextMenu } from "../hooks/useEditorContextMenu";
 import { useEditorFrontmatterDialog } from "../hooks/useEditorFrontmatterDialog";
 import { useToolbarActions } from "../hooks/useToolbarActions";
 import { useT, type Translator } from "../i18n";
-import { mermaidCanvasEditRequestEvent, type MermaidCanvasEditRequest } from "../mermaidCanvasEditEvent";
-import { CanvasPopover } from "./CanvasPopover";
+import { mermaidVisualEditRequestEvent, type MermaidVisualEditRequest } from "../mermaidVisualEditEvent";
 import { EditorContextMenu } from "./EditorContextMenu";
 import { EditorFrontmatterDialog } from "./EditorFrontmatterDialog";
+import { MermaidEditorPopover } from "./MermaidEditorPopover";
 
 export { buildWikiLinkCompletionSource } from "../editorExtensions";
 export { buildLivePreviewDecorations, findClickableLinkAtPosition } from "../editorLivePreview";
@@ -63,7 +63,7 @@ interface FrontmatterPropertyMenuState {
   unavailable: boolean;
 }
 
-type MermaidCanvasSession = MermaidCanvasEditRequest & {
+type MermaidVisualEditSession = MermaidVisualEditRequest & {
   filePath: string;
 };
 
@@ -94,7 +94,7 @@ export function Editor({
   const frontmatterCandidatesRef = useRef(frontmatterCandidates);
   const userDefinedFieldsRef = useRef(userDefinedFields);
   const [frontmatterPropertyMenu, setFrontmatterPropertyMenu] = useState<FrontmatterPropertyMenuState | null>(null);
-  const [mermaidCanvasSession, setMermaidCanvasSession] = useState<MermaidCanvasSession | null>(null);
+  const [mermaidVisualEditSession, setMermaidVisualEditSession] = useState<MermaidVisualEditSession | null>(null);
   const {
     closeContextMenu,
     contextMenu,
@@ -165,12 +165,12 @@ export function Editor({
       if (!detail) return;
       openFrontmatterDialog(detail);
     };
-    const handleMermaidCanvasEditRequest = (event: Event): void => {
-      const detail = (event as CustomEvent<MermaidCanvasEditRequest>).detail;
+    const handleMermaidVisualEditRequest = (event: Event): void => {
+      const detail = (event as CustomEvent<MermaidVisualEditRequest>).detail;
       if (!detail || !filePath) return;
 
       event.stopPropagation();
-      setMermaidCanvasSession({ ...detail, filePath });
+      setMermaidVisualEditSession({ ...detail, filePath });
     };
     const handleContextMenu = (event: MouseEvent): void => {
       const view = internalViewRef.current;
@@ -191,7 +191,7 @@ export function Editor({
     };
 
     container.addEventListener(frontmatterDialogRequestEvent, handleFrontmatterDialogRequest);
-    container.addEventListener(mermaidCanvasEditRequestEvent, handleMermaidCanvasEditRequest);
+    container.addEventListener(mermaidVisualEditRequestEvent, handleMermaidVisualEditRequest);
     container.addEventListener("pointerdown", handleRightButtonDown, true);
     container.addEventListener("mousedown", handleRightButtonDown, true);
     container.addEventListener("mouseup", handleRightButtonDown, true);
@@ -200,7 +200,7 @@ export function Editor({
 
     return () => {
       container.removeEventListener(frontmatterDialogRequestEvent, handleFrontmatterDialogRequest);
-      container.removeEventListener(mermaidCanvasEditRequestEvent, handleMermaidCanvasEditRequest);
+      container.removeEventListener(mermaidVisualEditRequestEvent, handleMermaidVisualEditRequest);
       container.removeEventListener("pointerdown", handleRightButtonDown, true);
       container.removeEventListener("mousedown", handleRightButtonDown, true);
       container.removeEventListener("mouseup", handleRightButtonDown, true);
@@ -317,11 +317,11 @@ export function Editor({
     if (viewRef) viewRef.current = nextView;
   }, [frontmatterCandidates, rememberSelection, settings, sourceMode, t, typewriterMode, userDefinedFields, viewRef]);
 
-  const updateMermaidCanvasSource = (source: string): void => {
+  const updateMermaidVisualSource = (source: string): void => {
     const view = internalViewRef.current;
-    if (!view || !mermaidCanvasSession) return;
+    if (!view || !mermaidVisualEditSession) return;
 
-    const { sourceFrom, sourceTo } = mermaidCanvasSession;
+    const { sourceFrom, sourceTo } = mermaidVisualEditSession;
     const delta = source.length - (sourceTo - sourceFrom);
     view.dispatch({
       changes: {
@@ -330,9 +330,9 @@ export function Editor({
         to: sourceTo
       }
     });
-    setMermaidCanvasSession({
-      ...mermaidCanvasSession,
-      blockTo: mermaidCanvasSession.blockTo + delta,
+    setMermaidVisualEditSession({
+      ...mermaidVisualEditSession,
+      blockTo: mermaidVisualEditSession.blockTo + delta,
       source,
       sourceTo: sourceFrom + source.length
     });
@@ -404,16 +404,16 @@ export function Editor({
         onPaste={pasteClipboard}
         onSelectAll={selectAll}
       />
-      {mermaidCanvasSession ? (
-        <CanvasPopover
+      {mermaidVisualEditSession ? (
+        <MermaidEditorPopover
           blockRange={{
-            from: mermaidCanvasSession.blockFrom,
-            to: mermaidCanvasSession.blockTo
+            from: mermaidVisualEditSession.blockFrom,
+            to: mermaidVisualEditSession.blockTo
           }}
-          filePath={mermaidCanvasSession.filePath}
-          onChange={updateMermaidCanvasSource}
-          onClose={() => setMermaidCanvasSession(null)}
-          source={mermaidCanvasSession.source}
+          filePath={mermaidVisualEditSession.filePath}
+          onChange={updateMermaidVisualSource}
+          onClose={() => setMermaidVisualEditSession(null)}
+          source={mermaidVisualEditSession.source}
         />
       ) : null}
     </>

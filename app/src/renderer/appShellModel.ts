@@ -45,9 +45,9 @@ export function openFilePathsForTabs(tabs: Record<string, Tab>): Set<string> {
 
 export function panelLabelsForTranslator(t: Translator): Record<PanelTabKind, string> {
   return {
-    canvas: t("nav.canvas"),
     chronicleSettings: t("nav.chronicleSettings"),
     frontmatter: t("nav.frontmatter"),
+    mermaidEditor: t("nav.mermaidEditor"),
     settings: t("nav.settings"),
     tools: t("nav.tools")
   };
