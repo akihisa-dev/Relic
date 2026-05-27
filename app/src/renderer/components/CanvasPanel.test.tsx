@@ -23,6 +23,21 @@ describe("CanvasPanel", () => {
 });
 
 describe("MermaidCanvasEditor", () => {
+  it("既存のMermaid図を開いた時点でキャンバスに表示する", () => {
+    const { container } = renderWithI18n(
+      <MermaidCanvasEditor
+        blockRange={{ from: 0, to: 28 }}
+        filePath="setting.md"
+        onChange={vi.fn()}
+        source={"graph TD; A-->B"}
+      />
+    );
+
+    expect(screen.getByRole("button", { name: "A" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "B" })).toBeInTheDocument();
+    expect(container.querySelector(".canvas-edges line")).not.toBeNull();
+  });
+
   it("ノード追加とラベル編集をMermaid sourceとして返す", () => {
     const onChange = vi.fn();
     renderWithI18n(

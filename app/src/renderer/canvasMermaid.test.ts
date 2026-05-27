@@ -54,6 +54,39 @@ describe("canvasMermaid", () => {
     ]);
   });
 
+  it("既存のgraph短縮表記と暗黙ノードをキャンバスデータへ変換する", () => {
+    const result = parseCanvasMermaid("graph TD; A-->B; B-->C");
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.diagram.direction).toBe("TD");
+    expect(result.diagram.nodes.map((node) => [node.id, node.label, node.shape])).toEqual([
+      ["A", "A", "rectangle"],
+      ["B", "B", "rectangle"],
+      ["C", "C", "rectangle"]
+    ]);
+    expect(result.diagram.edges).toEqual([
+      { from: "A", to: "B" },
+      { from: "B", to: "C" }
+    ]);
+  });
+
+  it("接続行に書かれた既存ノード形状をキャンバスデータへ変換する", () => {
+    const result = parseCanvasMermaid([
+      "flowchart LR",
+      "  person[人物] --> place{場所}",
+      "  place --> end((終端))"
+    ].join("\n"));
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.diagram.nodes.map((node) => [node.id, node.label, node.shape])).toEqual([
+      ["person", "人物", "rectangle"],
+      ["place", "場所", "diamond"],
+      ["end", "終端", "circle"]
+    ]);
+  });
+
   it("未対応構文を検出する", () => {
     expect(parseCanvasMermaid("sequenceDiagram\nAlice->>Bob: Hi").ok).toBe(false);
     expect(parseCanvasMermaid("flowchart TD\n  node1 -.-> node2").ok).toBe(false);
