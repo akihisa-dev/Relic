@@ -1,13 +1,13 @@
 import { WidgetType } from "@codemirror/view";
 import type { EditorView } from "@codemirror/view";
 
-import { enterMermaidSourceEdit } from "./editorMermaidEditState";
+import { enterDiagramSourceEdit } from "./editorDiagramEditState";
 import {
   buildDiagramFallback,
   renderDiagramElement,
   type DiagramLanguage,
   type DiagramRenderHandle
-} from "./mermaidPreview";
+} from "./diagramPreview";
 
 export class ListMarkerWidget extends WidgetType {
   constructor(
@@ -138,7 +138,7 @@ export class DiagramBlockWidget extends WidgetType {
 
   toDOM(view: EditorView): HTMLElement {
     const container = document.createElement("div");
-    container.className = `preview-diagram preview-${this.language} cm-live-diagram`;
+    container.className = `preview-diagram preview-diagram--${this.language} cm-live-diagram`;
 
     let diagramHandle: DiagramRenderHandle | null = null;
     const label = this.language === "d2" ? "D2" : "Mermaid";
@@ -166,7 +166,7 @@ export class DiagramBlockWidget extends WidgetType {
       event.preventDefault();
       event.stopPropagation();
       event.stopImmediatePropagation();
-      enterMermaidSourceEdit(
+      enterDiagramSourceEdit(
         view,
         { from: this.blockFrom, to: this.blockTo },
         this.editCursor

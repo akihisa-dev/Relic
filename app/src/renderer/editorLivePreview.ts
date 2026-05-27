@@ -10,7 +10,7 @@ import {
   type InlineMatch,
   type SourceRevealRange
 } from "./editorLivePreviewModel";
-import { mermaidEditRangeField } from "./editorMermaidEditState";
+import { diagramEditRangeField } from "./editorDiagramEditState";
 import {
   CheckboxWidget,
   DiagramBlockWidget,
@@ -19,7 +19,8 @@ import {
   ListMarkerWidget
 } from "./editorLivePreviewWidgets";
 import { findTableBlocks } from "./editorTables";
-import { diagramLanguageFor } from "./mermaidPreview";
+import { diagramLanguageFor } from "./diagramPreview";
+import { isClosingBacktickFence, parseBacktickOpeningFence } from "./markdownCodeFence";
 
 export { findClickableLinkAtPosition, type ClickableLinkAtPosition } from "./editorLivePreviewModel";
 
@@ -30,7 +31,7 @@ export function buildLivePreviewDecorations(
   const { state } = view;
   const doc = state.doc;
   const editorHasFocus = typeof view.hasFocus === "boolean" ? view.hasFocus : true;
-  const mermaidEditRange = state.field(mermaidEditRangeField, false);
+  const diagramEditRange = state.field(diagramEditRangeField, false);
 
   const ranges: { from: number; to: number; deco: Decoration }[] = [];
   const tableBlocks = findTableBlocks(state);
@@ -76,7 +77,7 @@ export function buildLivePreviewDecorations(
   }
 
   function isDiagramSourceEditing(from: number, to: number): boolean {
-    return Boolean(mermaidEditRange && mermaidEditRange.from <= from && mermaidEditRange.to >= to);
+    return Boolean(diagramEditRange && diagramEditRange.from <= from && diagramEditRange.to >= to);
   }
 
   function addInlineFormat(lineFrom: number, match: InlineMatch, text: string) {
@@ -110,19 +111,26 @@ export function buildLivePreviewDecorations(
     for (const match of collectInlineMatches(lineFrom, text)) addInlineFormat(lineFrom, match, text);
   }
 
-  function startsInsideFencedCode(lineNumber: number): boolean {
-    let inFencedCode = false;
+  function openFenceLengthBefore(lineNumber: number): number | null {
+    let activeFenceLength: number | null = null;
 
     for (let currentLine = 1; currentLine < lineNumber; currentLine += 1) {
-      if (/^\s*```/.test(doc.line(currentLine).text)) inFencedCode = !inFencedCode;
+      const text = doc.line(currentLine).text;
+
+      if (activeFenceLength === null) {
+        activeFenceLength = parseBacktickOpeningFence(text)?.markerLength ?? null;
+        continue;
+      }
+
+      if (isClosingBacktickFence(text, activeFenceLength)) activeFenceLength = null;
     }
 
-    return inFencedCode;
+    return activeFenceLength;
   }
 
-  function findClosingFenceLine(startLineNumber: number): number | null {
+  function findClosingFenceLine(startLineNumber: number, openingMarkerLength: number): number | null {
     for (let currentLine = startLineNumber + 1; currentLine <= doc.lines; currentLine += 1) {
-      if (/^\s*```/.test(doc.line(currentLine).text)) return currentLine;
+      if (isClosingBacktickFence(doc.line(currentLine).text, openingMarkerLength)) return currentLine;
     }
 
     return null;
@@ -136,7 +144,7 @@ export function buildLivePreviewDecorations(
 
   for (const { from: visFrom, to: visTo } of view.visibleRanges) {
     let lineNumber = doc.lineAt(visFrom).number;
-    let inFencedCode = startsInsideFencedCode(lineNumber);
+    let activeFenceLength = openFenceLengthBefore(lineNumber);
 
     while (lineNumber <= doc.lineAt(visTo).number) {
       const line = doc.line(lineNumber);
@@ -153,12 +161,31 @@ export function buildLivePreviewDecorations(
         continue;
       }
 
-      const fenceMatch = /^\s*```\s*([^\s`]*)?/.exec(text);
-      if (fenceMatch) {
-        const diagramLanguage = diagramLanguageFor(fenceMatch[1]);
+      if (activeFenceLength !== null) {
+        if (isClosingBacktickFence(text, activeFenceLength)) {
+          addSourceReveal(line.from, line.to);
+          addReplace(line.from, line.to);
+          activeFenceLength = null;
+          lineNumber += 1;
+          continue;
+        }
 
-        if (!inFencedCode && diagramLanguage) {
-          const closingLineNumber = findClosingFenceLine(lineNumber);
+        if (tableBlock) {
+          lineNumber += 1;
+          continue;
+        }
+
+        addMark(line.from, line.to, "cm-live-code-block");
+        lineNumber += 1;
+        continue;
+      }
+
+      const openingFence = parseBacktickOpeningFence(text);
+      if (openingFence) {
+        const diagramLanguage = diagramLanguageFor(openingFence.language);
+
+        if (diagramLanguage) {
+          const closingLineNumber = findClosingFenceLine(lineNumber, openingFence.markerLength);
 
           if (closingLineNumber) {
             const blockFrom = line.from;
@@ -193,18 +220,12 @@ export function buildLivePreviewDecorations(
 
         addSourceReveal(line.from, line.to);
         addReplace(line.from, line.to);
-        inFencedCode = !inFencedCode;
+        activeFenceLength = openingFence.markerLength;
         lineNumber += 1;
         continue;
       }
 
       if (tableBlock) {
-        lineNumber += 1;
-        continue;
-      }
-
-      if (inFencedCode) {
-        addMark(line.from, line.to, "cm-live-code-block");
         lineNumber += 1;
         continue;
       }

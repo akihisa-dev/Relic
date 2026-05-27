@@ -92,7 +92,6 @@ describe("App", () => {
 
     await waitFor(() => expect(container.querySelectorAll(".cm-live-diagram")).toHaveLength(2));
     expect(container.querySelector(".cm-live-diagram-edit-button")?.textContent).toBe("ソースを編集");
-    expect(container.querySelector(".cm-live-mermaid-visual-edit-button")).toBeNull();
   });
 
   it("ファイルツリーのノートをクリックするとタブが開く", async () => {
