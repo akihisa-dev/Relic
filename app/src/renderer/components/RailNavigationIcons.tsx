@@ -30,16 +30,6 @@ const IconFrontmatter = (): ReactElement => (
   </svg>
 );
 
-const IconCanvas = (): ReactElement => (
-  <svg fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="18">
-    <rect height="7" rx="1.5" width="8" x="3" y="4" />
-    <rect height="7" rx="1.5" width="8" x="13" y="13" />
-    <path d="M11 7.5h2" />
-    <path d="M17 11V9.5a2 2 0 0 0-2-2h-2" />
-    <path d="M8 11v1.5a2 2 0 0 0 2 2h3" />
-  </svg>
-);
-
 const IconChronicle = (): ReactElement => (
   <svg fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="18">
     <path d="M4 12h.01" />
@@ -89,7 +79,6 @@ export const sidebarViewDefs: Array<{ id: RailViewId; labelKey: TranslationKey; 
   { id: "files", labelKey: "nav.files", icon: <IconFiles /> },
   { id: "tools", labelKey: "nav.tools", icon: <IconTools /> },
   { id: "frontmatter", labelKey: "nav.frontmatter", icon: <IconFrontmatter /> },
-  { id: "canvas", labelKey: "nav.canvas", icon: <IconCanvas /> },
   { id: "chronicle", labelKey: "nav.chronicle", icon: <IconChronicle /> },
   { id: "calendar", labelKey: "nav.calendar", icon: <IconCalendar /> },
   { id: "chronicleSettings", labelKey: "nav.chronicleSettings", icon: <IconChronicleSettings /> },

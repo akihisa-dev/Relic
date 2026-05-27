@@ -110,6 +110,7 @@ export function PaneContentSurface({
           <Editor
             allFilePaths={allFilePaths}
             content={activeTab.content}
+            filePath={activeTab.path}
             frontmatterCandidates={frontmatterCandidates}
             key={activeTab.id}
             onChange={(content) => onUpdateTabContent(activeTab.id, content)}

@@ -650,6 +650,7 @@ describe("Editor", () => {
 
     expect(container.querySelector(".cm-live-mermaid")).not.toBeNull();
     expect(container.querySelector(".cm-live-mermaid-fit-button")).not.toBeNull();
+    expect(container.querySelector(".cm-live-mermaid-canvas-button")).not.toBeNull();
     expect(container.querySelector(".cm-live-mermaid-edit-button")).not.toBeNull();
 
     fireEvent.click(container.querySelector(".cm-live-mermaid-fit-button") as HTMLButtonElement);
@@ -663,6 +664,47 @@ describe("Editor", () => {
     viewRef.current?.dispatch({ selection: { anchor: content.length } });
 
     await waitFor(() => expect(container.querySelector(".cm-live-mermaid")).not.toBeNull());
+  });
+
+  it("Mermaid Widgetのキャンバス編集ボタンから対象ブロックだけを書き換える", async () => {
+    const viewRef = createRef<EditorView | null>();
+    const onChange = vi.fn();
+    const content = [
+      "# Mermaid",
+      "",
+      "```mermaid",
+      "flowchart TD",
+      "  node1[人物]",
+      "```",
+      "",
+      "```mermaid",
+      "flowchart TD",
+      "  node9[別ブロック]",
+      "```"
+    ].join("\n");
+    const { container } = render(
+      <Editor
+        content={content}
+        filePath="setting.md"
+        onChange={onChange}
+        settings={settings}
+        viewRef={viewRef}
+      />
+    );
+
+    await waitFor(() => expect(container.querySelector(".cm-live-mermaid-canvas-button")).not.toBeNull());
+
+    fireEvent.click(container.querySelector(".cm-live-mermaid-canvas-button") as HTMLButtonElement);
+    await waitFor(() => expect(container.querySelector(".canvas-popover")).not.toBeNull());
+
+    const rectangleButton = Array.from(container.querySelectorAll<HTMLButtonElement>(".canvas-toolbar button"))
+      .find((button) => button.textContent === "四角" || button.textContent === "Rectangle");
+    expect(rectangleButton).not.toBeUndefined();
+    fireEvent.click(rectangleButton as HTMLButtonElement);
+
+    await waitFor(() => expect(onChange).toHaveBeenLastCalledWith(expect.stringContaining("node2[Node 2]")));
+    expect(onChange).toHaveBeenLastCalledWith(expect.stringContaining("node9[別ブロック]"));
+    expect(onChange).toHaveBeenLastCalledWith(expect.stringContaining("%% relic:canvas"));
   });
 
   it("ライブプレビューで通常コードブロックはmermaid専用Widgetにしない", async () => {

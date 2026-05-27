@@ -161,6 +161,12 @@ export function buildLivePreviewDecorations(
           if (closingLineNumber) {
             const blockFrom = line.from;
             const blockTo = doc.line(closingLineNumber).to;
+            const sourceFrom = closingLineNumber > lineNumber + 1
+              ? doc.line(lineNumber + 1).from
+              : line.to;
+            const sourceTo = closingLineNumber > lineNumber + 1
+              ? doc.line(closingLineNumber - 1).to
+              : sourceFrom;
             const editCursor = closingLineNumber > lineNumber + 1
               ? doc.line(lineNumber + 1).from
               : line.to;
@@ -173,6 +179,8 @@ export function buildLivePreviewDecorations(
                   codeBlockSource(lineNumber, closingLineNumber),
                   blockFrom,
                   blockTo,
+                  sourceFrom,
+                  sourceTo,
                   editCursor
                 )
               );

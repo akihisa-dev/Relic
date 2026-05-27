@@ -2,6 +2,70 @@
   min-width: 0;
 }
 
+.canvas-popover-backdrop {
+  align-items: center;
+  background: color-mix(in srgb, var(--bg) 18%, transparent);
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  padding: 32px;
+  position: fixed;
+  z-index: 60;
+}
+
+.canvas-popover {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 18px 48px color-mix(in srgb, #000 24%, transparent);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-height: min(880px, calc(100vh - 64px));
+  max-width: min(1180px, calc(100vw - 64px));
+  min-width: min(960px, calc(100vw - 64px));
+  overflow: auto;
+  padding: 18px;
+}
+
+.canvas-popover-header {
+  align-items: flex-start;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+}
+
+.canvas-popover-header h2 {
+  font-size: 20px;
+  margin: 2px 0 0;
+}
+
+.canvas-editor {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.canvas-editor-context {
+  align-items: center;
+  color: var(--text-3);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 12px;
+  gap: 8px 12px;
+  min-width: 0;
+}
+
+.canvas-editor-context span {
+  overflow-wrap: anywhere;
+}
+
+.canvas-editor-context strong {
+  color: var(--accent);
+  font-weight: 600;
+}
+
 .canvas-page-header {
   margin-bottom: 14px;
 }
@@ -23,28 +87,6 @@
   gap: 10px;
   margin-bottom: 12px;
   padding: 10px 12px;
-}
-
-.canvas-block-picker {
-  align-items: center;
-  display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
-.canvas-block-picker span {
-  color: var(--text-3);
-  font-size: 12px;
-}
-
-.canvas-block-picker select {
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 5px;
-  color: var(--text);
-  font: inherit;
-  min-height: 32px;
-  padding: 6px 8px;
 }
 
 .canvas-toolbar {
@@ -226,6 +268,18 @@
 }
 
 @media (max-width: 920px) {
+  .canvas-popover-backdrop {
+    align-items: stretch;
+    padding: 16px;
+  }
+
+  .canvas-popover {
+    max-height: calc(100vh - 32px);
+    max-width: calc(100vw - 32px);
+    min-width: 0;
+    width: 100%;
+  }
+
   .canvas-workspace {
     grid-template-columns: 1fr;
   }
