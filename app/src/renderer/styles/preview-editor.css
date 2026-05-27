@@ -164,19 +164,27 @@
   min-height: 0;
   overflow: auto;
   padding: 32px;
+  touch-action: none;
+  user-select: none;
 }
 
 .preview-mermaid-overlay-viewport--dragging {
   cursor: grabbing;
 }
 
+.preview-mermaid-overlay-viewport--dragging .preview-mermaid-overlay-content,
+.preview-mermaid-overlay-viewport--dragging .preview-mermaid-svg--overlay {
+  cursor: grabbing;
+}
+
 .preview-mermaid-overlay-content {
   align-items: center;
+  cursor: grab;
   display: flex;
   justify-content: center;
   min-height: 100%;
   min-width: max-content;
-  transform-origin: center center;
+  transform-origin: left top;
 }
 
 .preview-mermaid-svg--overlay {

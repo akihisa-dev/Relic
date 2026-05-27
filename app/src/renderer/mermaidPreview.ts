@@ -175,14 +175,25 @@ function openMermaidZoomOverlay(diagram: HTMLElement): void {
   let dragStartY = 0;
   let dragOriginX = 0;
   let dragOriginY = 0;
+  let activePointerId: number | null = null;
 
   const updateTransform = () => {
     content.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${zoom})`;
     zoomStatus.textContent = `${Math.round(zoom * 100)}%`;
   };
 
-  const setZoom = (nextZoom: number) => {
-    zoom = Math.min(mermaidZoomMax, Math.max(mermaidZoomMin, nextZoom));
+  const setZoom = (nextZoom: number, anchor?: { clientX: number; clientY: number }) => {
+    const previousZoom = zoom;
+    const clampedZoom = Math.round(Math.min(mermaidZoomMax, Math.max(mermaidZoomMin, nextZoom)) * 100) / 100;
+
+    if (anchor && clampedZoom !== previousZoom) {
+      const rect = content.getBoundingClientRect();
+      const zoomRatio = clampedZoom / previousZoom;
+      offsetX = Math.round((offsetX - (anchor.clientX - rect.left) * (zoomRatio - 1)) * 100) / 100;
+      offsetY = Math.round((offsetY - (anchor.clientY - rect.top) * (zoomRatio - 1)) * 100) / 100;
+    }
+
+    zoom = clampedZoom;
     updateTransform();
   };
 
@@ -216,15 +227,15 @@ function openMermaidZoomOverlay(diagram: HTMLElement): void {
     if (event.target === overlay) close();
   });
   viewport.addEventListener("wheel", (event) => {
-    if (!event.ctrlKey) return;
-
     event.preventDefault();
-    setZoom(zoom + (event.deltaY < 0 ? mermaidZoomStep : -mermaidZoomStep));
+    setZoom(zoom + (event.deltaY < 0 ? mermaidZoomStep : -mermaidZoomStep), event);
   });
   viewport.addEventListener("pointerdown", (event) => {
     if (event.button !== 0) return;
 
+    event.preventDefault();
     isDragging = true;
+    activePointerId = event.pointerId;
     dragStartX = event.clientX;
     dragStartY = event.clientY;
     dragOriginX = offsetX;
@@ -235,21 +246,16 @@ function openMermaidZoomOverlay(diagram: HTMLElement): void {
   viewport.addEventListener("pointermove", (event) => {
     if (!isDragging) return;
 
+    event.preventDefault();
     offsetX = dragOriginX + event.clientX - dragStartX;
     offsetY = dragOriginY + event.clientY - dragStartY;
     updateTransform();
   });
   viewport.addEventListener("pointerup", (event) => {
-    if (!isDragging) return;
-
-    isDragging = false;
-    viewport.classList.remove("preview-mermaid-overlay-viewport--dragging");
-    viewport.releasePointerCapture?.(event.pointerId);
+    stopDragging(event.pointerId);
   });
-  viewport.addEventListener("pointercancel", () => {
-    isDragging = false;
-    viewport.classList.remove("preview-mermaid-overlay-viewport--dragging");
-  });
+  viewport.addEventListener("pointercancel", (event) => stopDragging(event.pointerId));
+  viewport.addEventListener("dragstart", (event) => event.preventDefault());
   document.addEventListener("keydown", handleDocumentKeyDown);
   document.body.append(overlay);
   updateTransform();
@@ -260,6 +266,27 @@ function openMermaidZoomOverlay(diagram: HTMLElement): void {
 
     event.preventDefault();
     close();
+  }
+
+  function stopDragging(pointerId: number): void {
+    if (!isDragging) return;
+
+    isDragging = false;
+    viewport.classList.remove("preview-mermaid-overlay-viewport--dragging");
+    releaseActivePointerCapture(pointerId);
+    activePointerId = null;
+  }
+
+  function releaseActivePointerCapture(fallbackPointerId: number): void {
+    const pointerId = activePointerId ?? fallbackPointerId;
+
+    try {
+      if (!viewport.hasPointerCapture || viewport.hasPointerCapture(pointerId)) {
+        viewport.releasePointerCapture?.(pointerId);
+      }
+    } catch {
+      // Pointer capture may already be gone after pointercancel.
+    }
   }
 }
 
