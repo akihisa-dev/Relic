@@ -1,3 +1,4 @@
+import { fireEvent } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { encodeMermaidSourceAttribute } from "./mermaidSourceAttribute";
@@ -22,6 +23,7 @@ async function loadMermaidPreviewModule() {
 beforeEach(() => {
   initializeMock.mockReset();
   renderMock.mockReset();
+  document.body.replaceChildren();
   document.documentElement.removeAttribute("data-theme");
   Object.defineProperty(window, "matchMedia", {
     configurable: true,
@@ -98,8 +100,99 @@ describe("mermaidPreview", () => {
 
     expect(warn).toHaveBeenCalled();
     expect(container.querySelector("pre code")?.textContent).toBe("invalid <source>");
+    expect(container.querySelector(".preview-mermaid-expand-button")).toBeNull();
     expect(container.textContent).not.toContain("parse failed");
     warn.mockRestore();
+  });
+
+  it("SVG描画成功時に拡大ボタンを追加する", async () => {
+    const { renderMermaidElement } = await loadMermaidPreviewModule();
+    const container = document.createElement("div");
+    renderMock.mockResolvedValueOnce({ svg: '<svg viewBox="0 0 640 320"><text>ok</text></svg>' });
+
+    await renderMermaidElement(container, "graph TD; A-->B");
+
+    const button = container.querySelector<HTMLButtonElement>(".preview-mermaid-expand-button");
+    const svg = container.querySelector<SVGSVGElement>(".preview-mermaid-svg svg");
+
+    expect(button).not.toBeNull();
+    expect(button?.type).toBe("button");
+    expect(button?.getAttribute("aria-label")).toBe("Mermaid図を拡大表示");
+    expect(svg?.getAttribute("width")).toBe("640px");
+    expect(svg?.style.maxWidth).toBe("none");
+  });
+
+  it("拡大ボタン押下でオーバーレイを開き、閉じるボタンで閉じる", async () => {
+    const { renderMermaidElement } = await loadMermaidPreviewModule();
+    const container = document.createElement("div");
+    renderMock.mockResolvedValueOnce({ svg: '<svg viewBox="0 0 640 320"><text>ok</text></svg>' });
+
+    await renderMermaidElement(container, "graph TD; A-->B");
+
+    fireEvent.click(container.querySelector(".preview-mermaid-expand-button") as HTMLButtonElement);
+
+    expect(document.querySelector('[role="dialog"][aria-label="Mermaid図の拡大表示"]')).not.toBeNull();
+
+    fireEvent.click(document.querySelector('[aria-label="Mermaid拡大表示を閉じる"]') as HTMLButtonElement);
+
+    expect(document.querySelector(".preview-mermaid-overlay")).toBeNull();
+  });
+
+  it("SVGクリックでオーバーレイを開き、Escで閉じる", async () => {
+    const { renderMermaidElement } = await loadMermaidPreviewModule();
+    const container = document.createElement("div");
+    renderMock.mockResolvedValueOnce({ svg: '<svg viewBox="0 0 640 320"><text>ok</text></svg>' });
+
+    await renderMermaidElement(container, "graph TD; A-->B");
+
+    fireEvent.click(container.querySelector(".preview-mermaid-svg") as HTMLElement);
+
+    expect(document.querySelector(".preview-mermaid-overlay")).not.toBeNull();
+
+    fireEvent.keyDown(document, { key: "Escape" });
+
+    expect(document.querySelector(".preview-mermaid-overlay")).toBeNull();
+  });
+
+  it("ズームイン・ズームアウト・リセットで拡大率を変更する", async () => {
+    const { renderMermaidElement } = await loadMermaidPreviewModule();
+    const container = document.createElement("div");
+    renderMock.mockResolvedValueOnce({ svg: '<svg viewBox="0 0 640 320"><text>ok</text></svg>' });
+
+    await renderMermaidElement(container, "graph TD; A-->B");
+
+    fireEvent.click(container.querySelector(".preview-mermaid-expand-button") as HTMLButtonElement);
+
+    const content = document.querySelector<HTMLElement>(".preview-mermaid-overlay-content");
+    const zoomInButton = document.querySelector<HTMLButtonElement>('[aria-label="Mermaid図を拡大"]');
+    const zoomOutButton = document.querySelector<HTMLButtonElement>('[aria-label="Mermaid図を縮小"]');
+    const resetButton = document.querySelector<HTMLButtonElement>(
+      '[aria-label="Mermaid図の拡大率と位置をリセット"]'
+    );
+
+    expect(content?.style.transform).toBe("translate(0px, 0px) scale(1)");
+
+    fireEvent.click(zoomInButton as HTMLButtonElement);
+    expect(content?.style.transform).toBe("translate(0px, 0px) scale(1.2)");
+
+    fireEvent.click(zoomOutButton as HTMLButtonElement);
+    expect(content?.style.transform).toBe("translate(0px, 0px) scale(1)");
+
+    fireEvent.click(zoomInButton as HTMLButtonElement);
+    fireEvent.click(resetButton as HTMLButtonElement);
+    expect(content?.style.transform).toBe("translate(0px, 0px) scale(1)");
+  });
+
+  it("通常コードブロックにはMermaid拡大ボタンを追加しない", async () => {
+    const { renderMermaidElements } = await loadMermaidPreviewModule();
+    const container = document.createElement("div");
+    container.innerHTML = '<pre><code class="language-js">const value = 1;</code></pre>';
+
+    renderMermaidElements(container);
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(container.querySelector(".preview-mermaid-expand-button")).toBeNull();
+    expect(renderMock).not.toHaveBeenCalled();
   });
 
   it("既存テーマに合わせてmermaidテーマを初期化する", async () => {
