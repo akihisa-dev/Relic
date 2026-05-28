@@ -43,7 +43,11 @@ export async function readAppSettings(userDataPath: string): Promise<AppSettings
 
   try {
     const rawSettings = await readFile(settingsPath, "utf8");
-    const parsedSettings = JSON.parse(rawSettings) as Partial<AppSettings>;
+    const parsedSettings = parseSettingsObject(rawSettings);
+
+    if (!parsedSettings) {
+      return defaultAppSettings;
+    }
 
     return {
       editorSettings: parseEditorSettings(parsedSettings.editorSettings),
@@ -200,6 +204,20 @@ function isWorkspaceSummary(value: unknown): value is WorkspaceSummary {
     typeof candidate.name === "string" &&
     typeof candidate.path === "string"
   );
+}
+
+function parseSettingsObject(raw: string): Record<string, unknown> | null {
+  try {
+    const parsed: unknown = JSON.parse(raw);
+
+    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+      return null;
+    }
+
+    return parsed as Record<string, unknown>;
+  } catch {
+    return null;
+  }
 }
 
 function isMissingFileError(error: unknown): boolean {

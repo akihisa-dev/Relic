@@ -46,7 +46,11 @@ export async function readWorkspaceSettings(
 
   try {
     const raw = await readFile(settingsPath, "utf8");
-    const parsed = JSON.parse(raw) as PersistedWorkspaceSettings;
+    const parsed = parseSettingsObject(raw);
+
+    if (!parsed) {
+      return defaultWorkspaceSettings;
+    }
 
     return {
       chronicleCalendars: parseChronicleCalendars(parsed.chronicleCalendars),
@@ -156,6 +160,20 @@ export async function writeWorkspaceSettings(
 
   await mkdir(path.dirname(settingsPath), { recursive: true });
   await atomicWriteTextFile(settingsPath, `${JSON.stringify(settings, null, 2)}\n`);
+}
+
+function parseSettingsObject(raw: string): PersistedWorkspaceSettings | null {
+  try {
+    const parsed: unknown = JSON.parse(raw);
+
+    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+      return null;
+    }
+
+    return parsed as PersistedWorkspaceSettings;
+  } catch {
+    return null;
+  }
 }
 
 function isMissingFileError(error: unknown): boolean {
