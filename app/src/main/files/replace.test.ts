@@ -107,6 +107,36 @@ describe("searchAndReplace", () => {
     expect(result.value[0].lineText).toContain("hello world");
     expect(result.value[0].newLineText).toContain("hi world");
   });
+
+  it("読めないMarkdownファイルはスキップして置換プレビューを続行する", async () => {
+    const ws = await mkdtemp(path.join(os.tmpdir(), "relic-replace-"));
+    temporaryPaths.push(ws);
+
+    await writeFile(path.join(ws, "blocked.md"), "hello blocked", "utf8");
+    await writeFile(path.join(ws, "visible.md"), "hello visible", "utf8");
+
+    const result = await searchAndReplace(ws, "hello", "hi", false, {
+      async readFile(filePath, encoding) {
+        if (path.basename(filePath) === "blocked.md") {
+          throw Object.assign(new Error("Permission denied"), { code: "EACCES" });
+        }
+
+        return readFile(filePath, encoding);
+      }
+    });
+
+    expect(result).toEqual({
+      ok: true,
+      value: [
+        {
+          lineNumber: 1,
+          lineText: "hello visible",
+          newLineText: "hi visible",
+          path: "visible.md"
+        }
+      ]
+    });
+  });
 });
 
 describe("applySearchAndReplace", () => {

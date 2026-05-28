@@ -12,6 +12,14 @@ import { readWorkspaceFileTree } from "./fileTree";
 import { resolveExistingWorkspacePath } from "./paths";
 import { buildReplacementPreviewLine, buildReplacementRegex } from "./replaceModel";
 
+interface SearchAndReplaceReadOperations {
+  readFile(filePath: string, encoding: BufferEncoding): Promise<string>;
+}
+
+const defaultSearchAndReplaceReadOperations: SearchAndReplaceReadOperations = {
+  readFile
+};
+
 export async function replaceInFile(
   workspacePath: string,
   relativePath: string,
@@ -63,7 +71,8 @@ export async function searchAndReplace(
   workspacePath: string,
   searchQuery: string,
   replacement: string,
-  isRegex: boolean
+  isRegex: boolean,
+  operations: SearchAndReplaceReadOperations = defaultSearchAndReplaceReadOperations
 ): Promise<RelicResult<SearchAndReplaceMatch[]>> {
   const regex = buildReplacementRegex(searchQuery, isRegex);
 
@@ -76,10 +85,19 @@ export async function searchAndReplace(
     const matches: SearchAndReplaceMatch[] = [];
     const files = await collectSafeMarkdownFiles(workspacePath, collectMarkdownPaths(fileTree));
     const fileContents = await Promise.all(
-      files.map(async (file) => ({ ...file, content: await readFile(file.absolutePath, "utf8") }))
+      files.map(async (file) => {
+        try {
+          return { ...file, content: await operations.readFile(file.absolutePath, "utf8") };
+        } catch {
+          return null;
+        }
+      })
     );
 
-    for (const { content, relativePath } of fileContents) {
+    for (const fileContent of fileContents) {
+      if (!fileContent) continue;
+
+      const { content, relativePath } = fileContent;
       const lines = content.split("\n");
 
       for (let index = 0; index < lines.length; index += 1) {
