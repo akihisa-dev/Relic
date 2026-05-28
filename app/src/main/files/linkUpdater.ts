@@ -17,13 +17,25 @@ interface LinkUpdatePatch {
   previousContent: string;
 }
 
+interface LinkUpdateReadOperations {
+  readFile(filePath: string, encoding: BufferEncoding): Promise<string>;
+}
+
+const defaultLinkUpdateReadOperations: LinkUpdateReadOperations = {
+  readFile
+};
+
 export async function readLinkUpdateImpact(
   workspacePath: string,
   kind: LinkUpdateImpactKind,
   oldPath: string,
-  newPath: string
+  newPath: string,
+  operations: LinkUpdateReadOperations = defaultLinkUpdateReadOperations
 ): Promise<RelicResult<LinkUpdateImpact>> {
-  const patches = await buildLinkUpdatePatches(workspacePath, kind, oldPath, newPath);
+  const patches = await buildLinkUpdatePatches(workspacePath, kind, oldPath, newPath, {
+    operations,
+    skipUnreadableFiles: true
+  });
   if (!patches.ok) return patches;
 
   return ok(summarizeLinkUpdatePatches(patches.value));
@@ -41,7 +53,10 @@ export async function updateLinksForFileRename(
 ): Promise<RelicResult<void>> {
   if (oldRelativePath === newRelativePath) return ok(undefined);
 
-  const patches = await buildLinkUpdatePatches(workspacePath, "file", oldRelativePath, newRelativePath);
+  const patches = await buildLinkUpdatePatches(workspacePath, "file", oldRelativePath, newRelativePath, {
+    operations: defaultLinkUpdateReadOperations,
+    skipUnreadableFiles: false
+  });
   if (!patches.ok) return patches;
 
   return applyLinkUpdatePatches(patches.value);
@@ -58,7 +73,10 @@ export async function updateLinksForFolderRename(
 ): Promise<RelicResult<void>> {
   if (oldFolderRelativePath === newFolderRelativePath) return ok(undefined);
 
-  const patches = await buildLinkUpdatePatches(workspacePath, "folder", oldFolderRelativePath, newFolderRelativePath);
+  const patches = await buildLinkUpdatePatches(workspacePath, "folder", oldFolderRelativePath, newFolderRelativePath, {
+    operations: defaultLinkUpdateReadOperations,
+    skipUnreadableFiles: false
+  });
   if (!patches.ok) return patches;
 
   return applyLinkUpdatePatches(patches.value);
@@ -68,7 +86,11 @@ async function buildLinkUpdatePatches(
   workspacePath: string,
   kind: LinkUpdateImpactKind,
   oldPath: string,
-  newPath: string
+  newPath: string,
+  options: {
+    operations: LinkUpdateReadOperations;
+    skipUnreadableFiles: boolean;
+  }
 ): Promise<RelicResult<LinkUpdatePatch[]>> {
   if (oldPath === newPath) return ok([]);
 
@@ -85,8 +107,10 @@ async function buildLinkUpdatePatches(
 
     let content: string;
     try {
-      content = await readFile(absoluteSourcePath.value, "utf8");
+      content = await options.operations.readFile(absoluteSourcePath.value, "utf8");
     } catch (err) {
+      if (options.skipUnreadableFiles) continue;
+
       return fail("LINK_UPDATE_READ_FAILED", "内部リンク更新のためにファイルを読み込めませんでした。", errorDetails(err));
     }
 

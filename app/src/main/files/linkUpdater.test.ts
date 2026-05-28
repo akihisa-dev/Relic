@@ -133,6 +133,32 @@ describe("updateLinksForFileRename", () => {
     });
   });
 
+  it("影響確認では読めないMarkdownファイルをスキップして件数を返す", async () => {
+    const ws = await mkdtemp(path.join(os.tmpdir(), "relic-link-updater-"));
+    temporaryPaths.push(ws);
+
+    await writeFile(path.join(ws, "blocked.md"), "[[old]]", "utf8");
+    await writeFile(path.join(ws, "visible.md"), "[[old]]", "utf8");
+
+    await expect(
+      readLinkUpdateImpact(ws, "file", "old.md", "new.md", {
+        async readFile(filePath, encoding) {
+          if (path.basename(filePath) === "blocked.md") {
+            throw Object.assign(new Error("Permission denied"), { code: "EACCES" });
+          }
+
+          return readFile(filePath, encoding);
+        }
+      })
+    ).resolves.toEqual({
+      ok: true,
+      value: {
+        fileCount: 1,
+        linkCount: 1
+      }
+    });
+  });
+
   it("埋め込みリンク ![[...]] も更新する", async () => {
     const ws = await mkdtemp(path.join(os.tmpdir(), "relic-link-updater-"));
     temporaryPaths.push(ws);
