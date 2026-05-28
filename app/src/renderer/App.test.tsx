@@ -1004,6 +1004,35 @@ describe("App", () => {
     expect(useUiStore.getState().rightPanelView).toBe("outline");
   });
 
+  it("機能トグルで右パネルをOFFにしたら表示上も右パネルを閉じる", async () => {
+    const saveFeatureToggles = vi.fn().mockResolvedValue({ ok: true, value: undefined });
+
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace }),
+      saveFeatureToggles
+    });
+
+    const { container } = await renderApp();
+
+    await screen.findByText("Notes");
+    fireEvent.click(screen.getByRole("button", { name: "アウトライン" }));
+
+    expect(container.querySelector(".right-panel")).not.toHaveClass("right-panel--closed");
+
+    fireEvent.click(screen.getByRole("button", { name: "設定" }));
+    fireEvent.click(await screen.findByLabelText("右パネル"));
+
+    expect(saveFeatureToggles).toHaveBeenCalledWith(expect.objectContaining({ rightPanel: false }));
+    expect(screen.queryByRole("button", { name: "アウトライン" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "リンク" })).toBeNull();
+    expect(container.querySelector(".title-bar")).not.toHaveClass("title-bar--right-panel-open");
+    expect(container.querySelector(".right-panel")).toHaveClass("right-panel--closed");
+
+    fireEvent.keyDown(window, { key: "B", metaKey: true, shiftKey: true });
+
+    expect(container.querySelector(".right-panel")).toHaveClass("right-panel--closed");
+  });
+
   it("右パネル幅のドラッグ変更を最小220px・最大520pxに制限する", async () => {
     window.relic = makeRelicApi({
       getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
