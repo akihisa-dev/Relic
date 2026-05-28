@@ -9,9 +9,18 @@ import { readWorkspaceAliases } from "./aliases";
 import { readWorkspaceFileTree } from "./fileTree";
 import { resolveWorkspaceRelativePath } from "./paths";
 
+interface BacklinksReadOperations {
+  readFile(filePath: string, encoding: BufferEncoding): Promise<string>;
+}
+
+const defaultBacklinksReadOperations: BacklinksReadOperations = {
+  readFile
+};
+
 export async function readBacklinks(
   workspacePath: string,
-  targetRelativePath: string
+  targetRelativePath: string,
+  operations: BacklinksReadOperations = defaultBacklinksReadOperations
 ): Promise<RelicResult<Backlink[]>> {
   if (path.extname(targetRelativePath) !== ".md") {
     return fail("FILE_TYPE_UNSUPPORTED", "Markdownファイルだけバックリンクを確認できます。");
@@ -35,10 +44,19 @@ export async function readBacklinks(
       return sourceFile.ok ? [{ sourcePath, absolutePath: sourceFile.value }] : [];
     });
     const fileContents = await Promise.all(
-      files.map(async (file) => ({ ...file, content: await readFile(file.absolutePath, "utf8") }))
+      files.map(async (file) => {
+        try {
+          return { ...file, content: await operations.readFile(file.absolutePath, "utf8") };
+        } catch {
+          return null;
+        }
+      })
     );
 
-    for (const { content, sourcePath } of fileContents) {
+    for (const fileContent of fileContents) {
+      if (!fileContent) continue;
+
+      const { content, sourcePath } = fileContent;
       const count = resolveWikiLinks(content, sourcePath, markdownPaths, aliasesByPath).filter(
         (link) => link.path === targetRelativePath
       ).length;
