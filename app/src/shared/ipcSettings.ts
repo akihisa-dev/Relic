@@ -1,4 +1,7 @@
 export interface FeatureToggles {
+  calendar: boolean;
+  chronicle: boolean;
+  chronicleSettings: boolean;
   tools: boolean;
   frontmatter: boolean;
   rightPanel: boolean;
@@ -30,6 +33,9 @@ export const defaultUserDefinedFields: UserDefinedField[] = [];
 export const defaultFrontmatterTemplates: FrontmatterTemplate[] = [];
 
 export const defaultFeatureToggles: FeatureToggles = {
+  calendar: true,
+  chronicle: true,
+  chronicleSettings: true,
   tools: true,
   frontmatter: true,
   rightPanel: true

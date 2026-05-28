@@ -3842,4 +3842,26 @@ describe("App", () => {
     await screen.findByRole("button", { name: "ファイル" });
     expect(screen.queryByRole("button", { name: "ツール" })).toBeNull();
   });
+
+  it("機能トグルで年表・カレンダー・暦設定のナビを非表示にする", async () => {
+    window.relic = makeRelicApi({
+      getFeatureToggles: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...defaultFeatureToggles,
+          calendar: false,
+          chronicle: false,
+          chronicleSettings: false
+        }
+      }),
+      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
+    });
+
+    await renderApp();
+
+    await screen.findByRole("button", { name: "ファイル" });
+    expect(screen.queryByRole("button", { name: "年表" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "カレンダー" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "暦設定" })).toBeNull();
+  });
 });

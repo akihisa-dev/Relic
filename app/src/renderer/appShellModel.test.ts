@@ -111,15 +111,18 @@ describe("appShellModel", () => {
 
     const enabled = enabledRailViewsForFeatures(railViews, {
       ...defaultFeatureToggles,
+      calendar: false,
+      chronicle: false,
+      chronicleSettings: false,
       frontmatter: false,
       tools: false
     });
     const split = splitRailViews(enabled);
 
-    expect(enabled.map((view) => view.id)).toEqual(["files", "chronicle", "calendar", "chronicleSettings", "settings"]);
+    expect(enabled.map((view) => view.id)).toEqual(["files", "settings"]);
     expect(split.primaryRailViews.map((view) => view.id)).toEqual(["files"]);
-    expect(split.chartRailViews.map((view) => view.id)).toEqual(["chronicle", "calendar"]);
-    expect(split.panelRailViews.map((view) => view.id)).toEqual(["chronicleSettings", "settings"]);
+    expect(split.chartRailViews.map((view) => view.id)).toEqual([]);
+    expect(split.panelRailViews.map((view) => view.id)).toEqual(["settings"]);
     expect(chartIdForRailView("chronicle")).toBe("chronicle");
     expect(chartIdForRailView("calendar")).toBe("date");
   });
