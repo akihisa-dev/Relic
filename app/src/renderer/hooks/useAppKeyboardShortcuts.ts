@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 
+import { isPrimaryShortcutEvent } from "../keyboardShortcuts";
 import type { PaneId, PaneState } from "../store/editorStore";
 
 interface UseAppKeyboardShortcutsInput {
@@ -35,37 +36,39 @@ export function useAppKeyboardShortcuts({
 }: UseAppKeyboardShortcutsInput): void {
   useEffect(() => {
     const handler = (event: KeyboardEvent): void => {
-      if (!event.metaKey) return;
+      if (!isPrimaryShortcutEvent(event)) return;
 
-      if (event.shiftKey && event.key === "P") {
+      const key = event.key.toLowerCase();
+
+      if (event.shiftKey && key === "p") {
         event.preventDefault();
         setShowQuickSwitcher(false);
         setShowCommandPalette((current) => !current);
-      } else if (!event.shiftKey && event.key === "p") {
+      } else if (!event.shiftKey && key === "p") {
         event.preventDefault();
         setShowCommandPalette(false);
         setShowQuickSwitcher((current) => !current);
-      } else if (event.key === "b" && !event.shiftKey) {
+      } else if (key === "b" && !event.shiftKey) {
         event.preventDefault();
         toggleSidebar();
       } else if (event.key === "\\") {
         event.preventDefault();
         toggleSplit();
-      } else if (event.key === "b" && event.shiftKey) {
+      } else if (key === "b" && event.shiftKey) {
         event.preventDefault();
         toggleRightPanel();
-      } else if (event.key === "w") {
+      } else if (key === "w") {
         event.preventDefault();
         const paneState = focusedPane === "left" ? leftPane : rightPane;
         if (paneState.activeTabId) closeTab(focusedPane, paneState.activeTabId);
-      } else if (event.key === "f") {
+      } else if (key === "f") {
         event.preventDefault();
         requestFileSearchFocus();
-      } else if (event.key === "n" && !event.shiftKey) {
+      } else if (key === "n" && !event.shiftKey) {
         event.preventDefault();
         setSidebarView("files");
         setIsCreatingFile(true);
-      } else if (event.key === "T" && event.shiftKey) {
+      } else if (key === "t" && event.shiftKey) {
         event.preventDefault();
         toggleTypewriterMode();
       }

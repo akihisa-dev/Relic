@@ -2,6 +2,7 @@ import { useMemo } from "react";
 
 import type { Command } from "../components/CommandPalette";
 import type { TranslationKey } from "../i18n";
+import { formatShortcut } from "../keyboardShortcuts";
 
 type Translate = (key: TranslationKey, params?: Record<string, string>) => string;
 
@@ -39,43 +40,43 @@ export function useCommandPaletteCommands({
       {
         id: "new-note",
         label: t("pane.createNote"),
-        shortcut: "⌘N",
+        shortcut: formatShortcut(["mod", "N"]),
         action: () => { setSidebarView("files"); setIsCreatingFile(true); }
       },
       {
         id: "search",
         label: t("command.search"),
-        shortcut: "⌘F",
+        shortcut: formatShortcut(["mod", "F"]),
         action: requestFileSearchFocus
       },
       {
         id: "quick-switcher",
         label: t("command.quickSwitcher"),
-        shortcut: "⌘P",
+        shortcut: formatShortcut(["mod", "P"]),
         action: () => setShowQuickSwitcher(true)
       },
       {
         id: "toggle-sidebar",
         label: t("command.sidebar"),
-        shortcut: "⌘B",
+        shortcut: formatShortcut(["mod", "B"]),
         action: toggleSidebar
       },
       {
         id: "toggle-split",
         label: t("command.split"),
-        shortcut: "⌘\\",
+        shortcut: formatShortcut(["mod", "\\"]),
         action: toggleSplit
       },
       {
         id: "toggle-right-panel",
         label: t("command.rightPanel"),
-        shortcut: "⌘⇧B",
+        shortcut: formatShortcut(["mod", "shift", "B"]),
         action: toggleRightPanel
       },
       {
         id: "toggle-typewriter",
         label: t("command.typewriter"),
-        shortcut: "⌘⇧T",
+        shortcut: formatShortcut(["mod", "shift", "T"]),
         action: toggleTypewriterMode
       },
       ...(activeFileName

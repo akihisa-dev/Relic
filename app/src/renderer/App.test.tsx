@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { defaultEditorSettings, defaultFeatureToggles } from "../shared/ipc";
 import {
@@ -20,6 +20,24 @@ function searchResultSet(results: unknown[]) {
   return { results, skippedLargeFiles: 0, truncated: false };
 }
 
+const originalNavigatorPlatform = Object.getOwnPropertyDescriptor(navigator, "platform");
+
+function setNavigatorPlatform(platform: string): void {
+  Object.defineProperty(navigator, "platform", {
+    configurable: true,
+    value: platform
+  });
+}
+
+function restoreNavigatorPlatform(): void {
+  if (originalNavigatorPlatform) {
+    Object.defineProperty(navigator, "platform", originalNavigatorPlatform);
+    return;
+  }
+
+  Reflect.deleteProperty(navigator, "platform");
+}
+
 const allRailFeatureToggles = {
   ...defaultFeatureToggles,
   chronicle: true,
@@ -31,8 +49,13 @@ const allRailFeatureToggles = {
 describe("App", () => {
   beforeAll(installMatchMediaMock);
 
+  beforeEach(() => {
+    setNavigatorPlatform("MacIntel");
+  });
+
   afterEach(() => {
     vi.clearAllMocks();
+    restoreNavigatorPlatform();
     resetRendererStores();
   });
 
@@ -1881,6 +1904,34 @@ describe("App", () => {
 
     expect(useUiStore.getState().isSidebarOpen).toBe(true);
     expect(useUiStore.getState().activeSidebarView).toBe("files");
+  });
+
+  it("WindowsではCtrlキーで主要ショートカットを実行できる", async () => {
+    setNavigatorPlatform("Win32");
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
+    });
+    useUiStore.setState({
+      activeSidebarView: "files",
+      isSidebarOpen: false
+    });
+
+    await renderApp();
+
+    await screen.findByRole("main");
+
+    fireEvent.keyDown(window, { key: "f", ctrlKey: true });
+
+    expect(useUiStore.getState().isSidebarOpen).toBe(true);
+    await waitFor(() => {
+      expect(screen.getByLabelText("ファイル検索")).toHaveFocus();
+    });
+
+    fireEvent.keyDown(window, { key: "P", ctrlKey: true, shiftKey: true });
+
+    expect(await screen.findByPlaceholderText("コマンドを検索...")).toBeInTheDocument();
+    expect(screen.getByText("Ctrl+P")).toBeInTheDocument();
+    expect(screen.getByText("Ctrl+N")).toBeInTheDocument();
   });
 
   it("ファイルボタンでファイルサイドバーを開閉できる", async () => {
