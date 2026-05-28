@@ -111,6 +111,34 @@ describe("workspaceSettings", () => {
     ]);
   });
 
+  it("壊れたワークスペース設定ファイルでも初期設定で読み込める", async () => {
+    const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-settings-"));
+    temporaryPaths.push(userDataPath);
+    const settingsPath = getWorkspaceSettingsPath(userDataPath, "ws-broken");
+    await mkdir(path.dirname(settingsPath), { recursive: true });
+    await writeFile(settingsPath, "{ invalid json", "utf8");
+
+    const settings = await readWorkspaceSettings(userDataPath, "ws-broken");
+
+    expect(settings.pinnedPaths).toEqual([]);
+    expect(settings.chronicleCalendars).toEqual(defaultChronicleCalendars);
+    expect(settings.charts).toEqual(defaultCharts);
+    expect(settings.workspacePath).toBe("");
+  });
+
+  it("オブジェクトではないワークスペース設定ファイルでも初期設定で読み込める", async () => {
+    const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-settings-"));
+    temporaryPaths.push(userDataPath);
+    const settingsPath = getWorkspaceSettingsPath(userDataPath, "ws-array");
+    await mkdir(path.dirname(settingsPath), { recursive: true });
+    await writeFile(settingsPath, "[]", "utf8");
+
+    const settings = await readWorkspaceSettings(userDataPath, "ws-array");
+
+    expect(settings.pinnedPaths).toEqual([]);
+    expect(settings.charts).toEqual(defaultCharts);
+  });
+
   it("設定ファイルのパスはworkspaceId別になる", () => {
     const p1 = getWorkspaceSettingsPath("/userData", "ws-1");
     const p2 = getWorkspaceSettingsPath("/userData", "ws-2");

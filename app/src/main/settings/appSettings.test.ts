@@ -1,4 +1,4 @@
-import { mkdtemp, readdir, rm } from "node:fs/promises";
+import { mkdtemp, readdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
@@ -46,5 +46,31 @@ describe("appSettings", () => {
       workspaces: [{ id: "ws-1", name: "Notes", path: "/tmp/Notes" }]
     });
     await expect(readdir(userDataPath)).resolves.toEqual([path.basename(getAppSettingsPath(userDataPath))]);
+  });
+
+  it("壊れたアプリ設定ファイルでも初期設定で読み込める", async () => {
+    const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-app-settings-"));
+    temporaryPaths.push(userDataPath);
+    await writeFile(getAppSettingsPath(userDataPath), "{ invalid json", "utf8");
+
+    await expect(readAppSettings(userDataPath)).resolves.toEqual({
+      editorSettings: defaultEditorSettings,
+      featureToggles: defaultFeatureToggles,
+      frontmatterTemplates: defaultFrontmatterTemplates,
+      lastWorkspaceId: null,
+      userDefinedFields: defaultUserDefinedFields,
+      workspaces: []
+    });
+  });
+
+  it("オブジェクトではないアプリ設定ファイルでも初期設定で読み込める", async () => {
+    const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-app-settings-"));
+    temporaryPaths.push(userDataPath);
+    await writeFile(getAppSettingsPath(userDataPath), "[]", "utf8");
+
+    await expect(readAppSettings(userDataPath)).resolves.toMatchObject({
+      lastWorkspaceId: null,
+      workspaces: []
+    });
   });
 });
