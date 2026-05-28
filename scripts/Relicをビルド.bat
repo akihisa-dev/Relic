@@ -16,10 +16,11 @@ if not exist "%PNPM_CMD%" (
 )
 
 echo Checking dependencies...
-call "%PNPM_CMD%" install
+call "%PNPM_CMD%" install --fetch-timeout 300000 --fetch-retries 5 --network-concurrency 2
 if errorlevel 1 (
   echo.
   echo Failed to install dependencies.
+  echo Package download may have timed out. Please check internet, VPN, or proxy settings, then run this file again.
   pause
   exit /b 1
 )
