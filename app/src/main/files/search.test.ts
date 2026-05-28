@@ -164,6 +164,28 @@ describe("searchWorkspace", () => {
     expect(result.value.skippedLargeFiles).toBe(1);
   });
 
+  it("2MiBちょうどのMarkdownは検索対象に含める", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-search-large-boundary-"));
+    temporaryPaths.push(workspacePath);
+    await writeFile(
+      path.join(workspacePath, "boundary.md"),
+      `${"x".repeat(workspaceSearchMaxFileBytes - "needle\n".length)}\nneedle`,
+      "utf8"
+    );
+
+    const result = await searchWorkspace(workspacePath, "needle", "fullText");
+
+    expect(result).toEqual({
+      ok: true,
+      value: searchResultSet([{
+        fileName: "boundary",
+        lineNumber: 2,
+        lineText: "needle",
+        path: "boundary.md"
+      }])
+    });
+  });
+
   async function createSearchWorkspace(): Promise<string> {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-search-"));
     temporaryPaths.push(workspacePath);

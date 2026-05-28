@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
 import path from "node:path";
 
 import type {
@@ -56,12 +56,14 @@ export async function searchWorkspace(
       if (!absolutePath.ok) continue;
 
       const fileName = path.basename(relativePath, ".md");
-      const content = await readFile(absolutePath.value, "utf8");
+      const fileStats = await stat(absolutePath.value);
 
-      if (Buffer.byteLength(content, "utf8") > workspaceSearchMaxFileBytes) {
+      if (fileStats.size > workspaceSearchMaxFileBytes) {
         skippedLargeFiles += 1;
         continue;
       }
+
+      const content = await readFile(absolutePath.value, "utf8");
 
       if (mode === "fileName") {
         let alias: string | null = null;
