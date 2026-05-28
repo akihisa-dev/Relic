@@ -76,7 +76,10 @@ export class InlineFormatWidget extends WidgetType {
 }
 
 export class CheckboxWidget extends WidgetType {
-  constructor(private readonly checked: boolean) {
+  constructor(
+    private readonly checked: boolean,
+    private readonly onToggle?: () => void
+  ) {
     super();
   }
 
@@ -89,12 +92,18 @@ export class CheckboxWidget extends WidgetType {
     checkbox.className = "cm-live-checkbox";
     checkbox.type = "checkbox";
     checkbox.checked = this.checked;
-    checkbox.tabIndex = -1;
+    checkbox.setAttribute("aria-label", this.checked ? "チェックを外す" : "チェックする");
+    checkbox.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      this.onToggle?.();
+    });
     return checkbox;
   }
 
-  ignoreEvent(): boolean {
-    return false;
+  ignoreEvent(event: Event): boolean {
+    return ["click", "mousedown", "pointerdown", "change"].includes(event.type);
   }
 }
 

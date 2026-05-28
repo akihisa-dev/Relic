@@ -254,8 +254,15 @@ export function buildLivePreviewDecorations(
         const match = /^(\s*[-*+]\s+\[([ xX])\]\s+)(.*)$/.exec(text);
         if (match) {
           const contentFrom = line.from + match[1].length;
+          const checkmarkFrom = line.from + match[1].indexOf("[") + 1;
+          const checked = /[xX]/.test(match[2]);
           addSourceReveal(line.from, line.to);
-          addWidget(line.from, contentFrom, new CheckboxWidget(/[xX]/.test(match[2])));
+          addWidget(line.from, contentFrom, new CheckboxWidget(checked, () => {
+            view.dispatch({
+              changes: { from: checkmarkFrom, to: checkmarkFrom + 1, insert: checked ? " " : "x" },
+              selection: { anchor: checkmarkFrom + 1 }
+            });
+          }));
           addInlineDecorations(contentFrom, match[3]);
         }
       } else if (/^\s*[-*+]\s+/.test(text)) {
