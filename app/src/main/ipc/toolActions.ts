@@ -15,6 +15,7 @@ import { fail, ok, type RelicResult } from "../../shared/result";
 import { parseMarkdownTags } from "../../shared/tags";
 import { atomicWriteTextFile } from "../files/atomicWrite";
 import { readWorkspaceFileTree } from "../files/fileTree";
+import { pathExists } from "../files/fileSystem";
 import { parseFrontmatter } from "../files/frontmatter";
 import {
   resolveExistingWorkspacePath,
@@ -45,6 +46,8 @@ const defaultToolActionFileOperations: ToolActionFileOperations = {
   readdir: (directoryPath, options) => readdir(directoryPath, options) as Promise<Dirent<string>[]>,
   stat
 };
+
+const DEFAULT_MAX_TOOL_OUTPUT_CANDIDATES = 1000;
 
 function isFileCandidate(candidate: FileCandidate | null): candidate is FileCandidate {
   return candidate !== null;
@@ -82,9 +85,10 @@ export async function mergeFiles(
 
   await mkdir(outputDir.value, { recursive: true });
   const outputPath = await uniqueFilePath(outputDir.value, outputName.value);
-  await atomicWriteTextFile(outputPath, merged);
+  if (!outputPath.ok) return outputPath;
+  await atomicWriteTextFile(outputPath.value, merged);
 
-  return ok(path.relative(workspacePath, outputPath));
+  return ok(path.relative(workspacePath, outputPath.value));
 }
 
 export async function splitFileByHeading(input: SplitFileByHeadingInput): Promise<RelicResult<string[]>> {
@@ -113,9 +117,10 @@ export async function splitFileByHeading(input: SplitFileByHeadingInput): Promis
       .replace(/\s+/g, " ")
       .trim() || "untitled";
     const outPath = await uniqueFilePath(outputDir.value, safeName);
+    if (!outPath.ok) return outPath;
     const sectionContent = section.lines.join("\n").trimEnd() + "\n";
-    await atomicWriteTextFile(outPath, sectionContent);
-    created.push(path.relative(workspacePath, outPath));
+    await atomicWriteTextFile(outPath.value, sectionContent);
+    created.push(path.relative(workspacePath, outPath.value));
   }
 
   return ok(created);
@@ -149,9 +154,10 @@ export async function generateTitleList(
 
   await mkdir(outputDir.value, { recursive: true });
   const outputPath = await uniqueFilePath(outputDir.value, outputName.value);
-  await atomicWriteTextFile(outputPath, content);
+  if (!outputPath.ok) return outputPath;
+  await atomicWriteTextFile(outputPath.value, content);
 
-  return ok(path.relative(workspacePath, outputPath));
+  return ok(path.relative(workspacePath, outputPath.value));
 }
 
 export async function generateTableOfContents(
@@ -185,9 +191,10 @@ export async function generateTableOfContents(
 
   await mkdir(outputDir.value, { recursive: true });
   const outputPath = await uniqueFilePath(outputDir.value, outputName.value);
-  await atomicWriteTextFile(outputPath, content);
+  if (!outputPath.ok) return outputPath;
+  await atomicWriteTextFile(outputPath.value, content);
 
-  return ok(path.relative(workspacePath, outputPath));
+  return ok(path.relative(workspacePath, outputPath.value));
 }
 
 async function getToolWorkspaceContext(): Promise<RelicResult<ToolWorkspaceContext>> {
@@ -448,18 +455,21 @@ function normalizeWorkspaceRelativeFolder(folder: string): string {
   return normalized === "" ? "." : normalized;
 }
 
-async function uniqueFilePath(dir: string, name: string): Promise<string> {
-  const ext = name.endsWith(".md") ? "" : ".md";
-  const base = name.replace(/\.md$/, "");
-  let candidate = path.join(dir, `${base}${ext}`);
-  let counter = 1;
-  while (true) {
-    try {
-      await stat(candidate);
-      candidate = path.join(dir, `${base}-${counter}${ext}`);
-      counter++;
-    } catch {
-      return candidate;
+export async function uniqueFilePath(
+  dir: string,
+  name: string,
+  maxCandidates = DEFAULT_MAX_TOOL_OUTPUT_CANDIDATES
+): Promise<RelicResult<string>> {
+  const base = name.endsWith(".md") ? name.slice(0, -".md".length) : name;
+
+  for (let counter = 0; counter < maxCandidates; counter += 1) {
+    const suffix = counter === 0 ? "" : `-${counter}`;
+    const candidate = path.join(dir, `${base}${suffix}.md`);
+
+    if (!(await pathExists(candidate))) {
+      return ok(candidate);
     }
   }
+
+  return fail("TOOL_OUTPUT_NAME_EXHAUSTED", "出力ファイル名の候補が多すぎます。");
 }

@@ -20,7 +20,13 @@ import {
 } from "../../shared/ipc";
 import { writeAppSettings } from "../settings/appSettings";
 import { addOrActivateWorkspace, createWorkspaceSummary } from "../workspace/workspaceService";
-import { generateTableOfContents, generateTitleList, mergeFiles, splitFileByHeading } from "./toolActions";
+import {
+  generateTableOfContents,
+  generateTitleList,
+  mergeFiles,
+  splitFileByHeading,
+  uniqueFilePath
+} from "./toolActions";
 
 describe("toolActions", () => {
   const temporaryPaths: string[] = [];
@@ -50,6 +56,31 @@ describe("toolActions", () => {
     expect(result).toEqual({ ok: true, value: "Titles.md" });
     await expect(readFile(path.join(workspacePath, "Titles.md"), "utf8")).resolves.toBe("- [[note]]\n");
     expect((await readdir(workspacePath)).sort()).toEqual(["Titles.md", "note.md"]);
+  });
+
+  it("出力名に.mdが含まれていてもMarkdownファイルとして保存する", async () => {
+    const { workspacePath } = await prepareActiveWorkspace();
+    await writeFile(path.join(workspacePath, "note.md"), "# Note\n", "utf8");
+
+    const result = await generateTitleList({
+      outputFolder: ".",
+      outputName: "Titles.md",
+      sortBy: "name"
+    });
+
+    expect(result).toEqual({ ok: true, value: "Titles.md" });
+    await expect(readFile(path.join(workspacePath, "Titles.md"), "utf8")).resolves.toBe("- [[note]]\n");
+  });
+
+  it("出力ファイル名候補が上限まで埋まっている場合は停止する", async () => {
+    const { workspacePath } = await prepareActiveWorkspace();
+    await writeFile(path.join(workspacePath, "Report.md"), "existing", "utf8");
+    await writeFile(path.join(workspacePath, "Report-1.md"), "existing 1", "utf8");
+
+    await expect(uniqueFilePath(workspacePath, "Report", 2)).resolves.toMatchObject({
+      error: { code: "TOOL_OUTPUT_NAME_EXHAUSTED" },
+      ok: false
+    });
   });
 
   it("ファイル情報を取得できないMarkdownファイルはスキップしてタイトル一覧生成を続行する", async () => {
