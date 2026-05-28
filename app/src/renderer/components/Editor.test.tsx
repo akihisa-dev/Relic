@@ -461,6 +461,30 @@ describe("Editor", () => {
     expect(container.querySelector(".cm-line")).toHaveStyle({ whiteSpace: "pre-wrap" });
   });
 
+  it("カーソルのある現在行を薄く示す", async () => {
+    const viewRef = createRef<EditorView | null>();
+    const { container } = render(
+      <Editor
+        content={"one\ntwo\nthree"}
+        onChange={vi.fn()}
+        settings={settings}
+        viewRef={viewRef}
+      />
+    );
+
+    await waitFor(() => expect(viewRef.current).not.toBeNull());
+
+    const view = viewRef.current!;
+    view.focus();
+    view.dispatch({ selection: { anchor: "one\n".length } });
+
+    await waitFor(() => expect(container.querySelector(".cm-activeLine")?.textContent).toBe("two"));
+
+    view.dispatch({ selection: { anchor: "one\ntwo\n".length } });
+
+    await waitFor(() => expect(container.querySelector(".cm-activeLine")?.textContent).toBe("three"));
+  });
+
   it("行番号を表示するときも本文だけを設定幅で中央に置く", async () => {
     const { container } = render(
       <Editor
