@@ -14,6 +14,8 @@ import { diagramEditRangeField } from "./editorDiagramEditState";
 import { DiagramBlockWidget } from "./editorDiagramLivePreview";
 import {
   CheckboxWidget,
+  CodeBlockFooterWidget,
+  CodeBlockHeaderWidget,
   HorizontalRuleWidget,
   InlineFormatWidget,
   ListMarkerWidget
@@ -164,7 +166,7 @@ export function buildLivePreviewDecorations(
       if (activeFenceLength !== null) {
         if (isClosingBacktickFence(text, activeFenceLength)) {
           addSourceReveal(line.from, line.to);
-          addReplace(line.from, line.to);
+          addWidget(line.from, line.to, new CodeBlockFooterWidget());
           activeFenceLength = null;
           lineNumber += 1;
           continue;
@@ -218,8 +220,28 @@ export function buildLivePreviewDecorations(
           }
         }
 
+        const closingLineNumber = findClosingFenceLine(lineNumber, openingFence.markerLength);
+
+        if (closingLineNumber) {
+          const source = codeBlockSource(lineNumber, closingLineNumber);
+          addSourceReveal(line.from, line.to);
+          addWidget(line.from, line.to, new CodeBlockHeaderWidget(openingFence.language, source));
+
+          for (let codeLineNumber = lineNumber + 1; codeLineNumber < closingLineNumber; codeLineNumber += 1) {
+            const codeLine = doc.line(codeLineNumber);
+            addMark(codeLine.from, codeLine.to, "cm-live-code-block");
+          }
+
+          const closingLine = doc.line(closingLineNumber);
+          addSourceReveal(closingLine.from, closingLine.to);
+          addWidget(closingLine.from, closingLine.to, new CodeBlockFooterWidget());
+
+          lineNumber = closingLineNumber + 1;
+          continue;
+        }
+
         addSourceReveal(line.from, line.to);
-        addReplace(line.from, line.to);
+        addWidget(line.from, line.to, new CodeBlockHeaderWidget(openingFence.language, ""));
         activeFenceLength = openingFence.markerLength;
         lineNumber += 1;
         continue;

@@ -780,10 +780,56 @@ describe("Editor", () => {
       "```"
     ].join("\n");
     const widgets = await collectInlineLivePreviewWidgets(content, 0, false);
+    const widgetClasses = await collectInlineLivePreviewWidgetClasses(content, 0, false);
     const classes = await collectLivePreviewClasses(content, content.length, false);
 
     expect(widgets).not.toContain("DiagramBlockWidget");
+    expect(widgetClasses).toEqual(expect.arrayContaining([
+      "cm-live-code-block-header",
+      "cm-live-code-block-footer"
+    ]));
     expect(classes).toContain("cm-live-code-block");
+  });
+
+  it("通常コードブロックのヘッダーから本文だけをコピーできる", async () => {
+    const writeClipboardText = vi.fn();
+    window.relic = {
+      writeClipboardText
+    } as unknown as typeof window.relic;
+    const source = "const value = 1;\nconsole.log(value);";
+    const { container } = render(
+      <Editor
+        content={["```ts", source, "```"].join("\n")}
+        onChange={vi.fn()}
+        settings={settings}
+      />
+    );
+
+    await waitFor(() => expect(container.querySelector(".cm-live-code-block-header")).not.toBeNull());
+    expect(container.querySelector(".cm-live-code-block-label")?.textContent).toBe("ts");
+
+    fireEvent.click(container.querySelector(".cm-live-code-block-copy") as HTMLButtonElement);
+
+    expect(writeClipboardText).toHaveBeenCalledWith(source);
+    await waitFor(() => expect(container.querySelector(".cm-live-code-block-copy")?.textContent).toBe("コピーしました"));
+  });
+
+  it("MermaidとD2の図ブロックには通常コードブロックのヘッダーを出さない", async () => {
+    const content = [
+      "```mermaid",
+      "graph TD; A-->B",
+      "```",
+      "",
+      "```d2",
+      "x -> y",
+      "```"
+    ].join("\n");
+    const widgets = await collectInlineLivePreviewWidgets(content, 0, false);
+    const widgetClasses = await collectInlineLivePreviewWidgetClasses(content, 0, false);
+
+    expect(widgets.filter((widget) => widget === "DiagramBlockWidget")).toHaveLength(2);
+    expect(widgetClasses).not.toContain("cm-live-code-block-header");
+    expect(widgetClasses).not.toContain("cm-live-code-block-footer");
   });
 
   it("ライブプレビューでリスト・チェックボックス・水平線をウィジェット表示する", async () => {
