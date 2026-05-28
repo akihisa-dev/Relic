@@ -56,13 +56,13 @@ export function registerOutputHandlers(): void {
 
   ipcMain.handle(
     printPreviewChannel,
-    async (_event, input: unknown): Promise<RelicResult<OutputPrintResult>> => {
+    async (event, input: unknown): Promise<RelicResult<OutputPrintResult>> => {
       try {
         if (!isPrintPreviewInput(input)) {
           return fail("OUTPUT_PRINT_INVALID_INPUT", "印刷内容が無効です。");
         }
 
-        return await printHtml(input.html, input.title);
+        return await printHtml(input.html, input.title, BrowserWindow.fromWebContents(event.sender));
       } catch (error) {
         return fail("OUTPUT_PRINT_FAILED", "印刷できませんでした。", ipcErrorDetails(error));
       }
@@ -146,11 +146,17 @@ async function renderHtmlToPdf(html: string, title: string): Promise<Buffer> {
   }
 }
 
-async function printHtml(html: string, title: string): Promise<RelicResult<OutputPrintResult>> {
-  const window = createOutputWindow(title);
+async function printHtml(
+  html: string,
+  title: string,
+  parentWindow: BrowserWindow | null
+): Promise<RelicResult<OutputPrintResult>> {
+  const window = createOutputWindow(`${title} - 印刷`, parentWindow);
 
   try {
     await loadOutputHtml(window, html);
+    window.show();
+    window.focus();
 
     return await new Promise<RelicResult<OutputPrintResult>>((resolve) => {
       window.webContents.print(
@@ -179,9 +185,12 @@ async function printHtml(html: string, title: string): Promise<RelicResult<Outpu
   }
 }
 
-function createOutputWindow(title: string): BrowserWindow {
+function createOutputWindow(title: string, parentWindow?: BrowserWindow | null): BrowserWindow {
   const window = new BrowserWindow({
+    autoHideMenuBar: true,
+    backgroundColor: "#ffffff",
     height: 900,
+    parent: parentWindow ?? undefined,
     show: false,
     title,
     webPreferences: {
