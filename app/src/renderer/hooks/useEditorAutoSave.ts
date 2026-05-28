@@ -100,7 +100,12 @@ export function useEditorAutoSave({
         }
 
         const currentTab = useEditorStore.getState().tabs[request.tabId];
-        if (currentTab?.kind === "file" && currentTab.path === request.path && currentTab.content === request.content) {
+        if (
+          currentTab?.kind === "file" &&
+          !currentTab.externalConflict &&
+          currentTab.path === request.path &&
+          currentTab.content === request.content
+        ) {
           useEditorStore.getState().markTabSaved(request.tabId, request.content);
           onSavedRef.current?.(request.path);
         }
@@ -179,6 +184,9 @@ export function useEditorAutoSave({
         if (queue?.timer) {
           clearTimeout(queue.timer);
           queue.timer = null;
+        }
+        if (queue?.pending) queue.pending = null;
+        if (queue) {
           wakeWaiters(queue);
           notifyQueueChanged();
         }
