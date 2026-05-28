@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
@@ -52,6 +52,28 @@ describe("readBacklinks", () => {
     });
   });
 
+  it("読めない参照元Markdownファイルはスキップしてバックリンク集計を続行する", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-backlinks-"));
+    temporaryPaths.push(workspacePath);
+    await writeFile(path.join(workspacePath, "target.md"), "# Target", "utf8");
+    await writeFile(path.join(workspacePath, "blocked.md"), "[[target]]", "utf8");
+    await writeFile(path.join(workspacePath, "visible.md"), "[[target]]", "utf8");
+
+    await expect(readBacklinks(workspacePath, "target.md", {
+      async readFile(filePath, encoding) {
+        if (path.basename(filePath) === "blocked.md") {
+          throw Object.assign(new Error("Permission denied"), { code: "EACCES" });
+        }
+
+        return readFile(filePath, encoding);
+      }
+    })).resolves.toEqual({
+      ok: true,
+      value: [
+        { count: 1, sourceName: "visible", sourcePath: "visible.md" }
+      ]
+    });
+  });
 
   it("Markdown以外とワークスペース外への参照を拒否する", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-backlinks-"));
