@@ -5,6 +5,7 @@ import type { CSSProperties, MutableRefObject, ReactElement } from "react";
 
 import { chronicleCalendarIds, type EditorSettings, type UserDefinedField } from "../../shared/ipc";
 import { buildExtensions, destroyEditorView } from "../editorExtensions";
+import { setEditorEditable } from "../editorEditable";
 import {
   appendOrCreateFrontmatterField,
   canAppendOrCreateFrontmatterField,
@@ -182,8 +183,20 @@ export function Editor({
         event.stopImmediatePropagation();
       }
     };
+    const restoreEditableForEditorClick = (event: MouseEvent): void => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      if (target.closest(".cm-frontmatter-properties")) return;
+
+      const view = internalViewRef.current;
+      if (!view || view.state.facet(EditorView.editable)) return;
+
+      setEditorEditable(view, true);
+    };
 
     container.addEventListener(frontmatterDialogRequestEvent, handleFrontmatterDialogRequest);
+    container.addEventListener("pointerdown", restoreEditableForEditorClick, true);
+    container.addEventListener("mousedown", restoreEditableForEditorClick, true);
     container.addEventListener("pointerdown", handleRightButtonDown, true);
     container.addEventListener("mousedown", handleRightButtonDown, true);
     container.addEventListener("mouseup", handleRightButtonDown, true);
@@ -192,6 +205,8 @@ export function Editor({
 
     return () => {
       container.removeEventListener(frontmatterDialogRequestEvent, handleFrontmatterDialogRequest);
+      container.removeEventListener("pointerdown", restoreEditableForEditorClick, true);
+      container.removeEventListener("mousedown", restoreEditableForEditorClick, true);
       container.removeEventListener("pointerdown", handleRightButtonDown, true);
       container.removeEventListener("mousedown", handleRightButtonDown, true);
       container.removeEventListener("mouseup", handleRightButtonDown, true);
