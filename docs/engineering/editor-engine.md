@@ -8,9 +8,9 @@
 
 **CodeMirror 6** を採用する。
 
-ライブプレビューはCodeMirror 6を中心に実装する。ただし、Markdown解析・HTML安全化・KaTeX連携などは専用ライブラリを組み合わせ、CodeMirrorだけで無理に完結させない。
+ライブプレビューはCodeMirror 6を中心に実装する。ただし、Markdown解析・HTML安全化・KaTeX連携・図表レンダリングなどは専用ライブラリを組み合わせ、CodeMirrorだけで無理に完結させない。
 
-Markdownプレビューでは `marked` でHTMLを生成し、`marked-footnote` で脚注を追加し、`DOMPurify` で安全化する。コードブロックのハイライトには `highlight.js`、数式表示には `KaTeX` を使う。`mermaid` コードブロックの図表示には `Mermaid` を遅延読み込みで使い、生成SVGは表示前に再度 `DOMPurify` で安全化する。フロントマターのYAML読み書きには `js-yaml` を使う。
+Markdownプレビューでは `marked` でHTMLを生成し、`marked-footnote` で脚注を追加し、`DOMPurify` で安全化する。コードブロックのハイライトには `highlight.js`、数式表示には `KaTeX` を使う。`mermaid` / `d2` コードブロックの図表示には `Mermaid` と `@terrastruct/d2` を遅延読み込みで使い、生成SVGは表示前に再度 `DOMPurify` で安全化する。フロントマターのYAML読み書きには `js-yaml` を使う。
 
 ---
 
@@ -52,6 +52,7 @@ dompurify                 # HTML安全化
 highlight.js              # コードブロックのシンタックスハイライト
 katex                     # 数式表示
 mermaid                   # Mermaidコードブロックの図表示
+@terrastruct/d2           # D2コードブロックの図表示
 js-yaml                   # フロントマターYAML処理
 ```
 
@@ -59,7 +60,12 @@ js-yaml                   # フロントマターYAML処理
 
 - `app/src/renderer/editorExtensions.ts`: CodeMirror拡張、Markdown言語サポート、内部リンク補完、リンククリック処理
 - `app/src/renderer/editorLivePreview.ts`: ライブプレビュー装飾
-- `app/src/renderer/mermaidPreview.ts`: Mermaidの遅延読み込み、SVG生成、安全化、表示
+- `app/src/renderer/editorDiagramLivePreview.ts`: ライブプレビュー内の図表Widget
+- `app/src/renderer/diagramPreview.ts`: Mermaid / D2 共通のSVG表示、安全化、エラー表示接続
+- `app/src/renderer/mermaidRenderer.ts`: Mermaidの遅延読み込み、初期化、SVG生成
+- `app/src/renderer/d2Renderer.ts`: D2の遅延読み込み、直列描画キュー、SVG生成
+- `app/src/renderer/diagramRenderState.ts`: 図表描画の非同期状態管理
+- `app/src/renderer/diagramPanZoom.ts`: 図表のpan / zoom操作
 - `app/src/renderer/editorTableWidget.ts`: ライブプレビュー表のDOM操作、フォーカス、CodeMirror書き戻し
 - `app/src/renderer/editorTableWidgetModel.ts`: ライブプレビュー表のTSV貼り付け、選択範囲、コピー、削除、矢印移動判定の純粋処理
 - `app/src/renderer/previewMarkdown.ts`: marked / marked-footnote / DOMPurify / highlight.js / KaTeX によるプレビューHTML生成
