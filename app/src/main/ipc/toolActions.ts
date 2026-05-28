@@ -1,5 +1,5 @@
 import { mkdir, readFile, readdir, stat } from "node:fs/promises";
-import type { Stats } from "node:fs";
+import type { Dirent, Stats } from "node:fs";
 import path from "node:path";
 
 import { app } from "electron";
@@ -36,11 +36,13 @@ interface FileCandidate {
 
 interface ToolActionFileOperations {
   readFile(filePath: string, encoding: BufferEncoding): Promise<string>;
+  readdir(directoryPath: string, options: { withFileTypes: true }): Promise<Dirent<string>[]>;
   stat(filePath: string): Promise<Stats>;
 }
 
 const defaultToolActionFileOperations: ToolActionFileOperations = {
   readFile,
+  readdir: (directoryPath, options) => readdir(directoryPath, options) as Promise<Dirent<string>[]>,
   stat
 };
 
@@ -153,8 +155,10 @@ export async function generateTitleList(
 }
 
 export async function generateTableOfContents(
-  input: GenerateTableOfContentsInput
+  input: GenerateTableOfContentsInput,
+  operations: Partial<ToolActionFileOperations> = {}
 ): Promise<RelicResult<string>> {
+  const fileOperations = { ...defaultToolActionFileOperations, ...operations };
   const context = await getToolWorkspaceContext();
   if (!context.ok) return context;
 
@@ -163,7 +167,15 @@ export async function generateTableOfContents(
   if (!targetAbsPath.ok) return targetAbsPath;
   const lines: string[] = [];
 
-  await collectTableOfContentsLines(targetAbsPath.value, input.targetFolder, 0, input.includeSubfolders, lines);
+  await collectTableOfContentsLines(
+    targetAbsPath.value,
+    input.targetFolder,
+    0,
+    input.includeSubfolders,
+    lines,
+    fileOperations,
+    false
+  );
 
   const content = lines.join("\n") + "\n";
   const outputName = safeOutputName(input.outputName);
@@ -325,9 +337,19 @@ async function collectTableOfContentsLines(
   relBase: string,
   indent: number,
   includeSubfolders: boolean,
-  lines: string[]
-): Promise<void> {
-  const entries = await readdir(dirPath, { withFileTypes: true });
+  lines: string[],
+  operations: ToolActionFileOperations,
+  skipOnReadError: boolean
+): Promise<boolean> {
+  let entries: Dirent<string>[];
+
+  try {
+    entries = await operations.readdir(dirPath, { withFileTypes: true });
+  } catch (error) {
+    if (skipOnReadError) return false;
+    throw error;
+  }
+
   entries.sort((a, b) => {
     if (a.isDirectory() !== b.isDirectory()) return a.isDirectory() ? -1 : 1;
     return a.name.localeCompare(b.name, "ja");
@@ -336,20 +358,29 @@ async function collectTableOfContentsLines(
     const prefix = "  ".repeat(indent) + "- ";
     if (entry.isDirectory()) {
       if (includeSubfolders) {
-        lines.push(`${prefix}**${entry.name}/**`);
-        await collectTableOfContentsLines(
+        const childLines: string[] = [];
+        const childRead = await collectTableOfContentsLines(
           path.join(dirPath, entry.name),
           path.join(relBase, entry.name),
           indent + 1,
           includeSubfolders,
-          lines
+          childLines,
+          operations,
+          true
         );
+
+        if (childRead) {
+          lines.push(`${prefix}**${entry.name}/**`);
+          lines.push(...childLines);
+        }
       }
     } else if (entry.name.endsWith(".md")) {
       const displayName = entry.name.replace(/\.md$/, "");
       lines.push(`${prefix}[[${displayName}]]`);
     }
   }
+
+  return true;
 }
 
 function matchesFrontmatterField(value: unknown, query: string): boolean {
