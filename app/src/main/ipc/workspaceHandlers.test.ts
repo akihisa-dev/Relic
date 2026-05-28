@@ -109,4 +109,44 @@ describe("workspaceHandlers", () => {
       { name: "読書メモ", path: "読書メモ.md", type: "file" }
     ]);
   });
+
+  it("起動時にアクティブワークスペースのフォルダがなくても状態を返す", async () => {
+    const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-user-data-"));
+    const parentPath = await mkdtemp(path.join(os.tmpdir(), "relic-workspace-parent-"));
+    temporaryPaths.push(userDataPath, parentPath);
+    const missingWorkspacePath = path.join(parentPath, "missing-workspace");
+    const workspace = createWorkspaceSummary(missingWorkspacePath);
+    const settings = addOrActivateWorkspace(
+      {
+        editorSettings: defaultEditorSettings,
+        featureToggles: defaultFeatureToggles,
+        frontmatterTemplates: defaultFrontmatterTemplates,
+        lastWorkspaceId: null,
+        userDefinedFields: defaultUserDefinedFields,
+        workspaces: []
+      },
+      workspace
+    );
+    await writeAppSettings(userDataPath, settings);
+
+    electronMock.getPath.mockReturnValue(userDataPath);
+    registerWorkspaceHandlers();
+    const getWorkspaceStateHandler = electronMock.handle.mock.calls.find(
+      ([channel]) => channel === getWorkspaceStateChannel
+    )?.[1];
+
+    if (!getWorkspaceStateHandler) throw new Error("getWorkspaceState handler was not registered");
+
+    const result = await getWorkspaceStateHandler();
+
+    expect(result).toEqual({
+      ok: true,
+      value: expect.objectContaining({
+        activeWorkspace: workspace,
+        fileTree: [],
+        pinnedPaths: [],
+        workspaces: [workspace]
+      })
+    });
+  });
 });
