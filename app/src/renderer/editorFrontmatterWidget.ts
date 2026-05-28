@@ -5,6 +5,7 @@ import type { FrontmatterDateFormat, UserDefinedField } from "../shared/ipc";
 import { setEditorEditable } from "./editorEditable";
 import {
   findFrontmatterBlock,
+  findTopLevelYamlFieldEntries,
   serializeDataPreservingYaml,
   type FrontmatterBlock
 } from "./editorFrontmatterModel";
@@ -64,6 +65,20 @@ export function frontmatterCollapsedValue(state: EditorState): boolean {
 
 export function setFrontmatterCollapsed(view: EditorView, collapsed: boolean): void {
   view.dispatch({ effects: frontmatterCollapsedEffect.of(collapsed) });
+}
+
+function visibleFrontmatterLineNumbers(block: FrontmatterBlock): Set<number> {
+  const lines = block.yamlText.replace(/\r\n/g, "\n").split("\n");
+  if (lines.at(-1) === "") lines.pop();
+
+  const lineNumbers = new Set<number>([block.startLine]);
+  for (const entry of findTopLevelYamlFieldEntries(lines)) {
+    if (Object.prototype.hasOwnProperty.call(block.data, entry.key)) {
+      lineNumbers.add(block.startLine + entry.start + 1);
+    }
+  }
+
+  return lineNumbers;
 }
 
 class FrontmatterPropertiesWidget extends WidgetType {
@@ -175,11 +190,22 @@ export function buildFrontmatterPropertiesDecorations(
   if (!block) return Decoration.none;
 
   const collapsed = frontmatterCollapsedValue(state);
+  const visibleLineNumbers = collapsed ? new Set<number>([block.startLine]) : visibleFrontmatterLineNumbers(block);
   const ranges: { from: number; to: number; deco: Decoration }[] = [];
   for (let lineNumber = block.startLine; lineNumber <= block.endLine; lineNumber += 1) {
     const line = state.doc.line(lineNumber);
 
-    if (collapsed && lineNumber !== block.startLine) continue;
+    if (!visibleLineNumbers.has(lineNumber)) {
+      if (!collapsed) {
+        const previousLine = state.doc.line(lineNumber - 1);
+        ranges.push({
+          from: previousLine.to,
+          to: line.to,
+          deco: Decoration.replace({})
+        });
+      }
+      continue;
+    }
 
     const widget = new FrontmatterPropertiesWidget(block, userDefinedFields, candidates, lineNumber, collapsed, t, dateFormat);
     ranges.push({
