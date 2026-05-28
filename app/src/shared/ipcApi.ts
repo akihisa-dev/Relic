@@ -13,6 +13,15 @@ import type {
   UserDefinedField
 } from "./ipcSettings";
 import type {
+  CopyDiagramSvgInput,
+  OutputCopyResult,
+  OutputPrintResult,
+  OutputSavedResult,
+  PrintPreviewInput,
+  SaveDiagramSvgInput,
+  SavePreviewAsPdfInput
+} from "./ipcOutput";
+import type {
   GenerateTableOfContentsInput,
   GenerateTitleListInput,
   MergeFilesInput,
@@ -63,6 +72,7 @@ export interface WindowCloseResponseInput {
 }
 
 export interface RelicApi {
+  copyDiagramSvg: (input: CopyDiagramSvgInput) => Promise<RelicResult<OutputCopyResult>>;
   createNewWorkspace: () => Promise<RelicResult<WorkspaceState>>;
   togglePin: (path: string) => Promise<RelicResult<WorkspaceState>>;
   createFolder: (input: CreateFolderInput) => Promise<RelicResult<WorkspaceState>>;
@@ -100,7 +110,10 @@ export interface RelicApi {
   revealWorkspaceItem: (input: RevealWorkspaceItemInput) => Promise<RelicResult<void>>;
   applySearchAndReplace: (input: SearchAndReplaceInput) => Promise<RelicResult<ReplaceInFileResult>>;
   replaceInFile: (input: ReplaceInFileInput) => Promise<RelicResult<ReplaceInFileResult>>;
+  printPreview: (input: PrintPreviewInput) => Promise<RelicResult<OutputPrintResult>>;
+  saveDiagramSvg: (input: SaveDiagramSvgInput) => Promise<RelicResult<OutputSavedResult>>;
   saveEditorSettings: (input: EditorSettings) => Promise<RelicResult<void>>;
+  savePreviewAsPdf: (input: SavePreviewAsPdfInput) => Promise<RelicResult<OutputSavedResult>>;
   searchAndReplace: (
     input: SearchAndReplaceInput
   ) => Promise<RelicResult<SearchAndReplaceMatch[]>>;

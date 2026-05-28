@@ -90,7 +90,8 @@
 }
 
 .cm-live-diagram-fit-button,
-.cm-live-diagram-edit-button {
+.cm-live-diagram-edit-button,
+.cm-live-diagram-output-button {
   background: color-mix(in srgb, var(--bg) 88%, transparent);
   border: 1px solid var(--border);
   color: var(--text-3);
@@ -102,14 +103,17 @@
 .cm-live-diagram-fit-button:hover,
 .cm-live-diagram-fit-button:focus-visible,
 .cm-live-diagram-edit-button:hover,
-.cm-live-diagram-edit-button:focus-visible {
+.cm-live-diagram-edit-button:focus-visible,
+.cm-live-diagram-output-button:hover,
+.cm-live-diagram-output-button:focus-visible {
   background: var(--hover);
   border-color: var(--border-medium);
   color: var(--text);
 }
 
 .cm-live-diagram-fit-button:disabled,
-.cm-live-diagram-edit-button:disabled {
+.cm-live-diagram-edit-button:disabled,
+.cm-live-diagram-output-button:disabled {
   cursor: default;
   opacity: 0.5;
 }

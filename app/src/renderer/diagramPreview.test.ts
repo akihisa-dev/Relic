@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 
 import { fireEvent } from "@testing-library/react";
+import type { EditorView } from "@codemirror/view";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { encodeDiagramSourceAttribute } from "./diagramSourceAttribute";
@@ -59,6 +60,22 @@ function createAttachedContainer(): HTMLDivElement {
   return container;
 }
 
+function createFakeEditorView(content: string, fileName = "Note"): EditorView {
+  const shell = document.createElement("div");
+  shell.className = "cm-editor-shell";
+  shell.dataset.outputFileName = fileName;
+  document.body.append(shell);
+
+  return {
+    dom: shell,
+    state: {
+      doc: {
+        toString: () => content
+      }
+    }
+  } as unknown as EditorView;
+}
+
 async function flushAnimationFrame() {
   await new Promise<void>((resolve) => {
     window.requestAnimationFrame(() => resolve());
@@ -81,6 +98,7 @@ beforeEach(() => {
   renderD2Mock.mockReset();
   renderMock.mockReset();
   document.body.replaceChildren();
+  window.relic = undefined;
   document.documentElement.removeAttribute("data-theme");
   Object.defineProperty(window, "matchMedia", {
     configurable: true,
@@ -287,6 +305,109 @@ describe("diagramPreview", () => {
     expect(container.querySelector("script")).toBeNull();
     expect(container.querySelector("[onload]")).toBeNull();
     expect(container.textContent).toContain("d2");
+  });
+
+  it("Mermaid図でSVG保存操作とSVGコピー操作が出る", async () => {
+    const { DiagramBlockWidget } = await import("./editorDiagramLivePreview");
+    window.relic = {
+      copyDiagramSvg: vi.fn().mockResolvedValue({ ok: true, value: { status: "copied" } }),
+      saveDiagramSvg: vi.fn().mockResolvedValue({ ok: true, value: { status: "saved", filePath: "/tmp/note.svg" } })
+    } as unknown as typeof window.relic;
+    renderMock.mockResolvedValueOnce({ svg: '<svg viewBox="0 0 120 80"><text>mermaid</text></svg>' });
+    const view = createFakeEditorView("```mermaid\ngraph TD; A-->B\n```", "Note");
+    const widget = new DiagramBlockWidget("graph TD; A-->B", "mermaid", 0, 30, 11);
+    const element = widget.toDOM(view);
+    document.body.append(element);
+
+    await vi.waitFor(() => {
+      expect(element.textContent).toContain("SVGとして保存");
+      expect(element.textContent).toContain("SVGをコピー");
+    });
+
+    fireEvent.click(element.querySelectorAll<HTMLButtonElement>(".cm-live-diagram-output-button")[0]);
+    fireEvent.click(element.querySelectorAll<HTMLButtonElement>(".cm-live-diagram-output-button")[1]);
+
+    await vi.waitFor(() => {
+      expect(window.relic!.saveDiagramSvg).toHaveBeenCalledWith({
+        defaultFileName: "Note-diagram-1-mermaid",
+        language: "mermaid",
+        svg: expect.stringContaining("<svg")
+      });
+      expect(window.relic!.copyDiagramSvg).toHaveBeenCalledWith({
+        language: "mermaid",
+        svg: expect.stringContaining("mermaid")
+      });
+    });
+  });
+
+  it("D2図でSVG保存操作とSVGコピー操作が出る", async () => {
+    const { DiagramBlockWidget } = await import("./editorDiagramLivePreview");
+    window.relic = {
+      copyDiagramSvg: vi.fn().mockResolvedValue({ ok: true, value: { status: "copied" } }),
+      saveDiagramSvg: vi.fn().mockResolvedValue({ ok: true, value: { status: "saved", filePath: "/tmp/note.svg" } })
+    } as unknown as typeof window.relic;
+    compileD2Mock.mockResolvedValueOnce({
+      diagram: { root: true },
+      renderOptions: {}
+    });
+    renderD2Mock.mockResolvedValueOnce('<svg viewBox="0 0 120 80"><path d="M0 0h1" /></svg>');
+    const view = createFakeEditorView("```d2\nx -> y\n```", "Note");
+    const widget = new DiagramBlockWidget("x -> y", "d2", 0, 16, 6);
+    const element = widget.toDOM(view);
+    document.body.append(element);
+
+    await vi.waitFor(() => {
+      expect(element.textContent).toContain("SVGとして保存");
+      expect(element.textContent).toContain("SVGをコピー");
+    });
+  });
+
+  it("Diagram描画エラー時にSVG保存/SVGコピー操作が出ない", async () => {
+    const { DiagramBlockWidget } = await import("./editorDiagramLivePreview");
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    renderMock.mockRejectedValueOnce(new Error("parse failed"));
+    const view = createFakeEditorView("```mermaid\ninvalid\n```", "Note");
+    const widget = new DiagramBlockWidget("invalid", "mermaid", 0, 22, 11);
+    const element = widget.toDOM(view);
+    document.body.append(element);
+
+    await vi.waitFor(() => {
+      expect(element.querySelector(".preview-diagram-error")).not.toBeNull();
+    });
+
+    expect(element.textContent).not.toContain("SVGとして保存");
+    expect(element.textContent).not.toContain("SVGをコピー");
+    warn.mockRestore();
+  });
+
+  it("pan/zoom操作後でも保存/コピー対象SVGにpan/zoom用wrapperやtransformが混ざらない", async () => {
+    const { DiagramBlockWidget } = await import("./editorDiagramLivePreview");
+    window.relic = {
+      copyDiagramSvg: vi.fn().mockResolvedValue({ ok: true, value: { status: "copied" } })
+    } as unknown as typeof window.relic;
+    renderMock.mockResolvedValueOnce({ svg: '<svg viewBox="0 0 120 80"><text>clean</text></svg>' });
+    const view = createFakeEditorView("```mermaid\ngraph TD; A-->B\n```", "Note");
+    const widget = new DiagramBlockWidget("graph TD; A-->B", "mermaid", 0, 30, 11);
+    const element = widget.toDOM(view);
+    document.body.append(element);
+
+    await vi.waitFor(() => {
+      expect(element.textContent).toContain("SVGをコピー");
+    });
+
+    const content = element.querySelector<HTMLElement>(".preview-diagram-panzoom-content");
+    if (!content) throw new Error("Pan/zoom content was not rendered.");
+    content.style.transform = "translate(40px, 20px) scale(2)";
+    fireEvent.click(element.querySelectorAll<HTMLButtonElement>(".cm-live-diagram-output-button")[1]);
+
+    await vi.waitFor(() => {
+      expect(window.relic!.copyDiagramSvg).toHaveBeenCalled();
+    });
+    const svg = vi.mocked(window.relic!.copyDiagramSvg).mock.calls[0][0].svg;
+    expect(svg).toContain("<svg");
+    expect(svg).toContain("clean");
+    expect(svg).not.toContain("preview-diagram-panzoom");
+    expect(svg).not.toContain("translate(40px, 20px) scale(2)");
   });
 
   it("複数D2ブロックの描画はD2 workerの応答が混ざらないよう直列化する", async () => {
