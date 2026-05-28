@@ -38,11 +38,13 @@ export function indentMarkdownListSelection(view: EditorView, direction: 1 | -1)
   const { state } = view;
   const selectedLineNumbers = selectedListLineNumbers(state.selection.ranges, state.doc);
   const changes: { from: number; insert?: string; to?: number }[] = [];
+  const canIndentPlainLines = state.selection.ranges.some((range) => !range.empty);
   let touched = false;
 
   for (const lineNumber of selectedLineNumbers) {
     const line = state.doc.line(lineNumber);
-    if (!parseListLine(line.text)) continue;
+    if (line.text.trim() === "") continue;
+    if (!canIndentPlainLines && !parseListLine(line.text)) continue;
 
     if (direction === 1) {
       changes.push({ from: line.from, insert: "  " });
@@ -62,6 +64,38 @@ export function indentMarkdownListSelection(view: EditorView, direction: 1 | -1)
   view.dispatch({
     changes,
     selection: state.selection.map(state.changes(changes))
+  });
+  return true;
+}
+
+export function moveSelectedLines(view: EditorView, direction: 1 | -1): boolean {
+  const { state } = view;
+  const { firstLine, lastLine } = selectedLineBounds(state.selection.ranges, state.doc);
+
+  if (direction === -1) {
+    if (firstLine.number === 1) return false;
+
+    const previousLine = state.doc.line(firstLine.number - 1);
+    const blockText = state.sliceDoc(firstLine.from, lastLine.to);
+    const insert = `${blockText}\n${previousLine.text}`;
+
+    view.dispatch({
+      changes: { from: previousLine.from, to: lastLine.to, insert },
+      selection: EditorSelection.range(previousLine.from, previousLine.from + blockText.length)
+    });
+    return true;
+  }
+
+  if (lastLine.number === state.doc.lines) return false;
+
+  const nextLine = state.doc.line(lastLine.number + 1);
+  const blockText = state.sliceDoc(firstLine.from, lastLine.to);
+  const insert = `${nextLine.text}\n${blockText}`;
+  const nextSelectionFrom = firstLine.from + nextLine.text.length + 1;
+
+  view.dispatch({
+    changes: { from: firstLine.from, to: nextLine.to, insert },
+    selection: EditorSelection.range(nextSelectionFrom, nextSelectionFrom + blockText.length)
   });
   return true;
 }
@@ -110,4 +144,25 @@ function selectedListLineNumbers(
   }
 
   return [...lineNumbers].sort((left, right) => left - right);
+}
+
+function selectedLineBounds(
+  ranges: readonly { from: number; to: number }[],
+  doc: EditorView["state"]["doc"]
+): {
+  firstLine: ReturnType<EditorView["state"]["doc"]["lineAt"]>;
+  lastLine: ReturnType<EditorView["state"]["doc"]["lineAt"]>;
+} {
+  let from = doc.length;
+  let to = 0;
+
+  for (const range of ranges) {
+    from = Math.min(from, range.from);
+    to = Math.max(to, range.to === range.from ? range.to : Math.max(range.from, range.to - 1));
+  }
+
+  return {
+    firstLine: doc.lineAt(from),
+    lastLine: doc.lineAt(to)
+  };
 }

@@ -4,6 +4,15 @@ import { EditorView } from "@codemirror/view";
 
 export type HeadingLevel = 1 | 2 | 3 | 4 | 5 | 6;
 export type BlockIdFactory = () => string;
+export type ListFormatKind = "bullet" | "checkbox" | "ordered";
+
+interface MarkdownListLine {
+  content: string;
+  indent: string;
+  kind: ListFormatKind;
+}
+
+const markdownListLinePattern = /^(\s*)((?:[-+*]\s+(?:\[[ xX]\]\s+)?)|(?:\d+\.\s+))(.*)$/;
 
 export function findToolbarTargetView(
   views: EditorView[],
@@ -67,7 +76,7 @@ export function insertAtLineStart(view: EditorView, prefix: string, placeholder:
 
 export function insertListAtSelectedLines(
   view: EditorView,
-  prefix: string | ((index: number) => string),
+  kind: ListFormatKind,
   placeholder: string
 ): void {
   const { state } = view;
@@ -78,17 +87,23 @@ export function insertListAtSelectedLines(
     const isMultiLine = fromLine.number !== toLine.number;
 
     if (!isMultiLine) {
-      const linePrefix = resolveLinePrefix(prefix, 0);
-      const insert = `${linePrefix}${fromLine.text.length > 0 ? fromLine.text : placeholder}`;
+      const parsed = parseMarkdownListLine(fromLine.text);
+      const plain = parsePlainLine(fromLine.text);
+      const nextText = parsed?.kind === kind
+        ? `${parsed.indent}${parsed.content}`
+        : `${parsed?.indent ?? plain.indent}${listPrefix(kind, 0)}${parsed?.content ?? (plain.content.length > 0 ? plain.content : placeholder)}`;
 
       return {
-        changes: { from: fromLine.from, to: fromLine.to, insert },
-        range: EditorSelection.range(fromLine.from + linePrefix.length, fromLine.from + insert.length)
+        changes: { from: fromLine.from, to: fromLine.to, insert: nextText },
+        range: EditorSelection.range(fromLine.from, fromLine.from + nextText.length)
       };
     }
 
     let appliedIndex = 0;
     const nextLines: string[] = [];
+    const targetLines = selectedNonEmptyLines(state, fromLine.number, toLine.number);
+    const shouldRemove = targetLines.length > 0
+      && targetLines.every((line) => parseMarkdownListLine(line.text)?.kind === kind);
 
     for (let lineNumber = fromLine.number; lineNumber <= toLine.number; lineNumber += 1) {
       const line = state.doc.line(lineNumber);
@@ -98,7 +113,14 @@ export function insertListAtSelectedLines(
         continue;
       }
 
-      nextLines.push(`${resolveLinePrefix(prefix, appliedIndex)}${line.text}`);
+      const parsed = parseMarkdownListLine(line.text);
+      if (shouldRemove && parsed) {
+        nextLines.push(`${parsed.indent}${parsed.content}`);
+        continue;
+      }
+
+      const plain = parsePlainLine(line.text);
+      nextLines.push(`${parsed?.indent ?? plain.indent}${listPrefix(kind, appliedIndex)}${parsed?.content ?? plain.content}`);
       appliedIndex += 1;
     }
 
@@ -221,10 +243,6 @@ function hasBlockId(text: string): boolean {
   return /(?:^|\s)\^[A-Za-z0-9_-]+$/.test(text.trimEnd());
 }
 
-function resolveLinePrefix(prefix: string | ((index: number) => string), index: number): string {
-  return typeof prefix === "function" ? prefix(index) : prefix;
-}
-
 function findParagraphEndLineNumbers(state: EditorState): number[] {
   const lineNumbers = new Set<number>();
   const { doc } = state;
@@ -264,4 +282,51 @@ function findParagraphEndLineNumbers(state: EditorState): number[] {
   }
 
   return [...lineNumbers].sort((a, b) => a - b);
+}
+
+function listPrefix(kind: ListFormatKind, index: number): string {
+  if (kind === "ordered") return `${index + 1}. `;
+  if (kind === "checkbox") return "- [ ] ";
+  return "- ";
+}
+
+function parseMarkdownListLine(text: string): MarkdownListLine | null {
+  const match = text.match(markdownListLinePattern);
+  if (!match) return null;
+
+  return {
+    content: match[3],
+    indent: match[1],
+    kind: listMarkerKind(match[2])
+  };
+}
+
+function listMarkerKind(marker: string): ListFormatKind {
+  if (/^\d+\.\s+$/.test(marker)) return "ordered";
+  if (/^[-+*]\s+\[[ xX]\]\s+$/.test(marker)) return "checkbox";
+  return "bullet";
+}
+
+function parsePlainLine(text: string): Pick<MarkdownListLine, "content" | "indent"> {
+  const match = text.match(/^(\s*)(.*)$/);
+
+  return {
+    content: match?.[2] ?? text,
+    indent: match?.[1] ?? ""
+  };
+}
+
+function selectedNonEmptyLines(
+  state: EditorState,
+  fromLineNumber: number,
+  toLineNumber: number
+): Array<{ text: string }> {
+  const lines: Array<{ text: string }> = [];
+
+  for (let lineNumber = fromLineNumber; lineNumber <= toLineNumber; lineNumber += 1) {
+    const line = state.doc.line(lineNumber);
+    if (line.text.trim() !== "") lines.push({ text: line.text });
+  }
+
+  return lines;
 }

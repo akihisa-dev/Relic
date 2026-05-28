@@ -11,7 +11,7 @@ import type { EditorSettings, UserDefinedField } from "../shared/ipc";
 import { contextSelectionHighlightField } from "./editorContextSelectionHighlight";
 import { editorEditableCompartment } from "./editorEditable";
 import { createFrontmatterPropertiesField, frontmatterCollapsedField } from "./editorFrontmatter";
-import { handleMarkdownListEnter, indentMarkdownListSelection, isListInputEvent } from "./editorListInput";
+import { handleMarkdownListEnter, indentMarkdownListSelection, isListInputEvent, moveSelectedLines } from "./editorListInput";
 import { buildLivePreviewDecorations, findClickableLinkAtPosition } from "./editorLivePreview";
 import { diagramEditRangeField } from "./editorDiagramEditState";
 import { createLivePreviewTableField } from "./editorTables";
@@ -128,6 +128,14 @@ export function buildExtensions(
           return true;
         }
         if (event.key === "Tab" && indentMarkdownListSelection(view, event.shiftKey ? -1 : 1)) {
+          event.preventDefault();
+          return true;
+        }
+        if (event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey && event.key === "ArrowUp" && moveSelectedLines(view, -1)) {
+          event.preventDefault();
+          return true;
+        }
+        if (event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey && event.key === "ArrowDown" && moveSelectedLines(view, 1)) {
           event.preventDefault();
           return true;
         }
