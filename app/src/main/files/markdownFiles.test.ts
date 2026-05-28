@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readdir, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
@@ -53,6 +53,7 @@ describe("createMarkdownFile", () => {
       }
     });
     await expect(readFile(path.join(workspacePath, "読書メモ.md"), "utf8")).resolves.toBe("");
+    await expect(readdir(workspacePath)).resolves.toEqual(["読書メモ.md"]);
   });
 
   it("同名ファイルがある場合は上書きしない", async () => {
@@ -96,6 +97,7 @@ describe("createMarkdownFileAtPath", () => {
       }
     });
     await expect(readFile(path.join(workspacePath, "folder", "新規ノート.md"), "utf8")).resolves.toBe("");
+    await expect(readdir(path.join(workspacePath, "folder"))).resolves.toEqual(["新規ノート.md"]);
   });
 
   it("ワークスペース外とMarkdown以外への作成を拒否する", async () => {
@@ -337,6 +339,7 @@ describe("duplicateMarkdownFile", () => {
     await expect(readFile(path.join(workspacePath, "読書メモ のコピー.md"), "utf8")).resolves.toBe(
       "# 読書メモ"
     );
+    expect((await readdir(workspacePath)).sort()).toEqual(["読書メモ のコピー.md", "読書メモ.md"]);
   });
 
   it("コピー名が既にある場合は連番で複製する", async () => {

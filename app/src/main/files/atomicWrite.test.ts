@@ -4,7 +4,7 @@ import path from "node:path";
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { atomicWriteTextFile } from "./atomicWrite";
+import { atomicWriteNewTextFile, atomicWriteTextFile } from "./atomicWrite";
 
 describe("atomicWriteTextFile", () => {
   const temporaryPaths: string[] = [];
@@ -37,6 +37,30 @@ describe("atomicWriteTextFile", () => {
         throw new Error("disk full");
       })
     })).rejects.toThrow("disk full");
+
+    await expect(readFile(filePath, "utf8")).resolves.toBe("original");
+    expect(temporaryWrites).toHaveLength(1);
+    expect(path.dirname(temporaryWrites[0])).toBe(workspacePath);
+    expect(unlink).toHaveBeenCalledWith(temporaryWrites[0]);
+  });
+
+  it("新規作成時に同名ファイルがある場合は元ファイル内容を残す", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-atomic-write-new-"));
+    temporaryPaths.push(workspacePath);
+    const filePath = path.join(workspacePath, "note.md");
+    const temporaryWrites: string[] = [];
+    const unlink = vi.fn().mockResolvedValue(undefined);
+
+    await writeFile(filePath, "original", "utf8");
+
+    await expect(atomicWriteNewTextFile(filePath, "next", {
+      link: vi.fn().mockRejectedValue(Object.assign(new Error("exists"), { code: "EEXIST" })),
+      rename: vi.fn(),
+      unlink,
+      writeFile: vi.fn().mockImplementation(async (temporaryPath: string) => {
+        temporaryWrites.push(temporaryPath);
+      })
+    })).rejects.toMatchObject({ code: "EEXIST" });
 
     await expect(readFile(filePath, "utf8")).resolves.toBe("original");
     expect(temporaryWrites).toHaveLength(1);
