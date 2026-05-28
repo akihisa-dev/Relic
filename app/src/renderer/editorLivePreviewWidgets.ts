@@ -130,8 +130,8 @@ export class HorizontalRuleWidget extends WidgetType {
   }
 }
 
-export class CodeBlockHeaderWidget extends WidgetType {
-  readonly className = "cm-live-code-block-header";
+export class CodeBlockWidget extends WidgetType {
+  readonly className = "cm-live-code-block-panel";
 
   constructor(
     private readonly language: string | null,
@@ -140,14 +140,17 @@ export class CodeBlockHeaderWidget extends WidgetType {
     super();
   }
 
-  eq(other: CodeBlockHeaderWidget): boolean {
+  eq(other: CodeBlockWidget): boolean {
     return this.language === other.language && this.source === other.source;
   }
 
   toDOM(): HTMLElement {
+    const panel = document.createElement("div");
+    panel.className = this.className;
+    panel.contentEditable = "false";
+
     const header = document.createElement("div");
-    header.className = this.className;
-    header.contentEditable = "false";
+    header.className = "cm-live-code-block-header";
 
     const label = document.createElement("span");
     label.className = "cm-live-code-block-label";
@@ -168,22 +171,32 @@ export class CodeBlockHeaderWidget extends WidgetType {
     });
 
     header.append(label, button);
-    return header;
+
+    const pre = document.createElement("pre");
+    pre.className = "cm-live-code-block-body";
+    const code = document.createElement("code");
+    code.textContent = this.source;
+    pre.append(code);
+
+    const footer = document.createElement("div");
+    footer.className = "cm-live-code-block-footer";
+    footer.setAttribute("aria-label", "コードブロックの終端");
+
+    panel.append(header, pre, footer);
+    return panel;
   }
 
   ignoreEvent(event: Event): boolean {
-    return ["click", "mousedown", "pointerdown"].includes(event.type);
-  }
-}
-
-export class CodeBlockFooterWidget extends WidgetType {
-  readonly className = "cm-live-code-block-footer";
-
-  toDOM(): HTMLElement {
-    const footer = document.createElement("div");
-    footer.className = this.className;
-    footer.contentEditable = "false";
-    footer.setAttribute("aria-label", "コードブロックの終端");
-    return footer;
+    return [
+      "click",
+      "dblclick",
+      "dragstart",
+      "mousedown",
+      "pointercancel",
+      "pointerdown",
+      "pointermove",
+      "pointerup",
+      "wheel"
+    ].includes(event.type);
   }
 }

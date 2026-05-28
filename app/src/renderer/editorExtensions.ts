@@ -12,7 +12,7 @@ import { contextSelectionHighlightField } from "./editorContextSelectionHighligh
 import { editorEditableCompartment } from "./editorEditable";
 import { createFrontmatterPropertiesField, frontmatterCollapsedField } from "./editorFrontmatter";
 import { handleMarkdownListEnter, indentMarkdownListSelection, isListInputEvent, moveSelectedLines } from "./editorListInput";
-import { buildLivePreviewDecorations, findClickableLinkAtPosition } from "./editorLivePreview";
+import { buildLivePreviewDecorations, createLivePreviewCodeBlockField, findClickableLinkAtPosition } from "./editorLivePreview";
 import { diagramEditRangeField } from "./editorDiagramEditState";
 import { createLivePreviewTableField } from "./editorTables";
 import type { Translator } from "./i18n";
@@ -218,6 +218,7 @@ export function buildExtensions(
       createFrontmatterPropertiesField(userDefinedFields, frontmatterCandidates, t, settings.frontmatterDateFormat),
       diagramEditRangeField,
       createLivePreviewTableField(t),
+      createLivePreviewCodeBlockField(),
       createLivePreviewPlugin(onOpenLinkRef, onOpenWikiLinkRef)
     ] : [])
   ];

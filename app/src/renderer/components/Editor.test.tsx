@@ -615,17 +615,15 @@ describe("Editor", () => {
   });
 
   it("ライブプレビューでブロック記法を安定して装飾する", async () => {
-    const classes = await collectLivePreviewClasses([
+    const content = [
       "> quote",
       "```",
       "code",
       "```"
-    ].join("\n"), 0, false);
+    ].join("\n");
+    const classes = await collectLivePreviewClasses(content, 0, false);
 
-    expect(Array.from(classes)).toEqual(expect.arrayContaining([
-      "cm-live-blockquote",
-      "cm-live-code-block"
-    ]));
+    expect(Array.from(classes)).toContain("cm-live-blockquote");
   });
 
   it("ライブプレビューでmermaidコードブロックを図Widget表示する", async () => {
@@ -780,15 +778,20 @@ describe("Editor", () => {
       "```"
     ].join("\n");
     const widgets = await collectInlineLivePreviewWidgets(content, 0, false);
-    const widgetClasses = await collectInlineLivePreviewWidgetClasses(content, 0, false);
-    const classes = await collectLivePreviewClasses(content, content.length, false);
+    const viewRef = createRef<EditorView | null>();
+    const { container } = render(
+      <Editor
+        content={`${content}\n\n本文`}
+        onChange={vi.fn()}
+        settings={settings}
+        viewRef={viewRef}
+      />
+    );
 
+    await waitFor(() => expect(viewRef.current).not.toBeNull());
+    viewRef.current?.dispatch({ selection: { anchor: viewRef.current.state.doc.length } });
     expect(widgets).not.toContain("DiagramBlockWidget");
-    expect(widgetClasses).toEqual(expect.arrayContaining([
-      "cm-live-code-block-header",
-      "cm-live-code-block-footer"
-    ]));
-    expect(classes).toContain("cm-live-code-block");
+    await waitFor(() => expect(container.querySelector(".cm-live-code-block-panel")).not.toBeNull());
   });
 
   it("通常コードブロックのヘッダーから本文だけをコピーできる", async () => {
@@ -797,14 +800,18 @@ describe("Editor", () => {
       writeClipboardText
     } as unknown as typeof window.relic;
     const source = "const value = 1;\nconsole.log(value);";
+    const viewRef = createRef<EditorView | null>();
     const { container } = render(
       <Editor
-        content={["```ts", source, "```"].join("\n")}
+        content={["```ts", source, "```", "", "本文"].join("\n")}
         onChange={vi.fn()}
         settings={settings}
+        viewRef={viewRef}
       />
     );
 
+    await waitFor(() => expect(viewRef.current).not.toBeNull());
+    viewRef.current?.dispatch({ selection: { anchor: viewRef.current.state.doc.length } });
     await waitFor(() => expect(container.querySelector(".cm-live-code-block-header")).not.toBeNull());
     expect(container.querySelector(".cm-live-code-block-label")?.textContent).toBe("ts");
 
@@ -812,6 +819,65 @@ describe("Editor", () => {
 
     expect(writeClipboardText).toHaveBeenCalledWith(source);
     await waitFor(() => expect(container.querySelector(".cm-live-code-block-copy")?.textContent).toBe("コピーしました"));
+  });
+
+  it("Electronクリップボードが失敗しても通常コードブロックをブラウザ経路でコピーできる", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    window.relic = {
+      writeClipboardText: vi.fn(() => {
+        throw new Error("clipboard unavailable");
+      })
+    } as unknown as typeof window.relic;
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: {
+        writeText
+      }
+    });
+    const source = "あああ";
+    const viewRef = createRef<EditorView | null>();
+    const { container } = render(
+      <Editor
+        content={["```", source, "```", "", "本文"].join("\n")}
+        onChange={vi.fn()}
+        settings={settings}
+        viewRef={viewRef}
+      />
+    );
+
+    await waitFor(() => expect(viewRef.current).not.toBeNull());
+    viewRef.current?.dispatch({ selection: { anchor: viewRef.current.state.doc.length } });
+    await waitFor(() => expect(container.querySelector(".cm-live-code-block-copy")).not.toBeNull());
+    fireEvent.click(container.querySelector(".cm-live-code-block-copy") as HTMLButtonElement);
+
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith(source));
+    await waitFor(() => expect(container.querySelector(".cm-live-code-block-copy")?.textContent).toBe("コピーしました"));
+  });
+
+  it("通常コードブロックのヘッダーや余白をクリックしてもソース表示に戻さない", async () => {
+    const viewRef = createRef<EditorView | null>();
+    const { container } = render(
+      <Editor
+        content={["```", "あああ", "```", "", "本文"].join("\n")}
+        onChange={vi.fn()}
+        settings={settings}
+        viewRef={viewRef}
+      />
+    );
+
+    await waitFor(() => expect(viewRef.current).not.toBeNull());
+    viewRef.current?.dispatch({ selection: { anchor: viewRef.current.state.doc.length } });
+    await waitFor(() => expect(container.querySelector(".cm-live-code-block-panel")).not.toBeNull());
+
+    fireEvent.mouseDown(container.querySelector(".cm-live-code-block-header") as HTMLElement);
+    fireEvent.click(container.querySelector(".cm-live-code-block-header") as HTMLElement);
+    fireEvent.mouseDown(container.querySelector(".cm-live-code-block-body") as HTMLElement);
+    fireEvent.click(container.querySelector(".cm-live-code-block-body") as HTMLElement);
+    fireEvent.mouseDown(container.querySelector(".cm-live-code-block-footer") as HTMLElement);
+    fireEvent.click(container.querySelector(".cm-live-code-block-footer") as HTMLElement);
+
+    expect(container.querySelector(".cm-live-code-block-panel")).not.toBeNull();
+    expect(container.textContent).not.toContain("```");
   });
 
   it("MermaidとD2の図ブロックには通常コードブロックのヘッダーを出さない", async () => {
@@ -828,8 +894,7 @@ describe("Editor", () => {
     const widgetClasses = await collectInlineLivePreviewWidgetClasses(content, 0, false);
 
     expect(widgets.filter((widget) => widget === "DiagramBlockWidget")).toHaveLength(2);
-    expect(widgetClasses).not.toContain("cm-live-code-block-header");
-    expect(widgetClasses).not.toContain("cm-live-code-block-footer");
+    expect(widgetClasses).not.toContain("cm-live-code-block-panel");
   });
 
   it("ライブプレビューでリスト・チェックボックス・水平線をウィジェット表示する", async () => {
