@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const electronMock = vi.hoisted(() => ({
+  browserWindowOptions: [] as Electron.BrowserWindowConstructorOptions[],
   clipboardWriteText: vi.fn(),
   destroy: vi.fn(),
   handle: vi.fn(),
@@ -19,6 +20,10 @@ const electronMock = vi.hoisted(() => ({
 vi.mock("electron", () => {
   class BrowserWindow {
     static fromWebContents = vi.fn().mockReturnValue(null);
+
+    constructor(options: Electron.BrowserWindowConstructorOptions) {
+      electronMock.browserWindowOptions.push(options);
+    }
 
     webContents = {
       on: electronMock.webContentsOn,
@@ -66,13 +71,19 @@ function handlerFor(channel: string) {
   return handler as (event: { sender: unknown }, input: unknown) => Promise<unknown>;
 }
 
+function lastLoadedHtml(): string {
+  const url = electronMock.loadURL.mock.calls.at(-1)?.[0] as string | undefined;
+  if (!url?.startsWith("data:text/html;base64,")) throw new Error("HTML was not loaded");
+  return Buffer.from(url.replace("data:text/html;base64,", ""), "base64").toString("utf8");
+}
+
 describe("outputHandlers", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    electronMock.browserWindowOptions.length = 0;
     electronMock.isDestroyed.mockReturnValue(false);
     electronMock.loadURL.mockResolvedValue(undefined);
     electronMock.printToPDF.mockResolvedValue(Buffer.from("pdf"));
-    electronMock.print.mockImplementation((_options, callback) => callback(true, ""));
     fsMock.writeFile.mockResolvedValue(undefined);
   });
 
@@ -158,23 +169,11 @@ describe("outputHandlers", () => {
     expect(electronMock.clipboardWriteText).not.toHaveBeenCalled();
   });
 
-  it("印刷キャンセル時は通常終了として扱う", async () => {
-    electronMock.print.mockImplementation((_options, callback) => callback(false, "Print job canceled"));
+  it("印刷時は印刷用Windowを開きOS標準印刷ボタンを表示する", async () => {
     registerOutputHandlers();
 
     const result = await handlerFor(printPreviewChannel)({ sender: {} }, {
-      html: "<html><body>本文</body></html>",
-      title: "Note"
-    });
-
-    expect(result).toEqual({ ok: true, value: { status: "canceled" } });
-  });
-
-  it("印刷時は一時Windowを表示してから印刷ダイアログを開く", async () => {
-    registerOutputHandlers();
-
-    const result = await handlerFor(printPreviewChannel)({ sender: {} }, {
-      html: "<html><body>本文</body></html>",
+      html: '<html><head><meta http-equiv="Content-Security-Policy" content="default-src \'none\'"></head><body>本文</body></html>',
       title: "Note"
     });
 
@@ -182,10 +181,23 @@ describe("outputHandlers", () => {
     expect(electronMock.loadURL).toHaveBeenCalled();
     expect(electronMock.show).toHaveBeenCalled();
     expect(electronMock.focus).toHaveBeenCalled();
-    expect(electronMock.print).toHaveBeenCalledWith(
-      expect.objectContaining({ silent: false }),
-      expect.any(Function)
+    expect(electronMock.print).not.toHaveBeenCalled();
+    expect(electronMock.destroy).not.toHaveBeenCalled();
+    expect(electronMock.browserWindowOptions.at(-1)?.webPreferences).toEqual(
+      expect.objectContaining({
+        contextIsolation: true,
+        javascript: true,
+        nodeIntegration: false,
+        sandbox: true
+      })
     );
-    expect(electronMock.destroy).toHaveBeenCalled();
+
+    const html = lastLoadedHtml();
+    expect(html).toContain("OS標準の印刷画面を開く");
+    expect(html).toContain("window.print()");
+    expect(html).toContain("setTimeout(openPrintDialog, 150)");
+    expect(html).toContain(".relic-print-preview-toolbar");
+    expect(html).toContain("display: none !important");
+    expect(html).toContain("script-src 'unsafe-inline'");
   });
 });
