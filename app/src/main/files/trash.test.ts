@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
@@ -71,6 +71,32 @@ describe("moveWorkspaceItemToTrash", () => {
     await expect(
       moveWorkspaceItemToTrash(workspacePath, "note.md", "folder", trashItem)
     ).resolves.toMatchObject({ ok: false });
+    expect(trashItem).not.toHaveBeenCalled();
+  });
+
+  it("シンボリックリンク経由で実体がワークスペース外の項目はゴミ箱へ移動しない", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-trash-"));
+    const outsidePath = await mkdtemp(path.join(os.tmpdir(), "relic-trash-outside-"));
+    temporaryPaths.push(workspacePath, outsidePath);
+    const trashItem = vi.fn().mockResolvedValue(undefined);
+
+    await mkdir(path.join(outsidePath, "outside-folder"));
+    await writeFile(path.join(outsidePath, "outside.md"), "outside", "utf8");
+    await symlink(path.join(outsidePath, "outside.md"), path.join(workspacePath, "linked.md"));
+    await symlink(path.join(outsidePath, "outside-folder"), path.join(workspacePath, "linked-folder"), "dir");
+
+    await expect(
+      moveWorkspaceItemToTrash(workspacePath, "linked.md", "file", trashItem)
+    ).resolves.toMatchObject({
+      error: { code: "WORKSPACE_PATH_OUTSIDE" },
+      ok: false
+    });
+    await expect(
+      moveWorkspaceItemToTrash(workspacePath, "linked-folder", "folder", trashItem)
+    ).resolves.toMatchObject({
+      error: { code: "WORKSPACE_PATH_OUTSIDE" },
+      ok: false
+    });
     expect(trashItem).not.toHaveBeenCalled();
   });
 });

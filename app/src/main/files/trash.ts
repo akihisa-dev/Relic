@@ -2,7 +2,7 @@ import { stat } from "node:fs/promises";
 import path from "node:path";
 
 import { fail, ok, type RelicResult } from "../../shared/result";
-import { resolveWorkspaceRelativePath } from "./paths";
+import { resolveExistingWorkspacePath } from "./paths";
 
 export type TrashItem = (absolutePath: string) => Promise<void>;
 
@@ -16,7 +16,7 @@ export async function moveWorkspaceItemToTrash(
     return fail("FILE_TYPE_UNSUPPORTED", "Markdownファイルだけをゴミ箱に移動できます。");
   }
 
-  const absolutePath = resolveWorkspaceRelativePath(workspacePath, relativePath);
+  const absolutePath = await resolveExistingWorkspacePath(workspacePath, relativePath);
 
   if (!absolutePath.ok) {
     return absolutePath;
