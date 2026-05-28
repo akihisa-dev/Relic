@@ -17,6 +17,7 @@ const APP_ID = "app.relic.desktop";
 const CLOSE_CONFIRM_TIMEOUT_MS = 5000;
 
 const approvedWindowCloseIds = new WeakSet<BrowserWindow>();
+let isDevelopmentQuitInProgress = false;
 let mainWindow: BrowserWindow | null = null;
 
 if (process.platform === "win32") {
@@ -73,6 +74,8 @@ function createWindow(): void {
 
 function configureWindowCloseProtection(window: BrowserWindow): void {
   window.on("close", (event) => {
+    if (isDevelopmentQuitInProgress) return;
+
     if (approvedWindowCloseIds.has(window)) {
       approvedWindowCloseIds.delete(window);
       return;
@@ -191,5 +194,6 @@ app.on("window-all-closed", () => {
 });
 
 app.on("before-quit", () => {
+  isDevelopmentQuitInProgress = Boolean(MAIN_WINDOW_VITE_DEV_SERVER_URL);
   stopWorkspaceWatcher();
 });
