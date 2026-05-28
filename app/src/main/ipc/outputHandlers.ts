@@ -1,5 +1,4 @@
 import { BrowserWindow, clipboard, dialog, ipcMain } from "electron";
-import { writeFile } from "node:fs/promises";
 
 import {
   copyDiagramSvgChannel,
@@ -15,6 +14,7 @@ import {
   type SavePreviewAsPdfInput
 } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
+import { atomicWriteFile, atomicWriteTextFile } from "../files/atomicWrite";
 
 const defaultPdfName = "relic-preview";
 const defaultSvgName = "relic-diagram";
@@ -45,7 +45,7 @@ export function registerOutputHandlers(): void {
         }
 
         const pdf = await renderHtmlToPdf(input.html, input.title);
-        await writeFile(selection.filePath, pdf);
+        await atomicWriteFile(selection.filePath, pdf);
 
         return ok({ filePath: selection.filePath, status: "saved" });
       } catch (error) {
@@ -97,7 +97,7 @@ export function registerOutputHandlers(): void {
           return ok({ status: "canceled" });
         }
 
-        await writeFile(selection.filePath, input.svg, "utf8");
+        await atomicWriteTextFile(selection.filePath, input.svg);
 
         return ok({ filePath: selection.filePath, status: "saved" });
       } catch (error) {
