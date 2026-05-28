@@ -127,12 +127,18 @@ export async function renameWorkspaceRegistration(
     }
 
     if (targetIsSourceDirectory) {
-      const temporaryPath = path.join(
+      const temporaryPath = await findAvailableRenameTemporaryPath(
         path.dirname(workspace.path),
-        `.relic-rename-${nextWorkspace.id}-${Date.now()}`
+        nextWorkspace.id
       );
       await rename(workspace.path, temporaryPath);
-      await rename(temporaryPath, nextWorkspace.path);
+
+      try {
+        await rename(temporaryPath, nextWorkspace.path);
+      } catch (error) {
+        await rename(temporaryPath, workspace.path).catch(() => undefined);
+        throw error;
+      }
     } else {
       await rename(workspace.path, nextWorkspace.path);
     }
@@ -184,4 +190,22 @@ function isMissingFileError(error: unknown): boolean {
     "code" in error &&
     (error as { code?: string }).code === "ENOENT"
   );
+}
+
+async function findAvailableRenameTemporaryPath(
+  parentPath: string,
+  workspaceId: string
+): Promise<string> {
+  const basePath = path.join(parentPath, `.relic-rename-${workspaceId}-${Date.now()}`);
+
+  for (let index = 0; ; index += 1) {
+    const candidatePath = index === 0 ? basePath : `${basePath}-${index}`;
+
+    try {
+      await stat(candidatePath);
+    } catch (error) {
+      if (isMissingFileError(error)) return candidatePath;
+      throw error;
+    }
+  }
 }

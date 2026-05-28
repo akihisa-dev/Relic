@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, rm, stat } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { defaultEditorSettings, defaultFeatureToggles, defaultFrontmatterTemplates, defaultUserDefinedFields } from "../../shared/ipc";
 import {
@@ -26,6 +26,7 @@ describe("workspaceService", () => {
   const temporaryPaths: string[] = [];
 
   afterEach(async () => {
+    vi.restoreAllMocks();
     await Promise.all(
       temporaryPaths.splice(0).map((temporaryPath) =>
         rm(temporaryPath, {
@@ -173,6 +174,39 @@ describe("workspaceService", () => {
         oldWorkspaceId: workspace.id
       }
     });
+  });
+
+  it("一時フォルダ名が既存でも大文字小文字だけのワークスペース名変更を続行する", async () => {
+    const parentPath = await mkdtemp(path.join(os.tmpdir(), "relic-workspace-parent-"));
+    temporaryPaths.push(parentPath);
+    const workspacePath = path.join(parentPath, "Relic Notes");
+    await mkdir(workspacePath);
+    await prepareWorkspace(workspacePath);
+    const workspace = createWorkspaceSummary(workspacePath);
+    const nextWorkspace = createWorkspaceSummary(path.join(parentPath, "relic notes"));
+    const settings = {
+      ...baseSettings,
+      lastWorkspaceId: workspace.id,
+      workspaces: [workspace]
+    };
+    vi.spyOn(Date, "now").mockReturnValue(12345);
+    await mkdir(path.join(parentPath, `.relic-rename-${nextWorkspace.id}-12345`));
+
+    const result = await renameWorkspaceRegistration(settings, workspace.id, "relic notes");
+
+    expect(result).toEqual({
+      ok: true,
+      value: {
+        nextSettings: {
+          ...baseSettings,
+          lastWorkspaceId: nextWorkspace.id,
+          workspaces: [nextWorkspace]
+        },
+        newWorkspaceId: nextWorkspace.id,
+        oldWorkspaceId: workspace.id
+      }
+    });
+    await expect(stat(nextWorkspace.path)).resolves.toBeTruthy();
   });
 
   it("空のワークスペース名は拒否する", async () => {
