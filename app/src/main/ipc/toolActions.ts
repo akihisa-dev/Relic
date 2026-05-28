@@ -33,23 +33,34 @@ interface FileCandidate {
   relPath: string;
 }
 
+interface ToolActionReadOperations {
+  readFile(filePath: string, encoding: BufferEncoding): Promise<string>;
+}
+
+const defaultToolActionReadOperations: ToolActionReadOperations = {
+  readFile
+};
+
 function isFileCandidate(candidate: FileCandidate | null): candidate is FileCandidate {
   return candidate !== null;
 }
 
-export async function mergeFiles(input: MergeFilesInput): Promise<RelicResult<string>> {
+export async function mergeFiles(
+  input: MergeFilesInput,
+  operations: ToolActionReadOperations = defaultToolActionReadOperations
+): Promise<RelicResult<string>> {
   const context = await getToolWorkspaceContext();
   if (!context.ok) return context;
 
   const { workspacePath } = context.value;
   const fileTree = await readWorkspaceFileTree(workspacePath);
   const candidates = await collectMergeCandidates(workspacePath, fileTree);
-  const filtered = await filterMergeCandidates(workspacePath, candidates, input);
+  const filtered = await filterMergeCandidates(workspacePath, candidates, input, operations);
 
   sortMergeCandidates(filtered, input.sortBy);
 
   const parts = await Promise.all(filtered.map(async (file) => {
-    const content = await readFile(path.join(workspacePath, file.relPath), "utf-8");
+    const content = await operations.readFile(path.join(workspacePath, file.relPath), "utf-8");
     const name = file.relPath.split("/").at(-1)?.replace(/\.md$/, "") ?? file.relPath;
     if (input.insertFilenameHeading) {
       return `# ${name}\n\n${content.trim()}`;
@@ -192,7 +203,8 @@ async function collectMergeCandidates(
 async function filterMergeCandidates(
   workspacePath: string,
   candidates: FileCandidate[],
-  input: MergeFilesInput
+  input: MergeFilesInput,
+  operations: ToolActionReadOperations
 ): Promise<FileCandidate[]> {
   if (input.filterType === "folder" && input.filterValue) {
     return candidates.filter((file) =>
@@ -203,8 +215,12 @@ async function filterMergeCandidates(
   if (input.filterType === "tag" && input.filterValue) {
     const tag = input.filterValue.trim().replace(/^#/, "");
     const taggedCandidates = await Promise.all(candidates.map(async (candidate) => {
-      const content = await readFile(path.join(workspacePath, candidate.relPath), "utf-8");
-      return new Set(parseMarkdownTags(content).tags).has(tag) ? candidate : null;
+      try {
+        const content = await operations.readFile(path.join(workspacePath, candidate.relPath), "utf-8");
+        return new Set(parseMarkdownTags(content).tags).has(tag) ? candidate : null;
+      } catch {
+        return null;
+      }
     }));
     return taggedCandidates.filter(isFileCandidate);
   }
@@ -215,10 +231,14 @@ async function filterMergeCandidates(
 
     if (field && value) {
       const frontmatterFiltered = await Promise.all(candidates.map(async (candidate) => {
-        const content = await readFile(path.join(workspacePath, candidate.relPath), "utf-8");
-        const { data } = parseFrontmatter(content);
+        try {
+          const content = await operations.readFile(path.join(workspacePath, candidate.relPath), "utf-8");
+          const { data } = parseFrontmatter(content);
 
-        return matchesFrontmatterField(data[field], value) ? candidate : null;
+          return matchesFrontmatterField(data[field], value) ? candidate : null;
+        } catch {
+          return null;
+        }
       }));
       return frontmatterFiltered.filter(isFileCandidate);
     }

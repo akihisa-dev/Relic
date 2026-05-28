@@ -20,7 +20,7 @@ import {
 } from "../../shared/ipc";
 import { writeAppSettings } from "../settings/appSettings";
 import { addOrActivateWorkspace, createWorkspaceSummary } from "../workspace/workspaceService";
-import { generateTableOfContents, generateTitleList, splitFileByHeading } from "./toolActions";
+import { generateTableOfContents, generateTitleList, mergeFiles, splitFileByHeading } from "./toolActions";
 
 describe("toolActions", () => {
   const temporaryPaths: string[] = [];
@@ -50,6 +50,69 @@ describe("toolActions", () => {
     expect(result).toEqual({ ok: true, value: "Titles.md" });
     await expect(readFile(path.join(workspacePath, "Titles.md"), "utf8")).resolves.toBe("- [[note]]\n");
     expect((await readdir(workspacePath)).sort()).toEqual(["Titles.md", "note.md"]);
+  });
+
+  it("タグ絞り込み中に読めないMarkdownファイルはスキップして結合を続行する", async () => {
+    const { workspacePath } = await prepareActiveWorkspace();
+    await writeFile(path.join(workspacePath, "blocked.md"), "---\ntags: [keep]\n---\nblocked", "utf8");
+    await writeFile(path.join(workspacePath, "visible.md"), "---\ntags: [keep]\n---\nvisible", "utf8");
+
+    const result = await mergeFiles(
+      {
+        filterType: "tag",
+        filterValue: "keep",
+        insertFilenameHeading: false,
+        outputFolder: ".",
+        outputName: "Merged",
+        sortBy: "name"
+      },
+      {
+        async readFile(filePath, encoding) {
+          if (path.basename(filePath) === "blocked.md") {
+            throw Object.assign(new Error("Permission denied"), { code: "EACCES" });
+          }
+
+          return readFile(filePath, encoding);
+        }
+      }
+    );
+
+    expect(result).toEqual({ ok: true, value: "Merged.md" });
+    await expect(readFile(path.join(workspacePath, "Merged.md"), "utf8")).resolves.toBe(
+      "---\ntags: [keep]\n---\nvisible\n"
+    );
+  });
+
+  it("フロントマター絞り込み中に読めないMarkdownファイルはスキップして結合を続行する", async () => {
+    const { workspacePath } = await prepareActiveWorkspace();
+    await writeFile(path.join(workspacePath, "blocked.md"), "---\nstatus: keep\n---\nblocked", "utf8");
+    await writeFile(path.join(workspacePath, "visible.md"), "---\nstatus: keep\n---\nvisible", "utf8");
+
+    const result = await mergeFiles(
+      {
+        filterType: "frontmatter",
+        filterValue: "keep",
+        frontmatterField: "status",
+        insertFilenameHeading: false,
+        outputFolder: ".",
+        outputName: "Merged",
+        sortBy: "name"
+      },
+      {
+        async readFile(filePath, encoding) {
+          if (path.basename(filePath) === "blocked.md") {
+            throw Object.assign(new Error("Permission denied"), { code: "EACCES" });
+          }
+
+          return readFile(filePath, encoding);
+        }
+      }
+    );
+
+    expect(result).toEqual({ ok: true, value: "Merged.md" });
+    await expect(readFile(path.join(workspacePath, "Merged.md"), "utf8")).resolves.toBe(
+      "---\nstatus: keep\n---\nvisible\n"
+    );
   });
 
   it("出力先フォルダが外部実体のシンボリックリンクなら書き込まない", async () => {
