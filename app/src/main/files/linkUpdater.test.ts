@@ -40,6 +40,46 @@ describe("updateLinksForFileRename", () => {
     await expect(readFile(path.join(ws, "source.md"), "utf8")).resolves.toBe("[[folder/new]]");
   });
 
+  it("別フォルダへ移動したファイルへの basename-only リンクはパス付きリンクへ更新する", async () => {
+    const ws = await mkdtemp(path.join(os.tmpdir(), "relic-link-updater-"));
+    temporaryPaths.push(ws);
+    await mkdir(path.join(ws, "archive"));
+
+    await writeFile(path.join(ws, "source.md"), "[[note]]", "utf8");
+    await writeFile(path.join(ws, "archive", "note.md"), "", "utf8");
+
+    await updateLinksForFileRename(ws, "note.md", "archive/note.md");
+
+    await expect(readFile(path.join(ws, "source.md"), "utf8")).resolves.toBe("[[archive/note]]");
+  });
+
+  it("同じフォルダ内で変更した basename-only リンクはファイル名だけを更新する", async () => {
+    const ws = await mkdtemp(path.join(os.tmpdir(), "relic-link-updater-"));
+    temporaryPaths.push(ws);
+    await mkdir(path.join(ws, "folder"));
+
+    await writeFile(path.join(ws, "folder", "source.md"), "[[old]]", "utf8");
+    await writeFile(path.join(ws, "folder", "new.md"), "", "utf8");
+
+    await updateLinksForFileRename(ws, "folder/old.md", "folder/new.md");
+
+    await expect(readFile(path.join(ws, "folder", "source.md"), "utf8")).resolves.toBe("[[new]]");
+  });
+
+  it("フロントマター内のファイルリンクも更新する", async () => {
+    const ws = await mkdtemp(path.join(os.tmpdir(), "relic-link-updater-"));
+    temporaryPaths.push(ws);
+
+    await writeFile(path.join(ws, "source.md"), "---\nrelated: [[old]]\n---\n# source", "utf8");
+    await writeFile(path.join(ws, "new.md"), "", "utf8");
+
+    await updateLinksForFileRename(ws, "old.md", "new.md");
+
+    await expect(readFile(path.join(ws, "source.md"), "utf8")).resolves.toBe(
+      "---\nrelated: [[new]]\n---\n# source"
+    );
+  });
+
   it("エイリアスを保持したままターゲットを更新する", async () => {
     const ws = await mkdtemp(path.join(os.tmpdir(), "relic-link-updater-"));
     temporaryPaths.push(ws);
@@ -166,5 +206,20 @@ describe("updateLinksForFolderRename", () => {
     await updateLinksForFolderRename(ws, "old-folder", "new-folder");
 
     await expect(readFile(path.join(ws, "source.md"), "utf8")).resolves.toBe(original);
+  });
+
+  it("フロントマター内のフォルダ付きリンクも更新する", async () => {
+    const ws = await mkdtemp(path.join(os.tmpdir(), "relic-link-updater-"));
+    temporaryPaths.push(ws);
+    await mkdir(path.join(ws, "new-folder"));
+
+    await writeFile(path.join(ws, "source.md"), "---\nrelated: [[old-folder/note]]\n---\n# source", "utf8");
+    await writeFile(path.join(ws, "new-folder", "note.md"), "", "utf8");
+
+    await updateLinksForFolderRename(ws, "old-folder", "new-folder");
+
+    await expect(readFile(path.join(ws, "source.md"), "utf8")).resolves.toBe(
+      "---\nrelated: [[new-folder/note]]\n---\n# source"
+    );
   });
 });

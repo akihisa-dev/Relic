@@ -252,6 +252,19 @@ describe("renameMarkdownFile", () => {
     await expect(readFile(path.join(workspacePath, "after.md"), "utf8")).resolves.toBe("# Before");
   });
 
+  it("リネーム時に内部リンクも更新する", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-rename-file-"));
+    temporaryPaths.push(workspacePath);
+
+    await writeFile(path.join(workspacePath, "before.md"), "# Before", "utf8");
+    await writeFile(path.join(workspacePath, "source.md"), "[[before]]", "utf8");
+
+    await expect(renameMarkdownFile(workspacePath, "before.md", "after")).resolves.toMatchObject({
+      ok: true
+    });
+    await expect(readFile(path.join(workspacePath, "source.md"), "utf8")).resolves.toBe("[[after]]");
+  });
+
   it("同名ファイルがある場合は上書きしない", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-rename-file-"));
     temporaryPaths.push(workspacePath);
@@ -276,6 +289,20 @@ describe("renameMarkdownFile", () => {
     await expect(renameMarkdownFile(workspacePath, "../outside.md", "inside")).resolves.toMatchObject({
       ok: false
     });
+  });
+
+  it("シンボリックリンク経由で実体がワークスペース外のMarkdownリネームを拒否する", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-rename-file-"));
+    const outsidePath = await mkdtemp(path.join(os.tmpdir(), "relic-outside-file-"));
+    temporaryPaths.push(workspacePath, outsidePath);
+
+    await writeFile(path.join(outsidePath, "outside.md"), "outside", "utf8");
+    await symlink(path.join(outsidePath, "outside.md"), path.join(workspacePath, "linked.md"));
+
+    await expect(renameMarkdownFile(workspacePath, "linked.md", "renamed")).resolves.toMatchObject({
+      ok: false
+    });
+    await expect(readFile(path.join(outsidePath, "outside.md"), "utf8")).resolves.toBe("outside");
   });
 });
 
@@ -372,6 +399,22 @@ describe("moveMarkdownFile", () => {
     await expect(readFile(path.join(workspacePath, "archive/note.md"), "utf8")).resolves.toBe("# Note");
   });
 
+  it("別フォルダへの移動時に内部リンクをパス付きリンクへ更新する", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-move-file-"));
+    temporaryPaths.push(workspacePath);
+
+    await mkdir(path.join(workspacePath, "archive"));
+    await writeFile(path.join(workspacePath, "note.md"), "# Note", "utf8");
+    await writeFile(path.join(workspacePath, "source.md"), "[[note]]", "utf8");
+
+    await expect(moveMarkdownFile(workspacePath, "note.md", "archive")).resolves.toMatchObject({
+      ok: true
+    });
+    await expect(readFile(path.join(workspacePath, "source.md"), "utf8")).resolves.toBe(
+      "[[archive/note]]"
+    );
+  });
+
   it("移動先に同名ファイルがある場合は上書きしない", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-move-file-"));
     temporaryPaths.push(workspacePath);
@@ -385,5 +428,32 @@ describe("moveMarkdownFile", () => {
     });
     await expect(readFile(path.join(workspacePath, "note.md"), "utf8")).resolves.toBe("source");
     await expect(readFile(path.join(workspacePath, "archive/note.md"), "utf8")).resolves.toBe("existing");
+  });
+
+  it("ワークスペース外の移動先フォルダを拒否する", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-move-file-"));
+    temporaryPaths.push(workspacePath);
+
+    await writeFile(path.join(workspacePath, "note.md"), "# Note", "utf8");
+
+    await expect(moveMarkdownFile(workspacePath, "note.md", "../outside")).resolves.toMatchObject({
+      ok: false
+    });
+    await expect(readFile(path.join(workspacePath, "note.md"), "utf8")).resolves.toBe("# Note");
+  });
+
+  it("シンボリックリンク経由で実体がワークスペース外のMarkdown移動を拒否する", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-move-file-"));
+    const outsidePath = await mkdtemp(path.join(os.tmpdir(), "relic-outside-file-"));
+    temporaryPaths.push(workspacePath, outsidePath);
+
+    await mkdir(path.join(workspacePath, "archive"));
+    await writeFile(path.join(outsidePath, "outside.md"), "outside", "utf8");
+    await symlink(path.join(outsidePath, "outside.md"), path.join(workspacePath, "linked.md"));
+
+    await expect(moveMarkdownFile(workspacePath, "linked.md", "archive")).resolves.toMatchObject({
+      ok: false
+    });
+    await expect(readFile(path.join(outsidePath, "outside.md"), "utf8")).resolves.toBe("outside");
   });
 });
