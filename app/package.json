@@ -1,7 +1,7 @@
 {
   "name": "relic",
-  "version": "0.0.161",
-  "description": "Relic is a desktop app for creating, storing, and browsing creative setting notes.",
+  "version": "0.0.162",
+  "description": "Relic is a local app that extends Markdown files with editing, search, browsing, visualization, and export while keeping the information as Markdown.",
   "main": ".vite/build/main.js",
   "private": true,
   "packageManager": "pnpm@10.10.0",
