@@ -31,7 +31,7 @@ import {
   getWorkspaceStateChannel
 } from "../../shared/ipc";
 import { writeAppSettings } from "../settings/appSettings";
-import { defaultCharts, writeWorkspaceSettings } from "../settings/workspaceSettings";
+import { defaultCharts, getWorkspaceSettingsPath, writeWorkspaceSettings } from "../settings/workspaceSettings";
 import { addOrActivateWorkspace, createWorkspaceSummary } from "../workspace/workspaceService";
 import { registerWorkspaceHandlers } from "./workspaceHandlers";
 
@@ -144,6 +144,48 @@ describe("workspaceHandlers", () => {
       value: expect.objectContaining({
         activeWorkspace: workspace,
         fileTree: [],
+        pinnedPaths: [],
+        workspaces: [workspace]
+      })
+    });
+  });
+
+  it("起動時にワークスペース設定を読めなくても状態を返す", async () => {
+    const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-user-data-"));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-workspace-"));
+    temporaryPaths.push(userDataPath, workspacePath);
+    await writeFile(path.join(workspacePath, "note.md"), "# Note\n", "utf8");
+
+    const workspace = createWorkspaceSummary(workspacePath);
+    const settings = addOrActivateWorkspace(
+      {
+        editorSettings: defaultEditorSettings,
+        featureToggles: defaultFeatureToggles,
+        frontmatterTemplates: defaultFrontmatterTemplates,
+        lastWorkspaceId: null,
+        userDefinedFields: defaultUserDefinedFields,
+        workspaces: []
+      },
+      workspace
+    );
+    await writeAppSettings(userDataPath, settings);
+    await mkdir(getWorkspaceSettingsPath(userDataPath, workspace.id), { recursive: true });
+
+    electronMock.getPath.mockReturnValue(userDataPath);
+    registerWorkspaceHandlers();
+    const getWorkspaceStateHandler = electronMock.handle.mock.calls.find(
+      ([channel]) => channel === getWorkspaceStateChannel
+    )?.[1];
+
+    if (!getWorkspaceStateHandler) throw new Error("getWorkspaceState handler was not registered");
+
+    const result = await getWorkspaceStateHandler();
+
+    expect(result).toEqual({
+      ok: true,
+      value: expect.objectContaining({
+        activeWorkspace: workspace,
+        fileTree: [{ name: "note", path: "note.md", type: "file" }],
         pinnedPaths: [],
         workspaces: [workspace]
       })
