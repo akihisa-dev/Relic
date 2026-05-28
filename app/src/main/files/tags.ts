@@ -7,8 +7,17 @@ import { collectMarkdownPaths } from "../../shared/workspaceTree";
 import { readWorkspaceFileTree } from "./fileTree";
 import { resolveWorkspaceRelativePath } from "./paths";
 
+interface TagsReadOperations {
+  readFile(filePath: string, encoding: BufferEncoding): Promise<string>;
+}
+
+const defaultTagsReadOperations: TagsReadOperations = {
+  readFile
+};
+
 export async function readWorkspaceTags(
-  workspacePath: string
+  workspacePath: string,
+  operations: TagsReadOperations = defaultTagsReadOperations
 ): Promise<RelicResult<WorkspaceTagSummary[]>> {
   try {
     const fileTree = await readWorkspaceFileTree(workspacePath);
@@ -18,10 +27,20 @@ export async function readWorkspaceTags(
       return absolutePath.ok ? [{ absolutePath: absolutePath.value, relativePath }] : [];
     });
     const fileContents = await Promise.all(
-      files.map(async (file) => ({ ...file, content: await readFile(file.absolutePath, "utf8") }))
+      files.map(async (file) => {
+        try {
+          return { ...file, content: await operations.readFile(file.absolutePath, "utf8") };
+        } catch {
+          return null;
+        }
+      })
     );
 
-    for (const { content } of fileContents) {
+    for (const fileContent of fileContents) {
+      if (!fileContent) continue;
+
+      const { content } = fileContent;
+
       for (const tag of parseMarkdownTags(content).tags) {
         tagCounts.set(tag, (tagCounts.get(tag) ?? 0) + 1);
       }
