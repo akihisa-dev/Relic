@@ -98,6 +98,49 @@ describe("useEditorAutoSave", () => {
     if (tab?.kind === "file") expect(tab.savedContent).toBe("改稿");
   });
 
+  it("保存中に外部変更と衝突した場合は保存待ち本文を追加保存せず衝突を維持する", async () => {
+    const firstSave = deferred<{ ok: true; value: undefined }>();
+    window.relic = {
+      writeMarkdownFile: vi.fn().mockReturnValueOnce(firstSave.promise)
+    } as unknown as typeof window.relic;
+    resetStore({
+      tab: { content: "初稿", id: "tab", kind: "file", name: "Memo", path: "memo.md", savedContent: "Base" }
+    });
+
+    const { rerender } = renderHook(({ tabs }) => useEditorAutoSave({
+      conflictCloseBlockedMessage: "conflict",
+      tabs
+    }), {
+      initialProps: { tabs: useEditorStore.getState().tabs }
+    });
+
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(window.relic!.writeMarkdownFile).toHaveBeenCalledTimes(1);
+
+    act(() => {
+      useEditorStore.getState().updateTabContent("tab", "改稿");
+    });
+    rerender({ tabs: useEditorStore.getState().tabs });
+
+    act(() => {
+      useEditorStore.getState().setTabExternalConflict("tab", "外部版");
+    });
+    rerender({ tabs: useEditorStore.getState().tabs });
+
+    firstSave.resolve({ ok: true, value: undefined });
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(window.relic!.writeMarkdownFile).toHaveBeenCalledTimes(1);
+
+    const tab = useEditorStore.getState().tabs.tab;
+    expect(tab?.kind).toBe("file");
+    if (tab?.kind === "file") {
+      expect(tab.content).toBe("改稿");
+      expect(tab.savedContent).toBe("Base");
+      expect(tab.externalConflict?.content).toBe("外部版");
+    }
+  });
+
   it("閉じる前保存は衝突中のタブを保存せず止める", async () => {
     resetStore({
       tab: {
