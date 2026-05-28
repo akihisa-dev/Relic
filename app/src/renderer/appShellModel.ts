@@ -113,11 +113,14 @@ export function activeChartIdsForPanes(
 
 export function enabledRailViewsForFeatures<TView extends Pick<AppRailView, "id">>(
   views: TView[],
-  featureToggles: Pick<FeatureToggles, "frontmatter" | "tools">
+  featureToggles: Pick<FeatureToggles, "calendar" | "chronicle" | "chronicleSettings" | "frontmatter" | "tools">
 ): TView[] {
   return views.filter((view) => {
     if (view.id === "tools" && !featureToggles.tools) return false;
     if (view.id === "frontmatter" && !featureToggles.frontmatter) return false;
+    if (view.id === "chronicleSettings" && !featureToggles.chronicleSettings) return false;
+    if (view.id === "chronicle" && !featureToggles.chronicle) return false;
+    if (view.id === "calendar" && !featureToggles.calendar) return false;
 
     return true;
   });

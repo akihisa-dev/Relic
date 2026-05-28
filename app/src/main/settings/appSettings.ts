@@ -104,6 +104,9 @@ function parseFeatureToggles(raw: unknown): FeatureToggles {
   const s = raw as Record<string, unknown>;
 
   return {
+    calendar: typeof s.calendar === "boolean" ? s.calendar : true,
+    chronicle: typeof s.chronicle === "boolean" ? s.chronicle : true,
+    chronicleSettings: typeof s.chronicleSettings === "boolean" ? s.chronicleSettings : true,
     tools: typeof s.tools === "boolean" ? s.tools : true,
     frontmatter: typeof s.frontmatter === "boolean" ? s.frontmatter : true,
     rightPanel: typeof s.rightPanel === "boolean" ? s.rightPanel : true

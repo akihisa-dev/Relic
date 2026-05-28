@@ -298,5 +298,9 @@ describe("SettingsPanel", () => {
     fireEvent.click(screen.getByLabelText("File tools"));
 
     expect(onFeatureTogglesSave).toHaveBeenCalledWith(expect.objectContaining({ tools: false }));
+
+    fireEvent.click(screen.getByLabelText("Timeline"));
+
+    expect(onFeatureTogglesSave).toHaveBeenCalledWith(expect.objectContaining({ chronicle: false }));
   });
 });
