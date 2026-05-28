@@ -48,6 +48,7 @@ export function resetRendererStores(): void {
 export function makeRelicApi(overrides: Partial<typeof window.relic> = {}): typeof window.relic {
   return {
     applySearchAndReplace: vi.fn(),
+    copyDiagramSvg: vi.fn().mockResolvedValue({ ok: true, value: { status: "copied" } }),
     createFolder: vi.fn(),
     createLinkedMarkdownFile: vi.fn(),
     createMarkdownFile: vi.fn(),
@@ -90,11 +91,14 @@ export function makeRelicApi(overrides: Partial<typeof window.relic> = {}): type
       }
     }),
     replaceInFile: vi.fn(),
+    printPreview: vi.fn().mockResolvedValue({ ok: true, value: { status: "printed" } }),
     respondToWindowCloseRequest: vi.fn(),
     revealWorkspaceItem: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
     saveEditorSettings: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
+    saveDiagramSvg: vi.fn().mockResolvedValue({ ok: true, value: { status: "saved" } }),
     saveFeatureToggles: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
     saveFrontmatterTemplates: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
+    savePreviewAsPdf: vi.fn().mockResolvedValue({ ok: true, value: { status: "saved" } }),
     saveUserDefinedFields: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
     saveWorkspaceChronicleCalendars: vi.fn().mockResolvedValue({ ok: true, value: [{ id: "chronicle0", name: "メイン暦" }] }),
     saveWorkspaceCharts: vi.fn().mockResolvedValue({ ok: true, value: [] }),

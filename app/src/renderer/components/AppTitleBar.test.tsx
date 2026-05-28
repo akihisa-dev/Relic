@@ -42,6 +42,7 @@ function renderTitleBar(overrides: Partial<Parameters<typeof AppTitleBar>[0]> = 
     [secondFileTab.id]: secondFileTab
   };
   const props: Parameters<typeof AppTitleBar>[0] = {
+    canOutputPreview: true,
     isRightPanelOpen: false,
     isSourceMode: false,
     isSplit: false,
@@ -53,8 +54,10 @@ function renderTitleBar(overrides: Partial<Parameters<typeof AppTitleBar>[0]> = 
     onCloseTabsToRight: vi.fn(),
     onDuplicateTabFile: vi.fn(),
     onOpenInOtherPane: vi.fn(),
+    onPrintPreview: vi.fn(),
     onRevealTabFile: vi.fn(),
     onRightPanelViewButton: vi.fn(),
+    onSavePreviewAsPdf: vi.fn(),
     onSourceModeToggle: vi.fn(),
     onSplitToggle: vi.fn(),
     onTabClose: vi.fn(),
@@ -104,6 +107,16 @@ describe("AppTitleBar", () => {
 
     fireEvent.click(screen.getAllByTitle("Close tab")[1]);
     expect(props.onTabClose).toHaveBeenCalledWith("left", secondFileTab.id);
+  });
+
+  it("runs preview output actions from the title bar", () => {
+    const props = renderTitleBar();
+
+    fireEvent.click(screen.getByRole("button", { name: "Print" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save as PDF" }));
+
+    expect(props.onPrintPreview).toHaveBeenCalled();
+    expect(props.onSavePreviewAsPdf).toHaveBeenCalled();
   });
 
   it("renders title bar tabs in a shrinking tab strip instead of requiring horizontal scrolling", () => {

@@ -4,6 +4,7 @@ import path from "node:path";
 import { registerAppHandlers } from "./ipc/appHandlers";
 import { registerEditorHandlers } from "./ipc/editorHandlers";
 import { registerFileHandlers } from "./ipc/fileHandlers";
+import { registerOutputHandlers } from "./ipc/outputHandlers";
 import { registerToolHandlers } from "./ipc/toolHandlers";
 import { registerWorkspaceHandlers } from "./ipc/workspaceHandlers";
 import { windowCloseRequestedChannel, windowCloseResponseChannel, type WindowCloseResponseInput } from "../shared/ipc";
@@ -175,6 +176,7 @@ app.whenReady().then(() => {
   registerAppHandlers();
   registerEditorHandlers();
   registerFileHandlers();
+  registerOutputHandlers();
   registerToolHandlers();
   registerWorkspaceHandlers();
   createWindow();

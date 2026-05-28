@@ -3,6 +3,8 @@ import { clipboard, contextBridge, ipcRenderer } from "electron";
 import {
   applySearchAndReplaceChannel,
   createNewWorkspaceChannel,
+  copyDiagramSvgChannel,
+  type CopyDiagramSvgInput,
   togglePinChannel,
   createFolderChannel,
   createLinkedMarkdownFileChannel,
@@ -51,6 +53,15 @@ import {
   type UserDefinedField,
   mergeFilesChannel,
   type MergeFilesInput,
+  printPreviewChannel,
+  type PrintPreviewInput,
+  saveDiagramSvgChannel,
+  type SaveDiagramSvgInput,
+  savePreviewAsPdfChannel,
+  type SavePreviewAsPdfInput,
+  type OutputCopyResult,
+  type OutputPrintResult,
+  type OutputSavedResult,
   splitFileByHeadingChannel,
   type SplitFileByHeadingInput,
   searchAndReplaceChannel,
@@ -104,6 +115,8 @@ import type { AliasIndex } from "../shared/links";
 const relicApi: RelicApi = {
   applySearchAndReplace: (input: SearchAndReplaceInput) =>
     ipcRenderer.invoke(applySearchAndReplaceChannel, input) as Promise<RelicResult<ReplaceInFileResult>>,
+  copyDiagramSvg: (input: CopyDiagramSvgInput) =>
+    ipcRenderer.invoke(copyDiagramSvgChannel, input) as Promise<RelicResult<OutputCopyResult>>,
   createNewWorkspace: () =>
     ipcRenderer.invoke(createNewWorkspaceChannel) as Promise<RelicResult<WorkspaceState>>,
   togglePin: (path: string) =>
@@ -166,8 +179,14 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(revealWorkspaceItemChannel, input) as Promise<RelicResult<void>>,
   replaceInFile: (input: ReplaceInFileInput) =>
     ipcRenderer.invoke(replaceInFileChannel, input) as Promise<RelicResult<ReplaceInFileResult>>,
+  printPreview: (input: PrintPreviewInput) =>
+    ipcRenderer.invoke(printPreviewChannel, input) as Promise<RelicResult<OutputPrintResult>>,
+  saveDiagramSvg: (input: SaveDiagramSvgInput) =>
+    ipcRenderer.invoke(saveDiagramSvgChannel, input) as Promise<RelicResult<OutputSavedResult>>,
   saveEditorSettings: (input: EditorSettings) =>
     ipcRenderer.invoke(saveEditorSettingsChannel, input) as Promise<RelicResult<void>>,
+  savePreviewAsPdf: (input: SavePreviewAsPdfInput) =>
+    ipcRenderer.invoke(savePreviewAsPdfChannel, input) as Promise<RelicResult<OutputSavedResult>>,
   searchAndReplace: (input: SearchAndReplaceInput) =>
     ipcRenderer.invoke(searchAndReplaceChannel, input) as Promise<
       RelicResult<SearchAndReplaceMatch[]>

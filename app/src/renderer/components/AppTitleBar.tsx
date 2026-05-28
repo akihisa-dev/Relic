@@ -4,10 +4,12 @@ import { usePaneTabInteractions } from "../hooks/usePaneTabInteractions";
 import { useT } from "../i18n";
 import type { PaneId, PaneState, PanelTabKind, Tab } from "../store/editorStore";
 import type { RightPanelView } from "../store/uiStore";
+import { PdfIcon, PrintIcon } from "./MarkdownActionIcons";
 import { PaneTabBar } from "./PaneTabBar";
 import { PaneTabContextMenu } from "./PaneTabContextMenu";
 
 interface AppTitleBarProps {
+  canOutputPreview: boolean;
   isRightPanelOpen: boolean;
   isSourceMode: boolean;
   isSplit: boolean;
@@ -19,8 +21,10 @@ interface AppTitleBarProps {
   onCloseTabsToRight: (pane: PaneId, tabId: string) => void;
   onDuplicateTabFile?: (tabId: string) => void;
   onOpenInOtherPane: (pane: PaneId, tabId: string) => void;
+  onPrintPreview: () => void;
   onRevealTabFile?: (tabId: string) => void;
   onRightPanelViewButton: (view: RightPanelView) => void;
+  onSavePreviewAsPdf: () => void;
   onSourceModeToggle: () => void;
   onSplitToggle: () => void;
   onTabClose: (pane: PaneId, tabId: string) => void;
@@ -37,6 +41,7 @@ interface AppTitleBarProps {
 }
 
 export function AppTitleBar({
+  canOutputPreview,
   isRightPanelOpen,
   isSourceMode,
   isSplit,
@@ -48,8 +53,10 @@ export function AppTitleBar({
   onCloseTabsToRight,
   onDuplicateTabFile,
   onOpenInOtherPane,
+  onPrintPreview,
   onRevealTabFile,
   onRightPanelViewButton,
+  onSavePreviewAsPdf,
   onSourceModeToggle,
   onSplitToggle,
   onTabClose,
@@ -66,12 +73,34 @@ export function AppTitleBar({
 }: AppTitleBarProps): ReactElement {
   const t = useT();
   const style = {
-    "--title-bar-action-width": `${isRightPanelOpen ? rightPanelWidth : 136}px`,
+    "--title-bar-action-width": `${isRightPanelOpen ? rightPanelWidth : 208}px`,
     "--title-bar-left-offset": `${leftOffsetWidth}px`
   } as CSSProperties;
 
   const paneActions = (
     <div className="main-area-actions">
+      <button
+        aria-label={t("output.print")}
+        className="toolbar-btn"
+        data-tooltip={t("output.print")}
+        disabled={!canOutputPreview}
+        onClick={onPrintPreview}
+        title={t("output.print")}
+        type="button"
+      >
+        <PrintIcon />
+      </button>
+      <button
+        aria-label={t("output.savePdf")}
+        className="toolbar-btn"
+        data-tooltip={t("output.savePdf")}
+        disabled={!canOutputPreview}
+        onClick={onSavePreviewAsPdf}
+        title={t("output.savePdf")}
+        type="button"
+      >
+        <PdfIcon />
+      </button>
       <button
         aria-label={t("pane.sourceShort")}
         className={`toolbar-btn${isSourceMode ? " active" : ""}`}

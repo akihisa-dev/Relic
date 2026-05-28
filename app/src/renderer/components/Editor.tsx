@@ -17,6 +17,7 @@ import { useEditorContextMenu } from "../hooks/useEditorContextMenu";
 import { useEditorFrontmatterDialog } from "../hooks/useEditorFrontmatterDialog";
 import { useToolbarActions } from "../hooks/useToolbarActions";
 import { useT, type Translator } from "../i18n";
+import { outputFileNameFromPath } from "../outputHtml";
 import { EditorContextMenu } from "./EditorContextMenu";
 import { EditorFrontmatterDialog } from "./EditorFrontmatterDialog";
 
@@ -64,6 +65,7 @@ interface FrontmatterPropertyMenuState {
 export function Editor({
   allFilePaths = defaultAllFilePaths,
   content,
+  filePath,
   frontmatterCandidates = defaultFrontmatterCandidates,
   onChange,
   onEditorAction,
@@ -302,7 +304,7 @@ export function Editor({
 
   return (
     <>
-      <div className="cm-editor-shell">
+      <div className="cm-editor-shell" data-output-file-name={outputFileNameFromPath(filePath) ?? undefined}>
         <div className="cm-editor-container" onContextMenuCapture={openReactContextMenu} ref={containerRef} />
         <button
           aria-expanded={frontmatterPropertyMenu ? "true" : "false"}

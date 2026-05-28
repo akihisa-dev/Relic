@@ -38,6 +38,7 @@ import { useWorkspaceCharts } from "./hooks/useWorkspaceCharts";
 import { useWorkspaceRenameRailHold } from "./hooks/useWorkspaceRenameRailHold";
 import { useWorkspaceSearchState } from "./hooks/useWorkspaceSearchState";
 import { matchesAnyTreeItemPath } from "./hooks/workspaceFileActionHelpers";
+import { buildPreviewOutputHtml } from "./outputHtml";
 import { useEditorStore, type PaneId } from "./store/editorStore";
 import { useUiStore, type RightPanelView } from "./store/uiStore";
 import { collectMarkdownPaths } from "./workspacePaths";
@@ -49,7 +50,7 @@ const TITLE_BAR_TRAFFIC_LIGHT_SPACE = 88;
 export function App(): ReactElement {
   const [workspaceState, setWorkspaceState] = useState<WorkspaceState | null>(null);
   const [linkContextMenu, setLinkContextMenu] = useState<AppLinkContextMenu | null>(null);
-  const { closeToast, isToastClosing, setWorkspaceError, toastMessage } = useAppToast();
+  const { closeToast, isToastClosing, setWorkspaceError, showToast, toastMessage } = useAppToast();
   const [leftPaneScrollHeading, setLeftPaneScrollHeading] = useState<string | undefined>(undefined);
   const [rightPaneScrollHeading, setRightPaneScrollHeading] = useState<string | undefined>(undefined);
   const [editorActionPulse, setEditorActionPulse] = useState(0);
@@ -522,6 +523,61 @@ export function App(): ReactElement {
     tabs
   });
 
+  const buildFocusedPreviewOutput = useCallback(async () => {
+    if (!activeFileTabInFocusedPane) return null;
+
+    return await buildPreviewOutputHtml({
+      content: activeFileTabInFocusedPane.content,
+      fileName: activeFileTabInFocusedPane.name,
+      path: activeFileTabInFocusedPane.path,
+      t,
+      title: activeFileTabInFocusedPane.name,
+      workspacePath: workspaceState?.activeWorkspace?.path
+    });
+  }, [activeFileTabInFocusedPane, t, workspaceState?.activeWorkspace?.path]);
+
+  const handlePrintPreview = useCallback((): void => {
+    if (!window.relic) return;
+
+    void buildFocusedPreviewOutput().then(async (payload) => {
+      if (!payload) {
+        setWorkspaceError("印刷するMarkdownファイルを開いてください。");
+        return;
+      }
+
+      const result = await window.relic!.printPreview({ html: payload.html, title: payload.title });
+      if (!result.ok) {
+        setWorkspaceError(result.error.message);
+        return;
+      }
+
+      if (result.value.status === "printed") showToast(t("output.printed"), "info");
+    }).catch((error) => {
+      setWorkspaceError(error instanceof Error ? error.message : String(error));
+    });
+  }, [buildFocusedPreviewOutput, setWorkspaceError, showToast, t]);
+
+  const handleSavePreviewAsPdf = useCallback((): void => {
+    if (!window.relic) return;
+
+    void buildFocusedPreviewOutput().then(async (payload) => {
+      if (!payload) {
+        setWorkspaceError("PDFとして保存するMarkdownファイルを開いてください。");
+        return;
+      }
+
+      const result = await window.relic!.savePreviewAsPdf(payload);
+      if (!result.ok) {
+        setWorkspaceError(result.error.message);
+        return;
+      }
+
+      if (result.value.status === "saved") showToast(t("output.pdfSaved"), "info");
+    }).catch((error) => {
+      setWorkspaceError(error instanceof Error ? error.message : String(error));
+    });
+  }, [buildFocusedPreviewOutput, setWorkspaceError, showToast, t]);
+
   const commands = useCommandPaletteCommands({
     activeFileName: activeFileTabInFocusedPane?.name ?? null,
     handleDeleteActiveFile,
@@ -595,6 +651,7 @@ export function App(): ReactElement {
     <I18nProvider language={editorSettings.language}>
     <div className="app-shell">
       <AppTitleBar
+        canOutputPreview={Boolean(activeFileTabInFocusedPane)}
         isRightPanelOpen={isRightPanelOpen}
         isSourceMode={isSourceMode}
         isSplit={isSplit}
@@ -606,8 +663,10 @@ export function App(): ReactElement {
         onCloseTabsToRight={closeTabsToRightWithMotion}
         onDuplicateTabFile={handleDuplicateTabFile}
         onOpenInOtherPane={openFileInOtherPane}
+        onPrintPreview={handlePrintPreview}
         onRevealTabFile={handleRevealTabFile}
         onRightPanelViewButton={handleRightPanelViewButton}
+        onSavePreviewAsPdf={handleSavePreviewAsPdf}
         onSourceModeToggle={() => setIsSourceMode((value) => !value)}
         onSplitToggle={toggleSplitWithMotion}
         onTabClose={closeTabWithMotion}
