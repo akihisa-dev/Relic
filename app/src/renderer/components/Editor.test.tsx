@@ -772,6 +772,37 @@ describe("Editor", () => {
     ]));
   });
 
+  it("ライブプレビューのチェックボックスクリックでMarkdownのチェック状態を切り替える", async () => {
+    const onChange = vi.fn();
+    const viewRef = createRef<EditorView | null>();
+    const { container } = render(
+      <Editor
+        content={"- [ ] task\n- [x] done"}
+        onChange={onChange}
+        settings={settings}
+        viewRef={viewRef}
+      />
+    );
+
+    await waitFor(() => expect(viewRef.current).not.toBeNull());
+
+    const firstCheckbox = container.querySelector(".cm-live-checkbox") as HTMLInputElement;
+    fireEvent.click(firstCheckbox);
+
+    await waitFor(() => {
+      expect(viewRef.current?.state.doc.toString()).toBe("- [x] task\n- [x] done");
+    });
+    expect(onChange).toHaveBeenLastCalledWith("- [x] task\n- [x] done");
+
+    const checkedBoxes = Array.from(container.querySelectorAll(".cm-live-checkbox")) as HTMLInputElement[];
+    fireEvent.click(checkedBoxes[1]);
+
+    await waitFor(() => {
+      expect(viewRef.current?.state.doc.toString()).toBe("- [x] task\n- [ ] done");
+    });
+    expect(onChange).toHaveBeenLastCalledWith("- [x] task\n- [ ] done");
+  });
+
   it("先頭フロントマターは水平線にせずメタデータとして薄く表示する", async () => {
     const content = "---\nstatus: draft\n---\n# 本文";
     const classes = await collectLivePreviewClasses(content, content.length, false);
