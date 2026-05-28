@@ -1,4 +1,5 @@
 import { mkdir, readFile, readdir, stat } from "node:fs/promises";
+import type { Stats } from "node:fs";
 import path from "node:path";
 
 import { app } from "electron";
@@ -33,12 +34,14 @@ interface FileCandidate {
   relPath: string;
 }
 
-interface ToolActionReadOperations {
+interface ToolActionFileOperations {
   readFile(filePath: string, encoding: BufferEncoding): Promise<string>;
+  stat(filePath: string): Promise<Stats>;
 }
 
-const defaultToolActionReadOperations: ToolActionReadOperations = {
-  readFile
+const defaultToolActionFileOperations: ToolActionFileOperations = {
+  readFile,
+  stat
 };
 
 function isFileCandidate(candidate: FileCandidate | null): candidate is FileCandidate {
@@ -47,20 +50,21 @@ function isFileCandidate(candidate: FileCandidate | null): candidate is FileCand
 
 export async function mergeFiles(
   input: MergeFilesInput,
-  operations: ToolActionReadOperations = defaultToolActionReadOperations
+  operations: Partial<ToolActionFileOperations> = {}
 ): Promise<RelicResult<string>> {
+  const fileOperations = { ...defaultToolActionFileOperations, ...operations };
   const context = await getToolWorkspaceContext();
   if (!context.ok) return context;
 
   const { workspacePath } = context.value;
   const fileTree = await readWorkspaceFileTree(workspacePath);
-  const candidates = await collectMergeCandidates(workspacePath, fileTree);
-  const filtered = await filterMergeCandidates(workspacePath, candidates, input, operations);
+  const candidates = await collectMergeCandidates(workspacePath, fileTree, fileOperations);
+  const filtered = await filterMergeCandidates(workspacePath, candidates, input, fileOperations);
 
   sortMergeCandidates(filtered, input.sortBy);
 
   const parts = await Promise.all(filtered.map(async (file) => {
-    const content = await operations.readFile(path.join(workspacePath, file.relPath), "utf-8");
+    const content = await fileOperations.readFile(path.join(workspacePath, file.relPath), "utf-8");
     const name = file.relPath.split("/").at(-1)?.replace(/\.md$/, "") ?? file.relPath;
     if (input.insertFilenameHeading) {
       return `# ${name}\n\n${content.trim()}`;
@@ -115,13 +119,17 @@ export async function splitFileByHeading(input: SplitFileByHeadingInput): Promis
   return ok(created);
 }
 
-export async function generateTitleList(input: GenerateTitleListInput): Promise<RelicResult<string>> {
+export async function generateTitleList(
+  input: GenerateTitleListInput,
+  operations: Partial<ToolActionFileOperations> = {}
+): Promise<RelicResult<string>> {
+  const fileOperations = { ...defaultToolActionFileOperations, ...operations };
   const context = await getToolWorkspaceContext();
   if (!context.ok) return context;
 
   const { workspacePath } = context.value;
   const fileTree = await readWorkspaceFileTree(workspacePath);
-  const collected = await collectTitleListFiles(workspacePath, fileTree, input.filterFolder);
+  const collected = await collectTitleListFiles(workspacePath, fileTree, input.filterFolder, fileOperations);
 
   if (input.sortBy === "mtime") {
     collected.sort((a, b) => b.mtime - a.mtime);
@@ -180,7 +188,8 @@ async function getToolWorkspaceContext(): Promise<RelicResult<ToolWorkspaceConte
 
 async function collectMergeCandidates(
   workspacePath: string,
-  nodes: WorkspaceTreeNode[]
+  nodes: WorkspaceTreeNode[],
+  operations: ToolActionFileOperations
 ): Promise<FileCandidate[]> {
   const candidates: FileCandidate[] = [];
 
@@ -190,8 +199,12 @@ async function collectMergeCandidates(
         await collect(node.children);
       } else {
         const absPath = path.join(workspacePath, node.path);
-        const s = await stat(absPath);
-        candidates.push({ relPath: node.path, mtime: s.mtimeMs, ctime: s.birthtimeMs });
+        try {
+          const s = await operations.stat(absPath);
+          candidates.push({ relPath: node.path, mtime: s.mtimeMs, ctime: s.birthtimeMs });
+        } catch {
+          return;
+        }
       }
     }));
   }
@@ -204,7 +217,7 @@ async function filterMergeCandidates(
   workspacePath: string,
   candidates: FileCandidate[],
   input: MergeFilesInput,
-  operations: ToolActionReadOperations
+  operations: ToolActionFileOperations
 ): Promise<FileCandidate[]> {
   if (input.filterType === "folder" && input.filterValue) {
     return candidates.filter((file) =>
@@ -277,7 +290,8 @@ function splitMarkdownSections(content: string, headingLevel: number): { title: 
 async function collectTitleListFiles(
   workspacePath: string,
   nodes: WorkspaceTreeNode[],
-  filterFolder: string | undefined
+  filterFolder: string | undefined,
+  operations: ToolActionFileOperations
 ): Promise<{ name: string; path: string; mtime: number }[]> {
   const collected: { name: string; path: string; mtime: number }[] = [];
 
@@ -292,8 +306,12 @@ async function collectTitleListFiles(
       } else {
         if (filterFolder && !node.path.startsWith(filterFolder + "/") && node.path !== filterFolder) return;
         const absPath = path.join(workspacePath, node.path);
-        const s = await stat(absPath);
-        collected.push({ name: node.name.replace(/\.md$/, ""), path: node.path, mtime: s.mtimeMs });
+        try {
+          const s = await operations.stat(absPath);
+          collected.push({ name: node.name.replace(/\.md$/, ""), path: node.path, mtime: s.mtimeMs });
+        } catch {
+          return;
+        }
       }
     }));
   }
