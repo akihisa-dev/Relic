@@ -211,6 +211,38 @@ describe("toolActions", () => {
     });
   });
 
+  it("再帰中に読めない子フォルダはスキップして目次生成を続行する", async () => {
+    const { workspacePath } = await prepareActiveWorkspace();
+    await mkdir(path.join(workspacePath, "blocked"));
+    await mkdir(path.join(workspacePath, "visible"));
+    await writeFile(path.join(workspacePath, "root.md"), "# Root\n", "utf8");
+    await writeFile(path.join(workspacePath, "blocked", "hidden.md"), "# Hidden\n", "utf8");
+    await writeFile(path.join(workspacePath, "visible", "note.md"), "# Note\n", "utf8");
+
+    const result = await generateTableOfContents(
+      {
+        includeSubfolders: true,
+        outputFolder: ".",
+        outputName: "Toc",
+        targetFolder: "."
+      },
+      {
+        async readdir(directoryPath, options) {
+          if (path.basename(directoryPath) === "blocked") {
+            throw Object.assign(new Error("Permission denied"), { code: "EACCES" });
+          }
+
+          return readdir(directoryPath, options);
+        }
+      }
+    );
+
+    expect(result).toEqual({ ok: true, value: "Toc.md" });
+    await expect(readFile(path.join(workspacePath, "Toc.md"), "utf8")).resolves.toBe(
+      "- **visible/**\n  - [[note]]\n- [[root]]\n"
+    );
+  });
+
   it("分割元ファイルが外部実体のシンボリックリンクなら読み込まない", async () => {
     const { outsidePath, workspacePath } = await prepareActiveWorkspace();
     await writeFile(path.join(outsidePath, "external.md"), "## A\n外部\n", "utf8");
