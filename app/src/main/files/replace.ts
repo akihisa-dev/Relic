@@ -1,4 +1,4 @@
-import { readFile, writeFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
 
 import type {
@@ -7,8 +7,9 @@ import type {
 } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { collectMarkdownPaths } from "../../shared/workspaceTree";
+import { atomicWriteTextFile } from "./atomicWrite";
 import { readWorkspaceFileTree } from "./fileTree";
-import { resolveWorkspaceRelativePath } from "./paths";
+import { resolveExistingWorkspacePath } from "./paths";
 import { buildReplacementPreviewLine, buildReplacementRegex } from "./replaceModel";
 
 export async function replaceInFile(
@@ -22,14 +23,14 @@ export async function replaceInFile(
     return fail("REPLACE_EMPTY_QUERY", "検索語句を入力してください。");
   }
 
-  const absolutePath = resolveWorkspaceRelativePath(workspacePath, relativePath);
+  if (path.extname(relativePath) !== ".md") {
+    return fail("FILE_TYPE_UNSUPPORTED", "Markdownファイルだけを対象にできます。");
+  }
+
+  const absolutePath = await resolveExistingWorkspacePath(workspacePath, relativePath);
 
   if (!absolutePath.ok) {
     return absolutePath;
-  }
-
-  if (path.extname(relativePath) !== ".md") {
-    return fail("FILE_TYPE_UNSUPPORTED", "Markdownファイルだけを対象にできます。");
   }
 
   const regex = buildReplacementRegex(searchQuery, isRegex);
@@ -45,7 +46,7 @@ export async function replaceInFile(
 
     if (count > 0) {
       const updated = content.replaceAll(regex.value, replacement);
-      await writeFile(absolutePath.value, updated, "utf8");
+      await atomicWriteTextFile(absolutePath.value, updated);
     }
 
     return ok({ count });
@@ -73,10 +74,7 @@ export async function searchAndReplace(
   try {
     const fileTree = await readWorkspaceFileTree(workspacePath);
     const matches: SearchAndReplaceMatch[] = [];
-    const files = collectMarkdownPaths(fileTree).flatMap((relativePath) => {
-      const absolutePath = resolveWorkspaceRelativePath(workspacePath, relativePath);
-      return absolutePath.ok ? [{ absolutePath: absolutePath.value, relativePath }] : [];
-    });
+    const files = await collectSafeMarkdownFiles(workspacePath, collectMarkdownPaths(fileTree));
     const fileContents = await Promise.all(
       files.map(async (file) => ({ ...file, content: await readFile(file.absolutePath, "utf8") }))
     );
@@ -127,10 +125,7 @@ export async function applySearchAndReplace(
   try {
     const fileTree = await readWorkspaceFileTree(workspacePath);
     let count = 0;
-    const files = collectMarkdownPaths(fileTree).flatMap((relativePath) => {
-      const absolutePath = resolveWorkspaceRelativePath(workspacePath, relativePath);
-      return absolutePath.ok ? [{ absolutePath: absolutePath.value, relativePath }] : [];
-    });
+    const files = await collectSafeMarkdownFiles(workspacePath, collectMarkdownPaths(fileTree));
     const fileContents = await Promise.all(
       files.map(async (file) => ({ ...file, content: await readFile(file.absolutePath, "utf8") }))
     );
@@ -141,7 +136,7 @@ export async function applySearchAndReplace(
       if (matches && matches.length > 0) {
         regex.value.lastIndex = 0;
         const updated = content.replaceAll(regex.value, replacement);
-        await writeFile(absolutePath, updated, "utf8");
+        await atomicWriteTextFile(absolutePath, updated);
         count += matches.length;
       }
 
@@ -156,4 +151,18 @@ export async function applySearchAndReplace(
       error instanceof Error ? error.message : String(error)
     );
   }
+}
+
+async function collectSafeMarkdownFiles(
+  workspacePath: string,
+  relativePaths: string[]
+): Promise<{ absolutePath: string; relativePath: string }[]> {
+  const files = await Promise.all(
+    relativePaths.map(async (relativePath) => {
+      const absolutePath = await resolveExistingWorkspacePath(workspacePath, relativePath);
+      return absolutePath.ok ? { absolutePath: absolutePath.value, relativePath } : null;
+    })
+  );
+
+  return files.filter((file): file is { absolutePath: string; relativePath: string } => file !== null);
 }

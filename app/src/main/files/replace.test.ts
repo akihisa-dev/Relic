@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readdir, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
@@ -25,6 +25,7 @@ describe("replaceInFile", () => {
 
     expect(result).toEqual({ ok: true, value: { count: 2 } });
     await expect(readFile(path.join(ws, "note.md"), "utf8")).resolves.toBe("baz bar baz");
+    await expect(readdir(ws)).resolves.toEqual(["note.md"]);
   });
 
   it("一致なしの場合はファイルを変更せず件数0を返す", async () => {
@@ -60,6 +61,23 @@ describe("replaceInFile", () => {
     const result = await replaceInFile(ws, "note.md", "[invalid", "ok", true);
 
     expect(result).toMatchObject({ ok: false });
+  });
+
+  it("実体がワークスペース外のシンボリックリンクは置換しない", async () => {
+    const ws = await mkdtemp(path.join(os.tmpdir(), "relic-replace-"));
+    const outside = await mkdtemp(path.join(os.tmpdir(), "relic-replace-outside-"));
+    temporaryPaths.push(ws, outside);
+
+    await writeFile(path.join(outside, "outside.md"), "foo", "utf8");
+    await symlink(path.join(outside, "outside.md"), path.join(ws, "linked.md"));
+
+    const result = await replaceInFile(ws, "linked.md", "foo", "bar", false);
+
+    expect(result).toMatchObject({
+      error: expect.objectContaining({ code: "WORKSPACE_PATH_OUTSIDE" }),
+      ok: false
+    });
+    await expect(readFile(path.join(outside, "outside.md"), "utf8")).resolves.toBe("foo");
   });
 });
 
@@ -113,5 +131,7 @@ describe("applySearchAndReplace", () => {
     expect(result).toEqual({ ok: true, value: { count: 2 } });
     await expect(readFile(path.join(ws, "a.md"), "utf8")).resolves.toBe("qux bar");
     await expect(readFile(path.join(ws, "sub", "b.md"), "utf8")).resolves.toBe("qux baz");
+    await expect(readdir(ws)).resolves.toEqual(["a.md", "sub"]);
+    await expect(readdir(path.join(ws, "sub"))).resolves.toEqual(["b.md"]);
   });
 });
