@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
@@ -182,6 +182,34 @@ describe("searchWorkspace", () => {
         lineNumber: 2,
         lineText: "needle",
         path: "boundary.md"
+      }])
+    });
+  });
+
+  it("読めないMarkdownファイルはスキップして検索を続行する", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-search-unreadable-"));
+    temporaryPaths.push(workspacePath);
+    await writeFile(path.join(workspacePath, "blocked.md"), "needle", "utf8");
+    await writeFile(path.join(workspacePath, "visible.md"), "needle", "utf8");
+
+    const result = await searchWorkspace(workspacePath, "needle", "fullText", undefined, {
+      async readFile(filePath, encoding) {
+        if (path.basename(filePath) === "blocked.md") {
+          throw Object.assign(new Error("Permission denied"), { code: "EACCES" });
+        }
+
+        return readFile(filePath, encoding);
+      },
+      stat
+    });
+
+    expect(result).toEqual({
+      ok: true,
+      value: searchResultSet([{
+        fileName: "visible",
+        lineNumber: 1,
+        lineText: "needle",
+        path: "visible.md"
       }])
     });
   });

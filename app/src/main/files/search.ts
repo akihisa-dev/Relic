@@ -1,4 +1,5 @@
 import { readFile, stat } from "node:fs/promises";
+import type { Stats } from "node:fs";
 import path from "node:path";
 
 import type {
@@ -17,11 +18,22 @@ import { resolveWorkspaceRelativePath } from "./paths";
 export const workspaceSearchMaxResults = 500;
 export const workspaceSearchMaxFileBytes = 2 * 1024 * 1024;
 
+interface SearchOperations {
+  readFile(filePath: string, encoding: BufferEncoding): Promise<string>;
+  stat(filePath: string): Promise<Stats>;
+}
+
+const defaultSearchOperations: SearchOperations = {
+  readFile,
+  stat
+};
+
 export async function searchWorkspace(
   workspacePath: string,
   query: string,
   mode: SearchMode,
-  frontmatterField?: string
+  frontmatterField?: string,
+  operations: SearchOperations = defaultSearchOperations
 ): Promise<RelicResult<WorkspaceSearchResultSet>> {
   const normalizedQuery = query.trim();
   const normalizedFrontmatterField = frontmatterField?.trim() ?? "";
@@ -56,14 +68,25 @@ export async function searchWorkspace(
       if (!absolutePath.ok) continue;
 
       const fileName = path.basename(relativePath, ".md");
-      const fileStats = await stat(absolutePath.value);
+      let content: string;
+      let fileStats: Stats;
+
+      try {
+        fileStats = await operations.stat(absolutePath.value);
+      } catch {
+        continue;
+      }
 
       if (fileStats.size > workspaceSearchMaxFileBytes) {
         skippedLargeFiles += 1;
         continue;
       }
 
-      const content = await readFile(absolutePath.value, "utf8");
+      try {
+        content = await operations.readFile(absolutePath.value, "utf8");
+      } catch {
+        continue;
+      }
 
       if (mode === "fileName") {
         let alias: string | null = null;
