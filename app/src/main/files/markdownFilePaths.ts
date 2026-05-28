@@ -5,6 +5,8 @@ import { validateBaseName } from "./names";
 import { resolveWorkspaceRelativePath, toWorkspaceRelativePath } from "./paths";
 import { pathExists } from "./fileSystem";
 
+const DEFAULT_MAX_COPY_NAME_CANDIDATES = 1000;
+
 export function normalizeMarkdownFileName(name: string): RelicResult<string> {
   const validatedName = validateBaseName(name, "ファイル名を入力してください。");
 
@@ -39,14 +41,15 @@ export function renamedMarkdownPath(relativePath: string, newName: string): Reli
 
 export async function createCopyRelativePath(
   workspacePath: string,
-  sourceRelativePath: string
+  sourceRelativePath: string,
+  maxCandidates = DEFAULT_MAX_COPY_NAME_CANDIDATES
 ): Promise<string> {
   const directory = path.dirname(sourceRelativePath);
   const extension = path.extname(sourceRelativePath);
   const baseName = path.basename(sourceRelativePath, extension);
   let copyIndex = 1;
 
-  while (true) {
+  while (copyIndex <= maxCandidates) {
     const copyName =
       copyIndex === 1 ? `${baseName} のコピー${extension}` : `${baseName} のコピー ${copyIndex}${extension}`;
     const candidateRelativePath = toWorkspaceRelativePath(path.join(directory, copyName));
@@ -62,4 +65,6 @@ export async function createCopyRelativePath(
 
     copyIndex += 1;
   }
+
+  throw new Error("コピー名の候補が多すぎます。");
 }
