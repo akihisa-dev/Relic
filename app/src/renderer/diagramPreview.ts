@@ -4,27 +4,13 @@ import { enqueueD2Render } from "./d2Renderer";
 import { buildDiagramError } from "./diagramErrorView";
 import { diagramLabel, diagramLanguageFor, type DiagramLanguage } from "./diagramLanguage";
 import { initializeDiagramPanZoom, type DiagramRenderHandle } from "./diagramPanZoom";
+import { beginDiagramRender } from "./diagramRenderState";
 import { decodeDiagramSourceAttribute } from "./diagramSourceAttribute";
 import { renderMermaidSvg } from "./mermaidRenderer";
 
 export { diagramLanguageFor, type DiagramLanguage } from "./diagramLanguage";
 export { buildDiagramError } from "./diagramErrorView";
 export type { DiagramRenderHandle } from "./diagramPanZoom";
-
-let renderTokenId = 0;
-const activeRenderStates = new WeakMap<HTMLElement, DiagramRenderState>();
-
-type DiagramRenderState =
-  | { language: DiagramLanguage; source: string; status: "rendering"; token: number }
-  | { handle: DiagramRenderHandle; language: DiagramLanguage; source: string; status: "rendered"; token: number }
-  | { error: unknown; language: DiagramLanguage; source: string; status: "error"; token: number }
-  | { language: DiagramLanguage; reason: "detached" | "superseded"; source: string; status: "stale"; token: number };
-
-type DiagramRenderContext = {
-  canApplyResult: () => boolean;
-  markError: (error: unknown) => void;
-  markRendered: (handle: DiagramRenderHandle) => void;
-};
 
 export function buildDiagramFallback(language: DiagramLanguage, source: string): HTMLElement {
   const pre = document.createElement("pre");
@@ -98,53 +84,6 @@ export function renderDiagramElements(root: ParentNode): void {
 async function renderDiagramSvg(language: DiagramLanguage, source: string): Promise<string> {
   if (language === "mermaid") return renderMermaidSvg(source);
   return enqueueD2Render(source);
-}
-
-function beginDiagramRender(
-  container: HTMLElement,
-  language: DiagramLanguage,
-  source: string
-): DiagramRenderContext {
-  const token = ++renderTokenId;
-  setDiagramRenderState(container, { language, source, status: "rendering", token });
-
-  const isCurrentRender = () => activeRenderStates.get(container)?.token === token;
-
-  const markStaleIfCurrent = (reason: "detached" | "superseded") => {
-    if (!isCurrentRender()) return;
-    setDiagramRenderState(container, { language, reason, source, status: "stale", token });
-  };
-
-  return {
-    canApplyResult: () => {
-      const current = activeRenderStates.get(container);
-
-      if (current?.token !== token || current.status !== "rendering") {
-        markStaleIfCurrent("superseded");
-        return false;
-      }
-
-      if (!container.isConnected) {
-        markStaleIfCurrent("detached");
-        return false;
-      }
-
-      return true;
-    },
-    markError: (error) => {
-      if (!isCurrentRender()) return;
-      setDiagramRenderState(container, { error, language, source, status: "error", token });
-    },
-    markRendered: (handle) => {
-      if (!isCurrentRender()) return;
-      setDiagramRenderState(container, { handle, language, source, status: "rendered", token });
-    }
-  };
-}
-
-function setDiagramRenderState(container: HTMLElement, state: DiagramRenderState): void {
-  activeRenderStates.set(container, state);
-  container.dataset.diagramRenderStatus = state.status;
 }
 
 function applyDiagramSvgIntrinsicSize(diagram: HTMLElement): void {
