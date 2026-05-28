@@ -14,7 +14,11 @@ import { fail, ok, type RelicResult } from "../../shared/result";
 import { parseMarkdownTags } from "../../shared/tags";
 import { readWorkspaceFileTree } from "../files/fileTree";
 import { parseFrontmatter } from "../files/frontmatter";
-import { resolveWorkspaceRelativePath, resolveWorkspaceRelativePathOrRoot } from "../files/paths";
+import {
+  resolveExistingWorkspacePath,
+  resolveExistingWorkspacePathOrRoot,
+  resolveNewWorkspacePath
+} from "../files/paths";
 import { readAppSettings } from "../settings/appSettings";
 import { toWorkspaceState } from "../workspace/workspaceService";
 
@@ -53,10 +57,10 @@ export async function mergeFiles(input: MergeFilesInput): Promise<RelicResult<st
   }));
 
   const merged = parts.join("\n\n---\n\n") + "\n";
-  const outputDir = resolveWorkspaceRelativePathOrRoot(workspacePath, input.outputFolder);
-  if (!outputDir.ok) return outputDir;
   const outputName = safeOutputName(input.outputName || "merged");
   if (!outputName.ok) return outputName;
+  const outputDir = await resolveToolOutputDirectory(workspacePath, input.outputFolder, outputName.value);
+  if (!outputDir.ok) return outputDir;
 
   await mkdir(outputDir.value, { recursive: true });
   const outputPath = await uniqueFilePath(outputDir.value, outputName.value);
@@ -70,7 +74,7 @@ export async function splitFileByHeading(input: SplitFileByHeadingInput): Promis
   if (!context.ok) return context;
 
   const { workspacePath } = context.value;
-  const absSource = resolveWorkspaceRelativePath(workspacePath, input.sourcePath);
+  const absSource = await resolveExistingWorkspacePath(workspacePath, input.sourcePath);
   if (!absSource.ok) return absSource;
   const content = await readFile(absSource.value, "utf-8");
   const sections = splitMarkdownSections(content, input.headingLevel);
@@ -79,7 +83,7 @@ export async function splitFileByHeading(input: SplitFileByHeadingInput): Promis
     return fail("SPLIT_NO_HEADINGS", `H${input.headingLevel} の見出しが見つかりませんでした。`);
   }
 
-  const outputDir = resolveWorkspaceRelativePathOrRoot(workspacePath, input.outputFolder);
+  const outputDir = await resolveToolOutputDirectory(workspacePath, input.outputFolder, "untitled");
   if (!outputDir.ok) return outputDir;
 
   await mkdir(outputDir.value, { recursive: true });
@@ -116,10 +120,10 @@ export async function generateTitleList(input: GenerateTitleListInput): Promise<
   const lines = collected.map((file) => `- [[${file.name}]]`);
   const content = lines.join("\n") + "\n";
 
-  const outputDir = resolveWorkspaceRelativePathOrRoot(workspacePath, input.outputFolder);
-  if (!outputDir.ok) return outputDir;
   const outputName = safeOutputName(input.outputName);
   if (!outputName.ok) return outputName;
+  const outputDir = await resolveToolOutputDirectory(workspacePath, input.outputFolder, outputName.value);
+  if (!outputDir.ok) return outputDir;
 
   await mkdir(outputDir.value, { recursive: true });
   const outputPath = await uniqueFilePath(outputDir.value, outputName.value);
@@ -135,17 +139,17 @@ export async function generateTableOfContents(
   if (!context.ok) return context;
 
   const { workspacePath } = context.value;
-  const targetAbsPath = resolveWorkspaceRelativePathOrRoot(workspacePath, input.targetFolder);
+  const targetAbsPath = await resolveExistingWorkspacePathOrRoot(workspacePath, input.targetFolder);
   if (!targetAbsPath.ok) return targetAbsPath;
   const lines: string[] = [];
 
   await collectTableOfContentsLines(targetAbsPath.value, input.targetFolder, 0, input.includeSubfolders, lines);
 
   const content = lines.join("\n") + "\n";
-  const outputDir = resolveWorkspaceRelativePathOrRoot(workspacePath, input.outputFolder);
-  if (!outputDir.ok) return outputDir;
   const outputName = safeOutputName(input.outputName);
   if (!outputName.ok) return outputName;
+  const outputDir = await resolveToolOutputDirectory(workspacePath, input.outputFolder, outputName.value);
+  if (!outputDir.ok) return outputDir;
 
   await mkdir(outputDir.value, { recursive: true });
   const outputPath = await uniqueFilePath(outputDir.value, outputName.value);
@@ -351,6 +355,27 @@ function safeOutputName(name: string): RelicResult<string> {
   }
 
   return ok(trimmed);
+}
+
+async function resolveToolOutputDirectory(
+  workspacePath: string,
+  outputFolder: string,
+  outputName: string
+): Promise<RelicResult<string>> {
+  const outputRelativePath = path.posix.join(
+    normalizeWorkspaceRelativeFolder(outputFolder),
+    outputName.endsWith(".md") ? outputName : `${outputName}.md`
+  );
+  const outputPath = await resolveNewWorkspacePath(workspacePath, outputRelativePath);
+
+  if (!outputPath.ok) return outputPath;
+
+  return ok(path.dirname(outputPath.value));
+}
+
+function normalizeWorkspaceRelativeFolder(folder: string): string {
+  const normalized = folder.replace(/\\/g, "/").trim();
+  return normalized === "" ? "." : normalized;
 }
 
 async function uniqueFilePath(dir: string, name: string): Promise<string> {
