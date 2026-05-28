@@ -44,7 +44,9 @@ export function replaceFileLinksWithCount(
     if (resolvedPath !== oldRelativePath) continue;
 
     const isPathBased = /\//.test(parsed.rawTargetBase);
-    const newTargetBase = isPathBased ? newPathWithoutExt : newBaseName;
+    const newRelativePath = `${newPathWithoutExt}.md`;
+    const canKeepBaseNameOnly = resolveWikiLinkPath(newBaseName, sourcePath) === newRelativePath;
+    const newTargetBase = isPathBased || !canKeepBaseNameOnly ? newPathWithoutExt : newBaseName;
 
     let newBody = newTargetBase;
     if (parsed.heading) newBody += `#${parsed.heading}`;

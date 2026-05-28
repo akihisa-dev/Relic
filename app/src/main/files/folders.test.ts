@@ -110,6 +110,22 @@ describe("renameFolder", () => {
     );
   });
 
+  it("フォルダリネーム時に配下ファイルへのパス付き内部リンクも更新する", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-rename-folder-"));
+    temporaryPaths.push(workspacePath);
+
+    await mkdir(path.join(workspacePath, "資料"));
+    await writeFile(path.join(workspacePath, "資料", "note.md"), "# Note", "utf8");
+    await writeFile(path.join(workspacePath, "source.md"), "[[資料/note]]", "utf8");
+
+    await expect(renameFolder(workspacePath, "資料", "Archive")).resolves.toMatchObject({
+      ok: true
+    });
+    await expect(readFile(path.join(workspacePath, "source.md"), "utf8")).resolves.toBe(
+      "[[Archive/note]]"
+    );
+  });
+
   it("同名フォルダや同名ファイルがある場合は上書きしない", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-rename-folder-"));
     temporaryPaths.push(workspacePath);
@@ -173,6 +189,23 @@ describe("moveFolder", () => {
     await expect(readFile(path.join(workspacePath, "archive", "資料", "note.md"), "utf8")).resolves.toBe("# Note");
   });
 
+  it("フォルダ移動時に配下ファイルへのパス付き内部リンクも更新する", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-move-folder-"));
+    temporaryPaths.push(workspacePath);
+
+    await mkdir(path.join(workspacePath, "資料"));
+    await mkdir(path.join(workspacePath, "archive"));
+    await writeFile(path.join(workspacePath, "資料", "note.md"), "# Note", "utf8");
+    await writeFile(path.join(workspacePath, "source.md"), "[[資料/note]]", "utf8");
+
+    await expect(moveFolder(workspacePath, "資料", "archive")).resolves.toMatchObject({
+      ok: true
+    });
+    await expect(readFile(path.join(workspacePath, "source.md"), "utf8")).resolves.toBe(
+      "[[archive/資料/note]]"
+    );
+  });
+
   it("移動先に同名フォルダがある場合は上書きしない", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-move-folder-"));
     temporaryPaths.push(workspacePath);
@@ -186,5 +219,17 @@ describe("moveFolder", () => {
     });
     expect((await stat(path.join(workspacePath, "資料"))).isDirectory()).toBe(true);
     expect((await stat(path.join(workspacePath, "archive", "資料"))).isDirectory()).toBe(true);
+  });
+
+  it("ワークスペース外の移動先フォルダを拒否する", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-move-folder-"));
+    temporaryPaths.push(workspacePath);
+
+    await mkdir(path.join(workspacePath, "資料"));
+
+    await expect(moveFolder(workspacePath, "資料", "../outside")).resolves.toMatchObject({
+      ok: false
+    });
+    expect((await stat(path.join(workspacePath, "資料"))).isDirectory()).toBe(true);
   });
 });
