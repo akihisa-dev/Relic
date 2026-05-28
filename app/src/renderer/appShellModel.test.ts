@@ -109,6 +109,9 @@ describe("appShellModel", () => {
       { icon: null, id: "settings", label: "Settings" }
     ];
 
+    const defaultEnabled = enabledRailViewsForFeatures(railViews, defaultFeatureToggles);
+    expect(defaultEnabled.map((view) => view.id)).toEqual(["files", "calendar", "settings"]);
+
     const enabled = enabledRailViewsForFeatures(railViews, {
       ...defaultFeatureToggles,
       calendar: false,

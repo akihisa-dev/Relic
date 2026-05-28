@@ -34,10 +34,10 @@ export const defaultFrontmatterTemplates: FrontmatterTemplate[] = [];
 
 export const defaultFeatureToggles: FeatureToggles = {
   calendar: true,
-  chronicle: true,
-  chronicleSettings: true,
-  tools: true,
-  frontmatter: true,
+  chronicle: false,
+  chronicleSettings: false,
+  tools: false,
+  frontmatter: false,
   rightPanel: true
 };
 

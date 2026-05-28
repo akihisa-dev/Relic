@@ -204,11 +204,13 @@ describe("FrontmatterPanel", () => {
 
 describe("SettingsPanel", () => {
   function renderSettingsPanel({
+    featureToggles = defaultFeatureToggles,
     language = "en",
     onFeatureTogglesSave = vi.fn(),
     onSave = vi.fn(),
     platform = "darwin"
   }: {
+    featureToggles?: typeof defaultFeatureToggles;
     language?: "en" | "ja";
     onFeatureTogglesSave?: (toggles: typeof defaultFeatureToggles) => void;
     onSave?: (settings: typeof defaultEditorSettings) => void;
@@ -218,7 +220,7 @@ describe("SettingsPanel", () => {
       <I18nProvider language={language}>
         <SettingsPanel
           appInfo={{ name: "Relic", platform, version: "1.2.3" }}
-          featureToggles={defaultFeatureToggles}
+          featureToggles={featureToggles}
           onFeatureTogglesSave={onFeatureTogglesSave}
           onSave={onSave}
           settings={defaultEditorSettings}
@@ -293,7 +295,10 @@ describe("SettingsPanel", () => {
 
   it("機能トグルを既存のFeatureToggles形式で保存する", () => {
     const onFeatureTogglesSave = vi.fn();
-    renderSettingsPanel({ onFeatureTogglesSave });
+    renderSettingsPanel({
+      featureToggles: { ...defaultFeatureToggles, chronicle: true, tools: true },
+      onFeatureTogglesSave
+    });
 
     fireEvent.click(screen.getByLabelText("File tools"));
 

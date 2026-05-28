@@ -20,6 +20,14 @@ function searchResultSet(results: unknown[]) {
   return { results, skippedLargeFiles: 0, truncated: false };
 }
 
+const allRailFeatureToggles = {
+  ...defaultFeatureToggles,
+  chronicle: true,
+  chronicleSettings: true,
+  frontmatter: true,
+  tools: true
+};
+
 describe("App", () => {
   beforeAll(installMatchMediaMock);
 
@@ -1013,6 +1021,7 @@ describe("App", () => {
 
   it("レールのフロントマターボタンから専用設定を開ける", async () => {
     window.relic = makeRelicApi({
+      getFeatureToggles: vi.fn().mockResolvedValue({ ok: true, value: allRailFeatureToggles }),
       getUserDefinedFields: vi.fn().mockResolvedValue({
         ok: true,
         value: [{ name: "category", type: "select", choices: ["draft", "done"] }]
@@ -1046,6 +1055,7 @@ describe("App", () => {
 
   it("レールの暦設定ボタンから専用設定を開ける", async () => {
     window.relic = makeRelicApi({
+      getFeatureToggles: vi.fn().mockResolvedValue({ ok: true, value: allRailFeatureToggles }),
       getWorkspaceChronicleCalendars: vi.fn().mockResolvedValue({
         ok: true,
         value: [
@@ -1083,6 +1093,7 @@ describe("App", () => {
     const updateChartEntry = vi.fn().mockResolvedValue({ ok: true, value: [] });
 
     window.relic = makeRelicApi({
+      getFeatureToggles: vi.fn().mockResolvedValue({ ok: true, value: allRailFeatureToggles }),
       getWorkspaceCharts: vi.fn().mockResolvedValue({
         ok: true,
         value: [{
@@ -1179,6 +1190,7 @@ describe("App", () => {
     const updateChartEntry = vi.fn().mockResolvedValue({ ok: true, value: [] });
 
     window.relic = makeRelicApi({
+      getFeatureToggles: vi.fn().mockResolvedValue({ ok: true, value: allRailFeatureToggles }),
       getWorkspaceCharts: vi.fn().mockResolvedValue({
         ok: true,
         value: [{
@@ -1247,6 +1259,7 @@ describe("App", () => {
     const updateChartEntry = vi.fn().mockResolvedValue({ ok: true, value: [] });
 
     window.relic = makeRelicApi({
+      getFeatureToggles: vi.fn().mockResolvedValue({ ok: true, value: allRailFeatureToggles }),
       getWorkspaceCharts: vi.fn().mockResolvedValue({
         ok: true,
         value: [{
@@ -1307,6 +1320,7 @@ describe("App", () => {
 
   it("dateチャートは表示対象が空でも日付チャートを表示する", async () => {
     window.relic = makeRelicApi({
+      getFeatureToggles: vi.fn().mockResolvedValue({ ok: true, value: allRailFeatureToggles }),
       getWorkspaceCharts: vi.fn().mockResolvedValue({
         ok: true,
         value: [{
@@ -1733,6 +1747,7 @@ describe("App", () => {
 
   it("旧形式の年表データが返っても年表タブを表示できる", async () => {
     window.relic = makeRelicApi({
+      getFeatureToggles: vi.fn().mockResolvedValue({ ok: true, value: allRailFeatureToggles }),
       getWorkspaceCharts: vi.fn().mockResolvedValue({
         ok: true,
         value: [{ endYear: 1333, fileName: "鎌倉時代", path: "history/kamakura.md", startYear: 1185 }]
@@ -1752,6 +1767,7 @@ describe("App", () => {
 
   it("画面タブ名は言語変更に追従する", async () => {
     window.relic = makeRelicApi({
+      getFeatureToggles: vi.fn().mockResolvedValue({ ok: true, value: allRailFeatureToggles }),
       getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
     });
 
@@ -1772,6 +1788,7 @@ describe("App", () => {
 
   it("別の画面タブを開いた後でも開いているレールボタンを押すと対象タブをアクティブにする", async () => {
     window.relic = makeRelicApi({
+      getFeatureToggles: vi.fn().mockResolvedValue({ ok: true, value: allRailFeatureToggles }),
       getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
     });
 
