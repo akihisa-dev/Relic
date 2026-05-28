@@ -5,7 +5,7 @@ import { marked, type Renderer } from "marked";
 import markedFootnote from "marked-footnote";
 
 import type { Translator } from "./i18n";
-import { diagramLanguageFor } from "./diagramPreview";
+import { diagramLanguageFor } from "./diagramLanguage";
 import { encodeDiagramSourceAttribute } from "./diagramSourceAttribute";
 
 export const maxEmbeddedFileLength = 20_000;

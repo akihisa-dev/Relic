@@ -2,7 +2,7 @@ import { StateEffect, StateField } from "@codemirror/state";
 import type { EditorState } from "@codemirror/state";
 import type { EditorView } from "@codemirror/view";
 
-import { diagramLanguageFor } from "./diagramPreview";
+import { diagramLanguageFor } from "./diagramLanguage";
 import { isClosingBacktickFence, parseBacktickOpeningFence } from "./markdownCodeFence";
 
 export interface DiagramEditRange {

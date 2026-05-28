@@ -11,15 +11,15 @@ import {
   type SourceRevealRange
 } from "./editorLivePreviewModel";
 import { diagramEditRangeField } from "./editorDiagramEditState";
+import { DiagramBlockWidget } from "./editorDiagramLivePreview";
 import {
   CheckboxWidget,
-  DiagramBlockWidget,
   HorizontalRuleWidget,
   InlineFormatWidget,
   ListMarkerWidget
 } from "./editorLivePreviewWidgets";
 import { findTableBlocks } from "./editorTables";
-import { diagramLanguageFor } from "./diagramPreview";
+import { diagramLanguageFor } from "./diagramLanguage";
 import { isClosingBacktickFence, parseBacktickOpeningFence } from "./markdownCodeFence";
 
 export { findClickableLinkAtPosition, type ClickableLinkAtPosition } from "./editorLivePreviewModel";
