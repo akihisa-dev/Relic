@@ -2,7 +2,7 @@ import { diagramLanguageFor } from "./diagramLanguage";
 import { renderDiagramElement } from "./diagramPreview";
 import { decodeDiagramSourceAttribute } from "./diagramSourceAttribute";
 import { getRenderedDiagramSvgText } from "./diagramSvg";
-import type { Translator } from "./i18n";
+import type { Translator } from "./i18nModel";
 import { escapeHtml, renderMarkdown } from "./previewMarkdown";
 
 export interface BuildPreviewOutputHtmlInput {
@@ -182,7 +182,11 @@ p {
 
 a,
 .wikilink {
+  background: none;
+  border: 0;
   color: #111111;
+  font: inherit;
+  padding: 0;
   text-decoration: underline;
 }
 

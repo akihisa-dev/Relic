@@ -76,7 +76,8 @@ export function useFileTreeItemState({
 
   useEffect(() => {
     return () => {
-      if (removeMotionTimerRef.current) window.clearTimeout(removeMotionTimerRef.current);
+      const removeMotionTimer = removeMotionTimerRef.current;
+      if (removeMotionTimer) window.clearTimeout(removeMotionTimer);
     };
   }, []);
 

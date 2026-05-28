@@ -54,9 +54,11 @@ export function AppFilesSidebar({
           />
         ) : null}
       </div>
-      <div
+      <button
+        aria-label={heading ? `${heading} resize` : "Resize sidebar"}
         className={`sidebar-resize-handle${isSidebarResizing ? " sidebar-resize-handle--active" : ""}`}
         onMouseDown={startSidebarResize}
+        type="button"
       />
     </aside>
   );

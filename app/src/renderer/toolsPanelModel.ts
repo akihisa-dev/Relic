@@ -8,7 +8,7 @@ import type {
   SplitHeadingLevel
 } from "../shared/ipc";
 import type { RelicResult } from "../shared/result";
-import type { Translator } from "./i18n";
+import type { Translator } from "./i18nModel";
 
 export interface TitleListDraft {
   filterFolder: string;

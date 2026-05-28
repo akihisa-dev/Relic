@@ -105,6 +105,7 @@ export function PaneView({
       onClick={onFocus}
       onFocusCapture={onFocus}
       onPointerDownCapture={onFocus}
+      role="presentation"
     >
       <PaneContentSurface
         activeTab={activeTab}

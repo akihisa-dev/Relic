@@ -22,9 +22,6 @@ import { parentFolderOf } from "../workspacePaths";
 import { FileTreeContextMenu } from "./FileTreeContextMenu";
 import { FileTreeItemRow } from "./FileTreeItemRow";
 
-export type { FileTreeExpansionRequest } from "../fileTreeModel";
-export { findNodeByPath } from "../fileTreeModel";
-
 export interface FileTreeProps {
   expansionRequest?: FileTreeExpansionRequest;
   isRoot?: boolean;
@@ -59,6 +56,9 @@ export interface FileTreeItemProps extends Omit<FileTreeProps, "isRoot" | "motio
   node: WorkspaceTreeNode;
 }
 
+const defaultSelectedItems: FileTreeMoveItem[] = [];
+const defaultSelectedPaths = new Set<string>();
+
 export function FileTreeItem({
   expansionRequest,
   isAppearing,
@@ -83,8 +83,8 @@ export function FileTreeItem({
   onSelectItem,
   onTogglePin,
   pinnedPaths,
-  selectedItems = [],
-  selectedPaths = new Set<string>()
+  selectedItems = defaultSelectedItems,
+  selectedPaths = defaultSelectedPaths
 }: FileTreeItemProps): ReactElement {
   const {
     cancelRename,
@@ -316,8 +316,8 @@ export function FileTree({
   onSelectItem,
   onTogglePin,
   pinnedPaths,
-  selectedItems = [],
-  selectedPaths = new Set<string>()
+  selectedItems = defaultSelectedItems,
+  selectedPaths = defaultSelectedPaths
 }: FileTreeProps & { animation?: "expand" }): ReactElement {
   const t = useT();
   const activeAppearingPaths = useFileTreeMotion(nodes, motionPaths);

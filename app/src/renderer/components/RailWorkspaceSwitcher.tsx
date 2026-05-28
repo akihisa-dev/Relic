@@ -190,7 +190,8 @@ export function RailWorkspaceSwitcher({
           className="tab-context-menu workspace-context-menu"
           onClick={(event) => event.stopPropagation()}
           role="menu"
-          style={{ left: contextMenu.x, position: "fixed", top: contextMenu.y, zIndex: 1000 }}
+          style={{ left: contextMenu.x, position: "fixed", top: contextMenu.y, zIndex: 40 }}
+          tabIndex={-1}
         >
           <button
             className="tab-context-menu-item"

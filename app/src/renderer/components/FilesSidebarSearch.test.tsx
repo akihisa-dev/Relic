@@ -41,11 +41,11 @@ describe("FilesSidebarSearch", () => {
     expect(props.onSearchQueryChange).toHaveBeenCalledWith("note");
 
     fireEvent.click(screen.getByRole("button", { name: "Search method" }));
-    expect(screen.getByRole("listbox", { name: "Search method" })).toBeInTheDocument();
+    expect(screen.getByRole("menu", { name: "Search method" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("option", { name: "Property" }));
 
     expect(props.onSearchModeChange).toHaveBeenCalledWith("frontmatter");
-    expect(screen.queryByRole("listbox", { name: "Search method" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("menu", { name: "Search method" })).not.toBeInTheDocument();
   });
 
   it("shows frontmatter field and value candidates in property search mode", () => {

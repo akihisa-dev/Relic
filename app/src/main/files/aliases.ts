@@ -11,13 +11,15 @@ export async function readWorkspaceAliases(workspacePath: string): Promise<Relic
   try {
     const fileTree = await readWorkspaceFileTree(workspacePath);
     const aliases: AliasIndex = {};
-
-    for (const relativePath of collectMarkdownPaths(fileTree)) {
+    const files = collectMarkdownPaths(fileTree).flatMap((relativePath) => {
       const absolutePath = resolveWorkspaceRelativePath(workspacePath, relativePath);
+      return absolutePath.ok ? [{ absolutePath: absolutePath.value, relativePath }] : [];
+    });
+    const fileContents = await Promise.all(
+      files.map(async (file) => ({ ...file, content: await readFile(file.absolutePath, "utf8") }))
+    );
 
-      if (!absolutePath.ok) continue;
-
-      const content = await readFile(absolutePath.value, "utf8");
+    for (const { content, relativePath } of fileContents) {
       const fileAliases = extractAliases(content);
 
       if (fileAliases.length > 0) {

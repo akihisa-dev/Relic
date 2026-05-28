@@ -130,9 +130,9 @@ export function EditorContextMenu({
     <div
       className="tab-context-menu editor-context-menu"
       role="menu"
-      style={{ left: contextMenu.x, position: "fixed", top: contextMenu.y, zIndex: 1000 }}
+      style={{ left: contextMenu.x, position: "fixed", top: contextMenu.y, zIndex: 40 }}
     >
-      <div className="editor-context-menu-grid editor-context-menu-grid--clipboard" role="group">
+      <div className="editor-context-menu-grid editor-context-menu-grid--clipboard">
         <IconMenuButton
           icon={<CopyIcon className="editor-context-menu-icon" size={16} />}
           label={t("editor.copy")}
@@ -159,7 +159,7 @@ export function EditorContextMenu({
         />
       </div>
       <div className="tab-context-menu-separator" />
-      <div className="editor-context-menu-section" role="group">
+      <div className="editor-context-menu-section">
         <div className="editor-context-menu-grid editor-context-menu-grid--inline">
           <IconMenuButton icon={<BoldIcon className="editor-context-menu-icon" size={16} />} label={t("toolbar.bold")} onClick={() => runEditorCommand((view) => wrapSelection(view, "**", "**", placeholderText))} />
           <IconMenuButton icon={<HighlightIcon className="editor-context-menu-icon" size={16} />} label={t("toolbar.highlight")} onClick={() => runEditorCommand((view) => wrapSelection(view, "==", "==", placeholderText))} />
@@ -177,7 +177,7 @@ export function EditorContextMenu({
         {markdownActions.showLinkDialog ? (
           <div className={toolbarPanelClass("editor-context-menu-inline-dialog", "link", markdownActions.closingPanel)}>
             <input
-              autoFocus
+              aria-label={t("toolbar.markdownLink")}
               className="editor-context-menu-input"
               onChange={(event) => markdownActions.setLinkUrl(event.target.value)}
               onKeyDown={(event) => {
@@ -203,7 +203,7 @@ export function EditorContextMenu({
         ) : null}
       </div>
       <div className="tab-context-menu-separator" />
-      <div className="editor-context-menu-section" role="group">
+      <div className="editor-context-menu-section">
         <div className="editor-context-menu-grid">
           <IconMenuButton icon={<BulletListIcon className="editor-context-menu-icon" size={16} />} label={t("toolbar.bulletList")} onClick={() => runEditorCommand((view) => insertListAtSelectedLines(view, "bullet", placeholderText))} />
           <IconMenuButton icon={<OrderedListIcon className="editor-context-menu-icon" size={16} />} label={t("toolbar.orderedList")} onClick={() => runEditorCommand((view) => insertListAtSelectedLines(view, "ordered", placeholderText))} />
@@ -211,7 +211,7 @@ export function EditorContextMenu({
         </div>
       </div>
       <div className="tab-context-menu-separator" />
-      <div className="editor-context-menu-section" role="group">
+      <div className="editor-context-menu-section">
         <div className="editor-context-menu-grid editor-context-menu-grid--heading">
           {TOOLBAR_HEADING_LEVELS.map((level) => (
             <IconMenuButton
@@ -229,7 +229,7 @@ export function EditorContextMenu({
         </div>
       </div>
       <div className="tab-context-menu-separator" />
-      <div className="editor-context-menu-section" role="group">
+      <div className="editor-context-menu-section">
         <div className="editor-context-menu-grid editor-context-menu-grid--insert">
           <IconMenuButton
             icon={<TableIcon className="editor-context-menu-icon" size={16} />}
@@ -243,6 +243,7 @@ export function EditorContextMenu({
         {markdownActions.showTableDialog ? (
           <div className={toolbarPanelClass("editor-context-menu-inline-dialog", "table", markdownActions.closingPanel)}>
             <input
+              aria-label={t("toolbar.rows")}
               className="editor-context-menu-input editor-context-menu-input--number"
               onChange={(event) => markdownActions.setTableRows(event.target.value)}
               onKeyDown={(event) => {
@@ -257,6 +258,7 @@ export function EditorContextMenu({
             />
             <span className="editor-context-menu-multiply">×</span>
             <input
+              aria-label={t("toolbar.columns")}
               className="editor-context-menu-input editor-context-menu-input--number"
               onChange={(event) => markdownActions.setTableCols(event.target.value)}
               onKeyDown={(event) => {
@@ -279,7 +281,7 @@ export function EditorContextMenu({
         ) : null}
       </div>
       <div className="tab-context-menu-separator" />
-      <div className="editor-context-menu-section" role="group">
+      <div className="editor-context-menu-section">
         <div className="editor-context-menu-grid editor-context-menu-grid--inline">
           <IconMenuButton icon={<ItalicIcon className="editor-context-menu-icon" size={16} />} label={t("toolbar.italic")} onClick={() => runEditorCommand((view) => wrapSelection(view, "*", "*", placeholderText))} />
           <IconMenuButton icon={<StrikethroughIcon className="editor-context-menu-icon" size={16} />} label={t("toolbar.strikethrough")} onClick={() => runEditorCommand((view) => wrapSelection(view, "~~", "~~", placeholderText))} />

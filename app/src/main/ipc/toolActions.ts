@@ -28,6 +28,10 @@ interface FileCandidate {
   relPath: string;
 }
 
+function isFileCandidate(candidate: FileCandidate | null): candidate is FileCandidate {
+  return candidate !== null;
+}
+
 export async function mergeFiles(input: MergeFilesInput): Promise<RelicResult<string>> {
   const context = await getToolWorkspaceContext();
   if (!context.ok) return context;
@@ -39,16 +43,14 @@ export async function mergeFiles(input: MergeFilesInput): Promise<RelicResult<st
 
   sortMergeCandidates(filtered, input.sortBy);
 
-  const parts: string[] = [];
-  for (const file of filtered) {
+  const parts = await Promise.all(filtered.map(async (file) => {
     const content = await readFile(path.join(workspacePath, file.relPath), "utf-8");
     const name = file.relPath.split("/").at(-1)?.replace(/\.md$/, "") ?? file.relPath;
     if (input.insertFilenameHeading) {
-      parts.push(`# ${name}\n\n${content.trim()}`);
-    } else {
-      parts.push(content.trim());
+      return `# ${name}\n\n${content.trim()}`;
     }
-  }
+    return content.trim();
+  }));
 
   const merged = parts.join("\n\n---\n\n") + "\n";
   const outputDir = resolveWorkspaceRelativePathOrRoot(workspacePath, input.outputFolder);
@@ -167,7 +169,7 @@ async function collectMergeCandidates(
   const candidates: FileCandidate[] = [];
 
   async function collect(items: WorkspaceTreeNode[]): Promise<void> {
-    for (const node of items) {
+    await Promise.all(items.map(async (node) => {
       if (node.type === "folder") {
         await collect(node.children);
       } else {
@@ -175,7 +177,7 @@ async function collectMergeCandidates(
         const s = await stat(absPath);
         candidates.push({ relPath: node.path, mtime: s.mtimeMs, ctime: s.birthtimeMs });
       }
-    }
+    }));
   }
 
   await collect(nodes);
@@ -194,34 +196,29 @@ async function filterMergeCandidates(
   }
 
   if (input.filterType === "tag" && input.filterValue) {
-    const tagFiltered: FileCandidate[] = [];
     const tag = input.filterValue.trim().replace(/^#/, "");
-    for (const candidate of candidates) {
+    const taggedCandidates = await Promise.all(candidates.map(async (candidate) => {
       const content = await readFile(path.join(workspacePath, candidate.relPath), "utf-8");
-      if (parseMarkdownTags(content).tags.includes(tag)) {
-        tagFiltered.push(candidate);
-      }
-    }
-    return tagFiltered;
+      return new Set(parseMarkdownTags(content).tags).has(tag) ? candidate : null;
+    }));
+    return taggedCandidates.filter(isFileCandidate);
   }
 
   if (input.filterType === "frontmatter") {
-    const frontmatterFiltered: FileCandidate[] = [];
     const field = input.frontmatterField?.trim() ?? "";
     const value = input.filterValue.trim();
 
     if (field && value) {
-      for (const candidate of candidates) {
+      const frontmatterFiltered = await Promise.all(candidates.map(async (candidate) => {
         const content = await readFile(path.join(workspacePath, candidate.relPath), "utf-8");
         const { data } = parseFrontmatter(content);
 
-        if (matchesFrontmatterField(data[field], value)) {
-          frontmatterFiltered.push(candidate);
-        }
-      }
+        return matchesFrontmatterField(data[field], value) ? candidate : null;
+      }));
+      return frontmatterFiltered.filter(isFileCandidate);
     }
 
-    return frontmatterFiltered;
+    return [];
   }
 
   return candidates;
@@ -260,7 +257,7 @@ async function collectTitleListFiles(
   const collected: { name: string; path: string; mtime: number }[] = [];
 
   async function collectFiles(items: WorkspaceTreeNode[], folderRelPath: string): Promise<void> {
-    for (const node of items) {
+    await Promise.all(items.map(async (node) => {
       if (node.type === "folder") {
         if (!filterFolder || folderRelPath === filterFolder || node.path === filterFolder) {
           await collectFiles(node.children, node.path);
@@ -268,12 +265,12 @@ async function collectTitleListFiles(
           await collectFiles(node.children, node.path);
         }
       } else {
-        if (filterFolder && !node.path.startsWith(filterFolder + "/") && node.path !== filterFolder) continue;
+        if (filterFolder && !node.path.startsWith(filterFolder + "/") && node.path !== filterFolder) return;
         const absPath = path.join(workspacePath, node.path);
         const s = await stat(absPath);
         collected.push({ name: node.name.replace(/\.md$/, ""), path: node.path, mtime: s.mtimeMs });
       }
-    }
+    }));
   }
 
   await collectFiles(nodes, "");

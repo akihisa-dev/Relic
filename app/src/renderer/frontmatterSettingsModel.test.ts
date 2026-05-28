@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { createTranslator } from "./i18n";
+import { createTranslator } from "./i18nModel";
 import {
   formatYamlExample,
   isFieldNameAvailable,

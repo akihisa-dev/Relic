@@ -79,10 +79,11 @@ export function usePaneTabMotion({
   }, [beforeCloseTabs, clearClosingPaneTabs, closeTab, closingPaneTabs]);
 
   const closeTabsWithMotion = useCallback((pane: PaneId, tabIds: string[], closeAction: () => void): void => {
-    const targetKeys = tabIds
-      .filter((tabId) => tabs[tabId])
-      .map((tabId) => paneTabMotionKey(pane, tabId))
-      .filter((key) => !closingPaneTabs.has(key));
+    const targetKeys = tabIds.flatMap((tabId) => {
+      if (!tabs[tabId]) return [];
+      const key = paneTabMotionKey(pane, tabId);
+      return closingPaneTabs.has(key) ? [] : [key];
+    });
 
     if (targetKeys.length === 0) return;
 

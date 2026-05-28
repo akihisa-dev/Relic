@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { PaneState, Tab } from "../store/editorStore";
-import { createTranslator } from "../i18n";
+import { createTranslator } from "../i18nModel";
 import {
   deleteTreeItemMessage,
   getActiveFileTab,

@@ -1,5 +1,5 @@
 import type { FeatureToggles, WorkspaceState } from "../shared/ipc";
-import type { Translator } from "./i18n";
+import type { Translator } from "./i18nModel";
 import type { PaneState, PanelTabKind, Tab } from "./store/editorStore";
 import type { SidebarView } from "./store/uiStore";
 
@@ -36,11 +36,10 @@ export function registeredWorkspacesForState(
 }
 
 export function openFilePathsForTabs(tabs: Record<string, Tab>): Set<string> {
-  return new Set(
-    Object.values(tabs)
-      .filter((tab) => tab.kind === "file")
-      .map((tab) => tab.path)
-  );
+  return Object.values(tabs).reduce<Set<string>>((paths, tab) => {
+    if (tab.kind === "file") paths.add(tab.path);
+    return paths;
+  }, new Set());
 }
 
 export function panelLabelsForTranslator(t: Translator): Record<PanelTabKind, string> {
@@ -53,11 +52,10 @@ export function panelLabelsForTranslator(t: Translator): Record<PanelTabKind, st
 }
 
 export function openPanelTabIdsForTabs(tabs: Record<string, Tab>): Set<PanelTabKind> {
-  return new Set(
-    Object.values(tabs)
-      .filter((tab) => tab.kind === "panel")
-      .map((tab) => tab.panel)
-  );
+  return Object.values(tabs).reduce<Set<PanelTabKind>>((panels, tab) => {
+    if (tab.kind === "panel") panels.add(tab.panel);
+    return panels;
+  }, new Set());
 }
 
 export function activePanelTabIdsForPanes(

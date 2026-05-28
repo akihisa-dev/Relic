@@ -37,10 +37,10 @@ export function FilesSidebarTreeSection({
 
               return (
                 <FileTreeItem
+                  key={p}
                   {...fileTreeProps}
                   expansionRequest={expansionRequest}
                   isPinned
-                  key={p}
                   node={node}
                   onDeleteSelectedItems={onDeleteSelectedItems}
                   onRequestExpansion={onRequestExpansion}

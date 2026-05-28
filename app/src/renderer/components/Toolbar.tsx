@@ -10,8 +10,6 @@ import {
   ToolbarListGroup
 } from "./ToolbarButtonGroups";
 
-export { insertBlockIds } from "../toolbarCommands";
-
 interface ToolbarProps {
   fallbackViewRef?: RefObject<EditorView | null>;
   onEditorAction?: () => void;

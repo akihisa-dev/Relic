@@ -1,5 +1,5 @@
 import { chronicleCalendarIds, type SearchMode, type UserDefinedField } from "../shared/ipc";
-import type { Translator } from "./i18n";
+import type { Translator } from "./i18nModel";
 
 const fixedFrontmatterSearchFields = [
   "tags",

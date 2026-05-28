@@ -27,7 +27,7 @@ import {
   withPastedTableCells
 } from "./editorTableWidgetModel";
 import { createLiveTableInteractionState } from "./editorTableWidgetState";
-import type { Translator } from "./i18n";
+import type { Translator } from "./i18nModel";
 
 export class TableWidget extends WidgetType {
   constructor(

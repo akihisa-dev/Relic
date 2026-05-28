@@ -79,6 +79,15 @@ export function PaneTabBar({
             onDragStart={(e) => onTabDragStart(e, tabId, isClosing)}
             onDragEnd={onTabDragEnd}
             onDrop={(e) => onTabDrop(e, tabId)}
+            onKeyDown={(e) => {
+              if (e.key !== "Enter" && e.key !== " ") return;
+              e.preventDefault();
+              e.stopPropagation();
+              if (isClosing) return;
+              onTabSelect(tabId);
+            }}
+            role="tab"
+            tabIndex={0}
           >
             {tab.isPinned ? (
               <span className="pane-tab-icon pane-tab-pin-icon" aria-hidden="true" data-testid="pane-tab-pin-icon">

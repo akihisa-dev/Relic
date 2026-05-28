@@ -5,8 +5,9 @@ import { createRef } from "react";
 import { describe, expect, it } from "vitest";
 
 import { defaultEditorSettings } from "../../shared/ipc";
+import { insertBlockIds } from "../toolbarCommands";
 import { Editor } from "./Editor";
-import { insertBlockIds, Toolbar } from "./Toolbar";
+import { Toolbar } from "./Toolbar";
 
 function createView(doc: string, selection: EditorSelection): EditorView {
   return new EditorView({

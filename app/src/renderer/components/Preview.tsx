@@ -1,13 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
-import type { MouseEvent, ReactElement } from "react";
+import type { ReactElement } from "react";
 
 import type { EditorSettings } from "../../shared/ipc";
 import { usePreviewEmbeds } from "../hooks/usePreviewEmbeds";
 import { useT } from "../i18n";
 import { renderDiagramElements } from "../diagramPreview";
 import { renderMarkdown, slugifyHeading, toggleNthCheckbox } from "../previewMarkdown";
-
-export { normalizeEmbedTarget } from "../previewMarkdown";
 
 interface PreviewProps {
   content: string;
@@ -36,6 +34,8 @@ export function Preview({
   workspacePath
 }: PreviewProps): ReactElement {
   const containerRef = useRef<HTMLDivElement>(null);
+  const handlePreviewActivationRef = useRef<(event: MouseEvent | KeyboardEvent) => void>(() => {});
+  const onScrollTargetHandledRef = useRef(onScrollTargetHandled);
   const embeds = usePreviewEmbeds(content, workspacePath);
   const t = useT();
 
@@ -44,11 +44,20 @@ export function Preview({
   }, [content, embeds, t, workspacePath]);
 
   useEffect(() => {
-    if (containerRef.current) renderDiagramElements(containerRef.current);
+    const container = containerRef.current;
+    if (!container) return;
+
+    container.innerHTML = html;
+    renderDiagramElements(container);
   }, [html, settings.theme]);
 
   useEffect(() => {
+    onScrollTargetHandledRef.current = onScrollTargetHandled;
+  }, [onScrollTargetHandled]);
+
+  useEffect(() => {
     if (!scrollTargetHeading || !containerRef.current) return;
+    let handledTimer: ReturnType<typeof setTimeout> | undefined;
 
     const id = slugifyHeading(scrollTargetHeading);
     const headings = containerRef.current.querySelectorAll<HTMLElement>("h1,h2,h3,h4,h5,h6");
@@ -56,17 +65,26 @@ export function Preview({
 
     if (el) {
       el.scrollIntoView({ behavior: "smooth", block: "start" });
-      onScrollTargetHandled?.();
+      handledTimer = setTimeout(() => onScrollTargetHandledRef.current?.(), 0);
     }
-  }, [scrollTargetHeading, html, onScrollTargetHandled]);
 
-  const handleClick = useCallback(
-    (e: MouseEvent<HTMLDivElement>) => {
-      const target = e.target as HTMLElement;
+    return () => {
+      if (handledTimer) clearTimeout(handledTimer);
+    };
+  }, [scrollTargetHeading, html]);
+
+  const handlePreviewActivation = useCallback(
+    (event: MouseEvent | KeyboardEvent) => {
+      if (event instanceof KeyboardEvent && event.key !== "Enter" && event.key !== " ") return;
+
+      const target = event.target as HTMLElement;
+      const currentTarget = event.currentTarget;
+      if (!(currentTarget instanceof HTMLDivElement)) return;
+
       const wikiLink = target.closest<HTMLElement>(".wikilink");
 
       if (wikiLink?.dataset.target && onOpenWikiLink) {
-        e.preventDefault();
+        event.preventDefault();
         const fullTarget = wikiLink.dataset.target;
         const hashIndex = fullTarget.indexOf("#");
 
@@ -81,13 +99,11 @@ export function Preview({
 
       if (target.tagName !== "INPUT" || (target as HTMLInputElement).type !== "checkbox") return;
 
-      e.preventDefault();
+      event.preventDefault();
 
       if (!onChange) return;
 
-      const checkboxes = (e.currentTarget as HTMLDivElement).querySelectorAll<HTMLInputElement>(
-        'input[type="checkbox"]'
-      );
+      const checkboxes = currentTarget.querySelectorAll<HTMLInputElement>('input[type="checkbox"]');
       const index = Array.from(checkboxes).indexOf(target as HTMLInputElement);
 
       if (index === -1) return;
@@ -96,6 +112,26 @@ export function Preview({
     },
     [content, onChange, onOpenWikiLink]
   );
+
+  useEffect(() => {
+    handlePreviewActivationRef.current = handlePreviewActivation;
+  }, [handlePreviewActivation]);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    const handlePreviewEvent = (event: MouseEvent | KeyboardEvent): void => {
+      handlePreviewActivationRef.current(event);
+    };
+
+    container.addEventListener("click", handlePreviewEvent);
+    container.addEventListener("keydown", handlePreviewEvent);
+
+    return () => {
+      container.removeEventListener("click", handlePreviewEvent);
+      container.removeEventListener("keydown", handlePreviewEvent);
+    };
+  }, []);
 
   const style: React.CSSProperties = {
     fontFamily: fontFamilyMap[settings.font],
@@ -112,8 +148,6 @@ export function Preview({
     <div
       ref={containerRef}
       className="preview-body"
-      dangerouslySetInnerHTML={{ __html: html }}
-      onClick={handleClick}
       style={style}
     />
   );

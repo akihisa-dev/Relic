@@ -10,7 +10,7 @@ export function getRenderedDiagramSvgText(root: ParentNode): string | null {
   return hasRenderableSvg(text) ? text : null;
 }
 
-export function hasRenderableSvg(svg: string): boolean {
+function hasRenderableSvg(svg: string): boolean {
   const match = /<svg\b[^>]*>([\s\S]*?)<\/svg>/i.exec(svg.trim());
   return Boolean(match?.[1].trim());
 }

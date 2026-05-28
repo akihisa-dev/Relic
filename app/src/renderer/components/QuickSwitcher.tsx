@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { ReactElement } from "react";
 
 import { useT } from "../i18n";
@@ -39,7 +39,9 @@ function getDirPath(filePath: string): string {
   return parts.join("/");
 }
 
-export function QuickSwitcher({ aliasesByPath = {}, filePaths, onClose, onSelect }: QuickSwitcherProps): ReactElement {
+const defaultAliasesByPath: Record<string, string[]> = {};
+
+export function QuickSwitcher({ aliasesByPath = defaultAliasesByPath, filePaths, onClose, onSelect }: QuickSwitcherProps): ReactElement {
   const t = useT();
   const [isClosing, setIsClosing] = useState(false);
   const [query, setQuery] = useState("");
@@ -60,18 +62,19 @@ export function QuickSwitcher({ aliasesByPath = {}, filePaths, onClose, onSelect
     setSelectedIndex(0);
   }, [query]);
 
-  const requestClose = (): void => {
+  const requestClose = useCallback((): void => {
     if (isClosing) return;
     setIsClosing(true);
     closeTimerRef.current = window.setTimeout(() => {
       onClose();
       closeTimerRef.current = null;
     }, 130);
-  };
+  }, [isClosing, onClose]);
 
   useEffect(() => {
     return () => {
-      if (closeTimerRef.current) window.clearTimeout(closeTimerRef.current);
+      const closeTimer = closeTimerRef.current;
+      if (closeTimer) window.clearTimeout(closeTimer);
     };
   }, []);
 
@@ -91,9 +94,10 @@ export function QuickSwitcher({ aliasesByPath = {}, filePaths, onClose, onSelect
   };
 
   return (
-    <div className={`modal-overlay${isClosing ? " modal-overlay--closing" : ""}`} onClick={requestClose}>
-      <div className={`quick-switcher${isClosing ? " quick-switcher--closing" : ""}`} onClick={(e) => e.stopPropagation()}>
+    <div className={`modal-overlay${isClosing ? " modal-overlay--closing" : ""}`} onClick={requestClose} role="presentation">
+      <div className={`quick-switcher${isClosing ? " quick-switcher--closing" : ""}`} onClick={(e) => e.stopPropagation()} role="presentation">
         <input
+          aria-label={t("command.quickSwitcher")}
           ref={inputRef}
           className="command-palette-input"
           onChange={(e) => setQuery(e.target.value)}
@@ -119,16 +123,18 @@ export function QuickSwitcher({ aliasesByPath = {}, filePaths, onClose, onSelect
             const alias = matchingAlias(filePath, query, aliasesByPath);
 
             return (
-              <li
-                className={`command-item${i === selectedIndex ? " command-item--selected" : ""}`}
-                key={filePath}
-                onClick={() => select(filePath)}
-                onMouseEnter={() => setSelectedIndex(i)}
-              >
-                <span className="command-label">{basename}</span>
-                {alias || showPath ? (
-                  <span className="command-shortcut">{alias ? `alias: ${alias}` : getDirPath(filePath)}</span>
-                ) : null}
+              <li key={filePath}>
+                <button
+                  className={`command-item${i === selectedIndex ? " command-item--selected" : ""}`}
+                  onClick={() => select(filePath)}
+                  onMouseEnter={() => setSelectedIndex(i)}
+                  type="button"
+                >
+                  <span className="command-label">{basename}</span>
+                  {alias || showPath ? (
+                    <span className="command-shortcut">{alias ? `alias: ${alias}` : getDirPath(filePath)}</span>
+                  ) : null}
+                </button>
               </li>
             );
           })}

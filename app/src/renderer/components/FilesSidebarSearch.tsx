@@ -90,7 +90,7 @@ export function FilesSidebarSearch({
         />
       </label>
       {isSearchMethodMenuOpen ? (
-        <div className="files-search-method-menu" role="listbox" aria-label={t("files.searchMethod")}>
+        <div className="files-search-method-menu" role="menu" aria-label={t("files.searchMethod")}>
           {searchModeOptions.map((option) => (
             <button
               aria-selected={option.mode === searchMode}
@@ -125,7 +125,7 @@ export function FilesSidebarSearch({
           {frontmatterValueCandidates.length > 0 ? (
             <datalist id="files-search-frontmatter-values">
               {frontmatterValueCandidates.map((candidate) => (
-                <option key={candidate} value={candidate} />
+                <option key={candidate} value={candidate}>{candidate}</option>
               ))}
             </datalist>
           ) : null}

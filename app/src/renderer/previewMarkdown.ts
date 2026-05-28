@@ -4,7 +4,7 @@ import katex from "katex";
 import { marked, type Renderer } from "marked";
 import markedFootnote from "marked-footnote";
 
-import type { Translator } from "./i18n";
+import type { Translator } from "./i18nModel";
 import { diagramLanguageFor } from "./diagramLanguage";
 import { encodeDiagramSourceAttribute } from "./diagramSourceAttribute";
 
@@ -93,7 +93,7 @@ const obsidianExtension = {
         }
       },
       renderer(token: { label: string; target: string }) {
-        return `<span class="wikilink" data-target="${token.target}">${token.label}</span>`;
+        return `<button class="wikilink" data-target="${token.target}" type="button">${token.label}</button>`;
       }
     }
   ]
@@ -237,7 +237,7 @@ export function renderMarkdown(
   return sanitized;
 }
 
-export function renderFileEmbed(
+function renderFileEmbed(
   target: string,
   embeds: Map<string, EmbedState>,
   workspacePath: string | null | undefined,

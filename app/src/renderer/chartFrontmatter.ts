@@ -13,10 +13,10 @@ export function readYamlArrayField(yamlText: string, field: string): string[] {
 
   if (!match) return [];
 
-  return match[1]
-    .split(",")
-    .map((value) => value.trim().replace(/^['"]|['"]$/g, ""))
-    .filter(Boolean);
+  return match[1].split(",").flatMap((value) => {
+    const item = value.trim().replace(/^['"]|['"]$/g, "");
+    return item ? [item] : [];
+  });
 }
 
 function escapeRegExp(value: string): string {

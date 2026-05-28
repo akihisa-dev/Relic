@@ -281,7 +281,7 @@ function findParagraphEndLineNumbers(state: EditorState): number[] {
     if (paragraphEnd !== null) lineNumbers.add(paragraphEnd);
   }
 
-  return [...lineNumbers].sort((a, b) => a - b);
+  return Array.from(lineNumbers).toSorted((a, b) => a - b);
 }
 
 function listPrefix(kind: ListFormatKind, index: number): string {

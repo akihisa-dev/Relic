@@ -3,7 +3,7 @@ import { useWorkspaceFileMutationActions } from "./useWorkspaceFileMutationActio
 import { useWorkspaceFileOpenActions } from "./useWorkspaceFileOpenActions";
 import { useWorkspaceRegistryActions } from "./useWorkspaceRegistryActions";
 import type { WorkspaceFileActionsContext } from "./workspaceFileActionTypes";
-import type { Translator } from "../i18n";
+import type { Translator } from "../i18nModel";
 
 type UseWorkspaceFileActionsInput = WorkspaceFileActionsContext & {
   beforeCloseAllTabs?: () => Promise<boolean> | boolean;

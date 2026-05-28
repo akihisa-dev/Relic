@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { WorkspaceState, WorkspaceTreeNode } from "../../shared/ipc";
-import { createTranslator } from "../i18n";
+import { createTranslator } from "../i18nModel";
 import type { Tab } from "../store/editorStore";
 import {
   buildFolderTabPathUpdates,

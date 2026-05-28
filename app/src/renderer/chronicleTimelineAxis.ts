@@ -182,7 +182,7 @@ export function buildVisibleChronicleGuideTicks(
     }));
 }
 
-export function buildChronicleTicks(axisStart: number, axisEnd: number, interval: number): number[] {
+function buildChronicleTicks(axisStart: number, axisEnd: number, interval: number): number[] {
   const first = firstChronicleTickYear(axisToYear(axisStart), interval);
   const endYear = axisToYear(axisEnd);
   const ticks: number[] = [];
@@ -197,7 +197,7 @@ export function buildChronicleTicks(axisStart: number, axisEnd: number, interval
   return ticks;
 }
 
-export function firstChronicleTickYear(startYear: number, interval: number): number {
+function firstChronicleTickYear(startYear: number, interval: number): number {
   if (interval <= 1) return startYear;
   return Math.ceil(startYear / interval) * interval;
 }
@@ -206,15 +206,15 @@ export function chronicleAxisTickInterval(interval: number): number {
   return Math.max(1, interval);
 }
 
-export function chronicleMajorGuideInterval(interval: number): number {
+function chronicleMajorGuideInterval(interval: number): number {
   return interval === 1 ? 10 : 100;
 }
 
-export function chronicleMinorGuideInterval(interval: number): number {
+function chronicleMinorGuideInterval(interval: number): number {
   return interval === 100 ? 10 : interval;
 }
 
-export function buildDateTicks(axisStart: number, axisEnd: number, unit: DateAxisSegmentUnit): number[] {
+function buildDateTicks(axisStart: number, axisEnd: number, unit: DateAxisSegmentUnit): number[] {
   const ticks: number[] = [];
   let cursor = previousDateUnit(axisStart, unit);
 
@@ -423,7 +423,7 @@ export function nextDateUnit(value: number, unit: DateAxisSegmentUnit): number {
   return Math.floor(date.getTime() / 86_400_000);
 }
 
-export function previousDateUnit(value: number, unit: DateAxisSegmentUnit): number {
+function previousDateUnit(value: number, unit: DateAxisSegmentUnit): number {
   return startOfDateUnit(value, unit);
 }
 
@@ -476,7 +476,7 @@ export function formatDateAxisSegmentLabel(value: number, unit: DateAxisSegmentU
   return String(month).padStart(2, "0");
 }
 
-export function formatChronicleAxisSegmentLabel(year: number): string {
+function formatChronicleAxisSegmentLabel(year: number): string {
   return year < 0 ? `−${Math.abs(year)}` : String(year);
 }
 

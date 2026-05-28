@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { MouseEvent } from "react";
 
 import type { MarkdownFileContent } from "../../shared/ipc";
-import type { Translator } from "../i18n";
+import type { Translator } from "../i18nModel";
 import { useEditorStore, type PaneId } from "../store/editorStore";
 import type { RailTabFlight, SidebarCreateFlight } from "./useRailFlights";
 
@@ -54,7 +54,8 @@ export function useSidebarFileInteractions({
 
   useEffect(() => {
     return () => {
-      if (openingFileTimerRef.current) clearTimeout(openingFileTimerRef.current);
+      const openingFileTimer = openingFileTimerRef.current;
+      if (openingFileTimer) clearTimeout(openingFileTimer);
     };
   }, []);
 

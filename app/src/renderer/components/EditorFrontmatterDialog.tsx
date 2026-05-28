@@ -1,7 +1,7 @@
 import type { ReactElement } from "react";
 
 import type { FrontmatterDialogRequest } from "../editorFrontmatter";
-import type { Translator } from "../i18n";
+import type { Translator } from "../i18nModel";
 
 interface EditorFrontmatterDialogProps {
   candidates: string[];
@@ -27,12 +27,12 @@ export function EditorFrontmatterDialog({
   if (!dialog) return null;
 
   return (
-    <div className="frontmatter-add-dialog" role="dialog" aria-modal="true">
+    <dialog aria-modal="true" className="frontmatter-add-dialog" open>
       <div className="frontmatter-add-dialog-title">
         {dialog.type === "property" ? t("frontmatter.addProperty") : t("frontmatter.addValueToField", { field: dialog.key })}
       </div>
       <input
-        autoFocus
+        aria-label={dialog.type === "property" ? t("frontmatter.propertyName") : t("frontmatter.value")}
         className="frontmatter-add-dialog-input"
         list={candidates.length > 0 ? "frontmatter-add-dialog-candidates" : undefined}
         onChange={(event) => onValueChange(event.target.value)}
@@ -47,7 +47,7 @@ export function EditorFrontmatterDialog({
       {candidates.length > 0 ? (
         <datalist id="frontmatter-add-dialog-candidates">
           {candidates.map((candidate) => (
-            <option key={candidate} value={candidate} />
+            <option key={candidate} value={candidate}>{candidate}</option>
           ))}
         </datalist>
       ) : null}
@@ -56,6 +56,6 @@ export function EditorFrontmatterDialog({
         <button onClick={onCancel} type="button">{t("common.cancel")}</button>
         <button onClick={onSubmit} type="button">{t("frontmatter.addField")}</button>
       </div>
-    </div>
+    </dialog>
   );
 }

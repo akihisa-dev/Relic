@@ -122,7 +122,8 @@ export function useToolbarActions({
 
   useEffect(() => {
     return () => {
-      if (closePanelTimerRef.current) clearTimeout(closePanelTimerRef.current);
+      const closePanelTimer = closePanelTimerRef.current;
+      if (closePanelTimer) clearTimeout(closePanelTimer);
     };
   }, []);
 

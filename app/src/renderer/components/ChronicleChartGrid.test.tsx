@@ -315,7 +315,7 @@ describe("ChronicleChartGrid", () => {
     expect(container.querySelector(".chronicle-vertical-panel .chronicle-vertical-minimap")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "上に8件のファイルがあります" }));
     fireEvent.click(screen.getByRole("button", { name: "下に42件のファイルがあります" }));
-    fireEvent.pointerDown(screen.getByRole("slider", { name: "縦方向ミニマップ" }));
+    fireEvent.pointerDown(screen.getByRole("scrollbar", { name: "縦方向ミニマップ" }));
 
     expect(props.onVerticalJump).toHaveBeenCalledWith(0);
     expect(props.onVerticalJump).toHaveBeenCalledWith(20);

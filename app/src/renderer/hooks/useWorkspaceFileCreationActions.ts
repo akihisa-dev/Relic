@@ -6,7 +6,7 @@ import {
   nextUniqueFolderName
 } from "./workspaceFileActionHelpers";
 import type { WorkspaceFileActionsContext } from "./workspaceFileActionTypes";
-import type { Translator } from "../i18n";
+import type { Translator } from "../i18nModel";
 
 type WorkspaceFileCreationInput = Pick<
   WorkspaceFileActionsContext,

@@ -3,7 +3,6 @@ import type { EditorView } from "@codemirror/view";
 import { findFrontmatterBlock, findFrontmatterLineRange, findTopLevelYamlFieldEntries } from "./editorFrontmatterModel";
 
 export {
-  availableFieldNames,
   choicesFor,
   chronicleInputValue,
   dateInputValue,
@@ -12,8 +11,6 @@ export {
   findFrontmatterLineRange,
   findTopLevelYamlFieldEntries,
   hasInvalidFrontmatterYaml,
-  findYamlInlineComment,
-  findYamlScalarQuote,
   fixedFrontmatterFieldNames,
   firstArrayValue,
   frontmatterDialogRequestEvent,
@@ -22,7 +19,6 @@ export {
   isEditableScalar,
   isFixedDateRangeField,
   isSingleValueField,
-  isYamlFlowSequence,
   parseChronicleYearInput,
   parseDateInput,
   parseScalarValue,
@@ -30,16 +26,12 @@ export {
   scalarInputValue,
   serializeData,
   serializeDataPreservingYaml,
-  serializeEntryPreservingInlineComment,
-  serializeEntryPreservingQuote,
-  serializeFlowScalar,
   shouldSerializeArrayAsFlowSequence,
   type FrontmatterBlock,
   type FrontmatterDialogRequest,
   type YamlFieldEntry
 } from "./editorFrontmatterModel";
 export {
-  buildFrontmatterPropertiesDecorations,
   createFrontmatterPropertiesField,
   frontmatterCollapsedField,
   frontmatterCollapsedValue,

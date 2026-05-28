@@ -12,13 +12,15 @@ export async function readFrontmatterValueCandidates(
   try {
     const fileTree = await readWorkspaceFileTree(workspacePath);
     const valuesByField = new Map<string, Set<string>>();
-
-    for (const relativePath of collectMarkdownPaths(fileTree)) {
+    const files = collectMarkdownPaths(fileTree).flatMap((relativePath) => {
       const absolutePath = resolveWorkspaceRelativePath(workspacePath, relativePath);
+      return absolutePath.ok ? [{ absolutePath: absolutePath.value, relativePath }] : [];
+    });
+    const fileContents = await Promise.all(
+      files.map(async (file) => ({ ...file, content: await readFile(file.absolutePath, "utf8") }))
+    );
 
-      if (!absolutePath.ok) continue;
-
-      const content = await readFile(absolutePath.value, "utf8");
+    for (const { content } of fileContents) {
       const { data } = parseFrontmatter(content);
 
       for (const [fieldName, value] of Object.entries(data)) {
@@ -31,11 +33,11 @@ export async function readFrontmatterValueCandidates(
     }
 
     return ok(Object.fromEntries(
-      [...valuesByField.entries()]
-        .sort(([a], [b]) => a.localeCompare(b, "ja"))
+      Array.from(valuesByField.entries())
+        .toSorted(([a], [b]) => a.localeCompare(b, "ja"))
         .map(([fieldName, values]) => [
           fieldName,
-          [...values].sort((a, b) => a.localeCompare(b, "ja"))
+          Array.from(values).toSorted((a, b) => a.localeCompare(b, "ja"))
         ])
     ));
   } catch (error) {

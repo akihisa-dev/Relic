@@ -1,4 +1,4 @@
-export function readEditorClipboardText(): string {
+function readEditorClipboardText(): string {
   if (window.relic?.readClipboardText) {
     return window.relic.readClipboardText();
   }

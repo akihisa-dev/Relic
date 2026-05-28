@@ -4,7 +4,8 @@ import type { WorkspaceState } from "../../shared/ipc";
 import { chartIdForRailView, type AppRailView, type AppRailViewId } from "../appShellModel";
 import type { PanelTabKind } from "../store/editorStore";
 import type { SidebarView } from "../store/uiStore";
-import { IconFiles, RailWorkspaceSwitcher } from "./RailNavigation";
+import { IconFiles } from "./RailNavigationIcons";
+import { RailWorkspaceSwitcher } from "./RailWorkspaceSwitcher";
 
 interface AppRailProps {
   activePanelTabIds: Set<PanelTabKind>;

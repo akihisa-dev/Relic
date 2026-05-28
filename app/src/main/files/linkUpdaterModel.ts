@@ -43,7 +43,7 @@ export function replaceFileLinksWithCount(
     const resolvedPath = resolveWikiLinkPath(parsed.targetBase, sourcePath);
     if (resolvedPath !== oldRelativePath) continue;
 
-    const isPathBased = parsed.rawTargetBase.includes("/");
+    const isPathBased = /\//.test(parsed.rawTargetBase);
     const newTargetBase = isPathBased ? newPathWithoutExt : newBaseName;
 
     let newBody = newTargetBase;
@@ -96,7 +96,7 @@ export function replaceFolderLinksWithCount(
       ? parsed.rawTargetBase
       : `${parsed.rawTargetBase}.md`;
 
-    if (!rawTargetWithExt.includes("/")) continue;
+    if (!/\//.test(rawTargetWithExt)) continue;
     if (!rawTargetWithExt.startsWith(oldPrefix)) continue;
 
     const suffix = rawTargetWithExt.slice(oldPrefix.length).replace(/\.md$/, "");

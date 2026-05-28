@@ -46,7 +46,7 @@ export function PaneTabContextMenu({
     <div
       className="tab-context-menu"
       onClick={(e) => e.stopPropagation()}
-      style={{ left: contextMenu.x, position: "fixed", top: contextMenu.y, zIndex: 1000 }}
+      style={{ left: contextMenu.x, position: "fixed", top: contextMenu.y, zIndex: 40 }}
     >
       {contextTab ? (
         <>

@@ -54,7 +54,7 @@ export function choicesFor(
     .sort((a, b) => a.localeCompare(b));
 }
 
-export function availableFieldNames(
+function availableFieldNames(
   data: Record<string, unknown>,
   userDefinedFields: UserDefinedField[],
   candidates: Record<string, string[]>

@@ -20,7 +20,7 @@ import {
   requestFrontmatterDialog,
   scalarInputValue
 } from "./editorFrontmatterModel";
-import type { Translator } from "./i18n";
+import type { Translator } from "./i18nModel";
 
 export type FrontmatterFieldUpdater = (view: EditorView, key: string, value: unknown) => void;
 
@@ -431,7 +431,7 @@ function arrayInput(
     removeButton.type = "button";
     removeButton.textContent = "×";
     removeButton.addEventListener("click", () => {
-      updateField(view, key, value.map(String).filter((_, itemIndex) => itemIndex !== index));
+      updateField(view, key, value.flatMap((item, itemIndex) => (itemIndex === index ? [] : [String(item)])));
     });
 
     pill.append(itemInput, removeButton);

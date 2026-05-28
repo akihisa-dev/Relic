@@ -7,7 +7,7 @@ import {
   isFilteringFiles,
   knownFrontmatterSearchFields
 } from "./filesSidebarModel";
-import { createTranslator } from "./i18n";
+import { createTranslator } from "./i18nModel";
 
 describe("filesSidebarModel", () => {
   it("builds known frontmatter fields from fixed and registered custom fields", () => {

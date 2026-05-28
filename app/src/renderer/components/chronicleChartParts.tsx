@@ -17,7 +17,7 @@ import {
   type DateOffscreenIndicator,
   type DateScale
 } from "../chronicleTimeline";
-import type { Translator } from "../i18n";
+import type { Translator } from "../i18nModel";
 
 export function DateAxis({
   axisEnd,
@@ -353,10 +353,15 @@ export function VerticalMinimap({
     <div className="chronicle-vertical-minimap">
       <div
         aria-label={label}
+        aria-controls="chronicle-chart"
+        aria-orientation="vertical"
+        aria-valuemax={100}
+        aria-valuemin={0}
+        aria-valuenow={Math.round(viewport.topPercent)}
         className="chronicle-vertical-minimap-track"
         onPointerDown={onPointerDown}
         ref={minimapRef}
-        role="slider"
+        role="scrollbar"
         tabIndex={0}
       >
         <span

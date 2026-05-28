@@ -73,13 +73,15 @@ export async function searchAndReplace(
   try {
     const fileTree = await readWorkspaceFileTree(workspacePath);
     const matches: SearchAndReplaceMatch[] = [];
-
-    for (const relativePath of collectMarkdownPaths(fileTree)) {
+    const files = collectMarkdownPaths(fileTree).flatMap((relativePath) => {
       const absolutePath = resolveWorkspaceRelativePath(workspacePath, relativePath);
+      return absolutePath.ok ? [{ absolutePath: absolutePath.value, relativePath }] : [];
+    });
+    const fileContents = await Promise.all(
+      files.map(async (file) => ({ ...file, content: await readFile(file.absolutePath, "utf8") }))
+    );
 
-      if (!absolutePath.ok) continue;
-
-      const content = await readFile(absolutePath.value, "utf8");
+    for (const { content, relativePath } of fileContents) {
       const lines = content.split("\n");
 
       for (let index = 0; index < lines.length; index += 1) {
@@ -125,19 +127,21 @@ export async function applySearchAndReplace(
   try {
     const fileTree = await readWorkspaceFileTree(workspacePath);
     let count = 0;
-
-    for (const relativePath of collectMarkdownPaths(fileTree)) {
+    const files = collectMarkdownPaths(fileTree).flatMap((relativePath) => {
       const absolutePath = resolveWorkspaceRelativePath(workspacePath, relativePath);
+      return absolutePath.ok ? [{ absolutePath: absolutePath.value, relativePath }] : [];
+    });
+    const fileContents = await Promise.all(
+      files.map(async (file) => ({ ...file, content: await readFile(file.absolutePath, "utf8") }))
+    );
 
-      if (!absolutePath.ok) continue;
-
-      const content = await readFile(absolutePath.value, "utf8");
+    for (const { absolutePath, content } of fileContents) {
       const matches = content.match(regex.value);
 
       if (matches && matches.length > 0) {
         regex.value.lastIndex = 0;
         const updated = content.replaceAll(regex.value, replacement);
-        await writeFile(absolutePath.value, updated, "utf8");
+        await writeFile(absolutePath, updated, "utf8");
         count += matches.length;
       }
 

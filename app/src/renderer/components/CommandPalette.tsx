@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { ReactElement } from "react";
 
 import { useT } from "../i18n";
@@ -42,18 +42,19 @@ export function CommandPalette({ commands, onClose }: CommandPaletteProps): Reac
     setSelectedIndex(0);
   }, [query]);
 
-  const requestClose = (): void => {
+  const requestClose = useCallback((): void => {
     if (isClosing) return;
     setIsClosing(true);
     closeTimerRef.current = window.setTimeout(() => {
       onClose();
       closeTimerRef.current = null;
     }, 130);
-  };
+  }, [isClosing, onClose]);
 
   useEffect(() => {
     return () => {
-      if (closeTimerRef.current) window.clearTimeout(closeTimerRef.current);
+      const closeTimer = closeTimerRef.current;
+      if (closeTimer) window.clearTimeout(closeTimer);
     };
   }, []);
 
@@ -75,9 +76,10 @@ export function CommandPalette({ commands, onClose }: CommandPaletteProps): Reac
   };
 
   return (
-    <div className={`modal-overlay${isClosing ? " modal-overlay--closing" : ""}`} onClick={requestClose}>
-      <div className={`command-palette${isClosing ? " command-palette--closing" : ""}`} onClick={(e) => e.stopPropagation()}>
+    <div className={`modal-overlay${isClosing ? " modal-overlay--closing" : ""}`} onClick={requestClose} role="presentation">
+      <div className={`command-palette${isClosing ? " command-palette--closing" : ""}`} onClick={(e) => e.stopPropagation()} role="presentation">
         <input
+          aria-label={t("command.palette")}
           ref={inputRef}
           className="command-palette-input"
           onChange={(e) => setQuery(e.target.value)}
@@ -98,14 +100,16 @@ export function CommandPalette({ commands, onClose }: CommandPaletteProps): Reac
         />
         <ul className="command-list">
           {filtered.map((cmd, i) => (
-            <li
-              className={`command-item${i === selectedIndex ? " command-item--selected" : ""}`}
-              key={cmd.id}
-              onClick={() => execute(cmd)}
-              onMouseEnter={() => setSelectedIndex(i)}
-            >
-              <span className="command-label">{cmd.label}</span>
-              {cmd.shortcut ? <span className="command-shortcut">{cmd.shortcut}</span> : null}
+            <li key={cmd.id}>
+              <button
+                className={`command-item${i === selectedIndex ? " command-item--selected" : ""}`}
+                onClick={() => execute(cmd)}
+                onMouseEnter={() => setSelectedIndex(i)}
+                type="button"
+              >
+                <span className="command-label">{cmd.label}</span>
+                {cmd.shortcut ? <span className="command-shortcut">{cmd.shortcut}</span> : null}
+              </button>
             </li>
           ))}
           {filtered.length === 0 ? (

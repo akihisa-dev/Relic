@@ -21,7 +21,8 @@ export function useWorkspaceRenameRailHold(): {
 
   useEffect(() => {
     return () => {
-      if (workspaceRenameHoldTimerRef.current) clearTimeout(workspaceRenameHoldTimerRef.current);
+      const workspaceRenameHoldTimer = workspaceRenameHoldTimerRef.current;
+      if (workspaceRenameHoldTimer) clearTimeout(workspaceRenameHoldTimer);
     };
   }, []);
 

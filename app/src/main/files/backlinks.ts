@@ -29,15 +29,16 @@ export async function readBacklinks(
     const aliasesResult = await readWorkspaceAliases(workspacePath);
     const aliasesByPath = aliasesResult.ok ? aliasesResult.value : {};
     const backlinks: Backlink[] = [];
-
-    for (const sourcePath of markdownPaths) {
-      if (sourcePath === targetRelativePath) continue;
-
+    const files = markdownPaths.flatMap((sourcePath) => {
+      if (sourcePath === targetRelativePath) return [];
       const sourceFile = resolveWorkspaceRelativePath(workspacePath, sourcePath);
+      return sourceFile.ok ? [{ sourcePath, absolutePath: sourceFile.value }] : [];
+    });
+    const fileContents = await Promise.all(
+      files.map(async (file) => ({ ...file, content: await readFile(file.absolutePath, "utf8") }))
+    );
 
-      if (!sourceFile.ok) continue;
-
-      const content = await readFile(sourceFile.value, "utf8");
+    for (const { content, sourcePath } of fileContents) {
       const count = resolveWikiLinks(content, sourcePath, markdownPaths, aliasesByPath).filter(
         (link) => link.path === targetRelativePath
       ).length;

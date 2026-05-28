@@ -2,7 +2,7 @@ import { useCallback } from "react";
 
 import type { LinkUpdateImpactKind } from "../../shared/ipcWorkspace";
 import type { WorkspaceState, WorkspaceTreeNode } from "../../shared/ipc";
-import type { Translator } from "../i18n";
+import type { Translator } from "../i18nModel";
 import {
   buildFolderTabPathUpdates,
   getMovableTreeItems,
@@ -133,6 +133,10 @@ export function useWorkspaceFileMutationActions({
 
       void (async () => {
         if (!await ensureCanMutateItems(movableItems)) return;
+        const fileTabIdByPath = new Map<string, string>();
+        for (const [tabId, tab] of Object.entries(tabs)) {
+          if (tab.kind === "file") fileTabIdByPath.set(tab.path, tabId);
+        }
 
         for (const item of movableItems) {
           if (item.type === "file") {
@@ -143,9 +147,9 @@ export function useWorkspaceFileMutationActions({
               return;
             }
 
-            const oldTab = Object.entries(tabs).find(([, tab]) => tab.kind === "file" && tab.path === item.path);
+            const oldTabId = fileTabIdByPath.get(item.path);
 
-            if (oldTab) updateTabMeta(oldTab[0], { name: result.value.file.name, path: result.value.file.path });
+            if (oldTabId) updateTabMeta(oldTabId, { name: result.value.file.name, path: result.value.file.path });
             setWorkspaceState(result.value.workspaceState);
             continue;
           }
@@ -223,11 +227,11 @@ export function useWorkspaceFileMutationActions({
 
           const result = await window.relic!.renameMarkdownFile({ newName, path });
           if (result.ok) {
-            Object.entries(tabs)
-              .filter(([, tab]) => tab.kind === "file" && tab.path === path)
-              .forEach(([tabId]) => {
+            for (const [tabId, tab] of Object.entries(tabs)) {
+              if (tab.kind === "file" && tab.path === path) {
                 updateTabMeta(tabId, { name: result.value.file.name, path: result.value.file.path });
-              });
+              }
+            }
             setWorkspaceState(result.value.workspaceState);
           } else {
             setWorkspaceError(result.error.message);

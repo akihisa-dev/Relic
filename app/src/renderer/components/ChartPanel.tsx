@@ -18,7 +18,9 @@ interface ChartViewProps {
   onUpdateEntry?: (input: UpdateChartEntryInput) => Promise<void> | void;
 }
 
-export function ChartView({ chart = null, charts = [], chronicleCalendars, onOpenFile, onUpdateEntry }: ChartViewProps): ReactElement {
+const defaultCharts: WorkspaceChart[] = [];
+
+export function ChartView({ chart = null, charts = defaultCharts, chronicleCalendars, onOpenFile, onUpdateEntry }: ChartViewProps): ReactElement {
   const t = useT();
   const model = useChronicleChartModel({ chart, charts, chronicleCalendars });
   const viewport = useChronicleChartViewport({

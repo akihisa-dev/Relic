@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
 import type { ReactElement } from "react";
 
 import { type AppInfo, type EditorSettings, type FeatureToggles } from "../../shared/ipc";
-import { type TranslationKey, useT } from "../i18n";
+import { useT } from "../i18n";
+import type { TranslationKey } from "../i18nModel";
 import { SettingsSegmentedControl } from "./SettingsSegmentedControl";
 
 function getEditorFontLabelKeys(platform?: NodeJS.Platform): { gothic: TranslationKey; mincho: TranslationKey; mono: TranslationKey } {
@@ -46,22 +46,11 @@ export function SettingsPanel({
   onSave: (s: EditorSettings) => void;
   onFeatureTogglesSave: (t: FeatureToggles) => void;
 }): ReactElement {
-  const [draft, setDraft] = useState<EditorSettings>(settings);
-  const [togglesDraft, setTogglesDraft] = useState<FeatureToggles>(featureToggles);
   const t = useT();
   const fontLabelKeys = getEditorFontLabelKeys(appInfo?.platform);
 
-  useEffect(() => {
-    setDraft(settings);
-  }, [settings]);
-
-  useEffect(() => {
-    setTogglesDraft(featureToggles);
-  }, [featureToggles]);
-
   const update = <K extends keyof EditorSettings>(key: K, value: EditorSettings[K]): void => {
-    const next = { ...draft, [key]: value };
-    setDraft(next);
+    const next = { ...settings, [key]: value };
     onSave(next);
   };
 
@@ -84,7 +73,7 @@ export function SettingsPanel({
                 { icon: <LightModeIcon />, label: t("settings.light"), value: "light" },
                 { icon: <DarkModeIcon />, label: t("settings.dark"), value: "dark" }
               ]}
-              value={draft.theme}
+              value={settings.theme}
             />
           </div>
           <div className="setting-row">
@@ -97,7 +86,7 @@ export function SettingsPanel({
                 { label: t("settings.languageEnglish"), value: "en" },
                 { label: t("settings.languageJapanese"), value: "ja" }
               ]}
-              value={draft.language}
+              value={settings.language}
             />
           </div>
         </div>
@@ -117,7 +106,7 @@ export function SettingsPanel({
                 { label: t(fontLabelKeys.mincho), value: "mincho" },
                 { label: t(fontLabelKeys.mono), value: "mono" }
               ]}
-              value={draft.font}
+              value={settings.font}
             />
           </div>
           <label className="setting-row">
@@ -128,7 +117,7 @@ export function SettingsPanel({
               min={10}
               onChange={(e) => update("fontSize", Number(e.target.value))}
               type="number"
-              value={draft.fontSize}
+              value={settings.fontSize}
             />
           </label>
           <label className="setting-row">
@@ -140,7 +129,7 @@ export function SettingsPanel({
               onChange={(e) => update("lineHeight", Number(e.target.value))}
               step={0.1}
               type="number"
-              value={draft.lineHeight}
+              value={settings.lineHeight}
             />
           </label>
           <div className="setting-row">
@@ -154,13 +143,13 @@ export function SettingsPanel({
                 { label: t("settings.maxWidthWide"), value: "800px" },
                 { label: t("settings.maxWidthNone"), value: "none" }
               ]}
-              value={draft.maxWidth}
+              value={settings.maxWidth}
             />
           </div>
           <label className="setting-row">
             <span>{t("settings.showLineNumbers")}</span>
             <input
-              checked={draft.showLineNumbers}
+              checked={settings.showLineNumbers}
               onChange={(e) => update("showLineNumbers", e.target.checked)}
               type="checkbox"
             />
@@ -168,7 +157,7 @@ export function SettingsPanel({
           <label className="setting-row">
             <span>{t("settings.spellCheck")}</span>
             <input
-              checked={draft.spellCheck}
+              checked={settings.spellCheck}
               onChange={(e) => update("spellCheck", e.target.checked)}
               type="checkbox"
             />
@@ -184,7 +173,7 @@ export function SettingsPanel({
                 { label: t("settings.frontmatterDateFormatDmy"), value: "dmy" },
                 { label: t("settings.frontmatterDateFormatSystem"), value: "system" }
               ]}
-              value={draft.frontmatterDateFormat}
+              value={settings.frontmatterDateFormat}
             />
           </div>
         </div>
@@ -206,10 +195,9 @@ export function SettingsPanel({
             <label className="setting-row" key={key}>
               <span>{label}</span>
               <input
-                checked={togglesDraft[key]}
+                checked={featureToggles[key]}
                 onChange={(e) => {
-                  const next = { ...togglesDraft, [key]: e.target.checked };
-                  setTogglesDraft(next);
+                  const next = { ...featureToggles, [key]: e.target.checked };
                   onFeatureTogglesSave(next);
                 }}
                 type="checkbox"

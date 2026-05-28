@@ -2,7 +2,7 @@ import type { ChartDateKind, ChartEntry, ChartSource, WorkspaceChart } from "../
 import { axisToYear, dayToDate } from "../shared/chartTime";
 import { fixedStatusValues } from "../shared/status";
 import { formatAxisValue } from "./chronicleTimelineAxis";
-import type { Translator } from "./i18n";
+import type { Translator } from "./i18nModel";
 
 export interface ChartRow {
   entries: ChartEntry[];
@@ -80,7 +80,7 @@ export function filterRows(rows: ChartRow[], query: string, statusFilter: string
   ));
 }
 
-export function matchesRowQuery(row: ChartRow, normalizedQuery: string): boolean {
+function matchesRowQuery(row: ChartRow, normalizedQuery: string): boolean {
   return (
     row.fileName.toLowerCase().includes(normalizedQuery) ||
     row.path.toLowerCase().includes(normalizedQuery) ||
@@ -92,12 +92,13 @@ export function matchesRowQuery(row: ChartRow, normalizedQuery: string): boolean
   );
 }
 
+const rowCollator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
+
 export function sortRows(rows: ChartRow[], sortKey: ChronicleSortKey): ChartRow[] {
-  const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
   const sorted = [...rows];
   sorted.sort((a, b) => {
-    if (sortKey === "name-asc") return collator.compare(a.fileName, b.fileName) || collator.compare(a.path, b.path);
-    if (sortKey === "name-desc") return collator.compare(b.fileName, a.fileName) || collator.compare(b.path, a.path);
+    if (sortKey === "name-asc") return rowCollator.compare(a.fileName, b.fileName) || rowCollator.compare(a.path, b.path);
+    if (sortKey === "name-desc") return rowCollator.compare(b.fileName, a.fileName) || rowCollator.compare(b.path, a.path);
 
     const aStart = rowStartValue(a);
     const bStart = rowStartValue(b);
@@ -107,16 +108,16 @@ export function sortRows(rows: ChartRow[], sortKey: ChronicleSortKey): ChartRow[
     if (primary !== 0) return primary;
     const secondary = sortKey === "start-desc" ? bEnd - aEnd : aEnd - bEnd;
     if (secondary !== 0) return secondary;
-    return collator.compare(a.fileName, b.fileName) || collator.compare(a.path, b.path);
+    return rowCollator.compare(a.fileName, b.fileName) || rowCollator.compare(a.path, b.path);
   });
   return sorted;
 }
 
-export function rowStartValue(row: ChartRow): number {
+function rowStartValue(row: ChartRow): number {
   return Math.min(...row.entries.map((entry) => entry.startValue));
 }
 
-export function rowEndValue(row: ChartRow): number {
+function rowEndValue(row: ChartRow): number {
   return Math.max(...row.entries.map((entry) => entry.endValue));
 }
 
@@ -124,15 +125,15 @@ export function rowCenterValue(row: ChartRow): number {
   return (rowStartValue(row) + rowEndValue(row)) / 2;
 }
 
-export function sortDateRowEntries(entries: ChartEntry[]): ChartEntry[] {
-  return [...entries].sort((a, b) => dateKindOrder(a.dateKind) - dateKindOrder(b.dateKind));
+function sortDateRowEntries(entries: ChartEntry[]): ChartEntry[] {
+  return entries.toSorted((a, b) => dateKindOrder(a.dateKind) - dateKindOrder(b.dateKind));
 }
 
-export function dateKindOrder(kind: ChartDateKind | undefined): number {
+function dateKindOrder(kind: ChartDateKind | undefined): number {
   return kind === "actual" ? 1 : 0;
 }
 
-export function mergeStatuses(current: string[], next: string[]): string[] {
+function mergeStatuses(current: string[], next: string[]): string[] {
   return [...new Set([...current, ...next])];
 }
 
@@ -185,7 +186,7 @@ function chronicleYearLabelWithoutCalendarName(label: string, calendarName: stri
     : trimmed;
 }
 
-export function formatDateSummaryLabel(value: string, omitYear: boolean): string {
+function formatDateSummaryLabel(value: string, omitYear: boolean): string {
   const normalized = value.replace(/-/g, "/");
   return omitYear ? normalized.slice(5) : normalized;
 }

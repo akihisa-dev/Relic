@@ -10,7 +10,7 @@ export interface DiagramEditRange {
   to: number;
 }
 
-export const setDiagramEditRangeEffect = StateEffect.define<DiagramEditRange | null>({
+const setDiagramEditRangeEffect = StateEffect.define<DiagramEditRange | null>({
   map: (value, mapping) => {
     if (!value) return null;
 

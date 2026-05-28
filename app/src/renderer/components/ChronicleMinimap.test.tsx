@@ -40,15 +40,15 @@ function renderMinimap(overrides: Partial<ChronicleMinimapProps> = {}) {
 }
 
 describe("ChronicleMinimap", () => {
-  it("chronicle chartでは既存classとslider roleでminimapを描画する", () => {
+  it("chronicle chartでは既存classとscrollbar roleでminimapを描画する", () => {
     const { container, props } = renderMinimap();
 
     expect(screen.getByText("全体")).toHaveClass("chronicle-minimap-label");
-    expect(screen.getByRole("slider", { name: "チャートミニマップ" })).toHaveClass("chronicle-minimap");
+    expect(screen.getByRole("scrollbar", { name: "チャートミニマップ" })).toHaveClass("chronicle-minimap");
     expect(container.querySelectorAll(".chronicle-minimap-item")).toHaveLength(2);
     expect(container.querySelector(".chronicle-minimap-window")).toHaveStyle({ left: "25%", width: "30%" });
 
-    fireEvent.pointerDown(screen.getByRole("slider", { name: "チャートミニマップ" }));
+    fireEvent.pointerDown(screen.getByRole("scrollbar", { name: "チャートミニマップ" }));
 
     expect(props.onMinimapPointerDown).toHaveBeenCalledTimes(1);
   });
@@ -58,7 +58,7 @@ describe("ChronicleMinimap", () => {
       activeChart: chart({ id: "date", name: "date", source: "date" })
     });
 
-    expect(screen.getByRole("slider", { name: "チャートミニマップ" })).toBeInTheDocument();
+    expect(screen.getByRole("scrollbar", { name: "チャートミニマップ" })).toBeInTheDocument();
     expect(container.querySelectorAll(".chronicle-minimap-item")).toHaveLength(2);
   });
 

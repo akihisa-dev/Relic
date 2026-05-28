@@ -52,7 +52,7 @@ export function createAdaptiveChroniclePointerDelta(
   };
 }
 
-export function chronicleDragSpeedMultiplier(speed: number): number {
+function chronicleDragSpeedMultiplier(speed: number): number {
   if (!Number.isFinite(speed)) return 1;
   if (speed <= CHRONICLE_FINE_DRAG_SPEED) return CHRONICLE_FINE_DRAG_MULTIPLIER;
   if (speed >= CHRONICLE_FAST_DRAG_SPEED) return CHRONICLE_FAST_DRAG_MULTIPLIER;

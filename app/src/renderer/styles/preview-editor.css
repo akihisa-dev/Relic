@@ -279,9 +279,13 @@
 }
 
 .wikilink {
+  background: none;
+  border: 0;
   border-bottom: 1px solid var(--link);
   color: var(--link);
   cursor: pointer;
+  font: inherit;
+  padding: 0;
 }
 
 .math-block {
@@ -1422,8 +1426,11 @@
 }
 
 .sidebar-resize-handle {
+  background: transparent;
+  border: 0;
   bottom: 0;
   cursor: col-resize;
+  padding: 0;
   position: absolute;
   right: 0;
   top: 0;

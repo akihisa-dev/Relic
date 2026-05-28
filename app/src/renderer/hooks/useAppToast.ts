@@ -43,8 +43,10 @@ export function useAppToast(): {
 
   useEffect(() => {
     return () => {
-      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-      if (toastCloseTimerRef.current) clearTimeout(toastCloseTimerRef.current);
+      const toastTimer = toastTimerRef.current;
+      const toastCloseTimer = toastCloseTimerRef.current;
+      if (toastTimer) clearTimeout(toastTimer);
+      if (toastCloseTimer) clearTimeout(toastCloseTimer);
     };
   }, []);
 

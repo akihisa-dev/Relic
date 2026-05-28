@@ -116,6 +116,7 @@ export function ChronicleChartGrid({
     <div className="chronicle-chart-layout">
       <div
         className="chronicle-chart"
+        id="chronicle-chart"
         onPointerDown={onChartPointerDown}
         onScroll={onChartScroll}
         ref={chartRef}
