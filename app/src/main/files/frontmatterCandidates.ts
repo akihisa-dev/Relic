@@ -6,8 +6,17 @@ import { parseFrontmatter } from "./frontmatter";
 import { readWorkspaceFileTree } from "./fileTree";
 import { resolveWorkspaceRelativePath } from "./paths";
 
+interface FrontmatterCandidateReadOperations {
+  readFile(filePath: string, encoding: BufferEncoding): Promise<string>;
+}
+
+const defaultFrontmatterCandidateReadOperations: FrontmatterCandidateReadOperations = {
+  readFile
+};
+
 export async function readFrontmatterValueCandidates(
-  workspacePath: string
+  workspacePath: string,
+  operations: FrontmatterCandidateReadOperations = defaultFrontmatterCandidateReadOperations
 ): Promise<RelicResult<Record<string, string[]>>> {
   try {
     const fileTree = await readWorkspaceFileTree(workspacePath);
@@ -17,10 +26,19 @@ export async function readFrontmatterValueCandidates(
       return absolutePath.ok ? [{ absolutePath: absolutePath.value, relativePath }] : [];
     });
     const fileContents = await Promise.all(
-      files.map(async (file) => ({ ...file, content: await readFile(file.absolutePath, "utf8") }))
+      files.map(async (file) => {
+        try {
+          return { ...file, content: await operations.readFile(file.absolutePath, "utf8") };
+        } catch {
+          return null;
+        }
+      })
     );
 
-    for (const { content } of fileContents) {
+    for (const fileContent of fileContents) {
+      if (!fileContent) continue;
+
+      const { content } = fileContent;
       const { data } = parseFrontmatter(content);
 
       for (const [fieldName, value] of Object.entries(data)) {
