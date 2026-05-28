@@ -10,7 +10,9 @@ import {
   canAppendOrCreateFrontmatterField,
   findFrontmatterBlock,
   fixedFrontmatterFieldNames,
+  frontmatterCollapsedValue,
   frontmatterDialogRequestEvent,
+  setFrontmatterCollapsed,
   type FrontmatterDialogRequest
 } from "../editorFrontmatter";
 import { useEditorContextMenu } from "../hooks/useEditorContextMenu";
@@ -286,6 +288,7 @@ export function Editor({
     if (!view) return;
 
     const currentContent = view.state.doc.toString();
+    const currentFrontmatterCollapsed = frontmatterCollapsedValue(view.state);
     const container = containerRef.current;
 
     destroyEditorView(view, container);
@@ -311,6 +314,7 @@ export function Editor({
     const nextView = new EditorView({ state, parent: container });
 
     internalViewRef.current = nextView;
+    setFrontmatterCollapsed(nextView, currentFrontmatterCollapsed);
 
     if (viewRef) viewRef.current = nextView;
   }, [frontmatterCandidates, rememberSelection, settings, sourceMode, t, typewriterMode, userDefinedFields, viewRef]);

@@ -16,16 +16,55 @@ import type { Translator } from "./i18n";
 
 const frontmatterCollapsedEffect = StateEffect.define<boolean>();
 
-export const frontmatterCollapsedField = StateField.define<boolean>({
-  create: () => true,
+interface FrontmatterCollapsedState {
+  blockFrom: number | null;
+  blockTo: number | null;
+  collapsed: boolean;
+}
+
+export const frontmatterCollapsedField = StateField.define<FrontmatterCollapsedState>({
+  create: (state) => {
+    const block = findFrontmatterBlock(state);
+
+    return {
+      blockFrom: block?.from ?? null,
+      blockTo: block?.to ?? null,
+      collapsed: true
+    };
+  },
   update: (value, transaction) => {
+    let collapsed = value.collapsed;
+    let hasExplicitCollapseEffect = false;
+
     for (const effect of transaction.effects) {
-      if (effect.is(frontmatterCollapsedEffect)) return effect.value;
+      if (effect.is(frontmatterCollapsedEffect)) {
+        collapsed = effect.value;
+        hasExplicitCollapseEffect = true;
+      }
     }
 
-    return value;
+    const block = findFrontmatterBlock(transaction.state);
+    const hadBlock = value.blockFrom !== null && value.blockTo !== null;
+
+    if (!hasExplicitCollapseEffect && !hadBlock && block) {
+      collapsed = true;
+    }
+
+    return {
+      blockFrom: block?.from ?? null,
+      blockTo: block?.to ?? null,
+      collapsed
+    };
   }
 });
+
+export function frontmatterCollapsedValue(state: EditorState): boolean {
+  return state.field(frontmatterCollapsedField, false)?.collapsed ?? true;
+}
+
+export function setFrontmatterCollapsed(view: EditorView, collapsed: boolean): void {
+  view.dispatch({ effects: frontmatterCollapsedEffect.of(collapsed) });
+}
 
 class FrontmatterPropertiesWidget extends WidgetType {
   constructor(
@@ -135,7 +174,7 @@ export function buildFrontmatterPropertiesDecorations(
   const block = findFrontmatterBlock(state);
   if (!block) return Decoration.none;
 
-  const collapsed = state.field(frontmatterCollapsedField, false) ?? false;
+  const collapsed = frontmatterCollapsedValue(state);
   const ranges: { from: number; to: number; deco: Decoration }[] = [];
   for (let lineNumber = block.startLine; lineNumber <= block.endLine; lineNumber += 1) {
     const line = state.doc.line(lineNumber);
