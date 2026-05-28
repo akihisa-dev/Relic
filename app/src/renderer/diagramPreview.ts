@@ -39,6 +39,9 @@ export async function renderDiagramElement(
     const diagram = document.createElement("div");
     diagram.className = `preview-diagram-svg preview-diagram-svg--${language}`;
     diagram.innerHTML = sanitized;
+    if (!diagram.querySelector("svg")) {
+      throw new Error(`${diagramLabel(language)} renderer did not return SVG text.`);
+    }
     applyDiagramSvgIntrinsicSize(diagram);
 
     const viewport = document.createElement("div");
