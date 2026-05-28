@@ -2,7 +2,7 @@ import { redo, undo } from "@codemirror/commands";
 import { markdown } from "@codemirror/lang-markdown";
 import { ensureSyntaxTree } from "@codemirror/language";
 import { EditorState } from "@codemirror/state";
-import type { EditorView } from "@codemirror/view";
+import { EditorView } from "@codemirror/view";
 import { GFM } from "@lezer/markdown";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { createRef } from "react";
@@ -1199,6 +1199,36 @@ describe("Editor", () => {
 
     expect(onChange).toHaveBeenLastCalledWith(expect.not.stringContaining("version:"));
     expect(viewRef.current?.state.doc.toString()).toContain("status: draft");
+  });
+
+  it("展開中フロントマター入力から本文をクリックすると本文編集へ戻る", async () => {
+    const viewRef = createRef<EditorView | null>();
+    const { container } = render(
+      <Editor
+        content={"---\nstatus: draft\n---\n# 本文"}
+        onChange={vi.fn()}
+        settings={settings}
+        viewRef={viewRef}
+      />
+    );
+
+    await expandFrontmatter(container);
+    const view = viewRef.current!;
+    const input = container.querySelector(".cm-frontmatter-input") as HTMLInputElement;
+    input.focus();
+
+    await waitFor(() => expect(view.state.facet(EditorView.editable)).toBe(false));
+
+    fireEvent.mouseDown(input);
+    expect(view.state.facet(EditorView.editable)).toBe(false);
+
+    fireEvent.mouseDown(view.dom.querySelector(".cm-content") as HTMLElement, {
+      button: 0,
+      clientX: 48,
+      clientY: 160
+    });
+
+    expect(view.state.facet(EditorView.editable)).toBe(true);
   });
 
   it("複数行プロパティを削除しても隣のプロパティは残す", async () => {
