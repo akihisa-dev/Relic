@@ -16,8 +16,8 @@ export async function buildWorkspaceState(settings: AppSettings): Promise<Worksp
 
   const [fileTree, wsSettings] = await Promise.all([
     readWorkspaceFileTree(activeWorkspace.path).catch(() => []),
-    readWorkspaceSettings(app.getPath("userData"), activeWorkspace.id)
+    readWorkspaceSettings(app.getPath("userData"), activeWorkspace.id).catch(() => null)
   ]);
 
-  return toWorkspaceState(settings, fileTree, wsSettings.pinnedPaths);
+  return toWorkspaceState(settings, fileTree, wsSettings?.pinnedPaths ?? []);
 }
