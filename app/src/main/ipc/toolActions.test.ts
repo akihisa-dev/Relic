@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readdir, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
@@ -35,6 +35,21 @@ describe("toolActions", () => {
         })
       )
     );
+  });
+
+  it("タイトル一覧生成後に一時ファイルを残さない", async () => {
+    const { workspacePath } = await prepareActiveWorkspace();
+    await writeFile(path.join(workspacePath, "note.md"), "# Note\n", "utf8");
+
+    const result = await generateTitleList({
+      outputFolder: ".",
+      outputName: "Titles",
+      sortBy: "name"
+    });
+
+    expect(result).toEqual({ ok: true, value: "Titles.md" });
+    await expect(readFile(path.join(workspacePath, "Titles.md"), "utf8")).resolves.toBe("- [[note]]\n");
+    expect((await readdir(workspacePath)).sort()).toEqual(["Titles.md", "note.md"]);
   });
 
   it("出力先フォルダが外部実体のシンボリックリンクなら書き込まない", async () => {

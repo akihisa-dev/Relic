@@ -1,4 +1,4 @@
-import { mkdir, readFile, readdir, stat, writeFile } from "node:fs/promises";
+import { mkdir, readFile, readdir, stat } from "node:fs/promises";
 import path from "node:path";
 
 import { app } from "electron";
@@ -12,6 +12,7 @@ import {
 } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { parseMarkdownTags } from "../../shared/tags";
+import { atomicWriteTextFile } from "../files/atomicWrite";
 import { readWorkspaceFileTree } from "../files/fileTree";
 import { parseFrontmatter } from "../files/frontmatter";
 import {
@@ -64,7 +65,7 @@ export async function mergeFiles(input: MergeFilesInput): Promise<RelicResult<st
 
   await mkdir(outputDir.value, { recursive: true });
   const outputPath = await uniqueFilePath(outputDir.value, outputName.value);
-  await writeFile(outputPath, merged, "utf-8");
+  await atomicWriteTextFile(outputPath, merged);
 
   return ok(path.relative(workspacePath, outputPath));
 }
@@ -96,7 +97,7 @@ export async function splitFileByHeading(input: SplitFileByHeadingInput): Promis
       .trim() || "untitled";
     const outPath = await uniqueFilePath(outputDir.value, safeName);
     const sectionContent = section.lines.join("\n").trimEnd() + "\n";
-    await writeFile(outPath, sectionContent, "utf-8");
+    await atomicWriteTextFile(outPath, sectionContent);
     created.push(path.relative(workspacePath, outPath));
   }
 
@@ -127,7 +128,7 @@ export async function generateTitleList(input: GenerateTitleListInput): Promise<
 
   await mkdir(outputDir.value, { recursive: true });
   const outputPath = await uniqueFilePath(outputDir.value, outputName.value);
-  await writeFile(outputPath, content, "utf-8");
+  await atomicWriteTextFile(outputPath, content);
 
   return ok(path.relative(workspacePath, outputPath));
 }
@@ -153,7 +154,7 @@ export async function generateTableOfContents(
 
   await mkdir(outputDir.value, { recursive: true });
   const outputPath = await uniqueFilePath(outputDir.value, outputName.value);
-  await writeFile(outputPath, content, "utf-8");
+  await atomicWriteTextFile(outputPath, content);
 
   return ok(path.relative(workspacePath, outputPath));
 }
