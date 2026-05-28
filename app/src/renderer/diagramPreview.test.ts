@@ -476,6 +476,21 @@ describe("diagramPreview", () => {
     warn.mockRestore();
   });
 
+  it("サニタイズ後にSVGが残らない場合は描画成功扱いにしない", async () => {
+    const { renderDiagramElement } = await loadDiagramPreviewModule();
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const container = createAttachedContainer();
+    renderMock.mockResolvedValueOnce({ svg: "<span>not svg</span>" });
+
+    await expect(renderDiagramElement(container, "mermaid", "graph TD; A-->B")).resolves.toBeNull();
+
+    expect(container.dataset.diagramRenderStatus).toBe("error");
+    expect(container.querySelector(".preview-diagram-error")).not.toBeNull();
+    expect(container.querySelector(".preview-diagram-panzoom-viewport")).toBeNull();
+    expect(container.textContent).toContain("Mermaid renderer did not return SVG text.");
+    warn.mockRestore();
+  });
+
   it("fitToViewportはviewport内に収まる倍率と中央寄せへ戻す", async () => {
     const { renderDiagramElement } = await loadDiagramPreviewModule();
     const container = createAttachedContainer();
