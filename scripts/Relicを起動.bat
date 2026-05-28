@@ -14,16 +14,15 @@ if not exist "%PNPM_CMD%" (
   exit /b 1
 )
 
-if not exist "node_modules" (
-  echo node_modules not found. Running pnpm install...
-  call "%PNPM_CMD%" install
-  if errorlevel 1 (
-    echo.
-    echo Failed to install dependencies.
-    pause
-    exit /b 1
-  )
+echo Checking dependencies...
+call "%PNPM_CMD%" install
+if errorlevel 1 (
+  echo.
+  echo Failed to install dependencies.
+  pause
+  exit /b 1
 )
+echo.
 
 call "%PNPM_CMD%" start
 if errorlevel 1 (
