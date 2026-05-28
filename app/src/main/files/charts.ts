@@ -23,10 +23,19 @@ import { resolveExistingWorkspacePath, resolveWorkspaceRelativePath } from "./pa
 
 export { extractChronicleRange, extractDateRange } from "./chronicleData";
 
+interface ChartReadOperations {
+  readFile(filePath: string, encoding: BufferEncoding): Promise<string>;
+}
+
+const defaultChartReadOperations: ChartReadOperations = {
+  readFile
+};
+
 export async function readWorkspaceCharts(
   workspacePath: string,
   charts: ChartSettings[],
-  calendars: ChronicleCalendarSettings[] = defaultChronicleCalendars
+  calendars: ChronicleCalendarSettings[] = defaultChronicleCalendars,
+  operations: ChartReadOperations = defaultChartReadOperations
 ): Promise<RelicResult<WorkspaceChart[]>> {
   try {
     const fileTree = await readWorkspaceFileTree(workspacePath);
@@ -39,10 +48,19 @@ export async function readWorkspaceCharts(
       return absolutePath.ok ? [{ absolutePath: absolutePath.value, relativePath }] : [];
     });
     const fileContents = await Promise.all(
-      files.map(async (file) => ({ ...file, content: await readFile(file.absolutePath, "utf8") }))
+      files.map(async (file) => {
+        try {
+          return { ...file, content: await operations.readFile(file.absolutePath, "utf8") };
+        } catch {
+          return null;
+        }
+      })
     );
 
-    for (const { content, relativePath } of fileContents) {
+    for (const fileContent of fileContents) {
+      if (!fileContent) continue;
+
+      const { content, relativePath } = fileContent;
       const fileEntries = collectChartEntriesForMarkdown(relativePath, content, calendars);
       entriesBySource.chronicle.push(...fileEntries.chronicle);
       entriesBySource.date.push(...fileEntries.date);

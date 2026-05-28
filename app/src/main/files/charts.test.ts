@@ -240,6 +240,51 @@ describe("readWorkspaceCharts", () => {
       }
     ]);
   });
+
+  it("読めないMarkdownファイルはスキップしてチャート読み込みを続行する", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-chart-unreadable-markdown-"));
+    await writeFile(
+      path.join(workspacePath, "blocked.md"),
+      "---\nplannedDate: [2026-05-01]\n---\n# Blocked\n",
+      "utf8"
+    );
+    await writeFile(
+      path.join(workspacePath, "visible.md"),
+      "---\nplannedDate: [2026-05-02]\n---\n# Visible\n",
+      "utf8"
+    );
+
+    const result = await readWorkspaceCharts(
+      workspacePath,
+      [
+        { filePaths: [], id: "chronicle", name: "chronicle", source: "chronicle" },
+        { filePaths: [], id: "date", name: "date", source: "date" }
+      ],
+      undefined,
+      {
+        async readFile(filePath, encoding) {
+          if (path.basename(filePath) === "blocked.md") {
+            throw Object.assign(new Error("Permission denied"), { code: "EACCES" });
+          }
+
+          return readFile(filePath, encoding);
+        }
+      }
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    expect(result.value.find((chart) => chart.source === "date")?.entries).toMatchObject([
+      {
+        dateKind: "planned",
+        endLabel: "2026-05-02",
+        fileName: "visible",
+        path: "visible.md",
+        startLabel: "2026-05-02"
+      }
+    ]);
+  });
 });
 
 describe("updateWorkspaceChartEntry", () => {
