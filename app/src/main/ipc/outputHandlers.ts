@@ -62,7 +62,7 @@ export function registerOutputHandlers(): void {
           return fail("OUTPUT_PRINT_INVALID_INPUT", "印刷内容が無効です。");
         }
 
-        return await printHtml(input.html, input.title, BrowserWindow.fromWebContents(event.sender));
+        return await openPrintPreview(input.html, input.title, BrowserWindow.fromWebContents(event.sender));
       } catch (error) {
         return fail("OUTPUT_PRINT_FAILED", "印刷できませんでした。", ipcErrorDetails(error));
       }
@@ -129,7 +129,7 @@ export function registerOutputHandlers(): void {
 }
 
 async function renderHtmlToPdf(html: string, title: string): Promise<Buffer> {
-  const window = createOutputWindow(title);
+  const window = createOutputWindow(title, { allowInlineScripts: false });
 
   try {
     await loadOutputHtml(window, html);
@@ -146,57 +146,35 @@ async function renderHtmlToPdf(html: string, title: string): Promise<Buffer> {
   }
 }
 
-async function printHtml(
+async function openPrintPreview(
   html: string,
   title: string,
   parentWindow: BrowserWindow | null
 ): Promise<RelicResult<OutputPrintResult>> {
-  const window = createOutputWindow(`${title} - 印刷`, parentWindow);
+  const window = createOutputWindow(`${title} - 印刷`, { allowInlineScripts: true, parentWindow });
 
-  try {
-    await loadOutputHtml(window, html);
-    window.show();
-    window.focus();
+  await loadOutputHtml(window, buildPrintPreviewHtml(html));
+  window.show();
+  window.focus();
 
-    return await new Promise<RelicResult<OutputPrintResult>>((resolve) => {
-      window.webContents.print(
-        {
-          pageSize: "A4",
-          printBackground: true,
-          silent: false
-        },
-        (success, failureReason) => {
-          if (success) {
-            resolve(ok({ status: "printed" }));
-            return;
-          }
-
-          if (isPrintCanceled(failureReason)) {
-            resolve(ok({ status: "canceled" }));
-            return;
-          }
-
-          resolve(fail("OUTPUT_PRINT_FAILED", "印刷できませんでした。", failureReason));
-        }
-      );
-    });
-  } finally {
-    destroyOutputWindow(window);
-  }
+  return ok({ status: "printed" });
 }
 
-function createOutputWindow(title: string, parentWindow?: BrowserWindow | null): BrowserWindow {
+function createOutputWindow(
+  title: string,
+  options: { allowInlineScripts: boolean; parentWindow?: BrowserWindow | null }
+): BrowserWindow {
   const window = new BrowserWindow({
     autoHideMenuBar: true,
     backgroundColor: "#ffffff",
     height: 900,
-    parent: parentWindow ?? undefined,
+    parent: options.parentWindow ?? undefined,
     show: false,
     title,
     webPreferences: {
       allowRunningInsecureContent: false,
       contextIsolation: true,
-      javascript: false,
+      javascript: options.allowInlineScripts,
       nodeIntegration: false,
       sandbox: true,
       webSecurity: true
@@ -216,6 +194,79 @@ function createOutputWindow(title: string, parentWindow?: BrowserWindow | null):
   });
 
   return window;
+}
+
+function buildPrintPreviewHtml(html: string): string {
+  const csp = [
+    "default-src 'none'",
+    "style-src 'unsafe-inline'",
+    "script-src 'unsafe-inline'",
+    "img-src data:",
+    "font-src data:"
+  ].join("; ");
+  const toolbar = [
+    '<div class="relic-print-preview-toolbar" role="region" aria-label="印刷操作">',
+    '<button type="button" data-relic-print>OS標準の印刷画面を開く</button>',
+    '<button type="button" data-relic-close>閉じる</button>',
+    "</div>"
+  ].join("");
+  const toolbarCss = `
+.relic-print-preview-toolbar {
+  align-items: center;
+  background: #ffffff;
+  border-bottom: 1px solid #d4d4d8;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+  box-sizing: border-box;
+  display: flex;
+  gap: 8px;
+  left: 0;
+  padding: 8px 12px;
+  position: sticky;
+  right: 0;
+  top: 0;
+  z-index: 10;
+}
+
+.relic-print-preview-toolbar button {
+  background: #18181b;
+  border: 1px solid #18181b;
+  border-radius: 6px;
+  color: #ffffff;
+  cursor: pointer;
+  font: 13px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  line-height: 1.4;
+  padding: 6px 10px;
+}
+
+.relic-print-preview-toolbar button[data-relic-close] {
+  background: #ffffff;
+  color: #18181b;
+}
+
+@media print {
+  .relic-print-preview-toolbar {
+    display: none !important;
+  }
+}
+`;
+  const script = `
+<script>
+(() => {
+  const openPrintDialog = () => window.print();
+  document.querySelector("[data-relic-print]")?.addEventListener("click", openPrintDialog);
+  document.querySelector("[data-relic-close]")?.addEventListener("click", () => window.close());
+  setTimeout(openPrintDialog, 150);
+})();
+</script>`;
+
+  return html
+    .replace(
+      /<meta http-equiv="Content-Security-Policy" content="[^"]*">/i,
+      `<meta http-equiv="Content-Security-Policy" content="${csp}">`
+    )
+    .replace("</head>", `<style>${toolbarCss}</style></head>`)
+    .replace("<body>", `<body>${toolbar}`)
+    .replace("</body>", `${script}</body>`);
 }
 
 async function loadOutputHtml(window: BrowserWindow, html: string): Promise<void> {
@@ -281,10 +332,6 @@ function ensureExtension(fileName: string, extension: "pdf" | "svg"): string {
 function hasRenderableSvg(svg: string): boolean {
   const match = /<svg\b[^>]*>([\s\S]*?)<\/svg>/i.exec(svg.trim());
   return Boolean(match?.[1].trim());
-}
-
-function isPrintCanceled(failureReason: string): boolean {
-  return /cancel|abort/i.test(failureReason);
 }
 
 function ipcErrorDetails(error: unknown): string {
