@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
@@ -37,6 +37,30 @@ describe("readFrontmatterValueCandidates", () => {
         status: ["draft", "review"],
         tags: ["資料", "小説"],
         締切: ["2026-05-10"]
+      }
+    });
+  });
+
+  it("読めないMarkdownファイルはスキップしてフロントマター候補集計を続行する", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-frontmatter-candidates-"));
+    temporaryPaths.push(workspacePath);
+    await writeFile(path.join(workspacePath, "blocked.md"), "---\nstatus: hidden\n---", "utf8");
+    await writeFile(path.join(workspacePath, "visible.md"), "---\nstatus: visible\n---", "utf8");
+
+    await expect(
+      readFrontmatterValueCandidates(workspacePath, {
+        async readFile(filePath, encoding) {
+          if (path.basename(filePath) === "blocked.md") {
+            throw Object.assign(new Error("Permission denied"), { code: "EACCES" });
+          }
+
+          return readFile(filePath, encoding);
+        }
+      })
+    ).resolves.toEqual({
+      ok: true,
+      value: {
+        status: ["visible"]
       }
     });
   });
