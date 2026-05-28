@@ -1,9 +1,9 @@
-import { mkdir, rename, readFile, writeFile } from "node:fs/promises";
+import { mkdir, rename, readFile } from "node:fs/promises";
 import path from "node:path";
 
 import type { MarkdownFileContent } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
-import { atomicWriteTextFile } from "./atomicWrite";
+import { atomicWriteNewTextFile, atomicWriteTextFile } from "./atomicWrite";
 import { errorDetails, isFileExistsError, pathExists } from "./fileSystem";
 import { updateLinksForFileRename } from "./linkUpdater";
 import {
@@ -41,10 +41,7 @@ export async function createMarkdownFile(
   }
 
   try {
-    await writeFile(absoluteFilePath.value, "", {
-      encoding: "utf8",
-      flag: "wx"
-    });
+    await atomicWriteNewTextFile(absoluteFilePath.value, "");
 
     return ok({
       path: normalizedName.value
@@ -90,10 +87,7 @@ export async function createMarkdownFileAtPath(
 
   try {
     await mkdir(path.dirname(absoluteFilePath.value), { recursive: true });
-    await writeFile(absoluteFilePath.value, "", {
-      encoding: "utf8",
-      flag: "wx"
-    });
+    await atomicWriteNewTextFile(absoluteFilePath.value, "");
 
     return readMarkdownFile(workspacePath, normalizedRelativePath);
   } catch (error) {
@@ -293,10 +287,7 @@ export async function duplicateMarkdownFile(
       return destinationPath;
     }
 
-    await writeFile(destinationPath.value, content, {
-      encoding: "utf8",
-      flag: "wx"
-    });
+    await atomicWriteNewTextFile(destinationPath.value, content);
 
     return readMarkdownFile(workspacePath, destinationRelativePath);
   } catch (error) {

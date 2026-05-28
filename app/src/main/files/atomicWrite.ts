@@ -1,4 +1,4 @@
-import { rename, unlink, writeFile } from "node:fs/promises";
+import { link, rename, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 interface AtomicWriteOperations {
@@ -17,6 +17,15 @@ const defaultOperations: AtomicWriteOperations = {
   writeFile
 };
 
+interface AtomicCreateOperations extends AtomicWriteOperations {
+  link: (existingPath: string, newPath: string) => Promise<void>;
+}
+
+const defaultCreateOperations: AtomicCreateOperations = {
+  ...defaultOperations,
+  link
+};
+
 export async function atomicWriteTextFile(
   filePath: string,
   content: string,
@@ -31,10 +40,7 @@ export async function atomicWriteFile(
   encoding?: BufferEncoding,
   operations: AtomicWriteOperations = defaultOperations
 ): Promise<void> {
-  const temporaryPath = path.join(
-    path.dirname(filePath),
-    `.${path.basename(filePath)}.${process.pid}.${Date.now()}.${Math.random().toString(36).slice(2)}.tmp`
-  );
+  const temporaryPath = createTemporaryPath(filePath);
 
   try {
     await operations.writeFile(temporaryPath, content, encoding);
@@ -43,4 +49,29 @@ export async function atomicWriteFile(
     await operations.unlink(temporaryPath).catch(() => undefined);
     throw error;
   }
+}
+
+export async function atomicWriteNewTextFile(
+  filePath: string,
+  content: string,
+  operations: AtomicCreateOperations = defaultCreateOperations
+): Promise<void> {
+  const temporaryPath = createTemporaryPath(filePath);
+
+  try {
+    await operations.writeFile(temporaryPath, content, "utf8");
+    await operations.link(temporaryPath, filePath);
+  } catch (error) {
+    await operations.unlink(temporaryPath).catch(() => undefined);
+    throw error;
+  }
+
+  await operations.unlink(temporaryPath);
+}
+
+function createTemporaryPath(filePath: string): string {
+  return path.join(
+    path.dirname(filePath),
+    `.${path.basename(filePath)}.${process.pid}.${Date.now()}.${Math.random().toString(36).slice(2)}.tmp`
+  );
 }
