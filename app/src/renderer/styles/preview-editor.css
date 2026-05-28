@@ -433,9 +433,7 @@
   max-height: min(520px, calc(100% - 56px));
   overflow: auto;
   padding: 10px;
-  position: absolute;
-  right: 16px;
-  top: 50px;
+  position: fixed;
   width: min(300px, calc(100% - 32px));
   z-index: 1300;
 }
