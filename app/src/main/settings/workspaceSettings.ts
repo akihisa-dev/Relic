@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile } from "node:fs/promises";
 import path from "node:path";
 
 import {
@@ -9,6 +9,7 @@ import {
   type ChartSettings,
   type ChartSource
 } from "../../shared/ipc";
+import { atomicWriteTextFile } from "../files/atomicWrite";
 
 export interface WorkspaceSettings {
   chronicleCalendars: ChronicleCalendarSettings[];
@@ -154,7 +155,7 @@ export async function writeWorkspaceSettings(
   const settingsPath = getWorkspaceSettingsPath(userDataPath, workspaceId);
 
   await mkdir(path.dirname(settingsPath), { recursive: true });
-  await writeFile(settingsPath, `${JSON.stringify(settings, null, 2)}\n`, "utf8");
+  await atomicWriteTextFile(settingsPath, `${JSON.stringify(settings, null, 2)}\n`);
 }
 
 function isMissingFileError(error: unknown): boolean {

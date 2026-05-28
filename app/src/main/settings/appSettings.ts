@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile } from "node:fs/promises";
 import path from "node:path";
 
 import {
@@ -14,6 +14,7 @@ import {
   type UserDefinedFieldType,
   type WorkspaceSummary
 } from "../../shared/ipc";
+import { atomicWriteTextFile } from "../files/atomicWrite";
 
 export interface AppSettings {
   editorSettings: EditorSettings;
@@ -69,7 +70,7 @@ export async function writeAppSettings(
   settings: AppSettings
 ): Promise<void> {
   await mkdir(userDataPath, { recursive: true });
-  await writeFile(getAppSettingsPath(userDataPath), `${JSON.stringify(settings, null, 2)}\n`, "utf8");
+  await atomicWriteTextFile(getAppSettingsPath(userDataPath), `${JSON.stringify(settings, null, 2)}\n`);
 }
 
 function parseEditorSettings(raw: unknown): EditorSettings {
