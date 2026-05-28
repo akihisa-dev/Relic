@@ -978,6 +978,37 @@ describe("Editor", () => {
     expect(container.querySelectorAll(".cm-frontmatter-row")).toHaveLength(0);
   });
 
+  it("展開中のフロントマターはエディタ再生成後も勝手に閉じない", async () => {
+    const viewRef = createRef<EditorView | null>();
+    const { container, rerender } = render(
+      <Editor
+        content={"---\nversion: v1.0\nstatus: draft\n---\n# 本文"}
+        onChange={vi.fn()}
+        settings={settings}
+        viewRef={viewRef}
+      />
+    );
+
+    await waitFor(() => expect(container.querySelector(".cm-frontmatter-properties")).not.toBeNull());
+    fireEvent.click(container.querySelector(".cm-frontmatter-header") as HTMLButtonElement);
+    await waitFor(() => {
+      expect(container.querySelector(".cm-frontmatter-properties")?.getAttribute("data-collapsed")).toBe("false");
+    });
+
+    rerender(
+      <Editor
+        content={"---\nversion: v1.0\nstatus: draft\n---\n# 本文"}
+        onChange={vi.fn()}
+        settings={{ ...settings, fontSize: settings.fontSize + 1 }}
+        viewRef={viewRef}
+      />
+    );
+
+    await waitFor(() => {
+      expect(container.querySelector(".cm-frontmatter-properties")?.getAttribute("data-collapsed")).toBe("false");
+    });
+  });
+
   it("常設プラスボタンから既存フロントマターに固定プロパティを追加できる", async () => {
     const viewRef = createRef<EditorView | null>();
     const onChange = vi.fn();
@@ -1027,6 +1058,31 @@ describe("Editor", () => {
 
     expect(onChange).toHaveBeenLastCalledWith(expect.stringContaining("plannedDate:"));
     expect(viewRef.current?.state.doc.toString()).toBe("---\nplannedDate:\n---\n# 本文");
+  });
+
+  it("削除後に作り直したフロントマターは以前の展開状態を勝手に引き継がない", async () => {
+    const viewRef = createRef<EditorView | null>();
+    const { container } = render(
+      <Editor
+        content={"---\nstatus: draft\n---\n# 本文"}
+        onChange={vi.fn()}
+        settings={settings}
+        viewRef={viewRef}
+      />
+    );
+
+    await expandFrontmatter(container);
+    fireEvent.click(container.querySelector(".cm-frontmatter-remove") as HTMLButtonElement);
+    await waitFor(() => expect(container.querySelector(".cm-frontmatter-properties")).toBeNull());
+
+    fireEvent.click(container.querySelector(".editor-frontmatter-add-button") as HTMLButtonElement);
+    const plannedDateItem = Array.from(container.querySelectorAll(".editor-frontmatter-add-menu-item"))
+      .find((item) => item.textContent?.includes("plannedDate")) as HTMLButtonElement;
+    fireEvent.click(plannedDateItem);
+
+    await waitFor(() => expect(container.querySelector(".cm-frontmatter-properties")).not.toBeNull());
+    expect(container.querySelector(".cm-frontmatter-properties")?.getAttribute("data-collapsed")).toBe("true");
+    expect(container.querySelectorAll(".cm-frontmatter-row")).toHaveLength(0);
   });
 
   it("空の新規ファイルでもフロントマター追加メニューを本文行数に依存しない高さで表示する", async () => {
