@@ -8,8 +8,12 @@ export function readEditorClipboardText(): string {
 
 export async function writeEditorClipboardText(text: string): Promise<void> {
   if (window.relic?.writeClipboardText) {
-    window.relic.writeClipboardText(text);
-    return;
+    try {
+      window.relic.writeClipboardText(text);
+      return;
+    } catch {
+      // Fall through to browser and DOM fallbacks.
+    }
   }
 
   if (navigator.clipboard?.writeText) {

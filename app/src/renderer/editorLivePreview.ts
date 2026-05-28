@@ -1,3 +1,4 @@
+import { StateField, type EditorState } from "@codemirror/state";
 import { Decoration, EditorView, WidgetType } from "@codemirror/view";
 import type { DecorationSet } from "@codemirror/view";
 
@@ -14,8 +15,7 @@ import { diagramEditRangeField } from "./editorDiagramEditState";
 import { DiagramBlockWidget } from "./editorDiagramLivePreview";
 import {
   CheckboxWidget,
-  CodeBlockFooterWidget,
-  CodeBlockHeaderWidget,
+  CodeBlockWidget,
   HorizontalRuleWidget,
   InlineFormatWidget,
   ListMarkerWidget
@@ -25,6 +25,67 @@ import { diagramLanguageFor } from "./diagramLanguage";
 import { isClosingBacktickFence, parseBacktickOpeningFence } from "./markdownCodeFence";
 
 export { findClickableLinkAtPosition, type ClickableLinkAtPosition } from "./editorLivePreviewModel";
+
+export function buildCodeBlockPreviewDecorations(state: EditorState): DecorationSet {
+  const ranges: { from: number; to: number; deco: Decoration }[] = [];
+  const doc = state.doc;
+
+  function selectionTouches(from: number, to: number): boolean {
+    return state.selection.ranges.some((range) => {
+      if (range.empty) return range.from >= from && range.from <= to;
+      return range.from <= to && range.to >= from;
+    });
+  }
+
+  function findClosingFenceLine(startLineNumber: number, openingMarkerLength: number): number | null {
+    for (let currentLine = startLineNumber + 1; currentLine <= doc.lines; currentLine += 1) {
+      if (isClosingBacktickFence(doc.line(currentLine).text, openingMarkerLength)) return currentLine;
+    }
+
+    return null;
+  }
+
+  function codeBlockSource(startLineNumber: number, closingLineNumber: number): string {
+    if (closingLineNumber <= startLineNumber + 1) return "";
+
+    return doc.sliceString(doc.line(startLineNumber + 1).from, doc.line(closingLineNumber - 1).to);
+  }
+
+  for (let lineNumber = 1; lineNumber <= doc.lines; lineNumber += 1) {
+    const line = doc.line(lineNumber);
+    const openingFence = parseBacktickOpeningFence(line.text);
+    if (!openingFence) continue;
+
+    const closingLineNumber = findClosingFenceLine(lineNumber, openingFence.markerLength);
+    if (!closingLineNumber) continue;
+
+    if (!diagramLanguageFor(openingFence.language)) {
+      const blockTo = doc.line(closingLineNumber).to;
+      if (!selectionTouches(line.from, blockTo)) {
+        ranges.push({
+          from: line.from,
+          to: blockTo,
+          deco: Decoration.replace({
+            block: true,
+            widget: new CodeBlockWidget(openingFence.language, codeBlockSource(lineNumber, closingLineNumber))
+          })
+        });
+      }
+    }
+
+    lineNumber = closingLineNumber;
+  }
+
+  return Decoration.set(ranges.map((range) => range.deco.range(range.from, range.to)), true);
+}
+
+export function createLivePreviewCodeBlockField(): StateField<DecorationSet> {
+  return StateField.define<DecorationSet>({
+    create: (state) => buildCodeBlockPreviewDecorations(state),
+    update: (_decorations, transaction) => buildCodeBlockPreviewDecorations(transaction.state),
+    provide: (field) => EditorView.decorations.from(field)
+  });
+}
 
 export function buildLivePreviewDecorations(
   view: EditorView,
@@ -113,21 +174,24 @@ export function buildLivePreviewDecorations(
     for (const match of collectInlineMatches(lineFrom, text)) addInlineFormat(lineFrom, match, text);
   }
 
-  function openFenceLengthBefore(lineNumber: number): number | null {
-    let activeFenceLength: number | null = null;
+  function openFenceBefore(lineNumber: number): { language: string | null; lineNumber: number; markerLength: number } | null {
+    let activeFence: { language: string | null; lineNumber: number; markerLength: number } | null = null;
 
     for (let currentLine = 1; currentLine < lineNumber; currentLine += 1) {
       const text = doc.line(currentLine).text;
 
-      if (activeFenceLength === null) {
-        activeFenceLength = parseBacktickOpeningFence(text)?.markerLength ?? null;
+      if (activeFence === null) {
+        const openingFence = parseBacktickOpeningFence(text);
+        activeFence = openingFence
+          ? { language: openingFence.language, lineNumber: currentLine, markerLength: openingFence.markerLength }
+          : null;
         continue;
       }
 
-      if (isClosingBacktickFence(text, activeFenceLength)) activeFenceLength = null;
+      if (isClosingBacktickFence(text, activeFence.markerLength)) activeFence = null;
     }
 
-    return activeFenceLength;
+    return activeFence;
   }
 
   function findClosingFenceLine(startLineNumber: number, openingMarkerLength: number): number | null {
@@ -146,7 +210,7 @@ export function buildLivePreviewDecorations(
 
   for (const { from: visFrom, to: visTo } of view.visibleRanges) {
     let lineNumber = doc.lineAt(visFrom).number;
-    let activeFenceLength = openFenceLengthBefore(lineNumber);
+    let activeFence = openFenceBefore(lineNumber);
 
     while (lineNumber <= doc.lineAt(visTo).number) {
       const line = doc.line(lineNumber);
@@ -163,11 +227,20 @@ export function buildLivePreviewDecorations(
         continue;
       }
 
-      if (activeFenceLength !== null) {
-        if (isClosingBacktickFence(text, activeFenceLength)) {
+      if (activeFence !== null) {
+        const closingLineNumber = findClosingFenceLine(activeFence.lineNumber, activeFence.markerLength);
+        const diagramLanguage = diagramLanguageFor(activeFence.language);
+
+        if (!diagramLanguage && closingLineNumber) {
+          lineNumber = closingLineNumber + 1;
+          activeFence = null;
+          continue;
+        }
+
+        if (isClosingBacktickFence(text, activeFence.markerLength)) {
           addSourceReveal(line.from, line.to);
-          addWidget(line.from, line.to, new CodeBlockFooterWidget());
-          activeFenceLength = null;
+          addReplace(line.from, line.to);
+          activeFence = null;
           lineNumber += 1;
           continue;
         }
@@ -223,26 +296,17 @@ export function buildLivePreviewDecorations(
         const closingLineNumber = findClosingFenceLine(lineNumber, openingFence.markerLength);
 
         if (closingLineNumber) {
-          const source = codeBlockSource(lineNumber, closingLineNumber);
-          addSourceReveal(line.from, line.to);
-          addWidget(line.from, line.to, new CodeBlockHeaderWidget(openingFence.language, source));
-
-          for (let codeLineNumber = lineNumber + 1; codeLineNumber < closingLineNumber; codeLineNumber += 1) {
-            const codeLine = doc.line(codeLineNumber);
-            addMark(codeLine.from, codeLine.to, "cm-live-code-block");
-          }
-
-          const closingLine = doc.line(closingLineNumber);
-          addSourceReveal(closingLine.from, closingLine.to);
-          addWidget(closingLine.from, closingLine.to, new CodeBlockFooterWidget());
-
           lineNumber = closingLineNumber + 1;
           continue;
         }
 
         addSourceReveal(line.from, line.to);
-        addWidget(line.from, line.to, new CodeBlockHeaderWidget(openingFence.language, ""));
-        activeFenceLength = openingFence.markerLength;
+        addReplace(line.from, line.to);
+        activeFence = {
+          language: openingFence.language,
+          lineNumber,
+          markerLength: openingFence.markerLength
+        };
         lineNumber += 1;
         continue;
       }
