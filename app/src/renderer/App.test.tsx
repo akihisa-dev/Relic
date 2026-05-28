@@ -2070,6 +2070,45 @@ describe("App", () => {
     expect(await screen.findByRole("button", { name: /index/ })).toBeInTheDocument();
   });
 
+  it("ワークスペースを開き直したら前のワークスペースのタブを閉じる", async () => {
+    const openWorkspace = vi.fn().mockResolvedValue({
+      ok: true,
+      value: {
+        activeWorkspace: { id: "ws-2", name: "Archive", path: "/tmp/Archive" },
+        fileTree: [{ name: "old", path: "old.md", type: "file" }],
+        pinnedPaths: [],
+        workspaces: [{ id: "ws-2", name: "Archive", path: "/tmp/Archive" }]
+      }
+    });
+
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [{ name: "読書メモ", path: "読書メモ.md", type: "file" }]
+        }
+      }),
+      openWorkspace,
+      readMarkdownFile: vi.fn().mockResolvedValue({
+        ok: true,
+        value: { content: "本文テスト", name: "読書メモ", path: "読書メモ.md" }
+      })
+    });
+
+    await renderApp();
+
+    fireEvent.click(await screen.findByRole("button", { name: /読書メモ/ }));
+    expect(await screen.findByText("読書メモ", { selector: ".pane-tab-name" })).toBeInTheDocument();
+
+    fireEvent.click(await screen.findByRole("button", { name: "ワークスペースを開く" }));
+
+    await waitFor(() => {
+      expect(screen.queryByText("読書メモ", { selector: ".pane-tab-name" })).not.toBeInTheDocument();
+    });
+    expect(useEditorStore.getState().tabs).toEqual({});
+  });
+
   it("新規ワークスペース作成ボタンからワークスペースを登録する", async () => {
     const createNewWorkspace = vi.fn().mockResolvedValue({
       ok: true,
@@ -2089,6 +2128,45 @@ describe("App", () => {
 
     expect(createNewWorkspace).toHaveBeenCalledTimes(1);
     expect(await screen.findByText("Drafts")).toBeInTheDocument();
+  });
+
+  it("新規ワークスペース作成後は前のワークスペースのタブを閉じる", async () => {
+    const createNewWorkspace = vi.fn().mockResolvedValue({
+      ok: true,
+      value: {
+        activeWorkspace: { id: "ws-new", name: "Drafts", path: "/tmp/Drafts" },
+        fileTree: [],
+        pinnedPaths: [],
+        workspaces: [{ id: "ws-new", name: "Drafts", path: "/tmp/Drafts" }]
+      }
+    });
+
+    window.relic = makeRelicApi({
+      createNewWorkspace,
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [{ name: "読書メモ", path: "読書メモ.md", type: "file" }]
+        }
+      }),
+      readMarkdownFile: vi.fn().mockResolvedValue({
+        ok: true,
+        value: { content: "本文テスト", name: "読書メモ", path: "読書メモ.md" }
+      })
+    });
+
+    await renderApp();
+
+    fireEvent.click(await screen.findByRole("button", { name: /読書メモ/ }));
+    expect(await screen.findByText("読書メモ", { selector: ".pane-tab-name" })).toBeInTheDocument();
+
+    fireEvent.click(await screen.findByRole("button", { name: "新規ワークスペース" }));
+
+    await waitFor(() => {
+      expect(screen.queryByText("読書メモ", { selector: ".pane-tab-name" })).not.toBeInTheDocument();
+    });
+    expect(useEditorStore.getState().tabs).toEqual({});
   });
 
   it("登録済みワークスペースをクリックして切り替える", async () => {

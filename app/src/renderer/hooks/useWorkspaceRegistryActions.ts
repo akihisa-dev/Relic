@@ -31,13 +31,14 @@ export function useWorkspaceRegistryActions({
         .then((result) => {
           if (result.ok) {
             setWorkspaceState(result.value);
+            closeAllTabs();
           } else {
             setWorkspaceError(result.error.message);
           }
         })
         .finally(() => setIsOpeningWorkspace(false));
     });
-  }, [beforeCloseAllTabs, setWorkspaceError, setWorkspaceState]);
+  }, [beforeCloseAllTabs, closeAllTabs, setWorkspaceError, setWorkspaceState]);
 
   const handleCreateNewWorkspace = useCallback((): void => {
     const relic = window.relic;
@@ -52,13 +53,14 @@ export function useWorkspaceRegistryActions({
         .then((result) => {
           if (result.ok) {
             setWorkspaceState(result.value);
+            closeAllTabs();
           } else {
             setWorkspaceError(result.error.message);
           }
         })
         .finally(() => setIsCreatingWorkspace(false));
     });
-  }, [beforeCloseAllTabs, setWorkspaceError, setWorkspaceState]);
+  }, [beforeCloseAllTabs, closeAllTabs, setWorkspaceError, setWorkspaceState]);
 
   const handleSwitchWorkspace = useCallback((workspaceId: string): void => {
     const relic = window.relic;
