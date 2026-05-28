@@ -49,11 +49,15 @@ vi.mock("electron", () => {
 });
 
 const fsMock = vi.hoisted(() => ({
+  rename: vi.fn(),
+  unlink: vi.fn(),
   writeFile: vi.fn()
 }));
 
 vi.mock("node:fs/promises", () => ({
-  default: { writeFile: fsMock.writeFile },
+  default: { rename: fsMock.rename, unlink: fsMock.unlink, writeFile: fsMock.writeFile },
+  rename: fsMock.rename,
+  unlink: fsMock.unlink,
   writeFile: fsMock.writeFile
 }));
 
@@ -84,6 +88,8 @@ describe("outputHandlers", () => {
     electronMock.isDestroyed.mockReturnValue(false);
     electronMock.loadURL.mockResolvedValue(undefined);
     electronMock.printToPDF.mockResolvedValue(Buffer.from("pdf"));
+    fsMock.rename.mockResolvedValue(undefined);
+    fsMock.unlink.mockResolvedValue(undefined);
     fsMock.writeFile.mockResolvedValue(undefined);
   });
 
@@ -137,6 +143,29 @@ describe("outputHandlers", () => {
     expect(electronMock.destroy).toHaveBeenCalled();
   });
 
+  it("PDF保存時は一時ファイル経由で保存する", async () => {
+    electronMock.showSaveDialog.mockResolvedValue({ canceled: false, filePath: "/tmp/out.pdf" });
+    registerOutputHandlers();
+
+    const result = await handlerFor(savePreviewAsPdfChannel)({ sender: {} }, {
+      defaultFileName: "Note",
+      html: "<html><body>本文</body></html>",
+      title: "Note"
+    });
+
+    expect(result).toEqual({ ok: true, value: { filePath: "/tmp/out.pdf", status: "saved" } });
+    expect(fsMock.writeFile).toHaveBeenCalledWith(
+      expect.stringMatching(/\/tmp\/\.out\.pdf\..+\.tmp$/),
+      Buffer.from("pdf"),
+      undefined
+    );
+    expect(fsMock.rename).toHaveBeenCalledWith(
+      expect.stringMatching(/\/tmp\/\.out\.pdf\..+\.tmp$/),
+      "/tmp/out.pdf"
+    );
+    expect(fsMock.writeFile).not.toHaveBeenCalledWith("/tmp/out.pdf", expect.anything(), expect.anything());
+  });
+
   it("SVG保存で空SVGを保存しない", async () => {
     registerOutputHandlers();
 
@@ -152,6 +181,29 @@ describe("outputHandlers", () => {
     });
     expect(electronMock.showSaveDialog).not.toHaveBeenCalled();
     expect(fsMock.writeFile).not.toHaveBeenCalled();
+  });
+
+  it("SVG保存時は一時ファイル経由で保存する", async () => {
+    electronMock.showSaveDialog.mockResolvedValue({ canceled: false, filePath: "/tmp/diagram.svg" });
+    registerOutputHandlers();
+
+    const result = await handlerFor(saveDiagramSvgChannel)({ sender: {} }, {
+      defaultFileName: "Note-diagram-1-mermaid",
+      language: "mermaid",
+      svg: '<svg><path d="M0 0" /></svg>'
+    });
+
+    expect(result).toEqual({ ok: true, value: { filePath: "/tmp/diagram.svg", status: "saved" } });
+    expect(fsMock.writeFile).toHaveBeenCalledWith(
+      expect.stringMatching(/\/tmp\/\.diagram\.svg\..+\.tmp$/),
+      '<svg><path d="M0 0" /></svg>',
+      "utf8"
+    );
+    expect(fsMock.rename).toHaveBeenCalledWith(
+      expect.stringMatching(/\/tmp\/\.diagram\.svg\..+\.tmp$/),
+      "/tmp/diagram.svg"
+    );
+    expect(fsMock.writeFile).not.toHaveBeenCalledWith("/tmp/diagram.svg", expect.anything(), expect.anything());
   });
 
   it("SVGコピーで空SVGをコピーしない", async () => {
