@@ -7,7 +7,18 @@ import { readWorkspaceFileTree } from "./fileTree";
 import { parseFrontmatter } from "./frontmatter";
 import { resolveWorkspaceRelativePath } from "./paths";
 
-export async function readWorkspaceAliases(workspacePath: string): Promise<RelicResult<AliasIndex>> {
+interface AliasesReadOperations {
+  readFile(filePath: string, encoding: BufferEncoding): Promise<string>;
+}
+
+const defaultAliasesReadOperations: AliasesReadOperations = {
+  readFile
+};
+
+export async function readWorkspaceAliases(
+  workspacePath: string,
+  operations: AliasesReadOperations = defaultAliasesReadOperations
+): Promise<RelicResult<AliasIndex>> {
   try {
     const fileTree = await readWorkspaceFileTree(workspacePath);
     const aliases: AliasIndex = {};
@@ -16,10 +27,19 @@ export async function readWorkspaceAliases(workspacePath: string): Promise<Relic
       return absolutePath.ok ? [{ absolutePath: absolutePath.value, relativePath }] : [];
     });
     const fileContents = await Promise.all(
-      files.map(async (file) => ({ ...file, content: await readFile(file.absolutePath, "utf8") }))
+      files.map(async (file) => {
+        try {
+          return { ...file, content: await operations.readFile(file.absolutePath, "utf8") };
+        } catch {
+          return null;
+        }
+      })
     );
 
-    for (const { content, relativePath } of fileContents) {
+    for (const fileContent of fileContents) {
+      if (!fileContent) continue;
+
+      const { content, relativePath } = fileContent;
       const fileAliases = extractAliases(content);
 
       if (fileAliases.length > 0) {
