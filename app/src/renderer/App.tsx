@@ -139,6 +139,12 @@ export function App(): ReactElement {
     setWorkspaceError,
     setWorkspaceState
   });
+  const isRightPanelAvailable = featureToggles.rightPanel;
+  const isEffectiveRightPanelOpen = isRightPanelAvailable && isRightPanelOpen;
+  const toggleRightPanelIfAvailable = useCallback((): void => {
+    if (!isRightPanelAvailable) return;
+    toggleRightPanel();
+  }, [isRightPanelAvailable, toggleRightPanel]);
 
   const {
     frontmatterCandidates,
@@ -444,7 +450,7 @@ export function App(): ReactElement {
     setShowCommandPalette,
     setShowQuickSwitcher,
     setSidebarView,
-    toggleRightPanel,
+    toggleRightPanel: toggleRightPanelIfAvailable,
     toggleSidebar,
     toggleSplit: toggleSplitWithMotion,
     toggleTypewriterMode
@@ -470,13 +476,13 @@ export function App(): ReactElement {
   const rightEditorViewRef = useRef<EditorView | null>(null);
 
   const handleRightPanelViewButton = useCallback((view: RightPanelView): void => {
-    if (isRightPanelOpen && rightPanelView === view) {
+    if (isEffectiveRightPanelOpen && rightPanelView === view) {
       toggleRightPanel();
       return;
     }
 
     setRightPanelView(view);
-  }, [isRightPanelOpen, rightPanelView, setRightPanelView, toggleRightPanel]);
+  }, [isEffectiveRightPanelOpen, rightPanelView, setRightPanelView, toggleRightPanel]);
 
   const {
     handleCreateFileInFolder,
@@ -598,7 +604,7 @@ export function App(): ReactElement {
     setShowQuickSwitcher,
     setSidebarView,
     t,
-    toggleRightPanel,
+    toggleRightPanel: toggleRightPanelIfAvailable,
     toggleSidebar,
     toggleSplit: toggleSplitWithMotion,
     toggleTypewriterMode
@@ -673,7 +679,7 @@ export function App(): ReactElement {
     <div className="app-shell">
       <AppTitleBar
         canOutputPreview={Boolean(activeFileTabInFocusedPane)}
-        isRightPanelOpen={isRightPanelOpen}
+        isRightPanelOpen={isEffectiveRightPanelOpen}
         isSourceMode={isSourceMode}
         isSplit={isSplit}
         leftClosingTabIds={leftClosingTabIds}
@@ -699,7 +705,7 @@ export function App(): ReactElement {
         rightPane={rightPane}
         rightPanelView={rightPanelView}
         rightPanelWidth={rightPanelWidth}
-        showRightPanelControls={featureToggles.rightPanel}
+        showRightPanelControls={isRightPanelAvailable}
         tabs={tabs}
       />
       <div className="workspace">
@@ -790,7 +796,7 @@ export function App(): ReactElement {
           focusedPane={focusedPane}
           frontmatterCandidates={frontmatterCandidates}
           isLoadingBacklinks={isLoadingBacklinks}
-          isRightPanelOpen={isRightPanelOpen}
+          isRightPanelOpen={isEffectiveRightPanelOpen}
           isRightPanelResizing={isRightPanelResizing}
           isSourceMode={isSourceMode}
           isSplit={isSplit}
