@@ -5,11 +5,13 @@ const electronMock = vi.hoisted(() => ({
   destroy: vi.fn(),
   handle: vi.fn(),
   isDestroyed: vi.fn(),
+  focus: vi.fn(),
   loadURL: vi.fn(),
   print: vi.fn(),
   printToPDF: vi.fn(),
   setPermissionRequestHandler: vi.fn(),
   setWindowOpenHandler: vi.fn(),
+  show: vi.fn(),
   showSaveDialog: vi.fn(),
   webContentsOn: vi.fn()
 }));
@@ -27,8 +29,10 @@ vi.mock("electron", () => {
     };
 
     destroy = electronMock.destroy;
+    focus = electronMock.focus;
     isDestroyed = electronMock.isDestroyed;
     loadURL = electronMock.loadURL;
+    show = electronMock.show;
   }
 
   return {
@@ -164,5 +168,24 @@ describe("outputHandlers", () => {
     });
 
     expect(result).toEqual({ ok: true, value: { status: "canceled" } });
+  });
+
+  it("印刷時は一時Windowを表示してから印刷ダイアログを開く", async () => {
+    registerOutputHandlers();
+
+    const result = await handlerFor(printPreviewChannel)({ sender: {} }, {
+      html: "<html><body>本文</body></html>",
+      title: "Note"
+    });
+
+    expect(result).toEqual({ ok: true, value: { status: "printed" } });
+    expect(electronMock.loadURL).toHaveBeenCalled();
+    expect(electronMock.show).toHaveBeenCalled();
+    expect(electronMock.focus).toHaveBeenCalled();
+    expect(electronMock.print).toHaveBeenCalledWith(
+      expect.objectContaining({ silent: false }),
+      expect.any(Function)
+    );
+    expect(electronMock.destroy).toHaveBeenCalled();
   });
 });
