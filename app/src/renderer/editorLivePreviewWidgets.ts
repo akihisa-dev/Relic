@@ -1,5 +1,20 @@
 import { WidgetType } from "@codemirror/view";
 
+import { writeEditorClipboardText } from "./editorClipboard";
+
+function stopWidgetButtonEvent(event: Event): void {
+  event.preventDefault();
+  event.stopPropagation();
+  event.stopImmediatePropagation();
+}
+
+function setTemporaryButtonText(button: HTMLButtonElement, text: string, fallback: string): void {
+  button.textContent = text;
+  window.setTimeout(() => {
+    button.textContent = fallback;
+  }, 1600);
+}
+
 export class ListMarkerWidget extends WidgetType {
   constructor(
     private readonly label: string,
@@ -112,5 +127,63 @@ export class HorizontalRuleWidget extends WidgetType {
     const hr = document.createElement("hr");
     hr.className = "cm-live-hr";
     return hr;
+  }
+}
+
+export class CodeBlockHeaderWidget extends WidgetType {
+  readonly className = "cm-live-code-block-header";
+
+  constructor(
+    private readonly language: string | null,
+    private readonly source: string
+  ) {
+    super();
+  }
+
+  eq(other: CodeBlockHeaderWidget): boolean {
+    return this.language === other.language && this.source === other.source;
+  }
+
+  toDOM(): HTMLElement {
+    const header = document.createElement("div");
+    header.className = this.className;
+    header.contentEditable = "false";
+
+    const label = document.createElement("span");
+    label.className = "cm-live-code-block-label";
+    label.textContent = this.language || "コード";
+
+    const button = document.createElement("button");
+    button.className = "cm-live-code-block-copy";
+    button.type = "button";
+    button.textContent = "コピー";
+    button.setAttribute("aria-label", "コードブロックをコピー");
+    button.addEventListener("pointerdown", stopWidgetButtonEvent);
+    button.addEventListener("mousedown", stopWidgetButtonEvent);
+    button.addEventListener("click", (event) => {
+      stopWidgetButtonEvent(event);
+      void writeEditorClipboardText(this.source)
+        .then(() => setTemporaryButtonText(button, "コピーしました", "コピー"))
+        .catch(() => setTemporaryButtonText(button, "コピーできませんでした", "コピー"));
+    });
+
+    header.append(label, button);
+    return header;
+  }
+
+  ignoreEvent(event: Event): boolean {
+    return ["click", "mousedown", "pointerdown"].includes(event.type);
+  }
+}
+
+export class CodeBlockFooterWidget extends WidgetType {
+  readonly className = "cm-live-code-block-footer";
+
+  toDOM(): HTMLElement {
+    const footer = document.createElement("div");
+    footer.className = this.className;
+    footer.contentEditable = "false";
+    footer.setAttribute("aria-label", "コードブロックの終端");
+    return footer;
   }
 }
