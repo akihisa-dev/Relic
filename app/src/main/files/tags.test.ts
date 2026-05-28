@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
@@ -33,6 +33,28 @@ describe("readWorkspaceTags", () => {
       value: [
         { count: 1, tag: "資料" },
         { count: 1, tag: "小説" }
+      ]
+    });
+  });
+
+  it("読めないMarkdownファイルはスキップしてタグ集計を続行する", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-tags-unreadable-"));
+    temporaryPaths.push(workspacePath);
+    await writeFile(path.join(workspacePath, "blocked.md"), "---\ntags: [読めない]\n---", "utf8");
+    await writeFile(path.join(workspacePath, "visible.md"), "---\ntags: [資料]\n---", "utf8");
+
+    await expect(readWorkspaceTags(workspacePath, {
+      async readFile(filePath, encoding) {
+        if (path.basename(filePath) === "blocked.md") {
+          throw Object.assign(new Error("Permission denied"), { code: "EACCES" });
+        }
+
+        return readFile(filePath, encoding);
+      }
+    })).resolves.toEqual({
+      ok: true,
+      value: [
+        { count: 1, tag: "資料" }
       ]
     });
   });
