@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, writeFile } from "node:fs/promises";
+import { mkdtemp, readdir, readFile, symlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
@@ -270,6 +270,7 @@ describe("updateWorkspaceChartEntry", () => {
     const updated = await readFile(filePath, "utf8");
     expect(extractChronicleRange(updated)).toEqual({ endYear: 1334, startYear: 1186 });
     expect(extractDateRange(updated)).toEqual({ endDate: "2027-05-05", startDate: "2027-05-01" });
+    await expect(readdir(workspacePath)).resolves.toEqual(["entry.md"]);
   });
 
   it("サブ暦バー移動時は元のchronicleNへサブ暦年で書き戻す", async () => {
@@ -447,6 +448,38 @@ describe("updateWorkspaceChartEntry", () => {
     if (result.ok) return;
     expect(result.error.code).toBe("CHART_FRONTMATTER_INVALID");
     await expect(readFile(filePath, "utf8")).resolves.toBe(original);
+  });
+
+  it("実体がワークスペース外のシンボリックリンクにはチャート書き戻しをしない", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-chart-linked-update-"));
+    const outsidePath = await mkdtemp(path.join(os.tmpdir(), "relic-chart-linked-outside-"));
+    const outsideFilePath = path.join(outsidePath, "outside.md");
+    const original = "---\nchronicle0: [2026]\nplannedDate: [2026-05-01]\n---\n# A\n";
+    await writeFile(outsideFilePath, original, "utf8");
+    await symlink(outsideFilePath, path.join(workspacePath, "linked.md"));
+
+    const result = await updateWorkspaceChartEntry(
+      workspacePath,
+      [
+        { filePaths: [], id: "chronicle", name: "chronicle", source: "chronicle" },
+        { filePaths: [], id: "date", name: "date", source: "date" }
+      ],
+      {
+        endValue: 20820,
+        kind: "resize-end",
+        originalEndValue: 20574,
+        originalStartValue: 20574,
+        path: "linked.md",
+        source: "date",
+        startValue: 20574
+      }
+    );
+
+    expect(result).toMatchObject({
+      error: expect.objectContaining({ code: "WORKSPACE_PATH_OUTSIDE" }),
+      ok: false
+    });
+    await expect(readFile(outsideFilePath, "utf8")).resolves.toBe(original);
   });
 
   it("actualDateバーの長さ変更時にactualDateとchronicleを連動して更新する", async () => {

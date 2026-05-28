@@ -1,4 +1,4 @@
-import { readFile, writeFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
 
 import {
@@ -17,8 +17,9 @@ import {
   sortChronicleEntries,
   sortDateEntries
 } from "./chronicleData";
+import { atomicWriteTextFile } from "./atomicWrite";
 import { readWorkspaceFileTree } from "./fileTree";
-import { resolveWorkspaceRelativePath } from "./paths";
+import { resolveExistingWorkspacePath, resolveWorkspaceRelativePath } from "./paths";
 
 export { extractChronicleRange, extractDateRange } from "./chronicleData";
 
@@ -72,14 +73,14 @@ export async function updateWorkspaceChartEntry(
   calendars: ChronicleCalendarSettings[] = defaultChronicleCalendars
 ): Promise<RelicResult<WorkspaceChart[]>> {
   try {
-    const absolutePath = resolveWorkspaceRelativePath(workspacePath, input.path);
+    if (path.extname(input.path) !== ".md") {
+      return fail("CHART_ENTRY_NOT_MARKDOWN", "Markdownファイル以外は更新できません。");
+    }
+
+    const absolutePath = await resolveExistingWorkspacePath(workspacePath, input.path);
 
     if (!absolutePath.ok) {
       return absolutePath;
-    }
-
-    if (path.extname(absolutePath.value) !== ".md") {
-      return fail("CHART_ENTRY_NOT_MARKDOWN", "Markdownファイル以外は更新できません。");
     }
 
     const content = await readFile(absolutePath.value, "utf8");
@@ -87,7 +88,7 @@ export async function updateWorkspaceChartEntry(
 
     if (!nextContent.ok) return nextContent;
 
-    await writeFile(absolutePath.value, nextContent.value, "utf8");
+    await atomicWriteTextFile(absolutePath.value, nextContent.value);
 
     return readWorkspaceCharts(workspacePath, charts, calendars);
   } catch (error) {
