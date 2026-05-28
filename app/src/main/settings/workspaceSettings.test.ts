@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
@@ -106,6 +106,9 @@ describe("workspaceSettings", () => {
 
     expect(raw.charts).toEqual(defaultCharts);
     expect(raw.ganttCharts).toBeUndefined();
+    await expect(readdir(path.dirname(getWorkspaceSettingsPath(userDataPath, "ws-new")))).resolves.toEqual([
+      path.basename(getWorkspaceSettingsPath(userDataPath, "ws-new"))
+    ]);
   });
 
   it("設定ファイルのパスはworkspaceId別になる", () => {
