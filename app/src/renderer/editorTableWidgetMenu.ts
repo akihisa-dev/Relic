@@ -9,7 +9,7 @@ import {
   tableColumnCount,
   type TableBlock
 } from "./editorTableModel";
-import type { Translator } from "./i18n";
+import type { Translator } from "./i18nModel";
 
 type LiveTableClipboard =
   | { type: "row"; cells: string[] }

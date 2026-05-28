@@ -1,5 +1,5 @@
-export const largeMarkdownMaxContentBytes = 1024 * 1024;
-export const largeMarkdownMaxLineLength = 80000;
+const largeMarkdownMaxContentBytes = 1024 * 1024;
+const largeMarkdownMaxLineLength = 80000;
 
 export function isLargeMarkdownContent(content: string): boolean {
   if (new Blob([content]).size > largeMarkdownMaxContentBytes) return true;

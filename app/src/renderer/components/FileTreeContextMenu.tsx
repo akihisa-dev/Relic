@@ -93,7 +93,7 @@ export function FileTreeContextMenu({
       className="tab-context-menu file-tree-context-menu"
       ref={menuRef}
       role="menu"
-      style={{ left: contextMenu.x, position: "fixed", top: contextMenu.y, zIndex: 1000 }}
+      style={{ left: contextMenu.x, position: "fixed", top: contextMenu.y, zIndex: 40 }}
     >
       {useSelectedItems ? null : (
         <>

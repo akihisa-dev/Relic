@@ -15,7 +15,7 @@ import { handleMarkdownListEnter, indentMarkdownListSelection, isListInputEvent,
 import { buildLivePreviewDecorations, createLivePreviewCodeBlockField, findClickableLinkAtPosition } from "./editorLivePreview";
 import { diagramEditRangeField } from "./editorDiagramEditState";
 import { createLivePreviewTableField } from "./editorTables";
-import type { Translator } from "./i18n";
+import type { Translator } from "./i18nModel";
 
 function createLivePreviewPlugin(
   onOpenLinkRef: RefObject<((href: string) => void) | undefined>,

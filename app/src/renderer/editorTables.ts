@@ -3,7 +3,7 @@ import { Decoration, EditorView, type DecorationSet } from "@codemirror/view";
 
 import { findTableBlocks } from "./editorTableModel";
 import { TableWidget } from "./editorTableWidget";
-import type { Translator } from "./i18n";
+import type { Translator } from "./i18nModel";
 
 export {
   deleteTableColumn,
@@ -12,14 +12,11 @@ export {
   formatTable,
   insertTableColumn,
   insertTableRow,
-  isTableDivider,
   moveTableColumn,
   moveTableColumnTo,
   moveTableRow,
   moveTableRowTo,
-  normalizeTableRows,
   sortTableByColumn,
-  splitTableRow,
   tableColumnCount,
   tableRowsFingerprint,
   withTableCellValue,

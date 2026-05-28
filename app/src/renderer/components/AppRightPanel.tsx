@@ -7,7 +7,7 @@ import { markdownLinkForPath } from "../appLinks";
 import type { OutlineHeading } from "../editorDerivedState";
 import { useT } from "../i18n";
 import type { RightPanelView } from "../store/uiStore";
-import { fixedMenuPosition } from "./RailNavigation";
+import { fixedMenuPosition } from "./railNavigationModel";
 
 interface AppRightPanelProps {
   backlinks: Backlink[];
@@ -51,22 +51,21 @@ export function AppRightPanel({
       className={`right-panel${isOpen ? "" : " right-panel--closed"}${isResizing ? " right-panel--resizing" : ""}`}
       style={{ flexBasis: isOpen ? width : 0, width: isOpen ? width : 0 }}
     >
-      <div
+      <button
+        aria-label={t("pane.resizeRightPanel")}
         className={`right-panel-resize-handle${isResizing ? " right-panel-resize-handle--active" : ""}`}
         onMouseDown={onResizeStart}
+        type="button"
       />
       <div className={`sidebar-body right-panel-content right-panel-content--${rightPanelView}`}>
       {rightPanelView === "outline" ? (
         outlineHeadings.length > 0 ? (
           <ul className="outline-list">
-            {outlineHeadings.map((heading, index) => (
-              <li
-                className={`outline-item outline-item--h${heading.level}`}
-                key={index}
-                onClick={() => onOutlineHeadingClick(heading.text)}
-                title={heading.text}
-              >
-                {heading.text}
+            {outlineHeadings.map((heading) => (
+              <li className={`outline-item outline-item--h${heading.level}`} key={`${heading.level}-${heading.text}`} title={heading.text}>
+                <button className="outline-item-button" onClick={() => onOutlineHeadingClick(heading.text)} type="button">
+                  {heading.text}
+                </button>
               </li>
             ))}
           </ul>
@@ -82,8 +81,8 @@ export function AppRightPanel({
             ) : null}
             {outgoingLinks.length > 0 ? (
               <ul className="links-list">
-                {outgoingLinks.map((link, index) => (
-                  <li className="links-list-item" key={`${link.wikiLink.raw}-${index}`}>
+                {outgoingLinks.map((link) => (
+                  <li className="links-list-item" key={`${link.wikiLink.kind}-${link.wikiLink.raw}-${link.wikiLink.target}`}>
                     <span className={`links-list-kind links-list-kind--${link.wikiLink.kind}`}>
                       {link.wikiLink.kind === "embed" ? t("links.embed") : t("links.link")}
                     </span>

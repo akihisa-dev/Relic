@@ -6,7 +6,7 @@ import {
   insertTableRow,
   type TableBlock
 } from "./editorTableModel";
-import type { Translator } from "./i18n";
+import type { Translator } from "./i18nModel";
 
 export type TableEdgeAddAxis = "column-before" | "column-after" | "row-before" | "row-after";
 

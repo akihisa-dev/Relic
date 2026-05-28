@@ -157,10 +157,9 @@ function ChronicleEntryBar({
       type="button"
     >
       <span
-        aria-label={t("chronicle.resizeStart")}
+        aria-hidden="true"
         className="chronicle-fill-resize chronicle-fill-resize--start"
         onPointerDown={(event) => onStartEntryEdit(event, entry, "resize-start")}
-        role="separator"
       />
       <span className="chronicle-fill-label" style={{ left: labelLeft, width: labelWidth }}>{rangeLabel}</span>
       {statusLabel ? (
@@ -169,10 +168,9 @@ function ChronicleEntryBar({
         </span>
       ) : null}
       <span
-        aria-label={t("chronicle.resizeEnd")}
+        aria-hidden="true"
         className="chronicle-fill-resize chronicle-fill-resize--end"
         onPointerDown={(event) => onStartEntryEdit(event, entry, "resize-end")}
-        role="separator"
       />
     </button>
   );

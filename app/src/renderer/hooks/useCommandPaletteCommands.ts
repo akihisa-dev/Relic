@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 
 import type { Command } from "../components/CommandPalette";
-import type { TranslationKey } from "../i18n";
+import type { TranslationKey } from "../i18nModel";
 import { formatShortcut } from "../keyboardShortcuts";
 
 type Translate = (key: TranslationKey, params?: Record<string, string>) => string;

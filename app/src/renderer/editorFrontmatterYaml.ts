@@ -27,7 +27,7 @@ export interface YamlFieldEntry {
 
 const topLevelYamlFieldPattern = /^([^#\s][^:]*):(?:\s|$)/;
 
-export function findYamlInlineComment(line: string): string | null {
+function findYamlInlineComment(line: string): string | null {
   let quote: "'" | "\"" | null = null;
 
   for (let index = 0; index < line.length; index += 1) {
@@ -52,14 +52,14 @@ export function findYamlInlineComment(line: string): string | null {
   return null;
 }
 
-export function findYamlScalarQuote(line: string): "'" | "\"" | null {
+function findYamlScalarQuote(line: string): "'" | "\"" | null {
   const match = /^[^:]+:\s*(["'])/.exec(line);
   if (!match) return null;
 
   return match[1] === "'" ? "'" : "\"";
 }
 
-export function isYamlFlowSequence(line: string): boolean {
+function isYamlFlowSequence(line: string): boolean {
   return /^[^:]+:\s*\[/.test(line);
 }
 
@@ -79,7 +79,7 @@ export function findTopLevelYamlFieldEntries(lines: string[]): YamlFieldEntry[] 
   return entries;
 }
 
-export function serializeFlowScalar(key: string, value: unknown): string {
+function serializeFlowScalar(key: string, value: unknown): string {
   if (isFixedDateRangeField(key) && typeof value === "string" && parseDateInput(value) !== null) return value;
   if (isFixedDateRangeField(key) && value instanceof Date) return value.toISOString().slice(0, 10);
   if (typeof value === "string") return JSON.stringify(value);
@@ -102,7 +102,7 @@ export function serializeData(data: Record<string, unknown>, userDefinedFields: 
     .join("\n");
 }
 
-export function serializeEntryPreservingQuote(
+function serializeEntryPreservingQuote(
   entry: YamlFieldEntry,
   lines: string[],
   value: unknown,
@@ -134,7 +134,7 @@ export function serializeEntryPreservingQuote(
   return `${entry.key}: ${JSON.stringify(value)}`;
 }
 
-export function serializeEntryPreservingInlineComment(
+function serializeEntryPreservingInlineComment(
   entry: YamlFieldEntry,
   lines: string[],
   value: unknown,

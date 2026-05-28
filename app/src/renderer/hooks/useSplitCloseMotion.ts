@@ -30,7 +30,8 @@ export function useSplitCloseMotion(
 
   useEffect(() => {
     return () => {
-      if (splitCloseTimerRef.current) clearTimeout(splitCloseTimerRef.current);
+      const splitCloseTimer = splitCloseTimerRef.current;
+      if (splitCloseTimer) clearTimeout(splitCloseTimer);
     };
   }, []);
 

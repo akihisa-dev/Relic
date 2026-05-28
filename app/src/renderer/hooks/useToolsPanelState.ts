@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 import type { MergeFilterType, MergeSortBy, SplitHeadingLevel } from "../../shared/ipc";
-import type { Translator } from "../i18n";
+import type { Translator } from "../i18nModel";
 import {
   buildMergeFilesInput,
   buildSplitFileInput,

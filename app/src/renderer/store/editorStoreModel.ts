@@ -436,7 +436,7 @@ export function toggleTabPinnedState(
   };
 }
 
-export function activateTab(pane: PaneState, tabId: string): PaneState {
+function activateTab(pane: PaneState, tabId: string): PaneState {
   return {
     ...pane,
     activeTabId: tabId,
@@ -444,7 +444,7 @@ export function activateTab(pane: PaneState, tabId: string): PaneState {
   };
 }
 
-export function ensureTabInPane(pane: PaneState, tabId: string): PaneState {
+function ensureTabInPane(pane: PaneState, tabId: string): PaneState {
   if (pane.tabIds.includes(tabId)) return pane;
 
   return {

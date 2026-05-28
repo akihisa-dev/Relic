@@ -1,6 +1,6 @@
 import type { ReactElement, ReactNode } from "react";
 
-import type { Translator } from "../i18n";
+import type { Translator } from "../i18nModel";
 import {
   TOOLBAR_HEADING_LEVELS,
   toolbarPanelClass,
@@ -216,7 +216,7 @@ export function ToolbarInsertGroup({
         {showLinkDialog ? (
           <div className={toolbarPanelClass("toolbar-inline-dialog", "link", closingPanel)}>
             <input
-              autoFocus
+              aria-label={t("toolbar.markdownLink")}
               className="toolbar-input"
               onChange={(event) => onSetLinkUrl(event.target.value)}
               onKeyDown={(event) => {
@@ -244,6 +244,7 @@ export function ToolbarInsertGroup({
         {showTableDialog ? (
           <div className={toolbarPanelClass("toolbar-inline-dialog", "table", closingPanel)}>
             <input
+              aria-label={t("toolbar.rows")}
               className="toolbar-input toolbar-input--narrow"
               onChange={(event) => onSetTableRows(event.target.value)}
               placeholder={t("toolbar.rows")}
@@ -252,6 +253,7 @@ export function ToolbarInsertGroup({
             />
             <span>×</span>
             <input
+              aria-label={t("toolbar.columns")}
               className="toolbar-input toolbar-input--narrow"
               onChange={(event) => onSetTableCols(event.target.value)}
               placeholder={t("toolbar.columns")}

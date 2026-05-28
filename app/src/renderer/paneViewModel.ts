@@ -1,4 +1,4 @@
-import type { Translator } from "./i18n";
+import type { Translator } from "./i18nModel";
 import type { PaneId, PanelTabKind, Tab } from "./store/editorStore";
 
 export const PANE_TAB_DRAG_MIME = "application/relic-tab";

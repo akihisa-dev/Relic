@@ -1,5 +1,5 @@
 import { chronicleCalendarIds, type ChronicleCalendarId, type UserDefinedField, type UserDefinedFieldType } from "../shared/ipc";
-import type { TranslationKey, Translator } from "./i18n";
+import type { TranslationKey, Translator } from "./i18nModel";
 
 export const FIELD_TYPES: UserDefinedFieldType[] = [
   "text",
@@ -39,7 +39,7 @@ export const FIELD_TYPE_DESCRIPTION_KEYS: Record<UserDefinedFieldType, Translati
   url: "settings.fieldTypeUrlDescription"
 };
 
-export const RESERVED_FIELD_NAMES = new Set(["aliases", "tags", "status", ...chronicleCalendarIds, "plannedDate", "actualDate"]);
+const RESERVED_FIELD_NAMES = new Set(["aliases", "tags", "status", ...chronicleCalendarIds, "plannedDate", "actualDate"]);
 
 export type FixedFieldDefinition = {
   name: "actualDate" | "aliases" | "tags" | "status" | ChronicleCalendarId | "plannedDate";
@@ -81,7 +81,7 @@ export const STANDARD_FIXED_FIELDS: FixedFieldDefinition[] = [
   }
 ];
 
-export const FIXED_FIELDS: FixedFieldDefinition[] = [
+const FIXED_FIELDS: FixedFieldDefinition[] = [
   ...STANDARD_FIXED_FIELDS.slice(0, 3),
   ...CHRONICLE_FIXED_FIELDS,
   ...STANDARD_FIXED_FIELDS.slice(3)
@@ -92,7 +92,10 @@ export function needsChoices(type: UserDefinedFieldType): boolean {
 }
 
 export function parseChoiceInput(value: string): string[] {
-  return value.split(/[,\n]/).map((choice) => choice.trim()).filter(Boolean);
+  return value.split(/[,\n]/).flatMap((choice) => {
+    const item = choice.trim();
+    return item ? [item] : [];
+  });
 }
 
 export function uniqueChoices(choices: string[]): string[] {

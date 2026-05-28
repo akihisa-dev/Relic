@@ -6,7 +6,7 @@ import {
   renderMarkdown,
   toggleNthCheckbox
 } from "./previewMarkdown";
-import { createTranslator } from "./i18n";
+import { createTranslator } from "./i18nModel";
 import { decodeDiagramSourceAttribute, encodeDiagramSourceAttribute } from "./diagramSourceAttribute";
 
 const t = createTranslator("ja");

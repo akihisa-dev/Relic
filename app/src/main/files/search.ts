@@ -64,9 +64,13 @@ export async function searchWorkspace(
       }
 
       if (mode === "fileName") {
-        const alias = extractAliases(content).find((item) =>
-          item.toLocaleLowerCase().includes(normalizedQuery.toLocaleLowerCase())
-        );
+        let alias: string | null = null;
+        for (const item of extractAliases(content)) {
+          if (item.toLocaleLowerCase().includes(normalizedQuery.toLocaleLowerCase())) {
+            alias = item;
+            break;
+          }
+        }
 
         if (fileName.toLocaleLowerCase().includes(normalizedQuery.toLocaleLowerCase()) || alias) {
           results.push({ fileName, lineNumber: null, lineText: alias ? `alias: ${alias}` : relativePath, path: relativePath });
@@ -82,7 +86,7 @@ export async function searchWorkspace(
       if (mode === "tag") {
         const tagQuery = normalizedQuery.replace(/^#/, "");
 
-        if (parseMarkdownTags(content).tags.includes(tagQuery)) {
+        if (new Set(parseMarkdownTags(content).tags).has(tagQuery)) {
           results.push({ fileName, lineNumber: null, lineText: `tags: ${tagQuery}`, path: relativePath });
           if (results.length >= workspaceSearchMaxResults) {
             truncated = true;

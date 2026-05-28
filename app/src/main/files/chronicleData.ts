@@ -78,7 +78,7 @@ export function collectChartEntriesForMarkdown(
 }
 
 export function sortChronicleEntries(entries: ChartEntry[]): ChartEntry[] {
-  return [...entries].sort((a, b) =>
+  return entries.toSorted((a, b) =>
     a.startValue - b.startValue ||
       a.endValue - b.endValue ||
       a.fileName.localeCompare(b.fileName, "ja")
@@ -86,7 +86,7 @@ export function sortChronicleEntries(entries: ChartEntry[]): ChartEntry[] {
 }
 
 export function sortDateEntries(entries: ChartEntry[]): ChartEntry[] {
-  return [...entries].sort((a, b) =>
+  return entries.toSorted((a, b) =>
     a.fileName.localeCompare(b.fileName, "ja") ||
       a.path.localeCompare(b.path, "ja") ||
       dateKindOrder(a.dateKind) - dateKindOrder(b.dateKind) ||
@@ -166,10 +166,11 @@ export function extractDateRange(markdown: string): DateRange | null {
 function extractStatusValues(data: Record<string, unknown>): string[] {
   const value = data.status;
   const rawValues = Array.isArray(value) ? value : typeof value === "string" ? [value] : [];
-  const statuses = rawValues
-    .filter((candidate): candidate is string => typeof candidate === "string")
-    .map((candidate) => candidate.trim())
-    .filter((candidate) => candidate.length > 0);
+  const statuses = rawValues.flatMap((candidate) => {
+    if (typeof candidate !== "string") return [];
+    const status = candidate.trim();
+    return status ? [status] : [];
+  });
 
   return [...new Set(statuses)];
 }

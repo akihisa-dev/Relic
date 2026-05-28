@@ -9,7 +9,7 @@ import { isLargeMarkdownContent } from "../largeMarkdown";
 import type { FileTab, PaneId, PaneState, Tab } from "../store/editorStore";
 import { useBacklinksState } from "./useBacklinksState";
 
-export const maxOutgoingLinks = 1000;
+const maxOutgoingLinks = 1000;
 
 interface UseActiveDocumentContextInput {
   aliasesByPath: AliasIndex;

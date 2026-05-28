@@ -11,32 +11,34 @@ export async function readWorkspaceFileTree(workspacePath: string): Promise<Work
 async function readDirectory(rootPath: string, relativeDirectory: string): Promise<WorkspaceTreeNode[]> {
   const absoluteDirectory = path.join(rootPath, relativeDirectory);
   const entries = await readdir(absoluteDirectory, { withFileTypes: true });
-  const nodes = await Promise.all(
-    entries
-      .filter((entry) => !entry.name.startsWith("."))
-      .map(async (entry): Promise<WorkspaceTreeNode | null> => {
-        const relativePath = toWorkspaceRelativePath(path.join(relativeDirectory, entry.name));
+  const nodeReads = entries.reduce<Promise<WorkspaceTreeNode | null>[]>((reads, entry) => {
+    if (entry.name.startsWith(".")) return reads;
 
-        if (entry.isDirectory()) {
-          return {
-            children: await readDirectory(rootPath, relativePath),
-            name: entry.name,
-            path: relativePath,
-            type: "folder"
-          };
-        }
+    reads.push((async (): Promise<WorkspaceTreeNode | null> => {
+      const relativePath = toWorkspaceRelativePath(path.join(relativeDirectory, entry.name));
 
-        if (entry.isFile() && path.extname(entry.name) === ".md") {
-          return {
-            name: path.basename(entry.name, ".md"),
-            path: relativePath,
-            type: "file"
-          };
-        }
+      if (entry.isDirectory()) {
+        return {
+          children: await readDirectory(rootPath, relativePath),
+          name: entry.name,
+          path: relativePath,
+          type: "folder"
+        };
+      }
 
-        return null;
-      })
-  );
+      if (entry.isFile() && path.extname(entry.name) === ".md") {
+        return {
+          name: path.basename(entry.name, ".md"),
+          path: relativePath,
+          type: "file"
+        };
+      }
+
+      return null;
+    })());
+    return reads;
+  }, []);
+  const nodes = await Promise.all(nodeReads);
 
   return nodes.filter(isTreeNode).sort(compareTreeNodes);
 }

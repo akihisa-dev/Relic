@@ -124,6 +124,7 @@ const VALID_FIELD_TYPES: UserDefinedFieldType[] = [
   "multi-select",
   "url"
 ];
+const VALID_FIELD_TYPES_SET = new Set<UserDefinedFieldType>(VALID_FIELD_TYPES);
 const FIELD_NAME_PATTERN = /^[^\s:][^\r\n:]*$/;
 const RESERVED_FIELD_NAMES = new Set(["aliases", "tags", "status", ...chronicleCalendarIds, "plannedDate", "actualDate"]);
 
@@ -142,7 +143,7 @@ function parseUserDefinedFields(raw: unknown): UserDefinedField[] {
       RESERVED_FIELD_NAMES.has(f.name)
     ) continue;
     if (names.has(f.name)) continue;
-    if (!VALID_FIELD_TYPES.includes(f.type as UserDefinedFieldType)) continue;
+    if (!VALID_FIELD_TYPES_SET.has(f.type as UserDefinedFieldType)) continue;
 
     const field: UserDefinedField = { name: f.name, type: f.type as UserDefinedFieldType };
 

@@ -1,6 +1,6 @@
 type ShortcutKey = "mod" | "shift" | "alt" | string;
 
-export function getPlatform(): string {
+function getPlatform(): string {
   return typeof navigator === "undefined" ? "" : navigator.platform;
 }
 

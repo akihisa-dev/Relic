@@ -1,14 +1,9 @@
-import { createContext, useContext, useMemo } from "react";
+import { createContext, use, useMemo } from "react";
 import type { ReactNode } from "react";
 
 import type { AppLanguage } from "../shared/ipc";
-import { createTranslator as createSharedTranslator, type TranslationKey, type Translator } from "../shared/i18n";
-
-export type { TranslationKey, Translator };
-
-export function createTranslator(language: AppLanguage): Translator {
-  return createSharedTranslator(language, typeof navigator === "undefined" ? undefined : navigator.language);
-}
+import { createTranslator } from "./i18nModel";
+import type { Translator } from "./i18nModel";
 
 const I18nContext = createContext<Translator>(createTranslator("system"));
 
@@ -25,5 +20,5 @@ export function I18nProvider({
 }
 
 export function useT(): Translator {
-  return useContext(I18nContext);
+  return use(I18nContext);
 }

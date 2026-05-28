@@ -138,9 +138,12 @@
 }
 
 .right-panel-resize-handle {
+  background: transparent;
+  border: 0;
   bottom: 0;
   cursor: col-resize;
   left: 0;
+  padding: 0;
   position: absolute;
   top: 0;
   transition:
@@ -695,6 +698,20 @@
   transform: translateY(1px) scale(0.99);
 }
 
+.outline-item-button {
+  background: none;
+  border: 0;
+  color: inherit;
+  cursor: default;
+  display: block;
+  font: inherit;
+  overflow: hidden;
+  padding: 0;
+  text-align: left;
+  text-overflow: ellipsis;
+  width: 100%;
+}
+
 .outline-item--h1 { padding-left: 8px; font-weight: 600; }
 .outline-item--h2 { padding-left: 16px; }
 .outline-item--h3 { padding-left: 24px; }
@@ -845,10 +862,15 @@
 
 .command-item {
   align-items: center;
+  background: none;
+  border: 0;
+  color: inherit;
   cursor: pointer;
   display: flex;
+  font: inherit;
   justify-content: space-between;
   padding: 8px 16px;
+  text-align: left;
   transform-origin: center;
   transition:
     background-color var(--motion-fast) var(--ease-standard),

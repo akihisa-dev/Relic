@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import type { MouseEvent, ReactElement, ReactNode } from "react";
 
 import type { FeatureToggles } from "../../shared/ipc";
@@ -14,13 +14,12 @@ import {
   type AppRailView,
   type AppRailViewId
 } from "../appShellModel";
-import { sidebarViewDefs } from "../components/RailNavigation";
-import type { Translator } from "../i18n";
+import { sidebarViewDefs } from "../components/railNavigationViews";
+import type { Translator } from "../i18nModel";
 import { useEditorStore, type PaneId, type PaneState, type PanelTabKind, type Tab } from "../store/editorStore";
 import type { SidebarView } from "../store/uiStore";
 
 interface UseAppRailNavigationInput {
-  activeSidebarView: SidebarView;
   clearRailTabFlight: () => void;
   closeSidebar: () => void;
   featureToggles: FeatureToggles;
@@ -59,7 +58,6 @@ export interface UseAppRailNavigationResult {
 }
 
 export function useAppRailNavigation({
-  activeSidebarView,
   clearRailTabFlight,
   closeSidebar,
   featureToggles,
@@ -101,19 +99,6 @@ export function useAppRailNavigation({
     () => splitRailViews(enabledRailViews),
     [enabledRailViews]
   );
-
-  useEffect(() => {
-    if (
-      activeSidebarView !== "tools" &&
-      activeSidebarView !== "frontmatter" &&
-      activeSidebarView !== "settings"
-    ) {
-      return;
-    }
-
-    openPanelInPane(focusedPane, activeSidebarView, panelLabels[activeSidebarView]);
-    setSidebarView("files");
-  }, [activeSidebarView, focusedPane, openPanelInPane, panelLabels, setSidebarView]);
 
   const renderPanelTabIcon = useCallback((panel: PanelTabKind): ReactNode => (
     sidebarViews.find((view) => view.id === panel)?.icon ?? null

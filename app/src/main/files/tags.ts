@@ -13,14 +13,15 @@ export async function readWorkspaceTags(
   try {
     const fileTree = await readWorkspaceFileTree(workspacePath);
     const tagCounts = new Map<string, number>();
-
-    for (const relativePath of collectMarkdownPaths(fileTree)) {
+    const files = collectMarkdownPaths(fileTree).flatMap((relativePath) => {
       const absolutePath = resolveWorkspaceRelativePath(workspacePath, relativePath);
+      return absolutePath.ok ? [{ absolutePath: absolutePath.value, relativePath }] : [];
+    });
+    const fileContents = await Promise.all(
+      files.map(async (file) => ({ ...file, content: await readFile(file.absolutePath, "utf8") }))
+    );
 
-      if (!absolutePath.ok) continue;
-
-      const content = await readFile(absolutePath.value, "utf8");
-
+    for (const { content } of fileContents) {
       for (const tag of parseMarkdownTags(content).tags) {
         tagCounts.set(tag, (tagCounts.get(tag) ?? 0) + 1);
       }

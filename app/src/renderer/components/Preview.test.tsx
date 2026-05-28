@@ -3,7 +3,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { defaultEditorSettings } from "../../shared/ipc";
 import { I18nProvider } from "../i18n";
-import { Preview, normalizeEmbedTarget } from "./Preview";
+import { normalizeEmbedTarget } from "../previewMarkdown";
+import { Preview } from "./Preview";
 
 const settings = { ...defaultEditorSettings, language: "ja" as const };
 

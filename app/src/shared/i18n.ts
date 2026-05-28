@@ -7,7 +7,7 @@ const dictionaries = { en, ja };
 export type TranslationKey = keyof typeof en;
 export type Translator = (key: TranslationKey, values?: Record<string, string | number>) => string;
 
-export function resolveLanguage(language: AppLanguage, systemLanguage?: string): "en" | "ja" {
+function resolveLanguage(language: AppLanguage, systemLanguage?: string): "en" | "ja" {
   if (language === "en" || language === "ja") return language;
 
   if (systemLanguage?.toLowerCase().startsWith("ja")) {

@@ -140,6 +140,6 @@ export function useWorkspaceSearchState({
 
 
 function mergeCandidates(...lists: string[][]): string[] {
-  return [...new Set(lists.flat().filter((item) => item.trim() !== ""))]
-    .sort((a, b) => a.localeCompare(b, "ja"));
+  return Array.from(new Set(lists.flat().filter((item) => item.trim() !== "")))
+    .toSorted((a, b) => a.localeCompare(b, "ja"));
 }

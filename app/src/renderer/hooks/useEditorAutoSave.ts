@@ -193,10 +193,11 @@ export function useEditorAutoSave({
 
   useEffect(() => {
     return () => {
-      for (const queue of queuesRef.current.values()) {
+      const queues = queuesRef.current;
+      for (const queue of queues.values()) {
         if (queue.timer) clearTimeout(queue.timer);
       }
-      queuesRef.current.clear();
+      queues.clear();
     };
   }, []);
 

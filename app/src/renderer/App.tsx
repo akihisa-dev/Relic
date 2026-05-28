@@ -15,7 +15,8 @@ import { AppOverlays } from "./components/AppOverlays";
 import { AppRail } from "./components/AppRail";
 import { AppStatusBar } from "./components/AppStatusBar";
 import { AppTitleBar } from "./components/AppTitleBar";
-import { createTranslator, I18nProvider } from "./i18n";
+import { I18nProvider } from "./i18n";
+import { createTranslator } from "./i18nModel";
 import { useActiveDocumentContext } from "./hooks/useActiveDocumentContext";
 import { useAppKeyboardShortcuts } from "./hooks/useAppKeyboardShortcuts";
 import { useAppPaneFileActions } from "./hooks/useAppPaneFileActions";
@@ -40,7 +41,7 @@ import { useWorkspaceSearchState } from "./hooks/useWorkspaceSearchState";
 import { matchesAnyTreeItemPath } from "./hooks/workspaceFileActionHelpers";
 import { buildPreviewOutputHtml } from "./outputHtml";
 import { useEditorStore, type PaneId } from "./store/editorStore";
-import { useUiStore, type RightPanelView } from "./store/uiStore";
+import { useUiStore, type RightPanelView, type SidebarView } from "./store/uiStore";
 import { collectMarkdownPaths } from "./workspacePaths";
 import "./styles.css";
 
@@ -233,9 +234,10 @@ export function App(): ReactElement {
     items: Array<{ path: string; type: "file" | "folder" }>
   ): Promise<boolean> | boolean => {
     const currentTabs = useEditorStore.getState().tabs;
-    const targetTabIds = Object.entries(currentTabs)
-      .filter(([, tab]) => tab.kind === "file" && matchesAnyTreeItemPath(tab.path, items))
-      .map(([tabId]) => tabId);
+    const targetTabIds = Object.entries(currentTabs).reduce<string[]>((acc, [tabId, tab]) => {
+      if (tab.kind === "file" && matchesAnyTreeItemPath(tab.path, items)) acc.push(tabId);
+      return acc;
+    }, []);
 
     if (targetTabIds.length === 0) return true;
     return ensureCanCloseTabs(focusedPane, targetTabIds);
@@ -328,10 +330,11 @@ export function App(): ReactElement {
 
   const refreshWorkspaceAfterExternalChange = useCallback(
     async (workspaceId: string): Promise<void> => {
-      if (!window.relic) return;
+      const relic = window.relic;
+      if (!relic) return;
       if (workspaceState?.activeWorkspace?.id && workspaceState.activeWorkspace.id !== workspaceId) return;
 
-      const result = await window.relic.getWorkspaceState();
+      const result = await relic.getWorkspaceState();
       if (!result.ok) {
         setWorkspaceError(result.error.message);
         return;
@@ -352,10 +355,18 @@ export function App(): ReactElement {
         if (tab?.kind === "file" && !nextFilePathSet.has(tab.path)) closeTab("right", tabId);
       }
 
-      for (const [tabId, tab] of Object.entries(tabs)) {
-        if (tab.kind !== "file" || !nextFilePathSet.has(tab.path)) continue;
+      const openFileEntries = Object.entries(tabs).reduce<Array<{ path: string; tabId: string }>>((acc, [tabId, tab]) => {
+        if (tab.kind === "file" && nextFilePathSet.has(tab.path)) acc.push({ path: tab.path, tabId });
+        return acc;
+      }, []);
+      const fileResults = await Promise.all(
+        openFileEntries.map(async ({ path, tabId }) => ({
+          fileResult: await relic.readMarkdownFile({ path }),
+          tabId
+        }))
+      );
 
-        const fileResult = await window.relic.readMarkdownFile({ path: tab.path });
+      for (const { fileResult, tabId } of fileResults) {
 
         if (!fileResult.ok) {
           setWorkspaceError(fileResult.error.message);
@@ -601,12 +612,12 @@ export function App(): ReactElement {
     handleRailPanelButton,
     openChartIds,
     openPanelTabIds,
+    panelLabels,
     panelRailViews,
     primaryRailViews,
     renderPanelTabIcon,
     sidebarViews
   } = useAppRailNavigation({
-    activeSidebarView,
     clearRailTabFlight,
     closeSidebar,
     featureToggles,
@@ -621,6 +632,16 @@ export function App(): ReactElement {
     t,
     tabs
   });
+
+  const setRailSidebarView = useCallback((view: SidebarView): void => {
+    if (view === "tools" || view === "frontmatter" || view === "settings") {
+      openPanelInPane(focusedPane, view, panelLabels[view]);
+      setSidebarView("files");
+      return;
+    }
+
+    setSidebarView(view);
+  }, [focusedPane, openPanelInPane, panelLabels, setSidebarView]);
 
   const { renderChartTab, renderPanelTab } = useAppTabRenderers({
     appInfo,
@@ -698,7 +719,7 @@ export function App(): ReactElement {
           onRenameActiveChange={setIsWorkspaceRenameActive}
           onRenameComplete={holdWorkspaceRailAfterRename}
           onRenameWorkspace={handleRenameWorkspace}
-          onSetSidebarView={setSidebarView}
+          onSetSidebarView={setRailSidebarView}
           onSwitchWorkspace={handleSwitchWorkspace}
           openChartIds={openChartIds}
           openPanelTabIds={openPanelTabIds}

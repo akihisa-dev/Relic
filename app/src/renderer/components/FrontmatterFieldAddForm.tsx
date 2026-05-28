@@ -43,6 +43,7 @@ export function FrontmatterFieldAddForm({
   return (
     <div className="frontmatter-field-add">
       <input
+        aria-label={t("settings.customFieldName")}
         className="setting-custom-field-input"
         onChange={(e) => onNewFieldNameChange(e.target.value)}
         placeholder={t("settings.customFieldName")}

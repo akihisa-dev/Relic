@@ -10,7 +10,7 @@ import {
   createFrontmatterValueInput,
   type FrontmatterFieldUpdater
 } from "./editorFrontmatterWidgetInputs";
-import type { Translator } from "./i18n";
+import type { Translator } from "./i18nModel";
 
 export function createFrontmatterHeader({
   collapsed,

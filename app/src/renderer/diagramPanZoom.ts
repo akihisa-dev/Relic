@@ -71,7 +71,7 @@ export function initializeDiagramPanZoom(viewport: HTMLElement, content: HTMLEle
     updateTransformNow();
   };
 
-  const setZoom = (nextZoom: number, anchor?: { clientX: number; clientY: number }) => {
+  const applyZoom = (nextZoom: number, anchor?: { clientX: number; clientY: number }) => {
     const previousZoom = zoom;
     const clampedZoom = Math.round(Math.min(diagramZoomMax, Math.max(diagramZoomMin, nextZoom)) * 100) / 100;
 
@@ -120,7 +120,7 @@ export function initializeDiagramPanZoom(viewport: HTMLElement, content: HTMLEle
   viewport.addEventListener("wheel", (event) => {
     event.preventDefault();
     event.stopPropagation();
-    setZoom(event.deltaY < 0 ? zoom * diagramZoomFactor : zoom / diagramZoomFactor, event);
+    applyZoom(event.deltaY < 0 ? zoom * diagramZoomFactor : zoom / diagramZoomFactor, event);
   });
   viewport.addEventListener("click", (event) => {
     event.preventDefault();
@@ -176,14 +176,14 @@ export function initializeDiagramPanZoom(viewport: HTMLElement, content: HTMLEle
     if (event.key === "+" || event.key === "=") {
       event.preventDefault();
       event.stopPropagation();
-      setZoom(zoom * diagramZoomFactor, getViewportCenter());
+      applyZoom(zoom * diagramZoomFactor, getViewportCenter());
       return;
     }
 
     if (event.key === "-" || event.key === "_") {
       event.preventDefault();
       event.stopPropagation();
-      setZoom(zoom / diagramZoomFactor, getViewportCenter());
+      applyZoom(zoom / diagramZoomFactor, getViewportCenter());
       return;
     }
 

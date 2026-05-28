@@ -37,6 +37,7 @@ export function FrontmatterChoiceEditor({
       </div>
       <div className="frontmatter-choice-add">
         <input
+          aria-label={t("settings.choiceAddPlaceholder")}
           className="setting-custom-field-input"
           onChange={(e) => onInputChange(e.target.value)}
           onKeyDown={(e) => {

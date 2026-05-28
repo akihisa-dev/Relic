@@ -10,15 +10,13 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { defaultEditorSettings } from "../../shared/ipc";
 import { contextSelectionHighlightField } from "../editorContextSelectionHighlight";
+import { buildWikiLinkCompletionSource } from "../editorExtensions";
 import { isListInputEvent } from "../editorListInput";
-import {
-  buildLivePreviewDecorations,
-  buildTableDecorations,
-  buildWikiLinkCompletionSource,
-  Editor,
-  findClickableLinkAtPosition
-} from "./Editor";
-import { createTranslator, I18nProvider } from "../i18n";
+import { buildLivePreviewDecorations, findClickableLinkAtPosition } from "../editorLivePreview";
+import { buildTableDecorations } from "../editorTables";
+import { I18nProvider } from "../i18n";
+import { createTranslator } from "../i18nModel";
+import { Editor } from "./Editor";
 
 const settings = { ...defaultEditorSettings, language: "ja" as const };
 

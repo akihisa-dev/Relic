@@ -24,7 +24,7 @@ export function SettingsSegmentedControl<T extends string>({
   } as CSSProperties;
 
   return (
-    <div aria-label={ariaLabel} className="settings-segmented" role="group" style={style}>
+    <div aria-label={ariaLabel} className="settings-segmented" style={style}>
       <span aria-hidden="true" className="settings-segmented-indicator" />
       {options.map((option) => (
         <button

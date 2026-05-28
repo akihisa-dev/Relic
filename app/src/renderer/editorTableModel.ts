@@ -6,12 +6,12 @@ export interface TableBlock {
   rows: string[][];
 }
 
-export function splitTableRow(line: string): string[] {
+function splitTableRow(line: string): string[] {
   const trimmed = line.trim().replace(/^\|/, "").replace(/\|$/, "");
   return trimmed.split("|").map((cell) => cell.trim());
 }
 
-export function isTableDivider(line: string): boolean {
+function isTableDivider(line: string): boolean {
   return /^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?\s*$/.test(line);
 }
 
@@ -19,7 +19,7 @@ export function tableColumnCount(rows: string[][]): number {
   return Math.max(...rows.map((row) => row.length), 1);
 }
 
-export function normalizeTableRows(rows: string[][]): string[][] {
+function normalizeTableRows(rows: string[][]): string[][] {
   const colCount = tableColumnCount(rows);
   return rows.map((row) => Array.from({ length: colCount }, (_, index) => row[index] ?? ""));
 }
@@ -46,7 +46,7 @@ export function findTableBlocks(state: EditorState): TableBlock[] {
     const headerLine = doc.line(lineNumber);
     const dividerLine = doc.line(lineNumber + 1);
 
-    if (!headerLine.text.includes("|") || !isTableDivider(dividerLine.text)) {
+    if (!/\|/.test(headerLine.text) || !isTableDivider(dividerLine.text)) {
       lineNumber += 1;
       continue;
     }
@@ -57,7 +57,7 @@ export function findTableBlocks(state: EditorState): TableBlock[] {
 
     while (cursor <= doc.lines) {
       const rowLine = doc.line(cursor);
-      if (!rowLine.text.includes("|") || rowLine.text.trim() === "") break;
+      if (!/\|/.test(rowLine.text) || rowLine.text.trim() === "") break;
       rows.push(splitTableRow(rowLine.text));
       endLine = rowLine;
       cursor += 1;

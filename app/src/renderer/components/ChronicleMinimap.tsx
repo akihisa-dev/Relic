@@ -28,10 +28,15 @@ export function ChronicleMinimap({
       <span className="chronicle-minimap-label">{t("chronicle.overview")}</span>
       <div
         aria-label={t("chronicle.minimap")}
+        aria-controls="chronicle-chart"
+        aria-orientation="horizontal"
+        aria-valuemax={100}
+        aria-valuemin={0}
+        aria-valuenow={Math.round(minimapViewport.leftPercent)}
         className="chronicle-minimap"
         onPointerDown={onMinimapPointerDown}
         ref={minimapRef}
-        role="slider"
+        role="scrollbar"
       >
         {minimapItems.map((item) => (
           <span

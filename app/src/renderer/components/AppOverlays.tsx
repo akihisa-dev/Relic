@@ -123,7 +123,8 @@ export function AppOverlays({
           className="tab-context-menu link-context-menu"
           onClick={(event) => event.stopPropagation()}
           role="menu"
-          style={{ left: linkContextMenu.x, position: "fixed", top: linkContextMenu.y, zIndex: 1000 }}
+          style={{ left: linkContextMenu.x, position: "fixed", top: linkContextMenu.y, zIndex: 40 }}
+          tabIndex={-1}
         >
           <button
             className="tab-context-menu-item"
@@ -190,7 +191,7 @@ export function AppOverlays({
       ) : null}
 
       {toastMessage ? (
-        <div className={`toast toast--${toastMessage.type}${isToastClosing ? " toast--closing" : ""}`} onClick={closeToast}>
+        <div className={`toast toast--${toastMessage.type}${isToastClosing ? " toast--closing" : ""}`} onClick={closeToast} role="presentation">
           {toastMessage.text}
         </div>
       ) : null}

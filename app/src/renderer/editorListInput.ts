@@ -143,7 +143,7 @@ function selectedListLineNumbers(
     }
   }
 
-  return [...lineNumbers].sort((left, right) => left - right);
+  return Array.from(lineNumbers).toSorted((left, right) => left - right);
 }
 
 function selectedLineBounds(

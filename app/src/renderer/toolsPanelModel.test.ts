@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { fail, ok } from "../shared/result";
-import { createTranslator } from "./i18n";
+import { createTranslator } from "./i18nModel";
 import {
   buildMergeFilesInput,
   buildSplitFileInput,

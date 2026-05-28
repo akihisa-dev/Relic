@@ -1,7 +1,7 @@
 import { useCallback } from "react";
 
 import type { MarkdownFileContent, WorkspaceState, WorkspaceTreeNode } from "../../shared/ipc";
-import type { Translator } from "../i18n";
+import type { Translator } from "../i18nModel";
 import type { PaneId, PanelTabKind, Tab } from "../store/editorStore";
 import { joinWorkspacePath } from "../workspacePaths";
 

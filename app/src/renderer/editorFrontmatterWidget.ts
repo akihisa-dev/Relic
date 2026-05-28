@@ -13,7 +13,7 @@ import {
   createFrontmatterHeader,
   frontmatterRowForLine
 } from "./editorFrontmatterWidgetDom";
-import type { Translator } from "./i18n";
+import type { Translator } from "./i18nModel";
 
 const frontmatterCollapsedEffect = StateEffect.define<boolean>();
 
@@ -179,7 +179,7 @@ class FrontmatterPropertiesWidget extends WidgetType {
   }
 }
 
-export function buildFrontmatterPropertiesDecorations(
+function buildFrontmatterPropertiesDecorations(
   state: EditorState,
   userDefinedFields: UserDefinedField[] = [],
   candidates: Record<string, string[]> = {},

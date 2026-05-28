@@ -73,9 +73,8 @@ export function PaneContentSurface({
             onRename={(name) => onRenameFile(activeTab.path, name)}
           />
           {activeTab.externalConflict ? (
-            <div
+            <output
               className="editor-conflict-banner"
-              role="status"
               style={{ maxWidth: editorSettings.maxWidth === "none" ? undefined : editorSettings.maxWidth }}
             >
               <span>{t("pane.externalConflict")}</span>
@@ -87,25 +86,23 @@ export function PaneContentSurface({
                   {t("pane.saveRelicVersion")}
                 </button>
               </div>
-            </div>
+            </output>
           ) : null}
           {isLargeMarkdown ? (
-            <div
+            <output
               className="editor-conflict-banner"
-              role="status"
               style={{ maxWidth: editorSettings.maxWidth === "none" ? undefined : editorSettings.maxWidth }}
             >
               <span>{t("pane.largeMarkdown")}</span>
-            </div>
+            </output>
           ) : null}
           {hasInvalidFrontmatter ? (
-            <div
+            <output
               className="editor-conflict-banner"
-              role="status"
               style={{ maxWidth: editorSettings.maxWidth === "none" ? undefined : editorSettings.maxWidth }}
             >
               <span>{t("frontmatter.invalidYamlBanner")}</span>
-            </div>
+            </output>
           ) : null}
           <Editor
             allFilePaths={allFilePaths}
@@ -177,6 +174,7 @@ interface EditableFileTitleProps {
 function EditableFileTitle({ maxWidth, name, onRename }: EditableFileTitleProps): ReactElement {
   const [draft, setDraft] = useState(name);
   const [editing, setEditing] = useState(false);
+  const t = useT();
 
   useEffect(() => {
     setDraft(name);
@@ -206,7 +204,7 @@ function EditableFileTitle({ maxWidth, name, onRename }: EditableFileTitleProps)
         style={{ maxWidth }}
       >
         <input
-          autoFocus
+          aria-label={t("pane.enterFileName")}
           className="editor-file-title editor-file-title-input"
           onBlur={commit}
           onChange={(event) => setDraft(event.target.value)}

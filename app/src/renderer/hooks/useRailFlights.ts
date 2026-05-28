@@ -57,8 +57,10 @@ export function useRailFlights(): {
 
   useEffect(() => {
     return () => {
-      if (railTimerRef.current) clearTimeout(railTimerRef.current);
-      if (sidebarTimerRef.current) clearTimeout(sidebarTimerRef.current);
+      const railTimer = railTimerRef.current;
+      const sidebarTimer = sidebarTimerRef.current;
+      if (railTimer) clearTimeout(railTimer);
+      if (sidebarTimer) clearTimeout(sidebarTimer);
     };
   }, []);
 

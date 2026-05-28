@@ -25,7 +25,7 @@ export function overlaps(from: number, to: number, ranges: Array<{ from: number;
   return ranges.some((range) => from < range.to && to > range.from);
 }
 
-export function collectRegexMatches(
+function collectRegexMatches(
   text: string,
   regex: RegExp,
   createMatch: (match: RegExpExecArray) => InlineMatch | null

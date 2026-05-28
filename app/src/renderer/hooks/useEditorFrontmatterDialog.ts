@@ -10,7 +10,7 @@ import {
   frontmatterFieldNamePattern,
   type FrontmatterDialogRequest
 } from "../editorFrontmatter";
-import type { Translator } from "../i18n";
+import type { Translator } from "../i18nModel";
 
 interface UseEditorFrontmatterDialogInput {
   frontmatterCandidates: Record<string, string[]>;

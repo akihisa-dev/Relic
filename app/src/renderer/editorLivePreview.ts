@@ -26,7 +26,7 @@ import { isClosingBacktickFence, parseBacktickOpeningFence } from "./markdownCod
 
 export { findClickableLinkAtPosition, type ClickableLinkAtPosition } from "./editorLivePreviewModel";
 
-export function buildCodeBlockPreviewDecorations(state: EditorState): DecorationSet {
+function buildCodeBlockPreviewDecorations(state: EditorState): DecorationSet {
   const ranges: { from: number; to: number; deco: Decoration }[] = [];
   const doc = state.doc;
 
@@ -100,6 +100,7 @@ export function buildLivePreviewDecorations(
   const tableBlocks = findTableBlocks(state);
   const frontmatterLineRange = findFrontmatterLineRange(doc);
   const sourceRevealRanges: SourceRevealRange[] = [];
+  let tableBlockIndex = 0;
 
   function selectionTouches(from: number, to: number): boolean {
     if (!editorHasFocus) return false;
@@ -215,7 +216,9 @@ export function buildLivePreviewDecorations(
     while (lineNumber <= doc.lineAt(visTo).number) {
       const line = doc.line(lineNumber);
       const text = line.text;
-      const tableBlock = tableBlocks.find((block) => line.from >= block.from && line.to <= block.to);
+      while (tableBlockIndex < tableBlocks.length && tableBlocks[tableBlockIndex].to < line.from) tableBlockIndex += 1;
+      const currentTableBlock = tableBlocks[tableBlockIndex] ?? null;
+      const tableBlock = currentTableBlock !== null && line.from >= currentTableBlock.from && line.to <= currentTableBlock.to;
 
       if (
         frontmatterLineRange &&

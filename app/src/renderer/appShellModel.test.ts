@@ -17,7 +17,7 @@ import {
   titleBarLeftOffset,
   type AppRailView
 } from "./appShellModel";
-import { createTranslator } from "./i18n";
+import { createTranslator } from "./i18nModel";
 import type { PaneState, Tab } from "./store/editorStore";
 
 const emptyPane = (activeTabId: string | null = null): PaneState => ({

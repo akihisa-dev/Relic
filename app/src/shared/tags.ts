@@ -70,8 +70,10 @@ function parseInlineArray(value: string): string[] {
   return value
     .slice(1, -1)
     .split(",")
-    .map(cleanTagValue)
-    .filter(Boolean);
+    .flatMap((item) => {
+      const tag = cleanTagValue(item);
+      return tag ? [tag] : [];
+    });
 }
 
 function cleanTagValue(value: string): string {
@@ -79,7 +81,10 @@ function cleanTagValue(value: string): string {
 }
 
 function uniqueTags(tags: string[]): string[] {
-  return [...new Set(tags.map(cleanTagValue).filter(Boolean))].sort((a, b) =>
+  return Array.from(new Set(tags.flatMap((item) => {
+    const tag = cleanTagValue(item);
+    return tag ? [tag] : [];
+  }))).toSorted((a, b) =>
     a.localeCompare(b, "ja")
   );
 }

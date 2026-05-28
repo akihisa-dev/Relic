@@ -19,14 +19,12 @@ import {
 import { useEditorContextMenu } from "../hooks/useEditorContextMenu";
 import { useEditorFrontmatterDialog } from "../hooks/useEditorFrontmatterDialog";
 import { useToolbarActions } from "../hooks/useToolbarActions";
-import { useT, type Translator } from "../i18n";
+import { useT } from "../i18n";
+import type { Translator } from "../i18nModel";
 import { outputFileNameFromPath } from "../outputHtml";
 import { EditorContextMenu } from "./EditorContextMenu";
 import { EditorFrontmatterDialog } from "./EditorFrontmatterDialog";
 
-export { buildWikiLinkCompletionSource } from "../editorExtensions";
-export { buildLivePreviewDecorations, findClickableLinkAtPosition } from "../editorLivePreview";
-export { buildTableDecorations } from "../editorTables";
 interface EditorProps {
   allFilePaths?: string[];
   content: string;
@@ -248,7 +246,8 @@ export function Editor({
   }, [frontmatterPropertyMenu]);
 
   useEffect(() => {
-    if (!containerRef.current) return;
+    const container = containerRef.current;
+    if (!container) return;
 
     const extensions = buildExtensions(
       settings,
@@ -265,14 +264,14 @@ export function Editor({
       onOpenWikiLinkRef
     );
     const state = EditorState.create({ doc: content, extensions });
-    const view = new EditorView({ state, parent: containerRef.current });
+    const view = new EditorView({ state, parent: container });
 
     internalViewRef.current = view;
 
     if (viewRef) viewRef.current = view;
 
     return () => {
-      destroyEditorView(view, containerRef.current);
+      destroyEditorView(view, container);
       internalViewRef.current = null;
       if (viewRef) viewRef.current = null;
     };
