@@ -1,16 +1,41 @@
 import { readdir } from "node:fs/promises";
+import type { Dirent } from "node:fs";
 import path from "node:path";
 
 import type { WorkspaceTreeNode } from "../../shared/ipc";
 import { toWorkspaceRelativePath } from "./paths";
 
-export async function readWorkspaceFileTree(workspacePath: string): Promise<WorkspaceTreeNode[]> {
-  return readDirectory(workspacePath, "");
+interface FileTreeOperations {
+  readdir(directoryPath: string, options: { withFileTypes: true }): Promise<Dirent[]>;
 }
 
-async function readDirectory(rootPath: string, relativeDirectory: string): Promise<WorkspaceTreeNode[]> {
+const defaultFileTreeOperations: FileTreeOperations = {
+  readdir
+};
+
+export async function readWorkspaceFileTree(
+  workspacePath: string,
+  operations: FileTreeOperations = defaultFileTreeOperations
+): Promise<WorkspaceTreeNode[]> {
+  return readDirectory(workspacePath, "", operations);
+}
+
+async function readDirectory(
+  rootPath: string,
+  relativeDirectory: string,
+  operations: FileTreeOperations
+): Promise<WorkspaceTreeNode[]> {
   const absoluteDirectory = path.join(rootPath, relativeDirectory);
-  const entries = await readdir(absoluteDirectory, { withFileTypes: true });
+  let entries: Dirent[];
+
+  try {
+    entries = await operations.readdir(absoluteDirectory, { withFileTypes: true });
+  } catch (error) {
+    if (relativeDirectory === "") throw error;
+
+    return [];
+  }
+
   const nodeReads = entries.reduce<Promise<WorkspaceTreeNode | null>[]>((reads, entry) => {
     if (entry.name.startsWith(".")) return reads;
 
@@ -19,7 +44,7 @@ async function readDirectory(rootPath: string, relativeDirectory: string): Promi
 
       if (entry.isDirectory()) {
         return {
-          children: await readDirectory(rootPath, relativePath),
+          children: await readDirectory(rootPath, relativePath, operations),
           name: entry.name,
           path: relativePath,
           type: "folder"

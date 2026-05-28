@@ -1,4 +1,5 @@
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import type { Dirent } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
@@ -49,4 +50,51 @@ describe("readWorkspaceFileTree", () => {
       }
     ]);
   });
+
+  it("読めない子フォルダは空フォルダとして扱い、読める項目は返す", async () => {
+    const workspacePath = path.join(path.sep, "workspace");
+    const lockedPath = path.join(workspacePath, "locked");
+
+    await expect(readWorkspaceFileTree(workspacePath, {
+      async readdir(directoryPath) {
+        if (directoryPath === workspacePath) {
+          return [
+            createDirectoryEntry("locked", "folder"),
+            createDirectoryEntry("note.md", "file")
+          ];
+        }
+
+        if (directoryPath === lockedPath) {
+          throw Object.assign(new Error("Permission denied"), { code: "EACCES" });
+        }
+
+        return [];
+      }
+    })).resolves.toEqual([
+      {
+        children: [],
+        name: "locked",
+        path: "locked",
+        type: "folder"
+      },
+      {
+        name: "note",
+        path: "note.md",
+        type: "file"
+      }
+    ]);
+  });
 });
+
+function createDirectoryEntry(name: string, type: "file" | "folder"): Dirent {
+  return {
+    isBlockDevice: () => false,
+    isCharacterDevice: () => false,
+    isDirectory: () => type === "folder",
+    isFIFO: () => false,
+    isFile: () => type === "file",
+    isSocket: () => false,
+    isSymbolicLink: () => false,
+    name
+  } as Dirent;
+}
