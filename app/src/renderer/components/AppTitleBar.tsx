@@ -2,6 +2,7 @@ import type { CSSProperties, ReactElement, ReactNode } from "react";
 
 import { usePaneTabInteractions } from "../hooks/usePaneTabInteractions";
 import { useT } from "../i18n";
+import { formatShortcut } from "../keyboardShortcuts";
 import type { PaneId, PaneState, PanelTabKind, Tab } from "../store/editorStore";
 import type { RightPanelView } from "../store/uiStore";
 import { PdfIcon, PrintIcon } from "./MarkdownActionIcons";
@@ -72,6 +73,8 @@ export function AppTitleBar({
   tabs
 }: AppTitleBarProps): ReactElement {
   const t = useT();
+  const splitShortcut = formatShortcut(["mod", "\\"]);
+  const toggleOutlineShortcut = formatShortcut(["mod", "shift", "B"]);
   const style = {
     "--title-bar-action-width": `${isRightPanelOpen ? rightPanelWidth : 208}px`,
     "--title-bar-left-offset": `${leftOffsetWidth}px`
@@ -114,9 +117,9 @@ export function AppTitleBar({
       <button
         aria-label={t("pane.splitShort")}
         className={`toolbar-btn${isSplit ? " active" : ""}`}
-        data-tooltip={t("pane.split")}
+        data-tooltip={t("pane.split", { shortcut: splitShortcut })}
         onClick={onSplitToggle}
-        title={t("pane.split")}
+        title={t("pane.split", { shortcut: splitShortcut })}
         type="button"
       >
         <SplitViewIcon />
@@ -126,9 +129,9 @@ export function AppTitleBar({
           <button
             aria-label={t("pane.outline")}
             className={`toolbar-btn${rightPanelView === "outline" && isRightPanelOpen ? " active" : ""}`}
-            data-tooltip={t("pane.toggleOutline")}
+            data-tooltip={t("pane.toggleOutline", { shortcut: toggleOutlineShortcut })}
             onClick={() => onRightPanelViewButton("outline")}
-            title={t("pane.toggleOutline")}
+            title={t("pane.toggleOutline", { shortcut: toggleOutlineShortcut })}
             type="button"
           >
             <OutlineIcon />
