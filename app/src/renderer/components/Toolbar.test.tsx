@@ -237,6 +237,26 @@ describe("Toolbar markdown actions", () => {
     }
   });
 
+  it("リスト系ボタンが複数行選択へ一括適用し、空行を飛ばす", () => {
+    const content = "one\n\ntwo\nthree";
+    const cases: Array<{ button: string | RegExp; expected: string }> = [
+      { button: "Bulleted list", expected: "- one\n\n- two\n- three" },
+      { button: "Numbered list", expected: "1. one\n\n2. two\n3. three" },
+      { button: "Checkbox", expected: "- [ ] one\n\n- [ ] two\n- [ ] three" }
+    ];
+
+    for (const { button, expected } of cases) {
+      const view = createView(content, EditorSelection.single(0, content.length));
+      render(<Toolbar viewRef={{ current: view }} />);
+
+      clickToolbarButton(button);
+
+      expect(view.state.doc.toString()).toBe(expected);
+      view.destroy();
+      document.body.innerHTML = "";
+    }
+  });
+
   it("リンクボタンがURL入力後にMarkdownリンクを挿入する", () => {
     const view = createView("hello", EditorSelection.single(0, 5));
     render(<Toolbar viewRef={{ current: view }} />);

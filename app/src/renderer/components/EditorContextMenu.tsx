@@ -15,6 +15,7 @@ import {
   insertAtLineStart,
   insertBlock,
   insertInternalLink,
+  insertListAtSelectedLines,
   insertMarkdownLink,
   wrapSelection,
   type HeadingLevel
@@ -204,9 +205,9 @@ export function EditorContextMenu({
       <div className="tab-context-menu-separator" />
       <div className="editor-context-menu-section" role="group">
         <div className="editor-context-menu-grid">
-          <IconMenuButton icon={<BulletListIcon className="editor-context-menu-icon" size={16} />} label={t("toolbar.bulletList")} onClick={() => runEditorCommand((view) => insertAtLineStart(view, "- ", placeholderText))} />
-          <IconMenuButton icon={<OrderedListIcon className="editor-context-menu-icon" size={16} />} label={t("toolbar.orderedList")} onClick={() => runEditorCommand((view) => insertAtLineStart(view, "1. ", placeholderText))} />
-          <IconMenuButton icon={<CheckboxIcon className="editor-context-menu-icon" size={16} />} label={t("toolbar.checkbox")} onClick={() => runEditorCommand((view) => insertAtLineStart(view, "- [ ] ", placeholderText))} />
+          <IconMenuButton icon={<BulletListIcon className="editor-context-menu-icon" size={16} />} label={t("toolbar.bulletList")} onClick={() => runEditorCommand((view) => insertListAtSelectedLines(view, "- ", placeholderText))} />
+          <IconMenuButton icon={<OrderedListIcon className="editor-context-menu-icon" size={16} />} label={t("toolbar.orderedList")} onClick={() => runEditorCommand((view) => insertListAtSelectedLines(view, (index) => `${index + 1}. `, placeholderText))} />
+          <IconMenuButton icon={<CheckboxIcon className="editor-context-menu-icon" size={16} />} label={t("toolbar.checkbox")} onClick={() => runEditorCommand((view) => insertListAtSelectedLines(view, "- [ ] ", placeholderText))} />
         </div>
       </div>
       <div className="tab-context-menu-separator" />
