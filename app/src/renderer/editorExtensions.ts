@@ -2,7 +2,7 @@ import { autocompletion, type CompletionContext, type CompletionResult } from "@
 import { defaultKeymap, historyKeymap, history } from "@codemirror/commands";
 import { markdown } from "@codemirror/lang-markdown";
 import { EditorState } from "@codemirror/state";
-import { EditorView, ViewPlugin, keymap, lineNumbers } from "@codemirror/view";
+import { EditorView, ViewPlugin, highlightActiveLine, keymap, lineNumbers } from "@codemirror/view";
 import type { ViewUpdate } from "@codemirror/view";
 import { GFM } from "@lezer/markdown";
 import type { RefObject } from "react";
@@ -116,6 +116,7 @@ export function buildExtensions(
     editorEditableCompartment.of(EditorView.editable.of(true)),
     markdown({ extensions: GFM }),
     EditorView.lineWrapping,
+    highlightActiveLine(),
     autocompletion({ override: [buildWikiLinkCompletionSource(allFilePaths)] }),
     contextSelectionHighlightField,
     frontmatterCollapsedField,
@@ -196,6 +197,9 @@ export function buildExtensions(
         overflowWrap: "anywhere",
         whiteSpace: "pre-wrap",
         wordBreak: "break-word"
+      },
+      ".cm-activeLine": {
+        backgroundColor: "var(--accent-softer)"
       },
       ".cm-focused": { outline: "none" }
     }),
