@@ -384,7 +384,7 @@ describe("Editor", () => {
     expect(view.state.doc.toString()).toBe("- item\n- \n1. first\n2. \n- [x] done\n- [ ] \n");
   });
 
-  it("TabとShift+Tabで選択中のリスト行を段下げ・段上げする", async () => {
+  it("TabとShift+Tabで選択中の行を段下げ・段上げする", async () => {
     const viewRef = createRef<EditorView | null>();
 
     render(
@@ -407,6 +407,35 @@ describe("Editor", () => {
     view.dispatch({ selection: { anchor: 0, head: "  - one\n  - two".length } });
     fireEvent.keyDown(contentElement, { key: "Tab", shiftKey: true });
     expect(view.state.doc.toString()).toBe("- one\n- two\nplain");
+
+    const plainStart = view.state.doc.toString().indexOf("plain");
+    view.dispatch({ selection: { anchor: plainStart, head: view.state.doc.length } });
+    fireEvent.keyDown(contentElement, { key: "Tab" });
+    expect(view.state.doc.toString()).toBe("- one\n- two\n  plain");
+  });
+
+  it("Alt+上下で選択中の行を移動する", async () => {
+    const viewRef = createRef<EditorView | null>();
+
+    render(
+      <Editor
+        content={"one\ntwo\nthree\nfour"}
+        onChange={vi.fn()}
+        settings={settings}
+        viewRef={viewRef}
+      />
+    );
+
+    await waitFor(() => expect(viewRef.current).not.toBeNull());
+    const view = viewRef.current!;
+    const contentElement = view.dom.querySelector(".cm-content")!;
+
+    view.dispatch({ selection: { anchor: "one\n".length, head: "one\ntwo\nthree".length } });
+    fireEvent.keyDown(contentElement, { key: "ArrowUp", altKey: true });
+    expect(view.state.doc.toString()).toBe("two\nthree\none\nfour");
+
+    fireEvent.keyDown(contentElement, { key: "ArrowDown", altKey: true });
+    expect(view.state.doc.toString()).toBe("one\ntwo\nthree\nfour");
   });
 
   it("IME変換中のEnterではリスト入力補助を実行しない", () => {

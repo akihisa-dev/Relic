@@ -257,6 +257,35 @@ describe("Toolbar markdown actions", () => {
     }
   });
 
+  it("同じリストボタンを押すとリスト記法を解除する", () => {
+    const cases: Array<{ button: string | RegExp; content: string; expected: string }> = [
+      { button: "Bulleted list", content: "- one\n- two", expected: "one\ntwo" },
+      { button: "Numbered list", content: "1. one\n2. two", expected: "one\ntwo" },
+      { button: "Checkbox", content: "- [ ] one\n- [x] two", expected: "one\ntwo" }
+    ];
+
+    for (const { button, content, expected } of cases) {
+      const view = createView(content, EditorSelection.single(0, content.length));
+      render(<Toolbar viewRef={{ current: view }} />);
+
+      clickToolbarButton(button);
+
+      expect(view.state.doc.toString()).toBe(expected);
+      view.destroy();
+      document.body.innerHTML = "";
+    }
+  });
+
+  it("別のリストボタンを押すと既存リストを変換する", () => {
+    const view = createView("- one\n- [ ] two\n3. three", EditorSelection.single(0, "- one\n- [ ] two\n3. three".length));
+    render(<Toolbar viewRef={{ current: view }} />);
+
+    clickToolbarButton("Numbered list");
+
+    expect(view.state.doc.toString()).toBe("1. one\n2. two\n3. three");
+    view.destroy();
+  });
+
   it("リンクボタンがURL入力後にMarkdownリンクを挿入する", () => {
     const view = createView("hello", EditorSelection.single(0, 5));
     render(<Toolbar viewRef={{ current: view }} />);
