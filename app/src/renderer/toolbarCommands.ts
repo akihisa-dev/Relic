@@ -65,6 +65,55 @@ export function insertAtLineStart(view: EditorView, prefix: string, placeholder:
   view.focus();
 }
 
+export function insertListAtSelectedLines(
+  view: EditorView,
+  prefix: string | ((index: number) => string),
+  placeholder: string
+): void {
+  const { state } = view;
+  const changes = state.changeByRange((range) => {
+    const fromLine = state.doc.lineAt(range.from);
+    const toPosition = !range.empty && range.to > range.from ? range.to - 1 : range.to;
+    const toLine = state.doc.lineAt(toPosition);
+    const isMultiLine = fromLine.number !== toLine.number;
+
+    if (!isMultiLine) {
+      const linePrefix = resolveLinePrefix(prefix, 0);
+      const insert = `${linePrefix}${fromLine.text.length > 0 ? fromLine.text : placeholder}`;
+
+      return {
+        changes: { from: fromLine.from, to: fromLine.to, insert },
+        range: EditorSelection.range(fromLine.from + linePrefix.length, fromLine.from + insert.length)
+      };
+    }
+
+    let appliedIndex = 0;
+    const nextLines: string[] = [];
+
+    for (let lineNumber = fromLine.number; lineNumber <= toLine.number; lineNumber += 1) {
+      const line = state.doc.line(lineNumber);
+
+      if (line.text.trim() === "") {
+        nextLines.push(line.text);
+        continue;
+      }
+
+      nextLines.push(`${resolveLinePrefix(prefix, appliedIndex)}${line.text}`);
+      appliedIndex += 1;
+    }
+
+    const insert = nextLines.join("\n");
+
+    return {
+      changes: { from: fromLine.from, to: toLine.to, insert },
+      range: EditorSelection.range(fromLine.from, fromLine.from + insert.length)
+    };
+  });
+
+  view.dispatch(changes);
+  view.focus();
+}
+
 export function insertBlock(view: EditorView, text: string): void {
   const { state } = view;
   const pos = state.selection.main.from;
@@ -170,6 +219,10 @@ function viewHasNonEmptySelection(view: EditorView): boolean {
 
 function hasBlockId(text: string): boolean {
   return /(?:^|\s)\^[A-Za-z0-9_-]+$/.test(text.trimEnd());
+}
+
+function resolveLinePrefix(prefix: string | ((index: number) => string), index: number): string {
+  return typeof prefix === "function" ? prefix(index) : prefix;
 }
 
 function findParagraphEndLineNumbers(state: EditorState): number[] {

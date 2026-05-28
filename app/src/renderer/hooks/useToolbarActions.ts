@@ -13,6 +13,7 @@ import {
   insertBlock,
   insertBlockIds,
   insertInternalLink,
+  insertListAtSelectedLines,
   insertMarkdownLink,
   type HeadingLevel,
   wrapSelection
@@ -177,9 +178,9 @@ export function useToolbarActions({
   const handleBlockquote = (): void => applyToView((view) => insertAtLineStart(view, "> ", placeholderText));
   const handleCodeBlock = (): void => applyToView((view) => insertBlock(view, "```\n\n```"));
   const handleHorizontalRule = (): void => applyToView((view) => insertBlock(view, "---"));
-  const handleBulletList = (): void => applyToView((view) => insertAtLineStart(view, "- ", placeholderText));
-  const handleOrderedList = (): void => applyToView((view) => insertAtLineStart(view, "1. ", placeholderText));
-  const handleCheckbox = (): void => applyToView((view) => insertAtLineStart(view, "- [ ] ", placeholderText));
+  const handleBulletList = (): void => applyToView((view) => insertListAtSelectedLines(view, "- ", placeholderText));
+  const handleOrderedList = (): void => applyToView((view) => insertListAtSelectedLines(view, (index) => `${index + 1}. `, placeholderText));
+  const handleCheckbox = (): void => applyToView((view) => insertListAtSelectedLines(view, "- [ ] ", placeholderText));
   const handleInternalLink = (): void => applyToView(insertInternalLink);
   const handleBlockId = (): void => applyToView(insertBlockIds);
 
