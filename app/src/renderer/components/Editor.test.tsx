@@ -1029,6 +1029,79 @@ describe("Editor", () => {
     expect(viewRef.current?.state.doc.toString()).toBe("---\nplannedDate:\n---\n# 本文");
   });
 
+  it("空の新規ファイルでもフロントマター追加メニューを本文行数に依存しない高さで表示する", async () => {
+    const viewRef = createRef<EditorView | null>();
+    const { container } = render(
+      <Editor
+        content=""
+        onChange={vi.fn()}
+        settings={settings}
+        viewRef={viewRef}
+      />
+    );
+
+    await waitFor(() => expect(container.querySelector(".cm-editor")).not.toBeNull());
+
+    fireEvent.click(container.querySelector(".editor-frontmatter-add-button") as HTMLButtonElement);
+    const menu = container.querySelector(".editor-frontmatter-add-menu") as HTMLElement;
+
+    expect(menu).not.toBeNull();
+    expect(menu.style.top).not.toBe("");
+    expect(menu.style.left).not.toBe("");
+    expect(menu.style.maxHeight).not.toBe("");
+  });
+
+  it("フロントマター追加メニューは画面端で見切れにくい位置へ補正する", async () => {
+    const originalInnerWidth = window.innerWidth;
+    const originalInnerHeight = window.innerHeight;
+    const originalClientWidth = Object.getOwnPropertyDescriptor(document.documentElement, "clientWidth");
+    const originalClientHeight = Object.getOwnPropertyDescriptor(document.documentElement, "clientHeight");
+    Object.defineProperty(window, "innerWidth", { configurable: true, value: 360 });
+    Object.defineProperty(window, "innerHeight", { configurable: true, value: 768 });
+    Object.defineProperty(document.documentElement, "clientWidth", { configurable: true, value: 360 });
+    Object.defineProperty(document.documentElement, "clientHeight", { configurable: true, value: 768 });
+    const viewRef = createRef<EditorView | null>();
+    const { container } = render(
+      <Editor
+        content=""
+        onChange={vi.fn()}
+        settings={settings}
+        viewRef={viewRef}
+      />
+    );
+
+    await waitFor(() => expect(container.querySelector(".cm-editor")).not.toBeNull());
+
+    const button = container.querySelector(".editor-frontmatter-add-button") as HTMLButtonElement;
+    vi.spyOn(button, "getBoundingClientRect").mockReturnValue({
+      bottom: 752,
+      height: 32,
+      left: 318,
+      right: 350,
+      top: 720,
+      width: 32,
+      x: 318,
+      y: 720,
+      toJSON: () => ({})
+    });
+
+    fireEvent.click(button);
+    const menu = container.querySelector(".editor-frontmatter-add-menu") as HTMLElement;
+
+    expect(menu.style.left).toBe("44px");
+    expect(menu.style.top).toBe("192px");
+    expect(menu.style.maxHeight).toBe("520px");
+
+    Object.defineProperty(window, "innerWidth", { configurable: true, value: originalInnerWidth });
+    Object.defineProperty(window, "innerHeight", { configurable: true, value: originalInnerHeight });
+    if (originalClientWidth) {
+      Object.defineProperty(document.documentElement, "clientWidth", originalClientWidth);
+    }
+    if (originalClientHeight) {
+      Object.defineProperty(document.documentElement, "clientHeight", originalClientHeight);
+    }
+  });
+
   it("未完了のフロントマター記法にはプロパティを追加しない", async () => {
     const viewRef = createRef<EditorView | null>();
     const onChange = vi.fn();

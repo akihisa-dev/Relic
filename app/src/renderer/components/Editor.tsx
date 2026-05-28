@@ -1,7 +1,7 @@
 import { EditorState } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 import { useEffect, useRef, useState } from "react";
-import type { MutableRefObject, ReactElement } from "react";
+import type { CSSProperties, MutableRefObject, ReactElement } from "react";
 
 import { chronicleCalendarIds, type EditorSettings, type UserDefinedField } from "../../shared/ipc";
 import { buildExtensions, destroyEditorView } from "../editorExtensions";
@@ -89,6 +89,7 @@ export function Editor({
   const frontmatterCandidatesRef = useRef(frontmatterCandidates);
   const userDefinedFieldsRef = useRef(userDefinedFields);
   const [frontmatterPropertyMenu, setFrontmatterPropertyMenu] = useState<FrontmatterPropertyMenuState | null>(null);
+  const [frontmatterPropertyMenuStyle, setFrontmatterPropertyMenuStyle] = useState<CSSProperties>({});
   const {
     closeContextMenu,
     contextMenu,
@@ -139,6 +140,9 @@ export function Editor({
       return;
     }
 
+    if (frontmatterButtonRef.current) {
+      setFrontmatterPropertyMenuStyle(frontmatterPropertyMenuPlacement(frontmatterButtonRef.current));
+    }
     setFrontmatterPropertyMenu(buildFrontmatterPropertyMenuState(view, t));
   };
 
@@ -197,6 +201,11 @@ export function Editor({
   useEffect(() => {
     if (!frontmatterPropertyMenu) return;
 
+    const updatePlacement = (): void => {
+      if (frontmatterButtonRef.current) {
+        setFrontmatterPropertyMenuStyle(frontmatterPropertyMenuPlacement(frontmatterButtonRef.current));
+      }
+    };
     const closeOnPointerDown = (event: PointerEvent): void => {
       const target = event.target;
       if (!(target instanceof Node)) return;
@@ -210,10 +219,14 @@ export function Editor({
 
     document.addEventListener("pointerdown", closeOnPointerDown);
     document.addEventListener("keydown", closeOnEscape);
+    window.addEventListener("resize", updatePlacement);
+    window.addEventListener("scroll", updatePlacement, true);
 
     return () => {
       document.removeEventListener("pointerdown", closeOnPointerDown);
       document.removeEventListener("keydown", closeOnEscape);
+      window.removeEventListener("resize", updatePlacement);
+      window.removeEventListener("scroll", updatePlacement, true);
     };
   }, [frontmatterPropertyMenu]);
 
@@ -319,7 +332,7 @@ export function Editor({
           +
         </button>
         {frontmatterPropertyMenu ? (
-          <div className="editor-frontmatter-add-menu" ref={frontmatterMenuRef} role="menu">
+          <div className="editor-frontmatter-add-menu" ref={frontmatterMenuRef} role="menu" style={frontmatterPropertyMenuStyle}>
             <div className="editor-frontmatter-add-menu-title">{t("frontmatter.addProperty")}</div>
             {frontmatterPropertyMenu.unavailable ? (
               <div className="editor-frontmatter-add-menu-empty">{t("frontmatter.fixYamlBeforeAdding")}</div>
@@ -423,4 +436,35 @@ function frontmatterPropertyLabel(key: string, t: Translator): string {
   if (key === "plannedDate") return t("frontmatter.propertyPlannedDate");
   if (key === "actualDate") return t("frontmatter.propertyActualDate");
   return key;
+}
+
+function frontmatterPropertyMenuPlacement(button: HTMLElement): CSSProperties {
+  const rect = button.getBoundingClientRect();
+  const margin = 16;
+  const gap = 8;
+  const menuMaxWidth = 300;
+  const menuMaxHeight = 520;
+  const menuMinHeight = 160;
+  const viewportWidth = Math.max(document.documentElement.clientWidth, window.innerWidth || 0);
+  const viewportHeight = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
+  const width = Math.max(0, Math.min(menuMaxWidth, viewportWidth - margin * 2));
+  const left = Math.min(
+    Math.max(rect.right - width, margin),
+    Math.max(margin, viewportWidth - width - margin)
+  );
+  const availableBelow = Math.max(0, viewportHeight - rect.bottom - gap - margin);
+  const availableAbove = Math.max(0, rect.top - gap - margin);
+  const opensBelow = availableBelow >= menuMinHeight || availableBelow >= availableAbove;
+  const availableHeight = opensBelow ? availableBelow : availableAbove;
+  const maxHeight = Math.max(80, Math.min(menuMaxHeight, availableHeight));
+  const top = opensBelow
+    ? Math.min(rect.bottom + gap, viewportHeight - margin)
+    : Math.max(margin, rect.top - gap - maxHeight);
+
+  return {
+    left,
+    maxHeight,
+    top,
+    width
+  };
 }
