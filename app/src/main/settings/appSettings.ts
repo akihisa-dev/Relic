@@ -136,6 +136,7 @@ const VALID_FIELD_TYPES_SET = new Set<UserDefinedFieldType>(VALID_FIELD_TYPES);
 const FIELD_NAME_PATTERN = /^[^\s:][^\r\n:]*$/;
 const RESERVED_FIELD_NAMES = new Set(["aliases", "tags", "status", ...chronicleCalendarIds, "plannedDate", "actualDate"]);
 const WORKSPACE_ID_PATTERN = /^[A-Za-z0-9_-]+$/;
+const FIELD_TYPES_WITH_CHOICES = new Set<UserDefinedFieldType>(["select", "multi-select"]);
 
 function parseUserDefinedFields(raw: unknown): UserDefinedField[] {
   if (!Array.isArray(raw)) return defaultUserDefinedFields;
@@ -154,10 +155,12 @@ function parseUserDefinedFields(raw: unknown): UserDefinedField[] {
     if (names.has(f.name)) continue;
     if (!VALID_FIELD_TYPES_SET.has(f.type as UserDefinedFieldType)) continue;
 
-    const field: UserDefinedField = { name: f.name, type: f.type as UserDefinedFieldType };
+    const type = f.type as UserDefinedFieldType;
+    const field: UserDefinedField = { name: f.name, type };
+    const choices = parseFieldChoices(f.choices, type);
 
-    if (Array.isArray(f.choices)) {
-      field.choices = f.choices.filter((c): c is string => typeof c === "string");
+    if (choices.length > 0) {
+      field.choices = choices;
     }
 
     result.push(field);
@@ -165,6 +168,23 @@ function parseUserDefinedFields(raw: unknown): UserDefinedField[] {
   }
 
   return result;
+}
+
+function parseFieldChoices(raw: unknown, type: UserDefinedFieldType): string[] {
+  if (!FIELD_TYPES_WITH_CHOICES.has(type) || !Array.isArray(raw)) return [];
+
+  const choices: string[] = [];
+  const seen = new Set<string>();
+
+  for (const item of raw) {
+    if (typeof item !== "string") continue;
+    const choice = item.trim();
+    if (!choice || seen.has(choice)) continue;
+    choices.push(choice);
+    seen.add(choice);
+  }
+
+  return choices;
 }
 
 function parseFrontmatterTemplates(raw: unknown): FrontmatterTemplate[] {

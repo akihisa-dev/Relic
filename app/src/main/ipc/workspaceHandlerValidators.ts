@@ -28,6 +28,7 @@ const userDefinedFieldTypes: UserDefinedFieldType[] = [
 const userDefinedFieldNamePattern = /^[^\s:][^\r\n:]*$/;
 const reservedUserDefinedFieldNames = new Set(["aliases", "tags", "status", ...validChronicleCalendarIds, "plannedDate", "actualDate"]);
 const chartSources: ChartSource[] = ["chronicle", "date"];
+const userDefinedFieldTypesWithChoices = new Set<UserDefinedFieldType>(["select", "multi-select"]);
 
 export function isUserDefinedFieldsInput(input: unknown): input is UserDefinedField[] {
   if (!Array.isArray(input)) return false;
@@ -45,9 +46,17 @@ export function isUserDefinedFieldsInput(input: unknown): input is UserDefinedFi
     ) return false;
     if (names.has(candidate.name)) return false;
     names.add(candidate.name);
-    if (!userDefinedFieldTypes.includes(candidate.type as UserDefinedFieldType)) return false;
+    const type = candidate.type as UserDefinedFieldType;
+    if (!userDefinedFieldTypes.includes(type)) return false;
     if ("choices" in candidate && !Array.isArray(candidate.choices)) return false;
-    if (Array.isArray(candidate.choices) && !candidate.choices.every((choice) => typeof choice === "string")) return false;
+    if (Array.isArray(candidate.choices)) {
+      if (!userDefinedFieldTypesWithChoices.has(type)) return false;
+      const choices = new Set<string>();
+      for (const choice of candidate.choices) {
+        if (typeof choice !== "string" || choice.trim() !== choice || choice === "" || choices.has(choice)) return false;
+        choices.add(choice);
+      }
+    }
 
     return true;
   });

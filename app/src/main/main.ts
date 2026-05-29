@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Menu, ipcMain, shell, type BrowserWindowConstructorOptions } from "electron";
+import { app, BrowserWindow, Menu, ipcMain, shell } from "electron";
 import path from "node:path";
 
 import { registerAppHandlers } from "./ipc/appHandlers";
@@ -10,6 +10,7 @@ import { registerWorkspaceHandlers } from "./ipc/workspaceHandlers";
 import { windowCloseRequestedChannel, windowCloseResponseChannel, type WindowCloseResponseInput } from "../shared/ipc";
 import { devServerLoadUrls, loadDevServerUrlWithRetry } from "./devServerLoader";
 import { stopWorkspaceWatcher } from "./workspace/workspaceWatcher";
+import { createMainWindowOptions } from "./windowOptions";
 
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string | undefined;
 declare const MAIN_WINDOW_VITE_NAME: string;
@@ -26,31 +27,11 @@ if (process.platform === "win32") {
 }
 
 function createWindow(): void {
-  const isMac = process.platform === "darwin";
-  const icon = isMac ? undefined : path.join(app.getAppPath(), "assets", "icon.ico");
-  const windowOptions: BrowserWindowConstructorOptions = {
-    height: 820,
-    icon,
-    minHeight: 640,
-    minWidth: 960,
-    title: "Relic",
-    width: 1240,
-    autoHideMenuBar: process.platform === "win32",
-    ...(isMac
-      ? {
-          titleBarStyle: "hiddenInset",
-          trafficLightPosition: { x: 10, y: 12 }
-        }
-      : {}),
-    webPreferences: {
-      allowRunningInsecureContent: false,
-      contextIsolation: true,
-      nodeIntegration: false,
-      preload: path.join(__dirname, "preload.js"),
-      sandbox: true,
-      webSecurity: true
-    }
-  };
+  const windowOptions = createMainWindowOptions({
+    appPath: app.getAppPath(),
+    platform: process.platform,
+    preloadPath: path.join(__dirname, "preload.js")
+  });
   const window = new BrowserWindow(windowOptions);
   mainWindow = window;
 
