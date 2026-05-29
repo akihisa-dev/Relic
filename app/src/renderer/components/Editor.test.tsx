@@ -595,7 +595,7 @@ describe("Editor", () => {
     });
   });
 
-  it("本文側の見出し左側ボタンで本文を折りたためる", async () => {
+  it("本文側の見出し行先頭ボタンで本文を折りたためる", async () => {
     const { container } = render(
       <I18nProvider language="ja">
         <Editor
@@ -616,6 +616,23 @@ describe("Editor", () => {
     expect(container.querySelector(".cm-foldPlaceholder")?.textContent).toBe("…");
     expect(container.textContent).not.toContain("節本文");
     expect(container.textContent).toContain("次の章");
+  });
+
+  it("ソースモードでも開閉ボタンを見出し記号の左側に出す", async () => {
+    const { container } = render(
+      <I18nProvider language="ja">
+        <Editor
+          content={"# 章\n本文"}
+          onChange={vi.fn()}
+          settings={settings}
+          sourceMode
+        />
+      </I18nProvider>
+    );
+
+    await waitFor(() => expect(container.querySelector(".cm-heading-fold-marker--open")).not.toBeNull());
+    expect(container.querySelector(".cm-line")?.textContent?.startsWith("▾# 章")).toBe(true);
+    expect(container.querySelector(".cm-gutters .cm-heading-fold-marker")).toBeNull();
   });
 
   it("[[ 入力時のファイル名補完候補を作る", () => {
