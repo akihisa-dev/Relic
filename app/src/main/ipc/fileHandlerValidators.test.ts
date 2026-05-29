@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   isCreateFolderInput,
+  isLinkUpdateImpactInput,
   isMoveItemToTrashInput,
   isMoveMarkdownFileInput,
   isReplaceInFileInput,
@@ -16,6 +17,15 @@ describe("fileHandlerValidators", () => {
     expect(isCreateFolderInput({ name: "Archive", parentFolder: undefined })).toBe(true);
     expect(isCreateFolderInput({ name: "Archive", parentFolder: 1 })).toBe(false);
     expect(isCreateFolderInput({ parentFolder: "Notes" })).toBe(false);
+  });
+
+  it("validates link update impact input paths", () => {
+    expect(isLinkUpdateImpactInput({ kind: "file", newPath: "Archive/Note.md", oldPath: "Note.md" })).toBe(true);
+    expect(isLinkUpdateImpactInput({ kind: "folder", newPath: "Archive/Notes", oldPath: "Notes" })).toBe(true);
+    expect(isLinkUpdateImpactInput({ kind: "file", newPath: "../outside.md", oldPath: "Note.md" })).toBe(false);
+    expect(isLinkUpdateImpactInput({ kind: "file", newPath: "/tmp/outside.md", oldPath: "Note.md" })).toBe(false);
+    expect(isLinkUpdateImpactInput({ kind: "file", newPath: "Archive/Note.md", oldPath: " Note.md " })).toBe(false);
+    expect(isLinkUpdateImpactInput({ kind: "other", newPath: "Archive/Note.md", oldPath: "Note.md" })).toBe(false);
   });
 
   it("validates workspace search input modes and optional frontmatter field", () => {

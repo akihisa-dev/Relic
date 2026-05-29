@@ -1,6 +1,9 @@
+import path from "node:path";
+
 import type {
   CreateFolderInput,
   CreateMarkdownFileInput,
+  LinkUpdateImpactInput,
   MoveFolderInput,
   MoveItemToTrashInput,
   MoveMarkdownFileInput,
@@ -24,6 +27,17 @@ export function isCreateFolderInput(input: unknown): input is CreateFolderInput 
       (input as { parentFolder?: unknown }).parentFolder === undefined ||
       typeof (input as { parentFolder?: unknown }).parentFolder === "string"
     )
+  );
+}
+
+export function isLinkUpdateImpactInput(input: unknown): input is LinkUpdateImpactInput {
+  if (typeof input !== "object" || input === null) return false;
+
+  const candidate = input as Record<string, unknown>;
+  return (
+    (candidate.kind === "file" || candidate.kind === "folder") &&
+    isWorkspaceRelativePathString(candidate.oldPath) &&
+    isWorkspaceRelativePathString(candidate.newPath)
   );
 }
 
@@ -292,4 +306,28 @@ function parseSearchMode(value: unknown): SearchMode | null {
   }
 
   return null;
+}
+
+function isWorkspaceRelativePathString(value: unknown): value is string {
+  if (typeof value !== "string") return false;
+
+  const trimmed = value.trim();
+  if (trimmed !== value) return false;
+
+  const normalizedInput = trimmed.replace(/\\/g, "/");
+  if (
+    !trimmed ||
+    normalizedInput === "." ||
+    normalizedInput.includes("\0") ||
+    path.posix.isAbsolute(normalizedInput) ||
+    path.win32.isAbsolute(trimmed)
+  ) {
+    return false;
+  }
+
+  const normalized = path.posix.normalize(normalizedInput);
+  return normalized !== "." &&
+    normalized !== ".." &&
+    !normalized.startsWith("../") &&
+    !path.posix.isAbsolute(normalized);
 }
