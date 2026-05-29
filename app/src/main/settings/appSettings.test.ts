@@ -93,4 +93,18 @@ describe("appSettings", () => {
       workspaces: [{ id: "ws-valid", name: "Notes", path: "/tmp/Notes" }]
     });
   });
+
+  it("登録一覧に存在しない最後のワークスペースIDは読み込み時に除外する", async () => {
+    const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-app-settings-"));
+    temporaryPaths.push(userDataPath);
+    await writeFile(getAppSettingsPath(userDataPath), JSON.stringify({
+      lastWorkspaceId: "ws-missing",
+      workspaces: [{ id: "ws-valid", name: "Notes", path: "/tmp/Notes" }]
+    }), "utf8");
+
+    await expect(readAppSettings(userDataPath)).resolves.toMatchObject({
+      lastWorkspaceId: null,
+      workspaces: [{ id: "ws-valid", name: "Notes", path: "/tmp/Notes" }]
+    });
+  });
 });
