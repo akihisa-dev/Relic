@@ -148,15 +148,21 @@ describe("workspaceHandlerValidators", () => {
 
   it("validates workspace rename input", () => {
     expect(isRenameWorkspaceInput({ name: "Journal", workspaceId: "workspace-1" })).toBe(true);
+    expect(isRenameWorkspaceInput({ name: "Journal", workspaceId: "workspace_1" })).toBe(true);
     expect(isRenameWorkspaceInput({ workspaceId: "workspace-1" })).toBe(false);
     expect(isRenameWorkspaceInput({ name: "Journal", workspaceId: "" })).toBe(false);
     expect(isRenameWorkspaceInput({ name: "Journal", workspaceId: "  " })).toBe(false);
+    expect(isRenameWorkspaceInput({ name: "Journal", workspaceId: " ../outside " })).toBe(false);
+    expect(isRenameWorkspaceInput({ name: "Journal", workspaceId: "folder/workspace" })).toBe(false);
   });
 
-  it("validates workspace switch input with a non-empty workspace id", () => {
+  it("validates workspace switch input with a safe workspace id", () => {
     expect(isSwitchWorkspaceInput({ workspaceId: "workspace-1" })).toBe(true);
+    expect(isSwitchWorkspaceInput({ workspaceId: "workspace_1" })).toBe(true);
     expect(isSwitchWorkspaceInput({ workspaceId: "" })).toBe(false);
     expect(isSwitchWorkspaceInput({ workspaceId: "  " })).toBe(false);
+    expect(isSwitchWorkspaceInput({ workspaceId: "../outside" })).toBe(false);
+    expect(isSwitchWorkspaceInput({ workspaceId: "folder/workspace" })).toBe(false);
     expect(isSwitchWorkspaceInput({ workspaceId: 1 })).toBe(false);
   });
 });
