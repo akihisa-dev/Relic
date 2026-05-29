@@ -131,4 +131,25 @@ describe("appSettings", () => {
       })
     });
   });
+
+  it("壊れたカスタムフィールドの選択肢は読み込み時に正規化する", async () => {
+    const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-app-settings-"));
+    temporaryPaths.push(userDataPath);
+    await writeFile(getAppSettingsPath(userDataPath), JSON.stringify({
+      userDefinedFields: [
+        { choices: ["draft", " draft ", "", "done", "draft", 1], name: "category", type: "select" },
+        { choices: ["unused"], name: "memo", type: "text" },
+        { name: "tags", type: "text" },
+        { name: "invalid", type: "unknown" },
+        { name: "category", type: "multi-select" }
+      ]
+    }), "utf8");
+
+    await expect(readAppSettings(userDataPath)).resolves.toMatchObject({
+      userDefinedFields: [
+        { choices: ["draft", "done"], name: "category", type: "select" },
+        { name: "memo", type: "text" }
+      ]
+    });
+  });
 });
