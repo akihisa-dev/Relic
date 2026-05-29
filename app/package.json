@@ -1,6 +1,6 @@
 {
   "name": "relic",
-  "version": "0.1.58",
+  "version": "0.1.59",
   "description": "Relic is a local app that extends Markdown files with editing, search, browsing, visualization, and export while keeping the information as Markdown.",
   "main": ".vite/build/main.js",
   "private": true,
@@ -22,6 +22,7 @@
     "test:mac": "vitest run",
     "test:win": "vitest run",
     "test:watch": "vitest",
+    "generate:icons": "node scripts/generate-icons.mjs",
     "clean:out": "node scripts/clean-out.mjs",
     "check:mac:safe": "node scripts/check-package-artifacts.mjs darwin",
     "check:win:safe": "node scripts/check-package-artifacts.mjs win32",
