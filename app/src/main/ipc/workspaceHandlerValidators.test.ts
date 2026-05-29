@@ -38,6 +38,10 @@ describe("workspaceHandlerValidators", () => {
       { id: "chronicle", name: "Chronicle", source: "chronicle", filePaths: ["/tmp/outside.md"] },
       { id: "date", name: "Date", source: "date", filePaths: ["a.md"] }
     ])).toBe(false);
+    expect(isChartsInput([
+      { id: "chronicle", name: "Chronicle", source: "chronicle", filePaths: ["section/../a.md"] },
+      { id: "date", name: "Date", source: "date", filePaths: ["a.md"] }
+    ])).toBe(false);
   });
 
   it("validates chart entry edits and frontmatter templates", () => {

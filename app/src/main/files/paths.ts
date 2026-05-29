@@ -16,6 +16,38 @@ export function toWorkspaceRelativePath(filePath: string): string {
   return filePath.split(path.sep).join("/");
 }
 
+export function normalizeWorkspaceRelativeInputPath(raw: string): string | null {
+  const trimmed = raw.trim();
+  const normalizedInput = trimmed.replace(/\\/g, "/");
+
+  if (
+    !trimmed ||
+    normalizedInput === "." ||
+    normalizedInput.includes("\0") ||
+    path.posix.isAbsolute(normalizedInput) ||
+    path.win32.isAbsolute(trimmed)
+  ) {
+    return null;
+  }
+
+  const normalized = path.posix.normalize(normalizedInput);
+
+  if (
+    normalized === "." ||
+    normalized === ".." ||
+    normalized.startsWith("../") ||
+    path.posix.isAbsolute(normalized)
+  ) {
+    return null;
+  }
+
+  return normalized;
+}
+
+export function isWorkspaceRelativeInputPath(value: unknown): value is string {
+  return typeof value === "string" && normalizeWorkspaceRelativeInputPath(value) === value;
+}
+
 export function resolveWorkspaceRelativePath(
   workspacePath: string,
   relativePath: string

@@ -3,11 +3,33 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
+  isWorkspaceRelativeInputPath,
+  normalizeWorkspaceRelativeInputPath,
   resolveNewWorkspacePath,
   resolveWorkspaceRelativePath,
   resolveWorkspaceRelativePathOrRoot,
   toWorkspaceRelativePath
 } from "./paths";
+
+describe("workspace relative input paths", () => {
+  it("保存済み設定向けにワークスペース相対パスを正規化する", () => {
+    expect(normalizeWorkspaceRelativeInputPath(" notes\\idea.md ")).toBe("notes/idea.md");
+    expect(normalizeWorkspaceRelativeInputPath("section/../notes/idea.md")).toBe("notes/idea.md");
+    expect(normalizeWorkspaceRelativeInputPath("../outside.md")).toBeNull();
+    expect(normalizeWorkspaceRelativeInputPath("/tmp/outside.md")).toBeNull();
+    expect(normalizeWorkspaceRelativeInputPath("C:\\Users\\test\\outside.md")).toBeNull();
+    expect(normalizeWorkspaceRelativeInputPath(".")).toBeNull();
+  });
+
+  it("IPC入力向けに正規化済みのワークスペース相対パスだけを許可する", () => {
+    expect(isWorkspaceRelativeInputPath("notes/idea.md")).toBe(true);
+    expect(isWorkspaceRelativeInputPath("notes\\idea.md")).toBe(false);
+    expect(isWorkspaceRelativeInputPath(" notes/idea.md ")).toBe(false);
+    expect(isWorkspaceRelativeInputPath("section/../notes/idea.md")).toBe(false);
+    expect(isWorkspaceRelativeInputPath("../outside.md")).toBe(false);
+    expect(isWorkspaceRelativeInputPath("/tmp/outside.md")).toBe(false);
+  });
+});
 
 describe("resolveWorkspaceRelativePath", () => {
   it("ワークスペース内の相対パスを絶対パスへ解決する", () => {

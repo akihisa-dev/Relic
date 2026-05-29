@@ -1,5 +1,3 @@
-import path from "node:path";
-
 import type {
   ChronicleCalendarSettings,
   ChronicleCalendarId,
@@ -14,6 +12,7 @@ import type {
   UserDefinedFieldType
 } from "../../shared/ipc";
 import { chronicleCalendarIds as validChronicleCalendarIds } from "../../shared/ipc";
+import { isWorkspaceRelativeInputPath } from "../files/paths";
 
 const userDefinedFieldTypes: UserDefinedFieldType[] = [
   "text",
@@ -68,7 +67,7 @@ export function isChartsInput(input: unknown): input is ChartSettings[] {
     if (!chartSources.includes(candidate.source as ChartSource)) return false;
     if (sources.has(candidate.source as ChartSource)) return false;
     if ("filePaths" in candidate && !Array.isArray(candidate.filePaths)) return false;
-    if (Array.isArray(candidate.filePaths) && !candidate.filePaths.every(isWorkspaceRelativePathString)) return false;
+    if (Array.isArray(candidate.filePaths) && !candidate.filePaths.every(isWorkspaceRelativeInputPath)) return false;
 
     sources.add(candidate.source as ChartSource);
     return true;
@@ -183,28 +182,4 @@ export function isRenameWorkspaceInput(input: unknown): input is RenameWorkspace
 
 function isChronicleCalendarId(value: unknown): value is ChronicleCalendarId {
   return typeof value === "string" && validChronicleCalendarIds.includes(value as ChronicleCalendarId);
-}
-
-function isWorkspaceRelativePathString(value: unknown): value is string {
-  if (typeof value !== "string") return false;
-
-  const trimmed = value.trim();
-  if (trimmed !== value) return false;
-
-  const normalizedInput = trimmed.replace(/\\/g, "/");
-  if (
-    !trimmed ||
-    normalizedInput === "." ||
-    normalizedInput.includes("\0") ||
-    path.posix.isAbsolute(normalizedInput) ||
-    path.win32.isAbsolute(trimmed)
-  ) {
-    return false;
-  }
-
-  const normalized = path.posix.normalize(normalizedInput);
-  return normalized !== "." &&
-    normalized !== ".." &&
-    !normalized.startsWith("../") &&
-    !path.posix.isAbsolute(normalized);
 }

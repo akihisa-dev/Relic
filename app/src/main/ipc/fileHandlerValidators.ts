@@ -1,5 +1,3 @@
-import path from "node:path";
-
 import type {
   CreateFolderInput,
   CreateMarkdownFileInput,
@@ -14,6 +12,7 @@ import type {
   SearchMode,
   SearchWorkspaceInput
 } from "../../shared/ipc";
+import { isWorkspaceRelativeInputPath } from "../files/paths";
 
 export function isCreateMarkdownFileInput(input: unknown): input is CreateMarkdownFileInput {
   return isNameInput(input);
@@ -36,8 +35,8 @@ export function isLinkUpdateImpactInput(input: unknown): input is LinkUpdateImpa
   const candidate = input as Record<string, unknown>;
   return (
     (candidate.kind === "file" || candidate.kind === "folder") &&
-    isWorkspaceRelativePathString(candidate.oldPath) &&
-    isWorkspaceRelativePathString(candidate.newPath)
+    isWorkspaceRelativeInputPath(candidate.oldPath) &&
+    isWorkspaceRelativeInputPath(candidate.newPath)
   );
 }
 
@@ -306,28 +305,4 @@ function parseSearchMode(value: unknown): SearchMode | null {
   }
 
   return null;
-}
-
-function isWorkspaceRelativePathString(value: unknown): value is string {
-  if (typeof value !== "string") return false;
-
-  const trimmed = value.trim();
-  if (trimmed !== value) return false;
-
-  const normalizedInput = trimmed.replace(/\\/g, "/");
-  if (
-    !trimmed ||
-    normalizedInput === "." ||
-    normalizedInput.includes("\0") ||
-    path.posix.isAbsolute(normalizedInput) ||
-    path.win32.isAbsolute(trimmed)
-  ) {
-    return false;
-  }
-
-  const normalized = path.posix.normalize(normalizedInput);
-  return normalized !== "." &&
-    normalized !== ".." &&
-    !normalized.startsWith("../") &&
-    !path.posix.isAbsolute(normalized);
 }
