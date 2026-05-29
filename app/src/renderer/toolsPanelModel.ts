@@ -81,7 +81,7 @@ export function createDefaultSplitFileDraft(): SplitFileDraft {
 export function buildTitleListInput(draft: TitleListDraft, t: Translator): GenerateTitleListInput {
   return {
     filterFolder: draft.filterFolder || undefined,
-    outputFolder: draft.outputFolder || ".",
+    outputFolder: draft.outputFolder || "",
     outputName: draft.outputName || t("tools.titleListDefaultName"),
     sortBy: draft.sortBy
   };
@@ -90,9 +90,9 @@ export function buildTitleListInput(draft: TitleListDraft, t: Translator): Gener
 export function buildTocInput(draft: TocDraft, t: Translator): GenerateTableOfContentsInput {
   return {
     includeSubfolders: draft.includeSubfolders,
-    outputFolder: draft.outputFolder || ".",
+    outputFolder: draft.outputFolder || "",
     outputName: draft.outputName || t("tools.tocDefaultName"),
-    targetFolder: draft.targetFolder || "."
+    targetFolder: draft.targetFolder || ""
   };
 }
 
@@ -102,7 +102,7 @@ export function buildMergeFilesInput(draft: MergeFilesDraft, t: Translator): Mer
     filterType: draft.filterType,
     filterValue: draft.filterValue,
     insertFilenameHeading: draft.insertFilenameHeading,
-    outputFolder: draft.outputFolder || ".",
+    outputFolder: draft.outputFolder || "",
     outputName: draft.outputName || t("tools.mergeDefaultName"),
     sortBy: draft.sortBy
   };
@@ -111,7 +111,7 @@ export function buildMergeFilesInput(draft: MergeFilesDraft, t: Translator): Mer
 export function buildSplitFileInput(draft: SplitFileDraft): SplitFileByHeadingInput {
   return {
     headingLevel: draft.headingLevel,
-    outputFolder: draft.outputFolder || ".",
+    outputFolder: draft.outputFolder || "",
     sourcePath: draft.sourcePath
   };
 }

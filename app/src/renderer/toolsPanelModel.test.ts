@@ -22,15 +22,15 @@ describe("toolsPanelModel", () => {
   it("builds title list and toc inputs with existing fallback defaults", () => {
     expect(buildTitleListInput(createDefaultTitleListDraft(t), t)).toEqual({
       filterFolder: undefined,
-      outputFolder: ".",
+      outputFolder: "",
       outputName: "Title List",
       sortBy: "name"
     });
     expect(buildTocInput(createDefaultTocDraft(t), t)).toEqual({
       includeSubfolders: true,
-      outputFolder: ".",
+      outputFolder: "",
       outputName: "Table of Contents",
-      targetFolder: "."
+      targetFolder: ""
     });
   });
 
@@ -48,7 +48,7 @@ describe("toolsPanelModel", () => {
       filterValue: "draft",
       frontmatterField: "status",
       insertFilenameHeading: true,
-      outputFolder: ".",
+      outputFolder: "",
       outputName: "Merged Result",
       sortBy: "name"
     });
@@ -61,7 +61,7 @@ describe("toolsPanelModel", () => {
       sourcePath: "Book.md"
     })).toEqual({
       headingLevel: 2,
-      outputFolder: ".",
+      outputFolder: "",
       sourcePath: "Book.md"
     });
     expect(resultStatus(ok("out.md"), t, String)).toBe("Done: out.md");
