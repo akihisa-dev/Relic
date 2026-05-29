@@ -84,6 +84,7 @@ describe("appSettings", () => {
         { id: "", name: "Empty ID", path: "/tmp/Empty" },
         { id: "ws-empty-name", name: " ", path: "/tmp/EmptyName" },
         { id: "ws-relative", name: "Relative", path: "relative/Notes" },
+        { id: "ws-dotdot", name: "DotDot", path: "/tmp/Notes/.." },
         { id: "../outside", name: "Traversal", path: "/tmp/Traversal" },
         { id: "folder/ws", name: "Slash", path: "/tmp/Slash" },
         { id: " ws-space ", name: "Space", path: "/tmp/Space" },

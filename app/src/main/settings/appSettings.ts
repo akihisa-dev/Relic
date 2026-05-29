@@ -213,8 +213,7 @@ function parseWorkspaceSummaries(raw: unknown): WorkspaceSummary[] {
       typeof candidate.name !== "string" ||
       candidate.name.trim() === "" ||
       typeof candidate.path !== "string" ||
-      candidate.path.trim() === "" ||
-      !path.isAbsolute(candidate.path)
+      !isNormalizedAbsolutePath(candidate.path)
     ) {
       continue;
     }
@@ -232,6 +231,10 @@ function parseWorkspaceSummaries(raw: unknown): WorkspaceSummary[] {
 
 function isSafeWorkspaceId(id: string): boolean {
   return id.trim() === id && WORKSPACE_ID_PATTERN.test(id);
+}
+
+function isNormalizedAbsolutePath(value: string): boolean {
+  return value.trim() === value && path.isAbsolute(value) && path.resolve(value) === value;
 }
 
 function parseLastWorkspaceId(raw: unknown, workspaces: WorkspaceSummary[]): string | null {
