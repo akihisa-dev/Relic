@@ -8,10 +8,7 @@ import {
   openWorkspaceChannel,
   removeWorkspaceChannel,
   renameWorkspaceChannel,
-  type RemoveWorkspaceInput,
-  type RenameWorkspaceInput,
   switchWorkspaceChannel,
-  type SwitchWorkspaceInput,
   togglePinChannel,
   type WorkspaceState
 } from "../../shared/ipc";
@@ -159,7 +156,7 @@ export function registerWorkspaceRegistrationHandlers(): void {
 
   ipcMain.handle(
     switchWorkspaceChannel,
-    async (_event, input: SwitchWorkspaceInput): Promise<RelicResult<WorkspaceState>> => {
+    async (_event, input: unknown): Promise<RelicResult<WorkspaceState>> => {
       try {
         if (!isSwitchWorkspaceInput(input)) {
           return fail("WORKSPACE_SWITCH_INVALID_INPUT", "ワークスペースを選択してください。");
@@ -197,7 +194,7 @@ export function registerWorkspaceRegistrationHandlers(): void {
 
   ipcMain.handle(
     removeWorkspaceChannel,
-    async (_event, input: RemoveWorkspaceInput): Promise<RelicResult<WorkspaceState>> => {
+    async (_event, input: unknown): Promise<RelicResult<WorkspaceState>> => {
       try {
         if (!isWorkspaceIdInput(input)) {
           return fail("WORKSPACE_REMOVE_INVALID_INPUT", "ワークスペースを選択してください。");
@@ -226,7 +223,7 @@ export function registerWorkspaceRegistrationHandlers(): void {
 
   ipcMain.handle(
     renameWorkspaceChannel,
-    async (_event, input: RenameWorkspaceInput): Promise<RelicResult<WorkspaceState>> => {
+    async (_event, input: unknown): Promise<RelicResult<WorkspaceState>> => {
       try {
         if (!isRenameWorkspaceInput(input)) {
           return fail("WORKSPACE_RENAME_INVALID_INPUT", "ワークスペース名を入力してください。");
