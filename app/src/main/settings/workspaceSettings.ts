@@ -35,7 +35,11 @@ const defaultWorkspaceSettings: WorkspaceSettings = {
   workspacePath: ""
 };
 
+const WORKSPACE_SETTINGS_ID_PATTERN = /^[A-Za-z0-9_-]+$/;
+
 export function getWorkspaceSettingsPath(userDataPath: string, workspaceId: string): string {
+  assertSafeWorkspaceSettingsId(workspaceId);
+
   return path.join(userDataPath, "workspaces", `${workspaceId}.json`);
 }
 
@@ -43,9 +47,8 @@ export async function readWorkspaceSettings(
   userDataPath: string,
   workspaceId: string
 ): Promise<WorkspaceSettings> {
-  const settingsPath = getWorkspaceSettingsPath(userDataPath, workspaceId);
-
   try {
+    const settingsPath = getWorkspaceSettingsPath(userDataPath, workspaceId);
     const raw = await readFile(settingsPath, "utf8");
     const parsed = parseSettingsObject(raw);
 
@@ -60,7 +63,7 @@ export async function readWorkspaceSettings(
       workspacePath: typeof parsed.workspacePath === "string" ? parsed.workspacePath : ""
     };
   } catch (error) {
-    if (isMissingFileError(error)) {
+    if (isMissingFileError(error) || isInvalidWorkspaceSettingsIdError(error)) {
       return defaultWorkspaceSettings;
     }
 
@@ -176,6 +179,16 @@ function isChronicleCalendarId(value: string): value is ChronicleCalendarId {
 
 function defaultChartName(source: ChartSource): string {
   return source === "date" ? "日付チャート" : "年表";
+}
+
+function assertSafeWorkspaceSettingsId(workspaceId: string): void {
+  if (workspaceId.trim() !== workspaceId || !WORKSPACE_SETTINGS_ID_PATTERN.test(workspaceId)) {
+    throw new Error("Invalid workspace settings id.");
+  }
+}
+
+function isInvalidWorkspaceSettingsIdError(error: unknown): boolean {
+  return error instanceof Error && error.message === "Invalid workspace settings id.";
 }
 
 export async function writeWorkspaceSettings(
