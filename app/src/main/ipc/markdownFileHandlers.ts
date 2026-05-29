@@ -30,6 +30,7 @@ import { resolveWorkspaceRelativePath } from "../files/paths";
 import { getActiveWorkspaceContext, ipcErrorDetails } from "./activeWorkspace";
 import {
   isCreateMarkdownFileInput,
+  isLinkUpdateImpactInput,
   isMoveMarkdownFileInput,
   isPathInput,
   isRenameMarkdownFileInput
@@ -39,12 +40,7 @@ import { buildWorkspaceState } from "./workspaceState";
 export function registerMarkdownFileHandlers(): void {
   ipcMain.handle(getLinkUpdateImpactChannel, async (_event, input: LinkUpdateImpactInput) => {
     try {
-      if (
-        !input ||
-        (input.kind !== "file" && input.kind !== "folder") ||
-        typeof input.oldPath !== "string" ||
-        typeof input.newPath !== "string"
-      ) {
+      if (!isLinkUpdateImpactInput(input)) {
         return fail("LINK_UPDATE_IMPACT_INVALID_INPUT", "リンク更新の確認対象が正しくありません。");
       }
 
