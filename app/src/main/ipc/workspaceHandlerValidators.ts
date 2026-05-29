@@ -84,7 +84,7 @@ export function isUpdateChartEntryInput(input: unknown): input is UpdateChartEnt
   if (typeof startValue !== "number" || typeof endValue !== "number") return false;
 
   return (
-    typeof candidate.path === "string" &&
+    isWorkspaceRelativeInputPath(candidate.path) &&
     chartSources.includes(candidate.source as ChartSource) &&
     (!("chronicleCalendarId" in candidate) || isChronicleCalendarId(candidate.chronicleCalendarId)) &&
     (!("chronicleCalendarStartYear" in candidate) || (Number.isInteger(candidate.chronicleCalendarStartYear) && Number(candidate.chronicleCalendarStartYear) >= 1)) &&
