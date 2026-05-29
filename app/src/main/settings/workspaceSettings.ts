@@ -55,9 +55,7 @@ export async function readWorkspaceSettings(
     return {
       chronicleCalendars: parseChronicleCalendars(parsed.chronicleCalendars),
       charts: parseCharts(parsed.charts ?? parsed.ganttCharts),
-      pinnedPaths: Array.isArray(parsed.pinnedPaths)
-        ? parsed.pinnedPaths.filter((p) => typeof p === "string")
-        : [],
+      pinnedPaths: parsePinnedPaths(parsed.pinnedPaths),
       workspacePath: typeof parsed.workspacePath === "string" ? parsed.workspacePath : ""
     };
   } catch (error) {
@@ -131,6 +129,46 @@ export function parseCharts(raw: unknown): ChartSettings[] {
       filePaths: saved?.filePaths ?? defaultChart.filePaths
     };
   });
+}
+
+export function parsePinnedPaths(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+
+  const paths = raw.flatMap((item): string[] => {
+    if (typeof item !== "string") return [];
+
+    const normalized = normalizePinnedPath(item);
+    return normalized ? [normalized] : [];
+  });
+
+  return Array.from(new Set(paths));
+}
+
+function normalizePinnedPath(raw: string): string | null {
+  const trimmed = raw.trim();
+  const normalizedInput = trimmed.replace(/\\/g, "/");
+
+  if (
+    !trimmed ||
+    normalizedInput === "." ||
+    path.posix.isAbsolute(normalizedInput) ||
+    path.win32.isAbsolute(trimmed)
+  ) {
+    return null;
+  }
+
+  const normalized = path.posix.normalize(normalizedInput);
+
+  if (
+    normalized === "." ||
+    normalized.startsWith("../") ||
+    normalized === ".." ||
+    path.posix.isAbsolute(normalized)
+  ) {
+    return null;
+  }
+
+  return normalized;
 }
 
 function parseChartFilePaths(raw: unknown): string[] | undefined {

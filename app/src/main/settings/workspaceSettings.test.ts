@@ -67,6 +67,33 @@ describe("workspaceSettings", () => {
     expect(settings.workspacePath).toBe("/Users/test/notes");
   });
 
+  it("読み込み時にピン留めパスをワークスペース相対パスだけに正規化する", async () => {
+    const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-settings-"));
+    temporaryPaths.push(userDataPath);
+    const settingsPath = getWorkspaceSettingsPath(userDataPath, "ws-pinned");
+    await mkdir(path.dirname(settingsPath), { recursive: true });
+
+    await writeFile(settingsPath, JSON.stringify({
+      chronicleCalendars: defaultChronicleCalendars,
+      charts: defaultCharts,
+      pinnedPaths: [
+        " notes/readme.md ",
+        "notes/readme.md",
+        "folder\\note.md",
+        "../outside.md",
+        "/tmp/outside.md",
+        "C:\\Users\\test\\note.md",
+        "",
+        123
+      ],
+      workspacePath: "/Users/test/notes"
+    }), "utf8");
+
+    const settings = await readWorkspaceSettings(userDataPath, "ws-pinned");
+
+    expect(settings.pinnedPaths).toEqual(["notes/readme.md", "folder/note.md"]);
+  });
+
   it("旧ganttChartsキーをchartsとして読み込む", async () => {
     const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-settings-"));
     temporaryPaths.push(userDataPath);

@@ -28,6 +28,7 @@ import {
   defaultChronicleCalendars,
   defaultFrontmatterTemplates,
   defaultUserDefinedFields,
+  togglePinChannel,
   getWorkspaceStateChannel
 } from "../../shared/ipc";
 import { writeAppSettings } from "../settings/appSettings";
@@ -189,6 +190,41 @@ describe("workspaceHandlers", () => {
         pinnedPaths: [],
         workspaces: [workspace]
       })
+    });
+  });
+
+  it("不正なピン留めパスは保存しない", async () => {
+    const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-user-data-"));
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-workspace-"));
+    temporaryPaths.push(userDataPath, workspacePath);
+
+    const workspace = createWorkspaceSummary(workspacePath);
+    const settings = addOrActivateWorkspace(
+      {
+        editorSettings: defaultEditorSettings,
+        featureToggles: defaultFeatureToggles,
+        frontmatterTemplates: defaultFrontmatterTemplates,
+        lastWorkspaceId: null,
+        userDefinedFields: defaultUserDefinedFields,
+        workspaces: []
+      },
+      workspace
+    );
+    await writeAppSettings(userDataPath, settings);
+
+    electronMock.getPath.mockReturnValue(userDataPath);
+    registerWorkspaceHandlers();
+    const togglePinHandler = electronMock.handle.mock.calls.find(
+      ([channel]) => channel === togglePinChannel
+    )?.[1];
+
+    if (!togglePinHandler) throw new Error("togglePin handler was not registered");
+
+    const result = await togglePinHandler(undefined, "../outside.md");
+
+    expect(result).toMatchObject({
+      error: { code: "TOGGLE_PIN_INVALID_INPUT" },
+      ok: false
     });
   });
 });
