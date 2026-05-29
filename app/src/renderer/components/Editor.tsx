@@ -303,6 +303,10 @@ export function Editor({
 
     const currentContent = view.state.doc.toString();
     const currentFrontmatterCollapsed = frontmatterCollapsedValue(view.state);
+    const currentSelection = view.state.selection;
+    const currentScrollLeft = view.scrollDOM.scrollLeft;
+    const currentScrollTop = view.scrollDOM.scrollTop;
+    const hadFocus = view.hasFocus;
     const container = containerRef.current;
 
     destroyEditorView(view, container);
@@ -324,11 +328,14 @@ export function Editor({
       onOpenLinkRef,
       onOpenWikiLinkRef
     );
-    const state = EditorState.create({ doc: currentContent, extensions });
+    const state = EditorState.create({ doc: currentContent, extensions, selection: currentSelection });
     const nextView = new EditorView({ state, parent: container });
 
     internalViewRef.current = nextView;
     setFrontmatterCollapsed(nextView, currentFrontmatterCollapsed);
+    nextView.scrollDOM.scrollLeft = currentScrollLeft;
+    nextView.scrollDOM.scrollTop = currentScrollTop;
+    if (hadFocus) nextView.focus();
 
     if (viewRef) viewRef.current = nextView;
   }, [frontmatterCandidates, rememberSelection, settings, sourceMode, t, typewriterMode, userDefinedFields, viewRef]);
