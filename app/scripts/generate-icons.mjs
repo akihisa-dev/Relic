@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const appDir = path.resolve(scriptDir, "..");
 const repoDir = path.resolve(appDir, "..");
-const sourcePng = path.join(repoDir, "docs", "logo", "relic.png");
+const sourcePng = path.join(repoDir, "docs", "logo", "relic-logo.png");
 const assetsDir = path.join(appDir, "assets");
 const iconsetDir = path.join(assetsDir, "icon.iconset");
 const icnsPath = path.join(assetsDir, "icon.icns");

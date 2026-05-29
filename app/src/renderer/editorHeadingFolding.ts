@@ -13,12 +13,6 @@ function headingLevel(lineText: string): number | null {
   return match ? match[1].length : null;
 }
 
-function headingContentFrom(lineFrom: number, lineText: string): number | null {
-  const match = /^(#{1,6})\s+/.exec(lineText);
-
-  return match ? lineFrom + match[0].length : null;
-}
-
 function isInsideBacktickFence(state: EditorState, lineNumber: number): boolean {
   let activeFence: { markerLength: number } | null = null;
 
@@ -122,7 +116,7 @@ class HeadingFoldWidget extends WidgetType {
   }
 }
 
-function buildHeadingFoldDecorations(view: EditorView, t: Translator, sourceMode: boolean): DecorationSet {
+function buildHeadingFoldDecorations(view: EditorView, t: Translator): DecorationSet {
   const ranges: Array<{ from: number; deco: Decoration }> = [];
   const doc = view.state.doc;
 
@@ -135,11 +129,8 @@ function buildHeadingFoldDecorations(view: EditorView, t: Translator, sourceMode
       const range = headingFoldRange(view.state, line.from);
       if (!range) continue;
 
-      const contentFrom = headingContentFrom(line.from, line.text);
-      if (contentFrom === null) continue;
-
       ranges.push({
-        from: sourceMode ? line.from : contentFrom,
+        from: line.from,
         deco: Decoration.widget({
           side: -1,
           widget: new HeadingFoldWidget(Boolean(foldedHeadingRange(view.state, range)), range, t)
@@ -151,18 +142,18 @@ function buildHeadingFoldDecorations(view: EditorView, t: Translator, sourceMode
   return Decoration.set(ranges.map(({ from, deco }) => deco.range(from)));
 }
 
-function createHeadingFoldWidgetPlugin(t: Translator, sourceMode: boolean): Extension {
+function createHeadingFoldWidgetPlugin(t: Translator): Extension {
   return ViewPlugin.fromClass(
     class {
       decorations: DecorationSet;
 
       constructor(view: EditorView) {
-        this.decorations = buildHeadingFoldDecorations(view, t, sourceMode);
+        this.decorations = buildHeadingFoldDecorations(view, t);
       }
 
       update(update: ViewUpdate): void {
         if (update.docChanged || update.selectionSet || update.viewportChanged || update.transactions.some((transaction) => transaction.effects.length > 0)) {
-          this.decorations = buildHeadingFoldDecorations(update.view, t, sourceMode);
+          this.decorations = buildHeadingFoldDecorations(update.view, t);
         }
       }
     },
@@ -172,10 +163,10 @@ function createHeadingFoldWidgetPlugin(t: Translator, sourceMode: boolean): Exte
   );
 }
 
-export function createHeadingFoldingExtension(t: Translator, sourceMode: boolean): Extension {
+export function createHeadingFoldingExtension(t: Translator): Extension {
   return [
     foldService.of((state, lineStart) => headingFoldRange(state, lineStart)),
     codeFolding({ placeholderText: "…" }),
-    createHeadingFoldWidgetPlugin(t, sourceMode)
+    createHeadingFoldWidgetPlugin(t)
   ];
 }
