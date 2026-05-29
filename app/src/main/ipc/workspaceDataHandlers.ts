@@ -15,7 +15,11 @@ import { readWorkspaceAliases } from "../files/aliases";
 import { readWorkspaceCharts, updateWorkspaceChartEntry } from "../files/charts";
 import { readFrontmatterValueCandidates } from "../files/frontmatterCandidates";
 import { readWorkspaceTags } from "../files/tags";
-import { readWorkspaceSettings, writeWorkspaceSettings } from "../settings/workspaceSettings";
+import {
+  normalizeWorkspaceRelativeSettingPath,
+  readWorkspaceSettings,
+  writeWorkspaceSettings
+} from "../settings/workspaceSettings";
 import { getActiveWorkspaceContext, ipcErrorDetails } from "./activeWorkspace";
 import {
   isChronicleCalendarsInput,
@@ -104,7 +108,10 @@ export function registerWorkspaceDataHandlers(): void {
       await writeWorkspaceSettings(context.value.userDataPath, context.value.activeWorkspace.id, {
         ...workspaceSettings,
         charts: input.map((chart) => ({
-          filePaths: chart.filePaths,
+          filePaths: chart.filePaths?.flatMap((filePath) => {
+            const normalized = normalizeWorkspaceRelativeSettingPath(filePath);
+            return normalized ? [normalized] : [];
+          }),
           id: chart.id.trim(),
           name: chart.name.trim(),
           source: chart.source

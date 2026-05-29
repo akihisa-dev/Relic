@@ -94,6 +94,49 @@ describe("workspaceSettings", () => {
     expect(settings.pinnedPaths).toEqual(["notes/readme.md", "folder/note.md"]);
   });
 
+  it("読み込み時にチャート対象パスをワークスペース相対パスだけに正規化する", async () => {
+    const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-settings-"));
+    temporaryPaths.push(userDataPath);
+    const settingsPath = getWorkspaceSettingsPath(userDataPath, "ws-chart-paths");
+    await mkdir(path.dirname(settingsPath), { recursive: true });
+
+    await writeFile(settingsPath, JSON.stringify({
+      chronicleCalendars: defaultChronicleCalendars,
+      charts: [
+        {
+          filePaths: [
+            " history\\old.md ",
+            "history/old.md",
+            "section/../notes/today.md",
+            "../outside.md",
+            "/tmp/outside.md",
+            "C:\\Users\\test\\outside.md",
+            ".",
+            123
+          ],
+          id: "chronicle",
+          name: "歴史",
+          source: "chronicle"
+        },
+        {
+          filePaths: ["schedule.md"],
+          id: "date",
+          name: "予定",
+          source: "date"
+        }
+      ],
+      pinnedPaths: [],
+      workspacePath: "/Users/test/notes"
+    }), "utf8");
+
+    const settings = await readWorkspaceSettings(userDataPath, "ws-chart-paths");
+
+    expect(settings.charts).toEqual([
+      { filePaths: ["history/old.md", "notes/today.md"], id: "chronicle", name: "chronicle", source: "chronicle" },
+      { filePaths: ["schedule.md"], id: "date", name: "date", source: "date" }
+    ]);
+  });
+
   it("旧ganttChartsキーをchartsとして読み込む", async () => {
     const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-settings-"));
     temporaryPaths.push(userDataPath);
