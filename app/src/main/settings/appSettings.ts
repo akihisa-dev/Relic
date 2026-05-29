@@ -131,6 +131,7 @@ const VALID_FIELD_TYPES: UserDefinedFieldType[] = [
 const VALID_FIELD_TYPES_SET = new Set<UserDefinedFieldType>(VALID_FIELD_TYPES);
 const FIELD_NAME_PATTERN = /^[^\s:][^\r\n:]*$/;
 const RESERVED_FIELD_NAMES = new Set(["aliases", "tags", "status", ...chronicleCalendarIds, "plannedDate", "actualDate"]);
+const WORKSPACE_ID_PATTERN = /^[A-Za-z0-9_-]+$/;
 
 function parseUserDefinedFields(raw: unknown): UserDefinedField[] {
   if (!Array.isArray(raw)) return defaultUserDefinedFields;
@@ -203,7 +204,7 @@ function parseWorkspaceSummaries(raw: unknown): WorkspaceSummary[] {
 
     if (
       typeof candidate.id !== "string" ||
-      candidate.id.trim() === "" ||
+      !isSafeWorkspaceId(candidate.id) ||
       ids.has(candidate.id) ||
       typeof candidate.name !== "string" ||
       candidate.name.trim() === "" ||
@@ -223,6 +224,10 @@ function parseWorkspaceSummaries(raw: unknown): WorkspaceSummary[] {
   }
 
   return result;
+}
+
+function isSafeWorkspaceId(id: string): boolean {
+  return id.trim() === id && WORKSPACE_ID_PATTERN.test(id);
 }
 
 function parseLastWorkspaceId(raw: unknown, workspaces: WorkspaceSummary[]): string | null {
