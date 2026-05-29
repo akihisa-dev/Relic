@@ -7,6 +7,8 @@ import { fail, ok, type RelicResult } from "../../shared/result";
 import type { AppSettings } from "../settings/appSettings";
 import { validateBaseName } from "../files/names";
 
+const DEFAULT_MAX_RENAME_TEMPORARY_PATH_CANDIDATES = 1000;
+
 export function createWorkspaceSummary(workspacePath: string): WorkspaceSummary {
   const normalizedPath = path.resolve(workspacePath);
 
@@ -131,12 +133,13 @@ export async function renameWorkspaceRegistration(
         path.dirname(workspace.path),
         nextWorkspace.id
       );
-      await rename(workspace.path, temporaryPath);
+      if (!temporaryPath.ok) return temporaryPath;
+      await rename(workspace.path, temporaryPath.value);
 
       try {
-        await rename(temporaryPath, nextWorkspace.path);
+        await rename(temporaryPath.value, nextWorkspace.path);
       } catch (error) {
-        await rename(temporaryPath, workspace.path).catch(() => undefined);
+        await rename(temporaryPath.value, workspace.path).catch(() => undefined);
         throw error;
       }
     } else {
@@ -192,20 +195,23 @@ function isMissingFileError(error: unknown): boolean {
   );
 }
 
-async function findAvailableRenameTemporaryPath(
+export async function findAvailableRenameTemporaryPath(
   parentPath: string,
-  workspaceId: string
-): Promise<string> {
+  workspaceId: string,
+  maxCandidates = DEFAULT_MAX_RENAME_TEMPORARY_PATH_CANDIDATES
+): Promise<RelicResult<string>> {
   const basePath = path.join(parentPath, `.relic-rename-${workspaceId}-${Date.now()}`);
 
-  for (let index = 0; ; index += 1) {
+  for (let index = 0; index < maxCandidates; index += 1) {
     const candidatePath = index === 0 ? basePath : `${basePath}-${index}`;
 
     try {
       await stat(candidatePath);
     } catch (error) {
-      if (isMissingFileError(error)) return candidatePath;
+      if (isMissingFileError(error)) return ok(candidatePath);
       throw error;
     }
   }
+
+  return fail("WORKSPACE_RENAME_TEMPORARY_PATH_EXHAUSTED", "ワークスペース名変更用の一時フォルダ名候補が多すぎます。");
 }

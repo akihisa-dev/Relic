@@ -9,6 +9,7 @@ import {
   addOrActivateWorkspace,
   activateWorkspace,
   createWorkspaceSummary,
+  findAvailableRenameTemporaryPath,
   prepareWorkspace,
   renameWorkspaceRegistration,
   removeWorkspaceRegistration,
@@ -207,6 +208,20 @@ describe("workspaceService", () => {
       }
     });
     await expect(stat(nextWorkspace.path)).resolves.toBeTruthy();
+  });
+
+  it("ワークスペース名変更用の一時フォルダ名候補が上限まで埋まっている場合は停止する", async () => {
+    const parentPath = await mkdtemp(path.join(os.tmpdir(), "relic-workspace-parent-"));
+    temporaryPaths.push(parentPath);
+    vi.spyOn(Date, "now").mockReturnValue(12345);
+
+    await mkdir(path.join(parentPath, ".relic-rename-workspace-id-12345"));
+    await mkdir(path.join(parentPath, ".relic-rename-workspace-id-12345-1"));
+
+    await expect(findAvailableRenameTemporaryPath(parentPath, "workspace-id", 2)).resolves.toMatchObject({
+      error: { code: "WORKSPACE_RENAME_TEMPORARY_PATH_EXHAUSTED" },
+      ok: false
+    });
   });
 
   it("空のワークスペース名は拒否する", async () => {
