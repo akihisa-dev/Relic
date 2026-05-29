@@ -11,6 +11,7 @@ import { fail, ok, type RelicResult } from "../../shared/result";
 import { writeMarkdownFileContent } from "../files/markdownFiles";
 import { readAppSettings, writeAppSettings } from "../settings/appSettings";
 import { toWorkspaceState } from "../workspace/workspaceService";
+import { isWriteMarkdownFileInput } from "./fileHandlerValidators";
 
 export function registerEditorHandlers(): void {
   ipcMain.handle(
@@ -76,17 +77,6 @@ export function registerEditorHandlers(): void {
         );
       }
     }
-  );
-}
-
-function isWriteMarkdownFileInput(input: unknown): input is WriteMarkdownFileInput {
-  return (
-    typeof input === "object" &&
-    input !== null &&
-    "path" in input &&
-    "content" in input &&
-    typeof (input as { path?: unknown }).path === "string" &&
-    typeof (input as { content?: unknown }).content === "string"
   );
 }
 
