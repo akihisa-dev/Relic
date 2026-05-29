@@ -1,4 +1,5 @@
 import type {
+  CreateFolderInput,
   CreateMarkdownFileInput,
   MoveFolderInput,
   MoveItemToTrashInput,
@@ -13,6 +14,17 @@ import type {
 
 export function isCreateMarkdownFileInput(input: unknown): input is CreateMarkdownFileInput {
   return isNameInput(input);
+}
+
+export function isCreateFolderInput(input: unknown): input is CreateFolderInput {
+  return (
+    isNameInput(input) &&
+    (
+      !("parentFolder" in input) ||
+      (input as { parentFolder?: unknown }).parentFolder === undefined ||
+      typeof (input as { parentFolder?: unknown }).parentFolder === "string"
+    )
+  );
 }
 
 export function isNameInput(input: unknown): input is { name: string } {

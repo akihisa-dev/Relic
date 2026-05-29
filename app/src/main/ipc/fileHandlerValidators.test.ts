@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  isCreateFolderInput,
   isMoveItemToTrashInput,
   isMoveMarkdownFileInput,
   isReplaceInFileInput,
@@ -9,6 +10,14 @@ import {
 } from "./fileHandlerValidators";
 
 describe("fileHandlerValidators", () => {
+  it("validates create folder input including optional parent folder", () => {
+    expect(isCreateFolderInput({ name: "Archive" })).toBe(true);
+    expect(isCreateFolderInput({ name: "Archive", parentFolder: "Notes" })).toBe(true);
+    expect(isCreateFolderInput({ name: "Archive", parentFolder: undefined })).toBe(true);
+    expect(isCreateFolderInput({ name: "Archive", parentFolder: 1 })).toBe(false);
+    expect(isCreateFolderInput({ parentFolder: "Notes" })).toBe(false);
+  });
+
   it("validates workspace search input modes and optional frontmatter field", () => {
     expect(isSearchWorkspaceInput({ mode: "fullText", query: "relic" })).toBe(true);
     expect(isSearchWorkspaceInput({ frontmatterField: undefined, mode: "fullText", query: "relic" })).toBe(true);
