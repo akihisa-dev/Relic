@@ -76,6 +76,24 @@ describe("workspaceHandlerValidators", () => {
       source: "date",
       startValue: 2
     })).toBe(false);
+    expect(isUpdateChartEntryInput({
+      endValue: 3,
+      kind: "move",
+      originalEndValue: 2,
+      originalStartValue: 1,
+      path: "../outside.md",
+      source: "date",
+      startValue: 2
+    })).toBe(false);
+    expect(isUpdateChartEntryInput({
+      endValue: 3,
+      kind: "move",
+      originalEndValue: 2,
+      originalStartValue: 1,
+      path: " Notes/Idea.md ",
+      source: "date",
+      startValue: 2
+    })).toBe(false);
     expect(isFrontmatterTemplatesInput([{ fieldNames: ["status"], name: "Basic" }])).toBe(true);
     expect(isFrontmatterTemplatesInput([{ fieldNames: [], name: "Basic" }])).toBe(false);
   });
