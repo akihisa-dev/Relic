@@ -73,4 +73,24 @@ describe("appSettings", () => {
       workspaces: []
     });
   });
+
+  it("壊れたワークスペース登録は設定読み込み時に除外する", async () => {
+    const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-app-settings-"));
+    temporaryPaths.push(userDataPath);
+    await writeFile(getAppSettingsPath(userDataPath), JSON.stringify({
+      lastWorkspaceId: "ws-valid",
+      workspaces: [
+        { id: "ws-valid", name: "Notes", path: "/tmp/Notes" },
+        { id: "", name: "Empty ID", path: "/tmp/Empty" },
+        { id: "ws-empty-name", name: " ", path: "/tmp/EmptyName" },
+        { id: "ws-relative", name: "Relative", path: "relative/Notes" },
+        { id: "ws-valid", name: "Duplicate", path: "/tmp/Duplicate" }
+      ]
+    }), "utf8");
+
+    await expect(readAppSettings(userDataPath)).resolves.toMatchObject({
+      lastWorkspaceId: "ws-valid",
+      workspaces: [{ id: "ws-valid", name: "Notes", path: "/tmp/Notes" }]
+    });
+  });
 });
