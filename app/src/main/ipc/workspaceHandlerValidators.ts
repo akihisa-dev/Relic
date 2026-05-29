@@ -29,6 +29,7 @@ const userDefinedFieldNamePattern = /^[^\s:][^\r\n:]*$/;
 const reservedUserDefinedFieldNames = new Set(["aliases", "tags", "status", ...validChronicleCalendarIds, "plannedDate", "actualDate"]);
 const chartSources: ChartSource[] = ["chronicle", "date"];
 const userDefinedFieldTypesWithChoices = new Set<UserDefinedFieldType>(["select", "multi-select"]);
+const workspaceIdPattern = /^[A-Za-z0-9_-]+$/;
 
 export function isUserDefinedFieldsInput(input: unknown): input is UserDefinedField[] {
   if (!Array.isArray(input)) return false;
@@ -166,12 +167,15 @@ export function isFeatureTogglesInput(input: unknown): input is FeatureToggles {
 }
 
 export function isWorkspaceIdInput(input: unknown): input is { workspaceId: string } {
+  const workspaceId = (input as { workspaceId?: unknown })?.workspaceId;
+
   return (
     typeof input === "object" &&
     input !== null &&
     "workspaceId" in input &&
-    typeof (input as { workspaceId?: unknown }).workspaceId === "string" &&
-    (input as { workspaceId: string }).workspaceId.trim() !== ""
+    typeof workspaceId === "string" &&
+    workspaceId.trim() === workspaceId &&
+    workspaceIdPattern.test(workspaceId)
   );
 }
 
