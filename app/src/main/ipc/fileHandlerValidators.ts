@@ -10,7 +10,8 @@ import type {
   ReplaceInFileInput,
   SearchAndReplaceInput,
   SearchMode,
-  SearchWorkspaceInput
+  SearchWorkspaceInput,
+  WriteMarkdownFileInput
 } from "../../shared/ipc";
 import { isWorkspaceRelativeInputPath, isWorkspaceRelativeInputPathOrRoot } from "../files/paths";
 
@@ -125,6 +126,17 @@ export function isReplaceInFileInput(input: unknown): input is ReplaceInFileInpu
     typeof (input as { searchQuery?: unknown }).searchQuery === "string" &&
     typeof (input as { replacement?: unknown }).replacement === "string" &&
     typeof (input as { isRegex?: unknown }).isRegex === "boolean"
+  );
+}
+
+export function isWriteMarkdownFileInput(input: unknown): input is WriteMarkdownFileInput {
+  return (
+    typeof input === "object" &&
+    input !== null &&
+    "path" in input &&
+    "content" in input &&
+    isWorkspaceRelativeInputPath((input as { path?: unknown }).path) &&
+    typeof (input as { content?: unknown }).content === "string"
   );
 }
 

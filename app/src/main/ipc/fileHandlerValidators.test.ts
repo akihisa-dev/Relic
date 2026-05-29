@@ -11,6 +11,7 @@ import {
   isRenameMarkdownFileInput,
   isReplaceInFileInput,
   isSearchWorkspaceInput,
+  isWriteMarkdownFileInput,
   normalizeSearchWorkspaceInput
 } from "./fileHandlerValidators";
 
@@ -152,5 +153,14 @@ describe("fileHandlerValidators", () => {
       replacement: "new",
       searchQuery: "old"
     })).toBe(false);
+  });
+
+  it("validates write input as content plus a normalized workspace-relative path", () => {
+    expect(isWriteMarkdownFileInput({ content: "# Note", path: "Note.md" })).toBe(true);
+    expect(isWriteMarkdownFileInput({ content: "# Note", path: "Notes/Idea.md" })).toBe(true);
+    expect(isWriteMarkdownFileInput({ content: "# Note", path: "../outside.md" })).toBe(false);
+    expect(isWriteMarkdownFileInput({ content: "# Note", path: "/tmp/outside.md" })).toBe(false);
+    expect(isWriteMarkdownFileInput({ content: "# Note", path: " Notes/Idea.md " })).toBe(false);
+    expect(isWriteMarkdownFileInput({ content: 1, path: "Note.md" })).toBe(false);
   });
 });
