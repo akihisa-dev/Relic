@@ -16,6 +16,7 @@ import { fail, ok, type RelicResult } from "../../shared/result";
 import { readAppSettings, writeAppSettings } from "../settings/appSettings";
 import { ipcErrorDetails } from "./activeWorkspace";
 import {
+  isFeatureTogglesInput,
   isFrontmatterTemplatesInput,
   isUserDefinedFieldsInput
 } from "./workspaceHandlerValidators";
@@ -30,8 +31,12 @@ export function registerWorkspacePreferenceHandlers(): void {
     }
   });
 
-  ipcMain.handle(saveFeatureTogglesChannel, async (_event, input: FeatureToggles): Promise<RelicResult<void>> => {
+  ipcMain.handle(saveFeatureTogglesChannel, async (_event, input: unknown): Promise<RelicResult<void>> => {
     try {
+      if (!isFeatureTogglesInput(input)) {
+        return fail("FEATURE_TOGGLES_INVALID_INPUT", "機能トグルの値が正しくありません。");
+      }
+
       const settings = await readAppSettings(app.getPath("userData"));
       await writeAppSettings(app.getPath("userData"), { ...settings, featureToggles: input });
       return ok(undefined);
