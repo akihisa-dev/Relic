@@ -30,7 +30,7 @@ export function registerOutputHandlers(): void {
 
         const saveOptions = {
           buttonLabel: "保存",
-          defaultPath: ensureExtension(sanitizeFileName(input.defaultFileName || input.title || defaultPdfName), "pdf"),
+          defaultPath: ensureExtension(sanitizeFileName(input.defaultFileName || input.title || defaultPdfName, defaultPdfName), "pdf"),
           filters: [{ extensions: ["pdf"], name: "PDF" }],
           properties: ["createDirectory", "showOverwriteConfirmation"],
           title: "PDFとして保存"
@@ -83,7 +83,7 @@ export function registerOutputHandlers(): void {
 
         const saveOptions = {
           buttonLabel: "保存",
-          defaultPath: ensureExtension(sanitizeFileName(input.defaultFileName || defaultSvgName), "svg"),
+          defaultPath: ensureExtension(sanitizeFileName(input.defaultFileName || defaultSvgName, defaultSvgName), "svg"),
           filters: [{ extensions: ["svg"], name: "SVG" }],
           properties: ["createDirectory", "showOverwriteConfirmation"],
           title: "SVGとして保存"
@@ -314,7 +314,7 @@ function isObject(input: unknown): input is Record<string, unknown> {
   return typeof input === "object" && input !== null;
 }
 
-function sanitizeFileName(value: string): string {
+function sanitizeFileName(value: string, fallbackName: string): string {
   const sanitized = value
     .trim()
     .replace(/[<>:"/\\|?*\u0000-\u001f]/g, "_")
@@ -322,7 +322,7 @@ function sanitizeFileName(value: string): string {
     .replace(/[. ]+$/g, "")
     .slice(0, 120);
 
-  return sanitized || defaultPdfName;
+  return sanitized || fallbackName;
 }
 
 function ensureExtension(fileName: string, extension: "pdf" | "svg"): string {
