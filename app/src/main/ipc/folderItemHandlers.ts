@@ -16,9 +16,9 @@ import { createFolder, moveFolder, renameFolder } from "../files/folders";
 import { moveWorkspaceItemToTrash } from "../files/trash";
 import { getActiveWorkspaceContext, ipcErrorDetails } from "./activeWorkspace";
 import {
+  isCreateFolderInput,
   isMoveFolderInput,
   isMoveItemToTrashInput,
-  isNameInput,
   isRenameFolderInput
 } from "./fileHandlerValidators";
 import { buildWorkspaceState } from "./workspaceState";
@@ -28,7 +28,7 @@ export function registerFolderItemHandlers(): void {
     createFolderChannel,
     async (_event, input: CreateFolderInput): Promise<RelicResult<WorkspaceState>> => {
       try {
-        if (!isNameInput(input)) {
+        if (!isCreateFolderInput(input)) {
           return fail("FOLDER_CREATE_INVALID_INPUT", "フォルダ名を入力してください。");
         }
 
