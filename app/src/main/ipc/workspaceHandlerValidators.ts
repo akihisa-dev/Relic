@@ -161,7 +161,8 @@ export function isWorkspaceIdInput(input: unknown): input is { workspaceId: stri
     typeof input === "object" &&
     input !== null &&
     "workspaceId" in input &&
-    typeof (input as { workspaceId?: unknown }).workspaceId === "string"
+    typeof (input as { workspaceId?: unknown }).workspaceId === "string" &&
+    (input as { workspaceId: string }).workspaceId.trim() !== ""
   );
 }
 
@@ -171,11 +172,9 @@ export function isSwitchWorkspaceInput(input: unknown): input is SwitchWorkspace
 
 export function isRenameWorkspaceInput(input: unknown): input is RenameWorkspaceInput {
   return (
-    typeof input === "object" &&
-    input !== null &&
+    isWorkspaceIdInput(input) &&
     "workspaceId" in input &&
     "name" in input &&
-    typeof (input as { workspaceId?: unknown }).workspaceId === "string" &&
     typeof (input as { name?: unknown }).name === "string"
   );
 }

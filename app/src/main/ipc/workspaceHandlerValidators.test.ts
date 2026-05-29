@@ -6,6 +6,7 @@ import {
   isChronicleCalendarsInput,
   isChartsInput,
   isRenameWorkspaceInput,
+  isSwitchWorkspaceInput,
   isUpdateChartEntryInput,
   isUserDefinedFieldsInput
 } from "./workspaceHandlerValidators";
@@ -145,5 +146,14 @@ describe("workspaceHandlerValidators", () => {
   it("validates workspace rename input", () => {
     expect(isRenameWorkspaceInput({ name: "Journal", workspaceId: "workspace-1" })).toBe(true);
     expect(isRenameWorkspaceInput({ workspaceId: "workspace-1" })).toBe(false);
+    expect(isRenameWorkspaceInput({ name: "Journal", workspaceId: "" })).toBe(false);
+    expect(isRenameWorkspaceInput({ name: "Journal", workspaceId: "  " })).toBe(false);
+  });
+
+  it("validates workspace switch input with a non-empty workspace id", () => {
+    expect(isSwitchWorkspaceInput({ workspaceId: "workspace-1" })).toBe(true);
+    expect(isSwitchWorkspaceInput({ workspaceId: "" })).toBe(false);
+    expect(isSwitchWorkspaceInput({ workspaceId: "  " })).toBe(false);
+    expect(isSwitchWorkspaceInput({ workspaceId: 1 })).toBe(false);
   });
 });
