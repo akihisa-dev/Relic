@@ -145,12 +145,17 @@ export function parsePinnedPaths(raw: unknown): string[] {
 }
 
 function normalizePinnedPath(raw: string): string | null {
+  return normalizeWorkspaceRelativeSettingPath(raw);
+}
+
+export function normalizeWorkspaceRelativeSettingPath(raw: string): string | null {
   const trimmed = raw.trim();
   const normalizedInput = trimmed.replace(/\\/g, "/");
 
   if (
     !trimmed ||
     normalizedInput === "." ||
+    normalizedInput.includes("\0") ||
     path.posix.isAbsolute(normalizedInput) ||
     path.win32.isAbsolute(trimmed)
   ) {
@@ -174,7 +179,14 @@ function normalizePinnedPath(raw: string): string | null {
 function parseChartFilePaths(raw: unknown): string[] | undefined {
   if (!Array.isArray(raw)) return undefined;
 
-  return Array.from(new Set(raw.filter((path) => typeof path === "string")));
+  const paths = raw.flatMap((item): string[] => {
+    if (typeof item !== "string") return [];
+
+    const normalized = normalizeWorkspaceRelativeSettingPath(item);
+    return normalized ? [normalized] : [];
+  });
+
+  return Array.from(new Set(paths));
 }
 
 function isChartSource(value: unknown): value is ChartSource {
