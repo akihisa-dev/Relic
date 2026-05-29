@@ -18,7 +18,7 @@ import {
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { getMainTranslator } from "../i18n";
 import { readAppSettings, writeAppSettings } from "../settings/appSettings";
-import { readWorkspaceSettings, writeWorkspaceSettings } from "../settings/workspaceSettings";
+import { parsePinnedPaths, readWorkspaceSettings, writeWorkspaceSettings } from "../settings/workspaceSettings";
 import {
   addOrActivateWorkspace,
   activateWorkspace,
@@ -122,9 +122,11 @@ export function registerWorkspaceRegistrationHandlers(): void {
     }
   });
 
-  ipcMain.handle(togglePinChannel, async (_event, path: unknown): Promise<RelicResult<WorkspaceState>> => {
+  ipcMain.handle(togglePinChannel, async (_event, rawPath: unknown): Promise<RelicResult<WorkspaceState>> => {
     try {
-      if (typeof path !== "string") {
+      const pinnedPath = parsePinnedPaths([rawPath]).at(0);
+
+      if (!pinnedPath) {
         return fail("TOGGLE_PIN_INVALID_INPUT", "パスが無効です。");
       }
 
@@ -136,9 +138,9 @@ export function registerWorkspaceRegistrationHandlers(): void {
       }
 
       const wsSettings = await readWorkspaceSettings(app.getPath("userData"), activeWorkspace.id);
-      const updated = wsSettings.pinnedPaths.includes(path)
-        ? wsSettings.pinnedPaths.filter((p) => p !== path)
-        : [...wsSettings.pinnedPaths, path];
+      const updated = wsSettings.pinnedPaths.includes(pinnedPath)
+        ? wsSettings.pinnedPaths.filter((p) => p !== pinnedPath)
+        : [...wsSettings.pinnedPaths, pinnedPath];
 
       await writeWorkspaceSettings(app.getPath("userData"), activeWorkspace.id, {
         ...wsSettings,
