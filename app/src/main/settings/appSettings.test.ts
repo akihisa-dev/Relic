@@ -110,4 +110,24 @@ describe("appSettings", () => {
       workspaces: [{ id: "ws-valid", name: "Notes", path: "/tmp/Notes" }]
     });
   });
+
+  it("壊れたエディタ設定の数値は読み込み時に既定値へ戻す", async () => {
+    const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-app-settings-"));
+    temporaryPaths.push(userDataPath);
+    await writeFile(getAppSettingsPath(userDataPath), JSON.stringify({
+      editorSettings: {
+        ...defaultEditorSettings,
+        fontSize: 1e999,
+        lineHeight: 0
+      },
+      workspaces: []
+    }), "utf8");
+
+    await expect(readAppSettings(userDataPath)).resolves.toMatchObject({
+      editorSettings: expect.objectContaining({
+        fontSize: defaultEditorSettings.fontSize,
+        lineHeight: defaultEditorSettings.lineHeight
+      })
+    });
+  });
 });
