@@ -206,6 +206,23 @@ describe("outputHandlers", () => {
     expect(fsMock.writeFile).not.toHaveBeenCalledWith("/tmp/diagram.svg", expect.anything(), expect.anything());
   });
 
+  it("SVG保存の初期ファイル名がドットだけの場合はSVG用の既定名へ戻す", async () => {
+    electronMock.showSaveDialog.mockResolvedValue({ canceled: true, filePath: "" });
+    registerOutputHandlers();
+
+    const result = await handlerFor(saveDiagramSvgChannel)({ sender: {} }, {
+      defaultFileName: ".",
+      language: "d2",
+      svg: '<svg><path d="M0 0" /></svg>'
+    });
+
+    expect(result).toEqual({ ok: true, value: { status: "canceled" } });
+    expect(electronMock.showSaveDialog).toHaveBeenCalledWith(expect.objectContaining({
+      defaultPath: "relic-diagram.svg"
+    }));
+    expect(fsMock.writeFile).not.toHaveBeenCalled();
+  });
+
   it("SVGコピーで空SVGをコピーしない", async () => {
     registerOutputHandlers();
 
