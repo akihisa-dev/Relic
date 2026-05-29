@@ -49,14 +49,15 @@ export async function readAppSettings(userDataPath: string): Promise<AppSettings
       return defaultAppSettings;
     }
 
+    const workspaces = parseWorkspaceSummaries(parsedSettings.workspaces);
+
     return {
       editorSettings: parseEditorSettings(parsedSettings.editorSettings),
       featureToggles: parseFeatureToggles(parsedSettings.featureToggles),
       frontmatterTemplates: parseFrontmatterTemplates(parsedSettings.frontmatterTemplates),
-      lastWorkspaceId:
-        typeof parsedSettings.lastWorkspaceId === "string" ? parsedSettings.lastWorkspaceId : null,
+      lastWorkspaceId: parseLastWorkspaceId(parsedSettings.lastWorkspaceId, workspaces),
       userDefinedFields: parseUserDefinedFields(parsedSettings.userDefinedFields),
-      workspaces: parseWorkspaceSummaries(parsedSettings.workspaces)
+      workspaces
     };
   } catch (error) {
     if (isMissingFileError(error)) {
@@ -222,6 +223,14 @@ function parseWorkspaceSummaries(raw: unknown): WorkspaceSummary[] {
   }
 
   return result;
+}
+
+function parseLastWorkspaceId(raw: unknown, workspaces: WorkspaceSummary[]): string | null {
+  if (typeof raw !== "string" || raw.trim() === "") {
+    return null;
+  }
+
+  return workspaces.some((workspace) => workspace.id === raw) ? raw : null;
 }
 
 function parseSettingsObject(raw: string): Record<string, unknown> | null {
