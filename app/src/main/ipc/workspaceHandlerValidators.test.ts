@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  isFeatureTogglesInput,
   isFrontmatterTemplatesInput,
   isChronicleCalendarsInput,
   isChartsInput,
@@ -65,6 +66,32 @@ describe("workspaceHandlerValidators", () => {
     })).toBe(false);
     expect(isFrontmatterTemplatesInput([{ fieldNames: ["status"], name: "Basic" }])).toBe(true);
     expect(isFrontmatterTemplatesInput([{ fieldNames: [], name: "Basic" }])).toBe(false);
+  });
+
+  it("validates feature toggles before saving", () => {
+    expect(isFeatureTogglesInput({
+      calendar: true,
+      chronicle: false,
+      chronicleSettings: false,
+      frontmatter: true,
+      rightPanel: true,
+      tools: false
+    })).toBe(true);
+    expect(isFeatureTogglesInput({
+      calendar: true,
+      chronicle: false,
+      chronicleSettings: false,
+      frontmatter: true,
+      rightPanel: true,
+      tools: "false"
+    })).toBe(false);
+    expect(isFeatureTogglesInput({
+      calendar: true,
+      chronicle: false,
+      frontmatter: true,
+      rightPanel: true,
+      tools: false
+    })).toBe(false);
   });
 
   it("validates chronicle calendar settings", () => {
