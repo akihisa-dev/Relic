@@ -56,9 +56,7 @@ export async function readAppSettings(userDataPath: string): Promise<AppSettings
       lastWorkspaceId:
         typeof parsedSettings.lastWorkspaceId === "string" ? parsedSettings.lastWorkspaceId : null,
       userDefinedFields: parseUserDefinedFields(parsedSettings.userDefinedFields),
-      workspaces: Array.isArray(parsedSettings.workspaces)
-        ? parsedSettings.workspaces.filter(isWorkspaceSummary)
-        : []
+      workspaces: parseWorkspaceSummaries(parsedSettings.workspaces)
     };
   } catch (error) {
     if (isMissingFileError(error)) {
@@ -192,18 +190,38 @@ function parseFrontmatterTemplates(raw: unknown): FrontmatterTemplate[] {
   return result;
 }
 
-function isWorkspaceSummary(value: unknown): value is WorkspaceSummary {
-  if (typeof value !== "object" || value === null) {
-    return false;
+function parseWorkspaceSummaries(raw: unknown): WorkspaceSummary[] {
+  if (!Array.isArray(raw)) return [];
+
+  const result: WorkspaceSummary[] = [];
+  const ids = new Set<string>();
+
+  for (const item of raw) {
+    if (typeof item !== "object" || item === null) continue;
+    const candidate = item as Record<string, unknown>;
+
+    if (
+      typeof candidate.id !== "string" ||
+      candidate.id.trim() === "" ||
+      ids.has(candidate.id) ||
+      typeof candidate.name !== "string" ||
+      candidate.name.trim() === "" ||
+      typeof candidate.path !== "string" ||
+      candidate.path.trim() === "" ||
+      !path.isAbsolute(candidate.path)
+    ) {
+      continue;
+    }
+
+    result.push({
+      id: candidate.id,
+      name: candidate.name,
+      path: candidate.path
+    });
+    ids.add(candidate.id);
   }
 
-  const candidate = value as Record<string, unknown>;
-
-  return (
-    typeof candidate.id === "string" &&
-    typeof candidate.name === "string" &&
-    typeof candidate.path === "string"
-  );
+  return result;
 }
 
 function parseSettingsObject(raw: string): Record<string, unknown> | null {
