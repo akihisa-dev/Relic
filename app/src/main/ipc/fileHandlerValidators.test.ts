@@ -3,9 +3,12 @@ import { describe, expect, it } from "vitest";
 import {
   isCreateFolderInput,
   isLinkUpdateImpactInput,
+  isMoveFolderInput,
   isMoveItemToTrashInput,
   isMoveMarkdownFileInput,
   isPathInput,
+  isRenameFolderInput,
+  isRenameMarkdownFileInput,
   isReplaceInFileInput,
   isSearchWorkspaceInput,
   normalizeSearchWorkspaceInput
@@ -15,8 +18,11 @@ describe("fileHandlerValidators", () => {
   it("validates create folder input including optional parent folder", () => {
     expect(isCreateFolderInput({ name: "Archive" })).toBe(true);
     expect(isCreateFolderInput({ name: "Archive", parentFolder: "Notes" })).toBe(true);
+    expect(isCreateFolderInput({ name: "Archive", parentFolder: "" })).toBe(true);
     expect(isCreateFolderInput({ name: "Archive", parentFolder: undefined })).toBe(true);
     expect(isCreateFolderInput({ name: "Archive", parentFolder: 1 })).toBe(false);
+    expect(isCreateFolderInput({ name: "Archive", parentFolder: "../outside" })).toBe(false);
+    expect(isCreateFolderInput({ name: "Archive", parentFolder: " Notes " })).toBe(false);
     expect(isCreateFolderInput({ parentFolder: "Notes" })).toBe(false);
   });
 
@@ -106,10 +112,25 @@ describe("fileHandlerValidators", () => {
 
   it("validates move and trash inputs without accepting partial objects", () => {
     expect(isMoveMarkdownFileInput({ destinationFolder: "Archive", path: "Note.md" })).toBe(true);
+    expect(isMoveMarkdownFileInput({ destinationFolder: "", path: "Note.md" })).toBe(true);
     expect(isMoveMarkdownFileInput({ path: "Note.md" })).toBe(false);
+    expect(isMoveMarkdownFileInput({ destinationFolder: "../outside", path: "Note.md" })).toBe(false);
+    expect(isMoveMarkdownFileInput({ destinationFolder: "Archive", path: "../outside.md" })).toBe(false);
+    expect(isMoveFolderInput({ destinationFolder: "Archive", path: "Notes" })).toBe(true);
+    expect(isMoveFolderInput({ destinationFolder: "", path: "Notes" })).toBe(true);
+    expect(isMoveFolderInput({ destinationFolder: "../outside", path: "Notes" })).toBe(false);
+    expect(isMoveFolderInput({ destinationFolder: "Archive", path: " Notes " })).toBe(false);
     expect(isMoveItemToTrashInput({ path: "Note.md", type: "file" })).toBe(true);
     expect(isMoveItemToTrashInput({ path: "Folder", type: "folder" })).toBe(true);
+    expect(isMoveItemToTrashInput({ path: "../outside.md", type: "file" })).toBe(false);
     expect(isMoveItemToTrashInput({ path: "Note.md", type: "other" })).toBe(false);
+  });
+
+  it("validates rename inputs with normalized workspace-relative paths", () => {
+    expect(isRenameMarkdownFileInput({ newName: "New", path: "Note.md" })).toBe(true);
+    expect(isRenameMarkdownFileInput({ newName: "New", path: "../outside.md" })).toBe(false);
+    expect(isRenameFolderInput({ newName: "Archive", path: "Notes" })).toBe(true);
+    expect(isRenameFolderInput({ newName: "Archive", path: " Notes " })).toBe(false);
   });
 
   it("validates replace input including regex flag", () => {

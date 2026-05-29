@@ -48,6 +48,10 @@ export function isWorkspaceRelativeInputPath(value: unknown): value is string {
   return typeof value === "string" && normalizeWorkspaceRelativeInputPath(value) === value;
 }
 
+export function isWorkspaceRelativeInputPathOrRoot(value: unknown): value is string {
+  return value === "" || isWorkspaceRelativeInputPath(value);
+}
+
 export function resolveWorkspaceRelativePath(
   workspacePath: string,
   relativePath: string

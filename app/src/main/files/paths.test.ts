@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   isWorkspaceRelativeInputPath,
+  isWorkspaceRelativeInputPathOrRoot,
   normalizeWorkspaceRelativeInputPath,
   resolveNewWorkspacePath,
   resolveWorkspaceRelativePath,
@@ -28,6 +29,14 @@ describe("workspace relative input paths", () => {
     expect(isWorkspaceRelativeInputPath("section/../notes/idea.md")).toBe(false);
     expect(isWorkspaceRelativeInputPath("../outside.md")).toBe(false);
     expect(isWorkspaceRelativeInputPath("/tmp/outside.md")).toBe(false);
+  });
+
+  it("ルート指定を許す入力では空文字か正規化済み相対パスだけを許可する", () => {
+    expect(isWorkspaceRelativeInputPathOrRoot("")).toBe(true);
+    expect(isWorkspaceRelativeInputPathOrRoot("notes")).toBe(true);
+    expect(isWorkspaceRelativeInputPathOrRoot(".")).toBe(false);
+    expect(isWorkspaceRelativeInputPathOrRoot("../outside")).toBe(false);
+    expect(isWorkspaceRelativeInputPathOrRoot(" notes ")).toBe(false);
   });
 });
 

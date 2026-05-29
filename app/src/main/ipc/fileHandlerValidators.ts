@@ -12,7 +12,7 @@ import type {
   SearchMode,
   SearchWorkspaceInput
 } from "../../shared/ipc";
-import { isWorkspaceRelativeInputPath } from "../files/paths";
+import { isWorkspaceRelativeInputPath, isWorkspaceRelativeInputPathOrRoot } from "../files/paths";
 
 export function isCreateMarkdownFileInput(input: unknown): input is CreateMarkdownFileInput {
   return isNameInput(input);
@@ -24,7 +24,7 @@ export function isCreateFolderInput(input: unknown): input is CreateFolderInput 
     (
       !("parentFolder" in input) ||
       (input as { parentFolder?: unknown }).parentFolder === undefined ||
-      typeof (input as { parentFolder?: unknown }).parentFolder === "string"
+      isWorkspaceRelativeInputPathOrRoot((input as { parentFolder?: unknown }).parentFolder)
     )
   );
 }
@@ -64,7 +64,7 @@ export function isRenameMarkdownFileInput(input: unknown): input is RenameMarkdo
     input !== null &&
     "path" in input &&
     "newName" in input &&
-    typeof (input as { path?: unknown }).path === "string" &&
+    isWorkspaceRelativeInputPath((input as { path?: unknown }).path) &&
     typeof (input as { newName?: unknown }).newName === "string"
   );
 }
@@ -75,7 +75,7 @@ export function isRenameFolderInput(input: unknown): input is RenameFolderInput 
     input !== null &&
     "path" in input &&
     "newName" in input &&
-    typeof (input as { path?: unknown }).path === "string" &&
+    isWorkspaceRelativeInputPath((input as { path?: unknown }).path) &&
     typeof (input as { newName?: unknown }).newName === "string"
   );
 }
@@ -86,7 +86,7 @@ export function isMoveItemToTrashInput(input: unknown): input is MoveItemToTrash
     input !== null &&
     "path" in input &&
     "type" in input &&
-    typeof (input as { path?: unknown }).path === "string" &&
+    isWorkspaceRelativeInputPath((input as { path?: unknown }).path) &&
     ((input as { type?: unknown }).type === "file" || (input as { type?: unknown }).type === "folder")
   );
 }
@@ -97,8 +97,8 @@ export function isMoveMarkdownFileInput(input: unknown): input is MoveMarkdownFi
     input !== null &&
     "path" in input &&
     "destinationFolder" in input &&
-    typeof (input as { path?: unknown }).path === "string" &&
-    typeof (input as { destinationFolder?: unknown }).destinationFolder === "string"
+    isWorkspaceRelativeInputPath((input as { path?: unknown }).path) &&
+    isWorkspaceRelativeInputPathOrRoot((input as { destinationFolder?: unknown }).destinationFolder)
   );
 }
 
@@ -108,8 +108,8 @@ export function isMoveFolderInput(input: unknown): input is MoveFolderInput {
     input !== null &&
     "path" in input &&
     "destinationFolder" in input &&
-    typeof (input as { path?: unknown }).path === "string" &&
-    typeof (input as { destinationFolder?: unknown }).destinationFolder === "string"
+    isWorkspaceRelativeInputPath((input as { path?: unknown }).path) &&
+    isWorkspaceRelativeInputPathOrRoot((input as { destinationFolder?: unknown }).destinationFolder)
   );
 }
 
