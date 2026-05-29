@@ -217,4 +217,24 @@ describe("workspaceSettings", () => {
     expect(p1).toContain("ws-1");
     expect(p2).toContain("ws-2");
   });
+
+  it("危険なworkspaceIdではワークスペース別設定ファイルのパスを作らない", async () => {
+    const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-settings-"));
+    temporaryPaths.push(userDataPath);
+
+    expect(() => getWorkspaceSettingsPath(userDataPath, "../outside")).toThrow("Invalid workspace settings id.");
+    expect(() => getWorkspaceSettingsPath(userDataPath, "folder/ws")).toThrow("Invalid workspace settings id.");
+    await expect(readWorkspaceSettings(userDataPath, "../outside")).resolves.toEqual({
+      chronicleCalendars: defaultChronicleCalendars,
+      charts: defaultCharts,
+      pinnedPaths: [],
+      workspacePath: ""
+    });
+    await expect(writeWorkspaceSettings(userDataPath, "../outside", {
+      chronicleCalendars: defaultChronicleCalendars,
+      charts: defaultCharts,
+      pinnedPaths: [],
+      workspacePath: "/tmp/workspace"
+    })).rejects.toThrow("Invalid workspace settings id.");
+  });
 });
