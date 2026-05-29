@@ -146,6 +146,39 @@ describe("Editor", () => {
     expect(view.state.doc.toString()).toBe("hello world");
   });
 
+  it("エディタ拡張の更新後もカーソル位置を維持する", async () => {
+    const onChange = vi.fn();
+    const viewRef = createRef<EditorView | null>();
+    const { rerender } = render(
+      <Editor
+        content={"1行目\n2行目\n3行目"}
+        frontmatterCandidates={{ status: ["draft"] }}
+        onChange={onChange}
+        settings={settings}
+        viewRef={viewRef}
+      />
+    );
+
+    await waitFor(() => expect(viewRef.current).not.toBeNull());
+
+    const cursorPosition = "1行目\n2行".length;
+    const firstView = viewRef.current!;
+    firstView.dispatch({ selection: { anchor: cursorPosition } });
+
+    rerender(
+      <Editor
+        content={"1行目\n2行目\n3行目"}
+        frontmatterCandidates={{ status: ["draft", "done"] }}
+        onChange={onChange}
+        settings={settings}
+        viewRef={viewRef}
+      />
+    );
+
+    await waitFor(() => expect(viewRef.current).not.toBe(firstView));
+    expect(viewRef.current!.state.selection.main.from).toBe(cursorPosition);
+  });
+
   it("ライブ表示のリンク文字クリックでリンクを開く", async () => {
     const onOpenLink = vi.fn();
     const onOpenWikiLink = vi.fn();
