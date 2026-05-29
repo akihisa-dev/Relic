@@ -11,6 +11,7 @@ import { fail, ok, type RelicResult } from "../../shared/result";
 import { writeMarkdownFileContent } from "../files/markdownFiles";
 import { readAppSettings, writeAppSettings } from "../settings/appSettings";
 import { toWorkspaceState } from "../workspace/workspaceService";
+import { isEditorSettingsInput } from "./editorHandlerValidators";
 import { isWriteMarkdownFileInput } from "./fileHandlerValidators";
 
 export function registerEditorHandlers(): void {
@@ -59,9 +60,9 @@ export function registerEditorHandlers(): void {
 
   ipcMain.handle(
     saveEditorSettingsChannel,
-    async (_event, input: EditorSettings): Promise<RelicResult<void>> => {
+    async (_event, input: unknown): Promise<RelicResult<void>> => {
       try {
-        if (!isEditorSettings(input)) {
+        if (!isEditorSettingsInput(input)) {
           return fail("EDITOR_SETTINGS_INVALID", "無効なエディタ設定です。");
         }
 
@@ -77,24 +78,5 @@ export function registerEditorHandlers(): void {
         );
       }
     }
-  );
-}
-
-function isEditorSettings(input: unknown): input is EditorSettings {
-  if (typeof input !== "object" || input === null) return false;
-
-  const s = input as Record<string, unknown>;
-
-  return (
-    (s.font === "system" || s.font === "gothic" || s.font === "mincho" || s.font === "mono") &&
-    typeof s.fontSize === "number" &&
-    (s.frontmatterDateFormat === "ymd" ||
-      s.frontmatterDateFormat === "system" ||
-      s.frontmatterDateFormat === "mdy" ||
-      s.frontmatterDateFormat === "dmy") &&
-    typeof s.lineHeight === "number" &&
-    (s.maxWidth === "550px" || s.maxWidth === "660px" || s.maxWidth === "800px" || s.maxWidth === "none") &&
-    typeof s.showLineNumbers === "boolean" &&
-    typeof s.spellCheck === "boolean"
   );
 }
