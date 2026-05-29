@@ -2,6 +2,15 @@ import { realpath } from "node:fs/promises";
 import path from "node:path";
 
 import { fail, ok, type RelicResult } from "../../shared/result";
+import { isMissingFileError } from "./fileSystem";
+
+interface RealpathOperations {
+  realpath(filePath: string): Promise<string>;
+}
+
+const defaultRealpathOperations: RealpathOperations = {
+  realpath
+};
 
 export function toWorkspaceRelativePath(filePath: string): string {
   return filePath.split(path.sep).join("/");
@@ -72,18 +81,24 @@ export async function resolveExistingWorkspacePath(
 
 export async function resolveNewWorkspacePath(
   workspacePath: string,
-  relativePath: string
+  relativePath: string,
+  operations: Partial<RealpathOperations> = {}
 ): Promise<RelicResult<string>> {
   const resolved = resolveWorkspaceRelativePath(workspacePath, relativePath);
 
   if (!resolved.ok) return resolved;
+  const realpathOperations = { ...defaultRealpathOperations, ...operations };
 
   let realWorkspace: string;
   let realParent: string;
 
   try {
-    realWorkspace = await realpath(workspacePath);
-    realParent = await realpathNearestExistingParent(workspacePath, path.dirname(resolved.value));
+    realWorkspace = await realpathOperations.realpath(workspacePath);
+    realParent = await realpathNearestExistingParent(
+      workspacePath,
+      path.dirname(resolved.value),
+      realpathOperations
+    );
   } catch {
     return fail("WORKSPACE_PATH_INVALID", "ワークスペース内のファイルを確認できませんでした。");
   }
@@ -127,7 +142,11 @@ function isPathInside(realWorkspacePath: string, realTargetPath: string): boolea
     (!relativeFromWorkspace.startsWith("..") && !path.isAbsolute(relativeFromWorkspace));
 }
 
-async function realpathNearestExistingParent(workspacePath: string, parentPath: string): Promise<string> {
+async function realpathNearestExistingParent(
+  workspacePath: string,
+  parentPath: string,
+  operations: RealpathOperations
+): Promise<string> {
   let current = parentPath;
 
   while (true) {
@@ -137,8 +156,11 @@ async function realpathNearestExistingParent(workspacePath: string, parentPath: 
     }
 
     try {
-      return await realpath(current);
-    } catch {
+      return await operations.realpath(current);
+    } catch (error) {
+      if (!isMissingFileError(error)) {
+        throw error;
+      }
       const next = path.dirname(current);
       if (next === current) throw new Error("No existing parent path.");
       current = next;
