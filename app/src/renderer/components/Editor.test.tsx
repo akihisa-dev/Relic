@@ -11,6 +11,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { defaultEditorSettings } from "../../shared/ipc";
 import { contextSelectionHighlightField } from "../editorContextSelectionHighlight";
 import { buildWikiLinkCompletionSource } from "../editorExtensions";
+import { headingFoldRange } from "../editorHeadingFolding";
 import { isListInputEvent } from "../editorListInput";
 import { buildLivePreviewDecorations, findClickableLinkAtPosition } from "../editorLivePreview";
 import { buildTableDecorations } from "../editorTables";
@@ -563,6 +564,56 @@ describe("Editor", () => {
       margin: "0 auto",
       maxWidth: "660px"
     });
+  });
+
+  it("見出し折りたたみ範囲を同じ階層以上の次の見出しまでにする", () => {
+    const state = EditorState.create({
+      doc: "# 章\n本文\n## 節\n節本文\n# 次の章",
+      extensions: [markdown({ extensions: GFM })]
+    });
+
+    expect(headingFoldRange(state, state.doc.line(1).from)).toEqual({
+      from: state.doc.line(1).to,
+      to: state.doc.line(4).to
+    });
+    expect(headingFoldRange(state, state.doc.line(3).from)).toEqual({
+      from: state.doc.line(3).to,
+      to: state.doc.line(4).to
+    });
+  });
+
+  it("コードブロック内の見出し記法は折りたたみ対象にしない", () => {
+    const state = EditorState.create({
+      doc: "```\n# コード内\n```\n# 本文\n本文",
+      extensions: [markdown({ extensions: GFM })]
+    });
+
+    expect(headingFoldRange(state, state.doc.line(2).from)).toBeNull();
+    expect(headingFoldRange(state, state.doc.line(4).from)).toEqual({
+      from: state.doc.line(4).to,
+      to: state.doc.line(5).to
+    });
+  });
+
+  it("見出し左側のボタンで本文を折りたためる", async () => {
+    const { container } = render(
+      <I18nProvider language="ja">
+        <Editor
+          content={"# 章\n本文\n## 節\n節本文\n# 次の章\n続き"}
+          onChange={vi.fn()}
+          settings={settings}
+        />
+      </I18nProvider>
+    );
+
+    await waitFor(() => expect(container.querySelectorAll(".cm-heading-fold-marker--open").length).toBeGreaterThanOrEqual(3));
+
+    fireEvent.click(container.querySelector(".cm-heading-fold-marker--open") as HTMLElement);
+
+    await waitFor(() => expect(container.querySelectorAll(".cm-heading-fold-marker--closed").length).toBeGreaterThanOrEqual(1));
+    expect(container.querySelector(".cm-foldPlaceholder")?.textContent).toBe("…");
+    expect(container.textContent).not.toContain("節本文");
+    expect(container.textContent).toContain("次の章");
   });
 
   it("[[ 入力時のファイル名補完候補を作る", () => {

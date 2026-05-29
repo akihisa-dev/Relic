@@ -11,6 +11,7 @@ import type { EditorSettings, UserDefinedField } from "../shared/ipc";
 import { contextSelectionHighlightField } from "./editorContextSelectionHighlight";
 import { editorEditableCompartment } from "./editorEditable";
 import { createFrontmatterPropertiesField, frontmatterCollapsedField } from "./editorFrontmatter";
+import { createHeadingFoldingExtension } from "./editorHeadingFolding";
 import { handleMarkdownListEnter, indentMarkdownListSelection, isListInputEvent, moveSelectedLines } from "./editorListInput";
 import { buildLivePreviewDecorations, createLivePreviewCodeBlockField, findClickableLinkAtPosition } from "./editorLivePreview";
 import { diagramEditRangeField } from "./editorDiagramEditState";
@@ -115,6 +116,7 @@ export function buildExtensions(
     keymap.of([...defaultKeymap, ...historyKeymap]),
     editorEditableCompartment.of(EditorView.editable.of(true)),
     markdown({ extensions: GFM }),
+    createHeadingFoldingExtension(t),
     EditorView.lineWrapping,
     highlightActiveLine(),
     autocompletion({ override: [buildWikiLinkCompletionSource(allFilePaths)] }),

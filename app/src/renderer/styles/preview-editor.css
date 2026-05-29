@@ -500,6 +500,34 @@
   padding: 4px;
 }
 
+.cm-foldGutter {
+  color: var(--text-3);
+}
+
+.cm-heading-fold-marker {
+  align-items: center;
+  border-radius: 4px;
+  display: inline-flex;
+  font-size: 12px;
+  height: 18px;
+  justify-content: center;
+  line-height: 1;
+  width: 18px;
+}
+
+.cm-heading-fold-marker:hover {
+  background: var(--hover);
+  color: var(--text-1);
+}
+
+.cm-foldPlaceholder {
+  background: transparent;
+  border: none;
+  color: var(--text-3);
+  margin-left: 4px;
+  padding: 0;
+}
+
 /* ライブプレビューデコレーション */
 .cm-live-h1 { font-size: 1.8em; font-weight: bold; }
 .cm-live-h2 { font-size: 1.5em; font-weight: bold; }
