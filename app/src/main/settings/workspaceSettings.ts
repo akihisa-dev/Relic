@@ -10,6 +10,7 @@ import {
   type ChartSource
 } from "../../shared/ipc";
 import { atomicWriteTextFile } from "../files/atomicWrite";
+import { normalizeWorkspaceRelativeInputPath } from "../files/paths";
 
 export interface WorkspaceSettings {
   chronicleCalendars: ChronicleCalendarSettings[];
@@ -149,31 +150,7 @@ function normalizePinnedPath(raw: string): string | null {
 }
 
 export function normalizeWorkspaceRelativeSettingPath(raw: string): string | null {
-  const trimmed = raw.trim();
-  const normalizedInput = trimmed.replace(/\\/g, "/");
-
-  if (
-    !trimmed ||
-    normalizedInput === "." ||
-    normalizedInput.includes("\0") ||
-    path.posix.isAbsolute(normalizedInput) ||
-    path.win32.isAbsolute(trimmed)
-  ) {
-    return null;
-  }
-
-  const normalized = path.posix.normalize(normalizedInput);
-
-  if (
-    normalized === "." ||
-    normalized.startsWith("../") ||
-    normalized === ".." ||
-    path.posix.isAbsolute(normalized)
-  ) {
-    return null;
-  }
-
-  return normalized;
+  return normalizeWorkspaceRelativeInputPath(raw);
 }
 
 function parseChartFilePaths(raw: unknown): string[] | undefined {
