@@ -116,7 +116,7 @@ export function buildExtensions(
     keymap.of([...defaultKeymap, ...historyKeymap]),
     editorEditableCompartment.of(EditorView.editable.of(true)),
     markdown({ extensions: GFM }),
-    createHeadingFoldingExtension(t),
+    createHeadingFoldingExtension(t, sourceMode),
     EditorView.lineWrapping,
     highlightActiveLine(),
     autocompletion({ override: [buildWikiLinkCompletionSource(allFilePaths)] }),

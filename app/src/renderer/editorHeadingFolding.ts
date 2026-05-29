@@ -1,5 +1,6 @@
-import { foldGutter, foldService } from "@codemirror/language";
+import { codeFolding, foldEffect, foldedRanges, foldService, unfoldEffect } from "@codemirror/language";
 import type { Extension, EditorState } from "@codemirror/state";
+import { Decoration, EditorView, ViewPlugin, WidgetType, type DecorationSet, type ViewUpdate } from "@codemirror/view";
 
 import type { Translator } from "./i18nModel";
 import { isClosingBacktickFence, parseBacktickOpeningFence } from "./markdownCodeFence";
@@ -10,6 +11,12 @@ function headingLevel(lineText: string): number | null {
   const match = headingPattern.exec(lineText);
 
   return match ? match[1].length : null;
+}
+
+function headingContentFrom(lineFrom: number, lineText: string): number | null {
+  const match = /^(#{1,6})\s+/.exec(lineText);
+
+  return match ? lineFrom + match[0].length : null;
 }
 
 function isInsideBacktickFence(state: EditorState, lineNumber: number): boolean {
@@ -66,20 +73,109 @@ export function headingFoldRange(state: EditorState, lineStart: number): { from:
   return from < to ? { from, to } : null;
 }
 
-export function createHeadingFoldingExtension(t: Translator): Extension {
+function foldedHeadingRange(state: EditorState, range: { from: number; to: number }): { from: number; to: number } | null {
+  let foldedRange: { from: number; to: number } | null = null;
+
+  foldedRanges(state).between(range.from, range.to, (from, to) => {
+    if (from === range.from && to === range.to) foldedRange = { from, to };
+  });
+
+  return foldedRange;
+}
+
+class HeadingFoldWidget extends WidgetType {
+  constructor(
+    private readonly folded: boolean,
+    private readonly range: { from: number; to: number },
+    private readonly t: Translator
+  ) {
+    super();
+  }
+
+  eq(other: HeadingFoldWidget): boolean {
+    return this.folded === other.folded && this.range.from === other.range.from && this.range.to === other.range.to;
+  }
+
+  toDOM(view: EditorView): HTMLElement {
+    const marker = document.createElement("button");
+    marker.className = `cm-heading-fold-marker${this.folded ? " cm-heading-fold-marker--closed" : " cm-heading-fold-marker--open"}`;
+    marker.textContent = this.folded ? "▸" : "▾";
+    marker.type = "button";
+    marker.setAttribute("aria-label", this.folded ? this.t("editor.unfoldHeading") : this.t("editor.foldHeading"));
+    marker.title = this.folded ? this.t("editor.unfoldHeading") : this.t("editor.foldHeading");
+    marker.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const foldedRange = foldedHeadingRange(view.state, this.range);
+
+      view.dispatch({
+        effects: foldedRange ? unfoldEffect.of(foldedRange) : foldEffect.of(this.range)
+      });
+      view.focus();
+    });
+
+    return marker;
+  }
+
+  ignoreEvent(): boolean {
+    return false;
+  }
+}
+
+function buildHeadingFoldDecorations(view: EditorView, t: Translator, sourceMode: boolean): DecorationSet {
+  const ranges: Array<{ from: number; deco: Decoration }> = [];
+  const doc = view.state.doc;
+
+  for (const { from: visibleFrom, to: visibleTo } of view.visibleRanges) {
+    const fromLine = doc.lineAt(visibleFrom).number;
+    const toLine = doc.lineAt(visibleTo).number;
+
+    for (let lineNumber = fromLine; lineNumber <= toLine; lineNumber += 1) {
+      const line = doc.line(lineNumber);
+      const range = headingFoldRange(view.state, line.from);
+      if (!range) continue;
+
+      const contentFrom = headingContentFrom(line.from, line.text);
+      if (contentFrom === null) continue;
+
+      ranges.push({
+        from: sourceMode ? line.from : contentFrom,
+        deco: Decoration.widget({
+          side: -1,
+          widget: new HeadingFoldWidget(Boolean(foldedHeadingRange(view.state, range)), range, t)
+        })
+      });
+    }
+  }
+
+  return Decoration.set(ranges.map(({ from, deco }) => deco.range(from)));
+}
+
+function createHeadingFoldWidgetPlugin(t: Translator, sourceMode: boolean): Extension {
+  return ViewPlugin.fromClass(
+    class {
+      decorations: DecorationSet;
+
+      constructor(view: EditorView) {
+        this.decorations = buildHeadingFoldDecorations(view, t, sourceMode);
+      }
+
+      update(update: ViewUpdate): void {
+        if (update.docChanged || update.selectionSet || update.viewportChanged || update.transactions.some((transaction) => transaction.effects.length > 0)) {
+          this.decorations = buildHeadingFoldDecorations(update.view, t, sourceMode);
+        }
+      }
+    },
+    {
+      decorations: (plugin) => plugin.decorations
+    }
+  );
+}
+
+export function createHeadingFoldingExtension(t: Translator, sourceMode: boolean): Extension {
   return [
     foldService.of((state, lineStart) => headingFoldRange(state, lineStart)),
-    foldGutter({
-      markerDOM: (open) => {
-        const marker = document.createElement("span");
-        marker.className = `cm-heading-fold-marker${open ? " cm-heading-fold-marker--open" : " cm-heading-fold-marker--closed"}`;
-        marker.textContent = open ? "▾" : "▸";
-        marker.setAttribute("aria-label", open ? t("editor.foldHeading") : t("editor.unfoldHeading"));
-        marker.setAttribute("role", "button");
-        marker.title = open ? t("editor.foldHeading") : t("editor.unfoldHeading");
-
-        return marker;
-      }
-    })
+    codeFolding({ placeholderText: "…" }),
+    createHeadingFoldWidgetPlugin(t, sourceMode)
   ];
 }

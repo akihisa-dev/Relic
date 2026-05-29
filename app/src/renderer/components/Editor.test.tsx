@@ -595,7 +595,7 @@ describe("Editor", () => {
     });
   });
 
-  it("見出し左側のボタンで本文を折りたためる", async () => {
+  it("本文側の見出し左側ボタンで本文を折りたためる", async () => {
     const { container } = render(
       <I18nProvider language="ja">
         <Editor
@@ -607,6 +607,8 @@ describe("Editor", () => {
     );
 
     await waitFor(() => expect(container.querySelectorAll(".cm-heading-fold-marker--open").length).toBeGreaterThanOrEqual(3));
+    expect(container.querySelector(".cm-content .cm-heading-fold-marker--open")).not.toBeNull();
+    expect(container.querySelector(".cm-gutters .cm-heading-fold-marker")).toBeNull();
 
     fireEvent.click(container.querySelector(".cm-heading-fold-marker--open") as HTMLElement);
 
