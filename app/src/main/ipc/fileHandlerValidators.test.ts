@@ -5,6 +5,7 @@ import {
   isLinkUpdateImpactInput,
   isMoveItemToTrashInput,
   isMoveMarkdownFileInput,
+  isPathInput,
   isReplaceInFileInput,
   isSearchWorkspaceInput,
   normalizeSearchWorkspaceInput
@@ -26,6 +27,14 @@ describe("fileHandlerValidators", () => {
     expect(isLinkUpdateImpactInput({ kind: "file", newPath: "/tmp/outside.md", oldPath: "Note.md" })).toBe(false);
     expect(isLinkUpdateImpactInput({ kind: "file", newPath: "Archive/Note.md", oldPath: " Note.md " })).toBe(false);
     expect(isLinkUpdateImpactInput({ kind: "other", newPath: "Archive/Note.md", oldPath: "Note.md" })).toBe(false);
+  });
+
+  it("validates path input as a normalized workspace-relative path", () => {
+    expect(isPathInput({ path: "Notes/Idea.md" })).toBe(true);
+    expect(isPathInput({ path: "../outside.md" })).toBe(false);
+    expect(isPathInput({ path: "/tmp/outside.md" })).toBe(false);
+    expect(isPathInput({ path: "Notes\\Idea.md" })).toBe(false);
+    expect(isPathInput({ path: " Notes/Idea.md " })).toBe(false);
   });
 
   it("validates workspace search input modes and optional frontmatter field", () => {
@@ -110,6 +119,12 @@ describe("fileHandlerValidators", () => {
       replacement: "new",
       searchQuery: "old"
     })).toBe(true);
+    expect(isReplaceInFileInput({
+      isRegex: false,
+      path: "../outside.md",
+      replacement: "new",
+      searchQuery: "old"
+    })).toBe(false);
     expect(isReplaceInFileInput({
       isRegex: "false",
       path: "Note.md",

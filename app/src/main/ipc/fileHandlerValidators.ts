@@ -54,7 +54,7 @@ export function isPathInput(input: unknown): input is { path: string } {
     typeof input === "object" &&
     input !== null &&
     "path" in input &&
-    typeof (input as { path?: unknown }).path === "string"
+    isWorkspaceRelativeInputPath((input as { path?: unknown }).path)
   );
 }
 
@@ -121,7 +121,7 @@ export function isReplaceInFileInput(input: unknown): input is ReplaceInFileInpu
     "searchQuery" in input &&
     "replacement" in input &&
     "isRegex" in input &&
-    typeof (input as { path?: unknown }).path === "string" &&
+    isWorkspaceRelativeInputPath((input as { path?: unknown }).path) &&
     typeof (input as { searchQuery?: unknown }).searchQuery === "string" &&
     typeof (input as { replacement?: unknown }).replacement === "string" &&
     typeof (input as { isRegex?: unknown }).isRegex === "boolean"
