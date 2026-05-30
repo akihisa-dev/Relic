@@ -36,6 +36,7 @@ import type {
   DiscardAIWorkspaceOperationsInput,
   PreviewAIWorkspaceMessageInput,
   RebuildAIWorkspaceIndexInput,
+  SaveAIModelInput,
   SaveOpenAIAPIKeyInput,
   SendAIWorkspaceMessageInput,
   TestOpenAIAPIKeyResult
@@ -149,6 +150,7 @@ export interface RelicApi {
   splitFileByHeading: (input: SplitFileByHeadingInput) => Promise<RelicResult<string[]>>;
   getAIWorkspaceState: () => Promise<RelicResult<AIWorkspaceState>>;
   getAISettings: () => Promise<RelicResult<AISettingsState>>;
+  saveAIModel: (input: SaveAIModelInput) => Promise<RelicResult<AISettingsState>>;
   saveOpenAIAPIKey: (input: SaveOpenAIAPIKeyInput) => Promise<RelicResult<AISettingsState>>;
   deleteOpenAIAPIKey: () => Promise<RelicResult<AISettingsState>>;
   testOpenAIAPIKey: () => Promise<RelicResult<TestOpenAIAPIKeyResult>>;

@@ -17,6 +17,7 @@ import {
 } from "./workspaceService";
 
 const baseSettings = {
+  aiSettings: { openAIModel: "gpt-5.4-mini" as const },
   editorSettings: defaultEditorSettings,
   featureToggles: defaultFeatureToggles,
   frontmatterTemplates: defaultFrontmatterTemplates,

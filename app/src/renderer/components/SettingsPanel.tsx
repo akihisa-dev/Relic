@@ -1,6 +1,14 @@
 import { useState, type ReactElement } from "react";
 
-import { type AISettingsState, type AppInfo, type EditorSettings, type FeatureToggles } from "../../shared/ipc";
+import {
+  defaultOpenAIWorkspaceModel,
+  openAIWorkspaceModels,
+  type AISettingsState,
+  type AppInfo,
+  type EditorSettings,
+  type FeatureToggles,
+  type OpenAIWorkspaceModel
+} from "../../shared/ipc";
 import { useT } from "../i18n";
 import type { TranslationKey } from "../i18nModel";
 import { SettingsSegmentedControl } from "./SettingsSegmentedControl";
@@ -40,6 +48,7 @@ export function SettingsPanel({
   settings,
   featureToggles,
   onDeleteOpenAIAPIKey,
+  onSaveAIModel,
   onSaveOpenAIAPIKey,
   onSave,
   onFeatureTogglesSave,
@@ -51,6 +60,7 @@ export function SettingsPanel({
   settings: EditorSettings;
   featureToggles: FeatureToggles;
   onDeleteOpenAIAPIKey: () => void;
+  onSaveAIModel: (model: OpenAIWorkspaceModel) => void;
   onSaveOpenAIAPIKey: (apiKey: string) => void;
   onSave: (s: EditorSettings) => void;
   onFeatureTogglesSave: (t: FeatureToggles) => void;
@@ -112,6 +122,18 @@ export function SettingsPanel({
               {aiSettings?.openAIAPIKeyConfigured ? "登録済み" : "未登録"}
             </span>
           </div>
+          <label className="setting-row">
+            <span>OpenAIモデル</span>
+            <select
+              className="settings-control"
+              onChange={(event) => onSaveAIModel(event.target.value as OpenAIWorkspaceModel)}
+              value={aiSettings?.model ?? defaultOpenAIWorkspaceModel}
+            >
+              {openAIWorkspaceModels.map((model) => (
+                <option key={model} value={model}>{model}</option>
+              ))}
+            </select>
+          </label>
           <label className="setting-row setting-row--stacked">
             <span>APIキーを入力</span>
             <input
@@ -149,7 +171,7 @@ export function SettingsPanel({
             </button>
           </div>
           <div className="settings-info">
-            <div>標準モデル: {aiSettings?.model ?? "gpt-5.4-mini"}</div>
+            <div>選択中モデル: {aiSettings?.model ?? defaultOpenAIWorkspaceModel}</div>
             <div>
               {aiSettings?.secureStorageAvailable === false
                 ? "この環境ではAPIキーを安全に保存できません。"

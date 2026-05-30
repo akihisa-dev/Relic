@@ -7,6 +7,7 @@ import type {
   ChronicleCalendarSettings,
   EditorSettings,
   FeatureToggles,
+  OpenAIWorkspaceModel,
   UpdateChartEntryInput,
   UserDefinedField,
   WorkspaceChart,
@@ -31,6 +32,7 @@ interface UseAppTabRenderersInput {
   handleSaveFeatureToggles: (toggles: FeatureToggles) => void;
   handleDeleteOpenAIAPIKey: () => void;
   handleSaveChronicleCalendars: (calendars: ChronicleCalendarSettings[]) => void;
+  handleSaveAIModel: (model: OpenAIWorkspaceModel) => void;
   handleSaveOpenAIAPIKey: (apiKey: string) => void;
   handleSaveSettings: (settings: EditorSettings) => void;
   handleSaveUserDefinedFields: (fields: UserDefinedField[]) => void;
@@ -52,6 +54,7 @@ export function useAppTabRenderers({
   handleSaveFeatureToggles,
   handleDeleteOpenAIAPIKey,
   handleSaveChronicleCalendars,
+  handleSaveAIModel,
   handleSaveOpenAIAPIKey,
   handleSaveSettings,
   handleSaveUserDefinedFields,
@@ -104,6 +107,7 @@ export function useAppTabRenderers({
         featureToggles={featureToggles}
         onDeleteOpenAIAPIKey={handleDeleteOpenAIAPIKey}
         onFeatureTogglesSave={handleSaveFeatureToggles}
+        onSaveAIModel={handleSaveAIModel}
         onSaveOpenAIAPIKey={handleSaveOpenAIAPIKey}
         onSave={handleSaveSettings}
         onTestOpenAIAPIKey={handleTestOpenAIAPIKey}
@@ -121,6 +125,7 @@ export function useAppTabRenderers({
     handleDeleteOpenAIAPIKey,
     handleSaveFeatureToggles,
     handleSaveChronicleCalendars,
+    handleSaveAIModel,
     handleSaveOpenAIAPIKey,
     handleSaveSettings,
     handleSaveUserDefinedFields,

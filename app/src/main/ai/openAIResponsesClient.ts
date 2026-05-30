@@ -1,6 +1,4 @@
-import type { AIWorkspaceFileOperation, AIWorkspaceReference } from "../../shared/ipc";
-
-export const openAIWorkspaceModel = "gpt-5.4-mini";
+import type { AIWorkspaceFileOperation, AIWorkspaceReference, OpenAIWorkspaceModel } from "../../shared/ipc";
 
 interface OpenAIWorkspaceResponse {
   message: string;
@@ -16,6 +14,7 @@ interface RunOpenAIWorkspaceTurnInput {
   apiKey: string;
   history: Array<{ content: string; role: "user" | "assistant" }>;
   message: string;
+  model: OpenAIWorkspaceModel;
   pendingOperations: AIWorkspaceFileOperation[];
   references: AIWorkspaceReference[];
   referenceContents: Array<{ content: string; path: string }>;
@@ -32,7 +31,7 @@ export async function runOpenAIWorkspaceTurn(
   const response = await fetch("https://api.openai.com/v1/responses", {
     body: JSON.stringify({
       input: buildPrompt(input),
-      model: openAIWorkspaceModel,
+      model: input.model,
       text: {
         format: {
           name: "relic_ai_workspace_response",

@@ -10,6 +10,8 @@ import {
   type DiscardAIWorkspaceOperationsInput,
   getAISettingsChannel,
   getAIWorkspaceStateChannel,
+  saveAIModelChannel,
+  type SaveAIModelInput,
   saveOpenAIAPIKeyChannel,
   type SaveOpenAIAPIKeyInput,
   previewAIWorkspaceMessageChannel,
@@ -32,7 +34,8 @@ import {
   readOpenAIAPIKey,
   saveOpenAIAPIKey
 } from "../ai/openAIKeyStore";
-import { openAIWorkspaceModel, testOpenAIAPIKey } from "../ai/openAIResponsesClient";
+import { testOpenAIAPIKey } from "../ai/openAIResponsesClient";
+import { readAppSettings, writeAppSettings } from "../settings/appSettings";
 import {
   applyAIWorkspaceOperations,
   clearAIWorkspaceState,
@@ -66,6 +69,28 @@ export function registerAIWorkspaceHandlers(): void {
     }
   });
 
+  ipcMain.handle(saveAIModelChannel, async (_event, input: SaveAIModelInput): Promise<RelicResult<AISettingsState>> => {
+    try {
+      if (!isSaveAIModelInput(input)) {
+        return fail("AI_SETTINGS_MODEL_INVALID", "OpenAIモデルを選んでください。");
+      }
+
+      const userDataPath = app.getPath("userData");
+      const settings = await readAppSettings(userDataPath);
+      await writeAppSettings(userDataPath, {
+        ...settings,
+        aiSettings: {
+          ...settings.aiSettings,
+          openAIModel: input.model
+        }
+      });
+
+      return ok(await getAISettingsState());
+    } catch (error) {
+      return fail("AI_SETTINGS_MODEL_SAVE_FAILED", "OpenAIモデルを保存できませんでした。", ipcErrorDetails(error));
+    }
+  });
+
   ipcMain.handle(deleteOpenAIAPIKeyChannel, async (): Promise<RelicResult<AISettingsState>> => {
     try {
       await deleteOpenAIAPIKey(app.getPath("userData"));
@@ -83,7 +108,8 @@ export function registerAIWorkspaceHandlers(): void {
       }
 
       await testOpenAIAPIKey(apiKey);
-      return ok({ model: openAIWorkspaceModel, ok: true });
+      const settings = await readAppSettings(app.getPath("userData"));
+      return ok({ model: settings.aiSettings.openAIModel, ok: true });
     } catch (error) {
       return fail("AI_SETTINGS_OPENAI_KEY_TEST_FAILED", "OpenAI APIキーを確認できませんでした。", ipcErrorDetails(error));
     }
@@ -197,9 +223,10 @@ export function registerAIWorkspaceHandlers(): void {
 
 async function getAISettingsState(): Promise<AISettingsState> {
   const userDataPath = app.getPath("userData");
+  const settings = await readAppSettings(userDataPath);
 
   return {
-    model: openAIWorkspaceModel,
+    model: settings.aiSettings.openAIModel,
     openAIAPIKeyConfigured: await hasOpenAIAPIKey(userDataPath),
     secureStorageAvailable: isOpenAIKeyStorageAvailable()
   };
@@ -231,6 +258,13 @@ function isPreviewAIWorkspaceMessageInput(value: unknown): value is PreviewAIWor
   const record = value as { message?: unknown };
 
   return typeof record.message === "string" && record.message.trim().length > 0;
+}
+
+function isSaveAIModelInput(value: unknown): value is SaveAIModelInput {
+  if (!value || typeof value !== "object") return false;
+  const record = value as { model?: unknown };
+
+  return record.model === "gpt-5.4" || record.model === "gpt-5.4-mini" || record.model === "gpt-5.4-nano";
 }
 
 function hasAppliedPendingOperation(beforeState: AIWorkspaceState, afterState: AIWorkspaceState): boolean {

@@ -3,6 +3,7 @@ import path from "node:path";
 
 import {
   chronicleCalendarIds,
+  defaultOpenAIWorkspaceModel,
   defaultEditorSettings,
   defaultFeatureToggles,
   defaultFrontmatterTemplates,
@@ -10,6 +11,7 @@ import {
   type EditorSettings,
   type FeatureToggles,
   type FrontmatterTemplate,
+  type OpenAIWorkspaceModel,
   type UserDefinedField,
   type UserDefinedFieldType,
   type WorkspaceSummary
@@ -17,6 +19,9 @@ import {
 import { atomicWriteTextFile } from "../files/atomicWrite";
 
 export interface AppSettings {
+  aiSettings: {
+    openAIModel: OpenAIWorkspaceModel;
+  };
   editorSettings: EditorSettings;
   featureToggles: FeatureToggles;
   frontmatterTemplates: FrontmatterTemplate[];
@@ -26,6 +31,9 @@ export interface AppSettings {
 }
 
 const defaultAppSettings: AppSettings = {
+  aiSettings: {
+    openAIModel: defaultOpenAIWorkspaceModel
+  },
   editorSettings: defaultEditorSettings,
   featureToggles: defaultFeatureToggles,
   frontmatterTemplates: defaultFrontmatterTemplates,
@@ -52,6 +60,7 @@ export async function readAppSettings(userDataPath: string): Promise<AppSettings
     const workspaces = parseWorkspaceSummaries(parsedSettings.workspaces);
 
     return {
+      aiSettings: parseAISettings(parsedSettings.aiSettings),
       editorSettings: parseEditorSettings(parsedSettings.editorSettings),
       featureToggles: parseFeatureToggles(parsedSettings.featureToggles),
       frontmatterTemplates: parseFrontmatterTemplates(parsedSettings.frontmatterTemplates),
@@ -74,6 +83,24 @@ export async function writeAppSettings(
 ): Promise<void> {
   await mkdir(userDataPath, { recursive: true });
   await atomicWriteTextFile(getAppSettingsPath(userDataPath), `${JSON.stringify(settings, null, 2)}\n`);
+}
+
+function parseAISettings(raw: unknown): AppSettings["aiSettings"] {
+  if (typeof raw !== "object" || raw === null) {
+    return defaultAppSettings.aiSettings;
+  }
+
+  const s = raw as Record<string, unknown>;
+
+  return {
+    openAIModel: parseOpenAIWorkspaceModel(s.openAIModel)
+  };
+}
+
+function parseOpenAIWorkspaceModel(value: unknown): OpenAIWorkspaceModel {
+  return value === "gpt-5.4" || value === "gpt-5.4-mini" || value === "gpt-5.4-nano"
+    ? value
+    : defaultOpenAIWorkspaceModel;
 }
 
 function parseEditorSettings(raw: unknown): EditorSettings {
