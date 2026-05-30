@@ -51,6 +51,43 @@ describe("parseCodexResponse", () => {
     });
   });
 
+  it("normalizes common operation field name variations", () => {
+    const result = parseCodexResponse(JSON.stringify({
+      message: "変更案を作成します。",
+      operations: [{
+        description: "認証仕様を更新",
+        filePath: "docs/auth.md",
+        kind: "UPDATE",
+        markdown: "# Auth\nupdated"
+      }]
+    }));
+
+    expect(result.operations).toEqual([{
+      content: "# Auth\nupdated",
+      kind: "update",
+      path: "docs/auth.md",
+      summary: "認証仕様を更新"
+    }]);
+  });
+
+  it("uses a safe fallback summary for valid operations without a summary", () => {
+    const result = parseCodexResponse(JSON.stringify({
+      message: "変更案を作成します。",
+      operations: [{
+        content: "# Auth",
+        kind: "create",
+        path: "docs/auth.md"
+      }]
+    }));
+
+    expect(result.operations).toEqual([{
+      content: "# Auth",
+      kind: "create",
+      path: "docs/auth.md",
+      summary: "docs/auth.md を作成"
+    }]);
+  });
+
   it("keeps plain text responses visible without creating file operations", () => {
     const result = parseCodexResponse("現在の要件は認証と同期に分けて整理できます。");
 
