@@ -19,6 +19,7 @@ interface CodexAIWorkspaceResponse {
 interface RunCodexAIWorkspaceTurnInput {
   history: Array<{ content: string; role: "user" | "assistant" }>;
   message: string;
+  pendingOperations: AIWorkspaceFileOperation[];
   references: AIWorkspaceReference[];
   referenceContents: Array<{ content: string; path: string }>;
   workspacePath: string;
@@ -218,6 +219,9 @@ function buildPrompt(input: RunCodexAIWorkspaceTurnInput): string {
   const referenceList = input.references
     .map((reference) => `- ${reference.path}${reference.line ? `:${reference.line}` : ""}`)
     .join("\n");
+  const pendingOperations = input.pendingOperations
+    .map((operation) => formatPendingOperationForPrompt(operation))
+    .join("\n\n");
 
   return [
     "Relic AI Workspaceとして回答してください。",
@@ -236,9 +240,27 @@ function buildPrompt(input: RunCodexAIWorkspaceTurnInput): string {
     "直近の会話:",
     history || "なし",
     "",
+    "作業中の変更案:",
+    pendingOperations || "なし",
+    "",
     "今回のユーザー入力:",
     input.message
   ].join("\n");
+}
+
+function formatPendingOperationForPrompt(operation: AIWorkspaceFileOperation): string {
+  const lines = [
+    `- id: ${operation.id}`,
+    `- kind: ${operation.kind}`,
+    `- path: ${operation.path}`,
+    `- summary: ${operation.summary}`
+  ];
+
+  if (operation.kind !== "delete" && operation.content) {
+    lines.push("```markdown", operation.content.slice(0, 12_000), "```");
+  }
+
+  return lines.join("\n");
 }
 
 function parseCodexResponse(text: string): CodexAIWorkspaceResponse {

@@ -189,6 +189,28 @@ describe("sendAIWorkspaceMessage", () => {
     }
   });
 
+  it("passes pending operations to Codex App Server for follow-up edits", async () => {
+    await writeFile(path.join(workspacePath, "README.md"), "# Auth\nLogin spec", "utf8");
+    await writeData({
+      operations: [createOperation("update", "README.md", "# Auth\nDraft update")]
+    });
+    vi.mocked(runCodexAIWorkspaceTurn).mockResolvedValueOnce({
+      message: "変更案を調整します。",
+      operations: [createOperation("update", "README.md", "# Auth\nAdjusted update")]
+    });
+
+    const result = await sendAIWorkspaceMessage(context(), { message: "さっきの案をもう少し短くして" });
+
+    expect(result.ok).toBe(true);
+    expect(runCodexAIWorkspaceTurn).toHaveBeenCalledWith(expect.objectContaining({
+      pendingOperations: [expect.objectContaining({
+        content: "# Auth\nDraft update",
+        path: "README.md",
+        status: "pending"
+      })]
+    }));
+  });
+
   it("applies only the pending operation named in a natural language message", async () => {
     await writeFile(path.join(workspacePath, "first.md"), "first", "utf8");
     await writeFile(path.join(workspacePath, "second.md"), "second", "utf8");
