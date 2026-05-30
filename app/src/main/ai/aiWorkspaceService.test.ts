@@ -97,6 +97,26 @@ describe("applyAIWorkspaceOperations", () => {
       expect(result.value.history.at(-1)?.content).toContain("作成後に対象Markdownが変更されていたため");
     }
   });
+
+  it("applies only selected pending operations", async () => {
+    await writeFile(path.join(workspacePath, "first.md"), "first", "utf8");
+    await writeFile(path.join(workspacePath, "second.md"), "second", "utf8");
+    await writeData({
+      operations: [
+        createOperation("update", "first.md", "updated first"),
+        createOperation("update", "second.md", "updated second")
+      ]
+    });
+
+    const result = await applyAIWorkspaceOperations(context(), { operationIds: ["update-first.md"] });
+
+    expect(result.ok).toBe(true);
+    await expect(readFile(path.join(workspacePath, "first.md"), "utf8")).resolves.toBe("updated first");
+    await expect(readFile(path.join(workspacePath, "second.md"), "utf8")).resolves.toBe("second");
+    if (result.ok) {
+      expect(result.value.pendingOperations.map((operation) => operation.path)).toEqual(["second.md"]);
+    }
+  });
 });
 
 describe("discardAIWorkspaceOperations", () => {

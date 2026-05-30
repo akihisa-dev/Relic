@@ -831,11 +831,11 @@ export function App(): ReactElement {
           leftPaneScrollHeading={leftPaneScrollHeading}
           onCreateFile={handleCreateNoteFromPane}
           onAIWorkspaceClearData={() => { void clearAIWorkspaceData(); }}
-          onAIWorkspaceApplyOperations={() => { void applyAIWorkspaceOperations(dirtyMarkdownPaths); }}
+          onAIWorkspaceApplyOperations={(operationIds) => { void applyAIWorkspaceOperations(dirtyMarkdownPaths, operationIds); }}
           onAIWorkspaceCancelMessagePreview={cancelAIWorkspaceMessage}
           onAIWorkspaceConfirmMessagePreview={() => { void confirmAIWorkspaceMessage(); }}
           onAIWorkspaceRebuildIndex={() => { void rebuildAIWorkspaceIndex(); }}
-          onAIWorkspaceDiscardOperations={() => { void discardAIWorkspaceOperations(); }}
+          onAIWorkspaceDiscardOperations={(operationIds) => { void discardAIWorkspaceOperations(operationIds); }}
           onAIWorkspaceSendMessage={(message) => { void sendAIWorkspaceMessage(message, dirtyMarkdownPaths); }}
           onEditorAction={() => setEditorActionPulse((value) => value + 1)}
           onFileSaveError={setWorkspaceError}

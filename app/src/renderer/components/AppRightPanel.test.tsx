@@ -137,6 +137,9 @@ describe("AppRightPanel", () => {
   });
 
   it("shows pending Markdown operation content without showing delete content", () => {
+    const onApply = vi.fn();
+    const onDiscard = vi.fn();
+
     render(
       <I18nProvider language="en">
         <AppRightPanel
@@ -180,10 +183,10 @@ describe("AppRightPanel", () => {
           isOpen
           isResizing={false}
           onAIWorkspaceClearData={vi.fn()}
-          onAIWorkspaceApplyOperations={vi.fn()}
+          onAIWorkspaceApplyOperations={onApply}
           onAIWorkspaceCancelMessagePreview={vi.fn()}
           onAIWorkspaceConfirmMessagePreview={vi.fn()}
-          onAIWorkspaceDiscardOperations={vi.fn()}
+          onAIWorkspaceDiscardOperations={onDiscard}
           onAIWorkspaceRebuildIndex={vi.fn()}
           onAIWorkspaceSendMessage={vi.fn()}
           onOpenFile={vi.fn()}
@@ -205,6 +208,10 @@ describe("AppRightPanel", () => {
 
     expect(screen.getByText((_, element) => element?.tagName === "PRE" && element.textContent === "# New\nbody")).toBeInTheDocument();
     expect(screen.queryByText("# Old\nsecret")).not.toBeInTheDocument();
+    fireEvent.click(screen.getAllByRole("button", { name: "この変更を反映" })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: "この変更を取りやめ" })[1]);
+    expect(onApply).toHaveBeenCalledWith(["op-create"]);
+    expect(onDiscard).toHaveBeenCalledWith(["op-delete"]);
   });
 
   it("shows Markdown files excluded from AI references", () => {

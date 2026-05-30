@@ -423,6 +423,34 @@
   line-height: 1.4;
 }
 
+.ai-workspace-operation-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ai-workspace-operation-actions button {
+  background: var(--hover);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-2);
+  font-size: 12px;
+  min-height: 26px;
+  padding: 0 8px;
+}
+
+.ai-workspace-operation-actions button:last-child {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #ffffff;
+}
+
+.ai-workspace-operation-actions button:disabled {
+  background: var(--hover-strong);
+  border-color: var(--border);
+  color: var(--text-3);
+}
+
 .ai-workspace-operation-preview {
   background: var(--input-bg);
   border: 1px solid var(--border);

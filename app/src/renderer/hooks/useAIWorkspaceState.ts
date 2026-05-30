@@ -22,8 +22,8 @@ export function useAIWorkspaceState({
   sendAIWorkspaceMessage: (message: string, dirtyFilePaths?: string[]) => Promise<void>;
   confirmAIWorkspaceMessage: () => Promise<void>;
   cancelAIWorkspaceMessage: () => void;
-  applyAIWorkspaceOperations: (dirtyFilePaths?: string[]) => Promise<void>;
-  discardAIWorkspaceOperations: () => Promise<void>;
+  applyAIWorkspaceOperations: (dirtyFilePaths?: string[], operationIds?: string[]) => Promise<void>;
+  discardAIWorkspaceOperations: (operationIds?: string[]) => Promise<void>;
   clearAIWorkspaceData: () => Promise<void>;
 } {
   const [aiWorkspaceState, setAIWorkspaceState] = useState<AIWorkspaceState | null>(null);
@@ -142,12 +142,15 @@ export function useAIWorkspaceState({
     setAIWorkspaceState(result.value);
   }, [isEnabled, onError, workspaceId]);
 
-  const applyAIWorkspaceOperations = useCallback(async (dirtyFilePaths: string[] = []): Promise<void> => {
+  const applyAIWorkspaceOperations = useCallback(async (
+    dirtyFilePaths: string[] = [],
+    operationIds?: string[]
+  ): Promise<void> => {
     if (!isEnabled || !workspaceId) return;
     if (!window.relic?.applyAIWorkspaceOperations) return;
 
     setIsAIWorkspaceSending(true);
-    const result = await window.relic.applyAIWorkspaceOperations({ dirtyFilePaths });
+    const result = await window.relic.applyAIWorkspaceOperations({ dirtyFilePaths, operationIds });
     setIsAIWorkspaceSending(false);
 
     if (!result.ok) {
@@ -158,12 +161,12 @@ export function useAIWorkspaceState({
     setAIWorkspaceState(result.value);
   }, [isEnabled, onError, workspaceId]);
 
-  const discardAIWorkspaceOperations = useCallback(async (): Promise<void> => {
+  const discardAIWorkspaceOperations = useCallback(async (operationIds?: string[]): Promise<void> => {
     if (!isEnabled || !workspaceId) return;
     if (!window.relic?.discardAIWorkspaceOperations) return;
 
     setIsAIWorkspaceSending(true);
-    const result = await window.relic.discardAIWorkspaceOperations({});
+    const result = await window.relic.discardAIWorkspaceOperations({ operationIds });
     setIsAIWorkspaceSending(false);
 
     if (!result.ok) {
