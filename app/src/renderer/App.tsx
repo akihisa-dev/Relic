@@ -837,7 +837,12 @@ export function App(): ReactElement {
           onAIWorkspaceRebuildIndex={() => { void rebuildAIWorkspaceIndex(); }}
           onAIWorkspaceDiscardOperations={(operationIds) => { void discardAIWorkspaceOperations(operationIds); }}
           onAIWorkspaceSendMessage={(message) => {
-            void sendAIWorkspaceMessage(message, dirtyMarkdownPaths, activeFileTabInFocusedPane?.path ?? null);
+            void sendAIWorkspaceMessage(
+              message,
+              dirtyMarkdownPaths,
+              activeFileTabInFocusedPane?.path ?? null,
+              activeFileTabInFocusedPane?.content ?? null
+            );
           }}
           onEditorAction={() => setEditorActionPulse((value) => value + 1)}
           onFileSaveError={setWorkspaceError}

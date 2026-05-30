@@ -85,7 +85,7 @@ export async function previewAIWorkspaceMessage(
 
     return ok({
       message,
-      references: requiresExternalAI ? buildReferences(data, message, input.activeFilePath) : [],
+      references: requiresExternalAI ? buildReferences(data, message, input.activeFilePath, input.activeFileContent) : [],
       requiresExternalAI,
       skippedLargeFiles: data.index.skippedLargeFiles,
       unreadableFiles: data.index.unreadableFiles
@@ -127,7 +127,7 @@ export async function sendAIWorkspaceMessage(
       return createRevertOperations(context, data, message, input.activeFilePath);
     }
 
-    const references = buildReferences(data, message, input.activeFilePath);
+    const references = buildReferences(data, message, input.activeFilePath, input.activeFileContent);
     const userMessage: AIWorkspaceMessage = {
       content: message,
       createdAt: new Date().toISOString(),
@@ -140,7 +140,10 @@ export async function sendAIWorkspaceMessage(
       history: data.history.map((item) => ({ content: item.content, role: item.role })),
       message,
       pendingOperations: data.operations.filter((operation) => operation.status === "pending"),
-      referenceContents: await readReferenceContents(context.workspacePath, references),
+      referenceContents: await readReferenceContents(context.workspacePath, references, {
+        content: input.activeFileContent ?? null,
+        path: input.activeFilePath ?? null
+      }),
       references,
       workspacePath: context.workspacePath
     }).catch((error) => {
@@ -402,7 +405,8 @@ function toState(data: AIWorkspaceData): AIWorkspaceState {
 function buildReferences(
   data: AIWorkspaceData,
   message: string,
-  activeFilePath?: string | null
+  activeFilePath?: string | null,
+  activeFileContent?: string | null
 ): AIWorkspaceReference[] {
   const references = searchAIWorkspaceChunks(data.index.chunks, message).map<AIWorkspaceReference>((chunk) => ({
     line: chunk.startLine,
@@ -421,7 +425,7 @@ function buildReferences(
   return [{
     line: activeChunk.startLine,
     path: activeChunk.path,
-    preview: activeChunk.content.split("\n").find((line) => line.trim())?.trim().slice(0, 160) ?? activeChunk.path
+    preview: previewMarkdownContent(activeFileContent ?? activeChunk.content, activeChunk.path)
   }, ...references.filter((reference) => {
     return normalizeOperationText(reference.path) !== normalizedActiveFilePath;
   })];
@@ -429,12 +433,18 @@ function buildReferences(
 
 async function readReferenceContents(
   workspacePath: string,
-  references: AIWorkspaceReference[]
+  references: AIWorkspaceReference[],
+  activeFile?: { content: string | null; path: string | null }
 ): Promise<Array<{ content: string; path: string }>> {
   const uniquePaths = [...new Set(references.map((reference) => reference.path))].slice(0, 8);
   const contents: Array<{ content: string; path: string }> = [];
 
   for (const path of uniquePaths) {
+    if (activeFile?.path && activeFile.content !== null && normalizeOperationText(path) === normalizeOperationText(activeFile.path)) {
+      contents.push({ content: activeFile.content.slice(0, 16_000), path });
+      continue;
+    }
+
     const file = await readMarkdownFile(workspacePath, path);
     if (file.ok) {
       contents.push({ content: file.value.content.slice(0, 16_000), path });
@@ -442,6 +452,10 @@ async function readReferenceContents(
   }
 
   return contents;
+}
+
+function previewMarkdownContent(content: string, fallbackPath: string): string {
+  return content.split("\n").find((line) => line.trim())?.trim().slice(0, 160) ?? fallbackPath;
 }
 
 async function applyOperation(

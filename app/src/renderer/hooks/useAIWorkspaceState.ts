@@ -19,7 +19,12 @@ export function useAIWorkspaceState({
   isAIWorkspaceSending: boolean;
   reloadAIWorkspace: () => Promise<void>;
   rebuildAIWorkspaceIndex: () => Promise<void>;
-  sendAIWorkspaceMessage: (message: string, dirtyFilePaths?: string[], activeFilePath?: string | null) => Promise<void>;
+  sendAIWorkspaceMessage: (
+    message: string,
+    dirtyFilePaths?: string[],
+    activeFilePath?: string | null,
+    activeFileContent?: string | null
+  ) => Promise<void>;
   confirmAIWorkspaceMessage: () => Promise<void>;
   cancelAIWorkspaceMessage: () => void;
   applyAIWorkspaceOperations: (dirtyFilePaths?: string[], operationIds?: string[]) => Promise<void>;
@@ -30,6 +35,7 @@ export function useAIWorkspaceState({
   const [aiWorkspaceMessagePreview, setAIWorkspaceMessagePreview] = useState<AIWorkspaceMessagePreview | null>(null);
   const [previewDirtyFilePaths, setPreviewDirtyFilePaths] = useState<string[]>([]);
   const [previewActiveFilePath, setPreviewActiveFilePath] = useState<string | null>(null);
+  const [previewActiveFileContent, setPreviewActiveFileContent] = useState<string | null>(null);
   const [isAIWorkspaceLoading, setIsAIWorkspaceLoading] = useState(false);
   const [isAIWorkspaceSending, setIsAIWorkspaceSending] = useState(false);
 
@@ -72,14 +78,15 @@ export function useAIWorkspaceState({
   const sendAIWorkspaceMessage = useCallback(async (
     message: string,
     dirtyFilePaths: string[] = [],
-    activeFilePath: string | null = null
+    activeFilePath: string | null = null,
+    activeFileContent: string | null = null
   ): Promise<void> => {
     if (!isEnabled || !workspaceId) return;
     if (!window.relic?.sendAIWorkspaceMessage) return;
     if (!window.relic?.previewAIWorkspaceMessage) return;
 
     setIsAIWorkspaceSending(true);
-    const previewResult = await window.relic.previewAIWorkspaceMessage({ activeFilePath, message });
+    const previewResult = await window.relic.previewAIWorkspaceMessage({ activeFileContent, activeFilePath, message });
     setIsAIWorkspaceSending(false);
 
     if (!previewResult.ok) {
@@ -91,11 +98,12 @@ export function useAIWorkspaceState({
       setAIWorkspaceMessagePreview(previewResult.value);
       setPreviewDirtyFilePaths(dirtyFilePaths);
       setPreviewActiveFilePath(activeFilePath);
+      setPreviewActiveFileContent(activeFileContent);
       return;
     }
 
     setIsAIWorkspaceSending(true);
-    const result = await window.relic.sendAIWorkspaceMessage({ activeFilePath, dirtyFilePaths, message });
+    const result = await window.relic.sendAIWorkspaceMessage({ activeFileContent, activeFilePath, dirtyFilePaths, message });
     setIsAIWorkspaceSending(false);
 
     if (!result.ok) {
@@ -113,6 +121,7 @@ export function useAIWorkspaceState({
     setIsAIWorkspaceSending(true);
     const result = await window.relic.sendAIWorkspaceMessage({
       activeFilePath: previewActiveFilePath,
+      activeFileContent: previewActiveFileContent,
       dirtyFilePaths: previewDirtyFilePaths,
       message: aiWorkspaceMessagePreview.message
     });
@@ -124,13 +133,15 @@ export function useAIWorkspaceState({
     }
 
     setAIWorkspaceMessagePreview(null);
+    setPreviewActiveFileContent(null);
     setPreviewActiveFilePath(null);
     setPreviewDirtyFilePaths([]);
     setAIWorkspaceState(result.value);
-  }, [aiWorkspaceMessagePreview, isEnabled, onError, previewActiveFilePath, previewDirtyFilePaths, workspaceId]);
+  }, [aiWorkspaceMessagePreview, isEnabled, onError, previewActiveFileContent, previewActiveFilePath, previewDirtyFilePaths, workspaceId]);
 
   const cancelAIWorkspaceMessage = useCallback((): void => {
     setAIWorkspaceMessagePreview(null);
+    setPreviewActiveFileContent(null);
     setPreviewActiveFilePath(null);
     setPreviewDirtyFilePaths([]);
   }, []);

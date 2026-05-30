@@ -37,12 +37,14 @@ export interface AIWorkspaceState {
 }
 
 export interface SendAIWorkspaceMessageInput {
+  activeFileContent?: string | null;
   activeFilePath?: string | null;
   dirtyFilePaths?: string[];
   message: string;
 }
 
 export interface PreviewAIWorkspaceMessageInput {
+  activeFileContent?: string | null;
   activeFilePath?: string | null;
   message: string;
 }
