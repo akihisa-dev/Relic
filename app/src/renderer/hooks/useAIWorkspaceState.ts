@@ -247,7 +247,7 @@ export function useAIWorkspaceState({
 function sameStringList(left: string[], right: string[]): boolean {
   if (left.length !== right.length) return false;
 
-  const leftItems = [...left].sort();
-  const rightItems = [...right].sort();
-  return leftItems.every((item, index) => item === rightItems[index]);
+  const leftItems = left.toSorted();
+  const rightItems = right.toSorted();
+  return leftItems.length === rightItems.length && leftItems.every((item, index) => item === rightItems[index]);
 }
