@@ -8,6 +8,8 @@ import type {
   ApplyAIWorkspaceOperationsInput,
   ClearAIWorkspaceDataInput,
   DiscardAIWorkspaceOperationsInput,
+  PreviewAIWorkspaceMessageInput,
+  AIWorkspaceMessagePreview,
   SendAIWorkspaceMessageInput
 } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
@@ -50,6 +52,36 @@ export async function rebuildAIWorkspaceIndex(context: AIWorkspaceContext): Prom
   }
 }
 
+export async function previewAIWorkspaceMessage(
+  context: AIWorkspaceContext,
+  input: PreviewAIWorkspaceMessageInput
+): Promise<RelicResult<AIWorkspaceMessagePreview>> {
+  const message = input.message.trim();
+
+  if (!message) {
+    return fail("AI_WORKSPACE_MESSAGE_EMPTY", "AIに送る内容を入力してください。");
+  }
+
+  try {
+    const data = await ensureIndexed(context);
+    const hasPendingOperations = data.operations.some((operation) => operation.status === "pending");
+    const requiresExternalAI = !(
+      hasPendingOperations &&
+      (shouldDiscardPendingOperations(message) || shouldApplyPendingOperations(message))
+    );
+
+    return ok({
+      message,
+      references: requiresExternalAI ? buildReferences(data, message) : [],
+      requiresExternalAI,
+      skippedLargeFiles: data.index.skippedLargeFiles,
+      unreadableFiles: data.index.unreadableFiles
+    });
+  } catch (error) {
+    return fail("AI_WORKSPACE_PREVIEW_FAILED", "AIへ送るMarkdown参照を確認できませんでした。", String(error));
+  }
+}
+
 export async function sendAIWorkspaceMessage(
   context: AIWorkspaceContext,
   input: SendAIWorkspaceMessageInput,
@@ -71,11 +103,7 @@ export async function sendAIWorkspaceMessage(
       return applyAIWorkspaceOperations(context, { dirtyFilePaths: input.dirtyFilePaths }, trashItem);
     }
 
-    const references = searchAIWorkspaceChunks(data.index.chunks, message).map<AIWorkspaceReference>((chunk) => ({
-      line: chunk.startLine,
-      path: chunk.path,
-      preview: chunk.content.split("\n").find((line) => line.trim())?.trim().slice(0, 160) ?? chunk.path
-    }));
+    const references = buildReferences(data, message);
     const userMessage: AIWorkspaceMessage = {
       content: message,
       createdAt: new Date().toISOString(),
@@ -269,6 +297,14 @@ function toState(data: AIWorkspaceData): AIWorkspaceState {
     operationHistory: data.operations,
     pendingOperations: data.operations.filter((operation) => operation.status === "pending")
   };
+}
+
+function buildReferences(data: AIWorkspaceData, message: string): AIWorkspaceReference[] {
+  return searchAIWorkspaceChunks(data.index.chunks, message).map<AIWorkspaceReference>((chunk) => ({
+    line: chunk.startLine,
+    path: chunk.path,
+    preview: chunk.content.split("\n").find((line) => line.trim())?.trim().slice(0, 160) ?? chunk.path
+  }));
 }
 
 async function readReferenceContents(

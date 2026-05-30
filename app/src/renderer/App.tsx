@@ -122,9 +122,12 @@ export function App(): ReactElement {
   const { isSplitClosing, toggleSplitWithMotion } = useSplitCloseMotion(isSplit, toggleSplit);
   const {
     aiWorkspaceState,
+    aiWorkspaceMessagePreview,
     isAIWorkspaceLoading,
     isAIWorkspaceSending,
     applyAIWorkspaceOperations,
+    cancelAIWorkspaceMessage,
+    confirmAIWorkspaceMessage,
     discardAIWorkspaceOperations,
     rebuildAIWorkspaceIndex,
     sendAIWorkspaceMessage,
@@ -808,6 +811,7 @@ export function App(): ReactElement {
 
         <AppEditorWorkspace
           aiWorkspaceState={aiWorkspaceState}
+          aiWorkspaceMessagePreview={aiWorkspaceMessagePreview}
           allFilePaths={existingMarkdownPaths}
           backlinks={backlinks}
           editorActionPulse={editorActionPulse}
@@ -828,6 +832,8 @@ export function App(): ReactElement {
           onCreateFile={handleCreateNoteFromPane}
           onAIWorkspaceClearData={() => { void clearAIWorkspaceData(); }}
           onAIWorkspaceApplyOperations={() => { void applyAIWorkspaceOperations(dirtyMarkdownPaths); }}
+          onAIWorkspaceCancelMessagePreview={cancelAIWorkspaceMessage}
+          onAIWorkspaceConfirmMessagePreview={() => { void confirmAIWorkspaceMessage(); }}
           onAIWorkspaceRebuildIndex={() => { void rebuildAIWorkspaceIndex(); }}
           onAIWorkspaceDiscardOperations={() => { void discardAIWorkspaceOperations(); }}
           onAIWorkspaceSendMessage={(message) => { void sendAIWorkspaceMessage(message, dirtyMarkdownPaths); }}

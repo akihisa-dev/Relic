@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 
-import type { AIWorkspaceState } from "../../shared/ipc";
+import type { AIWorkspaceMessagePreview, AIWorkspaceState } from "../../shared/ipc";
 
 interface UseAIWorkspaceStateOptions {
   isEnabled: boolean;
@@ -14,16 +14,21 @@ export function useAIWorkspaceState({
   workspaceId
 }: UseAIWorkspaceStateOptions): {
   aiWorkspaceState: AIWorkspaceState | null;
+  aiWorkspaceMessagePreview: AIWorkspaceMessagePreview | null;
   isAIWorkspaceLoading: boolean;
   isAIWorkspaceSending: boolean;
   reloadAIWorkspace: () => Promise<void>;
   rebuildAIWorkspaceIndex: () => Promise<void>;
   sendAIWorkspaceMessage: (message: string, dirtyFilePaths?: string[]) => Promise<void>;
+  confirmAIWorkspaceMessage: () => Promise<void>;
+  cancelAIWorkspaceMessage: () => void;
   applyAIWorkspaceOperations: (dirtyFilePaths?: string[]) => Promise<void>;
   discardAIWorkspaceOperations: () => Promise<void>;
   clearAIWorkspaceData: () => Promise<void>;
 } {
   const [aiWorkspaceState, setAIWorkspaceState] = useState<AIWorkspaceState | null>(null);
+  const [aiWorkspaceMessagePreview, setAIWorkspaceMessagePreview] = useState<AIWorkspaceMessagePreview | null>(null);
+  const [previewDirtyFilePaths, setPreviewDirtyFilePaths] = useState<string[]>([]);
   const [isAIWorkspaceLoading, setIsAIWorkspaceLoading] = useState(false);
   const [isAIWorkspaceSending, setIsAIWorkspaceSending] = useState(false);
 
@@ -66,6 +71,22 @@ export function useAIWorkspaceState({
   const sendAIWorkspaceMessage = useCallback(async (message: string, dirtyFilePaths: string[] = []): Promise<void> => {
     if (!isEnabled || !workspaceId) return;
     if (!window.relic?.sendAIWorkspaceMessage) return;
+    if (!window.relic?.previewAIWorkspaceMessage) return;
+
+    setIsAIWorkspaceSending(true);
+    const previewResult = await window.relic.previewAIWorkspaceMessage({ message });
+    setIsAIWorkspaceSending(false);
+
+    if (!previewResult.ok) {
+      onError(previewResult.error.message);
+      return;
+    }
+
+    if (previewResult.value.requiresExternalAI) {
+      setAIWorkspaceMessagePreview(previewResult.value);
+      setPreviewDirtyFilePaths(dirtyFilePaths);
+      return;
+    }
 
     setIsAIWorkspaceSending(true);
     const result = await window.relic.sendAIWorkspaceMessage({ dirtyFilePaths, message });
@@ -78,6 +99,32 @@ export function useAIWorkspaceState({
 
     setAIWorkspaceState(result.value);
   }, [isEnabled, onError, workspaceId]);
+
+  const confirmAIWorkspaceMessage = useCallback(async (): Promise<void> => {
+    if (!isEnabled || !workspaceId || !aiWorkspaceMessagePreview) return;
+    if (!window.relic?.sendAIWorkspaceMessage) return;
+
+    setIsAIWorkspaceSending(true);
+    const result = await window.relic.sendAIWorkspaceMessage({
+      dirtyFilePaths: previewDirtyFilePaths,
+      message: aiWorkspaceMessagePreview.message
+    });
+    setIsAIWorkspaceSending(false);
+
+    if (!result.ok) {
+      onError(result.error.message);
+      return;
+    }
+
+    setAIWorkspaceMessagePreview(null);
+    setPreviewDirtyFilePaths([]);
+    setAIWorkspaceState(result.value);
+  }, [aiWorkspaceMessagePreview, isEnabled, onError, previewDirtyFilePaths, workspaceId]);
+
+  const cancelAIWorkspaceMessage = useCallback((): void => {
+    setAIWorkspaceMessagePreview(null);
+    setPreviewDirtyFilePaths([]);
+  }, []);
 
   const clearAIWorkspaceData = useCallback(async (): Promise<void> => {
     if (!isEnabled || !workspaceId) return;
@@ -133,11 +180,14 @@ export function useAIWorkspaceState({
 
   return {
     aiWorkspaceState,
+    aiWorkspaceMessagePreview,
     isAIWorkspaceLoading,
     isAIWorkspaceSending,
     reloadAIWorkspace,
     rebuildAIWorkspaceIndex,
     sendAIWorkspaceMessage,
+    confirmAIWorkspaceMessage,
+    cancelAIWorkspaceMessage,
     applyAIWorkspaceOperations,
     discardAIWorkspaceOperations,
     clearAIWorkspaceData

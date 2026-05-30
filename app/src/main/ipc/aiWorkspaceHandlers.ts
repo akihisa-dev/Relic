@@ -8,6 +8,8 @@ import {
   discardAIWorkspaceOperationsChannel,
   type DiscardAIWorkspaceOperationsInput,
   getAIWorkspaceStateChannel,
+  previewAIWorkspaceMessageChannel,
+  type PreviewAIWorkspaceMessageInput,
   rebuildAIWorkspaceIndexChannel,
   type RebuildAIWorkspaceIndexInput,
   sendAIWorkspaceMessageChannel,
@@ -19,6 +21,7 @@ import {
   clearAIWorkspaceState,
   discardAIWorkspaceOperations,
   getAIWorkspaceState,
+  previewAIWorkspaceMessage,
   rebuildAIWorkspaceIndex,
   sendAIWorkspaceMessage
 } from "../ai/aiWorkspaceService";
@@ -59,6 +62,21 @@ export function registerAIWorkspaceHandlers(): void {
       return sendAIWorkspaceMessage(context.value, input, shell.trashItem);
     } catch (error) {
       return fail("AI_WORKSPACE_MESSAGE_FAILED", "AI Workspaceで処理できませんでした。", ipcErrorDetails(error));
+    }
+  });
+
+  ipcMain.handle(previewAIWorkspaceMessageChannel, async (_event, input: PreviewAIWorkspaceMessageInput) => {
+    try {
+      if (!isPreviewAIWorkspaceMessageInput(input)) {
+        return fail("AI_WORKSPACE_MESSAGE_INVALID", "AIに送る内容を入力してください。");
+      }
+
+      const context = await getAIWorkspaceContext();
+      if (!context.ok) return context;
+
+      return previewAIWorkspaceMessage(context.value, input);
+    } catch (error) {
+      return fail("AI_WORKSPACE_PREVIEW_FAILED", "AIへ送るMarkdown参照を確認できませんでした。", ipcErrorDetails(error));
     }
   });
 
@@ -111,6 +129,13 @@ async function getAIWorkspaceContext() {
 }
 
 function isSendAIWorkspaceMessageInput(value: unknown): value is SendAIWorkspaceMessageInput {
+  if (!value || typeof value !== "object") return false;
+  const record = value as { message?: unknown };
+
+  return typeof record.message === "string" && record.message.trim().length > 0;
+}
+
+function isPreviewAIWorkspaceMessageInput(value: unknown): value is PreviewAIWorkspaceMessageInput {
   if (!value || typeof value !== "object") return false;
   const record = value as { message?: unknown };
 

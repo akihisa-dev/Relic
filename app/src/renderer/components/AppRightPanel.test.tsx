@@ -45,11 +45,14 @@ describe("AppRightPanel", () => {
           backlinks={[]}
           isAIWorkspaceLoading={false}
           isAIWorkspaceSending={false}
+          aiWorkspaceMessagePreview={null}
           isLoadingBacklinks={false}
           isOpen
           isResizing={false}
           onAIWorkspaceClearData={vi.fn()}
           onAIWorkspaceApplyOperations={vi.fn()}
+          onAIWorkspaceCancelMessagePreview={vi.fn()}
+          onAIWorkspaceConfirmMessagePreview={vi.fn()}
           onAIWorkspaceDiscardOperations={vi.fn()}
           onAIWorkspaceRebuildIndex={vi.fn()}
           onAIWorkspaceSendMessage={vi.fn()}
@@ -100,11 +103,14 @@ describe("AppRightPanel", () => {
           backlinks={[]}
           isAIWorkspaceLoading={false}
           isAIWorkspaceSending={false}
+          aiWorkspaceMessagePreview={null}
           isLoadingBacklinks={false}
           isOpen
           isResizing={false}
           onAIWorkspaceClearData={vi.fn()}
           onAIWorkspaceApplyOperations={vi.fn()}
+          onAIWorkspaceCancelMessagePreview={vi.fn()}
+          onAIWorkspaceConfirmMessagePreview={vi.fn()}
           onAIWorkspaceDiscardOperations={vi.fn()}
           onAIWorkspaceRebuildIndex={vi.fn()}
           onAIWorkspaceSendMessage={vi.fn()}
@@ -150,11 +156,14 @@ describe("AppRightPanel", () => {
           backlinks={[]}
           isAIWorkspaceLoading={false}
           isAIWorkspaceSending={false}
+          aiWorkspaceMessagePreview={null}
           isLoadingBacklinks={false}
           isOpen
           isResizing={false}
           onAIWorkspaceClearData={vi.fn()}
           onAIWorkspaceApplyOperations={vi.fn()}
+          onAIWorkspaceCancelMessagePreview={vi.fn()}
+          onAIWorkspaceConfirmMessagePreview={vi.fn()}
           onAIWorkspaceDiscardOperations={vi.fn()}
           onAIWorkspaceRebuildIndex={vi.fn()}
           onAIWorkspaceSendMessage={vi.fn()}
@@ -180,11 +189,33 @@ describe("AppRightPanel", () => {
     expect(screen.getByText("Markdownを読み込めませんでした。")).toBeInTheDocument();
   });
 
-  it("shows a notice when outgoing links are limited", () => {
+  it("shows AI message preview references before external send", () => {
+    const onConfirm = vi.fn();
+    const onCancel = vi.fn();
+
     render(
       <I18nProvider language="en">
         <AppRightPanel
-          aiWorkspaceState={null}
+          aiWorkspaceState={{
+            codexAppServerAvailable: true,
+            history: [],
+            index: {
+              chunkCount: 1,
+              indexedAt: "2026-05-30T00:00:00.000Z",
+              indexedFileCount: 1,
+              skippedLargeFiles: [],
+              unreadableFiles: []
+            },
+            operationHistory: [],
+            pendingOperations: []
+          }}
+          aiWorkspaceMessagePreview={{
+            message: "認証を整理して",
+            references: [{ line: 1, path: "docs/auth.md", preview: "# Auth" }],
+            requiresExternalAI: true,
+            skippedLargeFiles: [],
+            unreadableFiles: []
+          }}
           backlinks={[]}
           isAIWorkspaceLoading={false}
           isAIWorkspaceSending={false}
@@ -193,6 +224,50 @@ describe("AppRightPanel", () => {
           isResizing={false}
           onAIWorkspaceClearData={vi.fn()}
           onAIWorkspaceApplyOperations={vi.fn()}
+          onAIWorkspaceCancelMessagePreview={onCancel}
+          onAIWorkspaceConfirmMessagePreview={onConfirm}
+          onAIWorkspaceDiscardOperations={vi.fn()}
+          onAIWorkspaceRebuildIndex={vi.fn()}
+          onAIWorkspaceSendMessage={vi.fn()}
+          onOpenFile={vi.fn()}
+          onOpenWikiLink={vi.fn()}
+          onOutlineHeadingClick={vi.fn()}
+          onResizeStart={vi.fn()}
+          outlineHeadings={[]}
+          outgoingLinks={[]}
+          outgoingLinksLimited={false}
+          rightPanelView="ai"
+          setLinkContextMenu={vi.fn()}
+          width={260}
+          workspaceName="Novel"
+        />
+      </I18nProvider>
+    );
+
+    expect(screen.getByText("AIへ送るMarkdown参照")).toBeInTheDocument();
+    expect(screen.getByText("docs/auth.md:1")).toBeInTheDocument();
+    fireEvent.click(screen.getAllByRole("button", { name: "送信" })[0]);
+    fireEvent.click(screen.getByRole("button", { name: "キャンセル" }));
+    expect(onConfirm).toHaveBeenCalled();
+    expect(onCancel).toHaveBeenCalled();
+  });
+
+  it("shows a notice when outgoing links are limited", () => {
+    render(
+      <I18nProvider language="en">
+        <AppRightPanel
+          aiWorkspaceState={null}
+          aiWorkspaceMessagePreview={null}
+          backlinks={[]}
+          isAIWorkspaceLoading={false}
+          isAIWorkspaceSending={false}
+          isLoadingBacklinks={false}
+          isOpen
+          isResizing={false}
+          onAIWorkspaceClearData={vi.fn()}
+          onAIWorkspaceApplyOperations={vi.fn()}
+          onAIWorkspaceCancelMessagePreview={vi.fn()}
+          onAIWorkspaceConfirmMessagePreview={vi.fn()}
           onAIWorkspaceDiscardOperations={vi.fn()}
           onAIWorkspaceRebuildIndex={vi.fn()}
           onAIWorkspaceSendMessage={vi.fn()}

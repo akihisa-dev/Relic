@@ -29,9 +29,11 @@ import type {
 } from "./ipcTools";
 import type {
   ApplyAIWorkspaceOperationsInput,
+  AIWorkspaceMessagePreview,
   AIWorkspaceState,
   ClearAIWorkspaceDataInput,
   DiscardAIWorkspaceOperationsInput,
+  PreviewAIWorkspaceMessageInput,
   RebuildAIWorkspaceIndexInput,
   SendAIWorkspaceMessageInput
 } from "./ipcAiWorkspace";
@@ -144,6 +146,7 @@ export interface RelicApi {
   splitFileByHeading: (input: SplitFileByHeadingInput) => Promise<RelicResult<string[]>>;
   getAIWorkspaceState: () => Promise<RelicResult<AIWorkspaceState>>;
   rebuildAIWorkspaceIndex: (input: RebuildAIWorkspaceIndexInput) => Promise<RelicResult<AIWorkspaceState>>;
+  previewAIWorkspaceMessage: (input: PreviewAIWorkspaceMessageInput) => Promise<RelicResult<AIWorkspaceMessagePreview>>;
   sendAIWorkspaceMessage: (input: SendAIWorkspaceMessageInput) => Promise<RelicResult<AIWorkspaceState>>;
   applyAIWorkspaceOperations: (input: ApplyAIWorkspaceOperationsInput) => Promise<RelicResult<AIWorkspaceState>>;
   discardAIWorkspaceOperations: (input: DiscardAIWorkspaceOperationsInput) => Promise<RelicResult<AIWorkspaceState>>;

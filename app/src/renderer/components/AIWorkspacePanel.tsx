@@ -1,14 +1,17 @@
 import { useState, type ReactElement } from "react";
 
-import type { AIWorkspaceState } from "../../shared/ipc";
+import type { AIWorkspaceMessagePreview, AIWorkspaceState } from "../../shared/ipc";
 
 type AIWorkspacePanelView = "chat" | "history";
 
 interface AIWorkspacePanelProps {
   isLoading: boolean;
   isSending: boolean;
+  messagePreview: AIWorkspaceMessagePreview | null;
   onApplyOperations: () => void;
+  onCancelMessagePreview: () => void;
   onClearData: () => void;
+  onConfirmMessagePreview: () => void;
   onDiscardOperations: () => void;
   onOpenFile: (path: string) => void;
   onRebuildIndex: () => void;
@@ -20,8 +23,11 @@ interface AIWorkspacePanelProps {
 export function AIWorkspacePanel({
   isLoading,
   isSending,
+  messagePreview,
   onApplyOperations,
+  onCancelMessagePreview,
   onClearData,
+  onConfirmMessagePreview,
   onDiscardOperations,
   onOpenFile,
   onRebuildIndex,
@@ -128,6 +134,38 @@ export function AIWorkspacePanel({
               </li>
             ))}
           </ul>
+        </section>
+      ) : null}
+
+      {messagePreview ? (
+        <section className="ai-workspace-preview">
+          <div className="ai-workspace-preview-header">
+            <span>AIへ送るMarkdown参照</span>
+            <div className="ai-workspace-preview-actions">
+              <button disabled={isSending} onClick={onCancelMessagePreview} type="button">
+                キャンセル
+              </button>
+              <button disabled={isSending} onClick={onConfirmMessagePreview} type="button">
+                送信
+              </button>
+            </div>
+          </div>
+          <p>{messagePreview.message}</p>
+          {messagePreview.references.length > 0 ? (
+            <ul>
+              {messagePreview.references.map((reference) => (
+                <li key={`${reference.path}-${reference.line ?? 0}`}>
+                  <button onClick={() => onOpenFile(reference.path)} title={reference.path} type="button">
+                    <span>{reference.path}{reference.line ? `:${reference.line}` : ""}</span>
+                    <strong>開く</strong>
+                  </button>
+                  <small>{reference.preview}</small>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <small>関連しそうなMarkdownは見つかりませんでした。</small>
+          )}
         </section>
       ) : null}
 

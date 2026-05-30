@@ -32,6 +32,7 @@ import {
   moveMarkdownFileChannel,
   openWorkspaceChannel,
   readMarkdownFileChannel,
+  previewAIWorkspaceMessageChannel,
   rebuildAIWorkspaceIndexChannel,
   removeWorkspaceChannel,
   renameWorkspaceChannel,
@@ -96,6 +97,8 @@ import {
   type MoveFolderInput,
   type MoveItemToTrashInput,
   type MoveMarkdownFileInput,
+  type AIWorkspaceMessagePreview,
+  type PreviewAIWorkspaceMessageInput,
   type RelicApi,
   type ReadMarkdownFileInput,
   type RebuildAIWorkspaceIndexInput,
@@ -211,6 +214,8 @@ const relicApi: RelicApi = {
     >,
   rebuildAIWorkspaceIndex: (input: RebuildAIWorkspaceIndexInput) =>
     ipcRenderer.invoke(rebuildAIWorkspaceIndexChannel, input) as Promise<RelicResult<AIWorkspaceState>>,
+  previewAIWorkspaceMessage: (input: PreviewAIWorkspaceMessageInput) =>
+    ipcRenderer.invoke(previewAIWorkspaceMessageChannel, input) as Promise<RelicResult<AIWorkspaceMessagePreview>>,
   sendAIWorkspaceMessage: (input: SendAIWorkspaceMessageInput) =>
     ipcRenderer.invoke(sendAIWorkspaceMessageChannel, input) as Promise<RelicResult<AIWorkspaceState>>,
   applyAIWorkspaceOperations: (input: ApplyAIWorkspaceOperationsInput) =>
