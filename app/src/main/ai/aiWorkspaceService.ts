@@ -527,9 +527,9 @@ async function applyOperation(
   trashItem?: TrashItem
 ): Promise<RelicResult<void>> {
   if (operation.kind === "create") {
-    const created = await createMarkdownFileAtPath(workspacePath, operation.path);
+    const created = await createMarkdownFileAtPath(workspacePath, operation.path, operation.content ?? "");
     if (!created.ok) return created;
-    return writeMarkdownFileContent(workspacePath, operation.path, operation.content ?? "");
+    return ok(undefined);
   }
 
   const currentFile = await readMarkdownFile(workspacePath, operation.path);
