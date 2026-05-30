@@ -423,6 +423,32 @@ describe("sendAIWorkspaceMessage", () => {
     await expect(readFile(path.join(workspacePath, "second.md"), "utf8")).resolves.toBe("second");
   });
 
+  it("keeps pending operations when the user says not to apply them yet", async () => {
+    await writeFile(path.join(workspacePath, "draft.md"), "old", "utf8");
+    await writeData({
+      operations: [createOperation("update", "draft.md", "# Draft\nupdated")]
+    });
+
+    const result = await sendAIWorkspaceMessage(context(), { message: "まだ反映しない" });
+
+    expect(result.ok).toBe(true);
+    expect(runCodexAIWorkspaceTurn).not.toHaveBeenCalled();
+    await expect(readFile(path.join(workspacePath, "draft.md"), "utf8")).resolves.toBe("old");
+    if (result.ok) {
+      expect(result.value.pendingOperations).toEqual([
+        expect.objectContaining({
+          path: "draft.md",
+          status: "pending"
+        })
+      ]);
+      expect(result.value.history.at(-2)).toEqual(expect.objectContaining({
+        content: "まだ反映しない",
+        role: "user"
+      }));
+      expect(result.value.history.at(-1)?.content).toContain("作業中の変更として残しました");
+    }
+  });
+
   it("discards only the pending operation named in a natural language message", async () => {
     await writeFile(path.join(workspacePath, "first.md"), "first", "utf8");
     await writeFile(path.join(workspacePath, "second.md"), "second", "utf8");
@@ -570,6 +596,20 @@ describe("previewAIWorkspaceMessage", () => {
     });
 
     const result = await previewAIWorkspaceMessage(context(), { message: "それ反映して" });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.requiresExternalAI).toBe(false);
+      expect(result.value.references).toEqual([]);
+    }
+  });
+
+  it("does not require external AI when pending operations are kept for later", async () => {
+    await writeData({
+      operations: [createOperation("update", "draft.md", "# Draft\nupdated")]
+    });
+
+    const result = await previewAIWorkspaceMessage(context(), { message: "反映はまだしない" });
 
     expect(result.ok).toBe(true);
     if (result.ok) {
