@@ -286,6 +286,25 @@ describe("sendAIWorkspaceMessage", () => {
     }));
   });
 
+  it("passes full referenced Markdown content without silently truncating it", async () => {
+    const fullContent = `# Long Note\n${"x".repeat(20_000)}\n末尾の内容`;
+    await writeFile(path.join(workspacePath, "long.md"), fullContent, "utf8");
+    vi.mocked(runCodexAIWorkspaceTurn).mockResolvedValueOnce({
+      message: "長いノートを確認します。",
+      operations: []
+    });
+
+    const result = await sendAIWorkspaceMessage(context(), { message: "末尾の内容を確認して" });
+
+    expect(result.ok).toBe(true);
+    expect(runCodexAIWorkspaceTurn).toHaveBeenCalledWith(expect.objectContaining({
+      referenceContents: [expect.objectContaining({
+        content: fullContent,
+        path: "long.md"
+      })]
+    }));
+  });
+
   it("replaces old pending operations for the same Markdown path with new proposals", async () => {
     await writeFile(path.join(workspacePath, "README.md"), "# Auth\nLogin spec", "utf8");
     await writeData({
