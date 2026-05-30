@@ -36,6 +36,7 @@ export interface AIWorkspaceState {
 }
 
 export interface SendAIWorkspaceMessageInput {
+  dirtyFilePaths?: string[];
   message: string;
 }
 
@@ -63,5 +64,10 @@ export interface AIWorkspaceFileOperation {
 }
 
 export interface ApplyAIWorkspaceOperationsInput {
+  dirtyFilePaths?: string[];
+  operationIds?: string[];
+}
+
+export interface DiscardAIWorkspaceOperationsInput {
   operationIds?: string[];
 }

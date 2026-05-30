@@ -18,8 +18,9 @@ export function useAIWorkspaceState({
   isAIWorkspaceSending: boolean;
   reloadAIWorkspace: () => Promise<void>;
   rebuildAIWorkspaceIndex: () => Promise<void>;
-  sendAIWorkspaceMessage: (message: string) => Promise<void>;
-  applyAIWorkspaceOperations: () => Promise<void>;
+  sendAIWorkspaceMessage: (message: string, dirtyFilePaths?: string[]) => Promise<void>;
+  applyAIWorkspaceOperations: (dirtyFilePaths?: string[]) => Promise<void>;
+  discardAIWorkspaceOperations: () => Promise<void>;
   clearAIWorkspaceData: () => Promise<void>;
 } {
   const [aiWorkspaceState, setAIWorkspaceState] = useState<AIWorkspaceState | null>(null);
@@ -62,12 +63,12 @@ export function useAIWorkspaceState({
     setAIWorkspaceState(result.value);
   }, [isEnabled, onError, workspaceId]);
 
-  const sendAIWorkspaceMessage = useCallback(async (message: string): Promise<void> => {
+  const sendAIWorkspaceMessage = useCallback(async (message: string, dirtyFilePaths: string[] = []): Promise<void> => {
     if (!isEnabled || !workspaceId) return;
     if (!window.relic?.sendAIWorkspaceMessage) return;
 
     setIsAIWorkspaceSending(true);
-    const result = await window.relic.sendAIWorkspaceMessage({ message });
+    const result = await window.relic.sendAIWorkspaceMessage({ dirtyFilePaths, message });
     setIsAIWorkspaceSending(false);
 
     if (!result.ok) {
@@ -94,12 +95,28 @@ export function useAIWorkspaceState({
     setAIWorkspaceState(result.value);
   }, [isEnabled, onError, workspaceId]);
 
-  const applyAIWorkspaceOperations = useCallback(async (): Promise<void> => {
+  const applyAIWorkspaceOperations = useCallback(async (dirtyFilePaths: string[] = []): Promise<void> => {
     if (!isEnabled || !workspaceId) return;
     if (!window.relic?.applyAIWorkspaceOperations) return;
 
     setIsAIWorkspaceSending(true);
-    const result = await window.relic.applyAIWorkspaceOperations({});
+    const result = await window.relic.applyAIWorkspaceOperations({ dirtyFilePaths });
+    setIsAIWorkspaceSending(false);
+
+    if (!result.ok) {
+      onError(result.error.message);
+      return;
+    }
+
+    setAIWorkspaceState(result.value);
+  }, [isEnabled, onError, workspaceId]);
+
+  const discardAIWorkspaceOperations = useCallback(async (): Promise<void> => {
+    if (!isEnabled || !workspaceId) return;
+    if (!window.relic?.discardAIWorkspaceOperations) return;
+
+    setIsAIWorkspaceSending(true);
+    const result = await window.relic.discardAIWorkspaceOperations({});
     setIsAIWorkspaceSending(false);
 
     if (!result.ok) {
@@ -122,6 +139,7 @@ export function useAIWorkspaceState({
     rebuildAIWorkspaceIndex,
     sendAIWorkspaceMessage,
     applyAIWorkspaceOperations,
+    discardAIWorkspaceOperations,
     clearAIWorkspaceData
   };
 }

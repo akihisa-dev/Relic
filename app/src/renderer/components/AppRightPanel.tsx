@@ -22,6 +22,7 @@ interface AppRightPanelProps {
   onAIWorkspaceClearData: () => void;
   onAIWorkspaceApplyOperations: () => void;
   onAIWorkspaceRebuildIndex: () => void;
+  onAIWorkspaceDiscardOperations: () => void;
   onAIWorkspaceSendMessage: (message: string) => void;
   onOpenFile: (path: string) => void;
   onOpenWikiLink: (target: string, heading?: string) => void;
@@ -47,6 +48,7 @@ export function AppRightPanel({
   onAIWorkspaceClearData,
   onAIWorkspaceApplyOperations,
   onAIWorkspaceRebuildIndex,
+  onAIWorkspaceDiscardOperations,
   onAIWorkspaceSendMessage,
   onOpenFile,
   onOpenWikiLink,
@@ -82,6 +84,7 @@ export function AppRightPanel({
           isSending={isAIWorkspaceSending}
           onClearData={onAIWorkspaceClearData}
           onApplyOperations={onAIWorkspaceApplyOperations}
+          onDiscardOperations={onAIWorkspaceDiscardOperations}
           onOpenFile={onOpenFile}
           onRebuildIndex={onAIWorkspaceRebuildIndex}
           onSendMessage={onAIWorkspaceSendMessage}

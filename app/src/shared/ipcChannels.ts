@@ -51,4 +51,5 @@ export const getAIWorkspaceStateChannel = "aiWorkspace:getState";
 export const rebuildAIWorkspaceIndexChannel = "aiWorkspace:rebuildIndex";
 export const sendAIWorkspaceMessageChannel = "aiWorkspace:sendMessage";
 export const applyAIWorkspaceOperationsChannel = "aiWorkspace:applyOperations";
+export const discardAIWorkspaceOperationsChannel = "aiWorkspace:discardOperations";
 export const clearAIWorkspaceDataChannel = "aiWorkspace:clearData";

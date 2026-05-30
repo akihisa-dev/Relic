@@ -7,6 +7,7 @@ import type {
   AIWorkspaceState,
   ApplyAIWorkspaceOperationsInput,
   ClearAIWorkspaceDataInput,
+  DiscardAIWorkspaceOperationsInput,
   SendAIWorkspaceMessageInput
 } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
@@ -62,8 +63,12 @@ export async function sendAIWorkspaceMessage(
 
   try {
     const data = await ensureIndexed(context);
+    if (shouldDiscardPendingOperations(message) && data.operations.some((operation) => operation.status === "pending")) {
+      return discardAIWorkspaceOperations(context, {});
+    }
+
     if (shouldApplyPendingOperations(message) && data.operations.some((operation) => operation.status === "pending")) {
-      return applyAIWorkspaceOperations(context, {}, trashItem);
+      return applyAIWorkspaceOperations(context, { dirtyFilePaths: input.dirtyFilePaths }, trashItem);
     }
 
     const references = searchAIWorkspaceChunks(data.index.chunks, message).map<AIWorkspaceReference>((chunk) => ({
@@ -123,6 +128,14 @@ export async function applyAIWorkspaceOperations(
     return fail("AI_WORKSPACE_NO_PENDING_OPERATIONS", "反映できるAI変更案がありません。");
   }
 
+  const dirtyPaths = blockedDirtyPaths(targetOperations, input.dirtyFilePaths ?? []);
+  if (dirtyPaths.length > 0) {
+    return fail(
+      "AI_WORKSPACE_DIRTY_FILE_BLOCKED",
+      `未保存のMarkdownがあるためAI変更案を反映できません。先に保存または破棄してください: ${dirtyPaths.join(", ")}`
+    );
+  }
+
   const appliedIds = new Set<string>();
   const failedIds = new Set<string>();
 
@@ -148,6 +161,45 @@ export async function applyAIWorkspaceOperations(
     content: failedIds.size > 0
       ? "一部のAI変更案を反映できませんでした。対象ファイルの状態を確認してから、もう一度依頼してください。"
       : "AI変更案をMarkdownへ反映しました。",
+    createdAt: new Date().toISOString(),
+    id: createMessageId("assistant"),
+    references: targetOperations.map((operation) => ({
+      path: operation.path,
+      preview: operation.summary
+    })),
+    role: "assistant"
+  };
+  nextData.history = [...nextData.history, assistantMessage];
+  await writeAIWorkspaceData(context.userDataPath, context.workspaceId, nextData);
+
+  return ok(toState(nextData));
+}
+
+export async function discardAIWorkspaceOperations(
+  context: AIWorkspaceContext,
+  input: DiscardAIWorkspaceOperationsInput
+): Promise<RelicResult<AIWorkspaceState>> {
+  const data = await readAIWorkspaceData(context.userDataPath, context.workspaceId);
+  const targetIds = new Set(input.operationIds ?? []);
+  const targetOperations = data.operations.filter((operation) => {
+    if (operation.status !== "pending") return false;
+    return targetIds.size === 0 || targetIds.has(operation.id);
+  });
+
+  if (targetOperations.length === 0) {
+    return fail("AI_WORKSPACE_NO_PENDING_OPERATIONS", "取りやめできるAI変更案がありません。");
+  }
+
+  const discardedIds = new Set(targetOperations.map((operation) => operation.id));
+  const nextData: AIWorkspaceData = {
+    ...data,
+    operations: data.operations.map((operation) => {
+      if (discardedIds.has(operation.id)) return { ...operation, status: "discarded" };
+      return operation;
+    })
+  };
+  const assistantMessage: AIWorkspaceMessage = {
+    content: "AI変更案を取りやめました。Markdownファイルには反映していません。",
     createdAt: new Date().toISOString(),
     id: createMessageId("assistant"),
     references: targetOperations.map((operation) => ({
@@ -258,6 +310,22 @@ async function applyOperation(
 function shouldApplyPendingOperations(message: string): boolean {
   return /(反映|適用|実行|保存|やって|進めて)/.test(message) &&
     !/(しない|やめ|不要|キャンセル|まだ)/.test(message);
+}
+
+function shouldDiscardPendingOperations(message: string): boolean {
+  return /(やめ|取りやめ|不要|キャンセル|破棄|なしにして|しない)/.test(message);
+}
+
+function blockedDirtyPaths(
+  operations: AIWorkspaceFileOperation[],
+  dirtyFilePaths: string[]
+): string[] {
+  const dirtyPathSet = new Set(dirtyFilePaths);
+  return [...new Set(
+    operations
+      .filter((operation) => operation.kind !== "create" && dirtyPathSet.has(operation.path))
+      .map((operation) => operation.path)
+  )];
 }
 
 function buildAssistantPlaceholder(message: string, references: AIWorkspaceReference[]): string {

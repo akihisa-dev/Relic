@@ -7,6 +7,7 @@ interface AIWorkspacePanelProps {
   isSending: boolean;
   onApplyOperations: () => void;
   onClearData: () => void;
+  onDiscardOperations: () => void;
   onOpenFile: (path: string) => void;
   onRebuildIndex: () => void;
   onSendMessage: (message: string) => void;
@@ -19,6 +20,7 @@ export function AIWorkspacePanel({
   isSending,
   onApplyOperations,
   onClearData,
+  onDiscardOperations,
   onOpenFile,
   onRebuildIndex,
   onSendMessage,
@@ -67,9 +69,14 @@ export function AIWorkspacePanel({
         <section className="ai-workspace-operations">
           <div className="ai-workspace-operations-header">
             <span>作業中の変更</span>
-            <button disabled={isSending} onClick={onApplyOperations} type="button">
-              反映
-            </button>
+            <div className="ai-workspace-operations-actions">
+              <button disabled={isSending} onClick={onDiscardOperations} type="button">
+                取りやめ
+              </button>
+              <button disabled={isSending} onClick={onApplyOperations} type="button">
+                反映
+              </button>
+            </div>
           </div>
           <ul>
             {pendingOperations.map((operation) => (

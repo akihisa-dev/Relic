@@ -180,6 +180,11 @@
   justify-content: space-between;
 }
 
+.ai-workspace-operations-actions {
+  display: flex;
+  gap: 6px;
+}
+
 .ai-workspace-operations-header span {
   color: var(--text);
   font-size: 12px;
@@ -193,6 +198,12 @@
   color: #ffffff;
   min-height: 26px;
   padding: 0 10px;
+}
+
+.ai-workspace-operations-header button:first-child {
+  background: var(--hover);
+  border: 1px solid var(--border);
+  color: var(--text-2);
 }
 
 .ai-workspace-operations ul,

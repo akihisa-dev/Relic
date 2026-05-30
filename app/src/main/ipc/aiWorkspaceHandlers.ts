@@ -5,6 +5,8 @@ import {
   type ApplyAIWorkspaceOperationsInput,
   clearAIWorkspaceDataChannel,
   type ClearAIWorkspaceDataInput,
+  discardAIWorkspaceOperationsChannel,
+  type DiscardAIWorkspaceOperationsInput,
   getAIWorkspaceStateChannel,
   rebuildAIWorkspaceIndexChannel,
   type RebuildAIWorkspaceIndexInput,
@@ -15,6 +17,7 @@ import { fail } from "../../shared/result";
 import {
   applyAIWorkspaceOperations,
   clearAIWorkspaceState,
+  discardAIWorkspaceOperations,
   getAIWorkspaceState,
   rebuildAIWorkspaceIndex,
   sendAIWorkspaceMessage
@@ -67,6 +70,17 @@ export function registerAIWorkspaceHandlers(): void {
       return applyAIWorkspaceOperations(context.value, input ?? {}, shell.trashItem);
     } catch (error) {
       return fail("AI_WORKSPACE_APPLY_FAILED", "AI変更案を反映できませんでした。", ipcErrorDetails(error));
+    }
+  });
+
+  ipcMain.handle(discardAIWorkspaceOperationsChannel, async (_event, input: DiscardAIWorkspaceOperationsInput) => {
+    try {
+      const context = await getAIWorkspaceContext();
+      if (!context.ok) return context;
+
+      return discardAIWorkspaceOperations(context.value, input ?? {});
+    } catch (error) {
+      return fail("AI_WORKSPACE_DISCARD_FAILED", "AI変更案を取りやめできませんでした。", ipcErrorDetails(error));
     }
   });
 

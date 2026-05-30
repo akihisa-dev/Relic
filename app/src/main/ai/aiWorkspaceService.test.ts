@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { applyAIWorkspaceOperations } from "./aiWorkspaceService";
+import { applyAIWorkspaceOperations, discardAIWorkspaceOperations } from "./aiWorkspaceService";
 import { writeAIWorkspaceData, type AIWorkspaceData } from "./aiWorkspaceData";
 
 let userDataPath = "";
@@ -50,6 +50,38 @@ describe("applyAIWorkspaceOperations", () => {
 
     expect(result.ok).toBe(true);
     expect(trashItem).toHaveBeenCalledWith(path.join(workspacePath, "old.md"));
+  });
+
+  it("does not apply updates to Markdown files with unsaved editor changes", async () => {
+    await writeFile(path.join(workspacePath, "draft.md"), "old", "utf8");
+    await writeData({
+      operations: [createOperation("update", "draft.md", "# Draft\nupdated")]
+    });
+
+    const result = await applyAIWorkspaceOperations(context(), { dirtyFilePaths: ["draft.md"] });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error.code).toBe("AI_WORKSPACE_DIRTY_FILE_BLOCKED");
+    }
+    await expect(readFile(path.join(workspacePath, "draft.md"), "utf8")).resolves.toBe("old");
+  });
+});
+
+describe("discardAIWorkspaceOperations", () => {
+  it("discards pending operations without changing Markdown files", async () => {
+    await writeFile(path.join(workspacePath, "draft.md"), "old", "utf8");
+    await writeData({
+      operations: [createOperation("update", "draft.md", "# Draft\nupdated")]
+    });
+
+    const result = await discardAIWorkspaceOperations(context(), {});
+
+    expect(result.ok).toBe(true);
+    await expect(readFile(path.join(workspacePath, "draft.md"), "utf8")).resolves.toBe("old");
+    if (result.ok) {
+      expect(result.value.pendingOperations).toEqual([]);
+    }
   });
 });
 
