@@ -629,6 +629,29 @@ describe("previewAIWorkspaceMessage", () => {
     }
   });
 
+  it("does not include invalid active file paths as current-file references", async () => {
+    await writeData({
+      index: {
+        chunks: [],
+        indexedAt: new Date().toISOString(),
+        skippedLargeFiles: [],
+        sourceHash: await computeAIWorkspaceIndexSourceHash(workspacePath),
+        unreadableFiles: []
+      }
+    });
+
+    const result = await previewAIWorkspaceMessage(context(), {
+      activeFileContent: "# Outside\nshould not be referenced",
+      activeFilePath: "../outside.md",
+      message: "このファイルを整理して"
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.references).toEqual([]);
+    }
+  });
+
   it("rebuilds a stale AI index before previewing Markdown references", async () => {
     await writeFile(path.join(workspacePath, "README.md"), "# New Topic\nfresh content", "utf8");
     await writeData({

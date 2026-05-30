@@ -16,7 +16,7 @@ import type {
 } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { createMarkdownFileAtPath, readMarkdownFile, writeMarkdownFileContent } from "../files/markdownFiles";
-import { resolveWorkspaceRelativePath } from "../files/paths";
+import { normalizeWorkspaceRelativeInputPath, resolveWorkspaceRelativePath } from "../files/paths";
 import { workspaceSearchMaxFileBytes } from "../files/search";
 import { moveWorkspaceItemToTrash, type TrashItem } from "../files/trash";
 import { buildAIWorkspaceIndex, computeAIWorkspaceIndexSourceHash, searchAIWorkspaceChunks } from "./aiWorkspaceIndex";
@@ -449,10 +449,11 @@ function buildReferences(
     path: chunk.path,
     preview: chunk.content.split("\n").find((line) => line.trim())?.trim().slice(0, 160) ?? chunk.path
   }));
+  const activePath = usableActiveFilePath(activeFilePath);
 
-  if (!activeFilePath || !hasCurrentFileReference(message)) return references;
+  if (!activePath || !hasCurrentFileReference(message)) return references;
 
-  const normalizedActiveFilePath = normalizeOperationText(activeFilePath);
+  const normalizedActiveFilePath = normalizeOperationText(activePath);
   const activeChunk = data.index.chunks.find((chunk) => {
     return normalizeOperationText(chunk.path) === normalizedActiveFilePath;
   });
@@ -462,8 +463,8 @@ function buildReferences(
 
     return [{
       line: 1,
-      path: activeFilePath,
-      preview: previewMarkdownContent(activeContent, activeFilePath)
+      path: activePath,
+      preview: previewMarkdownContent(activeContent, activePath)
     }, ...references.filter((reference) => {
       return normalizeOperationText(reference.path) !== normalizedActiveFilePath;
     })];
@@ -488,7 +489,8 @@ async function readReferenceContents(
 
   for (const path of uniquePaths) {
     const activeContent = usableActiveFileContent(activeFile?.content);
-    if (activeFile?.path && activeContent && normalizeOperationText(path) === normalizeOperationText(activeFile.path)) {
+    const activePath = usableActiveFilePath(activeFile?.path);
+    if (activePath && activeContent && normalizeOperationText(path) === normalizeOperationText(activePath)) {
       contents.push({ content: activeContent, path });
       continue;
     }
@@ -510,6 +512,13 @@ function usableActiveFileContent(content?: string | null): string | null {
   if (content === undefined || content === null) return null;
   if (Buffer.byteLength(content, "utf8") > workspaceSearchMaxFileBytes) return null;
   return content;
+}
+
+function usableActiveFilePath(filePath?: string | null): string | null {
+  if (!filePath) return null;
+  const normalizedPath = normalizeWorkspaceRelativeInputPath(filePath);
+  if (!normalizedPath || path.posix.extname(normalizedPath) !== ".md") return null;
+  return normalizedPath;
 }
 
 async function applyOperation(
