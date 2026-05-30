@@ -82,4 +82,29 @@ describe("useAIWorkspaceState", () => {
       expect(hook.result.current.aiWorkspaceMessagePreview).toBeNull();
     });
   });
+
+  it("does not confirm a pending send preview after the editor context changed", async () => {
+    const onError = vi.fn();
+    const hook = renderHook(() => useAIWorkspaceState({
+      isEnabled: true,
+      onError,
+      workspaceId: "workspace-1"
+    }));
+
+    await waitFor(() => {
+      expect(window.relic?.getAIWorkspaceState).toHaveBeenCalled();
+    });
+
+    await act(async () => {
+      await hook.result.current.sendAIWorkspaceMessage("認証を整理して", [], "docs/auth.md", "# Auth");
+    });
+
+    await act(async () => {
+      await hook.result.current.confirmAIWorkspaceMessage(["docs/auth.md"], "docs/auth.md", "# Auth\nchanged");
+    });
+
+    expect(window.relic?.sendAIWorkspaceMessage).not.toHaveBeenCalled();
+    expect(hook.result.current.aiWorkspaceMessagePreview).toBeNull();
+    expect(onError).toHaveBeenCalledWith("送信確認後にMarkdownの状態が変わりました。もう一度AIへ送信してください。");
+  });
 });
