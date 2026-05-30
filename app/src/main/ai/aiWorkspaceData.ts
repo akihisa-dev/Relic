@@ -15,6 +15,7 @@ export interface AIWorkspaceIndexData {
   chunks: AIWorkspaceChunk[];
   indexedAt: string | null;
   skippedLargeFiles: Array<{ path: string; reason: string }>;
+  sourceHash: string | null;
   unreadableFiles: Array<{ path: string; reason: string }>;
 }
 
@@ -28,6 +29,7 @@ export const emptyAIWorkspaceIndex = (): AIWorkspaceIndexData => ({
   chunks: [],
   indexedAt: null,
   skippedLargeFiles: [],
+  sourceHash: null,
   unreadableFiles: []
 });
 
@@ -81,6 +83,7 @@ function parseIndexData(value: unknown): AIWorkspaceIndexData {
       : [],
     indexedAt: typeof record.indexedAt === "string" ? record.indexedAt : null,
     skippedLargeFiles: Array.isArray(record.skippedLargeFiles) ? record.skippedLargeFiles.filter(isSkippedFile) : [],
+    sourceHash: typeof record.sourceHash === "string" ? record.sourceHash : null,
     unreadableFiles: Array.isArray(record.unreadableFiles) ? record.unreadableFiles.filter(isSkippedFile) : []
   };
 }

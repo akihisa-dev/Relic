@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import {
   buildAIWorkspaceIndex,
+  computeAIWorkspaceIndexSourceHash,
   createLocalEmbedding,
   searchAIWorkspaceChunks,
   tokenizeSearchText
@@ -32,6 +33,7 @@ describe("buildAIWorkspaceIndex", () => {
 
     expect(new Set(index.chunks.map((chunk) => chunk.path))).toEqual(new Set(["README.md", "docs/notes.md"]));
     expect(index.chunks.every((chunk) => chunk.embedding.length > 0)).toBe(true);
+    expect(index.sourceHash).toBe(await computeAIWorkspaceIndexSourceHash(workspacePath));
     expect(index.skippedLargeFiles).toEqual([]);
     expect(index.unreadableFiles).toEqual([]);
   });
@@ -47,6 +49,16 @@ describe("buildAIWorkspaceIndex", () => {
       path: "large.md",
       reason: "大きいMarkdownのためAI参照から除外しました。"
     }]);
+  });
+
+  it("changes the source hash when Markdown files change", async () => {
+    await writeFile(path.join(workspacePath, "note.md"), "old", "utf8");
+    const before = await computeAIWorkspaceIndexSourceHash(workspacePath);
+
+    await writeFile(path.join(workspacePath, "note.md"), "new content", "utf8");
+    const after = await computeAIWorkspaceIndexSourceHash(workspacePath);
+
+    expect(after).not.toBe(before);
   });
 });
 
