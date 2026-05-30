@@ -136,6 +136,79 @@ describe("AppRightPanel", () => {
     expect(screen.getByText("認証仕様を更新")).toBeInTheDocument();
   });
 
+  it("shows AI message operation details and opens the target Markdown", () => {
+    const onOpenFile = vi.fn();
+
+    render(
+      <I18nProvider language="en">
+        <AppRightPanel
+          aiWorkspaceState={{
+            codexAppServerAvailable: true,
+            history: [{
+              content: "変更案を作成しました。",
+              createdAt: "2026-05-30T00:00:00.000Z",
+              id: "message-1",
+              operations: [{
+                content: "# Auth",
+                createdAt: "2026-05-30T00:00:00.000Z",
+                id: "op-1",
+                kind: "update",
+                path: "docs/auth.md",
+                status: "pending",
+                summary: "認証仕様を更新"
+              }],
+              references: [],
+              role: "assistant"
+            }],
+            index: {
+              chunkCount: 3,
+              indexedAt: "2026-05-30T00:00:00.000Z",
+              indexedFileCount: 2,
+              skippedLargeFiles: [],
+              unreadableFiles: []
+            },
+            operationHistory: [],
+            pendingOperations: []
+          }}
+          backlinks={[]}
+          isAIWorkspaceLoading={false}
+          isAIWorkspaceSending={false}
+          aiWorkspaceMessagePreview={null}
+          isLoadingBacklinks={false}
+          isOpen
+          isResizing={false}
+          onAIWorkspaceClearData={vi.fn()}
+          onAIWorkspaceApplyOperations={vi.fn()}
+          onAIWorkspaceCancelMessagePreview={vi.fn()}
+          onAIWorkspaceConfirmMessagePreview={vi.fn()}
+          onAIWorkspaceDiscardOperations={vi.fn()}
+          onAIWorkspaceRebuildIndex={vi.fn()}
+          onAIWorkspaceSendMessage={vi.fn()}
+          onOpenFile={onOpenFile}
+          onOpenWikiLink={vi.fn()}
+          onOutlineHeadingClick={vi.fn()}
+          onResizeStart={vi.fn()}
+          outlineHeadings={[]}
+          outgoingLinks={[]}
+          outgoingLinksLimited={false}
+          rightPanelView="ai"
+          setLinkContextMenu={vi.fn()}
+          width={260}
+          workspaceName="Novel"
+        />
+      </I18nProvider>
+    );
+
+    expect(screen.getByText("docs/auth.md")).toBeInTheDocument();
+    expect(screen.getByText("編集")).toBeInTheDocument();
+    expect(screen.getByText("未反映")).toBeInTheDocument();
+    expect(screen.getByText("認証仕様を更新")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /docs\/auth\.md/ }));
+
+    expect(onOpenFile).toHaveBeenCalledWith("docs/auth.md");
+  });
+
   it("shows pending Markdown operation content without showing delete content", () => {
     const onApply = vi.fn();
     const onDiscard = vi.fn();

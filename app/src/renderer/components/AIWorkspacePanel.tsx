@@ -244,7 +244,15 @@ export function AIWorkspacePanel({
                   <ul className="ai-workspace-message-operations">
                     {item.operations.map((operation) => (
                       <li key={operation.id}>
-                        {operationKindLabel(operation.kind)}: {operation.path}
+                        <button onClick={() => onOpenFile(operation.path)} title={operation.path} type="button">
+                          <span>{operation.path}</span>
+                          <strong>開く</strong>
+                        </button>
+                        <div>
+                          <span>{operationKindLabel(operation.kind)}</span>
+                          <span>{operationStatusLabel(operation.status)}</span>
+                        </div>
+                        <small>{operation.summary}</small>
                       </li>
                     ))}
                   </ul>
