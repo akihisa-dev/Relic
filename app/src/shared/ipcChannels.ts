@@ -47,3 +47,7 @@ export const getFrontmatterTemplatesChannel = "app:getFrontmatterTemplates";
 export const saveFrontmatterTemplatesChannel = "app:saveFrontmatterTemplates";
 export const mergeFilesChannel = "tools:mergeFiles";
 export const splitFileByHeadingChannel = "tools:splitFileByHeading";
+export const getAIWorkspaceStateChannel = "aiWorkspace:getState";
+export const rebuildAIWorkspaceIndexChannel = "aiWorkspace:rebuildIndex";
+export const sendAIWorkspaceMessageChannel = "aiWorkspace:sendMessage";
+export const clearAIWorkspaceDataChannel = "aiWorkspace:clearData";

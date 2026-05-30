@@ -18,6 +18,7 @@ import { AppTitleBar } from "./components/AppTitleBar";
 import { I18nProvider } from "./i18n";
 import { createTranslator } from "./i18nModel";
 import { useActiveDocumentContext } from "./hooks/useActiveDocumentContext";
+import { useAIWorkspaceState } from "./hooks/useAIWorkspaceState";
 import { useAppKeyboardShortcuts } from "./hooks/useAppKeyboardShortcuts";
 import { useAppPaneFileActions } from "./hooks/useAppPaneFileActions";
 import { useAppRailNavigation } from "./hooks/useAppRailNavigation";
@@ -119,6 +120,18 @@ export function App(): ReactElement {
     [tabs]
   );
   const { isSplitClosing, toggleSplitWithMotion } = useSplitCloseMotion(isSplit, toggleSplit);
+  const {
+    aiWorkspaceState,
+    isAIWorkspaceLoading,
+    isAIWorkspaceSending,
+    rebuildAIWorkspaceIndex,
+    sendAIWorkspaceMessage,
+    clearAIWorkspaceData
+  } = useAIWorkspaceState({
+    isEnabled: Boolean(workspaceState?.activeWorkspace),
+    onError: setWorkspaceError,
+    workspaceId: workspaceState?.activeWorkspace?.id
+  });
 
   const toggleSidebar = useCallback((): void => {
     if (isWorkspaceRenameActive) return;
@@ -785,12 +798,15 @@ export function App(): ReactElement {
         />
 
         <AppEditorWorkspace
+          aiWorkspaceState={aiWorkspaceState}
           allFilePaths={existingMarkdownPaths}
           backlinks={backlinks}
           editorActionPulse={editorActionPulse}
           editorSettings={editorSettings}
           focusedPane={focusedPane}
           frontmatterCandidates={frontmatterCandidates}
+          isAIWorkspaceLoading={isAIWorkspaceLoading}
+          isAIWorkspaceSending={isAIWorkspaceSending}
           isLoadingBacklinks={isLoadingBacklinks}
           isRightPanelOpen={isEffectiveRightPanelOpen}
           isRightPanelResizing={isRightPanelResizing}
@@ -801,6 +817,9 @@ export function App(): ReactElement {
           leftEditorViewRef={leftEditorViewRef}
           leftPaneScrollHeading={leftPaneScrollHeading}
           onCreateFile={handleCreateNoteFromPane}
+          onAIWorkspaceClearData={() => { void clearAIWorkspaceData(); }}
+          onAIWorkspaceRebuildIndex={() => { void rebuildAIWorkspaceIndex(); }}
+          onAIWorkspaceSendMessage={(message) => { void sendAIWorkspaceMessage(message); }}
           onEditorAction={() => setEditorActionPulse((value) => value + 1)}
           onFileSaveError={setWorkspaceError}
           onFileSaved={handleFileSaved}
@@ -833,6 +852,7 @@ export function App(): ReactElement {
           rightPanelWidth={rightPanelWidth}
           setLinkContextMenu={setLinkContextMenu}
           userDefinedFields={userDefinedFields}
+          workspaceName={workspaceState?.activeWorkspace?.name}
           workspacePath={workspaceState?.activeWorkspace?.path}
         />
       </div>

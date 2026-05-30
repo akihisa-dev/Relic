@@ -2,6 +2,7 @@ import type { EditorView } from "@codemirror/view";
 import type { Dispatch, MouseEvent as ReactMouseEvent, MutableRefObject, ReactElement, ReactNode, SetStateAction } from "react";
 
 import type { Backlink, EditorSettings, UserDefinedField } from "../../shared/ipc";
+import type { AIWorkspaceState } from "../../shared/ipc";
 import type { ResolvedWikiLink } from "../../shared/links";
 import type { AppLinkContextMenu } from "../appLinks";
 import type { OutlineHeading } from "../editorDerivedState";
@@ -11,6 +12,7 @@ import { AppRightPanel } from "./AppRightPanel";
 import { PaneView } from "./PaneView";
 
 interface AppEditorWorkspaceProps {
+  aiWorkspaceState: AIWorkspaceState | null;
   allFilePaths: string[];
   backlinks: Backlink[];
   editorActionPulse: number;
@@ -18,6 +20,8 @@ interface AppEditorWorkspaceProps {
   focusedPane: PaneId;
   frontmatterCandidates: Record<string, string[]>;
   isLoadingBacklinks: boolean;
+  isAIWorkspaceLoading: boolean;
+  isAIWorkspaceSending: boolean;
   isRightPanelOpen: boolean;
   isRightPanelResizing: boolean;
   isSourceMode: boolean;
@@ -27,6 +31,9 @@ interface AppEditorWorkspaceProps {
   leftEditorViewRef: MutableRefObject<EditorView | null>;
   leftPaneScrollHeading?: string;
   onCreateFile: (name: string) => void;
+  onAIWorkspaceClearData: () => void;
+  onAIWorkspaceRebuildIndex: () => void;
+  onAIWorkspaceSendMessage: (message: string) => void;
   onEditorAction: () => void;
   onFileSaved: () => void;
   onFileSaveError: (message: string) => void;
@@ -49,10 +56,12 @@ interface AppEditorWorkspaceProps {
   rightPanelWidth: number;
   setLinkContextMenu: Dispatch<SetStateAction<AppLinkContextMenu | null>>;
   userDefinedFields: UserDefinedField[];
+  workspaceName?: string | null;
   workspacePath?: string | null;
 }
 
 export function AppEditorWorkspace({
+  aiWorkspaceState,
   allFilePaths,
   backlinks,
   editorActionPulse,
@@ -60,6 +69,8 @@ export function AppEditorWorkspace({
   focusedPane,
   frontmatterCandidates,
   isLoadingBacklinks,
+  isAIWorkspaceLoading,
+  isAIWorkspaceSending,
   isRightPanelOpen,
   isRightPanelResizing,
   isSourceMode,
@@ -69,6 +80,9 @@ export function AppEditorWorkspace({
   leftEditorViewRef,
   leftPaneScrollHeading,
   onCreateFile,
+  onAIWorkspaceClearData,
+  onAIWorkspaceRebuildIndex,
+  onAIWorkspaceSendMessage,
   onEditorAction,
   onFileSaved,
   onFileSaveError,
@@ -91,6 +105,7 @@ export function AppEditorWorkspace({
   rightPanelWidth,
   setLinkContextMenu,
   userDefinedFields,
+  workspaceName,
   workspacePath
 }: AppEditorWorkspaceProps): ReactElement {
   return (
@@ -156,10 +171,16 @@ export function AppEditorWorkspace({
         </div>
 
         <AppRightPanel
+          aiWorkspaceState={aiWorkspaceState}
           backlinks={backlinks}
+          isAIWorkspaceLoading={isAIWorkspaceLoading}
+          isAIWorkspaceSending={isAIWorkspaceSending}
           isLoadingBacklinks={isLoadingBacklinks}
           isOpen={isRightPanelOpen}
           isResizing={isRightPanelResizing}
+          onAIWorkspaceClearData={onAIWorkspaceClearData}
+          onAIWorkspaceRebuildIndex={onAIWorkspaceRebuildIndex}
+          onAIWorkspaceSendMessage={onAIWorkspaceSendMessage}
           onOpenFile={onOpenFile}
           onOpenWikiLink={onOpenWikiLink}
           onOutlineHeadingClick={onOutlineHeadingClick}
@@ -170,6 +191,7 @@ export function AppEditorWorkspace({
           rightPanelView={rightPanelView}
           setLinkContextMenu={setLinkContextMenu}
           width={rightPanelWidth}
+          workspaceName={workspaceName}
         />
       </div>
     </main>

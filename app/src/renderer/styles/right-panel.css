@@ -100,6 +100,170 @@
 }
 
 /* ────────────────────────────────── */
+/* AI workspace                       */
+/* ────────────────────────────────── */
+
+.ai-workspace-panel {
+  display: grid;
+  gap: 12px;
+  min-height: 100%;
+}
+
+.ai-workspace-header {
+  align-items: start;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+.ai-workspace-title {
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.ai-workspace-subtitle,
+.ai-workspace-status,
+.ai-workspace-note {
+  color: var(--text-3);
+  font-size: 12px;
+}
+
+.ai-workspace-header-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.ai-workspace-icon-button {
+  align-items: center;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-2);
+  display: inline-flex;
+  height: 26px;
+  justify-content: center;
+  min-width: 26px;
+  padding: 0 6px;
+}
+
+.ai-workspace-icon-button:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+
+.ai-workspace-status {
+  display: grid;
+  gap: 4px;
+}
+
+.ai-workspace-note {
+  background: var(--hover);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px;
+}
+
+.ai-workspace-messages {
+  display: grid;
+  gap: 10px;
+  min-height: 160px;
+}
+
+.ai-workspace-message {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+}
+
+.ai-workspace-message--user {
+  background: var(--hover);
+}
+
+.ai-workspace-message--assistant {
+  background: var(--popup-bg);
+}
+
+.ai-workspace-message-role {
+  color: var(--text-3);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.ai-workspace-message p {
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.ai-workspace-references {
+  display: grid;
+  gap: 6px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ai-workspace-references li {
+  display: grid;
+  gap: 3px;
+}
+
+.ai-workspace-references button {
+  background: transparent;
+  border: 0;
+  color: var(--link);
+  font-size: 12px;
+  overflow: hidden;
+  padding: 0;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ai-workspace-references span {
+  color: var(--text-3);
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ai-workspace-form {
+  display: grid;
+  gap: 8px;
+}
+
+.ai-workspace-form textarea {
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font: inherit;
+  min-height: 86px;
+  padding: 8px;
+  resize: vertical;
+}
+
+.ai-workspace-form button {
+  background: var(--accent);
+  border: 0;
+  border-radius: 6px;
+  color: #ffffff;
+  min-height: 30px;
+  padding: 0 10px;
+}
+
+.ai-workspace-form button:disabled {
+  background: var(--hover-strong);
+  color: var(--text-3);
+}
+
+/* ────────────────────────────────── */
 /* Right panel                        */
 /* ────────────────────────────────── */
 
