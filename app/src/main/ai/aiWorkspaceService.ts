@@ -123,6 +123,7 @@ export async function sendAIWorkspaceMessage(
     const codexResponse = await runCodexAIWorkspaceTurn({
       history: data.history.map((item) => ({ content: item.content, role: item.role })),
       message,
+      pendingOperations: data.operations.filter((operation) => operation.status === "pending"),
       referenceContents: await readReferenceContents(context.workspacePath, references),
       references,
       workspacePath: context.workspacePath
