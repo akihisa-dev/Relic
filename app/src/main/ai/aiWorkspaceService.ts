@@ -100,14 +100,14 @@ export async function sendAIWorkspaceMessage(
     const data = await ensureIndexed(context);
     if (shouldDiscardPendingOperations(message) && data.operations.some((operation) => operation.status === "pending")) {
       return discardAIWorkspaceOperations(context, {
-        operationIds: selectPendingOperationIdsFromMessage(data.operations, message)
+        operationIds: selectPendingOperationIdsFromMessage(data.operations, message, input.activeFilePath)
       });
     }
 
     if (shouldApplyPendingOperations(message) && data.operations.some((operation) => operation.status === "pending")) {
       return applyAIWorkspaceOperations(context, {
         dirtyFilePaths: input.dirtyFilePaths,
-        operationIds: selectPendingOperationIdsFromMessage(data.operations, message)
+        operationIds: selectPendingOperationIdsFromMessage(data.operations, message, input.activeFilePath)
       }, trashItem);
     }
 
@@ -431,10 +431,21 @@ function shouldDiscardPendingOperations(message: string): boolean {
 
 function selectPendingOperationIdsFromMessage(
   operations: AIWorkspaceFileOperation[],
-  message: string
+  message: string,
+  activeFilePath?: string | null
 ): string[] | undefined {
   const pendingOperations = operations.filter((operation) => operation.status === "pending");
   const normalizedMessage = normalizeOperationText(message);
+  const normalizedActiveFilePath = activeFilePath ? normalizeOperationText(activeFilePath) : "";
+
+  if (normalizedActiveFilePath && /(この|現在|開いている|今の).{0,8}ファイル/.test(message)) {
+    const activeOperationIds = pendingOperations
+      .filter((operation) => normalizeOperationText(operation.path) === normalizedActiveFilePath)
+      .map((operation) => operation.id);
+
+    return activeOperationIds.length > 0 ? activeOperationIds : ["__ai_workspace_no_matching_active_file__"];
+  }
+
   const matchedIds = pendingOperations
     .filter((operation) => operationPathCandidates(operation.path).some((candidate) => {
       const normalizedCandidate = normalizeOperationText(candidate);

@@ -836,7 +836,9 @@ export function App(): ReactElement {
           onAIWorkspaceConfirmMessagePreview={() => { void confirmAIWorkspaceMessage(); }}
           onAIWorkspaceRebuildIndex={() => { void rebuildAIWorkspaceIndex(); }}
           onAIWorkspaceDiscardOperations={(operationIds) => { void discardAIWorkspaceOperations(operationIds); }}
-          onAIWorkspaceSendMessage={(message) => { void sendAIWorkspaceMessage(message, dirtyMarkdownPaths); }}
+          onAIWorkspaceSendMessage={(message) => {
+            void sendAIWorkspaceMessage(message, dirtyMarkdownPaths, activeFileTabInFocusedPane?.path ?? null);
+          }}
           onEditorAction={() => setEditorActionPulse((value) => value + 1)}
           onFileSaveError={setWorkspaceError}
           onFileSaved={handleFileSaved}
