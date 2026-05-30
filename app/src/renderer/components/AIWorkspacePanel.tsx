@@ -82,7 +82,8 @@ export function AIWorkspacePanel({
             {pendingOperations.map((operation) => (
               <li key={operation.id}>
                 <button onClick={() => onOpenFile(operation.path)} title={operation.path} type="button">
-                  {operation.path}
+                  <span>{operation.path}</span>
+                  <strong>開く</strong>
                 </button>
                 <span>{operation.kind === "create" ? "作成" : operation.kind === "update" ? "編集" : "削除"}</span>
                 <small>{operation.summary}</small>
@@ -107,7 +108,8 @@ export function AIWorkspacePanel({
                   {item.references.map((reference) => (
                     <li key={`${item.id}-${reference.path}-${reference.line ?? 0}`}>
                       <button onClick={() => onOpenFile(reference.path)} title={reference.path} type="button">
-                        {reference.path}{reference.line ? `:${reference.line}` : ""}
+                        <span>{reference.path}{reference.line ? `:${reference.line}` : ""}</span>
+                        <strong>開く</strong>
                       </button>
                       <span>{reference.preview}</span>
                     </li>

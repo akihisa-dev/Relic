@@ -83,16 +83,20 @@ export async function sendAIWorkspaceMessage(
       references: [],
       role: "user"
     };
+    let codexError: string | null = null;
     const codexResponse = await runCodexAIWorkspaceTurn({
       history: data.history.map((item) => ({ content: item.content, role: item.role })),
       message,
       referenceContents: await readReferenceContents(context.workspacePath, references),
       references,
       workspacePath: context.workspacePath
-    }).catch(() => null);
+    }).catch((error) => {
+      codexError = error instanceof Error ? error.message : String(error);
+      return null;
+    });
     const operations = codexResponse?.operations ?? [];
     const assistantMessage: AIWorkspaceMessage = {
-      content: codexResponse?.message ?? buildAssistantPlaceholder(message, references),
+      content: codexResponse?.message ?? buildAssistantFallback(message, references, codexError),
       createdAt: new Date().toISOString(),
       id: createMessageId("assistant"),
       operations,
@@ -328,11 +332,30 @@ function blockedDirtyPaths(
   )];
 }
 
-function buildAssistantPlaceholder(message: string, references: AIWorkspaceReference[]): string {
+function buildAssistantFallback(
+  message: string,
+  references: AIWorkspaceReference[],
+  codexError: string | null
+): string {
+  if (codexError) {
+    const files = references.map((reference) => `- ${reference.path}`).join("\n");
+
+    return [
+      "Codex App ServerでAI処理を完了できませんでした。",
+      "そのため、今回はローカルのMarkdown検索結果だけを表示しています。Markdownの作成・編集・削除案は作っていません。",
+      "",
+      files ? `関連しそうなMarkdown:\n${files}` : "関連しそうなMarkdownは見つかりませんでした。",
+      "",
+      `受け取った依頼: ${message}`,
+      "",
+      `失敗理由: ${codexError}`
+    ].join("\n");
+  }
+
   if (references.length === 0) {
     return [
       "ワークスペース内のMarkdownを確認しましたが、この内容に直接一致する参照はまだ見つかりませんでした。",
-      "Codex App Serverとの実行接続は次の実装段階でこの会話経路に接続します。"
+      "Markdown変更案は作っていません。"
     ].join("\n");
   }
 
@@ -345,7 +368,7 @@ function buildAssistantPlaceholder(message: string, references: AIWorkspaceRefer
     "",
     `受け取った依頼: ${message}`,
     "",
-    "この会話経路にCodex App Serverを接続すると、ここからMarkdownの作成・編集・削除まで進められます。"
+    "Markdown変更案は作っていません。"
   ].join("\n");
 }
 

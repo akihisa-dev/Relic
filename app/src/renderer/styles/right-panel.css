@@ -221,21 +221,37 @@
 }
 
 .ai-workspace-operations li button {
+  align-items: center;
   background: transparent;
   border: 0;
   color: var(--link);
+  display: flex;
   font-size: 12px;
+  gap: 6px;
+  justify-content: space-between;
   overflow: hidden;
   padding: 0;
   text-align: left;
-  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.ai-workspace-operations li span,
+.ai-workspace-operations li > span,
 .ai-workspace-message-operations li {
   color: var(--text-2);
   font-size: 12px;
+}
+
+.ai-workspace-operations li button span {
+  color: var(--link);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ai-workspace-operations li button strong,
+.ai-workspace-references button strong {
+  color: var(--text-3);
+  font-size: 11px;
+  font-weight: 600;
 }
 
 .ai-workspace-operations li small {
@@ -294,18 +310,27 @@
 }
 
 .ai-workspace-references button {
+  align-items: center;
   background: transparent;
   border: 0;
   color: var(--link);
+  display: flex;
   font-size: 12px;
+  gap: 6px;
+  justify-content: space-between;
   overflow: hidden;
   padding: 0;
   text-align: left;
-  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.ai-workspace-references span {
+.ai-workspace-references button span {
+  color: var(--link);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ai-workspace-references li > span {
   color: var(--text-3);
   font-size: 12px;
   overflow: hidden;
