@@ -2,6 +2,7 @@ import { clipboard, contextBridge, ipcRenderer } from "electron";
 
 import {
   applySearchAndReplaceChannel,
+  clearAIWorkspaceDataChannel,
   createNewWorkspaceChannel,
   copyDiagramSvgChannel,
   type CopyDiagramSvgInput,
@@ -11,6 +12,7 @@ import {
   createMarkdownFileChannel,
   duplicateMarkdownFileChannel,
   getBacklinksChannel,
+  getAIWorkspaceStateChannel,
   getAppInfoChannel,
   getEditorSettingsChannel,
   getFrontmatterValueCandidatesChannel,
@@ -28,6 +30,7 @@ import {
   moveMarkdownFileChannel,
   openWorkspaceChannel,
   readMarkdownFileChannel,
+  rebuildAIWorkspaceIndexChannel,
   removeWorkspaceChannel,
   renameWorkspaceChannel,
   renameFolderChannel,
@@ -66,8 +69,10 @@ import {
   type SplitFileByHeadingInput,
   searchAndReplaceChannel,
   searchWorkspaceChannel,
+  sendAIWorkspaceMessageChannel,
   switchWorkspaceChannel,
   writeMarkdownFileChannel,
+  type AIWorkspaceState,
   type AppInfo,
   type CreateFolderInput,
   type CreateLinkedMarkdownFileInput,
@@ -76,6 +81,7 @@ import {
   type DuplicateMarkdownFileInput,
   type EditorSettings,
   type Backlink,
+  type ClearAIWorkspaceDataInput,
   type ChronicleCalendarSettings,
   type GetBacklinksInput,
   type ChartSettings,
@@ -88,6 +94,7 @@ import {
   type MoveMarkdownFileInput,
   type RelicApi,
   type ReadMarkdownFileInput,
+  type RebuildAIWorkspaceIndexInput,
   type RemoveWorkspaceInput,
   type RenameWorkspaceInput,
   type RenameFolderInput,
@@ -99,6 +106,7 @@ import {
   type SearchAndReplaceInput,
   type SearchAndReplaceMatch,
   type SearchWorkspaceInput,
+  type SendAIWorkspaceMessageInput,
   type SwitchWorkspaceInput,
   type WorkspaceChangedEvent,
   type WindowCloseRequestEvent,
@@ -135,6 +143,8 @@ const relicApi: RelicApi = {
     >,
   getBacklinks: (input: GetBacklinksInput) =>
     ipcRenderer.invoke(getBacklinksChannel, input) as Promise<RelicResult<Backlink[]>>,
+  getAIWorkspaceState: () =>
+    ipcRenderer.invoke(getAIWorkspaceStateChannel) as Promise<RelicResult<AIWorkspaceState>>,
   getAppInfo: () => ipcRenderer.invoke(getAppInfoChannel) as Promise<RelicResult<AppInfo>>,
   getEditorSettings: () =>
     ipcRenderer.invoke(getEditorSettingsChannel) as Promise<RelicResult<EditorSettings>>,
@@ -195,6 +205,12 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(searchWorkspaceChannel, input) as Promise<
       RelicResult<WorkspaceSearchResultSet>
     >,
+  rebuildAIWorkspaceIndex: (input: RebuildAIWorkspaceIndexInput) =>
+    ipcRenderer.invoke(rebuildAIWorkspaceIndexChannel, input) as Promise<RelicResult<AIWorkspaceState>>,
+  sendAIWorkspaceMessage: (input: SendAIWorkspaceMessageInput) =>
+    ipcRenderer.invoke(sendAIWorkspaceMessageChannel, input) as Promise<RelicResult<AIWorkspaceState>>,
+  clearAIWorkspaceData: (input: ClearAIWorkspaceDataInput) =>
+    ipcRenderer.invoke(clearAIWorkspaceDataChannel, input) as Promise<RelicResult<AIWorkspaceState>>,
   switchWorkspace: (input: SwitchWorkspaceInput) =>
     ipcRenderer.invoke(switchWorkspaceChannel, input) as Promise<RelicResult<WorkspaceState>>,
   writeMarkdownFile: (input: WriteMarkdownFileInput) =>

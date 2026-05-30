@@ -1,6 +1,7 @@
 import { app, BrowserWindow, Menu, ipcMain, shell } from "electron";
 import path from "node:path";
 
+import { registerAIWorkspaceHandlers } from "./ipc/aiWorkspaceHandlers";
 import { registerAppHandlers } from "./ipc/appHandlers";
 import { registerEditorHandlers } from "./ipc/editorHandlers";
 import { registerFileHandlers } from "./ipc/fileHandlers";
@@ -154,6 +155,7 @@ function isAllowedExternalUrl(url: string): boolean {
 }
 
 app.whenReady().then(() => {
+  registerAIWorkspaceHandlers();
   registerAppHandlers();
   registerEditorHandlers();
   registerFileHandlers();

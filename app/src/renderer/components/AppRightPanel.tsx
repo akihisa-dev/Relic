@@ -7,13 +7,21 @@ import { markdownLinkForPath } from "../appLinks";
 import type { OutlineHeading } from "../editorDerivedState";
 import { useT } from "../i18n";
 import type { RightPanelView } from "../store/uiStore";
+import type { AIWorkspaceState } from "../../shared/ipc";
+import { AIWorkspacePanel } from "./AIWorkspacePanel";
 import { fixedMenuPosition } from "./railNavigationModel";
 
 interface AppRightPanelProps {
+  aiWorkspaceState: AIWorkspaceState | null;
   backlinks: Backlink[];
+  isAIWorkspaceLoading: boolean;
+  isAIWorkspaceSending: boolean;
   isLoadingBacklinks: boolean;
   isOpen: boolean;
   isResizing: boolean;
+  onAIWorkspaceClearData: () => void;
+  onAIWorkspaceRebuildIndex: () => void;
+  onAIWorkspaceSendMessage: (message: string) => void;
   onOpenFile: (path: string) => void;
   onOpenWikiLink: (target: string, heading?: string) => void;
   onOutlineHeadingClick: (heading: string) => void;
@@ -24,13 +32,20 @@ interface AppRightPanelProps {
   rightPanelView: RightPanelView;
   setLinkContextMenu: Dispatch<SetStateAction<AppLinkContextMenu | null>>;
   width: number;
+  workspaceName?: string | null;
 }
 
 export function AppRightPanel({
+  aiWorkspaceState,
   backlinks,
+  isAIWorkspaceLoading,
+  isAIWorkspaceSending,
   isLoadingBacklinks,
   isOpen,
   isResizing,
+  onAIWorkspaceClearData,
+  onAIWorkspaceRebuildIndex,
+  onAIWorkspaceSendMessage,
   onOpenFile,
   onOpenWikiLink,
   onOutlineHeadingClick,
@@ -40,13 +55,14 @@ export function AppRightPanel({
   outgoingLinksLimited,
   rightPanelView,
   setLinkContextMenu,
-  width
+  width,
+  workspaceName
 }: AppRightPanelProps): ReactElement {
   const t = useT();
 
   return (
     <aside
-      aria-label={rightPanelView === "outline" ? t("pane.outline") : t("pane.links")}
+      aria-label={rightPanelView === "ai" ? "AI" : rightPanelView === "outline" ? t("pane.outline") : t("pane.links")}
       aria-hidden={!isOpen}
       className={`right-panel${isOpen ? "" : " right-panel--closed"}${isResizing ? " right-panel--resizing" : ""}`}
       style={{ flexBasis: isOpen ? width : 0, width: isOpen ? width : 0 }}
@@ -58,7 +74,18 @@ export function AppRightPanel({
         type="button"
       />
       <div className={`sidebar-body right-panel-content right-panel-content--${rightPanelView}`}>
-      {rightPanelView === "outline" ? (
+      {rightPanelView === "ai" ? (
+        <AIWorkspacePanel
+          isLoading={isAIWorkspaceLoading}
+          isSending={isAIWorkspaceSending}
+          onClearData={onAIWorkspaceClearData}
+          onOpenFile={onOpenFile}
+          onRebuildIndex={onAIWorkspaceRebuildIndex}
+          onSendMessage={onAIWorkspaceSendMessage}
+          state={aiWorkspaceState}
+          workspaceName={workspaceName}
+        />
+      ) : rightPanelView === "outline" ? (
         outlineHeadings.length > 0 ? (
           <ul className="outline-list">
             {outlineHeadings.map((heading) => (

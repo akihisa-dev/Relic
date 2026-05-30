@@ -28,6 +28,12 @@ import type {
   SplitFileByHeadingInput
 } from "./ipcTools";
 import type {
+  AIWorkspaceState,
+  ClearAIWorkspaceDataInput,
+  RebuildAIWorkspaceIndexInput,
+  SendAIWorkspaceMessageInput
+} from "./ipcAiWorkspace";
+import type {
   AppInfo,
   Backlink,
   CreateFolderInput,
@@ -134,6 +140,10 @@ export interface RelicApi {
   saveFrontmatterTemplates: (input: FrontmatterTemplate[]) => Promise<RelicResult<void>>;
   mergeFiles: (input: MergeFilesInput) => Promise<RelicResult<string>>;
   splitFileByHeading: (input: SplitFileByHeadingInput) => Promise<RelicResult<string[]>>;
+  getAIWorkspaceState: () => Promise<RelicResult<AIWorkspaceState>>;
+  rebuildAIWorkspaceIndex: (input: RebuildAIWorkspaceIndexInput) => Promise<RelicResult<AIWorkspaceState>>;
+  sendAIWorkspaceMessage: (input: SendAIWorkspaceMessageInput) => Promise<RelicResult<AIWorkspaceState>>;
+  clearAIWorkspaceData: (input: ClearAIWorkspaceDataInput) => Promise<RelicResult<AIWorkspaceState>>;
   onWorkspaceChanged: (callback: (event: WorkspaceChangedEvent) => void) => () => void;
   onWindowCloseRequested: (callback: (event: WindowCloseRequestEvent) => void) => () => void;
   respondToWindowCloseRequest: (input: WindowCloseResponseInput) => void;
