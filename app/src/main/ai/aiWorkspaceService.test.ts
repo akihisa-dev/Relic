@@ -176,6 +176,7 @@ describe("sendAIWorkspaceMessage", () => {
       message: "変更案を作成します。",
       operations: [
         createOperation("update", "README.md", "# Auth\nUpdated"),
+        createOperation("create", "README.md", "# Duplicate"),
         createOperation("create", "../outside.md", "# Outside"),
         createOperation("create", "notes.txt", "text"),
         createOperation("delete", "missing.md")
@@ -191,6 +192,7 @@ describe("sendAIWorkspaceMessage", () => {
       expect(result.value.history.at(-1)?.content).toContain("../outside.md");
       expect(result.value.history.at(-1)?.content).toContain("notes.txt");
       expect(result.value.history.at(-1)?.content).toContain("missing.md");
+      expect(result.value.history.at(-1)?.content).toContain("同じパスのMarkdownがすでにある");
     }
   });
 
