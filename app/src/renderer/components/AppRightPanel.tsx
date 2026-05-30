@@ -21,11 +21,11 @@ interface AppRightPanelProps {
   isOpen: boolean;
   isResizing: boolean;
   onAIWorkspaceClearData: () => void;
-  onAIWorkspaceApplyOperations: () => void;
+  onAIWorkspaceApplyOperations: (operationIds?: string[]) => void;
   onAIWorkspaceCancelMessagePreview: () => void;
   onAIWorkspaceConfirmMessagePreview: () => void;
   onAIWorkspaceRebuildIndex: () => void;
-  onAIWorkspaceDiscardOperations: () => void;
+  onAIWorkspaceDiscardOperations: (operationIds?: string[]) => void;
   onAIWorkspaceSendMessage: (message: string) => void;
   onOpenFile: (path: string) => void;
   onOpenWikiLink: (target: string, heading?: string) => void;

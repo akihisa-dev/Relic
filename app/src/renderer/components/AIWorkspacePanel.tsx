@@ -8,11 +8,11 @@ interface AIWorkspacePanelProps {
   isLoading: boolean;
   isSending: boolean;
   messagePreview: AIWorkspaceMessagePreview | null;
-  onApplyOperations: () => void;
+  onApplyOperations: (operationIds?: string[]) => void;
   onCancelMessagePreview: () => void;
   onClearData: () => void;
   onConfirmMessagePreview: () => void;
-  onDiscardOperations: () => void;
+  onDiscardOperations: (operationIds?: string[]) => void;
   onOpenFile: (path: string) => void;
   onRebuildIndex: () => void;
   onSendMessage: (message: string) => void;
@@ -114,10 +114,10 @@ export function AIWorkspacePanel({
           <div className="ai-workspace-operations-header">
             <span>作業中の変更</span>
             <div className="ai-workspace-operations-actions">
-              <button disabled={isSending} onClick={onDiscardOperations} type="button">
+              <button disabled={isSending} onClick={() => onDiscardOperations()} type="button">
                 取りやめ
               </button>
-              <button disabled={isSending} onClick={onApplyOperations} type="button">
+              <button disabled={isSending} onClick={() => onApplyOperations()} type="button">
                 反映
               </button>
             </div>
@@ -131,6 +131,14 @@ export function AIWorkspacePanel({
                 </button>
                 <span>{operation.kind === "create" ? "作成" : operation.kind === "update" ? "編集" : "削除"}</span>
                 <small>{operation.summary}</small>
+                <div className="ai-workspace-operation-actions">
+                  <button disabled={isSending} onClick={() => onDiscardOperations([operation.id])} type="button">
+                    この変更を取りやめ
+                  </button>
+                  <button disabled={isSending} onClick={() => onApplyOperations([operation.id])} type="button">
+                    この変更を反映
+                  </button>
+                </div>
                 {operation.kind !== "delete" && operation.content ? (
                   <details className="ai-workspace-operation-preview">
                     <summary>Markdown内容を確認</summary>

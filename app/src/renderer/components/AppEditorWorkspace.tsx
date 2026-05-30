@@ -33,11 +33,11 @@ interface AppEditorWorkspaceProps {
   leftPaneScrollHeading?: string;
   onCreateFile: (name: string) => void;
   onAIWorkspaceClearData: () => void;
-  onAIWorkspaceApplyOperations: () => void;
+  onAIWorkspaceApplyOperations: (operationIds?: string[]) => void;
   onAIWorkspaceCancelMessagePreview: () => void;
   onAIWorkspaceConfirmMessagePreview: () => void;
   onAIWorkspaceRebuildIndex: () => void;
-  onAIWorkspaceDiscardOperations: () => void;
+  onAIWorkspaceDiscardOperations: (operationIds?: string[]) => void;
   onAIWorkspaceSendMessage: (message: string) => void;
   onEditorAction: () => void;
   onFileSaved: () => void;
