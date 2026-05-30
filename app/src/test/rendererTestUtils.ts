@@ -119,6 +119,16 @@ export function makeRelicApi(overrides: Partial<typeof window.relic> = {}): type
         pendingOperations: []
       }
     }),
+    previewAIWorkspaceMessage: vi.fn().mockResolvedValue({
+      ok: true,
+      value: {
+        message: "test",
+        references: [],
+        requiresExternalAI: true,
+        skippedLargeFiles: [],
+        unreadableFiles: []
+      }
+    }),
     renameFolder: vi.fn(),
     renameMarkdownFile: vi.fn(),
     renameWorkspace: vi.fn().mockResolvedValue({

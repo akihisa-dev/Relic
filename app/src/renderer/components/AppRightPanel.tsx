@@ -7,7 +7,7 @@ import { markdownLinkForPath } from "../appLinks";
 import type { OutlineHeading } from "../editorDerivedState";
 import { useT } from "../i18n";
 import type { RightPanelView } from "../store/uiStore";
-import type { AIWorkspaceState } from "../../shared/ipc";
+import type { AIWorkspaceMessagePreview, AIWorkspaceState } from "../../shared/ipc";
 import { AIWorkspacePanel } from "./AIWorkspacePanel";
 import { fixedMenuPosition } from "./railNavigationModel";
 
@@ -16,11 +16,14 @@ interface AppRightPanelProps {
   backlinks: Backlink[];
   isAIWorkspaceLoading: boolean;
   isAIWorkspaceSending: boolean;
+  aiWorkspaceMessagePreview: AIWorkspaceMessagePreview | null;
   isLoadingBacklinks: boolean;
   isOpen: boolean;
   isResizing: boolean;
   onAIWorkspaceClearData: () => void;
   onAIWorkspaceApplyOperations: () => void;
+  onAIWorkspaceCancelMessagePreview: () => void;
+  onAIWorkspaceConfirmMessagePreview: () => void;
   onAIWorkspaceRebuildIndex: () => void;
   onAIWorkspaceDiscardOperations: () => void;
   onAIWorkspaceSendMessage: (message: string) => void;
@@ -42,12 +45,15 @@ export function AppRightPanel({
   backlinks,
   isAIWorkspaceLoading,
   isAIWorkspaceSending,
+  aiWorkspaceMessagePreview,
   isLoadingBacklinks,
   isOpen,
   isResizing,
   onAIWorkspaceClearData,
   onAIWorkspaceApplyOperations,
+  onAIWorkspaceCancelMessagePreview,
   onAIWorkspaceRebuildIndex,
+  onAIWorkspaceConfirmMessagePreview,
   onAIWorkspaceDiscardOperations,
   onAIWorkspaceSendMessage,
   onOpenFile,
@@ -82,8 +88,11 @@ export function AppRightPanel({
         <AIWorkspacePanel
           isLoading={isAIWorkspaceLoading}
           isSending={isAIWorkspaceSending}
+          messagePreview={aiWorkspaceMessagePreview}
           onClearData={onAIWorkspaceClearData}
           onApplyOperations={onAIWorkspaceApplyOperations}
+          onCancelMessagePreview={onAIWorkspaceCancelMessagePreview}
+          onConfirmMessagePreview={onAIWorkspaceConfirmMessagePreview}
           onDiscardOperations={onAIWorkspaceDiscardOperations}
           onOpenFile={onOpenFile}
           onRebuildIndex={onAIWorkspaceRebuildIndex}

@@ -41,6 +41,18 @@ export interface SendAIWorkspaceMessageInput {
   message: string;
 }
 
+export interface PreviewAIWorkspaceMessageInput {
+  message: string;
+}
+
+export interface AIWorkspaceMessagePreview {
+  message: string;
+  references: AIWorkspaceReference[];
+  requiresExternalAI: boolean;
+  skippedLargeFiles: AIWorkspaceSkippedFile[];
+  unreadableFiles: AIWorkspaceSkippedFile[];
+}
+
 export interface RebuildAIWorkspaceIndexInput {
   force?: boolean;
 }

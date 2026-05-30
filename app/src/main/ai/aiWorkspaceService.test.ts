@@ -7,7 +7,12 @@ vi.mock("./codexAppServerClient", () => ({
   runCodexAIWorkspaceTurn: vi.fn()
 }));
 
-import { applyAIWorkspaceOperations, discardAIWorkspaceOperations, sendAIWorkspaceMessage } from "./aiWorkspaceService";
+import {
+  applyAIWorkspaceOperations,
+  discardAIWorkspaceOperations,
+  previewAIWorkspaceMessage,
+  sendAIWorkspaceMessage
+} from "./aiWorkspaceService";
 import { writeAIWorkspaceData, type AIWorkspaceData } from "./aiWorkspaceData";
 import { runCodexAIWorkspaceTurn } from "./codexAppServerClient";
 
@@ -104,6 +109,37 @@ describe("sendAIWorkspaceMessage", () => {
       expect(lastMessage?.content).toContain("Codex App ServerでAI処理を完了できませんでした。");
       expect(lastMessage?.content).toContain("失敗理由: connection failed");
       expect(result.value.pendingOperations).toEqual([]);
+    }
+  });
+});
+
+describe("previewAIWorkspaceMessage", () => {
+  it("returns Markdown references before calling Codex App Server", async () => {
+    await writeFile(path.join(workspacePath, "README.md"), "# Auth\nLogin spec", "utf8");
+
+    const result = await previewAIWorkspaceMessage(context(), { message: "Login spec" });
+
+    expect(result.ok).toBe(true);
+    expect(runCodexAIWorkspaceTurn).not.toHaveBeenCalled();
+    if (result.ok) {
+      expect(result.value.requiresExternalAI).toBe(true);
+      expect(result.value.references).toEqual([
+        expect.objectContaining({ path: "README.md", preview: "# Auth" })
+      ]);
+    }
+  });
+
+  it("does not require external AI for natural language apply commands", async () => {
+    await writeData({
+      operations: [createOperation("update", "draft.md", "# Draft\nupdated")]
+    });
+
+    const result = await previewAIWorkspaceMessage(context(), { message: "それ反映して" });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.requiresExternalAI).toBe(false);
+      expect(result.value.references).toEqual([]);
     }
   });
 });

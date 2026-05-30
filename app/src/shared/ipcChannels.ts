@@ -49,6 +49,7 @@ export const mergeFilesChannel = "tools:mergeFiles";
 export const splitFileByHeadingChannel = "tools:splitFileByHeading";
 export const getAIWorkspaceStateChannel = "aiWorkspace:getState";
 export const rebuildAIWorkspaceIndexChannel = "aiWorkspace:rebuildIndex";
+export const previewAIWorkspaceMessageChannel = "aiWorkspace:previewMessage";
 export const sendAIWorkspaceMessageChannel = "aiWorkspace:sendMessage";
 export const applyAIWorkspaceOperationsChannel = "aiWorkspace:applyOperations";
 export const discardAIWorkspaceOperationsChannel = "aiWorkspace:discardOperations";

@@ -2,7 +2,7 @@ import type { EditorView } from "@codemirror/view";
 import type { Dispatch, MouseEvent as ReactMouseEvent, MutableRefObject, ReactElement, ReactNode, SetStateAction } from "react";
 
 import type { Backlink, EditorSettings, UserDefinedField } from "../../shared/ipc";
-import type { AIWorkspaceState } from "../../shared/ipc";
+import type { AIWorkspaceMessagePreview, AIWorkspaceState } from "../../shared/ipc";
 import type { ResolvedWikiLink } from "../../shared/links";
 import type { AppLinkContextMenu } from "../appLinks";
 import type { OutlineHeading } from "../editorDerivedState";
@@ -13,6 +13,7 @@ import { PaneView } from "./PaneView";
 
 interface AppEditorWorkspaceProps {
   aiWorkspaceState: AIWorkspaceState | null;
+  aiWorkspaceMessagePreview: AIWorkspaceMessagePreview | null;
   allFilePaths: string[];
   backlinks: Backlink[];
   editorActionPulse: number;
@@ -33,6 +34,8 @@ interface AppEditorWorkspaceProps {
   onCreateFile: (name: string) => void;
   onAIWorkspaceClearData: () => void;
   onAIWorkspaceApplyOperations: () => void;
+  onAIWorkspaceCancelMessagePreview: () => void;
+  onAIWorkspaceConfirmMessagePreview: () => void;
   onAIWorkspaceRebuildIndex: () => void;
   onAIWorkspaceDiscardOperations: () => void;
   onAIWorkspaceSendMessage: (message: string) => void;
@@ -64,6 +67,7 @@ interface AppEditorWorkspaceProps {
 
 export function AppEditorWorkspace({
   aiWorkspaceState,
+  aiWorkspaceMessagePreview,
   allFilePaths,
   backlinks,
   editorActionPulse,
@@ -84,8 +88,10 @@ export function AppEditorWorkspace({
   onCreateFile,
   onAIWorkspaceClearData,
   onAIWorkspaceApplyOperations,
+  onAIWorkspaceCancelMessagePreview,
   onAIWorkspaceRebuildIndex,
   onAIWorkspaceDiscardOperations,
+  onAIWorkspaceConfirmMessagePreview,
   onAIWorkspaceSendMessage,
   onEditorAction,
   onFileSaved,
@@ -176,6 +182,7 @@ export function AppEditorWorkspace({
 
         <AppRightPanel
           aiWorkspaceState={aiWorkspaceState}
+          aiWorkspaceMessagePreview={aiWorkspaceMessagePreview}
           backlinks={backlinks}
           isAIWorkspaceLoading={isAIWorkspaceLoading}
           isAIWorkspaceSending={isAIWorkspaceSending}
@@ -184,6 +191,8 @@ export function AppEditorWorkspace({
           isResizing={isRightPanelResizing}
           onAIWorkspaceClearData={onAIWorkspaceClearData}
           onAIWorkspaceApplyOperations={onAIWorkspaceApplyOperations}
+          onAIWorkspaceCancelMessagePreview={onAIWorkspaceCancelMessagePreview}
+          onAIWorkspaceConfirmMessagePreview={onAIWorkspaceConfirmMessagePreview}
           onAIWorkspaceRebuildIndex={onAIWorkspaceRebuildIndex}
           onAIWorkspaceDiscardOperations={onAIWorkspaceDiscardOperations}
           onAIWorkspaceSendMessage={onAIWorkspaceSendMessage}
