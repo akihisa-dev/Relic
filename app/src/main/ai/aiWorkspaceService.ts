@@ -597,12 +597,32 @@ function validateOperationPath(workspacePath: string, operationPath: string): Re
     return fail("AI_WORKSPACE_OPERATION_PATH_INVALID", "AI変更案はMarkdownファイルだけを対象にできます。");
   }
 
-  if (path.isAbsolute(normalizedPath) || normalizedPath.split("/").includes("..")) {
+  const relativePath = operationRelativePath(workspacePath, normalizedPath);
+  if (!relativePath.ok) return relativePath;
+
+  if (relativePath.value.split("/").includes("..")) {
     return fail("AI_WORKSPACE_OPERATION_PATH_INVALID", "AI変更案のパスがワークスペース外を指しています。");
   }
 
-  const resolved = resolveWorkspaceRelativePath(workspacePath, normalizedPath);
+  const resolved = resolveWorkspaceRelativePath(workspacePath, relativePath.value);
   if (!resolved.ok) return resolved;
+
+  return ok(relativePath.value);
+}
+
+function operationRelativePath(workspacePath: string, normalizedPath: string): RelicResult<string> {
+  if (path.isAbsolute(normalizedPath)) {
+    const relativePath = path.relative(workspacePath, normalizedPath);
+    if (relativePath === "" || relativePath.startsWith("..") || path.isAbsolute(relativePath)) {
+      return fail("AI_WORKSPACE_OPERATION_PATH_INVALID", "AI変更案のパスがワークスペース外を指しています。");
+    }
+
+    return ok(relativePath.split(path.sep).join("/"));
+  }
+
+  if (path.win32.isAbsolute(normalizedPath)) {
+    return fail("AI_WORKSPACE_OPERATION_PATH_INVALID", "AI変更案のパスがワークスペース外を指しています。");
+  }
 
   return ok(normalizedPath);
 }
