@@ -43,9 +43,15 @@ export function useEditorAutoSave({
   saveStatusByTabId: Record<string, EditorSaveStatus>;
 } {
   const [queueSnapshot, setQueueSnapshot] = useState(0);
-  const queuesRef = useRef<Map<string, SaveQueue>>(new Map());
+  const queuesRef = useRef<Map<string, SaveQueue> | null>(null);
   const onSavedRef = useRef(onSaved);
   const onSaveErrorRef = useRef(onSaveError);
+
+  if (queuesRef.current === null) {
+    queuesRef.current = new Map();
+  }
+
+  const queues = queuesRef.current;
 
   onSavedRef.current = onSaved;
   onSaveErrorRef.current = onSaveError;
@@ -55,7 +61,7 @@ export function useEditorAutoSave({
   }, []);
 
   const queueForPath = useCallback((path: string): SaveQueue => {
-    const existing = queuesRef.current.get(path);
+    const existing = queues.get(path);
     if (existing) return existing;
 
     const queue: SaveQueue = {
@@ -65,9 +71,9 @@ export function useEditorAutoSave({
       timer: null,
       waiters: []
     };
-    queuesRef.current.set(path, queue);
+    queues.set(path, queue);
     return queue;
-  }, []);
+  }, [queues]);
 
   const wakeWaiters = useCallback((queue: SaveQueue): void => {
     if (queue.saving || queue.pending || queue.timer) return;
@@ -170,15 +176,15 @@ export function useEditorAutoSave({
     const openFileTabs = Object.values(tabs).filter((tab): tab is FileTab => tab.kind === "file");
     const openPaths = new Set(openFileTabs.map((tab) => tab.path));
 
-    for (const [path, queue] of queuesRef.current.entries()) {
+    for (const [path, queue] of queues.entries()) {
       if (openPaths.has(path)) continue;
 
       if (queue.timer) clearTimeout(queue.timer);
-      queuesRef.current.delete(path);
+      queues.delete(path);
     }
 
     for (const tab of openFileTabs) {
-      const queue = queuesRef.current.get(tab.path);
+      const queue = queues.get(tab.path);
 
       if (tab.externalConflict || tab.content === tab.savedContent) {
         if (queue?.timer) {
@@ -197,17 +203,16 @@ export function useEditorAutoSave({
 
       scheduleSave({ content: tab.content, path: tab.path, tabId: tab.id }, AUTO_SAVE_DELAY_MS);
     }
-  }, [notifyQueueChanged, scheduleSave, tabs, wakeWaiters]);
+  }, [notifyQueueChanged, queues, scheduleSave, tabs, wakeWaiters]);
 
   useEffect(() => {
     return () => {
-      const queues = queuesRef.current;
       for (const queue of queues.values()) {
         if (queue.timer) clearTimeout(queue.timer);
       }
       queues.clear();
     };
-  }, []);
+  }, [queues]);
 
   const flushTabsBeforeClose = useCallback(async (tabIds: string[]): Promise<SaveBeforeCloseResult> => {
     const state = useEditorStore.getState();
@@ -235,12 +240,12 @@ export function useEditorAutoSave({
     });
 
     if (unsaved) {
-      const queue = queuesRef.current.get(unsaved.path);
+      const queue = queues.get(unsaved.path);
       return { ok: false, message: queue?.lastError ?? "ファイルを保存できませんでした。" };
     }
 
     return { ok: true };
-  }, [conflictCloseBlockedMessage, scheduleSave, waitForIdle]);
+  }, [conflictCloseBlockedMessage, queues, scheduleSave, waitForIdle]);
 
   const saveStatusByTabId = useMemo(() => {
     void queueSnapshot;
@@ -249,7 +254,7 @@ export function useEditorAutoSave({
       if (tab.kind !== "file") return [];
       if (tab.externalConflict) return [[tab.id, "externalConflict" satisfies EditorSaveStatus]];
 
-      const queue = queuesRef.current.get(tab.path);
+      const queue = queues.get(tab.path);
       if (queue?.saving) return [[tab.id, "saving" satisfies EditorSaveStatus]];
       if (queue?.lastError) return [[tab.id, "error" satisfies EditorSaveStatus]];
       if (tab.content !== tab.savedContent) return [[tab.id, "dirty" satisfies EditorSaveStatus]];
@@ -258,7 +263,7 @@ export function useEditorAutoSave({
     });
 
     return Object.fromEntries(entries);
-  }, [queueSnapshot, tabs]);
+  }, [queueSnapshot, queues, tabs]);
 
   return {
     flushTabsBeforeClose,
