@@ -37,6 +37,7 @@ export function AIWorkspacePanel({
 }: AIWorkspacePanelProps): ReactElement {
   const [message, setMessage] = useState("");
   const [panelView, setPanelView] = useState<AIWorkspacePanelView>("chat");
+  const [isClearDataConfirming, setIsClearDataConfirming] = useState(false);
   const history = state?.history ?? [];
   const operationHistory = state?.operationHistory ?? [];
   const pendingOperations = state?.pendingOperations ?? [];
@@ -62,11 +63,36 @@ export function AIWorkspacePanel({
           <button className="ai-workspace-icon-button" onClick={onRebuildIndex} title="インデックスを更新" type="button">
             ↻
           </button>
-          <button className="ai-workspace-icon-button" onClick={onClearData} title="AIデータを削除" type="button">
+          <button
+            className="ai-workspace-icon-button"
+            onClick={() => setIsClearDataConfirming(true)}
+            title="AIデータを削除"
+            type="button"
+          >
             ×
           </button>
         </div>
       </div>
+
+      {isClearDataConfirming ? (
+        <section className="ai-workspace-clear-confirm">
+          <p>AIデータを削除します。Markdownファイルは変更しません。</p>
+          <div>
+            <button onClick={() => setIsClearDataConfirming(false)} type="button">
+              キャンセル
+            </button>
+            <button
+              onClick={() => {
+                setIsClearDataConfirming(false);
+                onClearData();
+              }}
+              type="button"
+            >
+              削除
+            </button>
+          </div>
+        </section>
+      ) : null}
 
       <div className="ai-workspace-status">
         <span>{state?.codexAppServerAvailable ? "Codex App Server: 利用可能" : "Codex App Server: 未検出"}</span>

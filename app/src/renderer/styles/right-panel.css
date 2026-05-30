@@ -157,6 +157,44 @@
   gap: 4px;
 }
 
+.ai-workspace-clear-confirm {
+  background: var(--hover);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  display: grid;
+  gap: 8px;
+  padding: 8px;
+}
+
+.ai-workspace-clear-confirm p {
+  color: var(--text-2);
+  font-size: 12px;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.ai-workspace-clear-confirm div {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.ai-workspace-clear-confirm button {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-2);
+  font-size: 12px;
+  min-height: 26px;
+  padding: 0 8px;
+}
+
+.ai-workspace-clear-confirm button:last-child {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #ffffff;
+}
+
 .ai-workspace-note {
   background: var(--hover);
   border: 1px solid var(--border);
