@@ -218,6 +218,32 @@ describe("sendAIWorkspaceMessage", () => {
     }));
   });
 
+  it("passes unsaved active Markdown content to Codex App Server for current-file messages", async () => {
+    await writeFile(path.join(workspacePath, "README.md"), "# Saved\nold content", "utf8");
+    vi.mocked(runCodexAIWorkspaceTurn).mockResolvedValueOnce({
+      message: "現在の本文を整理します。",
+      operations: []
+    });
+
+    const result = await sendAIWorkspaceMessage(context(), {
+      activeFileContent: "# Unsaved\nnew draft",
+      activeFilePath: "README.md",
+      message: "このファイルを整理して"
+    });
+
+    expect(result.ok).toBe(true);
+    expect(runCodexAIWorkspaceTurn).toHaveBeenCalledWith(expect.objectContaining({
+      referenceContents: [expect.objectContaining({
+        content: "# Unsaved\nnew draft",
+        path: "README.md"
+      })],
+      references: [expect.objectContaining({
+        path: "README.md",
+        preview: "# Unsaved"
+      })]
+    }));
+  });
+
   it("replaces old pending operations for the same Markdown path with new proposals", async () => {
     await writeFile(path.join(workspacePath, "README.md"), "# Auth\nLogin spec", "utf8");
     await writeData({
