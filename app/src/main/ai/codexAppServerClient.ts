@@ -240,7 +240,7 @@ class CodexAppServerClient {
   }
 }
 
-function buildPrompt(input: RunCodexAIWorkspaceTurnInput): string {
+export function buildPrompt(input: RunCodexAIWorkspaceTurnInput): string {
   const history = input.history.slice(-8)
     .map((message) => `${message.role === "user" ? "ユーザー" : "AI"}: ${message.content}`)
     .join("\n\n");
@@ -288,7 +288,7 @@ function formatPendingOperationForPrompt(operation: AIWorkspaceFileOperation): s
   ];
 
   if (operation.kind !== "delete" && operation.content) {
-    lines.push("```markdown", operation.content.slice(0, 12_000), "```");
+    lines.push("```markdown", operation.content, "```");
   }
 
   return lines.join("\n");
