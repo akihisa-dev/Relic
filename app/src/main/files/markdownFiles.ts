@@ -61,7 +61,8 @@ export async function createMarkdownFile(
 
 export async function createMarkdownFileAtPath(
   workspacePath: string,
-  relativePath: string
+  relativePath: string,
+  content = ""
 ): Promise<RelicResult<MarkdownFileContent>> {
   const normalizedRelativePath = toWorkspaceRelativePath(relativePath.replace(/\\/g, "/"));
 
@@ -87,7 +88,7 @@ export async function createMarkdownFileAtPath(
 
   try {
     await mkdir(path.dirname(absoluteFilePath.value), { recursive: true });
-    await atomicWriteNewTextFile(absoluteFilePath.value, "");
+    await atomicWriteNewTextFile(absoluteFilePath.value, content);
 
     return readMarkdownFile(workspacePath, normalizedRelativePath);
   } catch (error) {

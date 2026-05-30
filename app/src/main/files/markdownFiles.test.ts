@@ -100,6 +100,21 @@ describe("createMarkdownFileAtPath", () => {
     await expect(readdir(path.join(workspacePath, "folder"))).resolves.toEqual(["新規ノート.md"]);
   });
 
+  it("本文を指定してMarkdownファイルを作成する", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-create-linked-file-"));
+    temporaryPaths.push(workspacePath);
+
+    await expect(createMarkdownFileAtPath(workspacePath, "folder/本文あり.md", "# 本文\ncontent")).resolves.toEqual({
+      ok: true,
+      value: {
+        content: "# 本文\ncontent",
+        name: "本文あり",
+        path: "folder/本文あり.md"
+      }
+    });
+    await expect(readFile(path.join(workspacePath, "folder", "本文あり.md"), "utf8")).resolves.toBe("# 本文\ncontent");
+  });
+
   it("ワークスペース外とMarkdown以外への作成を拒否する", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-create-linked-file-"));
     temporaryPaths.push(workspacePath);
