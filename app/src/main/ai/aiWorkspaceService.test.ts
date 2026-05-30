@@ -444,6 +444,34 @@ describe("previewAIWorkspaceMessage", () => {
     }
   });
 
+  it("rebuilds a stale AI index before previewing Markdown references", async () => {
+    await writeFile(path.join(workspacePath, "README.md"), "# New Topic\nfresh content", "utf8");
+    await writeData({
+      index: {
+        chunks: [{
+          content: "# Old Topic",
+          embedding: [],
+          endLine: 1,
+          path: "README.md",
+          startLine: 1
+        }],
+        indexedAt: "2026-05-30T00:00:00.000Z",
+        skippedLargeFiles: [],
+        sourceHash: "stale",
+        unreadableFiles: []
+      }
+    });
+
+    const result = await previewAIWorkspaceMessage(context(), { message: "fresh content" });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.references).toEqual([
+        expect.objectContaining({ path: "README.md", preview: "# New Topic" })
+      ]);
+    }
+  });
+
   it("does not require external AI for natural language apply commands", async () => {
     await writeData({
       operations: [createOperation("update", "draft.md", "# Draft\nupdated")]
@@ -474,6 +502,7 @@ async function writeData(partial: Partial<AIWorkspaceData>): Promise<void> {
       chunks: [],
       indexedAt: null,
       skippedLargeFiles: [],
+      sourceHash: null,
       unreadableFiles: []
     },
     operations: [],

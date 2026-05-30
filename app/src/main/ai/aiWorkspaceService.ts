@@ -18,7 +18,7 @@ import { fail, ok, type RelicResult } from "../../shared/result";
 import { createMarkdownFileAtPath, readMarkdownFile, writeMarkdownFileContent } from "../files/markdownFiles";
 import { resolveWorkspaceRelativePath } from "../files/paths";
 import { moveWorkspaceItemToTrash, type TrashItem } from "../files/trash";
-import { buildAIWorkspaceIndex, searchAIWorkspaceChunks } from "./aiWorkspaceIndex";
+import { buildAIWorkspaceIndex, computeAIWorkspaceIndexSourceHash, searchAIWorkspaceChunks } from "./aiWorkspaceIndex";
 import {
   clearAIWorkspaceData,
   emptyAIWorkspaceData,
@@ -370,8 +370,9 @@ export async function clearAIWorkspaceState(
 
 async function ensureIndexed(context: AIWorkspaceContext): Promise<AIWorkspaceData> {
   const data = await readAIWorkspaceData(context.userDataPath, context.workspaceId);
+  const currentSourceHash = await computeAIWorkspaceIndexSourceHash(context.workspacePath);
 
-  if (data.index.indexedAt && data.index.chunks.length > 0) return data;
+  if (data.index.indexedAt && data.index.sourceHash === currentSourceHash) return data;
 
   const nextData = {
     ...data,

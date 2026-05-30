@@ -1,5 +1,6 @@
 import { readFile, stat } from "node:fs/promises";
 import type { Stats } from "node:fs";
+import { createHash } from "node:crypto";
 import path from "node:path";
 
 import { collectMarkdownPaths } from "../../shared/workspaceTree";
@@ -11,6 +12,13 @@ import type { AIWorkspaceChunk, AIWorkspaceIndexData } from "./aiWorkspaceData";
 interface IndexOperations {
   readFile(filePath: string, encoding: BufferEncoding): Promise<string>;
   stat(filePath: string): Promise<Stats>;
+}
+
+interface MarkdownFileSignature {
+  absolutePath: string | null;
+  mtimeMs: number | null;
+  path: string;
+  size: number | null;
 }
 
 const defaultIndexOperations: IndexOperations = {
@@ -25,34 +33,27 @@ export async function buildAIWorkspaceIndex(
   workspacePath: string,
   operations: IndexOperations = defaultIndexOperations
 ): Promise<AIWorkspaceIndexData> {
-  const fileTree = await readWorkspaceFileTree(workspacePath);
   const chunks: AIWorkspaceChunk[] = [];
   const skippedLargeFiles: Array<{ path: string; reason: string }> = [];
   const unreadableFiles: Array<{ path: string; reason: string }> = [];
+  const signatures = await collectMarkdownFileSignatures(workspacePath, operations);
 
-  for (const relativePath of collectMarkdownPaths(fileTree)) {
-    const absolutePath = resolveWorkspaceRelativePath(workspacePath, relativePath);
-
-    if (!absolutePath.ok) continue;
-
-    let fileStats: Stats;
-    try {
-      fileStats = await operations.stat(absolutePath.value);
-    } catch {
-      unreadableFiles.push({ path: relativePath, reason: "ファイル情報を確認できませんでした。" });
+  for (const signature of signatures) {
+    if (!signature.absolutePath || signature.size === null) {
+      unreadableFiles.push({ path: signature.path, reason: "ファイル情報を確認できませんでした。" });
       continue;
     }
 
-    if (fileStats.size > workspaceSearchMaxFileBytes) {
-      skippedLargeFiles.push({ path: relativePath, reason: "大きいMarkdownのためAI参照から除外しました。" });
+    if (signature.size > workspaceSearchMaxFileBytes) {
+      skippedLargeFiles.push({ path: signature.path, reason: "大きいMarkdownのためAI参照から除外しました。" });
       continue;
     }
 
     try {
-      const content = await operations.readFile(absolutePath.value, "utf8");
-      chunks.push(...chunkMarkdown(relativePath, content));
+      const content = await operations.readFile(signature.absolutePath, "utf8");
+      chunks.push(...chunkMarkdown(signature.path, content));
     } catch {
-      unreadableFiles.push({ path: relativePath, reason: "Markdownを読み込めませんでした。" });
+      unreadableFiles.push({ path: signature.path, reason: "Markdownを読み込めませんでした。" });
     }
   }
 
@@ -60,8 +61,13 @@ export async function buildAIWorkspaceIndex(
     chunks,
     indexedAt: new Date().toISOString(),
     skippedLargeFiles,
+    sourceHash: hashMarkdownFileSignatures(signatures),
     unreadableFiles
   };
+}
+
+export async function computeAIWorkspaceIndexSourceHash(workspacePath: string): Promise<string> {
+  return hashMarkdownFileSignatures(await collectMarkdownFileSignatures(workspacePath, defaultIndexOperations));
 }
 
 export function searchAIWorkspaceChunks(chunks: AIWorkspaceChunk[], query: string): AIWorkspaceChunk[] {
@@ -207,4 +213,51 @@ function cosineSimilarity(left: number[], right: number[]): number {
 
   if (leftMagnitude === 0 || rightMagnitude === 0) return 0;
   return dot / (Math.sqrt(leftMagnitude) * Math.sqrt(rightMagnitude));
+}
+
+async function collectMarkdownFileSignatures(
+  workspacePath: string,
+  operations: IndexOperations
+): Promise<MarkdownFileSignature[]> {
+  const fileTree = await readWorkspaceFileTree(workspacePath);
+  const signatures: MarkdownFileSignature[] = [];
+
+  for (const relativePath of collectMarkdownPaths(fileTree)) {
+    const absolutePath = resolveWorkspaceRelativePath(workspacePath, relativePath);
+    if (!absolutePath.ok) continue;
+
+    try {
+      const fileStats = await operations.stat(absolutePath.value);
+      signatures.push({
+        absolutePath: absolutePath.value,
+        mtimeMs: Math.trunc(fileStats.mtimeMs),
+        path: relativePath,
+        size: fileStats.size
+      });
+    } catch {
+      signatures.push({
+        absolutePath: absolutePath.value,
+        mtimeMs: null,
+        path: relativePath,
+        size: null
+      });
+    }
+  }
+
+  return signatures.sort((left, right) => left.path.localeCompare(right.path, "ja"));
+}
+
+function hashMarkdownFileSignatures(signatures: MarkdownFileSignature[]): string {
+  const hash = createHash("sha256");
+
+  for (const signature of signatures) {
+    hash.update(signature.path);
+    hash.update("\0");
+    hash.update(String(signature.size ?? "unreadable"));
+    hash.update("\0");
+    hash.update(String(signature.mtimeMs ?? "unreadable"));
+    hash.update("\n");
+  }
+
+  return hash.digest("hex");
 }
