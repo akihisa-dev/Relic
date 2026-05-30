@@ -48,12 +48,30 @@ export function resetRendererStores(): void {
 export function makeRelicApi(overrides: Partial<typeof window.relic> = {}): typeof window.relic {
   return {
     applySearchAndReplace: vi.fn(),
+    applyAIWorkspaceOperations: vi.fn().mockResolvedValue({
+      ok: true,
+      value: {
+        codexAppServerAvailable: false,
+        history: [],
+        index: { chunkCount: 0, indexedAt: null, indexedFileCount: 0, skippedLargeFiles: [], unreadableFiles: [] },
+        pendingOperations: []
+      }
+    }),
     copyDiagramSvg: vi.fn().mockResolvedValue({ ok: true, value: { status: "copied" } }),
     createFolder: vi.fn(),
     createLinkedMarkdownFile: vi.fn(),
     createMarkdownFile: vi.fn(),
     createNewWorkspace: vi.fn().mockResolvedValue({ ok: true, value: { activeWorkspace: null, fileTree: [], pinnedPaths: [], workspaces: [] } }),
     duplicateMarkdownFile: vi.fn(),
+    discardAIWorkspaceOperations: vi.fn().mockResolvedValue({
+      ok: true,
+      value: {
+        codexAppServerAvailable: false,
+        history: [],
+        index: { chunkCount: 0, indexedAt: null, indexedFileCount: 0, skippedLargeFiles: [], unreadableFiles: [] },
+        pendingOperations: []
+      }
+    }),
     generateTableOfContents: vi.fn(),
     generateTitleList: vi.fn(),
     getAppInfo: vi.fn().mockResolvedValue({ ok: true, value: { name: "Relic", platform: "darwin", version: "0.0.0" } }),
@@ -69,6 +87,15 @@ export function makeRelicApi(overrides: Partial<typeof window.relic> = {}): type
     getWorkspaceChronicleCalendars: vi.fn().mockResolvedValue({ ok: true, value: [{ id: "chronicle0", name: "メイン暦" }] }),
     getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: { activeWorkspace: null, fileTree: [], pinnedPaths: [], workspaces: [] } }),
     getWorkspaceTags: vi.fn().mockResolvedValue({ ok: true, value: [] }),
+    getAIWorkspaceState: vi.fn().mockResolvedValue({
+      ok: true,
+      value: {
+        codexAppServerAvailable: false,
+        history: [],
+        index: { chunkCount: 0, indexedAt: null, indexedFileCount: 0, skippedLargeFiles: [], unreadableFiles: [] },
+        pendingOperations: []
+      }
+    }),
     mergeFiles: vi.fn().mockResolvedValue({ ok: true, value: "merged.md" }),
     moveFolder: vi.fn(),
     moveItemToTrash: vi.fn(),
@@ -79,6 +106,15 @@ export function makeRelicApi(overrides: Partial<typeof window.relic> = {}): type
     readClipboardText: vi.fn().mockReturnValue(""),
     readMarkdownFile: vi.fn(),
     removeWorkspace: vi.fn().mockResolvedValue({ ok: true, value: { activeWorkspace: null, fileTree: [], pinnedPaths: [], workspaces: [] } }),
+    rebuildAIWorkspaceIndex: vi.fn().mockResolvedValue({
+      ok: true,
+      value: {
+        codexAppServerAvailable: false,
+        history: [],
+        index: { chunkCount: 0, indexedAt: null, indexedFileCount: 0, skippedLargeFiles: [], unreadableFiles: [] },
+        pendingOperations: []
+      }
+    }),
     renameFolder: vi.fn(),
     renameMarkdownFile: vi.fn(),
     renameWorkspace: vi.fn().mockResolvedValue({
@@ -104,6 +140,15 @@ export function makeRelicApi(overrides: Partial<typeof window.relic> = {}): type
     saveWorkspaceCharts: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     searchAndReplace: vi.fn(),
     searchWorkspace: vi.fn().mockResolvedValue({ ok: true, value: { results: [], skippedLargeFiles: 0, truncated: false } }),
+    sendAIWorkspaceMessage: vi.fn().mockResolvedValue({
+      ok: true,
+      value: {
+        codexAppServerAvailable: false,
+        history: [],
+        index: { chunkCount: 0, indexedAt: null, indexedFileCount: 0, skippedLargeFiles: [], unreadableFiles: [] },
+        pendingOperations: []
+      }
+    }),
     splitFileByHeading: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     switchWorkspace: vi.fn(),
     togglePin: vi.fn().mockResolvedValue({ ok: true, value: { activeWorkspace: null, fileTree: [], pinnedPaths: [], workspaces: [] } }),

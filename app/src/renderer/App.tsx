@@ -125,6 +125,7 @@ export function App(): ReactElement {
     isAIWorkspaceLoading,
     isAIWorkspaceSending,
     applyAIWorkspaceOperations,
+    discardAIWorkspaceOperations,
     rebuildAIWorkspaceIndex,
     sendAIWorkspaceMessage,
     clearAIWorkspaceData
@@ -186,6 +187,13 @@ export function App(): ReactElement {
   const existingMarkdownPaths = useMemo(
     () => collectMarkdownPaths(workspaceState?.fileTree ?? []),
     [workspaceState?.fileTree]
+  );
+  const dirtyMarkdownPaths = useMemo(
+    () => Object.values(tabs).flatMap((tab) => {
+      if (tab.kind !== "file") return [];
+      return tab.content !== tab.savedContent || Boolean(tab.externalConflict) ? [tab.path] : [];
+    }),
+    [tabs]
   );
   const aliasesByPath = useWorkspaceAliases({ setWorkspaceError, workspaceState });
   const { charts, handleUpdateChartEntry, reloadCharts } = useWorkspaceCharts({
@@ -819,9 +827,10 @@ export function App(): ReactElement {
           leftPaneScrollHeading={leftPaneScrollHeading}
           onCreateFile={handleCreateNoteFromPane}
           onAIWorkspaceClearData={() => { void clearAIWorkspaceData(); }}
-          onAIWorkspaceApplyOperations={() => { void applyAIWorkspaceOperations(); }}
+          onAIWorkspaceApplyOperations={() => { void applyAIWorkspaceOperations(dirtyMarkdownPaths); }}
           onAIWorkspaceRebuildIndex={() => { void rebuildAIWorkspaceIndex(); }}
-          onAIWorkspaceSendMessage={(message) => { void sendAIWorkspaceMessage(message); }}
+          onAIWorkspaceDiscardOperations={() => { void discardAIWorkspaceOperations(); }}
+          onAIWorkspaceSendMessage={(message) => { void sendAIWorkspaceMessage(message, dirtyMarkdownPaths); }}
           onEditorAction={() => setEditorActionPulse((value) => value + 1)}
           onFileSaveError={setWorkspaceError}
           onFileSaved={handleFileSaved}

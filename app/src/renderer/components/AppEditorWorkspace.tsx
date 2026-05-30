@@ -34,6 +34,7 @@ interface AppEditorWorkspaceProps {
   onAIWorkspaceClearData: () => void;
   onAIWorkspaceApplyOperations: () => void;
   onAIWorkspaceRebuildIndex: () => void;
+  onAIWorkspaceDiscardOperations: () => void;
   onAIWorkspaceSendMessage: (message: string) => void;
   onEditorAction: () => void;
   onFileSaved: () => void;
@@ -84,6 +85,7 @@ export function AppEditorWorkspace({
   onAIWorkspaceClearData,
   onAIWorkspaceApplyOperations,
   onAIWorkspaceRebuildIndex,
+  onAIWorkspaceDiscardOperations,
   onAIWorkspaceSendMessage,
   onEditorAction,
   onFileSaved,
@@ -183,6 +185,7 @@ export function AppEditorWorkspace({
           onAIWorkspaceClearData={onAIWorkspaceClearData}
           onAIWorkspaceApplyOperations={onAIWorkspaceApplyOperations}
           onAIWorkspaceRebuildIndex={onAIWorkspaceRebuildIndex}
+          onAIWorkspaceDiscardOperations={onAIWorkspaceDiscardOperations}
           onAIWorkspaceSendMessage={onAIWorkspaceSendMessage}
           onOpenFile={onOpenFile}
           onOpenWikiLink={onOpenWikiLink}

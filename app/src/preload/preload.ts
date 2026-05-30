@@ -4,6 +4,7 @@ import {
   applySearchAndReplaceChannel,
   applyAIWorkspaceOperationsChannel,
   clearAIWorkspaceDataChannel,
+  discardAIWorkspaceOperationsChannel,
   createNewWorkspaceChannel,
   copyDiagramSvgChannel,
   type CopyDiagramSvgInput,
@@ -84,6 +85,7 @@ import {
   type EditorSettings,
   type Backlink,
   type ClearAIWorkspaceDataInput,
+  type DiscardAIWorkspaceOperationsInput,
   type ChronicleCalendarSettings,
   type GetBacklinksInput,
   type ChartSettings,
@@ -213,6 +215,8 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(sendAIWorkspaceMessageChannel, input) as Promise<RelicResult<AIWorkspaceState>>,
   applyAIWorkspaceOperations: (input: ApplyAIWorkspaceOperationsInput) =>
     ipcRenderer.invoke(applyAIWorkspaceOperationsChannel, input) as Promise<RelicResult<AIWorkspaceState>>,
+  discardAIWorkspaceOperations: (input: DiscardAIWorkspaceOperationsInput) =>
+    ipcRenderer.invoke(discardAIWorkspaceOperationsChannel, input) as Promise<RelicResult<AIWorkspaceState>>,
   clearAIWorkspaceData: (input: ClearAIWorkspaceDataInput) =>
     ipcRenderer.invoke(clearAIWorkspaceDataChannel, input) as Promise<RelicResult<AIWorkspaceState>>,
   switchWorkspace: (input: SwitchWorkspaceInput) =>

@@ -31,6 +31,7 @@ import type {
   ApplyAIWorkspaceOperationsInput,
   AIWorkspaceState,
   ClearAIWorkspaceDataInput,
+  DiscardAIWorkspaceOperationsInput,
   RebuildAIWorkspaceIndexInput,
   SendAIWorkspaceMessageInput
 } from "./ipcAiWorkspace";
@@ -145,6 +146,7 @@ export interface RelicApi {
   rebuildAIWorkspaceIndex: (input: RebuildAIWorkspaceIndexInput) => Promise<RelicResult<AIWorkspaceState>>;
   sendAIWorkspaceMessage: (input: SendAIWorkspaceMessageInput) => Promise<RelicResult<AIWorkspaceState>>;
   applyAIWorkspaceOperations: (input: ApplyAIWorkspaceOperationsInput) => Promise<RelicResult<AIWorkspaceState>>;
+  discardAIWorkspaceOperations: (input: DiscardAIWorkspaceOperationsInput) => Promise<RelicResult<AIWorkspaceState>>;
   clearAIWorkspaceData: (input: ClearAIWorkspaceDataInput) => Promise<RelicResult<AIWorkspaceState>>;
   onWorkspaceChanged: (callback: (event: WorkspaceChangedEvent) => void) => () => void;
   onWindowCloseRequested: (callback: (event: WindowCloseRequestEvent) => void) => () => void;
