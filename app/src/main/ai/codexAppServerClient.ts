@@ -81,6 +81,9 @@ class CodexAppServerClient {
       stdout.on("line", (line) => this.handleLine(line));
 
       process.stderr.on("data", () => undefined);
+      process.stdin.on("error", (error) => {
+        this.failAll(new Error(`Codex App Serverへ送信できませんでした: ${error.message}`));
+      });
       process.once("spawn", () => resolve());
       process.once("error", (error) => {
         const wrappedError = new Error(`Codex App Serverを起動できませんでした: ${error.message}`);
@@ -157,7 +160,14 @@ class CodexAppServerClient {
         reject(new Error("Codex App Serverの応答がタイムアウトしました。"));
       }, requestTimeoutMs);
       this.pending.set(id, { reject, resolve, timeout });
-      process.stdin.write(`${payload}\n`);
+      process.stdin.write(`${payload}\n`, (error) => {
+        if (!error) return;
+        const pendingRequest = this.pending.get(id);
+        if (!pendingRequest) return;
+        clearTimeout(pendingRequest.timeout);
+        this.pending.delete(id);
+        pendingRequest.reject(new Error(`Codex App Serverへ送信できませんでした: ${error.message}`));
+      });
     });
   }
 
