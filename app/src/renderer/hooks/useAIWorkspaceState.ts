@@ -36,18 +36,10 @@ export function useAIWorkspaceState({
   clearAIWorkspaceData: () => Promise<void>;
 } {
   const [aiWorkspaceState, setAIWorkspaceState] = useState<AIWorkspaceState | null>(null);
-  const [aiWorkspaceMessagePreview, setAIWorkspaceMessagePreview] = useState<AIWorkspaceMessagePreview | null>(null);
-  const [previewDirtyFilePaths, setPreviewDirtyFilePaths] = useState<string[]>([]);
-  const [previewActiveFilePath, setPreviewActiveFilePath] = useState<string | null>(null);
-  const [previewActiveFileContent, setPreviewActiveFileContent] = useState<string | null>(null);
   const [isAIWorkspaceLoading, setIsAIWorkspaceLoading] = useState(false);
   const [isAIWorkspaceSending, setIsAIWorkspaceSending] = useState(false);
 
   const resetMessagePreview = useCallback((): void => {
-    setAIWorkspaceMessagePreview(null);
-    setPreviewActiveFileContent(null);
-    setPreviewActiveFilePath(null);
-    setPreviewDirtyFilePaths([]);
   }, []);
 
   const reloadAIWorkspace = useCallback(async (): Promise<void> => {
@@ -95,31 +87,12 @@ export function useAIWorkspaceState({
   ): Promise<void> => {
     if (!isEnabled || !workspaceId) return;
     if (!window.relic?.sendAIWorkspaceMessage) return;
-    if (!window.relic?.previewAIWorkspaceMessage) return;
-
-    setIsAIWorkspaceSending(true);
-    const previewResult = await window.relic.previewAIWorkspaceMessage({ activeFileContent, activeFilePath, message });
-    setIsAIWorkspaceSending(false);
-
-    if (!previewResult.ok) {
-      onError(previewResult.error.message);
-      return;
-    }
 
     if (
-      previewResult.value.requiresExternalAI &&
       aiWorkspaceState?.aiProvider === "openai-api" &&
       aiWorkspaceState.openAIAPIKeyConfigured === false
     ) {
       onError("AI共同作業を開始できません。設定のAIでOpenAI APIキーを登録してください。");
-      return;
-    }
-
-    if (previewResult.value.requiresExternalAI) {
-      setAIWorkspaceMessagePreview(previewResult.value);
-      setPreviewDirtyFilePaths(dirtyFilePaths);
-      setPreviewActiveFilePath(activeFilePath);
-      setPreviewActiveFileContent(activeFileContent);
       return;
     }
 
@@ -136,40 +109,12 @@ export function useAIWorkspaceState({
   }, [aiWorkspaceState?.aiProvider, aiWorkspaceState?.openAIAPIKeyConfigured, isEnabled, onError, workspaceId]);
 
   const confirmAIWorkspaceMessage = useCallback(async (
-    dirtyFilePaths: string[] = [],
-    activeFilePath: string | null = null,
-    activeFileContent: string | null = null
+    _dirtyFilePaths: string[] = [],
+    _activeFilePath: string | null = null,
+    _activeFileContent: string | null = null
   ): Promise<void> => {
-    if (!isEnabled || !workspaceId || !aiWorkspaceMessagePreview) return;
-    if (!window.relic?.sendAIWorkspaceMessage) return;
-
-    if (
-      !sameStringList(previewDirtyFilePaths, dirtyFilePaths) ||
-      previewActiveFilePath !== activeFilePath ||
-      previewActiveFileContent !== activeFileContent
-    ) {
-      resetMessagePreview();
-      onError("送信確認後にMarkdownの状態が変わりました。もう一度AIへ送信してください。");
-      return;
-    }
-
-    setIsAIWorkspaceSending(true);
-    const result = await window.relic.sendAIWorkspaceMessage({
-      activeFilePath: previewActiveFilePath,
-      activeFileContent: previewActiveFileContent,
-      dirtyFilePaths: previewDirtyFilePaths,
-      message: aiWorkspaceMessagePreview.message
-    });
-    setIsAIWorkspaceSending(false);
-
-    if (!result.ok) {
-      onError(result.error.message);
-      return;
-    }
-
     resetMessagePreview();
-    setAIWorkspaceState(result.value);
-  }, [aiWorkspaceMessagePreview, isEnabled, onError, previewActiveFileContent, previewActiveFilePath, previewDirtyFilePaths, resetMessagePreview, workspaceId]);
+  }, [resetMessagePreview]);
 
   const cancelAIWorkspaceMessage = useCallback((): void => {
     resetMessagePreview();
@@ -234,7 +179,7 @@ export function useAIWorkspaceState({
 
   return {
     aiWorkspaceState,
-    aiWorkspaceMessagePreview,
+    aiWorkspaceMessagePreview: null,
     isAIWorkspaceLoading,
     isAIWorkspaceSending,
     reloadAIWorkspace,
@@ -246,12 +191,4 @@ export function useAIWorkspaceState({
     discardAIWorkspaceOperations,
     clearAIWorkspaceData
   };
-}
-
-function sameStringList(left: string[], right: string[]): boolean {
-  if (left.length !== right.length) return false;
-
-  const leftItems = left.toSorted();
-  const rightItems = right.toSorted();
-  return leftItems.length === rightItems.length && leftItems.every((item, index) => item === rightItems[index]);
 }

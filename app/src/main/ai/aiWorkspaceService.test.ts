@@ -245,7 +245,7 @@ describe("sendAIWorkspaceMessage", () => {
     }
   });
 
-  it("stores the target Markdown hash with update operations", async () => {
+  it("applies safe Markdown operations returned by Codex immediately", async () => {
     await writeFile(path.join(workspacePath, "README.md"), "# Auth\nLogin spec", "utf8");
     vi.mocked(runCodexAIWorkspaceTurn).mockResolvedValueOnce({
       message: "READMEを更新します。",
@@ -258,9 +258,12 @@ describe("sendAIWorkspaceMessage", () => {
     expect(runCodexAIWorkspaceTurn).toHaveBeenCalledWith(expect.objectContaining({
       workspacePath
     }));
+    await expect(readFile(path.join(workspacePath, "README.md"), "utf8")).resolves.toBe("# Auth\nUpdated");
     if (result.ok) {
-      expect(result.value.pendingOperations[0].baseContent).toBe("# Auth\nLogin spec");
-      expect(result.value.pendingOperations[0].baseContentHash).toBe(hashContent("# Auth\nLogin spec"));
+      expect(result.value.pendingOperations).toEqual([]);
+      expect(result.value.operationHistory).toEqual([]);
+      expect(result.value.history.at(-1)?.content).toContain("Markdownへ反映しました。");
+      expect(result.value.history.at(-1)?.content).toContain("- README.md");
     }
   });
 
@@ -281,7 +284,7 @@ describe("sendAIWorkspaceMessage", () => {
     }));
   });
 
-  it("keeps only safe Markdown operations returned by OpenAI API", async () => {
+  it("applies only safe Markdown operations returned by OpenAI API", async () => {
     await writeFile(path.join(workspacePath, "README.md"), "# Auth\nLogin spec", "utf8");
     await writeAISettings({ aiProvider: "openai-api" });
     vi.mocked(runOpenAIWorkspaceTurn).mockResolvedValueOnce({
@@ -298,9 +301,12 @@ describe("sendAIWorkspaceMessage", () => {
     const result = await sendAIWorkspaceMessage(context(), { message: "Login spec" });
 
     expect(result.ok).toBe(true);
+    await expect(readFile(path.join(workspacePath, "README.md"), "utf8")).resolves.toBe("# Auth\nUpdated");
     if (result.ok) {
-      expect(result.value.pendingOperations.map((operation) => operation.path)).toEqual(["README.md"]);
-      expect(result.value.history.at(-1)?.content).toContain("Relic側で安全のため採用しなかった変更案");
+      expect(result.value.pendingOperations).toEqual([]);
+      expect(result.value.operationHistory).toEqual([]);
+      expect(result.value.history.at(-1)?.content).toContain("Markdownへ反映しました。");
+      expect(result.value.history.at(-1)?.content).toContain("安全のため採用しなかった変更があります。");
       expect(result.value.history.at(-1)?.content).toContain("../outside.md");
       expect(result.value.history.at(-1)?.content).toContain("notes.txt");
       expect(result.value.history.at(-1)?.content).toContain("missing.md");
@@ -322,19 +328,17 @@ describe("sendAIWorkspaceMessage", () => {
     const result = await sendAIWorkspaceMessage(context(), { message: "Login spec" });
 
     expect(result.ok).toBe(true);
+    await expect(readFile(path.join(workspacePath, "README.md"), "utf8")).resolves.toBe("# Auth\nUpdated");
+    await expect(readFile(path.join(path.dirname(workspacePath), "outside.md"), "utf8")).rejects.toThrow();
     if (result.ok) {
-      expect(result.value.pendingOperations).toEqual([
-        expect.objectContaining({
-          path: "README.md",
-          status: "pending"
-        })
-      ]);
-      expect(result.value.history.at(-1)?.content).toContain("Relic側で安全のため採用しなかった変更案");
+      expect(result.value.pendingOperations).toEqual([]);
+      expect(result.value.history.at(-1)?.content).toContain("Markdownへ反映しました。");
+      expect(result.value.history.at(-1)?.content).toContain("安全のため採用しなかった変更があります。");
       expect(result.value.history.at(-1)?.content).toContain("outside.md");
     }
   });
 
-  it("passes pending operations to OpenAI API for follow-up edits", async () => {
+  it("does not pass old saved operation data to OpenAI API for follow-up chat", async () => {
     await writeFile(path.join(workspacePath, "README.md"), "# Auth\nLogin spec", "utf8");
     await writeAISettings({ aiProvider: "openai-api" });
     await writeData({
@@ -349,12 +353,9 @@ describe("sendAIWorkspaceMessage", () => {
 
     expect(result.ok).toBe(true);
     expect(runOpenAIWorkspaceTurn).toHaveBeenCalledWith(expect.objectContaining({
-      pendingOperations: [expect.objectContaining({
-        content: "# Auth\nDraft update",
-        path: "README.md",
-        status: "pending"
-      })]
+      pendingOperations: []
     }));
+    await expect(readFile(path.join(workspacePath, "README.md"), "utf8")).resolves.toBe("# Auth\nAdjusted update");
   });
 
   it("passes unsaved active Markdown content to OpenAI API for current-file messages", async () => {
@@ -404,124 +405,25 @@ describe("sendAIWorkspaceMessage", () => {
     }));
   });
 
-  it("replaces old pending operations for the same Markdown path with new proposals", async () => {
+  it("does not overwrite Markdown files with unsaved editor changes", async () => {
     await writeFile(path.join(workspacePath, "README.md"), "# Auth\nLogin spec", "utf8");
     await writeAISettings({ aiProvider: "openai-api" });
-    await writeData({
-      operations: [createOperation("update", "README.md", "# Auth\nDraft update")]
-    });
     vi.mocked(runOpenAIWorkspaceTurn).mockResolvedValueOnce({
-      message: "変更案を作り直します。",
-      operations: [createOperation("update", "README.md", "# Auth\nAdjusted update")]
+      message: "READMEを更新します。",
+      operations: [createOperation("update", "README.md", "# Auth\nUpdated")]
     });
 
-    const result = await sendAIWorkspaceMessage(context(), { message: "さっきの案を作り直して" });
-
-    expect(result.ok).toBe(true);
-    if (result.ok) {
-      expect(result.value.pendingOperations).toEqual([
-        expect.objectContaining({
-          content: "# Auth\nAdjusted update",
-          path: "README.md",
-          status: "pending"
-        })
-      ]);
-      expect(result.value.operationHistory).toEqual([
-        expect.objectContaining({
-          content: "# Auth\nDraft update",
-          path: "README.md",
-          status: "replaced"
-        }),
-        expect.objectContaining({
-          content: "# Auth\nAdjusted update",
-          path: "README.md",
-          status: "pending"
-        })
-      ]);
-    }
-  });
-
-  it("creates a pending revert proposal for an applied update operation", async () => {
-    await writeFile(path.join(workspacePath, "README.md"), "# Auth\nUpdated", "utf8");
-    await writeData({
-      operations: [{
-        ...createOperation("update", "README.md", "# Auth\nUpdated"),
-        baseContent: "# Auth\nOriginal",
-        baseContentHash: hashContent("# Auth\nOriginal"),
-        status: "applied"
-      }]
+    const result = await sendAIWorkspaceMessage(context(), {
+      dirtyFilePaths: ["README.md"],
+      message: "Login spec"
     });
 
-    const result = await sendAIWorkspaceMessage(context(), { message: "さっきの変更を戻して" });
-
     expect(result.ok).toBe(true);
-    expect(runOpenAIWorkspaceTurn).not.toHaveBeenCalled();
-    await expect(readFile(path.join(workspacePath, "README.md"), "utf8")).resolves.toBe("# Auth\nUpdated");
+    await expect(readFile(path.join(workspacePath, "README.md"), "utf8")).resolves.toBe("# Auth\nLogin spec");
     if (result.ok) {
-      expect(result.value.pendingOperations).toEqual([
-        expect.objectContaining({
-          baseContent: "# Auth\nUpdated",
-          content: "# Auth\nOriginal",
-          kind: "update",
-          path: "README.md",
-          status: "pending"
-        })
-      ]);
-      expect(result.value.history.at(-1)?.content).toContain("元に戻す変更案を作成しました");
-    }
-  });
-
-  it("creates a pending delete proposal to revert an applied create operation", async () => {
-    await writeFile(path.join(workspacePath, "created.md"), "# Created", "utf8");
-    await writeData({
-      operations: [{
-        ...createOperation("create", "created.md", "# Created"),
-        status: "applied"
-      }]
-    });
-
-    const result = await sendAIWorkspaceMessage(context(), { message: "created.mdを元に戻して" });
-
-    expect(result.ok).toBe(true);
-    expect(runOpenAIWorkspaceTurn).not.toHaveBeenCalled();
-    await expect(readFile(path.join(workspacePath, "created.md"), "utf8")).resolves.toBe("# Created");
-    if (result.ok) {
-      expect(result.value.pendingOperations).toEqual([
-        expect.objectContaining({
-          baseContentHash: hashContent("# Created"),
-          kind: "delete",
-          path: "created.md",
-          status: "pending"
-        })
-      ]);
-    }
-  });
-
-  it("creates a pending create proposal to revert an applied delete operation", async () => {
-    await writeData({
-      operations: [{
-        ...createOperation("delete", "deleted.md"),
-        baseContent: "# Deleted\noriginal",
-        baseContentHash: hashContent("# Deleted\noriginal"),
-        status: "applied"
-      }]
-    });
-
-    const result = await sendAIWorkspaceMessage(context(), { message: "deleted.mdを元に戻して" });
-
-    expect(result.ok).toBe(true);
-    expect(runOpenAIWorkspaceTurn).not.toHaveBeenCalled();
-    await expect(readFile(path.join(workspacePath, "deleted.md"), "utf8")).rejects.toThrow();
-    if (result.ok) {
-      expect(result.value.pendingOperations).toEqual([
-        expect.objectContaining({
-          content: "# Deleted\noriginal",
-          kind: "create",
-          path: "deleted.md",
-          status: "pending",
-          summary: "AIが削除したMarkdownを元の本文で再作成する"
-        })
-      ]);
+      expect(result.value.pendingOperations).toEqual([]);
+      expect(result.value.history.at(-1)?.content).toContain("未保存のMarkdownがあるため");
+      expect(result.value.history.at(-1)?.content).toContain("- README.md");
     }
   });
 
@@ -547,129 +449,6 @@ describe("sendAIWorkspaceMessage", () => {
     }
   });
 
-  it("applies only the pending operation named in a natural language message", async () => {
-    await writeFile(path.join(workspacePath, "first.md"), "first", "utf8");
-    await writeFile(path.join(workspacePath, "second.md"), "second", "utf8");
-    await writeData({
-      operations: [
-        createOperation("update", "first.md", "updated first"),
-        createOperation("update", "second.md", "updated second")
-      ]
-    });
-
-    const result = await sendAIWorkspaceMessage(context(), { message: "first.mdだけ反映して" });
-
-    expect(result.ok).toBe(true);
-    expect(runOpenAIWorkspaceTurn).not.toHaveBeenCalled();
-    await expect(readFile(path.join(workspacePath, "first.md"), "utf8")).resolves.toBe("updated first");
-    await expect(readFile(path.join(workspacePath, "second.md"), "utf8")).resolves.toBe("second");
-    if (result.ok) {
-      expect(result.value.pendingOperations.map((operation) => operation.path)).toEqual(["second.md"]);
-      expect(result.value.history.at(-2)).toEqual(expect.objectContaining({
-        content: "first.mdだけ反映して",
-        role: "user"
-      }));
-      expect(result.value.history.at(-1)?.content).toContain("- 反映済み: first.md");
-    }
-  });
-
-  it("applies only the active file operation for natural language current-file messages", async () => {
-    await writeFile(path.join(workspacePath, "first.md"), "first", "utf8");
-    await writeFile(path.join(workspacePath, "second.md"), "second", "utf8");
-    await writeData({
-      operations: [
-        createOperation("update", "first.md", "updated first"),
-        createOperation("update", "second.md", "updated second")
-      ]
-    });
-
-    const result = await sendAIWorkspaceMessage(context(), {
-      activeFilePath: "second.md",
-      message: "このファイルだけ反映して"
-    });
-
-    expect(result.ok).toBe(true);
-    expect(runOpenAIWorkspaceTurn).not.toHaveBeenCalled();
-    await expect(readFile(path.join(workspacePath, "first.md"), "utf8")).resolves.toBe("first");
-    await expect(readFile(path.join(workspacePath, "second.md"), "utf8")).resolves.toBe("updated second");
-    if (result.ok) {
-      expect(result.value.pendingOperations.map((operation) => operation.path)).toEqual(["first.md"]);
-    }
-  });
-
-  it("does not apply all pending operations when a current-file message has no active file", async () => {
-    await writeFile(path.join(workspacePath, "first.md"), "first", "utf8");
-    await writeFile(path.join(workspacePath, "second.md"), "second", "utf8");
-    await writeData({
-      operations: [
-        createOperation("update", "first.md", "updated first"),
-        createOperation("update", "second.md", "updated second")
-      ]
-    });
-
-    const result = await sendAIWorkspaceMessage(context(), { message: "このファイルだけ反映して" });
-
-    expect(result.ok).toBe(false);
-    expect(runOpenAIWorkspaceTurn).not.toHaveBeenCalled();
-    if (!result.ok) {
-      expect(result.error.code).toBe("AI_WORKSPACE_NO_PENDING_OPERATIONS");
-    }
-    await expect(readFile(path.join(workspacePath, "first.md"), "utf8")).resolves.toBe("first");
-    await expect(readFile(path.join(workspacePath, "second.md"), "utf8")).resolves.toBe("second");
-  });
-
-  it("keeps pending operations when the user says not to apply them yet", async () => {
-    await writeFile(path.join(workspacePath, "draft.md"), "old", "utf8");
-    await writeData({
-      operations: [createOperation("update", "draft.md", "# Draft\nupdated")]
-    });
-
-    const result = await sendAIWorkspaceMessage(context(), { message: "まだ反映しない" });
-
-    expect(result.ok).toBe(true);
-    expect(runOpenAIWorkspaceTurn).not.toHaveBeenCalled();
-    await expect(readFile(path.join(workspacePath, "draft.md"), "utf8")).resolves.toBe("old");
-    if (result.ok) {
-      expect(result.value.pendingOperations).toEqual([
-        expect.objectContaining({
-          path: "draft.md",
-          status: "pending"
-        })
-      ]);
-      expect(result.value.history.at(-2)).toEqual(expect.objectContaining({
-        content: "まだ反映しない",
-        role: "user"
-      }));
-      expect(result.value.history.at(-1)?.content).toContain("作業中の変更として残しました");
-    }
-  });
-
-  it("discards only the pending operation named in a natural language message", async () => {
-    await writeFile(path.join(workspacePath, "first.md"), "first", "utf8");
-    await writeFile(path.join(workspacePath, "second.md"), "second", "utf8");
-    await writeData({
-      operations: [
-        createOperation("update", "first.md", "updated first"),
-        createOperation("update", "second.md", "updated second")
-      ]
-    });
-
-    const result = await sendAIWorkspaceMessage(context(), { message: "second.mdはやめて" });
-
-    expect(result.ok).toBe(true);
-    expect(runOpenAIWorkspaceTurn).not.toHaveBeenCalled();
-    await expect(readFile(path.join(workspacePath, "first.md"), "utf8")).resolves.toBe("first");
-    await expect(readFile(path.join(workspacePath, "second.md"), "utf8")).resolves.toBe("second");
-    if (result.ok) {
-      expect(result.value.pendingOperations.map((operation) => operation.path)).toEqual(["first.md"]);
-      expect(result.value.operationHistory.find((operation) => operation.path === "second.md")?.status).toBe("discarded");
-      expect(result.value.history.at(-2)).toEqual(expect.objectContaining({
-        content: "second.mdはやめて",
-        role: "user"
-      }));
-      expect(result.value.history.at(-1)?.content).toContain("- second.md");
-    }
-  });
 });
 
 describe("previewAIWorkspaceMessage", () => {
@@ -808,7 +587,7 @@ describe("previewAIWorkspaceMessage", () => {
     }
   });
 
-  it("does not require external AI for natural language apply commands", async () => {
+  it("treats natural language apply commands as ordinary AI conversation", async () => {
     await writeData({
       operations: [createOperation("update", "draft.md", "# Draft\nupdated")]
     });
@@ -817,12 +596,12 @@ describe("previewAIWorkspaceMessage", () => {
 
     expect(result.ok).toBe(true);
     if (result.ok) {
-      expect(result.value.requiresExternalAI).toBe(false);
+      expect(result.value.requiresExternalAI).toBe(true);
       expect(result.value.references).toEqual([]);
     }
   });
 
-  it("does not require external AI when pending operations are kept for later", async () => {
+  it("treats hold-later commands as ordinary AI conversation", async () => {
     await writeData({
       operations: [createOperation("update", "draft.md", "# Draft\nupdated")]
     });
@@ -831,12 +610,12 @@ describe("previewAIWorkspaceMessage", () => {
 
     expect(result.ok).toBe(true);
     if (result.ok) {
-      expect(result.value.requiresExternalAI).toBe(false);
+      expect(result.value.requiresExternalAI).toBe(true);
       expect(result.value.references).toEqual([]);
     }
   });
 
-  it("does not require external AI for natural language revert commands", async () => {
+  it("treats natural language revert commands as ordinary AI conversation", async () => {
     await writeData({
       operations: [{
         ...createOperation("update", "draft.md", "# Draft\nupdated"),
@@ -849,7 +628,7 @@ describe("previewAIWorkspaceMessage", () => {
 
     expect(result.ok).toBe(true);
     if (result.ok) {
-      expect(result.value.requiresExternalAI).toBe(false);
+      expect(result.value.requiresExternalAI).toBe(true);
       expect(result.value.references).toEqual([]);
     }
   });

@@ -20,7 +20,7 @@ import { normalizeWorkspaceRelativeInputPath, resolveWorkspaceRelativePath } fro
 import { workspaceSearchMaxFileBytes } from "../files/search";
 import { moveWorkspaceItemToTrash, type TrashItem } from "../files/trash";
 import { readAppSettings } from "../settings/appSettings";
-import { buildAIWorkspaceIndex, computeAIWorkspaceIndexSourceHash, searchAIWorkspaceChunks } from "./aiWorkspaceIndex";
+import { buildAIWorkspaceIndex, computeAIWorkspaceIndexSourceHash } from "./aiWorkspaceIndex";
 import {
   clearAIWorkspaceData,
   emptyAIWorkspaceData,
@@ -46,6 +46,13 @@ interface RejectedAIWorkspaceOperation {
 interface PreparedAIWorkspaceOperations {
   operations: AIWorkspaceFileOperation[];
   rejectedOperations: RejectedAIWorkspaceOperation[];
+}
+
+interface AppliedAIWorkspaceOperations {
+  applied: AIWorkspaceFileOperation[];
+  blockedDirtyPaths: string[];
+  failed: AIWorkspaceFileOperation[];
+  stale: AIWorkspaceFileOperation[];
 }
 
 interface AIWorkspaceTurnResult {
@@ -90,18 +97,11 @@ export async function previewAIWorkspaceMessage(
 
   try {
     const data = await ensureIndexed(context);
-    const hasPendingOperations = data.operations.some((operation) => operation.status === "pending");
-    const hasAppliedOperations = data.operations.some((operation) => operation.status === "applied");
-    const requiresExternalAI = !(
-      (hasPendingOperations &&
-        (shouldHoldPendingOperations(message) || shouldDiscardPendingOperations(message) || shouldApplyPendingOperations(message))) ||
-      (hasAppliedOperations && shouldRevertAppliedOperations(message))
-    );
 
     return ok({
       message,
-      references: requiresExternalAI ? buildReferences(data, message, input.activeFilePath, input.activeFileContent) : [],
-      requiresExternalAI,
+      references: buildReferences(data, message, input.activeFilePath, input.activeFileContent),
+      requiresExternalAI: true,
       skippedLargeFiles: data.index.skippedLargeFiles,
       unreadableFiles: data.index.unreadableFiles
     });
@@ -123,29 +123,6 @@ export async function sendAIWorkspaceMessage(
 
   try {
     const data = await ensureIndexed(context);
-    if (shouldHoldPendingOperations(message) && data.operations.some((operation) => operation.status === "pending")) {
-      return keepPendingOperations(context, data, message);
-    }
-
-    if (shouldDiscardPendingOperations(message) && data.operations.some((operation) => operation.status === "pending")) {
-      return discardAIWorkspaceOperations(context, {
-        operationIds: selectPendingOperationIdsFromMessage(data.operations, message, input.activeFilePath),
-        userMessage: message
-      });
-    }
-
-    if (shouldApplyPendingOperations(message) && data.operations.some((operation) => operation.status === "pending")) {
-      return applyAIWorkspaceOperations(context, {
-        dirtyFilePaths: input.dirtyFilePaths,
-        operationIds: selectPendingOperationIdsFromMessage(data.operations, message, input.activeFilePath),
-        userMessage: message
-      }, trashItem);
-    }
-
-    if (shouldRevertAppliedOperations(message) && data.operations.some((operation) => operation.status === "applied")) {
-      return createRevertOperations(context, data, message, input.activeFilePath);
-    }
-
     const references = buildReferences(data, message, input.activeFilePath, input.activeFileContent);
     const userMessage: AIWorkspaceMessage = {
       content: message,
@@ -163,7 +140,7 @@ export async function sendAIWorkspaceMessage(
     const turnInput = {
       history: data.history.map((item) => ({ content: item.content, role: item.role })),
       message,
-      pendingOperations: data.operations.filter((operation) => operation.status === "pending"),
+      pendingOperations: [],
       referenceContents,
       references
     } satisfies Omit<Parameters<typeof runOpenAIWorkspaceTurn>[0], "apiKey" | "model">;
@@ -198,20 +175,26 @@ export async function sendAIWorkspaceMessage(
     const preparedOperations = aiResponse
       ? await prepareOperations(context.workspacePath, aiResponse.operations)
       : { operations: [], rejectedOperations: [] };
+    const appliedOperations = await applyPreparedOperations(
+      context.workspacePath,
+      preparedOperations.operations,
+      input.dirtyFilePaths ?? [],
+      trashItem
+    );
     const assistantMessage: AIWorkspaceMessage = {
       content: aiResponse
-        ? appendRejectedOperationsNotice(aiResponse.message, preparedOperations.rejectedOperations)
+        ? buildChatOnlyAssistantMessage(aiResponse.message, preparedOperations.rejectedOperations, appliedOperations)
         : buildAssistantFallback(provider, message, references, aiError),
       createdAt: new Date().toISOString(),
       id: createMessageId("assistant"),
-      operations: preparedOperations.operations,
       references,
       role: "assistant"
     };
     const nextData = {
       ...data,
       history: [...data.history, userMessage, assistantMessage],
-      operations: mergeNewOperations(data.operations, preparedOperations.operations)
+      index: appliedOperations.applied.length > 0 ? await buildAIWorkspaceIndex(context.workspacePath) : data.index,
+      operations: []
     };
     await writeAIWorkspaceData(context.userDataPath, context.workspaceId, nextData);
 
@@ -483,7 +466,7 @@ function buildReferences(
   activeFilePath?: string | null,
   activeFileContent?: string | null
 ): AIWorkspaceReference[] {
-  const references = searchAIWorkspaceChunks(data.index.chunks, message).map<AIWorkspaceReference>((chunk) => ({
+  const references = allWorkspaceReferences(data).map<AIWorkspaceReference>((chunk) => ({
     line: chunk.startLine,
     path: chunk.path,
     preview: chunk.content.split("\n").find((line) => line.trim())?.trim().slice(0, 160) ?? chunk.path
@@ -518,12 +501,25 @@ function buildReferences(
   })];
 }
 
+function allWorkspaceReferences(data: AIWorkspaceData): AIWorkspaceData["index"]["chunks"] {
+  const seenPaths = new Set<string>();
+  const chunks: AIWorkspaceData["index"]["chunks"] = [];
+
+  for (const chunk of data.index.chunks) {
+    if (seenPaths.has(chunk.path)) continue;
+    seenPaths.add(chunk.path);
+    chunks.push(chunk);
+  }
+
+  return chunks;
+}
+
 async function readReferenceContents(
   workspacePath: string,
   references: AIWorkspaceReference[],
   activeFile?: { content: string | null; path: string | null }
 ): Promise<Array<{ content: string; path: string }>> {
-  const uniquePaths = [...new Set(references.map((reference) => reference.path))].slice(0, 8);
+  const uniquePaths = [...new Set(references.map((reference) => reference.path))];
   const contents: Array<{ content: string; path: string }> = [];
 
   for (const path of uniquePaths) {
@@ -637,6 +633,39 @@ async function prepareOperations(
   }
 
   return { operations: nextOperations, rejectedOperations };
+}
+
+async function applyPreparedOperations(
+  workspacePath: string,
+  operations: AIWorkspaceFileOperation[],
+  dirtyFilePaths: string[],
+  trashItem?: TrashItem
+): Promise<AppliedAIWorkspaceOperations> {
+  const dirtyPathSet = new Set(dirtyFilePaths);
+  const result: AppliedAIWorkspaceOperations = {
+    applied: [],
+    blockedDirtyPaths: [],
+    failed: [],
+    stale: []
+  };
+
+  for (const operation of operations) {
+    if (operation.kind !== "create" && dirtyPathSet.has(operation.path)) {
+      result.blockedDirtyPaths.push(operation.path);
+      continue;
+    }
+
+    const applied = await applyOperation(workspacePath, operation, trashItem);
+    if (applied.ok) {
+      result.applied.push(operation);
+    } else if (applied.error.code === "AI_WORKSPACE_STALE_OPERATION") {
+      result.stale.push(operation);
+    } else {
+      result.failed.push(operation);
+    }
+  }
+
+  return result;
 }
 
 function validateOperationPath(workspacePath: string, operationPath: string): RelicResult<string> {
@@ -957,18 +986,54 @@ function normalizeAIProviderError(provider: AIProvider, error: unknown): string 
   return message;
 }
 
-function appendRejectedOperationsNotice(
+function buildChatOnlyAssistantMessage(
   content: string,
-  rejectedOperations: RejectedAIWorkspaceOperation[]
+  rejectedOperations: RejectedAIWorkspaceOperation[],
+  appliedOperations: AppliedAIWorkspaceOperations
 ): string {
-  if (rejectedOperations.length === 0) return content;
+  const lines = [content.trim()];
 
-  return [
-    content,
-    "",
-    "Relic側で安全のため採用しなかった変更案:",
-    ...rejectedOperations.map((operation) => `- ${operation.path}: ${operation.reason}`)
-  ].join("\n");
+  if (appliedOperations.applied.length > 0) {
+    lines.push(
+      "",
+      "Markdownへ反映しました。",
+      ...appliedOperations.applied.map((operation) => `- ${operation.path}`)
+    );
+  }
+
+  if (appliedOperations.blockedDirtyPaths.length > 0) {
+    lines.push(
+      "",
+      "未保存のMarkdownがあるため、次の変更は反映しませんでした。先に保存または破棄してください。",
+      ...[...new Set(appliedOperations.blockedDirtyPaths)].map((path) => `- ${path}`)
+    );
+  }
+
+  if (appliedOperations.stale.length > 0) {
+    lines.push(
+      "",
+      "AIが考えている間に対象Markdownが変わったため、次の変更は反映しませんでした。",
+      ...appliedOperations.stale.map((operation) => `- ${operation.path}`)
+    );
+  }
+
+  if (appliedOperations.failed.length > 0) {
+    lines.push(
+      "",
+      "次のMarkdown変更は反映できませんでした。",
+      ...appliedOperations.failed.map((operation) => `- ${operation.path}`)
+    );
+  }
+
+  if (rejectedOperations.length > 0) {
+    lines.push(
+      "",
+      "安全のため採用しなかった変更があります。",
+      ...rejectedOperations.map((operation) => `- ${operation.path}: ${operation.reason}`)
+    );
+  }
+
+  return lines.join("\n").trim();
 }
 
 function buildOptionalUserHistory(message?: string): AIWorkspaceMessage[] {
