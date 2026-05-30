@@ -97,8 +97,9 @@ export function registerAIWorkspaceHandlers(): void {
       const context = await getAIWorkspaceContext();
       if (!context.ok) return context;
 
+      const beforeState = await getAIWorkspaceState(context.value);
       const result = await applyAIWorkspaceOperations(context.value, input ?? {}, shell.trashItem);
-      if (result.ok) {
+      if (result.ok && beforeState.ok && hasAppliedPendingOperation(beforeState.value, result.value)) {
         event.sender.send(workspaceChangedChannel, {
           changedAt: new Date().toISOString(),
           workspaceId: context.value.workspaceId,
