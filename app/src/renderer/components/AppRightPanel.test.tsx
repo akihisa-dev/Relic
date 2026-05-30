@@ -136,6 +136,77 @@ describe("AppRightPanel", () => {
     expect(screen.getByText("認証仕様を更新")).toBeInTheDocument();
   });
 
+  it("shows pending Markdown operation content without showing delete content", () => {
+    render(
+      <I18nProvider language="en">
+        <AppRightPanel
+          aiWorkspaceState={{
+            codexAppServerAvailable: true,
+            history: [],
+            index: {
+              chunkCount: 3,
+              indexedAt: "2026-05-30T00:00:00.000Z",
+              indexedFileCount: 2,
+              skippedLargeFiles: [],
+              unreadableFiles: []
+            },
+            operationHistory: [],
+            pendingOperations: [
+              {
+                content: "# New\nbody",
+                createdAt: "2026-05-30T00:00:00.000Z",
+                id: "op-create",
+                kind: "create",
+                path: "docs/new.md",
+                status: "pending",
+                summary: "新規資料を作成"
+              },
+              {
+                content: "# Old\nsecret",
+                createdAt: "2026-05-30T00:00:00.000Z",
+                id: "op-delete",
+                kind: "delete",
+                path: "docs/old.md",
+                status: "pending",
+                summary: "古い資料を削除"
+              }
+            ]
+          }}
+          backlinks={[]}
+          isAIWorkspaceLoading={false}
+          isAIWorkspaceSending={false}
+          aiWorkspaceMessagePreview={null}
+          isLoadingBacklinks={false}
+          isOpen
+          isResizing={false}
+          onAIWorkspaceClearData={vi.fn()}
+          onAIWorkspaceApplyOperations={vi.fn()}
+          onAIWorkspaceCancelMessagePreview={vi.fn()}
+          onAIWorkspaceConfirmMessagePreview={vi.fn()}
+          onAIWorkspaceDiscardOperations={vi.fn()}
+          onAIWorkspaceRebuildIndex={vi.fn()}
+          onAIWorkspaceSendMessage={vi.fn()}
+          onOpenFile={vi.fn()}
+          onOpenWikiLink={vi.fn()}
+          onOutlineHeadingClick={vi.fn()}
+          onResizeStart={vi.fn()}
+          outlineHeadings={[]}
+          outgoingLinks={[]}
+          outgoingLinksLimited={false}
+          rightPanelView="ai"
+          setLinkContextMenu={vi.fn()}
+          width={260}
+          workspaceName="Novel"
+        />
+      </I18nProvider>
+    );
+
+    fireEvent.click(screen.getByText("Markdown内容を確認"));
+
+    expect(screen.getByText((_, element) => element?.tagName === "PRE" && element.textContent === "# New\nbody")).toBeInTheDocument();
+    expect(screen.queryByText("# Old\nsecret")).not.toBeInTheDocument();
+  });
+
   it("shows Markdown files excluded from AI references", () => {
     render(
       <I18nProvider language="en">
