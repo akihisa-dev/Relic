@@ -18,19 +18,18 @@ interface AppFilesSidebarProps extends Omit<FilesSidebarProps, "onSelectedCountC
 
 export function AppFilesSidebar({
   activeSidebarView,
-  fileSelectionCount,
+  fileSelectionCount: _fileSelectionCount,
   isSidebarOpen,
   isSidebarResizing,
   onSelectedCountChange,
-  selectedCountLabel,
+  selectedCountLabel: _selectedCountLabel,
   sidebarViews,
   sidebarWidth,
   startSidebarResize,
   ...filesSidebarProps
 }: AppFilesSidebarProps): ReactElement {
   const heading = sidebarViews.find((view) => view.id === activeSidebarView)?.label;
-  const showHeader = activeSidebarView !== "files" || fileSelectionCount > 1;
-  const headerLabel = activeSidebarView === "files" ? selectedCountLabel : heading;
+  const showHeader = activeSidebarView !== "files";
 
   return (
     <aside
@@ -40,7 +39,7 @@ export function AppFilesSidebar({
     >
       {showHeader ? (
         <div className="sidebar-header">
-          <div className="pane-heading">{headerLabel}</div>
+          <div className="pane-heading">{heading}</div>
         </div>
       ) : null}
       <div className={`sidebar-body sidebar-view-content sidebar-view-content--${activeSidebarView}`}>
