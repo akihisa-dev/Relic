@@ -64,23 +64,32 @@ class CodexAppServerClient {
     timeout: NodeJS.Timeout;
   }>();
   private turnDeltas: string[] = [];
-  private turnResolvers = new Map<string, (value: string) => void>();
+  private turnResolvers = new Map<string, {
+    reject: (error: Error) => void;
+    resolve: (value: string) => void;
+    timeout: NodeJS.Timeout;
+  }>();
 
   async start(): Promise<void> {
-    this.process = spawn(codexBinaryPath, ["app-server", "--listen", "stdio://"], {
-      stdio: ["pipe", "pipe", "pipe"]
-    });
+    return new Promise((resolve, reject) => {
+      const process = spawn(codexBinaryPath, ["app-server", "--listen", "stdio://"], {
+        stdio: ["pipe", "pipe", "pipe"]
+      });
+      this.process = process;
 
-    const stdout = readline.createInterface({ input: this.process.stdout });
-    stdout.on("line", (line) => this.handleLine(line));
+      const stdout = readline.createInterface({ input: process.stdout });
+      stdout.on("line", (line) => this.handleLine(line));
 
-    this.process.stderr.on("data", () => undefined);
-    this.process.on("exit", () => {
-      for (const pendingRequest of this.pending.values()) {
-        clearTimeout(pendingRequest.timeout);
-        pendingRequest.reject(new Error("Codex App Serverが終了しました。"));
-      }
-      this.pending.clear();
+      process.stderr.on("data", () => undefined);
+      process.once("spawn", () => resolve());
+      process.once("error", (error) => {
+        const wrappedError = new Error(`Codex App Serverを起動できませんでした: ${error.message}`);
+        this.failAll(wrappedError);
+        reject(wrappedError);
+      });
+      process.on("exit", () => {
+        this.failAll(new Error("Codex App Serverが終了しました。"));
+      });
     });
   }
 
@@ -158,11 +167,22 @@ class CodexAppServerClient {
         this.turnResolvers.delete(turnId);
         reject(new Error("Codex App Serverのturnがタイムアウトしました。"));
       }, requestTimeoutMs);
-      this.turnResolvers.set(turnId, (value) => {
-        clearTimeout(timeout);
-        resolve(value);
-      });
+      this.turnResolvers.set(turnId, { reject, resolve, timeout });
     });
+  }
+
+  private failAll(error: Error): void {
+    for (const pendingRequest of this.pending.values()) {
+      clearTimeout(pendingRequest.timeout);
+      pendingRequest.reject(error);
+    }
+    this.pending.clear();
+
+    for (const turnResolver of this.turnResolvers.values()) {
+      clearTimeout(turnResolver.timeout);
+      turnResolver.reject(error);
+    }
+    this.turnResolvers.clear();
   }
 
   private handleLine(line: string): void {
@@ -199,12 +219,13 @@ class CodexAppServerClient {
       const params = message.params as { turn?: { id?: string } } | undefined;
       const turnId = params?.turn?.id;
       if (!turnId) return;
-      const resolve = this.turnResolvers.get(turnId);
-      if (!resolve) return;
+      const turnResolver = this.turnResolvers.get(turnId);
+      if (!turnResolver) return;
       this.turnResolvers.delete(turnId);
+      clearTimeout(turnResolver.timeout);
       const text = this.turnDeltas.join("");
       this.turnDeltas = [];
-      resolve(text);
+      turnResolver.resolve(text);
     }
   }
 }
