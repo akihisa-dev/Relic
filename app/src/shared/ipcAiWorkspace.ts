@@ -32,6 +32,7 @@ export interface AIWorkspaceState {
   codexAppServerAvailable: boolean;
   history: AIWorkspaceMessage[];
   index: AIWorkspaceIndexSummary;
+  operationHistory: AIWorkspaceFileOperation[];
   pendingOperations: AIWorkspaceFileOperation[];
 }
 

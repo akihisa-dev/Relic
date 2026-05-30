@@ -2,6 +2,8 @@ import { useState, type ReactElement } from "react";
 
 import type { AIWorkspaceState } from "../../shared/ipc";
 
+type AIWorkspacePanelView = "chat" | "history";
+
 interface AIWorkspacePanelProps {
   isLoading: boolean;
   isSending: boolean;
@@ -28,7 +30,9 @@ export function AIWorkspacePanel({
   workspaceName
 }: AIWorkspacePanelProps): ReactElement {
   const [message, setMessage] = useState("");
+  const [panelView, setPanelView] = useState<AIWorkspacePanelView>("chat");
   const history = state?.history ?? [];
+  const operationHistory = state?.operationHistory ?? [];
   const pendingOperations = state?.pendingOperations ?? [];
 
   return (
@@ -65,6 +69,25 @@ export function AIWorkspacePanel({
         </div>
       ) : null}
 
+      <div className="ai-workspace-tabs" role="tablist" aria-label="AI Workspace表示">
+        <button
+          aria-selected={panelView === "chat"}
+          onClick={() => setPanelView("chat")}
+          role="tab"
+          type="button"
+        >
+          会話
+        </button>
+        <button
+          aria-selected={panelView === "history"}
+          onClick={() => setPanelView("history")}
+          role="tab"
+          type="button"
+        >
+          変更履歴
+        </button>
+      </div>
+
       {pendingOperations.length > 0 ? (
         <section className="ai-workspace-operations">
           <div className="ai-workspace-operations-header">
@@ -93,42 +116,67 @@ export function AIWorkspacePanel({
         </section>
       ) : null}
 
-      <div className="ai-workspace-messages" aria-live="polite">
-        {isLoading && history.length === 0 ? (
-          <div className="empty-note">AI Workspaceを読み込んでいます。</div>
-        ) : history.length === 0 ? (
-          <div className="empty-note">右パネルからMarkdownワークスペースについて話しかけられます。</div>
-        ) : (
-          history.map((item) => (
-            <article className={`ai-workspace-message ai-workspace-message--${item.role}`} key={item.id}>
-              <div className="ai-workspace-message-role">{item.role === "user" ? "You" : "AI"}</div>
-              <p>{item.content}</p>
-              {item.references.length > 0 ? (
-                <ul className="ai-workspace-references">
-                  {item.references.map((reference) => (
-                    <li key={`${item.id}-${reference.path}-${reference.line ?? 0}`}>
-                      <button onClick={() => onOpenFile(reference.path)} title={reference.path} type="button">
-                        <span>{reference.path}{reference.line ? `:${reference.line}` : ""}</span>
-                        <strong>開く</strong>
-                      </button>
-                      <span>{reference.preview}</span>
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
-              {item.operations?.length ? (
-                <ul className="ai-workspace-message-operations">
-                  {item.operations.map((operation) => (
-                    <li key={operation.id}>
-                      {operation.kind === "create" ? "作成" : operation.kind === "update" ? "編集" : "削除"}: {operation.path}
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
-            </article>
-          ))
-        )}
-      </div>
+      {panelView === "chat" ? (
+        <div className="ai-workspace-messages" aria-live="polite">
+          {isLoading && history.length === 0 ? (
+            <div className="empty-note">AI Workspaceを読み込んでいます。</div>
+          ) : history.length === 0 ? (
+            <div className="empty-note">右パネルからMarkdownワークスペースについて話しかけられます。</div>
+          ) : (
+            history.map((item) => (
+              <article className={`ai-workspace-message ai-workspace-message--${item.role}`} key={item.id}>
+                <div className="ai-workspace-message-role">{item.role === "user" ? "You" : "AI"}</div>
+                <p>{item.content}</p>
+                {item.references.length > 0 ? (
+                  <ul className="ai-workspace-references">
+                    {item.references.map((reference) => (
+                      <li key={`${item.id}-${reference.path}-${reference.line ?? 0}`}>
+                        <button onClick={() => onOpenFile(reference.path)} title={reference.path} type="button">
+                          <span>{reference.path}{reference.line ? `:${reference.line}` : ""}</span>
+                          <strong>開く</strong>
+                        </button>
+                        <span>{reference.preview}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+                {item.operations?.length ? (
+                  <ul className="ai-workspace-message-operations">
+                    {item.operations.map((operation) => (
+                      <li key={operation.id}>
+                        {operationKindLabel(operation.kind)}: {operation.path}
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+              </article>
+            ))
+          )}
+        </div>
+      ) : (
+        <div className="ai-workspace-history">
+          {operationHistory.length === 0 ? (
+            <div className="empty-note">AIによるMarkdown変更履歴はまだありません。</div>
+          ) : (
+            <ul>
+              {[...operationHistory].reverse().map((operation) => (
+                <li key={operation.id}>
+                  <button onClick={() => onOpenFile(operation.path)} title={operation.path} type="button">
+                    <span>{operation.path}</span>
+                    <strong>開く</strong>
+                  </button>
+                  <div>
+                    <span>{operationKindLabel(operation.kind)}</span>
+                    <span>{operationStatusLabel(operation.status)}</span>
+                    <time dateTime={operation.createdAt}>{formatOperationTime(operation.createdAt)}</time>
+                  </div>
+                  <small>{operation.summary}</small>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
 
       <form
         className="ai-workspace-form"
@@ -152,4 +200,29 @@ export function AIWorkspacePanel({
       </form>
     </div>
   );
+}
+
+function operationKindLabel(kind: "create" | "update" | "delete"): string {
+  if (kind === "create") return "作成";
+  if (kind === "update") return "編集";
+  return "削除";
+}
+
+function operationStatusLabel(status: "pending" | "applied" | "discarded" | "failed"): string {
+  if (status === "pending") return "未反映";
+  if (status === "applied") return "反映済み";
+  if (status === "discarded") return "取りやめ";
+  return "失敗";
+}
+
+function formatOperationTime(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+
+  return date.toLocaleString("ja-JP", {
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    month: "2-digit"
+  });
 }

@@ -266,6 +266,7 @@ function toState(data: AIWorkspaceData): AIWorkspaceState {
       skippedLargeFiles: data.index.skippedLargeFiles,
       unreadableFiles: data.index.unreadableFiles
     },
+    operationHistory: data.operations,
     pendingOperations: data.operations.filter((operation) => operation.status === "pending")
   };
 }

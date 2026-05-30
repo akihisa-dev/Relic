@@ -164,6 +164,30 @@
   padding: 8px;
 }
 
+.ai-workspace-tabs {
+  background: var(--hover);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding: 2px;
+}
+
+.ai-workspace-tabs button {
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  color: var(--text-3);
+  font-size: 12px;
+  min-height: 26px;
+}
+
+.ai-workspace-tabs button[aria-selected="true"] {
+  background: var(--popup-bg);
+  color: var(--text);
+  font-weight: 700;
+}
+
 .ai-workspace-operations {
   background: var(--popup-bg);
   border: 1px solid var(--border);
@@ -264,6 +288,71 @@
   display: grid;
   gap: 10px;
   min-height: 160px;
+}
+
+.ai-workspace-history {
+  min-height: 160px;
+}
+
+.ai-workspace-history ul {
+  display: grid;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ai-workspace-history li {
+  background: var(--popup-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  display: grid;
+  gap: 6px;
+  padding: 10px;
+}
+
+.ai-workspace-history li button {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: var(--link);
+  display: flex;
+  font-size: 12px;
+  gap: 6px;
+  justify-content: space-between;
+  overflow: hidden;
+  padding: 0;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.ai-workspace-history li button span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ai-workspace-history li button strong {
+  color: var(--text-3);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.ai-workspace-history li div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ai-workspace-history li div span,
+.ai-workspace-history li time {
+  color: var(--text-3);
+  font-size: 12px;
+}
+
+.ai-workspace-history li small {
+  color: var(--text-2);
+  font-size: 12px;
+  line-height: 1.4;
 }
 
 .ai-workspace-message {

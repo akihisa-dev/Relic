@@ -54,6 +54,7 @@ export function makeRelicApi(overrides: Partial<typeof window.relic> = {}): type
         codexAppServerAvailable: false,
         history: [],
         index: { chunkCount: 0, indexedAt: null, indexedFileCount: 0, skippedLargeFiles: [], unreadableFiles: [] },
+        operationHistory: [],
         pendingOperations: []
       }
     }),
@@ -69,6 +70,7 @@ export function makeRelicApi(overrides: Partial<typeof window.relic> = {}): type
         codexAppServerAvailable: false,
         history: [],
         index: { chunkCount: 0, indexedAt: null, indexedFileCount: 0, skippedLargeFiles: [], unreadableFiles: [] },
+        operationHistory: [],
         pendingOperations: []
       }
     }),
@@ -93,6 +95,7 @@ export function makeRelicApi(overrides: Partial<typeof window.relic> = {}): type
         codexAppServerAvailable: false,
         history: [],
         index: { chunkCount: 0, indexedAt: null, indexedFileCount: 0, skippedLargeFiles: [], unreadableFiles: [] },
+        operationHistory: [],
         pendingOperations: []
       }
     }),
@@ -112,6 +115,7 @@ export function makeRelicApi(overrides: Partial<typeof window.relic> = {}): type
         codexAppServerAvailable: false,
         history: [],
         index: { chunkCount: 0, indexedAt: null, indexedFileCount: 0, skippedLargeFiles: [], unreadableFiles: [] },
+        operationHistory: [],
         pendingOperations: []
       }
     }),
@@ -146,6 +150,7 @@ export function makeRelicApi(overrides: Partial<typeof window.relic> = {}): type
         codexAppServerAvailable: false,
         history: [],
         index: { chunkCount: 0, indexedAt: null, indexedFileCount: 0, skippedLargeFiles: [], unreadableFiles: [] },
+        operationHistory: [],
         pendingOperations: []
       }
     }),
