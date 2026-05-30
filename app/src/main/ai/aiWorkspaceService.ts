@@ -490,6 +490,15 @@ async function prepareOperations(
     }
 
     if (operation.kind === "create") {
+      const existingFile = await readMarkdownFile(workspacePath, pathResult.value);
+      if (existingFile.ok) {
+        rejectedOperations.push({
+          path: pathResult.value,
+          reason: "同じパスのMarkdownがすでにあるため、新規作成案としては採用しませんでした。"
+        });
+        continue;
+      }
+
       nextOperations.push({ ...operation, path: pathResult.value });
       continue;
     }
