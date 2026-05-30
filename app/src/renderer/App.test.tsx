@@ -1004,7 +1004,7 @@ describe("App", () => {
     expect(useUiStore.getState().rightPanelView).toBe("outline");
   });
 
-  it("AI Workspaceへ現在ファイルの未保存本文とdirty状態を渡す", async () => {
+  it("AI Workspaceへ現在ファイルの未保存本文とdirty状態を直接渡す", async () => {
     const previewAIWorkspaceMessage = vi.fn().mockResolvedValue({
       ok: true,
       value: {
@@ -1072,16 +1072,6 @@ describe("App", () => {
     fireEvent.click(screen.getByRole("button", { name: "送信" }));
 
     await waitFor(() => {
-      expect(previewAIWorkspaceMessage).toHaveBeenCalledWith({
-        activeFileContent: "# 未保存\nnew draft",
-        activeFilePath: "読書メモ.md",
-        message: "このファイルを整理して"
-      });
-    });
-    expect(screen.getByText("AIへ送るMarkdown参照")).toBeInTheDocument();
-
-    fireEvent.click(screen.getAllByRole("button", { name: "送信" })[0]);
-    await waitFor(() => {
       expect(sendAIWorkspaceMessage).toHaveBeenCalledWith({
         activeFileContent: "# 未保存\nnew draft",
         activeFilePath: "読書メモ.md",
@@ -1089,6 +1079,8 @@ describe("App", () => {
         message: "このファイルを整理して"
       });
     });
+    expect(previewAIWorkspaceMessage).not.toHaveBeenCalled();
+    expect(screen.queryByText("AIへ送るMarkdown参照")).not.toBeInTheDocument();
   });
 
   it("機能トグルで右パネルをOFFにしたら表示上も右パネルを閉じる", async () => {

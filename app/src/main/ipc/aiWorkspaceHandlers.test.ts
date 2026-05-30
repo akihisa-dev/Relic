@@ -84,7 +84,7 @@ describe("registerAIWorkspaceHandlers", () => {
     }));
   });
 
-  it("does not notify workspace changes when chat only creates pending proposals", async () => {
+  it("notifies workspace changes after a successful chat message", async () => {
     const sender = { send: vi.fn() };
     const beforeState = createAIWorkspaceState("pending");
     const afterState = createAIWorkspaceState("pending");
@@ -104,7 +104,10 @@ describe("registerAIWorkspaceHandlers", () => {
 
     await handler({ sender }, { message: "認証を整理して" });
 
-    expect(sender.send).not.toHaveBeenCalled();
+    expect(sender.send).toHaveBeenCalledWith(workspaceChangedChannel, expect.objectContaining({
+      workspaceId: "workspace-1",
+      workspacePath: "/tmp/notes"
+    }));
   });
 
   it("notifies workspace changes when applying operations changes Markdown", async () => {

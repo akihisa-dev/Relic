@@ -27,6 +27,17 @@ describe("useAIWorkspaceState", () => {
           skippedLargeFiles: [],
           unreadableFiles: []
         }
+      }),
+      sendAIWorkspaceMessage: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          aiProvider: "codex-app-server",
+          openAIAPIKeyConfigured: true,
+          history: [],
+          index: { chunkCount: 0, indexedAt: null, indexedFileCount: 0, skippedLargeFiles: [], unreadableFiles: [] },
+          operationHistory: [],
+          pendingOperations: []
+        }
       })
     });
   });
@@ -35,7 +46,7 @@ describe("useAIWorkspaceState", () => {
     vi.clearAllMocks();
   });
 
-  it("clears a pending send preview when AI Workspace data is cleared", async () => {
+  it("sends an AI Workspace message directly without a send preview", async () => {
     const onError = vi.fn();
     const hook = renderHook(() => useAIWorkspaceState({
       isEnabled: true,
@@ -51,22 +62,18 @@ describe("useAIWorkspaceState", () => {
       await hook.result.current.sendAIWorkspaceMessage("認証を整理して", [], "docs/auth.md", "# Auth");
     });
 
-    expect(hook.result.current.aiWorkspaceMessagePreview).toEqual(expect.objectContaining({
+    expect(window.relic?.previewAIWorkspaceMessage).not.toHaveBeenCalled();
+    expect(window.relic?.sendAIWorkspaceMessage).toHaveBeenCalledWith({
+      activeFileContent: "# Auth",
+      activeFilePath: "docs/auth.md",
+      dirtyFilePaths: [],
       message: "認証を整理して"
-    }));
-
-    await act(async () => {
-      await hook.result.current.clearAIWorkspaceData();
     });
-
-    expect(window.relic?.clearAIWorkspaceData).toHaveBeenCalledWith({ includeHistory: true, includeIndex: true });
-    await waitFor(() => {
-      expect(hook.result.current.aiWorkspaceMessagePreview).toBeNull();
-    });
+    expect(hook.result.current.aiWorkspaceMessagePreview).toBeNull();
     expect(onError).not.toHaveBeenCalled();
   });
 
-  it("clears a pending send preview when AI Workspace becomes disabled", async () => {
+  it("keeps the message preview empty when AI Workspace becomes disabled", async () => {
     const onError = vi.fn();
     const hook = renderHook(
       ({ isEnabled }) => useAIWorkspaceState({
@@ -85,7 +92,7 @@ describe("useAIWorkspaceState", () => {
       await hook.result.current.sendAIWorkspaceMessage("認証を整理して");
     });
 
-    expect(hook.result.current.aiWorkspaceMessagePreview).not.toBeNull();
+    expect(hook.result.current.aiWorkspaceMessagePreview).toBeNull();
 
     hook.rerender({ isEnabled: false });
 
@@ -94,7 +101,7 @@ describe("useAIWorkspaceState", () => {
     });
   });
 
-  it("does not confirm a pending send preview after the editor context changed", async () => {
+  it("does not keep a pending preview when confirm is called for compatibility", async () => {
     const onError = vi.fn();
     const hook = renderHook(() => useAIWorkspaceState({
       isEnabled: true,
@@ -114,9 +121,8 @@ describe("useAIWorkspaceState", () => {
       await hook.result.current.confirmAIWorkspaceMessage(["docs/auth.md"], "docs/auth.md", "# Auth\nchanged");
     });
 
-    expect(window.relic?.sendAIWorkspaceMessage).not.toHaveBeenCalled();
     expect(hook.result.current.aiWorkspaceMessagePreview).toBeNull();
-    expect(onError).toHaveBeenCalledWith("送信確認後にMarkdownの状態が変わりました。もう一度AIへ送信してください。");
+    expect(onError).not.toHaveBeenCalled();
   });
 
   it("does not show an external AI send preview when AI collaboration is unavailable", async () => {
@@ -163,7 +169,7 @@ describe("useAIWorkspaceState", () => {
     expect(onError).toHaveBeenCalledWith("AI共同作業を開始できません。設定のAIでOpenAI APIキーを登録してください。");
   });
 
-  it("keeps local AI workspace operations available when AI collaboration is unavailable", async () => {
+  it("does not use local pending-operation commands when OpenAI API is unavailable", async () => {
     const onError = vi.fn();
     window.relic = makeRelicApi({
       getAIWorkspaceState: vi.fn().mockResolvedValue({
@@ -177,16 +183,7 @@ describe("useAIWorkspaceState", () => {
           pendingOperations: []
         }
       }),
-      previewAIWorkspaceMessage: vi.fn().mockResolvedValue({
-        ok: true,
-        value: {
-          message: "それ反映して",
-          references: [],
-          requiresExternalAI: false,
-          skippedLargeFiles: [],
-          unreadableFiles: []
-        }
-      })
+      sendAIWorkspaceMessage: vi.fn()
     });
     const hook = renderHook(() => useAIWorkspaceState({
       isEnabled: true,
@@ -195,19 +192,14 @@ describe("useAIWorkspaceState", () => {
     }));
 
     await waitFor(() => {
-      expect(window.relic?.getAIWorkspaceState).toHaveBeenCalled();
+      expect(hook.result.current.aiWorkspaceState?.openAIAPIKeyConfigured).toBe(false);
     });
 
     await act(async () => {
       await hook.result.current.sendAIWorkspaceMessage("それ反映して");
     });
 
-    expect(window.relic?.sendAIWorkspaceMessage).toHaveBeenCalledWith({
-      activeFileContent: null,
-      activeFilePath: null,
-      dirtyFilePaths: [],
-      message: "それ反映して"
-    });
-    expect(onError).not.toHaveBeenCalled();
+    expect(window.relic?.sendAIWorkspaceMessage).not.toHaveBeenCalled();
+    expect(onError).toHaveBeenCalledWith("AI共同作業を開始できません。設定のAIでOpenAI APIキーを登録してください。");
   });
 });
