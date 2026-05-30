@@ -1,0 +1,85 @@
+import { act, renderHook, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import { makeRelicApi } from "../../test/rendererTestUtils";
+import { useAIWorkspaceState } from "./useAIWorkspaceState";
+
+describe("useAIWorkspaceState", () => {
+  beforeEach(() => {
+    window.relic = makeRelicApi({
+      previewAIWorkspaceMessage: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          message: "認証を整理して",
+          references: [{ line: 1, path: "docs/auth.md", preview: "# Auth" }],
+          requiresExternalAI: true,
+          skippedLargeFiles: [],
+          unreadableFiles: []
+        }
+      })
+    });
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("clears a pending send preview when AI Workspace data is cleared", async () => {
+    const onError = vi.fn();
+    const hook = renderHook(() => useAIWorkspaceState({
+      isEnabled: true,
+      onError,
+      workspaceId: "workspace-1"
+    }));
+
+    await waitFor(() => {
+      expect(window.relic?.getAIWorkspaceState).toHaveBeenCalled();
+    });
+
+    await act(async () => {
+      await hook.result.current.sendAIWorkspaceMessage("認証を整理して", [], "docs/auth.md", "# Auth");
+    });
+
+    expect(hook.result.current.aiWorkspaceMessagePreview).toEqual(expect.objectContaining({
+      message: "認証を整理して"
+    }));
+
+    await act(async () => {
+      await hook.result.current.clearAIWorkspaceData();
+    });
+
+    expect(window.relic?.clearAIWorkspaceData).toHaveBeenCalledWith({ includeHistory: true, includeIndex: true });
+    await waitFor(() => {
+      expect(hook.result.current.aiWorkspaceMessagePreview).toBeNull();
+    });
+    expect(onError).not.toHaveBeenCalled();
+  });
+
+  it("clears a pending send preview when AI Workspace becomes disabled", async () => {
+    const onError = vi.fn();
+    const hook = renderHook(
+      ({ isEnabled }) => useAIWorkspaceState({
+        isEnabled,
+        onError,
+        workspaceId: isEnabled ? "workspace-1" : null
+      }),
+      { initialProps: { isEnabled: true } }
+    );
+
+    await waitFor(() => {
+      expect(window.relic?.getAIWorkspaceState).toHaveBeenCalled();
+    });
+
+    await act(async () => {
+      await hook.result.current.sendAIWorkspaceMessage("認証を整理して");
+    });
+
+    expect(hook.result.current.aiWorkspaceMessagePreview).not.toBeNull();
+
+    hook.rerender({ isEnabled: false });
+
+    await waitFor(() => {
+      expect(hook.result.current.aiWorkspaceMessagePreview).toBeNull();
+    });
+  });
+});
