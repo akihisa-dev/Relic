@@ -58,6 +58,16 @@ export function makeRelicApi(overrides: Partial<typeof window.relic> = {}): type
         pendingOperations: []
       }
     }),
+    clearAIWorkspaceData: vi.fn().mockResolvedValue({
+      ok: true,
+      value: {
+        codexAppServerAvailable: false,
+        history: [],
+        index: { chunkCount: 0, indexedAt: null, indexedFileCount: 0, skippedLargeFiles: [], unreadableFiles: [] },
+        operationHistory: [],
+        pendingOperations: []
+      }
+    }),
     copyDiagramSvg: vi.fn().mockResolvedValue({ ok: true, value: { status: "copied" } }),
     createFolder: vi.fn(),
     createLinkedMarkdownFile: vi.fn(),

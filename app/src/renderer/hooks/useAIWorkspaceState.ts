@@ -39,9 +39,17 @@ export function useAIWorkspaceState({
   const [isAIWorkspaceLoading, setIsAIWorkspaceLoading] = useState(false);
   const [isAIWorkspaceSending, setIsAIWorkspaceSending] = useState(false);
 
+  const resetMessagePreview = useCallback((): void => {
+    setAIWorkspaceMessagePreview(null);
+    setPreviewActiveFileContent(null);
+    setPreviewActiveFilePath(null);
+    setPreviewDirtyFilePaths([]);
+  }, []);
+
   const reloadAIWorkspace = useCallback(async (): Promise<void> => {
     if (!isEnabled || !workspaceId) {
       setAIWorkspaceState(null);
+      resetMessagePreview();
       return;
     }
 
@@ -57,7 +65,7 @@ export function useAIWorkspaceState({
     }
 
     setAIWorkspaceState(result.value);
-  }, [isEnabled, onError, workspaceId]);
+  }, [isEnabled, onError, resetMessagePreview, workspaceId]);
 
   const rebuildAIWorkspaceIndex = useCallback(async (): Promise<void> => {
     if (!isEnabled || !workspaceId) return;
@@ -132,24 +140,19 @@ export function useAIWorkspaceState({
       return;
     }
 
-    setAIWorkspaceMessagePreview(null);
-    setPreviewActiveFileContent(null);
-    setPreviewActiveFilePath(null);
-    setPreviewDirtyFilePaths([]);
+    resetMessagePreview();
     setAIWorkspaceState(result.value);
-  }, [aiWorkspaceMessagePreview, isEnabled, onError, previewActiveFileContent, previewActiveFilePath, previewDirtyFilePaths, workspaceId]);
+  }, [aiWorkspaceMessagePreview, isEnabled, onError, previewActiveFileContent, previewActiveFilePath, previewDirtyFilePaths, resetMessagePreview, workspaceId]);
 
   const cancelAIWorkspaceMessage = useCallback((): void => {
-    setAIWorkspaceMessagePreview(null);
-    setPreviewActiveFileContent(null);
-    setPreviewActiveFilePath(null);
-    setPreviewDirtyFilePaths([]);
-  }, []);
+    resetMessagePreview();
+  }, [resetMessagePreview]);
 
   const clearAIWorkspaceData = useCallback(async (): Promise<void> => {
     if (!isEnabled || !workspaceId) return;
     if (!window.relic?.clearAIWorkspaceData) return;
 
+    resetMessagePreview();
     setIsAIWorkspaceLoading(true);
     const result = await window.relic.clearAIWorkspaceData({ includeHistory: true, includeIndex: true });
     setIsAIWorkspaceLoading(false);
@@ -159,8 +162,9 @@ export function useAIWorkspaceState({
       return;
     }
 
+    resetMessagePreview();
     setAIWorkspaceState(result.value);
-  }, [isEnabled, onError, workspaceId]);
+  }, [isEnabled, onError, resetMessagePreview, workspaceId]);
 
   const applyAIWorkspaceOperations = useCallback(async (
     dirtyFilePaths: string[] = [],
