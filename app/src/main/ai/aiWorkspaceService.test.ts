@@ -186,6 +186,49 @@ describe("sendAIWorkspaceMessage", () => {
       expect(result.value.pendingOperations.map((operation) => operation.path)).toEqual(["README.md"]);
     }
   });
+
+  it("applies only the pending operation named in a natural language message", async () => {
+    await writeFile(path.join(workspacePath, "first.md"), "first", "utf8");
+    await writeFile(path.join(workspacePath, "second.md"), "second", "utf8");
+    await writeData({
+      operations: [
+        createOperation("update", "first.md", "updated first"),
+        createOperation("update", "second.md", "updated second")
+      ]
+    });
+
+    const result = await sendAIWorkspaceMessage(context(), { message: "first.mdだけ反映して" });
+
+    expect(result.ok).toBe(true);
+    expect(runCodexAIWorkspaceTurn).not.toHaveBeenCalled();
+    await expect(readFile(path.join(workspacePath, "first.md"), "utf8")).resolves.toBe("updated first");
+    await expect(readFile(path.join(workspacePath, "second.md"), "utf8")).resolves.toBe("second");
+    if (result.ok) {
+      expect(result.value.pendingOperations.map((operation) => operation.path)).toEqual(["second.md"]);
+    }
+  });
+
+  it("discards only the pending operation named in a natural language message", async () => {
+    await writeFile(path.join(workspacePath, "first.md"), "first", "utf8");
+    await writeFile(path.join(workspacePath, "second.md"), "second", "utf8");
+    await writeData({
+      operations: [
+        createOperation("update", "first.md", "updated first"),
+        createOperation("update", "second.md", "updated second")
+      ]
+    });
+
+    const result = await sendAIWorkspaceMessage(context(), { message: "second.mdはやめて" });
+
+    expect(result.ok).toBe(true);
+    expect(runCodexAIWorkspaceTurn).not.toHaveBeenCalled();
+    await expect(readFile(path.join(workspacePath, "first.md"), "utf8")).resolves.toBe("first");
+    await expect(readFile(path.join(workspacePath, "second.md"), "utf8")).resolves.toBe("second");
+    if (result.ok) {
+      expect(result.value.pendingOperations.map((operation) => operation.path)).toEqual(["first.md"]);
+      expect(result.value.operationHistory.find((operation) => operation.path === "second.md")?.status).toBe("discarded");
+    }
+  });
 });
 
 describe("previewAIWorkspaceMessage", () => {
