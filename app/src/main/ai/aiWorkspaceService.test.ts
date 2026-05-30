@@ -3,8 +3,13 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { applyAIWorkspaceOperations, discardAIWorkspaceOperations } from "./aiWorkspaceService";
+vi.mock("./codexAppServerClient", () => ({
+  runCodexAIWorkspaceTurn: vi.fn()
+}));
+
+import { applyAIWorkspaceOperations, discardAIWorkspaceOperations, sendAIWorkspaceMessage } from "./aiWorkspaceService";
 import { writeAIWorkspaceData, type AIWorkspaceData } from "./aiWorkspaceData";
+import { runCodexAIWorkspaceTurn } from "./codexAppServerClient";
 
 let userDataPath = "";
 let workspacePath = "";
@@ -12,6 +17,7 @@ let workspacePath = "";
 beforeEach(async () => {
   userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-ai-user-data-"));
   workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-ai-workspace-"));
+  vi.mocked(runCodexAIWorkspaceTurn).mockReset();
 });
 
 afterEach(async () => {
@@ -80,6 +86,23 @@ describe("discardAIWorkspaceOperations", () => {
     expect(result.ok).toBe(true);
     await expect(readFile(path.join(workspacePath, "draft.md"), "utf8")).resolves.toBe("old");
     if (result.ok) {
+      expect(result.value.pendingOperations).toEqual([]);
+    }
+  });
+});
+
+describe("sendAIWorkspaceMessage", () => {
+  it("shows a clear fallback message when Codex App Server fails", async () => {
+    await writeFile(path.join(workspacePath, "README.md"), "# 認証\nログイン仕様", "utf8");
+    vi.mocked(runCodexAIWorkspaceTurn).mockRejectedValueOnce(new Error("connection failed"));
+
+    const result = await sendAIWorkspaceMessage(context(), { message: "認証について整理して" });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      const lastMessage = result.value.history.at(-1);
+      expect(lastMessage?.content).toContain("Codex App ServerでAI処理を完了できませんでした。");
+      expect(lastMessage?.content).toContain("失敗理由: connection failed");
       expect(result.value.pendingOperations).toEqual([]);
     }
   });
