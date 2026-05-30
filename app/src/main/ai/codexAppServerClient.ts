@@ -286,14 +286,50 @@ export function parseCodexResponse(text: string): CodexAIWorkspaceResponse {
 
 function extractJsonObject(text: string): string | null {
   const trimmed = text.trim();
-  if (trimmed.startsWith("{")) return trimmed;
 
   const fencedJson = trimmed.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
   if (fencedJson) return fencedJson[1].trim();
 
-  const firstBrace = trimmed.indexOf("{");
-  const lastBrace = trimmed.lastIndexOf("}");
-  if (firstBrace >= 0 && lastBrace > firstBrace) return trimmed.slice(firstBrace, lastBrace + 1);
+  return extractFirstBalancedJsonObject(trimmed);
+}
+
+function extractFirstBalancedJsonObject(text: string): string | null {
+  const firstBrace = text.indexOf("{");
+  if (firstBrace === -1) return null;
+
+  let depth = 0;
+  let isEscaped = false;
+  let isInString = false;
+
+  for (let index = firstBrace; index < text.length; index += 1) {
+    const char = text[index];
+
+    if (isInString) {
+      if (isEscaped) {
+        isEscaped = false;
+      } else if (char === "\\") {
+        isEscaped = true;
+      } else if (char === "\"") {
+        isInString = false;
+      }
+      continue;
+    }
+
+    if (char === "\"") {
+      isInString = true;
+      continue;
+    }
+
+    if (char === "{") {
+      depth += 1;
+      continue;
+    }
+
+    if (char === "}") {
+      depth -= 1;
+      if (depth === 0) return text.slice(firstBrace, index + 1);
+    }
+  }
 
   return null;
 }
