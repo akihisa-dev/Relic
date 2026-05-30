@@ -1,5 +1,6 @@
 import { existsSync } from "node:fs";
 import { createHash } from "node:crypto";
+import path from "node:path";
 
 import type {
   AIWorkspaceFileOperation,
@@ -15,6 +16,7 @@ import type {
 } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { createMarkdownFileAtPath, readMarkdownFile, writeMarkdownFileContent } from "../files/markdownFiles";
+import { resolveWorkspaceRelativePath } from "../files/paths";
 import { moveWorkspaceItemToTrash, type TrashItem } from "../files/trash";
 import { buildAIWorkspaceIndex, searchAIWorkspaceChunks } from "./aiWorkspaceIndex";
 import {
@@ -123,7 +125,7 @@ export async function sendAIWorkspaceMessage(
       codexError = error instanceof Error ? error.message : String(error);
       return null;
     });
-    const operations = codexResponse ? await addOperationBaseHashes(context.workspacePath, codexResponse.operations) : [];
+    const operations = codexResponse ? await prepareOperations(context.workspacePath, codexResponse.operations) : [];
     const assistantMessage: AIWorkspaceMessage = {
       content: codexResponse?.message ?? buildAssistantFallback(message, references, codexError),
       createdAt: new Date().toISOString(),
@@ -365,26 +367,48 @@ async function applyOperation(
   return ok(undefined);
 }
 
-async function addOperationBaseHashes(
+async function prepareOperations(
   workspacePath: string,
   operations: AIWorkspaceFileOperation[]
 ): Promise<AIWorkspaceFileOperation[]> {
   const nextOperations: AIWorkspaceFileOperation[] = [];
 
   for (const operation of operations) {
+    const pathResult = validateOperationPath(workspacePath, operation.path);
+    if (!pathResult.ok) continue;
+
     if (operation.kind === "create") {
-      nextOperations.push(operation);
+      nextOperations.push({ ...operation, path: pathResult.value });
       continue;
     }
 
-    const file = await readMarkdownFile(workspacePath, operation.path);
+    const file = await readMarkdownFile(workspacePath, pathResult.value);
+    if (!file.ok) continue;
+
     nextOperations.push({
       ...operation,
-      baseContentHash: file.ok ? hashContent(file.value.content) : undefined
+      baseContentHash: hashContent(file.value.content),
+      path: pathResult.value
     });
   }
 
   return nextOperations;
+}
+
+function validateOperationPath(workspacePath: string, operationPath: string): RelicResult<string> {
+  const normalizedPath = operationPath.replace(/\\/g, "/").trim();
+  if (!normalizedPath || path.extname(normalizedPath) !== ".md") {
+    return fail("AI_WORKSPACE_OPERATION_PATH_INVALID", "AI変更案はMarkdownファイルだけを対象にできます。");
+  }
+
+  if (path.isAbsolute(normalizedPath) || normalizedPath.split("/").includes("..")) {
+    return fail("AI_WORKSPACE_OPERATION_PATH_INVALID", "AI変更案のパスがワークスペース外を指しています。");
+  }
+
+  const resolved = resolveWorkspaceRelativePath(workspacePath, normalizedPath);
+  if (!resolved.ok) return resolved;
+
+  return ok(normalizedPath);
 }
 
 function hashContent(content: string): string {
