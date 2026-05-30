@@ -49,6 +49,12 @@ export function AIWorkspacePanel({
     ...(messagePreview?.skippedLargeFiles ?? []),
     ...(messagePreview?.unreadableFiles ?? [])
   ];
+  const sendCurrentMessage = (): void => {
+    const trimmed = message.trim();
+    if (!trimmed || isSending) return;
+    onSendMessage(trimmed);
+    setMessage("");
+  };
 
   return (
     <div className="ai-workspace-panel">
@@ -316,14 +322,16 @@ export function AIWorkspacePanel({
         className="ai-workspace-form"
         onSubmit={(event) => {
           event.preventDefault();
-          const trimmed = message.trim();
-          if (!trimmed) return;
-          onSendMessage(trimmed);
-          setMessage("");
+          sendCurrentMessage();
         }}
       >
         <textarea
           aria-label="AIへのメッセージ"
+          onKeyDown={(event) => {
+            if (!(event.metaKey || event.ctrlKey) || event.key !== "Enter") return;
+            event.preventDefault();
+            sendCurrentMessage();
+          }}
           onChange={(event) => setMessage(event.target.value)}
           placeholder="このワークスペースについて相談..."
           value={message}
