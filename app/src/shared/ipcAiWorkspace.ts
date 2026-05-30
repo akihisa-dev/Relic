@@ -83,8 +83,10 @@ export interface AIWorkspaceFileOperation {
 export interface ApplyAIWorkspaceOperationsInput {
   dirtyFilePaths?: string[];
   operationIds?: string[];
+  userMessage?: string;
 }
 
 export interface DiscardAIWorkspaceOperationsInput {
   operationIds?: string[];
+  userMessage?: string;
 }

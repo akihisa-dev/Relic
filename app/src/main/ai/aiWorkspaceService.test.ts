@@ -327,6 +327,11 @@ describe("sendAIWorkspaceMessage", () => {
     await expect(readFile(path.join(workspacePath, "second.md"), "utf8")).resolves.toBe("second");
     if (result.ok) {
       expect(result.value.pendingOperations.map((operation) => operation.path)).toEqual(["second.md"]);
+      expect(result.value.history.at(-2)).toEqual(expect.objectContaining({
+        content: "first.mdだけ反映して",
+        role: "user"
+      }));
+      expect(result.value.history.at(-1)?.content).toContain("- 反映済み: first.md");
     }
   });
 
@@ -394,6 +399,10 @@ describe("sendAIWorkspaceMessage", () => {
     if (result.ok) {
       expect(result.value.pendingOperations.map((operation) => operation.path)).toEqual(["first.md"]);
       expect(result.value.operationHistory.find((operation) => operation.path === "second.md")?.status).toBe("discarded");
+      expect(result.value.history.at(-2)).toEqual(expect.objectContaining({
+        content: "second.mdはやめて",
+        role: "user"
+      }));
       expect(result.value.history.at(-1)?.content).toContain("- second.md");
     }
   });
