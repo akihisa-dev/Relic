@@ -248,6 +248,61 @@ describe("sendAIWorkspaceMessage", () => {
     }
   });
 
+  it("creates a pending revert proposal for an applied update operation", async () => {
+    await writeFile(path.join(workspacePath, "README.md"), "# Auth\nUpdated", "utf8");
+    await writeData({
+      operations: [{
+        ...createOperation("update", "README.md", "# Auth\nUpdated"),
+        baseContent: "# Auth\nOriginal",
+        baseContentHash: hashContent("# Auth\nOriginal"),
+        status: "applied"
+      }]
+    });
+
+    const result = await sendAIWorkspaceMessage(context(), { message: "さっきの変更を戻して" });
+
+    expect(result.ok).toBe(true);
+    expect(runCodexAIWorkspaceTurn).not.toHaveBeenCalled();
+    await expect(readFile(path.join(workspacePath, "README.md"), "utf8")).resolves.toBe("# Auth\nUpdated");
+    if (result.ok) {
+      expect(result.value.pendingOperations).toEqual([
+        expect.objectContaining({
+          baseContent: "# Auth\nUpdated",
+          content: "# Auth\nOriginal",
+          kind: "update",
+          path: "README.md",
+          status: "pending"
+        })
+      ]);
+      expect(result.value.history.at(-1)?.content).toContain("元に戻す変更案を作成しました");
+    }
+  });
+
+  it("creates a pending delete proposal to revert an applied create operation", async () => {
+    await writeFile(path.join(workspacePath, "created.md"), "# Created", "utf8");
+    await writeData({
+      operations: [{
+        ...createOperation("create", "created.md", "# Created"),
+        status: "applied"
+      }]
+    });
+
+    const result = await sendAIWorkspaceMessage(context(), { message: "created.mdを元に戻して" });
+
+    expect(result.ok).toBe(true);
+    expect(runCodexAIWorkspaceTurn).not.toHaveBeenCalled();
+    await expect(readFile(path.join(workspacePath, "created.md"), "utf8")).resolves.toBe("# Created");
+    if (result.ok) {
+      expect(result.value.pendingOperations).toEqual([
+        expect.objectContaining({
+          kind: "delete",
+          path: "created.md",
+          status: "pending"
+        })
+      ]);
+    }
+  });
+
   it("applies only the pending operation named in a natural language message", async () => {
     await writeFile(path.join(workspacePath, "first.md"), "first", "utf8");
     await writeFile(path.join(workspacePath, "second.md"), "second", "utf8");
