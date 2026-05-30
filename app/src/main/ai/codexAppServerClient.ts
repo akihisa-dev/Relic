@@ -308,8 +308,12 @@ export function parseCodexResponse(text: string): CodexAIWorkspaceResponse {
 function extractJsonObject(text: string): string | null {
   const trimmed = text.trim();
 
-  const fencedJson = trimmed.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-  if (fencedJson) return fencedJson[1].trim();
+  for (const fencedBlock of trimmed.matchAll(/```([a-zA-Z0-9_-]+)?\s*\n?([\s\S]*?)\s*```/g)) {
+    const language = fencedBlock[1]?.toLowerCase() ?? "";
+    const content = fencedBlock[2].trim();
+    const jsonObject = extractFirstBalancedJsonObject(content);
+    if (language === "json" && jsonObject) return jsonObject;
+  }
 
   return extractFirstBalancedJsonObject(trimmed);
 }
