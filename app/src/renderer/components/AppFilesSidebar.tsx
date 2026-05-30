@@ -29,23 +29,20 @@ export function AppFilesSidebar({
   ...filesSidebarProps
 }: AppFilesSidebarProps): ReactElement {
   const heading = sidebarViews.find((view) => view.id === activeSidebarView)?.label;
+  const showHeader = activeSidebarView !== "files" || fileSelectionCount > 1;
+  const headerLabel = activeSidebarView === "files" ? selectedCountLabel : heading;
 
   return (
     <aside
       aria-hidden={!isSidebarOpen}
-      className={`sidebar${isSidebarOpen ? "" : " sidebar--closed"}${isSidebarResizing ? " sidebar--resizing" : ""}`}
+      className={`sidebar${isSidebarOpen ? "" : " sidebar--closed"}${isSidebarResizing ? " sidebar--resizing" : ""}${showHeader ? "" : " sidebar--no-header"}`}
       style={{ width: isSidebarOpen ? sidebarWidth : 0 }}
     >
-      <div className="sidebar-header">
-        <div className="pane-heading">
-          {heading}
-          {activeSidebarView === "files" && fileSelectionCount > 1 ? (
-            <span className="pane-heading-count">
-              {selectedCountLabel}
-            </span>
-          ) : null}
+      {showHeader ? (
+        <div className="sidebar-header">
+          <div className="pane-heading">{headerLabel}</div>
         </div>
-      </div>
+      ) : null}
       <div className={`sidebar-body sidebar-view-content sidebar-view-content--${activeSidebarView}`}>
         {activeSidebarView === "files" ? (
           <FilesSidebar
