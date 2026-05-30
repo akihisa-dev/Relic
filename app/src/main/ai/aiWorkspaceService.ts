@@ -86,7 +86,7 @@ export async function previewAIWorkspaceMessage(
     const hasAppliedOperations = data.operations.some((operation) => operation.status === "applied");
     const requiresExternalAI = !(
       (hasPendingOperations &&
-        (shouldDiscardPendingOperations(message) || shouldApplyPendingOperations(message))) ||
+        (shouldHoldPendingOperations(message) || shouldDiscardPendingOperations(message) || shouldApplyPendingOperations(message))) ||
       (hasAppliedOperations && shouldRevertAppliedOperations(message))
     );
 
@@ -115,6 +115,10 @@ export async function sendAIWorkspaceMessage(
 
   try {
     const data = await ensureIndexed(context);
+    if (shouldHoldPendingOperations(message) && data.operations.some((operation) => operation.status === "pending")) {
+      return keepPendingOperations(context, data, message);
+    }
+
     if (shouldDiscardPendingOperations(message) && data.operations.some((operation) => operation.status === "pending")) {
       return discardAIWorkspaceOperations(context, {
         operationIds: selectPendingOperationIdsFromMessage(data.operations, message, input.activeFilePath),
@@ -181,6 +185,31 @@ export async function sendAIWorkspaceMessage(
   } catch (error) {
     return fail("AI_WORKSPACE_MESSAGE_FAILED", "AI Workspaceで処理できませんでした。", String(error));
   }
+}
+
+async function keepPendingOperations(
+  context: AIWorkspaceContext,
+  data: AIWorkspaceData,
+  message: string
+): Promise<RelicResult<AIWorkspaceState>> {
+  const pendingOperations = data.operations.filter((operation) => operation.status === "pending");
+  const assistantMessage: AIWorkspaceMessage = {
+    content: buildKeepPendingOperationsMessage(pendingOperations),
+    createdAt: new Date().toISOString(),
+    id: createMessageId("assistant"),
+    references: pendingOperations.map((operation) => ({
+      path: operation.path,
+      preview: operation.summary
+    })),
+    role: "assistant"
+  };
+  const nextData: AIWorkspaceData = {
+    ...data,
+    history: [...data.history, ...buildOptionalUserHistory(message), assistantMessage]
+  };
+  await writeAIWorkspaceData(context.userDataPath, context.workspaceId, nextData);
+
+  return ok(toState(nextData));
 }
 
 function mergeNewOperations(
@@ -587,8 +616,12 @@ function shouldApplyPendingOperations(message: string): boolean {
     !/(しない|やめ|不要|キャンセル|まだ)/.test(message);
 }
 
+function shouldHoldPendingOperations(message: string): boolean {
+  return /((まだ|今は|あとで|後で).*(反映|適用|実行|保存).*(しない|しないで|しなくていい)|(反映|適用|実行|保存).*(まだ|今は|あとで|後で).*(しない|しないで|しなくていい))/.test(message);
+}
+
 function shouldDiscardPendingOperations(message: string): boolean {
-  return /(やめ|取りやめ|不要|キャンセル|破棄|なしにして|しない)/.test(message);
+  return /(やめ|取りやめ|不要|キャンセル|破棄|なしにして)/.test(message);
 }
 
 function shouldRevertAppliedOperations(message: string): boolean {
@@ -717,6 +750,14 @@ function buildApplyOperationsMessage(
 function buildDiscardOperationsMessage(operations: AIWorkspaceFileOperation[]): string {
   return [
     "AI変更案を取りやめました。Markdownファイルには反映していません。",
+    "",
+    ...operations.map((operation) => `- ${operation.path}`)
+  ].join("\n").trim();
+}
+
+function buildKeepPendingOperationsMessage(operations: AIWorkspaceFileOperation[]): string {
+  return [
+    "AI変更案はまだ反映せず、作業中の変更として残しました。",
     "",
     ...operations.map((operation) => `- ${operation.path}`)
   ].join("\n").trim();
