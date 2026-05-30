@@ -1,4 +1,5 @@
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -77,6 +78,25 @@ describe("applyAIWorkspaceOperations", () => {
     }
     await expect(readFile(path.join(workspacePath, "draft.md"), "utf8")).resolves.toBe("old");
   });
+
+  it("marks an operation as stale when the target Markdown changed after the proposal", async () => {
+    await writeFile(path.join(workspacePath, "draft.md"), "new user content", "utf8");
+    await writeData({
+      operations: [{
+        ...createOperation("update", "draft.md", "# Draft\nAI update"),
+        baseContentHash: hashContent("old content")
+      }]
+    });
+
+    const result = await applyAIWorkspaceOperations(context(), {});
+
+    expect(result.ok).toBe(true);
+    await expect(readFile(path.join(workspacePath, "draft.md"), "utf8")).resolves.toBe("new user content");
+    if (result.ok) {
+      expect(result.value.operationHistory[0].status).toBe("stale");
+      expect(result.value.history.at(-1)?.content).toContain("作成後に対象Markdownが変更されていたため");
+    }
+  });
 });
 
 describe("discardAIWorkspaceOperations", () => {
@@ -109,6 +129,21 @@ describe("sendAIWorkspaceMessage", () => {
       expect(lastMessage?.content).toContain("Codex App ServerでAI処理を完了できませんでした。");
       expect(lastMessage?.content).toContain("失敗理由: connection failed");
       expect(result.value.pendingOperations).toEqual([]);
+    }
+  });
+
+  it("stores the target Markdown hash with update operations", async () => {
+    await writeFile(path.join(workspacePath, "README.md"), "# Auth\nLogin spec", "utf8");
+    vi.mocked(runCodexAIWorkspaceTurn).mockResolvedValueOnce({
+      message: "READMEを更新します。",
+      operations: [createOperation("update", "README.md", "# Auth\nUpdated")]
+    });
+
+    const result = await sendAIWorkspaceMessage(context(), { message: "Login spec" });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.pendingOperations[0].baseContentHash).toBe(hashContent("# Auth\nLogin spec"));
     }
   });
 });
@@ -180,4 +215,8 @@ function createOperation(
     status: "pending" as const,
     summary: `${kind} ${filePath}`
   };
+}
+
+function hashContent(content: string): string {
+  return createHash("sha256").update(content).digest("hex");
 }

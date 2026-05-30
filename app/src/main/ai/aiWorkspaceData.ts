@@ -120,6 +120,13 @@ function isAIWorkspaceFileOperation(value: unknown): value is AIWorkspaceFileOpe
     typeof record.path === "string" &&
     typeof record.summary === "string" &&
     (record.kind === "create" || record.kind === "update" || record.kind === "delete") &&
-    (record.status === "pending" || record.status === "applied" || record.status === "discarded" || record.status === "failed") &&
+    (
+      record.status === "pending" ||
+      record.status === "applied" ||
+      record.status === "discarded" ||
+      record.status === "failed" ||
+      record.status === "stale"
+    ) &&
+    (record.baseContentHash === undefined || typeof record.baseContentHash === "string") &&
     (record.content === undefined || typeof record.content === "string");
 }
