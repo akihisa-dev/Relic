@@ -64,7 +64,7 @@ export interface ClearAIWorkspaceDataInput {
   includeIndex?: boolean;
 }
 
-export type AIWorkspaceFileOperationStatus = "pending" | "applied" | "discarded" | "failed" | "stale";
+export type AIWorkspaceFileOperationStatus = "pending" | "applied" | "discarded" | "failed" | "stale" | "replaced";
 
 export type AIWorkspaceFileOperationKind = "create" | "update" | "delete";
 

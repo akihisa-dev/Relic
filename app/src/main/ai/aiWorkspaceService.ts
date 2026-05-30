@@ -143,7 +143,7 @@ export async function sendAIWorkspaceMessage(
     const nextData = {
       ...data,
       history: [...data.history, userMessage, assistantMessage],
-      operations: [...data.operations, ...operations]
+      operations: mergeNewOperations(data.operations, operations)
     };
     await writeAIWorkspaceData(context.userDataPath, context.workspaceId, nextData);
 
@@ -151,6 +151,25 @@ export async function sendAIWorkspaceMessage(
   } catch (error) {
     return fail("AI_WORKSPACE_MESSAGE_FAILED", "AI Workspaceで処理できませんでした。", String(error));
   }
+}
+
+function mergeNewOperations(
+  currentOperations: AIWorkspaceFileOperation[],
+  newOperations: AIWorkspaceFileOperation[]
+): AIWorkspaceFileOperation[] {
+  if (newOperations.length === 0) return currentOperations;
+
+  const replacedPaths = new Set(newOperations.map((operation) => operation.path));
+  return [
+    ...currentOperations.map((operation) => {
+      if (operation.status === "pending" && replacedPaths.has(operation.path)) {
+        return { ...operation, status: "replaced" as const };
+      }
+
+      return operation;
+    }),
+    ...newOperations
+  ];
 }
 
 export async function applyAIWorkspaceOperations(
