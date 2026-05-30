@@ -416,18 +416,54 @@
 }
 
 .ai-workspace-operations li > span,
-.ai-workspace-message-operations li {
+.ai-workspace-message-operations li div,
+.ai-workspace-message-operations li small {
   color: var(--text-2);
   font-size: 12px;
 }
 
-.ai-workspace-operations li button span {
+.ai-workspace-message-operations li {
+  border-top: 1px solid var(--border);
+  display: grid;
+  gap: 4px;
+  padding-top: 6px;
+}
+
+.ai-workspace-message-operations li button {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: var(--link);
+  display: flex;
+  font-size: 12px;
+  gap: 6px;
+  justify-content: space-between;
+  overflow: hidden;
+  padding: 0;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.ai-workspace-message-operations li div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ai-workspace-message-operations li small {
+  color: var(--text-3);
+  line-height: 1.4;
+}
+
+.ai-workspace-operations li button span,
+.ai-workspace-message-operations li button span {
   color: var(--link);
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .ai-workspace-operations li button strong,
+.ai-workspace-message-operations li button strong,
 .ai-workspace-references button strong {
   color: var(--text-3);
   font-size: 11px;
