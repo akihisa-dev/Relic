@@ -1,5 +1,9 @@
 export type AIWorkspaceRole = "user" | "assistant";
 
+export const openAIWorkspaceModels = ["gpt-5.4", "gpt-5.4-mini", "gpt-5.4-nano"] as const;
+export type OpenAIWorkspaceModel = typeof openAIWorkspaceModels[number];
+export const defaultOpenAIWorkspaceModel: OpenAIWorkspaceModel = "gpt-5.4-mini";
+
 export interface AIWorkspaceMessage {
   content: string;
   createdAt: string;
@@ -37,7 +41,7 @@ export interface AIWorkspaceState {
 }
 
 export interface AISettingsState {
-  model: string;
+  model: OpenAIWorkspaceModel;
   openAIAPIKeyConfigured: boolean;
   secureStorageAvailable: boolean;
 }
@@ -46,8 +50,12 @@ export interface SaveOpenAIAPIKeyInput {
   apiKey: string;
 }
 
+export interface SaveAIModelInput {
+  model: OpenAIWorkspaceModel;
+}
+
 export interface TestOpenAIAPIKeyResult {
-  model: string;
+  model: OpenAIWorkspaceModel;
   ok: boolean;
 }
 

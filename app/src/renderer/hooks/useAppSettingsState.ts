@@ -5,6 +5,7 @@ import type {
   AppInfo,
   EditorSettings,
   FrontmatterTemplate,
+  OpenAIWorkspaceModel,
   WorkspaceState
 } from "../../shared/ipc";
 import {
@@ -113,6 +114,19 @@ export function useAppSettingsState({
     });
   }, []);
 
+  const handleSaveAIModel = useCallback((model: OpenAIWorkspaceModel): void => {
+    setAISettings((current) => current ? { ...current, model } : current);
+    setAISettingsStatus(null);
+    void window.relic?.saveAIModel({ model }).then((result) => {
+      if (result.ok) {
+        setAISettings(result.value);
+        setAISettingsStatus(`OpenAIモデルを${result.value.model}に変更しました。`);
+      } else {
+        setAISettingsStatus(result.error.message);
+      }
+    });
+  }, []);
+
   const handleDeleteOpenAIAPIKey = useCallback((): void => {
     setAISettingsStatus(null);
     void window.relic?.deleteOpenAIAPIKey().then((result) => {
@@ -129,7 +143,7 @@ export function useAppSettingsState({
     setAISettingsStatus("OpenAI APIキーを確認しています。");
     void window.relic?.testOpenAIAPIKey().then((result) => {
       if (result.ok) {
-        setAISettingsStatus(`OpenAI APIキーを確認できました。標準モデル: ${result.value.model}`);
+        setAISettingsStatus(`OpenAI APIキーを確認できました。選択中モデル: ${result.value.model}`);
       } else {
         setAISettingsStatus(result.error.message);
       }
@@ -145,6 +159,7 @@ export function useAppSettingsState({
     handleSaveFeatureToggles,
     handleSaveFrontmatterTemplates,
     handleDeleteOpenAIAPIKey,
+    handleSaveAIModel,
     handleSaveOpenAIAPIKey,
     handleSaveSettings,
     handleTestOpenAIAPIKey,

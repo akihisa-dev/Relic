@@ -24,6 +24,7 @@ import { writeAIWorkspaceData, type AIWorkspaceData } from "./aiWorkspaceData";
 import { computeAIWorkspaceIndexSourceHash } from "./aiWorkspaceIndex";
 import { readOpenAIAPIKey } from "./openAIKeyStore";
 import { runOpenAIWorkspaceTurn } from "./openAIResponsesClient";
+import { getAppSettingsPath } from "../settings/appSettings";
 
 let userDataPath = "";
 let workspacePath = "";
@@ -201,10 +202,30 @@ describe("sendAIWorkspaceMessage", () => {
     const result = await sendAIWorkspaceMessage(context(), { message: "Login spec" });
 
     expect(result.ok).toBe(true);
+    expect(runOpenAIWorkspaceTurn).toHaveBeenCalledWith(expect.objectContaining({
+      model: "gpt-5.4-mini"
+    }));
     if (result.ok) {
       expect(result.value.pendingOperations[0].baseContent).toBe("# Auth\nLogin spec");
       expect(result.value.pendingOperations[0].baseContentHash).toBe(hashContent("# Auth\nLogin spec"));
     }
+  });
+
+  it("uses the selected OpenAI model from app settings", async () => {
+    await writeFile(getAppSettingsPath(userDataPath), JSON.stringify({
+      aiSettings: { openAIModel: "gpt-5.4" }
+    }), "utf8");
+    vi.mocked(runOpenAIWorkspaceTurn).mockResolvedValueOnce({
+      message: "選択モデルで処理します。",
+      operations: []
+    });
+
+    const result = await sendAIWorkspaceMessage(context(), { message: "モデル設定を使って" });
+
+    expect(result.ok).toBe(true);
+    expect(runOpenAIWorkspaceTurn).toHaveBeenCalledWith(expect.objectContaining({
+      model: "gpt-5.4"
+    }));
   });
 
   it("keeps only safe Markdown operations returned by OpenAI API", async () => {

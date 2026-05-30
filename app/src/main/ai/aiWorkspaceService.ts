@@ -18,6 +18,7 @@ import { createMarkdownFileAtPath, readMarkdownFile, writeMarkdownFileContent } 
 import { normalizeWorkspaceRelativeInputPath, resolveWorkspaceRelativePath } from "../files/paths";
 import { workspaceSearchMaxFileBytes } from "../files/search";
 import { moveWorkspaceItemToTrash, type TrashItem } from "../files/trash";
+import { readAppSettings } from "../settings/appSettings";
 import { buildAIWorkspaceIndex, computeAIWorkspaceIndexSourceHash, searchAIWorkspaceChunks } from "./aiWorkspaceIndex";
 import {
   clearAIWorkspaceData,
@@ -27,7 +28,7 @@ import {
   type AIWorkspaceData
 } from "./aiWorkspaceData";
 import { hasOpenAIAPIKey, readOpenAIAPIKey } from "./openAIKeyStore";
-import { openAIWorkspaceModel, runOpenAIWorkspaceTurn } from "./openAIResponsesClient";
+import { runOpenAIWorkspaceTurn } from "./openAIResponsesClient";
 
 interface AIWorkspaceContext {
   userDataPath: string;
@@ -150,12 +151,14 @@ export async function sendAIWorkspaceMessage(
     if (!apiKey) {
       return fail("AI_WORKSPACE_OPENAI_KEY_MISSING", "OpenAI APIキーをAI設定で登録してください。");
     }
+    const settings = await readAppSettings(context.userDataPath);
 
     let openAIError: string | null = null;
     const openAIResponse = await runOpenAIWorkspaceTurn({
       apiKey,
       history: data.history.map((item) => ({ content: item.content, role: item.role })),
       message,
+      model: settings.aiSettings.openAIModel,
       pendingOperations: data.operations.filter((operation) => operation.status === "pending"),
       referenceContents: await readReferenceContents(context.workspacePath, references, {
         content: input.activeFileContent ?? null,

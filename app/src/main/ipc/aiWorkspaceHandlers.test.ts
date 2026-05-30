@@ -1,3 +1,7 @@
+import { mkdtemp, rm } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const electronMock = vi.hoisted(() => ({
@@ -39,11 +43,13 @@ vi.mock("../ai/aiWorkspaceService", () => aiWorkspaceServiceMock);
 
 import {
   applyAIWorkspaceOperationsChannel,
+  saveAIModelChannel,
   sendAIWorkspaceMessageChannel,
   workspaceChangedChannel,
   type AIWorkspaceState
 } from "../../shared/ipc";
 import { registerAIWorkspaceHandlers } from "./aiWorkspaceHandlers";
+import { readAppSettings } from "../settings/appSettings";
 
 afterEach(() => {
   vi.clearAllMocks();
@@ -148,6 +154,30 @@ describe("registerAIWorkspaceHandlers", () => {
     await handler({ sender }, {});
 
     expect(sender.send).not.toHaveBeenCalled();
+  });
+
+  it("saves the selected OpenAI model in app settings", async () => {
+    const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-ai-settings-"));
+    vi.mocked((await import("electron")).app.getPath).mockReturnValue(userDataPath);
+
+    try {
+      registerAIWorkspaceHandlers();
+      const handler = electronMock.handle.mock.calls.find(([channel]) => channel === saveAIModelChannel)?.[1];
+      if (!handler) throw new Error("saveAIModel handler was not registered");
+
+      const result = await handler({}, { model: "gpt-5.4" });
+
+      expect(result).toEqual({
+        ok: true,
+        value: expect.objectContaining({ model: "gpt-5.4" })
+      });
+      await expect(readAppSettings(userDataPath)).resolves.toMatchObject({
+        aiSettings: { openAIModel: "gpt-5.4" }
+      });
+    } finally {
+      vi.mocked((await import("electron")).app.getPath).mockReturnValue("/tmp/relic-user-data");
+      await rm(userDataPath, { force: true, recursive: true });
+    }
   });
 });
 

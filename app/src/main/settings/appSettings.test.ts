@@ -31,6 +31,7 @@ describe("appSettings", () => {
     temporaryPaths.push(userDataPath);
 
     await writeAppSettings(userDataPath, {
+      aiSettings: { openAIModel: "gpt-5.4" },
       editorSettings: { ...defaultEditorSettings, language: "ja" },
       featureToggles: { ...defaultFeatureToggles, tools: true },
       frontmatterTemplates: defaultFrontmatterTemplates,
@@ -40,6 +41,7 @@ describe("appSettings", () => {
     });
 
     await expect(readAppSettings(userDataPath)).resolves.toMatchObject({
+      aiSettings: { openAIModel: "gpt-5.4" },
       editorSettings: expect.objectContaining({ language: "ja" }),
       featureToggles: expect.objectContaining({ tools: true }),
       lastWorkspaceId: "ws-1",
@@ -55,11 +57,24 @@ describe("appSettings", () => {
 
     await expect(readAppSettings(userDataPath)).resolves.toEqual({
       editorSettings: defaultEditorSettings,
+      aiSettings: { openAIModel: "gpt-5.4-mini" },
       featureToggles: defaultFeatureToggles,
       frontmatterTemplates: defaultFrontmatterTemplates,
       lastWorkspaceId: null,
       userDefinedFields: defaultUserDefinedFields,
       workspaces: []
+    });
+  });
+
+  it("AIモデルが不正な場合は既定モデルへ戻す", async () => {
+    const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-app-settings-"));
+    temporaryPaths.push(userDataPath);
+    await writeFile(getAppSettingsPath(userDataPath), JSON.stringify({
+      aiSettings: { openAIModel: "unknown-model" }
+    }), "utf8");
+
+    await expect(readAppSettings(userDataPath)).resolves.toMatchObject({
+      aiSettings: { openAIModel: "gpt-5.4-mini" }
     });
   });
 

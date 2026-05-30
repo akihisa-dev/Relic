@@ -1,7 +1,12 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
-import { defaultEditorSettings, defaultFeatureToggles, type UserDefinedField } from "../../shared/ipc";
+import {
+  defaultEditorSettings,
+  defaultFeatureToggles,
+  type OpenAIWorkspaceModel,
+  type UserDefinedField
+} from "../../shared/ipc";
 import { I18nProvider } from "../i18n";
 import { FrontmatterPanel } from "./FrontmatterPanel";
 import { SettingsPanel } from "./SettingsPanel";
@@ -208,6 +213,7 @@ describe("SettingsPanel", () => {
     language = "en",
     onDeleteOpenAIAPIKey = vi.fn(),
     onFeatureTogglesSave = vi.fn(),
+    onSaveAIModel = vi.fn(),
     onSaveOpenAIAPIKey = vi.fn(),
     onSave = vi.fn(),
     onTestOpenAIAPIKey = vi.fn(),
@@ -217,6 +223,7 @@ describe("SettingsPanel", () => {
     language?: "en" | "ja";
     onDeleteOpenAIAPIKey?: () => void;
     onFeatureTogglesSave?: (toggles: typeof defaultFeatureToggles) => void;
+    onSaveAIModel?: (model: OpenAIWorkspaceModel) => void;
     onSaveOpenAIAPIKey?: (apiKey: string) => void;
     onSave?: (settings: typeof defaultEditorSettings) => void;
     onTestOpenAIAPIKey?: () => void;
@@ -231,6 +238,7 @@ describe("SettingsPanel", () => {
           featureToggles={featureToggles}
           onDeleteOpenAIAPIKey={onDeleteOpenAIAPIKey}
           onFeatureTogglesSave={onFeatureTogglesSave}
+          onSaveAIModel={onSaveAIModel}
           onSaveOpenAIAPIKey={onSaveOpenAIAPIKey}
           onSave={onSave}
           onTestOpenAIAPIKey={onTestOpenAIAPIKey}
@@ -262,6 +270,21 @@ describe("SettingsPanel", () => {
     fireEvent.click(screen.getByRole("button", { name: "保存" }));
 
     expect(onSaveOpenAIAPIKey).toHaveBeenCalledWith("sk-test-key-12345678901234567890");
+  });
+
+  it("OpenAIモデルを実モデル名で選べる", () => {
+    const onSaveAIModel = vi.fn();
+    renderSettingsPanel({ onSaveAIModel });
+
+    const modelSelect = screen.getByLabelText("OpenAIモデル");
+    expect(modelSelect).toHaveDisplayValue("gpt-5.4-mini");
+    expect(screen.getByRole("option", { name: "gpt-5.4" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "gpt-5.4-mini" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "gpt-5.4-nano" })).toBeInTheDocument();
+
+    fireEvent.change(modelSelect, { target: { value: "gpt-5.4" } });
+
+    expect(onSaveAIModel).toHaveBeenCalledWith("gpt-5.4");
   });
 
   it("アプリ情報では内部プラットフォーム名ではなくユーザー向けOS名を表示する", () => {
