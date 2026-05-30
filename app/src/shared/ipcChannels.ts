@@ -50,4 +50,5 @@ export const splitFileByHeadingChannel = "tools:splitFileByHeading";
 export const getAIWorkspaceStateChannel = "aiWorkspace:getState";
 export const rebuildAIWorkspaceIndexChannel = "aiWorkspace:rebuildIndex";
 export const sendAIWorkspaceMessageChannel = "aiWorkspace:sendMessage";
+export const applyAIWorkspaceOperationsChannel = "aiWorkspace:applyOperations";
 export const clearAIWorkspaceDataChannel = "aiWorkspace:clearData";

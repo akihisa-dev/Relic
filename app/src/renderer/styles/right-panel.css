@@ -164,6 +164,75 @@
   padding: 8px;
 }
 
+.ai-workspace-operations {
+  background: var(--popup-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+}
+
+.ai-workspace-operations-header {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.ai-workspace-operations-header span {
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.ai-workspace-operations-header button {
+  background: var(--accent);
+  border: 0;
+  border-radius: 4px;
+  color: #ffffff;
+  min-height: 26px;
+  padding: 0 10px;
+}
+
+.ai-workspace-operations ul,
+.ai-workspace-message-operations {
+  display: grid;
+  gap: 6px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ai-workspace-operations li {
+  display: grid;
+  gap: 4px;
+}
+
+.ai-workspace-operations li button {
+  background: transparent;
+  border: 0;
+  color: var(--link);
+  font-size: 12px;
+  overflow: hidden;
+  padding: 0;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ai-workspace-operations li span,
+.ai-workspace-message-operations li {
+  color: var(--text-2);
+  font-size: 12px;
+}
+
+.ai-workspace-operations li small {
+  color: var(--text-3);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
 .ai-workspace-messages {
   display: grid;
   gap: 10px;

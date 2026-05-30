@@ -19,6 +19,7 @@ export function useAIWorkspaceState({
   reloadAIWorkspace: () => Promise<void>;
   rebuildAIWorkspaceIndex: () => Promise<void>;
   sendAIWorkspaceMessage: (message: string) => Promise<void>;
+  applyAIWorkspaceOperations: () => Promise<void>;
   clearAIWorkspaceData: () => Promise<void>;
 } {
   const [aiWorkspaceState, setAIWorkspaceState] = useState<AIWorkspaceState | null>(null);
@@ -93,6 +94,22 @@ export function useAIWorkspaceState({
     setAIWorkspaceState(result.value);
   }, [isEnabled, onError, workspaceId]);
 
+  const applyAIWorkspaceOperations = useCallback(async (): Promise<void> => {
+    if (!isEnabled || !workspaceId) return;
+    if (!window.relic?.applyAIWorkspaceOperations) return;
+
+    setIsAIWorkspaceSending(true);
+    const result = await window.relic.applyAIWorkspaceOperations({});
+    setIsAIWorkspaceSending(false);
+
+    if (!result.ok) {
+      onError(result.error.message);
+      return;
+    }
+
+    setAIWorkspaceState(result.value);
+  }, [isEnabled, onError, workspaceId]);
+
   useEffect(() => {
     void reloadAIWorkspace();
   }, [reloadAIWorkspace]);
@@ -104,6 +121,7 @@ export function useAIWorkspaceState({
     reloadAIWorkspace,
     rebuildAIWorkspaceIndex,
     sendAIWorkspaceMessage,
+    applyAIWorkspaceOperations,
     clearAIWorkspaceData
   };
 }

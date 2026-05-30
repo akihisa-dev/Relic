@@ -20,6 +20,7 @@ interface AppRightPanelProps {
   isOpen: boolean;
   isResizing: boolean;
   onAIWorkspaceClearData: () => void;
+  onAIWorkspaceApplyOperations: () => void;
   onAIWorkspaceRebuildIndex: () => void;
   onAIWorkspaceSendMessage: (message: string) => void;
   onOpenFile: (path: string) => void;
@@ -44,6 +45,7 @@ export function AppRightPanel({
   isOpen,
   isResizing,
   onAIWorkspaceClearData,
+  onAIWorkspaceApplyOperations,
   onAIWorkspaceRebuildIndex,
   onAIWorkspaceSendMessage,
   onOpenFile,
@@ -79,6 +81,7 @@ export function AppRightPanel({
           isLoading={isAIWorkspaceLoading}
           isSending={isAIWorkspaceSending}
           onClearData={onAIWorkspaceClearData}
+          onApplyOperations={onAIWorkspaceApplyOperations}
           onOpenFile={onOpenFile}
           onRebuildIndex={onAIWorkspaceRebuildIndex}
           onSendMessage={onAIWorkspaceSendMessage}
