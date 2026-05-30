@@ -324,6 +324,10 @@
   padding: 16px;
 }
 
+.sidebar--no-header > .sidebar-body {
+  padding-top: 8px;
+}
+
 .pane-heading {
   align-items: center;
   color: var(--text-2);
