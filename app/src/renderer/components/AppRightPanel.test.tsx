@@ -130,6 +130,56 @@ describe("AppRightPanel", () => {
     expect(screen.getByText("認証仕様を更新")).toBeInTheDocument();
   });
 
+  it("shows Markdown files excluded from AI references", () => {
+    render(
+      <I18nProvider language="en">
+        <AppRightPanel
+          aiWorkspaceState={{
+            codexAppServerAvailable: true,
+            history: [],
+            index: {
+              chunkCount: 1,
+              indexedAt: "2026-05-30T00:00:00.000Z",
+              indexedFileCount: 1,
+              skippedLargeFiles: [{ path: "large.md", reason: "大きいMarkdownのためAI参照から除外しました。" }],
+              unreadableFiles: [{ path: "locked.md", reason: "Markdownを読み込めませんでした。" }]
+            },
+            operationHistory: [],
+            pendingOperations: []
+          }}
+          backlinks={[]}
+          isAIWorkspaceLoading={false}
+          isAIWorkspaceSending={false}
+          isLoadingBacklinks={false}
+          isOpen
+          isResizing={false}
+          onAIWorkspaceClearData={vi.fn()}
+          onAIWorkspaceApplyOperations={vi.fn()}
+          onAIWorkspaceDiscardOperations={vi.fn()}
+          onAIWorkspaceRebuildIndex={vi.fn()}
+          onAIWorkspaceSendMessage={vi.fn()}
+          onOpenFile={vi.fn()}
+          onOpenWikiLink={vi.fn()}
+          onOutlineHeadingClick={vi.fn()}
+          onResizeStart={vi.fn()}
+          outlineHeadings={[]}
+          outgoingLinks={[]}
+          outgoingLinksLimited={false}
+          rightPanelView="ai"
+          setLinkContextMenu={vi.fn()}
+          width={260}
+          workspaceName="Novel"
+        />
+      </I18nProvider>
+    );
+
+    fireEvent.click(screen.getByText("AI参照から外したMarkdownがあります"));
+
+    expect(screen.getByText("large.md")).toBeInTheDocument();
+    expect(screen.getByText("locked.md")).toBeInTheDocument();
+    expect(screen.getByText("Markdownを読み込めませんでした。")).toBeInTheDocument();
+  });
+
   it("shows a notice when outgoing links are limited", () => {
     render(
       <I18nProvider language="en">

@@ -164,6 +164,56 @@
   padding: 8px;
 }
 
+.ai-workspace-note summary {
+  color: var(--text-2);
+  cursor: default;
+  font-size: 12px;
+}
+
+.ai-workspace-note ul {
+  display: grid;
+  gap: 6px;
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+}
+
+.ai-workspace-note li {
+  display: grid;
+  gap: 3px;
+}
+
+.ai-workspace-note button {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: var(--link);
+  display: flex;
+  font-size: 12px;
+  gap: 6px;
+  justify-content: space-between;
+  overflow: hidden;
+  padding: 0;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.ai-workspace-note button span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ai-workspace-note button strong {
+  color: var(--text-3);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.ai-workspace-note small {
+  color: var(--text-3);
+  font-size: 12px;
+}
+
 .ai-workspace-tabs {
   background: var(--hover);
   border: 1px solid var(--border);
