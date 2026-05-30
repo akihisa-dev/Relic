@@ -64,11 +64,7 @@ export async function buildAIWorkspaceIndex(
 }
 
 export function searchAIWorkspaceChunks(chunks: AIWorkspaceChunk[], query: string): AIWorkspaceChunk[] {
-  const terms = query
-    .toLocaleLowerCase()
-    .split(/\s+/)
-    .map((term) => term.trim())
-    .filter(Boolean);
+  const terms = tokenizeSearchText(query);
 
   if (terms.length === 0) return chunks.slice(0, 8);
 
@@ -78,6 +74,25 @@ export function searchAIWorkspaceChunks(chunks: AIWorkspaceChunk[], query: strin
     .sort((a, b) => b.score - a.score || a.chunk.path.localeCompare(b.chunk.path, "ja"))
     .slice(0, 8)
     .map((item) => item.chunk);
+}
+
+export function tokenizeSearchText(value: string): string[] {
+  const normalized = value.toLocaleLowerCase();
+  const terms = new Set<string>();
+
+  for (const match of normalized.matchAll(/[\p{L}\p{N}_-]+/gu)) {
+    const token = match[0].trim();
+    if (!token) continue;
+    terms.add(token);
+
+    if (hasCjk(token)) {
+      for (const gram of cjkNgrams(token)) {
+        terms.add(gram);
+      }
+    }
+  }
+
+  return [...terms];
 }
 
 function chunkMarkdown(relativePath: string, content: string): AIWorkspaceChunk[] {
@@ -114,6 +129,22 @@ function scoreChunk(chunk: AIWorkspaceChunk, terms: string[]): number {
   const haystack = `${chunk.path}\n${chunk.content}`.toLocaleLowerCase();
 
   return terms.reduce((score, term) => score + countOccurrences(haystack, term), 0);
+}
+
+function hasCjk(value: string): boolean {
+  return /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]/u.test(value);
+}
+
+function cjkNgrams(value: string): string[] {
+  const chars = [...value].filter((char) => hasCjk(char));
+  if (chars.length <= 1) return chars;
+
+  const grams: string[] = [];
+  for (let index = 0; index < chars.length - 1; index += 1) {
+    grams.push(chars.slice(index, index + 2).join(""));
+  }
+
+  return grams;
 }
 
 function countOccurrences(value: string, term: string): number {

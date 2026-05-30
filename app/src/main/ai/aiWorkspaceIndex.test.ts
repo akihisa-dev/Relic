@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { buildAIWorkspaceIndex, searchAIWorkspaceChunks } from "./aiWorkspaceIndex";
+import { buildAIWorkspaceIndex, searchAIWorkspaceChunks, tokenizeSearchText } from "./aiWorkspaceIndex";
 import { workspaceSearchMaxFileBytes } from "../files/search";
 
 let workspacePath = "";
@@ -53,5 +53,22 @@ describe("searchAIWorkspaceChunks", () => {
     ];
 
     expect(searchAIWorkspaceChunks(chunks, "target").map((chunk) => chunk.path)).toEqual(["b.md", "c.md"]);
+  });
+
+  it("matches Japanese natural language queries against Markdown terms", () => {
+    const chunks = [
+      { content: "# 認証\nログイン仕様", endLine: 2, path: "auth.md", startLine: 1 },
+      { content: "# 画面\nテーマ設定", endLine: 2, path: "theme.md", startLine: 1 }
+    ];
+
+    expect(searchAIWorkspaceChunks(chunks, "認証について整理して").map((chunk) => chunk.path)).toEqual(["auth.md"]);
+  });
+});
+
+describe("tokenizeSearchText", () => {
+  it("keeps full tokens and adds Japanese ngrams", () => {
+    expect(tokenizeSearchText("認証について整理して")).toEqual(
+      expect.arrayContaining(["認証について整理して", "認証"])
+    );
   });
 });
