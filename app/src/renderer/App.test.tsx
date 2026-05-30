@@ -3388,7 +3388,7 @@ describe("App", () => {
     expect(noteRow).toHaveClass("multi-selected");
     expect(draftsRow).toHaveClass("selected");
     expect(draftsRow).toHaveClass("multi-selected");
-    expect(screen.getByText("2件選択中")).toBeInTheDocument();
+    expect(screen.queryByText("2件選択中")).not.toBeInTheDocument();
 
     fireEvent.click(archiveRow, { shiftKey: true });
 
@@ -3397,7 +3397,7 @@ describe("App", () => {
     expect(draftsRow).toHaveClass("multi-selected");
     expect(archiveRow).toHaveClass("selected");
     expect(archiveRow).toHaveClass("multi-selected");
-    expect(screen.getByText("2件選択中")).toBeInTheDocument();
+    expect(screen.queryByText("2件選択中")).not.toBeInTheDocument();
 
     fireEvent.click(noteRow);
 
