@@ -31,7 +31,12 @@ vi.mock("./activeWorkspace", () => ({
 
 vi.mock("../ai/aiWorkspaceService", () => aiWorkspaceServiceMock);
 
-import { sendAIWorkspaceMessageChannel, workspaceChangedChannel, type AIWorkspaceState } from "../../shared/ipc";
+import {
+  applyAIWorkspaceOperationsChannel,
+  sendAIWorkspaceMessageChannel,
+  workspaceChangedChannel,
+  type AIWorkspaceState
+} from "../../shared/ipc";
 import { registerAIWorkspaceHandlers } from "./aiWorkspaceHandlers";
 
 afterEach(() => {
@@ -88,9 +93,59 @@ describe("registerAIWorkspaceHandlers", () => {
 
     expect(sender.send).not.toHaveBeenCalled();
   });
+
+  it("notifies workspace changes when applying operations changes Markdown", async () => {
+    const sender = { send: vi.fn() };
+    const beforeState = createAIWorkspaceState("pending");
+    const afterState = createAIWorkspaceState("applied");
+    activeWorkspaceMock.getActiveWorkspaceContext.mockResolvedValue({
+      ok: true,
+      value: {
+        activeWorkspace: { id: "workspace-1", path: "/tmp/notes" },
+        userDataPath: "/tmp/relic-user-data"
+      }
+    });
+    aiWorkspaceServiceMock.getAIWorkspaceState.mockResolvedValue({ ok: true, value: beforeState });
+    aiWorkspaceServiceMock.applyAIWorkspaceOperations.mockResolvedValue({ ok: true, value: afterState });
+
+    registerAIWorkspaceHandlers();
+    const handler = electronMock.handle.mock.calls.find(([channel]) => channel === applyAIWorkspaceOperationsChannel)?.[1];
+    if (!handler) throw new Error("applyAIWorkspaceOperations handler was not registered");
+
+    const result = await handler({ sender }, {});
+
+    expect(result).toEqual({ ok: true, value: afterState });
+    expect(sender.send).toHaveBeenCalledWith(workspaceChangedChannel, expect.objectContaining({
+      workspaceId: "workspace-1",
+      workspacePath: "/tmp/notes"
+    }));
+  });
+
+  it("does not notify workspace changes when applying operations leaves proposals stale", async () => {
+    const sender = { send: vi.fn() };
+    const beforeState = createAIWorkspaceState("pending");
+    const afterState = createAIWorkspaceState("stale");
+    activeWorkspaceMock.getActiveWorkspaceContext.mockResolvedValue({
+      ok: true,
+      value: {
+        activeWorkspace: { id: "workspace-1", path: "/tmp/notes" },
+        userDataPath: "/tmp/relic-user-data"
+      }
+    });
+    aiWorkspaceServiceMock.getAIWorkspaceState.mockResolvedValue({ ok: true, value: beforeState });
+    aiWorkspaceServiceMock.applyAIWorkspaceOperations.mockResolvedValue({ ok: true, value: afterState });
+
+    registerAIWorkspaceHandlers();
+    const handler = electronMock.handle.mock.calls.find(([channel]) => channel === applyAIWorkspaceOperationsChannel)?.[1];
+    if (!handler) throw new Error("applyAIWorkspaceOperations handler was not registered");
+
+    await handler({ sender }, {});
+
+    expect(sender.send).not.toHaveBeenCalled();
+  });
 });
 
-function createAIWorkspaceState(status: "pending" | "applied"): AIWorkspaceState {
+function createAIWorkspaceState(status: "pending" | "applied" | "stale"): AIWorkspaceState {
   return {
     codexAppServerAvailable: true,
     history: [],
