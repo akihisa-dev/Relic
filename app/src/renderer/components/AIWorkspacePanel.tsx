@@ -34,6 +34,10 @@ export function AIWorkspacePanel({
   const history = state?.history ?? [];
   const operationHistory = state?.operationHistory ?? [];
   const pendingOperations = state?.pendingOperations ?? [];
+  const skippedFiles = [
+    ...(state?.index.skippedLargeFiles ?? []),
+    ...(state?.index.unreadableFiles ?? [])
+  ];
 
   return (
     <div className="ai-workspace-panel">
@@ -63,10 +67,21 @@ export function AIWorkspacePanel({
         </span>
       </div>
 
-      {state?.index.skippedLargeFiles.length || state?.index.unreadableFiles.length ? (
-        <div className="ai-workspace-note">
-          AI参照から外したMarkdownがあります。
-        </div>
+      {skippedFiles.length > 0 ? (
+        <details className="ai-workspace-note">
+          <summary>AI参照から外したMarkdownがあります</summary>
+          <ul>
+            {skippedFiles.map((file) => (
+              <li key={`${file.path}-${file.reason}`}>
+                <button onClick={() => onOpenFile(file.path)} title={file.path} type="button">
+                  <span>{file.path}</span>
+                  <strong>開く</strong>
+                </button>
+                <small>{file.reason}</small>
+              </li>
+            ))}
+          </ul>
+        </details>
       ) : null}
 
       <div className="ai-workspace-tabs" role="tablist" aria-label="AI Workspace表示">
