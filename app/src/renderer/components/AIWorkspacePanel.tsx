@@ -142,7 +142,20 @@ export function AIWorkspacePanel({
                 {operation.kind !== "delete" && operation.content ? (
                   <details className="ai-workspace-operation-preview">
                     <summary>Markdown内容を確認</summary>
-                    <pre>{operation.content}</pre>
+                    {operation.kind === "update" && operation.baseContent ? (
+                      <div className="ai-workspace-operation-compare">
+                        <section>
+                          <span>変更前</span>
+                          <pre>{operation.baseContent}</pre>
+                        </section>
+                        <section>
+                          <span>変更後</span>
+                          <pre>{operation.content}</pre>
+                        </section>
+                      </div>
+                    ) : (
+                      <pre>{operation.content}</pre>
+                    )}
                   </details>
                 ) : null}
               </li>

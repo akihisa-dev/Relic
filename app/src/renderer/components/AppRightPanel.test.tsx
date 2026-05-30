@@ -214,6 +214,69 @@ describe("AppRightPanel", () => {
     expect(onDiscard).toHaveBeenCalledWith(["op-delete"]);
   });
 
+  it("shows before and after content for pending Markdown updates", () => {
+    render(
+      <I18nProvider language="en">
+        <AppRightPanel
+          aiWorkspaceState={{
+            codexAppServerAvailable: true,
+            history: [],
+            index: {
+              chunkCount: 3,
+              indexedAt: "2026-05-30T00:00:00.000Z",
+              indexedFileCount: 2,
+              skippedLargeFiles: [],
+              unreadableFiles: []
+            },
+            operationHistory: [],
+            pendingOperations: [{
+              baseContent: "# Auth\nold",
+              content: "# Auth\nnew",
+              createdAt: "2026-05-30T00:00:00.000Z",
+              id: "op-update",
+              kind: "update",
+              path: "docs/auth.md",
+              status: "pending",
+              summary: "認証仕様を更新"
+            }]
+          }}
+          backlinks={[]}
+          isAIWorkspaceLoading={false}
+          isAIWorkspaceSending={false}
+          aiWorkspaceMessagePreview={null}
+          isLoadingBacklinks={false}
+          isOpen
+          isResizing={false}
+          onAIWorkspaceClearData={vi.fn()}
+          onAIWorkspaceApplyOperations={vi.fn()}
+          onAIWorkspaceCancelMessagePreview={vi.fn()}
+          onAIWorkspaceConfirmMessagePreview={vi.fn()}
+          onAIWorkspaceDiscardOperations={vi.fn()}
+          onAIWorkspaceRebuildIndex={vi.fn()}
+          onAIWorkspaceSendMessage={vi.fn()}
+          onOpenFile={vi.fn()}
+          onOpenWikiLink={vi.fn()}
+          onOutlineHeadingClick={vi.fn()}
+          onResizeStart={vi.fn()}
+          outlineHeadings={[]}
+          outgoingLinks={[]}
+          outgoingLinksLimited={false}
+          rightPanelView="ai"
+          setLinkContextMenu={vi.fn()}
+          width={260}
+          workspaceName="Novel"
+        />
+      </I18nProvider>
+    );
+
+    fireEvent.click(screen.getByText("Markdown内容を確認"));
+
+    expect(screen.getByText("変更前")).toBeInTheDocument();
+    expect(screen.getByText("変更後")).toBeInTheDocument();
+    expect(screen.getByText((_, element) => element?.tagName === "PRE" && element.textContent === "# Auth\nold")).toBeInTheDocument();
+    expect(screen.getByText((_, element) => element?.tagName === "PRE" && element.textContent === "# Auth\nnew")).toBeInTheDocument();
+  });
+
   it("shows Markdown files excluded from AI references", () => {
     render(
       <I18nProvider language="en">
