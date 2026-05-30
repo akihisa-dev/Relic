@@ -391,6 +391,7 @@ describe("AppRightPanel", () => {
       </I18nProvider>
     );
 
+    fireEvent.click(screen.getByRole("tab", { name: "作業中の変更 2" }));
     fireEvent.click(screen.getByText("Markdown内容を確認"));
 
     expect(screen.getByText((_, element) => element?.tagName === "PRE" && element.textContent === "# New\nbody")).toBeInTheDocument();
@@ -456,6 +457,7 @@ describe("AppRightPanel", () => {
       </I18nProvider>
     );
 
+    fireEvent.click(screen.getByRole("tab", { name: "作業中の変更 1" }));
     fireEvent.click(screen.getByText("Markdown内容を確認"));
 
     expect(screen.getByText("変更前")).toBeInTheDocument();
