@@ -2,7 +2,7 @@ import { useState, type ReactElement } from "react";
 
 import type { AIWorkspaceMessagePreview, AIWorkspaceState } from "../../shared/ipc";
 
-type AIWorkspacePanelView = "chat" | "history";
+type AIWorkspacePanelView = "chat" | "changes" | "history";
 
 interface AIWorkspacePanelProps {
   isLoading: boolean;
@@ -136,6 +136,14 @@ export function AIWorkspacePanel({
           会話
         </button>
         <button
+          aria-selected={panelView === "changes"}
+          onClick={() => setPanelView("changes")}
+          role="tab"
+          type="button"
+        >
+          作業中の変更{pendingOperations.length > 0 ? ` ${pendingOperations.length}` : ""}
+        </button>
+        <button
           aria-selected={panelView === "history"}
           onClick={() => setPanelView("history")}
           role="tab"
@@ -145,58 +153,64 @@ export function AIWorkspacePanel({
         </button>
       </div>
 
-      {pendingOperations.length > 0 ? (
+      {panelView === "changes" ? (
         <section className="ai-workspace-operations">
-          <div className="ai-workspace-operations-header">
-            <span>作業中の変更</span>
-            <div className="ai-workspace-operations-actions">
-              <button disabled={isSending} onClick={() => onDiscardOperations()} type="button">
-                取りやめ
-              </button>
-              <button disabled={isSending} onClick={() => onApplyOperations()} type="button">
-                反映
-              </button>
-            </div>
-          </div>
-          <ul>
-            {pendingOperations.map((operation) => (
-              <li key={operation.id}>
-                <button onClick={() => onOpenFile(operation.path)} title={operation.path} type="button">
-                  <span>{operation.path}</span>
-                  <strong>開く</strong>
-                </button>
-                <span>{operation.kind === "create" ? "作成" : operation.kind === "update" ? "編集" : "削除"}</span>
-                <small>{operation.summary}</small>
-                <div className="ai-workspace-operation-actions">
-                  <button disabled={isSending} onClick={() => onDiscardOperations([operation.id])} type="button">
-                    この変更を取りやめ
+          {pendingOperations.length === 0 ? (
+            <div className="empty-note">作業中のAI変更はありません。</div>
+          ) : (
+            <>
+              <div className="ai-workspace-operations-header">
+                <span>作業中の変更</span>
+                <div className="ai-workspace-operations-actions">
+                  <button disabled={isSending} onClick={() => onDiscardOperations()} type="button">
+                    取りやめ
                   </button>
-                  <button disabled={isSending} onClick={() => onApplyOperations([operation.id])} type="button">
-                    この変更を反映
+                  <button disabled={isSending} onClick={() => onApplyOperations()} type="button">
+                    反映
                   </button>
                 </div>
-                {operation.kind !== "delete" && operation.content ? (
-                  <details className="ai-workspace-operation-preview">
-                    <summary>Markdown内容を確認</summary>
-                    {operation.kind === "update" && operation.baseContent ? (
-                      <div className="ai-workspace-operation-compare">
-                        <section>
-                          <span>変更前</span>
-                          <pre>{operation.baseContent}</pre>
-                        </section>
-                        <section>
-                          <span>変更後</span>
+              </div>
+              <ul>
+                {pendingOperations.map((operation) => (
+                  <li key={operation.id}>
+                    <button onClick={() => onOpenFile(operation.path)} title={operation.path} type="button">
+                      <span>{operation.path}</span>
+                      <strong>開く</strong>
+                    </button>
+                    <span>{operation.kind === "create" ? "作成" : operation.kind === "update" ? "編集" : "削除"}</span>
+                    <small>{operation.summary}</small>
+                    <div className="ai-workspace-operation-actions">
+                      <button disabled={isSending} onClick={() => onDiscardOperations([operation.id])} type="button">
+                        この変更を取りやめ
+                      </button>
+                      <button disabled={isSending} onClick={() => onApplyOperations([operation.id])} type="button">
+                        この変更を反映
+                      </button>
+                    </div>
+                    {operation.kind !== "delete" && operation.content ? (
+                      <details className="ai-workspace-operation-preview">
+                        <summary>Markdown内容を確認</summary>
+                        {operation.kind === "update" && operation.baseContent ? (
+                          <div className="ai-workspace-operation-compare">
+                            <section>
+                              <span>変更前</span>
+                              <pre>{operation.baseContent}</pre>
+                            </section>
+                            <section>
+                              <span>変更後</span>
+                              <pre>{operation.content}</pre>
+                            </section>
+                          </div>
+                        ) : (
                           <pre>{operation.content}</pre>
-                        </section>
-                      </div>
-                    ) : (
-                      <pre>{operation.content}</pre>
-                    )}
-                  </details>
-                ) : null}
-              </li>
-            ))}
-          </ul>
+                        )}
+                      </details>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
         </section>
       ) : null}
 
@@ -293,7 +307,7 @@ export function AIWorkspacePanel({
             ))
           )}
         </div>
-      ) : (
+      ) : panelView === "history" ? (
         <div className="ai-workspace-history">
           {operationHistory.length === 0 ? (
             <div className="empty-note">AIによるMarkdown変更履歴はまだありません。</div>
@@ -316,7 +330,7 @@ export function AIWorkspacePanel({
             </ul>
           )}
         </div>
-      )}
+      ) : null}
 
       <form
         className="ai-workspace-form"
