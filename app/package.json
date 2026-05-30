@@ -1,6 +1,6 @@
 {
   "name": "relic",
-  "version": "0.1.143",
+  "version": "0.1.144",
   "description": "Relic is a local app that extends Markdown files with editing, search, browsing, visualization, and export while keeping the information as Markdown.",
   "main": ".vite/build/main.js",
   "private": true,

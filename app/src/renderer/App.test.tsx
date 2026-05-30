@@ -1004,6 +1004,81 @@ describe("App", () => {
     expect(useUiStore.getState().rightPanelView).toBe("outline");
   });
 
+  it("AI Workspaceへ現在ファイルの未保存本文とdirty状態を渡す", async () => {
+    const previewAIWorkspaceMessage = vi.fn().mockResolvedValue({
+      ok: true,
+      value: {
+        message: "このファイルを整理して",
+        references: [{ line: 1, path: "読書メモ.md", preview: "# 未保存" }],
+        requiresExternalAI: true,
+        skippedLargeFiles: [],
+        unreadableFiles: []
+      }
+    });
+    const sendAIWorkspaceMessage = vi.fn().mockResolvedValue({
+      ok: true,
+      value: {
+        codexAppServerAvailable: true,
+        history: [],
+        index: { chunkCount: 1, indexedAt: "2026-05-30T00:00:00.000Z", indexedFileCount: 1, skippedLargeFiles: [], unreadableFiles: [] },
+        operationHistory: [],
+        pendingOperations: []
+      }
+    });
+
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [{ name: "読書メモ", path: "読書メモ.md", type: "file" }]
+        }
+      }),
+      previewAIWorkspaceMessage,
+      readMarkdownFile: vi.fn().mockResolvedValue({
+        ok: true,
+        value: { content: "# 保存済み\nold", name: "読書メモ", path: "読書メモ.md" }
+      }),
+      sendAIWorkspaceMessage
+    });
+
+    await renderApp();
+
+    fireEvent.click(await screen.findByRole("button", { name: /読書メモ/ }));
+    await waitFor(() => {
+      expect(useEditorStore.getState().leftPane.activeTabId).not.toBeNull();
+    });
+
+    const activeTabId = useEditorStore.getState().leftPane.activeTabId!;
+    act(() => {
+      useEditorStore.getState().updateTabContent(activeTabId, "# 未保存\nnew draft");
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "AI" }));
+    const input = await screen.findByLabelText("AIへのメッセージ");
+    fireEvent.change(input, { target: { value: "このファイルを整理して" } });
+    fireEvent.click(screen.getByRole("button", { name: "送信" }));
+
+    await waitFor(() => {
+      expect(previewAIWorkspaceMessage).toHaveBeenCalledWith({
+        activeFileContent: "# 未保存\nnew draft",
+        activeFilePath: "読書メモ.md",
+        message: "このファイルを整理して"
+      });
+    });
+    expect(screen.getByText("AIへ送るMarkdown参照")).toBeInTheDocument();
+
+    fireEvent.click(screen.getAllByRole("button", { name: "送信" })[0]);
+    await waitFor(() => {
+      expect(sendAIWorkspaceMessage).toHaveBeenCalledWith({
+        activeFileContent: "# 未保存\nnew draft",
+        activeFilePath: "読書メモ.md",
+        dirtyFilePaths: ["読書メモ.md"],
+        message: "このファイルを整理して"
+      });
+    });
+  });
+
   it("機能トグルで右パネルをOFFにしたら表示上も右パネルを閉じる", async () => {
     const saveFeatureToggles = vi.fn().mockResolvedValue({ ok: true, value: undefined });
 
