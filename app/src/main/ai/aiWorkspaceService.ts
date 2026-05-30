@@ -408,8 +408,10 @@ export async function clearAIWorkspaceState(
 }
 
 async function ensureIndexed(context: AIWorkspaceContext): Promise<AIWorkspaceData> {
-  const data = await readAIWorkspaceData(context.userDataPath, context.workspaceId);
-  const currentSourceHash = await computeAIWorkspaceIndexSourceHash(context.workspacePath);
+  const [data, currentSourceHash] = await Promise.all([
+    readAIWorkspaceData(context.userDataPath, context.workspaceId),
+    computeAIWorkspaceIndexSourceHash(context.workspacePath)
+  ]);
 
   if (data.index.indexedAt && data.index.sourceHash === currentSourceHash) return data;
 
@@ -669,19 +671,27 @@ function selectPendingOperationIdsFromMessage(
   if (hasCurrentFileReference(message)) {
     if (!normalizedActiveFilePath) return ["__ai_workspace_no_matching_active_file__"];
 
-    const activeOperationIds = pendingOperations
-      .filter((operation) => normalizeOperationText(operation.path) === normalizedActiveFilePath)
-      .map((operation) => operation.id);
+    const activeOperationIds: string[] = [];
+    for (const operation of pendingOperations) {
+      if (normalizeOperationText(operation.path) === normalizedActiveFilePath) {
+        activeOperationIds.push(operation.id);
+      }
+    }
 
     return activeOperationIds.length > 0 ? activeOperationIds : ["__ai_workspace_no_matching_active_file__"];
   }
 
-  const matchedIds = pendingOperations
-    .filter((operation) => operationPathCandidates(operation.path).some((candidate) => {
+  const matchedIds: string[] = [];
+  for (const operation of pendingOperations) {
+    const matchesPath = operationPathCandidates(operation.path).some((candidate) => {
       const normalizedCandidate = normalizeOperationText(candidate);
       return normalizedCandidate.length >= 2 && normalizedMessage.includes(normalizedCandidate);
-    }))
-    .map((operation) => operation.id);
+    });
+
+    if (matchesPath) {
+      matchedIds.push(operation.id);
+    }
+  }
 
   return matchedIds.length > 0 ? matchedIds : undefined;
 }
@@ -836,11 +846,15 @@ function blockedDirtyPaths(
   dirtyFilePaths: string[]
 ): string[] {
   const dirtyPathSet = new Set(dirtyFilePaths);
-  return [...new Set(
-    operations
-      .filter((operation) => operation.kind !== "create" && dirtyPathSet.has(operation.path))
-      .map((operation) => operation.path)
-  )];
+  const blockedPaths = new Set<string>();
+
+  for (const operation of operations) {
+    if (operation.kind !== "create" && dirtyPathSet.has(operation.path)) {
+      blockedPaths.add(operation.path);
+    }
+  }
+
+  return [...blockedPaths];
 }
 
 function buildAssistantFallback(

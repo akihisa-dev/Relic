@@ -76,9 +76,15 @@ export function searchAIWorkspaceChunks(chunks: AIWorkspaceChunk[], query: strin
 
   if (terms.length === 0) return chunks.slice(0, 8);
 
-  return chunks
-    .map((chunk) => ({ chunk, score: scoreChunk(chunk, terms, queryEmbedding) }))
-    .filter((item) => item.score > 0)
+  const scoredChunks: Array<{ chunk: AIWorkspaceChunk; score: number }> = [];
+  for (const chunk of chunks) {
+    const score = scoreChunk(chunk, terms, queryEmbedding);
+    if (score > 0) {
+      scoredChunks.push({ chunk, score });
+    }
+  }
+
+  return scoredChunks
     .sort((a, b) => b.score - a.score || a.chunk.path.localeCompare(b.chunk.path, "ja"))
     .slice(0, 8)
     .map((item) => item.chunk);

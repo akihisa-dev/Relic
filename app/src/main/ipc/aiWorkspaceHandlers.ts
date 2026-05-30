@@ -165,9 +165,12 @@ function isPreviewAIWorkspaceMessageInput(value: unknown): value is PreviewAIWor
 }
 
 function hasAppliedPendingOperation(beforeState: AIWorkspaceState, afterState: AIWorkspaceState): boolean {
-  const pendingIds = new Set(beforeState.operationHistory
-    .filter((operation) => operation.status === "pending")
-    .map((operation) => operation.id));
+  const pendingIds = new Set<string>();
+  for (const operation of beforeState.operationHistory) {
+    if (operation.status === "pending") {
+      pendingIds.add(operation.id);
+    }
+  }
 
   return afterState.operationHistory.some((operation) => {
     return pendingIds.has(operation.id) && operation.status === "applied";

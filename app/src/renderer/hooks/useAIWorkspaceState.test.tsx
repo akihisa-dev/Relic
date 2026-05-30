@@ -149,7 +149,7 @@ describe("useAIWorkspaceState", () => {
     }));
 
     await waitFor(() => {
-      expect(window.relic?.getAIWorkspaceState).toHaveBeenCalled();
+      expect(hook.result.current.aiWorkspaceState?.codexAppServerAvailable).toBe(false);
     });
 
     await act(async () => {
