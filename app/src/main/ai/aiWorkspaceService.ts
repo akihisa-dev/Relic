@@ -202,11 +202,7 @@ export async function applyAIWorkspaceOperations(
     })
   };
   const assistantMessage: AIWorkspaceMessage = {
-    content: staleIds.size > 0
-      ? "一部のAI変更案は、作成後に対象Markdownが変更されていたため反映しませんでした。現在の内容をもとに、もう一度依頼してください。"
-      : failedIds.size > 0
-        ? "一部のAI変更案を反映できませんでした。対象ファイルの状態を確認してから、もう一度依頼してください。"
-      : "AI変更案をMarkdownへ反映しました。",
+    content: buildApplyOperationsMessage(targetOperations, staleIds, failedIds),
     createdAt: new Date().toISOString(),
     id: createMessageId("assistant"),
     references: targetOperations.map((operation) => ({
@@ -245,7 +241,7 @@ export async function discardAIWorkspaceOperations(
     })
   };
   const assistantMessage: AIWorkspaceMessage = {
-    content: "AI変更案を取りやめました。Markdownファイルには反映していません。",
+    content: buildDiscardOperationsMessage(targetOperations),
     createdAt: new Date().toISOString(),
     id: createMessageId("assistant"),
     references: targetOperations.map((operation) => ({
@@ -438,7 +434,9 @@ function selectPendingOperationIdsFromMessage(
   const normalizedMessage = normalizeOperationText(message);
   const normalizedActiveFilePath = activeFilePath ? normalizeOperationText(activeFilePath) : "";
 
-  if (normalizedActiveFilePath && /(この|現在|開いている|今の).{0,8}ファイル/.test(message)) {
+  if (hasCurrentFileReference(message)) {
+    if (!normalizedActiveFilePath) return ["__ai_workspace_no_matching_active_file__"];
+
     const activeOperationIds = pendingOperations
       .filter((operation) => normalizeOperationText(operation.path) === normalizedActiveFilePath)
       .map((operation) => operation.id);
@@ -456,6 +454,10 @@ function selectPendingOperationIdsFromMessage(
   return matchedIds.length > 0 ? matchedIds : undefined;
 }
 
+function hasCurrentFileReference(message: string): boolean {
+  return /(この|現在|開いている|今の).{0,8}ファイル/.test(message);
+}
+
 function operationPathCandidates(operationPath: string): string[] {
   const normalizedPath = operationPath.replace(/\\/g, "/");
   const fileName = path.posix.basename(normalizedPath);
@@ -470,6 +472,40 @@ function normalizeOperationText(value: string): string {
     .replace(/\\/g, "/")
     .replace(/[「」『』（）()[\]{}"'`、。，．\s]/g, "")
     .toLowerCase();
+}
+
+function buildApplyOperationsMessage(
+  operations: AIWorkspaceFileOperation[],
+  staleIds: Set<string>,
+  failedIds: Set<string>
+): string {
+  const header = staleIds.size > 0
+    ? "一部のAI変更案は、作成後に対象Markdownが変更されていたため反映しませんでした。現在の内容をもとに、もう一度依頼してください。"
+    : failedIds.size > 0
+      ? "一部のAI変更案を反映できませんでした。対象ファイルの状態を確認してから、もう一度依頼してください。"
+      : "AI変更案をMarkdownへ反映しました。";
+
+  return [header, "", ...operationResultLines(operations, staleIds, failedIds)].join("\n").trim();
+}
+
+function buildDiscardOperationsMessage(operations: AIWorkspaceFileOperation[]): string {
+  return [
+    "AI変更案を取りやめました。Markdownファイルには反映していません。",
+    "",
+    ...operations.map((operation) => `- ${operation.path}`)
+  ].join("\n").trim();
+}
+
+function operationResultLines(
+  operations: AIWorkspaceFileOperation[],
+  staleIds: Set<string>,
+  failedIds: Set<string>
+): string[] {
+  return operations.map((operation) => {
+    if (staleIds.has(operation.id)) return `- 再作業が必要: ${operation.path}`;
+    if (failedIds.has(operation.id)) return `- 失敗: ${operation.path}`;
+    return `- 反映済み: ${operation.path}`;
+  });
 }
 
 function blockedDirtyPaths(
