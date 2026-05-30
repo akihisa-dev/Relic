@@ -208,6 +208,30 @@ describe("sendAIWorkspaceMessage", () => {
     }
   });
 
+  it("applies only the active file operation for natural language current-file messages", async () => {
+    await writeFile(path.join(workspacePath, "first.md"), "first", "utf8");
+    await writeFile(path.join(workspacePath, "second.md"), "second", "utf8");
+    await writeData({
+      operations: [
+        createOperation("update", "first.md", "updated first"),
+        createOperation("update", "second.md", "updated second")
+      ]
+    });
+
+    const result = await sendAIWorkspaceMessage(context(), {
+      activeFilePath: "second.md",
+      message: "このファイルだけ反映して"
+    });
+
+    expect(result.ok).toBe(true);
+    expect(runCodexAIWorkspaceTurn).not.toHaveBeenCalled();
+    await expect(readFile(path.join(workspacePath, "first.md"), "utf8")).resolves.toBe("first");
+    await expect(readFile(path.join(workspacePath, "second.md"), "utf8")).resolves.toBe("updated second");
+    if (result.ok) {
+      expect(result.value.pendingOperations.map((operation) => operation.path)).toEqual(["first.md"]);
+    }
+  });
+
   it("discards only the pending operation named in a natural language message", async () => {
     await writeFile(path.join(workspacePath, "first.md"), "first", "utf8");
     await writeFile(path.join(workspacePath, "second.md"), "second", "utf8");
