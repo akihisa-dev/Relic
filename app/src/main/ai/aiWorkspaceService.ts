@@ -111,6 +111,10 @@ export async function sendAIWorkspaceMessage(
       }, trashItem);
     }
 
+    if (shouldRevertAppliedOperations(message) && data.operations.some((operation) => operation.status === "applied")) {
+      return createRevertOperations(context, data, message, input.activeFilePath);
+    }
+
     const references = buildReferences(data, message, input.activeFilePath);
     const userMessage: AIWorkspaceMessage = {
       content: message,
@@ -271,6 +275,55 @@ export async function discardAIWorkspaceOperations(
     role: "assistant"
   };
   nextData.history = [...nextData.history, assistantMessage];
+  await writeAIWorkspaceData(context.userDataPath, context.workspaceId, nextData);
+
+  return ok(toState(nextData));
+}
+
+async function createRevertOperations(
+  context: AIWorkspaceContext,
+  data: AIWorkspaceData,
+  message: string,
+  activeFilePath?: string | null
+): Promise<RelicResult<AIWorkspaceState>> {
+  const targetOperations = selectAppliedOperationsForRevert(data.operations, message, activeFilePath);
+  if (targetOperations.length === 0) {
+    return fail("AI_WORKSPACE_NO_REVERTABLE_OPERATIONS", "元に戻せるAI変更履歴がありません。");
+  }
+
+  const revertOperations: AIWorkspaceFileOperation[] = [];
+  for (const operation of targetOperations) {
+    const revertOperation = await buildRevertOperation(context.workspacePath, operation);
+    if (revertOperation) revertOperations.push(revertOperation);
+  }
+
+  if (revertOperations.length === 0) {
+    return fail("AI_WORKSPACE_NO_REVERTABLE_OPERATIONS", "元に戻せるAI変更履歴がありません。");
+  }
+
+  const userMessage: AIWorkspaceMessage = {
+    content: message,
+    createdAt: new Date().toISOString(),
+    id: createMessageId("user"),
+    references: [],
+    role: "user"
+  };
+  const assistantMessage: AIWorkspaceMessage = {
+    content: buildRevertOperationsMessage(revertOperations),
+    createdAt: new Date().toISOString(),
+    id: createMessageId("assistant"),
+    operations: revertOperations,
+    references: revertOperations.map((operation) => ({
+      path: operation.path,
+      preview: operation.summary
+    })),
+    role: "assistant"
+  };
+  const nextData: AIWorkspaceData = {
+    ...data,
+    history: [...data.history, userMessage, assistantMessage],
+    operations: mergeNewOperations(data.operations, revertOperations)
+  };
   await writeAIWorkspaceData(context.userDataPath, context.workspaceId, nextData);
 
   return ok(toState(nextData));
@@ -466,6 +519,10 @@ function shouldDiscardPendingOperations(message: string): boolean {
   return /(やめ|取りやめ|不要|キャンセル|破棄|なしにして|しない)/.test(message);
 }
 
+function shouldRevertAppliedOperations(message: string): boolean {
+  return /(戻し|戻して|元に戻|取り消し|巻き戻)/.test(message);
+}
+
 function selectPendingOperationIdsFromMessage(
   operations: AIWorkspaceFileOperation[],
   message: string,
@@ -493,6 +550,62 @@ function selectPendingOperationIdsFromMessage(
     .map((operation) => operation.id);
 
   return matchedIds.length > 0 ? matchedIds : undefined;
+}
+
+function selectAppliedOperationsForRevert(
+  operations: AIWorkspaceFileOperation[],
+  message: string,
+  activeFilePath?: string | null
+): AIWorkspaceFileOperation[] {
+  const appliedOperations = [...operations].reverse().filter((operation) => operation.status === "applied");
+  const normalizedActiveFilePath = activeFilePath ? normalizeOperationText(activeFilePath) : "";
+
+  if (hasCurrentFileReference(message) && normalizedActiveFilePath) {
+    return appliedOperations.filter((operation) => normalizeOperationText(operation.path) === normalizedActiveFilePath).slice(0, 1);
+  }
+
+  const matchedOperations = appliedOperations.filter((operation) => operationPathCandidates(operation.path).some((candidate) => {
+    const normalizedCandidate = normalizeOperationText(candidate);
+    return normalizedCandidate.length >= 2 && normalizeOperationText(message).includes(normalizedCandidate);
+  }));
+  if (matchedOperations.length > 0) return matchedOperations.slice(0, 1);
+
+  return appliedOperations.slice(0, 1);
+}
+
+async function buildRevertOperation(
+  workspacePath: string,
+  operation: AIWorkspaceFileOperation
+): Promise<AIWorkspaceFileOperation | null> {
+  if (operation.kind === "update" && operation.baseContent !== undefined) {
+    const file = await readMarkdownFile(workspacePath, operation.path);
+    if (!file.ok) return null;
+
+    return {
+      baseContent: file.value.content,
+      baseContentHash: hashContent(file.value.content),
+      content: operation.baseContent,
+      createdAt: new Date().toISOString(),
+      id: createMessageId("revert-update"),
+      kind: "update",
+      path: operation.path,
+      status: "pending",
+      summary: "AI変更を元のMarkdown本文へ戻す"
+    };
+  }
+
+  if (operation.kind === "create") {
+    return {
+      createdAt: new Date().toISOString(),
+      id: createMessageId("revert-create"),
+      kind: "delete",
+      path: operation.path,
+      status: "pending",
+      summary: "AIが作成したMarkdownを削除して元に戻す"
+    };
+  }
+
+  return null;
 }
 
 function hasCurrentFileReference(message: string): boolean {
@@ -532,6 +645,14 @@ function buildApplyOperationsMessage(
 function buildDiscardOperationsMessage(operations: AIWorkspaceFileOperation[]): string {
   return [
     "AI変更案を取りやめました。Markdownファイルには反映していません。",
+    "",
+    ...operations.map((operation) => `- ${operation.path}`)
+  ].join("\n").trim();
+}
+
+function buildRevertOperationsMessage(operations: AIWorkspaceFileOperation[]): string {
+  return [
+    "反映済みのAI変更を元に戻す変更案を作成しました。まだMarkdownファイルには反映していません。",
     "",
     ...operations.map((operation) => `- ${operation.path}`)
   ].join("\n").trim();
