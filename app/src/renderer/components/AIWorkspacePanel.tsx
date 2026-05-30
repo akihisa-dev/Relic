@@ -44,6 +44,10 @@ export function AIWorkspacePanel({
     ...(state?.index.skippedLargeFiles ?? []),
     ...(state?.index.unreadableFiles ?? [])
   ];
+  const previewSkippedFiles = [
+    ...(messagePreview?.skippedLargeFiles ?? []),
+    ...(messagePreview?.unreadableFiles ?? [])
+  ];
 
   return (
     <div className="ai-workspace-panel">
@@ -193,6 +197,22 @@ export function AIWorkspacePanel({
           ) : (
             <small>関連しそうなMarkdownは見つかりませんでした。</small>
           )}
+          {previewSkippedFiles.length > 0 ? (
+            <details className="ai-workspace-preview-skipped">
+              <summary>AIに送らないMarkdown</summary>
+              <ul>
+                {previewSkippedFiles.map((file) => (
+                  <li key={`${file.path}-${file.reason}`}>
+                    <button onClick={() => onOpenFile(file.path)} title={file.path} type="button">
+                      <span>{file.path}</span>
+                      <strong>開く</strong>
+                    </button>
+                    <small>{file.reason}</small>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          ) : null}
         </section>
       ) : null}
 
