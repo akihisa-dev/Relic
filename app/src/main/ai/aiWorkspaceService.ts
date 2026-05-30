@@ -110,14 +110,16 @@ export async function sendAIWorkspaceMessage(
     const data = await ensureIndexed(context);
     if (shouldDiscardPendingOperations(message) && data.operations.some((operation) => operation.status === "pending")) {
       return discardAIWorkspaceOperations(context, {
-        operationIds: selectPendingOperationIdsFromMessage(data.operations, message, input.activeFilePath)
+        operationIds: selectPendingOperationIdsFromMessage(data.operations, message, input.activeFilePath),
+        userMessage: message
       });
     }
 
     if (shouldApplyPendingOperations(message) && data.operations.some((operation) => operation.status === "pending")) {
       return applyAIWorkspaceOperations(context, {
         dirtyFilePaths: input.dirtyFilePaths,
-        operationIds: selectPendingOperationIdsFromMessage(data.operations, message, input.activeFilePath)
+        operationIds: selectPendingOperationIdsFromMessage(data.operations, message, input.activeFilePath),
+        userMessage: message
       }, trashItem);
     }
 
@@ -249,7 +251,7 @@ export async function applyAIWorkspaceOperations(
     })),
     role: "assistant"
   };
-  nextData.history = [...nextData.history, assistantMessage];
+  nextData.history = [...nextData.history, ...buildOptionalUserHistory(input.userMessage), assistantMessage];
   await writeAIWorkspaceData(context.userDataPath, context.workspaceId, nextData);
 
   return ok(toState(nextData));
@@ -288,7 +290,7 @@ export async function discardAIWorkspaceOperations(
     })),
     role: "assistant"
   };
-  nextData.history = [...nextData.history, assistantMessage];
+  nextData.history = [...nextData.history, ...buildOptionalUserHistory(input.userMessage), assistantMessage];
   await writeAIWorkspaceData(context.userDataPath, context.workspaceId, nextData);
 
   return ok(toState(nextData));
@@ -764,6 +766,19 @@ function appendRejectedOperationsNotice(
     "Relic側で安全のため採用しなかった変更案:",
     ...rejectedOperations.map((operation) => `- ${operation.path}: ${operation.reason}`)
   ].join("\n");
+}
+
+function buildOptionalUserHistory(message?: string): AIWorkspaceMessage[] {
+  const content = message?.trim();
+  if (!content) return [];
+
+  return [{
+    content,
+    createdAt: new Date().toISOString(),
+    id: createMessageId("user"),
+    references: [],
+    role: "user"
+  }];
 }
 
 function createMessageId(prefix: string): string {
