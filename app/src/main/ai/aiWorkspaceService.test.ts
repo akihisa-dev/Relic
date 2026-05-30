@@ -397,6 +397,34 @@ describe("sendAIWorkspaceMessage", () => {
     }
   });
 
+  it("creates a pending create proposal to revert an applied delete operation", async () => {
+    await writeData({
+      operations: [{
+        ...createOperation("delete", "deleted.md"),
+        baseContent: "# Deleted\noriginal",
+        baseContentHash: hashContent("# Deleted\noriginal"),
+        status: "applied"
+      }]
+    });
+
+    const result = await sendAIWorkspaceMessage(context(), { message: "deleted.mdを元に戻して" });
+
+    expect(result.ok).toBe(true);
+    expect(runCodexAIWorkspaceTurn).not.toHaveBeenCalled();
+    await expect(readFile(path.join(workspacePath, "deleted.md"), "utf8")).rejects.toThrow();
+    if (result.ok) {
+      expect(result.value.pendingOperations).toEqual([
+        expect.objectContaining({
+          content: "# Deleted\noriginal",
+          kind: "create",
+          path: "deleted.md",
+          status: "pending",
+          summary: "AIが削除したMarkdownを元の本文で再作成する"
+        })
+      ]);
+    }
+  });
+
   it("does not delete a created Markdown when a revert proposal became stale", async () => {
     await writeFile(path.join(workspacePath, "created.md"), "# Edited after proposal", "utf8");
     await writeData({
