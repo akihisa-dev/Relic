@@ -213,6 +213,31 @@ describe("sendAIWorkspaceMessage", () => {
     }
   });
 
+  it("accepts absolute operation paths only when they are inside the workspace", async () => {
+    await writeFile(path.join(workspacePath, "README.md"), "# Auth\nLogin spec", "utf8");
+    vi.mocked(runCodexAIWorkspaceTurn).mockResolvedValueOnce({
+      message: "変更案を作成します。",
+      operations: [
+        createOperation("update", path.join(workspacePath, "README.md"), "# Auth\nUpdated"),
+        createOperation("create", path.join(path.dirname(workspacePath), "outside.md"), "# Outside")
+      ]
+    });
+
+    const result = await sendAIWorkspaceMessage(context(), { message: "Login spec" });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.pendingOperations).toEqual([
+        expect.objectContaining({
+          path: "README.md",
+          status: "pending"
+        })
+      ]);
+      expect(result.value.history.at(-1)?.content).toContain("Relic側で安全のため採用しなかった変更案");
+      expect(result.value.history.at(-1)?.content).toContain("outside.md");
+    }
+  });
+
   it("passes pending operations to Codex App Server for follow-up edits", async () => {
     await writeFile(path.join(workspacePath, "README.md"), "# Auth\nLogin spec", "utf8");
     await writeData({
