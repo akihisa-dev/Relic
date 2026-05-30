@@ -69,7 +69,7 @@ export async function clearAIWorkspaceData(userDataPath: string, workspaceId: st
 }
 
 function aiWorkspaceDataPath(userDataPath: string, workspaceId: string): string {
-  return path.join(userDataPath, "ai-workspaces", `${workspaceId}.json`);
+  return path.join(userDataPath, "ai-workspaces", `${encodeURIComponent(workspaceId)}.json`);
 }
 
 function parseIndexData(value: unknown): AIWorkspaceIndexData {
