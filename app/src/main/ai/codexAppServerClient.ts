@@ -263,8 +263,17 @@ function formatPendingOperationForPrompt(operation: AIWorkspaceFileOperation): s
   return lines.join("\n");
 }
 
-function parseCodexResponse(text: string): CodexAIWorkspaceResponse {
-  const parsed = JSON.parse(extractJsonObject(text)) as Partial<CodexAIWorkspaceResponse>;
+export function parseCodexResponse(text: string): CodexAIWorkspaceResponse {
+  const jsonObject = extractJsonObject(text);
+  if (!jsonObject) return buildUnstructuredCodexResponse(text);
+
+  let parsed: Partial<CodexAIWorkspaceResponse>;
+  try {
+    parsed = JSON.parse(jsonObject) as Partial<CodexAIWorkspaceResponse>;
+  } catch {
+    return buildUnstructuredCodexResponse(text);
+  }
+
   const operations = Array.isArray(parsed.operations)
     ? parsed.operations.filter(isCodexOperation)
     : [];
@@ -275,7 +284,7 @@ function parseCodexResponse(text: string): CodexAIWorkspaceResponse {
   };
 }
 
-function extractJsonObject(text: string): string {
+function extractJsonObject(text: string): string | null {
   const trimmed = text.trim();
   if (trimmed.startsWith("{")) return trimmed;
 
@@ -286,7 +295,20 @@ function extractJsonObject(text: string): string {
   const lastBrace = trimmed.lastIndexOf("}");
   if (firstBrace >= 0 && lastBrace > firstBrace) return trimmed.slice(firstBrace, lastBrace + 1);
 
-  throw new Error("Codex App Serverの応答をJSONとして読めませんでした。");
+  return null;
+}
+
+function buildUnstructuredCodexResponse(text: string): CodexAIWorkspaceResponse {
+  const message = text.trim() || "Codex App Serverから空の応答が返りました。";
+
+  return {
+    message: [
+      message,
+      "",
+      "Markdown変更案は構造化形式で取得できなかったため作成しませんでした。"
+    ].join("\n"),
+    operations: []
+  };
 }
 
 function isCodexOperation(value: unknown): value is CodexAIWorkspaceResponse["operations"][number] {
