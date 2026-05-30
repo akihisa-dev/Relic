@@ -70,6 +70,7 @@ export type AIWorkspaceFileOperationKind = "create" | "update" | "delete";
 
 export interface AIWorkspaceFileOperation {
   baseContentHash?: string;
+  baseContent?: string;
   content?: string;
   createdAt: string;
   id: string;

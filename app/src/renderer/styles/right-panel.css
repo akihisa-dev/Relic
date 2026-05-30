@@ -477,6 +477,25 @@
   word-break: break-word;
 }
 
+.ai-workspace-operation-compare {
+  display: grid;
+}
+
+.ai-workspace-operation-compare section {
+  display: grid;
+}
+
+.ai-workspace-operation-compare section + section {
+  border-top: 1px solid var(--border);
+}
+
+.ai-workspace-operation-compare span {
+  color: var(--text-3);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 6px 8px 0;
+}
+
 .ai-workspace-messages {
   display: grid;
   gap: 10px;

@@ -428,6 +428,7 @@ async function prepareOperations(
 
     nextOperations.push({
       ...operation,
+      baseContent: file.value.content,
       baseContentHash: hashContent(file.value.content),
       path: pathResult.value
     });

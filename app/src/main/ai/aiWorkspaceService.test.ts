@@ -165,6 +165,7 @@ describe("sendAIWorkspaceMessage", () => {
 
     expect(result.ok).toBe(true);
     if (result.ok) {
+      expect(result.value.pendingOperations[0].baseContent).toBe("# Auth\nLogin spec");
       expect(result.value.pendingOperations[0].baseContentHash).toBe(hashContent("# Auth\nLogin spec"));
     }
   });
