@@ -275,7 +275,7 @@ export function parseCodexResponse(text: string): CodexAIWorkspaceResponse {
   }
 
   const operations = Array.isArray(parsed.operations)
-    ? parsed.operations.filter(isCodexOperation)
+    ? parsed.operations.map(normalizeCodexOperation).filter((operation): operation is CodexAIWorkspaceResponse["operations"][number] => Boolean(operation))
     : [];
 
   return {
@@ -347,14 +347,40 @@ function buildUnstructuredCodexResponse(text: string): CodexAIWorkspaceResponse 
   };
 }
 
-function isCodexOperation(value: unknown): value is CodexAIWorkspaceResponse["operations"][number] {
-  if (!value || typeof value !== "object") return false;
-  const record = value as CodexAIWorkspaceResponse["operations"][number];
+function normalizeCodexOperation(value: unknown): CodexAIWorkspaceResponse["operations"][number] | null {
+  if (!value || typeof value !== "object") return null;
+  const record = value as Record<string, unknown>;
+  const kind = typeof record.kind === "string" ? record.kind.toLowerCase() : "";
+  const path = stringField(record, "path") ?? stringField(record, "filePath");
+  const summary = stringField(record, "summary") ?? stringField(record, "description") ?? fallbackOperationSummary(kind, path);
+  const content = stringField(record, "content") ??
+    stringField(record, "markdown") ??
+    stringField(record, "body") ??
+    stringField(record, "newContent");
 
-  return (record.kind === "create" || record.kind === "update" || record.kind === "delete") &&
-    typeof record.path === "string" &&
-    typeof record.summary === "string" &&
-    (record.kind === "delete" || typeof record.content === "string");
+  if (kind !== "create" && kind !== "update" && kind !== "delete") return null;
+  if (!path || !summary) return null;
+  if (kind !== "delete" && content === undefined) return null;
+
+  return {
+    content,
+    kind,
+    path,
+    summary
+  };
+}
+
+function stringField(record: Record<string, unknown>, key: string): string | undefined {
+  const value = record[key];
+  return typeof value === "string" ? value : undefined;
+}
+
+function fallbackOperationSummary(kind: string, path?: string): string | undefined {
+  if (!path) return undefined;
+  if (kind === "create") return `${path} を作成`;
+  if (kind === "update") return `${path} を更新`;
+  if (kind === "delete") return `${path} を削除`;
+  return undefined;
 }
 
 function createOperationId(kind: string): string {
