@@ -187,6 +187,10 @@ describe("sendAIWorkspaceMessage", () => {
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.value.pendingOperations.map((operation) => operation.path)).toEqual(["README.md"]);
+      expect(result.value.history.at(-1)?.content).toContain("Relic側で安全のため採用しなかった変更案");
+      expect(result.value.history.at(-1)?.content).toContain("../outside.md");
+      expect(result.value.history.at(-1)?.content).toContain("notes.txt");
+      expect(result.value.history.at(-1)?.content).toContain("missing.md");
     }
   });
 

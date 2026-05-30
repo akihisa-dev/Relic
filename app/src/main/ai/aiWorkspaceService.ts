@@ -34,6 +34,16 @@ interface AIWorkspaceContext {
   workspacePath: string;
 }
 
+interface RejectedAIWorkspaceOperation {
+  path: string;
+  reason: string;
+}
+
+interface PreparedAIWorkspaceOperations {
+  operations: AIWorkspaceFileOperation[];
+  rejectedOperations: RejectedAIWorkspaceOperation[];
+}
+
 export async function getAIWorkspaceState(context: AIWorkspaceContext): Promise<RelicResult<AIWorkspaceState>> {
   const data = await readAIWorkspaceData(context.userDataPath, context.workspaceId);
 
@@ -135,19 +145,23 @@ export async function sendAIWorkspaceMessage(
       codexError = error instanceof Error ? error.message : String(error);
       return null;
     });
-    const operations = codexResponse ? await prepareOperations(context.workspacePath, codexResponse.operations) : [];
+    const preparedOperations = codexResponse
+      ? await prepareOperations(context.workspacePath, codexResponse.operations)
+      : { operations: [], rejectedOperations: [] };
     const assistantMessage: AIWorkspaceMessage = {
-      content: codexResponse?.message ?? buildAssistantFallback(message, references, codexError),
+      content: codexResponse
+        ? appendRejectedOperationsNotice(codexResponse.message, preparedOperations.rejectedOperations)
+        : buildAssistantFallback(message, references, codexError),
       createdAt: new Date().toISOString(),
       id: createMessageId("assistant"),
-      operations,
+      operations: preparedOperations.operations,
       references,
       role: "assistant"
     };
     const nextData = {
       ...data,
       history: [...data.history, userMessage, assistantMessage],
-      operations: mergeNewOperations(data.operations, operations)
+      operations: mergeNewOperations(data.operations, preparedOperations.operations)
     };
     await writeAIWorkspaceData(context.userDataPath, context.workspaceId, nextData);
 
@@ -464,12 +478,16 @@ async function applyOperation(
 async function prepareOperations(
   workspacePath: string,
   operations: AIWorkspaceFileOperation[]
-): Promise<AIWorkspaceFileOperation[]> {
+): Promise<PreparedAIWorkspaceOperations> {
   const nextOperations: AIWorkspaceFileOperation[] = [];
+  const rejectedOperations: RejectedAIWorkspaceOperation[] = [];
 
   for (const operation of operations) {
     const pathResult = validateOperationPath(workspacePath, operation.path);
-    if (!pathResult.ok) continue;
+    if (!pathResult.ok) {
+      rejectedOperations.push({ path: operation.path, reason: pathResult.error.message });
+      continue;
+    }
 
     if (operation.kind === "create") {
       nextOperations.push({ ...operation, path: pathResult.value });
@@ -477,7 +495,10 @@ async function prepareOperations(
     }
 
     const file = await readMarkdownFile(workspacePath, pathResult.value);
-    if (!file.ok) continue;
+    if (!file.ok) {
+      rejectedOperations.push({ path: pathResult.value, reason: file.error.message });
+      continue;
+    }
 
     nextOperations.push({
       ...operation,
@@ -487,7 +508,7 @@ async function prepareOperations(
     });
   }
 
-  return nextOperations;
+  return { operations: nextOperations, rejectedOperations };
 }
 
 function validateOperationPath(workspacePath: string, operationPath: string): RelicResult<string> {
@@ -719,6 +740,20 @@ function buildAssistantFallback(
     `受け取った依頼: ${message}`,
     "",
     "Markdown変更案は作っていません。"
+  ].join("\n");
+}
+
+function appendRejectedOperationsNotice(
+  content: string,
+  rejectedOperations: RejectedAIWorkspaceOperation[]
+): string {
+  if (rejectedOperations.length === 0) return content;
+
+  return [
+    content,
+    "",
+    "Relic側で安全のため採用しなかった変更案:",
+    ...rejectedOperations.map((operation) => `- ${operation.path}: ${operation.reason}`)
   ].join("\n");
 }
 
