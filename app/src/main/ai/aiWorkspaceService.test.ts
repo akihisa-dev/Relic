@@ -146,6 +146,26 @@ describe("sendAIWorkspaceMessage", () => {
       expect(result.value.pendingOperations[0].baseContentHash).toBe(hashContent("# Auth\nLogin spec"));
     }
   });
+
+  it("keeps only safe Markdown operations returned by Codex App Server", async () => {
+    await writeFile(path.join(workspacePath, "README.md"), "# Auth\nLogin spec", "utf8");
+    vi.mocked(runCodexAIWorkspaceTurn).mockResolvedValueOnce({
+      message: "変更案を作成します。",
+      operations: [
+        createOperation("update", "README.md", "# Auth\nUpdated"),
+        createOperation("create", "../outside.md", "# Outside"),
+        createOperation("create", "notes.txt", "text"),
+        createOperation("delete", "missing.md")
+      ]
+    });
+
+    const result = await sendAIWorkspaceMessage(context(), { message: "Login spec" });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.pendingOperations.map((operation) => operation.path)).toEqual(["README.md"]);
+    }
+  });
 });
 
 describe("previewAIWorkspaceMessage", () => {
