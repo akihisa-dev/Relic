@@ -25,7 +25,7 @@ export function openFileTabState(
   const paneState = state[paneKey];
 
   if (existing) {
-    const nextPane = activateTab(ensureTabInPane(paneState, existing.id), existing.id);
+    const nextPane = activateTab(insertTabAfterActive(paneState, existing.id), existing.id);
     return {
       focusedPane: pane,
       [paneKey]: reorderPinnedTabs(nextPane, state.tabs)
@@ -44,11 +44,7 @@ export function openFileTabState(
   return {
     focusedPane: pane,
     tabs: { ...state.tabs, [id]: newTab },
-    [paneKey]: {
-      activeTabId: id,
-      history: [...paneState.history, id],
-      tabIds: [...paneState.tabIds, id]
-    }
+    [paneKey]: activateTab(insertTabAfterActive(paneState, id), id)
   };
 }
 
@@ -66,7 +62,7 @@ export function openPanelTabState(
     ? state.tabs
     : { ...state.tabs, [id]: { id, kind: "panel" as const, name, panel } satisfies PanelTab };
 
-  const nextPane = activateTab(ensureTabInPane(paneState, id), id);
+  const nextPane = activateTab(insertTabAfterActive(paneState, id), id);
 
   return {
     focusedPane: pane,
@@ -88,7 +84,7 @@ export function openChartTabState(
     ? { ...state.tabs, [id]: { ...existing, name: chart.name } }
     : { ...state.tabs, [id]: { chartId: chart.id, id, kind: "chart" as const, name: chart.name } satisfies ChartTab };
 
-  const nextPane = activateTab(ensureTabInPane(paneState, id), id);
+  const nextPane = activateTab(insertTabAfterActive(paneState, id), id);
 
   return {
     focusedPane: pane,
@@ -444,12 +440,24 @@ function activateTab(pane: PaneState, tabId: string): PaneState {
   };
 }
 
-function ensureTabInPane(pane: PaneState, tabId: string): PaneState {
+function insertTabAfterActive(pane: PaneState, tabId: string): PaneState {
   if (pane.tabIds.includes(tabId)) return pane;
+
+  const activeIndex = pane.activeTabId ? pane.tabIds.indexOf(pane.activeTabId) : -1;
+  if (activeIndex === -1) {
+    return {
+      ...pane,
+      tabIds: [...pane.tabIds, tabId]
+    };
+  }
 
   return {
     ...pane,
-    tabIds: [...pane.tabIds, tabId]
+    tabIds: [
+      ...pane.tabIds.slice(0, activeIndex + 1),
+      tabId,
+      ...pane.tabIds.slice(activeIndex + 1)
+    ]
   };
 }
 

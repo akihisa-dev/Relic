@@ -221,7 +221,6 @@
     opacity: 0;
     padding-left: 0;
     padding-right: 0;
-    transform: scaleX(0.88) translateY(2px);
   }
   to {
     max-width: 180px;
@@ -229,16 +228,6 @@
     opacity: 1;
     padding-left: 8px;
     padding-right: 8px;
-    transform: scaleX(1) translateY(0);
-  }
-}
-
-@keyframes tab-select {
-  0% {
-    transform: translateY(1px) scale(0.985);
-  }
-  100% {
-    transform: translateY(0) scale(1);
   }
 }
 

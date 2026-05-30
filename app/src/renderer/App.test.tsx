@@ -2010,7 +2010,7 @@ describe("App", () => {
 
     fireEvent.click(await screen.findByRole("button", { name: "新規ファイル" }));
 
-    expect(document.querySelector(".rail-tab-flight--open")).toBeInTheDocument();
+    expect(document.querySelector(".rail-tab-flight--open")).not.toBeInTheDocument();
     expect(createMarkdownFile).toHaveBeenCalledWith({ name: "新規ファイル" });
     expect((await screen.findAllByText("新規ファイル")).length).toBeGreaterThan(0);
     await waitFor(() => {
