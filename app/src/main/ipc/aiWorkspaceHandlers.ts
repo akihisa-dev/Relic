@@ -14,6 +14,7 @@ import {
   type RebuildAIWorkspaceIndexInput,
   sendAIWorkspaceMessageChannel,
   type SendAIWorkspaceMessageInput,
+  type AIWorkspaceState,
   workspaceChangedChannel
 } from "../../shared/ipc";
 import { fail } from "../../shared/result";
@@ -51,7 +52,7 @@ export function registerAIWorkspaceHandlers(): void {
     }
   });
 
-  ipcMain.handle(sendAIWorkspaceMessageChannel, async (_event, input: SendAIWorkspaceMessageInput) => {
+  ipcMain.handle(sendAIWorkspaceMessageChannel, async (event, input: SendAIWorkspaceMessageInput) => {
     try {
       if (!isSendAIWorkspaceMessageInput(input)) {
         return fail("AI_WORKSPACE_MESSAGE_INVALID", "AIに送る内容を入力してください。");
@@ -60,7 +61,17 @@ export function registerAIWorkspaceHandlers(): void {
       const context = await getAIWorkspaceContext();
       if (!context.ok) return context;
 
-      return sendAIWorkspaceMessage(context.value, input, shell.trashItem);
+      const beforeState = await getAIWorkspaceState(context.value);
+      const result = await sendAIWorkspaceMessage(context.value, input, shell.trashItem);
+      if (result.ok && beforeState.ok && hasAppliedPendingOperation(beforeState.value, result.value)) {
+        event.sender.send(workspaceChangedChannel, {
+          changedAt: new Date().toISOString(),
+          workspaceId: context.value.workspaceId,
+          workspacePath: context.value.workspacePath
+        });
+      }
+
+      return result;
     } catch (error) {
       return fail("AI_WORKSPACE_MESSAGE_FAILED", "AI Workspaceで処理できませんでした。", ipcErrorDetails(error));
     }
@@ -150,4 +161,14 @@ function isPreviewAIWorkspaceMessageInput(value: unknown): value is PreviewAIWor
   const record = value as { message?: unknown };
 
   return typeof record.message === "string" && record.message.trim().length > 0;
+}
+
+function hasAppliedPendingOperation(beforeState: AIWorkspaceState, afterState: AIWorkspaceState): boolean {
+  const pendingIds = new Set(beforeState.operationHistory
+    .filter((operation) => operation.status === "pending")
+    .map((operation) => operation.id));
+
+  return afterState.operationHistory.some((operation) => {
+    return pendingIds.has(operation.id) && operation.status === "applied";
+  });
 }
