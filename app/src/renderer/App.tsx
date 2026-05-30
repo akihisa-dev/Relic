@@ -833,7 +833,13 @@ export function App(): ReactElement {
           onAIWorkspaceClearData={() => { void clearAIWorkspaceData(); }}
           onAIWorkspaceApplyOperations={(operationIds) => { void applyAIWorkspaceOperations(dirtyMarkdownPaths, operationIds); }}
           onAIWorkspaceCancelMessagePreview={cancelAIWorkspaceMessage}
-          onAIWorkspaceConfirmMessagePreview={() => { void confirmAIWorkspaceMessage(); }}
+          onAIWorkspaceConfirmMessagePreview={() => {
+            void confirmAIWorkspaceMessage(
+              dirtyMarkdownPaths,
+              activeFileTabInFocusedPane?.path ?? null,
+              activeFileTabInFocusedPane?.content ?? null
+            );
+          }}
           onAIWorkspaceRebuildIndex={() => { void rebuildAIWorkspaceIndex(); }}
           onAIWorkspaceDiscardOperations={(operationIds) => { void discardAIWorkspaceOperations(operationIds); }}
           onAIWorkspaceSendMessage={(message) => {

@@ -25,7 +25,11 @@ export function useAIWorkspaceState({
     activeFilePath?: string | null,
     activeFileContent?: string | null
   ) => Promise<void>;
-  confirmAIWorkspaceMessage: () => Promise<void>;
+  confirmAIWorkspaceMessage: (
+    dirtyFilePaths?: string[],
+    activeFilePath?: string | null,
+    activeFileContent?: string | null
+  ) => Promise<void>;
   cancelAIWorkspaceMessage: () => void;
   applyAIWorkspaceOperations: (dirtyFilePaths?: string[], operationIds?: string[]) => Promise<void>;
   discardAIWorkspaceOperations: (operationIds?: string[]) => Promise<void>;
@@ -122,9 +126,23 @@ export function useAIWorkspaceState({
     setAIWorkspaceState(result.value);
   }, [isEnabled, onError, workspaceId]);
 
-  const confirmAIWorkspaceMessage = useCallback(async (): Promise<void> => {
+  const confirmAIWorkspaceMessage = useCallback(async (
+    dirtyFilePaths: string[] = [],
+    activeFilePath: string | null = null,
+    activeFileContent: string | null = null
+  ): Promise<void> => {
     if (!isEnabled || !workspaceId || !aiWorkspaceMessagePreview) return;
     if (!window.relic?.sendAIWorkspaceMessage) return;
+
+    if (
+      !sameStringList(previewDirtyFilePaths, dirtyFilePaths) ||
+      previewActiveFilePath !== activeFilePath ||
+      previewActiveFileContent !== activeFileContent
+    ) {
+      resetMessagePreview();
+      onError("送信確認後にMarkdownの状態が変わりました。もう一度AIへ送信してください。");
+      return;
+    }
 
     setIsAIWorkspaceSending(true);
     const result = await window.relic.sendAIWorkspaceMessage({
@@ -219,4 +237,12 @@ export function useAIWorkspaceState({
     discardAIWorkspaceOperations,
     clearAIWorkspaceData
   };
+}
+
+function sameStringList(left: string[], right: string[]): boolean {
+  if (left.length !== right.length) return false;
+
+  const leftItems = [...left].sort();
+  const rightItems = [...right].sort();
+  return leftItems.every((item, index) => item === rightItems[index]);
 }
