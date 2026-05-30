@@ -79,7 +79,7 @@ export function useAIWorkspaceState({
     if (!window.relic?.previewAIWorkspaceMessage) return;
 
     setIsAIWorkspaceSending(true);
-    const previewResult = await window.relic.previewAIWorkspaceMessage({ message });
+    const previewResult = await window.relic.previewAIWorkspaceMessage({ activeFilePath, message });
     setIsAIWorkspaceSending(false);
 
     if (!previewResult.ok) {

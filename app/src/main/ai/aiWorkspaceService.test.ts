@@ -295,6 +295,26 @@ describe("previewAIWorkspaceMessage", () => {
     }
   });
 
+  it("includes the active Markdown file for current-file messages", async () => {
+    await writeFile(path.join(workspacePath, "current.md"), "# Current\n開いているファイル", "utf8");
+    await writeFile(path.join(workspacePath, "other.md"), "# Other\n別ファイル", "utf8");
+
+    const result = await previewAIWorkspaceMessage(context(), {
+      activeFilePath: "current.md",
+      message: "このファイルを整理して"
+    });
+
+    expect(result.ok).toBe(true);
+    expect(runCodexAIWorkspaceTurn).not.toHaveBeenCalled();
+    if (result.ok) {
+      expect(result.value.requiresExternalAI).toBe(true);
+      expect(result.value.references[0]).toEqual(expect.objectContaining({
+        path: "current.md",
+        preview: "# Current"
+      }));
+    }
+  });
+
   it("does not require external AI for natural language apply commands", async () => {
     await writeData({
       operations: [createOperation("update", "draft.md", "# Draft\nupdated")]

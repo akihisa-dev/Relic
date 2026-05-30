@@ -75,7 +75,7 @@ export async function previewAIWorkspaceMessage(
 
     return ok({
       message,
-      references: requiresExternalAI ? buildReferences(data, message) : [],
+      references: requiresExternalAI ? buildReferences(data, message, input.activeFilePath) : [],
       requiresExternalAI,
       skippedLargeFiles: data.index.skippedLargeFiles,
       unreadableFiles: data.index.unreadableFiles
@@ -111,7 +111,7 @@ export async function sendAIWorkspaceMessage(
       }, trashItem);
     }
 
-    const references = buildReferences(data, message);
+    const references = buildReferences(data, message, input.activeFilePath);
     const userMessage: AIWorkspaceMessage = {
       content: message,
       createdAt: new Date().toISOString(),
@@ -309,12 +309,32 @@ function toState(data: AIWorkspaceData): AIWorkspaceState {
   };
 }
 
-function buildReferences(data: AIWorkspaceData, message: string): AIWorkspaceReference[] {
-  return searchAIWorkspaceChunks(data.index.chunks, message).map<AIWorkspaceReference>((chunk) => ({
+function buildReferences(
+  data: AIWorkspaceData,
+  message: string,
+  activeFilePath?: string | null
+): AIWorkspaceReference[] {
+  const references = searchAIWorkspaceChunks(data.index.chunks, message).map<AIWorkspaceReference>((chunk) => ({
     line: chunk.startLine,
     path: chunk.path,
     preview: chunk.content.split("\n").find((line) => line.trim())?.trim().slice(0, 160) ?? chunk.path
   }));
+
+  if (!activeFilePath || !hasCurrentFileReference(message)) return references;
+
+  const normalizedActiveFilePath = normalizeOperationText(activeFilePath);
+  const activeChunk = data.index.chunks.find((chunk) => {
+    return normalizeOperationText(chunk.path) === normalizedActiveFilePath;
+  });
+  if (!activeChunk) return references;
+
+  return [{
+    line: activeChunk.startLine,
+    path: activeChunk.path,
+    preview: activeChunk.content.split("\n").find((line) => line.trim())?.trim().slice(0, 160) ?? activeChunk.path
+  }, ...references.filter((reference) => {
+    return normalizeOperationText(reference.path) !== normalizedActiveFilePath;
+  })];
 }
 
 async function readReferenceContents(
@@ -455,7 +475,7 @@ function selectPendingOperationIdsFromMessage(
 }
 
 function hasCurrentFileReference(message: string): boolean {
-  return /(この|現在|開いている|今の).{0,8}ファイル/.test(message);
+  return /(このファイル|現在のファイル|開いているファイル|今のファイル)/.test(message);
 }
 
 function operationPathCandidates(operationPath: string): string[] {
