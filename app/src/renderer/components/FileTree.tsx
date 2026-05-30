@@ -59,6 +59,10 @@ export interface FileTreeItemProps extends Omit<FileTreeProps, "isRoot" | "motio
 const defaultSelectedItems: FileTreeMoveItem[] = [];
 const defaultSelectedPaths = new Set<string>();
 
+const draggedItemsFromEvent = (event: DragEvent<HTMLButtonElement>): FileTreeMoveItem[] => (
+  parseFileTreeDragPayload(event.dataTransfer.getData(FILE_TREE_DRAG_MIME))
+);
+
 export function FileTreeItem({
   expansionRequest,
   isAppearing,
@@ -161,10 +165,6 @@ export function FileTreeItem({
     setIsDragging(false);
     setIsDragOver(false);
   };
-
-  const draggedItemsFromEvent = (event: DragEvent<HTMLButtonElement>): FileTreeMoveItem[] => (
-    parseFileTreeDragPayload(event.dataTransfer.getData(FILE_TREE_DRAG_MIME))
-  );
 
   const dropDestinationForNode = (): string => (
     node.type === "folder" ? node.path : parentFolderOf(node.path)

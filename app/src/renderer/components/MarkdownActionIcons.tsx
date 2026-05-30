@@ -5,6 +5,15 @@ interface ActionIconProps {
   size?: number;
 }
 
+const headingIconPaths: Record<number, ReactNode> = {
+  1: <><path d="M4 12h8" /><path d="M4 18V6" /><path d="M12 18V6" /><path d="m17 12 3-2v8" /></>,
+  2: <><path d="M4 12h8" /><path d="M4 18V6" /><path d="M12 18V6" /><path d="M21 18h-4c0-4 4-3 4-6 0-1.5-2-2.5-4-1" /></>,
+  3: <><path d="M4 12h8" /><path d="M4 18V6" /><path d="M12 18V6" /><path d="M17.5 10.5c1.7-1 3.5 0 3.5 1.5a2 2 0 0 1-2 2" /><path d="M17 17.5c2 1.5 4 .3 4-1.5a2 2 0 0 0-2-2" /></>,
+  4: <><path d="M12 18V6" /><path d="M17 10v3a1 1 0 0 0 1 1h3" /><path d="M21 10v8" /><path d="M4 12h8" /><path d="M4 18V6" /></>,
+  5: <><path d="M4 12h8" /><path d="M4 18V6" /><path d="M12 18V6" /><path d="M17 13v-3h4" /><path d="M17 17.7c.4.2.8.3 1.3.3 1.5 0 2.7-1.1 2.7-2.5S19.8 13 18.3 13H17" /></>,
+  6: <><path d="M4 12h8" /><path d="M4 18V6" /><path d="M12 18V6" /><circle cx="19" cy="16" r="2" /><path d="M20 10c-2 2-3 3.5-3 6" /></>
+};
+
 function SvgIcon({ children, className, size = 18 }: ActionIconProps & { children: ReactNode }): ReactElement {
   return (
     <svg
@@ -109,14 +118,5 @@ function SelectAllIcon(props: ActionIconProps): ReactElement {
 }
 
 export function HeadingIcon({ level, ...props }: ActionIconProps & { level: number }): ReactElement {
-  const paths: Record<number, ReactNode> = {
-    1: <><path d="M4 12h8" /><path d="M4 18V6" /><path d="M12 18V6" /><path d="m17 12 3-2v8" /></>,
-    2: <><path d="M4 12h8" /><path d="M4 18V6" /><path d="M12 18V6" /><path d="M21 18h-4c0-4 4-3 4-6 0-1.5-2-2.5-4-1" /></>,
-    3: <><path d="M4 12h8" /><path d="M4 18V6" /><path d="M12 18V6" /><path d="M17.5 10.5c1.7-1 3.5 0 3.5 1.5a2 2 0 0 1-2 2" /><path d="M17 17.5c2 1.5 4 .3 4-1.5a2 2 0 0 0-2-2" /></>,
-    4: <><path d="M12 18V6" /><path d="M17 10v3a1 1 0 0 0 1 1h3" /><path d="M21 10v8" /><path d="M4 12h8" /><path d="M4 18V6" /></>,
-    5: <><path d="M4 12h8" /><path d="M4 18V6" /><path d="M12 18V6" /><path d="M17 13v-3h4" /><path d="M17 17.7c.4.2.8.3 1.3.3 1.5 0 2.7-1.1 2.7-2.5S19.8 13 18.3 13H17" /></>,
-    6: <><path d="M4 12h8" /><path d="M4 18V6" /><path d="M12 18V6" /><circle cx="19" cy="16" r="2" /><path d="M20 10c-2 2-3 3.5-3 6" /></>
-  };
-
-  return <SvgIcon {...props}>{paths[level] ?? paths[1]}</SvgIcon>;
+  return <SvgIcon {...props}>{headingIconPaths[level] ?? headingIconPaths[1]}</SvgIcon>;
 }
