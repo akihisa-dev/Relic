@@ -95,6 +95,7 @@ describe("applyAIWorkspaceOperations", () => {
     if (result.ok) {
       expect(result.value.operationHistory[0].status).toBe("stale");
       expect(result.value.history.at(-1)?.content).toContain("作成後に対象Markdownが変更されていたため");
+      expect(result.value.history.at(-1)?.content).toContain("- 再作業が必要: draft.md");
     }
   });
 
@@ -115,6 +116,7 @@ describe("applyAIWorkspaceOperations", () => {
     await expect(readFile(path.join(workspacePath, "second.md"), "utf8")).resolves.toBe("second");
     if (result.ok) {
       expect(result.value.pendingOperations.map((operation) => operation.path)).toEqual(["second.md"]);
+      expect(result.value.history.at(-1)?.content).toContain("- 反映済み: first.md");
     }
   });
 });
@@ -232,6 +234,27 @@ describe("sendAIWorkspaceMessage", () => {
     }
   });
 
+  it("does not apply all pending operations when a current-file message has no active file", async () => {
+    await writeFile(path.join(workspacePath, "first.md"), "first", "utf8");
+    await writeFile(path.join(workspacePath, "second.md"), "second", "utf8");
+    await writeData({
+      operations: [
+        createOperation("update", "first.md", "updated first"),
+        createOperation("update", "second.md", "updated second")
+      ]
+    });
+
+    const result = await sendAIWorkspaceMessage(context(), { message: "このファイルだけ反映して" });
+
+    expect(result.ok).toBe(false);
+    expect(runCodexAIWorkspaceTurn).not.toHaveBeenCalled();
+    if (!result.ok) {
+      expect(result.error.code).toBe("AI_WORKSPACE_NO_PENDING_OPERATIONS");
+    }
+    await expect(readFile(path.join(workspacePath, "first.md"), "utf8")).resolves.toBe("first");
+    await expect(readFile(path.join(workspacePath, "second.md"), "utf8")).resolves.toBe("second");
+  });
+
   it("discards only the pending operation named in a natural language message", async () => {
     await writeFile(path.join(workspacePath, "first.md"), "first", "utf8");
     await writeFile(path.join(workspacePath, "second.md"), "second", "utf8");
@@ -251,6 +274,7 @@ describe("sendAIWorkspaceMessage", () => {
     if (result.ok) {
       expect(result.value.pendingOperations.map((operation) => operation.path)).toEqual(["first.md"]);
       expect(result.value.operationHistory.find((operation) => operation.path === "second.md")?.status).toBe("discarded");
+      expect(result.value.history.at(-1)?.content).toContain("- second.md");
     }
   });
 });
