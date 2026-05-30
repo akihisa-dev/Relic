@@ -264,7 +264,10 @@ function isSaveAIModelInput(value: unknown): value is SaveAIModelInput {
   if (!value || typeof value !== "object") return false;
   const record = value as { model?: unknown };
 
-  return record.model === "gpt-5.4" || record.model === "gpt-5.4-mini" || record.model === "gpt-5.4-nano";
+  return record.model === "gpt-5.5" ||
+    record.model === "gpt-5.4" ||
+    record.model === "gpt-5.4-mini" ||
+    record.model === "gpt-5.4-nano";
 }
 
 function hasAppliedPendingOperation(beforeState: AIWorkspaceState, afterState: AIWorkspaceState): boolean {

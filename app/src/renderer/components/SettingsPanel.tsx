@@ -144,6 +144,15 @@ export function SettingsPanel({
               value={openAIAPIKeyInput}
             />
           </label>
+          <div className="settings-link-row">
+            <a
+              href="https://platform.openai.com/api-keys"
+              rel="noreferrer"
+              target="_blank"
+            >
+              OpenAIのAPIキー画面を開く
+            </a>
+          </div>
           <div className="settings-actions-row">
             <button
               disabled={!openAIAPIKeyInput.trim() || aiSettings?.secureStorageAvailable === false}

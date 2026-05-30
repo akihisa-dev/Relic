@@ -115,7 +115,7 @@ export function makeRelicApi(overrides: Partial<typeof window.relic> = {}): type
     }),
     saveAIModel: vi.fn().mockResolvedValue({
       ok: true,
-      value: { model: "gpt-5.4", openAIAPIKeyConfigured: false, secureStorageAvailable: true }
+      value: { model: "gpt-5.5", openAIAPIKeyConfigured: false, secureStorageAvailable: true }
     }),
     saveOpenAIAPIKey: vi.fn().mockResolvedValue({
       ok: true,

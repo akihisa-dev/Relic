@@ -278,13 +278,23 @@ describe("SettingsPanel", () => {
 
     const modelSelect = screen.getByLabelText("OpenAIモデル");
     expect(modelSelect).toHaveDisplayValue("gpt-5.4-mini");
+    expect(screen.getByRole("option", { name: "gpt-5.5" })).toBeInTheDocument();
     expect(screen.getByRole("option", { name: "gpt-5.4" })).toBeInTheDocument();
     expect(screen.getByRole("option", { name: "gpt-5.4-mini" })).toBeInTheDocument();
     expect(screen.getByRole("option", { name: "gpt-5.4-nano" })).toBeInTheDocument();
 
-    fireEvent.change(modelSelect, { target: { value: "gpt-5.4" } });
+    fireEvent.change(modelSelect, { target: { value: "gpt-5.5" } });
 
-    expect(onSaveAIModel).toHaveBeenCalledWith("gpt-5.4");
+    expect(onSaveAIModel).toHaveBeenCalledWith("gpt-5.5");
+  });
+
+  it("OpenAI APIキー画面へのリンクを表示する", () => {
+    renderSettingsPanel();
+
+    expect(screen.getByRole("link", { name: "OpenAIのAPIキー画面を開く" })).toHaveAttribute(
+      "href",
+      "https://platform.openai.com/api-keys"
+    );
   });
 
   it("アプリ情報では内部プラットフォーム名ではなくユーザー向けOS名を表示する", () => {
