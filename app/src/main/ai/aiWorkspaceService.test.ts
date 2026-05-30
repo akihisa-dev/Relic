@@ -344,11 +344,34 @@ describe("sendAIWorkspaceMessage", () => {
     if (result.ok) {
       expect(result.value.pendingOperations).toEqual([
         expect.objectContaining({
+          baseContentHash: hashContent("# Created"),
           kind: "delete",
           path: "created.md",
           status: "pending"
         })
       ]);
+    }
+  });
+
+  it("does not delete a created Markdown when a revert proposal became stale", async () => {
+    await writeFile(path.join(workspacePath, "created.md"), "# Edited after proposal", "utf8");
+    await writeData({
+      operations: [{
+        ...createOperation("delete", "created.md"),
+        baseContentHash: hashContent("# Created"),
+        summary: "AIが作成したMarkdownを削除して元に戻す"
+      }]
+    });
+    const trashItem = vi.fn(async () => undefined);
+
+    const result = await applyAIWorkspaceOperations(context(), {}, trashItem);
+
+    expect(result.ok).toBe(true);
+    expect(trashItem).not.toHaveBeenCalled();
+    await expect(readFile(path.join(workspacePath, "created.md"), "utf8")).resolves.toBe("# Edited after proposal");
+    if (result.ok) {
+      expect(result.value.operationHistory[0].status).toBe("stale");
+      expect(result.value.history.at(-1)?.content).toContain("- 再作業が必要: created.md");
     }
   });
 

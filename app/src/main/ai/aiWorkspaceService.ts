@@ -700,7 +700,11 @@ async function buildRevertOperation(
   }
 
   if (operation.kind === "create") {
+    const file = await readMarkdownFile(workspacePath, operation.path);
+    if (!file.ok) return null;
+
     return {
+      baseContentHash: hashContent(file.value.content),
       createdAt: new Date().toISOString(),
       id: createMessageId("revert-create"),
       kind: "delete",
