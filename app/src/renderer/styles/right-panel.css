@@ -124,6 +124,7 @@
 
 .ai-workspace-subtitle,
 .ai-workspace-status,
+.ai-workspace-status-note,
 .ai-workspace-note {
   color: var(--text-3);
   font-size: 12px;
@@ -155,6 +156,14 @@
 .ai-workspace-status {
   display: grid;
   gap: 4px;
+}
+
+.ai-workspace-status-note {
+  background: var(--hover);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  line-height: 1.45;
+  padding: 8px;
 }
 
 .ai-workspace-clear-confirm {

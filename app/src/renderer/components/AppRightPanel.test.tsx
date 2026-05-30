@@ -72,7 +72,58 @@ describe("AppRightPanel", () => {
     );
 
     expect(screen.getByText("Novel のMarkdown共同作業")).toBeInTheDocument();
+    expect(screen.getByText("AI共同作業: 準備済み")).toBeInTheDocument();
     expect(screen.getByText("2 files / 3 chunks")).toBeInTheDocument();
+  });
+
+  it("explains when AI workspace conversation is unavailable", () => {
+    render(
+      <I18nProvider language="en">
+        <AppRightPanel
+          aiWorkspaceState={{
+            codexAppServerAvailable: false,
+            history: [],
+            index: {
+              chunkCount: 0,
+              indexedAt: null,
+              indexedFileCount: 0,
+              skippedLargeFiles: [],
+              unreadableFiles: []
+            },
+            operationHistory: [],
+            pendingOperations: []
+          }}
+          backlinks={[]}
+          isAIWorkspaceLoading={false}
+          isAIWorkspaceSending={false}
+          aiWorkspaceMessagePreview={null}
+          isLoadingBacklinks={false}
+          isOpen
+          isResizing={false}
+          onAIWorkspaceClearData={vi.fn()}
+          onAIWorkspaceApplyOperations={vi.fn()}
+          onAIWorkspaceCancelMessagePreview={vi.fn()}
+          onAIWorkspaceConfirmMessagePreview={vi.fn()}
+          onAIWorkspaceDiscardOperations={vi.fn()}
+          onAIWorkspaceRebuildIndex={vi.fn()}
+          onAIWorkspaceSendMessage={vi.fn()}
+          onOpenFile={vi.fn()}
+          onOpenWikiLink={vi.fn()}
+          onOutlineHeadingClick={vi.fn()}
+          onResizeStart={vi.fn()}
+          outlineHeadings={[]}
+          outgoingLinks={[]}
+          outgoingLinksLimited={false}
+          rightPanelView="ai"
+          setLinkContextMenu={vi.fn()}
+          width={260}
+          workspaceName="Novel"
+        />
+      </I18nProvider>
+    );
+
+    expect(screen.getByText("AI共同作業: 利用できません")).toBeInTheDocument();
+    expect(screen.getByText("AIとの会話にはCodexアプリが必要です。Markdownの閲覧と編集はこのまま使えます。")).toBeInTheDocument();
   });
 
   it("confirms before clearing AI workspace data", () => {
