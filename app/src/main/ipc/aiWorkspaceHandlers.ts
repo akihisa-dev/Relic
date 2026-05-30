@@ -13,7 +13,8 @@ import {
   rebuildAIWorkspaceIndexChannel,
   type RebuildAIWorkspaceIndexInput,
   sendAIWorkspaceMessageChannel,
-  type SendAIWorkspaceMessageInput
+  type SendAIWorkspaceMessageInput,
+  workspaceChangedChannel
 } from "../../shared/ipc";
 import { fail } from "../../shared/result";
 import {
@@ -80,12 +81,21 @@ export function registerAIWorkspaceHandlers(): void {
     }
   });
 
-  ipcMain.handle(applyAIWorkspaceOperationsChannel, async (_event, input: ApplyAIWorkspaceOperationsInput) => {
+  ipcMain.handle(applyAIWorkspaceOperationsChannel, async (event, input: ApplyAIWorkspaceOperationsInput) => {
     try {
       const context = await getAIWorkspaceContext();
       if (!context.ok) return context;
 
-      return applyAIWorkspaceOperations(context.value, input ?? {}, shell.trashItem);
+      const result = await applyAIWorkspaceOperations(context.value, input ?? {}, shell.trashItem);
+      if (result.ok) {
+        event.sender.send(workspaceChangedChannel, {
+          changedAt: new Date().toISOString(),
+          workspaceId: context.value.workspaceId,
+          workspacePath: context.value.workspacePath
+        });
+      }
+
+      return result;
     } catch (error) {
       return fail("AI_WORKSPACE_APPLY_FAILED", "AI変更案を反映できませんでした。", ipcErrorDetails(error));
     }
