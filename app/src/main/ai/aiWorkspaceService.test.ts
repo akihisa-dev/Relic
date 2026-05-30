@@ -8,6 +8,10 @@ vi.mock("./openAIResponsesClient", () => ({
   runOpenAIWorkspaceTurn: vi.fn()
 }));
 
+vi.mock("./codexAppServerClient", () => ({
+  runCodexAIWorkspaceTurn: vi.fn()
+}));
+
 vi.mock("./openAIKeyStore", () => ({
   hasOpenAIAPIKey: vi.fn(async () => true),
   readOpenAIAPIKey: vi.fn(async () => "sk-test-openai-key")
@@ -22,6 +26,7 @@ import {
 } from "./aiWorkspaceService";
 import { writeAIWorkspaceData, type AIWorkspaceData } from "./aiWorkspaceData";
 import { computeAIWorkspaceIndexSourceHash } from "./aiWorkspaceIndex";
+import { runCodexAIWorkspaceTurn } from "./codexAppServerClient";
 import { readOpenAIAPIKey } from "./openAIKeyStore";
 import { runOpenAIWorkspaceTurn } from "./openAIResponsesClient";
 import { getAppSettingsPath } from "../settings/appSettings";
@@ -33,6 +38,7 @@ beforeEach(async () => {
   userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-ai-user-data-"));
   workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-ai-workspace-"));
   vi.mocked(runOpenAIWorkspaceTurn).mockReset();
+  vi.mocked(runCodexAIWorkspaceTurn).mockReset();
   vi.mocked(readOpenAIAPIKey).mockResolvedValue("sk-test-openai-key");
 });
 
@@ -166,6 +172,7 @@ describe("discardAIWorkspaceOperations", () => {
 describe("sendAIWorkspaceMessage", () => {
   it("stops before external AI when the OpenAI API key is missing", async () => {
     await writeFile(path.join(workspacePath, "README.md"), "# Auth\nLogin spec", "utf8");
+    await writeAISettings({ aiProvider: "openai-api" });
     vi.mocked(readOpenAIAPIKey).mockResolvedValueOnce(null);
 
     const result = await sendAIWorkspaceMessage(context(), { message: "Login spec" });
@@ -179,6 +186,7 @@ describe("sendAIWorkspaceMessage", () => {
 
   it("shows a clear fallback message when OpenAI API fails", async () => {
     await writeFile(path.join(workspacePath, "README.md"), "# 認証\nログイン仕様", "utf8");
+    await writeAISettings({ aiProvider: "openai-api" });
     vi.mocked(runOpenAIWorkspaceTurn).mockRejectedValueOnce(new Error("connection failed"));
 
     const result = await sendAIWorkspaceMessage(context(), { message: "認証について整理して" });
@@ -192,9 +200,54 @@ describe("sendAIWorkspaceMessage", () => {
     }
   });
 
+  it("routes external AI messages to Codex App Server by default", async () => {
+    await writeFile(path.join(workspacePath, "README.md"), "# Auth\nLogin spec", "utf8");
+    vi.mocked(runCodexAIWorkspaceTurn).mockResolvedValueOnce({
+      message: "Codexで処理しました。",
+      operations: []
+    });
+
+    const result = await sendAIWorkspaceMessage(context(), { message: "Login spec" });
+
+    expect(result.ok).toBe(true);
+    expect(runCodexAIWorkspaceTurn).toHaveBeenCalledWith(expect.objectContaining({
+      message: "Login spec",
+      workspacePath
+    }));
+    expect(runOpenAIWorkspaceTurn).not.toHaveBeenCalled();
+  });
+
+  it("shows a clear fallback message when Codex App Server fails", async () => {
+    await writeFile(path.join(workspacePath, "README.md"), "# 認証\nログイン仕様", "utf8");
+    vi.mocked(runCodexAIWorkspaceTurn).mockRejectedValueOnce(new Error("Codex App Serverを起動できませんでした: ENOENT"));
+
+    const result = await sendAIWorkspaceMessage(context(), { message: "認証について整理して" });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      const lastMessage = result.value.history.at(-1);
+      expect(lastMessage?.content).toContain("Codex App ServerでAI処理を完了できませんでした。");
+      expect(lastMessage?.content).toContain("設定のAI接続方式をOpenAI APIへ切り替えることもできます。");
+      expect(result.value.pendingOperations).toEqual([]);
+    }
+  });
+
+  it("translates OpenAI quota and billing errors into Japanese", async () => {
+    await writeFile(path.join(workspacePath, "README.md"), "# 認証\nログイン仕様", "utf8");
+    await writeAISettings({ aiProvider: "openai-api" });
+    vi.mocked(runOpenAIWorkspaceTurn).mockRejectedValueOnce(new Error("insufficient_quota billing hard limit reached"));
+
+    const result = await sendAIWorkspaceMessage(context(), { message: "認証について整理して" });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.history.at(-1)?.content).toContain("OpenAI APIの利用枠または請求設定を確認してください。");
+    }
+  });
+
   it("stores the target Markdown hash with update operations", async () => {
     await writeFile(path.join(workspacePath, "README.md"), "# Auth\nLogin spec", "utf8");
-    vi.mocked(runOpenAIWorkspaceTurn).mockResolvedValueOnce({
+    vi.mocked(runCodexAIWorkspaceTurn).mockResolvedValueOnce({
       message: "READMEを更新します。",
       operations: [createOperation("update", "README.md", "# Auth\nUpdated")]
     });
@@ -202,8 +255,8 @@ describe("sendAIWorkspaceMessage", () => {
     const result = await sendAIWorkspaceMessage(context(), { message: "Login spec" });
 
     expect(result.ok).toBe(true);
-    expect(runOpenAIWorkspaceTurn).toHaveBeenCalledWith(expect.objectContaining({
-      model: "gpt-5.4-mini"
+    expect(runCodexAIWorkspaceTurn).toHaveBeenCalledWith(expect.objectContaining({
+      workspacePath
     }));
     if (result.ok) {
       expect(result.value.pendingOperations[0].baseContent).toBe("# Auth\nLogin spec");
@@ -213,7 +266,7 @@ describe("sendAIWorkspaceMessage", () => {
 
   it("uses the selected OpenAI model from app settings", async () => {
     await writeFile(getAppSettingsPath(userDataPath), JSON.stringify({
-      aiSettings: { openAIModel: "gpt-5.5" }
+      aiSettings: { aiProvider: "openai-api", openAIModel: "gpt-5.5" }
     }), "utf8");
     vi.mocked(runOpenAIWorkspaceTurn).mockResolvedValueOnce({
       message: "選択モデルで処理します。",
@@ -230,6 +283,7 @@ describe("sendAIWorkspaceMessage", () => {
 
   it("keeps only safe Markdown operations returned by OpenAI API", async () => {
     await writeFile(path.join(workspacePath, "README.md"), "# Auth\nLogin spec", "utf8");
+    await writeAISettings({ aiProvider: "openai-api" });
     vi.mocked(runOpenAIWorkspaceTurn).mockResolvedValueOnce({
       message: "変更案を作成します。",
       operations: [
@@ -256,6 +310,7 @@ describe("sendAIWorkspaceMessage", () => {
 
   it("accepts absolute operation paths only when they are inside the workspace", async () => {
     await writeFile(path.join(workspacePath, "README.md"), "# Auth\nLogin spec", "utf8");
+    await writeAISettings({ aiProvider: "openai-api" });
     vi.mocked(runOpenAIWorkspaceTurn).mockResolvedValueOnce({
       message: "変更案を作成します。",
       operations: [
@@ -281,6 +336,7 @@ describe("sendAIWorkspaceMessage", () => {
 
   it("passes pending operations to OpenAI API for follow-up edits", async () => {
     await writeFile(path.join(workspacePath, "README.md"), "# Auth\nLogin spec", "utf8");
+    await writeAISettings({ aiProvider: "openai-api" });
     await writeData({
       operations: [createOperation("update", "README.md", "# Auth\nDraft update")]
     });
@@ -303,6 +359,7 @@ describe("sendAIWorkspaceMessage", () => {
 
   it("passes unsaved active Markdown content to OpenAI API for current-file messages", async () => {
     await writeFile(path.join(workspacePath, "README.md"), "# Saved\nold content", "utf8");
+    await writeAISettings({ aiProvider: "openai-api" });
     vi.mocked(runOpenAIWorkspaceTurn).mockResolvedValueOnce({
       message: "現在の本文を整理します。",
       operations: []
@@ -330,6 +387,7 @@ describe("sendAIWorkspaceMessage", () => {
   it("passes full referenced Markdown content without silently truncating it", async () => {
     const fullContent = `# Long Note\n${"x".repeat(20_000)}\n末尾の内容`;
     await writeFile(path.join(workspacePath, "long.md"), fullContent, "utf8");
+    await writeAISettings({ aiProvider: "openai-api" });
     vi.mocked(runOpenAIWorkspaceTurn).mockResolvedValueOnce({
       message: "長いノートを確認します。",
       operations: []
@@ -348,6 +406,7 @@ describe("sendAIWorkspaceMessage", () => {
 
   it("replaces old pending operations for the same Markdown path with new proposals", async () => {
     await writeFile(path.join(workspacePath, "README.md"), "# Auth\nLogin spec", "utf8");
+    await writeAISettings({ aiProvider: "openai-api" });
     await writeData({
       operations: [createOperation("update", "README.md", "# Auth\nDraft update")]
     });
@@ -817,6 +876,15 @@ async function writeData(partial: Partial<AIWorkspaceData>): Promise<void> {
     operations: [],
     ...partial
   });
+}
+
+async function writeAISettings(settings: { aiProvider: "codex-app-server" | "openai-api"; openAIModel?: string }): Promise<void> {
+  await writeFile(getAppSettingsPath(userDataPath), JSON.stringify({
+    aiSettings: {
+      aiProvider: settings.aiProvider,
+      openAIModel: settings.openAIModel ?? "gpt-5.4-mini"
+    }
+  }), "utf8");
 }
 
 function createOperation(

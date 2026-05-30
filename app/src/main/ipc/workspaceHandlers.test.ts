@@ -63,7 +63,7 @@ describe("workspaceHandlers", () => {
     const workspace = createWorkspaceSummary(workspacePath);
     const settings = addOrActivateWorkspace(
       {
-        aiSettings: { openAIModel: "gpt-5.4-mini" },
+        aiSettings: { aiProvider: "codex-app-server", openAIModel: "gpt-5.4-mini" },
         editorSettings: defaultEditorSettings,
         featureToggles: defaultFeatureToggles,
         frontmatterTemplates: defaultFrontmatterTemplates,
@@ -120,7 +120,7 @@ describe("workspaceHandlers", () => {
     const workspace = createWorkspaceSummary(missingWorkspacePath);
     const settings = addOrActivateWorkspace(
       {
-        aiSettings: { openAIModel: "gpt-5.4-mini" },
+        aiSettings: { aiProvider: "codex-app-server", openAIModel: "gpt-5.4-mini" },
         editorSettings: defaultEditorSettings,
         featureToggles: defaultFeatureToggles,
         frontmatterTemplates: defaultFrontmatterTemplates,
@@ -162,7 +162,7 @@ describe("workspaceHandlers", () => {
     const workspace = createWorkspaceSummary(workspacePath);
     const settings = addOrActivateWorkspace(
       {
-        aiSettings: { openAIModel: "gpt-5.4-mini" },
+        aiSettings: { aiProvider: "codex-app-server", openAIModel: "gpt-5.4-mini" },
         editorSettings: defaultEditorSettings,
         featureToggles: defaultFeatureToggles,
         frontmatterTemplates: defaultFrontmatterTemplates,
@@ -204,7 +204,7 @@ describe("workspaceHandlers", () => {
     const workspace = createWorkspaceSummary(workspacePath);
     const settings = addOrActivateWorkspace(
       {
-        aiSettings: { openAIModel: "gpt-5.4-mini" },
+        aiSettings: { aiProvider: "codex-app-server", openAIModel: "gpt-5.4-mini" },
         editorSettings: defaultEditorSettings,
         featureToggles: defaultFeatureToggles,
         frontmatterTemplates: defaultFrontmatterTemplates,

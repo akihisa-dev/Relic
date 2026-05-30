@@ -2,7 +2,9 @@ import { mkdir, readFile } from "node:fs/promises";
 import path from "node:path";
 
 import {
+  aiProviders,
   chronicleCalendarIds,
+  defaultAIProvider,
   defaultOpenAIWorkspaceModel,
   defaultEditorSettings,
   defaultFeatureToggles,
@@ -11,6 +13,7 @@ import {
   type EditorSettings,
   type FeatureToggles,
   type FrontmatterTemplate,
+  type AIProvider,
   type OpenAIWorkspaceModel,
   type UserDefinedField,
   type UserDefinedFieldType,
@@ -20,6 +23,7 @@ import { atomicWriteTextFile } from "../files/atomicWrite";
 
 export interface AppSettings {
   aiSettings: {
+    aiProvider: AIProvider;
     openAIModel: OpenAIWorkspaceModel;
   };
   editorSettings: EditorSettings;
@@ -32,6 +36,7 @@ export interface AppSettings {
 
 const defaultAppSettings: AppSettings = {
   aiSettings: {
+    aiProvider: defaultAIProvider,
     openAIModel: defaultOpenAIWorkspaceModel
   },
   editorSettings: defaultEditorSettings,
@@ -93,8 +98,15 @@ function parseAISettings(raw: unknown): AppSettings["aiSettings"] {
   const s = raw as Record<string, unknown>;
 
   return {
+    aiProvider: parseAIProvider(s.aiProvider),
     openAIModel: parseOpenAIWorkspaceModel(s.openAIModel)
   };
+}
+
+function parseAIProvider(value: unknown): AIProvider {
+  return aiProviders.includes(value as AIProvider)
+    ? value as AIProvider
+    : defaultAIProvider;
 }
 
 function parseOpenAIWorkspaceModel(value: unknown): OpenAIWorkspaceModel {

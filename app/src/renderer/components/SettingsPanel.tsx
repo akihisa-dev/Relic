@@ -1,9 +1,12 @@
 import { useState, type ReactElement } from "react";
 
 import {
+  aiProviders,
+  defaultAIProvider,
   defaultOpenAIWorkspaceModel,
   openAIWorkspaceModels,
   type AISettingsState,
+  type AIProvider,
   type AppInfo,
   type EditorSettings,
   type FeatureToggles,
@@ -49,6 +52,7 @@ export function SettingsPanel({
   featureToggles,
   onDeleteOpenAIAPIKey,
   onSaveAIModel,
+  onSaveAIProvider,
   onSaveOpenAIAPIKey,
   onSave,
   onFeatureTogglesSave,
@@ -61,6 +65,7 @@ export function SettingsPanel({
   featureToggles: FeatureToggles;
   onDeleteOpenAIAPIKey: () => void;
   onSaveAIModel: (model: OpenAIWorkspaceModel) => void;
+  onSaveAIProvider: (provider: AIProvider) => void;
   onSaveOpenAIAPIKey: (apiKey: string) => void;
   onSave: (s: EditorSettings) => void;
   onFeatureTogglesSave: (t: FeatureToggles) => void;
@@ -69,6 +74,7 @@ export function SettingsPanel({
   const t = useT();
   const [openAIAPIKeyInput, setOpenAIAPIKeyInput] = useState("");
   const fontLabelKeys = getEditorFontLabelKeys(appInfo?.platform);
+  const aiProvider = aiSettings?.aiProvider ?? defaultAIProvider;
 
   const update = <K extends keyof EditorSettings>(key: K, value: EditorSettings[K]): void => {
     const next = { ...settings, [key]: value };
@@ -117,77 +123,99 @@ export function SettingsPanel({
         <div className="links-panel-subheading">AI</div>
         <div className="settings-stack">
           <div className="setting-row">
-            <span>OpenAI APIキー</span>
-            <span className="settings-inline-status">
-              {aiSettings?.openAIAPIKeyConfigured ? "登録済み" : "未登録"}
-            </span>
-          </div>
-          <label className="setting-row">
-            <span>OpenAIモデル</span>
-            <select
-              className="settings-control"
-              onChange={(event) => onSaveAIModel(event.target.value as OpenAIWorkspaceModel)}
-              value={aiSettings?.model ?? defaultOpenAIWorkspaceModel}
-            >
-              {openAIWorkspaceModels.map((model) => (
-                <option key={model} value={model}>{model}</option>
-              ))}
-            </select>
-          </label>
-          <label className="setting-row setting-row--stacked">
-            <span>APIキーを入力</span>
-            <input
-              className="settings-control settings-text-input"
-              onChange={(event) => setOpenAIAPIKeyInput(event.target.value)}
-              placeholder="sk-..."
-              type="password"
-              value={openAIAPIKeyInput}
+            <span>AI接続方式</span>
+            <SettingsSegmentedControl
+              ariaLabel="AI接続方式"
+              onChange={(value) => onSaveAIProvider(value)}
+              options={aiProviders.map((provider) => ({
+                label: formatAIProviderLabel(provider),
+                value: provider
+              }))}
+              value={aiProvider}
             />
-          </label>
-          <div className="settings-link-row">
-            <a
-              href="https://platform.openai.com/api-keys"
-              rel="noreferrer"
-              target="_blank"
-            >
-              OpenAIのAPIキー画面を開く
-            </a>
           </div>
-          <div className="settings-actions-row">
-            <button
-              disabled={!openAIAPIKeyInput.trim() || aiSettings?.secureStorageAvailable === false}
-              onClick={() => {
-                onSaveOpenAIAPIKey(openAIAPIKeyInput);
-                setOpenAIAPIKeyInput("");
-              }}
-              type="button"
-            >
-              保存
-            </button>
-            <button
-              disabled={!aiSettings?.openAIAPIKeyConfigured}
-              onClick={onTestOpenAIAPIKey}
-              type="button"
-            >
-              接続確認
-            </button>
-            <button
-              disabled={!aiSettings?.openAIAPIKeyConfigured}
-              onClick={onDeleteOpenAIAPIKey}
-              type="button"
-            >
-              削除
-            </button>
-          </div>
-          <div className="settings-info">
-            <div>選択中モデル: {aiSettings?.model ?? defaultOpenAIWorkspaceModel}</div>
-            <div>
-              {aiSettings?.secureStorageAvailable === false
-                ? "この環境ではAPIキーを安全に保存できません。"
-                : "APIキーは暗号化してアプリデータに保存します。Markdownワークスペースには保存しません。"}
+          {aiProvider === "codex-app-server" ? (
+            <div className="settings-info">
+              <div>Codexアプリを使ってAI共同作業を行います。OpenAI APIキーの入力は不要です。</div>
+              <div>Codex App Serverが利用できない環境では、AI接続方式をOpenAI APIへ切り替えられます。</div>
+              {aiSettingsStatus ? <div>{aiSettingsStatus}</div> : null}
             </div>
-            {aiSettingsStatus ? <div>{aiSettingsStatus}</div> : null}
-          </div>
+          ) : (
+            <>
+              <div className="setting-row">
+                <span>OpenAI APIキー</span>
+                <span className="settings-inline-status">
+                  {aiSettings?.openAIAPIKeyConfigured ? "登録済み" : "未登録"}
+                </span>
+              </div>
+              <label className="setting-row">
+                <span>OpenAIモデル</span>
+                <select
+                  className="settings-control"
+                  onChange={(event) => onSaveAIModel(event.target.value as OpenAIWorkspaceModel)}
+                  value={aiSettings?.model ?? defaultOpenAIWorkspaceModel}
+                >
+                  {openAIWorkspaceModels.map((model) => (
+                    <option key={model} value={model}>{model}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="setting-row setting-row--stacked">
+                <span>APIキーを入力</span>
+                <input
+                  className="settings-control settings-text-input"
+                  onChange={(event) => setOpenAIAPIKeyInput(event.target.value)}
+                  placeholder="sk-..."
+                  type="password"
+                  value={openAIAPIKeyInput}
+                />
+              </label>
+              <div className="settings-link-row">
+                <a
+                  href="https://platform.openai.com/api-keys"
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  OpenAIのAPIキー画面を開く
+                </a>
+              </div>
+              <div className="settings-actions-row">
+                <button
+                  disabled={!openAIAPIKeyInput.trim() || aiSettings?.secureStorageAvailable === false}
+                  onClick={() => {
+                    onSaveOpenAIAPIKey(openAIAPIKeyInput);
+                    setOpenAIAPIKeyInput("");
+                  }}
+                  type="button"
+                >
+                  保存
+                </button>
+                <button
+                  disabled={!aiSettings?.openAIAPIKeyConfigured}
+                  onClick={onTestOpenAIAPIKey}
+                  type="button"
+                >
+                  接続確認
+                </button>
+                <button
+                  disabled={!aiSettings?.openAIAPIKeyConfigured}
+                  onClick={onDeleteOpenAIAPIKey}
+                  type="button"
+                >
+                  削除
+                </button>
+              </div>
+              <div className="settings-info">
+                <div>選択中モデル: {aiSettings?.model ?? defaultOpenAIWorkspaceModel}</div>
+                <div>
+                  {aiSettings?.secureStorageAvailable === false
+                    ? "この環境ではAPIキーを安全に保存できません。"
+                    : "APIキーは暗号化してアプリデータに保存します。Markdownワークスペースには保存しません。"}
+                </div>
+                {aiSettingsStatus ? <div>{aiSettingsStatus}</div> : null}
+              </div>
+            </>
+          )}
         </div>
       </section>
 
@@ -315,6 +343,10 @@ export function SettingsPanel({
       </section>
     </div>
   );
+}
+
+function formatAIProviderLabel(provider: AIProvider): string {
+  return provider === "codex-app-server" ? "Codex App Server" : "OpenAI API";
 }
 
 function LightModeIcon(): ReactElement {

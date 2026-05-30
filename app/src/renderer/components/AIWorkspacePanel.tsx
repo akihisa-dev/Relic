@@ -41,6 +41,7 @@ export function AIWorkspacePanel({
   const history = state?.history ?? [];
   const operationHistory = state?.operationHistory ?? [];
   const pendingOperations = state?.pendingOperations ?? [];
+  const providerLabel = state?.aiProvider === "openai-api" ? "OpenAI API" : "Codex App Server";
   const skippedFiles = [
     ...(state?.index.skippedLargeFiles ?? []),
     ...(state?.index.unreadableFiles ?? [])
@@ -101,7 +102,7 @@ export function AIWorkspacePanel({
       ) : null}
 
       <div className="ai-workspace-status">
-        <span>{state?.openAIAPIKeyConfigured ? "AI共同作業: 準備済み" : "AI共同作業: APIキー未設定"}</span>
+        <span>AI共同作業: {providerLabel}</span>
         <span>
           {state?.index.indexedAt
             ? `${state.index.indexedFileCount} files / ${state.index.chunkCount} chunks`
@@ -109,7 +110,7 @@ export function AIWorkspacePanel({
         </span>
       </div>
 
-      {state && !state.openAIAPIKeyConfigured ? (
+      {state && state.aiProvider === "openai-api" && !state.openAIAPIKeyConfigured ? (
         <div className="ai-workspace-status-note">
           AIとの会話にはOpenAI APIキーが必要です。設定のAIから登録してください。Markdownの閲覧と編集はこのまま使えます。
         </div>

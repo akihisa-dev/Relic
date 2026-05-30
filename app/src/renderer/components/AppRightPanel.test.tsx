@@ -30,6 +30,7 @@ describe("AppRightPanel", () => {
       <I18nProvider language="en">
         <AppRightPanel
           aiWorkspaceState={{
+            aiProvider: "codex-app-server",
             openAIAPIKeyConfigured: true,
             history: [],
             index: {
@@ -72,7 +73,7 @@ describe("AppRightPanel", () => {
     );
 
     expect(screen.getByText("Novel のMarkdown共同作業")).toBeInTheDocument();
-    expect(screen.getByText("AI共同作業: 準備済み")).toBeInTheDocument();
+    expect(screen.getByText("AI共同作業: Codex App Server")).toBeInTheDocument();
     expect(screen.getByText("2 files / 3 chunks")).toBeInTheDocument();
   });
 
@@ -81,6 +82,7 @@ describe("AppRightPanel", () => {
       <I18nProvider language="en">
         <AppRightPanel
           aiWorkspaceState={{
+            aiProvider: "openai-api",
             openAIAPIKeyConfigured: false,
             history: [],
             index: {
@@ -122,7 +124,7 @@ describe("AppRightPanel", () => {
       </I18nProvider>
     );
 
-    expect(screen.getByText("AI共同作業: APIキー未設定")).toBeInTheDocument();
+    expect(screen.getByText("AI共同作業: OpenAI API")).toBeInTheDocument();
     expect(screen.getByText("AIとの会話にはOpenAI APIキーが必要です。設定のAIから登録してください。Markdownの閲覧と編集はこのまま使えます。")).toBeInTheDocument();
   });
 
@@ -133,6 +135,7 @@ describe("AppRightPanel", () => {
       <I18nProvider language="en">
         <AppRightPanel
           aiWorkspaceState={{
+            aiProvider: "codex-app-server",
             openAIAPIKeyConfigured: true,
             history: [],
             index: {
@@ -189,6 +192,7 @@ describe("AppRightPanel", () => {
       <I18nProvider language="en">
         <AppRightPanel
           aiWorkspaceState={{
+            aiProvider: "codex-app-server",
             openAIAPIKeyConfigured: true,
             history: [],
             index: {
@@ -252,6 +256,7 @@ describe("AppRightPanel", () => {
       <I18nProvider language="en">
         <AppRightPanel
           aiWorkspaceState={{
+            aiProvider: "codex-app-server",
             openAIAPIKeyConfigured: true,
             history: [],
             index: {
@@ -308,6 +313,7 @@ describe("AppRightPanel", () => {
       <I18nProvider language="en">
         <AppRightPanel
           aiWorkspaceState={{
+            aiProvider: "codex-app-server",
             openAIAPIKeyConfigured: true,
             history: [{
               content: "変更案を作成しました。",
@@ -382,6 +388,7 @@ describe("AppRightPanel", () => {
       <I18nProvider language="en">
         <AppRightPanel
           aiWorkspaceState={{
+            aiProvider: "codex-app-server",
             openAIAPIKeyConfigured: true,
             history: [],
             index: {
@@ -458,6 +465,7 @@ describe("AppRightPanel", () => {
       <I18nProvider language="en">
         <AppRightPanel
           aiWorkspaceState={{
+            aiProvider: "codex-app-server",
             openAIAPIKeyConfigured: true,
             history: [],
             index: {
@@ -522,6 +530,7 @@ describe("AppRightPanel", () => {
       <I18nProvider language="en">
         <AppRightPanel
           aiWorkspaceState={{
+            aiProvider: "codex-app-server",
             openAIAPIKeyConfigured: true,
             history: [],
             index: {
@@ -578,6 +587,7 @@ describe("AppRightPanel", () => {
       <I18nProvider language="en">
         <AppRightPanel
           aiWorkspaceState={{
+            aiProvider: "codex-app-server",
             openAIAPIKeyConfigured: true,
             history: [],
             index: {

@@ -4,6 +4,10 @@ export const openAIWorkspaceModels = ["gpt-5.5", "gpt-5.4", "gpt-5.4-mini", "gpt
 export type OpenAIWorkspaceModel = typeof openAIWorkspaceModels[number];
 export const defaultOpenAIWorkspaceModel: OpenAIWorkspaceModel = "gpt-5.4-mini";
 
+export const aiProviders = ["codex-app-server", "openai-api"] as const;
+export type AIProvider = typeof aiProviders[number];
+export const defaultAIProvider: AIProvider = "codex-app-server";
+
 export interface AIWorkspaceMessage {
   content: string;
   createdAt: string;
@@ -33,6 +37,7 @@ export interface AIWorkspaceSkippedFile {
 }
 
 export interface AIWorkspaceState {
+  aiProvider: AIProvider;
   history: AIWorkspaceMessage[];
   index: AIWorkspaceIndexSummary;
   openAIAPIKeyConfigured: boolean;
@@ -41,6 +46,7 @@ export interface AIWorkspaceState {
 }
 
 export interface AISettingsState {
+  aiProvider: AIProvider;
   model: OpenAIWorkspaceModel;
   openAIAPIKeyConfigured: boolean;
   secureStorageAvailable: boolean;
@@ -52,6 +58,10 @@ export interface SaveOpenAIAPIKeyInput {
 
 export interface SaveAIModelInput {
   model: OpenAIWorkspaceModel;
+}
+
+export interface SaveAIProviderInput {
+  aiProvider: AIProvider;
 }
 
 export interface TestOpenAIAPIKeyResult {

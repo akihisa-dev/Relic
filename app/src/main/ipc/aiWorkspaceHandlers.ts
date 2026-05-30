@@ -10,6 +10,8 @@ import {
   type DiscardAIWorkspaceOperationsInput,
   getAISettingsChannel,
   getAIWorkspaceStateChannel,
+  saveAIProviderChannel,
+  type SaveAIProviderInput,
   saveAIModelChannel,
   type SaveAIModelInput,
   saveOpenAIAPIKeyChannel,
@@ -88,6 +90,28 @@ export function registerAIWorkspaceHandlers(): void {
       return ok(await getAISettingsState());
     } catch (error) {
       return fail("AI_SETTINGS_MODEL_SAVE_FAILED", "OpenAIモデルを保存できませんでした。", ipcErrorDetails(error));
+    }
+  });
+
+  ipcMain.handle(saveAIProviderChannel, async (_event, input: SaveAIProviderInput): Promise<RelicResult<AISettingsState>> => {
+    try {
+      if (!isSaveAIProviderInput(input)) {
+        return fail("AI_SETTINGS_PROVIDER_INVALID", "AI接続方式を選んでください。");
+      }
+
+      const userDataPath = app.getPath("userData");
+      const settings = await readAppSettings(userDataPath);
+      await writeAppSettings(userDataPath, {
+        ...settings,
+        aiSettings: {
+          ...settings.aiSettings,
+          aiProvider: input.aiProvider
+        }
+      });
+
+      return ok(await getAISettingsState());
+    } catch (error) {
+      return fail("AI_SETTINGS_PROVIDER_SAVE_FAILED", "AI接続方式を保存できませんでした。", ipcErrorDetails(error));
     }
   });
 
@@ -226,6 +250,7 @@ async function getAISettingsState(): Promise<AISettingsState> {
   const settings = await readAppSettings(userDataPath);
 
   return {
+    aiProvider: settings.aiSettings.aiProvider,
     model: settings.aiSettings.openAIModel,
     openAIAPIKeyConfigured: await hasOpenAIAPIKey(userDataPath),
     secureStorageAvailable: isOpenAIKeyStorageAvailable()
@@ -268,6 +293,13 @@ function isSaveAIModelInput(value: unknown): value is SaveAIModelInput {
     record.model === "gpt-5.4" ||
     record.model === "gpt-5.4-mini" ||
     record.model === "gpt-5.4-nano";
+}
+
+function isSaveAIProviderInput(value: unknown): value is SaveAIProviderInput {
+  if (!value || typeof value !== "object") return false;
+  const record = value as { aiProvider?: unknown };
+
+  return record.aiProvider === "codex-app-server" || record.aiProvider === "openai-api";
 }
 
 function hasAppliedPendingOperation(beforeState: AIWorkspaceState, afterState: AIWorkspaceState): boolean {

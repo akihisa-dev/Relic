@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import type {
   AppInfo,
   AISettingsState,
+  AIProvider,
   ChronicleCalendarSettings,
   EditorSettings,
   FeatureToggles,
@@ -33,6 +34,7 @@ interface UseAppTabRenderersInput {
   handleDeleteOpenAIAPIKey: () => void;
   handleSaveChronicleCalendars: (calendars: ChronicleCalendarSettings[]) => void;
   handleSaveAIModel: (model: OpenAIWorkspaceModel) => void;
+  handleSaveAIProvider: (provider: AIProvider) => void;
   handleSaveOpenAIAPIKey: (apiKey: string) => void;
   handleSaveSettings: (settings: EditorSettings) => void;
   handleSaveUserDefinedFields: (fields: UserDefinedField[]) => void;
@@ -55,6 +57,7 @@ export function useAppTabRenderers({
   handleDeleteOpenAIAPIKey,
   handleSaveChronicleCalendars,
   handleSaveAIModel,
+  handleSaveAIProvider,
   handleSaveOpenAIAPIKey,
   handleSaveSettings,
   handleSaveUserDefinedFields,
@@ -108,6 +111,7 @@ export function useAppTabRenderers({
         onDeleteOpenAIAPIKey={handleDeleteOpenAIAPIKey}
         onFeatureTogglesSave={handleSaveFeatureToggles}
         onSaveAIModel={handleSaveAIModel}
+        onSaveAIProvider={handleSaveAIProvider}
         onSaveOpenAIAPIKey={handleSaveOpenAIAPIKey}
         onSave={handleSaveSettings}
         onTestOpenAIAPIKey={handleTestOpenAIAPIKey}
@@ -126,6 +130,7 @@ export function useAppTabRenderers({
     handleSaveFeatureToggles,
     handleSaveChronicleCalendars,
     handleSaveAIModel,
+    handleSaveAIProvider,
     handleSaveOpenAIAPIKey,
     handleSaveSettings,
     handleSaveUserDefinedFields,

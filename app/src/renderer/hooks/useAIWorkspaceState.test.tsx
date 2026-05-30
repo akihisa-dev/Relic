@@ -10,6 +10,7 @@ describe("useAIWorkspaceState", () => {
       getAIWorkspaceState: vi.fn().mockResolvedValue({
         ok: true,
         value: {
+          aiProvider: "codex-app-server",
           openAIAPIKeyConfigured: true,
           history: [],
           index: { chunkCount: 0, indexedAt: null, indexedFileCount: 0, skippedLargeFiles: [], unreadableFiles: [] },
@@ -124,6 +125,7 @@ describe("useAIWorkspaceState", () => {
       getAIWorkspaceState: vi.fn().mockResolvedValue({
         ok: true,
         value: {
+          aiProvider: "openai-api",
           openAIAPIKeyConfigured: false,
           history: [],
           index: { chunkCount: 0, indexedAt: null, indexedFileCount: 0, skippedLargeFiles: [], unreadableFiles: [] },
@@ -167,6 +169,7 @@ describe("useAIWorkspaceState", () => {
       getAIWorkspaceState: vi.fn().mockResolvedValue({
         ok: true,
         value: {
+          aiProvider: "openai-api",
           openAIAPIKeyConfigured: false,
           history: [],
           index: { chunkCount: 0, indexedAt: null, indexedFileCount: 0, skippedLargeFiles: [], unreadableFiles: [] },
