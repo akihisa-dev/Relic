@@ -63,7 +63,7 @@ class CodexAppServerClient {
     resolve: (value: unknown) => void;
     timeout: NodeJS.Timeout;
   }>();
-  private turnDeltas: string[] = [];
+  private turnTexts = new Map<string, string[]>();
   private turnResolvers = new Map<string, {
     reject: (error: Error) => void;
     resolve: (value: string) => void;
@@ -175,8 +175,10 @@ class CodexAppServerClient {
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
         this.turnResolvers.delete(turnId);
+        this.turnTexts.delete(turnId);
         reject(new Error("Codex App Serverのturnがタイムアウトしました。"));
       }, requestTimeoutMs);
+      this.turnTexts.set(turnId, []);
       this.turnResolvers.set(turnId, { reject, resolve, timeout });
     });
   }
@@ -193,6 +195,7 @@ class CodexAppServerClient {
       turnResolver.reject(error);
     }
     this.turnResolvers.clear();
+    this.turnTexts.clear();
   }
 
   private handleLine(line: string): void {
@@ -221,20 +224,40 @@ class CodexAppServerClient {
 
     if (message.method === "item/agentMessage/delta") {
       const params = message.params as { delta?: unknown } | undefined;
-      if (typeof params?.delta === "string") this.turnDeltas.push(params.delta);
+      const turnId = (message.params as { turnId?: unknown } | undefined)?.turnId;
+      if (typeof turnId === "string" && typeof params?.delta === "string") {
+        const deltas = this.turnTexts.get(turnId) ?? [];
+        deltas.push(params.delta);
+        this.turnTexts.set(turnId, deltas);
+      }
+      return;
+    }
+
+    if (message.method === "item/completed") {
+      const params = message.params as { item?: { text?: unknown; type?: unknown }; turnId?: unknown } | undefined;
+      if (typeof params?.turnId === "string" && params.item?.type === "agentMessage" && typeof params.item.text === "string") {
+        const currentText = (this.turnTexts.get(params.turnId) ?? []).join("");
+        if (params.item.text.length > currentText.length) {
+          this.turnTexts.set(params.turnId, [params.item.text]);
+        }
+      }
       return;
     }
 
     if (message.method === "turn/completed") {
-      const params = message.params as { turn?: { id?: string } } | undefined;
+      const params = message.params as { turn?: { error?: { message?: string } | null; id?: string; status?: string } } | undefined;
       const turnId = params?.turn?.id;
       if (!turnId) return;
       const turnResolver = this.turnResolvers.get(turnId);
       if (!turnResolver) return;
       this.turnResolvers.delete(turnId);
       clearTimeout(turnResolver.timeout);
-      const text = this.turnDeltas.join("");
-      this.turnDeltas = [];
+      const text = (this.turnTexts.get(turnId) ?? []).join("");
+      this.turnTexts.delete(turnId);
+      if (params.turn?.status === "failed") {
+        turnResolver.reject(new Error(params.turn.error?.message ?? "Codex App Serverのturnが失敗しました。"));
+        return;
+      }
       turnResolver.resolve(text);
     }
   }
@@ -259,6 +282,7 @@ export function buildPrompt(input: RunCodexAIWorkspaceTurnInput): string {
     "必要な場合はMarkdownファイル変更案をoperationsへ入れてください。",
     "operationsはMarkdownファイルだけを対象にしてください。",
     "削除はdelete operationで表現してください。",
+    "delete operationのcontentは空文字にしてください。",
     "ファイル更新は部分差分ではなく、更新後のMarkdown全文をcontentへ入れてください。",
     "変更不要ならoperationsは空配列にしてください。",
     "",
@@ -422,7 +446,7 @@ function createOperationId(kind: string): string {
   return `${kind}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-const codexAIWorkspaceOutputSchema = {
+export const codexAIWorkspaceOutputSchema = {
   additionalProperties: false,
   properties: {
     message: { type: "string" },
@@ -435,7 +459,7 @@ const codexAIWorkspaceOutputSchema = {
           path: { type: "string" },
           summary: { type: "string" }
         },
-        required: ["kind", "path", "summary"],
+        required: ["content", "kind", "path", "summary"],
         type: "object"
       },
       type: "array"
