@@ -11,6 +11,7 @@ import type {
   DiscardAIWorkspaceOperationsInput,
   PreviewAIWorkspaceMessageInput,
   AIWorkspaceMessagePreview,
+  AIProvider,
   SendAIWorkspaceMessageInput
 } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
@@ -28,6 +29,7 @@ import {
   type AIWorkspaceData
 } from "./aiWorkspaceData";
 import { hasOpenAIAPIKey, readOpenAIAPIKey } from "./openAIKeyStore";
+import { runCodexAIWorkspaceTurn } from "./codexAppServerClient";
 import { runOpenAIWorkspaceTurn } from "./openAIResponsesClient";
 
 interface AIWorkspaceContext {
@@ -44,6 +46,11 @@ interface RejectedAIWorkspaceOperation {
 interface PreparedAIWorkspaceOperations {
   operations: AIWorkspaceFileOperation[];
   rejectedOperations: RejectedAIWorkspaceOperation[];
+}
+
+interface AIWorkspaceTurnResult {
+  message: string;
+  operations: AIWorkspaceFileOperation[];
 }
 
 export async function getAIWorkspaceState(context: AIWorkspaceContext): Promise<RelicResult<AIWorkspaceState>> {
@@ -147,35 +154,54 @@ export async function sendAIWorkspaceMessage(
       references: [],
       role: "user"
     };
-    const apiKey = await readOpenAIAPIKey(context.userDataPath);
-    if (!apiKey) {
-      return fail("AI_WORKSPACE_OPENAI_KEY_MISSING", "OpenAI APIキーをAI設定で登録してください。");
-    }
     const settings = await readAppSettings(context.userDataPath);
-
-    let openAIError: string | null = null;
-    const openAIResponse = await runOpenAIWorkspaceTurn({
-      apiKey,
+    const provider = settings.aiSettings.aiProvider;
+    const referenceContents = await readReferenceContents(context.workspacePath, references, {
+      content: input.activeFileContent ?? null,
+      path: input.activeFilePath ?? null
+    });
+    const turnInput = {
       history: data.history.map((item) => ({ content: item.content, role: item.role })),
       message,
-      model: settings.aiSettings.openAIModel,
       pendingOperations: data.operations.filter((operation) => operation.status === "pending"),
-      referenceContents: await readReferenceContents(context.workspacePath, references, {
-        content: input.activeFileContent ?? null,
-        path: input.activeFilePath ?? null
-      }),
+      referenceContents,
       references
-    }).catch((error) => {
-      openAIError = error instanceof Error ? error.message : String(error);
-      return null;
-    });
-    const preparedOperations = openAIResponse
-      ? await prepareOperations(context.workspacePath, openAIResponse.operations)
+    } satisfies Omit<Parameters<typeof runOpenAIWorkspaceTurn>[0], "apiKey" | "model">;
+
+    let aiError: string | null = null;
+    let aiResponse: AIWorkspaceTurnResult | null = null;
+
+    if (provider === "openai-api") {
+      const apiKey = await readOpenAIAPIKey(context.userDataPath);
+      if (!apiKey) {
+        return fail("AI_WORKSPACE_OPENAI_KEY_MISSING", "OpenAI APIキーをAI設定で登録してください。");
+      }
+
+      aiResponse = await runOpenAIWorkspaceTurn({
+        ...turnInput,
+        apiKey,
+        model: settings.aiSettings.openAIModel
+      }).catch((error) => {
+        aiError = normalizeAIProviderError(provider, error);
+        return null;
+      });
+    } else {
+      aiResponse = await runCodexAIWorkspaceTurn({
+        ...turnInput,
+        workspacePath: context.workspacePath
+      }).catch((error) => {
+        aiError = normalizeAIProviderError(provider, error);
+        return null;
+      });
+    }
+
+    const preparedOperations = aiResponse
+      ? await prepareOperations(context.workspacePath, aiResponse.operations)
       : { operations: [], rejectedOperations: [] };
     const assistantMessage: AIWorkspaceMessage = {
-      content: openAIResponse
-        ? appendRejectedOperationsNotice(openAIResponse.message, preparedOperations.rejectedOperations)
-        : buildAssistantFallback(message, references, openAIError),
+      content: aiResponse
+        ? appendRejectedOperationsNotice(aiResponse.message, preparedOperations.rejectedOperations)
+        : buildAssistantFallback(provider, message, references, aiError),
       createdAt: new Date().toISOString(),
       id: createMessageId("assistant"),
       operations: preparedOperations.operations,
@@ -433,7 +459,10 @@ async function ensureIndexed(context: AIWorkspaceContext): Promise<AIWorkspaceDa
 }
 
 async function toState(data: AIWorkspaceData, userDataPath?: string): Promise<AIWorkspaceState> {
+  const settings = userDataPath ? await readAppSettings(userDataPath) : null;
+
   return {
+    aiProvider: settings?.aiSettings.aiProvider ?? "codex-app-server",
     history: data.history,
     index: {
       chunkCount: data.index.chunks.length,
@@ -866,22 +895,30 @@ function blockedDirtyPaths(
 }
 
 function buildAssistantFallback(
+  provider: AIProvider,
   message: string,
   references: AIWorkspaceReference[],
-  openAIError: string | null
+  aiError: string | null
 ): string {
-  if (openAIError) {
+  if (aiError) {
     const files = references.map((reference) => `- ${reference.path}`).join("\n");
+    const providerMessage = provider === "openai-api"
+      ? "OpenAI APIでAI処理を完了できませんでした。"
+      : "Codex App ServerでAI処理を完了できませんでした。";
+    const nextStep = provider === "openai-api"
+      ? "OpenAI APIキー、課金状態、利用上限、ネットワーク接続を確認してください。"
+      : "Codexアプリが利用できる状態か確認してください。利用できない場合は、設定のAI接続方式をOpenAI APIへ切り替えることもできます。";
 
     return [
-      "OpenAI APIでAI処理を完了できませんでした。",
+      providerMessage,
       "そのため、今回はローカルのMarkdown検索結果だけを表示しています。Markdownの作成・編集・削除案は作っていません。",
+      nextStep,
       "",
       files ? `関連しそうなMarkdown:\n${files}` : "関連しそうなMarkdownは見つかりませんでした。",
       "",
       `受け取った依頼: ${message}`,
       "",
-      `失敗理由: ${openAIError}`
+      `失敗理由: ${aiError}`
     ].join("\n");
   }
 
@@ -903,6 +940,21 @@ function buildAssistantFallback(
     "",
     "Markdown変更案は作っていません。"
   ].join("\n");
+}
+
+function normalizeAIProviderError(provider: AIProvider, error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error);
+  if (provider !== "openai-api") return message;
+
+  const lower = message.toLowerCase();
+  if (lower.includes("quota") || lower.includes("billing") || lower.includes("insufficient_quota")) {
+    return "OpenAI APIの利用枠または請求設定を確認してください。APIの残高不足、利用上限、請求設定が原因の可能性があります。";
+  }
+  if (lower.includes("rate limit") || lower.includes("rate_limit")) {
+    return "OpenAI APIの利用が一時的に集中しています。少し時間を置いてからもう一度お試しください。";
+  }
+
+  return message;
 }
 
 function appendRejectedOperationsNotice(

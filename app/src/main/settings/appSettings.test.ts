@@ -31,7 +31,7 @@ describe("appSettings", () => {
     temporaryPaths.push(userDataPath);
 
     await writeAppSettings(userDataPath, {
-      aiSettings: { openAIModel: "gpt-5.5" },
+      aiSettings: { aiProvider: "openai-api", openAIModel: "gpt-5.5" },
       editorSettings: { ...defaultEditorSettings, language: "ja" },
       featureToggles: { ...defaultFeatureToggles, tools: true },
       frontmatterTemplates: defaultFrontmatterTemplates,
@@ -41,7 +41,7 @@ describe("appSettings", () => {
     });
 
     await expect(readAppSettings(userDataPath)).resolves.toMatchObject({
-      aiSettings: { openAIModel: "gpt-5.5" },
+      aiSettings: { aiProvider: "openai-api", openAIModel: "gpt-5.5" },
       editorSettings: expect.objectContaining({ language: "ja" }),
       featureToggles: expect.objectContaining({ tools: true }),
       lastWorkspaceId: "ws-1",
@@ -57,7 +57,7 @@ describe("appSettings", () => {
 
     await expect(readAppSettings(userDataPath)).resolves.toEqual({
       editorSettings: defaultEditorSettings,
-      aiSettings: { openAIModel: "gpt-5.4-mini" },
+      aiSettings: { aiProvider: "codex-app-server", openAIModel: "gpt-5.4-mini" },
       featureToggles: defaultFeatureToggles,
       frontmatterTemplates: defaultFrontmatterTemplates,
       lastWorkspaceId: null,
@@ -74,7 +74,19 @@ describe("appSettings", () => {
     }), "utf8");
 
     await expect(readAppSettings(userDataPath)).resolves.toMatchObject({
-      aiSettings: { openAIModel: "gpt-5.4-mini" }
+      aiSettings: { aiProvider: "codex-app-server", openAIModel: "gpt-5.4-mini" }
+    });
+  });
+
+  it("AI接続方式が未設定または不正な場合はCodex App Server方式へ戻す", async () => {
+    const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-app-settings-"));
+    temporaryPaths.push(userDataPath);
+    await writeFile(getAppSettingsPath(userDataPath), JSON.stringify({
+      aiSettings: { aiProvider: "unknown-provider", openAIModel: "gpt-5.5" }
+    }), "utf8");
+
+    await expect(readAppSettings(userDataPath)).resolves.toMatchObject({
+      aiSettings: { aiProvider: "codex-app-server", openAIModel: "gpt-5.5" }
     });
   });
 

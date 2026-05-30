@@ -17,7 +17,7 @@ import {
 } from "./workspaceService";
 
 const baseSettings = {
-  aiSettings: { openAIModel: "gpt-5.4-mini" as const },
+  aiSettings: { aiProvider: "codex-app-server" as const, openAIModel: "gpt-5.4-mini" as const },
   editorSettings: defaultEditorSettings,
   featureToggles: defaultFeatureToggles,
   frontmatterTemplates: defaultFrontmatterTemplates,

@@ -44,6 +44,7 @@ vi.mock("../ai/aiWorkspaceService", () => aiWorkspaceServiceMock);
 import {
   applyAIWorkspaceOperationsChannel,
   saveAIModelChannel,
+  saveAIProviderChannel,
   sendAIWorkspaceMessageChannel,
   workspaceChangedChannel,
   type AIWorkspaceState
@@ -172,7 +173,31 @@ describe("registerAIWorkspaceHandlers", () => {
         value: expect.objectContaining({ model: "gpt-5.5" })
       });
       await expect(readAppSettings(userDataPath)).resolves.toMatchObject({
-        aiSettings: { openAIModel: "gpt-5.5" }
+        aiSettings: { aiProvider: "codex-app-server", openAIModel: "gpt-5.5" }
+      });
+    } finally {
+      vi.mocked((await import("electron")).app.getPath).mockReturnValue("/tmp/relic-user-data");
+      await rm(userDataPath, { force: true, recursive: true });
+    }
+  });
+
+  it("saves the selected AI provider in app settings", async () => {
+    const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-ai-settings-"));
+    vi.mocked((await import("electron")).app.getPath).mockReturnValue(userDataPath);
+
+    try {
+      registerAIWorkspaceHandlers();
+      const handler = electronMock.handle.mock.calls.find(([channel]) => channel === saveAIProviderChannel)?.[1];
+      if (!handler) throw new Error("saveAIProvider handler was not registered");
+
+      const result = await handler({}, { aiProvider: "openai-api" });
+
+      expect(result).toEqual({
+        ok: true,
+        value: expect.objectContaining({ aiProvider: "openai-api" })
+      });
+      await expect(readAppSettings(userDataPath)).resolves.toMatchObject({
+        aiSettings: { aiProvider: "openai-api" }
       });
     } finally {
       vi.mocked((await import("electron")).app.getPath).mockReturnValue("/tmp/relic-user-data");
@@ -183,6 +208,7 @@ describe("registerAIWorkspaceHandlers", () => {
 
 function createAIWorkspaceState(status: "pending" | "applied" | "stale"): AIWorkspaceState {
   return {
+    aiProvider: "codex-app-server",
     openAIAPIKeyConfigured: true,
     history: [],
     index: {

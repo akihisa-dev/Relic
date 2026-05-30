@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import type {
   AISettingsState,
+  AIProvider,
   AppInfo,
   EditorSettings,
   FrontmatterTemplate,
@@ -127,6 +128,19 @@ export function useAppSettingsState({
     });
   }, []);
 
+  const handleSaveAIProvider = useCallback((aiProvider: AIProvider): void => {
+    setAISettings((current) => current ? { ...current, aiProvider } : current);
+    setAISettingsStatus(null);
+    void window.relic?.saveAIProvider({ aiProvider }).then((result) => {
+      if (result.ok) {
+        setAISettings(result.value);
+        setAISettingsStatus(`AI接続方式を${formatAIProviderLabel(result.value.aiProvider)}に変更しました。`);
+      } else {
+        setAISettingsStatus(result.error.message);
+      }
+    });
+  }, []);
+
   const handleDeleteOpenAIAPIKey = useCallback((): void => {
     setAISettingsStatus(null);
     void window.relic?.deleteOpenAIAPIKey().then((result) => {
@@ -160,10 +174,15 @@ export function useAppSettingsState({
     handleSaveFrontmatterTemplates,
     handleDeleteOpenAIAPIKey,
     handleSaveAIModel,
+    handleSaveAIProvider,
     handleSaveOpenAIAPIKey,
     handleSaveSettings,
     handleTestOpenAIAPIKey,
     handleSaveUserDefinedFields,
     userDefinedFields
   };
+}
+
+function formatAIProviderLabel(provider: AIProvider): string {
+  return provider === "codex-app-server" ? "Codex App Server" : "OpenAI API";
 }

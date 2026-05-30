@@ -43,6 +43,7 @@ import {
   replaceInFileChannel,
   revealWorkspaceItemChannel,
   saveAIModelChannel,
+  saveAIProviderChannel,
   saveWorkspaceChartsChannel,
   saveWorkspaceChronicleCalendarsChannel,
   updateChartEntryChannel,
@@ -109,6 +110,7 @@ import {
   type ReadMarkdownFileInput,
   type RebuildAIWorkspaceIndexInput,
   type SaveAIModelInput,
+  type SaveAIProviderInput,
   type SaveOpenAIAPIKeyInput,
   type RemoveWorkspaceInput,
   type RenameWorkspaceInput,
@@ -163,6 +165,8 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(getAIWorkspaceStateChannel) as Promise<RelicResult<AIWorkspaceState>>,
   getAISettings: () =>
     ipcRenderer.invoke(getAISettingsChannel) as Promise<RelicResult<AISettingsState>>,
+  saveAIProvider: (input: SaveAIProviderInput) =>
+    ipcRenderer.invoke(saveAIProviderChannel, input) as Promise<RelicResult<AISettingsState>>,
   saveAIModel: (input: SaveAIModelInput) =>
     ipcRenderer.invoke(saveAIModelChannel, input) as Promise<RelicResult<AISettingsState>>,
   saveOpenAIAPIKey: (input: SaveOpenAIAPIKeyInput) =>

@@ -102,6 +102,7 @@ export function makeRelicApi(overrides: Partial<typeof window.relic> = {}): type
     getAIWorkspaceState: vi.fn().mockResolvedValue({
       ok: true,
       value: {
+        aiProvider: "codex-app-server",
         history: [],
         index: { chunkCount: 0, indexedAt: null, indexedFileCount: 0, skippedLargeFiles: [], unreadableFiles: [] },
         openAIAPIKeyConfigured: false,
@@ -111,19 +112,23 @@ export function makeRelicApi(overrides: Partial<typeof window.relic> = {}): type
     }),
     getAISettings: vi.fn().mockResolvedValue({
       ok: true,
-      value: { model: "gpt-5.4-mini", openAIAPIKeyConfigured: false, secureStorageAvailable: true }
+      value: { aiProvider: "codex-app-server", model: "gpt-5.4-mini", openAIAPIKeyConfigured: false, secureStorageAvailable: true }
+    }),
+    saveAIProvider: vi.fn().mockResolvedValue({
+      ok: true,
+      value: { aiProvider: "openai-api", model: "gpt-5.4-mini", openAIAPIKeyConfigured: false, secureStorageAvailable: true }
     }),
     saveAIModel: vi.fn().mockResolvedValue({
       ok: true,
-      value: { model: "gpt-5.5", openAIAPIKeyConfigured: false, secureStorageAvailable: true }
+      value: { aiProvider: "codex-app-server", model: "gpt-5.5", openAIAPIKeyConfigured: false, secureStorageAvailable: true }
     }),
     saveOpenAIAPIKey: vi.fn().mockResolvedValue({
       ok: true,
-      value: { model: "gpt-5.4-mini", openAIAPIKeyConfigured: true, secureStorageAvailable: true }
+      value: { aiProvider: "openai-api", model: "gpt-5.4-mini", openAIAPIKeyConfigured: true, secureStorageAvailable: true }
     }),
     deleteOpenAIAPIKey: vi.fn().mockResolvedValue({
       ok: true,
-      value: { model: "gpt-5.4-mini", openAIAPIKeyConfigured: false, secureStorageAvailable: true }
+      value: { aiProvider: "openai-api", model: "gpt-5.4-mini", openAIAPIKeyConfigured: false, secureStorageAvailable: true }
     }),
     testOpenAIAPIKey: vi.fn().mockResolvedValue({
       ok: true,
@@ -142,6 +147,7 @@ export function makeRelicApi(overrides: Partial<typeof window.relic> = {}): type
     rebuildAIWorkspaceIndex: vi.fn().mockResolvedValue({
       ok: true,
       value: {
+        aiProvider: "codex-app-server",
         openAIAPIKeyConfigured: false,
         history: [],
         index: { chunkCount: 0, indexedAt: null, indexedFileCount: 0, skippedLargeFiles: [], unreadableFiles: [] },
