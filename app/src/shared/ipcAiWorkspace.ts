@@ -43,6 +43,7 @@ export interface SendAIWorkspaceMessageInput {
 }
 
 export interface PreviewAIWorkspaceMessageInput {
+  activeFilePath?: string | null;
   message: string;
 }
 
