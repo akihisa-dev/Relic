@@ -4,10 +4,9 @@ import type { MouseEvent } from "react";
 import type { MarkdownFileContent } from "../../shared/ipc";
 import type { Translator } from "../i18nModel";
 import { useEditorStore, type PaneId } from "../store/editorStore";
-import type { RailTabFlight, SidebarCreateFlight } from "./useRailFlights";
+import type { SidebarCreateFlight } from "./useRailFlights";
 
 interface UseSidebarFileInteractionsInput {
-  focusedPane: PaneId;
   handleCreateFile: () => void;
   handleCreateFolder: () => void;
   handleOpenFile: (path: string) => void;
@@ -15,13 +14,11 @@ interface UseSidebarFileInteractionsInput {
   openFileInPane: (pane: PaneId, file: MarkdownFileContent) => void;
   setTabActive: (pane: PaneId, tabId: string) => void;
   setWorkspaceError: (message: string | null) => void;
-  showRailTabFlight: (flight: RailTabFlight, duration?: number) => void;
   showSidebarCreateFlight: (flight: SidebarCreateFlight, duration?: number) => void;
   t: Translator;
 }
 
 export function useSidebarFileInteractions({
-  focusedPane,
   handleCreateFile,
   handleCreateFolder,
   handleOpenFile,
@@ -29,7 +26,6 @@ export function useSidebarFileInteractions({
   openFileInPane,
   setTabActive,
   setWorkspaceError,
-  showRailTabFlight,
   showSidebarCreateFlight,
   t
 }: UseSidebarFileInteractionsInput): {
@@ -119,23 +115,9 @@ export function useSidebarFileInteractions({
   }, [handleOpenFile, markOpeningFile, onFileOpenMotion, openFileInPane, setTabActive, setWorkspaceError]);
 
   const handleCreateFileFromSidebar = useCallback((event?: MouseEvent<HTMLButtonElement>): void => {
-    if (event) {
-      const buttonRect = event.currentTarget.getBoundingClientRect();
-      const tabBar = document.querySelector(`.pane${focusedPane === "left" ? "" : ":last-child"} .pane-tab-bar`) ?? document.querySelector(".pane-tab-bar");
-      const tabBarRect = tabBar?.getBoundingClientRect();
-
-      showRailTabFlight({
-        direction: "open",
-        fromX: buttonRect.left + buttonRect.width / 2,
-        fromY: buttonRect.top + buttonRect.height / 2,
-        label: t("files.createNote"),
-        toX: (tabBarRect?.left ?? buttonRect.left + buttonRect.width + 120) + 48,
-        toY: (tabBarRect?.top ?? buttonRect.top) + 15
-      });
-    }
-
+    void event;
     handleCreateFile();
-  }, [focusedPane, handleCreateFile, showRailTabFlight, t]);
+  }, [handleCreateFile]);
 
   const handleCreateFolderFromSidebar = useCallback((event?: MouseEvent<HTMLButtonElement>): void => {
     if (event) {

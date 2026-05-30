@@ -30,14 +30,6 @@ interface UseAppRailNavigationInput {
   rightPane: PaneState;
   setSidebarView: (view: SidebarView) => void;
   setTabActive: (pane: PaneId, tabId: string) => void;
-  showRailTabFlight: (flight: {
-    direction: "open" | "close";
-    fromX: number;
-    fromY: number;
-    label: string;
-    toX: number;
-    toY: number;
-  }) => void;
   t: Translator;
   tabs: Record<string, Tab>;
 }
@@ -68,7 +60,6 @@ export function useAppRailNavigation({
   rightPane,
   setSidebarView,
   setTabActive,
-  showRailTabFlight,
   t,
   tabs
 }: UseAppRailNavigationInput): UseAppRailNavigationResult {
@@ -104,26 +95,8 @@ export function useAppRailNavigation({
     sidebarViews.find((view) => view.id === panel)?.icon ?? null
   ), [sidebarViews]);
 
-  const showRailOpenFlight = useCallback((
-    label: string,
-    railRect: DOMRect
-  ): void => {
-    requestAnimationFrame(() => {
-      const pane = document.querySelector(`.pane${focusedPane === "left" ? "" : ":last-child"} .pane-tab-bar`) ?? document.querySelector(".pane-tab-bar");
-      const toRect = pane?.getBoundingClientRect();
-      showRailTabFlight({
-        direction: "open",
-        fromX: railRect.left + railRect.width / 2,
-        fromY: railRect.top + railRect.height / 2,
-        label,
-        toX: (toRect?.left ?? railRect.left + 180) + 48,
-        toY: (toRect?.top ?? railRect.top) + 15
-      });
-    });
-  }, [focusedPane, showRailTabFlight]);
-
   const handleRailPanelButton = useCallback((panel: PanelTabKind, label: string, event: MouseEvent<HTMLButtonElement>): void => {
-    const railRect = event.currentTarget.getBoundingClientRect();
+    void event;
     const panelTabId = `panel-${panel}`;
     const editorState = useEditorStore.getState();
     const openedPanes: PaneId[] = [
@@ -139,14 +112,14 @@ export function useAppRailNavigation({
 
     const panelLabel = panelLabels[panel];
     openPanelInPane(focusedPane, panel, panelLabel);
-    showRailOpenFlight(panelLabel, railRect);
-  }, [clearRailTabFlight, focusedPane, openPanelInPane, panelLabels, setTabActive, showRailOpenFlight]);
+    clearRailTabFlight();
+  }, [clearRailTabFlight, focusedPane, openPanelInPane, panelLabels, setTabActive]);
 
   const handleRailChartButton = useCallback((view: AppRailViewId, label: string, event: MouseEvent<HTMLButtonElement>): void => {
+    void event;
     const chartId = chartIdForRailView(view);
     if (!chartId) return;
 
-    const railRect = event.currentTarget.getBoundingClientRect();
     const tabId = `chart-${chartId}`;
     const editorState = useEditorStore.getState();
     const openedPanes: PaneId[] = [
@@ -163,14 +136,13 @@ export function useAppRailNavigation({
 
     closeSidebar();
     openChartInPane(focusedPane, { id: chartId, name: label });
-    showRailOpenFlight(label, railRect);
+    clearRailTabFlight();
   }, [
     clearRailTabFlight,
     closeSidebar,
     focusedPane,
     openChartInPane,
-    setTabActive,
-    showRailOpenFlight
+    setTabActive
   ]);
 
   return {

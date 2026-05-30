@@ -60,7 +60,6 @@ export function App(): ReactElement {
   const {
     clearRailTabFlight,
     railTabFlight,
-    showRailTabFlight,
     showSidebarCreateFlight,
     sidebarCreateFlight
   } = useRailFlights();
@@ -303,7 +302,6 @@ export function App(): ReactElement {
     handleSidebarOpenFile,
     openingFilePath
   } = useSidebarFileInteractions({
-    focusedPane,
     handleCreateFile,
     handleCreateFolder,
     handleOpenFile,
@@ -311,7 +309,6 @@ export function App(): ReactElement {
     openFileInPane,
     setTabActive,
     setWorkspaceError,
-    showRailTabFlight,
     showSidebarCreateFlight,
     t
   });
@@ -634,7 +631,6 @@ export function App(): ReactElement {
     rightPane,
     setSidebarView,
     setTabActive,
-    showRailTabFlight,
     t,
     tabs
   });

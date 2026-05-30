@@ -67,6 +67,46 @@ describe("editorStore", () => {
     expect(state.leftPane.tabIds).toHaveLength(1);
   });
 
+  it("新しいファイルタブは現在のアクティブタブの右側に追加される", () => {
+    const { openFileInPane, setTabActive } = useEditorStore.getState();
+
+    openFileInPane("left", sampleFile);
+    openFileInPane("left", sampleFile2);
+
+    const firstTabId = useEditorStore.getState().leftPane.tabIds[0];
+    const secondTabId = useEditorStore.getState().leftPane.tabIds[1];
+    setTabActive("left", firstTabId);
+    openFileInPane("left", sampleFile3);
+
+    const state = useEditorStore.getState();
+    const thirdTabId = state.leftPane.activeTabId!;
+
+    expect(state.leftPane.tabIds).toEqual([firstTabId, thirdTabId, secondTabId]);
+    expect(state.tabs[thirdTabId].kind).toBe("file");
+    if (state.tabs[thirdTabId].kind === "file") {
+      expect(state.tabs[thirdTabId].path).toBe(sampleFile3.path);
+    }
+  });
+
+  it("画面タブとチャートタブも現在のアクティブタブの右側に追加される", () => {
+    useEditorStore.getState().openFileInPane("left", sampleFile);
+    useEditorStore.getState().openFileInPane("left", sampleFile2);
+
+    const firstTabId = useEditorStore.getState().leftPane.tabIds[0];
+    const secondTabId = useEditorStore.getState().leftPane.tabIds[1];
+    useEditorStore.getState().setTabActive("left", firstTabId);
+    useEditorStore.getState().openPanelInPane("left", "settings", "設定");
+    useEditorStore.getState().setTabActive("left", firstTabId);
+    useEditorStore.getState().openChartInPane("left", { id: "chronicle", name: "年表" });
+
+    expect(useEditorStore.getState().leftPane.tabIds).toEqual([
+      firstTabId,
+      "chart-chronicle",
+      "panel-settings",
+      secondTabId
+    ]);
+  });
+
   it("タブを閉じると履歴ベースで直前のタブがアクティブになる", () => {
     const { openFileInPane } = useEditorStore.getState();
 

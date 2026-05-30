@@ -380,7 +380,7 @@
 
 .pane-tab {
   align-items: center;
-  animation: tab-enter var(--motion-normal) var(--ease-enter);
+  animation: tab-enter var(--motion-fast) var(--ease-standard);
   border: 1px solid transparent;
   border-bottom: 0;
   border-radius: 7px 7px 0 0;
@@ -395,19 +395,16 @@
   min-width: 80px;
   padding: 0 8px;
   position: relative;
-  transform-origin: 50% 70%;
   transition:
     background-color 140ms ease,
     border-color 140ms ease,
     color 140ms ease,
-    height var(--motion-normal) var(--ease-enter),
-    max-width var(--motion-normal) var(--ease-enter),
-    min-width var(--motion-normal) var(--ease-enter),
+    max-width var(--motion-fast) var(--ease-standard),
+    min-width var(--motion-fast) var(--ease-standard),
     opacity var(--motion-fast) var(--ease-standard),
-    padding var(--motion-normal) var(--ease-enter),
-    transform var(--motion-normal) var(--ease-press);
+    padding var(--motion-fast) var(--ease-standard);
   user-select: none;
-  will-change: max-width, min-width, opacity, padding, transform;
+  will-change: max-width, min-width, opacity, padding;
 }
 
 .title-bar .pane-tab {
@@ -459,7 +456,6 @@
 }
 
 .pane-tab--active {
-  animation: tab-select var(--motion-fast) var(--ease-press);
   background: var(--bg);
   border-color: var(--border);
   border-bottom-color: var(--bg);
@@ -508,7 +504,7 @@
 }
 
 .pane-tab:active {
-  transform: scale(0.985) translateY(1px);
+  opacity: 0.9;
 }
 
 .pane-tab--closing {
@@ -518,7 +514,6 @@
   padding-left: 0;
   padding-right: 0;
   pointer-events: none;
-  transform: scaleX(0.72) scaleY(0.88) translateY(3px);
 }
 
 .pane-tab-name {
