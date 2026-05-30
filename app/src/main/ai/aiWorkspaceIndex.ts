@@ -19,6 +19,7 @@ const defaultIndexOperations: IndexOperations = {
 };
 
 const maxChunkLines = 80;
+const embeddingDimensions = 64;
 
 export async function buildAIWorkspaceIndex(
   workspacePath: string,
@@ -65,11 +66,12 @@ export async function buildAIWorkspaceIndex(
 
 export function searchAIWorkspaceChunks(chunks: AIWorkspaceChunk[], query: string): AIWorkspaceChunk[] {
   const terms = tokenizeSearchText(query);
+  const queryEmbedding = createLocalEmbedding(query);
 
   if (terms.length === 0) return chunks.slice(0, 8);
 
   return chunks
-    .map((chunk) => ({ chunk, score: scoreChunk(chunk, terms) }))
+    .map((chunk) => ({ chunk, score: scoreChunk(chunk, terms, queryEmbedding) }))
     .filter((item) => item.score > 0)
     .sort((a, b) => b.score - a.score || a.chunk.path.localeCompare(b.chunk.path, "ja"))
     .slice(0, 8)
@@ -95,6 +97,21 @@ export function tokenizeSearchText(value: string): string[] {
   return [...terms];
 }
 
+export function createLocalEmbedding(value: string): number[] {
+  const vector = Array.from({ length: embeddingDimensions }, () => 0);
+  const terms = tokenizeSearchText(value);
+
+  for (const term of terms) {
+    const index = stableHash(term) % embeddingDimensions;
+    vector[index] += term.length <= 2 ? 0.7 : 1;
+  }
+
+  const magnitude = Math.sqrt(vector.reduce((sum, item) => sum + item * item, 0));
+  if (magnitude === 0) return vector;
+
+  return vector.map((item) => Number((item / magnitude).toFixed(6)));
+}
+
 function chunkMarkdown(relativePath: string, content: string): AIWorkspaceChunk[] {
   const lines = content.split("\n");
   const chunks: AIWorkspaceChunk[] = [];
@@ -106,6 +123,7 @@ function chunkMarkdown(relativePath: string, content: string): AIWorkspaceChunk[
     if (chunkContent) {
       chunks.push({
         content: chunkContent,
+        embedding: createLocalEmbedding(`${relativePath}\n${chunkContent}`),
         endLine: end,
         path: relativePath,
         startLine: start + 1
@@ -116,6 +134,7 @@ function chunkMarkdown(relativePath: string, content: string): AIWorkspaceChunk[
   if (chunks.length === 0) {
     chunks.push({
       content: `# ${path.basename(relativePath, ".md")}`,
+      embedding: createLocalEmbedding(relativePath),
       endLine: 1,
       path: relativePath,
       startLine: 1
@@ -125,10 +144,12 @@ function chunkMarkdown(relativePath: string, content: string): AIWorkspaceChunk[
   return chunks;
 }
 
-function scoreChunk(chunk: AIWorkspaceChunk, terms: string[]): number {
+function scoreChunk(chunk: AIWorkspaceChunk, terms: string[], queryEmbedding: number[]): number {
   const haystack = `${chunk.path}\n${chunk.content}`.toLocaleLowerCase();
+  const lexicalScore = terms.reduce((score, term) => score + countOccurrences(haystack, term), 0);
+  const vectorScore = cosineSimilarity(queryEmbedding, chunk.embedding) * 2;
 
-  return terms.reduce((score, term) => score + countOccurrences(haystack, term), 0);
+  return lexicalScore + vectorScore;
 }
 
 function hasCjk(value: string): boolean {
@@ -157,4 +178,33 @@ function countOccurrences(value: string, term: string): number {
   }
 
   return count;
+}
+
+function stableHash(value: string): number {
+  let hash = 2166136261;
+
+  for (const char of value) {
+    hash ^= char.codePointAt(0) ?? 0;
+    hash = Math.imul(hash, 16777619);
+  }
+
+  return hash >>> 0;
+}
+
+function cosineSimilarity(left: number[], right: number[]): number {
+  if (left.length === 0 || right.length === 0) return 0;
+
+  const length = Math.min(left.length, right.length);
+  let dot = 0;
+  let leftMagnitude = 0;
+  let rightMagnitude = 0;
+
+  for (let index = 0; index < length; index += 1) {
+    dot += left[index] * right[index];
+    leftMagnitude += left[index] * left[index];
+    rightMagnitude += right[index] * right[index];
+  }
+
+  if (leftMagnitude === 0 || rightMagnitude === 0) return 0;
+  return dot / (Math.sqrt(leftMagnitude) * Math.sqrt(rightMagnitude));
 }

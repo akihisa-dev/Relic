@@ -3,7 +3,12 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { buildAIWorkspaceIndex, searchAIWorkspaceChunks, tokenizeSearchText } from "./aiWorkspaceIndex";
+import {
+  buildAIWorkspaceIndex,
+  createLocalEmbedding,
+  searchAIWorkspaceChunks,
+  tokenizeSearchText
+} from "./aiWorkspaceIndex";
 import { workspaceSearchMaxFileBytes } from "../files/search";
 
 let workspacePath = "";
@@ -26,6 +31,7 @@ describe("buildAIWorkspaceIndex", () => {
     const index = await buildAIWorkspaceIndex(workspacePath);
 
     expect(new Set(index.chunks.map((chunk) => chunk.path))).toEqual(new Set(["README.md", "docs/notes.md"]));
+    expect(index.chunks.every((chunk) => chunk.embedding.length > 0)).toBe(true);
     expect(index.skippedLargeFiles).toEqual([]);
     expect(index.unreadableFiles).toEqual([]);
   });
@@ -47,9 +53,9 @@ describe("buildAIWorkspaceIndex", () => {
 describe("searchAIWorkspaceChunks", () => {
   it("returns matching chunks first", () => {
     const chunks = [
-      { content: "alpha", endLine: 1, path: "a.md", startLine: 1 },
-      { content: "target target", endLine: 1, path: "b.md", startLine: 1 },
-      { content: "target", endLine: 1, path: "c.md", startLine: 1 }
+      chunk("a.md", "alpha"),
+      chunk("b.md", "target target"),
+      chunk("c.md", "target")
     ];
 
     expect(searchAIWorkspaceChunks(chunks, "target").map((chunk) => chunk.path)).toEqual(["b.md", "c.md"]);
@@ -57,13 +63,31 @@ describe("searchAIWorkspaceChunks", () => {
 
   it("matches Japanese natural language queries against Markdown terms", () => {
     const chunks = [
-      { content: "# 認証\nログイン仕様", endLine: 2, path: "auth.md", startLine: 1 },
-      { content: "# 画面\nテーマ設定", endLine: 2, path: "theme.md", startLine: 1 }
+      chunk("auth.md", "# 認証\nログイン仕様", 2),
+      chunk("theme.md", "# 画面\nテーマ設定", 2)
     ];
 
     expect(searchAIWorkspaceChunks(chunks, "認証について整理して").map((chunk) => chunk.path)).toEqual(["auth.md"]);
   });
 });
+
+describe("createLocalEmbedding", () => {
+  it("creates stable normalized local vectors", () => {
+    expect(createLocalEmbedding("認証")).toEqual(createLocalEmbedding("認証"));
+    expect(createLocalEmbedding("認証")).toHaveLength(64);
+    expect(createLocalEmbedding("")).toEqual(Array.from({ length: 64 }, () => 0));
+  });
+});
+
+function chunk(filePath: string, content: string, endLine = 1) {
+  return {
+    content,
+    embedding: createLocalEmbedding(`${filePath}\n${content}`),
+    endLine,
+    path: filePath,
+    startLine: 1
+  };
+}
 
 describe("tokenizeSearchText", () => {
   it("keeps full tokens and adds Japanese ngrams", () => {
