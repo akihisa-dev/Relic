@@ -211,6 +211,42 @@ describe("sendAIWorkspaceMessage", () => {
     }));
   });
 
+  it("replaces old pending operations for the same Markdown path with new proposals", async () => {
+    await writeFile(path.join(workspacePath, "README.md"), "# Auth\nLogin spec", "utf8");
+    await writeData({
+      operations: [createOperation("update", "README.md", "# Auth\nDraft update")]
+    });
+    vi.mocked(runCodexAIWorkspaceTurn).mockResolvedValueOnce({
+      message: "変更案を作り直します。",
+      operations: [createOperation("update", "README.md", "# Auth\nAdjusted update")]
+    });
+
+    const result = await sendAIWorkspaceMessage(context(), { message: "さっきの案を作り直して" });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.pendingOperations).toEqual([
+        expect.objectContaining({
+          content: "# Auth\nAdjusted update",
+          path: "README.md",
+          status: "pending"
+        })
+      ]);
+      expect(result.value.operationHistory).toEqual([
+        expect.objectContaining({
+          content: "# Auth\nDraft update",
+          path: "README.md",
+          status: "replaced"
+        }),
+        expect.objectContaining({
+          content: "# Auth\nAdjusted update",
+          path: "README.md",
+          status: "pending"
+        })
+      ]);
+    }
+  });
+
   it("applies only the pending operation named in a natural language message", async () => {
     await writeFile(path.join(workspacePath, "first.md"), "first", "utf8");
     await writeFile(path.join(workspacePath, "second.md"), "second", "utf8");

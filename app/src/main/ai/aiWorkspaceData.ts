@@ -142,7 +142,8 @@ function isAIWorkspaceFileOperation(value: unknown): value is AIWorkspaceFileOpe
       record.status === "applied" ||
       record.status === "discarded" ||
       record.status === "failed" ||
-      record.status === "stale"
+      record.status === "stale" ||
+      record.status === "replaced"
     ) &&
     (record.baseContentHash === undefined || typeof record.baseContentHash === "string") &&
     (record.content === undefined || typeof record.content === "string");
