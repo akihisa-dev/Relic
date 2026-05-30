@@ -336,6 +336,23 @@
   font-weight: 600;
 }
 
+.ai-workspace-preview-skipped {
+  background: var(--hover);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 6px 8px;
+}
+
+.ai-workspace-preview-skipped summary {
+  color: var(--text-2);
+  cursor: default;
+  font-size: 12px;
+}
+
+.ai-workspace-preview-skipped ul {
+  margin-top: 6px;
+}
+
 .ai-workspace-operations-header {
   align-items: center;
   display: flex;

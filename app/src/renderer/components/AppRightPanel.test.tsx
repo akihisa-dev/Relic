@@ -354,8 +354,8 @@ describe("AppRightPanel", () => {
             message: "認証を整理して",
             references: [{ line: 1, path: "docs/auth.md", preview: "# Auth" }],
             requiresExternalAI: true,
-            skippedLargeFiles: [],
-            unreadableFiles: []
+            skippedLargeFiles: [{ path: "large.md", reason: "大きいMarkdownのためAI参照から除外しました。" }],
+            unreadableFiles: [{ path: "locked.md", reason: "Markdownを読み込めませんでした。" }]
           }}
           backlinks={[]}
           isAIWorkspaceLoading={false}
@@ -387,6 +387,9 @@ describe("AppRightPanel", () => {
 
     expect(screen.getByText("AIへ送るMarkdown参照")).toBeInTheDocument();
     expect(screen.getByText("docs/auth.md:1")).toBeInTheDocument();
+    fireEvent.click(screen.getByText("AIに送らないMarkdown"));
+    expect(screen.getByText("large.md")).toBeInTheDocument();
+    expect(screen.getByText("locked.md")).toBeInTheDocument();
     fireEvent.click(screen.getAllByRole("button", { name: "送信" })[0]);
     fireEvent.click(screen.getByRole("button", { name: "キャンセル" }));
     expect(onConfirm).toHaveBeenCalled();
