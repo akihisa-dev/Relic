@@ -5,6 +5,7 @@ import type { AIWorkspaceFileOperation, AIWorkspaceMessage } from "../../shared/
 
 export interface AIWorkspaceChunk {
   content: string;
+  embedding: number[];
   endLine: number;
   path: string;
   startLine: number;
@@ -75,7 +76,9 @@ function parseIndexData(value: unknown): AIWorkspaceIndexData {
   const record = value as Partial<AIWorkspaceIndexData>;
 
   return {
-    chunks: Array.isArray(record.chunks) ? record.chunks.filter(isAIWorkspaceChunk) : [],
+    chunks: Array.isArray(record.chunks)
+      ? record.chunks.map(parseAIWorkspaceChunk).filter((chunk): chunk is AIWorkspaceChunk => Boolean(chunk))
+      : [],
     indexedAt: typeof record.indexedAt === "string" ? record.indexedAt : null,
     skippedLargeFiles: Array.isArray(record.skippedLargeFiles) ? record.skippedLargeFiles.filter(isSkippedFile) : [],
     unreadableFiles: Array.isArray(record.unreadableFiles) ? record.unreadableFiles.filter(isSkippedFile) : []
@@ -94,14 +97,28 @@ function isAIWorkspaceMessage(value: unknown): value is AIWorkspaceMessage {
     (!record.operations || (Array.isArray(record.operations) && record.operations.every(isAIWorkspaceFileOperation)));
 }
 
-function isAIWorkspaceChunk(value: unknown): value is AIWorkspaceChunk {
-  if (!value || typeof value !== "object") return false;
+function parseAIWorkspaceChunk(value: unknown): AIWorkspaceChunk | null {
+  if (!value || typeof value !== "object") return null;
   const record = value as AIWorkspaceChunk;
 
-  return typeof record.path === "string" &&
-    typeof record.content === "string" &&
-    typeof record.startLine === "number" &&
-    typeof record.endLine === "number";
+  if (
+    typeof record.path !== "string" ||
+    typeof record.content !== "string" ||
+    typeof record.startLine !== "number" ||
+    typeof record.endLine !== "number"
+  ) {
+    return null;
+  }
+
+  return {
+    content: record.content,
+    embedding: Array.isArray(record.embedding) && record.embedding.every((item) => typeof item === "number")
+      ? record.embedding
+      : [],
+    endLine: record.endLine,
+    path: record.path,
+    startLine: record.startLine
+  };
 }
 
 function isSkippedFile(value: unknown): value is { path: string; reason: string } {
