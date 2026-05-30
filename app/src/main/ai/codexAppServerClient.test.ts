@@ -1,6 +1,61 @@
-import { describe, expect, it } from "vitest";
+import { EventEmitter } from "node:events";
+import { PassThrough, Writable } from "node:stream";
+import { describe, expect, it, vi } from "vitest";
 
-import { parseCodexResponse } from "./codexAppServerClient";
+const childProcessMock = vi.hoisted(() => ({
+  spawn: vi.fn()
+}));
+
+vi.mock("node:child_process", () => ({
+  default: childProcessMock,
+  spawn: childProcessMock.spawn
+}));
+
+import { parseCodexResponse, runCodexAIWorkspaceTurn } from "./codexAppServerClient";
+
+function createFakeCodexProcess(): EventEmitter & {
+  kill: () => void;
+  stderr: PassThrough;
+  stdin: Writable;
+  stdout: PassThrough;
+} {
+  const process = new EventEmitter() as EventEmitter & {
+    kill: () => void;
+    stderr: PassThrough;
+    stdin: Writable;
+    stdout: PassThrough;
+  };
+  process.stdout = new PassThrough();
+  process.stderr = new PassThrough();
+  process.stdin = new Writable({
+    write(_chunk, _encoding, callback) {
+      callback();
+    }
+  });
+  process.kill = vi.fn();
+
+  return process;
+}
+
+describe("runCodexAIWorkspaceTurn", () => {
+  it("rejects cleanly when Codex App Server cannot be started", async () => {
+    const fakeProcess = createFakeCodexProcess();
+    childProcessMock.spawn.mockReturnValueOnce(fakeProcess);
+
+    queueMicrotask(() => {
+      fakeProcess.emit("error", new Error("ENOENT"));
+    });
+
+    await expect(runCodexAIWorkspaceTurn({
+      history: [],
+      message: "要件を整理して",
+      pendingOperations: [],
+      referenceContents: [],
+      references: [],
+      workspacePath: "/tmp/workspace"
+    })).rejects.toThrow("Codex App Serverを起動できませんでした: ENOENT");
+  });
+});
 
 describe("parseCodexResponse", () => {
   it("parses structured AI Workspace responses", () => {
