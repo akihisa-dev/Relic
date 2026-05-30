@@ -11,7 +11,7 @@ vi.mock("node:child_process", () => ({
   spawn: childProcessMock.spawn
 }));
 
-import { parseCodexResponse, runCodexAIWorkspaceTurn } from "./codexAppServerClient";
+import { buildPrompt, parseCodexResponse, runCodexAIWorkspaceTurn } from "./codexAppServerClient";
 
 function createFakeCodexProcess(options: {
   stdinWriteError?: Error;
@@ -209,5 +209,29 @@ describe("parseCodexResponse", () => {
     expect(result.message).toContain("途中で切れました");
     expect(result.message).toContain("Markdown変更案は構造化形式で取得できなかったため作成しませんでした。");
     expect(result.operations).toEqual([]);
+  });
+});
+
+describe("AI Workspace prompt", () => {
+  it("includes full pending operation content", () => {
+    const longContent = `# Draft\n${"x".repeat(13_000)}\n末尾`;
+    const prompt = buildPrompt({
+      history: [],
+      message: "さっきの案を直して",
+      pendingOperations: [{
+        content: longContent,
+        createdAt: "2026-05-30T00:00:00.000Z",
+        id: "operation-1",
+        kind: "update",
+        path: "draft.md",
+        status: "pending",
+        summary: "draft.mdを更新"
+      }],
+      referenceContents: [],
+      references: [],
+      workspacePath: "/tmp/workspace"
+    });
+
+    expect(prompt).toContain(longContent);
   });
 });
