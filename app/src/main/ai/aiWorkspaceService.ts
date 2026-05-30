@@ -743,6 +743,21 @@ async function buildRevertOperation(
     };
   }
 
+  if (operation.kind === "delete" && operation.baseContent !== undefined) {
+    const existingFile = await readMarkdownFile(workspacePath, operation.path);
+    if (existingFile.ok) return null;
+
+    return {
+      content: operation.baseContent,
+      createdAt: new Date().toISOString(),
+      id: createMessageId("revert-delete"),
+      kind: "create",
+      path: operation.path,
+      status: "pending",
+      summary: "AIが削除したMarkdownを元の本文で再作成する"
+    };
+  }
+
   return null;
 }
 
