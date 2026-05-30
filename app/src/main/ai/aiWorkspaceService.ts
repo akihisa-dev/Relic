@@ -1,4 +1,5 @@
 import { existsSync } from "node:fs";
+import { createHash } from "node:crypto";
 
 import type {
   AIWorkspaceFileOperation,
@@ -122,7 +123,7 @@ export async function sendAIWorkspaceMessage(
       codexError = error instanceof Error ? error.message : String(error);
       return null;
     });
-    const operations = codexResponse?.operations ?? [];
+    const operations = codexResponse ? await addOperationBaseHashes(context.workspacePath, codexResponse.operations) : [];
     const assistantMessage: AIWorkspaceMessage = {
       content: codexResponse?.message ?? buildAssistantFallback(message, references, codexError),
       createdAt: new Date().toISOString(),
@@ -170,11 +171,14 @@ export async function applyAIWorkspaceOperations(
 
   const appliedIds = new Set<string>();
   const failedIds = new Set<string>();
+  const staleIds = new Set<string>();
 
   for (const operation of targetOperations) {
     const result = await applyOperation(context.workspacePath, operation, trashItem);
     if (result.ok) {
       appliedIds.add(operation.id);
+    } else if (result.error.code === "AI_WORKSPACE_STALE_OPERATION") {
+      staleIds.add(operation.id);
     } else {
       failedIds.add(operation.id);
     }
@@ -185,13 +189,16 @@ export async function applyAIWorkspaceOperations(
     index: await buildAIWorkspaceIndex(context.workspacePath),
     operations: data.operations.map((operation) => {
       if (appliedIds.has(operation.id)) return { ...operation, status: "applied" };
+      if (staleIds.has(operation.id)) return { ...operation, status: "stale" };
       if (failedIds.has(operation.id)) return { ...operation, status: "failed" };
       return operation;
     })
   };
   const assistantMessage: AIWorkspaceMessage = {
-    content: failedIds.size > 0
-      ? "一部のAI変更案を反映できませんでした。対象ファイルの状態を確認してから、もう一度依頼してください。"
+    content: staleIds.size > 0
+      ? "一部のAI変更案は、作成後に対象Markdownが変更されていたため反映しませんでした。現在の内容をもとに、もう一度依頼してください。"
+      : failedIds.size > 0
+        ? "一部のAI変更案を反映できませんでした。対象ファイルの状態を確認してから、もう一度依頼してください。"
       : "AI変更案をMarkdownへ反映しました。",
     createdAt: new Date().toISOString(),
     id: createMessageId("assistant"),
@@ -335,6 +342,16 @@ async function applyOperation(
     return writeMarkdownFileContent(workspacePath, operation.path, operation.content ?? "");
   }
 
+  const currentFile = await readMarkdownFile(workspacePath, operation.path);
+  if (!currentFile.ok) return currentFile;
+
+  if (operation.baseContentHash && hashContent(currentFile.value.content) !== operation.baseContentHash) {
+    return fail(
+      "AI_WORKSPACE_STALE_OPERATION",
+      "AI変更案の作成後に対象Markdownが変更されています。"
+    );
+  }
+
   if (operation.kind === "update") {
     return writeMarkdownFileContent(workspacePath, operation.path, operation.content ?? "");
   }
@@ -346,6 +363,32 @@ async function applyOperation(
   const moved = await moveWorkspaceItemToTrash(workspacePath, operation.path, "file", trashItem);
   if (!moved.ok) return moved;
   return ok(undefined);
+}
+
+async function addOperationBaseHashes(
+  workspacePath: string,
+  operations: AIWorkspaceFileOperation[]
+): Promise<AIWorkspaceFileOperation[]> {
+  const nextOperations: AIWorkspaceFileOperation[] = [];
+
+  for (const operation of operations) {
+    if (operation.kind === "create") {
+      nextOperations.push(operation);
+      continue;
+    }
+
+    const file = await readMarkdownFile(workspacePath, operation.path);
+    nextOperations.push({
+      ...operation,
+      baseContentHash: file.ok ? hashContent(file.value.content) : undefined
+    });
+  }
+
+  return nextOperations;
+}
+
+function hashContent(content: string): string {
+  return createHash("sha256").update(content).digest("hex");
 }
 
 function shouldApplyPendingOperations(message: string): boolean {

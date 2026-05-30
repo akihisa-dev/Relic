@@ -261,10 +261,11 @@ function operationKindLabel(kind: "create" | "update" | "delete"): string {
   return "削除";
 }
 
-function operationStatusLabel(status: "pending" | "applied" | "discarded" | "failed"): string {
+function operationStatusLabel(status: "pending" | "applied" | "discarded" | "failed" | "stale"): string {
   if (status === "pending") return "未反映";
   if (status === "applied") return "反映済み";
   if (status === "discarded") return "取りやめ";
+  if (status === "stale") return "再作業が必要";
   return "失敗";
 }
 
