@@ -99,11 +99,16 @@ export async function sendAIWorkspaceMessage(
   try {
     const data = await ensureIndexed(context);
     if (shouldDiscardPendingOperations(message) && data.operations.some((operation) => operation.status === "pending")) {
-      return discardAIWorkspaceOperations(context, {});
+      return discardAIWorkspaceOperations(context, {
+        operationIds: selectPendingOperationIdsFromMessage(data.operations, message)
+      });
     }
 
     if (shouldApplyPendingOperations(message) && data.operations.some((operation) => operation.status === "pending")) {
-      return applyAIWorkspaceOperations(context, { dirtyFilePaths: input.dirtyFilePaths }, trashItem);
+      return applyAIWorkspaceOperations(context, {
+        dirtyFilePaths: input.dirtyFilePaths,
+        operationIds: selectPendingOperationIdsFromMessage(data.operations, message)
+      }, trashItem);
     }
 
     const references = buildReferences(data, message);
@@ -422,6 +427,38 @@ function shouldApplyPendingOperations(message: string): boolean {
 
 function shouldDiscardPendingOperations(message: string): boolean {
   return /(やめ|取りやめ|不要|キャンセル|破棄|なしにして|しない)/.test(message);
+}
+
+function selectPendingOperationIdsFromMessage(
+  operations: AIWorkspaceFileOperation[],
+  message: string
+): string[] | undefined {
+  const pendingOperations = operations.filter((operation) => operation.status === "pending");
+  const normalizedMessage = normalizeOperationText(message);
+  const matchedIds = pendingOperations
+    .filter((operation) => operationPathCandidates(operation.path).some((candidate) => {
+      const normalizedCandidate = normalizeOperationText(candidate);
+      return normalizedCandidate.length >= 2 && normalizedMessage.includes(normalizedCandidate);
+    }))
+    .map((operation) => operation.id);
+
+  return matchedIds.length > 0 ? matchedIds : undefined;
+}
+
+function operationPathCandidates(operationPath: string): string[] {
+  const normalizedPath = operationPath.replace(/\\/g, "/");
+  const fileName = path.posix.basename(normalizedPath);
+  const extension = path.posix.extname(fileName);
+  const stem = extension ? fileName.slice(0, -extension.length) : fileName;
+
+  return [normalizedPath, fileName, stem];
+}
+
+function normalizeOperationText(value: string): string {
+  return value
+    .replace(/\\/g, "/")
+    .replace(/[「」『』（）()[\]{}"'`、。，．\s]/g, "")
+    .toLowerCase();
 }
 
 function blockedDirtyPaths(
