@@ -194,6 +194,62 @@ describe("AppRightPanel", () => {
     expect(screen.getByText("認証仕様を更新")).toBeInTheDocument();
   });
 
+  it("sends an AI workspace message with command enter", () => {
+    const onSendMessage = vi.fn();
+
+    render(
+      <I18nProvider language="en">
+        <AppRightPanel
+          aiWorkspaceState={{
+            codexAppServerAvailable: true,
+            history: [],
+            index: {
+              chunkCount: 3,
+              indexedAt: "2026-05-30T00:00:00.000Z",
+              indexedFileCount: 2,
+              skippedLargeFiles: [],
+              unreadableFiles: []
+            },
+            operationHistory: [],
+            pendingOperations: []
+          }}
+          backlinks={[]}
+          isAIWorkspaceLoading={false}
+          isAIWorkspaceSending={false}
+          aiWorkspaceMessagePreview={null}
+          isLoadingBacklinks={false}
+          isOpen
+          isResizing={false}
+          onAIWorkspaceClearData={vi.fn()}
+          onAIWorkspaceApplyOperations={vi.fn()}
+          onAIWorkspaceCancelMessagePreview={vi.fn()}
+          onAIWorkspaceConfirmMessagePreview={vi.fn()}
+          onAIWorkspaceDiscardOperations={vi.fn()}
+          onAIWorkspaceRebuildIndex={vi.fn()}
+          onAIWorkspaceSendMessage={onSendMessage}
+          onOpenFile={vi.fn()}
+          onOpenWikiLink={vi.fn()}
+          onOutlineHeadingClick={vi.fn()}
+          onResizeStart={vi.fn()}
+          outlineHeadings={[]}
+          outgoingLinks={[]}
+          outgoingLinksLimited={false}
+          rightPanelView="ai"
+          setLinkContextMenu={vi.fn()}
+          width={260}
+          workspaceName="Novel"
+        />
+      </I18nProvider>
+    );
+
+    const input = screen.getByLabelText("AIへのメッセージ");
+    fireEvent.change(input, { target: { value: "要件を整理して" } });
+    fireEvent.keyDown(input, { key: "Enter", metaKey: true });
+
+    expect(onSendMessage).toHaveBeenCalledWith("要件を整理して");
+    expect(input).toHaveValue("");
+  });
+
   it("shows AI message operation details and opens the target Markdown", () => {
     const onOpenFile = vi.fn();
 
