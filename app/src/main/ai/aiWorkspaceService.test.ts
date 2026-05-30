@@ -149,17 +149,17 @@ describe("sendAIWorkspaceMessage", () => {
 });
 
 describe("previewAIWorkspaceMessage", () => {
-  it("returns Markdown references before calling Codex App Server", async () => {
-    await writeFile(path.join(workspacePath, "README.md"), "# Auth\nLogin spec", "utf8");
+  it("returns Markdown references for Japanese messages before calling Codex App Server", async () => {
+    await writeFile(path.join(workspacePath, "README.md"), "# 認証\nログイン仕様", "utf8");
 
-    const result = await previewAIWorkspaceMessage(context(), { message: "Login spec" });
+    const result = await previewAIWorkspaceMessage(context(), { message: "認証について整理して" });
 
     expect(result.ok).toBe(true);
     expect(runCodexAIWorkspaceTurn).not.toHaveBeenCalled();
     if (result.ok) {
       expect(result.value.requiresExternalAI).toBe(true);
       expect(result.value.references).toEqual([
-        expect.objectContaining({ path: "README.md", preview: "# Auth" })
+        expect.objectContaining({ path: "README.md", preview: "# 認証" })
       ]);
     }
   });
