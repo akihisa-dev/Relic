@@ -577,6 +577,24 @@ describe("previewAIWorkspaceMessage", () => {
       expect(result.value.references).toEqual([]);
     }
   });
+
+  it("does not require external AI for natural language revert commands", async () => {
+    await writeData({
+      operations: [{
+        ...createOperation("update", "draft.md", "# Draft\nupdated"),
+        baseContent: "# Draft\nold",
+        status: "applied"
+      }]
+    });
+
+    const result = await previewAIWorkspaceMessage(context(), { message: "さっきの変更を戻して" });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.requiresExternalAI).toBe(false);
+      expect(result.value.references).toEqual([]);
+    }
+  });
 });
 
 function context() {

@@ -83,9 +83,11 @@ export async function previewAIWorkspaceMessage(
   try {
     const data = await ensureIndexed(context);
     const hasPendingOperations = data.operations.some((operation) => operation.status === "pending");
+    const hasAppliedOperations = data.operations.some((operation) => operation.status === "applied");
     const requiresExternalAI = !(
-      hasPendingOperations &&
-      (shouldDiscardPendingOperations(message) || shouldApplyPendingOperations(message))
+      (hasPendingOperations &&
+        (shouldDiscardPendingOperations(message) || shouldApplyPendingOperations(message))) ||
+      (hasAppliedOperations && shouldRevertAppliedOperations(message))
     );
 
     return ok({
