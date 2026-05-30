@@ -106,6 +106,36 @@ describe("parseCodexResponse", () => {
     });
   });
 
+  it("ignores non-JSON fenced blocks before a structured response", () => {
+    const result = parseCodexResponse([
+      "変更案です。",
+      "```markdown",
+      "# Preview",
+      "```",
+      "```json",
+      JSON.stringify({
+        message: "docs/auth.mdを更新します。",
+        operations: [{
+          content: "# Auth\nupdated",
+          kind: "update",
+          path: "docs/auth.md",
+          summary: "認証資料を更新"
+        }]
+      }),
+      "```"
+    ].join("\n"));
+
+    expect(result).toEqual({
+      message: "docs/auth.mdを更新します。",
+      operations: [{
+        content: "# Auth\nupdated",
+        kind: "update",
+        path: "docs/auth.md",
+        summary: "認証資料を更新"
+      }]
+    });
+  });
+
   it("normalizes common operation field name variations", () => {
     const result = parseCodexResponse(JSON.stringify({
       message: "変更案を作成します。",
