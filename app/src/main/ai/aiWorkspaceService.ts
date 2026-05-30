@@ -489,13 +489,13 @@ async function readReferenceContents(
   for (const path of uniquePaths) {
     const activeContent = usableActiveFileContent(activeFile?.content);
     if (activeFile?.path && activeContent && normalizeOperationText(path) === normalizeOperationText(activeFile.path)) {
-      contents.push({ content: activeContent.slice(0, 16_000), path });
+      contents.push({ content: activeContent, path });
       continue;
     }
 
     const file = await readMarkdownFile(workspacePath, path);
     if (file.ok) {
-      contents.push({ content: file.value.content.slice(0, 16_000), path });
+      contents.push({ content: file.value.content, path });
     }
   }
 
