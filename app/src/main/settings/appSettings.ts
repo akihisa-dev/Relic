@@ -98,7 +98,7 @@ function parseAISettings(raw: unknown): AppSettings["aiSettings"] {
 }
 
 function parseOpenAIWorkspaceModel(value: unknown): OpenAIWorkspaceModel {
-  return value === "gpt-5.4" || value === "gpt-5.4-mini" || value === "gpt-5.4-nano"
+  return value === "gpt-5.5" || value === "gpt-5.4" || value === "gpt-5.4-mini" || value === "gpt-5.4-nano"
     ? value
     : defaultOpenAIWorkspaceModel;
 }

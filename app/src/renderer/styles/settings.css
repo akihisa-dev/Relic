@@ -124,6 +124,17 @@
   min-height: 32px;
 }
 
+.settings-link-row {
+  font-size: 12px;
+  padding-top: 2px;
+}
+
+.settings-link-row a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 .setting-row input[type="checkbox"] {
   appearance: none;
   background: var(--border-medium);

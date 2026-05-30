@@ -24,7 +24,7 @@ describe("runOpenAIWorkspaceTurn", () => {
       apiKey: "sk-test-openai-key",
       history: [],
       message: "READMEを整理して",
-      model: "gpt-5.4",
+      model: "gpt-5.5",
       pendingOperations: [],
       referenceContents: [{ content: "# README\nOld", path: "README.md" }],
       references: [{ line: 1, path: "README.md", preview: "# README" }]
@@ -38,7 +38,7 @@ describe("runOpenAIWorkspaceTurn", () => {
       method: "POST"
     }));
     const body = JSON.parse(String(fetchMock.mock.calls[0][1]?.body)) as Record<string, unknown>;
-    expect(body.model).toBe("gpt-5.4");
+    expect(body.model).toBe("gpt-5.5");
     expect(body.text).toEqual(expect.objectContaining({
       format: expect.objectContaining({
         name: "relic_ai_workspace_response",

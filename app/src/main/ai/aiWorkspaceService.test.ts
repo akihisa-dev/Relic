@@ -213,7 +213,7 @@ describe("sendAIWorkspaceMessage", () => {
 
   it("uses the selected OpenAI model from app settings", async () => {
     await writeFile(getAppSettingsPath(userDataPath), JSON.stringify({
-      aiSettings: { openAIModel: "gpt-5.4" }
+      aiSettings: { openAIModel: "gpt-5.5" }
     }), "utf8");
     vi.mocked(runOpenAIWorkspaceTurn).mockResolvedValueOnce({
       message: "選択モデルで処理します。",
@@ -224,7 +224,7 @@ describe("sendAIWorkspaceMessage", () => {
 
     expect(result.ok).toBe(true);
     expect(runOpenAIWorkspaceTurn).toHaveBeenCalledWith(expect.objectContaining({
-      model: "gpt-5.4"
+      model: "gpt-5.5"
     }));
   });
 

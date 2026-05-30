@@ -31,7 +31,7 @@ describe("appSettings", () => {
     temporaryPaths.push(userDataPath);
 
     await writeAppSettings(userDataPath, {
-      aiSettings: { openAIModel: "gpt-5.4" },
+      aiSettings: { openAIModel: "gpt-5.5" },
       editorSettings: { ...defaultEditorSettings, language: "ja" },
       featureToggles: { ...defaultFeatureToggles, tools: true },
       frontmatterTemplates: defaultFrontmatterTemplates,
@@ -41,7 +41,7 @@ describe("appSettings", () => {
     });
 
     await expect(readAppSettings(userDataPath)).resolves.toMatchObject({
-      aiSettings: { openAIModel: "gpt-5.4" },
+      aiSettings: { openAIModel: "gpt-5.5" },
       editorSettings: expect.objectContaining({ language: "ja" }),
       featureToggles: expect.objectContaining({ tools: true }),
       lastWorkspaceId: "ws-1",

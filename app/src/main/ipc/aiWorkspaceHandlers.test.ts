@@ -165,14 +165,14 @@ describe("registerAIWorkspaceHandlers", () => {
       const handler = electronMock.handle.mock.calls.find(([channel]) => channel === saveAIModelChannel)?.[1];
       if (!handler) throw new Error("saveAIModel handler was not registered");
 
-      const result = await handler({}, { model: "gpt-5.4" });
+      const result = await handler({}, { model: "gpt-5.5" });
 
       expect(result).toEqual({
         ok: true,
-        value: expect.objectContaining({ model: "gpt-5.4" })
+        value: expect.objectContaining({ model: "gpt-5.5" })
       });
       await expect(readAppSettings(userDataPath)).resolves.toMatchObject({
-        aiSettings: { openAIModel: "gpt-5.4" }
+        aiSettings: { openAIModel: "gpt-5.5" }
       });
     } finally {
       vi.mocked((await import("electron")).app.getPath).mockReturnValue("/tmp/relic-user-data");

@@ -1,6 +1,6 @@
 export type AIWorkspaceRole = "user" | "assistant";
 
-export const openAIWorkspaceModels = ["gpt-5.4", "gpt-5.4-mini", "gpt-5.4-nano"] as const;
+export const openAIWorkspaceModels = ["gpt-5.5", "gpt-5.4", "gpt-5.4-mini", "gpt-5.4-nano"] as const;
 export type OpenAIWorkspaceModel = typeof openAIWorkspaceModels[number];
 export const defaultOpenAIWorkspaceModel: OpenAIWorkspaceModel = "gpt-5.4-mini";
 

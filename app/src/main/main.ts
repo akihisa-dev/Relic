@@ -147,7 +147,8 @@ function isAllowedExternalUrl(url: string): boolean {
 
     return parsed.protocol === "https:" && (
       parsed.hostname === "github.com" ||
-      parsed.hostname.endsWith(".github.com")
+      parsed.hostname.endsWith(".github.com") ||
+      parsed.hostname === "platform.openai.com"
     );
   } catch {
     return false;
