@@ -101,13 +101,19 @@ export function AIWorkspacePanel({
       ) : null}
 
       <div className="ai-workspace-status">
-        <span>{state?.codexAppServerAvailable ? "Codex App Server: 利用可能" : "Codex App Server: 未検出"}</span>
+        <span>{state?.codexAppServerAvailable ? "AI共同作業: 準備済み" : "AI共同作業: 利用できません"}</span>
         <span>
           {state?.index.indexedAt
             ? `${state.index.indexedFileCount} files / ${state.index.chunkCount} chunks`
             : "未インデックス"}
         </span>
       </div>
+
+      {state && !state.codexAppServerAvailable ? (
+        <div className="ai-workspace-status-note">
+          AIとの会話にはCodexアプリが必要です。Markdownの閲覧と編集はこのまま使えます。
+        </div>
+      ) : null}
 
       {skippedFiles.length > 0 ? (
         <details className="ai-workspace-note">
