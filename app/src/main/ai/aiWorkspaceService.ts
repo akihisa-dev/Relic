@@ -1,13 +1,17 @@
 import { existsSync } from "node:fs";
 
 import type {
+  AIWorkspaceFileOperation,
   AIWorkspaceMessage,
   AIWorkspaceReference,
   AIWorkspaceState,
+  ApplyAIWorkspaceOperationsInput,
   ClearAIWorkspaceDataInput,
   SendAIWorkspaceMessageInput
 } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
+import { createMarkdownFileAtPath, readMarkdownFile, writeMarkdownFileContent } from "../files/markdownFiles";
+import { moveWorkspaceItemToTrash, type TrashItem } from "../files/trash";
 import { buildAIWorkspaceIndex, searchAIWorkspaceChunks } from "./aiWorkspaceIndex";
 import {
   clearAIWorkspaceData,
@@ -16,6 +20,7 @@ import {
   writeAIWorkspaceData,
   type AIWorkspaceData
 } from "./aiWorkspaceData";
+import { runCodexAIWorkspaceTurn } from "./codexAppServerClient";
 
 interface AIWorkspaceContext {
   userDataPath: string;
@@ -46,7 +51,8 @@ export async function rebuildAIWorkspaceIndex(context: AIWorkspaceContext): Prom
 
 export async function sendAIWorkspaceMessage(
   context: AIWorkspaceContext,
-  input: SendAIWorkspaceMessageInput
+  input: SendAIWorkspaceMessageInput,
+  trashItem?: TrashItem
 ): Promise<RelicResult<AIWorkspaceState>> {
   const message = input.message.trim();
 
@@ -56,6 +62,10 @@ export async function sendAIWorkspaceMessage(
 
   try {
     const data = await ensureIndexed(context);
+    if (shouldApplyPendingOperations(message) && data.operations.some((operation) => operation.status === "pending")) {
+      return applyAIWorkspaceOperations(context, {}, trashItem);
+    }
+
     const references = searchAIWorkspaceChunks(data.index.chunks, message).map<AIWorkspaceReference>((chunk) => ({
       line: chunk.startLine,
       path: chunk.path,
@@ -68,16 +78,26 @@ export async function sendAIWorkspaceMessage(
       references: [],
       role: "user"
     };
+    const codexResponse = await runCodexAIWorkspaceTurn({
+      history: data.history.map((item) => ({ content: item.content, role: item.role })),
+      message,
+      referenceContents: await readReferenceContents(context.workspacePath, references),
+      references,
+      workspacePath: context.workspacePath
+    }).catch(() => null);
+    const operations = codexResponse?.operations ?? [];
     const assistantMessage: AIWorkspaceMessage = {
-      content: buildAssistantPlaceholder(message, references),
+      content: codexResponse?.message ?? buildAssistantPlaceholder(message, references),
       createdAt: new Date().toISOString(),
       id: createMessageId("assistant"),
+      operations,
       references,
       role: "assistant"
     };
     const nextData = {
       ...data,
-      history: [...data.history, userMessage, assistantMessage]
+      history: [...data.history, userMessage, assistantMessage],
+      operations: [...data.operations, ...operations]
     };
     await writeAIWorkspaceData(context.userDataPath, context.workspaceId, nextData);
 
@@ -85,6 +105,61 @@ export async function sendAIWorkspaceMessage(
   } catch (error) {
     return fail("AI_WORKSPACE_MESSAGE_FAILED", "AI Workspaceで処理できませんでした。", String(error));
   }
+}
+
+export async function applyAIWorkspaceOperations(
+  context: AIWorkspaceContext,
+  input: ApplyAIWorkspaceOperationsInput,
+  trashItem?: TrashItem
+): Promise<RelicResult<AIWorkspaceState>> {
+  const data = await readAIWorkspaceData(context.userDataPath, context.workspaceId);
+  const targetIds = new Set(input.operationIds ?? []);
+  const targetOperations = data.operations.filter((operation) => {
+    if (operation.status !== "pending") return false;
+    return targetIds.size === 0 || targetIds.has(operation.id);
+  });
+
+  if (targetOperations.length === 0) {
+    return fail("AI_WORKSPACE_NO_PENDING_OPERATIONS", "反映できるAI変更案がありません。");
+  }
+
+  const appliedIds = new Set<string>();
+  const failedIds = new Set<string>();
+
+  for (const operation of targetOperations) {
+    const result = await applyOperation(context.workspacePath, operation, trashItem);
+    if (result.ok) {
+      appliedIds.add(operation.id);
+    } else {
+      failedIds.add(operation.id);
+    }
+  }
+
+  const nextData: AIWorkspaceData = {
+    ...data,
+    index: await buildAIWorkspaceIndex(context.workspacePath),
+    operations: data.operations.map((operation) => {
+      if (appliedIds.has(operation.id)) return { ...operation, status: "applied" };
+      if (failedIds.has(operation.id)) return { ...operation, status: "failed" };
+      return operation;
+    })
+  };
+  const assistantMessage: AIWorkspaceMessage = {
+    content: failedIds.size > 0
+      ? "一部のAI変更案を反映できませんでした。対象ファイルの状態を確認してから、もう一度依頼してください。"
+      : "AI変更案をMarkdownへ反映しました。",
+    createdAt: new Date().toISOString(),
+    id: createMessageId("assistant"),
+    references: targetOperations.map((operation) => ({
+      path: operation.path,
+      preview: operation.summary
+    })),
+    role: "assistant"
+  };
+  nextData.history = [...nextData.history, assistantMessage];
+  await writeAIWorkspaceData(context.userDataPath, context.workspaceId, nextData);
+
+  return ok(toState(nextData));
 }
 
 export async function clearAIWorkspaceState(
@@ -102,7 +177,8 @@ export async function clearAIWorkspaceState(
   const data = await readAIWorkspaceData(context.userDataPath, context.workspaceId);
   const nextData: AIWorkspaceData = {
     history: includeHistory ? [] : data.history,
-    index: includeIndex ? emptyAIWorkspaceData().index : data.index
+    index: includeIndex ? emptyAIWorkspaceData().index : data.index,
+    operations: includeHistory ? [] : data.operations
   };
   await writeAIWorkspaceData(context.userDataPath, context.workspaceId, nextData);
 
@@ -133,8 +209,55 @@ function toState(data: AIWorkspaceData): AIWorkspaceState {
       indexedFileCount: new Set(data.index.chunks.map((chunk) => chunk.path)).size,
       skippedLargeFiles: data.index.skippedLargeFiles,
       unreadableFiles: data.index.unreadableFiles
-    }
+    },
+    pendingOperations: data.operations.filter((operation) => operation.status === "pending")
   };
+}
+
+async function readReferenceContents(
+  workspacePath: string,
+  references: AIWorkspaceReference[]
+): Promise<Array<{ content: string; path: string }>> {
+  const uniquePaths = [...new Set(references.map((reference) => reference.path))].slice(0, 8);
+  const contents: Array<{ content: string; path: string }> = [];
+
+  for (const path of uniquePaths) {
+    const file = await readMarkdownFile(workspacePath, path);
+    if (file.ok) {
+      contents.push({ content: file.value.content.slice(0, 16_000), path });
+    }
+  }
+
+  return contents;
+}
+
+async function applyOperation(
+  workspacePath: string,
+  operation: AIWorkspaceFileOperation,
+  trashItem?: TrashItem
+): Promise<RelicResult<void>> {
+  if (operation.kind === "create") {
+    const created = await createMarkdownFileAtPath(workspacePath, operation.path);
+    if (!created.ok) return created;
+    return writeMarkdownFileContent(workspacePath, operation.path, operation.content ?? "");
+  }
+
+  if (operation.kind === "update") {
+    return writeMarkdownFileContent(workspacePath, operation.path, operation.content ?? "");
+  }
+
+  if (!trashItem) {
+    return fail("AI_WORKSPACE_TRASH_UNAVAILABLE", "AI変更案の削除を実行できませんでした。");
+  }
+
+  const moved = await moveWorkspaceItemToTrash(workspacePath, operation.path, "file", trashItem);
+  if (!moved.ok) return moved;
+  return ok(undefined);
+}
+
+function shouldApplyPendingOperations(message: string): boolean {
+  return /(反映|適用|実行|保存|やって|進めて)/.test(message) &&
+    !/(しない|やめ|不要|キャンセル|まだ)/.test(message);
 }
 
 function buildAssistantPlaceholder(message: string, references: AIWorkspaceReference[]): string {

@@ -28,6 +28,7 @@ import type {
   SplitFileByHeadingInput
 } from "./ipcTools";
 import type {
+  ApplyAIWorkspaceOperationsInput,
   AIWorkspaceState,
   ClearAIWorkspaceDataInput,
   RebuildAIWorkspaceIndexInput,
@@ -143,6 +144,7 @@ export interface RelicApi {
   getAIWorkspaceState: () => Promise<RelicResult<AIWorkspaceState>>;
   rebuildAIWorkspaceIndex: (input: RebuildAIWorkspaceIndexInput) => Promise<RelicResult<AIWorkspaceState>>;
   sendAIWorkspaceMessage: (input: SendAIWorkspaceMessageInput) => Promise<RelicResult<AIWorkspaceState>>;
+  applyAIWorkspaceOperations: (input: ApplyAIWorkspaceOperationsInput) => Promise<RelicResult<AIWorkspaceState>>;
   clearAIWorkspaceData: (input: ClearAIWorkspaceDataInput) => Promise<RelicResult<AIWorkspaceState>>;
   onWorkspaceChanged: (callback: (event: WorkspaceChangedEvent) => void) => () => void;
   onWindowCloseRequested: (callback: (event: WindowCloseRequestEvent) => void) => () => void;

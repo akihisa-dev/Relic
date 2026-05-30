@@ -124,6 +124,7 @@ export function App(): ReactElement {
     aiWorkspaceState,
     isAIWorkspaceLoading,
     isAIWorkspaceSending,
+    applyAIWorkspaceOperations,
     rebuildAIWorkspaceIndex,
     sendAIWorkspaceMessage,
     clearAIWorkspaceData
@@ -818,6 +819,7 @@ export function App(): ReactElement {
           leftPaneScrollHeading={leftPaneScrollHeading}
           onCreateFile={handleCreateNoteFromPane}
           onAIWorkspaceClearData={() => { void clearAIWorkspaceData(); }}
+          onAIWorkspaceApplyOperations={() => { void applyAIWorkspaceOperations(); }}
           onAIWorkspaceRebuildIndex={() => { void rebuildAIWorkspaceIndex(); }}
           onAIWorkspaceSendMessage={(message) => { void sendAIWorkspaceMessage(message); }}
           onEditorAction={() => setEditorActionPulse((value) => value + 1)}

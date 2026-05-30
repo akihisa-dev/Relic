@@ -4,6 +4,7 @@ export interface AIWorkspaceMessage {
   content: string;
   createdAt: string;
   id: string;
+  operations?: AIWorkspaceFileOperation[];
   references: AIWorkspaceReference[];
   role: AIWorkspaceRole;
 }
@@ -31,6 +32,7 @@ export interface AIWorkspaceState {
   codexAppServerAvailable: boolean;
   history: AIWorkspaceMessage[];
   index: AIWorkspaceIndexSummary;
+  pendingOperations: AIWorkspaceFileOperation[];
 }
 
 export interface SendAIWorkspaceMessageInput {
@@ -46,3 +48,20 @@ export interface ClearAIWorkspaceDataInput {
   includeIndex?: boolean;
 }
 
+export type AIWorkspaceFileOperationStatus = "pending" | "applied" | "discarded" | "failed";
+
+export type AIWorkspaceFileOperationKind = "create" | "update" | "delete";
+
+export interface AIWorkspaceFileOperation {
+  content?: string;
+  createdAt: string;
+  id: string;
+  kind: AIWorkspaceFileOperationKind;
+  path: string;
+  status: AIWorkspaceFileOperationStatus;
+  summary: string;
+}
+
+export interface ApplyAIWorkspaceOperationsInput {
+  operationIds?: string[];
+}

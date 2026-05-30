@@ -1,7 +1,7 @@
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-import type { AIWorkspaceMessage } from "../../shared/ipc";
+import type { AIWorkspaceFileOperation, AIWorkspaceMessage } from "../../shared/ipc";
 
 export interface AIWorkspaceChunk {
   content: string;
@@ -20,6 +20,7 @@ export interface AIWorkspaceIndexData {
 export interface AIWorkspaceData {
   history: AIWorkspaceMessage[];
   index: AIWorkspaceIndexData;
+  operations: AIWorkspaceFileOperation[];
 }
 
 export const emptyAIWorkspaceIndex = (): AIWorkspaceIndexData => ({
@@ -31,7 +32,8 @@ export const emptyAIWorkspaceIndex = (): AIWorkspaceIndexData => ({
 
 export const emptyAIWorkspaceData = (): AIWorkspaceData => ({
   history: [],
-  index: emptyAIWorkspaceIndex()
+  index: emptyAIWorkspaceIndex(),
+  operations: []
 });
 
 export async function readAIWorkspaceData(userDataPath: string, workspaceId: string): Promise<AIWorkspaceData> {
@@ -41,7 +43,8 @@ export async function readAIWorkspaceData(userDataPath: string, workspaceId: str
 
     return {
       history: Array.isArray(parsed.history) ? parsed.history.filter(isAIWorkspaceMessage) : [],
-      index: parseIndexData(parsed.index)
+      index: parseIndexData(parsed.index),
+      operations: Array.isArray(parsed.operations) ? parsed.operations.filter(isAIWorkspaceFileOperation) : []
     };
   } catch {
     return emptyAIWorkspaceData();
@@ -87,7 +90,8 @@ function isAIWorkspaceMessage(value: unknown): value is AIWorkspaceMessage {
     typeof record.content === "string" &&
     typeof record.createdAt === "string" &&
     (record.role === "user" || record.role === "assistant") &&
-    Array.isArray(record.references);
+    Array.isArray(record.references) &&
+    (!record.operations || (Array.isArray(record.operations) && record.operations.every(isAIWorkspaceFileOperation)));
 }
 
 function isAIWorkspaceChunk(value: unknown): value is AIWorkspaceChunk {
@@ -105,4 +109,17 @@ function isSkippedFile(value: unknown): value is { path: string; reason: string 
   const record = value as { path?: unknown; reason?: unknown };
 
   return typeof record.path === "string" && typeof record.reason === "string";
+}
+
+function isAIWorkspaceFileOperation(value: unknown): value is AIWorkspaceFileOperation {
+  if (!value || typeof value !== "object") return false;
+  const record = value as AIWorkspaceFileOperation;
+
+  return typeof record.id === "string" &&
+    typeof record.createdAt === "string" &&
+    typeof record.path === "string" &&
+    typeof record.summary === "string" &&
+    (record.kind === "create" || record.kind === "update" || record.kind === "delete") &&
+    (record.status === "pending" || record.status === "applied" || record.status === "discarded" || record.status === "failed") &&
+    (record.content === undefined || typeof record.content === "string");
 }

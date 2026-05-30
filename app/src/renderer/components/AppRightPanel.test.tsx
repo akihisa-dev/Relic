@@ -38,7 +38,8 @@ describe("AppRightPanel", () => {
               indexedFileCount: 2,
               skippedLargeFiles: [],
               unreadableFiles: []
-            }
+            },
+            pendingOperations: []
           }}
           backlinks={[]}
           isAIWorkspaceLoading={false}
@@ -47,6 +48,7 @@ describe("AppRightPanel", () => {
           isOpen
           isResizing={false}
           onAIWorkspaceClearData={vi.fn()}
+          onAIWorkspaceApplyOperations={vi.fn()}
           onAIWorkspaceRebuildIndex={vi.fn()}
           onAIWorkspaceSendMessage={vi.fn()}
           onOpenFile={vi.fn()}
@@ -80,6 +82,7 @@ describe("AppRightPanel", () => {
           isOpen
           isResizing={false}
           onAIWorkspaceClearData={vi.fn()}
+          onAIWorkspaceApplyOperations={vi.fn()}
           onAIWorkspaceRebuildIndex={vi.fn()}
           onAIWorkspaceSendMessage={vi.fn()}
           onOpenFile={vi.fn()}

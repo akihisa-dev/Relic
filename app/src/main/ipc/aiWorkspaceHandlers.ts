@@ -1,6 +1,8 @@
-import { ipcMain } from "electron";
+import { ipcMain, shell } from "electron";
 
 import {
+  applyAIWorkspaceOperationsChannel,
+  type ApplyAIWorkspaceOperationsInput,
   clearAIWorkspaceDataChannel,
   type ClearAIWorkspaceDataInput,
   getAIWorkspaceStateChannel,
@@ -11,6 +13,7 @@ import {
 } from "../../shared/ipc";
 import { fail } from "../../shared/result";
 import {
+  applyAIWorkspaceOperations,
   clearAIWorkspaceState,
   getAIWorkspaceState,
   rebuildAIWorkspaceIndex,
@@ -50,9 +53,20 @@ export function registerAIWorkspaceHandlers(): void {
       const context = await getAIWorkspaceContext();
       if (!context.ok) return context;
 
-      return sendAIWorkspaceMessage(context.value, input);
+      return sendAIWorkspaceMessage(context.value, input, shell.trashItem);
     } catch (error) {
       return fail("AI_WORKSPACE_MESSAGE_FAILED", "AI Workspaceで処理できませんでした。", ipcErrorDetails(error));
+    }
+  });
+
+  ipcMain.handle(applyAIWorkspaceOperationsChannel, async (_event, input: ApplyAIWorkspaceOperationsInput) => {
+    try {
+      const context = await getAIWorkspaceContext();
+      if (!context.ok) return context;
+
+      return applyAIWorkspaceOperations(context.value, input ?? {}, shell.trashItem);
+    } catch (error) {
+      return fail("AI_WORKSPACE_APPLY_FAILED", "AI変更案を反映できませんでした。", ipcErrorDetails(error));
     }
   });
 

@@ -5,6 +5,7 @@ import type { AIWorkspaceState } from "../../shared/ipc";
 interface AIWorkspacePanelProps {
   isLoading: boolean;
   isSending: boolean;
+  onApplyOperations: () => void;
   onClearData: () => void;
   onOpenFile: (path: string) => void;
   onRebuildIndex: () => void;
@@ -16,6 +17,7 @@ interface AIWorkspacePanelProps {
 export function AIWorkspacePanel({
   isLoading,
   isSending,
+  onApplyOperations,
   onClearData,
   onOpenFile,
   onRebuildIndex,
@@ -25,6 +27,7 @@ export function AIWorkspacePanel({
 }: AIWorkspacePanelProps): ReactElement {
   const [message, setMessage] = useState("");
   const history = state?.history ?? [];
+  const pendingOperations = state?.pendingOperations ?? [];
 
   return (
     <div className="ai-workspace-panel">
@@ -60,6 +63,28 @@ export function AIWorkspacePanel({
         </div>
       ) : null}
 
+      {pendingOperations.length > 0 ? (
+        <section className="ai-workspace-operations">
+          <div className="ai-workspace-operations-header">
+            <span>作業中の変更</span>
+            <button disabled={isSending} onClick={onApplyOperations} type="button">
+              反映
+            </button>
+          </div>
+          <ul>
+            {pendingOperations.map((operation) => (
+              <li key={operation.id}>
+                <button onClick={() => onOpenFile(operation.path)} title={operation.path} type="button">
+                  {operation.path}
+                </button>
+                <span>{operation.kind === "create" ? "作成" : operation.kind === "update" ? "編集" : "削除"}</span>
+                <small>{operation.summary}</small>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
       <div className="ai-workspace-messages" aria-live="polite">
         {isLoading && history.length === 0 ? (
           <div className="empty-note">AI Workspaceを読み込んでいます。</div>
@@ -78,6 +103,15 @@ export function AIWorkspacePanel({
                         {reference.path}{reference.line ? `:${reference.line}` : ""}
                       </button>
                       <span>{reference.preview}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+              {item.operations?.length ? (
+                <ul className="ai-workspace-message-operations">
+                  {item.operations.map((operation) => (
+                    <li key={operation.id}>
+                      {operation.kind === "create" ? "作成" : operation.kind === "update" ? "編集" : "削除"}: {operation.path}
                     </li>
                   ))}
                 </ul>

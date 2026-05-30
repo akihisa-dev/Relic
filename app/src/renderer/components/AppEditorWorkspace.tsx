@@ -32,6 +32,7 @@ interface AppEditorWorkspaceProps {
   leftPaneScrollHeading?: string;
   onCreateFile: (name: string) => void;
   onAIWorkspaceClearData: () => void;
+  onAIWorkspaceApplyOperations: () => void;
   onAIWorkspaceRebuildIndex: () => void;
   onAIWorkspaceSendMessage: (message: string) => void;
   onEditorAction: () => void;
@@ -81,6 +82,7 @@ export function AppEditorWorkspace({
   leftPaneScrollHeading,
   onCreateFile,
   onAIWorkspaceClearData,
+  onAIWorkspaceApplyOperations,
   onAIWorkspaceRebuildIndex,
   onAIWorkspaceSendMessage,
   onEditorAction,
@@ -179,6 +181,7 @@ export function AppEditorWorkspace({
           isOpen={isRightPanelOpen}
           isResizing={isRightPanelResizing}
           onAIWorkspaceClearData={onAIWorkspaceClearData}
+          onAIWorkspaceApplyOperations={onAIWorkspaceApplyOperations}
           onAIWorkspaceRebuildIndex={onAIWorkspaceRebuildIndex}
           onAIWorkspaceSendMessage={onAIWorkspaceSendMessage}
           onOpenFile={onOpenFile}

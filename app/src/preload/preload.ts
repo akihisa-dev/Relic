@@ -2,6 +2,7 @@ import { clipboard, contextBridge, ipcRenderer } from "electron";
 
 import {
   applySearchAndReplaceChannel,
+  applyAIWorkspaceOperationsChannel,
   clearAIWorkspaceDataChannel,
   createNewWorkspaceChannel,
   copyDiagramSvgChannel,
@@ -73,6 +74,7 @@ import {
   switchWorkspaceChannel,
   writeMarkdownFileChannel,
   type AIWorkspaceState,
+  type ApplyAIWorkspaceOperationsInput,
   type AppInfo,
   type CreateFolderInput,
   type CreateLinkedMarkdownFileInput,
@@ -209,6 +211,8 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(rebuildAIWorkspaceIndexChannel, input) as Promise<RelicResult<AIWorkspaceState>>,
   sendAIWorkspaceMessage: (input: SendAIWorkspaceMessageInput) =>
     ipcRenderer.invoke(sendAIWorkspaceMessageChannel, input) as Promise<RelicResult<AIWorkspaceState>>,
+  applyAIWorkspaceOperations: (input: ApplyAIWorkspaceOperationsInput) =>
+    ipcRenderer.invoke(applyAIWorkspaceOperationsChannel, input) as Promise<RelicResult<AIWorkspaceState>>,
   clearAIWorkspaceData: (input: ClearAIWorkspaceDataInput) =>
     ipcRenderer.invoke(clearAIWorkspaceDataChannel, input) as Promise<RelicResult<AIWorkspaceState>>,
   switchWorkspace: (input: SwitchWorkspaceInput) =>
