@@ -1,7 +1,7 @@
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-import type { AIWorkspaceFileOperation, AIWorkspaceMessage } from "../../shared/ipc";
+import type { AIWorkspaceFileOperation, AIWorkspaceMessage, AIWorkspaceReference } from "../../shared/ipc";
 
 export interface AIWorkspaceChunk {
   content: string;
@@ -45,7 +45,9 @@ export async function readAIWorkspaceData(userDataPath: string, workspaceId: str
     const parsed = JSON.parse(raw) as Partial<AIWorkspaceData>;
 
     return {
-      history: Array.isArray(parsed.history) ? parsed.history.filter(isAIWorkspaceMessage) : [],
+      history: Array.isArray(parsed.history)
+        ? parsed.history.map(parseAIWorkspaceMessage).filter((message): message is AIWorkspaceMessage => Boolean(message))
+        : [],
       index: parseIndexData(parsed.index),
       operations: Array.isArray(parsed.operations) ? parsed.operations.filter(isAIWorkspaceFileOperation) : []
     };
@@ -88,16 +90,40 @@ function parseIndexData(value: unknown): AIWorkspaceIndexData {
   };
 }
 
-function isAIWorkspaceMessage(value: unknown): value is AIWorkspaceMessage {
-  if (!value || typeof value !== "object") return false;
+function parseAIWorkspaceMessage(value: unknown): AIWorkspaceMessage | null {
+  if (!value || typeof value !== "object") return null;
   const record = value as AIWorkspaceMessage;
 
-  return typeof record.id === "string" &&
-    typeof record.content === "string" &&
-    typeof record.createdAt === "string" &&
-    (record.role === "user" || record.role === "assistant") &&
-    Array.isArray(record.references) &&
-    (!record.operations || (Array.isArray(record.operations) && record.operations.every(isAIWorkspaceFileOperation)));
+  if (
+    typeof record.id !== "string" ||
+    typeof record.content !== "string" ||
+    typeof record.createdAt !== "string" ||
+    (record.role !== "user" && record.role !== "assistant")
+  ) {
+    return null;
+  }
+
+  const operations = Array.isArray(record.operations)
+    ? record.operations.filter(isAIWorkspaceFileOperation)
+    : undefined;
+
+  return {
+    content: record.content,
+    createdAt: record.createdAt,
+    id: record.id,
+    operations: operations && operations.length > 0 ? operations : undefined,
+    references: Array.isArray(record.references) ? record.references.filter(isAIWorkspaceReference) : [],
+    role: record.role
+  };
+}
+
+function isAIWorkspaceReference(value: unknown): value is AIWorkspaceReference {
+  if (!value || typeof value !== "object") return false;
+  const record = value as AIWorkspaceReference;
+
+  return typeof record.path === "string" &&
+    typeof record.preview === "string" &&
+    (record.line === undefined || typeof record.line === "number");
 }
 
 function parseAIWorkspaceChunk(value: unknown): AIWorkspaceChunk | null {
