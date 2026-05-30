@@ -423,6 +423,32 @@
   line-height: 1.4;
 }
 
+.ai-workspace-operation-preview {
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-2);
+  font-size: 12px;
+  overflow: hidden;
+}
+
+.ai-workspace-operation-preview summary {
+  cursor: default;
+  padding: 6px 8px;
+}
+
+.ai-workspace-operation-preview pre {
+  border-top: 1px solid var(--border);
+  color: var(--text);
+  font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  margin: 0;
+  max-height: 220px;
+  overflow: auto;
+  padding: 8px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 .ai-workspace-messages {
   display: grid;
   gap: 10px;

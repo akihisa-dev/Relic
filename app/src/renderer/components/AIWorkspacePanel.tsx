@@ -131,6 +131,12 @@ export function AIWorkspacePanel({
                 </button>
                 <span>{operation.kind === "create" ? "作成" : operation.kind === "update" ? "編集" : "削除"}</span>
                 <small>{operation.summary}</small>
+                {operation.kind !== "delete" && operation.content ? (
+                  <details className="ai-workspace-operation-preview">
+                    <summary>Markdown内容を確認</summary>
+                    <pre>{operation.content}</pre>
+                  </details>
+                ) : null}
               </li>
             ))}
           </ul>
