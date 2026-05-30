@@ -15,6 +15,7 @@ import {
   sendAIWorkspaceMessage
 } from "./aiWorkspaceService";
 import { writeAIWorkspaceData, type AIWorkspaceData } from "./aiWorkspaceData";
+import { computeAIWorkspaceIndexSourceHash } from "./aiWorkspaceIndex";
 import { runCodexAIWorkspaceTurn } from "./codexAppServerClient";
 
 let userDataPath = "";
@@ -467,6 +468,55 @@ describe("previewAIWorkspaceMessage", () => {
         path: "current.md",
         preview: "# Current"
       }));
+    }
+  });
+
+  it("uses small active Markdown content even when the current file is missing from the index", async () => {
+    await writeData({
+      index: {
+        chunks: [],
+        indexedAt: new Date().toISOString(),
+        skippedLargeFiles: [],
+        sourceHash: await computeAIWorkspaceIndexSourceHash(workspacePath),
+        unreadableFiles: []
+      }
+    });
+
+    const result = await previewAIWorkspaceMessage(context(), {
+      activeFileContent: "# Unsaved\nnew draft",
+      activeFilePath: "missing.md",
+      message: "このファイルを整理して"
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.references[0]).toEqual(expect.objectContaining({
+        path: "missing.md",
+        preview: "# Unsaved"
+      }));
+    }
+  });
+
+  it("does not send oversized active Markdown content as a partial current-file reference", async () => {
+    await writeData({
+      index: {
+        chunks: [],
+        indexedAt: new Date().toISOString(),
+        skippedLargeFiles: [],
+        sourceHash: await computeAIWorkspaceIndexSourceHash(workspacePath),
+        unreadableFiles: []
+      }
+    });
+
+    const result = await previewAIWorkspaceMessage(context(), {
+      activeFileContent: "x".repeat(2 * 1024 * 1024 + 1),
+      activeFilePath: "large.md",
+      message: "このファイルを整理して"
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.references).toEqual([]);
     }
   });
 

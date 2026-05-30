@@ -17,6 +17,7 @@ import type {
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { createMarkdownFileAtPath, readMarkdownFile, writeMarkdownFileContent } from "../files/markdownFiles";
 import { resolveWorkspaceRelativePath } from "../files/paths";
+import { workspaceSearchMaxFileBytes } from "../files/search";
 import { moveWorkspaceItemToTrash, type TrashItem } from "../files/trash";
 import { buildAIWorkspaceIndex, computeAIWorkspaceIndexSourceHash, searchAIWorkspaceChunks } from "./aiWorkspaceIndex";
 import {
@@ -420,12 +421,23 @@ function buildReferences(
   const activeChunk = data.index.chunks.find((chunk) => {
     return normalizeOperationText(chunk.path) === normalizedActiveFilePath;
   });
-  if (!activeChunk) return references;
+  const activeContent = usableActiveFileContent(activeFileContent);
+  if (!activeChunk) {
+    if (!activeContent) return references;
+
+    return [{
+      line: 1,
+      path: activeFilePath,
+      preview: previewMarkdownContent(activeContent, activeFilePath)
+    }, ...references.filter((reference) => {
+      return normalizeOperationText(reference.path) !== normalizedActiveFilePath;
+    })];
+  }
 
   return [{
     line: activeChunk.startLine,
     path: activeChunk.path,
-    preview: previewMarkdownContent(activeFileContent ?? activeChunk.content, activeChunk.path)
+    preview: previewMarkdownContent(activeContent ?? activeChunk.content, activeChunk.path)
   }, ...references.filter((reference) => {
     return normalizeOperationText(reference.path) !== normalizedActiveFilePath;
   })];
@@ -440,8 +452,9 @@ async function readReferenceContents(
   const contents: Array<{ content: string; path: string }> = [];
 
   for (const path of uniquePaths) {
-    if (activeFile?.path && activeFile.content !== null && normalizeOperationText(path) === normalizeOperationText(activeFile.path)) {
-      contents.push({ content: activeFile.content.slice(0, 16_000), path });
+    const activeContent = usableActiveFileContent(activeFile?.content);
+    if (activeFile?.path && activeContent && normalizeOperationText(path) === normalizeOperationText(activeFile.path)) {
+      contents.push({ content: activeContent.slice(0, 16_000), path });
       continue;
     }
 
@@ -456,6 +469,12 @@ async function readReferenceContents(
 
 function previewMarkdownContent(content: string, fallbackPath: string): string {
   return content.split("\n").find((line) => line.trim())?.trim().slice(0, 160) ?? fallbackPath;
+}
+
+function usableActiveFileContent(content?: string | null): string | null {
+  if (content === undefined || content === null) return null;
+  if (Buffer.byteLength(content, "utf8") > workspaceSearchMaxFileBytes) return null;
+  return content;
 }
 
 async function applyOperation(
