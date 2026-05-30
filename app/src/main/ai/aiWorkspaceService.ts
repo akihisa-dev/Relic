@@ -46,9 +46,13 @@ interface PreparedAIWorkspaceOperations {
 }
 
 export async function getAIWorkspaceState(context: AIWorkspaceContext): Promise<RelicResult<AIWorkspaceState>> {
-  const data = await readAIWorkspaceData(context.userDataPath, context.workspaceId);
+  try {
+    const data = await ensureIndexed(context);
 
-  return ok(toState(data));
+    return ok(toState(data));
+  } catch (error) {
+    return fail("AI_WORKSPACE_INDEX_FAILED", "AI Workspaceのインデックスを作成できませんでした。", String(error));
+  }
 }
 
 export async function rebuildAIWorkspaceIndex(context: AIWorkspaceContext): Promise<RelicResult<AIWorkspaceState>> {

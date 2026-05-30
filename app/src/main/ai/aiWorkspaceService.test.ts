@@ -11,6 +11,7 @@ vi.mock("./codexAppServerClient", () => ({
 import {
   applyAIWorkspaceOperations,
   discardAIWorkspaceOperations,
+  getAIWorkspaceState,
   previewAIWorkspaceMessage,
   sendAIWorkspaceMessage
 } from "./aiWorkspaceService";
@@ -30,6 +31,21 @@ beforeEach(async () => {
 afterEach(async () => {
   await rm(userDataPath, { force: true, recursive: true });
   await rm(workspacePath, { force: true, recursive: true });
+});
+
+describe("getAIWorkspaceState", () => {
+  it("indexes Markdown files when AI Workspace state is loaded", async () => {
+    await writeFile(path.join(workspacePath, "README.md"), "# Workspace\n概要", "utf8");
+
+    const result = await getAIWorkspaceState(context());
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.index.indexedAt).not.toBeNull();
+      expect(result.value.index.indexedFileCount).toBe(1);
+      expect(result.value.index.chunkCount).toBe(1);
+    }
+  });
 });
 
 describe("applyAIWorkspaceOperations", () => {
