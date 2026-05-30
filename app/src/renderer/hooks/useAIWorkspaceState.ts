@@ -106,8 +106,8 @@ export function useAIWorkspaceState({
       return;
     }
 
-    if (previewResult.value.requiresExternalAI && aiWorkspaceState?.codexAppServerAvailable === false) {
-      onError("AI共同作業を開始できません。Codexアプリを確認してください。");
+    if (previewResult.value.requiresExternalAI && aiWorkspaceState?.openAIAPIKeyConfigured === false) {
+      onError("AI共同作業を開始できません。設定のAIでOpenAI APIキーを登録してください。");
       return;
     }
 
@@ -129,7 +129,7 @@ export function useAIWorkspaceState({
     }
 
     setAIWorkspaceState(result.value);
-  }, [aiWorkspaceState?.codexAppServerAvailable, isEnabled, onError, workspaceId]);
+  }, [aiWorkspaceState?.openAIAPIKeyConfigured, isEnabled, onError, workspaceId]);
 
   const confirmAIWorkspaceMessage = useCallback(async (
     dirtyFilePaths: string[] = [],

@@ -206,23 +206,34 @@ describe("SettingsPanel", () => {
   function renderSettingsPanel({
     featureToggles = defaultFeatureToggles,
     language = "en",
+    onDeleteOpenAIAPIKey = vi.fn(),
     onFeatureTogglesSave = vi.fn(),
+    onSaveOpenAIAPIKey = vi.fn(),
     onSave = vi.fn(),
+    onTestOpenAIAPIKey = vi.fn(),
     platform = "darwin"
   }: {
     featureToggles?: typeof defaultFeatureToggles;
     language?: "en" | "ja";
+    onDeleteOpenAIAPIKey?: () => void;
     onFeatureTogglesSave?: (toggles: typeof defaultFeatureToggles) => void;
+    onSaveOpenAIAPIKey?: (apiKey: string) => void;
     onSave?: (settings: typeof defaultEditorSettings) => void;
+    onTestOpenAIAPIKey?: () => void;
     platform?: NodeJS.Platform;
   } = {}) {
     render(
       <I18nProvider language={language}>
         <SettingsPanel
           appInfo={{ name: "Relic", platform, version: "1.2.3" }}
+          aiSettings={{ model: "gpt-5.4-mini", openAIAPIKeyConfigured: false, secureStorageAvailable: true }}
+          aiSettingsStatus={null}
           featureToggles={featureToggles}
+          onDeleteOpenAIAPIKey={onDeleteOpenAIAPIKey}
           onFeatureTogglesSave={onFeatureTogglesSave}
+          onSaveOpenAIAPIKey={onSaveOpenAIAPIKey}
           onSave={onSave}
+          onTestOpenAIAPIKey={onTestOpenAIAPIKey}
           settings={defaultEditorSettings}
         />
       </I18nProvider>
@@ -235,11 +246,22 @@ describe("SettingsPanel", () => {
     expect(screen.getByRole("heading", { name: "Settings" })).toBeInTheDocument();
     expect(screen.getByText("Appearance")).toBeInTheDocument();
     expect(screen.getByText("Editor")).toBeInTheDocument();
+    expect(screen.getByText("AI")).toBeInTheDocument();
     expect(screen.getByText("Features")).toBeInTheDocument();
     expect(screen.getByText("App Info")).toBeInTheDocument();
     expect(screen.getByText("Relic 1.2.3")).toBeInTheDocument();
     expect(screen.getByText("macOS")).toBeInTheDocument();
     expect(screen.queryByText("darwin")).not.toBeInTheDocument();
+  });
+
+  it("OpenAI APIキーを設定から保存できる", () => {
+    const onSaveOpenAIAPIKey = vi.fn();
+    renderSettingsPanel({ onSaveOpenAIAPIKey });
+
+    fireEvent.change(screen.getByPlaceholderText("sk-..."), { target: { value: "sk-test-key-12345678901234567890" } });
+    fireEvent.click(screen.getByRole("button", { name: "保存" }));
+
+    expect(onSaveOpenAIAPIKey).toHaveBeenCalledWith("sk-test-key-12345678901234567890");
   });
 
   it("アプリ情報では内部プラットフォーム名ではなくユーザー向けOS名を表示する", () => {

@@ -4,6 +4,7 @@ import {
   applySearchAndReplaceChannel,
   applyAIWorkspaceOperationsChannel,
   clearAIWorkspaceDataChannel,
+  deleteOpenAIAPIKeyChannel,
   discardAIWorkspaceOperationsChannel,
   createNewWorkspaceChannel,
   copyDiagramSvgChannel,
@@ -15,6 +16,7 @@ import {
   duplicateMarkdownFileChannel,
   getBacklinksChannel,
   getAIWorkspaceStateChannel,
+  getAISettingsChannel,
   getAppInfoChannel,
   getEditorSettingsChannel,
   getFrontmatterValueCandidatesChannel,
@@ -44,6 +46,7 @@ import {
   saveWorkspaceChronicleCalendarsChannel,
   updateChartEntryChannel,
   saveEditorSettingsChannel,
+  saveOpenAIAPIKeyChannel,
   generateTitleListChannel,
   type GenerateTitleListInput,
   generateTableOfContentsChannel,
@@ -73,9 +76,11 @@ import {
   searchAndReplaceChannel,
   searchWorkspaceChannel,
   sendAIWorkspaceMessageChannel,
+  testOpenAIAPIKeyChannel,
   switchWorkspaceChannel,
   writeMarkdownFileChannel,
   type AIWorkspaceState,
+  type AISettingsState,
   type ApplyAIWorkspaceOperationsInput,
   type AppInfo,
   type CreateFolderInput,
@@ -102,6 +107,7 @@ import {
   type RelicApi,
   type ReadMarkdownFileInput,
   type RebuildAIWorkspaceIndexInput,
+  type SaveOpenAIAPIKeyInput,
   type RemoveWorkspaceInput,
   type RenameWorkspaceInput,
   type RenameFolderInput,
@@ -114,6 +120,7 @@ import {
   type SearchAndReplaceMatch,
   type SearchWorkspaceInput,
   type SendAIWorkspaceMessageInput,
+  type TestOpenAIAPIKeyResult,
   type SwitchWorkspaceInput,
   type WorkspaceChangedEvent,
   type WindowCloseRequestEvent,
@@ -152,6 +159,14 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(getBacklinksChannel, input) as Promise<RelicResult<Backlink[]>>,
   getAIWorkspaceState: () =>
     ipcRenderer.invoke(getAIWorkspaceStateChannel) as Promise<RelicResult<AIWorkspaceState>>,
+  getAISettings: () =>
+    ipcRenderer.invoke(getAISettingsChannel) as Promise<RelicResult<AISettingsState>>,
+  saveOpenAIAPIKey: (input: SaveOpenAIAPIKeyInput) =>
+    ipcRenderer.invoke(saveOpenAIAPIKeyChannel, input) as Promise<RelicResult<AISettingsState>>,
+  deleteOpenAIAPIKey: () =>
+    ipcRenderer.invoke(deleteOpenAIAPIKeyChannel) as Promise<RelicResult<AISettingsState>>,
+  testOpenAIAPIKey: () =>
+    ipcRenderer.invoke(testOpenAIAPIKeyChannel) as Promise<RelicResult<TestOpenAIAPIKeyResult>>,
   getAppInfo: () => ipcRenderer.invoke(getAppInfoChannel) as Promise<RelicResult<AppInfo>>,
   getEditorSettings: () =>
     ipcRenderer.invoke(getEditorSettingsChannel) as Promise<RelicResult<EditorSettings>>,

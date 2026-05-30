@@ -65,12 +65,18 @@
   border-top: 1px solid var(--border);
 }
 
+.setting-row--stacked {
+  align-items: stretch;
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .setting-row > span:first-child {
   color: var(--text-2);
   min-width: 0;
 }
 
 .setting-row input[type="number"],
+.setting-row input[type="password"],
 .setting-row input[type="search"],
 .setting-row input[type="text"],
 .setting-row select,
@@ -95,6 +101,27 @@
   max-width: 124px;
   justify-self: end;
   text-align: right;
+}
+
+.settings-text-input {
+  width: 100%;
+}
+
+.settings-inline-status {
+  color: var(--text-2);
+  font-size: 12px;
+  justify-self: end;
+}
+
+.settings-actions-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 0;
+}
+
+.settings-actions-row button {
+  min-height: 32px;
 }
 
 .setting-row input[type="checkbox"] {

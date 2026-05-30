@@ -1,6 +1,6 @@
-import type { ReactElement } from "react";
+import { useState, type ReactElement } from "react";
 
-import { type AppInfo, type EditorSettings, type FeatureToggles } from "../../shared/ipc";
+import { type AISettingsState, type AppInfo, type EditorSettings, type FeatureToggles } from "../../shared/ipc";
 import { useT } from "../i18n";
 import type { TranslationKey } from "../i18nModel";
 import { SettingsSegmentedControl } from "./SettingsSegmentedControl";
@@ -35,18 +35,29 @@ function formatPlatformLabel(platform?: NodeJS.Platform): string {
 
 export function SettingsPanel({
   appInfo,
+  aiSettings,
+  aiSettingsStatus,
   settings,
   featureToggles,
+  onDeleteOpenAIAPIKey,
+  onSaveOpenAIAPIKey,
   onSave,
-  onFeatureTogglesSave
+  onFeatureTogglesSave,
+  onTestOpenAIAPIKey
 }: {
   appInfo: AppInfo | null;
+  aiSettings: AISettingsState | null;
+  aiSettingsStatus: string | null;
   settings: EditorSettings;
   featureToggles: FeatureToggles;
+  onDeleteOpenAIAPIKey: () => void;
+  onSaveOpenAIAPIKey: (apiKey: string) => void;
   onSave: (s: EditorSettings) => void;
   onFeatureTogglesSave: (t: FeatureToggles) => void;
+  onTestOpenAIAPIKey: () => void;
 }): ReactElement {
   const t = useT();
+  const [openAIAPIKeyInput, setOpenAIAPIKeyInput] = useState("");
   const fontLabelKeys = getEditorFontLabelKeys(appInfo?.platform);
 
   const update = <K extends keyof EditorSettings>(key: K, value: EditorSettings[K]): void => {
@@ -88,6 +99,63 @@ export function SettingsPanel({
               ]}
               value={settings.language}
             />
+          </div>
+        </div>
+      </section>
+
+      <section className="settings-group">
+        <div className="links-panel-subheading">AI</div>
+        <div className="settings-stack">
+          <div className="setting-row">
+            <span>OpenAI APIキー</span>
+            <span className="settings-inline-status">
+              {aiSettings?.openAIAPIKeyConfigured ? "登録済み" : "未登録"}
+            </span>
+          </div>
+          <label className="setting-row setting-row--stacked">
+            <span>APIキーを入力</span>
+            <input
+              className="settings-control settings-text-input"
+              onChange={(event) => setOpenAIAPIKeyInput(event.target.value)}
+              placeholder="sk-..."
+              type="password"
+              value={openAIAPIKeyInput}
+            />
+          </label>
+          <div className="settings-actions-row">
+            <button
+              disabled={!openAIAPIKeyInput.trim() || aiSettings?.secureStorageAvailable === false}
+              onClick={() => {
+                onSaveOpenAIAPIKey(openAIAPIKeyInput);
+                setOpenAIAPIKeyInput("");
+              }}
+              type="button"
+            >
+              保存
+            </button>
+            <button
+              disabled={!aiSettings?.openAIAPIKeyConfigured}
+              onClick={onTestOpenAIAPIKey}
+              type="button"
+            >
+              接続確認
+            </button>
+            <button
+              disabled={!aiSettings?.openAIAPIKeyConfigured}
+              onClick={onDeleteOpenAIAPIKey}
+              type="button"
+            >
+              削除
+            </button>
+          </div>
+          <div className="settings-info">
+            <div>標準モデル: {aiSettings?.model ?? "gpt-5.4-mini"}</div>
+            <div>
+              {aiSettings?.secureStorageAvailable === false
+                ? "この環境ではAPIキーを安全に保存できません。"
+                : "APIキーは暗号化してアプリデータに保存します。Markdownワークスペースには保存しません。"}
+            </div>
+            {aiSettingsStatus ? <div>{aiSettingsStatus}</div> : null}
           </div>
         </div>
       </section>

@@ -54,3 +54,7 @@ export const sendAIWorkspaceMessageChannel = "aiWorkspace:sendMessage";
 export const applyAIWorkspaceOperationsChannel = "aiWorkspace:applyOperations";
 export const discardAIWorkspaceOperationsChannel = "aiWorkspace:discardOperations";
 export const clearAIWorkspaceDataChannel = "aiWorkspace:clearData";
+export const getAISettingsChannel = "ai:getSettings";
+export const saveOpenAIAPIKeyChannel = "ai:saveOpenAIAPIKey";
+export const deleteOpenAIAPIKeyChannel = "ai:deleteOpenAIAPIKey";
+export const testOpenAIAPIKeyChannel = "ai:testOpenAIAPIKey";

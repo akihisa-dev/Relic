@@ -30,7 +30,7 @@ describe("AppRightPanel", () => {
       <I18nProvider language="en">
         <AppRightPanel
           aiWorkspaceState={{
-            codexAppServerAvailable: true,
+            openAIAPIKeyConfigured: true,
             history: [],
             index: {
               chunkCount: 3,
@@ -81,7 +81,7 @@ describe("AppRightPanel", () => {
       <I18nProvider language="en">
         <AppRightPanel
           aiWorkspaceState={{
-            codexAppServerAvailable: false,
+            openAIAPIKeyConfigured: false,
             history: [],
             index: {
               chunkCount: 0,
@@ -122,8 +122,8 @@ describe("AppRightPanel", () => {
       </I18nProvider>
     );
 
-    expect(screen.getByText("AI共同作業: 利用できません")).toBeInTheDocument();
-    expect(screen.getByText("AIとの会話にはCodexアプリが必要です。Markdownの閲覧と編集はこのまま使えます。")).toBeInTheDocument();
+    expect(screen.getByText("AI共同作業: APIキー未設定")).toBeInTheDocument();
+    expect(screen.getByText("AIとの会話にはOpenAI APIキーが必要です。設定のAIから登録してください。Markdownの閲覧と編集はこのまま使えます。")).toBeInTheDocument();
   });
 
   it("confirms before clearing AI workspace data", () => {
@@ -133,7 +133,7 @@ describe("AppRightPanel", () => {
       <I18nProvider language="en">
         <AppRightPanel
           aiWorkspaceState={{
-            codexAppServerAvailable: true,
+            openAIAPIKeyConfigured: true,
             history: [],
             index: {
               chunkCount: 3,
@@ -189,7 +189,7 @@ describe("AppRightPanel", () => {
       <I18nProvider language="en">
         <AppRightPanel
           aiWorkspaceState={{
-            codexAppServerAvailable: true,
+            openAIAPIKeyConfigured: true,
             history: [],
             index: {
               chunkCount: 3,
@@ -252,7 +252,7 @@ describe("AppRightPanel", () => {
       <I18nProvider language="en">
         <AppRightPanel
           aiWorkspaceState={{
-            codexAppServerAvailable: true,
+            openAIAPIKeyConfigured: true,
             history: [],
             index: {
               chunkCount: 3,
@@ -308,7 +308,7 @@ describe("AppRightPanel", () => {
       <I18nProvider language="en">
         <AppRightPanel
           aiWorkspaceState={{
-            codexAppServerAvailable: true,
+            openAIAPIKeyConfigured: true,
             history: [{
               content: "変更案を作成しました。",
               createdAt: "2026-05-30T00:00:00.000Z",
@@ -382,7 +382,7 @@ describe("AppRightPanel", () => {
       <I18nProvider language="en">
         <AppRightPanel
           aiWorkspaceState={{
-            codexAppServerAvailable: true,
+            openAIAPIKeyConfigured: true,
             history: [],
             index: {
               chunkCount: 3,
@@ -458,7 +458,7 @@ describe("AppRightPanel", () => {
       <I18nProvider language="en">
         <AppRightPanel
           aiWorkspaceState={{
-            codexAppServerAvailable: true,
+            openAIAPIKeyConfigured: true,
             history: [],
             index: {
               chunkCount: 3,
@@ -522,7 +522,7 @@ describe("AppRightPanel", () => {
       <I18nProvider language="en">
         <AppRightPanel
           aiWorkspaceState={{
-            codexAppServerAvailable: true,
+            openAIAPIKeyConfigured: true,
             history: [],
             index: {
               chunkCount: 1,
@@ -578,7 +578,7 @@ describe("AppRightPanel", () => {
       <I18nProvider language="en">
         <AppRightPanel
           aiWorkspaceState={{
-            codexAppServerAvailable: true,
+            openAIAPIKeyConfigured: true,
             history: [],
             index: {
               chunkCount: 1,

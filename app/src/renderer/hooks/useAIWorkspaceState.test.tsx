@@ -10,7 +10,7 @@ describe("useAIWorkspaceState", () => {
       getAIWorkspaceState: vi.fn().mockResolvedValue({
         ok: true,
         value: {
-          codexAppServerAvailable: true,
+          openAIAPIKeyConfigured: true,
           history: [],
           index: { chunkCount: 0, indexedAt: null, indexedFileCount: 0, skippedLargeFiles: [], unreadableFiles: [] },
           operationHistory: [],
@@ -124,7 +124,7 @@ describe("useAIWorkspaceState", () => {
       getAIWorkspaceState: vi.fn().mockResolvedValue({
         ok: true,
         value: {
-          codexAppServerAvailable: false,
+          openAIAPIKeyConfigured: false,
           history: [],
           index: { chunkCount: 0, indexedAt: null, indexedFileCount: 0, skippedLargeFiles: [], unreadableFiles: [] },
           operationHistory: [],
@@ -149,7 +149,7 @@ describe("useAIWorkspaceState", () => {
     }));
 
     await waitFor(() => {
-      expect(hook.result.current.aiWorkspaceState?.codexAppServerAvailable).toBe(false);
+      expect(hook.result.current.aiWorkspaceState?.openAIAPIKeyConfigured).toBe(false);
     });
 
     await act(async () => {
@@ -158,7 +158,7 @@ describe("useAIWorkspaceState", () => {
 
     expect(hook.result.current.aiWorkspaceMessagePreview).toBeNull();
     expect(window.relic?.sendAIWorkspaceMessage).not.toHaveBeenCalled();
-    expect(onError).toHaveBeenCalledWith("AI共同作業を開始できません。Codexアプリを確認してください。");
+    expect(onError).toHaveBeenCalledWith("AI共同作業を開始できません。設定のAIでOpenAI APIキーを登録してください。");
   });
 
   it("keeps local AI workspace operations available when AI collaboration is unavailable", async () => {
@@ -167,7 +167,7 @@ describe("useAIWorkspaceState", () => {
       getAIWorkspaceState: vi.fn().mockResolvedValue({
         ok: true,
         value: {
-          codexAppServerAvailable: false,
+          openAIAPIKeyConfigured: false,
           history: [],
           index: { chunkCount: 0, indexedAt: null, indexedFileCount: 0, skippedLargeFiles: [], unreadableFiles: [] },
           operationHistory: [],

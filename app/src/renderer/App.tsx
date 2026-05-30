@@ -145,11 +145,16 @@ export function App(): ReactElement {
 
   const t = useMemo(() => createTranslator(editorSettings.language), [editorSettings.language]);
   const {
+    aiSettings,
+    aiSettingsStatus,
     appInfo,
     featureToggles,
+    handleDeleteOpenAIAPIKey,
     handleSaveFeatureToggles,
+    handleSaveOpenAIAPIKey,
     handleSaveSettings,
     handleSaveUserDefinedFields,
+    handleTestOpenAIAPIKey,
     userDefinedFields
   } = useAppSettingsState({
     setEditorSettings,
@@ -672,15 +677,20 @@ export function App(): ReactElement {
 
   const { renderChartTab, renderPanelTab } = useAppTabRenderers({
     appInfo,
+    aiSettings,
+    aiSettingsStatus,
     chronicleCalendars,
     editorSettings,
     featureToggles,
     charts,
     handleOpenFile,
+    handleDeleteOpenAIAPIKey,
     handleSaveChronicleCalendars,
     handleSaveFeatureToggles,
+    handleSaveOpenAIAPIKey,
     handleSaveSettings,
     handleSaveUserDefinedFields,
+    handleTestOpenAIAPIKey,
     handleUpdateChartEntry,
     userDefinedFields,
     workspaceState

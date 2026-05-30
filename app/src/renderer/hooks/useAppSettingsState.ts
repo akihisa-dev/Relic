@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import type {
+  AISettingsState,
   AppInfo,
   EditorSettings,
   FrontmatterTemplate,
@@ -26,6 +27,8 @@ export function useAppSettingsState({
   setWorkspaceState
 }: UseAppSettingsStateInput) {
   const [appInfo, setAppInfo] = useState<AppInfo | null>(null);
+  const [aiSettings, setAISettings] = useState<AISettingsState | null>(null);
+  const [aiSettingsStatus, setAISettingsStatus] = useState<string | null>(null);
   const [featureToggles, setFeatureToggles] = useState<FeatureToggles>(defaultFeatureToggles);
   const [frontmatterTemplates, setFrontmatterTemplates] = useState<FrontmatterTemplate[]>(defaultFrontmatterTemplates);
   const [userDefinedFields, setUserDefinedFields] = useState<UserDefinedField[]>(defaultUserDefinedFields);
@@ -67,6 +70,11 @@ export function useAppSettingsState({
       if (result.ok) setFrontmatterTemplates(result.value);
     });
 
+    void window.relic?.getAISettings().then((result) => {
+      if (canceled) return;
+      if (result.ok) setAISettings(result.value);
+    });
+
     return () => { canceled = true; };
   }, [setEditorSettings, setWorkspaceError, setWorkspaceState]);
 
@@ -93,13 +101,53 @@ export function useAppSettingsState({
     void window.relic?.saveFrontmatterTemplates(templates);
   }, []);
 
+  const handleSaveOpenAIAPIKey = useCallback((apiKey: string): void => {
+    setAISettingsStatus(null);
+    void window.relic?.saveOpenAIAPIKey({ apiKey }).then((result) => {
+      if (result.ok) {
+        setAISettings(result.value);
+        setAISettingsStatus("OpenAI APIキーを保存しました。");
+      } else {
+        setAISettingsStatus(result.error.message);
+      }
+    });
+  }, []);
+
+  const handleDeleteOpenAIAPIKey = useCallback((): void => {
+    setAISettingsStatus(null);
+    void window.relic?.deleteOpenAIAPIKey().then((result) => {
+      if (result.ok) {
+        setAISettings(result.value);
+        setAISettingsStatus("OpenAI APIキーを削除しました。");
+      } else {
+        setAISettingsStatus(result.error.message);
+      }
+    });
+  }, []);
+
+  const handleTestOpenAIAPIKey = useCallback((): void => {
+    setAISettingsStatus("OpenAI APIキーを確認しています。");
+    void window.relic?.testOpenAIAPIKey().then((result) => {
+      if (result.ok) {
+        setAISettingsStatus(`OpenAI APIキーを確認できました。標準モデル: ${result.value.model}`);
+      } else {
+        setAISettingsStatus(result.error.message);
+      }
+    });
+  }, []);
+
   return {
+    aiSettings,
+    aiSettingsStatus,
     appInfo,
     featureToggles,
     frontmatterTemplates,
     handleSaveFeatureToggles,
     handleSaveFrontmatterTemplates,
+    handleDeleteOpenAIAPIKey,
+    handleSaveOpenAIAPIKey,
     handleSaveSettings,
+    handleTestOpenAIAPIKey,
     handleSaveUserDefinedFields,
     userDefinedFields
   };

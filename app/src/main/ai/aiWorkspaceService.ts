@@ -1,4 +1,3 @@
-import { existsSync } from "node:fs";
 import { createHash } from "node:crypto";
 import path from "node:path";
 
@@ -27,7 +26,8 @@ import {
   writeAIWorkspaceData,
   type AIWorkspaceData
 } from "./aiWorkspaceData";
-import { runCodexAIWorkspaceTurn } from "./codexAppServerClient";
+import { hasOpenAIAPIKey, readOpenAIAPIKey } from "./openAIKeyStore";
+import { openAIWorkspaceModel, runOpenAIWorkspaceTurn } from "./openAIResponsesClient";
 
 interface AIWorkspaceContext {
   userDataPath: string;
@@ -49,7 +49,7 @@ export async function getAIWorkspaceState(context: AIWorkspaceContext): Promise<
   try {
     const data = await ensureIndexed(context);
 
-    return ok(toState(data));
+    return ok(await toState(data, context.userDataPath));
   } catch (error) {
     return fail("AI_WORKSPACE_INDEX_FAILED", "AI Workspaceのインデックスを作成できませんでした。", String(error));
   }
@@ -64,7 +64,7 @@ export async function rebuildAIWorkspaceIndex(context: AIWorkspaceContext): Prom
     };
     await writeAIWorkspaceData(context.userDataPath, context.workspaceId, nextData);
 
-    return ok(toState(nextData));
+    return ok(await toState(nextData, context.userDataPath));
   } catch (error) {
     return fail("AI_WORKSPACE_INDEX_FAILED", "AI Workspaceのインデックスを作成できませんでした。", String(error));
   }
@@ -146,8 +146,14 @@ export async function sendAIWorkspaceMessage(
       references: [],
       role: "user"
     };
-    let codexError: string | null = null;
-    const codexResponse = await runCodexAIWorkspaceTurn({
+    const apiKey = await readOpenAIAPIKey(context.userDataPath);
+    if (!apiKey) {
+      return fail("AI_WORKSPACE_OPENAI_KEY_MISSING", "OpenAI APIキーをAI設定で登録してください。");
+    }
+
+    let openAIError: string | null = null;
+    const openAIResponse = await runOpenAIWorkspaceTurn({
+      apiKey,
       history: data.history.map((item) => ({ content: item.content, role: item.role })),
       message,
       pendingOperations: data.operations.filter((operation) => operation.status === "pending"),
@@ -155,19 +161,18 @@ export async function sendAIWorkspaceMessage(
         content: input.activeFileContent ?? null,
         path: input.activeFilePath ?? null
       }),
-      references,
-      workspacePath: context.workspacePath
+      references
     }).catch((error) => {
-      codexError = error instanceof Error ? error.message : String(error);
+      openAIError = error instanceof Error ? error.message : String(error);
       return null;
     });
-    const preparedOperations = codexResponse
-      ? await prepareOperations(context.workspacePath, codexResponse.operations)
+    const preparedOperations = openAIResponse
+      ? await prepareOperations(context.workspacePath, openAIResponse.operations)
       : { operations: [], rejectedOperations: [] };
     const assistantMessage: AIWorkspaceMessage = {
-      content: codexResponse
-        ? appendRejectedOperationsNotice(codexResponse.message, preparedOperations.rejectedOperations)
-        : buildAssistantFallback(message, references, codexError),
+      content: openAIResponse
+        ? appendRejectedOperationsNotice(openAIResponse.message, preparedOperations.rejectedOperations)
+        : buildAssistantFallback(message, references, openAIError),
       createdAt: new Date().toISOString(),
       id: createMessageId("assistant"),
       operations: preparedOperations.operations,
@@ -181,7 +186,7 @@ export async function sendAIWorkspaceMessage(
     };
     await writeAIWorkspaceData(context.userDataPath, context.workspaceId, nextData);
 
-    return ok(toState(nextData));
+    return ok(await toState(nextData, context.userDataPath));
   } catch (error) {
     return fail("AI_WORKSPACE_MESSAGE_FAILED", "AI Workspaceで処理できませんでした。", String(error));
   }
@@ -209,7 +214,7 @@ async function keepPendingOperations(
   };
   await writeAIWorkspaceData(context.userDataPath, context.workspaceId, nextData);
 
-  return ok(toState(nextData));
+  return ok(await toState(nextData, context.userDataPath));
 }
 
 function mergeNewOperations(
@@ -293,7 +298,7 @@ export async function applyAIWorkspaceOperations(
   nextData.history = [...nextData.history, ...buildOptionalUserHistory(input.userMessage), assistantMessage];
   await writeAIWorkspaceData(context.userDataPath, context.workspaceId, nextData);
 
-  return ok(toState(nextData));
+  return ok(await toState(nextData, context.userDataPath));
 }
 
 export async function discardAIWorkspaceOperations(
@@ -332,7 +337,7 @@ export async function discardAIWorkspaceOperations(
   nextData.history = [...nextData.history, ...buildOptionalUserHistory(input.userMessage), assistantMessage];
   await writeAIWorkspaceData(context.userDataPath, context.workspaceId, nextData);
 
-  return ok(toState(nextData));
+  return ok(await toState(nextData, context.userDataPath));
 }
 
 async function createRevertOperations(
@@ -381,7 +386,7 @@ async function createRevertOperations(
   };
   await writeAIWorkspaceData(context.userDataPath, context.workspaceId, nextData);
 
-  return ok(toState(nextData));
+  return ok(await toState(nextData, context.userDataPath));
 }
 
 export async function clearAIWorkspaceState(
@@ -393,7 +398,7 @@ export async function clearAIWorkspaceState(
 
   if (includeHistory && includeIndex) {
     await clearAIWorkspaceData(context.userDataPath, context.workspaceId);
-    return ok(toState(emptyAIWorkspaceData()));
+    return ok(await toState(emptyAIWorkspaceData(), context.userDataPath));
   }
 
   const data = await readAIWorkspaceData(context.userDataPath, context.workspaceId);
@@ -404,7 +409,7 @@ export async function clearAIWorkspaceState(
   };
   await writeAIWorkspaceData(context.userDataPath, context.workspaceId, nextData);
 
-  return ok(toState(nextData));
+  return ok(await toState(nextData, context.userDataPath));
 }
 
 async function ensureIndexed(context: AIWorkspaceContext): Promise<AIWorkspaceData> {
@@ -424,9 +429,8 @@ async function ensureIndexed(context: AIWorkspaceContext): Promise<AIWorkspaceDa
   return nextData;
 }
 
-function toState(data: AIWorkspaceData): AIWorkspaceState {
+async function toState(data: AIWorkspaceData, userDataPath?: string): Promise<AIWorkspaceState> {
   return {
-    codexAppServerAvailable: existsSync("/Applications/Codex.app/Contents/Resources/codex"),
     history: data.history,
     index: {
       chunkCount: data.index.chunks.length,
@@ -435,6 +439,7 @@ function toState(data: AIWorkspaceData): AIWorkspaceState {
       skippedLargeFiles: data.index.skippedLargeFiles,
       unreadableFiles: data.index.unreadableFiles
     },
+    openAIAPIKeyConfigured: userDataPath ? await hasOpenAIAPIKey(userDataPath) : false,
     operationHistory: data.operations,
     pendingOperations: data.operations.filter((operation) => operation.status === "pending")
   };
@@ -860,20 +865,20 @@ function blockedDirtyPaths(
 function buildAssistantFallback(
   message: string,
   references: AIWorkspaceReference[],
-  codexError: string | null
+  openAIError: string | null
 ): string {
-  if (codexError) {
+  if (openAIError) {
     const files = references.map((reference) => `- ${reference.path}`).join("\n");
 
     return [
-      "Codex App ServerでAI処理を完了できませんでした。",
+      "OpenAI APIでAI処理を完了できませんでした。",
       "そのため、今回はローカルのMarkdown検索結果だけを表示しています。Markdownの作成・編集・削除案は作っていません。",
       "",
       files ? `関連しそうなMarkdown:\n${files}` : "関連しそうなMarkdownは見つかりませんでした。",
       "",
       `受け取った依頼: ${message}`,
       "",
-      `失敗理由: ${codexError}`
+      `失敗理由: ${openAIError}`
     ].join("\n");
   }
 

@@ -29,11 +29,26 @@ export interface AIWorkspaceSkippedFile {
 }
 
 export interface AIWorkspaceState {
-  codexAppServerAvailable: boolean;
   history: AIWorkspaceMessage[];
   index: AIWorkspaceIndexSummary;
+  openAIAPIKeyConfigured: boolean;
   operationHistory: AIWorkspaceFileOperation[];
   pendingOperations: AIWorkspaceFileOperation[];
+}
+
+export interface AISettingsState {
+  model: string;
+  openAIAPIKeyConfigured: boolean;
+  secureStorageAvailable: boolean;
+}
+
+export interface SaveOpenAIAPIKeyInput {
+  apiKey: string;
+}
+
+export interface TestOpenAIAPIKeyResult {
+  model: string;
+  ok: boolean;
 }
 
 export interface SendAIWorkspaceMessageInput {
