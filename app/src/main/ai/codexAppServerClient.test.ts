@@ -13,7 +13,9 @@ vi.mock("node:child_process", () => ({
 
 import { parseCodexResponse, runCodexAIWorkspaceTurn } from "./codexAppServerClient";
 
-function createFakeCodexProcess(): EventEmitter & {
+function createFakeCodexProcess(options: {
+  stdinWriteError?: Error;
+} = {}): EventEmitter & {
   kill: () => void;
   stderr: PassThrough;
   stdin: Writable;
@@ -29,7 +31,7 @@ function createFakeCodexProcess(): EventEmitter & {
   process.stderr = new PassThrough();
   process.stdin = new Writable({
     write(_chunk, _encoding, callback) {
-      callback();
+      callback(options.stdinWriteError);
     }
   });
   process.kill = vi.fn();
@@ -54,6 +56,26 @@ describe("runCodexAIWorkspaceTurn", () => {
       references: [],
       workspacePath: "/tmp/workspace"
     })).rejects.toThrow("Codex App Serverを起動できませんでした: ENOENT");
+  });
+
+  it("rejects cleanly when a request cannot be written to Codex App Server", async () => {
+    const fakeProcess = createFakeCodexProcess({
+      stdinWriteError: new Error("EPIPE")
+    });
+    childProcessMock.spawn.mockReturnValueOnce(fakeProcess);
+
+    queueMicrotask(() => {
+      fakeProcess.emit("spawn");
+    });
+
+    await expect(runCodexAIWorkspaceTurn({
+      history: [],
+      message: "要件を整理して",
+      pendingOperations: [],
+      referenceContents: [],
+      references: [],
+      workspacePath: "/tmp/workspace"
+    })).rejects.toThrow("Codex App Serverへ送信できませんでした: EPIPE");
   });
 });
 
