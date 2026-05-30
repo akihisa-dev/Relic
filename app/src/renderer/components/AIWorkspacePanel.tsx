@@ -101,7 +101,7 @@ export function AIWorkspacePanel({
       ) : null}
 
       <div className="ai-workspace-status">
-        <span>{state?.codexAppServerAvailable ? "AI共同作業: 準備済み" : "AI共同作業: 利用できません"}</span>
+        <span>{state?.openAIAPIKeyConfigured ? "AI共同作業: 準備済み" : "AI共同作業: APIキー未設定"}</span>
         <span>
           {state?.index.indexedAt
             ? `${state.index.indexedFileCount} files / ${state.index.chunkCount} chunks`
@@ -109,9 +109,9 @@ export function AIWorkspacePanel({
         </span>
       </div>
 
-      {state && !state.codexAppServerAvailable ? (
+      {state && !state.openAIAPIKeyConfigured ? (
         <div className="ai-workspace-status-note">
-          AIとの会話にはCodexアプリが必要です。Markdownの閲覧と編集はこのまま使えます。
+          AIとの会話にはOpenAI APIキーが必要です。設定のAIから登録してください。Markdownの閲覧と編集はこのまま使えます。
         </div>
       ) : null}
 

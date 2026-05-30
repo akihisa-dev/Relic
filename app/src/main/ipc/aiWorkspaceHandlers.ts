@@ -1,23 +1,38 @@
-import { ipcMain, shell } from "electron";
+import { app, ipcMain, shell } from "electron";
 
 import {
   applyAIWorkspaceOperationsChannel,
   type ApplyAIWorkspaceOperationsInput,
   clearAIWorkspaceDataChannel,
   type ClearAIWorkspaceDataInput,
+  deleteOpenAIAPIKeyChannel,
   discardAIWorkspaceOperationsChannel,
   type DiscardAIWorkspaceOperationsInput,
+  getAISettingsChannel,
   getAIWorkspaceStateChannel,
+  saveOpenAIAPIKeyChannel,
+  type SaveOpenAIAPIKeyInput,
   previewAIWorkspaceMessageChannel,
   type PreviewAIWorkspaceMessageInput,
   rebuildAIWorkspaceIndexChannel,
   type RebuildAIWorkspaceIndexInput,
   sendAIWorkspaceMessageChannel,
   type SendAIWorkspaceMessageInput,
+  testOpenAIAPIKeyChannel,
+  type AISettingsState,
   type AIWorkspaceState,
+  type TestOpenAIAPIKeyResult,
   workspaceChangedChannel
 } from "../../shared/ipc";
-import { fail } from "../../shared/result";
+import { fail, ok, type RelicResult } from "../../shared/result";
+import {
+  deleteOpenAIAPIKey,
+  hasOpenAIAPIKey,
+  isOpenAIKeyStorageAvailable,
+  readOpenAIAPIKey,
+  saveOpenAIAPIKey
+} from "../ai/openAIKeyStore";
+import { openAIWorkspaceModel, testOpenAIAPIKey } from "../ai/openAIResponsesClient";
 import {
   applyAIWorkspaceOperations,
   clearAIWorkspaceState,
@@ -30,6 +45,50 @@ import {
 import { getActiveWorkspaceContext, ipcErrorDetails } from "./activeWorkspace";
 
 export function registerAIWorkspaceHandlers(): void {
+  ipcMain.handle(getAISettingsChannel, async (): Promise<RelicResult<AISettingsState>> => {
+    try {
+      return ok(await getAISettingsState());
+    } catch (error) {
+      return fail("AI_SETTINGS_READ_FAILED", "AI設定を読み込めませんでした。", ipcErrorDetails(error));
+    }
+  });
+
+  ipcMain.handle(saveOpenAIAPIKeyChannel, async (_event, input: SaveOpenAIAPIKeyInput): Promise<RelicResult<AISettingsState>> => {
+    try {
+      if (!input || typeof input.apiKey !== "string") {
+        return fail("AI_SETTINGS_OPENAI_KEY_INVALID", "OpenAI APIキーを入力してください。");
+      }
+
+      await saveOpenAIAPIKey(app.getPath("userData"), input.apiKey);
+      return ok(await getAISettingsState());
+    } catch (error) {
+      return fail("AI_SETTINGS_OPENAI_KEY_SAVE_FAILED", "OpenAI APIキーを保存できませんでした。", ipcErrorDetails(error));
+    }
+  });
+
+  ipcMain.handle(deleteOpenAIAPIKeyChannel, async (): Promise<RelicResult<AISettingsState>> => {
+    try {
+      await deleteOpenAIAPIKey(app.getPath("userData"));
+      return ok(await getAISettingsState());
+    } catch (error) {
+      return fail("AI_SETTINGS_OPENAI_KEY_DELETE_FAILED", "OpenAI APIキーを削除できませんでした。", ipcErrorDetails(error));
+    }
+  });
+
+  ipcMain.handle(testOpenAIAPIKeyChannel, async (): Promise<RelicResult<TestOpenAIAPIKeyResult>> => {
+    try {
+      const apiKey = await readOpenAIAPIKey(app.getPath("userData"));
+      if (!apiKey) {
+        return fail("AI_SETTINGS_OPENAI_KEY_MISSING", "OpenAI APIキーを先に登録してください。");
+      }
+
+      await testOpenAIAPIKey(apiKey);
+      return ok({ model: openAIWorkspaceModel, ok: true });
+    } catch (error) {
+      return fail("AI_SETTINGS_OPENAI_KEY_TEST_FAILED", "OpenAI APIキーを確認できませんでした。", ipcErrorDetails(error));
+    }
+  });
+
   ipcMain.handle(getAIWorkspaceStateChannel, async () => {
     try {
       const context = await getAIWorkspaceContext();
@@ -134,6 +193,16 @@ export function registerAIWorkspaceHandlers(): void {
       return fail("AI_WORKSPACE_CLEAR_FAILED", "AI Workspaceデータを削除できませんでした。", ipcErrorDetails(error));
     }
   });
+}
+
+async function getAISettingsState(): Promise<AISettingsState> {
+  const userDataPath = app.getPath("userData");
+
+  return {
+    model: openAIWorkspaceModel,
+    openAIAPIKeyConfigured: await hasOpenAIAPIKey(userDataPath),
+    secureStorageAvailable: isOpenAIKeyStorageAvailable()
+  };
 }
 
 async function getAIWorkspaceContext() {

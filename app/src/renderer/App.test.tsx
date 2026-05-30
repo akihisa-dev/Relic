@@ -1018,7 +1018,7 @@ describe("App", () => {
     const sendAIWorkspaceMessage = vi.fn().mockResolvedValue({
       ok: true,
       value: {
-        codexAppServerAvailable: true,
+        openAIAPIKeyConfigured: true,
         history: [],
         index: { chunkCount: 1, indexedAt: "2026-05-30T00:00:00.000Z", indexedFileCount: 1, skippedLargeFiles: [], unreadableFiles: [] },
         operationHistory: [],
@@ -1037,7 +1037,7 @@ describe("App", () => {
       getAIWorkspaceState: vi.fn().mockResolvedValue({
         ok: true,
         value: {
-          codexAppServerAvailable: true,
+          openAIAPIKeyConfigured: true,
           history: [],
           index: { chunkCount: 1, indexedAt: "2026-05-30T00:00:00.000Z", indexedFileCount: 1, skippedLargeFiles: [], unreadableFiles: [] },
           operationHistory: [],

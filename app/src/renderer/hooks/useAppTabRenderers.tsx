@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 
 import type {
   AppInfo,
+  AISettingsState,
   ChronicleCalendarSettings,
   EditorSettings,
   FeatureToggles,
@@ -20,15 +21,20 @@ import type { PanelTabKind } from "../store/editorStore";
 
 interface UseAppTabRenderersInput {
   appInfo: AppInfo | null;
+  aiSettings: AISettingsState | null;
+  aiSettingsStatus: string | null;
   chronicleCalendars: ChronicleCalendarSettings[];
   editorSettings: EditorSettings;
   featureToggles: FeatureToggles;
   charts: WorkspaceChart[];
   handleOpenFile: (path: string) => void;
   handleSaveFeatureToggles: (toggles: FeatureToggles) => void;
+  handleDeleteOpenAIAPIKey: () => void;
   handleSaveChronicleCalendars: (calendars: ChronicleCalendarSettings[]) => void;
+  handleSaveOpenAIAPIKey: (apiKey: string) => void;
   handleSaveSettings: (settings: EditorSettings) => void;
   handleSaveUserDefinedFields: (fields: UserDefinedField[]) => void;
+  handleTestOpenAIAPIKey: () => void;
   handleUpdateChartEntry: (input: UpdateChartEntryInput) => Promise<void> | void;
   userDefinedFields: UserDefinedField[];
   workspaceState: WorkspaceState | null;
@@ -36,15 +42,20 @@ interface UseAppTabRenderersInput {
 
 export function useAppTabRenderers({
   appInfo,
+  aiSettings,
+  aiSettingsStatus,
   chronicleCalendars,
   editorSettings,
   featureToggles,
   charts,
   handleOpenFile,
   handleSaveFeatureToggles,
+  handleDeleteOpenAIAPIKey,
   handleSaveChronicleCalendars,
+  handleSaveOpenAIAPIKey,
   handleSaveSettings,
   handleSaveUserDefinedFields,
+  handleTestOpenAIAPIKey,
   handleUpdateChartEntry,
   userDefinedFields,
   workspaceState
@@ -88,22 +99,32 @@ export function useAppTabRenderers({
     return (
       <SettingsPanel
         appInfo={appInfo}
+        aiSettings={aiSettings}
+        aiSettingsStatus={aiSettingsStatus}
         featureToggles={featureToggles}
+        onDeleteOpenAIAPIKey={handleDeleteOpenAIAPIKey}
         onFeatureTogglesSave={handleSaveFeatureToggles}
+        onSaveOpenAIAPIKey={handleSaveOpenAIAPIKey}
         onSave={handleSaveSettings}
+        onTestOpenAIAPIKey={handleTestOpenAIAPIKey}
         settings={editorSettings}
       />
     );
   }, [
     appInfo,
+    aiSettings,
+    aiSettingsStatus,
     chronicleCalendars,
     editorSettings,
     featureToggles,
     handleOpenFile,
+    handleDeleteOpenAIAPIKey,
     handleSaveFeatureToggles,
     handleSaveChronicleCalendars,
+    handleSaveOpenAIAPIKey,
     handleSaveSettings,
     handleSaveUserDefinedFields,
+    handleTestOpenAIAPIKey,
     userDefinedFields,
     workspaceState
   ]);

@@ -4,8 +4,13 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("./codexAppServerClient", () => ({
-  runCodexAIWorkspaceTurn: vi.fn()
+vi.mock("./openAIResponsesClient", () => ({
+  runOpenAIWorkspaceTurn: vi.fn()
+}));
+
+vi.mock("./openAIKeyStore", () => ({
+  hasOpenAIAPIKey: vi.fn(async () => true),
+  readOpenAIAPIKey: vi.fn(async () => "sk-test-openai-key")
 }));
 
 import {
@@ -17,7 +22,8 @@ import {
 } from "./aiWorkspaceService";
 import { writeAIWorkspaceData, type AIWorkspaceData } from "./aiWorkspaceData";
 import { computeAIWorkspaceIndexSourceHash } from "./aiWorkspaceIndex";
-import { runCodexAIWorkspaceTurn } from "./codexAppServerClient";
+import { readOpenAIAPIKey } from "./openAIKeyStore";
+import { runOpenAIWorkspaceTurn } from "./openAIResponsesClient";
 
 let userDataPath = "";
 let workspacePath = "";
@@ -25,7 +31,8 @@ let workspacePath = "";
 beforeEach(async () => {
   userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-ai-user-data-"));
   workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-ai-workspace-"));
-  vi.mocked(runCodexAIWorkspaceTurn).mockReset();
+  vi.mocked(runOpenAIWorkspaceTurn).mockReset();
+  vi.mocked(readOpenAIAPIKey).mockResolvedValue("sk-test-openai-key");
 });
 
 afterEach(async () => {
@@ -156,16 +163,29 @@ describe("discardAIWorkspaceOperations", () => {
 });
 
 describe("sendAIWorkspaceMessage", () => {
-  it("shows a clear fallback message when Codex App Server fails", async () => {
+  it("stops before external AI when the OpenAI API key is missing", async () => {
+    await writeFile(path.join(workspacePath, "README.md"), "# Auth\nLogin spec", "utf8");
+    vi.mocked(readOpenAIAPIKey).mockResolvedValueOnce(null);
+
+    const result = await sendAIWorkspaceMessage(context(), { message: "Login spec" });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error.code).toBe("AI_WORKSPACE_OPENAI_KEY_MISSING");
+    }
+    expect(runOpenAIWorkspaceTurn).not.toHaveBeenCalled();
+  });
+
+  it("shows a clear fallback message when OpenAI API fails", async () => {
     await writeFile(path.join(workspacePath, "README.md"), "# 認証\nログイン仕様", "utf8");
-    vi.mocked(runCodexAIWorkspaceTurn).mockRejectedValueOnce(new Error("connection failed"));
+    vi.mocked(runOpenAIWorkspaceTurn).mockRejectedValueOnce(new Error("connection failed"));
 
     const result = await sendAIWorkspaceMessage(context(), { message: "認証について整理して" });
 
     expect(result.ok).toBe(true);
     if (result.ok) {
       const lastMessage = result.value.history.at(-1);
-      expect(lastMessage?.content).toContain("Codex App ServerでAI処理を完了できませんでした。");
+      expect(lastMessage?.content).toContain("OpenAI APIでAI処理を完了できませんでした。");
       expect(lastMessage?.content).toContain("失敗理由: connection failed");
       expect(result.value.pendingOperations).toEqual([]);
     }
@@ -173,7 +193,7 @@ describe("sendAIWorkspaceMessage", () => {
 
   it("stores the target Markdown hash with update operations", async () => {
     await writeFile(path.join(workspacePath, "README.md"), "# Auth\nLogin spec", "utf8");
-    vi.mocked(runCodexAIWorkspaceTurn).mockResolvedValueOnce({
+    vi.mocked(runOpenAIWorkspaceTurn).mockResolvedValueOnce({
       message: "READMEを更新します。",
       operations: [createOperation("update", "README.md", "# Auth\nUpdated")]
     });
@@ -187,9 +207,9 @@ describe("sendAIWorkspaceMessage", () => {
     }
   });
 
-  it("keeps only safe Markdown operations returned by Codex App Server", async () => {
+  it("keeps only safe Markdown operations returned by OpenAI API", async () => {
     await writeFile(path.join(workspacePath, "README.md"), "# Auth\nLogin spec", "utf8");
-    vi.mocked(runCodexAIWorkspaceTurn).mockResolvedValueOnce({
+    vi.mocked(runOpenAIWorkspaceTurn).mockResolvedValueOnce({
       message: "変更案を作成します。",
       operations: [
         createOperation("update", "README.md", "# Auth\nUpdated"),
@@ -215,7 +235,7 @@ describe("sendAIWorkspaceMessage", () => {
 
   it("accepts absolute operation paths only when they are inside the workspace", async () => {
     await writeFile(path.join(workspacePath, "README.md"), "# Auth\nLogin spec", "utf8");
-    vi.mocked(runCodexAIWorkspaceTurn).mockResolvedValueOnce({
+    vi.mocked(runOpenAIWorkspaceTurn).mockResolvedValueOnce({
       message: "変更案を作成します。",
       operations: [
         createOperation("update", path.join(workspacePath, "README.md"), "# Auth\nUpdated"),
@@ -238,12 +258,12 @@ describe("sendAIWorkspaceMessage", () => {
     }
   });
 
-  it("passes pending operations to Codex App Server for follow-up edits", async () => {
+  it("passes pending operations to OpenAI API for follow-up edits", async () => {
     await writeFile(path.join(workspacePath, "README.md"), "# Auth\nLogin spec", "utf8");
     await writeData({
       operations: [createOperation("update", "README.md", "# Auth\nDraft update")]
     });
-    vi.mocked(runCodexAIWorkspaceTurn).mockResolvedValueOnce({
+    vi.mocked(runOpenAIWorkspaceTurn).mockResolvedValueOnce({
       message: "変更案を調整します。",
       operations: [createOperation("update", "README.md", "# Auth\nAdjusted update")]
     });
@@ -251,7 +271,7 @@ describe("sendAIWorkspaceMessage", () => {
     const result = await sendAIWorkspaceMessage(context(), { message: "さっきの案をもう少し短くして" });
 
     expect(result.ok).toBe(true);
-    expect(runCodexAIWorkspaceTurn).toHaveBeenCalledWith(expect.objectContaining({
+    expect(runOpenAIWorkspaceTurn).toHaveBeenCalledWith(expect.objectContaining({
       pendingOperations: [expect.objectContaining({
         content: "# Auth\nDraft update",
         path: "README.md",
@@ -260,9 +280,9 @@ describe("sendAIWorkspaceMessage", () => {
     }));
   });
 
-  it("passes unsaved active Markdown content to Codex App Server for current-file messages", async () => {
+  it("passes unsaved active Markdown content to OpenAI API for current-file messages", async () => {
     await writeFile(path.join(workspacePath, "README.md"), "# Saved\nold content", "utf8");
-    vi.mocked(runCodexAIWorkspaceTurn).mockResolvedValueOnce({
+    vi.mocked(runOpenAIWorkspaceTurn).mockResolvedValueOnce({
       message: "現在の本文を整理します。",
       operations: []
     });
@@ -274,7 +294,7 @@ describe("sendAIWorkspaceMessage", () => {
     });
 
     expect(result.ok).toBe(true);
-    expect(runCodexAIWorkspaceTurn).toHaveBeenCalledWith(expect.objectContaining({
+    expect(runOpenAIWorkspaceTurn).toHaveBeenCalledWith(expect.objectContaining({
       referenceContents: [expect.objectContaining({
         content: "# Unsaved\nnew draft",
         path: "README.md"
@@ -289,7 +309,7 @@ describe("sendAIWorkspaceMessage", () => {
   it("passes full referenced Markdown content without silently truncating it", async () => {
     const fullContent = `# Long Note\n${"x".repeat(20_000)}\n末尾の内容`;
     await writeFile(path.join(workspacePath, "long.md"), fullContent, "utf8");
-    vi.mocked(runCodexAIWorkspaceTurn).mockResolvedValueOnce({
+    vi.mocked(runOpenAIWorkspaceTurn).mockResolvedValueOnce({
       message: "長いノートを確認します。",
       operations: []
     });
@@ -297,7 +317,7 @@ describe("sendAIWorkspaceMessage", () => {
     const result = await sendAIWorkspaceMessage(context(), { message: "末尾の内容を確認して" });
 
     expect(result.ok).toBe(true);
-    expect(runCodexAIWorkspaceTurn).toHaveBeenCalledWith(expect.objectContaining({
+    expect(runOpenAIWorkspaceTurn).toHaveBeenCalledWith(expect.objectContaining({
       referenceContents: [expect.objectContaining({
         content: fullContent,
         path: "long.md"
@@ -310,7 +330,7 @@ describe("sendAIWorkspaceMessage", () => {
     await writeData({
       operations: [createOperation("update", "README.md", "# Auth\nDraft update")]
     });
-    vi.mocked(runCodexAIWorkspaceTurn).mockResolvedValueOnce({
+    vi.mocked(runOpenAIWorkspaceTurn).mockResolvedValueOnce({
       message: "変更案を作り直します。",
       operations: [createOperation("update", "README.md", "# Auth\nAdjusted update")]
     });
@@ -355,7 +375,7 @@ describe("sendAIWorkspaceMessage", () => {
     const result = await sendAIWorkspaceMessage(context(), { message: "さっきの変更を戻して" });
 
     expect(result.ok).toBe(true);
-    expect(runCodexAIWorkspaceTurn).not.toHaveBeenCalled();
+    expect(runOpenAIWorkspaceTurn).not.toHaveBeenCalled();
     await expect(readFile(path.join(workspacePath, "README.md"), "utf8")).resolves.toBe("# Auth\nUpdated");
     if (result.ok) {
       expect(result.value.pendingOperations).toEqual([
@@ -383,7 +403,7 @@ describe("sendAIWorkspaceMessage", () => {
     const result = await sendAIWorkspaceMessage(context(), { message: "created.mdを元に戻して" });
 
     expect(result.ok).toBe(true);
-    expect(runCodexAIWorkspaceTurn).not.toHaveBeenCalled();
+    expect(runOpenAIWorkspaceTurn).not.toHaveBeenCalled();
     await expect(readFile(path.join(workspacePath, "created.md"), "utf8")).resolves.toBe("# Created");
     if (result.ok) {
       expect(result.value.pendingOperations).toEqual([
@@ -410,7 +430,7 @@ describe("sendAIWorkspaceMessage", () => {
     const result = await sendAIWorkspaceMessage(context(), { message: "deleted.mdを元に戻して" });
 
     expect(result.ok).toBe(true);
-    expect(runCodexAIWorkspaceTurn).not.toHaveBeenCalled();
+    expect(runOpenAIWorkspaceTurn).not.toHaveBeenCalled();
     await expect(readFile(path.join(workspacePath, "deleted.md"), "utf8")).rejects.toThrow();
     if (result.ok) {
       expect(result.value.pendingOperations).toEqual([
@@ -460,7 +480,7 @@ describe("sendAIWorkspaceMessage", () => {
     const result = await sendAIWorkspaceMessage(context(), { message: "first.mdだけ反映して" });
 
     expect(result.ok).toBe(true);
-    expect(runCodexAIWorkspaceTurn).not.toHaveBeenCalled();
+    expect(runOpenAIWorkspaceTurn).not.toHaveBeenCalled();
     await expect(readFile(path.join(workspacePath, "first.md"), "utf8")).resolves.toBe("updated first");
     await expect(readFile(path.join(workspacePath, "second.md"), "utf8")).resolves.toBe("second");
     if (result.ok) {
@@ -489,7 +509,7 @@ describe("sendAIWorkspaceMessage", () => {
     });
 
     expect(result.ok).toBe(true);
-    expect(runCodexAIWorkspaceTurn).not.toHaveBeenCalled();
+    expect(runOpenAIWorkspaceTurn).not.toHaveBeenCalled();
     await expect(readFile(path.join(workspacePath, "first.md"), "utf8")).resolves.toBe("first");
     await expect(readFile(path.join(workspacePath, "second.md"), "utf8")).resolves.toBe("updated second");
     if (result.ok) {
@@ -510,7 +530,7 @@ describe("sendAIWorkspaceMessage", () => {
     const result = await sendAIWorkspaceMessage(context(), { message: "このファイルだけ反映して" });
 
     expect(result.ok).toBe(false);
-    expect(runCodexAIWorkspaceTurn).not.toHaveBeenCalled();
+    expect(runOpenAIWorkspaceTurn).not.toHaveBeenCalled();
     if (!result.ok) {
       expect(result.error.code).toBe("AI_WORKSPACE_NO_PENDING_OPERATIONS");
     }
@@ -527,7 +547,7 @@ describe("sendAIWorkspaceMessage", () => {
     const result = await sendAIWorkspaceMessage(context(), { message: "まだ反映しない" });
 
     expect(result.ok).toBe(true);
-    expect(runCodexAIWorkspaceTurn).not.toHaveBeenCalled();
+    expect(runOpenAIWorkspaceTurn).not.toHaveBeenCalled();
     await expect(readFile(path.join(workspacePath, "draft.md"), "utf8")).resolves.toBe("old");
     if (result.ok) {
       expect(result.value.pendingOperations).toEqual([
@@ -557,7 +577,7 @@ describe("sendAIWorkspaceMessage", () => {
     const result = await sendAIWorkspaceMessage(context(), { message: "second.mdはやめて" });
 
     expect(result.ok).toBe(true);
-    expect(runCodexAIWorkspaceTurn).not.toHaveBeenCalled();
+    expect(runOpenAIWorkspaceTurn).not.toHaveBeenCalled();
     await expect(readFile(path.join(workspacePath, "first.md"), "utf8")).resolves.toBe("first");
     await expect(readFile(path.join(workspacePath, "second.md"), "utf8")).resolves.toBe("second");
     if (result.ok) {
@@ -573,13 +593,13 @@ describe("sendAIWorkspaceMessage", () => {
 });
 
 describe("previewAIWorkspaceMessage", () => {
-  it("returns Markdown references for Japanese messages before calling Codex App Server", async () => {
+  it("returns Markdown references for Japanese messages before calling OpenAI API", async () => {
     await writeFile(path.join(workspacePath, "README.md"), "# 認証\nログイン仕様", "utf8");
 
     const result = await previewAIWorkspaceMessage(context(), { message: "認証について整理して" });
 
     expect(result.ok).toBe(true);
-    expect(runCodexAIWorkspaceTurn).not.toHaveBeenCalled();
+    expect(runOpenAIWorkspaceTurn).not.toHaveBeenCalled();
     if (result.ok) {
       expect(result.value.requiresExternalAI).toBe(true);
       expect(result.value.references).toEqual([
@@ -598,7 +618,7 @@ describe("previewAIWorkspaceMessage", () => {
     });
 
     expect(result.ok).toBe(true);
-    expect(runCodexAIWorkspaceTurn).not.toHaveBeenCalled();
+    expect(runOpenAIWorkspaceTurn).not.toHaveBeenCalled();
     if (result.ok) {
       expect(result.value.requiresExternalAI).toBe(true);
       expect(result.value.references[0]).toEqual(expect.objectContaining({

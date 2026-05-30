@@ -20,7 +20,13 @@ const aiWorkspaceServiceMock = vi.hoisted(() => ({
 }));
 
 vi.mock("electron", () => ({
+  app: { getPath: vi.fn(() => "/tmp/relic-user-data") },
   ipcMain: { handle: electronMock.handle },
+  safeStorage: {
+    decryptString: vi.fn(),
+    encryptString: vi.fn(),
+    isEncryptionAvailable: vi.fn(() => true)
+  },
   shell: { trashItem: electronMock.trashItem }
 }));
 
@@ -147,7 +153,7 @@ describe("registerAIWorkspaceHandlers", () => {
 
 function createAIWorkspaceState(status: "pending" | "applied" | "stale"): AIWorkspaceState {
   return {
-    codexAppServerAvailable: true,
+    openAIAPIKeyConfigured: true,
     history: [],
     index: {
       chunkCount: 0,
