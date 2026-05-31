@@ -2,7 +2,7 @@ import type { EditorView } from "@codemirror/view";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactElement } from "react";
 
-import type { WorkspaceState } from "../shared/ipc";
+import { coworkPanelMaxWidth, coworkPanelMinWidth, type WorkspaceState } from "../shared/ipc";
 import type { AppLinkContextMenu } from "./appLinks";
 import {
   openFilePathsForTabs,
@@ -155,10 +155,12 @@ export function App(): ReactElement {
   const {
     aiSettings,
     aiSettingsStatus,
+    appUiSettings,
     appInfo,
     featureToggles,
     handleDeleteOpenAIAPIKey,
     handleSaveFeatureToggles,
+    handleSaveAppUiSettings,
     handleSaveAIModel,
     handleSaveAIProvider,
     handleSaveOpenAIAPIKey,
@@ -514,9 +516,12 @@ export function App(): ReactElement {
     isSidebarResizing: isSecondarySidebarResizing,
     startSidebarResize: startSecondarySidebarResize
   } = useSidebarResize({
-    initialWidth: 400,
-    maxWidth: 520,
-    minWidth: 320
+    initialWidth: appUiSettings.coworkPanelWidth,
+    maxWidth: coworkPanelMaxWidth,
+    minWidth: coworkPanelMinWidth,
+    onResizeEnd: (width) => {
+      handleSaveAppUiSettings({ ...appUiSettings, coworkPanelWidth: width });
+    }
   });
 
   const leftEditorViewRef = useRef<EditorView | null>(null);

@@ -41,6 +41,16 @@ export const defaultFeatureToggles: FeatureToggles = {
   rightPanel: true
 };
 
+export interface AppUiSettings {
+  coworkPanelWidth: number;
+}
+
+export const coworkPanelMinWidth = 320;
+export const coworkPanelMaxWidth = 520;
+export const defaultAppUiSettings: AppUiSettings = {
+  coworkPanelWidth: 400
+};
+
 export type EditorFont = "system" | "gothic" | "mincho" | "mono";
 export type EditorMaxWidth = "550px" | "660px" | "800px" | "none";
 export type FrontmatterDateFormat = "dmy" | "mdy" | "system" | "ymd";

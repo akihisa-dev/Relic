@@ -4,12 +4,17 @@ import path from "node:path";
 import {
   aiProviders,
   chronicleCalendarIds,
+  coworkPanelMaxWidth,
+  coworkPanelMinWidth,
+  defaultAppUiSettings,
   defaultAIProvider,
   defaultOpenAIWorkspaceModel,
   defaultEditorSettings,
   defaultFeatureToggles,
   defaultFrontmatterTemplates,
   defaultUserDefinedFields,
+  openAIWorkspaceModels,
+  type AppUiSettings,
   type EditorSettings,
   type FeatureToggles,
   type FrontmatterTemplate,
@@ -30,6 +35,7 @@ export interface AppSettings {
   featureToggles: FeatureToggles;
   frontmatterTemplates: FrontmatterTemplate[];
   lastWorkspaceId: string | null;
+  uiSettings?: AppUiSettings;
   userDefinedFields: UserDefinedField[];
   workspaces: WorkspaceSummary[];
 }
@@ -43,6 +49,7 @@ const defaultAppSettings: AppSettings = {
   featureToggles: defaultFeatureToggles,
   frontmatterTemplates: defaultFrontmatterTemplates,
   lastWorkspaceId: null,
+  uiSettings: defaultAppUiSettings,
   userDefinedFields: defaultUserDefinedFields,
   workspaces: []
 };
@@ -70,6 +77,7 @@ export async function readAppSettings(userDataPath: string): Promise<AppSettings
       featureToggles: parseFeatureToggles(parsedSettings.featureToggles),
       frontmatterTemplates: parseFrontmatterTemplates(parsedSettings.frontmatterTemplates),
       lastWorkspaceId: parseLastWorkspaceId(parsedSettings.lastWorkspaceId, workspaces),
+      uiSettings: parseAppUiSettings(parsedSettings.uiSettings),
       userDefinedFields: parseUserDefinedFields(parsedSettings.userDefinedFields),
       workspaces
     };
@@ -110,9 +118,26 @@ function parseAIProvider(value: unknown): AIProvider {
 }
 
 function parseOpenAIWorkspaceModel(value: unknown): OpenAIWorkspaceModel {
-  return value === "gpt-5.5" || value === "gpt-5.4" || value === "gpt-5.4-mini" || value === "gpt-5.4-nano"
-    ? value
+  return openAIWorkspaceModels.includes(value as OpenAIWorkspaceModel)
+    ? value as OpenAIWorkspaceModel
     : defaultOpenAIWorkspaceModel;
+}
+
+function parseAppUiSettings(raw: unknown): AppUiSettings {
+  if (typeof raw !== "object" || raw === null) {
+    return defaultAppUiSettings;
+  }
+
+  const s = raw as Record<string, unknown>;
+
+  return {
+    coworkPanelWidth: clampNumber(
+      s.coworkPanelWidth,
+      coworkPanelMinWidth,
+      coworkPanelMaxWidth,
+      defaultAppUiSettings.coworkPanelWidth
+    )
+  };
 }
 
 function parseEditorSettings(raw: unknown): EditorSettings {
@@ -141,6 +166,11 @@ function parseEditorSettings(raw: unknown): EditorSettings {
 
 function isPositiveFiniteNumber(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value) && value > 0;
+}
+
+function clampNumber(value: unknown, min: number, max: number, fallback: number): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) return fallback;
+  return Math.min(max, Math.max(min, Math.round(value)));
 }
 
 function parseFeatureToggles(raw: unknown): FeatureToggles {

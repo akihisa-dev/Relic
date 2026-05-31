@@ -70,6 +70,11 @@ export async function computeAIWorkspaceIndexSourceHash(workspacePath: string): 
   return hashMarkdownFileSignatures(await collectMarkdownFileSignatures(workspacePath, defaultIndexOperations));
 }
 
+export async function collectAIWorkspaceMarkdownPaths(workspacePath: string): Promise<string[]> {
+  const signatures = await collectMarkdownFileSignatures(workspacePath, defaultIndexOperations);
+  return signatures.map((signature) => signature.path);
+}
+
 export function searchAIWorkspaceChunks(chunks: AIWorkspaceChunk[], query: string): AIWorkspaceChunk[] {
   const terms = tokenizeSearchText(query);
   const queryEmbedding = createLocalEmbedding(query);

@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import type {
   AISettingsState,
   AIProvider,
+  AppUiSettings,
   AppInfo,
   EditorSettings,
   FrontmatterTemplate,
@@ -11,6 +12,7 @@ import type {
 } from "../../shared/ipc";
 import {
   defaultFeatureToggles,
+  defaultAppUiSettings,
   defaultFrontmatterTemplates,
   defaultUserDefinedFields,
   type FeatureToggles,
@@ -33,6 +35,7 @@ export function useAppSettingsState({
   const [appInfo, setAppInfo] = useState<AppInfo | null>(null);
   const [aiSettings, setAISettings] = useState<AISettingsState | null>(null);
   const [aiSettingsStatus, setAISettingsStatus] = useState<string | null>(null);
+  const [appUiSettings, setAppUiSettings] = useState<AppUiSettings>(defaultAppUiSettings);
   const [featureToggles, setFeatureToggles] = useState<FeatureToggles>(defaultFeatureToggles);
   const [frontmatterTemplates, setFrontmatterTemplates] = useState<FrontmatterTemplate[]>(defaultFrontmatterTemplates);
   const [userDefinedFields, setUserDefinedFields] = useState<UserDefinedField[]>(defaultUserDefinedFields);
@@ -62,6 +65,11 @@ export function useAppSettingsState({
     void window.relic?.getFeatureToggles().then((result) => {
       if (canceled) return;
       if (result.ok) setFeatureToggles(result.value);
+    });
+
+    void window.relic?.getAppUiSettings().then((result) => {
+      if (canceled) return;
+      if (result.ok) setAppUiSettings(result.value);
     });
 
     void window.relic?.getUserDefinedFields().then((result) => {
@@ -94,6 +102,15 @@ export function useAppSettingsState({
     setFeatureToggles(toggles);
     void window.relic?.saveFeatureToggles(toggles);
   }, []);
+
+  const handleSaveAppUiSettings = useCallback((settings: AppUiSettings): void => {
+    setAppUiSettings(settings);
+    void window.relic?.saveAppUiSettings(settings).then((result) => {
+      if (!result.ok) {
+        setWorkspaceError(result.error.message);
+      }
+    });
+  }, [setWorkspaceError]);
 
   const handleSaveUserDefinedFields = useCallback((fields: UserDefinedField[]): void => {
     setUserDefinedFields(fields);
@@ -174,9 +191,11 @@ export function useAppSettingsState({
     aiSettings,
     aiSettingsStatus,
     appInfo,
+    appUiSettings,
     featureToggles,
     frontmatterTemplates,
     handleSaveFeatureToggles,
+    handleSaveAppUiSettings,
     handleSaveFrontmatterTemplates,
     handleDeleteOpenAIAPIKey,
     handleSaveAIModel,

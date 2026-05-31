@@ -64,6 +64,56 @@ describe("getAIWorkspaceState", () => {
     }
   });
 
+  it("repairs stale Cowork references and deleted Markdown embeddings when state is loaded", async () => {
+    await writeFile(path.join(workspacePath, "README.md"), "# Workspace\n概要", "utf8");
+    await writeData({
+      activeChatId: "missing-chat",
+      chats: [{
+        createdAt: "2026-05-30T00:00:00.000Z",
+        history: [{
+          content: "AI response",
+          createdAt: "2026-05-30T00:00:00.000Z",
+          id: "message-1",
+          references: [
+            { path: "README.md", preview: "# Workspace" },
+            { path: "deleted.md", preview: "# Deleted" }
+          ],
+          role: "assistant"
+        }],
+        id: "chat-1",
+        operations: [createOperation("update", "deleted.md", "# Deleted")],
+        title: "テストチャット",
+        updatedAt: "2026-05-30T00:00:00.000Z"
+      }],
+      index: {
+        chunks: [
+          { content: "# Workspace", embedding: [1], endLine: 1, path: "README.md", startLine: 1 },
+          { content: "# Deleted", embedding: [1], endLine: 1, path: "deleted.md", startLine: 1 }
+        ],
+        indexedAt: "2026-05-30T00:00:00.000Z",
+        skippedLargeFiles: [],
+        sourceHash: await computeAIWorkspaceIndexSourceHash(workspacePath),
+        unreadableFiles: []
+      }
+    });
+
+    const result = await getAIWorkspaceState(context());
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.activeChatId).toBe("chat-1");
+      expect(result.value.history[0].references).toEqual([{ path: "README.md", preview: "# Workspace" }]);
+      expect(result.value.operationHistory).toEqual([]);
+      expect(result.value.index.indexedFileCount).toBe(1);
+    }
+
+    const saved = JSON.parse(await readFile(path.join(userDataPath, "ai-workspaces", "workspace.json"), "utf8")) as AIWorkspaceData;
+    expect(saved.activeChatId).toBe("chat-1");
+    expect(saved.chats[0].history[0].references).toEqual([{ path: "README.md", preview: "# Workspace" }]);
+    expect(saved.chats[0].operations).toEqual([]);
+    expect(saved.index.chunks.map((chunk) => chunk.path)).toEqual(["README.md"]);
+  });
+
   it("includes Codex usage when Codex App Server is selected", async () => {
     vi.mocked(readCodexAIWorkspaceUsage).mockResolvedValueOnce({
       planType: "prolite",
@@ -380,6 +430,36 @@ describe("sendAIWorkspaceMessage", () => {
     expect(runOpenAIWorkspaceTurn).toHaveBeenCalledWith(expect.objectContaining({
       model: "gpt-5.5"
     }));
+  });
+
+  it("falls back to the default OpenAI model when old settings contain an unknown model", async () => {
+    await writeFile(getAppSettingsPath(userDataPath), JSON.stringify({
+      aiSettings: { aiProvider: "openai-api", openAIModel: "removed-model" }
+    }), "utf8");
+    vi.mocked(runOpenAIWorkspaceTurn).mockResolvedValueOnce({
+      message: "既定モデルで処理します。",
+      operations: []
+    });
+
+    const result = await sendAIWorkspaceMessage(context(), { message: "モデル設定を使って" });
+
+    expect(result.ok).toBe(true);
+    expect(runOpenAIWorkspaceTurn).toHaveBeenCalledWith(expect.objectContaining({
+      model: "gpt-5.4-mini"
+    }));
+  });
+
+  it("shows a clear message when OpenAI rejects the selected model", async () => {
+    await writeAISettings({ aiProvider: "openai-api" });
+    vi.mocked(runOpenAIWorkspaceTurn).mockRejectedValueOnce(new Error("model_not_found: the model does not exist"));
+
+    const result = await sendAIWorkspaceMessage(context(), { message: "モデルエラーを確認" });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.history.at(-1)?.content).toContain("OpenAIモデルを利用できませんでした。");
+      expect(result.value.history.at(-1)?.content).toContain("設定のOpenAIモデルを既定値へ戻して");
+    }
   });
 
   it("applies only safe Markdown operations returned by OpenAI API", async () => {

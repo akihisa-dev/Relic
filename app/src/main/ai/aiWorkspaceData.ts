@@ -48,6 +48,23 @@ export const emptyAIWorkspaceData = (): AIWorkspaceData => ({
   index: emptyAIWorkspaceIndex(),
 });
 
+export function repairAIWorkspaceData(
+  data: AIWorkspaceData,
+  existingMarkdownPaths: Iterable<string>
+): AIWorkspaceData {
+  const existingPathSet = new Set(existingMarkdownPaths);
+  const chats = dedupeChats(data.chats).map((chat) => repairChat(chat, existingPathSet));
+  const activeChatId = data.activeChatId && chats.some((chat) => chat.id === data.activeChatId)
+    ? data.activeChatId
+    : chats[0]?.id ?? null;
+
+  return {
+    activeChatId,
+    chats,
+    index: repairIndex(data.index, existingPathSet)
+  };
+}
+
 export async function readAIWorkspaceData(userDataPath: string, workspaceId: string): Promise<AIWorkspaceData> {
   try {
     const raw = await readFile(aiWorkspaceDataPath(userDataPath, workspaceId), "utf8");
@@ -251,4 +268,52 @@ function isAIWorkspaceFileOperation(value: unknown): value is AIWorkspaceFileOpe
     (record.baseContentHash === undefined || typeof record.baseContentHash === "string") &&
     (record.baseContent === undefined || typeof record.baseContent === "string") &&
     (record.content === undefined || typeof record.content === "string");
+}
+
+function dedupeChats(chats: AIWorkspaceChatData[]): AIWorkspaceChatData[] {
+  const seenIds = new Set<string>();
+  const result: AIWorkspaceChatData[] = [];
+
+  for (const chat of chats) {
+    if (seenIds.has(chat.id)) continue;
+    seenIds.add(chat.id);
+    result.push(chat);
+  }
+
+  return result;
+}
+
+function repairChat(chat: AIWorkspaceChatData, existingPathSet: Set<string>): AIWorkspaceChatData {
+  return {
+    ...chat,
+    history: chat.history.map((message) => repairMessage(message, existingPathSet)),
+    operations: chat.operations.filter((operation) => shouldKeepOperation(operation, existingPathSet))
+  };
+}
+
+function repairMessage(message: AIWorkspaceMessage, existingPathSet: Set<string>): AIWorkspaceMessage {
+  const references = message.references.filter((reference) => existingPathSet.has(reference.path));
+  const operations = message.operations?.filter((operation) => shouldKeepOperation(operation, existingPathSet));
+
+  return {
+    ...message,
+    operations: operations && operations.length > 0 ? operations : undefined,
+    references
+  };
+}
+
+function repairIndex(index: AIWorkspaceIndexData, existingPathSet: Set<string>): AIWorkspaceIndexData {
+  return {
+    ...index,
+    chunks: index.chunks.filter((chunk) => existingPathSet.has(chunk.path)),
+    skippedLargeFiles: index.skippedLargeFiles.filter((file) => existingPathSet.has(file.path)),
+    unreadableFiles: index.unreadableFiles.filter((file) => existingPathSet.has(file.path))
+  };
+}
+
+function shouldKeepOperation(operation: AIWorkspaceFileOperation, existingPathSet: Set<string>): boolean {
+  if (existingPathSet.has(operation.path)) return true;
+  if (operation.kind === "create" && operation.status === "pending") return true;
+  if (operation.kind === "delete" && operation.status === "applied" && operation.baseContent !== undefined) return true;
+  return false;
 }

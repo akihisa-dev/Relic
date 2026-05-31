@@ -23,11 +23,12 @@ import { normalizeWorkspaceRelativeInputPath, resolveWorkspaceRelativePath } fro
 import { workspaceSearchMaxFileBytes } from "../files/search";
 import { moveWorkspaceItemToTrash, type TrashItem } from "../files/trash";
 import { readAppSettings } from "../settings/appSettings";
-import { buildAIWorkspaceIndex, computeAIWorkspaceIndexSourceHash } from "./aiWorkspaceIndex";
+import { buildAIWorkspaceIndex, collectAIWorkspaceMarkdownPaths, computeAIWorkspaceIndexSourceHash } from "./aiWorkspaceIndex";
 import {
   clearAIWorkspaceData,
   emptyAIWorkspaceData,
   readAIWorkspaceData,
+  repairAIWorkspaceData,
   writeAIWorkspaceData,
   type AIWorkspaceChatData,
   type AIWorkspaceData
@@ -573,20 +574,31 @@ export async function clearAIWorkspaceState(
 }
 
 async function ensureIndexed(context: AIWorkspaceContext): Promise<AIWorkspaceData> {
-  const [data, currentSourceHash] = await Promise.all([
+  const [data, currentSourceHash, currentMarkdownPaths] = await Promise.all([
     readAIWorkspaceData(context.userDataPath, context.workspaceId),
-    computeAIWorkspaceIndexSourceHash(context.workspacePath)
+    computeAIWorkspaceIndexSourceHash(context.workspacePath),
+    collectAIWorkspaceMarkdownPaths(context.workspacePath)
   ]);
+  const repairedData = repairAIWorkspaceData(data, currentMarkdownPaths);
 
-  if (data.index.indexedAt && data.index.sourceHash === currentSourceHash) return data;
+  if (repairedData.index.indexedAt && repairedData.index.sourceHash === currentSourceHash) {
+    if (!isSameAIWorkspaceData(data, repairedData)) {
+      await writeAIWorkspaceData(context.userDataPath, context.workspaceId, repairedData);
+    }
+    return repairedData;
+  }
 
   const nextData = {
-    ...data,
+    ...repairedData,
     index: await buildAIWorkspaceIndex(context.workspacePath)
   };
   await writeAIWorkspaceData(context.userDataPath, context.workspaceId, nextData);
 
   return nextData;
+}
+
+function isSameAIWorkspaceData(left: AIWorkspaceData, right: AIWorkspaceData): boolean {
+  return JSON.stringify(left) === JSON.stringify(right);
 }
 
 async function toState(data: AIWorkspaceData, userDataPath?: string): Promise<AIWorkspaceState> {
@@ -1194,6 +1206,9 @@ function normalizeAIProviderError(provider: AIProvider, error: unknown): string 
   }
   if (lower.includes("rate limit") || lower.includes("rate_limit")) {
     return "OpenAI APIの利用が一時的に集中しています。少し時間を置いてからもう一度お試しください。";
+  }
+  if (lower.includes("model") || lower.includes("not found") || lower.includes("invalid_request_error")) {
+    return "OpenAIモデルを利用できませんでした。設定のOpenAIモデルを既定値へ戻して、もう一度お試しください。";
   }
 
   return message;
