@@ -1,18 +1,24 @@
 import { create } from "zustand";
 
 export type SidebarView = "files" | "ai" | "settings" | "tools" | "frontmatter" | "chronicle" | "calendar";
-export type RightPanelView = "ai" | "outline" | "links";
+export type RightPanelView = "outline" | "links";
+export type SecondarySidebarView = "none" | "ai-chat";
 
 interface UiState {
   activeSidebarView: SidebarView;
   isSidebarOpen: boolean;
+  isSecondarySidebarOpen: boolean;
   isRightPanelOpen: boolean;
   isTypewriterMode: boolean;
   rightPanelView: RightPanelView;
+  secondarySidebarView: SecondarySidebarView;
   selectedChartId: string | null;
+  closeSecondarySidebar: () => void;
   closeSidebar: () => void;
+  openSecondarySidebar: (view: SecondarySidebarView) => void;
   openSidebar: () => void;
   setSelectedChartId: (chartId: string | null) => void;
+  setSecondarySidebarView: (view: SecondarySidebarView) => void;
   setSidebarView: (view: SidebarView) => void;
   toggleSidebar: () => void;
   toggleRightPanel: () => void;
@@ -23,13 +29,26 @@ interface UiState {
 export const useUiStore = create<UiState>((set) => ({
   activeSidebarView: "files",
   isSidebarOpen: true,
+  isSecondarySidebarOpen: false,
   isRightPanelOpen: false,
   isTypewriterMode: false,
   rightPanelView: "outline",
+  secondarySidebarView: "none",
   selectedChartId: null,
+  closeSecondarySidebar: () => set({ isSecondarySidebarOpen: false, secondarySidebarView: "none" }),
   closeSidebar: () => set({ isSidebarOpen: false }),
+  openSecondarySidebar: (view) =>
+    set({
+      isSecondarySidebarOpen: view !== "none",
+      secondarySidebarView: view
+    }),
   openSidebar: () => set({ isSidebarOpen: true }),
   setSelectedChartId: (chartId) => set({ selectedChartId: chartId }),
+  setSecondarySidebarView: (view) =>
+    set({
+      isSecondarySidebarOpen: view !== "none",
+      secondarySidebarView: view
+    }),
   setSidebarView: (view) =>
     set({
       activeSidebarView: view,
