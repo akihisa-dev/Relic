@@ -3,6 +3,7 @@ import { useMemo } from "react";
 import type { Command } from "../components/CommandPalette";
 import type { TranslationKey } from "../i18nModel";
 import { formatShortcut } from "../keyboardShortcuts";
+import type { SidebarView } from "../store/uiStore";
 
 type Translate = (key: TranslationKey, params?: Record<string, string>) => string;
 
@@ -13,7 +14,7 @@ interface UseCommandPaletteCommandsInput {
   requestFileSearchFocus: () => void;
   setIsCreatingFile: (isCreating: boolean) => void;
   setShowQuickSwitcher: (isShown: boolean) => void;
-  setSidebarView: (view: "files" | "settings") => void;
+  setSidebarView: (view: SidebarView) => void;
   t: Translate;
   toggleRightPanel: () => void;
   toggleSidebar: () => void;

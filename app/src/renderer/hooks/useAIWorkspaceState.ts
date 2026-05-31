@@ -18,6 +18,8 @@ export function useAIWorkspaceState({
   isAIWorkspaceLoading: boolean;
   isAIWorkspaceSending: boolean;
   reloadAIWorkspace: () => Promise<void>;
+  createAIWorkspaceChat: () => Promise<void>;
+  selectAIWorkspaceChat: (chatId: string) => Promise<void>;
   rebuildAIWorkspaceIndex: () => Promise<void>;
   sendAIWorkspaceMessage: (
     message: string,
@@ -62,6 +64,41 @@ export function useAIWorkspaceState({
 
     setAIWorkspaceState(result.value);
   }, [isEnabled, onError, resetMessagePreview, workspaceId]);
+
+  const createAIWorkspaceChat = useCallback(async (): Promise<void> => {
+    if (!isEnabled || !workspaceId) return;
+    if (!window.relic?.createAIWorkspaceChat) return;
+
+    resetMessagePreview();
+    setIsAIWorkspaceLoading(true);
+    const result = await window.relic.createAIWorkspaceChat({});
+    setIsAIWorkspaceLoading(false);
+
+    if (!result.ok) {
+      onError(result.error.message);
+      return;
+    }
+
+    setAIWorkspaceState(result.value);
+  }, [isEnabled, onError, resetMessagePreview, workspaceId]);
+
+  const selectAIWorkspaceChat = useCallback(async (chatId: string): Promise<void> => {
+    if (!isEnabled || !workspaceId) return;
+    if (!window.relic?.selectAIWorkspaceChat) return;
+    if (chatId === aiWorkspaceState?.activeChatId) return;
+
+    resetMessagePreview();
+    setIsAIWorkspaceLoading(true);
+    const result = await window.relic.selectAIWorkspaceChat({ chatId });
+    setIsAIWorkspaceLoading(false);
+
+    if (!result.ok) {
+      onError(result.error.message);
+      return;
+    }
+
+    setAIWorkspaceState(result.value);
+  }, [aiWorkspaceState?.activeChatId, isEnabled, onError, resetMessagePreview, workspaceId]);
 
   const rebuildAIWorkspaceIndex = useCallback(async (): Promise<void> => {
     if (!isEnabled || !workspaceId) return;
@@ -175,6 +212,8 @@ export function useAIWorkspaceState({
     isAIWorkspaceLoading,
     isAIWorkspaceSending,
     reloadAIWorkspace,
+    createAIWorkspaceChat,
+    selectAIWorkspaceChat,
     rebuildAIWorkspaceIndex,
     sendAIWorkspaceMessage,
     confirmAIWorkspaceMessage,

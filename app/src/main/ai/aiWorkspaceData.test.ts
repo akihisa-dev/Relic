@@ -19,12 +19,20 @@ describe("AI Workspace data storage", () => {
   it("keeps workspace ids inside the AI workspace app data directory", async () => {
     const data = {
       ...emptyAIWorkspaceData(),
-      history: [{
-        content: "hello",
+      activeChatId: "chat-1",
+      chats: [{
         createdAt: "2026-05-30T00:00:00.000Z",
-        id: "message-1",
-        references: [],
-        role: "user" as const
+        history: [{
+          content: "hello",
+          createdAt: "2026-05-30T00:00:00.000Z",
+          id: "message-1",
+          references: [],
+          role: "user" as const
+        }],
+        id: "chat-1",
+        operations: [],
+        title: "hello",
+        updatedAt: "2026-05-30T00:00:00.000Z"
       }]
     };
 
@@ -66,7 +74,9 @@ describe("AI Workspace data storage", () => {
 
     const data = await readAIWorkspaceData(userDataPath, "workspace");
 
-    expect(data.history).toEqual([{
+    expect(data.activeChatId).toBe("legacy");
+    expect(data.chats[0].title).toBe("以前のチャット");
+    expect(data.chats[0].history).toEqual([{
       content: "AI response",
       createdAt: "2026-05-30T00:00:00.000Z",
       id: "message-1",

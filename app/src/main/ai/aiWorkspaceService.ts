@@ -8,10 +8,12 @@ import type {
   AIWorkspaceState,
   ApplyAIWorkspaceOperationsInput,
   ClearAIWorkspaceDataInput,
+  CreateAIWorkspaceChatInput,
   DiscardAIWorkspaceOperationsInput,
   PreviewAIWorkspaceMessageInput,
   AIWorkspaceMessagePreview,
   AIProvider,
+  SelectAIWorkspaceChatInput,
   SendAIWorkspaceMessageInput
 } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
@@ -26,6 +28,7 @@ import {
   emptyAIWorkspaceData,
   readAIWorkspaceData,
   writeAIWorkspaceData,
+  type AIWorkspaceChatData,
   type AIWorkspaceData
 } from "./aiWorkspaceData";
 import { hasOpenAIAPIKey, readOpenAIAPIKey } from "./openAIKeyStore";
@@ -85,6 +88,56 @@ export async function rebuildAIWorkspaceIndex(context: AIWorkspaceContext): Prom
   }
 }
 
+export async function createAIWorkspaceChat(
+  context: AIWorkspaceContext,
+  input: CreateAIWorkspaceChatInput = {}
+): Promise<RelicResult<AIWorkspaceState>> {
+  try {
+    const data = await readAIWorkspaceData(context.userDataPath, context.workspaceId);
+    const now = new Date().toISOString();
+    const chat: AIWorkspaceChatData = {
+      createdAt: now,
+      history: [],
+      id: createChatId(),
+      operations: [],
+      title: input.title?.trim() || "新しいチャット",
+      updatedAt: now
+    };
+    const nextData: AIWorkspaceData = {
+      ...data,
+      activeChatId: chat.id,
+      chats: [chat, ...data.chats]
+    };
+    await writeAIWorkspaceData(context.userDataPath, context.workspaceId, nextData);
+
+    return ok(await toState(nextData, context.userDataPath));
+  } catch (error) {
+    return fail("AI_WORKSPACE_CHAT_CREATE_FAILED", "AIチャットを作成できませんでした。", String(error));
+  }
+}
+
+export async function selectAIWorkspaceChat(
+  context: AIWorkspaceContext,
+  input: SelectAIWorkspaceChatInput
+): Promise<RelicResult<AIWorkspaceState>> {
+  try {
+    const data = await readAIWorkspaceData(context.userDataPath, context.workspaceId);
+    if (!data.chats.some((chat) => chat.id === input.chatId)) {
+      return fail("AI_WORKSPACE_CHAT_NOT_FOUND", "選択したAIチャットが見つかりません。");
+    }
+
+    const nextData: AIWorkspaceData = {
+      ...data,
+      activeChatId: input.chatId
+    };
+    await writeAIWorkspaceData(context.userDataPath, context.workspaceId, nextData);
+
+    return ok(await toState(nextData, context.userDataPath));
+  } catch (error) {
+    return fail("AI_WORKSPACE_CHAT_SELECT_FAILED", "AIチャットを切り替えられませんでした。", String(error));
+  }
+}
+
 export async function previewAIWorkspaceMessage(
   context: AIWorkspaceContext,
   input: PreviewAIWorkspaceMessageInput
@@ -123,6 +176,7 @@ export async function sendAIWorkspaceMessage(
 
   try {
     const data = await ensureIndexed(context);
+    const chat = ensureActiveChat(data, message);
     const references = buildReferences(data, message, input.activeFilePath, input.activeFileContent);
     const userMessage: AIWorkspaceMessage = {
       content: message,
@@ -138,7 +192,7 @@ export async function sendAIWorkspaceMessage(
       path: input.activeFilePath ?? null
     });
     const turnInput = {
-      history: data.history.map((item) => ({ content: item.content, role: item.role })),
+      history: chat.history.map((item) => ({ content: item.content, role: item.role })),
       message,
       pendingOperations: [],
       referenceContents,
@@ -192,9 +246,14 @@ export async function sendAIWorkspaceMessage(
     };
     const nextData = {
       ...data,
-      history: [...data.history, userMessage, assistantMessage],
+      activeChatId: chat.id,
+      chats: upsertChat(data.chats, {
+        ...chat,
+        history: [...chat.history, userMessage, assistantMessage],
+        title: titleForChatAfterUserMessage(chat, message),
+        updatedAt: assistantMessage.createdAt
+      }),
       index: appliedOperations.applied.length > 0 ? await buildAIWorkspaceIndex(context.workspacePath) : data.index,
-      operations: []
     };
     await writeAIWorkspaceData(context.userDataPath, context.workspaceId, nextData);
 
@@ -209,7 +268,8 @@ async function keepPendingOperations(
   data: AIWorkspaceData,
   message: string
 ): Promise<RelicResult<AIWorkspaceState>> {
-  const pendingOperations = data.operations.filter((operation) => operation.status === "pending");
+  const chat = activeChat(data);
+  const pendingOperations = chat.operations.filter((operation) => operation.status === "pending");
   const assistantMessage: AIWorkspaceMessage = {
     content: buildKeepPendingOperationsMessage(pendingOperations),
     createdAt: new Date().toISOString(),
@@ -222,7 +282,12 @@ async function keepPendingOperations(
   };
   const nextData: AIWorkspaceData = {
     ...data,
-    history: [...data.history, ...buildOptionalUserHistory(message), assistantMessage]
+    activeChatId: chat.id,
+    chats: upsertChat(data.chats, {
+      ...chat,
+      history: [...chat.history, ...buildOptionalUserHistory(message), assistantMessage],
+      updatedAt: assistantMessage.createdAt
+    })
   };
   await writeAIWorkspaceData(context.userDataPath, context.workspaceId, nextData);
 
@@ -254,8 +319,9 @@ export async function applyAIWorkspaceOperations(
   trashItem?: TrashItem
 ): Promise<RelicResult<AIWorkspaceState>> {
   const data = await readAIWorkspaceData(context.userDataPath, context.workspaceId);
+  const chat = activeChat(data);
   const targetIds = new Set(input.operationIds ?? []);
-  const targetOperations = data.operations.filter((operation) => {
+  const targetOperations = chat.operations.filter((operation) => {
     if (operation.status !== "pending") return false;
     return targetIds.size === 0 || targetIds.has(operation.id);
   });
@@ -287,16 +353,12 @@ export async function applyAIWorkspaceOperations(
     }
   }
 
-  const nextData: AIWorkspaceData = {
-    ...data,
-    index: await buildAIWorkspaceIndex(context.workspacePath),
-    operations: data.operations.map((operation) => {
-      if (appliedIds.has(operation.id)) return { ...operation, status: "applied" };
-      if (staleIds.has(operation.id)) return { ...operation, status: "stale" };
-      if (failedIds.has(operation.id)) return { ...operation, status: "failed" };
-      return operation;
-    })
-  };
+  const nextOperations = chat.operations.map((operation) => {
+    if (appliedIds.has(operation.id)) return { ...operation, status: "applied" as const };
+    if (staleIds.has(operation.id)) return { ...operation, status: "stale" as const };
+    if (failedIds.has(operation.id)) return { ...operation, status: "failed" as const };
+    return operation;
+  });
   const assistantMessage: AIWorkspaceMessage = {
     content: buildApplyOperationsMessage(targetOperations, staleIds, failedIds),
     createdAt: new Date().toISOString(),
@@ -307,7 +369,17 @@ export async function applyAIWorkspaceOperations(
     })),
     role: "assistant"
   };
-  nextData.history = [...nextData.history, ...buildOptionalUserHistory(input.userMessage), assistantMessage];
+  const nextData: AIWorkspaceData = {
+    ...data,
+    activeChatId: chat.id,
+    index: await buildAIWorkspaceIndex(context.workspacePath),
+    chats: upsertChat(data.chats, {
+      ...chat,
+      history: [...chat.history, ...buildOptionalUserHistory(input.userMessage), assistantMessage],
+      operations: nextOperations,
+      updatedAt: assistantMessage.createdAt
+    })
+  };
   await writeAIWorkspaceData(context.userDataPath, context.workspaceId, nextData);
 
   return ok(await toState(nextData, context.userDataPath));
@@ -318,8 +390,9 @@ export async function discardAIWorkspaceOperations(
   input: DiscardAIWorkspaceOperationsInput
 ): Promise<RelicResult<AIWorkspaceState>> {
   const data = await readAIWorkspaceData(context.userDataPath, context.workspaceId);
+  const chat = activeChat(data);
   const targetIds = new Set(input.operationIds ?? []);
-  const targetOperations = data.operations.filter((operation) => {
+  const targetOperations = chat.operations.filter((operation) => {
     if (operation.status !== "pending") return false;
     return targetIds.size === 0 || targetIds.has(operation.id);
   });
@@ -329,13 +402,10 @@ export async function discardAIWorkspaceOperations(
   }
 
   const discardedIds = new Set(targetOperations.map((operation) => operation.id));
-  const nextData: AIWorkspaceData = {
-    ...data,
-    operations: data.operations.map((operation) => {
-      if (discardedIds.has(operation.id)) return { ...operation, status: "discarded" };
-      return operation;
-    })
-  };
+  const nextOperations = chat.operations.map((operation) => {
+    if (discardedIds.has(operation.id)) return { ...operation, status: "discarded" as const };
+    return operation;
+  });
   const assistantMessage: AIWorkspaceMessage = {
     content: buildDiscardOperationsMessage(targetOperations),
     createdAt: new Date().toISOString(),
@@ -346,7 +416,16 @@ export async function discardAIWorkspaceOperations(
     })),
     role: "assistant"
   };
-  nextData.history = [...nextData.history, ...buildOptionalUserHistory(input.userMessage), assistantMessage];
+  const nextData: AIWorkspaceData = {
+    ...data,
+    activeChatId: chat.id,
+    chats: upsertChat(data.chats, {
+      ...chat,
+      history: [...chat.history, ...buildOptionalUserHistory(input.userMessage), assistantMessage],
+      operations: nextOperations,
+      updatedAt: assistantMessage.createdAt
+    })
+  };
   await writeAIWorkspaceData(context.userDataPath, context.workspaceId, nextData);
 
   return ok(await toState(nextData, context.userDataPath));
@@ -358,7 +437,8 @@ async function createRevertOperations(
   message: string,
   activeFilePath?: string | null
 ): Promise<RelicResult<AIWorkspaceState>> {
-  const targetOperations = selectAppliedOperationsForRevert(data.operations, message, activeFilePath);
+  const chat = activeChat(data);
+  const targetOperations = selectAppliedOperationsForRevert(chat.operations, message, activeFilePath);
   if (targetOperations.length === 0) {
     return fail("AI_WORKSPACE_NO_REVERTABLE_OPERATIONS", "元に戻せるAI変更履歴がありません。");
   }
@@ -393,8 +473,13 @@ async function createRevertOperations(
   };
   const nextData: AIWorkspaceData = {
     ...data,
-    history: [...data.history, userMessage, assistantMessage],
-    operations: mergeNewOperations(data.operations, revertOperations)
+    activeChatId: chat.id,
+    chats: upsertChat(data.chats, {
+      ...chat,
+      history: [...chat.history, userMessage, assistantMessage],
+      operations: mergeNewOperations(chat.operations, revertOperations),
+      updatedAt: assistantMessage.createdAt
+    })
   };
   await writeAIWorkspaceData(context.userDataPath, context.workspaceId, nextData);
 
@@ -415,9 +500,9 @@ export async function clearAIWorkspaceState(
 
   const data = await readAIWorkspaceData(context.userDataPath, context.workspaceId);
   const nextData: AIWorkspaceData = {
-    history: includeHistory ? [] : data.history,
+    activeChatId: includeHistory ? null : data.activeChatId,
+    chats: includeHistory ? [] : data.chats,
     index: includeIndex ? emptyAIWorkspaceData().index : data.index,
-    operations: includeHistory ? [] : data.operations
   };
   await writeAIWorkspaceData(context.userDataPath, context.workspaceId, nextData);
 
@@ -443,10 +528,20 @@ async function ensureIndexed(context: AIWorkspaceContext): Promise<AIWorkspaceDa
 
 async function toState(data: AIWorkspaceData, userDataPath?: string): Promise<AIWorkspaceState> {
   const settings = userDataPath ? await readAppSettings(userDataPath) : null;
+  const chat = data.chats.find((item) => item.id === data.activeChatId) ?? data.chats[0] ?? null;
+  const sortedChats = [...data.chats].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 
   return {
+    activeChatId: chat?.id ?? null,
     aiProvider: settings?.aiSettings.aiProvider ?? "codex-app-server",
-    history: data.history,
+    chats: sortedChats.map((item) => ({
+      createdAt: item.createdAt,
+      id: item.id,
+      messageCount: item.history.length,
+      title: item.title,
+      updatedAt: item.updatedAt
+    })),
+    history: chat?.history ?? [],
     index: {
       chunkCount: data.index.chunks.length,
       indexedAt: data.index.indexedAt,
@@ -455,8 +550,8 @@ async function toState(data: AIWorkspaceData, userDataPath?: string): Promise<AI
       unreadableFiles: data.index.unreadableFiles
     },
     openAIAPIKeyConfigured: userDataPath ? await hasOpenAIAPIKey(userDataPath) : false,
-    operationHistory: data.operations,
-    pendingOperations: data.operations.filter((operation) => operation.status === "pending")
+    operationHistory: chat?.operations ?? [],
+    pendingOperations: chat?.operations.filter((operation) => operation.status === "pending") ?? []
   };
 }
 
@@ -499,6 +594,55 @@ function buildReferences(
   }, ...references.filter((reference) => {
     return normalizeOperationText(reference.path) !== normalizedActiveFilePath;
   })];
+}
+
+function activeChat(data: AIWorkspaceData): AIWorkspaceChatData {
+  return data.chats.find((chat) => chat.id === data.activeChatId) ?? data.chats[0] ?? emptyChat();
+}
+
+function ensureActiveChat(data: AIWorkspaceData, firstMessage: string): AIWorkspaceChatData {
+  const existing = data.chats.find((chat) => chat.id === data.activeChatId) ?? data.chats[0];
+  if (existing) return existing;
+
+  const now = new Date().toISOString();
+  return {
+    createdAt: now,
+    history: [],
+    id: createChatId(),
+    operations: [],
+    title: titleFromMessage(firstMessage),
+    updatedAt: now
+  };
+}
+
+function emptyChat(): AIWorkspaceChatData {
+  const now = new Date().toISOString();
+  return {
+    createdAt: now,
+    history: [],
+    id: createChatId(),
+    operations: [],
+    title: "新しいチャット",
+    updatedAt: now
+  };
+}
+
+function upsertChat(chats: AIWorkspaceChatData[], chat: AIWorkspaceChatData): AIWorkspaceChatData[] {
+  const exists = chats.some((item) => item.id === chat.id);
+  if (!exists) return [chat, ...chats];
+
+  return chats.map((item) => item.id === chat.id ? chat : item);
+}
+
+function titleForChatAfterUserMessage(chat: AIWorkspaceChatData, message: string): string {
+  if (chat.title && chat.title !== "新しいチャット") return chat.title;
+  return titleFromMessage(message);
+}
+
+function titleFromMessage(message: string): string {
+  const normalized = message.replace(/\s+/g, " ").trim();
+  if (!normalized) return "新しいチャット";
+  return normalized.length > 28 ? `${normalized.slice(0, 28)}…` : normalized;
 }
 
 function allWorkspaceReferences(data: AIWorkspaceData): AIWorkspaceData["index"]["chunks"] {
@@ -1051,4 +1195,8 @@ function buildOptionalUserHistory(message?: string): AIWorkspaceMessage[] {
 
 function createMessageId(prefix: string): string {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function createChatId(): string {
+  return createMessageId("chat");
 }

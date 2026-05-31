@@ -1083,6 +1083,60 @@ describe("App", () => {
     expect(screen.queryByText("AIへ送るMarkdown参照")).not.toBeInTheDocument();
   });
 
+  it("左レールのAI Workspaceでチャット履歴を表示して切り替えられる", async () => {
+    const aiState = {
+      activeChatId: "chat-1",
+      aiProvider: "codex-app-server" as const,
+      chats: [
+        {
+          createdAt: "2026-05-30T00:00:00.000Z",
+          id: "chat-1",
+          messageCount: 2,
+          title: "以前のチャット",
+          updatedAt: "2026-05-30T00:00:00.000Z"
+        },
+        {
+          createdAt: "2026-05-31T00:00:00.000Z",
+          id: "chat-2",
+          messageCount: 0,
+          title: "認証整理",
+          updatedAt: "2026-05-31T00:00:00.000Z"
+        }
+      ],
+      history: [],
+      index: { chunkCount: 1, indexedAt: "2026-05-30T00:00:00.000Z", indexedFileCount: 1, skippedLargeFiles: [], unreadableFiles: [] },
+      openAIAPIKeyConfigured: true,
+      operationHistory: [],
+      pendingOperations: []
+    };
+    const createAIWorkspaceChat = vi.fn().mockResolvedValue({ ok: true, value: aiState });
+    const selectAIWorkspaceChat = vi.fn().mockResolvedValue({
+      ok: true,
+      value: { ...aiState, activeChatId: "chat-2" }
+    });
+
+    window.relic = makeRelicApi({
+      createAIWorkspaceChat,
+      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace }),
+      getAIWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: aiState }),
+      selectAIWorkspaceChat
+    });
+
+    await renderApp();
+
+    fireEvent.click(await screen.findByRole("button", { name: "AI Workspace" }));
+
+    expect(await screen.findByRole("button", { name: "新規チャット" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /以前のチャット/ })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /認証整理/ }));
+
+    await waitFor(() => {
+      expect(selectAIWorkspaceChat).toHaveBeenCalledWith({ chatId: "chat-2" });
+    });
+    fireEvent.click(screen.getByRole("button", { name: "新規チャット" }));
+    expect(createAIWorkspaceChat).toHaveBeenCalledWith({});
+  });
+
   it("機能トグルで右パネルをOFFにしたら表示上も右パネルを閉じる", async () => {
     const saveFeatureToggles = vi.fn().mockResolvedValue({ ok: true, value: undefined });
 

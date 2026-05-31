@@ -19,10 +19,19 @@ export interface AIWorkspaceIndexData {
   unreadableFiles: Array<{ path: string; reason: string }>;
 }
 
-export interface AIWorkspaceData {
+export interface AIWorkspaceChatData {
+  createdAt: string;
   history: AIWorkspaceMessage[];
-  index: AIWorkspaceIndexData;
+  id: string;
   operations: AIWorkspaceFileOperation[];
+  title: string;
+  updatedAt: string;
+}
+
+export interface AIWorkspaceData {
+  activeChatId: string | null;
+  chats: AIWorkspaceChatData[];
+  index: AIWorkspaceIndexData;
 }
 
 export const emptyAIWorkspaceIndex = (): AIWorkspaceIndexData => ({
@@ -34,9 +43,9 @@ export const emptyAIWorkspaceIndex = (): AIWorkspaceIndexData => ({
 });
 
 export const emptyAIWorkspaceData = (): AIWorkspaceData => ({
-  history: [],
+  activeChatId: null,
+  chats: [],
   index: emptyAIWorkspaceIndex(),
-  operations: []
 });
 
 export async function readAIWorkspaceData(userDataPath: string, workspaceId: string): Promise<AIWorkspaceData> {
@@ -44,12 +53,31 @@ export async function readAIWorkspaceData(userDataPath: string, workspaceId: str
     const raw = await readFile(aiWorkspaceDataPath(userDataPath, workspaceId), "utf8");
     const parsed = JSON.parse(raw) as Partial<AIWorkspaceData>;
 
+    const legacyHistory = Array.isArray((parsed as Partial<AIWorkspaceData> & { history?: unknown }).history)
+      ? (parsed as Partial<AIWorkspaceData> & { history?: unknown[] }).history
+        ?.map(parseAIWorkspaceMessage).filter((message): message is AIWorkspaceMessage => Boolean(message)) ?? []
+      : [];
+    const legacyOperations = Array.isArray((parsed as Partial<AIWorkspaceData> & { operations?: unknown }).operations)
+      ? (parsed as Partial<AIWorkspaceData> & { operations?: unknown[] }).operations
+        ?.filter(isAIWorkspaceFileOperation) ?? []
+      : [];
+    const chats = Array.isArray(parsed.chats)
+      ? parsed.chats.map(parseAIWorkspaceChat).filter((chat): chat is AIWorkspaceChatData => Boolean(chat))
+      : [];
+    const migratedChats = chats.length > 0
+      ? chats
+      : legacyHistory.length > 0 || legacyOperations.length > 0
+        ? [legacyChat(legacyHistory, legacyOperations)]
+        : [];
+    const activeChatId = typeof parsed.activeChatId === "string" &&
+      migratedChats.some((chat) => chat.id === parsed.activeChatId)
+      ? parsed.activeChatId
+      : migratedChats[0]?.id ?? null;
+
     return {
-      history: Array.isArray(parsed.history)
-        ? parsed.history.map(parseAIWorkspaceMessage).filter((message): message is AIWorkspaceMessage => Boolean(message))
-        : [],
+      activeChatId,
+      chats: migratedChats,
       index: parseIndexData(parsed.index),
-      operations: Array.isArray(parsed.operations) ? parsed.operations.filter(isAIWorkspaceFileOperation) : []
     };
   } catch {
     return emptyAIWorkspaceData();
@@ -72,6 +100,52 @@ export async function clearAIWorkspaceData(userDataPath: string, workspaceId: st
 
 function aiWorkspaceDataPath(userDataPath: string, workspaceId: string): string {
   return path.join(userDataPath, "ai-workspaces", `${encodeURIComponent(workspaceId)}.json`);
+}
+
+function legacyChat(
+  history: AIWorkspaceMessage[],
+  operations: AIWorkspaceFileOperation[]
+): AIWorkspaceChatData {
+  const timestamps = [
+    ...history.map((message) => message.createdAt),
+    ...operations.map((operation) => operation.createdAt)
+  ].filter(Boolean).sort();
+  const createdAt = timestamps[0] ?? new Date(0).toISOString();
+  const updatedAt = timestamps.at(-1) ?? createdAt;
+
+  return {
+    createdAt,
+    history,
+    id: "legacy",
+    operations,
+    title: "以前のチャット",
+    updatedAt
+  };
+}
+
+function parseAIWorkspaceChat(value: unknown): AIWorkspaceChatData | null {
+  if (!value || typeof value !== "object") return null;
+  const record = value as Partial<AIWorkspaceChatData>;
+
+  if (
+    typeof record.id !== "string" ||
+    typeof record.title !== "string" ||
+    typeof record.createdAt !== "string" ||
+    typeof record.updatedAt !== "string"
+  ) {
+    return null;
+  }
+
+  return {
+    createdAt: record.createdAt,
+    history: Array.isArray(record.history)
+      ? record.history.map(parseAIWorkspaceMessage).filter((message): message is AIWorkspaceMessage => Boolean(message))
+      : [],
+    id: record.id,
+    operations: Array.isArray(record.operations) ? record.operations.filter(isAIWorkspaceFileOperation) : [],
+    title: record.title.trim() || "新しいチャット",
+    updatedAt: record.updatedAt
+  };
 }
 
 function parseIndexData(value: unknown): AIWorkspaceIndexData {

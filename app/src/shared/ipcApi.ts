@@ -33,12 +33,14 @@ import type {
   AIWorkspaceMessagePreview,
   AIWorkspaceState,
   ClearAIWorkspaceDataInput,
+  CreateAIWorkspaceChatInput,
   DiscardAIWorkspaceOperationsInput,
   PreviewAIWorkspaceMessageInput,
   RebuildAIWorkspaceIndexInput,
   SaveAIModelInput,
   SaveAIProviderInput,
   SaveOpenAIAPIKeyInput,
+  SelectAIWorkspaceChatInput,
   SendAIWorkspaceMessageInput,
   TestOpenAIAPIKeyResult
 } from "./ipcAiWorkspace";
@@ -150,6 +152,8 @@ export interface RelicApi {
   mergeFiles: (input: MergeFilesInput) => Promise<RelicResult<string>>;
   splitFileByHeading: (input: SplitFileByHeadingInput) => Promise<RelicResult<string[]>>;
   getAIWorkspaceState: () => Promise<RelicResult<AIWorkspaceState>>;
+  createAIWorkspaceChat: (input: CreateAIWorkspaceChatInput) => Promise<RelicResult<AIWorkspaceState>>;
+  selectAIWorkspaceChat: (input: SelectAIWorkspaceChatInput) => Promise<RelicResult<AIWorkspaceState>>;
   getAISettings: () => Promise<RelicResult<AISettingsState>>;
   saveAIProvider: (input: SaveAIProviderInput) => Promise<RelicResult<AISettingsState>>;
   saveAIModel: (input: SaveAIModelInput) => Promise<RelicResult<AISettingsState>>;

@@ -17,6 +17,14 @@ export interface AIWorkspaceMessage {
   role: AIWorkspaceRole;
 }
 
+export interface AIWorkspaceChatSummary {
+  createdAt: string;
+  id: string;
+  messageCount: number;
+  title: string;
+  updatedAt: string;
+}
+
 export interface AIWorkspaceReference {
   line?: number;
   path: string;
@@ -37,7 +45,9 @@ export interface AIWorkspaceSkippedFile {
 }
 
 export interface AIWorkspaceState {
+  activeChatId?: string | null;
   aiProvider: AIProvider;
+  chats?: AIWorkspaceChatSummary[];
   history: AIWorkspaceMessage[];
   index: AIWorkspaceIndexSummary;
   openAIAPIKeyConfigured: boolean;
@@ -97,6 +107,14 @@ export interface RebuildAIWorkspaceIndexInput {
 export interface ClearAIWorkspaceDataInput {
   includeHistory?: boolean;
   includeIndex?: boolean;
+}
+
+export interface CreateAIWorkspaceChatInput {
+  title?: string;
+}
+
+export interface SelectAIWorkspaceChatInput {
+  chatId: string;
 }
 
 export type AIWorkspaceFileOperationStatus = "pending" | "applied" | "discarded" | "failed" | "stale" | "replaced";

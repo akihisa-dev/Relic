@@ -128,9 +128,11 @@ export function App(): ReactElement {
     applyAIWorkspaceOperations,
     cancelAIWorkspaceMessage,
     confirmAIWorkspaceMessage,
+    createAIWorkspaceChat,
     discardAIWorkspaceOperations,
     rebuildAIWorkspaceIndex,
     reloadAIWorkspace,
+    selectAIWorkspaceChat,
     sendAIWorkspaceMessage,
     clearAIWorkspaceData
   } = useAIWorkspaceState({
@@ -676,8 +678,12 @@ export function App(): ReactElement {
       return;
     }
 
+    if (view === "ai") {
+      setRightPanelView("ai");
+    }
+
     setSidebarView(view);
-  }, [focusedPane, openPanelInPane, panelLabels, setSidebarView]);
+  }, [focusedPane, openPanelInPane, panelLabels, setRightPanelView, setSidebarView]);
 
   const { renderChartTab, renderPanelTab } = useAppTabRenderers({
     appInfo,
@@ -777,7 +783,9 @@ export function App(): ReactElement {
 
         <AppFilesSidebar
           activeSidebarView={activeSidebarView}
+          aiWorkspaceState={aiWorkspaceState}
           fileSelectionCount={fileSelectionCount}
+          isAIWorkspaceLoading={isAIWorkspaceLoading}
           isCreatingFile={isCreatingFile}
           isCreatingFolder={isCreatingFolder}
           isCreatingWorkspace={isCreatingWorkspace}
@@ -785,6 +793,7 @@ export function App(): ReactElement {
           isSearching={isSearching}
           isSidebarOpen={isSidebarOpen}
           isSidebarResizing={isSidebarResizing}
+          onCreateAIChat={() => { void createAIWorkspaceChat(); }}
           onCreateFile={handleCreateFileFromSidebar}
           onCreateFileInFolder={handleCreateFileInFolder}
           onCreateFolder={handleCreateFolderFromSidebar}
@@ -805,6 +814,10 @@ export function App(): ReactElement {
           onSearchModeChange={setSearchMode}
           onSearchQueryChange={setSearchQuery}
           onSelectFolder={handleSelectFolder}
+          onSelectAIChat={(chatId) => {
+            setRightPanelView("ai");
+            void selectAIWorkspaceChat(chatId);
+          }}
           onSelectedCountChange={setFileSelectionCount}
           onTogglePin={handleTogglePin}
           openingFilePath={openingFilePath}
