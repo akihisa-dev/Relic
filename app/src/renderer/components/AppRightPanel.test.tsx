@@ -72,12 +72,13 @@ describe("AppRightPanel", () => {
       </I18nProvider>
     );
 
-    expect(screen.getByText("Novel のMarkdown共同作業")).toBeInTheDocument();
-    expect(screen.getByText("AI共同作業: Codex App Server")).toBeInTheDocument();
-    expect(screen.getByText("2 files / 3 chunks")).toBeInTheDocument();
+    expect(screen.getByLabelText("AIへのメッセージ")).toBeInTheDocument();
+    expect(screen.queryByText("Novel のMarkdown共同作業")).not.toBeInTheDocument();
+    expect(screen.queryByText("AI共同作業: Codex App Server")).not.toBeInTheDocument();
+    expect(screen.queryByText("2 files / 3 chunks")).not.toBeInTheDocument();
   });
 
-  it("explains when AI workspace conversation is unavailable", () => {
+  it("keeps the AI workspace panel as a chat surface even when OpenAI API is unavailable", () => {
     render(
       <I18nProvider language="en">
         <AppRightPanel
@@ -124,8 +125,9 @@ describe("AppRightPanel", () => {
       </I18nProvider>
     );
 
-    expect(screen.getByText("AI共同作業: OpenAI API")).toBeInTheDocument();
-    expect(screen.getByText("AIとの会話にはOpenAI APIキーが必要です。設定のAIから登録してください。Markdownの閲覧と編集はこのまま使えます。")).toBeInTheDocument();
+    expect(screen.getByLabelText("AIへのメッセージ")).toBeInTheDocument();
+    expect(screen.queryByText("AI共同作業: OpenAI API")).not.toBeInTheDocument();
+    expect(screen.queryByText("AIとの会話にはOpenAI APIキーが必要です。設定のAIから登録してください。Markdownの閲覧と編集はこのまま使えます。")).not.toBeInTheDocument();
   });
 
   it("confirms before clearing AI workspace data", () => {

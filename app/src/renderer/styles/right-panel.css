@@ -105,24 +105,11 @@
 
 .ai-workspace-panel {
   display: grid;
-  gap: 12px;
+  gap: 10px;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
   min-height: 100%;
 }
 
-.ai-workspace-header {
-  align-items: start;
-  display: flex;
-  gap: 10px;
-  justify-content: space-between;
-}
-
-.ai-workspace-title {
-  color: var(--text);
-  font-size: 14px;
-  font-weight: 700;
-}
-
-.ai-workspace-subtitle,
 .ai-workspace-status,
 .ai-workspace-status-note,
 .ai-workspace-note {
@@ -133,6 +120,7 @@
 .ai-workspace-header-actions {
   display: flex;
   gap: 4px;
+  justify-content: flex-end;
 }
 
 .ai-workspace-icon-button {
@@ -597,9 +585,11 @@
 }
 
 .ai-workspace-messages {
+  align-content: end;
   display: grid;
-  gap: 10px;
-  min-height: 160px;
+  gap: 14px;
+  min-height: 0;
+  overflow: auto;
 }
 
 .ai-workspace-history {
@@ -668,19 +658,20 @@
 }
 
 .ai-workspace-message {
-  border: 1px solid var(--border);
-  border-radius: 6px;
   display: grid;
-  gap: 8px;
-  padding: 10px;
+  max-width: 100%;
 }
 
 .ai-workspace-message--user {
   background: var(--hover);
+  border-radius: 14px;
+  justify-self: end;
+  max-width: min(82%, 520px);
+  padding: 8px 10px;
 }
 
 .ai-workspace-message--assistant {
-  background: var(--popup-bg);
+  justify-self: stretch;
 }
 
 .ai-workspace-message-role {
@@ -740,28 +731,33 @@
 }
 
 .ai-workspace-form {
+  align-items: end;
+  border: 1px solid var(--border);
+  border-radius: 14px;
   display: grid;
-  gap: 8px;
+  gap: 6px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding: 6px;
 }
 
 .ai-workspace-form textarea {
-  background: var(--input-bg);
-  border: 1px solid var(--border);
-  border-radius: 6px;
+  background: transparent;
+  border: 0;
   color: var(--text);
   font: inherit;
-  min-height: 86px;
-  padding: 8px;
+  max-height: 160px;
+  min-height: 38px;
+  padding: 9px 6px;
   resize: vertical;
 }
 
 .ai-workspace-form button {
   background: var(--accent);
   border: 0;
-  border-radius: 6px;
+  border-radius: 10px;
   color: #ffffff;
-  min-height: 30px;
-  padding: 0 10px;
+  min-height: 38px;
+  padding: 0 14px;
 }
 
 .ai-workspace-form button:disabled {
