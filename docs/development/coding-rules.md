@@ -202,6 +202,17 @@ UIに表示する日本語文言は、後から集約できるようにコンポ
 - コードをそのまま言い換えるコメントは書かない
 - 仕様に由来する分岐は、関連仕様ファイル名が分かる短いコメントを許容する
 
+## 肥大化防止
+
+- 1000行超の `ts` / `tsx` は原則として分割対象にする
+- 700行超の `ts` / `tsx` は分割候補として調査対象にする
+- UIコンポーネントに、検索、並び替え、検証、正規化、parse、serializeなどのpure functionを溜めない
+- `sort` / `filter` / `validate` / `normalize` / `parse` / `serialize` は、責務名が分かるmodel、lib、serviceへ寄せる
+- 共通型・共通定数は `shared` / `types` / `constants`、または既存の責務別共有モジュールへ寄せる
+- IPC channel / payload / response は境界定義に寄せ、main / preload / rendererのどこに責務があるか分かる名前にする
+- docsと実装がずれた場合は、現在実装を正としてdocsを更新する
+- 新機能追加時は、肥大ファイルへ直接積み増す前に、hook / component / lib / serviceへ切り出せる責務を先に作る
+
 ---
 
 ## ドキュメント更新

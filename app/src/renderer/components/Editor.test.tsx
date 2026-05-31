@@ -1,6 +1,5 @@
 import { redo, undo } from "@codemirror/commands";
 import { markdown } from "@codemirror/lang-markdown";
-import { ensureSyntaxTree } from "@codemirror/language";
 import { EditorState } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 import { GFM } from "@lezer/markdown";
@@ -8,112 +7,21 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { createRef } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { defaultEditorSettings } from "../../shared/ipc";
 import { contextSelectionHighlightField } from "../editorContextSelectionHighlight";
 import { buildWikiLinkCompletionSource } from "../editorExtensions";
 import { headingFoldRange } from "../editorHeadingFolding";
 import { isListInputEvent } from "../editorListInput";
-import { buildLivePreviewDecorations, findClickableLinkAtPosition } from "../editorLivePreview";
-import { buildTableDecorations } from "../editorTables";
+import { findClickableLinkAtPosition } from "../editorLivePreview";
 import { I18nProvider } from "../i18n";
-import { createTranslator } from "../i18nModel";
 import { Editor } from "./Editor";
-
-const settings = { ...defaultEditorSettings, language: "ja" as const };
-
-async function collectLivePreviewClasses(content: string, cursor: number, hasFocus = true): Promise<Set<string>> {
-  const state = EditorState.create({
-    doc: content,
-    extensions: [markdown({ extensions: GFM })],
-    selection: { anchor: cursor }
-  });
-  await ensureSyntaxTree(state, state.doc.length, 100);
-
-  const classes = new Set<string>();
-  buildLivePreviewDecorations({
-    hasFocus,
-    state,
-    visibleRanges: [{ from: 0, to: state.doc.length }]
-  } as unknown as EditorView).between(0, state.doc.length, (_from, _to, value) => {
-    const cls = (value as unknown as { spec?: { class?: string } }).spec?.class;
-    if (cls) classes.add(cls);
-  });
-
-  return classes;
-}
-
-async function collectLivePreviewWidgets(content: string, cursor: number, hasFocus = true): Promise<string[]> {
-  const state = EditorState.create({
-    doc: content,
-    extensions: [markdown({ extensions: GFM })],
-    selection: { anchor: cursor }
-  });
-  await ensureSyntaxTree(state, state.doc.length, 100);
-
-  const widgets: string[] = [];
-  void hasFocus;
-  buildTableDecorations(state, createTranslator("ja")).between(0, state.doc.length, (_from, _to, value) => {
-    const widget = (value as unknown as { spec?: { widget?: { constructor?: { name?: string } } } }).spec?.widget;
-    if (widget?.constructor?.name) widgets.push(widget.constructor.name);
-  });
-
-  return widgets;
-}
-
-async function collectInlineLivePreviewWidgets(content: string, cursor: number, hasFocus = true): Promise<string[]> {
-  const state = EditorState.create({
-    doc: content,
-    extensions: [markdown({ extensions: GFM })],
-    selection: { anchor: cursor }
-  });
-  await ensureSyntaxTree(state, state.doc.length, 100);
-
-  const widgets: string[] = [];
-  buildLivePreviewDecorations({
-    hasFocus,
-    state,
-    visibleRanges: [{ from: 0, to: state.doc.length }]
-  } as unknown as EditorView).between(0, state.doc.length, (_from, _to, value) => {
-    const widget = (value as unknown as { spec?: { widget?: { constructor?: { name?: string } } } }).spec?.widget;
-    if (widget?.constructor?.name) widgets.push(widget.constructor.name);
-  });
-
-  return widgets;
-}
-
-async function collectInlineLivePreviewWidgetClasses(content: string, cursor: number, hasFocus = true): Promise<string[]> {
-  const state = EditorState.create({
-    doc: content,
-    extensions: [markdown({ extensions: GFM })],
-    selection: { anchor: cursor }
-  });
-  await ensureSyntaxTree(state, state.doc.length, 100);
-
-  const classes: string[] = [];
-  buildLivePreviewDecorations({
-    hasFocus,
-    state,
-    visibleRanges: [{ from: 0, to: state.doc.length }]
-  } as unknown as EditorView).between(0, state.doc.length, (_from, _to, value) => {
-    const widget = (value as unknown as { spec?: { widget?: { className?: string } } }).spec?.widget;
-    if (widget?.className) classes.push(widget.className);
-  });
-
-  return classes;
-}
-
-async function expandFrontmatter(container: HTMLElement): Promise<void> {
-  await waitFor(() => expect(container.querySelector(".cm-frontmatter-header")).not.toBeNull());
-  const properties = container.querySelector(".cm-frontmatter-properties");
-
-  if (properties?.getAttribute("data-collapsed") === "true") {
-    fireEvent.click(container.querySelector(".cm-frontmatter-header") as HTMLButtonElement);
-  }
-
-  await waitFor(() => {
-    expect(container.querySelector(".cm-frontmatter-properties")?.getAttribute("data-collapsed")).toBe("false");
-  });
-}
+import {
+  collectInlineLivePreviewWidgetClasses,
+  collectInlineLivePreviewWidgets,
+  collectLivePreviewClasses,
+  collectLivePreviewWidgets,
+  expandFrontmatter,
+  settings
+} from "./editorTestHelpers";
 
 describe("Editor", () => {
   afterEach(() => {
