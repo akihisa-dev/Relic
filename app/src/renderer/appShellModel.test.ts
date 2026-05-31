@@ -88,6 +88,7 @@ describe("appShellModel", () => {
     expect(labels).toEqual({
       chronicleSettings: "Calendar Settings",
       frontmatter: "Frontmatter",
+      hakobiBridge: "Hakobi Bridge",
       settings: "Settings",
       tools: "Tools"
     });
@@ -101,6 +102,8 @@ describe("appShellModel", () => {
   it("filters and splits rail views without changing order", () => {
     const railViews: AppRailView[] = [
       { icon: null, id: "files", label: "Files" },
+      { icon: null, id: "ai", label: "Cowork" },
+      { icon: null, id: "hakobiBridge", label: "Hakobi Bridge" },
       { icon: null, id: "tools", label: "Tools" },
       { icon: null, id: "frontmatter", label: "Frontmatter" },
       { icon: null, id: "chronicle", label: "Timeline" },
@@ -110,7 +113,7 @@ describe("appShellModel", () => {
     ];
 
     const defaultEnabled = enabledRailViewsForFeatures(railViews, defaultFeatureToggles);
-    expect(defaultEnabled.map((view) => view.id)).toEqual(["files", "calendar", "settings"]);
+    expect(defaultEnabled.map((view) => view.id)).toEqual(["files", "ai", "hakobiBridge", "calendar", "settings"]);
 
     const enabled = enabledRailViewsForFeatures(railViews, {
       ...defaultFeatureToggles,
@@ -122,10 +125,10 @@ describe("appShellModel", () => {
     });
     const split = splitRailViews(enabled);
 
-    expect(enabled.map((view) => view.id)).toEqual(["files", "settings"]);
-    expect(split.primaryRailViews.map((view) => view.id)).toEqual(["files"]);
+    expect(enabled.map((view) => view.id)).toEqual(["files", "ai", "hakobiBridge", "settings"]);
+    expect(split.primaryRailViews.map((view) => view.id)).toEqual(["files", "ai"]);
     expect(split.chartRailViews.map((view) => view.id)).toEqual([]);
-    expect(split.panelRailViews.map((view) => view.id)).toEqual(["settings"]);
+    expect(split.panelRailViews.map((view) => view.id)).toEqual(["hakobiBridge", "settings"]);
     expect(chartIdForRailView("chronicle")).toBe("chronicle");
     expect(chartIdForRailView("calendar")).toBe("date");
   });
