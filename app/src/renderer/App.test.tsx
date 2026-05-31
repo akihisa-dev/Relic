@@ -1211,6 +1211,41 @@ describe("App", () => {
     });
   });
 
+  it("OpenAI API方式では管理画面で使用量を確認する表示を出す", async () => {
+    const aiState = {
+      activeChatId: "chat-1",
+      aiProvider: "openai-api" as const,
+      chats: [
+        {
+          createdAt: "2026-05-31T00:00:00.000Z",
+          id: "chat-1",
+          messageCount: 0,
+          title: "API確認",
+          updatedAt: "2026-05-31T00:00:00.000Z"
+        }
+      ],
+      history: [],
+      index: { chunkCount: 1, indexedAt: "2026-05-30T00:00:00.000Z", indexedFileCount: 1, skippedLargeFiles: [], unreadableFiles: [] },
+      openAIAPIKeyConfigured: true,
+      operationHistory: [],
+      pendingOperations: []
+    };
+
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace }),
+      getAIWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: aiState })
+    });
+
+    await renderApp();
+
+    fireEvent.click(await screen.findByRole("button", { name: "AI Workspace" }));
+
+    expect(await screen.findByLabelText("OpenAI API使用量")).toBeInTheDocument();
+    expect(screen.getByText("API使用量")).toBeInTheDocument();
+    expect(screen.getByText("OpenAI管理画面で確認")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Codex残り使用量")).not.toBeInTheDocument();
+  });
+
   it("機能トグルで右パネルをOFFにしたら表示上も右パネルを閉じる", async () => {
     const saveFeatureToggles = vi.fn().mockResolvedValue({ ok: true, value: undefined });
 

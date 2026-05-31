@@ -92,6 +92,8 @@ export function AIChatsSidebar({
       )}
       {state?.aiProvider === "codex-app-server" ? (
         <CodexUsagePanel state={state} />
+      ) : state?.aiProvider === "openai-api" ? (
+        <OpenAIAPIUsagePanel />
       ) : null}
     </div>
   );
@@ -123,6 +125,18 @@ function CodexUsagePanel({ state }: { state: AIWorkspaceState }): ReactElement {
       ) : (
         <p className="ai-usage-empty">使用量を取得できません</p>
       )}
+    </section>
+  );
+}
+
+function OpenAIAPIUsagePanel(): ReactElement {
+  return (
+    <section aria-label="OpenAI API使用量" className="ai-usage-panel">
+      <div className="ai-usage-heading">
+        <span className="ai-usage-gauge" aria-hidden="true" />
+        <span>API使用量</span>
+      </div>
+      <p className="ai-usage-empty">OpenAI管理画面で確認</p>
     </section>
   );
 }
