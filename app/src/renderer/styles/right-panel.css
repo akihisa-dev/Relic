@@ -712,13 +712,13 @@
   align-items: center;
   background: var(--input-bg);
   border: 1px solid var(--border);
-  border-radius: 9999px;
+  border-radius: 26px;
   box-sizing: border-box;
   display: flex;
   gap: 8px;
-  min-height: 48px;
+  min-height: 52px;
   overflow: hidden;
-  padding: 5px 8px 5px 16px;
+  padding: 7px 10px 7px 18px;
 }
 
 .ai-workspace-form textarea {
