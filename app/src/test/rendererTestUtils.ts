@@ -38,9 +38,11 @@ export function resetRendererStores(): void {
   useUiStore.setState({
     activeSidebarView: "files",
     isRightPanelOpen: false,
+    isSecondarySidebarOpen: false,
     isSidebarOpen: true,
     isTypewriterMode: false,
     rightPanelView: "outline",
+    secondarySidebarView: "none",
     selectedChartId: null
   });
 }

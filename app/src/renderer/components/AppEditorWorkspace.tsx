@@ -7,8 +7,9 @@ import type { ResolvedWikiLink } from "../../shared/links";
 import type { AppLinkContextMenu } from "../appLinks";
 import type { OutlineHeading } from "../editorDerivedState";
 import type { PaneId, PanelTabKind } from "../store/editorStore";
-import type { RightPanelView } from "../store/uiStore";
+import type { RightPanelView, SecondarySidebarView } from "../store/uiStore";
 import { AppRightPanel } from "./AppRightPanel";
+import { AppSecondarySidebar } from "./AppSecondarySidebar";
 import { PaneView } from "./PaneView";
 
 interface AppEditorWorkspaceProps {
@@ -28,6 +29,7 @@ interface AppEditorWorkspaceProps {
   isSourceMode: boolean;
   isSplit: boolean;
   isSplitClosing: boolean;
+  isSecondarySidebarOpen: boolean;
   isTypewriterMode: boolean;
   leftEditorViewRef: MutableRefObject<EditorView | null>;
   leftPaneScrollHeading?: string;
@@ -48,6 +50,7 @@ interface AppEditorWorkspaceProps {
   onOutlineHeadingClick: (heading: string) => void;
   onRenameFile: (path: string, name: string) => void;
   onRightPanelResizeStart: (event: ReactMouseEvent) => void;
+  onSecondarySidebarClose: () => void;
   onScrollTargetHandled: (pane: PaneId) => void;
   onSetFocusedPane: (pane: PaneId) => void;
   outlineHeadings: OutlineHeading[];
@@ -59,6 +62,8 @@ interface AppEditorWorkspaceProps {
   rightPaneScrollHeading?: string;
   rightPanelView: RightPanelView;
   rightPanelWidth: number;
+  secondarySidebarView: SecondarySidebarView;
+  secondarySidebarWidth: number;
   setLinkContextMenu: Dispatch<SetStateAction<AppLinkContextMenu | null>>;
   userDefinedFields: UserDefinedField[];
   workspaceName?: string | null;
@@ -82,6 +87,7 @@ export function AppEditorWorkspace({
   isSourceMode,
   isSplit,
   isSplitClosing,
+  isSecondarySidebarOpen,
   isTypewriterMode,
   leftEditorViewRef,
   leftPaneScrollHeading,
@@ -102,6 +108,7 @@ export function AppEditorWorkspace({
   onOutlineHeadingClick,
   onRenameFile,
   onRightPanelResizeStart,
+  onSecondarySidebarClose,
   onScrollTargetHandled,
   onSetFocusedPane,
   outlineHeadings,
@@ -113,6 +120,8 @@ export function AppEditorWorkspace({
   rightPaneScrollHeading,
   rightPanelView,
   rightPanelWidth,
+  secondarySidebarView,
+  secondarySidebarWidth,
   setLinkContextMenu,
   userDefinedFields,
   workspaceName,
@@ -121,6 +130,25 @@ export function AppEditorWorkspace({
   return (
     <main className="main-area">
       <div className="editor-layout">
+        <AppSecondarySidebar
+          aiWorkspaceState={aiWorkspaceState}
+          aiWorkspaceMessagePreview={aiWorkspaceMessagePreview}
+          isAIWorkspaceLoading={isAIWorkspaceLoading}
+          isAIWorkspaceSending={isAIWorkspaceSending}
+          isOpen={isSecondarySidebarOpen}
+          onAIWorkspaceClearData={onAIWorkspaceClearData}
+          onAIWorkspaceApplyOperations={onAIWorkspaceApplyOperations}
+          onAIWorkspaceCancelMessagePreview={onAIWorkspaceCancelMessagePreview}
+          onAIWorkspaceConfirmMessagePreview={onAIWorkspaceConfirmMessagePreview}
+          onAIWorkspaceRebuildIndex={onAIWorkspaceRebuildIndex}
+          onAIWorkspaceDiscardOperations={onAIWorkspaceDiscardOperations}
+          onAIWorkspaceSendMessage={onAIWorkspaceSendMessage}
+          onClose={onSecondarySidebarClose}
+          onOpenFile={onOpenFile}
+          view={secondarySidebarView}
+          width={secondarySidebarWidth}
+          workspaceName={workspaceName}
+        />
         <div className="editor-workspace">
           <div className={`panes-container${isSplit ? " panes-container--split" : ""}${isSplitClosing ? " panes-container--closing-split" : ""}`}>
             <PaneView
@@ -181,21 +209,10 @@ export function AppEditorWorkspace({
         </div>
 
         <AppRightPanel
-          aiWorkspaceState={aiWorkspaceState}
-          aiWorkspaceMessagePreview={aiWorkspaceMessagePreview}
           backlinks={backlinks}
-          isAIWorkspaceLoading={isAIWorkspaceLoading}
-          isAIWorkspaceSending={isAIWorkspaceSending}
           isLoadingBacklinks={isLoadingBacklinks}
           isOpen={isRightPanelOpen}
           isResizing={isRightPanelResizing}
-          onAIWorkspaceClearData={onAIWorkspaceClearData}
-          onAIWorkspaceApplyOperations={onAIWorkspaceApplyOperations}
-          onAIWorkspaceCancelMessagePreview={onAIWorkspaceCancelMessagePreview}
-          onAIWorkspaceConfirmMessagePreview={onAIWorkspaceConfirmMessagePreview}
-          onAIWorkspaceRebuildIndex={onAIWorkspaceRebuildIndex}
-          onAIWorkspaceDiscardOperations={onAIWorkspaceDiscardOperations}
-          onAIWorkspaceSendMessage={onAIWorkspaceSendMessage}
           onOpenFile={onOpenFile}
           onOpenWikiLink={onOpenWikiLink}
           onOutlineHeadingClick={onOutlineHeadingClick}
@@ -206,7 +223,6 @@ export function AppEditorWorkspace({
           rightPanelView={rightPanelView}
           setLinkContextMenu={setLinkContextMenu}
           width={rightPanelWidth}
-          workspaceName={workspaceName}
         />
       </div>
     </main>

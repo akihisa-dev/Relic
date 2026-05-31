@@ -1066,7 +1066,7 @@ describe("App", () => {
       useEditorStore.getState().updateTabContent(activeTabId, "# 未保存\nnew draft");
     });
 
-    fireEvent.click(screen.getByRole("button", { name: "AI" }));
+    fireEvent.click(screen.getByRole("button", { name: "AI Workspace" }));
     const input = await screen.findByLabelText("AIへのメッセージ");
     fireEvent.change(input, { target: { value: "このファイルを整理して" } });
     fireEvent.click(screen.getByRole("button", { name: "送信" }));
@@ -1081,6 +1081,8 @@ describe("App", () => {
     });
     expect(previewAIWorkspaceMessage).not.toHaveBeenCalled();
     expect(screen.queryByText("AIへ送るMarkdown参照")).not.toBeInTheDocument();
+    expect(useUiStore.getState().isSecondarySidebarOpen).toBe(true);
+    expect(useUiStore.getState().secondarySidebarView).toBe("ai-chat");
   });
 
   it("左レールのAI Workspaceでチャット履歴を表示して切り替えられる", async () => {
@@ -1127,14 +1129,24 @@ describe("App", () => {
     fireEvent.click(await screen.findByRole("button", { name: "AI Workspace" }));
 
     expect(await screen.findByRole("button", { name: "新規チャット" })).toBeInTheDocument();
+    expect(useUiStore.getState().isSecondarySidebarOpen).toBe(true);
+    expect(useUiStore.getState().secondarySidebarView).toBe("ai-chat");
+    expect(screen.getByLabelText("AIへのメッセージ")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /以前のチャット 2件/ })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /認証整理 未開始/ }));
 
     await waitFor(() => {
       expect(selectAIWorkspaceChat).toHaveBeenCalledWith({ chatId: "chat-2" });
     });
+    expect(useUiStore.getState().isSecondarySidebarOpen).toBe(true);
     fireEvent.click(screen.getByRole("button", { name: "新規チャット" }));
     expect(createAIWorkspaceChat).toHaveBeenCalledWith({});
+    act(() => {
+      useUiStore.getState().closeSidebar();
+    });
+    expect(useUiStore.getState().isSidebarOpen).toBe(false);
+    expect(useUiStore.getState().isSecondarySidebarOpen).toBe(true);
+    expect(screen.getByLabelText("AIへのメッセージ")).toBeInTheDocument();
   });
 
   it("左サイドバーのAIチャット履歴から確認後にチャットを削除できる", async () => {

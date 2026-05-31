@@ -105,9 +105,13 @@ export function App(): ReactElement {
   const {
     activeSidebarView,
     isRightPanelOpen,
+    isSecondarySidebarOpen,
     isSidebarOpen,
     isTypewriterMode,
     rightPanelView,
+    secondarySidebarView,
+    closeSecondarySidebar,
+    openSecondarySidebar,
     setRightPanelView,
     setSidebarView,
     closeSidebar,
@@ -505,6 +509,11 @@ export function App(): ReactElement {
     maxWidth: 520,
     minWidth: 220
   });
+  const { sidebarWidth: secondarySidebarWidth } = useSidebarResize({
+    initialWidth: 400,
+    maxWidth: 520,
+    minWidth: 320
+  });
 
   const leftEditorViewRef = useRef<EditorView | null>(null);
   const rightEditorViewRef = useRef<EditorView | null>(null);
@@ -680,11 +689,11 @@ export function App(): ReactElement {
     }
 
     if (view === "ai") {
-      setRightPanelView("ai");
+      openSecondarySidebar("ai-chat");
     }
 
     setSidebarView(view);
-  }, [focusedPane, openPanelInPane, panelLabels, setRightPanelView, setSidebarView]);
+  }, [focusedPane, openPanelInPane, openSecondarySidebar, panelLabels, setSidebarView]);
 
   const { renderChartTab, renderPanelTab } = useAppTabRenderers({
     appInfo,
@@ -794,7 +803,10 @@ export function App(): ReactElement {
           isSearching={isSearching}
           isSidebarOpen={isSidebarOpen}
           isSidebarResizing={isSidebarResizing}
-          onCreateAIChat={() => { void createAIWorkspaceChat(); }}
+          onCreateAIChat={() => {
+            openSecondarySidebar("ai-chat");
+            void createAIWorkspaceChat();
+          }}
           onDeleteAIChat={(chatId) => { void deleteAIWorkspaceChat(chatId); }}
           onCreateFile={handleCreateFileFromSidebar}
           onCreateFileInFolder={handleCreateFileInFolder}
@@ -817,7 +829,7 @@ export function App(): ReactElement {
           onSearchQueryChange={setSearchQuery}
           onSelectFolder={handleSelectFolder}
           onSelectAIChat={(chatId) => {
-            setRightPanelView("ai");
+            openSecondarySidebar("ai-chat");
             void selectAIWorkspaceChat(chatId);
           }}
           onSelectedCountChange={setFileSelectionCount}
@@ -854,6 +866,7 @@ export function App(): ReactElement {
           isLoadingBacklinks={isLoadingBacklinks}
           isRightPanelOpen={isEffectiveRightPanelOpen}
           isRightPanelResizing={isRightPanelResizing}
+          isSecondarySidebarOpen={isSecondarySidebarOpen}
           isSourceMode={isSourceMode}
           isSplit={isSplit}
           isSplitClosing={isSplitClosing}
@@ -893,6 +906,7 @@ export function App(): ReactElement {
           }}
           onRenameFile={(path, name) => handleRenameTreeItem(path, "file", name)}
           onRightPanelResizeStart={startRightPanelResize}
+          onSecondarySidebarClose={closeSecondarySidebar}
           onScrollTargetHandled={(pane) => {
             if (pane === "left") {
               setLeftPaneScrollHeading(undefined);
@@ -911,6 +925,8 @@ export function App(): ReactElement {
           rightPaneScrollHeading={rightPaneScrollHeading}
           rightPanelView={rightPanelView}
           rightPanelWidth={rightPanelWidth}
+          secondarySidebarView={secondarySidebarView}
+          secondarySidebarWidth={secondarySidebarWidth}
           setLinkContextMenu={setLinkContextMenu}
           userDefinedFields={userDefinedFields}
           workspaceName={workspaceState?.activeWorkspace?.name}
