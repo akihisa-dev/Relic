@@ -94,6 +94,7 @@ export async function readCodexAIWorkspaceUsage(): Promise<AIWorkspaceUsageState
   const client = new CodexAppServerClient(usageRequestTimeoutMs);
 
   try {
+    // eslint-disable-next-line react-doctor/async-parallel -- the app-server protocol requires start, initialize, then rate-limit request in order.
     await client.start();
     await client.initialize();
     const response = await client.readRateLimits();
