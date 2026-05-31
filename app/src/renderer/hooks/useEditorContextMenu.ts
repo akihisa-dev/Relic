@@ -18,10 +18,12 @@ interface UseEditorContextMenuInput {
 }
 
 export function useEditorContextMenu({ viewRef }: UseEditorContextMenuInput) {
+  const openedGestureRef = useRef<{ openedAt: number; x: number; y: number } | null>(null);
   const lastSelectionRef = useRef<{ from: number; text: string; to: number } | null>(null);
   const [contextMenu, setContextMenu] = useState<EditorContextMenuState | null>(null);
 
   const closeContextMenu = useCallback((): void => {
+    openedGestureRef.current = null;
     viewRef.current?.dispatch({ effects: setContextSelectionHighlightEffect.of(null) });
     setContextMenu(null);
   }, [viewRef]);
@@ -43,6 +45,15 @@ export function useEditorContextMenu({ viewRef }: UseEditorContextMenuInput) {
 
     event.preventDefault();
     const position = editorContextMenuPosition(event.clientX, event.clientY);
+    const openedGesture = openedGestureRef.current;
+    if (
+      openedGesture &&
+      Date.now() - openedGesture.openedAt < 500 &&
+      Math.abs(openedGesture.x - event.clientX) <= 2 &&
+      Math.abs(openedGesture.y - event.clientY) <= 2
+    ) {
+      return true;
+    }
     const selection = view.state.selection.main;
     let clickedPosition: number | null = null;
     try {
@@ -94,6 +105,11 @@ export function useEditorContextMenu({ viewRef }: UseEditorContextMenuInput) {
       selectionTo,
       ...position
     });
+    openedGestureRef.current = {
+      openedAt: Date.now(),
+      x: event.clientX,
+      y: event.clientY
+    };
     return true;
   }, []);
 
