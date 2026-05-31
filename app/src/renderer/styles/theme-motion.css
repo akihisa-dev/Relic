@@ -27,6 +27,7 @@
   --shadow: rgba(0, 0, 0, 0.42);
   --shadow-soft: rgba(0, 0, 0, 0.28);
   --workspace-shadow: 0 14px 36px rgba(0, 0, 0, 0.32);
+  --floating-panel-shadow: 0 18px 44px rgba(0, 0, 0, 0.32);
   --chrome-shadow: 0 1px 0 rgba(255, 255, 255, 0.055) inset, 0 1px 16px rgba(0, 0, 0, 0.34);
   --accent: #179bd0;
   --accent-hover: #2aa7d8;
@@ -112,6 +113,7 @@
     --shadow: rgba(0, 0, 0, 0.42);
     --shadow-soft: rgba(0, 0, 0, 0.28);
     --workspace-shadow: 0 14px 36px rgba(0, 0, 0, 0.32);
+    --floating-panel-shadow: 0 18px 44px rgba(0, 0, 0, 0.32);
     --chrome-shadow: 0 1px 0 rgba(255, 255, 255, 0.055) inset, 0 1px 16px rgba(0, 0, 0, 0.34);
     --accent: #179bd0;
     --accent-hover: #2aa7d8;

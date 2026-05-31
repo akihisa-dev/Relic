@@ -3,8 +3,8 @@
 /* ────────────────────────────────── */
 
 .main-area {
-  background: var(--surface);
-  box-shadow: var(--workspace-shadow);
+  background: transparent;
+  box-shadow: none;
   display: grid;
   flex: 1 1 auto;
   grid-template-rows: minmax(0, 1fr);
@@ -30,6 +30,7 @@
 
 .editor-layout {
   display: flex;
+  gap: 10px;
   height: 100%;
   min-height: 0;
   min-width: 0;
@@ -37,7 +38,7 @@
 }
 
 .editor-workspace {
-  background: var(--surface);
+  background: transparent;
   display: grid;
   flex: 1 1 auto;
   grid-template-rows: minmax(0, 1fr);
@@ -49,8 +50,9 @@
 .secondary-sidebar {
   background: var(--sidebar-bg);
   backdrop-filter: blur(18px) saturate(132%);
-  border-right: 0;
-  box-shadow: 1px 0 0 var(--border), 12px 0 28px rgba(16, 24, 40, 0.045);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--floating-panel-shadow);
   display: flex;
   flex: 0 0 400px;
   flex-direction: column;
@@ -69,7 +71,8 @@
 }
 
 .secondary-sidebar--closed {
-  border-right-color: transparent;
+  border-color: transparent;
+  box-shadow: none;
   flex-basis: 0;
   min-width: 0;
   pointer-events: none;
@@ -77,7 +80,7 @@
 }
 
 .secondary-sidebar--resizing {
-  border-right-color: var(--accent);
+  border-color: var(--accent-ring);
   transition:
     background-color var(--motion-fast) var(--ease-standard),
     border-color var(--motion-fast) var(--ease-standard);
@@ -90,7 +93,7 @@
   cursor: col-resize;
   padding: 0;
   position: absolute;
-  right: 0;
+  right: -4px;
   top: 0;
   transition:
     background-color var(--motion-fast) var(--ease-standard),
