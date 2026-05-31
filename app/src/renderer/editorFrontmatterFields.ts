@@ -54,21 +54,6 @@ export function choicesFor(
     .sort((a, b) => a.localeCompare(b));
 }
 
-function availableFieldNames(
-  data: Record<string, unknown>,
-  userDefinedFields: UserDefinedField[],
-  candidates: Record<string, string[]>
-): string[] {
-  const usedKeys = new Set(Object.keys(data));
-  return Array.from(new Set([
-    ...fixedFrontmatterFieldNames,
-    ...userDefinedFields.map((field) => field.name),
-    ...Object.keys(candidates)
-  ]))
-    .filter((key) => !usedKeys.has(key))
-    .sort((a, b) => a.localeCompare(b));
-}
-
 export function inputTypeFor(field?: UserDefinedField): string {
   if (field?.type === "date") return "text";
   if (field?.type === "datetime") return "datetime-local";

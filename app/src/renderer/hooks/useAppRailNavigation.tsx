@@ -17,7 +17,6 @@ import {
 import { sidebarViewDefs } from "../components/railNavigationViews";
 import type { Translator } from "../i18nModel";
 import { useEditorStore, type PaneId, type PaneState, type PanelTabKind, type Tab } from "../store/editorStore";
-import type { SidebarView } from "../store/uiStore";
 
 interface UseAppRailNavigationInput {
   clearRailTabFlight: () => void;
@@ -28,7 +27,6 @@ interface UseAppRailNavigationInput {
   openChartInPane: (pane: PaneId, chart: { id: string; name: string }) => void;
   openPanelInPane: (pane: PaneId, panel: PanelTabKind, label: string) => void;
   rightPane: PaneState;
-  setSidebarView: (view: SidebarView) => void;
   setTabActive: (pane: PaneId, tabId: string) => void;
   t: Translator;
   tabs: Record<string, Tab>;
@@ -58,7 +56,6 @@ export function useAppRailNavigation({
   openChartInPane,
   openPanelInPane,
   rightPane,
-  setSidebarView,
   setTabActive,
   t,
   tabs
@@ -95,7 +92,7 @@ export function useAppRailNavigation({
     sidebarViews.find((view) => view.id === panel)?.icon ?? null
   ), [sidebarViews]);
 
-  const handleRailPanelButton = useCallback((panel: PanelTabKind, label: string, event: MouseEvent<HTMLButtonElement>): void => {
+  const handleRailPanelButton = useCallback((panel: PanelTabKind, _label: string, event: MouseEvent<HTMLButtonElement>): void => {
     void event;
     const panelTabId = `panel-${panel}`;
     const editorState = useEditorStore.getState();

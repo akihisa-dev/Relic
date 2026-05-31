@@ -168,8 +168,7 @@ export class TableWidget extends WidgetType {
             focusCell,
             rowIndex,
             t: this.t,
-            updateRows,
-            wrapper
+            updateRows
           });
         });
         input.addEventListener("blur", updateCell);
@@ -345,8 +344,7 @@ export class TableWidget extends WidgetType {
         updateRows: (rows) => {
           const view = findTableWidgetView(wrapper);
           if (view) updateTableWidgetRows(view, this.block, rows);
-        },
-        wrapper
+        }
       });
     });
     return button;

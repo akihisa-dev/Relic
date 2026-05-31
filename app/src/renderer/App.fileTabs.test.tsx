@@ -156,7 +156,7 @@ describe("App file tabs", () => {
       revealWorkspaceItem
     });
 
-    const { container } = await renderApp();
+    await renderApp();
 
     fireEvent.click(await screen.findByRole("button", { name: /読書メモ/ }));
     const tab = (await screen.findByText("読書メモ", { selector: ".pane-tab-name" })).closest(".pane-tab");

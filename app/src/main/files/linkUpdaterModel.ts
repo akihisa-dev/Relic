@@ -4,7 +4,6 @@ export function replaceFileLinks(
   content: string,
   sourcePath: string,
   oldRelativePath: string,
-  oldBaseName: string,
   newBaseName: string,
   newPathWithoutExt: string
 ): string {
@@ -12,7 +11,6 @@ export function replaceFileLinks(
     content,
     sourcePath,
     oldRelativePath,
-    oldBaseName,
     newBaseName,
     newPathWithoutExt
   ).content;
@@ -22,7 +20,6 @@ export function replaceFileLinksWithCount(
   content: string,
   sourcePath: string,
   oldRelativePath: string,
-  oldBaseName: string,
   newBaseName: string,
   newPathWithoutExt: string
 ): { content: string; count: number } {

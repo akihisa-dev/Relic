@@ -551,7 +551,6 @@ describe("Editor frontmatter", () => {
 
     const rows = Array.from(container.querySelectorAll(".cm-frontmatter-row"));
     const aliasRow = rows.find((row) => row.querySelector(".cm-frontmatter-key")?.textContent === "aliases") as HTMLElement;
-    const tagRow = rows.find((row) => row.querySelector(".cm-frontmatter-key")?.textContent === "tags") as HTMLElement;
     fireEvent.click(aliasRow.querySelector(".cm-frontmatter-pill-add") as HTMLButtonElement);
     expect((container.querySelector(".frontmatter-add-dialog-input") as HTMLInputElement).getAttribute("list")).toBeNull();
     fireEvent.click(container.querySelector(".frontmatter-add-dialog-actions button:first-child") as HTMLButtonElement);

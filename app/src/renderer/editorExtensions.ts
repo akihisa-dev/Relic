@@ -109,8 +109,6 @@ export function buildExtensions(
   onOpenLinkRef: RefObject<((href: string) => void) | undefined>,
   onOpenWikiLinkRef: RefObject<((target: string, heading?: string) => void) | undefined>
 ) {
-  const constrainedContentWidth = settings.maxWidth === "none" ? null : settings.maxWidth;
-
   return [
     history(),
     keymap.of([...defaultKeymap, ...historyKeymap]),

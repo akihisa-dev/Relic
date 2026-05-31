@@ -1,7 +1,4 @@
-import type {
-  AIProvider,
-  AIWorkspaceFileOperation
-} from "../../shared/ipc";
+import type { AIWorkspaceFileOperation } from "../../shared/ipc";
 
 export interface AIWorkspaceContext {
   userDataPath: string;
@@ -29,9 +26,4 @@ export interface AppliedAIWorkspaceOperations {
 export interface AIWorkspaceTurnResult {
   message: string;
   operations: AIWorkspaceFileOperation[];
-}
-
-export interface AIWorkspaceTurnFailure {
-  aiError: string | null;
-  provider: AIProvider;
 }

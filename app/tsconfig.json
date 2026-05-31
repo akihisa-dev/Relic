@@ -11,6 +11,8 @@
     "jsx": "react-jsx",
     "lib": ["DOM", "DOM.Iterable", "ES2023"],
     "noEmit": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
     "resolveJsonModule": true,
     "skipLibCheck": true,
     "types": ["vitest/globals"]

@@ -201,7 +201,6 @@ export function App(): ReactElement {
     dirtyMarkdownPaths,
     existingMarkdownPaths,
     openFilePathSet,
-    pinnedPathSet,
     registeredWorkspaces
   } = useAppWorkspaceCollections({ tabs, workspaceState });
   const aliasesByPath = useWorkspaceAliases({ setWorkspaceError, workspaceState });
@@ -489,7 +488,6 @@ export function App(): ReactElement {
     openChartInPane,
     openPanelInPane,
     rightPane,
-    setSidebarView,
     setTabActive,
     t,
     tabs
