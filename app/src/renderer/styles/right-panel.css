@@ -721,12 +721,14 @@
 .ai-workspace-form textarea {
   background: transparent;
   border: 0;
+  box-sizing: border-box;
   color: var(--text);
   font: inherit;
-  max-height: 160px;
+  max-height: min(220px, 38vh);
   min-height: 44px;
+  overflow-y: auto;
   padding: 11px 10px;
-  resize: vertical;
+  resize: none;
 }
 
 .ai-workspace-form button {

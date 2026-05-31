@@ -263,6 +263,63 @@ describe("AppRightPanel", () => {
     expect(input).toHaveValue("");
   });
 
+  it("expands the AI workspace input to fit the typed message", () => {
+    render(
+      <I18nProvider language="en">
+        <AppRightPanel
+          aiWorkspaceState={{
+            aiProvider: "codex-app-server",
+            openAIAPIKeyConfigured: true,
+            history: [],
+            index: {
+              chunkCount: 3,
+              indexedAt: "2026-05-30T00:00:00.000Z",
+              indexedFileCount: 2,
+              skippedLargeFiles: [],
+              unreadableFiles: []
+            },
+            operationHistory: [],
+            pendingOperations: []
+          }}
+          backlinks={[]}
+          isAIWorkspaceLoading={false}
+          isAIWorkspaceSending={false}
+          aiWorkspaceMessagePreview={null}
+          isLoadingBacklinks={false}
+          isOpen
+          isResizing={false}
+          onAIWorkspaceClearData={vi.fn()}
+          onAIWorkspaceApplyOperations={vi.fn()}
+          onAIWorkspaceCancelMessagePreview={vi.fn()}
+          onAIWorkspaceConfirmMessagePreview={vi.fn()}
+          onAIWorkspaceDiscardOperations={vi.fn()}
+          onAIWorkspaceRebuildIndex={vi.fn()}
+          onAIWorkspaceSendMessage={vi.fn()}
+          onOpenFile={vi.fn()}
+          onOpenWikiLink={vi.fn()}
+          onOutlineHeadingClick={vi.fn()}
+          onResizeStart={vi.fn()}
+          outlineHeadings={[]}
+          outgoingLinks={[]}
+          outgoingLinksLimited={false}
+          rightPanelView="ai"
+          setLinkContextMenu={vi.fn()}
+          width={260}
+          workspaceName="Novel"
+        />
+      </I18nProvider>
+    );
+
+    const input = screen.getByLabelText("AIへのメッセージ");
+    Object.defineProperty(input, "scrollHeight", {
+      configurable: true,
+      value: 96
+    });
+    fireEvent.change(input, { target: { value: "1行目\n2行目\n3行目" } });
+
+    expect(input).toHaveStyle({ height: "96px" });
+  });
+
   it("shows a notice when outgoing links are limited", () => {
     render(
       <I18nProvider language="en">
