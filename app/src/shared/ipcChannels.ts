@@ -50,6 +50,7 @@ export const splitFileByHeadingChannel = "tools:splitFileByHeading";
 export const getAIWorkspaceStateChannel = "aiWorkspace:getState";
 export const createAIWorkspaceChatChannel = "aiWorkspace:createChat";
 export const selectAIWorkspaceChatChannel = "aiWorkspace:selectChat";
+export const deleteAIWorkspaceChatChannel = "aiWorkspace:deleteChat";
 export const rebuildAIWorkspaceIndexChannel = "aiWorkspace:rebuildIndex";
 export const previewAIWorkspaceMessageChannel = "aiWorkspace:previewMessage";
 export const sendAIWorkspaceMessageChannel = "aiWorkspace:sendMessage";

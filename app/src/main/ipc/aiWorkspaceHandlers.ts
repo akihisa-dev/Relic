@@ -7,6 +7,8 @@ import {
   createAIWorkspaceChatChannel,
   type CreateAIWorkspaceChatInput,
   type ClearAIWorkspaceDataInput,
+  deleteAIWorkspaceChatChannel,
+  type DeleteAIWorkspaceChatInput,
   deleteOpenAIAPIKeyChannel,
   discardAIWorkspaceOperationsChannel,
   type DiscardAIWorkspaceOperationsInput,
@@ -46,6 +48,7 @@ import {
   applyAIWorkspaceOperations,
   clearAIWorkspaceState,
   createAIWorkspaceChat,
+  deleteAIWorkspaceChat,
   discardAIWorkspaceOperations,
   getAIWorkspaceState,
   previewAIWorkspaceMessage,
@@ -193,6 +196,21 @@ export function registerAIWorkspaceHandlers(): void {
     }
   });
 
+  ipcMain.handle(deleteAIWorkspaceChatChannel, async (_event, input: DeleteAIWorkspaceChatInput) => {
+    try {
+      if (!isDeleteAIWorkspaceChatInput(input)) {
+        return fail("AI_WORKSPACE_CHAT_INVALID", "削除するAIチャットを選んでください。");
+      }
+
+      const context = await getAIWorkspaceContext();
+      if (!context.ok) return context;
+
+      return deleteAIWorkspaceChat(context.value, input);
+    } catch (error) {
+      return fail("AI_WORKSPACE_CHAT_DELETE_FAILED", "AIチャットを削除できませんでした。", ipcErrorDetails(error));
+    }
+  });
+
   ipcMain.handle(sendAIWorkspaceMessageChannel, async (event, input: SendAIWorkspaceMessageInput) => {
     try {
       if (!isSendAIWorkspaceMessageInput(input)) {
@@ -317,6 +335,13 @@ function isPreviewAIWorkspaceMessageInput(value: unknown): value is PreviewAIWor
 }
 
 function isSelectAIWorkspaceChatInput(value: unknown): value is SelectAIWorkspaceChatInput {
+  if (!value || typeof value !== "object") return false;
+  const record = value as { chatId?: unknown };
+
+  return typeof record.chatId === "string" && record.chatId.trim().length > 0;
+}
+
+function isDeleteAIWorkspaceChatInput(value: unknown): value is DeleteAIWorkspaceChatInput {
   if (!value || typeof value !== "object") return false;
   const record = value as { chatId?: unknown };
 

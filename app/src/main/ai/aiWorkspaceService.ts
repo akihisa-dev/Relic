@@ -9,6 +9,7 @@ import type {
   ApplyAIWorkspaceOperationsInput,
   ClearAIWorkspaceDataInput,
   CreateAIWorkspaceChatInput,
+  DeleteAIWorkspaceChatInput,
   DiscardAIWorkspaceOperationsInput,
   PreviewAIWorkspaceMessageInput,
   AIWorkspaceMessagePreview,
@@ -135,6 +136,36 @@ export async function selectAIWorkspaceChat(
     return ok(await toState(nextData, context.userDataPath));
   } catch (error) {
     return fail("AI_WORKSPACE_CHAT_SELECT_FAILED", "AIチャットを切り替えられませんでした。", String(error));
+  }
+}
+
+export async function deleteAIWorkspaceChat(
+  context: AIWorkspaceContext,
+  input: DeleteAIWorkspaceChatInput
+): Promise<RelicResult<AIWorkspaceState>> {
+  try {
+    const data = await readAIWorkspaceData(context.userDataPath, context.workspaceId);
+    const chatIndex = data.chats.findIndex((chat) => chat.id === input.chatId);
+    if (chatIndex < 0) {
+      return fail("AI_WORKSPACE_CHAT_NOT_FOUND", "削除するAIチャットが見つかりません。");
+    }
+
+    const chats = data.chats.filter((chat) => chat.id !== input.chatId);
+    const activeChatId = data.activeChatId === input.chatId
+      ? chats[Math.max(0, chatIndex - 1)]?.id ?? chats[0]?.id ?? null
+      : data.activeChatId && chats.some((chat) => chat.id === data.activeChatId)
+        ? data.activeChatId
+        : chats[0]?.id ?? null;
+    const nextData: AIWorkspaceData = {
+      ...data,
+      activeChatId,
+      chats
+    };
+    await writeAIWorkspaceData(context.userDataPath, context.workspaceId, nextData);
+
+    return ok(await toState(nextData, context.userDataPath));
+  } catch (error) {
+    return fail("AI_WORKSPACE_CHAT_DELETE_FAILED", "AIチャットを削除できませんでした。", String(error));
   }
 }
 

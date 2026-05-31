@@ -19,6 +19,7 @@ vi.mock("./openAIKeyStore", () => ({
 
 import {
   applyAIWorkspaceOperations,
+  deleteAIWorkspaceChat,
   discardAIWorkspaceOperations,
   getAIWorkspaceState,
   previewAIWorkspaceMessage,
@@ -165,6 +166,48 @@ describe("discardAIWorkspaceOperations", () => {
     await expect(readFile(path.join(workspacePath, "draft.md"), "utf8")).resolves.toBe("old");
     if (result.ok) {
       expect(result.value.pendingOperations).toEqual([]);
+    }
+  });
+});
+
+describe("deleteAIWorkspaceChat", () => {
+  it("deletes only the selected chat and keeps Markdown files untouched", async () => {
+    await writeFile(path.join(workspacePath, "README.md"), "# Workspace", "utf8");
+    await writeData({
+      activeChatId: "chat-1",
+      chats: [
+        createChat("chat-1", "消すチャット", [createOperation("update", "README.md", "# Updated")]),
+        createChat("chat-2", "残すチャット", [])
+      ]
+    });
+
+    const result = await deleteAIWorkspaceChat(context(), { chatId: "chat-1" });
+
+    expect(result.ok).toBe(true);
+    await expect(readFile(path.join(workspacePath, "README.md"), "utf8")).resolves.toBe("# Workspace");
+    if (result.ok) {
+      expect(result.value.activeChatId).toBe("chat-2");
+      expect(result.value.chats?.map((chat) => chat.id)).toEqual(["chat-2"]);
+      expect(result.value.history).toEqual([]);
+      expect(result.value.operationHistory).toEqual([]);
+    }
+  });
+
+  it("keeps the active chat when deleting another chat", async () => {
+    await writeData({
+      activeChatId: "chat-1",
+      chats: [
+        createChat("chat-1", "作業中", []),
+        createChat("chat-2", "削除対象", [])
+      ]
+    });
+
+    const result = await deleteAIWorkspaceChat(context(), { chatId: "chat-2" });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.activeChatId).toBe("chat-1");
+      expect(result.value.chats?.map((chat) => chat.id)).toEqual(["chat-1"]);
     }
   });
 });
@@ -693,6 +736,21 @@ function createOperation(
     path: filePath,
     status: "pending" as const,
     summary: `${kind} ${filePath}`
+  };
+}
+
+function createChat(
+  id: string,
+  title: string,
+  operations: ReturnType<typeof createOperation>[] = []
+): AIWorkspaceChatData {
+  return {
+    createdAt: "2026-05-30T00:00:00.000Z",
+    history: [],
+    id,
+    operations,
+    title,
+    updatedAt: "2026-05-30T00:00:00.000Z"
   };
 }
 

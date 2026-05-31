@@ -83,6 +83,16 @@ export function makeRelicApi(overrides: Partial<typeof window.relic> = {}): type
     createLinkedMarkdownFile: vi.fn(),
     createMarkdownFile: vi.fn(),
     createNewWorkspace: vi.fn().mockResolvedValue({ ok: true, value: { activeWorkspace: null, fileTree: [], pinnedPaths: [], workspaces: [] } }),
+    deleteAIWorkspaceChat: vi.fn().mockResolvedValue({
+      ok: true,
+      value: {
+        openAIAPIKeyConfigured: false,
+        history: [],
+        index: { chunkCount: 0, indexedAt: null, indexedFileCount: 0, skippedLargeFiles: [], unreadableFiles: [] },
+        operationHistory: [],
+        pendingOperations: []
+      }
+    }),
     duplicateMarkdownFile: vi.fn(),
     discardAIWorkspaceOperations: vi.fn().mockResolvedValue({
       ok: true,

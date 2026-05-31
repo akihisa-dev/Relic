@@ -117,6 +117,10 @@ export interface SelectAIWorkspaceChatInput {
   chatId: string;
 }
 
+export interface DeleteAIWorkspaceChatInput {
+  chatId: string;
+}
+
 export type AIWorkspaceFileOperationStatus = "pending" | "applied" | "discarded" | "failed" | "stale" | "replaced";
 
 export type AIWorkspaceFileOperationKind = "create" | "update" | "delete";
