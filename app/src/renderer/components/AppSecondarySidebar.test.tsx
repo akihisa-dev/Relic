@@ -26,6 +26,7 @@ function renderSecondarySidebar(overrides: Partial<Parameters<typeof AppSecondar
     isAIWorkspaceLoading: false,
     isAIWorkspaceSending: false,
     isOpen: true,
+    isResizing: false,
     onAIWorkspaceApplyOperations: vi.fn(),
     onAIWorkspaceCancelMessagePreview: vi.fn(),
     onAIWorkspaceClearData: vi.fn(),
@@ -35,6 +36,7 @@ function renderSecondarySidebar(overrides: Partial<Parameters<typeof AppSecondar
     onAIWorkspaceSendMessage: vi.fn(),
     onClose: vi.fn(),
     onOpenFile: vi.fn(),
+    onResizeStart: vi.fn(),
     view: "ai-chat",
     width: 400,
     workspaceName: "Novel",
@@ -125,5 +127,18 @@ describe("AppSecondarySidebar", () => {
     fireEvent.click(screen.getByRole("button", { name: "AIチャットを閉じる" }));
 
     expect(onClose).toHaveBeenCalled();
+  });
+
+  it("renders a resize handle for the AI chat panel", () => {
+    const onResizeStart = vi.fn();
+    renderSecondarySidebar({ isResizing: true, onResizeStart });
+
+    const resizeHandle = screen.getByRole("button", { name: "AIチャットの幅を変更" });
+    expect(screen.getByLabelText("AIチャット")).toHaveClass("secondary-sidebar--resizing");
+    expect(resizeHandle).toHaveClass("secondary-sidebar-resize-handle--active");
+
+    fireEvent.mouseDown(resizeHandle, { clientX: 400 });
+
+    expect(onResizeStart).toHaveBeenCalled();
   });
 });

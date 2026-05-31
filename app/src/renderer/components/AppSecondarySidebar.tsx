@@ -1,4 +1,4 @@
-import type { ReactElement } from "react";
+import type { MouseEvent as ReactMouseEvent, ReactElement } from "react";
 
 import type { AIWorkspaceMessagePreview, AIWorkspaceState } from "../../shared/ipc";
 import type { SecondarySidebarView } from "../store/uiStore";
@@ -10,6 +10,7 @@ interface AppSecondarySidebarProps {
   isAIWorkspaceLoading: boolean;
   isAIWorkspaceSending: boolean;
   isOpen: boolean;
+  isResizing: boolean;
   onAIWorkspaceApplyOperations: (operationIds?: string[]) => void;
   onAIWorkspaceCancelMessagePreview: () => void;
   onAIWorkspaceClearData: () => void;
@@ -19,6 +20,7 @@ interface AppSecondarySidebarProps {
   onAIWorkspaceSendMessage: (message: string) => void;
   onClose: () => void;
   onOpenFile: (path: string) => void;
+  onResizeStart: (event: ReactMouseEvent) => void;
   view: SecondarySidebarView;
   width: number;
   workspaceName?: string | null;
@@ -30,6 +32,7 @@ export function AppSecondarySidebar({
   isAIWorkspaceLoading,
   isAIWorkspaceSending,
   isOpen,
+  isResizing,
   onAIWorkspaceApplyOperations,
   onAIWorkspaceCancelMessagePreview,
   onAIWorkspaceClearData,
@@ -39,6 +42,7 @@ export function AppSecondarySidebar({
   onAIWorkspaceSendMessage,
   onClose,
   onOpenFile,
+  onResizeStart,
   view,
   width,
   workspaceName
@@ -49,9 +53,15 @@ export function AppSecondarySidebar({
     <aside
       aria-hidden={!isOpen}
       aria-label="AIチャット"
-      className={`secondary-sidebar${isOpen ? "" : " secondary-sidebar--closed"}`}
+      className={`secondary-sidebar${isOpen ? "" : " secondary-sidebar--closed"}${isResizing ? " secondary-sidebar--resizing" : ""}`}
       style={{ flexBasis: isOpen ? width : 0, width: isOpen ? width : 0 }}
     >
+      <button
+        aria-label="AIチャットの幅を変更"
+        className={`secondary-sidebar-resize-handle${isResizing ? " secondary-sidebar-resize-handle--active" : ""}`}
+        onMouseDown={onResizeStart}
+        type="button"
+      />
       <header className="secondary-sidebar-header">
         <span>AIチャット</span>
         <button aria-label="AIチャットを閉じる" className="secondary-sidebar-close-button" onClick={onClose} type="button">
