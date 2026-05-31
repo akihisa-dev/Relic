@@ -97,7 +97,7 @@ export function buildPrompt(input: Omit<RunOpenAIWorkspaceTurnInput, "apiKey">):
     .join("\n\n");
 
   return [
-    "Relic AI Workspaceとして日本語で簡潔に回答してください。",
+    "Relic Coworkとして日本語で簡潔に回答してください。",
     "必要な場合はMarkdownファイル変更案をoperationsへ入れてください。",
     "operationsはMarkdownファイルだけを対象にしてください。",
     "削除はdelete operationで表現し、contentは空文字にしてください。",

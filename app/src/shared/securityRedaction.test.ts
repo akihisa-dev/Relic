@@ -20,6 +20,6 @@ describe("redactSensitiveText", () => {
   });
 
   it("keeps normal Japanese error messages unchanged", () => {
-    expect(redactSensitiveText("AI Workspaceを読み込めませんでした。")).toBe("AI Workspaceを読み込めませんでした。");
+    expect(redactSensitiveText("Coworkを読み込めませんでした。")).toBe("Coworkを読み込めませんでした。");
   });
 });

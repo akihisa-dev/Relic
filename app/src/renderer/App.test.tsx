@@ -968,7 +968,7 @@ describe("App", () => {
 
     const { container } = await renderApp();
 
-    fireEvent.click(await screen.findByRole("button", { name: "AI Workspace" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Cowork" }));
 
     const secondarySidebar = container.querySelector(".secondary-sidebar");
     const resizeHandle = container.querySelector(".secondary-sidebar-resize-handle");
@@ -1041,7 +1041,7 @@ describe("App", () => {
     expect(useUiStore.getState().rightPanelView).toBe("outline");
   });
 
-  it("AI Workspaceへ現在ファイルの未保存本文とdirty状態を直接渡す", async () => {
+  it("Coworkへ現在ファイルの未保存本文とdirty状態を直接渡す", async () => {
     const previewAIWorkspaceMessage = vi.fn().mockResolvedValue({
       ok: true,
       value: {
@@ -1103,7 +1103,7 @@ describe("App", () => {
       useEditorStore.getState().updateTabContent(activeTabId, "# 未保存\nnew draft");
     });
 
-    fireEvent.click(screen.getByRole("button", { name: "AI Workspace" }));
+    fireEvent.click(screen.getByRole("button", { name: "Cowork" }));
     const input = await screen.findByLabelText("AIへのメッセージ");
     fireEvent.change(input, { target: { value: "このファイルを整理して" } });
     fireEvent.click(screen.getByRole("button", { name: "送信" }));
@@ -1122,7 +1122,7 @@ describe("App", () => {
     expect(useUiStore.getState().secondarySidebarView).toBe("ai-chat");
   });
 
-  it("左レールのAI Workspaceでチャット履歴を表示して切り替えられる", async () => {
+  it("左レールのCoworkでチャット履歴を表示して切り替えられる", async () => {
     const aiState = {
       activeChatId: "chat-1",
       aiProvider: "codex-app-server" as const,
@@ -1179,7 +1179,7 @@ describe("App", () => {
 
     await renderApp();
 
-    fireEvent.click(await screen.findByRole("button", { name: "AI Workspace" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Cowork" }));
 
     expect(await screen.findByRole("button", { name: "新規チャット" })).toBeInTheDocument();
     expect(useUiStore.getState().isSecondarySidebarOpen).toBe(true);
@@ -1199,7 +1199,7 @@ describe("App", () => {
     expect(useUiStore.getState().isSecondarySidebarOpen).toBe(true);
     fireEvent.click(screen.getByRole("button", { name: "新規チャット" }));
     expect(createAIWorkspaceChat).toHaveBeenCalledWith({});
-    fireEvent.click(screen.getByRole("button", { name: "AI Workspaceサイドバーを閉じる" }));
+    fireEvent.click(screen.getByRole("button", { name: "Coworkサイドバーを閉じる" }));
     expect(useUiStore.getState().isSidebarOpen).toBe(false);
     expect(useUiStore.getState().isSecondarySidebarOpen).toBe(true);
     expect(screen.getByLabelText("AIへのメッセージ")).toBeInTheDocument();
@@ -1237,7 +1237,7 @@ describe("App", () => {
 
     await renderApp();
 
-    fireEvent.click(await screen.findByRole("button", { name: "AI Workspace" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Cowork" }));
     fireEvent.click(await screen.findByRole("button", { name: "削除するチャットを削除" }));
 
     expect(screen.getByText("このチャットを削除しますか？Markdownファイルには影響しません。")).toBeInTheDocument();
@@ -1275,7 +1275,7 @@ describe("App", () => {
 
     await renderApp();
 
-    fireEvent.click(await screen.findByRole("button", { name: "AI Workspace" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Cowork" }));
 
     expect(await screen.findByLabelText("OpenAI API使用量")).toBeInTheDocument();
     expect(screen.getByText("API使用量")).toBeInTheDocument();

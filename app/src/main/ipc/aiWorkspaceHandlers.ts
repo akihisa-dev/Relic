@@ -158,7 +158,7 @@ export function registerAIWorkspaceHandlers(): void {
 
       return getAIWorkspaceState(context.value);
     } catch (error) {
-      return fail("AI_WORKSPACE_READ_FAILED", "AI Workspaceを読み込めませんでした。", ipcErrorDetails(error));
+      return fail("AI_WORKSPACE_READ_FAILED", "Coworkを読み込めませんでした。", ipcErrorDetails(error));
     }
   });
 
@@ -169,7 +169,7 @@ export function registerAIWorkspaceHandlers(): void {
 
       return rebuildAIWorkspaceIndex(context.value);
     } catch (error) {
-      return fail("AI_WORKSPACE_INDEX_FAILED", "AI Workspaceのインデックスを作成できませんでした。", ipcErrorDetails(error));
+      return fail("AI_WORKSPACE_INDEX_FAILED", "Coworkのインデックスを作成できませんでした。", ipcErrorDetails(error));
     }
   });
 
@@ -247,7 +247,7 @@ export function registerAIWorkspaceHandlers(): void {
 
       return result;
     } catch (error) {
-      return fail("AI_WORKSPACE_MESSAGE_FAILED", "AI Workspaceで処理できませんでした。", ipcErrorDetails(error));
+      return fail("AI_WORKSPACE_MESSAGE_FAILED", "Coworkで処理できませんでした。", ipcErrorDetails(error));
     }
   });
 
@@ -312,7 +312,7 @@ export function registerAIWorkspaceHandlers(): void {
 
       return clearAIWorkspaceState(context.value, input ?? {});
     } catch (error) {
-      return fail("AI_WORKSPACE_CLEAR_FAILED", "AI Workspaceデータを削除できませんでした。", ipcErrorDetails(error));
+      return fail("AI_WORKSPACE_CLEAR_FAILED", "Coworkデータを削除できませんでした。", ipcErrorDetails(error));
     }
   });
 }
