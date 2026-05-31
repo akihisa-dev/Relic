@@ -3,6 +3,7 @@ import { clipboard, contextBridge, ipcRenderer } from "electron";
 import {
   applySearchAndReplaceChannel,
   applyAIWorkspaceOperationsChannel,
+  cancelAIWorkspaceMessageChannel,
   clearAIWorkspaceDataChannel,
   createAIWorkspaceChatChannel,
   deleteAIWorkspaceChatChannel,
@@ -253,6 +254,8 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(previewAIWorkspaceMessageChannel, input) as Promise<RelicResult<AIWorkspaceMessagePreview>>,
   sendAIWorkspaceMessage: (input: SendAIWorkspaceMessageInput) =>
     ipcRenderer.invoke(sendAIWorkspaceMessageChannel, input) as Promise<RelicResult<AIWorkspaceState>>,
+  cancelAIWorkspaceMessage: () =>
+    ipcRenderer.invoke(cancelAIWorkspaceMessageChannel) as Promise<RelicResult<void>>,
   applyAIWorkspaceOperations: (input: ApplyAIWorkspaceOperationsInput) =>
     ipcRenderer.invoke(applyAIWorkspaceOperationsChannel, input) as Promise<RelicResult<AIWorkspaceState>>,
   discardAIWorkspaceOperations: (input: DiscardAIWorkspaceOperationsInput) =>

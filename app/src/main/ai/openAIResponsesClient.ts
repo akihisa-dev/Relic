@@ -18,6 +18,7 @@ interface RunOpenAIWorkspaceTurnInput {
   pendingOperations: AIWorkspaceFileOperation[];
   references: AIWorkspaceReference[];
   referenceContents: Array<{ content: string; path: string }>;
+  signal?: AbortSignal;
 }
 
 interface RunOpenAIWorkspaceTurnResult {
@@ -45,7 +46,8 @@ export async function runOpenAIWorkspaceTurn(
       Authorization: `Bearer ${input.apiKey}`,
       "Content-Type": "application/json"
     },
-    method: "POST"
+    method: "POST",
+    signal: input.signal
   });
 
   if (!response.ok) {

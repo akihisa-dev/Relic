@@ -197,7 +197,8 @@ export async function previewAIWorkspaceMessage(
 export async function sendAIWorkspaceMessage(
   context: AIWorkspaceContext,
   input: SendAIWorkspaceMessageInput,
-  trashItem?: TrashItem
+  trashItem?: TrashItem,
+  options: { signal?: AbortSignal } = {}
 ): Promise<RelicResult<AIWorkspaceState>> {
   const message = input.message.trim();
 
@@ -206,7 +207,9 @@ export async function sendAIWorkspaceMessage(
   }
 
   try {
+    throwIfAIWorkspaceAborted(options.signal);
     const data = await ensureIndexed(context);
+    throwIfAIWorkspaceAborted(options.signal);
     const chat = ensureActiveChat(data, message);
     const references = buildReferences(data, message, input.activeFilePath, input.activeFileContent);
     const userMessage: AIWorkspaceMessage = {
@@ -222,6 +225,7 @@ export async function sendAIWorkspaceMessage(
       content: input.activeFileContent ?? null,
       path: input.activeFilePath ?? null
     });
+    throwIfAIWorkspaceAborted(options.signal);
     const turnInput = {
       history: chat.history.map((item) => ({ content: item.content, role: item.role })),
       message,
@@ -242,20 +246,26 @@ export async function sendAIWorkspaceMessage(
       aiResponse = await runOpenAIWorkspaceTurn({
         ...turnInput,
         apiKey,
-        model: settings.aiSettings.openAIModel
+        model: settings.aiSettings.openAIModel,
+        signal: options.signal
       }).catch((error) => {
+        if (isAIWorkspaceAbortError(error, options.signal)) throw error;
         aiError = normalizeAIProviderError(provider, error);
         return null;
       });
     } else {
       aiResponse = await runCodexAIWorkspaceTurn({
         ...turnInput,
+        signal: options.signal,
         workspacePath: context.workspacePath
       }).catch((error) => {
+        if (isAIWorkspaceAbortError(error, options.signal)) throw error;
         aiError = normalizeAIProviderError(provider, error);
         return null;
       });
     }
+
+    throwIfAIWorkspaceAborted(options.signal);
 
     const preparedOperations = aiResponse
       ? await prepareOperations(context.workspacePath, aiResponse.operations)
@@ -290,6 +300,10 @@ export async function sendAIWorkspaceMessage(
 
     return ok(await toState(nextData, context.userDataPath));
   } catch (error) {
+    if (isAIWorkspaceAbortError(error, options.signal)) {
+      return fail("AI_WORKSPACE_MESSAGE_CANCELLED", "AIの応答生成を中断しました。");
+    }
+
     return fail("AI_WORKSPACE_MESSAGE_FAILED", "AI Workspaceで処理できませんでした。", String(error));
   }
 }
@@ -1164,6 +1178,18 @@ function normalizeAIProviderError(provider: AIProvider, error: unknown): string 
   }
 
   return message;
+}
+
+function throwIfAIWorkspaceAborted(signal?: AbortSignal): void {
+  if (signal?.aborted) {
+    throw new Error("AI Workspace処理を中断しました。");
+  }
+}
+
+function isAIWorkspaceAbortError(error: unknown, signal?: AbortSignal): boolean {
+  if (signal?.aborted) return true;
+  if (typeof DOMException !== "undefined" && error instanceof DOMException && error.name === "AbortError") return true;
+  return error instanceof Error && error.message.includes("AI Workspace処理を中断しました");
 }
 
 function buildChatOnlyAssistantMessage(

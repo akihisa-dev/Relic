@@ -3,6 +3,7 @@ import { app, ipcMain, shell } from "electron";
 import {
   applyAIWorkspaceOperationsChannel,
   type ApplyAIWorkspaceOperationsInput,
+  cancelAIWorkspaceMessageChannel,
   clearAIWorkspaceDataChannel,
   createAIWorkspaceChatChannel,
   type CreateAIWorkspaceChatInput,
@@ -57,6 +58,8 @@ import {
   sendAIWorkspaceMessage
 } from "../ai/aiWorkspaceService";
 import { getActiveWorkspaceContext, ipcErrorDetails } from "./activeWorkspace";
+
+const activeAIWorkspaceMessageControllers = new Map<number, AbortController>();
 
 export function registerAIWorkspaceHandlers(): void {
   ipcMain.handle(getAISettingsChannel, async (): Promise<RelicResult<AISettingsState>> => {
@@ -220,7 +223,20 @@ export function registerAIWorkspaceHandlers(): void {
       const context = await getAIWorkspaceContext();
       if (!context.ok) return context;
 
-      const result = await sendAIWorkspaceMessage(context.value, input, shell.trashItem);
+      const senderId = event.sender.id;
+      activeAIWorkspaceMessageControllers.get(senderId)?.abort();
+      const abortController = new AbortController();
+      activeAIWorkspaceMessageControllers.set(senderId, abortController);
+      let result: RelicResult<AIWorkspaceState>;
+      try {
+        result = await sendAIWorkspaceMessage(context.value, input, shell.trashItem, {
+          signal: abortController.signal
+        });
+      } finally {
+        if (activeAIWorkspaceMessageControllers.get(senderId) === abortController) {
+          activeAIWorkspaceMessageControllers.delete(senderId);
+        }
+      }
       if (result.ok) {
         event.sender.send(workspaceChangedChannel, {
           changedAt: new Date().toISOString(),
@@ -233,6 +249,13 @@ export function registerAIWorkspaceHandlers(): void {
     } catch (error) {
       return fail("AI_WORKSPACE_MESSAGE_FAILED", "AI Workspaceで処理できませんでした。", ipcErrorDetails(error));
     }
+  });
+
+  ipcMain.handle(cancelAIWorkspaceMessageChannel, async (event): Promise<RelicResult<void>> => {
+    const controller = activeAIWorkspaceMessageControllers.get(event.sender.id);
+    controller?.abort();
+    activeAIWorkspaceMessageControllers.delete(event.sender.id);
+    return ok(undefined);
   });
 
   ipcMain.handle(previewAIWorkspaceMessageChannel, async (_event, input: PreviewAIWorkspaceMessageInput) => {

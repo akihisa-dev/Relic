@@ -73,6 +73,48 @@ describe("useAIWorkspaceState", () => {
     expect(onError).not.toHaveBeenCalled();
   });
 
+  it("can cancel an active AI Workspace message without showing a cancellation error", async () => {
+    const onError = vi.fn();
+    window.relic = makeRelicApi({
+      getAIWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          aiProvider: "codex-app-server",
+          openAIAPIKeyConfigured: true,
+          history: [],
+          index: { chunkCount: 0, indexedAt: null, indexedFileCount: 0, skippedLargeFiles: [], unreadableFiles: [] },
+          operationHistory: [],
+          pendingOperations: []
+        }
+      }),
+      cancelAIWorkspaceMessage: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
+      sendAIWorkspaceMessage: vi.fn().mockResolvedValue({
+        ok: false,
+        error: {
+          code: "AI_WORKSPACE_MESSAGE_CANCELLED",
+          message: "AIの応答生成を中断しました。"
+        }
+      })
+    });
+    const hook = renderHook(() => useAIWorkspaceState({
+      isEnabled: true,
+      onError,
+      workspaceId: "workspace-1"
+    }));
+
+    await waitFor(() => {
+      expect(window.relic?.getAIWorkspaceState).toHaveBeenCalled();
+    });
+
+    await act(async () => {
+      await hook.result.current.cancelAIWorkspaceMessage();
+      await hook.result.current.sendAIWorkspaceMessage("認証を整理して");
+    });
+
+    expect(window.relic?.cancelAIWorkspaceMessage).toHaveBeenCalled();
+    expect(onError).not.toHaveBeenCalled();
+  });
+
   it("keeps the message preview empty when AI Workspace becomes disabled", async () => {
     const onError = vi.fn();
     const hook = renderHook(

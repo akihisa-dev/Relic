@@ -13,6 +13,7 @@ interface AppSecondarySidebarProps {
   isResizing: boolean;
   onAIWorkspaceApplyOperations: (operationIds?: string[]) => void;
   onAIWorkspaceCancelMessagePreview: () => void;
+  onAIWorkspaceCancelSending: () => void;
   onAIWorkspaceClearData: () => void;
   onAIWorkspaceConfirmMessagePreview: () => void;
   onAIWorkspaceDiscardOperations: (operationIds?: string[]) => void;
@@ -35,6 +36,7 @@ export function AppSecondarySidebar({
   isResizing,
   onAIWorkspaceApplyOperations,
   onAIWorkspaceCancelMessagePreview,
+  onAIWorkspaceCancelSending,
   onAIWorkspaceClearData,
   onAIWorkspaceConfirmMessagePreview,
   onAIWorkspaceDiscardOperations,
@@ -77,6 +79,7 @@ export function AppSecondarySidebar({
             onClearData={onAIWorkspaceClearData}
             onApplyOperations={onAIWorkspaceApplyOperations}
             onCancelMessagePreview={onAIWorkspaceCancelMessagePreview}
+            onCancelSending={onAIWorkspaceCancelSending}
             onConfirmMessagePreview={onAIWorkspaceConfirmMessagePreview}
             onDiscardOperations={onAIWorkspaceDiscardOperations}
             onOpenFile={onOpenFile}
