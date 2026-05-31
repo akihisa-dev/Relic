@@ -491,6 +491,38 @@
   text-transform: uppercase;
 }
 
+.sidebar-pane-heading {
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.sidebar-pane-heading > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebar-close-button {
+  align-items: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  color: var(--text-3);
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: 18px;
+  height: 26px;
+  justify-content: center;
+  line-height: 1;
+  padding: 0;
+  width: 26px;
+}
+
+.sidebar-close-button:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+
 .pane-heading-count {
   color: var(--text-3);
   font-size: 11px;

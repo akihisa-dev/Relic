@@ -808,6 +808,7 @@ export function App(): ReactElement {
             void createAIWorkspaceChat();
           }}
           onDeleteAIChat={(chatId) => { void deleteAIWorkspaceChat(chatId); }}
+          onCloseSidebar={closeSidebar}
           onCreateFile={handleCreateFileFromSidebar}
           onCreateFileInFolder={handleCreateFileInFolder}
           onCreateFolder={handleCreateFolderFromSidebar}

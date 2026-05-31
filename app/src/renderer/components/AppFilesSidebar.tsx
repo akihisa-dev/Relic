@@ -15,6 +15,7 @@ interface AppFilesSidebarProps extends Omit<FilesSidebarProps, "onSelectedCountC
   isSidebarResizing: boolean;
   onCreateAIChat: () => void;
   onDeleteAIChat: (chatId: string) => void;
+  onCloseSidebar: () => void;
   onSelectAIChat: (chatId: string) => void;
   onSelectedCountChange: (count: number) => void;
   selectedCountLabel: string;
@@ -32,6 +33,7 @@ export function AppFilesSidebar({
   isSidebarResizing,
   onCreateAIChat,
   onDeleteAIChat,
+  onCloseSidebar,
   onSelectAIChat,
   onSelectedCountChange,
   selectedCountLabel: _selectedCountLabel,
@@ -51,7 +53,20 @@ export function AppFilesSidebar({
     >
       {showHeader ? (
         <div className="sidebar-header">
-          <div className="pane-heading">{heading}</div>
+          <div className="pane-heading sidebar-pane-heading">
+            <span>{heading}</span>
+            {activeSidebarView === "ai" ? (
+              <button
+                aria-label="AI Workspaceサイドバーを閉じる"
+                className="sidebar-close-button"
+                onClick={onCloseSidebar}
+                title="閉じる"
+                type="button"
+              >
+                ×
+              </button>
+            ) : null}
+          </div>
         </div>
       ) : null}
       <div className={`sidebar-body sidebar-view-content sidebar-view-content--${activeSidebarView}`}>
