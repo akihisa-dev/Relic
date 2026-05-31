@@ -32,6 +32,7 @@ import {
   testOpenAIAPIKeyChannel,
   type AISettingsState,
   type AIWorkspaceState,
+  openAIWorkspaceModels,
   type TestOpenAIAPIKeyResult,
   workspaceChangedChannel
 } from "../../shared/ipc";
@@ -375,10 +376,7 @@ function isSaveAIModelInput(value: unknown): value is SaveAIModelInput {
   if (!value || typeof value !== "object") return false;
   const record = value as { model?: unknown };
 
-  return record.model === "gpt-5.5" ||
-    record.model === "gpt-5.4" ||
-    record.model === "gpt-5.4-mini" ||
-    record.model === "gpt-5.4-nano";
+  return openAIWorkspaceModels.includes(record.model as SaveAIModelInput["model"]);
 }
 
 function isSaveAIProviderInput(value: unknown): value is SaveAIProviderInput {

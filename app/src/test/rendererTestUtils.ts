@@ -1,6 +1,7 @@
 import { vi } from "vitest";
 
 import {
+  defaultAppUiSettings,
   defaultEditorSettings,
   defaultFeatureToggles,
   type WorkspaceState
@@ -112,6 +113,7 @@ export function makeRelicApi(overrides: Partial<typeof window.relic> = {}): type
     getAppInfo: vi.fn().mockResolvedValue({ ok: true, value: { name: "Relic", platform: "darwin", version: "0.0.0" } }),
     getBacklinks: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     getEditorSettings: vi.fn().mockResolvedValue({ ok: true, value: { ...defaultEditorSettings, language: "ja" } }),
+    getAppUiSettings: vi.fn().mockResolvedValue({ ok: true, value: defaultAppUiSettings }),
     getFeatureToggles: vi.fn().mockResolvedValue({ ok: true, value: defaultFeatureToggles }),
     getFrontmatterTemplates: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     getFrontmatterValueCandidates: vi.fn().mockResolvedValue({ ok: true, value: {} }),
@@ -204,6 +206,7 @@ export function makeRelicApi(overrides: Partial<typeof window.relic> = {}): type
     respondToWindowCloseRequest: vi.fn(),
     revealWorkspaceItem: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
     saveEditorSettings: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
+    saveAppUiSettings: vi.fn().mockResolvedValue({ ok: true, value: defaultAppUiSettings }),
     saveDiagramSvg: vi.fn().mockResolvedValue({ ok: true, value: { status: "saved" } }),
     saveFeatureToggles: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
     saveFrontmatterTemplates: vi.fn().mockResolvedValue({ ok: true, value: undefined }),

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   isFeatureTogglesInput,
   isFrontmatterTemplatesInput,
+  isAppUiSettingsInput,
   isChronicleCalendarsInput,
   isChartsInput,
   isRenameWorkspaceInput,
@@ -126,6 +127,15 @@ describe("workspaceHandlerValidators", () => {
       rightPanel: true,
       tools: false
     })).toBe(false);
+  });
+
+  it("validates app UI settings before saving", () => {
+    expect(isAppUiSettingsInput({ coworkPanelWidth: 320 })).toBe(true);
+    expect(isAppUiSettingsInput({ coworkPanelWidth: 520 })).toBe(true);
+    expect(isAppUiSettingsInput({ coworkPanelWidth: 319 })).toBe(false);
+    expect(isAppUiSettingsInput({ coworkPanelWidth: 521 })).toBe(false);
+    expect(isAppUiSettingsInput({ coworkPanelWidth: Number.NaN })).toBe(false);
+    expect(isAppUiSettingsInput({ coworkPanelWidth: "400" })).toBe(false);
   });
 
   it("validates chronicle calendar settings", () => {

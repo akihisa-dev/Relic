@@ -7,6 +7,7 @@ import type {
   WorkspaceChart
 } from "./ipcCharts";
 import type {
+  AppUiSettings,
   EditorSettings,
   FeatureToggles,
   FrontmatterTemplate,
@@ -146,6 +147,8 @@ export interface RelicApi {
   generateTableOfContents: (input: GenerateTableOfContentsInput) => Promise<RelicResult<string>>;
   getFeatureToggles: () => Promise<RelicResult<FeatureToggles>>;
   saveFeatureToggles: (input: FeatureToggles) => Promise<RelicResult<void>>;
+  getAppUiSettings: () => Promise<RelicResult<AppUiSettings>>;
+  saveAppUiSettings: (input: AppUiSettings) => Promise<RelicResult<AppUiSettings>>;
   getUserDefinedFields: () => Promise<RelicResult<UserDefinedField[]>>;
   saveUserDefinedFields: (input: UserDefinedField[]) => Promise<RelicResult<void>>;
   getFrontmatterTemplates: () => Promise<RelicResult<FrontmatterTemplate[]>>;

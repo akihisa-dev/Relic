@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { emptyAIWorkspaceData, readAIWorkspaceData, writeAIWorkspaceData } from "./aiWorkspaceData";
+import { emptyAIWorkspaceData, readAIWorkspaceData, repairAIWorkspaceData, writeAIWorkspaceData } from "./aiWorkspaceData";
 
 let userDataPath = "";
 
@@ -93,4 +93,87 @@ describe("Cowork data storage", () => {
       role: "assistant"
     }]);
   });
+
+  it("repairs stale index chunks, embeddings, and history references for deleted Markdown", () => {
+    const repaired = repairAIWorkspaceData({
+      activeChatId: "missing-chat",
+      chats: [
+        {
+          createdAt: "2026-05-30T00:00:00.000Z",
+          history: [{
+            content: "AI response",
+            createdAt: "2026-05-30T00:00:00.000Z",
+            id: "message-1",
+            operations: [
+              operation("update", "existing.md", "pending"),
+              operation("update", "deleted.md", "pending")
+            ],
+            references: [
+              { path: "existing.md", preview: "# Existing" },
+              { path: "deleted.md", preview: "# Deleted" }
+            ],
+            role: "assistant"
+          }],
+          id: "chat-1",
+          operations: [
+            operation("update", "existing.md", "pending"),
+            operation("update", "deleted.md", "pending"),
+            operation("create", "new.md", "pending"),
+            { ...operation("delete", "deleted.md", "applied"), baseContent: "# Deleted" }
+          ],
+          title: "Chat",
+          updatedAt: "2026-05-30T00:00:00.000Z"
+        },
+        {
+          createdAt: "2026-05-30T00:00:00.000Z",
+          history: [],
+          id: "chat-1",
+          operations: [],
+          title: "Duplicate",
+          updatedAt: "2026-05-30T00:00:00.000Z"
+        }
+      ],
+      index: {
+        chunks: [
+          { content: "# Existing", embedding: [1], endLine: 1, path: "existing.md", startLine: 1 },
+          { content: "# Deleted", embedding: [1], endLine: 1, path: "deleted.md", startLine: 1 }
+        ],
+        indexedAt: "2026-05-30T00:00:00.000Z",
+        skippedLargeFiles: [
+          { path: "large.md", reason: "large" },
+          { path: "deleted.md", reason: "deleted" }
+        ],
+        sourceHash: "hash",
+        unreadableFiles: [
+          { path: "unreadable.md", reason: "unreadable" },
+          { path: "deleted.md", reason: "deleted" }
+        ]
+      }
+    }, ["existing.md", "large.md", "unreadable.md"]);
+
+    expect(repaired.activeChatId).toBe("chat-1");
+    expect(repaired.chats).toHaveLength(1);
+    expect(repaired.index.chunks.map((chunk) => chunk.path)).toEqual(["existing.md"]);
+    expect(repaired.index.skippedLargeFiles.map((file) => file.path)).toEqual(["large.md"]);
+    expect(repaired.index.unreadableFiles.map((file) => file.path)).toEqual(["unreadable.md"]);
+    expect(repaired.chats[0].history[0].references).toEqual([{ path: "existing.md", preview: "# Existing" }]);
+    expect(repaired.chats[0].history[0].operations).toEqual([operation("update", "existing.md", "pending")]);
+    expect(repaired.chats[0].operations).toEqual([
+      operation("update", "existing.md", "pending"),
+      operation("create", "new.md", "pending"),
+      { ...operation("delete", "deleted.md", "applied"), baseContent: "# Deleted" }
+    ]);
+  });
 });
+
+function operation(kind: "create" | "update" | "delete", filePath: string, status: "pending" | "applied") {
+  return {
+    content: kind === "delete" ? undefined : "# Content",
+    createdAt: "2026-05-30T00:00:00.000Z",
+    id: `${kind}-${filePath}-${status}`,
+    kind,
+    path: filePath,
+    status,
+    summary: `${kind} ${filePath}`
+  };
+}

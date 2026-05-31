@@ -22,6 +22,7 @@ import {
   getAISettingsChannel,
   getAppInfoChannel,
   getEditorSettingsChannel,
+  getAppUiSettingsChannel,
   getFrontmatterValueCandidatesChannel,
   getWorkspaceAliasesChannel,
   getWorkspaceChartsChannel,
@@ -51,6 +52,7 @@ import {
   saveWorkspaceChronicleCalendarsChannel,
   updateChartEntryChannel,
   saveEditorSettingsChannel,
+  saveAppUiSettingsChannel,
   saveOpenAIAPIKeyChannel,
   selectAIWorkspaceChatChannel,
   generateTitleListChannel,
@@ -85,6 +87,7 @@ import {
   testOpenAIAPIKeyChannel,
   switchWorkspaceChannel,
   writeMarkdownFileChannel,
+  type AppUiSettings,
   type AIWorkspaceState,
   type AISettingsState,
   type ApplyAIWorkspaceOperationsInput,
@@ -191,6 +194,8 @@ const relicApi: RelicApi = {
   getAppInfo: () => ipcRenderer.invoke(getAppInfoChannel) as Promise<RelicResult<AppInfo>>,
   getEditorSettings: () =>
     ipcRenderer.invoke(getEditorSettingsChannel) as Promise<RelicResult<EditorSettings>>,
+  getAppUiSettings: () =>
+    ipcRenderer.invoke(getAppUiSettingsChannel) as Promise<RelicResult<AppUiSettings>>,
   getWorkspaceAliases: () =>
     ipcRenderer.invoke(getWorkspaceAliasesChannel) as Promise<RelicResult<AliasIndex>>,
   getWorkspaceCharts: () =>
@@ -238,6 +243,8 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(saveDiagramSvgChannel, input) as Promise<RelicResult<OutputSavedResult>>,
   saveEditorSettings: (input: EditorSettings) =>
     ipcRenderer.invoke(saveEditorSettingsChannel, input) as Promise<RelicResult<void>>,
+  saveAppUiSettings: (input: AppUiSettings) =>
+    ipcRenderer.invoke(saveAppUiSettingsChannel, input) as Promise<RelicResult<AppUiSettings>>,
   savePreviewAsPdf: (input: SavePreviewAsPdfInput) =>
     ipcRenderer.invoke(savePreviewAsPdfChannel, input) as Promise<RelicResult<OutputSavedResult>>,
   searchAndReplace: (input: SearchAndReplaceInput) =>
