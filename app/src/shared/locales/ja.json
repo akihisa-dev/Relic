@@ -120,7 +120,7 @@
   "links.outgoingLimited": "リンクが多いため、一部のみ表示しています。",
   "links.updateImpactConfirm": "{{files}} 件のMarkdownファイル内にある {{links}} 件のリンクを更新します。続けますか？",
   "nav.files": "ファイル",
-  "nav.ai": "AI Workspace",
+  "nav.ai": "Cowork",
   "nav.chronicle": "年表",
   "nav.calendar": "カレンダー",
   "nav.chronicleSettings": "暦設定",

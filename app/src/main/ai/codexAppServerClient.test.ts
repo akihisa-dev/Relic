@@ -197,7 +197,7 @@ describe("readCodexAIWorkspaceUsage", () => {
 });
 
 describe("parseCodexResponse", () => {
-  it("parses structured AI Workspace responses", () => {
+  it("parses structured Cowork responses", () => {
     const result = parseCodexResponse(JSON.stringify({
       message: "READMEを更新します。",
       operations: [{
@@ -297,7 +297,7 @@ describe("parseCodexResponse", () => {
   });
 });
 
-describe("AI Workspace prompt", () => {
+describe("Cowork prompt", () => {
   it("uses a Codex-compatible strict output schema", () => {
     expect(codexAIWorkspaceOutputSchema.properties.operations.items.required).toEqual([
       "content",
@@ -348,6 +348,7 @@ describe("AI Workspace prompt", () => {
       workspacePath: "/tmp/workspace"
     });
 
+    expect(prompt).toContain("Relic Coworkとして回答してください。");
     expect(prompt).toContain("operationsはMarkdownファイルだけを対象にしてください。");
     expect(prompt).toContain("ファイル更新は部分差分ではなく、更新後のMarkdown全文をcontentへ入れてください。");
     expect(codexAIWorkspaceOutputSchema.properties.operations.items.required).toEqual([

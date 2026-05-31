@@ -51,7 +51,7 @@ afterEach(async () => {
 });
 
 describe("getAIWorkspaceState", () => {
-  it("indexes Markdown files when AI Workspace state is loaded", async () => {
+  it("indexes Markdown files when Cowork state is loaded", async () => {
     await writeFile(path.join(workspacePath, "README.md"), "# Workspace\n概要", "utf8");
 
     const result = await getAIWorkspaceState(context());
@@ -294,7 +294,7 @@ describe("sendAIWorkspaceMessage", () => {
     const abortController = new AbortController();
     vi.mocked(runCodexAIWorkspaceTurn).mockImplementationOnce(async (input) => {
       await new Promise((_resolve, reject) => {
-        input.signal?.addEventListener("abort", () => reject(new Error("AI Workspace処理を中断しました。")), { once: true });
+        input.signal?.addEventListener("abort", () => reject(new Error("Cowork処理を中断しました。")), { once: true });
       });
       throw new Error("unreachable");
     });

@@ -15,7 +15,7 @@ afterEach(async () => {
   await rm(userDataPath, { force: true, recursive: true });
 });
 
-describe("AI Workspace data storage", () => {
+describe("Cowork data storage", () => {
   it("keeps workspace ids inside the AI workspace app data directory", async () => {
     const data = {
       ...emptyAIWorkspaceData(),

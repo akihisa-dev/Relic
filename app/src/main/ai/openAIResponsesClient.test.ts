@@ -108,7 +108,7 @@ describe("testOpenAIAPIKey", () => {
   });
 });
 
-describe("AI Workspace prompt", () => {
+describe("Cowork prompt", () => {
   it("treats reference Markdown instructions as source material", () => {
     const prompt = buildPrompt({
       history: [],
@@ -137,6 +137,7 @@ describe("AI Workspace prompt", () => {
       references: []
     });
 
+    expect(prompt).toContain("Relic Coworkとして日本語で簡潔に回答してください。");
     expect(prompt).toContain("operationsはMarkdownファイルだけを対象にしてください。");
     expect(prompt).toContain("ファイル更新は部分差分ではなく、更新後のMarkdown全文をcontentへ入れてください。");
   });

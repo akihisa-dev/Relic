@@ -31,7 +31,7 @@ AIのセッション開始時は、`../AGENTS.md` から [project/overview.md](p
 | [project/overview.md](project/overview.md) | Relicの目的、対象ユーザー、判断思想、リポジトリ構成 |
 | [project/terms.md](project/terms.md) | 用語定義。コード・UI・ドキュメントで使う言葉の統一基準 |
 | [features/](features/) | 機能の振る舞い・詳細仕様 |
-| [features/ai-workspace.md](features/ai-workspace.md) | AI Workspace仕様。Relic内でAIとローカルMarkdownワークスペースを共同編集する体験 |
+| [features/ai-workspace.md](features/ai-workspace.md) | Cowork仕様。Relic内でAIとローカルMarkdownワークスペースを共同編集する体験 |
 | [design/system.md](design/system.md) | デザインシステム。カラーパレット・タイポグラフィ・スペーシング・コンポーネント定義 |
 | [design/screens.md](design/screens.md) | 画面一覧と構成 |
 | [design/navigation.md](design/navigation.md) | 画面遷移フロー |

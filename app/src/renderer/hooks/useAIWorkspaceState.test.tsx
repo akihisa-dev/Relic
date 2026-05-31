@@ -46,7 +46,7 @@ describe("useAIWorkspaceState", () => {
     vi.clearAllMocks();
   });
 
-  it("sends an AI Workspace message directly without a send preview", async () => {
+  it("sends a Cowork message directly without a send preview", async () => {
     const onError = vi.fn();
     const hook = renderHook(() => useAIWorkspaceState({
       isEnabled: true,
@@ -134,7 +134,7 @@ describe("useAIWorkspaceState", () => {
     expect(onError).not.toHaveBeenCalled();
   });
 
-  it("can cancel an active AI Workspace message without showing a cancellation error", async () => {
+  it("can cancel an active Cowork message without showing a cancellation error", async () => {
     const onError = vi.fn();
     window.relic = makeRelicApi({
       getAIWorkspaceState: vi.fn().mockResolvedValue({
@@ -176,7 +176,7 @@ describe("useAIWorkspaceState", () => {
     expect(onError).not.toHaveBeenCalled();
   });
 
-  it("keeps the message preview empty when AI Workspace becomes disabled", async () => {
+  it("keeps the message preview empty when Cowork becomes disabled", async () => {
     const onError = vi.fn();
     const hook = renderHook(
       ({ isEnabled }) => useAIWorkspaceState({

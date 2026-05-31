@@ -70,7 +70,7 @@ export async function getAIWorkspaceState(context: AIWorkspaceContext): Promise<
 
     return ok(await toState(data, context.userDataPath));
   } catch (error) {
-    return fail("AI_WORKSPACE_INDEX_FAILED", "AI Workspaceのインデックスを作成できませんでした。", String(error));
+    return fail("AI_WORKSPACE_INDEX_FAILED", "Coworkのインデックスを作成できませんでした。", String(error));
   }
 }
 
@@ -85,7 +85,7 @@ export async function rebuildAIWorkspaceIndex(context: AIWorkspaceContext): Prom
 
     return ok(await toState(nextData, context.userDataPath));
   } catch (error) {
-    return fail("AI_WORKSPACE_INDEX_FAILED", "AI Workspaceのインデックスを作成できませんでした。", String(error));
+    return fail("AI_WORKSPACE_INDEX_FAILED", "Coworkのインデックスを作成できませんでした。", String(error));
   }
 }
 
@@ -322,7 +322,7 @@ export async function sendAIWorkspaceMessage(
       return fail("AI_WORKSPACE_MESSAGE_CANCELLED", "AIの応答生成を中断しました。");
     }
 
-    return fail("AI_WORKSPACE_MESSAGE_FAILED", "AI Workspaceで処理できませんでした。", String(error));
+    return fail("AI_WORKSPACE_MESSAGE_FAILED", "Coworkで処理できませんでした。", String(error));
   }
 }
 
@@ -1200,14 +1200,14 @@ function normalizeAIProviderError(provider: AIProvider, error: unknown): string 
 
 function throwIfAIWorkspaceAborted(signal?: AbortSignal): void {
   if (signal?.aborted) {
-    throw new Error("AI Workspace処理を中断しました。");
+    throw new Error("Cowork処理を中断しました。");
   }
 }
 
 function isAIWorkspaceAbortError(error: unknown, signal?: AbortSignal): boolean {
   if (signal?.aborted) return true;
   if (typeof DOMException !== "undefined" && error instanceof DOMException && error.name === "AbortError") return true;
-  return error instanceof Error && error.message.includes("AI Workspace処理を中断しました");
+  return error instanceof Error && error.message.includes("Cowork処理を中断しました");
 }
 
 function buildChatOnlyAssistantMessage(

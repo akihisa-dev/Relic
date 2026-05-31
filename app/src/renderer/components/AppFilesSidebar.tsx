@@ -57,7 +57,7 @@ export function AppFilesSidebar({
             <span>{heading}</span>
             {activeSidebarView === "ai" ? (
               <button
-                aria-label="AI Workspaceサイドバーを閉じる"
+                aria-label="Coworkサイドバーを閉じる"
                 className="sidebar-close-button"
                 onClick={onCloseSidebar}
                 title="閉じる"

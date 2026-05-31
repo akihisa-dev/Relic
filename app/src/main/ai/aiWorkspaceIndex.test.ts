@@ -25,7 +25,7 @@ afterEach(async () => {
 describe("buildAIWorkspaceIndex", () => {
   it("indexes all readable Markdown files in the workspace", async () => {
     await mkdir(path.join(workspacePath, "docs"), { recursive: true });
-    await writeFile(path.join(workspacePath, "README.md"), "# Relic\nAI Workspace", "utf8");
+    await writeFile(path.join(workspacePath, "README.md"), "# Relic\nCowork", "utf8");
     await writeFile(path.join(workspacePath, "docs", "notes.md"), "# Notes\n共同編集", "utf8");
     await writeFile(path.join(workspacePath, "image.png"), "ignored", "utf8");
 

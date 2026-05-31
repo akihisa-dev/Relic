@@ -58,7 +58,7 @@ export async function runCodexAIWorkspaceTurn(
   input: RunCodexAIWorkspaceTurnInput
 ): Promise<RunCodexAIWorkspaceTurnResult> {
   const client = new CodexAppServerClient();
-  const abortError = new Error("AI Workspace処理を中断しました。");
+  const abortError = new Error("Cowork処理を中断しました。");
 
   if (input.signal?.aborted) {
     throw abortError;
@@ -175,7 +175,7 @@ class CodexAppServerClient {
     const result = await this.request("thread/start", {
       approvalPolicy: "never",
       baseInstructions: [
-        "あなたはRelicのAI Workspaceです。",
+        "あなたはRelicのCoworkです。",
         "Relicで開いているローカルMarkdownワークスペースだけを対象にします。",
         "Markdown以外のファイル操作は提案しません。",
         "ファイルを直接編集せず、必ず指定されたJSON形式で変更案を返します。",
@@ -367,7 +367,7 @@ export function buildPrompt(input: RunCodexAIWorkspaceTurnInput): string {
     .join("\n\n");
 
   return [
-    "Relic AI Workspaceとして回答してください。",
+    "Relic Coworkとして回答してください。",
     "必要な場合はMarkdownファイル変更案をoperationsへ入れてください。",
     "operationsはMarkdownファイルだけを対象にしてください。",
     "削除はdelete operationで表現してください。",
