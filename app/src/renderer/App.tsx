@@ -129,6 +129,7 @@ export function App(): ReactElement {
     cancelAIWorkspaceMessage,
     confirmAIWorkspaceMessage,
     createAIWorkspaceChat,
+    deleteAIWorkspaceChat,
     discardAIWorkspaceOperations,
     rebuildAIWorkspaceIndex,
     reloadAIWorkspace,
@@ -794,6 +795,7 @@ export function App(): ReactElement {
           isSidebarOpen={isSidebarOpen}
           isSidebarResizing={isSidebarResizing}
           onCreateAIChat={() => { void createAIWorkspaceChat(); }}
+          onDeleteAIChat={(chatId) => { void deleteAIWorkspaceChat(chatId); }}
           onCreateFile={handleCreateFileFromSidebar}
           onCreateFileInFolder={handleCreateFileInFolder}
           onCreateFolder={handleCreateFolderFromSidebar}

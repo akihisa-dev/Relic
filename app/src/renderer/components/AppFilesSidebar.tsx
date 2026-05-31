@@ -14,6 +14,7 @@ interface AppFilesSidebarProps extends Omit<FilesSidebarProps, "onSelectedCountC
   isSidebarOpen: boolean;
   isSidebarResizing: boolean;
   onCreateAIChat: () => void;
+  onDeleteAIChat: (chatId: string) => void;
   onSelectAIChat: (chatId: string) => void;
   onSelectedCountChange: (count: number) => void;
   selectedCountLabel: string;
@@ -30,6 +31,7 @@ export function AppFilesSidebar({
   isSidebarOpen,
   isSidebarResizing,
   onCreateAIChat,
+  onDeleteAIChat,
   onSelectAIChat,
   onSelectedCountChange,
   selectedCountLabel: _selectedCountLabel,
@@ -62,6 +64,7 @@ export function AppFilesSidebar({
           <AIChatsSidebar
             isLoading={isAIWorkspaceLoading}
             onCreateChat={onCreateAIChat}
+            onDeleteChat={onDeleteAIChat}
             onSelectChat={onSelectAIChat}
             state={aiWorkspaceState}
           />

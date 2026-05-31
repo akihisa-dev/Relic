@@ -34,6 +34,7 @@ import type {
   AIWorkspaceState,
   ClearAIWorkspaceDataInput,
   CreateAIWorkspaceChatInput,
+  DeleteAIWorkspaceChatInput,
   DiscardAIWorkspaceOperationsInput,
   PreviewAIWorkspaceMessageInput,
   RebuildAIWorkspaceIndexInput,
@@ -154,6 +155,7 @@ export interface RelicApi {
   getAIWorkspaceState: () => Promise<RelicResult<AIWorkspaceState>>;
   createAIWorkspaceChat: (input: CreateAIWorkspaceChatInput) => Promise<RelicResult<AIWorkspaceState>>;
   selectAIWorkspaceChat: (input: SelectAIWorkspaceChatInput) => Promise<RelicResult<AIWorkspaceState>>;
+  deleteAIWorkspaceChat: (input: DeleteAIWorkspaceChatInput) => Promise<RelicResult<AIWorkspaceState>>;
   getAISettings: () => Promise<RelicResult<AISettingsState>>;
   saveAIProvider: (input: SaveAIProviderInput) => Promise<RelicResult<AISettingsState>>;
   saveAIModel: (input: SaveAIModelInput) => Promise<RelicResult<AISettingsState>>;

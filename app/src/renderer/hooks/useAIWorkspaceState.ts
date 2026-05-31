@@ -20,6 +20,7 @@ export function useAIWorkspaceState({
   reloadAIWorkspace: () => Promise<void>;
   createAIWorkspaceChat: () => Promise<void>;
   selectAIWorkspaceChat: (chatId: string) => Promise<void>;
+  deleteAIWorkspaceChat: (chatId: string) => Promise<void>;
   rebuildAIWorkspaceIndex: () => Promise<void>;
   sendAIWorkspaceMessage: (
     message: string,
@@ -99,6 +100,23 @@ export function useAIWorkspaceState({
 
     setAIWorkspaceState(result.value);
   }, [aiWorkspaceState?.activeChatId, isEnabled, onError, resetMessagePreview, workspaceId]);
+
+  const deleteAIWorkspaceChat = useCallback(async (chatId: string): Promise<void> => {
+    if (!isEnabled || !workspaceId) return;
+    if (!window.relic?.deleteAIWorkspaceChat) return;
+
+    resetMessagePreview();
+    setIsAIWorkspaceLoading(true);
+    const result = await window.relic.deleteAIWorkspaceChat({ chatId });
+    setIsAIWorkspaceLoading(false);
+
+    if (!result.ok) {
+      onError(result.error.message);
+      return;
+    }
+
+    setAIWorkspaceState(result.value);
+  }, [isEnabled, onError, resetMessagePreview, workspaceId]);
 
   const rebuildAIWorkspaceIndex = useCallback(async (): Promise<void> => {
     if (!isEnabled || !workspaceId) return;
@@ -214,6 +232,7 @@ export function useAIWorkspaceState({
     reloadAIWorkspace,
     createAIWorkspaceChat,
     selectAIWorkspaceChat,
+    deleteAIWorkspaceChat,
     rebuildAIWorkspaceIndex,
     sendAIWorkspaceMessage,
     confirmAIWorkspaceMessage,
