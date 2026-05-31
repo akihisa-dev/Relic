@@ -88,7 +88,6 @@ describe("appShellModel", () => {
     expect(labels).toEqual({
       chronicleSettings: "Calendar Settings",
       frontmatter: "Frontmatter",
-      hakobiBridge: "Hakobi Bridge",
       settings: "Settings",
       tools: "Tools"
     });
@@ -126,9 +125,9 @@ describe("appShellModel", () => {
     const split = splitRailViews(enabled);
 
     expect(enabled.map((view) => view.id)).toEqual(["files", "ai", "hakobiBridge", "settings"]);
-    expect(split.primaryRailViews.map((view) => view.id)).toEqual(["files", "ai"]);
+    expect(split.primaryRailViews.map((view) => view.id)).toEqual(["files", "ai", "hakobiBridge"]);
     expect(split.chartRailViews.map((view) => view.id)).toEqual([]);
-    expect(split.panelRailViews.map((view) => view.id)).toEqual(["hakobiBridge", "settings"]);
+    expect(split.panelRailViews.map((view) => view.id)).toEqual(["settings"]);
     expect(chartIdForRailView("chronicle")).toBe("chronicle");
     expect(chartIdForRailView("calendar")).toBe("date");
   });
