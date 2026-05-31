@@ -9,6 +9,7 @@ vi.mock("./openAIResponsesClient", () => ({
 }));
 
 vi.mock("./codexAppServerClient", () => ({
+  readCodexAIWorkspaceUsage: vi.fn(async () => null),
   runCodexAIWorkspaceTurn: vi.fn()
 }));
 
@@ -27,7 +28,7 @@ import {
 } from "./aiWorkspaceService";
 import { writeAIWorkspaceData, type AIWorkspaceChatData, type AIWorkspaceData } from "./aiWorkspaceData";
 import { computeAIWorkspaceIndexSourceHash } from "./aiWorkspaceIndex";
-import { runCodexAIWorkspaceTurn } from "./codexAppServerClient";
+import { readCodexAIWorkspaceUsage, runCodexAIWorkspaceTurn } from "./codexAppServerClient";
 import { readOpenAIAPIKey } from "./openAIKeyStore";
 import { runOpenAIWorkspaceTurn } from "./openAIResponsesClient";
 import { getAppSettingsPath } from "../settings/appSettings";
@@ -40,6 +41,7 @@ beforeEach(async () => {
   workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-ai-workspace-"));
   vi.mocked(runOpenAIWorkspaceTurn).mockReset();
   vi.mocked(runCodexAIWorkspaceTurn).mockReset();
+  vi.mocked(readCodexAIWorkspaceUsage).mockResolvedValue(null);
   vi.mocked(readOpenAIAPIKey).mockResolvedValue("sk-test-openai-key");
 });
 
@@ -59,6 +61,33 @@ describe("getAIWorkspaceState", () => {
       expect(result.value.index.indexedAt).not.toBeNull();
       expect(result.value.index.indexedFileCount).toBe(1);
       expect(result.value.index.chunkCount).toBe(1);
+    }
+  });
+
+  it("includes Codex usage when Codex App Server is selected", async () => {
+    vi.mocked(readCodexAIWorkspaceUsage).mockResolvedValueOnce({
+      planType: "prolite",
+      primary: {
+        remainingPercent: 76,
+        resetsAt: "2026-05-31T05:05:35.000Z",
+        usedPercent: 24,
+        windowDurationMins: 300
+      },
+      readAt: "2026-05-31T04:30:00.000Z",
+      secondary: {
+        remainingPercent: 97,
+        resetsAt: "2026-06-07T01:37:56.000Z",
+        usedPercent: 3,
+        windowDurationMins: 10080
+      }
+    });
+
+    const result = await getAIWorkspaceState(context());
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.codexUsage?.primary?.remainingPercent).toBe(76);
+      expect(result.value.codexUsage?.secondary?.windowDurationMins).toBe(10080);
     }
   });
 });

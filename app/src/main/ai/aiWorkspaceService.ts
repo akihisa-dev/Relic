@@ -33,7 +33,7 @@ import {
   type AIWorkspaceData
 } from "./aiWorkspaceData";
 import { hasOpenAIAPIKey, readOpenAIAPIKey } from "./openAIKeyStore";
-import { runCodexAIWorkspaceTurn } from "./codexAppServerClient";
+import { readCodexAIWorkspaceUsage, runCodexAIWorkspaceTurn } from "./codexAppServerClient";
 import { runOpenAIWorkspaceTurn } from "./openAIResponsesClient";
 
 interface AIWorkspaceContext {
@@ -559,12 +559,16 @@ async function ensureIndexed(context: AIWorkspaceContext): Promise<AIWorkspaceDa
 
 async function toState(data: AIWorkspaceData, userDataPath?: string): Promise<AIWorkspaceState> {
   const settings = userDataPath ? await readAppSettings(userDataPath) : null;
+  const aiProvider = settings?.aiSettings.aiProvider ?? "codex-app-server";
   const chat = data.chats.find((item) => item.id === data.activeChatId) ?? data.chats[0] ?? null;
   const sortedChats = [...data.chats].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  const codexUsage = aiProvider === "codex-app-server"
+    ? await readCodexAIWorkspaceUsage().catch(() => null)
+    : null;
 
   return {
     activeChatId: chat?.id ?? null,
-    aiProvider: settings?.aiSettings.aiProvider ?? "codex-app-server",
+    aiProvider,
     chats: sortedChats.map((item) => ({
       createdAt: item.createdAt,
       id: item.id,
@@ -580,6 +584,7 @@ async function toState(data: AIWorkspaceData, userDataPath?: string): Promise<AI
       skippedLargeFiles: data.index.skippedLargeFiles,
       unreadableFiles: data.index.unreadableFiles
     },
+    codexUsage,
     openAIAPIKeyConfigured: userDataPath ? await hasOpenAIAPIKey(userDataPath) : false,
     operationHistory: chat?.operations ?? [],
     pendingOperations: chat?.operations.filter((operation) => operation.status === "pending") ?? []
