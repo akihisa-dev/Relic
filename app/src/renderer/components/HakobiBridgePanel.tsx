@@ -5,7 +5,7 @@ import { useT } from "../i18n";
 
 type BridgeMode = "browser" | "internal";
 
-export function HakobiBridgeSidebar({ workspacePath }: { workspacePath: string | null }): ReactElement {
+export function HakobiBridgePanel({ workspacePath }: { workspacePath: string | null }): ReactElement {
   const t = useT();
   const [enabled, setEnabled] = useState(false);
   const [mode, setMode] = useState<BridgeMode>("browser");
@@ -40,7 +40,12 @@ export function HakobiBridgeSidebar({ workspacePath }: { workspacePath: string |
   };
 
   return (
-    <div className="hakobi-bridge-sidebar">
+    <div className="settings-page hakobi-bridge-page">
+      <header className="settings-page-header">
+        <p className="settings-page-kicker">{t("nav.hakobiBridge")}</p>
+        <h2>{t("hakobiBridge.title")}</h2>
+      </header>
+
       <section className="settings-group hakobi-bridge-status">
         <div>
           <div className="links-panel-subheading">{t("hakobiBridge.connection")}</div>

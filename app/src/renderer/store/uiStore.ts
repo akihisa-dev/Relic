@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-export type SidebarView = "files" | "ai" | "hakobiBridge" | "settings" | "tools" | "frontmatter" | "chronicle" | "calendar";
+export type SidebarView = "files" | "ai" | "settings" | "tools" | "frontmatter" | "chronicle" | "calendar";
 export type RightPanelView = "outline" | "links";
 export type SecondarySidebarView = "none" | "ai-chat";
 

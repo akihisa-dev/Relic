@@ -2,20 +2,21 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { I18nProvider } from "../i18n";
-import { HakobiBridgeSidebar } from "./HakobiBridgeSidebar";
+import { HakobiBridgePanel } from "./HakobiBridgePanel";
 
-function renderSidebar(workspacePath: string | null = "/tmp/notes"): void {
+function renderPanel(workspacePath: string | null = "/tmp/notes"): void {
   render(
     <I18nProvider language="en">
-      <HakobiBridgeSidebar workspacePath={workspacePath} />
+      <HakobiBridgePanel workspacePath={workspacePath} />
     </I18nProvider>
   );
 }
 
-describe("HakobiBridgeSidebar", () => {
-  it("keeps Hakobi Bridge settings and workbench in its own sidebar", () => {
-    renderSidebar();
+describe("HakobiBridgePanel", () => {
+  it("keeps Hakobi Bridge settings and workbench in its own panel", () => {
+    renderPanel();
 
+    expect(screen.getAllByText("Hakobi Bridge").length).toBeGreaterThan(0);
     expect(screen.getByText("Connection status")).toBeInTheDocument();
     expect(screen.getByText("Hakobi Bridge settings")).toBeInTheDocument();
     expect(screen.getByLabelText("Allowed domain")).toHaveValue("app.ai-constcierge.com");
@@ -25,8 +26,8 @@ describe("HakobiBridgeSidebar", () => {
     expect(screen.getByText("Relic change proposal")).toBeInTheDocument();
   });
 
-  it("prepares a response and change proposal entry from the sidebar", () => {
-    renderSidebar();
+  it("prepares a response and change proposal entry from the panel", () => {
+    renderPanel();
 
     fireEvent.click(screen.getByLabelText("Use Hakobi Bridge"));
     fireEvent.change(screen.getByLabelText("Send field"), { target: { value: "Summarize this file" } });
@@ -39,7 +40,7 @@ describe("HakobiBridgeSidebar", () => {
   });
 
   it("requires a workspace before sending to Hakobi", () => {
-    renderSidebar(null);
+    renderPanel(null);
 
     expect(screen.getByText("Open a workspace to use this.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Send to Hakobi" })).toBeDisabled();
