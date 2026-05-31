@@ -2,6 +2,7 @@ import { diagramLanguageFor } from "./diagramLanguage";
 import { renderDiagramElement } from "./diagramPreview";
 import { decodeDiagramSourceAttribute } from "./diagramSourceAttribute";
 import { getRenderedDiagramSvgText } from "./diagramSvg";
+import { sanitizePreviewHtml } from "./htmlSanitizer";
 import type { Translator } from "./i18nModel";
 import { escapeHtml, renderMarkdown } from "./previewMarkdown";
 
@@ -35,10 +36,11 @@ export async function buildPreviewOutputHtml({
   try {
     await renderOutputDiagrams(root);
     normalizeOutputDiagramDom(root);
+    const sanitizedBody = sanitizePreviewHtml(root.innerHTML);
 
     return {
       defaultFileName,
-      html: wrapOutputHtml(root.innerHTML, documentTitle),
+      html: wrapOutputHtml(sanitizedBody, documentTitle),
       title: documentTitle
     };
   } finally {
@@ -102,7 +104,7 @@ function normalizeOutputDiagramDom(root: ParentNode): void {
 
     const outputDiagram = document.createElement("div");
     outputDiagram.className = "relic-output-diagram";
-    outputDiagram.innerHTML = svg;
+    outputDiagram.innerHTML = sanitizePreviewHtml(svg);
     diagram.replaceChildren(outputDiagram);
     diagram.removeAttribute("data-diagram-source");
   });

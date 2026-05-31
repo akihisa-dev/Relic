@@ -33,6 +33,67 @@ describe("outputHtml", () => {
     expect(result.html).not.toContain("right-panel");
   });
 
+  it("印刷/PDF用HTMLに危険なMarkdown由来HTMLを残さない", async () => {
+    const t = createTranslator("ja");
+    const result = await buildPreviewOutputHtml({
+      content: [
+        "# タイトル",
+        "",
+        "<script>alert(1)</script>",
+        '<img src=x onerror="alert(1)">',
+        "[x](javascript:alert(1))",
+        '<iframe src="https://example.com"></iframe>'
+      ].join("\n"),
+      fileName: "Note",
+      path: "Folder/Note.md",
+      t,
+      title: "Note",
+      workspacePath: "/tmp/relic"
+    });
+
+    expect(result.html).not.toContain("<script>alert(1)</script>");
+    expect(result.html).not.toContain("onerror");
+    expect(result.html).not.toContain("<img");
+    expect(result.html).not.toContain("javascript:");
+    expect(result.html).not.toContain("<iframe");
+    expect(result.html).toContain("<h1");
+    expect(new DOMParser().parseFromString(result.html, "text/html").querySelector("a[href^='javascript:']")).toBeNull();
+  });
+
+  it("印刷/PDF用HTMLでも通常Markdown、コードブロック、KaTeX、Mermaid枠を維持する", async () => {
+    const t = createTranslator("ja");
+    const result = await buildPreviewOutputHtml({
+      content: [
+        "# タイトル",
+        "",
+        "本文 **強調**",
+        "",
+        "$E=mc^2$",
+        "",
+        "```js",
+        "const value = 1;",
+        "```",
+        "",
+        "```mermaid",
+        "graph TD; A-->B",
+        "```"
+      ].join("\n"),
+      fileName: "Note",
+      path: "Folder/Note.md",
+      t,
+      title: "Note",
+      workspacePath: "/tmp/relic"
+    });
+
+    expect(result.html).toContain("<h1");
+    expect(result.html).toContain("<strong>強調</strong>");
+    expect(result.html).toContain("math-inline");
+    expect(result.html).toContain("katex");
+    expect(result.html).toContain("hljs language-js");
+    expect(result.html).toContain("preview-diagram");
+    expect(result.html).toContain('data-diagram-language="mermaid"');
+  });
+
   it("初期ファイル名に使えない文字を安全な文字にする", () => {
     expect(safeOutputFileName('A/B:C*D?"E.md')).toBe("A_B_C_D__E");
     expect(firstH1("前\n# 見出し\n本文")).toBe("見出し");

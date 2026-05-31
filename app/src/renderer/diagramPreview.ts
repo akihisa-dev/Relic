@@ -1,11 +1,10 @@
-import DOMPurify from "dompurify";
-
 import { enqueueD2Render } from "./d2Renderer";
 import { buildDiagramError } from "./diagramErrorView";
 import { diagramLabel, diagramLanguageFor, type DiagramLanguage } from "./diagramLanguage";
 import { initializeDiagramPanZoom, type DiagramRenderHandle } from "./diagramPanZoom";
 import { beginDiagramRender } from "./diagramRenderState";
 import { decodeDiagramSourceAttribute } from "./diagramSourceAttribute";
+import { sanitizeSvgHtml } from "./htmlSanitizer";
 import { renderMermaidSvg } from "./mermaidRenderer";
 
 export { diagramLanguageFor, type DiagramLanguage } from "./diagramLanguage";
@@ -32,7 +31,7 @@ export async function renderDiagramElement(
     const svg = await renderDiagramSvg(language, source);
     if (!renderContext.canApplyResult()) return null;
 
-    const sanitized = DOMPurify.sanitize(svg, { USE_PROFILES: { svg: true, svgFilters: true } });
+    const sanitized = sanitizeSvgHtml(svg);
     if (!renderContext.canApplyResult()) return null;
 
     container.replaceChildren();
