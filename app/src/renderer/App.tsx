@@ -130,6 +130,7 @@ export function App(): ReactElement {
     confirmAIWorkspaceMessage,
     discardAIWorkspaceOperations,
     rebuildAIWorkspaceIndex,
+    reloadAIWorkspace,
     sendAIWorkspaceMessage,
     clearAIWorkspaceData
   } = useAIWorkspaceState({
@@ -159,6 +160,7 @@ export function App(): ReactElement {
     handleTestOpenAIAPIKey,
     userDefinedFields
   } = useAppSettingsState({
+    onAISettingsChanged: () => { void reloadAIWorkspace(); },
     setEditorSettings,
     setWorkspaceError,
     setWorkspaceState

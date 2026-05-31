@@ -88,14 +88,6 @@ export function useAIWorkspaceState({
     if (!isEnabled || !workspaceId) return;
     if (!window.relic?.sendAIWorkspaceMessage) return;
 
-    if (
-      aiWorkspaceState?.aiProvider === "openai-api" &&
-      aiWorkspaceState.openAIAPIKeyConfigured === false
-    ) {
-      onError("AI共同作業を開始できません。設定のAIでOpenAI APIキーを登録してください。");
-      return;
-    }
-
     setIsAIWorkspaceSending(true);
     const result = await window.relic.sendAIWorkspaceMessage({ activeFileContent, activeFilePath, dirtyFilePaths, message });
     setIsAIWorkspaceSending(false);
@@ -106,7 +98,7 @@ export function useAIWorkspaceState({
     }
 
     setAIWorkspaceState(result.value);
-  }, [aiWorkspaceState?.aiProvider, aiWorkspaceState?.openAIAPIKeyConfigured, isEnabled, onError, workspaceId]);
+  }, [isEnabled, onError, workspaceId]);
 
   const confirmAIWorkspaceMessage = useCallback(async (
     _dirtyFilePaths: string[] = [],
