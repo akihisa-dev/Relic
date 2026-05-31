@@ -836,7 +836,8 @@
 /* ────────────────────────────────── */
 
 .right-panel {
-  background: var(--surface-raised);
+  background: var(--sidebar-bg);
+  backdrop-filter: blur(18px) saturate(132%);
   border: 1px solid var(--border);
   border-radius: 14px;
   box-shadow: var(--floating-panel-shadow);
@@ -1449,11 +1450,11 @@
 
 .status-bar {
   align-items: center;
-  background: color-mix(in srgb, var(--sidebar-bg) 92%, transparent);
+  background: color-mix(in srgb, var(--sidebar-bg) 96%, transparent);
   backdrop-filter: blur(18px) saturate(135%);
   border: 1px solid var(--border);
   border-radius: 12px;
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 12px 28px rgba(19, 35, 58, 0.12);
   color: var(--text-3);
   display: flex;
   font-size: 12px;
