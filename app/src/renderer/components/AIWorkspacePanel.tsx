@@ -1,4 +1,4 @@
-import { useState, type ReactElement } from "react";
+import { useLayoutEffect, useRef, useState, type ReactElement } from "react";
 
 import type { AIWorkspaceMessagePreview, AIWorkspaceState } from "../../shared/ipc";
 
@@ -24,6 +24,7 @@ export function AIWorkspacePanel({
   state
 }: AIWorkspacePanelProps): ReactElement {
   const [message, setMessage] = useState("");
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const history = state?.history ?? [];
   const sendCurrentMessage = (): void => {
     const trimmed = message.trim();
@@ -31,6 +32,13 @@ export function AIWorkspacePanel({
     onSendMessage(trimmed);
     setMessage("");
   };
+
+  useLayoutEffect(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    textarea.style.height = "auto";
+    textarea.style.height = `${textarea.scrollHeight}px`;
+  }, [message]);
 
   return (
     <div className="ai-workspace-panel">
@@ -51,6 +59,7 @@ export function AIWorkspacePanel({
       >
         <textarea
           aria-label="AIへのメッセージ"
+          ref={textareaRef}
           onKeyDown={(event) => {
             if (!(event.metaKey || event.ctrlKey) || event.key !== "Enter") return;
             event.preventDefault();
