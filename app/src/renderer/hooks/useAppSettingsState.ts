@@ -18,12 +18,14 @@ import {
 } from "../../shared/ipc";
 
 interface UseAppSettingsStateInput {
+  onAISettingsChanged?: () => void;
   setEditorSettings: (settings: EditorSettings) => void;
   setWorkspaceError: (message: string | null) => void;
   setWorkspaceState: (state: WorkspaceState) => void;
 }
 
 export function useAppSettingsState({
+  onAISettingsChanged,
   setEditorSettings,
   setWorkspaceError,
   setWorkspaceState
@@ -109,11 +111,12 @@ export function useAppSettingsState({
       if (result.ok) {
         setAISettings(result.value);
         setAISettingsStatus("OpenAI APIキーを保存しました。");
+        onAISettingsChanged?.();
       } else {
         setAISettingsStatus(result.error.message);
       }
     });
-  }, []);
+  }, [onAISettingsChanged]);
 
   const handleSaveAIModel = useCallback((model: OpenAIWorkspaceModel): void => {
     setAISettings((current) => current ? { ...current, model } : current);
@@ -122,11 +125,12 @@ export function useAppSettingsState({
       if (result.ok) {
         setAISettings(result.value);
         setAISettingsStatus(`OpenAIモデルを${result.value.model}に変更しました。`);
+        onAISettingsChanged?.();
       } else {
         setAISettingsStatus(result.error.message);
       }
     });
-  }, []);
+  }, [onAISettingsChanged]);
 
   const handleSaveAIProvider = useCallback((aiProvider: AIProvider): void => {
     setAISettings((current) => current ? { ...current, aiProvider } : current);
@@ -135,11 +139,12 @@ export function useAppSettingsState({
       if (result.ok) {
         setAISettings(result.value);
         setAISettingsStatus(`AI接続方式を${formatAIProviderLabel(result.value.aiProvider)}に変更しました。`);
+        onAISettingsChanged?.();
       } else {
         setAISettingsStatus(result.error.message);
       }
     });
-  }, []);
+  }, [onAISettingsChanged]);
 
   const handleDeleteOpenAIAPIKey = useCallback((): void => {
     setAISettingsStatus(null);
@@ -147,11 +152,12 @@ export function useAppSettingsState({
       if (result.ok) {
         setAISettings(result.value);
         setAISettingsStatus("OpenAI APIキーを削除しました。");
+        onAISettingsChanged?.();
       } else {
         setAISettingsStatus(result.error.message);
       }
     });
-  }, []);
+  }, [onAISettingsChanged]);
 
   const handleTestOpenAIAPIKey = useCallback((): void => {
     setAISettingsStatus("OpenAI APIキーを確認しています。");
