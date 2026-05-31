@@ -19,15 +19,11 @@ interface AIWorkspacePanelProps {
 }
 
 export function AIWorkspacePanel({
-  isLoading,
   isSending,
-  onClearData,
-  onRebuildIndex,
   onSendMessage,
   state
 }: AIWorkspacePanelProps): ReactElement {
   const [message, setMessage] = useState("");
-  const [isClearDataConfirming, setIsClearDataConfirming] = useState(false);
   const history = state?.history ?? [];
   const sendCurrentMessage = (): void => {
     const trimmed = message.trim();
@@ -38,48 +34,12 @@ export function AIWorkspacePanel({
 
   return (
     <div className="ai-workspace-panel">
-      <div className="ai-workspace-header-actions">
-        <button className="ai-workspace-icon-button" onClick={onRebuildIndex} title="インデックスを更新" type="button">
-          ↻
-        </button>
-        <button
-          className="ai-workspace-icon-button"
-          onClick={() => setIsClearDataConfirming(true)}
-          title="AIデータを削除"
-          type="button"
-        >
-          ×
-        </button>
-      </div>
-
-      {isClearDataConfirming ? (
-        <section className="ai-workspace-clear-confirm">
-          <p>AIデータを削除します。Markdownファイルは変更しません。</p>
-          <div>
-            <button onClick={() => setIsClearDataConfirming(false)} type="button">
-              キャンセル
-            </button>
-            <button
-              onClick={() => {
-                setIsClearDataConfirming(false);
-                onClearData();
-              }}
-              type="button"
-            >
-              削除
-            </button>
-          </div>
-        </section>
-      ) : null}
-
       <div className="ai-workspace-messages" aria-live="polite">
-        {isLoading && history.length === 0 ? null : (
-          history.map((item) => (
-            <article className={`ai-workspace-message ai-workspace-message--${item.role}`} key={item.id}>
-              <p>{item.content}</p>
-            </article>
-          ))
-        )}
+        {history.map((item) => (
+          <article className={`ai-workspace-message ai-workspace-message--${item.role}`} key={item.id}>
+            <p>{item.content}</p>
+          </article>
+        ))}
       </div>
 
       <form
@@ -99,8 +59,8 @@ export function AIWorkspacePanel({
           onChange={(event) => setMessage(event.target.value)}
           value={message}
         />
-        <button disabled={isSending || !message.trim()} type="submit">
-          {isSending ? "送信中" : "送信"}
+        <button aria-label="送信" disabled={isSending || !message.trim()} type="submit">
+          <span aria-hidden="true">↑</span>
         </button>
       </form>
     </div>

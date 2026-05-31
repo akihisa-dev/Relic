@@ -130,65 +130,6 @@ describe("AppRightPanel", () => {
     expect(screen.queryByText("AIとの会話にはOpenAI APIキーが必要です。設定のAIから登録してください。Markdownの閲覧と編集はこのまま使えます。")).not.toBeInTheDocument();
   });
 
-  it("confirms before clearing AI workspace data", () => {
-    const onClearData = vi.fn();
-
-    render(
-      <I18nProvider language="en">
-        <AppRightPanel
-          aiWorkspaceState={{
-            aiProvider: "codex-app-server",
-            openAIAPIKeyConfigured: true,
-            history: [],
-            index: {
-              chunkCount: 3,
-              indexedAt: "2026-05-30T00:00:00.000Z",
-              indexedFileCount: 2,
-              skippedLargeFiles: [],
-              unreadableFiles: []
-            },
-            operationHistory: [],
-            pendingOperations: []
-          }}
-          backlinks={[]}
-          isAIWorkspaceLoading={false}
-          isAIWorkspaceSending={false}
-          aiWorkspaceMessagePreview={null}
-          isLoadingBacklinks={false}
-          isOpen
-          isResizing={false}
-          onAIWorkspaceClearData={onClearData}
-          onAIWorkspaceApplyOperations={vi.fn()}
-          onAIWorkspaceCancelMessagePreview={vi.fn()}
-          onAIWorkspaceConfirmMessagePreview={vi.fn()}
-          onAIWorkspaceDiscardOperations={vi.fn()}
-          onAIWorkspaceRebuildIndex={vi.fn()}
-          onAIWorkspaceSendMessage={vi.fn()}
-          onOpenFile={vi.fn()}
-          onOpenWikiLink={vi.fn()}
-          onOutlineHeadingClick={vi.fn()}
-          onResizeStart={vi.fn()}
-          outlineHeadings={[]}
-          outgoingLinks={[]}
-          outgoingLinksLimited={false}
-          rightPanelView="ai"
-          setLinkContextMenu={vi.fn()}
-          width={260}
-          workspaceName="Novel"
-        />
-      </I18nProvider>
-    );
-
-    fireEvent.click(screen.getByTitle("AIデータを削除"));
-
-    expect(screen.getByText("AIデータを削除します。Markdownファイルは変更しません。")).toBeInTheDocument();
-    expect(onClearData).not.toHaveBeenCalled();
-
-    fireEvent.click(screen.getByRole("button", { name: "削除" }));
-
-    expect(onClearData).toHaveBeenCalled();
-  });
-
   it("keeps AI workspace focused on conversation without operation tabs", () => {
     render(
       <I18nProvider language="en">
