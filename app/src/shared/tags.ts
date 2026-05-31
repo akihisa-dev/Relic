@@ -33,13 +33,12 @@ function parseFrontmatterTags(frontmatter: string | null): string[] {
   const lines = frontmatter.split("\n");
   const tags: string[] = [];
 
-  for (let index = 0; index < lines.length; index += 1) {
-    const line = lines[index];
+  for (const [index, line] of lines.entries()) {
     const inlineMatch = /^tags:\s*(.*?)\s*$/.exec(line);
 
     if (!inlineMatch) continue;
 
-    const value = inlineMatch[1].trim();
+    const value = (inlineMatch[1] ?? "").trim();
 
     if (value.startsWith("[") && value.endsWith("]")) {
       tags.push(...parseInlineArray(value));
@@ -52,14 +51,15 @@ function parseFrontmatterTags(frontmatter: string | null): string[] {
     }
 
     for (let nextIndex = index + 1; nextIndex < lines.length; nextIndex += 1) {
-      const itemMatch = /^\s*-\s+(.+?)\s*$/.exec(lines[nextIndex]);
+      const nextLine = lines[nextIndex] ?? "";
+      const itemMatch = /^\s*-\s+(.+?)\s*$/.exec(nextLine);
 
       if (itemMatch) {
-        tags.push(cleanTagValue(itemMatch[1]));
+        tags.push(cleanTagValue(itemMatch[1] ?? ""));
         continue;
       }
 
-      if (/^\S/.test(lines[nextIndex])) break;
+      if (/^\S/.test(nextLine)) break;
     }
   }
 

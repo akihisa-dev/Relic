@@ -29,12 +29,13 @@ export function parseWikiLinks(markdown: string): WikiLink[] {
   const pattern = /(!)?\[\[([^\]\n]+)\]\]/g;
 
   for (const match of source.matchAll(pattern)) {
-    const parsed = parseWikiLinkBody(match[2], match[1] === "!" ? "embed" : "link");
+    const raw = match[0] ?? "";
+    const parsed = parseWikiLinkBody(match[2] ?? "", match[1] === "!" ? "embed" : "link");
 
     if (parsed) {
       links.push({
         ...parsed,
-        raw: match[0]
+        raw
       });
     }
   }
@@ -115,7 +116,7 @@ export function createWikiLinkResolver(
     const path = aliasPath ?? resolvedPath;
 
     return {
-      displayName: wikiLink.alias ?? path.split("/").at(-1)!.replace(/\.md$/, ""),
+      displayName: wikiLink.alias ?? basenameWithoutMarkdownExtension(path),
       exists: existingPaths.has(path),
       path,
       wikiLink
@@ -141,24 +142,28 @@ function parseWikiLinkBody(
   body: string,
   kind: WikiLinkKind
 ): Omit<WikiLink, "raw"> | null {
-  const [targetPart, aliasPart] = body.split("|", 2);
+  const [targetPart = "", aliasPart] = body.split("|", 2);
   const normalizedTargetPart = targetPart.trim();
 
   if (normalizedTargetPart === "") return null;
 
-  const blockParts = normalizedTargetPart.split("^", 2);
-  const headingParts = blockParts[0].split("#", 2);
-  const target = headingParts[0].trim();
+  const [targetWithHeading = "", blockId] = normalizedTargetPart.split("^", 2);
+  const [targetBase = "", heading] = targetWithHeading.split("#", 2);
+  const target = targetBase.trim();
 
   if (target === "") return null;
 
   return {
     alias: aliasPart?.trim() || null,
-    blockId: blockParts[1]?.trim() || null,
-    heading: headingParts[1]?.trim() || null,
+    blockId: blockId?.trim() || null,
+    heading: heading?.trim() || null,
     kind,
     target: normalizeWikiLinkTarget(target)
   };
+}
+
+function basenameWithoutMarkdownExtension(path: string): string {
+  return (path.split("/").at(-1) ?? path).replace(/\.md$/, "");
 }
 
 function maskFencedCodeBlocks(markdown: string): string {

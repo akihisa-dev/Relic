@@ -39,7 +39,7 @@ const mathExtension = {
         const match = /^\$\$([^$]+)\$\$/.exec(src);
 
         if (match) {
-          return { type: "mathBlock", raw: match[0], text: match[1].trim() };
+          return { type: "mathBlock", raw: match[0], text: (match[1] ?? "").trim() };
         }
 
         return undefined;
@@ -56,7 +56,7 @@ const mathExtension = {
         const match = /^\$([^$\n]+)\$/.exec(src);
 
         if (match) {
-          return { type: "mathInline", raw: match[0], text: match[1].trim() };
+          return { type: "mathInline", raw: match[0], text: (match[1] ?? "").trim() };
         }
 
         return undefined;
@@ -78,7 +78,7 @@ const obsidianExtension = {
       tokenizer(src: string) {
         const match = /^\[([^\]\n]+)\]\(((?:javascript|file):[^\n]*)\)/i.exec(src);
 
-        if (match) return { type: "unsafeLink", raw: match[0], text: match[1] };
+        if (match) return { type: "unsafeLink", raw: match[0], text: match[1] ?? "" };
         return undefined;
       },
       renderer(token: { text: string }) {
@@ -92,7 +92,7 @@ const obsidianExtension = {
       tokenizer(src: string) {
         const match = /^==([^=]+)==/.exec(src);
 
-        if (match) return { type: "highlight", raw: match[0], text: match[1] };
+        if (match) return { type: "highlight", raw: match[0], text: match[1] ?? "" };
         return undefined;
       },
       renderer(token: { text: string }) {
@@ -107,8 +107,8 @@ const obsidianExtension = {
         const match = /^\[\[([^\]]+)\]\]/.exec(src);
 
         if (match) {
-          const parts = match[1].split("|");
-          return { type: "wikilink", raw: match[0], label: parts[1] ?? parts[0], target: parts[0] };
+          const [target = "", label] = (match[1] ?? "").split("|");
+          return { type: "wikilink", raw: match[0], label: label ?? target, target };
         }
 
         return undefined;
@@ -137,7 +137,9 @@ function escapeHtmlAttribute(value: string): string {
 }
 
 export function normalizeEmbedTarget(target: string): string | null {
-  const normalized = target.trim().split("#")[0].split("^")[0].replace(/\\/g, "/");
+  const [targetWithoutHeading = ""] = target.trim().split("#", 1);
+  const [targetWithoutBlock = ""] = targetWithoutHeading.split("^", 1);
+  const normalized = targetWithoutBlock.replace(/\\/g, "/");
 
   if (
     normalized === "" ||
@@ -218,7 +220,7 @@ export function extractEmbedTargets(content: string): string[] {
   const targets = new Set<string>();
 
   for (const match of content.matchAll(/!\[\[([^\]\n]+)\]\]/g)) {
-    const target = normalizeEmbedTarget(match[1]);
+    const target = normalizeEmbedTarget(match[1] ?? "");
 
     if (target) targets.add(target);
   }

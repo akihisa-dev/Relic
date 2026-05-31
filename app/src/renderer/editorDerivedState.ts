@@ -30,7 +30,12 @@ export function extractOutlineHeadings(content: string): OutlineHeading[] {
     .split("\n")
     .flatMap((line) => {
       const match = /^(#{1,6}) (.+)/.exec(line);
+      if (!match) return [];
 
-      return match ? [{ level: match[1].length, text: match[2] }] : [];
+      const marker = match[1] ?? "";
+      const text = match[2] ?? "";
+      if (!marker || !text) return [];
+
+      return [{ level: marker.length, text }];
     });
 }

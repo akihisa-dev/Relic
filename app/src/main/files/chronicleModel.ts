@@ -37,6 +37,8 @@ export function extractChronicleRangeFromData(
   const startYear = value[0];
   const endYear = value.length === 1 ? startYear : value[1];
 
+  if (typeof startYear !== "number" || typeof endYear !== "number") return null;
+
   if (startYear > endYear) return null;
 
   return { endYear, startYear };
