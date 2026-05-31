@@ -73,6 +73,67 @@ describe("useAIWorkspaceState", () => {
     expect(onError).not.toHaveBeenCalled();
   });
 
+  it("shows the user message immediately while AI response is pending", async () => {
+    const onError = vi.fn();
+    let resolveSend: ((value: Awaited<ReturnType<NonNullable<typeof window.relic>["sendAIWorkspaceMessage"]>>) => void) | undefined;
+    window.relic = makeRelicApi({
+      getAIWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          aiProvider: "codex-app-server",
+          openAIAPIKeyConfigured: true,
+          history: [],
+          index: { chunkCount: 0, indexedAt: null, indexedFileCount: 0, skippedLargeFiles: [], unreadableFiles: [] },
+          operationHistory: [],
+          pendingOperations: []
+        }
+      }),
+      sendAIWorkspaceMessage: vi.fn().mockImplementation(() => new Promise((resolve) => {
+        resolveSend = resolve;
+      }))
+    });
+    const hook = renderHook(() => useAIWorkspaceState({
+      isEnabled: true,
+      onError,
+      workspaceId: "workspace-1"
+    }));
+
+    await waitFor(() => {
+      expect(window.relic?.getAIWorkspaceState).toHaveBeenCalled();
+    });
+
+    await act(async () => {
+      void hook.result.current.sendAIWorkspaceMessage("認証を整理して");
+    });
+
+    expect(hook.result.current.aiWorkspaceState?.history.at(-1)).toMatchObject({
+      content: "認証を整理して",
+      role: "user"
+    });
+
+    await act(async () => {
+      resolveSend?.({
+        ok: true,
+        value: {
+          aiProvider: "codex-app-server",
+          openAIAPIKeyConfigured: true,
+          history: [{
+            content: "認証を整理して",
+            createdAt: "2026-05-31T00:00:00.000Z",
+            id: "user-1",
+            references: [],
+            role: "user"
+          }],
+          index: { chunkCount: 0, indexedAt: null, indexedFileCount: 0, skippedLargeFiles: [], unreadableFiles: [] },
+          operationHistory: [],
+          pendingOperations: []
+        }
+      });
+    });
+
+    expect(onError).not.toHaveBeenCalled();
+  });
+
   it("can cancel an active AI Workspace message without showing a cancellation error", async () => {
     const onError = vi.fn();
     window.relic = makeRelicApi({
