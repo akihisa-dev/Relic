@@ -24,16 +24,6 @@ export const IconTools = (): ReactElement => (
   </svg>
 );
 
-export const IconBridge = (): ReactElement => (
-  <svg fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="18">
-    <path d="M6 7h12" />
-    <path d="M4 17h16" />
-    <path d="M6 17c0-5 2-10 6-10s6 5 6 10" />
-    <path d="M9 17c0-3.5 1-7 3-7s3 3.5 3 7" />
-    <path d="M2 20h20" />
-  </svg>
-);
-
 export const IconFrontmatter = (): ReactElement => (
   <svg fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="18">
     <path d="M2 6h4" />
