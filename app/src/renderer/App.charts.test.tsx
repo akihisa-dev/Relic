@@ -1,0 +1,272 @@
+import {
+  fireEvent,
+  screen,
+  waitFor
+} from "@testing-library/react";
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi
+} from "vitest";
+import {
+  allRailFeatureToggles,
+  renderApp,
+  restoreNavigatorPlatform,
+  setNavigatorPlatform
+} from "./appTestHelpers";
+import {
+  installMatchMediaMock,
+  makeRelicApi,
+  resetRendererStores,
+  testWorkspaceState as withWorkspace
+} from "../test/rendererTestUtils";
+import { useEditorStore } from "./store/editorStore";
+import { useUiStore } from "./store/uiStore";
+
+describe("App charts", () => {
+  beforeAll(installMatchMediaMock);
+
+  beforeEach(() => {
+    setNavigatorPlatform("MacIntel");
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+    restoreNavigatorPlatform();
+    resetRendererStores();
+  });
+
+  it("レールのチャートボタンからchronicleを持つファイルを表示できる", async () => {
+    const updateChartEntry = vi.fn().mockResolvedValue({ ok: true, value: [] });
+
+    window.relic = makeRelicApi({
+      getFeatureToggles: vi.fn().mockResolvedValue({ ok: true, value: allRailFeatureToggles }),
+      getWorkspaceCharts: vi.fn().mockResolvedValue({
+        ok: true,
+        value: [{
+          entries: [{
+            endLabel: "1333",
+            endValue: 1332,
+            fileName: "鎌倉時代",
+            path: "history/kamakura.md",
+            startLabel: "1185",
+            startValue: 1184
+          }],
+          filePaths: ["history/kamakura.md"],
+          id: "chronicle",
+          name: "年表",
+          source: "chronicle"
+        }]
+      }),
+      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace }),
+      readMarkdownFile: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          content: "---\nchronicle0: [1186, 1334]\n---\n# 鎌倉時代",
+          name: "鎌倉時代",
+          path: "history/kamakura.md"
+        }
+      }),
+      updateChartEntry
+    });
+
+    const renderResult = await renderApp();
+
+    await screen.findByText("Notes");
+
+    fireEvent.click(screen.getByRole("button", { name: "年表" }));
+
+    const activeTabId = useEditorStore.getState().leftPane.activeTabId;
+    expect(activeTabId).toBe("chart-chronicle");
+    expect(useEditorStore.getState().tabs[activeTabId!]).toMatchObject({
+      chartId: "chronicle",
+      kind: "chart"
+    });
+    expect(useUiStore.getState().isSidebarOpen).toBe(false);
+    expect(renderResult.container.querySelector(".chronicle-sidebar")).toBeNull();
+    expect(screen.getAllByText("鎌倉時代").length).toBeGreaterThan(0);
+    expect(screen.getByText("1185 〜 1333")).toBeInTheDocument();
+    expect(screen.getByText("年代")).toBeInTheDocument();
+    expect(screen.getByText("1185-1333")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "1185-1333" })).toHaveAttribute(
+      "title",
+      "この年代へ移動"
+    );
+    expect(renderResult.container.querySelector(".chronicle-minimap")).toBeInTheDocument();
+    expect(renderResult.container.querySelector(".chronicle-minimap-item")).toBeInTheDocument();
+    expect(renderResult.container.querySelector(".chronicle-actions")).toBeNull();
+    expect(screen.queryByText("計画")).not.toBeInTheDocument();
+    expect(screen.queryByText("実行")).not.toBeInTheDocument();
+    expect(renderResult.container.querySelectorAll(".chronicle-guide-line").length).toBeGreaterThan(0);
+    expect(renderResult.container.querySelectorAll(".chronicle-guide-line--major").length).toBeGreaterThan(0);
+    expect(renderResult.container.querySelectorAll(".chronicle-guide-line").length).toBeGreaterThan(
+      renderResult.container.querySelectorAll(".chronicle-guide-line--major").length
+    );
+    const oneYearAxisLabels = Array.from(renderResult.container.querySelectorAll(".chronicle-axis--chronicle .chronicle-axis-cell"))
+      .map((element) => Number(element.textContent?.replace("−", "-") ?? Number.NaN));
+    expect(oneYearAxisLabels.length).toBeGreaterThan(0);
+    expect(oneYearAxisLabels.slice(1, 5).every((label, index) => label - oneYearAxisLabels[index] === 1)).toBe(true);
+    expect(renderResult.container.querySelectorAll(".chronicle-guide-line").length).toBeGreaterThan(
+      renderResult.container.querySelectorAll(".chronicle-guide-line--major").length
+    );
+    expect(renderResult.container.querySelectorAll(".chronicle-guide-row-line").length).toBeGreaterThan(0);
+
+    const fill = renderResult.container.querySelector(".chronicle-fill") as HTMLElement;
+    const pointerDown = new Event("pointerdown", { bubbles: true }) as PointerEvent;
+    Object.defineProperty(pointerDown, "button", { value: 0 });
+    Object.defineProperty(pointerDown, "clientX", { value: 0 });
+    Object.defineProperty(pointerDown, "pointerId", { value: 1 });
+    fill.dispatchEvent(pointerDown);
+    const pointerUp = new Event("pointerup") as PointerEvent;
+    Object.defineProperty(pointerUp, "clientX", { value: 20 });
+    Object.defineProperty(pointerUp, "pointerId", { value: 1 });
+    window.dispatchEvent(pointerUp);
+
+    await waitFor(() => expect(updateChartEntry).toHaveBeenCalledWith({
+      endValue: 1333,
+      kind: "move",
+      originalEndValue: 1332,
+      originalStartValue: 1184,
+      path: "history/kamakura.md",
+      source: "chronicle",
+      startValue: 1185
+    }));
+  });
+
+  it("chronicleチャートのバー編集は低速ドラッグで1年単位の細かな変更にする", async () => {
+    const updateChartEntry = vi.fn().mockResolvedValue({ ok: true, value: [] });
+
+    window.relic = makeRelicApi({
+      getFeatureToggles: vi.fn().mockResolvedValue({ ok: true, value: allRailFeatureToggles }),
+      getWorkspaceCharts: vi.fn().mockResolvedValue({
+        ok: true,
+        value: [{
+          entries: [{
+            endLabel: "1333",
+            endValue: 1332,
+            fileName: "鎌倉時代",
+            path: "history/kamakura.md",
+            startLabel: "1185",
+            startValue: 1184
+          }],
+          filePaths: ["history/kamakura.md"],
+          id: "chronicle",
+          name: "年表",
+          source: "chronicle"
+        }]
+      }),
+      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace }),
+      readMarkdownFile: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          content: "---\nchronicle0: [1210, 1358]\n---\n# 鎌倉時代",
+          name: "鎌倉時代",
+          path: "history/kamakura.md"
+        }
+      }),
+      updateChartEntry
+    });
+
+    const { container } = await renderApp();
+
+    await screen.findByText("Notes");
+
+    fireEvent.click(screen.getByRole("button", { name: "年表" }));
+    expect(container.querySelector(".chronicle-actions")).toBeNull();
+
+    const fill = container.querySelector(".chronicle-fill") as HTMLElement;
+    const pointerDown = new Event("pointerdown", { bubbles: true }) as PointerEvent;
+    Object.defineProperty(pointerDown, "button", { value: 0 });
+    Object.defineProperty(pointerDown, "clientX", { value: 0 });
+    Object.defineProperty(pointerDown, "pointerId", { value: 1 });
+    fill.dispatchEvent(pointerDown);
+    for (let clientX = 1; clientX <= 72; clientX += 1) {
+      const pointerMove = new Event("pointermove") as PointerEvent;
+      Object.defineProperty(pointerMove, "clientX", { value: clientX });
+      Object.defineProperty(pointerMove, "pointerId", { value: 1 });
+      window.dispatchEvent(pointerMove);
+    }
+    const pointerUp = new Event("pointerup") as PointerEvent;
+    Object.defineProperty(pointerUp, "clientX", { value: 72 });
+    Object.defineProperty(pointerUp, "pointerId", { value: 1 });
+    window.dispatchEvent(pointerUp);
+
+    await waitFor(() => expect(updateChartEntry).toHaveBeenCalledWith({
+      endValue: 1333,
+      kind: "move",
+      originalEndValue: 1332,
+      originalStartValue: 1184,
+      path: "history/kamakura.md",
+      source: "chronicle",
+      startValue: 1185
+    }));
+  });
+
+  it("chronicleチャートのバー編集は高速ドラッグで大きく移動する", async () => {
+    const updateChartEntry = vi.fn().mockResolvedValue({ ok: true, value: [] });
+
+    window.relic = makeRelicApi({
+      getFeatureToggles: vi.fn().mockResolvedValue({ ok: true, value: allRailFeatureToggles }),
+      getWorkspaceCharts: vi.fn().mockResolvedValue({
+        ok: true,
+        value: [{
+          entries: [{
+            endLabel: "1333",
+            endValue: 1332,
+            fileName: "鎌倉時代",
+            path: "history/kamakura.md",
+            startLabel: "1185",
+            startValue: 1184
+          }],
+          filePaths: ["history/kamakura.md"],
+          id: "chronicle",
+          name: "年表",
+          source: "chronicle"
+        }]
+      }),
+      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace }),
+      readMarkdownFile: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          content: "---\nchronicle0: [1210, 1358]\n---\n# 鎌倉時代",
+          name: "鎌倉時代",
+          path: "history/kamakura.md"
+        }
+      }),
+      updateChartEntry
+    });
+
+    const { container } = await renderApp();
+
+    await screen.findByText("Notes");
+
+    fireEvent.click(screen.getByRole("button", { name: "年表" }));
+    expect(container.querySelector(".chronicle-actions")).toBeNull();
+
+    const fill = container.querySelector(".chronicle-fill") as HTMLElement;
+    const pointerDown = new Event("pointerdown", { bubbles: true }) as PointerEvent;
+    Object.defineProperty(pointerDown, "button", { value: 0 });
+    Object.defineProperty(pointerDown, "clientX", { value: 0 });
+    Object.defineProperty(pointerDown, "pointerId", { value: 1 });
+    fill.dispatchEvent(pointerDown);
+    const pointerUp = new Event("pointerup") as PointerEvent;
+    Object.defineProperty(pointerUp, "clientX", { value: 72 });
+    Object.defineProperty(pointerUp, "pointerId", { value: 1 });
+    window.dispatchEvent(pointerUp);
+
+    await waitFor(() => expect(updateChartEntry).toHaveBeenCalledWith({
+      endValue: 1335,
+      kind: "move",
+      originalEndValue: 1332,
+      originalStartValue: 1184,
+      path: "history/kamakura.md",
+      source: "chronicle",
+      startValue: 1187
+    }));
+  });
+
+});
