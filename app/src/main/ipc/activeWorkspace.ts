@@ -2,6 +2,7 @@ import { app } from "electron";
 
 import type { WorkspaceSummary } from "../../shared/ipc";
 import { fail, type RelicResult } from "../../shared/result";
+import { redactSensitiveText } from "../../shared/securityRedaction";
 import { readAppSettings, type AppSettings } from "../settings/appSettings";
 import { toWorkspaceState } from "../workspace/workspaceService";
 
@@ -17,7 +18,8 @@ export interface ActiveWorkspaceContext {
 }
 
 export function ipcErrorDetails(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
+  const message = error instanceof Error ? error.message : String(error);
+  return redactSensitiveText(message);
 }
 
 export async function getActiveWorkspaceContext(): Promise<RelicResult<ActiveWorkspaceContext>> {
