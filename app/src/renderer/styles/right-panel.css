@@ -1449,13 +1449,18 @@
 
 .status-bar {
   align-items: center;
-  background: var(--sidebar-bg);
-  border-top: 1px solid var(--border);
+  background: color-mix(in srgb, var(--sidebar-bg) 92%, transparent);
+  backdrop-filter: blur(18px) saturate(135%);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
   color: var(--text-3);
   display: flex;
   font-size: 12px;
   gap: 16px;
-  padding: 0 12px;
+  margin: 0 12px 8px;
+  min-height: 26px;
+  padding: 0 14px;
 }
 
 /* ────────────────────────────────── */

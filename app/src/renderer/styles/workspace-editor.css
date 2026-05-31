@@ -484,22 +484,22 @@
 }
 
 .main-area-actions .toolbar-btn:hover {
-  background: rgba(255, 255, 255, 0.14);
-  border-color: transparent;
+  background: var(--hover);
+  border-color: var(--border-soft);
   box-shadow: none;
-  color: #ffffff;
+  color: var(--text);
 }
 
 .main-area-actions .toolbar-btn.active {
-  background: rgba(255, 255, 255, 0.92);
-  border-color: transparent;
+  background: var(--surface-raised);
+  border-color: var(--border-soft);
   border-radius: 6px;
   box-shadow: none;
   color: var(--accent);
 }
 
 .main-area-actions .toolbar-btn.active:hover {
-  background: #ffffff;
+  background: var(--surface-raised);
   color: var(--accent);
 }
 
@@ -537,17 +537,23 @@
 }
 
 .title-bar .pane-tab {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.26);
+  background: rgba(255, 255, 255, 0.56);
+  border-color: var(--border);
+  border-radius: 10px 10px 0 0;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.16),
-    0 -1px 0 rgba(0, 0, 0, 0.04);
-  color: rgba(255, 255, 255, 0.84);
+    inset 0 1px 0 rgba(255, 255, 255, 0.82),
+    0 -1px 0 rgba(16, 24, 40, 0.04);
+  color: var(--text-2);
+  font-weight: 700;
+  height: 43px;
+  max-width: 280px;
+  min-width: 214px;
+  padding: 0 12px;
 }
 
 .title-bar .pane-tab-bar--fit .pane-tab {
   flex: 1 1 0;
-  max-width: 180px;
+  max-width: 280px;
   min-width: 44px;
   padding-left: 6px;
   padding-right: 5px;
@@ -567,9 +573,9 @@
 }
 
 .title-bar .pane-tab:hover:not(.pane-tab--active):not(.pane-tab--closing) {
-  background: rgba(255, 255, 255, 0.18);
-  border-color: rgba(255, 255, 255, 0.36);
-  color: #ffffff;
+  background: rgba(255, 255, 255, 0.76);
+  border-color: var(--border-soft);
+  color: var(--text);
 }
 
 .title-bar .pane-tab--active {
@@ -577,7 +583,7 @@
 }
 
 .title-bar .pane-tab .pane-tab-close {
-  color: rgba(255, 255, 255, 0.64);
+  color: var(--text-3);
 }
 
 .title-bar .pane-tab--active .pane-tab-close {
@@ -601,9 +607,9 @@
 
 .title-bar .pane-tab--active {
   background: var(--surface);
-  border-color: var(--surface);
-  border-bottom-color: var(--surface);
-  box-shadow: none;
+  border-color: var(--border);
+  border-bottom-color: transparent;
+  box-shadow: 0 10px 24px rgba(27, 42, 74, 0.08);
   color: var(--text);
 }
 

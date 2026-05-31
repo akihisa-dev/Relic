@@ -5,7 +5,7 @@
 .app-shell {
   background: var(--app-bg);
   display: grid;
-  grid-template-rows: 38px minmax(0, 1fr) 28px;
+  grid-template-rows: 52px minmax(0, 1fr) 34px;
   height: 100vh;
   min-width: 0;
   overflow: hidden;
@@ -15,7 +15,7 @@
   -webkit-app-region: drag;
   background: var(--title-bar-bg);
   backdrop-filter: blur(18px) saturate(145%);
-  box-shadow: var(--chrome-shadow);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.42) inset, 0 1px 0 var(--border);
   display: grid;
   grid-column: 1 / -1;
   grid-template-columns: var(--title-bar-left-offset, 88px) minmax(0, 1fr) var(--title-bar-action-width, 136px);
@@ -44,7 +44,7 @@
 }
 
 .title-bar-pane + .title-bar-pane {
-  box-shadow: -1px 0 0 rgba(255, 255, 255, 0.16);
+  box-shadow: -1px 0 0 var(--border);
 }
 
 .title-bar-actions {
@@ -58,7 +58,7 @@
   background: var(--title-bar-bg);
   border-bottom: 0;
   height: 100%;
-  padding: 4px 8px 0;
+  padding: 8px 8px 0;
 }
 
 .title-bar .pane-tab,
@@ -68,10 +68,11 @@
 
 .title-bar .pane-tab--active {
   background: var(--surface);
-  border-color: transparent;
-  box-shadow: none;
+  border-color: var(--border);
+  border-bottom-color: transparent;
+  box-shadow: 0 10px 24px rgba(27, 42, 74, 0.08);
   color: var(--text);
-  height: 33px;
+  height: 43px;
 }
 
 .title-bar .pane-tab--active::after {
@@ -89,8 +90,8 @@
   background: var(--title-bar-bg);
   border-bottom: 0;
   border-left: 0;
-  box-shadow: -1px 0 0 rgba(255, 255, 255, 0.16);
-  color: rgba(255, 255, 255, 0.78);
+  box-shadow: -1px 0 0 var(--border);
+  color: var(--text-2);
   height: 100%;
   min-height: 0;
   width: 100%;
@@ -109,7 +110,7 @@
   min-height: 0;
   min-width: 0;
   overflow: hidden;
-  padding: 10px 12px 8px;
+  padding: 10px 12px 6px;
   -webkit-app-region: no-drag;
 }
 
