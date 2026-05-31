@@ -311,6 +311,8 @@ describe("AppRightPanel", () => {
     );
 
     const input = screen.getByLabelText("AIへのメッセージ");
+    expect(input).toHaveAttribute("rows", "1");
+
     Object.defineProperty(input, "scrollHeight", {
       configurable: true,
       value: 96

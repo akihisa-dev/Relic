@@ -60,6 +60,7 @@ export function AIWorkspacePanel({
         <textarea
           aria-label="AIへのメッセージ"
           ref={textareaRef}
+          rows={1}
           onKeyDown={(event) => {
             if (!(event.metaKey || event.ctrlKey) || event.key !== "Enter") return;
             event.preventDefault();
