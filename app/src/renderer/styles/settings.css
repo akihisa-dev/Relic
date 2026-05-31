@@ -35,8 +35,8 @@
 }
 
 .settings-group {
-  background: var(--bg);
-  border: 1px solid var(--border);
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--border) 68%, transparent);
   border-radius: 8px;
   display: grid;
   gap: 12px;
@@ -411,8 +411,8 @@
 }
 
 .frontmatter-field-card {
-  background: var(--bg);
-  border: 1px solid var(--border-soft);
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--border-soft) 72%, transparent);
   border-radius: 7px;
   min-width: 0;
   overflow: hidden;
@@ -420,7 +420,7 @@
 
 .frontmatter-field-card[data-expanded="true"] {
   border-color: var(--border-medium);
-  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.02);
+  box-shadow: none;
 }
 
 .frontmatter-field-card--fixed {
@@ -560,7 +560,7 @@
 }
 
 .frontmatter-field-detail {
-  background: rgba(0, 0, 0, 0.012);
+  background: transparent;
   border-top: 1px solid var(--border);
   display: grid;
   gap: 10px;
@@ -681,7 +681,7 @@
 
 .frontmatter-choice-pill {
   align-items: center;
-  background: var(--bg);
+  background: color-mix(in srgb, var(--sidebar-bg) 52%, transparent);
   border: 1px solid var(--border);
   border-radius: 4px;
   color: var(--text);
