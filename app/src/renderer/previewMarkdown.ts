@@ -1,4 +1,3 @@
-import DOMPurify from "dompurify";
 import hljs from "highlight.js";
 import katex from "katex";
 import { marked, type Renderer } from "marked";
@@ -7,6 +6,7 @@ import markedFootnote from "marked-footnote";
 import type { Translator } from "./i18nModel";
 import { diagramLanguageFor } from "./diagramLanguage";
 import { encodeDiagramSourceAttribute } from "./diagramSourceAttribute";
+import { isSafePreviewUrl, sanitizePreviewHtml } from "./htmlSanitizer";
 
 export const maxEmbeddedFileLength = 20_000;
 
@@ -68,6 +68,19 @@ const mathExtension = {
 const obsidianExtension = {
   extensions: [
     {
+      name: "unsafeLink",
+      level: "inline" as const,
+      start: (src: string) => src.indexOf("["),
+      tokenizer(src: string) {
+        const match = /^\[([^\]\n]+)\]\(((?:javascript|file):[^\n]*)\)/i.exec(src);
+
+        if (match) return { type: "unsafeLink", raw: match[0], text: match[1] };
+      },
+      renderer(token: { text: string }) {
+        return escapeHtml(token.text);
+      }
+    },
+    {
       name: "highlight",
       level: "inline" as const,
       start: (src: string) => src.indexOf("=="),
@@ -77,7 +90,7 @@ const obsidianExtension = {
         if (match) return { type: "highlight", raw: match[0], text: match[1] };
       },
       renderer(token: { text: string }) {
-        return `<mark>${token.text}</mark>`;
+        return `<mark>${escapeHtml(token.text)}</mark>`;
       }
     },
     {
@@ -93,7 +106,7 @@ const obsidianExtension = {
         }
       },
       renderer(token: { label: string; target: string }) {
-        return `<button class="wikilink" data-target="${token.target}" type="button">${token.label}</button>`;
+        return `<button class="wikilink" data-target="${escapeHtmlAttribute(token.target)}" type="button">${escapeHtml(token.label)}</button>`;
       }
     }
   ]
@@ -113,12 +126,6 @@ export function escapeHtml(value: string): string {
 
 function escapeHtmlAttribute(value: string): string {
   return escapeHtml(value).replace(/'/g, "&#39;");
-}
-
-function sanitizePreviewHtml(html: string): string {
-  return DOMPurify.sanitize(html, {
-    ADD_ATTR: ["checked", "class", "data-diagram-language", "data-diagram-source", "data-target", "id"]
-  });
 }
 
 export function normalizeEmbedTarget(target: string): string | null {
@@ -173,6 +180,13 @@ function buildRenderer(): Renderer {
     const titleAttribute = title ? ` title="${escapeHtml(title)}"` : "";
 
     return `<span class="preview-image-placeholder"${titleAttribute}>${alt || escapeHtml(href)}</span>`;
+  };
+
+  renderer.link = ({ href, title, text }) => {
+    if (!isSafePreviewUrl(href)) return text;
+
+    const titleAttribute = title ? ` title="${escapeHtmlAttribute(title)}"` : "";
+    return `<a href="${escapeHtmlAttribute(href)}"${titleAttribute}>${text}</a>`;
   };
 
   return renderer;

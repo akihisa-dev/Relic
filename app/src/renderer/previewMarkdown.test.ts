@@ -34,7 +34,16 @@ describe("previewMarkdown", () => {
 
   it("主要なclassとdata属性を残しながら危険なHTMLを除去する", () => {
     const html = renderMarkdown(
-      "[[Note#Heading|Alias]]\n\n- [x] Done\n\n<script>alert(1)</script>",
+      [
+        "[[Note#Heading|Alias]]",
+        "",
+        "- [x] Done",
+        "",
+        "<script>alert(1)</script>",
+        '<img src=x onerror="alert(1)">',
+        '<iframe src="https://example.com"></iframe>',
+        "[x](javascript:alert(1))"
+      ].join("\n"),
       null,
       new Map(),
       true,
@@ -46,6 +55,22 @@ describe("previewMarkdown", () => {
     expect(html).toContain('class="preview-checkbox"');
     expect(html).toContain("checked");
     expect(html).not.toContain("<script");
+    expect(html).not.toContain("onerror");
+    expect(html).not.toContain("<img");
+    expect(html).not.toContain("<iframe");
+    expect(html).not.toContain("javascript:");
+    expect(new DOMParser().parseFromString(html, "text/html").querySelector("a[href^='javascript:']")).toBeNull();
+  });
+
+  it("file URLをリンク先として残さない", () => {
+    const html = renderMarkdown("[local](file:///Users/example/secret.md)", null, new Map(), true, t);
+
+    const document = new DOMParser().parseFromString(html, "text/html");
+    const link = document.querySelector("a");
+
+    expect(link).toBeNull();
+    expect(html).toContain("local");
+    expect(html).not.toContain("file:");
   });
 
   it("mermaidコードブロックをDiagram表示用HTMLとして残す", () => {
@@ -104,6 +129,50 @@ describe("previewMarkdown", () => {
     expect(html).toContain("hljs language-js");
     expect(html).not.toContain('class="preview-diagram');
     expect(html).not.toContain("data-diagram-source");
+  });
+
+  it("通常Markdown、コードブロック、KaTeXをsanitize後も維持する", () => {
+    const html = renderMarkdown(
+      "# 見出し\n\n本文 **強調**\n\n$E=mc^2$\n\n```js\nconst value = 1;\n```",
+      null,
+      new Map(),
+      true,
+      t
+    );
+
+    expect(html).toContain("<h1");
+    expect(html).toContain("<strong>強調</strong>");
+    expect(html).toContain("math-inline");
+    expect(html).toContain("katex");
+    expect(html).toContain("hljs language-js");
+    expect(html).toContain("const");
+  });
+
+  it("コードブロック内の危険URL例は説明用テキストとして維持する", () => {
+    const html = renderMarkdown("```md\n[x](javascript:alert(1))\n```", null, new Map(), true, t);
+    const document = new DOMParser().parseFromString(html, "text/html");
+
+    expect(document.querySelector("code")?.textContent).toBe("[x](javascript:alert(1))");
+    expect(document.querySelector("a[href^='javascript:']")).toBeNull();
+  });
+
+  it("カスタムMarkdown拡張の表示文字列をHTMLとして実行しない", () => {
+    const html = renderMarkdown(
+      '==<img src=x onerror="alert(1)">==\n\n[[Note" onclick="alert(1)|<script>alert(1)</script>]]',
+      null,
+      new Map(),
+      true,
+      t
+    );
+
+    const document = new DOMParser().parseFromString(html, "text/html");
+    const wikiLink = document.querySelector<HTMLElement>(".wikilink");
+
+    expect(document.querySelector("script")).toBeNull();
+    expect(document.querySelector("[onerror]")).toBeNull();
+    expect(wikiLink?.dataset.target).toBe('Note" onclick="alert(1)');
+    expect(wikiLink?.getAttribute("onclick")).toBeNull();
+    expect(wikiLink?.textContent).toBe("<script>alert(1)</script>");
   });
 
   it("大文字・空白つきのmermaid言語指定をDiagram表示用HTMLとして扱う", () => {
