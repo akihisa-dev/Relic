@@ -4,8 +4,14 @@
 
 [data-theme="dark"] {
   --bg: #131313;
-  --rail-bg: rgba(20, 20, 20, 0.95);
-  --sidebar-bg: rgba(26, 26, 26, 0.97);
+  --app-bg:
+    radial-gradient(circle at 18% 0%, rgba(23, 155, 208, 0.105), transparent 30%),
+    linear-gradient(135deg, #101214 0%, #151719 48%, #0f1113 100%);
+  --surface: #151515;
+  --surface-raised: rgba(24, 24, 24, 0.98);
+  --surface-subtle: #1a1b1d;
+  --rail-bg: rgba(18, 20, 22, 0.78);
+  --sidebar-bg: rgba(23, 24, 26, 0.78);
   --popup-bg: rgba(37, 37, 37, 0.98);
   --text: #e6e6e6;
   --text-2: #9e9e9e;
@@ -17,12 +23,17 @@
   --hover: rgba(255, 255, 255, 0.05);
   --hover-strong: rgba(255, 255, 255, 0.1);
   --input-bg: rgba(255, 255, 255, 0.06);
+  --selection: rgba(23, 155, 208, 0.18);
+  --shadow: rgba(0, 0, 0, 0.42);
+  --shadow-soft: rgba(0, 0, 0, 0.28);
+  --workspace-shadow: 0 14px 36px rgba(0, 0, 0, 0.32);
+  --chrome-shadow: 0 1px 0 rgba(255, 255, 255, 0.055) inset, 0 1px 16px rgba(0, 0, 0, 0.34);
   --accent: #179bd0;
   --accent-hover: #2aa7d8;
   --accent-soft: rgba(23, 155, 208, 0.16);
   --accent-softer: rgba(23, 155, 208, 0.09);
   --accent-ring: rgba(23, 155, 208, 0.3);
-  --title-bar-bg: #00628c;
+  --title-bar-bg: rgba(0, 98, 140, 0.78);
   --link: #179bd0;
   --attention: #ff5722;
   --attention-hover: #e64d1f;
@@ -78,8 +89,14 @@
   :root:not([data-theme="light"]) {
     color-scheme: dark;
     --bg: #131313;
-    --rail-bg: rgba(20, 20, 20, 0.95);
-    --sidebar-bg: rgba(26, 26, 26, 0.97);
+    --app-bg:
+      radial-gradient(circle at 18% 0%, rgba(23, 155, 208, 0.105), transparent 30%),
+      linear-gradient(135deg, #101214 0%, #151719 48%, #0f1113 100%);
+    --surface: #151515;
+    --surface-raised: rgba(24, 24, 24, 0.98);
+    --surface-subtle: #1a1b1d;
+    --rail-bg: rgba(18, 20, 22, 0.78);
+    --sidebar-bg: rgba(23, 24, 26, 0.78);
     --popup-bg: rgba(37, 37, 37, 0.98);
     --text: #e6e6e6;
     --text-2: #9e9e9e;
@@ -91,12 +108,17 @@
     --hover: rgba(255, 255, 255, 0.05);
     --hover-strong: rgba(255, 255, 255, 0.1);
     --input-bg: rgba(255, 255, 255, 0.06);
+    --selection: rgba(23, 155, 208, 0.18);
+    --shadow: rgba(0, 0, 0, 0.42);
+    --shadow-soft: rgba(0, 0, 0, 0.28);
+    --workspace-shadow: 0 14px 36px rgba(0, 0, 0, 0.32);
+    --chrome-shadow: 0 1px 0 rgba(255, 255, 255, 0.055) inset, 0 1px 16px rgba(0, 0, 0, 0.34);
     --accent: #179bd0;
     --accent-hover: #2aa7d8;
     --accent-soft: rgba(23, 155, 208, 0.16);
     --accent-softer: rgba(23, 155, 208, 0.09);
     --accent-ring: rgba(23, 155, 208, 0.3);
-    --title-bar-bg: #00628c;
+    --title-bar-bg: rgba(0, 98, 140, 0.78);
     --link: #179bd0;
     --attention: #ff5722;
     --attention-hover: #e64d1f;

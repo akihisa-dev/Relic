@@ -1,24 +1,35 @@
 :root {
   --bg: #ffffff;
-  --rail-bg: rgba(255, 255, 255, 0.96);
-  --sidebar-bg: rgba(250, 250, 250, 0.96);
+  --app-bg:
+    radial-gradient(circle at 18% 0%, rgba(0, 98, 140, 0.045), transparent 32%),
+    linear-gradient(135deg, #f6f7f8 0%, #fbfbfc 46%, #f2f4f6 100%);
+  --surface: #ffffff;
+  --surface-raised: rgba(255, 255, 255, 0.98);
+  --surface-subtle: #f8f9fa;
+  --rail-bg: rgba(248, 250, 251, 0.78);
+  --sidebar-bg: rgba(246, 247, 248, 0.78);
   --popup-bg: rgba(255, 255, 255, 0.98);
   --text: #1c1c1c;
   --text-2: #5e5e5e;
   --text-3: #8a8a8a;
-  --border: rgba(28, 28, 28, 0.1);
-  --border-soft: rgba(28, 28, 28, 0.13);
-  --border-medium: rgba(28, 28, 28, 0.2);
+  --border: rgba(28, 28, 28, 0.075);
+  --border-soft: rgba(28, 28, 28, 0.11);
+  --border-medium: rgba(28, 28, 28, 0.18);
   --btn-bg: rgba(255, 255, 255, 0.9);
   --hover: rgba(28, 28, 28, 0.04);
   --hover-strong: rgba(28, 28, 28, 0.1);
   --input-bg: rgba(255, 255, 255, 0.72);
+  --selection: rgba(0, 98, 140, 0.1);
+  --shadow: rgba(16, 24, 40, 0.12);
+  --shadow-soft: rgba(16, 24, 40, 0.07);
+  --workspace-shadow: 0 12px 32px rgba(16, 24, 40, 0.08);
+  --chrome-shadow: 0 1px 0 rgba(255, 255, 255, 0.36) inset, 0 1px 12px rgba(16, 24, 40, 0.1);
   --accent: #00628c;
   --accent-hover: #007caf;
   --accent-soft: rgba(0, 98, 140, 0.08);
   --accent-softer: rgba(0, 98, 140, 0.04);
   --accent-ring: rgba(0, 98, 140, 0.16);
-  --title-bar-bg: var(--accent);
+  --title-bar-bg: rgba(0, 98, 140, 0.92);
   --link: #00628c;
   --attention: #ff5722;
   --attention-hover: #e64d1f;
@@ -35,7 +46,7 @@
   --ease-exit: cubic-bezier(0.4, 0, 1, 1);
   --ease-press: cubic-bezier(0.2, 0, 0.2, 1);
   color: var(--text);
-  background: var(--bg);
+  background: var(--app-bg);
   font-family:
     -apple-system, BlinkMacSystemFont, "SF Pro Text", "Hiragino Sans", "Yu Gothic", sans-serif;
   font-synthesis: none;
@@ -72,6 +83,10 @@ body,
   height: 100%;
   margin: 0;
   overflow: hidden;
+}
+
+body {
+  background: var(--app-bg);
 }
 
 button,
