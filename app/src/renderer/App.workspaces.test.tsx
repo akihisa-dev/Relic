@@ -567,4 +567,31 @@ describe("App workspaces", () => {
 
     expect(removeWorkspace).toHaveBeenCalledWith({ workspaceId: "ws-1" });
   });
+
+  it("左レールのワークスペース右クリックメニューからフォルダーを開く", async () => {
+    const revealWorkspaceItem = vi.fn().mockResolvedValue({ ok: true, value: undefined });
+
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          activeWorkspace: { id: "ws-1", name: "Notes", path: "/tmp/Notes" },
+          fileTree: [],
+          pinnedPaths: [],
+          workspaces: [{ id: "ws-1", name: "Notes", path: "/tmp/Notes" }]
+        }
+      }),
+      revealWorkspaceItem
+    });
+
+    await renderApp();
+
+    fireEvent.contextMenu(await screen.findByRole("button", { name: "Notes" }));
+    const menu = await screen.findByRole("menu");
+    fireEvent.click(within(menu).getByRole("menuitem", { name: "ファイルの場所を表示" }));
+
+    await waitFor(() => {
+      expect(revealWorkspaceItem).toHaveBeenCalledWith({ path: "", workspaceId: "ws-1" });
+    });
+  });
 });

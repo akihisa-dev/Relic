@@ -107,6 +107,14 @@ export function useWorkspaceRegistryActions({
     return false;
   }, [setWorkspaceError, setWorkspaceState]);
 
+  const handleRevealWorkspace = useCallback((workspaceId: string): void => {
+    if (!window.relic) return;
+
+    void window.relic.revealWorkspaceItem({ path: "", workspaceId }).then((result) => {
+      if (!result.ok) setWorkspaceError(result.error.message);
+    });
+  }, [setWorkspaceError]);
+
   const handleRefreshWorkspaceState = useCallback((): void => {
     void window.relic?.getWorkspaceState().then((result) => {
       if (result.ok) setWorkspaceState(result.value);
@@ -126,6 +134,7 @@ export function useWorkspaceRegistryActions({
     handleCreateNewWorkspace,
     handleOpenWorkspace,
     handleRefreshWorkspaceState,
+    handleRevealWorkspace,
     handleRemoveWorkspace,
     handleRenameWorkspace,
     handleSwitchWorkspace,

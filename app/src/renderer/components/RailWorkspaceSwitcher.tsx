@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { ReactElement } from "react";
+import { createPortal } from "react-dom";
 
 import type { WorkspaceState } from "../../shared/ipc";
 import { fixedMenuPosition } from "./railNavigationModel";
@@ -11,8 +12,10 @@ interface RailWorkspaceSwitcherProps {
   onRenameComplete?: () => void;
   onRemoveWorkspace: (id: string) => void;
   onRenameWorkspace: (id: string, currentName: string) => Promise<boolean>;
+  onRevealWorkspace: (id: string) => void;
   onSwitchWorkspace: (id: string) => void;
   renameLabel: string;
+  revealWorkspaceLabel: string;
   removeLabel: (name: string) => string;
   workspaces: WorkspaceState["workspaces"];
 }
@@ -25,7 +28,9 @@ export function RailWorkspaceSwitcher({
   onRemoveWorkspace,
   onRenameWorkspace,
   onSwitchWorkspace,
+  onRevealWorkspace,
   renameLabel,
+  revealWorkspaceLabel,
   removeLabel,
   workspaces
 }: RailWorkspaceSwitcherProps): ReactElement | null {
@@ -185,7 +190,7 @@ export function RailWorkspaceSwitcher({
           </div>
         );
       })}
-      {contextMenu ? (
+      {contextMenu ? createPortal(
         <div
           className="tab-context-menu workspace-context-menu"
           onClick={(event) => event.stopPropagation()}
@@ -205,6 +210,17 @@ export function RailWorkspaceSwitcher({
             {renameLabel}
           </button>
           <button
+            className="tab-context-menu-item"
+            onClick={() => {
+              onRevealWorkspace(contextMenu.workspaceId);
+              setContextMenu(null);
+            }}
+            role="menuitem"
+            type="button"
+          >
+            {revealWorkspaceLabel}
+          </button>
+          <button
             className="tab-context-menu-item danger"
             onClick={() => {
               onRemoveWorkspace(contextMenu.workspaceId);
@@ -216,7 +232,7 @@ export function RailWorkspaceSwitcher({
             {removeLabel(contextMenu.name)}
           </button>
         </div>
-      ) : null}
+      , document.body) : null}
     </div>
   );
 }

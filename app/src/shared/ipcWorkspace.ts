@@ -73,6 +73,7 @@ export interface MoveItemToTrashInput {
 
 export interface RevealWorkspaceItemInput {
   path: string;
+  workspaceId?: string;
 }
 
 export interface MoveMarkdownFileInput {

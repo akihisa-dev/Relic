@@ -26,14 +26,15 @@ import {
   renameMarkdownFile
 } from "../files/markdownFiles";
 import { readLinkUpdateImpact } from "../files/linkUpdater";
-import { resolveWorkspaceRelativePath } from "../files/paths";
+import { resolveWorkspaceRelativePathOrRoot } from "../files/paths";
 import { getActiveWorkspaceContext, ipcErrorDetails } from "./activeWorkspace";
 import {
   isCreateMarkdownFileInput,
   isLinkUpdateImpactInput,
   isMoveMarkdownFileInput,
   isPathInput,
-  isRenameMarkdownFileInput
+  isRenameMarkdownFileInput,
+  isRevealWorkspaceItemInput
 } from "./fileHandlerValidators";
 import { buildWorkspaceState } from "./workspaceState";
 
@@ -217,14 +218,25 @@ export function registerMarkdownFileHandlers(): void {
     revealWorkspaceItemChannel,
     async (_event, input: RevealWorkspaceItemInput): Promise<RelicResult<void>> => {
       try {
-        if (!isPathInput(input)) {
+        if (!isRevealWorkspaceItemInput(input)) {
           return fail("REVEAL_INVALID_INPUT", "表示する項目を選択してください。");
         }
 
         const context = await getActiveWorkspaceContext();
         if (!context.ok) return context;
 
-        const absolutePath = resolveWorkspaceRelativePath(context.value.activeWorkspace.path, input.path);
+        const workspaceSummary = input.workspaceId === undefined
+          ? context.value.activeWorkspace
+          : context.value.settings.workspaces.find((workspace) => workspace.id === input.workspaceId);
+
+        if (!workspaceSummary) {
+          return fail("WORKSPACE_NOT_FOUND", "登録済みワークスペースが見つかりませんでした。");
+        }
+
+        const absolutePath = resolveWorkspaceRelativePathOrRoot(
+          workspaceSummary.path,
+          input.path
+        );
 
         if (!absolutePath.ok) {
           return absolutePath;
