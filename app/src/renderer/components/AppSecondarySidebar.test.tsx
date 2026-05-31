@@ -109,6 +109,7 @@ describe("AppSecondarySidebar", () => {
     const onCancelSending = vi.fn();
     renderSecondarySidebar({ isAIWorkspaceSending: true, onAIWorkspaceCancelSending: onCancelSending });
 
+    expect(screen.getByLabelText("AI応答を生成中")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "AI応答を中断" }));
 
     expect(onCancelSending).toHaveBeenCalled();
