@@ -186,6 +186,7 @@ function countOccurrences(value: string, term: string): number {
 
   while (index !== -1) {
     count += 1;
+    // eslint-disable-next-line react-doctor/js-set-map-lookups -- this counts repeated substring occurrences, not membership lookups.
     index = value.indexOf(term, index + term.length);
   }
 

@@ -593,7 +593,7 @@ async function toState(data: AIWorkspaceData, userDataPath?: string): Promise<AI
   const settings = userDataPath ? await readAppSettings(userDataPath) : null;
   const aiProvider = settings?.aiSettings.aiProvider ?? "codex-app-server";
   const chat = data.chats.find((item) => item.id === data.activeChatId) ?? data.chats[0] ?? null;
-  const sortedChats = [...data.chats].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  const sortedChats = data.chats.toSorted((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   const codexUsage = aiProvider === "codex-app-server"
     ? await readCodexAIWorkspaceUsage().catch(() => null)
     : null;
@@ -963,6 +963,7 @@ function selectPendingOperationIdsFromMessage(
   for (const operation of pendingOperations) {
     const matchesPath = operationPathCandidates(operation.path).some((candidate) => {
       const normalizedCandidate = normalizeOperationText(candidate);
+      // eslint-disable-next-line react-doctor/js-set-map-lookups -- substring matching is intentional; a Set cannot replace path-fragment matching.
       return normalizedCandidate.length >= 2 && normalizedMessage.includes(normalizedCandidate);
     });
 
