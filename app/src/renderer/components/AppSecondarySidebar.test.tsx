@@ -29,6 +29,7 @@ function renderSecondarySidebar(overrides: Partial<Parameters<typeof AppSecondar
     isResizing: false,
     onAIWorkspaceApplyOperations: vi.fn(),
     onAIWorkspaceCancelMessagePreview: vi.fn(),
+    onAIWorkspaceCancelSending: vi.fn(),
     onAIWorkspaceClearData: vi.fn(),
     onAIWorkspaceConfirmMessagePreview: vi.fn(),
     onAIWorkspaceDiscardOperations: vi.fn(),
@@ -102,6 +103,39 @@ describe("AppSecondarySidebar", () => {
 
     expect(onSendMessage).toHaveBeenCalledWith("要件を整理して");
     expect(input).toHaveValue("");
+  });
+
+  it("shows a stop button while sending and can cancel the running response", () => {
+    const onCancelSending = vi.fn();
+    renderSecondarySidebar({ isAIWorkspaceSending: true, onAIWorkspaceCancelSending: onCancelSending });
+
+    fireEvent.click(screen.getByRole("button", { name: "AI応答を中断" }));
+
+    expect(onCancelSending).toHaveBeenCalled();
+  });
+
+  it("edits a sent user message and resends the edited text", () => {
+    const onSendMessage = vi.fn();
+    renderSecondarySidebar({
+      onAIWorkspaceSendMessage: onSendMessage,
+      aiWorkspaceState: {
+        ...aiWorkspaceState,
+        history: [{
+          content: "最初の依頼",
+          createdAt: "2026-05-31T00:00:00.000Z",
+          id: "message-user-1",
+          references: [],
+          role: "user"
+        }]
+      }
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "編集" }));
+    const editInput = screen.getByLabelText("ユーザー発言を編集");
+    fireEvent.change(editInput, { target: { value: "修正後の依頼" } });
+    fireEvent.click(screen.getByRole("button", { name: "再送信" }));
+
+    expect(onSendMessage).toHaveBeenCalledWith("修正後の依頼");
   });
 
   it("expands the AI workspace input to fit the typed message", () => {

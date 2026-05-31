@@ -23,6 +23,7 @@ interface RunCodexAIWorkspaceTurnInput {
   pendingOperations: AIWorkspaceFileOperation[];
   references: AIWorkspaceReference[];
   referenceContents: Array<{ content: string; path: string }>;
+  signal?: AbortSignal;
   workspacePath: string;
 }
 
@@ -52,6 +53,16 @@ export async function runCodexAIWorkspaceTurn(
   input: RunCodexAIWorkspaceTurnInput
 ): Promise<RunCodexAIWorkspaceTurnResult> {
   const client = new CodexAppServerClient();
+  const abortError = new Error("AI Workspace処理を中断しました。");
+
+  if (input.signal?.aborted) {
+    throw abortError;
+  }
+
+  const abortHandler = (): void => {
+    client.abort(abortError);
+  };
+  input.signal?.addEventListener("abort", abortHandler, { once: true });
 
   try {
     await client.start();
@@ -69,6 +80,7 @@ export async function runCodexAIWorkspaceTurn(
       }))
     };
   } finally {
+    input.signal?.removeEventListener("abort", abortHandler);
     client.stop();
   }
 }
@@ -133,6 +145,11 @@ class CodexAppServerClient {
   stop(): void {
     this.process?.kill();
     this.process = null;
+  }
+
+  abort(error: Error): void {
+    this.failAll(error);
+    this.stop();
   }
 
   async initialize(): Promise<void> {

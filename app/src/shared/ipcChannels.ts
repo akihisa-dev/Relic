@@ -54,6 +54,7 @@ export const deleteAIWorkspaceChatChannel = "aiWorkspace:deleteChat";
 export const rebuildAIWorkspaceIndexChannel = "aiWorkspace:rebuildIndex";
 export const previewAIWorkspaceMessageChannel = "aiWorkspace:previewMessage";
 export const sendAIWorkspaceMessageChannel = "aiWorkspace:sendMessage";
+export const cancelAIWorkspaceMessageChannel = "aiWorkspace:cancelMessage";
 export const applyAIWorkspaceOperationsChannel = "aiWorkspace:applyOperations";
 export const discardAIWorkspaceOperationsChannel = "aiWorkspace:discardOperations";
 export const clearAIWorkspaceDataChannel = "aiWorkspace:clearData";

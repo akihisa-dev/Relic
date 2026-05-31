@@ -165,6 +165,7 @@ export interface RelicApi {
   rebuildAIWorkspaceIndex: (input: RebuildAIWorkspaceIndexInput) => Promise<RelicResult<AIWorkspaceState>>;
   previewAIWorkspaceMessage: (input: PreviewAIWorkspaceMessageInput) => Promise<RelicResult<AIWorkspaceMessagePreview>>;
   sendAIWorkspaceMessage: (input: SendAIWorkspaceMessageInput) => Promise<RelicResult<AIWorkspaceState>>;
+  cancelAIWorkspaceMessage: () => Promise<RelicResult<void>>;
   applyAIWorkspaceOperations: (input: ApplyAIWorkspaceOperationsInput) => Promise<RelicResult<AIWorkspaceState>>;
   discardAIWorkspaceOperations: (input: DiscardAIWorkspaceOperationsInput) => Promise<RelicResult<AIWorkspaceState>>;
   clearAIWorkspaceData: (input: ClearAIWorkspaceDataInput) => Promise<RelicResult<AIWorkspaceState>>;

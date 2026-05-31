@@ -43,6 +43,7 @@ vi.mock("../ai/aiWorkspaceService", () => aiWorkspaceServiceMock);
 
 import {
   applyAIWorkspaceOperationsChannel,
+  cancelAIWorkspaceMessageChannel,
   saveAIModelChannel,
   saveAIProviderChannel,
   sendAIWorkspaceMessageChannel,
@@ -108,6 +109,44 @@ describe("registerAIWorkspaceHandlers", () => {
       workspaceId: "workspace-1",
       workspacePath: "/tmp/notes"
     }));
+  });
+
+  it("aborts the active chat message when cancellation is requested", async () => {
+    const sender = { id: 12, send: vi.fn() };
+    const afterState = createAIWorkspaceState("pending");
+    let sentSignal: AbortSignal | undefined;
+    let resolveSignalReady: (() => void) | undefined;
+    const signalReady = new Promise<void>((resolve) => {
+      resolveSignalReady = resolve;
+    });
+    activeWorkspaceMock.getActiveWorkspaceContext.mockResolvedValue({
+      ok: true,
+      value: {
+        activeWorkspace: { id: "workspace-1", path: "/tmp/notes" },
+        userDataPath: "/tmp/relic-user-data"
+      }
+    });
+    aiWorkspaceServiceMock.sendAIWorkspaceMessage.mockImplementation(
+      async (_context: unknown, _input: unknown, _trashItem: unknown, options: { signal?: AbortSignal }) => {
+        sentSignal = options.signal;
+        resolveSignalReady?.();
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        return { ok: true, value: afterState };
+      }
+    );
+
+    registerAIWorkspaceHandlers();
+    const sendHandler = electronMock.handle.mock.calls.find(([channel]) => channel === sendAIWorkspaceMessageChannel)?.[1];
+    const cancelHandler = electronMock.handle.mock.calls.find(([channel]) => channel === cancelAIWorkspaceMessageChannel)?.[1];
+    if (!sendHandler || !cancelHandler) throw new Error("AI workspace message handlers were not registered");
+
+    const sendPromise = sendHandler({ sender }, { message: "認証を整理して" });
+    await signalReady;
+    const cancelResult = await cancelHandler({ sender });
+    await sendPromise;
+
+    expect(cancelResult).toEqual({ ok: true, value: undefined });
+    expect(sentSignal?.aborted).toBe(true);
   });
 
   it("notifies workspace changes when applying operations changes Markdown", async () => {

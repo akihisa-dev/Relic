@@ -666,6 +666,58 @@
   white-space: pre-wrap;
 }
 
+.ai-workspace-message-actions {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+  margin-top: 6px;
+}
+
+.ai-workspace-message-actions button {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--text-2);
+  font: inherit;
+  font-size: 12px;
+  padding: 2px 6px;
+}
+
+.ai-workspace-message-actions button:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+
+.ai-workspace-message-actions button:disabled {
+  color: var(--text-3);
+  cursor: default;
+}
+
+.ai-workspace-message-edit {
+  display: grid;
+  gap: 6px;
+}
+
+.ai-workspace-message-edit textarea {
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-sizing: border-box;
+  color: var(--text);
+  font: inherit;
+  line-height: 1.6;
+  min-height: 88px;
+  outline: none;
+  padding: 8px;
+  resize: vertical;
+  width: min(360px, 100%);
+}
+
+.ai-workspace-message-edit textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent-ring);
+}
+
 .ai-workspace-references {
   display: grid;
   gap: 6px;

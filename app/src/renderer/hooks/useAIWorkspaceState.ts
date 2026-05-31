@@ -28,12 +28,12 @@ export function useAIWorkspaceState({
     activeFilePath?: string | null,
     activeFileContent?: string | null
   ) => Promise<void>;
+  cancelAIWorkspaceMessage: () => Promise<void>;
   confirmAIWorkspaceMessage: (
     dirtyFilePaths?: string[],
     activeFilePath?: string | null,
     activeFileContent?: string | null
   ) => Promise<void>;
-  cancelAIWorkspaceMessage: () => void;
   applyAIWorkspaceOperations: (dirtyFilePaths?: string[], operationIds?: string[]) => Promise<void>;
   discardAIWorkspaceOperations: (operationIds?: string[]) => Promise<void>;
   clearAIWorkspaceData: () => Promise<void>;
@@ -148,6 +148,7 @@ export function useAIWorkspaceState({
     setIsAIWorkspaceSending(false);
 
     if (!result.ok) {
+      if (result.error.code === "AI_WORKSPACE_MESSAGE_CANCELLED") return;
       onError(result.error.message);
       return;
     }
@@ -163,9 +164,18 @@ export function useAIWorkspaceState({
     resetMessagePreview();
   }, [resetMessagePreview]);
 
-  const cancelAIWorkspaceMessage = useCallback((): void => {
+  const cancelAIWorkspaceMessage = useCallback(async (): Promise<void> => {
     resetMessagePreview();
-  }, [resetMessagePreview]);
+    if (!isEnabled || !workspaceId) return;
+    if (!window.relic?.cancelAIWorkspaceMessage) return;
+
+    const result = await window.relic.cancelAIWorkspaceMessage();
+    setIsAIWorkspaceSending(false);
+
+    if (!result.ok) {
+      onError(result.error.message);
+    }
+  }, [isEnabled, onError, resetMessagePreview, workspaceId]);
 
   const clearAIWorkspaceData = useCallback(async (): Promise<void> => {
     if (!isEnabled || !workspaceId) return;

@@ -38,6 +38,7 @@ interface AppEditorWorkspaceProps {
   onAIWorkspaceClearData: () => void;
   onAIWorkspaceApplyOperations: (operationIds?: string[]) => void;
   onAIWorkspaceCancelMessagePreview: () => void;
+  onAIWorkspaceCancelSending: () => void;
   onAIWorkspaceConfirmMessagePreview: () => void;
   onAIWorkspaceRebuildIndex: () => void;
   onAIWorkspaceDiscardOperations: (operationIds?: string[]) => void;
@@ -98,6 +99,7 @@ export function AppEditorWorkspace({
   onAIWorkspaceClearData,
   onAIWorkspaceApplyOperations,
   onAIWorkspaceCancelMessagePreview,
+  onAIWorkspaceCancelSending,
   onAIWorkspaceRebuildIndex,
   onAIWorkspaceDiscardOperations,
   onAIWorkspaceConfirmMessagePreview,
@@ -144,6 +146,7 @@ export function AppEditorWorkspace({
           onAIWorkspaceClearData={onAIWorkspaceClearData}
           onAIWorkspaceApplyOperations={onAIWorkspaceApplyOperations}
           onAIWorkspaceCancelMessagePreview={onAIWorkspaceCancelMessagePreview}
+          onAIWorkspaceCancelSending={onAIWorkspaceCancelSending}
           onAIWorkspaceConfirmMessagePreview={onAIWorkspaceConfirmMessagePreview}
           onAIWorkspaceRebuildIndex={onAIWorkspaceRebuildIndex}
           onAIWorkspaceDiscardOperations={onAIWorkspaceDiscardOperations}

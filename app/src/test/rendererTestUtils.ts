@@ -70,6 +70,7 @@ export function makeRelicApi(overrides: Partial<typeof window.relic> = {}): type
         pendingOperations: []
       }
     }),
+    cancelAIWorkspaceMessage: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
     copyDiagramSvg: vi.fn().mockResolvedValue({ ok: true, value: { status: "copied" } }),
     createAIWorkspaceChat: vi.fn().mockResolvedValue({
       ok: true,

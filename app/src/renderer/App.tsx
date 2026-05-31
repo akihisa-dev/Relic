@@ -883,6 +883,7 @@ export function App(): ReactElement {
           onAIWorkspaceClearData={() => { void clearAIWorkspaceData(); }}
           onAIWorkspaceApplyOperations={(operationIds) => { void applyAIWorkspaceOperations(dirtyMarkdownPaths, operationIds); }}
           onAIWorkspaceCancelMessagePreview={cancelAIWorkspaceMessage}
+          onAIWorkspaceCancelSending={() => { void cancelAIWorkspaceMessage(); }}
           onAIWorkspaceConfirmMessagePreview={() => {
             void confirmAIWorkspaceMessage(
               dirtyMarkdownPaths,

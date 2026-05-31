@@ -8,6 +8,7 @@ interface AIWorkspacePanelProps {
   messagePreview: AIWorkspaceMessagePreview | null;
   onApplyOperations: (operationIds?: string[]) => void;
   onCancelMessagePreview: () => void;
+  onCancelSending: () => void;
   onClearData: () => void;
   onConfirmMessagePreview: () => void;
   onDiscardOperations: (operationIds?: string[]) => void;
@@ -20,10 +21,13 @@ interface AIWorkspacePanelProps {
 
 export function AIWorkspacePanel({
   isSending,
+  onCancelSending,
   onSendMessage,
   state
 }: AIWorkspacePanelProps): ReactElement {
   const [message, setMessage] = useState("");
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editingMessage, setEditingMessage] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const history = state?.history ?? [];
   const sendCurrentMessage = (): void => {
@@ -31,6 +35,20 @@ export function AIWorkspacePanel({
     if (!trimmed || isSending) return;
     onSendMessage(trimmed);
     setMessage("");
+  };
+  const startEditingMessage = (id: string, content: string): void => {
+    setEditingMessageId(id);
+    setEditingMessage(content);
+  };
+  const cancelEditingMessage = (): void => {
+    setEditingMessageId(null);
+    setEditingMessage("");
+  };
+  const resendEditedMessage = (): void => {
+    const trimmed = editingMessage.trim();
+    if (!trimmed || isSending) return;
+    onSendMessage(trimmed);
+    cancelEditingMessage();
   };
 
   useLayoutEffect(() => {
@@ -49,7 +67,39 @@ export function AIWorkspacePanel({
       <div className="ai-workspace-messages" aria-live="polite">
         {history.map((item) => (
           <article className={`ai-workspace-message ai-workspace-message--${item.role}`} key={item.id}>
-            <p>{item.content}</p>
+            {editingMessageId === item.id ? (
+              <div className="ai-workspace-message-edit">
+                <textarea
+                  aria-label="ユーザー発言を編集"
+                  onChange={(event) => setEditingMessage(event.target.value)}
+                  rows={3}
+                  value={editingMessage}
+                />
+                <div className="ai-workspace-message-actions">
+                  <button disabled={isSending || !editingMessage.trim()} onClick={resendEditedMessage} type="button">
+                    再送信
+                  </button>
+                  <button onClick={cancelEditingMessage} type="button">
+                    キャンセル
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <p>{item.content}</p>
+                {item.role === "user" ? (
+                  <div className="ai-workspace-message-actions">
+                    <button
+                      disabled={isSending}
+                      onClick={() => startEditingMessage(item.id, item.content)}
+                      type="button"
+                    >
+                      編集
+                    </button>
+                  </div>
+                ) : null}
+              </>
+            )}
           </article>
         ))}
       </div>
@@ -63,6 +113,7 @@ export function AIWorkspacePanel({
       >
         <textarea
           aria-label="AIへのメッセージ"
+          disabled={isSending}
           ref={textareaRef}
           rows={1}
           onKeyDown={(event) => {
@@ -73,9 +124,15 @@ export function AIWorkspacePanel({
           onChange={(event) => setMessage(event.target.value)}
           value={message}
         />
-        <button aria-label="送信" disabled={isSending || !message.trim()} type="submit">
-          <span aria-hidden="true">↑</span>
-        </button>
+        {isSending ? (
+          <button aria-label="AI応答を中断" onClick={onCancelSending} type="button">
+            <span aria-hidden="true">■</span>
+          </button>
+        ) : (
+          <button aria-label="送信" disabled={!message.trim()} type="submit">
+            <span aria-hidden="true">↑</span>
+          </button>
+        )}
       </form>
     </div>
   );
