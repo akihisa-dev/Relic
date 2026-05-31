@@ -2,7 +2,6 @@ import { useMemo } from "react";
 import type { ReactElement } from "react";
 
 import type { ChronicleCalendarSettings, UpdateChartEntryInput, WorkspaceChart } from "../../shared/ipc";
-import { useT } from "../i18n";
 import { buildChronicleVerticalViewportState, buildChronicleViewportState, useChronicleChartModel } from "../hooks/useChronicleChartModel";
 import { useChronicleChartViewport } from "../hooks/useChronicleChartViewport";
 import { useChronicleEntryDrag } from "../hooks/useChronicleEntryDrag";
@@ -21,7 +20,6 @@ interface ChartViewProps {
 const defaultCharts: WorkspaceChart[] = [];
 
 export function ChartView({ chart = null, charts = defaultCharts, chronicleCalendars, onOpenFile, onUpdateEntry }: ChartViewProps): ReactElement {
-  const t = useT();
   const model = useChronicleChartModel({ chart, charts, chronicleCalendars });
   const viewport = useChronicleChartViewport({
     activeChart: model.activeChart,

@@ -112,7 +112,7 @@ describe("App rail panels", () => {
       getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
     });
 
-    const { container } = await renderApp();
+    await renderApp();
 
     await screen.findByText("Notes");
 

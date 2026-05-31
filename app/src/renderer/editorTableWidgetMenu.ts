@@ -25,8 +25,7 @@ export function showLiveTableMenu({
   focusCell,
   rowIndex,
   t,
-  updateRows,
-  wrapper
+  updateRows
 }: {
   block: TableBlock;
   colIndex: number;
@@ -35,7 +34,6 @@ export function showLiveTableMenu({
   rowIndex: number;
   t: Translator;
   updateRows: (rows: string[][]) => void;
-  wrapper: HTMLElement;
 }): void {
   document.querySelectorAll(".cm-live-table-menu").forEach((element) => element.remove());
 

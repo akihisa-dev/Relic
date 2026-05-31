@@ -81,12 +81,6 @@ export const STANDARD_FIXED_FIELDS: FixedFieldDefinition[] = [
   }
 ];
 
-const FIXED_FIELDS: FixedFieldDefinition[] = [
-  ...STANDARD_FIXED_FIELDS.slice(0, 3),
-  ...CHRONICLE_FIXED_FIELDS,
-  ...STANDARD_FIXED_FIELDS.slice(3)
-];
-
 export function needsChoices(type: UserDefinedFieldType): boolean {
   return type === "select" || type === "multi-select";
 }

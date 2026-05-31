@@ -18,7 +18,6 @@ export function useAppWorkspaceCollections({
   dirtyMarkdownPaths: string[];
   existingMarkdownPaths: string[];
   openFilePathSet: Set<string>;
-  pinnedPathSet: Set<string>;
   registeredWorkspaces: ReturnType<typeof registeredWorkspacesForState>;
 } {
   const existingMarkdownPaths = useMemo(
@@ -36,10 +35,6 @@ export function useAppWorkspaceCollections({
     () => registeredWorkspacesForState(workspaceState),
     [workspaceState]
   );
-  const pinnedPathSet = useMemo(
-    () => new Set(workspaceState?.pinnedPaths ?? []),
-    [workspaceState?.pinnedPaths]
-  );
   const openFilePathSet = useMemo(
     () => openFilePathsForTabs(tabs),
     [tabs]
@@ -49,7 +44,6 @@ export function useAppWorkspaceCollections({
     dirtyMarkdownPaths,
     existingMarkdownPaths,
     openFilePathSet,
-    pinnedPathSet,
     registeredWorkspaces
   };
 }

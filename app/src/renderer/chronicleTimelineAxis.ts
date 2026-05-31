@@ -226,11 +226,11 @@ function buildDateTicks(axisStart: number, axisEnd: number, unit: DateAxisSegmen
   return ticks;
 }
 
-export function dateGuideUnit(scale: DateScale): DateAxisSegmentUnit {
+export function dateGuideUnit(_scale: DateScale): DateAxisSegmentUnit {
   return "day";
 }
 
-export function dateMajorGuideUnit(scale: DateScale): DateAxisSegmentUnit {
+export function dateMajorGuideUnit(_scale: DateScale): DateAxisSegmentUnit {
   return "month";
 }
 
@@ -250,7 +250,7 @@ export function formatRange(entry: ChartEntry, source: ChartSource, dateScale: D
   return `${start} 〜 ${end}`;
 }
 
-export function formatAxisValue(value: number, source: ChartSource): string {
+export function formatAxisValue(value: number, _source: ChartSource): string {
   const year = axisToYear(value);
   return year < 0 ? `−${Math.abs(year)}` : String(year);
 }
@@ -427,7 +427,7 @@ function previousDateUnit(value: number, unit: DateAxisSegmentUnit): number {
   return startOfDateUnit(value, unit);
 }
 
-export function dateUnitWidth(scale: DateScale | null): number {
+export function dateUnitWidth(_scale: DateScale | null): number {
   return 22;
 }
 
@@ -462,7 +462,7 @@ export function formatChronicleCalendarAxisLabel(calendar: ChronicleCalendarSett
   return formatChronicleAxisSegmentLabel(year);
 }
 
-export function dateAxisHeightForScale(scale: DateScale | null): number {
+export function dateAxisHeightForScale(_scale: DateScale | null): number {
   return 69;
 }
 
@@ -488,7 +488,7 @@ function chronicleLabelWithoutCalendarName(label: string, calendarName: string |
   return trimmed.startsWith(`${name} `) ? trimmed.slice(name.length + 1) : trimmed;
 }
 
-export function formatDateLabel(value: string, unit: DateScaleUnit): string {
+export function formatDateLabel(value: string, _unit: DateScaleUnit): string {
   return value.slice(8, 10);
 }
 

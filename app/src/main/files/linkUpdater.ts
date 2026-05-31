@@ -97,7 +97,6 @@ async function buildLinkUpdatePatches(
   const fileTree = await readWorkspaceFileTree(workspacePath);
   const markdownPaths = collectMarkdownPaths(fileTree);
   const patches: LinkUpdatePatch[] = [];
-  const oldBaseName = path.basename(oldPath, ".md");
   const newBaseName = path.basename(newPath, ".md");
   const newPathWithoutExt = newPath.replace(/\.md$/, "");
 
@@ -119,7 +118,6 @@ async function buildLinkUpdatePatches(
         content,
         sourcePath,
         oldPath,
-        oldBaseName,
         newBaseName,
         newPathWithoutExt
       )
