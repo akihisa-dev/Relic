@@ -48,7 +48,8 @@ AIのセッション開始時は、`../AGENTS.md` から [project/overview.md](p
 | [development/phases/P4.md](development/phases/P4.md) | P4正本。機能追加フェーズの対象範囲、ルール、作業記録 |
 | [development/phases/P5.md](development/phases/P5.md) | P5正本。実用機能の実装と細部の調整フェーズの対象範囲、ルール、作業記録 |
 | [development/phases/P6.md](development/phases/P6.md) | P6正本。コンセプト再定義と安定化準備フェーズの対象範囲、ルール、作業記録 |
-| [development/phases/P7.md](development/phases/P7.md) | 現在フェーズ正本。AIワークスペースフェーズの対象範囲、ルール、作業記録 |
+| [development/phases/P7.md](development/phases/P7.md) | P7正本。AIワークスペースフェーズの対象範囲、ルール、作業記録 |
+| [development/phases/P8.md](development/phases/P8.md) | 現在フェーズ正本。UI・ビジュアルデザインフェーズの対象範囲、ルール、作業記録 |
 | [development/questions.md](development/questions.md) | 未決定事項の正本 |
 | [development/coding-rules.md](development/coding-rules.md) | コーディング規約 |
 | [development/testing-rules.md](development/testing-rules.md) | テスト方針 |
