@@ -100,8 +100,7 @@ export async function searchAndReplace(
       const { content, relativePath } = fileContent;
       const lines = content.split("\n");
 
-      for (let index = 0; index < lines.length; index += 1) {
-        const line = lines[index];
+      for (const [index, line] of lines.entries()) {
 
         if (regex.value.test(line)) {
           regex.value.lastIndex = 0;

@@ -115,7 +115,9 @@ function parseSvgViewBox(value: string | null): { width: number; height: number 
   const parts = value.trim().split(/[\s,]+/).map(Number);
   if (parts.length !== 4 || parts.some((part) => !Number.isFinite(part))) return null;
 
-  const [, , width, height] = parts;
+  const width = parts[2];
+  const height = parts[3];
+  if (typeof width !== "number" || typeof height !== "number") return null;
   if (width <= 0 || height <= 0) return null;
 
   return { width, height };

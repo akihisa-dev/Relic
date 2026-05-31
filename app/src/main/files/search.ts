@@ -144,8 +144,7 @@ export async function searchWorkspace(
 
       const lines = content.split("\n");
 
-      for (let index = 0; index < lines.length; index += 1) {
-        const line = lines[index];
+      for (const [index, line] of lines.entries()) {
         const matches =
           mode === "regex"
             ? regex!.test(line)

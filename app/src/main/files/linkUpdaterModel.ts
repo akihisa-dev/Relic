@@ -31,9 +31,11 @@ export function replaceFileLinksWithCount(
   const pattern = /(!)?\[\[([^\]\n]+)\]\]/g;
 
   for (const match of maskedContent.matchAll(pattern)) {
-    const rawLink = match[0];
-    const body = match[2];
+    const matchStart = match.index;
+    const rawLink = match[0] ?? "";
+    const body = match[2] ?? "";
 
+    if (matchStart === undefined || !rawLink) continue;
     const parsed = parseWikiLinkBody(body);
     if (!parsed) continue;
 
@@ -53,8 +55,8 @@ export function replaceFileLinksWithCount(
     const embed = match[1] === "!" ? "!" : "";
     const newRawLink = `${embed}[[${newBody}]]`;
 
-    const matchStart = match.index! + offset;
-    result = result.slice(0, matchStart) + newRawLink + result.slice(matchStart + rawLink.length);
+    const adjustedMatchStart = matchStart + offset;
+    result = result.slice(0, adjustedMatchStart) + newRawLink + result.slice(adjustedMatchStart + rawLink.length);
     offset += newRawLink.length - rawLink.length;
     count += 1;
   }
@@ -85,9 +87,11 @@ export function replaceFolderLinksWithCount(
   const pattern = /(!)?\[\[([^\]\n]+)\]\]/g;
 
   for (const match of maskedContent.matchAll(pattern)) {
-    const rawLink = match[0];
-    const body = match[2];
+    const matchStart = match.index;
+    const rawLink = match[0] ?? "";
+    const body = match[2] ?? "";
 
+    if (matchStart === undefined || !rawLink) continue;
     const parsed = parseWikiLinkBody(body);
     if (!parsed) continue;
 
@@ -109,8 +113,8 @@ export function replaceFolderLinksWithCount(
     const embed = match[1] === "!" ? "!" : "";
     const newRawLink = `${embed}[[${newBody}]]`;
 
-    const matchStart = match.index! + offset;
-    result = result.slice(0, matchStart) + newRawLink + result.slice(matchStart + rawLink.length);
+    const adjustedMatchStart = matchStart + offset;
+    result = result.slice(0, adjustedMatchStart) + newRawLink + result.slice(adjustedMatchStart + rawLink.length);
     offset += newRawLink.length - rawLink.length;
     count += 1;
   }
@@ -131,9 +135,9 @@ function parseWikiLinkBody(body: string): ParsedWikiLinkBody | null {
   const targetPart = pipeIndex >= 0 ? body.slice(0, pipeIndex) : body;
   const alias = pipeIndex >= 0 ? body.slice(pipeIndex + 1) : null;
 
-  const blockParts = targetPart.split("^", 2);
-  const headingParts = blockParts[0].split("#", 2);
-  const rawTargetBase = headingParts[0].trim();
+  const [targetWithHeading = "", blockId] = targetPart.split("^", 2);
+  const [targetBasePart = "", heading] = targetWithHeading.split("#", 2);
+  const rawTargetBase = targetBasePart.trim();
 
   if (!rawTargetBase) return null;
 
@@ -141,8 +145,8 @@ function parseWikiLinkBody(body: string): ParsedWikiLinkBody | null {
 
   return {
     alias,
-    blockId: blockParts[1]?.trim() || null,
-    heading: headingParts[1]?.trim() || null,
+    blockId: blockId?.trim() || null,
+    heading: heading?.trim() || null,
     rawTargetBase,
     targetBase
   };

@@ -8,11 +8,14 @@ export function parseBacktickOpeningFence(lineText: string): BacktickCodeFence |
   if (!match) return null;
 
   const language = match[2]?.trim().split(/\s+/, 1)[0] ?? null;
-  return { language, markerLength: match[1].length };
+  const marker = match[1] ?? "";
+  if (!marker) return null;
+
+  return { language, markerLength: marker.length };
 }
 
 export function isClosingBacktickFence(lineText: string, openingMarkerLength: number): boolean {
   const match = /^[ \t]*(`{3,})[ \t]*$/.exec(lineText);
 
-  return Boolean(match && match[1].length >= openingMarkerLength);
+  return Boolean(match && (match[1] ?? "").length >= openingMarkerLength);
 }
