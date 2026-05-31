@@ -4,13 +4,8 @@ import type { ReactElement } from "react";
 
 import { type WorkspaceState } from "../shared/ipc";
 import type { AppLinkContextMenu } from "./appLinks";
-import { AppEditorWorkspace } from "./components/AppEditorWorkspace";
-import { AppFilesSidebar } from "./components/AppFilesSidebar";
-import { AppOverlays } from "./components/AppOverlays";
-import { AppRail } from "./components/AppRail";
-import { AppStatusBar } from "./components/AppStatusBar";
-import { AppTitleBar } from "./components/AppTitleBar";
-import { I18nProvider } from "./i18n";
+import { createAppLayoutProps } from "./appLayoutProps";
+import { AppLayout } from "./components/AppLayout";
 import { createTranslator } from "./i18nModel";
 import { useActiveDocumentContext } from "./hooks/useActiveDocumentContext";
 import { useAIWorkspaceState } from "./hooks/useAIWorkspaceState";
@@ -530,225 +525,161 @@ export function App(): ReactElement {
     userDefinedFields,
     workspaceState
   });
-  // ──────────────────
-  // レンダリング
-  // ──────────────────
+  const appLayoutProps = createAppLayoutProps({
+    activeChartIds,
+    activeFileTabInFocusedPane,
+    activePanelTabIds,
+    activeSidebarView,
+    aiWorkspaceEditorActions,
+    aiWorkspaceMessagePreview,
+    aiWorkspaceState,
+    aliasesByPath,
+    appInlineHandlers,
+    backlinks,
+    chartRailViews,
+    closeAllTabsInPaneWithMotion,
+    closeOtherTabsWithMotion,
+    closeSecondarySidebar,
+    closeSidebar,
+    closeTabWithMotion,
+    closeTabsToRightWithMotion,
+    closeToast,
+    commands,
+    createAIWorkspaceChat,
+    deleteAIWorkspaceChat,
+    editorActionPulse,
+    editorSettings,
+    existingMarkdownPaths,
+    featureRightPanelAvailable: isRightPanelAvailable,
+    fileSearchFocusRequest,
+    fileSelectionCount,
+    focusedPane,
+    frontmatterCandidates,
+    frontmatterSearchFields,
+    handleCreateFileFromSidebar,
+    handleCreateFileInFolder,
+    handleCreateFolderFromSidebar,
+    handleCreateFolderInFolder,
+    handleCreateNewWorkspace,
+    handleCreateNoteFromPane,
+    handleDeleteTreeItem,
+    handleDeleteTreeItems,
+    handleDuplicateTabFile,
+    handleDuplicateTreeFile,
+    handleFileSaved,
+    handleMoveFile,
+    handleMoveFolder,
+    handleMoveTreeItems,
+    handleOpenFile,
+    handleOpenMarkdownLink,
+    handleOpenWikiLink,
+    handleOpenWorkspace,
+    handlePrintPreview,
+    handleRailChartButton,
+    handleRailPanelButton,
+    handleRemoveWorkspace,
+    handleRenameTreeItem,
+    handleRenameWorkspace,
+    handleRevealTabFile,
+    handleRevealWorkspaceItem,
+    handleRightPanelViewButton,
+    handleSavePreviewAsPdf,
+    handleSelectFolder,
+    handleSidebarOpenFile,
+    handleSwitchWorkspace,
+    handleTogglePin,
+    holdWorkspaceRailAfterRename,
+    isAIWorkspaceLoading,
+    isAIWorkspaceSending,
+    isCreatingFile,
+    isCreatingFolder,
+    isCreatingWorkspace,
+    isEffectiveRightPanelOpen,
+    isLoadingBacklinks,
+    isOpeningWorkspace,
+    isRightPanelResizing,
+    isSearching,
+    isSecondarySidebarOpen,
+    isSecondarySidebarResizing,
+    isSidebarOpen,
+    isSidebarResizing,
+    isSourceMode,
+    isSplit,
+    isSplitClosing,
+    isToastClosing,
+    isTypewriterMode,
+    isWorkspaceRenameActive,
+    isWorkspaceRenameHoldingRail,
+    leftClosingTabIds,
+    leftEditorViewRef,
+    leftPane,
+    leftPaneScrollHeading,
+    linkContextMenu,
+    moveTab,
+    openChartIds,
+    openFileInOtherPane,
+    openFilePathSet,
+    openPanelTabIds,
+    openSecondarySidebar,
+    openTreeFileInOtherPane,
+    openWorkspacePathInOtherPane,
+    openingFilePath,
+    outlineHeadings,
+    outgoingLinks,
+    outgoingLinksLimited,
+    panelRailViews,
+    primaryRailViews,
+    railTabFlight,
+    registeredWorkspaces,
+    renderChartTab,
+    renderPanelTab,
+    renderPanelTabIcon,
+    rightClosingTabIds,
+    rightEditorViewRef,
+    rightPane,
+    rightPaneScrollHeading,
+    rightPanelView,
+    rightPanelWidth,
+    saveStatusByTabId,
+    searchError,
+    searchFrontmatterField,
+    searchLimitNotice,
+    searchMode,
+    searchQuery,
+    searchResults,
+    secondarySidebarView,
+    secondarySidebarWidth,
+    selectAIWorkspaceChat,
+    setFileSelectionCount,
+    setFocusedPane,
+    setIsSourceMode,
+    setIsWorkspaceRenameActive,
+    setLinkContextMenu,
+    setRailSidebarView,
+    setSearchFrontmatterField,
+    setSearchMode,
+    setSearchQuery,
+    setShowCommandPalette,
+    setShowQuickSwitcher,
+    setTabActive,
+    setWorkspaceError,
+    showCommandPalette,
+    showQuickSwitcher,
+    sidebarCreateFlight,
+    sidebarViews,
+    sidebarWidth,
+    startRightPanelResize,
+    startSecondarySidebarResize,
+    startSidebarResize,
+    t,
+    tabs,
+    titleBarLeftOffsetWidth,
+    toastMessage,
+    toggleSplitWithMotion,
+    toggleTabPinned,
+    userDefinedFields,
+    workspaceState
+  });
 
-  return (
-    <I18nProvider language={editorSettings.language}>
-    <div className="app-shell">
-      <AppTitleBar
-        canOutputPreview={Boolean(activeFileTabInFocusedPane)}
-        isRightPanelOpen={isEffectiveRightPanelOpen}
-        isSourceMode={isSourceMode}
-        isSplit={isSplit}
-        leftClosingTabIds={leftClosingTabIds}
-        leftOffsetWidth={titleBarLeftOffsetWidth}
-        leftPane={leftPane}
-        onCloseAllTabsInPane={closeAllTabsInPaneWithMotion}
-        onCloseOtherTabs={closeOtherTabsWithMotion}
-        onCloseTabsToRight={closeTabsToRightWithMotion}
-        onDuplicateTabFile={handleDuplicateTabFile}
-        onOpenInOtherPane={openFileInOtherPane}
-        onPrintPreview={handlePrintPreview}
-        onRevealTabFile={handleRevealTabFile}
-        onRightPanelViewButton={handleRightPanelViewButton}
-        onSavePreviewAsPdf={handleSavePreviewAsPdf}
-        onSourceModeToggle={() => setIsSourceMode((value) => !value)}
-        onSplitToggle={toggleSplitWithMotion}
-        onTabClose={closeTabWithMotion}
-        onTabMove={moveTab}
-        onTabSelect={setTabActive}
-        onTogglePinTab={toggleTabPinned}
-        renderPanelTabIcon={renderPanelTabIcon}
-        rightClosingTabIds={rightClosingTabIds}
-        rightPane={rightPane}
-        rightPanelView={rightPanelView}
-        rightPanelWidth={rightPanelWidth}
-        showRightPanelControls={isRightPanelAvailable}
-        tabs={tabs}
-      />
-      <div className="workspace">
-        <AppRail
-          activePanelTabIds={activePanelTabIds}
-          activeSidebarView={activeSidebarView}
-          activeWorkspaceId={workspaceState?.activeWorkspace?.id ?? null}
-          activeChartIds={activeChartIds}
-          chartRailViews={chartRailViews}
-          isSidebarOpen={isSidebarOpen}
-          isWorkspaceRenameActive={isWorkspaceRenameActive}
-          isWorkspaceRenameHoldingRail={isWorkspaceRenameHoldingRail}
-          onChartButton={handleRailChartButton}
-          onCloseSidebar={closeSidebar}
-          onPanelButton={handleRailPanelButton}
-          onRemoveWorkspace={handleRemoveWorkspace}
-          onRenameActiveChange={setIsWorkspaceRenameActive}
-          onRenameComplete={holdWorkspaceRailAfterRename}
-          onRenameWorkspace={handleRenameWorkspace}
-          onSetSidebarView={setRailSidebarView}
-          onSwitchWorkspace={handleSwitchWorkspace}
-          openChartIds={openChartIds}
-          openPanelTabIds={openPanelTabIds}
-          panelRailViews={panelRailViews}
-          primaryRailViews={primaryRailViews}
-          registeredWorkspaces={registeredWorkspaces}
-          renameLabel={t("files.rename")}
-          removeWorkspaceLabel={(name) => t("files.removeWorkspace", { name })}
-          viewSwitcherLabel={t("nav.viewSwitcher")}
-          workspacesLabel={t("files.registeredWorkspaces")}
-        />
-
-        <AppFilesSidebar
-          activeSidebarView={activeSidebarView}
-          aiWorkspaceState={aiWorkspaceState}
-          fileSelectionCount={fileSelectionCount}
-          isAIWorkspaceLoading={isAIWorkspaceLoading}
-          isCreatingFile={isCreatingFile}
-          isCreatingFolder={isCreatingFolder}
-          isCreatingWorkspace={isCreatingWorkspace}
-          isOpeningWorkspace={isOpeningWorkspace}
-          isSearching={isSearching}
-          isSidebarOpen={isSidebarOpen}
-          isSidebarResizing={isSidebarResizing}
-          onCreateAIChat={() => {
-            openSecondarySidebar("ai-chat");
-            void createAIWorkspaceChat();
-          }}
-          onDeleteAIChat={(chatId) => { void deleteAIWorkspaceChat(chatId); }}
-          onCloseSidebar={closeSidebar}
-          onCreateFile={handleCreateFileFromSidebar}
-          onCreateFileInFolder={handleCreateFileInFolder}
-          onCreateFolder={handleCreateFolderFromSidebar}
-          onCreateFolderInFolder={handleCreateFolderInFolder}
-          onCreateWorkspace={handleCreateNewWorkspace}
-          onDeleteItem={handleDeleteTreeItem}
-          onDeleteItems={handleDeleteTreeItems}
-          onDuplicateFile={handleDuplicateTreeFile}
-          onMoveFile={handleMoveFile}
-          onMoveFolder={handleMoveFolder}
-          onMoveItems={handleMoveTreeItems}
-          onOpenFile={handleSidebarOpenFile}
-          onOpenInOtherPane={isSplit ? openTreeFileInOtherPane : undefined}
-          onOpenWorkspace={handleOpenWorkspace}
-          onRevealItem={handleRevealWorkspaceItem}
-          onRenameItem={handleRenameTreeItem}
-          onSearchFrontmatterFieldChange={setSearchFrontmatterField}
-          onSearchModeChange={setSearchMode}
-          onSearchQueryChange={setSearchQuery}
-          onSelectFolder={handleSelectFolder}
-          onSelectAIChat={(chatId) => {
-            openSecondarySidebar("ai-chat");
-            void selectAIWorkspaceChat(chatId);
-          }}
-          onSelectedCountChange={setFileSelectionCount}
-          onTogglePin={handleTogglePin}
-          openingFilePath={openingFilePath}
-          openFilePaths={openFilePathSet}
-          searchError={searchError}
-          searchFocusRequest={fileSearchFocusRequest}
-          searchFrontmatterCandidates={frontmatterCandidates}
-          searchFrontmatterField={searchFrontmatterField}
-          searchFrontmatterFields={frontmatterSearchFields}
-          searchLimitNotice={searchLimitNotice}
-          searchMode={searchMode}
-          searchQuery={searchQuery}
-          searchResults={searchResults}
-          selectedCountLabel={t("files.selectedCount", { count: fileSelectionCount })}
-          sidebarViews={sidebarViews}
-          sidebarWidth={sidebarWidth}
-          startSidebarResize={startSidebarResize}
-          workspaceState={workspaceState}
-        />
-
-        <AppEditorWorkspace
-          aiWorkspaceState={aiWorkspaceState}
-          aiWorkspaceMessagePreview={aiWorkspaceMessagePreview}
-          allFilePaths={existingMarkdownPaths}
-          backlinks={backlinks}
-          editorActionPulse={editorActionPulse}
-          editorSettings={editorSettings}
-          focusedPane={focusedPane}
-          frontmatterCandidates={frontmatterCandidates}
-          isAIWorkspaceLoading={isAIWorkspaceLoading}
-          isAIWorkspaceSending={isAIWorkspaceSending}
-          isLoadingBacklinks={isLoadingBacklinks}
-          isRightPanelOpen={isEffectiveRightPanelOpen}
-          isRightPanelResizing={isRightPanelResizing}
-          isSecondarySidebarResizing={isSecondarySidebarResizing}
-          isSecondarySidebarOpen={isSecondarySidebarOpen}
-          isSourceMode={isSourceMode}
-          isSplit={isSplit}
-          isSplitClosing={isSplitClosing}
-          isTypewriterMode={isTypewriterMode}
-          leftEditorViewRef={leftEditorViewRef}
-          leftPaneScrollHeading={leftPaneScrollHeading}
-          onCreateFile={handleCreateNoteFromPane}
-          onAIWorkspaceApplyOperations={aiWorkspaceEditorActions.onAIWorkspaceApplyOperations}
-          onAIWorkspaceCancelMessagePreview={aiWorkspaceEditorActions.onAIWorkspaceCancelMessagePreview}
-          onAIWorkspaceCancelSending={aiWorkspaceEditorActions.onAIWorkspaceCancelSending}
-          onAIWorkspaceClearData={aiWorkspaceEditorActions.onAIWorkspaceClearData}
-          onAIWorkspaceConfirmMessagePreview={aiWorkspaceEditorActions.onAIWorkspaceConfirmMessagePreview}
-          onAIWorkspaceDiscardOperations={aiWorkspaceEditorActions.onAIWorkspaceDiscardOperations}
-          onAIWorkspaceRebuildIndex={aiWorkspaceEditorActions.onAIWorkspaceRebuildIndex}
-          onAIWorkspaceSendMessage={aiWorkspaceEditorActions.onAIWorkspaceSendMessage}
-          onEditorAction={appInlineHandlers.onEditorAction}
-          onFileSaveError={setWorkspaceError}
-          onFileSaved={handleFileSaved}
-          onOpenFile={handleOpenFile}
-          onOpenLink={handleOpenMarkdownLink}
-          onOpenWikiLink={handleOpenWikiLink}
-          onOutlineHeadingClick={appInlineHandlers.onOutlineHeadingClick}
-          onRenameFile={(path, name) => handleRenameTreeItem(path, "file", name)}
-          onRightPanelResizeStart={startRightPanelResize}
-          onSecondarySidebarClose={closeSecondarySidebar}
-          onSecondarySidebarResizeStart={startSecondarySidebarResize}
-          onScrollTargetHandled={appInlineHandlers.onScrollTargetHandled}
-          onSetFocusedPane={setFocusedPane}
-          outlineHeadings={outlineHeadings}
-          outgoingLinks={outgoingLinks}
-          outgoingLinksLimited={outgoingLinksLimited}
-          renderChartTab={renderChartTab}
-          renderPanelTab={renderPanelTab}
-          rightEditorViewRef={rightEditorViewRef}
-          rightPaneScrollHeading={rightPaneScrollHeading}
-          rightPanelView={rightPanelView}
-          rightPanelWidth={rightPanelWidth}
-          secondarySidebarView={secondarySidebarView}
-          secondarySidebarWidth={secondarySidebarWidth}
-          setLinkContextMenu={setLinkContextMenu}
-          userDefinedFields={userDefinedFields}
-          workspaceName={workspaceState?.activeWorkspace?.name}
-          workspacePath={workspaceState?.activeWorkspace?.path}
-        />
-      </div>
-
-      <AppStatusBar
-        activeFileTab={activeFileTabInFocusedPane}
-        saveStatus={activeFileTabInFocusedPane ? saveStatusByTabId[activeFileTabInFocusedPane.id] : undefined}
-      />
-
-      <AppOverlays
-        aliasesByPath={aliasesByPath}
-        closeToast={closeToast}
-        commands={commands}
-        existingMarkdownPaths={existingMarkdownPaths}
-        handleOpenFile={handleOpenFile}
-        handleOpenWikiLink={handleOpenWikiLink}
-        handleRevealWorkspaceItem={handleRevealWorkspaceItem}
-        isSplit={isSplit}
-        isToastClosing={isToastClosing}
-        linkContextMenu={linkContextMenu}
-        openWorkspacePathInOtherPane={openWorkspacePathInOtherPane}
-        railTabFlight={railTabFlight}
-        setLinkContextMenu={setLinkContextMenu}
-        setShowCommandPalette={setShowCommandPalette}
-        setShowQuickSwitcher={setShowQuickSwitcher}
-        showCommandPalette={showCommandPalette}
-        showQuickSwitcher={showQuickSwitcher}
-        sidebarCreateFlight={sidebarCreateFlight}
-        toastMessage={toastMessage}
-      />
-    </div>
-    </I18nProvider>
-  );
+  return <AppLayout {...appLayoutProps} />;
 }
