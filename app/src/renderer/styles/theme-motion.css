@@ -5,19 +5,19 @@
 [data-theme="dark"] {
   --bg: #131313;
   --app-bg:
-    radial-gradient(circle at 18% 0%, rgba(23, 155, 208, 0.105), transparent 30%),
-    linear-gradient(135deg, #101214 0%, #151719 48%, #0f1113 100%);
+    radial-gradient(circle at 18% 0%, rgba(23, 155, 208, 0.13), transparent 30%),
+    linear-gradient(135deg, #0d1117 0%, #141a22 48%, #0c1016 100%);
   --surface: #151515;
   --surface-raised: rgba(24, 24, 24, 0.98);
   --surface-subtle: #1a1b1d;
-  --rail-bg: rgba(18, 20, 22, 0.78);
-  --sidebar-bg: rgba(24, 26, 29, 0.86);
+  --rail-bg: rgba(20, 24, 30, 0.9);
+  --sidebar-bg: rgba(24, 29, 36, 0.93);
   --popup-bg: rgba(37, 37, 37, 0.98);
   --text: #e6e6e6;
   --text-2: #9e9e9e;
   --text-3: #6b6b6b;
-  --border: rgba(255, 255, 255, 0.1);
-  --border-soft: rgba(255, 255, 255, 0.13);
+  --border: rgba(255, 255, 255, 0.13);
+  --border-soft: rgba(255, 255, 255, 0.17);
   --border-medium: rgba(255, 255, 255, 0.2);
   --btn-bg: rgba(255, 255, 255, 0.08);
   --hover: rgba(255, 255, 255, 0.05);
@@ -27,14 +27,14 @@
   --shadow: rgba(0, 0, 0, 0.42);
   --shadow-soft: rgba(0, 0, 0, 0.28);
   --workspace-shadow: 0 14px 36px rgba(0, 0, 0, 0.32);
-  --floating-panel-shadow: 0 20px 52px rgba(0, 0, 0, 0.38), 0 1px 2px rgba(0, 0, 0, 0.24);
+  --floating-panel-shadow: 0 24px 58px rgba(0, 0, 0, 0.46), 0 2px 6px rgba(0, 0, 0, 0.28);
   --chrome-shadow: 0 1px 0 rgba(255, 255, 255, 0.055) inset, 0 1px 16px rgba(0, 0, 0, 0.34);
   --accent: #179bd0;
   --accent-hover: #2aa7d8;
   --accent-soft: rgba(23, 155, 208, 0.16);
   --accent-softer: rgba(23, 155, 208, 0.09);
   --accent-ring: rgba(23, 155, 208, 0.3);
-  --title-bar-bg: rgba(18, 20, 22, 0.72);
+  --title-bar-bg: rgba(17, 22, 29, 0.82);
   --link: #179bd0;
   --attention: #ff5722;
   --attention-hover: #e64d1f;
@@ -91,19 +91,19 @@
     color-scheme: dark;
     --bg: #131313;
     --app-bg:
-      radial-gradient(circle at 18% 0%, rgba(23, 155, 208, 0.105), transparent 30%),
-      linear-gradient(135deg, #101214 0%, #151719 48%, #0f1113 100%);
+      radial-gradient(circle at 18% 0%, rgba(23, 155, 208, 0.13), transparent 30%),
+      linear-gradient(135deg, #0d1117 0%, #141a22 48%, #0c1016 100%);
     --surface: #151515;
     --surface-raised: rgba(24, 24, 24, 0.98);
     --surface-subtle: #1a1b1d;
-    --rail-bg: rgba(18, 20, 22, 0.78);
-    --sidebar-bg: rgba(24, 26, 29, 0.86);
+    --rail-bg: rgba(20, 24, 30, 0.9);
+    --sidebar-bg: rgba(24, 29, 36, 0.93);
     --popup-bg: rgba(37, 37, 37, 0.98);
     --text: #e6e6e6;
     --text-2: #9e9e9e;
     --text-3: #6b6b6b;
-    --border: rgba(255, 255, 255, 0.1);
-    --border-soft: rgba(255, 255, 255, 0.13);
+    --border: rgba(255, 255, 255, 0.13);
+    --border-soft: rgba(255, 255, 255, 0.17);
     --border-medium: rgba(255, 255, 255, 0.2);
     --btn-bg: rgba(255, 255, 255, 0.08);
     --hover: rgba(255, 255, 255, 0.05);
@@ -113,14 +113,14 @@
     --shadow: rgba(0, 0, 0, 0.42);
     --shadow-soft: rgba(0, 0, 0, 0.28);
     --workspace-shadow: 0 14px 36px rgba(0, 0, 0, 0.32);
-    --floating-panel-shadow: 0 20px 52px rgba(0, 0, 0, 0.38), 0 1px 2px rgba(0, 0, 0, 0.24);
+    --floating-panel-shadow: 0 24px 58px rgba(0, 0, 0, 0.46), 0 2px 6px rgba(0, 0, 0, 0.28);
     --chrome-shadow: 0 1px 0 rgba(255, 255, 255, 0.055) inset, 0 1px 16px rgba(0, 0, 0, 0.34);
     --accent: #179bd0;
     --accent-hover: #2aa7d8;
     --accent-soft: rgba(23, 155, 208, 0.16);
     --accent-softer: rgba(23, 155, 208, 0.09);
     --accent-ring: rgba(23, 155, 208, 0.3);
-    --title-bar-bg: rgba(18, 20, 22, 0.72);
+    --title-bar-bg: rgba(17, 22, 29, 0.82);
     --link: #179bd0;
     --attention: #ff5722;
     --attention-hover: #e64d1f;
