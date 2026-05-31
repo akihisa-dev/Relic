@@ -1141,9 +1141,7 @@ describe("App", () => {
     expect(useUiStore.getState().isSecondarySidebarOpen).toBe(true);
     fireEvent.click(screen.getByRole("button", { name: "新規チャット" }));
     expect(createAIWorkspaceChat).toHaveBeenCalledWith({});
-    act(() => {
-      useUiStore.getState().closeSidebar();
-    });
+    fireEvent.click(screen.getByRole("button", { name: "AI Workspaceサイドバーを閉じる" }));
     expect(useUiStore.getState().isSidebarOpen).toBe(false);
     expect(useUiStore.getState().isSecondarySidebarOpen).toBe(true);
     expect(screen.getByLabelText("AIへのメッセージ")).toBeInTheDocument();
