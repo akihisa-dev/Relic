@@ -23,6 +23,8 @@ interface AppRailProps {
   onRenameActiveChange: (isActive: boolean) => void;
   onRenameComplete: () => void;
   onRenameWorkspace: (id: string, currentName: string) => Promise<boolean>;
+  onRevealWorkspace: (workspaceId: string) => void;
+  revealWorkspaceLabel: string;
   onSetSidebarView: (view: SidebarView) => void;
   onSwitchWorkspace: (id: string) => void;
   openPanelTabIds: Set<PanelTabKind>;
@@ -52,6 +54,8 @@ export function AppRail({
   onRenameActiveChange,
   onRenameComplete,
   onRenameWorkspace,
+  onRevealWorkspace,
+  revealWorkspaceLabel,
   onSetSidebarView,
   onSwitchWorkspace,
   openChartIds,
@@ -127,6 +131,8 @@ export function AppRail({
             onRenameComplete={onRenameComplete}
             onRemoveWorkspace={onRemoveWorkspace}
             onRenameWorkspace={onRenameWorkspace}
+            onRevealWorkspace={onRevealWorkspace}
+            revealWorkspaceLabel={revealWorkspaceLabel}
             onSwitchWorkspace={onSwitchWorkspace}
             renameLabel={renameLabel}
             removeLabel={removeWorkspaceLabel}

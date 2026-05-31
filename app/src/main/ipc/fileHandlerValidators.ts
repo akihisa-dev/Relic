@@ -14,6 +14,7 @@ import type {
   WriteMarkdownFileInput
 } from "../../shared/ipc";
 import { isWorkspaceRelativeInputPath, isWorkspaceRelativeInputPathOrRoot } from "../files/paths";
+import { isWorkspaceIdInput } from "./workspaceHandlerValidators";
 
 export function isCreateMarkdownFileInput(input: unknown): input is CreateMarkdownFileInput {
   return isNameInput(input);
@@ -56,6 +57,23 @@ export function isPathInput(input: unknown): input is { path: string } {
     input !== null &&
     "path" in input &&
     isWorkspaceRelativeInputPath((input as { path?: unknown }).path)
+  );
+}
+
+export function isPathOrRootInput(input: unknown): input is { path: string } {
+  return (
+    typeof input === "object" &&
+    input !== null &&
+    "path" in input &&
+    isWorkspaceRelativeInputPathOrRoot((input as { path?: unknown }).path)
+  );
+}
+
+export function isRevealWorkspaceItemInput(input: unknown): input is { path: string; workspaceId?: string } {
+  const workspaceId = (input as { workspaceId?: unknown })?.workspaceId;
+  return (
+    isPathOrRootInput(input) &&
+    (workspaceId === undefined || isWorkspaceIdInput({ workspaceId }))
   );
 }
 

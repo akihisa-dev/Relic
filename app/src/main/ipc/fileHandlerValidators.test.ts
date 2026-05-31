@@ -7,6 +7,7 @@ import {
   isMoveItemToTrashInput,
   isMoveMarkdownFileInput,
   isPathInput,
+  isRevealWorkspaceItemInput,
   isRenameFolderInput,
   isRenameMarkdownFileInput,
   isReplaceInFileInput,
@@ -42,6 +43,16 @@ describe("fileHandlerValidators", () => {
     expect(isPathInput({ path: "/tmp/outside.md" })).toBe(false);
     expect(isPathInput({ path: "Notes\\Idea.md" })).toBe(false);
     expect(isPathInput({ path: " Notes/Idea.md " })).toBe(false);
+  });
+
+  it("validates reveal workspace item input with workspace id and root path", () => {
+    expect(isRevealWorkspaceItemInput({ path: "", workspaceId: "ws-1" })).toBe(true);
+    expect(isRevealWorkspaceItemInput({ path: "", workspaceId: "ws_1" })).toBe(true);
+    expect(isRevealWorkspaceItemInput({ path: "Archive/Note.md" })).toBe(true);
+    expect(isRevealWorkspaceItemInput({ path: "", workspaceId: "space space" })).toBe(false);
+    expect(isRevealWorkspaceItemInput({ path: "../outside.md", workspaceId: "ws-1" })).toBe(false);
+    expect(isRevealWorkspaceItemInput({ path: "Archive/Note.md", workspaceId: "../outside" })).toBe(false);
+    expect(isRevealWorkspaceItemInput({ workspaceId: "ws-1" })).toBe(false);
   });
 
   it("validates workspace search input modes and optional frontmatter field", () => {

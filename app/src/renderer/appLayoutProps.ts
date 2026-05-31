@@ -76,6 +76,7 @@ interface AppLayoutPropsInput {
   handleRemoveWorkspace: RailProps["onRemoveWorkspace"];
   handleRenameTreeItem: FilesSidebarProps["onRenameItem"];
   handleRenameWorkspace: RailProps["onRenameWorkspace"];
+  handleRevealWorkspace: RailProps["onRevealWorkspace"];
   handleRevealTabFile: TitleBarProps["onRevealTabFile"];
   handleRevealWorkspaceItem: OverlaysProps["handleRevealWorkspaceItem"];
   handleRightPanelViewButton: TitleBarProps["onRightPanelViewButton"];
@@ -232,6 +233,7 @@ export function createAppLayoutProps({
   handleRemoveWorkspace,
   handleRenameTreeItem,
   handleRenameWorkspace,
+  handleRevealWorkspace,
   handleRevealTabFile,
   handleRevealWorkspaceItem,
   handleRightPanelViewButton,
@@ -480,9 +482,11 @@ export function createAppLayoutProps({
       onCloseSidebar: closeSidebar,
       onPanelButton: handleRailPanelButton,
       onRemoveWorkspace: handleRemoveWorkspace,
+      onRevealWorkspace: handleRevealWorkspace,
       onRenameActiveChange: setIsWorkspaceRenameActive,
       onRenameComplete: holdWorkspaceRailAfterRename,
       onRenameWorkspace: handleRenameWorkspace,
+      revealWorkspaceLabel: t("files.revealInFinder"),
       onSetSidebarView: setRailSidebarView,
       onSwitchWorkspace: handleSwitchWorkspace,
       openChartIds,
