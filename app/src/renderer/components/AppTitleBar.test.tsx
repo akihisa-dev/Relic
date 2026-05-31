@@ -154,6 +154,9 @@ describe("AppTitleBar", () => {
     });
 
     fireEvent.contextMenu(tabElement("Note"), { clientX: 50, clientY: 60 });
+    const contextMenu = screen.getByRole("button", { name: "Pin" }).closest(".tab-context-menu");
+    expect(contextMenu?.parentElement).toBe(document.body);
+    expect(contextMenu).toHaveStyle({ zIndex: "10000" });
     fireEvent.click(screen.getByRole("button", { name: "Pin" }));
     expect(props.onTogglePinTab).toHaveBeenCalledWith(fileTab.id);
 
