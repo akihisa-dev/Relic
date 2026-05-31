@@ -1,4 +1,5 @@
 import type { ReactElement } from "react";
+import { createPortal } from "react-dom";
 
 import { markdownLinkForPaneTabPath } from "../paneViewModel";
 import type { Tab } from "../store/editorStore";
@@ -42,11 +43,11 @@ export function PaneTabContextMenu({
 
   const contextTabIsFile = contextTab?.kind === "file";
 
-  return (
+  return createPortal(
     <div
       className="tab-context-menu"
       onClick={(e) => e.stopPropagation()}
-      style={{ left: contextMenu.x, position: "fixed", top: contextMenu.y, zIndex: 40 }}
+      style={{ left: contextMenu.x, position: "fixed", top: contextMenu.y, zIndex: 10000 }}
     >
       {contextTab ? (
         <>
@@ -164,7 +165,8 @@ export function PaneTabContextMenu({
       >
         {t("pane.closeAllTabs")}
       </button>
-    </div>
+    </div>,
+    document.body
   );
 }
 
