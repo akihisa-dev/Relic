@@ -1,5 +1,6 @@
 import DOMPurify from "dompurify";
 
+// Markdown preview keeps normal http links as text navigation targets, but window-level opening is separately restricted to an https allowlist.
 const allowedPreviewUriPattern = /^(?:(?:https?|mailto):|#|\/|\.{0,2}\/|(?![a-z][a-z0-9+.-]*:)[^\s]*)/i;
 
 const forbiddenEventAttributes = [

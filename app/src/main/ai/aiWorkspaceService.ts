@@ -882,7 +882,7 @@ async function applyPreparedOperations(
 
 function validateOperationPath(workspacePath: string, operationPath: string): RelicResult<string> {
   const normalizedPath = operationPath.replace(/\\/g, "/").trim();
-  if (!normalizedPath || path.extname(normalizedPath) !== ".md") {
+  if (!normalizedPath || normalizedPath.includes("\0") || path.extname(normalizedPath) !== ".md") {
     return fail("AI_WORKSPACE_OPERATION_PATH_INVALID", "AI変更案はMarkdownファイルだけを対象にできます。");
   }
 
