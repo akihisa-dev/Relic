@@ -120,6 +120,7 @@
   "links.outgoingLimited": "Only some links are shown because there are many links.",
   "links.updateImpactConfirm": "Update {{links}} link(s) in {{files}} Markdown file(s)?",
   "nav.files": "Files",
+  "nav.ai": "AI Workspace",
   "nav.chronicle": "Timeline",
   "nav.calendar": "Calendar",
   "nav.chronicleSettings": "Calendar Settings",

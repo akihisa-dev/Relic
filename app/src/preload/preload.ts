@@ -4,6 +4,7 @@ import {
   applySearchAndReplaceChannel,
   applyAIWorkspaceOperationsChannel,
   clearAIWorkspaceDataChannel,
+  createAIWorkspaceChatChannel,
   deleteOpenAIAPIKeyChannel,
   discardAIWorkspaceOperationsChannel,
   createNewWorkspaceChannel,
@@ -49,6 +50,7 @@ import {
   updateChartEntryChannel,
   saveEditorSettingsChannel,
   saveOpenAIAPIKeyChannel,
+  selectAIWorkspaceChatChannel,
   generateTitleListChannel,
   type GenerateTitleListInput,
   generateTableOfContentsChannel,
@@ -93,6 +95,7 @@ import {
   type EditorSettings,
   type Backlink,
   type ClearAIWorkspaceDataInput,
+  type CreateAIWorkspaceChatInput,
   type DiscardAIWorkspaceOperationsInput,
   type ChronicleCalendarSettings,
   type GetBacklinksInput,
@@ -112,6 +115,7 @@ import {
   type SaveAIModelInput,
   type SaveAIProviderInput,
   type SaveOpenAIAPIKeyInput,
+  type SelectAIWorkspaceChatInput,
   type RemoveWorkspaceInput,
   type RenameWorkspaceInput,
   type RenameFolderInput,
@@ -163,6 +167,10 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(getBacklinksChannel, input) as Promise<RelicResult<Backlink[]>>,
   getAIWorkspaceState: () =>
     ipcRenderer.invoke(getAIWorkspaceStateChannel) as Promise<RelicResult<AIWorkspaceState>>,
+  createAIWorkspaceChat: (input: CreateAIWorkspaceChatInput) =>
+    ipcRenderer.invoke(createAIWorkspaceChatChannel, input) as Promise<RelicResult<AIWorkspaceState>>,
+  selectAIWorkspaceChat: (input: SelectAIWorkspaceChatInput) =>
+    ipcRenderer.invoke(selectAIWorkspaceChatChannel, input) as Promise<RelicResult<AIWorkspaceState>>,
   getAISettings: () =>
     ipcRenderer.invoke(getAISettingsChannel) as Promise<RelicResult<AISettingsState>>,
   saveAIProvider: (input: SaveAIProviderInput) =>

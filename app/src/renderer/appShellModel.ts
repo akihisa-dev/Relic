@@ -135,10 +135,11 @@ export function splitRailViews<TView extends Pick<AppRailView, "id">>(
     chartRailViews: views.filter((view) => chartIdForRailView(view.id) !== null),
     panelRailViews: views.filter((view) =>
       view.id !== "files" &&
+      view.id !== "ai" &&
       chartIdForRailView(view.id) === null
     ),
     primaryRailViews: views.filter((view) =>
-      view.id === "files"
+      view.id === "files" || view.id === "ai"
     )
   };
 }

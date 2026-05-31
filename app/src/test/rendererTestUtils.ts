@@ -69,6 +69,16 @@ export function makeRelicApi(overrides: Partial<typeof window.relic> = {}): type
       }
     }),
     copyDiagramSvg: vi.fn().mockResolvedValue({ ok: true, value: { status: "copied" } }),
+    createAIWorkspaceChat: vi.fn().mockResolvedValue({
+      ok: true,
+      value: {
+        openAIAPIKeyConfigured: false,
+        history: [],
+        index: { chunkCount: 0, indexedAt: null, indexedFileCount: 0, skippedLargeFiles: [], unreadableFiles: [] },
+        operationHistory: [],
+        pendingOperations: []
+      }
+    }),
     createFolder: vi.fn(),
     createLinkedMarkdownFile: vi.fn(),
     createMarkdownFile: vi.fn(),
@@ -190,6 +200,16 @@ export function makeRelicApi(overrides: Partial<typeof window.relic> = {}): type
     saveWorkspaceCharts: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     searchAndReplace: vi.fn(),
     searchWorkspace: vi.fn().mockResolvedValue({ ok: true, value: { results: [], skippedLargeFiles: 0, truncated: false } }),
+    selectAIWorkspaceChat: vi.fn().mockResolvedValue({
+      ok: true,
+      value: {
+        openAIAPIKeyConfigured: false,
+        history: [],
+        index: { chunkCount: 0, indexedAt: null, indexedFileCount: 0, skippedLargeFiles: [], unreadableFiles: [] },
+        operationHistory: [],
+        pendingOperations: []
+      }
+    }),
     sendAIWorkspaceMessage: vi.fn().mockResolvedValue({
       ok: true,
       value: {

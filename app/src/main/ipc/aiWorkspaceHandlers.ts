@@ -4,6 +4,8 @@ import {
   applyAIWorkspaceOperationsChannel,
   type ApplyAIWorkspaceOperationsInput,
   clearAIWorkspaceDataChannel,
+  createAIWorkspaceChatChannel,
+  type CreateAIWorkspaceChatInput,
   type ClearAIWorkspaceDataInput,
   deleteOpenAIAPIKeyChannel,
   discardAIWorkspaceOperationsChannel,
@@ -16,6 +18,8 @@ import {
   type SaveAIModelInput,
   saveOpenAIAPIKeyChannel,
   type SaveOpenAIAPIKeyInput,
+  selectAIWorkspaceChatChannel,
+  type SelectAIWorkspaceChatInput,
   previewAIWorkspaceMessageChannel,
   type PreviewAIWorkspaceMessageInput,
   rebuildAIWorkspaceIndexChannel,
@@ -41,10 +45,12 @@ import { readAppSettings, writeAppSettings } from "../settings/appSettings";
 import {
   applyAIWorkspaceOperations,
   clearAIWorkspaceState,
+  createAIWorkspaceChat,
   discardAIWorkspaceOperations,
   getAIWorkspaceState,
   previewAIWorkspaceMessage,
   rebuildAIWorkspaceIndex,
+  selectAIWorkspaceChat,
   sendAIWorkspaceMessage
 } from "../ai/aiWorkspaceService";
 import { getActiveWorkspaceContext, ipcErrorDetails } from "./activeWorkspace";
@@ -158,6 +164,32 @@ export function registerAIWorkspaceHandlers(): void {
       return rebuildAIWorkspaceIndex(context.value);
     } catch (error) {
       return fail("AI_WORKSPACE_INDEX_FAILED", "AI Workspaceのインデックスを作成できませんでした。", ipcErrorDetails(error));
+    }
+  });
+
+  ipcMain.handle(createAIWorkspaceChatChannel, async (_event, input: CreateAIWorkspaceChatInput) => {
+    try {
+      const context = await getAIWorkspaceContext();
+      if (!context.ok) return context;
+
+      return createAIWorkspaceChat(context.value, input ?? {});
+    } catch (error) {
+      return fail("AI_WORKSPACE_CHAT_CREATE_FAILED", "AIチャットを作成できませんでした。", ipcErrorDetails(error));
+    }
+  });
+
+  ipcMain.handle(selectAIWorkspaceChatChannel, async (_event, input: SelectAIWorkspaceChatInput) => {
+    try {
+      if (!isSelectAIWorkspaceChatInput(input)) {
+        return fail("AI_WORKSPACE_CHAT_INVALID", "切り替えるAIチャットを選んでください。");
+      }
+
+      const context = await getAIWorkspaceContext();
+      if (!context.ok) return context;
+
+      return selectAIWorkspaceChat(context.value, input);
+    } catch (error) {
+      return fail("AI_WORKSPACE_CHAT_SELECT_FAILED", "AIチャットを切り替えられませんでした。", ipcErrorDetails(error));
     }
   });
 
@@ -282,6 +314,13 @@ function isPreviewAIWorkspaceMessageInput(value: unknown): value is PreviewAIWor
   const record = value as { message?: unknown };
 
   return typeof record.message === "string" && record.message.trim().length > 0;
+}
+
+function isSelectAIWorkspaceChatInput(value: unknown): value is SelectAIWorkspaceChatInput {
+  if (!value || typeof value !== "object") return false;
+  const record = value as { chatId?: unknown };
+
+  return typeof record.chatId === "string" && record.chatId.trim().length > 0;
 }
 
 function isSaveAIModelInput(value: unknown): value is SaveAIModelInput {

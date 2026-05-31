@@ -24,7 +24,7 @@ import {
   previewAIWorkspaceMessage,
   sendAIWorkspaceMessage
 } from "./aiWorkspaceService";
-import { writeAIWorkspaceData, type AIWorkspaceData } from "./aiWorkspaceData";
+import { writeAIWorkspaceData, type AIWorkspaceChatData, type AIWorkspaceData } from "./aiWorkspaceData";
 import { computeAIWorkspaceIndexSourceHash } from "./aiWorkspaceIndex";
 import { runCodexAIWorkspaceTurn } from "./codexAppServerClient";
 import { readOpenAIAPIKey } from "./openAIKeyStore";
@@ -642,18 +642,32 @@ function context() {
   };
 }
 
-async function writeData(partial: Partial<AIWorkspaceData>): Promise<void> {
+type AIWorkspaceDataTestPartial = Partial<AIWorkspaceData> & Pick<Partial<AIWorkspaceChatData>, "history" | "operations">;
+
+async function writeData(partial: AIWorkspaceDataTestPartial): Promise<void> {
+  const now = "2026-05-30T00:00:00.000Z";
+  const history = partial.history ?? [];
+  const operations = partial.operations ?? [];
+  const { activeChatId, index } = partial;
+  const chats = partial.chats ?? [{
+    createdAt: now,
+    history,
+    id: "chat-1",
+    operations,
+    title: "テストチャット",
+    updatedAt: now
+  }];
+
   await writeAIWorkspaceData(userDataPath, "workspace", {
-    history: [],
-    index: {
+    activeChatId: activeChatId ?? chats[0]?.id ?? null,
+    chats,
+    index: index ?? {
       chunks: [],
       indexedAt: null,
       skippedLargeFiles: [],
       sourceHash: null,
       unreadableFiles: []
-    },
-    operations: [],
-    ...partial
+    }
   });
 }
 
