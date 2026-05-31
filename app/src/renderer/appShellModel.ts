@@ -46,6 +46,7 @@ export function panelLabelsForTranslator(t: Translator): Record<PanelTabKind, st
   return {
     chronicleSettings: t("nav.chronicleSettings"),
     frontmatter: t("nav.frontmatter"),
+    hakobiBridge: t("nav.hakobiBridge"),
     settings: t("nav.settings"),
     tools: t("nav.tools")
   };

@@ -12,6 +12,10 @@
   max-width: 1040px;
 }
 
+.hakobi-bridge-page {
+  max-width: 1040px;
+}
+
 .settings-page-header {
   display: grid;
   gap: 4px;
@@ -111,6 +115,63 @@
   color: var(--text-2);
   font-size: 12px;
   justify-self: end;
+}
+
+.hakobi-bridge-status {
+  align-items: center;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.hakobi-bridge-status p,
+.hakobi-bridge-note {
+  color: var(--text-2);
+  font-size: 13px;
+  line-height: 1.55;
+  margin: 4px 0 0;
+}
+
+.hakobi-bridge-pill {
+  align-items: center;
+  background: var(--border-soft);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-2);
+  display: inline-flex;
+  font-size: 12px;
+  font-weight: 650;
+  min-height: 26px;
+  padding: 0 10px;
+}
+
+.hakobi-bridge-pill--ready {
+  background: color-mix(in srgb, var(--success) 14%, transparent);
+  border-color: color-mix(in srgb, var(--success) 36%, var(--border));
+  color: var(--success);
+}
+
+.hakobi-bridge-workbench {
+  gap: 10px;
+}
+
+.hakobi-bridge-textarea {
+  background: var(--input-bg);
+  border: 1px solid var(--border-soft);
+  border-radius: 7px;
+  color: var(--text);
+  min-height: 116px;
+  min-width: 0;
+  padding: 9px;
+  resize: vertical;
+  width: 100%;
+}
+
+.hakobi-bridge-textarea--response {
+  min-height: 148px;
+}
+
+.hakobi-bridge-textarea:focus {
+  border-color: var(--accent);
+  outline: none;
 }
 
 .settings-actions-row {
