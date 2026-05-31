@@ -1205,24 +1205,6 @@ describe("App", () => {
     expect(screen.getByLabelText("AIへのメッセージ")).toBeInTheDocument();
   });
 
-  it("左レールのHakobi Bridgeで専用サイドバーを表示する", async () => {
-    window.relic = makeRelicApi({
-      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
-    });
-
-    await renderApp();
-
-    fireEvent.click(await screen.findByRole("button", { name: "Hakobi Bridge" }));
-
-    expect(useUiStore.getState().activeSidebarView).toBe("hakobiBridge");
-    expect(useUiStore.getState().isSidebarOpen).toBe(true);
-    expect(useUiStore.getState().isSecondarySidebarOpen).toBe(false);
-    expect(screen.getByText("接続状態")).toBeInTheDocument();
-    expect(screen.getByText("Hakobi Bridge設定")).toBeInTheDocument();
-    expect(screen.getByLabelText("許可ドメイン")).toHaveValue("app.ai-constcierge.com");
-    expect(screen.getByRole("button", { name: "Hakobi Bridgeサイドバーを閉じる" })).toBeInTheDocument();
-  });
-
   it("左サイドバーのAIチャット履歴から確認後にチャットを削除できる", async () => {
     const aiState = {
       activeChatId: "chat-1",

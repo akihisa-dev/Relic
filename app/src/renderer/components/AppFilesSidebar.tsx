@@ -5,7 +5,6 @@ import type { SidebarView } from "../store/uiStore";
 import type { AIWorkspaceState } from "../../shared/ipc";
 import { AIChatsSidebar } from "./AIChatsSidebar";
 import { FilesSidebar, type FilesSidebarProps } from "./FilesSidebar";
-import { HakobiBridgeSidebar } from "./HakobiBridgeSidebar";
 
 interface AppFilesSidebarProps extends Omit<FilesSidebarProps, "onSelectedCountChange"> {
   activeSidebarView: SidebarView;
@@ -56,9 +55,9 @@ export function AppFilesSidebar({
         <div className="sidebar-header">
           <div className="pane-heading sidebar-pane-heading">
             <span>{heading}</span>
-            {activeSidebarView === "ai" || activeSidebarView === "hakobiBridge" ? (
+            {activeSidebarView === "ai" ? (
               <button
-                aria-label={activeSidebarView === "ai" ? "Coworkサイドバーを閉じる" : "Hakobi Bridgeサイドバーを閉じる"}
+                aria-label="Coworkサイドバーを閉じる"
                 className="sidebar-close-button"
                 onClick={onCloseSidebar}
                 title="閉じる"
@@ -84,8 +83,6 @@ export function AppFilesSidebar({
             onSelectChat={onSelectAIChat}
             state={aiWorkspaceState}
           />
-        ) : activeSidebarView === "hakobiBridge" ? (
-          <HakobiBridgeSidebar workspacePath={filesSidebarProps.workspaceState?.activeWorkspace?.path ?? null} />
         ) : null}
       </div>
       <button
