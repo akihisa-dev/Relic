@@ -652,6 +652,17 @@
   padding: 0 6px;
 }
 
+.ai-workspace-message--pending {
+  align-items: center;
+  min-height: 28px;
+}
+
+.ai-workspace-pending-spinner {
+  display: block;
+  height: 24px;
+  width: 24px;
+}
+
 .ai-workspace-message-role {
   color: var(--text-3);
   font-size: 11px;
