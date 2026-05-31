@@ -48,6 +48,8 @@ import "./styles.css";
 
 const RAIL_WIDTH = 48;
 const TITLE_BAR_TRAFFIC_LIGHT_SPACE = 88;
+const FLOATING_PANEL_GAP = 10;
+const WORKSPACE_HORIZONTAL_PADDING = 12;
 
 export function App(): ReactElement {
   const [workspaceState, setWorkspaceState] = useState<WorkspaceState | null>(null);
@@ -729,7 +731,10 @@ export function App(): ReactElement {
   const titleBarLeftOffsetWidth = titleBarLeftOffset(
     TITLE_BAR_TRAFFIC_LIGHT_SPACE,
     RAIL_WIDTH,
-    sidebarWidth
+    sidebarWidth,
+    WORKSPACE_HORIZONTAL_PADDING,
+    FLOATING_PANEL_GAP,
+    isSecondarySidebarOpen ? secondarySidebarWidth : 0
   );
 
   // ──────────────────

@@ -96,6 +96,8 @@ describe("appShellModel", () => {
   it("keeps title bar tabs aligned to the reserved sidebar edge", () => {
     expect(titleBarLeftOffset(88, 48, 260)).toBe(308);
     expect(titleBarLeftOffset(88, 48, 20)).toBe(88);
+    expect(titleBarLeftOffset(88, 48, 260, 12, 10)).toBe(340);
+    expect(titleBarLeftOffset(88, 48, 260, 12, 10, 400)).toBe(750);
   });
 
   it("filters and splits rail views without changing order", () => {
