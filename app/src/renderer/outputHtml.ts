@@ -2,7 +2,7 @@ import { diagramLanguageFor } from "./diagramLanguage";
 import { renderDiagramElement } from "./diagramPreview";
 import { decodeDiagramSourceAttribute } from "./diagramSourceAttribute";
 import { getRenderedDiagramSvgText } from "./diagramSvg";
-import { sanitizePreviewHtml } from "./htmlSanitizer";
+import { sanitizePreviewHtml, sanitizeSvgHtml } from "./htmlSanitizer";
 import type { Translator } from "./i18nModel";
 import { escapeHtml, renderMarkdown } from "./previewMarkdown";
 
@@ -104,7 +104,7 @@ function normalizeOutputDiagramDom(root: ParentNode): void {
 
     const outputDiagram = document.createElement("div");
     outputDiagram.className = "relic-output-diagram";
-    outputDiagram.innerHTML = sanitizePreviewHtml(svg);
+    outputDiagram.innerHTML = sanitizeSvgHtml(svg);
     diagram.replaceChildren(outputDiagram);
     diagram.removeAttribute("data-diagram-source");
   });

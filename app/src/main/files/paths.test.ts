@@ -19,6 +19,7 @@ describe("workspace relative input paths", () => {
     expect(normalizeWorkspaceRelativeInputPath("../outside.md")).toBeNull();
     expect(normalizeWorkspaceRelativeInputPath("/tmp/outside.md")).toBeNull();
     expect(normalizeWorkspaceRelativeInputPath("C:\\Users\\test\\outside.md")).toBeNull();
+    expect(normalizeWorkspaceRelativeInputPath("note.md\0outside")).toBeNull();
     expect(normalizeWorkspaceRelativeInputPath(".")).toBeNull();
   });
 
@@ -29,6 +30,8 @@ describe("workspace relative input paths", () => {
     expect(isWorkspaceRelativeInputPath("section/../notes/idea.md")).toBe(false);
     expect(isWorkspaceRelativeInputPath("../outside.md")).toBe(false);
     expect(isWorkspaceRelativeInputPath("/tmp/outside.md")).toBe(false);
+    expect(isWorkspaceRelativeInputPath("C:\\outside.md")).toBe(false);
+    expect(isWorkspaceRelativeInputPath("note.md\0outside")).toBe(false);
   });
 
   it("ルート指定を許す入力では空文字か正規化済み相対パスだけを許可する", () => {
@@ -53,6 +56,7 @@ describe("resolveWorkspaceRelativePath", () => {
     expect(resolveWorkspaceRelativePath("/tmp/relic-notes", "C:\\Users\\test\\note.md").ok).toBe(false);
     expect(resolveWorkspaceRelativePath("/tmp/relic-notes", "\\\\server\\share\\note.md").ok).toBe(false);
     expect(resolveWorkspaceRelativePath("/tmp/relic-notes", "../other.md").ok).toBe(false);
+    expect(resolveWorkspaceRelativePath("/tmp/relic-notes", "note.md\0outside").ok).toBe(false);
   });
 });
 

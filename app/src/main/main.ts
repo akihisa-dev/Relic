@@ -12,6 +12,7 @@ import { windowCloseRequestedChannel, windowCloseResponseChannel, type WindowClo
 import { devServerLoadUrls, loadDevServerUrlWithRetry } from "./devServerLoader";
 import { stopWorkspaceWatcher } from "./workspace/workspaceWatcher";
 import { createMainWindowOptions } from "./windowOptions";
+import { isAllowedExternalUrl } from "./windowSecurity";
 
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string | undefined;
 declare const MAIN_WINDOW_VITE_NAME: string;
@@ -139,20 +140,6 @@ function isAllowedAppNavigation(url: string): boolean {
   }
 
   return url.startsWith("file://");
-}
-
-function isAllowedExternalUrl(url: string): boolean {
-  try {
-    const parsed = new URL(url);
-
-    return parsed.protocol === "https:" && (
-      parsed.hostname === "github.com" ||
-      parsed.hostname.endsWith(".github.com") ||
-      parsed.hostname === "platform.openai.com"
-    );
-  } catch {
-    return false;
-  }
 }
 
 app.whenReady().then(() => {

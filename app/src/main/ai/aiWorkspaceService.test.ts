@@ -391,7 +391,10 @@ describe("sendAIWorkspaceMessage", () => {
         createOperation("update", "README.md", "# Auth\nUpdated"),
         createOperation("create", "README.md", "# Duplicate"),
         createOperation("create", "../outside.md", "# Outside"),
+        createOperation("create", "/tmp/outside.md", "# Outside"),
+        createOperation("create", "C:\\outside.md", "# Outside"),
         createOperation("create", "notes.txt", "text"),
+        createOperation("create", "null-byte.md\0outside", "# Outside"),
         createOperation("delete", "missing.md")
       ]
     });
@@ -406,6 +409,8 @@ describe("sendAIWorkspaceMessage", () => {
       expect(result.value.history.at(-1)?.content).toContain("Markdownへ反映しました。");
       expect(result.value.history.at(-1)?.content).toContain("安全のため採用しなかった変更があります。");
       expect(result.value.history.at(-1)?.content).toContain("../outside.md");
+      expect(result.value.history.at(-1)?.content).toContain("/tmp/outside.md");
+      expect(result.value.history.at(-1)?.content).toContain("C:\\outside.md");
       expect(result.value.history.at(-1)?.content).toContain("notes.txt");
       expect(result.value.history.at(-1)?.content).toContain("missing.md");
       expect(result.value.history.at(-1)?.content).toContain("同じパスのMarkdownがすでにある");
