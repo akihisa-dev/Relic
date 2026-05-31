@@ -23,11 +23,11 @@ export class ListMarkerWidget extends WidgetType {
     super();
   }
 
-  eq(other: ListMarkerWidget): boolean {
+  override eq(other: ListMarkerWidget): boolean {
     return this.label === other.label && this.className === other.className;
   }
 
-  toDOM(): HTMLElement {
+  override toDOM(): HTMLElement {
     const marker = document.createElement("span");
     marker.className = this.className;
     marker.textContent = this.label;
@@ -45,11 +45,11 @@ export class InlineFormatWidget extends WidgetType {
     super();
   }
 
-  eq(other: InlineFormatWidget): boolean {
+  override eq(other: InlineFormatWidget): boolean {
     return this.tagName === other.tagName && this.text === other.text && this.className === other.className;
   }
 
-  toDOM(): HTMLElement {
+  override toDOM(): HTMLElement {
     const element = document.createElement(this.tagName);
     element.className = this.className;
     element.textContent = this.text;
@@ -85,7 +85,7 @@ export class InlineFormatWidget extends WidgetType {
     return element;
   }
 
-  ignoreEvent(event: Event): boolean {
+  override ignoreEvent(event: Event): boolean {
     return Boolean(this.onClick && ["click", "mousedown", "pointerdown"].includes(event.type));
   }
 }
@@ -98,11 +98,11 @@ export class CheckboxWidget extends WidgetType {
     super();
   }
 
-  eq(other: CheckboxWidget): boolean {
+  override eq(other: CheckboxWidget): boolean {
     return this.checked === other.checked;
   }
 
-  toDOM(): HTMLElement {
+  override toDOM(): HTMLElement {
     const checkbox = document.createElement("input");
     checkbox.className = "cm-live-checkbox";
     checkbox.type = "checkbox";
@@ -117,13 +117,13 @@ export class CheckboxWidget extends WidgetType {
     return checkbox;
   }
 
-  ignoreEvent(event: Event): boolean {
+  override ignoreEvent(event: Event): boolean {
     return ["click", "mousedown", "pointerdown", "change"].includes(event.type);
   }
 }
 
 export class HorizontalRuleWidget extends WidgetType {
-  toDOM(): HTMLElement {
+  override toDOM(): HTMLElement {
     const hr = document.createElement("hr");
     hr.className = "cm-live-hr";
     return hr;
@@ -140,11 +140,11 @@ export class CodeBlockWidget extends WidgetType {
     super();
   }
 
-  eq(other: CodeBlockWidget): boolean {
+  override eq(other: CodeBlockWidget): boolean {
     return this.language === other.language && this.source === other.source;
   }
 
-  toDOM(): HTMLElement {
+  override toDOM(): HTMLElement {
     const panel = document.createElement("div");
     panel.className = this.className;
     panel.contentEditable = "false";
@@ -186,7 +186,7 @@ export class CodeBlockWidget extends WidgetType {
     return panel;
   }
 
-  ignoreEvent(event: Event): boolean {
+  override ignoreEvent(event: Event): boolean {
     return [
       "click",
       "dblclick",

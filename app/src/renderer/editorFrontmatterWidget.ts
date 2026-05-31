@@ -94,7 +94,7 @@ class FrontmatterPropertiesWidget extends WidgetType {
     super();
   }
 
-  eq(other: FrontmatterPropertiesWidget): boolean {
+  override eq(other: FrontmatterPropertiesWidget): boolean {
     return this.block.from === other.block.from &&
       this.block.to === other.block.to &&
       JSON.stringify(this.block.data) === JSON.stringify(other.block.data) &&
@@ -103,7 +103,7 @@ class FrontmatterPropertiesWidget extends WidgetType {
       this.dateFormat === other.dateFormat;
   }
 
-  toDOM(view: EditorView): HTMLElement {
+  override toDOM(view: EditorView): HTMLElement {
     const wrapper = document.createElement("section");
     wrapper.className = "cm-frontmatter-properties";
     wrapper.dataset.collapsed = String(this.collapsed);
@@ -149,7 +149,7 @@ class FrontmatterPropertiesWidget extends WidgetType {
     return wrapper;
   }
 
-  ignoreEvent(): boolean {
+  override ignoreEvent(): boolean {
     return true;
   }
 

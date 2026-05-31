@@ -41,6 +41,8 @@ const mathExtension = {
         if (match) {
           return { type: "mathBlock", raw: match[0], text: match[1].trim() };
         }
+
+        return undefined;
       },
       renderer(token: { text: string }) {
         return `<div class="math-block">${renderMath(token.text, true)}</div>`;
@@ -56,6 +58,8 @@ const mathExtension = {
         if (match) {
           return { type: "mathInline", raw: match[0], text: match[1].trim() };
         }
+
+        return undefined;
       },
       renderer(token: { text: string }) {
         return `<span class="math-inline">${renderMath(token.text, false)}</span>`;
@@ -75,6 +79,7 @@ const obsidianExtension = {
         const match = /^\[([^\]\n]+)\]\(((?:javascript|file):[^\n]*)\)/i.exec(src);
 
         if (match) return { type: "unsafeLink", raw: match[0], text: match[1] };
+        return undefined;
       },
       renderer(token: { text: string }) {
         return escapeHtml(token.text);
@@ -88,6 +93,7 @@ const obsidianExtension = {
         const match = /^==([^=]+)==/.exec(src);
 
         if (match) return { type: "highlight", raw: match[0], text: match[1] };
+        return undefined;
       },
       renderer(token: { text: string }) {
         return `<mark>${escapeHtml(token.text)}</mark>`;
@@ -104,6 +110,8 @@ const obsidianExtension = {
           const parts = match[1].split("|");
           return { type: "wikilink", raw: match[0], label: parts[1] ?? parts[0], target: parts[0] };
         }
+
+        return undefined;
       },
       renderer(token: { label: string; target: string }) {
         return `<button class="wikilink" data-target="${escapeHtmlAttribute(token.target)}" type="button">${escapeHtml(token.label)}</button>`;

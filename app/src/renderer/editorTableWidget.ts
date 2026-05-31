@@ -37,7 +37,7 @@ export class TableWidget extends WidgetType {
     super();
   }
 
-  eq(other: TableWidget): boolean {
+  override eq(other: TableWidget): boolean {
     return (
       this.block.from === other.block.from &&
       this.block.to === other.block.to &&
@@ -45,7 +45,7 @@ export class TableWidget extends WidgetType {
     );
   }
 
-  toDOM(): HTMLElement {
+  override toDOM(): HTMLElement {
     const wrapper = document.createElement("div");
     wrapper.className = "cm-live-table";
     wrapper.tabIndex = -1;
@@ -288,7 +288,7 @@ export class TableWidget extends WidgetType {
     return wrapper;
   }
 
-  ignoreEvent(): boolean {
+  override ignoreEvent(): boolean {
     return true;
   }
 

@@ -86,11 +86,11 @@ class HeadingFoldWidget extends WidgetType {
     super();
   }
 
-  eq(other: HeadingFoldWidget): boolean {
+  override eq(other: HeadingFoldWidget): boolean {
     return this.folded === other.folded && this.range.from === other.range.from && this.range.to === other.range.to;
   }
 
-  toDOM(view: EditorView): HTMLElement {
+  override toDOM(view: EditorView): HTMLElement {
     const marker = document.createElement("button");
     marker.className = `cm-heading-fold-marker${this.folded ? " cm-heading-fold-marker--closed" : " cm-heading-fold-marker--open"}`;
     marker.textContent = this.folded ? "▸" : "▾";
@@ -111,7 +111,7 @@ class HeadingFoldWidget extends WidgetType {
     return marker;
   }
 
-  ignoreEvent(): boolean {
+  override ignoreEvent(): boolean {
     return false;
   }
 }

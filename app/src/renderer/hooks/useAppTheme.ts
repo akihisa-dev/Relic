@@ -22,5 +22,7 @@ export function useAppTheme(theme: AppTheme | undefined): void {
       mq.addEventListener("change", listener);
       return () => mq.removeEventListener("change", listener);
     }
+
+    return undefined;
   }, [theme]);
 }

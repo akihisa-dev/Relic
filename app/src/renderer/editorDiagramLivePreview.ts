@@ -24,7 +24,7 @@ export class DiagramBlockWidget extends WidgetType {
     super();
   }
 
-  eq(other: DiagramBlockWidget): boolean {
+  override eq(other: DiagramBlockWidget): boolean {
     return this.source === other.source &&
       this.language === other.language &&
       this.blockFrom === other.blockFrom &&
@@ -32,7 +32,7 @@ export class DiagramBlockWidget extends WidgetType {
       this.editCursor === other.editCursor;
   }
 
-  toDOM(view: EditorView): HTMLElement {
+  override toDOM(view: EditorView): HTMLElement {
     const container = document.createElement("div");
     container.className = `preview-diagram preview-diagram--${this.language} cm-live-diagram`;
 
@@ -88,7 +88,7 @@ export class DiagramBlockWidget extends WidgetType {
     return container;
   }
 
-  ignoreEvent(event: Event): boolean {
+  override ignoreEvent(event: Event): boolean {
     return [
       "click",
       "dblclick",
