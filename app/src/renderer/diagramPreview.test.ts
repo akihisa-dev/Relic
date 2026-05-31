@@ -96,7 +96,10 @@ describe("diagramPreview", () => {
     renderDiagramElements(container);
 
     await vi.waitFor(() => {
-      expect(compileD2Mock).toHaveBeenCalledWith("x -> y", { layout: "dagre" });
+      expect(compileD2Mock).toHaveBeenCalledWith({
+        fs: { index: "x -> y" },
+        options: { layout: "dagre" }
+      });
       expect(renderD2Mock).toHaveBeenCalledWith({ root: true }, { noXMLTag: true, pad: 12 });
     });
     await vi.waitFor(() => {
@@ -338,7 +341,10 @@ describe("diagramPreview", () => {
       expect(compileD2Mock).toHaveBeenCalledTimes(1);
     });
     await new Promise((resolve) => setTimeout(resolve, 0));
-    expect(compileD2Mock).toHaveBeenCalledWith("a -> b", { layout: "dagre" });
+    expect(compileD2Mock).toHaveBeenCalledWith({
+      fs: { index: "a -> b" },
+      options: { layout: "dagre" }
+    });
     expect(compileD2Mock).toHaveBeenCalledTimes(1);
 
     firstCompile.resolve({ diagram: { id: "first" }, renderOptions: {} });
@@ -351,7 +357,10 @@ describe("diagramPreview", () => {
     await vi.waitFor(() => {
       expect(compileD2Mock).toHaveBeenCalledTimes(2);
     });
-    expect(compileD2Mock).toHaveBeenLastCalledWith("c -> d", { layout: "dagre" });
+    expect(compileD2Mock).toHaveBeenLastCalledWith({
+      fs: { index: "c -> d" },
+      options: { layout: "dagre" }
+    });
 
     secondCompile.resolve({ diagram: { id: "second" }, renderOptions: {} });
     await vi.waitFor(() => {

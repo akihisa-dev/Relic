@@ -1,4 +1,5 @@
-type D2CompileOptions = Omit<import("@terrastruct/d2").CompileRequest, "fs">;
+type D2CompileOptions = import("@terrastruct/d2").CompileOptions;
+type D2CompileRequest = import("@terrastruct/d2").CompileRequest;
 type D2Renderer = InstanceType<(typeof import("@terrastruct/d2"))["D2"]>;
 
 let d2RendererPromise: Promise<D2Renderer> | null = null;
@@ -24,8 +25,7 @@ async function loadD2(): Promise<D2Renderer> {
 
 async function renderD2Svg(source: string): Promise<string> {
   const d2 = await loadD2();
-  const compileOptions = getD2CompileOptions();
-  const result = await d2.compile(source, compileOptions);
+  const result = await d2.compile(createD2CompileRequest(source));
   const svg = await d2.render(result.diagram, {
     ...(result.renderOptions ?? {}),
     noXMLTag: true
@@ -38,6 +38,13 @@ async function renderD2Svg(source: string): Promise<string> {
   return svg;
 }
 
+function createD2CompileRequest(source: string): D2CompileRequest {
+  return {
+    fs: { index: source },
+    options: getD2CompileOptions()
+  };
+}
+
 function getD2CompileOptions(): D2CompileOptions {
-  return { layout: "dagre" } as unknown as D2CompileOptions;
+  return { layout: "dagre" };
 }
