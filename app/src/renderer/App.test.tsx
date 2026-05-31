@@ -961,6 +961,43 @@ describe("App", () => {
     fireEvent.mouseUp(document);
   });
 
+  it("AIチャットパネル幅のドラッグ変更を最小320px・最大520pxに制限する", async () => {
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
+    });
+
+    const { container } = await renderApp();
+
+    fireEvent.click(await screen.findByRole("button", { name: "AI Workspace" }));
+
+    const secondarySidebar = container.querySelector(".secondary-sidebar");
+    const resizeHandle = container.querySelector(".secondary-sidebar-resize-handle");
+
+    expect(secondarySidebar).toBeInstanceOf(HTMLElement);
+    expect(resizeHandle).toBeInstanceOf(HTMLElement);
+
+    fireEvent.mouseDown(resizeHandle as HTMLElement, { clientX: 400 });
+
+    expect(secondarySidebar).toHaveClass("secondary-sidebar--resizing");
+    expect(resizeHandle).toHaveClass("secondary-sidebar-resize-handle--active");
+
+    fireEvent.mouseMove(document, { clientX: 900 });
+
+    expect(secondarySidebar).toHaveStyle({ width: "520px" });
+
+    fireEvent.mouseUp(document);
+
+    expect(secondarySidebar).not.toHaveClass("secondary-sidebar--resizing");
+    expect(resizeHandle).not.toHaveClass("secondary-sidebar-resize-handle--active");
+
+    fireEvent.mouseDown(resizeHandle as HTMLElement, { clientX: 520 });
+    fireEvent.mouseMove(document, { clientX: -200 });
+
+    expect(secondarySidebar).toHaveStyle({ width: "320px" });
+
+    fireEvent.mouseUp(document);
+  });
+
   it("右パネルのアウトライン・リンクボタンを閉じた後も再度開ける", async () => {
     window.relic = makeRelicApi({
       getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })

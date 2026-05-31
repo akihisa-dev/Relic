@@ -509,7 +509,11 @@ export function App(): ReactElement {
     maxWidth: 520,
     minWidth: 220
   });
-  const { sidebarWidth: secondarySidebarWidth } = useSidebarResize({
+  const {
+    sidebarWidth: secondarySidebarWidth,
+    isSidebarResizing: isSecondarySidebarResizing,
+    startSidebarResize: startSecondarySidebarResize
+  } = useSidebarResize({
     initialWidth: 400,
     maxWidth: 520,
     minWidth: 320
@@ -867,6 +871,7 @@ export function App(): ReactElement {
           isLoadingBacklinks={isLoadingBacklinks}
           isRightPanelOpen={isEffectiveRightPanelOpen}
           isRightPanelResizing={isRightPanelResizing}
+          isSecondarySidebarResizing={isSecondarySidebarResizing}
           isSecondarySidebarOpen={isSecondarySidebarOpen}
           isSourceMode={isSourceMode}
           isSplit={isSplit}
@@ -908,6 +913,7 @@ export function App(): ReactElement {
           onRenameFile={(path, name) => handleRenameTreeItem(path, "file", name)}
           onRightPanelResizeStart={startRightPanelResize}
           onSecondarySidebarClose={closeSecondarySidebar}
+          onSecondarySidebarResizeStart={startSecondarySidebarResize}
           onScrollTargetHandled={(pane) => {
             if (pane === "left") {
               setLeftPaneScrollHeading(undefined);

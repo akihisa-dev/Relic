@@ -26,6 +26,7 @@ interface AppEditorWorkspaceProps {
   isAIWorkspaceSending: boolean;
   isRightPanelOpen: boolean;
   isRightPanelResizing: boolean;
+  isSecondarySidebarResizing: boolean;
   isSourceMode: boolean;
   isSplit: boolean;
   isSplitClosing: boolean;
@@ -51,6 +52,7 @@ interface AppEditorWorkspaceProps {
   onRenameFile: (path: string, name: string) => void;
   onRightPanelResizeStart: (event: ReactMouseEvent) => void;
   onSecondarySidebarClose: () => void;
+  onSecondarySidebarResizeStart: (event: ReactMouseEvent) => void;
   onScrollTargetHandled: (pane: PaneId) => void;
   onSetFocusedPane: (pane: PaneId) => void;
   outlineHeadings: OutlineHeading[];
@@ -84,6 +86,7 @@ export function AppEditorWorkspace({
   isAIWorkspaceSending,
   isRightPanelOpen,
   isRightPanelResizing,
+  isSecondarySidebarResizing,
   isSourceMode,
   isSplit,
   isSplitClosing,
@@ -109,6 +112,7 @@ export function AppEditorWorkspace({
   onRenameFile,
   onRightPanelResizeStart,
   onSecondarySidebarClose,
+  onSecondarySidebarResizeStart,
   onScrollTargetHandled,
   onSetFocusedPane,
   outlineHeadings,
@@ -136,6 +140,7 @@ export function AppEditorWorkspace({
           isAIWorkspaceLoading={isAIWorkspaceLoading}
           isAIWorkspaceSending={isAIWorkspaceSending}
           isOpen={isSecondarySidebarOpen}
+          isResizing={isSecondarySidebarResizing}
           onAIWorkspaceClearData={onAIWorkspaceClearData}
           onAIWorkspaceApplyOperations={onAIWorkspaceApplyOperations}
           onAIWorkspaceCancelMessagePreview={onAIWorkspaceCancelMessagePreview}
@@ -145,6 +150,7 @@ export function AppEditorWorkspace({
           onAIWorkspaceSendMessage={onAIWorkspaceSendMessage}
           onClose={onSecondarySidebarClose}
           onOpenFile={onOpenFile}
+          onResizeStart={onSecondarySidebarResizeStart}
           view={secondarySidebarView}
           width={secondarySidebarWidth}
           workspaceName={workspaceName}
