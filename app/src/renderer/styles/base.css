@@ -1,14 +1,14 @@
 :root {
   --bg: #ffffff;
   --app-bg:
-    radial-gradient(circle at 18% 0%, rgba(255, 255, 255, 0.96), transparent 30%),
-    radial-gradient(circle at 84% 4%, rgba(224, 233, 247, 0.58), transparent 31%),
-    linear-gradient(135deg, #f8fbff 0%, #f2f6fb 52%, #f9fbfe 100%);
+    radial-gradient(circle at 18% 0%, rgba(255, 255, 255, 0.98), transparent 30%),
+    radial-gradient(circle at 84% 4%, rgba(232, 239, 249, 0.34), transparent 31%),
+    linear-gradient(135deg, #fbfdff 0%, #f7f9fc 52%, #fcfdff 100%);
   --surface: #ffffff;
   --surface-raised: rgba(255, 255, 255, 0.98);
   --surface-subtle: #f8f9fa;
-  --rail-bg: rgba(233, 242, 252, 0.9);
-  --sidebar-bg: rgba(244, 248, 253, 0.94);
+  --rail-bg: rgba(255, 255, 255, 0.78);
+  --sidebar-bg: rgba(255, 255, 255, 0.78);
   --popup-bg: rgba(255, 255, 255, 0.98);
   --text: #1c1c1c;
   --text-2: #5e5e5e;
@@ -31,7 +31,7 @@
   --accent-soft: rgba(0, 98, 140, 0.08);
   --accent-softer: rgba(0, 98, 140, 0.04);
   --accent-ring: rgba(0, 98, 140, 0.16);
-  --title-bar-bg: rgba(245, 249, 254, 0.82);
+  --title-bar-bg: rgba(250, 252, 255, 0.86);
   --link: #00628c;
   --attention: #ff5722;
   --attention-hover: #e64d1f;
