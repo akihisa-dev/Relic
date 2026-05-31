@@ -223,6 +223,35 @@ describe("Editor", () => {
     expect(viewRef.current!.state.doc.toString()).toBe("**hello** world");
   });
 
+  it("本文の右クリック中に選択が動いても最初の選択範囲へMarkdown操作を適用する", async () => {
+    const viewRef = createRef<EditorView | null>();
+    const onChange = vi.fn();
+
+    render(
+      <Editor
+        content="hello world"
+        onChange={onChange}
+        settings={{ ...settings, language: "ja" }}
+        viewRef={viewRef}
+      />
+    );
+
+    await waitFor(() => expect(viewRef.current).not.toBeNull());
+    const view = viewRef.current!;
+    const contentElement = view.dom.querySelector(".cm-content")!;
+    view.dispatch({ selection: { anchor: 6, head: 11 } });
+
+    fireEvent.mouseDown(contentElement, { button: 2, clientX: 32, clientY: 32 });
+    expect(await screen.findByRole("menuitem", { name: "Bold" })).toBeInTheDocument();
+
+    view.dispatch({ selection: { anchor: 0, head: 5 } });
+    fireEvent.contextMenu(contentElement, { clientX: 32, clientY: 32 });
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Bold" }));
+
+    expect(onChange).toHaveBeenLastCalledWith("hello **world**");
+    expect(viewRef.current!.state.doc.toString()).toBe("hello **world**");
+  });
+
   it("本文の右クリックメニューからアイコンのSVGを押してもMarkdown操作を適用できる", async () => {
     const viewRef = createRef<EditorView | null>();
     const onChange = vi.fn();
