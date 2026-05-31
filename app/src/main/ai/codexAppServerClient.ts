@@ -1,10 +1,11 @@
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import readline from "node:readline";
 
-import type { AIWorkspaceFileOperation, AIWorkspaceReference } from "../../shared/ipc";
+import type { AIWorkspaceFileOperation, AIWorkspaceReference, AIWorkspaceUsageState, AIWorkspaceUsageWindow } from "../../shared/ipc";
 
 const codexBinaryPath = "/Applications/Codex.app/Contents/Resources/codex";
 const requestTimeoutMs = 120_000;
+const usageRequestTimeoutMs = 10_000;
 
 interface CodexAIWorkspaceResponse {
   message: string;
@@ -28,6 +29,23 @@ interface RunCodexAIWorkspaceTurnInput {
 interface RunCodexAIWorkspaceTurnResult {
   message: string;
   operations: AIWorkspaceFileOperation[];
+}
+
+interface CodexRateLimitWindow {
+  resetsAt?: number | null;
+  usedPercent?: number;
+  windowDurationMins?: number | null;
+}
+
+interface CodexRateLimitSnapshot {
+  planType?: string | null;
+  primary?: CodexRateLimitWindow | null;
+  secondary?: CodexRateLimitWindow | null;
+}
+
+interface CodexRateLimitsResponse {
+  rateLimits?: CodexRateLimitSnapshot;
+  rateLimitsByLimitId?: Record<string, CodexRateLimitSnapshot | undefined> | null;
 }
 
 export async function runCodexAIWorkspaceTurn(
@@ -55,6 +73,20 @@ export async function runCodexAIWorkspaceTurn(
   }
 }
 
+export async function readCodexAIWorkspaceUsage(): Promise<AIWorkspaceUsageState | null> {
+  const client = new CodexAppServerClient(usageRequestTimeoutMs);
+
+  try {
+    await client.start();
+    await client.initialize();
+    const response = await client.readRateLimits();
+
+    return toAIWorkspaceUsageState(response);
+  } finally {
+    client.stop();
+  }
+}
+
 class CodexAppServerClient {
   private nextId = 1;
   private process: ChildProcessWithoutNullStreams | null = null;
@@ -69,6 +101,8 @@ class CodexAppServerClient {
     resolve: (value: string) => void;
     timeout: NodeJS.Timeout;
   }>();
+
+  constructor(private readonly timeoutMs = requestTimeoutMs) {}
 
   async start(): Promise<void> {
     return new Promise((resolve, reject) => {
@@ -148,6 +182,10 @@ class CodexAppServerClient {
     return parseCodexResponse(text);
   }
 
+  async readRateLimits(): Promise<CodexRateLimitsResponse> {
+    return await this.request("account/rateLimits/read", undefined) as CodexRateLimitsResponse;
+  }
+
   private request(method: string, params: unknown): Promise<unknown> {
     const id = this.nextId++;
     const process = this.process;
@@ -158,7 +196,7 @@ class CodexAppServerClient {
       const timeout = setTimeout(() => {
         this.pending.delete(id);
         reject(new Error("Codex App Serverの応答がタイムアウトしました。"));
-      }, requestTimeoutMs);
+      }, this.timeoutMs);
       this.pending.set(id, { reject, resolve, timeout });
       process.stdin.write(`${payload}\n`, (error) => {
         if (!error) return;
@@ -177,7 +215,7 @@ class CodexAppServerClient {
         this.turnResolvers.delete(turnId);
         this.turnTexts.delete(turnId);
         reject(new Error("Codex App Serverのturnがタイムアウトしました。"));
-      }, requestTimeoutMs);
+      }, this.timeoutMs);
       this.turnTexts.set(turnId, []);
       this.turnResolvers.set(turnId, { reject, resolve, timeout });
     });
@@ -261,6 +299,34 @@ class CodexAppServerClient {
       turnResolver.resolve(text);
     }
   }
+}
+
+function toAIWorkspaceUsageState(response: CodexRateLimitsResponse): AIWorkspaceUsageState | null {
+  const snapshot = response.rateLimitsByLimitId?.codex ?? response.rateLimits;
+  if (!snapshot) return null;
+
+  return {
+    planType: typeof snapshot.planType === "string" ? snapshot.planType : null,
+    primary: toAIWorkspaceUsageWindow(snapshot.primary),
+    readAt: new Date().toISOString(),
+    secondary: toAIWorkspaceUsageWindow(snapshot.secondary)
+  };
+}
+
+function toAIWorkspaceUsageWindow(window: CodexRateLimitWindow | null | undefined): AIWorkspaceUsageWindow | null {
+  if (!window || typeof window.usedPercent !== "number") return null;
+  const usedPercent = clampPercent(window.usedPercent);
+
+  return {
+    remainingPercent: clampPercent(100 - usedPercent),
+    resetsAt: typeof window.resetsAt === "number" ? new Date(window.resetsAt * 1000).toISOString() : null,
+    usedPercent,
+    windowDurationMins: typeof window.windowDurationMins === "number" ? window.windowDurationMins : null
+  };
+}
+
+function clampPercent(value: number): number {
+  return Math.max(0, Math.min(100, Math.round(value)));
 }
 
 export function buildPrompt(input: RunCodexAIWorkspaceTurnInput): string {

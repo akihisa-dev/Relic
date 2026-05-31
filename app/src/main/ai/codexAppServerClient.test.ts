@@ -11,7 +11,13 @@ vi.mock("node:child_process", () => ({
   spawn: childProcessMock.spawn
 }));
 
-import { buildPrompt, codexAIWorkspaceOutputSchema, parseCodexResponse, runCodexAIWorkspaceTurn } from "./codexAppServerClient";
+import {
+  buildPrompt,
+  codexAIWorkspaceOutputSchema,
+  parseCodexResponse,
+  readCodexAIWorkspaceUsage,
+  runCodexAIWorkspaceTurn
+} from "./codexAppServerClient";
 
 function createFakeCodexProcess(options: {
   onWrite?: (chunk: string, process: EventEmitter & {
@@ -130,6 +136,63 @@ describe("runCodexAIWorkspaceTurn", () => {
       references: [],
       workspacePath: "/tmp/workspace"
     })).rejects.toThrow("invalid_json_schema");
+  });
+});
+
+describe("readCodexAIWorkspaceUsage", () => {
+  it("reads Codex rate limits as remaining usage windows", async () => {
+    const fakeProcess = createFakeCodexProcess({
+      onWrite(chunk, process) {
+        const request = JSON.parse(chunk) as { id: number; method: string };
+        if (request.method === "initialize") {
+          process.stdout.write(`${JSON.stringify({ id: request.id, result: {} })}\n`);
+        }
+        if (request.method === "account/rateLimits/read") {
+          process.stdout.write(`${JSON.stringify({
+            id: request.id,
+            result: {
+              rateLimits: {
+                limitId: "codex",
+                planType: "prolite",
+                primary: { resetsAt: 1780203935, usedPercent: 24, windowDurationMins: 300 },
+                secondary: { resetsAt: 1780796276, usedPercent: 3, windowDurationMins: 10080 }
+              },
+              rateLimitsByLimitId: {
+                codex: {
+                  limitId: "codex",
+                  planType: "prolite",
+                  primary: { resetsAt: 1780203935, usedPercent: 24, windowDurationMins: 300 },
+                  secondary: { resetsAt: 1780796276, usedPercent: 3, windowDurationMins: 10080 }
+                }
+              }
+            }
+          })}\n`);
+        }
+      }
+    });
+    childProcessMock.spawn.mockReturnValueOnce(fakeProcess);
+
+    queueMicrotask(() => {
+      fakeProcess.emit("spawn");
+    });
+
+    const usage = await readCodexAIWorkspaceUsage();
+
+    expect(usage).toEqual(expect.objectContaining({
+      planType: "prolite",
+      primary: {
+        remainingPercent: 76,
+        resetsAt: "2026-05-31T05:05:35.000Z",
+        usedPercent: 24,
+        windowDurationMins: 300
+      },
+      secondary: {
+        remainingPercent: 97,
+        resetsAt: "2026-06-07T01:37:56.000Z",
+        usedPercent: 3,
+        windowDurationMins: 10080
+      }
+    }));
   });
 });
 

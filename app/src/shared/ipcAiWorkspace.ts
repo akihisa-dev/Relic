@@ -48,11 +48,26 @@ export interface AIWorkspaceState {
   activeChatId?: string | null;
   aiProvider: AIProvider;
   chats?: AIWorkspaceChatSummary[];
+  codexUsage?: AIWorkspaceUsageState | null;
   history: AIWorkspaceMessage[];
   index: AIWorkspaceIndexSummary;
   openAIAPIKeyConfigured: boolean;
   operationHistory: AIWorkspaceFileOperation[];
   pendingOperations: AIWorkspaceFileOperation[];
+}
+
+export interface AIWorkspaceUsageState {
+  planType: string | null;
+  primary: AIWorkspaceUsageWindow | null;
+  readAt: string;
+  secondary: AIWorkspaceUsageWindow | null;
+}
+
+export interface AIWorkspaceUsageWindow {
+  remainingPercent: number;
+  resetsAt: string | null;
+  usedPercent: number;
+  windowDurationMins: number | null;
 }
 
 export interface AISettingsState {

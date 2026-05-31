@@ -1109,7 +1109,23 @@ describe("App", () => {
       index: { chunkCount: 1, indexedAt: "2026-05-30T00:00:00.000Z", indexedFileCount: 1, skippedLargeFiles: [], unreadableFiles: [] },
       openAIAPIKeyConfigured: true,
       operationHistory: [],
-      pendingOperations: []
+      pendingOperations: [],
+      codexUsage: {
+        planType: "prolite",
+        primary: {
+          remainingPercent: 76,
+          resetsAt: "2026-05-31T05:05:35.000Z",
+          usedPercent: 24,
+          windowDurationMins: 300
+        },
+        readAt: "2026-05-31T04:30:00.000Z",
+        secondary: {
+          remainingPercent: 97,
+          resetsAt: "2026-06-07T01:37:56.000Z",
+          usedPercent: 3,
+          windowDurationMins: 10080
+        }
+      }
     };
     const createAIWorkspaceChat = vi.fn().mockResolvedValue({ ok: true, value: aiState });
     const selectAIWorkspaceChat = vi.fn().mockResolvedValue({
@@ -1132,6 +1148,11 @@ describe("App", () => {
     expect(useUiStore.getState().isSecondarySidebarOpen).toBe(true);
     expect(useUiStore.getState().secondarySidebarView).toBe("ai-chat");
     expect(screen.getByLabelText("AIへのメッセージ")).toBeInTheDocument();
+    expect(screen.getByLabelText("Codex残り使用量")).toBeInTheDocument();
+    expect(screen.getByText("5時間")).toBeInTheDocument();
+    expect(screen.getByText("76%")).toBeInTheDocument();
+    expect(screen.getByText("1週間")).toBeInTheDocument();
+    expect(screen.getByText("97%")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /以前のチャット 2件/ })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /認証整理 未開始/ }));
 
