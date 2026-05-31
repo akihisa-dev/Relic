@@ -1,14 +1,9 @@
 import type { EditorView } from "@codemirror/view";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import type { ReactElement } from "react";
 
-import { coworkPanelMaxWidth, coworkPanelMinWidth, type WorkspaceState } from "../shared/ipc";
+import { type WorkspaceState } from "../shared/ipc";
 import type { AppLinkContextMenu } from "./appLinks";
-import {
-  openFilePathsForTabs,
-  registeredWorkspacesForState,
-  titleBarLeftOffset,
-} from "./appShellModel";
 import { AppEditorWorkspace } from "./components/AppEditorWorkspace";
 import { AppFilesSidebar } from "./components/AppFilesSidebar";
 import { AppOverlays } from "./components/AppOverlays";
@@ -19,37 +14,37 @@ import { I18nProvider } from "./i18n";
 import { createTranslator } from "./i18nModel";
 import { useActiveDocumentContext } from "./hooks/useActiveDocumentContext";
 import { useAIWorkspaceState } from "./hooks/useAIWorkspaceState";
+import { useAIWorkspaceEditorActions } from "./hooks/useAIWorkspaceEditorActions";
+import { useAppCloseGuards } from "./hooks/useAppCloseGuards";
 import { useAppKeyboardShortcuts } from "./hooks/useAppKeyboardShortcuts";
+import { useAppInlineHandlers } from "./hooks/useAppInlineHandlers";
+import { useAppLayoutWidths } from "./hooks/useAppLayoutWidths";
 import { useAppPaneFileActions } from "./hooks/useAppPaneFileActions";
+import { useAppPreviewOutputActions } from "./hooks/useAppPreviewOutputActions";
 import { useAppRailNavigation } from "./hooks/useAppRailNavigation";
+import { useAppRailSidebarSelection } from "./hooks/useAppRailSidebarSelection";
 import { useAppSettingsState } from "./hooks/useAppSettingsState";
 import { useAppTabRenderers } from "./hooks/useAppTabRenderers";
 import { useAppTheme } from "./hooks/useAppTheme";
 import { useAppToast } from "./hooks/useAppToast";
+import { useAppWorkspaceCollections } from "./hooks/useAppWorkspaceCollections";
 import { useCommandPaletteCommands } from "./hooks/useCommandPaletteCommands";
 import { useEditorAutoSave } from "./hooks/useEditorAutoSave";
 import { usePaneTabMotion } from "./hooks/usePaneTabMotion";
 import { useRailFlights } from "./hooks/useRailFlights";
-import { useSidebarResize } from "./hooks/useSidebarResize";
 import { useSidebarFileInteractions } from "./hooks/useSidebarFileInteractions";
 import { useSplitCloseMotion } from "./hooks/useSplitCloseMotion";
+import { useWindowCloseRequest } from "./hooks/useWindowCloseRequest";
 import { useWorkspaceAliases } from "./hooks/useWorkspaceAliases";
 import { useWorkspaceFileActions } from "./hooks/useWorkspaceFileActions";
 import { useWorkspaceChronicleCalendars } from "./hooks/useWorkspaceChronicleCalendars";
 import { useWorkspaceCharts } from "./hooks/useWorkspaceCharts";
+import { useWorkspaceExternalRefresh } from "./hooks/useWorkspaceExternalRefresh";
 import { useWorkspaceRenameRailHold } from "./hooks/useWorkspaceRenameRailHold";
 import { useWorkspaceSearchState } from "./hooks/useWorkspaceSearchState";
-import { matchesAnyTreeItemPath } from "./hooks/workspaceFileActionHelpers";
-import { buildPreviewOutputHtml } from "./outputHtml";
-import { useEditorStore, type PaneId } from "./store/editorStore";
-import { useUiStore, type RightPanelView, type SidebarView } from "./store/uiStore";
-import { collectMarkdownPaths } from "./workspacePaths";
+import { useEditorStore } from "./store/editorStore";
+import { useUiStore, type RightPanelView } from "./store/uiStore";
 import "./styles.css";
-
-const RAIL_WIDTH = 48;
-const TITLE_BAR_TRAFFIC_LIGHT_SPACE = 88;
-const FLOATING_PANEL_GAP = 10;
-const WORKSPACE_HORIZONTAL_PADDING = 12;
 
 export function App(): ReactElement {
   const [workspaceState, setWorkspaceState] = useState<WorkspaceState | null>(null);
@@ -207,17 +202,13 @@ export function App(): ReactElement {
     setFileSearchFocusRequest((current) => current + 1);
   }, [setSidebarView]);
 
-  const existingMarkdownPaths = useMemo(
-    () => collectMarkdownPaths(workspaceState?.fileTree ?? []),
-    [workspaceState?.fileTree]
-  );
-  const dirtyMarkdownPaths = useMemo(
-    () => Object.values(tabs).flatMap((tab) => {
-      if (tab.kind !== "file") return [];
-      return tab.content !== tab.savedContent || Boolean(tab.externalConflict) ? [tab.path] : [];
-    }),
-    [tabs]
-  );
+  const {
+    dirtyMarkdownPaths,
+    existingMarkdownPaths,
+    openFilePathSet,
+    pinnedPathSet,
+    registeredWorkspaces
+  } = useAppWorkspaceCollections({ tabs, workspaceState });
   const aliasesByPath = useWorkspaceAliases({ setWorkspaceError, workspaceState });
   const { charts, handleUpdateChartEntry, reloadCharts } = useWorkspaceCharts({
     hasOpenChart,
@@ -242,56 +233,15 @@ export function App(): ReactElement {
     onSaveError: setWorkspaceError,
     tabs
   });
-  const ensureCanCloseTabs = useCallback((_pane: PaneId, tabIds: string[]): Promise<boolean> | boolean => {
-    const currentTabs = useEditorStore.getState().tabs;
-    const needsSaveCheck = tabIds.some((tabId) => {
-      const tab = currentTabs[tabId];
-      return tab?.kind === "file" && (Boolean(tab.externalConflict) || tab.content !== tab.savedContent);
-    });
-
-    if (!needsSaveCheck) return true;
-
-    return (async () => {
-    const result = await flushTabsBeforeClose(tabIds);
-    if (!result.ok) {
-      setWorkspaceError(result.message ?? "ファイルを保存できませんでした。");
-      return false;
-    }
-
-    return true;
-    })();
-  }, [flushTabsBeforeClose, setWorkspaceError]);
-  const ensureCanCloseAllTabs = useCallback((): Promise<boolean> | boolean => {
-    const currentTabs = useEditorStore.getState().tabs;
-    const tabIds = Object.keys(currentTabs);
-    const needsSaveCheck = Object.values(currentTabs).some((tab) => {
-      return tab.kind === "file" && (Boolean(tab.externalConflict) || tab.content !== tab.savedContent);
-    });
-
-    if (!needsSaveCheck) return true;
-
-    return (async () => {
-    const result = await flushTabsBeforeClose(tabIds);
-    if (!result.ok) {
-      setWorkspaceError(result.message ?? "ファイルを保存できませんでした。");
-      return false;
-    }
-
-    return true;
-    })();
-  }, [flushTabsBeforeClose, setWorkspaceError]);
-  const ensureCanMutateWorkspaceItems = useCallback((
-    items: Array<{ path: string; type: "file" | "folder" }>
-  ): Promise<boolean> | boolean => {
-    const currentTabs = useEditorStore.getState().tabs;
-    const targetTabIds = Object.entries(currentTabs).reduce<string[]>((acc, [tabId, tab]) => {
-      if (tab.kind === "file" && matchesAnyTreeItemPath(tab.path, items)) acc.push(tabId);
-      return acc;
-    }, []);
-
-    if (targetTabIds.length === 0) return true;
-    return ensureCanCloseTabs(focusedPane, targetTabIds);
-  }, [ensureCanCloseTabs, focusedPane]);
+  const {
+    ensureCanCloseAllTabs,
+    ensureCanCloseTabs,
+    ensureCanMutateWorkspaceItems
+  } = useAppCloseGuards({
+    focusedPane,
+    flushTabsBeforeClose,
+    setWorkspaceError
+  });
 
   const {
     handleDeleteActiveFile,
@@ -340,6 +290,13 @@ export function App(): ReactElement {
     updateTabMeta,
     workspaceState
   });
+  const appInlineHandlers = useAppInlineHandlers({
+    focusedPane,
+    openSecondarySidebar,
+    setEditorActionPulse,
+    setLeftPaneScrollHeading,
+    setRightPaneScrollHeading
+  });
 
   const {
     handleCreateFileFromSidebar,
@@ -350,7 +307,7 @@ export function App(): ReactElement {
     handleCreateFile,
     handleCreateFolder,
     handleOpenFile,
-    onFileOpenMotion: () => setEditorActionPulse((value) => value + 1),
+    onFileOpenMotion: appInlineHandlers.onFileOpenMotion,
     openFileInPane,
     setTabActive,
     setWorkspaceError,
@@ -376,109 +333,20 @@ export function App(): ReactElement {
     tabs
   });
 
-  const refreshWorkspaceAfterExternalChange = useCallback(
-    async (workspaceId: string): Promise<void> => {
-      const relic = window.relic;
-      if (!relic) return;
-      if (workspaceState?.activeWorkspace?.id && workspaceState.activeWorkspace.id !== workspaceId) return;
-
-      const result = await relic.getWorkspaceState();
-      if (!result.ok) {
-        setWorkspaceError(result.error.message);
-        return;
-      }
-
-      if (result.value.activeWorkspace?.id !== workspaceId) return;
-
-      const nextFilePaths = collectMarkdownPaths(result.value.fileTree);
-      const nextFilePathSet = new Set(nextFilePaths);
-
-      for (const tabId of leftPane.tabIds) {
-        const tab = tabs[tabId];
-        if (tab?.kind === "file" && !nextFilePathSet.has(tab.path)) closeTab("left", tabId);
-      }
-
-      for (const tabId of rightPane.tabIds) {
-        const tab = tabs[tabId];
-        if (tab?.kind === "file" && !nextFilePathSet.has(tab.path)) closeTab("right", tabId);
-      }
-
-      const openFileEntries = Object.entries(tabs).reduce<Array<{ path: string; tabId: string }>>((acc, [tabId, tab]) => {
-        if (tab.kind === "file" && nextFilePathSet.has(tab.path)) acc.push({ path: tab.path, tabId });
-        return acc;
-      }, []);
-      const fileResults = await Promise.all(
-        openFileEntries.map(async ({ path, tabId }) => ({
-          fileResult: await relic.readMarkdownFile({ path }),
-          tabId
-        }))
-      );
-
-      for (const { fileResult, tabId } of fileResults) {
-
-        if (!fileResult.ok) {
-          setWorkspaceError(fileResult.error.message);
-          continue;
-        }
-
-        const currentTab = useEditorStore.getState().tabs[tabId];
-        if (currentTab?.kind !== "file") continue;
-
-        const externalContent = fileResult.value.content;
-
-        if (externalContent === currentTab.savedContent) continue;
-
-        if (externalContent === currentTab.content) {
-          markTabSaved(tabId, externalContent);
-          continue;
-        }
-
-        if (currentTab.content === currentTab.savedContent) {
-          updateTabFromExternal(tabId, externalContent);
-          continue;
-        }
-
-        const shouldNotify = currentTab.externalConflict?.content !== externalContent;
-        setTabExternalConflict(tabId, externalContent);
-        if (shouldNotify) {
-          setWorkspaceError(t("pane.externalConflictToast", { name: currentTab.name }));
-        }
-      }
-
-      setWorkspaceState(result.value);
-    },
-    [
-      closeTab,
-      leftPane.tabIds,
-      markTabSaved,
-      rightPane.tabIds,
-      setTabExternalConflict,
-      setWorkspaceError,
-      setWorkspaceState,
-      tabs,
-      t,
-      updateTabFromExternal,
-      workspaceState?.activeWorkspace?.id
-    ]
-  );
-
-  useEffect(() => {
-    if (!window.relic?.onWorkspaceChanged) return undefined;
-
-    return window.relic.onWorkspaceChanged((event) => {
-      void refreshWorkspaceAfterExternalChange(event.workspaceId);
-    });
-  }, [refreshWorkspaceAfterExternalChange]);
-
-  useEffect(() => {
-    if (!window.relic?.onWindowCloseRequested) return undefined;
-
-    return window.relic.onWindowCloseRequested((event) => {
-      void Promise.resolve(ensureCanCloseAllTabs()).then((ok) => {
-        window.relic?.respondToWindowCloseRequest({ ok, requestId: event.requestId });
-      });
-    });
-  }, [ensureCanCloseAllTabs]);
+  useWorkspaceExternalRefresh({
+    closeTab,
+    leftPane,
+    markTabSaved,
+    rightPane,
+    setTabExternalConflict,
+    setWorkspaceError,
+    setWorkspaceState,
+    t,
+    tabs,
+    updateTabFromExternal,
+    workspaceState
+  });
+  useWindowCloseRequest(ensureCanCloseAllTabs);
 
   useAppTheme(editorSettings.theme);
 
@@ -498,32 +366,21 @@ export function App(): ReactElement {
     toggleTypewriterMode
   });
 
-  const { sidebarWidth, isSidebarResizing, startSidebarResize } = useSidebarResize({
-    initialWidth: 260,
-    maxWidth: 500,
-    minWidth: 180
-  });
   const {
-    sidebarWidth: rightPanelWidth,
-    isSidebarResizing: isRightPanelResizing,
-    startSidebarResize: startRightPanelResize
-  } = useSidebarResize({
-    direction: "left",
-    initialWidth: 240,
-    maxWidth: 520,
-    minWidth: 220
-  });
-  const {
-    sidebarWidth: secondarySidebarWidth,
-    isSidebarResizing: isSecondarySidebarResizing,
-    startSidebarResize: startSecondarySidebarResize
-  } = useSidebarResize({
-    initialWidth: appUiSettings.coworkPanelWidth,
-    maxWidth: coworkPanelMaxWidth,
-    minWidth: coworkPanelMinWidth,
-    onResizeEnd: (width) => {
-      handleSaveAppUiSettings({ ...appUiSettings, coworkPanelWidth: width });
-    }
+    isRightPanelResizing,
+    isSecondarySidebarResizing,
+    isSidebarResizing,
+    rightPanelWidth,
+    secondarySidebarWidth,
+    sidebarWidth,
+    startRightPanelResize,
+    startSecondarySidebarResize,
+    startSidebarResize,
+    titleBarLeftOffsetWidth
+  } = useAppLayoutWidths({
+    appUiSettings,
+    handleSaveAppUiSettings,
+    isSecondarySidebarOpen
   });
 
   const leftEditorViewRef = useRef<EditorView | null>(null);
@@ -563,19 +420,6 @@ export function App(): ReactElement {
     tabs
   });
 
-  const registeredWorkspaces = useMemo(
-    () => registeredWorkspacesForState(workspaceState),
-    [workspaceState]
-  );
-  const pinnedPathSet = useMemo(
-    () => new Set(workspaceState?.pinnedPaths ?? []),
-    [workspaceState?.pinnedPaths]
-  );
-  const openFilePathSet = useMemo(
-    () => openFilePathsForTabs(tabs),
-    [tabs]
-  );
-
   const {
     activeFileTabInFocusedPane,
     backlinks,
@@ -594,60 +438,24 @@ export function App(): ReactElement {
     tabs
   });
 
-  const buildFocusedPreviewOutput = useCallback(async () => {
-    if (!activeFileTabInFocusedPane) return null;
-
-    return await buildPreviewOutputHtml({
-      content: activeFileTabInFocusedPane.content,
-      fileName: activeFileTabInFocusedPane.name,
-      path: activeFileTabInFocusedPane.path,
-      t,
-      title: activeFileTabInFocusedPane.name,
-      workspacePath: workspaceState?.activeWorkspace?.path
-    });
-  }, [activeFileTabInFocusedPane, t, workspaceState?.activeWorkspace?.path]);
-
-  const handlePrintPreview = useCallback((): void => {
-    if (!window.relic) return;
-
-    void buildFocusedPreviewOutput().then(async (payload) => {
-      if (!payload) {
-        setWorkspaceError("印刷するMarkdownファイルを開いてください。");
-        return;
-      }
-
-      const result = await window.relic!.printPreview({ html: payload.html, title: payload.title });
-      if (!result.ok) {
-        setWorkspaceError(result.error.message);
-        return;
-      }
-
-      if (result.value.status === "printed") showToast(t("output.printed"), "info");
-    }).catch((error) => {
-      setWorkspaceError(error instanceof Error ? error.message : String(error));
-    });
-  }, [buildFocusedPreviewOutput, setWorkspaceError, showToast, t]);
-
-  const handleSavePreviewAsPdf = useCallback((): void => {
-    if (!window.relic) return;
-
-    void buildFocusedPreviewOutput().then(async (payload) => {
-      if (!payload) {
-        setWorkspaceError("PDFとして保存するMarkdownファイルを開いてください。");
-        return;
-      }
-
-      const result = await window.relic!.savePreviewAsPdf(payload);
-      if (!result.ok) {
-        setWorkspaceError(result.error.message);
-        return;
-      }
-
-      if (result.value.status === "saved") showToast(t("output.pdfSaved"), "info");
-    }).catch((error) => {
-      setWorkspaceError(error instanceof Error ? error.message : String(error));
-    });
-  }, [buildFocusedPreviewOutput, setWorkspaceError, showToast, t]);
+  const { handlePrintPreview, handleSavePreviewAsPdf } = useAppPreviewOutputActions({
+    activeFileTab: activeFileTabInFocusedPane,
+    setWorkspaceError,
+    showToast,
+    t,
+    workspacePath: workspaceState?.activeWorkspace?.path
+  });
+  const aiWorkspaceEditorActions = useAIWorkspaceEditorActions({
+    activeFileTab: activeFileTabInFocusedPane,
+    applyAIWorkspaceOperations,
+    cancelAIWorkspaceMessage,
+    clearAIWorkspaceData,
+    confirmAIWorkspaceMessage,
+    dirtyMarkdownPaths,
+    discardAIWorkspaceOperations,
+    rebuildAIWorkspaceIndex,
+    sendAIWorkspaceMessage
+  });
 
   const commands = useCommandPaletteCommands({
     activeFileName: activeFileTabInFocusedPane?.name ?? null,
@@ -692,19 +500,13 @@ export function App(): ReactElement {
     tabs
   });
 
-  const setRailSidebarView = useCallback((view: SidebarView): void => {
-    if (view === "tools" || view === "frontmatter" || view === "settings") {
-      openPanelInPane(focusedPane, view, panelLabels[view]);
-      setSidebarView("files");
-      return;
-    }
-
-    if (view === "ai") {
-      openSecondarySidebar("ai-chat");
-    }
-
-    setSidebarView(view);
-  }, [focusedPane, openPanelInPane, openSecondarySidebar, panelLabels, setSidebarView]);
+  const setRailSidebarView = useAppRailSidebarSelection({
+    focusedPane,
+    openPanelInPane,
+    openSecondarySidebar,
+    panelLabels,
+    setSidebarView
+  });
 
   const { renderChartTab, renderPanelTab } = useAppTabRenderers({
     appInfo,
@@ -728,15 +530,6 @@ export function App(): ReactElement {
     userDefinedFields,
     workspaceState
   });
-  const titleBarLeftOffsetWidth = titleBarLeftOffset(
-    TITLE_BAR_TRAFFIC_LIGHT_SPACE,
-    RAIL_WIDTH,
-    sidebarWidth,
-    WORKSPACE_HORIZONTAL_PADDING,
-    FLOATING_PANEL_GAP,
-    isSecondarySidebarOpen ? secondarySidebarWidth : 0
-  );
-
   // ──────────────────
   // レンダリング
   // ──────────────────
@@ -890,49 +683,26 @@ export function App(): ReactElement {
           leftEditorViewRef={leftEditorViewRef}
           leftPaneScrollHeading={leftPaneScrollHeading}
           onCreateFile={handleCreateNoteFromPane}
-          onAIWorkspaceClearData={() => { void clearAIWorkspaceData(); }}
-          onAIWorkspaceApplyOperations={(operationIds) => { void applyAIWorkspaceOperations(dirtyMarkdownPaths, operationIds); }}
-          onAIWorkspaceCancelMessagePreview={cancelAIWorkspaceMessage}
-          onAIWorkspaceCancelSending={() => { void cancelAIWorkspaceMessage(); }}
-          onAIWorkspaceConfirmMessagePreview={() => {
-            void confirmAIWorkspaceMessage(
-              dirtyMarkdownPaths,
-              activeFileTabInFocusedPane?.path ?? null,
-              activeFileTabInFocusedPane?.content ?? null
-            );
-          }}
-          onAIWorkspaceRebuildIndex={() => { void rebuildAIWorkspaceIndex(); }}
-          onAIWorkspaceDiscardOperations={(operationIds) => { void discardAIWorkspaceOperations(operationIds); }}
-          onAIWorkspaceSendMessage={(message) => {
-            void sendAIWorkspaceMessage(
-              message,
-              dirtyMarkdownPaths,
-              activeFileTabInFocusedPane?.path ?? null,
-              activeFileTabInFocusedPane?.content ?? null
-            );
-          }}
-          onEditorAction={() => setEditorActionPulse((value) => value + 1)}
+          onAIWorkspaceApplyOperations={aiWorkspaceEditorActions.onAIWorkspaceApplyOperations}
+          onAIWorkspaceCancelMessagePreview={aiWorkspaceEditorActions.onAIWorkspaceCancelMessagePreview}
+          onAIWorkspaceCancelSending={aiWorkspaceEditorActions.onAIWorkspaceCancelSending}
+          onAIWorkspaceClearData={aiWorkspaceEditorActions.onAIWorkspaceClearData}
+          onAIWorkspaceConfirmMessagePreview={aiWorkspaceEditorActions.onAIWorkspaceConfirmMessagePreview}
+          onAIWorkspaceDiscardOperations={aiWorkspaceEditorActions.onAIWorkspaceDiscardOperations}
+          onAIWorkspaceRebuildIndex={aiWorkspaceEditorActions.onAIWorkspaceRebuildIndex}
+          onAIWorkspaceSendMessage={aiWorkspaceEditorActions.onAIWorkspaceSendMessage}
+          onEditorAction={appInlineHandlers.onEditorAction}
           onFileSaveError={setWorkspaceError}
           onFileSaved={handleFileSaved}
           onOpenFile={handleOpenFile}
           onOpenLink={handleOpenMarkdownLink}
           onOpenWikiLink={handleOpenWikiLink}
-          onOutlineHeadingClick={(heading) => {
-            const setScrollHeading = focusedPane === "left" ? setLeftPaneScrollHeading : setRightPaneScrollHeading;
-            setScrollHeading(heading);
-          }}
+          onOutlineHeadingClick={appInlineHandlers.onOutlineHeadingClick}
           onRenameFile={(path, name) => handleRenameTreeItem(path, "file", name)}
           onRightPanelResizeStart={startRightPanelResize}
           onSecondarySidebarClose={closeSecondarySidebar}
           onSecondarySidebarResizeStart={startSecondarySidebarResize}
-          onScrollTargetHandled={(pane) => {
-            if (pane === "left") {
-              setLeftPaneScrollHeading(undefined);
-              return;
-            }
-
-            setRightPaneScrollHeading(undefined);
-          }}
+          onScrollTargetHandled={appInlineHandlers.onScrollTargetHandled}
           onSetFocusedPane={setFocusedPane}
           outlineHeadings={outlineHeadings}
           outgoingLinks={outgoingLinks}

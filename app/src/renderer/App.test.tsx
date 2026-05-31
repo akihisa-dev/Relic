@@ -1,50 +1,22 @@
-import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { defaultEditorSettings, defaultFeatureToggles } from "../shared/ipc";
+import {
+  allRailFeatureToggles,
+  renderApp,
+  restoreNavigatorPlatform,
+  searchResultSet,
+  setNavigatorPlatform
+} from "./appTestHelpers";
 import {
   installMatchMediaMock,
   makeRelicApi,
   resetRendererStores,
   testWorkspaceState as withWorkspace
 } from "../test/rendererTestUtils";
-import { App } from "./App";
 import { useEditorStore } from "./store/editorStore";
 import { useUiStore } from "./store/uiStore";
-
-function renderApp() {
-  return render(<App />);
-}
-
-function searchResultSet(results: unknown[]) {
-  return { results, skippedLargeFiles: 0, truncated: false };
-}
-
-const originalNavigatorPlatform = Object.getOwnPropertyDescriptor(navigator, "platform");
-
-function setNavigatorPlatform(platform: string): void {
-  Object.defineProperty(navigator, "platform", {
-    configurable: true,
-    value: platform
-  });
-}
-
-function restoreNavigatorPlatform(): void {
-  if (originalNavigatorPlatform) {
-    Object.defineProperty(navigator, "platform", originalNavigatorPlatform);
-    return;
-  }
-
-  Reflect.deleteProperty(navigator, "platform");
-}
-
-const allRailFeatureToggles = {
-  ...defaultFeatureToggles,
-  chronicle: true,
-  chronicleSettings: true,
-  frontmatter: true,
-  tools: true
-};
 
 describe("App", () => {
   beforeAll(installMatchMediaMock);
