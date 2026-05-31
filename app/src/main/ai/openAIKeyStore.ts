@@ -1,4 +1,4 @@
-import { mkdir, readFile, rm } from "node:fs/promises";
+import { chmod, mkdir, readFile, rm } from "node:fs/promises";
 import path from "node:path";
 
 import { safeStorage } from "electron";
@@ -11,6 +11,7 @@ interface StoredOpenAIKey {
 }
 
 const credentialsFileName = "ai-openai-key.json";
+let chmodCredentialFile = chmod;
 
 export function isOpenAIKeyStorageAvailable(): boolean {
   return safeStorage.isEncryptionAvailable();
@@ -51,8 +52,10 @@ export async function saveOpenAIAPIKey(userDataPath: string, apiKey: string): Pr
     savedAt: new Date().toISOString()
   };
 
+  const filePath = getOpenAIKeyPath(userDataPath);
   await mkdir(userDataPath, { recursive: true });
-  await atomicWriteTextFile(getOpenAIKeyPath(userDataPath), `${JSON.stringify(storedKey, null, 2)}\n`);
+  await atomicWriteTextFile(filePath, `${JSON.stringify(storedKey, null, 2)}\n`);
+  await restrictCredentialFilePermissions(filePath);
 }
 
 export async function deleteOpenAIAPIKey(userDataPath: string): Promise<void> {
@@ -61,6 +64,25 @@ export async function deleteOpenAIAPIKey(userDataPath: string): Promise<void> {
 
 function getOpenAIKeyPath(userDataPath: string): string {
   return path.join(userDataPath, credentialsFileName);
+}
+
+async function restrictCredentialFilePermissions(filePath: string): Promise<void> {
+  if (process.platform === "win32") return;
+
+  try {
+    await chmodCredentialFile(filePath, 0o600);
+  } catch {
+    // 保存自体は成功しているため、権限変更に失敗してもAPIキー保存は失敗扱いにしない。
+  }
+}
+
+export function setOpenAIKeyStoreChmodForTest(chmodFile: typeof chmod): () => void {
+  const previousChmodCredentialFile = chmodCredentialFile;
+  chmodCredentialFile = chmodFile;
+
+  return () => {
+    chmodCredentialFile = previousChmodCredentialFile;
+  };
 }
 
 function parseStoredKey(raw: string): StoredOpenAIKey | null {

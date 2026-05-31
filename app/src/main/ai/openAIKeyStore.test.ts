@@ -13,7 +13,7 @@ vi.mock("electron", () => ({
   safeStorage: safeStorageMock
 }));
 
-import { deleteOpenAIAPIKey, hasOpenAIAPIKey, readOpenAIAPIKey, saveOpenAIAPIKey } from "./openAIKeyStore";
+import { deleteOpenAIAPIKey, hasOpenAIAPIKey, readOpenAIAPIKey, saveOpenAIAPIKey, setOpenAIKeyStoreChmodForTest } from "./openAIKeyStore";
 
 let userDataPath = "";
 
@@ -35,6 +35,50 @@ describe("OpenAI API key store", () => {
     await expect(readOpenAIAPIKey(userDataPath)).resolves.toBe("sk-test-openai-key-1234567890");
     await expect(hasOpenAIAPIKey(userDataPath)).resolves.toBe(true);
     await expect(readFile(path.join(userDataPath, "app-settings.json"), "utf8")).rejects.toMatchObject({ code: "ENOENT" });
+  });
+
+  it("restricts the saved OpenAI API key file permissions outside Windows", async () => {
+    const chmodMock = vi.fn<() => Promise<void>>(() => Promise.resolve());
+    const restoreChmod = setOpenAIKeyStoreChmodForTest(chmodMock);
+
+    try {
+      await saveOpenAIAPIKey(userDataPath, "sk-test-openai-key-1234567890");
+
+      if (process.platform === "win32") {
+        expect(chmodMock).not.toHaveBeenCalled();
+      } else {
+        expect(chmodMock).toHaveBeenCalledWith(path.join(userDataPath, "ai-openai-key.json"), 0o600);
+      }
+    } finally {
+      restoreChmod();
+    }
+  });
+
+  it("saves the OpenAI API key even when restricting file permissions fails", async () => {
+    const restoreChmod = setOpenAIKeyStoreChmodForTest(vi.fn<() => Promise<void>>(() => Promise.reject(new Error("chmod failed"))));
+
+    try {
+      await expect(saveOpenAIAPIKey(userDataPath, "sk-test-openai-key-1234567890")).resolves.toBeUndefined();
+      await expect(readOpenAIAPIKey(userDataPath)).resolves.toBe("sk-test-openai-key-1234567890");
+    } finally {
+      restoreChmod();
+    }
+  });
+
+  it("skips restricting the saved OpenAI API key file permissions on Windows", async () => {
+    const originalPlatform = process.platform;
+    const chmodMock = vi.fn<() => Promise<void>>(() => Promise.resolve());
+    const restoreChmod = setOpenAIKeyStoreChmodForTest(chmodMock);
+    Object.defineProperty(process, "platform", { value: "win32" });
+
+    try {
+      await saveOpenAIAPIKey(userDataPath, "sk-test-openai-key-1234567890");
+    } finally {
+      Object.defineProperty(process, "platform", { value: originalPlatform });
+      restoreChmod();
+    }
+
+    expect(chmodMock).not.toHaveBeenCalled();
   });
 
   it("deletes the saved OpenAI API key", async () => {

@@ -73,6 +73,8 @@ known_hosts
 
 # Relic / Electron のローカル実行データ
 app-settings.json
+ai-openai-key.json
+**/ai-openai-key.json
 workspaces/*.json
 relic-user-data/
 Relic Test Workspace/
