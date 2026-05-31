@@ -299,7 +299,7 @@
 }
 
 .editor-body {
-  background: var(--surface);
+  background: transparent;
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr);
   min-height: 0;
@@ -381,11 +381,22 @@
 }
 
 .cm-editor-container .cm-editor {
+  background: transparent;
   height: 100%;
 }
 
 .cm-editor-container .cm-scroller {
+  background: transparent;
   overflow: auto;
+}
+
+.cm-editor-container .cm-gutters {
+  background: transparent;
+  border-right-color: color-mix(in srgb, var(--border) 58%, transparent);
+}
+
+.cm-editor-container .cm-activeLineGutter {
+  background: transparent;
 }
 
 .cm-editor-container .cm-line {
@@ -1413,7 +1424,7 @@
 .pane-status {
   align-items: center;
   border-top: 0;
-  box-shadow: 0 -1px 0 var(--border);
+  box-shadow: 0 -1px 0 color-mix(in srgb, var(--border) 52%, transparent);
   color: var(--text-3);
   display: flex;
   font-size: 11px;
