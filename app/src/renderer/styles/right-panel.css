@@ -837,8 +837,9 @@
 
 .right-panel {
   background: var(--surface-raised);
-  border-left: 0;
-  box-shadow: -1px 0 0 var(--border), -12px 0 28px rgba(16, 24, 40, 0.045);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--floating-panel-shadow);
   display: flex;
   flex: 0 0 240px;
   flex-direction: column;
@@ -856,7 +857,8 @@
 }
 
 .right-panel--closed {
-  border-left-color: transparent;
+  border-color: transparent;
+  box-shadow: none;
   flex-basis: 0;
   min-width: 0;
   pointer-events: none;
@@ -864,7 +866,7 @@
 }
 
 .right-panel--resizing {
-  border-left-color: var(--accent);
+  border-color: var(--accent-ring);
   transition:
     background-color var(--motion-fast) var(--ease-standard),
     border-color var(--motion-fast) var(--ease-standard);
@@ -875,7 +877,7 @@
   border: 0;
   bottom: 0;
   cursor: col-resize;
-  left: 0;
+  left: -4px;
   padding: 0;
   position: absolute;
   top: 0;
