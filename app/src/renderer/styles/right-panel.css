@@ -836,8 +836,9 @@
 /* ────────────────────────────────── */
 
 .right-panel {
-  background: var(--popup-bg);
-  border-left: 1px solid var(--border);
+  background: var(--surface-raised);
+  border-left: 0;
+  box-shadow: -1px 0 0 var(--border), -12px 0 28px rgba(16, 24, 40, 0.045);
   display: flex;
   flex: 0 0 240px;
   flex-direction: column;
