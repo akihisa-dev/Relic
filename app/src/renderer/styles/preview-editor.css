@@ -1434,7 +1434,7 @@
 
 .empty-pane {
   align-items: center;
-  background: var(--surface);
+  background: transparent;
   color: var(--text-3);
   display: flex;
   flex-direction: column;
