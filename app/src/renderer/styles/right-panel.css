@@ -640,7 +640,7 @@
 }
 
 .ai-workspace-message--user {
-  background: rgba(145, 83, 255, 0.16);
+  background: var(--accent-soft);
   border-radius: 18px;
   justify-self: end;
   max-width: min(78%, 520px);
