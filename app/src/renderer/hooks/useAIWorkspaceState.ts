@@ -143,18 +143,22 @@ export function useAIWorkspaceState({
     if (!isEnabled || !workspaceId) return;
     if (!window.relic?.sendAIWorkspaceMessage) return;
 
+    const trimmedMessage = message.trim();
+    const previousState = aiWorkspaceState;
+    setAIWorkspaceState((currentState) => optimisticAIWorkspaceState(currentState, trimmedMessage));
     setIsAIWorkspaceSending(true);
-    const result = await window.relic.sendAIWorkspaceMessage({ activeFileContent, activeFilePath, dirtyFilePaths, message });
+    const result = await window.relic.sendAIWorkspaceMessage({ activeFileContent, activeFilePath, dirtyFilePaths, message: trimmedMessage });
     setIsAIWorkspaceSending(false);
 
     if (!result.ok) {
       if (result.error.code === "AI_WORKSPACE_MESSAGE_CANCELLED") return;
+      setAIWorkspaceState(previousState);
       onError(result.error.message);
       return;
     }
 
     setAIWorkspaceState(result.value);
-  }, [isEnabled, onError, workspaceId]);
+  }, [aiWorkspaceState, isEnabled, onError, workspaceId]);
 
   const confirmAIWorkspaceMessage = useCallback(async (
     _dirtyFilePaths: string[] = [],
@@ -250,5 +254,23 @@ export function useAIWorkspaceState({
     applyAIWorkspaceOperations,
     discardAIWorkspaceOperations,
     clearAIWorkspaceData
+  };
+}
+
+function optimisticAIWorkspaceState(state: AIWorkspaceState | null, message: string): AIWorkspaceState | null {
+  if (!state || !message) return state;
+
+  return {
+    ...state,
+    history: [
+      ...state.history,
+      {
+        content: message,
+        createdAt: new Date().toISOString(),
+        id: `optimistic-user-${Date.now()}`,
+        references: [],
+        role: "user"
+      }
+    ]
   };
 }

@@ -289,6 +289,32 @@ describe("sendAIWorkspaceMessage", () => {
     expect(runOpenAIWorkspaceTurn).not.toHaveBeenCalled();
   });
 
+  it("keeps the user message when AI generation is aborted after send", async () => {
+    await writeFile(path.join(workspacePath, "README.md"), "# Auth\nLogin spec", "utf8");
+    const abortController = new AbortController();
+    vi.mocked(runCodexAIWorkspaceTurn).mockImplementationOnce(async (input) => {
+      await new Promise((_resolve, reject) => {
+        input.signal?.addEventListener("abort", () => reject(new Error("AI Workspace処理を中断しました。")), { once: true });
+      });
+      throw new Error("unreachable");
+    });
+
+    const resultPromise = sendAIWorkspaceMessage(context(), { message: "Login spec" }, undefined, {
+      signal: abortController.signal
+    });
+    await vi.waitFor(() => {
+      expect(runCodexAIWorkspaceTurn).toHaveBeenCalled();
+    });
+    abortController.abort();
+    const result = await resultPromise;
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.history).toHaveLength(1);
+      expect(result.value.history[0]).toMatchObject({ content: "Login spec", role: "user" });
+    }
+  });
+
   it("shows a clear fallback message when Codex App Server fails", async () => {
     await writeFile(path.join(workspacePath, "README.md"), "# 認証\nログイン仕様", "utf8");
     vi.mocked(runCodexAIWorkspaceTurn).mockRejectedValueOnce(new Error("Codex App Serverを起動できませんでした: ENOENT"));

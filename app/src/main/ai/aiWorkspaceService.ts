@@ -201,6 +201,7 @@ export async function sendAIWorkspaceMessage(
   options: { signal?: AbortSignal } = {}
 ): Promise<RelicResult<AIWorkspaceState>> {
   const message = input.message.trim();
+  let userOnlyData: AIWorkspaceData | null = null;
 
   if (!message) {
     return fail("AI_WORKSPACE_MESSAGE_EMPTY", "AIに送る内容を入力してください。");
@@ -219,6 +220,20 @@ export async function sendAIWorkspaceMessage(
       references: [],
       role: "user"
     };
+    const userOnlyChat: AIWorkspaceChatData = {
+      ...chat,
+      history: [...chat.history, userMessage],
+      title: titleForChatAfterUserMessage(chat, message),
+      updatedAt: userMessage.createdAt
+    };
+    userOnlyData = {
+      ...data,
+      activeChatId: userOnlyChat.id,
+      chats: upsertChat(data.chats, userOnlyChat)
+    };
+    await writeAIWorkspaceData(context.userDataPath, context.workspaceId, userOnlyData);
+    throwIfAIWorkspaceAborted(options.signal);
+
     const settings = await readAppSettings(context.userDataPath);
     const provider = settings.aiSettings.aiProvider;
     const referenceContents = await readReferenceContents(context.workspacePath, references, {
@@ -286,21 +301,24 @@ export async function sendAIWorkspaceMessage(
       role: "assistant"
     };
     const nextData = {
-      ...data,
-      activeChatId: chat.id,
-      chats: upsertChat(data.chats, {
-        ...chat,
-        history: [...chat.history, userMessage, assistantMessage],
-        title: titleForChatAfterUserMessage(chat, message),
+      ...userOnlyData,
+      activeChatId: userOnlyChat.id,
+      chats: upsertChat(userOnlyData.chats, {
+        ...userOnlyChat,
+        history: [...userOnlyChat.history, assistantMessage],
         updatedAt: assistantMessage.createdAt
       }),
-      index: appliedOperations.applied.length > 0 ? await buildAIWorkspaceIndex(context.workspacePath) : data.index,
+      index: appliedOperations.applied.length > 0 ? await buildAIWorkspaceIndex(context.workspacePath) : userOnlyData.index,
     };
     await writeAIWorkspaceData(context.userDataPath, context.workspaceId, nextData);
 
     return ok(await toState(nextData, context.userDataPath));
   } catch (error) {
     if (isAIWorkspaceAbortError(error, options.signal)) {
+      if (userOnlyData) {
+        return ok(await toState(userOnlyData, context.userDataPath));
+      }
+
       return fail("AI_WORKSPACE_MESSAGE_CANCELLED", "AIの応答生成を中断しました。");
     }
 
