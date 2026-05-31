@@ -1,8 +1,6 @@
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
-import { createHash } from "node:crypto";
-import os from "node:os";
+import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 vi.mock("./openAIResponsesClient", () => ({
   runOpenAIWorkspaceTurn: vi.fn()
@@ -23,32 +21,27 @@ import {
   deleteAIWorkspaceChat,
   discardAIWorkspaceOperations,
   getAIWorkspaceState,
-  previewAIWorkspaceMessage,
   sendAIWorkspaceMessage
 } from "./aiWorkspaceService";
-import { writeAIWorkspaceData, type AIWorkspaceChatData, type AIWorkspaceData } from "./aiWorkspaceData";
+import type { AIWorkspaceData } from "./aiWorkspaceData";
 import { computeAIWorkspaceIndexSourceHash } from "./aiWorkspaceIndex";
 import { readCodexAIWorkspaceUsage, runCodexAIWorkspaceTurn } from "./codexAppServerClient";
 import { readOpenAIAPIKey } from "./openAIKeyStore";
 import { runOpenAIWorkspaceTurn } from "./openAIResponsesClient";
 import { getAppSettingsPath } from "../settings/appSettings";
+import {
+  context,
+  createChat,
+  createOperation,
+  hashContent,
+  setupAIWorkspaceServiceTest,
+  userDataPath,
+  workspacePath,
+  writeAISettings,
+  writeData
+} from "./aiWorkspaceServiceTestHelpers";
 
-let userDataPath = "";
-let workspacePath = "";
-
-beforeEach(async () => {
-  userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-ai-user-data-"));
-  workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-ai-workspace-"));
-  vi.mocked(runOpenAIWorkspaceTurn).mockReset();
-  vi.mocked(runCodexAIWorkspaceTurn).mockReset();
-  vi.mocked(readCodexAIWorkspaceUsage).mockResolvedValue(null);
-  vi.mocked(readOpenAIAPIKey).mockResolvedValue("sk-test-openai-key");
-});
-
-afterEach(async () => {
-  await rm(userDataPath, { force: true, recursive: true });
-  await rm(workspacePath, { force: true, recursive: true });
-});
+setupAIWorkspaceServiceTest();
 
 describe("getAIWorkspaceState", () => {
   it("indexes Markdown files when Cowork state is loaded", async () => {
@@ -633,267 +626,3 @@ describe("sendAIWorkspaceMessage", () => {
   });
 
 });
-
-describe("previewAIWorkspaceMessage", () => {
-  it("returns Markdown references for Japanese messages before calling OpenAI API", async () => {
-    await writeFile(path.join(workspacePath, "README.md"), "# 認証\nログイン仕様", "utf8");
-
-    const result = await previewAIWorkspaceMessage(context(), { message: "認証について整理して" });
-
-    expect(result.ok).toBe(true);
-    expect(runOpenAIWorkspaceTurn).not.toHaveBeenCalled();
-    if (result.ok) {
-      expect(result.value.requiresExternalAI).toBe(true);
-      expect(result.value.references).toEqual([
-        expect.objectContaining({ path: "README.md", preview: "# 認証" })
-      ]);
-    }
-  });
-
-  it("includes the active Markdown file for current-file messages", async () => {
-    await writeFile(path.join(workspacePath, "current.md"), "# Current\n開いているファイル", "utf8");
-    await writeFile(path.join(workspacePath, "other.md"), "# Other\n別ファイル", "utf8");
-
-    const result = await previewAIWorkspaceMessage(context(), {
-      activeFilePath: "current.md",
-      message: "このファイルを整理して"
-    });
-
-    expect(result.ok).toBe(true);
-    expect(runOpenAIWorkspaceTurn).not.toHaveBeenCalled();
-    if (result.ok) {
-      expect(result.value.requiresExternalAI).toBe(true);
-      expect(result.value.references[0]).toEqual(expect.objectContaining({
-        path: "current.md",
-        preview: "# Current"
-      }));
-    }
-  });
-
-  it("uses small active Markdown content even when the current file is missing from the index", async () => {
-    await writeData({
-      index: {
-        chunks: [],
-        indexedAt: new Date().toISOString(),
-        skippedLargeFiles: [],
-        sourceHash: await computeAIWorkspaceIndexSourceHash(workspacePath),
-        unreadableFiles: []
-      }
-    });
-
-    const result = await previewAIWorkspaceMessage(context(), {
-      activeFileContent: "# Unsaved\nnew draft",
-      activeFilePath: "missing.md",
-      message: "このファイルを整理して"
-    });
-
-    expect(result.ok).toBe(true);
-    if (result.ok) {
-      expect(result.value.references[0]).toEqual(expect.objectContaining({
-        path: "missing.md",
-        preview: "# Unsaved"
-      }));
-    }
-  });
-
-  it("does not send oversized active Markdown content as a partial current-file reference", async () => {
-    await writeData({
-      index: {
-        chunks: [],
-        indexedAt: new Date().toISOString(),
-        skippedLargeFiles: [],
-        sourceHash: await computeAIWorkspaceIndexSourceHash(workspacePath),
-        unreadableFiles: []
-      }
-    });
-
-    const result = await previewAIWorkspaceMessage(context(), {
-      activeFileContent: "x".repeat(2 * 1024 * 1024 + 1),
-      activeFilePath: "large.md",
-      message: "このファイルを整理して"
-    });
-
-    expect(result.ok).toBe(true);
-    if (result.ok) {
-      expect(result.value.references).toEqual([]);
-    }
-  });
-
-  it("does not include invalid active file paths as current-file references", async () => {
-    await writeData({
-      index: {
-        chunks: [],
-        indexedAt: new Date().toISOString(),
-        skippedLargeFiles: [],
-        sourceHash: await computeAIWorkspaceIndexSourceHash(workspacePath),
-        unreadableFiles: []
-      }
-    });
-
-    const result = await previewAIWorkspaceMessage(context(), {
-      activeFileContent: "# Outside\nshould not be referenced",
-      activeFilePath: "../outside.md",
-      message: "このファイルを整理して"
-    });
-
-    expect(result.ok).toBe(true);
-    if (result.ok) {
-      expect(result.value.references).toEqual([]);
-    }
-  });
-
-  it("rebuilds a stale AI index before previewing Markdown references", async () => {
-    await writeFile(path.join(workspacePath, "README.md"), "# New Topic\nfresh content", "utf8");
-    await writeData({
-      index: {
-        chunks: [{
-          content: "# Old Topic",
-          embedding: [],
-          endLine: 1,
-          path: "README.md",
-          startLine: 1
-        }],
-        indexedAt: "2026-05-30T00:00:00.000Z",
-        skippedLargeFiles: [],
-        sourceHash: "stale",
-        unreadableFiles: []
-      }
-    });
-
-    const result = await previewAIWorkspaceMessage(context(), { message: "fresh content" });
-
-    expect(result.ok).toBe(true);
-    if (result.ok) {
-      expect(result.value.references).toEqual([
-        expect.objectContaining({ path: "README.md", preview: "# New Topic" })
-      ]);
-    }
-  });
-
-  it("treats natural language apply commands as ordinary AI conversation", async () => {
-    await writeData({
-      operations: [createOperation("update", "draft.md", "# Draft\nupdated")]
-    });
-
-    const result = await previewAIWorkspaceMessage(context(), { message: "それ反映して" });
-
-    expect(result.ok).toBe(true);
-    if (result.ok) {
-      expect(result.value.requiresExternalAI).toBe(true);
-      expect(result.value.references).toEqual([]);
-    }
-  });
-
-  it("treats hold-later commands as ordinary AI conversation", async () => {
-    await writeData({
-      operations: [createOperation("update", "draft.md", "# Draft\nupdated")]
-    });
-
-    const result = await previewAIWorkspaceMessage(context(), { message: "反映はまだしない" });
-
-    expect(result.ok).toBe(true);
-    if (result.ok) {
-      expect(result.value.requiresExternalAI).toBe(true);
-      expect(result.value.references).toEqual([]);
-    }
-  });
-
-  it("treats natural language revert commands as ordinary AI conversation", async () => {
-    await writeData({
-      operations: [{
-        ...createOperation("update", "draft.md", "# Draft\nupdated"),
-        baseContent: "# Draft\nold",
-        status: "applied"
-      }]
-    });
-
-    const result = await previewAIWorkspaceMessage(context(), { message: "さっきの変更を戻して" });
-
-    expect(result.ok).toBe(true);
-    if (result.ok) {
-      expect(result.value.requiresExternalAI).toBe(true);
-      expect(result.value.references).toEqual([]);
-    }
-  });
-});
-
-function context() {
-  return {
-    userDataPath,
-    workspaceId: "workspace",
-    workspacePath
-  };
-}
-
-type AIWorkspaceDataTestPartial = Partial<AIWorkspaceData> & Pick<Partial<AIWorkspaceChatData>, "history" | "operations">;
-
-async function writeData(partial: AIWorkspaceDataTestPartial): Promise<void> {
-  const now = "2026-05-30T00:00:00.000Z";
-  const history = partial.history ?? [];
-  const operations = partial.operations ?? [];
-  const { activeChatId, index } = partial;
-  const chats = partial.chats ?? [{
-    createdAt: now,
-    history,
-    id: "chat-1",
-    operations,
-    title: "テストチャット",
-    updatedAt: now
-  }];
-
-  await writeAIWorkspaceData(userDataPath, "workspace", {
-    activeChatId: activeChatId ?? chats[0]?.id ?? null,
-    chats,
-    index: index ?? {
-      chunks: [],
-      indexedAt: null,
-      skippedLargeFiles: [],
-      sourceHash: null,
-      unreadableFiles: []
-    }
-  });
-}
-
-async function writeAISettings(settings: { aiProvider: "codex-app-server" | "openai-api"; openAIModel?: string }): Promise<void> {
-  await writeFile(getAppSettingsPath(userDataPath), JSON.stringify({
-    aiSettings: {
-      aiProvider: settings.aiProvider,
-      openAIModel: settings.openAIModel ?? "gpt-5.4-mini"
-    }
-  }), "utf8");
-}
-
-function createOperation(
-  kind: "create" | "update" | "delete",
-  filePath: string,
-  content?: string
-) {
-  return {
-    content,
-    createdAt: "2026-05-30T00:00:00.000Z",
-    id: `${kind}-${filePath}`,
-    kind,
-    path: filePath,
-    status: "pending" as const,
-    summary: `${kind} ${filePath}`
-  };
-}
-
-function createChat(
-  id: string,
-  title: string,
-  operations: ReturnType<typeof createOperation>[] = []
-): AIWorkspaceChatData {
-  return {
-    createdAt: "2026-05-30T00:00:00.000Z",
-    history: [],
-    id,
-    operations,
-    title,
-    updatedAt: "2026-05-30T00:00:00.000Z"
-  };
-}
-
-function hashContent(content: string): string {
-  return createHash("sha256").update(content).digest("hex");
-}
