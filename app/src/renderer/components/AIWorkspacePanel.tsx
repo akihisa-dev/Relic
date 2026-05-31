@@ -36,6 +36,10 @@ export function AIWorkspacePanel({
   useLayoutEffect(() => {
     const textarea = textareaRef.current;
     if (!textarea) return;
+    if (!message) {
+      textarea.style.height = "";
+      return;
+    }
     textarea.style.height = "auto";
     textarea.style.height = `${textarea.scrollHeight}px`;
   }, [message]);

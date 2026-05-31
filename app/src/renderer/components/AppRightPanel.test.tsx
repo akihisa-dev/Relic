@@ -312,6 +312,7 @@ describe("AppRightPanel", () => {
 
     const input = screen.getByLabelText("AIへのメッセージ");
     expect(input).toHaveAttribute("rows", "1");
+    expect((input as HTMLTextAreaElement).style.height).toBe("");
 
     Object.defineProperty(input, "scrollHeight", {
       configurable: true,
