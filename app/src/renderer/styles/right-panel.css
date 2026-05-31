@@ -105,8 +105,8 @@
 
 .ai-workspace-panel {
   display: grid;
-  gap: 10px;
-  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  grid-template-rows: minmax(0, 1fr) auto;
+  height: 100%;
   min-height: 100%;
 }
 
@@ -115,30 +115,6 @@
 .ai-workspace-note {
   color: var(--text-3);
   font-size: 12px;
-}
-
-.ai-workspace-header-actions {
-  display: flex;
-  gap: 4px;
-  justify-content: flex-end;
-}
-
-.ai-workspace-icon-button {
-  align-items: center;
-  background: transparent;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  color: var(--text-2);
-  display: inline-flex;
-  height: 26px;
-  justify-content: center;
-  min-width: 26px;
-  padding: 0 6px;
-}
-
-.ai-workspace-icon-button:hover {
-  background: var(--hover);
-  color: var(--text);
 }
 
 .ai-workspace-status {
@@ -587,9 +563,10 @@
 .ai-workspace-messages {
   align-content: end;
   display: grid;
-  gap: 14px;
+  gap: 20px;
   min-height: 0;
   overflow: auto;
+  padding: 0 2px 18px;
 }
 
 .ai-workspace-history {
@@ -663,15 +640,16 @@
 }
 
 .ai-workspace-message--user {
-  background: var(--hover);
-  border-radius: 14px;
+  background: rgba(145, 83, 255, 0.16);
+  border-radius: 18px;
   justify-self: end;
-  max-width: min(82%, 520px);
-  padding: 8px 10px;
+  max-width: min(78%, 520px);
+  padding: 9px 12px;
 }
 
 .ai-workspace-message--assistant {
   justify-self: stretch;
+  padding: 0 6px;
 }
 
 .ai-workspace-message-role {
@@ -682,8 +660,8 @@
 
 .ai-workspace-message p {
   color: var(--text);
-  font-size: 13px;
-  line-height: 1.5;
+  font-size: 14px;
+  line-height: 1.7;
   margin: 0;
   white-space: pre-wrap;
 }
@@ -733,11 +711,11 @@
 .ai-workspace-form {
   align-items: end;
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: 22px;
   display: grid;
   gap: 6px;
   grid-template-columns: minmax(0, 1fr) auto;
-  padding: 6px;
+  padding: 8px;
 }
 
 .ai-workspace-form textarea {
@@ -746,23 +724,34 @@
   color: var(--text);
   font: inherit;
   max-height: 160px;
-  min-height: 38px;
-  padding: 9px 6px;
+  min-height: 44px;
+  padding: 11px 10px;
   resize: vertical;
 }
 
 .ai-workspace-form button {
+  align-items: center;
   background: var(--accent);
   border: 0;
-  border-radius: 10px;
+  border-radius: 999px;
   color: #ffffff;
-  min-height: 38px;
-  padding: 0 14px;
+  display: inline-flex;
+  font-size: 22px;
+  height: 44px;
+  justify-content: center;
+  line-height: 1;
+  padding: 0;
+  width: 44px;
 }
 
 .ai-workspace-form button:disabled {
   background: var(--hover-strong);
   color: var(--text-3);
+}
+
+.right-panel-content--ai {
+  overflow: hidden;
+  padding-top: 16px;
 }
 
 /* ────────────────────────────────── */
