@@ -17,7 +17,6 @@ import type {
 import { ChartView } from "../components/ChartPanel";
 import { ChronicleSettingsPanel } from "../components/ChronicleSettingsPanel";
 import { FrontmatterPanel } from "../components/FrontmatterPanel";
-import { HakobiBridgePanel } from "../components/HakobiBridgePanel";
 import { SettingsPanel } from "../components/SettingsPanel";
 import { ToolsPanel } from "../components/ToolsPanel";
 import type { PanelTabKind } from "../store/editorStore";
@@ -83,10 +82,6 @@ export function useAppTabRenderers({
   const renderPanelTab = useCallback((panel: PanelTabKind): ReactNode => {
     if (panel === "tools") {
       return <ToolsPanel workspacePath={workspaceState?.activeWorkspace?.path ?? null} />;
-    }
-
-    if (panel === "hakobiBridge") {
-      return <HakobiBridgePanel workspacePath={workspaceState?.activeWorkspace?.path ?? null} />;
     }
 
     if (panel === "frontmatter") {

@@ -12,10 +12,6 @@
   max-width: 1040px;
 }
 
-.hakobi-bridge-page {
-  max-width: 1040px;
-}
-
 .settings-page-header {
   display: grid;
   gap: 4px;
@@ -120,6 +116,31 @@
 .hakobi-bridge-status {
   align-items: center;
   grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.hakobi-bridge-sidebar {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.sidebar-view-content--hakobiBridge .settings-group {
+  border-radius: 7px;
+  padding: 12px;
+}
+
+.sidebar-view-content--hakobiBridge .setting-row {
+  align-items: stretch;
+  gap: 6px;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.sidebar-view-content--hakobiBridge .settings-actions-row {
+  align-items: stretch;
+}
+
+.sidebar-view-content--hakobiBridge .settings-actions-row button {
+  width: 100%;
 }
 
 .hakobi-bridge-status p,

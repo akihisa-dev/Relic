@@ -46,7 +46,6 @@ export function panelLabelsForTranslator(t: Translator): Record<PanelTabKind, st
   return {
     chronicleSettings: t("nav.chronicleSettings"),
     frontmatter: t("nav.frontmatter"),
-    hakobiBridge: t("nav.hakobiBridge"),
     settings: t("nav.settings"),
     tools: t("nav.tools")
   };
@@ -137,10 +136,11 @@ export function splitRailViews<TView extends Pick<AppRailView, "id">>(
     panelRailViews: views.filter((view) =>
       view.id !== "files" &&
       view.id !== "ai" &&
+      view.id !== "hakobiBridge" &&
       chartIdForRailView(view.id) === null
     ),
     primaryRailViews: views.filter((view) =>
-      view.id === "files" || view.id === "ai"
+      view.id === "files" || view.id === "ai" || view.id === "hakobiBridge"
     )
   };
 }
