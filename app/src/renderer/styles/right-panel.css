@@ -712,27 +712,29 @@
   align-items: center;
   background: var(--input-bg);
   border: 1px solid var(--border);
-  border-radius: 999px;
-  display: grid;
-  gap: 6px;
-  grid-template-columns: minmax(0, 1fr) auto;
+  border-radius: 9999px;
+  box-sizing: border-box;
+  display: flex;
+  gap: 8px;
+  min-height: 48px;
   overflow: hidden;
-  padding: 6px 8px;
+  padding: 5px 8px 5px 16px;
 }
 
 .ai-workspace-form textarea {
   background: transparent;
   border: 0;
-  border-radius: 999px;
+  border-radius: 0;
   box-sizing: border-box;
   color: var(--text);
+  flex: 1 1 auto;
   font: inherit;
-  line-height: 1.45;
+  line-height: 24px;
   max-height: min(220px, 38vh);
-  min-height: 22px;
+  min-height: 24px;
   outline: none;
   overflow-y: auto;
-  padding: 0 8px;
+  padding: 0;
   resize: none;
 }
 
@@ -741,13 +743,14 @@
 }
 
 .ai-workspace-form button {
+  flex: 0 0 auto;
   align-items: center;
   background: var(--accent);
   border: 0;
-  border-radius: 999px;
+  border-radius: 9999px;
   color: #ffffff;
   display: inline-flex;
-  font-size: 20px;
+  font-size: 19px;
   height: 36px;
   justify-content: center;
   line-height: 1;
