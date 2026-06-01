@@ -62,14 +62,57 @@ export function FileTreeItemRow({
 }: FileTreeItemRowProps): ReactElement {
   const t = useT();
   const isFolder = node.type === "folder";
+  const rowClassName = `file-tree-row ${node.type}${isOpen ? " open" : ""}${isOpening ? " file-tree-row--opening" : ""}${isSelected ? " selected" : ""}${useSelectedItems ? " multi-selected" : ""}${isDragging ? " dragging" : ""}${isDragOver ? " drag-over" : ""}${isAppearing ? " file-tree-row--appearing" : ""}${isRemoving ? " file-tree-row--removing" : ""}`;
+  const icon = (
+    <span className={`file-tree-icon${isFolder ? " file-tree-icon--folder" : ""}${isFolder && isExpanded ? " file-tree-icon--expanded" : ""}`}>
+      {node.type === "folder" ? (
+        <>
+          <span aria-hidden="true" className="file-tree-folder-chevron">▶</span>
+          <FolderStateIcon isExpanded={isExpanded} />
+        </>
+      ) : (
+        <>
+          <span className="file-tree-file-accessible-dot">·</span>
+          <FileTypeIcon />
+        </>
+      )}
+    </span>
+  );
+
+  if (isRenaming) {
+    return (
+      <div className="file-tree-row-wrap">
+        <div
+          className={rowClassName}
+          data-node-path={node.path}
+          data-node-type={node.type}
+        >
+          {icon}
+          <input
+            aria-label={t("files.rename")}
+            className="file-tree-rename-input"
+            onBlur={commitRename}
+            onChange={(e) => setRenameDraft(e.target.value)}
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") commitRename();
+              if (e.key === "Escape") cancelRename();
+            }}
+            ref={inputRef}
+            value={renameDraft}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="file-tree-row-wrap">
       <button
-        className={`file-tree-row ${node.type}${isOpen ? " open" : ""}${isOpening ? " file-tree-row--opening" : ""}${isSelected ? " selected" : ""}${useSelectedItems ? " multi-selected" : ""}${isDragging ? " dragging" : ""}${isDragOver ? " drag-over" : ""}${isAppearing ? " file-tree-row--appearing" : ""}${isRemoving ? " file-tree-row--removing" : ""}`}
+        className={rowClassName}
         data-node-path={node.path}
         data-node-type={node.type}
-        draggable={!isRenaming}
+        draggable
         onDragEnd={onDragEnd}
         onDragLeave={onDragLeave}
         onDragOver={onDragOver}
@@ -84,36 +127,8 @@ export function FileTreeItemRow({
         onClick={onActivate}
         type="button"
       >
-        <span className={`file-tree-icon${isFolder ? " file-tree-icon--folder" : ""}${isFolder && isExpanded ? " file-tree-icon--expanded" : ""}`}>
-          {node.type === "folder" ? (
-            <>
-              <span aria-hidden="true" className="file-tree-folder-chevron">▶</span>
-              <FolderStateIcon isExpanded={isExpanded} />
-            </>
-          ) : (
-            <>
-              <span className="file-tree-file-accessible-dot">·</span>
-              <FileTypeIcon />
-            </>
-          )}
-        </span>
-        {isRenaming ? (
-          <input
-            aria-label={t("files.rename")}
-            className="file-tree-rename-input"
-            onBlur={commitRename}
-            onChange={(e) => setRenameDraft(e.target.value)}
-            onClick={(e) => e.stopPropagation()}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") commitRename();
-              if (e.key === "Escape") cancelRename();
-            }}
-            ref={inputRef}
-            value={renameDraft}
-          />
-        ) : (
-          <span className="file-tree-name">{node.name}</span>
-        )}
+        {icon}
+        <span className="file-tree-name">{node.name}</span>
       </button>
       {onTogglePin ? (
         <button

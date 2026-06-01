@@ -77,6 +77,7 @@ describe("FileTree", () => {
 
     fireEvent.doubleClick(rowButton("Root"));
     const input = screen.getByLabelText("Rename");
+    expect(input.closest("button")).toBeNull();
     fireEvent.change(input, { target: { value: " Renamed " } });
     fireEvent.keyDown(input, { key: "Enter" });
 
