@@ -21,7 +21,7 @@ export function normalizeMarkdownFileName(name: string): RelicResult<string> {
 
 export function markdownPathInFolder(relativePath: string, destinationFolder: string): string {
   const normalizedDestFolder = toWorkspaceRelativePath(destinationFolder.trim());
-  const baseName = path.basename(relativePath);
+  const baseName = path.posix.basename(toWorkspaceRelativePath(relativePath));
   return toWorkspaceRelativePath(
     normalizedDestFolder === "" ? baseName : `${normalizedDestFolder}/${baseName}`
   );
@@ -35,7 +35,10 @@ export function renamedMarkdownPath(relativePath: string, newName: string): Reli
   }
 
   return ok(toWorkspaceRelativePath(
-    path.join(path.dirname(relativePath), normalizedNewName.value)
+    path.posix.join(
+      path.posix.dirname(toWorkspaceRelativePath(relativePath)),
+      normalizedNewName.value
+    )
   ));
 }
 
@@ -44,15 +47,16 @@ export async function createCopyRelativePath(
   sourceRelativePath: string,
   maxCandidates = DEFAULT_MAX_COPY_NAME_CANDIDATES
 ): Promise<string> {
-  const directory = path.dirname(sourceRelativePath);
-  const extension = path.extname(sourceRelativePath);
-  const baseName = path.basename(sourceRelativePath, extension);
+  const normalizedSourcePath = toWorkspaceRelativePath(sourceRelativePath);
+  const directory = path.posix.dirname(normalizedSourcePath);
+  const extension = path.posix.extname(normalizedSourcePath);
+  const baseName = path.posix.basename(normalizedSourcePath, extension);
   let copyIndex = 1;
 
   while (copyIndex <= maxCandidates) {
     const copyName =
       copyIndex === 1 ? `${baseName} のコピー${extension}` : `${baseName} のコピー ${copyIndex}${extension}`;
-    const candidateRelativePath = toWorkspaceRelativePath(path.join(directory, copyName));
+    const candidateRelativePath = toWorkspaceRelativePath(path.posix.join(directory, copyName));
     const candidatePath = resolveWorkspaceRelativePath(workspacePath, candidateRelativePath);
 
     if (!candidatePath.ok) {

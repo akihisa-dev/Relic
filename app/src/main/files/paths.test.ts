@@ -115,5 +115,6 @@ describe("resolveNewWorkspacePath", () => {
 describe("toWorkspaceRelativePath", () => {
   it("OS のパス区切りをワークスペース相対パスの区切りへ正規化する", () => {
     expect(toWorkspaceRelativePath(path.join("notes", "idea.md"))).toBe("notes/idea.md");
+    expect(toWorkspaceRelativePath("notes\\idea.md")).toBe("notes/idea.md");
   });
 });

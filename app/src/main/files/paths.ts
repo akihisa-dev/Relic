@@ -13,7 +13,7 @@ const defaultRealpathOperations: RealpathOperations = {
 };
 
 export function toWorkspaceRelativePath(filePath: string): string {
-  return filePath.split(path.sep).join("/");
+  return filePath.replace(/\\/g, "/");
 }
 
 export function normalizeWorkspaceRelativeInputPath(raw: string): string | null {
