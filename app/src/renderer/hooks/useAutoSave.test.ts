@@ -1,6 +1,7 @@
 import { renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { makeRelicApi } from "../../test/rendererTestUtils";
 import { useAutoSave } from "./useAutoSave";
 
 function deferred<T>(): { promise: Promise<T>; resolve: (value: T) => void } {
@@ -15,9 +16,9 @@ function deferred<T>(): { promise: Promise<T>; resolve: (value: T) => void } {
 describe("useAutoSave", () => {
   beforeEach(() => {
     vi.useFakeTimers();
-    window.relic = {
+    window.relic = makeRelicApi({
       writeMarkdownFile: vi.fn().mockResolvedValue({ ok: true, value: undefined })
-    } as unknown as typeof window.relic;
+    });
   });
 
   afterEach(() => {
@@ -52,11 +53,11 @@ describe("useAutoSave", () => {
     const firstSave = deferred<{ ok: true; value: undefined }>();
     const secondSave = deferred<{ ok: true; value: undefined }>();
 
-    window.relic = {
+    window.relic = makeRelicApi({
       writeMarkdownFile: vi.fn()
         .mockReturnValueOnce(firstSave.promise)
         .mockReturnValueOnce(secondSave.promise)
-    } as unknown as typeof window.relic;
+    });
 
     const { rerender } = renderHook(({ content }) => useAutoSave(content, "memo.md", true), {
       initialProps: { content: "初稿" }
@@ -88,11 +89,11 @@ describe("useAutoSave", () => {
     const secondSave = deferred<{ ok: true; value: undefined }>();
     const onSaved = vi.fn();
 
-    window.relic = {
+    window.relic = makeRelicApi({
       writeMarkdownFile: vi.fn()
         .mockReturnValueOnce(firstSave.promise)
         .mockReturnValueOnce(secondSave.promise)
-    } as unknown as typeof window.relic;
+    });
 
     const { rerender } = renderHook(({ content }) => useAutoSave(content, "memo.md", true, onSaved), {
       initialProps: { content: "初稿" }
@@ -115,12 +116,12 @@ describe("useAutoSave", () => {
   it("保存失敗後に onSaveError を呼ぶ", async () => {
     const onSaveError = vi.fn();
 
-    window.relic = {
+    window.relic = makeRelicApi({
       writeMarkdownFile: vi.fn().mockResolvedValue({
         ok: false,
         error: { code: "FILE_WRITE_FAILED", message: "ファイルを保存できませんでした。" }
       })
-    } as unknown as typeof window.relic;
+    });
 
     renderHook(() => useAutoSave("# メモ", "memo.md", true, undefined, onSaveError));
 

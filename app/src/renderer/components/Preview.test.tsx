@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { defaultEditorSettings } from "../../shared/ipc";
+import { makeRelicApi } from "../../test/rendererTestUtils";
 import { I18nProvider } from "../i18n";
 import { normalizeEmbedTarget } from "../previewMarkdown";
 import { Preview } from "./Preview";
@@ -102,9 +103,9 @@ describe("Preview", () => {
   });
 
   it("Obsidian形式の画像埋め込みをファイル埋め込みとして扱わない", () => {
-    window.relic = {
+    window.relic = makeRelicApi({
       readMarkdownFile: vi.fn()
-    } as unknown as typeof window.relic;
+    });
 
     render(
       <Preview
@@ -133,7 +134,7 @@ describe("Preview", () => {
   });
 
   it("ファイル埋め込みを一段階だけ読み込んで表示する", async () => {
-    window.relic = {
+    window.relic = makeRelicApi({
       readMarkdownFile: vi.fn().mockResolvedValue({
         ok: true,
         value: {
@@ -142,7 +143,7 @@ describe("Preview", () => {
           path: "埋め込み先.md"
         }
       })
-    } as unknown as typeof window.relic;
+    });
 
     render(<Preview content="前\n\n![[埋め込み先]]\n\n後" settings={settings} />);
 
@@ -153,12 +154,12 @@ describe("Preview", () => {
   });
 
   it("大きすぎる埋め込みファイルは全文表示しない", async () => {
-    window.relic = {
+    window.relic = makeRelicApi({
       readMarkdownFile: vi.fn().mockResolvedValue({
         ok: true,
         value: { content: "a".repeat(20_001), name: "巨大ノート", path: "巨大ノート.md" }
       })
-    } as unknown as typeof window.relic;
+    });
 
     render(
       <I18nProvider language="ja">

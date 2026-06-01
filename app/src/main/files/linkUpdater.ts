@@ -8,7 +8,7 @@ import { atomicWriteTextFile } from "./atomicWrite";
 import { errorDetails } from "./fileSystem";
 import { readWorkspaceFileTree } from "./fileTree";
 import { replaceFileLinksWithCount, replaceFolderLinksWithCount } from "./linkUpdaterModel";
-import { resolveExistingWorkspacePath } from "./paths";
+import { resolveExistingWorkspacePath, toWorkspaceRelativePath } from "./paths";
 
 interface LinkUpdatePatch {
   absolutePath: string;
@@ -94,11 +94,14 @@ async function buildLinkUpdatePatches(
 ): Promise<RelicResult<LinkUpdatePatch[]>> {
   if (oldPath === newPath) return ok([]);
 
+  const normalizedOldPath = toWorkspaceRelativePath(oldPath);
+  const normalizedNewPath = toWorkspaceRelativePath(newPath);
+
   const fileTree = await readWorkspaceFileTree(workspacePath);
   const markdownPaths = collectMarkdownPaths(fileTree);
   const patches: LinkUpdatePatch[] = [];
-  const newBaseName = path.basename(newPath, ".md");
-  const newPathWithoutExt = newPath.replace(/\.md$/, "");
+  const newBaseName = path.posix.basename(normalizedNewPath, ".md");
+  const newPathWithoutExt = normalizedNewPath.replace(/\.md$/, "");
 
   for (const sourcePath of markdownPaths) {
     const absoluteSourcePath = await resolveExistingWorkspacePath(workspacePath, sourcePath);
@@ -117,11 +120,11 @@ async function buildLinkUpdatePatches(
       ? replaceFileLinksWithCount(
         content,
         sourcePath,
-        oldPath,
+        normalizedOldPath,
         newBaseName,
         newPathWithoutExt
       )
-      : replaceFolderLinksWithCount(content, oldPath, newPath);
+      : replaceFolderLinksWithCount(content, normalizedOldPath, normalizedNewPath);
 
     if (replacement.content !== content) {
       patches.push({

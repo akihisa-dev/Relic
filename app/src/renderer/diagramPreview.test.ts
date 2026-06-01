@@ -12,6 +12,7 @@ import {
   loadDiagramPreviewModule,
   setupDiagramPreviewTest
 } from "./diagramPreviewTestHelpers";
+import { makeRelicApi } from "../test/rendererTestUtils";
 
 setupDiagramPreviewTest();
 const { compileD2Mock, initializeMock, renderD2Mock, renderMock } = getDiagramPreviewMocks();
@@ -218,10 +219,10 @@ describe("diagramPreview", () => {
 
   it("Mermaid図でSVG保存操作とSVGコピー操作が出る", async () => {
     const { DiagramBlockWidget } = await import("./editorDiagramLivePreview");
-    window.relic = {
+    window.relic = makeRelicApi({
       copyDiagramSvg: vi.fn().mockResolvedValue({ ok: true, value: { status: "copied" } }),
       saveDiagramSvg: vi.fn().mockResolvedValue({ ok: true, value: { status: "saved", filePath: "/tmp/note.svg" } })
-    } as unknown as typeof window.relic;
+    });
     renderMock.mockResolvedValueOnce({ svg: '<svg viewBox="0 0 120 80"><text>mermaid</text></svg>' });
     const view = createFakeEditorView("```mermaid\ngraph TD; A-->B\n```", "Note");
     const widget = new DiagramBlockWidget("graph TD; A-->B", "mermaid", 0, 30, 11);
@@ -251,10 +252,10 @@ describe("diagramPreview", () => {
 
   it("D2図でSVG保存操作とSVGコピー操作が出る", async () => {
     const { DiagramBlockWidget } = await import("./editorDiagramLivePreview");
-    window.relic = {
+    window.relic = makeRelicApi({
       copyDiagramSvg: vi.fn().mockResolvedValue({ ok: true, value: { status: "copied" } }),
       saveDiagramSvg: vi.fn().mockResolvedValue({ ok: true, value: { status: "saved", filePath: "/tmp/note.svg" } })
-    } as unknown as typeof window.relic;
+    });
     compileD2Mock.mockResolvedValueOnce({
       diagram: { root: true },
       renderOptions: {}
@@ -291,9 +292,9 @@ describe("diagramPreview", () => {
 
   it("pan/zoom操作後でも保存/コピー対象SVGにpan/zoom用wrapperやtransformが混ざらない", async () => {
     const { DiagramBlockWidget } = await import("./editorDiagramLivePreview");
-    window.relic = {
+    window.relic = makeRelicApi({
       copyDiagramSvg: vi.fn().mockResolvedValue({ ok: true, value: { status: "copied" } })
-    } as unknown as typeof window.relic;
+    });
     renderMock.mockResolvedValueOnce({ svg: '<svg viewBox="0 0 120 80"><text>clean</text></svg>' });
     const view = createFakeEditorView("```mermaid\ngraph TD; A-->B\n```", "Note");
     const widget = new DiagramBlockWidget("graph TD; A-->B", "mermaid", 0, 30, 11);
