@@ -1,5 +1,6 @@
 import type { AIWorkspaceFileOperation, AIWorkspaceReference, OpenAIWorkspaceModel } from "../../shared/ipc";
 import { redactSensitiveText } from "../../shared/securityRedaction";
+import { createAIWorkspaceOperationId, formatPendingOperationForPrompt } from "./aiWorkspaceProviderHelpers";
 
 interface OpenAIWorkspaceResponse {
   message: string;
@@ -63,7 +64,7 @@ export async function runOpenAIWorkspaceTurn(
     operations: parsed.operations.map((operation) => ({
       ...operation,
       createdAt: new Date().toISOString(),
-      id: createOperationId(operation.kind),
+      id: createAIWorkspaceOperationId(operation.kind),
       status: "pending"
     }))
   };
@@ -190,25 +191,6 @@ function normalizeOperation(value: unknown): OpenAIWorkspaceResponse["operations
   if (kind !== "delete" && !content) return null;
 
   return { content, kind, path, summary };
-}
-
-function formatPendingOperationForPrompt(operation: AIWorkspaceFileOperation): string {
-  const lines = [
-    `- id: ${operation.id}`,
-    `- kind: ${operation.kind}`,
-    `- path: ${operation.path}`,
-    `- summary: ${operation.summary}`
-  ];
-
-  if (operation.kind !== "delete" && operation.content) {
-    lines.push("```markdown", operation.content, "```");
-  }
-
-  return lines.join("\n");
-}
-
-function createOperationId(kind: string): string {
-  return `${kind}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
 export const openAIWorkspaceOutputSchema = {
