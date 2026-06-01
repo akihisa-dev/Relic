@@ -44,7 +44,6 @@ function renderTitleBar(overrides: Partial<Parameters<typeof AppTitleBar>[0]> = 
     [secondFileTab.id]: secondFileTab
   };
   const props: Parameters<typeof AppTitleBar>[0] = {
-    canOutputPreview: true,
     isRightPanelOpen: false,
     isSourceMode: false,
     isSplit: false,
@@ -111,14 +110,11 @@ describe("AppTitleBar", () => {
     expect(props.onTabClose).toHaveBeenCalledWith("left", secondFileTab.id);
   });
 
-  it("runs preview output actions from the title bar", () => {
-    const props = renderTitleBar();
+  it("keeps preview output actions out of the title bar buttons", () => {
+    renderTitleBar();
 
-    fireEvent.click(screen.getByRole("button", { name: "Print" }));
-    fireEvent.click(screen.getByRole("button", { name: "Save as PDF" }));
-
-    expect(props.onPrintPreview).toHaveBeenCalled();
-    expect(props.onSavePreviewAsPdf).toHaveBeenCalled();
+    expect(screen.queryByRole("button", { name: "Print" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Save as PDF" })).toBeNull();
   });
 
   it("keeps gaps around title bar action buttons draggable", () => {
@@ -189,6 +185,14 @@ describe("AppTitleBar", () => {
     fireEvent.contextMenu(tabElement("Note"), { clientX: 50, clientY: 60 });
     fireEvent.click(screen.getByRole("button", { name: "Copy Markdown link" }));
     expect(writeText).toHaveBeenCalledWith("[[Folder/Note]]");
+
+    fireEvent.contextMenu(tabElement("Note"), { clientX: 50, clientY: 60 });
+    fireEvent.click(screen.getByRole("button", { name: "Print" }));
+    expect(props.onPrintPreview).toHaveBeenCalledWith(fileTab);
+
+    fireEvent.contextMenu(tabElement("Note"), { clientX: 50, clientY: 60 });
+    fireEvent.click(screen.getByRole("button", { name: "Save as PDF" }));
+    expect(props.onSavePreviewAsPdf).toHaveBeenCalledWith(fileTab);
 
     fireEvent.contextMenu(tabElement("Note"), { clientX: 50, clientY: 60 });
     fireEvent.click(screen.getByRole("button", { name: "Show in folder" }));

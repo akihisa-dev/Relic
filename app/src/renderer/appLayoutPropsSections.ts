@@ -192,7 +192,6 @@ export function createStatusBarProps(input: AppLayoutPropsInput): StatusBarProps
 
 export function createTitleBarProps(input: AppLayoutPropsInput): TitleBarProps {
   return {
-    canOutputPreview: Boolean(input.activeFileTabInFocusedPane),
     isRightPanelOpen: input.isEffectiveRightPanelOpen,
     isSourceMode: input.isSourceMode,
     isSplit: input.isSplit,
