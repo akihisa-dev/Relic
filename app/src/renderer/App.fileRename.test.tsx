@@ -251,6 +251,52 @@ describe("App file rename and context menu", () => {
     });
   });
 
+  it("ファイルツリーの右クリックメニューからフォルダをインラインでリネームする", async () => {
+    const renameFolder = vi.fn().mockResolvedValue({
+      ok: true,
+      value: {
+        ...withWorkspace,
+        fileTree: [
+          {
+            children: [{ name: "読書メモ", path: "Archive/読書メモ.md", type: "file" }],
+            name: "Archive",
+            path: "Archive",
+            type: "folder"
+          }
+        ]
+      }
+    });
+
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [
+            {
+              children: [{ name: "読書メモ", path: "資料/読書メモ.md", type: "file" }],
+              name: "資料",
+              path: "資料",
+              type: "folder"
+            }
+          ]
+        }
+      }),
+      renameFolder
+    });
+
+    await renderApp();
+
+    fireEvent.contextMenu(await screen.findByRole("button", { name: /資料/ }));
+    fireEvent.click(await screen.findByRole("menuitem", { name: "名前を変更" }));
+    fireEvent.change(screen.getByLabelText("名前を変更"), { target: { value: "Archive" } });
+    fireEvent.keyDown(screen.getByLabelText("名前を変更"), { key: "Enter" });
+
+    await waitFor(() => {
+      expect(renameFolder).toHaveBeenCalledWith({ newName: "Archive", path: "資料" });
+    });
+  });
+
   it("ファイルツリーの右クリックメニューからファイルを複製する", async () => {
     const duplicateMarkdownFile = vi.fn().mockResolvedValue({
       ok: true,
