@@ -278,7 +278,7 @@ describe("Editor live preview", () => {
     fireEvent.click(container.querySelector(".cm-live-code-block-copy") as HTMLButtonElement);
 
     expect(writeClipboardText).toHaveBeenCalledWith(source);
-    await waitFor(() => expect(container.querySelector(".cm-live-code-block-copy")?.textContent).toBe("コピーしました"));
+    await waitFor(() => expect(container.querySelector(".cm-live-code-block-copy")?.textContent).toBe("Copied"));
   });
 
   it("Electronクリップボードが失敗しても通常コードブロックをブラウザ経路でコピーできる", async () => {
@@ -311,7 +311,7 @@ describe("Editor live preview", () => {
     fireEvent.click(container.querySelector(".cm-live-code-block-copy") as HTMLButtonElement);
 
     await waitFor(() => expect(writeText).toHaveBeenCalledWith(source));
-    await waitFor(() => expect(container.querySelector(".cm-live-code-block-copy")?.textContent).toBe("コピーしました"));
+    await waitFor(() => expect(container.querySelector(".cm-live-code-block-copy")?.textContent).toBe("Copied"));
   });
 
   it("通常コードブロックのヘッダーや余白をクリックしてもソース表示に戻さない", async () => {

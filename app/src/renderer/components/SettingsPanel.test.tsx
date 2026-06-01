@@ -273,7 +273,7 @@ describe("SettingsPanel", () => {
     renderSettingsPanel({ aiProvider: "openai-api", onSaveOpenAIAPIKey });
 
     fireEvent.change(screen.getByPlaceholderText("sk-..."), { target: { value: "sk-test-key-12345678901234567890" } });
-    fireEvent.click(screen.getByRole("button", { name: "保存" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
 
     expect(onSaveOpenAIAPIKey).toHaveBeenCalledWith("sk-test-key-12345678901234567890");
   });
@@ -282,7 +282,7 @@ describe("SettingsPanel", () => {
     const onSaveAIModel = vi.fn();
     renderSettingsPanel({ aiProvider: "openai-api", onSaveAIModel });
 
-    const modelSelect = screen.getByLabelText("OpenAIモデル");
+    const modelSelect = screen.getByLabelText("OpenAI model");
     expect(modelSelect).toHaveDisplayValue("gpt-5.4-mini");
     expect(screen.getByRole("option", { name: "gpt-5.5" })).toBeInTheDocument();
     expect(screen.getByRole("option", { name: "gpt-5.4" })).toBeInTheDocument();
@@ -297,7 +297,7 @@ describe("SettingsPanel", () => {
   it("OpenAI APIキー画面へのリンクを表示する", () => {
     renderSettingsPanel({ aiProvider: "openai-api" });
 
-    expect(screen.getByRole("link", { name: "OpenAIのAPIキー画面を開く" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Open OpenAI API key page" })).toHaveAttribute(
       "href",
       "https://platform.openai.com/api-keys"
     );
@@ -315,9 +315,9 @@ describe("SettingsPanel", () => {
   it("Codex App Server方式ではOpenAI APIキー欄を隠す", () => {
     renderSettingsPanel({ aiProvider: "codex-app-server" });
 
-    expect(screen.getByText("Codexアプリを使ってAI共同作業を行います。OpenAI APIキーの入力は不要です。")).toBeInTheDocument();
+    expect(screen.getByText("Use the Codex app for AI coworking. No OpenAI API key is required.")).toBeInTheDocument();
     expect(screen.queryByPlaceholderText("sk-...")).not.toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "OpenAIのAPIキー画面を開く" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Open OpenAI API key page" })).not.toBeInTheDocument();
   });
 
   it("アプリ情報では内部プラットフォーム名ではなくユーザー向けOS名を表示する", () => {

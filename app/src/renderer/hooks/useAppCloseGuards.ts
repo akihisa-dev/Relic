@@ -6,12 +6,14 @@ import { matchesAnyTreeItemPath } from "./workspaceFileActionHelpers";
 interface UseAppCloseGuardsInput {
   focusedPane: PaneId;
   flushTabsBeforeClose: (tabIds: string[]) => Promise<{ message?: string; ok: boolean }>;
+  saveFailedMessage: string;
   setWorkspaceError: (message: string | null) => void;
 }
 
 export function useAppCloseGuards({
   focusedPane,
   flushTabsBeforeClose,
+  saveFailedMessage,
   setWorkspaceError
 }: UseAppCloseGuardsInput): {
   ensureCanCloseAllTabs: () => Promise<boolean> | boolean;
@@ -30,13 +32,13 @@ export function useAppCloseGuards({
     return (async () => {
       const result = await flushTabsBeforeClose(tabIds);
       if (!result.ok) {
-        setWorkspaceError(result.message ?? "ファイルを保存できませんでした。");
+        setWorkspaceError(result.message ?? saveFailedMessage);
         return false;
       }
 
       return true;
     })();
-  }, [flushTabsBeforeClose, setWorkspaceError]);
+  }, [flushTabsBeforeClose, saveFailedMessage, setWorkspaceError]);
 
   const ensureCanCloseAllTabs = useCallback((): Promise<boolean> | boolean => {
     const currentTabs = useEditorStore.getState().tabs;
@@ -50,13 +52,13 @@ export function useAppCloseGuards({
     return (async () => {
       const result = await flushTabsBeforeClose(tabIds);
       if (!result.ok) {
-        setWorkspaceError(result.message ?? "ファイルを保存できませんでした。");
+        setWorkspaceError(result.message ?? saveFailedMessage);
         return false;
       }
 
       return true;
     })();
-  }, [flushTabsBeforeClose, setWorkspaceError]);
+  }, [flushTabsBeforeClose, saveFailedMessage, setWorkspaceError]);
 
   const ensureCanMutateWorkspaceItems = useCallback((
     items: Array<{ path: string; type: "file" | "folder" }>

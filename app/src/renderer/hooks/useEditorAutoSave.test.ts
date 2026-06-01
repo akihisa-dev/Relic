@@ -49,6 +49,7 @@ describe("useEditorAutoSave", () => {
 
     renderHook(() => useEditorAutoSave({
       conflictCloseBlockedMessage: "conflict",
+      saveFailedMessage: "save failed",
       tabs: useEditorStore.getState().tabs
     }));
 
@@ -72,6 +73,7 @@ describe("useEditorAutoSave", () => {
 
     const { rerender } = renderHook(({ tabs }) => useEditorAutoSave({
       conflictCloseBlockedMessage: "conflict",
+      saveFailedMessage: "save failed",
       tabs
     }), {
       initialProps: { tabs: useEditorStore.getState().tabs }
@@ -110,6 +112,7 @@ describe("useEditorAutoSave", () => {
 
     const { rerender } = renderHook(({ tabs }) => useEditorAutoSave({
       conflictCloseBlockedMessage: "conflict",
+      saveFailedMessage: "save failed",
       tabs
     }), {
       initialProps: { tabs: useEditorStore.getState().tabs }
@@ -157,6 +160,7 @@ describe("useEditorAutoSave", () => {
 
     const { result } = renderHook(() => useEditorAutoSave({
       conflictCloseBlockedMessage: "conflict",
+      saveFailedMessage: "save failed",
       tabs: useEditorStore.getState().tabs
     }));
 

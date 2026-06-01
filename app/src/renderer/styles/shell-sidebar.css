@@ -48,7 +48,7 @@
 }
 
 .title-bar-actions {
-  -webkit-app-region: no-drag;
+  -webkit-app-region: drag;
   min-width: 0;
 }
 
@@ -87,6 +87,7 @@
 }
 
 .title-bar .main-area-actions {
+  -webkit-app-region: drag;
   background: var(--title-bar-bg);
   border-bottom: 0;
   border-left: 0;
@@ -95,6 +96,10 @@
   height: 100%;
   min-height: 0;
   width: 100%;
+}
+
+.title-bar .main-area-actions .toolbar-btn {
+  -webkit-app-region: no-drag;
 }
 
 .title-bar--right-panel-open .main-area-actions {

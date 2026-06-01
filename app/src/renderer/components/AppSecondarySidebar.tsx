@@ -1,6 +1,7 @@
 import type { MouseEvent as ReactMouseEvent, ReactElement } from "react";
 
 import type { AIWorkspaceMessagePreview, AIWorkspaceState } from "../../shared/ipc";
+import { useT } from "../i18n";
 import type { SecondarySidebarView } from "../store/uiStore";
 import { AIWorkspacePanel } from "./AIWorkspacePanel";
 
@@ -49,24 +50,25 @@ export function AppSecondarySidebar({
   width,
   workspaceName
 }: AppSecondarySidebarProps): ReactElement {
+  const t = useT();
   const shouldShowAIChat = isOpen && view === "ai-chat";
 
   return (
     <aside
       aria-hidden={!isOpen}
-      aria-label="AIチャット"
+      aria-label={t("aiChat.title")}
       className={`secondary-sidebar${isOpen ? "" : " secondary-sidebar--closed"}${isResizing ? " secondary-sidebar--resizing" : ""}`}
       style={{ flexBasis: isOpen ? width : 0, width: isOpen ? width : 0 }}
     >
       <button
-        aria-label="AIチャットの幅を変更"
+        aria-label={t("aiChat.resize")}
         className={`secondary-sidebar-resize-handle${isResizing ? " secondary-sidebar-resize-handle--active" : ""}`}
         onMouseDown={onResizeStart}
         type="button"
       />
       <header className="secondary-sidebar-header">
-        <span>AIチャット</span>
-        <button aria-label="AIチャットを閉じる" className="secondary-sidebar-close-button" onClick={onClose} type="button">
+        <span>{t("aiChat.title")}</span>
+        <button aria-label={t("aiChat.close")} className="secondary-sidebar-close-button" onClick={onClose} type="button">
           ×
         </button>
       </header>

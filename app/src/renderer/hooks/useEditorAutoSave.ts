@@ -23,6 +23,7 @@ interface UseEditorAutoSaveInput {
   conflictCloseBlockedMessage: string;
   onSaved?: (path: string) => void;
   onSaveError?: (message: string) => void;
+  saveFailedMessage: string;
   tabs: Record<string, Tab>;
 }
 
@@ -37,6 +38,7 @@ export function useEditorAutoSave({
   conflictCloseBlockedMessage,
   onSaved,
   onSaveError,
+  saveFailedMessage,
   tabs
 }: UseEditorAutoSaveInput): {
   flushTabsBeforeClose: (tabIds: string[]) => Promise<SaveBeforeCloseResult>;
@@ -241,11 +243,11 @@ export function useEditorAutoSave({
 
     if (unsaved) {
       const queue = queues.get(unsaved.path);
-      return { ok: false, message: queue?.lastError ?? "ファイルを保存できませんでした。" };
+      return { ok: false, message: queue?.lastError ?? saveFailedMessage };
     }
 
     return { ok: true };
-  }, [conflictCloseBlockedMessage, queues, scheduleSave, waitForIdle]);
+  }, [conflictCloseBlockedMessage, queues, saveFailedMessage, scheduleSave, waitForIdle]);
 
   const saveStatusByTabId = useMemo(() => {
     void queueSnapshot;

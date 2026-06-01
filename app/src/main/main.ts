@@ -10,6 +10,7 @@ import { registerToolHandlers } from "./ipc/toolHandlers";
 import { registerWorkspaceHandlers } from "./ipc/workspaceHandlers";
 import { windowCloseRequestedChannel, windowCloseResponseChannel, type WindowCloseResponseInput } from "../shared/ipc";
 import { devServerLoadUrls, loadDevServerUrlWithRetry } from "./devServerLoader";
+import { getMainTranslator } from "./i18n";
 import { stopWorkspaceWatcher } from "./workspace/workspaceWatcher";
 import { createMainWindowOptions } from "./windowOptions";
 import { isAllowedExternalUrl } from "./windowSecurity";
@@ -97,16 +98,18 @@ function configureEditorContextMenu(window: BrowserWindow): void {
     if (!params.isEditable) return;
 
     event.preventDefault();
-    Menu.buildFromTemplate([
-      { enabled: params.editFlags.canUndo, label: "取り消し", click: () => window.webContents.undo() },
-      { enabled: params.editFlags.canRedo, label: "やり直し", click: () => window.webContents.redo() },
-      { type: "separator" },
-      { label: "カット", click: () => window.webContents.cut() },
-      { label: "コピー", click: () => window.webContents.copy() },
-      { label: "ペースト", click: () => window.webContents.paste() },
-      { type: "separator" },
-      { label: "すべて選択", click: () => window.webContents.selectAll() }
-    ]).popup({ window });
+    void getMainTranslator().then((t) => {
+      Menu.buildFromTemplate([
+        { enabled: params.editFlags.canUndo, label: t("editor.undo"), click: () => window.webContents.undo() },
+        { enabled: params.editFlags.canRedo, label: t("editor.redo"), click: () => window.webContents.redo() },
+        { type: "separator" },
+        { label: t("editor.cut"), click: () => window.webContents.cut() },
+        { label: t("editor.copy"), click: () => window.webContents.copy() },
+        { label: t("editor.paste"), click: () => window.webContents.paste() },
+        { type: "separator" },
+        { label: t("editor.selectAll"), click: () => window.webContents.selectAll() }
+      ]).popup({ window });
+    });
   });
 }
 

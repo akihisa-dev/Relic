@@ -9,6 +9,7 @@ import {
 } from "./diagramPreview";
 import { getRenderedDiagramSvgText } from "./diagramSvg";
 import { enterDiagramSourceEdit } from "./editorDiagramEditState";
+import { createTranslator, type Translator } from "./i18nModel";
 import { buildDiagramDefaultFileName } from "./outputHtml";
 
 export class DiagramBlockWidget extends WidgetType {
@@ -19,7 +20,8 @@ export class DiagramBlockWidget extends WidgetType {
     private readonly language: DiagramLanguage,
     private readonly blockFrom: number,
     private readonly blockTo: number,
-    private readonly editCursor: number
+    private readonly editCursor: number,
+    private readonly t: Translator = createTranslator("system")
   ) {
     super();
   }
@@ -43,8 +45,8 @@ export class DiagramBlockWidget extends WidgetType {
     const fitButton = document.createElement("button");
     fitButton.type = "button";
     fitButton.className = "cm-live-diagram-fit-button";
-    fitButton.textContent = "全体表示";
-    fitButton.setAttribute("aria-label", `${label}図を全体表示`);
+    fitButton.textContent = this.t("diagram.fit");
+    fitButton.setAttribute("aria-label", this.t("diagram.fitAria", { language: label }));
     fitButton.disabled = true;
     fitButton.addEventListener("click", (event) => {
       event.preventDefault();
@@ -56,8 +58,8 @@ export class DiagramBlockWidget extends WidgetType {
     const editButton = document.createElement("button");
     editButton.type = "button";
     editButton.className = "cm-live-diagram-edit-button";
-    editButton.textContent = "ソースを編集";
-    editButton.setAttribute("aria-label", `${label}ソースを編集`);
+    editButton.textContent = this.t("diagram.editSource");
+    editButton.setAttribute("aria-label", this.t("diagram.editSourceAria", { language: label }));
     editButton.addEventListener("click", (event) => {
       event.preventDefault();
       event.stopPropagation();
@@ -79,8 +81,8 @@ export class DiagramBlockWidget extends WidgetType {
       fitButton.disabled = !handle;
       if (handle) {
         toolbar.append(
-          createDiagramSvgSaveButton(view, diagram, this.language, this.blockFrom),
-          createDiagramSvgCopyButton(diagram, this.language)
+          createDiagramSvgSaveButton(view, diagram, this.language, this.blockFrom, this.t),
+          createDiagramSvgCopyButton(diagram, this.language, this.t)
         );
       }
     });
@@ -107,17 +109,18 @@ function createDiagramSvgSaveButton(
   view: EditorView,
   diagram: HTMLElement,
   language: DiagramLanguage,
-  blockFrom: number
+  blockFrom: number,
+  t: Translator
 ): HTMLButtonElement {
-  const label = "SVGとして保存";
+  const label = t("diagram.saveSvg");
   const button = createDiagramOutputButton(label);
-  button.setAttribute("aria-label", `${language === "d2" ? "D2" : "Mermaid"}図をSVGとして保存`);
+  button.setAttribute("aria-label", t("diagram.saveSvgAria", { language: language === "d2" ? "D2" : "Mermaid" }));
 
   button.addEventListener("click", (event) => {
     stopDiagramOutputEvent(event);
     const svg = getRenderedDiagramSvgText(diagram);
     if (!svg || !window.relic) {
-      setTemporaryButtonText(button, "保存できませんでした", label);
+      setTemporaryButtonText(button, t("diagram.saveFailed"), label);
       return;
     }
 
@@ -129,43 +132,43 @@ function createDiagramSvgSaveButton(
 
     void window.relic.saveDiagramSvg({ defaultFileName, language, svg }).then((result) => {
       if (result.ok && result.value.status === "saved") {
-        setTemporaryButtonText(button, "保存しました", label);
+        setTemporaryButtonText(button, t("diagram.saveDone"), label);
         return;
       }
 
       if (result.ok && result.value.status === "canceled") return;
 
-      setTemporaryButtonText(button, result.ok ? "保存できませんでした" : result.error.message, label);
+      setTemporaryButtonText(button, result.ok ? t("diagram.saveFailed") : result.error.message, label);
     }).catch((error) => {
-      setTemporaryButtonText(button, error instanceof Error ? error.message : "保存できませんでした", label);
+      setTemporaryButtonText(button, error instanceof Error ? error.message : t("diagram.saveFailed"), label);
     });
   });
 
   return button;
 }
 
-function createDiagramSvgCopyButton(diagram: HTMLElement, language: DiagramLanguage): HTMLButtonElement {
-  const label = "SVGをコピー";
+function createDiagramSvgCopyButton(diagram: HTMLElement, language: DiagramLanguage, t: Translator): HTMLButtonElement {
+  const label = t("diagram.copySvg");
   const button = createDiagramOutputButton(label);
-  button.setAttribute("aria-label", `${language === "d2" ? "D2" : "Mermaid"}図のSVGをコピー`);
+  button.setAttribute("aria-label", t("diagram.copySvgAria", { language: language === "d2" ? "D2" : "Mermaid" }));
 
   button.addEventListener("click", (event) => {
     stopDiagramOutputEvent(event);
     const svg = getRenderedDiagramSvgText(diagram);
     if (!svg || !window.relic) {
-      setTemporaryButtonText(button, "コピーできませんでした", label);
+      setTemporaryButtonText(button, t("editor.copyFailed"), label);
       return;
     }
 
     void window.relic.copyDiagramSvg({ language, svg }).then((result) => {
       if (result.ok) {
-        setTemporaryButtonText(button, "コピーしました", label);
+        setTemporaryButtonText(button, t("editor.copyDone"), label);
         return;
       }
 
       setTemporaryButtonText(button, result.error.message, label);
     }).catch((error) => {
-      setTemporaryButtonText(button, error instanceof Error ? error.message : "コピーできませんでした", label);
+      setTemporaryButtonText(button, error instanceof Error ? error.message : t("editor.copyFailed"), label);
     });
   });
 

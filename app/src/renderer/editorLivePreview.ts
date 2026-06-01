@@ -22,11 +22,12 @@ import {
 } from "./editorLivePreviewWidgets";
 import { findTableBlocks } from "./editorTables";
 import { diagramLanguageFor } from "./diagramLanguage";
+import { createTranslator, type Translator } from "./i18nModel";
 import { isClosingBacktickFence, parseBacktickOpeningFence } from "./markdownCodeFence";
 
 export { findClickableLinkAtPosition, type ClickableLinkAtPosition } from "./editorLivePreviewModel";
 
-function buildCodeBlockPreviewDecorations(state: EditorState): DecorationSet {
+function buildCodeBlockPreviewDecorations(state: EditorState, t: Translator): DecorationSet {
   const ranges: { from: number; to: number; deco: Decoration }[] = [];
   const doc = state.doc;
 
@@ -67,7 +68,7 @@ function buildCodeBlockPreviewDecorations(state: EditorState): DecorationSet {
           to: blockTo,
           deco: Decoration.replace({
             block: true,
-            widget: new CodeBlockWidget(openingFence.language, codeBlockSource(lineNumber, closingLineNumber))
+            widget: new CodeBlockWidget(openingFence.language, codeBlockSource(lineNumber, closingLineNumber), t)
           })
         });
       }
@@ -79,17 +80,18 @@ function buildCodeBlockPreviewDecorations(state: EditorState): DecorationSet {
   return Decoration.set(ranges.map((range) => range.deco.range(range.from, range.to)), true);
 }
 
-export function createLivePreviewCodeBlockField(): StateField<DecorationSet> {
+export function createLivePreviewCodeBlockField(t: Translator = createTranslator("system")): StateField<DecorationSet> {
   return StateField.define<DecorationSet>({
-    create: (state) => buildCodeBlockPreviewDecorations(state),
-    update: (_decorations, transaction) => buildCodeBlockPreviewDecorations(transaction.state),
+    create: (state) => buildCodeBlockPreviewDecorations(state, t),
+    update: (_decorations, transaction) => buildCodeBlockPreviewDecorations(transaction.state, t),
     provide: (field) => EditorView.decorations.from(field)
   });
 }
 
 export function buildLivePreviewDecorations(
   view: EditorView,
-  onOpenClickableLink?: (link: ClickableLinkAtPosition) => void
+  onOpenClickableLink?: (link: ClickableLinkAtPosition) => void,
+  t: Translator = createTranslator("system")
 ): DecorationSet {
   const { state } = view;
   const doc = state.doc;
@@ -281,7 +283,8 @@ export function buildLivePreviewDecorations(
                   diagramLanguage,
                   blockFrom,
                   blockTo,
-                  editCursor
+                  editCursor,
+                  t
                 )
               );
 
@@ -351,7 +354,7 @@ export function buildLivePreviewDecorations(
               changes: { from: checkmarkFrom, to: checkmarkFrom + 1, insert: checked ? " " : "x" },
               selection: { anchor: checkmarkFrom + 1 }
             });
-          }));
+          }, t));
           addInlineDecorations(contentFrom, match[3]);
         }
       } else if (/^\s*[-*+]\s+/.test(text)) {

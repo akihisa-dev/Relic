@@ -34,7 +34,7 @@ export async function buildPreviewOutputHtml({
   document.body.append(root);
 
   try {
-    await renderOutputDiagrams(root);
+    await renderOutputDiagrams(root, t);
     normalizeOutputDiagramDom(root);
     const sanitizedBody = sanitizePreviewHtml(root.innerHTML);
 
@@ -79,7 +79,7 @@ export function outputFileNameFromPath(path: string | null | undefined): string 
   return name || null;
 }
 
-async function renderOutputDiagrams(root: ParentNode): Promise<void> {
+async function renderOutputDiagrams(root: ParentNode, t: Translator): Promise<void> {
   const diagrams = Array.from(root.querySelectorAll<HTMLElement>(".preview-diagram"));
 
   await Promise.all(diagrams.map(async (diagram) => {
@@ -91,7 +91,7 @@ async function renderOutputDiagrams(root: ParentNode): Promise<void> {
       : decodeDiagramSourceAttribute(diagram.dataset.diagramSource);
     if (!source) return;
 
-    await renderDiagramElement(diagram, language, source);
+    await renderDiagramElement(diagram, language, source, t);
   }));
 }
 

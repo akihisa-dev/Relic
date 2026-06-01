@@ -48,8 +48,8 @@ export function Preview({
     if (!container) return;
 
     container.innerHTML = html;
-    renderDiagramElements(container);
-  }, [html, settings.theme]);
+    renderDiagramElements(container, t);
+  }, [html, settings.theme, t]);
 
   useEffect(() => {
     onScrollTargetHandledRef.current = onScrollTargetHandled;

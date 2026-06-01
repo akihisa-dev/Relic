@@ -14,7 +14,9 @@ import {
   type SavePreviewAsPdfInput
 } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
+import type { Translator } from "../../shared/i18n";
 import { atomicWriteFile, atomicWriteTextFile } from "../files/atomicWrite";
+import { getMainTranslator } from "../i18n";
 
 const defaultPdfName = "relic-preview";
 const defaultSvgName = "relic-diagram";
@@ -23,17 +25,18 @@ export function registerOutputHandlers(): void {
   ipcMain.handle(
     savePreviewAsPdfChannel,
     async (event, input: unknown): Promise<RelicResult<OutputSavedResult>> => {
+      const t = await getMainTranslator();
       try {
         if (!isSavePreviewAsPdfInput(input)) {
-          return fail("OUTPUT_PDF_INVALID_INPUT", "PDF保存の内容が無効です。");
+          return fail("OUTPUT_PDF_INVALID_INPUT", t("output.pdfInvalidInput"));
         }
 
         const saveOptions = {
-          buttonLabel: "保存",
+          buttonLabel: t("common.save"),
           defaultPath: ensureExtension(sanitizeFileName(input.defaultFileName || input.title || defaultPdfName, defaultPdfName), "pdf"),
           filters: [{ extensions: ["pdf"], name: "PDF" }],
           properties: ["createDirectory", "showOverwriteConfirmation"],
-          title: "PDFとして保存"
+          title: t("output.pdfDialogTitle")
         } satisfies Electron.SaveDialogOptions;
         const parentWindow = BrowserWindow.fromWebContents(event.sender);
         const selection = parentWindow
@@ -49,7 +52,7 @@ export function registerOutputHandlers(): void {
 
         return ok({ filePath: selection.filePath, status: "saved" });
       } catch (error) {
-        return fail("OUTPUT_PDF_FAILED", "PDFとして保存できませんでした。", ipcErrorDetails(error));
+        return fail("OUTPUT_PDF_FAILED", t("output.pdfSaveFailed"), ipcErrorDetails(error));
       }
     }
   );
@@ -57,14 +60,15 @@ export function registerOutputHandlers(): void {
   ipcMain.handle(
     printPreviewChannel,
     async (event, input: unknown): Promise<RelicResult<OutputPrintResult>> => {
+      const t = await getMainTranslator();
       try {
         if (!isPrintPreviewInput(input)) {
-          return fail("OUTPUT_PRINT_INVALID_INPUT", "印刷内容が無効です。");
+          return fail("OUTPUT_PRINT_INVALID_INPUT", t("output.printInvalidInput"));
         }
 
-        return await openPrintPreview(input.html, input.title, BrowserWindow.fromWebContents(event.sender));
+        return await openPrintPreview(input.html, input.title, BrowserWindow.fromWebContents(event.sender), t);
       } catch (error) {
-        return fail("OUTPUT_PRINT_FAILED", "印刷できませんでした。", ipcErrorDetails(error));
+        return fail("OUTPUT_PRINT_FAILED", t("output.printFailed"), ipcErrorDetails(error));
       }
     }
   );
@@ -72,21 +76,22 @@ export function registerOutputHandlers(): void {
   ipcMain.handle(
     saveDiagramSvgChannel,
     async (event, input: unknown): Promise<RelicResult<OutputSavedResult>> => {
+      const t = await getMainTranslator();
       try {
         if (!isSaveDiagramSvgInput(input)) {
-          return fail("OUTPUT_SVG_INVALID_INPUT", "SVG保存の内容が無効です。");
+          return fail("OUTPUT_SVG_INVALID_INPUT", t("output.svgInvalidInput"));
         }
 
         if (!hasRenderableSvg(input.svg)) {
-          return fail("OUTPUT_SVG_EMPTY", "保存できるSVGがありません。");
+          return fail("OUTPUT_SVG_EMPTY", t("output.svgEmptySave"));
         }
 
         const saveOptions = {
-          buttonLabel: "保存",
+          buttonLabel: t("common.save"),
           defaultPath: ensureExtension(sanitizeFileName(input.defaultFileName || defaultSvgName, defaultSvgName), "svg"),
           filters: [{ extensions: ["svg"], name: "SVG" }],
           properties: ["createDirectory", "showOverwriteConfirmation"],
-          title: "SVGとして保存"
+          title: t("output.saveSvgDialogTitle")
         } satisfies Electron.SaveDialogOptions;
         const parentWindow = BrowserWindow.fromWebContents(event.sender);
         const selection = parentWindow
@@ -101,7 +106,7 @@ export function registerOutputHandlers(): void {
 
         return ok({ filePath: selection.filePath, status: "saved" });
       } catch (error) {
-        return fail("OUTPUT_SVG_SAVE_FAILED", "SVGとして保存できませんでした。", ipcErrorDetails(error));
+        return fail("OUTPUT_SVG_SAVE_FAILED", t("output.svgSaveFailed"), ipcErrorDetails(error));
       }
     }
   );
@@ -109,20 +114,21 @@ export function registerOutputHandlers(): void {
   ipcMain.handle(
     copyDiagramSvgChannel,
     async (_event, input: unknown): Promise<RelicResult<OutputCopyResult>> => {
+      const t = await getMainTranslator();
       try {
         if (!isCopyDiagramSvgInput(input)) {
-          return fail("OUTPUT_SVG_COPY_INVALID_INPUT", "SVGコピーの内容が無効です。");
+          return fail("OUTPUT_SVG_COPY_INVALID_INPUT", t("output.svgCopyInvalidInput"));
         }
 
         if (!hasRenderableSvg(input.svg)) {
-          return fail("OUTPUT_SVG_EMPTY", "コピーできるSVGがありません。");
+          return fail("OUTPUT_SVG_EMPTY", t("output.svgEmptyCopy"));
         }
 
         clipboard.writeText(input.svg);
 
         return ok({ status: "copied" });
       } catch (error) {
-        return fail("OUTPUT_SVG_COPY_FAILED", "SVGをコピーできませんでした。", ipcErrorDetails(error));
+        return fail("OUTPUT_SVG_COPY_FAILED", t("output.svgCopyFailed"), ipcErrorDetails(error));
       }
     }
   );
@@ -149,11 +155,12 @@ async function renderHtmlToPdf(html: string, title: string): Promise<Buffer> {
 async function openPrintPreview(
   html: string,
   title: string,
-  parentWindow: BrowserWindow | null
+  parentWindow: BrowserWindow | null,
+  t: Translator
 ): Promise<RelicResult<OutputPrintResult>> {
-  const window = createOutputWindow(`${title} - 印刷`, { allowInlineScripts: true, parentWindow });
+  const window = createOutputWindow(`${title} - ${t("output.print")}`, { allowInlineScripts: true, parentWindow });
 
-  await loadOutputHtml(window, buildPrintPreviewHtml(html));
+  await loadOutputHtml(window, buildPrintPreviewHtml(html, t));
   window.show();
   window.focus();
 
@@ -196,7 +203,7 @@ function createOutputWindow(
   return window;
 }
 
-function buildPrintPreviewHtml(html: string): string {
+function buildPrintPreviewHtml(html: string, t: Translator): string {
   const csp = [
     "default-src 'none'",
     "style-src 'unsafe-inline'",
@@ -205,9 +212,9 @@ function buildPrintPreviewHtml(html: string): string {
     "font-src data:"
   ].join("; ");
   const toolbar = [
-    '<div class="relic-print-preview-toolbar" role="region" aria-label="印刷操作">',
-    '<button type="button" data-relic-print>OS標準の印刷画面を開く</button>',
-    '<button type="button" data-relic-close>閉じる</button>',
+    `<div class="relic-print-preview-toolbar" role="region" aria-label="${escapeHtml(t("output.printDialogControls"))}">`,
+    `<button type="button" data-relic-print>${escapeHtml(t("output.printDialogButton"))}</button>`,
+    `<button type="button" data-relic-close>${escapeHtml(t("output.printDialogClose"))}</button>`,
     "</div>"
   ].join("");
   const toolbarCss = `
@@ -332,6 +339,14 @@ function ensureExtension(fileName: string, extension: "pdf" | "svg"): string {
 function hasRenderableSvg(svg: string): boolean {
   const match = /<svg\b[^>]*>([\s\S]*?)<\/svg>/i.exec(svg.trim());
   return Boolean(match?.[1].trim());
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll("\"", "&quot;");
 }
 
 function ipcErrorDetails(error: unknown): string {

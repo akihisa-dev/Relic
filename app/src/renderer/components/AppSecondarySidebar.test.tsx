@@ -60,8 +60,8 @@ describe("AppSecondarySidebar", () => {
   it("renders the AI workspace panel in the secondary sidebar", () => {
     renderSecondarySidebar();
 
-    expect(screen.getByLabelText("AIチャット")).toHaveClass("secondary-sidebar");
-    expect(screen.getByLabelText("AIへのメッセージ")).toBeInTheDocument();
+    expect(screen.getByLabelText("AI chat")).toHaveClass("secondary-sidebar");
+    expect(screen.getByLabelText("Message to AI")).toBeInTheDocument();
   });
 
   it("keeps AI workspace focused on conversation without operation tabs", () => {
@@ -97,7 +97,7 @@ describe("AppSecondarySidebar", () => {
     const onSendMessage = vi.fn();
     renderSecondarySidebar({ onAIWorkspaceSendMessage: onSendMessage });
 
-    const input = screen.getByLabelText("AIへのメッセージ");
+    const input = screen.getByLabelText("Message to AI");
     fireEvent.change(input, { target: { value: "要件を整理して" } });
     fireEvent.keyDown(input, { key: "Enter", metaKey: true });
 
@@ -109,8 +109,8 @@ describe("AppSecondarySidebar", () => {
     const onCancelSending = vi.fn();
     renderSecondarySidebar({ isAIWorkspaceSending: true, onAIWorkspaceCancelSending: onCancelSending });
 
-    expect(screen.getByLabelText("AI応答を生成中")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "AI応答を中断" }));
+    expect(screen.getByLabelText("Generating AI response")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Stop AI response" }));
 
     expect(onCancelSending).toHaveBeenCalled();
   });
@@ -131,10 +131,10 @@ describe("AppSecondarySidebar", () => {
       }
     });
 
-    fireEvent.click(screen.getByRole("button", { name: "編集" }));
-    const editInput = screen.getByLabelText("ユーザー発言を編集");
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    const editInput = screen.getByLabelText("Edit user message");
     fireEvent.change(editInput, { target: { value: "修正後の依頼" } });
-    fireEvent.click(screen.getByRole("button", { name: "再送信" }));
+    fireEvent.click(screen.getByRole("button", { name: "Resend" }));
 
     expect(onSendMessage).toHaveBeenCalledWith("修正後の依頼");
   });
@@ -142,7 +142,7 @@ describe("AppSecondarySidebar", () => {
   it("expands the AI workspace input to fit the typed message", () => {
     renderSecondarySidebar();
 
-    const input = screen.getByLabelText("AIへのメッセージ");
+    const input = screen.getByLabelText("Message to AI");
     expect(input).toHaveAttribute("rows", "1");
     expect((input as HTMLTextAreaElement).style.height).toBe("");
 
@@ -159,7 +159,7 @@ describe("AppSecondarySidebar", () => {
     const onClose = vi.fn();
     renderSecondarySidebar({ onClose });
 
-    fireEvent.click(screen.getByRole("button", { name: "AIチャットを閉じる" }));
+    fireEvent.click(screen.getByRole("button", { name: "Close AI chat" }));
 
     expect(onClose).toHaveBeenCalled();
   });
@@ -168,8 +168,8 @@ describe("AppSecondarySidebar", () => {
     const onResizeStart = vi.fn();
     renderSecondarySidebar({ isResizing: true, onResizeStart });
 
-    const resizeHandle = screen.getByRole("button", { name: "AIチャットの幅を変更" });
-    expect(screen.getByLabelText("AIチャット")).toHaveClass("secondary-sidebar--resizing");
+    const resizeHandle = screen.getByRole("button", { name: "Resize AI chat" });
+    expect(screen.getByLabelText("AI chat")).toHaveClass("secondary-sidebar--resizing");
     expect(resizeHandle).toHaveClass("secondary-sidebar-resize-handle--active");
 
     fireEvent.mouseDown(resizeHandle, { clientX: 400 });

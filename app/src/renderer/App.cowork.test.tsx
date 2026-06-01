@@ -277,7 +277,7 @@ describe("App Cowork", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Cowork" }));
 
     expect(await screen.findByLabelText("OpenAI API使用量")).toBeInTheDocument();
-    expect(screen.getByText("API使用量")).toBeInTheDocument();
+    expect(screen.getByText("OpenAI API使用量")).toBeInTheDocument();
     expect(screen.getByText("OpenAI管理画面で確認")).toBeInTheDocument();
     expect(screen.queryByLabelText("Codex残り使用量")).not.toBeInTheDocument();
   });

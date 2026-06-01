@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef, useState, type ReactElement } from "react";
 
 import type { AIWorkspaceMessagePreview, AIWorkspaceState } from "../../shared/ipc";
+import { useT } from "../i18n";
 
 interface AIWorkspacePanelProps {
   isLoading: boolean;
@@ -25,6 +26,7 @@ export function AIWorkspacePanel({
   onSendMessage,
   state
 }: AIWorkspacePanelProps): ReactElement {
+  const t = useT();
   const [message, setMessage] = useState("");
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editingMessage, setEditingMessage] = useState("");
@@ -70,17 +72,17 @@ export function AIWorkspacePanel({
             {editingMessageId === item.id ? (
               <div className="ai-workspace-message-edit">
                 <textarea
-                  aria-label="ユーザー発言を編集"
+                  aria-label={t("aiChat.editUserMessage")}
                   onChange={(event) => setEditingMessage(event.target.value)}
                   rows={3}
                   value={editingMessage}
                 />
                 <div className="ai-workspace-message-actions">
                   <button disabled={isSending || !editingMessage.trim()} onClick={resendEditedMessage} type="button">
-                    再送信
+                    {t("aiChat.resend")}
                   </button>
                   <button onClick={cancelEditingMessage} type="button">
-                    キャンセル
+                    {t("common.cancel")}
                   </button>
                 </div>
               </div>
@@ -94,7 +96,7 @@ export function AIWorkspacePanel({
                       onClick={() => startEditingMessage(item.id, item.content)}
                       type="button"
                     >
-                      編集
+                      {t("aiChat.edit")}
                     </button>
                   </div>
                 ) : null}
@@ -103,7 +105,7 @@ export function AIWorkspacePanel({
           </article>
         ))}
         {isSending ? (
-          <article aria-label="AI応答を生成中" className="ai-workspace-message ai-workspace-message--assistant ai-workspace-message--pending">
+          <article aria-label={t("aiChat.generating")} className="ai-workspace-message ai-workspace-message--assistant ai-workspace-message--pending">
             <svg
               aria-hidden="true"
               className="ai-workspace-pending-spinner"
@@ -134,7 +136,7 @@ export function AIWorkspacePanel({
         }}
       >
         <textarea
-          aria-label="AIへのメッセージ"
+          aria-label={t("aiChat.messageInput")}
           disabled={isSending}
           ref={textareaRef}
           rows={1}
@@ -147,11 +149,11 @@ export function AIWorkspacePanel({
           value={message}
         />
         {isSending ? (
-          <button aria-label="AI応答を中断" onClick={onCancelSending} type="button">
+          <button aria-label={t("aiChat.cancelResponse")} onClick={onCancelSending} type="button">
             <span aria-hidden="true">■</span>
           </button>
         ) : (
-          <button aria-label="送信" disabled={!message.trim()} type="submit">
+          <button aria-label={t("aiChat.send")} disabled={!message.trim()} type="submit">
             <span aria-hidden="true">↑</span>
           </button>
         )}

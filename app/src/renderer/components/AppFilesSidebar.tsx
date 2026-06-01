@@ -3,6 +3,7 @@ import type { MouseEvent as ReactMouseEvent, ReactElement } from "react";
 import type { AppRailView } from "../appShellModel";
 import type { SidebarView } from "../store/uiStore";
 import type { AIWorkspaceState } from "../../shared/ipc";
+import { useT } from "../i18n";
 import { AIChatsSidebar } from "./AIChatsSidebar";
 import { FilesSidebar, type FilesSidebarProps } from "./FilesSidebar";
 
@@ -42,6 +43,7 @@ export function AppFilesSidebar({
   startSidebarResize,
   ...filesSidebarProps
 }: AppFilesSidebarProps): ReactElement {
+  const t = useT();
   const heading = sidebarViews.find((view) => view.id === activeSidebarView)?.label;
   const showHeader = activeSidebarView !== "files";
 
@@ -57,10 +59,10 @@ export function AppFilesSidebar({
             <span>{heading}</span>
             {activeSidebarView === "ai" ? (
               <button
-                aria-label="Coworkサイドバーを閉じる"
+                aria-label={t("aiChat.closeSidebar")}
                 className="sidebar-close-button"
                 onClick={onCloseSidebar}
-                title="閉じる"
+                title={t("aiChat.closeSidebar")}
                 type="button"
               >
                 ×
