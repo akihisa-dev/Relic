@@ -39,7 +39,7 @@ Relicはオープンソースソフトウェアです。ライセンスは GNU A
 - ファイル加工ツール（マージ、分割、タイトル一覧、目次生成）
 - Markdownプレビューの印刷 / PDF保存
 - 図表SVGのコピー / 保存
-- Cowork（OpenAI APIキーをユーザー環境で設定して使うAIワークスペース）
+- Cowork（Codex App Serverまたはユーザー環境のOpenAI APIキーで使うAIワークスペース）
 - ライト / ダーク / システム追従テーマ
 
 ---
