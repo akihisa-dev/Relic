@@ -2,8 +2,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const electronMock = vi.hoisted(() => ({
   browserWindowOptions: [] as Electron.BrowserWindowConstructorOptions[],
+  browserWindowOn: vi.fn(),
   clipboardWriteText: vi.fn(),
   destroy: vi.fn(),
+  getPath: vi.fn(),
   handle: vi.fn(),
   isDestroyed: vi.fn(),
   focus: vi.fn(),
@@ -37,10 +39,12 @@ vi.mock("electron", () => {
     focus = electronMock.focus;
     isDestroyed = electronMock.isDestroyed;
     loadURL = electronMock.loadURL;
+    on = electronMock.browserWindowOn;
     show = electronMock.show;
   }
 
   return {
+    app: { getPath: electronMock.getPath },
     BrowserWindow,
     clipboard: { writeText: electronMock.clipboardWriteText },
     dialog: { showSaveDialog: electronMock.showSaveDialog },
@@ -83,8 +87,8 @@ function handlerFor(channel: string) {
   return handler as (event: { sender: unknown }, input: unknown) => Promise<unknown>;
 }
 
-function lastLoadedHtml(): string {
-  const url = electronMock.loadURL.mock.calls.at(-1)?.[0] as string | undefined;
+function loadedHtmlAt(index: number): string {
+  const url = electronMock.loadURL.mock.calls.at(index)?.[0] as string | undefined;
   if (!url?.startsWith("data:text/html;base64,")) throw new Error("HTML was not loaded");
   return Buffer.from(url.replace("data:text/html;base64,", ""), "base64").toString("utf8");
 }
@@ -93,6 +97,7 @@ describe("outputHandlers", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     electronMock.browserWindowOptions.length = 0;
+    electronMock.getPath.mockReturnValue("/tmp");
     electronMock.isDestroyed.mockReturnValue(false);
     electronMock.loadURL.mockResolvedValue(undefined);
     electronMock.printToPDF.mockResolvedValue(Buffer.from("pdf"));
@@ -246,7 +251,7 @@ describe("outputHandlers", () => {
     expect(electronMock.clipboardWriteText).not.toHaveBeenCalled();
   });
 
-  it("印刷時は印刷用Windowを開きOS標準印刷ボタンを表示する", async () => {
+  it("印刷時は一時PDFをChromiumのPDFプレビューとして開く", async () => {
     registerOutputHandlers();
 
     const result = await handlerFor(printPreviewChannel)({ sender: {} }, {
@@ -255,11 +260,21 @@ describe("outputHandlers", () => {
     });
 
     expect(result).toEqual({ ok: true, value: { status: "printed" } });
-    expect(electronMock.loadURL).toHaveBeenCalled();
+    expect(electronMock.printToPDF).toHaveBeenCalled();
     expect(electronMock.show).toHaveBeenCalled();
     expect(electronMock.focus).toHaveBeenCalled();
     expect(electronMock.print).not.toHaveBeenCalled();
-    expect(electronMock.destroy).not.toHaveBeenCalled();
+    expect(electronMock.browserWindowOn).toHaveBeenCalledWith("closed", expect.any(Function));
+    expect(fsMock.writeFile).toHaveBeenCalledWith(
+      expect.stringMatching(/\/tmp\/\.relic-print-preview-.+-Note\.pdf\..+\.tmp$/),
+      Buffer.from("pdf"),
+      undefined
+    );
+    expect(fsMock.rename).toHaveBeenCalledWith(
+      expect.stringMatching(/\/tmp\/\.relic-print-preview-.+-Note\.pdf\..+\.tmp$/),
+      expect.stringMatching(/\/tmp\/relic-print-preview-.+-Note\.pdf$/)
+    );
+    expect(electronMock.loadURL.mock.calls.at(-1)?.[0]).toMatch(/^file:\/\/\/tmp\/relic-print-preview-.+-Note\.pdf$/);
     expect(electronMock.browserWindowOptions.at(-1)?.webPreferences).toEqual(
       expect.objectContaining({
         contextIsolation: true,
@@ -269,12 +284,11 @@ describe("outputHandlers", () => {
       })
     );
 
-    const html = lastLoadedHtml();
-    expect(html).toContain("OS標準の印刷画面を開く");
-    expect(html).toContain("window.print()");
-    expect(html).toContain("setTimeout(openPrintDialog, 150)");
-    expect(html).toContain(".relic-print-preview-toolbar");
-    expect(html).toContain("display: none !important");
-    expect(html).toContain("script-src 'unsafe-inline'");
+    const html = loadedHtmlAt(0);
+    expect(html).toContain("本文");
+
+    const closeHandler = electronMock.browserWindowOn.mock.calls.find(([eventName]) => eventName === "closed")?.[1] as (() => void) | undefined;
+    closeHandler?.();
+    expect(fsMock.unlink).toHaveBeenCalledWith(expect.stringMatching(/\/tmp\/relic-print-preview-.+-Note\.pdf$/));
   });
 });

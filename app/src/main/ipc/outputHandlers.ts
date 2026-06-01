@@ -1,4 +1,7 @@
-import { BrowserWindow, clipboard, dialog, ipcMain } from "electron";
+import { BrowserWindow, app, clipboard, dialog, ipcMain } from "electron";
+import { unlink } from "node:fs/promises";
+import path from "node:path";
+import { pathToFileURL } from "node:url";
 
 import {
   copyDiagramSvgChannel,
@@ -158,18 +161,40 @@ async function openPrintPreview(
   parentWindow: BrowserWindow | null,
   t: Translator
 ): Promise<RelicResult<OutputPrintResult>> {
-  const window = createOutputWindow(`${title} - ${t("output.print")}`, { allowInlineScripts: true, parentWindow });
+  const pdf = await renderHtmlToPdf(html, title);
+  const pdfPath = temporaryPrintPreviewPath(title);
+  await atomicWriteFile(pdfPath, pdf);
+  const pdfUrl = pathToFileURL(pdfPath).toString();
+  const window = createOutputWindow(`${title} - ${t("output.print")}`, {
+    allowInlineScripts: true,
+    allowedNavigation: (url) => url === pdfUrl,
+    parentWindow
+  });
 
-  await loadOutputHtml(window, buildPrintPreviewHtml(html, t));
-  window.show();
-  window.focus();
+  window.on("closed", () => {
+    void unlink(pdfPath).catch(() => undefined);
+  });
+
+  try {
+    await window.loadURL(pdfUrl);
+    window.show();
+    window.focus();
+  } catch (error) {
+    destroyOutputWindow(window);
+    await unlink(pdfPath).catch(() => undefined);
+    throw error;
+  }
 
   return ok({ status: "printed" });
 }
 
 function createOutputWindow(
   title: string,
-  options: { allowInlineScripts: boolean; parentWindow?: BrowserWindow | null }
+  options: {
+    allowInlineScripts: boolean;
+    allowedNavigation?: (url: string) => boolean;
+    parentWindow?: BrowserWindow | null;
+  }
 ): BrowserWindow {
   const window = new BrowserWindow({
     autoHideMenuBar: true,
@@ -191,7 +216,7 @@ function createOutputWindow(
 
   window.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
   window.webContents.on("will-navigate", (event, url) => {
-    if (!url.startsWith("data:text/html")) event.preventDefault();
+    if (!url.startsWith("data:text/html") && !options.allowedNavigation?.(url)) event.preventDefault();
   });
   window.webContents.on("will-attach-webview", (event) => {
     event.preventDefault();
@@ -201,79 +226,6 @@ function createOutputWindow(
   });
 
   return window;
-}
-
-function buildPrintPreviewHtml(html: string, t: Translator): string {
-  const csp = [
-    "default-src 'none'",
-    "style-src 'unsafe-inline'",
-    "script-src 'unsafe-inline'",
-    "img-src data:",
-    "font-src data:"
-  ].join("; ");
-  const toolbar = [
-    `<div class="relic-print-preview-toolbar" role="region" aria-label="${escapeHtml(t("output.printDialogControls"))}">`,
-    `<button type="button" data-relic-print>${escapeHtml(t("output.printDialogButton"))}</button>`,
-    `<button type="button" data-relic-close>${escapeHtml(t("output.printDialogClose"))}</button>`,
-    "</div>"
-  ].join("");
-  const toolbarCss = `
-.relic-print-preview-toolbar {
-  align-items: center;
-  background: #ffffff;
-  border-bottom: 1px solid #d4d4d8;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
-  box-sizing: border-box;
-  display: flex;
-  gap: 8px;
-  left: 0;
-  padding: 8px 12px;
-  position: sticky;
-  right: 0;
-  top: 0;
-  z-index: 10;
-}
-
-.relic-print-preview-toolbar button {
-  background: #18181b;
-  border: 1px solid #18181b;
-  border-radius: 6px;
-  color: #ffffff;
-  cursor: pointer;
-  font: 13px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  line-height: 1.4;
-  padding: 6px 10px;
-}
-
-.relic-print-preview-toolbar button[data-relic-close] {
-  background: #ffffff;
-  color: #18181b;
-}
-
-@media print {
-  .relic-print-preview-toolbar {
-    display: none !important;
-  }
-}
-`;
-  const script = `
-<script>
-(() => {
-  const openPrintDialog = () => window.print();
-  document.querySelector("[data-relic-print]")?.addEventListener("click", openPrintDialog);
-  document.querySelector("[data-relic-close]")?.addEventListener("click", () => window.close());
-  setTimeout(openPrintDialog, 150);
-})();
-</script>`;
-
-  return html
-    .replace(
-      /<meta http-equiv="Content-Security-Policy" content="[^"]*">/i,
-      `<meta http-equiv="Content-Security-Policy" content="${csp}">`
-    )
-    .replace("</head>", `<style>${toolbarCss}</style></head>`)
-    .replace("<body>", `<body>${toolbar}`)
-    .replace("</body>", `${script}</body>`);
 }
 
 async function loadOutputHtml(window: BrowserWindow, html: string): Promise<void> {
@@ -336,17 +288,17 @@ function ensureExtension(fileName: string, extension: "pdf" | "svg"): string {
   return fileName.toLowerCase().endsWith(`.${extension}`) ? fileName : `${fileName}.${extension}`;
 }
 
+function temporaryPrintPreviewPath(title: string): string {
+  const fileName = ensureExtension(sanitizeFileName(title || defaultPdfName, defaultPdfName), "pdf");
+  return path.join(
+    app.getPath("temp"),
+    `relic-print-preview-${process.pid}-${Date.now()}-${Math.random().toString(36).slice(2)}-${fileName}`
+  );
+}
+
 function hasRenderableSvg(svg: string): boolean {
   const match = /<svg\b[^>]*>([\s\S]*?)<\/svg>/i.exec(svg.trim());
   return Boolean(match?.[1].trim());
-}
-
-function escapeHtml(value: string): string {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll("\"", "&quot;");
 }
 
 function ipcErrorDetails(error: unknown): string {
