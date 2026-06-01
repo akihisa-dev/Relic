@@ -20,7 +20,9 @@
   grid-column: 1 / -1;
   grid-template-columns: var(--title-bar-left-offset, 88px) minmax(0, 1fr) var(--title-bar-action-width, 136px);
   min-width: 0;
-  overflow: hidden;
+  overflow: visible;
+  position: relative;
+  z-index: 40;
 }
 
 .title-bar-drag-area {

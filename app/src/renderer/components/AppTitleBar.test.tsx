@@ -129,6 +129,14 @@ describe("AppTitleBar", () => {
     expect(css).toMatch(/\.title-bar \.main-area-actions \.toolbar-btn\s*\{[^}]*-webkit-app-region:\s*no-drag;/s);
   });
 
+  it("lets title bar action tooltips render above the workspace layer", () => {
+    const css = readFileSync("src/renderer/styles/shell-sidebar.css", "utf8");
+
+    expect(css).toMatch(/\.title-bar\s*\{[^}]*overflow:\s*visible;/s);
+    expect(css).toMatch(/\.title-bar\s*\{[^}]*position:\s*relative;/s);
+    expect(css).toMatch(/\.title-bar\s*\{[^}]*z-index:\s*40;/s);
+  });
+
   it("renders title bar tabs in a shrinking tab strip instead of requiring horizontal scrolling", () => {
     const manyTabs = Object.fromEntries(
       Array.from({ length: 12 }, (_, index) => {
