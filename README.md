@@ -1,5 +1,13 @@
 # Relic
 
+![Relic workspace screenshot](assets/relic-workspace-screenshot.png)
+
+![Relic Cowork screenshot](assets/relic-cowork-screenshot.png)
+
+![Relic timeline screenshot](assets/relic-timeline-screenshot.png)
+
+![Relic calendar screenshot](assets/relic-calendar-screenshot.png)
+
 Relicは、Markdownに書ける情報をMarkdownファイルのまま保ち、その情報をもとに編集・閲覧・検索・可視化・出力を拡張するローカルアプリです。
 
 本文、見出し、リスト、表、リンク、タグ、フロントマター、コードブロックなど、Markdown内にテキストとして書ける情報を正本として扱います。MermaidやD2の図表も、Relic独自の図データではなく、Markdownコードブロックとして書ける情報だから扱います。
