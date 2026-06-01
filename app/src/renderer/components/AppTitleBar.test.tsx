@@ -70,7 +70,8 @@ function renderTitleBar(overrides: Partial<Parameters<typeof AppTitleBar>[0]> = 
     rightPane: emptyPane(),
     rightPanelView: "outline",
     rightPanelWidth: 240,
-    showRightPanelControls: true,
+    showRightPanelLinksControl: true,
+    showRightPanelOutlineControl: true,
     tabs,
     ...overrides
   };

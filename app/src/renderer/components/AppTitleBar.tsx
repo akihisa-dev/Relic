@@ -35,7 +35,8 @@ interface AppTitleBarProps {
   rightPane: PaneState;
   rightPanelView: RightPanelView;
   rightPanelWidth: number;
-  showRightPanelControls: boolean;
+  showRightPanelLinksControl: boolean;
+  showRightPanelOutlineControl: boolean;
   tabs: Record<string, Tab>;
 }
 
@@ -66,7 +67,8 @@ export function AppTitleBar({
   rightPane,
   rightPanelView,
   rightPanelWidth,
-  showRightPanelControls,
+  showRightPanelLinksControl,
+  showRightPanelOutlineControl,
   tabs
 }: AppTitleBarProps): ReactElement {
   const t = useT();
@@ -99,29 +101,29 @@ export function AppTitleBar({
       >
         <SplitViewIcon />
       </button>
-      {showRightPanelControls ? (
-        <>
-          <button
-            aria-label={t("pane.outline")}
-            className={`toolbar-btn${rightPanelView === "outline" && isRightPanelOpen ? " active" : ""}`}
-            data-tooltip={t("pane.toggleOutline", { shortcut: toggleOutlineShortcut })}
-            onClick={() => onRightPanelViewButton("outline")}
-            title={t("pane.toggleOutline", { shortcut: toggleOutlineShortcut })}
-            type="button"
-          >
-            <OutlineIcon />
-          </button>
-          <button
-            aria-label={t("pane.links")}
-            className={`toolbar-btn${rightPanelView === "links" && isRightPanelOpen ? " active" : ""}`}
-            data-tooltip={t("pane.toggleLinks")}
-            onClick={() => onRightPanelViewButton("links")}
-            title={t("pane.toggleLinks")}
-            type="button"
-          >
-            <LinksIcon />
-          </button>
-        </>
+      {showRightPanelOutlineControl ? (
+        <button
+          aria-label={t("pane.outline")}
+          className={`toolbar-btn${rightPanelView === "outline" && isRightPanelOpen ? " active" : ""}`}
+          data-tooltip={t("pane.toggleOutline", { shortcut: toggleOutlineShortcut })}
+          onClick={() => onRightPanelViewButton("outline")}
+          title={t("pane.toggleOutline", { shortcut: toggleOutlineShortcut })}
+          type="button"
+        >
+          <OutlineIcon />
+        </button>
+      ) : null}
+      {showRightPanelLinksControl ? (
+        <button
+          aria-label={t("pane.links")}
+          className={`toolbar-btn${rightPanelView === "links" && isRightPanelOpen ? " active" : ""}`}
+          data-tooltip={t("pane.toggleLinks")}
+          onClick={() => onRightPanelViewButton("links")}
+          title={t("pane.toggleLinks")}
+          type="button"
+        >
+          <LinksIcon />
+        </button>
       ) : null}
     </div>
   );

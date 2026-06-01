@@ -218,7 +218,8 @@ export function createTitleBarProps(input: AppLayoutPropsInput): TitleBarProps {
     rightPane: input.rightPane,
     rightPanelView: input.rightPanelView,
     rightPanelWidth: input.rightPanelWidth,
-    showRightPanelControls: input.featureRightPanelAvailable,
+    showRightPanelLinksControl: input.featureRightPanelLinksAvailable,
+    showRightPanelOutlineControl: input.featureRightPanelOutlineAvailable,
     tabs: input.tabs
   };
 }

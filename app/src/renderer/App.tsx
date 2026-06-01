@@ -1,6 +1,5 @@
 import type { EditorView } from "@codemirror/view";
-import { useCallback, useMemo, useRef, useState } from "react";
-import type { ReactElement } from "react";
+import { useCallback, useMemo, useRef, useState, type ReactElement } from "react";
 
 import { type WorkspaceState } from "../shared/ipc";
 import type { AppLinkContextMenu } from "./appLinks";
@@ -167,12 +166,23 @@ export function App(): ReactElement {
     setWorkspaceState,
     t
   });
-  const isRightPanelAvailable = featureToggles.rightPanel;
+  const isRightPanelOutlineAvailable = featureToggles.rightPanelOutline;
+  const isRightPanelLinksAvailable = featureToggles.rightPanelLinks;
+  const isRightPanelAvailable = isRightPanelOutlineAvailable || isRightPanelLinksAvailable;
+  const effectiveRightPanelView = resolveEnabledRightPanelView(
+    rightPanelView,
+    isRightPanelOutlineAvailable,
+    isRightPanelLinksAvailable
+  );
   const isEffectiveRightPanelOpen = isRightPanelAvailable && isRightPanelOpen;
   const toggleRightPanelIfAvailable = useCallback((): void => {
     if (!isRightPanelAvailable) return;
+    if (!isRightPanelOpen && rightPanelView !== effectiveRightPanelView) {
+      setRightPanelView(effectiveRightPanelView);
+      return;
+    }
     toggleRightPanel();
-  }, [isRightPanelAvailable, toggleRightPanel]);
+  }, [effectiveRightPanelView, isRightPanelAvailable, isRightPanelOpen, rightPanelView, setRightPanelView, toggleRightPanel]);
 
   const {
     frontmatterCandidates,
@@ -385,13 +395,23 @@ export function App(): ReactElement {
   const rightEditorViewRef = useRef<EditorView | null>(null);
 
   const handleRightPanelViewButton = useCallback((view: RightPanelView): void => {
-    if (isEffectiveRightPanelOpen && rightPanelView === view) {
+    if (view === "outline" && !isRightPanelOutlineAvailable) return;
+    if (view === "links" && !isRightPanelLinksAvailable) return;
+
+    if (isEffectiveRightPanelOpen && effectiveRightPanelView === view) {
       toggleRightPanel();
       return;
     }
 
     setRightPanelView(view);
-  }, [isEffectiveRightPanelOpen, rightPanelView, setRightPanelView, toggleRightPanel]);
+  }, [
+    effectiveRightPanelView,
+    isEffectiveRightPanelOpen,
+    isRightPanelLinksAvailable,
+    isRightPanelOutlineAvailable,
+    setRightPanelView,
+    toggleRightPanel
+  ]);
 
   const {
     handleCreateFileInFolder,
@@ -552,7 +572,8 @@ export function App(): ReactElement {
     editorActionPulse,
     editorSettings,
     existingMarkdownPaths,
-    featureRightPanelAvailable: isRightPanelAvailable,
+    featureRightPanelLinksAvailable: isRightPanelLinksAvailable,
+    featureRightPanelOutlineAvailable: isRightPanelOutlineAvailable,
     fileSearchFocusRequest,
     fileSelectionCount,
     focusedPane,
@@ -641,7 +662,7 @@ export function App(): ReactElement {
     rightEditorViewRef,
     rightPane,
     rightPaneScrollHeading,
-    rightPanelView,
+    rightPanelView: effectiveRightPanelView,
     rightPanelWidth,
     saveStatusByTabId,
     searchError,
@@ -685,4 +706,15 @@ export function App(): ReactElement {
   });
 
   return <AppLayout {...appLayoutProps} />;
+}
+
+function resolveEnabledRightPanelView(
+  currentView: RightPanelView,
+  isOutlineAvailable: boolean,
+  isLinksAvailable: boolean
+): RightPanelView {
+  if (currentView === "outline" && isOutlineAvailable) return "outline";
+  if (currentView === "links" && isLinksAvailable) return "links";
+  if (isOutlineAvailable) return "outline";
+  return "links";
 }

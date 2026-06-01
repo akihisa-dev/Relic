@@ -102,6 +102,29 @@ describe("appSettings", () => {
     });
   });
 
+  it("旧rightPanel機能設定を右パネル個別設定へ引き継ぐ", async () => {
+    const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-app-settings-"));
+    temporaryPaths.push(userDataPath);
+    await writeFile(getAppSettingsPath(userDataPath), JSON.stringify({
+      featureToggles: {
+        calendar: true,
+        chronicle: false,
+        chronicleSettings: false,
+        frontmatter: false,
+        rightPanel: false,
+        tools: false
+      }
+    }), "utf8");
+
+    await expect(readAppSettings(userDataPath)).resolves.toMatchObject({
+      featureToggles: expect.objectContaining({
+        ai: true,
+        rightPanelLinks: false,
+        rightPanelOutline: false
+      })
+    });
+  });
+
   it("Coworkパネル幅を読み込み時に320pxから520pxへ丸める", async () => {
     const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-app-settings-"));
     temporaryPaths.push(userDataPath);

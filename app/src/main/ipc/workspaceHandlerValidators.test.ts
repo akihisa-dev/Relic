@@ -105,26 +105,32 @@ describe("workspaceHandlerValidators", () => {
 
   it("validates feature toggles before saving", () => {
     expect(isFeatureTogglesInput({
+      ai: true,
       calendar: true,
       chronicle: false,
       chronicleSettings: false,
       frontmatter: true,
-      rightPanel: true,
+      rightPanelLinks: true,
+      rightPanelOutline: true,
       tools: false
     })).toBe(true);
     expect(isFeatureTogglesInput({
+      ai: true,
       calendar: true,
       chronicle: false,
       chronicleSettings: false,
       frontmatter: true,
-      rightPanel: true,
+      rightPanelLinks: true,
+      rightPanelOutline: true,
       tools: "false"
     })).toBe(false);
     expect(isFeatureTogglesInput({
+      ai: true,
       calendar: true,
       chronicle: false,
       frontmatter: true,
-      rightPanel: true,
+      rightPanelLinks: true,
+      rightPanelOutline: true,
       tools: false
     })).toBe(false);
   });

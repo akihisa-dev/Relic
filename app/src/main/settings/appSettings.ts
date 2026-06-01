@@ -179,14 +179,17 @@ function parseFeatureToggles(raw: unknown): FeatureToggles {
   }
 
   const s = raw as Record<string, unknown>;
+  const legacyRightPanel = typeof s.rightPanel === "boolean" ? s.rightPanel : true;
 
   return {
+    ai: typeof s.ai === "boolean" ? s.ai : true,
     calendar: typeof s.calendar === "boolean" ? s.calendar : true,
     chronicle: typeof s.chronicle === "boolean" ? s.chronicle : false,
     chronicleSettings: typeof s.chronicleSettings === "boolean" ? s.chronicleSettings : false,
     tools: typeof s.tools === "boolean" ? s.tools : false,
     frontmatter: typeof s.frontmatter === "boolean" ? s.frontmatter : false,
-    rightPanel: typeof s.rightPanel === "boolean" ? s.rightPanel : true
+    rightPanelLinks: typeof s.rightPanelLinks === "boolean" ? s.rightPanelLinks : legacyRightPanel,
+    rightPanelOutline: typeof s.rightPanelOutline === "boolean" ? s.rightPanelOutline : legacyRightPanel
   };
 }
 
