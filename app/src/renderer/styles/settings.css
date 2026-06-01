@@ -137,36 +137,38 @@
 
 .setting-row input[type="checkbox"] {
   appearance: none;
-  background: var(--border-medium);
+  background: rgb(199, 199, 199);
   border: 0;
   border-radius: 999px;
-  height: 22px;
+  cursor: pointer;
+  flex: 0 0 auto;
+  height: 28px;
   justify-self: end;
   margin: 0;
   position: relative;
   transition: background-color var(--motion-normal) var(--ease-standard);
-  width: 38px;
+  width: 56px;
 }
 
 .setting-row input[type="checkbox"]::after {
-  background: var(--bg);
+  background: conic-gradient(rgb(104, 104, 104), white, rgb(104, 104, 104), white, rgb(104, 104, 104));
   border-radius: 999px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+  box-shadow: 3px 2px 6px rgba(8, 8, 8, 0.26);
   content: "";
-  height: 18px;
-  left: 2px;
+  height: 28px;
+  left: 0;
   position: absolute;
-  top: 2px;
+  top: 0;
   transition: transform var(--motion-normal) var(--ease-enter);
-  width: 18px;
+  width: 28px;
 }
 
 .setting-row input[type="checkbox"]:checked {
-  background: var(--accent);
+  background: rgb(153, 197, 151);
 }
 
 .setting-row input[type="checkbox"]:checked::after {
-  transform: translateX(16px);
+  transform: translateX(28px);
 }
 
 .setting-row input[type="checkbox"]:active::after {
@@ -174,7 +176,7 @@
 }
 
 .setting-row input[type="checkbox"]:checked:active::after {
-  transform: translateX(16px) scale(0.96);
+  transform: translateX(28px) scale(0.96);
 }
 
 .setting-row input:focus-visible,
