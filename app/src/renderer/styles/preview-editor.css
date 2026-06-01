@@ -1465,26 +1465,23 @@
 }
 
 .empty-pane-form {
+  align-items: center;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  width: 220px;
 }
 
 .empty-pane-create-button {
   background: #e8e8e8;
   border: 1px solid #e8e8e8;
   border-radius: 0.5em;
-  box-shadow: 6px 6px 12px #d8dde2, -6px -6px 12px #ffffff;
+  box-shadow: 6px 6px 12px #c5c5c5, -6px -6px 12px #ffffff;
   color: #090909;
   cursor: pointer;
   font-size: 18px;
-  font-weight: 700;
   padding: 0.7em 1.7em;
-  transition:
-    box-shadow 0.3s var(--ease-standard),
-    color 0.3s var(--ease-standard),
-    transform var(--motion-fast) var(--ease-press);
+  transition: all 0.3s;
+  white-space: nowrap;
 }
 
 .empty-pane-create-button:hover {
@@ -1495,7 +1492,6 @@
 .empty-pane-create-button:active {
   box-shadow: inset 4px 4px 12px #c5c5c5, inset -4px -4px 12px #ffffff;
   color: #666666;
-  transform: translateY(1px);
 }
 
 .sidebar-resize-handle {
