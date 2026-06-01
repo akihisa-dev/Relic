@@ -14,6 +14,7 @@ import {
 import {
   insertAtLineStart,
   insertBlock,
+  insertCodeBlock,
   insertInternalLink,
   insertListAtSelectedLines,
   insertMarkdownLink,
@@ -224,7 +225,7 @@ export function EditorContextMenu({
         </div>
         <div className="editor-context-menu-grid">
           <IconMenuButton icon={<BlockquoteIcon className="editor-context-menu-icon" size={16} />} label={t("toolbar.blockquote")} onClick={() => runEditorCommand((view) => insertAtLineStart(view, "> ", placeholderText))} />
-          <IconMenuButton icon={<CodeBlockIcon className="editor-context-menu-icon" size={16} />} label={t("toolbar.codeBlock")} onClick={() => runEditorCommand((view) => insertBlock(view, "```\n\n```"))} />
+          <IconMenuButton icon={<CodeBlockIcon className="editor-context-menu-icon" size={16} />} label={t("toolbar.codeBlock")} onClick={() => runEditorCommand(insertCodeBlock)} />
           <IconMenuButton icon={<HorizontalRuleIcon className="editor-context-menu-icon" size={16} />} label={t("toolbar.horizontalRule")} onClick={() => runEditorCommand((view) => insertBlock(view, "---"))} />
         </div>
       </div>

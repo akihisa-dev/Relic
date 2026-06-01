@@ -12,6 +12,7 @@ import {
   insertAtLineStart,
   insertBlock,
   insertBlockIds,
+  insertCodeBlock,
   insertInternalLink,
   insertListAtSelectedLines,
   insertMarkdownLink,
@@ -177,7 +178,7 @@ export function useToolbarActions({
   };
 
   const handleBlockquote = (): void => applyToView((view) => insertAtLineStart(view, "> ", placeholderText));
-  const handleCodeBlock = (): void => applyToView((view) => insertBlock(view, "```\n\n```"));
+  const handleCodeBlock = (): void => applyToView(insertCodeBlock);
   const handleHorizontalRule = (): void => applyToView((view) => insertBlock(view, "---"));
   const handleBulletList = (): void => applyToView((view) => insertListAtSelectedLines(view, "bullet", placeholderText));
   const handleOrderedList = (): void => applyToView((view) => insertListAtSelectedLines(view, "ordered", placeholderText));

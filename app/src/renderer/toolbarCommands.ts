@@ -149,6 +149,32 @@ export function insertBlock(view: EditorView, text: string): void {
   view.focus();
 }
 
+export function insertCodeBlock(view: EditorView): void {
+  const { state } = view;
+
+  if (state.selection.ranges.every((range) => range.empty)) {
+    insertBlock(view, "```\n\n```");
+    return;
+  }
+
+  const before = "```\n";
+  const after = "\n```";
+  const changes = state.changeByRange((range) => {
+    const selected = state.sliceDoc(range.from, range.to);
+
+    return {
+      changes: { from: range.from, to: range.to, insert: `${before}${selected}${after}` },
+      range: EditorSelection.range(
+        range.from + before.length,
+        range.from + before.length + selected.length
+      )
+    };
+  });
+
+  view.dispatch(changes);
+  view.focus();
+}
+
 export function insertMarkdownLink(view: EditorView, url: string, placeholderLinkText: string): void {
   const { state } = view;
   const selected = state.sliceDoc(state.selection.main.from, state.selection.main.to);
