@@ -2,6 +2,7 @@ import { act, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { defaultEditorSettings } from "../../shared/ipc";
+import { makeRelicApi } from "../../test/rendererTestUtils";
 import { useEditorStore, type Tab } from "../store/editorStore";
 import { useEditorAutoSave } from "./useEditorAutoSave";
 
@@ -28,9 +29,9 @@ function deferred<T>(): { promise: Promise<T>; resolve: (value: T) => void } {
 describe("useEditorAutoSave", () => {
   beforeEach(() => {
     vi.useFakeTimers();
-    window.relic = {
+    window.relic = makeRelicApi({
       writeMarkdownFile: vi.fn().mockResolvedValue({ ok: true, value: undefined })
-    } as unknown as typeof window.relic;
+    });
   });
 
   afterEach(() => {
@@ -60,11 +61,11 @@ describe("useEditorAutoSave", () => {
   it("保存中に本文が変わった場合は最新本文だけを追加保存する", async () => {
     const firstSave = deferred<{ ok: true; value: undefined }>();
     const secondSave = deferred<{ ok: true; value: undefined }>();
-    window.relic = {
+    window.relic = makeRelicApi({
       writeMarkdownFile: vi.fn()
         .mockReturnValueOnce(firstSave.promise)
         .mockReturnValueOnce(secondSave.promise)
-    } as unknown as typeof window.relic;
+    });
     resetStore({
       tab: { content: "初稿", id: "tab", kind: "file", name: "Memo", path: "memo.md", savedContent: "" }
     });
@@ -100,9 +101,9 @@ describe("useEditorAutoSave", () => {
 
   it("保存中に外部変更と衝突した場合は保存待ち本文を追加保存せず衝突を維持する", async () => {
     const firstSave = deferred<{ ok: true; value: undefined }>();
-    window.relic = {
+    window.relic = makeRelicApi({
       writeMarkdownFile: vi.fn().mockReturnValueOnce(firstSave.promise)
-    } as unknown as typeof window.relic;
+    });
     resetStore({
       tab: { content: "初稿", id: "tab", kind: "file", name: "Memo", path: "memo.md", savedContent: "Base" }
     });

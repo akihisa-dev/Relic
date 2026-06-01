@@ -4,6 +4,7 @@ import { fireEvent, render, waitFor } from "@testing-library/react";
 import { createRef } from "react";
 import { describe, expect, it, vi } from "vitest";
 
+import { makeRelicApi } from "../../test/rendererTestUtils";
 import { findClickableLinkAtPosition } from "../editorLivePreview";
 import { Editor } from "./Editor";
 import {
@@ -255,9 +256,9 @@ describe("Editor live preview", () => {
 
   it("通常コードブロックのヘッダーから本文だけをコピーできる", async () => {
     const writeClipboardText = vi.fn();
-    window.relic = {
+    window.relic = makeRelicApi({
       writeClipboardText
-    } as unknown as typeof window.relic;
+    });
     const source = "const value = 1;\nconsole.log(value);";
     const viewRef = createRef<EditorView | null>();
     const { container } = render(
@@ -282,11 +283,11 @@ describe("Editor live preview", () => {
 
   it("Electronクリップボードが失敗しても通常コードブロックをブラウザ経路でコピーできる", async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
-    window.relic = {
+    window.relic = makeRelicApi({
       writeClipboardText: vi.fn(() => {
         throw new Error("clipboard unavailable");
       })
-    } as unknown as typeof window.relic;
+    });
     Object.defineProperty(navigator, "clipboard", {
       configurable: true,
       value: {

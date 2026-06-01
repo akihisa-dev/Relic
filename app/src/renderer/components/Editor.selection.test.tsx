@@ -2,6 +2,7 @@ import { fireEvent, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { contextSelectionHighlightField } from "../editorContextSelectionHighlight";
+import { makeRelicApi } from "../../test/rendererTestUtils";
 import { renderEditorWithView, settings } from "./editorTestHelpers";
 
 describe("Editor selection commands", () => {
@@ -10,10 +11,10 @@ describe("Editor selection commands", () => {
   });
 
   it("Electronでも本文の右クリックでMarkdownメニューを表示する", async () => {
-    window.relic = {
+    window.relic = makeRelicApi({
       readClipboardText: vi.fn(),
       writeClipboardText: vi.fn()
-    } as unknown as typeof window.relic;
+    });
 
     const { view } = await renderEditorWithView({
       content: "hello world",

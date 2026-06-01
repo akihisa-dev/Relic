@@ -2,6 +2,7 @@ import { redo, undo } from "@codemirror/commands";
 import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { makeRelicApi } from "../../test/rendererTestUtils";
 import { renderEditorWithView, settings } from "./editorTestHelpers";
 import { Editor } from "./Editor";
 
@@ -25,10 +26,12 @@ describe("Editor markdown editing", () => {
 
   it("本文の右クリックメニューからコピー・カット・ペーストを実行できる", async () => {
     const readClipboardText = vi.fn().mockReturnValue("!");
+    const writeClipboardText = vi.fn();
     const writeText = vi.fn().mockResolvedValue(undefined);
-    window.relic = {
-      readClipboardText
-    } as unknown as typeof window.relic;
+    window.relic = makeRelicApi({
+      readClipboardText,
+      writeClipboardText
+    });
     Object.defineProperty(navigator, "clipboard", {
       configurable: true,
       value: {
@@ -50,7 +53,7 @@ describe("Editor markdown editing", () => {
     fireEvent.contextMenu(contentElement, { clientX: 32, clientY: 32 });
     fireEvent.click(await screen.findByRole("menuitem", { name: "Copy" }));
     await waitFor(() => {
-      expect(writeText).toHaveBeenCalledWith("hello");
+      expect(writeClipboardText).toHaveBeenCalledWith("hello");
     });
 
     view.dispatch({ selection: { anchor: 5, head: 5 } });
