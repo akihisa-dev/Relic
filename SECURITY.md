@@ -2,9 +2,11 @@
 
 このリポジトリには秘密情報を置かない。
 
+RelicはGitHub Public Repositoryとして公開する前提で管理する。脆弱性や秘密情報の混入を見つけた場合は、公開Issueに詳細を書かず、GitHub Security Advisoriesなどの非公開で連絡できる経路を優先する。
+
 ## 禁止
 
-- `.env`、`.npmrc`、認証JSON、ローカル設定JSON
+- `.env`、認証情報を含む `.npmrc`、認証JSON、ローカル設定JSON
 - npm token、HTTP Authorization header、DB接続文字列、秘密鍵、証明書
 - 個人アカウント、外部サービス、配布署名に関わる認証情報
 
