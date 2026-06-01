@@ -19,26 +19,27 @@ export function useAppPreviewOutputActions({
   t,
   workspacePath
 }: UseAppPreviewOutputActionsInput): {
-  handlePrintPreview: () => void;
-  handleSavePreviewAsPdf: () => void;
+  handlePrintPreview: (tab?: FileTab) => void;
+  handleSavePreviewAsPdf: (tab?: FileTab) => void;
 } {
-  const buildFocusedPreviewOutput = useCallback(async () => {
-    if (!activeFileTab) return null;
+  const buildPreviewOutput = useCallback(async (tab?: FileTab) => {
+    const outputTab = tab ?? activeFileTab;
+    if (!outputTab) return null;
 
     return await buildPreviewOutputHtml({
-      content: activeFileTab.content,
-      fileName: activeFileTab.name,
-      path: activeFileTab.path,
+      content: outputTab.content,
+      fileName: outputTab.name,
+      path: outputTab.path,
       t,
-      title: activeFileTab.name,
+      title: outputTab.name,
       workspacePath
     });
   }, [activeFileTab, t, workspacePath]);
 
-  const handlePrintPreview = useCallback((): void => {
+  const handlePrintPreview = useCallback((tab?: FileTab): void => {
     if (!window.relic) return;
 
-    void buildFocusedPreviewOutput().then(async (payload) => {
+    void buildPreviewOutput(tab).then(async (payload) => {
       if (!payload) {
         setWorkspaceError(t("output.printNoFile"));
         return;
@@ -54,12 +55,12 @@ export function useAppPreviewOutputActions({
     }).catch((error) => {
       setWorkspaceError(error instanceof Error ? error.message : String(error));
     });
-  }, [buildFocusedPreviewOutput, setWorkspaceError, showToast, t]);
+  }, [buildPreviewOutput, setWorkspaceError, showToast, t]);
 
-  const handleSavePreviewAsPdf = useCallback((): void => {
+  const handleSavePreviewAsPdf = useCallback((tab?: FileTab): void => {
     if (!window.relic) return;
 
-    void buildFocusedPreviewOutput().then(async (payload) => {
+    void buildPreviewOutput(tab).then(async (payload) => {
       if (!payload) {
         setWorkspaceError(t("output.savePdfNoFile"));
         return;
@@ -75,7 +76,7 @@ export function useAppPreviewOutputActions({
     }).catch((error) => {
       setWorkspaceError(error instanceof Error ? error.message : String(error));
     });
-  }, [buildFocusedPreviewOutput, setWorkspaceError, showToast, t]);
+  }, [buildPreviewOutput, setWorkspaceError, showToast, t]);
 
   return {
     handlePrintPreview,

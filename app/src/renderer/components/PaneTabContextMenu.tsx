@@ -2,7 +2,7 @@ import type { ReactElement } from "react";
 import { createPortal } from "react-dom";
 
 import { markdownLinkForPaneTabPath } from "../paneViewModel";
-import type { Tab } from "../store/editorStore";
+import type { FileTab, Tab } from "../store/editorStore";
 import { useT } from "../i18n";
 import type { PaneTabContextMenuState } from "../hooks/usePaneTabInteractions";
 
@@ -17,7 +17,9 @@ interface PaneTabContextMenuProps {
   onCloseTabsToRight: (tabId: string) => void;
   onDuplicateTabFile?: (tabId: string) => void;
   onOpenInOtherPane: (tabId: string) => void;
+  onPrintPreview: (tab: FileTab) => void;
   onRevealTabFile?: (tabId: string) => void;
+  onSavePreviewAsPdf: (tab: FileTab) => void;
   onTabClose: (tabId: string) => void;
   onTogglePinTab?: (tabId: string) => void;
 }
@@ -33,7 +35,9 @@ export function PaneTabContextMenu({
   onCloseTabsToRight,
   onDuplicateTabFile,
   onOpenInOtherPane,
+  onPrintPreview,
   onRevealTabFile,
+  onSavePreviewAsPdf,
   onTabClose,
   onTogglePinTab
 }: PaneTabContextMenuProps): ReactElement | null {
@@ -97,6 +101,26 @@ export function PaneTabContextMenu({
                 type="button"
               >
                 {t("files.copyMarkdownLink")}
+              </button>
+              <button
+                className="tab-context-menu-item"
+                onClick={() => {
+                  onPrintPreview(contextTab);
+                  onClose();
+                }}
+                type="button"
+              >
+                {t("output.print")}
+              </button>
+              <button
+                className="tab-context-menu-item"
+                onClick={() => {
+                  onSavePreviewAsPdf(contextTab);
+                  onClose();
+                }}
+                type="button"
+              >
+                {t("output.savePdf")}
               </button>
             </>
           ) : null}

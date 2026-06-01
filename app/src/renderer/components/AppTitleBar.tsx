@@ -3,14 +3,12 @@ import type { CSSProperties, ReactElement, ReactNode } from "react";
 import { usePaneTabInteractions } from "../hooks/usePaneTabInteractions";
 import { useT } from "../i18n";
 import { formatShortcut } from "../keyboardShortcuts";
-import type { PaneId, PaneState, PanelTabKind, Tab } from "../store/editorStore";
+import type { FileTab, PaneId, PaneState, PanelTabKind, Tab } from "../store/editorStore";
 import type { RightPanelView } from "../store/uiStore";
-import { PdfIcon, PrintIcon } from "./MarkdownActionIcons";
 import { PaneTabBar } from "./PaneTabBar";
 import { PaneTabContextMenu } from "./PaneTabContextMenu";
 
 interface AppTitleBarProps {
-  canOutputPreview: boolean;
   isRightPanelOpen: boolean;
   isSourceMode: boolean;
   isSplit: boolean;
@@ -22,10 +20,10 @@ interface AppTitleBarProps {
   onCloseTabsToRight: (pane: PaneId, tabId: string) => void;
   onDuplicateTabFile?: (tabId: string) => void;
   onOpenInOtherPane: (pane: PaneId, tabId: string) => void;
-  onPrintPreview: () => void;
+  onPrintPreview: (tab: FileTab) => void;
   onRevealTabFile?: (tabId: string) => void;
   onRightPanelViewButton: (view: RightPanelView) => void;
-  onSavePreviewAsPdf: () => void;
+  onSavePreviewAsPdf: (tab: FileTab) => void;
   onSourceModeToggle: () => void;
   onSplitToggle: () => void;
   onTabClose: (pane: PaneId, tabId: string) => void;
@@ -42,7 +40,6 @@ interface AppTitleBarProps {
 }
 
 export function AppTitleBar({
-  canOutputPreview,
   isRightPanelOpen,
   isSourceMode,
   isSplit,
@@ -82,28 +79,6 @@ export function AppTitleBar({
 
   const paneActions = (
     <div className="main-area-actions">
-      <button
-        aria-label={t("output.print")}
-        className="toolbar-btn"
-        data-tooltip={t("output.print")}
-        disabled={!canOutputPreview}
-        onClick={onPrintPreview}
-        title={t("output.print")}
-        type="button"
-      >
-        <PrintIcon />
-      </button>
-      <button
-        aria-label={t("output.savePdf")}
-        className="toolbar-btn"
-        data-tooltip={t("output.savePdf")}
-        disabled={!canOutputPreview}
-        onClick={onSavePreviewAsPdf}
-        title={t("output.savePdf")}
-        type="button"
-      >
-        <PdfIcon />
-      </button>
       <button
         aria-label={t("pane.sourceShort")}
         className={`toolbar-btn${isSourceMode ? " active" : ""}`}
@@ -167,7 +142,9 @@ export function AppTitleBar({
           onCloseTabsToRight={onCloseTabsToRight}
           onDuplicateTabFile={onDuplicateTabFile}
           onOpenInOtherPane={onOpenInOtherPane}
+          onPrintPreview={onPrintPreview}
           onRevealTabFile={onRevealTabFile}
+          onSavePreviewAsPdf={onSavePreviewAsPdf}
           onTabClose={onTabClose}
           onTabMove={onTabMove}
           onTabSelect={onTabSelect}
@@ -186,7 +163,9 @@ export function AppTitleBar({
             onCloseTabsToRight={onCloseTabsToRight}
             onDuplicateTabFile={onDuplicateTabFile}
             onOpenInOtherPane={onOpenInOtherPane}
+            onPrintPreview={onPrintPreview}
             onRevealTabFile={onRevealTabFile}
+            onSavePreviewAsPdf={onSavePreviewAsPdf}
             onTabClose={onTabClose}
             onTabMove={onTabMove}
             onTabSelect={onTabSelect}
@@ -213,7 +192,9 @@ interface TitleBarPaneTabsProps {
   onCloseTabsToRight: (pane: PaneId, tabId: string) => void;
   onDuplicateTabFile?: (tabId: string) => void;
   onOpenInOtherPane: (pane: PaneId, tabId: string) => void;
+  onPrintPreview: (tab: FileTab) => void;
   onRevealTabFile?: (tabId: string) => void;
+  onSavePreviewAsPdf: (tab: FileTab) => void;
   onTabClose: (pane: PaneId, tabId: string) => void;
   onTabMove: (fromPane: PaneId, toPane: PaneId, tabId: string, targetTabId?: string | null, position?: "before" | "after") => void;
   onTabSelect: (pane: PaneId, tabId: string) => void;
@@ -232,7 +213,9 @@ function TitleBarPaneTabs({
   onCloseTabsToRight,
   onDuplicateTabFile,
   onOpenInOtherPane,
+  onPrintPreview,
   onRevealTabFile,
+  onSavePreviewAsPdf,
   onTabClose,
   onTabMove,
   onTabSelect,
@@ -283,7 +266,9 @@ function TitleBarPaneTabs({
         onCloseTabsToRight={(tabId) => onCloseTabsToRight(pane, tabId)}
         onDuplicateTabFile={onDuplicateTabFile}
         onOpenInOtherPane={(tabId) => onOpenInOtherPane(pane, tabId)}
+        onPrintPreview={onPrintPreview}
         onRevealTabFile={onRevealTabFile}
+        onSavePreviewAsPdf={onSavePreviewAsPdf}
         onTabClose={(tabId) => onTabClose(pane, tabId)}
         onTogglePinTab={onTogglePinTab}
       />
