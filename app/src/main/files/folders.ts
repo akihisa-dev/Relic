@@ -76,7 +76,10 @@ export async function renameFolder(
     return validatedName;
   }
 
-  const nextRelativePath = toWorkspaceRelativePath(path.join(path.dirname(relativePath), validatedName.value));
+  const nextRelativePath = path.posix.join(
+    path.posix.dirname(toWorkspaceRelativePath(relativePath)),
+    validatedName.value
+  );
   const destinationPath = await resolveNewWorkspacePath(workspacePath, nextRelativePath);
 
   if (!destinationPath.ok) {
@@ -129,7 +132,7 @@ export async function moveFolder(
   }
 
   const normalizedDestFolder = toWorkspaceRelativePath(destinationFolder.trim());
-  const folderName = path.basename(relativePath);
+  const folderName = path.posix.basename(toWorkspaceRelativePath(relativePath));
   const nextRelativePath = toWorkspaceRelativePath(
     normalizedDestFolder === "" ? folderName : `${normalizedDestFolder}/${folderName}`
   );

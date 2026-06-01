@@ -4,7 +4,21 @@ import path from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import { createCopyRelativePath } from "./markdownFilePaths";
+import {
+  createCopyRelativePath,
+  markdownPathInFolder,
+  renamedMarkdownPath
+} from "./markdownFilePaths";
+
+describe("markdown workspace paths", () => {
+  it("Windows風の区切りが混ざってもワークスペース相対パスはスラッシュ区切りで作る", () => {
+    expect(markdownPathInFolder("資料\\読書メモ.md", "archive")).toBe("archive/読書メモ.md");
+    expect(renamedMarkdownPath("資料\\読書メモ.md", "読書ログ")).toEqual({
+      ok: true,
+      value: "資料/読書ログ.md"
+    });
+  });
+});
 
 describe("createCopyRelativePath", () => {
   const temporaryPaths: string[] = [];
