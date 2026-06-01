@@ -156,7 +156,7 @@ export function PaneContentSurface({
       </div>
       {workspacePath ? (
         <div className="empty-pane-form">
-          <button className="primary-button" onClick={() => onCreateFile("")} type="button">
+          <button className="primary-button empty-pane-create-button" onClick={() => onCreateFile("")} type="button">
             {t("pane.createFile")}
           </button>
         </div>
