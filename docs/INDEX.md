@@ -58,3 +58,5 @@ AIのセッション開始時は、`../AGENTS.md` から [project/overview.md](p
 
 `AGENTS.md` はAIエージェント向けルールの正本です。
 別のAI向け入口文書は作らず、ルールは `AGENTS.md` にだけ置きます。
+
+Relicのライセンスはリポジトリルートの `LICENSE` を正本とし、SPDX表記は `AGPL-3.0-or-later` とします。コントリビューション方針は `CONTRIBUTING.md` を参照します。
