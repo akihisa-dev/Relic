@@ -1,10 +1,12 @@
 export interface FeatureToggles {
+  ai: boolean;
   calendar: boolean;
   chronicle: boolean;
   chronicleSettings: boolean;
   tools: boolean;
   frontmatter: boolean;
-  rightPanel: boolean;
+  rightPanelLinks: boolean;
+  rightPanelOutline: boolean;
 }
 
 export type UserDefinedFieldType =
@@ -33,12 +35,14 @@ export const defaultUserDefinedFields: UserDefinedField[] = [];
 export const defaultFrontmatterTemplates: FrontmatterTemplate[] = [];
 
 export const defaultFeatureToggles: FeatureToggles = {
+  ai: true,
   calendar: true,
   chronicle: false,
   chronicleSettings: false,
   tools: false,
   frontmatter: false,
-  rightPanel: true
+  rightPanelLinks: true,
+  rightPanelOutline: true
 };
 
 export interface AppUiSettings {

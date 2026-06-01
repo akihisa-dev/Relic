@@ -35,7 +35,7 @@ describe("App rail panels", () => {
     resetRendererStores();
   });
 
-  it("機能トグルで右パネルをOFFにしたら表示上も右パネルを閉じる", async () => {
+  it("機能トグルで右パネル項目を個別にOFFにできる", async () => {
     const saveFeatureToggles = vi.fn().mockResolvedValue({ ok: true, value: undefined });
 
     window.relic = makeRelicApi({
@@ -51,13 +51,13 @@ describe("App rail panels", () => {
     expect(container.querySelector(".right-panel")).not.toHaveClass("right-panel--closed");
 
     fireEvent.click(screen.getByRole("button", { name: "設定" }));
-    fireEvent.click(await screen.findByLabelText("右パネル"));
+    fireEvent.click(await screen.findByLabelText("右パネル: アウトライン"));
 
-    expect(saveFeatureToggles).toHaveBeenCalledWith(expect.objectContaining({ rightPanel: false }));
+    expect(saveFeatureToggles).toHaveBeenCalledWith(expect.objectContaining({ rightPanelOutline: false }));
     expect(screen.queryByRole("button", { name: "アウトライン" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "リンク" })).toBeNull();
-    expect(container.querySelector(".title-bar")).not.toHaveClass("title-bar--right-panel-open");
-    expect(container.querySelector(".right-panel")).toHaveClass("right-panel--closed");
+    expect(screen.getByRole("button", { name: "リンク" })).toBeInTheDocument();
+    expect(container.querySelector(".title-bar")).toHaveClass("title-bar--right-panel-open");
+    expect(container.querySelector(".right-panel")).not.toHaveClass("right-panel--closed");
 
     fireEvent.keyDown(window, { key: "B", metaKey: true, shiftKey: true });
 

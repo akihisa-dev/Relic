@@ -54,7 +54,8 @@ export interface AppLayoutPropsInput {
   editorActionPulse: EditorWorkspaceProps["editorActionPulse"];
   editorSettings: EditorWorkspaceProps["editorSettings"];
   existingMarkdownPaths: EditorWorkspaceProps["allFilePaths"];
-  featureRightPanelAvailable: TitleBarProps["showRightPanelControls"];
+  featureRightPanelLinksAvailable: TitleBarProps["showRightPanelLinksControl"];
+  featureRightPanelOutlineAvailable: TitleBarProps["showRightPanelOutlineControl"];
   fileSearchFocusRequest: FilesSidebarProps["searchFocusRequest"];
   fileSelectionCount: FilesSidebarProps["fileSelectionCount"];
   focusedPane: EditorWorkspaceProps["focusedPane"];

@@ -374,7 +374,7 @@ describe("SettingsPanel", () => {
   it("機能トグルを既存のFeatureToggles形式で保存する", () => {
     const onFeatureTogglesSave = vi.fn();
     renderSettingsPanel({
-      featureToggles: { ...defaultFeatureToggles, chronicle: true, tools: true },
+      featureToggles: { ...defaultFeatureToggles, ai: true, chronicle: true, tools: true },
       onFeatureTogglesSave
     });
 
@@ -382,8 +382,16 @@ describe("SettingsPanel", () => {
 
     expect(onFeatureTogglesSave).toHaveBeenCalledWith(expect.objectContaining({ tools: false }));
 
+    fireEvent.click(screen.getByLabelText("Cowork"));
+
+    expect(onFeatureTogglesSave).toHaveBeenCalledWith(expect.objectContaining({ ai: false }));
+
     fireEvent.click(screen.getByLabelText("Timeline"));
 
     expect(onFeatureTogglesSave).toHaveBeenCalledWith(expect.objectContaining({ chronicle: false }));
+
+    fireEvent.click(screen.getByLabelText("Right panel: Links"));
+
+    expect(onFeatureTogglesSave).toHaveBeenCalledWith(expect.objectContaining({ rightPanelLinks: false }));
   });
 });
