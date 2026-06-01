@@ -188,9 +188,16 @@
 
 .settings-segmented {
   align-items: stretch;
-  background: var(--hover);
+  backdrop-filter: blur(12px) saturate(1.08);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.05)),
+    var(--hover);
   border: 1px solid var(--border-soft);
   border-radius: 999px;
+  box-shadow:
+    inset 1px 1px 3px rgba(255, 255, 255, 0.24),
+    inset -1px -1px 5px rgba(0, 0, 0, 0.12),
+    0 4px 12px rgba(0, 0, 0, 0.06);
   display: grid;
   grid-template-columns: repeat(var(--settings-segmented-count), minmax(0, 1fr));
   justify-self: end;
@@ -202,17 +209,22 @@
 }
 
 .settings-segmented-indicator {
-  background: var(--bg);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.24)),
+    var(--bg);
   border-radius: 999px;
   bottom: 4px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  box-shadow:
+    0 5px 16px rgba(0, 0, 0, 0.12),
+    0 0 0 1px rgba(255, 255, 255, 0.28) inset,
+    0 1px 6px rgba(255, 255, 255, 0.24) inset;
   left: 4px;
   pointer-events: none;
   position: absolute;
   top: 4px;
   transform: translateX(calc(var(--settings-segmented-index) * 100%));
   transition:
-    transform var(--motion-slow) var(--ease-enter),
+    transform 420ms cubic-bezier(0.22, 1.22, 0.36, 1),
     background-color var(--motion-normal) var(--ease-standard),
     box-shadow var(--motion-normal) var(--ease-standard);
   will-change: transform;
