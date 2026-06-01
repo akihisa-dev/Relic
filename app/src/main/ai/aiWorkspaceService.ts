@@ -24,9 +24,7 @@ import {
   type AIWorkspaceChatData,
   type AIWorkspaceData
 } from "./aiWorkspaceData";
-import { readOpenAIAPIKey } from "./openAIKeyStore";
-import { runCodexAIWorkspaceTurn } from "./codexAppServerClient";
-import { runOpenAIWorkspaceTurn } from "./openAIResponsesClient";
+import { MissingOpenAIAPIKeyError, runAIWorkspaceProviderTurn } from "./aiWorkspaceProviders";
 import {
   activeChat,
   buildOptionalUserHistory,
@@ -240,38 +238,26 @@ export async function sendAIWorkspaceMessage(
       pendingOperations: [],
       referenceContents,
       references
-    } satisfies Omit<Parameters<typeof runOpenAIWorkspaceTurn>[0], "apiKey" | "model">;
+    };
 
     let aiError: string | null = null;
     let aiResponse: AIWorkspaceTurnResult | null = null;
 
-    if (provider === "openai-api") {
-      const apiKey = await readOpenAIAPIKey(context.userDataPath);
-      if (!apiKey) {
-        return fail("AI_WORKSPACE_OPENAI_KEY_MISSING", "OpenAI APIキーをAI設定で登録してください。");
+    aiResponse = await runAIWorkspaceProviderTurn({
+      model: settings.aiSettings.openAIModel,
+      provider,
+      signal: options.signal,
+      turnInput,
+      userDataPath: context.userDataPath,
+      workspacePath: context.workspacePath
+    }).catch((error) => {
+      if (error instanceof MissingOpenAIAPIKeyError) {
+        throw error;
       }
-
-      aiResponse = await runOpenAIWorkspaceTurn({
-        ...turnInput,
-        apiKey,
-        model: settings.aiSettings.openAIModel,
-        signal: options.signal
-      }).catch((error) => {
-        if (isAIWorkspaceAbortError(error, options.signal)) throw error;
-        aiError = normalizeAIProviderError(provider, error);
-        return null;
-      });
-    } else {
-      aiResponse = await runCodexAIWorkspaceTurn({
-        ...turnInput,
-        signal: options.signal,
-        workspacePath: context.workspacePath
-      }).catch((error) => {
-        if (isAIWorkspaceAbortError(error, options.signal)) throw error;
-        aiError = normalizeAIProviderError(provider, error);
-        return null;
-      });
-    }
+      if (isAIWorkspaceAbortError(error, options.signal)) throw error;
+      aiError = normalizeAIProviderError(provider, error);
+      return null;
+    });
 
     throwIfAIWorkspaceAborted(options.signal);
 
@@ -307,6 +293,10 @@ export async function sendAIWorkspaceMessage(
 
     return ok(await toAIWorkspaceState(nextData, context.userDataPath));
   } catch (error) {
+    if (error instanceof MissingOpenAIAPIKeyError) {
+      return fail("AI_WORKSPACE_OPENAI_KEY_MISSING", "OpenAI APIキーをAI設定で登録してください。");
+    }
+
     if (isAIWorkspaceAbortError(error, options.signal)) {
       if (userOnlyData) {
         return ok(await toAIWorkspaceState(userOnlyData, context.userDataPath));

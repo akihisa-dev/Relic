@@ -3,15 +3,41 @@ import { ensureSyntaxTree } from "@codemirror/language";
 import { EditorState } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 import { GFM } from "@lezer/markdown";
-import { fireEvent, waitFor } from "@testing-library/react";
-import { expect } from "vitest";
+import { fireEvent, render, waitFor } from "@testing-library/react";
+import { createElement, createRef, type ComponentProps } from "react";
+import { expect, vi } from "vitest";
 
 import { defaultEditorSettings } from "../../shared/ipc";
 import { buildLivePreviewDecorations } from "../editorLivePreview";
 import { buildTableDecorations } from "../editorTables";
 import { createTranslator } from "../i18nModel";
+import { Editor } from "./Editor";
 
 export const settings = { ...defaultEditorSettings, language: "ja" as const };
+
+type EditorProps = ComponentProps<typeof Editor>;
+
+export function renderEditor(props: Partial<EditorProps> = {}) {
+  return render(createElement(Editor, {
+    content: props.content ?? "",
+    onChange: props.onChange ?? vi.fn(),
+    settings: props.settings ?? settings,
+    ...props
+  }));
+}
+
+export async function renderEditorWithView(props: Partial<EditorProps> = {}) {
+  const viewRef = createRef<EditorView | null>();
+  const renderResult = renderEditor({ ...props, viewRef });
+
+  await waitFor(() => expect(viewRef.current).not.toBeNull());
+
+  return {
+    ...renderResult,
+    view: viewRef.current!,
+    viewRef
+  };
+}
 
 export async function collectLivePreviewClasses(content: string, cursor: number, hasFocus = true): Promise<Set<string>> {
   const state = EditorState.create({
