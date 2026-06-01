@@ -219,7 +219,7 @@ describe("Toolbar markdown actions", () => {
   it("ブロック系ボタンがMarkdownブロックを挿入する", () => {
     const cases: Array<{ button: string | RegExp; expected: string }> = [
       { button: "Blockquote", expected: "> hello" },
-      { button: "Code block", expected: "hello\n```\n\n```\n" },
+      { button: "Code block", expected: "```\nhello\n```" },
       { button: "Horizontal rule", expected: "hello\n---\n" },
       { button: "Bulleted list", expected: "- hello" },
       { button: "Numbered list", expected: "1. hello" },
@@ -236,6 +236,16 @@ describe("Toolbar markdown actions", () => {
       view.destroy();
       document.body.innerHTML = "";
     }
+  });
+
+  it("コードブロックボタンは未選択時だけ空のコードブロックを挿入する", () => {
+    const view = createView("hello", EditorSelection.single(5));
+    render(<Toolbar viewRef={{ current: view }} />);
+
+    clickToolbarButton("Code block");
+
+    expect(view.state.doc.toString()).toBe("hello\n```\n\n```\n");
+    view.destroy();
   });
 
   it("リスト系ボタンが複数行選択へ一括適用し、空行を飛ばす", () => {

@@ -252,6 +252,31 @@ describe("Editor", () => {
     expect(viewRef.current!.state.doc.toString()).toBe("hello **world**");
   });
 
+  it("本文の右クリックメニューから選択範囲をコードブロックで囲む", async () => {
+    const viewRef = createRef<EditorView | null>();
+    const onChange = vi.fn();
+
+    render(
+      <Editor
+        content={"one\ntwo\nthree"}
+        onChange={onChange}
+        settings={{ ...settings, language: "ja" }}
+        viewRef={viewRef}
+      />
+    );
+
+    await waitFor(() => expect(viewRef.current).not.toBeNull());
+    const view = viewRef.current!;
+    const contentElement = view.dom.querySelector(".cm-content")!;
+    view.dispatch({ selection: { anchor: 0, head: "one\ntwo".length } });
+
+    fireEvent.contextMenu(contentElement, { clientX: 32, clientY: 32 });
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Code block" }));
+
+    expect(onChange).toHaveBeenLastCalledWith("```\none\ntwo\n```\nthree");
+    expect(viewRef.current!.state.doc.toString()).toBe("```\none\ntwo\n```\nthree");
+  });
+
   it("本文の右クリックメニューからアイコンのSVGを押してもMarkdown操作を適用できる", async () => {
     const viewRef = createRef<EditorView | null>();
     const onChange = vi.fn();
