@@ -20,7 +20,8 @@ import type { Translator } from "./i18nModel";
 
 function createLivePreviewPlugin(
   onOpenLinkRef: RefObject<((href: string) => void) | undefined>,
-  onOpenWikiLinkRef: RefObject<((target: string, heading?: string) => void) | undefined>
+  onOpenWikiLinkRef: RefObject<((target: string, heading?: string) => void) | undefined>,
+  t: Translator
 ) {
   return EditorView.decorations.of((view) => buildLivePreviewDecorations(view, (link) => {
     if (link.type === "markdown" && link.href) {
@@ -31,7 +32,7 @@ function createLivePreviewPlugin(
     if (link.type === "wiki" && link.target) {
       onOpenWikiLinkRef.current?.(link.target, link.heading ?? undefined);
     }
-  }));
+  }, t));
 }
 const typewriterExtension = ViewPlugin.fromClass(
   class {
@@ -218,8 +219,8 @@ export function buildExtensions(
       createFrontmatterPropertiesField(userDefinedFields, frontmatterCandidates, t, settings.frontmatterDateFormat),
       diagramEditRangeField,
       createLivePreviewTableField(t),
-      createLivePreviewCodeBlockField(),
-      createLivePreviewPlugin(onOpenLinkRef, onOpenWikiLinkRef)
+      createLivePreviewCodeBlockField(t),
+      createLivePreviewPlugin(onOpenLinkRef, onOpenWikiLinkRef, t)
     ] : [])
   ];
 }

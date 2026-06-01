@@ -1,6 +1,7 @@
 import { WidgetType } from "@codemirror/view";
 
 import { writeEditorClipboardText } from "./editorClipboard";
+import type { Translator } from "./i18nModel";
 
 function stopWidgetButtonEvent(event: Event): void {
   event.preventDefault();
@@ -93,7 +94,8 @@ export class InlineFormatWidget extends WidgetType {
 export class CheckboxWidget extends WidgetType {
   constructor(
     private readonly checked: boolean,
-    private readonly onToggle?: () => void
+    private readonly onToggle: (() => void) | undefined,
+    private readonly t: Translator
   ) {
     super();
   }
@@ -107,7 +109,7 @@ export class CheckboxWidget extends WidgetType {
     checkbox.className = "cm-live-checkbox";
     checkbox.type = "checkbox";
     checkbox.checked = this.checked;
-    checkbox.setAttribute("aria-label", this.checked ? "チェックを外す" : "チェックする");
+    checkbox.setAttribute("aria-label", this.checked ? this.t("editor.checkboxUncheck") : this.t("editor.checkboxCheck"));
     checkbox.addEventListener("click", (event) => {
       event.preventDefault();
       event.stopPropagation();
@@ -135,7 +137,8 @@ export class CodeBlockWidget extends WidgetType {
 
   constructor(
     private readonly language: string | null,
-    private readonly source: string
+    private readonly source: string,
+    private readonly t: Translator
   ) {
     super();
   }
@@ -154,20 +157,20 @@ export class CodeBlockWidget extends WidgetType {
 
     const label = document.createElement("span");
     label.className = "cm-live-code-block-label";
-    label.textContent = this.language || "コード";
+    label.textContent = this.language || this.t("editor.codeBlockLanguageFallback");
 
     const button = document.createElement("button");
     button.className = "cm-live-code-block-copy";
     button.type = "button";
-    button.textContent = "コピー";
-    button.setAttribute("aria-label", "コードブロックをコピー");
+    button.textContent = this.t("editor.copy");
+    button.setAttribute("aria-label", this.t("editor.copyCodeBlock"));
     button.addEventListener("pointerdown", stopWidgetButtonEvent);
     button.addEventListener("mousedown", stopWidgetButtonEvent);
     button.addEventListener("click", (event) => {
       stopWidgetButtonEvent(event);
       void writeEditorClipboardText(this.source)
-        .then(() => setTemporaryButtonText(button, "コピーしました", "コピー"))
-        .catch(() => setTemporaryButtonText(button, "コピーできませんでした", "コピー"));
+        .then(() => setTemporaryButtonText(button, this.t("editor.copyDone"), this.t("editor.copy")))
+        .catch(() => setTemporaryButtonText(button, this.t("editor.copyFailed"), this.t("editor.copy")));
     });
 
     header.append(label, button);
@@ -180,7 +183,7 @@ export class CodeBlockWidget extends WidgetType {
 
     const footer = document.createElement("div");
     footer.className = "cm-live-code-block-footer";
-    footer.setAttribute("aria-label", "コードブロックの終端");
+    footer.setAttribute("aria-label", this.t("editor.codeBlockEnd"));
 
     panel.append(header, pre, footer);
     return panel;

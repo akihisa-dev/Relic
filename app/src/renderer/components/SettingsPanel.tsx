@@ -120,12 +120,12 @@ export function SettingsPanel({
       </section>
 
       <section className="settings-group">
-        <div className="links-panel-subheading">AI</div>
+        <div className="links-panel-subheading">{t("settings.sectionAI")}</div>
         <div className="settings-stack">
           <div className="setting-row">
-            <span>AI接続方式</span>
+            <span>{t("settings.aiConnection")}</span>
             <SettingsSegmentedControl
-              ariaLabel="AI接続方式"
+              ariaLabel={t("settings.aiConnection")}
               onChange={(value) => onSaveAIProvider(value)}
               options={aiProviders.map((provider) => ({
                 label: formatAIProviderLabel(provider),
@@ -136,20 +136,20 @@ export function SettingsPanel({
           </div>
           {aiProvider === "codex-app-server" ? (
             <div className="settings-info">
-              <div>Codexアプリを使ってAI共同作業を行います。OpenAI APIキーの入力は不要です。</div>
-              <div>Codex App Serverが利用できない環境では、AI接続方式をOpenAI APIへ切り替えられます。</div>
+              <div>{t("settings.aiCodexInfo")}</div>
+              <div>{t("settings.aiCodexFallbackInfo")}</div>
               {aiSettingsStatus ? <div>{aiSettingsStatus}</div> : null}
             </div>
           ) : (
             <>
               <div className="setting-row">
-                <span>OpenAI APIキー</span>
+                <span>{t("settings.openAIAPIKey")}</span>
                 <span className="settings-inline-status">
-                  {aiSettings?.openAIAPIKeyConfigured ? "登録済み" : "未登録"}
+                  {aiSettings?.openAIAPIKeyConfigured ? t("settings.apiKeyConfigured") : t("settings.apiKeyNotConfigured")}
                 </span>
               </div>
               <label className="setting-row">
-                <span>OpenAIモデル</span>
+                <span>{t("settings.openAIModel")}</span>
                 <select
                   className="settings-control"
                   onChange={(event) => onSaveAIModel(event.target.value as OpenAIWorkspaceModel)}
@@ -161,7 +161,7 @@ export function SettingsPanel({
                 </select>
               </label>
               <label className="setting-row setting-row--stacked">
-                <span>APIキーを入力</span>
+                <span>{t("settings.aiApiKeyInput")}</span>
                 <input
                   className="settings-control settings-text-input"
                   onChange={(event) => setOpenAIAPIKeyInput(event.target.value)}
@@ -176,7 +176,7 @@ export function SettingsPanel({
                   rel="noreferrer"
                   target="_blank"
                 >
-                  OpenAIのAPIキー画面を開く
+                  {t("settings.openAIAPIKeyLink")}
                 </a>
               </div>
               <div className="settings-actions-row">
@@ -188,29 +188,29 @@ export function SettingsPanel({
                   }}
                   type="button"
                 >
-                  保存
+                  {t("common.save")}
                 </button>
                 <button
                   disabled={!aiSettings?.openAIAPIKeyConfigured}
                   onClick={onTestOpenAIAPIKey}
                   type="button"
                 >
-                  接続確認
+                  {t("settings.testConnection")}
                 </button>
                 <button
                   disabled={!aiSettings?.openAIAPIKeyConfigured}
                   onClick={onDeleteOpenAIAPIKey}
                   type="button"
                 >
-                  削除
+                  {t("common.delete")}
                 </button>
               </div>
               <div className="settings-info">
-                <div>選択中モデル: {aiSettings?.model ?? defaultOpenAIWorkspaceModel}</div>
+                <div>{t("settings.currentModel", { model: aiSettings?.model ?? defaultOpenAIWorkspaceModel })}</div>
                 <div>
                   {aiSettings?.secureStorageAvailable === false
-                    ? "この環境ではAPIキーを安全に保存できません。"
-                    : "APIキーは暗号化してアプリデータに保存します。Markdownワークスペースには保存しません。"}
+                    ? t("settings.openAIKeyStorageUnavailable")
+                    : t("settings.openAIKeyStorageDescription")}
                 </div>
                 {aiSettingsStatus ? <div>{aiSettingsStatus}</div> : null}
               </div>

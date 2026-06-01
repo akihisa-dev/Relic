@@ -10,6 +10,7 @@ import type {
   OpenAIWorkspaceModel,
   WorkspaceState
 } from "../../shared/ipc";
+import type { Translator } from "../i18nModel";
 import {
   defaultFeatureToggles,
   defaultAppUiSettings,
@@ -24,13 +25,15 @@ interface UseAppSettingsStateInput {
   setEditorSettings: (settings: EditorSettings) => void;
   setWorkspaceError: (message: string | null) => void;
   setWorkspaceState: (state: WorkspaceState) => void;
+  t: Translator;
 }
 
 export function useAppSettingsState({
   onAISettingsChanged,
   setEditorSettings,
   setWorkspaceError,
-  setWorkspaceState
+  setWorkspaceState,
+  t
 }: UseAppSettingsStateInput) {
   const [appInfo, setAppInfo] = useState<AppInfo | null>(null);
   const [aiSettings, setAISettings] = useState<AISettingsState | null>(null);
@@ -127,13 +130,13 @@ export function useAppSettingsState({
     void window.relic?.saveOpenAIAPIKey({ apiKey }).then((result) => {
       if (result.ok) {
         setAISettings(result.value);
-        setAISettingsStatus("OpenAI APIキーを保存しました。");
+        setAISettingsStatus(t("settings.openAIAPIKeySaved"));
         onAISettingsChanged?.();
       } else {
         setAISettingsStatus(result.error.message);
       }
     });
-  }, [onAISettingsChanged]);
+  }, [onAISettingsChanged, t]);
 
   const handleSaveAIModel = useCallback((model: OpenAIWorkspaceModel): void => {
     setAISettings((current) => current ? { ...current, model } : current);
@@ -141,13 +144,13 @@ export function useAppSettingsState({
     void window.relic?.saveAIModel({ model }).then((result) => {
       if (result.ok) {
         setAISettings(result.value);
-        setAISettingsStatus(`OpenAIモデルを${result.value.model}に変更しました。`);
+        setAISettingsStatus(t("settings.openAIModelChanged", { model: result.value.model }));
         onAISettingsChanged?.();
       } else {
         setAISettingsStatus(result.error.message);
       }
     });
-  }, [onAISettingsChanged]);
+  }, [onAISettingsChanged, t]);
 
   const handleSaveAIProvider = useCallback((aiProvider: AIProvider): void => {
     setAISettings((current) => current ? { ...current, aiProvider } : current);
@@ -155,37 +158,37 @@ export function useAppSettingsState({
     void window.relic?.saveAIProvider({ aiProvider }).then((result) => {
       if (result.ok) {
         setAISettings(result.value);
-        setAISettingsStatus(`AI接続方式を${formatAIProviderLabel(result.value.aiProvider)}に変更しました。`);
+        setAISettingsStatus(t("settings.aiProviderChanged", { provider: formatAIProviderLabel(result.value.aiProvider) }));
         onAISettingsChanged?.();
       } else {
         setAISettingsStatus(result.error.message);
       }
     });
-  }, [onAISettingsChanged]);
+  }, [onAISettingsChanged, t]);
 
   const handleDeleteOpenAIAPIKey = useCallback((): void => {
     setAISettingsStatus(null);
     void window.relic?.deleteOpenAIAPIKey().then((result) => {
       if (result.ok) {
         setAISettings(result.value);
-        setAISettingsStatus("OpenAI APIキーを削除しました。");
+        setAISettingsStatus(t("settings.openAIAPIKeyDeleted"));
         onAISettingsChanged?.();
       } else {
         setAISettingsStatus(result.error.message);
       }
     });
-  }, [onAISettingsChanged]);
+  }, [onAISettingsChanged, t]);
 
   const handleTestOpenAIAPIKey = useCallback((): void => {
-    setAISettingsStatus("OpenAI APIキーを確認しています。");
+    setAISettingsStatus(t("settings.openAIAPIKeyTesting"));
     void window.relic?.testOpenAIAPIKey().then((result) => {
       if (result.ok) {
-        setAISettingsStatus(`OpenAI APIキーを確認できました。選択中モデル: ${result.value.model}`);
+        setAISettingsStatus(t("settings.openAIAPIKeyTested", { model: result.value.model }));
       } else {
         setAISettingsStatus(result.error.message);
       }
     });
-  }, []);
+  }, [t]);
 
   return {
     aiSettings,

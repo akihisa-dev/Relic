@@ -164,7 +164,8 @@ export function App(): ReactElement {
     onAISettingsChanged: () => { void reloadAIWorkspace(); },
     setEditorSettings,
     setWorkspaceError,
-    setWorkspaceState
+    setWorkspaceState,
+    t
   });
   const isRightPanelAvailable = featureToggles.rightPanel;
   const isEffectiveRightPanelOpen = isRightPanelAvailable && isRightPanelOpen;
@@ -225,6 +226,7 @@ export function App(): ReactElement {
     conflictCloseBlockedMessage: t("pane.externalConflictCloseBlocked"),
     onSaved: handleFileSaved,
     onSaveError: setWorkspaceError,
+    saveFailedMessage: t("pane.saveFailed"),
     tabs
   });
   const {
@@ -234,6 +236,7 @@ export function App(): ReactElement {
   } = useAppCloseGuards({
     focusedPane,
     flushTabsBeforeClose,
+    saveFailedMessage: t("pane.saveFailed"),
     setWorkspaceError
   });
 

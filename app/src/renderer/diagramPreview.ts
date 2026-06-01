@@ -5,6 +5,7 @@ import { initializeDiagramPanZoom, type DiagramRenderHandle } from "./diagramPan
 import { beginDiagramRender } from "./diagramRenderState";
 import { decodeDiagramSourceAttribute } from "./diagramSourceAttribute";
 import { sanitizeSvgHtml } from "./htmlSanitizer";
+import { createTranslator, type Translator } from "./i18nModel";
 import { renderMermaidSvg } from "./mermaidRenderer";
 
 export { diagramLanguageFor, type DiagramLanguage } from "./diagramLanguage";
@@ -23,7 +24,8 @@ export function buildDiagramFallback(language: DiagramLanguage, source: string):
 export async function renderDiagramElement(
   container: HTMLElement,
   language: DiagramLanguage,
-  source: string
+  source: string,
+  t: Translator = createTranslator("system")
 ): Promise<DiagramRenderHandle | null> {
   const renderContext = beginDiagramRender(container, language, source);
 
@@ -48,7 +50,7 @@ export async function renderDiagramElement(
     viewport.tabIndex = 0;
     viewport.setAttribute(
       "aria-label",
-      `${diagramLabel(language)}図。+で拡大、-で縮小、0またはfで全体表示、矢印キーで移動、Shift+矢印キーで大きく移動できます。`
+      t("diagram.panZoomLabel", { language: diagramLabel(language) })
     );
     const content = document.createElement("div");
     content.className = "preview-diagram-panzoom-content";
@@ -62,13 +64,13 @@ export async function renderDiagramElement(
     if (!renderContext.canApplyResult()) return null;
 
     console.warn(`${diagramLabel(language)} diagram rendering failed.`, error);
-    container.replaceChildren(buildDiagramError(language, source, error));
+    container.replaceChildren(buildDiagramError(language, source, error, t));
     renderContext.markError(error);
     return null;
   }
 }
 
-export function renderDiagramElements(root: ParentNode): void {
+export function renderDiagramElements(root: ParentNode, t: Translator = createTranslator("system")): void {
   const diagrams = root.querySelectorAll<HTMLElement>(".preview-diagram");
 
   diagrams.forEach((diagram) => {
@@ -79,7 +81,7 @@ export function renderDiagramElements(root: ParentNode): void {
       ? ""
       : decodeDiagramSourceAttribute(diagram.dataset.diagramSource);
     if (!source) return;
-    void renderDiagramElement(diagram, language, source);
+    void renderDiagramElement(diagram, language, source, t);
   });
 }
 

@@ -113,12 +113,12 @@ describe("diagramPreview", () => {
     const element = buildDiagramError("mermaid", "graph TD; A-->", new Error("parse failed"));
 
     expect(element.classList.contains("preview-diagram-error")).toBe(true);
-    expect(element.textContent).toContain("Mermaidをレンダリングできませんでした");
-    expect(element.textContent).toContain("構文を確認してください。");
+    expect(element.textContent).toContain("Mermaid could not be rendered.");
+    expect(element.textContent).toContain("Check the syntax.");
     expect(element.textContent).toContain("graph TD; A-->");
     expect(element.textContent).toContain("parse failed");
-    expect(element.textContent).toContain("元ソースをコピー");
-    expect(element.textContent).toContain("詳細エラーをコピー");
+    expect(element.textContent).toContain("Copy source");
+    expect(element.textContent).toContain("Copy error details");
   });
 
   it("buildDiagramErrorは危険なHTMLをDOM化しない", async () => {
@@ -163,8 +163,8 @@ describe("diagramPreview", () => {
     expect(warn).toHaveBeenCalled();
     expect(container.dataset.diagramRenderStatus).toBe("error");
     expect(container.querySelector(".preview-diagram-error")).not.toBeNull();
-    expect(container.textContent).toContain("Mermaidをレンダリングできませんでした");
-    expect(container.textContent).toContain("構文を確認してください。");
+    expect(container.textContent).toContain("Mermaid could not be rendered.");
+    expect(container.textContent).toContain("Check the syntax.");
     expect(container.textContent).toContain("invalid <source>");
     expect(container.textContent).toContain("parse failed");
     expect(container.querySelector(".preview-diagram-panzoom-viewport")).toBeNull();
@@ -186,8 +186,8 @@ describe("diagramPreview", () => {
     expect(container.dataset.diagramRenderStatus).toBe("rendered");
     expect(viewport).not.toBeNull();
     expect(viewport?.tabIndex).toBe(0);
-    expect(viewport?.getAttribute("aria-label")).toContain("+で拡大");
-    expect(viewport?.getAttribute("aria-label")).toContain("Shift+矢印キー");
+    expect(viewport?.getAttribute("aria-label")).toContain("Use + to zoom in");
+    expect(viewport?.getAttribute("aria-label")).toContain("Shift+arrow keys");
     expect(content?.contains(container.querySelector(".preview-diagram-svg--mermaid"))).toBe(true);
     expect(content?.style.transform).toBe("translate(0px, 0px) scale(1)");
     expect(container.querySelector(".preview-diagram-expand-button")).toBeNull();
@@ -230,8 +230,8 @@ describe("diagramPreview", () => {
     document.body.append(element);
 
     await vi.waitFor(() => {
-      expect(element.textContent).toContain("SVGとして保存");
-      expect(element.textContent).toContain("SVGをコピー");
+      expect(element.textContent).toContain("Save as SVG");
+      expect(element.textContent).toContain("Copy SVG");
     });
 
     fireEvent.click(element.querySelectorAll<HTMLButtonElement>(".cm-live-diagram-output-button")[0]);
@@ -267,8 +267,8 @@ describe("diagramPreview", () => {
     document.body.append(element);
 
     await vi.waitFor(() => {
-      expect(element.textContent).toContain("SVGとして保存");
-      expect(element.textContent).toContain("SVGをコピー");
+      expect(element.textContent).toContain("Save as SVG");
+      expect(element.textContent).toContain("Copy SVG");
     });
   });
 
@@ -302,7 +302,7 @@ describe("diagramPreview", () => {
     document.body.append(element);
 
     await vi.waitFor(() => {
-      expect(element.textContent).toContain("SVGをコピー");
+      expect(element.textContent).toContain("Copy SVG");
     });
 
     const content = element.querySelector<HTMLElement>(".preview-diagram-panzoom-content");

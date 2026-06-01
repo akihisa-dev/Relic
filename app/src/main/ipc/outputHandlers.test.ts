@@ -61,6 +61,14 @@ vi.mock("node:fs/promises", () => ({
   writeFile: fsMock.writeFile
 }));
 
+vi.mock("../i18n", async () => {
+  const { createTranslator } = await vi.importActual<typeof import("../../shared/i18n")>("../../shared/i18n");
+
+  return {
+    getMainTranslator: async () => createTranslator("ja")
+  };
+});
+
 import {
   copyDiagramSvgChannel,
   printPreviewChannel,

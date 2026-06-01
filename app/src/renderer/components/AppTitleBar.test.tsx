@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -117,6 +119,14 @@ describe("AppTitleBar", () => {
 
     expect(props.onPrintPreview).toHaveBeenCalled();
     expect(props.onSavePreviewAsPdf).toHaveBeenCalled();
+  });
+
+  it("keeps gaps around title bar action buttons draggable", () => {
+    const css = readFileSync("src/renderer/styles/shell-sidebar.css", "utf8");
+
+    expect(css).toMatch(/\.title-bar-actions\s*\{[^}]*-webkit-app-region:\s*drag;/s);
+    expect(css).toMatch(/\.title-bar \.main-area-actions\s*\{[^}]*-webkit-app-region:\s*drag;/s);
+    expect(css).toMatch(/\.title-bar \.main-area-actions \.toolbar-btn\s*\{[^}]*-webkit-app-region:\s*no-drag;/s);
   });
 
   it("renders title bar tabs in a shrinking tab strip instead of requiring horizontal scrolling", () => {

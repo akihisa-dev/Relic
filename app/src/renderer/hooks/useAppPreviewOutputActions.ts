@@ -40,7 +40,7 @@ export function useAppPreviewOutputActions({
 
     void buildFocusedPreviewOutput().then(async (payload) => {
       if (!payload) {
-        setWorkspaceError("印刷するMarkdownファイルを開いてください。");
+        setWorkspaceError(t("output.printNoFile"));
         return;
       }
 
@@ -61,7 +61,7 @@ export function useAppPreviewOutputActions({
 
     void buildFocusedPreviewOutput().then(async (payload) => {
       if (!payload) {
-        setWorkspaceError("PDFとして保存するMarkdownファイルを開いてください。");
+        setWorkspaceError(t("output.savePdfNoFile"));
         return;
       }
 
