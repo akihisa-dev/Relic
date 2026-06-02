@@ -72,6 +72,23 @@
   color: var(--text-2);
 }
 
+[data-theme="dark"] .empty-pane-create-button {
+  background: #242629;
+  border-color: #242629;
+  box-shadow: 6px 6px 12px #0d0f12, -6px -6px 12px #34383d;
+  color: #f2f2f2;
+}
+
+[data-theme="dark"] .empty-pane-create-button:hover {
+  background: #242629;
+  color: #f2f2f2;
+}
+
+[data-theme="dark"] .empty-pane-create-button:active {
+  box-shadow: inset 4px 4px 12px #0d0f12, inset -4px -4px 12px #34383d;
+  color: #b8bcc2;
+}
+
 [data-theme="dark"] .new-file-form--primary {
   background: rgba(255, 255, 255, 0.04);
 }
@@ -139,6 +156,20 @@
   }
   :root:not([data-theme="light"]) .secondary-button {
     color: var(--text-2);
+  }
+  :root:not([data-theme="light"]) .empty-pane-create-button {
+    background: #242629;
+    border-color: #242629;
+    box-shadow: 6px 6px 12px #0d0f12, -6px -6px 12px #34383d;
+    color: #f2f2f2;
+  }
+  :root:not([data-theme="light"]) .empty-pane-create-button:hover {
+    background: #242629;
+    color: #f2f2f2;
+  }
+  :root:not([data-theme="light"]) .empty-pane-create-button:active {
+    box-shadow: inset 4px 4px 12px #0d0f12, inset -4px -4px 12px #34383d;
+    color: #b8bcc2;
   }
   :root:not([data-theme="light"]) .new-file-form--primary {
     background: rgba(255, 255, 255, 0.04);
