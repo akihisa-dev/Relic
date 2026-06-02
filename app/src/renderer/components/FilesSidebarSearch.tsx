@@ -79,15 +79,30 @@ export function FilesSidebarSearch({
         >
           {activeSearchModeLabel}
         </button>
-        <input
-          aria-label={t("files.search")}
-          list={searchMode === "frontmatter" && frontmatterValueCandidates.length > 0 ? "files-search-frontmatter-values" : undefined}
-          onChange={(event) => onSearchQueryChange(event.target.value)}
-          placeholder={searchPlaceholder}
-          ref={searchInputRef}
-          type="search"
-          value={searchQuery}
-        />
+        <span className="files-search-input-control">
+          <input
+            aria-label={t("files.search")}
+            list={searchMode === "frontmatter" && frontmatterValueCandidates.length > 0 ? "files-search-frontmatter-values" : undefined}
+            onChange={(event) => onSearchQueryChange(event.target.value)}
+            placeholder={searchPlaceholder}
+            ref={searchInputRef}
+            type="search"
+            value={searchQuery}
+          />
+          <span className="files-search-input-highlight" aria-hidden="true"></span>
+          <span className="files-search-input-underline" aria-hidden="true"></span>
+          <span className="files-search-input-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <path
+                d="M21 21L16.65 16.65M19 11C19 15.4183 15.4183 19 11 19C6.58172 19 3 15.4183 3 11C3 6.58172 6.58172 3 11 3C15.4183 3 19 6.58172 19 11Z"
+                stroke="currentColor"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+              ></path>
+            </svg>
+          </span>
+        </span>
       </label>
       {isSearchMethodMenuOpen ? (
         <div className="files-search-method-menu" role="menu" aria-label={t("files.searchMethod")}>
@@ -111,17 +126,20 @@ export function FilesSidebarSearch({
       ) : null}
       {searchMode === "frontmatter" ? (
         <div className="files-search-frontmatter">
-          <select
-            aria-label={t("files.searchFrontmatterField")}
-            className="search-input"
-            onChange={(event) => onSearchFrontmatterFieldChange(event.target.value)}
-            value={searchFrontmatterField}
-          >
-            <option value="">{t("files.searchFrontmatterField")}</option>
-            {searchFrontmatterFields.map((field) => (
-              <option key={field} value={field}>{field}</option>
-            ))}
-          </select>
+          <span className="files-search-property-select">
+            <select
+              aria-label={t("files.searchFrontmatterField")}
+              className="search-input"
+              onChange={(event) => onSearchFrontmatterFieldChange(event.target.value)}
+              value={searchFrontmatterField}
+            >
+              <option value="">{t("files.searchFrontmatterField")}</option>
+              {searchFrontmatterFields.map((field) => (
+                <option key={field} value={field}>{field}</option>
+              ))}
+            </select>
+            <span className="files-search-property-underline" aria-hidden="true"></span>
+          </span>
           {frontmatterValueCandidates.length > 0 ? (
             <datalist id="files-search-frontmatter-values">
               {frontmatterValueCandidates.map((candidate) => (

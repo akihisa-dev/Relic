@@ -369,13 +369,23 @@
 
 .files-search-input {
   align-items: center;
-  background: var(--input-bg);
+  background: color-mix(in srgb, var(--input-bg) 88%, transparent);
   border: 1px solid var(--border-soft);
-  border-radius: 6px;
+  border-radius: 8px;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
-  min-height: 34px;
+  min-height: 38px;
   overflow: hidden;
+  transition:
+    background-color var(--motion-normal) var(--ease-standard),
+    border-color var(--motion-normal) var(--ease-standard),
+    box-shadow var(--motion-normal) var(--ease-standard);
+}
+
+.files-search-input:focus-within {
+  background: color-mix(in srgb, var(--input-bg) 96%, transparent);
+  border-color: var(--border);
+  box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
 .files-search-input--error {
@@ -384,25 +394,109 @@
 }
 
 .files-search-mode-button {
-  background: var(--hover);
+  background: color-mix(in srgb, var(--hover) 76%, transparent);
   border: 0;
   border-radius: 0;
   border-right: 1px solid var(--border);
   color: var(--text-2);
   font-size: 12px;
-  min-height: 34px;
-  padding: 0 9px;
+  font-weight: 600;
+  min-height: 38px;
+  padding: 0 11px;
+  transition:
+    background-color var(--motion-fast) var(--ease-standard),
+    color var(--motion-fast) var(--ease-standard);
+}
+
+.files-search-mode-button:hover,
+.files-search-mode-button:focus-visible {
+  background: var(--hover);
+  color: var(--text);
+}
+
+.files-search-input-control {
+  display: block;
+  min-width: 0;
+  position: relative;
 }
 
 .files-search-input input {
+  appearance: none;
   background: transparent;
   border: 0;
+  border-bottom: 2px solid var(--border-soft);
   color: var(--text);
-  min-height: 34px;
+  min-height: 38px;
   min-width: 0;
   outline: none;
-  padding: 0 10px;
+  padding: 0 10px 0 36px;
+  position: relative;
   width: 100%;
+  z-index: 2;
+}
+
+.files-search-input input::-webkit-search-cancel-button,
+.files-search-input input::-webkit-search-decoration {
+  appearance: none;
+}
+
+.files-search-input-highlight {
+  background: var(--accent-soft);
+  bottom: 0;
+  left: 0;
+  opacity: 0.85;
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  transition: width var(--motion-normal) var(--ease-standard);
+  width: 0;
+  z-index: 1;
+}
+
+.files-search-input-underline {
+  background: var(--accent);
+  bottom: 0;
+  height: 2px;
+  left: 0;
+  pointer-events: none;
+  position: absolute;
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform var(--motion-normal) var(--ease-standard);
+  width: 100%;
+  z-index: 3;
+}
+
+.files-search-input-icon {
+  color: var(--text-3);
+  display: inline-flex;
+  height: 20px;
+  left: 10px;
+  pointer-events: none;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  transition: color var(--motion-normal) var(--ease-standard);
+  width: 20px;
+  z-index: 3;
+}
+
+.files-search-input-icon svg {
+  display: block;
+  height: 20px;
+  width: 20px;
+}
+
+.files-search-input input:focus ~ .files-search-input-highlight {
+  width: 100%;
+}
+
+.files-search-input input:focus ~ .files-search-input-underline {
+  transform: scaleX(1);
+}
+
+.files-search-input input:focus ~ .files-search-input-icon {
+  color: var(--accent);
 }
 
 .files-search-method-menu {
@@ -452,6 +546,77 @@
 .search-input--error {
   border-color: var(--error);
   outline-color: var(--error-bg);
+}
+
+.files-search-property-select {
+  background: color-mix(in srgb, var(--input-bg) 92%, transparent);
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  display: block;
+  overflow: hidden;
+  position: relative;
+  transition:
+    background-color var(--motion-normal) var(--ease-standard),
+    border-color var(--motion-normal) var(--ease-standard),
+    box-shadow var(--motion-normal) var(--ease-standard);
+}
+
+.files-search-property-select::after {
+  border-bottom: 2px solid currentColor;
+  border-right: 2px solid currentColor;
+  color: var(--text-2);
+  content: "";
+  height: 7px;
+  pointer-events: none;
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-65%) rotate(45deg);
+  transition: color var(--motion-normal) var(--ease-standard);
+  width: 7px;
+}
+
+.files-search-property-select:focus-within {
+  background: color-mix(in srgb, var(--input-bg) 98%, transparent);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.files-search-property-select:focus-within::after {
+  color: var(--accent);
+}
+
+.files-search-property-select select {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid var(--border-soft);
+  border-radius: 0;
+  color: var(--text);
+  min-height: 38px;
+  outline: none;
+  padding: 0 34px 0 12px;
+  position: relative;
+  width: 100%;
+  z-index: 2;
+}
+
+.files-search-property-underline {
+  background: var(--accent);
+  bottom: 0;
+  height: 2px;
+  left: 0;
+  pointer-events: none;
+  position: absolute;
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform var(--motion-normal) var(--ease-standard);
+  width: 100%;
+  z-index: 3;
+}
+
+.files-search-property-select:focus-within .files-search-property-underline {
+  transform: scaleX(1);
 }
 
 .search-mode-select {
