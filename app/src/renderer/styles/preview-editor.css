@@ -1478,9 +1478,15 @@
   box-shadow: 6px 6px 12px #c5c5c5, -6px -6px 12px #ffffff;
   color: #090909;
   cursor: pointer;
+  display: inline-block;
   font-size: 18px;
+  font-weight: 400;
+  line-height: normal;
+  min-height: 0;
   padding: 0.7em 1.7em;
+  transform: none;
   transition: all 0.3s;
+  width: auto;
   white-space: nowrap;
 }
 
@@ -1492,6 +1498,7 @@
 .empty-pane-create-button:active {
   box-shadow: inset 4px 4px 12px #c5c5c5, inset -4px -4px 12px #ffffff;
   color: #666666;
+  transform: none;
 }
 
 .sidebar-resize-handle {
