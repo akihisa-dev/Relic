@@ -299,8 +299,9 @@ describe("diagramPreview pan/zoom", () => {
     expect(css).toMatch(/\.preview-diagram-panzoom-viewport\s*{[^}]*overflow:\s*hidden;/s);
     expect(css).toMatch(/\.preview-diagram-panzoom-viewport\s*{[^}]*cursor:\s*default;/s);
     expect(css).toMatch(/\.preview-diagram-panzoom-viewport\s*{[^}]*user-select:\s*none;/s);
+    expect(css).toMatch(/\.preview-diagram-panzoom-viewport--expanded\s*{[^}]*min-height:\s*420px;/s);
     expect(css).toMatch(/\.preview-diagram-error\s*{[^}]*user-select:\s*text;/s);
     expect(css).toMatch(/\.preview-diagram-error-details pre\s*{[^}]*user-select:\s*text;/s);
-    expect(css).not.toContain("preview-diagram-overlay");
+    expect(css).toContain("preview-diagram-overlay");
   });
 });
