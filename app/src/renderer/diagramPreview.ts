@@ -12,6 +12,8 @@ export { diagramLanguageFor, type DiagramLanguage } from "./diagramLanguage";
 export { buildDiagramError } from "./diagramErrorView";
 export type { DiagramRenderHandle } from "./diagramPanZoom";
 
+let closeActiveDiagramOverlay: (() => void) | null = null;
+
 export function buildDiagramFallback(language: DiagramLanguage, source: string): HTMLElement {
   const pre = document.createElement("pre");
   const code = document.createElement("code");
@@ -25,7 +27,8 @@ export async function renderDiagramElement(
   container: HTMLElement,
   language: DiagramLanguage,
   source: string,
-  t: Translator = createTranslator("system")
+  t: Translator = createTranslator("system"),
+  options: { showExpandButton?: boolean } = {}
 ): Promise<DiagramRenderHandle | null> {
   const renderContext = beginDiagramRender(container, language, source);
 
@@ -57,6 +60,12 @@ export async function renderDiagramElement(
     content.append(diagram);
     viewport.append(content);
     const handle = initializeDiagramPanZoom(viewport, content);
+    if (options.showExpandButton ?? true) {
+      const actions = document.createElement("div");
+      actions.className = "preview-diagram-action-bar";
+      actions.append(createDiagramExpandButton(diagram, language, t));
+      container.append(actions);
+    }
     container.append(viewport);
     renderContext.markRendered(handle);
     return handle;
@@ -68,6 +77,115 @@ export async function renderDiagramElement(
     renderContext.markError(error);
     return null;
   }
+}
+
+export function createDiagramExpandButton(
+  diagram: HTMLElement,
+  language: DiagramLanguage,
+  t: Translator = createTranslator("system")
+): HTMLButtonElement {
+  const label = t("diagram.expand");
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "preview-diagram-expand-button";
+  button.textContent = label;
+  button.setAttribute("aria-label", t("diagram.expandAria", { language: diagramLabel(language) }));
+  button.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    openDiagramOverlay(diagram, language, t);
+  });
+
+  return button;
+}
+
+export function openDiagramOverlay(
+  diagram: HTMLElement,
+  language: DiagramLanguage,
+  t: Translator = createTranslator("system")
+): void {
+  closeActiveDiagramOverlay?.();
+
+  const overlay = document.createElement("div");
+  overlay.className = "preview-diagram-overlay";
+  overlay.setAttribute("role", "dialog");
+  overlay.setAttribute("aria-modal", "true");
+  overlay.setAttribute("aria-label", t("diagram.expandedLabel", { language: diagramLabel(language) }));
+
+  const panel = document.createElement("div");
+  panel.className = "preview-diagram-overlay-panel";
+
+  const toolbar = document.createElement("div");
+  toolbar.className = "preview-diagram-overlay-toolbar";
+
+  const title = document.createElement("div");
+  title.className = "preview-diagram-overlay-title";
+  title.textContent = t("diagram.expandedTitle", { language: diagramLabel(language) });
+
+  const controls = document.createElement("div");
+  controls.className = "preview-diagram-overlay-controls";
+
+  const fitButton = document.createElement("button");
+  fitButton.type = "button";
+  fitButton.className = "preview-diagram-overlay-button";
+  fitButton.textContent = t("diagram.fit");
+  fitButton.setAttribute("aria-label", t("diagram.fitAria", { language: diagramLabel(language) }));
+
+  const closeButton = document.createElement("button");
+  closeButton.type = "button";
+  closeButton.className = "preview-diagram-overlay-button";
+  closeButton.textContent = t("diagram.closeExpanded");
+  closeButton.setAttribute("aria-label", t("diagram.closeExpandedAria"));
+
+  controls.append(fitButton, closeButton);
+  toolbar.append(title, controls);
+
+  const viewport = document.createElement("div");
+  viewport.className = "preview-diagram-panzoom-viewport preview-diagram-panzoom-viewport--expanded";
+  viewport.tabIndex = 0;
+  viewport.setAttribute(
+    "aria-label",
+    t("diagram.panZoomLabel", { language: diagramLabel(language) })
+  );
+
+  const content = document.createElement("div");
+  content.className = "preview-diagram-panzoom-content";
+  content.append(diagram.cloneNode(true));
+  viewport.append(content);
+  panel.append(toolbar, viewport);
+  overlay.append(panel);
+
+  const closeOverlay = () => {
+    overlay.remove();
+    document.removeEventListener("keydown", onDocumentKeyDown);
+    if (closeActiveDiagramOverlay === closeOverlay) {
+      closeActiveDiagramOverlay = null;
+    }
+  };
+
+  const onDocumentKeyDown = (event: KeyboardEvent) => {
+    if (event.key !== "Escape") return;
+
+    event.preventDefault();
+    closeOverlay();
+  };
+
+  closeButton.addEventListener("click", closeOverlay);
+  overlay.addEventListener("click", (event) => {
+    if (event.target === overlay) closeOverlay();
+  });
+  document.addEventListener("keydown", onDocumentKeyDown);
+  closeActiveDiagramOverlay = closeOverlay;
+  document.body.append(overlay);
+
+  const handle = initializeDiagramPanZoom(viewport, content);
+  fitButton.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    handle.fitToViewport();
+  });
+  closeButton.focus();
+  window.requestAnimationFrame(() => handle.fitToViewport());
 }
 
 export function renderDiagramElements(root: ParentNode, t: Translator = createTranslator("system")): void {

@@ -3,6 +3,7 @@ import type { EditorView } from "@codemirror/view";
 
 import {
   buildDiagramFallback,
+  createDiagramExpandButton,
   renderDiagramElement,
   type DiagramLanguage,
   type DiagramRenderHandle
@@ -76,10 +77,14 @@ export class DiagramBlockWidget extends WidgetType {
     const diagram = document.createElement("div");
     diagram.className = "cm-live-diagram-body";
     diagram.append(buildDiagramFallback(this.language, this.source));
-    void renderDiagramElement(diagram, this.language, this.source).then((handle) => {
+    void renderDiagramElement(diagram, this.language, this.source, this.t, { showExpandButton: false }).then((handle) => {
       diagramHandle = handle;
       fitButton.disabled = !handle;
       if (handle) {
+        const renderedDiagram = diagram.querySelector<HTMLElement>(".preview-diagram-svg");
+        if (renderedDiagram) {
+          toolbar.append(createDiagramExpandButton(renderedDiagram, this.language, this.t));
+        }
         toolbar.append(
           createDiagramSvgSaveButton(view, diagram, this.language, this.blockFrom, this.t),
           createDiagramSvgCopyButton(diagram, this.language, this.t)

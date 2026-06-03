@@ -190,10 +190,32 @@ describe("diagramPreview", () => {
     expect(viewport?.getAttribute("aria-label")).toContain("Shift+arrow keys");
     expect(content?.contains(container.querySelector(".preview-diagram-svg--mermaid"))).toBe(true);
     expect(content?.style.transform).toBe("translate(0px, 0px) scale(1)");
-    expect(container.querySelector(".preview-diagram-expand-button")).toBeNull();
+    expect(container.querySelector(".preview-diagram-expand-button")?.textContent).toBe("Open large");
     expect(document.querySelector(".preview-diagram-overlay")).toBeNull();
     expect(svg?.getAttribute("width")).toBe("640px");
     expect(svg?.style.maxWidth).toBe("none");
+  });
+
+  it("通常プレビューの拡大表示ボタンで大きな図表ビューを開閉できる", async () => {
+    const { renderDiagramElement } = await loadDiagramPreviewModule();
+    const container = createAttachedContainer();
+    renderMock.mockResolvedValueOnce({ svg: '<svg viewBox="0 0 640 320"><text>large</text></svg>' });
+
+    await renderDiagramElement(container, "mermaid", "graph TD; A-->B");
+
+    fireEvent.click(container.querySelector(".preview-diagram-expand-button") as HTMLButtonElement);
+
+    const overlay = document.querySelector<HTMLElement>(".preview-diagram-overlay");
+    expect(overlay).not.toBeNull();
+    expect(overlay?.getAttribute("role")).toBe("dialog");
+    expect(overlay?.getAttribute("aria-modal")).toBe("true");
+    expect(overlay?.textContent).toContain("Mermaid diagram");
+    expect(overlay?.textContent).toContain("large");
+    expect(overlay?.querySelector(".preview-diagram-panzoom-viewport--expanded")).not.toBeNull();
+
+    fireEvent.click(overlay?.querySelectorAll<HTMLButtonElement>(".preview-diagram-overlay-button")[1] as HTMLButtonElement);
+
+    expect(document.querySelector(".preview-diagram-overlay")).toBeNull();
   });
 
   it("D2 SVG描画成功時も本文内パン・ズームviewportを構成する", async () => {
@@ -230,6 +252,7 @@ describe("diagramPreview", () => {
     document.body.append(element);
 
     await vi.waitFor(() => {
+      expect(element.textContent).toContain("Open large");
       expect(element.textContent).toContain("Save as SVG");
       expect(element.textContent).toContain("Copy SVG");
     });

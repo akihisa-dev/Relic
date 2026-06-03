@@ -46,7 +46,7 @@
 
 .preview-diagram {
   box-sizing: border-box;
-  margin: 0.8em 0;
+  margin: 1em 0;
   max-width: 100%;
   position: relative;
 }
@@ -71,7 +71,7 @@
   cursor: default;
   display: inline-block;
   max-width: none;
-  padding: 12px 16px;
+  padding: 20px 24px;
   width: max-content;
 }
 
@@ -79,6 +79,13 @@
   display: block;
   height: auto;
   max-width: none;
+}
+
+.preview-diagram-action-bar {
+  align-items: center;
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 6px;
 }
 
 .cm-live-diagram-toolbar {
@@ -91,7 +98,9 @@
 
 .cm-live-diagram-fit-button,
 .cm-live-diagram-edit-button,
-.cm-live-diagram-output-button {
+.cm-live-diagram-output-button,
+.preview-diagram-expand-button,
+.preview-diagram-overlay-button {
   background: color-mix(in srgb, var(--bg) 88%, transparent);
   border: 1px solid var(--border);
   color: var(--text-3);
@@ -105,7 +114,11 @@
 .cm-live-diagram-edit-button:hover,
 .cm-live-diagram-edit-button:focus-visible,
 .cm-live-diagram-output-button:hover,
-.cm-live-diagram-output-button:focus-visible {
+.cm-live-diagram-output-button:focus-visible,
+.preview-diagram-expand-button:hover,
+.preview-diagram-expand-button:focus-visible,
+.preview-diagram-overlay-button:hover,
+.preview-diagram-overlay-button:focus-visible {
   background: var(--hover);
   border-color: var(--border-medium);
   color: var(--text);
@@ -165,7 +178,12 @@
 }
 
 .preview-diagram-panzoom-viewport {
-  border: 1px solid var(--border);
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--border) 32%, transparent) 1px, transparent 1px),
+    linear-gradient(color-mix(in srgb, var(--border) 32%, transparent) 1px, transparent 1px),
+    color-mix(in srgb, var(--bg) 94%, var(--hover));
+  background-size: 24px 24px;
+  border: 1px solid var(--border-medium);
   border-radius: 6px;
   box-sizing: border-box;
   cursor: default;
@@ -193,6 +211,59 @@
   position: absolute;
   top: 0;
   transform-origin: left top;
+}
+
+.preview-diagram-panzoom-viewport--expanded {
+  height: min(78vh, 840px);
+  min-height: 420px;
+}
+
+.preview-diagram-overlay {
+  align-items: center;
+  background: rgba(18, 24, 34, 0.62);
+  box-sizing: border-box;
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  padding: 28px;
+  position: fixed;
+  z-index: 1000;
+}
+
+.preview-diagram-overlay-panel {
+  background: var(--bg);
+  border: 1px solid var(--border-medium);
+  border-radius: 8px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.28);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  max-height: 92vh;
+  max-width: 1180px;
+  padding: 12px;
+  width: min(92vw, 1180px);
+}
+
+.preview-diagram-overlay-toolbar {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.preview-diagram-overlay-title {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  min-width: 0;
+}
+
+.preview-diagram-overlay-controls {
+  align-items: center;
+  display: flex;
+  flex-shrink: 0;
+  gap: 6px;
 }
 
 .preview-body blockquote {
