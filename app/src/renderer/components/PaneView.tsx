@@ -27,6 +27,7 @@ export interface PaneViewProps {
   onOpenWikiLink?: (target: string, heading?: string) => void;
   onFileSaved?: (path: string) => void;
   onFileSaveError?: (message: string) => void;
+  onLargeMarkdownFallback?: (name: string, path: string) => void;
   onRenameFile: (path: string, name: string) => void;
   onScrollTargetHandled?: () => void;
   isSplitView: boolean;
@@ -53,6 +54,7 @@ export function PaneView({
   onOpenWikiLink,
   onFileSaved,
   onFileSaveError,
+  onLargeMarkdownFallback,
   onRenameFile,
   onScrollTargetHandled,
   onEditorAction,
@@ -122,6 +124,7 @@ export function PaneView({
         workspacePath={workspacePath}
         onCreateFile={onCreateFile}
         onEditorAction={onEditorAction}
+        onLargeMarkdownFallback={onLargeMarkdownFallback}
         onLoadExternalVersion={loadExternalVersion}
         onOpenLink={onOpenLink}
         onOpenWikiLink={onOpenWikiLink}

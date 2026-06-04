@@ -46,6 +46,7 @@ interface AppEditorWorkspaceProps {
   onEditorAction: () => void;
   onFileSaved: () => void;
   onFileSaveError: (message: string) => void;
+  onLargeMarkdownFallback: (name: string, path: string) => void;
   onOpenFile: (path: string) => void;
   onOpenLink: (href: string) => void;
   onOpenWikiLink: (target: string, heading?: string) => void;
@@ -107,6 +108,7 @@ export function AppEditorWorkspace({
   onEditorAction,
   onFileSaved,
   onFileSaveError,
+  onLargeMarkdownFallback,
   onOpenFile,
   onOpenLink,
   onOpenWikiLink,
@@ -181,6 +183,7 @@ export function AppEditorWorkspace({
               onFileSaveError={onFileSaveError}
               onFileSaved={onFileSaved}
               onFocus={() => onSetFocusedPane("left")}
+              onLargeMarkdownFallback={onLargeMarkdownFallback}
               onOpenLink={onOpenLink}
               onOpenWikiLink={onOpenWikiLink}
               onRenameFile={onRenameFile}
@@ -208,6 +211,7 @@ export function AppEditorWorkspace({
                 onFileSaveError={onFileSaveError}
                 onFileSaved={onFileSaved}
                 onFocus={() => onSetFocusedPane("right")}
+                onLargeMarkdownFallback={onLargeMarkdownFallback}
                 onOpenLink={onOpenLink}
                 onOpenWikiLink={onOpenWikiLink}
                 onRenameFile={onRenameFile}

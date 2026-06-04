@@ -1,8 +1,26 @@
-const largeMarkdownMaxContentBytes = 1024 * 1024;
-const largeMarkdownMaxLineLength = 80000;
+export const largeMarkdownMaxContentBytes = 1024 * 1024;
+export const largeMarkdownMaxLineLength = 80000;
+
+export type LargeMarkdownFallbackReason = "content-size" | "line-length";
 
 export function isLargeMarkdownContent(content: string): boolean {
-  if (new Blob([content]).size > largeMarkdownMaxContentBytes) return true;
+  return largeMarkdownFallbackReason(content) !== null;
+}
 
-  return content.split("\n").some((line) => line.length > largeMarkdownMaxLineLength);
+export function largeMarkdownFallbackReason(content: string): LargeMarkdownFallbackReason | null {
+  if (new Blob([content]).size > largeMarkdownMaxContentBytes) return "content-size";
+
+  let currentLineLength = 0;
+
+  for (let index = 0; index < content.length; index += 1) {
+    if (content[index] === "\n") {
+      currentLineLength = 0;
+      continue;
+    }
+
+    currentLineLength += 1;
+    if (currentLineLength > largeMarkdownMaxLineLength) return "line-length";
+  }
+
+  return null;
 }

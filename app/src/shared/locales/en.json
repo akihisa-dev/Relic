@@ -173,6 +173,7 @@
   "pane.externalConflictCloseBlocked": "A file changed outside Relic. Resolve it in the editor banner before closing.",
   "pane.externalConflictToast": "{{name}} changed outside Relic, so auto-save was paused.",
   "pane.largeMarkdown": "Live preview is paused for this large Markdown file.",
+  "pane.largeMarkdownToast": "{{name}} is large, so Relic opened it in source view for better performance.",
   "pane.loadExternalVersion": "Load external version",
   "pane.noFiles": "No files",
   "pane.noNotes": "No files",

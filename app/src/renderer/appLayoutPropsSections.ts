@@ -36,6 +36,7 @@ export function createEditorWorkspaceProps(input: AppLayoutPropsInput): EditorWo
     onCreateFile: input.handleCreateNoteFromPane,
     onFileSaveError: input.setWorkspaceError,
     onFileSaved: input.handleFileSaved,
+    onLargeMarkdownFallback: input.handleLargeMarkdownFallback,
     onOpenFile: input.handleOpenFile,
     onOpenLink: input.handleOpenMarkdownLink,
     onOpenWikiLink: input.handleOpenWikiLink,

@@ -72,6 +72,7 @@ export interface AppLayoutPropsInput {
   handleDuplicateTabFile: TitleBarProps["onDuplicateTabFile"];
   handleDuplicateTreeFile: FilesSidebarProps["onDuplicateFile"];
   handleFileSaved: EditorWorkspaceProps["onFileSaved"];
+  handleLargeMarkdownFallback: EditorWorkspaceProps["onLargeMarkdownFallback"];
   handleMoveFile: FilesSidebarProps["onMoveFile"];
   handleMoveFolder: FilesSidebarProps["onMoveFolder"];
   handleMoveTreeItems: FilesSidebarProps["onMoveItems"];

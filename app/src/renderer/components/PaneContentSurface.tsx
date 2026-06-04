@@ -1,5 +1,5 @@
 import { EditorView } from "@codemirror/view";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { FormEvent, KeyboardEvent, MutableRefObject, ReactElement, ReactNode } from "react";
 
 import type { EditorSettings, UserDefinedField } from "../../shared/ipc";
@@ -26,6 +26,7 @@ interface PaneContentSurfaceProps {
   onCreateFile: (name: string) => void;
   onEditorAction?: () => void;
   onLoadExternalVersion: () => void;
+  onLargeMarkdownFallback?: (name: string, path: string) => void;
   onOpenLink?: (href: string) => void;
   onOpenWikiLink?: (target: string, heading?: string) => void;
   onRenameFile: (path: string, name: string) => void;
@@ -48,6 +49,7 @@ export function PaneContentSurface({
   workspacePath,
   onCreateFile,
   onEditorAction,
+  onLargeMarkdownFallback,
   onLoadExternalVersion,
   onOpenLink,
   onOpenWikiLink,
@@ -56,11 +58,23 @@ export function PaneContentSurface({
   onUpdateTabContent
 }: PaneContentSurfaceProps): ReactElement {
   const t = useT();
+  const notifiedLargeMarkdownFallbacksRef = useRef<Set<string>>(new Set());
+  const activeFileTab = activeTab?.kind === "file" ? activeTab : null;
+  const isLargeMarkdown = activeFileTab ? isLargeMarkdownContent(activeFileTab.content) : false;
 
-  if (activeTab?.kind === "file") {
-    const { chars, words } = textCount(activeTab.content);
-    const isLargeMarkdown = isLargeMarkdownContent(activeTab.content);
-    const hasInvalidFrontmatter = hasInvalidFrontmatterYaml(activeTab.content);
+  useEffect(() => {
+    if (!activeFileTab || !isLargeMarkdown) return;
+
+    const notificationKey = `${activeFileTab.id}:${activeFileTab.path}`;
+    if (notifiedLargeMarkdownFallbacksRef.current.has(notificationKey)) return;
+
+    notifiedLargeMarkdownFallbacksRef.current.add(notificationKey);
+    onLargeMarkdownFallback?.(activeFileTab.name, activeFileTab.path);
+  }, [activeFileTab, isLargeMarkdown, onLargeMarkdownFallback]);
+
+  if (activeFileTab) {
+    const { chars, words } = textCount(activeFileTab.content);
+    const hasInvalidFrontmatter = hasInvalidFrontmatterYaml(activeFileTab.content);
 
     return (
       <div
@@ -69,10 +83,10 @@ export function PaneContentSurface({
         <div className="editor-body">
           <EditableFileTitle
             maxWidth={editorSettings.maxWidth === "none" ? undefined : editorSettings.maxWidth}
-            name={activeTab.name}
-            onRename={(name) => onRenameFile(activeTab.path, name)}
+            name={activeFileTab.name}
+            onRename={(name) => onRenameFile(activeFileTab.path, name)}
           />
-          {activeTab.externalConflict ? (
+          {activeFileTab.externalConflict ? (
             <output
               className="editor-conflict-banner"
               style={{ maxWidth: editorSettings.maxWidth === "none" ? undefined : editorSettings.maxWidth }}
@@ -106,11 +120,11 @@ export function PaneContentSurface({
           ) : null}
           <Editor
             allFilePaths={allFilePaths}
-            content={activeTab.content}
-            filePath={activeTab.path}
+            content={activeFileTab.content}
+            filePath={activeFileTab.path}
             frontmatterCandidates={frontmatterCandidates}
-            key={activeTab.id}
-            onChange={(content) => onUpdateTabContent(activeTab.id, content)}
+            key={activeFileTab.id}
+            onChange={(content) => onUpdateTabContent(activeFileTab.id, content)}
             onOpenLink={onOpenLink}
             onOpenWikiLink={onOpenWikiLink}
             settings={editorSettings}
