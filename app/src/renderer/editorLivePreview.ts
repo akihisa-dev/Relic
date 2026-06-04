@@ -1,6 +1,7 @@
 import { syntaxTree } from "@codemirror/language";
-import { ChangeSet, StateField, type EditorState, type Text, type Transaction } from "@codemirror/state";
-import { Decoration, EditorView, WidgetType } from "@codemirror/view";
+import { ChangeSet, StateEffect, StateField, type EditorState, type Text, type Transaction } from "@codemirror/state";
+import { Decoration, EditorView, ViewPlugin, WidgetType } from "@codemirror/view";
+import type { ViewUpdate } from "@codemirror/view";
 import type { DecorationSet } from "@codemirror/view";
 
 import { findFrontmatterLineRange } from "./editorFrontmatter";
@@ -41,7 +42,10 @@ interface FencedCodeBlockRange extends SyntaxBlockRange {
 interface CodeBlockPreviewState {
   decorations: DecorationSet;
   revealedRanges: SyntaxBlockRange[];
+  visibleRanges: SyntaxBlockRange[];
 }
+
+const codeBlockPreviewVisibleRangesEffect = StateEffect.define<SyntaxBlockRange[]>();
 
 function sortedUniqueRanges<T extends SyntaxBlockRange>(ranges: T[]): T[] {
   return Array.from(new Map(ranges.map((range) => [`${range.from}:${range.to}`, range])).values())
@@ -96,11 +100,27 @@ function blockSource(doc: Text, block: SyntaxBlockRange): string {
   return doc.sliceString(doc.line(startLine + 1).from, doc.line(endLine - 1).to);
 }
 
-function buildCodeBlockPreviewDecorations(state: EditorState, t: Translator): CodeBlockPreviewState {
+function initialVisibleRanges(state: EditorState): SyntaxBlockRange[] {
+  return state.doc.length === 0 ? [] : [{ from: 0, to: Math.min(state.doc.length, 1) }];
+}
+
+function visibleRangesForView(view: EditorView): SyntaxBlockRange[] {
+  return view.visibleRanges.map((range) => ({ from: range.from, to: range.to }));
+}
+
+function visibleRangeKey(ranges: readonly SyntaxBlockRange[]): string {
+  return ranges.map((range) => `${range.from}:${range.to}`).join("|");
+}
+
+function buildCodeBlockPreviewDecorations(
+  state: EditorState,
+  t: Translator,
+  visibleRanges: SyntaxBlockRange[]
+): CodeBlockPreviewState {
   const ranges: { from: number; to: number; deco: Decoration }[] = [];
   const revealedRanges: SyntaxBlockRange[] = [];
   const doc = state.doc;
-  const codeBlocks = fencedCodeBlocksInVisibleRanges(state, [{ from: 0, to: state.doc.length }]);
+  const codeBlocks = fencedCodeBlocksInVisibleRanges(state, visibleRanges);
 
   function selectionTouches(from: number, to: number): boolean {
     return state.selection.ranges.some((range) => {
@@ -128,7 +148,8 @@ function buildCodeBlockPreviewDecorations(state: EditorState, t: Translator): Co
 
   return {
     decorations: Decoration.set(ranges.map((range) => range.deco.range(range.from, range.to)), true),
-    revealedRanges
+    revealedRanges,
+    visibleRanges
   };
 }
 
@@ -169,6 +190,14 @@ function mapSyntaxBlockRanges(changes: ChangeSet, ranges: SyntaxBlockRange[]): S
   }));
 }
 
+function visibleRangeEffect(transaction: Transaction): SyntaxBlockRange[] | null {
+  for (const effect of transaction.effects) {
+    if (effect.is(codeBlockPreviewVisibleRangesEffect)) return effect.value;
+  }
+
+  return null;
+}
+
 function selectionTouchesRanges(state: EditorState, ranges: readonly SyntaxBlockRange[]): boolean {
   return state.selection.ranges.some((selection) => ranges.some((range) => {
     if (selection.empty) return selection.from >= range.from && selection.from <= range.to;
@@ -196,28 +225,60 @@ function shouldRebuildCodeBlockDecorationsForSelection(state: EditorState, previ
 }
 
 export function createLivePreviewCodeBlockField(t: Translator = createTranslator("system")) {
-  return StateField.define<CodeBlockPreviewState>({
-    create: (state) => buildCodeBlockPreviewDecorations(state, t),
+  const field = StateField.define<CodeBlockPreviewState>({
+    create: (state) => buildCodeBlockPreviewDecorations(state, t, initialVisibleRanges(state)),
     update: (preview, transaction) => {
+      const nextVisibleRanges = visibleRangeEffect(transaction);
+      if (nextVisibleRanges) return buildCodeBlockPreviewDecorations(transaction.state, t, nextVisibleRanges);
+
       if (transaction.docChanged) {
         if (canMapCodeBlockDecorations(transaction, preview.decorations)) {
           return {
             decorations: preview.decorations.map(transaction.changes),
-            revealedRanges: mapSyntaxBlockRanges(transaction.changes, preview.revealedRanges)
+            revealedRanges: mapSyntaxBlockRanges(transaction.changes, preview.revealedRanges),
+            visibleRanges: mapSyntaxBlockRanges(transaction.changes, preview.visibleRanges)
           };
         }
 
-        return buildCodeBlockPreviewDecorations(transaction.state, t);
+        return buildCodeBlockPreviewDecorations(transaction.state, t, preview.visibleRanges);
       }
 
       if (transaction.selection && shouldRebuildCodeBlockDecorationsForSelection(transaction.state, preview)) {
-        return buildCodeBlockPreviewDecorations(transaction.state, t);
+        return buildCodeBlockPreviewDecorations(transaction.state, t, preview.visibleRanges);
       }
 
       return preview;
     },
     provide: (field) => EditorView.decorations.from(field, (preview) => preview.decorations)
   });
+
+  const viewportSync = ViewPlugin.fromClass(
+    class {
+      private visibleRangesKey = "";
+
+      constructor(view: EditorView) {
+        this.scheduleVisibleRangeSync(view);
+      }
+
+      update(update: ViewUpdate): void {
+        if (update.viewportChanged || update.docChanged) this.scheduleVisibleRangeSync(update.view);
+      }
+
+      private scheduleVisibleRangeSync(view: EditorView): void {
+        const visibleRanges = visibleRangesForView(view);
+        const nextKey = visibleRangeKey(visibleRanges);
+        if (nextKey === this.visibleRangesKey) return;
+
+        this.visibleRangesKey = nextKey;
+        queueMicrotask(() => {
+          if (!view.dom.isConnected) return;
+          view.dispatch({ effects: codeBlockPreviewVisibleRangesEffect.of(visibleRangesForView(view)) });
+        });
+      }
+    }
+  );
+
+  return [field, viewportSync];
 }
 
 export function buildLivePreviewDecorations(

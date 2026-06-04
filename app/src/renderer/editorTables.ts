@@ -1,6 +1,6 @@
 import { syntaxTree } from "@codemirror/language";
-import { ChangeSet, StateField, type EditorState, type Text, type Transaction } from "@codemirror/state";
-import { Decoration, EditorView, type DecorationSet } from "@codemirror/view";
+import { ChangeSet, StateEffect, StateField, type EditorState, type Text, type Transaction } from "@codemirror/state";
+import { Decoration, EditorView, ViewPlugin, type DecorationSet, type ViewUpdate } from "@codemirror/view";
 
 import { findTableBlocks } from "./editorTableModel";
 import { TableWidget } from "./editorTableWidget";
@@ -43,6 +43,25 @@ export function buildTableDecorations(state: Parameters<typeof findTableBlocks>[
   );
 }
 
+interface TablePreviewState {
+  decorations: DecorationSet;
+  visibleRanges: Array<{ from: number; to: number }>;
+}
+
+const tablePreviewVisibleRangesEffect = StateEffect.define<Array<{ from: number; to: number }>>();
+
+function initialVisibleRanges(state: EditorState): Array<{ from: number; to: number }> {
+  return state.doc.length === 0 ? [] : [{ from: 0, to: Math.min(state.doc.length, 1) }];
+}
+
+function visibleRangesForView(view: EditorView): Array<{ from: number; to: number }> {
+  return view.visibleRanges.map((range) => ({ from: range.from, to: range.to }));
+}
+
+function visibleRangeKey(ranges: readonly { from: number; to: number }[]): string {
+  return ranges.map((range) => `${range.from}:${range.to}`).join("|");
+}
+
 function splitTableRow(line: string): string[] {
   const trimmed = line.trim().replace(/^\|/, "").replace(/\|$/, "");
   return trimmed.split("|").map((cell) => cell.trim());
@@ -62,41 +81,51 @@ function tableRowsFromRange(state: EditorState, from: number, to: number): strin
   return rows;
 }
 
-function buildSyntaxTableDecorations(state: EditorState, t: Translator): DecorationSet {
+function buildSyntaxTableDecorations(
+  state: EditorState,
+  t: Translator,
+  visibleRanges: Array<{ from: number; to: number }>
+): TablePreviewState {
   const ranges: { from: number; to: number; deco: Decoration }[] = [];
   const seen = new Set<string>();
+  const tree = syntaxTree(state);
 
-  syntaxTree(state).iterate({
-    from: 0,
-    to: state.doc.length,
-    enter: (node) => {
-      if (node.name !== "Table") return;
+  for (const visibleRange of visibleRanges) {
+    tree.iterate({
+      from: visibleRange.from,
+      to: visibleRange.to,
+      enter: (node) => {
+        if (node.name !== "Table") return;
 
-      const key = `${node.from}:${node.to}`;
-      if (seen.has(key)) return;
-      seen.add(key);
+        const key = `${node.from}:${node.to}`;
+        if (seen.has(key)) return;
+        seen.add(key);
 
-      ranges.push({
-        from: node.from,
-        to: node.to,
-        deco: Decoration.replace({
-          block: true,
-          widget: new TableWidget({
-            from: node.from,
-            to: node.to,
-            rows: tableRowsFromRange(state, node.from, node.to)
-          }, t)
-        })
-      });
-    }
-  });
+        ranges.push({
+          from: node.from,
+          to: node.to,
+          deco: Decoration.replace({
+            block: true,
+            widget: new TableWidget({
+              from: node.from,
+              to: node.to,
+              rows: tableRowsFromRange(state, node.from, node.to)
+            }, t)
+          })
+        });
+      }
+    });
+  }
 
   ranges.sort((a, b) => a.from - b.from || a.to - b.to);
 
-  return Decoration.set(
-    ranges.map(({ from, to, deco }) => deco.range(from, to)),
-    true
-  );
+  return {
+    decorations: Decoration.set(
+      ranges.map(({ from, to, deco }) => deco.range(from, to)),
+      true
+    ),
+    visibleRanges
+  };
 }
 
 function changedTextIncludes(changes: ChangeSet, doc: Text, pattern: RegExp): boolean {
@@ -129,16 +158,69 @@ function canMapTableDecorations(transaction: Transaction, decorations: Decoratio
   return !changedTextIncludes(transaction.changes, transaction.state.doc, /[|:\-\n]/);
 }
 
+function mapVisibleRanges(changes: ChangeSet, ranges: Array<{ from: number; to: number }>): Array<{ from: number; to: number }> {
+  return ranges.map((range) => ({
+    from: changes.mapPos(range.from),
+    to: changes.mapPos(range.to)
+  }));
+}
+
+function visibleRangeEffect(transaction: Transaction): Array<{ from: number; to: number }> | null {
+  for (const effect of transaction.effects) {
+    if (effect.is(tablePreviewVisibleRangesEffect)) return effect.value;
+  }
+
+  return null;
+}
+
 export function createLivePreviewTableField(t: Translator) {
-  return StateField.define<DecorationSet>({
-    create: (state) => buildSyntaxTableDecorations(state, t),
-    update: (decorations, transaction) => (
-      transaction.docChanged
-        ? canMapTableDecorations(transaction, decorations)
-          ? decorations.map(transaction.changes)
-          : buildSyntaxTableDecorations(transaction.state, t)
-        : decorations
-    ),
-    provide: (field) => EditorView.decorations.from(field)
+  const field = StateField.define<TablePreviewState>({
+    create: (state) => buildSyntaxTableDecorations(state, t, initialVisibleRanges(state)),
+    update: (preview, transaction) => {
+      const nextVisibleRanges = visibleRangeEffect(transaction);
+      if (nextVisibleRanges) return buildSyntaxTableDecorations(transaction.state, t, nextVisibleRanges);
+
+      if (transaction.docChanged) {
+        if (canMapTableDecorations(transaction, preview.decorations)) {
+          return {
+            decorations: preview.decorations.map(transaction.changes),
+            visibleRanges: mapVisibleRanges(transaction.changes, preview.visibleRanges)
+          };
+        }
+
+        return buildSyntaxTableDecorations(transaction.state, t, preview.visibleRanges);
+      }
+
+      return preview;
+    },
+    provide: (field) => EditorView.decorations.from(field, (preview) => preview.decorations)
   });
+
+  const viewportSync = ViewPlugin.fromClass(
+    class {
+      private visibleRangesKey = "";
+
+      constructor(view: EditorView) {
+        this.scheduleVisibleRangeSync(view);
+      }
+
+      update(update: ViewUpdate): void {
+        if (update.viewportChanged || update.docChanged) this.scheduleVisibleRangeSync(update.view);
+      }
+
+      private scheduleVisibleRangeSync(view: EditorView): void {
+        const visibleRanges = visibleRangesForView(view);
+        const nextKey = visibleRangeKey(visibleRanges);
+        if (nextKey === this.visibleRangesKey) return;
+
+        this.visibleRangesKey = nextKey;
+        queueMicrotask(() => {
+          if (!view.dom.isConnected) return;
+          view.dispatch({ effects: tablePreviewVisibleRangesEffect.of(visibleRangesForView(view)) });
+        });
+      }
+    }
+  );
+
+  return [field, viewportSync];
 }
