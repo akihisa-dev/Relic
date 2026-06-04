@@ -3,17 +3,18 @@
 /* ────────────────────────────────── */
 
 :root {
-  --color-primary: #4e78b8;
-  --color-primary-dark: #355c9a;
-  --color-accent: #8fd6ff;
-  --color-bg: #f4f5f3;
-  --color-surface: #eceff2;
-  --color-surface-elevated: #ffffff;
-  --color-border: #c9d1d9;
-  --color-border-strong: #9fa9b5;
-  --color-text: #17202a;
-  --color-text-secondary: #64707a;
-  --color-text-muted: #8b96a3;
+  --color-primary: #3261a1;
+  --color-primary-dark: #3261a1;
+  --color-accent: #6c8bb7;
+  --color-bg: #f2f1ee;
+  --color-surface: #e7e7e7;
+  --color-surface-alt: #dddedf;
+  --color-surface-elevated: #f2f1ee;
+  --color-border: #c3c8ce;
+  --color-border-strong: #a4aebd;
+  --color-text: #232b36;
+  --color-text-secondary: #89909a;
+  --color-text-muted: #89909a;
   --font-display: "Avenir Next Condensed", "IBM Plex Sans Condensed", "Arial Narrow", "IBM Plex Sans", "Inter", "Geist", sans-serif;
   --font-body: "Inter", "Geist", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Hiragino Sans", "Yu Gothic", sans-serif;
   --font-mono: "IBM Plex Mono", "SF Mono", "Menlo", "Consolas", monospace;
@@ -22,14 +23,14 @@
   --radius-lg: 8px;
   --bg: var(--color-bg);
   --app-bg:
-    linear-gradient(90deg, rgba(53, 92, 154, 0.035) 1px, transparent 1px),
-    linear-gradient(rgba(53, 92, 154, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(50, 97, 161, 0.035) 1px, transparent 1px),
+    linear-gradient(rgba(50, 97, 161, 0.03) 1px, transparent 1px),
     var(--color-bg);
   --surface: var(--color-surface-elevated);
   --surface-raised: var(--color-surface-elevated);
   --surface-subtle: var(--color-surface);
   --rail-bg: var(--color-surface-elevated);
-  --sidebar-bg: color-mix(in srgb, var(--color-surface) 86%, white);
+  --sidebar-bg: var(--color-surface);
   --popup-bg: var(--color-surface-elevated);
   --text: var(--color-text);
   --text-2: var(--color-text-secondary);
@@ -41,9 +42,9 @@
   --hover: color-mix(in srgb, var(--color-primary) 8%, transparent);
   --hover-strong: color-mix(in srgb, var(--color-primary) 13%, transparent);
   --input-bg: var(--color-surface-elevated);
-  --selection: color-mix(in srgb, var(--color-primary) 13%, white);
-  --shadow: rgba(53, 92, 154, 0.1);
-  --shadow-soft: rgba(53, 92, 154, 0.055);
+  --selection: var(--color-surface-alt);
+  --shadow: rgba(50, 97, 161, 0.1);
+  --shadow-soft: rgba(50, 97, 161, 0.055);
   --workspace-shadow: none;
   --floating-panel-shadow: 0 0 0 1px var(--color-border);
   --chrome-shadow: 0 1px 0 var(--color-border);
@@ -56,13 +57,14 @@
   --link: var(--color-primary-dark);
   --attention: var(--color-primary-dark);
   --attention-hover: var(--color-primary);
-  --highlight: color-mix(in srgb, var(--color-accent) 34%, transparent);
+  --highlight: color-mix(in srgb, var(--color-accent) 30%, transparent);
   font-family: var(--font-body);
 }
 
 :root[data-theme="dark"] {
   --color-bg: #111820;
   --color-surface: #17202a;
+  --color-surface-alt: #233140;
   --color-surface-elevated: #10161d;
   --color-border: #314154;
   --color-border-strong: #5c7290;
@@ -110,6 +112,7 @@
   :root:not([data-theme="light"]) {
     --color-bg: #111820;
     --color-surface: #17202a;
+    --color-surface-alt: #233140;
     --color-surface-elevated: #10161d;
     --color-border: #314154;
     --color-border-strong: #5c7290;
@@ -554,7 +557,7 @@ textarea {
 
 .preview-body th,
 .cm-live-table-widget th {
-  background: color-mix(in srgb, var(--color-surface) 72%, white);
+  background: var(--color-surface-alt);
   color: var(--color-primary-dark);
   font-family: var(--font-body);
   font-size: 12px;
@@ -590,7 +593,7 @@ textarea {
 .search-result-button--opening,
 .ai-chats-item-button--active,
 .command-item--selected {
-  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+  background: var(--color-surface-alt);
   color: var(--color-primary-dark);
 }
 
@@ -694,7 +697,7 @@ textarea {
 .chronicle-sidebar-item,
 .chronicle-chart,
 .preview-file-embed {
-  background: var(--color-surface-elevated);
+  background: var(--color-surface-alt);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   box-shadow: none;

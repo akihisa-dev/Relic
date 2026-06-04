@@ -109,52 +109,36 @@ radius-lg: 8px;
 
 ### Core Colors
 
-#### Warm Blue
+#### Primary Blue
 
 主要アクセントカラー。
 
 ```css
---color-primary: #4E78B8;
-```
-
-用途:
-
-- Active State
-- Selection
-- Links
-- Primary Actions
-
----
-
-#### Deep Blue
-
-強調表示や見出し。
-
-```css
---color-primary-dark: #355C9A;
+--color-primary: #3261A1;
 ```
 
 用途:
 
 - Headers
-- Navigation Indicators
-- Important Labels
+- Links
+- Icons
+- Accents
 
 ---
 
-#### Ice Blue
+#### Sub Blue
 
-補助アクセント。
+補助アクセントカラー。
 
 ```css
---color-accent: #8FD6FF;
+--color-accent: #6C8BB7;
 ```
 
 用途:
 
 - Hover States
-- Informational Highlights
-- Charts
+- Sub Labels
+- Boundary Emphasis
 
 ---
 
@@ -163,37 +147,37 @@ radius-lg: 8px;
 #### Background
 
 ```css
---color-bg: #F4F5F3;
+--color-bg: #F2F1EE;
 ```
 
-アプリ全体の背景色。
+エディタ背景、ページ全体の背景色。
 
 ---
 
 #### Surface
 
 ```css
---color-surface: #ECEFF2;
+--color-surface: #E7E7E7;
 ```
 
-サイドバーやパネル。
+サイドバー、ツールバー、パネル背景。
 
 ---
 
-#### Elevated Surface
+#### Surface Alt
 
 ```css
---color-surface-elevated: #FFFFFF;
+--color-surface-alt: #DDDEDF;
 ```
 
-エディタ領域やモーダル。
+選択中の項目背景、カード背景。
 
 ---
 
 #### Border
 
 ```css
---color-border: #C9D1D9;
+--color-border: #C3C8CE;
 ```
 
 区切り線。
@@ -203,7 +187,7 @@ radius-lg: 8px;
 #### Border Strong
 
 ```css
---color-border-strong: #9FA9B5;
+--color-border-strong: #A4AEBD;
 ```
 
 重要な境界。
@@ -215,7 +199,7 @@ radius-lg: 8px;
 #### Primary Text
 
 ```css
---color-text: #17202A;
+--color-text: #232B36;
 ```
 
 ---
@@ -223,7 +207,7 @@ radius-lg: 8px;
 #### Secondary Text
 
 ```css
---color-text-secondary: #64707A;
+--color-text-secondary: #89909A;
 ```
 
 ---
@@ -231,7 +215,7 @@ radius-lg: 8px;
 #### Muted Text
 
 ```css
---color-text-muted: #8B96A3;
+--color-text-muted: #89909A;
 ```
 
 ---
