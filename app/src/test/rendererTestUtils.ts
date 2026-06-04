@@ -38,7 +38,7 @@ export function resetRendererStores(): void {
   });
   useUiStore.setState({
     activeSidebarView: "files",
-    isRightPanelOpen: false,
+    isRightPanelOpen: true,
     isSecondarySidebarOpen: false,
     isSidebarOpen: true,
     isTypewriterMode: false,

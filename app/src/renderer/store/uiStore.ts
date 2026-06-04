@@ -30,7 +30,7 @@ export const useUiStore = create<UiState>((set) => ({
   activeSidebarView: "files",
   isSidebarOpen: true,
   isSecondarySidebarOpen: false,
-  isRightPanelOpen: false,
+  isRightPanelOpen: true,
   isTypewriterMode: false,
   rightPanelView: "outline",
   secondarySidebarView: "none",

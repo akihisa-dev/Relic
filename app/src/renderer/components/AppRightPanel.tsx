@@ -57,14 +57,23 @@ export function AppRightPanel({
         onMouseDown={onResizeStart}
         type="button"
       />
+      <div className="right-panel-title">
+        {rightPanelView === "outline" ? t("pane.outline") : t("pane.links")}
+      </div>
       <div className={`sidebar-body right-panel-content right-panel-content--${rightPanelView}`}>
       {rightPanelView === "outline" ? (
         outlineHeadings.length > 0 ? (
           <ul className="outline-list">
-            {outlineHeadings.map((heading) => (
+            {outlineHeadings.map((heading, index) => (
               <li className={`outline-item outline-item--h${heading.level}`} key={`${heading.level}-${heading.text}`} title={heading.text}>
-                <button className="outline-item-button" onClick={() => onOutlineHeadingClick(heading.text)} type="button">
-                  {heading.text}
+                <button
+                  aria-label={heading.text}
+                  className="outline-item-button"
+                  onClick={() => onOutlineHeadingClick(heading.text)}
+                  type="button"
+                >
+                  <span className="outline-item-number">{String(index + 1).padStart(2, "0")}</span>
+                  <span className="outline-item-text">{heading.text}</span>
                 </button>
               </li>
             ))}
