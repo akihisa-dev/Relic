@@ -48,4 +48,17 @@ describe("buildWikiLinkCompletionSource", () => {
 
     expect(result?.options.map((option) => option.label)).toEqual(["魔法体系"]);
   });
+
+  it("大量ファイル補完でも候補数を制限し、必要な候補を返す", () => {
+    const filePaths = Array.from({ length: 10_000 }, (_, index) => `notes/大量候補${String(index).padStart(5, "0")}.md`);
+    const result = complete("[[大量候補099", filePaths, ["大量候補別名"]);
+
+    expect(result?.options.length).toBeLessThanOrEqual(80);
+    expect(result?.options[0]).toEqual({
+      apply: "大量候補09900]]",
+      label: "大量候補09900"
+    });
+    expect(result?.options.map((option) => option.label)).toContain("大量候補09979");
+    expect(result?.options.map((option) => option.label)).not.toContain("大量候補09899");
+  });
 });

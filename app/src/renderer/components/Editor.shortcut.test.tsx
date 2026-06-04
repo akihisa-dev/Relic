@@ -72,5 +72,6 @@ describe("Editor shortcuts", () => {
     expect(isListInputEvent(composingEvent, { composing: false } as EditorView)).toBe(false);
     expect(isListInputEvent(imeProcessEvent, { composing: false } as EditorView)).toBe(false);
     expect(isListInputEvent(new KeyboardEvent("keydown", { key: "Enter" }), { composing: true } as EditorView)).toBe(false);
+    expect(isListInputEvent(new KeyboardEvent("keydown", { key: "Enter" }), { composing: false, compositionStarted: true } as EditorView)).toBe(false);
   });
 });

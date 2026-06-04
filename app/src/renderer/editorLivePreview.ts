@@ -1,5 +1,5 @@
 import { syntaxTree } from "@codemirror/language";
-import { StateField, type EditorState, type Text } from "@codemirror/state";
+import { ChangeSet, StateField, type EditorState, type Text, type Transaction } from "@codemirror/state";
 import { Decoration, EditorView, WidgetType } from "@codemirror/view";
 import type { DecorationSet } from "@codemirror/view";
 
@@ -119,11 +119,45 @@ function buildCodeBlockPreviewDecorations(state: EditorState, t: Translator): De
   return Decoration.set(ranges.map((range) => range.deco.range(range.from, range.to)), true);
 }
 
+function changedTextIncludes(changes: ChangeSet, doc: Text, pattern: RegExp): boolean {
+  let includes = false;
+
+  changes.iterChanges((_fromA, _toA, fromB, toB) => {
+    if (includes || fromB === toB) return;
+    includes = pattern.test(doc.sliceString(fromB, toB));
+  });
+
+  return includes;
+}
+
+function changesTouchDecorations(changes: ChangeSet, decorations: DecorationSet): boolean {
+  let touches = false;
+
+  changes.iterChangedRanges((fromA, toA) => {
+    if (touches) return;
+    decorations.between(Math.max(0, fromA - 1), Math.max(fromA + 1, toA), () => {
+      touches = true;
+    });
+  });
+
+  return touches;
+}
+
+function canMapCodeBlockDecorations(transaction: Transaction, decorations: DecorationSet): boolean {
+  if (!transaction.docChanged) return true;
+  if (changesTouchDecorations(transaction.changes, decorations)) return false;
+  return !changedTextIncludes(transaction.changes, transaction.state.doc, /[`$\n]/);
+}
+
 export function createLivePreviewCodeBlockField(t: Translator = createTranslator("system")) {
   return StateField.define<DecorationSet>({
     create: (state) => buildCodeBlockPreviewDecorations(state, t),
     update: (decorations, transaction) => (
-      transaction.docChanged || transaction.selection
+      transaction.docChanged
+        ? canMapCodeBlockDecorations(transaction, decorations)
+          ? decorations.map(transaction.changes)
+          : buildCodeBlockPreviewDecorations(transaction.state, t)
+        : transaction.selection
         ? buildCodeBlockPreviewDecorations(transaction.state, t)
         : decorations
     ),
