@@ -85,7 +85,9 @@ export function registerOutputHandlers(): void {
           return fail("OUTPUT_SVG_INVALID_INPUT", t("output.svgInvalidInput"));
         }
 
-        if (!hasRenderableSvg(input.svg)) {
+        const sanitizedSvg = sanitizeOutputSvg(input.svg);
+
+        if (!hasRenderableSvg(sanitizedSvg)) {
           return fail("OUTPUT_SVG_EMPTY", t("output.svgEmptySave"));
         }
 
@@ -105,7 +107,7 @@ export function registerOutputHandlers(): void {
           return ok({ status: "canceled" });
         }
 
-        await atomicWriteTextFile(selection.filePath, input.svg);
+        await atomicWriteTextFile(selection.filePath, sanitizedSvg);
 
         return ok({ filePath: selection.filePath, status: "saved" });
       } catch (error) {
@@ -123,11 +125,13 @@ export function registerOutputHandlers(): void {
           return fail("OUTPUT_SVG_COPY_INVALID_INPUT", t("output.svgCopyInvalidInput"));
         }
 
-        if (!hasRenderableSvg(input.svg)) {
+        const sanitizedSvg = sanitizeOutputSvg(input.svg);
+
+        if (!hasRenderableSvg(sanitizedSvg)) {
           return fail("OUTPUT_SVG_EMPTY", t("output.svgEmptyCopy"));
         }
 
-        clipboard.writeText(input.svg);
+        clipboard.writeText(sanitizedSvg);
 
         return ok({ status: "copied" });
       } catch (error) {
@@ -299,6 +303,19 @@ function temporaryPrintPreviewPath(title: string): string {
 function hasRenderableSvg(svg: string): boolean {
   const match = /<svg\b[^>]*>([\s\S]*?)<\/svg>/i.exec(svg.trim());
   return Boolean(match?.[1].trim());
+}
+
+function sanitizeOutputSvg(svg: string): string {
+  const match = /<svg\b[\s\S]*?<\/svg>/i.exec(svg.trim());
+  if (!match) return "";
+
+  return match[0]
+    .replace(/<\s*(script|foreignObject)\b[\s\S]*?<\s*\/\s*\1\s*>/gi, "")
+    .replace(/<\s*(script|foreignObject)\b[^>]*\/\s*>/gi, "")
+    .replace(/\s+on[a-z]+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, "")
+    .replace(/\s+(?:href|xlink:href|src)\s*=\s*"(?:(?:javascript|file):[^"]*)"/gi, "")
+    .replace(/\s+(?:href|xlink:href|src)\s*=\s*'(?:(?:javascript|file):[^']*)'/gi, "")
+    .replace(/\s+(?:href|xlink:href|src)\s*=\s*(?:javascript|file):[^\s>]+/gi, "");
 }
 
 function ipcErrorDetails(error: unknown): string {

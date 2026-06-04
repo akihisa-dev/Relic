@@ -71,6 +71,7 @@ export function resolveMarkdownLinkPath(href: string, sourcePath: string): Markd
   if (
     trimmedHref === "" ||
     /^[a-z][a-z0-9+.-]*:/i.test(trimmedHref) ||
+    trimmedHref.startsWith("//") ||
     trimmedHref.startsWith("#")
   ) {
     return null;
