@@ -48,7 +48,15 @@ interface TablePreviewState {
   visibleRanges: Array<{ from: number; to: number }>;
 }
 
+/** @internal Test-only observer for decoration rebuild quality gates. */
+export interface __TableDecorationTestHooks {
+  onRebuild?: (reason: "create" | "visibleRanges" | "docChanged") => void;
+}
+
 const tablePreviewVisibleRangesEffect = StateEffect.define<Array<{ from: number; to: number }>>();
+
+/** @internal Test-only access to drive visible range rebuilds without a browser viewport. */
+export const __tablePreviewVisibleRangesEffectForTests = tablePreviewVisibleRangesEffect;
 
 function initialVisibleRanges(state: EditorState): Array<{ from: number; to: number }> {
   return state.doc.length === 0 ? [] : [{ from: 0, to: Math.min(state.doc.length, 1) }];
@@ -173,12 +181,18 @@ function visibleRangeEffect(transaction: Transaction): Array<{ from: number; to:
   return null;
 }
 
-export function createLivePreviewTableField(t: Translator) {
+export function createLivePreviewTableField(t: Translator, testHooks?: __TableDecorationTestHooks) {
   const field = StateField.define<TablePreviewState>({
-    create: (state) => buildSyntaxTableDecorations(state, t, initialVisibleRanges(state)),
+    create: (state) => {
+      testHooks?.onRebuild?.("create");
+      return buildSyntaxTableDecorations(state, t, initialVisibleRanges(state));
+    },
     update: (preview, transaction) => {
       const nextVisibleRanges = visibleRangeEffect(transaction);
-      if (nextVisibleRanges) return buildSyntaxTableDecorations(transaction.state, t, nextVisibleRanges);
+      if (nextVisibleRanges) {
+        testHooks?.onRebuild?.("visibleRanges");
+        return buildSyntaxTableDecorations(transaction.state, t, nextVisibleRanges);
+      }
 
       if (transaction.docChanged) {
         if (canMapTableDecorations(transaction, preview.decorations)) {
@@ -188,6 +202,7 @@ export function createLivePreviewTableField(t: Translator) {
           };
         }
 
+        testHooks?.onRebuild?.("docChanged");
         return buildSyntaxTableDecorations(transaction.state, t, preview.visibleRanges);
       }
 

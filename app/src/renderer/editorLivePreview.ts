@@ -45,7 +45,15 @@ interface CodeBlockPreviewState {
   visibleRanges: SyntaxBlockRange[];
 }
 
+/** @internal Test-only observer for decoration rebuild quality gates. */
+export interface __CodeBlockDecorationTestHooks {
+  onRebuild?: (reason: "create" | "visibleRanges" | "docChanged" | "selection") => void;
+}
+
 const codeBlockPreviewVisibleRangesEffect = StateEffect.define<SyntaxBlockRange[]>();
+
+/** @internal Test-only access to drive visible range rebuilds without a browser viewport. */
+export const __codeBlockPreviewVisibleRangesEffectForTests = codeBlockPreviewVisibleRangesEffect;
 
 function sortedUniqueRanges<T extends SyntaxBlockRange>(ranges: T[]): T[] {
   return Array.from(new Map(ranges.map((range) => [`${range.from}:${range.to}`, range])).values())
@@ -224,12 +232,21 @@ function shouldRebuildCodeBlockDecorationsForSelection(state: EditorState, previ
   return !selectionTouchesRanges(state, preview.revealedRanges);
 }
 
-export function createLivePreviewCodeBlockField(t: Translator = createTranslator("system")) {
+export function createLivePreviewCodeBlockField(
+  t: Translator = createTranslator("system"),
+  testHooks?: __CodeBlockDecorationTestHooks
+) {
   const field = StateField.define<CodeBlockPreviewState>({
-    create: (state) => buildCodeBlockPreviewDecorations(state, t, initialVisibleRanges(state)),
+    create: (state) => {
+      testHooks?.onRebuild?.("create");
+      return buildCodeBlockPreviewDecorations(state, t, initialVisibleRanges(state));
+    },
     update: (preview, transaction) => {
       const nextVisibleRanges = visibleRangeEffect(transaction);
-      if (nextVisibleRanges) return buildCodeBlockPreviewDecorations(transaction.state, t, nextVisibleRanges);
+      if (nextVisibleRanges) {
+        testHooks?.onRebuild?.("visibleRanges");
+        return buildCodeBlockPreviewDecorations(transaction.state, t, nextVisibleRanges);
+      }
 
       if (transaction.docChanged) {
         if (canMapCodeBlockDecorations(transaction, preview.decorations)) {
@@ -240,10 +257,12 @@ export function createLivePreviewCodeBlockField(t: Translator = createTranslator
           };
         }
 
+        testHooks?.onRebuild?.("docChanged");
         return buildCodeBlockPreviewDecorations(transaction.state, t, preview.visibleRanges);
       }
 
       if (transaction.selection && shouldRebuildCodeBlockDecorationsForSelection(transaction.state, preview)) {
+        testHooks?.onRebuild?.("selection");
         return buildCodeBlockPreviewDecorations(transaction.state, t, preview.visibleRanges);
       }
 

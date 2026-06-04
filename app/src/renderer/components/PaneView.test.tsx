@@ -5,7 +5,7 @@ import type { EditorView } from "@codemirror/view";
 
 import { defaultEditorSettings } from "../../shared/ipc";
 import { I18nProvider } from "../i18n";
-import { largeMarkdownMaxContentBytes } from "../largeMarkdown";
+import { largeMarkdownMaxContentBytes, largeMarkdownMaxLineLength } from "../largeMarkdown";
 import { useEditorStore, type PaneState, type Tab } from "../store/editorStore";
 import { PaneView, type PaneViewProps } from "./PaneView";
 
@@ -149,7 +149,19 @@ describe("PaneView", () => {
   });
 
   it("1MiBを超えるMarkdownは通知を出して一時的にソース表示で開く", async () => {
-    const content = `**large**\n${"a".repeat(largeMarkdownMaxContentBytes)}`;
+    const content = [
+      "**large**",
+      "```ts",
+      "const value = 1;",
+      "```",
+      "",
+      "| A | B |",
+      "|---|---|",
+      "| 1 | 2 |",
+      "",
+      "a".repeat(largeMarkdownMaxContentBytes)
+    ].join("\n");
+    const editorSettings = { ...defaultEditorSettings, showLineNumbers: false };
 
     setPaneState(
       {
@@ -163,14 +175,18 @@ describe("PaneView", () => {
     );
 
     const props = renderPaneView({
-      editorSettings: { ...defaultEditorSettings, showLineNumbers: false },
+      editorSettings,
       sourceMode: false
     });
 
     expect(screen.getByText("Live preview is paused for this large Markdown file.")).toBeInTheDocument();
     await waitFor(() => expect(props.viewRef.current).not.toBeNull());
     expect(document.querySelector(".cm-live-bold")).toBeNull();
+    expect(document.querySelector(".cm-live-code-block-panel")).toBeNull();
+    expect(document.querySelector(".cm-live-table")).toBeNull();
     expect(props.sourceMode).toBe(false);
+    expect(useEditorStore.getState().editorSettings).toEqual(defaultEditorSettings);
+    expect(editorSettings.showLineNumbers).toBe(false);
     await waitFor(() => expect(props.onLargeMarkdownFallback).toHaveBeenCalledWith("Note", "Folder/Note.md"));
   });
 
@@ -179,8 +195,8 @@ describe("PaneView", () => {
       {
         [fileTab.id]: {
           ...fileTab,
-          content: `**large**\n${"a".repeat(80_001)}`,
-          savedContent: `**large**\n${"a".repeat(80_001)}`
+          content: `**large**\n${"a".repeat(largeMarkdownMaxLineLength + 1)}`,
+          savedContent: `**large**\n${"a".repeat(largeMarkdownMaxLineLength + 1)}`
         }
       },
       { activeTabId: fileTab.id, history: [fileTab.id], tabIds: [fileTab.id] }

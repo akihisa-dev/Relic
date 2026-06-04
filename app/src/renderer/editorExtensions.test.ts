@@ -1,7 +1,18 @@
 import { CompletionContext } from "@codemirror/autocomplete";
+import { markdown } from "@codemirror/lang-markdown";
 import { EditorState } from "@codemirror/state";
-import { describe, expect, it } from "vitest";
+import { GFM } from "@lezer/markdown";
+import { describe, expect, it, vi } from "vitest";
 
+import { createTranslator } from "./i18nModel";
+import {
+  __codeBlockPreviewVisibleRangesEffectForTests,
+  createLivePreviewCodeBlockField
+} from "./editorLivePreview";
+import {
+  __tablePreviewVisibleRangesEffectForTests,
+  createLivePreviewTableField
+} from "./editorTables";
 import { buildWikiLinkCompletionSource } from "./editorExtensions";
 
 function complete(doc: string, allFilePaths: string[], aliases: string[] = []) {
@@ -49,8 +60,8 @@ describe("buildWikiLinkCompletionSource", () => {
     expect(result?.options.map((option) => option.label)).toEqual(["魔法体系"]);
   });
 
-  it("大量ファイル補完でも候補数を制限し、必要な候補を返す", () => {
-    const filePaths = Array.from({ length: 10_000 }, (_, index) => `notes/大量候補${String(index).padStart(5, "0")}.md`);
+  it("10,000件を超える大量ファイル補完でも候補数を制限し、必要な候補を返す", () => {
+    const filePaths = Array.from({ length: 10_500 }, (_, index) => `notes/大量候補${String(index).padStart(5, "0")}.md`);
     const result = complete("[[大量候補099", filePaths, ["大量候補別名"]);
 
     expect(result?.options.length).toBeLessThanOrEqual(80);
@@ -79,5 +90,81 @@ describe("buildWikiLinkCompletionSource", () => {
     ]);
 
     expect(result?.options.map((option) => option.label)).toEqual(["ＡＢＣ計画"]);
+  });
+});
+
+describe("live preview decoration rebuild quality gates", () => {
+  it("通常テキスト入力ではCodeBlock decorationを再構築せずコードブロック編集時だけ再構築する", () => {
+    const onRebuild = vi.fn();
+    let state = EditorState.create({
+      doc: [
+        "```ts",
+        "const value = 1;",
+        "```",
+        "",
+        "plain"
+      ].join("\n"),
+      extensions: [
+        markdown({ extensions: GFM }),
+        createLivePreviewCodeBlockField(createTranslator("ja"), { onRebuild })
+      ]
+    });
+    state = state.update({
+      effects: __codeBlockPreviewVisibleRangesEffectForTests.of([{ from: 0, to: state.doc.length }])
+    }).state;
+    const visibleRebuildCount = onRebuild.mock.calls.length;
+
+    state = state.update({
+      changes: { from: state.doc.length, insert: " text" }
+    }).state;
+
+    expect(onRebuild).toHaveBeenCalledTimes(visibleRebuildCount);
+
+    state = state.update({
+      changes: { from: state.doc.toString().indexOf("value"), insert: "\n" }
+    }).state;
+
+    expect(onRebuild.mock.calls.map(([reason]) => reason)).toEqual([
+      "create",
+      "visibleRanges",
+      "docChanged"
+    ]);
+  });
+
+  it("通常テキスト入力ではTable decorationを再構築せず表編集時だけ再構築する", () => {
+    const onRebuild = vi.fn();
+    let state = EditorState.create({
+      doc: [
+        "| A | B |",
+        "|---|---|",
+        "| 1 | 2 |",
+        "",
+        "plain"
+      ].join("\n"),
+      extensions: [
+        markdown({ extensions: GFM }),
+        createLivePreviewTableField(createTranslator("ja"), { onRebuild })
+      ]
+    });
+    state = state.update({
+      effects: __tablePreviewVisibleRangesEffectForTests.of([{ from: 0, to: state.doc.length }])
+    }).state;
+    const visibleRebuildCount = onRebuild.mock.calls.length;
+
+    state = state.update({
+      changes: { from: state.doc.length, insert: " text" }
+    }).state;
+
+    expect(onRebuild).toHaveBeenCalledTimes(visibleRebuildCount);
+
+    state = state.update({
+      changes: { from: state.doc.toString().indexOf("1"), insert: "10" }
+    }).state;
+
+    expect(onRebuild.mock.calls.map(([reason]) => reason)).toEqual([
+      "create",
+      "visibleRanges",
+      "docChanged"
+    ]);
   });
 });

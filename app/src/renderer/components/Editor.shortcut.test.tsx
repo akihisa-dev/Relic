@@ -2,8 +2,22 @@ import { EditorView } from "@codemirror/view";
 import { fireEvent } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
+import {
+  __markEditorCompositionEndedForTests,
+  __markEditorCompositionStartedForTests
+} from "../editorExtensions";
 import { isListInputEvent } from "../editorListInput";
 import { renderEditorWithView } from "./editorTestHelpers";
+
+function dispatchKeyboardEventWithReadOnlyValue(
+  target: Element,
+  property: "isComposing" | "keyCode",
+  value: boolean | number
+): void {
+  const event = new KeyboardEvent("keydown", { bubbles: true, cancelable: true, key: "Enter" });
+  Object.defineProperty(event, property, { value });
+  target.dispatchEvent(event);
+}
 
 describe("Editor shortcuts", () => {
   it("リスト行でEnterを押すと次の項目を作り、空項目ではリストを終了する", async () => {
@@ -73,5 +87,47 @@ describe("Editor shortcuts", () => {
     expect(isListInputEvent(imeProcessEvent, { composing: false } as EditorView)).toBe(false);
     expect(isListInputEvent(new KeyboardEvent("keydown", { key: "Enter" }), { composing: true } as EditorView)).toBe(false);
     expect(isListInputEvent(new KeyboardEvent("keydown", { key: "Enter" }), { composing: false, compositionStarted: true } as EditorView)).toBe(false);
+  });
+
+  it("compositionstart中はMarkdown list shortcutを実行せずcompositionend後は通常入力に戻る", async () => {
+    const { view } = await renderEditorWithView({
+      content: "- 日本語"
+    });
+    const contentElement = view.dom.querySelector(".cm-content")!;
+
+    view.dispatch({ selection: { anchor: view.state.doc.length } });
+    __markEditorCompositionStartedForTests(view);
+    fireEvent.keyDown(contentElement, { key: "Enter" });
+
+    expect(view.state.doc.toString()).toBe("- 日本語");
+
+    __markEditorCompositionEndedForTests(view);
+    fireEvent.keyDown(contentElement, { key: "Enter" });
+
+    expect(view.state.doc.toString()).toBe("- 日本語\n- ");
+  });
+
+  it("keyCode 229のEnterではリスト補完を実行しない", async () => {
+    const { view } = await renderEditorWithView({
+      content: "- item"
+    });
+    const contentElement = view.dom.querySelector(".cm-content")!;
+
+    view.dispatch({ selection: { anchor: view.state.doc.length } });
+    dispatchKeyboardEventWithReadOnlyValue(contentElement, "keyCode", 229);
+
+    expect(view.state.doc.toString()).toBe("- item");
+  });
+
+  it("event.isComposingのEnterではリスト補完を実行しない", async () => {
+    const { view } = await renderEditorWithView({
+      content: "- item"
+    });
+    const contentElement = view.dom.querySelector(".cm-content")!;
+
+    view.dispatch({ selection: { anchor: view.state.doc.length } });
+    dispatchKeyboardEventWithReadOnlyValue(contentElement, "isComposing", true);
+
+    expect(view.state.doc.toString()).toBe("- item");
   });
 });
