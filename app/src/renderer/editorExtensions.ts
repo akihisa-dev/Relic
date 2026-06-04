@@ -1,7 +1,7 @@
 import { autocompletion, type CompletionContext, type CompletionResult } from "@codemirror/autocomplete";
 import { defaultKeymap, historyKeymap, history } from "@codemirror/commands";
 import { markdown } from "@codemirror/lang-markdown";
-import { Compartment, EditorState, type Extension, type StateEffect } from "@codemirror/state";
+import { Compartment, EditorState, Prec, type Extension, type StateEffect } from "@codemirror/state";
 import { EditorView, ViewPlugin, highlightActiveLine, keymap, lineNumbers } from "@codemirror/view";
 import type { ViewUpdate } from "@codemirror/view";
 import { GFM } from "@lezer/markdown";
@@ -57,6 +57,23 @@ const fontFamilyMap: Record<EditorSettings["font"], string> = {
   system: '-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif'
 };
 const composingViews = new WeakSet<EditorView>();
+const compositionEndedViews = new WeakSet<EditorView>();
+
+function markEditorCompositionStarted(view: EditorView): void {
+  composingViews.add(view);
+  compositionEndedViews.delete(view);
+}
+
+function markEditorCompositionEnded(view: EditorView): void {
+  composingViews.delete(view);
+  compositionEndedViews.add(view);
+}
+
+/** @internal Test-only hook for IME composition quality gates. */
+export const __markEditorCompositionStartedForTests = markEditorCompositionStarted;
+
+/** @internal Test-only hook for IME composition quality gates. */
+export const __markEditorCompositionEndedForTests = markEditorCompositionEnded;
 const autocompleteCompartment = new Compartment();
 const contentAttributesCompartment = new Compartment();
 const editorThemeCompartment = new Compartment();
@@ -353,15 +370,17 @@ function buildAutocompleteExtension(
 
 function buildEventHandlersExtension(config: EditorExtensionConfig): Extension {
   return [
-    EditorView.domEventHandlers({
+    Prec.highest(EditorView.domEventHandlers({
       keydown: (event, view) => {
         if (
           composingViews.has(view) ||
-          view.compositionStarted ||
+          (view.compositionStarted && !compositionEndedViews.has(view)) ||
           event.isComposing ||
-          event.keyCode === 229 ||
-          !isListInputEvent(event, view)
+          event.keyCode === 229
         ) {
+          return true;
+        }
+        if (!isListInputEvent(event, view)) {
           return false;
         }
         if (event.key === "Enter" && handleMarkdownListEnter(view)) {
@@ -383,11 +402,11 @@ function buildEventHandlersExtension(config: EditorExtensionConfig): Extension {
         return false;
       },
       compositionstart: (_event, view) => {
-        composingViews.add(view);
+        markEditorCompositionStarted(view);
         return false;
       },
       compositionend: (_event, view) => {
-        composingViews.delete(view);
+        markEditorCompositionEnded(view);
         return false;
       },
       click: (event, view) => {
@@ -417,7 +436,7 @@ function buildEventHandlersExtension(config: EditorExtensionConfig): Extension {
         return false;
       },
       contextmenu: config.onContextMenu
-    }),
+    })),
     EditorView.updateListener.of((update) => {
       if (update.docChanged) config.onChangeRef.current!(update.state.doc.toString());
       if (update.selectionSet || update.docChanged) config.onSelectionChange(update.state);
