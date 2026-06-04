@@ -1,0 +1,849 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Relic Design System</title>
+  <style>
+    :root {
+      --primary: #3261a1;
+      --sub-blue: #6c8bb7;
+      --bg: #f2f1ee;
+      --surface: #e7e7e7;
+      --surface-alt: #dddedf;
+      --border: #c3c8ce;
+      --border-strong: #a4aebd;
+      --text: #232b36;
+      --text-secondary: #89909a;
+      --white: #ffffff;
+      --max: 1500px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+      letter-spacing: 0;
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      min-width: 320px;
+    }
+
+    body::before {
+      background:
+        linear-gradient(90deg, rgba(50, 97, 161, 0.04) 1px, transparent 1px),
+        linear-gradient(rgba(50, 97, 161, 0.035) 1px, transparent 1px);
+      background-size: 72px 72px;
+      content: "";
+      inset: 0;
+      pointer-events: none;
+      position: fixed;
+      z-index: -1;
+    }
+
+    a {
+      color: var(--primary);
+      text-decoration: none;
+    }
+
+    .page {
+      margin: 0 auto;
+      max-width: var(--max);
+      min-height: 100vh;
+      position: relative;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(260px, 330px) minmax(0, 1fr);
+      min-height: 620px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .brand-panel {
+      border-right: 1px solid var(--border-strong);
+      min-height: 620px;
+      padding: 54px 46px;
+      position: relative;
+    }
+
+    .brand-kicker,
+    .eyebrow,
+    .section-title,
+    .token-name,
+    .metric-value,
+    .flow-label {
+      color: var(--primary);
+      font-family: "Avenir Next Condensed", "Arial Narrow", Inter, sans-serif;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .brand-kicker {
+      font-size: 22px;
+      letter-spacing: 0.42em;
+    }
+
+    .brand-title {
+      color: var(--primary);
+      font-family: "Avenir Next Condensed", "Arial Narrow", Inter, sans-serif;
+      font-size: clamp(48px, 5vw, 74px);
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      line-height: 0.92;
+      margin: 10px 0 20px;
+      text-transform: uppercase;
+    }
+
+    .brand-subtitle {
+      color: var(--primary);
+      font-family: "Avenir Next Condensed", "Arial Narrow", Inter, sans-serif;
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: 0.22em;
+      line-height: 1.2;
+      text-transform: uppercase;
+    }
+
+    .rule {
+      background: var(--border-strong);
+      height: 1px;
+      margin: 34px 0 24px;
+      width: 100%;
+    }
+
+    .brand-copy {
+      font-size: 15px;
+      line-height: 1.9;
+      max-width: 230px;
+    }
+
+    .motif {
+      border: 2px solid var(--primary);
+      border-radius: 999px;
+      bottom: 118px;
+      height: 88px;
+      left: 62px;
+      position: absolute;
+      width: 88px;
+    }
+
+    .motif::before {
+      background: var(--primary);
+      content: "";
+      height: 2px;
+      left: -18px;
+      position: absolute;
+      top: 43px;
+      transform: rotate(-42deg);
+      width: 124px;
+    }
+
+    .motif::after {
+      background: var(--primary);
+      border-radius: 999px;
+      box-shadow: -92px 86px 0 var(--primary);
+      content: "";
+      height: 8px;
+      position: absolute;
+      right: -9px;
+      top: -7px;
+      width: 8px;
+    }
+
+    .triangle-left,
+    .triangle-right {
+      border-style: solid;
+      height: 0;
+      position: absolute;
+      width: 0;
+    }
+
+    .triangle-left {
+      border-color: transparent transparent var(--primary) transparent;
+      border-width: 0 0 170px 170px;
+      bottom: 0;
+      right: 0;
+    }
+
+    .triangle-right {
+      border-color: transparent transparent var(--primary) transparent;
+      border-width: 0 0 290px 290px;
+      bottom: 0;
+      right: 0;
+      z-index: 0;
+    }
+
+    .hero-content {
+      padding: 44px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-grid {
+      display: grid;
+      gap: 34px;
+      grid-template-columns: minmax(0, 1fr) minmax(300px, 0.9fr);
+    }
+
+    .statement {
+      border-bottom: 1px solid var(--border-strong);
+      padding-bottom: 28px;
+    }
+
+    .eyebrow {
+      align-items: center;
+      display: flex;
+      font-size: 18px;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .eyebrow::after,
+    .section-title::after {
+      background: var(--primary);
+      content: "";
+      flex: 1;
+      height: 1px;
+      opacity: 0.75;
+    }
+
+    .lead {
+      font-size: clamp(34px, 4.3vw, 62px);
+      font-weight: 850;
+      letter-spacing: -0.03em;
+      line-height: 1.04;
+      margin: 0 0 24px;
+      max-width: 760px;
+    }
+
+    .summary {
+      color: var(--text);
+      display: grid;
+      font-size: 15px;
+      gap: 14px;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      line-height: 1.75;
+    }
+
+    .summary-card,
+    .principle,
+    .panel,
+    .component-card,
+    .flow-card {
+      background: rgba(231, 231, 231, 0.78);
+      border: 1px solid var(--border);
+      border-radius: 0;
+    }
+
+    .summary-card {
+      min-height: 140px;
+      padding: 20px;
+    }
+
+    .summary-card b,
+    .avoid b {
+      color: var(--primary);
+      display: block;
+      font-family: "Avenir Next Condensed", "Arial Narrow", Inter, sans-serif;
+      font-size: 17px;
+      letter-spacing: 0.08em;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+    }
+
+    .palette {
+      padding-top: 22px;
+    }
+
+    .section-title {
+      align-items: center;
+      display: flex;
+      font-size: 18px;
+      gap: 16px;
+      margin: 0 0 24px;
+    }
+
+    .token-grid {
+      display: grid;
+      gap: 22px;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .token {
+      min-width: 0;
+    }
+
+    .swatch {
+      border: 1px solid var(--border);
+      height: 124px;
+      margin-bottom: 16px;
+    }
+
+    .token-meta {
+      align-items: end;
+      display: grid;
+      gap: 10px;
+      grid-template-columns: minmax(0, 1fr) auto;
+    }
+
+    .token-name {
+      font-size: 16px;
+      letter-spacing: 0.06em;
+    }
+
+    .token-jp,
+    .token-use,
+    .flow-note {
+      color: var(--text);
+      font-size: 13px;
+      line-height: 1.75;
+      margin-top: 8px;
+    }
+
+    .hex {
+      font-size: 14px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .mini-rule {
+      background: var(--border-strong);
+      height: 1px;
+      margin: 18px 0;
+    }
+
+    .main-content {
+      border-top: 1px solid var(--border-strong);
+      padding: 34px 44px 120px;
+      position: relative;
+    }
+
+    .content-grid {
+      display: grid;
+      gap: 34px;
+      grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+    }
+
+    .panel {
+      padding: 26px;
+    }
+
+    .principles {
+      display: grid;
+      gap: 18px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .principle {
+      padding: 18px;
+    }
+
+    .principle h3,
+    .component-card h3,
+    .flow-card h3,
+    .panel h3 {
+      color: var(--primary);
+      font-family: "Avenir Next Condensed", "Arial Narrow", Inter, sans-serif;
+      font-size: 20px;
+      letter-spacing: 0.08em;
+      margin: 0 0 10px;
+      text-transform: uppercase;
+    }
+
+    .principle p,
+    .panel p,
+    .component-card p,
+    .flow-card p {
+      font-size: 14px;
+      line-height: 1.75;
+      margin: 0;
+    }
+
+    .shape-grid {
+      display: grid;
+      gap: 14px;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      margin-top: 18px;
+    }
+
+    .shape {
+      align-items: center;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      display: flex;
+      font-size: 12px;
+      font-weight: 700;
+      justify-content: center;
+      min-height: 72px;
+      padding: 12px;
+      text-align: center;
+      text-transform: uppercase;
+    }
+
+    .shape.triangle {
+      clip-path: polygon(50% 0, 100% 100%, 0 100%);
+      color: var(--white);
+      background: var(--primary);
+      border: none;
+    }
+
+    .shape.circle {
+      background: transparent;
+      border: 2px solid var(--primary);
+      border-radius: 999px;
+      color: var(--primary);
+      min-height: 72px;
+    }
+
+    .layout-map {
+      display: grid;
+      gap: 0;
+      grid-template-columns: 64px 220px 190px minmax(260px, 1fr) 210px;
+      margin-top: 18px;
+      min-height: 210px;
+    }
+
+    .layout-cell {
+      align-items: center;
+      background: var(--surface);
+      border: 1px solid var(--border-strong);
+      border-left: 0;
+      display: flex;
+      flex-direction: column;
+      font-size: 13px;
+      font-weight: 700;
+      justify-content: center;
+      padding: 14px;
+      text-align: center;
+    }
+
+    .layout-cell:first-child {
+      border-left: 1px solid var(--border-strong);
+    }
+
+    .layout-cell strong {
+      color: var(--primary);
+      display: block;
+      font-family: "Avenir Next Condensed", "Arial Narrow", Inter, sans-serif;
+      font-size: 18px;
+      letter-spacing: 0.08em;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+    }
+
+    .component-grid,
+    .flow-grid {
+      display: grid;
+      gap: 18px;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      margin-top: 18px;
+    }
+
+    .component-card,
+    .flow-card {
+      padding: 18px;
+    }
+
+    .outline-sample {
+      display: grid;
+      gap: 0;
+      margin-top: 18px;
+    }
+
+    .outline-row {
+      align-items: center;
+      border-bottom: 1px solid var(--border-strong);
+      color: var(--primary);
+      display: grid;
+      font-family: "Avenir Next Condensed", "Arial Narrow", Inter, sans-serif;
+      font-size: 17px;
+      font-weight: 800;
+      gap: 14px;
+      grid-template-columns: 40px minmax(0, 1fr);
+      min-height: 58px;
+      text-transform: uppercase;
+    }
+
+    .outline-row span {
+      align-items: center;
+      background: var(--primary);
+      color: var(--white);
+      display: flex;
+      height: 34px;
+      justify-content: center;
+      width: 34px;
+    }
+
+    .typography-sample {
+      display: grid;
+      gap: 18px;
+      margin-top: 18px;
+    }
+
+    .type-card {
+      border-bottom: 1px solid var(--border-strong);
+      padding-bottom: 16px;
+    }
+
+    .type-card .big {
+      color: var(--primary);
+      font-family: "Avenir Next Condensed", "Arial Narrow", Inter, sans-serif;
+      font-size: 44px;
+      font-weight: 900;
+      letter-spacing: -0.03em;
+      line-height: 1;
+      text-transform: uppercase;
+    }
+
+    .type-card .label {
+      color: var(--primary);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .type-card .body {
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
+    .impression {
+      display: grid;
+      gap: 18px;
+      grid-template-columns: 1fr 1fr;
+      margin-top: 18px;
+    }
+
+    .impression ul,
+    .avoid ul {
+      line-height: 1.85;
+      margin: 0;
+      padding-left: 20px;
+    }
+
+    .quote {
+      background: var(--bg);
+      border: 1px solid var(--border-strong);
+      bottom: 0;
+      color: var(--primary);
+      font-family: "Avenir Next Condensed", "Arial Narrow", Inter, sans-serif;
+      font-size: 16px;
+      font-weight: 900;
+      left: 0;
+      letter-spacing: 0.08em;
+      line-height: 1.18;
+      padding: 20px 24px;
+      position: absolute;
+      text-transform: uppercase;
+      width: 230px;
+      z-index: 2;
+    }
+
+    .ratio {
+      align-items: center;
+      border-top: 1px solid var(--border-strong);
+      bottom: 0;
+      display: grid;
+      gap: 24px;
+      grid-template-columns: 220px minmax(0, 1fr);
+      height: 112px;
+      left: 230px;
+      padding: 0 44px;
+      position: absolute;
+      right: 0;
+    }
+
+    .ratio-title {
+      color: var(--primary);
+      font-family: "Avenir Next Condensed", "Arial Narrow", Inter, sans-serif;
+      font-weight: 900;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .bar {
+      border: 1px solid var(--border-strong);
+      display: flex;
+      height: 38px;
+    }
+
+    .bar div {
+      align-items: center;
+      border-right: 1px solid var(--border-strong);
+      display: flex;
+      font-size: 12px;
+      font-weight: 700;
+      justify-content: center;
+    }
+
+    .bar div:last-child {
+      border-right: 0;
+    }
+
+    @media (max-width: 1100px) {
+      .hero,
+      .hero-grid,
+      .content-grid,
+      .summary,
+      .impression {
+        grid-template-columns: 1fr;
+      }
+
+      .brand-panel {
+        border-bottom: 1px solid var(--border-strong);
+        border-right: 0;
+        min-height: 420px;
+      }
+
+      .token-grid,
+      .component-grid,
+      .flow-grid,
+      .principles {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .layout-map {
+        grid-template-columns: 1fr;
+      }
+
+      .layout-cell,
+      .layout-cell:first-child {
+        border: 1px solid var(--border-strong);
+        border-bottom: 0;
+      }
+
+      .layout-cell:last-child {
+        border-bottom: 1px solid var(--border-strong);
+      }
+    }
+
+    @media (max-width: 720px) {
+      .brand-panel,
+      .hero-content,
+      .main-content {
+        padding: 28px;
+      }
+
+      .token-grid,
+      .component-grid,
+      .flow-grid,
+      .principles,
+      .shape-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .ratio,
+      .quote {
+        display: none;
+      }
+
+      .main-content {
+        padding-bottom: 40px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="hero" aria-labelledby="page-title">
+      <aside class="brand-panel">
+        <div class="brand-kicker">Relic</div>
+        <h1 class="brand-title" id="page-title">Design<br>System</h1>
+        <div class="brand-subtitle">Visual Document</div>
+        <div class="rule"></div>
+        <p class="brand-copy">
+          Markdownを正本にするナレッジワーク向けアプリのための、構造・可読性・集中体験を重視したデザイン文書。
+        </p>
+        <div class="motif" aria-hidden="true"></div>
+        <div class="triangle-left" aria-hidden="true"></div>
+      </aside>
+
+      <div class="hero-content">
+        <section class="statement">
+          <div class="eyebrow">Overview</div>
+          <p class="lead">Text is structure. Interface is architecture.</p>
+          <div class="summary">
+            <div class="summary-card">
+              <b>Structure First</b>
+              情報の階層、関係性、状態を明確に伝えることを最優先する。
+            </div>
+            <div class="summary-card">
+              <b>Strong Typography</b>
+              サイズ、ウェイト、余白によって情報の優先順位を示す。
+            </div>
+            <div class="summary-card">
+              <b>Calm Technology</b>
+              未来的でありながら、過剰に派手ではない作業環境を作る。
+            </div>
+          </div>
+        </section>
+
+        <section class="palette" aria-labelledby="palette-title">
+          <h2 class="section-title" id="palette-title">Color Palette</h2>
+          <div class="token-grid">
+            <article class="token">
+              <div class="swatch" style="background:#3261A1"></div>
+              <div class="token-meta"><div><div class="token-name">Primary Blue</div><div class="token-jp">見出し / リンク / アイコン</div></div><div class="hex">#3261A1</div></div>
+              <div class="mini-rule"></div><div class="token-use">主要アクション、現在状態、情報構造の強い起点に使用する。</div>
+            </article>
+            <article class="token">
+              <div class="swatch" style="background:#6C8BB7"></div>
+              <div class="token-meta"><div><div class="token-name">Sub Blue</div><div class="token-jp">ホバー / 補助強調</div></div><div class="hex">#6C8BB7</div></div>
+              <div class="mini-rule"></div><div class="token-use">控えめな強調、境界の補助、サブラベルに使用する。</div>
+            </article>
+            <article class="token">
+              <div class="swatch" style="background:#F2F1EE"></div>
+              <div class="token-meta"><div><div class="token-name">Background</div><div class="token-jp">背景 / エディタ</div></div><div class="hex">#F2F1EE</div></div>
+              <div class="mini-rule"></div><div class="token-use">文章の読みやすさを優先する、温かみのある背景色。</div>
+            </article>
+            <article class="token">
+              <div class="swatch" style="background:#E7E7E7"></div>
+              <div class="token-meta"><div><div class="token-name">Surface</div><div class="token-jp">サイドバー / パネル</div></div><div class="hex">#E7E7E7</div></div>
+              <div class="mini-rule"></div><div class="token-use">サイドバー、ツールバー、パネル背景に使用する。</div>
+            </article>
+            <article class="token">
+              <div class="swatch" style="background:#DDDEDF"></div>
+              <div class="token-meta"><div><div class="token-name">Surface Alt</div><div class="token-jp">選択背景 / カード</div></div><div class="hex">#DDDEDF</div></div>
+              <div class="mini-rule"></div><div class="token-use">選択中の項目、カード、まとまりのある情報ブロックに使用する。</div>
+            </article>
+            <article class="token">
+              <div class="swatch" style="background:#232B36"></div>
+              <div class="token-meta"><div><div class="token-name">Primary Text</div><div class="token-jp">本文 / 重要テキスト</div></div><div class="hex">#232B36</div></div>
+              <div class="mini-rule"></div><div class="token-use">可読性の基準になるメインテキスト色。</div>
+            </article>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <section class="main-content">
+      <div class="content-grid">
+        <section class="panel">
+          <h2 class="section-title">Design Principles</h2>
+          <div class="principles">
+            <article class="principle"><h3>Structure First</h3><p>すべてのUI要素は、装飾よりも構造の表現を優先する。</p></article>
+            <article class="principle"><h3>Strong Typography</h3><p>タイポグラフィをUIの主要な表現手段として扱う。</p></article>
+            <article class="principle"><h3>Geometric Consistency</h3><p>直線、矩形、境界線、グリッドを基本要素にする。</p></article>
+            <article class="principle"><h3>Calm Technology</h3><p>知的で落ち着いた、長く使える作業環境を提供する。</p></article>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2 class="section-title">Visual Language</h2>
+          <p>装飾要素は機能的なレイアウトを補助する目的でのみ使用する。装飾が情報を上回ってはならない。</p>
+          <div class="shape-grid">
+            <div class="shape">Rectangle</div>
+            <div class="shape">Line / Grid</div>
+            <div class="shape triangle">Triangle Accent</div>
+            <div class="shape circle">Circular Motif</div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2 class="section-title">Typography</h2>
+          <div class="typography-sample">
+            <div class="type-card"><div class="big">01_PROJECT_OVERVIEW</div></div>
+            <div class="type-card"><div class="label">SECTION LABEL / 12PX / 700</div></div>
+            <div class="type-card"><div class="body">本文は14px、line-height 1.7を基本にする。色や装飾へ過度に依存せず、余白とウェイトで階層を作る。</div></div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2 class="section-title">Navigation</h2>
+          <p>選択状態は背景色だけに頼らず、左側インジケーターや番号付きアウトラインで情報構造を示す。</p>
+          <div class="outline-sample">
+            <div class="outline-row"><span>01</span>Overview</div>
+            <div class="outline-row"><span>02</span>Goals</div>
+            <div class="outline-row"><span>03</span>References</div>
+            <div class="outline-row"><span>04</span>Notes</div>
+          </div>
+        </section>
+
+        <section class="panel" style="grid-column:1 / -1">
+          <h2 class="section-title">Screen Structure</h2>
+          <p>左レール、プライマリサイドバー、Cowork用セカンダリサイドバー、タブ式メインエリア、右パネルを基本構造にする。</p>
+          <div class="layout-map" aria-label="Relic screen structure">
+            <div class="layout-cell"><strong>Rail</strong>入口</div>
+            <div class="layout-cell"><strong>Explorer</strong>ファイル / 検索</div>
+            <div class="layout-cell"><strong>Cowork</strong>AIチャット</div>
+            <div class="layout-cell"><strong>Editor</strong>Markdown / Panel / Chart</div>
+            <div class="layout-cell"><strong>Outline</strong>見出し / リンク</div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2 class="section-title">Components</h2>
+          <div class="component-grid">
+            <article class="component-card"><h3>Tabs</h3><p>明確な境界線を持ち、アクティブ状態は青色ラインで表現する。</p></article>
+            <article class="component-card"><h3>Tables</h3><p>グリッドを強調し、情報密度と読みやすさの両方を保つ。</p></article>
+            <article class="component-card"><h3>Buttons</h3><p>Primaryは青地に白文字、Secondaryは透明背景と境界線を基本にする。</p></article>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2 class="section-title">Navigation Flow</h2>
+          <div class="flow-grid">
+            <article class="flow-card"><h3>Startup</h3><p>前回ワークスペースIDが有効ならメイン画面へ。未登録なら初回設定ビューを表示する。</p></article>
+            <article class="flow-card"><h3>Open File</h3><p>ファイルサイドバーからMarkdownを開き、既存タブがあればそのタブをアクティブにする。</p></article>
+            <article class="flow-card"><h3>Split View</h3><p>左右2ペインで独立したタブ列を持ち、分割解除時はアクティブペインへ戻る。</p></article>
+          </div>
+        </section>
+
+        <section class="panel" style="grid-column:1 / -1">
+          <h2 class="section-title">Desired Impression</h2>
+          <div class="impression">
+            <div>
+              <h3>Target</h3>
+              <ul>
+                <li>Structured</li>
+                <li>Intelligent</li>
+                <li>Calm</li>
+                <li>Technical</li>
+                <li>Focused</li>
+                <li>Durable</li>
+                <li>Architectural</li>
+              </ul>
+            </div>
+            <div class="avoid">
+              <h3>Avoid</h3>
+              <ul>
+                <li>Playful</li>
+                <li>Organic</li>
+                <li>Decorative</li>
+                <li>Skeuomorphic</li>
+                <li>Overly Minimal</li>
+                <li>Consumer Social App</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div class="quote">TEXT<br>IS<br>STRUCTURE.<br>THINK<br>IS<br>FUTURE.</div>
+      <div class="ratio">
+        <div class="ratio-title">Color Ratio<br><span style="color:var(--text);font-size:13px;font-family:Inter,sans-serif;font-weight:600;letter-spacing:0;text-transform:none">参考比率</span></div>
+        <div class="bar" aria-label="Color ratio">
+          <div style="width:60%;background:#F2F1EE">60%</div>
+          <div style="width:20%;background:#E7E7E7">20%</div>
+          <div style="width:10%;background:#6C8BB7;color:white">10%</div>
+          <div style="width:5%;background:#3261A1;color:white">5%</div>
+          <div style="width:3%;background:#232B36;color:white">3%</div>
+          <div style="width:2%;background:#89909A;color:white">2%</div>
+        </div>
+      </div>
+      <div class="triangle-right" aria-hidden="true"></div>
+    </section>
+  </main>
+</body>
+</html>
