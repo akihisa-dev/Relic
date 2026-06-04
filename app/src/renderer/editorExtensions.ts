@@ -84,10 +84,17 @@ interface WikiCompletionCandidate {
   apply: string;
   label: string;
   normalizedTerms: string[];
-  searchTerms: string[];
+}
+
+interface WikiCompletionIndex {
+  contains: Map<string, WikiCompletionCandidate[]>;
+  exact: Map<string, WikiCompletionCandidate[]>;
+  prefix: Map<string, WikiCompletionCandidate[]>;
+  sortedCandidates: WikiCompletionCandidate[];
 }
 
 const maxWikiCompletionOptions = 80;
+const wikiCompletionIndexKeyLength = 2;
 
 function normalizeCompletionText(value: string): string {
   return value.normalize("NFKC").toLocaleLowerCase("ja");
@@ -101,10 +108,8 @@ function basenameWithoutMarkdownExtension(filePath: string): string {
   return filePath.split("/").at(-1)?.replace(/\.md$/i, "") ?? "";
 }
 
-function matchRank(candidate: WikiCompletionCandidate, query: string): number | null {
-  if (query === "") return 1;
-
-  const normalizedQuery = normalizeCompletionText(query);
+function matchNormalizedRank(candidate: WikiCompletionCandidate, normalizedQuery: string): number | null {
+  if (normalizedQuery === "") return 1;
   const terms = candidate.normalizedTerms;
 
   if (terms.some((term) => term === normalizedQuery)) return 0;
@@ -112,6 +117,116 @@ function matchRank(candidate: WikiCompletionCandidate, query: string): number | 
   if (terms.some((term) => term.includes(normalizedQuery))) return 2;
 
   return null;
+}
+
+function compareWikiCandidates(left: WikiCompletionCandidate, right: WikiCompletionCandidate): number {
+  return left.label.localeCompare(right.label, "ja", { numeric: true, sensitivity: "base" });
+}
+
+function wikiCompletionIndexKey(value: string): string {
+  return value.slice(0, Math.min(wikiCompletionIndexKeyLength, value.length));
+}
+
+function addIndexedCandidate(
+  map: Map<string, Set<WikiCompletionCandidate>>,
+  key: string,
+  candidate: WikiCompletionCandidate
+): void {
+  if (!key) return;
+  const existing = map.get(key);
+
+  if (existing) {
+    existing.add(candidate);
+    return;
+  }
+
+  map.set(key, new Set([candidate]));
+}
+
+function addContainsIndexTerms(
+  map: Map<string, Set<WikiCompletionCandidate>>,
+  term: string,
+  candidate: WikiCompletionCandidate
+): void {
+  const keys = new Set<string>();
+  const maxSize = Math.min(wikiCompletionIndexKeyLength, term.length);
+
+  for (let size = 1; size <= maxSize; size += 1) {
+    for (let start = 0; start <= term.length - size; start += 1) {
+      keys.add(term.slice(start, start + size));
+    }
+  }
+
+  for (const key of keys) addIndexedCandidate(map, key, candidate);
+}
+
+function finalizeWikiCompletionMap(
+  map: Map<string, Set<WikiCompletionCandidate>>
+): Map<string, WikiCompletionCandidate[]> {
+  return new Map(
+    Array.from(map.entries(), ([key, candidates]) => [
+      key,
+      Array.from(candidates).sort(compareWikiCandidates)
+    ])
+  );
+}
+
+function buildWikiCompletionIndex(candidates: WikiCompletionCandidate[]): WikiCompletionIndex {
+  const exact = new Map<string, Set<WikiCompletionCandidate>>();
+  const prefix = new Map<string, Set<WikiCompletionCandidate>>();
+  const contains = new Map<string, Set<WikiCompletionCandidate>>();
+
+  for (const candidate of candidates) {
+    for (const term of candidate.normalizedTerms) {
+      addIndexedCandidate(exact, term, candidate);
+      addIndexedCandidate(prefix, wikiCompletionIndexKey(term), candidate);
+      addContainsIndexTerms(contains, term, candidate);
+    }
+  }
+
+  return {
+    contains: finalizeWikiCompletionMap(contains),
+    exact: finalizeWikiCompletionMap(exact),
+    prefix: finalizeWikiCompletionMap(prefix),
+    sortedCandidates: candidates.toSorted(compareWikiCandidates)
+  };
+}
+
+function rankedWikiCompletionCandidates(
+  index: WikiCompletionIndex,
+  query: string
+): Array<WikiCompletionCandidate & { rank: number }> {
+  const normalizedQuery = normalizeCompletionText(query);
+
+  if (normalizedQuery === "") {
+    return index.sortedCandidates.slice(0, maxWikiCompletionOptions).map((candidate) => ({ ...candidate, rank: 1 }));
+  }
+
+  const ranked: Array<WikiCompletionCandidate & { rank: number }> = [];
+  const seen = new Set<WikiCompletionCandidate>();
+
+  function addCandidates(candidates: WikiCompletionCandidate[] | undefined): void {
+    if (!candidates) return;
+
+    for (const candidate of candidates) {
+      if (seen.has(candidate)) continue;
+
+      const rank = matchNormalizedRank(candidate, normalizedQuery);
+      if (rank === null) continue;
+
+      seen.add(candidate);
+      ranked.push({ ...candidate, rank });
+    }
+  }
+
+  addCandidates(index.exact.get(normalizedQuery));
+  addCandidates(index.prefix.get(wikiCompletionIndexKey(normalizedQuery)));
+
+  if (ranked.length < maxWikiCompletionOptions) {
+    addCandidates(index.contains.get(wikiCompletionIndexKey(normalizedQuery)));
+  }
+
+  return ranked.toSorted((a, b) => a.rank - b.rank || compareWikiCandidates(a, b));
 }
 
 function buildWikiCompletionCandidates(allFilePaths: string[], aliasCandidates: string[]): WikiCompletionCandidate[] {
@@ -135,8 +250,7 @@ function buildWikiCompletionCandidates(allFilePaths: string[], aliasCandidates: 
       candidates.push({
         apply: `${basename}]]`,
         label: basename,
-        normalizedTerms: [basename, pathLabel].map(normalizeCompletionText),
-        searchTerms: [basename, pathLabel]
+        normalizedTerms: [basename, pathLabel].map(normalizeCompletionText)
       });
     } else {
       for (const filePath of paths) {
@@ -144,8 +258,7 @@ function buildWikiCompletionCandidates(allFilePaths: string[], aliasCandidates: 
         candidates.push({
           apply: `${label}]]`,
           label,
-          normalizedTerms: [basename, label].map(normalizeCompletionText),
-          searchTerms: [basename, label]
+          normalizedTerms: [basename, label].map(normalizeCompletionText)
         });
       }
     }
@@ -157,8 +270,7 @@ function buildWikiCompletionCandidates(allFilePaths: string[], aliasCandidates: 
     candidates.push({
       apply: `${trimmed}]]`,
       label: trimmed,
-      normalizedTerms: [trimmed].map(normalizeCompletionText),
-      searchTerms: [trimmed]
+      normalizedTerms: [trimmed].map(normalizeCompletionText)
     });
   }
 
@@ -169,7 +281,7 @@ export function buildWikiLinkCompletionSource(
   allFilePaths: string[],
   frontmatterCandidates: Record<string, string[]> = {}
 ) {
-  const candidates = buildWikiCompletionCandidates(allFilePaths, frontmatterCandidates.aliases ?? []);
+  const index = buildWikiCompletionIndex(buildWikiCompletionCandidates(allFilePaths, frontmatterCandidates.aliases ?? []));
 
   return (context: CompletionContext): CompletionResult | null => {
     const before = context.matchBefore(/\[\[([^\]\n]*)$/);
@@ -177,17 +289,7 @@ export function buildWikiLinkCompletionSource(
     if (!before || (!context.explicit && before.text === "[[")) return null;
 
     const query = before.text.slice(2);
-    const ranked: Array<WikiCompletionCandidate & { rank: number }> = [];
-
-    for (const candidate of candidates) {
-      const rank = matchRank(candidate, query);
-      if (rank !== null) ranked.push({ ...candidate, rank });
-    }
-
-    ranked.sort((a, b) => (
-      a.rank - b.rank ||
-      a.label.localeCompare(b.label, "ja", { numeric: true, sensitivity: "base" })
-    ));
+    const ranked = rankedWikiCompletionCandidates(index, query);
 
     return {
       filter: false,

@@ -5,6 +5,7 @@ import type { EditorView } from "@codemirror/view";
 
 import { defaultEditorSettings } from "../../shared/ipc";
 import { I18nProvider } from "../i18n";
+import { largeMarkdownMaxContentBytes } from "../largeMarkdown";
 import { useEditorStore, type PaneState, type Tab } from "../store/editorStore";
 import { PaneView, type PaneViewProps } from "./PaneView";
 
@@ -71,6 +72,7 @@ function renderPaneView(overrides: Partial<PaneViewProps> = {}): PaneViewProps {
     workspacePath: "/workspace",
     onCreateFile: vi.fn(),
     onFileSaved: vi.fn(),
+    onLargeMarkdownFallback: vi.fn(),
     onFocus: vi.fn(),
     onOpenLink: vi.fn(),
     onOpenWikiLink: vi.fn(),
@@ -146,7 +148,33 @@ describe("PaneView", () => {
     expect(screen.getByText("Editable body")).toBeInTheDocument();
   });
 
-  it("大きいMarkdownは通知を出して一時的にソース表示で開く", async () => {
+  it("1MiBを超えるMarkdownは通知を出して一時的にソース表示で開く", async () => {
+    const content = `**large**\n${"a".repeat(largeMarkdownMaxContentBytes)}`;
+
+    setPaneState(
+      {
+        [fileTab.id]: {
+          ...fileTab,
+          content,
+          savedContent: content
+        }
+      },
+      { activeTabId: fileTab.id, history: [fileTab.id], tabIds: [fileTab.id] }
+    );
+
+    const props = renderPaneView({
+      editorSettings: { ...defaultEditorSettings, showLineNumbers: false },
+      sourceMode: false
+    });
+
+    expect(screen.getByText("Live preview is paused for this large Markdown file.")).toBeInTheDocument();
+    await waitFor(() => expect(props.viewRef.current).not.toBeNull());
+    expect(document.querySelector(".cm-live-bold")).toBeNull();
+    expect(props.sourceMode).toBe(false);
+    await waitFor(() => expect(props.onLargeMarkdownFallback).toHaveBeenCalledWith("Note", "Folder/Note.md"));
+  });
+
+  it("80,000文字を超える行のMarkdownも一時的にソース表示で開く", async () => {
     setPaneState(
       {
         [fileTab.id]: {
@@ -166,5 +194,26 @@ describe("PaneView", () => {
     expect(screen.getByText("Live preview is paused for this large Markdown file.")).toBeInTheDocument();
     await waitFor(() => expect(props.viewRef.current).not.toBeNull());
     expect(document.querySelector(".cm-live-bold")).toBeNull();
+    await waitFor(() => expect(props.onLargeMarkdownFallback).toHaveBeenCalledTimes(1));
+  });
+
+  it("通常サイズのMarkdownはライブプレビューのまま開き、fallback通知を出さない", async () => {
+    setPaneState(
+      {
+        [fileTab.id]: {
+          ...fileTab,
+          content: "**normal**",
+          savedContent: "**normal**"
+        }
+      },
+      { activeTabId: fileTab.id, history: [fileTab.id], tabIds: [fileTab.id] }
+    );
+
+    const props = renderPaneView({ sourceMode: false });
+
+    expect(screen.queryByText("Live preview is paused for this large Markdown file.")).not.toBeInTheDocument();
+    await waitFor(() => expect(document.querySelector(".cm-live-bold")).not.toBeNull());
+    expect(props.sourceMode).toBe(false);
+    expect(props.onLargeMarkdownFallback).not.toHaveBeenCalled();
   });
 });

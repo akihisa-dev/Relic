@@ -61,4 +61,23 @@ describe("buildWikiLinkCompletionSource", () => {
     expect(result?.options.map((option) => option.label)).toContain("大量候補09979");
     expect(result?.options.map((option) => option.label)).not.toContain("大量候補09899");
   });
+
+  it("大量ファイル補完のcontains一致も索引経由で日本語候補を返す", () => {
+    const filePaths = Array.from({ length: 10_000 }, (_, index) => `notes/大量候補${String(index).padStart(5, "0")}.md`);
+    const result = complete("[[0997", filePaths);
+
+    expect(result?.options.length).toBeLessThanOrEqual(80);
+    expect(result?.options.map((option) => option.label)).toContain("大量候補09970");
+    expect(result?.options.map((option) => option.label)).toContain("大量候補09979");
+    expect(result?.options.map((option) => option.label)).not.toContain("大量候補09899");
+  });
+
+  it("NFKC正規化した英数字でもWikiリンク候補を返す", () => {
+    const result = complete("[[abc", [
+      "資料/ＡＢＣ計画.md",
+      "資料/ABD計画.md"
+    ]);
+
+    expect(result?.options.map((option) => option.label)).toEqual(["ＡＢＣ計画"]);
+  });
 });

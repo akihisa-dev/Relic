@@ -38,6 +38,11 @@ interface FencedCodeBlockRange extends SyntaxBlockRange {
   language: string | null;
 }
 
+interface CodeBlockPreviewState {
+  decorations: DecorationSet;
+  revealedRanges: SyntaxBlockRange[];
+}
+
 function sortedUniqueRanges<T extends SyntaxBlockRange>(ranges: T[]): T[] {
   return Array.from(new Map(ranges.map((range) => [`${range.from}:${range.to}`, range])).values())
     .toSorted((a, b) => a.from - b.from || a.to - b.to);
@@ -91,8 +96,9 @@ function blockSource(doc: Text, block: SyntaxBlockRange): string {
   return doc.sliceString(doc.line(startLine + 1).from, doc.line(endLine - 1).to);
 }
 
-function buildCodeBlockPreviewDecorations(state: EditorState, t: Translator): DecorationSet {
+function buildCodeBlockPreviewDecorations(state: EditorState, t: Translator): CodeBlockPreviewState {
   const ranges: { from: number; to: number; deco: Decoration }[] = [];
+  const revealedRanges: SyntaxBlockRange[] = [];
   const doc = state.doc;
   const codeBlocks = fencedCodeBlocksInVisibleRanges(state, [{ from: 0, to: state.doc.length }]);
 
@@ -104,7 +110,11 @@ function buildCodeBlockPreviewDecorations(state: EditorState, t: Translator): De
   }
 
   for (const block of codeBlocks) {
-    if (diagramLanguageFor(block.language) || selectionTouches(block.from, block.to)) continue;
+    if (diagramLanguageFor(block.language)) continue;
+    if (selectionTouches(block.from, block.to)) {
+      revealedRanges.push({ from: block.from, to: block.to });
+      continue;
+    }
 
     ranges.push({
       from: block.from,
@@ -116,7 +126,10 @@ function buildCodeBlockPreviewDecorations(state: EditorState, t: Translator): De
     });
   }
 
-  return Decoration.set(ranges.map((range) => range.deco.range(range.from, range.to)), true);
+  return {
+    decorations: Decoration.set(ranges.map((range) => range.deco.range(range.from, range.to)), true),
+    revealedRanges
+  };
 }
 
 function changedTextIncludes(changes: ChangeSet, doc: Text, pattern: RegExp): boolean {
@@ -149,19 +162,61 @@ function canMapCodeBlockDecorations(transaction: Transaction, decorations: Decor
   return !changedTextIncludes(transaction.changes, transaction.state.doc, /[`$\n]/);
 }
 
+function mapSyntaxBlockRanges(changes: ChangeSet, ranges: SyntaxBlockRange[]): SyntaxBlockRange[] {
+  return ranges.map((range) => ({
+    from: changes.mapPos(range.from),
+    to: changes.mapPos(range.to)
+  }));
+}
+
+function selectionTouchesRanges(state: EditorState, ranges: readonly SyntaxBlockRange[]): boolean {
+  return state.selection.ranges.some((selection) => ranges.some((range) => {
+    if (selection.empty) return selection.from >= range.from && selection.from <= range.to;
+    return selection.from <= range.to && selection.to >= range.from;
+  }));
+}
+
+function selectionTouchesDecorations(state: EditorState, decorations: DecorationSet): boolean {
+  let touches = false;
+
+  for (const selection of state.selection.ranges) {
+    decorations.between(selection.from, selection.empty ? selection.from + 1 : selection.to, () => {
+      touches = true;
+    });
+    if (touches) break;
+  }
+
+  return touches;
+}
+
+function shouldRebuildCodeBlockDecorationsForSelection(state: EditorState, preview: CodeBlockPreviewState): boolean {
+  if (selectionTouchesDecorations(state, preview.decorations)) return true;
+  if (preview.revealedRanges.length === 0) return false;
+  return !selectionTouchesRanges(state, preview.revealedRanges);
+}
+
 export function createLivePreviewCodeBlockField(t: Translator = createTranslator("system")) {
-  return StateField.define<DecorationSet>({
+  return StateField.define<CodeBlockPreviewState>({
     create: (state) => buildCodeBlockPreviewDecorations(state, t),
-    update: (decorations, transaction) => (
-      transaction.docChanged
-        ? canMapCodeBlockDecorations(transaction, decorations)
-          ? decorations.map(transaction.changes)
-          : buildCodeBlockPreviewDecorations(transaction.state, t)
-        : transaction.selection
-        ? buildCodeBlockPreviewDecorations(transaction.state, t)
-        : decorations
-    ),
-    provide: (field) => EditorView.decorations.from(field)
+    update: (preview, transaction) => {
+      if (transaction.docChanged) {
+        if (canMapCodeBlockDecorations(transaction, preview.decorations)) {
+          return {
+            decorations: preview.decorations.map(transaction.changes),
+            revealedRanges: mapSyntaxBlockRanges(transaction.changes, preview.revealedRanges)
+          };
+        }
+
+        return buildCodeBlockPreviewDecorations(transaction.state, t);
+      }
+
+      if (transaction.selection && shouldRebuildCodeBlockDecorationsForSelection(transaction.state, preview)) {
+        return buildCodeBlockPreviewDecorations(transaction.state, t);
+      }
+
+      return preview;
+    },
+    provide: (field) => EditorView.decorations.from(field, (preview) => preview.decorations)
   });
 }
 

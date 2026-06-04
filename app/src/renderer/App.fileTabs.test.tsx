@@ -119,6 +119,34 @@ describe("App file tabs", () => {
     expect(await screen.findByText("読書メモ", { selector: ".pane-tab-name" })).toBeInTheDocument();
   });
 
+  it("大きいMarkdownを開くと性能優先のソース表示をtoastで通知する", async () => {
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [{ name: "大容量メモ", path: "大容量メモ.md", type: "file" }]
+        }
+      }),
+      readMarkdownFile: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          content: `**large**\n${"a".repeat(80_001)}`,
+          name: "大容量メモ",
+          path: "大容量メモ.md"
+        }
+      })
+    });
+
+    await renderApp();
+
+    fireEvent.click(await screen.findByRole("button", { name: /大容量メモ/ }));
+
+    expect(await screen.findByText("大容量メモ は大きいMarkdownのため、性能優先でソース表示にしました。")).toHaveClass("toast--info");
+    expect(screen.getByText("大きいMarkdownのため、ライブプレビューを一時停止中です。")).toBeInTheDocument();
+    expect(document.querySelector(".cm-live-bold")).toBeNull();
+  });
+
   it("タブの右クリックメニューから複製・ピン留め・コピー・場所表示を実行する", async () => {
     const duplicateMarkdownFile = vi.fn().mockResolvedValue({
       ok: true,

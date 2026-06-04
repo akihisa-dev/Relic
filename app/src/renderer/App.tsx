@@ -143,6 +143,9 @@ export function App(): ReactElement {
   }, [isWorkspaceRenameActive, toggleSidebarState]);
 
   const t = useMemo(() => createTranslator(editorSettings.language), [editorSettings.language]);
+  const handleLargeMarkdownFallback = useCallback((name: string) => {
+    showToast(t("pane.largeMarkdownToast", { name }), "info");
+  }, [showToast, t]);
   const {
     aiSettings,
     aiSettingsStatus,
@@ -590,6 +593,7 @@ export function App(): ReactElement {
     handleDuplicateTabFile,
     handleDuplicateTreeFile,
     handleFileSaved,
+    handleLargeMarkdownFallback,
     handleMoveFile,
     handleMoveFolder,
     handleMoveTreeItems,
