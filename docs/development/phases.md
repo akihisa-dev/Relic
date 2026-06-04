@@ -56,7 +56,7 @@ checklist: phases/P11.md
 | P8 | UI・ビジュアルデザイン | done | `phases/P8.md` |
 | P9 | 全リファクタリング | done | `phases/P9.md` |
 | P10 | 機能改善・追加・小規模修正 | done | `phases/P10.md` |
-| P11 | マークダウンエディタ改善 | current | `phases/P11.md`, 必要に応じて `../project/overview.md`, `../features/`, `../design/screens.md`, `../design/navigation.md`, `../design/system.md`, `../engineering/architecture.md`, `../engineering/data-model.md`, `../engineering/decisions.md`, `coding-rules.md`, `testing-rules.md`, `questions.md` |
+| P11 | マークダウンエディタ改善 | current | `phases/P11.md`, 必要に応じて `../project/overview.md`, `../features/`, `../design/DESIGN.md`, `../engineering/architecture.md`, `../engineering/data-model.md`, `../engineering/decisions.md`, `coding-rules.md`, `testing-rules.md`, `questions.md` |
 
 ---
 
