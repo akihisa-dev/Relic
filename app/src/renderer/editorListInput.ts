@@ -101,7 +101,7 @@ export function moveSelectedLines(view: EditorView, direction: 1 | -1): boolean 
 }
 
 export function isListInputEvent(event: KeyboardEvent, view: EditorView): boolean {
-  if (event.isComposing || event.keyCode === 229 || view.composing) return false;
+  if (event.isComposing || event.keyCode === 229 || view.composing || view.compositionStarted) return false;
   const target = event.target;
   if (target instanceof HTMLElement && target.closest(".cm-live-table")) return false;
   return true;

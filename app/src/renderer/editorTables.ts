@@ -1,5 +1,5 @@
 import { syntaxTree } from "@codemirror/language";
-import { StateField, type EditorState } from "@codemirror/state";
+import { ChangeSet, StateField, type EditorState, type Text, type Transaction } from "@codemirror/state";
 import { Decoration, EditorView, type DecorationSet } from "@codemirror/view";
 
 import { findTableBlocks } from "./editorTableModel";
@@ -99,11 +99,45 @@ function buildSyntaxTableDecorations(state: EditorState, t: Translator): Decorat
   );
 }
 
+function changedTextIncludes(changes: ChangeSet, doc: Text, pattern: RegExp): boolean {
+  let includes = false;
+
+  changes.iterChanges((_fromA, _toA, fromB, toB) => {
+    if (includes || fromB === toB) return;
+    includes = pattern.test(doc.sliceString(fromB, toB));
+  });
+
+  return includes;
+}
+
+function changesTouchDecorations(changes: ChangeSet, decorations: DecorationSet): boolean {
+  let touches = false;
+
+  changes.iterChangedRanges((fromA, toA) => {
+    if (touches) return;
+    decorations.between(Math.max(0, fromA - 1), Math.max(fromA + 1, toA), () => {
+      touches = true;
+    });
+  });
+
+  return touches;
+}
+
+function canMapTableDecorations(transaction: Transaction, decorations: DecorationSet): boolean {
+  if (!transaction.docChanged) return true;
+  if (changesTouchDecorations(transaction.changes, decorations)) return false;
+  return !changedTextIncludes(transaction.changes, transaction.state.doc, /[|:\-\n]/);
+}
+
 export function createLivePreviewTableField(t: Translator) {
   return StateField.define<DecorationSet>({
     create: (state) => buildSyntaxTableDecorations(state, t),
     update: (decorations, transaction) => (
-      transaction.docChanged ? buildSyntaxTableDecorations(transaction.state, t) : decorations
+      transaction.docChanged
+        ? canMapTableDecorations(transaction, decorations)
+          ? decorations.map(transaction.changes)
+          : buildSyntaxTableDecorations(transaction.state, t)
+        : decorations
     ),
     provide: (field) => EditorView.decorations.from(field)
   });
