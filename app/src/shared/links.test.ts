@@ -93,6 +93,7 @@ describe("resolveMarkdownLinkPath", () => {
 
   it("外部URLはワークスペース内リンクとして扱わない", () => {
     expect(resolveMarkdownLinkPath("https://example.com", "source.md")).toBeNull();
+    expect(resolveMarkdownLinkPath("//example.com/note", "source.md")).toBeNull();
   });
 });
 

@@ -63,14 +63,21 @@ describe("previewMarkdown", () => {
   });
 
   it("file URLをリンク先として残さない", () => {
-    const html = renderMarkdown("[local](file:///Users/example/secret.md)", null, new Map(), true, t);
+    const html = renderMarkdown(
+      "[local](file:///Users/example/secret.md)\n[protocol-relative](//example.com/note)",
+      null,
+      new Map(),
+      true,
+      t
+    );
 
     const document = new DOMParser().parseFromString(html, "text/html");
-    const link = document.querySelector("a");
 
-    expect(link).toBeNull();
+    expect(document.querySelector("a")).toBeNull();
     expect(html).toContain("local");
+    expect(html).toContain("protocol-relative");
     expect(html).not.toContain("file:");
+    expect(html).not.toContain("//example.com");
   });
 
   it("mermaidコードブロックをDiagram表示用HTMLとして残す", () => {

@@ -219,6 +219,24 @@ describe("outputHandlers", () => {
     expect(fsMock.writeFile).not.toHaveBeenCalledWith("/tmp/diagram.svg", expect.anything(), expect.anything());
   });
 
+  it("SVG保存前にmain側でも危険なSVG要素を除去する", async () => {
+    electronMock.showSaveDialog.mockResolvedValue({ canceled: false, filePath: "/tmp/diagram.svg" });
+    registerOutputHandlers();
+
+    const result = await handlerFor(saveDiagramSvgChannel)({ sender: {} }, {
+      defaultFileName: "Note-diagram-1-mermaid",
+      language: "mermaid",
+      svg: '<svg><script>alert(1)</script><path onclick="alert(1)" href="javascript:alert(1)" d="M0 0" /></svg>'
+    });
+
+    expect(result).toEqual({ ok: true, value: { filePath: "/tmp/diagram.svg", status: "saved" } });
+    expect(fsMock.writeFile).toHaveBeenCalledWith(
+      expect.stringMatching(/\/tmp\/\.diagram\.svg\..+\.tmp$/),
+      '<svg><path d="M0 0" /></svg>',
+      "utf8"
+    );
+  });
+
   it("SVG保存の初期ファイル名がドットだけの場合はSVG用の既定名へ戻す", async () => {
     electronMock.showSaveDialog.mockResolvedValue({ canceled: true, filePath: "" });
     registerOutputHandlers();
@@ -249,6 +267,18 @@ describe("outputHandlers", () => {
       error: expect.objectContaining({ code: "OUTPUT_SVG_EMPTY" })
     });
     expect(electronMock.clipboardWriteText).not.toHaveBeenCalled();
+  });
+
+  it("SVGコピー前にmain側でも危険なSVG要素を除去する", async () => {
+    registerOutputHandlers();
+
+    const result = await handlerFor(copyDiagramSvgChannel)({ sender: {} }, {
+      language: "d2",
+      svg: "<svg><foreignObject><div>unsafe</div></foreignObject><text onload=\"alert(1)\">safe</text><a href=javascript:alert(1)>link</a></svg>"
+    });
+
+    expect(result).toEqual({ ok: true, value: { status: "copied" } });
+    expect(electronMock.clipboardWriteText).toHaveBeenCalledWith("<svg><text>safe</text><a>link</a></svg>");
   });
 
   it("印刷時は一時PDFをChromiumのPDFプレビューとして開く", async () => {
