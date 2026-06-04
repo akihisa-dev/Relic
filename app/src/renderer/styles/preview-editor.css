@@ -648,6 +648,39 @@
 }
 .cm-live-highlight { background: var(--highlight); border-radius: 2px; }
 
+.cm-live-math-inline {
+  display: inline-block;
+  line-height: 1.2;
+  padding: 0 0.08em;
+  vertical-align: -0.05em;
+}
+
+.cm-live-math-block {
+  box-sizing: border-box;
+  display: block;
+  margin: 0.65em 0;
+  overflow-x: auto;
+  padding: 0.45em 0.75em;
+  text-align: center;
+  width: 100%;
+}
+
+.cm-live-footnote-ref {
+  color: var(--link);
+  font-size: 0.78em;
+  font-weight: 650;
+  padding: 0 0.08em;
+  vertical-align: super;
+}
+
+.cm-live-footnote-def {
+  color: var(--link);
+  display: inline-block;
+  font-weight: 650;
+  margin-right: 0.5em;
+  min-width: 1.6em;
+}
+
 .cm-context-selection-highlight {
   background: var(--highlight);
   border-radius: 2px;

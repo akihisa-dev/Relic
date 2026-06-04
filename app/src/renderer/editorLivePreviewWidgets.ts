@@ -1,6 +1,8 @@
 import { WidgetType } from "@codemirror/view";
+import katex from "katex";
 
 import { writeEditorClipboardText } from "./editorClipboard";
+import { sanitizePreviewHtml } from "./htmlSanitizer";
 import type { Translator } from "./i18nModel";
 
 function stopWidgetButtonEvent(event: Event): void {
@@ -38,7 +40,7 @@ export class ListMarkerWidget extends WidgetType {
 
 export class InlineFormatWidget extends WidgetType {
   constructor(
-    private readonly tagName: "span" | "strong" | "em" | "code" | "a" | "u",
+    private readonly tagName: "span" | "strong" | "em" | "code" | "a" | "u" | "sup",
     private readonly text: string,
     private readonly className: string,
     private readonly onClick?: () => void
@@ -88,6 +90,62 @@ export class InlineFormatWidget extends WidgetType {
 
   override ignoreEvent(event: Event): boolean {
     return Boolean(this.onClick && ["click", "mousedown", "pointerdown"].includes(event.type));
+  }
+}
+
+function renderMathHtml(source: string, displayMode: boolean): string {
+  try {
+    return sanitizePreviewHtml(katex.renderToString(source, { displayMode, throwOnError: false }));
+  } catch {
+    const escaped = source
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+    return `<span class="math-error">${escaped}</span>`;
+  }
+}
+
+export class MathWidget extends WidgetType {
+  readonly className: string;
+
+  constructor(
+    private readonly source: string,
+    private readonly displayMode: boolean
+  ) {
+    super();
+    this.className = displayMode ? "cm-live-math-block" : "cm-live-math-inline";
+  }
+
+  override eq(other: MathWidget): boolean {
+    return this.source === other.source && this.displayMode === other.displayMode;
+  }
+
+  override toDOM(): HTMLElement {
+    const element = document.createElement(this.displayMode ? "div" : "span");
+    element.className = this.className;
+    element.innerHTML = renderMathHtml(this.source, this.displayMode);
+    return element;
+  }
+}
+
+export class FootnoteDefinitionMarkerWidget extends WidgetType {
+  readonly className = "cm-live-footnote-def";
+
+  constructor(private readonly id: string) {
+    super();
+  }
+
+  override eq(other: FootnoteDefinitionMarkerWidget): boolean {
+    return this.id === other.id;
+  }
+
+  override toDOM(): HTMLElement {
+    const element = document.createElement("span");
+    element.className = this.className;
+    const marker = document.createElement("sup");
+    marker.textContent = this.id;
+    element.append(marker);
+    return element;
   }
 }
 

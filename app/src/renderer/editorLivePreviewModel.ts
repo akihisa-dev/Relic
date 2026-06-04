@@ -6,6 +6,7 @@ export interface SourceRevealRange {
 }
 
 export interface InlineMatch {
+  content?: string;
   from: number;
   to: number;
   contentFrom: number;
@@ -160,6 +161,35 @@ export function collectInlineMatches(lineFrom: number, text: string): InlineMatc
     };
   }));
 
+  matches.push(...collectRegexMatches(text, /\[\^([^\]\n]+)\]/g, (match) => {
+    const from = lineFrom + match.index;
+    const to = from + match[0].length;
+    return {
+      content: match[1],
+      from,
+      to,
+      contentFrom: from + 2,
+      contentTo: to - 1,
+      className: "cm-live-footnote-ref",
+      hideRanges: [{ from, to: from + 2 }, { from: to - 1, to }]
+    };
+  }));
+
+  matches.push(...collectRegexMatches(text, /(^|[^\$\\])\$([^$\n]+)\$(?!\$)/g, (match) => {
+    const markerOffset = match[1].length;
+    const from = lineFrom + match.index + markerOffset;
+    const to = from + match[0].length - markerOffset;
+    return {
+      content: match[2],
+      from,
+      to,
+      contentFrom: from + 1,
+      contentTo: to - 1,
+      className: "cm-live-math-inline",
+      hideRanges: [{ from, to: from + 1 }, { from: to - 1, to }]
+    };
+  }));
+
   matches.push(...collectRegexMatches(text, /(^|[^\*])\*([^*\n]+)\*(?!\*)/g, (match) => {
     const markerOffset = match[1].length;
     const from = lineFrom + match.index + markerOffset;
@@ -197,11 +227,12 @@ export function collectInlineMatches(lineFrom: number, text: string): InlineMatc
   });
 }
 
-export function tagNameForInlineMatch(className: string): "span" | "strong" | "em" | "code" | "a" | "u" {
+export function tagNameForInlineMatch(className: string): "span" | "strong" | "em" | "code" | "a" | "u" | "sup" {
   if (className === "cm-live-bold") return "strong";
   if (className === "cm-live-italic") return "em";
   if (className === "cm-live-code") return "code";
   if (className === "cm-live-underline") return "u";
+  if (className === "cm-live-footnote-ref") return "sup";
   return "span";
 }
 

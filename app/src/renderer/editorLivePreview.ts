@@ -1,4 +1,5 @@
-import { StateField, type EditorState } from "@codemirror/state";
+import { syntaxTree } from "@codemirror/language";
+import { StateField, type EditorState, type Text } from "@codemirror/state";
 import { Decoration, EditorView, WidgetType } from "@codemirror/view";
 import type { DecorationSet } from "@codemirror/view";
 
@@ -16,20 +17,84 @@ import { DiagramBlockWidget } from "./editorDiagramLivePreview";
 import {
   CheckboxWidget,
   CodeBlockWidget,
+  FootnoteDefinitionMarkerWidget,
   HorizontalRuleWidget,
   InlineFormatWidget,
-  ListMarkerWidget
+  ListMarkerWidget,
+  MathWidget
 } from "./editorLivePreviewWidgets";
-import { findTableBlocks } from "./editorTables";
 import { diagramLanguageFor } from "./diagramLanguage";
 import { createTranslator, type Translator } from "./i18nModel";
-import { isClosingBacktickFence, parseBacktickOpeningFence } from "./markdownCodeFence";
+import { parseBacktickOpeningFence } from "./markdownCodeFence";
 
 export { findClickableLinkAtPosition, type ClickableLinkAtPosition } from "./editorLivePreviewModel";
+
+interface SyntaxBlockRange {
+  from: number;
+  to: number;
+}
+
+interface FencedCodeBlockRange extends SyntaxBlockRange {
+  language: string | null;
+}
+
+function sortedUniqueRanges<T extends SyntaxBlockRange>(ranges: T[]): T[] {
+  return Array.from(new Map(ranges.map((range) => [`${range.from}:${range.to}`, range])).values())
+    .toSorted((a, b) => a.from - b.from || a.to - b.to);
+}
+
+function syntaxBlocksInVisibleRanges(
+  state: EditorState,
+  visibleRanges: readonly SyntaxBlockRange[],
+  nodeName: "FencedCode" | "Table"
+): SyntaxBlockRange[] {
+  const ranges: SyntaxBlockRange[] = [];
+  const tree = syntaxTree(state);
+
+  for (const visibleRange of visibleRanges) {
+    tree.iterate({
+      from: visibleRange.from,
+      to: visibleRange.to,
+      enter: (node) => {
+        if (node.name === nodeName) ranges.push({ from: node.from, to: node.to });
+      }
+    });
+  }
+
+  return sortedUniqueRanges(ranges);
+}
+
+function fencedCodeBlocksInVisibleRanges(
+  state: EditorState,
+  visibleRanges: readonly SyntaxBlockRange[]
+): FencedCodeBlockRange[] {
+  return syntaxBlocksInVisibleRanges(state, visibleRanges, "FencedCode").map((range) => {
+    const openingFence = parseBacktickOpeningFence(state.doc.lineAt(range.from).text);
+    return { ...range, language: openingFence?.language ?? null };
+  });
+}
+
+function tableRangesInVisibleRanges(state: EditorState, visibleRanges: readonly SyntaxBlockRange[]): SyntaxBlockRange[] {
+  return syntaxBlocksInVisibleRanges(state, visibleRanges, "Table");
+}
+
+function lineNumberAtBlockEnd(doc: Text, to: number): number {
+  return doc.lineAt(Math.max(0, to - 1)).number;
+}
+
+function blockSource(doc: Text, block: SyntaxBlockRange): string {
+  const startLine = doc.lineAt(block.from).number;
+  const endLine = lineNumberAtBlockEnd(doc, block.to);
+
+  if (endLine <= startLine + 1) return "";
+
+  return doc.sliceString(doc.line(startLine + 1).from, doc.line(endLine - 1).to);
+}
 
 function buildCodeBlockPreviewDecorations(state: EditorState, t: Translator): DecorationSet {
   const ranges: { from: number; to: number; deco: Decoration }[] = [];
   const doc = state.doc;
+  const codeBlocks = fencedCodeBlocksInVisibleRanges(state, [{ from: 0, to: state.doc.length }]);
 
   function selectionTouches(from: number, to: number): boolean {
     return state.selection.ranges.some((range) => {
@@ -38,52 +103,30 @@ function buildCodeBlockPreviewDecorations(state: EditorState, t: Translator): De
     });
   }
 
-  function findClosingFenceLine(startLineNumber: number, openingMarkerLength: number): number | null {
-    for (let currentLine = startLineNumber + 1; currentLine <= doc.lines; currentLine += 1) {
-      if (isClosingBacktickFence(doc.line(currentLine).text, openingMarkerLength)) return currentLine;
-    }
+  for (const block of codeBlocks) {
+    if (diagramLanguageFor(block.language) || selectionTouches(block.from, block.to)) continue;
 
-    return null;
-  }
-
-  function codeBlockSource(startLineNumber: number, closingLineNumber: number): string {
-    if (closingLineNumber <= startLineNumber + 1) return "";
-
-    return doc.sliceString(doc.line(startLineNumber + 1).from, doc.line(closingLineNumber - 1).to);
-  }
-
-  for (let lineNumber = 1; lineNumber <= doc.lines; lineNumber += 1) {
-    const line = doc.line(lineNumber);
-    const openingFence = parseBacktickOpeningFence(line.text);
-    if (!openingFence) continue;
-
-    const closingLineNumber = findClosingFenceLine(lineNumber, openingFence.markerLength);
-    if (!closingLineNumber) continue;
-
-    if (!diagramLanguageFor(openingFence.language)) {
-      const blockTo = doc.line(closingLineNumber).to;
-      if (!selectionTouches(line.from, blockTo)) {
-        ranges.push({
-          from: line.from,
-          to: blockTo,
-          deco: Decoration.replace({
-            block: true,
-            widget: new CodeBlockWidget(openingFence.language, codeBlockSource(lineNumber, closingLineNumber), t)
-          })
-        });
-      }
-    }
-
-    lineNumber = closingLineNumber;
+    ranges.push({
+      from: block.from,
+      to: block.to,
+      deco: Decoration.replace({
+        block: true,
+        widget: new CodeBlockWidget(block.language, blockSource(doc, block), t)
+      })
+    });
   }
 
   return Decoration.set(ranges.map((range) => range.deco.range(range.from, range.to)), true);
 }
 
-export function createLivePreviewCodeBlockField(t: Translator = createTranslator("system")): StateField<DecorationSet> {
+export function createLivePreviewCodeBlockField(t: Translator = createTranslator("system")) {
   return StateField.define<DecorationSet>({
     create: (state) => buildCodeBlockPreviewDecorations(state, t),
-    update: (_decorations, transaction) => buildCodeBlockPreviewDecorations(transaction.state, t),
+    update: (decorations, transaction) => (
+      transaction.docChanged || transaction.selection
+        ? buildCodeBlockPreviewDecorations(transaction.state, t)
+        : decorations
+    ),
     provide: (field) => EditorView.decorations.from(field)
   });
 }
@@ -99,9 +142,11 @@ export function buildLivePreviewDecorations(
   const diagramEditRange = state.field(diagramEditRangeField, false);
 
   const ranges: { from: number; to: number; deco: Decoration }[] = [];
-  const tableBlocks = findTableBlocks(state);
+  const codeBlocks = fencedCodeBlocksInVisibleRanges(state, view.visibleRanges);
+  const tableBlocks = tableRangesInVisibleRanges(state, view.visibleRanges);
   const frontmatterLineRange = findFrontmatterLineRange(doc);
   const sourceRevealRanges: SourceRevealRange[] = [];
+  let codeBlockIndex = 0;
   let tableBlockIndex = 0;
 
   function selectionTouches(from: number, to: number): boolean {
@@ -148,6 +193,11 @@ export function buildLivePreviewDecorations(
 
   function addInlineFormat(lineFrom: number, match: InlineMatch, text: string) {
     if (!selectionTouches(match.from, match.to)) {
+      if (match.className === "cm-live-math-inline") {
+        addWidget(match.from, match.to, new MathWidget(match.content ?? "", false));
+        return;
+      }
+
       const link = match.className === "cm-live-link"
         ? findClickableLinkAtPosition(state.doc, match.from)
         : null;
@@ -169,6 +219,8 @@ export function buildLivePreviewDecorations(
     }
 
     addSourceReveal(match.from, match.to);
+    if (match.className === "cm-live-math-inline" || match.className === "cm-live-footnote-ref") return;
+
     addMark(match.contentFrom, match.contentTo, match.className);
     for (const hideRange of match.hideRanges) addReplace(hideRange.from, hideRange.to);
   }
@@ -177,50 +229,60 @@ export function buildLivePreviewDecorations(
     for (const match of collectInlineMatches(lineFrom, text)) addInlineFormat(lineFrom, match, text);
   }
 
-  function openFenceBefore(lineNumber: number): { language: string | null; lineNumber: number; markerLength: number } | null {
-    let activeFence: { language: string | null; lineNumber: number; markerLength: number } | null = null;
-
-    for (let currentLine = 1; currentLine < lineNumber; currentLine += 1) {
-      const text = doc.line(currentLine).text;
-
-      if (activeFence === null) {
-        const openingFence = parseBacktickOpeningFence(text);
-        activeFence = openingFence
-          ? { language: openingFence.language, lineNumber: currentLine, markerLength: openingFence.markerLength }
-          : null;
-        continue;
-      }
-
-      if (isClosingBacktickFence(text, activeFence.markerLength)) activeFence = null;
-    }
-
-    return activeFence;
+  function currentSyntaxBlock<T extends SyntaxBlockRange>(blocks: T[], index: number, lineFrom: number, lineTo: number): T | null {
+    const block = blocks[index] ?? null;
+    return block !== null && lineFrom >= block.from && lineTo <= block.to ? block : null;
   }
 
-  function findClosingFenceLine(startLineNumber: number, openingMarkerLength: number): number | null {
+  function addDiagramBlock(block: FencedCodeBlockRange): void {
+    const diagramLanguage = diagramLanguageFor(block.language);
+    if (!diagramLanguage) return;
+
+    const openingLine = doc.lineAt(block.from);
+    const closingLineNumber = lineNumberAtBlockEnd(doc, block.to);
+    const editCursor = closingLineNumber > openingLine.number + 1
+      ? doc.line(openingLine.number + 1).from
+      : openingLine.to;
+
+    if (!isDiagramSourceEditing(block.from, block.to)) {
+      addWidget(
+        openingLine.from,
+        openingLine.to,
+        new DiagramBlockWidget(
+          blockSource(doc, block),
+          diagramLanguage,
+          block.from,
+          block.to,
+          editCursor,
+          t
+        )
+      );
+
+      for (let hiddenLineNumber = openingLine.number + 1; hiddenLineNumber <= closingLineNumber; hiddenLineNumber += 1) {
+        const hiddenLine = doc.line(hiddenLineNumber);
+        addReplace(hiddenLine.from, hiddenLine.to);
+      }
+    }
+  }
+
+  function findClosingMathLine(startLineNumber: number): number | null {
     for (let currentLine = startLineNumber + 1; currentLine <= doc.lines; currentLine += 1) {
-      if (isClosingBacktickFence(doc.line(currentLine).text, openingMarkerLength)) return currentLine;
+      if (doc.line(currentLine).text.trim() === "$$") return currentLine;
     }
 
     return null;
   }
 
-  function codeBlockSource(startLineNumber: number, closingLineNumber: number): string {
-    if (closingLineNumber <= startLineNumber + 1) return "";
-
-    return doc.sliceString(doc.line(startLineNumber + 1).from, doc.line(closingLineNumber - 1).to);
-  }
-
   for (const { from: visFrom, to: visTo } of view.visibleRanges) {
     let lineNumber = doc.lineAt(visFrom).number;
-    let activeFence = openFenceBefore(lineNumber);
 
     while (lineNumber <= doc.lineAt(visTo).number) {
       const line = doc.line(lineNumber);
       const text = line.text;
+      while (codeBlockIndex < codeBlocks.length && codeBlocks[codeBlockIndex].to <= line.from) codeBlockIndex += 1;
       while (tableBlockIndex < tableBlocks.length && tableBlocks[tableBlockIndex].to < line.from) tableBlockIndex += 1;
-      const currentTableBlock = tableBlocks[tableBlockIndex] ?? null;
-      const tableBlock = currentTableBlock !== null && line.from >= currentTableBlock.from && line.to <= currentTableBlock.to;
+      const codeBlock = currentSyntaxBlock(codeBlocks, codeBlockIndex, line.from, line.to);
+      const tableBlock = currentSyntaxBlock(tableBlocks, tableBlockIndex, line.from, line.to);
 
       if (
         frontmatterLineRange &&
@@ -232,88 +294,9 @@ export function buildLivePreviewDecorations(
         continue;
       }
 
-      if (activeFence !== null) {
-        const closingLineNumber = findClosingFenceLine(activeFence.lineNumber, activeFence.markerLength);
-        const diagramLanguage = diagramLanguageFor(activeFence.language);
-
-        if (!diagramLanguage && closingLineNumber) {
-          lineNumber = closingLineNumber + 1;
-          activeFence = null;
-          continue;
-        }
-
-        if (isClosingBacktickFence(text, activeFence.markerLength)) {
-          addSourceReveal(line.from, line.to);
-          addReplace(line.from, line.to);
-          activeFence = null;
-          lineNumber += 1;
-          continue;
-        }
-
-        if (tableBlock) {
-          lineNumber += 1;
-          continue;
-        }
-
-        addMark(line.from, line.to, "cm-live-code-block");
-        lineNumber += 1;
-        continue;
-      }
-
-      const openingFence = parseBacktickOpeningFence(text);
-      if (openingFence) {
-        const diagramLanguage = diagramLanguageFor(openingFence.language);
-
-        if (diagramLanguage) {
-          const closingLineNumber = findClosingFenceLine(lineNumber, openingFence.markerLength);
-
-          if (closingLineNumber) {
-            const blockFrom = line.from;
-            const blockTo = doc.line(closingLineNumber).to;
-            const editCursor = closingLineNumber > lineNumber + 1
-              ? doc.line(lineNumber + 1).from
-              : line.to;
-
-            if (!isDiagramSourceEditing(blockFrom, blockTo)) {
-              addWidget(
-                line.from,
-                line.to,
-                new DiagramBlockWidget(
-                  codeBlockSource(lineNumber, closingLineNumber),
-                  diagramLanguage,
-                  blockFrom,
-                  blockTo,
-                  editCursor,
-                  t
-                )
-              );
-
-              for (let hiddenLineNumber = lineNumber + 1; hiddenLineNumber <= closingLineNumber; hiddenLineNumber += 1) {
-                const hiddenLine = doc.line(hiddenLineNumber);
-                addReplace(hiddenLine.from, hiddenLine.to);
-              }
-            }
-
-            lineNumber = closingLineNumber + 1;
-            continue;
-          }
-        }
-
-        const closingLineNumber = findClosingFenceLine(lineNumber, openingFence.markerLength);
-
-        if (closingLineNumber) {
-          lineNumber = closingLineNumber + 1;
-          continue;
-        }
-
-        addSourceReveal(line.from, line.to);
-        addReplace(line.from, line.to);
-        activeFence = {
-          language: openingFence.language,
-          lineNumber,
-          markerLength: openingFence.markerLength
-        };
-        lineNumber += 1;
+      if (codeBlock) {
+        addDiagramBlock(codeBlock);
+        lineNumber = lineNumberAtBlockEnd(doc, codeBlock.to) + 1;
         continue;
       }
 
@@ -333,6 +316,20 @@ export function buildLivePreviewDecorations(
       } else if (/^\s{0,3}([-*_])(?:\s*\1){2,}\s*$/.test(text)) {
         addSourceReveal(line.from, line.to);
         addWidget(line.from, line.to, new HorizontalRuleWidget());
+      } else if (/^\s*\$\$/.test(text)) {
+        const singleLineMatch = /^\s*\$\$(.*?)\$\$\s*$/.exec(text);
+        const closingLineNumber = singleLineMatch ? lineNumber : findClosingMathLine(lineNumber);
+
+        if (closingLineNumber) {
+          const blockTo = doc.line(closingLineNumber).to;
+          const source = singleLineMatch
+            ? singleLineMatch[1].trim()
+            : doc.sliceString(doc.line(lineNumber + 1).from, doc.line(closingLineNumber - 1).to).trim();
+          addSourceReveal(line.from, blockTo);
+          addWidget(line.from, blockTo, new MathWidget(source, true));
+          lineNumber = closingLineNumber + 1;
+          continue;
+        }
       } else if (/^\s*>\s?/.test(text)) {
         const match = /^(\s*>\s?)(.*)$/.exec(text);
         if (match) {
@@ -372,6 +369,14 @@ export function buildLivePreviewDecorations(
           addSourceReveal(line.from, line.to);
           addWidget(line.from, markerTo, new ListMarkerWidget(`${match[2]}.`, "cm-live-ordered-marker"));
           addInlineDecorations(markerTo, match[4]);
+        }
+      } else if (/^\s*\[\^([^\]\n]+)\]:\s?/.test(text)) {
+        const match = /^(\s*\[\^([^\]\n]+)\]:\s?)(.*)$/.exec(text);
+        if (match) {
+          const contentFrom = line.from + match[1].length;
+          addSourceReveal(line.from, line.to);
+          addWidget(line.from, contentFrom, new FootnoteDefinitionMarkerWidget(match[2]));
+          addInlineDecorations(contentFrom, match[3]);
         }
       } else {
         addInlineDecorations(line.from, text);
