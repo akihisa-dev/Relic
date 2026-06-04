@@ -12,6 +12,10 @@
 
 Markdownプレビューでは `marked` でHTMLを生成し、`marked-footnote` で脚注を追加し、`DOMPurify` で安全化する。コードブロックのハイライトには `highlight.js`、数式表示には `KaTeX` を使う。`mermaid` / `d2` コードブロックの図表示には `Mermaid` と `@terrastruct/d2` を遅延読み込みで使い、生成SVGは表示前に再度 `DOMPurify` で安全化する。フロントマターのYAML読み書きには `js-yaml` を使う。
 
+エディタ設定や表示モードの切り替えには CodeMirror 6 の `Compartment` を使う。フォント、行番号、スペルチェック、ソース/ライブプレビュー、タイプライターモード、補完候補、イベントハンドラは `reconfigure` で差し替え、`EditorView` は破棄しない。これにより本文、選択範囲、Undo/Redo履歴、フォーカス、スクロール位置を維持する。
+
+ライブプレビュー装飾は、可視範囲と `@codemirror/lang-markdown` の構文木を優先して使う。インライン装飾、コードフェンス、表、`mermaid` / `d2` 図の検出は、全文を毎回走査する実装へ戻さない。CodeMirrorの制約上、表や通常コードブロックのようなブロック置換DecorationはStateFieldから提供し、document変更がないtransactionでは再構築しない。
+
 ---
 
 ## 選定理由
@@ -59,7 +63,8 @@ js-yaml                   # フロントマターYAML処理
 主な実装位置:
 
 - `app/src/renderer/editorExtensions.ts`: CodeMirror拡張、Markdown言語サポート、内部リンク補完、リンククリック処理
-- `app/src/renderer/editorLivePreview.ts`: ライブプレビュー装飾
+- `app/src/renderer/editorLivePreview.ts`: ライブプレビュー装飾、数式・脚注・図表ブロック検出
+- `app/src/renderer/editorLivePreviewWidgets.ts`: ライブプレビュー内のインライン表示、コードブロック、数式、脚注Widget
 - `app/src/renderer/editorDiagramLivePreview.ts`: ライブプレビュー内の図表Widget
 - `app/src/renderer/diagramPreview.ts`: Mermaid / D2 共通のSVG表示、安全化、エラー表示接続
 - `app/src/renderer/mermaidRenderer.ts`: Mermaidの遅延読み込み、初期化、SVG生成

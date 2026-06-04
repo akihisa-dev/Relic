@@ -5,7 +5,7 @@ import { collectInlineMatches, findClickableLinkAtPosition, overlaps } from "./e
 
 describe("editorLivePreviewModel", () => {
   it("主要なインライン記法を検出する", () => {
-    const text = "`code` [link](https://example.com) [[Note|Alias]] **bold** __strong__ ~~gone~~ ==mark== <u>under</u> *em* _it_";
+    const text = "`code` [link](https://example.com) [[Note|Alias]] **bold** __strong__ ~~gone~~ ==mark== <u>under</u> [^note] $x^2$ *em* _it_";
     const matches = collectInlineMatches(0, text);
 
     expect(matches.map((match) => ({
@@ -20,6 +20,8 @@ describe("editorLivePreviewModel", () => {
       { className: "cm-live-strike", text: "gone" },
       { className: "cm-live-highlight", text: "mark" },
       { className: "cm-live-underline", text: "under" },
+      { className: "cm-live-footnote-ref", text: "note" },
+      { className: "cm-live-math-inline", text: "x^2" },
       { className: "cm-live-italic", text: "em" },
       { className: "cm-live-italic", text: "it" }
     ]);

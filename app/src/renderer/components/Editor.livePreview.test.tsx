@@ -43,6 +43,8 @@ describe("Editor live preview", () => {
       "`code`",
       "==mark==",
       "<u>underline</u>",
+      "$x^2$",
+      "[^note]",
       "[link](https://example.com)",
       "[[Page]]"
     ].join("\n"), 0, false);
@@ -54,8 +56,37 @@ describe("Editor live preview", () => {
       "cm-live-code",
       "cm-live-highlight",
       "cm-live-underline",
+      "cm-live-math-inline",
+      "cm-live-footnote-ref",
       "cm-live-link"
     ]));
+  });
+
+  it("ライブプレビューで数式と脚注定義をWidget表示する", async () => {
+    const content = [
+      "$$",
+      "x^2 + y^2",
+      "$$",
+      "",
+      "[^note]: footnote text"
+    ].join("\n");
+    const widgets = await collectInlineLivePreviewWidgets(content, 0, false);
+    const widgetClasses = await collectInlineLivePreviewWidgetClasses(content, 0, false);
+
+    expect(widgets).toContain("MathWidget");
+    expect(widgets).toContain("FootnoteDefinitionMarkerWidget");
+    expect(widgetClasses).toContain("cm-live-math-block");
+    expect(widgetClasses).toContain("cm-live-footnote-def");
+  });
+
+  it("カーソルが数式と脚注に触れたときはMarkdownソースを表示する", async () => {
+    const mathClasses = await collectInlineLivePreviewWidgetClasses("$x^2$", 2);
+    const footnoteClasses = await collectInlineLivePreviewWidgetClasses("[^note]", 2);
+    const blockMathWidgets = await collectInlineLivePreviewWidgets("$$\nx^2\n$$", 3);
+
+    expect(mathClasses).not.toContain("cm-live-math-inline");
+    expect(footnoteClasses).not.toContain("cm-live-footnote-ref");
+    expect(blockMathWidgets).not.toContain("MathWidget");
   });
 
   it("ライブ表示で置換されたリンクの先頭位置クリックもリンクとして扱う", () => {

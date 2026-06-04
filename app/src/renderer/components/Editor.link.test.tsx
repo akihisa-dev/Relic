@@ -35,11 +35,10 @@ describe("Editor links", () => {
 
     expect(result).toMatchObject({
       from: 2,
-      options: expect.arrayContaining([
-        { apply: "読書メモ]]", label: "読書メモ" },
+      options: [
         { apply: "folder/読書メモ]]", label: "folder/読書メモ" },
-        { apply: "資料]]", label: "資料" }
-      ])
+        { apply: "読書メモ]]", label: "読書メモ" }
+      ]
     });
   });
 });

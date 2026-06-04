@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { MutableRefObject } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { EditorView } from "@codemirror/view";
@@ -144,5 +144,27 @@ describe("PaneView", () => {
 
     expect(screen.getByText("Frontmatter cannot be read. Editing and saving can continue.")).toBeInTheDocument();
     expect(screen.getByText("Editable body")).toBeInTheDocument();
+  });
+
+  it("大きいMarkdownは通知を出して一時的にソース表示で開く", async () => {
+    setPaneState(
+      {
+        [fileTab.id]: {
+          ...fileTab,
+          content: `**large**\n${"a".repeat(80_001)}`,
+          savedContent: `**large**\n${"a".repeat(80_001)}`
+        }
+      },
+      { activeTabId: fileTab.id, history: [fileTab.id], tabIds: [fileTab.id] }
+    );
+
+    const props = renderPaneView({
+      editorSettings: { ...defaultEditorSettings, showLineNumbers: false },
+      sourceMode: false
+    });
+
+    expect(screen.getByText("Live preview is paused for this large Markdown file.")).toBeInTheDocument();
+    await waitFor(() => expect(props.viewRef.current).not.toBeNull());
+    expect(document.querySelector(".cm-live-bold")).toBeNull();
   });
 });

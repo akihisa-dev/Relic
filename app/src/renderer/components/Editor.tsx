@@ -4,16 +4,14 @@ import { useEffect, useRef, useState } from "react";
 import type { CSSProperties, MutableRefObject, ReactElement } from "react";
 
 import { chronicleCalendarIds, type EditorSettings, type UserDefinedField } from "../../shared/ipc";
-import { buildExtensions, destroyEditorView } from "../editorExtensions";
+import { buildEditorReconfigureEffects, buildExtensions, destroyEditorView } from "../editorExtensions";
 import { setEditorEditable } from "../editorEditable";
 import {
   appendOrCreateFrontmatterField,
   canAppendOrCreateFrontmatterField,
   findFrontmatterBlock,
   fixedFrontmatterFieldNames,
-  frontmatterCollapsedValue,
   frontmatterDialogRequestEvent,
-  setFrontmatterCollapsed,
   type FrontmatterDialogRequest
 } from "../editorFrontmatter";
 import { useEditorContextMenu } from "../hooks/useEditorContextMenu";
@@ -295,50 +293,37 @@ export function Editor({
     });
   }, [content]);
 
-  // 設定・タイプライターモード変更時にエディタを再生成
+  // 設定・タイプライターモード変更時はEditorViewを保ったまま拡張だけ差し替える
   useEffect(() => {
     const view = internalViewRef.current;
 
     if (!view) return;
 
-    const currentContent = view.state.doc.toString();
-    const currentFrontmatterCollapsed = frontmatterCollapsedValue(view.state);
-    const currentSelection = view.state.selection;
     const currentScrollLeft = view.scrollDOM.scrollLeft;
     const currentScrollTop = view.scrollDOM.scrollTop;
     const hadFocus = view.hasFocus;
-    const container = containerRef.current;
 
-    destroyEditorView(view, container);
-    internalViewRef.current = null;
-
-    if (!container) return;
-
-    const extensions = buildExtensions(
-      settings,
-      typewriterMode,
-      sourceMode,
-      onChangeRef,
-      allFilePathsRef.current,
-      userDefinedFieldsRef.current,
-      frontmatterCandidatesRef.current,
-      t,
-      openContextMenu,
-      rememberSelection,
-      onOpenLinkRef,
-      onOpenWikiLinkRef
-    );
-    const state = EditorState.create({ doc: currentContent, extensions, selection: currentSelection });
-    const nextView = new EditorView({ state, parent: container });
-
-    internalViewRef.current = nextView;
-    setFrontmatterCollapsed(nextView, currentFrontmatterCollapsed);
-    nextView.scrollDOM.scrollLeft = currentScrollLeft;
-    nextView.scrollDOM.scrollTop = currentScrollTop;
-    if (hadFocus) nextView.focus();
-
-    if (viewRef) viewRef.current = nextView;
-  }, [frontmatterCandidates, rememberSelection, settings, sourceMode, t, typewriterMode, userDefinedFields, viewRef]);
+    view.dispatch({
+      effects: buildEditorReconfigureEffects({
+        allFilePaths: allFilePathsRef.current,
+        frontmatterCandidates: frontmatterCandidatesRef.current,
+        onChangeRef,
+        onContextMenu: openContextMenu,
+        onOpenLinkRef,
+        onOpenWikiLinkRef,
+        onSelectionChange: rememberSelection,
+        settings,
+        sourceMode,
+        t,
+        typewriterMode,
+        userDefinedFields: userDefinedFieldsRef.current
+      })
+    });
+    view.scrollDOM.scrollLeft = currentScrollLeft;
+    view.scrollDOM.scrollTop = currentScrollTop;
+    if (hadFocus) view.focus();
+    if (viewRef) viewRef.current = view;
+  }, [allFilePaths, frontmatterCandidates, rememberSelection, settings, sourceMode, t, typewriterMode, userDefinedFields, viewRef, openContextMenu]);
 
   return (
     <>
@@ -440,7 +425,6 @@ function buildFrontmatterPropertyMenuState(view: EditorView, t: Translator): Fro
 
   return { groups, unavailable: false };
 }
-
 function frontmatterPropertyGroup(
   id: string,
   label: string,
