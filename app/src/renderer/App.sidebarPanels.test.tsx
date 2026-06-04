@@ -252,19 +252,20 @@ describe("App sidebar panels", () => {
 
     await screen.findByText("Notes");
 
+    expect(useUiStore.getState().isRightPanelOpen).toBe(true);
+    expect(useUiStore.getState().rightPanelView).toBe("outline");
+
+    fireEvent.click(screen.getByRole("button", { name: "アウトライン" }));
+
     expect(useUiStore.getState().isRightPanelOpen).toBe(false);
     expect(useUiStore.getState().rightPanelView).toBe("outline");
+    expect(container.querySelector(".title-bar--right-panel-open .main-area-actions")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "アウトライン" }));
 
     expect(useUiStore.getState().isRightPanelOpen).toBe(true);
     expect(useUiStore.getState().rightPanelView).toBe("outline");
     expect(container.querySelector(".title-bar--right-panel-open .main-area-actions")).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: "アウトライン" }));
-
-    expect(useUiStore.getState().isRightPanelOpen).toBe(false);
-    expect(useUiStore.getState().rightPanelView).toBe("outline");
 
     const mainActions = document.querySelector(".main-area-actions");
     expect(mainActions).toBeInstanceOf(HTMLElement);

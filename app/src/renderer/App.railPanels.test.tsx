@@ -46,7 +46,6 @@ describe("App rail panels", () => {
     const { container } = await renderApp();
 
     await screen.findByText("Notes");
-    fireEvent.click(screen.getByRole("button", { name: "アウトライン" }));
 
     expect(container.querySelector(".right-panel")).not.toHaveClass("right-panel--closed");
 
@@ -72,7 +71,6 @@ describe("App rail panels", () => {
     const { container } = await renderApp();
 
     await screen.findByText("Notes");
-    fireEvent.click(screen.getByRole("button", { name: "アウトライン" }));
 
     const rightPanel = container.querySelector(".right-panel");
     const resizeHandle = container.querySelector(".right-panel-resize-handle");
