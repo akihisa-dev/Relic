@@ -3,7 +3,7 @@
 Relicのナビゲーションは、左レール、プライマリサイドバー、Cowork用セカンダリサイドバー、メインエリアのタブで構成する。
 
 この文書では、各ナビゲーション要素が「何をできるか」を定義する。
-画面内の配置は [../design/screens.md](../design/screens.md)、画面遷移やビュー切り替えの流れは [../design/navigation.md](../design/navigation.md) を正とする。
+画面内の配置は [../design/DESIGN.md](../design/DESIGN.md)、画面遷移やビュー切り替えの流れは [../design/DESIGN.md](../design/DESIGN.md) を正とする。
 
 ## 左レール
 
