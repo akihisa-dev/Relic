@@ -1,8 +1,10 @@
 import {
+  act,
   fireEvent,
   screen,
   waitFor
 } from "@testing-library/react";
+import { EditorView } from "@codemirror/view";
 import {
   afterEach,
   beforeAll,
@@ -92,6 +94,65 @@ describe("App search and links", () => {
     expect(readMarkdownFile).toHaveBeenCalledWith({ path: "読書メモ.md" });
     await waitFor(() => {
       expect(container.querySelector(".cm-activeLine")?.textContent).toContain("一致した行");
+    });
+  });
+
+  it("開いているファイルの検索結果クリックでは同じEditorViewのまま対象行へ移動する", async () => {
+    const content = Array.from({ length: 120 }, (_, index) => (
+      index === 74 ? "検索一致行" : `本文 ${index + 1}`
+    )).join("\n");
+    const searchWorkspace = vi.fn().mockResolvedValue({
+      ok: true,
+      value: searchResultSet([{
+        fileName: "長文検索",
+        lineNumber: 75,
+        lineText: "検索一致行",
+        path: "長文検索.md"
+      }])
+    });
+
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [{ name: "長文検索", path: "長文検索.md", type: "file" }]
+        }
+      }),
+      readMarkdownFile: vi.fn().mockResolvedValue({
+        ok: true,
+        value: { content, name: "長文検索", path: "長文検索.md" }
+      }),
+      searchWorkspace
+    });
+
+    const { container } = await renderApp();
+
+    fireEvent.click(await screen.findByRole("button", { name: /長文検索/ }));
+    await screen.findByText("長文検索", { selector: ".pane-tab-name" });
+
+    const editorContent = container.querySelector(".cm-content");
+    expect(editorContent).not.toBeNull();
+    const view = EditorView.findFromDOM(editorContent as HTMLElement);
+    expect(view).not.toBeNull();
+
+    act(() => {
+      view!.dispatch({ selection: { anchor: content.length } });
+    });
+    view!.scrollDOM.scrollTop = 1200;
+
+    fireEvent.change(await screen.findByLabelText("ファイル検索"), {
+      target: { value: "検索一致" }
+    });
+
+    const resultLine = await screen.findByText("75: 検索一致行");
+    fireEvent.click(resultLine.closest("button") as HTMLButtonElement);
+
+    const targetFrom = content.indexOf("検索一致行");
+    await waitFor(() => {
+      expect(EditorView.findFromDOM(container.querySelector(".cm-content") as HTMLElement)).toBe(view);
+      expect(view!.state.selection.main.from).toBe(targetFrom);
+      expect(container.querySelector(".cm-activeLine")?.textContent).toContain("検索一致行");
     });
   });
 
