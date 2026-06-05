@@ -102,6 +102,21 @@ describe("replaceInFile", () => {
     await expect(readFile(path.join(ws, "note.md"), "utf8")).resolves.toBe("foo");
   });
 
+  it("本文内で空文字に一致する正規表現は置換せずエラーを返す", async () => {
+    const ws = await mkdtemp(path.join(os.tmpdir(), "relic-replace-"));
+    temporaryPaths.push(ws);
+
+    await writeFile(path.join(ws, "note.md"), "needle", "utf8");
+
+    const result = await replaceInFile(ws, "note.md", "(?=needle)", "bar", true);
+
+    expect(result).toMatchObject({
+      error: expect.objectContaining({ code: "REPLACE_REGEX_EMPTY_MATCH" }),
+      ok: false
+    });
+    await expect(readFile(path.join(ws, "note.md"), "utf8")).resolves.toBe("needle");
+  });
+
   it("空文字に一致する正規表現プレビューはエラーを返す", async () => {
     const ws = await mkdtemp(path.join(os.tmpdir(), "relic-replace-"));
     temporaryPaths.push(ws);
@@ -109,6 +124,20 @@ describe("replaceInFile", () => {
     await writeFile(path.join(ws, "note.md"), "foo", "utf8");
 
     const result = await searchAndReplace(ws, "^", "bar", true);
+
+    expect(result).toMatchObject({
+      error: expect.objectContaining({ code: "REPLACE_REGEX_EMPTY_MATCH" }),
+      ok: false
+    });
+  });
+
+  it("本文内で空文字に一致する正規表現プレビューはエラーを返す", async () => {
+    const ws = await mkdtemp(path.join(os.tmpdir(), "relic-replace-"));
+    temporaryPaths.push(ws);
+
+    await writeFile(path.join(ws, "note.md"), "needle", "utf8");
+
+    const result = await searchAndReplace(ws, "(?=needle)", "bar", true);
 
     expect(result).toMatchObject({
       error: expect.objectContaining({ code: "REPLACE_REGEX_EMPTY_MATCH" }),
@@ -288,5 +317,22 @@ describe("applySearchAndReplace", () => {
     });
     await expect(readFile(path.join(ws, "a.md"), "utf8")).resolves.toBe("foo");
     await expect(readFile(path.join(ws, "b.md"), "utf8")).resolves.toBe("foo");
+  });
+
+  it("一括置換でも本文内で空文字に一致する正規表現は書き換えない", async () => {
+    const ws = await mkdtemp(path.join(os.tmpdir(), "relic-replace-"));
+    temporaryPaths.push(ws);
+
+    await writeFile(path.join(ws, "a.md"), "safe", "utf8");
+    await writeFile(path.join(ws, "b.md"), "needle", "utf8");
+
+    const result = await applySearchAndReplace(ws, "(?=needle)", "bar", true);
+
+    expect(result).toMatchObject({
+      error: expect.objectContaining({ code: "REPLACE_REGEX_EMPTY_MATCH" }),
+      ok: false
+    });
+    await expect(readFile(path.join(ws, "a.md"), "utf8")).resolves.toBe("safe");
+    await expect(readFile(path.join(ws, "b.md"), "utf8")).resolves.toBe("needle");
   });
 });
