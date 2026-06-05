@@ -209,7 +209,7 @@ textarea {
 .title-bar .main-area-actions {
   backdrop-filter: none;
   background: var(--color-bg);
-  box-shadow: 0 1px 0 var(--color-border);
+  box-shadow: none;
 }
 
 .workspace {
@@ -373,7 +373,6 @@ textarea {
 }
 
 .main-area-actions,
-.pane-tab-bar,
 .toolbar {
   background: var(--color-bg);
   box-shadow: 0 1px 0 var(--color-border);
@@ -405,27 +404,27 @@ textarea {
 .pane-tab,
 .title-bar .pane-tab {
   background: transparent;
-  border-color: var(--color-border);
+  border-color: transparent;
   border-radius: 0;
   box-shadow: none;
   color: var(--color-text-secondary);
   font-family: var(--font-body);
-  font-size: 12px;
-  font-weight: 600;
-  height: 38px;
+  font-size: 13px;
+  font-weight: 700;
+  height: 44px;
   letter-spacing: 0;
 }
 
 .title-bar .pane-tab {
-  background: var(--color-bg);
-  height: 48px;
+  background: transparent;
+  height: 44px;
 }
 
 .pane-tab--active,
 .title-bar .pane-tab--active {
   background: var(--color-surface-elevated);
-  border-color: var(--color-border-strong);
-  box-shadow: inset 0 3px 0 var(--color-primary);
+  border-color: transparent;
+  box-shadow: none;
   color: var(--color-primary-dark);
 }
 

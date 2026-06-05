@@ -15,7 +15,6 @@ interface PaneTabsProps {
   onCloseAllTabs: (pane: PaneId) => void;
   onCloseOtherTabs: (pane: PaneId, tabId: string) => void;
   onCloseTabsToRight: (pane: PaneId, tabId: string) => void;
-  onCreateTab: (pane: PaneId) => void;
   onDuplicateTabFile?: (tabId: string) => void;
   onOpenInOtherPane: (pane: PaneId, tabId: string) => void;
   onPrintPreview: (tab: FileTab) => void;
@@ -37,7 +36,6 @@ export function PaneTabs({
   onCloseAllTabs,
   onCloseOtherTabs,
   onCloseTabsToRight,
-  onCreateTab,
   onDuplicateTabFile,
   onOpenInOtherPane,
   onPrintPreview,
@@ -73,7 +71,6 @@ export function PaneTabs({
         tabDropTarget={tabDropTarget}
         tabs={tabs}
         onContextMenuOpen={openContextMenu}
-        onCreateTab={() => onCreateTab(pane)}
         onTabBarDragLeave={handleTabBarDragLeave}
         onTabBarDragOver={handleTabBarDragOver}
         onTabClose={(tabId) => onTabClose(pane, tabId)}

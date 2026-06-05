@@ -1,4 +1,3 @@
-import { useRef } from "react";
 import type { DragEvent, ReactElement, ReactNode } from "react";
 
 import { paneTabLabel } from "../paneViewModel";
@@ -14,7 +13,6 @@ interface PaneTabBarProps {
   tabDropTarget: PaneTabDropTarget | null;
   tabs: Record<string, Tab>;
   onContextMenuOpen: (tabId: string, x: number, y: number) => void;
-  onCreateTab: () => void;
   onTabBarDragLeave: (e: DragEvent<HTMLElement>) => void;
   onTabBarDragOver: (e: DragEvent<HTMLElement>) => void;
   onTabClose: (tabId: string) => void;
@@ -33,7 +31,6 @@ export function PaneTabBar({
   tabDropTarget,
   tabs,
   onContextMenuOpen,
-  onCreateTab,
   onTabBarDragLeave,
   onTabBarDragOver,
   onTabClose,
@@ -45,37 +42,27 @@ export function PaneTabBar({
 }: PaneTabBarProps): ReactElement {
   const t = useT();
   const shouldFitTabs = paneState.tabIds.length > 1;
-  const tabBarRef = useRef<HTMLDivElement | null>(null);
 
   void pane;
 
-  const scrollTabs = (direction: -1 | 1): void => {
-    tabBarRef.current?.scrollBy({ behavior: "smooth", left: direction * 180 });
-  };
-
   return (
     <div className="pane-tab-bar-shell">
-      <button
-        aria-label={t("pane.scrollTabsLeft")}
-        className="pane-tab-scroll-button"
-        onClick={() => scrollTabs(-1)}
-        title={t("pane.scrollTabsLeft")}
-        type="button"
-      >
-        <ChevronLeftIcon />
-      </button>
       <div
         className={`pane-tab-bar${shouldFitTabs ? " pane-tab-bar--fit" : ""}${tabDropTarget?.tabId === null ? " pane-tab-bar--drop-end" : ""}`}
         onDragLeave={onTabBarDragLeave}
         onDragOver={onTabBarDragOver}
         onDrop={(e) => onTabDrop(e, null)}
-        ref={tabBarRef}
       >
         {paneState.tabIds.map((tabId) => {
           const tab = tabs[tabId];
           const isClosing = closingTabIds.has(tabId);
 
           if (!tab) return null;
+
+          const tabName = paneTabLabel(tab, t);
+          const tabNameExtension = tab.kind === "file" && /\.md$/i.test(tab.path) && !/\.md$/i.test(tabName)
+            ? ".md"
+            : undefined;
 
           return (
             <div
@@ -125,7 +112,7 @@ export function PaneTabBar({
               {tab.kind === "file" && tab.content !== tab.savedContent ? (
                 <span className="pane-tab-dirty-dot" aria-hidden="true" />
               ) : null}
-              <span className="pane-tab-name">{paneTabLabel(tab, t)}</span>
+              <span className="pane-tab-name" data-extension={tabNameExtension}>{tabName}</span>
               <button
                 aria-label={t("pane.closeTab")}
                 className="pane-tab-close"
@@ -142,57 +129,13 @@ export function PaneTabBar({
           );
         })}
       </div>
-      <button
-        aria-label={t("pane.scrollTabsRight")}
-        className="pane-tab-scroll-button"
-        onClick={() => scrollTabs(1)}
-        title={t("pane.scrollTabsRight")}
-        type="button"
-      >
-        <ChevronRightIcon />
-      </button>
-      <button
-        aria-label={t("pane.newEmptyTab")}
-        className="pane-tab-new-button"
-        onClick={onCreateTab}
-        title={t("pane.newEmptyTab")}
-        type="button"
-      >
-        <PlusIcon />
-      </button>
     </div>
-  );
-}
-
-function ChevronLeftIcon(): ReactElement {
-  return (
-    <svg aria-hidden="true" fill="none" height="20" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 24 24" width="20">
-      <path d="m15 18-6-6 6-6" />
-    </svg>
-  );
-}
-
-function ChevronRightIcon(): ReactElement {
-  return (
-    <svg aria-hidden="true" fill="none" height="20" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 24 24" width="20">
-      <path d="m9 18 6-6-6-6" />
-    </svg>
-  );
-}
-
-function PlusIcon(): ReactElement {
-  return (
-    <svg aria-hidden="true" fill="none" height="20" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" viewBox="0 0 24 24" width="20">
-      <path d="M12 5v14" />
-      <path d="M5 12h14" />
-    </svg>
   );
 }
 
 function CloseIcon(): ReactElement {
   return (
     <svg aria-hidden="true" fill="none" height="20" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="20">
-      <circle cx="12" cy="12" r="10" />
       <path d="m15 9-6 6" />
       <path d="m9 9 6 6" />
     </svg>

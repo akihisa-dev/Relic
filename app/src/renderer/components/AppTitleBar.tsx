@@ -4,6 +4,7 @@ import { useT } from "../i18n";
 import { formatShortcut } from "../keyboardShortcuts";
 import type { FileTab, PaneId, PaneState, PanelTabKind, Tab } from "../store/editorStore";
 import type { RightPanelView } from "../store/uiStore";
+import { PaneTabs } from "./PaneTabs";
 
 interface AppTitleBarProps {
   isRightPanelOpen: boolean;
@@ -43,6 +44,7 @@ export function AppTitleBar({
   isSplit,
   leftClosingTabIds,
   leftOffsetWidth,
+  leftPane,
   onCloseAllTabsInPane,
   onCloseOtherTabs,
   onCloseTabsToRight,
@@ -58,7 +60,9 @@ export function AppTitleBar({
   onTabMove,
   onTabSelect,
   onTogglePinTab,
+  renderPanelTabIcon,
   rightClosingTabIds,
+  rightPane,
   rightPanelView,
   rightPanelWidth,
   showRightPanelLinksControl,
@@ -72,22 +76,6 @@ export function AppTitleBar({
     "--title-bar-action-width": `${isRightPanelOpen ? rightPanelWidth : 208}px`,
     "--title-bar-left-offset": `${leftOffsetWidth}px`
   } as CSSProperties;
-
-  void leftClosingTabIds;
-  void onCloseAllTabsInPane;
-  void onCloseOtherTabs;
-  void onCloseTabsToRight;
-  void onDuplicateTabFile;
-  void onOpenInOtherPane;
-  void onPrintPreview;
-  void onRevealTabFile;
-  void onSavePreviewAsPdf;
-  void onTabClose;
-  void onTabMove;
-  void onTabSelect;
-  void onTogglePinTab;
-  void rightClosingTabIds;
-  void tabs;
 
   const paneActions = (
     <div className="main-area-actions">
@@ -141,7 +129,50 @@ export function AppTitleBar({
   return (
     <div className={`title-bar${isSplit ? " title-bar--split" : ""}${isRightPanelOpen ? " title-bar--right-panel-open" : ""}`} style={style}>
       <div className="title-bar-drag-area" />
-      <div className="title-bar-spacer" />
+      <div className={`title-bar-tabs${isSplit ? " title-bar-tabs--split" : ""}`}>
+        <PaneTabs
+          closingTabIds={leftClosingTabIds}
+          isSplitView={isSplit}
+          pane="left"
+          paneState={leftPane}
+          renderPanelTabIcon={renderPanelTabIcon}
+          tabs={tabs}
+          onCloseAllTabs={onCloseAllTabsInPane}
+          onCloseOtherTabs={onCloseOtherTabs}
+          onCloseTabsToRight={onCloseTabsToRight}
+          onDuplicateTabFile={onDuplicateTabFile}
+          onOpenInOtherPane={onOpenInOtherPane}
+          onPrintPreview={onPrintPreview}
+          onRevealTabFile={onRevealTabFile}
+          onSavePreviewAsPdf={onSavePreviewAsPdf}
+          onTabClose={onTabClose}
+          onTabMove={onTabMove}
+          onTabSelect={onTabSelect}
+          onTogglePinTab={onTogglePinTab}
+        />
+        {isSplit ? (
+          <PaneTabs
+            closingTabIds={rightClosingTabIds}
+            isSplitView={isSplit}
+            pane="right"
+            paneState={rightPane}
+            renderPanelTabIcon={renderPanelTabIcon}
+            tabs={tabs}
+            onCloseAllTabs={onCloseAllTabsInPane}
+            onCloseOtherTabs={onCloseOtherTabs}
+            onCloseTabsToRight={onCloseTabsToRight}
+            onDuplicateTabFile={onDuplicateTabFile}
+            onOpenInOtherPane={onOpenInOtherPane}
+            onPrintPreview={onPrintPreview}
+            onRevealTabFile={onRevealTabFile}
+            onSavePreviewAsPdf={onSavePreviewAsPdf}
+            onTabClose={onTabClose}
+            onTabMove={onTabMove}
+            onTabSelect={onTabSelect}
+            onTogglePinTab={onTogglePinTab}
+          />
+        ) : null}
+      </div>
       <div className="title-bar-actions">
         {paneActions}
       </div>
