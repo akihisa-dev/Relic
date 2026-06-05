@@ -1,12 +1,9 @@
 import type { CSSProperties, ReactElement, ReactNode } from "react";
 
-import { usePaneTabInteractions } from "../hooks/usePaneTabInteractions";
 import { useT } from "../i18n";
 import { formatShortcut } from "../keyboardShortcuts";
 import type { FileTab, PaneId, PaneState, PanelTabKind, Tab } from "../store/editorStore";
 import type { RightPanelView } from "../store/uiStore";
-import { PaneTabBar } from "./PaneTabBar";
-import { PaneTabContextMenu } from "./PaneTabContextMenu";
 
 interface AppTitleBarProps {
   isRightPanelOpen: boolean;
@@ -46,7 +43,6 @@ export function AppTitleBar({
   isSplit,
   leftClosingTabIds,
   leftOffsetWidth,
-  leftPane,
   onCloseAllTabsInPane,
   onCloseOtherTabs,
   onCloseTabsToRight,
@@ -62,9 +58,7 @@ export function AppTitleBar({
   onTabMove,
   onTabSelect,
   onTogglePinTab,
-  renderPanelTabIcon,
   rightClosingTabIds,
-  rightPane,
   rightPanelView,
   rightPanelWidth,
   showRightPanelLinksControl,
@@ -78,6 +72,22 @@ export function AppTitleBar({
     "--title-bar-action-width": `${isRightPanelOpen ? rightPanelWidth : 208}px`,
     "--title-bar-left-offset": `${leftOffsetWidth}px`
   } as CSSProperties;
+
+  void leftClosingTabIds;
+  void onCloseAllTabsInPane;
+  void onCloseOtherTabs;
+  void onCloseTabsToRight;
+  void onDuplicateTabFile;
+  void onOpenInOtherPane;
+  void onPrintPreview;
+  void onRevealTabFile;
+  void onSavePreviewAsPdf;
+  void onTabClose;
+  void onTabMove;
+  void onTabSelect;
+  void onTogglePinTab;
+  void rightClosingTabIds;
+  void tabs;
 
   const paneActions = (
     <div className="main-area-actions">
@@ -131,149 +141,10 @@ export function AppTitleBar({
   return (
     <div className={`title-bar${isSplit ? " title-bar--split" : ""}${isRightPanelOpen ? " title-bar--right-panel-open" : ""}`} style={style}>
       <div className="title-bar-drag-area" />
-      <div className={`title-bar-pane-tabs${isSplit ? " title-bar-pane-tabs--split" : ""}`}>
-        <TitleBarPaneTabs
-          closingTabIds={leftClosingTabIds}
-          isSplitView={isSplit}
-          pane="left"
-          paneState={leftPane}
-          renderPanelTabIcon={renderPanelTabIcon}
-          tabs={tabs}
-          onCloseAllTabs={onCloseAllTabsInPane}
-          onCloseOtherTabs={onCloseOtherTabs}
-          onCloseTabsToRight={onCloseTabsToRight}
-          onDuplicateTabFile={onDuplicateTabFile}
-          onOpenInOtherPane={onOpenInOtherPane}
-          onPrintPreview={onPrintPreview}
-          onRevealTabFile={onRevealTabFile}
-          onSavePreviewAsPdf={onSavePreviewAsPdf}
-          onTabClose={onTabClose}
-          onTabMove={onTabMove}
-          onTabSelect={onTabSelect}
-          onTogglePinTab={onTogglePinTab}
-        />
-        {isSplit ? (
-          <TitleBarPaneTabs
-            closingTabIds={rightClosingTabIds}
-            isSplitView={isSplit}
-            pane="right"
-            paneState={rightPane}
-            renderPanelTabIcon={renderPanelTabIcon}
-            tabs={tabs}
-            onCloseAllTabs={onCloseAllTabsInPane}
-            onCloseOtherTabs={onCloseOtherTabs}
-            onCloseTabsToRight={onCloseTabsToRight}
-            onDuplicateTabFile={onDuplicateTabFile}
-            onOpenInOtherPane={onOpenInOtherPane}
-            onPrintPreview={onPrintPreview}
-            onRevealTabFile={onRevealTabFile}
-            onSavePreviewAsPdf={onSavePreviewAsPdf}
-            onTabClose={onTabClose}
-            onTabMove={onTabMove}
-            onTabSelect={onTabSelect}
-            onTogglePinTab={onTogglePinTab}
-          />
-        ) : null}
-      </div>
+      <div className="title-bar-spacer" />
       <div className="title-bar-actions">
         {paneActions}
       </div>
-    </div>
-  );
-}
-
-interface TitleBarPaneTabsProps {
-  closingTabIds: Set<string>;
-  isSplitView: boolean;
-  pane: PaneId;
-  paneState: PaneState;
-  renderPanelTabIcon: (panel: PanelTabKind) => ReactNode;
-  tabs: Record<string, Tab>;
-  onCloseAllTabs: (pane: PaneId) => void;
-  onCloseOtherTabs: (pane: PaneId, tabId: string) => void;
-  onCloseTabsToRight: (pane: PaneId, tabId: string) => void;
-  onDuplicateTabFile?: (tabId: string) => void;
-  onOpenInOtherPane: (pane: PaneId, tabId: string) => void;
-  onPrintPreview: (tab: FileTab) => void;
-  onRevealTabFile?: (tabId: string) => void;
-  onSavePreviewAsPdf: (tab: FileTab) => void;
-  onTabClose: (pane: PaneId, tabId: string) => void;
-  onTabMove: (fromPane: PaneId, toPane: PaneId, tabId: string, targetTabId?: string | null, position?: "before" | "after") => void;
-  onTabSelect: (pane: PaneId, tabId: string) => void;
-  onTogglePinTab?: (tabId: string) => void;
-}
-
-function TitleBarPaneTabs({
-  closingTabIds,
-  isSplitView,
-  pane,
-  paneState,
-  renderPanelTabIcon,
-  tabs,
-  onCloseAllTabs,
-  onCloseOtherTabs,
-  onCloseTabsToRight,
-  onDuplicateTabFile,
-  onOpenInOtherPane,
-  onPrintPreview,
-  onRevealTabFile,
-  onSavePreviewAsPdf,
-  onTabClose,
-  onTabMove,
-  onTabSelect,
-  onTogglePinTab
-}: TitleBarPaneTabsProps): ReactElement {
-  const {
-    closeContextMenu,
-    contextMenu,
-    handleTabBarDragLeave,
-    handleTabBarDragOver,
-    handleTabDragEnd,
-    handleTabDragOver,
-    handleTabDragStart,
-    handleTabDrop,
-    openContextMenu,
-    tabDropTarget
-  } = usePaneTabInteractions({ onTabMove, pane });
-  const contextTab = contextMenu ? tabs[contextMenu.tabId] : null;
-  const contextTabIsPinned = Boolean(contextTab?.isPinned);
-
-  return (
-    <div className={`title-bar-pane title-bar-pane--${pane}`}>
-      <PaneTabBar
-        closingTabIds={closingTabIds}
-        pane={pane}
-        paneState={paneState}
-        renderPanelTabIcon={renderPanelTabIcon}
-        tabDropTarget={tabDropTarget}
-        tabs={tabs}
-        onContextMenuOpen={openContextMenu}
-        onTabBarDragLeave={handleTabBarDragLeave}
-        onTabBarDragOver={handleTabBarDragOver}
-        onTabClose={(tabId) => onTabClose(pane, tabId)}
-        onTabDragEnd={handleTabDragEnd}
-        onTabDragOver={handleTabDragOver}
-        onTabDragStart={handleTabDragStart}
-        onTabDrop={handleTabDrop}
-        onTabSelect={(tabId) => onTabSelect(pane, tabId)}
-      />
-      <PaneTabContextMenu
-        contextMenu={contextMenu}
-        contextTab={contextTab}
-        isPinned={contextTabIsPinned}
-        isSplitView={isSplitView}
-        onClose={closeContextMenu}
-        onCloseAllTabs={() => onCloseAllTabs(pane)}
-        onCloseOtherTabs={(tabId) => onCloseOtherTabs(pane, tabId)}
-        onCloseTabsToRight={(tabId) => onCloseTabsToRight(pane, tabId)}
-        onDuplicateTabFile={onDuplicateTabFile}
-        onOpenInOtherPane={(tabId) => onOpenInOtherPane(pane, tabId)}
-        onPrintPreview={onPrintPreview}
-        onRevealTabFile={onRevealTabFile}
-        onSavePreviewAsPdf={onSavePreviewAsPdf}
-        onTabClose={(tabId) => onTabClose(pane, tabId)}
-        onTogglePinTab={onTogglePinTab}
-      />
     </div>
   );
 }
