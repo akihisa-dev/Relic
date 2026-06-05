@@ -121,7 +121,8 @@ describe("AppTitleBar", () => {
 
     expect(designCss).toMatch(/--title-bar-bg:\s*var\(--color-surface-alt\);/);
     expect(designCss).toMatch(/--surface:\s*var\(--color-surface-elevated\);/);
-    expect(editorCss).toMatch(/\.pane-tab\s*\{[^}]*background:\s*color-mix\(in srgb, var\(--title-bar-bg\) 78%, var\(--surface\) 22%\);/s);
+    expect(designCss).toMatch(/\.title-bar,\s*\.title-bar \.pane-tab-bar,\s*\.title-bar \.main-area-actions\s*\{[^}]*background:\s*var\(--title-bar-bg\);/s);
+    expect(editorCss).toMatch(/\.pane-tab\s*\{[^}]*background:\s*color-mix\(in srgb, var\(--title-bar-bg\) 74%, var\(--surface\) 26%\);/s);
     expect(editorCss).toMatch(/\.pane-tab--active\s*\{[^}]*background:\s*var\(--surface\);/s);
   });
 
