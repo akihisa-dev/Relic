@@ -26,6 +26,23 @@ export function overlaps(from: number, to: number, ranges: Array<{ from: number;
   return ranges.some((range) => from < range.to && to > range.from);
 }
 
+function isStyleMatch(match: InlineMatch): boolean {
+  return match.className === "cm-live-bold" || match.className === "cm-live-italic";
+}
+
+function canOverlapAcceptedMatch(match: InlineMatch, accepted: InlineMatch[]): boolean {
+  const overlappingMatches = accepted.filter((acceptedMatch) => (
+    match.from < acceptedMatch.to && match.to > acceptedMatch.from
+  ));
+
+  if (overlappingMatches.length === 0) return true;
+  if (!isStyleMatch(match) || !overlappingMatches.every(isStyleMatch)) return false;
+
+  return !overlappingMatches.some((acceptedMatch) => (
+    match.hideRanges.some((hideRange) => overlaps(hideRange.from, hideRange.to, acceptedMatch.hideRanges))
+  ));
+}
+
 function containedInRanges(from: number, to: number, ranges: Array<{ from: number; to: number }>): boolean {
   return ranges.some((range) => from >= range.from && to <= range.to);
 }
@@ -255,7 +272,7 @@ export function collectInlineMatches(lineFrom: number, text: string): InlineMatc
     };
   }));
 
-  matches.push(...collectRegexMatches(text, /\*\*([^*\n]+)\*\*/g, (match) => {
+  matches.push(...collectRegexMatches(text, /\*\*((?:[^*\n]|\*(?!\*))+\S?)\*\*/g, (match) => {
     const from = lineFrom + match.index;
     const to = from + match[0].length;
     return {
@@ -379,10 +396,13 @@ export function collectInlineMatches(lineFrom: number, text: string): InlineMatc
 
   matches.sort((a, b) => a.from - b.from || b.to - a.to);
 
+  const accepted: InlineMatch[] = [];
+
   return matches.filter((match) => {
     if (containedInRanges(match.from, match.to, htmlTagRanges)) return false;
-    if (overlaps(match.from, match.to, occupied)) return false;
+    if (overlaps(match.from, match.to, occupied) && !canOverlapAcceptedMatch(match, accepted)) return false;
     occupied.push({ from: match.from, to: match.to });
+    accepted.push(match);
     return true;
   });
 }
