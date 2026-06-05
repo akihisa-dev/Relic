@@ -64,6 +64,32 @@ describe("Editor markdown editing", () => {
     });
   });
 
+  it("本文への複数行日本語ペーストは1回のUndoで戻せる", async () => {
+    const pastedText = "一行目\n- 箇条書き\n```ts\nconst 値 = 1;\n```";
+    const readClipboardText = vi.fn().mockReturnValue(pastedText);
+    window.relic = makeRelicApi({ readClipboardText });
+
+    const { view } = await renderEditorWithView({
+      content: "前\n後",
+      settings: { ...settings, language: "ja" }
+    });
+    const contentElement = view.dom.querySelector(".cm-content")!;
+    const insertAt = "前\n".length;
+
+    view.dispatch({ selection: { anchor: insertAt } });
+    fireEvent.contextMenu(contentElement, { clientX: 32, clientY: 32 });
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Paste" }));
+
+    await waitFor(() => {
+      expect(view.state.doc.toString()).toBe(`前\n${pastedText}後`);
+    });
+    expect(view.state.selection.main.head).toBe(insertAt + pastedText.length);
+    expect(undo(view)).toBe(true);
+    expect(view.state.doc.toString()).toBe("前\n後");
+    expect(redo(view)).toBe(true);
+    expect(view.state.doc.toString()).toBe(`前\n${pastedText}後`);
+  });
+
   it("外側からcontentが更新されたら表示中の文書も同期する", async () => {
     const { rerender, viewRef } = await renderEditorWithView({ content: "left" });
 
