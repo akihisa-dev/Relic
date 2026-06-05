@@ -42,6 +42,19 @@ describe("editorLivePreviewModel", () => {
     }))).toEqual([{ text: "italic" }]);
   });
 
+  it("ネストした強調では外側の太字と内側の斜体を両方検出する", () => {
+    const text = "**bold *italic* text**";
+    const matches = collectInlineMatches(0, text);
+
+    expect(matches.map((match) => ({
+      className: match.className,
+      text: text.slice(match.contentFrom, match.contentTo)
+    }))).toEqual(expect.arrayContaining([
+      { className: "cm-live-bold", text: "bold *italic* text" },
+      { className: "cm-live-italic", text: "italic" }
+    ]));
+  });
+
   it("複数バッククォートのinline codeは外側の境界を使う", () => {
     const text = "Use ``code with ` tick`` here";
     const [match] = collectInlineMatches(0, text);
