@@ -5,6 +5,7 @@ import {
   waitFor,
   within
 } from "@testing-library/react";
+import { EditorView } from "@codemirror/view";
 import {
   afterEach,
   beforeAll,
@@ -359,6 +360,51 @@ describe("App file tabs", () => {
       path: "読書メモ.md"
     }));
     await waitFor(() => expect(useEditorStore.getState().leftPane.activeTabId).toBeNull());
+  });
+
+  it("エディタ入力直後にタブを閉じても最新本文を即時保存する", async () => {
+    const writeMarkdownFile = vi.fn().mockResolvedValue({ ok: true, value: undefined });
+
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [{ name: "読書メモ", path: "読書メモ.md", type: "file" }]
+        }
+      }),
+      readMarkdownFile: vi.fn().mockResolvedValue({
+        ok: true,
+        value: { content: "本文テスト", name: "読書メモ", path: "読書メモ.md" }
+      }),
+      writeMarkdownFile
+    });
+
+    const { container } = await renderApp();
+    fireEvent.click(await screen.findByRole("button", { name: /読書メモ/ }));
+    await waitFor(() => expect(useEditorStore.getState().leftPane.activeTabId).not.toBeNull());
+
+    const activeTabId = useEditorStore.getState().leftPane.activeTabId!;
+    const editorContent = container.querySelector(".cm-content");
+    expect(editorContent).not.toBeNull();
+
+    const view = EditorView.findFromDOM(editorContent as HTMLElement);
+    expect(view).not.toBeNull();
+
+    act(() => {
+      view!.dispatch({
+        changes: { from: view!.state.doc.length, insert: "\n入力直後の本文" }
+      });
+    });
+
+    const tab = (await screen.findByText("読書メモ", { selector: ".pane-tab-name" })).closest(".pane-tab");
+    fireEvent.click(within(tab as HTMLElement).getByTitle("タブを閉じる"));
+
+    await waitFor(() => expect(writeMarkdownFile).toHaveBeenCalledWith({
+      content: "本文テスト\n入力直後の本文",
+      path: "読書メモ.md"
+    }));
+    await waitFor(() => expect(useEditorStore.getState().tabs[activeTabId]).toBeUndefined());
   });
 
   it("閉じる前保存に失敗した場合はタブと本文を維持する", async () => {
