@@ -96,11 +96,15 @@ describe("AppTitleBar", () => {
   });
 
   it("keeps gaps around title bar action buttons draggable", () => {
-    const css = readFileSync("src/renderer/styles/shell-sidebar.css", "utf8");
+    const shellCss = readFileSync("src/renderer/styles/shell-sidebar.css", "utf8");
+    const editorCss = readFileSync("src/renderer/styles/workspace-editor.css", "utf8");
 
-    expect(css).toMatch(/\.title-bar-actions\s*\{[^}]*-webkit-app-region:\s*drag;/s);
-    expect(css).toMatch(/\.title-bar \.main-area-actions\s*\{[^}]*-webkit-app-region:\s*drag;/s);
-    expect(css).toMatch(/\.title-bar \.main-area-actions \.toolbar-btn\s*\{[^}]*-webkit-app-region:\s*no-drag;/s);
+    expect(shellCss).toMatch(/\.title-bar-tabs\s*\{[^}]*-webkit-app-region:\s*drag;/s);
+    expect(shellCss).toMatch(/\.title-bar-actions\s*\{[^}]*-webkit-app-region:\s*drag;/s);
+    expect(shellCss).toMatch(/\.title-bar \.main-area-actions\s*\{[^}]*-webkit-app-region:\s*drag;/s);
+    expect(shellCss).toMatch(/\.title-bar \.main-area-actions \.toolbar-btn\s*\{[^}]*-webkit-app-region:\s*no-drag;/s);
+    expect(editorCss).toMatch(/\.pane-tab\s*\{[^}]*-webkit-app-region:\s*no-drag;/s);
+    expect(editorCss).toMatch(/\.pane-tab-close\s*\{[^}]*-webkit-app-region:\s*no-drag;/s);
   });
 
   it("lets title bar action tooltips render above the workspace layer", () => {
@@ -109,6 +113,13 @@ describe("AppTitleBar", () => {
     expect(css).toMatch(/\.title-bar\s*\{[^}]*overflow:\s*visible;/s);
     expect(css).toMatch(/\.title-bar\s*\{[^}]*position:\s*relative;/s);
     expect(css).toMatch(/\.title-bar\s*\{[^}]*z-index:\s*40;/s);
+  });
+
+  it("keeps the title bar background separate from the document surface", () => {
+    const css = readFileSync("src/renderer/styles/architectural-design.css", "utf8");
+
+    expect(css).toMatch(/--title-bar-bg:\s*var\(--color-surface\);/);
+    expect(css).toMatch(/--surface:\s*var\(--color-surface-elevated\);/);
   });
 
 });
