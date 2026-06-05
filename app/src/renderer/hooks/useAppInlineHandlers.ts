@@ -1,13 +1,14 @@
 import { useCallback } from "react";
 
+import type { HeadingScrollTarget, OutlineHeading } from "../editorDerivedState";
 import type { PaneId } from "../store/editorStore";
 
 interface UseAppInlineHandlersInput {
   focusedPane: PaneId;
   openSecondarySidebar: (view: "ai-chat") => void;
   setEditorActionPulse: (updater: (value: number) => number) => void;
-  setLeftPaneScrollHeading: (heading: string | undefined) => void;
-  setRightPaneScrollHeading: (heading: string | undefined) => void;
+  setLeftPaneScrollHeading: (heading: HeadingScrollTarget | undefined) => void;
+  setRightPaneScrollHeading: (heading: HeadingScrollTarget | undefined) => void;
 }
 
 export function useAppInlineHandlers({
@@ -19,14 +20,14 @@ export function useAppInlineHandlers({
 }: UseAppInlineHandlersInput): {
   onEditorAction: () => void;
   onFileOpenMotion: () => void;
-  onOutlineHeadingClick: (heading: string) => void;
+  onOutlineHeadingClick: (heading: OutlineHeading) => void;
   onScrollTargetHandled: (pane: PaneId) => void;
   openAIChatSidebar: () => void;
 } {
   const pulseEditorAction = useCallback(() => {
     setEditorActionPulse((value) => value + 1);
   }, [setEditorActionPulse]);
-  const onOutlineHeadingClick = useCallback((heading: string) => {
+  const onOutlineHeadingClick = useCallback((heading: OutlineHeading) => {
     const setScrollHeading = focusedPane === "left" ? setLeftPaneScrollHeading : setRightPaneScrollHeading;
     setScrollHeading(heading);
   }, [focusedPane, setLeftPaneScrollHeading, setRightPaneScrollHeading]);

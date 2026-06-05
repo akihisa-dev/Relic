@@ -24,6 +24,7 @@ import { useAppToast } from "./hooks/useAppToast";
 import { useAppWorkspaceCollections } from "./hooks/useAppWorkspaceCollections";
 import { useCommandPaletteCommands } from "./hooks/useCommandPaletteCommands";
 import { useEditorAutoSave } from "./hooks/useEditorAutoSave";
+import type { HeadingScrollTarget } from "./editorDerivedState";
 import { usePaneTabMotion } from "./hooks/usePaneTabMotion";
 import { useRailFlights } from "./hooks/useRailFlights";
 import { useSidebarFileInteractions } from "./hooks/useSidebarFileInteractions";
@@ -44,8 +45,8 @@ export function App(): ReactElement {
   const [workspaceState, setWorkspaceState] = useState<WorkspaceState | null>(null);
   const [linkContextMenu, setLinkContextMenu] = useState<AppLinkContextMenu | null>(null);
   const { closeToast, isToastClosing, setWorkspaceError, showToast, toastMessage } = useAppToast();
-  const [leftPaneScrollHeading, setLeftPaneScrollHeading] = useState<string | undefined>(undefined);
-  const [rightPaneScrollHeading, setRightPaneScrollHeading] = useState<string | undefined>(undefined);
+  const [leftPaneScrollHeading, setLeftPaneScrollHeading] = useState<HeadingScrollTarget | undefined>(undefined);
+  const [rightPaneScrollHeading, setRightPaneScrollHeading] = useState<HeadingScrollTarget | undefined>(undefined);
   const [editorActionPulse, setEditorActionPulse] = useState(0);
   const [showCommandPalette, setShowCommandPalette] = useState(false);
   const [showQuickSwitcher, setShowQuickSwitcher] = useState(false);

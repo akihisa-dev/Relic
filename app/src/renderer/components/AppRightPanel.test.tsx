@@ -64,7 +64,7 @@ describe("AppRightPanel", () => {
           onOpenWikiLink={vi.fn()}
           onOutlineHeadingClick={onOutlineHeadingClick}
           onResizeStart={vi.fn()}
-          outlineHeadings={[{ level: 2, text: "Overview" }]}
+          outlineHeadings={[{ from: 12, level: 2, text: "Overview" }]}
           outgoingLinks={[]}
           outgoingLinksLimited={false}
           rightPanelView="outline"
@@ -76,7 +76,39 @@ describe("AppRightPanel", () => {
 
     screen.getByRole("button", { name: "Overview" }).click();
 
-    expect(onOutlineHeadingClick).toHaveBeenCalledWith("Overview");
+    expect(onOutlineHeadingClick).toHaveBeenCalledWith({ from: 12, level: 2, text: "Overview" });
+  });
+
+  it("passes the clicked duplicate outline heading with its document position", () => {
+    const onOutlineHeadingClick = vi.fn();
+
+    render(
+      <I18nProvider language="en">
+        <AppRightPanel
+          backlinks={[]}
+          isLoadingBacklinks={false}
+          isOpen
+          isResizing={false}
+          onOpenFile={vi.fn()}
+          onOpenWikiLink={vi.fn()}
+          onOutlineHeadingClick={onOutlineHeadingClick}
+          onResizeStart={vi.fn()}
+          outlineHeadings={[
+            { from: 0, level: 1, text: "Scene" },
+            { from: 24, level: 2, text: "Scene" }
+          ]}
+          outgoingLinks={[]}
+          outgoingLinksLimited={false}
+          rightPanelView="outline"
+          setLinkContextMenu={vi.fn()}
+          width={260}
+        />
+      </I18nProvider>
+    );
+
+    screen.getAllByRole("button", { name: "Scene" })[1]?.click();
+
+    expect(onOutlineHeadingClick).toHaveBeenCalledWith({ from: 24, level: 2, text: "Scene" });
   });
 
   it("shows a notice when outgoing links are limited", () => {

@@ -26,16 +26,18 @@ describe("editorDerivedState", () => {
   });
 
   it("Markdown見出しからアウトラインを抽出する", () => {
-    expect(extractOutlineHeadings([
+    const content = [
       "# Title",
       "本文",
       "### Detail",
       "####Deep without space",
       "###### Max"
-    ].join("\n"))).toEqual([
-      { level: 1, text: "Title" },
-      { level: 3, text: "Detail" },
-      { level: 6, text: "Max" }
+    ].join("\n");
+
+    expect(extractOutlineHeadings(content)).toEqual([
+      { from: content.indexOf("# Title"), level: 1, text: "Title" },
+      { from: content.indexOf("### Detail"), level: 3, text: "Detail" },
+      { from: content.indexOf("###### Max"), level: 6, text: "Max" }
     ]);
   });
 });

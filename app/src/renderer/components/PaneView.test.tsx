@@ -178,6 +178,38 @@ describe("PaneView", () => {
     expect(props.onScrollTargetHandled).toHaveBeenCalledTimes(1);
   });
 
+  it("同名見出しジャンプではアウトライン項目の位置へカーソルを移す", async () => {
+    const content = [
+      "# Scene",
+      "",
+      "先頭の章",
+      "",
+      "## Scene",
+      "",
+      "2つ目の章"
+    ].join("\n");
+    const secondHeadingFrom = content.indexOf("## Scene");
+    setPaneState(
+      {
+        [fileTab.id]: {
+          ...fileTab,
+          content,
+          savedContent: content
+        }
+      },
+      { activeTabId: fileTab.id, history: [fileTab.id], tabIds: [fileTab.id] }
+    );
+
+    const props = renderPaneView({
+      scrollTargetHeading: { from: secondHeadingFrom, level: 2, text: "Scene" }
+    });
+
+    await waitFor(() => {
+      expect(props.viewRef.current?.state.selection.main.from).toBe(secondHeadingFrom);
+    });
+    expect(props.onScrollTargetHandled).toHaveBeenCalledTimes(1);
+  });
+
   it("1MiBを超えるMarkdownは通知を出して一時的にソース表示で開く", async () => {
     const content = [
       "**large**",
