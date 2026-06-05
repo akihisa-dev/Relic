@@ -354,8 +354,11 @@ function buildEditorThemeExtension(settings: EditorSettings): Extension {
   });
 }
 
-function buildContentAttributesExtension(settings: EditorSettings): Extension {
-  return EditorView.contentAttributes.of({ spellcheck: settings.spellCheck ? "true" : "false" });
+function buildContentAttributesExtension(settings: EditorSettings, t: Translator): Extension {
+  return EditorView.contentAttributes.of({
+    "aria-label": t("editor.markdownInput"),
+    spellcheck: settings.spellCheck ? "true" : "false"
+  });
 }
 
 function buildLineNumbersExtension(settings: EditorSettings): Extension {
@@ -486,7 +489,7 @@ function buildLivePreviewExtensions(config: EditorExtensionConfig): Extension {
 export function buildEditorReconfigureEffects(config: EditorExtensionConfig): StateEffect<unknown>[] {
   return [
     autocompleteCompartment.reconfigure(buildAutocompleteExtension(config.allFilePaths, config.frontmatterCandidates)),
-    contentAttributesCompartment.reconfigure(buildContentAttributesExtension(config.settings)),
+    contentAttributesCompartment.reconfigure(buildContentAttributesExtension(config.settings, config.t)),
     editorThemeCompartment.reconfigure(buildEditorThemeExtension(config.settings)),
     eventHandlersCompartment.reconfigure(buildEventHandlersExtension(config)),
     lineNumbersCompartment.reconfigure(buildLineNumbersExtension(config.settings)),
@@ -539,7 +542,7 @@ export function buildExtensions(
     frontmatterCollapsedField,
     eventHandlersCompartment.of(buildEventHandlersExtension(config)),
     editorThemeCompartment.of(buildEditorThemeExtension(settings)),
-    contentAttributesCompartment.of(buildContentAttributesExtension(settings)),
+    contentAttributesCompartment.of(buildContentAttributesExtension(settings, t)),
     lineNumbersCompartment.of(buildLineNumbersExtension(settings)),
     typewriterCompartment.of(buildTypewriterExtension(typewriterMode)),
     livePreviewCompartment.of(buildLivePreviewExtensions(config))

@@ -55,6 +55,7 @@
   "editor.formatting": "Format",
   "editor.insertFormatting": "Insert",
   "editor.listFormatting": "List",
+  "editor.markdownInput": "Markdown editor",
   "editor.paste": "Paste",
   "editor.selectAll": "Select all",
   "editor.redo": "Redo",
