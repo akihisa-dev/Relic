@@ -34,6 +34,25 @@ describe("editorLivePreviewModel", () => {
     expect(matches[0].className).toBe("cm-live-link");
   });
 
+  it("Markdown linkのURL内に括弧があってもリンク全体を検出する", () => {
+    const text = "Go [site](https://example.com/a_(b)) after";
+    const [match] = collectInlineMatches(0, text);
+
+    expect(match).toMatchObject({
+      className: "cm-live-link",
+      contentFrom: text.indexOf("site"),
+      contentTo: text.indexOf("site") + "site".length,
+      from: text.indexOf("[site]"),
+      to: text.indexOf(" after")
+    });
+  });
+
+  it("閉じていないMarkdown linkはライブプレビュー対象にしない", () => {
+    const matches = collectInlineMatches(0, "Go [site](https://example.com/a_(b)");
+
+    expect(matches.filter((match) => match.className === "cm-live-link")).toHaveLength(0);
+  });
+
   it("範囲の重なりを判定する", () => {
     expect(overlaps(2, 4, [{ from: 0, to: 3 }])).toBe(true);
     expect(overlaps(3, 5, [{ from: 0, to: 3 }])).toBe(false);
@@ -45,6 +64,16 @@ describe("editorLivePreviewModel", () => {
 
     expect(findClickableLinkAtPosition(state.doc, position)).toEqual({
       href: "https://example.com",
+      type: "markdown"
+    });
+  });
+
+  it("Markdown linkのURL内に括弧があってもクリック位置からhrefを返す", () => {
+    const state = EditorState.create({ doc: "Go [site](https://example.com/a_(b))" });
+    const position = state.doc.toString().indexOf("site");
+
+    expect(findClickableLinkAtPosition(state.doc, position)).toEqual({
+      href: "https://example.com/a_(b)",
       type: "markdown"
     });
   });

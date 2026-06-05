@@ -43,6 +43,74 @@ function collectRegexMatches(
   return matches;
 }
 
+interface MarkdownLinkMatch {
+  from: number;
+  to: number;
+  textFrom: number;
+  textTo: number;
+  href: string;
+}
+
+function findMarkdownLinkMatches(text: string): MarkdownLinkMatch[] {
+  const matches: MarkdownLinkMatch[] = [];
+  let searchFrom = 0;
+
+  while (searchFrom < text.length) {
+    const from = text.indexOf("[", searchFrom);
+    if (from < 0) break;
+
+    const textTo = text.indexOf("]", from + 1);
+    if (textTo < 0 || text.slice(from + 1, textTo).includes("\n")) {
+      searchFrom = from + 1;
+      continue;
+    }
+
+    const hrefOpen = textTo + 1;
+    const hrefFrom = hrefOpen + 1;
+    if (text[hrefOpen] !== "(" || hrefFrom >= text.length) {
+      searchFrom = from + 1;
+      continue;
+    }
+
+    let parenDepth = 0;
+    let hrefClose = -1;
+    for (let index = hrefFrom; index < text.length; index += 1) {
+      const char = text[index];
+      if (char === "\n") break;
+      if (char === "\\") {
+        index += 1;
+        continue;
+      }
+      if (char === "(") {
+        parenDepth += 1;
+        continue;
+      }
+      if (char !== ")") continue;
+      if (parenDepth === 0) {
+        hrefClose = index;
+        break;
+      }
+      parenDepth -= 1;
+    }
+
+    if (hrefClose < 0 || hrefClose === hrefFrom) {
+      searchFrom = from + 1;
+      continue;
+    }
+
+    matches.push({
+      from,
+      to: hrefClose + 1,
+      textFrom: from + 1,
+      textTo,
+      href: text.slice(hrefFrom, hrefClose)
+    });
+    searchFrom = hrefClose + 1;
+  }
+
+  return matches;
+}
+
 export function collectInlineMatches(lineFrom: number, text: string): InlineMatch[] {
   const occupied: Array<{ from: number; to: number }> = [];
   const matches: InlineMatch[] = [];
@@ -60,11 +128,11 @@ export function collectInlineMatches(lineFrom: number, text: string): InlineMatc
     };
   }));
 
-  matches.push(...collectRegexMatches(text, /\[([^\]\n]+)\]\(([^)\n]+)\)/g, (match) => {
-    const from = lineFrom + match.index;
-    const textFrom = from + 1;
-    const textTo = textFrom + match[1].length;
-    const to = from + match[0].length;
+  matches.push(...findMarkdownLinkMatches(text).map((match) => {
+    const from = lineFrom + match.from;
+    const textFrom = lineFrom + match.textFrom;
+    const textTo = lineFrom + match.textTo;
+    const to = lineFrom + match.to;
     return {
       from,
       to,
@@ -243,13 +311,9 @@ export function findClickableLinkAtPosition(
   const line = doc.lineAt(position);
   const offset = position - line.from;
 
-  for (const match of line.text.matchAll(/\[([^\]\n]+)\]\(([^)\n]+)\)/g)) {
-    const fullText = match[0];
-    const href = match[2];
-    const start = match.index ?? 0;
-
-    if (offset >= start && offset <= start + fullText.length) {
-      return { href, type: "markdown" };
+  for (const match of findMarkdownLinkMatches(line.text)) {
+    if (offset >= match.from && offset <= match.to) {
+      return { href: match.href, type: "markdown" };
     }
   }
 
