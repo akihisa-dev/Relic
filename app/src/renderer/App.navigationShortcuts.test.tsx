@@ -3,6 +3,7 @@ import {
   screen,
   waitFor
 } from "@testing-library/react";
+import { EditorView } from "@codemirror/view";
 import {
   afterEach,
   beforeAll,
@@ -124,6 +125,67 @@ describe("App navigation and shortcuts", () => {
     fireEvent.click(sourceButton);
 
     expect(sourceButton).toHaveClass("active");
+  });
+
+  it("ソースモードを切り替えてもエディタのカーソルとスクロール位置を維持する", async () => {
+    const content = [
+      "# 読書メモ",
+      "",
+      "**重要** な本文",
+      "",
+      ...Array.from({ length: 80 }, (_, index) => `行${index + 1}`)
+    ].join("\n");
+
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [{ name: "読書メモ", path: "読書メモ.md", type: "file" }]
+        }
+      }),
+      readMarkdownFile: vi.fn().mockResolvedValue({
+        ok: true,
+        value: { content, name: "読書メモ", path: "読書メモ.md" }
+      })
+    });
+
+    const { container } = await renderApp();
+    fireEvent.click(await screen.findByRole("button", { name: /読書メモ/ }));
+    await screen.findByText("読書メモ", { selector: ".pane-tab-name" });
+
+    const editorContent = container.querySelector(".cm-content");
+    expect(editorContent).not.toBeNull();
+
+    const view = EditorView.findFromDOM(editorContent as HTMLElement);
+    expect(view).not.toBeNull();
+
+    const selection = {
+      anchor: content.indexOf("重要"),
+      head: content.indexOf(" な本文")
+    };
+    view!.scrollDOM.scrollTop = 144;
+    view!.scrollDOM.scrollLeft = 11;
+    view!.dispatch({ selection });
+
+    const sourceButton = await screen.findByRole("button", { name: "ソース" });
+    fireEvent.click(sourceButton);
+
+    await waitFor(() => expect(sourceButton).toHaveClass("active"));
+    expect(EditorView.findFromDOM(container.querySelector(".cm-content") as HTMLElement)).toBe(view);
+    expect(view!.state.selection.main.from).toBe(selection.anchor);
+    expect(view!.state.selection.main.to).toBe(selection.head);
+    expect(view!.scrollDOM.scrollTop).toBe(144);
+    expect(view!.scrollDOM.scrollLeft).toBe(11);
+
+    fireEvent.click(sourceButton);
+
+    await waitFor(() => expect(sourceButton).not.toHaveClass("active"));
+    expect(EditorView.findFromDOM(container.querySelector(".cm-content") as HTMLElement)).toBe(view);
+    expect(view!.state.selection.main.from).toBe(selection.anchor);
+    expect(view!.state.selection.main.to).toBe(selection.head);
+    expect(view!.scrollDOM.scrollTop).toBe(144);
+    expect(view!.scrollDOM.scrollLeft).toBe(11);
   });
 
   it("サイドバーが閉じていてもショートカットで対象ビューを開ける", async () => {
