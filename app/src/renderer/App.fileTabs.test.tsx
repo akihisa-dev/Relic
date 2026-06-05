@@ -408,6 +408,60 @@ describe("App file tabs", () => {
     await waitFor(() => expect(useEditorStore.getState().tabs[activeTabId]).toBeUndefined());
   });
 
+  it("エディタ入力直後に別タブへ切り替えて戻っても本文を保持する", async () => {
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [
+            { name: "読書メモ", path: "読書メモ.md", type: "file" },
+            { name: "作業メモ", path: "作業メモ.md", type: "file" }
+          ]
+        }
+      }),
+      readMarkdownFile: vi.fn().mockImplementation(({ path }: { path: string }) => Promise.resolve({
+        ok: true,
+        value: path === "読書メモ.md"
+          ? { content: "本文テスト", name: "読書メモ", path: "読書メモ.md" }
+          : { content: "作業本文", name: "作業メモ", path: "作業メモ.md" }
+      }))
+    });
+
+    const { container } = await renderApp();
+    fireEvent.click(await screen.findByRole("button", { name: /読書メモ/ }));
+    await waitFor(() => expect(useEditorStore.getState().leftPane.activeTabId).not.toBeNull());
+    const firstTabId = useEditorStore.getState().leftPane.activeTabId!;
+
+    const editorContent = container.querySelector(".cm-content");
+    expect(editorContent).not.toBeNull();
+
+    const view = EditorView.findFromDOM(editorContent as HTMLElement);
+    expect(view).not.toBeNull();
+
+    act(() => {
+      view!.dispatch({
+        changes: { from: view!.state.doc.length, insert: "\n切替直前の本文" }
+      });
+    });
+
+    fireEvent.click(await screen.findByRole("button", { name: /作業メモ/ }));
+    await waitFor(() => {
+      const activeTab = useEditorStore.getState().tabs[useEditorStore.getState().leftPane.activeTabId ?? ""];
+      expect(activeTab?.kind).toBe("file");
+      if (activeTab?.kind === "file") expect(activeTab.path).toBe("作業メモ.md");
+    });
+
+    fireEvent.click(await screen.findByText("読書メモ", { selector: ".pane-tab-name" }));
+
+    await waitFor(() => expect(useEditorStore.getState().leftPane.activeTabId).toBe(firstTabId));
+    await waitFor(() => expect(container.querySelector(".cm-content")).toHaveTextContent("本文テスト"));
+    expect(container.querySelector(".cm-content")).toHaveTextContent("切替直前の本文");
+    const firstTab = useEditorStore.getState().tabs[firstTabId];
+    expect(firstTab?.kind).toBe("file");
+    if (firstTab?.kind === "file") expect(firstTab.content).toBe("本文テスト\n切替直前の本文");
+  });
+
   it("エディタ入力直後にウィンドウを閉じても最新本文を保存してから閉じる", async () => {
     let closeRequestHandler: (event: WindowCloseRequestEvent) => void = () => {
       throw new Error("close request handler was not registered");
