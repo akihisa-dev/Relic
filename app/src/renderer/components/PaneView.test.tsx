@@ -148,6 +148,36 @@ describe("PaneView", () => {
     expect(screen.getByText("Editable body")).toBeInTheDocument();
   });
 
+  it("見出しジャンプではスクロール対象の見出しへカーソルも移す", async () => {
+    const content = [
+      "# Intro",
+      "",
+      "本文",
+      "",
+      "## Target",
+      "",
+      "続き"
+    ].join("\n");
+    setPaneState(
+      {
+        [fileTab.id]: {
+          ...fileTab,
+          content,
+          savedContent: content
+        }
+      },
+      { activeTabId: fileTab.id, history: [fileTab.id], tabIds: [fileTab.id] }
+    );
+
+    const props = renderPaneView({ scrollTargetHeading: "Target" });
+    const targetFrom = content.indexOf("## Target");
+
+    await waitFor(() => {
+      expect(props.viewRef.current?.state.selection.main.from).toBe(targetFrom);
+    });
+    expect(props.onScrollTargetHandled).toHaveBeenCalledTimes(1);
+  });
+
   it("1MiBを超えるMarkdownは通知を出して一時的にソース表示で開く", async () => {
     const content = [
       "**large**",

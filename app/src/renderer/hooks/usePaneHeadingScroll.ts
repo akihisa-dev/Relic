@@ -18,7 +18,10 @@ export function usePaneHeadingScroll({
     for (let i = 1; i <= doc.lines; i++) {
       const line = doc.line(i);
       if (/^#{1,6} /.test(line.text) && line.text.replace(/^#{1,6} /, "") === scrollTargetHeading) {
-        view.dispatch({ effects: EditorView.scrollIntoView(line.from, { y: "center" }) });
+        view.dispatch({
+          effects: EditorView.scrollIntoView(line.from, { y: "center" }),
+          selection: { anchor: line.from }
+        });
         break;
       }
     }
