@@ -39,7 +39,11 @@ export async function writeEditorClipboardText(text: string): Promise<void> {
 
 export async function readEditorClipboardForPaste(): Promise<string> {
   if (window.relic?.readClipboardText) {
-    return readEditorClipboardText();
+    try {
+      return readEditorClipboardText();
+    } catch {
+      // Fall through to the browser clipboard fallback.
+    }
   }
 
   if (navigator.clipboard?.readText) {

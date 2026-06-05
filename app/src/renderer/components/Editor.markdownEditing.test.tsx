@@ -90,6 +90,36 @@ describe("Editor markdown editing", () => {
     expect(view.state.doc.toString()).toBe(`前\n${pastedText}後`);
   });
 
+  it("Electron側のクリップボード読み取りに失敗してもブラウザ側からペーストできる", async () => {
+    const readClipboardText = vi.fn(() => {
+      throw new Error("clipboard unavailable");
+    });
+    const readText = vi.fn().mockResolvedValue("fallback paste");
+    window.relic = makeRelicApi({ readClipboardText });
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: {
+        readText,
+        writeText: vi.fn()
+      }
+    });
+
+    const { view } = await renderEditorWithView({
+      content: "前後",
+      settings: { ...settings, language: "ja" }
+    });
+    const contentElement = view.dom.querySelector(".cm-content")!;
+
+    view.dispatch({ selection: { anchor: 1 } });
+    fireEvent.contextMenu(contentElement, { clientX: 32, clientY: 32 });
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Paste" }));
+
+    await waitFor(() => {
+      expect(view.state.doc.toString()).toBe("前fallback paste後");
+    });
+    expect(readText).toHaveBeenCalled();
+  });
+
   it("外側からcontentが更新されたら表示中の文書も同期する", async () => {
     const { rerender, viewRef } = await renderEditorWithView({ content: "left" });
 
