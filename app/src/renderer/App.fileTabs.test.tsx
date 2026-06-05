@@ -149,6 +149,62 @@ describe("App file tabs", () => {
     expect(document.querySelector(".cm-live-bold")).toBeNull();
   });
 
+  it("1万行Markdownへ入力してもEditorViewとカーソルとスクロール位置を維持する", async () => {
+    const longMarkdown = Array.from({ length: 10_000 }, (_, index) => `行${index + 1} 本文`).join("\n");
+
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [{ name: "長文メモ", path: "長文メモ.md", type: "file" }]
+        }
+      }),
+      readMarkdownFile: vi.fn().mockResolvedValue({
+        ok: true,
+        value: { content: longMarkdown, name: "長文メモ", path: "長文メモ.md" }
+      })
+    });
+
+    const { container } = await renderApp();
+
+    fireEvent.click(await screen.findByRole("button", { name: /長文メモ/ }));
+
+    const editorContent = await waitFor(() => {
+      const element = container.querySelector(".cm-content");
+      expect(element).not.toBeNull();
+      return element as HTMLElement;
+    });
+
+    const view = EditorView.findFromDOM(editorContent);
+    expect(view).not.toBeNull();
+    expect(screen.queryByText("大きいMarkdownのため、ライブプレビューを一時停止中です。")).toBeNull();
+
+    view!.scrollDOM.scrollTop = 2400;
+    view!.scrollDOM.scrollLeft = 32;
+
+    const insertAt = view!.state.doc.length;
+    act(() => {
+      view!.dispatch({
+        changes: { from: insertAt, insert: "\n入力しても位置を維持" },
+        selection: { anchor: insertAt + "\n入力しても位置を維持".length }
+      });
+    });
+
+    const nextEditorContent = container.querySelector(".cm-content") as HTMLElement;
+    const nextView = EditorView.findFromDOM(nextEditorContent);
+    expect(nextView).toBe(view);
+    expect(nextView!.state.selection.main.head).toBe(insertAt + "\n入力しても位置を維持".length);
+    expect(nextView!.scrollDOM.scrollTop).toBe(2400);
+    expect(nextView!.scrollDOM.scrollLeft).toBe(32);
+
+    const activeTabId = useEditorStore.getState().leftPane.activeTabId;
+    expect(activeTabId).not.toBeNull();
+    const activeTab = useEditorStore.getState().tabs[activeTabId!];
+    expect(activeTab?.kind).toBe("file");
+    if (activeTab?.kind === "file") expect(activeTab.content).toBe(`${longMarkdown}\n入力しても位置を維持`);
+  });
+
   it("タブの右クリックメニューから複製・ピン留め・コピー・場所表示を実行する", async () => {
     const duplicateMarkdownFile = vi.fn().mockResolvedValue({
       ok: true,
