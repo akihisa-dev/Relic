@@ -535,7 +535,7 @@
   -webkit-app-region: no-drag;
   align-items: center;
   animation: tab-enter var(--motion-fast) var(--ease-standard);
-  background: transparent;
+  background: color-mix(in srgb, var(--title-bar-bg) 78%, var(--surface) 22%);
   border: 0;
   border-radius: 0;
   color: var(--text-3);
@@ -564,7 +564,7 @@
 }
 
 .pane-tab:hover:not(.pane-tab--active):not(.pane-tab--closing) {
-  background: color-mix(in srgb, var(--surface) 62%, transparent);
+  background: color-mix(in srgb, var(--title-bar-bg) 58%, var(--surface) 42%);
   color: var(--text-2);
 }
 
