@@ -18,7 +18,7 @@ import { diagramEditRangeField } from "./editorDiagramEditState";
 import { createLivePreviewTableField } from "./editorTables";
 import type { Translator } from "./i18nModel";
 import { isPositionInFencedCodeBlock } from "./markdownCodeBlockRanges";
-import { wrapSelection } from "./toolbarCommands";
+import { insertMarkdownLink, wrapSelection } from "./toolbarCommands";
 
 function createLivePreviewPlugin(
   onOpenLinkRef: RefObject<((href: string) => void) | undefined>,
@@ -465,6 +465,13 @@ function buildMarkdownFormattingKeymapExtension(t: Translator): Extension {
       key: "Mod-i",
       run: (view) => {
         wrapSelection(view, "*", "*", t("toolbar.placeholderText"));
+        return true;
+      }
+    },
+    {
+      key: "Mod-k",
+      run: (view) => {
+        insertMarkdownLink(view, "URL", t("toolbar.placeholderLinkText"));
         return true;
       }
     }

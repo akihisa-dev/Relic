@@ -1,4 +1,5 @@
 import { EditorView } from "@codemirror/view";
+import { redo, undo } from "@codemirror/commands";
 import { fireEvent } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
@@ -41,6 +42,23 @@ describe("Editor shortcuts", () => {
     fireEvent.keyDown(contentElement, { key: "i", ...modKeyInit() });
     expect(view.state.doc.toString()).toBe("**bold** *italic*");
     expect(view.state.sliceDoc(view.state.selection.main.from, view.state.selection.main.to)).toBe("italic");
+  });
+
+  it("Mod+Kで選択範囲へMarkdownリンクを適用し、Undoで戻せる", async () => {
+    const { view } = await renderEditorWithView({
+      content: "open link"
+    });
+    const contentElement = view.dom.querySelector(".cm-content")!;
+
+    view.dispatch({ selection: { anchor: 5, head: 9 } });
+    fireEvent.keyDown(contentElement, { key: "k", ...modKeyInit() });
+
+    expect(view.state.doc.toString()).toBe("open [link](URL)");
+    expect(view.state.sliceDoc(view.state.selection.main.from, view.state.selection.main.to)).toBe("link");
+    expect(undo(view)).toBe(true);
+    expect(view.state.doc.toString()).toBe("open link");
+    expect(redo(view)).toBe(true);
+    expect(view.state.doc.toString()).toBe("open [link](URL)");
   });
 
   it("リスト行でEnterを押すと次の項目を作り、空項目ではリストを終了する", async () => {
