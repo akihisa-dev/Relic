@@ -363,7 +363,7 @@ export function collectInlineMatches(lineFrom: number, text: string): InlineMatc
     };
   }));
 
-  matches.push(...collectRegexMatches(text, /(^|[^_])_([^_\n]+)_(?!_)/g, (match) => {
+  matches.push(...collectRegexMatches(text, /(^|[^A-Za-z0-9_])_([^_\n]+)_(?![A-Za-z0-9_])/g, (match) => {
     const markerOffset = match[1].length;
     const from = lineFrom + match.index + markerOffset;
     const to = from + match[0].length - markerOffset;
