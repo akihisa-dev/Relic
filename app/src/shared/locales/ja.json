@@ -55,6 +55,7 @@
   "editor.formatting": "装飾",
   "editor.insertFormatting": "挿入",
   "editor.listFormatting": "リスト",
+  "editor.markdownInput": "Markdown本文",
   "editor.paste": "ペースト",
   "editor.selectAll": "すべて選択",
   "editor.redo": "やり直し",
