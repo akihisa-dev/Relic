@@ -88,6 +88,18 @@ describe("Editor preview", () => {
     });
   });
 
+  it("巨大な章は見出し折りたたみ範囲を作らない", () => {
+    const state = EditorState.create({
+      doc: [
+        "# Huge",
+        ...Array.from({ length: 2_100 }, (_, index) => `line ${index}`)
+      ].join("\n"),
+      extensions: [markdown({ extensions: GFM })]
+    });
+
+    expect(headingFoldRange(state, state.doc.line(1).from)).toBeNull();
+  });
+
   it("本文側の見出し行先頭ボタンで本文を折りたためる", async () => {
     const { container } = render(
       <I18nProvider language="ja">
