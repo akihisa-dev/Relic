@@ -417,6 +417,31 @@ describe("Toolbar markdown actions", () => {
     view.destroy();
   });
 
+  it("リスト系ボタンは途中だけの選択でも対象行だけを変換する", () => {
+    const content = "intro\n  child\n  plain\noutro";
+    const view = createView(
+      content,
+      EditorSelection.single(content.indexOf("child") + 1, content.indexOf("plain") + 2)
+    );
+    render(<Toolbar viewRef={{ current: view }} />);
+
+    clickToolbarButton("Bulleted list");
+
+    expect(view.state.doc.toString()).toBe("intro\n  - child\n  - plain\noutro");
+    view.destroy();
+  });
+
+  it("番号付きリストはインデント階層ごとに自然な番号へ変換する", () => {
+    const content = "- parent\n  - child\n  - second child\n- sibling\n  - sibling child";
+    const view = createView(content, EditorSelection.single(0, content.length));
+    render(<Toolbar viewRef={{ current: view }} />);
+
+    clickToolbarButton("Numbered list");
+
+    expect(view.state.doc.toString()).toBe("1. parent\n  1. child\n  2. second child\n2. sibling\n  1. sibling child");
+    view.destroy();
+  });
+
   it("リンクボタンがURL入力後にMarkdownリンクを挿入する", () => {
     const view = createView("hello", EditorSelection.single(0, 5));
     render(<Toolbar viewRef={{ current: view }} />);

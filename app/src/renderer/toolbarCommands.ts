@@ -118,6 +118,7 @@ export function insertListAtSelectedLines(
     }
 
     let appliedIndex = 0;
+    const orderedCounters = new Map<string, number>();
     const nextLines: string[] = [];
     const targetLines = selectedNonEmptyLines(state, fromLine.number, toLine.number);
     const shouldRemove = targetLines.length > 0
@@ -138,7 +139,9 @@ export function insertListAtSelectedLines(
       }
 
       const plain = parsePlainLine(line.text);
-      nextLines.push(`${parsed?.indent ?? plain.indent}${listPrefix(kind, appliedIndex)}${parsed?.content ?? plain.content}`);
+      const indent = parsed?.indent ?? plain.indent;
+      const index = kind === "ordered" ? nextOrderedListIndex(indent, orderedCounters) : appliedIndex;
+      nextLines.push(`${indent}${listPrefix(kind, index)}${parsed?.content ?? plain.content}`);
       appliedIndex += 1;
     }
 
@@ -582,6 +585,16 @@ function listPrefix(kind: ListFormatKind, index: number): string {
   if (kind === "ordered") return `${index + 1}. `;
   if (kind === "checkbox") return "- [ ] ";
   return "- ";
+}
+
+function nextOrderedListIndex(indent: string, counters: Map<string, number>): number {
+  for (const key of Array.from(counters.keys())) {
+    if (key.length > indent.length) counters.delete(key);
+  }
+
+  const index = counters.get(indent) ?? 0;
+  counters.set(indent, index + 1);
+  return index;
 }
 
 function parseMarkdownListLine(text: string): MarkdownListLine | null {
