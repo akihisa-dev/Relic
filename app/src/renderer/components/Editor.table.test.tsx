@@ -5,6 +5,7 @@ import { createRef } from "react";
 import { describe, expect, it, vi } from "vitest";
 
 import { I18nProvider } from "../i18n";
+import { livePreviewTableMaxRows } from "../editorTables";
 import { Editor } from "./Editor";
 import { collectLivePreviewWidgets, settings } from "./editorTestHelpers";
 
@@ -35,6 +36,17 @@ describe("Editor table preview", () => {
     await waitFor(() => expect(container.querySelector(".cm-live-table")).not.toBeNull());
     const inputs = Array.from(container.querySelectorAll(".cm-live-table-cell-input")) as HTMLInputElement[];
     expect(inputs.map((input) => input.value)).toEqual(expect.arrayContaining(["A", "B", "x", "y"]));
+  });
+
+  it("大きすぎる表はライブプレビューWidget化せず本文入力を軽く保つ", async () => {
+    const content = [
+      "| A | B |",
+      "| --- | --- |",
+      ...Array.from({ length: livePreviewTableMaxRows }, (_, index) => `| ${index} | value |`)
+    ].join("\n");
+    const widgets = await collectLivePreviewWidgets(content, content.length);
+
+    expect(widgets).not.toContain("TableWidget");
   });
 
   it("ライブプレビューの表セルを編集するとMarkdown本文を更新する", async () => {
