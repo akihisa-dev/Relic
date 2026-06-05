@@ -202,6 +202,51 @@ describe("Toolbar markdown actions", () => {
     }
   });
 
+  it("インライン装飾ボタンは既存の同じMarkdown記法を解除する", () => {
+    const cases: Array<{ button: string | RegExp; content: string; from: number; to: number }> = [
+      { button: "Bold", content: "**hello**", from: 2, to: 7 },
+      { button: "Italic", content: "*hello*", from: 1, to: 6 },
+      { button: "Strikethrough", content: "~~hello~~", from: 2, to: 7 },
+      { button: "Highlight", content: "==hello==", from: 2, to: 7 },
+      { button: "Underline", content: "<u>hello</u>", from: 3, to: 8 },
+      { button: "Inline code", content: "`hello`", from: 1, to: 6 }
+    ];
+
+    for (const { button, content, from, to } of cases) {
+      const view = createView(content, EditorSelection.single(from, to));
+      render(<Toolbar viewRef={{ current: view }} />);
+
+      clickToolbarButton(button);
+
+      expect(view.state.doc.toString()).toBe("hello");
+      expect(view.state.sliceDoc(view.state.selection.main.from, view.state.selection.main.to)).toBe("hello");
+      view.destroy();
+      document.body.innerHTML = "";
+    }
+  });
+
+  it("カーソルが既存マーク内にある場合も同じインライン装飾を解除する", () => {
+    const view = createView("before **hello** after", EditorSelection.single("before **he".length));
+    render(<Toolbar viewRef={{ current: view }} />);
+
+    clickToolbarButton("Bold");
+
+    expect(view.state.doc.toString()).toBe("before hello after");
+    expect(view.state.sliceDoc(view.state.selection.main.from, view.state.selection.main.to)).toBe("hello");
+    view.destroy();
+  });
+
+  it("斜体ボタンは太字記法の内側を斜体解除と誤判定しない", () => {
+    const view = createView("**hello**", EditorSelection.single(2, 7));
+    render(<Toolbar viewRef={{ current: view }} />);
+
+    clickToolbarButton("Italic");
+
+    expect(view.state.doc.toString()).toBe("***hello***");
+    expect(view.state.sliceDoc(view.state.selection.main.from, view.state.selection.main.to)).toBe("hello");
+    view.destroy();
+  });
+
   it("見出しメニューがH1からH6まで適用できる", () => {
     for (const level of [1, 2, 3, 4, 5, 6]) {
       const view = createView("hello", EditorSelection.single(0, 5));
@@ -214,6 +259,27 @@ describe("Toolbar markdown actions", () => {
       view.destroy();
       document.body.innerHTML = "";
     }
+  });
+
+  it("見出しボタンは同じレベルを解除し、別レベルへ置き換える", () => {
+    const sameLevel = createView("## hello", EditorSelection.single(3, 8));
+    render(<Toolbar viewRef={{ current: sameLevel }} />);
+
+    clickToolbarButton("Heading");
+    fireEvent.click(screen.getByRole("button", { name: "H2" }));
+
+    expect(sameLevel.state.doc.toString()).toBe("hello");
+    sameLevel.destroy();
+    document.body.innerHTML = "";
+
+    const differentLevel = createView("## hello", EditorSelection.single(3, 8));
+    render(<Toolbar viewRef={{ current: differentLevel }} />);
+
+    clickToolbarButton("Heading");
+    fireEvent.click(screen.getByRole("button", { name: "H3" }));
+
+    expect(differentLevel.state.doc.toString()).toBe("### hello");
+    differentLevel.destroy();
   });
 
   it("ブロック系ボタンがMarkdownブロックを挿入する", () => {
@@ -236,6 +302,26 @@ describe("Toolbar markdown actions", () => {
       view.destroy();
       document.body.innerHTML = "";
     }
+  });
+
+  it("引用とコードブロックは既存の同じ記法を解除する", () => {
+    const quote = createView("> hello", EditorSelection.single(2, 7));
+    render(<Toolbar viewRef={{ current: quote }} />);
+
+    clickToolbarButton("Blockquote");
+
+    expect(quote.state.doc.toString()).toBe("hello");
+    quote.destroy();
+    document.body.innerHTML = "";
+
+    const codeBlock = createView("```\nhello\n```", EditorSelection.single(4, 9));
+    render(<Toolbar viewRef={{ current: codeBlock }} />);
+
+    clickToolbarButton("Code block");
+
+    expect(codeBlock.state.doc.toString()).toBe("hello");
+    expect(codeBlock.state.sliceDoc(codeBlock.state.selection.main.from, codeBlock.state.selection.main.to)).toBe("hello");
+    codeBlock.destroy();
   });
 
   it("コードブロックボタンは未選択時だけ空のコードブロックを挿入する", () => {
@@ -309,6 +395,29 @@ describe("Toolbar markdown actions", () => {
     view.destroy();
   });
 
+  it("リンクボタンは既存リンクのテキスト選択または全体選択からMarkdownリンクを解除する", () => {
+    const linkText = createView("[hello](https://example.com)", EditorSelection.single(1, 6));
+    render(<Toolbar viewRef={{ current: linkText }} />);
+
+    clickToolbarButton("Markdown link");
+    fireEvent.change(screen.getByPlaceholderText("URL"), { target: { value: "https://ignored.example" } });
+    clickToolbarButton("Insert");
+
+    expect(linkText.state.doc.toString()).toBe("hello");
+    linkText.destroy();
+    document.body.innerHTML = "";
+
+    const wholeLink = createView("[hello](https://example.com)", EditorSelection.single(0, 28));
+    render(<Toolbar viewRef={{ current: wholeLink }} />);
+
+    clickToolbarButton("Markdown link");
+    fireEvent.change(screen.getByPlaceholderText("URL"), { target: { value: "https://ignored.example" } });
+    clickToolbarButton("Insert");
+
+    expect(wholeLink.state.doc.toString()).toBe("hello");
+    wholeLink.destroy();
+  });
+
   it("内部リンクボタンがカーソル位置へ内部リンク記法を挿入する", () => {
     const view = createView("hello", EditorSelection.single(2));
     render(<Toolbar viewRef={{ current: view }} />);
@@ -327,6 +436,17 @@ describe("Toolbar markdown actions", () => {
     clickToolbarButton("Internal link");
 
     expect(view.state.doc.toString()).toBe("[[あああ]]");
+    expect(view.state.sliceDoc(view.state.selection.main.from, view.state.selection.main.to)).toBe("あああ");
+    view.destroy();
+  });
+
+  it("内部リンクボタンは既存の内部リンクを解除する", () => {
+    const view = createView("[[あああ]]", EditorSelection.single(2, 5));
+    render(<Toolbar viewRef={{ current: view }} />);
+
+    clickToolbarButton("Internal link");
+
+    expect(view.state.doc.toString()).toBe("あああ");
     expect(view.state.sliceDoc(view.state.selection.main.from, view.state.selection.main.to)).toBe("あああ");
     view.destroy();
   });
