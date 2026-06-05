@@ -5,9 +5,13 @@ export function useWindowCloseRequest(ensureCanCloseAllTabs: () => Promise<boole
     if (!window.relic?.onWindowCloseRequested) return undefined;
 
     return window.relic.onWindowCloseRequested((event) => {
-      void Promise.resolve(ensureCanCloseAllTabs()).then((ok) => {
-        window.relic?.respondToWindowCloseRequest({ ok, requestId: event.requestId });
-      });
+      void Promise.resolve(ensureCanCloseAllTabs())
+        .then((ok) => {
+          window.relic?.respondToWindowCloseRequest({ ok, requestId: event.requestId });
+        })
+        .catch(() => {
+          window.relic?.respondToWindowCloseRequest({ ok: false, requestId: event.requestId });
+        });
     });
   }, [ensureCanCloseAllTabs]);
 }
