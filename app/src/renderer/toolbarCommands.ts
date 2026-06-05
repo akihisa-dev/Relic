@@ -212,6 +212,9 @@ export function insertCodeBlock(view: EditorView): void {
 export function insertMarkdownLink(view: EditorView, url: string, placeholderLinkText: string): void {
   const { state } = view;
   const changes = state.changeByRange((range) => {
+    const existingEdit = editMarkdownLink(state, range.from, range.to, url);
+    if (existingEdit) return existingEdit;
+
     const selectedToggle = toggleMarkdownLink(state, range.from, range.to);
     if (selectedToggle) return selectedToggle;
 
@@ -465,6 +468,66 @@ function toggleMarkdownLink(
       changes: { from, to, insert: fullMatch[1] },
       range: EditorSelection.range(from, from + fullMatch[1].length)
     };
+  }
+
+  return null;
+}
+
+function editMarkdownLink(
+  state: EditorState,
+  from: number,
+  to: number,
+  url: string
+): ToolbarRangeChange | null {
+  const link = markdownLinkAtRange(state, from, to);
+  if (!link) return null;
+
+  const selectedUrlOnly = from === link.urlFrom && to === link.urlTo;
+  const cursorInsideLink = from === to && from > link.from && from < link.to;
+  if (!selectedUrlOnly && !cursorInsideLink) return null;
+
+  return {
+    changes: { from: link.urlFrom, to: link.urlTo, insert: url },
+    range: EditorSelection.range(link.textFrom, link.textTo)
+  };
+}
+
+function markdownLinkAtRange(
+  state: EditorState,
+  from: number,
+  to: number
+): {
+  from: number;
+  textFrom: number;
+  textTo: number;
+  to: number;
+  urlFrom: number;
+  urlTo: number;
+} | null {
+  const line = state.doc.lineAt(from);
+  if (to > line.to) return null;
+
+  const linkPattern = /\[([^\]\n]+)\]\(([^)\n]+)\)/g;
+  let match: RegExpExecArray | null;
+
+  while ((match = linkPattern.exec(line.text)) !== null) {
+    const linkFrom = line.from + match.index;
+    const textFrom = linkFrom + 1;
+    const textTo = textFrom + match[1].length;
+    const urlFrom = textTo + 2;
+    const urlTo = urlFrom + match[2].length;
+    const linkTo = urlTo + 1;
+
+    if (from >= linkFrom && to <= linkTo) {
+      return {
+        from: linkFrom,
+        textFrom,
+        textTo,
+        to: linkTo,
+        urlFrom,
+        urlTo
+      };
+    }
   }
 
   return null;
