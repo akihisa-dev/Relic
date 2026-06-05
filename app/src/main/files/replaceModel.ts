@@ -31,6 +31,23 @@ export function buildReplacementPreviewLine(line: string, regex: RegExp, replace
   return applyReplacement(line, regex, replacement, isRegex);
 }
 
+export function canMatchEmptyTextInContent(regex: RegExp, text: string): boolean {
+  regex.lastIndex = 0;
+
+  let match: RegExpExecArray | null;
+  while ((match = regex.exec(text)) !== null) {
+    if (match[0] === "") {
+      regex.lastIndex = 0;
+      return true;
+    }
+
+    if (!regex.global) break;
+  }
+
+  regex.lastIndex = 0;
+  return false;
+}
+
 function escapeRegExp(str: string): string {
   return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }

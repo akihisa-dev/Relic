@@ -10,7 +10,7 @@ import { collectMarkdownPaths } from "../../shared/workspaceTree";
 import { atomicWriteTextFile } from "./atomicWrite";
 import { readWorkspaceFileTree } from "./fileTree";
 import { resolveExistingWorkspacePath } from "./paths";
-import { applyReplacement, buildReplacementPreviewLine, buildReplacementRegex } from "./replaceModel";
+import { applyReplacement, buildReplacementPreviewLine, buildReplacementRegex, canMatchEmptyTextInContent } from "./replaceModel";
 
 interface SearchAndReplaceReadOperations {
   readFile(filePath: string, encoding: BufferEncoding): Promise<string>;
@@ -49,6 +49,10 @@ export async function replaceInFile(
 
   try {
     const content = await readFile(absolutePath.value, "utf8");
+    if (isRegex && canMatchEmptyTextInContent(regex.value, content)) {
+      return fail("REPLACE_REGEX_EMPTY_MATCH", "空文字に一致する正規表現は置換できません。");
+    }
+
     const matches = content.match(regex.value);
     const count = matches ? matches.length : 0;
 
@@ -98,6 +102,10 @@ export async function searchAndReplace(
       if (!fileContent) continue;
 
       const { content, relativePath } = fileContent;
+      if (isRegex && canMatchEmptyTextInContent(regex.value, content)) {
+        return fail("REPLACE_REGEX_EMPTY_MATCH", "空文字に一致する正規表現は置換できません。");
+      }
+
       const lines = content.split("\n");
 
       for (const [index, line] of lines.entries()) {
@@ -153,6 +161,13 @@ export async function applySearchAndReplace(
         }
       })
     );
+
+    for (const fileContent of fileContents) {
+      if (!fileContent) continue;
+      if (isRegex && canMatchEmptyTextInContent(regex.value, fileContent.content)) {
+        return fail("REPLACE_REGEX_EMPTY_MATCH", "空文字に一致する正規表現は置換できません。");
+      }
+    }
 
     for (const fileContent of fileContents) {
       if (!fileContent) continue;
