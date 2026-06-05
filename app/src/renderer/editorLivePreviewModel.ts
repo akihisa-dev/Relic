@@ -51,6 +51,48 @@ interface MarkdownLinkMatch {
   href: string;
 }
 
+interface InlineCodeMatch {
+  from: number;
+  to: number;
+  contentFrom: number;
+  contentTo: number;
+}
+
+function countBacktickRun(text: string, from: number): number {
+  let length = 0;
+  while (text[from + length] === "`") length += 1;
+  return length;
+}
+
+function findInlineCodeMatches(text: string): InlineCodeMatch[] {
+  const matches: InlineCodeMatch[] = [];
+  let searchFrom = 0;
+
+  while (searchFrom < text.length) {
+    const from = text.indexOf("`", searchFrom);
+    if (from < 0) break;
+
+    const markerLength = countBacktickRun(text, from);
+    const marker = "`".repeat(markerLength);
+    const contentFrom = from + markerLength;
+    const closeFrom = text.indexOf(marker, contentFrom);
+    if (closeFrom < 0 || closeFrom === contentFrom || text.slice(contentFrom, closeFrom).includes("\n")) {
+      searchFrom = contentFrom;
+      continue;
+    }
+
+    matches.push({
+      from,
+      to: closeFrom + markerLength,
+      contentFrom,
+      contentTo: closeFrom
+    });
+    searchFrom = closeFrom + markerLength;
+  }
+
+  return matches;
+}
+
 function findMarkdownLinkMatches(text: string): MarkdownLinkMatch[] {
   const matches: MarkdownLinkMatch[] = [];
   let searchFrom = 0;
@@ -115,16 +157,18 @@ export function collectInlineMatches(lineFrom: number, text: string): InlineMatc
   const occupied: Array<{ from: number; to: number }> = [];
   const matches: InlineMatch[] = [];
 
-  matches.push(...collectRegexMatches(text, /`([^`\n]+)`/g, (match) => {
-    const from = lineFrom + match.index;
-    const to = from + match[0].length;
+  matches.push(...findInlineCodeMatches(text).map((match) => {
+    const from = lineFrom + match.from;
+    const to = lineFrom + match.to;
+    const contentFrom = lineFrom + match.contentFrom;
+    const contentTo = lineFrom + match.contentTo;
     return {
       from,
       to,
-      contentFrom: from + 1,
-      contentTo: to - 1,
+      contentFrom,
+      contentTo,
       className: "cm-live-code",
-      hideRanges: [{ from, to: from + 1 }, { from: to - 1, to }]
+      hideRanges: [{ from, to: contentFrom }, { from: contentTo, to }]
     };
   }));
 
