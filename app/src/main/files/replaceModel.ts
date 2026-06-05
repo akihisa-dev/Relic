@@ -14,9 +14,16 @@ export function buildReplacementRegex(searchQuery: string, isRegex: boolean): Re
   }
 }
 
-export function buildReplacementPreviewLine(line: string, regex: RegExp, replacement: string): string {
+export function applyReplacement(text: string, regex: RegExp, replacement: string, isRegex: boolean): string {
   regex.lastIndex = 0;
-  return line.replaceAll(regex, replacement);
+  return isRegex
+    ? text.replaceAll(regex, replacement)
+    : text.replaceAll(regex, () => replacement);
+}
+
+export function buildReplacementPreviewLine(line: string, regex: RegExp, replacement: string, isRegex: boolean): string {
+  regex.lastIndex = 0;
+  return applyReplacement(line, regex, replacement, isRegex);
 }
 
 function escapeRegExp(str: string): string {

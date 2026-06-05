@@ -10,7 +10,7 @@ import { collectMarkdownPaths } from "../../shared/workspaceTree";
 import { atomicWriteTextFile } from "./atomicWrite";
 import { readWorkspaceFileTree } from "./fileTree";
 import { resolveExistingWorkspacePath } from "./paths";
-import { buildReplacementPreviewLine, buildReplacementRegex } from "./replaceModel";
+import { applyReplacement, buildReplacementPreviewLine, buildReplacementRegex } from "./replaceModel";
 
 interface SearchAndReplaceReadOperations {
   readFile(filePath: string, encoding: BufferEncoding): Promise<string>;
@@ -53,7 +53,7 @@ export async function replaceInFile(
     const count = matches ? matches.length : 0;
 
     if (count > 0) {
-      const updated = content.replaceAll(regex.value, replacement);
+      const updated = applyReplacement(content, regex.value, replacement, isRegex);
       await atomicWriteTextFile(absolutePath.value, updated);
     }
 
@@ -104,7 +104,7 @@ export async function searchAndReplace(
 
         if (regex.value.test(line)) {
           regex.value.lastIndex = 0;
-          const newLineText = buildReplacementPreviewLine(line, regex.value, replacement);
+          const newLineText = buildReplacementPreviewLine(line, regex.value, replacement, isRegex);
           matches.push({
             lineNumber: index + 1,
             lineText: line.trim() === "" ? "(空行)" : line.trim(),
@@ -152,7 +152,7 @@ export async function applySearchAndReplace(
 
       if (matches && matches.length > 0) {
         regex.value.lastIndex = 0;
-        const updated = content.replaceAll(regex.value, replacement);
+        const updated = applyReplacement(content, regex.value, replacement, isRegex);
         await atomicWriteTextFile(absolutePath, updated);
         count += matches.length;
       }
