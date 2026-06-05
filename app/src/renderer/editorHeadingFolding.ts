@@ -6,6 +6,7 @@ import type { Translator } from "./i18nModel";
 import { isClosingBacktickFence, parseBacktickOpeningFence } from "./markdownCodeFence";
 
 const headingPattern = /^(#{1,6})\s+\S.*$/;
+const maxHeadingFoldScanLines = 2000;
 
 function headingLevel(lineText: string): number | null {
   const match = headingPattern.exec(lineText);
@@ -40,8 +41,10 @@ export function headingFoldRange(state: EditorState, lineStart: number): { from:
 
   let activeFence: { markerLength: number } | null = null;
   let sectionEndLineNumber = headingLine.number;
+  const maxLineNumber = Math.min(doc.lines, headingLine.number + maxHeadingFoldScanLines);
+  let foundBoundary = false;
 
-  for (let lineNumber = headingLine.number + 1; lineNumber <= doc.lines; lineNumber += 1) {
+  for (let lineNumber = headingLine.number + 1; lineNumber <= maxLineNumber; lineNumber += 1) {
     const line = doc.line(lineNumber);
 
     if (activeFence) {
@@ -51,7 +54,10 @@ export function headingFoldRange(state: EditorState, lineStart: number): { from:
     }
 
     const nextHeadingLevel = headingLevel(line.text);
-    if (nextHeadingLevel !== null && nextHeadingLevel <= level) break;
+    if (nextHeadingLevel !== null && nextHeadingLevel <= level) {
+      foundBoundary = true;
+      break;
+    }
 
     const openingFence = parseBacktickOpeningFence(line.text);
     if (openingFence) activeFence = { markerLength: openingFence.markerLength };
@@ -59,6 +65,7 @@ export function headingFoldRange(state: EditorState, lineStart: number): { from:
     sectionEndLineNumber = lineNumber;
   }
 
+  if (!foundBoundary && maxLineNumber < doc.lines) return null;
   if (sectionEndLineNumber <= headingLine.number) return null;
 
   const from = headingLine.to;
