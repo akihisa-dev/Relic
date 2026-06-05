@@ -120,6 +120,37 @@ export async function collectInlineLivePreviewWidgetClasses(content: string, cur
   return classes;
 }
 
+export async function collectLivePreviewReplacementRanges(content: string, cursor: number, hasFocus = true): Promise<Array<{
+  from: number;
+  to: number;
+  widget: string | null;
+}>> {
+  const state = EditorState.create({
+    doc: content,
+    extensions: [markdown({ extensions: GFM })],
+    selection: { anchor: cursor }
+  });
+  await ensureSyntaxTree(state, state.doc.length, 100);
+
+  const ranges: Array<{ from: number; to: number; widget: string | null }> = [];
+  buildLivePreviewDecorations({
+    hasFocus,
+    state,
+    visibleRanges: [{ from: 0, to: state.doc.length }]
+  } as unknown as EditorView).between(0, state.doc.length, (from, to, value) => {
+    const spec = (value as unknown as { spec?: { class?: string; widget?: { constructor?: { name?: string } } } }).spec;
+    if (spec?.class) return;
+
+    ranges.push({
+      from,
+      to,
+      widget: spec?.widget?.constructor?.name ?? null
+    });
+  });
+
+  return ranges;
+}
+
 export async function expandFrontmatter(container: HTMLElement): Promise<void> {
   await waitFor(() => expect(container.querySelector(".cm-frontmatter-header")).not.toBeNull());
   const properties = container.querySelector(".cm-frontmatter-properties");

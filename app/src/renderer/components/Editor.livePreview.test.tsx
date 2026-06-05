@@ -11,6 +11,7 @@ import {
   collectInlineLivePreviewWidgetClasses,
   collectInlineLivePreviewWidgets,
   collectLivePreviewClasses,
+  collectLivePreviewReplacementRanges,
   settings
 } from "./editorTestHelpers";
 
@@ -33,6 +34,25 @@ describe("Editor live preview", () => {
     const classes = await collectLivePreviewClasses("**bold**", 3);
 
     expect(classes.has("cm-live-bold")).toBe(true);
+  });
+
+  it("ライブプレビューで装飾文字にカーソルが触れたら編集用Markdown記法を隠さない", async () => {
+    const boldRanges = await collectLivePreviewReplacementRanges("**bold**", 3);
+    const linkRanges = await collectLivePreviewReplacementRanges("[link](https://example.com)", 2);
+    const listRanges = await collectLivePreviewReplacementRanges("- item", 3);
+
+    expect(boldRanges).toEqual([]);
+    expect(linkRanges).toEqual([]);
+    expect(listRanges).toEqual([]);
+  });
+
+  it("ライブプレビューでカーソル外の装飾は読みやすい置換表示を維持する", async () => {
+    const content = "**bold**\nplain";
+    const ranges = await collectLivePreviewReplacementRanges(content, content.length);
+
+    expect(ranges).toEqual([
+      { from: 0, to: 8, widget: "InlineFormatWidget" }
+    ]);
   });
 
   it("ライブプレビューで主要なインライン記法を安定して装飾する", async () => {
