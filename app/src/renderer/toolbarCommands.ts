@@ -171,7 +171,20 @@ export function insertCodeBlock(view: EditorView): void {
   const { state } = view;
 
   if (state.selection.ranges.every((range) => range.empty)) {
-    insertBlock(view, "```\n\n```");
+    const changes = state.changeByRange((range) => {
+      const line = state.doc.lineAt(range.from);
+      const prefix = line.from > 0 ? "\n" : "";
+      const insert = `${prefix}\n\`\`\`\n\n\`\`\`\n`;
+      const cursor = line.to + prefix.length + "\n```\n".length;
+
+      return {
+        changes: { from: line.to, insert },
+        range: EditorSelection.cursor(cursor)
+      };
+    });
+
+    view.dispatch(changes);
+    view.focus();
     return;
   }
 

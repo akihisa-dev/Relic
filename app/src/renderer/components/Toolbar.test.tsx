@@ -335,6 +335,39 @@ describe("Toolbar markdown actions", () => {
     view.destroy();
   });
 
+  it("空選択のインライン装飾はプレースホルダーを挿入して本文部分を選択する", async () => {
+    const { unmount, view } = await renderToolbarWithEditor("hello", EditorSelection.single(5));
+
+    clickToolbarButton("Bold");
+
+    expect(view.state.doc.toString()).toBe("hello**Text**");
+    expect(view.state.sliceDoc(view.state.selection.main.from, view.state.selection.main.to)).toBe("Text");
+    unmount();
+  });
+
+  it("空選択のMarkdownリンクはプレースホルダーを挿入してリンク文字部分を選択する", async () => {
+    const { unmount, view } = await renderToolbarWithEditor("hello", EditorSelection.single(5));
+
+    clickToolbarButton("Markdown link");
+    fireEvent.change(screen.getByPlaceholderText("URL"), { target: { value: "https://example.com" } });
+    clickToolbarButton("Insert");
+
+    expect(view.state.doc.toString()).toBe("hello[Link text](https://example.com)");
+    expect(view.state.sliceDoc(view.state.selection.main.from, view.state.selection.main.to)).toBe("Link text");
+    unmount();
+  });
+
+  it("空選択のコードブロックは空行を編集できる位置へカーソルを置く", async () => {
+    const { unmount, view } = await renderToolbarWithEditor("hello", EditorSelection.single(5));
+
+    clickToolbarButton("Code block");
+
+    expect(view.state.doc.toString()).toBe("hello\n```\n\n```\n");
+    expect(view.state.selection.main.from).toBe("hello\n```\n".length);
+    expect(view.state.selection.main.empty).toBe(true);
+    unmount();
+  });
+
   it("リスト系ボタンが複数行選択へ一括適用し、空行を飛ばす", () => {
     const content = "one\n\ntwo\nthree";
     const cases: Array<{ button: string | RegExp; expected: string }> = [
