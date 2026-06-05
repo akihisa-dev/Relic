@@ -101,7 +101,7 @@ describe("Editor markdown editing", () => {
     expect(view.state.sliceDoc(view.state.selection.main.from, view.state.selection.main.to)).toBe("hello");
   });
 
-  it("カット時にクリップボードへ保存できた場合だけ本文を消す", async () => {
+  it("カット時にクリップボードへ保存できた場合だけ本文を消し、1回のUndoで戻せる", async () => {
     const writeClipboardText = vi.fn();
     window.relic = makeRelicApi({
       writeClipboardText
@@ -121,6 +121,10 @@ describe("Editor markdown editing", () => {
       expect(view.state.doc.toString()).toBe(" world");
     });
     expect(writeClipboardText).toHaveBeenCalledWith("hello");
+    expect(undo(view)).toBe(true);
+    expect(view.state.doc.toString()).toBe("hello world");
+    expect(redo(view)).toBe(true);
+    expect(view.state.doc.toString()).toBe(" world");
   });
 
   it("本文への複数行日本語ペーストは1回のUndoで戻せる", async () => {
