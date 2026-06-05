@@ -48,11 +48,11 @@ describe("App workspaces", () => {
     expect(css).toMatch(/\.sidebar:has\(\.workspace-actions\)::after\s*\{[^}]*display:\s*none;/s);
     expect(css).toMatch(/\.workspace-actions\s*\{[^}]*background:\s*var\(--color-primary-dark\);/s);
     expect(css).toMatch(/\.workspace-actions\s*\{[^}]*position:\s*sticky;/s);
-    expect(css).toMatch(/\.workspace-actions\s*\{[^}]*margin:\s*auto -16px -18px;/s);
-    expect(css).toMatch(/\.workspace-actions\s*\{[^}]*padding:\s*12px 24px 14px;/s);
+    expect(css).toMatch(/\.workspace-actions\s*\{[^}]*margin:\s*auto -16px 0;/s);
+    expect(css).toMatch(/\.workspace-actions\s*\{[^}]*padding:\s*6px 24px 8px;/s);
     expect(css).not.toMatch(/\.workspace-actions\s*\{[^}]*min-height:/s);
     expect(css).toMatch(/\.workspace-actions \.workspace-action-button\s*\{[^}]*color:\s*color-mix\(in srgb, #fff 88%, var\(--color-primary-dark\) 12%\);/s);
-    expect(css).toMatch(/\.workspace-actions \.workspace-action-button\s*\{[^}]*min-height:\s*32px;/s);
+    expect(css).toMatch(/\.workspace-actions \.workspace-action-button\s*\{[^}]*min-height:\s*28px;/s);
   });
 
   it("新規ファイルボタンから名前なしでファイルを作成する", async () => {
