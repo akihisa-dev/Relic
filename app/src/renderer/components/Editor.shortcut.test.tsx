@@ -11,10 +11,11 @@ import { renderEditorWithView } from "./editorTestHelpers";
 
 function dispatchKeyboardEventWithReadOnlyValue(
   target: Element,
+  key: string,
   property: "isComposing" | "keyCode",
   value: boolean | number
 ): void {
-  const event = new KeyboardEvent("keydown", { bubbles: true, cancelable: true, key: "Enter" });
+  const event = new KeyboardEvent("keydown", { bubbles: true, cancelable: true, key });
   Object.defineProperty(event, property, { value });
   target.dispatchEvent(event);
 }
@@ -114,7 +115,7 @@ describe("Editor shortcuts", () => {
     const contentElement = view.dom.querySelector(".cm-content")!;
 
     view.dispatch({ selection: { anchor: view.state.doc.length } });
-    dispatchKeyboardEventWithReadOnlyValue(contentElement, "keyCode", 229);
+    dispatchKeyboardEventWithReadOnlyValue(contentElement, "Enter", "keyCode", 229);
 
     expect(view.state.doc.toString()).toBe("- item");
   });
@@ -126,8 +127,45 @@ describe("Editor shortcuts", () => {
     const contentElement = view.dom.querySelector(".cm-content")!;
 
     view.dispatch({ selection: { anchor: view.state.doc.length } });
-    dispatchKeyboardEventWithReadOnlyValue(contentElement, "isComposing", true);
+    dispatchKeyboardEventWithReadOnlyValue(contentElement, "Enter", "isComposing", true);
 
     expect(view.state.doc.toString()).toBe("- item");
+  });
+
+  it("compositionstart中はTab段下げとAlt上下の行移動を実行しない", async () => {
+    const { view } = await renderEditorWithView({
+      content: "- one\n- two\nthree"
+    });
+    const contentElement = view.dom.querySelector(".cm-content")!;
+
+    view.dispatch({ selection: { anchor: 0, head: "- one\n- two".length } });
+    __markEditorCompositionStartedForTests(view);
+
+    fireEvent.keyDown(contentElement, { key: "Tab" });
+    expect(view.state.doc.toString()).toBe("- one\n- two\nthree");
+
+    fireEvent.keyDown(contentElement, { altKey: true, key: "ArrowDown" });
+    expect(view.state.doc.toString()).toBe("- one\n- two\nthree");
+
+    __markEditorCompositionEndedForTests(view);
+    fireEvent.keyDown(contentElement, { key: "Tab" });
+    expect(view.state.doc.toString()).toBe("  - one\n  - two\nthree");
+  });
+
+  it("event.isComposingとkeyCode 229ではTab段下げとAlt上下の行移動を実行しない", async () => {
+    const { view } = await renderEditorWithView({
+      content: "one\ntwo\nthree"
+    });
+    const contentElement = view.dom.querySelector(".cm-content")!;
+
+    view.dispatch({ selection: { anchor: 0, head: "one\ntwo".length } });
+    dispatchKeyboardEventWithReadOnlyValue(contentElement, "Tab", "isComposing", true);
+    expect(view.state.doc.toString()).toBe("one\ntwo\nthree");
+
+    dispatchKeyboardEventWithReadOnlyValue(contentElement, "ArrowDown", "keyCode", 229);
+    expect(view.state.doc.toString()).toBe("one\ntwo\nthree");
+
+    fireEvent.keyDown(contentElement, { altKey: true, key: "ArrowDown" });
+    expect(view.state.doc.toString()).toBe("three\none\ntwo");
   });
 });
