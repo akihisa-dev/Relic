@@ -35,7 +35,7 @@
 }
 
 .title-bar-tabs {
-  -webkit-app-region: no-drag;
+  -webkit-app-region: drag;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   min-height: 0;

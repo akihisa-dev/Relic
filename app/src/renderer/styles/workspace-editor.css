@@ -474,10 +474,12 @@
 }
 
 .pane-tabs {
+  -webkit-app-region: drag;
   min-width: 0;
 }
 
 .pane-tab-bar-shell {
+  -webkit-app-region: drag;
   align-items: flex-end;
   background: var(--title-bar-bg);
   border-bottom: 0;
@@ -530,6 +532,7 @@
 }
 
 .pane-tab {
+  -webkit-app-region: no-drag;
   align-items: center;
   animation: tab-enter var(--motion-fast) var(--ease-standard);
   background: transparent;
@@ -658,6 +661,7 @@
 }
 
 .pane-tab-close {
+  -webkit-app-region: no-drag;
   align-items: center;
   background: transparent;
   border: 0;
