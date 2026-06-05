@@ -479,7 +479,7 @@
 
 .pane-tab-bar-shell {
   align-items: flex-end;
-  background: var(--surface);
+  background: var(--title-bar-bg);
   border-bottom: 0;
   display: flex;
   gap: 0;
