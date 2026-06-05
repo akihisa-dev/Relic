@@ -9,7 +9,7 @@ interface FilesSearchResultsProps {
   isSearching: boolean;
   limitNotice: { skippedLargeFiles: number; truncated: boolean } | null;
   mode: SearchMode;
-  onOpenFile: (path: string, event?: MouseEvent<HTMLButtonElement>) => void;
+  onOpenFile: (path: string, event?: MouseEvent<HTMLButtonElement>, options?: { lineNumber?: number | null }) => void;
   openingFilePath?: string | null;
   query: string;
   results: WorkspaceSearchResult[];
@@ -51,7 +51,7 @@ export function FilesSearchResults({
             <li className="search-result-item" key={`${result.path}-${result.lineNumber}-${index}`}>
               <button
                 className={`search-result-button${openingFilePath === result.path ? " search-result-button--opening" : ""}`}
-                onClick={(event) => onOpenFile(result.path, event)}
+                onClick={(event) => onOpenFile(result.path, event, { lineNumber: result.lineNumber })}
                 title={result.path}
                 type="button"
               >

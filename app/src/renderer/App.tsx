@@ -321,6 +321,8 @@ export function App(): ReactElement {
     handleOpenFile,
     onFileOpenMotion: appInlineHandlers.onFileOpenMotion,
     openFileInPane,
+    setLeftPaneScrollHeading,
+    setRightPaneScrollHeading,
     setTabActive,
     setWorkspaceError,
     showSidebarCreateFlight,

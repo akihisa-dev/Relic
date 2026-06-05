@@ -6,7 +6,12 @@ export interface OutlineHeading {
   text: string;
 }
 
-export type HeadingScrollTarget = string | OutlineHeading;
+export interface LineScrollTarget {
+  lineNumber: number;
+  type: "line";
+}
+
+export type HeadingScrollTarget = string | OutlineHeading | LineScrollTarget;
 
 export const outlineHeadingsMaxCount = 1000;
 
