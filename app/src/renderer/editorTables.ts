@@ -2,7 +2,7 @@ import { syntaxTree } from "@codemirror/language";
 import { ChangeSet, StateEffect, StateField, type EditorState, type Text, type Transaction } from "@codemirror/state";
 import { Decoration, EditorView, ViewPlugin, type DecorationSet, type ViewUpdate } from "@codemirror/view";
 
-import { findTableBlocks } from "./editorTableModel";
+import { findTableBlocks, tableColumnCount } from "./editorTableModel";
 import { TableWidget } from "./editorTableWidget";
 import type { Translator } from "./i18nModel";
 
@@ -24,10 +24,19 @@ export {
   type TableBlock
 } from "./editorTableModel";
 
+export const livePreviewTableMaxRows = 120;
+export const livePreviewTableMaxCells = 720;
+
+function shouldRenderLivePreviewTable(rows: string[][]): boolean {
+  return rows.length <= livePreviewTableMaxRows && rows.length * tableColumnCount(rows) <= livePreviewTableMaxCells;
+}
+
 export function buildTableDecorations(state: Parameters<typeof findTableBlocks>[0], t: Translator): DecorationSet {
   const ranges: { from: number; to: number; deco: Decoration }[] = [];
 
   for (const block of findTableBlocks(state)) {
+    if (!shouldRenderLivePreviewTable(block.rows)) continue;
+
     ranges.push({
       from: block.from,
       to: block.to,
@@ -109,6 +118,10 @@ function buildSyntaxTableDecorations(
         if (seen.has(key)) return;
         seen.add(key);
 
+        const rows = tableRowsFromRange(state, node.from, node.to);
+
+        if (!shouldRenderLivePreviewTable(rows)) return;
+
         ranges.push({
           from: node.from,
           to: node.to,
@@ -117,7 +130,7 @@ function buildSyntaxTableDecorations(
             widget: new TableWidget({
               from: node.from,
               to: node.to,
-              rows: tableRowsFromRange(state, node.from, node.to)
+              rows
             }, t)
           })
         });
