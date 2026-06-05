@@ -5,7 +5,7 @@
 .app-shell {
   background: var(--app-bg);
   display: grid;
-  grid-template-rows: 48px minmax(0, 1fr) 34px;
+  grid-template-rows: 52px minmax(0, 1fr) 34px;
   height: 100vh;
   min-width: 0;
   overflow: hidden;
