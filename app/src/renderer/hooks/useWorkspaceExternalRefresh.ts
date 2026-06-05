@@ -49,15 +49,28 @@ export function useWorkspaceExternalRefresh({
 
       const nextFilePaths = collectMarkdownPaths(result.value.fileTree);
       const nextFilePathSet = new Set(nextFilePaths);
+      const protectedMissingTabIds = new Set<string>();
+
+      const closeMissingTabIfSafe = (pane: PaneId, tabId: string): void => {
+        const tab = tabs[tabId];
+        if (tab?.kind !== "file" || nextFilePathSet.has(tab.path)) return;
+
+        if (tab.content === tab.savedContent && !tab.externalConflict) {
+          closeTab(pane, tabId);
+          return;
+        }
+
+        if (protectedMissingTabIds.has(tabId)) return;
+        protectedMissingTabIds.add(tabId);
+        setWorkspaceError(t("pane.missingDirtyTabToast", { name: tab.name }));
+      };
 
       for (const tabId of leftPane.tabIds) {
-        const tab = tabs[tabId];
-        if (tab?.kind === "file" && !nextFilePathSet.has(tab.path)) closeTab("left", tabId);
+        closeMissingTabIfSafe("left", tabId);
       }
 
       for (const tabId of rightPane.tabIds) {
-        const tab = tabs[tabId];
-        if (tab?.kind === "file" && !nextFilePathSet.has(tab.path)) closeTab("right", tabId);
+        closeMissingTabIfSafe("right", tabId);
       }
 
       const openFileEntries = Object.entries(tabs).reduce<Array<{ path: string; tabId: string }>>((acc, [tabId, tab]) => {
