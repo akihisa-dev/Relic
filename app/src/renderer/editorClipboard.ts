@@ -33,8 +33,12 @@ export async function writeEditorClipboardText(text: string): Promise<void> {
   textarea.style.top = "0";
   document.body.append(textarea);
   textarea.select();
-  document.execCommand("copy");
+  const copied = document.execCommand("copy");
   textarea.remove();
+
+  if (!copied) {
+    throw new Error("Clipboard copy failed");
+  }
 }
 
 export async function readEditorClipboardForPaste(): Promise<string> {
