@@ -4,6 +4,7 @@ import {
   screen,
   waitFor
 } from "@testing-library/react";
+import { EditorView } from "@codemirror/view";
 import {
   afterEach,
   beforeAll,
@@ -133,6 +134,67 @@ describe("App file rename and context menu", () => {
 
     await waitFor(() => expect(writeMarkdownFile).toHaveBeenCalledWith({
       content: "未保存本文",
+      path: "読書メモ.md"
+    }));
+    await waitFor(() => {
+      expect(renameMarkdownFile).toHaveBeenCalledWith({ newName: "読書ログ", path: "読書メモ.md" });
+    });
+  });
+
+  it("エディタ入力直後のリネームでも最新本文を保存してから名前を変える", async () => {
+    const renameMarkdownFile = vi.fn().mockResolvedValue({
+      ok: true,
+      value: {
+        file: { content: "本文テスト\nリネーム直前の本文", name: "読書ログ", path: "読書ログ.md" },
+        workspaceState: {
+          ...withWorkspace,
+          fileTree: [{ name: "読書ログ", path: "読書ログ.md", type: "file" }]
+        }
+      }
+    });
+    const writeMarkdownFile = vi.fn().mockResolvedValue({ ok: true, value: undefined });
+
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [{ name: "読書メモ", path: "読書メモ.md", type: "file" }]
+        }
+      }),
+      readMarkdownFile: vi.fn().mockResolvedValue({
+        ok: true,
+        value: { content: "本文テスト", name: "読書メモ", path: "読書メモ.md" }
+      }),
+      renameMarkdownFile,
+      writeMarkdownFile
+    });
+
+    const { container } = await renderApp();
+
+    fireEvent.click(await screen.findByRole("button", { name: /読書メモ/ }));
+    await waitFor(() => expect(useEditorStore.getState().leftPane.activeTabId).not.toBeNull());
+
+    const editorContent = container.querySelector(".cm-content");
+    expect(editorContent).not.toBeNull();
+
+    const view = EditorView.findFromDOM(editorContent as HTMLElement);
+    expect(view).not.toBeNull();
+
+    act(() => {
+      view!.dispatch({
+        changes: { from: view!.state.doc.length, insert: "\nリネーム直前の本文" }
+      });
+    });
+
+    fireEvent.click(await screen.findByText("読書メモ", { selector: ".editor-file-title" }));
+    fireEvent.change(container.querySelector(".editor-file-title-input") as HTMLInputElement, {
+      target: { value: "読書ログ" }
+    });
+    fireEvent.submit(container.querySelector(".editor-file-title-form") as HTMLFormElement);
+
+    await waitFor(() => expect(writeMarkdownFile).toHaveBeenCalledWith({
+      content: "本文テスト\nリネーム直前の本文",
       path: "読書メモ.md"
     }));
     await waitFor(() => {
