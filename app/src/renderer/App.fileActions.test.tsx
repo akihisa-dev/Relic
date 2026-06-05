@@ -4,6 +4,7 @@ import {
   screen,
   waitFor
 } from "@testing-library/react";
+import { EditorView } from "@codemirror/view";
 import {
   afterEach,
   beforeAll,
@@ -300,6 +301,89 @@ describe("App file actions", () => {
     if (movedTab?.kind === "file") {
       expect(movedTab.content).toBe("未保存本文");
       expect(movedTab.savedContent).toBe("未保存本文");
+      expect(movedTab.path).toBe("archive/note.md");
+    }
+  });
+
+  it("エディタ入力直後のファイル移動でも最新本文を保存してから移動する", async () => {
+    const movedWorkspaceState = {
+      ...withWorkspace,
+      fileTree: [
+        {
+          children: [{ name: "note", path: "archive/note.md", type: "file" }],
+          name: "archive",
+          path: "archive",
+          type: "folder"
+        }
+      ]
+    };
+    const moveMarkdownFile = vi.fn().mockResolvedValue({
+      ok: true,
+      value: {
+        file: { content: "# Note\n移動直前の本文", name: "note", path: "archive/note.md" },
+        workspaceState: movedWorkspaceState
+      }
+    });
+    const writeMarkdownFile = vi.fn().mockResolvedValue({ ok: true, value: undefined });
+
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [
+            { name: "note", path: "note.md", type: "file" },
+            { children: [], name: "archive", path: "archive", type: "folder" }
+          ]
+        }
+      }),
+      moveMarkdownFile,
+      readMarkdownFile: vi.fn().mockResolvedValue({
+        ok: true,
+        value: { content: "# Note", name: "note", path: "note.md" }
+      }),
+      writeMarkdownFile
+    });
+
+    const { container } = await renderApp();
+
+    const noteRow = await screen.findByRole("button", { name: /note/ });
+    fireEvent.click(noteRow);
+    await waitFor(() => expect(useEditorStore.getState().leftPane.activeTabId).not.toBeNull());
+
+    const activeTabId = useEditorStore.getState().leftPane.activeTabId!;
+    const editorContent = container.querySelector(".cm-content");
+    expect(editorContent).not.toBeNull();
+
+    const view = EditorView.findFromDOM(editorContent as HTMLElement);
+    expect(view).not.toBeNull();
+
+    act(() => {
+      view!.dispatch({
+        changes: { from: view!.state.doc.length, insert: "\n移動直前の本文" }
+      });
+    });
+
+    const archiveRow = await screen.findByRole("button", { name: /archive/ });
+    fireEvent.dragStart(noteRow, {
+      dataTransfer: { effectAllowed: "move", setData: vi.fn() }
+    });
+    fireEvent.drop(archiveRow, {
+      dataTransfer: { getData: () => JSON.stringify({ path: "note.md", type: "file" }) }
+    });
+
+    await waitFor(() => {
+      expect(writeMarkdownFile).toHaveBeenCalledWith({ content: "# Note\n移動直前の本文", path: "note.md" });
+    });
+    await waitFor(() => {
+      expect(moveMarkdownFile).toHaveBeenCalledWith({ destinationFolder: "archive", path: "note.md" });
+    });
+
+    const movedTab = useEditorStore.getState().tabs[activeTabId];
+    expect(movedTab?.kind).toBe("file");
+    if (movedTab?.kind === "file") {
+      expect(movedTab.content).toBe("# Note\n移動直前の本文");
+      expect(movedTab.savedContent).toBe("# Note\n移動直前の本文");
       expect(movedTab.path).toBe("archive/note.md");
     }
   });
