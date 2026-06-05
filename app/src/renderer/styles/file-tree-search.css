@@ -840,12 +840,25 @@
 
 .workspace-empty {
   display: grid;
-  gap: 14px;
-  padding: 8px 0;
+  align-content: end;
+  background: var(--color-primary-dark);
+  gap: 18px;
+  margin: auto -16px -18px;
+  min-height: min(32vh, 240px);
+  padding: 32px 24px 24px;
+  position: relative;
+}
+
+.sidebar-section:has(> .workspace-empty) {
+  min-height: 100%;
+}
+
+.sidebar:has(.workspace-empty)::after {
+  display: none;
 }
 
 .workspace-empty-title {
-  color: var(--text);
+  color: color-mix(in srgb, #fff 94%, var(--color-primary-dark) 6%);
   font-size: 16px;
   font-weight: 650;
   line-height: 1.4;
@@ -853,10 +866,37 @@
 }
 
 .workspace-empty-copy {
-  color: var(--text-2);
+  color: color-mix(in srgb, #fff 74%, var(--color-primary-dark) 26%);
   font-size: 13px;
   line-height: 1.65;
   margin: 0;
+}
+
+.workspace-empty .workspace-empty-actions {
+  gap: 10px;
+}
+
+.workspace-empty .workspace-action-button {
+  color: color-mix(in srgb, #fff 88%, var(--color-primary-dark) 12%);
+}
+
+.workspace-empty .workspace-action-button.primary-button,
+.workspace-empty .workspace-action-button.secondary-button {
+  background: transparent;
+  border-color: transparent;
+}
+
+.workspace-empty .workspace-action-button:hover:not(:disabled) {
+  background: color-mix(in srgb, #fff 12%, transparent);
+  color: #fff;
+}
+
+.workspace-empty .workspace-action-button:focus-visible {
+  box-shadow: 0 0 0 2px color-mix(in srgb, #fff 42%, transparent);
+}
+
+.workspace-empty .workspace-action-button:disabled {
+  color: color-mix(in srgb, #fff 44%, var(--color-primary-dark) 56%);
 }
 
 .setting-row {
