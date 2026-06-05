@@ -1,5 +1,5 @@
 import { EditorSelection } from "@codemirror/state";
-import type { EditorState } from "@codemirror/state";
+import type { ChangeSpec, EditorState, SelectionRange } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 
 export type HeadingLevel = 1 | 2 | 3 | 4 | 5 | 6;
@@ -10,6 +10,11 @@ interface MarkdownListLine {
   content: string;
   indent: string;
   kind: ListFormatKind;
+}
+
+interface ToolbarRangeChange {
+  changes: ChangeSpec;
+  range: SelectionRange;
 }
 
 const markdownListLinePattern = /^(\s*)((?:[-+*]\s+(?:\[[ xX]\]\s+)?)|(?:\d+\.\s+))(.*)$/;
@@ -42,6 +47,12 @@ export function findToolbarTargetView(
 export function wrapSelection(view: EditorView, before: string, after: string, placeholder: string): void {
   const { state } = view;
   const changes = state.changeByRange((range) => {
+    const selectedToggle = toggleSelectedWrapper(state, range.from, range.to, before, after);
+    if (selectedToggle) return selectedToggle;
+
+    const cursorToggle = range.empty ? toggleCursorWrapper(state, range.from, before, after) : null;
+    if (cursorToggle) return cursorToggle;
+
     const selected = state.sliceDoc(range.from, range.to);
     const text = selected.length > 0 ? selected : placeholder;
 
@@ -62,6 +73,13 @@ export function insertAtLineStart(view: EditorView, prefix: string, placeholder:
   const { state } = view;
   const changes = state.changeByRange((range) => {
     const line = state.doc.lineAt(range.from);
+    const heading = parseHeadingPrefix(prefix);
+    const headingToggle = heading ? toggleHeadingLine(line, heading) : null;
+    if (headingToggle) return headingToggle;
+
+    const quoteToggle = prefix === "> " ? toggleBlockquoteLine(line, placeholder) : null;
+    if (quoteToggle) return quoteToggle;
+
     const insert = `${prefix}${line.text.length > 0 ? line.text : placeholder}`;
 
     return {
@@ -160,6 +178,9 @@ export function insertCodeBlock(view: EditorView): void {
   const before = "```\n";
   const after = "\n```";
   const changes = state.changeByRange((range) => {
+    const selectedToggle = toggleSelectedWrapper(state, range.from, range.to, before, after);
+    if (selectedToggle) return selectedToggle;
+
     const selected = state.sliceDoc(range.from, range.to);
 
     return {
@@ -177,22 +198,32 @@ export function insertCodeBlock(view: EditorView): void {
 
 export function insertMarkdownLink(view: EditorView, url: string, placeholderLinkText: string): void {
   const { state } = view;
-  const selected = state.sliceDoc(state.selection.main.from, state.selection.main.to);
-  const text = selected || placeholderLinkText;
+  const changes = state.changeByRange((range) => {
+    const selectedToggle = toggleMarkdownLink(state, range.from, range.to);
+    if (selectedToggle) return selectedToggle;
 
-  view.dispatch({
-    changes: {
-      from: state.selection.main.from,
-      to: state.selection.main.to,
-      insert: `[${text}](${url})`
-    }
+    const selected = state.sliceDoc(range.from, range.to);
+    const text = selected || placeholderLinkText;
+
+    return {
+      changes: { from: range.from, to: range.to, insert: `[${text}](${url})` },
+      range: EditorSelection.range(range.from + 1, range.from + 1 + text.length)
+    };
   });
+
+  view.dispatch(changes);
   view.focus();
 }
 
 export function insertInternalLink(view: EditorView): void {
   const { state } = view;
   const changes = state.changeByRange((range) => {
+    const selectedToggle = toggleSelectedWrapper(state, range.from, range.to, "[[", "]]");
+    if (selectedToggle) return selectedToggle;
+
+    const cursorToggle = range.empty ? toggleCursorWrapper(state, range.from, "[[", "]]") : null;
+    if (cursorToggle) return cursorToggle;
+
     const selected = state.sliceDoc(range.from, range.to);
     const text = selected.length > 0 ? selected : "";
 
@@ -263,6 +294,167 @@ function viewContainsActiveElement(view: EditorView): boolean {
 
 function viewHasNonEmptySelection(view: EditorView): boolean {
   return view.state.selection.ranges.some((range) => !range.empty);
+}
+
+function toggleSelectedWrapper(
+  state: EditorState,
+  from: number,
+  to: number,
+  before: string,
+  after: string
+): ToolbarRangeChange | null {
+  if (from === to) return null;
+
+  const beforeFrom = from - before.length;
+  const afterTo = to + after.length;
+  if (
+    beforeFrom < 0
+    || afterTo > state.doc.length
+    || state.sliceDoc(beforeFrom, from) !== before
+    || state.sliceDoc(to, afterTo) !== after
+    || !isStandaloneInlineBoundary(state, beforeFrom, before)
+    || !isStandaloneInlineBoundary(state, to, after)
+  ) {
+    return null;
+  }
+
+  return {
+    changes: [
+      { from: to, to: afterTo, insert: "" },
+      { from: beforeFrom, to: from, insert: "" }
+    ],
+    range: EditorSelection.range(beforeFrom, beforeFrom + (to - from))
+  };
+}
+
+function toggleCursorWrapper(
+  state: EditorState,
+  position: number,
+  before: string,
+  after: string
+): ToolbarRangeChange | null {
+  const line = state.doc.lineAt(position);
+  const offset = position - line.from;
+  const start = findOpeningMarker(line.text, offset, before, after);
+  if (start === null) return null;
+
+  const contentStart = start + before.length;
+  const end = line.text.indexOf(after, Math.max(contentStart, offset));
+  if (end < contentStart) return null;
+
+  return {
+    changes: [
+      { from: line.from + end, to: line.from + end + after.length, insert: "" },
+      { from: line.from + start, to: line.from + contentStart, insert: "" }
+    ],
+    range: EditorSelection.range(line.from + contentStart - before.length, line.from + end - before.length)
+  };
+}
+
+function findOpeningMarker(text: string, offset: number, before: string, after: string): number | null {
+  for (let index = Math.min(offset, text.length); index >= 0; index -= 1) {
+    if (!text.startsWith(before, index)) continue;
+    if (!isStandaloneInlineMarker(text, index, before)) continue;
+    const contentStart = index + before.length;
+    const closingIndex = text.indexOf(after, Math.max(contentStart, offset));
+    if (closingIndex >= contentStart && isStandaloneInlineMarker(text, closingIndex, after)) return index;
+  }
+
+  return null;
+}
+
+function isStandaloneInlineMarker(text: string, index: number, marker: string): boolean {
+  if (marker !== "*" && marker !== "_") return true;
+
+  return text[index - 1] !== marker && text[index + marker.length] !== marker;
+}
+
+function isStandaloneInlineBoundary(state: EditorState, position: number, marker: string): boolean {
+  if (marker !== "*" && marker !== "_") return true;
+
+  const before = position > 0 ? state.sliceDoc(position - 1, position) : "";
+  const after = position + marker.length < state.doc.length
+    ? state.sliceDoc(position + marker.length, position + marker.length + 1)
+    : "";
+
+  return before !== marker && after !== marker;
+}
+
+function parseHeadingPrefix(prefix: string): HeadingLevel | null {
+  const match = prefix.match(/^(#{1,6}) $/);
+  if (!match) return null;
+
+  return match[1].length as HeadingLevel;
+}
+
+function toggleHeadingLine(
+  line: { from: number; text: string },
+  level: HeadingLevel
+): ToolbarRangeChange | null {
+  const match = line.text.match(/^(\s*)(#{1,6})\s+(.*)$/);
+  if (!match) return null;
+
+  const indent = match[1];
+  const existingLevel = match[2].length;
+  const content = match[3];
+  const nextText = existingLevel === level
+    ? `${indent}${content}`
+    : `${indent}${"#".repeat(level)} ${content}`;
+  const selectionStart = line.from + nextText.length - content.length;
+
+  return {
+    changes: { from: line.from, to: line.from + line.text.length, insert: nextText },
+    range: EditorSelection.range(selectionStart, line.from + nextText.length)
+  };
+}
+
+function toggleBlockquoteLine(
+  line: { from: number; text: string },
+  placeholder: string
+): ToolbarRangeChange | null {
+  const match = line.text.match(/^(\s*)>\s?(.*)$/);
+  if (!match) return null;
+
+  const nextText = `${match[1]}${match[2] || placeholder}`;
+
+  return {
+    changes: { from: line.from, to: line.from + line.text.length, insert: nextText },
+    range: EditorSelection.range(line.from + match[1].length, line.from + nextText.length)
+  };
+}
+
+function toggleMarkdownLink(
+  state: EditorState,
+  from: number,
+  to: number
+): ToolbarRangeChange | null {
+  if (from === to) return null;
+
+  const doc = state.doc.toString();
+  const selected = doc.slice(from, to);
+
+  if (doc[from - 1] === "[" && doc[to] === "]" && doc[to + 1] === "(") {
+    const closeParen = doc.indexOf(")", to + 2);
+    if (closeParen > to + 2) {
+      return {
+        changes: [
+          { from: to, to: closeParen + 1, insert: "" },
+          { from: from - 1, to: from, insert: "" }
+        ],
+        range: EditorSelection.range(from - 1, from - 1 + selected.length)
+      };
+    }
+  }
+
+  const fullMatch = selected.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
+  if (fullMatch) {
+    return {
+      changes: { from, to, insert: fullMatch[1] },
+      range: EditorSelection.range(from, from + fullMatch[1].length)
+    };
+  }
+
+  return null;
 }
 
 function hasBlockId(text: string): boolean {
