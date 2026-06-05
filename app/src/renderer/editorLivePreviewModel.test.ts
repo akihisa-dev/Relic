@@ -34,6 +34,14 @@ describe("editorLivePreviewModel", () => {
     expect(matches[0].className).toBe("cm-live-link");
   });
 
+  it("単語内のアンダースコアは斜体として装飾しない", () => {
+    const matches = collectInlineMatches(0, "Use foo_bar_baz and _italic_");
+
+    expect(matches.filter((match) => match.className === "cm-live-italic").map((match) => ({
+      text: "Use foo_bar_baz and _italic_".slice(match.contentFrom, match.contentTo)
+    }))).toEqual([{ text: "italic" }]);
+  });
+
   it("複数バッククォートのinline codeは外側の境界を使う", () => {
     const text = "Use ``code with ` tick`` here";
     const [match] = collectInlineMatches(0, text);
