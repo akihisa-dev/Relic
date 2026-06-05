@@ -52,6 +52,30 @@ describe("replaceInFile", () => {
     await expect(readFile(path.join(ws, "note.md"), "utf8")).resolves.toBe("[DATE] と [DATE]");
   });
 
+  it("通常文字列置換では置換後テキストの$記法を文字どおり扱う", async () => {
+    const ws = await mkdtemp(path.join(os.tmpdir(), "relic-replace-"));
+    temporaryPaths.push(ws);
+
+    await writeFile(path.join(ws, "note.md"), "foo foo", "utf8");
+
+    const result = await replaceInFile(ws, "note.md", "foo", "$&-$1", false);
+
+    expect(result).toEqual({ ok: true, value: { count: 2 } });
+    await expect(readFile(path.join(ws, "note.md"), "utf8")).resolves.toBe("$&-$1 $&-$1");
+  });
+
+  it("正規表現置換ではキャプチャ参照を維持する", async () => {
+    const ws = await mkdtemp(path.join(os.tmpdir(), "relic-replace-"));
+    temporaryPaths.push(ws);
+
+    await writeFile(path.join(ws, "note.md"), "2026/06/05", "utf8");
+
+    const result = await replaceInFile(ws, "note.md", "(\\d{4})/(\\d{2})/(\\d{2})", "$1-$2-$3", true);
+
+    expect(result).toEqual({ ok: true, value: { count: 1 } });
+    await expect(readFile(path.join(ws, "note.md"), "utf8")).resolves.toBe("2026-06-05");
+  });
+
   it("無効な正規表現はエラーを返す", async () => {
     const ws = await mkdtemp(path.join(os.tmpdir(), "relic-replace-"));
     temporaryPaths.push(ws);
@@ -137,6 +161,25 @@ describe("searchAndReplace", () => {
       ]
     });
   });
+
+  it("通常文字列の置換プレビューでも置換後テキストの$記法を文字どおり表示する", async () => {
+    const ws = await mkdtemp(path.join(os.tmpdir(), "relic-replace-"));
+    temporaryPaths.push(ws);
+
+    await writeFile(path.join(ws, "note.md"), "foo", "utf8");
+
+    const result = await searchAndReplace(ws, "foo", "$&-$1", false);
+
+    expect(result).toEqual({
+      ok: true,
+      value: [{
+        lineNumber: 1,
+        lineText: "foo",
+        newLineText: "$&-$1",
+        path: "note.md"
+      }]
+    });
+  });
 });
 
 describe("applySearchAndReplace", () => {
@@ -163,5 +206,19 @@ describe("applySearchAndReplace", () => {
     await expect(readFile(path.join(ws, "sub", "b.md"), "utf8")).resolves.toBe("qux baz");
     await expect(readdir(ws)).resolves.toEqual(["a.md", "sub"]);
     await expect(readdir(path.join(ws, "sub"))).resolves.toEqual(["b.md"]);
+  });
+
+  it("一括置換の通常文字列でも置換後テキストの$記法を文字どおり扱う", async () => {
+    const ws = await mkdtemp(path.join(os.tmpdir(), "relic-replace-"));
+    temporaryPaths.push(ws);
+
+    await writeFile(path.join(ws, "a.md"), "foo", "utf8");
+    await writeFile(path.join(ws, "b.md"), "foo", "utf8");
+
+    const result = await applySearchAndReplace(ws, "foo", "$&", false);
+
+    expect(result).toEqual({ ok: true, value: { count: 2 } });
+    await expect(readFile(path.join(ws, "a.md"), "utf8")).resolves.toBe("$&");
+    await expect(readFile(path.join(ws, "b.md"), "utf8")).resolves.toBe("$&");
   });
 });
