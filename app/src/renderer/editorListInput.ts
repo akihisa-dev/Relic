@@ -1,6 +1,8 @@
 import { EditorSelection } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 
+import { isPositionInFencedCodeBlock } from "./markdownCodeBlockRanges";
+
 interface ListLineMatch {
   content: string;
   indent: string;
@@ -12,6 +14,7 @@ const listLinePattern = /^(\s*)((?:[-+*]\s+(?:\[[ xX]\]\s+)?)|(?:\d+\.\s+))(.*)$
 export function handleMarkdownListEnter(view: EditorView): boolean {
   const selection = view.state.selection.main;
   if (!selection.empty) return false;
+  if (isPositionInFencedCodeBlock(view.state, selection.from)) return false;
 
   const line = view.state.doc.lineAt(selection.from);
   const match = parseListLine(line.text);

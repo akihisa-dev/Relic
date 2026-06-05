@@ -2,6 +2,8 @@ import { EditorSelection } from "@codemirror/state";
 import type { ChangeSpec, EditorState, SelectionRange } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 
+import { rangeIntersectsFencedCodeBlock } from "./markdownCodeBlockRanges";
+
 export type HeadingLevel = 1 | 2 | 3 | 4 | 5 | 6;
 export type BlockIdFactory = () => string;
 export type ListFormatKind = "bullet" | "checkbox" | "ordered";
@@ -47,6 +49,8 @@ export function findToolbarTargetView(
 export function wrapSelection(view: EditorView, before: string, after: string, placeholder: string): void {
   const { state } = view;
   const changes = state.changeByRange((range) => {
+    if (rangeIntersectsFencedCodeBlock(state, range.from, range.to)) return preserveRange(range);
+
     const selectedToggle = toggleSelectedWrapper(state, range.from, range.to, before, after);
     if (selectedToggle) return selectedToggle;
 
@@ -73,6 +77,8 @@ export function insertAtLineStart(view: EditorView, prefix: string, placeholder:
   const { state } = view;
   const changes = state.changeByRange((range) => {
     const line = state.doc.lineAt(range.from);
+    if (rangeIntersectsFencedCodeBlock(state, line.from, line.to)) return preserveRange(range);
+
     const heading = parseHeadingPrefix(prefix);
     const headingToggle = heading ? toggleHeadingLine(line, heading) : null;
     if (headingToggle) return headingToggle;
@@ -99,6 +105,8 @@ export function insertListAtSelectedLines(
 ): void {
   const { state } = view;
   const changes = state.changeByRange((range) => {
+    if (rangeIntersectsFencedCodeBlock(state, range.from, range.to)) return preserveRange(range);
+
     const fromLine = state.doc.lineAt(range.from);
     const toPosition = !range.empty && range.to > range.from ? range.to - 1 : range.to;
     const toLine = state.doc.lineAt(toPosition);
@@ -215,6 +223,8 @@ export function insertCodeBlock(view: EditorView): void {
 export function insertMarkdownLink(view: EditorView, url: string, placeholderLinkText: string): void {
   const { state } = view;
   const changes = state.changeByRange((range) => {
+    if (rangeIntersectsFencedCodeBlock(state, range.from, range.to)) return preserveRange(range);
+
     const existingEdit = editMarkdownLink(state, range.from, range.to, url);
     if (existingEdit) return existingEdit;
 
@@ -237,6 +247,8 @@ export function insertMarkdownLink(view: EditorView, url: string, placeholderLin
 export function insertInternalLink(view: EditorView): void {
   const { state } = view;
   const changes = state.changeByRange((range) => {
+    if (rangeIntersectsFencedCodeBlock(state, range.from, range.to)) return preserveRange(range);
+
     const selectedToggle = toggleSelectedWrapper(state, range.from, range.to, "[[", "]]");
     if (selectedToggle) return selectedToggle;
 
@@ -285,6 +297,13 @@ function viewContainsBrowserSelection(view: EditorView): boolean {
   if (!selection || selection.isCollapsed || !anchorNode || !focusNode) return false;
 
   return view.dom.contains(anchorNode) || view.dom.contains(focusNode);
+}
+
+function preserveRange(range: SelectionRange): ToolbarRangeChange {
+  return {
+    changes: [],
+    range
+  };
 }
 
 function findViewFromNode(node: Node | null): EditorView | null {

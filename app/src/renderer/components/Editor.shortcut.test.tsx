@@ -44,6 +44,18 @@ describe("Editor shortcuts", () => {
     expect(view.state.doc.toString()).toBe("- item\n- \n1. first\n2. \n- [x] done\n- [ ] \n");
   });
 
+  it("コードブロック内のリスト風テキストではEnterのリスト補完を実行しない", async () => {
+    const { view } = await renderEditorWithView({
+      content: "```md\n- item\n```"
+    });
+    const contentElement = view.dom.querySelector(".cm-content")!;
+
+    view.dispatch({ selection: { anchor: "```md\n- item".length } });
+    fireEvent.keyDown(contentElement, { key: "Enter" });
+
+    expect(view.state.doc.toString()).toBe("```md\n- item\n\n```");
+  });
+
   it("TabとShift+Tabで選択中の行を段下げ・段上げする", async () => {
     const { view } = await renderEditorWithView({
       content: "- one\n- two\nplain"

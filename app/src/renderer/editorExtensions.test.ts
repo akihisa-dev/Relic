@@ -15,11 +15,11 @@ import {
 } from "./editorTables";
 import { buildWikiLinkCompletionSource } from "./editorExtensions";
 
-function complete(doc: string, allFilePaths: string[], aliases: string[] = []) {
+function complete(doc: string, allFilePaths: string[], aliases: string[] = [], position = doc.length) {
   const state = EditorState.create({ doc });
   const source = buildWikiLinkCompletionSource(allFilePaths, { aliases });
 
-  return source(new CompletionContext(state, doc.length, true));
+  return source(new CompletionContext(state, position, true));
 }
 
 describe("buildWikiLinkCompletionSource", () => {
@@ -90,6 +90,13 @@ describe("buildWikiLinkCompletionSource", () => {
     ]);
 
     expect(result?.options.map((option) => option.label)).toEqual(["ＡＢＣ計画"]);
+  });
+
+  it("コードブロック内ではWikiリンク候補を返さない", () => {
+    const doc = "```ts\nconst link = [[王\n```";
+    const result = complete(doc, ["世界/王都.md"], [], doc.indexOf("王") + 1);
+
+    expect(result).toBeNull();
   });
 });
 
