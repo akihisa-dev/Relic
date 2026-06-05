@@ -27,7 +27,7 @@ export interface FilesSidebarProps {
   onMoveFile: (path: string, destFolder: string) => void;
   onMoveFolder: (path: string, destFolder: string) => void;
   onMoveItems: (items: Array<{ path: string; type: WorkspaceTreeNode["type"] }>, destFolder: string) => void;
-  onOpenFile: (path: string, event?: React.MouseEvent<HTMLButtonElement>) => void;
+  onOpenFile: (path: string, event?: React.MouseEvent<HTMLButtonElement>, options?: { lineNumber?: number | null }) => void;
   onOpenInOtherPane?: (path: string) => void;
   onOpenWorkspace: () => void;
   onRevealItem?: (path: string) => void;

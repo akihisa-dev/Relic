@@ -69,7 +69,7 @@ describe("App search and links", () => {
     });
     const readMarkdownFile = vi.fn().mockResolvedValue({
       ok: true,
-      value: { content: "一致した行", name: "読書メモ", path: "読書メモ.md" }
+      value: { content: "1行目\n2行目\n一致した行", name: "読書メモ", path: "読書メモ.md" }
     });
 
     window.relic = makeRelicApi({
@@ -78,7 +78,7 @@ describe("App search and links", () => {
       searchWorkspace
     });
 
-    await renderApp();
+    const { container } = await renderApp();
 
     fireEvent.change(await screen.findByLabelText("ファイル検索"), {
       target: { value: "一致" }
@@ -90,6 +90,9 @@ describe("App search and links", () => {
     expect(searchWorkspace).toHaveBeenCalledWith({ mode: "fullText", query: "一致" });
     expect(searchWorkspace.mock.calls.at(-1)?.[0]).toStrictEqual({ mode: "fullText", query: "一致" });
     expect(readMarkdownFile).toHaveBeenCalledWith({ path: "読書メモ.md" });
+    await waitFor(() => {
+      expect(container.querySelector(".cm-activeLine")?.textContent).toContain("一致した行");
+    });
   });
 
   it("検索中は読み込み反応を表示する", async () => {

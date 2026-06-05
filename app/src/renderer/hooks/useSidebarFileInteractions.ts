@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { MouseEvent } from "react";
 
 import type { MarkdownFileContent } from "../../shared/ipc";
+import type { HeadingScrollTarget } from "../editorDerivedState";
 import type { Translator } from "../i18nModel";
 import { useEditorStore, type PaneId } from "../store/editorStore";
 import type { SidebarCreateFlight } from "./useRailFlights";
@@ -12,10 +13,16 @@ interface UseSidebarFileInteractionsInput {
   handleOpenFile: (path: string) => void;
   onFileOpenMotion: () => void;
   openFileInPane: (pane: PaneId, file: MarkdownFileContent) => void;
+  setLeftPaneScrollHeading: (heading: HeadingScrollTarget | undefined) => void;
+  setRightPaneScrollHeading: (heading: HeadingScrollTarget | undefined) => void;
   setTabActive: (pane: PaneId, tabId: string) => void;
   setWorkspaceError: (message: string | null) => void;
   showSidebarCreateFlight: (flight: SidebarCreateFlight, duration?: number) => void;
   t: Translator;
+}
+
+interface OpenFileOptions {
+  lineNumber?: number | null;
 }
 
 export function useSidebarFileInteractions({
@@ -24,6 +31,8 @@ export function useSidebarFileInteractions({
   handleOpenFile,
   onFileOpenMotion,
   openFileInPane,
+  setLeftPaneScrollHeading,
+  setRightPaneScrollHeading,
   setTabActive,
   setWorkspaceError,
   showSidebarCreateFlight,
@@ -31,7 +40,7 @@ export function useSidebarFileInteractions({
 }: UseSidebarFileInteractionsInput): {
   handleCreateFileFromSidebar: (event?: MouseEvent<HTMLButtonElement>) => void;
   handleCreateFolderFromSidebar: (event?: MouseEvent<HTMLButtonElement>) => void;
-  handleSidebarOpenFile: (path: string, event?: MouseEvent<HTMLButtonElement>) => void;
+  handleSidebarOpenFile: (path: string, event?: MouseEvent<HTMLButtonElement>, options?: OpenFileOptions) => void;
   openingFilePath: string | null;
 } {
   const pendingSidebarFileOpenTokensRef = useRef<Record<string, number>>({});
@@ -55,7 +64,13 @@ export function useSidebarFileInteractions({
     };
   }, []);
 
-  const handleSidebarOpenFile = useCallback((path: string, event?: MouseEvent<HTMLButtonElement>): void => {
+  const scrollToLine = useCallback((pane: PaneId, lineNumber?: number | null): void => {
+    if (!lineNumber || lineNumber < 1) return;
+    const setScrollTarget = pane === "left" ? setLeftPaneScrollHeading : setRightPaneScrollHeading;
+    setScrollTarget({ lineNumber, type: "line" });
+  }, [setLeftPaneScrollHeading, setRightPaneScrollHeading]);
+
+  const handleSidebarOpenFile = useCallback((path: string, event?: MouseEvent<HTMLButtonElement>, options?: OpenFileOptions): void => {
     if (!event) {
       markOpeningFile(path);
       handleOpenFile(path);
@@ -83,6 +98,7 @@ export function useSidebarFileInteractions({
     if (openTabIdInPane && openTabInPane?.kind === "file") {
       markOpeningFile(path);
       setTabActive(targetPane, openTabIdInPane);
+      scrollToLine(targetPane, options?.lineNumber);
       onFileOpenMotion();
       return;
     }
@@ -92,6 +108,7 @@ export function useSidebarFileInteractions({
 
     if (existingTab?.kind === "file") {
       openFileInPane(targetPane, { content: existingTab.content, name: existingTab.name, path: existingTab.path });
+      scrollToLine(targetPane, options?.lineNumber);
       onFileOpenMotion();
       return;
     }
@@ -107,12 +124,13 @@ export function useSidebarFileInteractions({
       delete pendingSidebarFileOpenTokensRef.current[path];
       if (result.ok) {
         openFileInPane(targetPane, result.value);
+        scrollToLine(targetPane, options?.lineNumber);
         onFileOpenMotion();
       } else {
         setWorkspaceError(result.error.message);
       }
     });
-  }, [handleOpenFile, markOpeningFile, onFileOpenMotion, openFileInPane, setTabActive, setWorkspaceError]);
+  }, [handleOpenFile, markOpeningFile, onFileOpenMotion, openFileInPane, scrollToLine, setTabActive, setWorkspaceError]);
 
   const handleCreateFileFromSidebar = useCallback((event?: MouseEvent<HTMLButtonElement>): void => {
     void event;

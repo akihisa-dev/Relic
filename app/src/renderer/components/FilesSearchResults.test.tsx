@@ -45,7 +45,7 @@ describe("FilesSearchResults", () => {
     expect(screen.getByText("1 search results")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /Note/ }));
 
-    expect(props.onOpenFile).toHaveBeenCalledWith("Folder/Note.md", expect.any(Object));
+    expect(props.onOpenFile).toHaveBeenCalledWith("Folder/Note.md", expect.any(Object), { lineNumber: 3 });
   });
 
   it("shows error, loading, missing-field, and empty states", () => {

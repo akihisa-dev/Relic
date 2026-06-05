@@ -210,6 +210,35 @@ describe("PaneView", () => {
     expect(props.onScrollTargetHandled).toHaveBeenCalledTimes(1);
   });
 
+  it("行番号ジャンプでは対象行へカーソルを移す", async () => {
+    const content = [
+      "1行目",
+      "2行目",
+      "検索一致行",
+      "4行目"
+    ].join("\n");
+    const targetFrom = content.indexOf("検索一致行");
+    setPaneState(
+      {
+        [fileTab.id]: {
+          ...fileTab,
+          content,
+          savedContent: content
+        }
+      },
+      { activeTabId: fileTab.id, history: [fileTab.id], tabIds: [fileTab.id] }
+    );
+
+    const props = renderPaneView({
+      scrollTargetHeading: { lineNumber: 3, type: "line" }
+    });
+
+    await waitFor(() => {
+      expect(props.viewRef.current?.state.selection.main.from).toBe(targetFrom);
+    });
+    expect(props.onScrollTargetHandled).toHaveBeenCalledTimes(1);
+  });
+
   it("1MiBを超えるMarkdownは通知を出して一時的にソース表示で開く", async () => {
     const content = [
       "**large**",
