@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+
 import {
   fireEvent,
   screen,
@@ -37,6 +39,18 @@ describe("App workspaces", () => {
     vi.clearAllMocks();
     restoreNavigatorPlatform();
     resetRendererStores();
+  });
+
+  it("ワークスペース未選択時の案内パネルをサイドバー下部の青い領域として表示する", () => {
+    const css = readFileSync("src/renderer/styles/file-tree-search.css", "utf8");
+
+    expect(css).toMatch(/\.sidebar-section:has\(> \.workspace-empty\)\s*\{[^}]*min-height:\s*100%;/s);
+    expect(css).toMatch(/\.sidebar:has\(\.workspace-empty\)::after\s*\{[^}]*display:\s*none;/s);
+    expect(css).toMatch(/\.workspace-empty\s*\{[^}]*align-content:\s*end;/s);
+    expect(css).toMatch(/\.workspace-empty\s*\{[^}]*background:\s*var\(--color-primary-dark\);/s);
+    expect(css).toMatch(/\.workspace-empty\s*\{[^}]*margin:\s*auto -16px -18px;/s);
+    expect(css).toMatch(/\.workspace-empty-title\s*\{[^}]*color:\s*color-mix\(in srgb, #fff 94%, var\(--color-primary-dark\) 6%\);/s);
+    expect(css).toMatch(/\.workspace-empty \.workspace-action-button\s*\{[^}]*color:\s*color-mix\(in srgb, #fff 88%, var\(--color-primary-dark\) 12%\);/s);
   });
 
   it("新規ファイルボタンから名前なしでファイルを作成する", async () => {
