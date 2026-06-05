@@ -153,6 +153,56 @@ describe("Editor markdown editing", () => {
     expect(view.state.doc.toString()).toBe(`前\n${pastedText}後`);
   });
 
+  it("HTMLを含む通常ペーストでもプレーンMarkdown本文として貼り付け、1回のUndoで戻せる", async () => {
+    const pastedText = [
+      "日本語の見出し",
+      "",
+      "| 項目 | 値 |",
+      "| --- | --- |",
+      "| 表 | 123 |",
+      "",
+      "```js",
+      "console.log('貼り付け');",
+      "```"
+    ].join("\n");
+    const pastedHtml = [
+      "<h1>日本語の見出し</h1>",
+      "<table><tr><th>項目</th><th>値</th></tr><tr><td>表</td><td>123</td></tr></table>",
+      "<pre><code>console.log('貼り付け');</code></pre>"
+    ].join("");
+
+    const { view } = await renderEditorWithView({
+      content: "前\n後",
+      settings: { ...settings, language: "ja" }
+    });
+    const contentElement = view.dom.querySelector(".cm-content")!;
+    const insertAt = "前\n".length;
+    const getData = vi.fn((type: string) => {
+      if (type === "text/plain") return pastedText;
+      if (type === "text/html") return pastedHtml;
+      return "";
+    });
+
+    view.focus();
+    view.dispatch({ selection: { anchor: insertAt } });
+    fireEvent.paste(contentElement, {
+      clipboardData: {
+        getData,
+        types: ["text/html", "text/plain"]
+      }
+    });
+
+    await waitFor(() => {
+      expect(view.state.doc.toString()).toBe(`前\n${pastedText}後`);
+    });
+    expect(getData).toHaveBeenCalledWith("text/plain");
+    expect(view.state.selection.main.head).toBe(insertAt + pastedText.length);
+    expect(undo(view)).toBe(true);
+    expect(view.state.doc.toString()).toBe("前\n後");
+    expect(redo(view)).toBe(true);
+    expect(view.state.doc.toString()).toBe(`前\n${pastedText}後`);
+  });
+
   it("Electron側のクリップボード読み取りに失敗してもブラウザ側からペーストできる", async () => {
     const readClipboardText = vi.fn(() => {
       throw new Error("clipboard unavailable");
