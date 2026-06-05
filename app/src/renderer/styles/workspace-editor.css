@@ -463,19 +463,20 @@
   background: transparent;
   border-bottom: 0;
   display: flex;
-  gap: 24px;
-  flex: 0 1 auto;
+  flex: 1 1 auto;
+  gap: 4px;
   max-width: 100%;
   overflow-x: auto;
   overflow-y: hidden;
   padding: 0;
   position: relative;
   scrollbar-width: none;
-  width: max-content;
+  width: 100%;
 }
 
 .pane-tabs {
   -webkit-app-region: drag;
+  overflow: hidden;
   min-width: 0;
 }
 
@@ -488,6 +489,7 @@
   gap: 0;
   height: 52px;
   min-width: 0;
+  overflow: hidden;
   padding: 0;
   position: relative;
 }
@@ -542,14 +544,14 @@
   color: var(--text-3);
   cursor: default;
   display: flex;
-  flex-shrink: 0;
+  flex: 0 1 220px;
   font-size: 13px;
   font-weight: 700;
-  gap: 14px;
+  gap: 8px;
   height: 40px;
-  max-width: 480px;
-  min-width: 360px;
-  padding: 0 32px;
+  max-width: 280px;
+  min-width: 148px;
+  padding: 0 14px;
   position: relative;
   transition:
     background-color 140ms ease,
@@ -562,6 +564,10 @@
   user-select: none;
   will-change: max-width, min-width, opacity, padding;
   z-index: 1;
+}
+
+.pane-tab-bar--fit .pane-tab {
+  flex-basis: 200px;
 }
 
 .pane-tab:hover:not(.pane-tab--active):not(.pane-tab--closing) {
@@ -624,6 +630,7 @@
 
 .pane-tab-name {
   flex: 1;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -669,6 +676,7 @@
   border-radius: 4px;
   color: var(--text-3);
   display: inline-flex;
+  flex: 0 0 auto;
   height: 18px;
   justify-content: center;
   min-height: 0;

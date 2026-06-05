@@ -18,6 +18,15 @@ const fileTab: Tab = {
   savedContent: "hello world"
 };
 
+const secondFileTab: Tab = {
+  content: "second note",
+  id: "tab-second-file",
+  kind: "file",
+  name: "Second",
+  path: "Folder/Second.md",
+  savedContent: "second note"
+};
+
 function renderTitleBar(overrides: Partial<Parameters<typeof AppTitleBar>[0]> = {}): Parameters<typeof AppTitleBar>[0] {
   const tabs: Record<string, Tab> = {
     [fileTab.id]: { ...fileTab, isPinned: true }
@@ -88,6 +97,28 @@ describe("AppTitleBar", () => {
     expect(props.onTabClose).toHaveBeenCalledWith("left", fileTab.id);
   });
 
+  it("renders multiple title bar tabs as selectable controls", () => {
+    const props = renderTitleBar({
+      leftPane: {
+        activeTabId: fileTab.id,
+        history: [fileTab.id],
+        tabIds: [fileTab.id, secondFileTab.id]
+      },
+      tabs: {
+        [fileTab.id]: { ...fileTab, isPinned: true },
+        [secondFileTab.id]: secondFileTab
+      }
+    });
+
+    const secondTab = screen.getByText("Second", { selector: ".pane-tab-name" }).closest(".pane-tab");
+
+    expect(document.querySelectorAll(".title-bar .pane-tab")).toHaveLength(2);
+    expect(secondTab).toBeInstanceOf(HTMLElement);
+
+    fireEvent.click(secondTab as HTMLElement);
+    expect(props.onTabSelect).toHaveBeenCalledWith("left", secondFileTab.id);
+  });
+
   it("keeps preview output actions out of the title bar buttons", () => {
     renderTitleBar();
 
@@ -106,6 +137,17 @@ describe("AppTitleBar", () => {
     expect(editorCss).toMatch(/\.pane-tab\s*\{[^}]*-webkit-app-region:\s*no-drag;/s);
     expect(editorCss).toMatch(/\.pane-tab-close\s*\{[^}]*-webkit-app-region:\s*no-drag;/s);
     expect(editorCss).toMatch(/\.pane-tab-bar\s*\{[^}]*scrollbar-width:\s*none;/s);
+  });
+
+  it("keeps title bar tabs compact inside the available tab lane", () => {
+    const editorCss = readFileSync("src/renderer/styles/workspace-editor.css", "utf8");
+
+    expect(editorCss).toMatch(/\.pane-tab-bar\s*\{[^}]*gap:\s*4px;/s);
+    expect(editorCss).toMatch(/\.pane-tab-bar\s*\{[^}]*width:\s*100%;/s);
+    expect(editorCss).toMatch(/\.pane-tabs\s*\{[^}]*overflow:\s*hidden;/s);
+    expect(editorCss).toMatch(/\.pane-tab\s*\{[^}]*flex:\s*0 1 220px;/s);
+    expect(editorCss).toMatch(/\.pane-tab\s*\{[^}]*min-width:\s*148px;/s);
+    expect(editorCss).toMatch(/\.pane-tab-name\s*\{[^}]*min-width:\s*0;/s);
   });
 
   it("lets title bar action tooltips render above the workspace layer", () => {
