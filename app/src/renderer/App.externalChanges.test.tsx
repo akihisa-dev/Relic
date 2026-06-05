@@ -5,6 +5,7 @@ import {
   waitFor,
   within
 } from "@testing-library/react";
+import { EditorView } from "@codemirror/view";
 import {
   afterEach,
   beforeAll,
@@ -138,6 +139,68 @@ describe("App external file changes", () => {
     expect(tab?.kind).toBe("file");
     if (tab?.kind === "file") {
       expect(tab.content).toBe("Relic側の編集中本文");
+      expect(tab.savedContent).toBe("外部変更前");
+      expect(tab.externalConflict?.content).toBe("外部で更新された本文");
+    }
+  });
+
+  it("エディタ入力直後の外部変更でもRelic側本文を残して衝突させる", async () => {
+    let workspaceChanged: Parameters<NonNullable<typeof window.relic>["onWorkspaceChanged"]>[0] = () => undefined;
+    const writeMarkdownFile = vi.fn().mockResolvedValue({ ok: true, value: undefined });
+    const readMarkdownFile = vi.fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        value: { content: "外部変更前", name: "読書メモ", path: "読書メモ.md" }
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        value: { content: "外部で更新された本文", name: "読書メモ", path: "読書メモ.md" }
+      });
+
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [{ name: "読書メモ", path: "読書メモ.md", type: "file" }]
+        }
+      }),
+      onWorkspaceChanged: vi.fn((callback) => {
+        workspaceChanged = callback;
+        return vi.fn();
+      }),
+      readMarkdownFile,
+      writeMarkdownFile
+    });
+
+    const { container } = await renderApp();
+    fireEvent.click(await screen.findByRole("button", { name: /読書メモ/ }));
+    await waitFor(() => expect(useEditorStore.getState().leftPane.activeTabId).not.toBeNull());
+
+    const activeTabId = useEditorStore.getState().leftPane.activeTabId!;
+    const editorContent = container.querySelector(".cm-content");
+    expect(editorContent).not.toBeNull();
+
+    const view = EditorView.findFromDOM(editorContent as HTMLElement);
+    expect(view).not.toBeNull();
+
+    act(() => {
+      view!.dispatch({
+        changes: { from: view!.state.doc.length, insert: "\nRelic側の入力直後本文" }
+      });
+    });
+    act(() => {
+      workspaceChanged({ changedAt: new Date().toISOString(), workspaceId: "ws-1", workspacePath: "/tmp/Notes" });
+    });
+
+    expect(await screen.findByText("このファイルは外部で変更されました。自動保存を一時停止しています。")).toBeInTheDocument();
+    expect(await screen.findByText("読書メモ は外部で変更されたため、自動保存を一時停止しました。")).toHaveClass("toast--error");
+    expect(writeMarkdownFile).not.toHaveBeenCalled();
+
+    const tab = useEditorStore.getState().tabs[activeTabId];
+    expect(tab?.kind).toBe("file");
+    if (tab?.kind === "file") {
+      expect(tab.content).toBe("外部変更前\nRelic側の入力直後本文");
       expect(tab.savedContent).toBe("外部変更前");
       expect(tab.externalConflict?.content).toBe("外部で更新された本文");
     }
