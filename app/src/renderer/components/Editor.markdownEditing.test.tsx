@@ -64,6 +64,65 @@ describe("Editor markdown editing", () => {
     });
   });
 
+  it("カット時にクリップボードへ保存できない場合は本文を消さない", async () => {
+    const writeClipboardText = vi.fn(() => {
+      throw new Error("clipboard unavailable");
+    });
+    const writeText = vi.fn().mockRejectedValue(new Error("browser clipboard unavailable"));
+    const execCommand = vi.fn().mockReturnValue(false);
+    window.relic = makeRelicApi({
+      writeClipboardText
+    });
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: {
+        writeText
+      }
+    });
+    Object.defineProperty(document, "execCommand", {
+      configurable: true,
+      value: execCommand
+    });
+
+    const { view } = await renderEditorWithView({
+      content: "hello world",
+      settings: { ...settings, language: "ja" }
+    });
+    const contentElement = view.dom.querySelector(".cm-content")!;
+    view.dispatch({ selection: { anchor: 0, head: 5 } });
+
+    fireEvent.contextMenu(contentElement, { clientX: 32, clientY: 32 });
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Cut" }));
+
+    await waitFor(() => {
+      expect(execCommand).toHaveBeenCalledWith("copy");
+    });
+    expect(view.state.doc.toString()).toBe("hello world");
+    expect(view.state.sliceDoc(view.state.selection.main.from, view.state.selection.main.to)).toBe("hello");
+  });
+
+  it("カット時にクリップボードへ保存できた場合だけ本文を消す", async () => {
+    const writeClipboardText = vi.fn();
+    window.relic = makeRelicApi({
+      writeClipboardText
+    });
+
+    const { view } = await renderEditorWithView({
+      content: "hello world",
+      settings: { ...settings, language: "ja" }
+    });
+    const contentElement = view.dom.querySelector(".cm-content")!;
+    view.dispatch({ selection: { anchor: 0, head: 5 } });
+
+    fireEvent.contextMenu(contentElement, { clientX: 32, clientY: 32 });
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Cut" }));
+
+    await waitFor(() => {
+      expect(view.state.doc.toString()).toBe(" world");
+    });
+    expect(writeClipboardText).toHaveBeenCalledWith("hello");
+  });
+
   it("本文への複数行日本語ペーストは1回のUndoで戻せる", async () => {
     const pastedText = "一行目\n- 箇条書き\n```ts\nconst 値 = 1;\n```";
     const readClipboardText = vi.fn().mockReturnValue(pastedText);

@@ -143,12 +143,15 @@ export function useEditorContextMenu({ viewRef }: UseEditorContextMenuInput) {
     const from = !selection.empty ? selection.from : contextMenu?.selectionFrom ?? selection.from;
     const to = !selection.empty ? selection.to : contextMenu?.selectionTo ?? selection.to;
 
-    void writeEditorClipboardText(selectionText);
-    view.dispatch({
-      changes: { from, insert: "", to },
-      selection: { anchor: from }
-    });
-    view.focus();
+    void writeEditorClipboardText(selectionText).then(() => {
+      if (view.state.sliceDoc(from, to) !== selectionText) return;
+
+      view.dispatch({
+        changes: { from, insert: "", to },
+        selection: { anchor: from }
+      });
+      view.focus();
+    }).catch(() => undefined);
   }, [contextMenu, viewRef]);
 
   const pasteClipboard = useCallback(async (): Promise<void> => {
