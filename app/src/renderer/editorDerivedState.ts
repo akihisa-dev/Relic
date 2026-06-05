@@ -1,9 +1,12 @@
 import type { FileTab, PaneId, PaneState, Tab } from "./store/editorStore";
 
 export interface OutlineHeading {
+  from: number;
   level: number;
   text: string;
 }
+
+export type HeadingScrollTarget = string | OutlineHeading;
 
 export function getActiveTabInPane(
   pane: PaneId,
@@ -26,16 +29,21 @@ export function getActiveFileTabInPane(
 }
 
 export function extractOutlineHeadings(content: string): OutlineHeading[] {
-  return content
-    .split("\n")
-    .flatMap((line) => {
-      const match = /^(#{1,6}) (.+)/.exec(line);
-      if (!match) return [];
+  const headings: OutlineHeading[] = [];
+  let from = 0;
 
+  for (const rawLine of content.split("\n")) {
+    const line = rawLine.endsWith("\r") ? rawLine.slice(0, -1) : rawLine;
+    const match = /^(#{1,6}) (.+)/.exec(line);
+    if (match) {
       const marker = match[1] ?? "";
       const text = match[2] ?? "";
-      if (!marker || !text) return [];
+      if (marker && text) {
+        headings.push({ from, level: marker.length, text });
+      }
+    }
+    from += rawLine.length + 1;
+  }
 
-      return [{ level: marker.length, text }];
-    });
+  return headings;
 }

@@ -5,7 +5,7 @@ import type { Backlink, EditorSettings, UserDefinedField } from "../../shared/ip
 import type { AIWorkspaceMessagePreview, AIWorkspaceState } from "../../shared/ipc";
 import type { ResolvedWikiLink } from "../../shared/links";
 import type { AppLinkContextMenu } from "../appLinks";
-import type { OutlineHeading } from "../editorDerivedState";
+import type { HeadingScrollTarget, OutlineHeading } from "../editorDerivedState";
 import type { PaneId, PanelTabKind } from "../store/editorStore";
 import type { RightPanelView, SecondarySidebarView } from "../store/uiStore";
 import { AppRightPanel } from "./AppRightPanel";
@@ -33,7 +33,7 @@ interface AppEditorWorkspaceProps {
   isSecondarySidebarOpen: boolean;
   isTypewriterMode: boolean;
   leftEditorViewRef: MutableRefObject<EditorView | null>;
-  leftPaneScrollHeading?: string;
+  leftPaneScrollHeading?: HeadingScrollTarget;
   onCreateFile: (name: string) => void;
   onAIWorkspaceClearData: () => void;
   onAIWorkspaceApplyOperations: (operationIds?: string[]) => void;
@@ -50,7 +50,7 @@ interface AppEditorWorkspaceProps {
   onOpenFile: (path: string) => void;
   onOpenLink: (href: string) => void;
   onOpenWikiLink: (target: string, heading?: string) => void;
-  onOutlineHeadingClick: (heading: string) => void;
+  onOutlineHeadingClick: (heading: OutlineHeading) => void;
   onRenameFile: (path: string, name: string) => void;
   onRightPanelResizeStart: (event: ReactMouseEvent) => void;
   onSecondarySidebarClose: () => void;
@@ -63,7 +63,7 @@ interface AppEditorWorkspaceProps {
   renderChartTab: (chartId: string) => ReactNode;
   renderPanelTab: (panel: PanelTabKind) => ReactNode;
   rightEditorViewRef: MutableRefObject<EditorView | null>;
-  rightPaneScrollHeading?: string;
+  rightPaneScrollHeading?: HeadingScrollTarget;
   rightPanelView: RightPanelView;
   rightPanelWidth: number;
   secondarySidebarView: SecondarySidebarView;

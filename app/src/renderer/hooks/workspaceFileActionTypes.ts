@@ -1,5 +1,6 @@
 import type { MarkdownFileContent, WorkspaceState } from "../../shared/ipc";
 import type { AliasIndex } from "../../shared/links";
+import type { HeadingScrollTarget } from "../editorDerivedState";
 import type { FileTab, PaneId, PaneState, Tab } from "../store/editorStore";
 
 export interface WorkspaceFileActionsContext {
@@ -12,8 +13,8 @@ export interface WorkspaceFileActionsContext {
   leftPane: PaneState;
   openFileInPane: (pane: PaneId, file: MarkdownFileContent) => void;
   rightPane: PaneState;
-  setLeftPaneScrollHeading: (heading: string | undefined) => void;
-  setRightPaneScrollHeading: (heading: string | undefined) => void;
+  setLeftPaneScrollHeading: (heading: HeadingScrollTarget | undefined) => void;
+  setRightPaneScrollHeading: (heading: HeadingScrollTarget | undefined) => void;
   setWorkspaceError: (message: string | null) => void;
   setWorkspaceState: (state: WorkspaceState) => void;
   tabs: Record<string, Tab>;

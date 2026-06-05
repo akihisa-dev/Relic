@@ -1,6 +1,7 @@
 import { useCallback } from "react";
 
 import type { MarkdownFileContent, WorkspaceState, WorkspaceTreeNode } from "../../shared/ipc";
+import type { HeadingScrollTarget } from "../editorDerivedState";
 import type { Translator } from "../i18nModel";
 import type { PaneId, PanelTabKind, Tab } from "../store/editorStore";
 import { joinWorkspacePath } from "../workspacePaths";
@@ -12,8 +13,8 @@ interface UseAppPaneFileActionsInput {
   openFileInPane: (pane: PaneId, file: MarkdownFileContent) => void;
   openChartInPane: (pane: PaneId, chart: { id: string; name: string }) => void;
   openPanelInPane: (pane: PaneId, panel: PanelTabKind, name: string) => void;
-  setLeftPaneScrollHeading: (heading: string | undefined) => void;
-  setRightPaneScrollHeading: (heading: string | undefined) => void;
+  setLeftPaneScrollHeading: (heading: HeadingScrollTarget | undefined) => void;
+  setRightPaneScrollHeading: (heading: HeadingScrollTarget | undefined) => void;
   setWorkspaceError: (message: string | null) => void;
   setWorkspaceState: (state: WorkspaceState) => void;
   t: Translator;

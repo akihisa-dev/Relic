@@ -2,6 +2,7 @@ import { EditorView } from "@codemirror/view";
 import type { MutableRefObject, ReactElement, ReactNode } from "react";
 
 import type { EditorSettings, UserDefinedField } from "../../shared/ipc";
+import type { HeadingScrollTarget } from "../editorDerivedState";
 import { usePaneHeadingScroll } from "../hooks/usePaneHeadingScroll";
 import { useEditorStore, type PaneId, type PanelTabKind } from "../store/editorStore";
 import { PaneContentSurface } from "./PaneContentSurface";
@@ -13,7 +14,7 @@ export interface PaneViewProps {
   focusedPane: PaneId;
   frontmatterCandidates: Record<string, string[]>;
   pane: PaneId;
-  scrollTargetHeading?: string;
+  scrollTargetHeading?: HeadingScrollTarget;
   typewriterMode: boolean;
   userDefinedFields: UserDefinedField[];
   workspacePath?: string | null;

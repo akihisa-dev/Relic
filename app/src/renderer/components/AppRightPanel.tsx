@@ -16,7 +16,7 @@ interface AppRightPanelProps {
   isResizing: boolean;
   onOpenFile: (path: string) => void;
   onOpenWikiLink: (target: string, heading?: string) => void;
-  onOutlineHeadingClick: (heading: string) => void;
+  onOutlineHeadingClick: (heading: OutlineHeading) => void;
   onResizeStart: (event: ReactMouseEvent) => void;
   outlineHeadings: OutlineHeading[];
   outgoingLinks: ResolvedWikiLink[];
@@ -65,11 +65,11 @@ export function AppRightPanel({
         outlineHeadings.length > 0 ? (
           <ul className="outline-list">
             {outlineHeadings.map((heading, index) => (
-              <li className={`outline-item outline-item--h${heading.level}`} key={`${heading.level}-${heading.text}`} title={heading.text}>
+              <li className={`outline-item outline-item--h${heading.level}`} key={`${heading.from}-${heading.level}-${heading.text}`} title={heading.text}>
                 <button
                   aria-label={heading.text}
                   className="outline-item-button"
-                  onClick={() => onOutlineHeadingClick(heading.text)}
+                  onClick={() => onOutlineHeadingClick(heading)}
                   type="button"
                 >
                   <span className="outline-item-number">{String(index + 1).padStart(2, "0")}</span>
