@@ -1,4 +1,5 @@
 import {
+  act,
   fireEvent,
   screen,
   waitFor
@@ -23,6 +24,7 @@ import {
   resetRendererStores,
   testWorkspaceState as withWorkspace
 } from "../test/rendererTestUtils";
+import { useEditorStore } from "./store/editorStore";
 
 describe("App file actions", () => {
   beforeAll(installMatchMediaMock);
@@ -225,6 +227,137 @@ describe("App file actions", () => {
     await waitFor(() => {
       expect(moveFolder).toHaveBeenCalledWith({ destinationFolder: "archive", path: "drafts" });
     });
+  });
+
+  it("未保存の開きタブはファイル移動前に即時保存する", async () => {
+    const movedWorkspaceState = {
+      ...withWorkspace,
+      fileTree: [
+        {
+          children: [{ name: "note", path: "archive/note.md", type: "file" }],
+          name: "archive",
+          path: "archive",
+          type: "folder"
+        }
+      ]
+    };
+    const moveMarkdownFile = vi.fn().mockResolvedValue({
+      ok: true,
+      value: {
+        file: { content: "未保存本文", name: "note", path: "archive/note.md" },
+        workspaceState: movedWorkspaceState
+      }
+    });
+    const writeMarkdownFile = vi.fn().mockResolvedValue({ ok: true, value: undefined });
+
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [
+            { name: "note", path: "note.md", type: "file" },
+            { children: [], name: "archive", path: "archive", type: "folder" }
+          ]
+        }
+      }),
+      moveMarkdownFile,
+      readMarkdownFile: vi.fn().mockResolvedValue({
+        ok: true,
+        value: { content: "# Note", name: "note", path: "note.md" }
+      }),
+      writeMarkdownFile
+    });
+
+    await renderApp();
+
+    const noteRow = await screen.findByRole("button", { name: /note/ });
+    fireEvent.click(noteRow);
+    await waitFor(() => expect(useEditorStore.getState().leftPane.activeTabId).not.toBeNull());
+
+    const activeTabId = useEditorStore.getState().leftPane.activeTabId!;
+    act(() => {
+      useEditorStore.getState().updateTabContent(activeTabId, "未保存本文");
+    });
+
+    const archiveRow = await screen.findByRole("button", { name: /archive/ });
+    fireEvent.dragStart(noteRow, {
+      dataTransfer: { effectAllowed: "move", setData: vi.fn() }
+    });
+    fireEvent.drop(archiveRow, {
+      dataTransfer: { getData: () => JSON.stringify({ path: "note.md", type: "file" }) }
+    });
+
+    await waitFor(() => {
+      expect(writeMarkdownFile).toHaveBeenCalledWith({ content: "未保存本文", path: "note.md" });
+    });
+    await waitFor(() => {
+      expect(moveMarkdownFile).toHaveBeenCalledWith({ destinationFolder: "archive", path: "note.md" });
+    });
+
+    const movedTab = useEditorStore.getState().tabs[activeTabId];
+    expect(movedTab?.kind).toBe("file");
+    if (movedTab?.kind === "file") {
+      expect(movedTab.content).toBe("未保存本文");
+      expect(movedTab.savedContent).toBe("未保存本文");
+      expect(movedTab.path).toBe("archive/note.md");
+    }
+  });
+
+  it("ファイル移動前保存に失敗した場合は移動せず本文を残す", async () => {
+    const moveMarkdownFile = vi.fn();
+    const writeMarkdownFile = vi.fn().mockResolvedValue({
+      ok: false,
+      error: { code: "FILE_WRITE_FAILED", message: "ファイルを保存できませんでした。" }
+    });
+
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [
+            { name: "note", path: "note.md", type: "file" },
+            { children: [], name: "archive", path: "archive", type: "folder" }
+          ]
+        }
+      }),
+      moveMarkdownFile,
+      readMarkdownFile: vi.fn().mockResolvedValue({
+        ok: true,
+        value: { content: "# Note", name: "note", path: "note.md" }
+      }),
+      writeMarkdownFile
+    });
+
+    await renderApp();
+
+    const noteRow = await screen.findByRole("button", { name: /note/ });
+    fireEvent.click(noteRow);
+    await waitFor(() => expect(useEditorStore.getState().leftPane.activeTabId).not.toBeNull());
+
+    const activeTabId = useEditorStore.getState().leftPane.activeTabId!;
+    act(() => {
+      useEditorStore.getState().updateTabContent(activeTabId, "移動前に守る本文");
+    });
+
+    const archiveRow = await screen.findByRole("button", { name: /archive/ });
+    fireEvent.dragStart(noteRow, {
+      dataTransfer: { effectAllowed: "move", setData: vi.fn() }
+    });
+    fireEvent.drop(archiveRow, {
+      dataTransfer: { getData: () => JSON.stringify({ path: "note.md", type: "file" }) }
+    });
+
+    expect(await screen.findByText("ファイルを保存できませんでした。")).toHaveClass("toast--error");
+    expect(moveMarkdownFile).not.toHaveBeenCalled();
+
+    const tab = useEditorStore.getState().tabs[activeTabId];
+    expect(tab?.kind).toBe("file");
+    if (tab?.kind === "file") {
+      expect(tab.content).toBe("移動前に守る本文");
+      expect(tab.path).toBe("note.md");
+    }
   });
 
   it("展開済みフォルダ内の余白へドロップしても移動しない", async () => {
