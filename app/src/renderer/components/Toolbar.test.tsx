@@ -1,3 +1,4 @@
+import { redo, undo } from "@codemirror/commands";
 import { EditorSelection, EditorState } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
@@ -490,6 +491,88 @@ describe("Toolbar markdown actions", () => {
 
     expect(view.state.doc.toString()).toBe("[あああ](https://example.com)");
     unmount();
+  });
+
+  it("マーク適用・リンク挿入・表挿入はUndo/Redoで1操作として戻る", async () => {
+    const bold = await renderToolbarWithEditor("hello", EditorSelection.single(0, 5));
+
+    clickToolbarButton("Bold");
+
+    expect(bold.view.state.doc.toString()).toBe("**hello**");
+    expect(undo(bold.view)).toBe(true);
+    expect(bold.view.state.doc.toString()).toBe("hello");
+    expect(redo(bold.view)).toBe(true);
+    expect(bold.view.state.doc.toString()).toBe("**hello**");
+    bold.unmount();
+    document.body.innerHTML = "";
+
+    const link = await renderToolbarWithEditor("hello", EditorSelection.single(0, 5));
+
+    clickToolbarButton("Markdown link");
+    fireEvent.change(screen.getByPlaceholderText("URL"), { target: { value: "https://example.com" } });
+    clickToolbarButton("Insert");
+
+    expect(link.view.state.doc.toString()).toBe("[hello](https://example.com)");
+    expect(undo(link.view)).toBe(true);
+    expect(link.view.state.doc.toString()).toBe("hello");
+    expect(redo(link.view)).toBe(true);
+    expect(link.view.state.doc.toString()).toBe("[hello](https://example.com)");
+    link.unmount();
+    document.body.innerHTML = "";
+
+    const table = await renderToolbarWithEditor("hello", EditorSelection.single(5));
+
+    clickToolbarButton("Table");
+    const dialog = screen.getByText("×").closest(".toolbar-inline-dialog");
+    expect(dialog).not.toBeNull();
+    const inputs = within(dialog as HTMLElement).getAllByRole("spinbutton");
+    fireEvent.change(inputs[0], { target: { value: "2" } });
+    fireEvent.change(inputs[1], { target: { value: "2" } });
+    fireEvent.click(within(dialog as HTMLElement).getByRole("button", { name: "Insert" }));
+
+    const tableText = [
+      "hello",
+      "| Column 1 | Column 2 |",
+      "| --- | --- |",
+      "| 　 | 　 |",
+      "| 　 | 　 |",
+      ""
+    ].join("\n");
+    expect(table.view.state.doc.toString()).toBe(tableText);
+    expect(undo(table.view)).toBe(true);
+    expect(table.view.state.doc.toString()).toBe("hello");
+    expect(redo(table.view)).toBe(true);
+    expect(table.view.state.doc.toString()).toBe(tableText);
+    table.unmount();
+  });
+
+  it("太字化・リンク化・見出し化の後も本文側の選択範囲を保持する", async () => {
+    const bold = await renderToolbarWithEditor("hello", EditorSelection.single(0, 5));
+
+    clickToolbarButton("Bold");
+
+    expect(bold.view.state.sliceDoc(bold.view.state.selection.main.from, bold.view.state.selection.main.to)).toBe("hello");
+    bold.unmount();
+    document.body.innerHTML = "";
+
+    const link = await renderToolbarWithEditor("hello", EditorSelection.single(0, 5));
+
+    clickToolbarButton("Markdown link");
+    fireEvent.change(screen.getByPlaceholderText("URL"), { target: { value: "https://example.com" } });
+    clickToolbarButton("Insert");
+
+    expect(link.view.state.sliceDoc(link.view.state.selection.main.from, link.view.state.selection.main.to)).toBe("hello");
+    link.unmount();
+    document.body.innerHTML = "";
+
+    const heading = await renderToolbarWithEditor("hello", EditorSelection.single(0, 5));
+
+    clickToolbarButton("Heading");
+    fireEvent.click(screen.getByRole("button", { name: "H2" }));
+
+    expect(heading.view.state.doc.toString()).toBe("## hello");
+    expect(heading.view.state.sliceDoc(heading.view.state.selection.main.from, heading.view.state.selection.main.to)).toBe("hello");
+    heading.unmount();
   });
 
   it("表ボタンが指定行列のMarkdown表を挿入する", () => {
