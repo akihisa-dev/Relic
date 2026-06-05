@@ -16,8 +16,13 @@ interface SearchAndReplaceReadOperations {
   readFile(filePath: string, encoding: BufferEncoding): Promise<string>;
 }
 
-const defaultSearchAndReplaceReadOperations: SearchAndReplaceReadOperations = {
-  readFile
+interface SearchAndReplaceWriteOperations extends SearchAndReplaceReadOperations {
+  writeTextFile?: (filePath: string, content: string) => Promise<void>;
+}
+
+const defaultSearchAndReplaceOperations: Required<SearchAndReplaceWriteOperations> = {
+  readFile,
+  writeTextFile: atomicWriteTextFile
 };
 
 export async function replaceInFile(
@@ -76,7 +81,7 @@ export async function searchAndReplace(
   searchQuery: string,
   replacement: string,
   isRegex: boolean,
-  operations: SearchAndReplaceReadOperations = defaultSearchAndReplaceReadOperations
+  operations: SearchAndReplaceReadOperations = defaultSearchAndReplaceOperations
 ): Promise<RelicResult<SearchAndReplaceMatch[]>> {
   const regex = buildReplacementRegex(searchQuery, isRegex);
 
@@ -140,7 +145,7 @@ export async function applySearchAndReplace(
   searchQuery: string,
   replacement: string,
   isRegex: boolean,
-  operations: SearchAndReplaceReadOperations = defaultSearchAndReplaceReadOperations
+  operations: SearchAndReplaceWriteOperations = defaultSearchAndReplaceOperations
 ): Promise<RelicResult<{ count: number }>> {
   const regex = buildReplacementRegex(searchQuery, isRegex);
 
@@ -151,6 +156,7 @@ export async function applySearchAndReplace(
   try {
     const fileTree = await readWorkspaceFileTree(workspacePath);
     let count = 0;
+    const writeTextFile = operations.writeTextFile ?? defaultSearchAndReplaceOperations.writeTextFile;
     const files = await collectSafeMarkdownFiles(workspacePath, collectMarkdownPaths(fileTree));
     const fileContents = await Promise.all(
       files.map(async (file) => {
@@ -169,20 +175,32 @@ export async function applySearchAndReplace(
       }
     }
 
-    for (const fileContent of fileContents) {
-      if (!fileContent) continue;
+    const writtenPatches: Array<{ absolutePath: string; previousContent: string }> = [];
 
-      const { absolutePath, content } = fileContent;
-      const matches = content.match(regex.value);
+    try {
+      for (const fileContent of fileContents) {
+        if (!fileContent) continue;
 
-      if (matches && matches.length > 0) {
+        const { absolutePath, content } = fileContent;
+        const matches = content.match(regex.value);
+
+        if (matches && matches.length > 0) {
+          regex.value.lastIndex = 0;
+          const updated = applyReplacement(content, regex.value, replacement, isRegex);
+          await writeTextFile(absolutePath, updated);
+          writtenPatches.push({ absolutePath, previousContent: content });
+          count += matches.length;
+        }
+
         regex.value.lastIndex = 0;
-        const updated = applyReplacement(content, regex.value, replacement, isRegex);
-        await atomicWriteTextFile(absolutePath, updated);
-        count += matches.length;
       }
-
-      regex.value.lastIndex = 0;
+    } catch (error) {
+      await Promise.all(
+        writtenPatches.map((patch) =>
+          writeTextFile(patch.absolutePath, patch.previousContent).catch(() => undefined)
+        )
+      );
+      throw error;
     }
 
     return ok({ count });

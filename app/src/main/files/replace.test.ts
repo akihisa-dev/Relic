@@ -302,6 +302,37 @@ describe("applySearchAndReplace", () => {
     await expect(readFile(path.join(ws, "visible.md"), "utf8")).resolves.toBe("bar visible");
   });
 
+  it("一括置換の途中で書き込みに失敗した場合は書き込み済みファイルを元に戻す", async () => {
+    const ws = await mkdtemp(path.join(os.tmpdir(), "relic-replace-"));
+    temporaryPaths.push(ws);
+
+    const firstPath = path.join(ws, "a.md");
+    const secondPath = path.join(ws, "b.md");
+    let writeCount = 0;
+
+    await writeFile(firstPath, "foo first", "utf8");
+    await writeFile(secondPath, "foo second", "utf8");
+
+    const result = await applySearchAndReplace(ws, "foo", "bar", false, {
+      readFile,
+      async writeTextFile(filePath, content) {
+        writeCount += 1;
+        if (writeCount === 2) {
+          throw new Error("disk full");
+        }
+
+        await writeFile(filePath, content, "utf8");
+      }
+    });
+
+    expect(result).toMatchObject({
+      error: expect.objectContaining({ code: "REPLACE_FAILED" }),
+      ok: false
+    });
+    await expect(readFile(firstPath, "utf8")).resolves.toBe("foo first");
+    await expect(readFile(secondPath, "utf8")).resolves.toBe("foo second");
+  });
+
   it("一括置換でも空文字に一致する正規表現は書き換えない", async () => {
     const ws = await mkdtemp(path.join(os.tmpdir(), "relic-replace-"));
     temporaryPaths.push(ws);
