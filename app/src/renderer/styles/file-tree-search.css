@@ -811,11 +811,9 @@
 .workspace-actions {
   background: var(--color-primary-dark);
   border-top: 0;
-  bottom: 0;
   gap: 2px;
-  margin: auto -16px 0;
+  margin: auto -16px -18px;
   padding: 6px 24px 8px;
-  position: sticky;
   z-index: 2;
 }
 
