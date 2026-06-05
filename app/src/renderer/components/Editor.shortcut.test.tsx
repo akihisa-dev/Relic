@@ -9,6 +9,10 @@ import {
 import { isListInputEvent } from "../editorListInput";
 import { renderEditorWithView } from "./editorTestHelpers";
 
+function modKeyInit(): { ctrlKey?: boolean; metaKey?: boolean } {
+  return /Mac|iPhone|iPad|iPod/.test(navigator.platform) ? { metaKey: true } : { ctrlKey: true };
+}
+
 function dispatchKeyboardEventWithReadOnlyValue(
   target: Element,
   key: string,
@@ -21,6 +25,24 @@ function dispatchKeyboardEventWithReadOnlyValue(
 }
 
 describe("Editor shortcuts", () => {
+  it("Mod+BとMod+Iで選択範囲へ太字・斜体を適用する", async () => {
+    const { view } = await renderEditorWithView({
+      content: "bold italic"
+    });
+    const contentElement = view.dom.querySelector(".cm-content")!;
+
+    view.dispatch({ selection: { anchor: 0, head: 4 } });
+    fireEvent.keyDown(contentElement, { key: "b", ...modKeyInit() });
+    expect(view.state.doc.toString()).toBe("**bold** italic");
+    expect(view.state.sliceDoc(view.state.selection.main.from, view.state.selection.main.to)).toBe("bold");
+
+    const italicStart = view.state.doc.toString().indexOf("italic");
+    view.dispatch({ selection: { anchor: italicStart, head: italicStart + "italic".length } });
+    fireEvent.keyDown(contentElement, { key: "i", ...modKeyInit() });
+    expect(view.state.doc.toString()).toBe("**bold** *italic*");
+    expect(view.state.sliceDoc(view.state.selection.main.from, view.state.selection.main.to)).toBe("italic");
+  });
+
   it("リスト行でEnterを押すと次の項目を作り、空項目ではリストを終了する", async () => {
     const { view } = await renderEditorWithView({
       content: "- item\n1. first\n- [x] done\n- "

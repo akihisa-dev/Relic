@@ -18,6 +18,7 @@ import { diagramEditRangeField } from "./editorDiagramEditState";
 import { createLivePreviewTableField } from "./editorTables";
 import type { Translator } from "./i18nModel";
 import { isPositionInFencedCodeBlock } from "./markdownCodeBlockRanges";
+import { wrapSelection } from "./toolbarCommands";
 
 function createLivePreviewPlugin(
   onOpenLinkRef: RefObject<((href: string) => void) | undefined>,
@@ -81,6 +82,7 @@ const editorThemeCompartment = new Compartment();
 const eventHandlersCompartment = new Compartment();
 const lineNumbersCompartment = new Compartment();
 const livePreviewCompartment = new Compartment();
+const markdownFormattingKeymapCompartment = new Compartment();
 const typewriterCompartment = new Compartment();
 
 interface EditorExtensionConfig {
@@ -447,6 +449,25 @@ function buildEventHandlersExtension(config: EditorExtensionConfig): Extension {
   ];
 }
 
+function buildMarkdownFormattingKeymapExtension(t: Translator): Extension {
+  return Prec.highest(keymap.of([
+    {
+      key: "Mod-b",
+      run: (view) => {
+        wrapSelection(view, "**", "**", t("toolbar.placeholderText"));
+        return true;
+      }
+    },
+    {
+      key: "Mod-i",
+      run: (view) => {
+        wrapSelection(view, "*", "*", t("toolbar.placeholderText"));
+        return true;
+      }
+    }
+  ]));
+}
+
 function buildLivePreviewExtensions(config: EditorExtensionConfig): Extension {
   return config.sourceMode ? [] : [
     createFrontmatterPropertiesField(
@@ -470,6 +491,7 @@ export function buildEditorReconfigureEffects(config: EditorExtensionConfig): St
     eventHandlersCompartment.reconfigure(buildEventHandlersExtension(config)),
     lineNumbersCompartment.reconfigure(buildLineNumbersExtension(config.settings)),
     livePreviewCompartment.reconfigure(buildLivePreviewExtensions(config)),
+    markdownFormattingKeymapCompartment.reconfigure(buildMarkdownFormattingKeymapExtension(config.t)),
     typewriterCompartment.reconfigure(buildTypewriterExtension(config.typewriterMode))
   ];
 }
@@ -512,6 +534,7 @@ export function buildExtensions(
     EditorView.lineWrapping,
     highlightActiveLine(),
     autocompleteCompartment.of(buildAutocompleteExtension(allFilePaths, frontmatterCandidates)),
+    markdownFormattingKeymapCompartment.of(buildMarkdownFormattingKeymapExtension(t)),
     contextSelectionHighlightField,
     frontmatterCollapsedField,
     eventHandlersCompartment.of(buildEventHandlersExtension(config)),
