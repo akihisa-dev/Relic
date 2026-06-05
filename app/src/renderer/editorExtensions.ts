@@ -17,6 +17,7 @@ import { buildLivePreviewDecorations, createLivePreviewCodeBlockField, findClick
 import { diagramEditRangeField } from "./editorDiagramEditState";
 import { createLivePreviewTableField } from "./editorTables";
 import type { Translator } from "./i18nModel";
+import { isPositionInFencedCodeBlock } from "./markdownCodeBlockRanges";
 
 function createLivePreviewPlugin(
   onOpenLinkRef: RefObject<((href: string) => void) | undefined>,
@@ -301,6 +302,8 @@ export function buildWikiLinkCompletionSource(
   const index = buildWikiCompletionIndex(buildWikiCompletionCandidates(allFilePaths, frontmatterCandidates.aliases ?? []));
 
   return (context: CompletionContext): CompletionResult | null => {
+    if (context.state && isPositionInFencedCodeBlock(context.state, context.pos)) return null;
+
     const before = context.matchBefore(/\[\[([^\]\n]*)$/);
 
     if (!before || (!context.explicit && before.text === "[[")) return null;

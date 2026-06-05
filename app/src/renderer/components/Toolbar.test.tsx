@@ -325,6 +325,25 @@ describe("Toolbar markdown actions", () => {
     codeBlock.destroy();
   });
 
+  it("コードブロック内ではツールバーのマーク適用やリスト化を実行しない", () => {
+    const bold = createView("```ts\nconst value = 1;\n```", EditorSelection.single(6, 22));
+    render(<Toolbar viewRef={{ current: bold }} />);
+
+    clickToolbarButton("Bold");
+
+    expect(bold.state.doc.toString()).toBe("```ts\nconst value = 1;\n```");
+    bold.destroy();
+    document.body.innerHTML = "";
+
+    const list = createView("```md\nitem\n```", EditorSelection.single(6, 10));
+    render(<Toolbar viewRef={{ current: list }} />);
+
+    clickToolbarButton("Bulleted list");
+
+    expect(list.state.doc.toString()).toBe("```md\nitem\n```");
+    list.destroy();
+  });
+
   it("コードブロックボタンは未選択時だけ空のコードブロックを挿入する", () => {
     const view = createView("hello", EditorSelection.single(5));
     render(<Toolbar viewRef={{ current: view }} />);
