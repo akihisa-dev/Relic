@@ -20,6 +20,7 @@ import {
   restoreNavigatorPlatform,
   setNavigatorPlatform
 } from "./appTestHelpers";
+import type { WindowCloseRequestEvent } from "../shared/ipc";
 import {
   installMatchMediaMock,
   makeRelicApi,
@@ -405,6 +406,61 @@ describe("App file tabs", () => {
       path: "読書メモ.md"
     }));
     await waitFor(() => expect(useEditorStore.getState().tabs[activeTabId]).toBeUndefined());
+  });
+
+  it("エディタ入力直後にウィンドウを閉じても最新本文を保存してから閉じる", async () => {
+    let closeRequestHandler: (event: WindowCloseRequestEvent) => void = () => {
+      throw new Error("close request handler was not registered");
+    };
+    const respondToWindowCloseRequest = vi.fn();
+    const writeMarkdownFile = vi.fn().mockResolvedValue({ ok: true, value: undefined });
+
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [{ name: "読書メモ", path: "読書メモ.md", type: "file" }]
+        }
+      }),
+      onWindowCloseRequested: vi.fn((callback) => {
+        closeRequestHandler = callback;
+        return vi.fn();
+      }),
+      readMarkdownFile: vi.fn().mockResolvedValue({
+        ok: true,
+        value: { content: "本文テスト", name: "読書メモ", path: "読書メモ.md" }
+      }),
+      respondToWindowCloseRequest,
+      writeMarkdownFile
+    });
+
+    const { container } = await renderApp();
+    fireEvent.click(await screen.findByRole("button", { name: /読書メモ/ }));
+    await waitFor(() => expect(useEditorStore.getState().leftPane.activeTabId).not.toBeNull());
+
+    const editorContent = container.querySelector(".cm-content");
+    expect(editorContent).not.toBeNull();
+
+    const view = EditorView.findFromDOM(editorContent as HTMLElement);
+    expect(view).not.toBeNull();
+
+    act(() => {
+      view!.dispatch({
+        changes: { from: view!.state.doc.length, insert: "\n終了直前の本文" }
+      });
+    });
+
+    closeRequestHandler({ requestId: "close-after-input" });
+
+    await waitFor(() => expect(writeMarkdownFile).toHaveBeenCalledWith({
+      content: "本文テスト\n終了直前の本文",
+      path: "読書メモ.md"
+    }));
+    await waitFor(() => expect(respondToWindowCloseRequest).toHaveBeenCalledWith({
+      ok: true,
+      requestId: "close-after-input"
+    }));
   });
 
   it("閉じる前保存に失敗した場合はタブと本文を維持する", async () => {
