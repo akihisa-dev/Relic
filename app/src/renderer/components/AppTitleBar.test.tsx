@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { I18nProvider } from "../i18n";
@@ -70,11 +70,22 @@ afterEach(() => {
 });
 
 describe("AppTitleBar", () => {
-  it("keeps tabs out of the title bar so panes own the tab strip", () => {
-    renderTitleBar();
+  it("renders tabs in the title bar and keeps extra tab buttons hidden", () => {
+    const props = renderTitleBar();
+    const tab = screen.getByText("Note", { selector: ".pane-tab-name" }).closest(".pane-tab");
 
-    expect(document.querySelector(".title-bar .pane-tab-bar")).toBeNull();
-    expect(document.querySelector(".title-bar .pane-tab")).toBeNull();
+    expect(document.querySelector(".title-bar .pane-tab-bar")).toBeInTheDocument();
+    expect(tab).toBeInstanceOf(HTMLElement);
+    expect(screen.getByText("Note", { selector: ".pane-tab-name" })).toHaveAttribute("data-extension", ".md");
+    expect(screen.queryByTitle("Scroll tabs left")).not.toBeInTheDocument();
+    expect(screen.queryByTitle("Scroll tabs right")).not.toBeInTheDocument();
+    expect(screen.queryByTitle("New empty tab")).not.toBeInTheDocument();
+
+    fireEvent.click(tab as HTMLElement);
+    expect(props.onTabSelect).toHaveBeenCalledWith("left", fileTab.id);
+
+    fireEvent.click(screen.getByTitle("Close tab"));
+    expect(props.onTabClose).toHaveBeenCalledWith("left", fileTab.id);
   });
 
   it("keeps preview output actions out of the title bar buttons", () => {

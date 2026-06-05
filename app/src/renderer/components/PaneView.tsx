@@ -4,9 +4,8 @@ import type { MutableRefObject, ReactElement, ReactNode } from "react";
 import type { EditorSettings, UserDefinedField } from "../../shared/ipc";
 import type { HeadingScrollTarget } from "../editorDerivedState";
 import { usePaneHeadingScroll } from "../hooks/usePaneHeadingScroll";
-import { useEditorStore, type FileTab, type PaneId, type PanelTabKind } from "../store/editorStore";
+import { useEditorStore, type PaneId, type PanelTabKind } from "../store/editorStore";
 import { PaneContentSurface } from "./PaneContentSurface";
-import { PaneTabs } from "./PaneTabs";
 
 export interface PaneViewProps {
   allFilePaths: string[];
@@ -14,7 +13,6 @@ export interface PaneViewProps {
   editorSettings: EditorSettings;
   focusedPane: PaneId;
   frontmatterCandidates: Record<string, string[]>;
-  closingTabIds: Set<string>;
   pane: PaneId;
   scrollTargetHeading?: HeadingScrollTarget;
   typewriterMode: boolean;
@@ -23,30 +21,16 @@ export interface PaneViewProps {
   viewRef: MutableRefObject<EditorView | null>;
   renderChartTab: (chartId: string) => ReactNode;
   renderPanelTab: (panel: PanelTabKind) => ReactNode;
-  renderPanelTabIcon: (panel: PanelTabKind) => ReactNode;
-  onCloseAllTabsInPane: (pane: PaneId) => void;
-  onCloseOtherTabs: (pane: PaneId, tabId: string) => void;
-  onCloseTabsToRight: (pane: PaneId, tabId: string) => void;
   onCreateFile: (name: string) => void;
-  onDuplicateTabFile?: (tabId: string) => void;
   onEditorAction?: () => void;
   onFocus: () => void;
-  onOpenInOtherPane: (pane: PaneId, tabId: string) => void;
   onOpenLink?: (href: string) => void;
   onOpenWikiLink?: (target: string, heading?: string) => void;
   onFileSaved?: (path: string) => void;
   onFileSaveError?: (message: string) => void;
   onLargeMarkdownFallback?: (name: string, path: string) => void;
-  onPrintPreview: (tab: FileTab) => void;
-  onRevealTabFile?: (tabId: string) => void;
   onRenameFile: (path: string, name: string) => void;
-  onSavePreviewAsPdf: (tab: FileTab) => void;
   onScrollTargetHandled?: () => void;
-  onTabClose: (pane: PaneId, tabId: string) => void;
-  onTabMove: (fromPane: PaneId, toPane: PaneId, tabId: string, targetTabId?: string | null, position?: "before" | "after") => void;
-  onTabSelect: (pane: PaneId, tabId: string) => void;
-  onTogglePinTab?: (tabId: string) => void;
-  isSplitView: boolean;
   sourceMode: boolean;
 }
 
@@ -56,7 +40,6 @@ export function PaneView({
   editorSettings,
   focusedPane,
   frontmatterCandidates,
-  closingTabIds,
   pane,
   scrollTargetHeading,
   typewriterMode,
@@ -65,30 +48,16 @@ export function PaneView({
   viewRef,
   renderChartTab,
   renderPanelTab,
-  renderPanelTabIcon,
-  onCloseAllTabsInPane,
-  onCloseOtherTabs,
-  onCloseTabsToRight,
   onCreateFile,
-  onDuplicateTabFile,
   onFocus,
-  onOpenInOtherPane,
   onOpenLink,
   onOpenWikiLink,
   onFileSaved,
   onFileSaveError,
   onLargeMarkdownFallback,
-  onPrintPreview,
-  onRevealTabFile,
   onRenameFile,
-  onSavePreviewAsPdf,
   onScrollTargetHandled,
-  onTabClose,
-  onTabMove,
-  onTabSelect,
-  onTogglePinTab,
   onEditorAction,
-  isSplitView,
   sourceMode
 }: PaneViewProps): ReactElement {
   const {
@@ -138,27 +107,6 @@ export function PaneView({
       onPointerDownCapture={onFocus}
       role="presentation"
     >
-      <PaneTabs
-        closingTabIds={closingTabIds}
-        isSplitView={isSplitView}
-        pane={pane}
-        paneState={paneState}
-        renderPanelTabIcon={renderPanelTabIcon}
-        tabs={tabs}
-        onCloseAllTabs={onCloseAllTabsInPane}
-        onCloseOtherTabs={onCloseOtherTabs}
-        onCloseTabsToRight={onCloseTabsToRight}
-        onCreateTab={() => onCreateFile("")}
-        onDuplicateTabFile={onDuplicateTabFile}
-        onOpenInOtherPane={onOpenInOtherPane}
-        onPrintPreview={onPrintPreview}
-        onRevealTabFile={onRevealTabFile}
-        onSavePreviewAsPdf={onSavePreviewAsPdf}
-        onTabClose={onTabClose}
-        onTabMove={onTabMove}
-        onTabSelect={onTabSelect}
-        onTogglePinTab={onTogglePinTab}
-      />
       <PaneContentSurface
         activeTab={activeTab}
         allFilePaths={allFilePaths}
