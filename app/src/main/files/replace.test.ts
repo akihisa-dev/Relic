@@ -87,6 +87,35 @@ describe("replaceInFile", () => {
     expect(result).toMatchObject({ ok: false });
   });
 
+  it("空文字に一致する正規表現は置換せずエラーを返す", async () => {
+    const ws = await mkdtemp(path.join(os.tmpdir(), "relic-replace-"));
+    temporaryPaths.push(ws);
+
+    await writeFile(path.join(ws, "note.md"), "foo", "utf8");
+
+    const result = await replaceInFile(ws, "note.md", "(?=foo)", "bar", true);
+
+    expect(result).toMatchObject({
+      error: expect.objectContaining({ code: "REPLACE_REGEX_EMPTY_MATCH" }),
+      ok: false
+    });
+    await expect(readFile(path.join(ws, "note.md"), "utf8")).resolves.toBe("foo");
+  });
+
+  it("空文字に一致する正規表現プレビューはエラーを返す", async () => {
+    const ws = await mkdtemp(path.join(os.tmpdir(), "relic-replace-"));
+    temporaryPaths.push(ws);
+
+    await writeFile(path.join(ws, "note.md"), "foo", "utf8");
+
+    const result = await searchAndReplace(ws, "^", "bar", true);
+
+    expect(result).toMatchObject({
+      error: expect.objectContaining({ code: "REPLACE_REGEX_EMPTY_MATCH" }),
+      ok: false
+    });
+  });
+
   it("実体がワークスペース外のシンボリックリンクは置換しない", async () => {
     const ws = await mkdtemp(path.join(os.tmpdir(), "relic-replace-"));
     const outside = await mkdtemp(path.join(os.tmpdir(), "relic-replace-outside-"));
@@ -242,5 +271,22 @@ describe("applySearchAndReplace", () => {
     expect(result).toEqual({ ok: true, value: { count: 1 } });
     await expect(readFile(path.join(ws, "blocked.md"), "utf8")).resolves.toBe("foo blocked");
     await expect(readFile(path.join(ws, "visible.md"), "utf8")).resolves.toBe("bar visible");
+  });
+
+  it("一括置換でも空文字に一致する正規表現は書き換えない", async () => {
+    const ws = await mkdtemp(path.join(os.tmpdir(), "relic-replace-"));
+    temporaryPaths.push(ws);
+
+    await writeFile(path.join(ws, "a.md"), "foo", "utf8");
+    await writeFile(path.join(ws, "b.md"), "foo", "utf8");
+
+    const result = await applySearchAndReplace(ws, "(?=foo)", "bar", true);
+
+    expect(result).toMatchObject({
+      error: expect.objectContaining({ code: "REPLACE_REGEX_EMPTY_MATCH" }),
+      ok: false
+    });
+    await expect(readFile(path.join(ws, "a.md"), "utf8")).resolves.toBe("foo");
+    await expect(readFile(path.join(ws, "b.md"), "utf8")).resolves.toBe("foo");
   });
 });
