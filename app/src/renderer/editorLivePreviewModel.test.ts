@@ -54,6 +54,12 @@ describe("editorLivePreviewModel", () => {
     expect(matches[0].className).toBe("cm-live-code");
   });
 
+  it("HTMLタグ属性内のMarkdown link風テキストは装飾しない", () => {
+    const matches = collectInlineMatches(0, '<span data-ref="[site](https://example.com)">Label</span>');
+
+    expect(matches.filter((match) => match.className === "cm-live-link")).toHaveLength(0);
+  });
+
   it("Markdown linkのURL内に括弧があってもリンク全体を検出する", () => {
     const text = "Go [site](https://example.com/a_(b)) after";
     const [match] = collectInlineMatches(0, text);

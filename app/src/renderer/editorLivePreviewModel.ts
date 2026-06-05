@@ -26,6 +26,10 @@ export function overlaps(from: number, to: number, ranges: Array<{ from: number;
   return ranges.some((range) => from < range.to && to > range.from);
 }
 
+function containedInRanges(from: number, to: number, ranges: Array<{ from: number; to: number }>): boolean {
+  return ranges.some((range) => from >= range.from && to <= range.to);
+}
+
 function collectRegexMatches(
   text: string,
   regex: RegExp,
@@ -93,6 +97,45 @@ function findInlineCodeMatches(text: string): InlineCodeMatch[] {
   return matches;
 }
 
+function findHtmlTagRanges(text: string): Array<{ from: number; to: number }> {
+  const ranges: Array<{ from: number; to: number }> = [];
+  let searchFrom = 0;
+
+  while (searchFrom < text.length) {
+    const from = text.indexOf("<", searchFrom);
+    if (from < 0) break;
+
+    let quote: '"' | "'" | null = null;
+    let to = -1;
+    for (let index = from + 1; index < text.length; index += 1) {
+      const char = text[index];
+      if (char === "\n") break;
+      if (quote) {
+        if (char === quote) quote = null;
+        continue;
+      }
+      if (char === '"' || char === "'") {
+        quote = char;
+        continue;
+      }
+      if (char === ">") {
+        to = index + 1;
+        break;
+      }
+    }
+
+    if (to < 0) {
+      searchFrom = from + 1;
+      continue;
+    }
+
+    ranges.push({ from, to });
+    searchFrom = to;
+  }
+
+  return ranges;
+}
+
 function findMarkdownLinkMatches(text: string): MarkdownLinkMatch[] {
   const matches: MarkdownLinkMatch[] = [];
   let searchFrom = 0;
@@ -155,6 +198,10 @@ function findMarkdownLinkMatches(text: string): MarkdownLinkMatch[] {
 
 export function collectInlineMatches(lineFrom: number, text: string): InlineMatch[] {
   const occupied: Array<{ from: number; to: number }> = [];
+  const htmlTagRanges = findHtmlTagRanges(text).map((range) => ({
+    from: lineFrom + range.from,
+    to: lineFrom + range.to
+  }));
   const matches: InlineMatch[] = [];
 
   matches.push(...findInlineCodeMatches(text).map((match) => {
@@ -333,6 +380,7 @@ export function collectInlineMatches(lineFrom: number, text: string): InlineMatc
   matches.sort((a, b) => a.from - b.from || b.to - a.to);
 
   return matches.filter((match) => {
+    if (containedInRanges(match.from, match.to, htmlTagRanges)) return false;
     if (overlaps(match.from, match.to, occupied)) return false;
     occupied.push({ from: match.from, to: match.to });
     return true;
