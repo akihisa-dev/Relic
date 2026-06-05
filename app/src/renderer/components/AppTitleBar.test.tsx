@@ -116,10 +116,13 @@ describe("AppTitleBar", () => {
   });
 
   it("keeps the title bar background separate from the document surface", () => {
-    const css = readFileSync("src/renderer/styles/architectural-design.css", "utf8");
+    const designCss = readFileSync("src/renderer/styles/architectural-design.css", "utf8");
+    const editorCss = readFileSync("src/renderer/styles/workspace-editor.css", "utf8");
 
-    expect(css).toMatch(/--title-bar-bg:\s*var\(--color-surface\);/);
-    expect(css).toMatch(/--surface:\s*var\(--color-surface-elevated\);/);
+    expect(designCss).toMatch(/--title-bar-bg:\s*var\(--color-surface-alt\);/);
+    expect(designCss).toMatch(/--surface:\s*var\(--color-surface-elevated\);/);
+    expect(editorCss).toMatch(/\.pane-tab\s*\{[^}]*background:\s*color-mix\(in srgb, var\(--title-bar-bg\) 78%, var\(--surface\) 22%\);/s);
+    expect(editorCss).toMatch(/\.pane-tab--active\s*\{[^}]*background:\s*var\(--surface\);/s);
   });
 
 });

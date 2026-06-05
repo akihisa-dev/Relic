@@ -53,7 +53,7 @@
   --accent-soft: color-mix(in srgb, var(--color-primary) 12%, transparent);
   --accent-softer: color-mix(in srgb, var(--color-primary) 6%, transparent);
   --accent-ring: color-mix(in srgb, var(--color-primary) 34%, transparent);
-  --title-bar-bg: var(--color-surface);
+  --title-bar-bg: var(--color-surface-alt);
   --link: var(--color-primary-dark);
   --attention: var(--color-primary-dark);
   --attention-hover: var(--color-primary);
@@ -100,7 +100,7 @@
   --accent-soft: color-mix(in srgb, var(--color-primary) 20%, transparent);
   --accent-softer: color-mix(in srgb, var(--color-primary) 12%, transparent);
   --accent-ring: color-mix(in srgb, var(--color-accent) 36%, transparent);
-  --title-bar-bg: var(--color-surface);
+  --title-bar-bg: var(--color-surface-alt);
   --link: var(--color-accent);
   --attention: var(--color-accent);
   --attention-hover: var(--color-primary);
@@ -148,7 +148,7 @@
     --accent-soft: color-mix(in srgb, var(--color-primary) 20%, transparent);
     --accent-softer: color-mix(in srgb, var(--color-primary) 12%, transparent);
     --accent-ring: color-mix(in srgb, var(--color-accent) 36%, transparent);
-    --title-bar-bg: var(--color-surface);
+    --title-bar-bg: var(--color-surface-alt);
     --link: var(--color-accent);
     --attention: var(--color-accent);
     --attention-hover: var(--color-primary);
