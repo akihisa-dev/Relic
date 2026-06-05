@@ -221,4 +221,26 @@ describe("applySearchAndReplace", () => {
     await expect(readFile(path.join(ws, "a.md"), "utf8")).resolves.toBe("$&");
     await expect(readFile(path.join(ws, "b.md"), "utf8")).resolves.toBe("$&");
   });
+
+  it("読めないMarkdownファイルはスキップして一括置換を続行する", async () => {
+    const ws = await mkdtemp(path.join(os.tmpdir(), "relic-replace-"));
+    temporaryPaths.push(ws);
+
+    await writeFile(path.join(ws, "blocked.md"), "foo blocked", "utf8");
+    await writeFile(path.join(ws, "visible.md"), "foo visible", "utf8");
+
+    const result = await applySearchAndReplace(ws, "foo", "bar", false, {
+      async readFile(filePath, encoding) {
+        if (path.basename(filePath) === "blocked.md") {
+          throw Object.assign(new Error("Permission denied"), { code: "EACCES" });
+        }
+
+        return readFile(filePath, encoding);
+      }
+    });
+
+    expect(result).toEqual({ ok: true, value: { count: 1 } });
+    await expect(readFile(path.join(ws, "blocked.md"), "utf8")).resolves.toBe("foo blocked");
+    await expect(readFile(path.join(ws, "visible.md"), "utf8")).resolves.toBe("bar visible");
+  });
 });

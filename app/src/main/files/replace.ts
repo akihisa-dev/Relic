@@ -131,7 +131,8 @@ export async function applySearchAndReplace(
   workspacePath: string,
   searchQuery: string,
   replacement: string,
-  isRegex: boolean
+  isRegex: boolean,
+  operations: SearchAndReplaceReadOperations = defaultSearchAndReplaceReadOperations
 ): Promise<RelicResult<{ count: number }>> {
   const regex = buildReplacementRegex(searchQuery, isRegex);
 
@@ -144,10 +145,19 @@ export async function applySearchAndReplace(
     let count = 0;
     const files = await collectSafeMarkdownFiles(workspacePath, collectMarkdownPaths(fileTree));
     const fileContents = await Promise.all(
-      files.map(async (file) => ({ ...file, content: await readFile(file.absolutePath, "utf8") }))
+      files.map(async (file) => {
+        try {
+          return { ...file, content: await operations.readFile(file.absolutePath, "utf8") };
+        } catch {
+          return null;
+        }
+      })
     );
 
-    for (const { absolutePath, content } of fileContents) {
+    for (const fileContent of fileContents) {
+      if (!fileContent) continue;
+
+      const { absolutePath, content } = fileContent;
       const matches = content.match(regex.value);
 
       if (matches && matches.length > 0) {
