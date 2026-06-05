@@ -452,6 +452,42 @@ describe("Toolbar markdown actions", () => {
     wholeLink.destroy();
   });
 
+  it("リンクボタンは既存リンクのURL選択時にURLだけを更新する", () => {
+    const view = createView("[hello](https://old.example)", EditorSelection.single(8, 27));
+    render(<Toolbar viewRef={{ current: view }} />);
+
+    clickToolbarButton("Markdown link");
+    fireEvent.change(screen.getByPlaceholderText("URL"), { target: { value: "https://new.example" } });
+    clickToolbarButton("Insert");
+
+    expect(view.state.doc.toString()).toBe("[hello](https://new.example)");
+    expect(view.state.sliceDoc(view.state.selection.main.from, view.state.selection.main.to)).toBe("hello");
+    view.destroy();
+  });
+
+  it("リンクボタンは既存リンク内のカーソル位置からURLを更新する", async () => {
+    const textCursor = await renderToolbarWithEditor("[hello](https://old.example)", EditorSelection.single(3));
+
+    clickToolbarButton("Markdown link");
+    fireEvent.change(screen.getByPlaceholderText("URL"), { target: { value: "https://new.example" } });
+    clickToolbarButton("Insert");
+
+    expect(textCursor.view.state.doc.toString()).toBe("[hello](https://new.example)");
+    expect(textCursor.view.state.sliceDoc(textCursor.view.state.selection.main.from, textCursor.view.state.selection.main.to)).toBe("hello");
+    textCursor.unmount();
+    document.body.innerHTML = "";
+
+    const urlCursor = await renderToolbarWithEditor("[hello](https://old.example)", EditorSelection.single(12));
+
+    clickToolbarButton("Markdown link");
+    fireEvent.change(screen.getByPlaceholderText("URL"), { target: { value: "https://new.example" } });
+    clickToolbarButton("Insert");
+
+    expect(urlCursor.view.state.doc.toString()).toBe("[hello](https://new.example)");
+    expect(urlCursor.view.state.sliceDoc(urlCursor.view.state.selection.main.from, urlCursor.view.state.selection.main.to)).toBe("hello");
+    urlCursor.unmount();
+  });
+
   it("内部リンクボタンがカーソル位置へ内部リンク記法を挿入する", () => {
     const view = createView("hello", EditorSelection.single(2));
     render(<Toolbar viewRef={{ current: view }} />);
