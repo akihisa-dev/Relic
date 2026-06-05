@@ -34,6 +34,26 @@ describe("editorLivePreviewModel", () => {
     expect(matches[0].className).toBe("cm-live-link");
   });
 
+  it("複数バッククォートのinline codeは外側の境界を使う", () => {
+    const text = "Use ``code with ` tick`` here";
+    const [match] = collectInlineMatches(0, text);
+
+    expect(match).toMatchObject({
+      className: "cm-live-code",
+      contentFrom: text.indexOf("code"),
+      contentTo: text.indexOf(" here") - 2,
+      from: text.indexOf("``"),
+      to: text.indexOf(" here")
+    });
+  });
+
+  it("複数バッククォートのinline code内ではMarkdown linkを装飾しない", () => {
+    const matches = collectInlineMatches(0, "Use ``[site](https://example.com)`` here");
+
+    expect(matches).toHaveLength(1);
+    expect(matches[0].className).toBe("cm-live-code");
+  });
+
   it("Markdown linkのURL内に括弧があってもリンク全体を検出する", () => {
     const text = "Go [site](https://example.com/a_(b)) after";
     const [match] = collectInlineMatches(0, text);
