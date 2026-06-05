@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import type { DragEvent, ReactElement, ReactNode } from "react";
 
 import { paneTabLabel } from "../paneViewModel";
@@ -13,6 +14,7 @@ interface PaneTabBarProps {
   tabDropTarget: PaneTabDropTarget | null;
   tabs: Record<string, Tab>;
   onContextMenuOpen: (tabId: string, x: number, y: number) => void;
+  onCreateTab: () => void;
   onTabBarDragLeave: (e: DragEvent<HTMLElement>) => void;
   onTabBarDragOver: (e: DragEvent<HTMLElement>) => void;
   onTabClose: (tabId: string) => void;
@@ -31,6 +33,7 @@ export function PaneTabBar({
   tabDropTarget,
   tabs,
   onContextMenuOpen,
+  onCreateTab,
   onTabBarDragLeave,
   onTabBarDragOver,
   onTabClose,
@@ -42,84 +45,147 @@ export function PaneTabBar({
 }: PaneTabBarProps): ReactElement {
   const t = useT();
   const shouldFitTabs = paneState.tabIds.length > 1;
+  const tabBarRef = useRef<HTMLDivElement | null>(null);
 
   void pane;
 
+  const scrollTabs = (direction: -1 | 1): void => {
+    tabBarRef.current?.scrollBy({ behavior: "smooth", left: direction * 180 });
+  };
+
   return (
-    <div
-      className={`pane-tab-bar${shouldFitTabs ? " pane-tab-bar--fit" : ""}${tabDropTarget?.tabId === null ? " pane-tab-bar--drop-end" : ""}`}
-      onDragLeave={onTabBarDragLeave}
-      onDragOver={onTabBarDragOver}
-      onDrop={(e) => onTabDrop(e, null)}
-    >
-      {paneState.tabIds.map((tabId) => {
-        const tab = tabs[tabId];
-        const isClosing = closingTabIds.has(tabId);
+    <div className="pane-tab-bar-shell">
+      <button
+        aria-label={t("pane.scrollTabsLeft")}
+        className="pane-tab-scroll-button"
+        onClick={() => scrollTabs(-1)}
+        title={t("pane.scrollTabsLeft")}
+        type="button"
+      >
+        <ChevronLeftIcon />
+      </button>
+      <div
+        className={`pane-tab-bar${shouldFitTabs ? " pane-tab-bar--fit" : ""}${tabDropTarget?.tabId === null ? " pane-tab-bar--drop-end" : ""}`}
+        onDragLeave={onTabBarDragLeave}
+        onDragOver={onTabBarDragOver}
+        onDrop={(e) => onTabDrop(e, null)}
+        ref={tabBarRef}
+      >
+        {paneState.tabIds.map((tabId) => {
+          const tab = tabs[tabId];
+          const isClosing = closingTabIds.has(tabId);
 
-        if (!tab) return null;
+          if (!tab) return null;
 
-        return (
-          <div
-            className={`pane-tab pane-tab--${tab.kind}${paneState.activeTabId === tabId ? " pane-tab--active" : ""}${isClosing ? " pane-tab--closing" : ""}${tabDropTarget?.tabId === tabId ? ` pane-tab--drop-${tabDropTarget.position}` : ""}`}
-            data-tab-id={tabId}
-            draggable={!isClosing}
-            key={tabId}
-            onClick={(e) => {
-              e.stopPropagation();
-              if (isClosing) return;
-              onTabSelect(tabId);
-            }}
-            onContextMenu={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              if (isClosing) return;
-              onContextMenuOpen(tabId, e.clientX, e.clientY);
-            }}
-            onDragOver={(e) => onTabDragOver(e, tabId)}
-            onDragStart={(e) => onTabDragStart(e, tabId, isClosing)}
-            onDragEnd={onTabDragEnd}
-            onDrop={(e) => onTabDrop(e, tabId)}
-            onKeyDown={(e) => {
-              if (e.key !== "Enter" && e.key !== " ") return;
-              e.preventDefault();
-              e.stopPropagation();
-              if (isClosing) return;
-              onTabSelect(tabId);
-            }}
-            role="tab"
-            tabIndex={0}
-          >
-            {tab.isPinned ? (
-              <span className="pane-tab-icon pane-tab-pin-icon" aria-hidden="true" data-testid="pane-tab-pin-icon">
-                <PinTabIcon />
-              </span>
-            ) : null}
-            {tab.kind === "panel" ? (
-              <span className="pane-tab-icon" aria-hidden="true">
-                {renderPanelTabIcon(tab.panel)}
-              </span>
-            ) : tab.kind === "chart" ? (
-              <span className="pane-tab-icon" aria-hidden="true">
-                <ChartTabIcon />
-              </span>
-            ) : null}
-            <span className="pane-tab-name">{paneTabLabel(tab, t)}</span>
-            <button
-              aria-label={t("pane.closeTab")}
-              className="pane-tab-close"
+          return (
+            <div
+              className={`pane-tab pane-tab--${tab.kind}${paneState.activeTabId === tabId ? " pane-tab--active" : ""}${isClosing ? " pane-tab--closing" : ""}${tabDropTarget?.tabId === tabId ? ` pane-tab--drop-${tabDropTarget.position}` : ""}`}
+              data-tab-id={tabId}
+              draggable={!isClosing}
+              key={tabId}
               onClick={(e) => {
                 e.stopPropagation();
-                onTabClose(tabId);
+                if (isClosing) return;
+                onTabSelect(tabId);
               }}
-              title={t("pane.closeTab")}
-              type="button"
+              onContextMenu={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (isClosing) return;
+                onContextMenuOpen(tabId, e.clientX, e.clientY);
+              }}
+              onDragOver={(e) => onTabDragOver(e, tabId)}
+              onDragStart={(e) => onTabDragStart(e, tabId, isClosing)}
+              onDragEnd={onTabDragEnd}
+              onDrop={(e) => onTabDrop(e, tabId)}
+              onKeyDown={(e) => {
+                if (e.key !== "Enter" && e.key !== " ") return;
+                e.preventDefault();
+                e.stopPropagation();
+                if (isClosing) return;
+                onTabSelect(tabId);
+              }}
+              role="tab"
+              tabIndex={0}
             >
-              <CloseIcon />
-            </button>
-          </div>
-        );
-      })}
+              {tab.isPinned ? (
+                <span className="pane-tab-icon pane-tab-pin-icon" aria-hidden="true" data-testid="pane-tab-pin-icon">
+                  <PinTabIcon />
+                </span>
+              ) : null}
+              {tab.kind === "panel" ? (
+                <span className="pane-tab-icon" aria-hidden="true">
+                  {renderPanelTabIcon(tab.panel)}
+                </span>
+              ) : tab.kind === "chart" ? (
+                <span className="pane-tab-icon" aria-hidden="true">
+                  <ChartTabIcon />
+                </span>
+              ) : null}
+              {tab.kind === "file" && tab.content !== tab.savedContent ? (
+                <span className="pane-tab-dirty-dot" aria-hidden="true" />
+              ) : null}
+              <span className="pane-tab-name">{paneTabLabel(tab, t)}</span>
+              <button
+                aria-label={t("pane.closeTab")}
+                className="pane-tab-close"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onTabClose(tabId);
+                }}
+                title={t("pane.closeTab")}
+                type="button"
+              >
+                <CloseIcon />
+              </button>
+            </div>
+          );
+        })}
+      </div>
+      <button
+        aria-label={t("pane.scrollTabsRight")}
+        className="pane-tab-scroll-button"
+        onClick={() => scrollTabs(1)}
+        title={t("pane.scrollTabsRight")}
+        type="button"
+      >
+        <ChevronRightIcon />
+      </button>
+      <button
+        aria-label={t("pane.newEmptyTab")}
+        className="pane-tab-new-button"
+        onClick={onCreateTab}
+        title={t("pane.newEmptyTab")}
+        type="button"
+      >
+        <PlusIcon />
+      </button>
     </div>
+  );
+}
+
+function ChevronLeftIcon(): ReactElement {
+  return (
+    <svg aria-hidden="true" fill="none" height="20" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 24 24" width="20">
+      <path d="m15 18-6-6 6-6" />
+    </svg>
+  );
+}
+
+function ChevronRightIcon(): ReactElement {
+  return (
+    <svg aria-hidden="true" fill="none" height="20" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 24 24" width="20">
+      <path d="m9 18 6-6-6-6" />
+    </svg>
+  );
+}
+
+function PlusIcon(): ReactElement {
+  return (
+    <svg aria-hidden="true" fill="none" height="20" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" viewBox="0 0 24 24" width="20">
+      <path d="M12 5v14" />
+      <path d="M5 12h14" />
+    </svg>
   );
 }
 

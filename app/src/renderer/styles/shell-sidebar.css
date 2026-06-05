@@ -29,63 +29,14 @@
   min-width: 0;
 }
 
-.title-bar-pane-tabs {
+.title-bar-spacer {
   -webkit-app-region: drag;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
   min-width: 0;
-}
-
-.title-bar-pane-tabs--split {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-}
-
-.title-bar-pane {
-  display: grid;
-  min-width: 0;
-}
-
-.title-bar-pane + .title-bar-pane {
-  box-shadow: -1px 0 0 var(--border);
 }
 
 .title-bar-actions {
   -webkit-app-region: drag;
   min-width: 0;
-}
-
-.title-bar .pane-tab-bar {
-  -webkit-app-region: drag;
-  align-items: flex-end;
-  background: var(--title-bar-bg);
-  border-bottom: 0;
-  height: 100%;
-  padding: 8px 8px 0;
-}
-
-.title-bar .pane-tab,
-.title-bar .pane-tab-close {
-  -webkit-app-region: no-drag;
-}
-
-.title-bar .pane-tab--active {
-  background: var(--surface);
-  border-color: var(--border);
-  border-bottom-color: transparent;
-  box-shadow: 0 10px 24px rgba(27, 42, 74, 0.08);
-  color: var(--text);
-  height: 43px;
-}
-
-.title-bar .pane-tab--active::after {
-  background: var(--surface);
-  bottom: -1px;
-  content: "";
-  height: 2px;
-  left: 0;
-  position: absolute;
-  right: 0;
-  z-index: 3;
 }
 
 .title-bar .main-area-actions {

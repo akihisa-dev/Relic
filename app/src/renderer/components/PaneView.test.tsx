@@ -61,23 +61,37 @@ function renderPaneView(overrides: Partial<PaneViewProps> = {}): PaneViewProps {
     editorSettings: defaultEditorSettings,
     focusedPane: "left",
     frontmatterCandidates: {},
+    closingTabIds: new Set(),
     isSplitView: false,
     pane: "left",
     renderChartTab: (chartId) => <div>Chart {chartId}</div>,
     renderPanelTab: (panel) => <div>Panel {panel}</div>,
+    renderPanelTabIcon: () => <svg data-testid="panel-tab-icon" />,
+    onCloseAllTabsInPane: vi.fn(),
+    onCloseOtherTabs: vi.fn(),
+    onCloseTabsToRight: vi.fn(),
     sourceMode: false,
     typewriterMode: false,
     userDefinedFields: [],
     viewRef: { current: null } as MutableRefObject<EditorView | null>,
     workspacePath: "/workspace",
     onCreateFile: vi.fn(),
+    onDuplicateTabFile: vi.fn(),
     onFileSaved: vi.fn(),
     onLargeMarkdownFallback: vi.fn(),
     onFocus: vi.fn(),
+    onOpenInOtherPane: vi.fn(),
     onOpenLink: vi.fn(),
     onOpenWikiLink: vi.fn(),
+    onPrintPreview: vi.fn(),
+    onRevealTabFile: vi.fn(),
     onRenameFile: vi.fn(),
+    onSavePreviewAsPdf: vi.fn(),
     onScrollTargetHandled: vi.fn(),
+    onTabClose: vi.fn(),
+    onTabMove: vi.fn(),
+    onTabSelect: vi.fn(),
+    onTogglePinTab: vi.fn(),
     scrollTargetHeading: undefined,
     ...overrides
   };
@@ -127,6 +141,42 @@ describe("PaneView", () => {
     const props = renderPaneView();
     expect(screen.getByText("No files")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Create New File" }));
+    expect(props.onCreateFile).toHaveBeenCalledWith("");
+  });
+
+  it("renders editor tabs in the pane chrome and wires tab actions", () => {
+    const secondFileTab: Tab = {
+      content: "second",
+      id: "tab-second",
+      kind: "file",
+      name: "Second.md",
+      path: "Second.md",
+      savedContent: "saved"
+    };
+    setPaneState(
+      {
+        [fileTab.id]: { ...fileTab, isPinned: true },
+        [secondFileTab.id]: secondFileTab
+      },
+      { activeTabId: fileTab.id, history: [fileTab.id], tabIds: [fileTab.id, secondFileTab.id] }
+    );
+
+    const props = renderPaneView();
+    const secondTab = screen.getByText("Second.md", { selector: ".pane-tab-name" }).closest(".pane-tab");
+    expect(screen.getByTitle("Scroll tabs left")).toBeInTheDocument();
+    expect(screen.getByTitle("Scroll tabs right")).toBeInTheDocument();
+    expect(screen.getByTitle("New empty tab")).toBeInTheDocument();
+    expect(screen.getByTestId("pane-tab-pin-icon")).toBeInTheDocument();
+    expect(document.querySelector(".pane-tab-dirty-dot")).toBeInTheDocument();
+
+    expect(secondTab).toBeInstanceOf(HTMLElement);
+    fireEvent.click(secondTab as HTMLElement);
+    expect(props.onTabSelect).toHaveBeenCalledWith("left", secondFileTab.id);
+
+    fireEvent.click(screen.getAllByTitle("Close tab")[1]);
+    expect(props.onTabClose).toHaveBeenCalledWith("left", secondFileTab.id);
+
+    fireEvent.click(screen.getByTitle("New empty tab"));
     expect(props.onCreateFile).toHaveBeenCalledWith("");
   });
 
