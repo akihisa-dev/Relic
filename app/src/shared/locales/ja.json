@@ -173,6 +173,7 @@
   "pane.externalConflict": "このファイルは外部で変更されました。自動保存を一時停止しています。",
   "pane.externalConflictCloseBlocked": "外部で変更されたファイルがあります。通知帯から解決してから閉じてください。",
   "pane.externalConflictToast": "{{name}} は外部で変更されたため、自動保存を一時停止しました。",
+  "pane.missingDirtyTabToast": "{{name}} は外部で移動または削除されたため、未保存本文を開いたまま保持しました。",
   "pane.largeMarkdown": "大きいMarkdownのため、ライブプレビューを一時停止中です。",
   "pane.largeMarkdownToast": "{{name}} は大きいMarkdownのため、性能優先でソース表示にしました。",
   "pane.loadExternalVersion": "外部版を読み込む",

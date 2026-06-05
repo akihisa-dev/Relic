@@ -143,6 +143,64 @@ describe("App external file changes", () => {
     }
   });
 
+  it("外部更新で消えた未保存タブは閉じず本文を残す", async () => {
+    let workspaceChanged: Parameters<NonNullable<typeof window.relic>["onWorkspaceChanged"]>[0] = () => undefined;
+    const getWorkspaceState = vi.fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [{ name: "読書メモ", path: "読書メモ.md", type: "file" }]
+        }
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: []
+        }
+      });
+
+    window.relic = makeRelicApi({
+      getWorkspaceState,
+      onWorkspaceChanged: vi.fn((callback) => {
+        workspaceChanged = callback;
+        return vi.fn();
+      }),
+      readMarkdownFile: vi.fn().mockResolvedValue({
+        ok: true,
+        value: { content: "外部変更前", name: "読書メモ", path: "読書メモ.md" }
+      }),
+      writeMarkdownFile: vi.fn().mockResolvedValue({
+        ok: false,
+        error: { code: "FILE_WRITE_FAILED", message: "ファイルを保存できませんでした。" }
+      })
+    });
+
+    await renderApp();
+    fireEvent.click(await screen.findByRole("button", { name: /読書メモ/ }));
+    await waitFor(() => expect(useEditorStore.getState().leftPane.activeTabId).not.toBeNull());
+
+    const activeTabId = useEditorStore.getState().leftPane.activeTabId!;
+
+    act(() => {
+      useEditorStore.getState().updateTabContent(activeTabId, "Relic側に残す未保存本文");
+    });
+    act(() => {
+      workspaceChanged({ changedAt: new Date().toISOString(), workspaceId: "ws-1", workspacePath: "/tmp/Notes" });
+    });
+
+    expect(await screen.findByText("読書メモ は外部で移動または削除されたため、未保存本文を開いたまま保持しました。")).toHaveClass("toast--error");
+
+    const tab = useEditorStore.getState().tabs[activeTabId];
+    expect(tab?.kind).toBe("file");
+    if (tab?.kind === "file") {
+      expect(tab.content).toBe("Relic側に残す未保存本文");
+      expect(tab.savedContent).toBe("外部変更前");
+    }
+    expect(useEditorStore.getState().leftPane.activeTabId).toBe(activeTabId);
+  });
+
   it("衝突通知帯から外部版を読み込める", async () => {
     let workspaceChanged: Parameters<NonNullable<typeof window.relic>["onWorkspaceChanged"]>[0] = () => undefined;
     const readMarkdownFile = vi.fn()
