@@ -208,7 +208,7 @@ textarea {
 .title-bar .pane-tab-bar,
 .title-bar .main-area-actions {
   backdrop-filter: none;
-  background: var(--color-bg);
+  background: var(--title-bar-bg);
   box-shadow: none;
 }
 
@@ -403,7 +403,7 @@ textarea {
 
 .pane-tab,
 .title-bar .pane-tab {
-  background: transparent;
+  background: color-mix(in srgb, var(--title-bar-bg) 74%, var(--color-surface-elevated) 26%);
   border-color: transparent;
   border-radius: 0;
   box-shadow: none;
@@ -416,7 +416,7 @@ textarea {
 }
 
 .title-bar .pane-tab {
-  background: transparent;
+  background: color-mix(in srgb, var(--title-bar-bg) 74%, var(--color-surface-elevated) 26%);
   height: 44px;
 }
 
