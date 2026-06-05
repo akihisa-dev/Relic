@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import type { PaneState, Tab } from "./store/editorStore";
-import { extractOutlineHeadings, getActiveFileTabInPane, getActiveTabInPane } from "./editorDerivedState";
+import {
+  extractOutlineHeadings,
+  getActiveFileTabInPane,
+  getActiveTabInPane,
+  outlineHeadingsMaxCount
+} from "./editorDerivedState";
 
 describe("editorDerivedState", () => {
   it("指定ペインのアクティブタブを返す", () => {
@@ -39,5 +44,19 @@ describe("editorDerivedState", () => {
       { from: content.indexOf("### Detail"), level: 3, text: "Detail" },
       { from: content.indexOf("###### Max"), level: 6, text: "Max" }
     ]);
+  });
+
+  it("見出しが多すぎるMarkdownではアウトライン抽出を上限で止める", () => {
+    const lines = Array.from({ length: outlineHeadingsMaxCount + 10 }, (_, index) => `## Heading ${index + 1}`);
+    const content = lines.join("\n");
+
+    const headings = extractOutlineHeadings(content);
+
+    expect(headings).toHaveLength(outlineHeadingsMaxCount);
+    expect(headings.at(-1)).toEqual({
+      from: content.indexOf(`## Heading ${outlineHeadingsMaxCount}`),
+      level: 2,
+      text: `Heading ${outlineHeadingsMaxCount}`
+    });
   });
 });

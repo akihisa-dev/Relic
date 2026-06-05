@@ -8,6 +8,8 @@ export interface OutlineHeading {
 
 export type HeadingScrollTarget = string | OutlineHeading;
 
+export const outlineHeadingsMaxCount = 1000;
+
 export function getActiveTabInPane(
   pane: PaneId,
   panes: { leftPane: PaneState; rightPane: PaneState },
@@ -40,6 +42,7 @@ export function extractOutlineHeadings(content: string): OutlineHeading[] {
       const text = match[2] ?? "";
       if (marker && text) {
         headings.push({ from, level: marker.length, text });
+        if (headings.length >= outlineHeadingsMaxCount) break;
       }
     }
     from += rawLine.length + 1;
