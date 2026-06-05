@@ -1,3 +1,4 @@
+import { undo, redo } from "@codemirror/commands";
 import { EditorView } from "@codemirror/view";
 import { fireEvent, render, waitFor } from "@testing-library/react";
 import { createRef } from "react";
@@ -78,6 +79,36 @@ describe("Editor table preview", () => {
     });
 
     expect(viewRef.current?.state.doc.toString()).toBe("| A | B |\n| --- | --- |\n| left | right |\n| next | last |");
+  });
+
+  it("ライブプレビューの表セルTSV貼り付けは1回のUndoで戻せる", async () => {
+    const viewRef = createRef<EditorView | null>();
+    const original = "| A | B |\n| --- | --- |\n| x | y |";
+    const pasted = "| A | B |\n| --- | --- |\n| 左 | 右 |\n| 次 | 最後 |";
+
+    const { container } = render(
+      <Editor
+        content={original}
+        onChange={vi.fn()}
+        settings={settings}
+        viewRef={viewRef}
+      />
+    );
+
+    await waitFor(() => expect(container.querySelector(".cm-live-table-cell-input")).not.toBeNull());
+    const input = container.querySelector('.cm-live-table-cell-input[data-row="1"][data-col="0"]') as HTMLInputElement;
+
+    fireEvent.paste(input, {
+      clipboardData: {
+        getData: () => "左\t右\n次\t最後"
+      }
+    });
+
+    expect(viewRef.current?.state.doc.toString()).toBe(pasted);
+    expect(undo(viewRef.current!)).toBe(true);
+    expect(viewRef.current?.state.doc.toString()).toBe(original);
+    expect(redo(viewRef.current!)).toBe(true);
+    expect(viewRef.current?.state.doc.toString()).toBe(pasted);
   });
 
   it("ライブプレビューの表セルへの貼り付けが既存列を超える場合は列を追加する", async () => {
