@@ -97,7 +97,7 @@ export function AppRightPanel({
                     </span>
                     <button
                       className={`links-list-target${link.exists ? "" : " links-list-target--missing"}`}
-                      onClick={() => onOpenWikiLink(link.wikiLink.target)}
+                      onClick={() => onOpenWikiLink(link.wikiLink.target, link.wikiLink.heading ?? undefined)}
                       onContextMenu={(event) => {
                         event.preventDefault();
                         event.stopPropagation();

@@ -373,6 +373,60 @@ describe("App search and links", () => {
     expect(screen.getAllByText("埋め込み").length).toBeGreaterThan(0);
   });
 
+  it("右パネルの見出し付きアウトゴーイングリンクをクリックすると対象見出しへ移動する", async () => {
+    const targetContent = [
+      "# 参照先",
+      "",
+      "前置き",
+      "",
+      "## 決定事項",
+      "",
+      "本文"
+    ].join("\n");
+    const readMarkdownFile = vi.fn(({ path }: { path: string }) => Promise.resolve({
+      ok: true as const,
+      value:
+        path === "参照先.md"
+          ? { content: targetContent, name: "参照先", path: "参照先.md" }
+          : {
+              content: "[[参照先#決定事項|表示名]]",
+              name: "読書メモ",
+              path: "読書メモ.md"
+            }
+    }));
+
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [
+            { name: "読書メモ", path: "読書メモ.md", type: "file" },
+            { name: "参照先", path: "参照先.md", type: "file" }
+          ]
+        }
+      }),
+      readMarkdownFile
+    });
+
+    const { container } = await renderApp();
+
+    fireEvent.click(await screen.findByRole("button", { name: /読書メモ/ }));
+    fireEvent.click(screen.getByRole("button", { name: "リンク" }));
+
+    fireEvent.click(await screen.findByRole("button", { name: "表示名" }));
+
+    expect(readMarkdownFile).toHaveBeenCalledWith({ path: "参照先.md" });
+    await screen.findByText("参照先", { selector: ".pane-tab-name" });
+
+    const targetFrom = targetContent.indexOf("## 決定事項");
+    await waitFor(() => {
+      const view = EditorView.findFromDOM(container.querySelector(".cm-content") as HTMLElement);
+      expect(view?.state.selection.main.from).toBe(targetFrom);
+      expect(container.querySelector(".cm-activeLine")?.textContent).toContain("決定事項");
+    });
+  });
+
   it("右パネルのリンクを右クリックしてコピーと場所表示を実行する", async () => {
     const revealWorkspaceItem = vi.fn().mockResolvedValue({ ok: true, value: undefined });
     const writeText = vi.fn().mockResolvedValue(undefined);
