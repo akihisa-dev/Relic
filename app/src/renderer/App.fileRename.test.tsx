@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+
 import {
   act,
   fireEvent,
@@ -38,6 +40,15 @@ describe("App file rename and context menu", () => {
     vi.clearAllMocks();
     restoreNavigatorPlatform();
     resetRendererStores();
+  });
+
+  it("本文上部のファイル名表示欄は枠なしで縦幅を詰める", () => {
+    const previewCss = readFileSync("src/renderer/styles/preview-editor.css", "utf8");
+    const designCss = readFileSync("src/renderer/styles/architectural-design.css", "utf8");
+
+    expect(previewCss).toMatch(/\.editor-file-title\s*\{[^}]*border:\s*0;/s);
+    expect(previewCss).toMatch(/\.editor-file-title\s*\{[^}]*padding:\s*12px 32px 8px;/s);
+    expect(designCss).toMatch(/\.editor-file-title\s*\{[^}]*padding:\s*12px 32px 8px;/s);
   });
 
   it("本文上部のファイル名は本文外の表示として出し、直接リネームできる", async () => {
