@@ -886,6 +886,7 @@
     background-color var(--motion-fast) var(--ease-standard),
     box-shadow var(--motion-fast) var(--ease-standard),
     transform var(--motion-fast) var(--ease-press);
+  touch-action: none;
   width: 8px;
   z-index: 22;
 }
@@ -897,6 +898,24 @@
 .right-panel-resize-handle:hover,
 .right-panel-resize-handle--active {
   background: rgba(31, 35, 40, 0.12);
+}
+
+.right-panel-resize-handle::after {
+  background: var(--border);
+  bottom: 0;
+  content: "";
+  left: 50%;
+  opacity: 0.9;
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  width: 1px;
+}
+
+.right-panel-resize-handle:hover::after,
+.right-panel-resize-handle--active::after {
+  background: var(--accent);
+  width: 2px;
 }
 
 .right-panel-resize-handle--active {
