@@ -14,8 +14,6 @@ import {
   panelLabelsForTranslator,
   registeredWorkspacesForState,
   splitRailViews,
-  titleBarEditorLeftOffset,
-  titleBarLeftOffset,
   type AppRailView
 } from "./appShellModel";
 import { createTranslator } from "./i18nModel";
@@ -92,19 +90,6 @@ describe("appShellModel", () => {
       settings: "Settings",
       tools: "Tools"
     });
-  });
-
-  it("keeps title bar tabs aligned to the visible main editor edge", () => {
-    expect(titleBarLeftOffset(88, 48, 260)).toBe(308);
-    expect(titleBarLeftOffset(88, 48, 20)).toBe(88);
-    expect(titleBarLeftOffset(88, 56, 260, 0, 0)).toBe(316);
-    expect(titleBarLeftOffset(88, 56, 260, 0, 0, 400)).toBe(716);
-  });
-
-  it("keeps the split tab lanes aligned to the editor surface including the line-number gutter", () => {
-    expect(titleBarEditorLeftOffset(56, 0)).toBe(56);
-    expect(titleBarEditorLeftOffset(56, 260)).toBe(316);
-    expect(titleBarEditorLeftOffset(56, 260, 0, 0, 400)).toBe(716);
   });
 
   it("filters and splits rail views without changing order", () => {

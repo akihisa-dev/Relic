@@ -11,36 +11,6 @@ export interface AppRailView<TIcon = unknown> {
   label: string;
 }
 
-export function titleBarLeftOffset(
-  trafficLightSpace: number,
-  railWidth: number,
-  sidebarWidth: number,
-  workspacePadding = 0,
-  panelGap = 0,
-  secondarySidebarWidth = 0
-): number {
-  const primarySidebarEdge = workspacePadding + railWidth + panelGap + sidebarWidth + panelGap;
-  const secondarySidebarEdge = secondarySidebarWidth > 0
-    ? primarySidebarEdge + secondarySidebarWidth + panelGap
-    : primarySidebarEdge;
-
-  return Math.max(trafficLightSpace, secondarySidebarEdge);
-}
-
-export function titleBarEditorLeftOffset(
-  railWidth: number,
-  sidebarWidth: number,
-  workspacePadding = 0,
-  panelGap = 0,
-  secondarySidebarWidth = 0
-): number {
-  const primarySidebarEdge = workspacePadding + railWidth + panelGap + sidebarWidth + panelGap;
-
-  return secondarySidebarWidth > 0
-    ? primarySidebarEdge + secondarySidebarWidth + panelGap
-    : primarySidebarEdge;
-}
-
 export function chartIdForRailView(id: AppRailViewId): string | null {
   if (id === "chronicle") return "chronicle";
   if (id === "calendar") return "date";

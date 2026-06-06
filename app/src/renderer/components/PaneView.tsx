@@ -2,10 +2,12 @@ import { EditorView } from "@codemirror/view";
 import type { MutableRefObject, ReactElement, ReactNode } from "react";
 
 import type { EditorSettings, UserDefinedField } from "../../shared/ipc";
+import type { FileTab } from "../store/editorStore";
 import type { HeadingScrollTarget } from "../editorDerivedState";
 import { usePaneHeadingScroll } from "../hooks/usePaneHeadingScroll";
 import { useEditorStore, type PaneId, type PanelTabKind } from "../store/editorStore";
 import { PaneContentSurface } from "./PaneContentSurface";
+import { PaneTabs } from "./PaneTabs";
 
 export interface PaneViewProps {
   allFilePaths: string[];
@@ -13,6 +15,8 @@ export interface PaneViewProps {
   editorSettings: EditorSettings;
   focusedPane: PaneId;
   frontmatterCandidates: Record<string, string[]>;
+  closingTabIds: Set<string>;
+  isSplitView: boolean;
   pane: PaneId;
   scrollTargetHeading?: HeadingScrollTarget;
   typewriterMode: boolean;
@@ -21,7 +25,12 @@ export interface PaneViewProps {
   viewRef: MutableRefObject<EditorView | null>;
   renderChartTab: (chartId: string) => ReactNode;
   renderPanelTab: (panel: PanelTabKind) => ReactNode;
+  renderPanelTabIcon: (panel: PanelTabKind) => ReactNode;
+  onCloseAllTabs: (pane: PaneId) => void;
+  onCloseOtherTabs: (pane: PaneId, tabId: string) => void;
+  onCloseTabsToRight: (pane: PaneId, tabId: string) => void;
   onCreateFile: (name: string) => void;
+  onDuplicateTabFile?: (tabId: string) => void;
   onEditorAction?: () => void;
   onFocus: () => void;
   onOpenLink?: (href: string) => void;
@@ -29,8 +38,16 @@ export interface PaneViewProps {
   onFileSaved?: (path: string) => void;
   onFileSaveError?: (message: string) => void;
   onLargeMarkdownFallback?: (name: string, path: string) => void;
+  onOpenInOtherPane: (pane: PaneId, tabId: string) => void;
   onRenameFile: (path: string, name: string) => void;
+  onPrintPreview: (tab: FileTab) => void;
+  onRevealTabFile?: (tabId: string) => void;
+  onSavePreviewAsPdf: (tab: FileTab) => void;
   onScrollTargetHandled?: () => void;
+  onTabClose: (pane: PaneId, tabId: string) => void;
+  onTabMove: (fromPane: PaneId, toPane: PaneId, tabId: string, targetTabId?: string | null, position?: "before" | "after") => void;
+  onTabSelect: (pane: PaneId, tabId: string) => void;
+  onTogglePinTab?: (tabId: string) => void;
   sourceMode: boolean;
 }
 
@@ -40,6 +57,8 @@ export function PaneView({
   editorSettings,
   focusedPane,
   frontmatterCandidates,
+  closingTabIds,
+  isSplitView,
   pane,
   scrollTargetHeading,
   typewriterMode,
@@ -48,15 +67,28 @@ export function PaneView({
   viewRef,
   renderChartTab,
   renderPanelTab,
+  renderPanelTabIcon,
+  onCloseAllTabs,
+  onCloseOtherTabs,
+  onCloseTabsToRight,
   onCreateFile,
+  onDuplicateTabFile,
   onFocus,
   onOpenLink,
   onOpenWikiLink,
   onFileSaved,
   onFileSaveError,
   onLargeMarkdownFallback,
+  onOpenInOtherPane,
   onRenameFile,
+  onPrintPreview,
+  onRevealTabFile,
+  onSavePreviewAsPdf,
   onScrollTargetHandled,
+  onTabClose,
+  onTabMove,
+  onTabSelect,
+  onTogglePinTab,
   onEditorAction,
   sourceMode
 }: PaneViewProps): ReactElement {
@@ -107,6 +139,26 @@ export function PaneView({
       onPointerDownCapture={onFocus}
       role="presentation"
     >
+      <PaneTabs
+        closingTabIds={closingTabIds}
+        isSplitView={isSplitView}
+        pane={pane}
+        paneState={paneState}
+        renderPanelTabIcon={renderPanelTabIcon}
+        tabs={tabs}
+        onCloseAllTabs={onCloseAllTabs}
+        onCloseOtherTabs={onCloseOtherTabs}
+        onCloseTabsToRight={onCloseTabsToRight}
+        onDuplicateTabFile={onDuplicateTabFile}
+        onOpenInOtherPane={onOpenInOtherPane}
+        onPrintPreview={onPrintPreview}
+        onRevealTabFile={onRevealTabFile}
+        onSavePreviewAsPdf={onSavePreviewAsPdf}
+        onTabClose={onTabClose}
+        onTabMove={onTabMove}
+        onTabSelect={onTabSelect}
+        onTogglePinTab={onTogglePinTab}
+      />
       <PaneContentSurface
         activeTab={activeTab}
         allFilePaths={allFilePaths}

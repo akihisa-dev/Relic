@@ -7,7 +7,7 @@
   box-shadow: none;
   display: grid;
   flex: 1 1 auto;
-  grid-template-rows: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
   min-height: 0;
   min-width: 0;
   overflow: hidden;
@@ -16,15 +16,15 @@
 
 .main-area-actions {
   align-items: center;
-  background: transparent;
+  background: var(--surface-subtle);
   border-bottom: 1px solid var(--border);
   border-left: 0;
   display: flex;
   gap: 4px;
   justify-content: flex-end;
-  min-height: 38px;
-  padding: 0 8px;
-  width: 136px;
+  min-height: 40px;
+  padding: 0 12px;
+  width: 100%;
   z-index: 18;
 }
 
@@ -430,7 +430,7 @@
 
 .pane {
   display: grid;
-  grid-template-rows: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
   height: 100%;
   min-height: 0;
   min-width: 0;
@@ -486,17 +486,17 @@
   background: transparent;
 }
 
-.title-bar-tabs--split .pane-tabs--has-tabs {
+.panes-container--split .pane-tabs--has-tabs {
   box-shadow: inset 0 -1px 0 var(--border);
 }
 
-.title-bar-tabs--split .pane-tabs--left.pane-tabs--has-tabs {
+.panes-container--split .pane-tabs--left.pane-tabs--has-tabs {
   box-shadow:
     inset -1px 0 0 var(--border),
     inset 0 -1px 0 var(--border);
 }
 
-.title-bar-tabs--split .pane-tabs--right.pane-tabs--has-tabs {
+.panes-container--split .pane-tabs--right.pane-tabs--has-tabs {
   box-shadow:
     inset 1px 0 0 var(--border),
     inset 0 -1px 0 var(--border);
@@ -509,7 +509,7 @@
   border-bottom: 0;
   display: flex;
   gap: 0;
-  height: 52px;
+  height: 42px;
   min-width: 0;
   overflow: hidden;
   padding: 0;
@@ -520,31 +520,31 @@
   background: var(--title-bar-bg);
 }
 
-.title-bar-tabs--split .pane-tab-bar-shell {
+.panes-container--split .pane-tab-bar-shell {
   padding-inline: 8px;
 }
 
-.title-bar-tabs--split .pane-tabs--left .pane-tab-bar-shell {
+.panes-container--split .pane-tabs--left .pane-tab-bar-shell {
   padding-left: 0;
   padding-right: 10px;
 }
 
-.title-bar-tabs--split .pane-tabs--right .pane-tab-bar-shell {
+.panes-container--split .pane-tabs--right .pane-tab-bar-shell {
   padding-left: 10px;
   padding-right: 0;
 }
 
-.title-bar-tabs--split .pane-tab-bar {
+.panes-container--split .pane-tab-bar {
   overflow: hidden;
 }
 
-.title-bar-tabs--split .pane-tab {
+.panes-container--split .pane-tab {
   flex: 1 1 96px;
   max-width: 100%;
   min-width: 48px;
 }
 
-.title-bar-tabs--split .pane-tab-close {
+.panes-container--split .pane-tab-close {
   flex-basis: 16px;
   width: 16px;
 }

@@ -61,22 +61,37 @@ function renderPaneView(overrides: Partial<PaneViewProps> = {}): PaneViewProps {
     editorSettings: defaultEditorSettings,
     focusedPane: "left",
     frontmatterCandidates: {},
+    closingTabIds: new Set(),
+    isSplitView: false,
     pane: "left",
     renderChartTab: (chartId) => <div>Chart {chartId}</div>,
     renderPanelTab: (panel) => <div>Panel {panel}</div>,
+    renderPanelTabIcon: () => null,
     sourceMode: false,
     typewriterMode: false,
     userDefinedFields: [],
     viewRef: { current: null } as MutableRefObject<EditorView | null>,
     workspacePath: "/workspace",
+    onCloseAllTabs: vi.fn(),
+    onCloseOtherTabs: vi.fn(),
+    onCloseTabsToRight: vi.fn(),
     onCreateFile: vi.fn(),
+    onDuplicateTabFile: vi.fn(),
     onFileSaved: vi.fn(),
     onLargeMarkdownFallback: vi.fn(),
     onFocus: vi.fn(),
+    onOpenInOtherPane: vi.fn(),
     onOpenLink: vi.fn(),
     onOpenWikiLink: vi.fn(),
+    onPrintPreview: vi.fn(),
     onRenameFile: vi.fn(),
+    onRevealTabFile: vi.fn(),
+    onSavePreviewAsPdf: vi.fn(),
     onScrollTargetHandled: vi.fn(),
+    onTabClose: vi.fn(),
+    onTabMove: vi.fn(),
+    onTabSelect: vi.fn(),
+    onTogglePinTab: vi.fn(),
     scrollTargetHeading: undefined,
     ...overrides
   };
@@ -129,7 +144,7 @@ describe("PaneView", () => {
     expect(props.onCreateFile).toHaveBeenCalledWith("");
   });
 
-  it("keeps editor tabs out of the pane body", () => {
+  it("renders editor tabs inside the owning pane", () => {
     const secondFileTab: Tab = {
       content: "second",
       id: "tab-second",
@@ -148,8 +163,9 @@ describe("PaneView", () => {
 
     renderPaneView();
 
-    expect(document.querySelector(".pane .pane-tab-bar")).not.toBeInTheDocument();
-    expect(document.querySelector(".pane .pane-tab")).not.toBeInTheDocument();
+    expect(document.querySelector(".title-bar .pane-tab-bar")).not.toBeInTheDocument();
+    expect(document.querySelector(".pane .pane-tab-bar")).toBeInTheDocument();
+    expect(document.querySelectorAll(".pane .pane-tab")).toHaveLength(2);
   });
 
   it("shows a warning for unreadable frontmatter while keeping the editor editable", () => {
