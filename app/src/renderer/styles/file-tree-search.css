@@ -286,11 +286,14 @@
 }
 
 .files-sidebar-section {
+  box-sizing: border-box;
   display: grid;
   gap: 12px;
   grid-template-rows: auto minmax(0, 1fr) auto;
-  height: 100%;
-  min-height: 100%;
+  height: calc(100% + 32px);
+  margin: -16px;
+  min-height: calc(100% + 32px);
+  padding: 16px 16px 0;
 }
 
 .files-sidebar-fixed-controls {
@@ -842,7 +845,7 @@
   background: var(--color-primary-dark);
   border-top: 0;
   gap: 2px;
-  margin: auto -16px -18px;
+  margin: 0 -16px;
   padding: 6px 24px 8px;
   z-index: 2;
 }
