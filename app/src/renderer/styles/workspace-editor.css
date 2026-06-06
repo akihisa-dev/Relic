@@ -409,7 +409,7 @@
 }
 
 .pane--focused .pane-tab-bar-shell {
-  background: color-mix(in srgb, var(--surface-raised) 82%, var(--border) 18%);
+  background: var(--chrome-top-bg, var(--title-bar-bg));
 }
 
 .pane--focused .editor-surface--action-odd {
@@ -455,25 +455,25 @@
 }
 
 .panes-container--split .pane-tabs--has-tabs {
-  box-shadow: inset 0 -1px 0 var(--border);
+  box-shadow: inset 0 -1px 0 var(--chrome-top-border, var(--border));
 }
 
 .panes-container--split .pane-tabs--left.pane-tabs--has-tabs {
   box-shadow:
-    inset -1px 0 0 var(--border),
-    inset 0 -1px 0 var(--border);
+    inset -1px 0 0 var(--chrome-top-border, var(--border)),
+    inset 0 -1px 0 var(--chrome-top-border, var(--border));
 }
 
 .panes-container--split .pane-tabs--right.pane-tabs--has-tabs {
   box-shadow:
-    inset -1px 0 0 var(--border),
-    inset 0 -1px 0 var(--border);
+    inset -1px 0 0 var(--chrome-top-border, var(--border)),
+    inset 0 -1px 0 var(--chrome-top-border, var(--border));
 }
 
 .pane-tab-bar-shell {
   -webkit-app-region: drag;
   align-items: flex-end;
-  background: transparent;
+  background: var(--chrome-top-bg, var(--title-bar-bg));
   border-bottom: 0;
   display: flex;
   gap: 0;
@@ -485,7 +485,7 @@
 }
 
 .pane-tab-bar-shell--has-tabs {
-  background: var(--title-bar-bg);
+  background: var(--chrome-top-bg, var(--title-bar-bg));
 }
 
 .panes-container--split .pane-tab-bar-shell {
@@ -561,10 +561,10 @@
   -webkit-app-region: no-drag;
   align-items: center;
   animation: tab-enter var(--motion-fast) var(--ease-standard);
-  background: color-mix(in srgb, var(--surface-subtle) 82%, var(--surface) 18%);
+  background: var(--chrome-tab-bg, color-mix(in srgb, var(--surface-subtle) 82%, var(--surface) 18%));
   border: 0;
   border-radius: 0;
-  box-shadow: inset -1px 0 0 color-mix(in srgb, var(--border) 72%, transparent);
+  box-shadow: inset -1px 0 0 var(--chrome-tab-divider, color-mix(in srgb, var(--border) 72%, transparent));
   color: var(--text-3);
   cursor: default;
   display: flex;
@@ -595,16 +595,16 @@
 }
 
 .pane-tab:hover:not(.pane-tab--active):not(.pane-tab--closing) {
-  background: color-mix(in srgb, var(--surface-subtle) 68%, var(--surface) 32%);
+  background: var(--chrome-tab-bg, color-mix(in srgb, var(--surface-subtle) 68%, var(--surface) 32%));
   color: var(--text-2);
 }
 
 .pane-tab--active {
-  background: var(--surface);
+  background: var(--chrome-tab-active-bg, var(--surface));
   box-shadow:
-    inset 1px 0 0 color-mix(in srgb, var(--border) 72%, transparent),
-    inset -1px 0 0 color-mix(in srgb, var(--border) 72%, transparent),
-    inset 0 1px 0 color-mix(in srgb, var(--border) 72%, transparent);
+    inset 1px 0 0 var(--chrome-tab-divider, color-mix(in srgb, var(--border) 72%, transparent)),
+    inset -1px 0 0 var(--chrome-tab-divider, color-mix(in srgb, var(--border) 72%, transparent)),
+    inset 0 1px 0 var(--chrome-tab-divider, color-mix(in srgb, var(--border) 72%, transparent));
   color: var(--accent);
   z-index: 2;
 }

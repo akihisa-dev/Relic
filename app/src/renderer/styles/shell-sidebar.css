@@ -14,7 +14,7 @@
 .title-bar {
   align-items: center;
   -webkit-app-region: drag;
-  background: var(--title-bar-bg);
+  background: var(--chrome-top-bg, var(--title-bar-bg));
   backdrop-filter: blur(18px) saturate(145%);
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.5) inset;
   display: grid;
