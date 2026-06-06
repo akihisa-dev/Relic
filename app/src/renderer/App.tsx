@@ -390,6 +390,7 @@ export function App(): ReactElement {
     startRightPanelResize,
     startSecondarySidebarResize,
     startSidebarResize,
+    titleBarEditorLeftOffsetWidth,
     titleBarLeftOffsetWidth
   } = useAppLayoutWidths({
     appUiSettings,
@@ -706,6 +707,7 @@ export function App(): ReactElement {
     t,
     tabs,
     titleBarLeftOffsetWidth,
+    titleBarEditorLeftOffsetWidth,
     toastMessage,
     toggleSplitWithMotion,
     toggleTabPinned,

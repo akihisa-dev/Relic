@@ -197,6 +197,7 @@ export function createTitleBarProps(input: AppLayoutPropsInput): TitleBarProps {
     isSourceMode: input.isSourceMode,
     isSplit: input.isSplit,
     leftClosingTabIds: input.leftClosingTabIds,
+    editorLeftOffsetWidth: input.titleBarEditorLeftOffsetWidth,
     leftOffsetWidth: input.titleBarLeftOffsetWidth,
     leftPane: input.leftPane,
     onCloseAllTabsInPane: input.closeAllTabsInPaneWithMotion,

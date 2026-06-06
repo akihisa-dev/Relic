@@ -72,7 +72,7 @@ describe("App sidebar panels", () => {
     expect(screen.getByRole("button", { name: /読書メモ/ })).toBeInTheDocument();
   });
 
-  it("左サイドバーを閉じているときはタイトルバーのタブ開始位置を本文側へ戻す", async () => {
+  it("左サイドバーを閉じているときも分割タブは行番号込みのエディタ左端を基準にする", async () => {
     useUiStore.setState({ isSidebarOpen: false });
     window.relic = makeRelicApi({
       getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
@@ -82,7 +82,10 @@ describe("App sidebar panels", () => {
 
     await screen.findByText("Notes");
 
-    expect(container.querySelector(".title-bar")).toHaveStyle({ "--title-bar-left-offset": "88px" });
+    expect(container.querySelector(".title-bar")).toHaveStyle({
+      "--title-bar-editor-left-offset": "56px",
+      "--title-bar-left-offset": "88px"
+    });
   });
 
   it("フォルダ右クリックメニューからフォルダ以下と全体を一括開閉できる", async () => {

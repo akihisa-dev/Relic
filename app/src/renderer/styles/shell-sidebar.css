@@ -52,6 +52,8 @@
 
 .title-bar-tabs--split {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  margin-left: calc(var(--title-bar-editor-left-offset, var(--title-bar-left-offset, 88px)) - var(--title-bar-left-offset, 88px));
+  width: calc(100% + var(--title-bar-left-offset, 88px) - var(--title-bar-editor-left-offset, var(--title-bar-left-offset, 88px)));
 }
 
 .title-bar-actions {
