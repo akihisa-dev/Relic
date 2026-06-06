@@ -111,7 +111,7 @@ export function FilesSidebar({
   };
 
   return (
-    <div className="sidebar-section files-sidebar-section">
+    <div className={`sidebar-section${activeWorkspace ? " files-sidebar-section" : ""}`}>
       {activeWorkspace ? (
         <>
           <div className="files-sidebar-fixed-controls">

@@ -48,7 +48,7 @@ describe("App workspaces", () => {
     expect(css).toMatch(/\.sidebar:has\(\.workspace-actions\)::after\s*\{[^}]*display:\s*none;/s);
     expect(css).toMatch(/\.workspace-actions\s*\{[^}]*background:\s*var\(--color-primary-dark\);/s);
     expect(css).not.toMatch(/\.workspace-actions\s*\{[^}]*position:\s*sticky;/s);
-    expect(css).toMatch(/\.workspace-actions\s*\{[^}]*margin:\s*auto -16px -18px;/s);
+    expect(css).toMatch(/\.workspace-actions\s*\{[^}]*margin:\s*0 -16px;/s);
     expect(css).toMatch(/\.workspace-actions\s*\{[^}]*padding:\s*6px 24px 8px;/s);
     expect(css).not.toMatch(/\.workspace-actions\s*\{[^}]*min-height:/s);
     expect(css).toMatch(/\.workspace-actions \.workspace-action-button\s*\{[^}]*color:\s*color-mix\(in srgb, #fff 88%, var\(--color-primary-dark\) 12%\);/s);
@@ -60,6 +60,9 @@ describe("App workspaces", () => {
 
     expect(css).toMatch(/\.sidebar-body:has\(> \.files-sidebar-section\)\s*\{[^}]*overflow:\s*hidden;/s);
     expect(css).toMatch(/\.files-sidebar-section\s*\{[^}]*grid-template-rows:\s*auto minmax\(0, 1fr\) auto;/s);
+    expect(css).toMatch(/\.files-sidebar-section\s*\{[^}]*height:\s*calc\(100% \+ 32px\);/s);
+    expect(css).toMatch(/\.files-sidebar-section\s*\{[^}]*margin:\s*-16px;/s);
+    expect(css).toMatch(/\.files-sidebar-section\s*\{[^}]*padding:\s*16px 16px 0;/s);
     expect(css).toMatch(/\.files-sidebar-fixed-controls\s*\{[^}]*position:\s*relative;/s);
     expect(css).toMatch(/\.files-sidebar-fixed-controls\s*\{[^}]*z-index:\s*6;/s);
     expect(css).toMatch(/\.files-sidebar-scroll-area\s*\{[^}]*min-height:\s*0;/s);
