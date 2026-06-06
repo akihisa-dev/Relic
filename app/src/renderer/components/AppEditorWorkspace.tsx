@@ -10,6 +10,7 @@ import type { FileTab, PaneId, PanelTabKind } from "../store/editorStore";
 import type { RightPanelView, SecondarySidebarView } from "../store/uiStore";
 import { AppRightPanel } from "./AppRightPanel";
 import { AppSecondarySidebar } from "./AppSecondarySidebar";
+import { LayoutResizeBoundary } from "./LayoutResizeBoundary";
 import { PaneView } from "./PaneView";
 
 interface AppEditorWorkspaceProps {
@@ -196,11 +197,11 @@ export function AppEditorWorkspace({
           workspaceName={workspaceName}
         />
         {isSecondarySidebarOpen ? (
-          <button
+          <LayoutResizeBoundary
             aria-label="Resize secondary sidebar"
-            className={`layout-resize-boundary layout-resize-boundary--secondary-sidebar${isSecondarySidebarResizing ? " layout-resize-boundary--active" : ""}`}
-            onMouseDown={onSecondarySidebarResizeStart}
-            type="button"
+            isActive={isSecondarySidebarResizing}
+            onResizeStart={onSecondarySidebarResizeStart}
+            side="secondary-sidebar"
           />
         ) : null}
         <div className="editor-workspace">
@@ -293,11 +294,11 @@ export function AppEditorWorkspace({
         </div>
 
         {isRightPanelOpen ? (
-          <button
+          <LayoutResizeBoundary
             aria-label="Resize right panel"
-            className={`layout-resize-boundary layout-resize-boundary--right-panel${isRightPanelResizing ? " layout-resize-boundary--active" : ""}`}
-            onMouseDown={onRightPanelResizeStart}
-            type="button"
+            isActive={isRightPanelResizing}
+            onResizeStart={onRightPanelResizeStart}
+            side="right-panel"
           />
         ) : null}
         <AppRightPanel
