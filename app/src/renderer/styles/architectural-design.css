@@ -334,14 +334,13 @@ textarea {
   z-index: 2;
 }
 
-.main-area-actions,
 .toolbar {
   background: var(--color-bg);
   box-shadow: 0 1px 0 var(--color-border);
 }
 
 .main-area-actions {
-  border-left: 1px solid var(--color-border);
+  box-shadow: none;
 }
 
 .toolbar-btn,

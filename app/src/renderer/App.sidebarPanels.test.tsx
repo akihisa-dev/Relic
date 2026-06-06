@@ -283,17 +283,17 @@ describe("App sidebar panels", () => {
 
     expect(useUiStore.getState().isRightPanelOpen).toBe(false);
     expect(useUiStore.getState().rightPanelView).toBe("outline");
-    expect(document.querySelector(".title-bar .main-area-actions")).not.toBeInTheDocument();
-    expect(document.querySelector(".main-area > .main-area-actions")).toBeInTheDocument();
+    expect(document.querySelector(".title-bar .main-area-actions")).toBeInTheDocument();
+    expect(document.querySelector(".main-area > .main-area-actions")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "アウトライン" }));
 
     expect(useUiStore.getState().isRightPanelOpen).toBe(true);
     expect(useUiStore.getState().rightPanelView).toBe("outline");
-    expect(document.querySelector(".title-bar .main-area-actions")).not.toBeInTheDocument();
-    expect(document.querySelector(".main-area > .main-area-actions")).toBeInTheDocument();
+    expect(document.querySelector(".title-bar .main-area-actions")).toBeInTheDocument();
+    expect(document.querySelector(".main-area > .main-area-actions")).not.toBeInTheDocument();
 
-    const mainActions = document.querySelector(".main-area-actions");
+    const mainActions = document.querySelector(".title-bar .main-area-actions");
     expect(mainActions).toBeInstanceOf(HTMLElement);
     expect(within(mainActions as HTMLElement).queryByRole("button", { name: "フロントマター" })).not.toBeInTheDocument();
 

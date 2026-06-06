@@ -7,6 +7,7 @@ import { AppEditorWorkspace } from "./AppEditorWorkspace";
 import { AppFilesSidebar } from "./AppFilesSidebar";
 import { AppOverlays } from "./AppOverlays";
 import { AppRail } from "./AppRail";
+import { AppMainActions } from "./AppMainActions";
 import { AppStatusBar } from "./AppStatusBar";
 import { AppTitleBar } from "./AppTitleBar";
 
@@ -42,7 +43,19 @@ export function AppLayout({
   return (
     <I18nProvider language={language}>
       <div className="app-shell" style={appFontStyle}>
-        <AppTitleBar {...titleBarProps} />
+        <AppTitleBar {...titleBarProps}>
+          <AppMainActions
+            isRightPanelOpen={editorWorkspaceProps.isRightPanelOpen}
+            isSourceMode={editorWorkspaceProps.isSourceMode}
+            isSplit={editorWorkspaceProps.isSplit}
+            onRightPanelViewButton={editorWorkspaceProps.onRightPanelViewButton}
+            onSourceModeToggle={editorWorkspaceProps.onSourceModeToggle}
+            onSplitToggle={editorWorkspaceProps.onSplitToggle}
+            rightPanelView={editorWorkspaceProps.rightPanelView}
+            showRightPanelLinksControl={editorWorkspaceProps.showRightPanelLinksControl}
+            showRightPanelOutlineControl={editorWorkspaceProps.showRightPanelOutlineControl}
+          />
+        </AppTitleBar>
         <div className="workspace">
           <AppRail {...railProps} />
           <AppFilesSidebar {...filesSidebarProps} />

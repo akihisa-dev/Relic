@@ -12,13 +12,14 @@
 }
 
 .title-bar {
+  align-items: center;
   -webkit-app-region: drag;
   background: var(--title-bar-bg);
   backdrop-filter: blur(18px) saturate(145%);
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.5) inset;
   display: grid;
   grid-column: 1 / -1;
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) auto;
   min-width: 0;
   overflow: visible;
   position: relative;
@@ -26,7 +27,8 @@
 }
 
 .title-bar-drag-area {
-  grid-column: 1 / -1;
+  grid-column: 1;
+  height: 100%;
   min-width: 0;
 }
 
