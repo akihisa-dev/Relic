@@ -119,6 +119,28 @@ describe("AppTitleBar", () => {
     expect(props.onTabSelect).toHaveBeenCalledWith("left", secondFileTab.id);
   });
 
+  it("分割表示では左右ペインのタブ領域を別レーンとして表示する", () => {
+    renderTitleBar({
+      isSplit: true,
+      leftPane: { activeTabId: fileTab.id, history: [fileTab.id], tabIds: [fileTab.id] },
+      rightPane: { activeTabId: secondFileTab.id, history: [secondFileTab.id], tabIds: [secondFileTab.id] },
+      tabs: {
+        [fileTab.id]: fileTab,
+        [secondFileTab.id]: secondFileTab
+      }
+    });
+
+    const titleBarTabs = document.querySelector(".title-bar-tabs");
+    const leftLane = document.querySelector(".title-bar-tabs .pane-tabs--left");
+    const rightLane = document.querySelector(".title-bar-tabs .pane-tabs--right");
+
+    expect(titleBarTabs).toHaveClass("title-bar-tabs--split");
+    expect(leftLane?.querySelectorAll(".pane-tab")).toHaveLength(1);
+    expect(rightLane?.querySelectorAll(".pane-tab")).toHaveLength(1);
+    expect(leftLane).toHaveTextContent("Note");
+    expect(rightLane).toHaveTextContent("Second");
+  });
+
   it("keeps preview output actions out of the title bar buttons", () => {
     renderTitleBar();
 
@@ -148,6 +170,16 @@ describe("AppTitleBar", () => {
     expect(editorCss).toMatch(/\.pane-tab\s*\{[^}]*flex:\s*0 1 220px;/s);
     expect(editorCss).toMatch(/\.pane-tab\s*\{[^}]*min-width:\s*148px;/s);
     expect(editorCss).toMatch(/\.pane-tab-name\s*\{[^}]*min-width:\s*0;/s);
+  });
+
+  it("分割表示のタブレーンを境界線と内側余白で管理する", () => {
+    const shellCss = readFileSync("src/renderer/styles/shell-sidebar.css", "utf8");
+    const editorCss = readFileSync("src/renderer/styles/workspace-editor.css", "utf8");
+
+    expect(shellCss).toMatch(/\.title-bar-tabs\s*\{[^}]*overflow:\s*hidden;/s);
+    expect(editorCss).toMatch(/\.title-bar-tabs--split \.pane-tabs--left\s*\{[^}]*inset -1px 0 0 var\(--border\)/s);
+    expect(editorCss).toMatch(/\.title-bar-tabs--split \.pane-tabs--right\s*\{[^}]*inset 1px 0 0 var\(--border\)/s);
+    expect(editorCss).toMatch(/\.title-bar-tabs--split \.pane-tab-bar-shell\s*\{[^}]*padding-inline:\s*8px;/s);
   });
 
   it("lets title bar action tooltips render above the workspace layer", () => {
