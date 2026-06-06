@@ -230,6 +230,29 @@
       margin-top: 4px;
     }
 
+    .token-preview {
+      border: 1px solid var(--color-border);
+      display: grid;
+      gap: 6px;
+      margin: 12px 0 0;
+      min-height: 86px;
+      padding: 12px;
+    }
+
+    .token-preview strong,
+    .token-preview span {
+      display: block;
+    }
+
+    .token-preview strong {
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .token-preview span {
+      font-size: 12px;
+    }
+
     .shape-preview {
       align-items: center;
       background: var(--color-surface);
@@ -556,6 +579,7 @@ radius-lg: 8px;
 <p>主要アクセントカラー。</p>
 <pre><code class="language-css">--color-primary: #3261A1;
 </code></pre>
+<div class="token-preview" style="background:#3261A1;color:white"><strong>Primary Blue</strong><span>#3261A1</span></div>
 <p>用途:</p>
 <ul>
 <li>Headers</li>
@@ -568,6 +592,7 @@ radius-lg: 8px;
 <p>補助アクセントカラー。</p>
 <pre><code class="language-css">--color-accent: #6C8BB7;
 </code></pre>
+<div class="token-preview" style="background:#6C8BB7;color:white"><strong>Sub Blue</strong><span>#6C8BB7</span></div>
 <p>用途:</p>
 <ul>
 <li>Hover States</li>
@@ -579,40 +604,48 @@ radius-lg: 8px;
 <h4>Background</h4>
 <pre><code class="language-css">--color-bg: #F2F1EE;
 </code></pre>
+<div class="token-preview" style="background:#F2F1EE;color:#232B36"><strong>Background</strong><span>#F2F1EE</span></div>
 <p>エディタ背景、ページ全体の背景色。</p>
 <hr>
 <h4>Surface</h4>
 <pre><code class="language-css">--color-surface: #E7E7E7;
 </code></pre>
+<div class="token-preview" style="background:#E7E7E7;color:#232B36"><strong>Surface</strong><span>#E7E7E7</span></div>
 <p>サイドバー、ツールバー、パネル背景。</p>
 <hr>
 <h4>Surface Alt</h4>
 <pre><code class="language-css">--color-surface-alt: #DDDEDF;
 </code></pre>
+<div class="token-preview" style="background:#DDDEDF;color:#232B36"><strong>Surface Alt</strong><span>#DDDEDF</span></div>
 <p>選択中の項目背景、カード背景。</p>
 <hr>
 <h4>Border</h4>
 <pre><code class="language-css">--color-border: #C3C8CE;
 </code></pre>
+<div class="token-preview" style="background:#C3C8CE;color:#232B36"><strong>Border</strong><span>#C3C8CE</span></div>
 <p>区切り線。</p>
 <hr>
 <h4>Border Strong</h4>
 <pre><code class="language-css">--color-border-strong: #A4AEBD;
 </code></pre>
+<div class="token-preview" style="background:#A4AEBD;color:#232B36"><strong>Border Strong</strong><span>#A4AEBD</span></div>
 <p>重要な境界。</p>
 <hr>
 <h3>Typography Colors</h3>
 <h4>Primary Text</h4>
 <pre><code class="language-css">--color-text: #232B36;
 </code></pre>
+<div class="token-preview" style="background:#232B36;color:white"><strong>Primary Text</strong><span>#232B36</span></div>
 <hr>
 <h4>Secondary Text</h4>
 <pre><code class="language-css">--color-text-secondary: #89909A;
 </code></pre>
+<div class="token-preview" style="background:#89909A;color:white"><strong>Secondary Text</strong><span>#89909A</span></div>
 <hr>
 <h4>Muted Text</h4>
 <pre><code class="language-css">--color-text-muted: #89909A;
 </code></pre>
+<div class="token-preview" style="background:#89909A;color:white"><strong>Muted Text</strong><span>#89909A</span></div>
 <hr>
 <h2>Typography</h2>
 <p>書体はOSのシステムフォントに従う。</p>
