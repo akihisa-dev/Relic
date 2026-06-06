@@ -281,6 +281,36 @@
 /* Buttons / Inputs                   */
 /* ────────────────────────────────── */
 
+.sidebar-body:has(> .files-sidebar-section) {
+  overflow: hidden;
+}
+
+.files-sidebar-section {
+  display: grid;
+  gap: 12px;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  height: 100%;
+  min-height: 100%;
+}
+
+.files-sidebar-fixed-controls {
+  display: grid;
+  flex: 0 0 auto;
+  gap: 12px;
+  min-width: 0;
+  position: relative;
+  z-index: 6;
+}
+
+.files-sidebar-scroll-area {
+  align-content: start;
+  display: grid;
+  gap: 8px;
+  min-height: 0;
+  min-width: 0;
+  overflow-y: auto;
+}
+
 .primary-button {
   background: var(--accent);
   border-color: transparent;

@@ -111,69 +111,73 @@ export function FilesSidebar({
   };
 
   return (
-    <div className="sidebar-section">
+    <div className="sidebar-section files-sidebar-section">
       {activeWorkspace ? (
         <>
-          <FilesSidebarSearch
-            onSearchFrontmatterFieldChange={onSearchFrontmatterFieldChange}
-            onSearchModeChange={onSearchModeChange}
-            onSearchQueryChange={onSearchQueryChange}
-            searchError={searchError}
-            searchFocusRequest={searchFocusRequest}
-            searchFrontmatterCandidates={searchFrontmatterCandidates}
-            searchFrontmatterField={searchFrontmatterField}
-            searchFrontmatterFields={searchFrontmatterFields}
-            searchMode={searchMode}
-            searchQuery={searchQuery}
-          />
-          <FilesCreateActions
-            isCreatingFile={isCreatingFile}
-            isCreatingFolder={isCreatingFolder}
-            onCollapseAllFolders={() => requestExpansion("collapse")}
-            onCreateFile={onCreateFile}
-            onCreateFolder={onCreateFolder}
-            onExpandAllFolders={() => requestExpansion("expand")}
-          />
-          {isFilteringFiles ? (
-            <FilesSearchResults
-              error={searchError}
-              frontmatterField={searchFrontmatterField}
-              isSearching={isSearching}
-              limitNotice={searchLimitNotice}
-              mode={searchMode}
-              onOpenFile={onOpenFile}
-              openingFilePath={openingFilePath}
-              query={searchQuery}
-              results={searchResults}
+          <div className="files-sidebar-fixed-controls">
+            <FilesSidebarSearch
+              onSearchFrontmatterFieldChange={onSearchFrontmatterFieldChange}
+              onSearchModeChange={onSearchModeChange}
+              onSearchQueryChange={onSearchQueryChange}
+              searchError={searchError}
+              searchFocusRequest={searchFocusRequest}
+              searchFrontmatterCandidates={searchFrontmatterCandidates}
+              searchFrontmatterField={searchFrontmatterField}
+              searchFrontmatterFields={searchFrontmatterFields}
+              searchMode={searchMode}
+              searchQuery={searchQuery}
             />
-          ) : null}
-          {!isFilteringFiles && workspaceState ? (
-            <FilesSidebarTreeSection
-              expansionRequest={expansionRequest}
-              onDeleteItem={onDeleteItem}
-              onDeleteSelectedItems={() => onDeleteItems(selectedItems)}
-              onCreateFileInFolder={onCreateFileInFolder}
-              onCreateFolderInFolder={onCreateFolderInFolder}
-              onDuplicateFile={onDuplicateFile}
-              onMoveFile={onMoveFile}
-              onMoveFolder={onMoveFolder}
-              onMoveItems={onMoveItems}
-              onOpenFile={onOpenFile}
-              onOpenInOtherPane={onOpenInOtherPane}
-              onRequestExpansion={requestExpansion}
-              onRevealItem={onRevealItem}
-              onRenameItem={onRenameItem}
-              onSelectFolder={onSelectFolder}
-              onSelectItem={handleSelectItem}
-              onTogglePin={onTogglePin}
-              openingFilePath={openingFilePath}
-              openFilePaths={openFilePaths}
-              pinnedPaths={pinnedPaths}
-              selectedItems={selectedItems}
-              selectedPaths={selectedPaths}
-              workspaceState={workspaceState}
+            <FilesCreateActions
+              isCreatingFile={isCreatingFile}
+              isCreatingFolder={isCreatingFolder}
+              onCollapseAllFolders={() => requestExpansion("collapse")}
+              onCreateFile={onCreateFile}
+              onCreateFolder={onCreateFolder}
+              onExpandAllFolders={() => requestExpansion("expand")}
             />
-          ) : null}
+          </div>
+          <div className="files-sidebar-scroll-area">
+            {isFilteringFiles ? (
+              <FilesSearchResults
+                error={searchError}
+                frontmatterField={searchFrontmatterField}
+                isSearching={isSearching}
+                limitNotice={searchLimitNotice}
+                mode={searchMode}
+                onOpenFile={onOpenFile}
+                openingFilePath={openingFilePath}
+                query={searchQuery}
+                results={searchResults}
+              />
+            ) : null}
+            {!isFilteringFiles && workspaceState ? (
+              <FilesSidebarTreeSection
+                expansionRequest={expansionRequest}
+                onDeleteItem={onDeleteItem}
+                onDeleteSelectedItems={() => onDeleteItems(selectedItems)}
+                onCreateFileInFolder={onCreateFileInFolder}
+                onCreateFolderInFolder={onCreateFolderInFolder}
+                onDuplicateFile={onDuplicateFile}
+                onMoveFile={onMoveFile}
+                onMoveFolder={onMoveFolder}
+                onMoveItems={onMoveItems}
+                onOpenFile={onOpenFile}
+                onOpenInOtherPane={onOpenInOtherPane}
+                onRequestExpansion={requestExpansion}
+                onRevealItem={onRevealItem}
+                onRenameItem={onRenameItem}
+                onSelectFolder={onSelectFolder}
+                onSelectItem={handleSelectItem}
+                onTogglePin={onTogglePin}
+                openingFilePath={openingFilePath}
+                openFilePaths={openFilePaths}
+                pinnedPaths={pinnedPaths}
+                selectedItems={selectedItems}
+                selectedPaths={selectedPaths}
+                workspaceState={workspaceState}
+              />
+            ) : null}
+          </div>
           <FilesWorkspaceActions
             isCreatingWorkspace={isCreatingWorkspace}
             isOpeningWorkspace={isOpeningWorkspace}
