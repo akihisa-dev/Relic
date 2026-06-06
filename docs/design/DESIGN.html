@@ -17,6 +17,8 @@
       --text-secondary: #89909a;
       --white: #ffffff;
       --max: 1500px;
+      --font-ui: system-ui, sans-serif;
+      --font-emphasis: system-ui, sans-serif;
     }
 
     * {
@@ -26,7 +28,7 @@
     html {
       background: var(--bg);
       color: var(--text);
-      font-family: Inter, "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+      font-family: var(--font-ui);
       letter-spacing: 0;
       scroll-behavior: smooth;
     }
@@ -82,7 +84,7 @@
     .metric-value,
     .flow-label {
       color: var(--primary);
-      font-family: "Avenir Next Condensed", "Arial Narrow", Inter, sans-serif;
+      font-family: var(--font-emphasis);
       font-weight: 800;
       letter-spacing: 0.12em;
       text-transform: uppercase;
@@ -95,7 +97,7 @@
 
     .brand-title {
       color: var(--primary);
-      font-family: "Avenir Next Condensed", "Arial Narrow", Inter, sans-serif;
+      font-family: var(--font-emphasis);
       font-size: clamp(48px, 5vw, 74px);
       font-weight: 900;
       letter-spacing: 0.08em;
@@ -106,7 +108,7 @@
 
     .brand-subtitle {
       color: var(--primary);
-      font-family: "Avenir Next Condensed", "Arial Narrow", Inter, sans-serif;
+      font-family: var(--font-emphasis);
       font-size: 22px;
       font-weight: 800;
       letter-spacing: 0.22em;
@@ -220,7 +222,7 @@
     .lead {
       font-size: clamp(34px, 4.3vw, 62px);
       font-weight: 850;
-      letter-spacing: -0.03em;
+      letter-spacing: 0;
       line-height: 1.04;
       margin: 0 0 24px;
       max-width: 760px;
@@ -254,7 +256,7 @@
     .avoid b {
       color: var(--primary);
       display: block;
-      font-family: "Avenir Next Condensed", "Arial Narrow", Inter, sans-serif;
+      font-family: var(--font-emphasis);
       font-size: 17px;
       letter-spacing: 0.08em;
       margin-bottom: 10px;
@@ -353,7 +355,7 @@
     .flow-card h3,
     .panel h3 {
       color: var(--primary);
-      font-family: "Avenir Next Condensed", "Arial Narrow", Inter, sans-serif;
+      font-family: var(--font-emphasis);
       font-size: 20px;
       letter-spacing: 0.08em;
       margin: 0 0 10px;
@@ -434,7 +436,7 @@
     .layout-cell strong {
       color: var(--primary);
       display: block;
-      font-family: "Avenir Next Condensed", "Arial Narrow", Inter, sans-serif;
+      font-family: var(--font-emphasis);
       font-size: 18px;
       letter-spacing: 0.08em;
       margin-bottom: 8px;
@@ -465,7 +467,7 @@
       border-bottom: 1px solid var(--border-strong);
       color: var(--primary);
       display: grid;
-      font-family: "Avenir Next Condensed", "Arial Narrow", Inter, sans-serif;
+      font-family: var(--font-emphasis);
       font-size: 17px;
       font-weight: 800;
       gap: 14px;
@@ -497,10 +499,10 @@
 
     .type-card .big {
       color: var(--primary);
-      font-family: "Avenir Next Condensed", "Arial Narrow", Inter, sans-serif;
+      font-family: var(--font-emphasis);
       font-size: 44px;
       font-weight: 900;
-      letter-spacing: -0.03em;
+      letter-spacing: 0;
       line-height: 1;
       text-transform: uppercase;
     }
@@ -537,7 +539,7 @@
       border: 1px solid var(--border-strong);
       bottom: 0;
       color: var(--primary);
-      font-family: "Avenir Next Condensed", "Arial Narrow", Inter, sans-serif;
+      font-family: var(--font-emphasis);
       font-size: 16px;
       font-weight: 900;
       left: 0;
@@ -566,7 +568,7 @@
 
     .ratio-title {
       color: var(--primary);
-      font-family: "Avenir Next Condensed", "Arial Narrow", Inter, sans-serif;
+      font-family: var(--font-emphasis);
       font-weight: 900;
       letter-spacing: 0.1em;
       text-transform: uppercase;
@@ -832,7 +834,7 @@
 
       <div class="quote">TEXT<br>IS<br>STRUCTURE.<br>THINK<br>IS<br>FUTURE.</div>
       <div class="ratio">
-        <div class="ratio-title">Color Ratio<br><span style="color:var(--text);font-size:13px;font-family:Inter,sans-serif;font-weight:600;letter-spacing:0;text-transform:none">参考比率</span></div>
+        <div class="ratio-title">Color Ratio<br><span style="color:var(--text);font-size:13px;font-family:var(--font-ui);font-weight:600;letter-spacing:0;text-transform:none">参考比率</span></div>
         <div class="bar" aria-label="Color ratio">
           <div style="width:60%;background:#F2F1EE">60%</div>
           <div style="width:20%;background:#E7E7E7">20%</div>
