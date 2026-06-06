@@ -164,16 +164,10 @@ describe("AppSecondarySidebar", () => {
     expect(onClose).toHaveBeenCalled();
   });
 
-  it("renders a resize handle for the AI chat panel", () => {
-    const onResizeStart = vi.fn();
-    renderSecondarySidebar({ isResizing: true, onResizeStart });
+  it("leaves resizing to the surrounding layout boundary", () => {
+    renderSecondarySidebar({ isResizing: true });
 
-    const resizeHandle = screen.getByRole("button", { name: "Resize AI chat" });
     expect(screen.getByLabelText("AI chat")).toHaveClass("secondary-sidebar--resizing");
-    expect(resizeHandle).toHaveClass("secondary-sidebar-resize-handle--active");
-
-    fireEvent.mouseDown(resizeHandle, { clientX: 400 });
-
-    expect(onResizeStart).toHaveBeenCalled();
+    expect(screen.queryByRole("button", { name: "Resize AI chat" })).not.toBeInTheDocument();
   });
 });

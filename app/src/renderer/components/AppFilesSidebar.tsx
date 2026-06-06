@@ -43,9 +43,12 @@ export function AppFilesSidebar({
   startSidebarResize,
   ...filesSidebarProps
 }: AppFilesSidebarProps): ReactElement {
-  const t = useT();
   const heading = sidebarViews.find((view) => view.id === activeSidebarView)?.label;
   const showHeader = activeSidebarView !== "files";
+  const t = useT();
+
+  void isSidebarResizing;
+  void startSidebarResize;
 
   return (
     <aside
@@ -87,12 +90,6 @@ export function AppFilesSidebar({
           />
         ) : null}
       </div>
-      <button
-        aria-label={heading ? `${heading} resize` : "Resize sidebar"}
-        className={`sidebar-resize-handle${isSidebarResizing ? " sidebar-resize-handle--active" : ""}`}
-        onMouseDown={startSidebarResize}
-        type="button"
-      />
     </aside>
   );
 }

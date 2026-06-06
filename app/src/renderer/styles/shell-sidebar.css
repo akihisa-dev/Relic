@@ -41,6 +41,26 @@
   -webkit-app-region: no-drag;
 }
 
+.layout-resize-boundary {
+  appearance: none;
+  align-self: stretch;
+  background: transparent;
+  border: 0;
+  cursor: col-resize;
+  flex: 0 0 8px;
+  margin-left: -4px;
+  margin-right: -4px;
+  min-height: 0;
+  padding: 0;
+  position: relative;
+  touch-action: none;
+  z-index: 30;
+}
+
+.layout-resize-boundary--active {
+  cursor: col-resize;
+}
+
 /* ────────────────────────────────── */
 /* Rail                               */
 /* ────────────────────────────────── */

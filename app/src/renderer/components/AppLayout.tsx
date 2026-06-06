@@ -46,6 +46,14 @@ export function AppLayout({
         <div className="workspace">
           <AppRail {...railProps} />
           <AppFilesSidebar {...filesSidebarProps} />
+          {filesSidebarProps.isSidebarOpen ? (
+            <button
+              aria-label="Resize sidebar"
+              className={`layout-resize-boundary layout-resize-boundary--sidebar${filesSidebarProps.isSidebarResizing ? " layout-resize-boundary--active" : ""}`}
+              onMouseDown={filesSidebarProps.startSidebarResize}
+              type="button"
+            />
+          ) : null}
           <AppEditorWorkspace {...editorWorkspaceProps} />
         </div>
         <AppStatusBar {...statusBarProps} />

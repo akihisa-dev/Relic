@@ -74,7 +74,7 @@ describe("App rail panels", () => {
     await screen.findByText("Notes");
 
     const rightPanel = container.querySelector(".right-panel");
-    const resizeHandle = container.querySelector(".right-panel-resize-handle");
+    const resizeHandle = container.querySelector(".layout-resize-boundary--right-panel");
 
     expect(rightPanel).toBeInstanceOf(HTMLElement);
     expect(resizeHandle).toBeInstanceOf(HTMLElement);
@@ -82,7 +82,7 @@ describe("App rail panels", () => {
     fireEvent.mouseDown(resizeHandle as HTMLElement, { clientX: 500 });
 
     expect(rightPanel).toHaveClass("right-panel--resizing");
-    expect(resizeHandle).toHaveClass("right-panel-resize-handle--active");
+    expect(resizeHandle).toHaveClass("layout-resize-boundary--active");
 
     fireEvent.mouseMove(document, { clientX: -100 });
 
@@ -91,7 +91,7 @@ describe("App rail panels", () => {
     fireEvent.mouseUp(document);
 
     expect(rightPanel).not.toHaveClass("right-panel--resizing");
-    expect(resizeHandle).not.toHaveClass("right-panel-resize-handle--active");
+    expect(resizeHandle).not.toHaveClass("layout-resize-boundary--active");
 
     fireEvent.mouseDown(resizeHandle as HTMLElement, { clientX: 200 });
     fireEvent.mouseMove(document, { clientX: 900 });

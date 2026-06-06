@@ -44,6 +44,9 @@ export function AppRightPanel({
 }: AppRightPanelProps): ReactElement {
   const t = useT();
 
+  void isResizing;
+  void onResizeStart;
+
   return (
     <aside
       aria-label={rightPanelView === "outline" ? t("pane.outline") : t("pane.links")}
@@ -51,12 +54,6 @@ export function AppRightPanel({
       className={`right-panel${isOpen ? "" : " right-panel--closed"}${isResizing ? " right-panel--resizing" : ""}`}
       style={{ flexBasis: isOpen ? width : 0, width: isOpen ? width : 0 }}
     >
-      <button
-        aria-label={t("pane.resizeRightPanel")}
-        className={`right-panel-resize-handle${isResizing ? " right-panel-resize-handle--active" : ""}`}
-        onMouseDown={onResizeStart}
-        type="button"
-      />
       <div className="right-panel-title">
         {rightPanelView === "outline" ? t("pane.outline") : t("pane.links")}
       </div>
