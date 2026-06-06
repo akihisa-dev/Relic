@@ -644,33 +644,19 @@ textarea {
 
 .outline-item-button {
   border-bottom: 1px solid var(--color-border);
-  color: var(--color-primary-dark);
-  display: grid;
-  font-family: var(--font-display);
-  font-size: 14px;
-  font-weight: 700;
-  gap: 12px;
-  grid-template-columns: 34px minmax(0, 1fr);
+  color: var(--color-text);
+  display: block;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
   letter-spacing: 0;
-  min-height: 50px;
-  padding: 0 12px;
-  text-transform: uppercase;
-}
-
-.outline-item-number {
-  align-items: center;
-  background: var(--color-primary-dark);
-  color: #ffffff;
-  display: inline-flex;
-  font-family: var(--font-display);
-  font-size: 16px;
-  font-weight: 800;
-  height: 32px;
-  justify-content: center;
-  min-width: 32px;
+  min-height: 34px;
+  padding: 8px 12px;
+  text-transform: none;
 }
 
 .outline-item-text {
+  display: block;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;

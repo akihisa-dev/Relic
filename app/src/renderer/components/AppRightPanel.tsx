@@ -61,7 +61,7 @@ export function AppRightPanel({
       {rightPanelView === "outline" ? (
         outlineHeadings.length > 0 ? (
           <ul className="outline-list">
-            {outlineHeadings.map((heading, index) => (
+            {outlineHeadings.map((heading) => (
               <li className={`outline-item outline-item--h${heading.level}`} key={`${heading.from}-${heading.level}-${heading.text}`} title={heading.text}>
                 <button
                   aria-label={heading.text}
@@ -69,7 +69,6 @@ export function AppRightPanel({
                   onClick={() => onOutlineHeadingClick(heading)}
                   type="button"
                 >
-                  <span className="outline-item-number">{String(index + 1).padStart(2, "0")}</span>
                   <span className="outline-item-text">{heading.text}</span>
                 </button>
               </li>

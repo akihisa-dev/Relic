@@ -325,15 +325,19 @@ background: var(--color-primary);
 
 ### Outline Navigation
 
-アウトラインは番号付きセクションで表示する。
+アウトラインは番号を付けず、控えめな目次として表示する。
+
+見出し階層は左余白と細い境界線で表現する。
+
+青い番号ブロックや大きな装飾見出しは使用しない。
 
 例:
 
 ```text
-01 Overview
-02 Goals
-03 References
-04 Notes
+Overview
+  Goals
+  References
+    Notes
 ```
 
 ---

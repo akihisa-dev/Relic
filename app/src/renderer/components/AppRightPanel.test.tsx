@@ -74,6 +74,7 @@ describe("AppRightPanel", () => {
       </I18nProvider>
     );
 
+    expect(screen.queryByText("01")).not.toBeInTheDocument();
     screen.getByRole("button", { name: "Overview" }).click();
 
     expect(onOutlineHeadingClick).toHaveBeenCalledWith({ from: 12, level: 2, text: "Overview" });
