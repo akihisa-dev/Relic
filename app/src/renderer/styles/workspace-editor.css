@@ -579,6 +579,7 @@
   background: color-mix(in srgb, var(--surface-subtle) 82%, var(--surface) 18%);
   border: 0;
   border-radius: 0;
+  box-shadow: inset -1px 0 0 color-mix(in srgb, var(--border) 72%, transparent);
   color: var(--text-3);
   cursor: default;
   display: flex;
@@ -615,7 +616,10 @@
 
 .pane-tab--active {
   background: var(--surface);
-  box-shadow: none;
+  box-shadow:
+    inset 1px 0 0 color-mix(in srgb, var(--border) 72%, transparent),
+    inset -1px 0 0 color-mix(in srgb, var(--border) 72%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--border) 72%, transparent);
   color: var(--accent);
   z-index: 2;
 }
