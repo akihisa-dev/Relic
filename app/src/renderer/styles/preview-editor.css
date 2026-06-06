@@ -380,7 +380,7 @@
 .editor-file-title {
   appearance: none;
   background: transparent;
-  border: 1px solid transparent;
+  border: 0;
   box-sizing: border-box;
   color: var(--text);
   display: block;
@@ -391,7 +391,7 @@
   margin: 0 auto;
   min-width: 0;
   overflow: hidden;
-  padding: 36px 32px 14px;
+  padding: 12px 32px 8px;
   text-overflow: ellipsis;
   white-space: nowrap;
   width: 100%;
