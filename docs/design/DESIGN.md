@@ -222,19 +222,23 @@ radius-lg: 8px;
 
 ## Typography
 
+書体はOSのシステムフォントに従う。
+
+Relic固有のブランドフォントは選定しない。
+
+macOS、Windows、Linuxそれぞれの標準的なUIフォントで自然に見えることを優先する。
+
+```css
+font-family: system-ui, sans-serif;
+```
+
 ### Heading
-
-推奨:
-
-- Inter
-- Geist
-- IBM Plex Sans
 
 スタイル:
 
 ```css
 font-weight: 800;
-letter-spacing: -0.03em;
+letter-spacing: 0;
 ```
 
 ---
