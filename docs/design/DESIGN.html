@@ -266,19 +266,10 @@
       background-size: 18px 18px;
     }
 
-    .shape-triangle {
-      background: transparent;
+    .shape-square {
+      background: var(--color-primary);
       border: 0;
-      position: relative;
-    }
-
-    .shape-triangle::before {
-      border-color: transparent transparent var(--color-primary) transparent;
-      border-style: solid;
-      border-width: 0 42px 72px 42px;
-      content: "";
-      height: 0;
-      width: 0;
+      color: white;
     }
 
     .shape-circle {
@@ -501,7 +492,7 @@
 <div class="shape-preview shape-line">Line</div>
 <div class="shape-preview shape-grid-preview">Grid</div>
 <div class="shape-preview">Section Block</div>
-<div class="shape-preview shape-triangle" aria-label="Triangle Accent"></div>
+<div class="shape-preview shape-square" aria-label="Square Accent">Square Accent</div>
 <div class="shape-preview shape-circle">Circular Motif</div>
 </div>
 </div>
@@ -739,7 +730,7 @@ border: 1px solid var(--color-border);
 <p class="sample-title">Decorative Element Samples</p>
 <div class="decorative-sample">
 <div class="diagonal-sample" aria-label="Diagonal line"></div>
-<div class="shape-preview shape-triangle" aria-label="Triangle accent"></div>
+<div class="shape-preview shape-square" aria-label="Square accent">Square</div>
 <div class="circle-guide-sample" aria-label="Circular guide motif"></div>
 <div class="grid-sample" aria-label="Grid lines"></div>
 </div>
