@@ -62,6 +62,8 @@ describe("AppTitleBar", () => {
     expect(editorCss).toMatch(/\.pane\s*\{[^}]*grid-template-rows:\s*auto minmax\(0, 1fr\);/s);
     expect(editorCss).toMatch(/\.pane-tab-bar\s*\{[^}]*gap:\s*0;/s);
     expect(editorCss).toMatch(/\.pane-tab-bar\s*\{[^}]*width:\s*100%;/s);
+    expect(editorCss).toMatch(/\.pane-tabs\s*\{[^}]*-webkit-app-region:\s*no-drag;/s);
+    expect(editorCss).toMatch(/\.pane-tab-bar-shell\s*\{[^}]*-webkit-app-region:\s*no-drag;/s);
     expect(editorCss).toMatch(/\.pane-tabs\s*\{[^}]*overflow:\s*hidden;/s);
     expect(editorCss).toMatch(/\.pane-tab\s*\{[^}]*flex:\s*0 1 220px;/s);
     expect(editorCss).toMatch(/\.pane-tab\s*\{[^}]*max-width:\s*220px;/s);
