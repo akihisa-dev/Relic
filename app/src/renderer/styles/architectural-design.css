@@ -383,7 +383,7 @@ textarea {
   background: color-mix(in srgb, var(--color-surface-alt) 82%, var(--color-surface-elevated) 18%);
   border-color: transparent;
   border-radius: 0;
-  box-shadow: none;
+  box-shadow: inset -1px 0 0 color-mix(in srgb, var(--color-border) 72%, transparent);
   color: var(--color-text-secondary);
   font-family: var(--font-body);
   font-size: 13px;
@@ -401,7 +401,10 @@ textarea {
 .title-bar .pane-tab--active {
   background: var(--color-surface-elevated);
   border-color: transparent;
-  box-shadow: none;
+  box-shadow:
+    inset 1px 0 0 color-mix(in srgb, var(--color-border) 72%, transparent),
+    inset -1px 0 0 color-mix(in srgb, var(--color-border) 72%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--color-border) 72%, transparent);
   color: var(--color-primary-dark);
 }
 

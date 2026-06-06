@@ -229,9 +229,12 @@ describe("AppTitleBar", () => {
     expect(designCss).toMatch(/--title-bar-bg:\s*var\(--color-surface-alt\);/);
     expect(designCss).toMatch(/--surface:\s*var\(--color-surface-elevated\);/);
     expect(designCss).toMatch(/\.title-bar,\s*\.title-bar \.main-area-actions\s*\{[^}]*background:\s*var\(--title-bar-bg\);/s);
-    expect(designCss).toMatch(/\.main-area-actions \.toolbar-btn\.active\s*\{[^}]*box-shadow:\s*none;/s);
     expect(editorCss).toMatch(/\.pane-tab\s*\{[^}]*background:\s*color-mix\(in srgb, var\(--surface-subtle\) 82%, var\(--surface\) 18%\);/s);
+    expect(editorCss).toMatch(/\.pane-tab\s*\{[^}]*box-shadow:\s*inset -1px 0 0 color-mix\(in srgb, var\(--border\) 72%, transparent\);/s);
     expect(editorCss).toMatch(/\.pane-tab--active\s*\{[^}]*background:\s*var\(--surface\);/s);
+    expect(editorCss).toMatch(/\.pane-tab--active\s*\{[^}]*inset 1px 0 0 color-mix\(in srgb, var\(--border\) 72%, transparent\),[^}]*inset -1px 0 0 color-mix\(in srgb, var\(--border\) 72%, transparent\),[^}]*inset 0 1px 0 color-mix\(in srgb, var\(--border\) 72%, transparent\);/s);
+    expect(designCss).toMatch(/\.pane-tab,\s*\.title-bar \.pane-tab\s*\{[^}]*box-shadow:\s*inset -1px 0 0 color-mix\(in srgb, var\(--color-border\) 72%, transparent\);/s);
+    expect(designCss).toMatch(/\.pane-tab--active,\s*\.title-bar \.pane-tab--active\s*\{[^}]*inset 1px 0 0 color-mix\(in srgb, var\(--color-border\) 72%, transparent\),[^}]*inset -1px 0 0 color-mix\(in srgb, var\(--color-border\) 72%, transparent\),[^}]*inset 0 1px 0 color-mix\(in srgb, var\(--color-border\) 72%, transparent\);/s);
   });
 
   it("does not render diagonal blue panel decorations", () => {
