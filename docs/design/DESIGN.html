@@ -375,10 +375,9 @@
       color: white;
     }
 
-    .shape-rounded {
+    .shape-orthogonal {
       background: transparent;
       border: 2px solid var(--color-primary);
-      border-radius: 8px;
       color: var(--color-primary);
     }
 
@@ -387,31 +386,19 @@
       padding: 18px;
     }
 
-    .radius-demo-grid {
+    .corner-demo-grid {
       align-items: end;
       display: flex;
       flex-wrap: wrap;
       gap: 12px;
     }
 
-    .radius-demo {
+    .corner-demo {
       background: var(--color-surface-alt);
       border: 1px solid var(--color-border-strong);
       height: 76px;
       padding: 10px;
       width: 120px;
-    }
-
-    .radius-sm {
-      border-radius: 4px;
-    }
-
-    .radius-md {
-      border-radius: 6px;
-    }
-
-    .radius-lg {
-      border-radius: 8px;
     }
 
     .type-demo h3 {
@@ -491,7 +478,7 @@
 
     .diagonal-sample,
     .grid-sample,
-    .rounded-guide-sample {
+    .orthogonal-guide-sample {
       background: var(--color-surface);
       border: 1px solid var(--color-border);
       height: 92px;
@@ -517,9 +504,8 @@
       background-size: 20px 20px;
     }
 
-    .rounded-guide-sample::before {
+    .orthogonal-guide-sample::before {
       border: 2px solid var(--color-primary);
-      border-radius: 8px;
       content: "";
       height: 54px;
       left: 50%;
@@ -604,7 +590,7 @@
 <div class="shape-preview shape-grid-preview">Grid</div>
 <div class="shape-preview">Section Block</div>
 <div class="shape-preview shape-square" aria-label="Square Accent">Square Accent</div>
-<div class="shape-preview shape-rounded">Rounded Motif</div>
+<div class="shape-preview shape-orthogonal">Orthogonal Motif</div>
 </div>
 </div>
 <h4>Primary</h4>
@@ -617,7 +603,7 @@
 <h4>Secondary</h4>
 <ul>
 <li>Square Accent</li>
-<li>Rounded Rectangle Motif</li>
+<li>Orthogonal Guide Motif</li>
 </ul>
 <p>装飾要素は情報の邪魔にならない範囲で使用する。</p>
 <hr>
@@ -632,18 +618,17 @@ border-color: var(--border-primary);
 <div class="border-demo">1px border / no shadow</div>
 </div>
 <hr>
-<h3>Corner Radius</h3>
-<pre><code class="language-css">radius-sm: 4px;
-radius-md: 6px;
-radius-lg: 8px;
+<h3>Corners</h3>
+<pre><code class="language-css">corner-radius: 0;
 </code></pre>
-<p>大きなラウンド形状は使用しない。</p>
-<div class="visual-sample" aria-label="Corner radius samples">
-<p class="sample-title">Corner Radius Samples</p>
-<div class="radius-demo-grid">
-<div class="radius-demo radius-sm">4px</div>
-<div class="radius-demo radius-md">6px</div>
-<div class="radius-demo radius-lg">8px</div>
+<p>角丸は使用しない。</p>
+<p>矩形、直角、直線の境界を基本とする。</p>
+<div class="visual-sample" aria-label="Corner samples">
+<p class="sample-title">Corner Samples</p>
+<div class="corner-demo-grid">
+<div class="corner-demo">0px</div>
+<div class="corner-demo">Right Angle</div>
+<div class="corner-demo">Square Edge</div>
 </div>
 </div>
 <hr>
@@ -873,14 +858,14 @@ border: 1px solid var(--color-border);
 <div class="decorative-sample">
 <div class="diagonal-sample" aria-label="Diagonal line"></div>
 <div class="shape-preview shape-square" aria-label="Square accent">Square</div>
-<div class="rounded-guide-sample" aria-label="Rounded guide motif"></div>
+<div class="orthogonal-guide-sample" aria-label="Orthogonal guide motif"></div>
 <div class="grid-sample" aria-label="Grid lines"></div>
 </div>
 </div>
 <ul>
 <li>斜線</li>
 <li>四角形アクセント</li>
-<li>角丸ガイドモチーフ</li>
+<li>直角ガイドモチーフ</li>
 <li>グリッドライン</li>
 </ul>
 <p>装飾が情報を上回ってはならない。</p>

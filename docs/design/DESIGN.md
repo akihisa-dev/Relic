@@ -82,7 +82,7 @@ Relicでは、青は鉱物顔料や設計図面の青、白は石灰石や上質
 #### Secondary
 
 - Square Accent
-- Rounded Rectangle Motif
+- Orthogonal Guide Motif
 
 装飾要素は情報の邪魔にならない範囲で使用する。
 
@@ -101,15 +101,15 @@ border-color: var(--border-primary);
 
 ---
 
-### Corner Radius
+### Corners
 
 ```css
-radius-sm: 4px;
-radius-md: 6px;
-radius-lg: 8px;
+corner-radius: 0;
 ```
 
-大きなラウンド形状は使用しない。
+角丸は使用しない。
+
+矩形、直角、直線の境界を基本とする。
 
 ---
 
@@ -384,7 +384,7 @@ border: 1px solid var(--color-border);
 
 - 斜線
 - 四角形アクセント
-- 角丸ガイドモチーフ
+- 直角ガイドモチーフ
 - グリッドライン
 
 装飾が情報を上回ってはならない。
