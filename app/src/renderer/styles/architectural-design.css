@@ -15,9 +15,10 @@
   --color-text: #232b36;
   --color-text-secondary: #89909a;
   --color-text-muted: #89909a;
-  --font-display: "Avenir Next Condensed", "IBM Plex Sans Condensed", "Arial Narrow", "IBM Plex Sans", "Inter", "Geist", sans-serif;
-  --font-body: "Inter", "Geist", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Hiragino Sans", "Yu Gothic", sans-serif;
-  --font-mono: "IBM Plex Mono", "SF Mono", "Menlo", "Consolas", monospace;
+  --font-display: system-ui, sans-serif;
+  --font-body: system-ui, sans-serif;
+  --font-sans: system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   --radius-sm: 4px;
   --radius-md: 6px;
   --radius-lg: 8px;
@@ -778,4 +779,47 @@ textarea {
   margin: 0;
   min-height: 32px;
   padding: 0 18px;
+}
+
+/* ────────────────────────────────── */
+/* DESIGN.md compliance overrides      */
+/* ────────────────────────────────── */
+
+:where(.rail, .sidebar, .secondary-sidebar, .right-panel) {
+  backdrop-filter: none;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--floating-panel-shadow);
+}
+
+:where(.app-title-bar-button, .rail-button, .workspace-action-button, .file-tree-action-button, .pane-tab, .toolbar-button, .tool-card, .tool-section, .settings-panel, .settings-card, .settings-segmented, .ai-workspace-form, .ai-workspace-message--user) {
+  border-radius: var(--radius-lg);
+}
+
+:where(.settings-segmented, .settings-segmented-indicator, .ai-workspace-message--user, .ai-workspace-form, .frontmatter-dialog, .file-search-panel, .command-palette, .quick-switcher, .tool-card, .tool-section) {
+  backdrop-filter: none;
+  box-shadow: none;
+}
+
+.settings-segmented,
+.settings-segmented-indicator {
+  background: var(--color-surface-elevated);
+}
+
+.setting-row input[type="checkbox"],
+.setting-row input[type="checkbox"]::after {
+  box-shadow: none;
+}
+
+.ai-workspace-message--user {
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+}
+
+.ai-workspace-form {
+  background: var(--color-surface-elevated);
+  border-color: var(--color-border);
+}
+
+.ai-workspace-form button {
+  border-radius: var(--radius-md);
 }
