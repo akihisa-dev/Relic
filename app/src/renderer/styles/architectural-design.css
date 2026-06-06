@@ -201,7 +201,7 @@ textarea {
 /* ────────────────────────────────── */
 
 .app-shell {
-  grid-template-rows: 52px minmax(0, 1fr) 32px;
+  grid-template-rows: 42px minmax(0, 1fr) 32px;
 }
 
 .title-bar {

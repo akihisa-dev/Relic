@@ -26,7 +26,7 @@ describe("createMainWindowOptions", () => {
 
     expect(options.icon).toBeUndefined();
     expect(options.titleBarStyle).toBe("hiddenInset");
-    expect(options.trafficLightPosition).toEqual({ x: 10, y: 12 });
+    expect(options.trafficLightPosition).toEqual({ x: 10, y: 9 });
   });
 
   it("Windowsではメニューバーを自動で隠し、アイコンを設定する", () => {
