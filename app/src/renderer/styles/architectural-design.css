@@ -19,9 +19,9 @@
   --font-body: system-ui, sans-serif;
   --font-sans: system-ui, sans-serif;
   --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-  --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-lg: 8px;
+  --radius-sm: 0;
+  --radius-md: 0;
+  --radius-lg: 0;
   --bg: var(--color-bg);
   --texture-grain:
     radial-gradient(circle at 18% 22%, color-mix(in srgb, var(--color-border-strong) 11%, transparent) 0 0.55px, transparent 0.75px),
@@ -235,7 +235,7 @@
 
 ::-webkit-scrollbar-thumb {
   background: color-mix(in srgb, var(--color-primary) 28%, transparent);
-  border-radius: var(--radius-sm);
+  border-radius: 0;
 }
 
 body {
@@ -248,7 +248,7 @@ button,
 input,
 select,
 textarea {
-  border-radius: var(--radius-md);
+  border-radius: 0;
 }
 
 button {
@@ -420,7 +420,7 @@ textarea {
 .main-area-actions .toolbar-btn,
 .files-create-icon-button,
 .chronicle-icon-button {
-  border-radius: var(--radius-sm);
+  border-radius: 0;
 }
 
 .toolbar-btn.active,
@@ -517,7 +517,7 @@ textarea {
 .command-palette {
   background: var(--color-surface-elevated);
   border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-lg);
+  border-radius: 0;
   box-shadow: 0 10px 28px color-mix(in srgb, var(--color-primary-dark) 14%, transparent);
 }
 
@@ -603,7 +603,7 @@ textarea {
 .preview-diagram pre,
 .preview-diagram-panzoom-viewport {
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+  border-radius: 0;
 }
 
 /* ────────────────────────────────── */
@@ -718,14 +718,14 @@ textarea {
 .preview-file-embed {
   background: var(--color-surface-alt);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
+  border-radius: 0;
   box-shadow: none;
 }
 
 .settings-segmented,
 .settings-segmented-indicator {
   backdrop-filter: none;
-  border-radius: var(--radius-md);
+  border-radius: 0;
   box-shadow: none;
 }
 
@@ -739,13 +739,13 @@ textarea {
 }
 
 .settings-segmented-button {
-  border-radius: var(--radius-sm);
+  border-radius: 0;
 }
 
 .setting-row input[type="checkbox"] {
   background: var(--color-surface-elevated);
   border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-sm);
+  border-radius: 0;
   height: 22px;
   width: 38px;
 }
@@ -781,7 +781,7 @@ textarea {
 .frontmatter-field-type,
 .frontmatter-choice-pill,
 .empty-pane-create-button {
-  border-radius: var(--radius-sm);
+  border-radius: 0;
 }
 
 .primary-button,
@@ -792,7 +792,7 @@ textarea {
 .ai-workspace-form button {
   background: var(--color-primary);
   border-color: var(--color-primary);
-  border-radius: var(--radius-md);
+  border-radius: 0;
   color: #ffffff;
 }
 
@@ -849,12 +849,12 @@ textarea {
   background: var(--surface-texture-subtle);
   background-size: var(--texture-size-grain), auto;
   backdrop-filter: none;
-  border-radius: var(--radius-lg);
+  border-radius: 0;
   box-shadow: var(--floating-panel-shadow);
 }
 
 :where(.app-title-bar-button, .rail-button, .workspace-action-button, .file-tree-action-button, .pane-tab, .toolbar-button, .tool-card, .tool-section, .settings-panel, .settings-card, .settings-segmented, .ai-workspace-form, .ai-workspace-message--user, .editor-surface, .panel-tab-surface) {
-  border-radius: var(--radius-lg);
+  border-radius: 0;
 }
 
 :where(.settings-segmented, .settings-segmented-indicator, .ai-workspace-message--user, .ai-workspace-form, .frontmatter-dialog, .file-search-panel, .command-palette, .quick-switcher, .tool-card, .tool-section) {
@@ -886,7 +886,7 @@ textarea {
 }
 
 .ai-workspace-form button {
-  border-radius: var(--radius-md);
+  border-radius: 0;
 }
 
 .editor-surface,
@@ -901,4 +901,10 @@ textarea {
 .settings-card {
   background-image: var(--texture-stone-wash), var(--texture-grain);
   background-size: auto, var(--texture-size-grain);
+}
+
+*,
+*::before,
+*::after {
+  border-radius: 0;
 }

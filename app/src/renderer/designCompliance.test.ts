@@ -25,18 +25,23 @@ describe("DESIGN.md compliance", () => {
     expect(designCss).not.toMatch(/Avenir|IBM Plex|Inter|Geist|Arial Narrow/);
   });
 
-  it("keeps the DESIGN.md radius scale as the design token source", () => {
-    expect(designCss).toContain("--radius-sm: 4px;");
-    expect(designCss).toContain("--radius-md: 6px;");
-    expect(designCss).toContain("--radius-lg: 8px;");
+  it("keeps the DESIGN.md square-corner rule as the design token source", () => {
+    expect(designCss).toContain("--radius-sm: 0;");
+    expect(designCss).toContain("--radius-md: 0;");
+    expect(designCss).toContain("--radius-lg: 0;");
   });
 
   it("adds a final low-gloss compliance layer for chrome and panels", () => {
     expect(designCss).toMatch(/DESIGN\.md compliance overrides/);
     expect(designCss).toMatch(/\.rail,\s*\.sidebar,\s*\.secondary-sidebar,\s*\.right-panel\s*\{[^}]*backdrop-filter:\s*none;/s);
-    expect(designCss).toMatch(/\.rail,\s*\.sidebar,\s*\.secondary-sidebar,\s*\.right-panel\s*\{[^}]*border-radius:\s*var\(--radius-lg\);/s);
+    expect(designCss).toMatch(/\.rail,\s*\.sidebar,\s*\.secondary-sidebar,\s*\.right-panel\s*\{[^}]*border-radius:\s*0;/s);
     expect(designCss).toMatch(/\.settings-segmented,\s*\.settings-segmented-indicator\s*\{[^}]*background:\s*var\(--surface-texture\);/s);
     expect(designCss).toMatch(/\.setting-row input\[type="checkbox"\],\s*\.setting-row input\[type="checkbox"\]::after\s*\{[^}]*box-shadow:\s*none;/s);
+  });
+
+  it("forces app surfaces to square corners", () => {
+    expect(designCss).toMatch(/\*,\s*\*::before,\s*\*::after\s*\{[^}]*border-radius:\s*0;/s);
+    expect(designCss).not.toMatch(/border-radius:\s*var\(--radius-(sm|md|lg)\)/);
   });
 
   it("applies subtle lithomorphic surface texture without image noise assets", () => {
