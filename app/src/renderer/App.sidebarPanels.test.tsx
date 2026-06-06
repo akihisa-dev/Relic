@@ -72,20 +72,18 @@ describe("App sidebar panels", () => {
     expect(screen.getByRole("button", { name: /読書メモ/ })).toBeInTheDocument();
   });
 
-  it("左サイドバーを閉じているときも分割タブは行番号込みのエディタ左端を基準にする", async () => {
+  it("左サイドバーを閉じていてもタブはヘッダーではなくエディタペイン内に出す", async () => {
     useUiStore.setState({ isSidebarOpen: false });
     window.relic = makeRelicApi({
       getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
     });
 
-    const { container } = await renderApp();
+    await renderApp();
 
     await screen.findByText("Notes");
 
-    expect(container.querySelector(".title-bar")).toHaveStyle({
-      "--title-bar-editor-left-offset": "56px",
-      "--title-bar-left-offset": "88px"
-    });
+    expect(document.querySelector(".title-bar .pane-tab")).not.toBeInTheDocument();
+    expect(document.querySelector(".pane .pane-tabs")).toBeInTheDocument();
   });
 
   it("フォルダ右クリックメニューからフォルダ以下と全体を一括開閉できる", async () => {
@@ -264,7 +262,7 @@ describe("App sidebar panels", () => {
       getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
     });
 
-    const { container } = await renderApp();
+    await renderApp();
 
     await screen.findByText("Notes");
 
@@ -275,13 +273,15 @@ describe("App sidebar panels", () => {
 
     expect(useUiStore.getState().isRightPanelOpen).toBe(false);
     expect(useUiStore.getState().rightPanelView).toBe("outline");
-    expect(container.querySelector(".title-bar--right-panel-open .main-area-actions")).not.toBeInTheDocument();
+    expect(document.querySelector(".title-bar .main-area-actions")).not.toBeInTheDocument();
+    expect(document.querySelector(".main-area > .main-area-actions")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "アウトライン" }));
 
     expect(useUiStore.getState().isRightPanelOpen).toBe(true);
     expect(useUiStore.getState().rightPanelView).toBe("outline");
-    expect(container.querySelector(".title-bar--right-panel-open .main-area-actions")).toBeInTheDocument();
+    expect(document.querySelector(".title-bar .main-area-actions")).not.toBeInTheDocument();
+    expect(document.querySelector(".main-area > .main-area-actions")).toBeInTheDocument();
 
     const mainActions = document.querySelector(".main-area-actions");
     expect(mainActions).toBeInstanceOf(HTMLElement);

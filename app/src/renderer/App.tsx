@@ -389,14 +389,10 @@ export function App(): ReactElement {
     sidebarWidth,
     startRightPanelResize,
     startSecondarySidebarResize,
-    startSidebarResize,
-    titleBarEditorLeftOffsetWidth,
-    titleBarLeftOffsetWidth
+    startSidebarResize
   } = useAppLayoutWidths({
     appUiSettings,
-    handleSaveAppUiSettings,
-    isSidebarOpen,
-    isSecondarySidebarOpen
+    handleSaveAppUiSettings
   });
 
   const leftEditorViewRef = useRef<EditorView | null>(null);
@@ -645,7 +641,6 @@ export function App(): ReactElement {
     isWorkspaceRenameHoldingRail,
     leftClosingTabIds,
     leftEditorViewRef,
-    leftPane,
     leftPaneScrollHeading,
     linkContextMenu,
     moveTab,
@@ -669,7 +664,6 @@ export function App(): ReactElement {
     renderPanelTabIcon,
     rightClosingTabIds,
     rightEditorViewRef,
-    rightPane,
     rightPaneScrollHeading,
     rightPanelView: effectiveRightPanelView,
     rightPanelWidth,
@@ -705,9 +699,6 @@ export function App(): ReactElement {
     startSecondarySidebarResize,
     startSidebarResize,
     t,
-    tabs,
-    titleBarLeftOffsetWidth,
-    titleBarEditorLeftOffsetWidth,
     toastMessage,
     toggleSplitWithMotion,
     toggleTabPinned,

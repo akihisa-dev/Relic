@@ -204,23 +204,15 @@ textarea {
   grid-template-rows: 52px minmax(0, 1fr) 32px;
 }
 
-.title-bar,
-.title-bar .main-area-actions {
+.title-bar {
   backdrop-filter: none;
   background: var(--title-bar-bg);
   box-shadow: none;
 }
 
-.title-bar-tabs--has-tabs,
-.title-bar .pane-tabs--has-tabs,
-.title-bar .pane-tabs--has-tabs .pane-tab-bar,
-.title-bar .pane-tab-bar-shell--has-tabs {
+.pane-tab-bar-shell--has-tabs {
   backdrop-filter: none;
   background: var(--title-bar-bg);
-}
-
-.title-bar-tabs--has-tabs {
-  box-shadow: none;
 }
 
 .workspace {
@@ -378,8 +370,7 @@ textarea {
 /* Tabs                               */
 /* ────────────────────────────────── */
 
-.pane-tab,
-.title-bar .pane-tab {
+.pane-tab {
   background: color-mix(in srgb, var(--color-surface-alt) 82%, var(--color-surface-elevated) 18%);
   border-color: transparent;
   border-radius: 0;
@@ -392,13 +383,7 @@ textarea {
   letter-spacing: 0;
 }
 
-.title-bar .pane-tab {
-  background: color-mix(in srgb, var(--color-surface-alt) 82%, var(--color-surface-elevated) 18%);
-  height: 40px;
-}
-
-.pane-tab--active,
-.title-bar .pane-tab--active {
+.pane-tab--active {
   background: var(--color-surface-elevated);
   border-color: transparent;
   box-shadow:
@@ -406,10 +391,6 @@ textarea {
     inset -1px 0 0 color-mix(in srgb, var(--color-border) 72%, transparent),
     inset 0 1px 0 color-mix(in srgb, var(--color-border) 72%, transparent);
   color: var(--color-primary-dark);
-}
-
-.title-bar .pane-tab--active::after {
-  background: var(--color-surface-elevated);
 }
 
 .pane-tab--drop-before::before,

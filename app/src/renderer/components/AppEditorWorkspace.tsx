@@ -6,8 +6,9 @@ import type { AIWorkspaceMessagePreview, AIWorkspaceState } from "../../shared/i
 import type { ResolvedWikiLink } from "../../shared/links";
 import type { AppLinkContextMenu } from "../appLinks";
 import type { HeadingScrollTarget, OutlineHeading } from "../editorDerivedState";
-import type { PaneId, PanelTabKind } from "../store/editorStore";
+import type { FileTab, PaneId, PanelTabKind } from "../store/editorStore";
 import type { RightPanelView, SecondarySidebarView } from "../store/uiStore";
+import { AppMainActions } from "./AppMainActions";
 import { AppRightPanel } from "./AppRightPanel";
 import { AppSecondarySidebar } from "./AppSecondarySidebar";
 import { PaneView } from "./PaneView";
@@ -33,7 +34,11 @@ interface AppEditorWorkspaceProps {
   isSecondarySidebarOpen: boolean;
   isTypewriterMode: boolean;
   leftEditorViewRef: MutableRefObject<EditorView | null>;
+  leftClosingTabIds: Set<string>;
   leftPaneScrollHeading?: HeadingScrollTarget;
+  onCloseAllTabsInPane: (pane: PaneId) => void;
+  onCloseOtherTabs: (pane: PaneId, tabId: string) => void;
+  onCloseTabsToRight: (pane: PaneId, tabId: string) => void;
   onCreateFile: (name: string) => void;
   onAIWorkspaceClearData: () => void;
   onAIWorkspaceApplyOperations: (operationIds?: string[]) => void;
@@ -48,27 +53,43 @@ interface AppEditorWorkspaceProps {
   onFileSaveError: (message: string) => void;
   onLargeMarkdownFallback: (name: string, path: string) => void;
   onOpenFile: (path: string) => void;
+  onOpenInOtherPane: (pane: PaneId, tabId: string) => void;
   onOpenLink: (href: string) => void;
   onOpenWikiLink: (target: string, heading?: string) => void;
   onOutlineHeadingClick: (heading: OutlineHeading) => void;
+  onDuplicateTabFile?: (tabId: string) => void;
+  onPrintPreview: (tab: FileTab) => void;
   onRenameFile: (path: string, name: string) => void;
+  onRevealTabFile?: (tabId: string) => void;
   onRightPanelResizeStart: (event: ReactMouseEvent) => void;
+  onRightPanelViewButton: (view: RightPanelView) => void;
+  onSavePreviewAsPdf: (tab: FileTab) => void;
   onSecondarySidebarClose: () => void;
   onSecondarySidebarResizeStart: (event: ReactMouseEvent) => void;
   onScrollTargetHandled: (pane: PaneId) => void;
   onSetFocusedPane: (pane: PaneId) => void;
+  onSourceModeToggle: () => void;
+  onSplitToggle: () => void;
+  onTabClose: (pane: PaneId, tabId: string) => void;
+  onTabMove: (fromPane: PaneId, toPane: PaneId, tabId: string, targetTabId?: string | null, position?: "before" | "after") => void;
+  onTabSelect: (pane: PaneId, tabId: string) => void;
+  onTogglePinTab?: (tabId: string) => void;
   outlineHeadings: OutlineHeading[];
   outgoingLinks: ResolvedWikiLink[];
   outgoingLinksLimited: boolean;
   renderChartTab: (chartId: string) => ReactNode;
   renderPanelTab: (panel: PanelTabKind) => ReactNode;
+  renderPanelTabIcon: (panel: PanelTabKind) => ReactNode;
   rightEditorViewRef: MutableRefObject<EditorView | null>;
+  rightClosingTabIds: Set<string>;
   rightPaneScrollHeading?: HeadingScrollTarget;
   rightPanelView: RightPanelView;
   rightPanelWidth: number;
   secondarySidebarView: SecondarySidebarView;
   secondarySidebarWidth: number;
   setLinkContextMenu: Dispatch<SetStateAction<AppLinkContextMenu | null>>;
+  showRightPanelLinksControl: boolean;
+  showRightPanelOutlineControl: boolean;
   userDefinedFields: UserDefinedField[];
   workspaceName?: string | null;
   workspacePath?: string | null;
@@ -95,7 +116,11 @@ export function AppEditorWorkspace({
   isSecondarySidebarOpen,
   isTypewriterMode,
   leftEditorViewRef,
+  leftClosingTabIds,
   leftPaneScrollHeading,
+  onCloseAllTabsInPane,
+  onCloseOtherTabs,
+  onCloseTabsToRight,
   onCreateFile,
   onAIWorkspaceClearData,
   onAIWorkspaceApplyOperations,
@@ -110,33 +135,60 @@ export function AppEditorWorkspace({
   onFileSaveError,
   onLargeMarkdownFallback,
   onOpenFile,
+  onOpenInOtherPane,
   onOpenLink,
   onOpenWikiLink,
   onOutlineHeadingClick,
+  onDuplicateTabFile,
+  onPrintPreview,
   onRenameFile,
+  onRevealTabFile,
   onRightPanelResizeStart,
+  onRightPanelViewButton,
+  onSavePreviewAsPdf,
   onSecondarySidebarClose,
   onSecondarySidebarResizeStart,
   onScrollTargetHandled,
   onSetFocusedPane,
+  onSourceModeToggle,
+  onSplitToggle,
+  onTabClose,
+  onTabMove,
+  onTabSelect,
+  onTogglePinTab,
   outlineHeadings,
   outgoingLinks,
   outgoingLinksLimited,
   renderChartTab,
   renderPanelTab,
+  renderPanelTabIcon,
   rightEditorViewRef,
+  rightClosingTabIds,
   rightPaneScrollHeading,
   rightPanelView,
   rightPanelWidth,
   secondarySidebarView,
   secondarySidebarWidth,
   setLinkContextMenu,
+  showRightPanelLinksControl,
+  showRightPanelOutlineControl,
   userDefinedFields,
   workspaceName,
   workspacePath
 }: AppEditorWorkspaceProps): ReactElement {
   return (
     <main className="main-area">
+      <AppMainActions
+        isRightPanelOpen={isRightPanelOpen}
+        isSourceMode={isSourceMode}
+        isSplit={isSplit}
+        onRightPanelViewButton={onRightPanelViewButton}
+        onSourceModeToggle={onSourceModeToggle}
+        onSplitToggle={onSplitToggle}
+        rightPanelView={rightPanelView}
+        showRightPanelLinksControl={showRightPanelLinksControl}
+        showRightPanelOutlineControl={showRightPanelOutlineControl}
+      />
       <div className="editor-layout">
         <AppSecondarySidebar
           aiWorkspaceState={aiWorkspaceState}
@@ -168,25 +220,40 @@ export function AppEditorWorkspace({
               editorSettings={editorSettings}
               focusedPane={focusedPane}
               frontmatterCandidates={frontmatterCandidates}
+              closingTabIds={leftClosingTabIds}
+              isSplitView={isSplit}
               pane="left"
               renderChartTab={renderChartTab}
               renderPanelTab={renderPanelTab}
+              renderPanelTabIcon={renderPanelTabIcon}
               scrollTargetHeading={leftPaneScrollHeading}
               sourceMode={isSourceMode}
               typewriterMode={isTypewriterMode}
               userDefinedFields={userDefinedFields}
               viewRef={leftEditorViewRef}
               workspacePath={workspacePath}
+              onCloseAllTabs={onCloseAllTabsInPane}
+              onCloseOtherTabs={onCloseOtherTabs}
+              onCloseTabsToRight={onCloseTabsToRight}
               onCreateFile={onCreateFile}
+              onDuplicateTabFile={onDuplicateTabFile}
               onEditorAction={onEditorAction}
               onFileSaveError={onFileSaveError}
               onFileSaved={onFileSaved}
               onFocus={() => onSetFocusedPane("left")}
               onLargeMarkdownFallback={onLargeMarkdownFallback}
+              onOpenInOtherPane={onOpenInOtherPane}
               onOpenLink={onOpenLink}
               onOpenWikiLink={onOpenWikiLink}
+              onPrintPreview={onPrintPreview}
               onRenameFile={onRenameFile}
+              onRevealTabFile={onRevealTabFile}
+              onSavePreviewAsPdf={onSavePreviewAsPdf}
               onScrollTargetHandled={() => onScrollTargetHandled("left")}
+              onTabClose={onTabClose}
+              onTabMove={onTabMove}
+              onTabSelect={onTabSelect}
+              onTogglePinTab={onTogglePinTab}
             />
             {isSplit ? (
               <PaneView
@@ -195,25 +262,40 @@ export function AppEditorWorkspace({
                 editorSettings={editorSettings}
                 focusedPane={focusedPane}
                 frontmatterCandidates={frontmatterCandidates}
+                closingTabIds={rightClosingTabIds}
+                isSplitView={isSplit}
                 pane="right"
                 renderChartTab={renderChartTab}
                 renderPanelTab={renderPanelTab}
+                renderPanelTabIcon={renderPanelTabIcon}
                 scrollTargetHeading={rightPaneScrollHeading}
                 sourceMode={isSourceMode}
                 typewriterMode={isTypewriterMode}
                 userDefinedFields={userDefinedFields}
                 viewRef={rightEditorViewRef}
                 workspacePath={workspacePath}
+                onCloseAllTabs={onCloseAllTabsInPane}
+                onCloseOtherTabs={onCloseOtherTabs}
+                onCloseTabsToRight={onCloseTabsToRight}
                 onCreateFile={onCreateFile}
+                onDuplicateTabFile={onDuplicateTabFile}
                 onEditorAction={onEditorAction}
                 onFileSaveError={onFileSaveError}
                 onFileSaved={onFileSaved}
                 onFocus={() => onSetFocusedPane("right")}
                 onLargeMarkdownFallback={onLargeMarkdownFallback}
+                onOpenInOtherPane={onOpenInOtherPane}
                 onOpenLink={onOpenLink}
                 onOpenWikiLink={onOpenWikiLink}
+                onPrintPreview={onPrintPreview}
                 onRenameFile={onRenameFile}
+                onRevealTabFile={onRevealTabFile}
+                onSavePreviewAsPdf={onSavePreviewAsPdf}
                 onScrollTargetHandled={() => onScrollTargetHandled("right")}
+                onTabClose={onTabClose}
+                onTabMove={onTabMove}
+                onTabSelect={onTabSelect}
+                onTogglePinTab={onTogglePinTab}
               />
             ) : null}
           </div>
