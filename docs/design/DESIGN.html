@@ -253,6 +253,86 @@
       font-size: 12px;
     }
 
+    .usage-preview {
+      border: 1px solid var(--color-border);
+      display: grid;
+      gap: 12px;
+      margin: 14px 0 0;
+      padding: 14px;
+    }
+
+    .usage-preview-title {
+      color: var(--color-primary);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .usage-grid {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    }
+
+    .usage-item {
+      background: rgba(255, 255, 255, 0.42);
+      border: 1px solid var(--color-border);
+      min-height: 72px;
+      padding: 12px;
+    }
+
+    .usage-heading {
+      color: var(--color-primary);
+      font-size: 18px;
+      font-weight: 800;
+      line-height: 1.25;
+    }
+
+    .usage-link {
+      color: var(--color-primary);
+      display: inline-block;
+      font-weight: 700;
+      margin-top: 4px;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    .usage-icon {
+      align-items: center;
+      background: var(--color-primary);
+      color: white;
+      display: inline-flex;
+      font-size: 12px;
+      font-weight: 800;
+      height: 32px;
+      justify-content: center;
+      width: 32px;
+    }
+
+    .usage-accent {
+      border-left: 4px solid var(--color-primary);
+      padding-left: 10px;
+    }
+
+    .usage-hover {
+      background: rgba(108, 139, 183, 0.22);
+      border-color: var(--color-accent);
+    }
+
+    .usage-sub-label {
+      color: var(--color-accent);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .usage-boundary {
+      border-top: 3px solid var(--color-accent);
+      padding-top: 12px;
+    }
+
     .shape-preview {
       align-items: center;
       background: var(--color-surface);
@@ -559,7 +639,7 @@ radius-lg: 8px;
 </div>
 </div>
 <hr>
-<h2>Color Palette</h2>
+<h2 id="color-palette">Color Palette</h2>
 <div class="visual-sample" aria-label="Color palette samples">
 <p class="sample-title">Color Samples</p>
 <div class="sample-grid">
@@ -587,6 +667,15 @@ radius-lg: 8px;
 <li>Icons</li>
 <li>Accents</li>
 </ul>
+<div class="usage-preview" aria-label="Primary Blue usage examples">
+<div class="usage-preview-title">Usage Examples</div>
+<div class="usage-grid">
+<div class="usage-item"><div class="usage-heading">Section Header</div></div>
+<div class="usage-item"><a class="usage-link" href="#color-palette">Text Link</a></div>
+<div class="usage-item"><span class="usage-icon">I</span></div>
+<div class="usage-item usage-accent">Accent line for current state</div>
+</div>
+</div>
 <hr>
 <h4>Sub Blue</h4>
 <p>補助アクセントカラー。</p>
@@ -599,6 +688,14 @@ radius-lg: 8px;
 <li>Sub Labels</li>
 <li>Boundary Emphasis</li>
 </ul>
+<div class="usage-preview" aria-label="Sub Blue usage examples">
+<div class="usage-preview-title">Usage Examples</div>
+<div class="usage-grid">
+<div class="usage-item usage-hover">Hover state surface</div>
+<div class="usage-item"><div class="usage-sub-label">Sub Label</div></div>
+<div class="usage-item usage-boundary">Boundary emphasis</div>
+</div>
+</div>
 <hr>
 <h3>Neutral Palette</h3>
 <h4>Background</h4>
