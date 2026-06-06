@@ -427,6 +427,11 @@
 /* ────────────────────────────────── */
 
 .pane-tabs {
+  -webkit-app-region: no-drag;
+  background: transparent;
+  min-width: 0;
+  overflow: hidden;
+  position: relative;
   --pane-tab-lane-height: 42px;
   --pane-tab-inline-padding: 8px;
   --pane-tab-split-edge-padding: 10px;
@@ -457,14 +462,6 @@
   position: relative;
   scrollbar-width: none;
   width: 100%;
-}
-
-.pane-tabs {
-  -webkit-app-region: no-drag;
-  background: transparent;
-  min-width: 0;
-  overflow: hidden;
-  position: relative;
 }
 
 .pane-tabs--has-tabs {
