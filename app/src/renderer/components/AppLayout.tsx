@@ -10,6 +10,7 @@ import { AppRail } from "./AppRail";
 import { AppMainActions } from "./AppMainActions";
 import { AppStatusBar } from "./AppStatusBar";
 import { AppTitleBar } from "./AppTitleBar";
+import { LayoutResizeBoundary } from "./LayoutResizeBoundary";
 
 export interface AppLayoutProps {
   editorWorkspaceProps: ComponentProps<typeof AppEditorWorkspace>;
@@ -60,11 +61,11 @@ export function AppLayout({
           <AppRail {...railProps} />
           <AppFilesSidebar {...filesSidebarProps} />
           {filesSidebarProps.isSidebarOpen ? (
-            <button
+            <LayoutResizeBoundary
               aria-label="Resize sidebar"
-              className={`layout-resize-boundary layout-resize-boundary--sidebar${filesSidebarProps.isSidebarResizing ? " layout-resize-boundary--active" : ""}`}
-              onMouseDown={filesSidebarProps.startSidebarResize}
-              type="button"
+              isActive={filesSidebarProps.isSidebarResizing}
+              onResizeStart={filesSidebarProps.startSidebarResize}
+              side="sidebar"
             />
           ) : null}
           <AppEditorWorkspace {...editorWorkspaceProps} />

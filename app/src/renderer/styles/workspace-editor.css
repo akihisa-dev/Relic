@@ -426,6 +426,23 @@
 /* Pane tab bar                        */
 /* ────────────────────────────────── */
 
+.pane-tabs {
+  --pane-tab-lane-height: 42px;
+  --pane-tab-inline-padding: 8px;
+  --pane-tab-split-edge-padding: 10px;
+  --pane-tab-width: 220px;
+  --pane-tab-fit-width: 104px;
+  --pane-tab-split-width: 180px;
+  --pane-tab-min-width: 64px;
+  --pane-tab-split-min-width: 48px;
+  --pane-tab-height: 40px;
+  --pane-tab-padding-inline: 8px;
+  --pane-tab-close-size: 18px;
+  --pane-tab-split-close-size: 16px;
+  --pane-tab-drop-indicator-width: 3px;
+  --pane-tab-drop-indicator-inset: 4px;
+}
+
 .pane-tab-bar {
   align-items: flex-start;
   background: transparent;
@@ -477,7 +494,7 @@
   border-bottom: 0;
   display: flex;
   gap: 0;
-  height: 42px;
+  height: var(--pane-tab-lane-height);
   min-width: 0;
   overflow: hidden;
   padding: 0;
@@ -489,17 +506,17 @@
 }
 
 .panes-container--split .pane-tab-bar-shell {
-  padding-inline: 8px;
+  padding-inline: var(--pane-tab-inline-padding);
 }
 
 .panes-container--split .pane-tabs--left .pane-tab-bar-shell {
   padding-left: 0;
-  padding-right: 10px;
+  padding-right: var(--pane-tab-split-edge-padding);
 }
 
 .panes-container--split .pane-tabs--right .pane-tab-bar-shell {
   padding-left: 0;
-  padding-right: 10px;
+  padding-right: var(--pane-tab-split-edge-padding);
 }
 
 .panes-container--split .pane-tab-bar {
@@ -507,14 +524,14 @@
 }
 
 .panes-container--split .pane-tab {
-  flex: 0 1 180px;
+  flex: 0 1 var(--pane-tab-split-width);
   max-width: 100%;
-  min-width: 48px;
+  min-width: var(--pane-tab-split-min-width);
 }
 
 .panes-container--split .pane-tab-close {
-  flex-basis: 16px;
-  width: 16px;
+  flex-basis: var(--pane-tab-split-close-size);
+  width: var(--pane-tab-split-close-size);
 }
 
 .pane-tab-bar-shell::after {
@@ -568,14 +585,14 @@
   color: var(--text-3);
   cursor: default;
   display: flex;
-  flex: 0 1 220px;
+  flex: 0 1 var(--pane-tab-width);
   font-size: 13px;
   font-weight: 700;
   gap: 6px;
-  height: 40px;
-  max-width: 220px;
-  min-width: 64px;
-  padding: 0 8px;
+  height: var(--pane-tab-height);
+  max-width: var(--pane-tab-width);
+  min-width: var(--pane-tab-min-width);
+  padding: 0 var(--pane-tab-padding-inline);
   position: relative;
   transition:
     background-color 140ms ease,
@@ -591,7 +608,7 @@
 }
 
 .pane-tab-bar--fit .pane-tab {
-  flex-basis: 104px;
+  flex-basis: var(--pane-tab-fit-width);
 }
 
 .pane-tab:hover:not(.pane-tab--active):not(.pane-tab--closing) {
@@ -622,26 +639,26 @@
 .pane-tab-bar--drop-end::after {
   background: var(--accent);
   border-radius: 999px;
-  bottom: 4px;
+  bottom: var(--pane-tab-drop-indicator-inset);
   content: "";
   position: absolute;
-  top: 4px;
-  width: 3px;
+  top: var(--pane-tab-drop-indicator-inset);
+  width: var(--pane-tab-drop-indicator-width);
   z-index: 5;
 }
 
 .pane-tab--drop-before::before {
-  left: -3px;
+  left: calc(var(--pane-tab-drop-indicator-width) * -1);
 }
 
 .pane-tab--drop-after::after {
-  right: -3px;
+  right: calc(var(--pane-tab-drop-indicator-width) * -1);
 }
 
 .pane-tab-bar--drop-end::after {
   align-self: stretch;
-  flex: 0 0 3px;
-  margin: 4px 0;
+  flex: 0 0 var(--pane-tab-drop-indicator-width);
+  margin: var(--pane-tab-drop-indicator-inset) 0;
   position: static;
 }
 
@@ -707,7 +724,7 @@
   color: var(--text-3);
   display: inline-flex;
   flex: 0 0 auto;
-  height: 18px;
+  height: var(--pane-tab-close-size);
   justify-content: center;
   min-height: 0;
   padding: 0;
@@ -715,7 +732,7 @@
     background-color var(--motion-fast) var(--ease-standard),
     color var(--motion-fast) var(--ease-standard),
     transform var(--motion-fast) var(--ease-press);
-  width: 18px;
+  width: var(--pane-tab-close-size);
 }
 
 .pane-tab-close > svg {

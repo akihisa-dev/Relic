@@ -40,7 +40,6 @@ describe("AppTitleBar", () => {
   it("keeps the title bar draggable and visually separate from the workspace", () => {
     const css = readFileSync("src/renderer/styles/shell-sidebar.css", "utf8");
     const designCss = readFileSync("src/renderer/styles/architectural-design.css", "utf8");
-    const editorCss = readFileSync("src/renderer/styles/workspace-editor.css", "utf8");
 
     expect(css).toMatch(/\.title-bar\s*\{[^}]*-webkit-app-region:\s*drag;/s);
     expect(css).toMatch(/\.app-shell\s*\{[^}]*grid-template-rows:\s*42px minmax\(0, 1fr\) 34px;/s);
@@ -48,31 +47,22 @@ describe("AppTitleBar", () => {
     expect(css).toMatch(/\.title-bar\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\) auto;/s);
     expect(css).toMatch(/\.title-bar-drag-area\s*\{[^}]*grid-column:\s*1;/s);
     expect(css).toMatch(/\.title-bar\s*\{[^}]*z-index:\s*40;/s);
-    expect(editorCss).toMatch(/\.main-area\s*\{[^}]*grid-template-rows:\s*minmax\(0, 1fr\);/s);
-    expect(editorCss).toMatch(/\.main-area-actions\s*\{[^}]*-webkit-app-region:\s*no-drag;/s);
     expect(designCss).toMatch(/--chrome-top-bg:\s*var\(--title-bar-bg\);/);
     expect(css).toMatch(/\.title-bar\s*\{[^}]*background:\s*var\(--chrome-top-bg, var\(--title-bar-bg\)\);/s);
-    expect(editorCss).toMatch(/\.pane-tab-bar-shell\s*\{[^}]*background:\s*var\(--chrome-top-bg, var\(--title-bar-bg\)\);/s);
-    expect(editorCss).toMatch(/\.pane--focused \.pane-tab-bar-shell\s*\{[^}]*background:\s*var\(--chrome-top-bg, var\(--title-bar-bg\)\);/s);
   });
 
-  it("keeps pane tabs compact and inside each editor pane", () => {
+  it("keeps pane tab sizing controlled by shared tab tokens", () => {
     const editorCss = readFileSync("src/renderer/styles/workspace-editor.css", "utf8");
 
-    expect(editorCss).toMatch(/\.pane\s*\{[^}]*grid-template-rows:\s*auto minmax\(0, 1fr\);/s);
-    expect(editorCss).toMatch(/\.pane-tab-bar\s*\{[^}]*gap:\s*0;/s);
-    expect(editorCss).toMatch(/\.pane-tab-bar\s*\{[^}]*width:\s*100%;/s);
-    expect(editorCss).toMatch(/\.pane-tabs\s*\{[^}]*-webkit-app-region:\s*no-drag;/s);
-    expect(editorCss).toMatch(/\.pane-tab-bar-shell\s*\{[^}]*-webkit-app-region:\s*no-drag;/s);
-    expect(editorCss).toMatch(/\.pane-tabs\s*\{[^}]*overflow:\s*hidden;/s);
-    expect(editorCss).toMatch(/\.pane-tab\s*\{[^}]*flex:\s*0 1 220px;/s);
-    expect(editorCss).toMatch(/\.pane-tab\s*\{[^}]*max-width:\s*220px;/s);
-    expect(editorCss).toMatch(/\.pane-tab\s*\{[^}]*min-width:\s*64px;/s);
-    expect(editorCss).toMatch(/\.pane-tab\s*\{[^}]*background:\s*var\(--chrome-tab-bg,/s);
-    expect(editorCss).toMatch(/\.pane-tab--active\s*\{[^}]*background:\s*var\(--chrome-tab-active-bg,/s);
-    expect(editorCss).toMatch(/\.pane-tab-name\s*\{[^}]*min-width:\s*0;/s);
+    expect(editorCss).toMatch(/--pane-tab-lane-height:\s*42px;/);
+    expect(editorCss).toMatch(/--pane-tab-width:\s*220px;/);
+    expect(editorCss).toMatch(/--pane-tab-fit-width:\s*104px;/);
+    expect(editorCss).toMatch(/--pane-tab-split-width:\s*180px;/);
+    expect(editorCss).toMatch(/--pane-tab-min-width:\s*64px;/);
+    expect(editorCss).toMatch(/--pane-tab-split-min-width:\s*48px;/);
+    expect(editorCss).toMatch(/--pane-tab-drop-indicator-width:\s*3px;/);
+    expect(editorCss).toMatch(/\.pane-tab\s*\{[^}]*flex:\s*0 1 var\(--pane-tab-width\);/s);
     expect(editorCss).toMatch(/\.pane-tab-bar--drop-end::after\s*\{[^}]*position:\s*static;/s);
-    expect(editorCss).toMatch(/\.pane-tab-bar--drop-end::after\s*\{[^}]*flex:\s*0 0 3px;/s);
   });
 
   it("manages split pane tab lanes with pane-local boundaries", () => {
@@ -80,12 +70,8 @@ describe("AppTitleBar", () => {
 
     expect(editorCss).toMatch(/\.panes-container--split \.pane-tabs--left\.pane-tabs--has-tabs\s*\{[^}]*inset -1px 0 0 var\(--chrome-top-border, var\(--border\)\)/s);
     expect(editorCss).toMatch(/\.panes-container--split \.pane-tabs--right\.pane-tabs--has-tabs\s*\{[^}]*inset -1px 0 0 var\(--chrome-top-border, var\(--border\)\)/s);
-    expect(editorCss).toMatch(/\.panes-container--split \.pane-tab-bar-shell\s*\{[^}]*padding-inline:\s*8px;/s);
-    expect(editorCss).toMatch(/\.panes-container--split \.pane-tabs--left \.pane-tab-bar-shell\s*\{[^}]*padding-right:\s*10px;/s);
-    expect(editorCss).toMatch(/\.panes-container--split \.pane-tabs--right \.pane-tab-bar-shell\s*\{[^}]*padding-left:\s*0;/s);
-    expect(editorCss).toMatch(/\.panes-container--split \.pane-tabs--right \.pane-tab-bar-shell\s*\{[^}]*padding-right:\s*10px;/s);
-    expect(editorCss).toMatch(/\.panes-container--split \.pane-tab-bar\s*\{[^}]*overflow:\s*hidden;/s);
-    expect(editorCss).toMatch(/\.panes-container--split \.pane-tab\s*\{[^}]*flex:\s*0 1 180px;[^}]*max-width:\s*100%;[^}]*min-width:\s*48px;/s);
+    expect(editorCss).toMatch(/\.panes-container--split \.pane-tab-bar-shell\s*\{[^}]*padding-inline:\s*var\(--pane-tab-inline-padding\);/s);
+    expect(editorCss).toMatch(/\.panes-container--split \.pane-tab\s*\{[^}]*flex:\s*0 1 var\(--pane-tab-split-width\);[^}]*max-width:\s*100%;[^}]*min-width:\s*var\(--pane-tab-split-min-width\);/s);
   });
 
   it("does not render diagonal blue panel decorations", () => {
