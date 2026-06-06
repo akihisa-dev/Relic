@@ -7,6 +7,7 @@ import type { RightPanelView } from "../store/uiStore";
 import { PaneTabs } from "./PaneTabs";
 
 interface AppTitleBarProps {
+  editorLeftOffsetWidth: number;
   isRightPanelOpen: boolean;
   isSourceMode: boolean;
   isSplit: boolean;
@@ -39,6 +40,7 @@ interface AppTitleBarProps {
 }
 
 export function AppTitleBar({
+  editorLeftOffsetWidth,
   isRightPanelOpen,
   isSourceMode,
   isSplit,
@@ -75,6 +77,7 @@ export function AppTitleBar({
   const hasTitleBarTabs = leftPane.tabIds.length > 0 || (isSplit && rightPane.tabIds.length > 0);
   const style = {
     "--title-bar-action-width": `${isRightPanelOpen ? rightPanelWidth : 208}px`,
+    "--title-bar-editor-left-offset": `${editorLeftOffsetWidth}px`,
     "--title-bar-left-offset": `${leftOffsetWidth}px`
   } as CSSProperties;
 

@@ -181,6 +181,7 @@ export interface AppLayoutPropsInput {
   t: Translator;
   tabs: TitleBarProps["tabs"];
   titleBarLeftOffsetWidth: TitleBarProps["leftOffsetWidth"];
+  titleBarEditorLeftOffsetWidth: TitleBarProps["editorLeftOffsetWidth"];
   toastMessage: OverlaysProps["toastMessage"];
   toggleSplitWithMotion: TitleBarProps["onSplitToggle"];
   toggleTabPinned: TitleBarProps["onTogglePinTab"];

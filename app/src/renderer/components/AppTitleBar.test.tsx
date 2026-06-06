@@ -32,6 +32,7 @@ function renderTitleBar(overrides: Partial<Parameters<typeof AppTitleBar>[0]> = 
     [fileTab.id]: { ...fileTab, isPinned: true }
   };
   const props: Parameters<typeof AppTitleBar>[0] = {
+    editorLeftOffsetWidth: 88,
     isRightPanelOpen: false,
     isSourceMode: false,
     isSplit: false,
@@ -192,6 +193,8 @@ describe("AppTitleBar", () => {
     const editorCss = readFileSync("src/renderer/styles/workspace-editor.css", "utf8");
 
     expect(shellCss).toMatch(/\.title-bar-tabs\s*\{[^}]*overflow:\s*hidden;/s);
+    expect(shellCss).toMatch(/\.title-bar-tabs--split\s*\{[^}]*margin-left:\s*calc\(var\(--title-bar-editor-left-offset, var\(--title-bar-left-offset, 88px\)\) - var\(--title-bar-left-offset, 88px\)\);/s);
+    expect(shellCss).toMatch(/\.title-bar-tabs--split\s*\{[^}]*width:\s*calc\(100% \+ var\(--title-bar-left-offset, 88px\) - var\(--title-bar-editor-left-offset, var\(--title-bar-left-offset, 88px\)\)\);/s);
     expect(editorCss).toMatch(/\.title-bar-tabs--split \.pane-tabs--left\.pane-tabs--has-tabs\s*\{[^}]*inset -1px 0 0 var\(--border\)/s);
     expect(editorCss).toMatch(/\.title-bar-tabs--split \.pane-tabs--right\.pane-tabs--has-tabs\s*\{[^}]*inset 1px 0 0 var\(--border\)/s);
     expect(editorCss).toMatch(/\.title-bar-tabs--split \.pane-tab-bar-shell\s*\{[^}]*padding-inline:\s*8px;/s);

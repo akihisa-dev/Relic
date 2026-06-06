@@ -1,7 +1,7 @@
 import { useMemo, type MouseEvent as ReactMouseEvent } from "react";
 
 import { coworkPanelMaxWidth, coworkPanelMinWidth, type AppUiSettings } from "../../shared/ipc";
-import { titleBarLeftOffset } from "../appShellModel";
+import { titleBarEditorLeftOffset, titleBarLeftOffset } from "../appShellModel";
 import { useSidebarResize } from "./useSidebarResize";
 
 const RAIL_WIDTH = 56;
@@ -31,6 +31,7 @@ export function useAppLayoutWidths({
   startRightPanelResize: (event: ReactMouseEvent) => void;
   startSecondarySidebarResize: (event: ReactMouseEvent) => void;
   startSidebarResize: (event: ReactMouseEvent) => void;
+  titleBarEditorLeftOffsetWidth: number;
   titleBarLeftOffsetWidth: number;
 } {
   const { sidebarWidth, isSidebarResizing, startSidebarResize } = useSidebarResize({
@@ -71,6 +72,16 @@ export function useAppLayoutWidths({
     ),
     [isSecondarySidebarOpen, isSidebarOpen, secondarySidebarWidth, sidebarWidth]
   );
+  const titleBarEditorLeftOffsetWidth = useMemo(
+    () => titleBarEditorLeftOffset(
+      RAIL_WIDTH,
+      isSidebarOpen ? sidebarWidth : 0,
+      WORKSPACE_HORIZONTAL_PADDING,
+      FLOATING_PANEL_GAP,
+      isSecondarySidebarOpen ? secondarySidebarWidth : 0
+    ),
+    [isSecondarySidebarOpen, isSidebarOpen, secondarySidebarWidth, sidebarWidth]
+  );
 
   return {
     isRightPanelResizing,
@@ -82,6 +93,7 @@ export function useAppLayoutWidths({
     startRightPanelResize,
     startSecondarySidebarResize,
     startSidebarResize,
+    titleBarEditorLeftOffsetWidth,
     titleBarLeftOffsetWidth
   };
 }
