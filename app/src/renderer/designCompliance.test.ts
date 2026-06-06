@@ -33,9 +33,20 @@ describe("DESIGN.md compliance", () => {
 
   it("adds a final low-gloss compliance layer for chrome and panels", () => {
     expect(designCss).toMatch(/DESIGN\.md compliance overrides/);
-    expect(designCss).toMatch(/:where\(\.rail, \.sidebar, \.secondary-sidebar, \.right-panel\)\s*\{[^}]*backdrop-filter:\s*none;/s);
-    expect(designCss).toMatch(/:where\(\.rail, \.sidebar, \.secondary-sidebar, \.right-panel\)\s*\{[^}]*border-radius:\s*var\(--radius-lg\);/s);
-    expect(designCss).toMatch(/\.settings-segmented,\s*\.settings-segmented-indicator\s*\{[^}]*background:\s*var\(--color-surface-elevated\);/s);
+    expect(designCss).toMatch(/\.rail,\s*\.sidebar,\s*\.secondary-sidebar,\s*\.right-panel\s*\{[^}]*backdrop-filter:\s*none;/s);
+    expect(designCss).toMatch(/\.rail,\s*\.sidebar,\s*\.secondary-sidebar,\s*\.right-panel\s*\{[^}]*border-radius:\s*var\(--radius-lg\);/s);
+    expect(designCss).toMatch(/\.settings-segmented,\s*\.settings-segmented-indicator\s*\{[^}]*background:\s*var\(--surface-texture\);/s);
     expect(designCss).toMatch(/\.setting-row input\[type="checkbox"\],\s*\.setting-row input\[type="checkbox"\]::after\s*\{[^}]*box-shadow:\s*none;/s);
+  });
+
+  it("applies subtle lithomorphic surface texture without image noise assets", () => {
+    expect(designCss).toMatch(/--texture-grain:\s*[\s\S]*radial-gradient/);
+    expect(designCss).toMatch(/--texture-fibers:\s*[\s\S]*linear-gradient/);
+    expect(designCss).toMatch(/--texture-stone-wash:\s*[\s\S]*linear-gradient/);
+    expect(designCss).toMatch(/--surface-texture:\s*[\s\S]*var\(--texture-stone-wash\),[\s\S]*var\(--texture-grain\),[\s\S]*var\(--color-surface-elevated\);/);
+    expect(designCss).toMatch(/body\s*\{[^}]*background:\s*var\(--app-bg\);/s);
+    expect(designCss).toMatch(/\.rail,\s*\.sidebar,\s*\.secondary-sidebar,\s*\.right-panel\s*\{[^}]*background:\s*var\(--surface-texture-subtle\);/s);
+    expect(designCss).toMatch(/\.editor-surface,\s*\.panel-tab-surface,\s*\.preview,\s*\.cm-editor,\s*\.frontmatter-field-card,\s*\.frontmatter-field-add,\s*\.frontmatter-format-guide,\s*\.tool-card,\s*\.tool-section,\s*\.settings-card\s*\{[^}]*background-image:\s*var\(--texture-stone-wash\), var\(--texture-grain\);/s);
+    expect(designCss).not.toMatch(/url\([^)]*noise/i);
   });
 });

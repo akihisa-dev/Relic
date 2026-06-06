@@ -23,10 +23,30 @@
   --radius-md: 6px;
   --radius-lg: 8px;
   --bg: var(--color-bg);
+  --texture-grain:
+    radial-gradient(circle at 18% 22%, color-mix(in srgb, var(--color-border-strong) 11%, transparent) 0 0.55px, transparent 0.75px),
+    radial-gradient(circle at 72% 64%, color-mix(in srgb, var(--color-border) 12%, transparent) 0 0.45px, transparent 0.7px);
+  --texture-fibers:
+    linear-gradient(117deg, transparent 0 46%, color-mix(in srgb, var(--color-border) 9%, transparent) 47%, transparent 49%),
+    linear-gradient(23deg, transparent 0 61%, color-mix(in srgb, #ffffff 24%, transparent) 62%, transparent 64%);
+  --texture-stone-wash:
+    linear-gradient(180deg, color-mix(in srgb, #ffffff 18%, transparent), transparent 34%),
+    linear-gradient(90deg, color-mix(in srgb, var(--color-border) 10%, transparent), transparent 28%, color-mix(in srgb, var(--color-border-strong) 6%, transparent) 76%, transparent);
+  --texture-size-grain: 11px 13px, 17px 19px;
+  --texture-size-fibers: 29px 31px, 37px 41px;
   --app-bg:
+    var(--texture-grain),
+    var(--texture-fibers),
     linear-gradient(90deg, rgba(50, 97, 161, 0.035) 1px, transparent 1px),
     linear-gradient(rgba(50, 97, 161, 0.03) 1px, transparent 1px),
     var(--color-bg);
+  --surface-texture:
+    var(--texture-stone-wash),
+    var(--texture-grain),
+    var(--color-surface-elevated);
+  --surface-texture-subtle:
+    var(--texture-grain),
+    var(--color-surface);
   --surface: var(--color-surface-elevated);
   --surface-raised: var(--color-surface-elevated);
   --surface-subtle: var(--color-surface);
@@ -78,10 +98,28 @@
   --color-text-secondary: #b8c6d4;
   --color-text-muted: #7f91a4;
   --bg: var(--color-bg);
+  --texture-grain:
+    radial-gradient(circle at 18% 22%, color-mix(in srgb, var(--color-border-strong) 16%, transparent) 0 0.55px, transparent 0.75px),
+    radial-gradient(circle at 72% 64%, color-mix(in srgb, var(--color-border) 16%, transparent) 0 0.45px, transparent 0.7px);
+  --texture-fibers:
+    linear-gradient(117deg, transparent 0 46%, color-mix(in srgb, var(--color-border) 8%, transparent) 47%, transparent 49%),
+    linear-gradient(23deg, transparent 0 61%, color-mix(in srgb, #ffffff 6%, transparent) 62%, transparent 64%);
+  --texture-stone-wash:
+    linear-gradient(180deg, color-mix(in srgb, #ffffff 5%, transparent), transparent 34%),
+    linear-gradient(90deg, color-mix(in srgb, var(--color-border) 8%, transparent), transparent 28%, color-mix(in srgb, var(--color-border-strong) 8%, transparent) 76%, transparent);
   --app-bg:
+    var(--texture-grain),
+    var(--texture-fibers),
     linear-gradient(90deg, rgba(143, 214, 255, 0.05) 1px, transparent 1px),
     linear-gradient(rgba(143, 214, 255, 0.045) 1px, transparent 1px),
     var(--color-bg);
+  --surface-texture:
+    var(--texture-stone-wash),
+    var(--texture-grain),
+    var(--color-surface-elevated);
+  --surface-texture-subtle:
+    var(--texture-grain),
+    var(--color-surface);
   --surface: var(--color-surface-elevated);
   --surface-raised: var(--color-surface-elevated);
   --surface-subtle: var(--color-surface);
@@ -131,10 +169,28 @@
     --color-text-secondary: #b8c6d4;
     --color-text-muted: #7f91a4;
     --bg: var(--color-bg);
+    --texture-grain:
+      radial-gradient(circle at 18% 22%, color-mix(in srgb, var(--color-border-strong) 16%, transparent) 0 0.55px, transparent 0.75px),
+      radial-gradient(circle at 72% 64%, color-mix(in srgb, var(--color-border) 16%, transparent) 0 0.45px, transparent 0.7px);
+    --texture-fibers:
+      linear-gradient(117deg, transparent 0 46%, color-mix(in srgb, var(--color-border) 8%, transparent) 47%, transparent 49%),
+      linear-gradient(23deg, transparent 0 61%, color-mix(in srgb, #ffffff 6%, transparent) 62%, transparent 64%);
+    --texture-stone-wash:
+      linear-gradient(180deg, color-mix(in srgb, #ffffff 5%, transparent), transparent 34%),
+      linear-gradient(90deg, color-mix(in srgb, var(--color-border) 8%, transparent), transparent 28%, color-mix(in srgb, var(--color-border-strong) 8%, transparent) 76%, transparent);
     --app-bg:
+      var(--texture-grain),
+      var(--texture-fibers),
       linear-gradient(90deg, rgba(143, 214, 255, 0.05) 1px, transparent 1px),
       linear-gradient(rgba(143, 214, 255, 0.045) 1px, transparent 1px),
       var(--color-bg);
+    --surface-texture:
+      var(--texture-stone-wash),
+      var(--texture-grain),
+      var(--color-surface-elevated);
+    --surface-texture-subtle:
+      var(--texture-grain),
+      var(--color-surface);
     --surface: var(--color-surface-elevated);
     --surface-raised: var(--color-surface-elevated);
     --surface-subtle: var(--color-surface);
@@ -183,6 +239,7 @@
 }
 
 body {
+  background: var(--app-bg);
   color: var(--color-text);
   font-size: 13px;
 }
@@ -207,7 +264,7 @@ button:not(:disabled):hover {
 input,
 select,
 textarea {
-  background: var(--color-surface-elevated);
+  background: var(--surface-texture);
   border: 1px solid var(--color-border);
   color: var(--color-text);
 }
@@ -785,13 +842,18 @@ textarea {
 /* DESIGN.md compliance overrides      */
 /* ────────────────────────────────── */
 
-:where(.rail, .sidebar, .secondary-sidebar, .right-panel) {
+.rail,
+.sidebar,
+.secondary-sidebar,
+.right-panel {
+  background: var(--surface-texture-subtle);
+  background-size: var(--texture-size-grain), auto;
   backdrop-filter: none;
   border-radius: var(--radius-lg);
   box-shadow: var(--floating-panel-shadow);
 }
 
-:where(.app-title-bar-button, .rail-button, .workspace-action-button, .file-tree-action-button, .pane-tab, .toolbar-button, .tool-card, .tool-section, .settings-panel, .settings-card, .settings-segmented, .ai-workspace-form, .ai-workspace-message--user) {
+:where(.app-title-bar-button, .rail-button, .workspace-action-button, .file-tree-action-button, .pane-tab, .toolbar-button, .tool-card, .tool-section, .settings-panel, .settings-card, .settings-segmented, .ai-workspace-form, .ai-workspace-message--user, .editor-surface, .panel-tab-surface) {
   border-radius: var(--radius-lg);
 }
 
@@ -802,7 +864,8 @@ textarea {
 
 .settings-segmented,
 .settings-segmented-indicator {
-  background: var(--color-surface-elevated);
+  background: var(--surface-texture);
+  background-size: var(--texture-size-fibers), var(--texture-size-grain), auto;
 }
 
 .setting-row input[type="checkbox"],
@@ -811,15 +874,31 @@ textarea {
 }
 
 .ai-workspace-message--user {
-  background: var(--color-surface-alt);
+  background: var(--texture-grain), var(--color-surface-alt);
+  background-size: var(--texture-size-grain), auto;
   border: 1px solid var(--color-border);
 }
 
 .ai-workspace-form {
-  background: var(--color-surface-elevated);
+  background: var(--surface-texture);
+  background-size: var(--texture-size-fibers), var(--texture-size-grain), auto;
   border-color: var(--color-border);
 }
 
 .ai-workspace-form button {
   border-radius: var(--radius-md);
+}
+
+.editor-surface,
+.panel-tab-surface,
+.preview,
+.cm-editor,
+.frontmatter-field-card,
+.frontmatter-field-add,
+.frontmatter-format-guide,
+.tool-card,
+.tool-section,
+.settings-card {
+  background-image: var(--texture-stone-wash), var(--texture-grain);
+  background-size: auto, var(--texture-size-grain);
 }
