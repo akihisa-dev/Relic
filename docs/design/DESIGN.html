@@ -566,6 +566,8 @@
 <h2>Overview</h2>
 <p>このデザインシステムは、情報の構造化・可読性・集中体験を重視したナレッジワーク向けインターフェースである。</p>
 <p>Relicの色、素材、質感の基礎思想は <a href="LITHOMORPHISM.md">LITHOMORPHISM.md</a> を正とし、この文書ではその思想をRelicの画面構成、色、UI部品へ適用する。</p>
+<p>Relicでは、青は鉱物顔料や設計図面の青、白は石灰石や上質紙の白、灰色は石粉やコンクリートの面として扱う。</p>
+<p>質感は色そのものを変えず、低光沢で乾いた表面処理として扱う。</p>
 <div class="visual-sample" aria-label="Lithomorphism reference">
 <p class="sample-title">Lithomorphism</p>
 <p>石、鉱物、石粉、乾いた顔料を連想させる、低光沢で硬質な視覚思想。Relicでは色そのものを変えず、素材感と表面処理の判断基準として利用する。</p>
@@ -590,6 +592,7 @@
 <h3>Calm Technology</h3>
 <p>未来的でありながら過剰に派手ではない。</p>
 <p>知的で落ち着いた作業環境を提供する。</p>
+<p>低光沢な面、落ち着いた鉱物色、明確な境界によって、静かで観測的な空気感を作る。</p>
 <hr>
 <h2>Visual Language</h2>
 <h3>Shapes</h3>
@@ -661,7 +664,7 @@ radius-lg: 8px;
 </div>
 <h3>Core Colors</h3>
 <h4>Primary Blue</h4>
-<p>主要アクセントカラー。</p>
+<p>主要アクセントカラー。LITHOMORPHISMでは、Webの青ではなく鉱物顔料や設計図面の青として扱う。</p>
 <pre><code class="language-css">--color-primary: #3261A1;
 </code></pre>
 <div class="token-preview" style="background:#3261A1;color:white"><strong>Primary Blue</strong><span>#3261A1</span></div>
@@ -683,7 +686,7 @@ radius-lg: 8px;
 </div>
 <hr>
 <h4>Sub Blue</h4>
-<p>補助アクセントカラー。</p>
+<p>補助アクセントカラー。LITHOMORPHISMでは、経年した青、補助的な印刷インクの青として扱う。</p>
 <pre><code class="language-css">--color-accent: #6C8BB7;
 </code></pre>
 <div class="token-preview" style="background:#6C8BB7;color:white"><strong>Sub Blue</strong><span>#6C8BB7</span></div>
@@ -707,47 +710,50 @@ radius-lg: 8px;
 <pre><code class="language-css">--color-bg: #F2F1EE;
 </code></pre>
 <div class="token-preview" style="background:#F2F1EE;color:#232B36"><strong>Background</strong><span>#F2F1EE</span></div>
-<p>エディタ背景、ページ全体の背景色。</p>
+<p>エディタ背景、ページ全体の背景色。LITHOMORPHISMでは、純白ではなく石灰石や上質紙に近い白として扱う。</p>
 <hr>
 <h4>Surface</h4>
 <pre><code class="language-css">--color-surface: #E7E7E7;
 </code></pre>
 <div class="token-preview" style="background:#E7E7E7;color:#232B36"><strong>Surface</strong><span>#E7E7E7</span></div>
-<p>サイドバー、ツールバー、パネル背景。</p>
+<p>サイドバー、ツールバー、パネル背景。LITHOMORPHISMでは、石粉を含んだ乾いた面として扱う。</p>
 <hr>
 <h4>Surface Alt</h4>
 <pre><code class="language-css">--color-surface-alt: #DDDEDF;
 </code></pre>
 <div class="token-preview" style="background:#DDDEDF;color:#232B36"><strong>Surface Alt</strong><span>#DDDEDF</span></div>
-<p>選択中の項目背景、カード背景。</p>
+<p>選択中の項目背景、カード背景。LITHOMORPHISMでは、コンクリートに近い低彩度の面として扱う。</p>
 <hr>
 <h4>Border</h4>
 <pre><code class="language-css">--color-border: #C3C8CE;
 </code></pre>
 <div class="token-preview" style="background:#C3C8CE;color:#232B36"><strong>Border</strong><span>#C3C8CE</span></div>
-<p>区切り線。</p>
+<p>区切り線。LITHOMORPHISMでは、薄いセメント線のような境界として扱う。</p>
 <hr>
 <h4>Border Strong</h4>
 <pre><code class="language-css">--color-border-strong: #A4AEBD;
 </code></pre>
 <div class="token-preview" style="background:#A4AEBD;color:#232B36"><strong>Border Strong</strong><span>#A4AEBD</span></div>
-<p>重要な境界。</p>
+<p>重要な境界。LITHOMORPHISMでは、鉱物系の強い境界として扱う。</p>
 <hr>
 <h3>Typography Colors</h3>
 <h4>Primary Text</h4>
 <pre><code class="language-css">--color-text: #232B36;
 </code></pre>
 <div class="token-preview" style="background:#232B36;color:white"><strong>Primary Text</strong><span>#232B36</span></div>
+<p>石や紙に沈んだ濃色インクとして扱う。</p>
 <hr>
 <h4>Secondary Text</h4>
 <pre><code class="language-css">--color-text-secondary: #89909A;
 </code></pre>
 <div class="token-preview" style="background:#89909A;color:white"><strong>Secondary Text</strong><span>#89909A</span></div>
+<p>石粉を含んだグレーとして扱う。</p>
 <hr>
 <h4>Muted Text</h4>
 <pre><code class="language-css">--color-text-muted: #89909A;
 </code></pre>
 <div class="token-preview" style="background:#89909A;color:white"><strong>Muted Text</strong><span>#89909A</span></div>
+<p>石粉を含んだグレーとして扱う。</p>
 <hr>
 <h2>Typography</h2>
 <p>書体はOSのシステムフォントに従う。</p>
@@ -860,6 +866,7 @@ border: 1px solid var(--color-border);
 <hr>
 <h2>Decorative Elements</h2>
 <p>装飾要素は機能的なレイアウトを補助する目的でのみ使用する。</p>
+<p>装飾はLITHOMORPHISMの素材感を誇張するためではなく、情報構造、境界、視線誘導を支えるために使う。</p>
 <p>許可される要素:</p>
 <div class="visual-sample" aria-label="Decorative element samples">
 <p class="sample-title">Decorative Element Samples</p>
@@ -877,6 +884,7 @@ border: 1px solid var(--color-border);
 <li>グリッドライン</li>
 </ul>
 <p>装飾が情報を上回ってはならない。</p>
+<p>強いノイズ、汚れ加工、グロー、ガラス反射、金属光沢、ネオン化は使用しない。</p>
 <hr>
 <h2>Desired Impression</h2>
 <p>このデザインシステムが目指す印象:</p>
@@ -888,6 +896,9 @@ border: 1px solid var(--color-border);
 <li>Focused</li>
 <li>Durable</li>
 <li>Architectural</li>
+<li>Functional</li>
+<li>Permanent</li>
+<li>Observational</li>
 </ul>
 <p>避けるべき印象:</p>
 <ul>
@@ -897,6 +908,12 @@ border: 1px solid var(--color-border);
 <li>Skeuomorphic</li>
 <li>Overly Minimal</li>
 <li>Consumer Social App</li>
+<li>Glossy</li>
+<li>Metallic</li>
+<li>Plastic</li>
+<li>Glassy</li>
+<li>Neon</li>
+<li>Wet</li>
 </ul>
 <hr>
 <h1>Screen Structure</h1>
