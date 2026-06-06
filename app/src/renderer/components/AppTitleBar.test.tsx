@@ -50,7 +50,10 @@ describe("AppTitleBar", () => {
     expect(css).toMatch(/\.title-bar\s*\{[^}]*z-index:\s*40;/s);
     expect(editorCss).toMatch(/\.main-area\s*\{[^}]*grid-template-rows:\s*minmax\(0, 1fr\);/s);
     expect(editorCss).toMatch(/\.main-area-actions\s*\{[^}]*-webkit-app-region:\s*no-drag;/s);
-    expect(designCss).toMatch(/--title-bar-bg:\s*var\(--color-surface-alt\);/);
+    expect(designCss).toMatch(/--chrome-top-bg:\s*var\(--title-bar-bg\);/);
+    expect(css).toMatch(/\.title-bar\s*\{[^}]*background:\s*var\(--chrome-top-bg, var\(--title-bar-bg\)\);/s);
+    expect(editorCss).toMatch(/\.pane-tab-bar-shell\s*\{[^}]*background:\s*var\(--chrome-top-bg, var\(--title-bar-bg\)\);/s);
+    expect(editorCss).toMatch(/\.pane--focused \.pane-tab-bar-shell\s*\{[^}]*background:\s*var\(--chrome-top-bg, var\(--title-bar-bg\)\);/s);
   });
 
   it("keeps pane tabs compact and inside each editor pane", () => {
@@ -63,14 +66,16 @@ describe("AppTitleBar", () => {
     expect(editorCss).toMatch(/\.pane-tab\s*\{[^}]*flex:\s*0 1 220px;/s);
     expect(editorCss).toMatch(/\.pane-tab\s*\{[^}]*max-width:\s*220px;/s);
     expect(editorCss).toMatch(/\.pane-tab\s*\{[^}]*min-width:\s*64px;/s);
+    expect(editorCss).toMatch(/\.pane-tab\s*\{[^}]*background:\s*var\(--chrome-tab-bg,/s);
+    expect(editorCss).toMatch(/\.pane-tab--active\s*\{[^}]*background:\s*var\(--chrome-tab-active-bg,/s);
     expect(editorCss).toMatch(/\.pane-tab-name\s*\{[^}]*min-width:\s*0;/s);
   });
 
   it("manages split pane tab lanes with pane-local boundaries", () => {
     const editorCss = readFileSync("src/renderer/styles/workspace-editor.css", "utf8");
 
-    expect(editorCss).toMatch(/\.panes-container--split \.pane-tabs--left\.pane-tabs--has-tabs\s*\{[^}]*inset -1px 0 0 var\(--border\)/s);
-    expect(editorCss).toMatch(/\.panes-container--split \.pane-tabs--right\.pane-tabs--has-tabs\s*\{[^}]*inset -1px 0 0 var\(--border\)/s);
+    expect(editorCss).toMatch(/\.panes-container--split \.pane-tabs--left\.pane-tabs--has-tabs\s*\{[^}]*inset -1px 0 0 var\(--chrome-top-border, var\(--border\)\)/s);
+    expect(editorCss).toMatch(/\.panes-container--split \.pane-tabs--right\.pane-tabs--has-tabs\s*\{[^}]*inset -1px 0 0 var\(--chrome-top-border, var\(--border\)\)/s);
     expect(editorCss).toMatch(/\.panes-container--split \.pane-tab-bar-shell\s*\{[^}]*padding-inline:\s*8px;/s);
     expect(editorCss).toMatch(/\.panes-container--split \.pane-tabs--left \.pane-tab-bar-shell\s*\{[^}]*padding-right:\s*10px;/s);
     expect(editorCss).toMatch(/\.panes-container--split \.pane-tabs--right \.pane-tab-bar-shell\s*\{[^}]*padding-left:\s*0;/s);

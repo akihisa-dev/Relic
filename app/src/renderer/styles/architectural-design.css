@@ -54,6 +54,11 @@
   --accent-softer: color-mix(in srgb, var(--color-primary) 6%, transparent);
   --accent-ring: color-mix(in srgb, var(--color-primary) 34%, transparent);
   --title-bar-bg: var(--color-surface-alt);
+  --chrome-top-bg: var(--title-bar-bg);
+  --chrome-top-border: var(--color-border);
+  --chrome-tab-bg: color-mix(in srgb, var(--chrome-top-bg) 82%, var(--color-surface-elevated) 18%);
+  --chrome-tab-active-bg: var(--color-surface-elevated);
+  --chrome-tab-divider: color-mix(in srgb, var(--chrome-top-border) 72%, transparent);
   --link: var(--color-primary-dark);
   --attention: var(--color-primary-dark);
   --attention-hover: var(--color-primary);
@@ -101,6 +106,11 @@
   --accent-softer: color-mix(in srgb, var(--color-primary) 12%, transparent);
   --accent-ring: color-mix(in srgb, var(--color-accent) 36%, transparent);
   --title-bar-bg: var(--color-surface-alt);
+  --chrome-top-bg: var(--title-bar-bg);
+  --chrome-top-border: var(--color-border);
+  --chrome-tab-bg: color-mix(in srgb, var(--chrome-top-bg) 82%, var(--color-surface-elevated) 18%);
+  --chrome-tab-active-bg: var(--color-surface-elevated);
+  --chrome-tab-divider: color-mix(in srgb, var(--chrome-top-border) 72%, transparent);
   --link: var(--color-accent);
   --attention: var(--color-accent);
   --attention-hover: var(--color-primary);
@@ -149,6 +159,11 @@
     --accent-softer: color-mix(in srgb, var(--color-primary) 12%, transparent);
     --accent-ring: color-mix(in srgb, var(--color-accent) 36%, transparent);
     --title-bar-bg: var(--color-surface-alt);
+    --chrome-top-bg: var(--title-bar-bg);
+    --chrome-top-border: var(--color-border);
+    --chrome-tab-bg: color-mix(in srgb, var(--chrome-top-bg) 82%, var(--color-surface-elevated) 18%);
+    --chrome-tab-active-bg: var(--color-surface-elevated);
+    --chrome-tab-divider: color-mix(in srgb, var(--chrome-top-border) 72%, transparent);
     --link: var(--color-accent);
     --attention: var(--color-accent);
     --attention-hover: var(--color-primary);
@@ -206,13 +221,13 @@ textarea {
 
 .title-bar {
   backdrop-filter: none;
-  background: var(--title-bar-bg);
+  background: var(--chrome-top-bg);
   box-shadow: none;
 }
 
-.pane-tab-bar-shell--has-tabs {
+.pane-tab-bar-shell {
   backdrop-filter: none;
-  background: var(--title-bar-bg);
+  background: var(--chrome-top-bg);
 }
 
 .workspace {
@@ -370,10 +385,10 @@ textarea {
 /* ────────────────────────────────── */
 
 .pane-tab {
-  background: color-mix(in srgb, var(--color-surface-alt) 82%, var(--color-surface-elevated) 18%);
+  background: var(--chrome-tab-bg);
   border-color: transparent;
   border-radius: 0;
-  box-shadow: inset -1px 0 0 color-mix(in srgb, var(--color-border) 72%, transparent);
+  box-shadow: inset -1px 0 0 var(--chrome-tab-divider);
   color: var(--color-text-secondary);
   font-family: var(--font-body);
   font-size: 13px;
@@ -383,12 +398,12 @@ textarea {
 }
 
 .pane-tab--active {
-  background: var(--color-surface-elevated);
+  background: var(--chrome-tab-active-bg);
   border-color: transparent;
   box-shadow:
-    inset 1px 0 0 color-mix(in srgb, var(--color-border) 72%, transparent),
-    inset -1px 0 0 color-mix(in srgb, var(--color-border) 72%, transparent),
-    inset 0 1px 0 color-mix(in srgb, var(--color-border) 72%, transparent);
+    inset 1px 0 0 var(--chrome-tab-divider),
+    inset -1px 0 0 var(--chrome-tab-divider),
+    inset 0 1px 0 var(--chrome-tab-divider);
   color: var(--color-primary-dark);
 }
 
