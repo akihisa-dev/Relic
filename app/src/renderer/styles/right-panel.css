@@ -1359,36 +1359,35 @@
 .outline-list {
   animation: right-panel-content-in var(--motion-normal) var(--ease-enter);
   display: grid;
-  gap: 2px;
+  gap: 0;
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
 .outline-item {
-  border-radius: 5px;
+  border-radius: 0;
   color: var(--text-2);
   cursor: default;
   font-size: 12px;
   min-height: 24px;
   overflow: hidden;
-  padding: 4px 8px;
+  padding: 0;
   text-overflow: ellipsis;
   transition:
     background-color var(--motion-fast) var(--ease-standard),
     color var(--motion-fast) var(--ease-standard),
-    transform var(--motion-fast) var(--ease-press);
+    border-color var(--motion-fast) var(--ease-standard);
   white-space: nowrap;
 }
 
 .outline-item:hover {
   background: var(--hover);
   color: var(--text);
-  transform: translateX(1px);
 }
 
 .outline-item:active {
-  transform: translateY(1px) scale(0.99);
+  color: var(--text);
 }
 
 .outline-item-button {
@@ -1405,12 +1404,12 @@
   width: 100%;
 }
 
-.outline-item--h1 { padding-left: 8px; font-weight: 600; }
-.outline-item--h2 { padding-left: 16px; }
-.outline-item--h3 { padding-left: 24px; }
-.outline-item--h4 { padding-left: 32px; }
-.outline-item--h5 { padding-left: 40px; }
-.outline-item--h6 { padding-left: 48px; }
+.outline-item--h1 .outline-item-button { padding-left: 12px; font-weight: 650; }
+.outline-item--h2 .outline-item-button { padding-left: 20px; }
+.outline-item--h3 .outline-item-button { padding-left: 28px; }
+.outline-item--h4 .outline-item-button { padding-left: 36px; }
+.outline-item--h5 .outline-item-button { padding-left: 44px; }
+.outline-item--h6 .outline-item-button { padding-left: 52px; }
 
 /* ────────────────────────────────── */
 /* Status bar                         */
