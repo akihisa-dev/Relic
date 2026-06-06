@@ -36,6 +36,8 @@
 
 .title-bar-tabs {
   -webkit-app-region: drag;
+  background: var(--surface);
+  box-shadow: inset 0 -1px 0 var(--border);
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   min-height: 0;

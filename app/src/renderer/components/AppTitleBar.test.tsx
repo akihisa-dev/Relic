@@ -185,6 +185,20 @@ describe("AppTitleBar", () => {
     expect(editorCss).toMatch(/\.title-bar-tabs--split \.pane-tab-bar-shell\s*\{[^}]*padding-inline:\s*8px;/s);
   });
 
+  it("keeps title bar tabs on the editor surface without moving them below the title bar", () => {
+    const shellCss = readFileSync("src/renderer/styles/shell-sidebar.css", "utf8");
+    const editorCss = readFileSync("src/renderer/styles/workspace-editor.css", "utf8");
+    const designCss = readFileSync("src/renderer/styles/architectural-design.css", "utf8");
+
+    expect(shellCss).toMatch(/\.app-shell\s*\{[^}]*grid-template-rows:\s*52px minmax\(0, 1fr\) 34px;/s);
+    expect(editorCss).toMatch(/\.pane-tab-bar-shell\s*\{[^}]*height:\s*52px;/s);
+    expect(shellCss).toMatch(/\.title-bar-tabs\s*\{[^}]*background:\s*var\(--surface\);/s);
+    expect(shellCss).toMatch(/\.title-bar-tabs\s*\{[^}]*box-shadow:\s*inset 0 -1px 0 var\(--border\);/s);
+    expect(editorCss).toMatch(/\.pane-tabs\s*\{[^}]*background:\s*var\(--surface\);/s);
+    expect(editorCss).toMatch(/\.pane-tab-bar-shell\s*\{[^}]*background:\s*var\(--surface\);/s);
+    expect(designCss).toMatch(/\.title-bar-tabs,\s*\.title-bar \.pane-tabs,\s*\.title-bar \.pane-tab-bar,\s*\.title-bar \.pane-tab-bar-shell\s*\{[^}]*background:\s*var\(--color-surface-elevated\);/s);
+  });
+
   it("lets title bar action tooltips render above the workspace layer", () => {
     const css = readFileSync("src/renderer/styles/shell-sidebar.css", "utf8");
 
@@ -199,9 +213,9 @@ describe("AppTitleBar", () => {
 
     expect(designCss).toMatch(/--title-bar-bg:\s*var\(--color-surface-alt\);/);
     expect(designCss).toMatch(/--surface:\s*var\(--color-surface-elevated\);/);
-    expect(designCss).toMatch(/\.title-bar,\s*\.title-bar \.pane-tab-bar,\s*\.title-bar \.main-area-actions\s*\{[^}]*background:\s*var\(--title-bar-bg\);/s);
+    expect(designCss).toMatch(/\.title-bar,\s*\.title-bar \.main-area-actions\s*\{[^}]*background:\s*var\(--title-bar-bg\);/s);
     expect(designCss).toMatch(/\.main-area-actions \.toolbar-btn\.active\s*\{[^}]*box-shadow:\s*none;/s);
-    expect(editorCss).toMatch(/\.pane-tab\s*\{[^}]*background:\s*color-mix\(in srgb, var\(--title-bar-bg\) 74%, var\(--surface\) 26%\);/s);
+    expect(editorCss).toMatch(/\.pane-tab\s*\{[^}]*background:\s*color-mix\(in srgb, var\(--surface-subtle\) 82%, var\(--surface\) 18%\);/s);
     expect(editorCss).toMatch(/\.pane-tab--active\s*\{[^}]*background:\s*var\(--surface\);/s);
   });
 

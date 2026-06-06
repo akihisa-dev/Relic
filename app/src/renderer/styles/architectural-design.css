@@ -205,11 +205,22 @@ textarea {
 }
 
 .title-bar,
-.title-bar .pane-tab-bar,
 .title-bar .main-area-actions {
   backdrop-filter: none;
   background: var(--title-bar-bg);
   box-shadow: none;
+}
+
+.title-bar-tabs,
+.title-bar .pane-tabs,
+.title-bar .pane-tab-bar,
+.title-bar .pane-tab-bar-shell {
+  backdrop-filter: none;
+  background: var(--color-surface-elevated);
+}
+
+.title-bar-tabs {
+  box-shadow: inset 0 -1px 0 var(--color-border);
 }
 
 .workspace {
@@ -369,7 +380,7 @@ textarea {
 
 .pane-tab,
 .title-bar .pane-tab {
-  background: color-mix(in srgb, var(--title-bar-bg) 74%, var(--color-surface-elevated) 26%);
+  background: color-mix(in srgb, var(--color-surface-alt) 82%, var(--color-surface-elevated) 18%);
   border-color: transparent;
   border-radius: 0;
   box-shadow: none;
@@ -382,7 +393,7 @@ textarea {
 }
 
 .title-bar .pane-tab {
-  background: color-mix(in srgb, var(--title-bar-bg) 74%, var(--color-surface-elevated) 26%);
+  background: color-mix(in srgb, var(--color-surface-alt) 82%, var(--color-surface-elevated) 18%);
   height: 40px;
 }
 
