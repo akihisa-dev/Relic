@@ -574,14 +574,14 @@
   color: var(--text-3);
   cursor: default;
   display: flex;
-  flex: 0 1 220px;
+  flex: 1 1 132px;
   font-size: 13px;
   font-weight: 700;
-  gap: 8px;
+  gap: 6px;
   height: 40px;
-  max-width: 280px;
-  min-width: 148px;
-  padding: 0 14px;
+  max-width: 220px;
+  min-width: 64px;
+  padding: 0 8px;
   position: relative;
   transition:
     background-color 140ms ease,
@@ -597,7 +597,7 @@
 }
 
 .pane-tab-bar--fit .pane-tab {
-  flex-basis: 200px;
+  flex-basis: 104px;
 }
 
 .pane-tab:hover:not(.pane-tab--active):not(.pane-tab--closing) {
