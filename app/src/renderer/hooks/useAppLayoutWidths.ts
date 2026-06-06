@@ -4,10 +4,10 @@ import { coworkPanelMaxWidth, coworkPanelMinWidth, type AppUiSettings } from "..
 import { titleBarLeftOffset } from "../appShellModel";
 import { useSidebarResize } from "./useSidebarResize";
 
-const RAIL_WIDTH = 48;
+const RAIL_WIDTH = 56;
 const TITLE_BAR_TRAFFIC_LIGHT_SPACE = 88;
-const FLOATING_PANEL_GAP = 10;
-const WORKSPACE_HORIZONTAL_PADDING = 12;
+const FLOATING_PANEL_GAP = 0;
+const WORKSPACE_HORIZONTAL_PADDING = 0;
 
 interface UseAppLayoutWidthsInput {
   appUiSettings: AppUiSettings;
