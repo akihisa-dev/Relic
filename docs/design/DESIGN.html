@@ -492,6 +492,29 @@
       margin-top: 18px;
     }
 
+    .type-policy {
+      background: var(--bg);
+      border: 1px solid var(--border-strong);
+      display: grid;
+      gap: 12px;
+      padding: 18px;
+    }
+
+    .type-policy p {
+      font-size: 14px;
+      line-height: 1.7;
+      margin: 0;
+    }
+
+    .type-policy code {
+      background: var(--surface-alt);
+      color: var(--primary);
+      display: inline-block;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 4px 6px;
+    }
+
     .type-card {
       border-bottom: 1px solid var(--border-strong);
       padding-bottom: 16px;
@@ -755,6 +778,11 @@
         <section class="panel">
           <h2 class="section-title">Typography</h2>
           <div class="typography-sample">
+            <div class="type-policy">
+              <p>書体はOSのシステムフォントに従う。Relic固有のブランドフォントは選定しない。</p>
+              <p>macOS、Windows、Linuxそれぞれの標準的なUIフォントで自然に見えることを優先する。</p>
+              <code>font-family: system-ui, sans-serif;</code>
+            </div>
             <div class="type-card"><div class="big">01_PROJECT_OVERVIEW</div></div>
             <div class="type-card"><div class="label">SECTION LABEL / 12PX / 700</div></div>
             <div class="type-card"><div class="body">本文は14px、line-height 1.7を基本にする。色や装飾へ過度に依存せず、余白とウェイトで階層を作る。</div></div>
