@@ -3,22 +3,20 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Relic Design System</title>
+  <title>Relic Design Document</title>
   <style>
     :root {
-      --primary: #3261a1;
-      --sub-blue: #6c8bb7;
-      --bg: #f2f1ee;
-      --surface: #e7e7e7;
-      --surface-alt: #dddedf;
-      --border: #c3c8ce;
-      --border-strong: #a4aebd;
-      --text: #232b36;
-      --text-secondary: #89909a;
-      --white: #ffffff;
-      --max: 1500px;
-      --font-ui: system-ui, sans-serif;
-      --font-emphasis: system-ui, sans-serif;
+      --color-primary: #3261a1;
+      --color-accent: #6c8bb7;
+      --color-bg: #f2f1ee;
+      --color-surface: #e7e7e7;
+      --color-surface-alt: #dddedf;
+      --color-border: #c3c8ce;
+      --color-border-strong: #a4aebd;
+      --color-text: #232b36;
+      --color-text-secondary: #89909a;
+      --color-code-bg: #f8f8f6;
+      --content-width: 920px;
     }
 
     * {
@@ -26,10 +24,11 @@
     }
 
     html {
-      background: var(--bg);
-      color: var(--text);
-      font-family: var(--font-ui);
-      letter-spacing: 0;
+      background: var(--color-bg);
+      color: var(--color-text);
+      font-family: system-ui, sans-serif;
+      font-size: 14px;
+      line-height: 1.7;
       scroll-behavior: smooth;
     }
 
@@ -40,8 +39,8 @@
 
     body::before {
       background:
-        linear-gradient(90deg, rgba(50, 97, 161, 0.04) 1px, transparent 1px),
-        linear-gradient(rgba(50, 97, 161, 0.035) 1px, transparent 1px);
+        linear-gradient(90deg, rgba(50, 97, 161, 0.035) 1px, transparent 1px),
+        linear-gradient(rgba(50, 97, 161, 0.03) 1px, transparent 1px);
       background-size: 72px 72px;
       content: "";
       inset: 0;
@@ -50,831 +49,768 @@
       z-index: -1;
     }
 
-    a {
-      color: var(--primary);
-      text-decoration: none;
-    }
-
     .page {
       margin: 0 auto;
-      max-width: var(--max);
-      min-height: 100vh;
-      position: relative;
+      max-width: var(--content-width);
+      padding: 56px 28px 96px;
     }
 
-    .hero {
-      display: grid;
-      grid-template-columns: minmax(260px, 330px) minmax(0, 1fr);
-      min-height: 620px;
-      overflow: hidden;
-      position: relative;
-    }
-
-    .brand-panel {
-      border-right: 1px solid var(--border-strong);
-      min-height: 620px;
-      padding: 54px 46px;
-      position: relative;
-    }
-
-    .brand-kicker,
-    .eyebrow,
-    .section-title,
-    .token-name,
-    .metric-value,
-    .flow-label {
-      color: var(--primary);
-      font-family: var(--font-emphasis);
-      font-weight: 800;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-    }
-
-    .brand-kicker {
-      font-size: 22px;
-      letter-spacing: 0.42em;
-    }
-
-    .brand-title {
-      color: var(--primary);
-      font-family: var(--font-emphasis);
-      font-size: clamp(48px, 5vw, 74px);
-      font-weight: 900;
-      letter-spacing: 0.08em;
-      line-height: 0.92;
-      margin: 10px 0 20px;
-      text-transform: uppercase;
-    }
-
-    .brand-subtitle {
-      color: var(--primary);
-      font-family: var(--font-emphasis);
-      font-size: 22px;
-      font-weight: 800;
-      letter-spacing: 0.22em;
-      line-height: 1.2;
-      text-transform: uppercase;
-    }
-
-    .rule {
-      background: var(--border-strong);
-      height: 1px;
-      margin: 34px 0 24px;
-      width: 100%;
-    }
-
-    .brand-copy {
-      font-size: 15px;
-      line-height: 1.9;
-      max-width: 230px;
-    }
-
-    .motif {
-      border: 2px solid var(--primary);
-      border-radius: 999px;
-      bottom: 118px;
-      height: 88px;
-      left: 62px;
-      position: absolute;
-      width: 88px;
-    }
-
-    .motif::before {
-      background: var(--primary);
-      content: "";
-      height: 2px;
-      left: -18px;
-      position: absolute;
-      top: 43px;
-      transform: rotate(-42deg);
-      width: 124px;
-    }
-
-    .motif::after {
-      background: var(--primary);
-      border-radius: 999px;
-      box-shadow: -92px 86px 0 var(--primary);
-      content: "";
-      height: 8px;
-      position: absolute;
-      right: -9px;
-      top: -7px;
-      width: 8px;
-    }
-
-    .triangle-left,
-    .triangle-right {
-      border-style: solid;
-      height: 0;
-      position: absolute;
-      width: 0;
-    }
-
-    .triangle-left {
-      border-color: transparent transparent var(--primary) transparent;
-      border-width: 0 0 170px 170px;
-      bottom: 0;
-      right: 0;
-    }
-
-    .triangle-right {
-      border-color: transparent transparent var(--primary) transparent;
-      border-width: 0 0 290px 290px;
-      bottom: 0;
-      right: 0;
-      z-index: 0;
-    }
-
-    .hero-content {
+    .document {
+      background: rgba(231, 231, 231, 0.72);
+      border: 1px solid var(--color-border-strong);
       padding: 44px;
-      position: relative;
-      z-index: 1;
     }
 
-    .hero-grid {
-      display: grid;
-      gap: 34px;
-      grid-template-columns: minmax(0, 1fr) minmax(300px, 0.9fr);
-    }
-
-    .statement {
-      border-bottom: 1px solid var(--border-strong);
-      padding-bottom: 28px;
-    }
-
-    .eyebrow {
-      align-items: center;
-      display: flex;
-      font-size: 18px;
-      gap: 16px;
-      margin-bottom: 24px;
-    }
-
-    .eyebrow::after,
-    .section-title::after {
-      background: var(--primary);
-      content: "";
-      flex: 1;
-      height: 1px;
-      opacity: 0.75;
-    }
-
-    .lead {
-      font-size: clamp(34px, 4.3vw, 62px);
-      font-weight: 850;
-      letter-spacing: 0;
-      line-height: 1.04;
-      margin: 0 0 24px;
-      max-width: 760px;
-    }
-
-    .summary {
-      color: var(--text);
-      display: grid;
-      font-size: 15px;
-      gap: 14px;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      line-height: 1.75;
-    }
-
-    .summary-card,
-    .principle,
-    .panel,
-    .component-card,
-    .flow-card {
-      background: rgba(231, 231, 231, 0.78);
-      border: 1px solid var(--border);
-      border-radius: 0;
-    }
-
-    .summary-card {
-      min-height: 140px;
-      padding: 20px;
-    }
-
-    .summary-card b,
-    .avoid b {
-      color: var(--primary);
-      display: block;
-      font-family: var(--font-emphasis);
-      font-size: 17px;
-      letter-spacing: 0.08em;
-      margin-bottom: 10px;
-      text-transform: uppercase;
-    }
-
-    .palette {
-      padding-top: 22px;
-    }
-
-    .section-title {
-      align-items: center;
-      display: flex;
-      font-size: 12px;
-      font-weight: 700;
-      gap: 16px;
-      letter-spacing: 0.08em;
-      margin: 0 0 24px;
-    }
-
-    .token-grid {
-      display: grid;
-      gap: 22px;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-
-    .token {
-      min-width: 0;
-    }
-
-    .swatch {
-      border: 1px solid var(--border);
-      height: 124px;
-      margin-bottom: 16px;
-    }
-
-    .token-meta {
-      align-items: end;
-      display: grid;
-      gap: 10px;
-      grid-template-columns: minmax(0, 1fr) auto;
-    }
-
-    .token-name {
-      font-size: 16px;
-      letter-spacing: 0.06em;
-    }
-
-    .token-jp,
-    .token-use,
-    .flow-note {
-      color: var(--text);
-      font-size: 13px;
-      line-height: 1.75;
-      margin-top: 8px;
-    }
-
-    .hex {
-      font-size: 14px;
-      font-weight: 700;
-      white-space: nowrap;
-    }
-
-    .mini-rule {
-      background: var(--border-strong);
-      height: 1px;
-      margin: 18px 0;
-    }
-
-    .main-content {
-      border-top: 1px solid var(--border-strong);
-      padding: 34px 44px 120px;
-      position: relative;
-    }
-
-    .content-grid {
-      display: grid;
-      gap: 34px;
-      grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
-    }
-
-    .panel {
-      padding: 26px;
-    }
-
-    .principles {
-      display: grid;
-      gap: 18px;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .principle {
-      padding: 18px;
-    }
-
-    .principle h3,
-    .component-card h3,
-    .flow-card h3,
-    .panel h3 {
-      color: var(--primary);
-      font-family: var(--font-emphasis);
-      font-size: 20px;
-      letter-spacing: 0.08em;
-      margin: 0 0 10px;
-      text-transform: uppercase;
-    }
-
-    .principle p,
-    .panel p,
-    .component-card p,
-    .flow-card p {
-      font-size: 14px;
-      line-height: 1.75;
-      margin: 0;
-    }
-
-    .shape-grid {
-      display: grid;
-      gap: 14px;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      margin-top: 18px;
-    }
-
-    .shape {
-      align-items: center;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      display: flex;
-      font-size: 12px;
-      font-weight: 700;
-      justify-content: center;
-      min-height: 72px;
-      padding: 12px;
-      text-align: center;
-      text-transform: uppercase;
-    }
-
-    .shape.triangle {
-      clip-path: polygon(50% 0, 100% 100%, 0 100%);
-      color: var(--white);
-      background: var(--primary);
-      border: none;
-    }
-
-    .shape.circle {
-      background: transparent;
-      border: 2px solid var(--primary);
-      border-radius: 999px;
-      color: var(--primary);
-      min-height: 72px;
-    }
-
-    .layout-map {
-      display: grid;
-      gap: 0;
-      grid-template-columns: 64px 220px 190px minmax(260px, 1fr) 210px;
-      margin-top: 18px;
-      min-height: 210px;
-    }
-
-    .layout-cell {
-      align-items: center;
-      background: var(--surface);
-      border: 1px solid var(--border-strong);
-      border-left: 0;
-      display: flex;
-      flex-direction: column;
-      font-size: 13px;
-      font-weight: 700;
-      justify-content: center;
-      padding: 14px;
-      text-align: center;
-    }
-
-    .layout-cell:first-child {
-      border-left: 1px solid var(--border-strong);
-    }
-
-    .layout-cell strong {
-      color: var(--primary);
-      display: block;
-      font-family: var(--font-emphasis);
-      font-size: 18px;
-      letter-spacing: 0.08em;
-      margin-bottom: 8px;
-      text-transform: uppercase;
-    }
-
-    .component-grid,
-    .flow-grid {
-      display: grid;
-      gap: 18px;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      margin-top: 18px;
-    }
-
-    .component-card,
-    .flow-card {
-      padding: 18px;
-    }
-
-    .outline-sample {
-      display: grid;
-      gap: 0;
-      margin-top: 18px;
-    }
-
-    .outline-row {
-      align-items: center;
-      border-bottom: 1px solid var(--border-strong);
-      color: var(--primary);
-      display: grid;
-      font-family: var(--font-emphasis);
-      font-size: 17px;
+    h1,
+    h2,
+    h3,
+    h4 {
+      color: var(--color-primary);
       font-weight: 800;
-      gap: 14px;
-      grid-template-columns: 40px minmax(0, 1fr);
-      min-height: 58px;
-      text-transform: uppercase;
-    }
-
-    .outline-row span {
-      align-items: center;
-      background: var(--primary);
-      color: var(--white);
-      display: flex;
-      height: 34px;
-      justify-content: center;
-      width: 34px;
-    }
-
-    .typography-sample {
-      display: grid;
-      gap: 18px;
-      margin-top: 18px;
-    }
-
-    .type-policy {
-      background: var(--bg);
-      border: 1px solid var(--border-strong);
-      display: grid;
-      gap: 12px;
-      padding: 18px;
-    }
-
-    .type-policy p {
-      font-size: 14px;
-      line-height: 1.7;
+      letter-spacing: 0;
+      line-height: 1.25;
       margin: 0;
     }
 
-    .type-policy code {
-      background: var(--surface-alt);
-      color: var(--primary);
-      display: inline-block;
-      font-size: 13px;
-      font-weight: 700;
-      padding: 4px 6px;
-    }
-
-    .type-card {
-      border-bottom: 1px solid var(--border-strong);
+    h1 {
+      border-bottom: 1px solid var(--color-border-strong);
+      font-size: 28px;
+      margin-bottom: 24px;
       padding-bottom: 16px;
     }
 
-    .type-card .big {
-      color: var(--primary);
-      font-family: var(--font-emphasis);
-      font-size: 20px;
-      font-weight: 800;
-      letter-spacing: 0;
-      line-height: 1.35;
+    h1:not(:first-child) {
+      margin-top: 56px;
     }
 
-    .type-card .label {
-      color: var(--primary);
-      font-size: 12px;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
+    h2 {
+      border-top: 1px solid var(--color-border-strong);
+      font-size: 22px;
+      margin-top: 42px;
+      padding-top: 26px;
     }
 
-    .type-card .body {
+    h3 {
+      font-size: 17px;
+      margin-top: 30px;
+    }
+
+    h4 {
+      color: var(--color-text);
       font-size: 14px;
-      line-height: 1.7;
+      margin-top: 22px;
     }
 
-    .impression {
-      display: grid;
-      gap: 18px;
-      grid-template-columns: 1fr 1fr;
-      margin-top: 18px;
+    p {
+      margin: 14px 0 0;
     }
 
-    .impression ul,
-    .avoid ul {
-      line-height: 1.85;
-      margin: 0;
-      padding-left: 20px;
+    a {
+      color: var(--color-primary);
+      text-decoration: underline;
+      text-underline-offset: 3px;
     }
 
-    .quote {
-      background: var(--bg);
-      border: 1px solid var(--border-strong);
-      bottom: 0;
-      color: var(--primary);
-      font-family: var(--font-emphasis);
-      font-size: 16px;
-      font-weight: 900;
-      left: 0;
-      letter-spacing: 0.08em;
-      line-height: 1.18;
-      padding: 20px 24px;
-      position: absolute;
-      text-transform: uppercase;
-      width: 230px;
-      z-index: 2;
+    ul,
+    ol {
+      margin: 12px 0 0;
+      padding-left: 1.35rem;
     }
 
-    .ratio {
-      align-items: center;
-      border-top: 1px solid var(--border-strong);
-      bottom: 0;
-      display: grid;
-      gap: 24px;
-      grid-template-columns: 220px minmax(0, 1fr);
-      height: 112px;
-      left: 230px;
-      padding: 0 44px;
-      position: absolute;
-      right: 0;
+    li + li {
+      margin-top: 4px;
     }
 
-    .ratio-title {
-      color: var(--primary);
-      font-family: var(--font-emphasis);
-      font-weight: 900;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
+    strong {
+      font-weight: 800;
     }
 
-    .bar {
-      border: 1px solid var(--border-strong);
-      display: flex;
-      height: 38px;
+    hr {
+      border: 0;
+      border-top: 1px solid var(--color-border);
+      margin: 32px 0;
     }
 
-    .bar div {
-      align-items: center;
-      border-right: 1px solid var(--border-strong);
-      display: flex;
+    code {
+      background: var(--color-surface-alt);
+      color: var(--color-primary);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.92em;
+      padding: 0.12em 0.34em;
+    }
+
+    pre {
+      background: var(--color-code-bg);
+      border: 1px solid var(--color-border);
+      margin: 16px 0 0;
+      overflow: auto;
+      padding: 16px;
+    }
+
+    pre code {
+      background: transparent;
+      color: var(--color-text);
+      display: block;
+      font-size: 13px;
+      line-height: 1.6;
+      padding: 0;
+      white-space: pre;
+    }
+
+    table {
+      border-collapse: collapse;
+      margin-top: 16px;
+      width: 100%;
+    }
+
+    th,
+    td {
+      border: 1px solid var(--color-border);
+      padding: 10px 12px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: var(--color-surface-alt);
+      color: var(--color-primary);
       font-size: 12px;
       font-weight: 700;
-      justify-content: center;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
     }
 
-    .bar div:last-child {
-      border-right: 0;
-    }
-
-    @media (max-width: 1100px) {
-      .hero,
-      .hero-grid,
-      .content-grid,
-      .summary,
-      .impression {
-        grid-template-columns: 1fr;
-      }
-
-      .brand-panel {
-        border-bottom: 1px solid var(--border-strong);
-        border-right: 0;
-        min-height: 420px;
-      }
-
-      .token-grid,
-      .component-grid,
-      .flow-grid,
-      .principles {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-
-      .layout-map {
-        grid-template-columns: 1fr;
-      }
-
-      .layout-cell,
-      .layout-cell:first-child {
-        border: 1px solid var(--border-strong);
-        border-bottom: 0;
-      }
-
-      .layout-cell:last-child {
-        border-bottom: 1px solid var(--border-strong);
-      }
+    blockquote {
+      border-left: 4px solid var(--color-primary);
+      color: var(--color-text-secondary);
+      margin: 18px 0 0;
+      padding-left: 16px;
     }
 
     @media (max-width: 720px) {
-      .brand-panel,
-      .hero-content,
-      .main-content {
-        padding: 28px;
+      .page {
+        padding: 24px 14px 56px;
       }
 
-      .token-grid,
-      .component-grid,
-      .flow-grid,
-      .principles,
-      .shape-grid {
-        grid-template-columns: 1fr;
+      .document {
+        padding: 24px;
       }
 
-      .ratio,
-      .quote {
-        display: none;
+      h1 {
+        font-size: 24px;
       }
 
-      .main-content {
-        padding-bottom: 40px;
+      h2 {
+        font-size: 19px;
       }
     }
   </style>
 </head>
 <body>
   <main class="page">
-    <section class="hero" aria-labelledby="page-title">
-      <aside class="brand-panel">
-        <div class="brand-kicker">Relic</div>
-        <h1 class="brand-title" id="page-title">Design<br>System</h1>
-        <div class="brand-subtitle">Visual Document</div>
-        <div class="rule"></div>
-        <p class="brand-copy">
-          Markdownを正本にするナレッジワーク向けアプリのための、構造・可読性・集中体験を重視したデザイン文書。
-        </p>
-        <div class="motif" aria-hidden="true"></div>
-        <div class="triangle-left" aria-hidden="true"></div>
-      </aside>
+    <article class="document">
+<h1>DESIGN.md</h1>
+<p>Relicのデザイン系文書の正本。画面構成、画面遷移、デザインシステムをこの文書に集約する。</p>
+<h2>読み方</h2>
+<ul>
+<li>見た目の方針は「Visual Design System」を正とする</li>
+<li>画面内に何をどこへ置くかは「Screen Structure」を正とする</li>
+<li>画面遷移やビュー切り替えは「Navigation Flow」を正とする</li>
+<li>見た目の判断に迷う場合は、この文書の「Visual Design System」を優先する</li>
+<li>ナビゲーション要素の機能仕様は <a href="../features/navigation.md">../features/navigation.md</a> を正とする</li>
+</ul>
+<hr>
+<h1>Visual Design System</h1>
+<h2>Overview</h2>
+<p>このデザインシステムは、情報の構造化・可読性・集中体験を重視したナレッジワーク向けインターフェースである。</p>
+<p>装飾的な要素を最小限に抑えながら、強いタイポグラフィ、明確な境界線、幾何学的な構成を用いて情報階層を視覚化する。</p>
+<p>デザインの目的は「美しく見せること」ではなく、「情報構造を理解しやすくすること」にある。</p>
+<hr>
+<h2>Design Principles</h2>
+<h3>Structure First</h3>
+<p>すべてのUI要素は視覚的な装飾よりも構造の表現を優先する。</p>
+<p>情報の階層、関係性、状態を明確に伝えることを最重要視する。</p>
+<hr>
+<h3>Strong Typography</h3>
+<p>タイポグラフィはUIの主要な表現手段である。</p>
+<p>サイズ、ウェイト、余白によって情報の優先順位を示す。</p>
+<p>色や装飾への依存を避ける。</p>
+<hr>
+<h3>Geometric Consistency</h3>
+<p>直線、矩形、境界線を基本要素とする。</p>
+<p>過度な曲線や有機的表現は避ける。</p>
+<hr>
+<h3>Calm Technology</h3>
+<p>未来的でありながら過剰に派手ではない。</p>
+<p>知的で落ち着いた作業環境を提供する。</p>
+<hr>
+<h2>Visual Language</h2>
+<h3>Shapes</h3>
+<h4>Primary</h4>
+<ul>
+<li>Rectangle</li>
+<li>Line</li>
+<li>Grid</li>
+<li>Section Block</li>
+</ul>
+<h4>Secondary</h4>
+<ul>
+<li>Triangle Accent</li>
+<li>Circular Technical Motif</li>
+</ul>
+<p>装飾要素は情報の邪魔にならない範囲で使用する。</p>
+<hr>
+<h4>Border System</h4>
+<p>境界線は重要な情報構造の一部として扱う。</p>
+<pre><code class="language-css">border-width: 1px;
+border-color: var(--border-primary);
+</code></pre>
+<p>影による階層表現は最小限に抑える。</p>
+<hr>
+<h3>Corner Radius</h3>
+<pre><code class="language-css">radius-sm: 4px;
+radius-md: 6px;
+radius-lg: 8px;
+</code></pre>
+<p>大きなラウンド形状は使用しない。</p>
+<hr>
+<h2>Color Palette</h2>
+<h3>Core Colors</h3>
+<h4>Primary Blue</h4>
+<p>主要アクセントカラー。</p>
+<pre><code class="language-css">--color-primary: #3261A1;
+</code></pre>
+<p>用途:</p>
+<ul>
+<li>Headers</li>
+<li>Links</li>
+<li>Icons</li>
+<li>Accents</li>
+</ul>
+<hr>
+<h4>Sub Blue</h4>
+<p>補助アクセントカラー。</p>
+<pre><code class="language-css">--color-accent: #6C8BB7;
+</code></pre>
+<p>用途:</p>
+<ul>
+<li>Hover States</li>
+<li>Sub Labels</li>
+<li>Boundary Emphasis</li>
+</ul>
+<hr>
+<h3>Neutral Palette</h3>
+<h4>Background</h4>
+<pre><code class="language-css">--color-bg: #F2F1EE;
+</code></pre>
+<p>エディタ背景、ページ全体の背景色。</p>
+<hr>
+<h4>Surface</h4>
+<pre><code class="language-css">--color-surface: #E7E7E7;
+</code></pre>
+<p>サイドバー、ツールバー、パネル背景。</p>
+<hr>
+<h4>Surface Alt</h4>
+<pre><code class="language-css">--color-surface-alt: #DDDEDF;
+</code></pre>
+<p>選択中の項目背景、カード背景。</p>
+<hr>
+<h4>Border</h4>
+<pre><code class="language-css">--color-border: #C3C8CE;
+</code></pre>
+<p>区切り線。</p>
+<hr>
+<h4>Border Strong</h4>
+<pre><code class="language-css">--color-border-strong: #A4AEBD;
+</code></pre>
+<p>重要な境界。</p>
+<hr>
+<h3>Typography Colors</h3>
+<h4>Primary Text</h4>
+<pre><code class="language-css">--color-text: #232B36;
+</code></pre>
+<hr>
+<h4>Secondary Text</h4>
+<pre><code class="language-css">--color-text-secondary: #89909A;
+</code></pre>
+<hr>
+<h4>Muted Text</h4>
+<pre><code class="language-css">--color-text-muted: #89909A;
+</code></pre>
+<hr>
+<h2>Typography</h2>
+<p>書体はOSのシステムフォントに従う。</p>
+<p>Relic固有のブランドフォントは選定しない。</p>
+<p>macOS、Windows、Linuxそれぞれの標準的なUIフォントで自然に見えることを優先する。</p>
+<pre><code class="language-css">font-family: system-ui, sans-serif;
+</code></pre>
+<h3>Heading</h3>
+<p>スタイル:</p>
+<pre><code class="language-css">font-weight: 800;
+letter-spacing: 0;
+</code></pre>
+<hr>
+<h3>Section Labels</h3>
+<pre><code class="language-css">font-size: 12px;
+font-weight: 700;
+letter-spacing: 0.08em;
+text-transform: uppercase;
+</code></pre>
+<hr>
+<h3>Body</h3>
+<pre><code class="language-css">font-size: 14px;
+line-height: 1.7;
+font-weight: 400;
+</code></pre>
+<hr>
+<h2>Layout</h2>
+<h3>Three Panel Structure</h3>
+<pre><code class="language-text">Explorer
+Editor
+Outline
+</code></pre>
+<p>情報構造を常時可視化する。</p>
+<hr>
+<h3>Grid Alignment</h3>
+<p>主要なUI要素はグリッドに沿って配置する。</p>
+<p>任意の位置調整は避ける。</p>
+<hr>
+<h3>Editor Width</h3>
+<p>最適な可読性を維持するため、以下を推奨する。</p>
+<pre><code class="language-css">max-width: 820px;
+</code></pre>
+<hr>
+<h2>Navigation</h2>
+<h3>Active Item</h3>
+<p>選択状態は背景色ではなく左側インジケーターで表現する。</p>
+<pre><code class="language-css">width: 4px;
+background: var(--color-primary);
+</code></pre>
+<hr>
+<h3>Outline Navigation</h3>
+<p>アウトラインは番号付きセクションで表示する。</p>
+<p>例:</p>
+<pre><code class="language-text">01 Overview
+02 Goals
+03 References
+04 Notes
+</code></pre>
+<hr>
+<h2>Components</h2>
+<h3>Tabs</h3>
+<ul>
+<li>明確な境界線</li>
+<li>過剰な影を使用しない</li>
+<li>アクティブ状態は青色ラインで表現</li>
+</ul>
+<hr>
+<h3>Tables</h3>
+<ul>
+<li>グリッドを強調</li>
+<li>行間を広く確保</li>
+<li>情報密度を保ちながら読みやすさを優先</li>
+</ul>
+<hr>
+<h3>Buttons</h3>
+<p>Primary:</p>
+<pre><code class="language-css">background: var(--color-primary);
+color: white;
+</code></pre>
+<p>Secondary:</p>
+<pre><code class="language-css">background: transparent;
+border: 1px solid var(--color-border);
+</code></pre>
+<hr>
+<h2>Decorative Elements</h2>
+<p>装飾要素は機能的なレイアウトを補助する目的でのみ使用する。</p>
+<p>許可される要素:</p>
+<ul>
+<li>斜線</li>
+<li>三角形アクセント</li>
+<li>円形ガイドモチーフ</li>
+<li>グリッドライン</li>
+</ul>
+<p>装飾が情報を上回ってはならない。</p>
+<hr>
+<h2>Desired Impression</h2>
+<p>このデザインシステムが目指す印象:</p>
+<ul>
+<li>Structured</li>
+<li>Intelligent</li>
+<li>Calm</li>
+<li>Technical</li>
+<li>Focused</li>
+<li>Durable</li>
+<li>Architectural</li>
+</ul>
+<p>避けるべき印象:</p>
+<ul>
+<li>Playful</li>
+<li>Organic</li>
+<li>Decorative</li>
+<li>Skeuomorphic</li>
+<li>Overly Minimal</li>
+<li>Consumer Social App</li>
+</ul>
+<hr>
+<h1>Screen Structure</h1>
+<p>デスクトップ版の画面一覧と各画面の構成。</p>
+<p>この文書では、画面内に「何をどこへ置くか」を定義する。
+ナビゲーション要素の機能仕様は <a href="../features/navigation.md">../features/navigation.md</a>、画面遷移やビュー切り替えの流れはこの文書の「Navigation Flow」を正とする。</p>
+<hr>
+<h2>基本レイアウト原則</h2>
+<ul>
+<li><strong>左レール + プライマリサイドバー + Cowork用セカンダリサイドバー + タブ式メインエリア</strong>を基本構造にする</li>
+<li><strong>プライマリサイドバー</strong>は、ファイルモードではワークスペースの作成・登録、ファイルツリー、検索、ピン留めを扱い、CoworkモードではAIチャット履歴を扱う</li>
+<li><strong>セカンダリサイドバー</strong>は、CoworkのAIチャット本文と入力欄を扱う</li>
+<li><strong>メインエリア</strong>はタブを表示する作業領域とし、Markdownファイル、チャート、ファイル加工、フロントマター設定、暦設定、設定をタブとして開く</li>
+<li><strong>右パネル</strong>はMarkdownファイルタブの補助領域として扱い、アウトラインとリンク一覧だけを表示する</li>
+</ul>
+<hr>
+<h2>全体レイアウト</h2>
+<pre><code>┌──────────────────────────────────────────────────────────────┐
+│  タイトルバー                                                 │
+├────┬──────────────┬──────────────┬────────────────┬───────────┤
+│左  │              │              │ ペインのタブ行  │           │
+│レ  │ プライマリ   │ セカンダリ   │────────────────│ 右パネル  │
+│ー  │ サイドバー   │ サイドバー   │ タブ行アクション│ 開閉式    │
+│ル  │ （可変幅）   │ （Cowork用） │────────────────│           │
+│    │              │              │ メインエリア    │           │
+│    │              │              │ ファイル /      │           │
+│    │              │              │ パネル / チャート│          │
+├────┴──────────────┴──────────────┴────────────────┴───────────┤
+│  ステータスバー                                               │
+└──────────────────────────────────────────────────────────────┘
+</code></pre>
+<ul>
+<li>メインウィンドウの初期サイズは <code>1240 x 820</code> とする</li>
+<li>メインウィンドウの最小サイズは <code>640 x 400</code> とする</li>
+<li>macOSでは隠しタイトルバーを使い、ウィンドウ操作ボタンは左上に残す</li>
+<li>Windowsではアプリ用アイコンを設定し、メニューバーは自動で隠す</li>
+</ul>
+<hr>
+<h2>左レール</h2>
+<p>左端の縦アイコン領域。プライマリサイドバーの開閉、Cowork表示、メインエリアへ開くパネルタブやチャートタブの入口を持つ。</p>
+<table>
+<thead>
+<tr>
+<th>入口</th>
+<th>動作</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>ファイル</td>
+<td>ファイルサイドバーを開閉する</td>
+</tr>
+<tr>
+<td>Cowork</td>
+<td>プライマリサイドバーにAIチャット履歴を表示し、セカンダリサイドバーにAIチャットを開く</td>
+</tr>
+<tr>
+<td>ファイル加工</td>
+<td>メインエリアにファイル加工ツールのパネルタブを開く</td>
+</tr>
+<tr>
+<td>フロントマター</td>
+<td>メインエリアにフロントマター設定のパネルタブを開く</td>
+</tr>
+<tr>
+<td>暦設定</td>
+<td>メインエリアに暦設定のパネルタブを開く</td>
+</tr>
+<tr>
+<td>年表</td>
+<td>メインエリアに年表チャートタブを開く</td>
+</tr>
+<tr>
+<td>カレンダー</td>
+<td>メインエリアに日付チャートタブを開く</td>
+</tr>
+<tr>
+<td>設定</td>
+<td>メインエリアに設定のパネルタブを開く</td>
+</tr>
+</tbody></table>
+<ul>
+<li>各ボタンにはツールチップを表示する</li>
+<li>ファイル、設定は常に表示する</li>
+<li>Cowork、ファイル加工、フロントマター、暦設定、年表、カレンダーは、対応する機能トグルがオフの場合は入口を表示しない</li>
+<li>初期状態では、ファイル、Cowork、カレンダー、設定を表示する</li>
+<li>初期状態では、ファイル加工、フロントマター、暦設定、年表を表示しない</li>
+<li>登録済みワークスペースがある場合は、レール下部からワークスペースを切り替えられる</li>
+</ul>
+<hr>
+<h2>タイトルバー</h2>
+<p>画面上部のタイトルバーには、ペインごとのタブ列とタブ行アクションを置く。</p>
+<ul>
+<li>左側は、macOSのウィンドウ操作領域と左レール・プライマリサイドバー・開いているセカンダリサイドバーに重ならない位置からタブ列を始める</li>
+<li>分割表示中は、左ペインと右ペインのタブ列をタイトルバー内に並べる</li>
+<li>右側には、印刷、PDF保存、ソースモード切り替え、分割表示切り替え、右パネルのアウトライン/リンク切り替えを置く</li>
+<li>右パネルが開いている場合、右側の操作領域は右パネル幅に合わせて確保する</li>
+</ul>
+<hr>
+<h2>プライマリサイドバー</h2>
+<p>左レールのファイル入口またはCowork入口で開く可変幅のパネル。</p>
+<p>ファイルモードで扱うこと:</p>
+<ul>
+<li>ワークスペースの作成、登録</li>
+<li>ワークスペース内のフォルダ・Markdownファイルのツリー表示</li>
+<li>ファイル / フォルダの作成、リネーム、移動、複製、削除</li>
+<li>ピン留めしたファイル / フォルダの表示</li>
+<li>ファイル名、全文、タグ、フロントマターフィールド、正規表現による検索</li>
+<li>検索結果クリックによる該当ファイルのオープン</li>
+</ul>
+<p>Coworkモードで扱うこと:</p>
+<ul>
+<li>AIチャット履歴</li>
+<li>新規チャット作成</li>
+<li>チャット切り替え</li>
+<li>チャット削除確認</li>
+<li>Codex残り使用量、またはOpenAI API使用量確認の案内</li>
+</ul>
+<p>サイドバーは、macOSでは <code>⌘B</code>、Windows/Linuxでは <code>Ctrl+B</code>、またはレール上のファイルボタンで開閉できる。幅はユーザーがドラッグで変更できる。
+登録済みワークスペースの切り替えは左レール下部で扱う。</p>
+<hr>
+<h2>メインエリア</h2>
+<p>タブ式の作業領域。左右2ペイン分割に対応し、ペインごとに独立したタブ列を持つ。</p>
+<h3>タブ種別</h3>
+<table>
+<thead>
+<tr>
+<th>種別</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>ファイルタブ</td>
+<td>Markdownファイルを編集する</td>
+</tr>
+<tr>
+<td>パネルタブ</td>
+<td>ファイル加工、フロントマター設定、暦設定、設定を表示する</td>
+</tr>
+<tr>
+<td>チャートタブ</td>
+<td><code>chronicle0</code>〜<code>chronicle9</code> と暦設定をもとに年表、<code>plannedDate</code> / <code>actualDate</code> をもとにカレンダーを表示する</td>
+</tr>
+</tbody></table>
+<h3>タブ行アクション</h3>
+<ul>
+<li>印刷</li>
+<li>PDFとして保存</li>
+<li>ソースモード切り替え</li>
+<li>分割表示切り替え</li>
+<li>右パネルのアウトライン / リンク表示切り替え</li>
+</ul>
+<p>各ペインのタブ列右側に表示する。印刷とPDF保存は、フォーカス中ペインのアクティブなMarkdownファイルがある場合に実行できる。右パネルのアウトライン機能トグルがオフの場合はアウトライン切り替えを表示せず、右パネルのリンク機能トグルがオフの場合はリンク切り替えを表示しない。
+ファイル名変更はファイルタブ本文上部のファイルタイトルで扱い、ファイル移動はファイルツリーの操作で扱う。</p>
+<hr>
+<h2>ファイルタブ</h2>
+<p>Markdownファイルを表示・編集するタブ。</p>
+<p><strong>固定表示:</strong></p>
+<ul>
+<li>ファイルタイトル</li>
+<li>エディタ本体</li>
+<li>エディタ右上のフロントマター固定プロパティ追加 <code>+</code> ボタン</li>
+<li>ステータスバーの文字数・単語数</li>
+</ul>
+<p><strong>表示モード:</strong></p>
+<ul>
+<li>ライブプレビュー</li>
+<li>ソースモード</li>
+<li>タイプライターモード</li>
+</ul>
+<p>フロントマターがある場合は、ライブプレビューではファイル先頭のYAMLブロックを初期状態で折りたたんだフォームとして控えめに表示する。折りたたみ時はプロパティ件数を表示し、隠れたYAML行の空白や行番号は残さない。クリックで展開して値編集や削除を行える。ソースモードではフォーム化せず、Markdown内のYAMLとして表示する。
+エディタ右上の <code>+</code> ボタンはフロントマターの有無に関係なく同じ位置に表示し、固定プロパティ追加メニューを開く。
+フロントマターがない場合は選択した固定プロパティ付きでファイル先頭にフロントマターを作成し、既存フロントマターがある場合はその末尾に追加する。
+フロントマターの各プロパティ行には、このファイルからそのプロパティを削除する操作を表示する。</p>
+<hr>
+<h2>パネルタブ</h2>
+<p>Markdownファイル以外の作業画面をメインエリア内のタブとして表示する。</p>
+<table>
+<thead>
+<tr>
+<th>パネル</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>ファイル加工</td>
+<td>マージ、分割、タイトル一覧、目次生成を実行する</td>
+</tr>
+<tr>
+<td>フロントマター設定</td>
+<td>固定プロパティの説明、カスタムプロパティの入力能力、候補を管理する</td>
+</tr>
+<tr>
+<td>暦設定</td>
+<td><code>chronicle0</code> のメイン暦名、<code>chronicle1</code>〜<code>chronicle9</code> のサブ暦名とメイン暦開始年を管理する</td>
+</tr>
+<tr>
+<td>設定</td>
+<td>テーマ、フォント、行間、最大幅、言語、行番号、スペルチェック、AI接続方式、機能トグルを管理する</td>
+</tr>
+</tbody></table>
+<h2>Coworkセカンダリサイドバー</h2>
+<p>プライマリサイドバーの右、メインエリアの左に開くAIチャット用の補助領域。</p>
+<ul>
+<li>AIチャット本文</li>
+<li>ユーザー発言の編集と再送信</li>
+<li>メッセージ入力欄</li>
+<li>送信ボタン</li>
+<li>AI応答生成中の中断ボタン</li>
+<li>幅変更ハンドル</li>
+<li>閉じるボタン</li>
+</ul>
+<p>セカンダリサイドバーを閉じても、AIチャット履歴やAI系データは削除されない。プライマリサイドバーを閉じても、セカンダリサイドバーは開いたままにできる。</p>
+<hr>
+<h2>右パネル</h2>
+<p>ファイルタブの右側に開閉表示される補助領域。</p>
+<ul>
+<li>アウトラインパネル: 見出し一覧とジャンプ</li>
+<li>リンクパネル: バックリンク・アウトゴーイングリンク一覧</li>
+<li>右パネル内では、アウトライン / リンクのどちらか一方だけを表示する</li>
+<li>右パネルのアウトライン機能トグルがオフの場合はアウトライン切り替え操作を表示せず、右パネルのリンク機能トグルがオフの場合はリンク切り替え操作を表示しない</li>
+</ul>
+<p>フロントマターの入力能力管理やファイル加工、設定は右パネルではなく、メインエリアのパネルタブで扱う。</p>
+<hr>
+<h2>初回起動時</h2>
+<p>ワークスペースが未登録、または登録済みワークスペースはあるがアクティブワークスペースがない状態で起動したとき、プライマリサイドバーのファイルモードに初期設定ビューを表示する。</p>
+<ul>
+<li>既存フォルダをワークスペースとして開く</li>
+<li>新規ワークスペースを作成</li>
+</ul>
+<p>新規ワークスペース作成時は、毎回ユーザーが保存場所を選ぶ。
+既存フォルダを開く操作と新規ワークスペース作成操作は、どちらもダイアログをキャンセルした場合、現在のワークスペース登録状態を変えない。</p>
+<hr>
+<h1>Navigation Flow</h1>
+<p>アプリの画面遷移・ビュー切り替えフローを定義するドキュメント。</p>
+<p><strong>前提</strong>: ナビゲーションは左レール、プライマリサイドバー、Cowork用セカンダリサイドバー、メインエリアのタブ操作で行う。Markdownファイル以外の作業画面も、メインエリアのタブとして開く。</p>
+<p>この文書では、画面遷移やビュー切り替えの「流れ」を定義する。
+ナビゲーション要素の機能仕様は <a href="../features/navigation.md">../features/navigation.md</a>、画面内の配置はこの文書の「Screen Structure」を正とする。</p>
+<hr>
+<h2>起動フロー</h2>
+<pre><code>アプリ起動
+  │
+  ├─ 前回ワークスペースIDが有効 → メイン画面（ワークスペース状態を読み込む）
+  │
+  └─ アクティブワークスペースなし → プライマリサイドバーのファイルモードに初回設定ビューを表示
+        │
+        ├─ 新規ワークスペース作成
+        └─ 既存フォルダを開く
+              │
+              └─ → メイン画面
+</code></pre>
+<p>登録済みワークスペースがあっても、前回ワークスペースIDが登録一覧に存在しない場合は、アクティブワークスペースなしとして起動する。この場合、左レール下部には登録済みワークスペース一覧を表示できるが、プライマリサイドバー本体は初回設定ビューを表示する。</p>
+<hr>
+<h2>左レール</h2>
+<pre><code>左レール
+  ├─ ファイル        → ファイルサイドバーを開閉
+  ├─ Cowork          → AIチャット履歴を表示し、AIチャットを開く
+  ├─ ファイル加工    → パネルタブを開く（機能トグルON時のみ）
+  ├─ フロントマター  → パネルタブを開く（機能トグルON時のみ）
+  ├─ 暦設定          → パネルタブを開く（機能トグルON時のみ）
+  ├─ 年表            → 年表チャートタブを開く（機能トグルON時のみ）
+  ├─ カレンダー      → 日付チャートタブを開く（機能トグルON時のみ）
+  └─ 設定            → パネルタブを開く
+</code></pre>
+<p>既に同じパネルタブまたはチャートタブが開いている場合は、新規作成せずそのタブをアクティブにする。
+ファイル、設定は常に表示する。Cowork、ファイル加工、フロントマター、暦設定、年表、カレンダーは、対応する機能トグルがオフの場合は左レールに表示しない。
+初期状態では、ファイル、Cowork、カレンダー、設定を表示し、ファイル加工、フロントマター、暦設定、年表は表示しない。</p>
+<hr>
+<h2>プライマリサイドバー</h2>
+<p>プライマリサイドバーは、ファイルモードではワークスペースとMarkdownファイルの操作を扱い、CoworkモードではAIチャット履歴を扱う。</p>
+<pre><code>プライマリサイドバー
+  ├─ ファイルモード
+  │   ├─ ワークスペース作成 / 登録
+  │   ├─ ファイルツリー
+  │   ├─ ピン留め
+  │   └─ 検索
+  └─ Coworkモード
+      ├─ AIチャット履歴
+      ├─ 新規チャット
+      ├─ チャット削除確認
+      └─ AI使用量表示
+</code></pre>
+<p>macOSでは <code>⌘B</code>、Windows/Linuxでは <code>Ctrl+B</code>、または左レールのファイルボタンで開閉する。検索コマンドを実行した場合は、ファイルサイドバーを開き、検索入力へフォーカスする。</p>
+<hr>
+<h2>Cowork</h2>
+<pre><code>左レールのCoworkボタンを押す
+  │
+  ├─ プライマリサイドバーをAIチャット履歴表示にする
+  └─ セカンダリサイドバーをAIチャット表示で開く
+        │
+        ├─ チャットを選ぶ → 選択中チャットの会話へ切り替える
+        ├─ 新規チャット → 空のチャットを作って選択する
+        ├─ メッセージ送信 → AI応答とMarkdown反映結果を会話に表示する
+        └─ 応答生成中の中断 → 生成を止める
+</code></pre>
+<p>プライマリサイドバーを閉じても、セカンダリサイドバーは開いたままAIチャットを続けられる。セカンダリサイドバーを閉じた場合も、AIチャット履歴やAI系データは削除しない。</p>
+<hr>
+<h2>ファイルを開く</h2>
+<pre><code>ファイルサイドバーでファイルをクリック
+  │
+  ├─ 新しいファイルタブで開く
+  └─ 既に開いているファイルタブがある場合 → そのタブをアクティブにする
+</code></pre>
+<p>内部リンクをクリックした場合も、リンク先ファイルをファイルタブとして開く。リンク先が存在しない場合は新規ファイルを作成して開く。</p>
+<hr>
+<h2>タブの操作</h2>
+<pre><code>タブをクリック → そのタブをアクティブにする
+タブを閉じる  → 表示履歴ベースで直前に表示していたタブをアクティブにする
+              → タブが0枚になった場合は新規ファイル作成画面を表示
+</code></pre>
+<p>表示履歴は、タブをアクティブにした順に記録する。現在のタブを閉じたら、直近で表示していた未クローズのタブへ戻る。</p>
+<hr>
+<h2>分割表示</h2>
+<pre><code>分割ボタンを押す → メインエリアが左右2ペインに分割
+  │
+  ├─ 左ペイン：元のタブをそのまま表示
+  └─ 右ペイン：独立したタブ列を持つ
 
-      <div class="hero-content">
-        <section class="statement">
-          <div class="eyebrow">Overview</div>
-          <p class="lead">Text is structure. Interface is architecture.</p>
-          <div class="summary">
-            <div class="summary-card">
-              <b>Structure First</b>
-              情報の階層、関係性、状態を明確に伝えることを最優先する。
-            </div>
-            <div class="summary-card">
-              <b>Strong Typography</b>
-              サイズ、ウェイト、余白によって情報の優先順位を示す。
-            </div>
-            <div class="summary-card">
-              <b>Calm Technology</b>
-              未来的でありながら、過剰に派手ではない作業環境を作る。
-            </div>
-          </div>
-        </section>
+分割解除ボタンを押す → 1ペインに戻る（アクティブなペインのタブを表示）
+</code></pre>
+<p>分割表示中は、ペインごとに独立したタブ列を持つ。ファイルタブ、パネルタブ、チャートタブはいずれもペイン内のタブとして扱う。</p>
+<hr>
+<h2>右パネルの開閉</h2>
+<pre><code>アウトラインパネルボタンを押す → 右パネルにアウトラインを表示 / 閉じる
+リンクパネルボタンを押す      → 右パネルにリンク一覧を表示 / 閉じる
+</code></pre>
+<p>右パネルはファイルタブの補助領域であり、アウトラインとリンク一覧を同時表示しない。片方を開いている状態でもう片方を開いた場合は、右パネル内の表示内容を切り替える。
+右パネルのアウトライン機能トグルがオフの場合はアウトライン切り替え操作を表示せず、右パネルのリンク機能トグルがオフの場合はリンク切り替え操作を表示しない。</p>
+<hr>
+<h2>現在ファイルの出力</h2>
+<pre><code>ファイルタブの右クリックメニューで印刷を選ぶ
+  │
+  └─ 右クリックしたMarkdownファイルから一時PDFを生成
+        │
+        └─ Chromium PDFプレビューで開く
 
-        <section class="palette" aria-labelledby="palette-title">
-          <h2 class="section-title" id="palette-title">Color Palette</h2>
-          <div class="token-grid">
-            <article class="token">
-              <div class="swatch" style="background:#3261A1"></div>
-              <div class="token-meta"><div><div class="token-name">Primary Blue</div><div class="token-jp">見出し / リンク / アイコン</div></div><div class="hex">#3261A1</div></div>
-              <div class="mini-rule"></div><div class="token-use">主要アクション、現在状態、情報構造の強い起点に使用する。</div>
-            </article>
-            <article class="token">
-              <div class="swatch" style="background:#6C8BB7"></div>
-              <div class="token-meta"><div><div class="token-name">Sub Blue</div><div class="token-jp">ホバー / 補助強調</div></div><div class="hex">#6C8BB7</div></div>
-              <div class="mini-rule"></div><div class="token-use">控えめな強調、境界の補助、サブラベルに使用する。</div>
-            </article>
-            <article class="token">
-              <div class="swatch" style="background:#F2F1EE"></div>
-              <div class="token-meta"><div><div class="token-name">Background</div><div class="token-jp">背景 / エディタ</div></div><div class="hex">#F2F1EE</div></div>
-              <div class="mini-rule"></div><div class="token-use">文章の読みやすさを優先する、温かみのある背景色。</div>
-            </article>
-            <article class="token">
-              <div class="swatch" style="background:#E7E7E7"></div>
-              <div class="token-meta"><div><div class="token-name">Surface</div><div class="token-jp">サイドバー / パネル</div></div><div class="hex">#E7E7E7</div></div>
-              <div class="mini-rule"></div><div class="token-use">サイドバー、ツールバー、パネル背景に使用する。</div>
-            </article>
-            <article class="token">
-              <div class="swatch" style="background:#DDDEDF"></div>
-              <div class="token-meta"><div><div class="token-name">Surface Alt</div><div class="token-jp">選択背景 / カード</div></div><div class="hex">#DDDEDF</div></div>
-              <div class="mini-rule"></div><div class="token-use">選択中の項目、カード、まとまりのある情報ブロックに使用する。</div>
-            </article>
-            <article class="token">
-              <div class="swatch" style="background:#232B36"></div>
-              <div class="token-meta"><div><div class="token-name">Primary Text</div><div class="token-jp">本文 / 重要テキスト</div></div><div class="hex">#232B36</div></div>
-              <div class="mini-rule"></div><div class="token-use">可読性の基準になるメインテキスト色。</div>
-            </article>
-          </div>
-        </section>
-      </div>
-    </section>
-
-    <section class="main-content">
-      <div class="content-grid">
-        <section class="panel">
-          <h2 class="section-title">Design Principles</h2>
-          <div class="principles">
-            <article class="principle"><h3>Structure First</h3><p>すべてのUI要素は、装飾よりも構造の表現を優先する。</p></article>
-            <article class="principle"><h3>Strong Typography</h3><p>タイポグラフィをUIの主要な表現手段として扱う。</p></article>
-            <article class="principle"><h3>Geometric Consistency</h3><p>直線、矩形、境界線、グリッドを基本要素にする。</p></article>
-            <article class="principle"><h3>Calm Technology</h3><p>知的で落ち着いた、長く使える作業環境を提供する。</p></article>
-          </div>
-        </section>
-
-        <section class="panel">
-          <h2 class="section-title">Visual Language</h2>
-          <p>装飾要素は機能的なレイアウトを補助する目的でのみ使用する。装飾が情報を上回ってはならない。</p>
-          <div class="shape-grid">
-            <div class="shape">Rectangle</div>
-            <div class="shape">Line / Grid</div>
-            <div class="shape triangle">Triangle Accent</div>
-            <div class="shape circle">Circular Motif</div>
-          </div>
-        </section>
-
-        <section class="panel">
-          <h2 class="section-title">Typography</h2>
-          <div class="typography-sample">
-            <div class="type-policy">
-              <p>書体はOSのシステムフォントに従う。Relic固有のブランドフォントは選定しない。</p>
-              <p>macOS、Windows、Linuxそれぞれの標準的なUIフォントで自然に見えることを優先する。</p>
-              <code>font-family: system-ui, sans-serif;</code>
-            </div>
-            <div class="type-card"><div class="big">Project Overview</div></div>
-            <div class="type-card"><div class="label">SECTION LABEL / 12PX / 700</div></div>
-            <div class="type-card"><div class="body">本文は14px、line-height 1.7を基本にする。色や装飾へ過度に依存せず、余白とウェイトで階層を作る。</div></div>
-          </div>
-        </section>
-
-        <section class="panel">
-          <h2 class="section-title">Navigation</h2>
-          <p>選択状態は背景色だけに頼らず、左側インジケーターや番号付きアウトラインで情報構造を示す。</p>
-          <div class="outline-sample">
-            <div class="outline-row"><span>01</span>Overview</div>
-            <div class="outline-row"><span>02</span>Goals</div>
-            <div class="outline-row"><span>03</span>References</div>
-            <div class="outline-row"><span>04</span>Notes</div>
-          </div>
-        </section>
-
-        <section class="panel" style="grid-column:1 / -1">
-          <h2 class="section-title">Screen Structure</h2>
-          <p>左レール、プライマリサイドバー、Cowork用セカンダリサイドバー、タブ式メインエリア、右パネルを基本構造にする。</p>
-          <div class="layout-map" aria-label="Relic screen structure">
-            <div class="layout-cell"><strong>Rail</strong>入口</div>
-            <div class="layout-cell"><strong>Explorer</strong>ファイル / 検索</div>
-            <div class="layout-cell"><strong>Cowork</strong>AIチャット</div>
-            <div class="layout-cell"><strong>Editor</strong>Markdown / Panel / Chart</div>
-            <div class="layout-cell"><strong>Outline</strong>見出し / リンク</div>
-          </div>
-        </section>
-
-        <section class="panel">
-          <h2 class="section-title">Components</h2>
-          <div class="component-grid">
-            <article class="component-card"><h3>Tabs</h3><p>明確な境界線を持ち、アクティブ状態は青色ラインで表現する。</p></article>
-            <article class="component-card"><h3>Tables</h3><p>グリッドを強調し、情報密度と読みやすさの両方を保つ。</p></article>
-            <article class="component-card"><h3>Buttons</h3><p>Primaryは青地に白文字、Secondaryは透明背景と境界線を基本にする。</p></article>
-          </div>
-        </section>
-
-        <section class="panel">
-          <h2 class="section-title">Navigation Flow</h2>
-          <div class="flow-grid">
-            <article class="flow-card"><h3>Startup</h3><p>前回ワークスペースIDが有効ならメイン画面へ。未登録なら初回設定ビューを表示する。</p></article>
-            <article class="flow-card"><h3>Open File</h3><p>ファイルサイドバーからMarkdownを開き、既存タブがあればそのタブをアクティブにする。</p></article>
-            <article class="flow-card"><h3>Split View</h3><p>左右2ペインで独立したタブ列を持ち、分割解除時はアクティブペインへ戻る。</p></article>
-          </div>
-        </section>
-
-        <section class="panel" style="grid-column:1 / -1">
-          <h2 class="section-title">Desired Impression</h2>
-          <div class="impression">
-            <div>
-              <h3>Target</h3>
-              <ul>
-                <li>Structured</li>
-                <li>Intelligent</li>
-                <li>Calm</li>
-                <li>Technical</li>
-                <li>Focused</li>
-                <li>Durable</li>
-                <li>Architectural</li>
-              </ul>
-            </div>
-            <div class="avoid">
-              <h3>Avoid</h3>
-              <ul>
-                <li>Playful</li>
-                <li>Organic</li>
-                <li>Decorative</li>
-                <li>Skeuomorphic</li>
-                <li>Overly Minimal</li>
-                <li>Consumer Social App</li>
-              </ul>
-            </div>
-          </div>
-        </section>
-      </div>
-
-      <div class="quote">TEXT<br>IS<br>STRUCTURE.<br>THINK<br>IS<br>FUTURE.</div>
-      <div class="ratio">
-        <div class="ratio-title">Color Ratio<br><span style="color:var(--text);font-size:13px;font-family:var(--font-ui);font-weight:600;letter-spacing:0;text-transform:none">参考比率</span></div>
-        <div class="bar" aria-label="Color ratio">
-          <div style="width:60%;background:#F2F1EE">60%</div>
-          <div style="width:20%;background:#E7E7E7">20%</div>
-          <div style="width:10%;background:#6C8BB7;color:white">10%</div>
-          <div style="width:5%;background:#3261A1;color:white">5%</div>
-          <div style="width:3%;background:#232B36;color:white">3%</div>
-          <div style="width:2%;background:#89909A;color:white">2%</div>
-        </div>
-      </div>
-      <div class="triangle-right" aria-hidden="true"></div>
-    </section>
+ファイルタブの右クリックメニューでPDFとして保存を選ぶ
+  │
+  └─ 右クリックしたMarkdownファイルからPDFを生成
+        │
+        └─ 保存ダイアログで保存先を選んで保存
+</code></pre>
+<p>印刷とPDF保存は、Markdownファイルのタブ右クリックメニューから実行する。印刷時に生成するPDFはプレビュー用の一時ファイルであり、ユーザーが保存先を選ばない限りワークスペースや任意の保存先には残さない。</p>
+<hr>
+<h2>ワークスペースの切り替え</h2>
+<pre><code>左レール下部のワークスペース切替を操作
+  │
+  └─ 別のワークスペースを選択 → 開いているタブを閉じ、そのワークスペース状態を読み込む
+</code></pre>
+<p>ワークスペース切り替えでは、登録情報、ファイルツリー、ピン留めなどのワークスペース状態を読み込む。前ワークスペースで開いていたタブは持ち越さない。</p>
+<hr>
+<h2>新規ワークスペース作成</h2>
+<pre><code>新規ワークスペース作成を選択
+  │
+  ├─ 保存ダイアログで作成先とフォルダ名を選択
+  └─ 指定場所にワークスペースフォルダを作成して開く
+</code></pre>
+<p>保存場所は毎回ユーザーが選択する。
+既存フォルダを開く操作や新規ワークスペース作成操作でダイアログをキャンセルした場合は、登録済みワークスペースやアクティブワークスペースを変更しない。
+ただし、これらの操作ではダイアログ表示前に開きタブの保存確認を行うため、確認を通過した後にキャンセルした場合も、開きタブは閉じた状態になる。</p>
+    </article>
   </main>
 </body>
 </html>
