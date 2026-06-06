@@ -176,7 +176,7 @@ describe("AppTitleBar", () => {
   it("keeps title bar tabs compact and shrinkable inside the available tab lane", () => {
     const editorCss = readFileSync("src/renderer/styles/workspace-editor.css", "utf8");
 
-    expect(editorCss).toMatch(/\.pane-tab-bar\s*\{[^}]*gap:\s*4px;/s);
+    expect(editorCss).toMatch(/\.pane-tab-bar\s*\{[^}]*gap:\s*0;/s);
     expect(editorCss).toMatch(/\.pane-tab-bar\s*\{[^}]*width:\s*100%;/s);
     expect(editorCss).toMatch(/\.pane-tabs\s*\{[^}]*overflow:\s*hidden;/s);
     expect(editorCss).toMatch(/\.pane-tab\s*\{[^}]*flex:\s*1 1 132px;/s);
@@ -205,13 +205,13 @@ describe("AppTitleBar", () => {
     expect(shellCss).toMatch(/\.app-shell\s*\{[^}]*grid-template-rows:\s*52px minmax\(0, 1fr\) 34px;/s);
     expect(editorCss).toMatch(/\.pane-tab-bar-shell\s*\{[^}]*height:\s*52px;/s);
     expect(shellCss).toMatch(/\.title-bar-tabs\s*\{[^}]*background:\s*var\(--title-bar-bg\);/s);
-    expect(shellCss).toMatch(/\.title-bar-tabs--has-tabs\s*\{[^}]*background:\s*var\(--surface\);/s);
-    expect(shellCss).toMatch(/\.title-bar-tabs--has-tabs\s*\{[^}]*box-shadow:\s*inset 0 -1px 0 var\(--border\);/s);
+    expect(shellCss).toMatch(/\.title-bar-tabs--has-tabs\s*\{[^}]*background:\s*var\(--title-bar-bg\);/s);
+    expect(shellCss).toMatch(/\.title-bar-tabs--has-tabs\s*\{[^}]*box-shadow:\s*none;/s);
     expect(editorCss).toMatch(/\.pane-tabs\s*\{[^}]*background:\s*transparent;/s);
-    expect(editorCss).toMatch(/\.pane-tabs--has-tabs\s*\{[^}]*background:\s*var\(--surface\);/s);
+    expect(editorCss).toMatch(/\.pane-tabs--has-tabs\s*\{[^}]*background:\s*transparent;/s);
     expect(editorCss).toMatch(/\.pane-tab-bar-shell\s*\{[^}]*background:\s*transparent;/s);
-    expect(editorCss).toMatch(/\.pane-tab-bar-shell--has-tabs\s*\{[^}]*background:\s*var\(--surface\);/s);
-    expect(designCss).toMatch(/\.title-bar-tabs--has-tabs,\s*\.title-bar \.pane-tabs--has-tabs,\s*\.title-bar \.pane-tabs--has-tabs \.pane-tab-bar,\s*\.title-bar \.pane-tab-bar-shell--has-tabs\s*\{[^}]*background:\s*var\(--color-surface-elevated\);/s);
+    expect(editorCss).toMatch(/\.pane-tab-bar-shell--has-tabs\s*\{[^}]*background:\s*var\(--title-bar-bg\);/s);
+    expect(designCss).toMatch(/\.title-bar-tabs--has-tabs,\s*\.title-bar \.pane-tabs--has-tabs,\s*\.title-bar \.pane-tabs--has-tabs \.pane-tab-bar,\s*\.title-bar \.pane-tab-bar-shell--has-tabs\s*\{[^}]*background:\s*var\(--title-bar-bg\);/s);
   });
 
   it("lets title bar action tooltips render above the workspace layer", () => {

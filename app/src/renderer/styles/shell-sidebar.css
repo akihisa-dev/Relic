@@ -46,8 +46,8 @@
 }
 
 .title-bar-tabs--has-tabs {
-  background: var(--surface);
-  box-shadow: inset 0 -1px 0 var(--border);
+  background: var(--title-bar-bg);
+  box-shadow: none;
 }
 
 .title-bar-tabs--split {

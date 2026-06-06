@@ -216,11 +216,11 @@ textarea {
 .title-bar .pane-tabs--has-tabs .pane-tab-bar,
 .title-bar .pane-tab-bar-shell--has-tabs {
   backdrop-filter: none;
-  background: var(--color-surface-elevated);
+  background: var(--title-bar-bg);
 }
 
 .title-bar-tabs--has-tabs {
-  box-shadow: inset 0 -1px 0 var(--color-border);
+  box-shadow: none;
 }
 
 .workspace {
