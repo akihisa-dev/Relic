@@ -187,6 +187,254 @@
       padding-left: 16px;
     }
 
+    .visual-sample {
+      background: rgba(242, 241, 238, 0.88);
+      border: 1px solid var(--color-border);
+      margin: 18px 0 0;
+      padding: 18px;
+    }
+
+    .sample-title {
+      color: var(--color-primary);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      margin: 0 0 12px;
+      text-transform: uppercase;
+    }
+
+    .sample-grid {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    }
+
+    .swatch {
+      border: 1px solid var(--color-border);
+      min-height: 96px;
+      padding: 12px;
+    }
+
+    .swatch strong,
+    .swatch span {
+      display: block;
+    }
+
+    .swatch strong {
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .swatch span {
+      font-size: 12px;
+      margin-top: 4px;
+    }
+
+    .shape-preview {
+      align-items: center;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border-strong);
+      display: flex;
+      font-size: 12px;
+      font-weight: 700;
+      justify-content: center;
+      min-height: 84px;
+      padding: 12px;
+      text-align: center;
+    }
+
+    .shape-line {
+      min-height: 84px;
+      position: relative;
+    }
+
+    .shape-line::before {
+      background: var(--color-primary);
+      content: "";
+      height: 1px;
+      left: 16px;
+      position: absolute;
+      right: 16px;
+      top: 50%;
+    }
+
+    .shape-grid-preview {
+      background:
+        linear-gradient(90deg, rgba(50, 97, 161, 0.16) 1px, transparent 1px),
+        linear-gradient(rgba(50, 97, 161, 0.16) 1px, transparent 1px),
+        var(--color-surface);
+      background-size: 18px 18px;
+    }
+
+    .shape-triangle {
+      background: transparent;
+      border: 0;
+      position: relative;
+    }
+
+    .shape-triangle::before {
+      border-color: transparent transparent var(--color-primary) transparent;
+      border-style: solid;
+      border-width: 0 42px 72px 42px;
+      content: "";
+      height: 0;
+      width: 0;
+    }
+
+    .shape-circle {
+      background: transparent;
+      border: 2px solid var(--color-primary);
+      border-radius: 999px;
+      color: var(--color-primary);
+    }
+
+    .border-demo {
+      border: 1px solid var(--color-border-strong);
+      padding: 18px;
+    }
+
+    .radius-demo-grid {
+      align-items: end;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .radius-demo {
+      background: var(--color-surface-alt);
+      border: 1px solid var(--color-border-strong);
+      height: 76px;
+      padding: 10px;
+      width: 120px;
+    }
+
+    .radius-sm {
+      border-radius: 4px;
+    }
+
+    .radius-md {
+      border-radius: 6px;
+    }
+
+    .radius-lg {
+      border-radius: 8px;
+    }
+
+    .type-demo h3 {
+      color: var(--color-primary);
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: 0;
+      margin: 0;
+    }
+
+    .type-demo .section-label {
+      color: var(--color-primary);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      margin-top: 14px;
+      text-transform: uppercase;
+    }
+
+    .type-demo p {
+      font-size: 14px;
+      font-weight: 400;
+      line-height: 1.7;
+      margin-top: 10px;
+    }
+
+    .component-sample {
+      display: grid;
+      gap: 18px;
+    }
+
+    .tab-sample {
+      border-bottom: 1px solid var(--color-border-strong);
+      display: flex;
+      gap: 0;
+    }
+
+    .tab-sample div {
+      border: 1px solid var(--color-border);
+      border-bottom: 0;
+      padding: 8px 14px;
+    }
+
+    .tab-sample .active {
+      border-top: 3px solid var(--color-primary);
+      color: var(--color-primary);
+      font-weight: 800;
+    }
+
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .button-demo {
+      border: 1px solid var(--color-border);
+      font: inherit;
+      padding: 8px 14px;
+    }
+
+    .button-demo.primary {
+      background: var(--color-primary);
+      color: white;
+    }
+
+    .button-demo.secondary {
+      background: transparent;
+      color: var(--color-text);
+    }
+
+    .decorative-sample {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    }
+
+    .diagonal-sample,
+    .grid-sample,
+    .circle-guide-sample {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      height: 92px;
+      position: relative;
+    }
+
+    .diagonal-sample::before {
+      background: var(--color-primary);
+      content: "";
+      height: 1px;
+      left: 14px;
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: rotate(-18deg);
+    }
+
+    .grid-sample {
+      background:
+        linear-gradient(90deg, rgba(50, 97, 161, 0.18) 1px, transparent 1px),
+        linear-gradient(rgba(50, 97, 161, 0.18) 1px, transparent 1px),
+        var(--color-surface);
+      background-size: 20px 20px;
+    }
+
+    .circle-guide-sample::before {
+      border: 2px solid var(--color-primary);
+      border-radius: 999px;
+      content: "";
+      height: 54px;
+      left: 50%;
+      position: absolute;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 54px;
+    }
+
     @media (max-width: 720px) {
       .page {
         padding: 24px 14px 56px;
@@ -246,6 +494,17 @@
 <hr>
 <h2>Visual Language</h2>
 <h3>Shapes</h3>
+<div class="visual-sample" aria-label="Shape samples">
+<p class="sample-title">Shape Samples</p>
+<div class="sample-grid">
+<div class="shape-preview">Rectangle</div>
+<div class="shape-preview shape-line">Line</div>
+<div class="shape-preview shape-grid-preview">Grid</div>
+<div class="shape-preview">Section Block</div>
+<div class="shape-preview shape-triangle" aria-label="Triangle Accent"></div>
+<div class="shape-preview shape-circle">Circular Motif</div>
+</div>
+</div>
 <h4>Primary</h4>
 <ul>
 <li>Rectangle</li>
@@ -266,6 +525,10 @@
 border-color: var(--border-primary);
 </code></pre>
 <p>影による階層表現は最小限に抑える。</p>
+<div class="visual-sample" aria-label="Border sample">
+<p class="sample-title">Border Sample</p>
+<div class="border-demo">1px border / no shadow</div>
+</div>
 <hr>
 <h3>Corner Radius</h3>
 <pre><code class="language-css">radius-sm: 4px;
@@ -273,8 +536,30 @@ radius-md: 6px;
 radius-lg: 8px;
 </code></pre>
 <p>大きなラウンド形状は使用しない。</p>
+<div class="visual-sample" aria-label="Corner radius samples">
+<p class="sample-title">Corner Radius Samples</p>
+<div class="radius-demo-grid">
+<div class="radius-demo radius-sm">4px</div>
+<div class="radius-demo radius-md">6px</div>
+<div class="radius-demo radius-lg">8px</div>
+</div>
+</div>
 <hr>
 <h2>Color Palette</h2>
+<div class="visual-sample" aria-label="Color palette samples">
+<p class="sample-title">Color Samples</p>
+<div class="sample-grid">
+<div class="swatch" style="background:#3261A1;color:white"><strong>Primary Blue</strong><span>#3261A1</span></div>
+<div class="swatch" style="background:#6C8BB7;color:white"><strong>Sub Blue</strong><span>#6C8BB7</span></div>
+<div class="swatch" style="background:#F2F1EE;color:#232B36"><strong>Background</strong><span>#F2F1EE</span></div>
+<div class="swatch" style="background:#E7E7E7;color:#232B36"><strong>Surface</strong><span>#E7E7E7</span></div>
+<div class="swatch" style="background:#DDDEDF;color:#232B36"><strong>Surface Alt</strong><span>#DDDEDF</span></div>
+<div class="swatch" style="background:#C3C8CE;color:#232B36"><strong>Border</strong><span>#C3C8CE</span></div>
+<div class="swatch" style="background:#A4AEBD;color:#232B36"><strong>Border Strong</strong><span>#A4AEBD</span></div>
+<div class="swatch" style="background:#232B36;color:white"><strong>Primary Text</strong><span>#232B36</span></div>
+<div class="swatch" style="background:#89909A;color:white"><strong>Secondary / Muted Text</strong><span>#89909A</span></div>
+</div>
+</div>
 <h3>Core Colors</h3>
 <h4>Primary Blue</h4>
 <p>主要アクセントカラー。</p>
@@ -344,6 +629,12 @@ radius-lg: 8px;
 <p>macOS、Windows、Linuxそれぞれの標準的なUIフォントで自然に見えることを優先する。</p>
 <pre><code class="language-css">font-family: system-ui, sans-serif;
 </code></pre>
+<div class="visual-sample type-demo" aria-label="Typography samples">
+<p class="sample-title">Typography Samples</p>
+<h3>Heading Sample</h3>
+<div class="section-label">Section Label Sample</div>
+<p>本文は14px、line-height 1.7を基本にする。OSのシステムフォントに従い、読みやすいUI文字として表示する。</p>
+</div>
 <h3>Heading</h3>
 <p>スタイル:</p>
 <pre><code class="language-css">font-weight: 800;
@@ -397,6 +688,26 @@ background: var(--color-primary);
 </code></pre>
 <hr>
 <h2>Components</h2>
+<div class="visual-sample component-sample" aria-label="Component samples">
+<p class="sample-title">Component Samples</p>
+<div class="tab-sample">
+<div class="active">Active Tab</div>
+<div>Inactive Tab</div>
+</div>
+<table>
+<thead>
+<tr><th>Column</th><th>Value</th></tr>
+</thead>
+<tbody>
+<tr><td>Grid</td><td>Readable density</td></tr>
+<tr><td>Border</td><td>Clear separation</td></tr>
+</tbody>
+</table>
+<div class="button-row">
+<button class="button-demo primary" type="button">Primary</button>
+<button class="button-demo secondary" type="button">Secondary</button>
+</div>
+</div>
 <h3>Tabs</h3>
 <ul>
 <li>明確な境界線</li>
@@ -424,6 +735,15 @@ border: 1px solid var(--color-border);
 <h2>Decorative Elements</h2>
 <p>装飾要素は機能的なレイアウトを補助する目的でのみ使用する。</p>
 <p>許可される要素:</p>
+<div class="visual-sample" aria-label="Decorative element samples">
+<p class="sample-title">Decorative Element Samples</p>
+<div class="decorative-sample">
+<div class="diagonal-sample" aria-label="Diagonal line"></div>
+<div class="shape-preview shape-triangle" aria-label="Triangle accent"></div>
+<div class="circle-guide-sample" aria-label="Circular guide motif"></div>
+<div class="grid-sample" aria-label="Grid lines"></div>
+</div>
+</div>
 <ul>
 <li>斜線</li>
 <li>三角形アクセント</li>
