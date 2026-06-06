@@ -46,6 +46,7 @@ export function PaneTabs({
   onTabSelect,
   onTogglePinTab
 }: PaneTabsProps): ReactElement {
+  const hasTabs = paneState.tabIds.length > 0;
   const {
     closeContextMenu,
     contextMenu,
@@ -62,7 +63,7 @@ export function PaneTabs({
   const contextTabIsPinned = Boolean(contextTab?.isPinned);
 
   return (
-    <div className={`pane-tabs pane-tabs--${pane}`}>
+    <div className={`pane-tabs pane-tabs--${pane}${hasTabs ? " pane-tabs--has-tabs" : " pane-tabs--empty"}`}>
       <PaneTabBar
         closingTabIds={closingTabIds}
         pane={pane}

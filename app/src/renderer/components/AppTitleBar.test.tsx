@@ -148,6 +148,18 @@ describe("AppTitleBar", () => {
     expect(screen.queryByRole("button", { name: "Save as PDF" })).toBeNull();
   });
 
+  it("keeps the title bar background when no tabs are open", () => {
+    renderTitleBar({
+      leftPane: emptyPane(),
+      tabs: {}
+    });
+
+    expect(document.querySelector(".title-bar-tabs")).toHaveClass("title-bar-tabs--empty");
+    expect(document.querySelector(".title-bar-tabs .pane-tabs")).toHaveClass("pane-tabs--empty");
+    expect(document.querySelector(".title-bar-tabs .pane-tab-bar-shell")).toHaveClass("pane-tab-bar-shell--empty");
+    expect(document.querySelector(".title-bar .pane-tab")).toBeNull();
+  });
+
   it("keeps gaps around title bar action buttons draggable", () => {
     const shellCss = readFileSync("src/renderer/styles/shell-sidebar.css", "utf8");
     const editorCss = readFileSync("src/renderer/styles/workspace-editor.css", "utf8");
@@ -180,8 +192,8 @@ describe("AppTitleBar", () => {
     const editorCss = readFileSync("src/renderer/styles/workspace-editor.css", "utf8");
 
     expect(shellCss).toMatch(/\.title-bar-tabs\s*\{[^}]*overflow:\s*hidden;/s);
-    expect(editorCss).toMatch(/\.title-bar-tabs--split \.pane-tabs--left\s*\{[^}]*inset -1px 0 0 var\(--border\)/s);
-    expect(editorCss).toMatch(/\.title-bar-tabs--split \.pane-tabs--right\s*\{[^}]*inset 1px 0 0 var\(--border\)/s);
+    expect(editorCss).toMatch(/\.title-bar-tabs--split \.pane-tabs--left\.pane-tabs--has-tabs\s*\{[^}]*inset -1px 0 0 var\(--border\)/s);
+    expect(editorCss).toMatch(/\.title-bar-tabs--split \.pane-tabs--right\.pane-tabs--has-tabs\s*\{[^}]*inset 1px 0 0 var\(--border\)/s);
     expect(editorCss).toMatch(/\.title-bar-tabs--split \.pane-tab-bar-shell\s*\{[^}]*padding-inline:\s*8px;/s);
   });
 
@@ -192,11 +204,14 @@ describe("AppTitleBar", () => {
 
     expect(shellCss).toMatch(/\.app-shell\s*\{[^}]*grid-template-rows:\s*52px minmax\(0, 1fr\) 34px;/s);
     expect(editorCss).toMatch(/\.pane-tab-bar-shell\s*\{[^}]*height:\s*52px;/s);
-    expect(shellCss).toMatch(/\.title-bar-tabs\s*\{[^}]*background:\s*var\(--surface\);/s);
-    expect(shellCss).toMatch(/\.title-bar-tabs\s*\{[^}]*box-shadow:\s*inset 0 -1px 0 var\(--border\);/s);
-    expect(editorCss).toMatch(/\.pane-tabs\s*\{[^}]*background:\s*var\(--surface\);/s);
-    expect(editorCss).toMatch(/\.pane-tab-bar-shell\s*\{[^}]*background:\s*var\(--surface\);/s);
-    expect(designCss).toMatch(/\.title-bar-tabs,\s*\.title-bar \.pane-tabs,\s*\.title-bar \.pane-tab-bar,\s*\.title-bar \.pane-tab-bar-shell\s*\{[^}]*background:\s*var\(--color-surface-elevated\);/s);
+    expect(shellCss).toMatch(/\.title-bar-tabs\s*\{[^}]*background:\s*var\(--title-bar-bg\);/s);
+    expect(shellCss).toMatch(/\.title-bar-tabs--has-tabs\s*\{[^}]*background:\s*var\(--surface\);/s);
+    expect(shellCss).toMatch(/\.title-bar-tabs--has-tabs\s*\{[^}]*box-shadow:\s*inset 0 -1px 0 var\(--border\);/s);
+    expect(editorCss).toMatch(/\.pane-tabs\s*\{[^}]*background:\s*transparent;/s);
+    expect(editorCss).toMatch(/\.pane-tabs--has-tabs\s*\{[^}]*background:\s*var\(--surface\);/s);
+    expect(editorCss).toMatch(/\.pane-tab-bar-shell\s*\{[^}]*background:\s*transparent;/s);
+    expect(editorCss).toMatch(/\.pane-tab-bar-shell--has-tabs\s*\{[^}]*background:\s*var\(--surface\);/s);
+    expect(designCss).toMatch(/\.title-bar-tabs--has-tabs,\s*\.title-bar \.pane-tabs--has-tabs,\s*\.title-bar \.pane-tabs--has-tabs \.pane-tab-bar,\s*\.title-bar \.pane-tab-bar-shell--has-tabs\s*\{[^}]*background:\s*var\(--color-surface-elevated\);/s);
   });
 
   it("lets title bar action tooltips render above the workspace layer", () => {

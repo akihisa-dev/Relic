@@ -72,6 +72,7 @@ export function AppTitleBar({
   const t = useT();
   const splitShortcut = formatShortcut(["mod", "\\"]);
   const toggleOutlineShortcut = formatShortcut(["mod", "shift", "B"]);
+  const hasTitleBarTabs = leftPane.tabIds.length > 0 || (isSplit && rightPane.tabIds.length > 0);
   const style = {
     "--title-bar-action-width": `${isRightPanelOpen ? rightPanelWidth : 208}px`,
     "--title-bar-left-offset": `${leftOffsetWidth}px`
@@ -129,7 +130,7 @@ export function AppTitleBar({
   return (
     <div className={`title-bar${isSplit ? " title-bar--split" : ""}${isRightPanelOpen ? " title-bar--right-panel-open" : ""}`} style={style}>
       <div className="title-bar-drag-area" />
-      <div className={`title-bar-tabs${isSplit ? " title-bar-tabs--split" : ""}`}>
+      <div className={`title-bar-tabs${isSplit ? " title-bar-tabs--split" : ""}${hasTitleBarTabs ? " title-bar-tabs--has-tabs" : " title-bar-tabs--empty"}`}>
         <PaneTabs
           closingTabIds={leftClosingTabIds}
           isSplitView={isSplit}

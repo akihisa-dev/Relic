@@ -476,23 +476,27 @@
 
 .pane-tabs {
   -webkit-app-region: drag;
-  background: var(--surface);
+  background: transparent;
   min-width: 0;
   overflow: hidden;
   position: relative;
 }
 
-.title-bar-tabs--split .pane-tabs {
+.pane-tabs--has-tabs {
+  background: var(--surface);
+}
+
+.title-bar-tabs--split .pane-tabs--has-tabs {
   box-shadow: inset 0 -1px 0 var(--border);
 }
 
-.title-bar-tabs--split .pane-tabs--left {
+.title-bar-tabs--split .pane-tabs--left.pane-tabs--has-tabs {
   box-shadow:
     inset -1px 0 0 var(--border),
     inset 0 -1px 0 var(--border);
 }
 
-.title-bar-tabs--split .pane-tabs--right {
+.title-bar-tabs--split .pane-tabs--right.pane-tabs--has-tabs {
   box-shadow:
     inset 1px 0 0 var(--border),
     inset 0 -1px 0 var(--border);
@@ -501,7 +505,7 @@
 .pane-tab-bar-shell {
   -webkit-app-region: drag;
   align-items: flex-end;
-  background: var(--surface);
+  background: transparent;
   border-bottom: 0;
   display: flex;
   gap: 0;
@@ -510,6 +514,10 @@
   overflow: hidden;
   padding: 0;
   position: relative;
+}
+
+.pane-tab-bar-shell--has-tabs {
+  background: var(--surface);
 }
 
 .title-bar-tabs--split .pane-tab-bar-shell {
