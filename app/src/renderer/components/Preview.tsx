@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef } from "react";
 import type { ReactElement } from "react";
 
 import type { EditorSettings } from "../../shared/ipc";
+import { appFontFamilyMap } from "../appFont";
 import { usePreviewEmbeds } from "../hooks/usePreviewEmbeds";
 import { useT } from "../i18n";
 import { renderDiagramElements } from "../diagramPreview";
@@ -16,13 +17,6 @@ interface PreviewProps {
   settings: EditorSettings;
   workspacePath?: string | null;
 }
-
-const fontFamilyMap: Record<EditorSettings["font"], string> = {
-  gothic: '"Hiragino Sans", "Yu Gothic", "Meiryo", sans-serif',
-  mincho: '"Hiragino Mincho ProN", "Yu Mincho", "MS Mincho", serif',
-  mono: 'Menlo, Consolas, "Courier New", monospace',
-  system: '-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif'
-};
 
 export function Preview({
   content,
@@ -134,7 +128,7 @@ export function Preview({
   }, []);
 
   const style: React.CSSProperties = {
-    fontFamily: fontFamilyMap[settings.font],
+    fontFamily: appFontFamilyMap[settings.font],
     fontSize: `${settings.fontSize}px`,
     lineHeight: settings.lineHeight,
     maxWidth: settings.maxWidth === "none" ? "none" : settings.maxWidth,

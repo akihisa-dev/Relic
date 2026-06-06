@@ -8,6 +8,7 @@ import { GFM } from "@lezer/markdown";
 import type { RefObject } from "react";
 
 import type { EditorSettings, UserDefinedField } from "../shared/ipc";
+import { appFontFamilyMap } from "./appFont";
 import { contextSelectionHighlightField } from "./editorContextSelectionHighlight";
 import { editorEditableCompartment } from "./editorEditable";
 import { createFrontmatterPropertiesField, frontmatterCollapsedField } from "./editorFrontmatter";
@@ -52,12 +53,6 @@ const typewriterExtension = ViewPlugin.fromClass(
   }
 );
 
-const fontFamilyMap: Record<EditorSettings["font"], string> = {
-  gothic: '"Hiragino Sans", "Yu Gothic", "Meiryo", sans-serif',
-  mincho: '"Hiragino Mincho ProN", "Yu Mincho", "MS Mincho", serif',
-  mono: 'Menlo, Consolas, "Courier New", monospace',
-  system: '-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif'
-};
 const composingViews = new WeakSet<EditorView>();
 const compositionEndedViews = new WeakSet<EditorView>();
 
@@ -324,7 +319,7 @@ export function buildWikiLinkCompletionSource(
 function buildEditorThemeExtension(settings: EditorSettings): Extension {
   return EditorView.theme({
     "&": {
-      fontFamily: fontFamilyMap[settings.font],
+      fontFamily: appFontFamilyMap[settings.font],
       fontSize: `${settings.fontSize}px`,
       lineHeight: String(settings.lineHeight),
       height: "100%"

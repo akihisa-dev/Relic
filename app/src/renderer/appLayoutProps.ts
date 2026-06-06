@@ -192,6 +192,7 @@ export function createAppLayoutProps(input: AppLayoutPropsInput): AppLayoutProps
   return {
     editorWorkspaceProps: createEditorWorkspaceProps(input),
     filesSidebarProps: createFilesSidebarProps(input),
+    font: input.editorSettings.font,
     language: input.editorSettings.language,
     overlaysProps: createOverlaysProps(input),
     railProps: createRailProps(input),

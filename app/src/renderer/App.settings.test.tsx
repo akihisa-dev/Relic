@@ -1,6 +1,7 @@
-import { fireEvent, screen } from "@testing-library/react";
+import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { defaultEditorSettings } from "../shared/ipc";
 import {
   installMatchMediaMock,
   makeRelicApi,
@@ -11,6 +12,7 @@ import {
   restoreNavigatorPlatform,
   setNavigatorPlatform
 } from "./appTestHelpers";
+import { appFontFamilyMap } from "./appFont";
 
 describe("App settings", () => {
   beforeAll(installMatchMediaMock);
@@ -41,5 +43,26 @@ describe("App settings", () => {
     expect(saveEditorSettings).toHaveBeenCalledWith(
       expect.objectContaining({ fontSize: 18 })
     );
+  });
+
+  it("設定フォントをアプリ全体の文字用CSS変数へ反映する", async () => {
+    window.relic = makeRelicApi({
+      getEditorSettings: vi.fn().mockResolvedValue({
+        ok: true,
+        value: { ...defaultEditorSettings, font: "mono", language: "ja" }
+      })
+    });
+
+    await renderApp();
+
+    await waitFor(() => {
+      const shell = document.querySelector<HTMLElement>(".app-shell");
+
+      expect(shell).not.toBeNull();
+      expect(shell?.style.fontFamily).toBe(appFontFamilyMap.mono);
+      expect(shell?.style.getPropertyValue("--font-body")).toBe(appFontFamilyMap.mono);
+      expect(shell?.style.getPropertyValue("--font-display")).toBe(appFontFamilyMap.mono);
+      expect(shell?.style.getPropertyValue("--font-mono")).toBe(appFontFamilyMap.mono);
+    });
   });
 });
