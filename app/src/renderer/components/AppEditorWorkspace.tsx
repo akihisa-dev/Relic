@@ -8,7 +8,6 @@ import type { AppLinkContextMenu } from "../appLinks";
 import type { HeadingScrollTarget, OutlineHeading } from "../editorDerivedState";
 import type { FileTab, PaneId, PanelTabKind } from "../store/editorStore";
 import type { RightPanelView, SecondarySidebarView } from "../store/uiStore";
-import { AppMainActions } from "./AppMainActions";
 import { AppRightPanel } from "./AppRightPanel";
 import { AppSecondarySidebar } from "./AppSecondarySidebar";
 import { PaneView } from "./PaneView";
@@ -144,14 +143,11 @@ export function AppEditorWorkspace({
   onRenameFile,
   onRevealTabFile,
   onRightPanelResizeStart,
-  onRightPanelViewButton,
   onSavePreviewAsPdf,
   onSecondarySidebarClose,
   onSecondarySidebarResizeStart,
   onScrollTargetHandled,
   onSetFocusedPane,
-  onSourceModeToggle,
-  onSplitToggle,
   onTabClose,
   onTabMove,
   onTabSelect,
@@ -170,25 +166,12 @@ export function AppEditorWorkspace({
   secondarySidebarView,
   secondarySidebarWidth,
   setLinkContextMenu,
-  showRightPanelLinksControl,
-  showRightPanelOutlineControl,
   userDefinedFields,
   workspaceName,
   workspacePath
 }: AppEditorWorkspaceProps): ReactElement {
   return (
     <main className="main-area">
-      <AppMainActions
-        isRightPanelOpen={isRightPanelOpen}
-        isSourceMode={isSourceMode}
-        isSplit={isSplit}
-        onRightPanelViewButton={onRightPanelViewButton}
-        onSourceModeToggle={onSourceModeToggle}
-        onSplitToggle={onSplitToggle}
-        rightPanelView={rightPanelView}
-        showRightPanelLinksControl={showRightPanelLinksControl}
-        showRightPanelOutlineControl={showRightPanelOutlineControl}
-      />
       <div className="editor-layout">
         <AppSecondarySidebar
           aiWorkspaceState={aiWorkspaceState}

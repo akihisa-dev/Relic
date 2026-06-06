@@ -55,8 +55,8 @@ describe("App rail panels", () => {
     expect(saveFeatureToggles).toHaveBeenCalledWith(expect.objectContaining({ rightPanelOutline: false }));
     expect(screen.queryByRole("button", { name: "アウトライン" })).toBeNull();
     expect(screen.getByRole("button", { name: "リンク" })).toBeInTheDocument();
-    expect(container.querySelector(".title-bar .main-area-actions")).not.toBeInTheDocument();
-    expect(container.querySelector(".main-area > .main-area-actions")).toBeInTheDocument();
+    expect(container.querySelector(".title-bar .main-area-actions")).toBeInTheDocument();
+    expect(container.querySelector(".main-area > .main-area-actions")).not.toBeInTheDocument();
     expect(container.querySelector(".right-panel")).not.toHaveClass("right-panel--closed");
 
     fireEvent.keyDown(window, { key: "B", metaKey: true, shiftKey: true });

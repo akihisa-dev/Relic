@@ -7,7 +7,7 @@
   box-shadow: none;
   display: grid;
   flex: 1 1 auto;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
   min-height: 0;
   min-width: 0;
   overflow: hidden;
@@ -16,15 +16,15 @@
 
 .main-area-actions {
   align-items: center;
-  background: var(--surface-subtle);
-  border-bottom: 1px solid var(--border);
-  border-left: 0;
+  -webkit-app-region: no-drag;
+  background: transparent;
+  border: 0;
   display: flex;
   gap: 4px;
   justify-content: flex-end;
-  min-height: 40px;
-  padding: 0 12px;
-  width: 100%;
+  min-height: 0;
+  padding: 0 14px 0 0;
+  width: auto;
   z-index: 18;
 }
 

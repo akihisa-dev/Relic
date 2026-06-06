@@ -24,16 +24,32 @@ describe("AppTitleBar", () => {
     expect(screen.queryByRole("button")).toBeNull();
   });
 
+  it("can host header actions without making them part of the drag area", () => {
+    render(
+      <AppTitleBar>
+        <div className="main-area-actions">
+          <button type="button">Action</button>
+        </div>
+      </AppTitleBar>
+    );
+
+    expect(document.querySelector(".title-bar .main-area-actions")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Action" })).toBeInTheDocument();
+  });
+
   it("keeps the title bar draggable and visually separate from the workspace", () => {
     const css = readFileSync("src/renderer/styles/shell-sidebar.css", "utf8");
     const designCss = readFileSync("src/renderer/styles/architectural-design.css", "utf8");
+    const editorCss = readFileSync("src/renderer/styles/workspace-editor.css", "utf8");
 
     expect(css).toMatch(/\.title-bar\s*\{[^}]*-webkit-app-region:\s*drag;/s);
     expect(css).toMatch(/\.app-shell\s*\{[^}]*grid-template-rows:\s*42px minmax\(0, 1fr\) 34px;/s);
     expect(designCss).toMatch(/\.app-shell\s*\{[^}]*grid-template-rows:\s*42px minmax\(0, 1fr\) 32px;/s);
-    expect(css).toMatch(/\.title-bar\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\);/s);
-    expect(css).toMatch(/\.title-bar-drag-area\s*\{[^}]*grid-column:\s*1 \/ -1;/s);
+    expect(css).toMatch(/\.title-bar\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\) auto;/s);
+    expect(css).toMatch(/\.title-bar-drag-area\s*\{[^}]*grid-column:\s*1;/s);
     expect(css).toMatch(/\.title-bar\s*\{[^}]*z-index:\s*40;/s);
+    expect(editorCss).toMatch(/\.main-area\s*\{[^}]*grid-template-rows:\s*minmax\(0, 1fr\);/s);
+    expect(editorCss).toMatch(/\.main-area-actions\s*\{[^}]*-webkit-app-region:\s*no-drag;/s);
     expect(designCss).toMatch(/--title-bar-bg:\s*var\(--color-surface-alt\);/);
   });
 
