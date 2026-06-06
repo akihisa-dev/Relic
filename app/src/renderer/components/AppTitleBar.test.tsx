@@ -170,4 +170,15 @@ describe("AppTitleBar", () => {
     expect(editorCss).toMatch(/\.pane-tab--active\s*\{[^}]*background:\s*var\(--surface\);/s);
   });
 
+  it("does not render diagonal blue panel decorations", () => {
+    const designCss = readFileSync("src/renderer/styles/architectural-design.css", "utf8");
+
+    expect(designCss).not.toMatch(/clip-path:\s*polygon/);
+    expect(designCss).not.toMatch(/\.workspace::before/);
+    expect(designCss).not.toMatch(/\.workspace::after/);
+    expect(designCss).not.toMatch(/\.sidebar::after/);
+    expect(designCss).not.toMatch(/\.secondary-sidebar::after/);
+    expect(designCss).not.toMatch(/\.right-panel::before/);
+  });
+
 });

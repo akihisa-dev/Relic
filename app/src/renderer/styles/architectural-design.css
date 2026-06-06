@@ -218,32 +218,6 @@ textarea {
   position: relative;
 }
 
-.workspace::before,
-.workspace::after {
-  background: var(--color-primary-dark);
-  clip-path: polygon(0 0, 100% 100%, 0 100%);
-  content: "";
-  opacity: 0.96;
-  pointer-events: none;
-  position: absolute;
-  z-index: 1;
-}
-
-.workspace::before {
-  bottom: 0;
-  height: min(28vh, 220px);
-  left: 0;
-  width: min(22vw, 260px);
-}
-
-.workspace::after {
-  bottom: 0;
-  height: min(34vh, 280px);
-  right: 0;
-  transform: scaleX(-1);
-  width: min(20vw, 260px);
-}
-
 .rail,
 .sidebar,
 .secondary-sidebar,
@@ -313,21 +287,6 @@ textarea {
 .sidebar,
 .secondary-sidebar {
   border-width: 0 1px 0 0;
-}
-
-.sidebar::after,
-.secondary-sidebar::after {
-  background: var(--color-primary-dark);
-  bottom: 0;
-  clip-path: polygon(0 0, 100% 100%, 0 100%);
-  content: "";
-  height: min(24vh, 180px);
-  left: 0;
-  opacity: 0.96;
-  pointer-events: none;
-  position: absolute;
-  width: min(74%, 220px);
-  z-index: 0;
 }
 
 .sidebar > *,
@@ -657,19 +616,6 @@ textarea {
   z-index: 1;
 }
 
-.right-panel::before {
-  background: var(--color-primary-dark);
-  clip-path: polygon(100% 0, 100% 100%, 0 100%);
-  content: "";
-  height: min(32vh, 240px);
-  pointer-events: none;
-  position: absolute;
-  right: 0;
-  top: 0;
-  width: 58px;
-  z-index: 0;
-}
-
 .right-panel > * {
   position: relative;
   z-index: 1;
@@ -823,12 +769,4 @@ textarea {
   margin: 0;
   min-height: 32px;
   padding: 0 18px;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .workspace::before,
-  .workspace::after,
-  .right-panel::before {
-    transition: none;
-  }
 }
