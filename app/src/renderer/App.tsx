@@ -236,7 +236,7 @@ export function App(): ReactElement {
     void reloadCharts();
   }, [reloadCharts]);
 
-  const { flushTabsBeforeClose, saveStatusByTabId } = useEditorAutoSave({
+  const { flushTabsBeforeClose } = useEditorAutoSave({
     conflictCloseBlockedMessage: t("pane.externalConflictCloseBlocked"),
     onSaved: handleFileSaved,
     onSaveError: setWorkspaceError,
@@ -555,7 +555,6 @@ export function App(): ReactElement {
   });
   const appLayoutProps = createAppLayoutProps({
     activeChartIds,
-    activeFileTabInFocusedPane,
     activePanelTabIds,
     activeSidebarView,
     aiWorkspaceEditorActions,
@@ -671,7 +670,6 @@ export function App(): ReactElement {
     rightPaneScrollHeading,
     rightPanelView: effectiveRightPanelView,
     rightPanelWidth,
-    saveStatusByTabId,
     searchError,
     searchFrontmatterField,
     searchLimitNotice,

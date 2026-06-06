@@ -5,7 +5,6 @@ type EditorWorkspaceProps = AppLayoutProps["editorWorkspaceProps"];
 type FilesSidebarProps = AppLayoutProps["filesSidebarProps"];
 type OverlaysProps = AppLayoutProps["overlaysProps"];
 type RailProps = AppLayoutProps["railProps"];
-type StatusBarProps = AppLayoutProps["statusBarProps"];
 type TitleBarProps = AppLayoutProps["titleBarProps"];
 
 export function createEditorWorkspaceProps(input: AppLayoutPropsInput): EditorWorkspaceProps {
@@ -181,13 +180,6 @@ export function createRailProps(input: AppLayoutPropsInput): RailProps {
     revealWorkspaceLabel: input.t("files.revealInFinder"),
     viewSwitcherLabel: input.t("nav.viewSwitcher"),
     workspacesLabel: input.t("files.registeredWorkspaces")
-  };
-}
-
-export function createStatusBarProps(input: AppLayoutPropsInput): StatusBarProps {
-  return {
-    activeFileTab: input.activeFileTabInFocusedPane,
-    saveStatus: input.activeFileTabInFocusedPane ? input.saveStatusByTabId[input.activeFileTabInFocusedPane.id] : undefined
   };
 }
 

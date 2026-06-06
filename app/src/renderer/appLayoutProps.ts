@@ -5,7 +5,6 @@ import {
   createFilesSidebarProps,
   createOverlaysProps,
   createRailProps,
-  createStatusBarProps,
   createTitleBarProps
 } from "./appLayoutPropsSections";
 
@@ -13,12 +12,10 @@ type EditorWorkspaceProps = AppLayoutProps["editorWorkspaceProps"];
 type FilesSidebarProps = AppLayoutProps["filesSidebarProps"];
 type OverlaysProps = AppLayoutProps["overlaysProps"];
 type RailProps = AppLayoutProps["railProps"];
-type StatusBarProps = AppLayoutProps["statusBarProps"];
 type TitleBarProps = AppLayoutProps["titleBarProps"];
 
 export interface AppLayoutPropsInput {
   activeChartIds: RailProps["activeChartIds"];
-  activeFileTabInFocusedPane: StatusBarProps["activeFileTab"];
   activePanelTabIds: RailProps["activePanelTabIds"];
   activeSidebarView: RailProps["activeSidebarView"];
   aiWorkspaceEditorActions: Pick<
@@ -147,7 +144,6 @@ export interface AppLayoutPropsInput {
   rightPaneScrollHeading: EditorWorkspaceProps["rightPaneScrollHeading"];
   rightPanelView: TitleBarProps["rightPanelView"];
   rightPanelWidth: TitleBarProps["rightPanelWidth"];
-  saveStatusByTabId: Record<string, StatusBarProps["saveStatus"]>;
   searchError: FilesSidebarProps["searchError"];
   searchFrontmatterField: FilesSidebarProps["searchFrontmatterField"];
   searchLimitNotice: FilesSidebarProps["searchLimitNotice"];
@@ -195,7 +191,6 @@ export function createAppLayoutProps(input: AppLayoutPropsInput): AppLayoutProps
     language: input.editorSettings.language,
     overlaysProps: createOverlaysProps(input),
     railProps: createRailProps(input),
-    statusBarProps: createStatusBarProps(input),
     titleBarProps: createTitleBarProps(input)
   };
 }

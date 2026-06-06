@@ -354,7 +354,7 @@ describe("App file tabs", () => {
     if (tab?.kind === "file") expect(tab.content).toBe("保存に失敗しても残る本文");
   });
 
-  it("ステータスバーに保存状態を表示する", async () => {
+  it("ウィンドウ最下部のステータスバーは表示せず、メインエディタ側の文字数表示を残す", async () => {
     window.relic = makeRelicApi({
       getWorkspaceState: vi.fn().mockResolvedValue({
         ok: true,
@@ -372,14 +372,9 @@ describe("App file tabs", () => {
     await renderApp();
     fireEvent.click(await screen.findByRole("button", { name: /読書メモ/ }));
 
-    expect(await screen.findByText("保存済み")).toBeInTheDocument();
-
-    const activeTabId = useEditorStore.getState().leftPane.activeTabId!;
-    act(() => {
-      useEditorStore.getState().updateTabContent(activeTabId, "未保存の本文");
-    });
-
-    expect(await screen.findByText("未保存")).toBeInTheDocument();
+    expect(document.querySelector(".status-bar")).not.toBeInTheDocument();
+    expect(await screen.findByText("5 文字 / 1 語")).toBeInTheDocument();
+    expect(screen.queryByText("保存済み")).not.toBeInTheDocument();
   });
 
   it("未保存タブを閉じる前に即時保存する", async () => {
