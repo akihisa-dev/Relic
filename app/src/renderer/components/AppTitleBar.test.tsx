@@ -71,6 +71,8 @@ describe("AppTitleBar", () => {
     expect(editorCss).toMatch(/\.pane-tab\s*\{[^}]*background:\s*var\(--chrome-tab-bg,/s);
     expect(editorCss).toMatch(/\.pane-tab--active\s*\{[^}]*background:\s*var\(--chrome-tab-active-bg,/s);
     expect(editorCss).toMatch(/\.pane-tab-name\s*\{[^}]*min-width:\s*0;/s);
+    expect(editorCss).toMatch(/\.pane-tab-bar--drop-end::after\s*\{[^}]*position:\s*static;/s);
+    expect(editorCss).toMatch(/\.pane-tab-bar--drop-end::after\s*\{[^}]*flex:\s*0 0 3px;/s);
   });
 
   it("manages split pane tab lanes with pane-local boundaries", () => {
