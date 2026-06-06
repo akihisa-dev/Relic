@@ -161,14 +161,17 @@ describe("AppTitleBar", () => {
     expect(editorCss).toMatch(/\.pane-tab-bar\s*\{[^}]*scrollbar-width:\s*none;/s);
   });
 
-  it("keeps title bar tabs compact inside the available tab lane", () => {
+  it("keeps title bar tabs compact and shrinkable inside the available tab lane", () => {
     const editorCss = readFileSync("src/renderer/styles/workspace-editor.css", "utf8");
 
     expect(editorCss).toMatch(/\.pane-tab-bar\s*\{[^}]*gap:\s*4px;/s);
     expect(editorCss).toMatch(/\.pane-tab-bar\s*\{[^}]*width:\s*100%;/s);
     expect(editorCss).toMatch(/\.pane-tabs\s*\{[^}]*overflow:\s*hidden;/s);
-    expect(editorCss).toMatch(/\.pane-tab\s*\{[^}]*flex:\s*0 1 220px;/s);
-    expect(editorCss).toMatch(/\.pane-tab\s*\{[^}]*min-width:\s*148px;/s);
+    expect(editorCss).toMatch(/\.pane-tab\s*\{[^}]*flex:\s*1 1 132px;/s);
+    expect(editorCss).toMatch(/\.pane-tab\s*\{[^}]*max-width:\s*220px;/s);
+    expect(editorCss).toMatch(/\.pane-tab\s*\{[^}]*min-width:\s*64px;/s);
+    expect(editorCss).toMatch(/\.pane-tab\s*\{[^}]*padding:\s*0 8px;/s);
+    expect(editorCss).toMatch(/\.pane-tab-bar--fit \.pane-tab\s*\{[^}]*flex-basis:\s*104px;/s);
     expect(editorCss).toMatch(/\.pane-tab-name\s*\{[^}]*min-width:\s*0;/s);
   });
 
