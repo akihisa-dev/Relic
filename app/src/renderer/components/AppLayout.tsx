@@ -1,6 +1,7 @@
-import type { ComponentProps, ReactElement } from "react";
+import type { ComponentProps, CSSProperties, ReactElement } from "react";
 
-import type { AppLanguage } from "../../shared/ipc";
+import type { AppLanguage, EditorSettings } from "../../shared/ipc";
+import { appFontFamilyMap } from "../appFont";
 import { I18nProvider } from "../i18n";
 import { AppEditorWorkspace } from "./AppEditorWorkspace";
 import { AppFilesSidebar } from "./AppFilesSidebar";
@@ -12,6 +13,7 @@ import { AppTitleBar } from "./AppTitleBar";
 export interface AppLayoutProps {
   editorWorkspaceProps: ComponentProps<typeof AppEditorWorkspace>;
   filesSidebarProps: ComponentProps<typeof AppFilesSidebar>;
+  font: EditorSettings["font"];
   language: AppLanguage;
   overlaysProps: ComponentProps<typeof AppOverlays>;
   railProps: ComponentProps<typeof AppRail>;
@@ -22,15 +24,24 @@ export interface AppLayoutProps {
 export function AppLayout({
   editorWorkspaceProps,
   filesSidebarProps,
+  font,
   language,
   overlaysProps,
   railProps,
   statusBarProps,
   titleBarProps
 }: AppLayoutProps): ReactElement {
+  const fontFamily = appFontFamilyMap[font];
+  const appFontStyle: CSSProperties & Record<"--font-body" | "--font-display" | "--font-mono", string> = {
+    "--font-body": fontFamily,
+    "--font-display": fontFamily,
+    "--font-mono": fontFamily,
+    fontFamily
+  };
+
   return (
     <I18nProvider language={language}>
-      <div className="app-shell">
+      <div className="app-shell" style={appFontStyle}>
         <AppTitleBar {...titleBarProps} />
         <div className="workspace">
           <AppRail {...railProps} />
