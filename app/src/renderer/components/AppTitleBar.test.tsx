@@ -29,6 +29,8 @@ describe("AppTitleBar", () => {
     const designCss = readFileSync("src/renderer/styles/architectural-design.css", "utf8");
 
     expect(css).toMatch(/\.title-bar\s*\{[^}]*-webkit-app-region:\s*drag;/s);
+    expect(css).toMatch(/\.app-shell\s*\{[^}]*grid-template-rows:\s*42px minmax\(0, 1fr\) 34px;/s);
+    expect(designCss).toMatch(/\.app-shell\s*\{[^}]*grid-template-rows:\s*42px minmax\(0, 1fr\) 32px;/s);
     expect(css).toMatch(/\.title-bar\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\);/s);
     expect(css).toMatch(/\.title-bar-drag-area\s*\{[^}]*grid-column:\s*1 \/ -1;/s);
     expect(css).toMatch(/\.title-bar\s*\{[^}]*z-index:\s*40;/s);

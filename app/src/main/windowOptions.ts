@@ -28,7 +28,7 @@ export function createMainWindowOptions({
     ...(isMac
       ? {
           titleBarStyle: "hiddenInset",
-          trafficLightPosition: { x: 10, y: 12 }
+          trafficLightPosition: { x: 10, y: 9 }
         }
       : {}),
     webPreferences: {
