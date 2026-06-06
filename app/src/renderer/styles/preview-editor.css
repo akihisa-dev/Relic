@@ -1612,12 +1612,13 @@
   cursor: col-resize;
   padding: 0;
   position: absolute;
-  right: 0;
+  right: -4px;
   top: 0;
   transition:
     background-color var(--motion-fast) var(--ease-standard),
     box-shadow var(--motion-fast) var(--ease-standard),
     transform var(--motion-fast) var(--ease-press);
+  touch-action: none;
   width: 8px;
   z-index: 20;
 }
@@ -1629,6 +1630,24 @@
 .sidebar-resize-handle:hover,
 .sidebar-resize-handle--active {
   background: rgba(31, 35, 40, 0.12);
+}
+
+.sidebar-resize-handle::after {
+  background: var(--border);
+  bottom: 0;
+  content: "";
+  left: 50%;
+  opacity: 0.9;
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  width: 1px;
+}
+
+.sidebar-resize-handle:hover::after,
+.sidebar-resize-handle--active::after {
+  background: var(--accent);
+  width: 2px;
 }
 
 .sidebar-resize-handle--active {

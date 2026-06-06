@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+
 import {
   fireEvent,
   screen,
@@ -38,6 +40,19 @@ describe("App sidebar panels", () => {
     vi.clearAllMocks();
     restoreNavigatorPlatform();
     resetRendererStores();
+  });
+
+  it("3つのサイド境界をドラッグ可能なリサイズハンドルとして見せる", () => {
+    const previewCss = readFileSync("src/renderer/styles/preview-editor.css", "utf8");
+    const workspaceCss = readFileSync("src/renderer/styles/workspace-editor.css", "utf8");
+    const rightPanelCss = readFileSync("src/renderer/styles/right-panel.css", "utf8");
+
+    expect(previewCss).toMatch(/\.sidebar-resize-handle\s*\{[^}]*right:\s*-4px;[^}]*touch-action:\s*none;/s);
+    expect(previewCss).toMatch(/\.sidebar-resize-handle::after\s*\{[^}]*width:\s*1px;/s);
+    expect(workspaceCss).toMatch(/\.secondary-sidebar-resize-handle\s*\{[^}]*right:\s*-4px;[^}]*touch-action:\s*none;/s);
+    expect(workspaceCss).toMatch(/\.secondary-sidebar-resize-handle::after\s*\{[^}]*width:\s*1px;/s);
+    expect(rightPanelCss).toMatch(/\.right-panel-resize-handle\s*\{[^}]*left:\s*-4px;[^}]*touch-action:\s*none;/s);
+    expect(rightPanelCss).toMatch(/\.right-panel-resize-handle::after\s*\{[^}]*width:\s*1px;/s);
   });
 
   it("ファイルツリーのフォルダを開閉できる", async () => {
