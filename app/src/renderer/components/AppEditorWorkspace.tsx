@@ -212,6 +212,14 @@ export function AppEditorWorkspace({
           width={secondarySidebarWidth}
           workspaceName={workspaceName}
         />
+        {isSecondarySidebarOpen ? (
+          <button
+            aria-label="Resize secondary sidebar"
+            className={`layout-resize-boundary layout-resize-boundary--secondary-sidebar${isSecondarySidebarResizing ? " layout-resize-boundary--active" : ""}`}
+            onMouseDown={onSecondarySidebarResizeStart}
+            type="button"
+          />
+        ) : null}
         <div className="editor-workspace">
           <div className={`panes-container${isSplit ? " panes-container--split" : ""}${isSplitClosing ? " panes-container--closing-split" : ""}`}>
             <PaneView
@@ -301,6 +309,14 @@ export function AppEditorWorkspace({
           </div>
         </div>
 
+        {isRightPanelOpen ? (
+          <button
+            aria-label="Resize right panel"
+            className={`layout-resize-boundary layout-resize-boundary--right-panel${isRightPanelResizing ? " layout-resize-boundary--active" : ""}`}
+            onMouseDown={onRightPanelResizeStart}
+            type="button"
+          />
+        ) : null}
         <AppRightPanel
           backlinks={backlinks}
           isLoadingBacklinks={isLoadingBacklinks}

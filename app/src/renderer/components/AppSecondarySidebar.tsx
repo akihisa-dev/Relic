@@ -50,8 +50,11 @@ export function AppSecondarySidebar({
   width,
   workspaceName
 }: AppSecondarySidebarProps): ReactElement {
-  const t = useT();
   const shouldShowAIChat = isOpen && view === "ai-chat";
+  const t = useT();
+
+  void isResizing;
+  void onResizeStart;
 
   return (
     <aside
@@ -60,12 +63,6 @@ export function AppSecondarySidebar({
       className={`secondary-sidebar${isOpen ? "" : " secondary-sidebar--closed"}${isResizing ? " secondary-sidebar--resizing" : ""}`}
       style={{ flexBasis: isOpen ? width : 0, width: isOpen ? width : 0 }}
     >
-      <button
-        aria-label={t("aiChat.resize")}
-        className={`secondary-sidebar-resize-handle${isResizing ? " secondary-sidebar-resize-handle--active" : ""}`}
-        onMouseDown={onResizeStart}
-        type="button"
-      />
       <header className="secondary-sidebar-header">
         <span>{t("aiChat.title")}</span>
         <button aria-label={t("aiChat.close")} className="secondary-sidebar-close-button" onClick={onClose} type="button">

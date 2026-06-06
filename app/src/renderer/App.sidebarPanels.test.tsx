@@ -42,17 +42,12 @@ describe("App sidebar panels", () => {
     resetRendererStores();
   });
 
-  it("3つのサイド境界をドラッグ可能なリサイズハンドルとして見せる", () => {
-    const previewCss = readFileSync("src/renderer/styles/preview-editor.css", "utf8");
-    const workspaceCss = readFileSync("src/renderer/styles/workspace-editor.css", "utf8");
-    const rightPanelCss = readFileSync("src/renderer/styles/right-panel.css", "utf8");
+  it("サイド境界を透明なレイアウト境界としてドラッグ可能にする", () => {
+    const css = readFileSync("src/renderer/styles/shell-sidebar.css", "utf8");
 
-    expect(previewCss).toMatch(/\.sidebar-resize-handle\s*\{[^}]*right:\s*-4px;[^}]*touch-action:\s*none;/s);
-    expect(previewCss).toMatch(/\.sidebar-resize-handle::after\s*\{[^}]*width:\s*1px;/s);
-    expect(workspaceCss).toMatch(/\.secondary-sidebar-resize-handle\s*\{[^}]*right:\s*-4px;[^}]*touch-action:\s*none;/s);
-    expect(workspaceCss).toMatch(/\.secondary-sidebar-resize-handle::after\s*\{[^}]*width:\s*1px;/s);
-    expect(rightPanelCss).toMatch(/\.right-panel-resize-handle\s*\{[^}]*left:\s*-4px;[^}]*touch-action:\s*none;/s);
-    expect(rightPanelCss).toMatch(/\.right-panel-resize-handle::after\s*\{[^}]*width:\s*1px;/s);
+    expect(css).toMatch(/\.layout-resize-boundary\s*\{[^}]*cursor:\s*col-resize;[^}]*flex:\s*0 0 8px;/s);
+    expect(css).toMatch(/\.layout-resize-boundary\s*\{[^}]*margin-left:\s*-4px;[^}]*margin-right:\s*-4px;/s);
+    expect(css).toMatch(/\.layout-resize-boundary\s*\{[^}]*background:\s*transparent;[^}]*touch-action:\s*none;/s);
   });
 
   it("ファイルツリーのフォルダを開閉できる", async () => {
@@ -202,7 +197,7 @@ describe("App sidebar panels", () => {
     await screen.findByText("Notes");
 
     const sidebar = container.querySelector(".sidebar");
-    const resizeHandle = container.querySelector(".sidebar-resize-handle");
+    const resizeHandle = container.querySelector(".layout-resize-boundary--sidebar");
 
     expect(sidebar).toBeInstanceOf(HTMLElement);
     expect(resizeHandle).toBeInstanceOf(HTMLElement);
@@ -210,7 +205,7 @@ describe("App sidebar panels", () => {
     fireEvent.mouseDown(resizeHandle as HTMLElement, { clientX: 260 });
 
     expect(sidebar).toHaveClass("sidebar--resizing");
-    expect(resizeHandle).toHaveClass("sidebar-resize-handle--active");
+    expect(resizeHandle).toHaveClass("layout-resize-boundary--active");
 
     fireEvent.mouseMove(document, { clientX: 800 });
 
@@ -219,7 +214,7 @@ describe("App sidebar panels", () => {
     fireEvent.mouseUp(document);
 
     expect(sidebar).not.toHaveClass("sidebar--resizing");
-    expect(resizeHandle).not.toHaveClass("sidebar-resize-handle--active");
+    expect(resizeHandle).not.toHaveClass("layout-resize-boundary--active");
 
     fireEvent.mouseDown(resizeHandle as HTMLElement, { clientX: 500 });
     fireEvent.mouseMove(document, { clientX: -200 });
@@ -242,7 +237,7 @@ describe("App sidebar panels", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Cowork" }));
 
     const secondarySidebar = container.querySelector(".secondary-sidebar");
-    const resizeHandle = container.querySelector(".secondary-sidebar-resize-handle");
+    const resizeHandle = container.querySelector(".layout-resize-boundary--secondary-sidebar");
 
     expect(secondarySidebar).toBeInstanceOf(HTMLElement);
     expect(resizeHandle).toBeInstanceOf(HTMLElement);
@@ -251,7 +246,7 @@ describe("App sidebar panels", () => {
     fireEvent.mouseDown(resizeHandle as HTMLElement, { clientX: 480 });
 
     expect(secondarySidebar).toHaveClass("secondary-sidebar--resizing");
-    expect(resizeHandle).toHaveClass("secondary-sidebar-resize-handle--active");
+    expect(resizeHandle).toHaveClass("layout-resize-boundary--active");
 
     fireEvent.mouseMove(document, { clientX: 900 });
 
@@ -261,7 +256,7 @@ describe("App sidebar panels", () => {
     expect(saveAppUiSettings).toHaveBeenLastCalledWith({ coworkPanelWidth: 520 });
 
     expect(secondarySidebar).not.toHaveClass("secondary-sidebar--resizing");
-    expect(resizeHandle).not.toHaveClass("secondary-sidebar-resize-handle--active");
+    expect(resizeHandle).not.toHaveClass("layout-resize-boundary--active");
 
     fireEvent.mouseDown(resizeHandle as HTMLElement, { clientX: 520 });
     fireEvent.mouseMove(document, { clientX: -200 });
