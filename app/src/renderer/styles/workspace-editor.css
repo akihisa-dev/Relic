@@ -443,7 +443,7 @@
 }
 
 .pane-tabs {
-  -webkit-app-region: drag;
+  -webkit-app-region: no-drag;
   background: transparent;
   min-width: 0;
   overflow: hidden;
@@ -471,7 +471,7 @@
 }
 
 .pane-tab-bar-shell {
-  -webkit-app-region: drag;
+  -webkit-app-region: no-drag;
   align-items: flex-end;
   background: var(--chrome-top-bg, var(--title-bar-bg));
   border-bottom: 0;

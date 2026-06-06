@@ -7,6 +7,7 @@ import { defaultEditorSettings } from "../../shared/ipc";
 import { I18nProvider } from "../i18n";
 import { largeMarkdownMaxContentBytes, largeMarkdownMaxLineLength } from "../largeMarkdown";
 import { useEditorStore, type PaneState, type Tab } from "../store/editorStore";
+import { PANE_TAB_DRAG_MIME, serializePaneTabDragPayload } from "../paneViewModel";
 import { PaneView, type PaneViewProps } from "./PaneView";
 
 const emptyPane = (): PaneState => ({ activeTabId: null, history: [], tabIds: [] });
@@ -166,6 +167,34 @@ describe("PaneView", () => {
     expect(document.querySelector(".title-bar .pane-tab-bar")).not.toBeInTheDocument();
     expect(document.querySelector(".pane .pane-tab-bar")).toBeInTheDocument();
     expect(document.querySelectorAll(".pane .pane-tab")).toHaveLength(2);
+  });
+
+  it("タブバーの空き領域へドロップして分割ペイン間でタブを移動できる", () => {
+    setPaneState(
+      { [fileTab.id]: fileTab },
+      { activeTabId: fileTab.id, history: [fileTab.id], tabIds: [fileTab.id] },
+      emptyPane()
+    );
+    const onTabMove = vi.fn();
+
+    renderPaneView({ onTabMove, pane: "right" });
+
+    const tabBar = document.querySelector(".pane-tab-bar");
+    expect(tabBar).toBeInstanceOf(HTMLElement);
+
+    fireEvent.dragOver(tabBar as HTMLElement, {
+      dataTransfer: { types: [PANE_TAB_DRAG_MIME] }
+    });
+    fireEvent.drop(tabBar as HTMLElement, {
+      dataTransfer: {
+        getData: (type: string) => type === PANE_TAB_DRAG_MIME
+          ? serializePaneTabDragPayload({ fromPane: "left", tabId: fileTab.id })
+          : "",
+        types: [PANE_TAB_DRAG_MIME]
+      }
+    });
+
+    expect(onTabMove).toHaveBeenCalledWith("left", "right", fileTab.id, null, "after");
   });
 
   it("shows a warning for unreadable frontmatter while keeping the editor editable", () => {
