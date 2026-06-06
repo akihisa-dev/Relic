@@ -248,4 +248,11 @@ describe("AppTitleBar", () => {
     expect(designCss).not.toMatch(/\.right-panel::before/);
   });
 
+  it("keeps the right panel header compact", () => {
+    const designCss = readFileSync("src/renderer/styles/architectural-design.css", "utf8");
+
+    expect(designCss).toMatch(/\.right-panel-title\s*\{[^}]*min-height:\s*44px;[^}]*padding:\s*12px 18px 9px;/s);
+    expect(designCss).toMatch(/\.right-panel-content\s*\{[^}]*padding-top:\s*14px;/s);
+  });
+
 });
