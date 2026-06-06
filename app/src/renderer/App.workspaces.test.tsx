@@ -55,6 +55,17 @@ describe("App workspaces", () => {
     expect(css).toMatch(/\.workspace-actions \.workspace-action-button\s*\{[^}]*min-height:\s*28px;/s);
   });
 
+  it("ファイル検索と作成操作は一覧スクロールから外して固定する", () => {
+    const css = readFileSync("src/renderer/styles/file-tree-search.css", "utf8");
+
+    expect(css).toMatch(/\.sidebar-body:has\(> \.files-sidebar-section\)\s*\{[^}]*overflow:\s*hidden;/s);
+    expect(css).toMatch(/\.files-sidebar-section\s*\{[^}]*grid-template-rows:\s*auto minmax\(0, 1fr\) auto;/s);
+    expect(css).toMatch(/\.files-sidebar-fixed-controls\s*\{[^}]*position:\s*relative;/s);
+    expect(css).toMatch(/\.files-sidebar-fixed-controls\s*\{[^}]*z-index:\s*6;/s);
+    expect(css).toMatch(/\.files-sidebar-scroll-area\s*\{[^}]*min-height:\s*0;/s);
+    expect(css).toMatch(/\.files-sidebar-scroll-area\s*\{[^}]*overflow-y:\s*auto;/s);
+  });
+
   it("新規ファイルボタンから名前なしでファイルを作成する", async () => {
     const createMarkdownFile = vi.fn().mockResolvedValue({
       ok: true,
