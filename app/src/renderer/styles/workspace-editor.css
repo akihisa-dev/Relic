@@ -639,7 +639,10 @@
 }
 
 .pane-tab-bar--drop-end::after {
-  right: 8px;
+  align-self: stretch;
+  flex: 0 0 3px;
+  margin: 4px 0;
+  position: static;
 }
 
 .pane-tab:active {
