@@ -498,7 +498,7 @@
 
 .panes-container--split .pane-tabs--right.pane-tabs--has-tabs {
   box-shadow:
-    inset 1px 0 0 var(--border),
+    inset -1px 0 0 var(--border),
     inset 0 -1px 0 var(--border);
 }
 
@@ -530,8 +530,8 @@
 }
 
 .panes-container--split .pane-tabs--right .pane-tab-bar-shell {
-  padding-left: 10px;
-  padding-right: 0;
+  padding-left: 0;
+  padding-right: 10px;
 }
 
 .panes-container--split .pane-tab-bar {

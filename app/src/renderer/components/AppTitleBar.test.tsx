@@ -52,10 +52,11 @@ describe("AppTitleBar", () => {
     const editorCss = readFileSync("src/renderer/styles/workspace-editor.css", "utf8");
 
     expect(editorCss).toMatch(/\.panes-container--split \.pane-tabs--left\.pane-tabs--has-tabs\s*\{[^}]*inset -1px 0 0 var\(--border\)/s);
-    expect(editorCss).toMatch(/\.panes-container--split \.pane-tabs--right\.pane-tabs--has-tabs\s*\{[^}]*inset 1px 0 0 var\(--border\)/s);
+    expect(editorCss).toMatch(/\.panes-container--split \.pane-tabs--right\.pane-tabs--has-tabs\s*\{[^}]*inset -1px 0 0 var\(--border\)/s);
     expect(editorCss).toMatch(/\.panes-container--split \.pane-tab-bar-shell\s*\{[^}]*padding-inline:\s*8px;/s);
     expect(editorCss).toMatch(/\.panes-container--split \.pane-tabs--left \.pane-tab-bar-shell\s*\{[^}]*padding-right:\s*10px;/s);
-    expect(editorCss).toMatch(/\.panes-container--split \.pane-tabs--right \.pane-tab-bar-shell\s*\{[^}]*padding-left:\s*10px;/s);
+    expect(editorCss).toMatch(/\.panes-container--split \.pane-tabs--right \.pane-tab-bar-shell\s*\{[^}]*padding-left:\s*0;/s);
+    expect(editorCss).toMatch(/\.panes-container--split \.pane-tabs--right \.pane-tab-bar-shell\s*\{[^}]*padding-right:\s*10px;/s);
     expect(editorCss).toMatch(/\.panes-container--split \.pane-tab-bar\s*\{[^}]*overflow:\s*hidden;/s);
     expect(editorCss).toMatch(/\.panes-container--split \.pane-tab\s*\{[^}]*flex:\s*1 1 96px;[^}]*max-width:\s*100%;[^}]*min-width:\s*48px;/s);
   });
