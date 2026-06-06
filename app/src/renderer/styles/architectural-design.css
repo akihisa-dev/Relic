@@ -211,15 +211,15 @@ textarea {
   box-shadow: none;
 }
 
-.title-bar-tabs,
-.title-bar .pane-tabs,
-.title-bar .pane-tab-bar,
-.title-bar .pane-tab-bar-shell {
+.title-bar-tabs--has-tabs,
+.title-bar .pane-tabs--has-tabs,
+.title-bar .pane-tabs--has-tabs .pane-tab-bar,
+.title-bar .pane-tab-bar-shell--has-tabs {
   backdrop-filter: none;
   background: var(--color-surface-elevated);
 }
 
-.title-bar-tabs {
+.title-bar-tabs--has-tabs {
   box-shadow: inset 0 -1px 0 var(--color-border);
 }
 
