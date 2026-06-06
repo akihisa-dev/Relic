@@ -72,6 +72,19 @@ describe("App sidebar panels", () => {
     expect(screen.getByRole("button", { name: /読書メモ/ })).toBeInTheDocument();
   });
 
+  it("左サイドバーを閉じているときはタイトルバーのタブ開始位置を本文側へ戻す", async () => {
+    useUiStore.setState({ isSidebarOpen: false });
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
+    });
+
+    const { container } = await renderApp();
+
+    await screen.findByText("Notes");
+
+    expect(container.querySelector(".title-bar")).toHaveStyle({ "--title-bar-left-offset": "88px" });
+  });
+
   it("フォルダ右クリックメニューからフォルダ以下と全体を一括開閉できる", async () => {
     window.relic = makeRelicApi({
       getWorkspaceState: vi.fn().mockResolvedValue({

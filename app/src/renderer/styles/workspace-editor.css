@@ -526,10 +526,27 @@
 
 .title-bar-tabs--split .pane-tabs--left .pane-tab-bar-shell {
   padding-left: 0;
+  padding-right: 10px;
 }
 
 .title-bar-tabs--split .pane-tabs--right .pane-tab-bar-shell {
+  padding-left: 10px;
   padding-right: 0;
+}
+
+.title-bar-tabs--split .pane-tab-bar {
+  overflow: hidden;
+}
+
+.title-bar-tabs--split .pane-tab {
+  flex: 1 1 96px;
+  max-width: 100%;
+  min-width: 48px;
+}
+
+.title-bar-tabs--split .pane-tab-close {
+  flex-basis: 16px;
+  width: 16px;
 }
 
 .pane-tab-bar-shell::after {

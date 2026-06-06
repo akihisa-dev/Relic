@@ -12,12 +12,14 @@ const WORKSPACE_HORIZONTAL_PADDING = 0;
 interface UseAppLayoutWidthsInput {
   appUiSettings: AppUiSettings;
   handleSaveAppUiSettings: (settings: AppUiSettings) => void;
+  isSidebarOpen: boolean;
   isSecondarySidebarOpen: boolean;
 }
 
 export function useAppLayoutWidths({
   appUiSettings,
   handleSaveAppUiSettings,
+  isSidebarOpen,
   isSecondarySidebarOpen
 }: UseAppLayoutWidthsInput): {
   isRightPanelResizing: boolean;
@@ -62,12 +64,12 @@ export function useAppLayoutWidths({
     () => titleBarLeftOffset(
       TITLE_BAR_TRAFFIC_LIGHT_SPACE,
       RAIL_WIDTH,
-      sidebarWidth,
+      isSidebarOpen ? sidebarWidth : 0,
       WORKSPACE_HORIZONTAL_PADDING,
       FLOATING_PANEL_GAP,
       isSecondarySidebarOpen ? secondarySidebarWidth : 0
     ),
-    [isSecondarySidebarOpen, secondarySidebarWidth, sidebarWidth]
+    [isSecondarySidebarOpen, isSidebarOpen, secondarySidebarWidth, sidebarWidth]
   );
 
   return {

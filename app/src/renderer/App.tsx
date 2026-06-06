@@ -394,6 +394,7 @@ export function App(): ReactElement {
   } = useAppLayoutWidths({
     appUiSettings,
     handleSaveAppUiSettings,
+    isSidebarOpen,
     isSecondarySidebarOpen
   });
 
