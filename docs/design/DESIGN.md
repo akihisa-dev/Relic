@@ -73,8 +73,8 @@ Relicのデザイン系文書の正本。画面構成、画面遷移、デザイ
 
 #### Secondary
 
-- Triangle Accent
-- Circular Technical Motif
+- Square Accent
+- Rounded Rectangle Motif
 
 装飾要素は情報の邪魔にならない範囲で使用する。
 
@@ -367,8 +367,8 @@ border: 1px solid var(--color-border);
 許可される要素:
 
 - 斜線
-- 三角形アクセント
-- 円形ガイドモチーフ
+- 四角形アクセント
+- 角丸ガイドモチーフ
 - グリッドライン
 
 装飾が情報を上回ってはならない。
