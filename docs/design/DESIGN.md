@@ -20,6 +20,10 @@ Relicのデザイン系文書の正本。画面構成、画面遷移、デザイ
 
 Relicの色、素材、質感の基礎思想は [LITHOMORPHISM.md](LITHOMORPHISM.md) を正とし、この文書ではその思想をRelicの画面構成、色、UI部品へ適用する。
 
+Relicでは、青は鉱物顔料や設計図面の青、白は石灰石や上質紙の白、灰色は石粉やコンクリートの面として扱う。
+
+質感は色そのものを変えず、低光沢で乾いた表面処理として扱う。
+
 装飾的な要素を最小限に抑えながら、強いタイポグラフィ、明確な境界線、幾何学的な構成を用いて情報階層を視覚化する。
 
 デザインの目的は「美しく見せること」ではなく、「情報構造を理解しやすくすること」にある。
@@ -59,6 +63,8 @@ Relicの色、素材、質感の基礎思想は [LITHOMORPHISM.md](LITHOMORPHISM
 未来的でありながら過剰に派手ではない。
 
 知的で落ち着いた作業環境を提供する。
+
+低光沢な面、落ち着いた鉱物色、明確な境界によって、静かで観測的な空気感を作る。
 
 ---
 
@@ -113,7 +119,7 @@ radius-lg: 8px;
 
 #### Primary Blue
 
-主要アクセントカラー。
+主要アクセントカラー。LITHOMORPHISMでは、Webの青ではなく鉱物顔料や設計図面の青として扱う。
 
 ```css
 --color-primary: #3261A1;
@@ -130,7 +136,7 @@ radius-lg: 8px;
 
 #### Sub Blue
 
-補助アクセントカラー。
+補助アクセントカラー。LITHOMORPHISMでは、経年した青、補助的な印刷インクの青として扱う。
 
 ```css
 --color-accent: #6C8BB7;
@@ -152,7 +158,7 @@ radius-lg: 8px;
 --color-bg: #F2F1EE;
 ```
 
-エディタ背景、ページ全体の背景色。
+エディタ背景、ページ全体の背景色。LITHOMORPHISMでは、純白ではなく石灰石や上質紙に近い白として扱う。
 
 ---
 
@@ -162,7 +168,7 @@ radius-lg: 8px;
 --color-surface: #E7E7E7;
 ```
 
-サイドバー、ツールバー、パネル背景。
+サイドバー、ツールバー、パネル背景。LITHOMORPHISMでは、石粉を含んだ乾いた面として扱う。
 
 ---
 
@@ -172,7 +178,7 @@ radius-lg: 8px;
 --color-surface-alt: #DDDEDF;
 ```
 
-選択中の項目背景、カード背景。
+選択中の項目背景、カード背景。LITHOMORPHISMでは、コンクリートに近い低彩度の面として扱う。
 
 ---
 
@@ -182,7 +188,7 @@ radius-lg: 8px;
 --color-border: #C3C8CE;
 ```
 
-区切り線。
+区切り線。LITHOMORPHISMでは、薄いセメント線のような境界として扱う。
 
 ---
 
@@ -192,7 +198,7 @@ radius-lg: 8px;
 --color-border-strong: #A4AEBD;
 ```
 
-重要な境界。
+重要な境界。LITHOMORPHISMでは、鉱物系の強い境界として扱う。
 
 ---
 
@@ -204,6 +210,8 @@ radius-lg: 8px;
 --color-text: #232B36;
 ```
 
+石や紙に沈んだ濃色インクとして扱う。
+
 ---
 
 #### Secondary Text
@@ -212,6 +220,8 @@ radius-lg: 8px;
 --color-text-secondary: #89909A;
 ```
 
+石粉を含んだグレーとして扱う。
+
 ---
 
 #### Muted Text
@@ -219,6 +229,8 @@ radius-lg: 8px;
 ```css
 --color-text-muted: #89909A;
 ```
+
+石粉を含んだグレーとして扱う。
 
 ---
 
@@ -366,6 +378,8 @@ border: 1px solid var(--color-border);
 
 装飾要素は機能的なレイアウトを補助する目的でのみ使用する。
 
+装飾はLITHOMORPHISMの素材感を誇張するためではなく、情報構造、境界、視線誘導を支えるために使う。
+
 許可される要素:
 
 - 斜線
@@ -374,6 +388,8 @@ border: 1px solid var(--color-border);
 - グリッドライン
 
 装飾が情報を上回ってはならない。
+
+強いノイズ、汚れ加工、グロー、ガラス反射、金属光沢、ネオン化は使用しない。
 
 ---
 
@@ -388,6 +404,9 @@ border: 1px solid var(--color-border);
 - Focused
 - Durable
 - Architectural
+- Functional
+- Permanent
+- Observational
 
 避けるべき印象:
 
@@ -397,6 +416,12 @@ border: 1px solid var(--color-border);
 - Skeuomorphic
 - Overly Minimal
 - Consumer Social App
+- Glossy
+- Metallic
+- Plastic
+- Glassy
+- Neon
+- Wet
 
 ---
 
