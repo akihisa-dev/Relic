@@ -6,7 +6,6 @@ import { AppEditorWorkspace } from "./AppEditorWorkspace";
 import { AppFilesSidebar } from "./AppFilesSidebar";
 import { AppOverlays } from "./AppOverlays";
 import { AppRail } from "./AppRail";
-import { AppStatusBar } from "./AppStatusBar";
 import { AppTitleBar } from "./AppTitleBar";
 
 export interface AppLayoutProps {
@@ -15,7 +14,6 @@ export interface AppLayoutProps {
   language: AppLanguage;
   overlaysProps: ComponentProps<typeof AppOverlays>;
   railProps: ComponentProps<typeof AppRail>;
-  statusBarProps: ComponentProps<typeof AppStatusBar>;
   titleBarProps: ComponentProps<typeof AppTitleBar>;
 }
 
@@ -25,7 +23,6 @@ export function AppLayout({
   language,
   overlaysProps,
   railProps,
-  statusBarProps,
   titleBarProps
 }: AppLayoutProps): ReactElement {
   return (
@@ -37,7 +34,6 @@ export function AppLayout({
           <AppFilesSidebar {...filesSidebarProps} />
           <AppEditorWorkspace {...editorWorkspaceProps} />
         </div>
-        <AppStatusBar {...statusBarProps} />
         <AppOverlays {...overlaysProps} />
       </div>
     </I18nProvider>

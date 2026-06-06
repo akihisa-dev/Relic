@@ -276,8 +276,7 @@ textarea {
 .links-panel-subheading,
 .chronicle-search span,
 .chronicle-name-header,
-.chronicle-axis,
-.status-bar {
+.chronicle-axis {
   font-family: var(--font-body);
   font-weight: 600;
   letter-spacing: 0.02em;
@@ -752,21 +751,4 @@ textarea {
   --chronicle-planned-fill: color-mix(in srgb, var(--color-accent) 42%, transparent);
   --chronicle-planned-fill-active: color-mix(in srgb, var(--color-accent) 58%, transparent);
   --chronicle-planned-fill-hover: color-mix(in srgb, var(--color-accent) 50%, transparent);
-}
-
-/* ────────────────────────────────── */
-/* Status                             */
-/* ────────────────────────────────── */
-
-.status-bar {
-  background: var(--color-bg);
-  backdrop-filter: none;
-  border-color: var(--color-border);
-  border-radius: 0;
-  box-shadow: none;
-  color: var(--color-primary-dark);
-  font-size: 12px;
-  margin: 0;
-  min-height: 32px;
-  padding: 0 18px;
 }
