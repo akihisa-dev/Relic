@@ -476,7 +476,7 @@
 
 .pane-tabs {
   -webkit-app-region: drag;
-  background: var(--title-bar-bg);
+  background: var(--surface);
   min-width: 0;
   overflow: hidden;
   position: relative;
@@ -501,7 +501,7 @@
 .pane-tab-bar-shell {
   -webkit-app-region: drag;
   align-items: flex-end;
-  background: var(--title-bar-bg);
+  background: var(--surface);
   border-bottom: 0;
   display: flex;
   gap: 0;
@@ -568,7 +568,7 @@
   -webkit-app-region: no-drag;
   align-items: center;
   animation: tab-enter var(--motion-fast) var(--ease-standard);
-  background: color-mix(in srgb, var(--title-bar-bg) 74%, var(--surface) 26%);
+  background: color-mix(in srgb, var(--surface-subtle) 82%, var(--surface) 18%);
   border: 0;
   border-radius: 0;
   color: var(--text-3);
@@ -601,7 +601,7 @@
 }
 
 .pane-tab:hover:not(.pane-tab--active):not(.pane-tab--closing) {
-  background: color-mix(in srgb, var(--title-bar-bg) 58%, var(--surface) 42%);
+  background: color-mix(in srgb, var(--surface-subtle) 68%, var(--surface) 32%);
   color: var(--text-2);
 }
 
