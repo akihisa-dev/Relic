@@ -60,7 +60,7 @@ describe("AppTitleBar", () => {
     expect(editorCss).toMatch(/\.pane-tab-bar\s*\{[^}]*gap:\s*0;/s);
     expect(editorCss).toMatch(/\.pane-tab-bar\s*\{[^}]*width:\s*100%;/s);
     expect(editorCss).toMatch(/\.pane-tabs\s*\{[^}]*overflow:\s*hidden;/s);
-    expect(editorCss).toMatch(/\.pane-tab\s*\{[^}]*flex:\s*1 1 132px;/s);
+    expect(editorCss).toMatch(/\.pane-tab\s*\{[^}]*flex:\s*0 1 220px;/s);
     expect(editorCss).toMatch(/\.pane-tab\s*\{[^}]*max-width:\s*220px;/s);
     expect(editorCss).toMatch(/\.pane-tab\s*\{[^}]*min-width:\s*64px;/s);
     expect(editorCss).toMatch(/\.pane-tab-name\s*\{[^}]*min-width:\s*0;/s);
@@ -76,7 +76,7 @@ describe("AppTitleBar", () => {
     expect(editorCss).toMatch(/\.panes-container--split \.pane-tabs--right \.pane-tab-bar-shell\s*\{[^}]*padding-left:\s*0;/s);
     expect(editorCss).toMatch(/\.panes-container--split \.pane-tabs--right \.pane-tab-bar-shell\s*\{[^}]*padding-right:\s*10px;/s);
     expect(editorCss).toMatch(/\.panes-container--split \.pane-tab-bar\s*\{[^}]*overflow:\s*hidden;/s);
-    expect(editorCss).toMatch(/\.panes-container--split \.pane-tab\s*\{[^}]*flex:\s*1 1 96px;[^}]*max-width:\s*100%;[^}]*min-width:\s*48px;/s);
+    expect(editorCss).toMatch(/\.panes-container--split \.pane-tab\s*\{[^}]*flex:\s*0 1 180px;[^}]*max-width:\s*100%;[^}]*min-width:\s*48px;/s);
   });
 
   it("does not render diagonal blue panel decorations", () => {

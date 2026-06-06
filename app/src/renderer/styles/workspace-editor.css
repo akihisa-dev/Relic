@@ -507,7 +507,7 @@
 }
 
 .panes-container--split .pane-tab {
-  flex: 1 1 96px;
+  flex: 0 1 180px;
   max-width: 100%;
   min-width: 48px;
 }
@@ -568,7 +568,7 @@
   color: var(--text-3);
   cursor: default;
   display: flex;
-  flex: 1 1 132px;
+  flex: 0 1 220px;
   font-size: 13px;
   font-weight: 700;
   gap: 6px;
