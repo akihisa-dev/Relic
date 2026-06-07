@@ -18,6 +18,7 @@ import {
   defaultFrontmatterTemplates,
   defaultUserDefinedFields
 } from "../../shared/ipc";
+import { resolveWikiLinks } from "../../shared/links";
 import { writeAppSettings } from "../settings/appSettings";
 import { addOrActivateWorkspace, createWorkspaceSummary } from "../workspace/workspaceService";
 import {
@@ -54,7 +55,7 @@ describe("toolActions", () => {
     });
 
     expect(result).toEqual({ ok: true, value: "Titles.md" });
-    await expect(readFile(path.join(workspacePath, "Titles.md"), "utf8")).resolves.toBe("- [[/note|note]]\n");
+    await expect(readFile(path.join(workspacePath, "Titles.md"), "utf8")).resolves.toBe("- [[./note|note]]\n");
     expect((await readdir(workspacePath)).sort()).toEqual(["Titles.md", "note.md"]);
   });
 
@@ -69,7 +70,7 @@ describe("toolActions", () => {
     });
 
     expect(result).toEqual({ ok: true, value: "Titles.md" });
-    await expect(readFile(path.join(workspacePath, "Titles.md"), "utf8")).resolves.toBe("- [[/note|note]]\n");
+    await expect(readFile(path.join(workspacePath, "Titles.md"), "utf8")).resolves.toBe("- [[./note|note]]\n");
   });
 
   it("出力ファイル名候補が上限まで埋まっている場合は停止する", async () => {
@@ -106,7 +107,7 @@ describe("toolActions", () => {
     );
 
     expect(result).toEqual({ ok: true, value: "Titles.md" });
-    await expect(readFile(path.join(workspacePath, "Titles.md"), "utf8")).resolves.toBe("- [[/visible|visible]]\n");
+    await expect(readFile(path.join(workspacePath, "Titles.md"), "utf8")).resolves.toBe("- [[./visible|visible]]\n");
   });
 
   it("タイトル一覧は出力先フォルダからではなく既存ファイルへのリンクを生成する", async () => {
@@ -122,9 +123,12 @@ describe("toolActions", () => {
     });
 
     expect(result).toEqual({ ok: true, value: "indexes/Titles.md" });
-    await expect(readFile(path.join(workspacePath, "indexes", "Titles.md"), "utf8")).resolves.toBe(
-      "- [[/notes/child|child]]\n- [[/root|root]]\n"
-    );
+    const content = await readFile(path.join(workspacePath, "indexes", "Titles.md"), "utf8");
+    expect(content).toBe("- [[./notes/child|child]]\n- [[./root|root]]\n");
+    expect(resolveWikiLinks(content, "indexes/Titles.md", ["notes/child.md", "root.md"])).toEqual([
+      expect.objectContaining({ exists: true, path: "notes/child.md" }),
+      expect.objectContaining({ exists: true, path: "root.md" })
+    ]);
   });
 
   it("ファイル情報を取得できないMarkdownファイルはスキップして結合を続行する", async () => {
@@ -288,7 +292,7 @@ describe("toolActions", () => {
 
     expect(result).toEqual({ ok: true, value: "Toc.md" });
     await expect(readFile(path.join(workspacePath, "Toc.md"), "utf8")).resolves.toBe(
-      "- **visible/**\n  - [[/visible/note|note]]\n- [[/root|root]]\n"
+      "- **visible/**\n  - [[./visible/note|note]]\n- [[./root|root]]\n"
     );
   });
 
@@ -306,9 +310,12 @@ describe("toolActions", () => {
     });
 
     expect(result).toEqual({ ok: true, value: "indexes/Toc.md" });
-    await expect(readFile(path.join(workspacePath, "indexes", "Toc.md"), "utf8")).resolves.toBe(
-      "- **notes/**\n  - [[/notes/child|child]]\n- [[/root|root]]\n"
-    );
+    const content = await readFile(path.join(workspacePath, "indexes", "Toc.md"), "utf8");
+    expect(content).toBe("- **notes/**\n  - [[./notes/child|child]]\n- [[./root|root]]\n");
+    expect(resolveWikiLinks(content, "indexes/Toc.md", ["notes/child.md", "root.md"])).toEqual([
+      expect.objectContaining({ exists: true, path: "notes/child.md" }),
+      expect.objectContaining({ exists: true, path: "root.md" })
+    ]);
   });
 
   it("分割元ファイルが外部実体のシンボリックリンクなら読み込まない", async () => {
