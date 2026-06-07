@@ -4,6 +4,7 @@ import { fireEvent } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { encodeDiagramSourceAttribute } from "./diagramSourceAttribute";
+import { diagramMaxSourceChars, diagramRenderTimeoutMs } from "./diagramLimits";
 import {
   createAttachedContainer,
   createDeferred,
@@ -169,6 +170,73 @@ describe("diagramPreview", () => {
     expect(container.textContent).toContain("parse failed");
     expect(container.querySelector(".preview-diagram-panzoom-viewport")).toBeNull();
     warn.mockRestore();
+  });
+
+  it("大きすぎるMermaidソースはレンダラーへ渡さずエラーUIを表示する", async () => {
+    const { renderDiagramElement } = await loadDiagramPreviewModule();
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const container = createAttachedContainer();
+    const source = `graph TD;\n${"A-->B\n".repeat(Math.ceil(diagramMaxSourceChars / 5))}`;
+
+    await expect(renderDiagramElement(container, "mermaid", source)).resolves.toBeNull();
+
+    expect(renderMock).not.toHaveBeenCalled();
+    expect(container.dataset.diagramRenderStatus).toBe("error");
+    expect(container.querySelector(".preview-diagram-error")).not.toBeNull();
+    expect(container.textContent).toContain("Mermaid diagram source is too large to render.");
+    warn.mockRestore();
+  });
+
+  it("大きすぎるD2ソースはレンダラーへ渡さずエラーUIを表示する", async () => {
+    const { renderDiagramElement } = await loadDiagramPreviewModule();
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const container = createAttachedContainer();
+    const source = "x -> y\n".repeat(Math.ceil(diagramMaxSourceChars / 7));
+
+    await expect(renderDiagramElement(container, "d2", source)).resolves.toBeNull();
+
+    expect(compileD2Mock).not.toHaveBeenCalled();
+    expect(renderD2Mock).not.toHaveBeenCalled();
+    expect(container.dataset.diagramRenderStatus).toBe("error");
+    expect(container.querySelector(".preview-diagram-error")).not.toBeNull();
+    expect(container.textContent).toContain("D2 diagram source is too large to render.");
+    warn.mockRestore();
+  });
+
+  it("Mermaid描画が一定時間を超える場合はエラーUIを表示する", async () => {
+    vi.useFakeTimers();
+    const { renderDiagramElement } = await loadDiagramPreviewModule();
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const container = createAttachedContainer();
+    renderMock.mockReturnValueOnce(new Promise(() => undefined));
+
+    const result = renderDiagramElement(container, "mermaid", "graph TD; A-->B");
+    await vi.advanceTimersByTimeAsync(diagramRenderTimeoutMs);
+
+    await expect(result).resolves.toBeNull();
+    expect(container.dataset.diagramRenderStatus).toBe("error");
+    expect(container.querySelector(".preview-diagram-error")).not.toBeNull();
+    expect(container.textContent).toContain("Mermaid diagram rendering timed out.");
+    warn.mockRestore();
+    vi.useRealTimers();
+  });
+
+  it("D2描画が一定時間を超える場合はエラーUIを表示する", async () => {
+    vi.useFakeTimers();
+    const { renderDiagramElement } = await loadDiagramPreviewModule();
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const container = createAttachedContainer();
+    compileD2Mock.mockReturnValueOnce(new Promise(() => undefined));
+
+    const result = renderDiagramElement(container, "d2", "x -> y");
+    await vi.advanceTimersByTimeAsync(diagramRenderTimeoutMs);
+
+    await expect(result).resolves.toBeNull();
+    expect(container.dataset.diagramRenderStatus).toBe("error");
+    expect(container.querySelector(".preview-diagram-error")).not.toBeNull();
+    expect(container.textContent).toContain("D2 diagram rendering timed out.");
+    warn.mockRestore();
+    vi.useRealTimers();
   });
 
   it("SVG描画成功時に本文内パン・ズームviewportを構成しhandleを返す", async () => {
