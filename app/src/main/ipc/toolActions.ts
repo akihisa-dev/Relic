@@ -393,7 +393,7 @@ async function collectTableOfContentsLines(
 
 function wikiLinkForMarkdownPath(relativePath: string, displayName: string): string {
   const normalizedPath = relativePath.replace(/\\/g, "/").replace(/\.md$/i, "");
-  return `[[/${normalizedPath}|${displayName}]]`;
+  return `[[./${normalizedPath}|${displayName}]]`;
 }
 
 function matchesFrontmatterField(value: unknown, query: string): boolean {
