@@ -8,7 +8,6 @@ import {
   type GenerateTableOfContentsInput,
   type GenerateTitleListInput,
   type MergeFilesInput,
-  type SplitFileByHeadingInput,
   type WorkspaceTreeNode
 } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
@@ -18,7 +17,6 @@ import { readWorkspaceFileTree } from "../files/fileTree";
 import { pathExists } from "../files/fileSystem";
 import { parseFrontmatter } from "../files/frontmatter";
 import {
-  resolveExistingWorkspacePath,
   resolveExistingWorkspacePathOrRoot,
   resolveNewWorkspacePath
 } from "../files/paths";
@@ -89,41 +87,6 @@ export async function mergeFiles(
   await atomicWriteTextFile(outputPath.value, merged);
 
   return ok(path.relative(workspacePath, outputPath.value));
-}
-
-export async function splitFileByHeading(input: SplitFileByHeadingInput): Promise<RelicResult<string[]>> {
-  const context = await getToolWorkspaceContext();
-  if (!context.ok) return context;
-
-  const { workspacePath } = context.value;
-  const absSource = await resolveExistingWorkspacePath(workspacePath, input.sourcePath);
-  if (!absSource.ok) return absSource;
-  const content = await readFile(absSource.value, "utf-8");
-  const sections = splitMarkdownSections(content, input.headingLevel);
-
-  if (sections.length === 0) {
-    return fail("SPLIT_NO_HEADINGS", `H${input.headingLevel} の見出しが見つかりませんでした。`);
-  }
-
-  const outputDir = await resolveToolOutputDirectory(workspacePath, input.outputFolder, "untitled");
-  if (!outputDir.ok) return outputDir;
-
-  await mkdir(outputDir.value, { recursive: true });
-
-  const created: string[] = [];
-  for (const section of sections) {
-    const safeName = section.title
-      .replace(/[/\\:*?"<>|]/g, "_")
-      .replace(/\s+/g, " ")
-      .trim() || "untitled";
-    const outPath = await uniqueFilePath(outputDir.value, safeName);
-    if (!outPath.ok) return outPath;
-    const sectionContent = section.lines.join("\n").trimEnd() + "\n";
-    await atomicWriteTextFile(outPath.value, sectionContent);
-    created.push(path.relative(workspacePath, outPath.value));
-  }
-
-  return ok(created);
 }
 
 export async function generateTitleList(
@@ -289,25 +252,6 @@ function sortMergeCandidates(candidates: FileCandidate[], sortBy: MergeFilesInpu
   if (sortBy === "mtime") candidates.sort((a, b) => b.mtime - a.mtime);
   else if (sortBy === "ctime") candidates.sort((a, b) => b.ctime - a.ctime);
   else candidates.sort((a, b) => a.relPath.localeCompare(b.relPath, "ja"));
-}
-
-function splitMarkdownSections(content: string, headingLevel: number): { title: string; lines: string[] }[] {
-  const lines = content.split("\n");
-  const headingPrefix = "#".repeat(headingLevel) + " ";
-  const sections: { title: string; lines: string[] }[] = [];
-  let current: { title: string; lines: string[] } | null = null;
-
-  for (const line of lines) {
-    if (line.startsWith(headingPrefix) && !line.startsWith(headingPrefix + "#")) {
-      if (current) sections.push(current);
-      current = { title: line.slice(headingPrefix.length).trim(), lines: [line] };
-    } else {
-      if (current) current.lines.push(line);
-    }
-  }
-  if (current) sections.push(current);
-
-  return sections;
 }
 
 async function collectTitleListFiles(

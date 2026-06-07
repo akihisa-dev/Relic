@@ -4,7 +4,6 @@ import { useT } from "../i18n";
 import { useToolsPanelState } from "../hooks/useToolsPanelState";
 import {
   MergeFilesToolSection,
-  SplitFileToolSection,
   TitleListToolSection,
   TocToolSection
 } from "./ToolsPanelSections";
@@ -15,19 +14,14 @@ export function ToolsPanel({ workspacePath }: { workspacePath: string | null }):
     handleGenerateTitleList,
     handleGenerateToc,
     handleMergeFiles,
-    handleSplitFile,
     mergeDraft,
     mergeStatus,
     setMergeDraftField,
     setMergeFilterType,
     setMergeSortBy,
-    setSplitDraftField,
-    setSplitLevel,
     setTitleListDraftField,
     setTitleListSortBy,
     setTocDraftField,
-    splitDraft,
-    splitStatus,
     titleListDraft,
     titleListStatus,
     tocDraft,
@@ -64,13 +58,6 @@ export function ToolsPanel({ workspacePath }: { workspacePath: string | null }):
             onSortByChange={setMergeSortBy}
             onUpdate={setMergeDraftField}
             status={mergeStatus}
-          />
-          <SplitFileToolSection
-            draft={splitDraft}
-            onSplit={handleSplitFile}
-            onSplitLevelChange={setSplitLevel}
-            onUpdate={setSplitDraftField}
-            status={splitStatus}
           />
         </>
       )}

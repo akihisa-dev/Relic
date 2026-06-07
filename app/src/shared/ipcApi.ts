@@ -24,8 +24,7 @@ import type {
 import type {
   GenerateTableOfContentsInput,
   GenerateTitleListInput,
-  MergeFilesInput,
-  SplitFileByHeadingInput
+  MergeFilesInput
 } from "./ipcTools";
 import type {
   AppInfo,
@@ -133,7 +132,6 @@ export interface RelicApi {
   getFrontmatterTemplates: () => Promise<RelicResult<FrontmatterTemplate[]>>;
   saveFrontmatterTemplates: (input: FrontmatterTemplate[]) => Promise<RelicResult<void>>;
   mergeFiles: (input: MergeFilesInput) => Promise<RelicResult<string>>;
-  splitFileByHeading: (input: SplitFileByHeadingInput) => Promise<RelicResult<string[]>>;
   onWorkspaceChanged: (callback: (event: WorkspaceChangedEvent) => void) => () => void;
   onWindowCloseRequested: (callback: (event: WindowCloseRequestEvent) => void) => () => void;
   respondToWindowCloseRequest: (input: WindowCloseResponseInput) => void;

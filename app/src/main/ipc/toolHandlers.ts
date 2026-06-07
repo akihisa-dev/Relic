@@ -3,22 +3,19 @@ import { ipcMain } from "electron";
 import {
   generateTableOfContentsChannel,
   generateTitleListChannel,
-  mergeFilesChannel,
-  splitFileByHeadingChannel
+  mergeFilesChannel
 } from "../../shared/ipc";
 import { fail, type RelicResult } from "../../shared/result";
 import { ipcErrorDetails } from "./activeWorkspace";
 import {
   generateTableOfContents,
   generateTitleList,
-  mergeFiles,
-  splitFileByHeading
+  mergeFiles
 } from "./toolActions";
 import {
   isGenerateTableOfContentsInput,
   isGenerateTitleListInput,
-  isMergeFilesInput,
-  isSplitFileByHeadingInput
+  isMergeFilesInput
 } from "./toolHandlerValidators";
 
 export function registerToolHandlers(): void {
@@ -33,21 +30,6 @@ export function registerToolHandlers(): void {
         return await mergeFiles(input);
       } catch (error) {
         return fail("MERGE_FAILED", "ファイルのマージに失敗しました。", ipcErrorDetails(error));
-      }
-    }
-  );
-
-  ipcMain.handle(
-    splitFileByHeadingChannel,
-    async (_event, input: unknown): Promise<RelicResult<string[]>> => {
-      try {
-        if (!isSplitFileByHeadingInput(input)) {
-          return fail("SPLIT_INVALID_INPUT", "分割条件が無効です。");
-        }
-
-        return await splitFileByHeading(input);
-      } catch (error) {
-        return fail("SPLIT_FAILED", "ファイルの分割に失敗しました。", ipcErrorDetails(error));
       }
     }
   );

@@ -25,7 +25,6 @@ import {
   generateTableOfContents,
   generateTitleList,
   mergeFiles,
-  splitFileByHeading,
   uniqueFilePath
 } from "./toolActions";
 
@@ -369,26 +368,6 @@ describe("toolActions", () => {
       expect.objectContaining({ exists: true, path: "notes/child.md" }),
       expect.objectContaining({ exists: true, path: "root.md" })
     ]);
-  });
-
-  it("分割元ファイルが外部実体のシンボリックリンクなら読み込まない", async () => {
-    const { outsidePath, workspacePath } = await prepareActiveWorkspace();
-    await writeFile(path.join(outsidePath, "external.md"), "## A\n外部\n", "utf8");
-    await symlink(path.join(outsidePath, "external.md"), path.join(workspacePath, "external.md"));
-
-    const result = await splitFileByHeading({
-      headingLevel: 2,
-      outputFolder: ".",
-      sourcePath: "external.md"
-    });
-
-    expect(result).toMatchObject({
-      error: { code: "WORKSPACE_PATH_OUTSIDE" },
-      ok: false
-    });
-    await expect(readFile(path.join(workspacePath, "A.md"), "utf8")).rejects.toMatchObject({
-      code: "ENOENT"
-    });
   });
 
   async function prepareActiveWorkspace(): Promise<{

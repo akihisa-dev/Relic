@@ -3,9 +3,7 @@ import type {
   GenerateTitleListInput,
   MergeFilesInput,
   MergeFilterType,
-  MergeSortBy,
-  SplitFileByHeadingInput,
-  SplitHeadingLevel
+  MergeSortBy
 } from "../shared/ipc";
 import type { RelicResult } from "../shared/result";
 import type { Translator } from "./i18nModel";
@@ -32,12 +30,6 @@ export interface MergeFilesDraft {
   outputFolder: string;
   outputName: string;
   sortBy: MergeSortBy;
-}
-
-export interface SplitFileDraft {
-  headingLevel: SplitHeadingLevel;
-  outputFolder: string;
-  sourcePath: string;
 }
 
 export function createDefaultTitleListDraft(t: Translator): TitleListDraft {
@@ -67,14 +59,6 @@ export function createDefaultMergeFilesDraft(t: Translator): MergeFilesDraft {
     outputFolder: "",
     outputName: t("tools.mergeDefaultName"),
     sortBy: "name"
-  };
-}
-
-export function createDefaultSplitFileDraft(): SplitFileDraft {
-  return {
-    headingLevel: 2,
-    outputFolder: "",
-    sourcePath: ""
   };
 }
 
@@ -108,22 +92,10 @@ export function buildMergeFilesInput(draft: MergeFilesDraft, t: Translator): Mer
   };
 }
 
-export function buildSplitFileInput(draft: SplitFileDraft): SplitFileByHeadingInput {
-  return {
-    headingLevel: draft.headingLevel,
-    outputFolder: draft.outputFolder || "",
-    sourcePath: draft.sourcePath
-  };
-}
-
 export function resultStatus<T>(result: RelicResult<T>, t: Translator, formatValue: (value: T) => string): string {
   return result.ok
     ? `${t("tools.statusDone")}: ${formatValue(result.value)}`
     : `${t("tools.statusError")}: ${result.error.message}`;
-}
-
-export function splitResultStatus(result: RelicResult<string[]>, t: Translator): string {
-  return resultStatus(result, t, (value) => t("tools.splitResultCreated", { count: value.length }));
 }
 
 export function isToolStatusError(status: string | null): boolean {

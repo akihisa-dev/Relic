@@ -1,8 +1,8 @@
 import type { ReactElement } from "react";
 
-import type { MergeFilterType, MergeSortBy, SplitHeadingLevel } from "../../shared/ipc";
+import type { MergeFilterType, MergeSortBy } from "../../shared/ipc";
 import { useT } from "../i18n";
-import type { MergeFilesDraft, SplitFileDraft } from "../toolsPanelModel";
+import type { MergeFilesDraft } from "../toolsPanelModel";
 import { ToolStatus } from "./ToolStatus";
 
 export function MergeFilesToolSection({
@@ -108,63 +108,6 @@ export function MergeFilesToolSection({
         </label>
         <button className="primary-button" onClick={onMerge} type="button">
           {t("tools.merge")}
-        </button>
-        <ToolStatus status={status} />
-      </div>
-    </section>
-  );
-}
-
-export function SplitFileToolSection({
-  draft,
-  onSplit,
-  onSplitLevelChange,
-  onUpdate,
-  status
-}: {
-  draft: SplitFileDraft;
-  onSplit: () => void;
-  onSplitLevelChange: (value: SplitHeadingLevel) => void;
-  onUpdate: <K extends keyof SplitFileDraft>(key: K, value: SplitFileDraft[K]) => void;
-  status: string | null;
-}): ReactElement {
-  const t = useT();
-
-  return (
-    <section className="settings-group tools-settings-group">
-      <div className="links-panel-subheading">{t("tools.splitByHeading")}</div>
-      <div className="search-block">
-        <label className="setting-row">
-          <span>{t("tools.sourceFile")}</span>
-          <input
-            onChange={(e) => onUpdate("sourcePath", e.target.value)}
-            placeholder={t("tools.placeholderSourceExample")}
-            type="text"
-            value={draft.sourcePath}
-          />
-        </label>
-        <label className="setting-row">
-          <span>{t("tools.headingLevel")}</span>
-          <select
-            onChange={(e) => onSplitLevelChange(Number(e.target.value) as SplitHeadingLevel)}
-            value={draft.headingLevel}
-          >
-            <option value={1}>H1 (#)</option>
-            <option value={2}>H2 (##)</option>
-            <option value={3}>H3 (###)</option>
-          </select>
-        </label>
-        <label className="setting-row">
-          <span>{t("tools.outputFolder")}</span>
-          <input
-            onChange={(e) => onUpdate("outputFolder", e.target.value)}
-            placeholder={t("tools.placeholderRoot")}
-            type="text"
-            value={draft.outputFolder}
-          />
-        </label>
-        <button className="primary-button" onClick={onSplit} type="button">
-          {t("tools.splitByHeading")}
         </button>
         <ToolStatus status={status} />
       </div>
