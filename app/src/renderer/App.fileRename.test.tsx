@@ -156,6 +156,7 @@ describe("App file rename and context menu", () => {
 
     await waitFor(() => expect(writeMarkdownFile).toHaveBeenCalledWith({
       content: "未保存本文",
+      expectedContent: "本文テスト",
       path: "読書メモ.md"
     }));
     await waitFor(() => {
@@ -217,6 +218,7 @@ describe("App file rename and context menu", () => {
 
     await waitFor(() => expect(writeMarkdownFile).toHaveBeenCalledWith({
       content: "本文テスト\nリネーム直前の本文",
+      expectedContent: "本文テスト",
       path: "読書メモ.md"
     }));
     await waitFor(() => {

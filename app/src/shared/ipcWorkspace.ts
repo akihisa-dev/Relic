@@ -168,6 +168,7 @@ export interface WorkspaceSearchResultSet {
 
 export interface WriteMarkdownFileInput {
   content: string;
+  expectedContent?: string;
   path: string;
 }
 

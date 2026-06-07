@@ -138,7 +138,8 @@ export async function readMarkdownFile(
 export async function writeMarkdownFileContent(
   workspacePath: string,
   relativePath: string,
-  content: string
+  content: string,
+  expectedContent?: string
 ): Promise<RelicResult<void>> {
   const absoluteFilePath = await resolveExistingWorkspacePath(workspacePath, relativePath);
 
@@ -151,6 +152,13 @@ export async function writeMarkdownFileContent(
   }
 
   try {
+    if (expectedContent !== undefined) {
+      const currentContent = await readFile(absoluteFilePath.value, "utf8");
+      if (currentContent !== expectedContent) {
+        return fail("FILE_WRITE_CONFLICT", "ファイルが外部で変更されています。再読み込みしてから保存してください。");
+      }
+    }
+
     await atomicWriteTextFile(absoluteFilePath.value, content);
 
     return ok(undefined);

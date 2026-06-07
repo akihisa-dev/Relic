@@ -21,8 +21,17 @@ interface LinkUpdateReadOperations {
   readFile(filePath: string, encoding: BufferEncoding): Promise<string>;
 }
 
+interface LinkUpdateWriteOperations extends LinkUpdateReadOperations {
+  writeTextFile(filePath: string, content: string): Promise<void>;
+}
+
 const defaultLinkUpdateReadOperations: LinkUpdateReadOperations = {
   readFile
+};
+
+const defaultLinkUpdateWriteOperations: LinkUpdateWriteOperations = {
+  readFile,
+  writeTextFile: atomicWriteTextFile
 };
 
 export async function readLinkUpdateImpact(
@@ -49,17 +58,18 @@ export async function readLinkUpdateImpact(
 export async function updateLinksForFileRename(
   workspacePath: string,
   oldRelativePath: string,
-  newRelativePath: string
+  newRelativePath: string,
+  operations: LinkUpdateWriteOperations = defaultLinkUpdateWriteOperations
 ): Promise<RelicResult<void>> {
   if (oldRelativePath === newRelativePath) return ok(undefined);
 
   const patches = await buildLinkUpdatePatches(workspacePath, "file", oldRelativePath, newRelativePath, {
-    operations: defaultLinkUpdateReadOperations,
+    operations,
     skipUnreadableFiles: false
   });
   if (!patches.ok) return patches;
 
-  return applyLinkUpdatePatches(patches.value);
+  return applyLinkUpdatePatches(patches.value, operations);
 }
 
 /**
@@ -69,17 +79,18 @@ export async function updateLinksForFileRename(
 export async function updateLinksForFolderRename(
   workspacePath: string,
   oldFolderRelativePath: string,
-  newFolderRelativePath: string
+  newFolderRelativePath: string,
+  operations: LinkUpdateWriteOperations = defaultLinkUpdateWriteOperations
 ): Promise<RelicResult<void>> {
   if (oldFolderRelativePath === newFolderRelativePath) return ok(undefined);
 
   const patches = await buildLinkUpdatePatches(workspacePath, "folder", oldFolderRelativePath, newFolderRelativePath, {
-    operations: defaultLinkUpdateReadOperations,
+    operations,
     skipUnreadableFiles: false
   });
   if (!patches.ok) return patches;
 
-  return applyLinkUpdatePatches(patches.value);
+  return applyLinkUpdatePatches(patches.value, operations);
 }
 
 async function buildLinkUpdatePatches(
@@ -146,19 +157,34 @@ function summarizeLinkUpdatePatches(patches: LinkUpdatePatch[]): LinkUpdateImpac
   };
 }
 
-async function applyLinkUpdatePatches(patches: LinkUpdatePatch[]): Promise<RelicResult<void>> {
+async function applyLinkUpdatePatches(
+  patches: LinkUpdatePatch[],
+  operations: LinkUpdateWriteOperations
+): Promise<RelicResult<void>> {
   const applied: LinkUpdatePatch[] = [];
 
   try {
     for (const patch of patches) {
-      await atomicWriteTextFile(patch.absolutePath, patch.nextContent);
+      const currentContent = await operations.readFile(patch.absolutePath, "utf8");
+      if (currentContent !== patch.previousContent) {
+        return fail("LINK_UPDATE_CONFLICT", "内部リンク更新対象のファイルが外部で変更されています。再読み込みしてから実行してください。");
+      }
+
+      await operations.writeTextFile(patch.absolutePath, patch.nextContent);
       applied.push(patch);
     }
 
     return ok(undefined);
   } catch (error) {
     for (const patch of applied.reverse()) {
-      await atomicWriteTextFile(patch.absolutePath, patch.previousContent).catch(() => undefined);
+      try {
+        const currentContent = await operations.readFile(patch.absolutePath, "utf8");
+        if (currentContent === patch.nextContent) {
+          await operations.writeTextFile(patch.absolutePath, patch.previousContent);
+        }
+      } catch {
+        // ロールバックはベストエフォート。外部変更の上書きだけは避ける。
+      }
     }
 
     return fail("LINK_UPDATE_WRITE_FAILED", "内部リンクを更新できませんでした。", errorDetails(error));

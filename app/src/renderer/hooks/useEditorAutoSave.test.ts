@@ -55,8 +55,16 @@ describe("useEditorAutoSave", () => {
 
     await vi.advanceTimersByTimeAsync(1000);
 
-    expect(window.relic!.writeMarkdownFile).toHaveBeenCalledWith({ content: "first draft", path: "first.md" });
-    expect(window.relic!.writeMarkdownFile).toHaveBeenCalledWith({ content: "second draft", path: "second.md" });
+    expect(window.relic!.writeMarkdownFile).toHaveBeenCalledWith({
+      content: "first draft",
+      expectedContent: "first",
+      path: "first.md"
+    });
+    expect(window.relic!.writeMarkdownFile).toHaveBeenCalledWith({
+      content: "second draft",
+      expectedContent: "second",
+      path: "second.md"
+    });
   });
 
   it("保存中に本文が変わった場合は最新本文だけを追加保存する", async () => {
@@ -91,7 +99,11 @@ describe("useEditorAutoSave", () => {
     await vi.advanceTimersByTimeAsync(0);
 
     expect(window.relic!.writeMarkdownFile).toHaveBeenCalledTimes(2);
-    expect(window.relic!.writeMarkdownFile).toHaveBeenLastCalledWith({ content: "改稿", path: "memo.md" });
+    expect(window.relic!.writeMarkdownFile).toHaveBeenLastCalledWith({
+      content: "改稿",
+      expectedContent: "",
+      path: "memo.md"
+    });
 
     secondSave.resolve({ ok: true, value: undefined });
     await vi.advanceTimersByTimeAsync(0);

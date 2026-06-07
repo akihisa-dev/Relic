@@ -168,10 +168,12 @@ describe("fileHandlerValidators", () => {
 
   it("validates write input as content plus a normalized workspace-relative path", () => {
     expect(isWriteMarkdownFileInput({ content: "# Note", path: "Note.md" })).toBe(true);
+    expect(isWriteMarkdownFileInput({ content: "# Note", expectedContent: "old", path: "Note.md" })).toBe(true);
     expect(isWriteMarkdownFileInput({ content: "# Note", path: "Notes/Idea.md" })).toBe(true);
     expect(isWriteMarkdownFileInput({ content: "# Note", path: "../outside.md" })).toBe(false);
     expect(isWriteMarkdownFileInput({ content: "# Note", path: "/tmp/outside.md" })).toBe(false);
     expect(isWriteMarkdownFileInput({ content: "# Note", path: " Notes/Idea.md " })).toBe(false);
     expect(isWriteMarkdownFileInput({ content: 1, path: "Note.md" })).toBe(false);
+    expect(isWriteMarkdownFileInput({ content: "# Note", expectedContent: 1, path: "Note.md" })).toBe(false);
   });
 });
