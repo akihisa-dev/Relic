@@ -368,7 +368,7 @@
   "tools.frontmatterField": "フロントマターフィールド",
   "tools.frontmatterValue": "フロントマター値",
   "tools.headingLevel": "見出しレベル",
-  "tools.merge": "条件指定マージ",
+  "tools.merge": "フォルダ内マージ",
   "tools.mergeDefaultName": "マージ結果",
   "tools.outputFolder": "出力フォルダ",
   "tools.placeholderRoot": "（空=ルート）",

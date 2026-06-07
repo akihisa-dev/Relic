@@ -3,6 +3,7 @@ import path from "node:path";
 
 export const mainWindowMinWidth = 640;
 export const mainWindowMinHeight = 400;
+export const transientSessionPartition = "relic-main";
 
 interface CreateMainWindowOptionsInput {
   appPath: string;
@@ -35,6 +36,7 @@ export function createMainWindowOptions({
       allowRunningInsecureContent: false,
       contextIsolation: true,
       nodeIntegration: false,
+      partition: transientSessionPartition,
       preload: preloadPath,
       sandbox: true,
       webSecurity: true

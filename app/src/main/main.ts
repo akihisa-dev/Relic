@@ -19,11 +19,14 @@ declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string | undefined;
 declare const MAIN_WINDOW_VITE_NAME: string;
 
 const APP_ID = "app.relic.desktop";
+const APP_NAME = "Relic";
 const CLOSE_CONFIRM_TIMEOUT_MS = 5000;
 
 const approvedWindowCloseIds = new WeakSet<BrowserWindow>();
 let isDevelopmentQuitInProgress = false;
 let mainWindow: BrowserWindow | null = null;
+
+app.setName(APP_NAME);
 
 if (process.platform === "win32") {
   app.setAppUserModelId(APP_ID);

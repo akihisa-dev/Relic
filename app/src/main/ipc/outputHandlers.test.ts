@@ -344,6 +344,7 @@ describe("outputHandlers", () => {
         contextIsolation: true,
         javascript: true,
         nodeIntegration: false,
+        partition: "relic-main",
         sandbox: true
       })
     );

@@ -1,7 +1,7 @@
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { createMainWindowOptions, mainWindowMinHeight, mainWindowMinWidth } from "./windowOptions";
+import { createMainWindowOptions, mainWindowMinHeight, mainWindowMinWidth, transientSessionPartition } from "./windowOptions";
 
 describe("createMainWindowOptions", () => {
   it("OSの左右分割を妨げにくい最小サイズにする", () => {
@@ -38,5 +38,16 @@ describe("createMainWindowOptions", () => {
 
     expect(options.autoHideMenuBar).toBe(true);
     expect(options.icon).toBe(path.join("/relic", "assets", "icon.ico"));
+  });
+
+  it("ブラウザ保存領域をディスクに残さないメモリセッションを使う", () => {
+    const options = createMainWindowOptions({
+      appPath: "/relic",
+      platform: "darwin",
+      preloadPath: "/relic/preload.js"
+    });
+
+    expect(options.webPreferences?.partition).toBe(transientSessionPartition);
+    expect(transientSessionPartition.startsWith("persist:")).toBe(false);
   });
 });
