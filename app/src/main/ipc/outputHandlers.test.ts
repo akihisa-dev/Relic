@@ -93,6 +93,12 @@ function loadedHtmlAt(index: number): string {
   return Buffer.from(url.replace("data:text/html;base64,", ""), "base64").toString("utf8");
 }
 
+function lastWrittenText(): string {
+  const value = fsMock.writeFile.mock.calls.at(-1)?.[1];
+  if (typeof value !== "string") throw new Error("Text was not written");
+  return value;
+}
+
 describe("outputHandlers", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -209,9 +215,10 @@ describe("outputHandlers", () => {
     expect(result).toEqual({ ok: true, value: { filePath: "/tmp/diagram.svg", status: "saved" } });
     expect(fsMock.writeFile).toHaveBeenCalledWith(
       expect.stringMatching(/\/tmp\/\.diagram\.svg\..+\.tmp$/),
-      '<svg><path d="M0 0" /></svg>',
+      expect.any(String),
       "utf8"
     );
+    expect(lastWrittenText()).toContain('<path d="M0 0"');
     expect(fsMock.rename).toHaveBeenCalledWith(
       expect.stringMatching(/\/tmp\/\.diagram\.svg\..+\.tmp$/),
       "/tmp/diagram.svg"
@@ -232,9 +239,32 @@ describe("outputHandlers", () => {
     expect(result).toEqual({ ok: true, value: { filePath: "/tmp/diagram.svg", status: "saved" } });
     expect(fsMock.writeFile).toHaveBeenCalledWith(
       expect.stringMatching(/\/tmp\/\.diagram\.svg\..+\.tmp$/),
-      '<svg><path d="M0 0" /></svg>',
+      expect.any(String),
       "utf8"
     );
+    expect(lastWrittenText()).toContain('<path d="M0 0"');
+    expect(lastWrittenText()).not.toContain("<script");
+    expect(lastWrittenText()).not.toContain("onclick");
+    expect(lastWrittenText()).not.toContain("javascript:");
+  });
+
+  it("SVG保存前にmain側で大文字小文字混在や空白入りの危険なSVG属性を除去する", async () => {
+    electronMock.showSaveDialog.mockResolvedValue({ canceled: false, filePath: "/tmp/diagram.svg" });
+    registerOutputHandlers();
+
+    const result = await handlerFor(saveDiagramSvgChannel)({ sender: {} }, {
+      defaultFileName: "Note-diagram-1-mermaid",
+      language: "mermaid",
+      svg: '<svg onLoad="alert(1)"><SCRIPT>alert(1)</SCRIPT><text ONCLICK="alert(1)">safe</text><a href="java\nscript:alert(1)" xlink:href="file:///tmp/a.svg">link</a></svg>'
+    });
+
+    expect(result).toEqual({ ok: true, value: { filePath: "/tmp/diagram.svg", status: "saved" } });
+    expect(lastWrittenText()).toContain("<text>safe</text>");
+    expect(lastWrittenText()).toContain("<a>link</a>");
+    expect(lastWrittenText()).not.toMatch(/<script/i);
+    expect(lastWrittenText()).not.toMatch(/\son/i);
+    expect(lastWrittenText()).not.toContain("javascript:");
+    expect(lastWrittenText()).not.toContain("file:");
   });
 
   it("SVG保存の初期ファイル名がドットだけの場合はSVG用の既定名へ戻す", async () => {
@@ -278,7 +308,11 @@ describe("outputHandlers", () => {
     });
 
     expect(result).toEqual({ ok: true, value: { status: "copied" } });
-    expect(electronMock.clipboardWriteText).toHaveBeenCalledWith("<svg><text>safe</text><a>link</a></svg>");
+    expect(electronMock.clipboardWriteText).toHaveBeenCalledWith(expect.stringContaining("<text>safe</text>"));
+    expect(electronMock.clipboardWriteText).toHaveBeenCalledWith(expect.stringContaining("<a>link</a>"));
+    expect(electronMock.clipboardWriteText).not.toHaveBeenCalledWith(expect.stringContaining("<foreignObject"));
+    expect(electronMock.clipboardWriteText).not.toHaveBeenCalledWith(expect.stringContaining("onload"));
+    expect(electronMock.clipboardWriteText).not.toHaveBeenCalledWith(expect.stringContaining("javascript:"));
   });
 
   it("印刷時は一時PDFをChromiumのPDFプレビューとして開く", async () => {

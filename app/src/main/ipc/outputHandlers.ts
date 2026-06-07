@@ -1,4 +1,5 @@
 import { BrowserWindow, app, clipboard, dialog, ipcMain } from "electron";
+import { JSDOM } from "jsdom";
 import { unlink } from "node:fs/promises";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
@@ -23,6 +24,8 @@ import { getMainTranslator } from "../i18n";
 
 const defaultPdfName = "relic-preview";
 const defaultSvgName = "relic-diagram";
+const outputSvgUriAttributes = new Set(["href", "xlink:href", "src"]);
+const forbiddenOutputSvgTags = new Set(["foreignobject", "script"]);
 
 export function registerOutputHandlers(): void {
   ipcMain.handle(
@@ -309,13 +312,51 @@ function sanitizeOutputSvg(svg: string): string {
   const match = /<svg\b[\s\S]*?<\/svg>/i.exec(svg.trim());
   if (!match) return "";
 
-  return match[0]
-    .replace(/<\s*(script|foreignObject)\b[\s\S]*?<\s*\/\s*\1\s*>/gi, "")
-    .replace(/<\s*(script|foreignObject)\b[^>]*\/\s*>/gi, "")
-    .replace(/\s+on[a-z]+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, "")
-    .replace(/\s+(?:href|xlink:href|src)\s*=\s*"(?:(?:javascript|file):[^"]*)"/gi, "")
-    .replace(/\s+(?:href|xlink:href|src)\s*=\s*'(?:(?:javascript|file):[^']*)'/gi, "")
-    .replace(/\s+(?:href|xlink:href|src)\s*=\s*(?:javascript|file):[^\s>]+/gi, "");
+  const dom = new JSDOM(`<!doctype html><body>${match[0]}</body>`);
+  const root = dom.window.document.querySelector("svg");
+  if (!root) return "";
+
+  sanitizeOutputSvgElement(root);
+
+  return root.outerHTML.trim();
+}
+
+function sanitizeOutputSvgElement(root: SVGSVGElement): void {
+  const document = root.ownerDocument;
+  const walker = document.createTreeWalker(root, 1);
+  const unsafeElements: Element[] = [];
+
+  sanitizeOutputSvgElementAttributes(root);
+
+  while (walker.nextNode()) {
+    const element = walker.currentNode as Element;
+    if (forbiddenOutputSvgTags.has(element.tagName.toLowerCase())) {
+      unsafeElements.push(element);
+      continue;
+    }
+
+    sanitizeOutputSvgElementAttributes(element);
+  }
+
+  unsafeElements.forEach((element) => {
+    element.remove();
+  });
+}
+
+function sanitizeOutputSvgElementAttributes(element: Element): void {
+  for (const attribute of Array.from(element.attributes)) {
+    const name = attribute.name.toLowerCase();
+    if (name.startsWith("on") || (outputSvgUriAttributes.has(name) && !isSafeOutputSvgUri(attribute.value))) {
+      element.removeAttribute(attribute.name);
+    }
+  }
+}
+
+function isSafeOutputSvgUri(value: string): boolean {
+  const trimmed = value.trim();
+  const scheme = trimmed.replace(/[\u0000-\u0020]+/g, "").match(/^([a-z][a-z0-9+.-]*):/i)?.[1]?.toLowerCase();
+
+  return scheme === undefined || scheme === "http" || scheme === "https" || scheme === "mailto";
 }
 
 function ipcErrorDetails(error: unknown): string {
