@@ -9,6 +9,7 @@ import { textCount } from "../paneViewModel";
 import type { PanelTabKind, Tab } from "../store/editorStore";
 import { useT } from "../i18n";
 import { Editor } from "./Editor";
+import { SourceModeButton } from "./AppMainActions";
 
 interface PaneContentSurfaceProps {
   activeTab: Tab | null | undefined;
@@ -31,6 +32,7 @@ interface PaneContentSurfaceProps {
   onOpenWikiLink?: (target: string, heading?: string) => void;
   onRenameFile: (path: string, name: string) => void;
   onSaveRelicVersion: () => void;
+  onSourceModeToggle: () => void;
   onUpdateTabContent: (tabId: string, content: string) => void;
 }
 
@@ -55,6 +57,7 @@ export function PaneContentSurface({
   onOpenWikiLink,
   onRenameFile,
   onSaveRelicVersion,
+  onSourceModeToggle,
   onUpdateTabContent
 }: PaneContentSurfaceProps): ReactElement {
   const t = useT();
@@ -93,7 +96,13 @@ export function PaneContentSurface({
                 onRename={(name) => onRenameFile(activeFileTab.path, name)}
               />
             </div>
-            <div className="editor-file-title-actions" ref={setFrontmatterAddButtonHost} />
+            <div className="editor-file-title-actions">
+              <SourceModeButton
+                isSourceMode={sourceMode}
+                onSourceModeToggle={onSourceModeToggle}
+              />
+              <div className="editor-file-title-frontmatter-action" ref={setFrontmatterAddButtonHost} />
+            </div>
           </div>
           {activeFileTab.externalConflict ? (
             <output

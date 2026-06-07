@@ -89,6 +89,7 @@ function renderPaneView(overrides: Partial<PaneViewProps> = {}): PaneViewProps {
     onRevealTabFile: vi.fn(),
     onSavePreviewAsPdf: vi.fn(),
     onScrollTargetHandled: vi.fn(),
+    onSourceModeToggle: vi.fn(),
     onTabClose: vi.fn(),
     onTabMove: vi.fn(),
     onTabSelect: vi.fn(),

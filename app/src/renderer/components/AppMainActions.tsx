@@ -12,6 +12,7 @@ interface AppMainActionsProps {
   onSourceModeToggle: () => void;
   onSplitToggle: () => void;
   rightPanelView: RightPanelView;
+  showSourceControl?: boolean;
   showRightPanelLinksControl: boolean;
   showRightPanelOutlineControl: boolean;
 }
@@ -24,6 +25,7 @@ export function AppMainActions({
   onSourceModeToggle,
   onSplitToggle,
   rightPanelView,
+  showSourceControl = true,
   showRightPanelLinksControl,
   showRightPanelOutlineControl
 }: AppMainActionsProps): ReactElement {
@@ -33,16 +35,12 @@ export function AppMainActions({
 
   return (
     <div className="main-area-actions">
-      <button
-        aria-label={t("pane.sourceShort")}
-        className={`toolbar-btn${isSourceMode ? " active" : ""}`}
-        data-tooltip={t("pane.sourceMode")}
-        onClick={onSourceModeToggle}
-        title={t("pane.sourceMode")}
-        type="button"
-      >
-        <SourceModeIcon />
-      </button>
+      {showSourceControl ? (
+        <SourceModeButton
+          isSourceMode={isSourceMode}
+          onSourceModeToggle={onSourceModeToggle}
+        />
+      ) : null}
       <button
         aria-label={t("pane.splitShort")}
         className={`toolbar-btn${isSplit ? " active" : ""}`}
@@ -78,6 +76,28 @@ export function AppMainActions({
         </button>
       ) : null}
     </div>
+  );
+}
+
+interface SourceModeButtonProps {
+  isSourceMode: boolean;
+  onSourceModeToggle: () => void;
+}
+
+export function SourceModeButton({ isSourceMode, onSourceModeToggle }: SourceModeButtonProps): ReactElement {
+  const t = useT();
+
+  return (
+    <button
+      aria-label={t("pane.sourceShort")}
+      className={`toolbar-btn${isSourceMode ? " active" : ""}`}
+      data-tooltip={t("pane.sourceMode")}
+      onClick={onSourceModeToggle}
+      title={t("pane.sourceMode")}
+      type="button"
+    >
+      <SourceModeIcon />
+    </button>
   );
 }
 

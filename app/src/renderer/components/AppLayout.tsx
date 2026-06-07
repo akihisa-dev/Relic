@@ -53,6 +53,7 @@ export function AppLayout({
             onSourceModeToggle={editorWorkspaceProps.onSourceModeToggle}
             onSplitToggle={editorWorkspaceProps.onSplitToggle}
             rightPanelView={editorWorkspaceProps.rightPanelView}
+            showSourceControl={false}
             showRightPanelLinksControl={editorWorkspaceProps.showRightPanelLinksControl}
             showRightPanelOutlineControl={editorWorkspaceProps.showRightPanelOutlineControl}
           />

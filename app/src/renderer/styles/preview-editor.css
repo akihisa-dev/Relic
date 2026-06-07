@@ -419,9 +419,11 @@
   align-items: center;
   box-sizing: border-box;
   display: flex;
+  gap: 6px;
   grid-column: 3;
   justify-content: flex-start;
   min-height: 64px;
+  -webkit-app-region: no-drag;
   padding: 12px 32px 8px 8px;
 }
 
@@ -540,6 +542,28 @@
 .editor-file-title-actions .editor-frontmatter-add-button {
   flex: 0 0 auto;
   position: static;
+}
+
+.editor-file-title-actions .toolbar-btn {
+  align-items: center;
+  appearance: none;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-2);
+  cursor: pointer;
+  display: inline-flex;
+  flex: 0 0 auto;
+  height: 32px;
+  justify-content: center;
+  padding: 0;
+  width: 32px;
+}
+
+.editor-file-title-actions .toolbar-btn:hover,
+.editor-file-title-actions .toolbar-btn.active {
+  background: var(--hover);
+  border-color: var(--border);
+  color: var(--accent);
 }
 
 .editor-frontmatter-add-menu {
