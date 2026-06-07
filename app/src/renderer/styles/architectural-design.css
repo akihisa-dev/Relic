@@ -32,21 +32,41 @@
   --texture-stone-wash:
     linear-gradient(180deg, color-mix(in srgb, #ffffff 18%, transparent), transparent 34%),
     linear-gradient(90deg, color-mix(in srgb, var(--color-border) 10%, transparent), transparent 28%, color-mix(in srgb, var(--color-border-strong) 6%, transparent) 76%, transparent);
+  --material-mineral-blue:
+    radial-gradient(circle at 24% 30%, color-mix(in srgb, #ffffff 12%, transparent) 0 0.65px, transparent 0.95px),
+    radial-gradient(circle at 74% 62%, color-mix(in srgb, #102a4f 18%, transparent) 0 0.75px, transparent 1.05px),
+    linear-gradient(142deg, color-mix(in srgb, #ffffff 8%, transparent), transparent 38%),
+    var(--color-primary);
+  --material-limestone:
+    var(--texture-fibers),
+    linear-gradient(180deg, color-mix(in srgb, #ffffff 22%, transparent), transparent 40%),
+    var(--texture-grain),
+    var(--color-bg);
+  --material-stone-dust:
+    var(--texture-grain),
+    linear-gradient(90deg, color-mix(in srgb, var(--color-border) 12%, transparent), transparent 34%, color-mix(in srgb, #ffffff 12%, transparent) 78%, transparent),
+    var(--color-surface);
+  --material-concrete:
+    radial-gradient(circle at 16% 24%, color-mix(in srgb, var(--color-border-strong) 12%, transparent) 0 0.8px, transparent 1.1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--color-border) 14%, transparent), transparent 22%, color-mix(in srgb, #ffffff 10%, transparent) 72%, transparent),
+    var(--color-surface-alt);
   --texture-size-grain: 11px 13px, 17px 19px;
   --texture-size-fibers: 29px 31px, 37px 41px;
+  --material-size-mineral-blue: 13px 17px, 19px 23px, auto, auto;
+  --material-size-limestone: var(--texture-size-fibers), auto, var(--texture-size-grain), auto;
+  --material-size-stone-dust: var(--texture-size-grain), auto, auto;
+  --material-size-concrete: 17px 19px, auto, auto;
+  --app-bg-size: 36px 36px, 36px 36px, var(--material-size-limestone);
   --app-bg:
-    var(--texture-grain),
-    var(--texture-fibers),
     linear-gradient(90deg, rgba(50, 97, 161, 0.035) 1px, transparent 1px),
     linear-gradient(rgba(50, 97, 161, 0.03) 1px, transparent 1px),
-    var(--color-bg);
+    var(--material-limestone);
   --surface-texture:
     var(--texture-stone-wash),
     var(--texture-grain),
     var(--color-surface-elevated);
   --surface-texture-subtle:
-    var(--texture-grain),
-    var(--color-surface);
+    var(--material-stone-dust);
   --surface: var(--color-surface-elevated);
   --surface-raised: var(--color-surface-elevated);
   --surface-subtle: var(--color-surface);
@@ -107,19 +127,34 @@
   --texture-stone-wash:
     linear-gradient(180deg, color-mix(in srgb, #ffffff 5%, transparent), transparent 34%),
     linear-gradient(90deg, color-mix(in srgb, var(--color-border) 8%, transparent), transparent 28%, color-mix(in srgb, var(--color-border-strong) 8%, transparent) 76%, transparent);
-  --app-bg:
-    var(--texture-grain),
+  --material-mineral-blue:
+    radial-gradient(circle at 24% 30%, color-mix(in srgb, #ffffff 8%, transparent) 0 0.65px, transparent 0.95px),
+    radial-gradient(circle at 74% 62%, color-mix(in srgb, #02070d 20%, transparent) 0 0.75px, transparent 1.05px),
+    linear-gradient(142deg, color-mix(in srgb, #ffffff 6%, transparent), transparent 38%),
+    var(--color-primary);
+  --material-limestone:
     var(--texture-fibers),
+    linear-gradient(180deg, color-mix(in srgb, #ffffff 5%, transparent), transparent 40%),
+    var(--texture-grain),
+    var(--color-bg);
+  --material-stone-dust:
+    var(--texture-grain),
+    linear-gradient(90deg, color-mix(in srgb, var(--color-border) 10%, transparent), transparent 34%, color-mix(in srgb, #ffffff 4%, transparent) 78%, transparent),
+    var(--color-surface);
+  --material-concrete:
+    radial-gradient(circle at 16% 24%, color-mix(in srgb, var(--color-border-strong) 14%, transparent) 0 0.8px, transparent 1.1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--color-border) 11%, transparent), transparent 22%, color-mix(in srgb, #ffffff 4%, transparent) 72%, transparent),
+    var(--color-surface-alt);
+  --app-bg:
     linear-gradient(90deg, rgba(143, 214, 255, 0.05) 1px, transparent 1px),
     linear-gradient(rgba(143, 214, 255, 0.045) 1px, transparent 1px),
-    var(--color-bg);
+    var(--material-limestone);
   --surface-texture:
     var(--texture-stone-wash),
     var(--texture-grain),
     var(--color-surface-elevated);
   --surface-texture-subtle:
-    var(--texture-grain),
-    var(--color-surface);
+    var(--material-stone-dust);
   --surface: var(--color-surface-elevated);
   --surface-raised: var(--color-surface-elevated);
   --surface-subtle: var(--color-surface);
@@ -178,19 +213,34 @@
     --texture-stone-wash:
       linear-gradient(180deg, color-mix(in srgb, #ffffff 5%, transparent), transparent 34%),
       linear-gradient(90deg, color-mix(in srgb, var(--color-border) 8%, transparent), transparent 28%, color-mix(in srgb, var(--color-border-strong) 8%, transparent) 76%, transparent);
-    --app-bg:
-      var(--texture-grain),
+    --material-mineral-blue:
+      radial-gradient(circle at 24% 30%, color-mix(in srgb, #ffffff 8%, transparent) 0 0.65px, transparent 0.95px),
+      radial-gradient(circle at 74% 62%, color-mix(in srgb, #02070d 20%, transparent) 0 0.75px, transparent 1.05px),
+      linear-gradient(142deg, color-mix(in srgb, #ffffff 6%, transparent), transparent 38%),
+      var(--color-primary);
+    --material-limestone:
       var(--texture-fibers),
+      linear-gradient(180deg, color-mix(in srgb, #ffffff 5%, transparent), transparent 40%),
+      var(--texture-grain),
+      var(--color-bg);
+    --material-stone-dust:
+      var(--texture-grain),
+      linear-gradient(90deg, color-mix(in srgb, var(--color-border) 10%, transparent), transparent 34%, color-mix(in srgb, #ffffff 4%, transparent) 78%, transparent),
+      var(--color-surface);
+    --material-concrete:
+      radial-gradient(circle at 16% 24%, color-mix(in srgb, var(--color-border-strong) 14%, transparent) 0 0.8px, transparent 1.1px),
+      linear-gradient(90deg, color-mix(in srgb, var(--color-border) 11%, transparent), transparent 22%, color-mix(in srgb, #ffffff 4%, transparent) 72%, transparent),
+      var(--color-surface-alt);
+    --app-bg:
       linear-gradient(90deg, rgba(143, 214, 255, 0.05) 1px, transparent 1px),
       linear-gradient(rgba(143, 214, 255, 0.045) 1px, transparent 1px),
-      var(--color-bg);
+      var(--material-limestone);
     --surface-texture:
       var(--texture-stone-wash),
       var(--texture-grain),
       var(--color-surface-elevated);
     --surface-texture-subtle:
-      var(--texture-grain),
-      var(--color-surface);
+      var(--material-stone-dust);
     --surface: var(--color-surface-elevated);
     --surface-raised: var(--color-surface-elevated);
     --surface-subtle: var(--color-surface);
@@ -240,6 +290,7 @@
 
 body {
   background: var(--app-bg);
+  background-size: var(--app-bg-size);
   color: var(--color-text);
   font-size: 13px;
 }
@@ -264,7 +315,8 @@ button:not(:disabled):hover {
 input,
 select,
 textarea {
-  background: var(--surface-texture);
+  background: var(--material-limestone);
+  background-size: var(--material-size-limestone);
   border: 1px solid var(--color-border);
   color: var(--color-text);
 }
@@ -279,13 +331,15 @@ textarea {
 
 .title-bar {
   backdrop-filter: none;
-  background: var(--chrome-top-bg);
+  background: var(--material-concrete);
+  background-size: var(--material-size-concrete);
   box-shadow: none;
 }
 
 .pane-tab-bar-shell {
   backdrop-filter: none;
-  background: var(--chrome-top-bg);
+  background: var(--material-concrete);
+  background-size: var(--material-size-concrete);
 }
 
 .workspace {
@@ -335,7 +389,8 @@ textarea {
 
 .rail-button.active::before,
 .rail-button.open::before {
-  background: var(--color-primary);
+  background: var(--material-mineral-blue);
+  background-size: var(--material-size-mineral-blue);
   bottom: 0;
   content: "";
   left: 0;
@@ -401,14 +456,16 @@ textarea {
 }
 
 .main-area {
-  background: var(--color-surface-elevated);
+  background: var(--material-limestone);
+  background-size: var(--material-size-limestone);
   border-left: 1px solid var(--color-border);
   border-right: 1px solid var(--color-border);
   z-index: 2;
 }
 
 .toolbar {
-  background: var(--color-bg);
+  background: var(--material-limestone);
+  background-size: var(--material-size-limestone);
   box-shadow: 0 1px 0 var(--color-border);
 }
 
@@ -443,7 +500,8 @@ textarea {
 /* ────────────────────────────────── */
 
 .pane-tab {
-  background: var(--chrome-tab-bg);
+  background: var(--material-concrete);
+  background-size: var(--material-size-concrete);
   border-color: transparent;
   border-radius: 0;
   box-shadow: inset -1px 0 0 var(--chrome-tab-divider);
@@ -456,7 +514,8 @@ textarea {
 }
 
 .pane-tab--active {
-  background: var(--chrome-tab-active-bg);
+  background: var(--material-limestone);
+  background-size: var(--material-size-limestone);
   border-color: transparent;
   box-shadow:
     inset 1px 0 0 var(--chrome-tab-divider),
@@ -478,7 +537,8 @@ textarea {
 .editor-body {
   background:
     linear-gradient(90deg, transparent 0, transparent 96%, color-mix(in srgb, var(--color-primary) 6%, transparent) 100%),
-    var(--color-surface-elevated);
+    var(--material-limestone);
+  background-size: auto, var(--material-size-limestone);
 }
 
 .editor-file-title {
@@ -494,7 +554,8 @@ textarea {
 }
 
 .editor-frontmatter-add-button {
-  background: var(--color-primary-dark);
+  background: var(--material-mineral-blue);
+  background-size: var(--material-size-mineral-blue);
   border-color: var(--color-primary-dark);
   border-radius: 0;
   box-shadow: none;
@@ -503,7 +564,8 @@ textarea {
 
 .editor-frontmatter-add-button:hover,
 .editor-frontmatter-add-button[aria-expanded="true"] {
-  background: var(--color-primary);
+  background: var(--material-mineral-blue);
+  background-size: var(--material-size-mineral-blue);
   border-color: var(--color-primary);
   color: #ffffff;
 }
@@ -515,7 +577,8 @@ textarea {
 .editor-context-menu-inline-dialog,
 .preview-diagram-overlay-panel,
 .command-palette {
-  background: var(--color-surface-elevated);
+  background: var(--material-limestone);
+  background-size: var(--material-size-limestone);
   border: 1px solid var(--color-border-strong);
   border-radius: 0;
   box-shadow: 0 10px 28px color-mix(in srgb, var(--color-primary-dark) 14%, transparent);
@@ -589,7 +652,8 @@ textarea {
 
 .preview-body th,
 .cm-live-table-widget th {
-  background: var(--color-surface-alt);
+  background: var(--material-concrete);
+  background-size: var(--material-size-concrete);
   color: var(--color-primary-dark);
   font-family: var(--font-body);
   font-size: 12px;
@@ -625,7 +689,8 @@ textarea {
 .search-result-button--opening,
 .ai-chats-item-button--active,
 .command-item--selected {
-  background: var(--color-surface-alt);
+  background: var(--material-concrete);
+  background-size: var(--material-size-concrete);
   color: var(--color-primary-dark);
 }
 
@@ -633,7 +698,8 @@ textarea {
 .file-tree-row--opening::before,
 .outline-item-button[aria-current="true"]::before,
 .command-item--selected::before {
-  background: var(--color-primary);
+  background: var(--material-mineral-blue);
+  background-size: var(--material-size-mineral-blue);
   bottom: 0;
   content: "";
   left: 0;
@@ -702,7 +768,8 @@ textarea {
 .chronicle-sidebar-item,
 .chronicle-chart,
 .preview-file-embed {
-  background: var(--color-surface-alt);
+  background: var(--material-concrete);
+  background-size: var(--material-size-concrete);
   border: 1px solid var(--color-border);
   border-radius: 0;
   box-shadow: none;
@@ -716,11 +783,13 @@ textarea {
 }
 
 .settings-segmented {
-  background: var(--color-surface);
+  background: var(--material-stone-dust);
+  background-size: var(--material-size-stone-dust);
 }
 
 .settings-segmented-indicator {
-  background: var(--color-surface-elevated);
+  background: var(--material-limestone);
+  background-size: var(--material-size-limestone);
   border: 1px solid var(--color-primary);
 }
 
@@ -729,7 +798,8 @@ textarea {
 }
 
 .setting-row input[type="checkbox"] {
-  background: var(--color-surface-elevated);
+  background: var(--material-limestone);
+  background-size: var(--material-size-limestone);
   border: 1px solid var(--color-border-strong);
   border-radius: 0;
   height: 22px;
@@ -747,7 +817,8 @@ textarea {
 }
 
 .setting-row input[type="checkbox"]:checked {
-  background: var(--color-primary);
+  background: var(--material-mineral-blue);
+  background-size: var(--material-size-mineral-blue);
   border-color: var(--color-primary-dark);
 }
 
@@ -776,7 +847,8 @@ textarea {
 .ai-workspace-operations-header button,
 .ai-workspace-operation-actions button:last-child,
 .ai-workspace-form button {
-  background: var(--color-primary);
+  background: var(--material-mineral-blue);
+  background-size: var(--material-size-mineral-blue);
   border-color: var(--color-primary);
   border-radius: 0;
   color: #ffffff;
@@ -788,7 +860,8 @@ textarea {
 .ai-workspace-operations-header button:hover,
 .ai-workspace-operation-actions button:last-child:hover,
 .ai-workspace-form button:hover {
-  background: var(--color-primary-dark);
+  background: var(--material-mineral-blue);
+  background-size: var(--material-size-mineral-blue);
   border-color: var(--color-primary-dark);
 }
 
@@ -833,7 +906,7 @@ textarea {
 .secondary-sidebar,
 .right-panel {
   background: var(--surface-texture-subtle);
-  background-size: var(--texture-size-grain), auto;
+  background-size: var(--material-size-stone-dust);
   backdrop-filter: none;
   border-radius: 0;
   box-shadow: var(--floating-panel-shadow);
@@ -851,7 +924,7 @@ textarea {
 .settings-segmented,
 .settings-segmented-indicator {
   background: var(--surface-texture);
-  background-size: var(--texture-size-fibers), var(--texture-size-grain), auto;
+  background-size: auto, var(--texture-size-grain), auto;
 }
 
 .setting-row input[type="checkbox"],
@@ -860,14 +933,14 @@ textarea {
 }
 
 .ai-workspace-message--user {
-  background: var(--texture-grain), var(--color-surface-alt);
-  background-size: var(--texture-size-grain), auto;
+  background: var(--material-concrete);
+  background-size: var(--material-size-concrete);
   border: 1px solid var(--color-border);
 }
 
 .ai-workspace-form {
   background: var(--surface-texture);
-  background-size: var(--texture-size-fibers), var(--texture-size-grain), auto;
+  background-size: auto, var(--texture-size-grain), auto;
   border-color: var(--color-border);
 }
 
@@ -885,8 +958,8 @@ textarea {
 .tool-card,
 .tool-section,
 .settings-card {
-  background-image: var(--texture-stone-wash), var(--texture-grain);
-  background-size: auto, var(--texture-size-grain);
+  background: var(--material-limestone);
+  background-size: var(--material-size-limestone);
 }
 
 *,
