@@ -47,10 +47,8 @@ export function AppLayout({
         <AppTitleBar {...titleBarProps}>
           <AppMainActions
             isRightPanelOpen={editorWorkspaceProps.isRightPanelOpen}
-            isSourceMode={editorWorkspaceProps.isSourceMode}
             isSplit={editorWorkspaceProps.isSplit}
             onRightPanelViewButton={editorWorkspaceProps.onRightPanelViewButton}
-            onSourceModeToggle={editorWorkspaceProps.onSourceModeToggle}
             onSplitToggle={editorWorkspaceProps.onSplitToggle}
             rightPanelView={editorWorkspaceProps.rightPanelView}
             showSourceControl={false}

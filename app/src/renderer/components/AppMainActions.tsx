@@ -6,10 +6,10 @@ import type { RightPanelView } from "../store/uiStore";
 
 interface AppMainActionsProps {
   isRightPanelOpen: boolean;
-  isSourceMode: boolean;
+  isSourceMode?: boolean;
   isSplit: boolean;
   onRightPanelViewButton: (view: RightPanelView) => void;
-  onSourceModeToggle: () => void;
+  onSourceModeToggle?: () => void;
   onSplitToggle: () => void;
   rightPanelView: RightPanelView;
   showSourceControl?: boolean;
@@ -19,7 +19,7 @@ interface AppMainActionsProps {
 
 export function AppMainActions({
   isRightPanelOpen,
-  isSourceMode,
+  isSourceMode = false,
   isSplit,
   onRightPanelViewButton,
   onSourceModeToggle,
@@ -35,7 +35,7 @@ export function AppMainActions({
 
   return (
     <div className="main-area-actions">
-      {showSourceControl ? (
+      {showSourceControl && onSourceModeToggle ? (
         <SourceModeButton
           isSourceMode={isSourceMode}
           onSourceModeToggle={onSourceModeToggle}

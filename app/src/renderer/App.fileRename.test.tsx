@@ -51,7 +51,9 @@ describe("App file rename and context menu", () => {
     expect(previewCss).toMatch(/\.editor-file-title\s*\{[^}]*border:\s*0;/s);
     expect(previewCss).toMatch(/\.editor-file-title\s*\{[^}]*padding:\s*12px 32px 8px;/s);
     expect(previewCss).toMatch(/\.editor-file-title-actions\s*\{[^}]*grid-column:\s*3;/s);
+    expect(previewCss).toMatch(/\.editor-file-title-actions\s*\{[^}]*flex-direction:\s*column;/s);
     expect(previewCss).toMatch(/\.editor-file-title-actions\s*\{[^}]*gap:\s*6px;/s);
+    expect(previewCss).toMatch(/\.editor-file-title-actions\s*\{[^}]*min-height:\s*84px;/s);
     expect(previewCss).toMatch(/\.editor-file-title-actions\s*\{[^}]*padding:\s*12px 32px 8px 8px;/s);
     expect(previewCss).toMatch(/\.editor-file-title-actions \.editor-frontmatter-add-button\s*\{[^}]*position:\s*static;/s);
     expect(previewCss).toMatch(/\.editor-file-title-actions \.toolbar-btn\s*\{[^}]*height:\s*32px;[^}]*width:\s*32px;/s);

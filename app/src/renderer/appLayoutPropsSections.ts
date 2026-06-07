@@ -25,7 +25,8 @@ export function createEditorWorkspaceProps(input: AppLayoutPropsInput): EditorWo
     isRightPanelResizing: input.isRightPanelResizing,
     isSecondarySidebarOpen: input.isSecondarySidebarOpen,
     isSecondarySidebarResizing: input.isSecondarySidebarResizing,
-    isSourceMode: input.isSourceMode,
+    isLeftSourceMode: input.isLeftSourceMode,
+    isRightSourceMode: input.isRightSourceMode,
     isSplit: input.isSplit,
     isSplitClosing: input.isSplitClosing,
     isTypewriterMode: input.isTypewriterMode,
@@ -55,7 +56,14 @@ export function createEditorWorkspaceProps(input: AppLayoutPropsInput): EditorWo
     onSecondarySidebarClose: input.closeSecondarySidebar,
     onSecondarySidebarResizeStart: input.startSecondarySidebarResize,
     onSetFocusedPane: input.setFocusedPane,
-    onSourceModeToggle: () => input.setIsSourceMode((value) => !value),
+    onSourceModeToggle: (pane) => {
+      if (pane === "right") {
+        input.setIsRightSourceMode((value) => !value);
+        return;
+      }
+
+      input.setIsLeftSourceMode((value) => !value);
+    },
     onSplitToggle: input.toggleSplitWithMotion,
     onTabClose: input.closeTabWithMotion,
     onTabMove: input.moveTab,
