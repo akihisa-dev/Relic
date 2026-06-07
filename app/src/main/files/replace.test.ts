@@ -5,6 +5,7 @@ import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { applySearchAndReplace, replaceInFile, searchAndReplace } from "./replace";
+import { regexMaxLineLength, regexMaxPatternLength } from "./regexSafety";
 
 describe("replaceInFile", () => {
   const temporaryPaths: string[] = [];
@@ -85,6 +86,38 @@ describe("replaceInFile", () => {
     const result = await replaceInFile(ws, "note.md", "[invalid", "ok", true);
 
     expect(result).toMatchObject({ ok: false });
+  });
+
+  it("重すぎる可能性がある正規表現置換は実行前に拒否する", async () => {
+    const ws = await mkdtemp(path.join(os.tmpdir(), "relic-replace-"));
+    temporaryPaths.push(ws);
+
+    await writeFile(path.join(ws, "note.md"), "aaaaaaaaaaaaaaaa!", "utf8");
+
+    await expect(replaceInFile(ws, "note.md", "(a+)+$", "ok", true)).resolves.toMatchObject({
+      error: expect.objectContaining({ code: "REGEX_TOO_COMPLEX" }),
+      ok: false
+    });
+    await expect(replaceInFile(ws, "note.md", "a".repeat(regexMaxPatternLength + 1), "ok", true)).resolves.toMatchObject({
+      error: expect.objectContaining({ code: "REGEX_TOO_COMPLEX" }),
+      ok: false
+    });
+    await expect(readFile(path.join(ws, "note.md"), "utf8")).resolves.toBe("aaaaaaaaaaaaaaaa!");
+  });
+
+  it("正規表現置換では長すぎる行を含むファイルを変更しない", async () => {
+    const ws = await mkdtemp(path.join(os.tmpdir(), "relic-replace-"));
+    temporaryPaths.push(ws);
+
+    await writeFile(path.join(ws, "note.md"), `${"a".repeat(regexMaxLineLength + 1)}\nneedle`, "utf8");
+
+    const result = await replaceInFile(ws, "note.md", "needle", "ok", true);
+
+    expect(result).toMatchObject({
+      error: expect.objectContaining({ code: "REGEX_TARGET_TOO_LONG" }),
+      ok: false
+    });
+    await expect(readFile(path.join(ws, "note.md"), "utf8")).resolves.toBe(`${"a".repeat(regexMaxLineLength + 1)}\nneedle`);
   });
 
   it("空文字に一致する正規表現は置換せずエラーを返す", async () => {
@@ -238,6 +271,20 @@ describe("searchAndReplace", () => {
       }]
     });
   });
+
+  it("正規表現置換プレビューでは長すぎる行を含むファイルを拒否する", async () => {
+    const ws = await mkdtemp(path.join(os.tmpdir(), "relic-replace-"));
+    temporaryPaths.push(ws);
+
+    await writeFile(path.join(ws, "note.md"), `${"a".repeat(regexMaxLineLength + 1)}\nneedle`, "utf8");
+
+    const result = await searchAndReplace(ws, "needle", "ok", true);
+
+    expect(result).toMatchObject({
+      error: expect.objectContaining({ code: "REGEX_TARGET_TOO_LONG" }),
+      ok: false
+    });
+  });
 });
 
 describe("applySearchAndReplace", () => {
@@ -365,5 +412,22 @@ describe("applySearchAndReplace", () => {
     });
     await expect(readFile(path.join(ws, "a.md"), "utf8")).resolves.toBe("safe");
     await expect(readFile(path.join(ws, "b.md"), "utf8")).resolves.toBe("needle");
+  });
+
+  it("一括正規表現置換では長すぎる行を含むファイルがある場合に書き換えない", async () => {
+    const ws = await mkdtemp(path.join(os.tmpdir(), "relic-replace-"));
+    temporaryPaths.push(ws);
+
+    await writeFile(path.join(ws, "safe.md"), "needle", "utf8");
+    await writeFile(path.join(ws, "long.md"), `${"a".repeat(regexMaxLineLength + 1)}\nneedle`, "utf8");
+
+    const result = await applySearchAndReplace(ws, "needle", "ok", true);
+
+    expect(result).toMatchObject({
+      error: expect.objectContaining({ code: "REGEX_TARGET_TOO_LONG" }),
+      ok: false
+    });
+    await expect(readFile(path.join(ws, "safe.md"), "utf8")).resolves.toBe("needle");
+    await expect(readFile(path.join(ws, "long.md"), "utf8")).resolves.toBe(`${"a".repeat(regexMaxLineLength + 1)}\nneedle`);
   });
 });

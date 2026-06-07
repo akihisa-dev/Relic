@@ -4,6 +4,7 @@ import path from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
+import { regexMaxLineLength, regexMaxPatternLength } from "./regexSafety";
 import { searchWorkspace, workspaceSearchMaxFileBytes, workspaceSearchMaxResults } from "./search";
 
 describe("searchWorkspace", () => {
@@ -101,6 +102,38 @@ describe("searchWorkspace", () => {
     await expect(searchWorkspace(workspacePath, "[", "regex")).resolves.toMatchObject({
       ok: false,
       error: { code: "SEARCH_REGEX_INVALID" }
+    });
+  });
+
+  it("重すぎる可能性がある正規表現検索は実行前に拒否する", async () => {
+    const workspacePath = await createSearchWorkspace();
+
+    await expect(searchWorkspace(workspacePath, "(a+)+$", "regex")).resolves.toMatchObject({
+      error: expect.objectContaining({ code: "REGEX_TOO_COMPLEX" }),
+      ok: false
+    });
+    await expect(searchWorkspace(workspacePath, "a".repeat(regexMaxPatternLength + 1), "regex")).resolves.toMatchObject({
+      error: expect.objectContaining({ code: "REGEX_TOO_COMPLEX" }),
+      ok: false
+    });
+  });
+
+  it("正規表現検索では長すぎる行を評価しない", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-search-regex-long-line-"));
+    temporaryPaths.push(workspacePath);
+    await writeFile(path.join(workspacePath, "long.md"), `${"a".repeat(regexMaxLineLength + 1)}needle`, "utf8");
+    await writeFile(path.join(workspacePath, "short.md"), "needle", "utf8");
+
+    const result = await searchWorkspace(workspacePath, "needle", "regex");
+
+    expect(result).toEqual({
+      ok: true,
+      value: searchResultSet([{
+        fileName: "short",
+        lineNumber: 1,
+        lineText: "needle",
+        path: "short.md"
+      }])
     });
   });
 

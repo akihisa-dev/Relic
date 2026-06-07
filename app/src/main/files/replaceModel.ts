@@ -1,4 +1,5 @@
 import { fail, ok, type RelicResult } from "../../shared/result";
+import { validateSafeRegexPattern } from "./regexSafety";
 
 export function buildReplacementRegex(searchQuery: string, isRegex: boolean): RelicResult<RegExp> {
   if (searchQuery.trim() === "") {
@@ -6,6 +7,11 @@ export function buildReplacementRegex(searchQuery: string, isRegex: boolean): Re
   }
 
   try {
+    if (isRegex) {
+      const safePattern = validateSafeRegexPattern(searchQuery, "置換");
+      if (!safePattern.ok) return safePattern;
+    }
+
     const regex = isRegex
       ? new RegExp(searchQuery, "g")
       : new RegExp(escapeRegExp(searchQuery), "g");
