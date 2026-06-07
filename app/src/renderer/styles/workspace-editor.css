@@ -486,7 +486,7 @@
 
 .pane-tab-bar-shell {
   -webkit-app-region: no-drag;
-  align-items: flex-end;
+  align-items: flex-start;
   background: var(--chrome-top-bg, var(--title-bar-bg));
   border-bottom: 0;
   display: flex;
