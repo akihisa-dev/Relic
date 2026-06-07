@@ -210,7 +210,7 @@
 - 図表の編集履歴や差分が、通常のテキスト差分として扱える
 - MermaidとD2のどちらもコードブロック文化と相性がよく、Relic独自形式を作る必要がない
 - SVG生成結果やpan / zoom状態を保存しないことで、Markdown本文と表示状態の責務を分けられる
-- D2のブラウザ版はWebAssembly workerと内部の動的実行を使うため、現行CSPでは `worker-src blob:` と `script-src 'wasm-unsafe-eval' 'unsafe-eval'` を許可する
+- D2のブラウザ版はWebAssembly workerを使うため、現行CSPでは `worker-src blob:` と `script-src 'wasm-unsafe-eval'` を許可する。文字列から任意コード実行につながりやすい `'unsafe-eval'` は許可しない
 
 ---
 

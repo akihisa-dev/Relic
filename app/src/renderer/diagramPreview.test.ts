@@ -489,10 +489,11 @@ describe("diagramPreview", () => {
     expect(container.textContent).toContain("ok");
   });
 
-  it("D2ブラウザレンダラーに必要なCSPを許可する", () => {
+  it("D2ブラウザレンダラーに必要なCSPだけを許可する", () => {
     const html = readFileSync("index.html", "utf8");
 
-    expect(html).toContain("script-src 'self' 'wasm-unsafe-eval' 'unsafe-eval'");
+    expect(html).toContain("script-src 'self' 'wasm-unsafe-eval'");
+    expect(html).not.toContain("'unsafe-eval'");
     expect(html).toContain("worker-src 'self' blob:");
   });
 
