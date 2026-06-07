@@ -377,6 +377,16 @@
   overflow: hidden;
 }
 
+.editor-file-title-row {
+  align-items: start;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  margin: 0 auto;
+  min-width: 0;
+  width: 100%;
+}
+
 .editor-file-title {
   appearance: none;
   background: transparent;
@@ -395,6 +405,14 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   width: 100%;
+}
+
+.editor-file-title-actions {
+  align-items: center;
+  box-sizing: border-box;
+  display: flex;
+  min-height: 64px;
+  padding: 12px 32px 8px 0;
 }
 
 .editor-file-title-button {
@@ -507,6 +525,11 @@
 
 .editor-frontmatter-add-button:active {
   transform: translateY(1px);
+}
+
+.editor-file-title-actions .editor-frontmatter-add-button {
+  flex: 0 0 auto;
+  position: static;
 }
 
 .editor-frontmatter-add-menu {
