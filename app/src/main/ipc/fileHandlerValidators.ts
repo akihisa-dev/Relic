@@ -154,7 +154,8 @@ export function isWriteMarkdownFileInput(input: unknown): input is WriteMarkdown
     "path" in input &&
     "content" in input &&
     isWorkspaceRelativeInputPath((input as { path?: unknown }).path) &&
-    typeof (input as { content?: unknown }).content === "string"
+    typeof (input as { content?: unknown }).content === "string" &&
+    (!("expectedContent" in input) || typeof (input as { expectedContent?: unknown }).expectedContent === "string")
   );
 }
 

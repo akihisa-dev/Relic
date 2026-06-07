@@ -7,6 +7,7 @@ export type EditorSaveStatus = "saved" | "dirty" | "saving" | "error" | "externa
 
 interface SaveRequest {
   content: string;
+  expectedContent: string;
   path: string;
   tabId: string;
 }
@@ -99,7 +100,11 @@ export function useEditorAutoSave({
     queue.lastError = null;
     notifyQueueChanged();
 
-    void window.relic.writeMarkdownFile({ content: request.content, path: request.path })
+    void window.relic.writeMarkdownFile({
+      content: request.content,
+      expectedContent: request.expectedContent,
+      path: request.path
+    })
       .then((result) => {
         if (!result.ok) {
           queue.lastError = result.error.message;
@@ -203,7 +208,7 @@ export function useEditorAutoSave({
 
       if (queue?.pending?.tabId === tab.id && queue.pending.content === tab.content) continue;
 
-      scheduleSave({ content: tab.content, path: tab.path, tabId: tab.id }, AUTO_SAVE_DELAY_MS);
+      scheduleSave({ content: tab.content, expectedContent: tab.savedContent, path: tab.path, tabId: tab.id }, AUTO_SAVE_DELAY_MS);
     }
   }, [notifyQueueChanged, queues, scheduleSave, tabs, wakeWaiters]);
 
@@ -230,7 +235,7 @@ export function useEditorAutoSave({
     const dirtyTargets = targets.filter((tab) => tab.content !== tab.savedContent);
 
     for (const tab of dirtyTargets) {
-      scheduleSave({ content: tab.content, path: tab.path, tabId: tab.id }, 0);
+      scheduleSave({ content: tab.content, expectedContent: tab.savedContent, path: tab.path, tabId: tab.id }, 0);
     }
 
     await Promise.all(dirtyTargets.map((tab) => waitForIdle(tab.path)));

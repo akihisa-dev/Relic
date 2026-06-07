@@ -290,7 +290,11 @@ describe("App file actions", () => {
     });
 
     await waitFor(() => {
-      expect(writeMarkdownFile).toHaveBeenCalledWith({ content: "未保存本文", path: "note.md" });
+      expect(writeMarkdownFile).toHaveBeenCalledWith({
+        content: "未保存本文",
+        expectedContent: "# Note",
+        path: "note.md"
+      });
     });
     await waitFor(() => {
       expect(moveMarkdownFile).toHaveBeenCalledWith({ destinationFolder: "archive", path: "note.md" });
@@ -373,7 +377,11 @@ describe("App file actions", () => {
     });
 
     await waitFor(() => {
-      expect(writeMarkdownFile).toHaveBeenCalledWith({ content: "# Note\n移動直前の本文", path: "note.md" });
+      expect(writeMarkdownFile).toHaveBeenCalledWith({
+        content: "# Note\n移動直前の本文",
+        expectedContent: "# Note",
+        path: "note.md"
+      });
     });
     await waitFor(() => {
       expect(moveMarkdownFile).toHaveBeenCalledWith({ destinationFolder: "archive", path: "note.md" });

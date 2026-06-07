@@ -30,7 +30,7 @@ export function registerEditorHandlers(): void {
           return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
         }
 
-        return writeMarkdownFileContent(state.activeWorkspace.path, input.path, input.content);
+        return writeMarkdownFileContent(state.activeWorkspace.path, input.path, input.content, input.expectedContent);
       } catch (error) {
         return fail(
           "FILE_WRITE_FAILED",

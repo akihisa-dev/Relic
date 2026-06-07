@@ -345,6 +345,7 @@ describe("App file tabs", () => {
 
     await waitFor(() => expect(writeMarkdownFile).toHaveBeenCalledWith({
       content: "保存に失敗しても残る本文",
+      expectedContent: "本文テスト",
       path: "読書メモ.md"
     }), { timeout: 2000 });
 
@@ -414,6 +415,7 @@ describe("App file tabs", () => {
 
     await waitFor(() => expect(writeMarkdownFile).toHaveBeenCalledWith({
       content: "閉じる前に保存する本文",
+      expectedContent: "本文テスト",
       path: "読書メモ.md"
     }));
     await waitFor(() => expect(useEditorStore.getState().leftPane.activeTabId).toBeNull());
@@ -459,6 +461,7 @@ describe("App file tabs", () => {
 
     await waitFor(() => expect(writeMarkdownFile).toHaveBeenCalledWith({
       content: "本文テスト\n入力直後の本文",
+      expectedContent: "本文テスト",
       path: "読書メモ.md"
     }));
     await waitFor(() => expect(useEditorStore.getState().tabs[activeTabId]).toBeUndefined());
@@ -565,6 +568,7 @@ describe("App file tabs", () => {
 
     await waitFor(() => expect(writeMarkdownFile).toHaveBeenCalledWith({
       content: "本文テスト\n終了直前の本文",
+      expectedContent: "本文テスト",
       path: "読書メモ.md"
     }));
     await waitFor(() => expect(respondToWindowCloseRequest).toHaveBeenCalledWith({

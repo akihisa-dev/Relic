@@ -196,6 +196,68 @@ describe("updateLinksForFileRename", () => {
 
     await expect(readFile(path.join(ws, "source.md"), "utf8")).resolves.toBe("[[other]]");
   });
+
+  it("リンク更新対象が読み込み後に外部変更された場合は上書きしない", async () => {
+    const ws = await mkdtemp(path.join(os.tmpdir(), "relic-link-updater-conflict-"));
+    temporaryPaths.push(ws);
+    const sourcePath = path.join(ws, "source.md");
+
+    await writeFile(sourcePath, "[[old]]", "utf8");
+    await writeFile(path.join(ws, "new.md"), "", "utf8");
+
+    let sourceReadCount = 0;
+    const result = await updateLinksForFileRename(ws, "old.md", "new.md", {
+      async readFile(filePath, encoding) {
+        const content = await readFile(filePath, encoding);
+        if (filePath === sourcePath) {
+          sourceReadCount += 1;
+        }
+        if (filePath === sourcePath && sourceReadCount === 1) {
+          await writeFile(sourcePath, "外部変更 [[old]]", "utf8");
+        }
+        return content;
+      },
+      async writeTextFile(filePath, content) {
+        await writeFile(filePath, content, "utf8");
+      }
+    });
+
+    expect(result).toMatchObject({
+      error: expect.objectContaining({ code: "LINK_UPDATE_CONFLICT" }),
+      ok: false
+    });
+    await expect(readFile(sourcePath, "utf8")).resolves.toBe("外部変更 [[old]]");
+  });
+
+  it("ロールバック対象が外部変更済みの場合は古い内容で上書きしない", async () => {
+    const ws = await mkdtemp(path.join(os.tmpdir(), "relic-link-updater-rollback-conflict-"));
+    temporaryPaths.push(ws);
+    const firstPath = path.join(ws, "first.md");
+    const secondPath = path.join(ws, "second.md");
+
+    await writeFile(firstPath, "[[old]]", "utf8");
+    await writeFile(secondPath, "[[old]]", "utf8");
+    await writeFile(path.join(ws, "new.md"), "", "utf8");
+
+    let writeCount = 0;
+    const result = await updateLinksForFileRename(ws, "old.md", "new.md", {
+      readFile,
+      async writeTextFile(filePath, content) {
+        writeCount += 1;
+        if (writeCount === 2) throw new Error("disk full");
+
+        await writeFile(filePath, content, "utf8");
+        await writeFile(filePath, "外部変更 [[new]]", "utf8");
+      }
+    });
+
+    expect(result).toMatchObject({
+      error: expect.objectContaining({ code: "LINK_UPDATE_WRITE_FAILED" }),
+      ok: false
+    });
+    await expect(readFile(firstPath, "utf8")).resolves.toBe("外部変更 [[new]]");
+    await expect(readFile(secondPath, "utf8")).resolves.toBe("[[old]]");
+  });
 });
 
 describe("updateLinksForFolderRename", () => {

@@ -211,6 +211,19 @@ describe("writeMarkdownFileContent", () => {
     await expect(readFile(path.join(workspacePath, "読書メモ.md"), "utf8")).resolves.toBe("new");
   });
 
+  it("期待した元本文と現在本文が異なる場合は保存しない", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-write-conflict-"));
+    temporaryPaths.push(workspacePath);
+
+    await writeFile(path.join(workspacePath, "読書メモ.md"), "external", "utf8");
+
+    await expect(writeMarkdownFileContent(workspacePath, "読書メモ.md", "relic", "old")).resolves.toMatchObject({
+      error: expect.objectContaining({ code: "FILE_WRITE_CONFLICT" }),
+      ok: false
+    });
+    await expect(readFile(path.join(workspacePath, "読書メモ.md"), "utf8")).resolves.toBe("external");
+  });
+
   it("Markdown以外とワークスペース外への書き込みを拒否する", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-write-file-"));
     temporaryPaths.push(workspacePath);
