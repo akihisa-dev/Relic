@@ -22,6 +22,7 @@ import type {
   SavePreviewAsPdfInput
 } from "./ipcOutput";
 import type {
+  GenerateTagIndexInput,
   GenerateTableOfContentsInput,
   GenerateTitleListInput,
   MergeFilesInput
@@ -125,6 +126,7 @@ export interface RelicApi {
   updateChartEntry: (input: UpdateChartEntryInput) => Promise<RelicResult<WorkspaceChart[]>>;
   generateTitleList: (input: GenerateTitleListInput) => Promise<RelicResult<string>>;
   generateTableOfContents: (input: GenerateTableOfContentsInput) => Promise<RelicResult<string>>;
+  generateTagIndex: (input: GenerateTagIndexInput) => Promise<RelicResult<string>>;
   getFeatureToggles: () => Promise<RelicResult<FeatureToggles>>;
   saveFeatureToggles: (input: FeatureToggles) => Promise<RelicResult<void>>;
   getUserDefinedFields: () => Promise<RelicResult<UserDefinedField[]>>;

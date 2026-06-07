@@ -80,6 +80,33 @@ describe("ToolsPanel", () => {
     });
   });
 
+  it("タグ別索引を生成できる", async () => {
+    const generateTagIndex = vi.fn().mockResolvedValue({ ok: true, value: "Tags.md" });
+    window.relic = makeRelicApi({ generateTagIndex });
+
+    renderToolsPanel("ja");
+
+    const tagIndex = sectionBlock("タグ別索引生成");
+    fireEvent.change(within(tagIndex).getByLabelText("フォルダ"), { target: { value: "notes" } });
+    fireEvent.click(within(tagIndex).getByLabelText("サブフォルダを含める"));
+    fireEvent.click(within(tagIndex).getByLabelText("タグなしを含める"));
+    fireEvent.change(within(tagIndex).getByLabelText("並び順"), { target: { value: "mtime" } });
+    fireEvent.change(within(tagIndex).getByLabelText("出力フォルダ"), { target: { value: "indexes" } });
+    fireEvent.change(within(tagIndex).getByLabelText("ファイル名"), { target: { value: "Tags" } });
+    fireEvent.click(within(tagIndex).getByRole("button", { name: "作成" }));
+
+    await waitFor(() => {
+      expect(generateTagIndex).toHaveBeenCalledWith({
+        includeSubfolders: false,
+        includeUntagged: true,
+        outputFolder: "indexes",
+        outputName: "Tags",
+        sortBy: "mtime",
+        targetFolder: "notes"
+      });
+    });
+  });
+
   it("フロントマター条件を指定してマージできる", async () => {
     const mergeFiles = vi.fn().mockResolvedValue({ ok: true, value: "merged.md" });
     window.relic = makeRelicApi({ mergeFiles });

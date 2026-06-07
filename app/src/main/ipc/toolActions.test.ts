@@ -22,6 +22,7 @@ import { resolveWikiLinks } from "../../shared/links";
 import { writeAppSettings } from "../settings/appSettings";
 import { addOrActivateWorkspace, createWorkspaceSummary } from "../workspace/workspaceService";
 import {
+  generateTagIndex,
   generateTableOfContents,
   generateTitleList,
   mergeFiles,
@@ -368,6 +369,97 @@ describe("toolActions", () => {
       expect.objectContaining({ exists: true, path: "notes/child.md" }),
       expect.objectContaining({ exists: true, path: "root.md" })
     ]);
+  });
+
+  it("タグ別索引はタグごとの内部リンク一覧を生成する", async () => {
+    const { workspacePath } = await prepareActiveWorkspace();
+    await mkdir(path.join(workspacePath, "notes"));
+    await mkdir(path.join(workspacePath, "indexes"));
+    await writeFile(path.join(workspacePath, "notes", "a.md"), "---\ntags: [project, idea]\n---\n# A\n", "utf8");
+    await writeFile(path.join(workspacePath, "notes", "b.md"), "---\ntags:\n  - project\n---\n# B\n", "utf8");
+    await writeFile(path.join(workspacePath, "notes", "untagged.md"), "# Untagged\n", "utf8");
+
+    const result = await generateTagIndex({
+      includeSubfolders: true,
+      includeUntagged: true,
+      outputFolder: "indexes",
+      outputName: "Tags",
+      sortBy: "name",
+      targetFolder: "notes"
+    });
+
+    expect(result).toEqual({ ok: true, value: "indexes/Tags.md" });
+    const content = await readFile(path.join(workspacePath, "indexes", "Tags.md"), "utf8");
+    expect(content).toBe(
+      "# タグ別索引\n\n## idea\n- [[a]]\n\n## project\n- [[a]]\n- [[b]]\n\n## タグなし\n- [[untagged]]\n"
+    );
+    expect(resolveWikiLinks(content, "indexes/Tags.md", [
+      "notes/a.md",
+      "notes/b.md",
+      "notes/untagged.md"
+    ])).toEqual([
+      expect.objectContaining({ exists: true, path: "notes/a.md" }),
+      expect.objectContaining({ exists: true, path: "notes/a.md" }),
+      expect.objectContaining({ exists: true, path: "notes/b.md" }),
+      expect.objectContaining({ exists: true, path: "notes/untagged.md" })
+    ]);
+  });
+
+  it("タグ別索引はサブフォルダを含めない指定と読めない候補の除外を扱う", async () => {
+    const { workspacePath } = await prepareActiveWorkspace();
+    await mkdir(path.join(workspacePath, "notes"));
+    await mkdir(path.join(workspacePath, "notes", "child"));
+    await writeFile(path.join(workspacePath, "notes", "visible.md"), "---\ntags: [project]\n---\n# Visible\n", "utf8");
+    await writeFile(path.join(workspacePath, "notes", "blocked.md"), "---\ntags: [project]\n---\n# Blocked\n", "utf8");
+    await writeFile(path.join(workspacePath, "notes", "child", "nested.md"), "---\ntags: [project]\n---\n# Nested\n", "utf8");
+
+    const result = await generateTagIndex(
+      {
+        includeSubfolders: false,
+        includeUntagged: false,
+        outputFolder: "",
+        outputName: "Tags",
+        sortBy: "name",
+        targetFolder: "notes"
+      },
+      {
+        async readFile(filePath, encoding) {
+          if (path.basename(filePath) === "blocked.md") {
+            throw Object.assign(new Error("Permission denied"), { code: "EACCES" });
+          }
+
+          return readFile(filePath, encoding);
+        }
+      }
+    );
+
+    expect(result).toEqual({ ok: true, value: "Tags.md" });
+    await expect(readFile(path.join(workspacePath, "Tags.md"), "utf8")).resolves.toBe(
+      "# タグ別索引\n\n## project\n- [[visible]]\n"
+    );
+  });
+
+  it("タグ別索引の対象フォルダが外部実体のシンボリックリンクなら読み込まない", async () => {
+    const { outsidePath, workspacePath } = await prepareActiveWorkspace();
+    await writeFile(path.join(outsidePath, "external.md"), "---\ntags: [secret]\n---\n# External\n", "utf8");
+    await symlink(outsidePath, path.join(workspacePath, "linked-out"), "dir");
+
+    const result = await generateTagIndex({
+      includeSubfolders: true,
+      includeUntagged: false,
+      outputFolder: "",
+      outputName: "Tags",
+      sortBy: "name",
+      targetFolder: "linked-out"
+    });
+
+    expect(result).toMatchObject({
+      error: { code: "WORKSPACE_PATH_OUTSIDE" },
+      ok: false
+    });
+    await expect(readFile(path.join(workspacePath, "Tags.md"), "utf8")).rejects.toMatchObject({
+      code: "ENOENT"
+    });
   });
 
   async function prepareActiveWorkspace(): Promise<{

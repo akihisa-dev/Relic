@@ -1,4 +1,5 @@
 import type {
+  GenerateTagIndexInput,
   GenerateTableOfContentsInput,
   GenerateTitleListInput,
   MergeFilesInput
@@ -42,6 +43,18 @@ export function isGenerateTableOfContentsInput(input: unknown): input is Generat
     typeof input.includeSubfolders === "boolean" &&
     hasWorkspaceFolder(input, "outputFolder") &&
     hasString(input, "outputName") &&
+    hasWorkspaceFolder(input, "targetFolder")
+  );
+}
+
+export function isGenerateTagIndexInput(input: unknown): input is GenerateTagIndexInput {
+  return (
+    isRecord(input) &&
+    typeof input.includeSubfolders === "boolean" &&
+    typeof input.includeUntagged === "boolean" &&
+    hasWorkspaceFolder(input, "outputFolder") &&
+    hasString(input, "outputName") &&
+    (input.sortBy === "name" || input.sortBy === "mtime") &&
     hasWorkspaceFolder(input, "targetFolder")
   );
 }

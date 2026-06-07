@@ -42,6 +42,8 @@ import {
   type GenerateTitleListInput,
   generateTableOfContentsChannel,
   type GenerateTableOfContentsInput,
+  generateTagIndexChannel,
+  type GenerateTagIndexInput,
   getFeatureTogglesChannel,
   saveFeatureTogglesChannel,
   getFrontmatterTemplatesChannel,
@@ -208,6 +210,8 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(generateTitleListChannel, input) as Promise<RelicResult<string>>,
   generateTableOfContents: (input: GenerateTableOfContentsInput) =>
     ipcRenderer.invoke(generateTableOfContentsChannel, input) as Promise<RelicResult<string>>,
+  generateTagIndex: (input: GenerateTagIndexInput) =>
+    ipcRenderer.invoke(generateTagIndexChannel, input) as Promise<RelicResult<string>>,
   getFeatureToggles: () =>
     ipcRenderer.invoke(getFeatureTogglesChannel) as Promise<RelicResult<FeatureToggles>>,
   saveFeatureToggles: (input: FeatureToggles) =>

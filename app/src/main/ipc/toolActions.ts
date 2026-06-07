@@ -5,6 +5,7 @@ import path from "node:path";
 import { app } from "electron";
 
 import {
+  type GenerateTagIndexInput,
   type GenerateTableOfContentsInput,
   type GenerateTitleListInput,
   type MergeFilesInput,
@@ -29,6 +30,7 @@ interface ToolWorkspaceContext {
 
 interface FileCandidate {
   ctime: number;
+  name?: string;
   mtime: number;
   relPath: string;
 }
@@ -164,6 +166,73 @@ export async function generateTableOfContents(
   return ok(path.relative(workspacePath, outputPath.value));
 }
 
+export async function generateTagIndex(
+  input: GenerateTagIndexInput,
+  operations: Partial<ToolActionFileOperations> = {}
+): Promise<RelicResult<string>> {
+  const fileOperations = { ...defaultToolActionFileOperations, ...operations };
+  const context = await getToolWorkspaceContext();
+  if (!context.ok) return context;
+
+  const { workspacePath } = context.value;
+  const targetAbsPath = await resolveExistingWorkspacePathOrRoot(workspacePath, input.targetFolder);
+  if (!targetAbsPath.ok) return targetAbsPath;
+  const fileTree = await readWorkspaceFileTree(workspacePath);
+  const collected = await collectTagIndexFiles(
+    workspacePath,
+    fileTree,
+    input.targetFolder,
+    input.includeSubfolders,
+    fileOperations
+  );
+  const wikiLinkForPath = createWikiLinkFormatter(collectMarkdownPathsFromTree(fileTree));
+  const grouped = new Map<string, FileCandidate[]>();
+
+  await Promise.all(collected.map(async (file) => {
+    try {
+      const content = await fileOperations.readFile(path.join(workspacePath, file.relPath), "utf-8");
+      const tags = parseMarkdownTags(content).frontmatterTags;
+      const targetTags = tags.length > 0 ? tags : input.includeUntagged ? ["タグなし"] : [];
+
+      for (const tag of targetTags) {
+        grouped.set(tag, [...(grouped.get(tag) ?? []), file]);
+      }
+    } catch {
+      return;
+    }
+  }));
+
+  const lines: string[] = ["# タグ別索引", ""];
+  const sortedTags = [...grouped.keys()].sort((a, b) => a.localeCompare(b, "ja"));
+  for (const tag of sortedTags) {
+    const files = grouped.get(tag) ?? [];
+    if (input.sortBy === "mtime") {
+      files.sort((a, b) => b.mtime - a.mtime);
+    } else {
+      files.sort((a, b) => (a.name ?? a.relPath).localeCompare(b.name ?? b.relPath, "ja"));
+    }
+
+    lines.push(`## ${tag}`);
+    for (const file of files) {
+      const displayName = file.name ?? file.relPath.replace(/\.md$/i, "");
+      lines.push(`- ${wikiLinkForPath(file.relPath, displayName)}`);
+    }
+    lines.push("");
+  }
+
+  const outputName = safeOutputName(input.outputName);
+  if (!outputName.ok) return outputName;
+  const outputDir = await resolveToolOutputDirectory(workspacePath, input.outputFolder, outputName.value);
+  if (!outputDir.ok) return outputDir;
+
+  await mkdir(outputDir.value, { recursive: true });
+  const outputPath = await uniqueFilePath(outputDir.value, outputName.value);
+  if (!outputPath.ok) return outputPath;
+  await atomicWriteTextFile(outputPath.value, lines.join("\n").trimEnd() + "\n");
+
+  return ok(path.relative(workspacePath, outputPath.value));
+}
+
 async function getToolWorkspaceContext(): Promise<RelicResult<ToolWorkspaceContext>> {
   const settings = await readAppSettings(app.getPath("userData"));
   const state = toWorkspaceState(settings);
@@ -284,6 +353,57 @@ async function collectTitleListFiles(
   }
 
   await collectFiles(nodes, "");
+  return collected;
+}
+
+async function collectTagIndexFiles(
+  workspacePath: string,
+  nodes: WorkspaceTreeNode[],
+  targetFolder: string,
+  includeSubfolders: boolean,
+  operations: ToolActionFileOperations
+): Promise<FileCandidate[]> {
+  const normalizedTarget = targetFolder.replace(/\\/g, "/").replace(/\/+$/, "");
+  const collected: FileCandidate[] = [];
+
+  function isTargetPath(filePath: string): boolean {
+    const folder = filePath.includes("/") ? filePath.slice(0, filePath.lastIndexOf("/")) : "";
+
+    if (!normalizedTarget) {
+      return includeSubfolders || folder === "";
+    }
+
+    if (includeSubfolders) {
+      return filePath.startsWith(`${normalizedTarget}/`);
+    }
+
+    return folder === normalizedTarget;
+  }
+
+  async function collect(items: WorkspaceTreeNode[]): Promise<void> {
+    await Promise.all(items.map(async (node) => {
+      if (node.type === "folder") {
+        await collect(node.children);
+        return;
+      }
+
+      if (!node.path.toLowerCase().endsWith(".md") || !isTargetPath(node.path)) return;
+
+      try {
+        const s = await operations.stat(path.join(workspacePath, node.path));
+        collected.push({
+          ctime: s.birthtimeMs,
+          mtime: s.mtimeMs,
+          name: node.name.replace(/\.md$/i, ""),
+          relPath: node.path
+        });
+      } catch {
+        return;
+      }
+    }));
+  }
+
+  await collect(nodes);
   return collected;
 }
 
