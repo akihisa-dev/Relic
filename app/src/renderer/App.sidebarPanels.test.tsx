@@ -225,49 +225,6 @@ describe("App sidebar panels", () => {
     fireEvent.mouseUp(document);
   });
 
-  it("AIチャットパネル幅のドラッグ変更を最小320px・最大520pxに制限する", async () => {
-    const saveAppUiSettings = vi.fn().mockResolvedValue({ ok: true, value: { coworkPanelWidth: 520 } });
-    window.relic = makeRelicApi({
-      getAppUiSettings: vi.fn().mockResolvedValue({ ok: true, value: { coworkPanelWidth: 480 } }),
-      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace }),
-      saveAppUiSettings
-    });
-
-    const { container } = await renderApp();
-
-    fireEvent.click(await screen.findByRole("button", { name: "Cowork" }));
-
-    const secondarySidebar = container.querySelector(".secondary-sidebar");
-    const resizeHandle = container.querySelector(".layout-resize-boundary--secondary-sidebar");
-
-    expect(secondarySidebar).toBeInstanceOf(HTMLElement);
-    expect(resizeHandle).toBeInstanceOf(HTMLElement);
-    await waitFor(() => expect(secondarySidebar).toHaveStyle({ width: "480px" }));
-
-    fireEvent.mouseDown(resizeHandle as HTMLElement, { clientX: 480 });
-
-    expect(secondarySidebar).toHaveClass("secondary-sidebar--resizing");
-    expect(resizeHandle).toHaveClass("layout-resize-boundary--active");
-
-    fireEvent.mouseMove(document, { clientX: 900 });
-
-    expect(secondarySidebar).toHaveStyle({ width: "520px" });
-
-    fireEvent.mouseUp(document);
-    expect(saveAppUiSettings).toHaveBeenLastCalledWith({ coworkPanelWidth: 520 });
-
-    expect(secondarySidebar).not.toHaveClass("secondary-sidebar--resizing");
-    expect(resizeHandle).not.toHaveClass("layout-resize-boundary--active");
-
-    fireEvent.mouseDown(resizeHandle as HTMLElement, { clientX: 520 });
-    fireEvent.mouseMove(document, { clientX: -200 });
-
-    expect(secondarySidebar).toHaveStyle({ width: "320px" });
-
-    fireEvent.mouseUp(document);
-    expect(saveAppUiSettings).toHaveBeenLastCalledWith({ coworkPanelWidth: 320 });
-  });
-
   it("右パネルのアウトライン・リンクボタンを閉じた後も再度開ける", async () => {
     window.relic = makeRelicApi({
       getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })

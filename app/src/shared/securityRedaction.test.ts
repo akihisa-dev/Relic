@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { redactSensitiveText } from "./securityRedaction";
 
 describe("redactSensitiveText", () => {
-  it("redacts OpenAI API keys", () => {
+  it("redacts API keys", () => {
     expect(redactSensitiveText("failed with sk-abcdefghijklmnopqrstuvwxyz")).toBe("failed with sk-[redacted]");
   });
 
@@ -11,8 +11,8 @@ describe("redactSensitiveText", () => {
     expect(redactSensitiveText("Authorization: Bearer abc123._~+/=-XYZ")).toBe("Authorization: Bearer [redacted]");
   });
 
-  it("redacts OPENAI_API_KEY assignments", () => {
-    expect(redactSensitiveText("OPENAI_API_KEY=sk-secret-value")).toBe("OPENAI_API_KEY=[redacted]");
+  it("redacts API_KEY assignments", () => {
+    expect(redactSensitiveText("SERVICE_API_KEY=sk-secret-value")).toBe("SERVICE_API_KEY=[redacted]");
   });
 
   it("redacts generic API key fields", () => {
@@ -20,6 +20,6 @@ describe("redactSensitiveText", () => {
   });
 
   it("keeps normal Japanese error messages unchanged", () => {
-    expect(redactSensitiveText("Coworkを読み込めませんでした。")).toBe("Coworkを読み込めませんでした。");
+    expect(redactSensitiveText("設定を読み込めませんでした。")).toBe("設定を読み込めませんでした。");
   });
 });

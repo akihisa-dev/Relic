@@ -2,24 +2,14 @@ import { mkdir, readFile } from "node:fs/promises";
 import path from "node:path";
 
 import {
-  aiProviders,
   chronicleCalendarIds,
-  coworkPanelMaxWidth,
-  coworkPanelMinWidth,
-  defaultAppUiSettings,
-  defaultAIProvider,
-  defaultOpenAIWorkspaceModel,
   defaultEditorSettings,
   defaultFeatureToggles,
   defaultFrontmatterTemplates,
   defaultUserDefinedFields,
-  openAIWorkspaceModels,
-  type AppUiSettings,
   type EditorSettings,
   type FeatureToggles,
   type FrontmatterTemplate,
-  type AIProvider,
-  type OpenAIWorkspaceModel,
   type UserDefinedField,
   type UserDefinedFieldType,
   type WorkspaceSummary
@@ -27,29 +17,19 @@ import {
 import { atomicWriteTextFile } from "../files/atomicWrite";
 
 export interface AppSettings {
-  aiSettings: {
-    aiProvider: AIProvider;
-    openAIModel: OpenAIWorkspaceModel;
-  };
   editorSettings: EditorSettings;
   featureToggles: FeatureToggles;
   frontmatterTemplates: FrontmatterTemplate[];
   lastWorkspaceId: string | null;
-  uiSettings?: AppUiSettings;
   userDefinedFields: UserDefinedField[];
   workspaces: WorkspaceSummary[];
 }
 
 const defaultAppSettings: AppSettings = {
-  aiSettings: {
-    aiProvider: defaultAIProvider,
-    openAIModel: defaultOpenAIWorkspaceModel
-  },
   editorSettings: defaultEditorSettings,
   featureToggles: defaultFeatureToggles,
   frontmatterTemplates: defaultFrontmatterTemplates,
   lastWorkspaceId: null,
-  uiSettings: defaultAppUiSettings,
   userDefinedFields: defaultUserDefinedFields,
   workspaces: []
 };
@@ -72,12 +52,10 @@ export async function readAppSettings(userDataPath: string): Promise<AppSettings
     const workspaces = parseWorkspaceSummaries(parsedSettings.workspaces);
 
     return {
-      aiSettings: parseAISettings(parsedSettings.aiSettings),
       editorSettings: parseEditorSettings(parsedSettings.editorSettings),
       featureToggles: parseFeatureToggles(parsedSettings.featureToggles),
       frontmatterTemplates: parseFrontmatterTemplates(parsedSettings.frontmatterTemplates),
       lastWorkspaceId: parseLastWorkspaceId(parsedSettings.lastWorkspaceId, workspaces),
-      uiSettings: parseAppUiSettings(parsedSettings.uiSettings),
       userDefinedFields: parseUserDefinedFields(parsedSettings.userDefinedFields),
       workspaces
     };
@@ -96,48 +74,6 @@ export async function writeAppSettings(
 ): Promise<void> {
   await mkdir(userDataPath, { recursive: true });
   await atomicWriteTextFile(getAppSettingsPath(userDataPath), `${JSON.stringify(settings, null, 2)}\n`);
-}
-
-function parseAISettings(raw: unknown): AppSettings["aiSettings"] {
-  if (typeof raw !== "object" || raw === null) {
-    return defaultAppSettings.aiSettings;
-  }
-
-  const s = raw as Record<string, unknown>;
-
-  return {
-    aiProvider: parseAIProvider(s.aiProvider),
-    openAIModel: parseOpenAIWorkspaceModel(s.openAIModel)
-  };
-}
-
-function parseAIProvider(value: unknown): AIProvider {
-  return aiProviders.includes(value as AIProvider)
-    ? value as AIProvider
-    : defaultAIProvider;
-}
-
-function parseOpenAIWorkspaceModel(value: unknown): OpenAIWorkspaceModel {
-  return openAIWorkspaceModels.includes(value as OpenAIWorkspaceModel)
-    ? value as OpenAIWorkspaceModel
-    : defaultOpenAIWorkspaceModel;
-}
-
-function parseAppUiSettings(raw: unknown): AppUiSettings {
-  if (typeof raw !== "object" || raw === null) {
-    return defaultAppUiSettings;
-  }
-
-  const s = raw as Record<string, unknown>;
-
-  return {
-    coworkPanelWidth: clampNumber(
-      s.coworkPanelWidth,
-      coworkPanelMinWidth,
-      coworkPanelMaxWidth,
-      defaultAppUiSettings.coworkPanelWidth
-    )
-  };
 }
 
 function parseEditorSettings(raw: unknown): EditorSettings {
@@ -168,11 +104,6 @@ function isPositiveFiniteNumber(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value) && value > 0;
 }
 
-function clampNumber(value: unknown, min: number, max: number, fallback: number): number {
-  if (typeof value !== "number" || !Number.isFinite(value)) return fallback;
-  return Math.min(max, Math.max(min, Math.round(value)));
-}
-
 function parseFeatureToggles(raw: unknown): FeatureToggles {
   if (typeof raw !== "object" || raw === null) {
     return defaultFeatureToggles;
@@ -182,7 +113,6 @@ function parseFeatureToggles(raw: unknown): FeatureToggles {
   const legacyRightPanel = typeof s.rightPanel === "boolean" ? s.rightPanel : true;
 
   return {
-    ai: typeof s.ai === "boolean" ? s.ai : true,
     calendar: typeof s.calendar === "boolean" ? s.calendar : true,
     chronicle: typeof s.chronicle === "boolean" ? s.chronicle : false,
     chronicleSettings: typeof s.chronicleSettings === "boolean" ? s.chronicleSettings : false,

@@ -25,31 +25,6 @@ afterEach(() => {
 });
 
 describe("AppRightPanel", () => {
-  it("does not render the AI workspace panel", () => {
-    render(
-      <I18nProvider language="en">
-        <AppRightPanel
-          backlinks={[]}
-          isLoadingBacklinks={false}
-          isOpen
-          isResizing={false}
-          onOpenFile={vi.fn()}
-          onOpenWikiLink={vi.fn()}
-          onOutlineHeadingClick={vi.fn()}
-          onResizeStart={vi.fn()}
-          outlineHeadings={[]}
-          outgoingLinks={[]}
-          outgoingLinksLimited={false}
-          rightPanelView="outline"
-          setLinkContextMenu={vi.fn()}
-          width={260}
-        />
-      </I18nProvider>
-    );
-
-    expect(screen.queryByLabelText("AIへのメッセージ")).not.toBeInTheDocument();
-  });
-
   it("shows outline headings", () => {
     const onOutlineHeadingClick = vi.fn();
 

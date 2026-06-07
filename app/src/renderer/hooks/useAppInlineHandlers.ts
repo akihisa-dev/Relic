@@ -5,7 +5,6 @@ import type { PaneId } from "../store/editorStore";
 
 interface UseAppInlineHandlersInput {
   focusedPane: PaneId;
-  openSecondarySidebar: (view: "ai-chat") => void;
   setEditorActionPulse: (updater: (value: number) => number) => void;
   setLeftPaneScrollHeading: (heading: HeadingScrollTarget | undefined) => void;
   setRightPaneScrollHeading: (heading: HeadingScrollTarget | undefined) => void;
@@ -13,7 +12,6 @@ interface UseAppInlineHandlersInput {
 
 export function useAppInlineHandlers({
   focusedPane,
-  openSecondarySidebar,
   setEditorActionPulse,
   setLeftPaneScrollHeading,
   setRightPaneScrollHeading
@@ -22,7 +20,6 @@ export function useAppInlineHandlers({
   onFileOpenMotion: () => void;
   onOutlineHeadingClick: (heading: OutlineHeading) => void;
   onScrollTargetHandled: (pane: PaneId) => void;
-  openAIChatSidebar: () => void;
 } {
   const pulseEditorAction = useCallback(() => {
     setEditorActionPulse((value) => value + 1);
@@ -39,15 +36,10 @@ export function useAppInlineHandlers({
 
     setRightPaneScrollHeading(undefined);
   }, [setLeftPaneScrollHeading, setRightPaneScrollHeading]);
-  const openAIChatSidebar = useCallback(() => {
-    openSecondarySidebar("ai-chat");
-  }, [openSecondarySidebar]);
-
   return {
     onEditorAction: pulseEditorAction,
     onFileOpenMotion: pulseEditorAction,
     onOutlineHeadingClick,
-    onScrollTargetHandled,
-    openAIChatSidebar
+    onScrollTargetHandled
   };
 }

@@ -21,7 +21,6 @@ import {
 
 function appSettings(overrides: Partial<AppSettings> = {}): AppSettings {
   return {
-    aiSettings: { aiProvider: "codex-app-server", openAIModel: "gpt-5.4-mini" },
     editorSettings: defaultEditorSettings,
     featureToggles: defaultFeatureToggles,
     frontmatterTemplates: defaultFrontmatterTemplates,

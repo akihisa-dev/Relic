@@ -10,21 +10,15 @@ type TitleBarProps = AppLayoutProps["titleBarProps"];
 
 export function createEditorWorkspaceProps(input: AppLayoutPropsInput): EditorWorkspaceProps {
   return {
-    aiWorkspaceMessagePreview: input.aiWorkspaceMessagePreview,
-    aiWorkspaceState: input.aiWorkspaceState,
     allFilePaths: input.existingMarkdownPaths,
     backlinks: input.backlinks,
     editorActionPulse: input.editorActionPulse,
     editorSettings: input.editorSettings,
     focusedPane: input.focusedPane,
     frontmatterCandidates: input.frontmatterCandidates,
-    isAIWorkspaceLoading: input.isAIWorkspaceLoading,
-    isAIWorkspaceSending: input.isAIWorkspaceSending,
     isLoadingBacklinks: input.isLoadingBacklinks,
     isRightPanelOpen: input.isEffectiveRightPanelOpen,
     isRightPanelResizing: input.isRightPanelResizing,
-    isSecondarySidebarOpen: input.isSecondarySidebarOpen,
-    isSecondarySidebarResizing: input.isSecondarySidebarResizing,
     isLeftSourceMode: input.isLeftSourceMode,
     isRightSourceMode: input.isRightSourceMode,
     isSplit: input.isSplit,
@@ -33,7 +27,6 @@ export function createEditorWorkspaceProps(input: AppLayoutPropsInput): EditorWo
     leftClosingTabIds: input.leftClosingTabIds,
     leftEditorViewRef: input.leftEditorViewRef,
     leftPaneScrollHeading: input.leftPaneScrollHeading,
-    ...input.aiWorkspaceEditorActions,
     ...input.appInlineHandlers,
     onCloseAllTabsInPane: input.closeAllTabsInPaneWithMotion,
     onCloseOtherTabs: input.closeOtherTabsWithMotion,
@@ -53,8 +46,6 @@ export function createEditorWorkspaceProps(input: AppLayoutPropsInput): EditorWo
     onRightPanelResizeStart: input.startRightPanelResize,
     onRightPanelViewButton: input.handleRightPanelViewButton,
     onSavePreviewAsPdf: input.handleSavePreviewAsPdf,
-    onSecondarySidebarClose: input.closeSecondarySidebar,
-    onSecondarySidebarResizeStart: input.startSecondarySidebarResize,
     onSetFocusedPane: input.setFocusedPane,
     onSourceModeToggle: (pane) => {
       if (pane === "right") {
@@ -80,13 +71,10 @@ export function createEditorWorkspaceProps(input: AppLayoutPropsInput): EditorWo
     rightPaneScrollHeading: input.rightPaneScrollHeading,
     rightPanelView: input.rightPanelView,
     rightPanelWidth: input.rightPanelWidth,
-    secondarySidebarView: input.secondarySidebarView,
-    secondarySidebarWidth: input.secondarySidebarWidth,
     setLinkContextMenu: input.setLinkContextMenu,
     showRightPanelLinksControl: input.featureRightPanelLinksAvailable,
     showRightPanelOutlineControl: input.featureRightPanelOutlineAvailable,
     userDefinedFields: input.userDefinedFields,
-    workspaceName: input.workspaceState?.activeWorkspace?.name,
     workspacePath: input.workspaceState?.activeWorkspace?.path
   };
 }
@@ -94,9 +82,7 @@ export function createEditorWorkspaceProps(input: AppLayoutPropsInput): EditorWo
 export function createFilesSidebarProps(input: AppLayoutPropsInput): FilesSidebarProps {
   return {
     activeSidebarView: input.activeSidebarView,
-    aiWorkspaceState: input.aiWorkspaceState,
     fileSelectionCount: input.fileSelectionCount,
-    isAIWorkspaceLoading: input.isAIWorkspaceLoading,
     isCreatingFile: input.isCreatingFile,
     isCreatingFolder: input.isCreatingFolder,
     isCreatingWorkspace: input.isCreatingWorkspace,
@@ -105,16 +91,11 @@ export function createFilesSidebarProps(input: AppLayoutPropsInput): FilesSideba
     isSidebarOpen: input.isSidebarOpen,
     isSidebarResizing: input.isSidebarResizing,
     onCloseSidebar: input.closeSidebar,
-    onCreateAIChat: () => {
-      input.openSecondarySidebar("ai-chat");
-      void input.createAIWorkspaceChat();
-    },
     onCreateFile: input.handleCreateFileFromSidebar,
     onCreateFileInFolder: input.handleCreateFileInFolder,
     onCreateFolder: input.handleCreateFolderFromSidebar,
     onCreateFolderInFolder: input.handleCreateFolderInFolder,
     onCreateWorkspace: input.handleCreateNewWorkspace,
-    onDeleteAIChat: (chatId) => { void input.deleteAIWorkspaceChat(chatId); },
     onDeleteItem: input.handleDeleteTreeItem,
     onDeleteItems: input.handleDeleteTreeItems,
     onDuplicateFile: input.handleDuplicateTreeFile,
@@ -129,10 +110,6 @@ export function createFilesSidebarProps(input: AppLayoutPropsInput): FilesSideba
     onSearchFrontmatterFieldChange: input.setSearchFrontmatterField,
     onSearchModeChange: input.setSearchMode,
     onSearchQueryChange: input.setSearchQuery,
-    onSelectAIChat: (chatId) => {
-      input.openSecondarySidebar("ai-chat");
-      void input.selectAIWorkspaceChat(chatId);
-    },
     onSelectFolder: input.handleSelectFolder,
     onSelectedCountChange: input.setFileSelectionCount,
     onTogglePin: input.handleTogglePin,

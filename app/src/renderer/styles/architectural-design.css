@@ -350,7 +350,6 @@ textarea {
 
 .rail,
 .sidebar,
-.secondary-sidebar,
 .right-panel {
   backdrop-filter: none;
   border-color: var(--color-border);
@@ -415,13 +414,11 @@ textarea {
   text-transform: none;
 }
 
-.sidebar,
-.secondary-sidebar {
+.sidebar {
   border-width: 0 1px 0 0;
 }
 
-.sidebar > *,
-.secondary-sidebar > * {
+.sidebar > * {
   position: relative;
   z-index: 1;
 }
@@ -445,13 +442,11 @@ textarea {
 }
 
 .sidebar-header,
-.secondary-sidebar-header,
 .right-panel > .sidebar-header {
   box-shadow: 0 1px 0 var(--color-border-strong);
 }
 
-.sidebar-body,
-.secondary-sidebar-body {
+.sidebar-body {
   padding: 18px 16px;
 }
 
@@ -678,7 +673,6 @@ textarea {
 .links-list-target,
 .outline-item-button,
 .search-result-button,
-.ai-chats-item-button,
 .workspace-action-button {
   border-radius: 0;
   position: relative;
@@ -686,8 +680,7 @@ textarea {
 
 .file-tree-row.selected,
 .file-tree-row--opening,
-.search-result-button--opening,
-.ai-chats-item-button--active,
+.search-result-button--opening--active,
 .command-item--selected {
   background: var(--material-concrete);
   background-size: var(--material-size-concrete);
@@ -761,10 +754,6 @@ textarea {
 .frontmatter-field-add,
 .frontmatter-field-collapse-summary,
 .frontmatter-format-guide,
-.ai-workspace-note,
-.ai-workspace-tabs,
-.ai-workspace-operations,
-.ai-workspace-preview,
 .chronicle-sidebar-item,
 .chronicle-chart,
 .preview-file-embed {
@@ -841,12 +830,7 @@ textarea {
   border-radius: 0;
 }
 
-.primary-button,
-.ai-chats-new-button,
-.ai-workspace-preview-actions button,
-.ai-workspace-operations-header button,
-.ai-workspace-operation-actions button:last-child,
-.ai-workspace-form button {
+.primary-button {
   background: var(--material-mineral-blue);
   background-size: var(--material-size-mineral-blue);
   border-color: var(--color-primary);
@@ -854,12 +838,7 @@ textarea {
   color: #ffffff;
 }
 
-.primary-button:hover,
-.ai-chats-new-button:hover,
-.ai-workspace-preview-actions button:hover,
-.ai-workspace-operations-header button:hover,
-.ai-workspace-operation-actions button:last-child:hover,
-.ai-workspace-form button:hover {
+.primary-button:hover {
   background: var(--material-mineral-blue);
   background-size: var(--material-size-mineral-blue);
   border-color: var(--color-primary-dark);
@@ -903,7 +882,6 @@ textarea {
 
 .rail,
 .sidebar,
-.secondary-sidebar,
 .right-panel {
   background: var(--surface-texture-subtle);
   background-size: var(--material-size-stone-dust);
@@ -912,11 +890,11 @@ textarea {
   box-shadow: var(--floating-panel-shadow);
 }
 
-:where(.app-title-bar-button, .rail-button, .workspace-action-button, .file-tree-action-button, .pane-tab, .toolbar-button, .tool-card, .tool-section, .settings-panel, .settings-card, .settings-segmented, .ai-workspace-form, .ai-workspace-message--user, .editor-surface, .panel-tab-surface) {
+:where(.app-title-bar-button, .rail-button, .workspace-action-button, .file-tree-action-button, .pane-tab, .toolbar-button, .tool-card, .tool-section, .settings-panel, .settings-card, .settings-segmented, .editor-surface, .panel-tab-surface) {
   border-radius: 0;
 }
 
-:where(.settings-segmented, .settings-segmented-indicator, .ai-workspace-message--user, .ai-workspace-form, .frontmatter-dialog, .file-search-panel, .command-palette, .quick-switcher, .tool-card, .tool-section) {
+:where(.settings-segmented, .settings-segmented-indicator, .frontmatter-dialog, .file-search-panel, .command-palette, .quick-switcher, .tool-card, .tool-section) {
   backdrop-filter: none;
   box-shadow: none;
 }
@@ -931,23 +909,6 @@ textarea {
 .setting-row input[type="checkbox"]::after {
   box-shadow: none;
 }
-
-.ai-workspace-message--user {
-  background: var(--material-concrete);
-  background-size: var(--material-size-concrete);
-  border: 1px solid var(--color-border);
-}
-
-.ai-workspace-form {
-  background: var(--surface-texture);
-  background-size: auto, var(--texture-size-grain), auto;
-  border-color: var(--color-border);
-}
-
-.ai-workspace-form button {
-  border-radius: 0;
-}
-
 .editor-surface,
 .panel-tab-surface,
 .preview,

@@ -1,16 +1,9 @@
-import { useState, type ReactElement } from "react";
+import type { ReactElement } from "react";
 
 import {
-  aiProviders,
-  defaultAIProvider,
-  defaultOpenAIWorkspaceModel,
-  openAIWorkspaceModels,
-  type AISettingsState,
-  type AIProvider,
   type AppInfo,
   type EditorSettings,
-  type FeatureToggles,
-  type OpenAIWorkspaceModel
+  type FeatureToggles
 } from "../../shared/ipc";
 import { useT } from "../i18n";
 import type { TranslationKey } from "../i18nModel";
@@ -46,35 +39,19 @@ function formatPlatformLabel(platform?: NodeJS.Platform): string {
 
 export function SettingsPanel({
   appInfo,
-  aiSettings,
-  aiSettingsStatus,
   settings,
   featureToggles,
-  onDeleteOpenAIAPIKey,
-  onSaveAIModel,
-  onSaveAIProvider,
-  onSaveOpenAIAPIKey,
   onSave,
-  onFeatureTogglesSave,
-  onTestOpenAIAPIKey
+  onFeatureTogglesSave
 }: {
   appInfo: AppInfo | null;
-  aiSettings: AISettingsState | null;
-  aiSettingsStatus: string | null;
   settings: EditorSettings;
   featureToggles: FeatureToggles;
-  onDeleteOpenAIAPIKey: () => void;
-  onSaveAIModel: (model: OpenAIWorkspaceModel) => void;
-  onSaveAIProvider: (provider: AIProvider) => void;
-  onSaveOpenAIAPIKey: (apiKey: string) => void;
   onSave: (s: EditorSettings) => void;
   onFeatureTogglesSave: (t: FeatureToggles) => void;
-  onTestOpenAIAPIKey: () => void;
 }): ReactElement {
   const t = useT();
-  const [openAIAPIKeyInput, setOpenAIAPIKeyInput] = useState("");
   const fontLabelKeys = getEditorFontLabelKeys(appInfo?.platform);
-  const aiProvider = aiSettings?.aiProvider ?? defaultAIProvider;
 
   const update = <K extends keyof EditorSettings>(key: K, value: EditorSettings[K]): void => {
     const next = { ...settings, [key]: value };
@@ -116,106 +93,6 @@ export function SettingsPanel({
               value={settings.language}
             />
           </div>
-        </div>
-      </section>
-
-      <section className="settings-group">
-        <div className="links-panel-subheading">{t("settings.sectionAI")}</div>
-        <div className="settings-stack">
-          <div className="setting-row">
-            <span>{t("settings.aiConnection")}</span>
-            <SettingsSegmentedControl
-              ariaLabel={t("settings.aiConnection")}
-              onChange={(value) => onSaveAIProvider(value)}
-              options={aiProviders.map((provider) => ({
-                label: formatAIProviderLabel(provider),
-                value: provider
-              }))}
-              value={aiProvider}
-            />
-          </div>
-          {aiProvider === "codex-app-server" ? (
-            <div className="settings-info">
-              <div>{t("settings.aiCodexInfo")}</div>
-              <div>{t("settings.aiCodexFallbackInfo")}</div>
-              {aiSettingsStatus ? <div>{aiSettingsStatus}</div> : null}
-            </div>
-          ) : (
-            <>
-              <div className="setting-row">
-                <span>{t("settings.openAIAPIKey")}</span>
-                <span className="settings-inline-status">
-                  {aiSettings?.openAIAPIKeyConfigured ? t("settings.apiKeyConfigured") : t("settings.apiKeyNotConfigured")}
-                </span>
-              </div>
-              <label className="setting-row">
-                <span>{t("settings.openAIModel")}</span>
-                <select
-                  className="settings-control"
-                  onChange={(event) => onSaveAIModel(event.target.value as OpenAIWorkspaceModel)}
-                  value={aiSettings?.model ?? defaultOpenAIWorkspaceModel}
-                >
-                  {openAIWorkspaceModels.map((model) => (
-                    <option key={model} value={model}>{model}</option>
-                  ))}
-                </select>
-              </label>
-              <label className="setting-row setting-row--stacked">
-                <span>{t("settings.aiApiKeyInput")}</span>
-                <input
-                  className="settings-control settings-text-input"
-                  onChange={(event) => setOpenAIAPIKeyInput(event.target.value)}
-                  placeholder="sk-..."
-                  type="password"
-                  value={openAIAPIKeyInput}
-                />
-              </label>
-              <div className="settings-link-row">
-                <a
-                  href="https://platform.openai.com/api-keys"
-                  rel="noreferrer"
-                  target="_blank"
-                >
-                  {t("settings.openAIAPIKeyLink")}
-                </a>
-              </div>
-              <div className="settings-actions-row">
-                <button
-                  disabled={!openAIAPIKeyInput.trim() || aiSettings?.secureStorageAvailable === false}
-                  onClick={() => {
-                    onSaveOpenAIAPIKey(openAIAPIKeyInput);
-                    setOpenAIAPIKeyInput("");
-                  }}
-                  type="button"
-                >
-                  {t("common.save")}
-                </button>
-                <button
-                  disabled={!aiSettings?.openAIAPIKeyConfigured}
-                  onClick={onTestOpenAIAPIKey}
-                  type="button"
-                >
-                  {t("settings.testConnection")}
-                </button>
-                <button
-                  disabled={!aiSettings?.openAIAPIKeyConfigured}
-                  onClick={onDeleteOpenAIAPIKey}
-                  type="button"
-                >
-                  {t("common.delete")}
-                </button>
-              </div>
-              <div className="settings-info">
-                <div>{t("settings.currentModel", { model: aiSettings?.model ?? defaultOpenAIWorkspaceModel })}</div>
-                <div>
-                  {aiSettings?.secureStorageAvailable === false
-                    ? t("settings.openAIKeyStorageUnavailable")
-                    : t("settings.openAIKeyStorageDescription")}
-                </div>
-                {aiSettingsStatus ? <div>{aiSettingsStatus}</div> : null}
-              </div>
-            </>
-          )}
         </div>
       </section>
 
@@ -312,7 +189,6 @@ export function SettingsPanel({
           {(
             [
               { key: "tools", label: t("settings.featureTools") },
-              { key: "ai", label: t("settings.featureCowork") },
               { key: "frontmatter", label: t("settings.featureFrontmatter") },
               { key: "chronicleSettings", label: t("settings.featureChronicleSettings") },
               { key: "chronicle", label: t("settings.featureChronicle") },
@@ -345,10 +221,6 @@ export function SettingsPanel({
       </section>
     </div>
   );
-}
-
-function formatAIProviderLabel(provider: AIProvider): string {
-  return provider === "codex-app-server" ? "Codex App Server" : "OpenAI API";
 }
 
 function LightModeIcon(): ReactElement {

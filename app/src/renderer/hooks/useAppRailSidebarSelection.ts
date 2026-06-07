@@ -6,7 +6,6 @@ import type { SidebarView } from "../store/uiStore";
 interface UseAppRailSidebarSelectionInput {
   focusedPane: PaneId;
   openPanelInPane: (pane: PaneId, panel: PanelTabKind, name: string) => void;
-  openSecondarySidebar: (view: "ai-chat") => void;
   panelLabels: Record<PanelTabKind, string>;
   setSidebarView: (view: SidebarView) => void;
 }
@@ -14,7 +13,6 @@ interface UseAppRailSidebarSelectionInput {
 export function useAppRailSidebarSelection({
   focusedPane,
   openPanelInPane,
-  openSecondarySidebar,
   panelLabels,
   setSidebarView
 }: UseAppRailSidebarSelectionInput): (view: SidebarView) => void {
@@ -25,10 +23,6 @@ export function useAppRailSidebarSelection({
       return;
     }
 
-    if (view === "ai") {
-      openSecondarySidebar("ai-chat");
-    }
-
     setSidebarView(view);
-  }, [focusedPane, openPanelInPane, openSecondarySidebar, panelLabels, setSidebarView]);
+  }, [focusedPane, openPanelInPane, panelLabels, setSidebarView]);
 }

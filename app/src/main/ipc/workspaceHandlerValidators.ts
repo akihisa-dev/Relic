@@ -1,7 +1,6 @@
 import type {
   ChronicleCalendarSettings,
   ChronicleCalendarId,
-  AppUiSettings,
   FeatureToggles,
   FrontmatterTemplate,
   ChartSettings,
@@ -12,11 +11,7 @@ import type {
   UserDefinedField,
   UserDefinedFieldType
 } from "../../shared/ipc";
-import {
-  chronicleCalendarIds as validChronicleCalendarIds,
-  coworkPanelMaxWidth,
-  coworkPanelMinWidth
-} from "../../shared/ipc";
+import { chronicleCalendarIds as validChronicleCalendarIds } from "../../shared/ipc";
 import { isWorkspaceRelativeInputPath } from "../files/paths";
 
 const userDefinedFieldTypes: UserDefinedFieldType[] = [
@@ -162,7 +157,6 @@ export function isFeatureTogglesInput(input: unknown): input is FeatureToggles {
 
   const candidate = input as Record<string, unknown>;
   return (
-    typeof candidate.ai === "boolean" &&
     typeof candidate.calendar === "boolean" &&
     typeof candidate.chronicle === "boolean" &&
     typeof candidate.chronicleSettings === "boolean" &&
@@ -171,16 +165,6 @@ export function isFeatureTogglesInput(input: unknown): input is FeatureToggles {
     typeof candidate.rightPanelLinks === "boolean" &&
     typeof candidate.rightPanelOutline === "boolean"
   );
-}
-
-export function isAppUiSettingsInput(input: unknown): input is AppUiSettings {
-  if (typeof input !== "object" || input === null || Array.isArray(input)) return false;
-
-  const candidate = input as Record<string, unknown>;
-  return typeof candidate.coworkPanelWidth === "number" &&
-    Number.isFinite(candidate.coworkPanelWidth) &&
-    candidate.coworkPanelWidth >= coworkPanelMinWidth &&
-    candidate.coworkPanelWidth <= coworkPanelMaxWidth;
 }
 
 export function isWorkspaceIdInput(input: unknown): input is { workspaceId: string } {

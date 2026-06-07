@@ -1,5 +1,4 @@
 export interface FeatureToggles {
-  ai: boolean;
   calendar: boolean;
   chronicle: boolean;
   chronicleSettings: boolean;
@@ -35,7 +34,6 @@ export const defaultUserDefinedFields: UserDefinedField[] = [];
 export const defaultFrontmatterTemplates: FrontmatterTemplate[] = [];
 
 export const defaultFeatureToggles: FeatureToggles = {
-  ai: true,
   calendar: true,
   chronicle: false,
   chronicleSettings: false,
@@ -43,16 +41,6 @@ export const defaultFeatureToggles: FeatureToggles = {
   frontmatter: false,
   rightPanelLinks: true,
   rightPanelOutline: true
-};
-
-export interface AppUiSettings {
-  coworkPanelWidth: number;
-}
-
-export const coworkPanelMinWidth = 320;
-export const coworkPanelMaxWidth = 520;
-export const defaultAppUiSettings: AppUiSettings = {
-  coworkPanelWidth: 400
 };
 
 export type EditorFont = "system" | "gothic" | "mincho" | "mono";

@@ -1,7 +1,6 @@
 import { vi } from "vitest";
 
 import {
-  defaultAppUiSettings,
   defaultEditorSettings,
   defaultFeatureToggles,
   type WorkspaceState
@@ -39,11 +38,9 @@ export function resetRendererStores(): void {
   useUiStore.setState({
     activeSidebarView: "files",
     isRightPanelOpen: true,
-    isSecondarySidebarOpen: false,
     isSidebarOpen: true,
     isTypewriterMode: false,
     rightPanelView: "outline",
-    secondarySidebarView: "none",
     selectedChartId: null
   });
 }
@@ -51,69 +48,17 @@ export function resetRendererStores(): void {
 export function makeRelicApi(overrides: Partial<typeof window.relic> = {}): typeof window.relic {
   return {
     applySearchAndReplace: vi.fn(),
-    applyAIWorkspaceOperations: vi.fn().mockResolvedValue({
-      ok: true,
-      value: {
-        openAIAPIKeyConfigured: false,
-        history: [],
-        index: { chunkCount: 0, indexedAt: null, indexedFileCount: 0, skippedLargeFiles: [], unreadableFiles: [] },
-        operationHistory: [],
-        pendingOperations: []
-      }
-    }),
-    clearAIWorkspaceData: vi.fn().mockResolvedValue({
-      ok: true,
-      value: {
-        openAIAPIKeyConfigured: false,
-        history: [],
-        index: { chunkCount: 0, indexedAt: null, indexedFileCount: 0, skippedLargeFiles: [], unreadableFiles: [] },
-        operationHistory: [],
-        pendingOperations: []
-      }
-    }),
-    cancelAIWorkspaceMessage: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
     copyDiagramSvg: vi.fn().mockResolvedValue({ ok: true, value: { status: "copied" } }),
-    createAIWorkspaceChat: vi.fn().mockResolvedValue({
-      ok: true,
-      value: {
-        openAIAPIKeyConfigured: false,
-        history: [],
-        index: { chunkCount: 0, indexedAt: null, indexedFileCount: 0, skippedLargeFiles: [], unreadableFiles: [] },
-        operationHistory: [],
-        pendingOperations: []
-      }
-    }),
     createFolder: vi.fn(),
     createLinkedMarkdownFile: vi.fn(),
     createMarkdownFile: vi.fn(),
     createNewWorkspace: vi.fn().mockResolvedValue({ ok: true, value: { activeWorkspace: null, fileTree: [], pinnedPaths: [], workspaces: [] } }),
-    deleteAIWorkspaceChat: vi.fn().mockResolvedValue({
-      ok: true,
-      value: {
-        openAIAPIKeyConfigured: false,
-        history: [],
-        index: { chunkCount: 0, indexedAt: null, indexedFileCount: 0, skippedLargeFiles: [], unreadableFiles: [] },
-        operationHistory: [],
-        pendingOperations: []
-      }
-    }),
     duplicateMarkdownFile: vi.fn(),
-    discardAIWorkspaceOperations: vi.fn().mockResolvedValue({
-      ok: true,
-      value: {
-        openAIAPIKeyConfigured: false,
-        history: [],
-        index: { chunkCount: 0, indexedAt: null, indexedFileCount: 0, skippedLargeFiles: [], unreadableFiles: [] },
-        operationHistory: [],
-        pendingOperations: []
-      }
-    }),
     generateTableOfContents: vi.fn(),
     generateTitleList: vi.fn(),
     getAppInfo: vi.fn().mockResolvedValue({ ok: true, value: { name: "Relic", platform: "darwin", version: "0.0.0" } }),
     getBacklinks: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     getEditorSettings: vi.fn().mockResolvedValue({ ok: true, value: { ...defaultEditorSettings, language: "ja" } }),
-    getAppUiSettings: vi.fn().mockResolvedValue({ ok: true, value: defaultAppUiSettings }),
     getFeatureToggles: vi.fn().mockResolvedValue({ ok: true, value: defaultFeatureToggles }),
     getFrontmatterTemplates: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     getFrontmatterValueCandidates: vi.fn().mockResolvedValue({ ok: true, value: {} }),
@@ -124,41 +69,6 @@ export function makeRelicApi(overrides: Partial<typeof window.relic> = {}): type
     getWorkspaceChronicleCalendars: vi.fn().mockResolvedValue({ ok: true, value: [{ id: "chronicle0", name: "メイン暦" }] }),
     getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: { activeWorkspace: null, fileTree: [], pinnedPaths: [], workspaces: [] } }),
     getWorkspaceTags: vi.fn().mockResolvedValue({ ok: true, value: [] }),
-    getAIWorkspaceState: vi.fn().mockResolvedValue({
-      ok: true,
-      value: {
-        aiProvider: "codex-app-server",
-        history: [],
-        index: { chunkCount: 0, indexedAt: null, indexedFileCount: 0, skippedLargeFiles: [], unreadableFiles: [] },
-        openAIAPIKeyConfigured: false,
-        operationHistory: [],
-        pendingOperations: []
-      }
-    }),
-    getAISettings: vi.fn().mockResolvedValue({
-      ok: true,
-      value: { aiProvider: "codex-app-server", model: "gpt-5.4-mini", openAIAPIKeyConfigured: false, secureStorageAvailable: true }
-    }),
-    saveAIProvider: vi.fn().mockResolvedValue({
-      ok: true,
-      value: { aiProvider: "openai-api", model: "gpt-5.4-mini", openAIAPIKeyConfigured: false, secureStorageAvailable: true }
-    }),
-    saveAIModel: vi.fn().mockResolvedValue({
-      ok: true,
-      value: { aiProvider: "codex-app-server", model: "gpt-5.5", openAIAPIKeyConfigured: false, secureStorageAvailable: true }
-    }),
-    saveOpenAIAPIKey: vi.fn().mockResolvedValue({
-      ok: true,
-      value: { aiProvider: "openai-api", model: "gpt-5.4-mini", openAIAPIKeyConfigured: true, secureStorageAvailable: true }
-    }),
-    deleteOpenAIAPIKey: vi.fn().mockResolvedValue({
-      ok: true,
-      value: { aiProvider: "openai-api", model: "gpt-5.4-mini", openAIAPIKeyConfigured: false, secureStorageAvailable: true }
-    }),
-    testOpenAIAPIKey: vi.fn().mockResolvedValue({
-      ok: true,
-      value: { model: "gpt-5.4-mini", ok: true }
-    }),
     mergeFiles: vi.fn().mockResolvedValue({ ok: true, value: "merged.md" }),
     moveFolder: vi.fn(),
     moveItemToTrash: vi.fn(),
@@ -169,27 +79,6 @@ export function makeRelicApi(overrides: Partial<typeof window.relic> = {}): type
     readClipboardText: vi.fn().mockReturnValue(""),
     readMarkdownFile: vi.fn(),
     removeWorkspace: vi.fn().mockResolvedValue({ ok: true, value: { activeWorkspace: null, fileTree: [], pinnedPaths: [], workspaces: [] } }),
-    rebuildAIWorkspaceIndex: vi.fn().mockResolvedValue({
-      ok: true,
-      value: {
-        aiProvider: "codex-app-server",
-        openAIAPIKeyConfigured: false,
-        history: [],
-        index: { chunkCount: 0, indexedAt: null, indexedFileCount: 0, skippedLargeFiles: [], unreadableFiles: [] },
-        operationHistory: [],
-        pendingOperations: []
-      }
-    }),
-    previewAIWorkspaceMessage: vi.fn().mockResolvedValue({
-      ok: true,
-      value: {
-        message: "test",
-        references: [],
-        requiresExternalAI: true,
-        skippedLargeFiles: [],
-        unreadableFiles: []
-      }
-    }),
     renameFolder: vi.fn(),
     renameMarkdownFile: vi.fn(),
     renameWorkspace: vi.fn().mockResolvedValue({
@@ -206,7 +95,6 @@ export function makeRelicApi(overrides: Partial<typeof window.relic> = {}): type
     respondToWindowCloseRequest: vi.fn(),
     revealWorkspaceItem: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
     saveEditorSettings: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
-    saveAppUiSettings: vi.fn().mockResolvedValue({ ok: true, value: defaultAppUiSettings }),
     saveDiagramSvg: vi.fn().mockResolvedValue({ ok: true, value: { status: "saved" } }),
     saveFeatureToggles: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
     saveFrontmatterTemplates: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
@@ -216,26 +104,6 @@ export function makeRelicApi(overrides: Partial<typeof window.relic> = {}): type
     saveWorkspaceCharts: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     searchAndReplace: vi.fn(),
     searchWorkspace: vi.fn().mockResolvedValue({ ok: true, value: { results: [], skippedLargeFiles: 0, truncated: false } }),
-    selectAIWorkspaceChat: vi.fn().mockResolvedValue({
-      ok: true,
-      value: {
-        openAIAPIKeyConfigured: false,
-        history: [],
-        index: { chunkCount: 0, indexedAt: null, indexedFileCount: 0, skippedLargeFiles: [], unreadableFiles: [] },
-        operationHistory: [],
-        pendingOperations: []
-      }
-    }),
-    sendAIWorkspaceMessage: vi.fn().mockResolvedValue({
-      ok: true,
-      value: {
-        openAIAPIKeyConfigured: false,
-        history: [],
-        index: { chunkCount: 0, indexedAt: null, indexedFileCount: 0, skippedLargeFiles: [], unreadableFiles: [] },
-        operationHistory: [],
-        pendingOperations: []
-      }
-    }),
     splitFileByHeading: vi.fn().mockResolvedValue({ ok: true, value: [] }),
     switchWorkspace: vi.fn(),
     togglePin: vi.fn().mockResolvedValue({ ok: true, value: { activeWorkspace: null, fileTree: [], pinnedPaths: [], workspaces: [] } }),
