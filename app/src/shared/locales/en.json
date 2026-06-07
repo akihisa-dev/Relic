@@ -368,7 +368,7 @@
   "tools.frontmatterField": "Frontmatter field",
   "tools.frontmatterValue": "Frontmatter value",
   "tools.headingLevel": "Heading level",
-  "tools.merge": "Merge by Condition",
+  "tools.merge": "Folder Merge",
   "tools.mergeDefaultName": "Merged Result",
   "tools.outputFolder": "Output folder",
   "tools.placeholderRoot": "(empty = root)",

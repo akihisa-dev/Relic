@@ -20,6 +20,7 @@ import { fail, ok, type RelicResult } from "../../shared/result";
 import type { Translator } from "../../shared/i18n";
 import { atomicWriteFile, atomicWriteTextFile } from "../files/atomicWrite";
 import { getMainTranslator } from "../i18n";
+import { transientSessionPartition } from "../windowOptions";
 
 const defaultPdfName = "relic-preview";
 const defaultSvgName = "relic-diagram";
@@ -214,6 +215,7 @@ function createOutputWindow(
       contextIsolation: true,
       javascript: options.allowInlineScripts,
       nodeIntegration: false,
+      partition: transientSessionPartition,
       sandbox: true,
       webSecurity: true
     },

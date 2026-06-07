@@ -89,7 +89,7 @@ describe("ToolsPanel", () => {
     fireEvent.change(screen.getByLabelText("フィルター"), { target: { value: "frontmatter" } });
     fireEvent.change(screen.getByLabelText("フロントマターフィールド"), { target: { value: "status" } });
     fireEvent.change(screen.getByLabelText("フロントマター値"), { target: { value: "draft" } });
-    fireEvent.click(screen.getByRole("button", { name: "条件指定マージ" }));
+    fireEvent.click(screen.getByRole("button", { name: "フォルダ内マージ" }));
 
     await waitFor(() => {
       expect(mergeFiles).toHaveBeenCalledWith(expect.objectContaining({
