@@ -21,7 +21,7 @@ pnpm build:mac:safe
 
 echo ""
 echo "ビルドが完了しました。"
-echo "app/out/ フォルダに safe build の成果物が生成されています。"
+echo "app/out/ フォルダに Relic.app と DMG が生成されています。"
 echo ""
 echo "Enterキーを押すと閉じます。"
 read -r

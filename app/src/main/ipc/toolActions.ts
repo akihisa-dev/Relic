@@ -144,7 +144,8 @@ export async function generateTitleList(
     collected.sort((a, b) => a.name.localeCompare(b.name, "ja"));
   }
 
-  const lines = collected.map((file) => `- ${wikiLinkForMarkdownPath(file.path, file.name)}`);
+  const wikiLinkForPath = createWikiLinkFormatter(collectMarkdownPathsFromTree(fileTree));
+  const lines = collected.map((file) => `- ${wikiLinkForPath(file.path, file.name)}`);
   const content = lines.join("\n") + "\n";
 
   const outputName = safeOutputName(input.outputName);
@@ -171,6 +172,8 @@ export async function generateTableOfContents(
   const { workspacePath } = context.value;
   const targetAbsPath = await resolveExistingWorkspacePathOrRoot(workspacePath, input.targetFolder);
   if (!targetAbsPath.ok) return targetAbsPath;
+  const fileTree = await readWorkspaceFileTree(workspacePath);
+  const wikiLinkForPath = createWikiLinkFormatter(collectMarkdownPathsFromTree(fileTree));
   const lines: string[] = [];
 
   await collectTableOfContentsLines(
@@ -179,6 +182,7 @@ export async function generateTableOfContents(
     0,
     input.includeSubfolders,
     lines,
+    wikiLinkForPath,
     fileOperations,
     false
   );
@@ -345,6 +349,7 @@ async function collectTableOfContentsLines(
   indent: number,
   includeSubfolders: boolean,
   lines: string[],
+  wikiLinkForPath: (relativePath: string, displayName: string) => string,
   operations: ToolActionFileOperations,
   skipOnReadError: boolean
 ): Promise<boolean> {
@@ -372,6 +377,7 @@ async function collectTableOfContentsLines(
           indent + 1,
           includeSubfolders,
           childLines,
+          wikiLinkForPath,
           operations,
           true
         );
@@ -384,16 +390,48 @@ async function collectTableOfContentsLines(
     } else if (entry.name.endsWith(".md")) {
       const displayName = entry.name.replace(/\.md$/, "");
       const fileRelativePath = path.posix.join(relBase, entry.name);
-      lines.push(`${prefix}${wikiLinkForMarkdownPath(fileRelativePath, displayName)}`);
+      lines.push(`${prefix}${wikiLinkForPath(fileRelativePath, displayName)}`);
     }
   }
 
   return true;
 }
 
-function wikiLinkForMarkdownPath(relativePath: string, displayName: string): string {
-  const normalizedPath = relativePath.replace(/\\/g, "/").replace(/\.md$/i, "");
-  return `[[./${normalizedPath}|${displayName}]]`;
+function collectMarkdownPathsFromTree(nodes: WorkspaceTreeNode[]): string[] {
+  const paths: string[] = [];
+
+  function collect(items: WorkspaceTreeNode[]): void {
+    for (const node of items) {
+      if (node.type === "folder") {
+        collect(node.children);
+      } else if (node.path.toLowerCase().endsWith(".md")) {
+        paths.push(node.path);
+      }
+    }
+  }
+
+  collect(nodes);
+  return paths;
+}
+
+function createWikiLinkFormatter(markdownPaths: string[]): (relativePath: string, displayName: string) => string {
+  const basenameCounts = new Map<string, number>();
+
+  for (const markdownPath of markdownPaths) {
+    const basename = markdownPath.replace(/\\/g, "/").split("/").at(-1)?.replace(/\.md$/i, "") ?? markdownPath;
+    basenameCounts.set(basename, (basenameCounts.get(basename) ?? 0) + 1);
+  }
+
+  return (relativePath, displayName) => {
+    const normalizedPath = relativePath.replace(/\\/g, "/").replace(/\.md$/i, "");
+    const basename = normalizedPath.split("/").at(-1) ?? normalizedPath;
+
+    if ((basenameCounts.get(basename) ?? 0) === 1) {
+      return displayName === basename ? `[[${basename}]]` : `[[${basename}|${displayName}]]`;
+    }
+
+    return `[[./${normalizedPath}|${displayName}]]`;
+  };
 }
 
 function matchesFrontmatterField(value: unknown, query: string): boolean {

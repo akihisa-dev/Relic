@@ -108,13 +108,20 @@ export function createWikiLinkResolver(
   existingMarkdownPaths: Iterable<string>,
   aliasesByPath: AliasIndex = {}
 ): (markdown: string, sourcePath: string) => ResolvedWikiLink[] {
-  const existingPaths = new Set([...existingMarkdownPaths].map(normalizePathSegments));
+  const normalizedExistingPaths = [...existingMarkdownPaths].map(normalizePathSegments);
+  const existingPaths = new Set(normalizedExistingPaths);
+  const uniqueBasenameTargets = buildUniqueBasenameTargetMap(normalizedExistingPaths);
   const aliasTargets = buildAliasTargetMap(aliasesByPath);
 
   return (markdown, sourcePath) => parseWikiLinks(markdown).map((wikiLink) => {
     const resolvedPath = resolveWikiLinkPath(wikiLink.target, sourcePath);
-    const aliasPath = existingPaths.has(resolvedPath) ? null : aliasTargets.get(aliasKey(wikiLink.target)) ?? null;
-    const path = aliasPath ?? resolvedPath;
+    const uniqueBasenamePath = existingPaths.has(resolvedPath)
+      ? null
+      : uniqueBasenameTargets.get(basenameLinkKey(wikiLink.target)) ?? null;
+    const aliasPath = existingPaths.has(resolvedPath) || uniqueBasenamePath
+      ? null
+      : aliasTargets.get(aliasKey(wikiLink.target)) ?? null;
+    const path = uniqueBasenamePath ?? aliasPath ?? resolvedPath;
 
     return {
       displayName: wikiLink.alias ?? basenameWithoutMarkdownExtension(path),
@@ -132,9 +139,13 @@ export function resolveWikiLinkPathWithAliases(
   aliasesByPath: AliasIndex = {}
 ): string {
   const resolvedPath = resolveWikiLinkPath(target, sourcePath);
-  const existingPaths = new Set([...existingMarkdownPaths].map(normalizePathSegments));
+  const normalizedExistingPaths = [...existingMarkdownPaths].map(normalizePathSegments);
+  const existingPaths = new Set(normalizedExistingPaths);
 
   if (existingPaths.has(resolvedPath)) return resolvedPath;
+
+  const uniqueBasenamePath = buildUniqueBasenameTargetMap(normalizedExistingPaths).get(basenameLinkKey(target)) ?? null;
+  if (uniqueBasenamePath) return uniqueBasenamePath;
 
   return buildAliasTargetMap(aliasesByPath).get(aliasKey(target)) ?? resolvedPath;
 }
@@ -165,6 +176,24 @@ function parseWikiLinkBody(
 
 function basenameWithoutMarkdownExtension(path: string): string {
   return (path.split("/").at(-1) ?? path).replace(/\.md$/, "");
+}
+
+function basenameLinkKey(target: string): string {
+  const normalizedTarget = normalizeWikiLinkTarget(target);
+  if (normalizedTarget.includes("/")) return "";
+
+  return normalizedTarget;
+}
+
+function buildUniqueBasenameTargetMap(paths: string[]): Map<string, string> {
+  const targets = new Map<string, string | null>();
+
+  for (const path of paths) {
+    const basename = path.split("/").at(-1) ?? path;
+    targets.set(basename, targets.has(basename) ? null : path);
+  }
+
+  return new Map([...targets.entries()].filter((entry): entry is [string, string] => entry[1] !== null));
 }
 
 function maskFencedCodeBlocks(markdown: string): string {

@@ -122,6 +122,24 @@ describe("resolveWikiLinks", () => {
     ]);
   });
 
+  it("パスなしリンクはワークスペース内でファイル名が一意ならそのファイルへ解決する", () => {
+    expect(resolveWikiLinks("[[B]]", "indexes/source.md", ["notes/B.md", "A.md"])).toEqual([
+      expect.objectContaining({
+        exists: true,
+        path: "notes/B.md"
+      })
+    ]);
+  });
+
+  it("パスなしリンクは同名ファイルが複数ある場合に一意解決しない", () => {
+    expect(resolveWikiLinks("[[B]]", "indexes/source.md", ["archive/B.md", "notes/B.md"])).toEqual([
+      expect.objectContaining({
+        exists: false,
+        path: "indexes/B.md"
+      })
+    ]);
+  });
+
   it("同じpath集合とalias集合を再利用するresolverを作れる", () => {
     const resolve = createWikiLinkResolver(["A.md", "notes/B.md"], { "notes/B.md": ["bee"] });
 
@@ -134,5 +152,9 @@ describe("resolveWikiLinkPathWithAliases", () => {
   it("既存パスを優先し、存在しないリンクだけaliasesで解決する", () => {
     expect(resolveWikiLinkPathWithAliases("a", "source.md", ["A.md"], { "A.md": ["a"] })).toBe("A.md");
     expect(resolveWikiLinkPathWithAliases("a", "source.md", ["a.md", "A.md"], { "A.md": ["a"] })).toBe("a.md");
+  });
+
+  it("パスなしリンクはワークスペース内でファイル名が一意なら開ける", () => {
+    expect(resolveWikiLinkPathWithAliases("B", "indexes/source.md", ["notes/B.md"])).toBe("notes/B.md");
   });
 });
