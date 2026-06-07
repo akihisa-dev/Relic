@@ -410,6 +410,8 @@ describe("App external file changes", () => {
       expect(useEditorStore.getState().leftPane.activeTabId).not.toBeNull();
     });
     const openedTabId = useEditorStore.getState().leftPane.activeTabId;
+    expect(fileButton).not.toHaveClass("selected");
+    expect(fileButton).not.toHaveClass("open");
 
     fireEvent.click(fileButton);
     expect(fileButton).toHaveClass("file-tree-row--opening");
@@ -418,6 +420,8 @@ describe("App external file changes", () => {
     await waitFor(() => {
       expect(useEditorStore.getState().leftPane.activeTabId).toBe(openedTabId);
     });
+    expect(fileButton).not.toHaveClass("selected");
+    expect(fileButton).not.toHaveClass("open");
   });
 
   it("ファイルタブを閉じるとその場で静かに退場する", async () => {

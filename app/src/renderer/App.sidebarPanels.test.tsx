@@ -184,7 +184,8 @@ describe("App sidebar panels", () => {
       expect(useEditorStore.getState().leftPane.activeTabId).not.toBeNull();
     });
     expect(fileButton).not.toHaveClass("active");
-    expect(fileButton).toHaveClass("open");
+    expect(fileButton).not.toHaveClass("open");
+    expect(fileButton).not.toHaveClass("selected");
   });
 
   it("サイドバー幅のドラッグ変更を最小180px・最大500pxに制限する", async () => {

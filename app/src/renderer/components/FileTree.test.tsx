@@ -71,6 +71,12 @@ describe("FileTree", () => {
     expect(screen.getByText("Child")).toBeInTheDocument();
   });
 
+  it("does not keep a visual open highlight for already-open files", () => {
+    renderFileTree({ openFilePaths: new Set(["Root.md"]) });
+
+    expect(rowButton("Root")).not.toHaveClass("open");
+  });
+
   it("commits and cancels rename from the row", () => {
     const onRenameItem = vi.fn();
     renderFileTree({ onRenameItem });

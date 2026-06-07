@@ -108,7 +108,6 @@ export function FileTreeItem({
     startRename
   } = useFileTreeItemState({ expansionRequest, node, onRenameItem });
   const isSelected = selectedPaths.has(node.path);
-  const isOpen = node.type === "file" && openFilePaths?.has(node.path);
   const isOpening = node.type === "file" && openingFilePath === node.path;
   const useSelectedItems = shouldUseSelectedFileTreeItems(isSelected, selectedItems);
   const [isDragging, setIsDragging] = useState(false);
@@ -214,7 +213,6 @@ export function FileTreeItem({
         isDragging={isDragging}
         isDragOver={isDragOver}
         isExpanded={isExpanded}
-        isOpen={isOpen}
         isOpening={isOpening}
         isPinned={isPinned}
         isRemoving={isRemoving}
