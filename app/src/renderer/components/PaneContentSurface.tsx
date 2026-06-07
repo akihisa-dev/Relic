@@ -61,6 +61,7 @@ export function PaneContentSurface({
   const notifiedLargeMarkdownFallbacksRef = useRef<Set<string>>(new Set());
   const activeFileTab = activeTab?.kind === "file" ? activeTab : null;
   const isLargeMarkdown = activeFileTab ? isLargeMarkdownContent(activeFileTab.content) : false;
+  const [frontmatterAddButtonHost, setFrontmatterAddButtonHost] = useState<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!activeFileTab || !isLargeMarkdown) return;
@@ -81,11 +82,16 @@ export function PaneContentSurface({
         className={`editor-surface${editorActionPulse > 0 ? ` editor-surface--action-${editorActionPulse % 2 === 0 ? "even" : "odd"}` : ""}`}
       >
         <div className="editor-body">
-          <EditableFileTitle
-            maxWidth={editorSettings.maxWidth === "none" ? undefined : editorSettings.maxWidth}
-            name={activeFileTab.name}
-            onRename={(name) => onRenameFile(activeFileTab.path, name)}
-          />
+          <div
+            className="editor-file-title-row"
+            style={{ maxWidth: editorSettings.maxWidth === "none" ? undefined : editorSettings.maxWidth }}
+          >
+            <EditableFileTitle
+              name={activeFileTab.name}
+              onRename={(name) => onRenameFile(activeFileTab.path, name)}
+            />
+            <div className="editor-file-title-actions" ref={setFrontmatterAddButtonHost} />
+          </div>
           {activeFileTab.externalConflict ? (
             <output
               className="editor-conflict-banner"
@@ -129,6 +135,7 @@ export function PaneContentSurface({
             onOpenWikiLink={onOpenWikiLink}
             settings={editorSettings}
             sourceMode={sourceMode || isLargeMarkdown}
+            frontmatterAddButtonHost={frontmatterAddButtonHost}
             typewriterMode={typewriterMode}
             userDefinedFields={userDefinedFields}
             viewRef={viewRef}
@@ -180,12 +187,11 @@ export function PaneContentSurface({
 }
 
 interface EditableFileTitleProps {
-  maxWidth?: string;
   name: string;
   onRename: (name: string) => void;
 }
 
-function EditableFileTitle({ maxWidth, name, onRename }: EditableFileTitleProps): ReactElement {
+function EditableFileTitle({ name, onRename }: EditableFileTitleProps): ReactElement {
   const [draft, setDraft] = useState(name);
   const [editing, setEditing] = useState(false);
   const t = useT();
@@ -215,7 +221,6 @@ function EditableFileTitle({ maxWidth, name, onRename }: EditableFileTitleProps)
           event.preventDefault();
           commit();
         }}
-        style={{ maxWidth }}
       >
         <input
           aria-label={t("pane.enterFileName")}
@@ -238,7 +243,6 @@ function EditableFileTitle({ maxWidth, name, onRename }: EditableFileTitleProps)
     <button
       className="editor-file-title editor-file-title-button"
       onClick={() => setEditing(true)}
-      style={{ maxWidth }}
       type="button"
     >
       {name}

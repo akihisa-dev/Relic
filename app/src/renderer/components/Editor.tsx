@@ -2,6 +2,7 @@ import { EditorState } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 import { useEffect, useRef, useState } from "react";
 import type { CSSProperties, MutableRefObject, ReactElement } from "react";
+import { createPortal } from "react-dom";
 
 import { chronicleCalendarIds, type EditorSettings, type UserDefinedField } from "../../shared/ipc";
 import { buildEditorReconfigureEffects, buildExtensions, destroyEditorView } from "../editorExtensions";
@@ -34,6 +35,7 @@ interface EditorProps {
   onOpenWikiLink?: (target: string, heading?: string) => void;
   settings: EditorSettings;
   sourceMode?: boolean;
+  frontmatterAddButtonHost?: HTMLElement | null;
   typewriterMode?: boolean;
   userDefinedFields?: UserDefinedField[];
   viewRef?: MutableRefObject<EditorView | null>;
@@ -72,6 +74,7 @@ export function Editor({
   onOpenWikiLink,
   settings,
   sourceMode = false,
+  frontmatterAddButtonHost = null,
   typewriterMode = false,
   userDefinedFields = defaultUserDefinedFields,
   viewRef
@@ -325,22 +328,26 @@ export function Editor({
     if (viewRef) viewRef.current = view;
   }, [allFilePaths, frontmatterCandidates, rememberSelection, settings, sourceMode, t, typewriterMode, userDefinedFields, viewRef, openContextMenu]);
 
+  const frontmatterAddButton = (
+    <button
+      aria-expanded={frontmatterPropertyMenu ? "true" : "false"}
+      aria-haspopup="menu"
+      aria-label={t("frontmatter.addProperty")}
+      className="editor-frontmatter-add-button"
+      onClick={toggleFrontmatterPropertyMenu}
+      ref={frontmatterButtonRef}
+      title={t("frontmatter.addProperty")}
+      type="button"
+    >
+      +
+    </button>
+  );
+
   return (
     <>
       <div className="cm-editor-shell" data-output-file-name={outputFileNameFromPath(filePath) ?? undefined}>
         <div className="cm-editor-container" onContextMenuCapture={openReactContextMenu} ref={containerRef} />
-        <button
-          aria-expanded={frontmatterPropertyMenu ? "true" : "false"}
-          aria-haspopup="menu"
-          aria-label={t("frontmatter.addProperty")}
-          className="editor-frontmatter-add-button"
-          onClick={toggleFrontmatterPropertyMenu}
-          ref={frontmatterButtonRef}
-          title={t("frontmatter.addProperty")}
-          type="button"
-        >
-          +
-        </button>
+        {frontmatterAddButtonHost ? null : frontmatterAddButton}
         {frontmatterPropertyMenu ? (
           <div className="editor-frontmatter-add-menu" ref={frontmatterMenuRef} role="menu" style={frontmatterPropertyMenuStyle}>
             <div className="editor-frontmatter-add-menu-title">{t("frontmatter.addProperty")}</div>
@@ -370,6 +377,7 @@ export function Editor({
           </div>
         ) : null}
       </div>
+      {frontmatterAddButtonHost ? createPortal(frontmatterAddButton, frontmatterAddButtonHost) : null}
       <EditorFrontmatterDialog
         candidates={frontmatterDialogCandidates}
         dialog={frontmatterDialog}
