@@ -14,6 +14,7 @@ import { extractAliases } from "./aliases";
 import { parseFrontmatter } from "./frontmatter";
 import { readWorkspaceFileTree } from "./fileTree";
 import { resolveWorkspaceRelativePath } from "./paths";
+import { isRegexSafeLine, validateSafeRegexPattern } from "./regexSafety";
 
 export const workspaceSearchMaxResults = 500;
 export const workspaceSearchMaxFileBytes = 2 * 1024 * 1024;
@@ -49,6 +50,9 @@ export async function searchWorkspace(
   let regex: RegExp | null = null;
 
   if (mode === "regex") {
+    const safePattern = validateSafeRegexPattern(normalizedQuery, "検索");
+    if (!safePattern.ok) return safePattern;
+
     try {
       regex = new RegExp(normalizedQuery, "i");
     } catch {
@@ -145,6 +149,8 @@ export async function searchWorkspace(
       const lines = content.split("\n");
 
       for (const [index, line] of lines.entries()) {
+        if (mode === "regex" && !isRegexSafeLine(line)) continue;
+
         const matches =
           mode === "regex"
             ? regex!.test(line)

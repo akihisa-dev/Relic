@@ -11,6 +11,7 @@ import { atomicWriteTextFile } from "./atomicWrite";
 import { readWorkspaceFileTree } from "./fileTree";
 import { resolveExistingWorkspacePath } from "./paths";
 import { applyReplacement, buildReplacementPreviewLine, buildReplacementRegex, canMatchEmptyTextInContent } from "./replaceModel";
+import { isRegexSafeLine, validateRegexTargetText } from "./regexSafety";
 
 interface SearchAndReplaceReadOperations {
   readFile(filePath: string, encoding: BufferEncoding): Promise<string>;
@@ -54,6 +55,11 @@ export async function replaceInFile(
 
   try {
     const content = await readFile(absolutePath.value, "utf8");
+    if (isRegex) {
+      const safeTarget = validateRegexTargetText(content, "置換");
+      if (!safeTarget.ok) return safeTarget;
+    }
+
     if (isRegex && canMatchEmptyTextInContent(regex.value, content)) {
       return fail("REPLACE_REGEX_EMPTY_MATCH", "空文字に一致する正規表現は置換できません。");
     }
@@ -107,6 +113,11 @@ export async function searchAndReplace(
       if (!fileContent) continue;
 
       const { content, relativePath } = fileContent;
+      if (isRegex) {
+        const safeTarget = validateRegexTargetText(content, "置換プレビュー");
+        if (!safeTarget.ok) return safeTarget;
+      }
+
       if (isRegex && canMatchEmptyTextInContent(regex.value, content)) {
         return fail("REPLACE_REGEX_EMPTY_MATCH", "空文字に一致する正規表現は置換できません。");
       }
@@ -114,6 +125,7 @@ export async function searchAndReplace(
       const lines = content.split("\n");
 
       for (const [index, line] of lines.entries()) {
+        if (isRegex && !isRegexSafeLine(line)) continue;
 
         if (regex.value.test(line)) {
           regex.value.lastIndex = 0;
@@ -170,6 +182,11 @@ export async function applySearchAndReplace(
 
     for (const fileContent of fileContents) {
       if (!fileContent) continue;
+      if (isRegex) {
+        const safeTarget = validateRegexTargetText(fileContent.content, "一括置換");
+        if (!safeTarget.ok) return safeTarget;
+      }
+
       if (isRegex && canMatchEmptyTextInContent(regex.value, fileContent.content)) {
         return fail("REPLACE_REGEX_EMPTY_MATCH", "空文字に一致する正規表現は置換できません。");
       }
