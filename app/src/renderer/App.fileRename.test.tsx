@@ -51,8 +51,10 @@ describe("App file rename and context menu", () => {
     expect(previewCss).toMatch(/\.editor-file-title\s*\{[^}]*border:\s*0;/s);
     expect(previewCss).toMatch(/\.editor-file-title\s*\{[^}]*padding:\s*12px 32px 8px;/s);
     expect(previewCss).toMatch(/\.editor-file-title-actions\s*\{[^}]*grid-column:\s*3;/s);
+    expect(previewCss).toMatch(/\.editor-file-title-actions\s*\{[^}]*gap:\s*6px;/s);
     expect(previewCss).toMatch(/\.editor-file-title-actions\s*\{[^}]*padding:\s*12px 32px 8px 8px;/s);
     expect(previewCss).toMatch(/\.editor-file-title-actions \.editor-frontmatter-add-button\s*\{[^}]*position:\s*static;/s);
+    expect(previewCss).toMatch(/\.editor-file-title-actions \.toolbar-btn\s*\{[^}]*height:\s*32px;[^}]*width:\s*32px;/s);
     expect(designCss).toMatch(/\.editor-file-title\s*\{[^}]*padding:\s*12px 32px 8px;/s);
   });
 
@@ -90,6 +92,7 @@ describe("App file rename and context menu", () => {
     const title = await screen.findByText("読書メモ", { selector: ".editor-file-title" });
     expect(title).toBeInTheDocument();
     expect(container.querySelector(".editor-file-title-actions .editor-frontmatter-add-button")).toBeInTheDocument();
+    expect(container.querySelector(".editor-file-title-actions .toolbar-btn")).toBeInTheDocument();
     expect(container.querySelector(".cm-content")).toHaveTextContent("本文テスト");
     expect(container.querySelector(".cm-content")).not.toHaveTextContent("読書メモ");
 

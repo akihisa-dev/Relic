@@ -44,6 +44,7 @@ export interface PaneViewProps {
   onRevealTabFile?: (tabId: string) => void;
   onSavePreviewAsPdf: (tab: FileTab) => void;
   onScrollTargetHandled?: () => void;
+  onSourceModeToggle: () => void;
   onTabClose: (pane: PaneId, tabId: string) => void;
   onTabMove: (fromPane: PaneId, toPane: PaneId, tabId: string, targetTabId?: string | null, position?: "before" | "after") => void;
   onTabSelect: (pane: PaneId, tabId: string) => void;
@@ -85,6 +86,7 @@ export function PaneView({
   onRevealTabFile,
   onSavePreviewAsPdf,
   onScrollTargetHandled,
+  onSourceModeToggle,
   onTabClose,
   onTabMove,
   onTabSelect,
@@ -168,6 +170,7 @@ export function PaneView({
         renderChartTab={renderChartTab}
         renderPanelTab={renderPanelTab}
         sourceMode={sourceMode}
+        onSourceModeToggle={onSourceModeToggle}
         typewriterMode={typewriterMode}
         userDefinedFields={userDefinedFields}
         viewRef={viewRef}

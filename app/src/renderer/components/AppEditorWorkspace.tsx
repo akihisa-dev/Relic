@@ -149,6 +149,7 @@ export function AppEditorWorkspace({
   onSecondarySidebarResizeStart,
   onScrollTargetHandled,
   onSetFocusedPane,
+  onSourceModeToggle,
   onTabClose,
   onTabMove,
   onTabSelect,
@@ -220,6 +221,7 @@ export function AppEditorWorkspace({
               renderPanelTabIcon={renderPanelTabIcon}
               scrollTargetHeading={leftPaneScrollHeading}
               sourceMode={isSourceMode}
+              onSourceModeToggle={onSourceModeToggle}
               typewriterMode={isTypewriterMode}
               userDefinedFields={userDefinedFields}
               viewRef={leftEditorViewRef}
@@ -262,6 +264,7 @@ export function AppEditorWorkspace({
                 renderPanelTabIcon={renderPanelTabIcon}
                 scrollTargetHeading={rightPaneScrollHeading}
                 sourceMode={isSourceMode}
+                onSourceModeToggle={onSourceModeToggle}
                 typewriterMode={isTypewriterMode}
                 userDefinedFields={userDefinedFields}
                 viewRef={rightEditorViewRef}

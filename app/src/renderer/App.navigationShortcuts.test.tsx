@@ -112,15 +112,29 @@ describe("App navigation and shortcuts", () => {
     expect(panes).toHaveClass("panes-container--closing-split");
   });
 
-  it("右上の分割ボタン横でソースモードを切り替えられる", async () => {
+  it("ファイルタイトル行右側でソースモードを切り替えられる", async () => {
     window.relic = makeRelicApi({
-      getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [{ name: "読書メモ", path: "読書メモ.md", type: "file" }]
+        }
+      }),
+      readMarkdownFile: vi.fn().mockResolvedValue({
+        ok: true,
+        value: { content: "# 本文", name: "読書メモ", path: "読書メモ.md" }
+      })
     });
 
-    await renderApp();
+    const { container } = await renderApp();
+    fireEvent.click(await screen.findByRole("button", { name: /読書メモ/ }));
+    await screen.findByText("読書メモ", { selector: ".pane-tab-name" });
 
     const sourceButton = await screen.findByRole("button", { name: "ソース" });
     expect(screen.getByRole("button", { name: "分割" })).toBeInTheDocument();
+    expect(container.querySelector(".title-bar .main-area-actions .toolbar-btn[aria-label=\"ソース\"]")).toBeNull();
+    expect(container.querySelector(".editor-file-title-actions .toolbar-btn[aria-label=\"ソース\"]")).toBeInTheDocument();
 
     fireEvent.click(sourceButton);
 
