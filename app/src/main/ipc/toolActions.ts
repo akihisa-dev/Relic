@@ -144,7 +144,7 @@ export async function generateTitleList(
     collected.sort((a, b) => a.name.localeCompare(b.name, "ja"));
   }
 
-  const lines = collected.map((file) => `- [[${file.name}]]`);
+  const lines = collected.map((file) => `- ${wikiLinkForMarkdownPath(file.path, file.name)}`);
   const content = lines.join("\n") + "\n";
 
   const outputName = safeOutputName(input.outputName);
@@ -368,7 +368,7 @@ async function collectTableOfContentsLines(
         const childLines: string[] = [];
         const childRead = await collectTableOfContentsLines(
           path.join(dirPath, entry.name),
-          path.join(relBase, entry.name),
+          path.posix.join(relBase, entry.name),
           indent + 1,
           includeSubfolders,
           childLines,
@@ -383,11 +383,17 @@ async function collectTableOfContentsLines(
       }
     } else if (entry.name.endsWith(".md")) {
       const displayName = entry.name.replace(/\.md$/, "");
-      lines.push(`${prefix}[[${displayName}]]`);
+      const fileRelativePath = path.posix.join(relBase, entry.name);
+      lines.push(`${prefix}${wikiLinkForMarkdownPath(fileRelativePath, displayName)}`);
     }
   }
 
   return true;
+}
+
+function wikiLinkForMarkdownPath(relativePath: string, displayName: string): string {
+  const normalizedPath = relativePath.replace(/\\/g, "/").replace(/\.md$/i, "");
+  return `[[/${normalizedPath}|${displayName}]]`;
 }
 
 function matchesFrontmatterField(value: unknown, query: string): boolean {
