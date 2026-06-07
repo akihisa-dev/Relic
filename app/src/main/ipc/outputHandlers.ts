@@ -1,5 +1,4 @@
 import { BrowserWindow, app, clipboard, dialog, ipcMain } from "electron";
-import { JSDOM } from "jsdom";
 import { unlink } from "node:fs/promises";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
@@ -312,44 +311,44 @@ function sanitizeOutputSvg(svg: string): string {
   const match = /<svg\b[\s\S]*?<\/svg>/i.exec(svg.trim());
   if (!match) return "";
 
-  const dom = new JSDOM(`<!doctype html><body>${match[0]}</body>`);
-  const root = dom.window.document.querySelector("svg");
-  if (!root) return "";
-
-  sanitizeOutputSvgElement(root);
-
-  return root.outerHTML.trim();
+  return sanitizeOutputSvgMarkup(match[0]).trim();
 }
 
-function sanitizeOutputSvgElement(root: SVGSVGElement): void {
-  const document = root.ownerDocument;
-  const walker = document.createTreeWalker(root, 1);
-  const unsafeElements: Element[] = [];
+function sanitizeOutputSvgMarkup(svg: string): string {
+  let sanitized = svg;
 
-  sanitizeOutputSvgElementAttributes(root);
-
-  while (walker.nextNode()) {
-    const element = walker.currentNode as Element;
-    if (forbiddenOutputSvgTags.has(element.tagName.toLowerCase())) {
-      unsafeElements.push(element);
-      continue;
-    }
-
-    sanitizeOutputSvgElementAttributes(element);
+  for (const tagName of forbiddenOutputSvgTags) {
+    const forbiddenBlockPattern = new RegExp(
+      `<\\s*${tagName}\\b[^>]*(?:\\/>|[\\s\\S]*?<\\s*\\/\\s*${tagName}\\s*>)`,
+      "gi"
+    );
+    sanitized = sanitized.replace(forbiddenBlockPattern, "");
   }
 
-  unsafeElements.forEach((element) => {
-    element.remove();
+  return sanitized.replace(/<([A-Za-z][\w:.-]*)([^<>]*?)(\/?)>/g, (_tag, tagName: string, rawAttributes: string, selfClosing: string) => {
+    if (forbiddenOutputSvgTags.has(tagName.toLowerCase())) return "";
+    const attributes = sanitizeOutputSvgAttributes(rawAttributes);
+    return `<${tagName}${attributes}${selfClosing}>`;
   });
 }
 
-function sanitizeOutputSvgElementAttributes(element: Element): void {
-  for (const attribute of Array.from(element.attributes)) {
-    const name = attribute.name.toLowerCase();
-    if (name.startsWith("on") || (outputSvgUriAttributes.has(name) && !isSafeOutputSvgUri(attribute.value))) {
-      element.removeAttribute(attribute.name);
+function sanitizeOutputSvgAttributes(rawAttributes: string): string {
+  const sanitized: string[] = [];
+  const attributePattern = /\s+([^\s=/>]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/g;
+
+  for (const match of rawAttributes.matchAll(attributePattern)) {
+    const rawName = match[1] ?? "";
+    const name = rawName.toLowerCase();
+    const value = match[2] ?? match[3] ?? match[4] ?? "";
+
+    if (name.startsWith("on") || (outputSvgUriAttributes.has(name) && !isSafeOutputSvgUri(value))) {
+      continue;
     }
+
+    sanitized.push(match[0]);
   }
+
+  return sanitized.join("");
 }
 
 function isSafeOutputSvgUri(value: string): boolean {
