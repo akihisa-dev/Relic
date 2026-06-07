@@ -28,7 +28,8 @@ interface AppEditorWorkspaceProps {
   isRightPanelOpen: boolean;
   isRightPanelResizing: boolean;
   isSecondarySidebarResizing: boolean;
-  isSourceMode: boolean;
+  isLeftSourceMode: boolean;
+  isRightSourceMode: boolean;
   isSplit: boolean;
   isSplitClosing: boolean;
   isSecondarySidebarOpen: boolean;
@@ -68,7 +69,7 @@ interface AppEditorWorkspaceProps {
   onSecondarySidebarResizeStart: (event: ReactMouseEvent) => void;
   onScrollTargetHandled: (pane: PaneId) => void;
   onSetFocusedPane: (pane: PaneId) => void;
-  onSourceModeToggle: () => void;
+  onSourceModeToggle: (pane: PaneId) => void;
   onSplitToggle: () => void;
   onTabClose: (pane: PaneId, tabId: string) => void;
   onTabMove: (fromPane: PaneId, toPane: PaneId, tabId: string, targetTabId?: string | null, position?: "before" | "after") => void;
@@ -110,7 +111,8 @@ export function AppEditorWorkspace({
   isRightPanelOpen,
   isRightPanelResizing,
   isSecondarySidebarResizing,
-  isSourceMode,
+  isLeftSourceMode,
+  isRightSourceMode,
   isSplit,
   isSplitClosing,
   isSecondarySidebarOpen,
@@ -220,8 +222,8 @@ export function AppEditorWorkspace({
               renderPanelTab={renderPanelTab}
               renderPanelTabIcon={renderPanelTabIcon}
               scrollTargetHeading={leftPaneScrollHeading}
-              sourceMode={isSourceMode}
-              onSourceModeToggle={onSourceModeToggle}
+              sourceMode={isLeftSourceMode}
+              onSourceModeToggle={() => onSourceModeToggle("left")}
               typewriterMode={isTypewriterMode}
               userDefinedFields={userDefinedFields}
               viewRef={leftEditorViewRef}
@@ -263,8 +265,8 @@ export function AppEditorWorkspace({
                 renderPanelTab={renderPanelTab}
                 renderPanelTabIcon={renderPanelTabIcon}
                 scrollTargetHeading={rightPaneScrollHeading}
-                sourceMode={isSourceMode}
-                onSourceModeToggle={onSourceModeToggle}
+                sourceMode={isRightSourceMode}
+                onSourceModeToggle={() => onSourceModeToggle("right")}
                 typewriterMode={isTypewriterMode}
                 userDefinedFields={userDefinedFields}
                 viewRef={rightEditorViewRef}

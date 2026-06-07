@@ -109,7 +109,8 @@ export interface AppLayoutPropsInput {
   isSecondarySidebarResizing: EditorWorkspaceProps["isSecondarySidebarResizing"];
   isSidebarOpen: RailProps["isSidebarOpen"];
   isSidebarResizing: FilesSidebarProps["isSidebarResizing"];
-  isSourceMode: EditorWorkspaceProps["isSourceMode"];
+  isLeftSourceMode: EditorWorkspaceProps["isLeftSourceMode"];
+  isRightSourceMode: EditorWorkspaceProps["isRightSourceMode"];
   isSplit: EditorWorkspaceProps["isSplit"];
   isSplitClosing: EditorWorkspaceProps["isSplitClosing"];
   isToastClosing: OverlaysProps["isToastClosing"];
@@ -155,7 +156,8 @@ export interface AppLayoutPropsInput {
   secondarySidebarWidth: EditorWorkspaceProps["secondarySidebarWidth"];
   selectAIWorkspaceChat: (chatId: string) => Promise<void>;
   setFileSelectionCount: FilesSidebarProps["onSelectedCountChange"];
-  setIsSourceMode: (updater: (value: boolean) => boolean) => void;
+  setIsLeftSourceMode: (updater: (value: boolean) => boolean) => void;
+  setIsRightSourceMode: (updater: (value: boolean) => boolean) => void;
   setIsWorkspaceRenameActive: RailProps["onRenameActiveChange"];
   setLinkContextMenu: OverlaysProps["setLinkContextMenu"];
   setFocusedPane: EditorWorkspaceProps["onSetFocusedPane"];

@@ -1,6 +1,8 @@
 import {
+  act,
   fireEvent,
   screen,
+  within,
   waitFor
 } from "@testing-library/react";
 import { EditorView } from "@codemirror/view";
@@ -139,6 +141,53 @@ describe("App navigation and shortcuts", () => {
     fireEvent.click(sourceButton);
 
     expect(sourceButton).toHaveClass("active");
+  });
+
+  it("分割表示では左右ペインのソースモードを独立して切り替える", async () => {
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [{ name: "左メモ", path: "左メモ.md", type: "file" }]
+        }
+      }),
+      readMarkdownFile: vi.fn().mockResolvedValue({
+        ok: true,
+        value: { content: "# 左本文", name: "左メモ", path: "左メモ.md" }
+      })
+    });
+
+    const { container } = await renderApp();
+    fireEvent.click(await screen.findByRole("button", { name: /左メモ/ }));
+    await screen.findByText("左メモ", { selector: ".pane-tab-name" });
+
+    fireEvent.click(screen.getByRole("button", { name: "分割" }));
+    act(() => {
+      useEditorStore.getState().openFileInPane("right", {
+        content: "# 右本文",
+        name: "右メモ",
+        path: "右メモ.md"
+      });
+    });
+
+    await screen.findByText("右メモ", { selector: ".pane-tab-name" });
+
+    const panes = container.querySelectorAll(".pane");
+    expect(panes).toHaveLength(2);
+
+    const leftSourceButton = within(panes[0] as HTMLElement).getByRole("button", { name: "ソース" });
+    const rightSourceButton = within(panes[1] as HTMLElement).getByRole("button", { name: "ソース" });
+
+    fireEvent.click(leftSourceButton);
+
+    expect(leftSourceButton).toHaveClass("active");
+    expect(rightSourceButton).not.toHaveClass("active");
+
+    fireEvent.click(rightSourceButton);
+
+    expect(leftSourceButton).toHaveClass("active");
+    expect(rightSourceButton).toHaveClass("active");
   });
 
   it("ソースモードを切り替えてもエディタのカーソルとスクロール位置を維持する", async () => {

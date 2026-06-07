@@ -58,7 +58,8 @@ export function App(): ReactElement {
   } = useRailFlights();
   const [fileSearchFocusRequest, setFileSearchFocusRequest] = useState(0);
   const [fileSelectionCount, setFileSelectionCount] = useState(0);
-  const [isSourceMode, setIsSourceMode] = useState(false);
+  const [isLeftSourceMode, setIsLeftSourceMode] = useState(false);
+  const [isRightSourceMode, setIsRightSourceMode] = useState(false);
   const {
     holdWorkspaceRailAfterRename,
     isWorkspaceRenameActive,
@@ -632,7 +633,8 @@ export function App(): ReactElement {
     isSecondarySidebarResizing,
     isSidebarOpen,
     isSidebarResizing,
-    isSourceMode,
+    isLeftSourceMode,
+    isRightSourceMode,
     isSplit,
     isSplitClosing,
     isToastClosing,
@@ -679,7 +681,8 @@ export function App(): ReactElement {
     selectAIWorkspaceChat,
     setFileSelectionCount,
     setFocusedPane,
-    setIsSourceMode,
+    setIsLeftSourceMode,
+    setIsRightSourceMode,
     setIsWorkspaceRenameActive,
     setLinkContextMenu,
     setRailSidebarView,
