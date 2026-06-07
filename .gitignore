@@ -10,6 +10,7 @@
 # npm / GitHub / OAuth のローカル秘密情報
 .npmrc
 *.npmrc
+!app/.npmrc
 !.npmrc.example
 github-oauth*.json
 github-auth*.json
