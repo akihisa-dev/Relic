@@ -1,6 +1,6 @@
 import { EditorView } from "@codemirror/view";
 import { useEffect, useRef, useState } from "react";
-import type { FormEvent, KeyboardEvent, MutableRefObject, ReactElement, ReactNode } from "react";
+import type { CSSProperties, FormEvent, KeyboardEvent, MutableRefObject, ReactElement, ReactNode } from "react";
 
 import type { EditorSettings, UserDefinedField } from "../../shared/ipc";
 import { hasInvalidFrontmatterYaml } from "../editorFrontmatter";
@@ -76,26 +76,29 @@ export function PaneContentSurface({
   if (activeFileTab) {
     const { chars, words } = textCount(activeFileTab.content);
     const hasInvalidFrontmatter = hasInvalidFrontmatterYaml(activeFileTab.content);
+    const editorContentMaxWidth = editorSettings.maxWidth === "none" ? undefined : editorSettings.maxWidth;
+    const editorTitleRowStyle = {
+      "--editor-file-title-max-width": editorContentMaxWidth ?? "100%"
+    } as CSSProperties;
 
     return (
       <div
         className={`editor-surface${editorActionPulse > 0 ? ` editor-surface--action-${editorActionPulse % 2 === 0 ? "even" : "odd"}` : ""}`}
       >
         <div className="editor-body">
-          <div
-            className="editor-file-title-row"
-            style={{ maxWidth: editorSettings.maxWidth === "none" ? undefined : editorSettings.maxWidth }}
-          >
-            <EditableFileTitle
-              name={activeFileTab.name}
-              onRename={(name) => onRenameFile(activeFileTab.path, name)}
-            />
+          <div className="editor-file-title-row" style={editorTitleRowStyle}>
+            <div className="editor-file-title-slot">
+              <EditableFileTitle
+                name={activeFileTab.name}
+                onRename={(name) => onRenameFile(activeFileTab.path, name)}
+              />
+            </div>
             <div className="editor-file-title-actions" ref={setFrontmatterAddButtonHost} />
           </div>
           {activeFileTab.externalConflict ? (
             <output
               className="editor-conflict-banner"
-              style={{ maxWidth: editorSettings.maxWidth === "none" ? undefined : editorSettings.maxWidth }}
+              style={{ maxWidth: editorContentMaxWidth }}
             >
               <span>{t("pane.externalConflict")}</span>
               <div className="editor-conflict-actions">
@@ -111,7 +114,7 @@ export function PaneContentSurface({
           {isLargeMarkdown ? (
             <output
               className="editor-conflict-banner"
-              style={{ maxWidth: editorSettings.maxWidth === "none" ? undefined : editorSettings.maxWidth }}
+              style={{ maxWidth: editorContentMaxWidth }}
             >
               <span>{t("pane.largeMarkdown")}</span>
             </output>
@@ -119,7 +122,7 @@ export function PaneContentSurface({
           {hasInvalidFrontmatter ? (
             <output
               className="editor-conflict-banner"
-              style={{ maxWidth: editorSettings.maxWidth === "none" ? undefined : editorSettings.maxWidth }}
+              style={{ maxWidth: editorContentMaxWidth }}
             >
               <span>{t("frontmatter.invalidYamlBanner")}</span>
             </output>
