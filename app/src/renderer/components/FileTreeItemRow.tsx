@@ -11,7 +11,6 @@ interface FileTreeItemRowProps {
   isDragging?: boolean;
   isDragOver?: boolean;
   isExpanded: boolean;
-  isOpen?: boolean;
   isOpening?: boolean;
   isPinned?: boolean;
   isRemoving: boolean;
@@ -40,7 +39,6 @@ export function FileTreeItemRow({
   isDragging,
   isDragOver,
   isExpanded,
-  isOpen,
   isOpening,
   isPinned,
   isRemoving,
@@ -62,7 +60,7 @@ export function FileTreeItemRow({
 }: FileTreeItemRowProps): ReactElement {
   const t = useT();
   const isFolder = node.type === "folder";
-  const rowClassName = `file-tree-row ${node.type}${isOpen ? " open" : ""}${isOpening ? " file-tree-row--opening" : ""}${isSelected ? " selected" : ""}${useSelectedItems ? " multi-selected" : ""}${isDragging ? " dragging" : ""}${isDragOver ? " drag-over" : ""}${isAppearing ? " file-tree-row--appearing" : ""}${isRemoving ? " file-tree-row--removing" : ""}`;
+  const rowClassName = `file-tree-row ${node.type}${isOpening ? " file-tree-row--opening" : ""}${isSelected ? " selected" : ""}${useSelectedItems ? " multi-selected" : ""}${isDragging ? " dragging" : ""}${isDragOver ? " drag-over" : ""}${isAppearing ? " file-tree-row--appearing" : ""}${isRemoving ? " file-tree-row--removing" : ""}`;
   const icon = (
     <span className={`file-tree-icon${isFolder ? " file-tree-icon--folder" : ""}${isFolder && isExpanded ? " file-tree-icon--expanded" : ""}`}>
       {node.type === "folder" ? (

@@ -78,8 +78,8 @@ export function useFileTreeSelection({
       return false;
     }
 
-    setSelectedPaths(new Set([node.path]));
-    setSelectionAnchorPath(node.path);
+    setSelectedPaths(new Set());
+    setSelectionAnchorPath(null);
     return !isMultiSelectionMode;
   };
 
