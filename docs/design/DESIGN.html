@@ -554,10 +554,6 @@
 <p>Relicの色、素材、質感の基礎思想は <a href="LITHOMORPHISM.md">LITHOMORPHISM.md</a> を正とし、この文書ではその思想をRelicの画面構成、色、UI部品へ適用する。</p>
 <p>Relicでは、青は鉱物顔料や設計図面の青、白は石灰石や上質紙の白、灰色は石粉やコンクリートの面として扱う。</p>
 <p>質感は色そのものを変えず、低光沢で乾いた表面処理として扱う。</p>
-<div class="visual-sample" aria-label="Lithomorphism reference">
-<p class="sample-title">Lithomorphism</p>
-<p>石、鉱物、石粉、乾いた顔料を連想させる、低光沢で硬質な視覚思想。Relicでは色そのものを変えず、素材感と表面処理の判断基準として利用する。</p>
-</div>
 <p>装飾的な要素を最小限に抑えながら、強いタイポグラフィ、明確な境界線、幾何学的な構成を用いて情報階層を視覚化する。</p>
 <p>デザインの目的は「美しく見せること」ではなく、「情報構造を理解しやすくすること」にある。</p>
 <hr>
@@ -582,17 +578,6 @@
 <hr>
 <h2>Visual Language</h2>
 <h3>Shapes</h3>
-<div class="visual-sample" aria-label="Shape samples">
-<p class="sample-title">Shape Samples</p>
-<div class="sample-grid">
-<div class="shape-preview">Rectangle</div>
-<div class="shape-preview shape-line">Line</div>
-<div class="shape-preview shape-grid-preview">Grid</div>
-<div class="shape-preview">Section Block</div>
-<div class="shape-preview shape-square" aria-label="Square Accent">Square Accent</div>
-<div class="shape-preview shape-orthogonal">Orthogonal Motif</div>
-</div>
-</div>
 <h4>Primary</h4>
 <ul>
 <li>Rectangle</li>
@@ -613,46 +598,19 @@
 border-color: var(--border-primary);
 </code></pre>
 <p>影による階層表現は最小限に抑える。</p>
-<div class="visual-sample" aria-label="Border sample">
-<p class="sample-title">Border Sample</p>
-<div class="border-demo">1px border / no shadow</div>
-</div>
 <hr>
 <h3>Corners</h3>
 <pre><code class="language-css">corner-radius: 0;
 </code></pre>
 <p>角丸は使用しない。</p>
 <p>矩形、直角、直線の境界を基本とする。</p>
-<div class="visual-sample" aria-label="Corner samples">
-<p class="sample-title">Corner Samples</p>
-<div class="corner-demo-grid">
-<div class="corner-demo">0px</div>
-<div class="corner-demo">Right Angle</div>
-<div class="corner-demo">Square Edge</div>
-</div>
-</div>
 <hr>
-<h2 id="color-palette">Color Palette</h2>
-<div class="visual-sample" aria-label="Color palette samples">
-<p class="sample-title">Color Samples</p>
-<div class="sample-grid">
-<div class="swatch" style="background:#3261A1;color:white"><strong>Primary Blue</strong><span>#3261A1</span></div>
-<div class="swatch" style="background:#6C8BB7;color:white"><strong>Sub Blue</strong><span>#6C8BB7</span></div>
-<div class="swatch" style="background:#F2F1EE;color:#232B36"><strong>Background</strong><span>#F2F1EE</span></div>
-<div class="swatch" style="background:#E7E7E7;color:#232B36"><strong>Surface</strong><span>#E7E7E7</span></div>
-<div class="swatch" style="background:#DDDEDF;color:#232B36"><strong>Surface Alt</strong><span>#DDDEDF</span></div>
-<div class="swatch" style="background:#C3C8CE;color:#232B36"><strong>Border</strong><span>#C3C8CE</span></div>
-<div class="swatch" style="background:#A4AEBD;color:#232B36"><strong>Border Strong</strong><span>#A4AEBD</span></div>
-<div class="swatch" style="background:#232B36;color:white"><strong>Primary Text</strong><span>#232B36</span></div>
-<div class="swatch" style="background:#89909A;color:white"><strong>Secondary / Muted Text</strong><span>#89909A</span></div>
-</div>
-</div>
+<h2>Color Palette</h2>
 <h3>Core Colors</h3>
 <h4>Primary Blue</h4>
 <p>主要アクセントカラー。LITHOMORPHISMでは、Webの青ではなく鉱物顔料や設計図面の青として扱う。</p>
 <pre><code class="language-css">--color-primary: #3261A1;
 </code></pre>
-<div class="token-preview" style="background:#3261A1;color:white"><strong>Primary Blue</strong><span>#3261A1</span></div>
 <p>用途:</p>
 <ul>
 <li>Headers</li>
@@ -660,84 +618,58 @@ border-color: var(--border-primary);
 <li>Icons</li>
 <li>Accents</li>
 </ul>
-<div class="usage-preview" aria-label="Primary Blue usage examples">
-<div class="usage-preview-title">Usage Examples</div>
-<div class="usage-grid">
-<div class="usage-item"><div class="usage-heading">Section Header</div></div>
-<div class="usage-item"><a class="usage-link" href="#color-palette">Text Link</a></div>
-<div class="usage-item"><span class="usage-icon">I</span></div>
-<div class="usage-item usage-accent">Accent line for current state</div>
-</div>
-</div>
 <hr>
 <h4>Sub Blue</h4>
 <p>補助アクセントカラー。LITHOMORPHISMでは、経年した青、補助的な印刷インクの青として扱う。</p>
 <pre><code class="language-css">--color-accent: #6C8BB7;
 </code></pre>
-<div class="token-preview" style="background:#6C8BB7;color:white"><strong>Sub Blue</strong><span>#6C8BB7</span></div>
 <p>用途:</p>
 <ul>
 <li>Hover States</li>
 <li>Sub Labels</li>
 <li>Boundary Emphasis</li>
 </ul>
-<div class="usage-preview" aria-label="Sub Blue usage examples">
-<div class="usage-preview-title">Usage Examples</div>
-<div class="usage-grid">
-<div class="usage-item usage-hover">Hover state surface</div>
-<div class="usage-item"><div class="usage-sub-label">Sub Label</div></div>
-<div class="usage-item usage-boundary">Boundary emphasis</div>
-</div>
-</div>
 <hr>
 <h3>Neutral Palette</h3>
 <h4>Background</h4>
 <pre><code class="language-css">--color-bg: #F2F1EE;
 </code></pre>
-<div class="token-preview" style="background:#F2F1EE;color:#232B36"><strong>Background</strong><span>#F2F1EE</span></div>
 <p>エディタ背景、ページ全体の背景色。LITHOMORPHISMでは、純白ではなく石灰石や上質紙に近い白として扱う。</p>
 <hr>
 <h4>Surface</h4>
 <pre><code class="language-css">--color-surface: #E7E7E7;
 </code></pre>
-<div class="token-preview" style="background:#E7E7E7;color:#232B36"><strong>Surface</strong><span>#E7E7E7</span></div>
 <p>サイドバー、ツールバー、パネル背景。LITHOMORPHISMでは、石粉を含んだ乾いた面として扱う。</p>
 <hr>
 <h4>Surface Alt</h4>
 <pre><code class="language-css">--color-surface-alt: #DDDEDF;
 </code></pre>
-<div class="token-preview" style="background:#DDDEDF;color:#232B36"><strong>Surface Alt</strong><span>#DDDEDF</span></div>
 <p>選択中の項目背景、カード背景。LITHOMORPHISMでは、コンクリートに近い低彩度の面として扱う。</p>
 <hr>
 <h4>Border</h4>
 <pre><code class="language-css">--color-border: #C3C8CE;
 </code></pre>
-<div class="token-preview" style="background:#C3C8CE;color:#232B36"><strong>Border</strong><span>#C3C8CE</span></div>
 <p>区切り線。LITHOMORPHISMでは、薄いセメント線のような境界として扱う。</p>
 <hr>
 <h4>Border Strong</h4>
 <pre><code class="language-css">--color-border-strong: #A4AEBD;
 </code></pre>
-<div class="token-preview" style="background:#A4AEBD;color:#232B36"><strong>Border Strong</strong><span>#A4AEBD</span></div>
 <p>重要な境界。LITHOMORPHISMでは、鉱物系の強い境界として扱う。</p>
 <hr>
 <h3>Typography Colors</h3>
 <h4>Primary Text</h4>
 <pre><code class="language-css">--color-text: #232B36;
 </code></pre>
-<div class="token-preview" style="background:#232B36;color:white"><strong>Primary Text</strong><span>#232B36</span></div>
 <p>石や紙に沈んだ濃色インクとして扱う。</p>
 <hr>
 <h4>Secondary Text</h4>
 <pre><code class="language-css">--color-text-secondary: #89909A;
 </code></pre>
-<div class="token-preview" style="background:#89909A;color:white"><strong>Secondary Text</strong><span>#89909A</span></div>
 <p>石粉を含んだグレーとして扱う。</p>
 <hr>
 <h4>Muted Text</h4>
 <pre><code class="language-css">--color-text-muted: #89909A;
 </code></pre>
-<div class="token-preview" style="background:#89909A;color:white"><strong>Muted Text</strong><span>#89909A</span></div>
 <p>石粉を含んだグレーとして扱う。</p>
 <hr>
 <h2>Typography</h2>
@@ -746,12 +678,6 @@ border-color: var(--border-primary);
 <p>macOS、Windows、Linuxそれぞれの標準的なUIフォントで自然に見えることを優先する。</p>
 <pre><code class="language-css">font-family: system-ui, sans-serif;
 </code></pre>
-<div class="visual-sample type-demo" aria-label="Typography samples">
-<p class="sample-title">Typography Samples</p>
-<h3>Heading Sample</h3>
-<div class="section-label">Section Label Sample</div>
-<p>本文は14px、line-height 1.7を基本にする。OSのシステムフォントに従い、読みやすいUI文字として表示する。</p>
-</div>
 <h3>Heading</h3>
 <p>スタイル:</p>
 <pre><code class="language-css">font-weight: 800;
@@ -807,26 +733,6 @@ background: var(--color-primary);
 </code></pre>
 <hr>
 <h2>Components</h2>
-<div class="visual-sample component-sample" aria-label="Component samples">
-<p class="sample-title">Component Samples</p>
-<div class="tab-sample">
-<div class="active">Active Tab</div>
-<div>Inactive Tab</div>
-</div>
-<table>
-<thead>
-<tr><th>Column</th><th>Value</th></tr>
-</thead>
-<tbody>
-<tr><td>Grid</td><td>Readable density</td></tr>
-<tr><td>Border</td><td>Clear separation</td></tr>
-</tbody>
-</table>
-<div class="button-row">
-<button class="button-demo primary" type="button">Primary</button>
-<button class="button-demo secondary" type="button">Secondary</button>
-</div>
-</div>
 <h3>Tabs</h3>
 <ul>
 <li>明確な境界線</li>
@@ -855,15 +761,6 @@ border: 1px solid var(--color-border);
 <p>装飾要素は機能的なレイアウトを補助する目的でのみ使用する。</p>
 <p>装飾はLITHOMORPHISMの素材感を誇張するためではなく、情報構造、境界、視線誘導を支えるために使う。</p>
 <p>許可される要素:</p>
-<div class="visual-sample" aria-label="Decorative element samples">
-<p class="sample-title">Decorative Element Samples</p>
-<div class="decorative-sample">
-<div class="diagonal-sample" aria-label="Diagonal line"></div>
-<div class="shape-preview shape-square" aria-label="Square accent">Square</div>
-<div class="orthogonal-guide-sample" aria-label="Orthogonal guide motif"></div>
-<div class="grid-sample" aria-label="Grid lines"></div>
-</div>
-</div>
 <ul>
 <li>斜線</li>
 <li>四角形アクセント</li>
@@ -910,9 +807,8 @@ border: 1px solid var(--color-border);
 <hr>
 <h2>基本レイアウト原則</h2>
 <ul>
-<li><strong>左レール + プライマリサイドバー + Cowork用セカンダリサイドバー + タブ式メインエリア</strong>を基本構造にする</li>
-<li><strong>プライマリサイドバー</strong>は、ファイルモードではワークスペースの作成・登録、ファイルツリー、検索、ピン留めを扱い、CoworkモードではAIチャット履歴を扱う</li>
-<li><strong>セカンダリサイドバー</strong>は、CoworkのAIチャット本文と入力欄を扱う</li>
+<li><strong>左レール + プライマリサイドバー + タブ式メインエリア + 右パネル</strong>を基本構造にする</li>
+<li><strong>プライマリサイドバー</strong>は、ファイルモードではワークスペースの作成・登録、ファイルツリー、検索、ピン留めを扱う</li>
 <li><strong>メインエリア</strong>はタブを表示する作業領域とし、Markdownファイル、チャート、ファイル加工、フロントマター設定、暦設定、設定をタブとして開く</li>
 <li><strong>右パネル</strong>はMarkdownファイルタブの補助領域として扱い、アウトラインとリンク一覧だけを表示する</li>
 </ul>
@@ -920,15 +816,15 @@ border: 1px solid var(--color-border);
 <h2>全体レイアウト</h2>
 <pre><code>┌──────────────────────────────────────────────────────────────┐
 │  タイトルバー                                                 │
-├────┬──────────────┬──────────────┬────────────────┬───────────┤
-│左  │              │              │ ペインのタブ行  │           │
-│レ  │ プライマリ   │ セカンダリ   │────────────────│ 右パネル  │
-│ー  │ サイドバー   │ サイドバー   │ タブ行アクション│ 開閉式    │
-│ル  │ （可変幅）   │ （Cowork用） │────────────────│           │
-│    │              │              │ メインエリア    │           │
-│    │              │              │ ファイル /      │           │
-│    │              │              │ パネル / チャート│          │
-├────┴──────────────┴──────────────┴────────────────┴───────────┤
+├────┬──────────────┬────────────────────────┬───────────┤
+│左  │              │ ペインのタブ行          │           │
+│レ  │ プライマリ   │────────────────────────│ 右パネル  │
+│ー  │ サイドバー   │ タブ行アクション        │ 開閉式    │
+│ル  │ （可変幅）   │────────────────────────│           │
+│    │              │ メインエリア            │           │
+│    │              │ ファイル / パネル /     │           │
+│    │              │ チャート                │           │
+├────┴──────────────┴────────────────────────┴───────────┤
 │  ステータスバー                                               │
 └──────────────────────────────────────────────────────────────┘
 </code></pre>
@@ -940,7 +836,7 @@ border: 1px solid var(--color-border);
 </ul>
 <hr>
 <h2>左レール</h2>
-<p>左端の縦アイコン領域。プライマリサイドバーの開閉、Cowork表示、メインエリアへ開くパネルタブやチャートタブの入口を持つ。</p>
+<p>左端の縦アイコン領域。プライマリサイドバーの開閉、メインエリアへ開くパネルタブやチャートタブの入口を持つ。</p>
 <table>
 <thead>
 <tr>
@@ -951,10 +847,6 @@ border: 1px solid var(--color-border);
 <tbody><tr>
 <td>ファイル</td>
 <td>ファイルサイドバーを開閉する</td>
-</tr>
-<tr>
-<td>Cowork</td>
-<td>プライマリサイドバーにAIチャット履歴を表示し、セカンダリサイドバーにAIチャットを開く</td>
 </tr>
 <tr>
 <td>ファイル加工</td>
@@ -984,8 +876,8 @@ border: 1px solid var(--color-border);
 <ul>
 <li>各ボタンにはツールチップを表示する</li>
 <li>ファイル、設定は常に表示する</li>
-<li>Cowork、ファイル加工、フロントマター、暦設定、年表、カレンダーは、対応する機能トグルがオフの場合は入口を表示しない</li>
-<li>初期状態では、ファイル、Cowork、カレンダー、設定を表示する</li>
+<li>ファイル加工、フロントマター、暦設定、年表、カレンダーは、対応する機能トグルがオフの場合は入口を表示しない</li>
+<li>初期状態では、ファイル、カレンダー、設定を表示する</li>
 <li>初期状態では、ファイル加工、フロントマター、暦設定、年表を表示しない</li>
 <li>登録済みワークスペースがある場合は、レール下部からワークスペースを切り替えられる</li>
 </ul>
@@ -993,14 +885,14 @@ border: 1px solid var(--color-border);
 <h2>タイトルバー</h2>
 <p>画面上部のタイトルバーには、ペインごとのタブ列とタブ行アクションを置く。</p>
 <ul>
-<li>左側は、macOSのウィンドウ操作領域と左レール・プライマリサイドバー・開いているセカンダリサイドバーに重ならない位置からタブ列を始める</li>
+<li>左側は、macOSのウィンドウ操作領域と左レール・プライマリサイドバーに重ならない位置からタブ列を始める</li>
 <li>分割表示中は、左ペインと右ペインのタブ列をタイトルバー内に並べる</li>
 <li>右側には、印刷、PDF保存、ソースモード切り替え、分割表示切り替え、右パネルのアウトライン/リンク切り替えを置く</li>
 <li>右パネルが開いている場合、右側の操作領域は右パネル幅に合わせて確保する</li>
 </ul>
 <hr>
 <h2>プライマリサイドバー</h2>
-<p>左レールのファイル入口またはCowork入口で開く可変幅のパネル。</p>
+<p>左レールのファイル入口で開く可変幅のパネル。</p>
 <p>ファイルモードで扱うこと:</p>
 <ul>
 <li>ワークスペースの作成、登録</li>
@@ -1009,14 +901,6 @@ border: 1px solid var(--color-border);
 <li>ピン留めしたファイル / フォルダの表示</li>
 <li>ファイル名、全文、タグ、フロントマターフィールド、正規表現による検索</li>
 <li>検索結果クリックによる該当ファイルのオープン</li>
-</ul>
-<p>Coworkモードで扱うこと:</p>
-<ul>
-<li>AIチャット履歴</li>
-<li>新規チャット作成</li>
-<li>チャット切り替え</li>
-<li>チャット削除確認</li>
-<li>Codex残り使用量、またはOpenAI API使用量確認の案内</li>
 </ul>
 <p>サイドバーは、macOSでは <code>⌘B</code>、Windows/Linuxでは <code>Ctrl+B</code>、またはレール上のファイルボタンで開閉できる。幅はユーザーがドラッグで変更できる。
 登録済みワークスペースの切り替えは左レール下部で扱う。</p>
@@ -1098,21 +982,9 @@ border: 1px solid var(--color-border);
 </tr>
 <tr>
 <td>設定</td>
-<td>テーマ、フォント、行間、最大幅、言語、行番号、スペルチェック、AI接続方式、機能トグルを管理する</td>
+<td>テーマ、フォント、行間、最大幅、言語、行番号、スペルチェック、機能トグルを管理する</td>
 </tr>
 </tbody></table>
-<h2>Coworkセカンダリサイドバー</h2>
-<p>プライマリサイドバーの右、メインエリアの左に開くAIチャット用の補助領域。</p>
-<ul>
-<li>AIチャット本文</li>
-<li>ユーザー発言の編集と再送信</li>
-<li>メッセージ入力欄</li>
-<li>送信ボタン</li>
-<li>AI応答生成中の中断ボタン</li>
-<li>幅変更ハンドル</li>
-<li>閉じるボタン</li>
-</ul>
-<p>セカンダリサイドバーを閉じても、AIチャット履歴やAI系データは削除されない。プライマリサイドバーを閉じても、セカンダリサイドバーは開いたままにできる。</p>
 <hr>
 <h2>右パネル</h2>
 <p>ファイルタブの右側に開閉表示される補助領域。</p>
@@ -1135,7 +1007,7 @@ border: 1px solid var(--color-border);
 <hr>
 <h1>Navigation Flow</h1>
 <p>アプリの画面遷移・ビュー切り替えフローを定義するドキュメント。</p>
-<p><strong>前提</strong>: ナビゲーションは左レール、プライマリサイドバー、Cowork用セカンダリサイドバー、メインエリアのタブ操作で行う。Markdownファイル以外の作業画面も、メインエリアのタブとして開く。</p>
+<p><strong>前提</strong>: ナビゲーションは左レール、プライマリサイドバー、メインエリアのタブ操作で行う。Markdownファイル以外の作業画面も、メインエリアのタブとして開く。</p>
 <p>この文書では、画面遷移やビュー切り替えの「流れ」を定義する。
 ナビゲーション要素の機能仕様は <a href="../features/navigation.md">../features/navigation.md</a>、画面内の配置はこの文書の「Screen Structure」を正とする。</p>
 <hr>
@@ -1156,7 +1028,6 @@ border: 1px solid var(--color-border);
 <h2>左レール</h2>
 <pre><code>左レール
   ├─ ファイル        → ファイルサイドバーを開閉
-  ├─ Cowork          → AIチャット履歴を表示し、AIチャットを開く
   ├─ ファイル加工    → パネルタブを開く（機能トグルON時のみ）
   ├─ フロントマター  → パネルタブを開く（機能トグルON時のみ）
   ├─ 暦設定          → パネルタブを開く（機能トグルON時のみ）
@@ -1165,37 +1036,19 @@ border: 1px solid var(--color-border);
   └─ 設定            → パネルタブを開く
 </code></pre>
 <p>既に同じパネルタブまたはチャートタブが開いている場合は、新規作成せずそのタブをアクティブにする。
-ファイル、設定は常に表示する。Cowork、ファイル加工、フロントマター、暦設定、年表、カレンダーは、対応する機能トグルがオフの場合は左レールに表示しない。
-初期状態では、ファイル、Cowork、カレンダー、設定を表示し、ファイル加工、フロントマター、暦設定、年表は表示しない。</p>
+ファイル、設定は常に表示する。ファイル加工、フロントマター、暦設定、年表、カレンダーは、対応する機能トグルがオフの場合は左レールに表示しない。
+初期状態では、ファイル、カレンダー、設定を表示し、ファイル加工、フロントマター、暦設定、年表は表示しない。</p>
 <hr>
 <h2>プライマリサイドバー</h2>
-<p>プライマリサイドバーは、ファイルモードではワークスペースとMarkdownファイルの操作を扱い、CoworkモードではAIチャット履歴を扱う。</p>
+<p>プライマリサイドバーは、ファイルモードではワークスペースとMarkdownファイルの操作を扱う。</p>
 <pre><code>プライマリサイドバー
   ├─ ファイルモード
   │   ├─ ワークスペース作成 / 登録
   │   ├─ ファイルツリー
   │   ├─ ピン留め
   │   └─ 検索
-  └─ Coworkモード
-      ├─ AIチャット履歴
-      ├─ 新規チャット
-      ├─ チャット削除確認
-      └─ AI使用量表示
 </code></pre>
 <p>macOSでは <code>⌘B</code>、Windows/Linuxでは <code>Ctrl+B</code>、または左レールのファイルボタンで開閉する。検索コマンドを実行した場合は、ファイルサイドバーを開き、検索入力へフォーカスする。</p>
-<hr>
-<h2>Cowork</h2>
-<pre><code>左レールのCoworkボタンを押す
-  │
-  ├─ プライマリサイドバーをAIチャット履歴表示にする
-  └─ セカンダリサイドバーをAIチャット表示で開く
-        │
-        ├─ チャットを選ぶ → 選択中チャットの会話へ切り替える
-        ├─ 新規チャット → 空のチャットを作って選択する
-        ├─ メッセージ送信 → AI応答とMarkdown反映結果を会話に表示する
-        └─ 応答生成中の中断 → 生成を止める
-</code></pre>
-<p>プライマリサイドバーを閉じても、セカンダリサイドバーは開いたままAIチャットを続けられる。セカンダリサイドバーを閉じた場合も、AIチャット履歴やAI系データは削除しない。</p>
 <hr>
 <h2>ファイルを開く</h2>
 <pre><code>ファイルサイドバーでファイルをクリック
