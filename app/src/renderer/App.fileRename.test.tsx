@@ -46,10 +46,12 @@ describe("App file rename and context menu", () => {
     const previewCss = readFileSync("src/renderer/styles/preview-editor.css", "utf8");
     const designCss = readFileSync("src/renderer/styles/architectural-design.css", "utf8");
 
-    expect(previewCss).toMatch(/\.editor-file-title-row\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\) auto;/s);
+    expect(previewCss).toMatch(/\.editor-file-title-row\s*\{[^}]*grid-template-columns:\s*[^}]*minmax\(0, var\(--editor-file-title-max-width, 820px\)\)[^}]*minmax\(48px, 1fr\);/s);
+    expect(previewCss).toMatch(/\.editor-file-title-slot\s*\{[^}]*grid-column:\s*2;/s);
     expect(previewCss).toMatch(/\.editor-file-title\s*\{[^}]*border:\s*0;/s);
     expect(previewCss).toMatch(/\.editor-file-title\s*\{[^}]*padding:\s*12px 32px 8px;/s);
-    expect(previewCss).toMatch(/\.editor-file-title-actions\s*\{[^}]*padding:\s*12px 32px 8px 0;/s);
+    expect(previewCss).toMatch(/\.editor-file-title-actions\s*\{[^}]*grid-column:\s*3;/s);
+    expect(previewCss).toMatch(/\.editor-file-title-actions\s*\{[^}]*padding:\s*12px 32px 8px 8px;/s);
     expect(previewCss).toMatch(/\.editor-file-title-actions \.editor-frontmatter-add-button\s*\{[^}]*position:\s*static;/s);
     expect(designCss).toMatch(/\.editor-file-title\s*\{[^}]*padding:\s*12px 32px 8px;/s);
   });
