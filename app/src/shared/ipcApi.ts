@@ -7,7 +7,6 @@ import type {
   WorkspaceChart
 } from "./ipcCharts";
 import type {
-  AppUiSettings,
   EditorSettings,
   FeatureToggles,
   FrontmatterTemplate,
@@ -28,24 +27,6 @@ import type {
   MergeFilesInput,
   SplitFileByHeadingInput
 } from "./ipcTools";
-import type {
-  ApplyAIWorkspaceOperationsInput,
-  AISettingsState,
-  AIWorkspaceMessagePreview,
-  AIWorkspaceState,
-  ClearAIWorkspaceDataInput,
-  CreateAIWorkspaceChatInput,
-  DeleteAIWorkspaceChatInput,
-  DiscardAIWorkspaceOperationsInput,
-  PreviewAIWorkspaceMessageInput,
-  RebuildAIWorkspaceIndexInput,
-  SaveAIModelInput,
-  SaveAIProviderInput,
-  SaveOpenAIAPIKeyInput,
-  SelectAIWorkspaceChatInput,
-  SendAIWorkspaceMessageInput,
-  TestOpenAIAPIKeyResult
-} from "./ipcAiWorkspace";
 import type {
   AppInfo,
   Backlink,
@@ -147,31 +128,12 @@ export interface RelicApi {
   generateTableOfContents: (input: GenerateTableOfContentsInput) => Promise<RelicResult<string>>;
   getFeatureToggles: () => Promise<RelicResult<FeatureToggles>>;
   saveFeatureToggles: (input: FeatureToggles) => Promise<RelicResult<void>>;
-  getAppUiSettings: () => Promise<RelicResult<AppUiSettings>>;
-  saveAppUiSettings: (input: AppUiSettings) => Promise<RelicResult<AppUiSettings>>;
   getUserDefinedFields: () => Promise<RelicResult<UserDefinedField[]>>;
   saveUserDefinedFields: (input: UserDefinedField[]) => Promise<RelicResult<void>>;
   getFrontmatterTemplates: () => Promise<RelicResult<FrontmatterTemplate[]>>;
   saveFrontmatterTemplates: (input: FrontmatterTemplate[]) => Promise<RelicResult<void>>;
   mergeFiles: (input: MergeFilesInput) => Promise<RelicResult<string>>;
   splitFileByHeading: (input: SplitFileByHeadingInput) => Promise<RelicResult<string[]>>;
-  getAIWorkspaceState: () => Promise<RelicResult<AIWorkspaceState>>;
-  createAIWorkspaceChat: (input: CreateAIWorkspaceChatInput) => Promise<RelicResult<AIWorkspaceState>>;
-  selectAIWorkspaceChat: (input: SelectAIWorkspaceChatInput) => Promise<RelicResult<AIWorkspaceState>>;
-  deleteAIWorkspaceChat: (input: DeleteAIWorkspaceChatInput) => Promise<RelicResult<AIWorkspaceState>>;
-  getAISettings: () => Promise<RelicResult<AISettingsState>>;
-  saveAIProvider: (input: SaveAIProviderInput) => Promise<RelicResult<AISettingsState>>;
-  saveAIModel: (input: SaveAIModelInput) => Promise<RelicResult<AISettingsState>>;
-  saveOpenAIAPIKey: (input: SaveOpenAIAPIKeyInput) => Promise<RelicResult<AISettingsState>>;
-  deleteOpenAIAPIKey: () => Promise<RelicResult<AISettingsState>>;
-  testOpenAIAPIKey: () => Promise<RelicResult<TestOpenAIAPIKeyResult>>;
-  rebuildAIWorkspaceIndex: (input: RebuildAIWorkspaceIndexInput) => Promise<RelicResult<AIWorkspaceState>>;
-  previewAIWorkspaceMessage: (input: PreviewAIWorkspaceMessageInput) => Promise<RelicResult<AIWorkspaceMessagePreview>>;
-  sendAIWorkspaceMessage: (input: SendAIWorkspaceMessageInput) => Promise<RelicResult<AIWorkspaceState>>;
-  cancelAIWorkspaceMessage: () => Promise<RelicResult<void>>;
-  applyAIWorkspaceOperations: (input: ApplyAIWorkspaceOperationsInput) => Promise<RelicResult<AIWorkspaceState>>;
-  discardAIWorkspaceOperations: (input: DiscardAIWorkspaceOperationsInput) => Promise<RelicResult<AIWorkspaceState>>;
-  clearAIWorkspaceData: (input: ClearAIWorkspaceDataInput) => Promise<RelicResult<AIWorkspaceState>>;
   onWorkspaceChanged: (callback: (event: WorkspaceChangedEvent) => void) => () => void;
   onWindowCloseRequested: (callback: (event: WindowCloseRequestEvent) => void) => () => void;
   respondToWindowCloseRequest: (input: WindowCloseResponseInput) => void;

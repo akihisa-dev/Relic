@@ -7,8 +7,6 @@ import { createAppLayoutProps } from "./appLayoutProps";
 import { AppLayout } from "./components/AppLayout";
 import { createTranslator } from "./i18nModel";
 import { useActiveDocumentContext } from "./hooks/useActiveDocumentContext";
-import { useAIWorkspaceState } from "./hooks/useAIWorkspaceState";
-import { useAIWorkspaceEditorActions } from "./hooks/useAIWorkspaceEditorActions";
 import { useAppCloseGuards } from "./hooks/useAppCloseGuards";
 import { useAppKeyboardShortcuts } from "./hooks/useAppKeyboardShortcuts";
 import { useAppInlineHandlers } from "./hooks/useAppInlineHandlers";
@@ -98,13 +96,9 @@ export function App(): ReactElement {
   const {
     activeSidebarView,
     isRightPanelOpen,
-    isSecondarySidebarOpen,
     isSidebarOpen,
     isTypewriterMode,
     rightPanelView,
-    secondarySidebarView,
-    closeSecondarySidebar,
-    openSecondarySidebar,
     setRightPanelView,
     setSidebarView,
     closeSidebar,
@@ -117,27 +111,6 @@ export function App(): ReactElement {
     [tabs]
   );
   const { isSplitClosing, toggleSplitWithMotion } = useSplitCloseMotion(isSplit, toggleSplit);
-  const {
-    aiWorkspaceState,
-    aiWorkspaceMessagePreview,
-    isAIWorkspaceLoading,
-    isAIWorkspaceSending,
-    applyAIWorkspaceOperations,
-    cancelAIWorkspaceMessage,
-    confirmAIWorkspaceMessage,
-    createAIWorkspaceChat,
-    deleteAIWorkspaceChat,
-    discardAIWorkspaceOperations,
-    rebuildAIWorkspaceIndex,
-    reloadAIWorkspace,
-    selectAIWorkspaceChat,
-    sendAIWorkspaceMessage,
-    clearAIWorkspaceData
-  } = useAIWorkspaceState({
-    isEnabled: Boolean(workspaceState?.activeWorkspace),
-    onError: setWorkspaceError,
-    workspaceId: workspaceState?.activeWorkspace?.id
-  });
 
   const toggleSidebar = useCallback((): void => {
     if (isWorkspaceRenameActive) return;
@@ -149,27 +122,16 @@ export function App(): ReactElement {
     showToast(t("pane.largeMarkdownToast", { name }), "info");
   }, [showToast, t]);
   const {
-    aiSettings,
-    aiSettingsStatus,
-    appUiSettings,
     appInfo,
     featureToggles,
-    handleDeleteOpenAIAPIKey,
     handleSaveFeatureToggles,
-    handleSaveAppUiSettings,
-    handleSaveAIModel,
-    handleSaveAIProvider,
-    handleSaveOpenAIAPIKey,
     handleSaveSettings,
     handleSaveUserDefinedFields,
-    handleTestOpenAIAPIKey,
     userDefinedFields
   } = useAppSettingsState({
-    onAISettingsChanged: () => { void reloadAIWorkspace(); },
     setEditorSettings,
     setWorkspaceError,
-    setWorkspaceState,
-    t
+    setWorkspaceState
   });
   const isRightPanelOutlineAvailable = featureToggles.rightPanelOutline;
   const isRightPanelLinksAvailable = featureToggles.rightPanelLinks;
@@ -214,7 +176,6 @@ export function App(): ReactElement {
   }, [setSidebarView]);
 
   const {
-    dirtyMarkdownPaths,
     existingMarkdownPaths,
     openFilePathSet,
     registeredWorkspaces
@@ -305,7 +266,6 @@ export function App(): ReactElement {
   });
   const appInlineHandlers = useAppInlineHandlers({
     focusedPane,
-    openSecondarySidebar,
     setEditorActionPulse,
     setLeftPaneScrollHeading,
     setRightPaneScrollHeading
@@ -383,18 +343,12 @@ export function App(): ReactElement {
 
   const {
     isRightPanelResizing,
-    isSecondarySidebarResizing,
     isSidebarResizing,
     rightPanelWidth,
-    secondarySidebarWidth,
     sidebarWidth,
     startRightPanelResize,
-    startSecondarySidebarResize,
     startSidebarResize
-  } = useAppLayoutWidths({
-    appUiSettings,
-    handleSaveAppUiSettings
-  });
+  } = useAppLayoutWidths();
 
   const leftEditorViewRef = useRef<EditorView | null>(null);
   const rightEditorViewRef = useRef<EditorView | null>(null);
@@ -468,18 +422,6 @@ export function App(): ReactElement {
     t,
     workspacePath: workspaceState?.activeWorkspace?.path
   });
-  const aiWorkspaceEditorActions = useAIWorkspaceEditorActions({
-    activeFileTab: activeFileTabInFocusedPane,
-    applyAIWorkspaceOperations,
-    cancelAIWorkspaceMessage,
-    clearAIWorkspaceData,
-    confirmAIWorkspaceMessage,
-    dirtyMarkdownPaths,
-    discardAIWorkspaceOperations,
-    rebuildAIWorkspaceIndex,
-    sendAIWorkspaceMessage
-  });
-
   const commands = useCommandPaletteCommands({
     activeFileName: activeFileTabInFocusedPane?.name ?? null,
     handleDeleteActiveFile,
@@ -525,29 +467,21 @@ export function App(): ReactElement {
   const setRailSidebarView = useAppRailSidebarSelection({
     focusedPane,
     openPanelInPane,
-    openSecondarySidebar,
     panelLabels,
     setSidebarView
   });
 
   const { renderChartTab, renderPanelTab } = useAppTabRenderers({
     appInfo,
-    aiSettings,
-    aiSettingsStatus,
     chronicleCalendars,
     editorSettings,
     featureToggles,
     charts,
     handleOpenFile,
-    handleDeleteOpenAIAPIKey,
     handleSaveChronicleCalendars,
     handleSaveFeatureToggles,
-    handleSaveAIModel,
-    handleSaveAIProvider,
-    handleSaveOpenAIAPIKey,
     handleSaveSettings,
     handleSaveUserDefinedFields,
-    handleTestOpenAIAPIKey,
     handleUpdateChartEntry,
     userDefinedFields,
     workspaceState
@@ -557,23 +491,17 @@ export function App(): ReactElement {
     activeFileTabInFocusedPane,
     activePanelTabIds,
     activeSidebarView,
-    aiWorkspaceEditorActions,
-    aiWorkspaceMessagePreview,
-    aiWorkspaceState,
     aliasesByPath,
     appInlineHandlers,
     backlinks,
     chartRailViews,
     closeAllTabsInPaneWithMotion,
     closeOtherTabsWithMotion,
-    closeSecondarySidebar,
     closeSidebar,
     closeTabWithMotion,
     closeTabsToRightWithMotion,
     closeToast,
     commands,
-    createAIWorkspaceChat,
-    deleteAIWorkspaceChat,
     editorActionPulse,
     editorSettings,
     existingMarkdownPaths,
@@ -619,8 +547,6 @@ export function App(): ReactElement {
     handleSwitchWorkspace,
     handleTogglePin,
     holdWorkspaceRailAfterRename,
-    isAIWorkspaceLoading,
-    isAIWorkspaceSending,
     isCreatingFile,
     isCreatingFolder,
     isCreatingWorkspace,
@@ -629,8 +555,6 @@ export function App(): ReactElement {
     isOpeningWorkspace,
     isRightPanelResizing,
     isSearching,
-    isSecondarySidebarOpen,
-    isSecondarySidebarResizing,
     isSidebarOpen,
     isSidebarResizing,
     isLeftSourceMode,
@@ -650,7 +574,6 @@ export function App(): ReactElement {
     openFileInOtherPane,
     openFilePathSet,
     openPanelTabIds,
-    openSecondarySidebar,
     openTreeFileInOtherPane,
     openWorkspacePathInOtherPane,
     openingFilePath,
@@ -676,9 +599,6 @@ export function App(): ReactElement {
     searchMode,
     searchQuery,
     searchResults,
-    secondarySidebarView,
-    secondarySidebarWidth,
-    selectAIWorkspaceChat,
     setFileSelectionCount,
     setFocusedPane,
     setIsLeftSourceMode,
@@ -699,7 +619,6 @@ export function App(): ReactElement {
     sidebarViews,
     sidebarWidth,
     startRightPanelResize,
-    startSecondarySidebarResize,
     startSidebarResize,
     t,
     toastMessage,

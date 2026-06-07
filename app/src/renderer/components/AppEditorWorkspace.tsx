@@ -2,20 +2,16 @@ import type { EditorView } from "@codemirror/view";
 import type { Dispatch, MouseEvent as ReactMouseEvent, MutableRefObject, ReactElement, ReactNode, SetStateAction } from "react";
 
 import type { Backlink, EditorSettings, UserDefinedField } from "../../shared/ipc";
-import type { AIWorkspaceMessagePreview, AIWorkspaceState } from "../../shared/ipc";
 import type { ResolvedWikiLink } from "../../shared/links";
 import type { AppLinkContextMenu } from "../appLinks";
 import type { HeadingScrollTarget, OutlineHeading } from "../editorDerivedState";
 import type { FileTab, PaneId, PanelTabKind } from "../store/editorStore";
-import type { RightPanelView, SecondarySidebarView } from "../store/uiStore";
+import type { RightPanelView } from "../store/uiStore";
 import { AppRightPanel } from "./AppRightPanel";
-import { AppSecondarySidebar } from "./AppSecondarySidebar";
 import { LayoutResizeBoundary } from "./LayoutResizeBoundary";
 import { PaneView } from "./PaneView";
 
 interface AppEditorWorkspaceProps {
-  aiWorkspaceState: AIWorkspaceState | null;
-  aiWorkspaceMessagePreview: AIWorkspaceMessagePreview | null;
   allFilePaths: string[];
   backlinks: Backlink[];
   editorActionPulse: number;
@@ -23,16 +19,12 @@ interface AppEditorWorkspaceProps {
   focusedPane: PaneId;
   frontmatterCandidates: Record<string, string[]>;
   isLoadingBacklinks: boolean;
-  isAIWorkspaceLoading: boolean;
-  isAIWorkspaceSending: boolean;
   isRightPanelOpen: boolean;
   isRightPanelResizing: boolean;
-  isSecondarySidebarResizing: boolean;
   isLeftSourceMode: boolean;
   isRightSourceMode: boolean;
   isSplit: boolean;
   isSplitClosing: boolean;
-  isSecondarySidebarOpen: boolean;
   isTypewriterMode: boolean;
   leftEditorViewRef: MutableRefObject<EditorView | null>;
   leftClosingTabIds: Set<string>;
@@ -41,14 +33,6 @@ interface AppEditorWorkspaceProps {
   onCloseOtherTabs: (pane: PaneId, tabId: string) => void;
   onCloseTabsToRight: (pane: PaneId, tabId: string) => void;
   onCreateFile: (name: string) => void;
-  onAIWorkspaceClearData: () => void;
-  onAIWorkspaceApplyOperations: (operationIds?: string[]) => void;
-  onAIWorkspaceCancelMessagePreview: () => void;
-  onAIWorkspaceCancelSending: () => void;
-  onAIWorkspaceConfirmMessagePreview: () => void;
-  onAIWorkspaceRebuildIndex: () => void;
-  onAIWorkspaceDiscardOperations: (operationIds?: string[]) => void;
-  onAIWorkspaceSendMessage: (message: string) => void;
   onEditorAction: () => void;
   onFileSaved: () => void;
   onFileSaveError: (message: string) => void;
@@ -65,8 +49,6 @@ interface AppEditorWorkspaceProps {
   onRightPanelResizeStart: (event: ReactMouseEvent) => void;
   onRightPanelViewButton: (view: RightPanelView) => void;
   onSavePreviewAsPdf: (tab: FileTab) => void;
-  onSecondarySidebarClose: () => void;
-  onSecondarySidebarResizeStart: (event: ReactMouseEvent) => void;
   onScrollTargetHandled: (pane: PaneId) => void;
   onSetFocusedPane: (pane: PaneId) => void;
   onSourceModeToggle: (pane: PaneId) => void;
@@ -86,19 +68,14 @@ interface AppEditorWorkspaceProps {
   rightPaneScrollHeading?: HeadingScrollTarget;
   rightPanelView: RightPanelView;
   rightPanelWidth: number;
-  secondarySidebarView: SecondarySidebarView;
-  secondarySidebarWidth: number;
   setLinkContextMenu: Dispatch<SetStateAction<AppLinkContextMenu | null>>;
   showRightPanelLinksControl: boolean;
   showRightPanelOutlineControl: boolean;
   userDefinedFields: UserDefinedField[];
-  workspaceName?: string | null;
   workspacePath?: string | null;
 }
 
 export function AppEditorWorkspace({
-  aiWorkspaceState,
-  aiWorkspaceMessagePreview,
   allFilePaths,
   backlinks,
   editorActionPulse,
@@ -106,16 +83,12 @@ export function AppEditorWorkspace({
   focusedPane,
   frontmatterCandidates,
   isLoadingBacklinks,
-  isAIWorkspaceLoading,
-  isAIWorkspaceSending,
   isRightPanelOpen,
   isRightPanelResizing,
-  isSecondarySidebarResizing,
   isLeftSourceMode,
   isRightSourceMode,
   isSplit,
   isSplitClosing,
-  isSecondarySidebarOpen,
   isTypewriterMode,
   leftEditorViewRef,
   leftClosingTabIds,
@@ -124,14 +97,6 @@ export function AppEditorWorkspace({
   onCloseOtherTabs,
   onCloseTabsToRight,
   onCreateFile,
-  onAIWorkspaceClearData,
-  onAIWorkspaceApplyOperations,
-  onAIWorkspaceCancelMessagePreview,
-  onAIWorkspaceCancelSending,
-  onAIWorkspaceRebuildIndex,
-  onAIWorkspaceDiscardOperations,
-  onAIWorkspaceConfirmMessagePreview,
-  onAIWorkspaceSendMessage,
   onEditorAction,
   onFileSaved,
   onFileSaveError,
@@ -147,8 +112,6 @@ export function AppEditorWorkspace({
   onRevealTabFile,
   onRightPanelResizeStart,
   onSavePreviewAsPdf,
-  onSecondarySidebarClose,
-  onSecondarySidebarResizeStart,
   onScrollTargetHandled,
   onSetFocusedPane,
   onSourceModeToggle,
@@ -167,46 +130,13 @@ export function AppEditorWorkspace({
   rightPaneScrollHeading,
   rightPanelView,
   rightPanelWidth,
-  secondarySidebarView,
-  secondarySidebarWidth,
   setLinkContextMenu,
   userDefinedFields,
-  workspaceName,
   workspacePath
 }: AppEditorWorkspaceProps): ReactElement {
   return (
     <main className="main-area">
       <div className="editor-layout">
-        <AppSecondarySidebar
-          aiWorkspaceState={aiWorkspaceState}
-          aiWorkspaceMessagePreview={aiWorkspaceMessagePreview}
-          isAIWorkspaceLoading={isAIWorkspaceLoading}
-          isAIWorkspaceSending={isAIWorkspaceSending}
-          isOpen={isSecondarySidebarOpen}
-          isResizing={isSecondarySidebarResizing}
-          onAIWorkspaceClearData={onAIWorkspaceClearData}
-          onAIWorkspaceApplyOperations={onAIWorkspaceApplyOperations}
-          onAIWorkspaceCancelMessagePreview={onAIWorkspaceCancelMessagePreview}
-          onAIWorkspaceCancelSending={onAIWorkspaceCancelSending}
-          onAIWorkspaceConfirmMessagePreview={onAIWorkspaceConfirmMessagePreview}
-          onAIWorkspaceRebuildIndex={onAIWorkspaceRebuildIndex}
-          onAIWorkspaceDiscardOperations={onAIWorkspaceDiscardOperations}
-          onAIWorkspaceSendMessage={onAIWorkspaceSendMessage}
-          onClose={onSecondarySidebarClose}
-          onOpenFile={onOpenFile}
-          onResizeStart={onSecondarySidebarResizeStart}
-          view={secondarySidebarView}
-          width={secondarySidebarWidth}
-          workspaceName={workspaceName}
-        />
-        {isSecondarySidebarOpen ? (
-          <LayoutResizeBoundary
-            aria-label="Resize secondary sidebar"
-            isActive={isSecondarySidebarResizing}
-            onResizeStart={onSecondarySidebarResizeStart}
-            side="secondary-sidebar"
-          />
-        ) : null}
         <div className="editor-workspace">
           <div className={`panes-container${isSplit ? " panes-container--split" : ""}${isSplitClosing ? " panes-container--closing-split" : ""}`}>
             <PaneView

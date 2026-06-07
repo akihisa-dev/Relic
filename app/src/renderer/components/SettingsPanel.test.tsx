@@ -4,8 +4,6 @@ import { describe, expect, it, vi } from "vitest";
 import {
   defaultEditorSettings,
   defaultFeatureToggles,
-  type AIProvider,
-  type OpenAIWorkspaceModel,
   type UserDefinedField
 } from "../../shared/ipc";
 import { I18nProvider } from "../i18n";
@@ -212,42 +210,23 @@ describe("SettingsPanel", () => {
   function renderSettingsPanel({
     featureToggles = defaultFeatureToggles,
     language = "en",
-    onDeleteOpenAIAPIKey = vi.fn(),
     onFeatureTogglesSave = vi.fn(),
-    onSaveAIModel = vi.fn(),
-    onSaveAIProvider = vi.fn(),
-    onSaveOpenAIAPIKey = vi.fn(),
     onSave = vi.fn(),
-    onTestOpenAIAPIKey = vi.fn(),
-    platform = "darwin",
-    aiProvider = "codex-app-server"
+    platform = "darwin"
   }: {
-    aiProvider?: AIProvider;
     featureToggles?: typeof defaultFeatureToggles;
     language?: "en" | "ja";
-    onDeleteOpenAIAPIKey?: () => void;
     onFeatureTogglesSave?: (toggles: typeof defaultFeatureToggles) => void;
-    onSaveAIModel?: (model: OpenAIWorkspaceModel) => void;
-    onSaveAIProvider?: (provider: AIProvider) => void;
-    onSaveOpenAIAPIKey?: (apiKey: string) => void;
     onSave?: (settings: typeof defaultEditorSettings) => void;
-    onTestOpenAIAPIKey?: () => void;
     platform?: NodeJS.Platform;
   } = {}) {
     render(
       <I18nProvider language={language}>
         <SettingsPanel
           appInfo={{ name: "Relic", platform, version: "1.2.3" }}
-          aiSettings={{ aiProvider, model: "gpt-5.4-mini", openAIAPIKeyConfigured: false, secureStorageAvailable: true }}
-          aiSettingsStatus={null}
           featureToggles={featureToggles}
-          onDeleteOpenAIAPIKey={onDeleteOpenAIAPIKey}
           onFeatureTogglesSave={onFeatureTogglesSave}
-          onSaveAIModel={onSaveAIModel}
-          onSaveAIProvider={onSaveAIProvider}
-          onSaveOpenAIAPIKey={onSaveOpenAIAPIKey}
           onSave={onSave}
-          onTestOpenAIAPIKey={onTestOpenAIAPIKey}
           settings={defaultEditorSettings}
         />
       </I18nProvider>
@@ -260,64 +239,11 @@ describe("SettingsPanel", () => {
     expect(screen.getByRole("heading", { name: "Settings" })).toBeInTheDocument();
     expect(screen.getByText("Appearance")).toBeInTheDocument();
     expect(screen.getByText("Editor")).toBeInTheDocument();
-    expect(screen.getByText("AI")).toBeInTheDocument();
     expect(screen.getByText("Features")).toBeInTheDocument();
     expect(screen.getByText("App Info")).toBeInTheDocument();
     expect(screen.getByText("Relic 1.2.3")).toBeInTheDocument();
     expect(screen.getByText("macOS")).toBeInTheDocument();
     expect(screen.queryByText("darwin")).not.toBeInTheDocument();
-  });
-
-  it("OpenAI APIキーを設定から保存できる", () => {
-    const onSaveOpenAIAPIKey = vi.fn();
-    renderSettingsPanel({ aiProvider: "openai-api", onSaveOpenAIAPIKey });
-
-    fireEvent.change(screen.getByPlaceholderText("sk-..."), { target: { value: "sk-test-key-12345678901234567890" } });
-    fireEvent.click(screen.getByRole("button", { name: "Save" }));
-
-    expect(onSaveOpenAIAPIKey).toHaveBeenCalledWith("sk-test-key-12345678901234567890");
-  });
-
-  it("OpenAIモデルを実モデル名で選べる", () => {
-    const onSaveAIModel = vi.fn();
-    renderSettingsPanel({ aiProvider: "openai-api", onSaveAIModel });
-
-    const modelSelect = screen.getByLabelText("OpenAI model");
-    expect(modelSelect).toHaveDisplayValue("gpt-5.4-mini");
-    expect(screen.getByRole("option", { name: "gpt-5.5" })).toBeInTheDocument();
-    expect(screen.getByRole("option", { name: "gpt-5.4" })).toBeInTheDocument();
-    expect(screen.getByRole("option", { name: "gpt-5.4-mini" })).toBeInTheDocument();
-    expect(screen.getByRole("option", { name: "gpt-5.4-nano" })).toBeInTheDocument();
-
-    fireEvent.change(modelSelect, { target: { value: "gpt-5.5" } });
-
-    expect(onSaveAIModel).toHaveBeenCalledWith("gpt-5.5");
-  });
-
-  it("OpenAI APIキー画面へのリンクを表示する", () => {
-    renderSettingsPanel({ aiProvider: "openai-api" });
-
-    expect(screen.getByRole("link", { name: "Open OpenAI API key page" })).toHaveAttribute(
-      "href",
-      "https://platform.openai.com/api-keys"
-    );
-  });
-
-  it("AI接続方式を選べる", () => {
-    const onSaveAIProvider = vi.fn();
-    renderSettingsPanel({ onSaveAIProvider });
-
-    fireEvent.click(screen.getByRole("button", { name: "OpenAI API" }));
-
-    expect(onSaveAIProvider).toHaveBeenCalledWith("openai-api");
-  });
-
-  it("Codex App Server方式ではOpenAI APIキー欄を隠す", () => {
-    renderSettingsPanel({ aiProvider: "codex-app-server" });
-
-    expect(screen.getByText("Use the Codex app for AI coworking. No OpenAI API key is required.")).toBeInTheDocument();
-    expect(screen.queryByPlaceholderText("sk-...")).not.toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "Open OpenAI API key page" })).not.toBeInTheDocument();
   });
 
   it("アプリ情報では内部プラットフォーム名ではなくユーザー向けOS名を表示する", () => {
@@ -374,17 +300,13 @@ describe("SettingsPanel", () => {
   it("機能トグルを既存のFeatureToggles形式で保存する", () => {
     const onFeatureTogglesSave = vi.fn();
     renderSettingsPanel({
-      featureToggles: { ...defaultFeatureToggles, ai: true, chronicle: true, tools: true },
+      featureToggles: { ...defaultFeatureToggles, chronicle: true, tools: true },
       onFeatureTogglesSave
     });
 
     fireEvent.click(screen.getByLabelText("File tools"));
 
     expect(onFeatureTogglesSave).toHaveBeenCalledWith(expect.objectContaining({ tools: false }));
-
-    fireEvent.click(screen.getByLabelText("Cowork"));
-
-    expect(onFeatureTogglesSave).toHaveBeenCalledWith(expect.objectContaining({ ai: false }));
 
     fireEvent.click(screen.getByLabelText("Timeline"));
 

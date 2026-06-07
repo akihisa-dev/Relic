@@ -82,7 +82,6 @@ describe("AppTitleBar", () => {
     expect(designCss).not.toMatch(/\.workspace::before/);
     expect(designCss).not.toMatch(/\.workspace::after/);
     expect(designCss).not.toMatch(/\.sidebar::after/);
-    expect(designCss).not.toMatch(/\.secondary-sidebar::after/);
     expect(designCss).not.toMatch(/\.right-panel::before/);
   });
 

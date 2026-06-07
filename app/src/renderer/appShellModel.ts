@@ -103,10 +103,9 @@ export function activeChartIdsForPanes(
 
 export function enabledRailViewsForFeatures<TView extends Pick<AppRailView, "id">>(
   views: TView[],
-  featureToggles: Pick<FeatureToggles, "ai" | "calendar" | "chronicle" | "chronicleSettings" | "frontmatter" | "tools">
+  featureToggles: Pick<FeatureToggles, "calendar" | "chronicle" | "chronicleSettings" | "frontmatter" | "tools">
 ): TView[] {
   return views.filter((view) => {
-    if (view.id === "ai" && !featureToggles.ai) return false;
     if (view.id === "tools" && !featureToggles.tools) return false;
     if (view.id === "frontmatter" && !featureToggles.frontmatter) return false;
     if (view.id === "chronicleSettings" && !featureToggles.chronicleSettings) return false;
@@ -128,11 +127,10 @@ export function splitRailViews<TView extends Pick<AppRailView, "id">>(
     chartRailViews: views.filter((view) => chartIdForRailView(view.id) !== null),
     panelRailViews: views.filter((view) =>
       view.id !== "files" &&
-      view.id !== "ai" &&
       chartIdForRailView(view.id) === null
     ),
     primaryRailViews: views.filter((view) =>
-      view.id === "files" || view.id === "ai"
+      view.id === "files"
     )
   };
 }

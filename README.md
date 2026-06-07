@@ -69,13 +69,6 @@ Relic is open source software licensed under the GNU Affero General Public Licen
 - Generate title lists.
 - Generate tables of contents.
 
-### Cowork
-
-- AI workspace powered by Codex App Server or by an OpenAI API key configured in the user's environment.
-- Designed as an assistant workspace around local Markdown files, while keeping Markdown files as the source of truth.
-
-![Relic Cowork screenshot](assets/relic-cowork-screenshot.png)
-
 ---
 
 ## Platforms
@@ -331,13 +324,6 @@ Relicはオープンソースソフトウェアです。ライセンスは GNU A
 - ファイルの分割
 - タイトル一覧の生成
 - 目次生成
-
-### Cowork
-
-- Codex App Serverまたはユーザー環境のOpenAI APIキーで使うAIワークスペース
-- Markdownファイルを正本として保ちながら、ローカルMarkdownファイルの周辺で補助する作業領域
-
-![Relic Cowork screenshot](assets/relic-cowork-screenshot.png)
 
 ---
 

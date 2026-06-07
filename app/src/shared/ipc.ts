@@ -5,4 +5,3 @@ export * from "./ipcOutput";
 export * from "./ipcSettings";
 export * from "./ipcTools";
 export * from "./ipcWorkspace";
-export * from "./ipcAiWorkspace";

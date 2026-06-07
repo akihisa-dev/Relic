@@ -5,7 +5,6 @@ import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
 import {
-  defaultAppUiSettings,
   defaultEditorSettings,
   defaultFeatureToggles,
   defaultFrontmatterTemplates,
@@ -32,22 +31,18 @@ describe("appSettings", () => {
     temporaryPaths.push(userDataPath);
 
     await writeAppSettings(userDataPath, {
-      aiSettings: { aiProvider: "openai-api", openAIModel: "gpt-5.5" },
       editorSettings: { ...defaultEditorSettings, language: "ja" },
       featureToggles: { ...defaultFeatureToggles, tools: true },
       frontmatterTemplates: defaultFrontmatterTemplates,
       lastWorkspaceId: "ws-1",
-      uiSettings: { coworkPanelWidth: 512 },
       userDefinedFields: defaultUserDefinedFields,
       workspaces: [{ id: "ws-1", name: "Notes", path: "/tmp/Notes" }]
     });
 
     await expect(readAppSettings(userDataPath)).resolves.toMatchObject({
-      aiSettings: { aiProvider: "openai-api", openAIModel: "gpt-5.5" },
       editorSettings: expect.objectContaining({ language: "ja" }),
       featureToggles: expect.objectContaining({ tools: true }),
       lastWorkspaceId: "ws-1",
-      uiSettings: { coworkPanelWidth: 512 },
       workspaces: [{ id: "ws-1", name: "Notes", path: "/tmp/Notes" }]
     });
     await expect(readdir(userDataPath)).resolves.toEqual([path.basename(getAppSettingsPath(userDataPath))]);
@@ -60,45 +55,11 @@ describe("appSettings", () => {
 
     await expect(readAppSettings(userDataPath)).resolves.toEqual({
       editorSettings: defaultEditorSettings,
-      aiSettings: { aiProvider: "codex-app-server", openAIModel: "gpt-5.4-mini" },
       featureToggles: defaultFeatureToggles,
       frontmatterTemplates: defaultFrontmatterTemplates,
       lastWorkspaceId: null,
-      uiSettings: defaultAppUiSettings,
       userDefinedFields: defaultUserDefinedFields,
       workspaces: []
-    });
-  });
-
-  it("AIモデルが不正な場合は既定モデルへ戻す", async () => {
-    const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-app-settings-"));
-    temporaryPaths.push(userDataPath);
-    await writeFile(getAppSettingsPath(userDataPath), JSON.stringify({
-      aiSettings: { openAIModel: "unknown-model" }
-    }), "utf8");
-
-    await expect(readAppSettings(userDataPath)).resolves.toMatchObject({
-      aiSettings: { aiProvider: "codex-app-server", openAIModel: "gpt-5.4-mini" }
-    });
-  });
-
-  it("AIモデルが空文字やnullの場合も既定モデルへ戻す", async () => {
-    const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-app-settings-"));
-    temporaryPaths.push(userDataPath);
-    await writeFile(getAppSettingsPath(userDataPath), JSON.stringify({
-      aiSettings: { openAIModel: null }
-    }), "utf8");
-
-    await expect(readAppSettings(userDataPath)).resolves.toMatchObject({
-      aiSettings: { aiProvider: "codex-app-server", openAIModel: "gpt-5.4-mini" }
-    });
-
-    await writeFile(getAppSettingsPath(userDataPath), JSON.stringify({
-      aiSettings: { openAIModel: "" }
-    }), "utf8");
-
-    await expect(readAppSettings(userDataPath)).resolves.toMatchObject({
-      aiSettings: { aiProvider: "codex-app-server", openAIModel: "gpt-5.4-mini" }
     });
   });
 
@@ -118,42 +79,9 @@ describe("appSettings", () => {
 
     await expect(readAppSettings(userDataPath)).resolves.toMatchObject({
       featureToggles: expect.objectContaining({
-        ai: true,
         rightPanelLinks: false,
         rightPanelOutline: false
       })
-    });
-  });
-
-  it("Coworkパネル幅を読み込み時に320pxから520pxへ丸める", async () => {
-    const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-app-settings-"));
-    temporaryPaths.push(userDataPath);
-    await writeFile(getAppSettingsPath(userDataPath), JSON.stringify({
-      uiSettings: { coworkPanelWidth: 999 }
-    }), "utf8");
-
-    await expect(readAppSettings(userDataPath)).resolves.toMatchObject({
-      uiSettings: { coworkPanelWidth: 520 }
-    });
-
-    await writeFile(getAppSettingsPath(userDataPath), JSON.stringify({
-      uiSettings: { coworkPanelWidth: 100 }
-    }), "utf8");
-
-    await expect(readAppSettings(userDataPath)).resolves.toMatchObject({
-      uiSettings: { coworkPanelWidth: 320 }
-    });
-  });
-
-  it("AI接続方式が未設定または不正な場合はCodex App Server方式へ戻す", async () => {
-    const userDataPath = await mkdtemp(path.join(os.tmpdir(), "relic-app-settings-"));
-    temporaryPaths.push(userDataPath);
-    await writeFile(getAppSettingsPath(userDataPath), JSON.stringify({
-      aiSettings: { aiProvider: "unknown-provider", openAIModel: "gpt-5.5" }
-    }), "utf8");
-
-    await expect(readAppSettings(userDataPath)).resolves.toMatchObject({
-      aiSettings: { aiProvider: "codex-app-server", openAIModel: "gpt-5.5" }
     });
   });
 

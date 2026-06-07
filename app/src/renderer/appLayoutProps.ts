@@ -20,19 +20,6 @@ export interface AppLayoutPropsInput {
   activeFileTabInFocusedPane: StatusBarProps["activeFileTab"];
   activePanelTabIds: RailProps["activePanelTabIds"];
   activeSidebarView: RailProps["activeSidebarView"];
-  aiWorkspaceEditorActions: Pick<
-    EditorWorkspaceProps,
-    | "onAIWorkspaceApplyOperations"
-    | "onAIWorkspaceCancelMessagePreview"
-    | "onAIWorkspaceCancelSending"
-    | "onAIWorkspaceClearData"
-    | "onAIWorkspaceConfirmMessagePreview"
-    | "onAIWorkspaceDiscardOperations"
-    | "onAIWorkspaceRebuildIndex"
-    | "onAIWorkspaceSendMessage"
-  >;
-  aiWorkspaceMessagePreview: EditorWorkspaceProps["aiWorkspaceMessagePreview"];
-  aiWorkspaceState: EditorWorkspaceProps["aiWorkspaceState"];
   aliasesByPath: OverlaysProps["aliasesByPath"];
   appInlineHandlers: Pick<
     EditorWorkspaceProps,
@@ -42,14 +29,11 @@ export interface AppLayoutPropsInput {
   chartRailViews: RailProps["chartRailViews"];
   closeAllTabsInPaneWithMotion: EditorWorkspaceProps["onCloseAllTabsInPane"];
   closeOtherTabsWithMotion: EditorWorkspaceProps["onCloseOtherTabs"];
-  closeSecondarySidebar: EditorWorkspaceProps["onSecondarySidebarClose"];
   closeSidebar: FilesSidebarProps["onCloseSidebar"];
   closeTabWithMotion: EditorWorkspaceProps["onTabClose"];
   closeTabsToRightWithMotion: EditorWorkspaceProps["onCloseTabsToRight"];
   closeToast: OverlaysProps["closeToast"];
   commands: OverlaysProps["commands"];
-  createAIWorkspaceChat: () => Promise<void>;
-  deleteAIWorkspaceChat: (chatId: string) => Promise<void>;
   editorActionPulse: EditorWorkspaceProps["editorActionPulse"];
   editorSettings: EditorWorkspaceProps["editorSettings"];
   existingMarkdownPaths: EditorWorkspaceProps["allFilePaths"];
@@ -95,8 +79,6 @@ export interface AppLayoutPropsInput {
   handleSwitchWorkspace: RailProps["onSwitchWorkspace"];
   handleTogglePin: FilesSidebarProps["onTogglePin"];
   holdWorkspaceRailAfterRename: RailProps["onRenameComplete"];
-  isAIWorkspaceLoading: EditorWorkspaceProps["isAIWorkspaceLoading"];
-  isAIWorkspaceSending: EditorWorkspaceProps["isAIWorkspaceSending"];
   isCreatingFile: FilesSidebarProps["isCreatingFile"];
   isCreatingFolder: FilesSidebarProps["isCreatingFolder"];
   isCreatingWorkspace: FilesSidebarProps["isCreatingWorkspace"];
@@ -105,8 +87,6 @@ export interface AppLayoutPropsInput {
   isOpeningWorkspace: FilesSidebarProps["isOpeningWorkspace"];
   isRightPanelResizing: EditorWorkspaceProps["isRightPanelResizing"];
   isSearching: FilesSidebarProps["isSearching"];
-  isSecondarySidebarOpen: EditorWorkspaceProps["isSecondarySidebarOpen"];
-  isSecondarySidebarResizing: EditorWorkspaceProps["isSecondarySidebarResizing"];
   isSidebarOpen: RailProps["isSidebarOpen"];
   isSidebarResizing: FilesSidebarProps["isSidebarResizing"];
   isLeftSourceMode: EditorWorkspaceProps["isLeftSourceMode"];
@@ -126,7 +106,6 @@ export interface AppLayoutPropsInput {
   openFileInOtherPane: EditorWorkspaceProps["onOpenInOtherPane"];
   openFilePathSet: FilesSidebarProps["openFilePaths"];
   openPanelTabIds: RailProps["openPanelTabIds"];
-  openSecondarySidebar: (view: "ai-chat") => void;
   openTreeFileInOtherPane: FilesSidebarProps["onOpenInOtherPane"];
   openWorkspacePathInOtherPane: OverlaysProps["openWorkspacePathInOtherPane"];
   openingFilePath: FilesSidebarProps["openingFilePath"];
@@ -152,9 +131,6 @@ export interface AppLayoutPropsInput {
   searchMode: FilesSidebarProps["searchMode"];
   searchQuery: FilesSidebarProps["searchQuery"];
   searchResults: FilesSidebarProps["searchResults"];
-  secondarySidebarView: EditorWorkspaceProps["secondarySidebarView"];
-  secondarySidebarWidth: EditorWorkspaceProps["secondarySidebarWidth"];
-  selectAIWorkspaceChat: (chatId: string) => Promise<void>;
   setFileSelectionCount: FilesSidebarProps["onSelectedCountChange"];
   setIsLeftSourceMode: (updater: (value: boolean) => boolean) => void;
   setIsRightSourceMode: (updater: (value: boolean) => boolean) => void;
@@ -175,7 +151,6 @@ export interface AppLayoutPropsInput {
   sidebarViews: FilesSidebarProps["sidebarViews"];
   sidebarWidth: FilesSidebarProps["sidebarWidth"];
   startRightPanelResize: EditorWorkspaceProps["onRightPanelResizeStart"];
-  startSecondarySidebarResize: EditorWorkspaceProps["onSecondarySidebarResizeStart"];
   startSidebarResize: FilesSidebarProps["startSidebarResize"];
   t: Translator;
   toastMessage: OverlaysProps["toastMessage"];

@@ -1,17 +1,13 @@
 import { app, ipcMain } from "electron";
 
 import {
-  defaultAppUiSettings,
   defaultFeatureToggles,
-  getAppUiSettingsChannel,
   getFeatureTogglesChannel,
   getFrontmatterTemplatesChannel,
   getUserDefinedFieldsChannel,
-  saveAppUiSettingsChannel,
   saveFeatureTogglesChannel,
   saveFrontmatterTemplatesChannel,
   saveUserDefinedFieldsChannel,
-  type AppUiSettings,
   type FeatureToggles,
   type FrontmatterTemplate,
   type UserDefinedField
@@ -20,7 +16,6 @@ import { fail, ok, type RelicResult } from "../../shared/result";
 import { readAppSettings, writeAppSettings } from "../settings/appSettings";
 import { ipcErrorDetails } from "./activeWorkspace";
 import {
-  isAppUiSettingsInput,
   isFeatureTogglesInput,
   isFrontmatterTemplatesInput,
   isUserDefinedFieldsInput
@@ -33,30 +28,6 @@ export function registerWorkspacePreferenceHandlers(): void {
       return ok(settings.featureToggles ?? defaultFeatureToggles);
     } catch (error) {
       return fail("FEATURE_TOGGLES_READ_FAILED", "機能トグルを読み込めませんでした。", ipcErrorDetails(error));
-    }
-  });
-
-  ipcMain.handle(getAppUiSettingsChannel, async (): Promise<RelicResult<AppUiSettings>> => {
-    try {
-      const settings = await readAppSettings(app.getPath("userData"));
-      return ok(settings.uiSettings ?? defaultAppUiSettings);
-    } catch (error) {
-      return fail("APP_UI_SETTINGS_READ_FAILED", "画面設定を読み込めませんでした。", ipcErrorDetails(error));
-    }
-  });
-
-  ipcMain.handle(saveAppUiSettingsChannel, async (_event, input: unknown): Promise<RelicResult<AppUiSettings>> => {
-    try {
-      if (!isAppUiSettingsInput(input)) {
-        return fail("APP_UI_SETTINGS_INVALID_INPUT", "画面設定の値が正しくありません。");
-      }
-
-      const settings = await readAppSettings(app.getPath("userData"));
-      const nextSettings = { ...settings.uiSettings, ...input };
-      await writeAppSettings(app.getPath("userData"), { ...settings, uiSettings: nextSettings });
-      return ok(nextSettings);
-    } catch (error) {
-      return fail("APP_UI_SETTINGS_SAVE_FAILED", "画面設定を保存できませんでした。", ipcErrorDetails(error));
     }
   });
 

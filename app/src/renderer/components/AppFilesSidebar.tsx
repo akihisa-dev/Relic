@@ -2,22 +2,14 @@ import type { MouseEvent as ReactMouseEvent, ReactElement } from "react";
 
 import type { AppRailView } from "../appShellModel";
 import type { SidebarView } from "../store/uiStore";
-import type { AIWorkspaceState } from "../../shared/ipc";
-import { useT } from "../i18n";
-import { AIChatsSidebar } from "./AIChatsSidebar";
 import { FilesSidebar, type FilesSidebarProps } from "./FilesSidebar";
 
 interface AppFilesSidebarProps extends Omit<FilesSidebarProps, "onSelectedCountChange"> {
   activeSidebarView: SidebarView;
-  aiWorkspaceState: AIWorkspaceState | null;
   fileSelectionCount: number;
-  isAIWorkspaceLoading: boolean;
   isSidebarOpen: boolean;
   isSidebarResizing: boolean;
-  onCreateAIChat: () => void;
-  onDeleteAIChat: (chatId: string) => void;
   onCloseSidebar: () => void;
-  onSelectAIChat: (chatId: string) => void;
   onSelectedCountChange: (count: number) => void;
   selectedCountLabel: string;
   sidebarViews: Array<Pick<AppRailView<ReactElement>, "id" | "label">>;
@@ -27,15 +19,10 @@ interface AppFilesSidebarProps extends Omit<FilesSidebarProps, "onSelectedCountC
 
 export function AppFilesSidebar({
   activeSidebarView,
-  aiWorkspaceState,
   fileSelectionCount: _fileSelectionCount,
-  isAIWorkspaceLoading,
   isSidebarOpen,
   isSidebarResizing,
-  onCreateAIChat,
-  onDeleteAIChat,
   onCloseSidebar,
-  onSelectAIChat,
   onSelectedCountChange,
   selectedCountLabel: _selectedCountLabel,
   sidebarViews,
@@ -45,7 +32,6 @@ export function AppFilesSidebar({
 }: AppFilesSidebarProps): ReactElement {
   const heading = sidebarViews.find((view) => view.id === activeSidebarView)?.label;
   const showHeader = activeSidebarView !== "files";
-  const t = useT();
 
   void isSidebarResizing;
   void startSidebarResize;
@@ -60,17 +46,15 @@ export function AppFilesSidebar({
         <div className="sidebar-header">
           <div className="pane-heading sidebar-pane-heading">
             <span>{heading}</span>
-            {activeSidebarView === "ai" ? (
-              <button
-                aria-label={t("aiChat.closeSidebar")}
-                className="sidebar-close-button"
-                onClick={onCloseSidebar}
-                title={t("aiChat.closeSidebar")}
-                type="button"
-              >
-                ×
-              </button>
-            ) : null}
+            <button
+              aria-label={heading}
+              className="sidebar-close-button"
+              onClick={onCloseSidebar}
+              title={heading}
+              type="button"
+            >
+              ×
+            </button>
           </div>
         </div>
       ) : null}
@@ -79,14 +63,6 @@ export function AppFilesSidebar({
           <FilesSidebar
             {...filesSidebarProps}
             onSelectedCountChange={onSelectedCountChange}
-          />
-        ) : activeSidebarView === "ai" ? (
-          <AIChatsSidebar
-            isLoading={isAIWorkspaceLoading}
-            onCreateChat={onCreateAIChat}
-            onDeleteChat={onDeleteAIChat}
-            onSelectChat={onSelectAIChat}
-            state={aiWorkspaceState}
           />
         ) : null}
       </div>

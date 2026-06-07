@@ -307,7 +307,6 @@ describe("toolActions", () => {
     const workspace = createWorkspaceSummary(workspacePath);
     const settings = addOrActivateWorkspace(
       {
-        aiSettings: { aiProvider: "codex-app-server", openAIModel: "gpt-5.4-mini" },
         editorSettings: defaultEditorSettings,
         featureToggles: defaultFeatureToggles,
         frontmatterTemplates: defaultFrontmatterTemplates,

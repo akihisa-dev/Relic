@@ -2,13 +2,6 @@ import { clipboard, contextBridge, ipcRenderer } from "electron";
 
 import {
   applySearchAndReplaceChannel,
-  applyAIWorkspaceOperationsChannel,
-  cancelAIWorkspaceMessageChannel,
-  clearAIWorkspaceDataChannel,
-  createAIWorkspaceChatChannel,
-  deleteAIWorkspaceChatChannel,
-  deleteOpenAIAPIKeyChannel,
-  discardAIWorkspaceOperationsChannel,
   createNewWorkspaceChannel,
   copyDiagramSvgChannel,
   type CopyDiagramSvgInput,
@@ -18,11 +11,8 @@ import {
   createMarkdownFileChannel,
   duplicateMarkdownFileChannel,
   getBacklinksChannel,
-  getAIWorkspaceStateChannel,
-  getAISettingsChannel,
   getAppInfoChannel,
   getEditorSettingsChannel,
-  getAppUiSettingsChannel,
   getFrontmatterValueCandidatesChannel,
   getWorkspaceAliasesChannel,
   getWorkspaceChartsChannel,
@@ -38,23 +28,16 @@ import {
   moveMarkdownFileChannel,
   openWorkspaceChannel,
   readMarkdownFileChannel,
-  previewAIWorkspaceMessageChannel,
-  rebuildAIWorkspaceIndexChannel,
   removeWorkspaceChannel,
   renameWorkspaceChannel,
   renameFolderChannel,
   renameMarkdownFileChannel,
   replaceInFileChannel,
   revealWorkspaceItemChannel,
-  saveAIModelChannel,
-  saveAIProviderChannel,
   saveWorkspaceChartsChannel,
   saveWorkspaceChronicleCalendarsChannel,
   updateChartEntryChannel,
   saveEditorSettingsChannel,
-  saveAppUiSettingsChannel,
-  saveOpenAIAPIKeyChannel,
-  selectAIWorkspaceChatChannel,
   generateTitleListChannel,
   type GenerateTitleListInput,
   generateTableOfContentsChannel,
@@ -83,14 +66,8 @@ import {
   type SplitFileByHeadingInput,
   searchAndReplaceChannel,
   searchWorkspaceChannel,
-  sendAIWorkspaceMessageChannel,
-  testOpenAIAPIKeyChannel,
   switchWorkspaceChannel,
   writeMarkdownFileChannel,
-  type AppUiSettings,
-  type AIWorkspaceState,
-  type AISettingsState,
-  type ApplyAIWorkspaceOperationsInput,
   type AppInfo,
   type CreateFolderInput,
   type CreateLinkedMarkdownFileInput,
@@ -99,10 +76,6 @@ import {
   type DuplicateMarkdownFileInput,
   type EditorSettings,
   type Backlink,
-  type ClearAIWorkspaceDataInput,
-  type CreateAIWorkspaceChatInput,
-  type DeleteAIWorkspaceChatInput,
-  type DiscardAIWorkspaceOperationsInput,
   type ChronicleCalendarSettings,
   type GetBacklinksInput,
   type ChartSettings,
@@ -113,15 +86,8 @@ import {
   type MoveFolderInput,
   type MoveItemToTrashInput,
   type MoveMarkdownFileInput,
-  type AIWorkspaceMessagePreview,
-  type PreviewAIWorkspaceMessageInput,
   type RelicApi,
   type ReadMarkdownFileInput,
-  type RebuildAIWorkspaceIndexInput,
-  type SaveAIModelInput,
-  type SaveAIProviderInput,
-  type SaveOpenAIAPIKeyInput,
-  type SelectAIWorkspaceChatInput,
   type RemoveWorkspaceInput,
   type RenameWorkspaceInput,
   type RenameFolderInput,
@@ -133,8 +99,6 @@ import {
   type SearchAndReplaceInput,
   type SearchAndReplaceMatch,
   type SearchWorkspaceInput,
-  type SendAIWorkspaceMessageInput,
-  type TestOpenAIAPIKeyResult,
   type SwitchWorkspaceInput,
   type WorkspaceChangedEvent,
   type WindowCloseRequestEvent,
@@ -171,31 +135,9 @@ const relicApi: RelicApi = {
     >,
   getBacklinks: (input: GetBacklinksInput) =>
     ipcRenderer.invoke(getBacklinksChannel, input) as Promise<RelicResult<Backlink[]>>,
-  getAIWorkspaceState: () =>
-    ipcRenderer.invoke(getAIWorkspaceStateChannel) as Promise<RelicResult<AIWorkspaceState>>,
-  createAIWorkspaceChat: (input: CreateAIWorkspaceChatInput) =>
-    ipcRenderer.invoke(createAIWorkspaceChatChannel, input) as Promise<RelicResult<AIWorkspaceState>>,
-  selectAIWorkspaceChat: (input: SelectAIWorkspaceChatInput) =>
-    ipcRenderer.invoke(selectAIWorkspaceChatChannel, input) as Promise<RelicResult<AIWorkspaceState>>,
-  deleteAIWorkspaceChat: (input: DeleteAIWorkspaceChatInput) =>
-    ipcRenderer.invoke(deleteAIWorkspaceChatChannel, input) as Promise<RelicResult<AIWorkspaceState>>,
-  getAISettings: () =>
-    ipcRenderer.invoke(getAISettingsChannel) as Promise<RelicResult<AISettingsState>>,
-  saveAIProvider: (input: SaveAIProviderInput) =>
-    ipcRenderer.invoke(saveAIProviderChannel, input) as Promise<RelicResult<AISettingsState>>,
-  saveAIModel: (input: SaveAIModelInput) =>
-    ipcRenderer.invoke(saveAIModelChannel, input) as Promise<RelicResult<AISettingsState>>,
-  saveOpenAIAPIKey: (input: SaveOpenAIAPIKeyInput) =>
-    ipcRenderer.invoke(saveOpenAIAPIKeyChannel, input) as Promise<RelicResult<AISettingsState>>,
-  deleteOpenAIAPIKey: () =>
-    ipcRenderer.invoke(deleteOpenAIAPIKeyChannel) as Promise<RelicResult<AISettingsState>>,
-  testOpenAIAPIKey: () =>
-    ipcRenderer.invoke(testOpenAIAPIKeyChannel) as Promise<RelicResult<TestOpenAIAPIKeyResult>>,
   getAppInfo: () => ipcRenderer.invoke(getAppInfoChannel) as Promise<RelicResult<AppInfo>>,
   getEditorSettings: () =>
     ipcRenderer.invoke(getEditorSettingsChannel) as Promise<RelicResult<EditorSettings>>,
-  getAppUiSettings: () =>
-    ipcRenderer.invoke(getAppUiSettingsChannel) as Promise<RelicResult<AppUiSettings>>,
   getWorkspaceAliases: () =>
     ipcRenderer.invoke(getWorkspaceAliasesChannel) as Promise<RelicResult<AliasIndex>>,
   getWorkspaceCharts: () =>
@@ -243,8 +185,6 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(saveDiagramSvgChannel, input) as Promise<RelicResult<OutputSavedResult>>,
   saveEditorSettings: (input: EditorSettings) =>
     ipcRenderer.invoke(saveEditorSettingsChannel, input) as Promise<RelicResult<void>>,
-  saveAppUiSettings: (input: AppUiSettings) =>
-    ipcRenderer.invoke(saveAppUiSettingsChannel, input) as Promise<RelicResult<AppUiSettings>>,
   savePreviewAsPdf: (input: SavePreviewAsPdfInput) =>
     ipcRenderer.invoke(savePreviewAsPdfChannel, input) as Promise<RelicResult<OutputSavedResult>>,
   searchAndReplace: (input: SearchAndReplaceInput) =>
@@ -255,20 +195,6 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(searchWorkspaceChannel, input) as Promise<
       RelicResult<WorkspaceSearchResultSet>
     >,
-  rebuildAIWorkspaceIndex: (input: RebuildAIWorkspaceIndexInput) =>
-    ipcRenderer.invoke(rebuildAIWorkspaceIndexChannel, input) as Promise<RelicResult<AIWorkspaceState>>,
-  previewAIWorkspaceMessage: (input: PreviewAIWorkspaceMessageInput) =>
-    ipcRenderer.invoke(previewAIWorkspaceMessageChannel, input) as Promise<RelicResult<AIWorkspaceMessagePreview>>,
-  sendAIWorkspaceMessage: (input: SendAIWorkspaceMessageInput) =>
-    ipcRenderer.invoke(sendAIWorkspaceMessageChannel, input) as Promise<RelicResult<AIWorkspaceState>>,
-  cancelAIWorkspaceMessage: () =>
-    ipcRenderer.invoke(cancelAIWorkspaceMessageChannel) as Promise<RelicResult<void>>,
-  applyAIWorkspaceOperations: (input: ApplyAIWorkspaceOperationsInput) =>
-    ipcRenderer.invoke(applyAIWorkspaceOperationsChannel, input) as Promise<RelicResult<AIWorkspaceState>>,
-  discardAIWorkspaceOperations: (input: DiscardAIWorkspaceOperationsInput) =>
-    ipcRenderer.invoke(discardAIWorkspaceOperationsChannel, input) as Promise<RelicResult<AIWorkspaceState>>,
-  clearAIWorkspaceData: (input: ClearAIWorkspaceDataInput) =>
-    ipcRenderer.invoke(clearAIWorkspaceDataChannel, input) as Promise<RelicResult<AIWorkspaceState>>,
   switchWorkspace: (input: SwitchWorkspaceInput) =>
     ipcRenderer.invoke(switchWorkspaceChannel, input) as Promise<RelicResult<WorkspaceState>>,
   writeMarkdownFile: (input: WriteMarkdownFileInput) =>

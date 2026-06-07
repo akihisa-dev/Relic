@@ -1,6 +1,6 @@
 import type { MouseEvent as ReactMouseEvent, ReactElement } from "react";
 
-type LayoutResizeBoundarySide = "sidebar" | "secondary-sidebar" | "right-panel";
+type LayoutResizeBoundarySide = "sidebar" | "right-panel";
 
 interface LayoutResizeBoundaryProps {
   "aria-label": string;
