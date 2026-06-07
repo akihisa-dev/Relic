@@ -54,6 +54,7 @@ export function makeRelicApi(overrides: Partial<typeof window.relic> = {}): type
     createMarkdownFile: vi.fn(),
     createNewWorkspace: vi.fn().mockResolvedValue({ ok: true, value: { activeWorkspace: null, fileTree: [], pinnedPaths: [], workspaces: [] } }),
     duplicateMarkdownFile: vi.fn(),
+    generateTagIndex: vi.fn(),
     generateTableOfContents: vi.fn(),
     generateTitleList: vi.fn(),
     getAppInfo: vi.fn().mockResolvedValue({ ok: true, value: { name: "Relic", platform: "darwin", version: "0.0.0" } }),

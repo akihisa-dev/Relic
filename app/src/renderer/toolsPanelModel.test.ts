@@ -4,9 +4,11 @@ import { fail, ok } from "../shared/result";
 import { createTranslator } from "./i18nModel";
 import {
   buildMergeFilesInput,
+  buildTagIndexInput,
   buildTitleListInput,
   buildTocInput,
   createDefaultMergeFilesDraft,
+  createDefaultTagIndexDraft,
   createDefaultTitleListDraft,
   createDefaultTocDraft,
   isToolStatusError,
@@ -28,6 +30,25 @@ describe("toolsPanelModel", () => {
       outputFolder: "",
       outputName: "Table of Contents",
       targetFolder: ""
+    });
+  });
+
+  it("builds tag index input with fallback defaults", () => {
+    const draft = {
+      ...createDefaultTagIndexDraft(t),
+      includeUntagged: true,
+      outputName: "",
+      sortBy: "mtime" as const,
+      targetFolder: "Notes"
+    };
+
+    expect(buildTagIndexInput(draft, t)).toEqual({
+      includeSubfolders: true,
+      includeUntagged: true,
+      outputFolder: "",
+      outputName: "Tag Index",
+      sortBy: "mtime",
+      targetFolder: "Notes"
     });
   });
 

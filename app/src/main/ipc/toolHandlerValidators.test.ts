@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  isGenerateTagIndexInput,
   isGenerateTableOfContentsInput,
   isGenerateTitleListInput,
   isMergeFilesInput
@@ -52,6 +53,41 @@ describe("toolHandlerValidators", () => {
       includeSubfolders: "true",
       outputFolder: "",
       outputName: "Toc",
+      targetFolder: "Notes"
+    })).toBe(false);
+  });
+
+  it("validates tag index inputs", () => {
+    expect(isGenerateTagIndexInput({
+      includeSubfolders: true,
+      includeUntagged: false,
+      outputFolder: "",
+      outputName: "Tags",
+      sortBy: "name",
+      targetFolder: "Notes"
+    })).toBe(true);
+    expect(isGenerateTagIndexInput({
+      includeSubfolders: true,
+      includeUntagged: false,
+      outputFolder: "",
+      outputName: "Tags",
+      sortBy: "ctime",
+      targetFolder: "Notes"
+    })).toBe(false);
+    expect(isGenerateTagIndexInput({
+      includeSubfolders: true,
+      includeUntagged: false,
+      outputFolder: "../outside",
+      outputName: "Tags",
+      sortBy: "name",
+      targetFolder: "Notes"
+    })).toBe(false);
+    expect(isGenerateTagIndexInput({
+      includeSubfolders: true,
+      includeUntagged: "false",
+      outputFolder: "",
+      outputName: "Tags",
+      sortBy: "name",
       targetFolder: "Notes"
     })).toBe(false);
   });

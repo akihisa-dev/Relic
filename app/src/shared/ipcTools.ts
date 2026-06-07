@@ -13,6 +13,15 @@ export interface GenerateTableOfContentsInput {
   targetFolder: string;
 }
 
+export interface GenerateTagIndexInput {
+  includeSubfolders: boolean;
+  includeUntagged: boolean;
+  outputFolder: string;
+  outputName: string;
+  sortBy: "name" | "mtime";
+  targetFolder: string;
+}
+
 export type MergeFilterType = "folder" | "frontmatter" | "tag" | "all";
 export type MergeSortBy = "name" | "mtime" | "ctime";
 

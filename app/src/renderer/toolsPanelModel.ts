@@ -1,4 +1,5 @@
 import type {
+  GenerateTagIndexInput,
   GenerateTableOfContentsInput,
   GenerateTitleListInput,
   MergeFilesInput,
@@ -19,6 +20,15 @@ export interface TocDraft {
   includeSubfolders: boolean;
   outputFolder: string;
   outputName: string;
+  targetFolder: string;
+}
+
+export interface TagIndexDraft {
+  includeSubfolders: boolean;
+  includeUntagged: boolean;
+  outputFolder: string;
+  outputName: string;
+  sortBy: "name" | "mtime";
   targetFolder: string;
 }
 
@@ -50,6 +60,17 @@ export function createDefaultTocDraft(t: Translator): TocDraft {
   };
 }
 
+export function createDefaultTagIndexDraft(t: Translator): TagIndexDraft {
+  return {
+    includeSubfolders: true,
+    includeUntagged: false,
+    outputFolder: "",
+    outputName: t("tools.tagIndexDefaultName"),
+    sortBy: "name",
+    targetFolder: ""
+  };
+}
+
 export function createDefaultMergeFilesDraft(t: Translator): MergeFilesDraft {
   return {
     filterType: "all",
@@ -76,6 +97,17 @@ export function buildTocInput(draft: TocDraft, t: Translator): GenerateTableOfCo
     includeSubfolders: draft.includeSubfolders,
     outputFolder: draft.outputFolder || "",
     outputName: draft.outputName || t("tools.tocDefaultName"),
+    targetFolder: draft.targetFolder || ""
+  };
+}
+
+export function buildTagIndexInput(draft: TagIndexDraft, t: Translator): GenerateTagIndexInput {
+  return {
+    includeSubfolders: draft.includeSubfolders,
+    includeUntagged: draft.includeUntagged,
+    outputFolder: draft.outputFolder || "",
+    outputName: draft.outputName || t("tools.tagIndexDefaultName"),
+    sortBy: draft.sortBy,
     targetFolder: draft.targetFolder || ""
   };
 }

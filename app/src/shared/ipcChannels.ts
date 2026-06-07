@@ -39,6 +39,7 @@ export const createNewWorkspaceChannel = "workspace:createNew";
 export const togglePinChannel = "workspace:togglePin";
 export const generateTitleListChannel = "tools:generateTitleList";
 export const generateTableOfContentsChannel = "tools:generateTableOfContents";
+export const generateTagIndexChannel = "tools:generateTagIndex";
 export const getFeatureTogglesChannel = "app:getFeatureToggles";
 export const saveFeatureTogglesChannel = "app:saveFeatureToggles";
 export const getUserDefinedFieldsChannel = "app:getUserDefinedFields";

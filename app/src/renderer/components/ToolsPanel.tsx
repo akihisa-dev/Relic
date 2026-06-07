@@ -4,6 +4,7 @@ import { useT } from "../i18n";
 import { useToolsPanelState } from "../hooks/useToolsPanelState";
 import {
   MergeFilesToolSection,
+  TagIndexToolSection,
   TitleListToolSection,
   TocToolSection
 } from "./ToolsPanelSections";
@@ -12,6 +13,7 @@ export function ToolsPanel({ workspacePath }: { workspacePath: string | null }):
   const t = useT();
   const {
     handleGenerateTitleList,
+    handleGenerateTagIndex,
     handleGenerateToc,
     handleMergeFiles,
     mergeDraft,
@@ -19,9 +21,13 @@ export function ToolsPanel({ workspacePath }: { workspacePath: string | null }):
     setMergeDraftField,
     setMergeFilterType,
     setMergeSortBy,
+    setTagIndexDraftField,
+    setTagIndexSortBy,
     setTitleListDraftField,
     setTitleListSortBy,
     setTocDraftField,
+    tagIndexDraft,
+    tagIndexStatus,
     titleListDraft,
     titleListStatus,
     tocDraft,
@@ -50,6 +56,13 @@ export function ToolsPanel({ workspacePath }: { workspacePath: string | null }):
             onGenerate={handleGenerateToc}
             onUpdate={setTocDraftField}
             status={tocStatus}
+          />
+          <TagIndexToolSection
+            draft={tagIndexDraft}
+            onGenerate={handleGenerateTagIndex}
+            onSortByChange={setTagIndexSortBy}
+            onUpdate={setTagIndexDraftField}
+            status={tagIndexStatus}
           />
           <MergeFilesToolSection
             draft={mergeDraft}

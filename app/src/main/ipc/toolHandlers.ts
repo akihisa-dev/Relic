@@ -1,6 +1,7 @@
 import { ipcMain } from "electron";
 
 import {
+  generateTagIndexChannel,
   generateTableOfContentsChannel,
   generateTitleListChannel,
   mergeFilesChannel
@@ -8,11 +9,13 @@ import {
 import { fail, type RelicResult } from "../../shared/result";
 import { ipcErrorDetails } from "./activeWorkspace";
 import {
+  generateTagIndex,
   generateTableOfContents,
   generateTitleList,
   mergeFiles
 } from "./toolActions";
 import {
+  isGenerateTagIndexInput,
   isGenerateTableOfContentsInput,
   isGenerateTitleListInput,
   isMergeFilesInput
@@ -60,6 +63,21 @@ export function registerToolHandlers(): void {
         return await generateTableOfContents(input);
       } catch (error) {
         return fail("TOC_FAILED", "目次の生成に失敗しました。", ipcErrorDetails(error));
+      }
+    }
+  );
+
+  ipcMain.handle(
+    generateTagIndexChannel,
+    async (_event, input: unknown): Promise<RelicResult<string>> => {
+      try {
+        if (!isGenerateTagIndexInput(input)) {
+          return fail("TAG_INDEX_INVALID_INPUT", "タグ別索引の生成条件が無効です。");
+        }
+
+        return await generateTagIndex(input);
+      } catch (error) {
+        return fail("TAG_INDEX_FAILED", "タグ別索引の生成に失敗しました。", ipcErrorDetails(error));
       }
     }
   );
