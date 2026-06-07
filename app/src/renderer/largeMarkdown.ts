@@ -7,7 +7,7 @@ export function isLargeMarkdownContent(content: string): boolean {
   return largeMarkdownFallbackReason(content) !== null;
 }
 
-export function largeMarkdownFallbackReason(content: string): LargeMarkdownFallbackReason | null {
+function largeMarkdownFallbackReason(content: string): LargeMarkdownFallbackReason | null {
   if (new Blob([content]).size > largeMarkdownMaxContentBytes) return "content-size";
 
   let currentLineLength = 0;

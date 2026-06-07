@@ -20,6 +20,7 @@
       "react-doctor/no-pass-live-state-to-parent",
       "react-doctor/no-prop-callback-in-effect",
       "react-doctor/no-render-in-render",
+      "react-doctor/no-render-prop-children",
       "react-doctor/no-reset-all-state-on-prop-change",
       "react-doctor/prefer-dynamic-import",
       "react-doctor/prefer-useReducer",

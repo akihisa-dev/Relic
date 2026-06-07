@@ -33,9 +33,7 @@ export {
 } from "./editorFrontmatterModel";
 export {
   createFrontmatterPropertiesField,
-  frontmatterCollapsedField,
-  frontmatterCollapsedValue,
-  setFrontmatterCollapsed
+  frontmatterCollapsedField
 } from "./editorFrontmatterWidget";
 
 export function appendFrontmatterField(view: EditorView, key: string): void {

@@ -59,12 +59,8 @@ export const frontmatterCollapsedField = StateField.define<FrontmatterCollapsedS
   }
 });
 
-export function frontmatterCollapsedValue(state: EditorState): boolean {
+function frontmatterCollapsedValue(state: EditorState): boolean {
   return state.field(frontmatterCollapsedField, false)?.collapsed ?? true;
-}
-
-export function setFrontmatterCollapsed(view: EditorView, collapsed: boolean): void {
-  view.dispatch({ effects: frontmatterCollapsedEffect.of(collapsed) });
 }
 
 function visibleFrontmatterLineNumbers(block: FrontmatterBlock): Set<number> {
