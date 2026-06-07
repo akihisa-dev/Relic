@@ -61,7 +61,11 @@ export function PaneContentSurface({
   onUpdateTabContent
 }: PaneContentSurfaceProps): ReactElement {
   const t = useT();
-  const notifiedLargeMarkdownFallbacksRef = useRef<Set<string>>(new Set());
+  const notifiedLargeMarkdownFallbacksRef = useRef<Set<string> | null>(null);
+  if (notifiedLargeMarkdownFallbacksRef.current === null) {
+    notifiedLargeMarkdownFallbacksRef.current = new Set();
+  }
+  const notifiedLargeMarkdownFallbacks = notifiedLargeMarkdownFallbacksRef.current;
   const activeFileTab = activeTab?.kind === "file" ? activeTab : null;
   const isLargeMarkdown = activeFileTab ? isLargeMarkdownContent(activeFileTab.content) : false;
   const [frontmatterAddButtonHost, setFrontmatterAddButtonHost] = useState<HTMLDivElement | null>(null);
@@ -70,11 +74,11 @@ export function PaneContentSurface({
     if (!activeFileTab || !isLargeMarkdown) return;
 
     const notificationKey = `${activeFileTab.id}:${activeFileTab.path}`;
-    if (notifiedLargeMarkdownFallbacksRef.current.has(notificationKey)) return;
+    if (notifiedLargeMarkdownFallbacks.has(notificationKey)) return;
 
-    notifiedLargeMarkdownFallbacksRef.current.add(notificationKey);
+    notifiedLargeMarkdownFallbacks.add(notificationKey);
     onLargeMarkdownFallback?.(activeFileTab.name, activeFileTab.path);
-  }, [activeFileTab, isLargeMarkdown, onLargeMarkdownFallback]);
+  }, [activeFileTab, isLargeMarkdown, notifiedLargeMarkdownFallbacks, onLargeMarkdownFallback]);
 
   if (activeFileTab) {
     const { chars, words } = textCount(activeFileTab.content);

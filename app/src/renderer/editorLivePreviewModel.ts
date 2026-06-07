@@ -85,6 +85,11 @@ function countBacktickRun(text: string, from: number): number {
   return length;
 }
 
+function hasNewlineBetween(text: string, from: number, to: number): boolean {
+  const newlineIndex = text.indexOf("\n", from);
+  return newlineIndex >= 0 && newlineIndex < to;
+}
+
 function findInlineCodeMatches(text: string): InlineCodeMatch[] {
   const matches: InlineCodeMatch[] = [];
   let searchFrom = 0;
@@ -97,7 +102,7 @@ function findInlineCodeMatches(text: string): InlineCodeMatch[] {
     const marker = "`".repeat(markerLength);
     const contentFrom = from + markerLength;
     const closeFrom = text.indexOf(marker, contentFrom);
-    if (closeFrom < 0 || closeFrom === contentFrom || text.slice(contentFrom, closeFrom).includes("\n")) {
+    if (closeFrom < 0 || closeFrom === contentFrom || hasNewlineBetween(text, contentFrom, closeFrom)) {
       searchFrom = contentFrom;
       continue;
     }
@@ -162,7 +167,7 @@ function findMarkdownLinkMatches(text: string): MarkdownLinkMatch[] {
     if (from < 0) break;
 
     const textTo = text.indexOf("]", from + 1);
-    if (textTo < 0 || text.slice(from + 1, textTo).includes("\n")) {
+    if (textTo < 0 || hasNewlineBetween(text, from + 1, textTo)) {
       searchFrom = from + 1;
       continue;
     }
