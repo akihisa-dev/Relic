@@ -1,8 +1,7 @@
 import type {
   GenerateTableOfContentsInput,
   GenerateTitleListInput,
-  MergeFilesInput,
-  SplitFileByHeadingInput
+  MergeFilesInput
 } from "../../shared/ipc";
 import { isWorkspaceRelativeInputPath, isWorkspaceRelativeInputPathOrRoot } from "../files/paths";
 
@@ -16,10 +15,6 @@ function hasString(input: Record<string, unknown>, key: string): boolean {
 
 function hasWorkspaceFolder(input: Record<string, unknown>, key: string): boolean {
   return isWorkspaceRelativeInputPathOrRoot(input[key]);
-}
-
-function hasWorkspacePath(input: Record<string, unknown>, key: string): boolean {
-  return isWorkspaceRelativeInputPath(input[key]);
 }
 
 function hasOptionalWorkspacePath(input: Record<string, unknown>, key: string): boolean {
@@ -65,14 +60,5 @@ export function isMergeFilesInput(input: unknown): input is MergeFilesInput {
     hasWorkspaceFolder(input, "outputFolder") &&
     hasString(input, "outputName") &&
     (input.sortBy === "name" || input.sortBy === "mtime" || input.sortBy === "ctime")
-  );
-}
-
-export function isSplitFileByHeadingInput(input: unknown): input is SplitFileByHeadingInput {
-  return (
-    isRecord(input) &&
-    (input.headingLevel === 1 || input.headingLevel === 2 || input.headingLevel === 3) &&
-    hasWorkspaceFolder(input, "outputFolder") &&
-    hasWorkspacePath(input, "sourcePath")
   );
 }

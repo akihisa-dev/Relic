@@ -25,11 +25,3 @@ export interface MergeFilesInput {
   outputName: string;
   sortBy: MergeSortBy;
 }
-
-export type SplitHeadingLevel = 1 | 2 | 3;
-
-export interface SplitFileByHeadingInput {
-  headingLevel: SplitHeadingLevel;
-  outputFolder: string;
-  sourcePath: string;
-}

@@ -1,20 +1,16 @@
 import { useState } from "react";
 
-import type { MergeFilterType, MergeSortBy, SplitHeadingLevel } from "../../shared/ipc";
+import type { MergeFilterType, MergeSortBy } from "../../shared/ipc";
 import type { Translator } from "../i18nModel";
 import {
   buildMergeFilesInput,
-  buildSplitFileInput,
   buildTitleListInput,
   buildTocInput,
   createDefaultMergeFilesDraft,
-  createDefaultSplitFileDraft,
   createDefaultTitleListDraft,
   createDefaultTocDraft,
   resultStatus,
-  splitResultStatus,
   type MergeFilesDraft,
-  type SplitFileDraft,
   type TitleListDraft,
   type TocDraft
 } from "../toolsPanelModel";
@@ -25,19 +21,14 @@ export interface UseToolsPanelStateResult {
   handleGenerateTitleList: () => Promise<void>;
   handleGenerateToc: () => Promise<void>;
   handleMergeFiles: () => Promise<void>;
-  handleSplitFile: () => Promise<void>;
   mergeDraft: MergeFilesDraft;
   mergeStatus: string | null;
   setMergeDraftField: DraftSetter<MergeFilesDraft>;
   setMergeFilterType: (value: MergeFilterType) => void;
   setMergeSortBy: (value: MergeSortBy) => void;
-  setSplitDraftField: DraftSetter<SplitFileDraft>;
-  setSplitLevel: (value: SplitHeadingLevel) => void;
   setTitleListDraftField: DraftSetter<TitleListDraft>;
   setTitleListSortBy: (value: "name" | "mtime") => void;
   setTocDraftField: DraftSetter<TocDraft>;
-  splitDraft: SplitFileDraft;
-  splitStatus: string | null;
   titleListDraft: TitleListDraft;
   titleListStatus: string | null;
   tocDraft: TocDraft;
@@ -51,8 +42,6 @@ export function useToolsPanelState(workspacePath: string | null, t: Translator):
   const [tocStatus, setTocStatus] = useState<string | null>(null);
   const [mergeDraft, setMergeDraft] = useState(() => createDefaultMergeFilesDraft(t));
   const [mergeStatus, setMergeStatus] = useState<string | null>(null);
-  const [splitDraft, setSplitDraft] = useState(createDefaultSplitFileDraft);
-  const [splitStatus, setSplitStatus] = useState<string | null>(null);
 
   const setTitleListDraftField: DraftSetter<TitleListDraft> = (key, value) => {
     setTitleListDraft((current) => ({ ...current, [key]: value }));
@@ -63,10 +52,6 @@ export function useToolsPanelState(workspacePath: string | null, t: Translator):
   const setMergeDraftField: DraftSetter<MergeFilesDraft> = (key, value) => {
     setMergeDraft((current) => ({ ...current, [key]: value }));
   };
-  const setSplitDraftField: DraftSetter<SplitFileDraft> = (key, value) => {
-    setSplitDraft((current) => ({ ...current, [key]: value }));
-  };
-
   const handleGenerateTitleList = async (): Promise<void> => {
     if (!workspacePath) return;
     setTitleListStatus(t("common.running"));
@@ -88,30 +73,18 @@ export function useToolsPanelState(workspacePath: string | null, t: Translator):
     setMergeStatus(resultStatus(result, t, String));
   };
 
-  const handleSplitFile = async (): Promise<void> => {
-    if (!workspacePath || !splitDraft.sourcePath) return;
-    setSplitStatus(t("tools.processing"));
-    const result = await window.relic!.splitFileByHeading(buildSplitFileInput(splitDraft));
-    setSplitStatus(splitResultStatus(result, t));
-  };
-
   return {
     handleGenerateTitleList,
     handleGenerateToc,
     handleMergeFiles,
-    handleSplitFile,
     mergeDraft,
     mergeStatus,
     setMergeDraftField,
     setMergeFilterType: (value) => setMergeDraftField("filterType", value),
     setMergeSortBy: (value) => setMergeDraftField("sortBy", value),
-    setSplitDraftField,
-    setSplitLevel: (value) => setSplitDraftField("headingLevel", value),
     setTitleListDraftField,
     setTitleListSortBy: (value) => setTitleListDraftField("sortBy", value),
     setTocDraftField,
-    splitDraft,
-    splitStatus,
     titleListDraft,
     titleListStatus,
     tocDraft,

@@ -62,8 +62,6 @@ import {
   type OutputCopyResult,
   type OutputPrintResult,
   type OutputSavedResult,
-  splitFileByHeadingChannel,
-  type SplitFileByHeadingInput,
   searchAndReplaceChannel,
   searchWorkspaceChannel,
   switchWorkspaceChannel,
@@ -224,8 +222,6 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(saveFrontmatterTemplatesChannel, input) as Promise<RelicResult<void>>,
   mergeFiles: (input: MergeFilesInput) =>
     ipcRenderer.invoke(mergeFilesChannel, input) as Promise<RelicResult<string>>,
-  splitFileByHeading: (input: SplitFileByHeadingInput) =>
-    ipcRenderer.invoke(splitFileByHeadingChannel, input) as Promise<RelicResult<string[]>>,
   onWorkspaceChanged: (callback: (event: WorkspaceChangedEvent) => void) => {
     const listener = (_event: Electron.IpcRendererEvent, payload: WorkspaceChangedEvent): void => {
       callback(payload);

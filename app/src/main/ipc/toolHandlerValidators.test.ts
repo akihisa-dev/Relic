@@ -3,8 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   isGenerateTableOfContentsInput,
   isGenerateTitleListInput,
-  isMergeFilesInput,
-  isSplitFileByHeadingInput
+  isMergeFilesInput
 } from "./toolHandlerValidators";
 
 describe("toolHandlerValidators", () => {
@@ -57,7 +56,7 @@ describe("toolHandlerValidators", () => {
     })).toBe(false);
   });
 
-  it("validates merge and split inputs", () => {
+  it("validates merge inputs", () => {
     expect(isMergeFilesInput({
       filterType: "frontmatter",
       filterValue: "draft",
@@ -82,26 +81,6 @@ describe("toolHandlerValidators", () => {
       outputFolder: "",
       outputName: "Merged",
       sortBy: "name"
-    })).toBe(false);
-    expect(isSplitFileByHeadingInput({
-      headingLevel: 2,
-      outputFolder: "Split",
-      sourcePath: "Source.md"
-    })).toBe(true);
-    expect(isSplitFileByHeadingInput({
-      headingLevel: 2,
-      outputFolder: "../outside",
-      sourcePath: "Source.md"
-    })).toBe(false);
-    expect(isSplitFileByHeadingInput({
-      headingLevel: 2,
-      outputFolder: "Split",
-      sourcePath: "../outside.md"
-    })).toBe(false);
-    expect(isSplitFileByHeadingInput({
-      headingLevel: 4,
-      outputFolder: "Split",
-      sourcePath: "Source.md"
     })).toBe(false);
   });
 });

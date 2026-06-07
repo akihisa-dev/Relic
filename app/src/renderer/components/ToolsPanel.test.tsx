@@ -100,28 +100,11 @@ describe("ToolsPanel", () => {
     });
   });
 
-  it("ソース指定時だけ見出し分割を実行する", async () => {
-    const splitFileByHeading = vi.fn().mockResolvedValue({ ok: true, value: ["A.md", "B.md"] });
-    window.relic = makeRelicApi({ splitFileByHeading });
+  it("見出し分割は通常のファイル加工ツール一覧に表示しない", () => {
+    window.relic = makeRelicApi();
 
     renderToolsPanel("en");
 
-    const split = sectionBlock("Split by Heading");
-    fireEvent.click(within(split).getByRole("button", { name: "Split by Heading" }));
-    expect(splitFileByHeading).not.toHaveBeenCalled();
-
-    fireEvent.change(within(split).getByLabelText("Source file"), { target: { value: "Book.md" } });
-    fireEvent.change(within(split).getByLabelText("Heading level"), { target: { value: "3" } });
-    fireEvent.change(within(split).getByLabelText("Output folder"), { target: { value: "Chapters" } });
-    fireEvent.click(within(split).getByRole("button", { name: "Split by Heading" }));
-
-    await waitFor(() => {
-      expect(splitFileByHeading).toHaveBeenCalledWith({
-        headingLevel: 3,
-        outputFolder: "Chapters",
-        sourcePath: "Book.md"
-      });
-    });
-    expect(await screen.findByText("Done: 2 file(s) created")).toBeInTheDocument();
+    expect(screen.queryByText("Split by Heading")).not.toBeInTheDocument();
   });
 });
