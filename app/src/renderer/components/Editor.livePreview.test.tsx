@@ -302,7 +302,8 @@ describe("Editor live preview", () => {
     await waitFor(() => expect(viewRef.current).not.toBeNull());
     viewRef.current?.dispatch({ selection: { anchor: viewRef.current.state.doc.length } });
     expect(widgets).not.toContain("DiagramBlockWidget");
-    await waitFor(() => expect(container.querySelector(".cm-live-code-block-panel")).not.toBeNull());
+    await waitFor(() => expect(container.querySelector(".cm-live-code-block-header")).not.toBeNull());
+    expect(container.querySelector(".cm-live-code-block-footer")).not.toBeNull();
   });
 
   it("通常コードブロックのヘッダーから本文だけをコピーできる", async () => {
@@ -365,11 +366,12 @@ describe("Editor live preview", () => {
     await waitFor(() => expect(container.querySelector(".cm-live-code-block-copy")?.textContent).toBe("Copied"));
   });
 
-  it("通常コードブロックのヘッダーや余白をクリックしてもソース表示に戻さない", async () => {
+  it("通常コードブロックは本文を触ってもブロック表示を維持する", async () => {
     const viewRef = createRef<EditorView | null>();
+    const content = ["```", "あああ", "```", "", "本文"].join("\n");
     const { container } = render(
       <Editor
-        content={["```", "あああ", "```", "", "本文"].join("\n")}
+        content={content}
         onChange={vi.fn()}
         settings={settings}
         viewRef={viewRef}
@@ -378,17 +380,46 @@ describe("Editor live preview", () => {
 
     await waitFor(() => expect(viewRef.current).not.toBeNull());
     viewRef.current?.dispatch({ selection: { anchor: viewRef.current.state.doc.length } });
-    await waitFor(() => expect(container.querySelector(".cm-live-code-block-panel")).not.toBeNull());
+    await waitFor(() => expect(container.querySelector(".cm-live-code-block-header")).not.toBeNull());
+    await waitFor(() => expect(container.querySelector(".cm-live-code-block-line")).not.toBeNull());
 
-    fireEvent.mouseDown(container.querySelector(".cm-live-code-block-header") as HTMLElement);
+    viewRef.current?.dispatch({ selection: { anchor: content.indexOf("あああ") + 1 } });
+
+    await waitFor(() => expect(container.querySelector(".cm-live-code-block-header")).not.toBeNull());
+    expect(container.querySelector(".cm-live-code-block-footer")).not.toBeNull();
+    expect(container.textContent).not.toContain("```");
+  });
+
+  it("通常コードブロックのヘッダーとフッターを触ったときだけソース表示に戻す", async () => {
+    const viewRef = createRef<EditorView | null>();
+    const content = ["```js", "const value = 1;", "```", "", "本文"].join("\n");
+    const { container } = render(
+      <Editor
+        content={content}
+        onChange={vi.fn()}
+        settings={settings}
+        viewRef={viewRef}
+      />
+    );
+
+    await waitFor(() => expect(viewRef.current).not.toBeNull());
+    viewRef.current?.dispatch({ selection: { anchor: viewRef.current.state.doc.length } });
+    await waitFor(() => expect(container.querySelector(".cm-live-code-block-header")).not.toBeNull());
+
     fireEvent.click(container.querySelector(".cm-live-code-block-header") as HTMLElement);
-    fireEvent.mouseDown(container.querySelector(".cm-live-code-block-body") as HTMLElement);
-    fireEvent.click(container.querySelector(".cm-live-code-block-body") as HTMLElement);
-    fireEvent.mouseDown(container.querySelector(".cm-live-code-block-footer") as HTMLElement);
+
+    await waitFor(() => expect(container.querySelector(".cm-live-code-block-header")).toBeNull());
+    expect(viewRef.current?.state.selection.main.head).toBe(0);
+    expect(container.textContent).toContain("```js");
+
+    viewRef.current?.dispatch({ selection: { anchor: viewRef.current.state.doc.length } });
+    await waitFor(() => expect(container.querySelector(".cm-live-code-block-footer")).not.toBeNull());
+
     fireEvent.click(container.querySelector(".cm-live-code-block-footer") as HTMLElement);
 
-    expect(container.querySelector(".cm-live-code-block-panel")).not.toBeNull();
-    expect(container.textContent).not.toContain("```");
+    await waitFor(() => expect(container.querySelector(".cm-live-code-block-header")).toBeNull());
+    expect(viewRef.current?.state.selection.main.head).toBe(content.lastIndexOf("```"));
+    expect(container.textContent).toContain("```");
   });
 
   it("MermaidとD2の図ブロックには通常コードブロックのヘッダーを出さない", async () => {
