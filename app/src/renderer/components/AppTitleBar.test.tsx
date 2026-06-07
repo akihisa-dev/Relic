@@ -61,6 +61,7 @@ describe("AppTitleBar", () => {
     expect(editorCss).toMatch(/--pane-tab-min-width:\s*64px;/);
     expect(editorCss).toMatch(/--pane-tab-split-min-width:\s*48px;/);
     expect(editorCss).toMatch(/--pane-tab-drop-indicator-width:\s*3px;/);
+    expect(editorCss).toMatch(/\.pane-tab-bar-shell\s*\{[^}]*align-items:\s*flex-start;/s);
     expect(editorCss).toMatch(/\.pane-tab\s*\{[^}]*flex:\s*0 1 var\(--pane-tab-width\);/s);
     expect(editorCss).toMatch(/\.pane-tab-bar--drop-end::after\s*\{[^}]*position:\s*static;/s);
   });
