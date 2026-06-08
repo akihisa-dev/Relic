@@ -46,6 +46,9 @@ interface OrderedChronicleEntry {
 interface ChronicleEntryShape {
   displayEntry: ChartEntry;
   entry: ChartEntry;
+  fileNameLabelWidth: number;
+  fileNameLabelX: number;
+  fileNameLabelY: number;
   height: number;
   key: string;
   labelX: number;
@@ -211,6 +214,7 @@ function buildChronicleEntryShapes(
     const valueLeft = Math.max(0, (startValue - axisStart) * unitWidth);
     const isSingleValue = startValue === endValue;
     const rangeLabel = formatRange(item.displayEntry, "chronicle", dateScale);
+    const fileNameLabelWidth = labelWidthForText(item.entry.fileName);
     const labelWidth = labelWidthForText(rangeLabel);
     const naturalWidth = isSingleValue ? unitWidth : (endValue - startValue + 1) * unitWidth;
     const width = Math.max(4, naturalWidth);
@@ -224,12 +228,18 @@ function buildChronicleEntryShapes(
       ? (width - labelWidth) / 2
       : Math.max(7, Math.min(maxLabelLeft, scrollLeft - x + 7));
     const labelX = x + labelLeft;
-    const labelY = y + Math.max(15, Math.min(height - 5, height / 2 + 4));
+    const labelY = y + Math.max(30, Math.min(height - 5, height / 2 + 12));
+    const fileNameLabelX = labelX;
+    const fileNameLabelY = labelY - 20;
+    const fileNameBackgroundWidth = Math.min(fileNameLabelWidth, Math.max(0, width - labelLeft));
     const labelBackgroundWidth = Math.min(labelWidth, Math.max(0, width - labelLeft));
 
     return {
       displayEntry: item.displayEntry,
       entry: item.entry,
+      fileNameLabelWidth: fileNameBackgroundWidth,
+      fileNameLabelX,
+      fileNameLabelY,
       height,
       key: entryKey(item.entry),
       labelWidth: labelBackgroundWidth,
@@ -342,6 +352,27 @@ function ChronicleEntrySvgShape({
         className="chronicle-fill-hit"
         d={shape.path}
       />
+      {shape.fileNameLabelWidth > 0 ? (
+        <>
+          <rect
+            className="chronicle-fill-label-bg chronicle-fill-label-bg--file"
+            height={18}
+            rx={4}
+            ry={4}
+            width={shape.fileNameLabelWidth}
+            x={shape.fileNameLabelX}
+            y={shape.fileNameLabelY - 14}
+          />
+          <text
+            className="chronicle-fill-label chronicle-fill-file-label"
+            dominantBaseline="middle"
+            x={shape.fileNameLabelX + 7}
+            y={shape.fileNameLabelY - 5}
+          >
+            {entry.fileName}
+          </text>
+        </>
+      ) : null}
       {shape.labelWidth > 0 ? (
         <>
           <rect

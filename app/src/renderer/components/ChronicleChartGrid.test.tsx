@@ -148,8 +148,9 @@ describe("ChronicleChartGrid", () => {
     expect(container.querySelectorAll(".chronicle-axis--chronicle .chronicle-axis-row")).toHaveLength(2);
     expect(container.querySelector(".chronicle-name-header--chronicle")).toBeNull();
     expect(container.querySelector(".chronicle-year-summary")).toBeNull();
-    expect(container.querySelector(".chronicle-fill-label")).toHaveTextContent("21 〜 22");
-    expect(container.querySelector(".chronicle-fill-label")).not.toHaveTextContent("帝国暦");
+    expect(container.querySelector(".chronicle-fill-file-label")).toHaveTextContent("鎌倉時代");
+    expect(container.querySelector(".chronicle-fill-label:not(.chronicle-fill-file-label)")).toHaveTextContent("21 〜 22");
+    expect(container.querySelector(".chronicle-fill-label:not(.chronicle-fill-file-label)")).not.toHaveTextContent("帝国暦");
   });
 
   it("chronicleでは重なるentryを別レーンに配置する", () => {
@@ -180,7 +181,8 @@ describe("ChronicleChartGrid", () => {
       "M 183,193 H 429 Q 432,193 432,196 V 383 Q 432,386 429,386 H 183 Q 180,386 180,383 V 196 Q 180,193 183,193 Z",
       "M 831,0 H 1041 Q 1044,0 1044,3 V 190 Q 1044,193 1041,193 H 831 Q 828,193 828,190 V 3 Q 828,0 831,0 Z"
     ]);
-    expect(container.querySelectorAll(".chronicle-fill-label")).toHaveLength(3);
+    expect(container.querySelectorAll(".chronicle-fill-file-label")).toHaveLength(3);
+    expect(container.querySelectorAll(".chronicle-fill-label:not(.chronicle-fill-file-label)")).toHaveLength(3);
     expect(shapes[0].getAttribute("d")).toContain("M 111,0");
     expect(fills[0].style.getPropertyValue("--chronicle-fill")).not.toBe(fills[1].style.getPropertyValue("--chronicle-fill"));
     expect(fills[2].style.getPropertyValue("--chronicle-fill")).toMatch(/^hsla\(/);
