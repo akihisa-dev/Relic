@@ -23,7 +23,8 @@ import { ChartGuideLines, TodayLine } from "./chronicleChartParts";
 const CHRONICLE_MIN_SEGMENT_HEIGHT = 38;
 const CHRONICLE_LABEL_HEIGHT = 18;
 const CHRONICLE_LABEL_PADDING_X = 7;
-const CHRONICLE_MIN_LABEL_WIDTH = 16;
+const CHRONICLE_LABEL_BLOCK_HEIGHT = 38;
+const CHRONICLE_LABEL_VERTICAL_GAP = 4;
 const CHRONICLE_COLOR_PALETTE = [
   { hue: 202, lightness: 43 },
   { hue: 168, lightness: 39 },
@@ -60,6 +61,13 @@ interface ChronicleEntryShape {
   labelY: number;
   labelWidth: number;
   path: string;
+  width: number;
+  x: number;
+  y: number;
+}
+
+interface LabelBounds {
+  height: number;
   width: number;
   x: number;
   y: number;
@@ -212,6 +220,8 @@ function buildChronicleEntryShapes(
       };
     })
   );
+  const occupiedLabelBounds: LabelBounds[] = [];
+
   return entries.map((item) => {
     const laneIndex = laneIndexes[item.order] ?? 0;
     const startValue = item.displayEntry.startValue;
@@ -233,24 +243,32 @@ function buildChronicleEntryShapes(
       ? (width - labelWidth) / 2
       : Math.max(CHRONICLE_LABEL_PADDING_X, Math.min(maxLabelLeft, scrollLeft - x + CHRONICLE_LABEL_PADDING_X));
     const labelX = x + labelLeft;
-    const labelY = y + Math.max(30, Math.min(height - 5, height / 2 + 12));
+    const preferredLabelY = y + Math.max(30, Math.min(height - 5, height / 2 + 12));
+    const labelBlockWidth = Math.max(fileNameLabelWidth, labelWidth);
+    const labelY = labelYForBar({
+      barHeight: height,
+      barY: y,
+      occupiedLabelBounds,
+      preferredLabelY,
+      width: labelBlockWidth,
+      x: labelX
+    });
     const fileNameLabelX = labelX;
     const fileNameLabelY = labelY - 20;
-    const fileNameBackgroundWidth = visibleLabelWidth(fileNameLabelWidth, width - labelLeft);
-    const labelBackgroundWidth = visibleLabelWidth(labelWidth, width - labelLeft);
     const clipKey = clipIdKey(item.entry, item.order);
+    occupiedLabelBounds.push(labelBounds(labelX, labelY, labelBlockWidth));
 
     return {
       displayEntry: item.displayEntry,
       entry: item.entry,
       fileNameClipId: `chronicle-file-label-${clipKey}`,
-      fileNameLabelWidth: fileNameBackgroundWidth,
+      fileNameLabelWidth,
       fileNameLabelX,
       fileNameLabelY,
       height,
       key: entryKey(item.entry),
       labelClipId: `chronicle-range-label-${clipKey}`,
-      labelWidth: labelBackgroundWidth,
+      labelWidth,
       labelX,
       labelY,
       path: roundedRectPath(x, y, width, height, 3),
@@ -261,10 +279,63 @@ function buildChronicleEntryShapes(
   });
 }
 
-function visibleLabelWidth(labelWidth: number, availableWidth: number): number {
-  const width = Math.min(labelWidth, Math.max(0, availableWidth));
+function labelYForBar({
+  barHeight,
+  barY,
+  occupiedLabelBounds,
+  preferredLabelY,
+  width,
+  x
+}: {
+  barHeight: number;
+  barY: number;
+  occupiedLabelBounds: LabelBounds[];
+  preferredLabelY: number;
+  width: number;
+  x: number;
+}): number {
+  const minLabelY = barY + 14;
+  const maxLabelY = Math.max(minLabelY, barY + barHeight - 4);
+  const candidates = labelYCandidates(preferredLabelY, minLabelY, maxLabelY);
 
-  return width >= CHRONICLE_MIN_LABEL_WIDTH ? width : 0;
+  return candidates.find((candidate) =>
+    !occupiedLabelBounds.some((bounds) => boundsOverlap(labelBounds(x, candidate, width), bounds))
+  ) ?? candidates[0];
+}
+
+function labelYCandidates(preferredLabelY: number, minLabelY: number, maxLabelY: number): number[] {
+  const step = CHRONICLE_LABEL_BLOCK_HEIGHT + CHRONICLE_LABEL_VERTICAL_GAP;
+  const preferred = clamp(preferredLabelY, minLabelY, maxLabelY);
+  const candidates = [preferred];
+
+  for (let offset = step; offset <= maxLabelY - minLabelY + step; offset += step) {
+    candidates.push(clamp(preferred + offset, minLabelY, maxLabelY));
+    candidates.push(clamp(preferred - offset, minLabelY, maxLabelY));
+  }
+
+  return [...new Set(candidates)];
+}
+
+function labelBounds(x: number, labelY: number, width: number): LabelBounds {
+  return {
+    height: CHRONICLE_LABEL_BLOCK_HEIGHT,
+    width,
+    x,
+    y: labelY - 34
+  };
+}
+
+function boundsOverlap(a: LabelBounds, b: LabelBounds): boolean {
+  return (
+    a.x < b.x + b.width &&
+    a.x + a.width > b.x &&
+    a.y < b.y + b.height &&
+    a.y + a.height > b.y
+  );
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value));
 }
 
 function clipIdKey(entry: ChartEntry, order: number): string {
