@@ -38,10 +38,6 @@ export function CommandPalette({ commands, onClose }: CommandPaletteProps): Reac
     inputRef.current?.focus();
   }, []);
 
-  useEffect(() => {
-    setSelectedIndex(0);
-  }, [query]);
-
   const requestClose = useCallback((): void => {
     if (isClosing) return;
     setIsClosing(true);
@@ -82,7 +78,10 @@ export function CommandPalette({ commands, onClose }: CommandPaletteProps): Reac
           aria-label={t("command.palette")}
           ref={inputRef}
           className="command-palette-input"
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setSelectedIndex(0);
+          }}
           onKeyDown={(e) => {
             if (e.key === "ArrowDown") {
               e.preventDefault();

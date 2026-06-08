@@ -26,6 +26,10 @@ const defaultPdfName = "relic-preview";
 const defaultSvgName = "relic-diagram";
 const outputSvgUriAttributes = new Set(["href", "xlink:href", "src"]);
 const forbiddenOutputSvgTags = new Set(["foreignobject", "script"]);
+const forbiddenOutputSvgBlockPatterns = [...forbiddenOutputSvgTags].map((tagName) => new RegExp(
+  `<\\s*${tagName}\\b[^>]*(?:\\/>|[\\s\\S]*?<\\s*\\/\\s*${tagName}\\s*>)`,
+  "gi"
+));
 
 export function registerOutputHandlers(): void {
   ipcMain.handle(
@@ -319,11 +323,7 @@ function sanitizeOutputSvg(svg: string): string {
 function sanitizeOutputSvgMarkup(svg: string): string {
   let sanitized = svg;
 
-  for (const tagName of forbiddenOutputSvgTags) {
-    const forbiddenBlockPattern = new RegExp(
-      `<\\s*${tagName}\\b[^>]*(?:\\/>|[\\s\\S]*?<\\s*\\/\\s*${tagName}\\s*>)`,
-      "gi"
-    );
+  for (const forbiddenBlockPattern of forbiddenOutputSvgBlockPatterns) {
     sanitized = sanitized.replace(forbiddenBlockPattern, "");
   }
 

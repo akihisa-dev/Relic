@@ -95,12 +95,12 @@ export function useChronicleEntryDrag({
 
       currentPreviewRange = nextRange;
       setDragPreview({
-        editKind: kind,
-        path: entry.path,
-        source: activeSource,
-        ...chronicleCalendarPatch(entry),
-        ...dateKindPatch(entry),
-        ...nextRange
+          editKind: kind,
+          path: entry.path,
+          source: activeSource,
+          ...chronicleCalendarPatch(entry),
+          ...dateKindPatch(entry),
+          ...nextRange
       });
     };
 

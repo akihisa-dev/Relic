@@ -16,6 +16,20 @@ interface UseWorkspaceSearchStateInput {
   workspaceState: WorkspaceState | null;
 }
 
+interface SearchSnapshot {
+  error: string | null;
+  key: string | null;
+  limitNotice: { skippedLargeFiles: number; truncated: boolean } | null;
+  results: WorkspaceSearchResult[];
+}
+
+const emptySearchSnapshot: SearchSnapshot = {
+  error: null,
+  key: null,
+  limitNotice: null,
+  results: []
+};
+
 export function useWorkspaceSearchState({
   setWorkspaceError,
   userDefinedFields,
@@ -24,17 +38,24 @@ export function useWorkspaceSearchState({
   const [searchQuery, setSearchQuery] = useState("");
   const [searchMode, setSearchMode] = useState<SearchMode>("fullText");
   const [searchFrontmatterField, setSearchFrontmatterField] = useState("");
-  const [searchResults, setSearchResults] = useState<WorkspaceSearchResult[]>([]);
-  const [searchLimitNotice, setSearchLimitNotice] = useState<{ skippedLargeFiles: number; truncated: boolean } | null>(null);
-  const [searchError, setSearchError] = useState<string | null>(null);
-  const [isSearching, setIsSearching] = useState(false);
+  const [searchSnapshot, setSearchSnapshot] = useState<SearchSnapshot>(emptySearchSnapshot);
   const [workspaceFrontmatterCandidates, setWorkspaceFrontmatterCandidates] = useState<Record<string, string[]>>({});
   const frontmatterSearchFields = useMemo(
     () => knownFrontmatterSearchFields(userDefinedFields),
     [userDefinedFields]
   );
+  const effectiveSearchFrontmatterField =
+    searchMode === "frontmatter" &&
+    searchFrontmatterField !== "" &&
+    !frontmatterSearchFields.includes(searchFrontmatterField)
+      ? ""
+      : searchFrontmatterField;
+  const hasActiveWorkspace = Boolean(workspaceState?.activeWorkspace);
+  const searchKey = hasActiveWorkspace && searchQuery.trim() !== ""
+    ? `${workspaceState?.activeWorkspace?.id ?? ""}:${searchMode}:${effectiveSearchFrontmatterField}:${searchQuery}`
+    : null;
   const frontmatterCandidates = useMemo(() => {
-    const result: Record<string, string[]> = { ...workspaceFrontmatterCandidates };
+    const result: Record<string, string[]> = hasActiveWorkspace ? { ...workspaceFrontmatterCandidates } : {};
     result.status = [...fixedStatusValues];
 
     for (const field of userDefinedFields) {
@@ -42,21 +63,10 @@ export function useWorkspaceSearchState({
     }
 
     return result;
-  }, [userDefinedFields, workspaceFrontmatterCandidates]);
-
-  useEffect(() => {
-    if (
-      searchMode === "frontmatter" &&
-      searchFrontmatterField !== "" &&
-      !frontmatterSearchFields.includes(searchFrontmatterField)
-    ) {
-      setSearchFrontmatterField("");
-    }
-  }, [frontmatterSearchFields, searchFrontmatterField, searchMode]);
+  }, [hasActiveWorkspace, userDefinedFields, workspaceFrontmatterCandidates]);
 
   useEffect(() => {
     if (!workspaceState?.activeWorkspace || !window.relic) {
-      setWorkspaceFrontmatterCandidates({});
       return;
     }
 
@@ -80,58 +90,57 @@ export function useWorkspaceSearchState({
 
   useEffect(() => {
     if (!workspaceState?.activeWorkspace || !window.relic || searchQuery.trim() === "") {
-      setSearchResults([]);
-      setSearchLimitNotice(null);
-      setSearchError(null);
-      setIsSearching(false);
       return;
     }
 
     let canceled = false;
     const input: SearchWorkspaceInput =
       searchMode === "frontmatter"
-        ? { frontmatterField: searchFrontmatterField, mode: searchMode, query: searchQuery }
+        ? { frontmatterField: effectiveSearchFrontmatterField, mode: searchMode, query: searchQuery }
         : { mode: searchMode, query: searchQuery };
 
-    setIsSearching(true);
     void window.relic
       .searchWorkspace(input)
       .then((result) => {
         if (canceled) return;
 
         if (result.ok) {
-          setSearchResults(result.value.results);
-          setSearchLimitNotice(
-            result.value.truncated || result.value.skippedLargeFiles > 0
+          setSearchSnapshot({
+            error: null,
+            key: searchKey,
+            limitNotice: result.value.truncated || result.value.skippedLargeFiles > 0
               ? { skippedLargeFiles: result.value.skippedLargeFiles, truncated: result.value.truncated }
-              : null
-          );
-          setSearchError(null);
+              : null,
+            results: result.value.results
+          });
         } else {
-          setSearchResults([]);
-          setSearchLimitNotice(null);
-          setSearchError(result.error.message);
+          setSearchSnapshot({
+            error: result.error.message,
+            key: searchKey,
+            limitNotice: null,
+            results: []
+          });
         }
-      })
-      .finally(() => {
-        if (!canceled) setIsSearching(false);
       });
 
     return () => {
       canceled = true;
     };
-  }, [searchFrontmatterField, searchMode, searchQuery, workspaceState?.activeWorkspace?.id, workspaceState?.fileTree]);
+  }, [effectiveSearchFrontmatterField, searchKey, searchMode, searchQuery, workspaceState?.activeWorkspace?.id, workspaceState?.fileTree]);
+
+  const hasActiveSearch = searchKey !== null;
+  const currentSearchSnapshot = hasActiveSearch && searchSnapshot.key === searchKey ? searchSnapshot : emptySearchSnapshot;
 
   return {
     frontmatterCandidates,
     frontmatterSearchFields,
-    isSearching,
-    searchError,
-    searchLimitNotice,
-    searchFrontmatterField,
+    isSearching: hasActiveSearch && searchSnapshot.key !== searchKey,
+    searchError: currentSearchSnapshot.error,
+    searchLimitNotice: currentSearchSnapshot.limitNotice,
+    searchFrontmatterField: effectiveSearchFrontmatterField,
     searchMode,
     searchQuery,
-    searchResults,
+    searchResults: currentSearchSnapshot.results,
     setSearchFrontmatterField,
     setSearchMode,
     setSearchQuery

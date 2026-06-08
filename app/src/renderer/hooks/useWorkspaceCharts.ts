@@ -54,7 +54,6 @@ export function useWorkspaceCharts({
 
   useEffect(() => {
     if (!workspaceState?.activeWorkspace || !window.relic) {
-      setCharts([]);
       return;
     }
 
@@ -107,7 +106,7 @@ export function useWorkspaceCharts({
   }, [setWorkspaceError, tabs, updateTabContent, workspaceState?.fileTree]);
 
   return {
-    charts,
+    charts: workspaceState?.activeWorkspace ? charts : [],
     handleUpdateChartEntry,
     reloadCharts
   };

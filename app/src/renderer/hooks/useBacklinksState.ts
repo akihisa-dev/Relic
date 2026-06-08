@@ -8,22 +8,25 @@ interface UseBacklinksStateInput {
   setWorkspaceError: (message: string | null) => void;
 }
 
+const emptyBacklinks: Backlink[] = [];
+
 export function useBacklinksState({
   activeFilePath,
   fileTree,
   setWorkspaceError
 }: UseBacklinksStateInput) {
-  const [backlinks, setBacklinks] = useState<Backlink[]>([]);
-  const [isLoadingBacklinks, setIsLoadingBacklinks] = useState(false);
+  const [backlinkState, setBacklinkState] = useState<{ backlinks: Backlink[]; path: string | null }>({
+    backlinks: emptyBacklinks,
+    path: null
+  });
+  const hasActiveFile = Boolean(activeFilePath && window.relic);
 
   useEffect(() => {
     if (!activeFilePath || !window.relic) {
-      setBacklinks([]);
       return;
     }
 
     let canceled = false;
-    setIsLoadingBacklinks(true);
 
     void window.relic
       .getBacklinks({ path: activeFilePath })
@@ -31,14 +34,11 @@ export function useBacklinksState({
         if (canceled) return;
 
         if (result.ok) {
-          setBacklinks(result.value);
+          setBacklinkState({ backlinks: result.value, path: activeFilePath });
         } else {
-          setBacklinks([]);
+          setBacklinkState({ backlinks: emptyBacklinks, path: activeFilePath });
           setWorkspaceError(result.error.message);
         }
-      })
-      .finally(() => {
-        if (!canceled) setIsLoadingBacklinks(false);
       });
 
     return () => {
@@ -47,7 +47,7 @@ export function useBacklinksState({
   }, [activeFilePath, fileTree, setWorkspaceError]);
 
   return {
-    backlinks,
-    isLoadingBacklinks
+    backlinks: hasActiveFile && backlinkState.path === activeFilePath ? backlinkState.backlinks : emptyBacklinks,
+    isLoadingBacklinks: hasActiveFile && backlinkState.path !== activeFilePath
   };
 }

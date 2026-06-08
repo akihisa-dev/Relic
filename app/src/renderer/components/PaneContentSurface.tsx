@@ -96,6 +96,7 @@ export function PaneContentSurface({
           <div className="editor-file-title-row" style={editorTitleRowStyle}>
             <div className="editor-file-title-slot">
               <EditableFileTitle
+                key={activeFileTab.id}
                 name={activeFileTab.name}
                 onRename={(name) => onRenameFile(activeFileTab.path, name)}
               />
@@ -211,11 +212,6 @@ function EditableFileTitle({ name, onRename }: EditableFileTitleProps): ReactEle
   const [draft, setDraft] = useState(name);
   const [editing, setEditing] = useState(false);
   const t = useT();
-
-  useEffect(() => {
-    setDraft(name);
-    setEditing(false);
-  }, [name]);
 
   const commit = (): void => {
     const nextName = draft.trim();
