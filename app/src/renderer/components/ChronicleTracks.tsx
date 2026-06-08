@@ -38,6 +38,7 @@ const CHRONICLE_COLOR_PALETTE = [
 interface OrderedChronicleEntry {
   displayEntry: ChartEntry;
   entry: ChartEntry;
+  laneIndex: number;
   order: number;
 }
 
@@ -160,7 +161,7 @@ export function ChronicleTracks({
 
 function buildChronicleLayout(rows: ChartRow[], dragPreview: DragPreview | null): ChronicleLayout {
   let order = 0;
-  const orderedEntries: OrderedChronicleEntry[] = rows.flatMap((row) =>
+  const entries = rows.flatMap((row) =>
     row.entries.map((entry) => {
       const currentOrder = order;
       order += 1;
@@ -171,6 +172,11 @@ function buildChronicleLayout(rows: ChartRow[], dragPreview: DragPreview | null)
       };
     })
   );
+  const laneIndexes = assignChronicleLaneIndexes(entries);
+  const orderedEntries: OrderedChronicleEntry[] = entries.map((entryItem) => ({
+    ...entryItem,
+    laneIndex: laneIndexes[entryItem.order] ?? 0
+  }));
 
   const points = new Set<number>();
   for (const item of orderedEntries) {
@@ -189,7 +195,7 @@ function buildChronicleLayout(rows: ChartRow[], dragPreview: DragPreview | null)
 
     const activeEntries = orderedEntries
       .filter((item) => item.displayEntry.startValue < segmentEndExclusive && item.displayEntry.endValue + 1 > segmentStartValue)
-      .toSorted((a, b) => a.order - b.order);
+      .toSorted((a, b) => a.laneIndex - b.laneIndex || a.order - b.order);
     laneCount = Math.max(laneCount, activeEntries.length);
 
     activeEntries.forEach((item, overlapIndex) => {
@@ -208,6 +214,33 @@ function buildChronicleLayout(rows: ChartRow[], dragPreview: DragPreview | null)
   }
 
   return { laneCount, segments };
+}
+
+function assignChronicleLaneIndexes(
+  entries: Array<Omit<OrderedChronicleEntry, "laneIndex">>
+): Record<number, number> {
+  const laneEndValues: number[] = [];
+  const preferredLaneByFile = new Map<string, number>();
+  const laneIndexes: Record<number, number> = {};
+
+  for (const item of entries.toSorted((a, b) =>
+    a.displayEntry.startValue - b.displayEntry.startValue ||
+    a.displayEntry.endValue - b.displayEntry.endValue ||
+    a.order - b.order
+  )) {
+    const fileKey = item.entry.path || item.entry.fileName;
+    const preferredLane = preferredLaneByFile.get(fileKey);
+    const laneIndex = preferredLane !== undefined && (laneEndValues[preferredLane] ?? -Infinity) < item.displayEntry.startValue
+      ? preferredLane
+      : laneEndValues.findIndex((endValue) => endValue < item.displayEntry.startValue);
+    const nextLaneIndex = laneIndex === -1 ? laneEndValues.length : laneIndex;
+
+    laneEndValues[nextLaneIndex] = item.displayEntry.endValue;
+    preferredLaneByFile.set(fileKey, nextLaneIndex);
+    laneIndexes[item.order] = nextLaneIndex;
+  }
+
+  return laneIndexes;
 }
 
 function ChronicleEntryBar({
