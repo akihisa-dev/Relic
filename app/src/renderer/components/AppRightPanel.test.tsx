@@ -1,8 +1,10 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { defaultEditorSettings } from "../../shared/ipc";
 import type { ResolvedWikiLink } from "../../shared/links";
 import { I18nProvider } from "../i18n";
+import type { FileTab } from "../store/editorStore";
 import { AppRightPanel } from "./AppRightPanel";
 
 const outgoingLink: ResolvedWikiLink = {
@@ -25,26 +27,37 @@ afterEach(() => {
 });
 
 describe("AppRightPanel", () => {
+  const defaultProps = {
+    activeFileTab: null,
+    backlinks: [],
+    editorSettings: defaultEditorSettings,
+    frontmatterCandidates: {},
+    isLoadingBacklinks: false,
+    isOpen: true,
+    isResizing: false,
+    onOpenFile: vi.fn(),
+    onOpenWikiLink: vi.fn(),
+    onOutlineHeadingClick: vi.fn(),
+    onResizeStart: vi.fn(),
+    onUpdateTabContent: vi.fn(),
+    outlineHeadings: [],
+    outgoingLinks: [],
+    outgoingLinksLimited: false,
+    setLinkContextMenu: vi.fn(),
+    userDefinedFields: [],
+    width: 260
+  };
+
   it("shows outline headings", () => {
     const onOutlineHeadingClick = vi.fn();
 
     render(
       <I18nProvider language="en">
         <AppRightPanel
-          backlinks={[]}
-          isLoadingBacklinks={false}
-          isOpen
-          isResizing={false}
-          onOpenFile={vi.fn()}
-          onOpenWikiLink={vi.fn()}
+          {...defaultProps}
           onOutlineHeadingClick={onOutlineHeadingClick}
-          onResizeStart={vi.fn()}
           outlineHeadings={[{ from: 12, level: 2, text: "Overview" }]}
-          outgoingLinks={[]}
-          outgoingLinksLimited={false}
           rightPanelView="outline"
-          setLinkContextMenu={vi.fn()}
-          width={260}
         />
       </I18nProvider>
     );
@@ -61,23 +74,13 @@ describe("AppRightPanel", () => {
     render(
       <I18nProvider language="en">
         <AppRightPanel
-          backlinks={[]}
-          isLoadingBacklinks={false}
-          isOpen
-          isResizing={false}
-          onOpenFile={vi.fn()}
-          onOpenWikiLink={vi.fn()}
+          {...defaultProps}
           onOutlineHeadingClick={onOutlineHeadingClick}
-          onResizeStart={vi.fn()}
           outlineHeadings={[
             { from: 0, level: 1, text: "Scene" },
             { from: 24, level: 2, text: "Scene" }
           ]}
-          outgoingLinks={[]}
-          outgoingLinksLimited={false}
           rightPanelView="outline"
-          setLinkContextMenu={vi.fn()}
-          width={260}
         />
       </I18nProvider>
     );
@@ -91,24 +94,70 @@ describe("AppRightPanel", () => {
     render(
       <I18nProvider language="en">
         <AppRightPanel
-          backlinks={[]}
-          isLoadingBacklinks={false}
-          isOpen
-          isResizing={false}
-          onOpenFile={vi.fn()}
-          onOpenWikiLink={vi.fn()}
-          onOutlineHeadingClick={vi.fn()}
-          onResizeStart={vi.fn()}
-          outlineHeadings={[]}
+          {...defaultProps}
           outgoingLinks={[outgoingLink]}
           outgoingLinksLimited
           rightPanelView="links"
-          setLinkContextMenu={vi.fn()}
-          width={260}
         />
       </I18nProvider>
     );
 
     expect(screen.getByText("Only some links are shown because there are many links.")).toBeInTheDocument();
+  });
+
+  it("updates only the frontmatter block from the frontmatter panel", () => {
+    const onUpdateTabContent = vi.fn();
+    const activeFileTab: FileTab = {
+      content: "---\ntags: [draft]\n---\n# Body\nKeep this.",
+      id: "tab-1",
+      kind: "file",
+      name: "Note",
+      path: "Note.md",
+      savedContent: "---\ntags: [draft]\n---\n# Body\nKeep this."
+    };
+
+    render(
+      <I18nProvider language="en">
+        <AppRightPanel
+          {...defaultProps}
+          activeFileTab={activeFileTab}
+          onUpdateTabContent={onUpdateTabContent}
+          rightPanelView="frontmatter"
+        />
+      </I18nProvider>
+    );
+
+    const tagInput = screen.getByDisplayValue("draft");
+    fireEvent.change(tagInput, { target: { value: "review" } });
+    fireEvent.blur(tagInput);
+
+    expect(onUpdateTabContent).toHaveBeenCalledWith(
+      "tab-1",
+      "---\ntags: [\"review\"]\n---\n# Body\nKeep this."
+    );
+  });
+
+  it("does not show form inputs for invalid frontmatter", () => {
+    const activeFileTab: FileTab = {
+      content: "---\ntags: [broken\n# Body",
+      id: "tab-1",
+      kind: "file",
+      name: "Broken",
+      path: "Broken.md",
+      savedContent: "---\ntags: [broken\n# Body"
+    };
+
+    render(
+      <I18nProvider language="en">
+        <AppRightPanel
+          {...defaultProps}
+          activeFileTab={activeFileTab}
+          rightPanelView="frontmatter"
+        />
+      </I18nProvider>
+    );
+
+    expect(screen.getByText("Frontmatter cannot be read, so form editing is unavailable.")).toBeInTheDocument();
+    expect(screen.queryByDisplayValue("broken")).not.toBeInTheDocument();
   });
 });

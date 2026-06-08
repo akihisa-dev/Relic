@@ -10,6 +10,7 @@ type TitleBarProps = AppLayoutProps["titleBarProps"];
 
 export function createEditorWorkspaceProps(input: AppLayoutPropsInput): EditorWorkspaceProps {
   return {
+    activeFileTab: input.activeFileTabForRightPanel,
     allFilePaths: input.existingMarkdownPaths,
     backlinks: input.backlinks,
     editorActionPulse: input.editorActionPulse,
@@ -72,6 +73,8 @@ export function createEditorWorkspaceProps(input: AppLayoutPropsInput): EditorWo
     rightPanelView: input.rightPanelView,
     rightPanelWidth: input.rightPanelWidth,
     setLinkContextMenu: input.setLinkContextMenu,
+    onUpdateTabContent: input.updateTabContent,
+    showRightPanelFrontmatterControl: input.featureRightPanelFrontmatterAvailable,
     showRightPanelLinksControl: input.featureRightPanelLinksAvailable,
     showRightPanelOutlineControl: input.featureRightPanelOutlineAvailable,
     userDefinedFields: input.userDefinedFields,

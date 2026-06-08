@@ -18,6 +18,7 @@ type StatusBarProps = AppLayoutProps["statusBarProps"];
 export interface AppLayoutPropsInput {
   activeChartIds: RailProps["activeChartIds"];
   activeFileTabInFocusedPane: StatusBarProps["activeFileTab"];
+  activeFileTabForRightPanel: EditorWorkspaceProps["activeFileTab"];
   activePanelTabIds: RailProps["activePanelTabIds"];
   activeSidebarView: RailProps["activeSidebarView"];
   aliasesByPath: OverlaysProps["aliasesByPath"];
@@ -39,6 +40,7 @@ export interface AppLayoutPropsInput {
   existingMarkdownPaths: EditorWorkspaceProps["allFilePaths"];
   featureRightPanelLinksAvailable: EditorWorkspaceProps["showRightPanelLinksControl"];
   featureRightPanelOutlineAvailable: EditorWorkspaceProps["showRightPanelOutlineControl"];
+  featureRightPanelFrontmatterAvailable: EditorWorkspaceProps["showRightPanelFrontmatterControl"];
   fileSearchFocusRequest: FilesSidebarProps["searchFocusRequest"];
   fileSelectionCount: FilesSidebarProps["fileSelectionCount"];
   focusedPane: EditorWorkspaceProps["focusedPane"];
@@ -144,6 +146,7 @@ export interface AppLayoutPropsInput {
   setShowCommandPalette: OverlaysProps["setShowCommandPalette"];
   setShowQuickSwitcher: OverlaysProps["setShowQuickSwitcher"];
   setTabActive: EditorWorkspaceProps["onTabSelect"];
+  updateTabContent: EditorWorkspaceProps["onUpdateTabContent"];
   setWorkspaceError: EditorWorkspaceProps["onFileSaveError"];
   showCommandPalette: OverlaysProps["showCommandPalette"];
   showQuickSwitcher: OverlaysProps["showQuickSwitcher"];
