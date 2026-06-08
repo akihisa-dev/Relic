@@ -16,7 +16,6 @@ export function useWorkspaceAliases({
 
   useEffect(() => {
     if (!workspaceState?.activeWorkspace || !window.relic) {
-      setAliasesByPath({});
       return;
     }
 
@@ -38,5 +37,5 @@ export function useWorkspaceAliases({
     };
   }, [setWorkspaceError, workspaceState?.activeWorkspace?.id, workspaceState?.fileTree]);
 
-  return aliasesByPath;
+  return workspaceState?.activeWorkspace ? aliasesByPath : {};
 }

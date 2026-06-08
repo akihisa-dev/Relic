@@ -24,7 +24,6 @@ export function useWorkspaceChronicleCalendars({
 
   useEffect(() => {
     if (!workspaceState?.activeWorkspace || !window.relic) {
-      setChronicleCalendars(defaultChronicleCalendars);
       return;
     }
 
@@ -58,7 +57,7 @@ export function useWorkspaceChronicleCalendars({
   }, [onSaved, setWorkspaceError]);
 
   return {
-    chronicleCalendars,
+    chronicleCalendars: workspaceState?.activeWorkspace ? chronicleCalendars : defaultChronicleCalendars,
     handleSaveChronicleCalendars
   };
 }

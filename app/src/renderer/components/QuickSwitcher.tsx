@@ -58,10 +58,6 @@ export function QuickSwitcher({ aliasesByPath = defaultAliasesByPath, filePaths,
     inputRef.current?.focus();
   }, []);
 
-  useEffect(() => {
-    setSelectedIndex(0);
-  }, [query]);
-
   const requestClose = useCallback((): void => {
     if (isClosing) return;
     setIsClosing(true);
@@ -100,7 +96,10 @@ export function QuickSwitcher({ aliasesByPath = defaultAliasesByPath, filePaths,
           aria-label={t("command.quickSwitcher")}
           ref={inputRef}
           className="command-palette-input"
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setSelectedIndex(0);
+          }}
           onKeyDown={(e) => {
             if (e.key === "ArrowDown") {
               e.preventDefault();

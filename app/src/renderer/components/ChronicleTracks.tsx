@@ -347,7 +347,7 @@ function assignChronicleLaneIndexes(
     const preferredLane = preferredLaneByFile.get(fileKey);
     const laneIndex = preferredLane !== undefined && (laneEndValues[preferredLane] ?? -Infinity) < item.displayEntry.startValue
       ? preferredLane
-      : laneEndValues.findIndex((endValue) => endValue < item.displayEntry.startValue);
+      : findAvailableLaneIndex(laneEndValues, item.displayEntry.startValue);
     const nextLaneIndex = laneIndex === -1 ? laneEndValues.length : laneIndex;
 
     laneEndValues[nextLaneIndex] = item.displayEntry.endValue;
@@ -356,6 +356,14 @@ function assignChronicleLaneIndexes(
   }
 
   return laneIndexes;
+}
+
+function findAvailableLaneIndex(laneEndValues: number[], startValue: number): number {
+  for (let index = 0; index < laneEndValues.length; index += 1) {
+    if (laneEndValues[index] < startValue) return index;
+  }
+
+  return -1;
 }
 
 function ChronicleEntrySvgShape({

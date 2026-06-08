@@ -101,7 +101,7 @@ export function useChronicleChartModel({
   const dateScale = activeSource === "date" ? DATE_SCALES[0] : null;
   const effectiveQuery = activeSource === "date" ? query : "";
   const effectiveSortKey = activeSource === "date" ? sortKey : "start-asc";
-  const effectiveStatusFilter = activeSource === "date" ? statusFilter : "";
+  const effectiveStatusFilter = activeSource === "date" && (statusFilter === "" || statusOptions.includes(statusFilter)) ? statusFilter : "";
   const filteredRows = useMemo(
     () => filterRows(buildChartRows(allEntries, activeSource), effectiveQuery, effectiveStatusFilter),
     [activeSource, allEntries, effectiveQuery, effectiveStatusFilter]
@@ -161,11 +161,6 @@ export function useChronicleChartModel({
     setSelectedChartId(fallbackId);
   }, [availableCharts, chart, selectedChartId, setSelectedChartId]);
 
-  useEffect(() => {
-    if (activeSource !== "date" || statusFilter === "" || statusOptions.includes(statusFilter)) return;
-    setStatusFilter("");
-  }, [activeSource, statusFilter, statusOptions]);
-
   return {
     activeChart,
     activeSource,
@@ -186,7 +181,7 @@ export function useChronicleChartModel({
     setSortKey,
     setStatusFilter,
     sortKey,
-    statusFilter,
+    statusFilter: effectiveStatusFilter,
     statusOptions,
     tickInterval,
     ticks,

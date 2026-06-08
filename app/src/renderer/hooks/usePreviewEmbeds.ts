@@ -1,15 +1,15 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { extractEmbedTargets, maxEmbeddedFileLength, type EmbedState } from "../previewMarkdown";
 
+const emptyEmbeds = new Map<string, EmbedState>();
+
 export function usePreviewEmbeds(content: string, workspacePath: string | null | undefined): Map<string, EmbedState> {
   const [embeds, setEmbeds] = useState<Map<string, EmbedState>>(new Map());
+  const targets = useMemo(() => extractEmbedTargets(content), [content]);
 
   useEffect(() => {
-    const targets = extractEmbedTargets(content);
-
     if (targets.length === 0 || !window.relic) {
-      setEmbeds(new Map());
       return;
     }
 
@@ -40,7 +40,7 @@ export function usePreviewEmbeds(content: string, workspacePath: string | null |
     return () => {
       canceled = true;
     };
-  }, [content, workspacePath]);
+  }, [targets, workspacePath]);
 
-  return embeds;
+  return targets.length > 0 && window.relic ? embeds : emptyEmbeds;
 }

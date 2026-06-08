@@ -34,7 +34,7 @@ describe("App settings", () => {
 
     await renderApp();
 
-    fireEvent.click(screen.getByRole("button", { name: "設定" }));
+    fireEvent.click(screen.getByRole("button", { name: /^(設定|Settings)$/ }));
 
     const input = await screen.findByDisplayValue("16");
 

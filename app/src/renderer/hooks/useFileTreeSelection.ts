@@ -28,20 +28,16 @@ export function useFileTreeSelection({
     () => new Set(selectableItems.map((item) => item.path)),
     [selectableItems]
   );
-  const selectedItems = useMemo(
-    () => selectableItems.filter((item) => selectedPaths.has(item.path)),
-    [selectableItems, selectedPaths]
+  const effectiveSelectedPaths = useMemo(
+    () => new Set([...selectedPaths].filter((path) => selectablePathSet.has(path))),
+    [selectablePathSet, selectedPaths]
   );
-
-  useEffect(() => {
-    setSelectedPaths((current) => {
-      const next = new Set([...current].filter((path) => selectablePathSet.has(path)));
-      return next.size === current.size ? current : next;
-    });
-    if (selectionAnchorPath && !selectablePathSet.has(selectionAnchorPath)) {
-      setSelectionAnchorPath(null);
-    }
-  }, [selectablePathSet, selectionAnchorPath]);
+  const effectiveSelectionAnchorPath =
+    selectionAnchorPath && selectablePathSet.has(selectionAnchorPath) ? selectionAnchorPath : null;
+  const selectedItems = useMemo(
+    () => selectableItems.filter((item) => effectiveSelectedPaths.has(item.path)),
+    [effectiveSelectedPaths, selectableItems]
+  );
 
   useEffect(() => {
     onSelectedCountChange?.(selectedItems.length);
@@ -53,12 +49,12 @@ export function useFileTreeSelection({
   ): boolean => {
     if (!selectablePathSet.has(node.path)) return true;
 
-    const isRangeSelect = event.shiftKey && selectionAnchorPath && selectablePathSet.has(selectionAnchorPath);
+    const isRangeSelect = event.shiftKey && effectiveSelectionAnchorPath;
     const isToggleSelect = event.metaKey || event.ctrlKey;
-    const isMultiSelectionMode = selectedPaths.size > 1;
+    const isMultiSelectionMode = effectiveSelectedPaths.size > 1;
 
     if (isRangeSelect) {
-      const fromIndex = selectableItems.findIndex((item) => item.path === selectionAnchorPath);
+      const fromIndex = selectableItems.findIndex((item) => item.path === effectiveSelectionAnchorPath);
       const toIndex = selectableItems.findIndex((item) => item.path === node.path);
       if (fromIndex >= 0 && toIndex >= 0) {
         const [start, end] = fromIndex < toIndex ? [fromIndex, toIndex] : [toIndex, fromIndex];
@@ -86,7 +82,7 @@ export function useFileTreeSelection({
   return {
     handleSelectItem,
     selectedItems,
-    selectedPaths
+    selectedPaths: effectiveSelectedPaths
   };
 }
 
