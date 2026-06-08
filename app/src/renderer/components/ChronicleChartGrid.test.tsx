@@ -191,6 +191,36 @@ describe("ChronicleChartGrid", () => {
     expect(fills.map((fill) => fill.style.getPropertyValue("--chronicle-fill")).join(" ")).toMatch(/hsla\((126|168|202|226|252|286|322|354|18|42|82|190),/);
   });
 
+  it("chronicleでは短いバーに収まらないファイル名ラベルを通常表示せず詳細カードに全文を出す", () => {
+    const longFileName = "とても長い年表バー名ラベル";
+    const chronicleChart = chart({
+      entries: [
+        entry({
+          endLabel: "10",
+          endValue: 10,
+          fileName: longFileName,
+          path: "history/long-label.md",
+          startLabel: "10",
+          startValue: 10
+        })
+      ]
+    });
+    const { container } = renderGrid({
+      activeChart: chronicleChart,
+      axisEnd: 12,
+      axisStart: 8,
+      rows: buildChartRows(chronicleChart.entries, "chronicle"),
+      timelineWidth: 180
+    });
+    const fill = container.querySelector(".chronicle-fill--chronicle") as SVGGElement;
+
+    expect(container.querySelector(".chronicle-fill-file-label")).toBeNull();
+
+    fireEvent.pointerEnter(fill);
+
+    expect(screen.getByRole("dialog")).toHaveTextContent(longFileName);
+  });
+
   it("chronicleではバーのホバーと選択で詳細カードを表示し、ファイルを開ける", () => {
     const { container, props } = renderGrid();
     const fill = container.querySelector(".chronicle-fill--chronicle") as SVGGElement;
