@@ -191,7 +191,7 @@ describe("ChronicleChartGrid", () => {
     expect(fills.map((fill) => fill.style.getPropertyValue("--chronicle-fill")).join(" ")).toMatch(/hsla\((126|168|202|226|252|286|322|354|18|42|82|190),/);
   });
 
-  it("chronicleでは長さ変更中のentryでレーン判定を動かさない", () => {
+  it("chronicleではドラッグ中のentryでレーン判定を動かさない", () => {
     const chronicleChart = chart({
       entries: [
         entry({ fileName: "A", path: "a.md", startValue: 10, endValue: 20 }),
@@ -213,6 +213,32 @@ describe("ChronicleChartGrid", () => {
 
     expect(hitPaths.map((shape) => shape.getAttribute("d"))).toEqual([
       "M 111,0 H 933 Q 936,0 936,3 V 383 Q 936,386 933,386 H 111 Q 108,386 108,383 V 3 Q 108,0 111,0 Z",
+      "M 831,0 H 1041 Q 1044,0 1044,3 V 383 Q 1044,386 1041,386 H 831 Q 828,386 828,383 V 3 Q 828,0 831,0 Z"
+    ]);
+  });
+
+  it("chronicleでは移動中のentryでもレーン判定を動かさない", () => {
+    const chronicleChart = chart({
+      entries: [
+        entry({ fileName: "A", path: "a.md", startValue: 10, endValue: 20 }),
+        entry({ fileName: "B", path: "b.md", startValue: 30, endValue: 35 })
+      ]
+    });
+    const { container } = renderGrid({
+      activeChart: chronicleChart,
+      dragPreview: {
+        editKind: "move",
+        endValue: 32,
+        path: "a.md",
+        source: "chronicle",
+        startValue: 22
+      },
+      rows: buildChartRows(chronicleChart.entries, "chronicle")
+    });
+    const hitPaths = Array.from(container.querySelectorAll(".chronicle-fill-hit")) as SVGPathElement[];
+
+    expect(hitPaths.map((shape) => shape.getAttribute("d"))).toEqual([
+      "M 543,0 H 933 Q 936,0 936,3 V 383 Q 936,386 933,386 H 543 Q 540,386 540,383 V 3 Q 540,0 543,0 Z",
       "M 831,0 H 1041 Q 1044,0 1044,3 V 383 Q 1044,386 1041,386 H 831 Q 828,386 828,383 V 3 Q 828,0 831,0 Z"
     ]);
   });
