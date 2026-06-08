@@ -93,8 +93,9 @@ describe("App charts", () => {
     expect(renderResult.container.querySelector(".chronicle-year-summary")).toBeNull();
     expect(screen.queryByText("年代")).not.toBeInTheDocument();
     expect(screen.queryByText("1185-1333")).not.toBeInTheDocument();
-    expect(renderResult.container.querySelector(".chronicle-tracks")).toHaveStyle({ height: "152px" });
-    expect(renderResult.container.querySelector(".chronicle-fill")).toHaveStyle({ height: "152px" });
+    expect(renderResult.container.querySelector(".chronicle-tracks")).toHaveStyle({ height: "38px" });
+    expect(renderResult.container.querySelector(".chronicle-tracks-svg")).toHaveAttribute("height", "38");
+    expect(renderResult.container.querySelector(".chronicle-fill-shape")).toHaveAttribute("height", "38");
     expect(renderResult.container.querySelector(".chronicle-toolbar")).toBeNull();
     expect(renderResult.container.querySelector(".chronicle-minimap")).toBeNull();
     expect(renderResult.container.querySelector(".chronicle-minimap-item")).toBeNull();
@@ -117,7 +118,7 @@ describe("App charts", () => {
     );
     expect(renderResult.container.querySelectorAll(".chronicle-guide-row-line")).toHaveLength(0);
 
-    const fill = renderResult.container.querySelector(".chronicle-fill") as HTMLElement;
+    const fill = renderResult.container.querySelector(".chronicle-fill") as SVGElement;
     const pointerDown = new Event("pointerdown", { bubbles: true }) as PointerEvent;
     Object.defineProperty(pointerDown, "button", { value: 0 });
     Object.defineProperty(pointerDown, "clientX", { value: 0 });
