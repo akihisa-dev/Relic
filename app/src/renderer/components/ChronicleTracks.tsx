@@ -20,6 +20,7 @@ import {
 import { useT } from "../i18n";
 import { ChartGuideLines, TodayLine } from "./chronicleChartParts";
 
+const CHRONICLE_TRACK_HEIGHT = 152;
 const CHRONICLE_COLOR_PALETTE = [
   { hue: 202, lightness: 43 },
   { hue: 168, lightness: 39 },
@@ -38,25 +39,7 @@ const CHRONICLE_COLOR_PALETTE = [
 interface OrderedChronicleEntry {
   displayEntry: ChartEntry;
   entry: ChartEntry;
-  laneIndex: number;
   order: number;
-}
-
-interface ChronicleSegment {
-  continuesFromPrevious: boolean;
-  continuesToNext: boolean;
-  displayEntry: ChartEntry;
-  entry: ChartEntry;
-  key: string;
-  overlapCount: number;
-  overlapIndex: number;
-  segmentEndValue: number;
-  segmentStartValue: number;
-}
-
-interface ChronicleLayout {
-  laneCount: number;
-  segments: ChronicleSegment[];
 }
 
 export function ChronicleTracks({
@@ -88,12 +71,12 @@ export function ChronicleTracks({
   timelineWidth: number;
   unitWidth: number;
 }): ReactElement {
-  const chronicleLayout = activeSource === "chronicle"
-    ? buildChronicleLayout(rows, dragPreview)
-    : { laneCount: 1, segments: [] };
+  const chronicleEntries = activeSource === "chronicle"
+    ? buildChronicleEntries(rows, dragPreview)
+    : [];
   const trackHeight = activeSource === "date"
     ? Math.max(1, rows.length) * ROW_HEIGHT
-    : chronicleLayout.laneCount * ROW_HEIGHT;
+    : CHRONICLE_TRACK_HEIGHT;
 
   return (
     <div
@@ -106,7 +89,7 @@ export function ChronicleTracks({
       <ChartGuideLines
         axisStart={axisStart}
         dateScale={dateScale}
-        rowCount={activeSource === "date" ? Math.max(1, rows.length) : chronicleLayout.laneCount}
+        rowCount={activeSource === "date" ? Math.max(1, rows.length) : 0}
         source={activeSource}
         ticks={guideTicks}
         unitWidth={unitWidth}
@@ -114,26 +97,24 @@ export function ChronicleTracks({
       {activeSource === "date" ? (
         <TodayLine axisEnd={axisEnd} axisStart={axisStart} unitWidth={unitWidth} />
       ) : null}
-      {activeSource === "chronicle" ? chronicleLayout.segments.map((segment) => (
+      {activeSource === "chronicle" ? chronicleEntries.map((item) => (
         <ChronicleEntryBar
           activeSource={activeSource}
           axisStart={axisStart}
-          continuesFromPrevious={segment.continuesFromPrevious}
-          continuesToNext={segment.continuesToNext}
+          continuesFromPrevious={false}
+          continuesToNext={false}
           dateScale={dateScale}
-          displayEntry={segment.displayEntry}
+          displayEntry={item.displayEntry}
           dragPreview={dragPreview}
-          entry={segment.entry}
-          key={segment.key}
+          entry={item.entry}
+          key={entryKey(item.entry)}
           onStartEntryEdit={onStartEntryEdit}
-          overlapCount={segment.overlapCount}
-          overlapIndex={segment.overlapIndex}
+          overlapCount={1}
+          overlapIndex={0}
           scrollLeft={scrollLeft}
-          segmentEndValue={segment.segmentEndValue}
-          segmentStartValue={segment.segmentStartValue}
           trackHeight={trackHeight}
           unitWidth={unitWidth}
-          zIndex={segment.overlapIndex + 10}
+          zIndex={item.order + 10}
         />
       )) : rows.map((row, index) => row.entries.map((entry) => (
         <ChronicleEntryBar
@@ -159,9 +140,9 @@ export function ChronicleTracks({
   );
 }
 
-function buildChronicleLayout(rows: ChartRow[], dragPreview: DragPreview | null): ChronicleLayout {
+function buildChronicleEntries(rows: ChartRow[], dragPreview: DragPreview | null): OrderedChronicleEntry[] {
   let order = 0;
-  const entries = rows.flatMap((row) =>
+  return rows.flatMap((row) =>
     row.entries.map((entry) => {
       const currentOrder = order;
       order += 1;
@@ -172,75 +153,6 @@ function buildChronicleLayout(rows: ChartRow[], dragPreview: DragPreview | null)
       };
     })
   );
-  const laneIndexes = assignChronicleLaneIndexes(entries);
-  const orderedEntries: OrderedChronicleEntry[] = entries.map((entryItem) => ({
-    ...entryItem,
-    laneIndex: laneIndexes[entryItem.order] ?? 0
-  }));
-
-  const points = new Set<number>();
-  for (const item of orderedEntries) {
-    points.add(item.displayEntry.startValue);
-    points.add(item.displayEntry.endValue + 1);
-  }
-
-  const sortedPoints = [...points].toSorted((a, b) => a - b);
-  const segments: ChronicleSegment[] = [];
-  let laneCount = 1;
-
-  for (let pointIndex = 0; pointIndex < sortedPoints.length - 1; pointIndex += 1) {
-    const segmentStartValue = sortedPoints[pointIndex];
-    const segmentEndExclusive = sortedPoints[pointIndex + 1];
-    if (segmentEndExclusive <= segmentStartValue) continue;
-
-    const activeEntries = orderedEntries
-      .filter((item) => item.displayEntry.startValue < segmentEndExclusive && item.displayEntry.endValue + 1 > segmentStartValue)
-      .toSorted((a, b) => a.laneIndex - b.laneIndex || a.order - b.order);
-    laneCount = Math.max(laneCount, activeEntries.length);
-
-    activeEntries.forEach((item, overlapIndex) => {
-      segments.push({
-        continuesFromPrevious: segmentStartValue > item.displayEntry.startValue,
-        continuesToNext: segmentEndExclusive - 1 < item.displayEntry.endValue,
-        displayEntry: item.displayEntry,
-        entry: item.entry,
-        key: `${entryKey(item.entry)}:${segmentStartValue}:${segmentEndExclusive}:${overlapIndex}`,
-        overlapCount: activeEntries.length,
-        overlapIndex,
-        segmentEndValue: segmentEndExclusive - 1,
-        segmentStartValue
-      });
-    });
-  }
-
-  return { laneCount, segments };
-}
-
-function assignChronicleLaneIndexes(
-  entries: Array<Omit<OrderedChronicleEntry, "laneIndex">>
-): Record<number, number> {
-  const laneEndValues: number[] = [];
-  const preferredLaneByFile = new Map<string, number>();
-  const laneIndexes: Record<number, number> = {};
-
-  for (const item of entries.toSorted((a, b) =>
-    a.displayEntry.startValue - b.displayEntry.startValue ||
-    a.displayEntry.endValue - b.displayEntry.endValue ||
-    a.order - b.order
-  )) {
-    const fileKey = item.entry.path || item.entry.fileName;
-    const preferredLane = preferredLaneByFile.get(fileKey);
-    const laneIndex = preferredLane !== undefined && (laneEndValues[preferredLane] ?? -Infinity) < item.displayEntry.startValue
-      ? preferredLane
-      : laneEndValues.findIndex((endValue) => endValue < item.displayEntry.startValue);
-    const nextLaneIndex = laneIndex === -1 ? laneEndValues.length : laneIndex;
-
-    laneEndValues[nextLaneIndex] = item.displayEntry.endValue;
-    preferredLaneByFile.set(fileKey, nextLaneIndex);
-    laneIndexes[item.order] = nextLaneIndex;
-  }
-
-  return laneIndexes;
 }
 
 function ChronicleEntryBar({
