@@ -121,17 +121,23 @@
 
 .right-frontmatter-fields {
   display: grid;
-  gap: 12px;
+  gap: 0;
   min-width: 0;
 }
 
 .right-frontmatter-row {
   align-items: start;
   animation: frontmatter-row-in var(--motion-normal) var(--ease-enter);
+  border-bottom: 1px solid var(--border);
   display: grid;
   gap: 6px;
   grid-template-columns: minmax(0, 1fr) 24px;
   min-width: 0;
+  padding: 12px 0;
+}
+
+.right-frontmatter-row:first-child {
+  padding-top: 0;
 }
 
 .right-frontmatter-key {
