@@ -139,7 +139,7 @@ describe("Editor frontmatter fields", () => {
     expect(viewRef.current?.state.doc.toString()).toContain("plannedDate: [2026-05-12, 2026-05-20]");
   });
 
-  it("plannedDateプロパティは設定した日付順で入力でき、保存はYYYY-MM-DDに揃える", async () => {
+  it("plannedDateプロパティは日付表示順設定にかかわらずカレンダー入力で編集できる", async () => {
     const viewRef = createRef<EditorView | null>();
     const { container } = render(
       <Editor
@@ -153,9 +153,9 @@ describe("Editor frontmatter fields", () => {
     await expandFrontmatter(container);
     await waitFor(() => expect(container.querySelector(".cm-frontmatter-date-range")).not.toBeNull());
     const inputs = Array.from(container.querySelectorAll(".cm-frontmatter-date-range .cm-frontmatter-input")) as HTMLInputElement[];
-    expect(inputs[0].type).toBe("text");
-    expect(inputs[0].value).toBe("12/05/2026");
-    fireEvent.change(inputs[1], { target: { value: "20/05/2026" } });
+    expect(inputs[0].type).toBe("date");
+    expect(inputs[0].value).toBe("2026-05-12");
+    fireEvent.change(inputs[1], { target: { value: "2026-05-20" } });
 
     expect(viewRef.current?.state.doc.toString()).toContain("plannedDate: [2026-05-12, 2026-05-20]");
   });
@@ -274,6 +274,7 @@ describe("Editor frontmatter fields", () => {
     expect(container.querySelector(".cm-frontmatter-pill-add")).toBeNull();
     const input = container.querySelector(".cm-frontmatter-input") as HTMLInputElement;
     expect(input.value).toBe("first");
+    expect(input.getAttribute("list")).toBeNull();
 
     fireEvent.change(input, { target: { value: "updated" } });
 
@@ -346,7 +347,7 @@ describe("Editor frontmatter fields", () => {
 
     const dateInput = Array.from(container.querySelectorAll(".cm-frontmatter-input"))
       .find((input) => (input as HTMLInputElement).value === "2026-03-29") as HTMLInputElement;
-    expect(dateInput.type).toBe("text");
+    expect(dateInput.type).toBe("date");
     expect(dateInput.value).toBe("2026-03-29");
     fireEvent.change(dateInput, { target: { value: "2026-04-01" } });
     expect(viewRef.current?.state.doc.toString()).toContain("updated: [\"2026-04-01\"]");

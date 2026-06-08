@@ -9,8 +9,6 @@ import {
   dateInputValue,
   fieldFor,
   firstArrayValue,
-  formatDateForInput,
-  inputPlaceholderForDateFormat,
   inputTypeFor,
   isChronicleField,
   isEditableScalar,
@@ -224,7 +222,7 @@ function FrontmatterValueControl({
     return <ScalarControl candidates={candidates} dateFormat={dateFormat} field={field} name={name} value={firstArrayValue(value)} writeAsArray onUpdateField={onUpdateField} />;
   }
   if (!field && Array.isArray(value)) {
-    return <ScalarControl candidates={candidates} dateFormat={dateFormat} field={{ name, type: "text" }} name={name} value={firstArrayValue(value)} writeAsArray onUpdateField={onUpdateField} />;
+    return <ScalarControl candidates={{}} dateFormat={dateFormat} field={undefined} name={name} value={firstArrayValue(value)} writeAsArray onUpdateField={onUpdateField} />;
   }
   if (field?.type === "multi-select" || name === "aliases" || name === "tags" || Array.isArray(value)) {
     return <ArrayControl name={name} value={Array.isArray(value) ? value : value == null ? [] : [value]} onUpdateField={onUpdateField} />;
@@ -254,7 +252,7 @@ function ScalarControl({
 }): ReactElement {
   const [invalid, setInvalid] = useState(false);
   const inputValue = field?.type === "date"
-    ? formatDateForInput(dateInputValue(value), dateFormat)
+    ? dateInputValue(value)
     : scalarInputValue(value, field);
 
   if (field?.type === "select") {
@@ -275,14 +273,13 @@ function ScalarControl({
     );
   }
 
-  const listId = choicesFor(name, field, candidates).length > 0 ? `right-frontmatter-${safeId(name)}` : undefined;
+  const listId = field && choicesFor(name, field, candidates).length > 0 ? `right-frontmatter-${safeId(name)}` : undefined;
   return (
     <>
       <input
         aria-invalid={invalid ? "true" : undefined}
         className="cm-frontmatter-input"
         defaultValue={inputValue}
-        inputMode={field?.type === "date" && dateFormat !== "system" ? "numeric" : undefined}
         key={inputValue}
         list={listId}
         onBlur={(event) => {
@@ -297,8 +294,7 @@ function ScalarControl({
           const nextValue = parseScalarValue(event.target.value, field);
           onUpdateField(name, writeAsArray && nextValue !== undefined ? [nextValue] : nextValue);
         }}
-        placeholder={field?.type === "date" && dateFormat !== "system" ? inputPlaceholderForDateFormat(dateFormat) : undefined}
-        type={field?.type === "date" && dateFormat === "system" ? "date" : inputTypeFor(field)}
+        type={inputTypeFor(field)}
       />
       {listId ? (
         <datalist id={listId}>
@@ -370,8 +366,8 @@ function DateRangeControl({
 }): ReactElement {
   const t = useT();
   const [error, setError] = useState<string | null>(null);
-  const startValue = formatDateForInput(dateInputValue(value[0]), dateFormat);
-  const endValue = formatDateForInput(value.length > 1 ? dateInputValue(value[1]) : "", dateFormat);
+  const startValue = dateInputValue(value[0]);
+  const endValue = value.length > 1 ? dateInputValue(value[1]) : "";
 
   const commit = (startRaw: string, endRaw: string): void => {
     const startDate = parseDateTextValue(startRaw, dateFormat);
@@ -392,8 +388,8 @@ function DateRangeControl({
 
   return (
     <span className="cm-frontmatter-input-wrap cm-frontmatter-date-range">
-      <input className="cm-frontmatter-input" defaultValue={startValue} inputMode={dateFormat === "system" ? undefined : "numeric"} onBlur={(event) => commit(event.target.value, event.currentTarget.parentElement?.querySelectorAll("input")[1]?.value ?? "")} placeholder={dateFormat === "system" ? undefined : inputPlaceholderForDateFormat(dateFormat)} type={dateFormat === "system" ? "date" : "text"} />
-      <input className="cm-frontmatter-input" defaultValue={endValue} inputMode={dateFormat === "system" ? undefined : "numeric"} onBlur={(event) => commit(event.currentTarget.parentElement?.querySelectorAll("input")[0]?.value ?? "", event.target.value)} placeholder={dateFormat === "system" ? undefined : inputPlaceholderForDateFormat(dateFormat)} type={dateFormat === "system" ? "date" : "text"} />
+      <input className="cm-frontmatter-input" defaultValue={startValue} onBlur={(event) => commit(event.target.value, event.currentTarget.parentElement?.querySelectorAll("input")[1]?.value ?? "")} type="date" />
+      <input className="cm-frontmatter-input" defaultValue={endValue} onBlur={(event) => commit(event.currentTarget.parentElement?.querySelectorAll("input")[0]?.value ?? "", event.target.value)} type="date" />
       {error ? <span className="cm-frontmatter-input-error">{error}</span> : null}
     </span>
   );
