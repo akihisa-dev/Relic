@@ -166,10 +166,18 @@ describe("ChronicleChartGrid", () => {
     const fills = Array.from(container.querySelectorAll(".chronicle-fill--chronicle")) as HTMLElement[];
 
     expect(container.querySelector(".chronicle-name-column")).toBeNull();
-    expect(container.querySelector(".chronicle-tracks")).toHaveStyle({ height: "456px" });
+    expect(container.querySelector(".chronicle-tracks")).toHaveStyle({ height: "76px" });
     expect(fills).toHaveLength(5);
-    expect(fills.map((fill) => fill.style.top)).toEqual(["0px", "0px", "228px", "0px", "0px"]);
-    expect(fills.map((fill) => fill.style.height)).toEqual(["456px", "228px", "228px", "456px", "456px"]);
+    expect(fills.map((fill) => fill.style.top)).toEqual(["0px", "0px", "38px", "0px", "0px"]);
+    expect(fills.map((fill) => fill.style.height)).toEqual(["76px", "38px", "38px", "76px", "76px"]);
+    expect(fills.map((fill) => fill.style.borderRadius)).toEqual([
+      "3px 0px 0px 3px",
+      "0px 0px 0px 0px",
+      "3px 3px 3px 3px",
+      "0px 3px 3px 0px",
+      "3px 3px 3px 3px"
+    ]);
+    expect(container.querySelectorAll(".chronicle-fill-label")).toHaveLength(3);
     expect(fills[0].style.getPropertyValue("--chronicle-fill")).toBe(fills[1].style.getPropertyValue("--chronicle-fill"));
     expect(fills[1].style.getPropertyValue("--chronicle-fill")).not.toBe(fills[2].style.getPropertyValue("--chronicle-fill"));
     expect(fills[3].style.getPropertyValue("--chronicle-fill")).toMatch(/^hsla\(/);
