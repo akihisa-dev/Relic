@@ -93,8 +93,8 @@ describe("App charts", () => {
     expect(renderResult.container.querySelector(".chronicle-year-summary")).toBeNull();
     expect(screen.queryByText("年代")).not.toBeInTheDocument();
     expect(screen.queryByText("1185-1333")).not.toBeInTheDocument();
-    expect(renderResult.container.querySelector(".chronicle-tracks")).toHaveStyle({ height: "38px" });
-    expect(renderResult.container.querySelector(".chronicle-fill")).toHaveStyle({ height: "38px" });
+    expect(renderResult.container.querySelector(".chronicle-tracks")).toHaveStyle({ height: "152px" });
+    expect(renderResult.container.querySelector(".chronicle-fill")).toHaveStyle({ height: "152px" });
     expect(renderResult.container.querySelector(".chronicle-toolbar")).toBeNull();
     expect(renderResult.container.querySelector(".chronicle-minimap")).toBeNull();
     expect(renderResult.container.querySelector(".chronicle-minimap-item")).toBeNull();
@@ -115,7 +115,7 @@ describe("App charts", () => {
     expect(renderResult.container.querySelectorAll(".chronicle-guide-line").length).toBeGreaterThan(
       renderResult.container.querySelectorAll(".chronicle-guide-line--major").length
     );
-    expect(renderResult.container.querySelectorAll(".chronicle-guide-row-line").length).toBeGreaterThan(0);
+    expect(renderResult.container.querySelectorAll(".chronicle-guide-row-line")).toHaveLength(0);
 
     const fill = renderResult.container.querySelector(".chronicle-fill") as HTMLElement;
     const pointerDown = new Event("pointerdown", { bubbles: true }) as PointerEvent;

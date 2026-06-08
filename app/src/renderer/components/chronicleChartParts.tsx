@@ -171,7 +171,9 @@ export function ChartGuideLines({
   ticks: ChartGuideTick[];
   unitWidth: number;
 }): ReactElement {
-  const rowLines = Array.from({ length: rowCount + 1 }, (_value, index) => index * ROW_HEIGHT);
+  const rowLines = rowCount > 0
+    ? Array.from({ length: rowCount + 1 }, (_value, index) => index * ROW_HEIGHT)
+    : [];
   const sourceClassName = source === "date"
     ? `chronicle-guide-lines--date chronicle-guide-lines--date-${dateScale?.unit ?? "month"}`
     : "chronicle-guide-lines--chronicle";
