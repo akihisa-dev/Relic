@@ -519,7 +519,7 @@ function ChronicleHoverFileNameLabel({
   shape: ChronicleEntryShape | null;
   timelineWidth: number;
 }): ReactElement | null {
-  if (!shape || shape.fileNameLabelWidth > 0) return null;
+  if (!shape) return null;
 
   const labelWidth = labelWidthForText(shape.entry.fileName);
   const labelX = Math.max(0, Math.min(Math.max(0, timelineWidth - labelWidth), shape.fileNameLabelX));

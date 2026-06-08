@@ -228,6 +228,7 @@ describe("ChronicleChartGrid", () => {
 
     fireEvent.pointerEnter(fill);
 
+    expect(container.querySelector(".chronicle-fill-file-label--hover")).toHaveTextContent("鎌倉時代");
     expect(screen.getByRole("dialog")).toHaveTextContent("鎌倉時代");
     expect(screen.getByRole("dialog")).toHaveTextContent("1185 〜 1333");
 
