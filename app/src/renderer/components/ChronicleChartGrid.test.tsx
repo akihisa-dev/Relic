@@ -151,7 +151,7 @@ describe("ChronicleChartGrid", () => {
     expect(container.querySelector(".chronicle-fill-label")).not.toHaveTextContent("帝国暦");
   });
 
-  it("chronicleでは行分割せずentryを1本のバーとして重ねる", () => {
+  it("chronicleでは行グリッドなしで重なり区間だけ縦分割する", () => {
     const chronicleChart = chart({
       entries: [
         entry({ fileName: "A", path: "a.md", startValue: 10, endValue: 20 }),
@@ -168,21 +168,24 @@ describe("ChronicleChartGrid", () => {
     expect(container.querySelector(".chronicle-name-column")).toBeNull();
     expect(container.querySelector(".chronicle-tracks")).toHaveStyle({ height: "152px" });
     expect(container.querySelectorAll(".chronicle-tracks .chronicle-guide-row-line")).toHaveLength(0);
-    expect(fills).toHaveLength(3);
-    expect(fills.map((fill) => fill.style.top)).toEqual(["0px", "0px", "0px"]);
-    expect(fills.map((fill) => fill.style.height)).toEqual(["152px", "152px", "152px"]);
+    expect(fills).toHaveLength(5);
+    expect(fills.map((fill) => fill.style.top)).toEqual(["0px", "0px", "76px", "0px", "0px"]);
+    expect(fills.map((fill) => fill.style.height)).toEqual(["152px", "76px", "76px", "152px", "152px"]);
     expect(fills.map((fill) => fill.style.borderRadius)).toEqual([
+      "3px 0px 0px 3px",
+      "0px 0px 0px 0px",
       "3px 3px 3px 3px",
-      "3px 3px 3px 3px",
+      "0px 3px 3px 0px",
       "3px 3px 3px 3px"
     ]);
     expect(container.querySelectorAll(".chronicle-fill-label")).toHaveLength(3);
-    expect(fills[0].style.getPropertyValue("--chronicle-fill")).not.toBe(fills[1].style.getPropertyValue("--chronicle-fill"));
-    expect(fills[2].style.getPropertyValue("--chronicle-fill")).toMatch(/^hsla\(/);
+    expect(fills[0].style.getPropertyValue("--chronicle-fill")).toBe(fills[1].style.getPropertyValue("--chronicle-fill"));
+    expect(fills[1].style.getPropertyValue("--chronicle-fill")).not.toBe(fills[2].style.getPropertyValue("--chronicle-fill"));
+    expect(fills[3].style.getPropertyValue("--chronicle-fill")).toMatch(/^hsla\(/);
     expect(fills.map((fill) => fill.style.getPropertyValue("--chronicle-fill")).join(" ")).toMatch(/hsla\((126|168|202|226|252|286|322|354|18|42|82|190),/);
   });
 
-  it("chronicleでは長いentryも分割せず1本のバーで描画する", () => {
+  it("chronicleでは同じentryの重なり区間を同じ縦位置へ寄せる", () => {
     const chronicleChart = chart({
       entries: [
         entry({ fileName: "B", path: "b.md", startValue: 10, endValue: 12 }),
@@ -195,13 +198,14 @@ describe("ChronicleChartGrid", () => {
       rows: buildChartRows(chronicleChart.entries, "chronicle")
     });
     const fills = Array.from(container.querySelectorAll(".chronicle-fill--chronicle")) as HTMLElement[];
-    const longEntryBars = fills.filter((fill) => fill.title.includes("A "));
+    const longEntrySegments = fills.filter((fill) => fill.title.includes("A "));
 
     expect(container.querySelector(".chronicle-tracks")).toHaveStyle({ height: "152px" });
-    expect(fills).toHaveLength(3);
-    expect(longEntryBars).toHaveLength(1);
-    expect(longEntryBars[0]).toHaveTextContent("10 〜 30");
-    expect(longEntryBars[0]).toHaveStyle({ height: "152px", top: "0px" });
+    expect(container.querySelectorAll(".chronicle-tracks .chronicle-guide-row-line")).toHaveLength(0);
+    expect(longEntrySegments).toHaveLength(4);
+    expect(longEntrySegments.map((fill) => fill.style.top)).toEqual(["76px", "0px", "76px", "0px"]);
+    expect(longEntrySegments.map((fill) => fill.style.height)).toEqual(["76px", "152px", "76px", "152px"]);
+    expect(longEntrySegments[0]).toHaveTextContent("10 〜 30");
   });
 
   it("dateのplanned/actual列とstatus badgeを既存class名で描画する", () => {

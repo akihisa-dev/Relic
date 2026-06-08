@@ -39,7 +39,20 @@ const CHRONICLE_COLOR_PALETTE = [
 interface OrderedChronicleEntry {
   displayEntry: ChartEntry;
   entry: ChartEntry;
+  laneIndex: number;
   order: number;
+}
+
+interface ChronicleSegment {
+  continuesFromPrevious: boolean;
+  continuesToNext: boolean;
+  displayEntry: ChartEntry;
+  entry: ChartEntry;
+  key: string;
+  overlapCount: number;
+  overlapIndex: number;
+  segmentEndValue: number;
+  segmentStartValue: number;
 }
 
 export function ChronicleTracks({
@@ -71,8 +84,8 @@ export function ChronicleTracks({
   timelineWidth: number;
   unitWidth: number;
 }): ReactElement {
-  const chronicleEntries = activeSource === "chronicle"
-    ? buildChronicleEntries(rows, dragPreview)
+  const chronicleSegments = activeSource === "chronicle"
+    ? buildChronicleSegments(rows, dragPreview)
     : [];
   const trackHeight = activeSource === "date"
     ? Math.max(1, rows.length) * ROW_HEIGHT
@@ -97,24 +110,26 @@ export function ChronicleTracks({
       {activeSource === "date" ? (
         <TodayLine axisEnd={axisEnd} axisStart={axisStart} unitWidth={unitWidth} />
       ) : null}
-      {activeSource === "chronicle" ? chronicleEntries.map((item) => (
+      {activeSource === "chronicle" ? chronicleSegments.map((segment) => (
         <ChronicleEntryBar
           activeSource={activeSource}
           axisStart={axisStart}
-          continuesFromPrevious={false}
-          continuesToNext={false}
+          continuesFromPrevious={segment.continuesFromPrevious}
+          continuesToNext={segment.continuesToNext}
           dateScale={dateScale}
-          displayEntry={item.displayEntry}
+          displayEntry={segment.displayEntry}
           dragPreview={dragPreview}
-          entry={item.entry}
-          key={entryKey(item.entry)}
+          entry={segment.entry}
+          key={segment.key}
           onStartEntryEdit={onStartEntryEdit}
-          overlapCount={1}
-          overlapIndex={0}
+          overlapCount={segment.overlapCount}
+          overlapIndex={segment.overlapIndex}
           scrollLeft={scrollLeft}
+          segmentEndValue={segment.segmentEndValue}
+          segmentStartValue={segment.segmentStartValue}
           trackHeight={trackHeight}
           unitWidth={unitWidth}
-          zIndex={item.order + 10}
+          zIndex={segment.overlapIndex + 10}
         />
       )) : rows.map((row, index) => row.entries.map((entry) => (
         <ChronicleEntryBar
@@ -140,9 +155,9 @@ export function ChronicleTracks({
   );
 }
 
-function buildChronicleEntries(rows: ChartRow[], dragPreview: DragPreview | null): OrderedChronicleEntry[] {
+function buildChronicleSegments(rows: ChartRow[], dragPreview: DragPreview | null): ChronicleSegment[] {
   let order = 0;
-  return rows.flatMap((row) =>
+  const entries = rows.flatMap((row) =>
     row.entries.map((entry) => {
       const currentOrder = order;
       order += 1;
@@ -153,6 +168,73 @@ function buildChronicleEntries(rows: ChartRow[], dragPreview: DragPreview | null
       };
     })
   );
+  const laneIndexes = assignChronicleLaneIndexes(entries);
+  const orderedEntries: OrderedChronicleEntry[] = entries.map((item) => ({
+    ...item,
+    laneIndex: laneIndexes[item.order] ?? 0
+  }));
+  const points = new Set<number>();
+
+  for (const item of orderedEntries) {
+    points.add(item.displayEntry.startValue);
+    points.add(item.displayEntry.endValue + 1);
+  }
+
+  const sortedPoints = [...points].toSorted((a, b) => a - b);
+  const segments: ChronicleSegment[] = [];
+
+  for (let pointIndex = 0; pointIndex < sortedPoints.length - 1; pointIndex += 1) {
+    const segmentStartValue = sortedPoints[pointIndex];
+    const segmentEndExclusive = sortedPoints[pointIndex + 1];
+    if (segmentEndExclusive <= segmentStartValue) continue;
+
+    const activeEntries = orderedEntries
+      .filter((item) => item.displayEntry.startValue < segmentEndExclusive && item.displayEntry.endValue + 1 > segmentStartValue)
+      .toSorted((a, b) => a.laneIndex - b.laneIndex || a.order - b.order);
+
+    activeEntries.forEach((item, overlapIndex) => {
+      segments.push({
+        continuesFromPrevious: segmentStartValue > item.displayEntry.startValue,
+        continuesToNext: segmentEndExclusive - 1 < item.displayEntry.endValue,
+        displayEntry: item.displayEntry,
+        entry: item.entry,
+        key: `${entryKey(item.entry)}:${segmentStartValue}:${segmentEndExclusive}:${overlapIndex}`,
+        overlapCount: activeEntries.length,
+        overlapIndex,
+        segmentEndValue: segmentEndExclusive - 1,
+        segmentStartValue
+      });
+    });
+  }
+
+  return segments;
+}
+
+function assignChronicleLaneIndexes(
+  entries: Array<Omit<OrderedChronicleEntry, "laneIndex">>
+): Record<number, number> {
+  const laneEndValues: number[] = [];
+  const preferredLaneByFile = new Map<string, number>();
+  const laneIndexes: Record<number, number> = {};
+
+  for (const item of entries.toSorted((a, b) =>
+    a.displayEntry.startValue - b.displayEntry.startValue ||
+    a.displayEntry.endValue - b.displayEntry.endValue ||
+    a.order - b.order
+  )) {
+    const fileKey = item.entry.path || item.entry.fileName;
+    const preferredLane = preferredLaneByFile.get(fileKey);
+    const laneIndex = preferredLane !== undefined && (laneEndValues[preferredLane] ?? -Infinity) < item.displayEntry.startValue
+      ? preferredLane
+      : laneEndValues.findIndex((endValue) => endValue < item.displayEntry.startValue);
+    const nextLaneIndex = laneIndex === -1 ? laneEndValues.length : laneIndex;
+
+    laneEndValues[nextLaneIndex] = item.displayEntry.endValue;
+    preferredLaneByFile.set(fileKey, nextLaneIndex);
+    laneIndexes[item.order] = nextLaneIndex;
+  }
+
+  return laneIndexes;
 }
 
 function ChronicleEntryBar({
