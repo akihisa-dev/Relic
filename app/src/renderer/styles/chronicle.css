@@ -926,15 +926,6 @@
   fill: var(--chronicle-fill-active);
 }
 
-.chronicle-fill-label-bg {
-  fill: color-mix(in srgb, var(--bg) 72%, transparent);
-  pointer-events: none;
-}
-
-.chronicle-fill-label-bg--file {
-  fill: color-mix(in srgb, var(--bg) 62%, transparent);
-}
-
 .chronicle-fill-label-leader {
   fill: none;
   pointer-events: none;
@@ -991,11 +982,6 @@
 
 .chronicle-fill--date.chronicle-fill--actual {
   z-index: 4;
-}
-
-.chronicle-fill--chronicle .chronicle-fill-label {
-  background: color-mix(in srgb, var(--bg) 72%, transparent);
-  border-radius: 4px;
 }
 
 .chronicle-fill--actual:hover {
