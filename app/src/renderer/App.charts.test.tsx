@@ -262,13 +262,13 @@ describe("App charts", () => {
     window.dispatchEvent(pointerUp);
 
     await waitFor(() => expect(updateChartEntry).toHaveBeenCalledWith({
-      endValue: 1335,
+      endValue: 1334,
       kind: "move",
       originalEndValue: 1332,
       originalStartValue: 1184,
       path: "history/kamakura.md",
       source: "chronicle",
-      startValue: 1187
+      startValue: 1186
     }));
   });
 

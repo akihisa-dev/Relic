@@ -5,8 +5,8 @@ import type { ChronicleCalendarSettings, ChartSource, WorkspaceChart } from "../
 import {
   DATE_NAME_COLUMN_WIDTH,
   DATE_SCALES,
+  CHRONICLE_TICK_WIDTH,
   ROW_HEIGHT,
-  TICK_WIDTH,
   chronicleAxisHeightForCalendars,
   buildChartRows,
   buildGuideTicks,
@@ -131,7 +131,7 @@ export function useChronicleChartModel({
   const boundsKey = `${activeChart?.id ?? "none"}:${activeSource}:${effectiveQuery}`;
   const { axisEnd, axisStart } = useStableTimelineBounds(computedBounds, boundsKey);
   const axisSpan = Math.max(1, axisEnd - axisStart + 1);
-  const unitWidth = activeSource === "date" ? dateUnitWidth(dateScale) : chronicleUnitWidth(tickInterval, TICK_WIDTH);
+  const unitWidth = activeSource === "date" ? dateUnitWidth(dateScale) : chronicleUnitWidth(tickInterval, CHRONICLE_TICK_WIDTH);
   const nameColumnWidth = activeSource === "date" ? DATE_NAME_COLUMN_WIDTH : 0;
   const timelineWidth = Math.max(720, axisSpan * unitWidth);
   const ticks = useMemo(
