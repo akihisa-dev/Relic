@@ -175,6 +175,12 @@ export function ChronicleTracks({
               shape={shape}
             />
           ))}
+          {hoveredChronicleKey ? (
+            <ChronicleHoverFileNameLabel
+              shape={chronicleShapes.find((shape) => shape.key === hoveredChronicleKey) ?? null}
+              timelineWidth={timelineWidth}
+            />
+          ) : null}
         </svg>
       ) : rows.map((row, index) => row.entries.map((entry) => (
         <ChronicleEntryBar
@@ -502,6 +508,42 @@ function ChronicleEntrySvgShape({
         x={shape.x + shape.width - 10}
         y={shape.y + 4}
       />
+    </g>
+  );
+}
+
+function ChronicleHoverFileNameLabel({
+  shape,
+  timelineWidth
+}: {
+  shape: ChronicleEntryShape | null;
+  timelineWidth: number;
+}): ReactElement | null {
+  if (!shape || shape.fileNameLabelWidth > 0) return null;
+
+  const labelWidth = labelWidthForText(shape.entry.fileName);
+  const labelX = Math.max(0, Math.min(Math.max(0, timelineWidth - labelWidth), shape.fileNameLabelX));
+  const labelY = shape.fileNameLabelY;
+
+  return (
+    <g className="chronicle-hover-file-label">
+      <rect
+        className="chronicle-fill-label-bg chronicle-fill-label-bg--hover-file"
+        height={CHRONICLE_LABEL_HEIGHT}
+        rx={4}
+        ry={4}
+        width={labelWidth}
+        x={labelX}
+        y={labelY - 14}
+      />
+      <text
+        className="chronicle-fill-label chronicle-fill-file-label chronicle-fill-file-label--hover"
+        dominantBaseline="middle"
+        x={labelX + CHRONICLE_LABEL_PADDING_X}
+        y={labelY - 5}
+      >
+        {shape.entry.fileName}
+      </text>
     </g>
   );
 }
