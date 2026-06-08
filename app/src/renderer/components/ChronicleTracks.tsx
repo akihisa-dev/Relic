@@ -55,6 +55,28 @@ interface ChronicleSegment {
   segmentStartValue: number;
 }
 
+interface ChronicleSegmentRect extends ChronicleSegment {
+  height: number;
+  labelX: number;
+  labelY: number;
+  labelWidth: number;
+  path: string;
+  width: number;
+  x: number;
+  y: number;
+}
+
+interface ChronicleEntryShape {
+  displayEntry: ChartEntry;
+  entry: ChartEntry;
+  key: string;
+  labelSegment: ChronicleSegmentRect | null;
+  path: string;
+  resizeEnd: ChronicleSegmentRect | null;
+  resizeStart: ChronicleSegmentRect | null;
+  segments: ChronicleSegmentRect[];
+}
+
 export function ChronicleTracks({
   activeSource,
   axisEnd,
@@ -91,6 +113,15 @@ export function ChronicleTracks({
     CHRONICLE_MIN_SEGMENT_HEIGHT,
     maxChronicleOverlapCount(chronicleSegments) * CHRONICLE_MIN_SEGMENT_HEIGHT
   );
+  const chronicleShapes = activeSource === "chronicle"
+    ? buildChronicleEntryShapes(chronicleSegments, {
+        axisStart,
+        dateScale,
+        scrollLeft,
+        trackHeight: chronicleTrackHeight,
+        unitWidth
+      })
+    : [];
   const trackHeight = activeSource === "date"
     ? Math.max(1, rows.length) * ROW_HEIGHT
     : chronicleTrackHeight;
@@ -123,24 +154,13 @@ export function ChronicleTracks({
           viewBox={`0 0 ${timelineWidth} ${trackHeight}`}
           width={timelineWidth}
         >
-          {chronicleSegments.map((segment) => (
-            <ChronicleEntrySvgBar
-              axisStart={axisStart}
-              continuesFromPrevious={segment.continuesFromPrevious}
-              continuesToNext={segment.continuesToNext}
+          {chronicleShapes.map((shape) => (
+            <ChronicleEntrySvgShape
               dateScale={dateScale}
-              displayEntry={segment.displayEntry}
               dragPreview={dragPreview}
-              entry={segment.entry}
-              key={segment.key}
+              key={shape.key}
               onStartEntryEdit={onStartEntryEdit}
-              overlapCount={segment.overlapCount}
-              overlapIndex={segment.overlapIndex}
-              scrollLeft={scrollLeft}
-              segmentEndValue={segment.segmentEndValue}
-              segmentStartValue={segment.segmentStartValue}
-              trackHeight={trackHeight}
-              unitWidth={unitWidth}
+              shape={shape}
             />
           ))}
         </svg>
@@ -170,6 +190,153 @@ export function ChronicleTracks({
 
 function maxChronicleOverlapCount(segments: ChronicleSegment[]): number {
   return segments.reduce((max, segment) => Math.max(max, segment.overlapCount), 1);
+}
+
+function buildChronicleEntryShapes(
+  segments: ChronicleSegment[],
+  {
+    axisStart,
+    dateScale,
+    scrollLeft,
+    trackHeight,
+    unitWidth
+  }: {
+    axisStart: number;
+    dateScale: DateScale | null;
+    scrollLeft: number;
+    trackHeight: number;
+    unitWidth: number;
+  }
+): ChronicleEntryShape[] {
+  const shapeMap = new Map<string, ChronicleSegmentRect[]>();
+
+  for (const segment of segments) {
+    const rect = chronicleSegmentRect(segment, {
+      axisStart,
+      dateScale,
+      scrollLeft,
+      trackHeight,
+      unitWidth
+    });
+    const key = entryKey(segment.entry);
+    const current = shapeMap.get(key);
+
+    if (current) {
+      current.push(rect);
+    } else {
+      shapeMap.set(key, [rect]);
+    }
+  }
+
+  return [...shapeMap.entries()].map(([key, rects]) => {
+    const sortedRects = rects.toSorted((a, b) => a.segmentStartValue - b.segmentStartValue);
+    const first = sortedRects[0];
+    const labelSegment = sortedRects.find((rect) => !rect.continuesFromPrevious) ?? first ?? null;
+    const resizeStart = sortedRects.find((rect) => rect.segmentStartValue === rect.displayEntry.startValue) ?? null;
+    const resizeEnd = sortedRects.find((rect) => rect.segmentEndValue === rect.displayEntry.endValue) ?? null;
+
+    return {
+      displayEntry: first.displayEntry,
+      entry: first.entry,
+      key,
+      labelSegment,
+      path: chronicleShapePath(sortedRects),
+      resizeEnd,
+      resizeStart,
+      segments: sortedRects
+    };
+  });
+}
+
+function chronicleSegmentRect(
+  segment: ChronicleSegment,
+  {
+    axisStart,
+    dateScale,
+    scrollLeft,
+    trackHeight,
+    unitWidth
+  }: {
+    axisStart: number;
+    dateScale: DateScale | null;
+    scrollLeft: number;
+    trackHeight: number;
+    unitWidth: number;
+  }
+): ChronicleSegmentRect {
+  const startValue = segment.segmentStartValue;
+  const endValue = segment.segmentEndValue;
+  const valueLeft = Math.max(0, (startValue - axisStart) * unitWidth);
+  const isSingleValue = startValue === endValue;
+  const rangeLabel = formatRange(segment.displayEntry, "chronicle", dateScale);
+  const labelWidth = labelWidthForText(rangeLabel);
+  const naturalWidth = isSingleValue ? unitWidth : (endValue - startValue + 1) * unitWidth;
+  const width = Math.max(4, naturalWidth);
+  const x = isSingleValue
+    ? Math.max(0, valueLeft + (naturalWidth - width) / 2)
+    : valueLeft;
+  const height = trackHeight / segment.overlapCount;
+  const y = height * segment.overlapIndex;
+  const maxLabelLeft = Math.max(0, width - labelWidth);
+  const labelLeft = isSingleValue
+    ? (width - labelWidth) / 2
+    : Math.max(7, Math.min(maxLabelLeft, scrollLeft - x + 7));
+  const labelX = x + labelLeft;
+  const labelY = y + Math.max(15, Math.min(height - 5, height / 2 + 4));
+  const labelBackgroundWidth = Math.min(labelWidth, Math.max(0, width - labelLeft));
+
+  return {
+    ...segment,
+    height,
+    labelX,
+    labelY,
+    labelWidth: labelBackgroundWidth,
+    path: rectPath(x, y, width, height),
+    width,
+    x,
+    y
+  };
+}
+
+function chronicleShapePath(segments: ChronicleSegmentRect[]): string {
+  if (segments.length === 0) return "";
+
+  const [first, ...rest] = segments;
+  const commands = [`M ${first.x},${first.y}`];
+  let previousTop = first.y;
+
+  commands.push(`L ${first.x + first.width},${first.y}`);
+  for (const segment of rest) {
+    const boundaryX = segment.x;
+    if (segment.y !== previousTop) {
+      commands.push(`L ${boundaryX},${previousTop}`);
+      commands.push(`L ${boundaryX},${segment.y}`);
+    }
+    commands.push(`L ${segment.x + segment.width},${segment.y}`);
+    previousTop = segment.y;
+  }
+
+  const last = segments[segments.length - 1];
+  let previousBottom = last.y + last.height;
+
+  commands.push(`L ${last.x + last.width},${previousBottom}`);
+  for (let index = segments.length - 2; index >= 0; index -= 1) {
+    const segment = segments[index];
+    const boundaryX = segments[index + 1].x;
+    const bottom = segment.y + segment.height;
+    if (bottom !== previousBottom) {
+      commands.push(`L ${boundaryX},${previousBottom}`);
+      commands.push(`L ${boundaryX},${bottom}`);
+    }
+    commands.push(`L ${segment.x},${bottom}`);
+    previousBottom = bottom;
+  }
+
+  return `${commands.join(" ")} Z`;
+}
+
+function rectPath(x: number, y: number, width: number, height: number): string {
+  return `M ${x},${y} H ${x + width} V ${y + height} H ${x} Z`;
 }
 
 function buildChronicleSegments(rows: ChartRow[], dragPreview: DragPreview | null): ChronicleSegment[] {
@@ -254,70 +421,27 @@ function assignChronicleLaneIndexes(
   return laneIndexes;
 }
 
-function ChronicleEntrySvgBar({
-  axisStart,
-  continuesFromPrevious,
-  continuesToNext,
+function ChronicleEntrySvgShape({
   dateScale,
-  displayEntry,
   dragPreview,
-  entry,
   onStartEntryEdit,
-  overlapCount,
-  overlapIndex,
-  scrollLeft,
-  segmentEndValue,
-  segmentStartValue,
-  trackHeight,
-  unitWidth
+  shape
 }: {
-  axisStart: number;
-  continuesFromPrevious: boolean;
-  continuesToNext: boolean;
   dateScale: DateScale | null;
-  displayEntry: ChartEntry;
   dragPreview: DragPreview | null;
-  entry: ChartEntry;
   onStartEntryEdit: (
     event: PointerEvent<Element>,
     entry: ChartEntry,
     kind: ChartEntryEditKind
   ) => void;
-  overlapCount: number;
-  overlapIndex: number;
-  scrollLeft: number;
-  segmentEndValue: number;
-  segmentStartValue: number;
-  trackHeight: number;
-  unitWidth: number;
+  shape: ChronicleEntryShape;
 }): ReactElement {
   const t = useT();
-  const startValue = segmentStartValue;
-  const endValue = segmentEndValue;
-  const valueLeft = Math.max(0, (startValue - axisStart) * unitWidth);
-  const isSingleValue = startValue === endValue;
-  const rangeLabel = formatRange(displayEntry, "chronicle", dateScale);
-  const labelWidth = labelWidthForText(rangeLabel);
-  const naturalWidth = isSingleValue ? unitWidth : (endValue - startValue + 1) * unitWidth;
-  const width = Math.max(4, naturalWidth);
-  const left = isSingleValue
-    ? Math.max(0, valueLeft + (naturalWidth - width) / 2)
-    : valueLeft;
-  const fillHeight = trackHeight / overlapCount;
-  const top = fillHeight * overlapIndex;
-  const maxLabelLeft = Math.max(0, width - labelWidth);
-  const labelLeft = isSingleValue
-    ? (width - labelWidth) / 2
-    : Math.max(7, Math.min(maxLabelLeft, scrollLeft - left + 7));
-  const showStartResize = startValue === displayEntry.startValue;
-  const showEndResize = endValue === displayEntry.endValue;
-  const showRangeLabel = !continuesFromPrevious;
+  const { entry } = shape;
+  const rangeLabel = formatRange(shape.displayEntry, "chronicle", dateScale);
   const colorStyle = chronicleColorStyleForEntry(entry);
   const isDragging = isPreviewForEntry(entry, dragPreview, "chronicle");
-  const radius = continuesFromPrevious || continuesToNext ? 0 : 3;
-  const labelX = left + labelLeft;
-  const labelY = top + Math.max(15, Math.min(fillHeight - 5, fillHeight / 2 + 4));
-  const labelBackgroundWidth = Math.min(labelWidth, Math.max(0, width - labelLeft));
+  const labelSegment = shape.labelSegment;
 
   return (
     <g
@@ -329,56 +453,58 @@ function ChronicleEntrySvgBar({
       tabIndex={0}
     >
       <title>{`${entry.fileName} ${rangeLabel}`}</title>
-      <rect
+      <path
         className="chronicle-fill-shape"
-        height={fillHeight}
-        rx={radius}
-        ry={radius}
-        width={width}
-        x={left}
-        y={top}
+        d={shape.path}
       />
-      {showRangeLabel && labelBackgroundWidth > 0 ? (
+      {shape.segments.map((segment) => (
+        <path
+          className="chronicle-fill-hit"
+          d={segment.path}
+          key={segment.key}
+        />
+      ))}
+      {labelSegment && labelSegment.labelWidth > 0 ? (
         <>
           <rect
             className="chronicle-fill-label-bg"
             height={18}
             rx={4}
             ry={4}
-            width={labelBackgroundWidth}
-            x={labelX}
-            y={labelY - 14}
+            width={labelSegment.labelWidth}
+            x={labelSegment.labelX}
+            y={labelSegment.labelY - 14}
           />
           <text
             className="chronicle-fill-label"
             dominantBaseline="middle"
-            x={labelX + 7}
-            y={labelY - 5}
+            x={labelSegment.labelX + 7}
+            y={labelSegment.labelY - 5}
           >
             {rangeLabel}
           </text>
         </>
       ) : null}
-      {showStartResize ? (
+      {shape.resizeStart ? (
         <rect
           aria-hidden="true"
           className="chronicle-fill-resize chronicle-fill-resize--start"
-          height={Math.max(18, fillHeight - 8)}
+          height={Math.max(18, shape.resizeStart.height - 8)}
           onPointerDown={(event) => onStartEntryEdit(event, entry, "resize-start")}
           width={10}
-          x={left}
-          y={top + 4}
+          x={shape.resizeStart.x}
+          y={shape.resizeStart.y + 4}
         />
       ) : null}
-      {showEndResize ? (
+      {shape.resizeEnd ? (
         <rect
           aria-hidden="true"
           className="chronicle-fill-resize chronicle-fill-resize--end"
-          height={Math.max(18, fillHeight - 8)}
+          height={Math.max(18, shape.resizeEnd.height - 8)}
           onPointerDown={(event) => onStartEntryEdit(event, entry, "resize-end")}
           width={10}
-          x={left + width - 10}
-          y={top + 4}
+          x={shape.resizeEnd.x + shape.resizeEnd.width - 10}
+          y={shape.resizeEnd.y + 4}
         />
       ) : null}
     </g>
