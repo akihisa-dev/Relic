@@ -21,7 +21,6 @@ import { useT } from "../i18n";
 import { ChartGuideLines, TodayLine } from "./chronicleChartParts";
 
 const CHRONICLE_MIN_SEGMENT_HEIGHT = 38;
-const CHRONICLE_LABEL_HEIGHT = 18;
 const CHRONICLE_LABEL_BLOCK_HEIGHT = 38;
 const CHRONICLE_LABEL_PADDING_X = 7;
 const CHRONICLE_LABEL_GAP = 8;
@@ -67,6 +66,20 @@ interface ChronicleEntryShape {
 
 interface LabelBounds {
   height: number;
+  width: number;
+  x: number;
+  y: number;
+}
+
+interface ChronicleEntryShapeBase {
+  displayEntry: ChartEntry;
+  entry: ChartEntry;
+  fileNameLabelWidth: number;
+  height: number;
+  labelWidth: number;
+  order: number;
+  path: string;
+  rangeLabelY: number;
   width: number;
   x: number;
   y: number;
@@ -119,7 +132,6 @@ export function ChronicleTracks({
         axisStart,
         dateScale,
         laneHeight: chronicleLaneHeight,
-        scrollLeft,
         timelineWidth,
         unitWidth
       })
@@ -198,14 +210,12 @@ function buildChronicleEntryShapes(
     axisStart,
     dateScale,
     laneHeight,
-    scrollLeft,
     timelineWidth,
     unitWidth
   }: {
     axisStart: number;
     dateScale: DateScale | null;
     laneHeight: number;
-    scrollLeft: number;
     timelineWidth: number;
     unitWidth: number;
   }
@@ -222,9 +232,7 @@ function buildChronicleEntryShapes(
       };
     })
   );
-  const occupiedLabels: LabelBounds[] = [];
-
-  return entries.map((item) => {
+  const shapeBases = entries.map((item): ChronicleEntryShapeBase => {
     const laneIndex = laneIndexes[item.order] ?? 0;
     const startValue = item.displayEntry.startValue;
     const endValue = item.displayEntry.endValue;
@@ -240,49 +248,71 @@ function buildChronicleEntryShapes(
       : valueLeft;
     const height = laneHeight;
     const y = laneIndex * laneHeight;
-    const maxLabelLeft = Math.max(0, width - labelWidth);
-    const labelLeft = isSingleValue
-      ? (width - labelWidth) / 2
-      : Math.max(CHRONICLE_LABEL_PADDING_X, Math.min(maxLabelLeft, scrollLeft - x + CHRONICLE_LABEL_PADDING_X));
-    const labelX = x + labelLeft;
-    const labelY = y + Math.max(30, Math.min(height - 5, height / 2 + 12));
-    const fileNameLabelX = labelX;
-    const fileNameLabelY = labelY - 20;
-    const labelBlockWidth = Math.max(fileNameLabelWidth, labelWidth);
-    const inlineBounds = labelBounds(labelX, labelY, labelBlockWidth);
-    const inlineFits = fileNameLabelWidth <= width - labelLeft && labelWidth <= width - labelLeft;
-    const inlineIsAvailable = inlineFits && !occupiedLabels.some((bounds) => boundsOverlap(inlineBounds, bounds));
-    const labelPlacement = inlineIsAvailable
-      ? { bounds: inlineBounds, fileNameX: fileNameLabelX, fileNameY: fileNameLabelY, leaderPath: null, rangeX: labelX, rangeY: labelY }
-      : externalLabelPlacement({
-          barHeight: height,
-          barWidth: width,
-          barX: x,
-          barY: y,
-          labelBlockWidth,
-          labelY,
-          occupiedLabels,
-          timelineWidth
-        });
-
-    occupiedLabels.push(labelPlacement.bounds);
+    const rangeLabelY = y + Math.max(30, Math.min(height - 5, height / 2 + 12));
 
     return {
       displayEntry: item.displayEntry,
       entry: item.entry,
       fileNameLabelWidth,
-      fileNameLabelX: labelPlacement.fileNameX,
-      fileNameLabelY: labelPlacement.fileNameY,
       height,
-      key: entryKey(item.entry),
       labelWidth,
-      labelX: labelPlacement.rangeX,
-      labelY: labelPlacement.rangeY,
-      leaderPath: labelPlacement.leaderPath,
+      order: item.order,
       path: roundedRectPath(x, y, width, height, 3),
+      rangeLabelY,
       width,
       x,
       y
+    };
+  });
+  const occupiedLabels: LabelBounds[] = [];
+  const occupiedBars = shapeBases.map((base) => barBounds(base));
+  const trackHeight = Math.max(1, Math.ceil(Math.max(laneHeight, ...shapeBases.map((base) => base.y + base.height))));
+
+  return shapeBases.map((base) => {
+    const labelBlockWidth = Math.max(base.fileNameLabelWidth, base.labelWidth);
+    const labelLeft = CHRONICLE_LABEL_PADDING_X;
+    const inlinePlacement = {
+      bounds: labelBounds(base.x + labelLeft, base.rangeLabelY, labelBlockWidth),
+      fileNameX: base.x + labelLeft,
+      fileNameY: base.rangeLabelY - 20,
+      leaderPath: null,
+      rangeX: base.x + labelLeft,
+      rangeY: base.rangeLabelY
+    };
+    const labelFitsInsideBar = labelBlockWidth <= base.width - labelLeft;
+    const labelPlacement = labelFitsInsideBar
+      ? inlinePlacement
+      : externalLabelPlacement({
+          barHeight: base.height,
+          barWidth: base.width,
+          barX: base.x,
+          barY: base.y,
+          labelBlockWidth,
+          labelY: base.rangeLabelY,
+          occupiedBars,
+          occupiedLabels,
+          timelineWidth,
+          trackHeight
+        });
+
+    occupiedLabels.push(labelPlacement.bounds);
+
+    return {
+      displayEntry: base.displayEntry,
+      entry: base.entry,
+      fileNameLabelWidth: base.fileNameLabelWidth,
+      fileNameLabelX: labelPlacement.fileNameX,
+      fileNameLabelY: labelPlacement.fileNameY,
+      height: base.height,
+      key: entryKey(base.entry),
+      labelWidth: base.labelWidth,
+      labelX: labelPlacement.rangeX,
+      labelY: labelPlacement.rangeY,
+      leaderPath: labelPlacement.leaderPath,
+      path: base.path,
+      width: base.width,
+      x: base.x,
+      y: base.y
     };
   });
 }
@@ -296,6 +326,15 @@ function labelBounds(x: number, rangeLabelY: number, width: number): LabelBounds
   };
 }
 
+function barBounds(base: Pick<ChronicleEntryShapeBase, "height" | "width" | "x" | "y">): LabelBounds {
+  return {
+    height: base.height,
+    width: base.width,
+    x: base.x,
+    y: base.y
+  };
+}
+
 function externalLabelPlacement({
   barHeight,
   barWidth,
@@ -303,8 +342,10 @@ function externalLabelPlacement({
   barY,
   labelBlockWidth,
   labelY,
+  occupiedBars,
   occupiedLabels,
-  timelineWidth
+  timelineWidth,
+  trackHeight
 }: {
   barHeight: number;
   barWidth: number;
@@ -312,8 +353,10 @@ function externalLabelPlacement({
   barY: number;
   labelBlockWidth: number;
   labelY: number;
+  occupiedBars: LabelBounds[];
   occupiedLabels: LabelBounds[];
   timelineWidth: number;
+  trackHeight: number;
 }): {
   bounds: LabelBounds;
   fileNameX: number;
@@ -326,29 +369,26 @@ function externalLabelPlacement({
   const leftX = Math.max(0, barX - labelBlockWidth - CHRONICLE_LABEL_GAP);
   const preferredX = barX + barWidth + CHRONICLE_LABEL_GAP + labelBlockWidth <= timelineWidth ? rightX : leftX;
   const alternateX = preferredX === rightX ? leftX : rightX;
-  const yCandidates = [
-    labelY,
-    labelY + CHRONICLE_LABEL_BLOCK_HEIGHT + CHRONICLE_LABEL_GAP,
-    labelY - CHRONICLE_LABEL_BLOCK_HEIGHT - CHRONICLE_LABEL_GAP,
-    barY + 34,
-    barY + Math.max(34, barHeight - 4)
-  ];
+  const yCandidates = labelYCandidates(labelY, trackHeight);
   const candidates = [preferredX, alternateX].flatMap((x) =>
     yCandidates.map((rangeY) => ({
       rangeX: x,
-      rangeY: clamp(rangeY, barY + 34, Math.max(barY + 34, barY + barHeight - 4))
+      rangeY
     }))
   );
   const selected = candidates.find((candidate) => {
     const bounds = labelBounds(candidate.rangeX, candidate.rangeY, labelBlockWidth);
 
-    return !occupiedLabels.some((occupied) => boundsOverlap(bounds, occupied));
+    return (
+      !occupiedBars.some((occupied) => boundsOverlap(bounds, occupied)) &&
+      !occupiedLabels.some((occupied) => boundsOverlap(bounds, occupied))
+    );
   }) ?? candidates[0];
   const bounds = labelBounds(selected.rangeX, selected.rangeY, labelBlockWidth);
   const labelCenterY = bounds.y + bounds.height / 2;
   const labelEdgeX = selected.rangeX > barX ? selected.rangeX : selected.rangeX + labelBlockWidth;
-  const barAnchorX = selected.rangeX > barX ? barX + barWidth : barX;
-  const barAnchorY = barY + Math.min(Math.max(labelCenterY - barY, 8), barHeight - 8);
+  const barAnchorX = barX + barWidth / 2;
+  const barAnchorY = barY + barHeight / 2;
 
   return {
     bounds,
@@ -358,6 +398,20 @@ function externalLabelPlacement({
     rangeX: selected.rangeX,
     rangeY: selected.rangeY
   };
+}
+
+function labelYCandidates(preferredRangeY: number, trackHeight: number): number[] {
+  const maxRangeY = Math.max(34, trackHeight - 4);
+  const preferred = clamp(preferredRangeY, 34, maxRangeY);
+  const step = CHRONICLE_LABEL_BLOCK_HEIGHT + CHRONICLE_LABEL_GAP;
+  const candidates = [preferred];
+
+  for (let offset = step; offset <= trackHeight + step; offset += step) {
+    candidates.push(clamp(preferred + offset, 34, maxRangeY));
+    candidates.push(clamp(preferred - offset, 34, maxRangeY));
+  }
+
+  return [...new Set(candidates)];
 }
 
 function boundsOverlap(a: LabelBounds, b: LabelBounds): boolean {
@@ -482,15 +536,6 @@ function ChronicleEntrySvgShape({
       ) : null}
       {shape.fileNameLabelWidth > 0 ? (
         <>
-          <rect
-            className="chronicle-fill-label-bg chronicle-fill-label-bg--file"
-            height={CHRONICLE_LABEL_HEIGHT}
-            rx={4}
-            ry={4}
-            width={shape.fileNameLabelWidth}
-            x={shape.fileNameLabelX}
-            y={shape.fileNameLabelY - 14}
-          />
           <text
             className="chronicle-fill-label chronicle-fill-file-label"
             dominantBaseline="middle"
@@ -503,15 +548,6 @@ function ChronicleEntrySvgShape({
       ) : null}
       {shape.labelWidth > 0 ? (
         <>
-          <rect
-            className="chronicle-fill-label-bg"
-            height={CHRONICLE_LABEL_HEIGHT}
-            rx={4}
-            ry={4}
-            width={shape.labelWidth}
-            x={shape.labelX}
-            y={shape.labelY - 14}
-          />
           <text
             className="chronicle-fill-label"
             dominantBaseline="middle"

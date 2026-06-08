@@ -206,6 +206,8 @@ describe("ChronicleChartGrid", () => {
     const fileLabels = Array.from(container.querySelectorAll(".chronicle-fill-file-label"));
 
     expect(leaders.length).toBeGreaterThan(0);
+    expect(leaders[0]).toHaveAttribute("d", expect.stringMatching(/^M 90,193 L /));
+    expect(container.querySelector(".chronicle-fill-label-bg")).toBeNull();
     expect(fileLabels[0]).toHaveTextContent("01-project-long-name");
     expect(fileLabels[0]).not.toHaveAttribute("clip-path");
   });
