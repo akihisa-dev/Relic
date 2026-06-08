@@ -198,7 +198,7 @@ describe("useChronicleChartModel", () => {
     });
   });
 
-  it("chronicle表示では設定済み暦の段数に合わせて横軸の高さを確保する", () => {
+  it("chronicle表示では設定済み暦の段数に合わせて横軸の高さを確保し、左列幅は持たない", () => {
     const { result } = renderHook(() => useChronicleChartModel({
       chart: chart(),
       charts: [],
@@ -210,7 +210,17 @@ describe("useChronicleChartModel", () => {
     }));
 
     expect(result.current.dateAxisHeight).toBe(72);
-    expect(result.current.nameColumnWidth).toBe(420);
+    expect(result.current.nameColumnWidth).toBe(0);
+  });
+
+  it("date表示では左列幅を確保する", () => {
+    const { result } = renderHook(() => useChronicleChartModel({
+      chart: chart({ id: "date", name: "date", source: "date" }),
+      charts: [],
+      chronicleCalendars: defaultChronicleCalendars
+    }));
+
+    expect(result.current.nameColumnWidth).toBe(430);
   });
 
   it("縦方向の表示範囲と画面外件数を計算する", () => {
