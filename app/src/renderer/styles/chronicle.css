@@ -974,7 +974,7 @@
   grid-template-columns: 30px minmax(0, 1fr);
   min-height: 54px;
   padding: 8px;
-  pointer-events: auto;
+  pointer-events: none;
   position: absolute;
   width: 252px;
   z-index: 20;
@@ -991,6 +991,7 @@
   height: 30px;
   justify-content: center;
   padding: 0;
+  pointer-events: auto;
   width: 30px;
 }
 

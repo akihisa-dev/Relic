@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+
 import { createRef } from "react";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
@@ -236,6 +238,36 @@ describe("ChronicleChartGrid", () => {
     fireEvent.click(screen.getByRole("button", { name: "鎌倉時代を開く" }));
 
     expect(props.onOpenFile).toHaveBeenCalledWith("history/kamakura.md");
+  });
+
+  it("chronicleでは選択済みカードがあってもホバー中はホバー先の詳細カードを優先する", () => {
+    const chronicleChart = chart({
+      entries: [
+        entry({ fileName: "A", path: "a.md", startValue: 10, endValue: 20 }),
+        entry({ fileName: "B", path: "b.md", startValue: 30, endValue: 35 })
+      ]
+    });
+    const { container } = renderGrid({
+      activeChart: chronicleChart,
+      rows: buildChartRows(chronicleChart.entries, "chronicle")
+    });
+    const fills = Array.from(container.querySelectorAll(".chronicle-fill--chronicle")) as SVGGElement[];
+
+    fireEvent.pointerDown(fills[0]);
+    expect(screen.getByRole("dialog")).toHaveTextContent("A");
+
+    fireEvent.pointerEnter(fills[1]);
+
+    expect(container.querySelector(".chronicle-fill-file-label--hover")).toHaveTextContent("B");
+    expect(screen.getByRole("dialog")).toHaveTextContent("B");
+    expect(screen.getByRole("dialog")).not.toHaveTextContent("A");
+  });
+
+  it("chronicleの詳細カード本体はバーのホバーを遮らず、開くボタンだけクリック可能にする", () => {
+    const css = readFileSync("src/renderer/styles/chronicle.css", "utf8");
+
+    expect(css).toMatch(/\.chronicle-entry-card\s*\{[^}]*pointer-events:\s*none;/s);
+    expect(css).toMatch(/\.chronicle-entry-card-open\s*\{[^}]*pointer-events:\s*auto;/s);
   });
 
   it("chronicleでは空白クリックで固定表示の詳細カードを閉じる", () => {
