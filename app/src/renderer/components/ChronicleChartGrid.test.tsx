@@ -218,6 +218,7 @@ describe("ChronicleChartGrid", () => {
 
     fireEvent.pointerEnter(fill);
 
+    expect(container.querySelector(".chronicle-fill-file-label--hover")).toHaveTextContent(longFileName);
     expect(screen.getByRole("dialog")).toHaveTextContent(longFileName);
   });
 

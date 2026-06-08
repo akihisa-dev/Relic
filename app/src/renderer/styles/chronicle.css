@@ -935,6 +935,12 @@
   fill: color-mix(in srgb, var(--bg) 62%, transparent);
 }
 
+.chronicle-fill-label-bg--hover-file {
+  fill: color-mix(in srgb, var(--bg) 72%, transparent);
+  stroke: color-mix(in srgb, var(--text) 18%, transparent);
+  stroke-width: 1px;
+}
+
 .chronicle-tracks-svg .chronicle-fill-label {
   fill: var(--text);
   font-size: 11px;
@@ -946,9 +952,18 @@
   fill: var(--text-2);
 }
 
+.chronicle-hover-file-label {
+  pointer-events: none;
+}
+
+.chronicle-tracks-svg .chronicle-fill-file-label--hover {
+  fill: var(--text);
+}
+
 .chronicle-entry-card {
   align-items: center;
-  background: color-mix(in srgb, var(--bg) 94%, var(--hover));
+  backdrop-filter: blur(6px);
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
   border: 1px solid var(--border);
   border-radius: 6px;
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.13);
