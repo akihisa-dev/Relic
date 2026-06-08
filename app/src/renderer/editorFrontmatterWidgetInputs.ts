@@ -6,8 +6,6 @@ import {
   choicesFor,
   chronicleInputValue,
   dateInputValue,
-  formatDateForInput,
-  inputPlaceholderForDateFormat,
   firstArrayValue,
   inputTypeFor,
   isChronicleField,
@@ -59,7 +57,7 @@ export function createFrontmatterValueInput({
     return scalarInput(view, key, firstArrayValue(value), field, candidates, updateField, dateFormat, true);
   }
   if (!field && Array.isArray(value)) {
-    return scalarInput(view, key, firstArrayValue(value), { name: key, type: "text" }, candidates, updateField, dateFormat, true);
+    return scalarInput(view, key, firstArrayValue(value), undefined, {}, updateField, dateFormat, true);
   }
   if (field?.type === "multi-select" || key === "aliases" || key === "tags" || Array.isArray(value)) {
     return arrayInput(
@@ -91,12 +89,11 @@ function scalarInput(
   wrap.className = "cm-frontmatter-input-wrap";
   const input = document.createElement("input");
   input.className = "cm-frontmatter-input";
-  input.type = field?.type === "date" && dateFormat === "system" ? "date" : inputTypeFor(field);
+  input.type = inputTypeFor(field);
   input.value = field?.type === "date"
-    ? formatDateForInput(dateInputValue(value), dateFormat)
+    ? dateInputValue(value)
     : scalarInputValue(value, field);
-  if (field?.type === "date" && dateFormat !== "system") configureDateTextInput(input, dateFormat);
-  const datalist = createDatalist(input, key, choicesFor(key, field, candidates));
+  const datalist = field ? createDatalist(input, key, choicesFor(key, field, candidates)) : null;
 
   input.addEventListener("change", () => {
     if (field?.type === "date") {
@@ -310,15 +307,13 @@ function dateRangeInput(
 
   const startInput = document.createElement("input");
   startInput.className = "cm-frontmatter-input";
-  startInput.type = dateFormat === "system" ? "date" : "text";
-  startInput.value = formatDateForInput(dateInputValue(value[0]), dateFormat);
-  if (dateFormat !== "system") configureDateTextInput(startInput, dateFormat);
+  startInput.type = "date";
+  startInput.value = dateInputValue(value[0]);
 
   const endInput = document.createElement("input");
   endInput.className = "cm-frontmatter-input";
-  endInput.type = dateFormat === "system" ? "date" : "text";
-  endInput.value = formatDateForInput(value.length > 1 ? dateInputValue(value[1]) : "", dateFormat);
-  if (dateFormat !== "system") configureDateTextInput(endInput, dateFormat);
+  endInput.type = "date";
+  endInput.value = value.length > 1 ? dateInputValue(value[1]) : "";
 
   const error = document.createElement("span");
   error.className = "cm-frontmatter-input-error";
@@ -373,14 +368,6 @@ function dateRangeInput(
   wrap.append(startInput, endInput, error);
   commit(false);
   return wrap;
-}
-
-function configureDateTextInput(input: HTMLInputElement, dateFormat: FrontmatterDateFormat): void {
-  input.inputMode = "numeric";
-  input.pattern = dateFormat === "ymd"
-    ? "\\d{4}-\\d{2}-\\d{2}"
-    : "\\d{2}/\\d{2}/\\d{4}";
-  input.placeholder = inputPlaceholderForDateFormat(dateFormat);
 }
 
 function parseDateTextInput(input: HTMLInputElement, dateFormat: FrontmatterDateFormat): string | null | undefined {

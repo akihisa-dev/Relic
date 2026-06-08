@@ -55,7 +55,7 @@ export function choicesFor(
 }
 
 export function inputTypeFor(field?: UserDefinedField): string {
-  if (field?.type === "date") return "text";
+  if (field?.type === "date") return "date";
   if (field?.type === "datetime") return "datetime-local";
   if (field?.type === "time") return "time";
   if (field?.type === "number") return "number";

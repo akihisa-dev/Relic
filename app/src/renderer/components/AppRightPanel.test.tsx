@@ -161,6 +161,7 @@ describe("AppRightPanel", () => {
 
     expect(screen.queryByTitle("Add value")).not.toBeInTheDocument();
     const input = screen.getByDisplayValue("first");
+    expect(input.getAttribute("list")).toBeNull();
     fireEvent.change(input, { target: { value: "updated" } });
     fireEvent.blur(input);
 
@@ -192,5 +193,29 @@ describe("AppRightPanel", () => {
 
     expect(screen.getByText("Frontmatter cannot be read, so form editing is unavailable.")).toBeInTheDocument();
     expect(screen.queryByDisplayValue("broken")).not.toBeInTheDocument();
+  });
+
+  it("uses calendar inputs for registered date properties in the frontmatter panel", () => {
+    const activeFileTab: FileTab = {
+      content: "---\ndeadline: 2026-06-08\n---\n# Body",
+      id: "tab-1",
+      kind: "file",
+      name: "Note",
+      path: "Note.md",
+      savedContent: "---\ndeadline: 2026-06-08\n---\n# Body"
+    };
+
+    render(
+      <I18nProvider language="en">
+        <AppRightPanel
+          {...defaultProps}
+          activeFileTab={activeFileTab}
+          rightPanelView="frontmatter"
+          userDefinedFields={[{ name: "deadline", type: "date" }]}
+        />
+      </I18nProvider>
+    );
+
+    expect((screen.getByDisplayValue("2026-06-08") as HTMLInputElement).type).toBe("date");
   });
 });
