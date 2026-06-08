@@ -151,7 +151,7 @@ describe("ChronicleChartGrid", () => {
     expect(container.querySelector(".chronicle-fill-label")).not.toHaveTextContent("帝国暦");
   });
 
-  it("chronicleでは行グリッドなしで重なり区間だけ縦分割する", () => {
+  it("chronicleでは重なるentryを別レーンに配置する", () => {
     const chronicleChart = chart({
       entries: [
         entry({ fileName: "A", path: "a.md", startValue: 10, endValue: 20 }),
@@ -173,22 +173,20 @@ describe("ChronicleChartGrid", () => {
     expect(container.querySelectorAll(".chronicle-tracks .chronicle-guide-row-line")).toHaveLength(0);
     expect(fills).toHaveLength(3);
     expect(shapes).toHaveLength(3);
-    expect(hitPaths).toHaveLength(5);
+    expect(hitPaths).toHaveLength(3);
     expect(hitPaths.map((shape) => shape.getAttribute("d"))).toEqual([
-      "M 108,0 H 180 V 76 H 108 Z",
-      "M 180,0 H 432 V 38 H 180 Z",
-      "M 432,0 H 504 V 76 H 432 Z",
-      "M 180,38 H 432 V 76 H 180 Z",
-      "M 828,0 H 1044 V 76 H 828 Z"
+      "M 111,0 H 501 Q 504,0 504,3 V 35 Q 504,38 501,38 H 111 Q 108,38 108,35 V 3 Q 108,0 111,0 Z",
+      "M 183,38 H 429 Q 432,38 432,41 V 73 Q 432,76 429,76 H 183 Q 180,76 180,73 V 41 Q 180,38 183,38 Z",
+      "M 831,0 H 1041 Q 1044,0 1044,3 V 35 Q 1044,38 1041,38 H 831 Q 828,38 828,35 V 3 Q 828,0 831,0 Z"
     ]);
     expect(container.querySelectorAll(".chronicle-fill-label")).toHaveLength(3);
-    expect(shapes[0].getAttribute("d")).toContain("M 108,0");
+    expect(shapes[0].getAttribute("d")).toContain("M 111,0");
     expect(fills[0].style.getPropertyValue("--chronicle-fill")).not.toBe(fills[1].style.getPropertyValue("--chronicle-fill"));
     expect(fills[2].style.getPropertyValue("--chronicle-fill")).toMatch(/^hsla\(/);
     expect(fills.map((fill) => fill.style.getPropertyValue("--chronicle-fill")).join(" ")).toMatch(/hsla\((126|168|202|226|252|286|322|354|18|42|82|190),/);
   });
 
-  it("chronicleでは同じentryの重なり区間を同じ縦位置へ寄せる", () => {
+  it("chronicleでは長いentryを分割せず1本のバーにする", () => {
     const chronicleChart = chart({
       entries: [
         entry({ fileName: "B", path: "b.md", startValue: 10, endValue: 12 }),
@@ -202,24 +200,16 @@ describe("ChronicleChartGrid", () => {
     });
     const fills = Array.from(container.querySelectorAll(".chronicle-fill--chronicle")) as SVGGElement[];
     const longEntryBars = fills.filter((fill) => fill.getAttribute("aria-label")?.includes("A "));
-    const longEntryHitPaths = longEntryBars.flatMap((fill) =>
-      Array.from(fill.querySelectorAll(".chronicle-fill-hit")) as SVGPathElement[]
-    );
+    const longEntryHitPath = longEntryBars[0]?.querySelector(".chronicle-fill-hit") as SVGPathElement;
 
     expect(container.querySelector(".chronicle-tracks")).toHaveStyle({ height: "76px" });
     expect(container.querySelectorAll(".chronicle-tracks .chronicle-guide-row-line")).toHaveLength(0);
     expect(longEntryBars).toHaveLength(1);
-    expect(longEntryHitPaths).toHaveLength(4);
-    expect(longEntryHitPaths.map((shape) => shape.getAttribute("d"))).toEqual([
-      "M 108,38 H 216 V 76 H 108 Z",
-      "M 216,0 H 252 V 76 H 216 Z",
-      "M 252,38 H 360 V 76 H 252 Z",
-      "M 360,0 H 864 V 76 H 360 Z"
-    ]);
+    expect(longEntryHitPath.getAttribute("d")).toBe("M 111,38 H 861 Q 864,38 864,41 V 73 Q 864,76 861,76 H 111 Q 108,76 108,73 V 41 Q 108,38 111,38 Z");
     expect(longEntryBars[0]).toHaveTextContent("10 〜 30");
   });
 
-  it("chronicleでは最大重なり数に応じて年表の高さを広げる", () => {
+  it("chronicleでは必要なレーン数に応じて年表の高さを広げる", () => {
     const chronicleChart = chart({
       entries: [
         entry({ fileName: "A", path: "a.md", startValue: 10, endValue: 20 }),
@@ -235,7 +225,7 @@ describe("ChronicleChartGrid", () => {
 
     expect(container.querySelector(".chronicle-tracks")).toHaveStyle({ height: "114px" });
     expect(container.querySelector(".chronicle-tracks-svg")).toHaveAttribute("height", "114");
-    expect(hitPaths.map((shape) => shape.getAttribute("d"))).toContain("M 216,76 H 324 V 114 H 216 Z");
+    expect(hitPaths.map((shape) => shape.getAttribute("d"))).toContain("M 219,76 H 321 Q 324,76 324,79 V 111 Q 324,114 321,114 H 219 Q 216,114 216,111 V 79 Q 216,76 219,76 Z");
   });
 
   it("dateのplanned/actual列とstatus badgeを既存class名で描画する", () => {
