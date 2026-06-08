@@ -935,6 +935,14 @@
   fill: color-mix(in srgb, var(--bg) 62%, transparent);
 }
 
+.chronicle-fill-label-leader {
+  fill: none;
+  pointer-events: none;
+  stroke: color-mix(in srgb, var(--text-3) 68%, transparent);
+  stroke-linecap: round;
+  stroke-width: 1.4px;
+}
+
 .chronicle-tracks-svg .chronicle-fill-label {
   fill: var(--text);
   font-size: 11px;

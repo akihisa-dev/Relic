@@ -183,12 +183,31 @@ describe("ChronicleChartGrid", () => {
     ]);
     expect(container.querySelectorAll(".chronicle-fill-file-label")).toHaveLength(3);
     expect(container.querySelectorAll(".chronicle-fill-label:not(.chronicle-fill-file-label)")).toHaveLength(3);
-    expect(container.querySelector(".chronicle-fill-file-label")).toHaveAttribute("clip-path", expect.stringMatching(/^url\(#chronicle-file-label-/));
-    expect(container.querySelector(".chronicle-fill-label:not(.chronicle-fill-file-label)")).toHaveAttribute("clip-path", expect.stringMatching(/^url\(#chronicle-range-label-/));
+    expect(container.querySelector(".chronicle-fill-file-label")).not.toHaveAttribute("clip-path");
+    expect(container.querySelector(".chronicle-fill-label:not(.chronicle-fill-file-label)")).not.toHaveAttribute("clip-path");
     expect(shapes[0].getAttribute("d")).toContain("M 111,0");
     expect(fills[0].style.getPropertyValue("--chronicle-fill")).not.toBe(fills[1].style.getPropertyValue("--chronicle-fill"));
     expect(fills[2].style.getPropertyValue("--chronicle-fill")).toMatch(/^hsla\(/);
     expect(fills.map((fill) => fill.style.getPropertyValue("--chronicle-fill")).join(" ")).toMatch(/hsla\((126|168|202|226|252|286|322|354|18|42|82|190),/);
+  });
+
+  it("chronicleでは狭いバーのラベルを線付きで外へ逃がす", () => {
+    const chronicleChart = chart({
+      entries: [
+        entry({ fileName: "01-project-long-name", path: "a.md", startValue: 10, endValue: 10 }),
+        entry({ fileName: "02-character-long-name", path: "b.md", startValue: 11, endValue: 12 })
+      ]
+    });
+    const { container } = renderGrid({
+      activeChart: chronicleChart,
+      rows: buildChartRows(chronicleChart.entries, "chronicle")
+    });
+    const leaders = container.querySelectorAll(".chronicle-fill-label-leader");
+    const fileLabels = Array.from(container.querySelectorAll(".chronicle-fill-file-label"));
+
+    expect(leaders.length).toBeGreaterThan(0);
+    expect(fileLabels[0]).toHaveTextContent("01-project-long-name");
+    expect(fileLabels[0]).not.toHaveAttribute("clip-path");
   });
 
   it("chronicleでは長さ変更中のentryでレーン判定を動かさない", () => {
