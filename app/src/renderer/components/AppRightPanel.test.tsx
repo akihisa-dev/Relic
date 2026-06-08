@@ -137,6 +137,39 @@ describe("AppRightPanel", () => {
     );
   });
 
+  it("treats unregistered frontmatter properties as text fields in the frontmatter panel", () => {
+    const onUpdateTabContent = vi.fn();
+    const activeFileTab: FileTab = {
+      content: "---\nunknown: [first, second]\n---\n# Body\nKeep this.",
+      id: "tab-1",
+      kind: "file",
+      name: "Note",
+      path: "Note.md",
+      savedContent: "---\nunknown: [first, second]\n---\n# Body\nKeep this."
+    };
+
+    render(
+      <I18nProvider language="en">
+        <AppRightPanel
+          {...defaultProps}
+          activeFileTab={activeFileTab}
+          onUpdateTabContent={onUpdateTabContent}
+          rightPanelView="frontmatter"
+        />
+      </I18nProvider>
+    );
+
+    expect(screen.queryByTitle("Add value")).not.toBeInTheDocument();
+    const input = screen.getByDisplayValue("first");
+    fireEvent.change(input, { target: { value: "updated" } });
+    fireEvent.blur(input);
+
+    expect(onUpdateTabContent).toHaveBeenCalledWith(
+      "tab-1",
+      "---\nunknown: [\"updated\"]\n---\n# Body\nKeep this."
+    );
+  });
+
   it("does not show form inputs for invalid frontmatter", () => {
     const activeFileTab: FileTab = {
       content: "---\ntags: [broken\n# Body",

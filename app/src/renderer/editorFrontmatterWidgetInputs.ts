@@ -58,6 +58,9 @@ export function createFrontmatterValueInput({
   if (isSingleValueField(field)) {
     return scalarInput(view, key, firstArrayValue(value), field, candidates, updateField, dateFormat, true);
   }
+  if (!field && Array.isArray(value)) {
+    return scalarInput(view, key, firstArrayValue(value), { name: key, type: "text" }, candidates, updateField, dateFormat, true);
+  }
   if (field?.type === "multi-select" || key === "aliases" || key === "tags" || Array.isArray(value)) {
     return arrayInput(
       view,
