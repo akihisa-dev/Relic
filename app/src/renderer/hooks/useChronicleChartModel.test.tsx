@@ -69,6 +69,16 @@ describe("useChronicleChartModel", () => {
     expect(result.current.dateScale?.unit).toBe("day");
   });
 
+  it("chronicle表示では年ごとの列幅を広めにする", () => {
+    const { result } = renderHook(() => useChronicleChartModel({
+      chart: chart(),
+      charts: [],
+      chronicleCalendars: defaultChronicleCalendars
+    }));
+
+    expect(result.current.unitWidth).toBe(48);
+  });
+
   it("query/status filter と sort state からrowsを導出する", () => {
     const dateChart = chart({
       entries: [
