@@ -95,6 +95,7 @@ export function useChronicleEntryDrag({
 
       currentPreviewRange = nextRange;
       setDragPreview({
+        editKind: kind,
         path: entry.path,
         source: activeSource,
         ...chronicleCalendarPatch(entry),
@@ -142,6 +143,7 @@ export function useChronicleEntryDrag({
 
     setDragPreview({
       endValue: entry.endValue,
+      editKind: kind,
       path: entry.path,
       source: activeSource,
       ...chronicleCalendarPatch(entry),

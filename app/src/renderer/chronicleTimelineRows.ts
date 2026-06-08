@@ -1,4 +1,4 @@
-import type { ChartDateKind, ChartEntry, ChartSource, WorkspaceChart } from "../shared/ipc";
+import type { ChartDateKind, ChartEntry, ChartEntryEditKind, ChartSource, WorkspaceChart } from "../shared/ipc";
 import { axisToYear, dayToDate } from "../shared/chartTime";
 import { fixedStatusValues } from "../shared/status";
 import { formatAxisValue } from "./chronicleTimelineAxis";
@@ -16,6 +16,7 @@ export interface DragPreview {
   chronicleCalendarId?: ChartEntry["chronicleCalendarId"];
   dateKind?: ChartDateKind;
   endValue: number;
+  editKind: ChartEntryEditKind;
   path: string;
   source: ChartSource;
   startValue: number;
