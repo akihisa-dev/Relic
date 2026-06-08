@@ -20,7 +20,24 @@ import {
 import { useT } from "../i18n";
 import { ChartGuideLines, TodayLine } from "./chronicleChartParts";
 
-const CHRONICLE_ROW_HEIGHT_MULTIPLIER = 8;
+const CHRONICLE_LANE_COUNT = 12;
+const CHRONICLE_TRACK_HEIGHT = ROW_HEIGHT * CHRONICLE_LANE_COUNT;
+
+interface OrderedChronicleEntry {
+  displayEntry: ChartEntry;
+  entry: ChartEntry;
+  order: number;
+}
+
+interface ChronicleSegment {
+  displayEntry: ChartEntry;
+  entry: ChartEntry;
+  key: string;
+  overlapCount: number;
+  overlapIndex: number;
+  segmentEndValue: number;
+  segmentStartValue: number;
+}
 
 export function ChronicleTracks({
   activeSource,
@@ -53,7 +70,10 @@ export function ChronicleTracks({
 }): ReactElement {
   const trackHeight = activeSource === "date"
     ? Math.max(1, rows.length) * ROW_HEIGHT
-    : ROW_HEIGHT * CHRONICLE_ROW_HEIGHT_MULTIPLIER;
+    : CHRONICLE_TRACK_HEIGHT;
+  const chronicleSegments = activeSource === "chronicle"
+    ? buildChronicleSegments(rows, dragPreview)
+    : [];
 
   return (
     <div
@@ -66,7 +86,7 @@ export function ChronicleTracks({
       <ChartGuideLines
         axisStart={axisStart}
         dateScale={dateScale}
-        rowCount={activeSource === "date" ? Math.max(1, rows.length) : CHRONICLE_ROW_HEIGHT_MULTIPLIER}
+        rowCount={activeSource === "date" ? Math.max(1, rows.length) : CHRONICLE_LANE_COUNT}
         source={activeSource}
         ticks={guideTicks}
         unitWidth={unitWidth}
@@ -74,40 +94,117 @@ export function ChronicleTracks({
       {activeSource === "date" ? (
         <TodayLine axisEnd={axisEnd} axisStart={axisStart} unitWidth={unitWidth} />
       ) : null}
-      {rows.map((row, index) => row.entries.map((entry, entryIndex) => (
+      {activeSource === "chronicle" ? chronicleSegments.map((segment) => (
         <ChronicleEntryBar
           activeSource={activeSource}
           axisStart={axisStart}
           dateScale={dateScale}
+          displayEntry={segment.displayEntry}
+          dragPreview={dragPreview}
+          entry={segment.entry}
+          key={segment.key}
+          onStartEntryEdit={onStartEntryEdit}
+          overlapCount={segment.overlapCount}
+          overlapIndex={segment.overlapIndex}
+          scrollLeft={scrollLeft}
+          segmentEndValue={segment.segmentEndValue}
+          segmentStartValue={segment.segmentStartValue}
+          trackHeight={trackHeight}
+          unitWidth={unitWidth}
+          zIndex={segment.overlapIndex + 10}
+        />
+      )) : rows.map((row, index) => row.entries.map((entry) => (
+        <ChronicleEntryBar
+          activeSource={activeSource}
+          axisStart={axisStart}
+          dateScale={dateScale}
+          displayEntry={entry}
           dragPreview={dragPreview}
           entry={entry}
           key={entryKey(entry)}
           onStartEntryEdit={onStartEntryEdit}
+          overlapCount={1}
+          overlapIndex={0}
           rowIndex={activeSource === "date" ? index : 0}
           scrollLeft={scrollLeft}
+          trackHeight={trackHeight}
           unitWidth={unitWidth}
-          zIndex={activeSource === "date" ? undefined : entryIndex + index + 10}
         />
       )))}
     </div>
   );
 }
 
+function buildChronicleSegments(rows: ChartRow[], dragPreview: DragPreview | null): ChronicleSegment[] {
+  let order = 0;
+  const orderedEntries: OrderedChronicleEntry[] = rows.flatMap((row) =>
+    row.entries.map((entry) => {
+      const currentOrder = order;
+      order += 1;
+      return {
+        displayEntry: previewEntryForDrag(entry, dragPreview),
+        entry,
+        order: currentOrder
+      };
+    })
+  );
+
+  const points = new Set<number>();
+  for (const item of orderedEntries) {
+    points.add(item.displayEntry.startValue);
+    points.add(item.displayEntry.endValue + 1);
+  }
+
+  const sortedPoints = [...points].toSorted((a, b) => a - b);
+  const segments: ChronicleSegment[] = [];
+
+  for (let pointIndex = 0; pointIndex < sortedPoints.length - 1; pointIndex += 1) {
+    const segmentStartValue = sortedPoints[pointIndex];
+    const segmentEndExclusive = sortedPoints[pointIndex + 1];
+    if (segmentEndExclusive <= segmentStartValue) continue;
+
+    const activeEntries = orderedEntries
+      .filter((item) => item.displayEntry.startValue < segmentEndExclusive && item.displayEntry.endValue + 1 > segmentStartValue)
+      .toSorted((a, b) => a.order - b.order);
+
+    activeEntries.forEach((item, overlapIndex) => {
+      segments.push({
+        displayEntry: item.displayEntry,
+        entry: item.entry,
+        key: `${entryKey(item.entry)}:${segmentStartValue}:${segmentEndExclusive}:${overlapIndex}`,
+        overlapCount: activeEntries.length,
+        overlapIndex,
+        segmentEndValue: segmentEndExclusive - 1,
+        segmentStartValue
+      });
+    });
+  }
+
+  return segments;
+}
+
 function ChronicleEntryBar({
   activeSource,
   axisStart,
   dateScale,
+  displayEntry,
   dragPreview,
   entry,
   onStartEntryEdit,
+  overlapCount,
+  overlapIndex,
   rowIndex,
   scrollLeft,
+  segmentEndValue,
+  segmentStartValue,
+  trackHeight,
   unitWidth,
   zIndex
 }: {
   activeSource: ChartSource;
   axisStart: number;
   dateScale: DateScale | null;
+  displayEntry: ChartEntry;
   dragPreview: DragPreview | null;
   entry: ChartEntry;
   onStartEntryEdit: (
@@ -115,18 +212,25 @@ function ChronicleEntryBar({
     entry: ChartEntry,
     kind: ChartEntryEditKind
   ) => void;
-  rowIndex: number;
+  overlapCount: number;
+  overlapIndex: number;
+  rowIndex?: number;
   scrollLeft: number;
+  segmentEndValue?: number;
+  segmentStartValue?: number;
+  trackHeight: number;
   unitWidth: number;
   zIndex?: number;
 }): ReactElement {
   const t = useT();
-  const previewEntry = previewEntryForDrag(entry, dragPreview);
-  const valueLeft = Math.max(0, (previewEntry.startValue - axisStart) * unitWidth);
-  const isSingleValue = previewEntry.startValue === previewEntry.endValue;
+  const previewEntry = activeSource === "chronicle" ? displayEntry : previewEntryForDrag(entry, dragPreview);
+  const startValue = segmentStartValue ?? previewEntry.startValue;
+  const endValue = segmentEndValue ?? previewEntry.endValue;
+  const valueLeft = Math.max(0, (startValue - axisStart) * unitWidth);
+  const isSingleValue = startValue === endValue;
   const rangeLabel = formatRange(previewEntry, activeSource, dateScale);
   const labelWidth = labelWidthForText(rangeLabel);
-  const naturalWidth = isSingleValue ? unitWidth : (previewEntry.endValue - previewEntry.startValue + 1) * unitWidth;
+  const naturalWidth = isSingleValue ? unitWidth : (endValue - startValue + 1) * unitWidth;
   const width = Math.max(4, naturalWidth);
   const left = activeSource === "chronicle" && isSingleValue
     ? Math.max(0, valueLeft + (naturalWidth - width) / 2)
@@ -136,9 +240,11 @@ function ChronicleEntryBar({
     ? (width - labelWidth) / 2
     : Math.max(7, Math.min(maxLabelLeft, scrollLeft - left + 7));
   const top = activeSource === "date"
-    ? rowIndex * ROW_HEIGHT + dateFillOffset()
-    : rowIndex * ROW_HEIGHT;
-  const fillHeight = activeSource === "date" ? dateFillHeight() : ROW_HEIGHT * CHRONICLE_ROW_HEIGHT_MULTIPLIER;
+    ? (rowIndex ?? 0) * ROW_HEIGHT + dateFillOffset()
+    : (trackHeight / overlapCount) * overlapIndex;
+  const fillHeight = activeSource === "date" ? dateFillHeight() : trackHeight / overlapCount;
+  const showStartResize = activeSource === "date" || startValue === previewEntry.startValue;
+  const showEndResize = activeSource === "date" || endValue === previewEntry.endValue;
   const dateKind = entry.dateKind ?? "planned";
   const statusLabel = activeSource === "date" && dateKind === "actual"
     ? statusLabelForEntry(entry)
@@ -167,22 +273,26 @@ function ChronicleEntryBar({
       title={`${entry.fileName}${activeSource === "date" ? ` ${formatDateKindLabel(entry.dateKind, t)}: ` : " "}${rangeLabel}`}
       type="button"
     >
-      <span
-        aria-hidden="true"
-        className="chronicle-fill-resize chronicle-fill-resize--start"
-        onPointerDown={(event) => onStartEntryEdit(event, entry, "resize-start")}
-      />
+      {showStartResize ? (
+        <span
+          aria-hidden="true"
+          className="chronicle-fill-resize chronicle-fill-resize--start"
+          onPointerDown={(event) => onStartEntryEdit(event, entry, "resize-start")}
+        />
+      ) : null}
       <span className="chronicle-fill-label" style={{ left: labelLeft, width: labelWidth }}>{rangeLabel}</span>
       {statusLabel ? (
         <span className="chronicle-fill-status" style={{ left: statusLabelLeft, width: statusBadgeWidth }}>
           {statusLabel}
         </span>
       ) : null}
-      <span
-        aria-hidden="true"
-        className="chronicle-fill-resize chronicle-fill-resize--end"
-        onPointerDown={(event) => onStartEntryEdit(event, entry, "resize-end")}
-      />
+      {showEndResize ? (
+        <span
+          aria-hidden="true"
+          className="chronicle-fill-resize chronicle-fill-resize--end"
+          onPointerDown={(event) => onStartEntryEdit(event, entry, "resize-end")}
+        />
+      ) : null}
     </button>
   );
 }

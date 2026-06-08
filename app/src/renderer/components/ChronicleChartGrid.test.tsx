@@ -61,7 +61,7 @@ function renderGrid(overrides: Partial<ChronicleChartGridProps> = {}) {
     dateScale,
     dragPreview: null,
     guideTicks: buildGuideTicks(bounds.axisStart, bounds.axisEnd, ticks, tickInterval, activeSource, dateScale),
-    nameColumnWidth: activeSource === "date" ? 430 : 420,
+    nameColumnWidth: activeSource === "date" ? 430 : 0,
     onChartPointerDown: vi.fn(),
     onChartScroll: vi.fn(),
     onJump: vi.fn(),
@@ -151,7 +151,7 @@ describe("ChronicleChartGrid", () => {
     expect(container.querySelector(".chronicle-fill-label")).not.toHaveTextContent("帝国暦");
   });
 
-  it("chronicleでは複数entryを1行に重ねる", () => {
+  it("chronicleでは重なり区間だけ重なり数で縦分割する", () => {
     const chronicleChart = chart({
       entries: [
         entry({ fileName: "A", path: "a.md", startValue: 10, endValue: 20 }),
@@ -166,10 +166,10 @@ describe("ChronicleChartGrid", () => {
     const fills = Array.from(container.querySelectorAll(".chronicle-fill--chronicle")) as HTMLElement[];
 
     expect(container.querySelector(".chronicle-name-column")).toBeNull();
-    expect(container.querySelector(".chronicle-tracks")).toHaveStyle({ height: "304px" });
-    expect(fills).toHaveLength(3);
-    expect(fills.map((fill) => fill.style.top)).toEqual(["0px", "0px", "0px"]);
-    expect(fills.map((fill) => fill.style.height)).toEqual(["304px", "304px", "304px"]);
+    expect(container.querySelector(".chronicle-tracks")).toHaveStyle({ height: "456px" });
+    expect(fills).toHaveLength(5);
+    expect(fills.map((fill) => fill.style.top)).toEqual(["0px", "0px", "228px", "0px", "0px"]);
+    expect(fills.map((fill) => fill.style.height)).toEqual(["456px", "228px", "228px", "456px", "456px"]);
   });
 
   it("dateのplanned/actual列とstatus badgeを既存class名で描画する", () => {
