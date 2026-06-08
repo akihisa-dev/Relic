@@ -912,6 +912,11 @@
   fill: var(--chronicle-fill);
 }
 
+.chronicle-fill-hit {
+  fill: transparent;
+  pointer-events: all;
+}
+
 .chronicle-tracks-svg .chronicle-fill:hover .chronicle-fill-shape {
   fill: var(--chronicle-fill-hover);
 }

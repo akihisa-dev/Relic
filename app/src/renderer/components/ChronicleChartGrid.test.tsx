@@ -164,20 +164,27 @@ describe("ChronicleChartGrid", () => {
       rows: buildChartRows(chronicleChart.entries, "chronicle")
     });
     const fills = Array.from(container.querySelectorAll(".chronicle-fill--chronicle")) as SVGGElement[];
-    const shapes = Array.from(container.querySelectorAll(".chronicle-fill-shape")) as SVGRectElement[];
+    const shapes = Array.from(container.querySelectorAll(".chronicle-fill-shape")) as SVGPathElement[];
+    const hitPaths = Array.from(container.querySelectorAll(".chronicle-fill-hit")) as SVGPathElement[];
 
     expect(container.querySelector(".chronicle-name-column")).toBeNull();
     expect(container.querySelector(".chronicle-tracks")).toHaveStyle({ height: "76px" });
     expect(container.querySelector(".chronicle-tracks-svg")).toHaveAttribute("height", "76");
     expect(container.querySelectorAll(".chronicle-tracks .chronicle-guide-row-line")).toHaveLength(0);
-    expect(fills).toHaveLength(5);
-    expect(shapes.map((shape) => shape.getAttribute("y"))).toEqual(["0", "0", "38", "0", "0"]);
-    expect(shapes.map((shape) => shape.getAttribute("height"))).toEqual(["76", "38", "38", "76", "76"]);
-    expect(shapes.map((shape) => shape.getAttribute("rx"))).toEqual(["0", "0", "3", "0", "3"]);
+    expect(fills).toHaveLength(3);
+    expect(shapes).toHaveLength(3);
+    expect(hitPaths).toHaveLength(5);
+    expect(hitPaths.map((shape) => shape.getAttribute("d"))).toEqual([
+      "M 108,0 H 180 V 76 H 108 Z",
+      "M 180,0 H 432 V 38 H 180 Z",
+      "M 432,0 H 504 V 76 H 432 Z",
+      "M 180,38 H 432 V 76 H 180 Z",
+      "M 828,0 H 1044 V 76 H 828 Z"
+    ]);
     expect(container.querySelectorAll(".chronicle-fill-label")).toHaveLength(3);
-    expect(fills[0].style.getPropertyValue("--chronicle-fill")).toBe(fills[1].style.getPropertyValue("--chronicle-fill"));
-    expect(fills[1].style.getPropertyValue("--chronicle-fill")).not.toBe(fills[2].style.getPropertyValue("--chronicle-fill"));
-    expect(fills[3].style.getPropertyValue("--chronicle-fill")).toMatch(/^hsla\(/);
+    expect(shapes[0].getAttribute("d")).toContain("M 108,0");
+    expect(fills[0].style.getPropertyValue("--chronicle-fill")).not.toBe(fills[1].style.getPropertyValue("--chronicle-fill"));
+    expect(fills[2].style.getPropertyValue("--chronicle-fill")).toMatch(/^hsla\(/);
     expect(fills.map((fill) => fill.style.getPropertyValue("--chronicle-fill")).join(" ")).toMatch(/hsla\((126|168|202|226|252|286|322|354|18|42|82|190),/);
   });
 
@@ -194,15 +201,22 @@ describe("ChronicleChartGrid", () => {
       rows: buildChartRows(chronicleChart.entries, "chronicle")
     });
     const fills = Array.from(container.querySelectorAll(".chronicle-fill--chronicle")) as SVGGElement[];
-    const longEntrySegments = fills.filter((fill) => fill.getAttribute("aria-label")?.includes("A "));
-    const longEntryShapes = longEntrySegments.map((fill) => fill.querySelector(".chronicle-fill-shape") as SVGRectElement);
+    const longEntryBars = fills.filter((fill) => fill.getAttribute("aria-label")?.includes("A "));
+    const longEntryHitPaths = longEntryBars.flatMap((fill) =>
+      Array.from(fill.querySelectorAll(".chronicle-fill-hit")) as SVGPathElement[]
+    );
 
     expect(container.querySelector(".chronicle-tracks")).toHaveStyle({ height: "76px" });
     expect(container.querySelectorAll(".chronicle-tracks .chronicle-guide-row-line")).toHaveLength(0);
-    expect(longEntrySegments).toHaveLength(4);
-    expect(longEntryShapes.map((shape) => shape.getAttribute("y"))).toEqual(["38", "0", "38", "0"]);
-    expect(longEntryShapes.map((shape) => shape.getAttribute("height"))).toEqual(["38", "76", "38", "76"]);
-    expect(longEntrySegments[0]).toHaveTextContent("10 〜 30");
+    expect(longEntryBars).toHaveLength(1);
+    expect(longEntryHitPaths).toHaveLength(4);
+    expect(longEntryHitPaths.map((shape) => shape.getAttribute("d"))).toEqual([
+      "M 108,38 H 216 V 76 H 108 Z",
+      "M 216,0 H 252 V 76 H 216 Z",
+      "M 252,38 H 360 V 76 H 252 Z",
+      "M 360,0 H 864 V 76 H 360 Z"
+    ]);
+    expect(longEntryBars[0]).toHaveTextContent("10 〜 30");
   });
 
   it("chronicleでは最大重なり数に応じて年表の高さを広げる", () => {
@@ -217,11 +231,11 @@ describe("ChronicleChartGrid", () => {
       activeChart: chronicleChart,
       rows: buildChartRows(chronicleChart.entries, "chronicle")
     });
-    const shapes = Array.from(container.querySelectorAll(".chronicle-fill-shape")) as SVGRectElement[];
+    const hitPaths = Array.from(container.querySelectorAll(".chronicle-fill-hit")) as SVGPathElement[];
 
     expect(container.querySelector(".chronicle-tracks")).toHaveStyle({ height: "114px" });
     expect(container.querySelector(".chronicle-tracks-svg")).toHaveAttribute("height", "114");
-    expect(shapes.map((shape) => shape.getAttribute("height"))).toContain("38");
+    expect(hitPaths.map((shape) => shape.getAttribute("d"))).toContain("M 216,76 H 324 V 114 H 216 Z");
   });
 
   it("dateのplanned/actual列とstatus badgeを既存class名で描画する", () => {
