@@ -212,6 +212,35 @@ describe("ChronicleChartGrid", () => {
     expect(fileLabels[0].getAttribute("y")).not.toBe(fileLabels[1].getAttribute("y"));
   });
 
+  it("chronicleではバーのホバーと選択で詳細カードを表示し、ファイルを開ける", () => {
+    const { container, props } = renderGrid();
+    const fill = container.querySelector(".chronicle-fill--chronicle") as SVGGElement;
+
+    fireEvent.pointerEnter(fill);
+
+    expect(screen.getByRole("dialog")).toHaveTextContent("鎌倉時代");
+    expect(screen.getByRole("dialog")).toHaveTextContent("1185 〜 1333");
+
+    fireEvent.pointerDown(fill);
+    fireEvent.click(screen.getByRole("button", { name: "鎌倉時代を開く" }));
+
+    expect(props.onOpenFile).toHaveBeenCalledWith("history/kamakura.md");
+  });
+
+  it("chronicleでは空白クリックで固定表示の詳細カードを閉じる", () => {
+    const { container } = renderGrid();
+    const fill = container.querySelector(".chronicle-fill--chronicle") as SVGGElement;
+    const svg = container.querySelector(".chronicle-tracks-svg") as SVGSVGElement;
+
+    fireEvent.pointerDown(fill);
+
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+
+    fireEvent.pointerDown(svg);
+
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
   it("chronicleではドラッグ中のentryでレーン判定を動かさない", () => {
     const chronicleChart = chart({
       entries: [

@@ -180,6 +180,7 @@ export function ChronicleChartGrid({
               dateScale={dateScale}
               dragPreview={dragPreview}
               guideTicks={visibleGuideTicks}
+              onOpenFile={onOpenFile}
               onStartEntryEdit={onStartEntryEdit}
               rows={rows}
               scrollLeft={scrollLeft}
