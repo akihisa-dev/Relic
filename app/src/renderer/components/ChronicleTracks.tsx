@@ -293,7 +293,7 @@ function buildChronicleLaneIndexes(rows: ChartRow[], dragPreview: DragPreview | 
     row.entries.map((entry) => {
       const currentOrder = order;
       order += 1;
-      const shouldFreezeLane = dragPreview?.source === "chronicle" && dragPreview.editKind !== "move";
+      const shouldFreezeLane = dragPreview?.source === "chronicle";
       return {
         displayEntry: shouldFreezeLane ? entry : previewEntryForDrag(entry, dragPreview),
         entry,
