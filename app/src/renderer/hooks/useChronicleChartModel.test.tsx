@@ -108,8 +108,8 @@ describe("useChronicleChartModel", () => {
     expect(result.current.rows.map((row) => row.path)).toEqual(["tasks/implementation.md"]);
   });
 
-  it("更新操作までは既存の行順を維持する", async () => {
-    const firstChart = chart({
+  it("chronicle表示では隠れたquery/sort stateをrowsへ反映しない", () => {
+    const chronicleChart = chart({
       entries: [
         entry({ fileName: "A", path: "a.md", startValue: 10, endValue: 10 }),
         entry({ fileName: "B", path: "b.md", startValue: 20, endValue: 20 })
@@ -117,6 +117,27 @@ describe("useChronicleChartModel", () => {
       id: "chronicle",
       name: "chronicle",
       source: "chronicle"
+    });
+    const { result } = renderHook(() => useChronicleChartModel({ chart: chronicleChart, charts: [], chronicleCalendars: defaultChronicleCalendars }));
+
+    act(() => {
+      result.current.setQuery("一致しない検索語");
+      result.current.setSortKey("start-desc");
+      result.current.refreshRowOrder();
+    });
+
+    expect(result.current.rows.map((row) => row.path)).toEqual(["a.md", "b.md"]);
+  });
+
+  it("date表示では更新操作までは既存の行順を維持する", async () => {
+    const firstChart = chart({
+      entries: [
+        entry({ dateKind: "planned", fileName: "A", path: "a.md", startValue: 10, endValue: 10 }),
+        entry({ dateKind: "planned", fileName: "B", path: "b.md", startValue: 20, endValue: 20 })
+      ],
+      id: "date",
+      name: "date",
+      source: "date"
     });
     const { rerender, result } = renderHook(
       ({ activeChart }) => useChronicleChartModel({ chart: activeChart, charts: [], chronicleCalendars: defaultChronicleCalendars }),
@@ -141,8 +162,8 @@ describe("useChronicleChartModel", () => {
       activeChart: {
         ...firstChart,
         entries: [
-          entry({ fileName: "A", path: "a.md", startValue: 30, endValue: 30 }),
-          entry({ fileName: "B", path: "b.md", startValue: 5, endValue: 5 })
+          entry({ dateKind: "planned", fileName: "A", path: "a.md", startValue: 30, endValue: 30 }),
+          entry({ dateKind: "planned", fileName: "B", path: "b.md", startValue: 5, endValue: 5 })
         ]
       }
     });
