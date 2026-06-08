@@ -173,6 +173,7 @@ describe("ChronicleChartGrid", () => {
     expect(fills[0].style.getPropertyValue("--chronicle-fill")).toBe(fills[1].style.getPropertyValue("--chronicle-fill"));
     expect(fills[1].style.getPropertyValue("--chronicle-fill")).not.toBe(fills[2].style.getPropertyValue("--chronicle-fill"));
     expect(fills[3].style.getPropertyValue("--chronicle-fill")).toMatch(/^hsla\(/);
+    expect(fills.map((fill) => fill.style.getPropertyValue("--chronicle-fill")).join(" ")).toMatch(/hsla\((126|168|202|226|252|286|322|354|18|42|82|190),/);
   });
 
   it("dateのplanned/actual列とstatus badgeを既存class名で描画する", () => {
