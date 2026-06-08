@@ -88,14 +88,12 @@ describe("App charts", () => {
     });
     expect(useUiStore.getState().isSidebarOpen).toBe(false);
     expect(renderResult.container.querySelector(".chronicle-sidebar")).toBeNull();
-    expect(screen.getAllByText("鎌倉時代").length).toBeGreaterThan(0);
     expect(screen.getByText("1185 〜 1333")).toBeInTheDocument();
-    expect(screen.getByText("年代")).toBeInTheDocument();
-    expect(screen.getByText("1185-1333")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "1185-1333" })).toHaveAttribute(
-      "title",
-      "この年代へ移動"
-    );
+    expect(renderResult.container.querySelector(".chronicle-name-column")).toBeNull();
+    expect(renderResult.container.querySelector(".chronicle-year-summary")).toBeNull();
+    expect(screen.queryByText("年代")).not.toBeInTheDocument();
+    expect(screen.queryByText("1185-1333")).not.toBeInTheDocument();
+    expect(renderResult.container.querySelector(".chronicle-tracks")).toHaveStyle({ height: "38px" });
     expect(renderResult.container.querySelector(".chronicle-toolbar")).toBeNull();
     expect(renderResult.container.querySelector(".chronicle-minimap")).toBeNull();
     expect(renderResult.container.querySelector(".chronicle-minimap-item")).toBeNull();

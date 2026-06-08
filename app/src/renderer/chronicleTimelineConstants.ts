@@ -1,5 +1,4 @@
 export const ROW_HEIGHT = 38;
-export const CHRONICLE_NAME_COLUMN_WIDTH = 420;
 export const DATE_NAME_COLUMN_WIDTH = 430;
 export const TICK_WIDTH = 72;
 export const LABEL_HORIZONTAL_PADDING = 14;

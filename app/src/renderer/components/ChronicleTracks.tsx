@@ -49,18 +49,20 @@ export function ChronicleTracks({
   timelineWidth: number;
   unitWidth: number;
 }): ReactElement {
+  const trackRowCount = activeSource === "date" ? Math.max(1, rows.length) : 1;
+
   return (
     <div
       className={`chronicle-tracks${activeSource === "date" ? " chronicle-tracks--date" : ""}`}
       style={{
-        height: Math.max(1, rows.length) * ROW_HEIGHT,
+        height: trackRowCount * ROW_HEIGHT,
         width: timelineWidth
       } as CSSProperties}
     >
       <ChartGuideLines
         axisStart={axisStart}
         dateScale={dateScale}
-        rowCount={Math.max(1, rows.length)}
+        rowCount={trackRowCount}
         source={activeSource}
         ticks={guideTicks}
         unitWidth={unitWidth}
@@ -68,7 +70,7 @@ export function ChronicleTracks({
       {activeSource === "date" ? (
         <TodayLine axisEnd={axisEnd} axisStart={axisStart} unitWidth={unitWidth} />
       ) : null}
-      {rows.map((row, index) => row.entries.map((entry) => (
+      {rows.map((row, index) => row.entries.map((entry, entryIndex) => (
         <ChronicleEntryBar
           activeSource={activeSource}
           axisStart={axisStart}
@@ -77,9 +79,10 @@ export function ChronicleTracks({
           entry={entry}
           key={entryKey(entry)}
           onStartEntryEdit={onStartEntryEdit}
-          rowIndex={index}
+          rowIndex={activeSource === "date" ? index : 0}
           scrollLeft={scrollLeft}
           unitWidth={unitWidth}
+          zIndex={activeSource === "date" ? undefined : entryIndex + index + 10}
         />
       )))}
     </div>
@@ -95,7 +98,8 @@ function ChronicleEntryBar({
   onStartEntryEdit,
   rowIndex,
   scrollLeft,
-  unitWidth
+  unitWidth,
+  zIndex
 }: {
   activeSource: ChartSource;
   axisStart: number;
@@ -110,6 +114,7 @@ function ChronicleEntryBar({
   rowIndex: number;
   scrollLeft: number;
   unitWidth: number;
+  zIndex?: number;
 }): ReactElement {
   const t = useT();
   const previewEntry = previewEntryForDrag(entry, dragPreview);
@@ -151,7 +156,8 @@ function ChronicleEntryBar({
         height: activeSource === "date" ? dateFillHeight() : undefined,
         left,
         top,
-        width
+        width,
+        zIndex
       }}
       title={`${entry.fileName}${activeSource === "date" ? ` ${formatDateKindLabel(entry.dateKind, t)}: ` : " "}${rangeLabel}`}
       type="button"

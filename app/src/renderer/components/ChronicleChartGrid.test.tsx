@@ -98,17 +98,16 @@ describe("ChronicleChartGrid", () => {
     expect(container.querySelector(".chronicle-chart-layout")).toHaveClass("chronicle-chart-layout--chronicle");
     expect(container.querySelector(".chronicle-vertical-panel")).toBeNull();
     expect(container.querySelector(".chronicle-vertical-minimap")).toBeNull();
-    expect(container.querySelector(".chronicle-name-column")).toHaveStyle({ width: "420px" });
-    expect(container.querySelector(".chronicle-name-header--chronicle")).toBeInTheDocument();
+    expect(container.querySelector(".chronicle-name-column")).toBeNull();
+    expect(container.querySelector(".chronicle-name-header--chronicle")).toBeNull();
+    expect(container.querySelector(".chronicle-year-summary")).toBeNull();
     expect(container.querySelector(".chronicle-axis--chronicle")).toBeInTheDocument();
     expect(container.querySelector(".chronicle-fill--chronicle")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "鎌倉時代" }));
-    fireEvent.click(screen.getByTitle("この年代へ移動"));
     fireEvent.pointerDown(container.querySelector(".chronicle-chart") as Element);
 
-    expect(props.onOpenFile).toHaveBeenCalledWith("history/kamakura.md");
-    expect(props.onJump).toHaveBeenCalledWith(expect.any(Number));
+    expect(props.onOpenFile).not.toHaveBeenCalled();
+    expect(props.onJump).not.toHaveBeenCalled();
     expect(props.onChartPointerDown).toHaveBeenCalledTimes(1);
   });
 
@@ -146,11 +145,30 @@ describe("ChronicleChartGrid", () => {
     });
 
     expect(container.querySelectorAll(".chronicle-axis--chronicle .chronicle-axis-row")).toHaveLength(2);
-    expect(container.querySelector(".chronicle-name-header--chronicle")).toHaveTextContent("王国暦");
-    expect(container.querySelector(".chronicle-name-header--chronicle")).toHaveTextContent("帝国暦");
-    expect(container.querySelector(".chronicle-year-summary")).toHaveTextContent("帝国暦 21-22");
+    expect(container.querySelector(".chronicle-name-header--chronicle")).toBeNull();
+    expect(container.querySelector(".chronicle-year-summary")).toBeNull();
     expect(container.querySelector(".chronicle-fill-label")).toHaveTextContent("21 〜 22");
     expect(container.querySelector(".chronicle-fill-label")).not.toHaveTextContent("帝国暦");
+  });
+
+  it("chronicleでは複数entryを1行に重ねる", () => {
+    const chronicleChart = chart({
+      entries: [
+        entry({ fileName: "A", path: "a.md", startValue: 10, endValue: 20 }),
+        entry({ fileName: "B", path: "b.md", startValue: 12, endValue: 18 }),
+        entry({ fileName: "C", path: "c.md", startValue: 30, endValue: 35 })
+      ]
+    });
+    const { container } = renderGrid({
+      activeChart: chronicleChart,
+      rows: buildChartRows(chronicleChart.entries, "chronicle")
+    });
+    const fills = Array.from(container.querySelectorAll(".chronicle-fill--chronicle")) as HTMLElement[];
+
+    expect(container.querySelector(".chronicle-name-column")).toBeNull();
+    expect(container.querySelector(".chronicle-tracks")).toHaveStyle({ height: "38px" });
+    expect(fills).toHaveLength(3);
+    expect(fills.map((fill) => fill.style.top)).toEqual(["0px", "0px", "0px"]);
   });
 
   it("dateのplanned/actual列とstatus badgeを既存class名で描画する", () => {
@@ -184,6 +202,7 @@ describe("ChronicleChartGrid", () => {
 
     expect(screen.getByText("計画")).toBeInTheDocument();
     expect(screen.getByText("実行")).toBeInTheDocument();
+    expect(container.querySelector(".chronicle-name-column")).toHaveStyle({ width: "430px" });
     expect(container.querySelector(".chronicle-name-header--date")).toBeInTheDocument();
     expect(container.querySelector(".chronicle-fill--planned")).toBeInTheDocument();
     expect(container.querySelector(".chronicle-fill--actual")).toBeInTheDocument();

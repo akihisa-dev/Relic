@@ -93,6 +93,7 @@ export function ChronicleChartGrid({
   verticalOffscreenIndicators
 }: ChronicleChartGridProps): ReactElement {
   const t = useT();
+  const showNameColumn = activeSource === "date";
 
   if (!activeChart) {
     return <div className="frontmatter-field-empty">{t("chronicle.empty")}</div>;
@@ -136,15 +137,17 @@ export function ChronicleChartGrid({
           />
         ) : null}
         <div className="chronicle-grid" style={{ width: nameColumnWidth + timelineWidth }}>
-          <ChronicleNameColumn
-            activeSource={activeSource}
-            chronicleCalendars={chronicleCalendars}
-            dateAxisHeight={dateAxisHeight}
-            nameColumnWidth={nameColumnWidth}
-            onJump={onJump}
-            onOpenFile={onOpenFile}
-            rows={rows}
-          />
+          {showNameColumn ? (
+            <ChronicleNameColumn
+              activeSource={activeSource}
+              chronicleCalendars={chronicleCalendars}
+              dateAxisHeight={dateAxisHeight}
+              nameColumnWidth={nameColumnWidth}
+              onJump={onJump}
+              onOpenFile={onOpenFile}
+              rows={rows}
+            />
+          ) : null}
           <div className="chronicle-timeline" style={{ marginLeft: nameColumnWidth, width: timelineWidth }}>
             {activeSource === "date" ? (
               <DateAxis

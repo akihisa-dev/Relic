@@ -3,7 +3,6 @@ import type { Dispatch, SetStateAction } from "react";
 
 import type { ChronicleCalendarSettings, ChartSource, WorkspaceChart } from "../../shared/ipc";
 import {
-  CHRONICLE_NAME_COLUMN_WIDTH,
   DATE_NAME_COLUMN_WIDTH,
   DATE_SCALES,
   ROW_HEIGHT,
@@ -133,7 +132,7 @@ export function useChronicleChartModel({
   const { axisEnd, axisStart } = useStableTimelineBounds(computedBounds, boundsKey);
   const axisSpan = Math.max(1, axisEnd - axisStart + 1);
   const unitWidth = activeSource === "date" ? dateUnitWidth(dateScale) : chronicleUnitWidth(tickInterval, TICK_WIDTH);
-  const nameColumnWidth = activeSource === "date" ? DATE_NAME_COLUMN_WIDTH : CHRONICLE_NAME_COLUMN_WIDTH;
+  const nameColumnWidth = activeSource === "date" ? DATE_NAME_COLUMN_WIDTH : 0;
   const timelineWidth = Math.max(720, axisSpan * unitWidth);
   const ticks = useMemo(
     () => buildTicks(axisStart, axisEnd, tickInterval, activeSource, dateScale),

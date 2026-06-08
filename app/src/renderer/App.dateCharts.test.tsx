@@ -482,7 +482,7 @@ describe("App date charts", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "年表" }));
 
-    expect(screen.getAllByText("鎌倉時代").length).toBeGreaterThan(0);
+    expect(document.querySelector(".chronicle-name-column")).toBeNull();
     expect(screen.getByText("1185 〜 1333")).toBeInTheDocument();
   });
 });
