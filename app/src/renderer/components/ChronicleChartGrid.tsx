@@ -31,6 +31,7 @@ export interface ChronicleChartGridProps {
   axisEnd: number;
   axisStart: number;
   chartRef: RefObject<HTMLDivElement | null>;
+  chartViewportHeight: number;
   chartViewportWidth: number;
   chronicleOffscreenIndicators: { left: DateOffscreenIndicator | null; right: DateOffscreenIndicator | null };
   chronicleCalendars: ChronicleCalendarSettings[];
@@ -67,6 +68,7 @@ export function ChronicleChartGrid({
   axisEnd,
   axisStart,
   chartRef,
+  chartViewportHeight,
   chartViewportWidth,
   chronicleOffscreenIndicators,
   chronicleCalendars,
@@ -181,6 +183,7 @@ export function ChronicleChartGrid({
               onStartEntryEdit={onStartEntryEdit}
               rows={rows}
               scrollLeft={scrollLeft}
+              trackViewportHeight={Math.max(1, chartViewportHeight - dateAxisHeight)}
               timelineWidth={timelineWidth}
               unitWidth={unitWidth}
             />

@@ -98,6 +98,7 @@ export function ChartView({ chart = null, charts = defaultCharts, chronicleCalen
         axisEnd={model.axisEnd}
         axisStart={model.axisStart}
         chartRef={viewport.chartRef}
+        chartViewportHeight={viewport.chartViewportHeight}
         chartViewportWidth={viewport.chartViewportWidth}
         chronicleOffscreenIndicators={viewportState.chronicleOffscreenIndicators}
         chronicleCalendars={chronicleCalendars}
