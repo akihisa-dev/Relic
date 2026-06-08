@@ -135,11 +135,13 @@ export function App(): ReactElement {
   });
   const isRightPanelOutlineAvailable = featureToggles.rightPanelOutline;
   const isRightPanelLinksAvailable = featureToggles.rightPanelLinks;
-  const isRightPanelAvailable = isRightPanelOutlineAvailable || isRightPanelLinksAvailable;
+  const isRightPanelFrontmatterAvailable = featureToggles.frontmatter;
+  const isRightPanelAvailable = isRightPanelOutlineAvailable || isRightPanelLinksAvailable || isRightPanelFrontmatterAvailable;
   const effectiveRightPanelView = resolveEnabledRightPanelView(
     rightPanelView,
     isRightPanelOutlineAvailable,
-    isRightPanelLinksAvailable
+    isRightPanelLinksAvailable,
+    isRightPanelFrontmatterAvailable
   );
   const isEffectiveRightPanelOpen = isRightPanelAvailable && isRightPanelOpen;
   const toggleRightPanelIfAvailable = useCallback((): void => {
@@ -356,6 +358,7 @@ export function App(): ReactElement {
   const handleRightPanelViewButton = useCallback((view: RightPanelView): void => {
     if (view === "outline" && !isRightPanelOutlineAvailable) return;
     if (view === "links" && !isRightPanelLinksAvailable) return;
+    if (view === "frontmatter" && !isRightPanelFrontmatterAvailable) return;
 
     if (isEffectiveRightPanelOpen && effectiveRightPanelView === view) {
       toggleRightPanel();
@@ -366,6 +369,7 @@ export function App(): ReactElement {
   }, [
     effectiveRightPanelView,
     isEffectiveRightPanelOpen,
+    isRightPanelFrontmatterAvailable,
     isRightPanelLinksAvailable,
     isRightPanelOutlineAvailable,
     setRightPanelView,
@@ -489,6 +493,7 @@ export function App(): ReactElement {
   const appLayoutProps = createAppLayoutProps({
     activeChartIds,
     activeFileTabInFocusedPane,
+    activeFileTabForRightPanel: activeFileTabInFocusedPane,
     activePanelTabIds,
     activeSidebarView,
     aliasesByPath,
@@ -507,6 +512,7 @@ export function App(): ReactElement {
     existingMarkdownPaths,
     featureRightPanelLinksAvailable: isRightPanelLinksAvailable,
     featureRightPanelOutlineAvailable: isRightPanelOutlineAvailable,
+    featureRightPanelFrontmatterAvailable: isRightPanelFrontmatterAvailable,
     fileSearchFocusRequest,
     fileSelectionCount,
     focusedPane,
@@ -612,6 +618,7 @@ export function App(): ReactElement {
     setShowCommandPalette,
     setShowQuickSwitcher,
     setTabActive,
+    updateTabContent,
     setWorkspaceError,
     showCommandPalette,
     showQuickSwitcher,
@@ -634,10 +641,14 @@ export function App(): ReactElement {
 function resolveEnabledRightPanelView(
   currentView: RightPanelView,
   isOutlineAvailable: boolean,
-  isLinksAvailable: boolean
+  isLinksAvailable: boolean,
+  isFrontmatterAvailable: boolean
 ): RightPanelView {
   if (currentView === "outline" && isOutlineAvailable) return "outline";
   if (currentView === "links" && isLinksAvailable) return "links";
+  if (currentView === "frontmatter" && isFrontmatterAvailable) return "frontmatter";
   if (isOutlineAvailable) return "outline";
+  if (isLinksAvailable) return "links";
+  if (isFrontmatterAvailable) return "frontmatter";
   return "links";
 }

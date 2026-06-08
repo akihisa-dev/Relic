@@ -1,16 +1,21 @@
 import type { Dispatch, MouseEvent as ReactMouseEvent, ReactElement, SetStateAction } from "react";
 
-import type { Backlink } from "../../shared/ipc";
+import type { Backlink, EditorSettings, UserDefinedField } from "../../shared/ipc";
 import type { ResolvedWikiLink } from "../../shared/links";
 import type { AppLinkContextMenu } from "../appLinks";
 import { markdownLinkForPath } from "../appLinks";
 import type { OutlineHeading } from "../editorDerivedState";
 import { useT } from "../i18n";
+import type { FileTab } from "../store/editorStore";
 import type { RightPanelView } from "../store/uiStore";
 import { fixedMenuPosition } from "./railNavigationModel";
+import { RightPanelFrontmatterForm } from "./RightPanelFrontmatterForm";
 
 interface AppRightPanelProps {
+  activeFileTab: FileTab | null;
   backlinks: Backlink[];
+  editorSettings: EditorSettings;
+  frontmatterCandidates: Record<string, string[]>;
   isLoadingBacklinks: boolean;
   isOpen: boolean;
   isResizing: boolean;
@@ -18,16 +23,21 @@ interface AppRightPanelProps {
   onOpenWikiLink: (target: string, heading?: string) => void;
   onOutlineHeadingClick: (heading: OutlineHeading) => void;
   onResizeStart: (event: ReactMouseEvent) => void;
+  onUpdateTabContent: (tabId: string, content: string) => void;
   outlineHeadings: OutlineHeading[];
   outgoingLinks: ResolvedWikiLink[];
   outgoingLinksLimited: boolean;
   rightPanelView: RightPanelView;
   setLinkContextMenu: Dispatch<SetStateAction<AppLinkContextMenu | null>>;
+  userDefinedFields: UserDefinedField[];
   width: number;
 }
 
 export function AppRightPanel({
+  activeFileTab,
   backlinks,
+  editorSettings,
+  frontmatterCandidates,
   isLoadingBacklinks,
   isOpen,
   isResizing,
@@ -35,11 +45,13 @@ export function AppRightPanel({
   onOpenWikiLink,
   onOutlineHeadingClick,
   onResizeStart,
+  onUpdateTabContent,
   outlineHeadings,
   outgoingLinks,
   outgoingLinksLimited,
   rightPanelView,
   setLinkContextMenu,
+  userDefinedFields,
   width
 }: AppRightPanelProps): ReactElement {
   const t = useT();
@@ -49,13 +61,13 @@ export function AppRightPanel({
 
   return (
     <aside
-      aria-label={rightPanelView === "outline" ? t("pane.outline") : t("pane.links")}
+      aria-label={rightPanelTitle(rightPanelView, t)}
       aria-hidden={!isOpen}
       className={`right-panel${isOpen ? "" : " right-panel--closed"}${isResizing ? " right-panel--resizing" : ""}`}
       style={{ flexBasis: isOpen ? width : 0, width: isOpen ? width : 0 }}
     >
       <div className="right-panel-title">
-        {rightPanelView === "outline" ? t("pane.outline") : t("pane.links")}
+        {rightPanelTitle(rightPanelView, t)}
       </div>
       <div className={`sidebar-body right-panel-content right-panel-content--${rightPanelView}`}>
       {rightPanelView === "outline" ? (
@@ -77,6 +89,14 @@ export function AppRightPanel({
         ) : (
           <div className="empty-note">{t("empty.noHeadings")}</div>
         )
+      ) : rightPanelView === "frontmatter" ? (
+        <RightPanelFrontmatterForm
+          activeFileTab={activeFileTab}
+          editorSettings={editorSettings}
+          frontmatterCandidates={frontmatterCandidates}
+          onUpdateTabContent={onUpdateTabContent}
+          userDefinedFields={userDefinedFields}
+        />
       ) : outgoingLinks.length > 0 || backlinks.length > 0 || isLoadingBacklinks ? (
         <div className="links-panel-stack">
           <div className="links-panel-section">
@@ -173,4 +193,10 @@ export function AppRightPanel({
       </div>
     </aside>
   );
+}
+
+function rightPanelTitle(view: RightPanelView, t: ReturnType<typeof useT>): string {
+  if (view === "outline") return t("pane.outline");
+  if (view === "frontmatter") return t("pane.frontmatter");
+  return t("pane.links");
 }

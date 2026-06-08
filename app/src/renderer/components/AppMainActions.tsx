@@ -13,6 +13,7 @@ interface AppMainActionsProps {
   onSplitToggle: () => void;
   rightPanelView: RightPanelView;
   showSourceControl?: boolean;
+  showRightPanelFrontmatterControl: boolean;
   showRightPanelLinksControl: boolean;
   showRightPanelOutlineControl: boolean;
 }
@@ -26,6 +27,7 @@ export function AppMainActions({
   onSplitToggle,
   rightPanelView,
   showSourceControl = true,
+  showRightPanelFrontmatterControl,
   showRightPanelLinksControl,
   showRightPanelOutlineControl
 }: AppMainActionsProps): ReactElement {
@@ -75,7 +77,32 @@ export function AppMainActions({
           <LinksIcon />
         </button>
       ) : null}
+      {showRightPanelFrontmatterControl ? (
+        <button
+          aria-label={t("pane.frontmatter")}
+          className={`toolbar-btn${rightPanelView === "frontmatter" && isRightPanelOpen ? " active" : ""}`}
+          data-tooltip={t("pane.toggleFrontmatter")}
+          onClick={() => onRightPanelViewButton("frontmatter")}
+          title={t("pane.toggleFrontmatter")}
+          type="button"
+        >
+          <FrontmatterIcon />
+        </button>
+      ) : null}
     </div>
+  );
+}
+
+function FrontmatterIcon(): ReactElement {
+  return (
+    <svg aria-hidden="true" fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="18">
+      <path d="M5 5h14" />
+      <path d="M5 12h14" />
+      <path d="M5 19h14" />
+      <path d="M8 3v4" />
+      <path d="M16 10v4" />
+      <path d="M11 17v4" />
+    </svg>
   );
 }
 

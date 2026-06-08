@@ -99,6 +99,96 @@
   white-space: nowrap;
 }
 
+/* ────────────────────────────────── */
+/* Right panel frontmatter            */
+/* ────────────────────────────────── */
+
+.right-frontmatter-panel {
+  animation: right-panel-content-in var(--motion-normal) var(--ease-enter);
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+
+.right-frontmatter-file {
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.right-frontmatter-fields {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.right-frontmatter-row {
+  align-items: start;
+  animation: frontmatter-row-in var(--motion-normal) var(--ease-enter);
+  display: grid;
+  gap: 6px;
+  grid-template-columns: minmax(0, 1fr) 24px;
+  min-width: 0;
+}
+
+.right-frontmatter-key {
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 700;
+  grid-column: 1 / -1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.right-frontmatter-control {
+  min-width: 0;
+}
+
+.right-frontmatter-control .cm-frontmatter-input,
+.right-frontmatter-add-input {
+  border-bottom: 1px solid var(--border);
+  min-height: 28px;
+}
+
+.right-frontmatter-control .cm-frontmatter-chronicle,
+.right-frontmatter-control .cm-frontmatter-date-range {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.right-frontmatter-control .cm-frontmatter-yaml-input {
+  border-bottom: 1px solid var(--border);
+  min-height: 72px;
+}
+
+.right-frontmatter-add {
+  border-top: 1px solid var(--border);
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding-top: 12px;
+}
+
+.right-frontmatter-add-input {
+  background: transparent;
+  border-left: 0;
+  border-right: 0;
+  border-top: 0;
+  color: var(--text);
+  font: inherit;
+  min-width: 0;
+  outline: none;
+  padding: 0;
+  width: 100%;
+}
+
+.right-frontmatter-add-input:focus {
+  border-bottom-color: var(--accent);
+}
+
 
 /* ────────────────────────────────── */
 /* Right panel                        */

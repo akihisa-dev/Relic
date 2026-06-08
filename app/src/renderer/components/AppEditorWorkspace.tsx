@@ -13,6 +13,7 @@ import { PaneView } from "./PaneView";
 
 interface AppEditorWorkspaceProps {
   allFilePaths: string[];
+  activeFileTab: FileTab | null;
   backlinks: Backlink[];
   editorActionPulse: number;
   editorSettings: EditorSettings;
@@ -57,6 +58,7 @@ interface AppEditorWorkspaceProps {
   onTabMove: (fromPane: PaneId, toPane: PaneId, tabId: string, targetTabId?: string | null, position?: "before" | "after") => void;
   onTabSelect: (pane: PaneId, tabId: string) => void;
   onTogglePinTab?: (tabId: string) => void;
+  onUpdateTabContent: (tabId: string, content: string) => void;
   outlineHeadings: OutlineHeading[];
   outgoingLinks: ResolvedWikiLink[];
   outgoingLinksLimited: boolean;
@@ -69,6 +71,7 @@ interface AppEditorWorkspaceProps {
   rightPanelView: RightPanelView;
   rightPanelWidth: number;
   setLinkContextMenu: Dispatch<SetStateAction<AppLinkContextMenu | null>>;
+  showRightPanelFrontmatterControl: boolean;
   showRightPanelLinksControl: boolean;
   showRightPanelOutlineControl: boolean;
   userDefinedFields: UserDefinedField[];
@@ -77,6 +80,7 @@ interface AppEditorWorkspaceProps {
 
 export function AppEditorWorkspace({
   allFilePaths,
+  activeFileTab,
   backlinks,
   editorActionPulse,
   editorSettings,
@@ -119,6 +123,7 @@ export function AppEditorWorkspace({
   onTabMove,
   onTabSelect,
   onTogglePinTab,
+  onUpdateTabContent,
   outlineHeadings,
   outgoingLinks,
   outgoingLinksLimited,
@@ -131,9 +136,12 @@ export function AppEditorWorkspace({
   rightPanelView,
   rightPanelWidth,
   setLinkContextMenu,
+  showRightPanelFrontmatterControl,
   userDefinedFields,
   workspacePath
 }: AppEditorWorkspaceProps): ReactElement {
+  void showRightPanelFrontmatterControl;
+
   return (
     <main className="main-area">
       <div className="editor-layout">
@@ -237,7 +245,10 @@ export function AppEditorWorkspace({
           />
         ) : null}
         <AppRightPanel
+          activeFileTab={activeFileTab}
           backlinks={backlinks}
+          editorSettings={editorSettings}
+          frontmatterCandidates={frontmatterCandidates}
           isLoadingBacklinks={isLoadingBacklinks}
           isOpen={isRightPanelOpen}
           isResizing={isRightPanelResizing}
@@ -245,11 +256,13 @@ export function AppEditorWorkspace({
           onOpenWikiLink={onOpenWikiLink}
           onOutlineHeadingClick={onOutlineHeadingClick}
           onResizeStart={onRightPanelResizeStart}
+          onUpdateTabContent={onUpdateTabContent}
           outlineHeadings={outlineHeadings}
           outgoingLinks={outgoingLinks}
           outgoingLinksLimited={outgoingLinksLimited}
           rightPanelView={rightPanelView}
           setLinkContextMenu={setLinkContextMenu}
+          userDefinedFields={userDefinedFields}
           width={rightPanelWidth}
         />
       </div>
