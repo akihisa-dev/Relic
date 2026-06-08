@@ -191,6 +191,27 @@ describe("ChronicleChartGrid", () => {
     expect(fills.map((fill) => fill.style.getPropertyValue("--chronicle-fill")).join(" ")).toMatch(/hsla\((126|168|202|226|252|286|322|354|18|42|82|190),/);
   });
 
+  it("chronicleでは短い隣接バーのラベルを見切らずバー内で上下にずらす", () => {
+    const chronicleChart = chart({
+      entries: [
+        entry({ fileName: "01-project-long-name", path: "a.md", startValue: 10, endValue: 10 }),
+        entry({ fileName: "02-character-long-name", path: "b.md", startValue: 11, endValue: 11 })
+      ]
+    });
+    const { container } = renderGrid({
+      activeChart: chronicleChart,
+      rows: buildChartRows(chronicleChart.entries, "chronicle")
+    });
+    const fileLabels = Array.from(container.querySelectorAll(".chronicle-fill-file-label")) as SVGTextElement[];
+    const fileLabelBackgrounds = Array.from(container.querySelectorAll(".chronicle-fill-label-bg--file")) as SVGRectElement[];
+
+    expect(fileLabels).toHaveLength(2);
+    expect(fileLabels[0]).toHaveTextContent("01-project-long-name");
+    expect(fileLabels[1]).toHaveTextContent("02-character-long-name");
+    expect(fileLabelBackgrounds[0].getAttribute("width")).toBe("174");
+    expect(fileLabels[0].getAttribute("y")).not.toBe(fileLabels[1].getAttribute("y"));
+  });
+
   it("chronicleではドラッグ中のentryでレーン判定を動かさない", () => {
     const chronicleChart = chart({
       entries: [
