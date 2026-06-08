@@ -22,7 +22,20 @@ import { ChartGuideLines, TodayLine } from "./chronicleChartParts";
 
 const CHRONICLE_LANE_COUNT = 12;
 const CHRONICLE_TRACK_HEIGHT = ROW_HEIGHT * CHRONICLE_LANE_COUNT;
-const CHRONICLE_COLOR_COUNT = 12;
+const CHRONICLE_COLOR_PALETTE = [
+  { hue: 202, lightness: 43 },
+  { hue: 168, lightness: 39 },
+  { hue: 126, lightness: 39 },
+  { hue: 82, lightness: 38 },
+  { hue: 42, lightness: 42 },
+  { hue: 18, lightness: 45 },
+  { hue: 354, lightness: 46 },
+  { hue: 322, lightness: 45 },
+  { hue: 286, lightness: 45 },
+  { hue: 252, lightness: 46 },
+  { hue: 226, lightness: 45 },
+  { hue: 190, lightness: 40 }
+] as const;
 
 interface OrderedChronicleEntry {
   displayEntry: ChartEntry;
@@ -301,13 +314,12 @@ function ChronicleEntryBar({
 }
 
 function chronicleColorStyleForEntry(entry: ChartEntry): CSSProperties {
-  const colorIndex = stableColorIndex(entry.path || entry.fileName, CHRONICLE_COLOR_COUNT);
-  const hue = 198 + colorIndex * 10;
+  const color = CHRONICLE_COLOR_PALETTE[stableColorIndex(entry.path || entry.fileName, CHRONICLE_COLOR_PALETTE.length)];
 
   return {
-    "--chronicle-fill": `hsla(${hue}, 58%, 43%, 0.34)`,
-    "--chronicle-fill-active": `hsla(${hue}, 58%, 39%, 0.56)`,
-    "--chronicle-fill-hover": `hsla(${hue}, 58%, 41%, 0.44)`
+    "--chronicle-fill": `hsla(${color.hue}, 58%, ${color.lightness}%, 0.38)`,
+    "--chronicle-fill-active": `hsla(${color.hue}, 58%, ${Math.max(32, color.lightness - 4)}%, 0.62)`,
+    "--chronicle-fill-hover": `hsla(${color.hue}, 58%, ${Math.max(34, color.lightness - 2)}%, 0.5)`
   } as CSSProperties;
 }
 
