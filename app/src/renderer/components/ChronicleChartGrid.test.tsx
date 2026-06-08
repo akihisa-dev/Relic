@@ -95,6 +95,9 @@ describe("ChronicleChartGrid", () => {
     const { container, props } = renderGrid();
 
     expect(container.querySelector(".chronicle-chart")).toBeInTheDocument();
+    expect(container.querySelector(".chronicle-chart-layout")).toHaveClass("chronicle-chart-layout--chronicle");
+    expect(container.querySelector(".chronicle-vertical-panel")).toBeNull();
+    expect(container.querySelector(".chronicle-vertical-minimap")).toBeNull();
     expect(container.querySelector(".chronicle-name-column")).toHaveStyle({ width: "420px" });
     expect(container.querySelector(".chronicle-name-header--chronicle")).toBeInTheDocument();
     expect(container.querySelector(".chronicle-axis--chronicle")).toBeInTheDocument();
@@ -301,8 +304,26 @@ describe("ChronicleChartGrid", () => {
     expect(screen.getByText("このガントチャートに表示できるファイルはまだありません。")).toHaveClass("frontmatter-field-empty");
   });
 
-  it("縦方向の画面外件数とミニマップを描画してcallbackへつなぐ", () => {
+  it("dateでは縦方向の画面外件数とミニマップを描画してcallbackへつなぐ", () => {
+    const dateChart = chart({
+      entries: [
+        entry({
+          dateKind: "planned",
+          endLabel: "2026-05-05",
+          endValue: day("2026-05-05"),
+          fileName: "実装タスク",
+          path: "tasks/implementation.md",
+          startLabel: "2026-05-01",
+          startValue: day("2026-05-01")
+        })
+      ],
+      id: "date",
+      name: "date",
+      source: "date"
+    });
     const { container, props } = renderGrid({
+      activeChart: dateChart,
+      activeSource: "date",
       verticalMinimapViewport: { heightPercent: 24, topPercent: 36 },
       verticalOffscreenIndicators: {
         bottom: { count: 42, targetIndex: 20 },
@@ -311,6 +332,7 @@ describe("ChronicleChartGrid", () => {
     });
 
     expect(container.querySelector(".chronicle-chart-layout")).toBeInTheDocument();
+    expect(container.querySelector(".chronicle-chart-layout")).not.toHaveClass("chronicle-chart-layout--chronicle");
     expect(container.querySelector(".chronicle-vertical-panel")).toBeInTheDocument();
     expect(container.querySelector(".chronicle-vertical-panel .chronicle-vertical-minimap")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "上に8件のファイルがあります" }));

@@ -113,7 +113,7 @@ export function ChronicleChartGrid({
       : guideTicks;
 
   return (
-    <div className="chronicle-chart-layout">
+    <div className={`chronicle-chart-layout${activeSource === "chronicle" ? " chronicle-chart-layout--chronicle" : ""}`}>
       <div
         className="chronicle-chart"
         id="chronicle-chart"
@@ -184,19 +184,21 @@ export function ChronicleChartGrid({
           </div>
         </div>
       </div>
-      <aside className="chronicle-vertical-panel">
-      <VerticalOffscreenJumpButtons
-        indicators={verticalOffscreenIndicators}
-        onJump={onVerticalJump}
-        t={t}
-      />
-      <VerticalMinimap
-        label={t("chronicle.verticalMinimap")}
-        minimapRef={verticalMinimapRef}
-        onPointerDown={onVerticalMinimapPointerDown}
-        viewport={verticalMinimapViewport}
-      />
-      </aside>
+      {activeSource === "date" ? (
+        <aside className="chronicle-vertical-panel">
+          <VerticalOffscreenJumpButtons
+            indicators={verticalOffscreenIndicators}
+            onJump={onVerticalJump}
+            t={t}
+          />
+          <VerticalMinimap
+            label={t("chronicle.verticalMinimap")}
+            minimapRef={verticalMinimapRef}
+            onPointerDown={onVerticalMinimapPointerDown}
+            viewport={verticalMinimapViewport}
+          />
+        </aside>
+      ) : null}
     </div>
   );
 }

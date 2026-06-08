@@ -246,6 +246,11 @@
   min-width: 0;
 }
 
+.chronicle-chart-layout--chronicle {
+  gap: 0;
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .chronicle-chart {
   --chronicle-actual-fill: rgba(224, 108, 0, 0.48);
   --chronicle-actual-fill-active: rgba(224, 108, 0, 0.64);

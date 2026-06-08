@@ -96,8 +96,11 @@ describe("App charts", () => {
       "title",
       "この年代へ移動"
     );
-    expect(renderResult.container.querySelector(".chronicle-minimap")).toBeInTheDocument();
-    expect(renderResult.container.querySelector(".chronicle-minimap-item")).toBeInTheDocument();
+    expect(renderResult.container.querySelector(".chronicle-toolbar")).toBeNull();
+    expect(renderResult.container.querySelector(".chronicle-minimap")).toBeNull();
+    expect(renderResult.container.querySelector(".chronicle-minimap-item")).toBeNull();
+    expect(renderResult.container.querySelector(".chronicle-vertical-panel")).toBeNull();
+    expect(renderResult.container.querySelector(".chronicle-vertical-minimap")).toBeNull();
     expect(renderResult.container.querySelector(".chronicle-actions")).toBeNull();
     expect(screen.queryByText("計画")).not.toBeInTheDocument();
     expect(screen.queryByText("実行")).not.toBeInTheDocument();
