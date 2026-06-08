@@ -121,8 +121,14 @@ export function ChronicleTracks({
         unitWidth
       })
     : [];
+  const hoveredChronicleShape = activeSource === "chronicle"
+    ? chronicleShapes.find((shape) => shape.key === hoveredChronicleKey) ?? null
+    : null;
+  const selectedChronicleShape = activeSource === "chronicle"
+    ? chronicleShapes.find((shape) => shape.key === selectedChronicleKey) ?? null
+    : null;
   const activeChronicleShape = activeSource === "chronicle"
-    ? chronicleShapes.find((shape) => shape.key === (selectedChronicleKey ?? hoveredChronicleKey)) ?? null
+    ? hoveredChronicleShape ?? selectedChronicleShape
     : null;
   const trackHeight = activeSource === "date"
     ? Math.max(1, rows.length) * ROW_HEIGHT
@@ -177,7 +183,7 @@ export function ChronicleTracks({
           ))}
           {hoveredChronicleKey ? (
             <ChronicleHoverFileNameLabel
-              shape={chronicleShapes.find((shape) => shape.key === hoveredChronicleKey) ?? null}
+              shape={hoveredChronicleShape}
               timelineWidth={timelineWidth}
             />
           ) : null}
