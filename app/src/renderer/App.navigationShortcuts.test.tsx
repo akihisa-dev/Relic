@@ -51,11 +51,13 @@ describe("App navigation and shortcuts", () => {
       getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
     });
 
-    await renderApp();
+    const { container } = await renderApp();
 
     await screen.findByText("Notes");
 
-    fireEvent.click(screen.getByRole("button", { name: "フロントマター" }));
+    const rail = container.querySelector(".rail");
+    if (!(rail instanceof HTMLElement)) throw new Error("rail was not rendered");
+    fireEvent.click(within(rail).getByRole("button", { name: "フロントマター" }));
 
     expect(document.querySelector('.pane-tab[data-tab-id="panel-frontmatter"]')?.textContent).toContain("フロントマター");
 
@@ -72,26 +74,30 @@ describe("App navigation and shortcuts", () => {
       getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
     });
 
-    await renderApp();
+    const { container } = await renderApp();
 
     await screen.findByText("Notes");
 
-    fireEvent.click(screen.getByRole("button", { name: "フロントマター" }));
-    fireEvent.click(screen.getByRole("button", { name: "設定" }));
+    const rail = container.querySelector(".rail");
+    if (!(rail instanceof HTMLElement)) throw new Error("rail was not rendered");
+    const frontmatterButton = within(rail).getByRole("button", { name: "フロントマター" });
+
+    fireEvent.click(frontmatterButton);
+    fireEvent.click(within(rail).getByRole("button", { name: "設定" }));
 
     expect(useEditorStore.getState().tabs["panel-frontmatter"]).toMatchObject({
       kind: "panel",
       panel: "frontmatter"
     });
     expect(useEditorStore.getState().leftPane.activeTabId).toBe("panel-settings");
-    expect(screen.getByRole("button", { name: "フロントマター" })).toHaveClass("open");
-    expect(screen.getByRole("button", { name: "フロントマター" })).not.toHaveClass("active");
+    expect(frontmatterButton).toHaveClass("open");
+    expect(frontmatterButton).not.toHaveClass("active");
 
-    fireEvent.click(screen.getByRole("button", { name: "フロントマター" }));
+    fireEvent.click(frontmatterButton);
 
     expect(document.querySelector(".rail-tab-flight--close")).not.toBeInTheDocument();
     expect(useEditorStore.getState().leftPane.activeTabId).toBe("panel-frontmatter");
-    expect(screen.getByRole("button", { name: "フロントマター" })).toHaveClass("active");
+    expect(frontmatterButton).toHaveClass("active");
     expect(useEditorStore.getState().tabs["panel-frontmatter"]).toBeDefined();
     expect(useEditorStore.getState().tabs["panel-settings"]).toBeDefined();
   });

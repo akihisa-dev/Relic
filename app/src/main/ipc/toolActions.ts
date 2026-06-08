@@ -203,7 +203,7 @@ export async function generateTagIndex(
   }));
 
   const lines: string[] = ["# タグ別索引", ""];
-  const sortedTags = [...grouped.keys()].sort((a, b) => a.localeCompare(b, "ja"));
+  const sortedTags = Array.from(grouped.keys()).toSorted((a, b) => a.localeCompare(b, "ja"));
   for (const tag of sortedTags) {
     const files = grouped.get(tag) ?? [];
     if (input.sortBy === "mtime") {

@@ -573,7 +573,6 @@ function ChronicleEntryCard({
     <div
       className="chronicle-entry-card"
       onPointerDown={(event) => event.stopPropagation()}
-      role="dialog"
       style={{ left, top } as CSSProperties}
     >
       <button

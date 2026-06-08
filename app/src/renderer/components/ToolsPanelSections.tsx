@@ -1,3 +1,5 @@
 export { ToolStatus } from "./ToolStatus";
 export { MergeFilesToolSection } from "./ToolsPanelMergeSections";
-export { TagIndexToolSection, TitleListToolSection, TocToolSection } from "./ToolsPanelTitleSections";
+export { TagIndexToolSection } from "./TagIndexToolSection";
+export { TitleListToolSection } from "./ToolsPanelTitleSections";
+export { TocToolSection } from "./TocToolSection";
