@@ -20,6 +20,8 @@ import {
 import { useT } from "../i18n";
 import { ChartGuideLines, TodayLine } from "./chronicleChartParts";
 
+const CHRONICLE_ROW_HEIGHT_MULTIPLIER = 8;
+
 export function ChronicleTracks({
   activeSource,
   axisEnd,
@@ -49,20 +51,22 @@ export function ChronicleTracks({
   timelineWidth: number;
   unitWidth: number;
 }): ReactElement {
-  const trackRowCount = activeSource === "date" ? Math.max(1, rows.length) : 1;
+  const trackHeight = activeSource === "date"
+    ? Math.max(1, rows.length) * ROW_HEIGHT
+    : ROW_HEIGHT * CHRONICLE_ROW_HEIGHT_MULTIPLIER;
 
   return (
     <div
       className={`chronicle-tracks${activeSource === "date" ? " chronicle-tracks--date" : ""}`}
       style={{
-        height: trackRowCount * ROW_HEIGHT,
+        height: trackHeight,
         width: timelineWidth
       } as CSSProperties}
     >
       <ChartGuideLines
         axisStart={axisStart}
         dateScale={dateScale}
-        rowCount={trackRowCount}
+        rowCount={activeSource === "date" ? Math.max(1, rows.length) : CHRONICLE_ROW_HEIGHT_MULTIPLIER}
         source={activeSource}
         ticks={guideTicks}
         unitWidth={unitWidth}
@@ -134,6 +138,7 @@ function ChronicleEntryBar({
   const top = activeSource === "date"
     ? rowIndex * ROW_HEIGHT + dateFillOffset()
     : rowIndex * ROW_HEIGHT;
+  const fillHeight = activeSource === "date" ? dateFillHeight() : ROW_HEIGHT * CHRONICLE_ROW_HEIGHT_MULTIPLIER;
   const dateKind = entry.dateKind ?? "planned";
   const statusLabel = activeSource === "date" && dateKind === "actual"
     ? statusLabelForEntry(entry)
@@ -153,7 +158,7 @@ function ChronicleEntryBar({
       data-date-kind={entry.dateKind}
       onPointerDown={(event) => onStartEntryEdit(event, entry, "move")}
       style={{
-        height: activeSource === "date" ? dateFillHeight() : undefined,
+        height: fillHeight,
         left,
         top,
         width,
