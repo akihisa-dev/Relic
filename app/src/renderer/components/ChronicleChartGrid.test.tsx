@@ -184,6 +184,27 @@ describe("ChronicleChartGrid", () => {
     expect(fills.map((fill) => fill.style.getPropertyValue("--chronicle-fill")).join(" ")).toMatch(/hsla\((126|168|202|226|252|286|322|354|18|42|82|190),/);
   });
 
+  it("chronicleでは同じentryの重なり区間を同じ縦位置へ寄せる", () => {
+    const chronicleChart = chart({
+      entries: [
+        entry({ fileName: "B", path: "b.md", startValue: 10, endValue: 12 }),
+        entry({ fileName: "A", path: "a.md", startValue: 10, endValue: 30 }),
+        entry({ fileName: "C", path: "c.md", startValue: 14, endValue: 16 })
+      ]
+    });
+    const { container } = renderGrid({
+      activeChart: chronicleChart,
+      rows: buildChartRows(chronicleChart.entries, "chronicle")
+    });
+    const fills = Array.from(container.querySelectorAll(".chronicle-fill--chronicle")) as HTMLElement[];
+    const longEntrySegments = fills.filter((fill) => fill.title.includes("A "));
+
+    expect(container.querySelector(".chronicle-tracks")).toHaveStyle({ height: "76px" });
+    expect(longEntrySegments).toHaveLength(4);
+    expect(longEntrySegments.map((fill) => fill.style.top)).toEqual(["38px", "0px", "38px", "0px"]);
+    expect(longEntrySegments.map((fill) => fill.style.height)).toEqual(["38px", "76px", "38px", "76px"]);
+  });
+
   it("dateのplanned/actual列とstatus badgeを既存class名で描画する", () => {
     const dateChart = chart({
       entries: [
