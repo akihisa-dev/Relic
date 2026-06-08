@@ -22,6 +22,7 @@ import { ChartGuideLines, TodayLine } from "./chronicleChartParts";
 
 const CHRONICLE_LANE_COUNT = 12;
 const CHRONICLE_TRACK_HEIGHT = ROW_HEIGHT * CHRONICLE_LANE_COUNT;
+const CHRONICLE_COLOR_COUNT = 12;
 
 interface OrderedChronicleEntry {
   displayEntry: ChartEntry;
@@ -245,6 +246,7 @@ function ChronicleEntryBar({
   const fillHeight = activeSource === "date" ? dateFillHeight() : trackHeight / overlapCount;
   const showStartResize = activeSource === "date" || startValue === previewEntry.startValue;
   const showEndResize = activeSource === "date" || endValue === previewEntry.endValue;
+  const chronicleColorStyle = activeSource === "chronicle" ? chronicleColorStyleForEntry(entry) : {};
   const dateKind = entry.dateKind ?? "planned";
   const statusLabel = activeSource === "date" && dateKind === "actual"
     ? statusLabelForEntry(entry)
@@ -264,6 +266,7 @@ function ChronicleEntryBar({
       data-date-kind={entry.dateKind}
       onPointerDown={(event) => onStartEntryEdit(event, entry, "move")}
       style={{
+        ...chronicleColorStyle,
         height: fillHeight,
         left,
         top,
@@ -295,4 +298,23 @@ function ChronicleEntryBar({
       ) : null}
     </button>
   );
+}
+
+function chronicleColorStyleForEntry(entry: ChartEntry): CSSProperties {
+  const colorIndex = stableColorIndex(entry.path || entry.fileName, CHRONICLE_COLOR_COUNT);
+  const hue = 198 + colorIndex * 10;
+
+  return {
+    "--chronicle-fill": `hsla(${hue}, 58%, 43%, 0.34)`,
+    "--chronicle-fill-active": `hsla(${hue}, 58%, 39%, 0.56)`,
+    "--chronicle-fill-hover": `hsla(${hue}, 58%, 41%, 0.44)`
+  } as CSSProperties;
+}
+
+function stableColorIndex(value: string, modulo: number): number {
+  let hash = 0;
+  for (let index = 0; index < value.length; index += 1) {
+    hash = (hash * 31 + value.charCodeAt(index)) >>> 0;
+  }
+  return hash % modulo;
 }
