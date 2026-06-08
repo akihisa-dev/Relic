@@ -259,6 +259,44 @@ describe("Editor frontmatter fields", () => {
     expect(viewRef.current?.state.doc.toString()).toContain("meta:\n  source: web\n  rating: 6");
   });
 
+  it("未登録の配列プロパティはテキスト型として編集する", async () => {
+    const viewRef = createRef<EditorView | null>();
+    const { container } = render(
+      <Editor
+        content={"---\nunknown: [first, second]\n---\n# 本文"}
+        onChange={vi.fn()}
+        settings={settings}
+        viewRef={viewRef}
+      />
+    );
+
+    await expandFrontmatter(container);
+    expect(container.querySelector(".cm-frontmatter-pill-add")).toBeNull();
+    const input = container.querySelector(".cm-frontmatter-input") as HTMLInputElement;
+    expect(input.value).toBe("first");
+
+    fireEvent.change(input, { target: { value: "updated" } });
+
+    expect(viewRef.current?.state.doc.toString()).toContain("unknown: [\"updated\"]");
+  });
+
+  it("未登録でも複雑なYAML値はYAML入力で安全に編集する", async () => {
+    const viewRef = createRef<EditorView | null>();
+    const { container } = render(
+      <Editor
+        content={"---\nmeta:\n  source: web\n---\n# 本文"}
+        onChange={vi.fn()}
+        settings={settings}
+        viewRef={viewRef}
+      />
+    );
+
+    await expandFrontmatter(container);
+
+    expect(container.querySelector(".cm-frontmatter-yaml-input")).not.toBeNull();
+    expect(container.querySelector(".cm-frontmatter-input")).toBeNull();
+  });
+
   it("複雑なYAML値の入力が不正な場合は本文を更新しない", async () => {
     const viewRef = createRef<EditorView | null>();
     const { container } = render(

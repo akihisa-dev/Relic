@@ -223,6 +223,9 @@ function FrontmatterValueControl({
   if (isSingleValueField(field)) {
     return <ScalarControl candidates={candidates} dateFormat={dateFormat} field={field} name={name} value={firstArrayValue(value)} writeAsArray onUpdateField={onUpdateField} />;
   }
+  if (!field && Array.isArray(value)) {
+    return <ScalarControl candidates={candidates} dateFormat={dateFormat} field={{ name, type: "text" }} name={name} value={firstArrayValue(value)} writeAsArray onUpdateField={onUpdateField} />;
+  }
   if (field?.type === "multi-select" || name === "aliases" || name === "tags" || Array.isArray(value)) {
     return <ArrayControl name={name} value={Array.isArray(value) ? value : value == null ? [] : [value]} onUpdateField={onUpdateField} />;
   }
