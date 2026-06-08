@@ -69,25 +69,29 @@ export function ChartView({ chart = null, charts = defaultCharts, chronicleCalen
 
   return (
     <div className="chronicle-panel">
-      <ChronicleToolbar
-        activeSource={model.activeSource}
-        query={model.query}
-        refreshRowOrder={model.refreshRowOrder}
-        scrollToToday={viewport.scrollToToday}
-        setQuery={model.setQuery}
-        setSortKey={model.setSortKey}
-        setStatusFilter={model.setStatusFilter}
-        sortKey={model.sortKey}
-        statusFilter={model.statusFilter}
-        statusOptions={model.statusOptions}
-      />
-      <ChronicleMinimap
-        activeChart={model.activeChart}
-        minimapItems={model.minimapItems}
-        minimapRef={viewport.minimapRef}
-        minimapViewport={viewportState.minimapViewport}
-        onMinimapPointerDown={viewport.handleMinimapPointer}
-      />
+      {model.activeSource === "date" ? (
+        <>
+          <ChronicleToolbar
+            activeSource={model.activeSource}
+            query={model.query}
+            refreshRowOrder={model.refreshRowOrder}
+            scrollToToday={viewport.scrollToToday}
+            setQuery={model.setQuery}
+            setSortKey={model.setSortKey}
+            setStatusFilter={model.setStatusFilter}
+            sortKey={model.sortKey}
+            statusFilter={model.statusFilter}
+            statusOptions={model.statusOptions}
+          />
+          <ChronicleMinimap
+            activeChart={model.activeChart}
+            minimapItems={model.minimapItems}
+            minimapRef={viewport.minimapRef}
+            minimapViewport={viewportState.minimapViewport}
+            onMinimapPointerDown={viewport.handleMinimapPointer}
+          />
+        </>
+      ) : null}
       <ChronicleChartGrid
         activeChart={model.activeChart}
         activeSource={model.activeSource}
