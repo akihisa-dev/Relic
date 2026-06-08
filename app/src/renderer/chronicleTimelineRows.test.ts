@@ -53,6 +53,7 @@ describe("chronicleTimelineRows", () => {
     const actual = entry({ dateKind: "actual" });
     const preview = {
       dateKind: "planned" as const,
+      editKind: "move" as const,
       endValue: 20_850,
       path: "tasks/implementation.md",
       source: "date" as const,

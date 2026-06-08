@@ -21,6 +21,9 @@ import { useT } from "../i18n";
 import { ChartGuideLines, TodayLine } from "./chronicleChartParts";
 
 const CHRONICLE_MIN_SEGMENT_HEIGHT = 38;
+const CHRONICLE_LABEL_HEIGHT = 18;
+const CHRONICLE_LABEL_PADDING_X = 7;
+const CHRONICLE_MIN_LABEL_WIDTH = 16;
 const CHRONICLE_COLOR_PALETTE = [
   { hue: 202, lightness: 43 },
   { hue: 168, lightness: 39 },
@@ -46,11 +49,13 @@ interface OrderedChronicleEntry {
 interface ChronicleEntryShape {
   displayEntry: ChartEntry;
   entry: ChartEntry;
+  fileNameClipId: string;
   fileNameLabelWidth: number;
   fileNameLabelX: number;
   fileNameLabelY: number;
   height: number;
   key: string;
+  labelClipId: string;
   labelX: number;
   labelY: number;
   labelWidth: number;
@@ -226,22 +231,25 @@ function buildChronicleEntryShapes(
     const maxLabelLeft = Math.max(0, width - labelWidth);
     const labelLeft = isSingleValue
       ? (width - labelWidth) / 2
-      : Math.max(7, Math.min(maxLabelLeft, scrollLeft - x + 7));
+      : Math.max(CHRONICLE_LABEL_PADDING_X, Math.min(maxLabelLeft, scrollLeft - x + CHRONICLE_LABEL_PADDING_X));
     const labelX = x + labelLeft;
     const labelY = y + Math.max(30, Math.min(height - 5, height / 2 + 12));
     const fileNameLabelX = labelX;
     const fileNameLabelY = labelY - 20;
-    const fileNameBackgroundWidth = Math.min(fileNameLabelWidth, Math.max(0, width - labelLeft));
-    const labelBackgroundWidth = Math.min(labelWidth, Math.max(0, width - labelLeft));
+    const fileNameBackgroundWidth = visibleLabelWidth(fileNameLabelWidth, width - labelLeft);
+    const labelBackgroundWidth = visibleLabelWidth(labelWidth, width - labelLeft);
+    const clipKey = clipIdKey(item.entry, item.order);
 
     return {
       displayEntry: item.displayEntry,
       entry: item.entry,
+      fileNameClipId: `chronicle-file-label-${clipKey}`,
       fileNameLabelWidth: fileNameBackgroundWidth,
       fileNameLabelX,
       fileNameLabelY,
       height,
       key: entryKey(item.entry),
+      labelClipId: `chronicle-range-label-${clipKey}`,
       labelWidth: labelBackgroundWidth,
       labelX,
       labelY,
@@ -251,6 +259,16 @@ function buildChronicleEntryShapes(
       y
     };
   });
+}
+
+function visibleLabelWidth(labelWidth: number, availableWidth: number): number {
+  const width = Math.min(labelWidth, Math.max(0, availableWidth));
+
+  return width >= CHRONICLE_MIN_LABEL_WIDTH ? width : 0;
+}
+
+function clipIdKey(entry: ChartEntry, order: number): string {
+  return `${entryKey(entry)}-${order}`.replace(/[^a-zA-Z0-9_-]/g, "-");
 }
 
 function roundedRectPath(x: number, y: number, width: number, height: number, radius: number): string {
@@ -275,8 +293,9 @@ function buildChronicleLaneIndexes(rows: ChartRow[], dragPreview: DragPreview | 
     row.entries.map((entry) => {
       const currentOrder = order;
       order += 1;
+      const shouldFreezeLane = dragPreview?.source === "chronicle" && dragPreview.editKind !== "move";
       return {
-        displayEntry: previewEntryForDrag(entry, dragPreview),
+        displayEntry: shouldFreezeLane ? entry : previewEntryForDrag(entry, dragPreview),
         entry,
         order: currentOrder
       };
@@ -354,9 +373,17 @@ function ChronicleEntrySvgShape({
       />
       {shape.fileNameLabelWidth > 0 ? (
         <>
+          <clipPath id={shape.fileNameClipId}>
+            <rect
+              height={CHRONICLE_LABEL_HEIGHT}
+              width={shape.fileNameLabelWidth}
+              x={shape.fileNameLabelX}
+              y={shape.fileNameLabelY - 14}
+            />
+          </clipPath>
           <rect
             className="chronicle-fill-label-bg chronicle-fill-label-bg--file"
-            height={18}
+            height={CHRONICLE_LABEL_HEIGHT}
             rx={4}
             ry={4}
             width={shape.fileNameLabelWidth}
@@ -365,8 +392,9 @@ function ChronicleEntrySvgShape({
           />
           <text
             className="chronicle-fill-label chronicle-fill-file-label"
+            clipPath={`url(#${shape.fileNameClipId})`}
             dominantBaseline="middle"
-            x={shape.fileNameLabelX + 7}
+            x={shape.fileNameLabelX + CHRONICLE_LABEL_PADDING_X}
             y={shape.fileNameLabelY - 5}
           >
             {entry.fileName}
@@ -375,9 +403,17 @@ function ChronicleEntrySvgShape({
       ) : null}
       {shape.labelWidth > 0 ? (
         <>
+          <clipPath id={shape.labelClipId}>
+            <rect
+              height={CHRONICLE_LABEL_HEIGHT}
+              width={shape.labelWidth}
+              x={shape.labelX}
+              y={shape.labelY - 14}
+            />
+          </clipPath>
           <rect
             className="chronicle-fill-label-bg"
-            height={18}
+            height={CHRONICLE_LABEL_HEIGHT}
             rx={4}
             ry={4}
             width={shape.labelWidth}
@@ -386,8 +422,9 @@ function ChronicleEntrySvgShape({
           />
           <text
             className="chronicle-fill-label"
+            clipPath={`url(#${shape.labelClipId})`}
             dominantBaseline="middle"
-            x={shape.labelX + 7}
+            x={shape.labelX + CHRONICLE_LABEL_PADDING_X}
             y={shape.labelY - 5}
           >
             {rangeLabel}

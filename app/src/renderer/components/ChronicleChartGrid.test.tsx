@@ -183,10 +183,38 @@ describe("ChronicleChartGrid", () => {
     ]);
     expect(container.querySelectorAll(".chronicle-fill-file-label")).toHaveLength(3);
     expect(container.querySelectorAll(".chronicle-fill-label:not(.chronicle-fill-file-label)")).toHaveLength(3);
+    expect(container.querySelector(".chronicle-fill-file-label")).toHaveAttribute("clip-path", expect.stringMatching(/^url\(#chronicle-file-label-/));
+    expect(container.querySelector(".chronicle-fill-label:not(.chronicle-fill-file-label)")).toHaveAttribute("clip-path", expect.stringMatching(/^url\(#chronicle-range-label-/));
     expect(shapes[0].getAttribute("d")).toContain("M 111,0");
     expect(fills[0].style.getPropertyValue("--chronicle-fill")).not.toBe(fills[1].style.getPropertyValue("--chronicle-fill"));
     expect(fills[2].style.getPropertyValue("--chronicle-fill")).toMatch(/^hsla\(/);
     expect(fills.map((fill) => fill.style.getPropertyValue("--chronicle-fill")).join(" ")).toMatch(/hsla\((126|168|202|226|252|286|322|354|18|42|82|190),/);
+  });
+
+  it("chronicleでは長さ変更中のentryでレーン判定を動かさない", () => {
+    const chronicleChart = chart({
+      entries: [
+        entry({ fileName: "A", path: "a.md", startValue: 10, endValue: 20 }),
+        entry({ fileName: "B", path: "b.md", startValue: 30, endValue: 35 })
+      ]
+    });
+    const { container } = renderGrid({
+      activeChart: chronicleChart,
+      dragPreview: {
+        editKind: "resize-end",
+        endValue: 32,
+        path: "a.md",
+        source: "chronicle",
+        startValue: 10
+      },
+      rows: buildChartRows(chronicleChart.entries, "chronicle")
+    });
+    const hitPaths = Array.from(container.querySelectorAll(".chronicle-fill-hit")) as SVGPathElement[];
+
+    expect(hitPaths.map((shape) => shape.getAttribute("d"))).toEqual([
+      "M 111,0 H 933 Q 936,0 936,3 V 383 Q 936,386 933,386 H 111 Q 108,386 108,383 V 3 Q 108,0 111,0 Z",
+      "M 831,0 H 1041 Q 1044,0 1044,3 V 383 Q 1044,386 1041,386 H 831 Q 828,386 828,383 V 3 Q 828,0 831,0 Z"
+    ]);
   });
 
   it("chronicleでは長いentryを分割せず1本のバーにする", () => {
