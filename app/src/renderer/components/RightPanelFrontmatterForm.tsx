@@ -73,9 +73,11 @@ export function RightPanelFrontmatterForm({
   };
 
   const fieldNames = Object.keys(parsed.data);
-  const availableFields = [...fixedFrontmatterFieldNames, ...userDefinedFields.map((field) => field.name)]
-    .filter((name, index, names) => names.indexOf(name) === index)
-    .filter((name) => !Object.prototype.hasOwnProperty.call(parsed.data, name));
+  const availableFields = [...fixedFrontmatterFieldNames, ...userDefinedFields.map((field) => field.name)].reduce<string[]>((fields, name) => {
+    if (fields.includes(name) || Object.prototype.hasOwnProperty.call(parsed.data, name)) return fields;
+    fields.push(name);
+    return fields;
+  }, []);
 
   const addField = (): void => {
     const key = newFieldName.trim();
@@ -115,6 +117,7 @@ export function RightPanelFrontmatterForm({
       )}
       <div className="right-frontmatter-add">
         <input
+          aria-label={t("frontmatter.propertyName")}
           className="right-frontmatter-add-input"
           list="right-frontmatter-available-fields"
           onChange={(event) => {
@@ -129,7 +132,7 @@ export function RightPanelFrontmatterForm({
           value={newFieldName}
         />
         <datalist id="right-frontmatter-available-fields">
-          {availableFields.map((name) => <option key={name} value={name} />)}
+          {availableFields.map((name) => <option key={name} label={name} value={name}>{name}</option>)}
         </datalist>
         <button className="secondary-button" onClick={addField} type="button">
           {t("frontmatter.addProperty")}
@@ -172,6 +175,7 @@ function RightPanelFrontmatterRow({
         />
       </div>
       <button
+        aria-label={`${name} ${t("frontmatter.removeProperty")}`}
         className="cm-frontmatter-remove"
         onClick={() => onUpdateField(name, undefined)}
         title={t("frontmatter.removeProperty")}
@@ -250,6 +254,7 @@ function ScalarControl({
   value: unknown;
   writeAsArray?: boolean;
 }): ReactElement {
+  const t = useT();
   const [invalid, setInvalid] = useState(false);
   const inputValue = field?.type === "date"
     ? dateInputValue(value)
@@ -260,6 +265,7 @@ function ScalarControl({
     const options = inputValue && !choices.includes(inputValue) ? [inputValue, ...choices] : choices;
     return (
       <select
+        aria-label={name}
         className="cm-frontmatter-input"
         onChange={(event) => {
           const nextValue = parseScalarValue(event.target.value, field);
@@ -267,7 +273,7 @@ function ScalarControl({
         }}
         value={inputValue}
       >
-        {!inputValue ? <option value="" /> : null}
+        {!inputValue ? <option value="">{t("frontmatter.empty")}</option> : null}
         {options.map((choice) => <option key={choice} value={choice}>{choice}</option>)}
       </select>
     );
@@ -277,6 +283,7 @@ function ScalarControl({
   return (
     <>
       <input
+        aria-label={name}
         aria-invalid={invalid ? "true" : undefined}
         className="cm-frontmatter-input"
         defaultValue={inputValue}
@@ -298,7 +305,7 @@ function ScalarControl({
       />
       {listId ? (
         <datalist id={listId}>
-          {choicesFor(name, field, candidates).map((choice) => <option key={choice} value={choice} />)}
+          {choicesFor(name, field, candidates).map((choice) => <option key={choice} label={choice} value={choice}>{choice}</option>)}
         </datalist>
       ) : null}
     </>
@@ -346,8 +353,8 @@ function ChronicleControl({
 
   return (
     <span className="cm-frontmatter-input-wrap cm-frontmatter-chronicle">
-      <input className="cm-frontmatter-input" defaultValue={startValue} inputMode="numeric" onBlur={(event) => commit(event.target.value, event.currentTarget.parentElement?.querySelectorAll("input")[1]?.value ?? "")} placeholder={t("frontmatter.rangeStart")} type="text" />
-      <input className="cm-frontmatter-input" defaultValue={endValue} inputMode="numeric" onBlur={(event) => commit(event.currentTarget.parentElement?.querySelectorAll("input")[0]?.value ?? "", event.target.value)} placeholder={t("frontmatter.rangeEnd")} type="text" />
+      <input aria-label={`${name} ${t("frontmatter.rangeStart")}`} className="cm-frontmatter-input" defaultValue={startValue} inputMode="numeric" onBlur={(event) => commit(event.target.value, event.currentTarget.parentElement?.querySelectorAll("input")[1]?.value ?? "")} placeholder={t("frontmatter.rangeStart")} type="text" />
+      <input aria-label={`${name} ${t("frontmatter.rangeEnd")}`} className="cm-frontmatter-input" defaultValue={endValue} inputMode="numeric" onBlur={(event) => commit(event.currentTarget.parentElement?.querySelectorAll("input")[0]?.value ?? "", event.target.value)} placeholder={t("frontmatter.rangeEnd")} type="text" />
       {error ? <span className="cm-frontmatter-input-error">{error}</span> : null}
     </span>
   );
@@ -388,8 +395,8 @@ function DateRangeControl({
 
   return (
     <span className="cm-frontmatter-input-wrap cm-frontmatter-date-range">
-      <input className="cm-frontmatter-input" defaultValue={startValue} onBlur={(event) => commit(event.target.value, event.currentTarget.parentElement?.querySelectorAll("input")[1]?.value ?? "")} type="date" />
-      <input className="cm-frontmatter-input" defaultValue={endValue} onBlur={(event) => commit(event.currentTarget.parentElement?.querySelectorAll("input")[0]?.value ?? "", event.target.value)} type="date" />
+      <input aria-label={`${name} ${t("frontmatter.rangeStart")}`} className="cm-frontmatter-input" defaultValue={startValue} onBlur={(event) => commit(event.target.value, event.currentTarget.parentElement?.querySelectorAll("input")[1]?.value ?? "")} type="date" />
+      <input aria-label={`${name} ${t("frontmatter.rangeEnd")}`} className="cm-frontmatter-input" defaultValue={endValue} onBlur={(event) => commit(event.currentTarget.parentElement?.querySelectorAll("input")[0]?.value ?? "", event.target.value)} type="date" />
       {error ? <span className="cm-frontmatter-input-error">{error}</span> : null}
     </span>
   );
@@ -419,14 +426,16 @@ function ArrayControl({
   return (
     <div className="cm-frontmatter-pills">
       {value.map((item, index) => (
-        <span className="cm-frontmatter-pill" key={`${index}-${String(item)}`}>
+        <span className="cm-frontmatter-pill" key={arrayItemKey(value, index)}>
           <input
+            aria-label={`${name} ${t("frontmatter.value")}`}
             className="cm-frontmatter-pill-value"
             defaultValue={String(item)}
             onBlur={(event) => onUpdateField(name, nextItems(index, event.target.value))}
             type="text"
           />
           <button
+            aria-label={`${name} ${t("frontmatter.removeValue")}`}
             className="cm-frontmatter-pill-remove"
             onClick={() => onUpdateField(name, value.flatMap((entry, entryIndex) => entryIndex === index ? [] : [String(entry)]))}
             title={t("frontmatter.removeValue")}
@@ -437,6 +446,7 @@ function ArrayControl({
         </span>
       ))}
       <input
+        aria-label={`${name} ${t("frontmatter.value")}`}
         className="cm-frontmatter-pill-input"
         onChange={(event) => setDraftValue(event.target.value)}
         onKeyDown={(event) => {
@@ -451,6 +461,7 @@ function ArrayControl({
         value={draftValue}
       />
       <button
+        aria-label={`${name} ${t("frontmatter.addValue")}`}
         className="cm-frontmatter-pill-add"
         onClick={() => {
           const nextValue = draftValue.trim();
@@ -480,6 +491,7 @@ function ComplexControl({
 
   return (
     <textarea
+      aria-label={name}
       aria-invalid={invalid ? "true" : undefined}
       className="cm-frontmatter-yaml-input"
       defaultValue={yaml.dump(value, { lineWidth: -1 }).trimEnd()}
@@ -505,4 +517,10 @@ function parseDateTextValue(value: string, dateFormat: EditorSettings["frontmatt
 
 function safeId(value: string): string {
   return value.replace(/[^a-zA-Z0-9_-]/g, "-");
+}
+
+function arrayItemKey(value: unknown[], targetIndex: number): string {
+  const target = String(value[targetIndex]);
+  const occurrence = value.slice(0, targetIndex + 1).filter((item) => String(item) === target).length;
+  return `${target}-${occurrence}`;
 }

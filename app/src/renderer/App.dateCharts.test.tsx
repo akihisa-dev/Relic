@@ -1,6 +1,7 @@
 import {
   fireEvent,
   screen,
+  within,
   waitFor
 } from "@testing-library/react";
 import {
@@ -111,7 +112,9 @@ describe("App date charts", () => {
     expect(container.querySelectorAll(".chronicle-guide-line--major").length).toBeGreaterThan(0);
     expect(container.querySelectorAll(".chronicle-guide-row-line").length).toBeGreaterThan(0);
 
-    fireEvent.click(screen.getByRole("button", { name: "フロントマター" }));
+    const rail = container.querySelector(".rail");
+    if (!(rail instanceof HTMLElement)) throw new Error("rail was not rendered");
+    fireEvent.click(within(rail).getByRole("button", { name: "フロントマター" }));
     fireEvent.click(screen.getByRole("button", { name: "カレンダー" }));
 
     expect(screen.getByRole("button", { name: "カレンダー" })).toHaveClass("active");

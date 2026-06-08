@@ -221,7 +221,7 @@ describe("ChronicleChartGrid", () => {
     fireEvent.pointerEnter(fill);
 
     expect(container.querySelector(".chronicle-fill-file-label--hover")).toHaveTextContent(longFileName);
-    expect(screen.getByRole("dialog")).toHaveTextContent(longFileName);
+    expect(container.querySelector(".chronicle-entry-card")).toHaveTextContent(longFileName);
   });
 
   it("chronicleではバーのホバーと選択で詳細カードを表示し、ファイルを開ける", () => {
@@ -231,8 +231,8 @@ describe("ChronicleChartGrid", () => {
     fireEvent.pointerEnter(fill);
 
     expect(container.querySelector(".chronicle-fill-file-label--hover")).toHaveTextContent("鎌倉時代");
-    expect(screen.getByRole("dialog")).toHaveTextContent("鎌倉時代");
-    expect(screen.getByRole("dialog")).toHaveTextContent("1185 〜 1333");
+    expect(container.querySelector(".chronicle-entry-card")).toHaveTextContent("鎌倉時代");
+    expect(container.querySelector(".chronicle-entry-card")).toHaveTextContent("1185 〜 1333");
 
     fireEvent.pointerDown(fill);
     fireEvent.click(screen.getByRole("button", { name: "鎌倉時代を開く" }));
@@ -254,13 +254,13 @@ describe("ChronicleChartGrid", () => {
     const fills = Array.from(container.querySelectorAll(".chronicle-fill--chronicle")) as SVGGElement[];
 
     fireEvent.pointerDown(fills[0]);
-    expect(screen.getByRole("dialog")).toHaveTextContent("A");
+    expect(container.querySelector(".chronicle-entry-card")).toHaveTextContent("A");
 
     fireEvent.pointerEnter(fills[1]);
 
     expect(container.querySelector(".chronicle-fill-file-label--hover")).toHaveTextContent("B");
-    expect(screen.getByRole("dialog")).toHaveTextContent("B");
-    expect(screen.getByRole("dialog")).not.toHaveTextContent("A");
+    expect(container.querySelector(".chronicle-entry-card")).toHaveTextContent("B");
+    expect(container.querySelector(".chronicle-entry-card")).not.toHaveTextContent("A");
   });
 
   it("chronicleの詳細カード本体はバーのホバーを遮らず、開くボタンだけクリック可能にする", () => {
@@ -277,11 +277,11 @@ describe("ChronicleChartGrid", () => {
 
     fireEvent.pointerDown(fill);
 
-    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(container.querySelector(".chronicle-entry-card")).toBeInTheDocument();
 
     fireEvent.pointerDown(svg);
 
-    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(container.querySelector(".chronicle-entry-card")).toBeNull();
   });
 
   it("chronicleではドラッグ中のentryでレーン判定を動かさない", () => {

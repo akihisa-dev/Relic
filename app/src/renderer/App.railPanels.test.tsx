@@ -1,4 +1,4 @@
-import { fireEvent, screen } from "@testing-library/react";
+import { fireEvent, screen, within } from "@testing-library/react";
 import {
   afterEach,
   beforeAll,
@@ -111,11 +111,15 @@ describe("App rail panels", () => {
       getWorkspaceState: vi.fn().mockResolvedValue({ ok: true, value: withWorkspace })
     });
 
-    await renderApp();
+    const { container } = await renderApp();
 
     await screen.findByText("Notes");
 
-    fireEvent.click(screen.getByRole("button", { name: "フロントマター" }));
+    const rail = container.querySelector(".rail");
+    if (!(rail instanceof HTMLElement)) throw new Error("rail was not rendered");
+    const frontmatterButton = within(rail).getByRole("button", { name: "フロントマター" });
+
+    fireEvent.click(frontmatterButton);
 
     const activeTabId = useEditorStore.getState().leftPane.activeTabId;
     expect(activeTabId).toBe("panel-frontmatter");
@@ -124,11 +128,11 @@ describe("App rail panels", () => {
       panel: "frontmatter"
     });
     expect(document.querySelector('.pane-tab[data-tab-id="panel-frontmatter"] .pane-tab-icon svg')).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "フロントマター" })).toHaveClass("active");
+    expect(frontmatterButton).toHaveClass("active");
     expect(screen.getByText("フロントマター設定")).toBeInTheDocument();
     expect(screen.getByDisplayValue("category")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "フロントマター" }));
+    fireEvent.click(frontmatterButton);
 
     expect(document.querySelector(".rail-tab-flight--close")).not.toBeInTheDocument();
     expect(useEditorStore.getState().leftPane.activeTabId).toBe("panel-frontmatter");
