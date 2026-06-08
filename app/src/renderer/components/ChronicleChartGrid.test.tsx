@@ -166,9 +166,10 @@ describe("ChronicleChartGrid", () => {
     const fills = Array.from(container.querySelectorAll(".chronicle-fill--chronicle")) as HTMLElement[];
 
     expect(container.querySelector(".chronicle-name-column")).toBeNull();
-    expect(container.querySelector(".chronicle-tracks")).toHaveStyle({ height: "38px" });
+    expect(container.querySelector(".chronicle-tracks")).toHaveStyle({ height: "304px" });
     expect(fills).toHaveLength(3);
     expect(fills.map((fill) => fill.style.top)).toEqual(["0px", "0px", "0px"]);
+    expect(fills.map((fill) => fill.style.height)).toEqual(["304px", "304px", "304px"]);
   });
 
   it("dateのplanned/actual列とstatus badgeを既存class名で描画する", () => {
