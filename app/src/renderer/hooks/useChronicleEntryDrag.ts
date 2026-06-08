@@ -20,7 +20,7 @@ interface UseChronicleEntryDragInput {
 export interface ChronicleEntryDrag {
   dragPreview: DragPreview | null;
   startEntryEdit: (
-    event: PointerEvent<HTMLElement>,
+    event: PointerEvent<Element>,
     entry: ChartEntry,
     kind: ChartEntryEditKind
   ) => void;
@@ -39,7 +39,7 @@ export function useChronicleEntryDrag({
   }, [resetKey]);
 
   const startEntryEdit = useCallback((
-    event: PointerEvent<HTMLElement>,
+    event: PointerEvent<Element>,
     entry: ChartEntry,
     kind: ChartEntryEditKind
   ): void => {

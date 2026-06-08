@@ -163,21 +163,17 @@ describe("ChronicleChartGrid", () => {
       activeChart: chronicleChart,
       rows: buildChartRows(chronicleChart.entries, "chronicle")
     });
-    const fills = Array.from(container.querySelectorAll(".chronicle-fill--chronicle")) as HTMLElement[];
+    const fills = Array.from(container.querySelectorAll(".chronicle-fill--chronicle")) as SVGGElement[];
+    const shapes = Array.from(container.querySelectorAll(".chronicle-fill-shape")) as SVGRectElement[];
 
     expect(container.querySelector(".chronicle-name-column")).toBeNull();
-    expect(container.querySelector(".chronicle-tracks")).toHaveStyle({ height: "152px" });
+    expect(container.querySelector(".chronicle-tracks")).toHaveStyle({ height: "76px" });
+    expect(container.querySelector(".chronicle-tracks-svg")).toHaveAttribute("height", "76");
     expect(container.querySelectorAll(".chronicle-tracks .chronicle-guide-row-line")).toHaveLength(0);
     expect(fills).toHaveLength(5);
-    expect(fills.map((fill) => fill.style.top)).toEqual(["0px", "0px", "76px", "0px", "0px"]);
-    expect(fills.map((fill) => fill.style.height)).toEqual(["152px", "76px", "76px", "152px", "152px"]);
-    expect(fills.map((fill) => fill.style.borderRadius)).toEqual([
-      "3px 0px 0px 3px",
-      "0px 0px 0px 0px",
-      "3px 3px 3px 3px",
-      "0px 3px 3px 0px",
-      "3px 3px 3px 3px"
-    ]);
+    expect(shapes.map((shape) => shape.getAttribute("y"))).toEqual(["0", "0", "38", "0", "0"]);
+    expect(shapes.map((shape) => shape.getAttribute("height"))).toEqual(["76", "38", "38", "76", "76"]);
+    expect(shapes.map((shape) => shape.getAttribute("rx"))).toEqual(["0", "0", "3", "0", "3"]);
     expect(container.querySelectorAll(".chronicle-fill-label")).toHaveLength(3);
     expect(fills[0].style.getPropertyValue("--chronicle-fill")).toBe(fills[1].style.getPropertyValue("--chronicle-fill"));
     expect(fills[1].style.getPropertyValue("--chronicle-fill")).not.toBe(fills[2].style.getPropertyValue("--chronicle-fill"));
@@ -197,15 +193,35 @@ describe("ChronicleChartGrid", () => {
       activeChart: chronicleChart,
       rows: buildChartRows(chronicleChart.entries, "chronicle")
     });
-    const fills = Array.from(container.querySelectorAll(".chronicle-fill--chronicle")) as HTMLElement[];
-    const longEntrySegments = fills.filter((fill) => fill.title.includes("A "));
+    const fills = Array.from(container.querySelectorAll(".chronicle-fill--chronicle")) as SVGGElement[];
+    const longEntrySegments = fills.filter((fill) => fill.getAttribute("aria-label")?.includes("A "));
+    const longEntryShapes = longEntrySegments.map((fill) => fill.querySelector(".chronicle-fill-shape") as SVGRectElement);
 
-    expect(container.querySelector(".chronicle-tracks")).toHaveStyle({ height: "152px" });
+    expect(container.querySelector(".chronicle-tracks")).toHaveStyle({ height: "76px" });
     expect(container.querySelectorAll(".chronicle-tracks .chronicle-guide-row-line")).toHaveLength(0);
     expect(longEntrySegments).toHaveLength(4);
-    expect(longEntrySegments.map((fill) => fill.style.top)).toEqual(["76px", "0px", "76px", "0px"]);
-    expect(longEntrySegments.map((fill) => fill.style.height)).toEqual(["76px", "152px", "76px", "152px"]);
+    expect(longEntryShapes.map((shape) => shape.getAttribute("y"))).toEqual(["38", "0", "38", "0"]);
+    expect(longEntryShapes.map((shape) => shape.getAttribute("height"))).toEqual(["38", "76", "38", "76"]);
     expect(longEntrySegments[0]).toHaveTextContent("10 〜 30");
+  });
+
+  it("chronicleでは最大重なり数に応じて年表の高さを広げる", () => {
+    const chronicleChart = chart({
+      entries: [
+        entry({ fileName: "A", path: "a.md", startValue: 10, endValue: 20 }),
+        entry({ fileName: "B", path: "b.md", startValue: 12, endValue: 18 }),
+        entry({ fileName: "C", path: "c.md", startValue: 14, endValue: 16 })
+      ]
+    });
+    const { container } = renderGrid({
+      activeChart: chronicleChart,
+      rows: buildChartRows(chronicleChart.entries, "chronicle")
+    });
+    const shapes = Array.from(container.querySelectorAll(".chronicle-fill-shape")) as SVGRectElement[];
+
+    expect(container.querySelector(".chronicle-tracks")).toHaveStyle({ height: "114px" });
+    expect(container.querySelector(".chronicle-tracks-svg")).toHaveAttribute("height", "114");
+    expect(shapes.map((shape) => shape.getAttribute("height"))).toContain("38");
   });
 
   it("dateのplanned/actual列とstatus badgeを既存class名で描画する", () => {

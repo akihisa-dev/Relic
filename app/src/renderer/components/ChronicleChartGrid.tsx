@@ -45,7 +45,7 @@ export interface ChronicleChartGridProps {
   onJump: (value: number) => void;
   onOpenFile: (path: string) => void;
   onStartEntryEdit: (
-    event: PointerEvent<HTMLElement>,
+    event: PointerEvent<Element>,
     entry: ChartEntry,
     kind: ChartEntryEditKind
   ) => void;

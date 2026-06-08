@@ -894,6 +894,45 @@
   background: var(--chronicle-fill-hover);
 }
 
+.chronicle-tracks-svg {
+  display: block;
+  inset: 0;
+  overflow: visible;
+  position: absolute;
+  z-index: 3;
+}
+
+.chronicle-tracks-svg .chronicle-fill {
+  cursor: grab;
+  outline: none;
+  touch-action: none;
+}
+
+.chronicle-fill-shape {
+  fill: var(--chronicle-fill);
+}
+
+.chronicle-tracks-svg .chronicle-fill:hover .chronicle-fill-shape {
+  fill: var(--chronicle-fill-hover);
+}
+
+.chronicle-tracks-svg .chronicle-fill:active .chronicle-fill-shape,
+.chronicle-tracks-svg .chronicle-fill--dragging .chronicle-fill-shape {
+  fill: var(--chronicle-fill-active);
+}
+
+.chronicle-fill-label-bg {
+  fill: color-mix(in srgb, var(--bg) 72%, transparent);
+  pointer-events: none;
+}
+
+.chronicle-tracks-svg .chronicle-fill-label {
+  fill: var(--text);
+  font-size: 11px;
+  font-weight: 600;
+  pointer-events: none;
+}
+
 .chronicle-fill:active,
 .chronicle-fill--dragging {
   background: var(--chronicle-fill-active);
@@ -956,6 +995,16 @@
   z-index: 1;
 }
 
+.chronicle-tracks-svg .chronicle-fill-label {
+  display: block;
+  fill: var(--text);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 0;
+  pointer-events: none;
+  position: static;
+}
+
 .chronicle-fill-status {
   background: rgba(255, 255, 255, 0.86);
   border: 1px solid rgba(174, 78, 0, 0.24);
@@ -978,6 +1027,7 @@
 .chronicle-fill-resize {
   bottom: 4px;
   cursor: ew-resize;
+  fill: transparent;
   position: absolute;
   top: 4px;
   width: 10px;
