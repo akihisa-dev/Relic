@@ -30,36 +30,41 @@ export function ChronicleToolbar({
   statusOptions
 }: ChronicleToolbarProps): ReactElement {
   const t = useT();
+  const showSearchAndSort = activeSource === "date";
 
   return (
     <div className="chronicle-toolbar">
-      <label className="chronicle-search">
-        <span>{t("chronicle.search")}</span>
-        <input
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder={t("chronicle.searchPlaceholder")}
-          type="search"
-          value={query}
-        />
-      </label>
-      <label className="chronicle-search chronicle-sort">
-        <span>{t("chronicle.sort")}</span>
-        <select onChange={(event) => setSortKey(event.target.value as ChronicleSortKey)} value={sortKey}>
-          <option value="start-asc">{t("chronicle.sortStartAsc")}</option>
-          <option value="start-desc">{t("chronicle.sortStartDesc")}</option>
-          <option value="name-asc">{t("chronicle.sortNameAsc")}</option>
-          <option value="name-desc">{t("chronicle.sortNameDesc")}</option>
-        </select>
-      </label>
-      <button
-        aria-label={t("chronicle.refreshOrder")}
-        className="chronicle-icon-button"
-        onClick={refreshRowOrder}
-        title={t("chronicle.refreshOrder")}
-        type="button"
-      >
-        <RefreshIcon />
-      </button>
+      {showSearchAndSort ? (
+        <>
+          <label className="chronicle-search">
+            <span>{t("chronicle.search")}</span>
+            <input
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder={t("chronicle.searchPlaceholder")}
+              type="search"
+              value={query}
+            />
+          </label>
+          <label className="chronicle-search chronicle-sort">
+            <span>{t("chronicle.sort")}</span>
+            <select onChange={(event) => setSortKey(event.target.value as ChronicleSortKey)} value={sortKey}>
+              <option value="start-asc">{t("chronicle.sortStartAsc")}</option>
+              <option value="start-desc">{t("chronicle.sortStartDesc")}</option>
+              <option value="name-asc">{t("chronicle.sortNameAsc")}</option>
+              <option value="name-desc">{t("chronicle.sortNameDesc")}</option>
+            </select>
+          </label>
+          <button
+            aria-label={t("chronicle.refreshOrder")}
+            className="chronicle-icon-button"
+            onClick={refreshRowOrder}
+            title={t("chronicle.refreshOrder")}
+            type="button"
+          >
+            <RefreshIcon />
+          </button>
+        </>
+      ) : null}
       {activeSource === "date" && statusOptions.length > 0 ? (
         <label className="chronicle-search chronicle-status-filter">
           <span>{t("chronicle.status")}</span>

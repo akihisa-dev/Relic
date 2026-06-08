@@ -100,13 +100,16 @@ export function useChronicleChartModel({
   const statusOptions = useMemo(() => statusValuesForEntries(allEntries), [allEntries]);
   const tickInterval = 1;
   const dateScale = activeSource === "date" ? DATE_SCALES[0] : null;
+  const effectiveQuery = activeSource === "date" ? query : "";
+  const effectiveSortKey = activeSource === "date" ? sortKey : "start-asc";
+  const effectiveStatusFilter = activeSource === "date" ? statusFilter : "";
   const filteredRows = useMemo(
-    () => filterRows(buildChartRows(allEntries, activeSource), query, activeSource === "date" ? statusFilter : ""),
-    [activeSource, allEntries, query, statusFilter]
+    () => filterRows(buildChartRows(allEntries, activeSource), effectiveQuery, effectiveStatusFilter),
+    [activeSource, allEntries, effectiveQuery, effectiveStatusFilter]
   );
   const sortedRows = useMemo(
-    () => sortRows(filteredRows, sortKey),
-    [filteredRows, sortKey]
+    () => sortRows(filteredRows, effectiveSortKey),
+    [effectiveSortKey, filteredRows]
   );
   const rows = useMemo(
     () => orderRowsByKeys(filteredRows, rowOrderKeys, sortedRows),
@@ -115,7 +118,7 @@ export function useChronicleChartModel({
   const refreshRowOrder = useCallback((): void => {
     setRowOrderKeys(sortedRows.map((row) => row.key));
   }, [sortedRows]);
-  const rowOrderResetKey = `${activeChart?.id ?? "none"}:${activeSource}:${query}:${statusFilter}`;
+  const rowOrderResetKey = `${activeChart?.id ?? "none"}:${activeSource}:${effectiveQuery}:${effectiveStatusFilter}`;
 
   useEffect(() => {
     if (rowOrderResetKeyRef.current === rowOrderResetKey) return;
@@ -126,7 +129,7 @@ export function useChronicleChartModel({
 
   const entries = useMemo(() => rows.flatMap((row) => row.entries), [rows]);
   const computedBounds = timelineBounds(entries, tickInterval, activeSource, dateScale);
-  const boundsKey = `${activeChart?.id ?? "none"}:${activeSource}:${query}`;
+  const boundsKey = `${activeChart?.id ?? "none"}:${activeSource}:${effectiveQuery}`;
   const { axisEnd, axisStart } = useStableTimelineBounds(computedBounds, boundsKey);
   const axisSpan = Math.max(1, axisEnd - axisStart + 1);
   const unitWidth = activeSource === "date" ? dateUnitWidth(dateScale) : chronicleUnitWidth(tickInterval, TICK_WIDTH);

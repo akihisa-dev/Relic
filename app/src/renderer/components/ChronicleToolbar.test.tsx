@@ -30,13 +30,22 @@ function renderToolbar(overrides: Partial<ChronicleToolbarProps> = {}) {
 }
 
 describe("ChronicleToolbar", () => {
-  it("search/sortを既存classと文言で描画しcallbackへつなぐ", () => {
-    const { container, props } = renderToolbar();
+  it("chronicle sourceではsearch/sortと並び順更新を表示しない", () => {
+    const { container } = renderToolbar();
 
     expect(container.querySelector(".chronicle-toolbar")).toBeInTheDocument();
     expect(container.querySelector(".chronicle-source-buttons")).toBeNull();
     expect(screen.queryByRole("button", { name: "chronicle" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "date" })).not.toBeInTheDocument();
+    expect(screen.queryByPlaceholderText("ファイル名・パス・値")).not.toBeInTheDocument();
+    expect(screen.queryByDisplayValue("開始順（昇順）")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "並び順を更新" })).not.toBeInTheDocument();
+    expect(container.querySelector(".chronicle-actions")).toBeNull();
+  });
+
+  it("date sourceではsearch/sortを既存classと文言で描画しcallbackへつなぐ", () => {
+    const { props } = renderToolbar({ activeSource: "date" });
+
     fireEvent.change(screen.getByPlaceholderText("ファイル名・パス・値"), { target: { value: "鎌倉" } });
     fireEvent.change(screen.getByDisplayValue("開始順（昇順）"), { target: { value: "name-desc" } });
     fireEvent.click(screen.getByRole("button", { name: "並び順を更新" }));
@@ -44,7 +53,6 @@ describe("ChronicleToolbar", () => {
     expect(props.setQuery).toHaveBeenCalledWith("鎌倉");
     expect(props.setSortKey).toHaveBeenCalledWith("name-desc");
     expect(props.refreshRowOrder).toHaveBeenCalledTimes(1);
-    expect(container.querySelector(".chronicle-actions")).toBeNull();
   });
 
   it("date sourceではstatus filterと今日buttonを表示する", () => {
