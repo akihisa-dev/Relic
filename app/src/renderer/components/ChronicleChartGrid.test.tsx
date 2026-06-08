@@ -53,6 +53,7 @@ function renderGrid(overrides: Partial<ChronicleChartGridProps> = {}) {
     axisEnd: bounds.axisEnd,
     axisStart: bounds.axisStart,
     chartRef: createRef<HTMLDivElement>(),
+    chartViewportHeight: 420,
     chartViewportWidth: 720,
     chronicleOffscreenIndicators: { left: null, right: null },
     chronicleCalendars: defaultChronicleCalendars,
@@ -168,16 +169,16 @@ describe("ChronicleChartGrid", () => {
     const hitPaths = Array.from(container.querySelectorAll(".chronicle-fill-hit")) as SVGPathElement[];
 
     expect(container.querySelector(".chronicle-name-column")).toBeNull();
-    expect(container.querySelector(".chronicle-tracks")).toHaveStyle({ height: "76px" });
-    expect(container.querySelector(".chronicle-tracks-svg")).toHaveAttribute("height", "76");
+    expect(container.querySelector(".chronicle-tracks")).toHaveStyle({ height: "386px" });
+    expect(container.querySelector(".chronicle-tracks-svg")).toHaveAttribute("height", "386");
     expect(container.querySelectorAll(".chronicle-tracks .chronicle-guide-row-line")).toHaveLength(0);
     expect(fills).toHaveLength(3);
     expect(shapes).toHaveLength(3);
     expect(hitPaths).toHaveLength(3);
     expect(hitPaths.map((shape) => shape.getAttribute("d"))).toEqual([
-      "M 111,0 H 501 Q 504,0 504,3 V 35 Q 504,38 501,38 H 111 Q 108,38 108,35 V 3 Q 108,0 111,0 Z",
-      "M 183,38 H 429 Q 432,38 432,41 V 73 Q 432,76 429,76 H 183 Q 180,76 180,73 V 41 Q 180,38 183,38 Z",
-      "M 831,0 H 1041 Q 1044,0 1044,3 V 35 Q 1044,38 1041,38 H 831 Q 828,38 828,35 V 3 Q 828,0 831,0 Z"
+      "M 111,0 H 501 Q 504,0 504,3 V 190 Q 504,193 501,193 H 111 Q 108,193 108,190 V 3 Q 108,0 111,0 Z",
+      "M 183,193 H 429 Q 432,193 432,196 V 383 Q 432,386 429,386 H 183 Q 180,386 180,383 V 196 Q 180,193 183,193 Z",
+      "M 831,0 H 1041 Q 1044,0 1044,3 V 190 Q 1044,193 1041,193 H 831 Q 828,193 828,190 V 3 Q 828,0 831,0 Z"
     ]);
     expect(container.querySelectorAll(".chronicle-fill-label")).toHaveLength(3);
     expect(shapes[0].getAttribute("d")).toContain("M 111,0");
@@ -202,14 +203,14 @@ describe("ChronicleChartGrid", () => {
     const longEntryBars = fills.filter((fill) => fill.getAttribute("aria-label")?.includes("A "));
     const longEntryHitPath = longEntryBars[0]?.querySelector(".chronicle-fill-hit") as SVGPathElement;
 
-    expect(container.querySelector(".chronicle-tracks")).toHaveStyle({ height: "76px" });
+    expect(container.querySelector(".chronicle-tracks")).toHaveStyle({ height: "386px" });
     expect(container.querySelectorAll(".chronicle-tracks .chronicle-guide-row-line")).toHaveLength(0);
     expect(longEntryBars).toHaveLength(1);
-    expect(longEntryHitPath.getAttribute("d")).toBe("M 111,38 H 861 Q 864,38 864,41 V 73 Q 864,76 861,76 H 111 Q 108,76 108,73 V 41 Q 108,38 111,38 Z");
+    expect(longEntryHitPath.getAttribute("d")).toBe("M 111,193 H 861 Q 864,193 864,196 V 383 Q 864,386 861,386 H 111 Q 108,386 108,383 V 196 Q 108,193 111,193 Z");
     expect(longEntryBars[0]).toHaveTextContent("10 〜 30");
   });
 
-  it("chronicleでは必要なレーン数に応じて年表の高さを広げる", () => {
+  it("chronicleでは必要なレーン数で表示領域の高さを使い切る", () => {
     const chronicleChart = chart({
       entries: [
         entry({ fileName: "A", path: "a.md", startValue: 10, endValue: 20 }),
@@ -223,9 +224,9 @@ describe("ChronicleChartGrid", () => {
     });
     const hitPaths = Array.from(container.querySelectorAll(".chronicle-fill-hit")) as SVGPathElement[];
 
-    expect(container.querySelector(".chronicle-tracks")).toHaveStyle({ height: "114px" });
-    expect(container.querySelector(".chronicle-tracks-svg")).toHaveAttribute("height", "114");
-    expect(hitPaths.map((shape) => shape.getAttribute("d"))).toContain("M 219,76 H 321 Q 324,76 324,79 V 111 Q 324,114 321,114 H 219 Q 216,114 216,111 V 79 Q 216,76 219,76 Z");
+    expect(container.querySelector(".chronicle-tracks")).toHaveStyle({ height: "386px" });
+    expect(container.querySelector(".chronicle-tracks-svg")).toHaveAttribute("height", "386");
+    expect(hitPaths.map((shape) => shape.getAttribute("d"))).toContain("M 219,257.3333333333333 H 321 Q 324,257.3333333333333 324,260.3333333333333 V 383 Q 324,386 321,386 H 219 Q 216,386 216,383 V 260.3333333333333 Q 216,257.3333333333333 219,257.3333333333333 Z");
   });
 
   it("dateのplanned/actual列とstatus badgeを既存class名で描画する", () => {

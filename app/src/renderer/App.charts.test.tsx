@@ -93,8 +93,8 @@ describe("App charts", () => {
     expect(renderResult.container.querySelector(".chronicle-year-summary")).toBeNull();
     expect(screen.queryByText("年代")).not.toBeInTheDocument();
     expect(screen.queryByText("1185-1333")).not.toBeInTheDocument();
-    expect(renderResult.container.querySelector(".chronicle-tracks")).toHaveStyle({ height: "38px" });
-    expect(renderResult.container.querySelector(".chronicle-tracks-svg")).toHaveAttribute("height", "38");
+    expect(renderResult.container.querySelector(".chronicle-tracks")).toHaveStyle({ height: "386px" });
+    expect(renderResult.container.querySelector(".chronicle-tracks-svg")).toHaveAttribute("height", "386");
     expect(renderResult.container.querySelector(".chronicle-fill-shape")).toHaveAttribute("d");
     expect(renderResult.container.querySelector(".chronicle-toolbar")).toBeNull();
     expect(renderResult.container.querySelector(".chronicle-minimap")).toBeNull();

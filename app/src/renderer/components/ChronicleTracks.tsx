@@ -67,6 +67,7 @@ export function ChronicleTracks({
   onStartEntryEdit,
   rows,
   scrollLeft,
+  trackViewportHeight,
   timelineWidth,
   unitWidth
 }: {
@@ -83,18 +84,30 @@ export function ChronicleTracks({
   ) => void;
   rows: ChartRow[];
   scrollLeft: number;
+  trackViewportHeight: number;
   timelineWidth: number;
   unitWidth: number;
 }): ReactElement {
+  const chronicleLaneIndexes = activeSource === "chronicle"
+    ? buildChronicleLaneIndexes(rows, dragPreview)
+    : {};
+  const chronicleLaneCount = activeSource === "chronicle"
+    ? Math.max(1, Object.values(chronicleLaneIndexes).reduce((max, laneIndex) => Math.max(max, laneIndex + 1), 1))
+    : 1;
+  const chronicleLaneHeight = Math.max(
+    CHRONICLE_MIN_SEGMENT_HEIGHT,
+    trackViewportHeight / chronicleLaneCount
+  );
+  const chronicleTrackHeight = chronicleLaneCount * chronicleLaneHeight;
   const chronicleShapes = activeSource === "chronicle"
-    ? buildChronicleEntryShapes(rows, dragPreview, {
+    ? buildChronicleEntryShapes(rows, dragPreview, chronicleLaneIndexes, {
         axisStart,
         dateScale,
+        laneHeight: chronicleLaneHeight,
         scrollLeft,
         unitWidth
       })
     : [];
-  const chronicleTrackHeight = Math.max(1, chronicleLaneCount(chronicleShapes)) * CHRONICLE_MIN_SEGMENT_HEIGHT;
   const trackHeight = activeSource === "date"
     ? Math.max(1, rows.length) * ROW_HEIGHT
     : chronicleTrackHeight;
@@ -164,14 +177,17 @@ export function ChronicleTracks({
 function buildChronicleEntryShapes(
   rows: ChartRow[],
   dragPreview: DragPreview | null,
+  laneIndexes: Record<number, number>,
   {
     axisStart,
     dateScale,
+    laneHeight,
     scrollLeft,
     unitWidth
   }: {
     axisStart: number;
     dateScale: DateScale | null;
+    laneHeight: number;
     scrollLeft: number;
     unitWidth: number;
   }
@@ -188,8 +204,6 @@ function buildChronicleEntryShapes(
       };
     })
   );
-  const laneIndexes = assignChronicleLaneIndexes(entries);
-
   return entries.map((item) => {
     const laneIndex = laneIndexes[item.order] ?? 0;
     const startValue = item.displayEntry.startValue;
@@ -203,8 +217,8 @@ function buildChronicleEntryShapes(
     const x = isSingleValue
       ? Math.max(0, valueLeft + (naturalWidth - width) / 2)
       : valueLeft;
-    const height = CHRONICLE_MIN_SEGMENT_HEIGHT;
-    const y = laneIndex * CHRONICLE_MIN_SEGMENT_HEIGHT;
+    const height = laneHeight;
+    const y = laneIndex * laneHeight;
     const maxLabelLeft = Math.max(0, width - labelWidth);
     const labelLeft = isSingleValue
       ? (width - labelWidth) / 2
@@ -229,10 +243,6 @@ function buildChronicleEntryShapes(
   });
 }
 
-function chronicleLaneCount(shapes: ChronicleEntryShape[]): number {
-  return shapes.reduce((max, shape) => Math.max(max, Math.floor(shape.y / CHRONICLE_MIN_SEGMENT_HEIGHT) + 1), 1);
-}
-
 function roundedRectPath(x: number, y: number, width: number, height: number, radius: number): string {
   const r = Math.min(radius, width / 2, height / 2);
   return [
@@ -247,6 +257,23 @@ function roundedRectPath(x: number, y: number, width: number, height: number, ra
     `Q ${x},${y} ${x + r},${y}`,
     "Z"
   ].join(" ");
+}
+
+function buildChronicleLaneIndexes(rows: ChartRow[], dragPreview: DragPreview | null): Record<number, number> {
+  let order = 0;
+  const entries = rows.flatMap((row) =>
+    row.entries.map((entry) => {
+      const currentOrder = order;
+      order += 1;
+      return {
+        displayEntry: previewEntryForDrag(entry, dragPreview),
+        entry,
+        order: currentOrder
+      };
+    })
+  );
+
+  return assignChronicleLaneIndexes(entries);
 }
 
 function assignChronicleLaneIndexes(
