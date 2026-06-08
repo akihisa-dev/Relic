@@ -262,7 +262,7 @@ function buildChronicleEntryShapes(
     const labelY = y + Math.max(30, Math.min(height - 5, height / 2 + 12));
     const fileNameLabelX = labelX;
     const fileNameLabelY = labelY - 20;
-    const fileNameBackgroundWidth = visibleLabelWidth(fileNameLabelWidth, width - labelLeft);
+    const fileNameBackgroundWidth = labelFitsInBar(fileNameLabelWidth, width, labelLeft) ? fileNameLabelWidth : 0;
     const labelBackgroundWidth = visibleLabelWidth(labelWidth, width - labelLeft);
     const clipKey = clipIdKey(item.entry, item.order);
 
@@ -285,6 +285,14 @@ function buildChronicleEntryShapes(
       y
     };
   });
+}
+
+function labelFitsInBar(labelWidth: number, barWidth: number, labelLeft: number): boolean {
+  return (
+    labelWidth >= CHRONICLE_MIN_LABEL_WIDTH &&
+    labelLeft >= 0 &&
+    labelLeft + labelWidth <= barWidth
+  );
 }
 
 function visibleLabelWidth(labelWidth: number, availableWidth: number): number {

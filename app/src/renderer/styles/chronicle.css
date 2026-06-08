@@ -962,7 +962,7 @@
   pointer-events: auto;
   position: absolute;
   width: 252px;
-  z-index: 8;
+  z-index: 20;
 }
 
 .chronicle-entry-card-open {
@@ -990,7 +990,6 @@
   min-width: 0;
 }
 
-.chronicle-entry-card-file,
 .chronicle-entry-card-range {
   min-width: 0;
   overflow: hidden;
@@ -1001,6 +1000,8 @@
 .chronicle-entry-card-file {
   font-size: 12px;
   font-weight: 750;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .chronicle-entry-card-range {
