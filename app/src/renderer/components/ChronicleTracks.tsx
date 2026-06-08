@@ -20,8 +20,6 @@ import {
 import { useT } from "../i18n";
 import { ChartGuideLines, TodayLine } from "./chronicleChartParts";
 
-const CHRONICLE_LANE_COUNT = 12;
-const CHRONICLE_TRACK_HEIGHT = ROW_HEIGHT * CHRONICLE_LANE_COUNT;
 const CHRONICLE_COLOR_PALETTE = [
   { hue: 202, lightness: 43 },
   { hue: 168, lightness: 39 },
@@ -44,6 +42,8 @@ interface OrderedChronicleEntry {
 }
 
 interface ChronicleSegment {
+  continuesFromPrevious: boolean;
+  continuesToNext: boolean;
   displayEntry: ChartEntry;
   entry: ChartEntry;
   key: string;
@@ -51,6 +51,11 @@ interface ChronicleSegment {
   overlapIndex: number;
   segmentEndValue: number;
   segmentStartValue: number;
+}
+
+interface ChronicleLayout {
+  laneCount: number;
+  segments: ChronicleSegment[];
 }
 
 export function ChronicleTracks({
@@ -82,12 +87,12 @@ export function ChronicleTracks({
   timelineWidth: number;
   unitWidth: number;
 }): ReactElement {
+  const chronicleLayout = activeSource === "chronicle"
+    ? buildChronicleLayout(rows, dragPreview)
+    : { laneCount: 1, segments: [] };
   const trackHeight = activeSource === "date"
     ? Math.max(1, rows.length) * ROW_HEIGHT
-    : CHRONICLE_TRACK_HEIGHT;
-  const chronicleSegments = activeSource === "chronicle"
-    ? buildChronicleSegments(rows, dragPreview)
-    : [];
+    : chronicleLayout.laneCount * ROW_HEIGHT;
 
   return (
     <div
@@ -100,7 +105,7 @@ export function ChronicleTracks({
       <ChartGuideLines
         axisStart={axisStart}
         dateScale={dateScale}
-        rowCount={activeSource === "date" ? Math.max(1, rows.length) : CHRONICLE_LANE_COUNT}
+        rowCount={activeSource === "date" ? Math.max(1, rows.length) : chronicleLayout.laneCount}
         source={activeSource}
         ticks={guideTicks}
         unitWidth={unitWidth}
@@ -108,10 +113,12 @@ export function ChronicleTracks({
       {activeSource === "date" ? (
         <TodayLine axisEnd={axisEnd} axisStart={axisStart} unitWidth={unitWidth} />
       ) : null}
-      {activeSource === "chronicle" ? chronicleSegments.map((segment) => (
+      {activeSource === "chronicle" ? chronicleLayout.segments.map((segment) => (
         <ChronicleEntryBar
           activeSource={activeSource}
           axisStart={axisStart}
+          continuesFromPrevious={segment.continuesFromPrevious}
+          continuesToNext={segment.continuesToNext}
           dateScale={dateScale}
           displayEntry={segment.displayEntry}
           dragPreview={dragPreview}
@@ -131,6 +138,8 @@ export function ChronicleTracks({
         <ChronicleEntryBar
           activeSource={activeSource}
           axisStart={axisStart}
+          continuesFromPrevious={false}
+          continuesToNext={false}
           dateScale={dateScale}
           displayEntry={entry}
           dragPreview={dragPreview}
@@ -149,7 +158,7 @@ export function ChronicleTracks({
   );
 }
 
-function buildChronicleSegments(rows: ChartRow[], dragPreview: DragPreview | null): ChronicleSegment[] {
+function buildChronicleLayout(rows: ChartRow[], dragPreview: DragPreview | null): ChronicleLayout {
   let order = 0;
   const orderedEntries: OrderedChronicleEntry[] = rows.flatMap((row) =>
     row.entries.map((entry) => {
@@ -171,6 +180,7 @@ function buildChronicleSegments(rows: ChartRow[], dragPreview: DragPreview | nul
 
   const sortedPoints = [...points].toSorted((a, b) => a - b);
   const segments: ChronicleSegment[] = [];
+  let laneCount = 1;
 
   for (let pointIndex = 0; pointIndex < sortedPoints.length - 1; pointIndex += 1) {
     const segmentStartValue = sortedPoints[pointIndex];
@@ -180,9 +190,12 @@ function buildChronicleSegments(rows: ChartRow[], dragPreview: DragPreview | nul
     const activeEntries = orderedEntries
       .filter((item) => item.displayEntry.startValue < segmentEndExclusive && item.displayEntry.endValue + 1 > segmentStartValue)
       .toSorted((a, b) => a.order - b.order);
+    laneCount = Math.max(laneCount, activeEntries.length);
 
     activeEntries.forEach((item, overlapIndex) => {
       segments.push({
+        continuesFromPrevious: segmentStartValue > item.displayEntry.startValue,
+        continuesToNext: segmentEndExclusive - 1 < item.displayEntry.endValue,
         displayEntry: item.displayEntry,
         entry: item.entry,
         key: `${entryKey(item.entry)}:${segmentStartValue}:${segmentEndExclusive}:${overlapIndex}`,
@@ -194,12 +207,14 @@ function buildChronicleSegments(rows: ChartRow[], dragPreview: DragPreview | nul
     });
   }
 
-  return segments;
+  return { laneCount, segments };
 }
 
 function ChronicleEntryBar({
   activeSource,
   axisStart,
+  continuesFromPrevious,
+  continuesToNext,
   dateScale,
   displayEntry,
   dragPreview,
@@ -217,6 +232,8 @@ function ChronicleEntryBar({
 }: {
   activeSource: ChartSource;
   axisStart: number;
+  continuesFromPrevious: boolean;
+  continuesToNext: boolean;
   dateScale: DateScale | null;
   displayEntry: ChartEntry;
   dragPreview: DragPreview | null;
@@ -259,6 +276,10 @@ function ChronicleEntryBar({
   const fillHeight = activeSource === "date" ? dateFillHeight() : trackHeight / overlapCount;
   const showStartResize = activeSource === "date" || startValue === previewEntry.startValue;
   const showEndResize = activeSource === "date" || endValue === previewEntry.endValue;
+  const showRangeLabel = activeSource === "date" || !continuesFromPrevious;
+  const borderRadius = activeSource === "chronicle"
+    ? `${continuesFromPrevious ? 0 : 3}px ${continuesToNext ? 0 : 3}px ${continuesToNext ? 0 : 3}px ${continuesFromPrevious ? 0 : 3}px`
+    : undefined;
   const chronicleColorStyle = activeSource === "chronicle" ? chronicleColorStyleForEntry(entry) : {};
   const dateKind = entry.dateKind ?? "planned";
   const statusLabel = activeSource === "date" && dateKind === "actual"
@@ -282,6 +303,7 @@ function ChronicleEntryBar({
         ...chronicleColorStyle,
         height: fillHeight,
         left,
+        borderRadius,
         top,
         width,
         zIndex
@@ -296,7 +318,9 @@ function ChronicleEntryBar({
           onPointerDown={(event) => onStartEntryEdit(event, entry, "resize-start")}
         />
       ) : null}
-      <span className="chronicle-fill-label" style={{ left: labelLeft, width: labelWidth }}>{rangeLabel}</span>
+      {showRangeLabel ? (
+        <span className="chronicle-fill-label" style={{ left: labelLeft, width: labelWidth }}>{rangeLabel}</span>
+      ) : null}
       {statusLabel ? (
         <span className="chronicle-fill-status" style={{ left: statusLabelLeft, width: statusBadgeWidth }}>
           {statusLabel}
