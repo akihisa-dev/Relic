@@ -946,6 +946,69 @@
   fill: var(--text-2);
 }
 
+.chronicle-entry-card {
+  align-items: center;
+  background: color-mix(in srgb, var(--bg) 94%, var(--hover));
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.13);
+  box-sizing: border-box;
+  color: var(--text);
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 30px minmax(0, 1fr);
+  min-height: 54px;
+  padding: 8px;
+  pointer-events: auto;
+  position: absolute;
+  width: 252px;
+  z-index: 8;
+}
+
+.chronicle-entry-card-open {
+  align-items: center;
+  background: var(--bg);
+  border: 1px solid var(--border-soft);
+  border-radius: 5px;
+  color: var(--text-2);
+  cursor: pointer;
+  display: inline-flex;
+  height: 30px;
+  justify-content: center;
+  padding: 0;
+  width: 30px;
+}
+
+.chronicle-entry-card-open:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+
+.chronicle-entry-card-body {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.chronicle-entry-card-file,
+.chronicle-entry-card-range {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chronicle-entry-card-file {
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.chronicle-entry-card-range {
+  color: var(--text-2);
+  font-size: 11px;
+  font-weight: 650;
+}
+
 .chronicle-fill:active,
 .chronicle-fill--dragging {
   background: var(--chronicle-fill-active);

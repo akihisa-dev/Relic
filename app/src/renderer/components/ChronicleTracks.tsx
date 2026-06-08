@@ -1,4 +1,4 @@
-import type { CSSProperties, PointerEvent, ReactElement } from "react";
+import { useState, type CSSProperties, type PointerEvent, type ReactElement } from "react";
 
 import type { ChartEntry, ChartEntryEditKind, ChartSource } from "../../shared/ipc";
 import {
@@ -18,6 +18,7 @@ import {
   type DragPreview
 } from "../chronicleTimeline";
 import { useT } from "../i18n";
+import { IconFiles } from "./RailNavigationIcons";
 import { ChartGuideLines, TodayLine } from "./chronicleChartParts";
 
 const CHRONICLE_MIN_SEGMENT_HEIGHT = 38;
@@ -81,6 +82,7 @@ export function ChronicleTracks({
   dragPreview,
   guideTicks,
   onStartEntryEdit,
+  onOpenFile,
   rows,
   scrollLeft,
   trackViewportHeight,
@@ -98,12 +100,15 @@ export function ChronicleTracks({
     entry: ChartEntry,
     kind: ChartEntryEditKind
   ) => void;
+  onOpenFile: (path: string) => void;
   rows: ChartRow[];
   scrollLeft: number;
   trackViewportHeight: number;
   timelineWidth: number;
   unitWidth: number;
 }): ReactElement {
+  const [hoveredChronicleKey, setHoveredChronicleKey] = useState<string | null>(null);
+  const [selectedChronicleKey, setSelectedChronicleKey] = useState<string | null>(null);
   const chronicleLaneIndexes = activeSource === "chronicle"
     ? buildChronicleLaneIndexes(rows, dragPreview)
     : {};
@@ -124,6 +129,9 @@ export function ChronicleTracks({
         unitWidth
       })
     : [];
+  const activeChronicleShape = activeSource === "chronicle"
+    ? chronicleShapes.find((shape) => shape.key === (selectedChronicleKey ?? hoveredChronicleKey)) ?? null
+    : null;
   const trackHeight = activeSource === "date"
     ? Math.max(1, rows.length) * ROW_HEIGHT
     : chronicleTrackHeight;
@@ -152,6 +160,11 @@ export function ChronicleTracks({
           aria-label="年表"
           className="chronicle-tracks-svg"
           height={trackHeight}
+          onPointerDown={(event) => {
+            if (event.target === event.currentTarget) {
+              setSelectedChronicleKey(null);
+            }
+          }}
           role="group"
           viewBox={`0 0 ${timelineWidth} ${trackHeight}`}
           width={timelineWidth}
@@ -160,6 +173,11 @@ export function ChronicleTracks({
             <ChronicleEntrySvgShape
               dateScale={dateScale}
               dragPreview={dragPreview}
+              onHoverEntry={(key) => setHoveredChronicleKey(key)}
+              onLeaveEntry={(key) => {
+                setHoveredChronicleKey((current) => current === key ? null : current);
+              }}
+              onSelectEntry={(key) => setSelectedChronicleKey(key)}
               key={shape.key}
               onStartEntryEdit={onStartEntryEdit}
               shape={shape}
@@ -186,6 +204,14 @@ export function ChronicleTracks({
           unitWidth={unitWidth}
         />
       )))}
+      {activeChronicleShape ? (
+        <ChronicleEntryCard
+          dateScale={dateScale}
+          onOpenFile={onOpenFile}
+          shape={activeChronicleShape}
+          timelineWidth={timelineWidth}
+        />
+      ) : null}
     </div>
   );
 }
@@ -406,11 +432,17 @@ function assignChronicleLaneIndexes(
 function ChronicleEntrySvgShape({
   dateScale,
   dragPreview,
+  onHoverEntry,
+  onLeaveEntry,
+  onSelectEntry,
   onStartEntryEdit,
   shape
 }: {
   dateScale: DateScale | null;
   dragPreview: DragPreview | null;
+  onHoverEntry: (key: string) => void;
+  onLeaveEntry: (key: string) => void;
+  onSelectEntry: (key: string) => void;
   onStartEntryEdit: (
     event: PointerEvent<Element>,
     entry: ChartEntry,
@@ -428,7 +460,12 @@ function ChronicleEntrySvgShape({
     <g
       aria-label={`${entry.fileName} ${formatDateKindLabel(entry.dateKind, t)} ${rangeLabel}`}
       className={`chronicle-fill chronicle-fill--chronicle${isDragging ? " chronicle-fill--dragging" : ""}`}
-      onPointerDown={(event) => onStartEntryEdit(event, entry, "move")}
+      onPointerDown={(event) => {
+        onSelectEntry(shape.key);
+        onStartEntryEdit(event, entry, "move");
+      }}
+      onPointerEnter={() => onHoverEntry(shape.key)}
+      onPointerLeave={() => onLeaveEntry(shape.key)}
       role="button"
       style={colorStyle}
       tabIndex={0}
@@ -521,6 +558,47 @@ function ChronicleEntrySvgShape({
         y={shape.y + 4}
       />
     </g>
+  );
+}
+
+function ChronicleEntryCard({
+  dateScale,
+  onOpenFile,
+  shape,
+  timelineWidth
+}: {
+  dateScale: DateScale | null;
+  onOpenFile: (path: string) => void;
+  shape: ChronicleEntryShape;
+  timelineWidth: number;
+}): ReactElement {
+  const rangeLabel = formatRange(shape.displayEntry, "chronicle", dateScale);
+  const left = Math.max(8, Math.min(timelineWidth - 260, shape.x + 10));
+  const top = shape.y + 10;
+
+  return (
+    <div
+      className="chronicle-entry-card"
+      onPointerDown={(event) => event.stopPropagation()}
+      role="dialog"
+      style={{ left, top } as CSSProperties}
+    >
+      <button
+        aria-label={`${shape.entry.fileName}を開く`}
+        className="chronicle-entry-card-open"
+        onClick={(event) => {
+          event.stopPropagation();
+          onOpenFile(shape.entry.path);
+        }}
+        type="button"
+      >
+        <IconFiles />
+      </button>
+      <div className="chronicle-entry-card-body">
+        <div className="chronicle-entry-card-file">{shape.entry.fileName}</div>
+        <div className="chronicle-entry-card-range">{rangeLabel}</div>
+      </div>
+    </div>
   );
 }
 
