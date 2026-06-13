@@ -1021,7 +1021,7 @@
 
 .map-canvas-node--selected {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-soft), 0 8px 24px rgba(15, 23, 42, 0.1);
+  box-shadow: 0 0 0 4px var(--accent-soft), 0 0 0 1px var(--accent), 0 8px 24px rgba(15, 23, 42, 0.1);
 }
 
 .map-canvas-node--dragging {
@@ -1029,6 +1029,50 @@
   box-shadow: 0 14px 32px rgba(15, 23, 42, 0.16);
   cursor: grabbing;
   z-index: 2;
+}
+
+.map-canvas-node-outline-hitbox {
+  inset: -8px;
+  pointer-events: none;
+  position: absolute;
+}
+
+.map-canvas-node-outline-hit {
+  pointer-events: auto;
+  position: absolute;
+  touch-action: none;
+}
+
+.map-canvas-node-outline-hit--top,
+.map-canvas-node-outline-hit--bottom {
+  cursor: crosshair;
+  height: 12px;
+  left: 0;
+  right: 0;
+}
+
+.map-canvas-node-outline-hit--top {
+  top: 0;
+}
+
+.map-canvas-node-outline-hit--bottom {
+  bottom: 0;
+}
+
+.map-canvas-node-outline-hit--left,
+.map-canvas-node-outline-hit--right {
+  bottom: 0;
+  cursor: crosshair;
+  top: 0;
+  width: 12px;
+}
+
+.map-canvas-node-outline-hit--left {
+  left: 0;
+}
+
+.map-canvas-node-outline-hit--right {
+  right: 0;
 }
 
 .map-canvas-node-name,
