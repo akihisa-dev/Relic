@@ -30,6 +30,7 @@ interface PaneContentSurfaceProps {
   onEditorAction?: () => void;
   onLoadExternalVersion: () => void;
   onLargeMarkdownFallback?: (name: string, path: string) => void;
+  onOpenFile: (path: string) => void;
   onOpenLink?: (href: string) => void;
   onOpenWikiLink?: (target: string, heading?: string) => void;
   onRenameFile: (path: string, name: string) => void;
@@ -55,6 +56,7 @@ export function PaneContentSurface({
   onEditorAction,
   onLargeMarkdownFallback,
   onLoadExternalVersion,
+  onOpenFile,
   onOpenLink,
   onOpenWikiLink,
   onRenameFile,
@@ -149,6 +151,7 @@ export function PaneContentSurface({
               content={activeFileTab.content}
               fileName={activeFileTab.name}
               onChange={(content) => onUpdateTabContent(activeFileTab.id, content)}
+              onOpenFile={onOpenFile}
             />
           ) : (
             <Editor

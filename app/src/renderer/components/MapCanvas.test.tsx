@@ -95,6 +95,21 @@ describe("MapCanvas", () => {
     expect(onChange.mock.calls[0]?.[0]).toContain("y: 100");
   });
 
+  it("opens the node file on double click", () => {
+    const onOpenFile = vi.fn();
+    render(
+      <I18nProvider language="en">
+        <MapCanvas content={mapContent} fileName="World" onOpenFile={onOpenFile} />
+      </I18nProvider>
+    );
+    const node = screen.getByText("alice").closest(".map-canvas-node");
+    expect(node).toBeInstanceOf(HTMLElement);
+
+    fireEvent.doubleClick(node as HTMLElement);
+
+    expect(onOpenFile).toHaveBeenCalledWith("characters/alice.md");
+  });
+
   it("pans the canvas by dragging blank space", () => {
     const { container } = render(
       <I18nProvider language="en">
