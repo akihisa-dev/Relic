@@ -657,6 +657,10 @@ function clampZoom(value: number): number {
 function isBlankCanvasTarget(target: EventTarget, currentTarget: Element): boolean {
   return target === currentTarget ||
     (target instanceof Element && target.tagName.toLowerCase() === "svg") ||
+    (target instanceof Element && target.classList.contains("map-canvas-empty")) ||
+    (target instanceof Element && target.classList.contains("map-canvas-lines")) ||
+    (target instanceof Element && target.classList.contains("map-canvas-labels")) ||
+    (target instanceof Element && target.classList.contains("map-canvas-nodes")) ||
     (target instanceof Element && target.classList.contains("map-canvas-space"));
 }
 
