@@ -1143,6 +1143,24 @@
   justify-content: center;
   margin: 0 auto;
   min-width: max-content;
+  position: relative;
+}
+
+.why-tree-lines {
+  left: 0;
+  overflow: visible;
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  z-index: 0;
+}
+
+.why-tree-lines path {
+  fill: none;
+  stroke: var(--border-medium);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
 }
 
 .why-tree-branch {
@@ -1161,32 +1179,6 @@
   width: max-content;
 }
 
-.why-tree-connector {
-  height: 54px;
-  position: relative;
-  width: 100%;
-}
-
-.why-tree-connector::before {
-  background: var(--border-medium);
-  content: "";
-  height: 54px;
-  left: 50%;
-  position: absolute;
-  top: 0;
-  width: 2px;
-}
-
-.why-tree-connector::after {
-  background: var(--border-medium);
-  content: "";
-  height: 2px;
-  left: 150px;
-  position: absolute;
-  right: 150px;
-  top: 54px;
-}
-
 .why-tree-children {
   align-items: start;
   display: flex;
@@ -1196,17 +1188,7 @@
 }
 
 .why-tree-children > .why-tree-branch {
-  padding-top: 30px;
-}
-
-.why-tree-children > .why-tree-branch::before {
-  background: var(--border-medium);
-  content: "";
-  height: 30px;
-  left: 50%;
-  position: absolute;
-  top: 0;
-  width: 2px;
+  padding-top: 54px;
 }
 
 .why-tree-row {
@@ -1374,54 +1356,41 @@
   box-shadow: 0 0 0 4px var(--accent-soft), 0 10px 24px rgba(15, 23, 42, 0.1);
 }
 
-.why-tree-add-controls {
-  inset: 0;
-  pointer-events: none;
-  position: absolute;
-  z-index: 20;
-}
-
-.why-tree-add-control {
+.why-tree-node-menu {
+  align-items: center;
   background: #111;
   border: 1px solid rgba(255, 255, 255, 0.34);
   border-radius: 999px;
   box-shadow: 0 0 0 3px rgba(17, 17, 17, 0.2), 0 12px 28px rgba(15, 23, 42, 0.22);
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 2px;
+  left: 50%;
+  padding: 5px;
+  position: absolute;
+  top: calc(100% + 8px);
+  transform: translateX(-50%);
+  width: max-content;
+  z-index: 20;
+}
+
+.why-tree-node-menu button {
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
   color: #fff;
   font: inherit;
   font-size: 13px;
   font-weight: 700;
   min-height: 28px;
-  padding: 0 14px;
-  pointer-events: auto;
-  position: absolute;
+  padding: 0 12px;
+  text-align: left;
   white-space: nowrap;
 }
 
-.why-tree-add-control--fact {
-  right: calc(100% + 16px);
-  top: 50%;
-  transform: translateY(-50%);
-}
-
-.why-tree-add-control--why {
-  left: 50%;
-  top: calc(100% + 12px);
-  transform: translateX(-50%);
-}
-
-.why-tree-add-control--solution {
-  left: calc(100% + 16px);
-  top: 18px;
-}
-
-.why-tree-add-control--action {
-  left: calc(100% + 16px);
-  top: 58px;
-}
-
-.why-tree-add-control:hover,
-.why-tree-add-control:focus-visible {
-  background: #222;
+.why-tree-node-menu button:hover,
+.why-tree-node-menu button:focus-visible {
+  background: rgba(255, 255, 255, 0.14);
   outline: none;
 }
 
