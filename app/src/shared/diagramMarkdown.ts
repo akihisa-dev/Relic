@@ -316,6 +316,47 @@ export function addRelicWhyTreeSupplement(
   return serializeWhyTreeUpdate({ ...parsed.value, phenomenon: updated.value });
 }
 
+export function removeRelicWhyTreeWhy(content: string, whyPath: number[]): RelicResult<RelicWhyTreeUpdate> {
+  const parsed = parseRelicWhyTreeMarkdown(content);
+  if (!parsed.ok) return parsed;
+  if (whyPath.length === 0) {
+    return fail("WHY_TREE_PHENOMENON_REQUIRED", "問題・現象は削除できません。");
+  }
+  if (whyPath.some((index) => index !== 0)) {
+    return fail("WHY_TREE_PATH_INVALID", "Why Treeのパスが正しくありません。");
+  }
+
+  const updated = removeWhyTreeWhyAtPath(parsed.value.phenomenon, whyPath);
+  if (!updated.ok) return updated;
+
+  return serializeWhyTreeUpdate({ ...parsed.value, phenomenon: updated.value });
+}
+
+export function removeRelicWhyTreeSupplement(
+  content: string,
+  whyPath: number[],
+  kind: RelicWhyTreeSupplementKind,
+  index: number
+): RelicResult<RelicWhyTreeUpdate> {
+  const parsed = parseRelicWhyTreeMarkdown(content);
+  if (!parsed.ok) return parsed;
+
+  const key = whyTreeSupplementKey(kind);
+  const updated = updateWhyTreeNodeAtPath(parsed.value.phenomenon, whyPath, (node) => {
+    if (!Number.isInteger(index) || index < 0 || index >= node[key].length) {
+      return fail("WHY_TREE_ITEM_MISSING", "削除する項目が見つかりません。");
+    }
+
+    return ok({
+      ...node,
+      [key]: node[key].filter((_, itemIndex) => itemIndex !== index)
+    });
+  });
+  if (!updated.ok) return updated;
+
+  return serializeWhyTreeUpdate({ ...parsed.value, phenomenon: updated.value });
+}
+
 export function updateRelicWhyTreeSupplement(
   content: string,
   whyPath: number[],
@@ -832,6 +873,32 @@ function updateWhyTreeNodeAtPath(
   }
 
   const nextWhy = updateWhyTreeNodeAtPath(phenomenon.why, whyPath.slice(1), update);
+  if (!nextWhy.ok) return nextWhy;
+
+  return ok({
+    ...phenomenon,
+    why: nextWhy.value
+  });
+}
+
+function removeWhyTreeWhyAtPath(phenomenon: RelicWhyTreeNode, whyPath: number[]): RelicResult<RelicWhyTreeNode> {
+  if (whyPath.length === 1) {
+    if (!phenomenon.why) {
+      return fail("WHY_TREE_NODE_MISSING", "削除するWhyが見つかりません。");
+    }
+
+    const { why, ...rest } = phenomenon;
+    return ok({
+      ...rest,
+      ...(why.why ? { why: why.why } : {})
+    });
+  }
+
+  if (!phenomenon.why) {
+    return fail("WHY_TREE_NODE_MISSING", "削除するWhyが見つかりません。");
+  }
+
+  const nextWhy = removeWhyTreeWhyAtPath(phenomenon.why, whyPath.slice(1));
   if (!nextWhy.ok) return nextWhy;
 
   return ok({

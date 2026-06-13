@@ -154,6 +154,7 @@
   "diagram.whyTree.addSolution": "+ Solution",
   "diagram.whyTree.addWhy": "+ Why",
   "diagram.whyTree.chainLabel": "Why",
+  "diagram.whyTree.delete": "Delete",
   "diagram.whyTree.emptySupplement": "None",
   "diagram.whyTree.factInput": "Fact",
   "diagram.whyTree.facts": "Facts",

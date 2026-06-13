@@ -154,6 +154,7 @@
   "diagram.whyTree.addSolution": "+ 解決策",
   "diagram.whyTree.addWhy": "+ なぜ",
   "diagram.whyTree.chainLabel": "Why",
+  "diagram.whyTree.delete": "削除",
   "diagram.whyTree.emptySupplement": "なし",
   "diagram.whyTree.factInput": "根拠",
   "diagram.whyTree.facts": "根拠",

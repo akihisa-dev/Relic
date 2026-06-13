@@ -18,6 +18,8 @@ import {
   parseRelicDiagramMarkdown,
   removeRelicDiagramLine,
   removeRelicDiagramNode,
+  removeRelicWhyTreeSupplement,
+  removeRelicWhyTreeWhy,
   updateRelicDiagramLineLabel,
   updateRelicWhyTreeSupplement,
   updateRelicWhyTreeTitle,
@@ -71,6 +73,8 @@ interface WhyTreeChainItem {
 type WhyTreeSelection =
   | { kind: "phenomenon" | "why"; path: number[] }
   | { index: number; kind: RelicWhyTreeSupplementKind; path: number[] };
+
+type WhyTreeUpdateResult = { ok: true; value: { content: string } } | { ok: false };
 
 const canvasPadding = 180;
 const minCanvasWidth = 900;
@@ -619,7 +623,7 @@ function WhyTreeEditor({
   const chain = useMemo(() => buildWhyTreeChain(tree), [tree]);
   const [selection, setSelection] = useState<WhyTreeSelection>({ kind: "phenomenon", path: [] });
 
-  const applyUpdate = (updated: ReturnType<typeof addRelicWhyTreeWhy>): void => {
+  const applyUpdate = (updated: WhyTreeUpdateResult): void => {
     if (updated.ok) {
       onChange?.(updated.value.content);
     }
@@ -647,9 +651,41 @@ function WhyTreeEditor({
   const selectSupplement = (path: number[], kind: RelicWhyTreeSupplementKind, index: number): void => {
     setSelection({ index, kind, path });
   };
+  const selectParentMainNode = (path: number[]): void => {
+    setSelection(path.length === 0 ? { kind: "phenomenon", path: [] } : { kind: "why", path });
+  };
+  const removeMainWhy = (path: number[]): void => {
+    if (!onChange || path.length === 0) return;
+    applyUpdate(removeRelicWhyTreeWhy(content, path));
+    setSelection({ kind: "phenomenon", path: [] });
+  };
+  const removeSupplement = (path: number[], kind: RelicWhyTreeSupplementKind, index: number): void => {
+    if (!onChange) return;
+    applyUpdate(removeRelicWhyTreeSupplement(content, path, kind, index));
+    selectParentMainNode(path);
+  };
+  const deleteSelection = (): void => {
+    if (selection.kind === "phenomenon") return;
+    if (selection.kind === "why") {
+      removeMainWhy(selection.path);
+      return;
+    }
+
+    if ("index" in selection) {
+      removeSupplement(selection.path, selection.kind, selection.index);
+    }
+  };
+  const handleEditorKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>): void => {
+    if (event.key !== "Delete" && event.key !== "Backspace") return;
+    if (event.target instanceof HTMLInputElement) return;
+    if (selection.kind === "phenomenon") return;
+
+    event.preventDefault();
+    deleteSelection();
+  };
 
   return (
-    <div aria-label={fileName} className="why-tree-editor" role="tree">
+    <div aria-label={fileName} className="why-tree-editor" onKeyDown={handleEditorKeyDown} role="tree">
       <div className="why-tree-content">
         {chain.map((item, index) => (
           <div className="why-tree-step" key={item.path.join(".") || "phenomenon"}>
@@ -658,6 +694,7 @@ function WhyTreeEditor({
                 kind="fact"
                 node={item.node}
                 onChange={changeSupplement}
+                onRemove={removeSupplement}
                 onSelect={selectSupplement}
                 path={item.path}
                 selected={selection}
@@ -696,6 +733,19 @@ function WhyTreeEditor({
                       onFocus={() => selectMainNode(item)}
                       value={item.node.title}
                     />
+                    {item.role === "why" ? (
+                      <button
+                        aria-label={t("diagram.whyTree.delete")}
+                        className="why-tree-delete-button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          removeMainWhy(item.path);
+                        }}
+                        type="button"
+                      >
+                        ×
+                      </button>
+                    ) : null}
                   </div>
                   {isSameWhyTreeSelection(selection, { kind: item.role, path: item.path }) ? (
                     <WhyTreeNodeMenu
@@ -721,6 +771,7 @@ function WhyTreeEditor({
                   kind="solution"
                   node={item.node}
                   onChange={changeSupplement}
+                  onRemove={removeSupplement}
                   onSelect={selectSupplement}
                   path={item.path}
                   selected={selection}
@@ -729,6 +780,7 @@ function WhyTreeEditor({
                   kind="action"
                   node={item.node}
                   onChange={changeSupplement}
+                  onRemove={removeSupplement}
                   onSelect={selectSupplement}
                   path={item.path}
                   selected={selection}
@@ -769,6 +821,7 @@ function SupplementColumn({
   kind,
   node,
   onChange,
+  onRemove,
   onSelect,
   path,
   selected
@@ -776,6 +829,7 @@ function SupplementColumn({
   kind: RelicWhyTreeSupplementKind;
   node: RelicWhyTreeNode;
   onChange: (path: number[], kind: RelicWhyTreeSupplementKind, index: number, event: ReactChangeEvent<HTMLInputElement>) => void;
+  onRemove: (path: number[], kind: RelicWhyTreeSupplementKind, index: number) => void;
   onSelect: (path: number[], kind: RelicWhyTreeSupplementKind, index: number) => void;
   path: number[];
   selected: WhyTreeSelection;
@@ -788,23 +842,35 @@ function SupplementColumn({
       <span className="why-tree-support-heading">{t(whyTreeSupplementSectionKey(kind))}</span>
       {values.length === 0 ? (
         <span className="why-tree-support-empty">{t("diagram.whyTree.emptySupplement")}</span>
-      ) : values.map((value, index) => (
-        <label
-          className={[
-            "why-tree-support-item",
-            `why-tree-support-item--${kind}`,
-            isSameWhyTreeSelection(selected, { index, kind, path }) ? "why-tree-item--selected" : ""
-          ].filter(Boolean).join(" ")}
-          key={`${kind}-${path.join(".")}-${index}`}
-        >
-          <input
-            aria-label={t(whyTreeSupplementInputKey(kind))}
-            onChange={(event) => onChange(path, kind, index, event)}
-            onFocus={() => onSelect(path, kind, index)}
-            value={value}
-          />
-        </label>
-      ))}
+      ) : values.map((value, index) => {
+        const isSelected = isSameWhyTreeSelection(selected, { index, kind, path });
+
+        return (
+          <div
+            className={[
+              "why-tree-support-item",
+              `why-tree-support-item--${kind}`,
+              isSelected ? "why-tree-item--selected" : ""
+            ].filter(Boolean).join(" ")}
+            key={`${kind}-${path.join(".")}-${index}`}
+          >
+            <input
+              aria-label={t(whyTreeSupplementInputKey(kind))}
+              onChange={(event) => onChange(path, kind, index, event)}
+              onFocus={() => onSelect(path, kind, index)}
+              value={value}
+            />
+            <button
+              aria-label={t("diagram.whyTree.delete")}
+              className="why-tree-delete-button"
+              onClick={() => onRemove(path, kind, index)}
+              type="button"
+            >
+              ×
+            </button>
+          </div>
+        );
+      })}
     </section>
   );
 }
