@@ -781,12 +781,15 @@ function WhyTreeEditor({
           </div>
         </div>
         {item.node.whys.length > 0 ? (
-          <div className="why-tree-children">
-            {item.node.whys.map((why, index) => renderWhyTreeBranch({
-              node: why,
-              path: [...item.path, index],
-              role: "why"
-            }))}
+          <div className="why-tree-child-group">
+            <div aria-hidden="true" className="why-tree-connector" />
+            <div className="why-tree-children">
+              {item.node.whys.map((why, index) => renderWhyTreeBranch({
+                node: why,
+                path: [...item.path, index],
+                role: "why"
+              }))}
+            </div>
           </div>
         ) : null}
       </div>

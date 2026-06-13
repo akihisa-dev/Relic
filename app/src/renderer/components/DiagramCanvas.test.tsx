@@ -196,6 +196,8 @@ describe("DiagramCanvas", () => {
     fireEvent.click(screen.getByRole("button", { name: /\+ Why/ }));
 
     expect(screen.getAllByDisplayValue("なぜ？")).toHaveLength(2);
+    expect(container.querySelector(".why-tree-child-group")).toBeInTheDocument();
+    expect(container.querySelector(".why-tree-connector")).toBeInTheDocument();
     expect(container.querySelector(".why-tree-children")).toBeInTheDocument();
     expect(onChange.mock.calls[1]?.[0]).toContain("whys:");
   });
