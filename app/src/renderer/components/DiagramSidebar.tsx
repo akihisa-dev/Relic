@@ -2,16 +2,16 @@ import { useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEven
 import { createPortal } from "react-dom";
 
 import type { WorkspaceFileIndexEntry, WorkspaceState, WorkspaceTreeNode } from "../../shared/ipc";
-import { addRelicMapNodeForFile, isRelicMapMarkdownContent } from "../../shared/mapMarkdown";
+import { addRelicDiagramNodeForFile, isRelicDiagramMarkdownContent, type RelicDiagramType } from "../../shared/diagramMarkdown";
 import { useT } from "../i18n";
 import { useEditorStore } from "../store/editorStore";
 import { FilesWorkspaceEmpty } from "./FilesWorkspaceActions";
 
-interface MapSidebarProps {
+interface DiagramSidebarProps {
   isCreatingFile: boolean;
   isCreatingWorkspace: boolean;
   isOpeningWorkspace: boolean;
-  onCreateMapFile: () => void;
+  onCreateDiagramFile: (type: RelicDiagramType) => void;
   onCreateWorkspace: () => void;
   onDeleteItem?: (path: string, type: WorkspaceTreeNode["type"]) => void;
   onOpenFile: (path: string, event?: ReactMouseEvent<HTMLButtonElement>, options?: { lineNumber?: number | null }) => void;
@@ -21,11 +21,11 @@ interface MapSidebarProps {
   workspaceState: WorkspaceState | null;
 }
 
-export function MapSidebar({
+export function DiagramSidebar({
   isCreatingFile,
   isCreatingWorkspace,
   isOpeningWorkspace,
-  onCreateMapFile,
+  onCreateDiagramFile,
   onCreateWorkspace,
   onDeleteItem,
   onOpenFile,
@@ -33,7 +33,7 @@ export function MapSidebar({
   openingFilePath,
   openFilePaths,
   workspaceState
-}: MapSidebarProps): ReactElement {
+}: DiagramSidebarProps): ReactElement {
   const t = useT();
   const [placementError, setPlacementError] = useState<string | null>(null);
   const focusedPane = useEditorStore((state) => state.focusedPane);
@@ -42,27 +42,27 @@ export function MapSidebar({
   const tabs = useEditorStore((state) => state.tabs);
   const updateTabContent = useEditorStore((state) => state.updateTabContent);
   const activeWorkspace = workspaceState?.activeWorkspace ?? null;
-  const { mapFiles, placeableFiles } = useMemo(
-    () => groupMapSidebarFiles(workspaceState?.fileIndex ?? []),
+  const { diagramFiles, placeableFiles } = useMemo(
+    () => groupDiagramSidebarFiles(workspaceState?.fileIndex ?? []),
     [workspaceState?.fileIndex]
   );
   const activePane = focusedPane === "right" ? rightPane : leftPane;
   const activeTab = activePane.activeTabId ? tabs[activePane.activeTabId] : null;
-  const activeMapTab = activeTab?.kind === "file" && isRelicMapMarkdownContent(activeTab.content) ? activeTab : null;
+  const activeDiagramTab = activeTab?.kind === "file" && isRelicDiagramMarkdownContent(activeTab.content) ? activeTab : null;
   const handlePlaceFile = (filePath: string): void => {
-    if (!activeMapTab) {
-      setPlacementError(t("map.openMapFirst"));
+    if (!activeDiagramTab) {
+      setPlacementError(t("diagram.openDiagramFirst"));
       return;
     }
 
-    const next = addRelicMapNodeForFile(activeMapTab.content, filePath);
+    const next = addRelicDiagramNodeForFile(activeDiagramTab.content, filePath);
     if (!next.ok) {
       setPlacementError(next.error.message);
       return;
     }
 
     setPlacementError(null);
-    updateTabContent(activeMapTab.id, next.value.content);
+    updateTabContent(activeDiagramTab.id, next.value.content);
   };
 
   if (!activeWorkspace) {
@@ -79,44 +79,55 @@ export function MapSidebar({
   }
 
   return (
-    <div className="map-sidebar-section">
-      <div className="map-sidebar-actions">
+    <div className="diagram-sidebar-section">
+      <div className="diagram-sidebar-actions">
         <button
-          aria-label={t("map.createMap")}
+          aria-label={t("diagram.createRelationship")}
           className="files-create-icon-button"
-          data-tooltip={t("map.createMap")}
+          data-tooltip={t("diagram.createRelationship")}
           disabled={isCreatingFile}
-          onClick={onCreateMapFile}
-          title={t("map.createMap")}
+          onClick={() => onCreateDiagramFile("relationship")}
+          title={t("diagram.createRelationship")}
           type="button"
         >
-          <MapFileIcon />
+          <DiagramFileIcon />
+        </button>
+        <button
+          aria-label={t("diagram.createWhyTree")}
+          className="files-create-icon-button"
+          data-tooltip={t("diagram.createWhyTree")}
+          disabled={isCreatingFile}
+          onClick={() => onCreateDiagramFile("why-tree")}
+          title={t("diagram.createWhyTree")}
+          type="button"
+        >
+          <WhyTreeIcon />
         </button>
       </div>
-      <MapSidebarGroup
-        emptyLabel={t("map.noMapFiles")}
-        files={mapFiles}
+      <DiagramSidebarGroup
+        emptyLabel={t("diagram.noDiagramFiles")}
+        files={diagramFiles}
         onDeleteItem={onDeleteItem}
         onOpenFile={onOpenFile}
         openingFilePath={openingFilePath}
         openFilePaths={openFilePaths}
-        title={t("map.files")}
+        title={t("diagram.files")}
       />
-      <MapSidebarGroup
-        emptyLabel={t("map.noPlaceableFiles")}
+      <DiagramSidebarGroup
+        emptyLabel={t("diagram.noPlaceableFiles")}
         files={placeableFiles}
         onPlaceFile={handlePlaceFile}
-        placeDisabled={!activeMapTab}
-        title={t("map.placeableFiles")}
+        placeDisabled={!activeDiagramTab}
+        title={t("diagram.placeableFiles")}
       />
       {placementError ? (
-        <output className="map-sidebar-error">{placementError}</output>
+        <output className="diagram-sidebar-error">{placementError}</output>
       ) : null}
     </div>
   );
 }
 
-function MapFileIcon(): ReactElement {
+function DiagramFileIcon(): ReactElement {
   return (
     <svg aria-hidden="true" fill="none" height="22" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="22">
       <path d="M4.5 5.25v13.5l4.5-2.25 6 2.25 4.5-2.25V3l-4.5 2.25-6-2.25-4.5 2.25Z" />
@@ -126,7 +137,22 @@ function MapFileIcon(): ReactElement {
   );
 }
 
-function MapSidebarGroup({
+function WhyTreeIcon(): ReactElement {
+  return (
+    <svg aria-hidden="true" fill="none" height="22" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="22">
+      <path d="M12 4v5" />
+      <path d="M8 13 5 18" />
+      <path d="m16 13 3 5" />
+      <circle cx="12" cy="4" r="2" />
+      <circle cx="8" cy="13" r="2" />
+      <circle cx="16" cy="13" r="2" />
+      <circle cx="5" cy="20" r="2" />
+      <circle cx="19" cy="20" r="2" />
+    </svg>
+  );
+}
+
+function DiagramSidebarGroup({
   emptyLabel,
   files,
   onOpenFile,
@@ -139,8 +165,8 @@ function MapSidebarGroup({
 }: {
   emptyLabel: string;
   files: WorkspaceFileIndexEntry[];
-  onOpenFile?: MapSidebarProps["onOpenFile"];
-  onDeleteItem?: MapSidebarProps["onDeleteItem"];
+  onOpenFile?: DiagramSidebarProps["onOpenFile"];
+  onDeleteItem?: DiagramSidebarProps["onDeleteItem"];
   onPlaceFile?: (path: string) => void;
   openingFilePath?: string | null;
   openFilePaths?: Set<string>;
@@ -157,51 +183,51 @@ function MapSidebarGroup({
   };
 
   return (
-    <section className="map-sidebar-group">
-      <div className="map-sidebar-group-heading">
+    <section className="diagram-sidebar-group">
+      <div className="diagram-sidebar-group-heading">
         <span>{title}</span>
         <span className="pane-heading-count">{files.length}</span>
       </div>
       {files.length > 0 ? (
-        <ul className="map-sidebar-file-list">
+        <ul className="diagram-sidebar-file-list">
           {files.map((file) => (
             <li key={file.path}>
               {onOpenFile ? (
                 <button
-                  className={`map-sidebar-file map-sidebar-file--button${openFilePaths?.has(file.path) ? " open" : ""}${openingFilePath === file.path ? " loading" : ""}`}
+                  className={`diagram-sidebar-file diagram-sidebar-file--button${openFilePaths?.has(file.path) ? " open" : ""}${openingFilePath === file.path ? " loading" : ""}`}
                   onContextMenu={(event) => openContextMenu(file, event)}
                   onClick={(event) => onOpenFile(file.path, event)}
                   title={file.path}
                   type="button"
                 >
-                  <span className="map-sidebar-file-name">{file.name}</span>
-                  <span className="map-sidebar-file-path">{file.path}</span>
+                  <span className="diagram-sidebar-file-name">{file.name}</span>
+                  <span className="diagram-sidebar-file-path">{file.path}</span>
                 </button>
               ) : onPlaceFile ? (
                 <button
-                  className="map-sidebar-file map-sidebar-file--button"
+                  className="diagram-sidebar-file diagram-sidebar-file--button"
                   disabled={placeDisabled}
                   onClick={() => onPlaceFile(file.path)}
                   title={file.path}
                   type="button"
                 >
-                  <span className="map-sidebar-file-name">{file.name}</span>
-                  <span className="map-sidebar-file-path">{file.path}</span>
+                  <span className="diagram-sidebar-file-name">{file.name}</span>
+                  <span className="diagram-sidebar-file-path">{file.path}</span>
                 </button>
               ) : (
-                <div className="map-sidebar-file" title={file.path}>
-                  <span className="map-sidebar-file-name">{file.name}</span>
-                  <span className="map-sidebar-file-path">{file.path}</span>
+                <div className="diagram-sidebar-file" title={file.path}>
+                  <span className="diagram-sidebar-file-name">{file.name}</span>
+                  <span className="diagram-sidebar-file-path">{file.path}</span>
                 </div>
               )}
             </li>
           ))}
         </ul>
       ) : (
-        <p className="map-sidebar-empty">{emptyLabel}</p>
+        <p className="diagram-sidebar-empty">{emptyLabel}</p>
       )}
       {contextMenu && onDeleteItem ? (
-        <MapSidebarFileContextMenu
+        <DiagramSidebarFileContextMenu
           file={contextMenu.file}
           onClose={closeContextMenu}
           onDeleteItem={onDeleteItem}
@@ -213,7 +239,7 @@ function MapSidebarGroup({
   );
 }
 
-function MapSidebarFileContextMenu({
+function DiagramSidebarFileContextMenu({
   file,
   onClose,
   onDeleteItem,
@@ -222,7 +248,7 @@ function MapSidebarFileContextMenu({
 }: {
   file: WorkspaceFileIndexEntry;
   onClose: () => void;
-  onDeleteItem: NonNullable<MapSidebarProps["onDeleteItem"]>;
+  onDeleteItem: NonNullable<DiagramSidebarProps["onDeleteItem"]>;
   x: number;
   y: number;
 }): ReactElement {
@@ -282,24 +308,24 @@ function TrashIcon(): ReactElement {
   );
 }
 
-function groupMapSidebarFiles(fileIndex: WorkspaceFileIndexEntry[]): {
-  mapFiles: WorkspaceFileIndexEntry[];
+function groupDiagramSidebarFiles(fileIndex: WorkspaceFileIndexEntry[]): {
+  diagramFiles: WorkspaceFileIndexEntry[];
   placeableFiles: WorkspaceFileIndexEntry[];
 } {
-  const mapFiles: WorkspaceFileIndexEntry[] = [];
+  const diagramFiles: WorkspaceFileIndexEntry[] = [];
   const placeableFiles: WorkspaceFileIndexEntry[] = [];
 
   for (const file of fileIndex) {
     if (file.readStatus !== "ok") continue;
-    if (file.kind === "map") {
-      mapFiles.push(file);
+    if (file.kind === "diagram") {
+      diagramFiles.push(file);
     } else {
       placeableFiles.push(file);
     }
   }
 
   return {
-    mapFiles: sortFilesForSidebar(mapFiles),
+    diagramFiles: sortFilesForSidebar(diagramFiles),
     placeableFiles: sortFilesForSidebar(placeableFiles)
   };
 }

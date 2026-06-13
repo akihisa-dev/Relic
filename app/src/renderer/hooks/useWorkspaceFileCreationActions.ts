@@ -3,10 +3,14 @@ import { useCallback, useState } from "react";
 import {
   findCreatedMarkdownPath,
   nextUniqueFileName,
-  nextUniqueMapFileName,
+  nextUniqueDiagramFileName,
   nextUniqueFolderName
 } from "./workspaceFileActionHelpers";
-import { emptyRelicMapMarkdownContent } from "../../shared/mapMarkdown";
+import {
+  emptyRelicRelationshipMarkdownContent,
+  emptyRelicWhyTreeMarkdownContent,
+  type RelicDiagramType
+} from "../../shared/diagramMarkdown";
 import type { WorkspaceFileActionsContext } from "./workspaceFileActionTypes";
 import type { Translator } from "../i18nModel";
 
@@ -96,10 +100,10 @@ export function useWorkspaceFileCreationActions({
     workspaceState
   ]);
 
-  const handleCreateMapFile = useCallback((): void => {
+  const handleCreateDiagramFile = useCallback((diagramType: RelicDiagramType): void => {
     if (!window.relic) return;
 
-    const fileName = nextUniqueMapFileName(workspaceState, t);
+    const fileName = nextUniqueDiagramFileName(workspaceState, t, diagramType);
     const expectedPath = fileName.endsWith(".md") ? fileName : `${fileName}.md`;
 
     setIsCreatingFile(true);
@@ -115,7 +119,7 @@ export function useWorkspaceFileCreationActions({
 
         const createdPath = findCreatedMarkdownPath(createResult.value.fileTree, expectedPath) ?? expectedPath;
         const writeResult = await window.relic!.writeMarkdownFile({
-          content: emptyRelicMapMarkdownContent,
+          content: diagramType === "why-tree" ? emptyRelicWhyTreeMarkdownContent : emptyRelicRelationshipMarkdownContent,
           expectedContent: "",
           path: createdPath
         });
@@ -172,7 +176,7 @@ export function useWorkspaceFileCreationActions({
     fileNameDraft,
     folderNameDraft,
     handleCreateFile,
-    handleCreateMapFile,
+    handleCreateDiagramFile,
     handleCreateFolder,
     handleCreateNoteFromPane,
     isCreatingFile,

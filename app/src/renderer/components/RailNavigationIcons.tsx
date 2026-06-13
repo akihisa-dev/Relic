@@ -7,7 +7,7 @@ export const IconFiles = (_props: { sidebarOpen?: boolean } = {}): ReactElement 
   </svg>
 );
 
-export const IconMap = (): ReactElement => (
+export const IconDiagram = (): ReactElement => (
   <svg fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="18">
     <path d="M9 18 3 21V6l6-3 6 3 6-3v15l-6 3z" />
     <path d="M9 3v15" />

@@ -58,15 +58,15 @@ describe("searchWorkspace", () => {
     });
   });
 
-  it("Map用Markdownも全文検索対象に含める", async () => {
+  it("Diagram Markdownも全文検索対象に含める", async () => {
     const workspacePath = await createSearchWorkspace();
-    await writeFile(path.join(workspacePath, "人物関係.md"), "type: map\n\nnodes: []\nlines:\n  - label: 幼なじみ", "utf8");
+    await writeFile(path.join(workspacePath, "人物関係.md"), "---\ntype: relationship\n---\n\nnodes: []\nlines:\n  - label: 幼なじみ", "utf8");
 
     await expect(searchWorkspace(workspacePath, "幼なじみ", "fullText")).resolves.toEqual({
       ok: true,
       value: searchResultSet([{
         fileName: "人物関係",
-        lineNumber: 5,
+        lineNumber: 7,
         lineText: "- label: 幼なじみ",
         path: "人物関係.md"
       }])

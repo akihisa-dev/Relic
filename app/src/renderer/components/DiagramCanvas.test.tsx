@@ -3,10 +3,13 @@ import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { I18nProvider } from "../i18n";
-import { MapCanvas } from "./MapCanvas";
+import { DiagramCanvas } from "./DiagramCanvas";
 
-const mapContent = [
-  "type: map",
+const diagramContent = [
+  "---",
+  "type: relationship",
+  "title: 関係図",
+  "---",
   "",
   "nodes:",
   "  - id: node-1",
@@ -29,8 +32,10 @@ const mapContent = [
   ""
 ].join("\n");
 
-const mapContentWithoutLines = [
-  "type: map",
+const diagramContentWithoutLines = [
+  "---",
+  "type: relationship",
+  "---",
   "",
   "nodes:",
   "  - id: node-1",
@@ -49,8 +54,10 @@ const mapContentWithoutLines = [
   ""
 ].join("\n");
 
-const mapContentWithEmptyLabel = [
-  "type: map",
+const diagramContentWithEmptyLabel = [
+  "---",
+  "type: relationship",
+  "---",
   "",
   "nodes:",
   "  - id: node-1",
@@ -73,20 +80,49 @@ const mapContentWithEmptyLabel = [
   ""
 ].join("\n");
 
-function renderMapCanvas(content = mapContent) {
+const whyTreeContent = [
+  "---",
+  "type: why-tree",
+  "title: 原因分析",
+  "---",
+  "",
+  "nodes:",
+  "  - id: node-1",
+  "    file: problem.md",
+  "    role: phenomenon",
+  "    x: 120",
+  "    y: 80",
+  "    width: 180",
+  "    height: 80",
+  "  - id: node-2",
+  "    file: cause.md",
+  "    role: why",
+  "    x: 380",
+  "    y: 80",
+  "    width: 180",
+  "    height: 80",
+  "lines:",
+  "  - id: line-1",
+  "    from: node-1",
+  "    to: node-2",
+  "    label: なぜ",
+  ""
+].join("\n");
+
+function renderDiagramCanvas(content = diagramContent) {
   render(
     <I18nProvider language="en">
-      <MapCanvas content={content} fileName="World" />
+      <DiagramCanvas content={content} fileName="World" />
     </I18nProvider>
   );
 }
 
-function StatefulMapCanvas({ content, onChange }: { content: string; onChange: (content: string) => void }) {
+function StatefulDiagramCanvas({ content, onChange }: { content: string; onChange: (content: string) => void }) {
   const [currentContent, setCurrentContent] = useState(content);
 
   return (
     <I18nProvider language="en">
-      <MapCanvas
+      <DiagramCanvas
         content={currentContent}
         fileName="World"
         onChange={(nextContent) => {
@@ -102,9 +138,9 @@ afterEach(() => {
   cleanup();
 });
 
-describe("MapCanvas", () => {
-  it("renders nodes and line labels from Map Markdown", () => {
-    renderMapCanvas();
+describe("DiagramCanvas", () => {
+  it("renders nodes and line labels from Diagram Markdown", () => {
+    renderDiagramCanvas();
 
     expect(screen.getByText("alice")).toBeInTheDocument();
     expect(screen.queryByText("characters/alice.md")).not.toBeInTheDocument();
@@ -112,20 +148,39 @@ describe("MapCanvas", () => {
     expect(screen.getByText("幼なじみ")).toBeInTheDocument();
   });
 
-  it("shows an error for invalid Map Markdown", () => {
-    renderMapCanvas("type: map\n\nnotes: body");
+  it("renders and updates why-tree node roles", () => {
+    const onChange = vi.fn();
+    render(
+      <I18nProvider language="en">
+        <DiagramCanvas content={whyTreeContent} fileName="Why" onChange={onChange} />
+      </I18nProvider>
+    );
 
-    expect(screen.getByRole("alert")).toHaveTextContent("Could not read this Map file. Check the source.");
+    const roleSelects = screen.getAllByLabelText("Node role");
+    expect(roleSelects).toHaveLength(2);
+    expect(roleSelects[0]).toHaveValue("phenomenon");
+    expect(roleSelects[1]).toHaveValue("why");
+
+    fireEvent.change(roleSelects[1] as HTMLSelectElement, { target: { value: "fact" } });
+
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange.mock.calls[0]?.[0]).toContain("role: fact");
+  });
+
+  it("shows an error for invalid Diagram Markdown", () => {
+    renderDiagramCanvas("type: map\n\nnotes: body");
+
+    expect(screen.getByRole("alert")).toHaveTextContent("Could not read this Diagram file. Check the source.");
   });
 
   it("commits moved node coordinates on pointer up", () => {
     const onChange = vi.fn();
     render(
       <I18nProvider language="en">
-        <MapCanvas content={mapContent} fileName="World" onChange={onChange} />
+        <DiagramCanvas content={diagramContent} fileName="World" onChange={onChange} />
       </I18nProvider>
     );
-    const node = screen.getByText("alice").closest(".map-canvas-node");
+    const node = screen.getByText("alice").closest(".diagram-canvas-node");
     expect(node).toBeInstanceOf(HTMLElement);
 
     fireEvent(node as HTMLElement, pointerEvent("pointerdown", 1, 10, 10));
@@ -137,14 +192,14 @@ describe("MapCanvas", () => {
     expect(onChange.mock.calls[0]?.[0]).toContain("y: 100");
   });
 
-  it("does not navigate away from the Map when a node is double clicked", () => {
+  it("does not navigate away from the Diagram when a node is double clicked", () => {
     const onOpenFile = vi.fn();
     render(
       <I18nProvider language="en">
-        <MapCanvas content={mapContent} fileName="World" />
+        <DiagramCanvas content={diagramContent} fileName="World" />
       </I18nProvider>
     );
-    const node = screen.getByText("alice").closest(".map-canvas-node");
+    const node = screen.getByText("alice").closest(".diagram-canvas-node");
     expect(node).toBeInstanceOf(HTMLElement);
 
     fireEvent.doubleClick(node as HTMLElement);
@@ -155,11 +210,11 @@ describe("MapCanvas", () => {
   it("pans the canvas by dragging blank space", () => {
     const { container } = render(
       <I18nProvider language="en">
-        <MapCanvas content={mapContent} fileName="World" />
+        <DiagramCanvas content={diagramContent} fileName="World" />
       </I18nProvider>
     );
     const canvas = screen.getByRole("img", { name: "World" });
-    const space = container.querySelector(".map-canvas-space");
+    const space = container.querySelector(".diagram-canvas-space");
     expect(space).toBeInstanceOf(HTMLElement);
 
     fireEvent(canvas, pointerEvent("pointerdown", 5, 10, 10));
@@ -172,12 +227,12 @@ describe("MapCanvas", () => {
   it("pans the canvas from blank overlay layers", () => {
     const { container } = render(
       <I18nProvider language="en">
-        <MapCanvas content={mapContent} fileName="World" />
+        <DiagramCanvas content={diagramContent} fileName="World" />
       </I18nProvider>
     );
     const canvas = screen.getByRole("img", { name: "World" });
-    const space = container.querySelector(".map-canvas-space");
-    const nodeLayer = container.querySelector(".map-canvas-nodes");
+    const space = container.querySelector(".diagram-canvas-space");
+    const nodeLayer = container.querySelector(".diagram-canvas-nodes");
     expect(space).toBeInstanceOf(HTMLElement);
     expect(nodeLayer).toBeInstanceOf(HTMLElement);
 
@@ -191,11 +246,11 @@ describe("MapCanvas", () => {
   it("zooms the canvas around the pointer", () => {
     const { container } = render(
       <I18nProvider language="en">
-        <MapCanvas content={mapContent} fileName="World" />
+        <DiagramCanvas content={diagramContent} fileName="World" />
       </I18nProvider>
     );
     const canvas = screen.getByRole("img", { name: "World" });
-    const space = container.querySelector(".map-canvas-space");
+    const space = container.querySelector(".diagram-canvas-space");
     expect(space).toBeInstanceOf(HTMLElement);
 
     fireEvent.wheel(canvas, { clientX: 100, clientY: 100, deltaY: -100 });
@@ -207,11 +262,11 @@ describe("MapCanvas", () => {
     const onChange = vi.fn();
     render(
       <I18nProvider language="en">
-        <MapCanvas content={mapContent} fileName="World" onChange={onChange} />
+        <DiagramCanvas content={diagramContent} fileName="World" onChange={onChange} />
       </I18nProvider>
     );
     const canvas = screen.getByRole("img", { name: "World" });
-    const node = screen.getByText("alice").closest(".map-canvas-node");
+    const node = screen.getByText("alice").closest(".diagram-canvas-node");
     expect(node).toBeInstanceOf(HTMLElement);
 
     fireEvent.wheel(canvas, { clientX: 100, clientY: 100, deltaY: -100 });
@@ -224,14 +279,14 @@ describe("MapCanvas", () => {
     expect(onChange.mock.calls[0]?.[0]).toContain("y: 100");
   });
 
-  it("does not rewrite Map Markdown when a node is clicked without moving", () => {
+  it("does not rewrite Diagram Markdown when a node is clicked without moving", () => {
     const onChange = vi.fn();
     render(
       <I18nProvider language="en">
-        <MapCanvas content={mapContent} fileName="World" onChange={onChange} />
+        <DiagramCanvas content={diagramContent} fileName="World" onChange={onChange} />
       </I18nProvider>
     );
-    const node = screen.getByText("alice").closest(".map-canvas-node");
+    const node = screen.getByText("alice").closest(".diagram-canvas-node");
     expect(node).toBeInstanceOf(HTMLElement);
 
     fireEvent(node as HTMLElement, pointerEvent("pointerdown", 1, 10, 10));
@@ -243,7 +298,7 @@ describe("MapCanvas", () => {
   it("does not render node connection handles", () => {
     render(
       <I18nProvider language="en">
-        <MapCanvas content={mapContentWithoutLines} fileName="World" />
+        <DiagramCanvas content={diagramContentWithoutLines} fileName="World" />
       </I18nProvider>
     );
 
@@ -255,19 +310,19 @@ describe("MapCanvas", () => {
     const onChange = vi.fn();
     render(
       <I18nProvider language="en">
-        <MapCanvas content={mapContentWithoutLines} fileName="World" onChange={onChange} />
+        <DiagramCanvas content={diagramContentWithoutLines} fileName="World" onChange={onChange} />
       </I18nProvider>
     );
     const canvas = screen.getByRole("img", { name: "World" });
-    const alice = screen.getByText("alice").closest(".map-canvas-node");
-    const bob = screen.getByText("bob").closest(".map-canvas-node");
+    const alice = screen.getByText("alice").closest(".diagram-canvas-node");
+    const bob = screen.getByText("bob").closest(".diagram-canvas-node");
     expect(alice).toBeInstanceOf(HTMLElement);
     expect(bob).toBeInstanceOf(HTMLElement);
 
     fireEvent(alice as HTMLElement, pointerEvent("pointerdown", 2, 10, 10));
     fireEvent(alice as HTMLElement, pointerEvent("pointerup", 2, 10, 10));
-    expect(alice as HTMLElement).toHaveClass("map-canvas-node--selected");
-    const outline = (alice as HTMLElement).querySelector(".map-canvas-node-outline-hit--right");
+    expect(alice as HTMLElement).toHaveClass("diagram-canvas-node--selected");
+    const outline = (alice as HTMLElement).querySelector(".diagram-canvas-node-outline-hit--right");
     expect(outline).toBeInstanceOf(HTMLElement);
 
     fireEvent(outline as HTMLElement, pointerEvent("pointerdown", 3, 190, 50));
@@ -283,16 +338,16 @@ describe("MapCanvas", () => {
 
   it("opens line label editing immediately after creating a line", () => {
     const onChange = vi.fn();
-    render(<StatefulMapCanvas content={mapContentWithoutLines} onChange={onChange} />);
+    render(<StatefulDiagramCanvas content={diagramContentWithoutLines} onChange={onChange} />);
     const canvas = screen.getByRole("img", { name: "World" });
-    const alice = screen.getByText("alice").closest(".map-canvas-node");
-    const bob = screen.getByText("bob").closest(".map-canvas-node");
+    const alice = screen.getByText("alice").closest(".diagram-canvas-node");
+    const bob = screen.getByText("bob").closest(".diagram-canvas-node");
     expect(alice).toBeInstanceOf(HTMLElement);
     expect(bob).toBeInstanceOf(HTMLElement);
 
     fireEvent(alice as HTMLElement, pointerEvent("pointerdown", 2, 10, 10));
     fireEvent(alice as HTMLElement, pointerEvent("pointerup", 2, 10, 10));
-    const outline = (alice as HTMLElement).querySelector(".map-canvas-node-outline-hit--right");
+    const outline = (alice as HTMLElement).querySelector(".diagram-canvas-node-outline-hit--right");
     expect(outline).toBeInstanceOf(HTMLElement);
 
     fireEvent(outline as HTMLElement, pointerEvent("pointerdown", 3, 190, 50));
@@ -312,10 +367,10 @@ describe("MapCanvas", () => {
     const onChange = vi.fn();
     const { container } = render(
       <I18nProvider language="en">
-        <MapCanvas content={mapContentWithEmptyLabel} fileName="World" onChange={onChange} />
+        <DiagramCanvas content={diagramContentWithEmptyLabel} fileName="World" onChange={onChange} />
       </I18nProvider>
     );
-    const line = container.querySelector(".map-canvas-line-hit");
+    const line = container.querySelector(".diagram-canvas-line-hit");
     expect(line).toBeInstanceOf(Element);
 
     expect(screen.queryByRole("button", { name: "Edit line label" })).not.toBeInTheDocument();
@@ -328,10 +383,10 @@ describe("MapCanvas", () => {
     const onChange = vi.fn();
     render(
       <I18nProvider language="en">
-        <MapCanvas content={mapContentWithoutLines} fileName="World" onChange={onChange} />
+        <DiagramCanvas content={diagramContentWithoutLines} fileName="World" onChange={onChange} />
       </I18nProvider>
     );
-    const alice = screen.getByText("alice").closest(".map-canvas-node");
+    const alice = screen.getByText("alice").closest(".diagram-canvas-node");
     expect(alice).toBeInstanceOf(HTMLElement);
 
     fireEvent(alice as HTMLElement, pointerEvent("pointerdown", 2, 10, 10));
@@ -348,10 +403,10 @@ describe("MapCanvas", () => {
     const onChange = vi.fn();
     render(
       <I18nProvider language="en">
-        <MapCanvas content={mapContentWithoutLines} fileName="World" onChange={onChange} />
+        <DiagramCanvas content={diagramContentWithoutLines} fileName="World" onChange={onChange} />
       </I18nProvider>
     );
-    const alice = screen.getByText("alice").closest(".map-canvas-node");
+    const alice = screen.getByText("alice").closest(".diagram-canvas-node");
     expect(alice).toBeInstanceOf(HTMLElement);
 
     fireEvent(alice as HTMLElement, pointerEvent("pointerdown", 2, 10, 10));
@@ -371,16 +426,16 @@ describe("MapCanvas", () => {
     const onChange = vi.fn();
     render(
       <I18nProvider language="en">
-        <MapCanvas content={mapContentWithoutLines} fileName="World" onChange={onChange} />
+        <DiagramCanvas content={diagramContentWithoutLines} fileName="World" onChange={onChange} />
       </I18nProvider>
     );
     const canvas = screen.getByRole("img", { name: "World" });
-    const alice = screen.getByText("alice").closest(".map-canvas-node");
+    const alice = screen.getByText("alice").closest(".diagram-canvas-node");
     expect(alice).toBeInstanceOf(HTMLElement);
 
     fireEvent(alice as HTMLElement, pointerEvent("pointerdown", 2, 10, 10));
     fireEvent(alice as HTMLElement, pointerEvent("pointerup", 2, 10, 10));
-    const outline = (alice as HTMLElement).querySelector(".map-canvas-node-outline-hit--right");
+    const outline = (alice as HTMLElement).querySelector(".diagram-canvas-node-outline-hit--right");
     expect(outline).toBeInstanceOf(HTMLElement);
 
     fireEvent(outline as HTMLElement, pointerEvent("pointerdown", 3, 190, 50));
@@ -394,10 +449,10 @@ describe("MapCanvas", () => {
     const onChange = vi.fn();
     render(
       <I18nProvider language="en">
-        <MapCanvas content={mapContent} fileName="World" onChange={onChange} />
+        <DiagramCanvas content={diagramContent} fileName="World" onChange={onChange} />
       </I18nProvider>
     );
-    const node = screen.getByText("alice").closest(".map-canvas-node");
+    const node = screen.getByText("alice").closest(".diagram-canvas-node");
     expect(node).toBeInstanceOf(HTMLElement);
 
     fireEvent(node as HTMLElement, pointerEvent("pointerdown", 3, 10, 10));
@@ -414,10 +469,10 @@ describe("MapCanvas", () => {
     const onChange = vi.fn();
     const { container } = render(
       <I18nProvider language="en">
-        <MapCanvas content={mapContent} fileName="World" onChange={onChange} />
+        <DiagramCanvas content={diagramContent} fileName="World" onChange={onChange} />
       </I18nProvider>
     );
-    const line = container.querySelector(".map-canvas-line-hit");
+    const line = container.querySelector(".diagram-canvas-line-hit");
     expect(line).toBeInstanceOf(Element);
 
     fireEvent(line as Element, pointerEvent("pointerdown", 4, 10, 10));
@@ -433,7 +488,7 @@ describe("MapCanvas", () => {
     const onChange = vi.fn();
     render(
       <I18nProvider language="en">
-        <MapCanvas content={mapContent} fileName="World" onChange={onChange} />
+        <DiagramCanvas content={diagramContent} fileName="World" onChange={onChange} />
       </I18nProvider>
     );
 

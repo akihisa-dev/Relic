@@ -98,7 +98,7 @@ export function createFilesSidebarProps(input: AppLayoutPropsInput): FilesSideba
     onCreateFileInFolder: input.handleCreateFileInFolder,
     onCreateFolder: input.handleCreateFolderFromSidebar,
     onCreateFolderInFolder: input.handleCreateFolderInFolder,
-    onCreateMapFile: input.handleCreateMapFile,
+    onCreateDiagramFile: input.handleCreateDiagramFile,
     onCreateWorkspace: input.handleCreateNewWorkspace,
     onDeleteItem: input.handleDeleteTreeItem,
     onDeleteItems: input.handleDeleteTreeItems,

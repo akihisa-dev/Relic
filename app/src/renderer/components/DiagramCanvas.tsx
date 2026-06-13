@@ -10,42 +10,45 @@ import {
 } from "react";
 
 import {
-  addRelicMapLine,
-  moveRelicMapNode,
-  parseRelicMapMarkdown,
-  removeRelicMapLine,
-  removeRelicMapNode,
-  updateRelicMapLineLabel,
-  type RelicMapDocument,
-  type RelicMapLine,
-  type RelicMapNode
-} from "../../shared/mapMarkdown";
+  addRelicDiagramLine,
+  moveRelicDiagramNode,
+  parseRelicDiagramMarkdown,
+  relicWhyTreeRoles,
+  removeRelicDiagramLine,
+  removeRelicDiagramNode,
+  updateRelicDiagramNodeRole,
+  updateRelicDiagramLineLabel,
+  type RelicDiagramDocument,
+  type RelicDiagramLine,
+  type RelicDiagramNode,
+  type RelicWhyTreeRole
+} from "../../shared/diagramMarkdown";
 import { useT } from "../i18n";
 
-interface MapCanvasProps {
+interface DiagramCanvasProps {
   content: string;
   fileName: string;
   onChange?: (content: string) => void;
 }
 
-interface MapCanvasLayout {
+interface DiagramCanvasLayout {
   height: number;
-  lines: MapCanvasLineLayout[];
-  nodes: MapCanvasNodeLayout[];
+  lines: DiagramCanvasLineLayout[];
+  nodes: DiagramCanvasNodeLayout[];
   originX: number;
   originY: number;
   width: number;
 }
 
-interface MapCanvasNodeLayout {
-  node: RelicMapNode;
+interface DiagramCanvasNodeLayout {
+  node: RelicDiagramNode;
   x: number;
   y: number;
 }
 
-interface MapCanvasLineLayout {
+interface DiagramCanvasLineLayout {
   label: string;
-  line: RelicMapLine;
+  line: RelicDiagramLine;
   labelX: number;
   labelY: number;
   x1: number;
@@ -60,6 +63,13 @@ const minCanvasHeight = 620;
 const minZoom = 0.35;
 const maxZoom = 2.5;
 const connectActivationDistance = 4;
+const roleLabelKeys: Record<RelicWhyTreeRole, "diagram.role.phenomenon" | "diagram.role.why" | "diagram.role.fact" | "diagram.role.solution" | "diagram.role.action"> = {
+  action: "diagram.role.action",
+  fact: "diagram.role.fact",
+  phenomenon: "diagram.role.phenomenon",
+  solution: "diagram.role.solution",
+  why: "diagram.role.why"
+};
 
 interface DragState {
   currentX: number;
@@ -98,7 +108,7 @@ interface ViewportState {
   zoom: number;
 }
 
-type MapSelection =
+type DiagramSelection =
   | { id: string; type: "line" }
   | { id: string; type: "node" };
 
@@ -107,25 +117,25 @@ interface LabelEditState {
   value: string;
 }
 
-export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): ReactElement {
+export function DiagramCanvas({ content, fileName, onChange }: DiagramCanvasProps): ReactElement {
   const t = useT();
   const [connect, setConnect] = useState<ConnectState | null>(null);
   const [drag, setDrag] = useState<DragState | null>(null);
   const [labelEdit, setLabelEdit] = useState<LabelEditState | null>(null);
   const [pan, setPan] = useState<PanState | null>(null);
-  const [selection, setSelection] = useState<MapSelection | null>(null);
+  const [selection, setSelection] = useState<DiagramSelection | null>(null);
   const [viewport, setViewport] = useState<ViewportState>({ panX: 0, panY: 0, zoom: 1 });
-  const parsed = useMemo(() => parseRelicMapMarkdown(content), [content]);
+  const parsed = useMemo(() => parseRelicDiagramMarkdown(content), [content]);
 
   if (!parsed.ok) {
     return (
-      <div className="map-canvas map-canvas--invalid" role="alert">
-        <p>{t("map.invalidFile")}</p>
+      <div className="diagram-canvas diagram-canvas--invalid" role="alert">
+        <p>{t("diagram.invalidFile")}</p>
       </div>
     );
   }
 
-  const layout = buildMapCanvasLayout(parsed.value);
+  const layout = buildDiagramCanvasLayout(parsed.value);
   const displayNodes = layout.nodes.map((node) => {
     if (drag?.nodeId !== node.node.id) return node;
 
@@ -146,7 +156,7 @@ export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): Reac
     startX: connect.startX,
     startY: connect.startY
   } : null;
-  const startNodeDrag = (node: RelicMapNode, event: ReactPointerEvent<HTMLDivElement>): void => {
+  const startNodeDrag = (node: RelicDiagramNode, event: ReactPointerEvent<HTMLDivElement>): void => {
     if (!onChange) return;
 
     event.preventDefault();
@@ -188,7 +198,7 @@ export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): Reac
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
     if (drag.currentX !== drag.originalX || drag.currentY !== drag.originalY) {
-      const moved = moveRelicMapNode(content, drag.nodeId, drag.currentX, drag.currentY);
+      const moved = moveRelicDiagramNode(content, drag.nodeId, drag.currentX, drag.currentY);
       if (moved.ok) {
         onChange?.(moved.value.content);
       }
@@ -200,7 +210,7 @@ export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): Reac
     setDrag(null);
   };
   const pointerPositionInCanvas = (event: ReactPointerEvent<HTMLElement>): { x: number; y: number } => {
-    const canvas = event.currentTarget.closest(".map-canvas") ?? event.currentTarget;
+    const canvas = event.currentTarget.closest(".diagram-canvas") ?? event.currentTarget;
     const rect = canvas.getBoundingClientRect();
 
     return screenToCanvasPoint(event.clientX, event.clientY, rect, viewport);
@@ -260,7 +270,7 @@ export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): Reac
       };
     });
   };
-  const startConnect = (node: RelicMapNode, event: ReactPointerEvent<HTMLElement>): void => {
+  const startConnect = (node: RelicDiagramNode, event: ReactPointerEvent<HTMLElement>): void => {
     event.preventDefault();
     event.stopPropagation();
     if (!onChange) return;
@@ -314,7 +324,7 @@ export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): Reac
       return;
     }
 
-    const added = addRelicMapLine(content, connect.fromNodeId, toNodeId);
+    const added = addRelicDiagramLine(content, connect.fromNodeId, toNodeId);
     if (added.ok) {
       onChange?.(added.value.content);
       setSelection({ id: added.value.line.id, type: "line" });
@@ -326,13 +336,13 @@ export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): Reac
     if (!connect || connect.pointerId !== event.pointerId) return;
     setConnect(null);
   };
-  const startNodePointer = (node: RelicMapNode, event: ReactPointerEvent<HTMLDivElement>): void => {
+  const startNodePointer = (node: RelicDiagramNode, event: ReactPointerEvent<HTMLDivElement>): void => {
     startNodeDrag(node, event);
   };
-  const startNodeOutlineConnect = (node: RelicMapNode, event: ReactPointerEvent<HTMLElement>): void => {
+  const startNodeOutlineConnect = (node: RelicDiagramNode, event: ReactPointerEvent<HTMLElement>): void => {
     startConnect(node, event);
   };
-  const finishNodePointer = (node: RelicMapNode, event: ReactPointerEvent<HTMLDivElement>): void => {
+  const finishNodePointer = (node: RelicDiagramNode, event: ReactPointerEvent<HTMLDivElement>): void => {
     event.stopPropagation();
     if (connect?.pointerId === event.pointerId) {
       finishConnect(node.id, event);
@@ -347,7 +357,7 @@ export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): Reac
     setSelection({ id: lineId, type: "line" });
     focusCanvasFrom(event.currentTarget);
   };
-  const beginLabelEdit = (line: MapCanvasLineLayout): void => {
+  const beginLabelEdit = (line: DiagramCanvasLineLayout): void => {
     if (!onChange) return;
 
     setSelection({ id: line.line.id, type: "line" });
@@ -357,7 +367,7 @@ export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): Reac
     });
   };
   const startLabelEditFromButton = (
-    line: MapCanvasLineLayout,
+    line: DiagramCanvasLineLayout,
     event: ReactPointerEvent<HTMLButtonElement>
   ): void => {
     event.preventDefault();
@@ -365,7 +375,7 @@ export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): Reac
     beginLabelEdit(line);
   };
   const startLabelEditFromLine = (
-    line: MapCanvasLineLayout,
+    line: DiagramCanvasLineLayout,
     event: ReactMouseEvent<SVGPathElement>
   ): void => {
     event.preventDefault();
@@ -379,7 +389,7 @@ export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): Reac
   const commitLabelEdit = (): void => {
     if (!labelEdit || !onChange) return;
 
-    const updated = updateRelicMapLineLabel(content, labelEdit.lineId, labelEdit.value);
+    const updated = updateRelicDiagramLineLabel(content, labelEdit.lineId, labelEdit.value);
     if (updated.ok) {
       onChange(updated.value.content);
       setSelection({ id: updated.value.line.id, type: "line" });
@@ -404,8 +414,8 @@ export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): Reac
     if (!selection || !onChange) return;
 
     const deleted = selection.type === "node"
-      ? removeRelicMapNode(content, selection.id)
-      : removeRelicMapLine(content, selection.id);
+      ? removeRelicDiagramNode(content, selection.id)
+      : removeRelicDiagramLine(content, selection.id);
 
     if (deleted.ok) {
       onChange(deleted.value.content);
@@ -420,11 +430,20 @@ export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): Reac
     event.preventDefault();
     deleteSelection();
   };
+  const changeNodeRole = (nodeId: string, role: RelicWhyTreeRole): void => {
+    if (!onChange) return;
+
+    const updated = updateRelicDiagramNodeRole(content, nodeId, role);
+    if (updated.ok) {
+      onChange(updated.value.content);
+      setSelection({ id: updated.value.node.id, type: "node" });
+    }
+  };
 
   return (
     <div
       aria-label={fileName}
-      className={`map-canvas${pan ? " map-canvas--panning" : ""}`}
+      className={`diagram-canvas${pan ? " diagram-canvas--panning" : ""}`}
       onKeyDown={handleCanvasKeyDown}
       onPointerCancel={cancelConnect}
       onPointerDown={startPanOnBlank}
@@ -441,10 +460,10 @@ export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): Reac
       tabIndex={0}
     >
       {layout.nodes.length === 0 ? (
-        <p className="map-canvas-empty">{t("map.emptyCanvas")}</p>
+        <p className="diagram-canvas-empty">{t("diagram.emptyCanvas")}</p>
       ) : null}
       <div
-        className="map-canvas-space"
+        className="diagram-canvas-space"
         onPointerDown={clearSelectionOnBlankPointerDown}
         style={{
           height: layout.height,
@@ -455,7 +474,7 @@ export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): Reac
       >
         <svg
           aria-hidden="true"
-          className="map-canvas-lines"
+          className="diagram-canvas-lines"
           height={layout.height}
           viewBox={`0 0 ${layout.width} ${layout.height}`}
           width={layout.width}
@@ -463,14 +482,14 @@ export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): Reac
           {displayLines.map((line) => (
             <g key={line.line.id}>
               <path
-                className="map-canvas-line-hit"
+                className="diagram-canvas-line-hit"
                 d={`M ${line.x1} ${line.y1} L ${line.x2} ${line.y2}`}
                 onDoubleClick={(event) => startLabelEditFromLine(line, event)}
                 onPointerDown={(event) => selectLine(line.line.id, event)}
               />
               <path
                 aria-hidden="true"
-                className={`map-canvas-line${selection?.type === "line" && selection.id === line.line.id ? " map-canvas-line--selected" : ""}`}
+                className={`diagram-canvas-line${selection?.type === "line" && selection.id === line.line.id ? " diagram-canvas-line--selected" : ""}`}
                 d={`M ${line.x1} ${line.y1} L ${line.x2} ${line.y2}`}
                 onDoubleClick={(event) => startLabelEditFromLine(line, event)}
                 onPointerDown={(event) => selectLine(line.line.id, event)}
@@ -479,17 +498,17 @@ export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): Reac
           ))}
           {previewLine ? (
             <path
-              className="map-canvas-line map-canvas-line--preview"
+              className="diagram-canvas-line diagram-canvas-line--preview"
               d={`M ${previewLine.startX} ${previewLine.startY} L ${previewLine.currentX} ${previewLine.currentY}`}
             />
           ) : null}
         </svg>
-        <div className="map-canvas-labels">
+        <div className="diagram-canvas-labels">
           {displayLines.map((line) => {
             if (labelEdit?.lineId === line.line.id) {
               return (
                 <form
-                  className="map-canvas-label-editor"
+                  className="diagram-canvas-label-editor"
                   key={line.line.id}
                   onSubmit={submitLabelEdit}
                   style={{
@@ -498,7 +517,7 @@ export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): Reac
                   }}
                 >
                   <input
-                    aria-label={t("map.editLineLabel")}
+                    aria-label={t("diagram.editLineLabel")}
                     autoFocus
                     onBlur={commitLabelEdit}
                     onChange={(event) => changeLabelEditValue(event.currentTarget.value)}
@@ -519,8 +538,8 @@ export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): Reac
 
             return (
               <button
-                aria-label={t("map.editLineLabel")}
-                className={`map-canvas-line-label${line.label ? "" : " map-canvas-line-label--empty"}`}
+                aria-label={t("diagram.editLineLabel")}
+                className={`diagram-canvas-line-label${line.label ? "" : " diagram-canvas-line-label--empty"}`}
                 key={line.line.id}
                 onPointerDown={(event) => startLabelEditFromButton(line, event)}
                 style={{
@@ -529,18 +548,18 @@ export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): Reac
                 }}
                 type="button"
               >
-                {line.label || t("map.addLineLabel")}
+                {line.label || t("diagram.addLineLabel")}
               </button>
             );
           })}
         </div>
-        <div className="map-canvas-nodes">
+        <div className="diagram-canvas-nodes">
           {displayNodes.map(({ node, x, y }) => (
             <div
               className={[
-                "map-canvas-node",
-                drag?.nodeId === node.id ? "map-canvas-node--dragging" : "",
-                selection?.type === "node" && selection.id === node.id ? "map-canvas-node--selected" : ""
+                "diagram-canvas-node",
+                drag?.nodeId === node.id ? "diagram-canvas-node--dragging" : "",
+                selection?.type === "node" && selection.id === node.id ? "diagram-canvas-node--selected" : ""
               ].filter(Boolean).join(" ")}
               key={node.id}
               onPointerCancel={cancelNodeDrag}
@@ -555,12 +574,25 @@ export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): Reac
               }}
               title={node.file}
             >
-              <span className="map-canvas-node-name">{nodeFileName(node.file)}</span>
+              {parsed.value.type === "why-tree" && node.role ? (
+                <select
+                  aria-label={t("diagram.roleSelect")}
+                  className="diagram-canvas-node-role"
+                  onChange={(event) => changeNodeRole(node.id, event.currentTarget.value as RelicWhyTreeRole)}
+                  onPointerDown={(event) => event.stopPropagation()}
+                  value={node.role}
+                >
+                  {relicWhyTreeRoles.map((role) => (
+                    <option key={role} value={role}>{t(roleLabelKeys[role])}</option>
+                  ))}
+                </select>
+              ) : null}
+              <span className="diagram-canvas-node-name">{nodeFileName(node.file)}</span>
               {selection?.type === "node" && selection.id === node.id ? (
-                <span className="map-canvas-node-outline-hitbox" aria-hidden="true">
+                <span className="diagram-canvas-node-outline-hitbox" aria-hidden="true">
                   {(["top", "right", "bottom", "left"] as const).map((side) => (
                     <span
-                      className={`map-canvas-node-outline-hit map-canvas-node-outline-hit--${side}`}
+                      className={`diagram-canvas-node-outline-hit diagram-canvas-node-outline-hit--${side}`}
                       data-side={side}
                       key={side}
                       onPointerDown={(event) => startNodeOutlineConnect(node, event)}
@@ -576,18 +608,18 @@ export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): Reac
   );
 }
 
-export function mapCanvasStatus(content: string, t: ReturnType<typeof useT>): string {
-  const parsed = parseRelicMapMarkdown(content);
-  if (!parsed.ok) return t("map.invalidStatus");
+export function diagramCanvasStatus(content: string, t: ReturnType<typeof useT>): string {
+  const parsed = parseRelicDiagramMarkdown(content);
+  if (!parsed.ok) return t("diagram.invalidStatus");
 
-  return t("map.status", {
+  return t("diagram.status", {
     lines: parsed.value.lines.length,
     nodes: parsed.value.nodes.length
   });
 }
 
-function buildMapCanvasLayout(map: RelicMapDocument): MapCanvasLayout {
-  if (map.nodes.length === 0) {
+function buildDiagramCanvasLayout(diagram: RelicDiagramDocument): DiagramCanvasLayout {
+  if (diagram.nodes.length === 0) {
     return {
       height: minCanvasHeight,
       lines: [],
@@ -598,13 +630,13 @@ function buildMapCanvasLayout(map: RelicMapDocument): MapCanvasLayout {
     };
   }
 
-  const minX = Math.min(...map.nodes.map((node) => node.x));
-  const minY = Math.min(...map.nodes.map((node) => node.y));
-  const maxX = Math.max(...map.nodes.map((node) => node.x + node.width));
-  const maxY = Math.max(...map.nodes.map((node) => node.y + node.height));
+  const minX = Math.min(...diagram.nodes.map((node) => node.x));
+  const minY = Math.min(...diagram.nodes.map((node) => node.y));
+  const maxX = Math.max(...diagram.nodes.map((node) => node.x + node.width));
+  const maxY = Math.max(...diagram.nodes.map((node) => node.y + node.height));
   const originX = minX - canvasPadding;
   const originY = minY - canvasPadding;
-  const nodes = map.nodes.map((node) => ({
+  const nodes = diagram.nodes.map((node) => ({
     node,
     x: node.x - originX,
     y: node.y - originY
@@ -612,7 +644,7 @@ function buildMapCanvasLayout(map: RelicMapDocument): MapCanvasLayout {
 
   return {
     height: Math.max(minCanvasHeight, maxY - minY + canvasPadding * 2),
-    lines: buildLineLayouts(map.lines, nodes),
+    lines: buildLineLayouts(diagram.lines, nodes),
     nodes,
     originX,
     originY,
@@ -621,9 +653,9 @@ function buildMapCanvasLayout(map: RelicMapDocument): MapCanvasLayout {
 }
 
 function buildLineLayouts(
-  lines: RelicMapLine[],
-  nodes: MapCanvasNodeLayout[]
-): MapCanvasLineLayout[] {
+  lines: RelicDiagramLine[],
+  nodes: DiagramCanvasNodeLayout[]
+): DiagramCanvasLineLayout[] {
   const nodeById = new Map(nodes.map((node) => [node.node.id, node]));
 
   return lines.flatMap((line) => {
@@ -673,15 +705,15 @@ function clampZoom(value: number): number {
 function isBlankCanvasTarget(target: EventTarget, currentTarget: Element): boolean {
   return target === currentTarget ||
     (target instanceof Element && target.tagName.toLowerCase() === "svg") ||
-    (target instanceof Element && target.classList.contains("map-canvas-empty")) ||
-    (target instanceof Element && target.classList.contains("map-canvas-lines")) ||
-    (target instanceof Element && target.classList.contains("map-canvas-labels")) ||
-    (target instanceof Element && target.classList.contains("map-canvas-nodes")) ||
-    (target instanceof Element && target.classList.contains("map-canvas-space"));
+    (target instanceof Element && target.classList.contains("diagram-canvas-empty")) ||
+    (target instanceof Element && target.classList.contains("diagram-canvas-lines")) ||
+    (target instanceof Element && target.classList.contains("diagram-canvas-labels")) ||
+    (target instanceof Element && target.classList.contains("diagram-canvas-nodes")) ||
+    (target instanceof Element && target.classList.contains("diagram-canvas-space"));
 }
 
 function focusCanvasFrom(element: Element): void {
-  const canvas = element.closest(".map-canvas");
+  const canvas = element.closest(".diagram-canvas");
   if (canvas instanceof HTMLElement) {
     canvas.focus({ preventScroll: true });
   }

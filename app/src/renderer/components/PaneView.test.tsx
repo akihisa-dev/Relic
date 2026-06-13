@@ -392,9 +392,11 @@ describe("PaneView", () => {
     expect(props.onLargeMarkdownFallback).not.toHaveBeenCalled();
   });
 
-  it("Map用Markdownは通常エディタではなくMap表示で開く", () => {
+  it("Diagram Markdownは通常エディタではなくDiagram表示で開く", () => {
     const content = [
-      "type: map",
+      "---",
+      "type: relationship",
+      "---",
       "",
       "nodes:",
       "  - id: node-1",
@@ -412,7 +414,7 @@ describe("PaneView", () => {
           ...fileTab,
           content,
           name: "World",
-          path: "maps/World.md",
+          path: "diagrams/World.md",
           savedContent: content
         }
       },
@@ -427,15 +429,15 @@ describe("PaneView", () => {
     expect(document.querySelector(".cm-content")).toBeNull();
   });
 
-  it("Map用Markdownもソースモードでは通常エディタで開く", async () => {
-    const content = "type: map\n\nnodes: []\nlines: []\n";
+  it("Diagram Markdownもソースモードでは通常エディタで開く", async () => {
+    const content = "---\ntype: relationship\n---\n\nnodes: []\nlines: []\n";
     setPaneState(
       {
         [fileTab.id]: {
           ...fileTab,
           content,
           name: "World",
-          path: "maps/World.md",
+          path: "diagrams/World.md",
           savedContent: content
         }
       },

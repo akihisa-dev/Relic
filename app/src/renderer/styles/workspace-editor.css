@@ -882,7 +882,7 @@
   width: min(100%, 920px);
 }
 
-.map-canvas {
+.diagram-canvas {
   background:
     linear-gradient(var(--border-soft) 1px, transparent 1px),
     linear-gradient(90deg, var(--border-soft) 1px, transparent 1px);
@@ -896,15 +896,15 @@
   position: relative;
 }
 
-.map-canvas:focus {
+.diagram-canvas:focus {
   outline: none;
 }
 
-.map-canvas--panning {
+.diagram-canvas--panning {
   cursor: grabbing;
 }
 
-.map-canvas--invalid {
+.diagram-canvas--invalid {
   align-items: center;
   background: transparent;
   cursor: default;
@@ -915,7 +915,7 @@
   text-align: center;
 }
 
-.map-canvas-empty {
+.diagram-canvas-empty {
   color: var(--text-3);
   font-size: 13px;
   left: 50%;
@@ -925,31 +925,31 @@
   transform: translate(-50%, -50%);
 }
 
-.map-canvas-space {
+.diagram-canvas-space {
   min-height: 100%;
   min-width: 100%;
   position: relative;
 }
 
-.map-canvas-lines,
-.map-canvas-labels,
-.map-canvas-nodes {
+.diagram-canvas-lines,
+.diagram-canvas-labels,
+.diagram-canvas-nodes {
   inset: 0;
   position: absolute;
 }
 
-.map-canvas-labels,
-.map-canvas-nodes {
+.diagram-canvas-labels,
+.diagram-canvas-nodes {
   pointer-events: none;
 }
 
-.map-canvas-label-editor,
-.map-canvas-line-label,
-.map-canvas-node {
+.diagram-canvas-label-editor,
+.diagram-canvas-line-label,
+.diagram-canvas-node {
   pointer-events: auto;
 }
 
-.map-canvas-line {
+.diagram-canvas-line {
   fill: none;
   pointer-events: none;
   stroke: var(--border-medium);
@@ -957,7 +957,7 @@
   stroke-width: 2;
 }
 
-.map-canvas-line-hit {
+.diagram-canvas-line-hit {
   fill: none;
   pointer-events: stroke;
   stroke: transparent;
@@ -965,18 +965,18 @@
   stroke-width: 14;
 }
 
-.map-canvas-line--selected {
+.diagram-canvas-line--selected {
   stroke: var(--accent);
   stroke-width: 3;
 }
 
-.map-canvas-line--preview {
+.diagram-canvas-line--preview {
   opacity: 0.72;
   stroke: var(--accent);
   stroke-dasharray: 8 7;
 }
 
-.map-canvas-line-label {
+.diagram-canvas-line-label {
   background: var(--sidebar-bg);
   border: 1px solid transparent;
   border-radius: 999px;
@@ -993,24 +993,24 @@
   white-space: nowrap;
 }
 
-.map-canvas-line-label:hover {
+.diagram-canvas-line-label:hover {
   border-color: var(--accent-ring);
   color: var(--text);
 }
 
-.map-canvas-line-label--empty {
+.diagram-canvas-line-label--empty {
   border-color: var(--border);
   color: var(--text-3);
   font-weight: 600;
 }
 
-.map-canvas-label-editor {
+.diagram-canvas-label-editor {
   position: absolute;
   transform: translate(-50%, -50%);
   z-index: 3;
 }
 
-.map-canvas-label-editor input {
+.diagram-canvas-label-editor input {
   background: var(--bg);
   border: 1px solid var(--accent);
   border-radius: 6px;
@@ -1022,7 +1022,7 @@
   padding: 5px 8px;
 }
 
-.map-canvas-node {
+.diagram-canvas-node {
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 7px;
@@ -1040,77 +1040,88 @@
   user-select: none;
 }
 
-.map-canvas-node:hover {
+.diagram-canvas-node:hover {
   border-color: var(--accent-ring);
 }
 
-.map-canvas-node--selected {
+.diagram-canvas-node--selected {
   border-color: var(--accent);
   box-shadow: 0 0 0 4px var(--accent-soft), 0 0 0 1px var(--accent), 0 8px 24px rgba(15, 23, 42, 0.1);
 }
 
-.map-canvas-node--dragging {
+.diagram-canvas-node--dragging {
   border-color: var(--accent);
   box-shadow: 0 14px 32px rgba(15, 23, 42, 0.16);
   cursor: grabbing;
   z-index: 2;
 }
 
-.map-canvas-node-outline-hitbox {
+.diagram-canvas-node-outline-hitbox {
   inset: -8px;
   pointer-events: none;
   position: absolute;
 }
 
-.map-canvas-node-outline-hit {
+.diagram-canvas-node-outline-hit {
   pointer-events: auto;
   position: absolute;
   touch-action: none;
 }
 
-.map-canvas-node-outline-hit--top,
-.map-canvas-node-outline-hit--bottom {
+.diagram-canvas-node-outline-hit--top,
+.diagram-canvas-node-outline-hit--bottom {
   cursor: crosshair;
   height: 12px;
   left: 0;
   right: 0;
 }
 
-.map-canvas-node-outline-hit--top {
+.diagram-canvas-node-outline-hit--top {
   top: 0;
 }
 
-.map-canvas-node-outline-hit--bottom {
+.diagram-canvas-node-outline-hit--bottom {
   bottom: 0;
 }
 
-.map-canvas-node-outline-hit--left,
-.map-canvas-node-outline-hit--right {
+.diagram-canvas-node-outline-hit--left,
+.diagram-canvas-node-outline-hit--right {
   bottom: 0;
   cursor: crosshair;
   top: 0;
   width: 12px;
 }
 
-.map-canvas-node-outline-hit--left {
+.diagram-canvas-node-outline-hit--left {
   left: 0;
 }
 
-.map-canvas-node-outline-hit--right {
+.diagram-canvas-node-outline-hit--right {
   right: 0;
 }
 
-.map-canvas-node-name {
+.diagram-canvas-node-name {
   min-width: 0;
   overflow-wrap: anywhere;
   white-space: normal;
 }
 
-.map-canvas-node-name {
+.diagram-canvas-node-name {
   color: var(--text);
   font-size: 14px;
   font-weight: 700;
   line-height: 1.2;
+}
+
+.diagram-canvas-node-role {
+  max-width: 100%;
+  min-height: 24px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 11px;
 }
 
 /* ────────────────────────────────── */

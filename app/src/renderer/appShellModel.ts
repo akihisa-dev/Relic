@@ -136,5 +136,5 @@ export function splitRailViews<TView extends Pick<AppRailView, "id">>(
 }
 
 function isPrimarySidebarRailView(id: AppRailView["id"]): boolean {
-  return id === "files" || id === "map";
+  return id === "files" || id === "diagram";
 }

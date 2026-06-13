@@ -3,7 +3,7 @@ import type { Stats } from "node:fs";
 import path from "node:path";
 
 import type { WorkspaceFileIndexEntry, WorkspaceFileKind } from "../../shared/ipc";
-import { isRelicMapMarkdownContent } from "../../shared/mapMarkdown";
+import { isRelicDiagramMarkdownContent } from "../../shared/diagramMarkdown";
 import { collectMarkdownPaths } from "../../shared/workspaceTree";
 import { atomicWriteTextFile } from "./atomicWrite";
 import { readWorkspaceFileTree } from "./fileTree";
@@ -114,7 +114,7 @@ async function readIndexRecord(
   if (fileStats.size > maxSearchFileBytes) {
     try {
       const head = await operations.readHead(absolutePath, mapMarkerHeadBytes);
-      return recordFor(relativePath, fileStats, isRelicMapMarkdownContent(head) ? "map" : "markdown", [], false);
+      return recordFor(relativePath, fileStats, isRelicDiagramMarkdownContent(head) ? "diagram" : "markdown", [], false);
     } catch {
       return unreadableRecord(relativePath, fileStats);
     }
@@ -125,7 +125,7 @@ async function readIndexRecord(
     return recordFor(
       relativePath,
       fileStats,
-      isRelicMapMarkdownContent(content) ? "map" : "markdown",
+      isRelicDiagramMarkdownContent(content) ? "diagram" : "markdown",
       content.split("\n"),
       true
     );
@@ -209,7 +209,7 @@ function parseCachedRecord(raw: unknown): WorkspaceFileIndexRecord[] {
   if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return [];
 
   const record = raw as Record<string, unknown>;
-  if (record.kind !== "map" && record.kind !== "markdown") return [];
+  if (record.kind !== "diagram" && record.kind !== "markdown") return [];
   if (record.readStatus !== "ok" && record.readStatus !== "unreadable") return [];
   if (typeof record.path !== "string" || typeof record.name !== "string") return [];
   if (!isFiniteNumber(record.size) || !isFiniteNumber(record.mtimeMs)) return [];
