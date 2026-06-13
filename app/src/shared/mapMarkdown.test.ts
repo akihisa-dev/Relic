@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   addRelicMapNodeForFile,
   isRelicMapMarkdownContent,
+  moveRelicMapNode,
   parseRelicMapMarkdown,
   replaceRelicMapNodeFileReferences,
   serializeRelicMapMarkdown,
@@ -219,5 +220,20 @@ describe("addRelicMapNodeForFile", () => {
     expect(added.ok ? added.value.node.id : "").toBe("node-3");
     expect(added.ok ? added.value.node.file : "").toBe("characters/carol.md");
     expect(added.ok ? added.value.node.x : 0).toBeGreaterThan(120);
+  });
+});
+
+describe("moveRelicMapNode", () => {
+  it("Nodeの位置をMap用MDへ書き戻す", () => {
+    const moved = moveRelicMapNode(validMap, "node-1", 240.4, 160.6);
+
+    expect(moved.ok).toBe(true);
+    expect(moved.ok ? moved.value.node : null).toMatchObject({
+      id: "node-1",
+      x: 240,
+      y: 161
+    });
+    expect(moved.ok ? moved.value.content : "").toContain("x: 240");
+    expect(moved.ok ? moved.value.content : "").toContain("y: 161");
   });
 });
