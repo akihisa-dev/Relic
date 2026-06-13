@@ -3,13 +3,15 @@ import { useEffect, useRef, useState } from "react";
 import type { CSSProperties, FormEvent, KeyboardEvent, MutableRefObject, ReactElement, ReactNode } from "react";
 
 import type { EditorSettings, UserDefinedField } from "../../shared/ipc";
+import { isRelicMapMarkdownContent } from "../../shared/mapMarkdown";
 import { hasInvalidFrontmatterYaml } from "../editorFrontmatter";
 import { isLargeMarkdownContent } from "../largeMarkdown";
 import { textCount } from "../paneViewModel";
 import type { PanelTabKind, Tab } from "../store/editorStore";
 import { useT } from "../i18n";
-import { Editor } from "./Editor";
 import { SourceModeButton } from "./AppMainActions";
+import { Editor } from "./Editor";
+import { MapCanvas, mapCanvasStatus } from "./MapCanvas";
 
 interface PaneContentSurfaceProps {
   activeTab: Tab | null | undefined;
@@ -68,6 +70,7 @@ export function PaneContentSurface({
   const notifiedLargeMarkdownFallbacks = notifiedLargeMarkdownFallbacksRef.current;
   const activeFileTab = activeTab?.kind === "file" ? activeTab : null;
   const isLargeMarkdown = activeFileTab ? isLargeMarkdownContent(activeFileTab.content) : false;
+  const isMapMarkdown = activeFileTab ? isRelicMapMarkdownContent(activeFileTab.content) : false;
   const [frontmatterAddButtonHost, setFrontmatterAddButtonHost] = useState<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -141,26 +144,30 @@ export function PaneContentSurface({
               <span>{t("frontmatter.invalidYamlBanner")}</span>
             </output>
           ) : null}
-          <Editor
-            allFilePaths={allFilePaths}
-            content={activeFileTab.content}
-            filePath={activeFileTab.path}
-            frontmatterCandidates={frontmatterCandidates}
-            key={activeFileTab.id}
-            onChange={(content) => onUpdateTabContent(activeFileTab.id, content)}
-            onOpenLink={onOpenLink}
-            onOpenWikiLink={onOpenWikiLink}
-            settings={editorSettings}
-            sourceMode={sourceMode || isLargeMarkdown}
-            frontmatterAddButtonHost={frontmatterAddButtonHost}
-            typewriterMode={typewriterMode}
-            userDefinedFields={userDefinedFields}
-            viewRef={viewRef}
-            onEditorAction={onEditorAction}
-          />
+          {isMapMarkdown && !sourceMode ? (
+            <MapCanvas content={activeFileTab.content} fileName={activeFileTab.name} />
+          ) : (
+            <Editor
+              allFilePaths={allFilePaths}
+              content={activeFileTab.content}
+              filePath={activeFileTab.path}
+              frontmatterCandidates={frontmatterCandidates}
+              key={activeFileTab.id}
+              onChange={(content) => onUpdateTabContent(activeFileTab.id, content)}
+              onOpenLink={onOpenLink}
+              onOpenWikiLink={onOpenWikiLink}
+              settings={editorSettings}
+              sourceMode={sourceMode || isLargeMarkdown}
+              frontmatterAddButtonHost={frontmatterAddButtonHost}
+              typewriterMode={typewriterMode}
+              userDefinedFields={userDefinedFields}
+              viewRef={viewRef}
+              onEditorAction={onEditorAction}
+            />
+          )}
         </div>
         <div className="pane-status">
-          <span>{t("app.wordCount", { chars, words })}</span>
+          <span>{isMapMarkdown && !sourceMode ? mapCanvasStatus(activeFileTab.content, t) : t("app.wordCount", { chars, words })}</span>
         </div>
       </div>
     );
