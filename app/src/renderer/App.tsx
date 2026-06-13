@@ -196,9 +196,21 @@ export function App(): ReactElement {
     workspaceState
   });
 
-  const handleFileSaved = useCallback((): void => {
+  const handleFileSaved = useCallback((path?: string): void => {
     void reloadCharts();
-  }, [reloadCharts]);
+    if (!path || !window.relic) return;
+
+    void window.relic.getWorkspaceState().then((result) => {
+      if (result.ok) {
+        setWorkspaceState(result.value);
+        return;
+      }
+
+      setWorkspaceError(result.error.message);
+    }).catch((error) => {
+      setWorkspaceError(error instanceof Error ? error.message : String(error));
+    });
+  }, [reloadCharts, setWorkspaceError, setWorkspaceState]);
 
   const { flushTabsBeforeClose, saveStatusByTabId } = useEditorAutoSave({
     conflictCloseBlockedMessage: t("pane.externalConflictCloseBlocked"),
