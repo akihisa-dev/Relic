@@ -889,15 +889,25 @@
   background-size: 32px 32px;
   box-sizing: border-box;
   color: var(--text);
+  cursor: grab;
   height: 100%;
   min-height: 0;
-  overflow: auto;
+  overflow: hidden;
   position: relative;
+}
+
+.map-canvas:focus {
+  outline: none;
+}
+
+.map-canvas--panning {
+  cursor: grabbing;
 }
 
 .map-canvas--invalid {
   align-items: center;
   background: transparent;
+  cursor: default;
   color: var(--text-2);
   display: flex;
   justify-content: center;

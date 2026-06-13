@@ -4,6 +4,7 @@ import {
   type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
   type ReactElement,
+  type WheelEvent as ReactWheelEvent,
   useMemo,
   useState
 } from "react";
@@ -56,6 +57,8 @@ interface MapCanvasLineLayout {
 const canvasPadding = 180;
 const minCanvasWidth = 900;
 const minCanvasHeight = 620;
+const minZoom = 0.35;
+const maxZoom = 2.5;
 
 interface DragState {
   currentX: number;
@@ -77,6 +80,20 @@ interface ConnectState {
   startY: number;
 }
 
+interface PanState {
+  originalPanX: number;
+  originalPanY: number;
+  pointerId: number;
+  startClientX: number;
+  startClientY: number;
+}
+
+interface ViewportState {
+  panX: number;
+  panY: number;
+  zoom: number;
+}
+
 type MapSelection =
   | { id: string; type: "line" }
   | { id: string; type: "node" };
@@ -91,7 +108,9 @@ export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): Reac
   const [connect, setConnect] = useState<ConnectState | null>(null);
   const [drag, setDrag] = useState<DragState | null>(null);
   const [labelEdit, setLabelEdit] = useState<LabelEditState | null>(null);
+  const [pan, setPan] = useState<PanState | null>(null);
   const [selection, setSelection] = useState<MapSelection | null>(null);
+  const [viewport, setViewport] = useState<ViewportState>({ panX: 0, panY: 0, zoom: 1 });
   const parsed = useMemo(() => parseRelicMapMarkdown(content), [content]);
 
   if (!parsed.ok) {
@@ -149,8 +168,8 @@ export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): Reac
 
       return {
         ...current,
-        currentX: current.originalX + event.clientX - current.startClientX,
-        currentY: current.originalY + event.clientY - current.startClientY
+        currentX: current.originalX + (event.clientX - current.startClientX) / viewport.zoom,
+        currentY: current.originalY + (event.clientY - current.startClientY) / viewport.zoom
       };
     });
   };
@@ -173,16 +192,60 @@ export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): Reac
     setDrag(null);
   };
   const pointerPositionInCanvas = (event: ReactPointerEvent<HTMLElement>): { x: number; y: number } => {
-    const canvasSpace = event.currentTarget.closest(".map-canvas-space") ??
-      event.currentTarget.querySelector(".map-canvas-space");
-    const rect = canvasSpace?.getBoundingClientRect();
+    const canvas = event.currentTarget.closest(".map-canvas") ?? event.currentTarget;
+    const rect = canvas.getBoundingClientRect();
 
-    if (!rect) return { x: 0, y: 0 };
+    return screenToCanvasPoint(event.clientX, event.clientY, rect, viewport);
+  };
+  const startPanOnBlank = (event: ReactPointerEvent<HTMLDivElement>): void => {
+    if (!isBlankCanvasTarget(event.target, event.currentTarget)) return;
 
-    return {
-      x: event.clientX - rect.left,
-      y: event.clientY - rect.top
-    };
+    event.preventDefault();
+    setSelection(null);
+    setLabelEdit(null);
+    focusCanvasFrom(event.currentTarget);
+    if (typeof event.currentTarget.setPointerCapture === "function") {
+      event.currentTarget.setPointerCapture(event.pointerId);
+    }
+    setPan({
+      originalPanX: viewport.panX,
+      originalPanY: viewport.panY,
+      pointerId: event.pointerId,
+      startClientX: event.clientX,
+      startClientY: event.clientY
+    });
+  };
+  const updatePan = (event: ReactPointerEvent<HTMLDivElement>): void => {
+    if (!pan || pan.pointerId !== event.pointerId) return;
+
+    setViewport((current) => ({
+      ...current,
+      panX: pan.originalPanX + event.clientX - pan.startClientX,
+      panY: pan.originalPanY + event.clientY - pan.startClientY
+    }));
+  };
+  const finishPan = (event: ReactPointerEvent<HTMLDivElement>): void => {
+    if (!pan || pan.pointerId !== event.pointerId) return;
+
+    if (typeof event.currentTarget.releasePointerCapture === "function") {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    setPan(null);
+  };
+  const handleCanvasWheel = (event: ReactWheelEvent<HTMLDivElement>): void => {
+    event.preventDefault();
+    const rect = event.currentTarget.getBoundingClientRect();
+
+    setViewport((current) => {
+      const nextZoom = clampZoom(current.zoom * (event.deltaY < 0 ? 1.1 : 0.9));
+      const pointer = screenToCanvasPoint(event.clientX, event.clientY, rect, current);
+
+      return {
+        panX: event.clientX - rect.left - pointer.x * nextZoom,
+        panY: event.clientY - rect.top - pointer.y * nextZoom,
+        zoom: nextZoom
+      };
+    });
   };
   const nodeCenter = (nodeId: string): { x: number; y: number } | null => {
     const item = displayNodes.find((node) => node.node.id === nodeId);
@@ -291,12 +354,7 @@ export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): Reac
     setLabelEdit(null);
   };
   const clearSelectionOnBlankPointerDown = (event: ReactPointerEvent<HTMLDivElement>): void => {
-    const target = event.target;
-    if (
-      target === event.currentTarget ||
-      (target instanceof Element && target.tagName.toLowerCase() === "svg") ||
-      (target instanceof Element && target.classList.contains("map-canvas-space"))
-    ) {
+    if (isBlankCanvasTarget(event.target, event.currentTarget)) {
       setSelection(null);
       setLabelEdit(null);
       focusCanvasFrom(event.currentTarget);
@@ -326,11 +384,19 @@ export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): Reac
   return (
     <div
       aria-label={fileName}
-      className="map-canvas"
+      className={`map-canvas${pan ? " map-canvas--panning" : ""}`}
       onKeyDown={handleCanvasKeyDown}
       onPointerCancel={cancelConnect}
-      onPointerMove={updateConnect}
-      onPointerUp={cancelConnect}
+      onPointerDown={startPanOnBlank}
+      onPointerMove={(event) => {
+        updateConnect(event);
+        updatePan(event);
+      }}
+      onPointerUp={(event) => {
+        cancelConnect(event);
+        finishPan(event);
+      }}
+      onWheel={handleCanvasWheel}
       role="img"
       tabIndex={0}
     >
@@ -342,6 +408,8 @@ export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): Reac
         onPointerDown={clearSelectionOnBlankPointerDown}
         style={{
           height: layout.height,
+          transform: `translate(${viewport.panX}px, ${viewport.panY}px) scale(${viewport.zoom})`,
+          transformOrigin: "0 0",
           width: layout.width
         }}
       >
@@ -533,6 +601,28 @@ function buildLineLayouts(
 function nodeFileName(filePath: string): string {
   const name = filePath.split("/").at(-1) ?? filePath;
   return name.endsWith(".md") ? name.slice(0, -3) : name;
+}
+
+function screenToCanvasPoint(
+  clientX: number,
+  clientY: number,
+  rect: DOMRect,
+  viewport: ViewportState
+): { x: number; y: number } {
+  return {
+    x: (clientX - rect.left - viewport.panX) / viewport.zoom,
+    y: (clientY - rect.top - viewport.panY) / viewport.zoom
+  };
+}
+
+function clampZoom(value: number): number {
+  return Math.min(maxZoom, Math.max(minZoom, value));
+}
+
+function isBlankCanvasTarget(target: EventTarget, currentTarget: Element): boolean {
+  return target === currentTarget ||
+    (target instanceof Element && target.tagName.toLowerCase() === "svg") ||
+    (target instanceof Element && target.classList.contains("map-canvas-space"));
 }
 
 function focusCanvasFrom(element: Element): void {
