@@ -202,9 +202,12 @@ describe("MapCanvas", () => {
         <MapCanvas content={mapContentWithoutLines} fileName="World" onChange={onChange} />
       </I18nProvider>
     );
+    const handle = screen.getByLabelText("Connect alice");
 
-    fireEvent.click(screen.getByLabelText("Connect alice"));
-    fireEvent.doubleClick(screen.getByLabelText("Connect alice"));
+    fireEvent(handle, pointerEvent("pointerdown", 7, 10, 10));
+    fireEvent(handle, pointerEvent("pointerup", 7, 10, 10));
+    fireEvent.click(handle);
+    fireEvent.doubleClick(handle);
 
     expect(screen.getByRole("img", { name: "World" })).toBeInTheDocument();
     expect(onChange).not.toHaveBeenCalled();
