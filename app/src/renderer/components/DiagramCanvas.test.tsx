@@ -215,6 +215,27 @@ describe("DiagramCanvas", () => {
     expect(container.querySelectorAll(".why-tree-node-menu")).toHaveLength(1);
   });
 
+  it("pans the why-tree view by dragging blank space only", () => {
+    const { container } = render(<StatefulDiagramCanvas content={whyTreeContent} onChange={vi.fn()} />);
+    const editor = screen.getByRole("tree", { name: "World" }) as HTMLElement;
+    const content = container.querySelector(".why-tree-content") as Element;
+
+    Object.defineProperty(editor, "scrollLeft", { configurable: true, value: 120, writable: true });
+    Object.defineProperty(editor, "scrollTop", { configurable: true, value: 80, writable: true });
+    fireEvent(content, pointerEvent("pointerdown", 7, 200, 200));
+    fireEvent(editor, pointerEvent("pointermove", 7, 170, 150));
+    fireEvent(editor, pointerEvent("pointerup", 7, 170, 150));
+
+    expect(editor.scrollLeft).toBe(150);
+    expect(editor.scrollTop).toBe(130);
+
+    const node = screen.getByDisplayValue("売上低下").closest(".why-tree-main-node") as Element;
+    fireEvent(node, pointerEvent("pointerdown", 8, 200, 200));
+    fireEvent(editor, pointerEvent("pointermove", 8, 100, 100));
+    expect(editor.scrollLeft).toBe(150);
+    expect(editor.scrollTop).toBe(130);
+  });
+
   it("edits why-tree titles and supplements in Markdown", () => {
     const onChange = vi.fn();
     render(<StatefulDiagramCanvas content={whyTreeContent} onChange={onChange} />);

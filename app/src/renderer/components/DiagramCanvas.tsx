@@ -83,6 +83,14 @@ interface WhyTreeConnectorLayout {
   width: number;
 }
 
+interface WhyTreePanState {
+  pointerId: number;
+  scrollLeft: number;
+  scrollTop: number;
+  startClientX: number;
+  startClientY: number;
+}
+
 type WhyTreeSelection =
   | { kind: "phenomenon" | "why"; path: number[] }
   | { index: number; kind: RelicWhyTreeSupplementKind; path: number[] };
@@ -637,6 +645,7 @@ function WhyTreeEditor({
   const nodeRefs = useRef(new Map<string, HTMLDivElement>());
   const [selection, setSelection] = useState<WhyTreeSelection>({ kind: "phenomenon", path: [] });
   const [connectorLayout, setConnectorLayout] = useState<WhyTreeConnectorLayout>({ height: 0, paths: [], width: 0 });
+  const [pan, setPan] = useState<WhyTreePanState | null>(null);
 
   const updateConnectorLayout = (): void => {
     if (!contentRef.current) {
@@ -728,6 +737,35 @@ function WhyTreeEditor({
 
     event.preventDefault();
     deleteSelection();
+  };
+  const startPan = (event: ReactPointerEvent<HTMLDivElement>): void => {
+    if (event.button !== 0) return;
+    if (!isWhyTreePanTarget(event.target, event.currentTarget)) return;
+
+    if (typeof event.currentTarget.setPointerCapture === "function") {
+      event.currentTarget.setPointerCapture(event.pointerId);
+    }
+    setPan({
+      pointerId: event.pointerId,
+      scrollLeft: event.currentTarget.scrollLeft,
+      scrollTop: event.currentTarget.scrollTop,
+      startClientX: event.clientX,
+      startClientY: event.clientY
+    });
+  };
+  const updatePan = (event: ReactPointerEvent<HTMLDivElement>): void => {
+    if (!pan || pan.pointerId !== event.pointerId) return;
+
+    event.currentTarget.scrollLeft = pan.scrollLeft - (event.clientX - pan.startClientX);
+    event.currentTarget.scrollTop = pan.scrollTop - (event.clientY - pan.startClientY);
+  };
+  const finishPan = (event: ReactPointerEvent<HTMLDivElement>): void => {
+    if (!pan || pan.pointerId !== event.pointerId) return;
+
+    if (typeof event.currentTarget.hasPointerCapture === "function" && event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    setPan(null);
   };
   const renderWhyTreeBranch = (item: WhyTreeChainItem): ReactElement => {
     const isSelected = isSameWhyTreeSelection(selection, { kind: item.role, path: item.path });
@@ -851,7 +889,16 @@ function WhyTreeEditor({
   };
 
   return (
-    <div aria-label={fileName} className="why-tree-editor" onKeyDown={handleEditorKeyDown} role="tree">
+    <div
+      aria-label={fileName}
+      className={`why-tree-editor${pan ? " why-tree-editor--panning" : ""}`}
+      onKeyDown={handleEditorKeyDown}
+      onPointerCancel={finishPan}
+      onPointerDown={startPan}
+      onPointerMove={updatePan}
+      onPointerUp={finishPan}
+      role="tree"
+    >
       <div className="why-tree-content" ref={contentRef}>
         {connectorLayout.paths.length > 0 ? (
           <svg
@@ -1178,6 +1225,25 @@ function isBlankCanvasTarget(target: EventTarget, currentTarget: Element): boole
     (target instanceof Element && target.classList.contains("diagram-canvas-labels")) ||
     (target instanceof Element && target.classList.contains("diagram-canvas-nodes")) ||
     (target instanceof Element && target.classList.contains("diagram-canvas-space"));
+}
+
+function isWhyTreePanTarget(target: EventTarget, currentTarget: Element): boolean {
+  if (!(target instanceof Element)) return target === currentTarget;
+  if (target.closest(".why-tree-main-node")) return false;
+  if (target.closest(".why-tree-support-item")) return false;
+  if (target.closest(".why-tree-node-menu")) return false;
+
+  return target === currentTarget ||
+    target.classList.contains("why-tree-editor") ||
+    target.classList.contains("why-tree-content") ||
+    target.classList.contains("why-tree-lines") ||
+    target.classList.contains("why-tree-branch") ||
+    target.classList.contains("why-tree-child-group") ||
+    target.classList.contains("why-tree-children") ||
+    target.classList.contains("why-tree-row") ||
+    target.classList.contains("why-tree-main-column") ||
+    target.classList.contains("why-tree-support-column") ||
+    target.classList.contains("why-tree-support-empty");
 }
 
 function focusCanvasFrom(element: Element): void {
