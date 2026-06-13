@@ -959,6 +959,19 @@
   overflow: hidden;
   padding: 10px 12px;
   position: absolute;
+  touch-action: none;
+  user-select: none;
+}
+
+.map-canvas-node:hover {
+  border-color: var(--accent-ring);
+}
+
+.map-canvas-node--dragging {
+  border-color: var(--accent);
+  box-shadow: 0 14px 32px rgba(15, 23, 42, 0.16);
+  cursor: grabbing;
+  z-index: 2;
 }
 
 .map-canvas-node-name,

@@ -36,6 +36,11 @@ export interface RelicMapNodeInsertion {
   node: RelicMapNode;
 }
 
+export interface RelicMapNodeMove {
+  content: string;
+  node: RelicMapNode;
+}
+
 const mapTopLevelKeys = new Set(["type", "nodes", "lines"]);
 const mapNodeKeys = new Set(["id", "file", "x", "y", "width", "height"]);
 const mapLineKeys = new Set(["id", "from", "to", "label"]);
@@ -145,6 +150,42 @@ export function addRelicMapNodeForFile(
   return ok({
     content: serialized.value,
     node
+  });
+}
+
+export function moveRelicMapNode(
+  content: string,
+  nodeId: string,
+  x: number,
+  y: number
+): RelicResult<RelicMapNodeMove> {
+  const parsed = parseRelicMapMarkdown(content);
+  if (!parsed.ok) return parsed;
+
+  const nextX = parseFiniteNumber(x, "MAP_NODE_X_INVALID", "Nodeの x は数値にしてください。");
+  if (!nextX.ok) return nextX;
+  const nextY = parseFiniteNumber(y, "MAP_NODE_Y_INVALID", "Nodeの y は数値にしてください。");
+  if (!nextY.ok) return nextY;
+
+  const node = parsed.value.nodes.find((item) => item.id === nodeId);
+  if (!node) {
+    return fail("MAP_NODE_MISSING", "移動するNodeが見つかりません。");
+  }
+
+  const nextNode = {
+    ...node,
+    x: Math.round(nextX.value),
+    y: Math.round(nextY.value)
+  };
+  const serialized = serializeRelicMapMarkdown({
+    ...parsed.value,
+    nodes: parsed.value.nodes.map((item) => item.id === nodeId ? nextNode : item)
+  });
+  if (!serialized.ok) return serialized;
+
+  return ok({
+    content: serialized.value,
+    node: nextNode
   });
 }
 

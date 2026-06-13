@@ -1,5 +1,5 @@
-import { cleanup, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { I18nProvider } from "../i18n";
 import { MapCanvas } from "./MapCanvas";
@@ -55,4 +55,36 @@ describe("MapCanvas", () => {
 
     expect(screen.getByRole("alert")).toHaveTextContent("Could not read this Map file. Check the source.");
   });
+
+  it("commits moved node coordinates on pointer up", () => {
+    const onChange = vi.fn();
+    render(
+      <I18nProvider language="en">
+        <MapCanvas content={mapContent} fileName="World" onChange={onChange} />
+      </I18nProvider>
+    );
+    const node = screen.getByText("alice").closest(".map-canvas-node");
+    expect(node).toBeInstanceOf(HTMLElement);
+
+    fireEvent(node as HTMLElement, pointerEvent("pointerdown", 1, 10, 10));
+    fireEvent(node as HTMLElement, pointerEvent("pointermove", 1, 50, 30));
+    fireEvent(node as HTMLElement, pointerEvent("pointerup", 1, 50, 30));
+
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange.mock.calls[0]?.[0]).toContain("x: 160");
+    expect(onChange.mock.calls[0]?.[0]).toContain("y: 100");
+  });
 });
+
+function pointerEvent(type: string, pointerId: number, clientX: number, clientY: number): Event {
+  const event = new MouseEvent(type, {
+    bubbles: true,
+    cancelable: true,
+    clientX,
+    clientY
+  });
+
+  Object.defineProperty(event, "pointerId", { value: pointerId });
+
+  return event;
+}

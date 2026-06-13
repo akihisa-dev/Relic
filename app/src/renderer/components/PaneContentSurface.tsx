@@ -145,7 +145,11 @@ export function PaneContentSurface({
             </output>
           ) : null}
           {isMapMarkdown && !sourceMode ? (
-            <MapCanvas content={activeFileTab.content} fileName={activeFileTab.name} />
+            <MapCanvas
+              content={activeFileTab.content}
+              fileName={activeFileTab.name}
+              onChange={(content) => onUpdateTabContent(activeFileTab.id, content)}
+            />
           ) : (
             <Editor
               allFilePaths={allFilePaths}
