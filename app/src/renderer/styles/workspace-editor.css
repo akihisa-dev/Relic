@@ -1005,9 +1005,10 @@
   box-sizing: border-box;
   display: grid;
   gap: 4px;
-  grid-template-rows: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  align-content: center;
   min-width: 0;
-  overflow: hidden;
+  overflow: visible;
   padding: 10px 12px;
   position: absolute;
   touch-action: none;
@@ -1041,6 +1042,7 @@
   right: -7px;
   top: calc(50% - 7px);
   width: 14px;
+  z-index: 2;
 }
 
 .map-canvas-node-connect:hover {
@@ -1050,21 +1052,21 @@
 .map-canvas-node-name,
 .map-canvas-node-path {
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 
 .map-canvas-node-name {
-  align-self: end;
   color: var(--text);
   font-size: 14px;
   font-weight: 700;
+  line-height: 1.2;
 }
 
 .map-canvas-node-path {
   color: var(--text-3);
   font-size: 11px;
+  line-height: 1.25;
 }
 
 /* ────────────────────────────────── */

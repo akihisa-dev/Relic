@@ -81,7 +81,6 @@ function renderPaneView(overrides: Partial<PaneViewProps> = {}): PaneViewProps {
     onFileSaved: vi.fn(),
     onLargeMarkdownFallback: vi.fn(),
     onFocus: vi.fn(),
-    onOpenFile: vi.fn(),
     onOpenInOtherPane: vi.fn(),
     onOpenLink: vi.fn(),
     onOpenWikiLink: vi.fn(),

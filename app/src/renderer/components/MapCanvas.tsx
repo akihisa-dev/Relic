@@ -26,7 +26,6 @@ interface MapCanvasProps {
   content: string;
   fileName: string;
   onChange?: (content: string) => void;
-  onOpenFile?: (path: string) => void;
 }
 
 interface MapCanvasLayout {
@@ -104,7 +103,7 @@ interface LabelEditState {
   value: string;
 }
 
-export function MapCanvas({ content, fileName, onChange, onOpenFile }: MapCanvasProps): ReactElement {
+export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): ReactElement {
   const t = useT();
   const [connect, setConnect] = useState<ConnectState | null>(null);
   const [drag, setDrag] = useState<DragState | null>(null);
@@ -191,13 +190,6 @@ export function MapCanvas({ content, fileName, onChange, onOpenFile }: MapCanvas
   const cancelNodeDrag = (event: ReactPointerEvent<HTMLDivElement>): void => {
     if (!drag || drag.pointerId !== event.pointerId) return;
     setDrag(null);
-  };
-  const openNodeFile = (node: RelicMapNode, event: ReactMouseEvent<HTMLDivElement>): void => {
-    if (!onOpenFile) return;
-
-    event.preventDefault();
-    event.stopPropagation();
-    onOpenFile(node.file);
   };
   const pointerPositionInCanvas = (event: ReactPointerEvent<HTMLElement>): { x: number; y: number } => {
     const canvas = event.currentTarget.closest(".map-canvas") ?? event.currentTarget;
@@ -308,6 +300,10 @@ export function MapCanvas({ content, fileName, onChange, onOpenFile }: MapCanvas
   const cancelConnect = (event: ReactPointerEvent<HTMLDivElement>): void => {
     if (!connect || connect.pointerId !== event.pointerId) return;
     setConnect(null);
+  };
+  const stopNodeControlMouseEvent = (event: ReactMouseEvent<HTMLButtonElement>): void => {
+    event.preventDefault();
+    event.stopPropagation();
   };
   const selectLine = (lineId: string, event: ReactPointerEvent<SVGPathElement>): void => {
     event.preventDefault();
@@ -504,13 +500,12 @@ export function MapCanvas({ content, fileName, onChange, onOpenFile }: MapCanvas
               ].filter(Boolean).join(" ")}
               key={node.id}
               onPointerCancel={cancelNodeDrag}
-              onDoubleClick={(event) => openNodeFile(node, event)}
               onPointerDown={(event) => startNodeDrag(node, event)}
               onPointerMove={updateNodeDrag}
               onPointerUp={finishNodeDrag}
               style={{
-                height: node.height,
                 left: x,
+                minHeight: node.height,
                 top: y,
                 width: node.width
               }}
@@ -521,6 +516,8 @@ export function MapCanvas({ content, fileName, onChange, onOpenFile }: MapCanvas
               <button
                 aria-label={t("map.connectNode", { name: nodeFileName(node.file) })}
                 className="map-canvas-node-connect"
+                onClick={stopNodeControlMouseEvent}
+                onDoubleClick={stopNodeControlMouseEvent}
                 onPointerDown={(event) => startConnect(node.id, event)}
                 onPointerUp={(event) => finishConnect(node.id, event)}
                 title={t("map.connectNode", { name: nodeFileName(node.file) })}

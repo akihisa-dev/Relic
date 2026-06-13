@@ -176,7 +176,6 @@ export function AppEditorWorkspace({
               onFileSaved={onFileSaved}
               onFocus={() => onSetFocusedPane("left")}
               onLargeMarkdownFallback={onLargeMarkdownFallback}
-              onOpenFile={onOpenFile}
               onOpenInOtherPane={onOpenInOtherPane}
               onOpenLink={onOpenLink}
               onOpenWikiLink={onOpenWikiLink}
@@ -220,7 +219,6 @@ export function AppEditorWorkspace({
                 onFileSaved={onFileSaved}
                 onFocus={() => onSetFocusedPane("right")}
                 onLargeMarkdownFallback={onLargeMarkdownFallback}
-                onOpenFile={onOpenFile}
                 onOpenInOtherPane={onOpenInOtherPane}
                 onOpenLink={onOpenLink}
                 onOpenWikiLink={onOpenWikiLink}
