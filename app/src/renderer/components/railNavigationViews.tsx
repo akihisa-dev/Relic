@@ -9,6 +9,7 @@ import {
   IconChronicleSettings,
   IconFiles,
   IconFrontmatter,
+  IconMap,
   IconSettings,
   IconTools
 } from "./RailNavigationIcons";
@@ -17,6 +18,7 @@ type RailViewId = SidebarView | PanelTabKind;
 
 export const sidebarViewDefs: Array<{ id: RailViewId; labelKey: TranslationKey; icon: ReactElement }> = [
   { id: "files", labelKey: "nav.files", icon: <IconFiles /> },
+  { id: "map", labelKey: "nav.map", icon: <IconMap /> },
   { id: "tools", labelKey: "nav.tools", icon: <IconTools /> },
   { id: "frontmatter", labelKey: "nav.frontmatter", icon: <IconFrontmatter /> },
   { id: "chronicle", labelKey: "nav.chronicle", icon: <IconChronicle /> },

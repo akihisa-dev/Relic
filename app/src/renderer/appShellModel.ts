@@ -126,11 +126,15 @@ export function splitRailViews<TView extends Pick<AppRailView, "id">>(
   return {
     chartRailViews: views.filter((view) => chartIdForRailView(view.id) !== null),
     panelRailViews: views.filter((view) =>
-      view.id !== "files" &&
+      !isPrimarySidebarRailView(view.id) &&
       chartIdForRailView(view.id) === null
     ),
     primaryRailViews: views.filter((view) =>
-      view.id === "files"
+      isPrimarySidebarRailView(view.id)
     )
   };
+}
+
+function isPrimarySidebarRailView(id: AppRailView["id"]): boolean {
+  return id === "files" || id === "map";
 }

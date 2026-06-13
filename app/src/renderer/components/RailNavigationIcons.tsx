@@ -7,6 +7,14 @@ export const IconFiles = (_props: { sidebarOpen?: boolean } = {}): ReactElement 
   </svg>
 );
 
+export const IconMap = (): ReactElement => (
+  <svg fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="18">
+    <path d="M9 18 3 21V6l6-3 6 3 6-3v15l-6 3z" />
+    <path d="M9 3v15" />
+    <path d="M15 6v15" />
+  </svg>
+);
+
 export const IconTools = (): ReactElement => (
   <svg fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="18">
     <path d="m15 12-9.373 9.373a1 1 0 0 1-3.001-3L12 9" />
