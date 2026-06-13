@@ -3,6 +3,7 @@ import path from "node:path";
 
 import { collectMarkdownPaths } from "../../shared/workspaceTree";
 import type { LinkUpdateImpact, LinkUpdateImpactKind } from "../../shared/ipc";
+import { replaceRelicMapNodeFileReferences } from "../../shared/mapMarkdown";
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { atomicWriteTextFile } from "./atomicWrite";
 import { errorDetails } from "./fileSystem";
@@ -136,12 +137,19 @@ async function buildLinkUpdatePatches(
         newPathWithoutExt
       )
       : replaceFolderLinksWithCount(content, normalizedOldPath, normalizedNewPath);
+    const mapReplacement = replaceRelicMapNodeFileReferences(
+      replacement.content,
+      kind,
+      normalizedOldPath,
+      normalizedNewPath
+    );
+    if (!mapReplacement.ok) return mapReplacement;
 
-    if (replacement.content !== content) {
+    if (mapReplacement.value.content !== content) {
       patches.push({
         absolutePath: absoluteSourcePath.value,
-        linkCount: replacement.count,
-        nextContent: replacement.content,
+        linkCount: replacement.count + mapReplacement.value.count,
+        nextContent: mapReplacement.value.content,
         previousContent: content
       });
     }

@@ -24,6 +24,13 @@ export interface RelicMapLine {
   to: string;
 }
 
+export interface RelicMapReferenceReplacement {
+  content: string;
+  count: number;
+}
+
+export type RelicMapReferenceReplacementKind = "file" | "folder";
+
 const mapTopLevelKeys = new Set(["type", "nodes", "lines"]);
 const mapNodeKeys = new Set(["id", "file", "x", "y", "width", "height"]);
 const mapLineKeys = new Set(["id", "from", "to", "label"]);
@@ -84,6 +91,33 @@ export function serializeRelicMapMarkdown(document: RelicMapDocument): RelicResu
   return ok(`type: map\n\n${body}`);
 }
 
+export function replaceRelicMapNodeFileReferences(
+  content: string,
+  kind: RelicMapReferenceReplacementKind,
+  oldPath: string,
+  newPath: string
+): RelicResult<RelicMapReferenceReplacement> {
+  if (!isRelicMapMarkdownContent(content)) {
+    return ok({ content, count: 0 });
+  }
+
+  const parsed = parseRelicMapMarkdown(content);
+  if (!parsed.ok) return parsed;
+
+  const replacement = replaceMapNodeFilePaths(parsed.value, kind, oldPath, newPath);
+  if (replacement.count === 0) {
+    return ok({ content, count: 0 });
+  }
+
+  const serialized = serializeRelicMapMarkdown(replacement.map);
+  if (!serialized.ok) return serialized;
+
+  return ok({
+    content: serialized.value,
+    count: replacement.count
+  });
+}
+
 export function validateRelicMapDocument(raw: unknown): RelicResult<RelicMapDocument> {
   if (!isRecord(raw)) {
     return fail("MAP_FORMAT_INVALID", "Mapファイルの形式が正しくありません。");
@@ -109,6 +143,40 @@ export function validateRelicMapDocument(raw: unknown): RelicResult<RelicMapDocu
     nodes: nodes.value,
     type: "map"
   });
+}
+
+function replaceMapNodeFilePaths(
+  map: RelicMapDocument,
+  kind: RelicMapReferenceReplacementKind,
+  oldPath: string,
+  newPath: string
+): { count: number; map: RelicMapDocument } {
+  const normalizedOldPath = oldPath.replace(/\\/g, "/");
+  const normalizedNewPath = newPath.replace(/\\/g, "/");
+  const oldFolderPrefix = `${normalizedOldPath.replace(/\/$/, "")}/`;
+  const newFolderPrefix = `${normalizedNewPath.replace(/\/$/, "")}/`;
+  let count = 0;
+
+  const nodes = map.nodes.map((node) => {
+    const nextFile = kind === "file"
+      ? node.file === normalizedOldPath ? normalizedNewPath : node.file
+      : node.file.startsWith(oldFolderPrefix) ? `${newFolderPrefix}${node.file.slice(oldFolderPrefix.length)}` : node.file;
+
+    if (nextFile === node.file) return node;
+    count += 1;
+    return {
+      ...node,
+      file: nextFile
+    };
+  });
+
+  return {
+    count,
+    map: {
+      ...map,
+      nodes
+    }
+  };
 }
 
 function parseNodes(rawNodes: unknown): RelicResult<RelicMapNode[]> {

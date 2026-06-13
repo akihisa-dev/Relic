@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   isRelicMapMarkdownContent,
   parseRelicMapMarkdown,
+  replaceRelicMapNodeFileReferences,
   serializeRelicMapMarkdown,
   type RelicMapDocument
 } from "./mapMarkdown";
@@ -161,5 +162,35 @@ describe("serializeRelicMapMarkdown", () => {
       ""
     ].join("\n"));
     expect(serialized.ok ? parseRelicMapMarkdown(serialized.value).ok : false).toBe(true);
+  });
+});
+
+describe("replaceRelicMapNodeFileReferences", () => {
+  it("ファイル名変更に合わせてNodeの参照先を更新する", () => {
+    const replaced = replaceRelicMapNodeFileReferences(
+      validMap,
+      "file",
+      "characters/alice.md",
+      "characters/alicia.md"
+    );
+
+    expect(replaced.ok).toBe(true);
+    expect(replaced.ok ? replaced.value.count : 0).toBe(1);
+    expect(replaced.ok ? replaced.value.content : "").toContain("file: characters/alicia.md");
+    expect(replaced.ok ? replaced.value.content : "").toContain("file: characters/bob.md");
+  });
+
+  it("フォルダ移動に合わせてNodeの参照先を更新する", () => {
+    const replaced = replaceRelicMapNodeFileReferences(
+      validMap,
+      "folder",
+      "characters",
+      "archive/characters"
+    );
+
+    expect(replaced.ok).toBe(true);
+    expect(replaced.ok ? replaced.value.count : 0).toBe(2);
+    expect(replaced.ok ? replaced.value.content : "").toContain("file: archive/characters/alice.md");
+    expect(replaced.ok ? replaced.value.content : "").toContain("file: archive/characters/bob.md");
   });
 });
