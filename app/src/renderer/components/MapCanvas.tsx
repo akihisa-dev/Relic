@@ -318,6 +318,7 @@ export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): Reac
     if (added.ok) {
       onChange?.(added.value.content);
       setSelection({ id: added.value.line.id, type: "line" });
+      setLabelEdit({ lineId: added.value.line.id, value: "" });
     }
     setConnect(null);
   };
@@ -506,12 +507,13 @@ export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): Reac
               );
             }
 
-            if (!line.label) return null;
+            if (!line.label && selection?.type !== "line") return null;
+            if (!line.label && selection?.id !== line.line.id) return null;
 
             return (
               <button
                 aria-label={t("map.editLineLabel")}
-                className="map-canvas-line-label"
+                className={`map-canvas-line-label${line.label ? "" : " map-canvas-line-label--empty"}`}
                 key={line.line.id}
                 onPointerDown={(event) => startLabelEditFromButton(line, event)}
                 style={{
@@ -520,7 +522,7 @@ export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): Reac
                 }}
                 type="button"
               >
-                {line.label}
+                {line.label || t("map.addLineLabel")}
               </button>
             );
           })}

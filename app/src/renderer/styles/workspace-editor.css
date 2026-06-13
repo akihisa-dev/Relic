@@ -979,6 +979,12 @@
   color: var(--text);
 }
 
+.map-canvas-line-label--empty {
+  border-color: var(--border);
+  color: var(--text-3);
+  font-weight: 600;
+}
+
 .map-canvas-label-editor {
   position: absolute;
   transform: translate(-50%, -50%);

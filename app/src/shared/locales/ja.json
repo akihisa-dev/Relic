@@ -130,6 +130,7 @@
   "links.outgoingLimited": "リンクが多いため、一部のみ表示しています。",
   "links.updateImpactConfirm": "{{files}} 件のMarkdownファイル内にある {{links}} 件のリンクを更新します。続けますか？",
   "map.files": "Mapファイル",
+  "map.addLineLabel": "ラベルを追加",
   "map.connectNode": "{{name}} を接続",
   "map.createMap": "新規Map",
   "map.defaultNewMapName": "Map",
