@@ -6,7 +6,9 @@ import {
   type PointerEvent as ReactPointerEvent,
   type ReactElement,
   type WheelEvent as ReactWheelEvent,
+  useLayoutEffect,
   useMemo,
+  useRef,
   useState
 } from "react";
 
@@ -68,6 +70,17 @@ interface WhyTreeChainItem {
   node: RelicWhyTreeNode;
   path: number[];
   role: "phenomenon" | "why";
+}
+
+interface WhyTreeConnectorPath {
+  d: string;
+  id: string;
+}
+
+interface WhyTreeConnectorLayout {
+  height: number;
+  paths: WhyTreeConnectorPath[];
+  width: number;
 }
 
 type WhyTreeSelection =
@@ -620,7 +633,41 @@ function WhyTreeEditor({
   tree
 }: DiagramCanvasProps & { tree: RelicWhyTreeDocument }): ReactElement {
   const t = useT();
+  const contentRef = useRef<HTMLDivElement | null>(null);
+  const nodeRefs = useRef(new Map<string, HTMLDivElement>());
   const [selection, setSelection] = useState<WhyTreeSelection>({ kind: "phenomenon", path: [] });
+  const [connectorLayout, setConnectorLayout] = useState<WhyTreeConnectorLayout>({ height: 0, paths: [], width: 0 });
+
+  const updateConnectorLayout = (): void => {
+    if (!contentRef.current) {
+      setConnectorLayout({ height: 0, paths: [], width: 0 });
+      return;
+    }
+
+    const containerRect = contentRef.current.getBoundingClientRect();
+    const paths = buildWhyTreeConnectorPaths(tree.phenomenon, [], nodeRefs.current, containerRect);
+    setConnectorLayout({
+      height: containerRect.height,
+      paths,
+      width: containerRect.width
+    });
+  };
+
+  useLayoutEffect(() => {
+    updateConnectorLayout();
+    const container = contentRef.current;
+    if (!container) return undefined;
+
+    const resizeObserver = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(updateConnectorLayout);
+    resizeObserver?.observe(container);
+    nodeRefs.current.forEach((node) => resizeObserver?.observe(node));
+    window.addEventListener("resize", updateConnectorLayout);
+
+    return () => {
+      resizeObserver?.disconnect();
+      window.removeEventListener("resize", updateConnectorLayout);
+    };
+  }, [tree]);
 
   const applyUpdate = (updated: WhyTreeUpdateResult): void => {
     if (updated.ok) {
@@ -684,9 +731,10 @@ function WhyTreeEditor({
   };
   const renderWhyTreeBranch = (item: WhyTreeChainItem): ReactElement => {
     const isSelected = isSameWhyTreeSelection(selection, { kind: item.role, path: item.path });
+    const itemKey = whyTreePathKey(item.path);
 
     return (
-      <div className="why-tree-branch" key={item.path.join(".") || "phenomenon"}>
+      <div className="why-tree-branch" key={itemKey}>
         <div className="why-tree-row">
           <SupplementColumn
             kind="fact"
@@ -703,6 +751,13 @@ function WhyTreeEditor({
                 "why-tree-node-shell",
                 isSelected ? "why-tree-node-shell--menu-open" : ""
               ].filter(Boolean).join(" ")}
+              ref={(element) => {
+                if (element) {
+                  nodeRefs.current.set(itemKey, element);
+                } else {
+                  nodeRefs.current.delete(itemKey);
+                }
+              }}
             >
               <div
                 className={[
@@ -782,7 +837,6 @@ function WhyTreeEditor({
         </div>
         {item.node.whys.length > 0 ? (
           <div className="why-tree-child-group">
-            <div aria-hidden="true" className="why-tree-connector" />
             <div className="why-tree-children">
               {item.node.whys.map((why, index) => renderWhyTreeBranch({
                 node: why,
@@ -798,7 +852,20 @@ function WhyTreeEditor({
 
   return (
     <div aria-label={fileName} className="why-tree-editor" onKeyDown={handleEditorKeyDown} role="tree">
-      <div className="why-tree-content">
+      <div className="why-tree-content" ref={contentRef}>
+        {connectorLayout.paths.length > 0 ? (
+          <svg
+            aria-hidden="true"
+            className="why-tree-lines"
+            height={connectorLayout.height}
+            viewBox={`0 0 ${connectorLayout.width} ${connectorLayout.height}`}
+            width={connectorLayout.width}
+          >
+            {connectorLayout.paths.map((path) => (
+              <path d={path.d} key={path.id} />
+            ))}
+          </svg>
+        ) : null}
         {renderWhyTreeBranch({ node: tree.phenomenon, path: [], role: "phenomenon" })}
       </div>
     </div>
@@ -819,19 +886,11 @@ function WhyTreeNodeMenu({
   const t = useT();
 
   return (
-    <div className="why-tree-add-controls" aria-label={t("diagram.whyTree.addMenu")}>
-      <button className="why-tree-add-control why-tree-add-control--fact" onClick={onAddFact} type="button">
-        {t("diagram.whyTree.addFact")}
-      </button>
-      <button className="why-tree-add-control why-tree-add-control--why" onClick={onAddWhy} type="button">
-        {t("diagram.whyTree.addWhy")}
-      </button>
-      <button className="why-tree-add-control why-tree-add-control--solution" onClick={onAddSolution} type="button">
-        {t("diagram.whyTree.addSolution")}
-      </button>
-      <button className="why-tree-add-control why-tree-add-control--action" onClick={onAddAction} type="button">
-        {t("diagram.whyTree.addAction")}
-      </button>
+    <div className="why-tree-node-menu" aria-label={t("diagram.whyTree.addMenu")}>
+      <button onClick={onAddWhy} type="button">{t("diagram.whyTree.addWhy")}</button>
+      <button onClick={onAddFact} type="button">{t("diagram.whyTree.addFact")}</button>
+      <button onClick={onAddSolution} type="button">{t("diagram.whyTree.addSolution")}</button>
+      <button onClick={onAddAction} type="button">{t("diagram.whyTree.addAction")}</button>
     </div>
   );
 }
@@ -982,6 +1041,41 @@ function buildWhyTreeChain(tree: RelicWhyTreeDocument): WhyTreeChainItem[] {
   appendWhyTreeChildren(chain, tree.phenomenon.whys, []);
 
   return chain;
+}
+
+function buildWhyTreeConnectorPaths(
+  node: RelicWhyTreeNode,
+  path: number[],
+  nodeRefs: Map<string, HTMLDivElement>,
+  containerRect: DOMRect
+): WhyTreeConnectorPath[] {
+  const parentElement = nodeRefs.get(whyTreePathKey(path));
+  if (!parentElement) return [];
+
+  const parentRect = parentElement.getBoundingClientRect();
+  const parentX = parentRect.left - containerRect.left + parentRect.width / 2;
+  const parentY = parentRect.bottom - containerRect.top;
+
+  return node.whys.flatMap((why, index) => {
+    const childPath = [...path, index];
+    const childElement = nodeRefs.get(whyTreePathKey(childPath));
+    const nestedPaths = buildWhyTreeConnectorPaths(why, childPath, nodeRefs, containerRect);
+    if (!childElement) return nestedPaths;
+
+    const childRect = childElement.getBoundingClientRect();
+    const childX = childRect.left - containerRect.left + childRect.width / 2;
+    const childY = childRect.top - containerRect.top;
+    const elbowY = parentY + Math.max(28, (childY - parentY) / 2);
+
+    return [{
+      d: `M ${parentX} ${parentY} V ${elbowY} H ${childX} V ${childY}`,
+      id: `${whyTreePathKey(path)}-${whyTreePathKey(childPath)}`
+    }, ...nestedPaths];
+  });
+}
+
+function whyTreePathKey(path: number[]): string {
+  return path.length === 0 ? "phenomenon" : path.join(".");
 }
 
 function appendWhyTreeChildren(
