@@ -13,6 +13,7 @@ export interface WorkspaceSummary {
 export interface WorkspaceState {
   activeWorkspace: WorkspaceSummary | null;
   fileTree: WorkspaceTreeNode[];
+  fileIndex?: WorkspaceFileIndexEntry[];
   pinnedPaths: string[];
   workspaces: WorkspaceSummary[];
 }
@@ -164,6 +165,19 @@ export interface WorkspaceSearchResultSet {
   results: WorkspaceSearchResult[];
   skippedLargeFiles: number;
   truncated: boolean;
+}
+
+export type WorkspaceFileKind = "map" | "markdown";
+
+export type WorkspaceFileReadStatus = "ok" | "unreadable";
+
+export interface WorkspaceFileIndexEntry {
+  kind: WorkspaceFileKind;
+  mtimeMs: number;
+  name: string;
+  path: string;
+  readStatus: WorkspaceFileReadStatus;
+  size: number;
 }
 
 export interface WriteMarkdownFileInput {

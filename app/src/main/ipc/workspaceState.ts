@@ -2,6 +2,7 @@ import { app } from "electron";
 
 import type { WorkspaceState } from "../../shared/ipc";
 import { readWorkspaceFileTree } from "../files/fileTree";
+import { getWorkspaceFileIndexCachePath, readWorkspaceFileIndex } from "../files/workspaceFileIndex";
 import { type AppSettings } from "../settings/appSettings";
 import { readWorkspaceSettings } from "../settings/workspaceSettings";
 import { toWorkspaceState } from "../workspace/workspaceService";
@@ -14,10 +15,14 @@ export async function buildWorkspaceState(settings: AppSettings): Promise<Worksp
     return toWorkspaceState(settings);
   }
 
-  const [fileTree, wsSettings] = await Promise.all([
+  const userDataPath = app.getPath("userData");
+  const [fileTree, fileIndex, wsSettings] = await Promise.all([
     readWorkspaceFileTree(activeWorkspace.path).catch(() => []),
-    readWorkspaceSettings(app.getPath("userData"), activeWorkspace.id).catch(() => null)
+    readWorkspaceFileIndex(activeWorkspace.path, {
+      cachePath: getWorkspaceFileIndexCachePath(userDataPath, activeWorkspace.id)
+    }).catch(() => ({ entries: [], records: [] })),
+    readWorkspaceSettings(userDataPath, activeWorkspace.id).catch(() => null)
   ]);
 
-  return toWorkspaceState(settings, fileTree, wsSettings?.pinnedPaths ?? []);
+  return toWorkspaceState(settings, fileTree, wsSettings?.pinnedPaths ?? [], fileIndex.entries);
 }
