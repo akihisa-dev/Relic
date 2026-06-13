@@ -938,12 +938,31 @@
   position: absolute;
 }
 
+.map-canvas-labels,
+.map-canvas-nodes {
+  pointer-events: none;
+}
+
+.map-canvas-label-editor,
+.map-canvas-line-label,
+.map-canvas-node {
+  pointer-events: auto;
+}
+
 .map-canvas-line {
   fill: none;
-  pointer-events: stroke;
+  pointer-events: none;
   stroke: var(--border-medium);
   stroke-linecap: round;
   stroke-width: 2;
+}
+
+.map-canvas-line-hit {
+  fill: none;
+  pointer-events: stroke;
+  stroke: transparent;
+  stroke-linecap: round;
+  stroke-width: 14;
 }
 
 .map-canvas-line--selected {

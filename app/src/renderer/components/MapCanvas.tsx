@@ -463,6 +463,13 @@ export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): Reac
           {displayLines.map((line) => (
             <g key={line.line.id}>
               <path
+                className="map-canvas-line-hit"
+                d={`M ${line.x1} ${line.y1} L ${line.x2} ${line.y2}`}
+                onDoubleClick={(event) => startLabelEditFromLine(line, event)}
+                onPointerDown={(event) => selectLine(line.line.id, event)}
+              />
+              <path
+                aria-hidden="true"
                 className={`map-canvas-line${selection?.type === "line" && selection.id === line.line.id ? " map-canvas-line--selected" : ""}`}
                 d={`M ${line.x1} ${line.y1} L ${line.x2} ${line.y2}`}
                 onDoubleClick={(event) => startLabelEditFromLine(line, event)}
