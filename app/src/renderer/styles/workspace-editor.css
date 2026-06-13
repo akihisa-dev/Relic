@@ -1138,6 +1138,24 @@
   position: relative;
 }
 
+.why-tree-editor,
+.why-tree-lines,
+.why-tree-branch,
+.why-tree-child-group,
+.why-tree-children,
+.why-tree-row,
+.why-tree-main-column,
+.why-tree-support-column,
+.why-tree-support-empty {
+  cursor: grab;
+}
+
+.why-tree-editor--panning,
+.why-tree-editor--panning * {
+  cursor: grabbing;
+  user-select: none;
+}
+
 .why-tree-content {
   display: flex;
   justify-content: center;
