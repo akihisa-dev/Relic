@@ -618,8 +618,6 @@ function WhyTreeEditor({
   const t = useT();
   const chain = useMemo(() => buildWhyTreeChain(tree), [tree]);
   const [selection, setSelection] = useState<WhyTreeSelection>({ kind: "phenomenon", path: [] });
-  const selectedCanAdd = selection.kind === "phenomenon" || selection.kind === "why";
-  const selectedPath = selectedCanAdd ? selection.path : null;
 
   const applyUpdate = (updated: ReturnType<typeof addRelicWhyTreeWhy>): void => {
     if (updated.ok) {
@@ -629,13 +627,9 @@ function WhyTreeEditor({
   const selectMainNode = (item: WhyTreeChainItem): void => {
     setSelection({ kind: item.role, path: item.path });
   };
-  const addWhy = (): void => {
-    if (!selectedPath || !onChange) return;
-    applyUpdate(addRelicWhyTreeWhy(content, selectedPath));
-  };
-  const addSupplement = (kind: RelicWhyTreeSupplementKind): void => {
-    if (!selectedPath || !onChange) return;
-    applyUpdate(addRelicWhyTreeSupplement(content, selectedPath, kind));
+  const addSupplementFromPath = (path: number[], kind: RelicWhyTreeSupplementKind): void => {
+    if (!onChange) return;
+    applyUpdate(addRelicWhyTreeSupplement(content, path, kind));
   };
   const changeMainTitle = (path: number[], value: string): void => {
     if (!onChange) return;
@@ -669,23 +663,47 @@ function WhyTreeEditor({
                 selected={selection}
               />
               <div className="why-tree-main-column">
-                <button
-                  className={[
-                    "why-tree-main-node",
-                    `why-tree-main-node--${item.role}`,
-                    isSameWhyTreeSelection(selection, { kind: item.role, path: item.path }) ? "why-tree-item--selected" : ""
-                  ].filter(Boolean).join(" ")}
-                  onClick={() => selectMainNode(item)}
-                  type="button"
-                >
-                  <span className="why-tree-role-label">{t(whyTreeRoleLabelKey(item.role))}</span>
-                  <input
-                    aria-label={t(whyTreeTitleInputKey(item.role))}
-                    onChange={(event) => changeMainTitle(item.path, event.currentTarget.value)}
-                    onClick={(event) => event.stopPropagation()}
-                    value={item.node.title}
-                  />
-                </button>
+                <div className="why-tree-node-shell">
+                  <div
+                    className={[
+                      "why-tree-main-node",
+                      `why-tree-main-node--${item.role}`,
+                      isSameWhyTreeSelection(selection, { kind: item.role, path: item.path }) ? "why-tree-item--selected" : ""
+                    ].filter(Boolean).join(" ")}
+                    onClick={() => selectMainNode(item)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        selectMainNode(item);
+                      }
+                    }}
+                    role="treeitem"
+                    tabIndex={0}
+                  >
+                    <span className="why-tree-role-label">{t(whyTreeRoleLabelKey(item.role))}</span>
+                    <input
+                      aria-label={t(whyTreeTitleInputKey(item.role))}
+                      onChange={(event) => changeMainTitle(item.path, event.currentTarget.value)}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        selectMainNode(item);
+                      }}
+                      onFocus={() => selectMainNode(item)}
+                      value={item.node.title}
+                    />
+                  </div>
+                  {isSameWhyTreeSelection(selection, { kind: item.role, path: item.path }) ? (
+                    <WhyTreeNodeMenu
+                      onAddAction={() => addSupplementFromPath(item.path, "action")}
+                      onAddFact={() => addSupplementFromPath(item.path, "fact")}
+                      onAddSolution={() => addSupplementFromPath(item.path, "solution")}
+                      onAddWhy={() => {
+                        if (!onChange) return;
+                        applyUpdate(addRelicWhyTreeWhy(content, item.path));
+                      }}
+                    />
+                  ) : null}
+                </div>
                 {index < chain.length - 1 ? (
                   <div aria-hidden="true" className="why-tree-chain-connector">
                     <span />
@@ -715,14 +733,29 @@ function WhyTreeEditor({
           </div>
         ))}
       </div>
-      {selectedCanAdd && selectedPath ? (
-        <div className="why-tree-actions-bar" aria-label={t("diagram.whyTree.addMenu")}>
-          <button onClick={addWhy} type="button">{t("diagram.whyTree.addWhy")}</button>
-          <button onClick={() => addSupplement("fact")} type="button">{t("diagram.whyTree.addFact")}</button>
-          <button onClick={() => addSupplement("solution")} type="button">{t("diagram.whyTree.addSolution")}</button>
-          <button onClick={() => addSupplement("action")} type="button">{t("diagram.whyTree.addAction")}</button>
-        </div>
-      ) : null}
+    </div>
+  );
+}
+
+function WhyTreeNodeMenu({
+  onAddAction,
+  onAddFact,
+  onAddSolution,
+  onAddWhy
+}: {
+  onAddAction: () => void;
+  onAddFact: () => void;
+  onAddSolution: () => void;
+  onAddWhy: () => void;
+}): ReactElement {
+  const t = useT();
+
+  return (
+    <div className="why-tree-node-menu" aria-label={t("diagram.whyTree.addMenu")}>
+      <button onClick={onAddWhy} type="button">{t("diagram.whyTree.addWhy")}</button>
+      <button onClick={onAddFact} type="button">{t("diagram.whyTree.addFact")}</button>
+      <button onClick={onAddSolution} type="button">{t("diagram.whyTree.addSolution")}</button>
+      <button onClick={onAddAction} type="button">{t("diagram.whyTree.addAction")}</button>
     </div>
   );
 }
