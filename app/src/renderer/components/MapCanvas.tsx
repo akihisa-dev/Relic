@@ -257,13 +257,13 @@ export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): Reac
     };
   };
   const startConnect = (nodeId: string, event: ReactPointerEvent<HTMLButtonElement>): void => {
+    event.preventDefault();
+    event.stopPropagation();
     if (!onChange) return;
 
     const center = nodeCenter(nodeId);
     if (!center) return;
 
-    event.preventDefault();
-    event.stopPropagation();
     setConnect({
       currentX: center.x,
       currentY: center.y,
@@ -286,10 +286,14 @@ export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): Reac
     });
   };
   const finishConnect = (toNodeId: string, event: ReactPointerEvent<HTMLButtonElement>): void => {
-    if (!connect || connect.pointerId !== event.pointerId) return;
-
     event.preventDefault();
     event.stopPropagation();
+    if (!connect || connect.pointerId !== event.pointerId) return;
+    if (connect.fromNodeId === toNodeId) {
+      setConnect(null);
+      return;
+    }
+
     const added = addRelicMapLine(content, connect.fromNodeId, toNodeId);
     if (added.ok) {
       onChange?.(added.value.content);
