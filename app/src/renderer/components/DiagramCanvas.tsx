@@ -819,11 +819,19 @@ function WhyTreeNodeMenu({
   const t = useT();
 
   return (
-    <div className="why-tree-node-menu" aria-label={t("diagram.whyTree.addMenu")}>
-      <button onClick={onAddWhy} type="button">{t("diagram.whyTree.addWhy")}</button>
-      <button onClick={onAddFact} type="button">{t("diagram.whyTree.addFact")}</button>
-      <button onClick={onAddSolution} type="button">{t("diagram.whyTree.addSolution")}</button>
-      <button onClick={onAddAction} type="button">{t("diagram.whyTree.addAction")}</button>
+    <div className="why-tree-add-controls" aria-label={t("diagram.whyTree.addMenu")}>
+      <button className="why-tree-add-control why-tree-add-control--fact" onClick={onAddFact} type="button">
+        {t("diagram.whyTree.addFact")}
+      </button>
+      <button className="why-tree-add-control why-tree-add-control--why" onClick={onAddWhy} type="button">
+        {t("diagram.whyTree.addWhy")}
+      </button>
+      <button className="why-tree-add-control why-tree-add-control--solution" onClick={onAddSolution} type="button">
+        {t("diagram.whyTree.addSolution")}
+      </button>
+      <button className="why-tree-add-control why-tree-add-control--action" onClick={onAddAction} type="button">
+        {t("diagram.whyTree.addAction")}
+      </button>
     </div>
   );
 }

@@ -1374,41 +1374,54 @@
   box-shadow: 0 0 0 4px var(--accent-soft), 0 10px 24px rgba(15, 23, 42, 0.1);
 }
 
-.why-tree-node-menu {
-  align-items: center;
+.why-tree-add-controls {
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+  z-index: 20;
+}
+
+.why-tree-add-control {
   background: #111;
   border: 1px solid rgba(255, 255, 255, 0.34);
   border-radius: 999px;
   box-shadow: 0 0 0 3px rgba(17, 17, 17, 0.2), 0 12px 28px rgba(15, 23, 42, 0.22);
-  display: flex;
-  flex-wrap: nowrap;
-  gap: 2px;
-  left: 50%;
-  padding: 5px;
-  position: absolute;
-  top: calc(100% + 8px);
-  transform: translateX(-50%);
-  width: max-content;
-  z-index: 20;
-}
-
-.why-tree-node-menu button {
-  background: transparent;
-  border: 0;
-  border-radius: 999px;
   color: #fff;
   font: inherit;
   font-size: 13px;
   font-weight: 700;
   min-height: 28px;
-  padding: 0 12px;
-  text-align: left;
+  padding: 0 14px;
+  pointer-events: auto;
+  position: absolute;
   white-space: nowrap;
 }
 
-.why-tree-node-menu button:hover,
-.why-tree-node-menu button:focus-visible {
-  background: rgba(255, 255, 255, 0.14);
+.why-tree-add-control--fact {
+  right: calc(100% + 16px);
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.why-tree-add-control--why {
+  left: 50%;
+  top: calc(100% + 12px);
+  transform: translateX(-50%);
+}
+
+.why-tree-add-control--solution {
+  left: calc(100% + 16px);
+  top: 18px;
+}
+
+.why-tree-add-control--action {
+  left: calc(100% + 16px);
+  top: 58px;
+}
+
+.why-tree-add-control:hover,
+.why-tree-add-control:focus-visible {
+  background: #222;
   outline: none;
 }
 
