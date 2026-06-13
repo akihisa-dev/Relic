@@ -46,6 +46,11 @@ export interface RelicMapLineInsertion {
   line: RelicMapLine;
 }
 
+export interface RelicMapDeletion {
+  content: string;
+  count: number;
+}
+
 const mapTopLevelKeys = new Set(["type", "nodes", "lines"]);
 const mapNodeKeys = new Set(["id", "file", "x", "y", "width", "height"]);
 const mapLineKeys = new Set(["id", "from", "to", "label"]);
@@ -235,6 +240,56 @@ export function addRelicMapLine(
   return ok({
     content: serialized.value,
     line
+  });
+}
+
+export function removeRelicMapNode(content: string, nodeId: string): RelicResult<RelicMapDeletion> {
+  const parsed = parseRelicMapMarkdown(content);
+  if (!parsed.ok) return parsed;
+
+  const id = parseRequiredText(nodeId, "MAP_NODE_ID_INVALID", "Nodeの id を指定してください。");
+  if (!id.ok) return id;
+
+  const nextNodes = parsed.value.nodes.filter((node) => node.id !== id.value);
+  if (nextNodes.length === parsed.value.nodes.length) {
+    return fail("MAP_NODE_MISSING", "削除するNodeが見つかりません。");
+  }
+
+  const nextLines = parsed.value.lines.filter((line) => line.from !== id.value && line.to !== id.value);
+  const serialized = serializeRelicMapMarkdown({
+    ...parsed.value,
+    lines: nextLines,
+    nodes: nextNodes
+  });
+  if (!serialized.ok) return serialized;
+
+  return ok({
+    content: serialized.value,
+    count: parsed.value.nodes.length - nextNodes.length + parsed.value.lines.length - nextLines.length
+  });
+}
+
+export function removeRelicMapLine(content: string, lineId: string): RelicResult<RelicMapDeletion> {
+  const parsed = parseRelicMapMarkdown(content);
+  if (!parsed.ok) return parsed;
+
+  const id = parseRequiredText(lineId, "MAP_LINE_ID_INVALID", "Lineの id を指定してください。");
+  if (!id.ok) return id;
+
+  const nextLines = parsed.value.lines.filter((line) => line.id !== id.value);
+  if (nextLines.length === parsed.value.lines.length) {
+    return fail("MAP_LINE_MISSING", "削除するLineが見つかりません。");
+  }
+
+  const serialized = serializeRelicMapMarkdown({
+    ...parsed.value,
+    lines: nextLines
+  });
+  if (!serialized.ok) return serialized;
+
+  return ok({
+    content: serialized.value,
+    count: parsed.value.lines.length - nextLines.length
   });
 }
 
