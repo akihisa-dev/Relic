@@ -26,6 +26,7 @@ interface MapCanvasProps {
   content: string;
   fileName: string;
   onChange?: (content: string) => void;
+  onOpenFile?: (path: string) => void;
 }
 
 interface MapCanvasLayout {
@@ -103,7 +104,7 @@ interface LabelEditState {
   value: string;
 }
 
-export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): ReactElement {
+export function MapCanvas({ content, fileName, onChange, onOpenFile }: MapCanvasProps): ReactElement {
   const t = useT();
   const [connect, setConnect] = useState<ConnectState | null>(null);
   const [drag, setDrag] = useState<DragState | null>(null);
@@ -190,6 +191,13 @@ export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): Reac
   const cancelNodeDrag = (event: ReactPointerEvent<HTMLDivElement>): void => {
     if (!drag || drag.pointerId !== event.pointerId) return;
     setDrag(null);
+  };
+  const openNodeFile = (node: RelicMapNode, event: ReactMouseEvent<HTMLDivElement>): void => {
+    if (!onOpenFile) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    onOpenFile(node.file);
   };
   const pointerPositionInCanvas = (event: ReactPointerEvent<HTMLElement>): { x: number; y: number } => {
     const canvas = event.currentTarget.closest(".map-canvas") ?? event.currentTarget;
@@ -496,6 +504,7 @@ export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): Reac
               ].filter(Boolean).join(" ")}
               key={node.id}
               onPointerCancel={cancelNodeDrag}
+              onDoubleClick={(event) => openNodeFile(node, event)}
               onPointerDown={(event) => startNodeDrag(node, event)}
               onPointerMove={updateNodeDrag}
               onPointerUp={finishNodeDrag}
