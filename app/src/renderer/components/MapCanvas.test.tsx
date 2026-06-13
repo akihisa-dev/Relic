@@ -315,7 +315,7 @@ describe("MapCanvas", () => {
         <MapCanvas content={mapContentWithEmptyLabel} fileName="World" onChange={onChange} />
       </I18nProvider>
     );
-    const line = container.querySelector(".map-canvas-line");
+    const line = container.querySelector(".map-canvas-line-hit");
     expect(line).toBeInstanceOf(Element);
 
     expect(screen.queryByRole("button", { name: "Edit line label" })).not.toBeInTheDocument();
@@ -417,7 +417,7 @@ describe("MapCanvas", () => {
         <MapCanvas content={mapContent} fileName="World" onChange={onChange} />
       </I18nProvider>
     );
-    const line = container.querySelector(".map-canvas-line");
+    const line = container.querySelector(".map-canvas-line-hit");
     expect(line).toBeInstanceOf(Element);
 
     fireEvent(line as Element, pointerEvent("pointerdown", 4, 10, 10));
