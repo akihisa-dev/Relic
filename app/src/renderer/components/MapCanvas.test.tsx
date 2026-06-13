@@ -95,6 +95,59 @@ describe("MapCanvas", () => {
     expect(onChange.mock.calls[0]?.[0]).toContain("y: 100");
   });
 
+  it("pans the canvas by dragging blank space", () => {
+    const { container } = render(
+      <I18nProvider language="en">
+        <MapCanvas content={mapContent} fileName="World" />
+      </I18nProvider>
+    );
+    const canvas = screen.getByRole("img", { name: "World" });
+    const space = container.querySelector(".map-canvas-space");
+    expect(space).toBeInstanceOf(HTMLElement);
+
+    fireEvent(canvas, pointerEvent("pointerdown", 5, 10, 10));
+    fireEvent(canvas, pointerEvent("pointermove", 5, 40, 30));
+    fireEvent(canvas, pointerEvent("pointerup", 5, 40, 30));
+
+    expect((space as HTMLElement).style.transform).toContain("translate(30px, 20px)");
+  });
+
+  it("zooms the canvas around the pointer", () => {
+    const { container } = render(
+      <I18nProvider language="en">
+        <MapCanvas content={mapContent} fileName="World" />
+      </I18nProvider>
+    );
+    const canvas = screen.getByRole("img", { name: "World" });
+    const space = container.querySelector(".map-canvas-space");
+    expect(space).toBeInstanceOf(HTMLElement);
+
+    fireEvent.wheel(canvas, { clientX: 100, clientY: 100, deltaY: -100 });
+
+    expect((space as HTMLElement).style.transform).toContain("scale(1.1)");
+  });
+
+  it("commits moved node coordinates in canvas units while zoomed", () => {
+    const onChange = vi.fn();
+    render(
+      <I18nProvider language="en">
+        <MapCanvas content={mapContent} fileName="World" onChange={onChange} />
+      </I18nProvider>
+    );
+    const canvas = screen.getByRole("img", { name: "World" });
+    const node = screen.getByText("alice").closest(".map-canvas-node");
+    expect(node).toBeInstanceOf(HTMLElement);
+
+    fireEvent.wheel(canvas, { clientX: 100, clientY: 100, deltaY: -100 });
+    fireEvent(node as HTMLElement, pointerEvent("pointerdown", 6, 10, 10));
+    fireEvent(node as HTMLElement, pointerEvent("pointermove", 6, 54, 32));
+    fireEvent(node as HTMLElement, pointerEvent("pointerup", 6, 54, 32));
+
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange.mock.calls[0]?.[0]).toContain("x: 160");
+    expect(onChange.mock.calls[0]?.[0]).toContain("y: 100");
+  });
+
   it("does not rewrite Map Markdown when a node is clicked without moving", () => {
     const onChange = vi.fn();
     render(
