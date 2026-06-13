@@ -355,6 +355,140 @@ describe("App file tabs", () => {
     if (tab?.kind === "file") expect(tab.content).toBe("保存に失敗しても残る本文");
   });
 
+  it("Diagram画面でNodeを移動すると図解Markdownを自動保存する", async () => {
+    const diagramContent = [
+      "---",
+      "type: relationship",
+      "title: 関係図",
+      "---",
+      "",
+      "nodes:",
+      "  - id: node-1",
+      "    file: characters/alice.md",
+      "    x: 120",
+      "    y: 80",
+      "    width: 180",
+      "    height: 80",
+      "lines: []",
+      ""
+    ].join("\n");
+    const writeMarkdownFile = vi.fn().mockResolvedValue({ ok: true, value: undefined });
+
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [{ name: "関係図", path: "関係図.md", type: "file" }],
+          fileIndex: [{
+            contentHash: "diagram",
+            diagramType: "relationship",
+            excerptLines: [],
+            kind: "diagram",
+            mtimeMs: 1,
+            name: "関係図",
+            path: "関係図.md",
+            size: diagramContent.length
+          }]
+        }
+      }),
+      readMarkdownFile: vi.fn().mockResolvedValue({
+        ok: true,
+        value: { content: diagramContent, name: "関係図", path: "関係図.md" }
+      }),
+      writeMarkdownFile
+    });
+
+    await renderApp();
+    fireEvent.click(await screen.findByRole("button", { name: /関係図/ }));
+
+    const node = await screen.findByText("alice");
+    const nodeCard = node.closest(".diagram-canvas-node");
+    expect(nodeCard).toBeInstanceOf(HTMLElement);
+
+    fireEvent(nodeCard as HTMLElement, pointerEvent("pointerdown", 1, 10, 10));
+    fireEvent(nodeCard as HTMLElement, pointerEvent("pointermove", 1, 50, 30));
+    fireEvent(nodeCard as HTMLElement, pointerEvent("pointerup", 1, 50, 30));
+
+    await waitFor(() => expect(writeMarkdownFile).toHaveBeenCalledWith({
+      content: expect.stringContaining("x: 160"),
+      expectedContent: diagramContent,
+      path: "関係図.md"
+    }), { timeout: 2000 });
+  });
+
+  it("Diagramサイドバーから作成したRelationshipファイルへ初期本文を書き込んで開く", async () => {
+    const writeMarkdownFile = vi.fn().mockResolvedValue({ ok: true, value: undefined });
+    const getWorkspaceState = vi.fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [],
+          fileIndex: []
+        }
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [{ name: "関係図", path: "関係図.md", type: "file" }],
+          fileIndex: [{
+            contentHash: "diagram",
+            diagramType: "relationship",
+            excerptLines: [],
+            kind: "diagram",
+            mtimeMs: 1,
+            name: "関係図",
+            path: "関係図.md",
+            size: 1
+          }]
+        }
+      });
+
+    window.relic = makeRelicApi({
+      createMarkdownFile: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [{ name: "関係図", path: "関係図.md", type: "file" }],
+          fileIndex: []
+        }
+      }),
+      getWorkspaceState,
+      readMarkdownFile: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          content: [
+            "---",
+            "type: relationship",
+            "title: 関係図",
+            "---",
+            "",
+            "nodes: []",
+            "lines: []",
+            ""
+          ].join("\n"),
+          name: "関係図",
+          path: "関係図.md"
+        }
+      }),
+      writeMarkdownFile
+    });
+
+    await renderApp();
+
+    fireEvent.click(await screen.findByRole("button", { name: "図解" }));
+    fireEvent.click(await screen.findByRole("button", { name: "関係図を作成" }));
+
+    await waitFor(() => expect(writeMarkdownFile).toHaveBeenCalledWith({
+      content: expect.stringContaining("type: relationship"),
+      expectedContent: "",
+      path: "関係図.md"
+    }));
+    expect(await screen.findByRole("img", { name: "関係図" })).toBeInTheDocument();
+  });
+
   it("ステータスバーに保存状態を表示する", async () => {
     window.relic = makeRelicApi({
       getWorkspaceState: vi.fn().mockResolvedValue({
@@ -617,3 +751,16 @@ describe("App file tabs", () => {
     if (latestTab?.kind === "file") expect(latestTab.content).toBe("保存できない本文");
   });
 });
+
+function pointerEvent(type: string, pointerId: number, clientX: number, clientY: number): Event {
+  const event = new MouseEvent(type, {
+    bubbles: true,
+    cancelable: true,
+    clientX,
+    clientY
+  });
+
+  Object.defineProperty(event, "pointerId", { value: pointerId });
+
+  return event;
+}
