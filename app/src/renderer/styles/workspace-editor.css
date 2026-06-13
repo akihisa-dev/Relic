@@ -1156,7 +1156,7 @@
 .why-tree-children {
   align-items: start;
   display: flex;
-  gap: 34px;
+  gap: 88px;
   justify-content: center;
   padding-top: 26px;
   position: relative;
@@ -1174,10 +1174,11 @@
 
 .why-tree-row {
   align-items: start;
-  display: grid;
-  gap: 28px;
-  grid-template-columns: minmax(180px, 1fr) minmax(240px, 300px) minmax(220px, 1fr);
+  display: flex;
+  justify-content: center;
   min-height: 142px;
+  position: relative;
+  width: 300px;
 }
 
 .why-tree-main-column {
@@ -1185,6 +1186,7 @@
   display: grid;
   justify-items: center;
   min-width: 0;
+  width: 300px;
 }
 
 .why-tree-node-shell {
@@ -1270,14 +1272,24 @@
   display: grid;
   gap: 8px;
   min-width: 0;
+  position: absolute;
+  top: 0;
+  width: 170px;
+  z-index: 1;
+}
+
+.why-tree-support-column:has(.why-tree-support-empty) {
+  display: none;
 }
 
 .why-tree-support-column--fact {
   justify-items: end;
+  right: calc(100% + 18px);
 }
 
 .why-tree-support-column--right {
   gap: 14px;
+  left: calc(100% + 18px);
 }
 
 .why-tree-support-heading {
@@ -1301,7 +1313,7 @@
   box-sizing: border-box;
   display: grid;
   gap: 8px;
-  max-width: 240px;
+  max-width: 170px;
   min-height: 46px;
   padding: 12px 14px;
   position: relative;
