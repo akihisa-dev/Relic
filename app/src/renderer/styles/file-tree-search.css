@@ -375,6 +375,17 @@
   color: var(--text);
 }
 
+.map-sidebar-file--button:disabled {
+  color: var(--text-3);
+  cursor: default;
+  opacity: 0.55;
+}
+
+.map-sidebar-file--button:disabled:hover {
+  background: transparent;
+  color: var(--text-3);
+}
+
 .map-sidebar-file--button.loading {
   color: var(--accent);
 }
@@ -402,6 +413,14 @@
   font-size: 12px;
   margin: 0;
   padding: 7px 8px;
+}
+
+.map-sidebar-error {
+  border-top: 1px solid var(--border);
+  color: var(--text-2);
+  font-size: 12px;
+  line-height: 1.5;
+  padding-top: 10px;
 }
 
 .primary-button {

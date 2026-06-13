@@ -31,9 +31,16 @@ export interface RelicMapReferenceReplacement {
 
 export type RelicMapReferenceReplacementKind = "file" | "folder";
 
+export interface RelicMapNodeInsertion {
+  content: string;
+  node: RelicMapNode;
+}
+
 const mapTopLevelKeys = new Set(["type", "nodes", "lines"]);
 const mapNodeKeys = new Set(["id", "file", "x", "y", "width", "height"]);
 const mapLineKeys = new Set(["id", "from", "to", "label"]);
+const defaultNodeWidth = 180;
+const defaultNodeHeight = 80;
 
 export function isRelicMapMarkdownContent(content: string): boolean {
   return firstLine(content).trim() === "type: map";
@@ -118,6 +125,29 @@ export function replaceRelicMapNodeFileReferences(
   });
 }
 
+export function addRelicMapNodeForFile(
+  content: string,
+  filePath: string
+): RelicResult<RelicMapNodeInsertion> {
+  const parsed = parseRelicMapMarkdown(content);
+  if (!parsed.ok) return parsed;
+
+  const file = parseNodeFilePath(filePath);
+  if (!file.ok) return file;
+
+  const node = createNodeForFile(parsed.value, file.value);
+  const serialized = serializeRelicMapMarkdown({
+    ...parsed.value,
+    nodes: [...parsed.value.nodes, node]
+  });
+  if (!serialized.ok) return serialized;
+
+  return ok({
+    content: serialized.value,
+    node
+  });
+}
+
 export function validateRelicMapDocument(raw: unknown): RelicResult<RelicMapDocument> {
   if (!isRecord(raw)) {
     return fail("MAP_FORMAT_INVALID", "Mapファイルの形式が正しくありません。");
@@ -143,6 +173,84 @@ export function validateRelicMapDocument(raw: unknown): RelicResult<RelicMapDocu
     nodes: nodes.value,
     type: "map"
   });
+}
+
+function createNodeForFile(map: RelicMapDocument, filePath: string): RelicMapNode {
+  const candidate = {
+    file: filePath,
+    height: defaultNodeHeight,
+    id: nextNodeId(map.nodes),
+    width: defaultNodeWidth,
+    ...nextNodePosition(map.nodes)
+  };
+
+  return candidate;
+}
+
+function nextNodeId(nodes: RelicMapNode[]): string {
+  const usedIds = new Set(nodes.map((node) => node.id));
+  let index = 1;
+
+  while (usedIds.has(`node-${index}`)) {
+    index += 1;
+  }
+
+  return `node-${index}`;
+}
+
+function nextNodePosition(nodes: RelicMapNode[]): Pick<RelicMapNode, "x" | "y"> {
+  if (nodes.length === 0) {
+    return { x: 360, y: 270 };
+  }
+
+  const minX = Math.min(...nodes.map((node) => node.x));
+  const minY = Math.min(...nodes.map((node) => node.y));
+  const maxX = Math.max(...nodes.map((node) => node.x + node.width));
+  const maxY = Math.max(...nodes.map((node) => node.y + node.height));
+  const base = {
+    x: Math.round((minX + maxX) / 2 - defaultNodeWidth / 2),
+    y: Math.round((minY + maxY) / 2 - defaultNodeHeight / 2)
+  };
+
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    const candidate = {
+      x: base.x + attempt * 32,
+      y: base.y + attempt * 24
+    };
+    if (!nodes.some((node) => rectanglesOverlap(
+      candidate.x,
+      candidate.y,
+      defaultNodeWidth,
+      defaultNodeHeight,
+      node.x,
+      node.y,
+      node.width,
+      node.height
+    ))) {
+      return candidate;
+    }
+  }
+
+  return {
+    x: base.x + nodes.length * 32,
+    y: base.y + nodes.length * 24
+  };
+}
+
+function rectanglesOverlap(
+  leftX: number,
+  leftY: number,
+  leftWidth: number,
+  leftHeight: number,
+  rightX: number,
+  rightY: number,
+  rightWidth: number,
+  rightHeight: number
+): boolean {
+  return leftX < rightX + rightWidth &&
+    leftX + leftWidth > rightX &&
+    leftY < rightY + rightHeight &&
+    leftY + leftHeight > rightY;
 }
 
 function replaceMapNodeFilePaths(

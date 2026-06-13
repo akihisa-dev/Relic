@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  addRelicMapNodeForFile,
   isRelicMapMarkdownContent,
   parseRelicMapMarkdown,
   replaceRelicMapNodeFileReferences,
@@ -192,5 +193,31 @@ describe("replaceRelicMapNodeFileReferences", () => {
     expect(replaced.ok ? replaced.value.count : 0).toBe(2);
     expect(replaced.ok ? replaced.value.content : "").toContain("file: archive/characters/alice.md");
     expect(replaced.ok ? replaced.value.content : "").toContain("file: archive/characters/bob.md");
+  });
+});
+
+describe("addRelicMapNodeForFile", () => {
+  it("Map用MDの中央付近にNodeを追加する", () => {
+    const added = addRelicMapNodeForFile("type: map\n\nnodes: []\nlines: []\n", "characters/alice.md");
+
+    expect(added.ok).toBe(true);
+    expect(added.ok ? added.value.node : null).toMatchObject({
+      file: "characters/alice.md",
+      height: 80,
+      id: "node-1",
+      width: 180,
+      x: 360,
+      y: 270
+    });
+    expect(added.ok ? added.value.content : "").toContain("file: characters/alice.md");
+  });
+
+  it("既存Nodeと重ならない位置と次のIDでNodeを追加する", () => {
+    const added = addRelicMapNodeForFile(validMap, "characters/carol.md");
+
+    expect(added.ok).toBe(true);
+    expect(added.ok ? added.value.node.id : "").toBe("node-3");
+    expect(added.ok ? added.value.node.file : "").toBe("characters/carol.md");
+    expect(added.ok ? added.value.node.x : 0).toBeGreaterThan(120);
   });
 });
