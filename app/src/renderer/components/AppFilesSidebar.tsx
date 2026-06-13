@@ -3,6 +3,7 @@ import type { MouseEvent as ReactMouseEvent, ReactElement } from "react";
 import type { AppRailView } from "../appShellModel";
 import type { SidebarView } from "../store/uiStore";
 import { FilesSidebar, type FilesSidebarProps } from "./FilesSidebar";
+import { MapSidebar } from "./MapSidebar";
 
 interface AppFilesSidebarProps extends Omit<FilesSidebarProps, "onSelectedCountChange"> {
   activeSidebarView: SidebarView;
@@ -63,6 +64,18 @@ export function AppFilesSidebar({
           <FilesSidebar
             {...filesSidebarProps}
             onSelectedCountChange={onSelectedCountChange}
+          />
+        ) : null}
+        {activeSidebarView === "map" ? (
+          <MapSidebar
+            isCreatingWorkspace={filesSidebarProps.isCreatingWorkspace}
+            isOpeningWorkspace={filesSidebarProps.isOpeningWorkspace}
+            onCreateWorkspace={filesSidebarProps.onCreateWorkspace}
+            onOpenFile={filesSidebarProps.onOpenFile}
+            onOpenWorkspace={filesSidebarProps.onOpenWorkspace}
+            openingFilePath={filesSidebarProps.openingFilePath}
+            openFilePaths={filesSidebarProps.openFilePaths}
+            workspaceState={filesSidebarProps.workspaceState}
           />
         ) : null}
       </div>

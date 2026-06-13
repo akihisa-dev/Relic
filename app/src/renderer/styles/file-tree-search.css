@@ -285,6 +285,10 @@
   overflow: hidden;
 }
 
+.sidebar-body:has(> .map-sidebar-section) {
+  overflow: hidden;
+}
+
 .files-sidebar-section {
   box-sizing: border-box;
   display: grid;
@@ -312,6 +316,92 @@
   min-height: 0;
   min-width: 0;
   overflow-y: auto;
+}
+
+.map-sidebar-section {
+  align-content: start;
+  display: grid;
+  gap: 16px;
+  height: 100%;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.map-sidebar-group {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.map-sidebar-group-heading {
+  align-items: center;
+  color: var(--text-2);
+  display: flex;
+  font-size: 12px;
+  font-weight: 700;
+  justify-content: space-between;
+  letter-spacing: 0.02em;
+  min-width: 0;
+  text-transform: uppercase;
+}
+
+.map-sidebar-file-list {
+  display: grid;
+  gap: 4px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.map-sidebar-file {
+  border-radius: 6px;
+  color: var(--text-2);
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  padding: 7px 8px;
+  text-align: left;
+}
+
+.map-sidebar-file--button {
+  background: transparent;
+  border: 0;
+  width: 100%;
+}
+
+.map-sidebar-file--button:hover,
+.map-sidebar-file--button.open {
+  background: var(--hover);
+  color: var(--text);
+}
+
+.map-sidebar-file--button.loading {
+  color: var(--accent);
+}
+
+.map-sidebar-file-name,
+.map-sidebar-file-path {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.map-sidebar-file-name {
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.map-sidebar-file-path {
+  color: var(--text-3);
+  font-size: 11px;
+}
+
+.map-sidebar-empty {
+  color: var(--text-3);
+  font-size: 12px;
+  margin: 0;
+  padding: 7px 8px;
 }
 
 .primary-button {

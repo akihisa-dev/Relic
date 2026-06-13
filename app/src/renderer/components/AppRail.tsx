@@ -79,7 +79,7 @@ export function AppRail({
           className={primaryRailButtonClass(view, activeSidebarView, isSidebarOpen)}
           key={view.id}
           onClick={() => {
-            if (view.id === "files" && activeSidebarView === "files" && isSidebarOpen) {
+            if (view.id === activeSidebarView && isSidebarOpen) {
               onCloseSidebar();
               return;
             }
