@@ -489,6 +489,59 @@ describe("App file tabs", () => {
     expect(await screen.findByRole("img", { name: "関係図" })).toBeInTheDocument();
   });
 
+  it("Why Tree画面で入力すると図解Markdownを自動保存する", async () => {
+    const whyTreeContent = [
+      "---",
+      "type: why-tree",
+      "title: 原因分析",
+      "---",
+      "",
+      "phenomenon:",
+      "  title: 売上低下",
+      "  facts: []",
+      "  solutions: []",
+      "  actions: []",
+      ""
+    ].join("\n");
+    const writeMarkdownFile = vi.fn().mockResolvedValue({ ok: true, value: undefined });
+
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [{ name: "原因分析", path: "原因分析.md", type: "file" }],
+          fileIndex: [{
+            contentHash: "diagram",
+            diagramType: "why-tree",
+            excerptLines: [],
+            kind: "diagram",
+            mtimeMs: 1,
+            name: "原因分析",
+            path: "原因分析.md",
+            size: whyTreeContent.length
+          }]
+        }
+      }),
+      readMarkdownFile: vi.fn().mockResolvedValue({
+        ok: true,
+        value: { content: whyTreeContent, name: "原因分析", path: "原因分析.md" }
+      }),
+      writeMarkdownFile
+    });
+
+    await renderApp();
+    fireEvent.click(await screen.findByRole("button", { name: /原因分析/ }));
+
+    fireEvent.change(await screen.findByLabelText("問題・現象"), { target: { value: "売上が下がった" } });
+
+    await waitFor(() => expect(writeMarkdownFile).toHaveBeenCalledWith({
+      content: expect.stringContaining("title: 売上が下がった"),
+      expectedContent: whyTreeContent,
+      path: "原因分析.md"
+    }), { timeout: 2000 });
+  });
+
   it("ステータスバーに保存状態を表示する", async () => {
     window.relic = makeRelicApi({
       getWorkspaceState: vi.fn().mockResolvedValue({
