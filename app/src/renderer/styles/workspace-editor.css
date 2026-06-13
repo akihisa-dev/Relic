@@ -1147,10 +1147,44 @@
 
 .why-tree-branch {
   display: grid;
-  gap: 30px;
+  gap: 0;
   justify-items: center;
   min-width: 0;
   position: relative;
+}
+
+.why-tree-child-group {
+  display: grid;
+  justify-items: center;
+  margin-top: 30px;
+  position: relative;
+  width: max-content;
+}
+
+.why-tree-connector {
+  height: 54px;
+  position: relative;
+  width: 100%;
+}
+
+.why-tree-connector::before {
+  background: var(--border-medium);
+  content: "";
+  height: 54px;
+  left: 50%;
+  position: absolute;
+  top: 0;
+  width: 2px;
+}
+
+.why-tree-connector::after {
+  background: var(--border-medium);
+  content: "";
+  height: 2px;
+  left: 150px;
+  position: absolute;
+  right: 150px;
+  top: 54px;
 }
 
 .why-tree-children {
@@ -1158,37 +1192,20 @@
   display: flex;
   gap: 88px;
   justify-content: center;
-  padding-top: 26px;
   position: relative;
 }
 
-.why-tree-children::before {
-  background: var(--border-medium);
-  content: "";
-  height: 26px;
-  left: 50%;
-  position: absolute;
-  top: 0;
-  width: 2px;
-}
-
-.why-tree-children::after {
-  background: var(--border-medium);
-  content: "";
-  height: 2px;
-  left: 150px;
-  position: absolute;
-  right: 150px;
-  top: 26px;
+.why-tree-children > .why-tree-branch {
+  padding-top: 30px;
 }
 
 .why-tree-children > .why-tree-branch::before {
   background: var(--border-medium);
   content: "";
-  height: 26px;
+  height: 30px;
   left: 50%;
   position: absolute;
-  top: -26px;
+  top: 0;
   width: 2px;
 }
 
