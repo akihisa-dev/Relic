@@ -260,33 +260,24 @@ export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): Reac
       };
     });
   };
-  const nodeCenter = (nodeId: string): { x: number; y: number } | null => {
-    const item = displayNodes.find((node) => node.node.id === nodeId);
-    if (!item) return null;
-
-    return {
-      x: item.x + item.node.width / 2,
-      y: item.y + item.node.height / 2
-    };
-  };
-  const startConnect = (nodeId: string, event: ReactPointerEvent<HTMLButtonElement>): void => {
+  const startConnect = (nodeId: string, event: ReactPointerEvent<HTMLDivElement>): void => {
     event.preventDefault();
     event.stopPropagation();
     if (!onChange) return;
 
-    const center = nodeCenter(nodeId);
-    if (!center) return;
+    const pointer = pointerPositionInCanvas(event);
 
+    focusCanvasFrom(event.currentTarget);
     setConnect({
       isActive: false,
-      currentX: center.x,
-      currentY: center.y,
+      currentX: pointer.x,
+      currentY: pointer.y,
       fromNodeId: nodeId,
       pointerId: event.pointerId,
       startClientX: event.clientX,
       startClientY: event.clientY,
-      startX: center.x,
-      startY: center.y
+      startX: pointer.x,
+      startY: pointer.y
     });
   };
   const updateConnect = (event: ReactPointerEvent<HTMLDivElement>): void => {
@@ -310,7 +301,7 @@ export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): Reac
       };
     });
   };
-  const finishConnect = (toNodeId: string, event: ReactPointerEvent<HTMLButtonElement>): void => {
+  const finishConnect = (toNodeId: string, event: ReactPointerEvent<HTMLDivElement>): void => {
     event.preventDefault();
     event.stopPropagation();
     if (!connect || connect.pointerId !== event.pointerId) return;
@@ -330,9 +321,21 @@ export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): Reac
     if (!connect || connect.pointerId !== event.pointerId) return;
     setConnect(null);
   };
-  const stopNodeControlMouseEvent = (event: ReactMouseEvent<HTMLButtonElement>): void => {
-    event.preventDefault();
-    event.stopPropagation();
+  const startNodePointer = (node: RelicMapNode, event: ReactPointerEvent<HTMLDivElement>): void => {
+    if (selection?.type === "node" && selection.id === node.id) {
+      startConnect(node.id, event);
+      return;
+    }
+
+    startNodeDrag(node, event);
+  };
+  const finishNodePointer = (node: RelicMapNode, event: ReactPointerEvent<HTMLDivElement>): void => {
+    if (connect?.pointerId === event.pointerId) {
+      finishConnect(node.id, event);
+      return;
+    }
+
+    finishNodeDrag(event);
   };
   const selectLine = (lineId: string, event: ReactPointerEvent<SVGPathElement>): void => {
     event.preventDefault();
@@ -529,9 +532,9 @@ export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): Reac
               ].filter(Boolean).join(" ")}
               key={node.id}
               onPointerCancel={cancelNodeDrag}
-              onPointerDown={(event) => startNodeDrag(node, event)}
+              onPointerDown={(event) => startNodePointer(node, event)}
               onPointerMove={updateNodeDrag}
-              onPointerUp={finishNodeDrag}
+              onPointerUp={(event) => finishNodePointer(node, event)}
               style={{
                 left: x,
                 minHeight: node.height,
@@ -542,16 +545,6 @@ export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): Reac
             >
               <span className="map-canvas-node-name">{nodeFileName(node.file)}</span>
               <span className="map-canvas-node-path">{node.file}</span>
-              <button
-                aria-label={t("map.connectNode", { name: nodeFileName(node.file) })}
-                className="map-canvas-node-connect"
-                onClick={stopNodeControlMouseEvent}
-                onDoubleClick={stopNodeControlMouseEvent}
-                onPointerDown={(event) => startConnect(node.id, event)}
-                onPointerUp={(event) => finishConnect(node.id, event)}
-                title={t("map.connectNode", { name: nodeFileName(node.file) })}
-                type="button"
-              />
             </div>
           ))}
         </div>

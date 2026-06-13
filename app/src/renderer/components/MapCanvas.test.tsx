@@ -198,7 +198,18 @@ describe("MapCanvas", () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
-  it("adds a line by connecting node handles", () => {
+  it("does not render node connection handles", () => {
+    render(
+      <I18nProvider language="en">
+        <MapCanvas content={mapContentWithoutLines} fileName="World" />
+      </I18nProvider>
+    );
+
+    expect(screen.queryByLabelText("Connect alice")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Connect bob")).not.toBeInTheDocument();
+  });
+
+  it("adds a line by dragging from a selected node to another node", () => {
     const onChange = vi.fn();
     render(
       <I18nProvider language="en">
@@ -206,29 +217,58 @@ describe("MapCanvas", () => {
       </I18nProvider>
     );
     const canvas = screen.getByRole("img", { name: "World" });
+    const alice = screen.getByText("alice").closest(".map-canvas-node");
+    const bob = screen.getByText("bob").closest(".map-canvas-node");
+    expect(alice).toBeInstanceOf(HTMLElement);
+    expect(bob).toBeInstanceOf(HTMLElement);
 
-    fireEvent(screen.getByLabelText("Connect alice"), pointerEvent("pointerdown", 2, 10, 10));
-    fireEvent(canvas, pointerEvent("pointermove", 2, 260, 10));
-    fireEvent(screen.getByLabelText("Connect bob"), pointerEvent("pointerup", 2, 260, 10));
+    fireEvent(alice as HTMLElement, pointerEvent("pointerdown", 2, 10, 10));
+    fireEvent(alice as HTMLElement, pointerEvent("pointerup", 2, 10, 10));
+    fireEvent(alice as HTMLElement, pointerEvent("pointerdown", 3, 10, 10));
+    fireEvent(canvas, pointerEvent("pointermove", 3, 260, 10));
+    fireEvent(bob as HTMLElement, pointerEvent("pointerup", 3, 260, 10));
 
     expect(onChange).toHaveBeenCalledTimes(1);
     expect(onChange.mock.calls[0]?.[0]).toContain("from: node-1");
     expect(onChange.mock.calls[0]?.[0]).toContain("to: node-2");
   });
 
-  it("keeps node connection handle clicks inside the Map canvas", () => {
+  it("keeps unselected node dragging as node movement", () => {
     const onChange = vi.fn();
     render(
       <I18nProvider language="en">
         <MapCanvas content={mapContentWithoutLines} fileName="World" onChange={onChange} />
       </I18nProvider>
     );
-    const handle = screen.getByLabelText("Connect alice");
+    const alice = screen.getByText("alice").closest(".map-canvas-node");
+    expect(alice).toBeInstanceOf(HTMLElement);
 
-    fireEvent(handle, pointerEvent("pointerdown", 7, 10, 10));
-    fireEvent(handle, pointerEvent("pointerup", 7, 10, 10));
-    fireEvent.click(handle);
-    fireEvent.doubleClick(handle);
+    fireEvent(alice as HTMLElement, pointerEvent("pointerdown", 2, 10, 10));
+    fireEvent(alice as HTMLElement, pointerEvent("pointermove", 2, 50, 30));
+    fireEvent(alice as HTMLElement, pointerEvent("pointerup", 2, 50, 30));
+
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange.mock.calls[0]?.[0]).toContain("x: 160");
+    expect(onChange.mock.calls[0]?.[0]).toContain("y: 100");
+    expect(onChange.mock.calls[0]?.[0]).not.toContain("from: node-1");
+  });
+
+  it("does not add a line when a selected node is dragged back to itself", () => {
+    const onChange = vi.fn();
+    render(
+      <I18nProvider language="en">
+        <MapCanvas content={mapContentWithoutLines} fileName="World" onChange={onChange} />
+      </I18nProvider>
+    );
+    const canvas = screen.getByRole("img", { name: "World" });
+    const alice = screen.getByText("alice").closest(".map-canvas-node");
+    expect(alice).toBeInstanceOf(HTMLElement);
+
+    fireEvent(alice as HTMLElement, pointerEvent("pointerdown", 2, 10, 10));
+    fireEvent(alice as HTMLElement, pointerEvent("pointerup", 2, 10, 10));
+    fireEvent(alice as HTMLElement, pointerEvent("pointerdown", 3, 10, 10));
+    fireEvent(canvas, pointerEvent("pointermove", 3, 260, 10));
+    fireEvent(alice as HTMLElement, pointerEvent("pointerup", 3, 260, 10));
 
     expect(screen.getByRole("img", { name: "World" })).toBeInTheDocument();
     expect(onChange).not.toHaveBeenCalled();
