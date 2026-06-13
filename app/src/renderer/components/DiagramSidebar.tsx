@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEven
 import { createPortal } from "react-dom";
 
 import type { WorkspaceFileIndexEntry, WorkspaceState, WorkspaceTreeNode } from "../../shared/ipc";
-import { addRelicDiagramNodeForFile, isRelicDiagramMarkdownContent, type RelicDiagramType } from "../../shared/diagramMarkdown";
+import { addRelicDiagramNodeForFile, diagramTypeFromMarkdownContent, type RelicDiagramType } from "../../shared/diagramMarkdown";
 import { useT } from "../i18n";
 import { useEditorStore } from "../store/editorStore";
 import { FilesWorkspaceEmpty } from "./FilesWorkspaceActions";
@@ -48,21 +48,21 @@ export function DiagramSidebar({
   );
   const activePane = focusedPane === "right" ? rightPane : leftPane;
   const activeTab = activePane.activeTabId ? tabs[activePane.activeTabId] : null;
-  const activeDiagramTab = activeTab?.kind === "file" && isRelicDiagramMarkdownContent(activeTab.content) ? activeTab : null;
+  const activeRelationshipTab = activeTab?.kind === "file" && diagramTypeFromMarkdownContent(activeTab.content) === "relationship" ? activeTab : null;
   const handlePlaceFile = (filePath: string): void => {
-    if (!activeDiagramTab) {
-      setPlacementError(t("diagram.openDiagramFirst"));
+    if (!activeRelationshipTab) {
+      setPlacementError(t("diagram.openRelationshipFirst"));
       return;
     }
 
-    const next = addRelicDiagramNodeForFile(activeDiagramTab.content, filePath);
+    const next = addRelicDiagramNodeForFile(activeRelationshipTab.content, filePath);
     if (!next.ok) {
       setPlacementError(next.error.message);
       return;
     }
 
     setPlacementError(null);
-    updateTabContent(activeDiagramTab.id, next.value.content);
+    updateTabContent(activeRelationshipTab.id, next.value.content);
   };
 
   if (!activeWorkspace) {
@@ -117,7 +117,7 @@ export function DiagramSidebar({
         emptyLabel={t("diagram.noPlaceableFiles")}
         files={placeableFiles}
         onPlaceFile={handlePlaceFile}
-        placeDisabled={!activeDiagramTab}
+        placeDisabled={!activeRelationshipTab}
         title={t("diagram.placeableFiles")}
       />
       {placementError ? (

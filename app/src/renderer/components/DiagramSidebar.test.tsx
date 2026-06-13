@@ -143,4 +143,31 @@ describe("DiagramSidebar", () => {
     const tab = useEditorStore.getState().tabs["map-tab"];
     expect(tab?.kind === "file" ? tab.content : "").toContain("file: characters/Alice.md");
   });
+
+  it("does not place Markdown files into an active why-tree Diagram", () => {
+    const content = "---\ntype: why-tree\n---\n\nphenomenon:\n  title: 問題\n  facts: []\n  solutions: []\n  actions: []\n";
+    useEditorStore.setState({
+      focusedPane: "left",
+      leftPane: { activeTabId: "why-tab", history: ["why-tab"], tabIds: ["why-tab"] },
+      rightPane: emptyPane(),
+      tabs: {
+        "why-tab": {
+          content,
+          id: "why-tab",
+          kind: "file",
+          name: "Why",
+          path: "diagrams/Why.md",
+          savedContent: content
+        }
+      }
+    });
+    renderDiagramSidebar();
+
+    const placeButton = screen.getByRole("button", { name: /Alice\.md/ });
+    expect(placeButton).toBeDisabled();
+    fireEvent.click(placeButton);
+
+    const tab = useEditorStore.getState().tabs["why-tab"];
+    expect(tab?.kind === "file" ? tab.content : "").toBe(content);
+  });
 });

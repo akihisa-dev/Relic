@@ -83,29 +83,25 @@ const diagramContentWithEmptyLabel = [
 const whyTreeContent = [
   "---",
   "type: why-tree",
-  "title: 原因分析",
+  "title: 売上低下分析",
   "---",
   "",
-  "nodes:",
-  "  - id: node-1",
-  "    file: problem.md",
-  "    role: phenomenon",
-  "    x: 120",
-  "    y: 80",
-  "    width: 180",
-  "    height: 80",
-  "  - id: node-2",
-  "    file: cause.md",
-  "    role: why",
-  "    x: 380",
-  "    y: 80",
-  "    width: 180",
-  "    height: 80",
-  "lines:",
-  "  - id: line-1",
-  "    from: node-1",
-  "    to: node-2",
-  "    label: なぜ",
+  "phenomenon:",
+  "  title: 売上低下",
+  "  facts:",
+  "    - 市場縮小",
+  "  solutions:",
+  "    - 新市場開拓",
+  "  actions:",
+  "    - 調査実施",
+  "  why:",
+  "    title: 流入減少",
+  "    facts:",
+  "      - SEO順位低下",
+  "    solutions:",
+  "      - SEO改善",
+  "    actions:",
+  "      - 記事改修",
   ""
 ].join("\n");
 
@@ -148,23 +144,54 @@ describe("DiagramCanvas", () => {
     expect(screen.getByText("幼なじみ")).toBeInTheDocument();
   });
 
-  it("renders and updates why-tree node roles", () => {
-    const onChange = vi.fn();
-    render(
+  it("renders why-tree as a structural editor without relationship controls", () => {
+    const { container } = render(
       <I18nProvider language="en">
-        <DiagramCanvas content={whyTreeContent} fileName="Why" onChange={onChange} />
+        <DiagramCanvas content={whyTreeContent} fileName="Why" />
       </I18nProvider>
     );
 
-    const roleSelects = screen.getAllByLabelText("Node role");
-    expect(roleSelects).toHaveLength(2);
-    expect(roleSelects[0]).toHaveValue("phenomenon");
-    expect(roleSelects[1]).toHaveValue("why");
+    expect(screen.getByRole("tree", { name: "Why" })).toBeInTheDocument();
+    expect(screen.getByDisplayValue("売上低下")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("流入減少")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("市場縮小")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("SEO改善")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("記事改修")).toBeInTheDocument();
+    expect(container.querySelector(".diagram-canvas-node")).toBeNull();
+    expect(container.querySelector(".diagram-canvas-line")).toBeNull();
+    expect(screen.queryByLabelText("Node role")).not.toBeInTheDocument();
+  });
 
-    fireEvent.change(roleSelects[1] as HTMLSelectElement, { target: { value: "fact" } });
+  it("adds why-tree items only from Phenomenon or Why selection", () => {
+    const onChange = vi.fn();
+    render(<StatefulDiagramCanvas content={whyTreeContent} onChange={onChange} />);
 
-    expect(onChange).toHaveBeenCalledTimes(1);
-    expect(onChange.mock.calls[0]?.[0]).toContain("role: fact");
+    fireEvent.click(screen.getByRole("button", { name: /\+ Why/ }));
+    expect(onChange.mock.calls[0]?.[0]).toContain("title: なぜ？");
+
+    fireEvent.click(screen.getByRole("button", { name: /\+ Fact/ }));
+    expect(onChange.mock.calls[1]?.[0]).toContain("根拠");
+
+    fireEvent.click(screen.getByRole("button", { name: /\+ Solution/ }));
+    expect(onChange.mock.calls[2]?.[0]).toContain("解決策");
+
+    fireEvent.click(screen.getByRole("button", { name: /\+ Action/ }));
+    expect(onChange.mock.calls[3]?.[0]).toContain("実行項目");
+
+    fireEvent.focus(screen.getByDisplayValue("市場縮小"));
+    expect(screen.queryByRole("button", { name: /\+ Why/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /\+ Fact/ })).not.toBeInTheDocument();
+  });
+
+  it("edits why-tree titles and supplements in Markdown", () => {
+    const onChange = vi.fn();
+    render(<StatefulDiagramCanvas content={whyTreeContent} onChange={onChange} />);
+
+    fireEvent.change(screen.getByLabelText("Phenomenon title"), { target: { value: "売上が下がった" } });
+    expect(onChange.mock.calls[0]?.[0]).toContain("title: 売上が下がった");
+
+    fireEvent.change(screen.getAllByLabelText("Fact")[0] as HTMLInputElement, { target: { value: "市場が縮小した" } });
+    expect(onChange.mock.calls[1]?.[0]).toContain("市場が縮小した");
   });
 
   it("shows an error for invalid Diagram Markdown", () => {
