@@ -6,6 +6,7 @@ import {
   type PointerEvent as ReactPointerEvent,
   type ReactElement,
   type WheelEvent as ReactWheelEvent,
+  useEffect,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -643,9 +644,18 @@ function WhyTreeEditor({
   const t = useT();
   const contentRef = useRef<HTMLDivElement | null>(null);
   const nodeRefs = useRef(new Map<string, HTMLDivElement>());
+  const [draftContent, setDraftContent] = useState(content);
   const [selection, setSelection] = useState<WhyTreeSelection>({ kind: "phenomenon", path: [] });
   const [connectorLayout, setConnectorLayout] = useState<WhyTreeConnectorLayout>({ height: 0, paths: [], width: 0 });
   const [pan, setPan] = useState<WhyTreePanState | null>(null);
+  const displayedTree = useMemo(() => {
+    const parsed = parseRelicDiagramMarkdown(draftContent);
+    return parsed.ok && parsed.value.type === "why-tree" ? parsed.value : tree;
+  }, [draftContent, tree]);
+
+  useEffect(() => {
+    setDraftContent(content);
+  }, [content]);
 
   const updateConnectorLayout = (): void => {
     if (!contentRef.current) {
@@ -654,7 +664,7 @@ function WhyTreeEditor({
     }
 
     const containerRect = contentRef.current.getBoundingClientRect();
-    const paths = buildWhyTreeConnectorPaths(tree.phenomenon, [], nodeRefs.current, containerRect);
+    const paths = buildWhyTreeConnectorPaths(displayedTree.phenomenon, [], nodeRefs.current, containerRect);
     setConnectorLayout({
       height: containerRect.height,
       paths,
@@ -676,10 +686,11 @@ function WhyTreeEditor({
       resizeObserver?.disconnect();
       window.removeEventListener("resize", updateConnectorLayout);
     };
-  }, [tree]);
+  }, [displayedTree]);
 
   const applyUpdate = (updated: WhyTreeUpdateResult): void => {
     if (updated.ok) {
+      setDraftContent(updated.value.content);
       onChange?.(updated.value.content);
     }
   };
@@ -688,11 +699,11 @@ function WhyTreeEditor({
   };
   const addSupplementFromPath = (path: number[], kind: RelicWhyTreeSupplementKind): void => {
     if (!onChange) return;
-    applyUpdate(addRelicWhyTreeSupplement(content, path, kind));
+    applyUpdate(addRelicWhyTreeSupplement(draftContent, path, kind));
   };
   const changeMainTitle = (path: number[], value: string): void => {
     if (!onChange) return;
-    applyUpdate(updateRelicWhyTreeTitle(content, path, value));
+    applyUpdate(updateRelicWhyTreeTitle(draftContent, path, value));
   };
   const changeSupplement = (
     path: number[],
@@ -701,7 +712,7 @@ function WhyTreeEditor({
     event: ReactChangeEvent<HTMLInputElement>
   ): void => {
     if (!onChange) return;
-    applyUpdate(updateRelicWhyTreeSupplement(content, path, kind, index, event.currentTarget.value));
+    applyUpdate(updateRelicWhyTreeSupplement(draftContent, path, kind, index, event.currentTarget.value));
   };
   const selectSupplement = (path: number[], kind: RelicWhyTreeSupplementKind, index: number): void => {
     setSelection({ index, kind, path });
@@ -711,12 +722,12 @@ function WhyTreeEditor({
   };
   const removeMainWhy = (path: number[]): void => {
     if (!onChange || path.length === 0) return;
-    applyUpdate(removeRelicWhyTreeWhy(content, path));
+    applyUpdate(removeRelicWhyTreeWhy(draftContent, path));
     setSelection({ kind: "phenomenon", path: [] });
   };
   const removeSupplement = (path: number[], kind: RelicWhyTreeSupplementKind, index: number): void => {
     if (!onChange) return;
-    applyUpdate(removeRelicWhyTreeSupplement(content, path, kind, index));
+    applyUpdate(removeRelicWhyTreeSupplement(draftContent, path, kind, index));
     selectParentMainNode(path);
   };
   const deleteSelection = (): void => {
@@ -845,7 +856,7 @@ function WhyTreeEditor({
                   onAddSolution={() => addSupplementFromPath(item.path, "solution")}
                   onAddWhy={() => {
                     if (!onChange) return;
-                    applyUpdate(addRelicWhyTreeWhy(content, item.path));
+                    applyUpdate(addRelicWhyTreeWhy(draftContent, item.path));
                     setSelection({ kind: "why", path: [...item.path, item.node.whys.length] });
                   }}
                 />
@@ -913,7 +924,7 @@ function WhyTreeEditor({
             ))}
           </svg>
         ) : null}
-        {renderWhyTreeBranch({ node: tree.phenomenon, path: [], role: "phenomenon" })}
+        {renderWhyTreeBranch({ node: displayedTree.phenomenon, path: [], role: "phenomenon" })}
       </div>
     </div>
   );

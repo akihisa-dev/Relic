@@ -130,6 +130,14 @@ function StatefulDiagramCanvas({ content, onChange }: { content: string; onChang
   );
 }
 
+function DelayedDiagramCanvas({ content, onChange }: { content: string; onChange: (content: string) => void }) {
+  return (
+    <I18nProvider language="en">
+      <DiagramCanvas content={content} fileName="World" onChange={onChange} />
+    </I18nProvider>
+  );
+}
+
 afterEach(() => {
   cleanup();
 });
@@ -201,6 +209,21 @@ describe("DiagramCanvas", () => {
     expect(container.querySelector(".why-tree-lines path")).toBeInTheDocument();
     expect(container.querySelector(".why-tree-children")).toBeInTheDocument();
     expect(onChange.mock.calls[1]?.[0]).toContain("whys:");
+  });
+
+  it("renders added why-tree items immediately even before the parent content prop updates", () => {
+    const onChange = vi.fn();
+    const { container } = render(<DelayedDiagramCanvas content={whyTreeContent} onChange={onChange} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /\+ Why/ }));
+    expect(screen.getByDisplayValue("なぜ？")).toBeInTheDocument();
+    expect(container.querySelector(".why-tree-lines path")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /\+ Fact/ }));
+    expect(screen.getByDisplayValue("根拠")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /\+ Fact/ }));
+    expect(screen.getAllByDisplayValue("根拠")).toHaveLength(2);
+    expect(onChange).toHaveBeenCalledTimes(3);
   });
 
   it("moves the why-tree menu near the selected Why node", () => {
