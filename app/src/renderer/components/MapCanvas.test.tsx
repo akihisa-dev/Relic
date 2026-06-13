@@ -127,6 +127,25 @@ describe("MapCanvas", () => {
     expect((space as HTMLElement).style.transform).toContain("translate(30px, 20px)");
   });
 
+  it("pans the canvas from blank overlay layers", () => {
+    const { container } = render(
+      <I18nProvider language="en">
+        <MapCanvas content={mapContent} fileName="World" />
+      </I18nProvider>
+    );
+    const canvas = screen.getByRole("img", { name: "World" });
+    const space = container.querySelector(".map-canvas-space");
+    const nodeLayer = container.querySelector(".map-canvas-nodes");
+    expect(space).toBeInstanceOf(HTMLElement);
+    expect(nodeLayer).toBeInstanceOf(HTMLElement);
+
+    fireEvent(nodeLayer as HTMLElement, pointerEvent("pointerdown", 8, 100, 100));
+    fireEvent(canvas, pointerEvent("pointermove", 8, 160, 130));
+    fireEvent(canvas, pointerEvent("pointerup", 8, 160, 130));
+
+    expect((space as HTMLElement).style.transform).toContain("translate(60px, 30px)");
+  });
+
   it("zooms the canvas around the pointer", () => {
     const { container } = render(
       <I18nProvider language="en">
