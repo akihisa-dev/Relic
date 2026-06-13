@@ -1,9 +1,17 @@
-import { type PointerEvent as ReactPointerEvent, type ReactElement, useMemo, useState } from "react";
+import {
+  type KeyboardEvent as ReactKeyboardEvent,
+  type PointerEvent as ReactPointerEvent,
+  type ReactElement,
+  useMemo,
+  useState
+} from "react";
 
 import {
   addRelicMapLine,
   moveRelicMapNode,
   parseRelicMapMarkdown,
+  removeRelicMapLine,
+  removeRelicMapNode,
   type RelicMapDocument,
   type RelicMapLine,
   type RelicMapNode
@@ -66,10 +74,15 @@ interface ConnectState {
   startY: number;
 }
 
+type MapSelection =
+  | { id: string; type: "line" }
+  | { id: string; type: "node" };
+
 export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): ReactElement {
   const t = useT();
   const [connect, setConnect] = useState<ConnectState | null>(null);
   const [drag, setDrag] = useState<DragState | null>(null);
+  const [selection, setSelection] = useState<MapSelection | null>(null);
   const parsed = useMemo(() => parseRelicMapMarkdown(content), [content]);
 
   if (!parsed.ok) {
@@ -105,6 +118,8 @@ export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): Reac
     if (!onChange) return;
 
     event.preventDefault();
+    setSelection({ id: node.id, type: "node" });
+    focusCanvasFrom(event.currentTarget);
     if (typeof event.currentTarget.setPointerCapture === "function") {
       event.currentTarget.setPointerCapture(event.pointerId);
     }
@@ -136,9 +151,11 @@ export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): Reac
     if (typeof event.currentTarget.releasePointerCapture === "function") {
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
-    const moved = moveRelicMapNode(content, drag.nodeId, drag.currentX, drag.currentY);
-    if (moved.ok) {
-      onChange?.(moved.value.content);
+    if (drag.currentX !== drag.originalX || drag.currentY !== drag.originalY) {
+      const moved = moveRelicMapNode(content, drag.nodeId, drag.currentX, drag.currentY);
+      if (moved.ok) {
+        onChange?.(moved.value.content);
+      }
     }
     setDrag(null);
   };
@@ -204,6 +221,7 @@ export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): Reac
     const added = addRelicMapLine(content, connect.fromNodeId, toNodeId);
     if (added.ok) {
       onChange?.(added.value.content);
+      setSelection({ id: added.value.line.id, type: "line" });
     }
     setConnect(null);
   };
@@ -211,21 +229,60 @@ export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): Reac
     if (!connect || connect.pointerId !== event.pointerId) return;
     setConnect(null);
   };
+  const selectLine = (lineId: string, event: ReactPointerEvent<SVGPathElement>): void => {
+    event.preventDefault();
+    event.stopPropagation();
+    setSelection({ id: lineId, type: "line" });
+    focusCanvasFrom(event.currentTarget);
+  };
+  const clearSelectionOnBlankPointerDown = (event: ReactPointerEvent<HTMLDivElement>): void => {
+    const target = event.target;
+    if (
+      target === event.currentTarget ||
+      (target instanceof Element && target.tagName.toLowerCase() === "svg") ||
+      (target instanceof Element && target.classList.contains("map-canvas-space"))
+    ) {
+      setSelection(null);
+      focusCanvasFrom(event.currentTarget);
+    }
+  };
+  const deleteSelection = (): void => {
+    if (!selection || !onChange) return;
+
+    const deleted = selection.type === "node"
+      ? removeRelicMapNode(content, selection.id)
+      : removeRelicMapLine(content, selection.id);
+
+    if (deleted.ok) {
+      onChange(deleted.value.content);
+      setSelection(null);
+    }
+  };
+  const handleCanvasKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>): void => {
+    if (event.key !== "Delete" && event.key !== "Backspace") return;
+    if (!selection) return;
+
+    event.preventDefault();
+    deleteSelection();
+  };
 
   return (
     <div
       aria-label={fileName}
       className="map-canvas"
+      onKeyDown={handleCanvasKeyDown}
       onPointerCancel={cancelConnect}
       onPointerMove={updateConnect}
       onPointerUp={cancelConnect}
       role="img"
+      tabIndex={0}
     >
       {layout.nodes.length === 0 ? (
         <p className="map-canvas-empty">{t("map.emptyCanvas")}</p>
       ) : null}
       <div
         className="map-canvas-space"
+        onPointerDown={clearSelectionOnBlankPointerDown}
         style={{
           height: layout.height,
           width: layout.width
@@ -240,7 +297,11 @@ export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): Reac
         >
           {displayLines.map((line) => (
             <g key={line.line.id}>
-              <path className="map-canvas-line" d={`M ${line.x1} ${line.y1} L ${line.x2} ${line.y2}`} />
+              <path
+                className={`map-canvas-line${selection?.type === "line" && selection.id === line.line.id ? " map-canvas-line--selected" : ""}`}
+                d={`M ${line.x1} ${line.y1} L ${line.x2} ${line.y2}`}
+                onPointerDown={(event) => selectLine(line.line.id, event)}
+              />
               {line.label ? (
                 <text className="map-canvas-line-label" x={line.labelX} y={line.labelY}>
                   {line.label}
@@ -258,7 +319,11 @@ export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): Reac
         <div className="map-canvas-nodes">
           {displayNodes.map(({ node, x, y }) => (
             <div
-              className={`map-canvas-node${drag?.nodeId === node.id ? " map-canvas-node--dragging" : ""}`}
+              className={[
+                "map-canvas-node",
+                drag?.nodeId === node.id ? "map-canvas-node--dragging" : "",
+                selection?.type === "node" && selection.id === node.id ? "map-canvas-node--selected" : ""
+              ].filter(Boolean).join(" ")}
               key={node.id}
               onPointerCancel={cancelNodeDrag}
               onPointerDown={(event) => startNodeDrag(node, event)}
@@ -366,4 +431,11 @@ function buildLineLayouts(
 function nodeFileName(filePath: string): string {
   const name = filePath.split("/").at(-1) ?? filePath;
   return name.endsWith(".md") ? name.slice(0, -3) : name;
+}
+
+function focusCanvasFrom(element: Element): void {
+  const canvas = element.closest(".map-canvas");
+  if (canvas instanceof HTMLElement) {
+    canvas.focus({ preventScroll: true });
+  }
 }

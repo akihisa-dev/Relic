@@ -95,6 +95,22 @@ describe("MapCanvas", () => {
     expect(onChange.mock.calls[0]?.[0]).toContain("y: 100");
   });
 
+  it("does not rewrite Map Markdown when a node is clicked without moving", () => {
+    const onChange = vi.fn();
+    render(
+      <I18nProvider language="en">
+        <MapCanvas content={mapContent} fileName="World" onChange={onChange} />
+      </I18nProvider>
+    );
+    const node = screen.getByText("alice").closest(".map-canvas-node");
+    expect(node).toBeInstanceOf(HTMLElement);
+
+    fireEvent(node as HTMLElement, pointerEvent("pointerdown", 1, 10, 10));
+    fireEvent(node as HTMLElement, pointerEvent("pointerup", 1, 10, 10));
+
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
   it("adds a line by connecting node handles", () => {
     const onChange = vi.fn();
     render(
@@ -109,6 +125,45 @@ describe("MapCanvas", () => {
     expect(onChange).toHaveBeenCalledTimes(1);
     expect(onChange.mock.calls[0]?.[0]).toContain("from: node-1");
     expect(onChange.mock.calls[0]?.[0]).toContain("to: node-2");
+  });
+
+  it("deletes a selected node and connected lines with Delete", () => {
+    const onChange = vi.fn();
+    render(
+      <I18nProvider language="en">
+        <MapCanvas content={mapContent} fileName="World" onChange={onChange} />
+      </I18nProvider>
+    );
+    const node = screen.getByText("alice").closest(".map-canvas-node");
+    expect(node).toBeInstanceOf(HTMLElement);
+
+    fireEvent(node as HTMLElement, pointerEvent("pointerdown", 3, 10, 10));
+    fireEvent(node as HTMLElement, pointerEvent("pointerup", 3, 10, 10));
+    fireEvent.keyDown(screen.getByRole("img", { name: "World" }), { key: "Delete" });
+
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange.mock.calls[0]?.[0]).not.toContain("id: node-1");
+    expect(onChange.mock.calls[0]?.[0]).not.toContain("id: line-1");
+    expect(onChange.mock.calls[0]?.[0]).toContain("id: node-2");
+  });
+
+  it("deletes a selected line with Backspace", () => {
+    const onChange = vi.fn();
+    const { container } = render(
+      <I18nProvider language="en">
+        <MapCanvas content={mapContent} fileName="World" onChange={onChange} />
+      </I18nProvider>
+    );
+    const line = container.querySelector(".map-canvas-line");
+    expect(line).toBeInstanceOf(Element);
+
+    fireEvent(line as Element, pointerEvent("pointerdown", 4, 10, 10));
+    fireEvent.keyDown(screen.getByRole("img", { name: "World" }), { key: "Backspace" });
+
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange.mock.calls[0]?.[0]).not.toContain("id: line-1");
+    expect(onChange.mock.calls[0]?.[0]).toContain("id: node-1");
+    expect(onChange.mock.calls[0]?.[0]).toContain("id: node-2");
   });
 });
 

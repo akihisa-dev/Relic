@@ -929,9 +929,15 @@
 
 .map-canvas-line {
   fill: none;
+  pointer-events: stroke;
   stroke: var(--border-medium);
   stroke-linecap: round;
   stroke-width: 2;
+}
+
+.map-canvas-line--selected {
+  stroke: var(--accent);
+  stroke-width: 3;
 }
 
 .map-canvas-line--preview {
@@ -971,6 +977,11 @@
 
 .map-canvas-node:hover {
   border-color: var(--accent-ring);
+}
+
+.map-canvas-node--selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft), 0 8px 24px rgba(15, 23, 42, 0.1);
 }
 
 .map-canvas-node--dragging {

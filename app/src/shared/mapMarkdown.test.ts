@@ -6,6 +6,8 @@ import {
   isRelicMapMarkdownContent,
   moveRelicMapNode,
   parseRelicMapMarkdown,
+  removeRelicMapLine,
+  removeRelicMapNode,
   replaceRelicMapNodeFileReferences,
   serializeRelicMapMarkdown,
   type RelicMapDocument
@@ -277,5 +279,37 @@ describe("addRelicMapLine", () => {
   it("自分自身へのLineと重複Lineを拒否する", () => {
     expect(addRelicMapLine(validMap, "node-1", "node-1").ok).toBe(false);
     expect(addRelicMapLine(validMap, "node-2", "node-1").ok).toBe(false);
+  });
+});
+
+describe("removeRelicMapNode", () => {
+  it("Nodeと接続しているLineをMap用MDから削除する", () => {
+    const removed = removeRelicMapNode(validMap, "node-1");
+
+    expect(removed.ok).toBe(true);
+    expect(removed.ok ? removed.value.count : 0).toBe(2);
+    expect(removed.ok ? removed.value.content : "").not.toContain("id: node-1");
+    expect(removed.ok ? removed.value.content : "").not.toContain("id: line-1");
+    expect(removed.ok ? removed.value.content : "").toContain("id: node-2");
+  });
+
+  it("存在しないNode削除を拒否する", () => {
+    expect(removeRelicMapNode(validMap, "node-missing").ok).toBe(false);
+  });
+});
+
+describe("removeRelicMapLine", () => {
+  it("LineだけをMap用MDから削除する", () => {
+    const removed = removeRelicMapLine(validMap, "line-1");
+
+    expect(removed.ok).toBe(true);
+    expect(removed.ok ? removed.value.count : 0).toBe(1);
+    expect(removed.ok ? removed.value.content : "").not.toContain("id: line-1");
+    expect(removed.ok ? removed.value.content : "").toContain("id: node-1");
+    expect(removed.ok ? removed.value.content : "").toContain("id: node-2");
+  });
+
+  it("存在しないLine削除を拒否する", () => {
+    expect(removeRelicMapLine(validMap, "line-missing").ok).toBe(false);
   });
 });
