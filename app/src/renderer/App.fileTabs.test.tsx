@@ -417,6 +417,93 @@ describe("App file tabs", () => {
     }), { timeout: 2000 });
   });
 
+  it("保存後に図解ファイルの分類を更新してDiagramサイドバーへ表示する", async () => {
+    const diagramContent = [
+      "---",
+      "type: relationship",
+      "title: 関係図 6",
+      "---",
+      "",
+      "nodes:",
+      "  - id: node-1",
+      "    file: characters/alice.md",
+      "    x: 120",
+      "    y: 80",
+      "    width: 180",
+      "    height: 80",
+      "lines: []",
+      ""
+    ].join("\n");
+    const getWorkspaceState = vi.fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [{ name: "関係図 6", path: "関係図 6.md", type: "file" }],
+          fileIndex: [{
+            excerptLines: [],
+            kind: "markdown",
+            mtimeMs: 1,
+            name: "関係図 6",
+            path: "関係図 6.md",
+            readStatus: "ok",
+            size: diagramContent.length
+          }]
+        }
+      })
+      .mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [{ name: "関係図 6", path: "関係図 6.md", type: "file" }],
+          fileIndex: [{
+            excerptLines: [],
+            kind: "diagram",
+            mtimeMs: 2,
+            name: "関係図 6",
+            path: "関係図 6.md",
+            readStatus: "ok",
+            size: diagramContent.length + 1
+          }]
+        }
+      });
+    const writeMarkdownFile = vi.fn().mockResolvedValue({ ok: true, value: undefined });
+
+    window.relic = makeRelicApi({
+      getWorkspaceState,
+      readMarkdownFile: vi.fn().mockResolvedValue({
+        ok: true,
+        value: { content: diagramContent, name: "関係図 6", path: "関係図 6.md" }
+      }),
+      writeMarkdownFile
+    });
+
+    await renderApp();
+    fireEvent.click(await screen.findByRole("button", { name: /関係図 6/ }));
+    fireEvent.click(await screen.findByRole("button", { name: "図解" }));
+
+    expect(await screen.findByText("図解ファイルはまだありません。")).toBeInTheDocument();
+
+    const node = await screen.findByText("alice");
+    const nodeCard = node.closest(".diagram-canvas-node");
+    expect(nodeCard).toBeInstanceOf(HTMLElement);
+
+    fireEvent(nodeCard as HTMLElement, pointerEvent("pointerdown", 1, 10, 10));
+    fireEvent(nodeCard as HTMLElement, pointerEvent("pointermove", 1, 50, 30));
+    fireEvent(nodeCard as HTMLElement, pointerEvent("pointerup", 1, 50, 30));
+
+    await waitFor(() => expect(writeMarkdownFile).toHaveBeenCalledWith({
+      content: expect.stringContaining("x: 160"),
+      expectedContent: diagramContent,
+      path: "関係図 6.md"
+    }), { timeout: 2000 });
+    await waitFor(() => expect(getWorkspaceState).toHaveBeenCalledTimes(2));
+    await waitFor(() => {
+      expect(screen.queryByText("図解ファイルはまだありません。")).not.toBeInTheDocument();
+      expect(document.querySelector(".diagram-sidebar-file-list")).toHaveTextContent("関係図 6");
+    });
+  });
+
   it("Diagramサイドバーから作成したRelationshipファイルへ初期本文を書き込んで開く", async () => {
     const writeMarkdownFile = vi.fn().mockResolvedValue({ ok: true, value: undefined });
     const getWorkspaceState = vi.fn()
