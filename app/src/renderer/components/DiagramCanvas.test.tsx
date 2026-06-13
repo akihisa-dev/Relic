@@ -194,6 +194,7 @@ describe("DiagramCanvas", () => {
 
     const selectedWhy = screen.getByDisplayValue("流入減少").closest(".why-tree-node-shell");
     expect(selectedWhy).toBeInstanceOf(HTMLElement);
+    expect(selectedWhy).toHaveClass("why-tree-node-shell--menu-open");
     expect((selectedWhy as HTMLElement).querySelector(".why-tree-node-menu")).toBeInTheDocument();
     expect(container.querySelectorAll(".why-tree-node-menu")).toHaveLength(1);
   });

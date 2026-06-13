@@ -663,7 +663,12 @@ function WhyTreeEditor({
                 selected={selection}
               />
               <div className="why-tree-main-column">
-                <div className="why-tree-node-shell">
+                <div
+                  className={[
+                    "why-tree-node-shell",
+                    isSameWhyTreeSelection(selection, { kind: item.role, path: item.path }) ? "why-tree-node-shell--menu-open" : ""
+                  ].filter(Boolean).join(" ")}
+                >
                   <div
                     className={[
                       "why-tree-main-node",
