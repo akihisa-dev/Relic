@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import {
   addRelicDiagramLine,
   addRelicDiagramNodeForFile,
+  addRelicWhyTreeSupplement,
+  addRelicWhyTreeWhy,
   diagramTypeFromMarkdownContent,
   isRelicDiagramMarkdownContent,
   moveRelicDiagramNode,
@@ -12,7 +14,8 @@ import {
   replaceRelicDiagramNodeFileReferences,
   serializeRelicDiagramMarkdown,
   updateRelicDiagramLineLabel,
-  updateRelicDiagramNodeRole,
+  updateRelicWhyTreeSupplement,
+  updateRelicWhyTreeTitle,
   type RelicDiagramDocument
 } from "./diagramMarkdown";
 
@@ -46,7 +49,36 @@ const relationshipContent = [
 const whyTreeContent = [
   "---",
   "type: why-tree",
-  "title: 原因分析",
+  "title: 売上低下分析",
+  "---",
+  "",
+  "phenomenon:",
+  "  title: 売上低下",
+  "  facts:",
+  "    - 市場縮小",
+  "  solutions:",
+  "    - 新市場開拓",
+  "  actions:",
+  "    - 調査実施",
+  "  why:",
+  "    title: 流入減少",
+  "    facts:",
+  "      - SEO順位低下",
+  "    solutions:",
+  "      - SEO改善",
+  "    actions:",
+  "      - 記事改修",
+  "    why:",
+  "      title: コンテンツ老朽化",
+  "      facts: []",
+  "      solutions: []",
+  "      actions: []",
+  ""
+].join("\n");
+
+const relationshipLikeWhyTreeContent = [
+  "---",
+  "type: why-tree",
   "---",
   "",
   "nodes:",
@@ -57,18 +89,7 @@ const whyTreeContent = [
   "    y: 80",
   "    width: 180",
   "    height: 80",
-  "  - id: node-2",
-  "    file: cause.md",
-  "    role: why",
-  "    x: 380",
-  "    y: 80",
-  "    width: 180",
-  "    height: 80",
-  "lines:",
-  "  - id: line-1",
-  "    from: node-1",
-  "    to: node-2",
-  "    label: なぜ",
+  "lines: []",
   ""
 ].join("\n");
 
@@ -76,7 +97,7 @@ describe("isRelicDiagramMarkdownContent", () => {
   it("relationshipとwhy-treeをDiagramとして扱い、type: mapは扱わない", () => {
     expect(isRelicDiagramMarkdownContent(relationshipContent)).toBe(true);
     expect(isRelicDiagramMarkdownContent(whyTreeContent)).toBe(true);
-    expect(isRelicDiagramMarkdownContent("type: map\nnodes: []")).toBe(false);
+    expect(isRelicDiagramMarkdownContent("---\ntype: map\n---\n\nnodes: []")).toBe(false);
     expect(diagramTypeFromMarkdownContent(relationshipContent)).toBe("relationship");
     expect(diagramTypeFromMarkdownContent(whyTreeContent)).toBe("why-tree");
   });
@@ -102,10 +123,42 @@ describe("parseRelicDiagramMarkdown", () => {
     });
   });
 
+  it("why-treeからPhenomenon、Why Chain、補助要素を読み込む", () => {
+    const parsed = parseRelicDiagramMarkdown(whyTreeContent);
+
+    expect(parsed).toMatchObject({
+      ok: true,
+      value: {
+        type: "why-tree",
+        title: "売上低下分析",
+        phenomenon: {
+          title: "売上低下",
+          facts: ["市場縮小"],
+          solutions: ["新市場開拓"],
+          actions: ["調査実施"],
+          why: {
+            title: "流入減少",
+            facts: ["SEO順位低下"],
+            solutions: ["SEO改善"],
+            actions: ["記事改修"],
+            why: {
+              title: "コンテンツ老朽化"
+            }
+          }
+        }
+      }
+    });
+  });
+
   it("壊れたDiagram Markdownを拒否する", () => {
     expect(parseRelicDiagramMarkdown("---\ntype: relationship\n---\n\nnotes: body").ok).toBe(false);
     expect(parseRelicDiagramMarkdown("---\ntype: relationship\n---\n\nnodes:\n  - id: node-1\n    file: ../outside.md\n    x: 0\n    y: 0\n    width: 100\n    height: 80").ok).toBe(false);
     expect(parseRelicDiagramMarkdown("---\ntype: relationship\n---\n\nnodes:\n  - id: node-1\n    file: a.md\n    x: 0\n    y: 0\n    width: 100\n    height: 80\nlines:\n  - id: line-1\n    from: node-1\n    to: node-1").ok).toBe(false);
+  });
+
+  it("why-treeではRelationship型のnodes/linesやphenomenon欠落を拒否する", () => {
+    expect(parseRelicDiagramMarkdown(relationshipLikeWhyTreeContent).ok).toBe(false);
+    expect(parseRelicDiagramMarkdown("---\ntype: why-tree\n---\n\nwhy:\n  title: 原因").ok).toBe(false);
   });
 
   it("relationshipでは循環と多対多を許可する", () => {
@@ -174,6 +227,23 @@ describe("serializeRelicDiagramMarkdown", () => {
     expect(serialized.ok ? serialized.value : "").toContain("title: 関係図");
     expect(serialized.ok ? parseRelicDiagramMarkdown(serialized.value).ok : false).toBe(true);
   });
+
+  it("why-treeをMarkdownへ書き戻し、完全復元できる", () => {
+    const parsed = parseRelicDiagramMarkdown(whyTreeContent);
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+
+    const serialized = serializeRelicDiagramMarkdown(parsed.value);
+    expect(serialized.ok).toBe(true);
+    if (!serialized.ok) return;
+
+    expect(serialized.value).toContain("type: why-tree");
+    expect(serialized.value).toContain("phenomenon:");
+    expect(serialized.value).toContain("title: 流入減少");
+    expect(serialized.value).not.toContain("nodes:");
+    expect(serialized.value).not.toContain("lines:");
+    expect(parseRelicDiagramMarkdown(serialized.value)).toEqual(parsed);
+  });
 });
 
 describe("relationship operations", () => {
@@ -193,11 +263,7 @@ describe("relationship operations", () => {
     expect(moved.ok ? moved.value.content : "").toContain("x: 240");
     expect(moved.ok ? moved.value.content : "").toContain("y: 161");
 
-    const addedLine = addRelicDiagramLine(
-      parseRelicDiagramMarkdown(relationshipContent).ok ? serializeWithoutLines(relationshipContent) : relationshipContent,
-      "node-1",
-      "node-2"
-    );
+    const addedLine = addRelicDiagramLine(serializeRelationshipWithoutLines(relationshipContent), "node-1", "node-2");
     expect(addedLine.ok ? addedLine.value.line : null).toMatchObject({ from: "node-1", to: "node-2" });
 
     const removedNode = removeRelicDiagramNode(relationshipContent, "node-1");
@@ -209,57 +275,76 @@ describe("relationship operations", () => {
     const updatedLabel = updateRelicDiagramLineLabel(relationshipContent, "line-1", "親友");
     expect(updatedLabel.ok ? updatedLabel.value.content : "").toContain("label: 親友");
   });
+
+  it("why-treeにRelationship操作を適用しない", () => {
+    expect(addRelicDiagramNodeForFile(whyTreeContent, "memo.md").ok).toBe(false);
+    expect(addRelicDiagramLine(whyTreeContent, "node-1", "node-2").ok).toBe(false);
+    expect(moveRelicDiagramNode(whyTreeContent, "node-1", 1, 2).ok).toBe(false);
+    expect(removeRelicDiagramNode(whyTreeContent, "node-1").ok).toBe(false);
+    expect(removeRelicDiagramLine(whyTreeContent, "line-1").ok).toBe(false);
+    expect(updateRelicDiagramLineLabel(whyTreeContent, "line-1", "label").ok).toBe(false);
+
+    const replaced = replaceRelicDiagramNodeFileReferences(whyTreeContent, "file", "a.md", "b.md");
+    expect(replaced.ok ? replaced.value : null).toEqual({ content: whyTreeContent, count: 0 });
+  });
 });
 
-describe("why-tree", () => {
-  it("roleを保存・復元し、role変更をMarkdownへ反映する", () => {
-    const parsed = parseRelicDiagramMarkdown(whyTreeContent);
-    expect(parsed.ok ? parsed.value.nodes[0]?.role : null).toBe("phenomenon");
-    expect(parsed.ok ? parsed.value.nodes[1]?.role : null).toBe("why");
+describe("why-tree operations", () => {
+  it("PhenomenonとWhyのtitleをMarkdownへ保存し復元する", () => {
+    const updatedPhenomenon = updateRelicWhyTreeTitle(whyTreeContent, [], "売上が下がった");
+    expect(updatedPhenomenon.ok ? updatedPhenomenon.value.content : "").toContain("title: 売上が下がった");
 
-    const updated = updateRelicDiagramNodeRole(whyTreeContent, "node-2", "fact");
-    expect(updated.ok).toBe(true);
-    expect(updated.ok ? updated.value.content : "").toContain("role: fact");
-    expect(updated.ok ? parseRelicDiagramMarkdown(updated.value.content).ok : false).toBe(true);
+    const updatedWhy = updateRelicWhyTreeTitle(updatedPhenomenon.ok ? updatedPhenomenon.value.content : whyTreeContent, [0], "流入が減った");
+    expect(updatedWhy.ok ? updatedWhy.value.tree.phenomenon.why?.title : null).toBe("流入が減った");
+    expect(updatedWhy.ok ? parseRelicDiagramMarkdown(updatedWhy.value.content).ok : false).toBe(true);
   });
 
-  it("循環するLineを拒否する", () => {
-    const cyclic = addRelicDiagramLine(whyTreeContent, "node-2", "node-1");
-    expect(cyclic.ok).toBe(false);
-  });
+  it("Why ChainにWhyを追加し、補助要素をWhy Chainへ混ぜない", () => {
+    const added = addRelicWhyTreeWhy(whyTreeContent, [0, 0]);
 
-  it("Node追加時にroleをMarkdownへ保存する", () => {
-    const added = addRelicDiagramNodeForFile(whyTreeContent, "fact.md");
     expect(added.ok).toBe(true);
-    expect(added.ok ? added.value.node.role : null).toBe("why");
-    expect(added.ok ? added.value.content : "").toContain("role: why");
+    if (!added.ok) return;
+    expect(added.value.tree.phenomenon.why?.why?.title).toBe("コンテンツ老朽化");
+    expect(added.value.tree.phenomenon.why?.why?.why?.title).toBe("なぜ？");
+    expect(added.value.content).not.toContain("role:");
+    expect(added.value.content).not.toContain("nodes:");
+  });
 
-    const rootOnly = [
-      "---",
-      "type: why-tree",
-      "---",
-      "",
-      "nodes:",
-      "  - id: node-1",
-      "    file: problem.md",
-      "    role: phenomenon",
-      "    x: 120",
-      "    y: 80",
-      "    width: 180",
-      "    height: 80",
-      "lines: []",
-      ""
-    ].join("\n");
-    const next = addRelicDiagramNodeForFile(rootOnly, "cause.md");
+  it("Fact、Solution、Actionを追加・更新し、Markdownから復元する", () => {
+    const withFact = addRelicWhyTreeSupplement(whyTreeContent, [0], "fact");
+    expect(withFact.ok ? withFact.value.tree.phenomenon.why?.facts : []).toContain("根拠");
 
-    expect(next.ok).toBe(true);
-    expect(next.ok ? next.value.node.role : null).toBe("why");
+    const withSolution = addRelicWhyTreeSupplement(withFact.ok ? withFact.value.content : whyTreeContent, [0], "solution");
+    expect(withSolution.ok ? withSolution.value.tree.phenomenon.why?.solutions : []).toContain("解決策");
+
+    const withAction = addRelicWhyTreeSupplement(withSolution.ok ? withSolution.value.content : whyTreeContent, [0], "action");
+    expect(withAction.ok ? withAction.value.tree.phenomenon.why?.actions : []).toContain("実行項目");
+
+    const updated = updateRelicWhyTreeSupplement(withAction.ok ? withAction.value.content : whyTreeContent, [0], "action", 1, "記事改修を実行");
+    expect(updated.ok ? updated.value.tree.phenomenon.why?.actions[1] : null).toBe("記事改修を実行");
+    expect(updated.ok ? parseRelicDiagramMarkdown(updated.value.content) : null).toMatchObject({
+      ok: true,
+      value: {
+        type: "why-tree",
+        phenomenon: {
+          why: {
+            actions: ["記事改修", "記事改修を実行"]
+          }
+        }
+      }
+    });
+  });
+
+  it("Why Chainのパスは単一直列だけを許可し、横断リンクや循環を表現しない", () => {
+    expect(addRelicWhyTreeWhy(whyTreeContent, [1]).ok).toBe(false);
+    expect(addRelicWhyTreeSupplement(whyTreeContent, [0, 1], "fact").ok).toBe(false);
+    expect(updateRelicWhyTreeTitle(whyTreeContent, [0, 0, 0], "存在しないWhy").ok).toBe(false);
   });
 });
 
-function serializeWithoutLines(content: string): string {
+function serializeRelationshipWithoutLines(content: string): string {
   const parsed = parseRelicDiagramMarkdown(content);
-  if (!parsed.ok) return content;
+  if (!parsed.ok || parsed.value.type !== "relationship") return content;
 
   const serialized = serializeRelicDiagramMarkdown({
     ...parsed.value,

@@ -1,4 +1,5 @@
 import {
+  type ChangeEvent as ReactChangeEvent,
   type FormEvent as ReactFormEvent,
   type KeyboardEvent as ReactKeyboardEvent,
   type MouseEvent as ReactMouseEvent,
@@ -11,17 +12,21 @@ import {
 
 import {
   addRelicDiagramLine,
+  addRelicWhyTreeSupplement,
+  addRelicWhyTreeWhy,
   moveRelicDiagramNode,
   parseRelicDiagramMarkdown,
-  relicWhyTreeRoles,
   removeRelicDiagramLine,
   removeRelicDiagramNode,
-  updateRelicDiagramNodeRole,
   updateRelicDiagramLineLabel,
-  type RelicDiagramDocument,
+  updateRelicWhyTreeSupplement,
+  updateRelicWhyTreeTitle,
   type RelicDiagramLine,
   type RelicDiagramNode,
-  type RelicWhyTreeRole
+  type RelicRelationshipDiagramDocument,
+  type RelicWhyTreeDocument,
+  type RelicWhyTreeNode,
+  type RelicWhyTreeSupplementKind
 } from "../../shared/diagramMarkdown";
 import { useT } from "../i18n";
 
@@ -57,19 +62,22 @@ interface DiagramCanvasLineLayout {
   y2: number;
 }
 
+interface WhyTreeChainItem {
+  node: RelicWhyTreeNode;
+  path: number[];
+  role: "phenomenon" | "why";
+}
+
+type WhyTreeSelection =
+  | { kind: "phenomenon" | "why"; path: number[] }
+  | { index: number; kind: RelicWhyTreeSupplementKind; path: number[] };
+
 const canvasPadding = 180;
 const minCanvasWidth = 900;
 const minCanvasHeight = 620;
 const minZoom = 0.35;
 const maxZoom = 2.5;
 const connectActivationDistance = 4;
-const roleLabelKeys: Record<RelicWhyTreeRole, "diagram.role.phenomenon" | "diagram.role.why" | "diagram.role.fact" | "diagram.role.solution" | "diagram.role.action"> = {
-  action: "diagram.role.action",
-  fact: "diagram.role.fact",
-  phenomenon: "diagram.role.phenomenon",
-  solution: "diagram.role.solution",
-  why: "diagram.role.why"
-};
 
 interface DragState {
   currentX: number;
@@ -119,12 +127,6 @@ interface LabelEditState {
 
 export function DiagramCanvas({ content, fileName, onChange }: DiagramCanvasProps): ReactElement {
   const t = useT();
-  const [connect, setConnect] = useState<ConnectState | null>(null);
-  const [drag, setDrag] = useState<DragState | null>(null);
-  const [labelEdit, setLabelEdit] = useState<LabelEditState | null>(null);
-  const [pan, setPan] = useState<PanState | null>(null);
-  const [selection, setSelection] = useState<DiagramSelection | null>(null);
-  const [viewport, setViewport] = useState<ViewportState>({ panX: 0, panY: 0, zoom: 1 });
   const parsed = useMemo(() => parseRelicDiagramMarkdown(content), [content]);
 
   if (!parsed.ok) {
@@ -135,7 +137,28 @@ export function DiagramCanvas({ content, fileName, onChange }: DiagramCanvasProp
     );
   }
 
-  const layout = buildDiagramCanvasLayout(parsed.value);
+  return parsed.value.type === "why-tree" ? (
+    <WhyTreeEditor content={content} fileName={fileName} onChange={onChange} tree={parsed.value} />
+  ) : (
+    <RelationshipCanvas content={content} diagram={parsed.value} fileName={fileName} onChange={onChange} />
+  );
+}
+
+function RelationshipCanvas({
+  content,
+  diagram,
+  fileName,
+  onChange
+}: DiagramCanvasProps & { diagram: RelicRelationshipDiagramDocument }): ReactElement {
+  const t = useT();
+  const [connect, setConnect] = useState<ConnectState | null>(null);
+  const [drag, setDrag] = useState<DragState | null>(null);
+  const [labelEdit, setLabelEdit] = useState<LabelEditState | null>(null);
+  const [pan, setPan] = useState<PanState | null>(null);
+  const [selection, setSelection] = useState<DiagramSelection | null>(null);
+  const [viewport, setViewport] = useState<ViewportState>({ panX: 0, panY: 0, zoom: 1 });
+
+  const layout = buildDiagramCanvasLayout(diagram);
   const displayNodes = layout.nodes.map((node) => {
     if (drag?.nodeId !== node.node.id) return node;
 
@@ -149,7 +172,7 @@ export function DiagramCanvas({ content, fileName, onChange }: DiagramCanvasProp
       y: drag.currentY - layout.originY
     };
   });
-  const displayLines = buildLineLayouts(parsed.value.lines, displayNodes);
+  const displayLines = buildLineLayouts(diagram.lines, displayNodes);
   const previewLine = connect?.isActive ? {
     currentX: connect.currentX,
     currentY: connect.currentY,
@@ -430,15 +453,6 @@ export function DiagramCanvas({ content, fileName, onChange }: DiagramCanvasProp
     event.preventDefault();
     deleteSelection();
   };
-  const changeNodeRole = (nodeId: string, role: RelicWhyTreeRole): void => {
-    if (!onChange) return;
-
-    const updated = updateRelicDiagramNodeRole(content, nodeId, role);
-    if (updated.ok) {
-      onChange(updated.value.content);
-      setSelection({ id: updated.value.node.id, type: "node" });
-    }
-  };
 
   return (
     <div
@@ -574,19 +588,6 @@ export function DiagramCanvas({ content, fileName, onChange }: DiagramCanvasProp
               }}
               title={node.file}
             >
-              {parsed.value.type === "why-tree" && node.role ? (
-                <select
-                  aria-label={t("diagram.roleSelect")}
-                  className="diagram-canvas-node-role"
-                  onChange={(event) => changeNodeRole(node.id, event.currentTarget.value as RelicWhyTreeRole)}
-                  onPointerDown={(event) => event.stopPropagation()}
-                  value={node.role}
-                >
-                  {relicWhyTreeRoles.map((role) => (
-                    <option key={role} value={role}>{t(roleLabelKeys[role])}</option>
-                  ))}
-                </select>
-              ) : null}
               <span className="diagram-canvas-node-name">{nodeFileName(node.file)}</span>
               {selection?.type === "node" && selection.id === node.id ? (
                 <span className="diagram-canvas-node-outline-hitbox" aria-hidden="true">
@@ -608,9 +609,176 @@ export function DiagramCanvas({ content, fileName, onChange }: DiagramCanvasProp
   );
 }
 
+function WhyTreeEditor({
+  content,
+  fileName,
+  onChange,
+  tree
+}: DiagramCanvasProps & { tree: RelicWhyTreeDocument }): ReactElement {
+  const t = useT();
+  const chain = useMemo(() => buildWhyTreeChain(tree), [tree]);
+  const [selection, setSelection] = useState<WhyTreeSelection>({ kind: "phenomenon", path: [] });
+  const selectedCanAdd = selection.kind === "phenomenon" || selection.kind === "why";
+  const selectedPath = selectedCanAdd ? selection.path : null;
+
+  const applyUpdate = (updated: ReturnType<typeof addRelicWhyTreeWhy>): void => {
+    if (updated.ok) {
+      onChange?.(updated.value.content);
+    }
+  };
+  const selectMainNode = (item: WhyTreeChainItem): void => {
+    setSelection({ kind: item.role, path: item.path });
+  };
+  const addWhy = (): void => {
+    if (!selectedPath || !onChange) return;
+    applyUpdate(addRelicWhyTreeWhy(content, selectedPath));
+  };
+  const addSupplement = (kind: RelicWhyTreeSupplementKind): void => {
+    if (!selectedPath || !onChange) return;
+    applyUpdate(addRelicWhyTreeSupplement(content, selectedPath, kind));
+  };
+  const changeMainTitle = (path: number[], value: string): void => {
+    if (!onChange) return;
+    applyUpdate(updateRelicWhyTreeTitle(content, path, value));
+  };
+  const changeSupplement = (
+    path: number[],
+    kind: RelicWhyTreeSupplementKind,
+    index: number,
+    event: ReactChangeEvent<HTMLInputElement>
+  ): void => {
+    if (!onChange) return;
+    applyUpdate(updateRelicWhyTreeSupplement(content, path, kind, index, event.currentTarget.value));
+  };
+  const selectSupplement = (path: number[], kind: RelicWhyTreeSupplementKind, index: number): void => {
+    setSelection({ index, kind, path });
+  };
+
+  return (
+    <div aria-label={fileName} className="why-tree-editor" role="tree">
+      <div className="why-tree-content">
+        {chain.map((item, index) => (
+          <div className="why-tree-step" key={item.path.join(".") || "phenomenon"}>
+            <div className="why-tree-row">
+              <SupplementColumn
+                kind="fact"
+                node={item.node}
+                onChange={changeSupplement}
+                onSelect={selectSupplement}
+                path={item.path}
+                selected={selection}
+              />
+              <div className="why-tree-main-column">
+                <button
+                  className={[
+                    "why-tree-main-node",
+                    `why-tree-main-node--${item.role}`,
+                    isSameWhyTreeSelection(selection, { kind: item.role, path: item.path }) ? "why-tree-item--selected" : ""
+                  ].filter(Boolean).join(" ")}
+                  onClick={() => selectMainNode(item)}
+                  type="button"
+                >
+                  <span className="why-tree-role-label">{t(whyTreeRoleLabelKey(item.role))}</span>
+                  <input
+                    aria-label={t(whyTreeTitleInputKey(item.role))}
+                    onChange={(event) => changeMainTitle(item.path, event.currentTarget.value)}
+                    onClick={(event) => event.stopPropagation()}
+                    value={item.node.title}
+                  />
+                </button>
+                {index < chain.length - 1 ? (
+                  <div aria-hidden="true" className="why-tree-chain-connector">
+                    <span />
+                    <strong>{t("diagram.whyTree.chainLabel")}</strong>
+                  </div>
+                ) : null}
+              </div>
+              <div className="why-tree-support-column why-tree-support-column--right">
+                <SupplementColumn
+                  kind="solution"
+                  node={item.node}
+                  onChange={changeSupplement}
+                  onSelect={selectSupplement}
+                  path={item.path}
+                  selected={selection}
+                />
+                <SupplementColumn
+                  kind="action"
+                  node={item.node}
+                  onChange={changeSupplement}
+                  onSelect={selectSupplement}
+                  path={item.path}
+                  selected={selection}
+                />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+      {selectedCanAdd && selectedPath ? (
+        <div className="why-tree-actions-bar" aria-label={t("diagram.whyTree.addMenu")}>
+          <button onClick={addWhy} type="button">{t("diagram.whyTree.addWhy")}</button>
+          <button onClick={() => addSupplement("fact")} type="button">{t("diagram.whyTree.addFact")}</button>
+          <button onClick={() => addSupplement("solution")} type="button">{t("diagram.whyTree.addSolution")}</button>
+          <button onClick={() => addSupplement("action")} type="button">{t("diagram.whyTree.addAction")}</button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function SupplementColumn({
+  kind,
+  node,
+  onChange,
+  onSelect,
+  path,
+  selected
+}: {
+  kind: RelicWhyTreeSupplementKind;
+  node: RelicWhyTreeNode;
+  onChange: (path: number[], kind: RelicWhyTreeSupplementKind, index: number, event: ReactChangeEvent<HTMLInputElement>) => void;
+  onSelect: (path: number[], kind: RelicWhyTreeSupplementKind, index: number) => void;
+  path: number[];
+  selected: WhyTreeSelection;
+}): ReactElement {
+  const t = useT();
+  const values = whyTreeSupplementValues(node, kind);
+
+  return (
+    <section className={`why-tree-support-column why-tree-support-column--${kind}`} aria-label={t(whyTreeSupplementSectionKey(kind))}>
+      <span className="why-tree-support-heading">{t(whyTreeSupplementSectionKey(kind))}</span>
+      {values.length === 0 ? (
+        <span className="why-tree-support-empty">{t("diagram.whyTree.emptySupplement")}</span>
+      ) : values.map((value, index) => (
+        <label
+          className={[
+            "why-tree-support-item",
+            `why-tree-support-item--${kind}`,
+            isSameWhyTreeSelection(selected, { index, kind, path }) ? "why-tree-item--selected" : ""
+          ].filter(Boolean).join(" ")}
+          key={`${kind}-${path.join(".")}-${index}`}
+        >
+          <input
+            aria-label={t(whyTreeSupplementInputKey(kind))}
+            onChange={(event) => onChange(path, kind, index, event)}
+            onFocus={() => onSelect(path, kind, index)}
+            value={value}
+          />
+        </label>
+      ))}
+    </section>
+  );
+}
+
 export function diagramCanvasStatus(content: string, t: ReturnType<typeof useT>): string {
   const parsed = parseRelicDiagramMarkdown(content);
   if (!parsed.ok) return t("diagram.invalidStatus");
+
+  if (parsed.value.type === "why-tree") {
+    const counts = countWhyTreeItems(parsed.value);
+    return t("diagram.whyTreeStatus", counts);
+  }
 
   return t("diagram.status", {
     lines: parsed.value.lines.length,
@@ -618,7 +786,7 @@ export function diagramCanvasStatus(content: string, t: ReturnType<typeof useT>)
   });
 }
 
-function buildDiagramCanvasLayout(diagram: RelicDiagramDocument): DiagramCanvasLayout {
+function buildDiagramCanvasLayout(diagram: RelicRelationshipDiagramDocument): DiagramCanvasLayout {
   if (diagram.nodes.length === 0) {
     return {
       height: minCanvasHeight,
@@ -679,6 +847,83 @@ function buildLineLayouts(
       y2
     }];
   });
+}
+
+function buildWhyTreeChain(tree: RelicWhyTreeDocument): WhyTreeChainItem[] {
+  const chain: WhyTreeChainItem[] = [{
+    node: tree.phenomenon,
+    path: [],
+    role: "phenomenon"
+  }];
+  let current = tree.phenomenon.why;
+  let path = [0];
+
+  while (current) {
+    chain.push({
+      node: current,
+      path,
+      role: "why"
+    });
+    current = current.why;
+    path = [...path, 0];
+  }
+
+  return chain;
+}
+
+function countWhyTreeItems(tree: RelicWhyTreeDocument): {
+  actions: number;
+  facts: number;
+  solutions: number;
+  whys: number;
+} {
+  return buildWhyTreeChain(tree).reduce((counts, item) => ({
+    actions: counts.actions + item.node.actions.length,
+    facts: counts.facts + item.node.facts.length,
+    solutions: counts.solutions + item.node.solutions.length,
+    whys: counts.whys + (item.role === "why" ? 1 : 0)
+  }), { actions: 0, facts: 0, solutions: 0, whys: 0 });
+}
+
+function whyTreeSupplementValues(node: RelicWhyTreeNode, kind: RelicWhyTreeSupplementKind): string[] {
+  if (kind === "fact") return node.facts;
+  if (kind === "solution") return node.solutions;
+  return node.actions;
+}
+
+function whyTreeRoleLabelKey(role: "phenomenon" | "why"): "diagram.whyTree.phenomenon" | "diagram.whyTree.why" {
+  return role === "phenomenon" ? "diagram.whyTree.phenomenon" : "diagram.whyTree.why";
+}
+
+function whyTreeTitleInputKey(role: "phenomenon" | "why"): "diagram.whyTree.phenomenonTitle" | "diagram.whyTree.whyTitle" {
+  return role === "phenomenon" ? "diagram.whyTree.phenomenonTitle" : "diagram.whyTree.whyTitle";
+}
+
+function whyTreeSupplementSectionKey(
+  kind: RelicWhyTreeSupplementKind
+): "diagram.whyTree.facts" | "diagram.whyTree.solutions" | "diagram.whyTree.actions" {
+  if (kind === "fact") return "diagram.whyTree.facts";
+  if (kind === "solution") return "diagram.whyTree.solutions";
+  return "diagram.whyTree.actions";
+}
+
+function whyTreeSupplementInputKey(
+  kind: RelicWhyTreeSupplementKind
+): "diagram.whyTree.factInput" | "diagram.whyTree.solutionInput" | "diagram.whyTree.actionInput" {
+  if (kind === "fact") return "diagram.whyTree.factInput";
+  if (kind === "solution") return "diagram.whyTree.solutionInput";
+  return "diagram.whyTree.actionInput";
+}
+
+function isSameWhyTreeSelection(selection: WhyTreeSelection, target: WhyTreeSelection): boolean {
+  if (selection.kind !== target.kind) return false;
+  if (!samePath(selection.path, target.path)) return false;
+
+  return ("index" in selection ? selection.index : undefined) === ("index" in target ? target.index : undefined);
+}
+
+function samePath(left: number[], right: number[]): boolean {
+  return left.length === right.length && left.every((item, index) => item === right[index]);
 }
 
 function nodeFileName(filePath: string): string {

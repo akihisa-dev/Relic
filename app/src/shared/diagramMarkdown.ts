@@ -5,21 +5,30 @@ import { fail, ok, type RelicResult } from "./result";
 export const relicDiagramTypes = ["relationship", "why-tree"] as const;
 export type RelicDiagramType = typeof relicDiagramTypes[number];
 
-export const relicWhyTreeRoles = ["phenomenon", "why", "fact", "solution", "action"] as const;
-export type RelicWhyTreeRole = typeof relicWhyTreeRoles[number];
+export const relicWhyTreeSupplementKinds = ["fact", "solution", "action"] as const;
+export type RelicWhyTreeSupplementKind = typeof relicWhyTreeSupplementKinds[number];
 
-export interface RelicDiagramDocument {
+export type RelicWhyTreeSelectableKind = "phenomenon" | "why" | RelicWhyTreeSupplementKind;
+
+export interface RelicRelationshipDiagramDocument {
   lines: RelicDiagramLine[];
   nodes: RelicDiagramNode[];
   title?: string;
-  type: RelicDiagramType;
+  type: "relationship";
 }
+
+export interface RelicWhyTreeDocument {
+  phenomenon: RelicWhyTreeNode;
+  title?: string;
+  type: "why-tree";
+}
+
+export type RelicDiagramDocument = RelicRelationshipDiagramDocument | RelicWhyTreeDocument;
 
 export interface RelicDiagramNode {
   file: string;
   height: number;
   id: string;
-  role?: RelicWhyTreeRole;
   width: number;
   x: number;
   y: number;
@@ -30,6 +39,14 @@ export interface RelicDiagramLine {
   id: string;
   label: string;
   to: string;
+}
+
+export interface RelicWhyTreeNode {
+  actions: string[];
+  facts: string[];
+  solutions: string[];
+  title: string;
+  why?: RelicWhyTreeNode;
 }
 
 export interface RelicDiagramReferenceReplacement {
@@ -64,9 +81,9 @@ export interface RelicDiagramLineLabelUpdate {
   line: RelicDiagramLine;
 }
 
-export interface RelicDiagramNodeRoleUpdate {
+export interface RelicWhyTreeUpdate {
   content: string;
-  node: RelicDiagramNode;
+  tree: RelicWhyTreeDocument;
 }
 
 interface DiagramFrontmatter {
@@ -79,11 +96,12 @@ interface ParsedDiagramMarkdownParts {
   frontmatter: DiagramFrontmatter;
 }
 
-const diagramBodyKeys = new Set(["nodes", "lines"]);
+const relationshipBodyKeys = new Set(["nodes", "lines"]);
 const relationshipNodeKeys = new Set(["id", "file", "x", "y", "width", "height"]);
-const whyTreeNodeKeys = new Set(["id", "file", "role", "x", "y", "width", "height"]);
 const diagramLineKeys = new Set(["id", "from", "to", "label"]);
 const diagramFrontmatterKeys = new Set(["type", "title"]);
+const whyTreeBodyKeys = new Set(["phenomenon"]);
+const whyTreeNodeKeys = new Set(["title", "facts", "solutions", "actions", "why"]);
 const defaultNodeWidth = 180;
 const defaultNodeHeight = 80;
 
@@ -104,8 +122,11 @@ export const emptyRelicWhyTreeMarkdownContent = [
   "title: 原因分析",
   "---",
   "",
-  "nodes: []",
-  "lines: []",
+  "phenomenon:",
+  "  title: 問題・現象",
+  "  facts: []",
+  "  solutions: []",
+  "  actions: []",
   ""
 ].join("\n");
 
@@ -129,6 +150,24 @@ export function parseRelicDiagramMarkdown(content: string): RelicResult<RelicDia
   const parts = parseDiagramMarkdownParts(content);
   if (!parts.ok) return parts;
 
+  return parts.value.frontmatter.type === "why-tree"
+    ? parseRelicWhyTreeMarkdown(content)
+    : parseRelicRelationshipMarkdown(content);
+}
+
+export function serializeRelicDiagramMarkdown(document: RelicDiagramDocument): RelicResult<string> {
+  return document.type === "why-tree"
+    ? serializeRelicWhyTreeMarkdown(document)
+    : serializeRelicRelationshipMarkdown(document);
+}
+
+export function parseRelicRelationshipMarkdown(content: string): RelicResult<RelicRelationshipDiagramDocument> {
+  const parts = parseDiagramMarkdownParts(content);
+  if (!parts.ok) return parts;
+  if (parts.value.frontmatter.type !== "relationship") {
+    return fail("DIAGRAM_TYPE_INVALID", "relationship Diagramではありません。");
+  }
+
   let body: unknown;
   try {
     body = parts.value.body.trim().length > 0
@@ -143,35 +182,23 @@ export function parseRelicDiagramMarkdown(content: string): RelicResult<RelicDia
     return fail("DIAGRAM_FORMAT_INVALID", "図解ファイルの形式が正しくありません。");
   }
 
-  return validateRelicDiagramDocument({
+  return validateRelicRelationshipDocument({
     ...body,
     title: parts.value.frontmatter.title,
-    type: parts.value.frontmatter.type
+    type: "relationship"
   });
 }
 
-export function serializeRelicDiagramMarkdown(document: RelicDiagramDocument): RelicResult<string> {
-  const validated = validateRelicDiagramDocument(document);
+export function serializeRelicRelationshipMarkdown(document: RelicRelationshipDiagramDocument): RelicResult<string> {
+  const validated = validateRelicRelationshipDocument(document);
   if (!validated.ok) return validated;
 
-  const frontmatter = yaml.dump(
-    {
-      type: validated.value.type,
-      ...(validated.value.title ? { title: validated.value.title } : {})
-    },
-    {
-      lineWidth: -1,
-      noRefs: true,
-      schema: yaml.JSON_SCHEMA,
-      sortKeys: false
-    }
-  ).trimEnd();
+  const frontmatter = dumpFrontmatter(validated.value.type, validated.value.title);
   const body = yaml.dump(
     {
       nodes: validated.value.nodes.map((node) => ({
         id: node.id,
         file: node.file,
-        ...(validated.value.type === "why-tree" ? { role: node.role } : {}),
         x: node.x,
         y: node.y,
         width: node.width,
@@ -184,15 +211,138 @@ export function serializeRelicDiagramMarkdown(document: RelicDiagramDocument): R
         label: line.label
       }))
     },
-    {
-      lineWidth: -1,
-      noRefs: true,
-      schema: yaml.JSON_SCHEMA,
-      sortKeys: false
-    }
+    yamlDumpOptions()
   ).replace(/\n(\s*)'y':/g, "\n$1y:");
 
   return ok(`---\n${frontmatter}\n---\n\n${body}`);
+}
+
+export function parseRelicWhyTreeMarkdown(content: string): RelicResult<RelicWhyTreeDocument> {
+  const parts = parseDiagramMarkdownParts(content);
+  if (!parts.ok) return parts;
+  if (parts.value.frontmatter.type !== "why-tree") {
+    return fail("DIAGRAM_TYPE_INVALID", "why-tree Diagramではありません。");
+  }
+
+  let body: unknown;
+  try {
+    body = parts.value.body.trim().length > 0
+      ? yaml.load(parts.value.body, { schema: yaml.JSON_SCHEMA })
+      : {};
+  } catch (error) {
+    return fail("WHY_TREE_YAML_INVALID", "Why Treeを読み込めませんでした。", errorDetails(error));
+  }
+
+  if (!isRecord(body)) {
+    return fail("WHY_TREE_FORMAT_INVALID", "Why Treeの形式が正しくありません。");
+  }
+
+  return validateRelicWhyTreeDocument({
+    ...body,
+    title: parts.value.frontmatter.title,
+    type: "why-tree"
+  });
+}
+
+export function serializeRelicWhyTreeMarkdown(document: RelicWhyTreeDocument): RelicResult<string> {
+  const validated = validateRelicWhyTreeDocument(document);
+  if (!validated.ok) return validated;
+
+  const frontmatter = dumpFrontmatter(validated.value.type, validated.value.title);
+  const body = yaml.dump(
+    {
+      phenomenon: serializeWhyTreeNodeValue(validated.value.phenomenon)
+    },
+    yamlDumpOptions()
+  );
+
+  return ok(`---\n${frontmatter}\n---\n\n${body}`);
+}
+
+export function updateRelicWhyTreeTitle(
+  content: string,
+  whyPath: number[],
+  title: string
+): RelicResult<RelicWhyTreeUpdate> {
+  const parsed = parseRelicWhyTreeMarkdown(content);
+  if (!parsed.ok) return parsed;
+
+  const nextTitle = parseWhyTreeText(title);
+  if (!nextTitle.ok) return nextTitle;
+
+  const updated = updateWhyTreeNodeAtPath(parsed.value.phenomenon, whyPath, (node) => ({
+    ...node,
+    title: nextTitle.value
+  }));
+  if (!updated.ok) return updated;
+
+  return serializeWhyTreeUpdate({ ...parsed.value, phenomenon: updated.value });
+}
+
+export function addRelicWhyTreeWhy(content: string, whyPath: number[]): RelicResult<RelicWhyTreeUpdate> {
+  const parsed = parseRelicWhyTreeMarkdown(content);
+  if (!parsed.ok) return parsed;
+
+  const updated = updateWhyTreeNodeAtPath(parsed.value.phenomenon, whyPath, (node) => ({
+    ...node,
+    why: {
+      actions: [],
+      facts: [],
+      solutions: [],
+      title: "なぜ？",
+      ...(node.why ? { why: node.why } : {})
+    }
+  }));
+  if (!updated.ok) return updated;
+
+  return serializeWhyTreeUpdate({ ...parsed.value, phenomenon: updated.value });
+}
+
+export function addRelicWhyTreeSupplement(
+  content: string,
+  whyPath: number[],
+  kind: RelicWhyTreeSupplementKind
+): RelicResult<RelicWhyTreeUpdate> {
+  const parsed = parseRelicWhyTreeMarkdown(content);
+  if (!parsed.ok) return parsed;
+
+  const key = whyTreeSupplementKey(kind);
+  const updated = updateWhyTreeNodeAtPath(parsed.value.phenomenon, whyPath, (node) => ({
+    ...node,
+    [key]: [...node[key], defaultSupplementTitle(kind)]
+  }));
+  if (!updated.ok) return updated;
+
+  return serializeWhyTreeUpdate({ ...parsed.value, phenomenon: updated.value });
+}
+
+export function updateRelicWhyTreeSupplement(
+  content: string,
+  whyPath: number[],
+  kind: RelicWhyTreeSupplementKind,
+  index: number,
+  value: string
+): RelicResult<RelicWhyTreeUpdate> {
+  const parsed = parseRelicWhyTreeMarkdown(content);
+  if (!parsed.ok) return parsed;
+
+  const key = whyTreeSupplementKey(kind);
+  const nextText = parseWhyTreeText(value);
+  if (!nextText.ok) return nextText;
+
+  const updated = updateWhyTreeNodeAtPath(parsed.value.phenomenon, whyPath, (node) => {
+    if (!Number.isInteger(index) || index < 0 || index >= node[key].length) {
+      return fail("WHY_TREE_ITEM_MISSING", "更新する項目が見つかりません。");
+    }
+
+    return ok({
+      ...node,
+      [key]: node[key].map((item, itemIndex) => itemIndex === index ? nextText.value : item)
+    });
+  });
+  if (!updated.ok) return updated;
+
+  return serializeWhyTreeUpdate({ ...parsed.value, phenomenon: updated.value });
 }
 
 export function replaceRelicDiagramNodeFileReferences(
@@ -201,11 +351,11 @@ export function replaceRelicDiagramNodeFileReferences(
   oldPath: string,
   newPath: string
 ): RelicResult<RelicDiagramReferenceReplacement> {
-  if (!isRelicDiagramMarkdownContent(content)) {
+  if (diagramTypeFromMarkdownContent(content) !== "relationship") {
     return ok({ content, count: 0 });
   }
 
-  const parsed = parseRelicDiagramMarkdown(content);
+  const parsed = parseRelicRelationshipMarkdown(content);
   if (!parsed.ok) return parsed;
 
   const replacement = replaceDiagramNodeFilePaths(parsed.value, kind, oldPath, newPath);
@@ -213,7 +363,7 @@ export function replaceRelicDiagramNodeFileReferences(
     return ok({ content, count: 0 });
   }
 
-  const serialized = serializeRelicDiagramMarkdown(replacement.diagram);
+  const serialized = serializeRelicRelationshipMarkdown(replacement.diagram);
   if (!serialized.ok) return serialized;
 
   return ok({
@@ -226,14 +376,14 @@ export function addRelicDiagramNodeForFile(
   content: string,
   filePath: string
 ): RelicResult<RelicDiagramNodeInsertion> {
-  const parsed = parseRelicDiagramMarkdown(content);
+  const parsed = parseRelicRelationshipMarkdown(content);
   if (!parsed.ok) return parsed;
 
   const file = parseNodeFilePath(filePath);
   if (!file.ok) return file;
 
   const node = createNodeForFile(parsed.value, file.value);
-  const serialized = serializeRelicDiagramMarkdown({
+  const serialized = serializeRelicRelationshipMarkdown({
     ...parsed.value,
     nodes: [...parsed.value.nodes, node]
   });
@@ -251,7 +401,7 @@ export function moveRelicDiagramNode(
   x: number,
   y: number
 ): RelicResult<RelicDiagramNodeMove> {
-  const parsed = parseRelicDiagramMarkdown(content);
+  const parsed = parseRelicRelationshipMarkdown(content);
   if (!parsed.ok) return parsed;
 
   const nextX = parseFiniteNumber(x, "DIAGRAM_NODE_X_INVALID", "Nodeの x は数値にしてください。");
@@ -269,46 +419,9 @@ export function moveRelicDiagramNode(
     x: Math.round(nextX.value),
     y: Math.round(nextY.value)
   };
-  const serialized = serializeRelicDiagramMarkdown({
+  const serialized = serializeRelicRelationshipMarkdown({
     ...parsed.value,
     nodes: parsed.value.nodes.map((item) => item.id === nodeId ? nextNode : item)
-  });
-  if (!serialized.ok) return serialized;
-
-  return ok({
-    content: serialized.value,
-    node: nextNode
-  });
-}
-
-export function updateRelicDiagramNodeRole(
-  content: string,
-  nodeId: string,
-  role: RelicWhyTreeRole
-): RelicResult<RelicDiagramNodeRoleUpdate> {
-  const parsed = parseRelicDiagramMarkdown(content);
-  if (!parsed.ok) return parsed;
-  if (parsed.value.type !== "why-tree") {
-    return fail("DIAGRAM_ROLE_UNSUPPORTED", "roleはwhy-treeでだけ変更できます。");
-  }
-
-  const id = parseRequiredText(nodeId, "DIAGRAM_NODE_ID_INVALID", "Nodeの id を指定してください。");
-  if (!id.ok) return id;
-  const nextRole = parseWhyTreeRole(role);
-  if (!nextRole.ok) return nextRole;
-
-  const node = parsed.value.nodes.find((item) => item.id === id.value);
-  if (!node) {
-    return fail("DIAGRAM_NODE_MISSING", "roleを変更するNodeが見つかりません。");
-  }
-
-  const nextNode = {
-    ...node,
-    role: nextRole.value
-  };
-  const serialized = serializeRelicDiagramMarkdown({
-    ...parsed.value,
-    nodes: parsed.value.nodes.map((item) => item.id === id.value ? nextNode : item)
   });
   if (!serialized.ok) return serialized;
 
@@ -323,7 +436,7 @@ export function addRelicDiagramLine(
   fromNodeId: string,
   toNodeId: string
 ): RelicResult<RelicDiagramLineInsertion> {
-  const parsed = parseRelicDiagramMarkdown(content);
+  const parsed = parseRelicRelationshipMarkdown(content);
   if (!parsed.ok) return parsed;
 
   const from = parseRequiredText(fromNodeId, "DIAGRAM_LINE_FROM_INVALID", "Lineの from を指定してください。");
@@ -345,11 +458,10 @@ export function addRelicDiagramLine(
     label: "",
     to: to.value
   };
-  const nextDocument = {
+  const serialized = serializeRelicRelationshipMarkdown({
     ...parsed.value,
     lines: [...parsed.value.lines, line]
-  };
-  const serialized = serializeRelicDiagramMarkdown(nextDocument);
+  });
   if (!serialized.ok) return serialized;
 
   return ok({
@@ -359,7 +471,7 @@ export function addRelicDiagramLine(
 }
 
 export function removeRelicDiagramNode(content: string, nodeId: string): RelicResult<RelicDiagramDeletion> {
-  const parsed = parseRelicDiagramMarkdown(content);
+  const parsed = parseRelicRelationshipMarkdown(content);
   if (!parsed.ok) return parsed;
 
   const id = parseRequiredText(nodeId, "DIAGRAM_NODE_ID_INVALID", "Nodeの id を指定してください。");
@@ -371,7 +483,7 @@ export function removeRelicDiagramNode(content: string, nodeId: string): RelicRe
   }
 
   const nextLines = parsed.value.lines.filter((line) => line.from !== id.value && line.to !== id.value);
-  const serialized = serializeRelicDiagramMarkdown({
+  const serialized = serializeRelicRelationshipMarkdown({
     ...parsed.value,
     lines: nextLines,
     nodes: nextNodes
@@ -385,7 +497,7 @@ export function removeRelicDiagramNode(content: string, nodeId: string): RelicRe
 }
 
 export function removeRelicDiagramLine(content: string, lineId: string): RelicResult<RelicDiagramDeletion> {
-  const parsed = parseRelicDiagramMarkdown(content);
+  const parsed = parseRelicRelationshipMarkdown(content);
   if (!parsed.ok) return parsed;
 
   const id = parseRequiredText(lineId, "DIAGRAM_LINE_ID_INVALID", "Lineの id を指定してください。");
@@ -396,7 +508,7 @@ export function removeRelicDiagramLine(content: string, lineId: string): RelicRe
     return fail("DIAGRAM_LINE_MISSING", "削除するLineが見つかりません。");
   }
 
-  const serialized = serializeRelicDiagramMarkdown({
+  const serialized = serializeRelicRelationshipMarkdown({
     ...parsed.value,
     lines: nextLines
   });
@@ -413,7 +525,7 @@ export function updateRelicDiagramLineLabel(
   lineId: string,
   label: string
 ): RelicResult<RelicDiagramLineLabelUpdate> {
-  const parsed = parseRelicDiagramMarkdown(content);
+  const parsed = parseRelicRelationshipMarkdown(content);
   if (!parsed.ok) return parsed;
 
   const id = parseRequiredText(lineId, "DIAGRAM_LINE_ID_INVALID", "Lineの id を指定してください。");
@@ -430,7 +542,7 @@ export function updateRelicDiagramLineLabel(
     ...line,
     label: nextLabel.value
   };
-  const serialized = serializeRelicDiagramMarkdown({
+  const serialized = serializeRelicRelationshipMarkdown({
     ...parsed.value,
     lines: parsed.value.lines.map((item) => item.id === id.value ? nextLine : item)
   });
@@ -442,46 +554,314 @@ export function updateRelicDiagramLineLabel(
   });
 }
 
-export function validateRelicDiagramDocument(raw: unknown): RelicResult<RelicDiagramDocument> {
+function validateRelicRelationshipDocument(raw: unknown): RelicResult<RelicRelationshipDiagramDocument> {
   if (!isRecord(raw)) {
     return fail("DIAGRAM_FORMAT_INVALID", "図解ファイルの形式が正しくありません。");
   }
+  if (raw.type !== "relationship") {
+    return fail("DIAGRAM_TYPE_INVALID", "relationship Diagramではありません。");
+  }
 
-  const type = parseDiagramType(raw.type);
-  if (!type.ok) return type;
   const title = raw.title === undefined ? undefined : parseOptionalText(raw.title, "DIAGRAM_TITLE_INVALID", "図解の title は文字にしてください。");
   if (title && !title.ok) return title;
 
-  const allowedTopLevelKeys = new Set([...diagramBodyKeys, ...diagramFrontmatterKeys]);
+  const allowedTopLevelKeys = new Set([...relationshipBodyKeys, ...diagramFrontmatterKeys]);
   const unknownTopLevelKey = Object.keys(raw).find((key) => !allowedTopLevelKeys.has(key));
   if (unknownTopLevelKey) {
-    return fail("DIAGRAM_UNKNOWN_FIELD", `図解ファイルに未対応の項目があります: ${unknownTopLevelKey}`);
+    return fail("DIAGRAM_UNKNOWN_FIELD", `relationshipに未対応の項目があります: ${unknownTopLevelKey}`);
   }
 
-  const nodes = parseNodes(raw.nodes, type.value);
+  const nodes = parseNodes(raw.nodes);
   if (!nodes.ok) return nodes;
 
   const lines = parseLines(raw.lines, nodes.value);
   if (!lines.ok) return lines;
 
-  const document = {
+  return ok({
     lines: lines.value,
     nodes: nodes.value,
     ...(title?.value ? { title: title.value } : {}),
-    type: type.value
-  };
-  const treeValidation = type.value === "why-tree" ? validateWhyTree(document) : ok(document);
-  if (!treeValidation.ok) return treeValidation;
-
-  return ok(document);
+    type: "relationship"
+  });
 }
 
-function createNodeForFile(diagram: RelicDiagramDocument, filePath: string): RelicDiagramNode {
+function validateRelicWhyTreeDocument(raw: unknown): RelicResult<RelicWhyTreeDocument> {
+  if (!isRecord(raw)) {
+    return fail("WHY_TREE_FORMAT_INVALID", "Why Treeの形式が正しくありません。");
+  }
+  if (raw.type !== "why-tree") {
+    return fail("DIAGRAM_TYPE_INVALID", "why-tree Diagramではありません。");
+  }
+
+  const title = raw.title === undefined ? undefined : parseOptionalText(raw.title, "DIAGRAM_TITLE_INVALID", "図解の title は文字にしてください。");
+  if (title && !title.ok) return title;
+
+  const allowedTopLevelKeys = new Set([...whyTreeBodyKeys, ...diagramFrontmatterKeys]);
+  const unknownTopLevelKey = Object.keys(raw).find((key) => !allowedTopLevelKeys.has(key));
+  if (unknownTopLevelKey) {
+    return fail("WHY_TREE_UNKNOWN_FIELD", `Why Treeに未対応の項目があります: ${unknownTopLevelKey}`);
+  }
+
+  const phenomenon = parseWhyTreeNode(raw.phenomenon, "phenomenon");
+  if (!phenomenon.ok) return phenomenon;
+
+  return ok({
+    phenomenon: phenomenon.value,
+    ...(title?.value ? { title: title.value } : {}),
+    type: "why-tree"
+  });
+}
+
+function parseDiagramMarkdownParts(content: string): RelicResult<ParsedDiagramMarkdownParts> {
+  const normalizedContent = content.replace(/\r\n/g, "\n");
+  if (!normalizedContent.startsWith("---\n")) {
+    return fail("DIAGRAM_MARKER_MISSING", "図解ファイルの先頭にはYAMLフロントマターを置いてください。");
+  }
+
+  const endIndex = normalizedContent.indexOf("\n---", 4);
+  if (endIndex < 0) {
+    return fail("DIAGRAM_FRONTMATTER_INVALID", "図解ファイルのフロントマターを閉じてください。");
+  }
+
+  const endLineIndex = normalizedContent.indexOf("\n", endIndex + 4);
+  const frontmatterRaw = normalizedContent.slice(4, endIndex);
+  const body = endLineIndex < 0 ? "" : normalizedContent.slice(endLineIndex + 1);
+
+  let parsed: unknown;
+  try {
+    parsed = yaml.load(frontmatterRaw, { schema: yaml.JSON_SCHEMA });
+  } catch (error) {
+    return fail("DIAGRAM_FRONTMATTER_YAML_INVALID", "図解ファイルのフロントマターを読み込めませんでした。", errorDetails(error));
+  }
+
+  if (!isRecord(parsed)) {
+    return fail("DIAGRAM_FRONTMATTER_INVALID", "図解ファイルのフロントマターが正しくありません。");
+  }
+
+  const unknownKey = Object.keys(parsed).find((key) => !diagramFrontmatterKeys.has(key));
+  if (unknownKey) {
+    return fail("DIAGRAM_FRONTMATTER_UNKNOWN_FIELD", `図解フロントマターに未対応の項目があります: ${unknownKey}`);
+  }
+
+  const type = parseDiagramType(parsed.type);
+  if (!type.ok) return type;
+  const title = parsed.title === undefined ? undefined : parseOptionalText(parsed.title, "DIAGRAM_TITLE_INVALID", "図解の title は文字にしてください。");
+  if (title && !title.ok) return title;
+
+  return ok({
+    body,
+    frontmatter: {
+      ...(title?.value ? { title: title.value } : {}),
+      type: type.value
+    }
+  });
+}
+
+function parseNodes(rawNodes: unknown): RelicResult<RelicDiagramNode[]> {
+  if (rawNodes === undefined) return ok([]);
+  if (!Array.isArray(rawNodes)) {
+    return fail("DIAGRAM_NODES_INVALID", "relationshipのnodesは一覧にしてください。");
+  }
+
+  const nodeIds = new Set<string>();
+  const nodes: RelicDiagramNode[] = [];
+
+  for (const [index, rawNode] of rawNodes.entries()) {
+    if (!isRecord(rawNode)) {
+      return fail("DIAGRAM_NODE_INVALID", `nodes の ${index + 1} 件目が正しくありません。`);
+    }
+
+    const unknownKey = Object.keys(rawNode).find((key) => !relationshipNodeKeys.has(key));
+    if (unknownKey) {
+      return fail("DIAGRAM_NODE_UNKNOWN_FIELD", `Nodeに未対応の項目があります: ${unknownKey}`);
+    }
+
+    const id = parseRequiredText(rawNode.id, "DIAGRAM_NODE_ID_INVALID", "Nodeの id を指定してください。");
+    if (!id.ok) return id;
+    if (nodeIds.has(id.value)) {
+      return fail("DIAGRAM_NODE_DUPLICATED", `同じNode idが使われています: ${id.value}`);
+    }
+
+    const file = parseNodeFilePath(rawNode.file);
+    if (!file.ok) return file;
+    const x = parseFiniteNumber(rawNode.x, "DIAGRAM_NODE_X_INVALID", "Nodeの x は数値にしてください。");
+    if (!x.ok) return x;
+    const y = parseFiniteNumber(rawNode.y, "DIAGRAM_NODE_Y_INVALID", "Nodeの y は数値にしてください。");
+    if (!y.ok) return y;
+    const width = parsePositiveNumber(rawNode.width, "DIAGRAM_NODE_WIDTH_INVALID", "Nodeの width は0より大きい数値にしてください。");
+    if (!width.ok) return width;
+    const height = parsePositiveNumber(rawNode.height, "DIAGRAM_NODE_HEIGHT_INVALID", "Nodeの height は0より大きい数値にしてください。");
+    if (!height.ok) return height;
+
+    nodeIds.add(id.value);
+    nodes.push({
+      file: file.value,
+      height: height.value,
+      id: id.value,
+      width: width.value,
+      x: x.value,
+      y: y.value
+    });
+  }
+
+  return ok(nodes);
+}
+
+function parseLines(rawLines: unknown, nodes: RelicDiagramNode[]): RelicResult<RelicDiagramLine[]> {
+  if (rawLines === undefined) return ok([]);
+  if (!Array.isArray(rawLines)) {
+    return fail("DIAGRAM_LINES_INVALID", "relationshipのlinesは一覧にしてください。");
+  }
+
+  const nodeIds = new Set(nodes.map((node) => node.id));
+  const lineIds = new Set<string>();
+  const lines: RelicDiagramLine[] = [];
+
+  for (const [index, rawLine] of rawLines.entries()) {
+    if (!isRecord(rawLine)) {
+      return fail("DIAGRAM_LINE_INVALID", `lines の ${index + 1} 件目が正しくありません。`);
+    }
+
+    const unknownKey = Object.keys(rawLine).find((key) => !diagramLineKeys.has(key));
+    if (unknownKey) {
+      return fail("DIAGRAM_LINE_UNKNOWN_FIELD", `Lineに未対応の項目があります: ${unknownKey}`);
+    }
+
+    const id = parseRequiredText(rawLine.id, "DIAGRAM_LINE_ID_INVALID", "Lineの id を指定してください。");
+    if (!id.ok) return id;
+    if (lineIds.has(id.value)) {
+      return fail("DIAGRAM_LINE_DUPLICATED", `同じLine idが使われています: ${id.value}`);
+    }
+
+    const from = parseRequiredText(rawLine.from, "DIAGRAM_LINE_FROM_INVALID", "Lineの from を指定してください。");
+    if (!from.ok) return from;
+    const to = parseRequiredText(rawLine.to, "DIAGRAM_LINE_TO_INVALID", "Lineの to を指定してください。");
+    if (!to.ok) return to;
+    if (from.value === to.value) {
+      return fail("DIAGRAM_LINE_SELF_INVALID", "同じNode同士をLineでつなげません。");
+    }
+    if (!nodeIds.has(from.value) || !nodeIds.has(to.value)) {
+      return fail("DIAGRAM_LINE_NODE_MISSING", "Lineが存在しないNodeを参照しています。");
+    }
+
+    const label = parseOptionalText(rawLine.label, "DIAGRAM_LINE_LABEL_INVALID", "Lineの label は文字にしてください。");
+    if (!label.ok) return label;
+
+    lineIds.add(id.value);
+    lines.push({
+      from: from.value,
+      id: id.value,
+      label: label.value,
+      to: to.value
+    });
+  }
+
+  return ok(lines);
+}
+
+function parseWhyTreeNode(raw: unknown, label: string): RelicResult<RelicWhyTreeNode> {
+  if (!isRecord(raw)) {
+    return fail("WHY_TREE_NODE_INVALID", `${label} が正しくありません。`);
+  }
+
+  const unknownKey = Object.keys(raw).find((key) => !whyTreeNodeKeys.has(key));
+  if (unknownKey) {
+    return fail("WHY_TREE_NODE_UNKNOWN_FIELD", `Why Tree要素に未対応の項目があります: ${unknownKey}`);
+  }
+
+  const title = parseWhyTreeText(raw.title);
+  if (!title.ok) return title;
+  const facts = parseWhyTreeTextList(raw.facts, "facts");
+  if (!facts.ok) return facts;
+  const solutions = parseWhyTreeTextList(raw.solutions, "solutions");
+  if (!solutions.ok) return solutions;
+  const actions = parseWhyTreeTextList(raw.actions, "actions");
+  if (!actions.ok) return actions;
+  const why = raw.why === undefined ? undefined : parseWhyTreeNode(raw.why, "why");
+  if (why && !why.ok) return why;
+
+  return ok({
+    actions: actions.value,
+    facts: facts.value,
+    solutions: solutions.value,
+    title: title.value,
+    ...(why?.value ? { why: why.value } : {})
+  });
+}
+
+function parseWhyTreeTextList(raw: unknown, field: string): RelicResult<string[]> {
+  if (raw === undefined) return ok([]);
+  if (!Array.isArray(raw) || raw.some((item) => typeof item !== "string")) {
+    return fail("WHY_TREE_LIST_INVALID", `${field} は文字の一覧にしてください。`);
+  }
+
+  return ok(raw);
+}
+
+function serializeWhyTreeNodeValue(node: RelicWhyTreeNode): Record<string, unknown> {
+  return {
+    title: node.title,
+    facts: node.facts,
+    solutions: node.solutions,
+    actions: node.actions,
+    ...(node.why ? { why: serializeWhyTreeNodeValue(node.why) } : {})
+  };
+}
+
+function serializeWhyTreeUpdate(tree: RelicWhyTreeDocument): RelicResult<RelicWhyTreeUpdate> {
+  const serialized = serializeRelicWhyTreeMarkdown(tree);
+  if (!serialized.ok) return serialized;
+
+  return ok({
+    content: serialized.value,
+    tree
+  });
+}
+
+function updateWhyTreeNodeAtPath(
+  phenomenon: RelicWhyTreeNode,
+  whyPath: number[],
+  update: (node: RelicWhyTreeNode) => RelicWhyTreeNode | RelicResult<RelicWhyTreeNode>
+): RelicResult<RelicWhyTreeNode> {
+  if (whyPath.length === 0) return normalizeNodeUpdate(update(phenomenon));
+  if (whyPath.some((index) => index !== 0)) {
+    return fail("WHY_TREE_PATH_INVALID", "Why Treeのパスが正しくありません。");
+  }
+  if (!phenomenon.why) {
+    return fail("WHY_TREE_NODE_MISSING", "対象のWhyが見つかりません。");
+  }
+
+  const nextWhy = updateWhyTreeNodeAtPath(phenomenon.why, whyPath.slice(1), update);
+  if (!nextWhy.ok) return nextWhy;
+
+  return ok({
+    ...phenomenon,
+    why: nextWhy.value
+  });
+}
+
+function normalizeNodeUpdate(value: RelicWhyTreeNode | RelicResult<RelicWhyTreeNode>): RelicResult<RelicWhyTreeNode> {
+  if (isRecord(value) && typeof value.ok === "boolean") return value as RelicResult<RelicWhyTreeNode>;
+  return ok(value as RelicWhyTreeNode);
+}
+
+function whyTreeSupplementKey(kind: RelicWhyTreeSupplementKind): "facts" | "solutions" | "actions" {
+  if (kind === "fact") return "facts";
+  if (kind === "solution") return "solutions";
+  return "actions";
+}
+
+function defaultSupplementTitle(kind: RelicWhyTreeSupplementKind): string {
+  if (kind === "fact") return "根拠";
+  if (kind === "solution") return "解決策";
+  return "実行項目";
+}
+
+function createNodeForFile(diagram: RelicRelationshipDiagramDocument, filePath: string): RelicDiagramNode {
   return {
     file: filePath,
     height: defaultNodeHeight,
     id: nextNodeId(diagram.nodes),
-    ...(diagram.type === "why-tree" ? { role: diagram.nodes.length === 0 ? "phenomenon" as const : "why" as const } : {}),
     width: defaultNodeWidth,
     ...nextNodePosition(diagram.nodes)
   };
@@ -554,11 +934,11 @@ function rectanglesOverlap(
 }
 
 function replaceDiagramNodeFilePaths(
-  diagram: RelicDiagramDocument,
+  diagram: RelicRelationshipDiagramDocument,
   kind: RelicDiagramReferenceReplacementKind,
   oldPath: string,
   newPath: string
-): { count: number; diagram: RelicDiagramDocument } {
+): { count: number; diagram: RelicRelationshipDiagramDocument } {
   const normalizedOldPath = oldPath.replace(/\\/g, "/");
   const normalizedNewPath = newPath.replace(/\\/g, "/");
   const oldFolderPrefix = `${normalizedOldPath.replace(/\/$/, "")}/`;
@@ -587,202 +967,6 @@ function replaceDiagramNodeFilePaths(
   };
 }
 
-function parseDiagramMarkdownParts(content: string): RelicResult<ParsedDiagramMarkdownParts> {
-  const normalizedContent = content.replace(/\r\n/g, "\n");
-  if (!normalizedContent.startsWith("---\n")) {
-    return fail("DIAGRAM_MARKER_MISSING", "図解ファイルの先頭にはYAMLフロントマターを置いてください。");
-  }
-
-  const endIndex = normalizedContent.indexOf("\n---", 4);
-  if (endIndex < 0) {
-    return fail("DIAGRAM_FRONTMATTER_INVALID", "図解ファイルのフロントマターを閉じてください。");
-  }
-
-  const endLineIndex = normalizedContent.indexOf("\n", endIndex + 4);
-  const frontmatterRaw = normalizedContent.slice(4, endIndex);
-  const body = endLineIndex < 0 ? "" : normalizedContent.slice(endLineIndex + 1);
-
-  let parsed: unknown;
-  try {
-    parsed = yaml.load(frontmatterRaw, { schema: yaml.JSON_SCHEMA });
-  } catch (error) {
-    return fail("DIAGRAM_FRONTMATTER_YAML_INVALID", "図解ファイルのフロントマターを読み込めませんでした。", errorDetails(error));
-  }
-
-  if (!isRecord(parsed)) {
-    return fail("DIAGRAM_FRONTMATTER_INVALID", "図解ファイルのフロントマターが正しくありません。");
-  }
-
-  const unknownKey = Object.keys(parsed).find((key) => !diagramFrontmatterKeys.has(key));
-  if (unknownKey) {
-    return fail("DIAGRAM_FRONTMATTER_UNKNOWN_FIELD", `図解フロントマターに未対応の項目があります: ${unknownKey}`);
-  }
-
-  const type = parseDiagramType(parsed.type);
-  if (!type.ok) return type;
-  const title = parsed.title === undefined ? undefined : parseOptionalText(parsed.title, "DIAGRAM_TITLE_INVALID", "図解の title は文字にしてください。");
-  if (title && !title.ok) return title;
-
-  return ok({
-    body,
-    frontmatter: {
-      ...(title?.value ? { title: title.value } : {}),
-      type: type.value
-    }
-  });
-}
-
-function parseNodes(rawNodes: unknown, type: RelicDiagramType): RelicResult<RelicDiagramNode[]> {
-  if (rawNodes === undefined) return ok([]);
-  if (!Array.isArray(rawNodes)) {
-    return fail("DIAGRAM_NODES_INVALID", "図解ファイルの nodes は一覧にしてください。");
-  }
-
-  const nodeIds = new Set<string>();
-  const nodes: RelicDiagramNode[] = [];
-  const allowedNodeKeys = type === "why-tree" ? whyTreeNodeKeys : relationshipNodeKeys;
-
-  for (const [index, rawNode] of rawNodes.entries()) {
-    if (!isRecord(rawNode)) {
-      return fail("DIAGRAM_NODE_INVALID", `nodes の ${index + 1} 件目が正しくありません。`);
-    }
-
-    const unknownKey = Object.keys(rawNode).find((key) => !allowedNodeKeys.has(key));
-    if (unknownKey) {
-      return fail("DIAGRAM_NODE_UNKNOWN_FIELD", `Nodeに未対応の項目があります: ${unknownKey}`);
-    }
-
-    const id = parseRequiredText(rawNode.id, "DIAGRAM_NODE_ID_INVALID", "Nodeの id を指定してください。");
-    if (!id.ok) return id;
-    if (nodeIds.has(id.value)) {
-      return fail("DIAGRAM_NODE_DUPLICATED", `同じNode idが使われています: ${id.value}`);
-    }
-
-    const file = parseNodeFilePath(rawNode.file);
-    if (!file.ok) return file;
-
-    const role = type === "why-tree" ? parseWhyTreeRole(rawNode.role) : ok(undefined);
-    if (!role.ok) return role;
-    const x = parseFiniteNumber(rawNode.x, "DIAGRAM_NODE_X_INVALID", "Nodeの x は数値にしてください。");
-    if (!x.ok) return x;
-    const y = parseFiniteNumber(rawNode.y, "DIAGRAM_NODE_Y_INVALID", "Nodeの y は数値にしてください。");
-    if (!y.ok) return y;
-    const width = parsePositiveNumber(rawNode.width, "DIAGRAM_NODE_WIDTH_INVALID", "Nodeの width は0より大きい数値にしてください。");
-    if (!width.ok) return width;
-    const height = parsePositiveNumber(rawNode.height, "DIAGRAM_NODE_HEIGHT_INVALID", "Nodeの height は0より大きい数値にしてください。");
-    if (!height.ok) return height;
-
-    nodeIds.add(id.value);
-    nodes.push({
-      file: file.value,
-      height: height.value,
-      id: id.value,
-      ...(role.value ? { role: role.value } : {}),
-      width: width.value,
-      x: x.value,
-      y: y.value
-    });
-  }
-
-  return ok(nodes);
-}
-
-function parseLines(rawLines: unknown, nodes: RelicDiagramNode[]): RelicResult<RelicDiagramLine[]> {
-  if (rawLines === undefined) return ok([]);
-  if (!Array.isArray(rawLines)) {
-    return fail("DIAGRAM_LINES_INVALID", "図解ファイルの lines は一覧にしてください。");
-  }
-
-  const nodeIds = new Set(nodes.map((node) => node.id));
-  const lineIds = new Set<string>();
-  const lines: RelicDiagramLine[] = [];
-
-  for (const [index, rawLine] of rawLines.entries()) {
-    if (!isRecord(rawLine)) {
-      return fail("DIAGRAM_LINE_INVALID", `lines の ${index + 1} 件目が正しくありません。`);
-    }
-
-    const unknownKey = Object.keys(rawLine).find((key) => !diagramLineKeys.has(key));
-    if (unknownKey) {
-      return fail("DIAGRAM_LINE_UNKNOWN_FIELD", `Lineに未対応の項目があります: ${unknownKey}`);
-    }
-
-    const id = parseRequiredText(rawLine.id, "DIAGRAM_LINE_ID_INVALID", "Lineの id を指定してください。");
-    if (!id.ok) return id;
-    if (lineIds.has(id.value)) {
-      return fail("DIAGRAM_LINE_DUPLICATED", `同じLine idが使われています: ${id.value}`);
-    }
-
-    const from = parseRequiredText(rawLine.from, "DIAGRAM_LINE_FROM_INVALID", "Lineの from を指定してください。");
-    if (!from.ok) return from;
-    const to = parseRequiredText(rawLine.to, "DIAGRAM_LINE_TO_INVALID", "Lineの to を指定してください。");
-    if (!to.ok) return to;
-    if (from.value === to.value) {
-      return fail("DIAGRAM_LINE_SELF_INVALID", "同じNode同士をLineでつなげません。");
-    }
-    if (!nodeIds.has(from.value) || !nodeIds.has(to.value)) {
-      return fail("DIAGRAM_LINE_NODE_MISSING", "Lineが存在しないNodeを参照しています。");
-    }
-
-    const label = parseOptionalText(rawLine.label, "DIAGRAM_LINE_LABEL_INVALID", "Lineの label は文字にしてください。");
-    if (!label.ok) return label;
-
-    lineIds.add(id.value);
-    lines.push({
-      from: from.value,
-      id: id.value,
-      label: label.value,
-      to: to.value
-    });
-  }
-
-  return ok(lines);
-}
-
-function validateWhyTree(document: RelicDiagramDocument): RelicResult<RelicDiagramDocument> {
-  if (document.nodes.length === 0) return ok(document);
-  const incomingCounts = new Map(document.nodes.map((node) => [node.id, 0]));
-
-  for (const line of document.lines) {
-    incomingCounts.set(line.to, (incomingCounts.get(line.to) ?? 0) + 1);
-  }
-
-  const multipleParentNode = [...incomingCounts.entries()].find(([, count]) => count > 1);
-  if (multipleParentNode) {
-    return fail("DIAGRAM_WHY_TREE_MULTI_PARENT", "why-treeでは1つのNodeに複数の親を持たせられません。");
-  }
-
-  if (hasDirectedCycle(document.nodes.map((node) => node.id), document.lines)) {
-    return fail("DIAGRAM_WHY_TREE_CYCLE", "why-treeでは循環するLineを作れません。");
-  }
-
-  return ok(document);
-}
-
-function hasDirectedCycle(nodeIds: string[], lines: RelicDiagramLine[]): boolean {
-  const outgoing = new Map(nodeIds.map((id) => [id, [] as string[]]));
-  for (const line of lines) {
-    outgoing.get(line.from)?.push(line.to);
-  }
-
-  const visiting = new Set<string>();
-  const visited = new Set<string>();
-  const visit = (nodeId: string): boolean => {
-    if (visiting.has(nodeId)) return true;
-    if (visited.has(nodeId)) return false;
-
-    visiting.add(nodeId);
-    for (const next of outgoing.get(nodeId) ?? []) {
-      if (visit(next)) return true;
-    }
-    visiting.delete(nodeId);
-    visited.add(nodeId);
-    return false;
-  };
-
-  return nodeIds.some((nodeId) => visit(nodeId));
-}
-
 function nextLineId(lines: RelicDiagramLine[]): string {
   const usedIds = new Set(lines.map((line) => line.id));
   let index = 1;
@@ -802,17 +986,17 @@ function parseDiagramType(raw: unknown): RelicResult<RelicDiagramType> {
   return ok(raw);
 }
 
-function parseWhyTreeRole(raw: unknown): RelicResult<RelicWhyTreeRole> {
-  if (typeof raw !== "string" || !relicWhyTreeRoles.includes(raw as RelicWhyTreeRole)) {
-    return fail("DIAGRAM_NODE_ROLE_INVALID", "why-treeのNode roleはphenomenon、why、fact、solution、actionのいずれかにしてください。");
-  }
-
-  return ok(raw as RelicWhyTreeRole);
-}
-
 function parseRequiredText(raw: unknown, code: string, message: string): RelicResult<string> {
   if (typeof raw !== "string" || raw.trim() !== raw || raw.length === 0) {
     return fail(code, message);
+  }
+
+  return ok(raw);
+}
+
+function parseWhyTreeText(raw: unknown): RelicResult<string> {
+  if (typeof raw !== "string" || raw.trim() !== raw || raw.length === 0) {
+    return fail("WHY_TREE_TEXT_INVALID", "Why Treeのテキストは空でない文字にしてください。");
   }
 
   return ok(raw);
@@ -857,6 +1041,25 @@ function parseNodeFilePath(raw: unknown): RelicResult<string> {
   }
 
   return ok(filePath);
+}
+
+function dumpFrontmatter(type: RelicDiagramType, title: string | undefined): string {
+  return yaml.dump(
+    {
+      type,
+      ...(title ? { title } : {})
+    },
+    yamlDumpOptions()
+  ).trimEnd();
+}
+
+function yamlDumpOptions(): yaml.DumpOptions {
+  return {
+    lineWidth: -1,
+    noRefs: true,
+    schema: yaml.JSON_SCHEMA,
+    sortKeys: false
+  };
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

@@ -86,17 +86,23 @@ Diagram Markdownの判定は、YAMLフロントマターの `type` が `relation
 ## Diagram Markdown
 
 Diagram Markdownは、YAMLフロントマターに `type: relationship` または `type: why-tree` を持つ通常 `.md` ファイルとして保存する。
-正本はこのMarkdownファイルであり、Node、Line、Label、Node位置、Node固定サイズ、why-treeのroleを本文内のYAMLとして保持する。
+正本はこのMarkdownファイルであり、画面上だけに存在するDiagram要素は作らない。
 Diagram MarkdownにはDiagram以外の本文を混ぜず、壊れた形式の場合はDiagramキャンバス編集の対象にしない。
 
 | フィールド | 内容 |
 |-----------|------|
 | type | フロントマター内の `relationship` または `why-tree` |
 | title | フロントマター内の任意タイトル |
+
+### relationship
+
+`relationship` は自由な関係図として扱う。Node、Line、Label、Node位置、Node固定サイズを本文内のYAMLとして保持する。
+
+| フィールド | 内容 |
+|-----------|------|
 | nodes | Diagram上のカード一覧 |
 | nodes[].id | Diagramファイル内で一意のNode ID |
 | nodes[].file | Nodeが指す通常Markdownファイルのワークスペース相対パス |
-| nodes[].role | `why-tree` のNode役割。`phenomenon`、`why`、`fact`、`solution`、`action` のいずれか |
 | nodes[].x / nodes[].y | Diagram上のNode位置 |
 | nodes[].width / nodes[].height | Nodeの固定サイズ |
 | lines | Node同士をつなぐLine一覧 |
@@ -104,7 +110,22 @@ Diagram MarkdownにはDiagram以外の本文を混ぜず、壊れた形式の場
 | lines[].from / lines[].to | 接続するNode ID |
 | lines[].label | Line中央に表示する文字 |
 
-`relationship` は循環、多対多、横断関係を許可する。`why-tree` は原因分析用の役割付きツリーとして扱い、循環と複数親を禁止する。
+`relationship` は循環、多対多、横断関係を許可する。
+
+### why-tree
+
+`why-tree` は原因分析用の構造エディタとして扱う。自由なNode、Line、Label、Node位置は持たない。本文内のYAMLには必ず1つの `phenomenon` を置き、その下に単一直列の `why` を入れ子で保持する。`facts`、`solutions`、`actions` はPhenomenonまたは各Whyを支える補助要素であり、Why Chainの一部にはしない。
+
+| フィールド | 内容 |
+|-----------|------|
+| phenomenon | 問題・現象。Why Treeの開始点として必ず1つ持つ |
+| phenomenon.title / why.title | 表示する問題・原因の本文 |
+| phenomenon.why / why.why | 次のWhy。単一直列のWhy Chainとして扱う |
+| facts | 対象のPhenomenonまたはWhyを支える根拠一覧 |
+| solutions | 対象のPhenomenonまたはWhyに対する解決策一覧 |
+| actions | 対象のPhenomenonまたはWhyに対する実行項目一覧 |
+
+`why-tree` は循環、複数親、横断リンク、Fact / Solution / Action配下の子要素を表現しない。
 pan、zoom、選択状態は画面だけの状態として扱い、Markdownファイルには保存しない。
 
 ---

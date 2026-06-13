@@ -24,7 +24,7 @@ describe("readWorkspaceFileIndex", () => {
     const workspacePath = await createWorkspace();
     await writeFile(path.join(workspacePath, "note.md"), "# Note\n本文", "utf8");
     await writeFile(path.join(workspacePath, "relationship.md"), "---\ntype: relationship\n---\n\nnodes: []\nlines: []", "utf8");
-    await writeFile(path.join(workspacePath, "why.md"), "---\ntype: why-tree\n---\n\nnodes: []\nlines: []", "utf8");
+    await writeFile(path.join(workspacePath, "why.md"), "---\ntype: why-tree\n---\n\nphenomenon:\n  title: 問題\n  facts: []\n  solutions: []\n  actions: []", "utf8");
     await writeFile(path.join(workspacePath, "ignored.txt"), "---\ntype: relationship\n---", "utf8");
 
     const index = await readWorkspaceFileIndex(workspacePath);
@@ -54,7 +54,7 @@ describe("readWorkspaceFileIndex", () => {
     const workspacePath = await createWorkspace();
     await writeFile(path.join(workspacePath, "not-diagram.md"), "# Title\ntype: relationship", "utf8");
     await writeFile(path.join(workspacePath, "old-map.md"), "type: map\nnodes: []", "utf8");
-    await writeFile(path.join(workspacePath, "diagram.md"), "---\ntype: why-tree\n---\nnodes: []", "utf8");
+    await writeFile(path.join(workspacePath, "diagram.md"), "---\ntype: why-tree\n---\nphenomenon:\n  title: 問題", "utf8");
 
     const index = await readWorkspaceFileIndex(workspacePath);
 
