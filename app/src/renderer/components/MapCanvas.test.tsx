@@ -28,6 +28,26 @@ const mapContent = [
   ""
 ].join("\n");
 
+const mapContentWithoutLines = [
+  "type: map",
+  "",
+  "nodes:",
+  "  - id: node-1",
+  "    file: characters/alice.md",
+  "    x: 120",
+  "    y: 80",
+  "    width: 180",
+  "    height: 80",
+  "  - id: node-2",
+  "    file: characters/bob.md",
+  "    x: 380",
+  "    y: 80",
+  "    width: 180",
+  "    height: 80",
+  "lines: []",
+  ""
+].join("\n");
+
 function renderMapCanvas(content = mapContent) {
   render(
     <I18nProvider language="en">
@@ -73,6 +93,22 @@ describe("MapCanvas", () => {
     expect(onChange).toHaveBeenCalledTimes(1);
     expect(onChange.mock.calls[0]?.[0]).toContain("x: 160");
     expect(onChange.mock.calls[0]?.[0]).toContain("y: 100");
+  });
+
+  it("adds a line by connecting node handles", () => {
+    const onChange = vi.fn();
+    render(
+      <I18nProvider language="en">
+        <MapCanvas content={mapContentWithoutLines} fileName="World" onChange={onChange} />
+      </I18nProvider>
+    );
+
+    fireEvent(screen.getByLabelText("Connect alice"), pointerEvent("pointerdown", 2, 10, 10));
+    fireEvent(screen.getByLabelText("Connect bob"), pointerEvent("pointerup", 2, 260, 10));
+
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange.mock.calls[0]?.[0]).toContain("from: node-1");
+    expect(onChange.mock.calls[0]?.[0]).toContain("to: node-2");
   });
 });
 

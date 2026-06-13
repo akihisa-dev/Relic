@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   addRelicMapNodeForFile,
+  addRelicMapLine,
   isRelicMapMarkdownContent,
   moveRelicMapNode,
   parseRelicMapMarkdown,
@@ -235,5 +236,46 @@ describe("moveRelicMapNode", () => {
     });
     expect(moved.ok ? moved.value.content : "").toContain("x: 240");
     expect(moved.ok ? moved.value.content : "").toContain("y: 161");
+  });
+});
+
+describe("addRelicMapLine", () => {
+  it("Node同士をつなぐLineをMap用MDへ追加する", () => {
+    const content = [
+      "type: map",
+      "",
+      "nodes:",
+      "  - id: node-1",
+      "    file: a.md",
+      "    x: 0",
+      "    y: 0",
+      "    width: 180",
+      "    height: 80",
+      "  - id: node-2",
+      "    file: b.md",
+      "    x: 260",
+      "    y: 0",
+      "    width: 180",
+      "    height: 80",
+      "lines: []",
+      ""
+    ].join("\n");
+
+    const added = addRelicMapLine(content, "node-1", "node-2");
+
+    expect(added.ok).toBe(true);
+    expect(added.ok ? added.value.line : null).toEqual({
+      from: "node-1",
+      id: "line-1",
+      label: "",
+      to: "node-2"
+    });
+    expect(added.ok ? added.value.content : "").toContain("from: node-1");
+    expect(added.ok ? added.value.content : "").toContain("to: node-2");
+  });
+
+  it("自分自身へのLineと重複Lineを拒否する", () => {
+    expect(addRelicMapLine(validMap, "node-1", "node-1").ok).toBe(false);
+    expect(addRelicMapLine(validMap, "node-2", "node-1").ok).toBe(false);
   });
 });

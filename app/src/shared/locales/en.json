@@ -130,6 +130,7 @@
   "links.outgoingLimited": "Only some links are shown because there are many links.",
   "links.updateImpactConfirm": "Update {{links}} link(s) in {{files}} Markdown file(s)?",
   "map.files": "Map files",
+  "map.connectNode": "Connect {{name}}",
   "map.emptyCanvas": "No nodes.",
   "map.invalidFile": "Could not read this Map file. Check the source.",
   "map.invalidStatus": "Invalid Map",
