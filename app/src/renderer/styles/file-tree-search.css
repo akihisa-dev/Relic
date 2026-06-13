@@ -333,6 +333,12 @@
   min-width: 0;
 }
 
+.map-sidebar-actions {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+}
+
 .map-sidebar-group-heading {
   align-items: center;
   color: var(--text-2);

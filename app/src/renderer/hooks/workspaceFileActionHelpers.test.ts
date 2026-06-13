@@ -10,6 +10,7 @@ import {
   matchesAnyTreeItemPath,
   matchesTreeItemPath,
   nextUniqueFileName,
+  nextUniqueMapFileName,
   nextUniqueFolderName,
   removeCoveredItems
 } from "./workspaceFileActionHelpers";
@@ -68,6 +69,23 @@ describe("workspaceFileActionHelpers", () => {
 
     expect(nextUniqueFileName(state, t)).toBe("新規ファイル 3");
     expect(nextUniqueFolderName(state, t)).toBe("新規フォルダ 2");
+  });
+
+  it("rootに存在するMap名を避けて次のMapファイル名を返す", () => {
+    const state = workspaceState([
+      { name: "Map.md", path: "Map.md", type: "file" },
+      { name: "Map 2.md", path: "Map 2.md", type: "file" },
+      {
+        children: [
+          { name: "Map.md", path: "Nested/Map.md", type: "file" }
+        ],
+        name: "Nested",
+        path: "Nested",
+        type: "folder"
+      }
+    ]);
+
+    expect(nextUniqueMapFileName(state, t)).toBe("Map 3");
   });
 
   it("作成後のMarkdown pathを末尾一致で探す", () => {

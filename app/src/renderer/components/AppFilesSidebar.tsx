@@ -11,6 +11,7 @@ interface AppFilesSidebarProps extends Omit<FilesSidebarProps, "onSelectedCountC
   isSidebarOpen: boolean;
   isSidebarResizing: boolean;
   onCloseSidebar: () => void;
+  onCreateMapFile: () => void;
   onSelectedCountChange: (count: number) => void;
   selectedCountLabel: string;
   sidebarViews: Array<Pick<AppRailView<ReactElement>, "id" | "label">>;
@@ -24,6 +25,7 @@ export function AppFilesSidebar({
   isSidebarOpen,
   isSidebarResizing,
   onCloseSidebar,
+  onCreateMapFile,
   onSelectedCountChange,
   selectedCountLabel: _selectedCountLabel,
   sidebarViews,
@@ -68,9 +70,11 @@ export function AppFilesSidebar({
         ) : null}
         {activeSidebarView === "map" ? (
           <MapSidebar
+            isCreatingFile={filesSidebarProps.isCreatingFile}
             isCreatingWorkspace={filesSidebarProps.isCreatingWorkspace}
             isOpeningWorkspace={filesSidebarProps.isOpeningWorkspace}
             onCreateWorkspace={filesSidebarProps.onCreateWorkspace}
+            onCreateMapFile={onCreateMapFile}
             onOpenFile={filesSidebarProps.onOpenFile}
             onOpenWorkspace={filesSidebarProps.onOpenWorkspace}
             openingFilePath={filesSidebarProps.openingFilePath}
