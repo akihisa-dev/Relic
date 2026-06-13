@@ -210,6 +210,35 @@ describe("DiagramCanvas", () => {
     expect(onChange.mock.calls[1]?.[0]).toContain("市場が縮小した");
   });
 
+  it("deletes why-tree items except the Phenomenon", () => {
+    const onChange = vi.fn();
+    const { container } = render(<StatefulDiagramCanvas content={whyTreeContent} onChange={onChange} />);
+
+    const phenomenon = screen.getByDisplayValue("売上低下").closest(".why-tree-main-node");
+    expect(phenomenon).toBeInstanceOf(HTMLElement);
+    expect((phenomenon as HTMLElement).querySelector(".why-tree-delete-button")).toBeNull();
+
+    const whyNode = screen.getByDisplayValue("流入減少").closest(".why-tree-main-node");
+    expect(whyNode).toBeInstanceOf(HTMLElement);
+    fireEvent.click((whyNode as HTMLElement).querySelector(".why-tree-delete-button") as Element);
+
+    expect(onChange.mock.calls[0]?.[0]).not.toContain("title: 流入減少");
+    expect(screen.getByDisplayValue("売上低下")).toBeInTheDocument();
+    expect(container.querySelectorAll(".why-tree-main-node .why-tree-delete-button")).toHaveLength(0);
+  });
+
+  it("deletes selected why-tree supplements", () => {
+    const onChange = vi.fn();
+    render(<StatefulDiagramCanvas content={whyTreeContent} onChange={onChange} />);
+
+    const factNode = screen.getByDisplayValue("SEO順位低下").closest(".why-tree-support-item");
+    expect(factNode).toBeInstanceOf(HTMLElement);
+    fireEvent.click((factNode as HTMLElement).querySelector(".why-tree-delete-button") as Element);
+
+    expect(onChange.mock.calls[0]?.[0]).not.toContain("SEO順位低下");
+    expect(screen.queryByDisplayValue("SEO順位低下")).not.toBeInTheDocument();
+  });
+
   it("shows an error for invalid Diagram Markdown", () => {
     renderDiagramCanvas("type: map\n\nnotes: body");
 

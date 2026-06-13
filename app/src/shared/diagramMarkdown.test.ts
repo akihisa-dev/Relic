@@ -11,6 +11,8 @@ import {
   parseRelicDiagramMarkdown,
   removeRelicDiagramLine,
   removeRelicDiagramNode,
+  removeRelicWhyTreeSupplement,
+  removeRelicWhyTreeWhy,
   replaceRelicDiagramNodeFileReferences,
   serializeRelicDiagramMarkdown,
   updateRelicDiagramLineLabel,
@@ -333,6 +335,21 @@ describe("why-tree operations", () => {
         }
       }
     });
+  });
+
+  it("問題・現象以外のWhyと補助要素を削除し、Markdownから復元する", () => {
+    const removedWhy = removeRelicWhyTreeWhy(whyTreeContent, [0]);
+    expect(removedWhy.ok).toBe(true);
+    if (!removedWhy.ok) return;
+    expect(removedWhy.value.tree.phenomenon.why?.title).toBe("コンテンツ老朽化");
+    expect(removedWhy.value.content).not.toContain("title: 流入減少");
+    expect(parseRelicDiagramMarkdown(removedWhy.value.content).ok).toBe(true);
+
+    const removedFact = removeRelicWhyTreeSupplement(whyTreeContent, [0], "fact", 0);
+    expect(removedFact.ok ? removedFact.value.tree.phenomenon.why?.facts : null).toEqual([]);
+
+    expect(removeRelicWhyTreeWhy(whyTreeContent, []).ok).toBe(false);
+    expect(removeRelicWhyTreeSupplement(whyTreeContent, [0], "action", 9).ok).toBe(false);
   });
 
   it("Why Chainのパスは単一直列だけを許可し、横断リンクや循環を表現しない", () => {
