@@ -41,6 +41,11 @@ export interface RelicMapNodeMove {
   node: RelicMapNode;
 }
 
+export interface RelicMapLineInsertion {
+  content: string;
+  line: RelicMapLine;
+}
+
 const mapTopLevelKeys = new Set(["type", "nodes", "lines"]);
 const mapNodeKeys = new Set(["id", "file", "x", "y", "width", "height"]);
 const mapLineKeys = new Set(["id", "from", "to", "label"]);
@@ -186,6 +191,50 @@ export function moveRelicMapNode(
   return ok({
     content: serialized.value,
     node: nextNode
+  });
+}
+
+export function addRelicMapLine(
+  content: string,
+  fromNodeId: string,
+  toNodeId: string
+): RelicResult<RelicMapLineInsertion> {
+  const parsed = parseRelicMapMarkdown(content);
+  if (!parsed.ok) return parsed;
+
+  const from = parseRequiredText(fromNodeId, "MAP_LINE_FROM_INVALID", "Lineの from を指定してください。");
+  if (!from.ok) return from;
+  const to = parseRequiredText(toNodeId, "MAP_LINE_TO_INVALID", "Lineの to を指定してください。");
+  if (!to.ok) return to;
+  if (from.value === to.value) {
+    return fail("MAP_LINE_SELF_INVALID", "同じNode同士をLineでつなげません。");
+  }
+
+  const nodeIds = new Set(parsed.value.nodes.map((node) => node.id));
+  if (!nodeIds.has(from.value) || !nodeIds.has(to.value)) {
+    return fail("MAP_LINE_NODE_MISSING", "Lineが存在しないNodeを参照しています。");
+  }
+
+  const pairKey = linePairKey(from.value, to.value);
+  if (parsed.value.lines.some((line) => linePairKey(line.from, line.to) === pairKey)) {
+    return fail("MAP_LINE_PAIR_DUPLICATED", "同じNode同士のLineが重複しています。");
+  }
+
+  const line = {
+    from: from.value,
+    id: nextLineId(parsed.value.lines),
+    label: "",
+    to: to.value
+  };
+  const serialized = serializeRelicMapMarkdown({
+    ...parsed.value,
+    lines: [...parsed.value.lines, line]
+  });
+  if (!serialized.ok) return serialized;
+
+  return ok({
+    content: serialized.value,
+    line
   });
 }
 
@@ -417,7 +466,7 @@ function parseLines(rawLines: unknown, nodes: RelicMapNode[]): RelicResult<Relic
       return fail("MAP_LINE_NODE_MISSING", "Lineが存在しないNodeを参照しています。");
     }
 
-    const pairKey = [from.value, to.value].sort().join("\0");
+    const pairKey = linePairKey(from.value, to.value);
     if (nodePairs.has(pairKey)) {
       return fail("MAP_LINE_PAIR_DUPLICATED", "同じNode同士のLineが重複しています。");
     }
@@ -436,6 +485,21 @@ function parseLines(rawLines: unknown, nodes: RelicMapNode[]): RelicResult<Relic
   }
 
   return ok(lines);
+}
+
+function nextLineId(lines: RelicMapLine[]): string {
+  const usedIds = new Set(lines.map((line) => line.id));
+  let index = 1;
+
+  while (usedIds.has(`line-${index}`)) {
+    index += 1;
+  }
+
+  return `line-${index}`;
+}
+
+function linePairKey(from: string, to: string): string {
+  return [from, to].sort().join("\0");
 }
 
 function parseRequiredText(raw: unknown, code: string, message: string): RelicResult<string> {

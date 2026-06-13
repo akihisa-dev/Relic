@@ -934,6 +934,12 @@
   stroke-width: 2;
 }
 
+.map-canvas-line--preview {
+  opacity: 0.72;
+  stroke: var(--accent);
+  stroke-dasharray: 8 7;
+}
+
 .map-canvas-line-label {
   fill: var(--text-2);
   font-size: 12px;
@@ -972,6 +978,23 @@
   box-shadow: 0 14px 32px rgba(15, 23, 42, 0.16);
   cursor: grabbing;
   z-index: 2;
+}
+
+.map-canvas-node-connect {
+  background: var(--bg);
+  border: 2px solid var(--accent);
+  border-radius: 999px;
+  box-shadow: 0 0 0 3px var(--accent-soft);
+  height: 14px;
+  padding: 0;
+  position: absolute;
+  right: -7px;
+  top: calc(50% - 7px);
+  width: 14px;
+}
+
+.map-canvas-node-connect:hover {
+  background: var(--accent);
 }
 
 .map-canvas-node-name,

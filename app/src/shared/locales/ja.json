@@ -130,6 +130,7 @@
   "links.outgoingLimited": "リンクが多いため、一部のみ表示しています。",
   "links.updateImpactConfirm": "{{files}} 件のMarkdownファイル内にある {{links}} 件のリンクを更新します。続けますか？",
   "map.files": "Mapファイル",
+  "map.connectNode": "{{name}} を接続",
   "map.emptyCanvas": "Nodeはまだありません。",
   "map.invalidFile": "このMapファイルを読み込めません。ソースを確認してください。",
   "map.invalidStatus": "無効なMap",

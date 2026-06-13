@@ -1,6 +1,7 @@
 import { type PointerEvent as ReactPointerEvent, type ReactElement, useMemo, useState } from "react";
 
 import {
+  addRelicMapLine,
   moveRelicMapNode,
   parseRelicMapMarkdown,
   type RelicMapDocument,
@@ -56,8 +57,18 @@ interface DragState {
   startClientY: number;
 }
 
+interface ConnectState {
+  currentX: number;
+  currentY: number;
+  fromNodeId: string;
+  pointerId: number;
+  startX: number;
+  startY: number;
+}
+
 export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): ReactElement {
   const t = useT();
+  const [connect, setConnect] = useState<ConnectState | null>(null);
   const [drag, setDrag] = useState<DragState | null>(null);
   const parsed = useMemo(() => parseRelicMapMarkdown(content), [content]);
 
@@ -84,6 +95,12 @@ export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): Reac
     };
   });
   const displayLines = buildLineLayouts(parsed.value.lines, displayNodes);
+  const previewLine = connect ? {
+    currentX: connect.currentX,
+    currentY: connect.currentY,
+    startX: connect.startX,
+    startY: connect.startY
+  } : null;
   const startNodeDrag = (node: RelicMapNode, event: ReactPointerEvent<HTMLDivElement>): void => {
     if (!onChange) return;
 
@@ -129,9 +146,81 @@ export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): Reac
     if (!drag || drag.pointerId !== event.pointerId) return;
     setDrag(null);
   };
+  const pointerPositionInCanvas = (event: ReactPointerEvent<HTMLElement>): { x: number; y: number } => {
+    const canvasSpace = event.currentTarget.closest(".map-canvas-space") ??
+      event.currentTarget.querySelector(".map-canvas-space");
+    const rect = canvasSpace?.getBoundingClientRect();
+
+    if (!rect) return { x: 0, y: 0 };
+
+    return {
+      x: event.clientX - rect.left,
+      y: event.clientY - rect.top
+    };
+  };
+  const nodeCenter = (nodeId: string): { x: number; y: number } | null => {
+    const item = displayNodes.find((node) => node.node.id === nodeId);
+    if (!item) return null;
+
+    return {
+      x: item.x + item.node.width / 2,
+      y: item.y + item.node.height / 2
+    };
+  };
+  const startConnect = (nodeId: string, event: ReactPointerEvent<HTMLButtonElement>): void => {
+    if (!onChange) return;
+
+    const center = nodeCenter(nodeId);
+    if (!center) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    setConnect({
+      currentX: center.x,
+      currentY: center.y,
+      fromNodeId: nodeId,
+      pointerId: event.pointerId,
+      startX: center.x,
+      startY: center.y
+    });
+  };
+  const updateConnect = (event: ReactPointerEvent<HTMLDivElement>): void => {
+    setConnect((current) => {
+      if (!current || current.pointerId !== event.pointerId) return current;
+      const pointer = pointerPositionInCanvas(event);
+
+      return {
+        ...current,
+        currentX: pointer.x,
+        currentY: pointer.y
+      };
+    });
+  };
+  const finishConnect = (toNodeId: string, event: ReactPointerEvent<HTMLButtonElement>): void => {
+    if (!connect || connect.pointerId !== event.pointerId) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    const added = addRelicMapLine(content, connect.fromNodeId, toNodeId);
+    if (added.ok) {
+      onChange?.(added.value.content);
+    }
+    setConnect(null);
+  };
+  const cancelConnect = (event: ReactPointerEvent<HTMLDivElement>): void => {
+    if (!connect || connect.pointerId !== event.pointerId) return;
+    setConnect(null);
+  };
 
   return (
-    <div aria-label={fileName} className="map-canvas" role="img">
+    <div
+      aria-label={fileName}
+      className="map-canvas"
+      onPointerCancel={cancelConnect}
+      onPointerMove={updateConnect}
+      onPointerUp={cancelConnect}
+      role="img"
+    >
       {layout.nodes.length === 0 ? (
         <p className="map-canvas-empty">{t("map.emptyCanvas")}</p>
       ) : null}
@@ -159,6 +248,12 @@ export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): Reac
               ) : null}
             </g>
           ))}
+          {previewLine ? (
+            <path
+              className="map-canvas-line map-canvas-line--preview"
+              d={`M ${previewLine.startX} ${previewLine.startY} L ${previewLine.currentX} ${previewLine.currentY}`}
+            />
+          ) : null}
         </svg>
         <div className="map-canvas-nodes">
           {displayNodes.map(({ node, x, y }) => (
@@ -179,6 +274,14 @@ export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): Reac
             >
               <span className="map-canvas-node-name">{nodeFileName(node.file)}</span>
               <span className="map-canvas-node-path">{node.file}</span>
+              <button
+                aria-label={t("map.connectNode", { name: nodeFileName(node.file) })}
+                className="map-canvas-node-connect"
+                onPointerDown={(event) => startConnect(node.id, event)}
+                onPointerUp={(event) => finishConnect(node.id, event)}
+                title={t("map.connectNode", { name: nodeFileName(node.file) })}
+                type="button"
+              />
             </div>
           ))}
         </div>
