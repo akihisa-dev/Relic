@@ -1075,8 +1075,7 @@
   right: 0;
 }
 
-.map-canvas-node-name,
-.map-canvas-node-path {
+.map-canvas-node-name {
   min-width: 0;
   overflow-wrap: anywhere;
   white-space: normal;
@@ -1087,12 +1086,6 @@
   font-size: 14px;
   font-weight: 700;
   line-height: 1.2;
-}
-
-.map-canvas-node-path {
-  color: var(--text-3);
-  font-size: 11px;
-  line-height: 1.25;
 }
 
 /* ────────────────────────────────── */
