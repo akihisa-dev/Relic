@@ -253,7 +253,7 @@ describe("MapCanvas", () => {
     expect(onChange.mock.calls[0]?.[0]).not.toContain("from: node-1");
   });
 
-  it("does not add a line when a selected node is dragged back to itself", () => {
+  it("moves a selected node when it is not dropped on another node", () => {
     const onChange = vi.fn();
     render(
       <I18nProvider language="en">
@@ -268,10 +268,13 @@ describe("MapCanvas", () => {
     fireEvent(alice as HTMLElement, pointerEvent("pointerup", 2, 10, 10));
     fireEvent(alice as HTMLElement, pointerEvent("pointerdown", 3, 10, 10));
     fireEvent(canvas, pointerEvent("pointermove", 3, 260, 10));
-    fireEvent(alice as HTMLElement, pointerEvent("pointerup", 3, 260, 10));
+    fireEvent(canvas, pointerEvent("pointerup", 3, 260, 10));
 
     expect(screen.getByRole("img", { name: "World" })).toBeInTheDocument();
-    expect(onChange).not.toHaveBeenCalled();
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange.mock.calls[0]?.[0]).toContain("x: 370");
+    expect(onChange.mock.calls[0]?.[0]).toContain("y: 80");
+    expect(onChange.mock.calls[0]?.[0]).not.toContain("from: node-1");
   });
 
   it("deletes a selected node and connected lines with Delete", () => {

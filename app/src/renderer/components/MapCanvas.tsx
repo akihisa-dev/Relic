@@ -62,6 +62,7 @@ const maxZoom = 2.5;
 const connectActivationDistance = 4;
 
 interface DragState {
+  capturesPointer: boolean;
   currentX: number;
   currentY: number;
   nodeId: string;
@@ -156,6 +157,7 @@ export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): Reac
       event.currentTarget.setPointerCapture(event.pointerId);
     }
     setDrag({
+      capturesPointer: true,
       currentX: node.x,
       currentY: node.y,
       nodeId: node.id,
@@ -184,7 +186,7 @@ export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): Reac
   const finishNodeDrag = (event: ReactPointerEvent<HTMLDivElement>): void => {
     if (!drag || drag.pointerId !== event.pointerId) return;
 
-    if (typeof event.currentTarget.releasePointerCapture === "function") {
+    if (drag.capturesPointer && typeof event.currentTarget.releasePointerCapture === "function") {
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
     if (drag.currentX !== drag.originalX || drag.currentY !== drag.originalY) {
@@ -260,7 +262,7 @@ export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): Reac
       };
     });
   };
-  const startConnect = (nodeId: string, event: ReactPointerEvent<HTMLDivElement>): void => {
+  const startConnect = (node: RelicMapNode, event: ReactPointerEvent<HTMLDivElement>): void => {
     event.preventDefault();
     event.stopPropagation();
     if (!onChange) return;
@@ -272,12 +274,23 @@ export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): Reac
       isActive: false,
       currentX: pointer.x,
       currentY: pointer.y,
-      fromNodeId: nodeId,
+      fromNodeId: node.id,
       pointerId: event.pointerId,
       startClientX: event.clientX,
       startClientY: event.clientY,
       startX: pointer.x,
       startY: pointer.y
+    });
+    setDrag({
+      capturesPointer: false,
+      currentX: node.x,
+      currentY: node.y,
+      nodeId: node.id,
+      originalX: node.x,
+      originalY: node.y,
+      pointerId: event.pointerId,
+      startClientX: event.clientX,
+      startClientY: event.clientY
     });
   };
   const updateConnect = (event: ReactPointerEvent<HTMLDivElement>): void => {
@@ -301,21 +314,23 @@ export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): Reac
       };
     });
   };
-  const finishConnect = (toNodeId: string, event: ReactPointerEvent<HTMLDivElement>): void => {
+  const finishConnect = (toNodeId: string, event: ReactPointerEvent<HTMLDivElement>): boolean => {
     event.preventDefault();
     event.stopPropagation();
-    if (!connect || connect.pointerId !== event.pointerId) return;
+    if (!connect || connect.pointerId !== event.pointerId) return false;
     if (!connect.isActive || connect.fromNodeId === toNodeId) {
       setConnect(null);
-      return;
+      return false;
     }
 
     const added = addRelicMapLine(content, connect.fromNodeId, toNodeId);
     if (added.ok) {
       onChange?.(added.value.content);
       setSelection({ id: added.value.line.id, type: "line" });
+      setDrag(null);
     }
     setConnect(null);
+    return added.ok;
   };
   const cancelConnect = (event: ReactPointerEvent<HTMLDivElement>): void => {
     if (!connect || connect.pointerId !== event.pointerId) return;
@@ -323,15 +338,19 @@ export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): Reac
   };
   const startNodePointer = (node: RelicMapNode, event: ReactPointerEvent<HTMLDivElement>): void => {
     if (selection?.type === "node" && selection.id === node.id) {
-      startConnect(node.id, event);
+      startConnect(node, event);
       return;
     }
 
     startNodeDrag(node, event);
   };
   const finishNodePointer = (node: RelicMapNode, event: ReactPointerEvent<HTMLDivElement>): void => {
+    event.stopPropagation();
     if (connect?.pointerId === event.pointerId) {
-      finishConnect(node.id, event);
+      const didAddLine = finishConnect(node.id, event);
+      if (!didAddLine) {
+        finishNodeDrag(event);
+      }
       return;
     }
 
@@ -426,10 +445,12 @@ export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): Reac
       onPointerDown={startPanOnBlank}
       onPointerMove={(event) => {
         updateConnect(event);
+        updateNodeDrag(event);
         updatePan(event);
       }}
       onPointerUp={(event) => {
         cancelConnect(event);
+        finishNodeDrag(event);
         finishPan(event);
       }}
       onWheel={handleCanvasWheel}
