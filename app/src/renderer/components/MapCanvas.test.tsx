@@ -224,13 +224,19 @@ describe("MapCanvas", () => {
 
     fireEvent(alice as HTMLElement, pointerEvent("pointerdown", 2, 10, 10));
     fireEvent(alice as HTMLElement, pointerEvent("pointerup", 2, 10, 10));
-    fireEvent(alice as HTMLElement, pointerEvent("pointerdown", 3, 10, 10));
+    expect(alice as HTMLElement).toHaveClass("map-canvas-node--selected");
+    const outline = (alice as HTMLElement).querySelector(".map-canvas-node-outline-hit--right");
+    expect(outline).toBeInstanceOf(HTMLElement);
+
+    fireEvent(outline as HTMLElement, pointerEvent("pointerdown", 3, 190, 50));
     fireEvent(canvas, pointerEvent("pointermove", 3, 260, 10));
     fireEvent(bob as HTMLElement, pointerEvent("pointerup", 3, 260, 10));
 
     expect(onChange).toHaveBeenCalledTimes(1);
     expect(onChange.mock.calls[0]?.[0]).toContain("from: node-1");
     expect(onChange.mock.calls[0]?.[0]).toContain("to: node-2");
+    expect(onChange.mock.calls[0]?.[0]).toContain("x: 120");
+    expect(onChange.mock.calls[0]?.[0]).toContain("y: 80");
   });
 
   it("keeps unselected node dragging as node movement", () => {
@@ -253,7 +259,30 @@ describe("MapCanvas", () => {
     expect(onChange.mock.calls[0]?.[0]).not.toContain("from: node-1");
   });
 
-  it("moves a selected node when it is not dropped on another node", () => {
+  it("moves a selected node when dragging inside the node", () => {
+    const onChange = vi.fn();
+    render(
+      <I18nProvider language="en">
+        <MapCanvas content={mapContentWithoutLines} fileName="World" onChange={onChange} />
+      </I18nProvider>
+    );
+    const alice = screen.getByText("alice").closest(".map-canvas-node");
+    expect(alice).toBeInstanceOf(HTMLElement);
+
+    fireEvent(alice as HTMLElement, pointerEvent("pointerdown", 2, 10, 10));
+    fireEvent(alice as HTMLElement, pointerEvent("pointerup", 2, 10, 10));
+    fireEvent(alice as HTMLElement, pointerEvent("pointerdown", 3, 10, 10));
+    fireEvent(alice as HTMLElement, pointerEvent("pointermove", 3, 260, 10));
+    fireEvent(alice as HTMLElement, pointerEvent("pointerup", 3, 260, 10));
+
+    expect(screen.getByRole("img", { name: "World" })).toBeInTheDocument();
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange.mock.calls[0]?.[0]).toContain("x: 370");
+    expect(onChange.mock.calls[0]?.[0]).toContain("y: 80");
+    expect(onChange.mock.calls[0]?.[0]).not.toContain("from: node-1");
+  });
+
+  it("does not move a selected node when dragging its outline without a target node", () => {
     const onChange = vi.fn();
     render(
       <I18nProvider language="en">
@@ -266,15 +295,14 @@ describe("MapCanvas", () => {
 
     fireEvent(alice as HTMLElement, pointerEvent("pointerdown", 2, 10, 10));
     fireEvent(alice as HTMLElement, pointerEvent("pointerup", 2, 10, 10));
-    fireEvent(alice as HTMLElement, pointerEvent("pointerdown", 3, 10, 10));
+    const outline = (alice as HTMLElement).querySelector(".map-canvas-node-outline-hit--right");
+    expect(outline).toBeInstanceOf(HTMLElement);
+
+    fireEvent(outline as HTMLElement, pointerEvent("pointerdown", 3, 190, 50));
     fireEvent(canvas, pointerEvent("pointermove", 3, 260, 10));
     fireEvent(canvas, pointerEvent("pointerup", 3, 260, 10));
 
-    expect(screen.getByRole("img", { name: "World" })).toBeInTheDocument();
-    expect(onChange).toHaveBeenCalledTimes(1);
-    expect(onChange.mock.calls[0]?.[0]).toContain("x: 370");
-    expect(onChange.mock.calls[0]?.[0]).toContain("y: 80");
-    expect(onChange.mock.calls[0]?.[0]).not.toContain("from: node-1");
+    expect(onChange).not.toHaveBeenCalled();
   });
 
   it("deletes a selected node and connected lines with Delete", () => {
