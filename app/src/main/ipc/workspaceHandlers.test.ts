@@ -57,6 +57,7 @@ describe("workspaceHandlers", () => {
     temporaryPaths.push(userDataPath, workspacePath);
 
     await writeFile(path.join(workspacePath, "読書メモ.md"), "# 読書メモ\n", "utf8");
+    await writeFile(path.join(workspacePath, "人物関係.md"), "type: map\n\nnodes: []\nlines: []\n", "utf8");
     await mkdir(path.join(workspacePath, "資料"));
     await writeFile(path.join(workspacePath, "資料", "保管メモ.md"), "# 保管メモ\n", "utf8");
 
@@ -107,8 +108,14 @@ describe("workspaceHandlers", () => {
         path: "資料",
         type: "folder"
       },
+      { name: "人物関係", path: "人物関係.md", type: "file" },
       { name: "読書メモ", path: "読書メモ.md", type: "file" }
     ]);
+    expect(result.ok ? result.value.fileIndex : []).toEqual(expect.arrayContaining([
+      expect.objectContaining({ kind: "map", name: "人物関係", path: "人物関係.md", readStatus: "ok" }),
+      expect.objectContaining({ kind: "markdown", name: "保管メモ", path: "資料/保管メモ.md", readStatus: "ok" }),
+      expect.objectContaining({ kind: "markdown", name: "読書メモ", path: "読書メモ.md", readStatus: "ok" })
+    ]));
   });
 
   it("起動時にアクティブワークスペースのフォルダがなくても状態を返す", async () => {

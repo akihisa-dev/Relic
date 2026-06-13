@@ -1,6 +1,5 @@
 import { readFile, stat } from "node:fs/promises";
 import type { Stats } from "node:fs";
-import path from "node:path";
 
 import type {
   SearchMode,
@@ -9,12 +8,10 @@ import type {
 } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { parseMarkdownTags } from "../../shared/tags";
-import { collectMarkdownPaths } from "../../shared/workspaceTree";
 import { extractAliases } from "./aliases";
 import { parseFrontmatter } from "./frontmatter";
-import { readWorkspaceFileTree } from "./fileTree";
-import { resolveWorkspaceRelativePath } from "./paths";
 import { isRegexSafeLine, validateSafeRegexPattern } from "./regexSafety";
+import { readWorkspaceFileIndex } from "./workspaceFileIndex";
 
 export const workspaceSearchMaxResults = 500;
 export const workspaceSearchMaxFileBytes = 2 * 1024 * 1024;
@@ -61,36 +58,25 @@ export async function searchWorkspace(
   }
 
   try {
-    const fileTree = await readWorkspaceFileTree(workspacePath);
+    const fileIndex = await readWorkspaceFileIndex(workspacePath, {
+      maxSearchFileBytes: workspaceSearchMaxFileBytes,
+      operations: {
+        readFile: (filePath) => operations.readFile(filePath, "utf8"),
+        stat: operations.stat
+      }
+    });
     const results: WorkspaceSearchResult[] = [];
-    let skippedLargeFiles = 0;
+    const skippedLargeFiles = fileIndex.records.filter(
+      (record) => record.readStatus === "ok" && !record.searchable
+    ).length;
     let truncated = false;
 
-    for (const relativePath of collectMarkdownPaths(fileTree)) {
-      const absolutePath = resolveWorkspaceRelativePath(workspacePath, relativePath);
+    for (const record of fileIndex.records) {
+      if (record.readStatus !== "ok" || !record.searchable) continue;
 
-      if (!absolutePath.ok) continue;
-
-      const fileName = path.basename(relativePath, ".md");
-      let content: string;
-      let fileStats: Stats;
-
-      try {
-        fileStats = await operations.stat(absolutePath.value);
-      } catch {
-        continue;
-      }
-
-      if (fileStats.size > workspaceSearchMaxFileBytes) {
-        skippedLargeFiles += 1;
-        continue;
-      }
-
-      try {
-        content = await operations.readFile(absolutePath.value, "utf8");
-      } catch {
-        continue;
-      }
+      const fileName = record.name;
+      const relativePath = record.path;
+      const content = record.lines.join("\n");
 
       if (mode === "fileName") {
         let alias: string | null = null;
@@ -146,9 +132,7 @@ export async function searchWorkspace(
         continue;
       }
 
-      const lines = content.split("\n");
-
-      for (const [index, line] of lines.entries()) {
+      for (const [index, line] of record.lines.entries()) {
         if (mode === "regex" && !isRegexSafeLine(line)) continue;
 
         const matches =
