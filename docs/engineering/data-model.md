@@ -114,13 +114,13 @@ Diagram MarkdownにはDiagram以外の本文を混ぜず、壊れた形式の場
 
 ### why-tree
 
-`why-tree` は原因分析用の構造エディタとして扱う。自由なNode、Line、Label、Node位置は持たない。本文内のYAMLには必ず1つの `phenomenon` を置き、その下に単一直列の `why` を入れ子で保持する。`facts`、`solutions`、`actions` はPhenomenonまたは各Whyを支える補助要素であり、Why Chainの一部にはしない。
+`why-tree` は原因分析用の構造エディタとして扱う。自由なNode、Line、Label、Node位置は持たない。本文内のYAMLには必ず1つの `phenomenon` を置き、その下に子Why一覧の `whys` を入れ子で保持する。旧形式の単数 `why` は読み込み時に `whys` の先頭要素として扱い、保存時は `whys` へ正規化する。`facts`、`solutions`、`actions` はPhenomenonまたは各Whyを支える補助要素であり、Why一覧の一部にはしない。
 
 | フィールド | 内容 |
 |-----------|------|
 | phenomenon | 問題・現象。Why Treeの開始点として必ず1つ持つ |
 | phenomenon.title / why.title | 表示する問題・原因の本文 |
-| phenomenon.why / why.why | 次のWhy。単一直列のWhy Chainとして扱う |
+| phenomenon.whys / why.whys | 子Whyの一覧 |
 | facts | 対象のPhenomenonまたはWhyを支える根拠一覧 |
 | solutions | 対象のPhenomenonまたはWhyに対する解決策一覧 |
 | actions | 対象のPhenomenonまたはWhyに対する実行項目一覧 |

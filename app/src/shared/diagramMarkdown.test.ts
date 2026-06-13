@@ -125,7 +125,7 @@ describe("parseRelicDiagramMarkdown", () => {
     });
   });
 
-  it("why-treeからPhenomenon、Why Chain、補助要素を読み込む", () => {
+  it("why-treeからPhenomenon、Why、補助要素を読み込む", () => {
     const parsed = parseRelicDiagramMarkdown(whyTreeContent);
 
     expect(parsed).toMatchObject({
@@ -138,15 +138,19 @@ describe("parseRelicDiagramMarkdown", () => {
           facts: ["市場縮小"],
           solutions: ["新市場開拓"],
           actions: ["調査実施"],
-          why: {
-            title: "流入減少",
-            facts: ["SEO順位低下"],
-            solutions: ["SEO改善"],
-            actions: ["記事改修"],
-            why: {
-              title: "コンテンツ老朽化"
+          whys: [
+            {
+              title: "流入減少",
+              facts: ["SEO順位低下"],
+              solutions: ["SEO改善"],
+              actions: ["記事改修"],
+              whys: [
+                {
+                  title: "コンテンツ老朽化"
+                }
+              ]
             }
-          }
+          ]
         }
       }
     });
@@ -297,41 +301,61 @@ describe("why-tree operations", () => {
     expect(updatedPhenomenon.ok ? updatedPhenomenon.value.content : "").toContain("title: 売上が下がった");
 
     const updatedWhy = updateRelicWhyTreeTitle(updatedPhenomenon.ok ? updatedPhenomenon.value.content : whyTreeContent, [0], "流入が減った");
-    expect(updatedWhy.ok ? updatedWhy.value.tree.phenomenon.why?.title : null).toBe("流入が減った");
+    expect(updatedWhy.ok ? updatedWhy.value.tree.phenomenon.whys[0]?.title : null).toBe("流入が減った");
     expect(updatedWhy.ok ? parseRelicDiagramMarkdown(updatedWhy.value.content).ok : false).toBe(true);
   });
 
-  it("Why ChainにWhyを追加し、補助要素をWhy Chainへ混ぜない", () => {
+  it("Whyに子Whyを追加し、補助要素をWhy配列へ混ぜない", () => {
     const added = addRelicWhyTreeWhy(whyTreeContent, [0, 0]);
 
     expect(added.ok).toBe(true);
     if (!added.ok) return;
-    expect(added.value.tree.phenomenon.why?.why?.title).toBe("コンテンツ老朽化");
-    expect(added.value.tree.phenomenon.why?.why?.why?.title).toBe("なぜ？");
+    expect(added.value.tree.phenomenon.whys[0]?.whys[0]?.title).toBe("コンテンツ老朽化");
+    expect(added.value.tree.phenomenon.whys[0]?.whys[0]?.whys[0]?.title).toBe("なぜ？");
     expect(added.value.content).not.toContain("role:");
     expect(added.value.content).not.toContain("nodes:");
   });
 
+  it("選択したノードの子として複数のWhyを追加できる", () => {
+    const first = addRelicWhyTreeWhy(whyTreeContent, []);
+    expect(first.ok).toBe(true);
+    if (!first.ok) return;
+
+    const second = addRelicWhyTreeWhy(first.value.content, []);
+    expect(second.ok).toBe(true);
+    if (!second.ok) return;
+    expect(second.value.tree.phenomenon.whys.map((why) => why.title)).toEqual(["流入減少", "なぜ？", "なぜ？"]);
+
+    const child = addRelicWhyTreeWhy(second.value.content, [0]);
+    expect(child.ok).toBe(true);
+    if (!child.ok) return;
+    expect(child.value.tree.phenomenon.whys[0]?.whys.map((why) => why.title)).toEqual(["コンテンツ老朽化", "なぜ？"]);
+    expect(child.value.content).toContain("whys:");
+    expect(child.value.content).not.toContain("\n  why:");
+  });
+
   it("Fact、Solution、Actionを追加・更新し、Markdownから復元する", () => {
     const withFact = addRelicWhyTreeSupplement(whyTreeContent, [0], "fact");
-    expect(withFact.ok ? withFact.value.tree.phenomenon.why?.facts : []).toContain("根拠");
+    expect(withFact.ok ? withFact.value.tree.phenomenon.whys[0]?.facts : []).toContain("根拠");
 
     const withSolution = addRelicWhyTreeSupplement(withFact.ok ? withFact.value.content : whyTreeContent, [0], "solution");
-    expect(withSolution.ok ? withSolution.value.tree.phenomenon.why?.solutions : []).toContain("解決策");
+    expect(withSolution.ok ? withSolution.value.tree.phenomenon.whys[0]?.solutions : []).toContain("解決策");
 
     const withAction = addRelicWhyTreeSupplement(withSolution.ok ? withSolution.value.content : whyTreeContent, [0], "action");
-    expect(withAction.ok ? withAction.value.tree.phenomenon.why?.actions : []).toContain("実行項目");
+    expect(withAction.ok ? withAction.value.tree.phenomenon.whys[0]?.actions : []).toContain("実行項目");
 
     const updated = updateRelicWhyTreeSupplement(withAction.ok ? withAction.value.content : whyTreeContent, [0], "action", 1, "記事改修を実行");
-    expect(updated.ok ? updated.value.tree.phenomenon.why?.actions[1] : null).toBe("記事改修を実行");
+    expect(updated.ok ? updated.value.tree.phenomenon.whys[0]?.actions[1] : null).toBe("記事改修を実行");
     expect(updated.ok ? parseRelicDiagramMarkdown(updated.value.content) : null).toMatchObject({
       ok: true,
       value: {
         type: "why-tree",
         phenomenon: {
-          why: {
-            actions: ["記事改修", "記事改修を実行"]
-          }
+          whys: [
+            {
+              actions: ["記事改修", "記事改修を実行"]
+            }
+          ]
         }
       }
     });
@@ -341,18 +365,18 @@ describe("why-tree operations", () => {
     const removedWhy = removeRelicWhyTreeWhy(whyTreeContent, [0]);
     expect(removedWhy.ok).toBe(true);
     if (!removedWhy.ok) return;
-    expect(removedWhy.value.tree.phenomenon.why?.title).toBe("コンテンツ老朽化");
+    expect(removedWhy.value.tree.phenomenon.whys).toEqual([]);
     expect(removedWhy.value.content).not.toContain("title: 流入減少");
     expect(parseRelicDiagramMarkdown(removedWhy.value.content).ok).toBe(true);
 
     const removedFact = removeRelicWhyTreeSupplement(whyTreeContent, [0], "fact", 0);
-    expect(removedFact.ok ? removedFact.value.tree.phenomenon.why?.facts : null).toEqual([]);
+    expect(removedFact.ok ? removedFact.value.tree.phenomenon.whys[0]?.facts : null).toEqual([]);
 
     expect(removeRelicWhyTreeWhy(whyTreeContent, []).ok).toBe(false);
     expect(removeRelicWhyTreeSupplement(whyTreeContent, [0], "action", 9).ok).toBe(false);
   });
 
-  it("Why Chainのパスは単一直列だけを許可し、横断リンクや循環を表現しない", () => {
+  it("存在しないWhyパスや循環は表現しない", () => {
     expect(addRelicWhyTreeWhy(whyTreeContent, [1]).ok).toBe(false);
     expect(addRelicWhyTreeSupplement(whyTreeContent, [0, 1], "fact").ok).toBe(false);
     expect(updateRelicWhyTreeTitle(whyTreeContent, [0, 0, 0], "存在しないWhy").ok).toBe(false);

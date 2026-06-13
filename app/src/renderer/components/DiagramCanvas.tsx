@@ -620,7 +620,6 @@ function WhyTreeEditor({
   tree
 }: DiagramCanvasProps & { tree: RelicWhyTreeDocument }): ReactElement {
   const t = useT();
-  const chain = useMemo(() => buildWhyTreeChain(tree), [tree]);
   const [selection, setSelection] = useState<WhyTreeSelection>({ kind: "phenomenon", path: [] });
 
   const applyUpdate = (updated: WhyTreeUpdateResult): void => {
@@ -683,112 +682,121 @@ function WhyTreeEditor({
     event.preventDefault();
     deleteSelection();
   };
+  const renderWhyTreeBranch = (item: WhyTreeChainItem): ReactElement => {
+    const isSelected = isSameWhyTreeSelection(selection, { kind: item.role, path: item.path });
+
+    return (
+      <div className="why-tree-branch" key={item.path.join(".") || "phenomenon"}>
+        <div className="why-tree-row">
+          <SupplementColumn
+            kind="fact"
+            node={item.node}
+            onChange={changeSupplement}
+            onRemove={removeSupplement}
+            onSelect={selectSupplement}
+            path={item.path}
+            selected={selection}
+          />
+          <div className="why-tree-main-column">
+            <div
+              className={[
+                "why-tree-node-shell",
+                isSelected ? "why-tree-node-shell--menu-open" : ""
+              ].filter(Boolean).join(" ")}
+            >
+              <div
+                className={[
+                  "why-tree-main-node",
+                  `why-tree-main-node--${item.role}`,
+                  isSelected ? "why-tree-item--selected" : ""
+                ].filter(Boolean).join(" ")}
+                onClick={() => selectMainNode(item)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    selectMainNode(item);
+                  }
+                }}
+                role="treeitem"
+                tabIndex={0}
+              >
+                <span className="why-tree-role-label">{t(whyTreeRoleLabelKey(item.role))}</span>
+                <input
+                  aria-label={t(whyTreeTitleInputKey(item.role))}
+                  onChange={(event) => changeMainTitle(item.path, event.currentTarget.value)}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    selectMainNode(item);
+                  }}
+                  onFocus={() => selectMainNode(item)}
+                  value={item.node.title}
+                />
+                {item.role === "why" ? (
+                  <button
+                    aria-label={t("diagram.whyTree.delete")}
+                    className="why-tree-delete-button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      removeMainWhy(item.path);
+                    }}
+                    type="button"
+                  >
+                    ×
+                  </button>
+                ) : null}
+              </div>
+              {isSelected ? (
+                <WhyTreeNodeMenu
+                  onAddAction={() => addSupplementFromPath(item.path, "action")}
+                  onAddFact={() => addSupplementFromPath(item.path, "fact")}
+                  onAddSolution={() => addSupplementFromPath(item.path, "solution")}
+                  onAddWhy={() => {
+                    if (!onChange) return;
+                    applyUpdate(addRelicWhyTreeWhy(content, item.path));
+                    setSelection({ kind: "why", path: [...item.path, item.node.whys.length] });
+                  }}
+                />
+              ) : null}
+            </div>
+          </div>
+          <div className="why-tree-support-column why-tree-support-column--right">
+            <SupplementColumn
+              kind="solution"
+              node={item.node}
+              onChange={changeSupplement}
+              onRemove={removeSupplement}
+              onSelect={selectSupplement}
+              path={item.path}
+              selected={selection}
+            />
+            <SupplementColumn
+              kind="action"
+              node={item.node}
+              onChange={changeSupplement}
+              onRemove={removeSupplement}
+              onSelect={selectSupplement}
+              path={item.path}
+              selected={selection}
+            />
+          </div>
+        </div>
+        {item.node.whys.length > 0 ? (
+          <div className="why-tree-children">
+            {item.node.whys.map((why, index) => renderWhyTreeBranch({
+              node: why,
+              path: [...item.path, index],
+              role: "why"
+            }))}
+          </div>
+        ) : null}
+      </div>
+    );
+  };
 
   return (
     <div aria-label={fileName} className="why-tree-editor" onKeyDown={handleEditorKeyDown} role="tree">
       <div className="why-tree-content">
-        {chain.map((item, index) => (
-          <div className="why-tree-step" key={item.path.join(".") || "phenomenon"}>
-            <div className="why-tree-row">
-              <SupplementColumn
-                kind="fact"
-                node={item.node}
-                onChange={changeSupplement}
-                onRemove={removeSupplement}
-                onSelect={selectSupplement}
-                path={item.path}
-                selected={selection}
-              />
-              <div className="why-tree-main-column">
-                <div
-                  className={[
-                    "why-tree-node-shell",
-                    isSameWhyTreeSelection(selection, { kind: item.role, path: item.path }) ? "why-tree-node-shell--menu-open" : ""
-                  ].filter(Boolean).join(" ")}
-                >
-                  <div
-                    className={[
-                      "why-tree-main-node",
-                      `why-tree-main-node--${item.role}`,
-                      isSameWhyTreeSelection(selection, { kind: item.role, path: item.path }) ? "why-tree-item--selected" : ""
-                    ].filter(Boolean).join(" ")}
-                    onClick={() => selectMainNode(item)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter" || event.key === " ") {
-                        event.preventDefault();
-                        selectMainNode(item);
-                      }
-                    }}
-                    role="treeitem"
-                    tabIndex={0}
-                  >
-                    <span className="why-tree-role-label">{t(whyTreeRoleLabelKey(item.role))}</span>
-                    <input
-                      aria-label={t(whyTreeTitleInputKey(item.role))}
-                      onChange={(event) => changeMainTitle(item.path, event.currentTarget.value)}
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        selectMainNode(item);
-                      }}
-                      onFocus={() => selectMainNode(item)}
-                      value={item.node.title}
-                    />
-                    {item.role === "why" ? (
-                      <button
-                        aria-label={t("diagram.whyTree.delete")}
-                        className="why-tree-delete-button"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          removeMainWhy(item.path);
-                        }}
-                        type="button"
-                      >
-                        ×
-                      </button>
-                    ) : null}
-                  </div>
-                  {isSameWhyTreeSelection(selection, { kind: item.role, path: item.path }) ? (
-                    <WhyTreeNodeMenu
-                      onAddAction={() => addSupplementFromPath(item.path, "action")}
-                      onAddFact={() => addSupplementFromPath(item.path, "fact")}
-                      onAddSolution={() => addSupplementFromPath(item.path, "solution")}
-                      onAddWhy={() => {
-                        if (!onChange) return;
-                        applyUpdate(addRelicWhyTreeWhy(content, item.path));
-                      }}
-                    />
-                  ) : null}
-                </div>
-                {index < chain.length - 1 ? (
-                  <div aria-hidden="true" className="why-tree-chain-connector">
-                    <span />
-                    <strong>{t("diagram.whyTree.chainLabel")}</strong>
-                  </div>
-                ) : null}
-              </div>
-              <div className="why-tree-support-column why-tree-support-column--right">
-                <SupplementColumn
-                  kind="solution"
-                  node={item.node}
-                  onChange={changeSupplement}
-                  onRemove={removeSupplement}
-                  onSelect={selectSupplement}
-                  path={item.path}
-                  selected={selection}
-                />
-                <SupplementColumn
-                  kind="action"
-                  node={item.node}
-                  onChange={changeSupplement}
-                  onRemove={removeSupplement}
-                  onSelect={selectSupplement}
-                  path={item.path}
-                  selected={selection}
-                />
-              </div>
-            </div>
-          </div>
-        ))}
+        {renderWhyTreeBranch({ node: tree.phenomenon, path: [], role: "phenomenon" })}
       </div>
     </div>
   );
@@ -959,20 +967,26 @@ function buildWhyTreeChain(tree: RelicWhyTreeDocument): WhyTreeChainItem[] {
     path: [],
     role: "phenomenon"
   }];
-  let current = tree.phenomenon.why;
-  let path = [0];
 
-  while (current) {
+  appendWhyTreeChildren(chain, tree.phenomenon.whys, []);
+
+  return chain;
+}
+
+function appendWhyTreeChildren(
+  chain: WhyTreeChainItem[],
+  whys: RelicWhyTreeNode[],
+  parentPath: number[]
+): void {
+  whys.forEach((why, index) => {
+    const path = [...parentPath, index];
     chain.push({
-      node: current,
+      node: why,
       path,
       role: "why"
     });
-    current = current.why;
-    path = [...path, 0];
-  }
-
-  return chain;
+    appendWhyTreeChildren(chain, why.whys, path);
+  });
 }
 
 function countWhyTreeItems(tree: RelicWhyTreeDocument): {
