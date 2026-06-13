@@ -1,4 +1,5 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { I18nProvider } from "../i18n";
@@ -48,10 +49,51 @@ const mapContentWithoutLines = [
   ""
 ].join("\n");
 
+const mapContentWithEmptyLabel = [
+  "type: map",
+  "",
+  "nodes:",
+  "  - id: node-1",
+  "    file: characters/alice.md",
+  "    x: 120",
+  "    y: 80",
+  "    width: 180",
+  "    height: 80",
+  "  - id: node-2",
+  "    file: characters/bob.md",
+  "    x: 380",
+  "    y: 80",
+  "    width: 180",
+  "    height: 80",
+  "lines:",
+  "  - id: line-1",
+  "    from: node-1",
+  "    to: node-2",
+  "    label: ''",
+  ""
+].join("\n");
+
 function renderMapCanvas(content = mapContent) {
   render(
     <I18nProvider language="en">
       <MapCanvas content={content} fileName="World" />
+    </I18nProvider>
+  );
+}
+
+function StatefulMapCanvas({ content, onChange }: { content: string; onChange: (content: string) => void }) {
+  const [currentContent, setCurrentContent] = useState(content);
+
+  return (
+    <I18nProvider language="en">
+      <MapCanvas
+        content={currentContent}
+        fileName="World"
+        onChange={(nextContent) => {
+          setCurrentContent(nextContent);
+          onChange(nextContent);
+        }}
+      />
     </I18nProvider>
   );
 }
@@ -237,6 +279,49 @@ describe("MapCanvas", () => {
     expect(onChange.mock.calls[0]?.[0]).toContain("to: node-2");
     expect(onChange.mock.calls[0]?.[0]).toContain("x: 120");
     expect(onChange.mock.calls[0]?.[0]).toContain("y: 80");
+  });
+
+  it("opens line label editing immediately after creating a line", () => {
+    const onChange = vi.fn();
+    render(<StatefulMapCanvas content={mapContentWithoutLines} onChange={onChange} />);
+    const canvas = screen.getByRole("img", { name: "World" });
+    const alice = screen.getByText("alice").closest(".map-canvas-node");
+    const bob = screen.getByText("bob").closest(".map-canvas-node");
+    expect(alice).toBeInstanceOf(HTMLElement);
+    expect(bob).toBeInstanceOf(HTMLElement);
+
+    fireEvent(alice as HTMLElement, pointerEvent("pointerdown", 2, 10, 10));
+    fireEvent(alice as HTMLElement, pointerEvent("pointerup", 2, 10, 10));
+    const outline = (alice as HTMLElement).querySelector(".map-canvas-node-outline-hit--right");
+    expect(outline).toBeInstanceOf(HTMLElement);
+
+    fireEvent(outline as HTMLElement, pointerEvent("pointerdown", 3, 190, 50));
+    fireEvent(canvas, pointerEvent("pointermove", 3, 260, 10));
+    fireEvent(bob as HTMLElement, pointerEvent("pointerup", 3, 260, 10));
+
+    const input = screen.getByLabelText("Edit line label");
+    fireEvent.change(input, { target: { value: "best friends" } });
+    fireEvent.blur(input);
+
+    expect(onChange).toHaveBeenCalledTimes(2);
+    expect(onChange.mock.calls[1]?.[0]).toContain("label: best friends");
+    expect(screen.getByText("best friends")).toBeInTheDocument();
+  });
+
+  it("shows an add-label button for a selected unlabeled line", () => {
+    const onChange = vi.fn();
+    const { container } = render(
+      <I18nProvider language="en">
+        <MapCanvas content={mapContentWithEmptyLabel} fileName="World" onChange={onChange} />
+      </I18nProvider>
+    );
+    const line = container.querySelector(".map-canvas-line");
+    expect(line).toBeInstanceOf(Element);
+
+    expect(screen.queryByRole("button", { name: "Edit line label" })).not.toBeInTheDocument();
+    fireEvent(line as Element, pointerEvent("pointerdown", 4, 10, 10));
+
+    expect(screen.getByRole("button", { name: "Edit line label" })).toHaveTextContent("Add label");
   });
 
   it("keeps unselected node dragging as node movement", () => {
