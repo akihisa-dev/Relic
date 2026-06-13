@@ -189,13 +189,14 @@ describe("DiagramCanvas", () => {
 
   it("adds Why nodes from the selected node instead of always appending to the deepest node", () => {
     const onChange = vi.fn();
-    render(<StatefulDiagramCanvas content={whyTreeContent} onChange={onChange} />);
+    const { container } = render(<StatefulDiagramCanvas content={whyTreeContent} onChange={onChange} />);
 
     fireEvent.click(screen.getByRole("button", { name: /\+ Why/ }));
     fireEvent.focus(screen.getByDisplayValue("売上低下"));
     fireEvent.click(screen.getByRole("button", { name: /\+ Why/ }));
 
     expect(screen.getAllByDisplayValue("なぜ？")).toHaveLength(2);
+    expect(container.querySelector(".why-tree-children")).toBeInTheDocument();
     expect(onChange.mock.calls[1]?.[0]).toContain("whys:");
   });
 
