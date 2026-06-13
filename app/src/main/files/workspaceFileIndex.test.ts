@@ -20,11 +20,12 @@ describe("readWorkspaceFileIndex", () => {
     );
   });
 
-  it("Markdownファイル一覧とMap判定と行単位テキストを作る", async () => {
+  it("Markdownファイル一覧とDiagram判定と行単位テキストを作る", async () => {
     const workspacePath = await createWorkspace();
     await writeFile(path.join(workspacePath, "note.md"), "# Note\n本文", "utf8");
-    await writeFile(path.join(workspacePath, "map.md"), "type: map\n\nnodes: []\nlines: []", "utf8");
-    await writeFile(path.join(workspacePath, "ignored.txt"), "type: map", "utf8");
+    await writeFile(path.join(workspacePath, "relationship.md"), "---\ntype: relationship\n---\n\nnodes: []\nlines: []", "utf8");
+    await writeFile(path.join(workspacePath, "why.md"), "---\ntype: why-tree\n---\n\nnodes: []\nlines: []", "utf8");
+    await writeFile(path.join(workspacePath, "ignored.txt"), "---\ntype: relationship\n---", "utf8");
 
     const index = await readWorkspaceFileIndex(workspacePath);
 
@@ -34,27 +35,32 @@ describe("readWorkspaceFileIndex", () => {
       path: filePath,
       readStatus
     }))).toEqual([
-      { kind: "map", name: "map", path: "map.md", readStatus: "ok" },
-      { kind: "markdown", name: "note", path: "note.md", readStatus: "ok" }
+      { kind: "markdown", name: "note", path: "note.md", readStatus: "ok" },
+      { kind: "diagram", name: "relationship", path: "relationship.md", readStatus: "ok" },
+      { kind: "diagram", name: "why", path: "why.md", readStatus: "ok" }
     ]);
     expect(index.records.find((record) => record.path === "note.md")?.lines).toEqual(["# Note", "本文"]);
-    expect(index.records.find((record) => record.path === "map.md")?.lines).toEqual([
-      "type: map",
+    expect(index.records.find((record) => record.path === "relationship.md")?.lines).toEqual([
+      "---",
+      "type: relationship",
+      "---",
       "",
       "nodes: []",
       "lines: []"
     ]);
   });
 
-  it("Map判定は先頭行だけを見る", async () => {
+  it("Diagram判定はフロントマターtypeだけを見て、type: mapは扱わない", async () => {
     const workspacePath = await createWorkspace();
-    await writeFile(path.join(workspacePath, "not-map.md"), "# Title\ntype: map", "utf8");
-    await writeFile(path.join(workspacePath, "map.md"), "type: map\nnodes: []", "utf8");
+    await writeFile(path.join(workspacePath, "not-diagram.md"), "# Title\ntype: relationship", "utf8");
+    await writeFile(path.join(workspacePath, "old-map.md"), "type: map\nnodes: []", "utf8");
+    await writeFile(path.join(workspacePath, "diagram.md"), "---\ntype: why-tree\n---\nnodes: []", "utf8");
 
     const index = await readWorkspaceFileIndex(workspacePath);
 
-    expect(index.entries.find((entry) => entry.path === "not-map.md")?.kind).toBe("markdown");
-    expect(index.entries.find((entry) => entry.path === "map.md")?.kind).toBe("map");
+    expect(index.entries.find((entry) => entry.path === "not-diagram.md")?.kind).toBe("markdown");
+    expect(index.entries.find((entry) => entry.path === "old-map.md")?.kind).toBe("markdown");
+    expect(index.entries.find((entry) => entry.path === "diagram.md")?.kind).toBe("diagram");
   });
 
   it("変更されていないファイルは保存済みの控えを再利用する", async () => {
@@ -81,9 +87,9 @@ describe("readWorkspaceFileIndex", () => {
     expect(index.records.find((record) => record.path === "note.md")?.lines).toEqual(["needle"]);
   });
 
-  it("大きすぎるMarkdownは全文検索用本文を持たず先頭行だけでMap判定する", async () => {
+  it("大きすぎるMarkdownは全文検索用本文を持たず先頭部分だけでDiagram判定する", async () => {
     const workspacePath = await createWorkspace();
-    await writeFile(path.join(workspacePath, "large-map.md"), `type: map\n${"x".repeat(64)}`, "utf8");
+    await writeFile(path.join(workspacePath, "large-diagram.md"), `---\ntype: relationship\n---\n${"x".repeat(64)}`, "utf8");
 
     const index = await readWorkspaceFileIndex(workspacePath, {
       maxSearchFileBytes: 8,
@@ -95,9 +101,9 @@ describe("readWorkspaceFileIndex", () => {
     });
 
     expect(index.records).toMatchObject([{
-      kind: "map",
+      kind: "diagram",
       lines: [],
-      path: "large-map.md",
+      path: "large-diagram.md",
       searchable: false
     }]);
   });

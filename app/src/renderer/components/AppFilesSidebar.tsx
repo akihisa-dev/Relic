@@ -2,8 +2,9 @@ import type { MouseEvent as ReactMouseEvent, ReactElement } from "react";
 
 import type { AppRailView } from "../appShellModel";
 import type { SidebarView } from "../store/uiStore";
+import type { RelicDiagramType } from "../../shared/diagramMarkdown";
 import { FilesSidebar, type FilesSidebarProps } from "./FilesSidebar";
-import { MapSidebar } from "./MapSidebar";
+import { DiagramSidebar } from "./DiagramSidebar";
 
 interface AppFilesSidebarProps extends Omit<FilesSidebarProps, "onSelectedCountChange"> {
   activeSidebarView: SidebarView;
@@ -11,7 +12,7 @@ interface AppFilesSidebarProps extends Omit<FilesSidebarProps, "onSelectedCountC
   isSidebarOpen: boolean;
   isSidebarResizing: boolean;
   onCloseSidebar: () => void;
-  onCreateMapFile: () => void;
+  onCreateDiagramFile: (type: RelicDiagramType) => void;
   onSelectedCountChange: (count: number) => void;
   selectedCountLabel: string;
   sidebarViews: Array<Pick<AppRailView<ReactElement>, "id" | "label">>;
@@ -25,7 +26,7 @@ export function AppFilesSidebar({
   isSidebarOpen,
   isSidebarResizing,
   onCloseSidebar,
-  onCreateMapFile,
+  onCreateDiagramFile,
   onSelectedCountChange,
   selectedCountLabel: _selectedCountLabel,
   sidebarViews,
@@ -68,13 +69,13 @@ export function AppFilesSidebar({
             onSelectedCountChange={onSelectedCountChange}
           />
         ) : null}
-        {activeSidebarView === "map" ? (
-          <MapSidebar
+        {activeSidebarView === "diagram" ? (
+          <DiagramSidebar
             isCreatingFile={filesSidebarProps.isCreatingFile}
             isCreatingWorkspace={filesSidebarProps.isCreatingWorkspace}
             isOpeningWorkspace={filesSidebarProps.isOpeningWorkspace}
             onCreateWorkspace={filesSidebarProps.onCreateWorkspace}
-            onCreateMapFile={onCreateMapFile}
+            onCreateDiagramFile={onCreateDiagramFile}
             onDeleteItem={filesSidebarProps.onDeleteItem}
             onOpenFile={filesSidebarProps.onOpenFile}
             onOpenWorkspace={filesSidebarProps.onOpenWorkspace}

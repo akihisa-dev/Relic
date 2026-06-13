@@ -167,7 +167,7 @@ export interface WorkspaceSearchResultSet {
   truncated: boolean;
 }
 
-export type WorkspaceFileKind = "map" | "markdown";
+export type WorkspaceFileKind = "diagram" | "markdown";
 
 export type WorkspaceFileReadStatus = "ok" | "unreadable";
 

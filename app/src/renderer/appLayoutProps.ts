@@ -50,7 +50,7 @@ export interface AppLayoutPropsInput {
   handleCreateFileInFolder: FilesSidebarProps["onCreateFileInFolder"];
   handleCreateFolderFromSidebar: FilesSidebarProps["onCreateFolder"];
   handleCreateFolderInFolder: FilesSidebarProps["onCreateFolderInFolder"];
-  handleCreateMapFile: FilesSidebarProps["onCreateMapFile"];
+  handleCreateDiagramFile: FilesSidebarProps["onCreateDiagramFile"];
   handleCreateNewWorkspace: FilesSidebarProps["onCreateWorkspace"];
   handleCreateNoteFromPane: EditorWorkspaceProps["onCreateFile"];
   handleDeleteTreeItem: FilesSidebarProps["onDeleteItem"];

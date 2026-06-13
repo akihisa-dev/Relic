@@ -2,28 +2,28 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 
 import {
-  parseRelicMapMarkdown,
-  serializeRelicMapMarkdown,
-  type RelicMapDocument
-} from "../../shared/mapMarkdown";
+  parseRelicDiagramMarkdown,
+  serializeRelicDiagramMarkdown,
+  type RelicDiagramDocument
+} from "../../shared/diagramMarkdown";
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { atomicWriteTextFile } from "./atomicWrite";
 import { errorDetails } from "./fileSystem";
 import { resolveExistingWorkspacePath } from "./paths";
 
-export interface RelicMapFileContent {
+export interface RelicDiagramFileContent {
   content: string;
-  map: RelicMapDocument;
+  map: RelicDiagramDocument;
   name: string;
   path: string;
 }
 
-export async function readRelicMapFile(
+export async function readRelicDiagramFile(
   workspacePath: string,
   relativePath: string
-): Promise<RelicResult<RelicMapFileContent>> {
+): Promise<RelicResult<RelicDiagramFileContent>> {
   if (path.extname(relativePath) !== ".md") {
-    return fail("FILE_TYPE_UNSUPPORTED", "MapファイルはMarkdownファイルとして開いてください。");
+    return fail("FILE_TYPE_UNSUPPORTED", "図解ファイルはMarkdownファイルとして開いてください。");
   }
 
   const absoluteFilePath = await resolveExistingWorkspacePath(workspacePath, relativePath);
@@ -31,7 +31,7 @@ export async function readRelicMapFile(
 
   try {
     const content = await readFile(absoluteFilePath.value, "utf8");
-    const parsed = parseRelicMapMarkdown(content);
+    const parsed = parseRelicDiagramMarkdown(content);
     if (!parsed.ok) return parsed;
 
     return ok({
@@ -41,39 +41,39 @@ export async function readRelicMapFile(
       path: relativePath
     });
   } catch (error) {
-    return fail("MAP_FILE_READ_FAILED", "Mapファイルを読み込めませんでした。", errorDetails(error));
+    return fail("MAP_FILE_READ_FAILED", "図解ファイルを読み込めませんでした。", errorDetails(error));
   }
 }
 
-export async function writeRelicMapFile(
+export async function writeRelicDiagramFile(
   workspacePath: string,
   relativePath: string,
-  map: RelicMapDocument,
+  map: RelicDiagramDocument,
   expectedContent?: string
 ): Promise<RelicResult<string>> {
   if (path.extname(relativePath) !== ".md") {
-    return fail("FILE_TYPE_UNSUPPORTED", "MapファイルはMarkdownファイルとして保存してください。");
+    return fail("FILE_TYPE_UNSUPPORTED", "図解ファイルはMarkdownファイルとして保存してください。");
   }
 
   const absoluteFilePath = await resolveExistingWorkspacePath(workspacePath, relativePath);
   if (!absoluteFilePath.ok) return absoluteFilePath;
 
-  const serialized = serializeRelicMapMarkdown(map);
+  const serialized = serializeRelicDiagramMarkdown(map);
   if (!serialized.ok) return serialized;
 
   try {
     const currentContent = await readFile(absoluteFilePath.value, "utf8");
     if (expectedContent !== undefined && currentContent !== expectedContent) {
-      return fail("MAP_FILE_WRITE_CONFLICT", "Mapファイルが外部で変更されています。再読み込みしてから保存してください。");
+      return fail("MAP_FILE_WRITE_CONFLICT", "図解ファイルが外部で変更されています。再読み込みしてから保存してください。");
     }
 
-    const currentMap = parseRelicMapMarkdown(currentContent);
+    const currentMap = parseRelicDiagramMarkdown(currentContent);
     if (!currentMap.ok) return currentMap;
 
     await atomicWriteTextFile(absoluteFilePath.value, serialized.value);
 
     return ok(serialized.value);
   } catch (error) {
-    return fail("MAP_FILE_WRITE_FAILED", "Mapファイルを保存できませんでした。", errorDetails(error));
+    return fail("MAP_FILE_WRITE_FAILED", "図解ファイルを保存できませんでした。", errorDetails(error));
   }
 }

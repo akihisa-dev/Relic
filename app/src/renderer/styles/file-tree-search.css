@@ -285,7 +285,7 @@
   overflow: hidden;
 }
 
-.sidebar-body:has(> .map-sidebar-section) {
+.sidebar-body:has(> .diagram-sidebar-section) {
   overflow: hidden;
 }
 
@@ -318,7 +318,7 @@
   overflow-y: auto;
 }
 
-.map-sidebar-section {
+.diagram-sidebar-section {
   align-content: start;
   display: grid;
   gap: 16px;
@@ -327,19 +327,19 @@
   overflow-y: auto;
 }
 
-.map-sidebar-group {
+.diagram-sidebar-group {
   display: grid;
   gap: 8px;
   min-width: 0;
 }
 
-.map-sidebar-actions {
+.diagram-sidebar-actions {
   align-items: center;
   display: flex;
   justify-content: center;
 }
 
-.map-sidebar-group-heading {
+.diagram-sidebar-group-heading {
   align-items: center;
   color: var(--text-2);
   display: flex;
@@ -351,7 +351,7 @@
   text-transform: uppercase;
 }
 
-.map-sidebar-file-list {
+.diagram-sidebar-file-list {
   display: grid;
   gap: 4px;
   list-style: none;
@@ -359,7 +359,7 @@
   padding: 0;
 }
 
-.map-sidebar-file {
+.diagram-sidebar-file {
   border-radius: 6px;
   color: var(--text-2);
   display: grid;
@@ -369,59 +369,59 @@
   text-align: left;
 }
 
-.map-sidebar-file--button {
+.diagram-sidebar-file--button {
   background: transparent;
   border: 0;
   width: 100%;
 }
 
-.map-sidebar-file--button:hover,
-.map-sidebar-file--button.open {
+.diagram-sidebar-file--button:hover,
+.diagram-sidebar-file--button.open {
   background: var(--hover);
   color: var(--text);
 }
 
-.map-sidebar-file--button:disabled {
+.diagram-sidebar-file--button:disabled {
   color: var(--text-3);
   cursor: default;
   opacity: 0.55;
 }
 
-.map-sidebar-file--button:disabled:hover {
+.diagram-sidebar-file--button:disabled:hover {
   background: transparent;
   color: var(--text-3);
 }
 
-.map-sidebar-file--button.loading {
+.diagram-sidebar-file--button.loading {
   color: var(--accent);
 }
 
-.map-sidebar-file-name,
-.map-sidebar-file-path {
+.diagram-sidebar-file-name,
+.diagram-sidebar-file-path {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.map-sidebar-file-name {
+.diagram-sidebar-file-name {
   font-size: 13px;
   font-weight: 650;
 }
 
-.map-sidebar-file-path {
+.diagram-sidebar-file-path {
   color: var(--text-3);
   font-size: 11px;
 }
 
-.map-sidebar-empty {
+.diagram-sidebar-empty {
   color: var(--text-3);
   font-size: 12px;
   margin: 0;
   padding: 7px 8px;
 }
 
-.map-sidebar-error {
+.diagram-sidebar-error {
   border-top: 1px solid var(--border);
   color: var(--text-2);
   font-size: 12px;

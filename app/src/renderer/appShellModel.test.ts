@@ -95,7 +95,7 @@ describe("appShellModel", () => {
   it("filters and splits rail views without changing order", () => {
     const railViews: AppRailView[] = [
       { icon: null, id: "files", label: "Files" },
-      { icon: null, id: "map", label: "Map" },
+      { icon: null, id: "diagram", label: "Diagram" },
       { icon: null, id: "tools", label: "Tools" },
       { icon: null, id: "frontmatter", label: "Frontmatter" },
       { icon: null, id: "chronicle", label: "Timeline" },
@@ -105,7 +105,7 @@ describe("appShellModel", () => {
     ];
 
     const defaultEnabled = enabledRailViewsForFeatures(railViews, defaultFeatureToggles);
-    expect(defaultEnabled.map((view) => view.id)).toEqual(["files", "map", "calendar", "settings"]);
+    expect(defaultEnabled.map((view) => view.id)).toEqual(["files", "diagram", "calendar", "settings"]);
 
     const enabled = enabledRailViewsForFeatures(railViews, {
       ...defaultFeatureToggles,
@@ -117,8 +117,8 @@ describe("appShellModel", () => {
     });
     const split = splitRailViews(enabled);
 
-    expect(enabled.map((view) => view.id)).toEqual(["files", "map", "settings"]);
-    expect(split.primaryRailViews.map((view) => view.id)).toEqual(["files", "map"]);
+    expect(enabled.map((view) => view.id)).toEqual(["files", "diagram", "settings"]);
+    expect(split.primaryRailViews.map((view) => view.id)).toEqual(["files", "diagram"]);
     expect(split.chartRailViews.map((view) => view.id)).toEqual([]);
     expect(split.panelRailViews.map((view) => view.id)).toEqual(["settings"]);
     expect(chartIdForRailView("chronicle")).toBe("chronicle");

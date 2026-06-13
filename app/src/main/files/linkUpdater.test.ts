@@ -184,13 +184,15 @@ describe("updateLinksForFileRename", () => {
     await expect(readFile(path.join(ws, "source.md"), "utf8")).resolves.toBe("![[new]]");
   });
 
-  it("Map用Markdown内のNode参照も更新する", async () => {
+  it("図解用Markdown内のNode参照も更新する", async () => {
     const ws = await mkdtemp(path.join(os.tmpdir(), "relic-link-updater-map-"));
     temporaryPaths.push(ws);
     await mkdir(path.join(ws, "characters"));
 
     await writeFile(path.join(ws, "map.md"), [
-      "type: map",
+      "---",
+      "type: relationship",
+      "---",
       "",
       "nodes:",
       "  - id: node-1",
@@ -209,7 +211,7 @@ describe("updateLinksForFileRename", () => {
     await expect(readFile(path.join(ws, "map.md"), "utf8")).resolves.toContain("file: characters/new.md");
   });
 
-  it("壊れたMap用MarkdownはNode参照更新で上書きしない", async () => {
+  it("type: mapはDiagramとして扱わずNode参照更新で上書きしない", async () => {
     const ws = await mkdtemp(path.join(os.tmpdir(), "relic-link-updater-map-invalid-"));
     temporaryPaths.push(ws);
 
@@ -219,7 +221,7 @@ describe("updateLinksForFileRename", () => {
 
     const result = await updateLinksForFileRename(ws, "old.md", "new.md");
 
-    expect(result.ok).toBe(false);
+    expect(result.ok).toBe(true);
     await expect(readFile(path.join(ws, "map.md"), "utf8")).resolves.toBe(original);
   });
 
@@ -376,13 +378,15 @@ describe("updateLinksForFolderRename", () => {
     );
   });
 
-  it("Map用Markdown内のNode参照もフォルダ移動に合わせて更新する", async () => {
+  it("図解用Markdown内のNode参照もフォルダ移動に合わせて更新する", async () => {
     const ws = await mkdtemp(path.join(os.tmpdir(), "relic-link-updater-map-folder-"));
     temporaryPaths.push(ws);
     await mkdir(path.join(ws, "new-folder"));
 
     await writeFile(path.join(ws, "map.md"), [
-      "type: map",
+      "---",
+      "type: relationship",
+      "---",
       "",
       "nodes:",
       "  - id: node-1",

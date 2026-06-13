@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { defaultEditorSettings, type WorkspaceState } from "../../shared/ipc";
 import { I18nProvider } from "../i18n";
 import { useEditorStore, type PaneState } from "../store/editorStore";
-import { MapSidebar } from "./MapSidebar";
+import { DiagramSidebar } from "./DiagramSidebar";
 
 const workspaceState: WorkspaceState = {
   activeWorkspace: { id: "ws-1", name: "Project", path: "/tmp/project" },
@@ -18,18 +18,18 @@ const workspaceState: WorkspaceState = {
       size: 10
     },
     {
-      kind: "map",
+      kind: "diagram",
       mtimeMs: 2,
       name: "World.md",
-      path: "maps/World.md",
+      path: "diagrams/World.md",
       readStatus: "ok",
       size: 20
     },
     {
-      kind: "map",
+      kind: "diagram",
       mtimeMs: 3,
       name: "Broken.md",
-      path: "maps/Broken.md",
+      path: "diagrams/Broken.md",
       readStatus: "unreadable",
       size: 0
     }
@@ -52,12 +52,12 @@ function resetStore(): void {
   });
 }
 
-function renderMapSidebar(overrides: Partial<Parameters<typeof MapSidebar>[0]> = {}) {
+function renderDiagramSidebar(overrides: Partial<Parameters<typeof DiagramSidebar>[0]> = {}) {
   const props = {
     isCreatingWorkspace: false,
     isCreatingFile: false,
     isOpeningWorkspace: false,
-    onCreateMapFile: vi.fn(),
+    onCreateDiagramFile: vi.fn(),
     onCreateWorkspace: vi.fn(),
     onOpenFile: vi.fn(),
     onOpenWorkspace: vi.fn(),
@@ -67,7 +67,7 @@ function renderMapSidebar(overrides: Partial<Parameters<typeof MapSidebar>[0]> =
 
   render(
     <I18nProvider language="en">
-      <MapSidebar {...props} />
+      <DiagramSidebar {...props} />
     </I18nProvider>
   );
 
@@ -80,45 +80,47 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe("MapSidebar", () => {
-  it("separates Map files from placeable Markdown files", () => {
-    renderMapSidebar();
+describe("DiagramSidebar", () => {
+  it("separates Diagram files from placeable Markdown files", () => {
+    renderDiagramSidebar();
 
-    expect(screen.getByText("Map files")).toBeInTheDocument();
+    expect(screen.getByText("Diagram files")).toBeInTheDocument();
     expect(screen.getByText("World.md")).toBeInTheDocument();
     expect(screen.queryByText("Broken.md")).not.toBeInTheDocument();
     expect(screen.getByText("Markdown files")).toBeInTheDocument();
     expect(screen.getByText("Alice.md")).toBeInTheDocument();
   });
 
-  it("opens a Map file from the Map file list", () => {
-    const props = renderMapSidebar();
+  it("opens a Diagram file from the Diagram file list", () => {
+    const props = renderDiagramSidebar();
 
     fireEvent.click(screen.getByRole("button", { name: /World\.md/ }));
 
-    expect(props.onOpenFile).toHaveBeenCalledWith("maps/World.md", expect.any(Object));
+    expect(props.onOpenFile).toHaveBeenCalledWith("diagrams/World.md", expect.any(Object));
   });
 
-  it("moves a Map file to trash from the Map file context menu", () => {
+  it("moves a Diagram file to trash from the Diagram file context menu", () => {
     const onDeleteItem = vi.fn();
-    renderMapSidebar({ onDeleteItem });
+    renderDiagramSidebar({ onDeleteItem });
 
     fireEvent.contextMenu(screen.getByRole("button", { name: /World\.md/ }));
     fireEvent.click(screen.getByRole("menuitem", { name: "Move to Trash" }));
 
-    expect(onDeleteItem).toHaveBeenCalledWith("maps/World.md", "file");
+    expect(onDeleteItem).toHaveBeenCalledWith("diagrams/World.md", "file");
   });
 
-  it("creates a new Map file from the Map sidebar", () => {
-    const props = renderMapSidebar();
+  it("creates relationship and why-tree files from the Diagram sidebar", () => {
+    const props = renderDiagramSidebar();
 
-    fireEvent.click(screen.getByRole("button", { name: "New Map" }));
+    fireEvent.click(screen.getByRole("button", { name: "New relationship" }));
+    fireEvent.click(screen.getByRole("button", { name: "New why-tree" }));
 
-    expect(props.onCreateMapFile).toHaveBeenCalledTimes(1);
+    expect(props.onCreateDiagramFile).toHaveBeenNthCalledWith(1, "relationship");
+    expect(props.onCreateDiagramFile).toHaveBeenNthCalledWith(2, "why-tree");
   });
 
-  it("adds a placeable Markdown file to the active Map tab", () => {
-    const content = "type: map\n\nnodes: []\nlines: []\n";
+  it("adds a placeable Markdown file to the active Diagram tab", () => {
+    const content = "---\ntype: relationship\n---\n\nnodes: []\nlines: []\n";
     useEditorStore.setState({
       focusedPane: "left",
       leftPane: { activeTabId: "map-tab", history: ["map-tab"], tabIds: ["map-tab"] },
@@ -129,12 +131,12 @@ describe("MapSidebar", () => {
           id: "map-tab",
           kind: "file",
           name: "World",
-          path: "maps/World.md",
+          path: "diagrams/World.md",
           savedContent: content
         }
       }
     });
-    renderMapSidebar();
+    renderDiagramSidebar();
 
     fireEvent.click(screen.getByRole("button", { name: /Alice\.md/ }));
 

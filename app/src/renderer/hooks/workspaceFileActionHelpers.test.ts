@@ -10,7 +10,7 @@ import {
   matchesAnyTreeItemPath,
   matchesTreeItemPath,
   nextUniqueFileName,
-  nextUniqueMapFileName,
+  nextUniqueDiagramFileName,
   nextUniqueFolderName,
   removeCoveredItems
 } from "./workspaceFileActionHelpers";
@@ -71,13 +71,14 @@ describe("workspaceFileActionHelpers", () => {
     expect(nextUniqueFolderName(state, t)).toBe("新規フォルダ 2");
   });
 
-  it("rootに存在するMap名を避けて次のMapファイル名を返す", () => {
+  it("rootに存在する図解名を避けて次のDiagramファイル名を返す", () => {
     const state = workspaceState([
-      { name: "Map.md", path: "Map.md", type: "file" },
-      { name: "Map 2.md", path: "Map 2.md", type: "file" },
+      { name: "関係図.md", path: "関係図.md", type: "file" },
+      { name: "関係図 2.md", path: "関係図 2.md", type: "file" },
+      { name: "原因分析.md", path: "原因分析.md", type: "file" },
       {
         children: [
-          { name: "Map.md", path: "Nested/Map.md", type: "file" }
+          { name: "関係図.md", path: "Nested/関係図.md", type: "file" }
         ],
         name: "Nested",
         path: "Nested",
@@ -85,7 +86,8 @@ describe("workspaceFileActionHelpers", () => {
       }
     ]);
 
-    expect(nextUniqueMapFileName(state, t)).toBe("Map 3");
+    expect(nextUniqueDiagramFileName(state, t, "relationship")).toBe("関係図 3");
+    expect(nextUniqueDiagramFileName(state, t, "why-tree")).toBe("原因分析 2");
   });
 
   it("作成後のMarkdown pathを末尾一致で探す", () => {

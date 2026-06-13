@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import type { CSSProperties, FormEvent, KeyboardEvent, MutableRefObject, ReactElement, ReactNode } from "react";
 
 import type { EditorSettings, UserDefinedField } from "../../shared/ipc";
-import { isRelicMapMarkdownContent } from "../../shared/mapMarkdown";
+import { isRelicDiagramMarkdownContent } from "../../shared/diagramMarkdown";
 import { hasInvalidFrontmatterYaml } from "../editorFrontmatter";
 import { isLargeMarkdownContent } from "../largeMarkdown";
 import { textCount } from "../paneViewModel";
@@ -11,7 +11,7 @@ import type { PanelTabKind, Tab } from "../store/editorStore";
 import { useT } from "../i18n";
 import { SourceModeButton } from "./AppMainActions";
 import { Editor } from "./Editor";
-import { MapCanvas, mapCanvasStatus } from "./MapCanvas";
+import { DiagramCanvas, diagramCanvasStatus } from "./DiagramCanvas";
 
 interface PaneContentSurfaceProps {
   activeTab: Tab | null | undefined;
@@ -70,7 +70,7 @@ export function PaneContentSurface({
   const notifiedLargeMarkdownFallbacks = notifiedLargeMarkdownFallbacksRef.current;
   const activeFileTab = activeTab?.kind === "file" ? activeTab : null;
   const isLargeMarkdown = activeFileTab ? isLargeMarkdownContent(activeFileTab.content) : false;
-  const isMapMarkdown = activeFileTab ? isRelicMapMarkdownContent(activeFileTab.content) : false;
+  const isDiagramMarkdown = activeFileTab ? isRelicDiagramMarkdownContent(activeFileTab.content) : false;
   const [frontmatterAddButtonHost, setFrontmatterAddButtonHost] = useState<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -144,8 +144,8 @@ export function PaneContentSurface({
               <span>{t("frontmatter.invalidYamlBanner")}</span>
             </output>
           ) : null}
-          {isMapMarkdown && !sourceMode ? (
-            <MapCanvas
+          {isDiagramMarkdown && !sourceMode ? (
+            <DiagramCanvas
               content={activeFileTab.content}
               fileName={activeFileTab.name}
               onChange={(content) => onUpdateTabContent(activeFileTab.id, content)}
@@ -171,7 +171,7 @@ export function PaneContentSurface({
           )}
         </div>
         <div className="pane-status">
-          <span>{isMapMarkdown && !sourceMode ? mapCanvasStatus(activeFileTab.content, t) : t("app.wordCount", { chars, words })}</span>
+          <span>{isDiagramMarkdown && !sourceMode ? diagramCanvasStatus(activeFileTab.content, t) : t("app.wordCount", { chars, words })}</span>
         </div>
       </div>
     );
