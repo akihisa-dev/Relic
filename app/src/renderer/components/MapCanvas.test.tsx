@@ -186,8 +186,10 @@ describe("MapCanvas", () => {
         <MapCanvas content={mapContentWithoutLines} fileName="World" onChange={onChange} />
       </I18nProvider>
     );
+    const canvas = screen.getByRole("img", { name: "World" });
 
     fireEvent(screen.getByLabelText("Connect alice"), pointerEvent("pointerdown", 2, 10, 10));
+    fireEvent(canvas, pointerEvent("pointermove", 2, 260, 10));
     fireEvent(screen.getByLabelText("Connect bob"), pointerEvent("pointerup", 2, 260, 10));
 
     expect(onChange).toHaveBeenCalledTimes(1);
