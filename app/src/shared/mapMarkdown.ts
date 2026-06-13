@@ -62,6 +62,8 @@ const mapLineKeys = new Set(["id", "from", "to", "label"]);
 const defaultNodeWidth = 180;
 const defaultNodeHeight = 80;
 
+export const emptyRelicMapMarkdownContent = "type: map\n\nnodes: []\nlines: []\n";
+
 export function isRelicMapMarkdownContent(content: string): boolean {
   return firstLine(content).trim() === "type: map";
 }

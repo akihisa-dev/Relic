@@ -55,7 +55,9 @@ function resetStore(): void {
 function renderMapSidebar(overrides: Partial<Parameters<typeof MapSidebar>[0]> = {}) {
   const props = {
     isCreatingWorkspace: false,
+    isCreatingFile: false,
     isOpeningWorkspace: false,
+    onCreateMapFile: vi.fn(),
     onCreateWorkspace: vi.fn(),
     onOpenFile: vi.fn(),
     onOpenWorkspace: vi.fn(),
@@ -95,6 +97,14 @@ describe("MapSidebar", () => {
     fireEvent.click(screen.getByRole("button", { name: /World\.md/ }));
 
     expect(props.onOpenFile).toHaveBeenCalledWith("maps/World.md", expect.any(Object));
+  });
+
+  it("creates a new Map file from the Map sidebar", () => {
+    const props = renderMapSidebar();
+
+    fireEvent.click(screen.getByRole("button", { name: "New Map" }));
+
+    expect(props.onCreateMapFile).toHaveBeenCalledTimes(1);
   });
 
   it("adds a placeable Markdown file to the active Map tab", () => {

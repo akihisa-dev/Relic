@@ -131,6 +131,8 @@
   "links.updateImpactConfirm": "Update {{links}} link(s) in {{files}} Markdown file(s)?",
   "map.files": "Map files",
   "map.connectNode": "Connect {{name}}",
+  "map.createMap": "New Map",
+  "map.defaultNewMapName": "Map",
   "map.editLineLabel": "Edit line label",
   "map.emptyCanvas": "No nodes.",
   "map.invalidFile": "Could not read this Map file. Check the source.",

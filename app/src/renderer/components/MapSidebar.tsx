@@ -7,8 +7,10 @@ import { useEditorStore } from "../store/editorStore";
 import { FilesWorkspaceEmpty } from "./FilesWorkspaceActions";
 
 interface MapSidebarProps {
+  isCreatingFile: boolean;
   isCreatingWorkspace: boolean;
   isOpeningWorkspace: boolean;
+  onCreateMapFile: () => void;
   onCreateWorkspace: () => void;
   onOpenFile: (path: string, event?: ReactMouseEvent<HTMLButtonElement>, options?: { lineNumber?: number | null }) => void;
   onOpenWorkspace: () => void;
@@ -18,8 +20,10 @@ interface MapSidebarProps {
 }
 
 export function MapSidebar({
+  isCreatingFile,
   isCreatingWorkspace,
   isOpeningWorkspace,
+  onCreateMapFile,
   onCreateWorkspace,
   onOpenFile,
   onOpenWorkspace,
@@ -73,6 +77,19 @@ export function MapSidebar({
 
   return (
     <div className="map-sidebar-section">
+      <div className="map-sidebar-actions">
+        <button
+          aria-label={t("map.createMap")}
+          className="files-create-icon-button"
+          data-tooltip={t("map.createMap")}
+          disabled={isCreatingFile}
+          onClick={onCreateMapFile}
+          title={t("map.createMap")}
+          type="button"
+        >
+          <MapFileIcon />
+        </button>
+      </div>
       <MapSidebarGroup
         emptyLabel={t("map.noMapFiles")}
         files={mapFiles}
@@ -92,6 +109,16 @@ export function MapSidebar({
         <output className="map-sidebar-error">{placementError}</output>
       ) : null}
     </div>
+  );
+}
+
+function MapFileIcon(): ReactElement {
+  return (
+    <svg aria-hidden="true" fill="none" height="22" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="22">
+      <path d="M4.5 5.25v13.5l4.5-2.25 6 2.25 4.5-2.25V3l-4.5 2.25-6-2.25-4.5 2.25Z" />
+      <path d="M9 3v13.5" />
+      <path d="M15 5.25v13.5" />
+    </svg>
   );
 }
 

@@ -38,6 +38,20 @@ export function nextUniqueFileName(workspaceState: WorkspaceState | null, t: Tra
   }
 }
 
+export function nextUniqueMapFileName(workspaceState: WorkspaceState | null, t: Translator): string {
+  const existing = new Set<string>();
+
+  walkWorkspaceTree(workspaceState?.fileTree ?? [], (node) => {
+    if (node.type === "file") existing.add(node.path);
+  });
+
+  for (let i = 1; ; i += 1) {
+    const baseName = t("map.defaultNewMapName");
+    const name = i === 1 ? baseName : `${baseName} ${i}`;
+    if (!existing.has(`${name}.md`)) return name;
+  }
+}
+
 export function nextUniqueFolderName(workspaceState: WorkspaceState | null, t: Translator): string {
   const existing = new Set<string>();
 
