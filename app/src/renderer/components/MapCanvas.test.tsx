@@ -95,11 +95,11 @@ describe("MapCanvas", () => {
     expect(onChange.mock.calls[0]?.[0]).toContain("y: 100");
   });
 
-  it("opens the node file on double click", () => {
+  it("does not navigate away from the Map when a node is double clicked", () => {
     const onOpenFile = vi.fn();
     render(
       <I18nProvider language="en">
-        <MapCanvas content={mapContent} fileName="World" onOpenFile={onOpenFile} />
+        <MapCanvas content={mapContent} fileName="World" />
       </I18nProvider>
     );
     const node = screen.getByText("alice").closest(".map-canvas-node");
@@ -107,7 +107,7 @@ describe("MapCanvas", () => {
 
     fireEvent.doubleClick(node as HTMLElement);
 
-    expect(onOpenFile).toHaveBeenCalledWith("characters/alice.md");
+    expect(onOpenFile).not.toHaveBeenCalled();
   });
 
   it("pans the canvas by dragging blank space", () => {
@@ -193,6 +193,21 @@ describe("MapCanvas", () => {
     expect(onChange).toHaveBeenCalledTimes(1);
     expect(onChange.mock.calls[0]?.[0]).toContain("from: node-1");
     expect(onChange.mock.calls[0]?.[0]).toContain("to: node-2");
+  });
+
+  it("keeps node connection handle clicks inside the Map canvas", () => {
+    const onChange = vi.fn();
+    render(
+      <I18nProvider language="en">
+        <MapCanvas content={mapContentWithoutLines} fileName="World" onChange={onChange} />
+      </I18nProvider>
+    );
+
+    fireEvent.click(screen.getByLabelText("Connect alice"));
+    fireEvent.doubleClick(screen.getByLabelText("Connect alice"));
+
+    expect(screen.getByRole("img", { name: "World" })).toBeInTheDocument();
+    expect(onChange).not.toHaveBeenCalled();
   });
 
   it("deletes a selected node and connected lines with Delete", () => {

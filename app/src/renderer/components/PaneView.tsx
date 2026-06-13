@@ -38,7 +38,6 @@ export interface PaneViewProps {
   onFileSaved?: (path: string) => void;
   onFileSaveError?: (message: string) => void;
   onLargeMarkdownFallback?: (name: string, path: string) => void;
-  onOpenFile: (path: string) => void;
   onOpenInOtherPane: (pane: PaneId, tabId: string) => void;
   onRenameFile: (path: string, name: string) => void;
   onPrintPreview: (tab: FileTab) => void;
@@ -81,7 +80,6 @@ export function PaneView({
   onFileSaved,
   onFileSaveError,
   onLargeMarkdownFallback,
-  onOpenFile,
   onOpenInOtherPane,
   onRenameFile,
   onPrintPreview,
@@ -181,7 +179,6 @@ export function PaneView({
         onEditorAction={onEditorAction}
         onLargeMarkdownFallback={onLargeMarkdownFallback}
         onLoadExternalVersion={loadExternalVersion}
-        onOpenFile={onOpenFile}
         onOpenLink={onOpenLink}
         onOpenWikiLink={onOpenWikiLink}
         onRenameFile={onRenameFile}
