@@ -59,6 +59,7 @@ const minCanvasWidth = 900;
 const minCanvasHeight = 620;
 const minZoom = 0.35;
 const maxZoom = 2.5;
+const connectActivationDistance = 4;
 
 interface DragState {
   currentX: number;
@@ -72,10 +73,13 @@ interface DragState {
 }
 
 interface ConnectState {
+  isActive: boolean;
   currentX: number;
   currentY: number;
   fromNodeId: string;
   pointerId: number;
+  startClientX: number;
+  startClientY: number;
   startX: number;
   startY: number;
 }
@@ -136,7 +140,7 @@ export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): Reac
     };
   });
   const displayLines = buildLineLayouts(parsed.value.lines, displayNodes);
-  const previewLine = connect ? {
+  const previewLine = connect?.isActive ? {
     currentX: connect.currentX,
     currentY: connect.currentY,
     startX: connect.startX,
@@ -163,13 +167,17 @@ export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): Reac
     });
   };
   const updateNodeDrag = (event: ReactPointerEvent<HTMLDivElement>): void => {
+    const pointerId = event.pointerId;
+    const clientX = event.clientX;
+    const clientY = event.clientY;
+
     setDrag((current) => {
-      if (!current || current.pointerId !== event.pointerId) return current;
+      if (!current || current.pointerId !== pointerId) return current;
 
       return {
         ...current,
-        currentX: current.originalX + (event.clientX - current.startClientX) / viewport.zoom,
-        currentY: current.originalY + (event.clientY - current.startClientY) / viewport.zoom
+        currentX: current.originalX + (clientX - current.startClientX) / viewport.zoom,
+        currentY: current.originalY + (clientY - current.startClientY) / viewport.zoom
       };
     });
   };
@@ -217,11 +225,13 @@ export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): Reac
   };
   const updatePan = (event: ReactPointerEvent<HTMLDivElement>): void => {
     if (!pan || pan.pointerId !== event.pointerId) return;
+    const clientX = event.clientX;
+    const clientY = event.clientY;
 
     setViewport((current) => ({
       ...current,
-      panX: pan.originalPanX + event.clientX - pan.startClientX,
-      panY: pan.originalPanY + event.clientY - pan.startClientY
+      panX: pan.originalPanX + clientX - pan.startClientX,
+      panY: pan.originalPanY + clientY - pan.startClientY
     }));
   };
   const finishPan = (event: ReactPointerEvent<HTMLDivElement>): void => {
@@ -235,14 +245,17 @@ export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): Reac
   const handleCanvasWheel = (event: ReactWheelEvent<HTMLDivElement>): void => {
     event.preventDefault();
     const rect = event.currentTarget.getBoundingClientRect();
+    const clientX = event.clientX;
+    const clientY = event.clientY;
+    const deltaY = event.deltaY;
 
     setViewport((current) => {
-      const nextZoom = clampZoom(current.zoom * (event.deltaY < 0 ? 1.1 : 0.9));
-      const pointer = screenToCanvasPoint(event.clientX, event.clientY, rect, current);
+      const nextZoom = clampZoom(current.zoom * (deltaY < 0 ? 1.1 : 0.9));
+      const pointer = screenToCanvasPoint(clientX, clientY, rect, current);
 
       return {
-        panX: event.clientX - rect.left - pointer.x * nextZoom,
-        panY: event.clientY - rect.top - pointer.y * nextZoom,
+        panX: clientX - rect.left - pointer.x * nextZoom,
+        panY: clientY - rect.top - pointer.y * nextZoom,
         zoom: nextZoom
       };
     });
@@ -265,21 +278,33 @@ export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): Reac
     if (!center) return;
 
     setConnect({
+      isActive: false,
       currentX: center.x,
       currentY: center.y,
       fromNodeId: nodeId,
       pointerId: event.pointerId,
+      startClientX: event.clientX,
+      startClientY: event.clientY,
       startX: center.x,
       startY: center.y
     });
   };
   const updateConnect = (event: ReactPointerEvent<HTMLDivElement>): void => {
+    const pointerId = event.pointerId;
+    const clientX = event.clientX;
+    const clientY = event.clientY;
+    const pointer = pointerPositionInCanvas(event);
+
     setConnect((current) => {
-      if (!current || current.pointerId !== event.pointerId) return current;
-      const pointer = pointerPositionInCanvas(event);
+      if (!current || current.pointerId !== pointerId) return current;
+      const hasMovedEnough = Math.hypot(
+        clientX - current.startClientX,
+        clientY - current.startClientY
+      ) >= connectActivationDistance;
 
       return {
         ...current,
+        isActive: current.isActive || hasMovedEnough,
         currentX: pointer.x,
         currentY: pointer.y
       };
@@ -289,7 +314,7 @@ export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): Reac
     event.preventDefault();
     event.stopPropagation();
     if (!connect || connect.pointerId !== event.pointerId) return;
-    if (connect.fromNodeId === toNodeId) {
+    if (!connect.isActive || connect.fromNodeId === toNodeId) {
       setConnect(null);
       return;
     }
