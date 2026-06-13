@@ -644,16 +644,20 @@ function WhyTreeEditor({
   const t = useT();
   const contentRef = useRef<HTMLDivElement | null>(null);
   const nodeRefs = useRef(new Map<string, HTMLDivElement>());
+  const draftContentRef = useRef(content);
+  const panRef = useRef<WhyTreePanState | null>(null);
   const [draftContent, setDraftContent] = useState(content);
   const [selection, setSelection] = useState<WhyTreeSelection>({ kind: "phenomenon", path: [] });
   const [connectorLayout, setConnectorLayout] = useState<WhyTreeConnectorLayout>({ height: 0, paths: [], width: 0 });
-  const [pan, setPan] = useState<WhyTreePanState | null>(null);
+  const [isPanning, setIsPanning] = useState(false);
   const displayedTree = useMemo(() => {
     const parsed = parseRelicDiagramMarkdown(draftContent);
     return parsed.ok && parsed.value.type === "why-tree" ? parsed.value : tree;
   }, [draftContent, tree]);
 
   useEffect(() => {
+    if (content === draftContentRef.current) return;
+    draftContentRef.current = content;
     setDraftContent(content);
   }, [content]);
 
@@ -690,6 +694,7 @@ function WhyTreeEditor({
 
   const applyUpdate = (updated: WhyTreeUpdateResult): void => {
     if (updated.ok) {
+      draftContentRef.current = updated.value.content;
       setDraftContent(updated.value.content);
       onChange?.(updated.value.content);
     }
@@ -699,11 +704,11 @@ function WhyTreeEditor({
   };
   const addSupplementFromPath = (path: number[], kind: RelicWhyTreeSupplementKind): void => {
     if (!onChange) return;
-    applyUpdate(addRelicWhyTreeSupplement(draftContent, path, kind));
+    applyUpdate(addRelicWhyTreeSupplement(draftContentRef.current, path, kind));
   };
   const changeMainTitle = (path: number[], value: string): void => {
     if (!onChange) return;
-    applyUpdate(updateRelicWhyTreeTitle(draftContent, path, value));
+    applyUpdate(updateRelicWhyTreeTitle(draftContentRef.current, path, value));
   };
   const changeSupplement = (
     path: number[],
@@ -712,7 +717,7 @@ function WhyTreeEditor({
     event: ReactChangeEvent<HTMLInputElement>
   ): void => {
     if (!onChange) return;
-    applyUpdate(updateRelicWhyTreeSupplement(draftContent, path, kind, index, event.currentTarget.value));
+    applyUpdate(updateRelicWhyTreeSupplement(draftContentRef.current, path, kind, index, event.currentTarget.value));
   };
   const selectSupplement = (path: number[], kind: RelicWhyTreeSupplementKind, index: number): void => {
     setSelection({ index, kind, path });
@@ -722,12 +727,12 @@ function WhyTreeEditor({
   };
   const removeMainWhy = (path: number[]): void => {
     if (!onChange || path.length === 0) return;
-    applyUpdate(removeRelicWhyTreeWhy(draftContent, path));
+    applyUpdate(removeRelicWhyTreeWhy(draftContentRef.current, path));
     setSelection({ kind: "phenomenon", path: [] });
   };
   const removeSupplement = (path: number[], kind: RelicWhyTreeSupplementKind, index: number): void => {
     if (!onChange) return;
-    applyUpdate(removeRelicWhyTreeSupplement(draftContent, path, kind, index));
+    applyUpdate(removeRelicWhyTreeSupplement(draftContentRef.current, path, kind, index));
     selectParentMainNode(path);
   };
   const deleteSelection = (): void => {
@@ -753,30 +758,36 @@ function WhyTreeEditor({
     if (event.button !== 0) return;
     if (!isWhyTreePanTarget(event.target, event.currentTarget)) return;
 
+    event.preventDefault();
     if (typeof event.currentTarget.setPointerCapture === "function") {
       event.currentTarget.setPointerCapture(event.pointerId);
     }
-    setPan({
+    panRef.current = {
       pointerId: event.pointerId,
       scrollLeft: event.currentTarget.scrollLeft,
       scrollTop: event.currentTarget.scrollTop,
       startClientX: event.clientX,
       startClientY: event.clientY
-    });
+    };
+    setIsPanning(true);
   };
   const updatePan = (event: ReactPointerEvent<HTMLDivElement>): void => {
-    if (!pan || pan.pointerId !== event.pointerId) return;
+    const activePan = panRef.current;
+    if (!activePan || activePan.pointerId !== event.pointerId) return;
 
-    event.currentTarget.scrollLeft = pan.scrollLeft - (event.clientX - pan.startClientX);
-    event.currentTarget.scrollTop = pan.scrollTop - (event.clientY - pan.startClientY);
+    event.preventDefault();
+    event.currentTarget.scrollLeft = activePan.scrollLeft - (event.clientX - activePan.startClientX);
+    event.currentTarget.scrollTop = activePan.scrollTop - (event.clientY - activePan.startClientY);
   };
   const finishPan = (event: ReactPointerEvent<HTMLDivElement>): void => {
-    if (!pan || pan.pointerId !== event.pointerId) return;
+    const activePan = panRef.current;
+    if (!activePan || activePan.pointerId !== event.pointerId) return;
 
     if (typeof event.currentTarget.hasPointerCapture === "function" && event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
-    setPan(null);
+    panRef.current = null;
+    setIsPanning(false);
   };
   const renderWhyTreeBranch = (item: WhyTreeChainItem): ReactElement => {
     const isSelected = isSameWhyTreeSelection(selection, { kind: item.role, path: item.path });
@@ -800,13 +811,6 @@ function WhyTreeEditor({
                 "why-tree-node-shell",
                 isSelected ? "why-tree-node-shell--menu-open" : ""
               ].filter(Boolean).join(" ")}
-              ref={(element) => {
-                if (element) {
-                  nodeRefs.current.set(itemKey, element);
-                } else {
-                  nodeRefs.current.delete(itemKey);
-                }
-              }}
             >
               <div
                 className={[
@@ -819,6 +823,13 @@ function WhyTreeEditor({
                   if (event.key === "Enter" || event.key === " ") {
                     event.preventDefault();
                     selectMainNode(item);
+                  }
+                }}
+                ref={(element) => {
+                  if (element) {
+                    nodeRefs.current.set(itemKey, element);
+                  } else {
+                    nodeRefs.current.delete(itemKey);
                   }
                 }}
                 role="treeitem"
@@ -856,7 +867,7 @@ function WhyTreeEditor({
                   onAddSolution={() => addSupplementFromPath(item.path, "solution")}
                   onAddWhy={() => {
                     if (!onChange) return;
-                    applyUpdate(addRelicWhyTreeWhy(draftContent, item.path));
+                    applyUpdate(addRelicWhyTreeWhy(draftContentRef.current, item.path));
                     setSelection({ kind: "why", path: [...item.path, item.node.whys.length] });
                   }}
                 />
@@ -902,7 +913,7 @@ function WhyTreeEditor({
   return (
     <div
       aria-label={fileName}
-      className={`why-tree-editor${pan ? " why-tree-editor--panning" : ""}`}
+      className={`why-tree-editor${isPanning ? " why-tree-editor--panning" : ""}`}
       onKeyDown={handleEditorKeyDown}
       onPointerCancel={finishPan}
       onPointerDown={startPan}
@@ -1240,6 +1251,7 @@ function isBlankCanvasTarget(target: EventTarget, currentTarget: Element): boole
 
 function isWhyTreePanTarget(target: EventTarget, currentTarget: Element): boolean {
   if (!(target instanceof Element)) return target === currentTarget;
+  if (target.closest("input, button")) return false;
   if (target.closest(".why-tree-main-node")) return false;
   if (target.closest(".why-tree-support-item")) return false;
   if (target.closest(".why-tree-node-menu")) return false;
