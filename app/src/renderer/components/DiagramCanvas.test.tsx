@@ -164,7 +164,10 @@ describe("DiagramCanvas", () => {
 
   it("adds why-tree items only from Phenomenon or Why selection", () => {
     const onChange = vi.fn();
-    render(<StatefulDiagramCanvas content={whyTreeContent} onChange={onChange} />);
+    const { container } = render(<StatefulDiagramCanvas content={whyTreeContent} onChange={onChange} />);
+
+    expect(container.querySelector(".why-tree-node-menu")).toBeInTheDocument();
+    expect(container.querySelector(".why-tree-actions-bar")).toBeNull();
 
     fireEvent.click(screen.getByRole("button", { name: /\+ Why/ }));
     expect(onChange.mock.calls[0]?.[0]).toContain("title: なぜ？");
@@ -179,8 +182,20 @@ describe("DiagramCanvas", () => {
     expect(onChange.mock.calls[3]?.[0]).toContain("実行項目");
 
     fireEvent.focus(screen.getByDisplayValue("市場縮小"));
+    expect(container.querySelector(".why-tree-node-menu")).toBeNull();
     expect(screen.queryByRole("button", { name: /\+ Why/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /\+ Fact/ })).not.toBeInTheDocument();
+  });
+
+  it("moves the why-tree menu near the selected Why node", () => {
+    const { container } = render(<StatefulDiagramCanvas content={whyTreeContent} onChange={vi.fn()} />);
+
+    fireEvent.click(screen.getByDisplayValue("流入減少"));
+
+    const selectedWhy = screen.getByDisplayValue("流入減少").closest(".why-tree-node-shell");
+    expect(selectedWhy).toBeInstanceOf(HTMLElement);
+    expect((selectedWhy as HTMLElement).querySelector(".why-tree-node-menu")).toBeInTheDocument();
+    expect(container.querySelectorAll(".why-tree-node-menu")).toHaveLength(1);
   });
 
   it("edits why-tree titles and supplements in Markdown", () => {

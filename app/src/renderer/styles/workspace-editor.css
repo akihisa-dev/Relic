@@ -1165,6 +1165,15 @@
   min-width: 0;
 }
 
+.why-tree-node-shell {
+  display: grid;
+  justify-items: center;
+  min-width: 0;
+  position: relative;
+  width: min(100%, 300px);
+  z-index: 1;
+}
+
 .why-tree-main-node {
   background: var(--bg);
   border: 1px solid var(--border);
@@ -1177,7 +1186,7 @@
   min-height: 86px;
   padding: 14px 16px;
   text-align: left;
-  width: min(100%, 300px);
+  width: 100%;
 }
 
 .why-tree-main-node--phenomenon {
@@ -1192,6 +1201,10 @@
 .why-tree-main-node:hover,
 .why-tree-support-item:hover {
   border-color: var(--accent-ring);
+}
+
+.why-tree-main-node:focus {
+  outline: none;
 }
 
 .why-tree-role-label {
@@ -1299,36 +1312,42 @@
   box-shadow: 0 0 0 4px var(--accent-soft), 0 10px 24px rgba(15, 23, 42, 0.1);
 }
 
-.why-tree-actions-bar {
+.why-tree-node-menu {
   align-items: center;
-  background: color-mix(in srgb, var(--bg) 94%, transparent);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  bottom: 20px;
-  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.14);
-  display: flex;
-  gap: 8px;
+  background: #111;
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  border-radius: 999px;
+  box-shadow: 0 0 0 3px rgba(17, 17, 17, 0.2), 0 12px 28px rgba(15, 23, 42, 0.22);
+  display: grid;
+  gap: 4px;
+  justify-items: stretch;
   left: 50%;
-  padding: 8px;
-  position: sticky;
+  padding: 5px;
+  position: absolute;
+  top: calc(100% + 8px);
   transform: translateX(-50%);
   width: max-content;
+  z-index: 4;
 }
 
-.why-tree-actions-bar button {
-  background: var(--button-bg);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  color: var(--text);
+.why-tree-node-menu button {
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
+  color: #fff;
   font: inherit;
   font-size: 13px;
   font-weight: 700;
-  min-height: 34px;
+  min-height: 28px;
   padding: 0 12px;
+  text-align: left;
+  white-space: nowrap;
 }
 
-.why-tree-actions-bar button:hover {
-  border-color: var(--accent-ring);
+.why-tree-node-menu button:hover,
+.why-tree-node-menu button:focus-visible {
+  background: rgba(255, 255, 255, 0.14);
+  outline: none;
 }
 
 /* ────────────────────────────────── */
