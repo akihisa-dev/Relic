@@ -165,6 +165,24 @@ describe("MapCanvas", () => {
     expect(onChange.mock.calls[0]?.[0]).toContain("id: node-1");
     expect(onChange.mock.calls[0]?.[0]).toContain("id: node-2");
   });
+
+  it("edits a line label from the label button", () => {
+    const onChange = vi.fn();
+    render(
+      <I18nProvider language="en">
+        <MapCanvas content={mapContent} fileName="World" onChange={onChange} />
+      </I18nProvider>
+    );
+
+    fireEvent.pointerDown(screen.getByRole("button", { name: "Edit line label" }));
+    const input = screen.getByLabelText("Edit line label");
+    fireEvent.change(input, { target: { value: "best friends" } });
+    fireEvent.blur(input);
+
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange.mock.calls[0]?.[0]).toContain("label: best friends");
+    expect(onChange.mock.calls[0]?.[0]).toContain("id: line-1");
+  });
 });
 
 function pointerEvent(type: string, pointerId: number, clientX: number, clientY: number): Event {
