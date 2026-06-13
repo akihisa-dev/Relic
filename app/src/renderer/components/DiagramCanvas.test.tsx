@@ -105,6 +105,27 @@ const whyTreeContent = [
   ""
 ].join("\n");
 
+const whyTreeContentWithOnlyActions = [
+  "---",
+  "type: why-tree",
+  "title: 原因分析",
+  "---",
+  "",
+  "phenomenon:",
+  "  title: 問",
+  "  facts: []",
+  "  solutions: []",
+  "  actions:",
+  "    - 実行項目",
+  "    - 実行項目",
+  "  whys:",
+  "    - title: なぜ？",
+  "      facts: []",
+  "      solutions: []",
+  "      actions: []",
+  ""
+].join("\n");
+
 function renderDiagramCanvas(content = diagramContent) {
   render(
     <I18nProvider language="en">
@@ -170,6 +191,17 @@ describe("DiagramCanvas", () => {
     expect(screen.queryByLabelText("Node role")).not.toBeInTheDocument();
   });
 
+  it("renders action supplements even when solution supplements are empty", () => {
+    render(
+      <I18nProvider language="en">
+        <DiagramCanvas content={whyTreeContentWithOnlyActions} fileName="Why" />
+      </I18nProvider>
+    );
+
+    expect(screen.getAllByDisplayValue("実行項目")).toHaveLength(2);
+    expect(screen.queryByDisplayValue("解決策")).not.toBeInTheDocument();
+  });
+
   it("adds why-tree items only from Phenomenon or Why selection", () => {
     const onChange = vi.fn();
     const { container } = render(<StatefulDiagramCanvas content={whyTreeContent} onChange={onChange} />);
@@ -213,11 +245,13 @@ describe("DiagramCanvas", () => {
 
   it("renders added why-tree items immediately even before the parent content prop updates", () => {
     const onChange = vi.fn();
-    const { container } = render(<DelayedDiagramCanvas content={whyTreeContent} onChange={onChange} />);
+    const { container, rerender } = render(<DelayedDiagramCanvas content={whyTreeContent} onChange={onChange} />);
 
     fireEvent.click(screen.getByRole("button", { name: /\+ Why/ }));
     expect(screen.getByDisplayValue("なぜ？")).toBeInTheDocument();
     expect(container.querySelector(".why-tree-lines path")).toBeInTheDocument();
+    rerender(<DelayedDiagramCanvas content={whyTreeContent} onChange={onChange} />);
+    expect(screen.getByDisplayValue("なぜ？")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /\+ Fact/ }));
     expect(screen.getByDisplayValue("根拠")).toBeInTheDocument();
@@ -257,6 +291,12 @@ describe("DiagramCanvas", () => {
     fireEvent(editor, pointerEvent("pointermove", 8, 100, 100));
     expect(editor.scrollLeft).toBe(150);
     expect(editor.scrollTop).toBe(130);
+
+    fireEvent(editor, pointerEvent("pointerdown", 9, 220, 220));
+    fireEvent(editor, pointerEvent("pointermove", 9, 260, 250));
+    fireEvent(editor, pointerEvent("pointerup", 9, 260, 250));
+    expect(editor.scrollLeft).toBe(110);
+    expect(editor.scrollTop).toBe(100);
   });
 
   it("edits why-tree titles and supplements in Markdown", () => {

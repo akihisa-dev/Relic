@@ -1318,7 +1318,7 @@
   z-index: 1;
 }
 
-.why-tree-support-column:has(.why-tree-support-empty) {
+.why-tree-support-column:not(.why-tree-support-column--right):has(.why-tree-support-empty) {
   display: none;
 }
 
