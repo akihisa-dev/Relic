@@ -99,6 +99,16 @@ describe("MapSidebar", () => {
     expect(props.onOpenFile).toHaveBeenCalledWith("maps/World.md", expect.any(Object));
   });
 
+  it("moves a Map file to trash from the Map file context menu", () => {
+    const onDeleteItem = vi.fn();
+    renderMapSidebar({ onDeleteItem });
+
+    fireEvent.contextMenu(screen.getByRole("button", { name: /World\.md/ }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Move to Trash" }));
+
+    expect(onDeleteItem).toHaveBeenCalledWith("maps/World.md", "file");
+  });
+
   it("creates a new Map file from the Map sidebar", () => {
     const props = renderMapSidebar();
 

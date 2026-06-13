@@ -1,6 +1,7 @@
-import { useMemo, useState, type MouseEvent as ReactMouseEvent, type ReactElement } from "react";
+import { useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent, type ReactElement } from "react";
+import { createPortal } from "react-dom";
 
-import type { WorkspaceFileIndexEntry, WorkspaceState } from "../../shared/ipc";
+import type { WorkspaceFileIndexEntry, WorkspaceState, WorkspaceTreeNode } from "../../shared/ipc";
 import { addRelicMapNodeForFile, isRelicMapMarkdownContent } from "../../shared/mapMarkdown";
 import { useT } from "../i18n";
 import { useEditorStore } from "../store/editorStore";
@@ -12,6 +13,7 @@ interface MapSidebarProps {
   isOpeningWorkspace: boolean;
   onCreateMapFile: () => void;
   onCreateWorkspace: () => void;
+  onDeleteItem?: (path: string, type: WorkspaceTreeNode["type"]) => void;
   onOpenFile: (path: string, event?: ReactMouseEvent<HTMLButtonElement>, options?: { lineNumber?: number | null }) => void;
   onOpenWorkspace: () => void;
   openingFilePath?: string | null;
@@ -25,6 +27,7 @@ export function MapSidebar({
   isOpeningWorkspace,
   onCreateMapFile,
   onCreateWorkspace,
+  onDeleteItem,
   onOpenFile,
   onOpenWorkspace,
   openingFilePath,
@@ -93,6 +96,7 @@ export function MapSidebar({
       <MapSidebarGroup
         emptyLabel={t("map.noMapFiles")}
         files={mapFiles}
+        onDeleteItem={onDeleteItem}
         onOpenFile={onOpenFile}
         openingFilePath={openingFilePath}
         openFilePaths={openFilePaths}
@@ -126,6 +130,7 @@ function MapSidebarGroup({
   emptyLabel,
   files,
   onOpenFile,
+  onDeleteItem,
   onPlaceFile,
   openingFilePath,
   openFilePaths,
@@ -135,12 +140,22 @@ function MapSidebarGroup({
   emptyLabel: string;
   files: WorkspaceFileIndexEntry[];
   onOpenFile?: MapSidebarProps["onOpenFile"];
+  onDeleteItem?: MapSidebarProps["onDeleteItem"];
   onPlaceFile?: (path: string) => void;
   openingFilePath?: string | null;
   openFilePaths?: Set<string>;
   placeDisabled?: boolean;
   title: string;
 }): ReactElement {
+  const [contextMenu, setContextMenu] = useState<{ file: WorkspaceFileIndexEntry; x: number; y: number } | null>(null);
+  const closeContextMenu = (): void => setContextMenu(null);
+  const openContextMenu = (file: WorkspaceFileIndexEntry, event: ReactMouseEvent<HTMLButtonElement>): void => {
+    if (!onDeleteItem) return;
+    event.preventDefault();
+    event.stopPropagation();
+    setContextMenu({ file, x: event.clientX, y: event.clientY });
+  };
+
   return (
     <section className="map-sidebar-group">
       <div className="map-sidebar-group-heading">
@@ -154,6 +169,7 @@ function MapSidebarGroup({
               {onOpenFile ? (
                 <button
                   className={`map-sidebar-file map-sidebar-file--button${openFilePaths?.has(file.path) ? " open" : ""}${openingFilePath === file.path ? " loading" : ""}`}
+                  onContextMenu={(event) => openContextMenu(file, event)}
                   onClick={(event) => onOpenFile(file.path, event)}
                   title={file.path}
                   type="button"
@@ -184,7 +200,85 @@ function MapSidebarGroup({
       ) : (
         <p className="map-sidebar-empty">{emptyLabel}</p>
       )}
+      {contextMenu && onDeleteItem ? (
+        <MapSidebarFileContextMenu
+          file={contextMenu.file}
+          onClose={closeContextMenu}
+          onDeleteItem={onDeleteItem}
+          x={contextMenu.x}
+          y={contextMenu.y}
+        />
+      ) : null}
     </section>
+  );
+}
+
+function MapSidebarFileContextMenu({
+  file,
+  onClose,
+  onDeleteItem,
+  x,
+  y
+}: {
+  file: WorkspaceFileIndexEntry;
+  onClose: () => void;
+  onDeleteItem: NonNullable<MapSidebarProps["onDeleteItem"]>;
+  x: number;
+  y: number;
+}): ReactElement {
+  const t = useT();
+  const menuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const close = (event: PointerEvent): void => {
+      if (menuRef.current?.contains(event.target as Node)) return;
+      onClose();
+    };
+    const closeOnEscape = (event: KeyboardEvent): void => {
+      if (event.key === "Escape") onClose();
+    };
+
+    window.addEventListener("pointerdown", close);
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      window.removeEventListener("pointerdown", close);
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [onClose]);
+
+  return createPortal(
+    <div
+      className="tab-context-menu file-tree-context-menu"
+      ref={menuRef}
+      role="menu"
+      style={{ left: x, position: "fixed", top: y, zIndex: 40 }}
+    >
+      <button
+        className="tab-context-menu-item tab-context-menu-item--icon danger"
+        onClick={() => {
+          onClose();
+          onDeleteItem(file.path, "file");
+        }}
+        role="menuitem"
+        type="button"
+      >
+        <TrashIcon />
+        {t("files.moveToTrash")}
+      </button>
+    </div>,
+    document.body
+  );
+}
+
+function TrashIcon(): ReactElement {
+  return (
+    <svg aria-hidden="true" className="tab-context-menu-icon" fill="none" height="16" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="16">
+      <path d="M10 11v6" />
+      <path d="M14 11v6" />
+      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+      <path d="M3 6h18" />
+      <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+    </svg>
   );
 }
 

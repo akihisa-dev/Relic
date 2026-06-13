@@ -75,6 +75,7 @@ export function AppFilesSidebar({
             isOpeningWorkspace={filesSidebarProps.isOpeningWorkspace}
             onCreateWorkspace={filesSidebarProps.onCreateWorkspace}
             onCreateMapFile={onCreateMapFile}
+            onDeleteItem={filesSidebarProps.onDeleteItem}
             onOpenFile={filesSidebarProps.onOpenFile}
             onOpenWorkspace={filesSidebarProps.onOpenWorkspace}
             openingFilePath={filesSidebarProps.openingFilePath}
