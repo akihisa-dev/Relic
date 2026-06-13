@@ -135,6 +135,7 @@
   "map.invalidStatus": "Invalid Map",
   "map.noMapFiles": "No Map files.",
   "map.noPlaceableFiles": "No Markdown files to place.",
+  "map.openMapFirst": "Open a Map file before placing Markdown files.",
   "map.placeableFiles": "Markdown files",
   "map.status": "{{nodes}} nodes / {{lines}} lines",
   "nav.files": "Files",

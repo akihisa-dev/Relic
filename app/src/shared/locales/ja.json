@@ -135,6 +135,7 @@
   "map.invalidStatus": "無効なMap",
   "map.noMapFiles": "Mapファイルはまだありません。",
   "map.noPlaceableFiles": "配置できるMarkdownファイルはまだありません。",
+  "map.openMapFirst": "Markdownファイルを配置するにはMapファイルを開いてください。",
   "map.placeableFiles": "Markdownファイル",
   "map.status": "{{nodes}} Node / {{lines}} Line",
   "nav.files": "ファイル",
