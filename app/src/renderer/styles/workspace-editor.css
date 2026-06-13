@@ -1139,15 +1139,37 @@
 }
 
 .why-tree-content {
-  display: grid;
-  gap: 0;
+  display: flex;
+  justify-content: center;
   margin: 0 auto;
-  max-width: 1100px;
-  min-width: 760px;
+  min-width: max-content;
 }
 
-.why-tree-step {
+.why-tree-branch {
+  display: grid;
+  gap: 30px;
+  justify-items: center;
   min-width: 0;
+  position: relative;
+}
+
+.why-tree-children {
+  align-items: start;
+  display: flex;
+  gap: 34px;
+  justify-content: center;
+  padding-top: 26px;
+  position: relative;
+}
+
+.why-tree-children::before {
+  background: var(--border-medium);
+  content: "";
+  height: 26px;
+  left: 50%;
+  position: absolute;
+  top: 0;
+  width: 2px;
 }
 
 .why-tree-row {
@@ -1155,7 +1177,7 @@
   display: grid;
   gap: 28px;
   grid-template-columns: minmax(180px, 1fr) minmax(240px, 300px) minmax(220px, 1fr);
-  min-height: 190px;
+  min-height: 142px;
 }
 
 .why-tree-main-column {
@@ -1241,28 +1263,6 @@
 .why-tree-main-node--why input,
 .why-tree-support-item input {
   padding-right: 28px;
-}
-
-.why-tree-chain-connector {
-  align-items: center;
-  color: var(--text-3);
-  display: grid;
-  gap: 8px;
-  justify-items: center;
-  min-height: 92px;
-  padding: 8px 0;
-}
-
-.why-tree-chain-connector span {
-  background: var(--border-medium);
-  display: block;
-  height: 62px;
-  width: 2px;
-}
-
-.why-tree-chain-connector strong {
-  font-size: 13px;
-  font-weight: 800;
 }
 
 .why-tree-support-column {

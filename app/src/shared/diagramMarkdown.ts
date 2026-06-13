@@ -46,7 +46,7 @@ export interface RelicWhyTreeNode {
   facts: string[];
   solutions: string[];
   title: string;
-  why?: RelicWhyTreeNode;
+  whys: RelicWhyTreeNode[];
 }
 
 export interface RelicDiagramReferenceReplacement {
@@ -101,7 +101,7 @@ const relationshipNodeKeys = new Set(["id", "file", "x", "y", "width", "height"]
 const diagramLineKeys = new Set(["id", "from", "to", "label"]);
 const diagramFrontmatterKeys = new Set(["type", "title"]);
 const whyTreeBodyKeys = new Set(["phenomenon"]);
-const whyTreeNodeKeys = new Set(["title", "facts", "solutions", "actions", "why"]);
+const whyTreeNodeKeys = new Set(["title", "facts", "solutions", "actions", "why", "whys"]);
 const defaultNodeWidth = 180;
 const defaultNodeHeight = 80;
 
@@ -285,13 +285,13 @@ export function addRelicWhyTreeWhy(content: string, whyPath: number[]): RelicRes
 
   const updated = updateWhyTreeNodeAtPath(parsed.value.phenomenon, whyPath, (node) => ({
     ...node,
-    why: {
+    whys: [...node.whys, {
       actions: [],
       facts: [],
       solutions: [],
       title: "なぜ？",
-      ...(node.why ? { why: node.why } : {})
-    }
+      whys: []
+    }]
   }));
   if (!updated.ok) return updated;
 
@@ -322,11 +322,21 @@ export function removeRelicWhyTreeWhy(content: string, whyPath: number[]): Relic
   if (whyPath.length === 0) {
     return fail("WHY_TREE_PHENOMENON_REQUIRED", "問題・現象は削除できません。");
   }
-  if (whyPath.some((index) => index !== 0)) {
+  if (whyPath.some((index) => !Number.isInteger(index) || index < 0)) {
     return fail("WHY_TREE_PATH_INVALID", "Why Treeのパスが正しくありません。");
   }
 
-  const updated = removeWhyTreeWhyAtPath(parsed.value.phenomenon, whyPath);
+  const updated = updateWhyTreeNodeAtPath(parsed.value.phenomenon, whyPath.slice(0, -1), (node) => {
+    const targetIndex = whyPath[whyPath.length - 1];
+    if (targetIndex === undefined || targetIndex >= node.whys.length) {
+      return fail("WHY_TREE_NODE_MISSING", "削除するWhyが見つかりません。");
+    }
+
+    return ok({
+      ...node,
+      whys: node.whys.filter((_, index) => index !== targetIndex)
+    });
+  });
   if (!updated.ok) return updated;
 
   return serializeWhyTreeUpdate({ ...parsed.value, phenomenon: updated.value });
@@ -818,16 +828,34 @@ function parseWhyTreeNode(raw: unknown, label: string): RelicResult<RelicWhyTree
   if (!solutions.ok) return solutions;
   const actions = parseWhyTreeTextList(raw.actions, "actions");
   if (!actions.ok) return actions;
-  const why = raw.why === undefined ? undefined : parseWhyTreeNode(raw.why, "why");
-  if (why && !why.ok) return why;
+  const whys = parseWhyTreeNodeList(raw.whys, "whys");
+  if (!whys.ok) return whys;
+  const legacyWhy = raw.why === undefined ? undefined : parseWhyTreeNode(raw.why, "why");
+  if (legacyWhy && !legacyWhy.ok) return legacyWhy;
 
   return ok({
     actions: actions.value,
     facts: facts.value,
     solutions: solutions.value,
     title: title.value,
-    ...(why?.value ? { why: why.value } : {})
+    whys: [...(legacyWhy?.value ? [legacyWhy.value] : []), ...whys.value]
   });
+}
+
+function parseWhyTreeNodeList(raw: unknown, field: string): RelicResult<RelicWhyTreeNode[]> {
+  if (raw === undefined) return ok([]);
+  if (!Array.isArray(raw)) {
+    return fail("WHY_TREE_LIST_INVALID", `${field} は一覧にしてください。`);
+  }
+
+  const nodes: RelicWhyTreeNode[] = [];
+  for (const [index, item] of raw.entries()) {
+    const node = parseWhyTreeNode(item, `${field} の ${index + 1} 件目`);
+    if (!node.ok) return node;
+    nodes.push(node.value);
+  }
+
+  return ok(nodes);
 }
 
 function parseWhyTreeTextList(raw: unknown, field: string): RelicResult<string[]> {
@@ -845,7 +873,7 @@ function serializeWhyTreeNodeValue(node: RelicWhyTreeNode): Record<string, unkno
     facts: node.facts,
     solutions: node.solutions,
     actions: node.actions,
-    ...(node.why ? { why: serializeWhyTreeNodeValue(node.why) } : {})
+    ...(node.whys.length > 0 ? { whys: node.whys.map(serializeWhyTreeNodeValue) } : {})
   };
 }
 
@@ -865,45 +893,20 @@ function updateWhyTreeNodeAtPath(
   update: (node: RelicWhyTreeNode) => RelicWhyTreeNode | RelicResult<RelicWhyTreeNode>
 ): RelicResult<RelicWhyTreeNode> {
   if (whyPath.length === 0) return normalizeNodeUpdate(update(phenomenon));
-  if (whyPath.some((index) => index !== 0)) {
+  if (whyPath.some((index) => !Number.isInteger(index) || index < 0)) {
     return fail("WHY_TREE_PATH_INVALID", "Why Treeのパスが正しくありません。");
   }
-  if (!phenomenon.why) {
+  const [nextIndex, ...restPath] = whyPath;
+  if (nextIndex === undefined || nextIndex >= phenomenon.whys.length) {
     return fail("WHY_TREE_NODE_MISSING", "対象のWhyが見つかりません。");
   }
 
-  const nextWhy = updateWhyTreeNodeAtPath(phenomenon.why, whyPath.slice(1), update);
+  const nextWhy = updateWhyTreeNodeAtPath(phenomenon.whys[nextIndex], restPath, update);
   if (!nextWhy.ok) return nextWhy;
 
   return ok({
     ...phenomenon,
-    why: nextWhy.value
-  });
-}
-
-function removeWhyTreeWhyAtPath(phenomenon: RelicWhyTreeNode, whyPath: number[]): RelicResult<RelicWhyTreeNode> {
-  if (whyPath.length === 1) {
-    if (!phenomenon.why) {
-      return fail("WHY_TREE_NODE_MISSING", "削除するWhyが見つかりません。");
-    }
-
-    const { why, ...rest } = phenomenon;
-    return ok({
-      ...rest,
-      ...(why.why ? { why: why.why } : {})
-    });
-  }
-
-  if (!phenomenon.why) {
-    return fail("WHY_TREE_NODE_MISSING", "削除するWhyが見つかりません。");
-  }
-
-  const nextWhy = removeWhyTreeWhyAtPath(phenomenon.why, whyPath.slice(1));
-  if (!nextWhy.ok) return nextWhy;
-
-  return ok({
-    ...phenomenon,
-    why: nextWhy.value
+    whys: phenomenon.whys.map((why, index) => index === nextIndex ? nextWhy.value : why)
   });
 }
 

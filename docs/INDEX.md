@@ -31,6 +31,7 @@ AIのセッション開始時は、`../AGENTS.md` から [project/overview.md](p
 | [project/overview.md](project/overview.md) | Relicの目的、対象ユーザー、判断思想、リポジトリ構成 |
 | [project/terms.md](project/terms.md) | 用語定義。コード・UI・ドキュメントで使う言葉の統一基準 |
 | [features/](features/) | 機能の振る舞い・詳細仕様 |
+| [features/diagrams.md](features/diagrams.md) | Diagram / 図解、Relationship、Why Treeの仕様 |
 | [design/DESIGN.md](design/DESIGN.md) | デザイン正本。デザインシステム、画面一覧と構成、画面遷移フロー |
 | [engineering/architecture.md](engineering/architecture.md) | アーキテクチャ全体像 |
 | [engineering/data-model.md](engineering/data-model.md) | データモデル定義 |

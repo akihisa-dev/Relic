@@ -187,6 +187,18 @@ describe("DiagramCanvas", () => {
     expect(screen.queryByRole("button", { name: /\+ Fact/ })).not.toBeInTheDocument();
   });
 
+  it("adds Why nodes from the selected node instead of always appending to the deepest node", () => {
+    const onChange = vi.fn();
+    render(<StatefulDiagramCanvas content={whyTreeContent} onChange={onChange} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /\+ Why/ }));
+    fireEvent.focus(screen.getByDisplayValue("売上低下"));
+    fireEvent.click(screen.getByRole("button", { name: /\+ Why/ }));
+
+    expect(screen.getAllByDisplayValue("なぜ？")).toHaveLength(2);
+    expect(onChange.mock.calls[1]?.[0]).toContain("whys:");
+  });
+
   it("moves the why-tree menu near the selected Why node", () => {
     const { container } = render(<StatefulDiagramCanvas content={whyTreeContent} onChange={vi.fn()} />);
 
