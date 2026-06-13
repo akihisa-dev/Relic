@@ -51,6 +51,11 @@ export interface RelicMapDeletion {
   count: number;
 }
 
+export interface RelicMapLineLabelUpdate {
+  content: string;
+  line: RelicMapLine;
+}
+
 const mapTopLevelKeys = new Set(["type", "nodes", "lines"]);
 const mapNodeKeys = new Set(["id", "file", "x", "y", "width", "height"]);
 const mapLineKeys = new Set(["id", "from", "to", "label"]);
@@ -290,6 +295,40 @@ export function removeRelicMapLine(content: string, lineId: string): RelicResult
   return ok({
     content: serialized.value,
     count: parsed.value.lines.length - nextLines.length
+  });
+}
+
+export function updateRelicMapLineLabel(
+  content: string,
+  lineId: string,
+  label: string
+): RelicResult<RelicMapLineLabelUpdate> {
+  const parsed = parseRelicMapMarkdown(content);
+  if (!parsed.ok) return parsed;
+
+  const id = parseRequiredText(lineId, "MAP_LINE_ID_INVALID", "Lineの id を指定してください。");
+  if (!id.ok) return id;
+  const nextLabel = parseOptionalText(label, "MAP_LINE_LABEL_INVALID", "Lineの label は文字にしてください。");
+  if (!nextLabel.ok) return nextLabel;
+
+  const line = parsed.value.lines.find((item) => item.id === id.value);
+  if (!line) {
+    return fail("MAP_LINE_MISSING", "Labelを変更するLineが見つかりません。");
+  }
+
+  const nextLine = {
+    ...line,
+    label: nextLabel.value
+  };
+  const serialized = serializeRelicMapMarkdown({
+    ...parsed.value,
+    lines: parsed.value.lines.map((item) => item.id === id.value ? nextLine : item)
+  });
+  if (!serialized.ok) return serialized;
+
+  return ok({
+    content: serialized.value,
+    line: nextLine
   });
 }
 

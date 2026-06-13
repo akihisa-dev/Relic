@@ -10,6 +10,7 @@ import {
   removeRelicMapNode,
   replaceRelicMapNodeFileReferences,
   serializeRelicMapMarkdown,
+  updateRelicMapLineLabel,
   type RelicMapDocument
 } from "./mapMarkdown";
 
@@ -311,5 +312,24 @@ describe("removeRelicMapLine", () => {
 
   it("存在しないLine削除を拒否する", () => {
     expect(removeRelicMapLine(validMap, "line-missing").ok).toBe(false);
+  });
+});
+
+describe("updateRelicMapLineLabel", () => {
+  it("LineのLabelをMap用MDへ書き戻す", () => {
+    const updated = updateRelicMapLineLabel(validMap, "line-1", "親友");
+
+    expect(updated.ok).toBe(true);
+    expect(updated.ok ? updated.value.line : null).toMatchObject({
+      id: "line-1",
+      label: "親友"
+    });
+    expect(updated.ok ? updated.value.content : "").toContain("label: 親友");
+    expect(updated.ok ? updated.value.content : "").toContain("id: node-1");
+    expect(updated.ok ? updated.value.content : "").toContain("id: node-2");
+  });
+
+  it("存在しないLineのLabel更新を拒否する", () => {
+    expect(updateRelicMapLineLabel(validMap, "line-missing", "親友").ok).toBe(false);
   });
 });

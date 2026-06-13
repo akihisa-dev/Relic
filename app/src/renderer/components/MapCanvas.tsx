@@ -1,5 +1,7 @@
 import {
+  type FormEvent as ReactFormEvent,
   type KeyboardEvent as ReactKeyboardEvent,
+  type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
   type ReactElement,
   useMemo,
@@ -12,6 +14,7 @@ import {
   parseRelicMapMarkdown,
   removeRelicMapLine,
   removeRelicMapNode,
+  updateRelicMapLineLabel,
   type RelicMapDocument,
   type RelicMapLine,
   type RelicMapNode
@@ -78,10 +81,16 @@ type MapSelection =
   | { id: string; type: "line" }
   | { id: string; type: "node" };
 
+interface LabelEditState {
+  lineId: string;
+  value: string;
+}
+
 export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): ReactElement {
   const t = useT();
   const [connect, setConnect] = useState<ConnectState | null>(null);
   const [drag, setDrag] = useState<DragState | null>(null);
+  const [labelEdit, setLabelEdit] = useState<LabelEditState | null>(null);
   const [selection, setSelection] = useState<MapSelection | null>(null);
   const parsed = useMemo(() => parseRelicMapMarkdown(content), [content]);
 
@@ -235,6 +244,52 @@ export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): Reac
     setSelection({ id: lineId, type: "line" });
     focusCanvasFrom(event.currentTarget);
   };
+  const beginLabelEdit = (line: MapCanvasLineLayout): void => {
+    if (!onChange) return;
+
+    setSelection({ id: line.line.id, type: "line" });
+    setLabelEdit({
+      lineId: line.line.id,
+      value: line.line.label
+    });
+  };
+  const startLabelEditFromButton = (
+    line: MapCanvasLineLayout,
+    event: ReactPointerEvent<HTMLButtonElement>
+  ): void => {
+    event.preventDefault();
+    event.stopPropagation();
+    beginLabelEdit(line);
+  };
+  const startLabelEditFromLine = (
+    line: MapCanvasLineLayout,
+    event: ReactMouseEvent<SVGPathElement>
+  ): void => {
+    event.preventDefault();
+    event.stopPropagation();
+    beginLabelEdit(line);
+    focusCanvasFrom(event.currentTarget);
+  };
+  const changeLabelEditValue = (value: string): void => {
+    setLabelEdit((current) => current ? { ...current, value } : current);
+  };
+  const commitLabelEdit = (): void => {
+    if (!labelEdit || !onChange) return;
+
+    const updated = updateRelicMapLineLabel(content, labelEdit.lineId, labelEdit.value);
+    if (updated.ok) {
+      onChange(updated.value.content);
+      setSelection({ id: updated.value.line.id, type: "line" });
+    }
+    setLabelEdit(null);
+  };
+  const submitLabelEdit = (event: ReactFormEvent<HTMLFormElement>): void => {
+    event.preventDefault();
+    commitLabelEdit();
+  };
+  const cancelLabelEdit = (): void => {
+    setLabelEdit(null);
+  };
   const clearSelectionOnBlankPointerDown = (event: ReactPointerEvent<HTMLDivElement>): void => {
     const target = event.target;
     if (
@@ -243,6 +298,7 @@ export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): Reac
       (target instanceof Element && target.classList.contains("map-canvas-space"))
     ) {
       setSelection(null);
+      setLabelEdit(null);
       focusCanvasFrom(event.currentTarget);
     }
   };
@@ -255,6 +311,7 @@ export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): Reac
 
     if (deleted.ok) {
       onChange(deleted.value.content);
+      setLabelEdit(null);
       setSelection(null);
     }
   };
@@ -300,13 +357,9 @@ export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): Reac
               <path
                 className={`map-canvas-line${selection?.type === "line" && selection.id === line.line.id ? " map-canvas-line--selected" : ""}`}
                 d={`M ${line.x1} ${line.y1} L ${line.x2} ${line.y2}`}
+                onDoubleClick={(event) => startLabelEditFromLine(line, event)}
                 onPointerDown={(event) => selectLine(line.line.id, event)}
               />
-              {line.label ? (
-                <text className="map-canvas-line-label" x={line.labelX} y={line.labelY}>
-                  {line.label}
-                </text>
-              ) : null}
             </g>
           ))}
           {previewLine ? (
@@ -316,6 +369,55 @@ export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): Reac
             />
           ) : null}
         </svg>
+        <div className="map-canvas-labels">
+          {displayLines.map((line) => {
+            if (labelEdit?.lineId === line.line.id) {
+              return (
+                <form
+                  className="map-canvas-label-editor"
+                  key={line.line.id}
+                  onSubmit={submitLabelEdit}
+                  style={{
+                    left: line.labelX,
+                    top: line.labelY
+                  }}
+                >
+                  <input
+                    aria-label={t("map.editLineLabel")}
+                    autoFocus
+                    onBlur={commitLabelEdit}
+                    onChange={(event) => changeLabelEditValue(event.currentTarget.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Escape") {
+                        event.preventDefault();
+                        cancelLabelEdit();
+                      }
+                    }}
+                    value={labelEdit.value}
+                  />
+                </form>
+              );
+            }
+
+            if (!line.label) return null;
+
+            return (
+              <button
+                aria-label={t("map.editLineLabel")}
+                className="map-canvas-line-label"
+                key={line.line.id}
+                onPointerDown={(event) => startLabelEditFromButton(line, event)}
+                style={{
+                  left: line.labelX,
+                  top: line.labelY
+                }}
+                type="button"
+              >
+                {line.label}
+              </button>
+            );
+          })}
+        </div>
         <div className="map-canvas-nodes">
           {displayNodes.map(({ node, x, y }) => (
             <div

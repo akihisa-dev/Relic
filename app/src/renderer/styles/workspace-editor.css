@@ -922,6 +922,7 @@
 }
 
 .map-canvas-lines,
+.map-canvas-labels,
 .map-canvas-nodes {
   inset: 0;
   position: absolute;
@@ -947,15 +948,43 @@
 }
 
 .map-canvas-line-label {
-  fill: var(--text-2);
+  background: var(--sidebar-bg);
+  border: 1px solid transparent;
+  border-radius: 999px;
+  color: var(--text-2);
   font-size: 12px;
   font-weight: 650;
-  paint-order: stroke;
-  pointer-events: none;
-  stroke: var(--sidebar-bg);
-  stroke-linejoin: round;
-  stroke-width: 5px;
-  text-anchor: middle;
+  line-height: 1.2;
+  max-width: 180px;
+  overflow: hidden;
+  padding: 2px 7px;
+  position: absolute;
+  text-overflow: ellipsis;
+  transform: translate(-50%, -50%);
+  white-space: nowrap;
+}
+
+.map-canvas-line-label:hover {
+  border-color: var(--accent-ring);
+  color: var(--text);
+}
+
+.map-canvas-label-editor {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  z-index: 3;
+}
+
+.map-canvas-label-editor input {
+  background: var(--bg);
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.14);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  min-width: 120px;
+  padding: 5px 8px;
 }
 
 .map-canvas-node {
