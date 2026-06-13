@@ -159,6 +159,15 @@ function DelayedDiagramCanvas({ content, onChange }: { content: string; onChange
   );
 }
 
+function mockRect(element: Element, rect: { bottom: number; height: number; left: number; right: number; top: number; width: number }): void {
+  element.getBoundingClientRect = () => ({
+    ...rect,
+    x: rect.left,
+    y: rect.top,
+    toJSON: () => rect
+  });
+}
+
 afterEach(() => {
   cleanup();
 });
@@ -258,6 +267,25 @@ describe("DiagramCanvas", () => {
     fireEvent.click(screen.getByRole("button", { name: /\+ Fact/ }));
     expect(screen.getAllByDisplayValue("根拠")).toHaveLength(2);
     expect(onChange).toHaveBeenCalledTimes(3);
+  });
+
+  it("routes why-tree connector lines around the open add menu", () => {
+    const { container } = render(<StatefulDiagramCanvas content={whyTreeContent} onChange={vi.fn()} />);
+    const content = container.querySelector(".why-tree-content") as Element;
+    const nodes = container.querySelectorAll(".why-tree-main-node");
+    const menu = container.querySelector(".why-tree-node-menu") as Element;
+
+    mockRect(content, { bottom: 500, height: 500, left: 0, right: 1000, top: 0, width: 1000 });
+    mockRect(nodes[0] as Element, { bottom: 126, height: 86, left: 350, right: 650, top: 40, width: 300 });
+    mockRect(nodes[1] as Element, { bottom: 396, height: 86, left: 350, right: 650, top: 310, width: 300 });
+    mockRect(menu, { bottom: 220, height: 40, left: 360, right: 640, top: 180, width: 280 });
+    container.querySelectorAll(".why-tree-support-item").forEach((item, index) => {
+      mockRect(item, { bottom: 120 + index * 56, height: 46, left: 700, right: 870, top: 74 + index * 56, width: 170 });
+    });
+
+    fireEvent(window, new Event("resize"));
+
+    expect(container.querySelector(".why-tree-lines path")?.getAttribute("d")).toBe("M 500 126 V 168 H 656 V 232 H 500 V 310");
   });
 
   it("moves the why-tree menu near the selected Why node", () => {
