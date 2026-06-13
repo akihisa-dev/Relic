@@ -1172,6 +1172,26 @@
   width: 2px;
 }
 
+.why-tree-children::after {
+  background: var(--border-medium);
+  content: "";
+  height: 2px;
+  left: 150px;
+  position: absolute;
+  right: 150px;
+  top: 26px;
+}
+
+.why-tree-children > .why-tree-branch::before {
+  background: var(--border-medium);
+  content: "";
+  height: 26px;
+  left: 50%;
+  position: absolute;
+  top: -26px;
+  width: 2px;
+}
+
 .why-tree-row {
   align-items: start;
   display: flex;
