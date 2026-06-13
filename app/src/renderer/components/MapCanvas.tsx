@@ -547,7 +547,6 @@ export function MapCanvas({ content, fileName, onChange }: MapCanvasProps): Reac
               title={node.file}
             >
               <span className="map-canvas-node-name">{nodeFileName(node.file)}</span>
-              <span className="map-canvas-node-path">{node.file}</span>
               {selection?.type === "node" && selection.id === node.id ? (
                 <span className="map-canvas-node-outline-hitbox" aria-hidden="true">
                   {(["top", "right", "bottom", "left"] as const).map((side) => (
