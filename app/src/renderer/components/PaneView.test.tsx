@@ -391,4 +391,60 @@ describe("PaneView", () => {
     expect(props.sourceMode).toBe(false);
     expect(props.onLargeMarkdownFallback).not.toHaveBeenCalled();
   });
+
+  it("Map用Markdownは通常エディタではなくMap表示で開く", () => {
+    const content = [
+      "type: map",
+      "",
+      "nodes:",
+      "  - id: node-1",
+      "    file: characters/alice.md",
+      "    x: 120",
+      "    y: 80",
+      "    width: 180",
+      "    height: 80",
+      "lines: []",
+      ""
+    ].join("\n");
+    setPaneState(
+      {
+        [fileTab.id]: {
+          ...fileTab,
+          content,
+          name: "World",
+          path: "maps/World.md",
+          savedContent: content
+        }
+      },
+      { activeTabId: fileTab.id, history: [fileTab.id], tabIds: [fileTab.id] }
+    );
+
+    renderPaneView({ sourceMode: false });
+
+    expect(screen.getByRole("img", { name: "World" })).toBeInTheDocument();
+    expect(screen.getByText("alice")).toBeInTheDocument();
+    expect(screen.getByText("1 nodes / 0 lines")).toBeInTheDocument();
+    expect(document.querySelector(".cm-content")).toBeNull();
+  });
+
+  it("Map用Markdownもソースモードでは通常エディタで開く", async () => {
+    const content = "type: map\n\nnodes: []\nlines: []\n";
+    setPaneState(
+      {
+        [fileTab.id]: {
+          ...fileTab,
+          content,
+          name: "World",
+          path: "maps/World.md",
+          savedContent: content
+        }
+      },
+      { activeTabId: fileTab.id, history: [fileTab.id], tabIds: [fileTab.id] }
+    );
+
+    renderPaneView({ sourceMode: true });
+
+    await waitFor(() => expect(document.querySelector(".cm-content")).not.toBeNull());
+    expect(screen.queryByRole("img", { name: "World" })).not.toBeInTheDocument();
+  });
 });
