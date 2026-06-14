@@ -433,6 +433,31 @@ describe("DiagramCanvas", () => {
     expect(container.querySelector(".why-tree-node-menu")).toBeNull();
   });
 
+  it("deletes selected why-tree items from the keyboard outside text inputs", () => {
+    const onChange = vi.fn();
+    render(<StatefulDiagramCanvas content={whyTreeContent} onChange={onChange} />);
+    const editor = screen.getByRole("tree", { name: "World" });
+
+    fireEvent.click(screen.getByDisplayValue("流入減少"));
+    fireEvent.keyDown(editor, { key: "Delete" });
+
+    expect(onChange.mock.calls[0]?.[0]).not.toContain("title: 流入減少");
+    expect(screen.queryByDisplayValue("流入減少")).not.toBeInTheDocument();
+    expect(screen.getByDisplayValue("売上低下")).toBeInTheDocument();
+  });
+
+  it("keeps input Backspace as text editing in why-tree fields", () => {
+    const onChange = vi.fn();
+    render(<StatefulDiagramCanvas content={whyTreeContent} onChange={onChange} />);
+
+    fireEvent.keyDown(screen.getByDisplayValue("流入減少"), { key: "Backspace" });
+    fireEvent.keyDown(screen.getByDisplayValue("SEO順位低下"), { key: "Backspace" });
+
+    expect(onChange).not.toHaveBeenCalled();
+    expect(screen.getByDisplayValue("流入減少")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("SEO順位低下")).toBeInTheDocument();
+  });
+
   it("pans the why-tree view by dragging blank space only", () => {
     const { container } = render(<StatefulDiagramCanvas content={whyTreeContent} onChange={vi.fn()} />);
     const editor = screen.getByRole("tree", { name: "World" }) as HTMLElement;
