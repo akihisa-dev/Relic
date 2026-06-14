@@ -729,7 +729,7 @@ describe("DiagramCanvas", () => {
 
     expect(onChange).toHaveBeenCalledTimes(1);
     expect(onChange.mock.calls[0]?.[0]).toContain("x: 160");
-    expect(onChange.mock.calls[0]?.[0]).toContain("y: 100");
+    expect(onChange.mock.calls[0]?.[0]).toContain("y: 96");
   });
 
   it("snaps moved nodes to nearby node edges and only saves the final position", () => {
@@ -751,8 +751,8 @@ describe("DiagramCanvas", () => {
     fireEvent(node as HTMLElement, pointerEvent("pointerup", 1, 92, 10));
 
     expect(onChange).toHaveBeenCalledTimes(1);
-    expect(onChange.mock.calls[0]?.[0]).toContain("x: 200");
-    expect(onChange.mock.calls[0]?.[0]).toContain("y: 80");
+    expect(onChange.mock.calls[0]?.[0]).toContain("x: 192");
+    expect(onChange.mock.calls[0]?.[0]).toContain("y: 96");
     expect(onChange.mock.calls[0]?.[0]).not.toContain("snap");
   });
 
@@ -840,7 +840,7 @@ describe("DiagramCanvas", () => {
 
     expect(onChange).toHaveBeenCalledTimes(1);
     expect(onChange.mock.calls[0]?.[0]).toContain("x: 160");
-    expect(onChange.mock.calls[0]?.[0]).toContain("y: 100");
+    expect(onChange.mock.calls[0]?.[0]).toContain("y: 96");
   });
 
   it("does not rewrite Diagram Markdown when a node is clicked without moving", () => {
@@ -1020,7 +1020,7 @@ describe("DiagramCanvas", () => {
 
     expect(onChange).toHaveBeenCalledTimes(1);
     expect(onChange.mock.calls[0]?.[0]).toContain("x: 160");
-    expect(onChange.mock.calls[0]?.[0]).toContain("y: 100");
+    expect(onChange.mock.calls[0]?.[0]).toContain("y: 96");
     expect(onChange.mock.calls[0]?.[0]).not.toContain("from: node-1");
   });
 
@@ -1042,8 +1042,8 @@ describe("DiagramCanvas", () => {
 
     expect(screen.getByRole("img", { name: "World" })).toBeInTheDocument();
     expect(onChange).toHaveBeenCalledTimes(1);
-    expect(onChange.mock.calls[0]?.[0]).toContain("x: 370");
-    expect(onChange.mock.calls[0]?.[0]).toContain("y: 80");
+    expect(onChange.mock.calls[0]?.[0]).toContain("x: 384");
+    expect(onChange.mock.calls[0]?.[0]).toContain("y: 96");
     expect(onChange.mock.calls[0]?.[0]).not.toContain("from: node-1");
   });
 
