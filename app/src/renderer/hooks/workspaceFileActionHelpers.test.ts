@@ -88,6 +88,7 @@ describe("workspaceFileActionHelpers", () => {
 
     expect(nextUniqueDiagramFileName(state, t, "relationship")).toBe("関係図 3");
     expect(nextUniqueDiagramFileName(state, t, "why-tree")).toBe("原因分析 2");
+    expect(nextUniqueDiagramFileName(state, t, "why-tree", "トラブル振り返り")).toBe("トラブル振り返り");
   });
 
   it("作成後のMarkdown pathを末尾一致で探す", () => {
