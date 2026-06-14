@@ -30,7 +30,7 @@ const horizontalNodes: DiagramCanvasNodeLayout[] = [
 ];
 
 describe("buildLineLayouts", () => {
-  it("curves horizontal lines between node edges", () => {
+  it("connects a single horizontal line with a straight path", () => {
     const [line] = buildLineLayouts([
       {
         from: "node-1",
@@ -42,8 +42,8 @@ describe("buildLineLayouts", () => {
 
     expect(line).toMatchObject({
       labelX: 400,
-      labelY: 238,
-      pathD: "M 360 220 Q 400 256 440 220",
+      labelY: 220,
+      pathD: "M 360 220 L 440 220",
       x1: 360,
       x2: 440,
       y1: 220,
@@ -72,12 +72,12 @@ describe("buildLineLayouts", () => {
     expect(line?.x2).toBeCloseTo(472.22, 2);
     expect(line?.y1).toBe(260);
     expect(line?.y2).toBe(360);
-    expect(line?.pathD).toMatch(/^M .+ Q .+ .+$/);
-    expect(line?.labelX).toBeCloseTo(389.75, 2);
-    expect(line?.labelY).toBeCloseTo(324.8, 2);
+    expect(line?.pathD).toMatch(/^M .+ L .+$/);
+    expect(line?.labelX).toBeCloseTo(400, 2);
+    expect(line?.labelY).toBe(310);
   });
 
-  it("curves vertical lines between node edges", () => {
+  it("connects a single vertical line with a straight path", () => {
     const [line] = buildLineLayouts([
       {
         from: "node-1",
@@ -94,8 +94,8 @@ describe("buildLineLayouts", () => {
       }
     ]);
 
-    expect(line?.pathD).toBe("M 270 260 Q 234 310 270 360");
-    expect(line?.labelX).toBe(252);
+    expect(line?.pathD).toBe("M 270 260 L 270 360");
+    expect(line?.labelX).toBe(270);
     expect(line?.labelY).toBe(310);
   });
 
