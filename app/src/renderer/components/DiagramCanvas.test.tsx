@@ -130,6 +130,30 @@ const whyTreeContentWithSiblings = [
   ""
 ].join("\n");
 
+const whyTreeContentWithNestedWhy = [
+  "---",
+  "type: why-tree",
+  "title: 原因分析",
+  "---",
+  "",
+  "phenomenon:",
+  "  title: 売上低下",
+  "  facts: []",
+  "  solutions: []",
+  "  actions: []",
+  "  whys:",
+  "    - title: 流入減少",
+  "      facts: []",
+  "      solutions: []",
+  "      actions: []",
+  "      whys:",
+  "        - title: コンテンツ老朽化",
+  "          facts: []",
+  "          solutions: []",
+  "          actions: []",
+  ""
+].join("\n");
+
 const whyTreeContentWithOnlyActions = [
   "---",
   "type: why-tree",
@@ -334,6 +358,28 @@ describe("DiagramCanvas", () => {
     fireEvent.click(screen.getByRole("button", { name: /\+ Fact/ }));
     expect(screen.getAllByDisplayValue("根拠")).toHaveLength(2);
     expect(onChange).toHaveBeenCalledTimes(3);
+  });
+
+  it("collapses why-tree child whys without saving the collapsed state", () => {
+    const onChange = vi.fn();
+    const { container } = render(<StatefulDiagramCanvas content={whyTreeContentWithNestedWhy} onChange={onChange} />);
+
+    expect(screen.getByDisplayValue("コンテンツ老朽化")).toBeInTheDocument();
+    expect(container.querySelectorAll(".why-tree-lines path")).toHaveLength(2);
+
+    const parentWhy = screen.getByDisplayValue("流入減少").closest(".why-tree-main-node");
+    expect(parentWhy).toBeInstanceOf(HTMLElement);
+    fireEvent.click(within(parentWhy as HTMLElement).getByRole("button", { name: "Collapse child whys" }));
+
+    expect(screen.queryByDisplayValue("コンテンツ老朽化")).not.toBeInTheDocument();
+    expect(container.querySelectorAll(".why-tree-lines path")).toHaveLength(1);
+    expect(onChange).not.toHaveBeenCalled();
+
+    fireEvent.click(within(parentWhy as HTMLElement).getByRole("button", { name: "Show child whys" }));
+
+    expect(screen.getByDisplayValue("コンテンツ老朽化")).toBeInTheDocument();
+    expect(container.querySelectorAll(".why-tree-lines path")).toHaveLength(2);
+    expect(onChange).not.toHaveBeenCalled();
   });
 
   it("routes why-tree connector lines around the open add menu", () => {
