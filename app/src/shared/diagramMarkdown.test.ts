@@ -19,7 +19,7 @@ import {
   resizeRelicDiagramNode,
   serializeRelicDiagramMarkdown,
   updateRelicDiagramLineLabel,
-  updateRelicWhyTreeLabelPreset,
+  updateRelicWhyTreeLabels,
   updateRelicWhyTreeSupplement,
   updateRelicWhyTreeTitle,
   type RelicDiagramDocument
@@ -136,7 +136,13 @@ describe("parseRelicDiagramMarkdown", () => {
       ok: true,
       value: {
         type: "why-tree",
-        labelPreset: "generic",
+        labels: {
+          action: "アクション",
+          fact: "メモ",
+          node: "ノード",
+          root: "ルート",
+          solution: "関連項目"
+        },
         title: "売上低下分析",
         phenomenon: {
           title: "売上低下",
@@ -410,18 +416,26 @@ describe("why-tree operations", () => {
     expect(parseRelicDiagramMarkdown(movedFact.value.content).ok).toBe(true);
   });
 
-  it("ラベルプリセットを保存し、原因分析ラベルの初期値にも切り替えられる", () => {
-    const changed = updateRelicWhyTreeLabelPreset(whyTreeContent, "analysis");
+  it("任意の表示名をlabelsへ保存し、新規項目の初期値にも使う", () => {
+    const changed = updateRelicWhyTreeLabels(whyTreeContent, {
+      action: "次にやること",
+      fact: "観察",
+      node: "分解",
+      root: "テーマ",
+      solution: "候補"
+    });
     expect(changed.ok).toBe(true);
     if (!changed.ok) return;
 
-    expect(changed.value.content).toContain("labelPreset: analysis");
+    expect(changed.value.content).toContain("labels:");
+    expect(changed.value.content).toContain("root: テーマ");
+    expect(changed.value.content).toContain("node: 分解");
 
     const addedWhy = addRelicWhyTreeWhy(changed.value.content, []);
-    expect(addedWhy.ok ? addedWhy.value.tree.phenomenon.whys[1]?.title : null).toBe("原因");
+    expect(addedWhy.ok ? addedWhy.value.tree.phenomenon.whys[1]?.title : null).toBe("分解");
 
     const addedFact = addRelicWhyTreeSupplement(changed.value.content, [0], "fact");
-    expect(addedFact.ok ? addedFact.value.tree.phenomenon.whys[0]?.facts : []).toContain("根拠");
+    expect(addedFact.ok ? addedFact.value.tree.phenomenon.whys[0]?.facts : []).toContain("観察");
   });
 
   it("存在しないWhyパスや循環は表現しない", () => {

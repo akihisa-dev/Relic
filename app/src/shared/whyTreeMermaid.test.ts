@@ -11,6 +11,10 @@ describe("whyTreeToMermaid", () => {
       "title: 原因分析",
       "---",
       "",
+      "labels:",
+      "  fact: Fact",
+      "  solution: Solution",
+      "  action: Action",
       "phenomenon:",
       "  title: 問題",
       "  facts:",
@@ -32,9 +36,9 @@ describe("whyTreeToMermaid", () => {
     expect(whyTreeToMermaid(parsed.value)).toBe([
       "flowchart TD",
       "  phenomenon[\"問題\"]",
-      "  phenomenon_fact_1[\"Memo: 観察事実\"]",
+      "  phenomenon_fact_1[\"Fact: 観察事実\"]",
       "  phenomenon --> phenomenon_fact_1",
-      "  phenomenon_solution_1[\"Related item: 対策案\"]",
+      "  phenomenon_solution_1[\"Solution: 対策案\"]",
       "  phenomenon --> phenomenon_solution_1",
       "  phenomenon_action_1[\"Action: 実行項目\"]",
       "  phenomenon --> phenomenon_action_1",
@@ -75,7 +79,7 @@ describe("whyTreeToMermaid", () => {
 
     expect(mermaid).toContain("phenomenon[\"問題 &lt;A&gt;\"]");
     expect(mermaid).toContain("why_1[\"なぜ &amp; &quot;1&quot;\"]");
-    expect(mermaid).toContain("why_1_fact_1[\"Memo: 証拠 &lt;script&gt;\"]");
+    expect(mermaid).toContain("why_1_fact_1[\"メモ: 証拠 &lt;script&gt;\"]");
     expect(mermaid).toContain("why_1_1[\"深い原因\"]");
     expect(mermaid).not.toContain("<script>");
   });
