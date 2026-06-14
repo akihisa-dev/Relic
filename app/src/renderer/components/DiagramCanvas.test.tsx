@@ -761,6 +761,23 @@ describe("DiagramCanvas", () => {
     expect(onChange.mock.calls[0]?.[0]).not.toContain("snap");
   });
 
+  it("keeps the relationship viewport stable when a committed node move expands the canvas origin", () => {
+    const onChange = vi.fn();
+    const { container } = render(<StatefulDiagramCanvas content={diagramContentWithoutLines} onChange={onChange} />);
+    const node = screen.getByText("alice").closest(".diagram-canvas-node");
+    const space = container.querySelector(".diagram-canvas-space");
+    expect(node).toBeInstanceOf(HTMLElement);
+    expect(space).toBeInstanceOf(HTMLElement);
+
+    fireEvent(node as HTMLElement, pointerEvent("pointerdown", 1, 10, 10));
+    fireEvent(node as HTMLElement, pointerEvent("pointermove", 1, -50, 10));
+    fireEvent(node as HTMLElement, pointerEvent("pointerup", 1, -50, 10));
+
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange.mock.calls[0]?.[0]).toContain("x: 56");
+    expect((space as HTMLElement).style.transform).toContain("translate(-64px, 0px)");
+  });
+
   it("does not navigate away from the Diagram when a node is double clicked", () => {
     const onOpenFile = vi.fn();
     render(

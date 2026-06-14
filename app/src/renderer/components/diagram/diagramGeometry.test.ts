@@ -30,13 +30,29 @@ const horizontalNodes: DiagramCanvasNodeLayout[] = [
 ];
 
 function pathPoints(pathD: string): Array<{ x: number; y: number }> {
-  return pathD
-    .split(" L ")
-    .map((part) => part.replace(/^M /, ""))
-    .map((part) => {
-      const [x, y] = part.split(" ").map(Number);
-      return { x: x ?? 0, y: y ?? 0 };
-    });
+  const tokens = pathD.match(/[A-Z]|-?\d+(?:\.\d+)?/g) ?? [];
+  const points: Array<{ x: number; y: number }> = [];
+
+  for (let index = 0; index < tokens.length;) {
+    const command = tokens[index];
+    if (command === "M" || command === "L") {
+      const x = Number(tokens[index + 1]);
+      const y = Number(tokens[index + 2]);
+      points.push({ x, y });
+      index += 3;
+      continue;
+    }
+    if (command === "C") {
+      const x = Number(tokens[index + 5]);
+      const y = Number(tokens[index + 6]);
+      points.push({ x, y });
+      index += 7;
+      continue;
+    }
+    index += 1;
+  }
+
+  return points;
 }
 
 describe("buildLineLayouts", () => {
@@ -111,6 +127,79 @@ describe("buildLineLayouts", () => {
     expect(line?.pathD).toBe("M 270 260 L 270 360");
     expect(line?.labelX).toBe(270);
     expect(line?.labelY).toBe(310);
+  });
+
+  it("draws a jump on the vertical segment where relationship lines cross", () => {
+    const lines = buildLineLayouts([
+      {
+        from: "left",
+        id: "line-horizontal",
+        label: "",
+        to: "right"
+      },
+      {
+        from: "top",
+        id: "line-vertical",
+        label: "",
+        to: "bottom"
+      }
+    ], [
+      {
+        node: {
+          file: "left.md",
+          height: 80,
+          id: "left",
+          width: 180,
+          x: 80,
+          y: 180
+        },
+        x: 80,
+        y: 180
+      },
+      {
+        node: {
+          file: "right.md",
+          height: 80,
+          id: "right",
+          width: 180,
+          x: 520,
+          y: 180
+        },
+        x: 520,
+        y: 180
+      },
+      {
+        node: {
+          file: "top.md",
+          height: 80,
+          id: "top",
+          width: 180,
+          x: 300,
+          y: 40
+        },
+        x: 300,
+        y: 40
+      },
+      {
+        node: {
+          file: "bottom.md",
+          height: 80,
+          id: "bottom",
+          width: 180,
+          x: 300,
+          y: 360
+        },
+        x: 300,
+        y: 360
+      }
+    ]);
+
+    const horizontal = lines.find((line) => line.line.id === "line-horizontal");
+    const vertical = lines.find((line) => line.line.id === "line-vertical");
+
+    expect(horizontal?.pathD).not.toContain(" C ");
+    expect(vertical?.pathD).toContain(" C ");
+    expect(vertical?.pathD).toContain("L 390 208 C 404 208 404 232 390 232");
   });
 
   it("routes opposite lines as separate orthogonal paths", () => {
@@ -284,10 +373,10 @@ describe("buildLineLayouts", () => {
 
     expect(lines).toHaveLength(2);
     expect(lines[0]?.pathD).not.toBe(lines[1]?.pathD);
-    expect(firstPoints[0]?.y).toBe(firstPoints[1]?.y);
-    expect(firstPoints.at(-2)?.y).toBe(firstPoints.at(-1)?.y);
-    expect(secondPoints[0]?.y).toBe(secondPoints[1]?.y);
-    expect(secondPoints.at(-2)?.y).toBe(secondPoints.at(-1)?.y);
+    expect(firstPoints[0]).toEqual({ x: lines[0]?.x1, y: lines[0]?.y1 });
+    expect(firstPoints.at(-1)).toEqual({ x: lines[0]?.x2, y: lines[0]?.y2 });
+    expect(secondPoints[0]).toEqual({ x: lines[1]?.x1, y: lines[1]?.y1 });
+    expect(secondPoints.at(-1)).toEqual({ x: lines[1]?.x2, y: lines[1]?.y2 });
   });
 
   it("keeps vertically stacked opposite lines as separate orthogonal paths", () => {

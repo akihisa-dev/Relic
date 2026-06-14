@@ -8,6 +8,8 @@ const canvasPadding = 192;
 const minCanvasWidth = 900;
 const minCanvasHeight = 620;
 const lineAvoidanceMargin = 28;
+const lineJumpOffset = 14;
+const lineJumpRadius = 12;
 const pairedLineGap = 24;
 const turnCost = 8;
 const reservedSegmentPenalty = 5000;
@@ -131,7 +133,7 @@ export function buildLineLayouts(
 
   applyDestinationPortLanes(contexts);
 
-  return contexts.map((context) => {
+  const routedLines = contexts.map((context) => {
     const conflictingSegments = reservedSegments.filter((segment) => segment.toNodeId !== context.to.node.id);
     const route = buildRoutedLineRoute(
       context.start,
@@ -142,13 +144,19 @@ export function buildLineLayouts(
       conflictingSegments
     );
     reservedSegments.push(...segmentsFromPoints(route.points, context.to.node.id));
+    return { context, route };
+  });
 
+  return routedLines.map(({ context, route }, index) => {
+    const otherSegments = routedLines.flatMap((routedLine, otherIndex) => (
+      otherIndex === index ? [] : segmentsFromPoints(routedLine.route.points)
+    ));
     return {
       label: context.line.label,
       labelX: route.labelX,
       labelY: route.labelY,
       line: context.line,
-      pathD: route.pathD,
+      pathD: pathFromPointsWithVerticalLineJumps(route.points, otherSegments),
       x1: route.start.x,
       x2: route.end.x,
       y1: route.start.y,
@@ -523,6 +531,76 @@ function pathFromPoints(points: DiagramPoint[]): string {
     if (index === 0) return `M ${formatPathNumber(point.x)} ${formatPathNumber(point.y)}`;
     return `L ${formatPathNumber(point.x)} ${formatPathNumber(point.y)}`;
   }).join(" ");
+}
+
+function pathFromPointsWithVerticalLineJumps(points: DiagramPoint[], otherSegments: RoutedSegment[]): string {
+  const first = points[0];
+  if (!first) return "";
+
+  const commands = [`M ${formatPathNumber(first.x)} ${formatPathNumber(first.y)}`];
+  let current = first;
+
+  for (let index = 1; index < points.length; index += 1) {
+    const end = points[index];
+    if (!end) continue;
+
+    if (sameCoordinate(current.x, end.x) && !sameCoordinate(current.y, end.y)) {
+      const direction = end.y >= current.y ? 1 : -1;
+      const jumps = verticalLineJumps(current, end, otherSegments);
+
+      jumps.forEach((jump) => {
+        const before = { x: current.x, y: jump.y - direction * lineJumpRadius };
+        const after = { x: current.x, y: jump.y + direction * lineJumpRadius };
+        appendLineCommand(commands, before);
+        commands.push([
+          "C",
+          formatPathNumber(current.x + lineJumpOffset),
+          formatPathNumber(before.y),
+          formatPathNumber(current.x + lineJumpOffset),
+          formatPathNumber(after.y),
+          formatPathNumber(after.x),
+          formatPathNumber(after.y)
+        ].join(" "));
+      });
+    }
+
+    appendLineCommand(commands, end);
+    current = end;
+  }
+
+  return commands.join(" ");
+}
+
+function appendLineCommand(commands: string[], point: DiagramPoint): void {
+  const previousCommand = commands.at(-1);
+  const nextCommand = `L ${formatPathNumber(point.x)} ${formatPathNumber(point.y)}`;
+  if (previousCommand !== nextCommand) commands.push(nextCommand);
+}
+
+function verticalLineJumps(
+  start: DiagramPoint,
+  end: DiagramPoint,
+  otherSegments: RoutedSegment[]
+): DiagramPoint[] {
+  const direction = end.y >= start.y ? 1 : -1;
+  const jumps = otherSegments.flatMap((segment): DiagramPoint[] => {
+    if (!sameCoordinate(segment.start.y, segment.end.y) || sameCoordinate(segment.start.x, segment.end.x)) return [];
+    const x = start.x;
+    const y = segment.start.y;
+    if (!valueBetween(y, start.y, end.y) || !valueBetween(x, segment.start.x, segment.end.x)) return [];
+
+    const beforeY = y - direction * lineJumpRadius;
+    const afterY = y + direction * lineJumpRadius;
+    if (!valueBetween(beforeY, start.y, end.y) || !valueBetween(afterY, start.y, end.y)) return [];
+    return [{ x, y }];
+  });
+
+  return jumps
+    .sort((left, right) => direction * (left.y - right.y))
+    .filter((jump, index, sortedJumps) => {
+      const previous = sortedJumps[index - 1];
+      return !previous || Math.abs(jump.y - previous.y) >= lineJumpRadius * 2;
+    });
 }
 
 function labelPointFromRoute(points: DiagramPoint[]): DiagramPoint {
