@@ -57,4 +57,11 @@ describe("snapDiagramPointToGrid", () => {
       y: 96
     });
   });
+
+  it("snaps node corners to the visible grid relative to the canvas origin", () => {
+    expect(snapDiagramPointToGrid(160, 100, -72, -112)).toEqual({
+      x: 152,
+      y: 112
+    });
+  });
 });

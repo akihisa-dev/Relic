@@ -107,7 +107,7 @@ lines: []
 - Diagramサイドバーの配置可能Markdownファイルをクリックすると、開いているRelationshipへNodeを追加する
 - Nodeはキャンバス上の固定サイズカードとして表示する
 - LineはNodeを障害物として避ける経路探索により、短さを優先した折れ線として表示し、Nodeの辺へ直交する向きで接続する
-- Node内側をドラッグするとNodeを移動し、移動確定時の座標は背景グリッドに揃える
+- Node内側をドラッグするとNodeを移動し、移動確定時はNode左上角の表示位置を背景グリッドの交点に揃える
 - 選択済みNodeの外周を別NodeへドラッグするとLineを追加する
 - Nodeを選択してDeleteまたはBackspaceを押すと、そのNodeと接続しているLineを削除する
 - Lineを選択してDeleteまたはBackspaceを押すと、そのLineを削除する

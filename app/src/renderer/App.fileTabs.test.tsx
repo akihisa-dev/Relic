@@ -411,7 +411,7 @@ describe("App file tabs", () => {
     fireEvent(nodeCard as HTMLElement, pointerEvent("pointerup", 1, 50, 30));
 
     await waitFor(() => expect(writeMarkdownFile).toHaveBeenCalledWith({
-      content: expect.stringContaining("x: 160"),
+      content: expect.stringContaining("x: 152"),
       expectedContent: diagramContent,
       path: "関係図.md"
     }), { timeout: 2000 });
@@ -493,7 +493,7 @@ describe("App file tabs", () => {
     fireEvent(nodeCard as HTMLElement, pointerEvent("pointerup", 1, 50, 30));
 
     await waitFor(() => expect(writeMarkdownFile).toHaveBeenCalledWith({
-      content: expect.stringContaining("x: 160"),
+      content: expect.stringContaining("x: 152"),
       expectedContent: diagramContent,
       path: "関係図 6.md"
     }), { timeout: 2000 });

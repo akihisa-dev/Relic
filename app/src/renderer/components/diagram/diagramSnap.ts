@@ -62,10 +62,15 @@ export function snapDiagramNode(
   };
 }
 
-export function snapDiagramPointToGrid(x: number, y: number): { x: number; y: number } {
+export function snapDiagramPointToGrid(
+  x: number,
+  y: number,
+  originX = 0,
+  originY = 0
+): { x: number; y: number } {
   return {
-    x: Math.round(x / diagramGridSize) * diagramGridSize,
-    y: Math.round(y / diagramGridSize) * diagramGridSize
+    x: originX + Math.round((x - originX) / diagramGridSize) * diagramGridSize,
+    y: originY + Math.round((y - originY) / diagramGridSize) * diagramGridSize
   };
 }
 
