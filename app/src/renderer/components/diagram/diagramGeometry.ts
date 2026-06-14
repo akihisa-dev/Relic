@@ -11,6 +11,7 @@ const lineAvoidanceMargin = 28;
 const pairedLineGap = 24;
 const turnCost = 8;
 const reservedSegmentPenalty = 5000;
+const portLeadDistance = 28;
 
 export interface DiagramCanvasLayout {
   height: number;
@@ -57,6 +58,12 @@ interface RoutedSegment {
 }
 
 type RouteDirection = "h" | "none" | "v";
+type NodePortSide = "bottom" | "left" | "right" | "top";
+
+interface NodePort {
+  point: DiagramPoint;
+  side: NodePortSide;
+}
 
 export function buildDiagramCanvasLayout(diagram: RelicRelationshipDiagramDocument): DiagramCanvasLayout {
   if (diagram.nodes.length === 0) {
@@ -110,13 +117,8 @@ export function buildLineLayouts(
     const pairCount = pairCounts.get(pairKey) ?? 1;
     const pairIndex = pairIndexes.get(pairKey) ?? 0;
     pairIndexes.set(pairKey, pairIndex + 1);
-    const anchors = pairCount > 1
-      ? pairedNodeEdgePoints(from, to, pairIndex)
-      : {
-        end: nodeEdgePointToward(to, nodeCenter(from).x, nodeCenter(from).y),
-        start: nodeEdgePointToward(from, nodeCenter(to).x, nodeCenter(to).y)
-      };
-    const route = buildRoutedLineRoute(anchors.start, anchors.end, nodes, from.node.id, to.node.id, reservedSegments);
+    const ports = relationshipLinePorts(from, to, pairCount > 1 ? pairIndex : null);
+    const route = buildRoutedLineRoute(ports.start, ports.end, nodes, from.node.id, to.node.id, reservedSegments);
     reservedSegments.push(...segmentsFromPoints(route.points));
 
     return [{
@@ -146,28 +148,36 @@ function linePairKey(from: string, to: string): string {
   return from < to ? `${from}\u0000${to}` : `${to}\u0000${from}`;
 }
 
-function pairedNodeEdgePoints(
+function relationshipLinePorts(
   from: DiagramCanvasNodeLayout,
   to: DiagramCanvasNodeLayout,
-  pairIndex: number
-): { end: DiagramPoint; start: DiagramPoint } {
+  pairIndex: number | null
+): { end: NodePort; start: NodePort } {
   const fromCenter = nodeCenter(from);
   const toCenter = nodeCenter(to);
-  const offset = pairIndex === 0 ? -pairedLineGap / 2 : pairedLineGap / 2;
-  const dx = toCenter.x - fromCenter.x;
-  const dy = toCenter.y - fromCenter.y;
-  const horizontal = Math.abs(dx) >= Math.abs(dy);
+  const fromRect = nodeRect(from);
+  const toRect = nodeRect(to);
+  const horizontalGap = Math.max(toRect.left - fromRect.right, fromRect.left - toRect.right, 0);
+  const verticalGap = Math.max(toRect.top - fromRect.bottom, fromRect.top - toRect.bottom, 0);
+  const horizontal = horizontalGap >= verticalGap;
+  const offset = pairIndex === null ? 0 : pairIndex === 0 ? -pairedLineGap / 2 : pairedLineGap / 2;
 
   if (horizontal) {
     const fromIsLeft = fromCenter.x <= toCenter.x;
     return {
       end: {
-        x: fromIsLeft ? to.x : to.x + to.node.width,
-        y: clamp(toCenter.y + offset, to.y, to.y + to.node.height)
+        point: {
+          x: fromIsLeft ? to.x : to.x + to.node.width,
+          y: clamp(toCenter.y + offset, to.y, to.y + to.node.height)
+        },
+        side: fromIsLeft ? "left" : "right"
       },
       start: {
-        x: fromIsLeft ? from.x + from.node.width : from.x,
-        y: clamp(fromCenter.y + offset, from.y, from.y + from.node.height)
+        point: {
+          x: fromIsLeft ? from.x + from.node.width : from.x,
+          y: clamp(fromCenter.y + offset, from.y, from.y + from.node.height)
+        },
+        side: fromIsLeft ? "right" : "left"
       }
     };
   }
@@ -175,19 +185,25 @@ function pairedNodeEdgePoints(
   const fromIsAbove = fromCenter.y <= toCenter.y;
   return {
     end: {
-      x: clamp(toCenter.x + offset, to.x, to.x + to.node.width),
-      y: fromIsAbove ? to.y : to.y + to.node.height
+      point: {
+        x: clamp(toCenter.x + offset, to.x, to.x + to.node.width),
+        y: fromIsAbove ? to.y : to.y + to.node.height
+      },
+      side: fromIsAbove ? "top" : "bottom"
     },
     start: {
-      x: clamp(fromCenter.x + offset, from.x, from.x + from.node.width),
-      y: fromIsAbove ? from.y + from.node.height : from.y
+      point: {
+        x: clamp(fromCenter.x + offset, from.x, from.x + from.node.width),
+        y: fromIsAbove ? from.y + from.node.height : from.y
+      },
+      side: fromIsAbove ? "bottom" : "top"
     }
   };
 }
 
 function buildRoutedLineRoute(
-  start: DiagramPoint,
-  end: DiagramPoint,
+  start: NodePort,
+  end: NodePort,
   nodes: DiagramCanvasNodeLayout[],
   fromNodeId: string,
   toNodeId: string,
@@ -196,18 +212,54 @@ function buildRoutedLineRoute(
   const obstacles = nodes
     .filter((node) => node.node.id !== fromNodeId && node.node.id !== toNodeId)
     .map((node) => expandedNodeRect(node, lineAvoidanceMargin));
-  const points = routeOrthogonalPath(start, end, nodes, obstacles, reservedSegments);
+  const leadPoints = portLeadPoints(start, end);
+  const routedPoints = routeOrthogonalPath(leadPoints.start, leadPoints.end, nodes, obstacles, reservedSegments);
+  const points = simplifyRoute([start.point, ...routedPoints, end.point]);
   const pathD = pathFromPoints(points);
   const labelPoint = labelPointFromRoute(points);
 
   return {
-    end,
+    end: end.point,
     labelX: labelPoint.x,
     labelY: labelPoint.y,
     pathD,
     points,
-    start
+    start: start.point
   };
+}
+
+function portLeadPoints(start: NodePort, end: NodePort): { end: DiagramPoint; start: DiagramPoint } {
+  const startDirection = portOutwardDirection(start.side);
+  const endDirection = portOutwardDirection(end.side);
+  const leadDistance = usablePortLeadDistance(start, end, startDirection, endDirection);
+
+  return {
+    end: {
+      x: end.point.x + endDirection.x * leadDistance,
+      y: end.point.y + endDirection.y * leadDistance
+    },
+    start: {
+      x: start.point.x + startDirection.x * leadDistance,
+      y: start.point.y + startDirection.y * leadDistance
+    }
+  };
+}
+
+function usablePortLeadDistance(
+  start: NodePort,
+  end: NodePort,
+  startDirection: DiagramPoint,
+  endDirection: DiagramPoint
+): number {
+  if (sameCoordinate(start.point.y, end.point.y) && startDirection.x !== 0 && endDirection.x !== 0) {
+    const gap = Math.abs(end.point.x - start.point.x);
+    return Math.min(portLeadDistance, Math.max(0, gap / 3));
+  }
+  if (sameCoordinate(start.point.x, end.point.x) && startDirection.y !== 0 && endDirection.y !== 0) {
+    const gap = Math.abs(end.point.y - start.point.y);
+    return Math.min(portLeadDistance, Math.max(0, gap / 3));
+  }
+  return portLeadDistance;
 }
 
 function routeOrthogonalPath(
@@ -488,12 +540,35 @@ function pointInsideAnyRect(point: DiagramPoint, rects: DiagramRect[]): boolean 
 }
 
 function expandedNodeRect(node: DiagramCanvasNodeLayout, margin: number): DiagramRect {
+  const rect = nodeRect(node);
   return {
-    bottom: node.y + node.node.height + margin,
-    left: node.x - margin,
-    right: node.x + node.node.width + margin,
-    top: node.y - margin
+    bottom: rect.bottom + margin,
+    left: rect.left - margin,
+    right: rect.right + margin,
+    top: rect.top - margin
   };
+}
+
+function nodeRect(node: DiagramCanvasNodeLayout): DiagramRect {
+  return {
+    bottom: node.y + node.node.height,
+    left: node.x,
+    right: node.x + node.node.width,
+    top: node.y
+  };
+}
+
+function portOutwardDirection(side: NodePortSide): DiagramPoint {
+  switch (side) {
+    case "bottom":
+      return { x: 0, y: 1 };
+    case "left":
+      return { x: -1, y: 0 };
+    case "right":
+      return { x: 1, y: 0 };
+    case "top":
+      return { x: 0, y: -1 };
+  }
 }
 
 function pointKey(point: DiagramPoint): string {
@@ -520,28 +595,6 @@ function nodeCenter(node: DiagramCanvasNodeLayout): DiagramPoint {
   return {
     x: node.x + node.node.width / 2,
     y: node.y + node.node.height / 2
-  };
-}
-
-function nodeEdgePointToward(
-  node: DiagramCanvasNodeLayout,
-  targetX: number,
-  targetY: number
-): DiagramPoint {
-  const center = nodeCenter(node);
-  const dx = targetX - center.x;
-  const dy = targetY - center.y;
-  if (dx === 0 && dy === 0) return center;
-
-  const halfWidth = node.node.width / 2;
-  const halfHeight = node.node.height / 2;
-  const scaleX = dx === 0 ? Number.POSITIVE_INFINITY : halfWidth / Math.abs(dx);
-  const scaleY = dy === 0 ? Number.POSITIVE_INFINITY : halfHeight / Math.abs(dy);
-  const scale = Math.min(scaleX, scaleY);
-
-  return {
-    x: center.x + dx * scale,
-    y: center.y + dy * scale
   };
 }
 
