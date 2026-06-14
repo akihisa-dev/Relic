@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -77,6 +77,36 @@ const diagramContentWithEmptyLabel = [
   "    from: node-1",
   "    to: node-2",
   "    label: ''",
+  ""
+].join("\n");
+
+const diagramContentWithOppositeLines = [
+  "---",
+  "type: relationship",
+  "---",
+  "",
+  "nodes:",
+  "  - id: node-1",
+  "    file: characters/alice.md",
+  "    x: 120",
+  "    y: 80",
+  "    width: 180",
+  "    height: 80",
+  "  - id: node-2",
+  "    file: characters/bob.md",
+  "    x: 380",
+  "    y: 80",
+  "    width: 180",
+  "    height: 80",
+  "lines:",
+  "  - id: line-1",
+  "    from: node-1",
+  "    to: node-2",
+  "    label: 行き",
+  "  - id: line-2",
+  "    from: node-2",
+  "    to: node-1",
+  "    label: 戻り",
   ""
 ].join("\n");
 
@@ -268,7 +298,21 @@ describe("DiagramCanvas", () => {
     expect(line?.getAttribute("marker-end")).toMatch(/^url\(#diagram-canvas-arrow-/);
   });
 
-  it("copies Relationship Mermaid source", async () => {
+  it("renders opposite relationship lines as separate paths", () => {
+    const { container } = render(
+      <I18nProvider language="en">
+        <DiagramCanvas content={diagramContentWithOppositeLines} fileName="World" />
+      </I18nProvider>
+    );
+
+    const lines = Array.from(container.querySelectorAll(".diagram-canvas-line"));
+    expect(lines.map((line) => line.getAttribute("d"))).toEqual([
+      "M 360 210 H 440",
+      "M 440 230 H 360"
+    ]);
+  });
+
+  it("does not show the Mermaid copy action in Relationship Diagram mode", () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, "clipboard", {
       configurable: true,
@@ -276,12 +320,8 @@ describe("DiagramCanvas", () => {
     });
     renderDiagramCanvas();
 
-    fireEvent.click(screen.getByRole("button", { name: "Copy Mermaid source" }));
-
-    await waitFor(() => expect(writeText).toHaveBeenCalledWith(expect.stringContaining("flowchart TD")));
-    expect(writeText.mock.calls[0]?.[0]).toContain("node_1[\"alice\"]");
-    expect(writeText.mock.calls[0]?.[0]).toContain("node_1 -->|\"幼なじみ\"| node_2");
-    expect(screen.getByRole("button", { name: "Copy Mermaid source" })).toHaveTextContent("Copied");
+    expect(screen.queryByRole("button", { name: "Copy Mermaid source" })).not.toBeInTheDocument();
+    expect(writeText).not.toHaveBeenCalled();
   });
 
   it("renders why-tree as a structural editor without relationship controls", () => {
@@ -303,7 +343,7 @@ describe("DiagramCanvas", () => {
     expect(screen.queryByLabelText("Node role")).not.toBeInTheDocument();
   });
 
-  it("copies Why Tree Mermaid source", async () => {
+  it("does not show the Mermaid copy action in structure-tree mode", () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, "clipboard", {
       configurable: true,
@@ -315,11 +355,8 @@ describe("DiagramCanvas", () => {
       </I18nProvider>
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Copy Mermaid source" }));
-
-    await waitFor(() => expect(writeText).toHaveBeenCalledWith(expect.stringContaining("flowchart TD")));
-    expect(writeText.mock.calls[0]?.[0]).toContain("phenomenon[\"売上低下\"]");
-    expect(writeText.mock.calls[0]?.[0]).toContain("phenomenon --> why_1");
+    expect(screen.queryByRole("button", { name: "Copy Mermaid source" })).not.toBeInTheDocument();
+    expect(writeText).not.toHaveBeenCalled();
   });
 
   it("renders action supplements even when solution supplements are empty", () => {
@@ -1116,6 +1153,26 @@ describe("DiagramCanvas", () => {
     expect(onChange.mock.calls[0]?.[0]).not.toContain("id: line-1");
     expect(onChange.mock.calls[0]?.[0]).toContain("id: node-1");
     expect(onChange.mock.calls[0]?.[0]).toContain("id: node-2");
+  });
+
+  it("reverses a selected relationship line direction", () => {
+    const onChange = vi.fn();
+    const { container } = render(
+      <I18nProvider language="en">
+        <DiagramCanvas content={diagramContent} fileName="World" onChange={onChange} />
+      </I18nProvider>
+    );
+    const line = container.querySelector(".diagram-canvas-line-hit");
+    expect(line).toBeInstanceOf(Element);
+
+    expect(screen.queryByRole("button", { name: "Reverse arrow direction" })).not.toBeInTheDocument();
+    fireEvent(line as Element, pointerEvent("pointerdown", 4, 10, 10));
+    fireEvent.pointerDown(screen.getByRole("button", { name: "Reverse arrow direction" }));
+
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange.mock.calls[0]?.[0]).toContain("from: node-2");
+    expect(onChange.mock.calls[0]?.[0]).toContain("to: node-1");
+    expect(onChange.mock.calls[0]?.[0]).toContain("label: 幼なじみ");
   });
 
   it("edits a line label from the label button", () => {

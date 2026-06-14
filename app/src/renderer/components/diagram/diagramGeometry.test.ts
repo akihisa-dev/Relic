@@ -98,4 +98,25 @@ describe("buildLineLayouts", () => {
     expect(line?.labelX).toBe(278);
     expect(line?.labelY).toBe(310);
   });
+
+  it("offsets opposite lines between the same node pair", () => {
+    const lines = buildLineLayouts([
+      {
+        from: "node-1",
+        id: "line-1",
+        label: "A to B",
+        to: "node-2"
+      },
+      {
+        from: "node-2",
+        id: "line-2",
+        label: "B to A",
+        to: "node-1"
+      }
+    ], horizontalNodes);
+
+    expect(lines).toHaveLength(2);
+    expect(lines[0]?.pathD).toBe("M 360 210 H 440");
+    expect(lines[1]?.pathD).toBe("M 440 230 H 360");
+  });
 });

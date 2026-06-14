@@ -978,6 +978,8 @@
 }
 
 .diagram-canvas-label-editor,
+.diagram-canvas-line-action,
+.diagram-canvas-line-controls,
 .diagram-canvas-line-label,
 .diagram-canvas-node {
   pointer-events: auto;
@@ -1021,6 +1023,14 @@
   stroke-width: 1.5;
 }
 
+.diagram-canvas-line-controls {
+  align-items: center;
+  display: flex;
+  gap: 6px;
+  position: absolute;
+  transform: translate(-50%, -50%);
+}
+
 .diagram-canvas-line-label {
   background: var(--sidebar-bg);
   border: 1px solid transparent;
@@ -1032,9 +1042,7 @@
   max-width: 180px;
   overflow: hidden;
   padding: 2px 7px;
-  position: absolute;
   text-overflow: ellipsis;
-  transform: translate(-50%, -50%);
   white-space: nowrap;
 }
 
@@ -1047,6 +1055,24 @@
   border-color: var(--border);
   color: var(--text-3);
   font-weight: 600;
+}
+
+.diagram-canvas-line-action {
+  align-items: center;
+  background: var(--sidebar-bg);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-2);
+  display: inline-flex;
+  height: 24px;
+  justify-content: center;
+  padding: 0;
+  width: 24px;
+}
+
+.diagram-canvas-line-action:hover {
+  border-color: var(--accent-ring);
+  color: var(--text);
 }
 
 .diagram-canvas-label-editor {

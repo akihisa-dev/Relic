@@ -8,6 +8,7 @@ const canvasPadding = 180;
 const lineLabelOffset = 8;
 const minCanvasWidth = 900;
 const minCanvasHeight = 620;
+const parallelLineGap = 20;
 
 export interface DiagramCanvasLayout {
   height: number;
@@ -75,6 +76,8 @@ export function buildLineLayouts(
   nodes: DiagramCanvasNodeLayout[]
 ): DiagramCanvasLineLayout[] {
   const nodeById = new Map(nodes.map((node) => [node.node.id, node]));
+  const pairCounts = countLinePairs(lines);
+  const pairIndexes = new Map<string, number>();
 
   return lines.flatMap((line) => {
     const from = nodeById.get(line.from);
@@ -83,8 +86,12 @@ export function buildLineLayouts(
 
     const fromCenter = nodeCenter(from);
     const toCenter = nodeCenter(to);
-    const start = nodeEdgePointToward(from, toCenter.x, toCenter.y);
-    const end = nodeEdgePointToward(to, fromCenter.x, fromCenter.y);
+    const pairKey = linePairKey(line.from, line.to);
+    const pairIndex = pairIndexes.get(pairKey) ?? 0;
+    pairIndexes.set(pairKey, pairIndex + 1);
+    const offset = lineOffsetForPair(pairCounts.get(pairKey) ?? 1, pairIndex, line, nodeById);
+    const start = offsetPoint(nodeEdgePointToward(from, toCenter.x, toCenter.y), offset);
+    const end = offsetPoint(nodeEdgePointToward(to, fromCenter.x, fromCenter.y), offset);
     const route = buildLineRoute(start, end, to);
 
     return [{
@@ -99,6 +106,54 @@ export function buildLineLayouts(
       y2: end.y
     }];
   });
+}
+
+function countLinePairs(lines: RelicDiagramLine[]): Map<string, number> {
+  const counts = new Map<string, number>();
+  lines.forEach((line) => {
+    const key = linePairKey(line.from, line.to);
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  });
+  return counts;
+}
+
+function linePairKey(from: string, to: string): string {
+  return from < to ? `${from}\u0000${to}` : `${to}\u0000${from}`;
+}
+
+function lineOffsetForPair(
+  pairCount: number,
+  pairIndex: number,
+  line: RelicDiagramLine,
+  nodeById: Map<string, DiagramCanvasNodeLayout>
+): { x: number; y: number } {
+  if (pairCount < 2) return { x: 0, y: 0 };
+
+  const firstId = line.from < line.to ? line.from : line.to;
+  const secondId = line.from < line.to ? line.to : line.from;
+  const first = nodeById.get(firstId);
+  const second = nodeById.get(secondId);
+  if (!first || !second) return { x: 0, y: 0 };
+
+  const firstCenter = nodeCenter(first);
+  const secondCenter = nodeCenter(second);
+  const dx = secondCenter.x - firstCenter.x;
+  const dy = secondCenter.y - firstCenter.y;
+  const length = Math.hypot(dx, dy);
+  if (length < 0.001) return { x: 0, y: 0 };
+
+  const distance = (pairIndex - (pairCount - 1) / 2) * parallelLineGap;
+  return {
+    x: (-dy / length) * distance,
+    y: (dx / length) * distance
+  };
+}
+
+function offsetPoint(point: { x: number; y: number }, offset: { x: number; y: number }): { x: number; y: number } {
+  return {
+    x: point.x + offset.x,
+    y: point.y + offset.y
+  };
 }
 
 function buildLineRoute(

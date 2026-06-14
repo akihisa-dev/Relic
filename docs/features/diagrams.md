@@ -57,6 +57,7 @@ Diagramサイドバーから作成できるDiagramは、Relationshipと構造ツ
 - ソースモードをオンにすると、DiagramファイルのMarkdown本文を直接編集できる
 - Diagramファイルでもファイルタイトルのリネーム、タブ操作、自動保存は通常Markdownファイルと同じ扱いにする
 - Diagramキャンバスでの編集は、Markdown本文を書き換え、既存の自動保存に乗せる
+- Diagramキャンバスには、Mermaidソースをコピーする操作を表示しない
 - Diagramファイルのステータスバーには、通常の文字数・単語数ではなくDiagram内容の件数を表示する
 - Diagramとして読めない形式の場合は、Diagramキャンバスに無効なファイルであることを表示する
 
@@ -96,7 +97,9 @@ lines: []
 - Nodeの表示名は、`nodes[].file` の拡張子を除いたファイル名とする
 - Nodeのツールチップには、参照先ファイルパスを表示する
 - Relationshipは循環、多対多、横断関係を許可する
-- 同じNode同士を複数回つなぐLineは作らない
+- 同じNode一対のLineは最大2本まで作れる
+- 同じ向きのLineは1本だけ作れる
+- 2本目のLineは逆方向のLineとして作れる
 - 自分自身へ向かうLineは作らない
 
 ### 操作
@@ -107,6 +110,7 @@ lines: []
 - 選択済みNodeの外周を別NodeへドラッグするとLineを追加する
 - Nodeを選択してDeleteまたはBackspaceを押すと、そのNodeと接続しているLineを削除する
 - Lineを選択してDeleteまたはBackspaceを押すと、そのLineを削除する
+- Lineを選択すると、矢印方向を反転できる
 - Lineをダブルクリック、または選択中の空Labelに出る追加操作からLabelを編集できる
 - Line作成直後はLabel入力へ入る
 - 空白部分をドラッグすると表示位置を動かせる
@@ -115,7 +119,7 @@ lines: []
 - Nodeをダブルクリックしても参照先ファイルへ移動しない
 
 pan、zoom、選択状態、ドラッグ中の一時位置は画面だけの状態とし、Markdownファイルへ保存しない。
-Node位置、Line追加、Line削除、Node削除、Label編集はMarkdown本文へ書き戻す。
+Node位置、Line追加、Line削除、Line方向変更、Node削除、Label編集はMarkdown本文へ書き戻す。
 
 ---
 

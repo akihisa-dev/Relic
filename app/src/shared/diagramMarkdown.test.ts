@@ -11,6 +11,7 @@ import {
   moveRelicWhyTreeSupplement,
   moveRelicWhyTreeWhy,
   parseRelicDiagramMarkdown,
+  reverseRelicDiagramLineDirection,
   removeRelicDiagramLine,
   removeRelicDiagramNode,
   removeRelicWhyTreeSupplement,
@@ -348,6 +349,11 @@ describe("relationship operations", () => {
     expect(addRelicDiagramLine(relationshipContent, "node-1", "node-2").ok).toBe(false);
     expect(addRelicDiagramLine(relationshipContent, "node-2", "node-1").ok).toBe(true);
 
+    const reversed = reverseRelicDiagramLineDirection(relationshipContent, "line-1");
+    expect(reversed.ok ? reversed.value.line : null).toMatchObject({ from: "node-2", to: "node-1" });
+    expect(reversed.ok ? reversed.value.content : "").toContain("from: node-2");
+    expect(reversed.ok ? reversed.value.content : "").toContain("to: node-1");
+
     const removedNode = removeRelicDiagramNode(relationshipContent, "node-1");
     expect(removedNode.ok ? removedNode.value.content : "").not.toContain("id: node-1");
 
@@ -358,6 +364,40 @@ describe("relationship operations", () => {
     expect(updatedLabel.ok ? updatedLabel.value.content : "").toContain("label: 親友");
   });
 
+  it("同じNode一対のLineは逆方向2本までにする", () => {
+    const oppositeLines = [
+      "---",
+      "type: relationship",
+      "---",
+      "",
+      "nodes:",
+      "  - id: node-1",
+      "    file: a.md",
+      "    x: 0",
+      "    y: 0",
+      "    width: 100",
+      "    height: 80",
+      "  - id: node-2",
+      "    file: b.md",
+      "    x: 200",
+      "    y: 0",
+      "    width: 100",
+      "    height: 80",
+      "lines:",
+      "  - id: line-1",
+      "    from: node-1",
+      "    to: node-2",
+      "  - id: line-2",
+      "    from: node-2",
+      "    to: node-1"
+    ].join("\n");
+    const duplicatedDirection = `${oppositeLines}\n  - id: line-3\n    from: node-1\n    to: node-2`;
+
+    expect(parseRelicDiagramMarkdown(oppositeLines).ok).toBe(true);
+    expect(parseRelicDiagramMarkdown(duplicatedDirection).ok).toBe(false);
+    expect(reverseRelicDiagramLineDirection(oppositeLines, "line-1").ok).toBe(false);
+  });
+
   it("why-treeにRelationship操作を適用しない", () => {
     expect(addRelicDiagramNodeForFile(whyTreeContent, "memo.md").ok).toBe(false);
     expect(addRelicDiagramLine(whyTreeContent, "node-1", "node-2").ok).toBe(false);
@@ -365,6 +405,7 @@ describe("relationship operations", () => {
     expect(resizeRelicDiagramNode(whyTreeContent, "node-1", 100, 80).ok).toBe(false);
     expect(removeRelicDiagramNode(whyTreeContent, "node-1").ok).toBe(false);
     expect(removeRelicDiagramLine(whyTreeContent, "line-1").ok).toBe(false);
+    expect(reverseRelicDiagramLineDirection(whyTreeContent, "line-1").ok).toBe(false);
     expect(updateRelicDiagramLineLabel(whyTreeContent, "line-1", "label").ok).toBe(false);
 
     const replaced = replaceRelicDiagramNodeFileReferences(whyTreeContent, "file", "a.md", "b.md");
