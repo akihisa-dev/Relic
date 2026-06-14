@@ -469,6 +469,10 @@ describe("DiagramCanvas", () => {
     fireEvent.change(screen.getByLabelText("Phenomenon title"), { target: { value: "売上\n低下" } });
     expect(onChange.mock.calls[1]?.[0]).toContain("売上");
     expect((screen.getByLabelText("Phenomenon title") as HTMLTextAreaElement).value).toBe("売上\n低下");
+
+    fireEvent.change(screen.getByLabelText("Phenomenon title"), { target: { value: "売上低下\n" } });
+    expect(onChange.mock.calls[2]?.[0]).toContain("売上低下");
+    expect((screen.getByLabelText("Phenomenon title") as HTMLTextAreaElement).value).toBe("売上低下\n");
   });
 
   it("pans the why-tree view by dragging blank space only", () => {
