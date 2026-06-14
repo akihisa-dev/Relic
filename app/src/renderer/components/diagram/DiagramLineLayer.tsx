@@ -1,7 +1,8 @@
 import {
   type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
-  type ReactElement
+  type ReactElement,
+  useId
 } from "react";
 
 import { type DiagramCanvasLineLayout } from "./diagramGeometry";
@@ -35,6 +36,8 @@ export function DiagramLineLayer({
   selection,
   width
 }: DiagramLineLayerProps): ReactElement {
+  const markerId = `diagram-canvas-arrow-${useId().replace(/:/g, "")}`;
+
   return (
     <svg
       aria-hidden="true"
@@ -43,6 +46,19 @@ export function DiagramLineLayer({
       viewBox={`0 0 ${width} ${height}`}
       width={width}
     >
+      <defs>
+        <marker
+          id={markerId}
+          markerHeight="8"
+          markerWidth="8"
+          orient="auto"
+          refX="7"
+          refY="4"
+          viewBox="0 0 8 8"
+        >
+          <path className="diagram-canvas-arrow-marker" d="M 0 0 L 8 4 L 0 8 z" />
+        </marker>
+      </defs>
       {lines.map((line) => (
         <g key={line.line.id}>
           <path
@@ -55,6 +71,7 @@ export function DiagramLineLayer({
             aria-hidden="true"
             className={`diagram-canvas-line${selection?.type === "line" && selection.id === line.line.id ? " diagram-canvas-line--selected" : ""}`}
             d={`M ${line.x1} ${line.y1} L ${line.x2} ${line.y2}`}
+            markerEnd={`url(#${markerId})`}
             onDoubleClick={(event) => onLineDoubleClick(line, event)}
             onPointerDown={(event) => onLinePointerDown(line.line.id, event)}
           />
