@@ -1,4 +1,5 @@
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { readFileSync } from "node:fs";
 import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -820,6 +821,13 @@ describe("DiagramCanvas", () => {
     fireEvent.wheel(canvas, { clientX: 100, clientY: 100, deltaY: -100 });
 
     expect((space as HTMLElement).style.transform).toContain("scale(1.1)");
+  });
+
+  it("keeps the relationship grid inside the transformed canvas space", () => {
+    const css = readFileSync("src/renderer/styles/workspace-editor.css", "utf8");
+
+    expect(css).toMatch(/\.diagram-canvas\s*\{[^}]*background:\s*var\(--bg\);/s);
+    expect(css).toMatch(/\.diagram-canvas-space\s*\{[^}]*linear-gradient\(var\(--border-soft\) 1px, transparent 1px\)[^}]*background-size:\s*32px 32px;/s);
   });
 
   it("commits moved node coordinates in canvas units while zoomed", () => {
