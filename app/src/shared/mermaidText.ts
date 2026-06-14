@@ -14,7 +14,7 @@ export function mermaidSafeId(raw: string, fallback: string, used: Set<string>):
   return candidate;
 }
 
-export function mermaidText(value: string): string {
+function mermaidText(value: string): string {
   return value
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")

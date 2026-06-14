@@ -23,19 +23,23 @@ export function snapDiagramNode(
   nodes: DiagramCanvasNodeLayout[]
 ): DiagramSnapResult {
   const guides: DiagramSnapGuide[] = [];
+  const xTargets: number[] = [];
+  const yTargets: number[] = [];
+
+  for (const node of nodes) {
+    const { height: nodeHeight, id, width: nodeWidth, x: nodeX, y: nodeY } = node.node;
+    if (id === movingNodeId) continue;
+    xTargets.push(nodeX, nodeX + nodeWidth / 2, nodeX + nodeWidth);
+    yTargets.push(nodeY, nodeY + nodeHeight / 2, nodeY + nodeHeight);
+  }
+
   const xSnap = nearestSnap(
     [
       { offset: 0, value: x },
       { offset: width / 2, value: x + width / 2 },
       { offset: width, value: x + width }
     ],
-    nodes
-      .filter((node) => node.node.id !== movingNodeId)
-      .flatMap((node) => [
-        node.node.x,
-        node.node.x + node.node.width / 2,
-        node.node.x + node.node.width
-      ])
+    xTargets
   );
   const ySnap = nearestSnap(
     [
@@ -43,13 +47,7 @@ export function snapDiagramNode(
       { offset: height / 2, value: y + height / 2 },
       { offset: height, value: y + height }
     ],
-    nodes
-      .filter((node) => node.node.id !== movingNodeId)
-      .flatMap((node) => [
-        node.node.y,
-        node.node.y + node.node.height / 2,
-        node.node.y + node.node.height
-      ])
+    yTargets
   );
 
   if (xSnap) guides.push({ axis: "x", value: xSnap.target });

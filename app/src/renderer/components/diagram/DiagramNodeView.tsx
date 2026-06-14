@@ -107,12 +107,12 @@ export function DiagramNodeView({
               onPointerDown={(event) => onOutlinePointerDown(node, event)}
             />
           ))}
-          <span
+          <button
             aria-label={resizeLabel}
             className="diagram-canvas-node-resize-hit"
             onPointerDown={(event) => onResizePointerDown(node, event)}
-            role="button"
             tabIndex={-1}
+            type="button"
           />
         </span>
       ) : null}

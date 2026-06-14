@@ -49,7 +49,7 @@ export async function buildPreviewOutputHtml({
 
   const root = document.createElement("div");
   root.className = "relic-output-body";
-  root.innerHTML = renderMarkdown(content, workspacePath, new Map(), false, t);
+  root.innerHTML = sanitizePreviewHtml(renderMarkdown(content, workspacePath, new Map(), false, t));
   root.style.left = "-10000px";
   root.style.position = "fixed";
   root.style.top = "0";

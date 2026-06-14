@@ -4,6 +4,7 @@ import type { ReactElement } from "react";
 import type { EditorSettings } from "../../shared/ipc";
 import { appFontFamilyMap } from "../appFont";
 import { usePreviewEmbeds } from "../hooks/usePreviewEmbeds";
+import { sanitizePreviewHtml } from "../htmlSanitizer";
 import { useT } from "../i18n";
 import { renderDiagramElements } from "../diagramPreview";
 import { renderMarkdown, slugifyHeading, toggleNthCheckbox } from "../previewMarkdown";
@@ -41,7 +42,7 @@ export function Preview({
     const container = containerRef.current;
     if (!container) return;
 
-    container.innerHTML = html;
+    container.innerHTML = sanitizePreviewHtml(html);
     renderDiagramElements(container, t);
   }, [html, settings.theme, t]);
 

@@ -62,6 +62,7 @@ AIのセッション開始時は、`../AGENTS.md` から [project/overview.md](p
 | [development/coding-rules.md](development/coding-rules.md) | コーディング規約 |
 | [development/testing-rules.md](development/testing-rules.md) | テスト方針 |
 | [development/versioning-rules.md](development/versioning-rules.md) | バージョン管理ルール |
+| [development/release-rules.md](development/release-rules.md) | GitHub Releasesを使った手動リリース手順 |
 
 `AGENTS.md` はAIエージェント向けルールの正本です。
 別のAI向け入口文書は作らず、ルールは `AGENTS.md` にだけ置きます。

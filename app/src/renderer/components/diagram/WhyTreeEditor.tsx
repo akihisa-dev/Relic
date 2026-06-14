@@ -74,7 +74,7 @@ export function WhyTreeEditor({
 }: DiagramCanvasProps & { tree: RelicWhyTreeDocument }): ReactElement {
   const t = useT();
   const contentRef = useRef<HTMLDivElement | null>(null);
-  const nodeRefs = useRef(new Map<string, HTMLDivElement>());
+  const nodeRefs = useRef<Map<string, HTMLDivElement> | null>(null);
   const draftContentRef = useRef(content);
   const panRef = useRef<WhyTreePanState | null>(null);
   const [collapsedPaths, setCollapsedPaths] = useState<Set<string>>(() => new Set());
@@ -90,6 +90,7 @@ export function WhyTreeEditor({
     return parsed.ok && parsed.value.type === "why-tree" ? parsed.value : tree;
   }, [draftContent, tree]);
   const labels = displayedTree.labels;
+  const currentNodeRefs = nodeRefs.current ??= new Map<string, HTMLDivElement>();
 
   useEffect(() => {
     if (content === draftContentRef.current) return;
@@ -105,7 +106,7 @@ export function WhyTreeEditor({
 
     const containerRect = contentRef.current.getBoundingClientRect();
     const obstacles = getWhyTreeObstacleRects(contentRef.current, containerRect, viewport.zoom);
-    const paths = buildWhyTreeConnectorPaths(displayedTree.phenomenon, [], nodeRefs.current, containerRect, obstacles, collapsedPaths, viewport.zoom);
+    const paths = buildWhyTreeConnectorPaths(displayedTree.phenomenon, [], currentNodeRefs, containerRect, obstacles, collapsedPaths, viewport.zoom);
     setConnectorLayout({
       height: containerRect.height / viewport.zoom,
       paths,
@@ -120,7 +121,7 @@ export function WhyTreeEditor({
 
     const resizeObserver = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(updateConnectorLayout);
     resizeObserver?.observe(container);
-    nodeRefs.current.forEach((node) => resizeObserver?.observe(node));
+    currentNodeRefs.forEach((node) => resizeObserver?.observe(node));
     window.addEventListener("resize", updateConnectorLayout);
 
     return () => {
@@ -431,9 +432,9 @@ export function WhyTreeEditor({
                 }}
                 ref={(element) => {
                   if (element) {
-                    nodeRefs.current.set(itemKey, element);
+                    currentNodeRefs.set(itemKey, element);
                   } else {
-                    nodeRefs.current.delete(itemKey);
+                    currentNodeRefs.delete(itemKey);
                   }
                 }}
                 role="treeitem"
@@ -551,6 +552,7 @@ export function WhyTreeEditor({
       onPointerUp={finishPan}
       onWheel={handleWheel}
       role="tree"
+      tabIndex={0}
     >
       {toolbar}
       {labelPanelOpen ? (
@@ -758,48 +760,6 @@ function SupplementColumn({
       })}
     </section>
   );
-}
-
-function buildWhyTreeChain(tree: RelicWhyTreeDocument): WhyTreeChainItem[] {
-  const chain: WhyTreeChainItem[] = [{
-    node: tree.phenomenon,
-    path: [],
-    role: "phenomenon"
-  }];
-
-  appendWhyTreeChildren(chain, tree.phenomenon.whys, []);
-
-  return chain;
-}
-
-function appendWhyTreeChildren(
-  chain: WhyTreeChainItem[],
-  whys: RelicWhyTreeNode[],
-  parentPath: number[]
-): void {
-  whys.forEach((why, index) => {
-    const path = [...parentPath, index];
-    chain.push({
-      node: why,
-      path,
-      role: "why"
-    });
-    appendWhyTreeChildren(chain, why.whys, path);
-  });
-}
-
-export function countWhyTreeItems(tree: RelicWhyTreeDocument): {
-  actions: number;
-  facts: number;
-  solutions: number;
-  whys: number;
-} {
-  return buildWhyTreeChain(tree).reduce((counts, item) => ({
-    actions: counts.actions + item.node.actions.length,
-    facts: counts.facts + item.node.facts.length,
-    solutions: counts.solutions + item.node.solutions.length,
-    whys: counts.whys + (item.role === "why" ? 1 : 0)
-  }), { actions: 0, facts: 0, solutions: 0, whys: 0 });
 }
 
 function whyTreeSupplementValues(node: RelicWhyTreeNode, kind: RelicWhyTreeSupplementKind): string[] {

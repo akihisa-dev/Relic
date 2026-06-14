@@ -11,7 +11,8 @@ import type { PanelTabKind, Tab } from "../store/editorStore";
 import { useT } from "../i18n";
 import { SourceModeButton } from "./AppMainActions";
 import { Editor } from "./Editor";
-import { DiagramCanvas, diagramCanvasStatus } from "./DiagramCanvas";
+import { DiagramCanvas } from "./DiagramCanvas";
+import { diagramCanvasStatus } from "./diagram/diagramCanvasStatus";
 
 interface PaneContentSurfaceProps {
   activeTab: Tab | null | undefined;
