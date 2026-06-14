@@ -337,9 +337,12 @@ describe("DiagramCanvas", () => {
     const onChange = vi.fn();
     const { container } = render(<StatefulDiagramCanvas content={whyTreeContent} onChange={onChange} />);
 
-    expect(container.querySelector(".why-tree-node-menu")).toBeInTheDocument();
+    expect(container.querySelector(".why-tree-node-menu")).toBeNull();
     expect(container.querySelector(".why-tree-add-controls")).toBeNull();
     expect(container.querySelector(".why-tree-actions-bar")).toBeNull();
+
+    fireEvent.click(screen.getByDisplayValue("売上低下"));
+    expect(container.querySelector(".why-tree-node-menu")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /\+ ノード/ }));
     expect(onChange.mock.calls[0]?.[0]).toContain("title: ノード");
@@ -371,6 +374,7 @@ describe("DiagramCanvas", () => {
     expect(onChange.mock.calls[0]?.[0]).toContain("labels:");
     expect(onChange.mock.calls[0]?.[0]).toContain("node: 分解");
     expect(screen.getAllByText("分解").length).toBeGreaterThan(1);
+    fireEvent.click(screen.getByDisplayValue("売上低下"));
     expect(screen.getByRole("button", { name: /\+ 分解/ })).toBeInTheDocument();
     expect(document.querySelector(".why-tree-line-label")).toHaveTextContent("分解");
   });
@@ -394,8 +398,9 @@ describe("DiagramCanvas", () => {
     const onChange = vi.fn();
     const { container } = render(<StatefulDiagramCanvas content={whyTreeContent} onChange={onChange} />);
 
+    fireEvent.click(screen.getByDisplayValue("売上低下"));
     fireEvent.click(screen.getByRole("button", { name: /\+ ノード/ }));
-    fireEvent.focus(screen.getByDisplayValue("売上低下"));
+    fireEvent.click(screen.getByDisplayValue("売上低下"));
     fireEvent.click(screen.getByRole("button", { name: /\+ ノード/ }));
 
     expect(getWhyTreeTextareasByValue("ノード")).toHaveLength(2);
@@ -409,6 +414,7 @@ describe("DiagramCanvas", () => {
     const onChange = vi.fn();
     const { container, rerender } = render(<DelayedDiagramCanvas content={whyTreeContent} onChange={onChange} />);
 
+    fireEvent.click(screen.getByDisplayValue("売上低下"));
     fireEvent.click(screen.getByRole("button", { name: /\+ ノード/ }));
     expect(getWhyTreeTextareasByValue("ノード")[0]).toBeInTheDocument();
     expect(container.querySelector(".why-tree-lines path")).toBeInTheDocument();
@@ -448,6 +454,7 @@ describe("DiagramCanvas", () => {
     const { container } = render(<StatefulDiagramCanvas content={whyTreeContent} onChange={vi.fn()} />);
     const content = container.querySelector(".why-tree-content") as Element;
     const nodes = container.querySelectorAll(".why-tree-main-node");
+    fireEvent.click(screen.getByDisplayValue("売上低下"));
     const menu = container.querySelector(".why-tree-node-menu") as Element;
 
     mockRect(content, { bottom: 500, height: 500, left: 0, right: 1000, top: 0, width: 1000 });
@@ -462,6 +469,23 @@ describe("DiagramCanvas", () => {
 
     expect(container.querySelector(".why-tree-lines path")?.getAttribute("d")).toBe("M 500 126 V 168 H 656 V 232 H 500 V 310");
     expect(container.querySelector(".why-tree-line-label")).toHaveTextContent("ノード");
+  });
+
+  it("hides the why-tree add menu when blank space is clicked", () => {
+    const { container } = render(<StatefulDiagramCanvas content={whyTreeContent} onChange={vi.fn()} />);
+    const editor = screen.getByRole("tree", { name: "World" });
+    const content = container.querySelector(".why-tree-content");
+    expect(content).toBeInstanceOf(HTMLElement);
+
+    expect(container.querySelector(".why-tree-node-menu")).toBeNull();
+
+    fireEvent.click(screen.getByDisplayValue("売上低下"));
+    expect(container.querySelector(".why-tree-node-menu")).toBeInTheDocument();
+
+    fireEvent(content as HTMLElement, pointerEvent("pointerdown", 10, 120, 120));
+    fireEvent(editor, pointerEvent("pointerup", 10, 120, 120));
+
+    expect(container.querySelector(".why-tree-node-menu")).toBeNull();
   });
 
   it("moves the why-tree menu near the selected Why node", () => {
