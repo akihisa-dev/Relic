@@ -373,6 +373,21 @@ describe("DiagramCanvas", () => {
     expect(screen.getByRole("button", { name: /\+ 分解/ })).toBeInTheDocument();
   });
 
+  it("can close and reopen the structure-tree labels panel", () => {
+    const onChange = vi.fn();
+    render(<StatefulDiagramCanvas content={whyTreeContent} onChange={onChange} />);
+
+    expect(screen.getByLabelText("Node label")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Close labels panel" }));
+
+    expect(screen.queryByLabelText("Node label")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Show labels panel" }));
+
+    expect(screen.getByLabelText("Node label")).toBeInTheDocument();
+  });
+
   it("adds Why nodes from the selected node instead of always appending to the deepest node", () => {
     const onChange = vi.fn();
     const { container } = render(<StatefulDiagramCanvas content={whyTreeContent} onChange={onChange} />);
