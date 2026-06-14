@@ -26,13 +26,29 @@ import {
   updateRelicDiagramLineLabel,
   updateRelicWhyTreeSupplement,
   updateRelicWhyTreeTitle,
-  type RelicDiagramLine,
   type RelicDiagramNode,
   type RelicRelationshipDiagramDocument,
   type RelicWhyTreeDocument,
   type RelicWhyTreeNode,
   type RelicWhyTreeSupplementKind
 } from "../../shared/diagramMarkdown";
+import {
+  buildDiagramCanvasLayout,
+  buildLineLayouts,
+  nodeFileName,
+  type DiagramCanvasLineLayout
+} from "./diagram/diagramGeometry";
+import {
+  clampZoom,
+  screenToCanvasPoint,
+  type ViewportState
+} from "./diagram/diagramViewport";
+import {
+  buildWhyTreeConnectorPaths,
+  getWhyTreeObstacleRects,
+  whyTreePathKey,
+  type WhyTreeConnectorLayout
+} from "./diagram/whyTreeGeometry";
 import { useT } from "../i18n";
 
 interface DiagramCanvasProps {
@@ -41,54 +57,10 @@ interface DiagramCanvasProps {
   onChange?: (content: string) => void;
 }
 
-interface DiagramCanvasLayout {
-  height: number;
-  lines: DiagramCanvasLineLayout[];
-  nodes: DiagramCanvasNodeLayout[];
-  originX: number;
-  originY: number;
-  width: number;
-}
-
-interface DiagramCanvasNodeLayout {
-  node: RelicDiagramNode;
-  x: number;
-  y: number;
-}
-
-interface DiagramCanvasLineLayout {
-  label: string;
-  line: RelicDiagramLine;
-  labelX: number;
-  labelY: number;
-  x1: number;
-  x2: number;
-  y1: number;
-  y2: number;
-}
-
 interface WhyTreeChainItem {
   node: RelicWhyTreeNode;
   path: number[];
   role: "phenomenon" | "why";
-}
-
-interface WhyTreeConnectorPath {
-  d: string;
-  id: string;
-}
-
-interface WhyTreeConnectorLayout {
-  height: number;
-  paths: WhyTreeConnectorPath[];
-  width: number;
-}
-
-interface WhyTreeObstacleRect {
-  bottom: number;
-  left: number;
-  right: number;
-  top: number;
 }
 
 interface WhyTreePanState {
@@ -105,11 +77,6 @@ type WhyTreeSelection =
 
 type WhyTreeUpdateResult = { ok: true; value: { content: string } } | { ok: false };
 
-const canvasPadding = 180;
-const minCanvasWidth = 900;
-const minCanvasHeight = 620;
-const minZoom = 0.35;
-const maxZoom = 2.5;
 const connectActivationDistance = 4;
 
 interface DragState {
@@ -141,12 +108,6 @@ interface PanState {
   pointerId: number;
   startClientX: number;
   startClientY: number;
-}
-
-interface ViewportState {
-  panX: number;
-  panY: number;
-  zoom: number;
 }
 
 type DiagramSelection =
@@ -1045,69 +1006,6 @@ export function diagramCanvasStatus(content: string, t: ReturnType<typeof useT>)
   });
 }
 
-function buildDiagramCanvasLayout(diagram: RelicRelationshipDiagramDocument): DiagramCanvasLayout {
-  if (diagram.nodes.length === 0) {
-    return {
-      height: minCanvasHeight,
-      lines: [],
-      nodes: [],
-      originX: 0,
-      originY: 0,
-      width: minCanvasWidth
-    };
-  }
-
-  const minX = Math.min(...diagram.nodes.map((node) => node.x));
-  const minY = Math.min(...diagram.nodes.map((node) => node.y));
-  const maxX = Math.max(...diagram.nodes.map((node) => node.x + node.width));
-  const maxY = Math.max(...diagram.nodes.map((node) => node.y + node.height));
-  const originX = minX - canvasPadding;
-  const originY = minY - canvasPadding;
-  const nodes = diagram.nodes.map((node) => ({
-    node,
-    x: node.x - originX,
-    y: node.y - originY
-  }));
-
-  return {
-    height: Math.max(minCanvasHeight, maxY - minY + canvasPadding * 2),
-    lines: buildLineLayouts(diagram.lines, nodes),
-    nodes,
-    originX,
-    originY,
-    width: Math.max(minCanvasWidth, maxX - minX + canvasPadding * 2)
-  };
-}
-
-function buildLineLayouts(
-  lines: RelicDiagramLine[],
-  nodes: DiagramCanvasNodeLayout[]
-): DiagramCanvasLineLayout[] {
-  const nodeById = new Map(nodes.map((node) => [node.node.id, node]));
-
-  return lines.flatMap((line) => {
-    const from = nodeById.get(line.from);
-    const to = nodeById.get(line.to);
-    if (!from || !to) return [];
-
-    const x1 = from.x + from.node.width / 2;
-    const y1 = from.y + from.node.height / 2;
-    const x2 = to.x + to.node.width / 2;
-    const y2 = to.y + to.node.height / 2;
-
-    return [{
-      label: line.label,
-      labelX: (x1 + x2) / 2,
-      labelY: (y1 + y2) / 2 - 8,
-      line,
-      x1,
-      x2,
-      y1,
-      y2
-    }];
-  });
-}
-
 function buildWhyTreeChain(tree: RelicWhyTreeDocument): WhyTreeChainItem[] {
   const chain: WhyTreeChainItem[] = [{
     node: tree.phenomenon,
@@ -1118,102 +1016,6 @@ function buildWhyTreeChain(tree: RelicWhyTreeDocument): WhyTreeChainItem[] {
   appendWhyTreeChildren(chain, tree.phenomenon.whys, []);
 
   return chain;
-}
-
-function buildWhyTreeConnectorPaths(
-  node: RelicWhyTreeNode,
-  path: number[],
-  nodeRefs: Map<string, HTMLDivElement>,
-  containerRect: DOMRect,
-  obstacles: WhyTreeObstacleRect[]
-): WhyTreeConnectorPath[] {
-  const parentElement = nodeRefs.get(whyTreePathKey(path));
-  if (!parentElement) return [];
-
-  const parentRect = parentElement.getBoundingClientRect();
-  const parentX = parentRect.left - containerRect.left + parentRect.width / 2;
-  const parentY = parentRect.bottom - containerRect.top;
-
-  return node.whys.flatMap((why, index) => {
-    const childPath = [...path, index];
-    const childElement = nodeRefs.get(whyTreePathKey(childPath));
-    const nestedPaths = buildWhyTreeConnectorPaths(why, childPath, nodeRefs, containerRect, obstacles);
-    if (!childElement) return nestedPaths;
-
-    const childRect = childElement.getBoundingClientRect();
-    const childX = childRect.left - containerRect.left + childRect.width / 2;
-    const childY = childRect.top - containerRect.top;
-    const d = buildWhyTreeConnectorPath(parentX, parentY, childX, childY, obstacles);
-
-    return [{
-      d,
-      id: `${whyTreePathKey(path)}-${whyTreePathKey(childPath)}`
-    }, ...nestedPaths];
-  });
-}
-
-function getWhyTreeObstacleRects(contentElement: HTMLElement, containerRect: DOMRect): WhyTreeObstacleRect[] {
-  return [...contentElement.querySelectorAll(".why-tree-node-menu, .why-tree-support-item")].map((element) => {
-    const rect = element.getBoundingClientRect();
-
-    return {
-      bottom: rect.bottom - containerRect.top,
-      left: rect.left - containerRect.left,
-      right: rect.right - containerRect.left,
-      top: rect.top - containerRect.top
-    };
-  });
-}
-
-function buildWhyTreeConnectorPath(
-  parentX: number,
-  parentY: number,
-  childX: number,
-  childY: number,
-  obstacles: WhyTreeObstacleRect[]
-): string {
-  const elbowY = parentY + Math.max(28, (childY - parentY) / 2);
-  const blockingObstacle = obstacles.find((obstacle) => (
-    verticalSegmentIntersectsRect(parentX, parentY, childY, obstacle) ||
-    horizontalSegmentIntersectsRect(parentX, childX, elbowY, obstacle)
-  ));
-  if (!blockingObstacle) {
-    return `M ${parentX} ${parentY} V ${elbowY} H ${childX} V ${childY}`;
-  }
-
-  const topY = Math.max(parentY + 12, blockingObstacle.top - 12);
-  const bottomY = Math.min(childY - 12, blockingObstacle.bottom + 12);
-  if (bottomY <= topY) {
-    return `M ${parentX} ${parentY} V ${elbowY} H ${childX} V ${childY}`;
-  }
-
-  const candidates = [
-    blockingObstacle.right + 16,
-    blockingObstacle.left - 16
-  ];
-  const detourX = candidates.reduce((best, candidate) => (
-    obstacleScoreForVerticalSegment(candidate, topY, bottomY, obstacles) < obstacleScoreForVerticalSegment(best, topY, bottomY, obstacles)
-      ? candidate
-      : best
-  ));
-
-  return `M ${parentX} ${parentY} V ${topY} H ${detourX} V ${bottomY} H ${childX} V ${childY}`;
-}
-
-function verticalSegmentIntersectsRect(x: number, y1: number, y2: number, rect: WhyTreeObstacleRect): boolean {
-  return x >= rect.left && x <= rect.right && Math.max(y1, rect.top) <= Math.min(y2, rect.bottom);
-}
-
-function horizontalSegmentIntersectsRect(x1: number, x2: number, y: number, rect: WhyTreeObstacleRect): boolean {
-  return y >= rect.top && y <= rect.bottom && Math.max(Math.min(x1, x2), rect.left) <= Math.min(Math.max(x1, x2), rect.right);
-}
-
-function obstacleScoreForVerticalSegment(x: number, y1: number, y2: number, obstacles: WhyTreeObstacleRect[]): number {
-  return obstacles.filter((obstacle) => verticalSegmentIntersectsRect(x, y1, y2, obstacle)).length;
-}
-
-function whyTreePathKey(path: number[]): string {
-  return path.length === 0 ? "phenomenon" : path.join(".");
 }
 
 function appendWhyTreeChildren(
@@ -1285,27 +1087,6 @@ function isSameWhyTreeSelection(selection: WhyTreeSelection, target: WhyTreeSele
 
 function samePath(left: number[], right: number[]): boolean {
   return left.length === right.length && left.every((item, index) => item === right[index]);
-}
-
-function nodeFileName(filePath: string): string {
-  const name = filePath.split("/").at(-1) ?? filePath;
-  return name.endsWith(".md") ? name.slice(0, -3) : name;
-}
-
-function screenToCanvasPoint(
-  clientX: number,
-  clientY: number,
-  rect: DOMRect,
-  viewport: ViewportState
-): { x: number; y: number } {
-  return {
-    x: (clientX - rect.left - viewport.panX) / viewport.zoom,
-    y: (clientY - rect.top - viewport.panY) / viewport.zoom
-  };
-}
-
-function clampZoom(value: number): number {
-  return Math.min(maxZoom, Math.max(minZoom, value));
 }
 
 function isBlankCanvasTarget(target: EventTarget, currentTarget: Element): boolean {
