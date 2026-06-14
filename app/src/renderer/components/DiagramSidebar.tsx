@@ -146,13 +146,14 @@ export function DiagramSidebar({
 
 const flowchartShapes: RelicFreeDrawingShapeType[] = ["terminator", "process", "decision", "input-output", "note"];
 
+function startShapeDrag(shape: RelicFreeDrawingShapeType, event: ReactDragEvent<HTMLButtonElement>): void {
+  event.dataTransfer.effectAllowed = "copy";
+  event.dataTransfer.setData(freeDrawingShapeDragType, shape);
+  event.dataTransfer.setData("text/plain", shape);
+}
+
 function DiagramShapePalette({ title }: { title: string }): ReactElement {
   const t = useT();
-  const startDrag = (shape: RelicFreeDrawingShapeType, event: ReactDragEvent<HTMLButtonElement>): void => {
-    event.dataTransfer.effectAllowed = "copy";
-    event.dataTransfer.setData(freeDrawingShapeDragType, shape);
-    event.dataTransfer.setData("text/plain", shape);
-  };
 
   return (
     <section className="diagram-sidebar-group">
@@ -166,7 +167,7 @@ function DiagramShapePalette({ title }: { title: string }): ReactElement {
             <button
               className={`diagram-sidebar-shape diagram-sidebar-shape--${shape}`}
               draggable
-              onDragStart={(event) => startDrag(shape, event)}
+              onDragStart={(event) => startShapeDrag(shape, event)}
               title={t(`diagram.freeDrawingShape.${shape}`)}
               type="button"
             >

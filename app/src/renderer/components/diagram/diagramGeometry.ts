@@ -281,9 +281,12 @@ function buildRoutedLineRoute(
   toNodeId: string,
   reservedSegments: RoutedSegment[]
 ): { end: DiagramPoint; labelX: number; labelY: number; pathD: string; points: DiagramPoint[]; start: DiagramPoint } {
-  const obstacles = nodes
-    .filter((node) => node.node.id !== fromNodeId && node.node.id !== toNodeId)
-    .map((node) => expandedNodeRect(node, lineAvoidanceMargin));
+  const obstacles: DiagramRect[] = [];
+  for (const node of nodes) {
+    if (node.node.id !== fromNodeId && node.node.id !== toNodeId) {
+      obstacles.push(expandedNodeRect(node, lineAvoidanceMargin));
+    }
+  }
   const leadPoints = portLeadPoints(start, end);
   const routedPoints = routeOrthogonalPath(leadPoints.start, leadPoints.end, nodes, obstacles, reservedSegments);
   const points = simplifyRoute([start.point, ...routedPoints, end.point]);
@@ -394,7 +397,7 @@ function candidateCoordinates(
     }
   });
 
-  return [...values].sort((a, b) => a - b);
+  return Array.from(values).toSorted((a, b) => a - b);
 }
 
 function shortestOrthogonalRoute(

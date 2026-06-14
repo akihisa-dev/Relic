@@ -2,13 +2,13 @@ import * as yaml from "js-yaml";
 
 import { fail, ok, type RelicResult } from "./result";
 
-export const relicDiagramTypes = ["relationship", "why-tree", "free-drawing"] as const;
+const relicDiagramTypes = ["relationship", "why-tree", "free-drawing"] as const;
 export type RelicDiagramType = typeof relicDiagramTypes[number];
 
 export const relicFreeDrawingShapeTypes = ["terminator", "process", "decision", "input-output", "note"] as const;
 export type RelicFreeDrawingShapeType = typeof relicFreeDrawingShapeTypes[number];
 
-export const relicWhyTreeSupplementKinds = ["fact", "solution", "action"] as const;
+const relicWhyTreeSupplementKinds = ["fact", "solution", "action"] as const;
 export type RelicWhyTreeSupplementKind = typeof relicWhyTreeSupplementKinds[number];
 
 export type RelicWhyTreeSelectableKind = "phenomenon" | "why" | RelicWhyTreeSupplementKind;
@@ -206,8 +206,6 @@ export const emptyRelicFreeDrawingMarkdownContent = [
   "lines: []",
   ""
 ].join("\n");
-
-export const emptyRelicDiagramMarkdownContent = emptyRelicRelationshipMarkdownContent;
 
 export function isRelicDiagramType(value: unknown): value is RelicDiagramType {
   return typeof value === "string" && relicDiagramTypes.includes(value as RelicDiagramType);
@@ -1111,7 +1109,7 @@ function parseNodes(rawNodes: unknown): RelicResult<RelicRelationshipDiagramNode
       return fail("DIAGRAM_NODE_INVALID", `nodes の ${index + 1} 件目が正しくありません。`);
     }
 
-    const unknownKey = Object.keys(rawNode).find((key) => !relationshipNodeKeys.has(key));
+    const unknownKey = firstUnknownKey(rawNode, relationshipNodeKeys);
     if (unknownKey) {
       return fail("DIAGRAM_NODE_UNKNOWN_FIELD", `Nodeに未対応の項目があります: ${unknownKey}`);
     }
@@ -1161,7 +1159,7 @@ function parseFreeDrawingNodes(rawNodes: unknown): RelicResult<RelicFreeDrawingN
       return fail("DIAGRAM_NODE_INVALID", `nodes の ${index + 1} 件目が正しくありません。`);
     }
 
-    const unknownKey = Object.keys(rawNode).find((key) => !freeDrawingNodeKeys.has(key));
+    const unknownKey = firstUnknownKey(rawNode, freeDrawingNodeKeys);
     if (unknownKey) {
       return fail("DIAGRAM_NODE_UNKNOWN_FIELD", `Nodeに未対応の項目があります: ${unknownKey}`);
     }
@@ -1217,7 +1215,7 @@ function parseLines(rawLines: unknown, nodes: RelicDiagramNodeBase[]): RelicResu
       return fail("DIAGRAM_LINE_INVALID", `lines の ${index + 1} 件目が正しくありません。`);
     }
 
-    const unknownKey = Object.keys(rawLine).find((key) => !diagramLineKeys.has(key));
+    const unknownKey = firstUnknownKey(rawLine, diagramLineKeys);
     if (unknownKey) {
       return fail("DIAGRAM_LINE_UNKNOWN_FIELD", `Lineに未対応の項目があります: ${unknownKey}`);
     }
@@ -1697,6 +1695,14 @@ function yamlDumpOptions(): yaml.DumpOptions {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function firstUnknownKey(record: Record<string, unknown>, knownKeys: Set<string>): string | null {
+  for (const key of Object.keys(record)) {
+    if (!knownKeys.has(key)) return key;
+  }
+
+  return null;
 }
 
 function errorDetails(error: unknown): string {
