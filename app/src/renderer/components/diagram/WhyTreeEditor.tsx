@@ -83,6 +83,7 @@ export function WhyTreeEditor({
   const [selection, setSelection] = useState<WhyTreeSelection | null>({ kind: "phenomenon", path: [] });
   const [connectorLayout, setConnectorLayout] = useState<WhyTreeConnectorLayout>({ height: 0, paths: [], width: 0 });
   const [isPanning, setIsPanning] = useState(false);
+  const [labelPanelOpen, setLabelPanelOpen] = useState(true);
   const [viewport, setViewport] = useState<ViewportState>({ panX: 0, panY: 0, zoom: 1 });
   const displayedTree = useMemo(() => {
     const parsed = parseRelicDiagramMarkdown(draftContent);
@@ -550,11 +551,25 @@ export function WhyTreeEditor({
       role="tree"
     >
       {toolbar}
-      <WhyTreeLabelPanel
-        disabled={!onChange}
-        labels={labels}
-        onChange={changeLabel}
-      />
+      {labelPanelOpen ? (
+        <WhyTreeLabelPanel
+          disabled={!onChange}
+          labels={labels}
+          onChange={changeLabel}
+          onClose={() => setLabelPanelOpen(false)}
+        />
+      ) : (
+        <button
+          aria-label={t("diagram.whyTree.showLabelPanel")}
+          className="why-tree-label-toggle"
+          onClick={() => setLabelPanelOpen(true)}
+          onPointerDown={(event) => event.stopPropagation()}
+          onWheel={(event) => event.stopPropagation()}
+          type="button"
+        >
+          {t("diagram.whyTree.labelPanel")}
+        </button>
+      )}
       <div
         className="why-tree-content"
         ref={contentRef}
@@ -610,11 +625,13 @@ function WhyTreeNodeMenu({
 function WhyTreeLabelPanel({
   disabled,
   labels,
-  onChange
+  onChange,
+  onClose
 }: {
   disabled: boolean;
   labels: RelicWhyTreeLabels;
   onChange: (key: WhyTreeLabelKey, value: string) => void;
+  onClose: () => void;
 }): ReactElement {
   const t = useT();
 
@@ -624,7 +641,17 @@ function WhyTreeLabelPanel({
       onPointerDown={(event) => event.stopPropagation()}
       onWheel={(event) => event.stopPropagation()}
     >
-      <span className="why-tree-label-panel-title">{t("diagram.whyTree.labelPanel")}</span>
+      <div className="why-tree-label-panel-header">
+        <span className="why-tree-label-panel-title">{t("diagram.whyTree.labelPanel")}</span>
+        <button
+          aria-label={t("diagram.whyTree.closeLabelPanel")}
+          className="why-tree-label-panel-close"
+          onClick={onClose}
+          type="button"
+        >
+          ×
+        </button>
+      </div>
       <div className="why-tree-label-fields">
         {whyTreeLabelFields.map((field) => (
           <label key={field.key}>
