@@ -16,7 +16,13 @@ if ! command -v pnpm >/dev/null 2>&1; then
   exit 1
 fi
 
-CI=1 pnpm start
+if ! CI=1 pnpm start; then
+  echo ""
+  echo "Relic の起動に失敗しました。"
+  echo "Enterキーを押すと閉じます。"
+  read -r
+  exit 1
+fi
 
 echo ""
 echo "Relic が終了しました。Enterキーを押すと閉じます。"

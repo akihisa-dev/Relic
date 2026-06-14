@@ -17,11 +17,17 @@ if ! command -v pnpm >/dev/null 2>&1; then
   exit 1
 fi
 
-pnpm build:mac:safe
+if ! pnpm build:mac:safe; then
+  echo ""
+  echo "ビルドに失敗しました。"
+  echo "Enterキーを押すと閉じます。"
+  read -r
+  exit 1
+fi
 
 echo ""
 echo "ビルドが完了しました。"
-echo "app/out/ フォルダに Relic.app と DMG が生成されています。"
+echo "app/out/darwin/ フォルダに Relic.app と DMG が生成されています。"
 echo ""
 echo "Enterキーを押すと閉じます。"
 read -r

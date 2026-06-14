@@ -36,6 +36,6 @@ if errorlevel 1 (
 
 echo.
 echo Build complete.
-echo Safe build output is in app\out\Relic-win32-x64\
+echo Safe build output is in app\out\win32\Relic-win32-x64\
 echo.
 pause
