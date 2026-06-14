@@ -7,7 +7,6 @@ import {
 const canvasPadding = 180;
 const minCanvasWidth = 900;
 const minCanvasHeight = 620;
-const singleLineCurveOffset = 36;
 const pairedLineCurveOffset = 58;
 
 export interface DiagramCanvasLayout {
@@ -86,14 +85,11 @@ export function buildLineLayouts(
     const fromCenter = nodeCenter(from);
     const toCenter = nodeCenter(to);
     const pairKey = linePairKey(line.from, line.to);
-    const curveOffset = (pairCounts.get(pairKey) ?? 1) > 1
-      ? pairedLineCurveOffset
-      : singleLineCurveOffset;
-    const route = buildCurvedLineRoute(
-      nodeEdgePointToward(from, toCenter.x, toCenter.y),
-      nodeEdgePointToward(to, fromCenter.x, fromCenter.y),
-      curveOffset
-    );
+    const start = nodeEdgePointToward(from, toCenter.x, toCenter.y);
+    const end = nodeEdgePointToward(to, fromCenter.x, fromCenter.y);
+    const route = (pairCounts.get(pairKey) ?? 1) > 1
+      ? buildCurvedLineRoute(start, end, pairedLineCurveOffset)
+      : buildStraightLineRoute(start, end);
 
     return [{
       label: line.label,
@@ -120,6 +116,19 @@ function countLinePairs(lines: RelicDiagramLine[]): Map<string, number> {
 
 function linePairKey(from: string, to: string): string {
   return from < to ? `${from}\u0000${to}` : `${to}\u0000${from}`;
+}
+
+function buildStraightLineRoute(
+  start: { x: number; y: number },
+  end: { x: number; y: number }
+): { end: { x: number; y: number }; labelX: number; labelY: number; pathD: string; start: { x: number; y: number } } {
+  return {
+    end,
+    labelX: (start.x + end.x) / 2,
+    labelY: (start.y + end.y) / 2,
+    pathD: `M ${formatPathNumber(start.x)} ${formatPathNumber(start.y)} L ${formatPathNumber(end.x)} ${formatPathNumber(end.y)}`,
+    start
+  };
 }
 
 function buildCurvedLineRoute(

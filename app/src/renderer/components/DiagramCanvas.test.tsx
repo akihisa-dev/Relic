@@ -294,7 +294,7 @@ describe("DiagramCanvas", () => {
     expect(screen.getByText("bob")).toBeInTheDocument();
     expect(screen.getByText("幼なじみ")).toBeInTheDocument();
     const line = container.querySelector(".diagram-canvas-line");
-    expect(line?.getAttribute("d")).toBe("M 360 220 Q 400 256 440 220");
+    expect(line?.getAttribute("d")).toBe("M 360 220 L 440 220");
     expect(line?.getAttribute("marker-end")).toMatch(/^url\(#diagram-canvas-arrow-/);
   });
 
