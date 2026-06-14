@@ -927,11 +927,36 @@ describe("DiagramCanvas", () => {
     expect((space as HTMLElement).style.transform).toContain("scale(1.1)");
   });
 
-  it("keeps the relationship grid inside the transformed canvas space", () => {
+  it("renders the relationship grid as the full canvas background instead of a transformed content patch", () => {
     const css = readFileSync("src/renderer/styles/workspace-editor.css", "utf8");
 
-    expect(css).toMatch(/\.diagram-canvas\s*\{[^}]*background:\s*var\(--bg\);/s);
-    expect(css).toMatch(/\.diagram-canvas-space\s*\{[^}]*linear-gradient\(var\(--border-soft\) 1px, transparent 1px\)[^}]*background-size:\s*32px 32px;/s);
+    expect(css).toMatch(/\.diagram-canvas\s*\{[^}]*background-color:\s*var\(--bg\);/s);
+    expect(css).toMatch(/\.diagram-canvas\s*\{[^}]*linear-gradient\(var\(--border-soft\) 1px, transparent 1px\)[^}]*background-position:[^}]*var\(--diagram-canvas-grid-x, 0\) var\(--diagram-canvas-grid-y, 0\)[^}]*background-size:[^}]*var\(--diagram-canvas-grid-size, 32px\)/s);
+    expect(css).not.toMatch(/\.diagram-canvas-space\s*\{[^}]*linear-gradient\(var\(--border-soft\) 1px, transparent 1px\)/s);
+  });
+
+  it("moves and scales the relationship grid with the viewport", () => {
+    render(
+      <I18nProvider language="en">
+        <DiagramCanvas content={diagramContent} fileName="World" />
+      </I18nProvider>
+    );
+    const canvas = screen.getByRole("img", { name: "World" }) as HTMLElement;
+
+    expect(canvas.style.getPropertyValue("--diagram-canvas-grid-size")).toBe("32px");
+    expect(canvas.style.getPropertyValue("--diagram-canvas-grid-x")).toBe("0px");
+    expect(canvas.style.getPropertyValue("--diagram-canvas-grid-y")).toBe("0px");
+
+    fireEvent(canvas, pointerEvent("pointerdown", 5, 10, 10));
+    fireEvent(canvas, pointerEvent("pointermove", 5, 40, 30));
+    fireEvent(canvas, pointerEvent("pointerup", 5, 40, 30));
+
+    expect(canvas.style.getPropertyValue("--diagram-canvas-grid-x")).toBe("30px");
+    expect(canvas.style.getPropertyValue("--diagram-canvas-grid-y")).toBe("20px");
+
+    fireEvent.wheel(canvas, { clientX: 100, clientY: 100, deltaY: -100 });
+
+    expect(canvas.style.getPropertyValue("--diagram-canvas-grid-size")).toBe("35.2px");
   });
 
   it("commits moved node coordinates in canvas units while zoomed", () => {
