@@ -54,6 +54,7 @@ export function DiagramNodeView({
 }: DiagramNodeViewProps): ReactElement {
   const freeText = "text" in node ? node.text : null;
   const title = "file" in node ? node.file : freeText ?? "";
+  const shapeClass = "shape" in node ? `diagram-canvas-node--shape-${node.shape}` : "";
   const handleNodeTextKeyDown = (event: ReactKeyboardEvent<HTMLTextAreaElement>): void => {
     if (event.key !== "Escape") return;
     event.preventDefault();
@@ -64,6 +65,7 @@ export function DiagramNodeView({
     <div
       className={[
         "diagram-canvas-node",
+        shapeClass,
         isDragging ? "diagram-canvas-node--dragging" : "",
         isSelected ? "diagram-canvas-node--selected" : ""
       ].filter(Boolean).join(" ")}

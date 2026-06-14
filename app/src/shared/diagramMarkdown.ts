@@ -5,6 +5,9 @@ import { fail, ok, type RelicResult } from "./result";
 export const relicDiagramTypes = ["relationship", "why-tree", "free-drawing"] as const;
 export type RelicDiagramType = typeof relicDiagramTypes[number];
 
+export const relicFreeDrawingShapeTypes = ["terminator", "process", "decision", "input-output", "note"] as const;
+export type RelicFreeDrawingShapeType = typeof relicFreeDrawingShapeTypes[number];
+
 export const relicWhyTreeSupplementKinds = ["fact", "solution", "action"] as const;
 export type RelicWhyTreeSupplementKind = typeof relicWhyTreeSupplementKinds[number];
 
@@ -47,6 +50,7 @@ export interface RelicRelationshipDiagramNode extends RelicDiagramNodeBase {
 }
 
 export interface RelicFreeDrawingNode extends RelicDiagramNodeBase {
+  shape: RelicFreeDrawingShapeType;
   text: string;
 }
 
@@ -143,7 +147,7 @@ interface ParsedDiagramMarkdownParts {
 const relationshipBodyKeys = new Set(["nodes", "lines"]);
 const relationshipNodeKeys = new Set(["id", "file", "x", "y", "width", "height"]);
 const freeDrawingBodyKeys = new Set(["nodes", "lines"]);
-const freeDrawingNodeKeys = new Set(["id", "text", "x", "y", "width", "height"]);
+const freeDrawingNodeKeys = new Set(["id", "shape", "text", "x", "y", "width", "height"]);
 const diagramLineKeys = new Set(["id", "from", "to", "label"]);
 const diagramFrontmatterKeys = new Set(["type", "title"]);
 export const defaultRelicWhyTreeLabels: RelicWhyTreeLabels = {
@@ -327,6 +331,7 @@ export function serializeRelicFreeDrawingMarkdown(document: RelicFreeDrawingDiag
     {
       nodes: validated.value.nodes.map((node) => ({
         id: node.id,
+        shape: node.shape,
         text: node.text,
         x: node.x,
         y: node.y,
@@ -623,11 +628,16 @@ export function replaceRelicDiagramNodeFileReferences(
   });
 }
 
-export function addRelicFreeDrawingNode(content: string): RelicResult<RelicDiagramNodeInsertion> {
+export function addRelicFreeDrawingNode(
+  content: string,
+  shape: RelicFreeDrawingShapeType = "process",
+  x?: number,
+  y?: number
+): RelicResult<RelicDiagramNodeInsertion> {
   const parsed = parseRelicFreeDrawingMarkdown(content);
   if (!parsed.ok) return parsed;
 
-  const node = createFreeDrawingNode(parsed.value);
+  const node = createFreeDrawingNode(parsed.value, shape, x, y);
   const serialized = serializeRelicFreeDrawingMarkdown({
     ...parsed.value,
     nodes: [...parsed.value.nodes, node]
@@ -1164,6 +1174,8 @@ function parseFreeDrawingNodes(rawNodes: unknown): RelicResult<RelicFreeDrawingN
 
     const text = parseOptionalText(rawNode.text, "DIAGRAM_NODE_TEXT_INVALID", "Nodeの text は文字にしてください。");
     if (!text.ok) return text;
+    const shape = parseFreeDrawingShapeType(rawNode.shape);
+    if (!shape.ok) return shape;
     const x = parseFiniteNumber(rawNode.x, "DIAGRAM_NODE_X_INVALID", "Nodeの x は数値にしてください。");
     if (!x.ok) return x;
     const y = parseFiniteNumber(rawNode.y, "DIAGRAM_NODE_Y_INVALID", "Nodeの y は数値にしてください。");
@@ -1177,6 +1189,7 @@ function parseFreeDrawingNodes(rawNodes: unknown): RelicResult<RelicFreeDrawingN
     nodes.push({
       height: height.value,
       id: id.value,
+      shape: shape.value,
       text: text.value,
       width: width.value,
       x: x.value,
@@ -1450,14 +1463,32 @@ function createNodeForFile(diagram: RelicRelationshipDiagramDocument, filePath: 
   };
 }
 
-function createFreeDrawingNode(diagram: RelicFreeDrawingDiagramDocument): RelicFreeDrawingNode {
+function createFreeDrawingNode(
+  diagram: RelicFreeDrawingDiagramDocument,
+  shape: RelicFreeDrawingShapeType,
+  x?: number,
+  y?: number
+): RelicFreeDrawingNode {
+  const position = x === undefined || y === undefined
+    ? nextNodePosition(diagram.nodes)
+    : { x, y };
+
   return {
     height: defaultNodeHeight,
     id: nextNodeId(diagram.nodes),
-    text: "Node",
+    shape,
+    text: defaultFreeDrawingShapeText(shape),
     width: defaultNodeWidth,
-    ...nextNodePosition(diagram.nodes)
+    ...position
   };
+}
+
+function defaultFreeDrawingShapeText(shape: RelicFreeDrawingShapeType): string {
+  if (shape === "terminator") return "開始/終了";
+  if (shape === "decision") return "判断";
+  if (shape === "input-output") return "入出力";
+  if (shape === "note") return "メモ";
+  return "処理";
 }
 
 function nextNodeId(nodes: RelicDiagramNodeBase[]): string {
@@ -1600,6 +1631,15 @@ function parseOptionalText(raw: unknown, code: string, message: string): RelicRe
   if (typeof raw !== "string") return fail(code, message);
 
   return ok(raw);
+}
+
+function parseFreeDrawingShapeType(raw: unknown): RelicResult<RelicFreeDrawingShapeType> {
+  if (raw === undefined) return ok("process");
+  if (typeof raw !== "string" || !relicFreeDrawingShapeTypes.includes(raw as RelicFreeDrawingShapeType)) {
+    return fail("DIAGRAM_NODE_SHAPE_INVALID", "自由図Nodeの shape は対応する図形名にしてください。");
+  }
+
+  return ok(raw as RelicFreeDrawingShapeType);
 }
 
 function parseFiniteNumber(raw: unknown, code: string, message: string): RelicResult<number> {

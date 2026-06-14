@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent, type ReactElement } from "react";
+import { useEffect, useMemo, useRef, useState, type DragEvent as ReactDragEvent, type MouseEvent as ReactMouseEvent, type ReactElement } from "react";
 import { createPortal } from "react-dom";
 
 import type { WorkspaceFileIndexEntry, WorkspaceState, WorkspaceTreeNode } from "../../shared/ipc";
-import { addRelicDiagramNodeForFile, diagramTypeFromMarkdownContent, type RelicDiagramType } from "../../shared/diagramMarkdown";
+import { addRelicDiagramNodeForFile, diagramTypeFromMarkdownContent, type RelicDiagramType, type RelicFreeDrawingShapeType } from "../../shared/diagramMarkdown";
 import { useT } from "../i18n";
 import { useEditorStore } from "../store/editorStore";
+import { freeDrawingShapeDragType } from "./diagram/freeDrawingShapeDrag";
 import { FilesWorkspaceEmpty } from "./FilesWorkspaceActions";
 
 interface DiagramSidebarProps {
@@ -49,6 +50,7 @@ export function DiagramSidebar({
   const activePane = focusedPane === "right" ? rightPane : leftPane;
   const activeTab = activePane.activeTabId ? tabs[activePane.activeTabId] : null;
   const activeRelationshipTab = activeTab?.kind === "file" && diagramTypeFromMarkdownContent(activeTab.content) === "relationship" ? activeTab : null;
+  const activeFreeDrawingTab = activeTab?.kind === "file" && diagramTypeFromMarkdownContent(activeTab.content) === "free-drawing" ? activeTab : null;
   const handlePlaceFile = (filePath: string): void => {
     if (!activeRelationshipTab) {
       setPlacementError(t("diagram.openRelationshipFirst"));
@@ -124,17 +126,57 @@ export function DiagramSidebar({
         openFilePaths={openFilePaths}
         title={t("diagram.files")}
       />
-      <DiagramSidebarGroup
-        emptyLabel={t("diagram.noPlaceableFiles")}
-        files={placeableFiles}
-        onPlaceFile={handlePlaceFile}
-        placeDisabled={!activeRelationshipTab}
-        title={t("diagram.placeableFiles")}
-      />
+      {activeFreeDrawingTab ? (
+        <DiagramShapePalette title={t("diagram.flowchartShapes")} />
+      ) : (
+        <DiagramSidebarGroup
+          emptyLabel={t("diagram.noPlaceableFiles")}
+          files={placeableFiles}
+          onPlaceFile={handlePlaceFile}
+          placeDisabled={!activeRelationshipTab}
+          title={t("diagram.placeableFiles")}
+        />
+      )}
       {placementError ? (
         <output className="diagram-sidebar-error">{placementError}</output>
       ) : null}
     </div>
+  );
+}
+
+const flowchartShapes: RelicFreeDrawingShapeType[] = ["terminator", "process", "decision", "input-output", "note"];
+
+function DiagramShapePalette({ title }: { title: string }): ReactElement {
+  const t = useT();
+  const startDrag = (shape: RelicFreeDrawingShapeType, event: ReactDragEvent<HTMLButtonElement>): void => {
+    event.dataTransfer.effectAllowed = "copy";
+    event.dataTransfer.setData(freeDrawingShapeDragType, shape);
+    event.dataTransfer.setData("text/plain", shape);
+  };
+
+  return (
+    <section className="diagram-sidebar-group">
+      <div className="diagram-sidebar-group-heading">
+        <span>{title}</span>
+        <span className="pane-heading-count">{flowchartShapes.length}</span>
+      </div>
+      <ul className="diagram-sidebar-shape-list">
+        {flowchartShapes.map((shape) => (
+          <li key={shape}>
+            <button
+              className={`diagram-sidebar-shape diagram-sidebar-shape--${shape}`}
+              draggable
+              onDragStart={(event) => startDrag(shape, event)}
+              title={t(`diagram.freeDrawingShape.${shape}`)}
+              type="button"
+            >
+              <span className="diagram-sidebar-shape-icon" aria-hidden="true" />
+              <span className="diagram-sidebar-shape-name">{t(`diagram.freeDrawingShape.${shape}`)}</span>
+            </button>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 

@@ -99,12 +99,14 @@ const freeDrawingContent = [
   "",
   "nodes:",
   "  - id: node-1",
+  "    shape: process",
   "    text: 主人公",
   "    x: 120",
   "    y: 80",
   "    width: 180",
   "    height: 80",
   "  - id: node-2",
+  "    shape: decision",
   "    text: 敵対組織",
   "    x: 380",
   "    y: 80",
@@ -214,8 +216,8 @@ describe("parseRelicDiagramMarkdown", () => {
         type: "free-drawing",
         title: "自由図",
         nodes: [
-          { id: "node-1", text: "主人公" },
-          { id: "node-2", text: "敵対組織" }
+          { id: "node-1", shape: "process", text: "主人公" },
+          { id: "node-2", shape: "decision", text: "敵対組織" }
         ],
         lines: [
           { from: "node-1", id: "line-1", label: "対立", to: "node-2" }
@@ -382,6 +384,7 @@ describe("serializeRelicDiagramMarkdown", () => {
     if (!serialized.ok) return;
 
     expect(serialized.value).toContain("type: free-drawing");
+    expect(serialized.value).toContain("shape: process");
     expect(serialized.value).toContain("text: 主人公");
     expect(parseRelicDiagramMarkdown(serialized.value)).toEqual(parsed);
   });
@@ -481,9 +484,12 @@ describe("relationship operations", () => {
 
 describe("free-drawing operations", () => {
   it("自由テキストNodeの追加、変更、移動、Line追加をMarkdownへ反映する", () => {
-    const addedNode = addRelicFreeDrawingNode(freeDrawingContent);
+    const addedNode = addRelicFreeDrawingNode(freeDrawingContent, "input-output", 640, 320);
     expect(addedNode.ok ? addedNode.value.node.id : "").toBe("node-3");
-    expect(addedNode.ok ? addedNode.value.content : "").toContain("text: Node");
+    expect(addedNode.ok ? addedNode.value.content : "").toContain("shape: input-output");
+    expect(addedNode.ok ? addedNode.value.content : "").toContain("text: 入出力");
+    expect(addedNode.ok ? addedNode.value.content : "").toContain("x: 640");
+    expect(addedNode.ok ? addedNode.value.content : "").toContain("y: 320");
 
     const updatedText = updateRelicFreeDrawingNodeText(freeDrawingContent, "node-1", "新しいメモ");
     expect(updatedText.ok ? updatedText.value.node.text : "").toBe("新しいメモ");

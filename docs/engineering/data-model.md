@@ -114,13 +114,14 @@ Diagram MarkdownにはDiagram以外の本文を混ぜず、壊れた形式の場
 
 ### free-drawing
 
-`free-drawing` は自由テキストNodeの図解として扱う。Node、Line、Label、Node位置、Node固定サイズを本文内のYAMLとして保持する。
-Relationshipと同じ自由な接続構造を持つが、NodeはMarkdownファイルを参照せず `nodes[].text` を持つ。
+`free-drawing` は自由テキストを持つ図形の図解として扱う。Node、Line、Label、Node位置、Node固定サイズを本文内のYAMLとして保持する。
+Relationshipと同じ自由な接続構造を持つが、NodeはMarkdownファイルを参照せず `nodes[].shape` と `nodes[].text` を持つ。
 
 | フィールド | 内容 |
 |-----------|------|
 | nodes | Diagram上のカード一覧 |
 | nodes[].id | Diagramファイル内で一意のNode ID |
+| nodes[].shape | 図形の種類。`terminator`、`process`、`decision`、`input-output`、`note` のいずれか |
 | nodes[].text | Node内に表示・保存する自由テキスト |
 | nodes[].x / nodes[].y | Diagram上のNode位置 |
 | nodes[].width / nodes[].height | Nodeの固定サイズ |
