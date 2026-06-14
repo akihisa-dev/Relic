@@ -671,7 +671,7 @@ export function RelationshipCanvas({
         finishPan(event);
       }}
       onWheel={handleCanvasWheel}
-      role="application"
+      role="img"
       style={canvasStyle}
       tabIndex={0}
     >

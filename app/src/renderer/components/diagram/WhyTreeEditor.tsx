@@ -65,6 +65,17 @@ type WhyTreeLabelKey = keyof RelicWhyTreeLabels;
 
 type WhyTreeUpdateResult = { ok: true; value: { content: string } } | { ok: false };
 
+interface StableSupplementItem {
+  index: number;
+  key: string;
+  value: string;
+}
+
+interface StableSupplementKeyState {
+  key: string;
+  value: string;
+}
+
 export function WhyTreeEditor({
   content,
   fileName,
@@ -714,13 +725,15 @@ function SupplementColumn({
   const t = useT();
   const values = whyTreeSupplementValues(node, kind);
   const label = whyTreeSupplementLabel(labels, kind);
+  const items = useStableSupplementItems(values, `${kind}-${path.join(".") || "root"}`);
 
   return (
     <section className={`why-tree-support-column why-tree-support-column--${kind}`} aria-label={label}>
       <span className="why-tree-support-heading">{label}</span>
       {values.length === 0 ? (
         <span className="why-tree-support-empty">{t("diagram.whyTree.emptySupplement")}</span>
-      ) : values.map((value, index) => {
+      ) : items.map((item) => {
+        const { index, value } = item;
         const isSelected = isSameWhyTreeSelection(selected, { index, kind, path });
 
         return (
@@ -732,7 +745,7 @@ function SupplementColumn({
               isSelected ? "why-tree-item--selected" : ""
             ].filter(Boolean).join(" ")}
             draggable
-            key={`${kind}-${path.join(".")}-${index}`}
+            key={item.key}
             onDragEnd={onDragEnd}
             onDragOver={onAllowDrop}
             onDragStart={(event) => onStartDrag({ index, kind, path }, event)}
@@ -760,6 +773,35 @@ function SupplementColumn({
       })}
     </section>
   );
+}
+
+function useStableSupplementItems(values: string[], keyPrefix: string): StableSupplementItem[] {
+  const nextIdRef = useRef(0);
+  const keyPrefixRef = useRef(keyPrefix);
+  const previousRef = useRef<StableSupplementKeyState[]>([]);
+
+  if (keyPrefixRef.current !== keyPrefix) {
+    keyPrefixRef.current = keyPrefix;
+    previousRef.current = [];
+    nextIdRef.current = 0;
+  }
+
+  const previous = previousRef.current;
+  const usedPreviousIndexes = new Set<number>();
+  const next = values.map((value, index) => {
+    const sameValueIndex = previous.findIndex((item, previousIndex) => !usedPreviousIndexes.has(previousIndex) && item.value === value);
+    const fallbackIndex = !usedPreviousIndexes.has(index) && previous[index] ? index : -1;
+    const previousIndex = sameValueIndex >= 0 ? sameValueIndex : fallbackIndex;
+    const key = previousIndex >= 0
+      ? previous[previousIndex].key
+      : `${keyPrefix}-${nextIdRef.current++}`;
+
+    if (previousIndex >= 0) usedPreviousIndexes.add(previousIndex);
+    return { index, key, value };
+  });
+
+  previousRef.current = next.map(({ key, value }) => ({ key, value }));
+  return next;
 }
 
 function whyTreeSupplementValues(node: RelicWhyTreeNode, kind: RelicWhyTreeSupplementKind): string[] {
