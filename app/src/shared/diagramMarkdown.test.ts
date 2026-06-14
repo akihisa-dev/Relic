@@ -58,6 +58,12 @@ const whyTreeContent = [
   "title: 売上低下分析",
   "---",
   "",
+  "labels:",
+  "  root: ルート",
+  "  node: ノード",
+  "  fact: メモ",
+  "  solution: 関連項目",
+  "  action: アクション",
   "phenomenon:",
   "  title: 売上低下",
   "  facts:",
@@ -66,19 +72,19 @@ const whyTreeContent = [
   "    - 新市場開拓",
   "  actions:",
   "    - 調査実施",
-  "  why:",
-  "    title: 流入減少",
-  "    facts:",
-  "      - SEO順位低下",
-  "    solutions:",
-  "      - SEO改善",
-  "    actions:",
-  "      - 記事改修",
-  "    why:",
-  "      title: コンテンツ老朽化",
-  "      facts: []",
-  "      solutions: []",
-  "      actions: []",
+  "  whys:",
+  "    - title: 流入減少",
+  "      facts:",
+  "        - SEO順位低下",
+  "      solutions:",
+  "        - SEO改善",
+  "      actions:",
+  "        - 記事改修",
+  "      whys:",
+  "        - title: コンテンツ老朽化",
+  "          facts: []",
+  "          solutions: []",
+  "          actions: []",
   ""
 ].join("\n");
 
@@ -176,6 +182,59 @@ describe("parseRelicDiagramMarkdown", () => {
   it("why-treeではRelationship型のnodes/linesやphenomenon欠落を拒否する", () => {
     expect(parseRelicDiagramMarkdown(relationshipLikeWhyTreeContent).ok).toBe(false);
     expect(parseRelicDiagramMarkdown("---\ntype: why-tree\n---\n\nwhy:\n  title: 原因").ok).toBe(false);
+  });
+
+  it("why-treeのP17旧互換形式を拒否する", () => {
+    expect(parseRelicDiagramMarkdown([
+      "---",
+      "type: why-tree",
+      "---",
+      "",
+      "labelPreset: analysis",
+      "phenomenon:",
+      "  title: 問題",
+      "  facts: []",
+      "  solutions: []",
+      "  actions: []",
+      ""
+    ].join("\n")).ok).toBe(false);
+
+    expect(parseRelicDiagramMarkdown([
+      "---",
+      "type: why-tree",
+      "---",
+      "",
+      "phenomenon:",
+      "  title: 問題",
+      "  facts: []",
+      "  solutions: []",
+      "  actions: []",
+      ""
+    ].join("\n")).ok).toBe(false);
+
+    expect(parseRelicDiagramMarkdown([
+      "---",
+      "type: why-tree",
+      "---",
+      "",
+      "labels:",
+      "  root: ルート",
+      "  node: ノード",
+      "  fact: メモ",
+      "  solution: 関連項目",
+      "  action: アクション",
+      "phenomenon:",
+      "  title: 問題",
+      "  facts: []",
+      "  solutions: []",
+      "  actions: []",
+      "  why:",
+      "    title: 原因",
+      "    facts: []",
+      "    solutions: []",
+      "    actions: []",
+      ""
+    ].join("\n")).ok).toBe(false);
   });
 
   it("relationshipでは循環と多対多を許可する", () => {

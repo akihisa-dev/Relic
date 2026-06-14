@@ -145,7 +145,24 @@ describe("DiagramSidebar", () => {
   });
 
   it("does not place Markdown files into an active why-tree Diagram", () => {
-    const content = "---\ntype: why-tree\n---\n\nphenomenon:\n  title: 問題\n  facts: []\n  solutions: []\n  actions: []\n";
+    const content = [
+      "---",
+      "type: why-tree",
+      "---",
+      "",
+      "labels:",
+      "  root: ルート",
+      "  node: ノード",
+      "  fact: メモ",
+      "  solution: 関連項目",
+      "  action: アクション",
+      "phenomenon:",
+      "  title: 問題",
+      "  facts: []",
+      "  solutions: []",
+      "  actions: []",
+      ""
+    ].join("\n");
     useEditorStore.setState({
       focusedPane: "left",
       leftPane: { activeTabId: "why-tab", history: ["why-tab"], tabIds: ["why-tab"] },
