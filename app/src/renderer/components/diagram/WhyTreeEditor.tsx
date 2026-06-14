@@ -3,6 +3,7 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
   type PointerEvent as ReactPointerEvent,
   type ReactElement,
+  type WheelEvent as ReactWheelEvent,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -26,6 +27,7 @@ import {
   type RelicWhyTreeSupplementKind
 } from "../../../shared/diagramMarkdown";
 import { useT } from "../../i18n";
+import { clampZoom, screenToCanvasPoint, type ViewportState } from "./diagramViewport";
 import { type DiagramCanvasProps } from "./diagramTypes";
 import {
   buildWhyTreeConnectorPaths,
@@ -41,9 +43,9 @@ interface WhyTreeChainItem {
 }
 
 interface WhyTreePanState {
+  originalPanX: number;
+  originalPanY: number;
   pointerId: number;
-  scrollLeft: number;
-  scrollTop: number;
   startClientX: number;
   startClientY: number;
 }
@@ -71,6 +73,7 @@ export function WhyTreeEditor({
   const [selection, setSelection] = useState<WhyTreeSelection | null>({ kind: "phenomenon", path: [] });
   const [connectorLayout, setConnectorLayout] = useState<WhyTreeConnectorLayout>({ height: 0, paths: [], width: 0 });
   const [isPanning, setIsPanning] = useState(false);
+  const [viewport, setViewport] = useState<ViewportState>({ panX: 0, panY: 0, zoom: 1 });
   const displayedTree = useMemo(() => {
     const parsed = parseRelicDiagramMarkdown(draftContent);
     return parsed.ok && parsed.value.type === "why-tree" ? parsed.value : tree;
@@ -89,12 +92,12 @@ export function WhyTreeEditor({
     }
 
     const containerRect = contentRef.current.getBoundingClientRect();
-    const obstacles = getWhyTreeObstacleRects(contentRef.current, containerRect);
-    const paths = buildWhyTreeConnectorPaths(displayedTree.phenomenon, [], nodeRefs.current, containerRect, obstacles, collapsedPaths);
+    const obstacles = getWhyTreeObstacleRects(contentRef.current, containerRect, viewport.zoom);
+    const paths = buildWhyTreeConnectorPaths(displayedTree.phenomenon, [], nodeRefs.current, containerRect, obstacles, collapsedPaths, viewport.zoom);
     setConnectorLayout({
-      height: containerRect.height,
+      height: containerRect.height / viewport.zoom,
       paths,
-      width: containerRect.width
+      width: containerRect.width / viewport.zoom
     });
   };
 
@@ -112,7 +115,7 @@ export function WhyTreeEditor({
       resizeObserver?.disconnect();
       window.removeEventListener("resize", updateConnectorLayout);
     };
-  }, [collapsedPaths, displayedTree]);
+  }, [collapsedPaths, displayedTree, viewport.zoom]);
 
   const applyUpdate = (updated: WhyTreeUpdateResult): void => {
     if (updated.ok) {
@@ -245,9 +248,9 @@ export function WhyTreeEditor({
       event.currentTarget.setPointerCapture(event.pointerId);
     }
     panRef.current = {
+      originalPanX: viewport.panX,
+      originalPanY: viewport.panY,
       pointerId: event.pointerId,
-      scrollLeft: event.currentTarget.scrollLeft,
-      scrollTop: event.currentTarget.scrollTop,
       startClientX: event.clientX,
       startClientY: event.clientY
     };
@@ -258,8 +261,11 @@ export function WhyTreeEditor({
     if (!activePan || activePan.pointerId !== event.pointerId) return;
 
     event.preventDefault();
-    event.currentTarget.scrollLeft = activePan.scrollLeft - (event.clientX - activePan.startClientX);
-    event.currentTarget.scrollTop = activePan.scrollTop - (event.clientY - activePan.startClientY);
+    setViewport((current) => ({
+      ...current,
+      panX: activePan.originalPanX + event.clientX - activePan.startClientX,
+      panY: activePan.originalPanY + event.clientY - activePan.startClientY
+    }));
   };
   const finishPan = (event: ReactPointerEvent<HTMLDivElement>): void => {
     const activePan = panRef.current;
@@ -270,6 +276,24 @@ export function WhyTreeEditor({
     }
     panRef.current = null;
     setIsPanning(false);
+  };
+  const handleWheel = (event: ReactWheelEvent<HTMLDivElement>): void => {
+    event.preventDefault();
+    const rect = event.currentTarget.getBoundingClientRect();
+    const clientX = event.clientX;
+    const clientY = event.clientY;
+    const deltaY = event.deltaY;
+
+    setViewport((current) => {
+      const nextZoom = clampZoom(current.zoom * (deltaY < 0 ? 1.1 : 0.9));
+      const pointer = screenToCanvasPoint(clientX, clientY, rect, current);
+
+      return {
+        panX: clientX - rect.left - pointer.x * nextZoom,
+        panY: clientY - rect.top - pointer.y * nextZoom,
+        zoom: nextZoom
+      };
+    });
   };
   const renderWhyTreeBranch = (item: WhyTreeChainItem): ReactElement => {
     const isSelected = isSameWhyTreeSelection(selection, { kind: item.role, path: item.path });
@@ -425,10 +449,18 @@ export function WhyTreeEditor({
       onPointerDown={startPan}
       onPointerMove={updatePan}
       onPointerUp={finishPan}
+      onWheel={handleWheel}
       role="tree"
     >
       {toolbar}
-      <div className="why-tree-content" ref={contentRef}>
+      <div
+        className="why-tree-content"
+        ref={contentRef}
+        style={{
+          transform: `translate(${viewport.panX}px, ${viewport.panY}px) scale(${viewport.zoom})`,
+          transformOrigin: "0 0"
+        }}
+      >
         {connectorLayout.paths.length > 0 ? (
           <svg
             aria-hidden="true"

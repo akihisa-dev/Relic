@@ -24,25 +24,26 @@ export function buildWhyTreeConnectorPaths(
   nodeRefs: Map<string, HTMLDivElement>,
   containerRect: DOMRect,
   obstacles: WhyTreeObstacleRect[],
-  collapsedPaths: ReadonlySet<string> = new Set()
+  collapsedPaths: ReadonlySet<string> = new Set(),
+  scale = 1
 ): WhyTreeConnectorPath[] {
   const parentElement = nodeRefs.get(whyTreePathKey(path));
   if (!parentElement) return [];
   if (collapsedPaths.has(whyTreePathKey(path))) return [];
 
   const parentRect = parentElement.getBoundingClientRect();
-  const parentX = parentRect.left - containerRect.left + parentRect.width / 2;
-  const parentY = parentRect.bottom - containerRect.top;
+  const parentX = (parentRect.left - containerRect.left + parentRect.width / 2) / scale;
+  const parentY = (parentRect.bottom - containerRect.top) / scale;
 
   return node.whys.flatMap((why, index) => {
     const childPath = [...path, index];
     const childElement = nodeRefs.get(whyTreePathKey(childPath));
-    const nestedPaths = buildWhyTreeConnectorPaths(why, childPath, nodeRefs, containerRect, obstacles, collapsedPaths);
+    const nestedPaths = buildWhyTreeConnectorPaths(why, childPath, nodeRefs, containerRect, obstacles, collapsedPaths, scale);
     if (!childElement) return nestedPaths;
 
     const childRect = childElement.getBoundingClientRect();
-    const childX = childRect.left - containerRect.left + childRect.width / 2;
-    const childY = childRect.top - containerRect.top;
+    const childX = (childRect.left - containerRect.left + childRect.width / 2) / scale;
+    const childY = (childRect.top - containerRect.top) / scale;
     const d = buildWhyTreeConnectorPath(parentX, parentY, childX, childY, obstacles);
 
     return [{
@@ -52,15 +53,15 @@ export function buildWhyTreeConnectorPaths(
   });
 }
 
-export function getWhyTreeObstacleRects(contentElement: HTMLElement, containerRect: DOMRect): WhyTreeObstacleRect[] {
+export function getWhyTreeObstacleRects(contentElement: HTMLElement, containerRect: DOMRect, scale = 1): WhyTreeObstacleRect[] {
   return [...contentElement.querySelectorAll(".why-tree-node-menu, .why-tree-support-item")].map((element) => {
     const rect = element.getBoundingClientRect();
 
     return {
-      bottom: rect.bottom - containerRect.top,
-      left: rect.left - containerRect.left,
-      right: rect.right - containerRect.left,
-      top: rect.top - containerRect.top
+      bottom: (rect.bottom - containerRect.top) / scale,
+      left: (rect.left - containerRect.left) / scale,
+      right: (rect.right - containerRect.left) / scale,
+      top: (rect.top - containerRect.top) / scale
     };
   });
 }

@@ -459,30 +459,41 @@ describe("DiagramCanvas", () => {
   });
 
   it("pans the why-tree view by dragging blank space only", () => {
-    const { container } = render(<StatefulDiagramCanvas content={whyTreeContent} onChange={vi.fn()} />);
+    const onChange = vi.fn();
+    const { container } = render(<StatefulDiagramCanvas content={whyTreeContent} onChange={onChange} />);
     const editor = screen.getByRole("tree", { name: "World" }) as HTMLElement;
     const content = container.querySelector(".why-tree-content") as Element;
 
-    Object.defineProperty(editor, "scrollLeft", { configurable: true, value: 120, writable: true });
-    Object.defineProperty(editor, "scrollTop", { configurable: true, value: 80, writable: true });
     fireEvent(content, pointerEvent("pointerdown", 7, 200, 200));
     fireEvent(editor, pointerEvent("pointermove", 7, 170, 150));
     fireEvent(editor, pointerEvent("pointerup", 7, 170, 150));
 
-    expect(editor.scrollLeft).toBe(150);
-    expect(editor.scrollTop).toBe(130);
+    expect((content as HTMLElement).style.transform).toContain("translate(-30px, -50px)");
+    expect(onChange).not.toHaveBeenCalled();
 
     const node = screen.getByDisplayValue("売上低下").closest(".why-tree-main-node") as Element;
     fireEvent(node, pointerEvent("pointerdown", 8, 200, 200));
     fireEvent(editor, pointerEvent("pointermove", 8, 100, 100));
-    expect(editor.scrollLeft).toBe(150);
-    expect(editor.scrollTop).toBe(130);
+    expect((content as HTMLElement).style.transform).toContain("translate(-30px, -50px)");
 
     fireEvent(editor, pointerEvent("pointerdown", 9, 220, 220));
     fireEvent(editor, pointerEvent("pointermove", 9, 260, 250));
     fireEvent(editor, pointerEvent("pointerup", 9, 260, 250));
-    expect(editor.scrollLeft).toBe(110);
-    expect(editor.scrollTop).toBe(100);
+    expect((content as HTMLElement).style.transform).toContain("translate(10px, -20px)");
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("zooms the why-tree view without saving the viewport", () => {
+    const onChange = vi.fn();
+    const { container } = render(<StatefulDiagramCanvas content={whyTreeContent} onChange={onChange} />);
+    const editor = screen.getByRole("tree", { name: "World" });
+    const content = container.querySelector(".why-tree-content");
+    expect(content).toBeInstanceOf(HTMLElement);
+
+    fireEvent.wheel(editor, { clientX: 100, clientY: 100, deltaY: -100 });
+
+    expect((content as HTMLElement).style.transform).toContain("scale(1.1)");
+    expect(onChange).not.toHaveBeenCalled();
   });
 
   it("edits why-tree titles and supplements in Markdown", () => {
