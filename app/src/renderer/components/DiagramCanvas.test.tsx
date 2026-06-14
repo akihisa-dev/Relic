@@ -382,6 +382,31 @@ describe("DiagramCanvas", () => {
     expect(onChange.mock.calls[0]?.[0]).toContain("text: 主人公");
   });
 
+  it("resizes a selected free-drawing shape with the relationship resize handle", () => {
+    const onChange = vi.fn();
+    render(
+      <I18nProvider language="en">
+        <DiagramCanvas content={freeDrawingContent} fileName="自由図" onChange={onChange} />
+      </I18nProvider>
+    );
+    const decision = screen.getByText("敵対組織").closest(".diagram-canvas-node");
+    expect(decision).toBeInstanceOf(HTMLElement);
+    expect(decision).toHaveClass("diagram-canvas-node--shape-decision");
+
+    fireEvent(decision as HTMLElement, pointerEvent("pointerdown", 2, 390, 90));
+    fireEvent(decision as HTMLElement, pointerEvent("pointerup", 2, 390, 90));
+    const resizeHandle = screen.getByRole("button", { name: "Resize node" });
+
+    fireEvent(resizeHandle, pointerEvent("pointerdown", 3, 560, 160));
+    fireEvent(decision as HTMLElement, pointerEvent("pointermove", 3, 620, 190));
+    fireEvent(decision as HTMLElement, pointerEvent("pointerup", 3, 620, 190));
+
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange.mock.calls[0]?.[0]).toContain("shape: decision");
+    expect(onChange.mock.calls[0]?.[0]).toContain("width: 256");
+    expect(onChange.mock.calls[0]?.[0]).toContain("height: 96");
+  });
+
   it("drops a flowchart shape onto a free-drawing canvas", () => {
     const onChange = vi.fn();
     const emptyFreeDrawing = "---\ntype: free-drawing\n---\n\nnodes: []\nlines: []\n";
