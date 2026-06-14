@@ -5,7 +5,9 @@ import {
   type PointerEvent as ReactPointerEvent,
   type ReactElement,
   type WheelEvent as ReactWheelEvent,
+  useLayoutEffect,
   useMemo,
+  useRef,
   useState
 } from "react";
 
@@ -110,6 +112,24 @@ export function RelationshipCanvas({
   const [viewport, setViewport] = useState<ViewportState>({ panX: 0, panY: 0, zoom: 1 });
 
   const layout = useMemo(() => buildDiagramCanvasLayout(diagram), [diagram]);
+  const previousLayoutOriginRef = useRef<{ x: number; y: number } | null>(null);
+
+  useLayoutEffect(() => {
+    const previous = previousLayoutOriginRef.current;
+    previousLayoutOriginRef.current = { x: layout.originX, y: layout.originY };
+    if (!previous) return;
+
+    const deltaX = layout.originX - previous.x;
+    const deltaY = layout.originY - previous.y;
+    if (deltaX === 0 && deltaY === 0) return;
+
+    setViewport((current) => ({
+      ...current,
+      panX: current.panX + deltaX * current.zoom,
+      panY: current.panY + deltaY * current.zoom
+    }));
+  }, [layout.originX, layout.originY]);
+
   const displayNodes = useMemo(() => layout.nodes.map((node) => {
     if (resize?.nodeId === node.node.id) {
       return {
