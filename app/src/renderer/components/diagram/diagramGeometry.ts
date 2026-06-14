@@ -55,6 +55,7 @@ interface DiagramRect {
 interface RoutedSegment {
   end: DiagramPoint;
   start: DiagramPoint;
+  toNodeId: string;
 }
 
 type RouteDirection = "h" | "none" | "v";
@@ -63,6 +64,14 @@ type NodePortSide = "bottom" | "left" | "right" | "top";
 interface NodePort {
   point: DiagramPoint;
   side: NodePortSide;
+}
+
+interface LineRouteContext {
+  end: NodePort;
+  from: DiagramCanvasNodeLayout;
+  line: RelicDiagramLine;
+  start: NodePort;
+  to: DiagramCanvasNodeLayout;
 }
 
 export function buildDiagramCanvasLayout(diagram: RelicRelationshipDiagramDocument): DiagramCanvasLayout {
@@ -104,54 +113,53 @@ export function buildLineLayouts(
   nodes: DiagramCanvasNodeLayout[]
 ): DiagramCanvasLineLayout[] {
   const nodeById = new Map(nodes.map((node) => [node.node.id, node]));
-  const pairCounts = countLinePairs(lines);
-  const pairIndexes = new Map<string, number>();
   const reservedSegments: RoutedSegment[] = [];
-
-  return lines.flatMap((line) => {
+  const contexts = lines.flatMap((line): LineRouteContext[] => {
     const from = nodeById.get(line.from);
     const to = nodeById.get(line.to);
     if (!from || !to) return [];
 
-    const pairKey = linePairKey(line.from, line.to);
-    const pairCount = pairCounts.get(pairKey) ?? 1;
-    const pairIndex = pairIndexes.get(pairKey) ?? 0;
-    pairIndexes.set(pairKey, pairIndex + 1);
-    const ports = relationshipLinePorts(from, to, pairCount > 1 ? pairIndex : null);
-    const route = buildRoutedLineRoute(ports.start, ports.end, nodes, from.node.id, to.node.id, reservedSegments);
-    reservedSegments.push(...segmentsFromPoints(route.points));
-
+    const ports = relationshipLinePorts(from, to);
     return [{
-      label: line.label,
+      end: ports.end,
+      from,
+      line,
+      start: ports.start,
+      to
+    }];
+  });
+
+  applyDestinationPortLanes(contexts);
+
+  return contexts.map((context) => {
+    const conflictingSegments = reservedSegments.filter((segment) => segment.toNodeId !== context.to.node.id);
+    const route = buildRoutedLineRoute(
+      context.start,
+      context.end,
+      nodes,
+      context.from.node.id,
+      context.to.node.id,
+      conflictingSegments
+    );
+    reservedSegments.push(...segmentsFromPoints(route.points, context.to.node.id));
+
+    return {
+      label: context.line.label,
       labelX: route.labelX,
       labelY: route.labelY,
-      line,
+      line: context.line,
       pathD: route.pathD,
       x1: route.start.x,
       x2: route.end.x,
       y1: route.start.y,
       y2: route.end.y
-    }];
+    };
   });
-}
-
-function countLinePairs(lines: RelicDiagramLine[]): Map<string, number> {
-  const counts = new Map<string, number>();
-  lines.forEach((line) => {
-    const key = linePairKey(line.from, line.to);
-    counts.set(key, (counts.get(key) ?? 0) + 1);
-  });
-  return counts;
-}
-
-function linePairKey(from: string, to: string): string {
-  return from < to ? `${from}\u0000${to}` : `${to}\u0000${from}`;
 }
 
 function relationshipLinePorts(
   from: DiagramCanvasNodeLayout,
-  to: DiagramCanvasNodeLayout,
-  pairIndex: number | null
+  to: DiagramCanvasNodeLayout
 ): { end: NodePort; start: NodePort } {
   const fromCenter = nodeCenter(from);
   const toCenter = nodeCenter(to);
@@ -160,7 +168,6 @@ function relationshipLinePorts(
   const horizontalGap = Math.max(toRect.left - fromRect.right, fromRect.left - toRect.right, 0);
   const verticalGap = Math.max(toRect.top - fromRect.bottom, fromRect.top - toRect.bottom, 0);
   const horizontal = horizontalGap >= verticalGap;
-  const offset = pairIndex === null ? 0 : pairIndex === 0 ? -pairedLineGap / 2 : pairedLineGap / 2;
 
   if (horizontal) {
     const fromIsLeft = fromCenter.x <= toCenter.x;
@@ -168,14 +175,14 @@ function relationshipLinePorts(
       end: {
         point: {
           x: fromIsLeft ? to.x : to.x + to.node.width,
-          y: clamp(toCenter.y + offset, to.y, to.y + to.node.height)
+          y: toCenter.y
         },
         side: fromIsLeft ? "left" : "right"
       },
       start: {
         point: {
           x: fromIsLeft ? from.x + from.node.width : from.x,
-          y: clamp(fromCenter.y + offset, from.y, from.y + from.node.height)
+          y: fromCenter.y
         },
         side: fromIsLeft ? "right" : "left"
       }
@@ -186,19 +193,74 @@ function relationshipLinePorts(
   return {
     end: {
       point: {
-        x: clamp(toCenter.x + offset, to.x, to.x + to.node.width),
+        x: toCenter.x,
         y: fromIsAbove ? to.y : to.y + to.node.height
       },
       side: fromIsAbove ? "top" : "bottom"
     },
     start: {
       point: {
-        x: clamp(fromCenter.x + offset, from.x, from.x + from.node.width),
+        x: fromCenter.x,
         y: fromIsAbove ? from.y + from.node.height : from.y
       },
       side: fromIsAbove ? "bottom" : "top"
     }
   };
+}
+
+function applyDestinationPortLanes(contexts: LineRouteContext[]): void {
+  const groups = new Map<string, Array<{ context: LineRouteContext; node: DiagramCanvasNodeLayout; port: NodePort }>>();
+
+  contexts.forEach((context) => {
+    addPortUsage(groups, context.from, context.start, context);
+    addPortUsage(groups, context.to, context.end, context);
+  });
+
+  groups.forEach((usages) => {
+    const destinationIds: string[] = [];
+    usages.forEach(({ context }) => {
+      if (!destinationIds.includes(context.to.node.id)) destinationIds.push(context.to.node.id);
+    });
+    if (destinationIds.length <= 1) return;
+
+    const offsetByDestination = new Map(destinationIds.map((destinationId, index) => [
+      destinationId,
+      (index - (destinationIds.length - 1) / 2) * pairedLineGap
+    ]));
+
+    usages.forEach(({ context, node, port }) => {
+      const offset = offsetByDestination.get(context.to.node.id) ?? 0;
+      port.point = offsetPortPoint(port, node, offset);
+    });
+  });
+}
+
+function addPortUsage(
+  groups: Map<string, Array<{ context: LineRouteContext; node: DiagramCanvasNodeLayout; port: NodePort }>>,
+  node: DiagramCanvasNodeLayout,
+  port: NodePort,
+  context: LineRouteContext
+): void {
+  const key = `${node.node.id}\u0000${port.side}`;
+  groups.set(key, [...(groups.get(key) ?? []), { context, node, port }]);
+}
+
+function offsetPortPoint(port: NodePort, node: DiagramCanvasNodeLayout, offset: number): DiagramPoint {
+  const inset = Math.min(16, node.node.width / 2, node.node.height / 2);
+  switch (port.side) {
+    case "bottom":
+    case "top":
+      return {
+        x: clamp(port.point.x + offset, node.x + inset, node.x + node.node.width - inset),
+        y: port.point.y
+      };
+    case "left":
+    case "right":
+      return {
+        x: port.point.x,
+        y: clamp(port.point.y + offset, node.y + inset, node.y + node.node.height - inset)
+      };
+  }
 }
 
 function buildRoutedLineRoute(
@@ -483,12 +545,12 @@ function labelPointFromRoute(points: DiagramPoint[]): DiagramPoint {
   };
 }
 
-function segmentsFromPoints(points: DiagramPoint[]): RoutedSegment[] {
+function segmentsFromPoints(points: DiagramPoint[], toNodeId = ""): RoutedSegment[] {
   const segments: RoutedSegment[] = [];
   for (let index = 1; index < points.length; index += 1) {
     const start = points[index - 1];
     const end = points[index];
-    if (start && end) segments.push({ end, start });
+    if (start && end) segments.push({ end, start, toNodeId });
   }
   return segments;
 }
@@ -512,9 +574,13 @@ function segmentIntersectsRect(start: DiagramPoint, end: DiagramPoint, rect: Dia
 }
 
 function segmentReservedPenalty(start: DiagramPoint, end: DiagramPoint, reservedSegments: RoutedSegment[]): number {
-  return reservedSegments.some((segment) => segmentsOverlap(start, end, segment.start, segment.end))
+  return reservedSegments.some((segment) => segmentsConflict(start, end, segment.start, segment.end))
     ? reservedSegmentPenalty
     : 0;
+}
+
+function segmentsConflict(aStart: DiagramPoint, aEnd: DiagramPoint, bStart: DiagramPoint, bEnd: DiagramPoint): boolean {
+  return segmentsOverlap(aStart, aEnd, bStart, bEnd) || segmentsIntersect(aStart, aEnd, bStart, bEnd);
 }
 
 function segmentsOverlap(aStart: DiagramPoint, aEnd: DiagramPoint, bStart: DiagramPoint, bEnd: DiagramPoint): boolean {
@@ -525,6 +591,24 @@ function segmentsOverlap(aStart: DiagramPoint, aEnd: DiagramPoint, bStart: Diagr
     return rangesOverlap(aStart.y, aEnd.y, bStart.y, bEnd.y);
   }
   return false;
+}
+
+function segmentsIntersect(aStart: DiagramPoint, aEnd: DiagramPoint, bStart: DiagramPoint, bEnd: DiagramPoint): boolean {
+  const aHorizontal = sameCoordinate(aStart.y, aEnd.y);
+  const bHorizontal = sameCoordinate(bStart.y, bEnd.y);
+  if (aHorizontal === bHorizontal) return false;
+
+  const horizontalStart = aHorizontal ? aStart : bStart;
+  const horizontalEnd = aHorizontal ? aEnd : bEnd;
+  const verticalStart = aHorizontal ? bStart : aStart;
+  const verticalEnd = aHorizontal ? bEnd : aEnd;
+  const x = verticalStart.x;
+  const y = horizontalStart.y;
+  return valueBetween(x, horizontalStart.x, horizontalEnd.x) && valueBetween(y, verticalStart.y, verticalEnd.y);
+}
+
+function valueBetween(value: number, a: number, b: number): boolean {
+  return value > Math.min(a, b) && value < Math.max(a, b);
 }
 
 function rangesOverlap(a1: number, a2: number, b1: number, b2: number): boolean {

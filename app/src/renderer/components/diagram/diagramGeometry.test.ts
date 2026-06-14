@@ -134,6 +134,128 @@ describe("buildLineLayouts", () => {
     expect(lines[1]?.pathD).toBe("M 440 232 L 360 232");
   });
 
+  it("separates ports on the same node edge when line destinations differ", () => {
+    const nodes: DiagramCanvasNodeLayout[] = [
+      {
+        node: {
+          file: "top.md",
+          height: 320,
+          id: "top",
+          width: 480,
+          x: 64,
+          y: 64
+        },
+        x: 64,
+        y: 64
+      },
+      {
+        node: {
+          file: "left.md",
+          height: 224,
+          id: "left",
+          width: 480,
+          x: 64,
+          y: 608
+        },
+        x: 64,
+        y: 608
+      },
+      {
+        node: {
+          file: "right.md",
+          height: 224,
+          id: "right",
+          width: 480,
+          x: 640,
+          y: 608
+        },
+        x: 640,
+        y: 608
+      }
+    ];
+
+    const lines = buildLineLayouts([
+      {
+        from: "left",
+        id: "line-1",
+        label: "left to top",
+        to: "top"
+      },
+      {
+        from: "top",
+        id: "line-2",
+        label: "top to right",
+        to: "right"
+      }
+    ], nodes);
+
+    expect(lines).toHaveLength(2);
+    expect(lines[0]?.x2).toBe(292);
+    expect(lines[1]?.x1).toBe(316);
+    expect(lines[0]?.x2).not.toBe(lines[1]?.x1);
+  });
+
+  it("allows lines with the same destination to share a destination port", () => {
+    const nodes: DiagramCanvasNodeLayout[] = [
+      {
+        node: {
+          file: "top.md",
+          height: 320,
+          id: "top",
+          width: 480,
+          x: 64,
+          y: 64
+        },
+        x: 64,
+        y: 64
+      },
+      {
+        node: {
+          file: "left.md",
+          height: 224,
+          id: "left",
+          width: 480,
+          x: 64,
+          y: 608
+        },
+        x: 64,
+        y: 608
+      },
+      {
+        node: {
+          file: "right.md",
+          height: 224,
+          id: "right",
+          width: 480,
+          x: 640,
+          y: 608
+        },
+        x: 640,
+        y: 608
+      }
+    ];
+
+    const lines = buildLineLayouts([
+      {
+        from: "left",
+        id: "line-1",
+        label: "left to top",
+        to: "top"
+      },
+      {
+        from: "right",
+        id: "line-2",
+        label: "right to top",
+        to: "top"
+      }
+    ], nodes);
+
+    expect(lines).toHaveLength(2);
+    expect(lines[0]?.x2).toBe(304);
+    expect(lines[1]?.x2).toBe(304);
+    expect(lines[0]?.y2).toBe(lines[1]?.y2);
+  });
+
   it("keeps staggered opposite lines as separate orthogonal paths", () => {
     const lines = buildLineLayouts([
       {
