@@ -883,10 +883,7 @@
 }
 
 .diagram-canvas {
-  background:
-    linear-gradient(var(--border-soft) 1px, transparent 1px),
-    linear-gradient(90deg, var(--border-soft) 1px, transparent 1px);
-  background-size: 32px 32px;
+  background: var(--bg);
   box-sizing: border-box;
   color: var(--text);
   cursor: grab;
@@ -958,6 +955,10 @@
 }
 
 .diagram-canvas-space {
+  background:
+    linear-gradient(var(--border-soft) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border-soft) 1px, transparent 1px);
+  background-size: 32px 32px;
   min-height: 100%;
   min-width: 100%;
   position: relative;
