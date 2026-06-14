@@ -606,6 +606,9 @@ export function addRelicDiagramLine(
   if (!nodeIds.has(from.value) || !nodeIds.has(to.value)) {
     return fail("DIAGRAM_LINE_NODE_MISSING", "Lineが存在しないNodeを参照しています。");
   }
+  if (parsed.value.lines.some((line) => line.from === from.value && line.to === to.value)) {
+    return fail("DIAGRAM_LINE_DUPLICATED", "同じ向きのLineはすでに存在します。");
+  }
 
   const line = {
     from: from.value,
