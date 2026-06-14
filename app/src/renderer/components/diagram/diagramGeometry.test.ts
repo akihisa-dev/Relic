@@ -74,7 +74,7 @@ describe("buildLineLayouts", () => {
     expect(line?.y2).toBe(360);
     expect(line?.pathD).toMatch(/^M .+ L .+$/);
     expect(line?.labelX).toBeCloseTo(400, 2);
-    expect(line?.labelY).toBe(310);
+    expect(line?.labelY).toBe(260);
   });
 
   it("connects a single vertical line with a straight path", () => {
@@ -99,7 +99,7 @@ describe("buildLineLayouts", () => {
     expect(line?.labelY).toBe(310);
   });
 
-  it("curves opposite lines to different sides of the same node pair", () => {
+  it("routes opposite lines as separate orthogonal paths", () => {
     const lines = buildLineLayouts([
       {
         from: "node-1",
@@ -116,11 +116,11 @@ describe("buildLineLayouts", () => {
     ], horizontalNodes);
 
     expect(lines).toHaveLength(2);
-    expect(lines[0]?.pathD).toBe("M 360 220 Q 400 278 440 220");
-    expect(lines[1]?.pathD).toBe("M 440 220 Q 400 162 360 220");
+    expect(lines[0]?.pathD).toBe("M 360 208 L 440 208");
+    expect(lines[1]?.pathD).toBe("M 440 232 L 360 232");
   });
 
-  it("keeps staggered opposite lines as separate curves", () => {
+  it("keeps staggered opposite lines as separate orthogonal paths", () => {
     const lines = buildLineLayouts([
       {
         from: "node-1",
@@ -144,12 +144,12 @@ describe("buildLineLayouts", () => {
     ]);
 
     expect(lines).toHaveLength(2);
-    expect(lines[0]?.pathD).toMatch(/^M .+ Q .+ .+$/);
-    expect(lines[1]?.pathD).toMatch(/^M .+ Q .+ .+$/);
+    expect(lines[0]?.pathD).toMatch(/^M .+ L .+$/);
+    expect(lines[1]?.pathD).toMatch(/^M .+ L .+$/);
     expect(lines[0]?.pathD).not.toBe(lines[1]?.pathD);
   });
 
-  it("keeps vertically stacked opposite lines as separate curves", () => {
+  it("keeps vertically stacked opposite lines as separate orthogonal paths", () => {
     const lines = buildLineLayouts([
       {
         from: "node-1",
@@ -173,8 +173,40 @@ describe("buildLineLayouts", () => {
     ]);
 
     expect(lines).toHaveLength(2);
-    expect(lines[0]?.pathD).toMatch(/^M .+ Q .+ .+$/);
-    expect(lines[1]?.pathD).toMatch(/^M .+ Q .+ .+$/);
+    expect(lines[0]?.pathD).toMatch(/^M .+ L .+$/);
+    expect(lines[1]?.pathD).toMatch(/^M .+ L .+$/);
     expect(lines[0]?.pathD).not.toBe(lines[1]?.pathD);
+  });
+
+  it("routes a single line around an intervening node", () => {
+    const [line] = buildLineLayouts([
+      {
+        from: "node-1",
+        id: "line-1",
+        label: "",
+        to: "node-2"
+      }
+    ], [
+      horizontalNodes[0],
+      {
+        node: horizontalNodes[1].node,
+        x: 700,
+        y: 180
+      },
+      {
+        node: {
+          file: "middle.md",
+          height: 120,
+          id: "node-3",
+          width: 120,
+          x: 440,
+          y: 160
+        },
+        x: 440,
+        y: 160
+      }
+    ]);
+
+    expect(line?.pathD).toBe("M 360 220 L 360 132 L 700 132 L 700 220");
   });
 });
