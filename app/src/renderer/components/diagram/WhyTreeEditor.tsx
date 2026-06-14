@@ -13,12 +13,15 @@ import {
 import {
   addRelicWhyTreeSupplement,
   addRelicWhyTreeWhy,
+  moveRelicWhyTreeSupplement,
+  moveRelicWhyTreeWhy,
   parseRelicDiagramMarkdown,
   removeRelicWhyTreeSupplement,
   removeRelicWhyTreeWhy,
   updateRelicWhyTreeSupplement,
   updateRelicWhyTreeTitle,
   type RelicWhyTreeDocument,
+  type RelicWhyTreeMoveDirection,
   type RelicWhyTreeNode,
   type RelicWhyTreeSupplementKind
 } from "../../../shared/diagramMarkdown";
@@ -153,6 +156,28 @@ export function WhyTreeEditor({
     applyUpdate(removeRelicWhyTreeSupplement(draftContentRef.current, path, kind, index));
     selectParentMainNode(path);
   };
+  const moveMainWhy = (path: number[], direction: RelicWhyTreeMoveDirection): void => {
+    if (!onChange || path.length === 0) return;
+    const moved = moveRelicWhyTreeWhy(draftContentRef.current, path, direction);
+    if (!moved.ok) return;
+
+    const nextPath = movedWhyPath(path, direction);
+    applyUpdate(moved);
+    setSelection({ kind: "why", path: nextPath });
+  };
+  const moveSupplement = (
+    path: number[],
+    kind: RelicWhyTreeSupplementKind,
+    index: number,
+    direction: RelicWhyTreeMoveDirection
+  ): void => {
+    if (!onChange) return;
+    const moved = moveRelicWhyTreeSupplement(draftContentRef.current, path, kind, index, direction);
+    if (!moved.ok) return;
+
+    applyUpdate(moved);
+    setSelection({ index: index + moveDirectionOffset(direction), kind, path });
+  };
   const deleteSelection = (): void => {
     if (selection.kind === "phenomenon") return;
     if (selection.kind === "why") {
@@ -218,6 +243,7 @@ export function WhyTreeEditor({
             kind="fact"
             node={item.node}
             onChange={changeSupplement}
+            onMove={moveSupplement}
             onRemove={removeSupplement}
             onSelect={selectSupplement}
             path={item.path}
@@ -280,6 +306,8 @@ export function WhyTreeEditor({
               </div>
               {isSelected ? (
                 <WhyTreeNodeMenu
+                  canMoveDown={item.role === "why" && canMoveWhy(displayedTree, item.path, "down")}
+                  canMoveUp={item.role === "why" && canMoveWhy(displayedTree, item.path, "up")}
                   onAddAction={() => addSupplementFromPath(item.path, "action")}
                   onAddFact={() => addSupplementFromPath(item.path, "fact")}
                   onAddSolution={() => addSupplementFromPath(item.path, "solution")}
@@ -288,6 +316,9 @@ export function WhyTreeEditor({
                     applyUpdate(addRelicWhyTreeWhy(draftContentRef.current, item.path));
                     setSelection({ kind: "why", path: [...item.path, item.node.whys.length] });
                   }}
+                  onMoveDown={() => moveMainWhy(item.path, "down")}
+                  onMoveUp={() => moveMainWhy(item.path, "up")}
+                  showMove={item.role === "why"}
                 />
               ) : null}
             </div>
@@ -297,6 +328,7 @@ export function WhyTreeEditor({
               kind="solution"
               node={item.node}
               onChange={changeSupplement}
+              onMove={moveSupplement}
               onRemove={removeSupplement}
               onSelect={selectSupplement}
               path={item.path}
@@ -306,6 +338,7 @@ export function WhyTreeEditor({
               kind="action"
               node={item.node}
               onChange={changeSupplement}
+              onMove={moveSupplement}
               onRemove={removeSupplement}
               onSelect={selectSupplement}
               path={item.path}
@@ -361,20 +394,36 @@ export function WhyTreeEditor({
 }
 
 function WhyTreeNodeMenu({
+  canMoveDown,
+  canMoveUp,
   onAddAction,
   onAddFact,
   onAddSolution,
-  onAddWhy
+  onAddWhy,
+  onMoveDown,
+  onMoveUp,
+  showMove
 }: {
+  canMoveDown: boolean;
+  canMoveUp: boolean;
   onAddAction: () => void;
   onAddFact: () => void;
   onAddSolution: () => void;
   onAddWhy: () => void;
+  onMoveDown: () => void;
+  onMoveUp: () => void;
+  showMove: boolean;
 }): ReactElement {
   const t = useT();
 
   return (
     <div className="why-tree-node-menu" aria-label={t("diagram.whyTree.addMenu")}>
+      {showMove ? (
+        <>
+          <button disabled={!canMoveUp} onClick={onMoveUp} type="button">{t("diagram.whyTree.moveUp")}</button>
+          <button disabled={!canMoveDown} onClick={onMoveDown} type="button">{t("diagram.whyTree.moveDown")}</button>
+        </>
+      ) : null}
       <button onClick={onAddWhy} type="button">{t("diagram.whyTree.addWhy")}</button>
       <button onClick={onAddFact} type="button">{t("diagram.whyTree.addFact")}</button>
       <button onClick={onAddSolution} type="button">{t("diagram.whyTree.addSolution")}</button>
@@ -387,6 +436,7 @@ function SupplementColumn({
   kind,
   node,
   onChange,
+  onMove,
   onRemove,
   onSelect,
   path,
@@ -395,6 +445,7 @@ function SupplementColumn({
   kind: RelicWhyTreeSupplementKind;
   node: RelicWhyTreeNode;
   onChange: (path: number[], kind: RelicWhyTreeSupplementKind, index: number, event: ReactChangeEvent<HTMLInputElement>) => void;
+  onMove: (path: number[], kind: RelicWhyTreeSupplementKind, index: number, direction: RelicWhyTreeMoveDirection) => void;
   onRemove: (path: number[], kind: RelicWhyTreeSupplementKind, index: number) => void;
   onSelect: (path: number[], kind: RelicWhyTreeSupplementKind, index: number) => void;
   path: number[];
@@ -426,14 +477,32 @@ function SupplementColumn({
               onFocus={() => onSelect(path, kind, index)}
               value={value}
             />
-            <button
-              aria-label={t("diagram.whyTree.delete")}
-              className="why-tree-delete-button"
-              onClick={() => onRemove(path, kind, index)}
-              type="button"
-            >
-              ×
-            </button>
+            <div className="why-tree-item-actions">
+              <button
+                aria-label={t("diagram.whyTree.moveUp")}
+                disabled={index === 0}
+                onClick={() => onMove(path, kind, index, "up")}
+                type="button"
+              >
+                ↑
+              </button>
+              <button
+                aria-label={t("diagram.whyTree.moveDown")}
+                disabled={index === values.length - 1}
+                onClick={() => onMove(path, kind, index, "down")}
+                type="button"
+              >
+                ↓
+              </button>
+              <button
+                aria-label={t("diagram.whyTree.delete")}
+                className="why-tree-delete-button"
+                onClick={() => onRemove(path, kind, index)}
+                type="button"
+              >
+                ×
+              </button>
+            </div>
           </div>
         );
       })}
@@ -518,6 +587,38 @@ function isSameWhyTreeSelection(selection: WhyTreeSelection, target: WhyTreeSele
   if (!samePath(selection.path, target.path)) return false;
 
   return ("index" in selection ? selection.index : undefined) === ("index" in target ? target.index : undefined);
+}
+
+function canMoveWhy(
+  tree: RelicWhyTreeDocument,
+  path: number[],
+  direction: RelicWhyTreeMoveDirection
+): boolean {
+  if (path.length === 0) return false;
+  const parent = whyTreeNodeAtPath(tree.phenomenon, path.slice(0, -1));
+  const index = path[path.length - 1];
+  if (!parent || index === undefined) return false;
+
+  return canMoveIndex(parent.whys.length, index, direction);
+}
+
+function canMoveIndex(length: number, index: number, direction: RelicWhyTreeMoveDirection): boolean {
+  const nextIndex = index + moveDirectionOffset(direction);
+  return Number.isInteger(index) && index >= 0 && index < length && nextIndex >= 0 && nextIndex < length;
+}
+
+function movedWhyPath(path: number[], direction: RelicWhyTreeMoveDirection): number[] {
+  const nextPath = [...path];
+  nextPath[nextPath.length - 1] = (nextPath[nextPath.length - 1] ?? 0) + moveDirectionOffset(direction);
+  return nextPath;
+}
+
+function moveDirectionOffset(direction: RelicWhyTreeMoveDirection): -1 | 1 {
+  return direction === "up" ? -1 : 1;
+}
+
+function whyTreeNodeAtPath(root: RelicWhyTreeNode, path: number[]): RelicWhyTreeNode | null {
+  return path.reduce<RelicWhyTreeNode | null>((node, index) => node?.whys[index] ?? null, root);
 }
 
 function samePath(left: number[], right: number[]): boolean {
