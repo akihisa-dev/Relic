@@ -1100,6 +1100,21 @@
   touch-action: none;
 }
 
+.diagram-canvas-node-resize-hit {
+  background: var(--accent);
+  border: 2px solid var(--bg);
+  border-radius: 999px;
+  bottom: -1px;
+  box-shadow: 0 0 0 1px var(--accent);
+  cursor: nwse-resize;
+  height: 10px;
+  pointer-events: auto;
+  position: absolute;
+  right: -1px;
+  touch-action: none;
+  width: 10px;
+}
+
 .diagram-canvas-node-outline-hit--top,
 .diagram-canvas-node-outline-hit--bottom {
   cursor: crosshair;

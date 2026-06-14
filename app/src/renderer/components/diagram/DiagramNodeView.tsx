@@ -15,6 +15,8 @@ interface DiagramNodeViewProps {
   onPointerDown: (node: RelicDiagramNode, event: ReactPointerEvent<HTMLDivElement>) => void;
   onPointerMove: (event: ReactPointerEvent<HTMLDivElement>) => void;
   onPointerUp: (node: RelicDiagramNode, event: ReactPointerEvent<HTMLDivElement>) => void;
+  onResizePointerDown: (node: RelicDiagramNode, event: ReactPointerEvent<HTMLElement>) => void;
+  resizeLabel: string;
   x: number;
   y: number;
 }
@@ -28,6 +30,8 @@ export function DiagramNodeView({
   onPointerDown,
   onPointerMove,
   onPointerUp,
+  onResizePointerDown,
+  resizeLabel,
   x,
   y
 }: DiagramNodeViewProps): ReactElement {
@@ -52,7 +56,7 @@ export function DiagramNodeView({
     >
       <span className="diagram-canvas-node-name">{nodeFileName(node.file)}</span>
       {isSelected ? (
-        <span className="diagram-canvas-node-outline-hitbox" aria-hidden="true">
+        <span className="diagram-canvas-node-outline-hitbox">
           {(["top", "right", "bottom", "left"] as const).map((side) => (
             <span
               className={`diagram-canvas-node-outline-hit diagram-canvas-node-outline-hit--${side}`}
@@ -61,6 +65,13 @@ export function DiagramNodeView({
               onPointerDown={(event) => onOutlinePointerDown(node, event)}
             />
           ))}
+          <span
+            aria-label={resizeLabel}
+            className="diagram-canvas-node-resize-hit"
+            onPointerDown={(event) => onResizePointerDown(node, event)}
+            role="button"
+            tabIndex={-1}
+          />
         </span>
       ) : null}
     </div>

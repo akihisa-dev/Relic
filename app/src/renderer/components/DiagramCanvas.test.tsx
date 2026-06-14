@@ -657,6 +657,52 @@ describe("DiagramCanvas", () => {
     expect(onChange.mock.calls[0]?.[0]).not.toContain("from: node-1");
   });
 
+  it("commits selected node size on resize handle pointer up", () => {
+    const onChange = vi.fn();
+    render(
+      <I18nProvider language="en">
+        <DiagramCanvas content={diagramContentWithoutLines} fileName="World" onChange={onChange} />
+      </I18nProvider>
+    );
+    const alice = screen.getByText("alice").closest(".diagram-canvas-node");
+    expect(alice).toBeInstanceOf(HTMLElement);
+
+    fireEvent(alice as HTMLElement, pointerEvent("pointerdown", 2, 10, 10));
+    fireEvent(alice as HTMLElement, pointerEvent("pointerup", 2, 10, 10));
+    const resizeHandle = screen.getByRole("button", { name: "Resize node" });
+
+    fireEvent(resizeHandle, pointerEvent("pointerdown", 3, 190, 90));
+    fireEvent(alice as HTMLElement, pointerEvent("pointermove", 3, 230, 110));
+    fireEvent(alice as HTMLElement, pointerEvent("pointerup", 3, 230, 110));
+
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange.mock.calls[0]?.[0]).toContain("width: 220");
+    expect(onChange.mock.calls[0]?.[0]).toContain("height: 100");
+  });
+
+  it("keeps resized node above the minimum size", () => {
+    const onChange = vi.fn();
+    render(
+      <I18nProvider language="en">
+        <DiagramCanvas content={diagramContentWithoutLines} fileName="World" onChange={onChange} />
+      </I18nProvider>
+    );
+    const alice = screen.getByText("alice").closest(".diagram-canvas-node");
+    expect(alice).toBeInstanceOf(HTMLElement);
+
+    fireEvent(alice as HTMLElement, pointerEvent("pointerdown", 2, 10, 10));
+    fireEvent(alice as HTMLElement, pointerEvent("pointerup", 2, 10, 10));
+    const resizeHandle = screen.getByRole("button", { name: "Resize node" });
+
+    fireEvent(resizeHandle, pointerEvent("pointerdown", 3, 190, 90));
+    fireEvent(alice as HTMLElement, pointerEvent("pointermove", 3, -500, -500));
+    fireEvent(alice as HTMLElement, pointerEvent("pointerup", 3, -500, -500));
+
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange.mock.calls[0]?.[0]).toContain("width: 96");
+    expect(onChange.mock.calls[0]?.[0]).toContain("height: 56");
+  });
+
   it("does not move a selected node when dragging its outline without a target node", () => {
     const onChange = vi.fn();
     render(
