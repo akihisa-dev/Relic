@@ -39,7 +39,7 @@ interface WorkspaceFileIndexOperations {
   writeCache(filePath: string, content: string): Promise<void>;
 }
 
-const workspaceFileIndexCacheVersion = 1;
+const workspaceFileIndexCacheVersion = 2;
 const defaultMaxSearchFileBytes = 2 * 1024 * 1024;
 const mapMarkerHeadBytes = 256;
 const safeWorkspaceIndexIdPattern = /^[A-Za-z0-9_-]+$/;

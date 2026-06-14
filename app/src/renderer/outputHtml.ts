@@ -150,13 +150,13 @@ function wrapOutputHtml(body: string, title: string): string {
 }
 
 function buildDiagramOutputHtml(diagram: RelicDiagramDocument, title: string): string {
-  return diagram.type === "relationship"
-    ? buildRelationshipOutputHtml(diagram, title)
-    : buildWhyTreeOutputHtml(diagram, title);
+  return diagram.type === "why-tree"
+    ? buildWhyTreeOutputHtml(diagram, title)
+    : buildRelationshipOutputHtml(diagram, title);
 }
 
 function buildRelationshipOutputHtml(
-  diagram: Extract<RelicDiagramDocument, { type: "relationship" }>,
+  diagram: Extract<RelicDiagramDocument, { type: "relationship" | "free-drawing" }>,
   title: string
 ): string {
   const layout = buildDiagramCanvasLayout(diagram);
@@ -179,14 +179,22 @@ function buildRelationshipOutputHtml(
     ]),
     ...layout.nodes.map((node) => [
       `<foreignObject x="${node.x}" y="${node.y}" width="${node.node.width}" height="${node.node.height}">`,
-      `<div class="relic-output-relationship-node" title="${escapeHtmlAttribute(node.node.file)}" xmlns="http://www.w3.org/1999/xhtml">`,
-      `<span>${escapeHtml(nodeFileName(node.node.file))}</span>`,
+      `<div class="relic-output-relationship-node" title="${escapeHtmlAttribute(outputDiagramNodeTitle(node.node))}" xmlns="http://www.w3.org/1999/xhtml">`,
+      `<span>${escapeHtml(outputDiagramNodeText(node.node))}</span>`,
       "</div>",
       "</foreignObject>"
     ].join("")),
     "</svg>",
     "</section>"
   ].join("");
+}
+
+function outputDiagramNodeText(node: Extract<RelicDiagramDocument, { type: "relationship" | "free-drawing" }>["nodes"][number]): string {
+  return "file" in node ? nodeFileName(node.file) : node.text;
+}
+
+function outputDiagramNodeTitle(node: Extract<RelicDiagramDocument, { type: "relationship" | "free-drawing" }>["nodes"][number]): string {
+  return "file" in node ? node.file : node.text;
 }
 
 function buildWhyTreeOutputHtml(

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   addRelicDiagramLine,
+  addRelicFreeDrawingNode,
   addRelicDiagramNodeForFile,
   addRelicWhyTreeSupplement,
   addRelicWhyTreeWhy,
@@ -20,6 +21,7 @@ import {
   resizeRelicDiagramNode,
   serializeRelicDiagramMarkdown,
   updateRelicDiagramLineLabel,
+  updateRelicFreeDrawingNodeText,
   updateRelicWhyTreeLabels,
   updateRelicWhyTreeSupplement,
   updateRelicWhyTreeTitle,
@@ -89,6 +91,33 @@ const whyTreeContent = [
   ""
 ].join("\n");
 
+const freeDrawingContent = [
+  "---",
+  "type: free-drawing",
+  "title: 自由図",
+  "---",
+  "",
+  "nodes:",
+  "  - id: node-1",
+  "    text: 主人公",
+  "    x: 120",
+  "    y: 80",
+  "    width: 180",
+  "    height: 80",
+  "  - id: node-2",
+  "    text: 敵対組織",
+  "    x: 380",
+  "    y: 80",
+  "    width: 180",
+  "    height: 80",
+  "lines:",
+  "  - id: line-1",
+  "    from: node-1",
+  "    to: node-2",
+  "    label: 対立",
+  ""
+].join("\n");
+
 const relationshipLikeWhyTreeContent = [
   "---",
   "type: why-tree",
@@ -107,12 +136,14 @@ const relationshipLikeWhyTreeContent = [
 ].join("\n");
 
 describe("isRelicDiagramMarkdownContent", () => {
-  it("relationshipとwhy-treeをDiagramとして扱い、type: mapは扱わない", () => {
+  it("relationship、why-tree、free-drawingをDiagramとして扱い、type: mapは扱わない", () => {
     expect(isRelicDiagramMarkdownContent(relationshipContent)).toBe(true);
     expect(isRelicDiagramMarkdownContent(whyTreeContent)).toBe(true);
+    expect(isRelicDiagramMarkdownContent(freeDrawingContent)).toBe(true);
     expect(isRelicDiagramMarkdownContent("---\ntype: map\n---\n\nnodes: []")).toBe(false);
     expect(diagramTypeFromMarkdownContent(relationshipContent)).toBe("relationship");
     expect(diagramTypeFromMarkdownContent(whyTreeContent)).toBe("why-tree");
+    expect(diagramTypeFromMarkdownContent(freeDrawingContent)).toBe("free-drawing");
   });
 });
 
@@ -170,6 +201,25 @@ describe("parseRelicDiagramMarkdown", () => {
             }
           ]
         }
+      }
+    });
+  });
+
+  it("free-drawingから自由テキストNodeとLineを読み込む", () => {
+    const parsed = parseRelicDiagramMarkdown(freeDrawingContent);
+
+    expect(parsed).toMatchObject({
+      ok: true,
+      value: {
+        type: "free-drawing",
+        title: "自由図",
+        nodes: [
+          { id: "node-1", text: "主人公" },
+          { id: "node-2", text: "敵対組織" }
+        ],
+        lines: [
+          { from: "node-1", id: "line-1", label: "対立", to: "node-2" }
+        ]
       }
     });
   });
@@ -321,6 +371,20 @@ describe("serializeRelicDiagramMarkdown", () => {
     expect(serialized.value).not.toContain("lines:");
     expect(parseRelicDiagramMarkdown(serialized.value)).toEqual(parsed);
   });
+
+  it("free-drawingをDiagram Markdownへ書き戻す", () => {
+    const parsed = parseRelicDiagramMarkdown(freeDrawingContent);
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+
+    const serialized = serializeRelicDiagramMarkdown(parsed.value);
+    expect(serialized.ok).toBe(true);
+    if (!serialized.ok) return;
+
+    expect(serialized.value).toContain("type: free-drawing");
+    expect(serialized.value).toContain("text: 主人公");
+    expect(parseRelicDiagramMarkdown(serialized.value)).toEqual(parsed);
+  });
 });
 
 describe("relationship operations", () => {
@@ -412,6 +476,41 @@ describe("relationship operations", () => {
 
     const replaced = replaceRelicDiagramNodeFileReferences(whyTreeContent, "file", "a.md", "b.md");
     expect(replaced.ok ? replaced.value : null).toEqual({ content: whyTreeContent, count: 0 });
+  });
+});
+
+describe("free-drawing operations", () => {
+  it("自由テキストNodeの追加、変更、移動、Line追加をMarkdownへ反映する", () => {
+    const addedNode = addRelicFreeDrawingNode(freeDrawingContent);
+    expect(addedNode.ok ? addedNode.value.node.id : "").toBe("node-3");
+    expect(addedNode.ok ? addedNode.value.content : "").toContain("text: Node");
+
+    const updatedText = updateRelicFreeDrawingNodeText(freeDrawingContent, "node-1", "新しいメモ");
+    expect(updatedText.ok ? updatedText.value.node.text : "").toBe("新しいメモ");
+    expect(updatedText.ok ? updatedText.value.content : "").toContain("text: 新しいメモ");
+
+    const moved = moveRelicDiagramNode(freeDrawingContent, "node-1", 240.4, 160.6);
+    expect(moved.ok ? moved.value.content : "").toContain("x: 240");
+    expect(moved.ok ? moved.value.content : "").toContain("y: 161");
+
+    const addedLine = addRelicDiagramLine(
+      freeDrawingContent.replace([
+        "lines:",
+        "  - id: line-1",
+        "    from: node-1",
+        "    to: node-2",
+        "    label: 対立"
+      ].join("\n"), "lines: []"),
+      "node-1",
+      "node-2"
+    );
+    expect(addedLine.ok ? addedLine.value.line : null).toMatchObject({ from: "node-1", to: "node-2" });
+  });
+
+  it("free-drawingにRelationshipのファイル参照Node追加を適用しない", () => {
+    expect(addRelicDiagramNodeForFile(freeDrawingContent, "memo.md").ok).toBe(false);
+    const replaced = replaceRelicDiagramNodeFileReferences(freeDrawingContent, "file", "a.md", "b.md");
+    expect(replaced.ok ? replaced.value : null).toEqual({ content: freeDrawingContent, count: 0 });
   });
 });
 

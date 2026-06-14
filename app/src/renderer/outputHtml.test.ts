@@ -143,6 +143,48 @@ describe("outputHtml", () => {
     expect(result.html).not.toContain("lines:");
   });
 
+  it("FreeDrawing Diagramは自由テキストNodeの図解として出力する", async () => {
+    const t = createTranslator("ja");
+    const result = await buildPreviewOutputHtml({
+      content: [
+        "---",
+        "type: free-drawing",
+        "title: 自由図",
+        "---",
+        "",
+        "nodes:",
+        "  - id: a",
+        "    text: 主人公",
+        "    x: 0",
+        "    y: 0",
+        "    width: 192",
+        "    height: 96",
+        "  - id: b",
+        "    text: 敵対組織",
+        "    x: 256",
+        "    y: 0",
+        "    width: 192",
+        "    height: 96",
+        "lines:",
+        "  - id: l1",
+        "    from: a",
+        "    to: b",
+        "    label: 対立"
+      ].join("\n"),
+      fileName: "自由図.md",
+      path: "自由図.md",
+      t,
+      title: "自由図",
+      workspacePath: "/tmp/relic"
+    });
+
+    expect(result.html).toContain("relic-output-relationship");
+    expect(result.html).toContain(">主人公<");
+    expect(result.html).toContain(">敵対組織<");
+    expect(result.html).toContain("対立");
+    expect(result.html).not.toContain("text: 主人公");
+  });
+
   it("構造ツリーはMarkdownソースではなくツリーとして出力する", async () => {
     const t = createTranslator("ja");
     const result = await buildPreviewOutputHtml({

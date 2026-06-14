@@ -1224,6 +1224,24 @@
   line-height: 1.2;
 }
 
+.diagram-canvas-node-text {
+  background: transparent;
+  border: 0;
+  box-sizing: border-box;
+  color: var(--text);
+  cursor: text;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.25;
+  min-height: 44px;
+  outline: none;
+  overflow: hidden;
+  padding: 0;
+  resize: none;
+  width: 100%;
+}
+
 .diagram-canvas-node-role {
   max-width: 100%;
   min-height: 24px;
