@@ -29,6 +29,16 @@ const horizontalNodes: DiagramCanvasNodeLayout[] = [
   }
 ];
 
+function pathPoints(pathD: string): Array<{ x: number; y: number }> {
+  return pathD
+    .split(" L ")
+    .map((part) => part.replace(/^M /, ""))
+    .map((part) => {
+      const [x, y] = part.split(" ").map(Number);
+      return { x: x ?? 0, y: y ?? 0 };
+    });
+}
+
 describe("buildLineLayouts", () => {
   it("connects a single horizontal line with a straight path", () => {
     const [line] = buildLineLayouts([
@@ -51,7 +61,7 @@ describe("buildLineLayouts", () => {
     });
   });
 
-  it("connects diagonal lines at the nearest rectangle edges", () => {
+  it("connects diagonal lines with perpendicular node edge segments", () => {
     const [line] = buildLineLayouts([
       {
         from: "node-1",
@@ -68,13 +78,17 @@ describe("buildLineLayouts", () => {
       }
     ]);
 
-    expect(line?.x1).toBeCloseTo(327.78, 2);
-    expect(line?.x2).toBeCloseTo(472.22, 2);
-    expect(line?.y1).toBe(260);
-    expect(line?.y2).toBe(360);
-    expect(line?.pathD).toMatch(/^M .+ L .+$/);
-    expect(line?.labelX).toBeCloseTo(400, 2);
-    expect(line?.labelY).toBe(260);
+    expect(line).toMatchObject({
+      x1: 270,
+      x2: 530,
+      y1: 260,
+      y2: 360
+    });
+    const points = pathPoints(line?.pathD ?? "");
+    expect(points[0]).toEqual({ x: 270, y: 260 });
+    expect(points[1]?.x).toBe(270);
+    expect(points.at(-2)?.x).toBe(530);
+    expect(points.at(-1)).toEqual({ x: 530, y: 360 });
   });
 
   it("connects a single vertical line with a straight path", () => {
@@ -143,10 +157,15 @@ describe("buildLineLayouts", () => {
       }
     ]);
 
+    const firstPoints = pathPoints(lines[0]?.pathD ?? "");
+    const secondPoints = pathPoints(lines[1]?.pathD ?? "");
+
     expect(lines).toHaveLength(2);
-    expect(lines[0]?.pathD).toMatch(/^M .+ L .+$/);
-    expect(lines[1]?.pathD).toMatch(/^M .+ L .+$/);
     expect(lines[0]?.pathD).not.toBe(lines[1]?.pathD);
+    expect(firstPoints[0]?.y).toBe(firstPoints[1]?.y);
+    expect(firstPoints.at(-2)?.y).toBe(firstPoints.at(-1)?.y);
+    expect(secondPoints[0]?.y).toBe(secondPoints[1]?.y);
+    expect(secondPoints.at(-2)?.y).toBe(secondPoints.at(-1)?.y);
   });
 
   it("keeps vertically stacked opposite lines as separate orthogonal paths", () => {
@@ -207,6 +226,6 @@ describe("buildLineLayouts", () => {
       }
     ]);
 
-    expect(line?.pathD).toBe("M 360 220 L 360 132 L 700 132 L 700 220");
+    expect(line?.pathD).toBe("M 360 220 L 388 220 L 388 132 L 672 132 L 672 220 L 700 220");
   });
 });
