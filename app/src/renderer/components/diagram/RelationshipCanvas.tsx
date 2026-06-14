@@ -34,7 +34,7 @@ import { type DiagramCanvasProps } from "./diagramTypes";
 import { DiagramLineLayer } from "./DiagramLineLayer";
 import { DiagramNodeView } from "./DiagramNodeView";
 import { DiagramSnapGuides } from "./DiagramSnapGuides";
-import { snapDiagramNode, snapDiagramPointToGrid, type DiagramSnapGuide } from "./diagramSnap";
+import { snapDiagramNode, snapDiagramPointToGrid, snapDiagramSizeToGrid, type DiagramSnapGuide } from "./diagramSnap";
 
 const connectActivationDistance = 4;
 const minNodeHeight = 64;
@@ -138,6 +138,9 @@ export function RelationshipCanvas({
     ...guide,
     value: guide.value - (guide.axis === "x" ? layout.originX : layout.originY)
   }));
+  const resizePreview = resize
+    ? layout.nodes.find((node) => node.node.id === resize.nodeId)
+    : null;
   const previewLine = connect?.isActive ? {
     currentX: connect.currentX,
     currentY: connect.currentY,
@@ -234,11 +237,17 @@ export function RelationshipCanvas({
 
     setResize((current) => {
       if (!current || current.pointerId !== pointerId) return current;
+      const snapped = snapDiagramSizeToGrid(
+        current.originalWidth + (clientX - current.startClientX) / viewport.zoom,
+        current.originalHeight + (clientY - current.startClientY) / viewport.zoom,
+        minNodeWidth,
+        minNodeHeight
+      );
 
       return {
         ...current,
-        currentHeight: Math.max(minNodeHeight, current.originalHeight + (clientY - current.startClientY) / viewport.zoom),
-        currentWidth: Math.max(minNodeWidth, current.originalWidth + (clientX - current.startClientX) / viewport.zoom)
+        currentHeight: snapped.height,
+        currentWidth: snapped.width
       };
     });
   };
@@ -624,6 +633,18 @@ export function RelationshipCanvas({
           })}
         </div>
         <div className="diagram-canvas-nodes">
+          {resize && resizePreview ? (
+            <div
+              aria-hidden="true"
+              className="diagram-canvas-resize-preview"
+              style={{
+                height: resize.currentHeight,
+                left: resizePreview.x,
+                top: resizePreview.y,
+                width: resize.currentWidth
+              }}
+            />
+          ) : null}
           {displayNodes.map(({ node, x, y }) => (
             <DiagramNodeView
               isDragging={drag?.nodeId === node.id}

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { snapDiagramNode, snapDiagramPointToGrid } from "./diagramSnap";
+import { snapDiagramNode, snapDiagramPointToGrid, snapDiagramSizeToGrid } from "./diagramSnap";
 import { type DiagramCanvasNodeLayout } from "./diagramGeometry";
 
 const nodes: DiagramCanvasNodeLayout[] = [
@@ -62,6 +62,19 @@ describe("snapDiagramPointToGrid", () => {
     expect(snapDiagramPointToGrid(160, 100, -72, -112)).toEqual({
       x: 152,
       y: 112
+    });
+  });
+});
+
+describe("snapDiagramSizeToGrid", () => {
+  it("snaps node size to the 32px diagram grid while respecting minimums", () => {
+    expect(snapDiagramSizeToGrid(220, 100, 96, 64)).toEqual({
+      height: 96,
+      width: 224
+    });
+    expect(snapDiagramSizeToGrid(12, 12, 96, 64)).toEqual({
+      height: 64,
+      width: 96
     });
   });
 });
