@@ -1,7 +1,7 @@
 import {
+  type RelicConnectedDiagramDocument,
+  type RelicConnectedDiagramNode,
   type RelicDiagramLine,
-  type RelicDiagramNode,
-  type RelicRelationshipDiagramDocument
 } from "../../../shared/diagramMarkdown";
 
 const canvasPadding = 192;
@@ -26,7 +26,7 @@ export interface DiagramCanvasLayout {
 }
 
 export interface DiagramCanvasNodeLayout {
-  node: RelicDiagramNode;
+  node: RelicConnectedDiagramNode;
   x: number;
   y: number;
 }
@@ -77,7 +77,7 @@ interface LineRouteContext {
   to: DiagramCanvasNodeLayout;
 }
 
-export function buildDiagramCanvasLayout(diagram: RelicRelationshipDiagramDocument): DiagramCanvasLayout {
+export function buildDiagramCanvasLayout(diagram: RelicConnectedDiagramDocument): DiagramCanvasLayout {
   if (diagram.nodes.length === 0) {
     return {
       height: minCanvasHeight,

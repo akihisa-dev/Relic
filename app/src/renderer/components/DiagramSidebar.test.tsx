@@ -109,14 +109,16 @@ describe("DiagramSidebar", () => {
     expect(onDeleteItem).toHaveBeenCalledWith("diagrams/World.md", "file");
   });
 
-  it("creates relationship and why-tree files from the Diagram sidebar", () => {
+  it("creates relationship, why-tree, and free-drawing files from the Diagram sidebar", () => {
     const props = renderDiagramSidebar();
 
     fireEvent.click(screen.getByRole("button", { name: "New relationship" }));
     fireEvent.click(screen.getByRole("button", { name: "New structure tree" }));
+    fireEvent.click(screen.getByRole("button", { name: "New free drawing" }));
 
     expect(props.onCreateDiagramFile).toHaveBeenNthCalledWith(1, "relationship");
     expect(props.onCreateDiagramFile).toHaveBeenNthCalledWith(2, "why-tree");
+    expect(props.onCreateDiagramFile).toHaveBeenNthCalledWith(3, "free-drawing");
   });
 
   it("adds a placeable Markdown file to the active Diagram tab", () => {

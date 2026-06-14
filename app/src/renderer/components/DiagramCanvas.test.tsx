@@ -111,6 +111,33 @@ const diagramContentWithOppositeLines = [
   ""
 ].join("\n");
 
+const freeDrawingContent = [
+  "---",
+  "type: free-drawing",
+  "title: 自由図",
+  "---",
+  "",
+  "nodes:",
+  "  - id: node-1",
+  "    text: 主人公",
+  "    x: 120",
+  "    y: 80",
+  "    width: 180",
+  "    height: 80",
+  "  - id: node-2",
+  "    text: 敵対組織",
+  "    x: 380",
+  "    y: 80",
+  "    width: 180",
+  "    height: 80",
+  "lines:",
+  "  - id: line-1",
+  "    from: node-1",
+  "    to: node-2",
+  "    label: 対立",
+  ""
+].join("\n");
+
 const whyTreeContent = [
   "---",
   "type: why-tree",
@@ -311,6 +338,32 @@ describe("DiagramCanvas", () => {
       "M 372 220 L 452 220",
       "M 452 244 L 372 244"
     ]);
+  });
+
+  it("renders free-drawing text nodes and edits their text in Markdown", () => {
+    const onChange = vi.fn();
+    render(<StatefulDiagramCanvas content={freeDrawingContent} onChange={onChange} />);
+
+    const textNode = screen.getByDisplayValue("主人公");
+    expect(textNode).toBeInTheDocument();
+    expect(screen.getByDisplayValue("敵対組織")).toBeInTheDocument();
+    expect(screen.getByText("対立")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "+ Node" })).toBeInTheDocument();
+
+    fireEvent.change(textNode, { target: { value: "自由メモ" } });
+
+    expect(onChange).toHaveBeenLastCalledWith(expect.stringContaining("text: 自由メモ"));
+  });
+
+  it("adds a free-drawing text node from the canvas toolbar", () => {
+    const onChange = vi.fn();
+    render(<StatefulDiagramCanvas content={freeDrawingContent} onChange={onChange} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "+ Node" }));
+
+    expect(onChange).toHaveBeenLastCalledWith(expect.stringContaining("id: node-3"));
+    expect(onChange).toHaveBeenLastCalledWith(expect.stringContaining("text: Node"));
+    expect(screen.getByDisplayValue("Node")).toBeInTheDocument();
   });
 
   it("does not show the Mermaid copy action in Relationship Diagram mode", () => {

@@ -24,6 +24,7 @@ describe("readWorkspaceFileIndex", () => {
     const workspacePath = await createWorkspace();
     await writeFile(path.join(workspacePath, "note.md"), "# Note\n本文", "utf8");
     await writeFile(path.join(workspacePath, "relationship.md"), "---\ntype: relationship\n---\n\nnodes: []\nlines: []", "utf8");
+    await writeFile(path.join(workspacePath, "free.md"), "---\ntype: free-drawing\n---\n\nnodes: []\nlines: []", "utf8");
     await writeFile(path.join(workspacePath, "why.md"), "---\ntype: why-tree\n---\n\nlabels:\n  root: ルート\n  node: ノード\n  fact: メモ\n  solution: 関連項目\n  action: アクション\nphenomenon:\n  title: 問題\n  facts: []\n  solutions: []\n  actions: []", "utf8");
     await writeFile(path.join(workspacePath, "ignored.txt"), "---\ntype: relationship\n---", "utf8");
 
@@ -35,6 +36,7 @@ describe("readWorkspaceFileIndex", () => {
       path: filePath,
       readStatus
     }))).toEqual([
+      { kind: "diagram", name: "free", path: "free.md", readStatus: "ok" },
       { kind: "markdown", name: "note", path: "note.md", readStatus: "ok" },
       { kind: "diagram", name: "relationship", path: "relationship.md", readStatus: "ok" },
       { kind: "diagram", name: "why", path: "why.md", readStatus: "ok" }

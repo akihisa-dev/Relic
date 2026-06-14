@@ -103,6 +103,17 @@ export function DiagramSidebar({
         >
           <WhyTreeIcon />
         </button>
+        <button
+          aria-label={t("diagram.createFreeDrawing")}
+          className="files-create-icon-button"
+          data-tooltip={t("diagram.createFreeDrawing")}
+          disabled={isCreatingFile}
+          onClick={() => onCreateDiagramFile("free-drawing")}
+          title={t("diagram.createFreeDrawing")}
+          type="button"
+        >
+          <FreeDrawingIcon />
+        </button>
       </div>
       <DiagramSidebarGroup
         emptyLabel={t("diagram.noDiagramFiles")}
@@ -148,6 +159,19 @@ function WhyTreeIcon(): ReactElement {
       <circle cx="16" cy="13" r="2" />
       <circle cx="5" cy="20" r="2" />
       <circle cx="19" cy="20" r="2" />
+    </svg>
+  );
+}
+
+function FreeDrawingIcon(): ReactElement {
+  return (
+    <svg aria-hidden="true" fill="none" height="22" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="22">
+      <path d="M5 7.5h7v5H5z" />
+      <path d="M12 15h7v4h-7z" />
+      <path d="M12 10h3.5v5" />
+      <path d="M8.5 12.5v4.5H12" />
+      <path d="M16.5 7.5h2.5" />
+      <path d="M17.75 6.25v2.5" />
     </svg>
   );
 }

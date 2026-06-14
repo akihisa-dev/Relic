@@ -12,15 +12,17 @@ import {
 } from "react";
 
 import {
+  addRelicFreeDrawingNode,
   addRelicDiagramLine,
   moveRelicDiagramNode,
   removeRelicDiagramLine,
   removeRelicDiagramNode,
   reverseRelicDiagramLineDirection,
   resizeRelicDiagramNode,
+  updateRelicFreeDrawingNodeText,
   updateRelicDiagramLineLabel,
-  type RelicDiagramNode,
-  type RelicRelationshipDiagramDocument
+  type RelicConnectedDiagramDocument,
+  type RelicDiagramNodeBase
 } from "../../../shared/diagramMarkdown";
 import { useT } from "../../i18n";
 import {
@@ -101,8 +103,9 @@ export function RelationshipCanvas({
   fileName,
   onChange,
   toolbar
-}: DiagramCanvasProps & { diagram: RelicRelationshipDiagramDocument }): ReactElement {
+}: DiagramCanvasProps & { diagram: RelicConnectedDiagramDocument }): ReactElement {
   const t = useT();
+  const isFreeDrawing = diagram.type === "free-drawing";
   const [connect, setConnect] = useState<ConnectState | null>(null);
   const [drag, setDrag] = useState<DragState | null>(null);
   const [labelEdit, setLabelEdit] = useState<LabelEditState | null>(null);
@@ -188,7 +191,7 @@ export function RelationshipCanvas({
     startX: connect.startX,
     startY: connect.startY
   } : null;
-  const startNodeDrag = (node: RelicDiagramNode, event: ReactPointerEvent<HTMLDivElement>): void => {
+  const startNodeDrag = (node: RelicDiagramNodeBase, event: ReactPointerEvent<HTMLDivElement>): void => {
     if (!onChange) return;
 
     event.preventDefault();
@@ -250,7 +253,7 @@ export function RelationshipCanvas({
     if (!drag || drag.pointerId !== event.pointerId) return;
     setDrag(null);
   };
-  const startNodeResize = (node: RelicDiagramNode, event: ReactPointerEvent<HTMLElement>): void => {
+  const startNodeResize = (node: RelicDiagramNodeBase, event: ReactPointerEvent<HTMLElement>): void => {
     if (!onChange) return;
 
     event.preventDefault();
@@ -371,7 +374,7 @@ export function RelationshipCanvas({
       };
     });
   };
-  const startConnect = (node: RelicDiagramNode, event: ReactPointerEvent<HTMLElement>): void => {
+  const startConnect = (node: RelicDiagramNodeBase, event: ReactPointerEvent<HTMLElement>): void => {
     event.preventDefault();
     event.stopPropagation();
     if (!onChange) return;
@@ -437,13 +440,13 @@ export function RelationshipCanvas({
     if (!connect || connect.pointerId !== event.pointerId) return;
     setConnect(null);
   };
-  const startNodePointer = (node: RelicDiagramNode, event: ReactPointerEvent<HTMLDivElement>): void => {
+  const startNodePointer = (node: RelicDiagramNodeBase, event: ReactPointerEvent<HTMLDivElement>): void => {
     startNodeDrag(node, event);
   };
-  const startNodeOutlineConnect = (node: RelicDiagramNode, event: ReactPointerEvent<HTMLElement>): void => {
+  const startNodeOutlineConnect = (node: RelicDiagramNodeBase, event: ReactPointerEvent<HTMLElement>): void => {
     startConnect(node, event);
   };
-  const finishNodePointer = (node: RelicDiagramNode, event: ReactPointerEvent<HTMLDivElement>): void => {
+  const finishNodePointer = (node: RelicDiagramNodeBase, event: ReactPointerEvent<HTMLDivElement>): void => {
     event.stopPropagation();
     if (resize?.pointerId === event.pointerId) {
       finishNodeResize(event);
@@ -528,6 +531,23 @@ export function RelationshipCanvas({
       setSelection(null);
     }
   };
+  const addFreeDrawingNode = (): void => {
+    if (!onChange) return;
+
+    const added = addRelicFreeDrawingNode(content);
+    if (added.ok) {
+      onChange(added.value.content);
+      setSelection({ id: added.value.node.id, type: "node" });
+    }
+  };
+  const changeFreeDrawingNodeText = (nodeId: string, value: string): void => {
+    if (!onChange || !isFreeDrawing) return;
+
+    const updated = updateRelicFreeDrawingNodeText(content, nodeId, value);
+    if (updated.ok) {
+      onChange(updated.value.content);
+    }
+  };
   const reverseSelectedLineDirection = (
     line: DiagramCanvasLineLayout,
     event: ReactPointerEvent<HTMLButtonElement>
@@ -544,7 +564,7 @@ export function RelationshipCanvas({
     }
   };
   const handleCanvasKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>): void => {
-    if (event.target instanceof HTMLInputElement) return;
+    if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
     if (event.key === "Escape") {
       event.preventDefault();
       setConnect(null);
@@ -583,6 +603,17 @@ export function RelationshipCanvas({
       tabIndex={0}
     >
       {toolbar}
+      {isFreeDrawing ? (
+        <div className="diagram-toolbar">
+          <button
+            className="diagram-toolbar-button"
+            onClick={addFreeDrawingNode}
+            type="button"
+          >
+            {t("diagram.addFreeDrawingNode")}
+          </button>
+        </div>
+      ) : null}
       {layout.nodes.length === 0 ? (
         <p className="diagram-canvas-empty">{t("diagram.emptyCanvas")}</p>
       ) : null}
@@ -704,6 +735,8 @@ export function RelationshipCanvas({
               isSelected={selection?.type === "node" && selection.id === node.id}
               key={node.id}
               node={node}
+              nodeTextLabel={t("diagram.freeDrawingNodeText")}
+              onNodeTextChange={isFreeDrawing ? changeFreeDrawingNodeText : undefined}
               onOutlinePointerDown={startNodeOutlineConnect}
               onPointerCancel={cancelNodeDrag}
               onPointerDown={startNodePointer}

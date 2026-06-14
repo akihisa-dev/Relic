@@ -2,7 +2,7 @@ import * as yaml from "js-yaml";
 
 import { fail, ok, type RelicResult } from "./result";
 
-export const relicDiagramTypes = ["relationship", "why-tree"] as const;
+export const relicDiagramTypes = ["relationship", "why-tree", "free-drawing"] as const;
 export type RelicDiagramType = typeof relicDiagramTypes[number];
 
 export const relicWhyTreeSupplementKinds = ["fact", "solution", "action"] as const;
@@ -12,9 +12,16 @@ export type RelicWhyTreeSelectableKind = "phenomenon" | "why" | RelicWhyTreeSupp
 
 export interface RelicRelationshipDiagramDocument {
   lines: RelicDiagramLine[];
-  nodes: RelicDiagramNode[];
+  nodes: RelicRelationshipDiagramNode[];
   title?: string;
   type: "relationship";
+}
+
+export interface RelicFreeDrawingDiagramDocument {
+  lines: RelicDiagramLine[];
+  nodes: RelicFreeDrawingNode[];
+  title?: string;
+  type: "free-drawing";
 }
 
 export interface RelicWhyTreeDocument {
@@ -24,16 +31,27 @@ export interface RelicWhyTreeDocument {
   type: "why-tree";
 }
 
-export type RelicDiagramDocument = RelicRelationshipDiagramDocument | RelicWhyTreeDocument;
+export type RelicConnectedDiagramDocument = RelicRelationshipDiagramDocument | RelicFreeDrawingDiagramDocument;
+export type RelicDiagramDocument = RelicConnectedDiagramDocument | RelicWhyTreeDocument;
 
-export interface RelicDiagramNode {
-  file: string;
+export interface RelicDiagramNodeBase {
   height: number;
   id: string;
   width: number;
   x: number;
   y: number;
 }
+
+export interface RelicRelationshipDiagramNode extends RelicDiagramNodeBase {
+  file: string;
+}
+
+export interface RelicFreeDrawingNode extends RelicDiagramNodeBase {
+  text: string;
+}
+
+export type RelicConnectedDiagramNode = RelicRelationshipDiagramNode | RelicFreeDrawingNode;
+export type RelicDiagramNode = RelicRelationshipDiagramNode;
 
 export interface RelicDiagramLine {
   from: string;
@@ -67,17 +85,17 @@ export type RelicDiagramReferenceReplacementKind = "file" | "folder";
 
 export interface RelicDiagramNodeInsertion {
   content: string;
-  node: RelicDiagramNode;
+  node: RelicDiagramNodeBase;
 }
 
 export interface RelicDiagramNodeMove {
   content: string;
-  node: RelicDiagramNode;
+  node: RelicDiagramNodeBase;
 }
 
 export interface RelicDiagramNodeResize {
   content: string;
-  node: RelicDiagramNode;
+  node: RelicDiagramNodeBase;
 }
 
 export interface RelicDiagramLineInsertion {
@@ -100,6 +118,11 @@ export interface RelicDiagramLineDirectionUpdate {
   line: RelicDiagramLine;
 }
 
+export interface RelicFreeDrawingNodeTextUpdate {
+  content: string;
+  node: RelicFreeDrawingNode;
+}
+
 export interface RelicWhyTreeUpdate {
   content: string;
   tree: RelicWhyTreeDocument;
@@ -119,6 +142,8 @@ interface ParsedDiagramMarkdownParts {
 
 const relationshipBodyKeys = new Set(["nodes", "lines"]);
 const relationshipNodeKeys = new Set(["id", "file", "x", "y", "width", "height"]);
+const freeDrawingBodyKeys = new Set(["nodes", "lines"]);
+const freeDrawingNodeKeys = new Set(["id", "text", "x", "y", "width", "height"]);
 const diagramLineKeys = new Set(["id", "from", "to", "label"]);
 const diagramFrontmatterKeys = new Set(["type", "title"]);
 export const defaultRelicWhyTreeLabels: RelicWhyTreeLabels = {
@@ -167,6 +192,17 @@ export const emptyRelicWhyTreeMarkdownContent = [
   ""
 ].join("\n");
 
+export const emptyRelicFreeDrawingMarkdownContent = [
+  "---",
+  "type: free-drawing",
+  "title: 自由図",
+  "---",
+  "",
+  "nodes: []",
+  "lines: []",
+  ""
+].join("\n");
+
 export const emptyRelicDiagramMarkdownContent = emptyRelicRelationshipMarkdownContent;
 
 export function isRelicDiagramType(value: unknown): value is RelicDiagramType {
@@ -187,15 +223,15 @@ export function parseRelicDiagramMarkdown(content: string): RelicResult<RelicDia
   const parts = parseDiagramMarkdownParts(content);
   if (!parts.ok) return parts;
 
-  return parts.value.frontmatter.type === "why-tree"
-    ? parseRelicWhyTreeMarkdown(content)
-    : parseRelicRelationshipMarkdown(content);
+  if (parts.value.frontmatter.type === "why-tree") return parseRelicWhyTreeMarkdown(content);
+  if (parts.value.frontmatter.type === "free-drawing") return parseRelicFreeDrawingMarkdown(content);
+  return parseRelicRelationshipMarkdown(content);
 }
 
 export function serializeRelicDiagramMarkdown(document: RelicDiagramDocument): RelicResult<string> {
-  return document.type === "why-tree"
-    ? serializeRelicWhyTreeMarkdown(document)
-    : serializeRelicRelationshipMarkdown(document);
+  if (document.type === "why-tree") return serializeRelicWhyTreeMarkdown(document);
+  if (document.type === "free-drawing") return serializeRelicFreeDrawingMarkdown(document);
+  return serializeRelicRelationshipMarkdown(document);
 }
 
 export function parseRelicRelationshipMarkdown(content: string): RelicResult<RelicRelationshipDiagramDocument> {
@@ -236,6 +272,62 @@ export function serializeRelicRelationshipMarkdown(document: RelicRelationshipDi
       nodes: validated.value.nodes.map((node) => ({
         id: node.id,
         file: node.file,
+        x: node.x,
+        y: node.y,
+        width: node.width,
+        height: node.height
+      })),
+      lines: validated.value.lines.map((line) => ({
+        id: line.id,
+        from: line.from,
+        to: line.to,
+        label: line.label
+      }))
+    },
+    yamlDumpOptions()
+  ).replace(/\n(\s*)'y':/g, "\n$1y:");
+
+  return ok(`---\n${frontmatter}\n---\n\n${body}`);
+}
+
+export function parseRelicFreeDrawingMarkdown(content: string): RelicResult<RelicFreeDrawingDiagramDocument> {
+  const parts = parseDiagramMarkdownParts(content);
+  if (!parts.ok) return parts;
+  if (parts.value.frontmatter.type !== "free-drawing") {
+    return fail("DIAGRAM_TYPE_INVALID", "free-drawing Diagramではありません。");
+  }
+
+  let body: unknown;
+  try {
+    body = parts.value.body.trim().length > 0
+      ? yaml.load(parts.value.body, { schema: yaml.JSON_SCHEMA })
+      : {};
+  } catch (error) {
+    return fail("DIAGRAM_YAML_INVALID", "自由図を読み込めませんでした。", errorDetails(error));
+  }
+
+  if (body === null) body = {};
+  if (!isRecord(body)) {
+    return fail("DIAGRAM_FORMAT_INVALID", "自由図ファイルの形式が正しくありません。");
+  }
+
+  return validateRelicFreeDrawingDocument({
+    ...body,
+    title: parts.value.frontmatter.title,
+    type: "free-drawing"
+  });
+}
+
+export function serializeRelicFreeDrawingMarkdown(document: RelicFreeDrawingDiagramDocument): RelicResult<string> {
+  const validated = validateRelicFreeDrawingDocument(document);
+  if (!validated.ok) return validated;
+
+  const frontmatter = dumpFrontmatter(validated.value.type, validated.value.title);
+  const body = yaml.dump(
+    {
+      nodes: validated.value.nodes.map((node) => ({
+        id: node.id,
+        text: node.text,
         x: node.x,
         y: node.y,
         width: node.width,
@@ -531,6 +623,23 @@ export function replaceRelicDiagramNodeFileReferences(
   });
 }
 
+export function addRelicFreeDrawingNode(content: string): RelicResult<RelicDiagramNodeInsertion> {
+  const parsed = parseRelicFreeDrawingMarkdown(content);
+  if (!parsed.ok) return parsed;
+
+  const node = createFreeDrawingNode(parsed.value);
+  const serialized = serializeRelicFreeDrawingMarkdown({
+    ...parsed.value,
+    nodes: [...parsed.value.nodes, node]
+  });
+  if (!serialized.ok) return serialized;
+
+  return ok({
+    content: serialized.value,
+    node
+  });
+}
+
 export function addRelicDiagramNodeForFile(
   content: string,
   filePath: string
@@ -560,7 +669,7 @@ export function moveRelicDiagramNode(
   x: number,
   y: number
 ): RelicResult<RelicDiagramNodeMove> {
-  const parsed = parseRelicRelationshipMarkdown(content);
+  const parsed = parseRelicConnectedDiagramMarkdown(content);
   if (!parsed.ok) return parsed;
 
   const nextX = parseFiniteNumber(x, "DIAGRAM_NODE_X_INVALID", "Nodeの x は数値にしてください。");
@@ -578,10 +687,10 @@ export function moveRelicDiagramNode(
     x: Math.round(nextX.value),
     y: Math.round(nextY.value)
   };
-  const serialized = serializeRelicRelationshipMarkdown({
+  const serialized = serializeRelicConnectedDiagramMarkdown({
     ...parsed.value,
     nodes: parsed.value.nodes.map((item) => item.id === nodeId ? nextNode : item)
-  });
+  } as RelicConnectedDiagramDocument);
   if (!serialized.ok) return serialized;
 
   return ok({
@@ -596,7 +705,7 @@ export function resizeRelicDiagramNode(
   width: number,
   height: number
 ): RelicResult<RelicDiagramNodeResize> {
-  const parsed = parseRelicRelationshipMarkdown(content);
+  const parsed = parseRelicConnectedDiagramMarkdown(content);
   if (!parsed.ok) return parsed;
 
   const nextWidth = parseFiniteNumber(width, "DIAGRAM_NODE_WIDTH_INVALID", "Nodeの width は数値にしてください。");
@@ -617,10 +726,10 @@ export function resizeRelicDiagramNode(
     height: snapRelationshipNodeSize(nextHeight.value),
     width: snapRelationshipNodeSize(nextWidth.value)
   };
-  const serialized = serializeRelicRelationshipMarkdown({
+  const serialized = serializeRelicConnectedDiagramMarkdown({
     ...parsed.value,
     nodes: parsed.value.nodes.map((item) => item.id === nodeId ? nextNode : item)
-  });
+  } as RelicConnectedDiagramDocument);
   if (!serialized.ok) return serialized;
 
   return ok({
@@ -638,7 +747,7 @@ export function addRelicDiagramLine(
   fromNodeId: string,
   toNodeId: string
 ): RelicResult<RelicDiagramLineInsertion> {
-  const parsed = parseRelicRelationshipMarkdown(content);
+  const parsed = parseRelicConnectedDiagramMarkdown(content);
   if (!parsed.ok) return parsed;
 
   const from = parseRequiredText(fromNodeId, "DIAGRAM_LINE_FROM_INVALID", "Lineの from を指定してください。");
@@ -663,10 +772,10 @@ export function addRelicDiagramLine(
     label: "",
     to: to.value
   };
-  const serialized = serializeRelicRelationshipMarkdown({
+  const serialized = serializeRelicConnectedDiagramMarkdown({
     ...parsed.value,
     lines: [...parsed.value.lines, line]
-  });
+  } as RelicConnectedDiagramDocument);
   if (!serialized.ok) return serialized;
 
   return ok({
@@ -676,7 +785,7 @@ export function addRelicDiagramLine(
 }
 
 export function removeRelicDiagramNode(content: string, nodeId: string): RelicResult<RelicDiagramDeletion> {
-  const parsed = parseRelicRelationshipMarkdown(content);
+  const parsed = parseRelicConnectedDiagramMarkdown(content);
   if (!parsed.ok) return parsed;
 
   const id = parseRequiredText(nodeId, "DIAGRAM_NODE_ID_INVALID", "Nodeの id を指定してください。");
@@ -688,11 +797,11 @@ export function removeRelicDiagramNode(content: string, nodeId: string): RelicRe
   }
 
   const nextLines = parsed.value.lines.filter((line) => line.from !== id.value && line.to !== id.value);
-  const serialized = serializeRelicRelationshipMarkdown({
+  const serialized = serializeRelicConnectedDiagramMarkdown({
     ...parsed.value,
     lines: nextLines,
     nodes: nextNodes
-  });
+  } as RelicConnectedDiagramDocument);
   if (!serialized.ok) return serialized;
 
   return ok({
@@ -702,7 +811,7 @@ export function removeRelicDiagramNode(content: string, nodeId: string): RelicRe
 }
 
 export function removeRelicDiagramLine(content: string, lineId: string): RelicResult<RelicDiagramDeletion> {
-  const parsed = parseRelicRelationshipMarkdown(content);
+  const parsed = parseRelicConnectedDiagramMarkdown(content);
   if (!parsed.ok) return parsed;
 
   const id = parseRequiredText(lineId, "DIAGRAM_LINE_ID_INVALID", "Lineの id を指定してください。");
@@ -713,10 +822,10 @@ export function removeRelicDiagramLine(content: string, lineId: string): RelicRe
     return fail("DIAGRAM_LINE_MISSING", "削除するLineが見つかりません。");
   }
 
-  const serialized = serializeRelicRelationshipMarkdown({
+  const serialized = serializeRelicConnectedDiagramMarkdown({
     ...parsed.value,
     lines: nextLines
-  });
+  } as RelicConnectedDiagramDocument);
   if (!serialized.ok) return serialized;
 
   return ok({
@@ -730,7 +839,7 @@ export function updateRelicDiagramLineLabel(
   lineId: string,
   label: string
 ): RelicResult<RelicDiagramLineLabelUpdate> {
-  const parsed = parseRelicRelationshipMarkdown(content);
+  const parsed = parseRelicConnectedDiagramMarkdown(content);
   if (!parsed.ok) return parsed;
 
   const id = parseRequiredText(lineId, "DIAGRAM_LINE_ID_INVALID", "Lineの id を指定してください。");
@@ -747,10 +856,10 @@ export function updateRelicDiagramLineLabel(
     ...line,
     label: nextLabel.value
   };
-  const serialized = serializeRelicRelationshipMarkdown({
+  const serialized = serializeRelicConnectedDiagramMarkdown({
     ...parsed.value,
     lines: parsed.value.lines.map((item) => item.id === id.value ? nextLine : item)
-  });
+  } as RelicConnectedDiagramDocument);
   if (!serialized.ok) return serialized;
 
   return ok({
@@ -763,7 +872,7 @@ export function reverseRelicDiagramLineDirection(
   content: string,
   lineId: string
 ): RelicResult<RelicDiagramLineDirectionUpdate> {
-  const parsed = parseRelicRelationshipMarkdown(content);
+  const parsed = parseRelicConnectedDiagramMarkdown(content);
   if (!parsed.ok) return parsed;
 
   const id = parseRequiredText(lineId, "DIAGRAM_LINE_ID_INVALID", "Lineの id を指定してください。");
@@ -782,15 +891,49 @@ export function reverseRelicDiagramLineDirection(
     from: line.to,
     to: line.from
   };
-  const serialized = serializeRelicRelationshipMarkdown({
+  const serialized = serializeRelicConnectedDiagramMarkdown({
     ...parsed.value,
     lines: parsed.value.lines.map((item) => item.id === id.value ? nextLine : item)
-  });
+  } as RelicConnectedDiagramDocument);
   if (!serialized.ok) return serialized;
 
   return ok({
     content: serialized.value,
     line: nextLine
+  });
+}
+
+export function updateRelicFreeDrawingNodeText(
+  content: string,
+  nodeId: string,
+  text: string
+): RelicResult<RelicFreeDrawingNodeTextUpdate> {
+  const parsed = parseRelicFreeDrawingMarkdown(content);
+  if (!parsed.ok) return parsed;
+
+  const id = parseRequiredText(nodeId, "DIAGRAM_NODE_ID_INVALID", "Nodeの id を指定してください。");
+  if (!id.ok) return id;
+  const nextText = parseOptionalText(text, "DIAGRAM_NODE_TEXT_INVALID", "Nodeの text は文字にしてください。");
+  if (!nextText.ok) return nextText;
+
+  const node = parsed.value.nodes.find((item) => item.id === id.value);
+  if (!node) {
+    return fail("DIAGRAM_NODE_MISSING", "変更するNodeが見つかりません。");
+  }
+
+  const nextNode = {
+    ...node,
+    text: nextText.value
+  };
+  const serialized = serializeRelicFreeDrawingMarkdown({
+    ...parsed.value,
+    nodes: parsed.value.nodes.map((item) => item.id === id.value ? nextNode : item)
+  });
+  if (!serialized.ok) return serialized;
+
+  return ok({
+    content: serialized.value,
+    node: nextNode
   });
 }
 
@@ -822,6 +965,37 @@ function validateRelicRelationshipDocument(raw: unknown): RelicResult<RelicRelat
     nodes: nodes.value,
     ...(title?.value ? { title: title.value } : {}),
     type: "relationship"
+  });
+}
+
+function validateRelicFreeDrawingDocument(raw: unknown): RelicResult<RelicFreeDrawingDiagramDocument> {
+  if (!isRecord(raw)) {
+    return fail("DIAGRAM_FORMAT_INVALID", "自由図ファイルの形式が正しくありません。");
+  }
+  if (raw.type !== "free-drawing") {
+    return fail("DIAGRAM_TYPE_INVALID", "free-drawing Diagramではありません。");
+  }
+
+  const title = raw.title === undefined ? undefined : parseOptionalText(raw.title, "DIAGRAM_TITLE_INVALID", "図解の title は文字にしてください。");
+  if (title && !title.ok) return title;
+
+  const allowedTopLevelKeys = new Set([...freeDrawingBodyKeys, ...diagramFrontmatterKeys]);
+  const unknownTopLevelKey = Object.keys(raw).find((key) => !allowedTopLevelKeys.has(key));
+  if (unknownTopLevelKey) {
+    return fail("DIAGRAM_UNKNOWN_FIELD", `free-drawingに未対応の項目があります: ${unknownTopLevelKey}`);
+  }
+
+  const nodes = parseFreeDrawingNodes(raw.nodes);
+  if (!nodes.ok) return nodes;
+
+  const lines = parseLines(raw.lines, nodes.value);
+  if (!lines.ok) return lines;
+
+  return ok({
+    lines: lines.value,
+    nodes: nodes.value,
+    ...(title?.value ? { title: title.value } : {}),
+    type: "free-drawing"
   });
 }
 
@@ -900,14 +1074,27 @@ function parseDiagramMarkdownParts(content: string): RelicResult<ParsedDiagramMa
   });
 }
 
-function parseNodes(rawNodes: unknown): RelicResult<RelicDiagramNode[]> {
+function parseRelicConnectedDiagramMarkdown(content: string): RelicResult<RelicConnectedDiagramDocument> {
+  const type = diagramTypeFromMarkdownContent(content);
+  if (type === "relationship") return parseRelicRelationshipMarkdown(content);
+  if (type === "free-drawing") return parseRelicFreeDrawingMarkdown(content);
+  return fail("DIAGRAM_TYPE_INVALID", "relationship または free-drawing Diagramではありません。");
+}
+
+function serializeRelicConnectedDiagramMarkdown(document: RelicConnectedDiagramDocument): RelicResult<string> {
+  return document.type === "free-drawing"
+    ? serializeRelicFreeDrawingMarkdown(document)
+    : serializeRelicRelationshipMarkdown(document);
+}
+
+function parseNodes(rawNodes: unknown): RelicResult<RelicRelationshipDiagramNode[]> {
   if (rawNodes === undefined) return ok([]);
   if (!Array.isArray(rawNodes)) {
     return fail("DIAGRAM_NODES_INVALID", "relationshipのnodesは一覧にしてください。");
   }
 
   const nodeIds = new Set<string>();
-  const nodes: RelicDiagramNode[] = [];
+  const nodes: RelicRelationshipDiagramNode[] = [];
 
   for (const [index, rawNode] of rawNodes.entries()) {
     if (!isRecord(rawNode)) {
@@ -950,7 +1137,57 @@ function parseNodes(rawNodes: unknown): RelicResult<RelicDiagramNode[]> {
   return ok(nodes);
 }
 
-function parseLines(rawLines: unknown, nodes: RelicDiagramNode[]): RelicResult<RelicDiagramLine[]> {
+function parseFreeDrawingNodes(rawNodes: unknown): RelicResult<RelicFreeDrawingNode[]> {
+  if (rawNodes === undefined) return ok([]);
+  if (!Array.isArray(rawNodes)) {
+    return fail("DIAGRAM_NODES_INVALID", "free-drawingのnodesは一覧にしてください。");
+  }
+
+  const nodeIds = new Set<string>();
+  const nodes: RelicFreeDrawingNode[] = [];
+
+  for (const [index, rawNode] of rawNodes.entries()) {
+    if (!isRecord(rawNode)) {
+      return fail("DIAGRAM_NODE_INVALID", `nodes の ${index + 1} 件目が正しくありません。`);
+    }
+
+    const unknownKey = Object.keys(rawNode).find((key) => !freeDrawingNodeKeys.has(key));
+    if (unknownKey) {
+      return fail("DIAGRAM_NODE_UNKNOWN_FIELD", `Nodeに未対応の項目があります: ${unknownKey}`);
+    }
+
+    const id = parseRequiredText(rawNode.id, "DIAGRAM_NODE_ID_INVALID", "Nodeの id を指定してください。");
+    if (!id.ok) return id;
+    if (nodeIds.has(id.value)) {
+      return fail("DIAGRAM_NODE_DUPLICATED", `同じNode idが使われています: ${id.value}`);
+    }
+
+    const text = parseOptionalText(rawNode.text, "DIAGRAM_NODE_TEXT_INVALID", "Nodeの text は文字にしてください。");
+    if (!text.ok) return text;
+    const x = parseFiniteNumber(rawNode.x, "DIAGRAM_NODE_X_INVALID", "Nodeの x は数値にしてください。");
+    if (!x.ok) return x;
+    const y = parseFiniteNumber(rawNode.y, "DIAGRAM_NODE_Y_INVALID", "Nodeの y は数値にしてください。");
+    if (!y.ok) return y;
+    const width = parsePositiveNumber(rawNode.width, "DIAGRAM_NODE_WIDTH_INVALID", "Nodeの width は0より大きい数値にしてください。");
+    if (!width.ok) return width;
+    const height = parsePositiveNumber(rawNode.height, "DIAGRAM_NODE_HEIGHT_INVALID", "Nodeの height は0より大きい数値にしてください。");
+    if (!height.ok) return height;
+
+    nodeIds.add(id.value);
+    nodes.push({
+      height: height.value,
+      id: id.value,
+      text: text.value,
+      width: width.value,
+      x: x.value,
+      y: y.value
+    });
+  }
+
+  return ok(nodes);
+}
+
+function parseLines(rawLines: unknown, nodes: RelicDiagramNodeBase[]): RelicResult<RelicDiagramLine[]> {
   if (rawLines === undefined) return ok([]);
   if (!Array.isArray(rawLines)) {
     return fail("DIAGRAM_LINES_INVALID", "relationshipのlinesは一覧にしてください。");
@@ -1213,7 +1450,17 @@ function createNodeForFile(diagram: RelicRelationshipDiagramDocument, filePath: 
   };
 }
 
-function nextNodeId(nodes: RelicDiagramNode[]): string {
+function createFreeDrawingNode(diagram: RelicFreeDrawingDiagramDocument): RelicFreeDrawingNode {
+  return {
+    height: defaultNodeHeight,
+    id: nextNodeId(diagram.nodes),
+    text: "Node",
+    width: defaultNodeWidth,
+    ...nextNodePosition(diagram.nodes)
+  };
+}
+
+function nextNodeId(nodes: RelicDiagramNodeBase[]): string {
   const usedIds = new Set(nodes.map((node) => node.id));
   let index = 1;
 
@@ -1224,7 +1471,7 @@ function nextNodeId(nodes: RelicDiagramNode[]): string {
   return `node-${index}`;
 }
 
-function nextNodePosition(nodes: RelicDiagramNode[]): Pick<RelicDiagramNode, "x" | "y"> {
+function nextNodePosition(nodes: RelicDiagramNodeBase[]): Pick<RelicDiagramNodeBase, "x" | "y"> {
   if (nodes.length === 0) {
     return { x: 360, y: 270 };
   }
@@ -1326,7 +1573,7 @@ function nextLineId(lines: RelicDiagramLine[]): string {
 
 function parseDiagramType(raw: unknown): RelicResult<RelicDiagramType> {
   if (!isRelicDiagramType(raw)) {
-    return fail("DIAGRAM_TYPE_INVALID", "図解ファイルの type は relationship または why-tree にしてください。");
+    return fail("DIAGRAM_TYPE_INVALID", "図解ファイルの type は relationship、why-tree、free-drawing のいずれかにしてください。");
   }
 
   return ok(raw);

@@ -53,7 +53,9 @@ export function nextUniqueDiagramFileName(
   for (let i = 1; ; i += 1) {
     const baseName = type === "why-tree"
       ? t("diagram.defaultNewWhyTreeName")
-      : t("diagram.defaultNewRelationshipName");
+      : type === "free-drawing"
+        ? t("diagram.defaultNewFreeDrawingName")
+        : t("diagram.defaultNewRelationshipName");
     const name = i === 1 ? baseName : `${baseName} ${i}`;
     if (!existing.has(`${name}.md`)) return name;
   }

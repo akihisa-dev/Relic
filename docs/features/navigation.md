@@ -39,7 +39,7 @@ Relicのナビゲーションは、左レール、プライマリサイドバー
 - ファイルモードでは、ワークスペースの作成、登録を行う
 - ファイルモードでは、ファイル名、全文、タグ、フロントマターフィールド、正規表現で検索できる
 - Diagramモードでは、Diagramファイル一覧と配置可能Markdownファイル一覧を表示する
-- Diagramモードでは、Relationshipと構造ツリーを新規作成できる
+- Diagramモードでは、Relationship、構造ツリー、自由図を新規作成できる
 - Diagramモードでは、Diagramファイル一覧からDiagramファイルを開き、右クリックメニューからゴミ箱へ移動できる
 - Diagramモードでは、開いているRelationshipへ通常MarkdownファイルをNodeとして追加できる
 - macOSでは `⌘B`、Windows/Linuxでは `Ctrl+B`、またはボタンで開閉できる
