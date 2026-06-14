@@ -413,6 +413,26 @@ describe("DiagramCanvas", () => {
     expect(container.querySelectorAll(".why-tree-node-menu")).toHaveLength(1);
   });
 
+  it("uses why-tree keyboard shortcuts outside text inputs only", () => {
+    const onChange = vi.fn();
+    const { container } = render(<StatefulDiagramCanvas content={whyTreeContent} onChange={onChange} />);
+    const editor = screen.getByRole("tree", { name: "World" });
+    const whyInput = screen.getByDisplayValue("流入減少");
+
+    fireEvent.click(whyInput);
+    fireEvent.keyDown(whyInput, { key: "Enter" });
+    expect(onChange).not.toHaveBeenCalled();
+
+    fireEvent.keyDown(editor, { key: "Enter" });
+
+    expect(onChange.mock.calls[0]?.[0]).toContain("title: なぜ？");
+    expect(screen.getByDisplayValue("なぜ？")).toBeInTheDocument();
+
+    fireEvent.keyDown(editor, { key: "Escape" });
+
+    expect(container.querySelector(".why-tree-node-menu")).toBeNull();
+  });
+
   it("pans the why-tree view by dragging blank space only", () => {
     const { container } = render(<StatefulDiagramCanvas content={whyTreeContent} onChange={vi.fn()} />);
     const editor = screen.getByRole("tree", { name: "World" }) as HTMLElement;
