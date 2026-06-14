@@ -294,7 +294,7 @@ describe("DiagramCanvas", () => {
     expect(screen.getByText("bob")).toBeInTheDocument();
     expect(screen.getByText("幼なじみ")).toBeInTheDocument();
     const line = container.querySelector(".diagram-canvas-line");
-    expect(line?.getAttribute("d")).toBe("M 360 220 L 440 220");
+    expect(line?.getAttribute("d")).toBe("M 372 232 L 452 232");
     expect(line?.getAttribute("marker-end")).toMatch(/^url\(#diagram-canvas-arrow-/);
   });
 
@@ -307,8 +307,8 @@ describe("DiagramCanvas", () => {
 
     const lines = Array.from(container.querySelectorAll(".diagram-canvas-line"));
     expect(lines.map((line) => line.getAttribute("d"))).toEqual([
-      "M 360 208 L 440 208",
-      "M 440 232 L 360 232"
+      "M 372 220 L 452 220",
+      "M 452 244 L 372 244"
     ]);
   });
 
@@ -728,8 +728,8 @@ describe("DiagramCanvas", () => {
     fireEvent(node as HTMLElement, pointerEvent("pointerup", 1, 50, 30));
 
     expect(onChange).toHaveBeenCalledTimes(1);
-    expect(onChange.mock.calls[0]?.[0]).toContain("x: 160");
-    expect(onChange.mock.calls[0]?.[0]).toContain("y: 96");
+    expect(onChange.mock.calls[0]?.[0]).toContain("x: 152");
+    expect(onChange.mock.calls[0]?.[0]).toContain("y: 112");
   });
 
   it("snaps moved nodes to nearby node edges and only saves the final position", () => {
@@ -751,8 +751,8 @@ describe("DiagramCanvas", () => {
     fireEvent(node as HTMLElement, pointerEvent("pointerup", 1, 92, 10));
 
     expect(onChange).toHaveBeenCalledTimes(1);
-    expect(onChange.mock.calls[0]?.[0]).toContain("x: 192");
-    expect(onChange.mock.calls[0]?.[0]).toContain("y: 96");
+    expect(onChange.mock.calls[0]?.[0]).toContain("x: 216");
+    expect(onChange.mock.calls[0]?.[0]).toContain("y: 80");
     expect(onChange.mock.calls[0]?.[0]).not.toContain("snap");
   });
 
@@ -839,8 +839,8 @@ describe("DiagramCanvas", () => {
     fireEvent(node as HTMLElement, pointerEvent("pointerup", 6, 54, 32));
 
     expect(onChange).toHaveBeenCalledTimes(1);
-    expect(onChange.mock.calls[0]?.[0]).toContain("x: 160");
-    expect(onChange.mock.calls[0]?.[0]).toContain("y: 96");
+    expect(onChange.mock.calls[0]?.[0]).toContain("x: 152");
+    expect(onChange.mock.calls[0]?.[0]).toContain("y: 112");
   });
 
   it("does not rewrite Diagram Markdown when a node is clicked without moving", () => {
@@ -1019,8 +1019,8 @@ describe("DiagramCanvas", () => {
     fireEvent(alice as HTMLElement, pointerEvent("pointerup", 2, 50, 30));
 
     expect(onChange).toHaveBeenCalledTimes(1);
-    expect(onChange.mock.calls[0]?.[0]).toContain("x: 160");
-    expect(onChange.mock.calls[0]?.[0]).toContain("y: 96");
+    expect(onChange.mock.calls[0]?.[0]).toContain("x: 152");
+    expect(onChange.mock.calls[0]?.[0]).toContain("y: 112");
     expect(onChange.mock.calls[0]?.[0]).not.toContain("from: node-1");
   });
 
@@ -1042,8 +1042,8 @@ describe("DiagramCanvas", () => {
 
     expect(screen.getByRole("img", { name: "World" })).toBeInTheDocument();
     expect(onChange).toHaveBeenCalledTimes(1);
-    expect(onChange.mock.calls[0]?.[0]).toContain("x: 384");
-    expect(onChange.mock.calls[0]?.[0]).toContain("y: 96");
+    expect(onChange.mock.calls[0]?.[0]).toContain("x: 376");
+    expect(onChange.mock.calls[0]?.[0]).toContain("y: 80");
     expect(onChange.mock.calls[0]?.[0]).not.toContain("from: node-1");
   });
 

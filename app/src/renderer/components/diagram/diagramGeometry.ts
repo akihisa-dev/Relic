@@ -4,7 +4,7 @@ import {
   type RelicRelationshipDiagramDocument
 } from "../../../shared/diagramMarkdown";
 
-const canvasPadding = 180;
+const canvasPadding = 192;
 const minCanvasWidth = 900;
 const minCanvasHeight = 620;
 const lineAvoidanceMargin = 28;

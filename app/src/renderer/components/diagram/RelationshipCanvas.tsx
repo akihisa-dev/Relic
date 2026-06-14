@@ -193,7 +193,7 @@ export function RelationshipCanvas({
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
     const hasMoved = drag.currentX !== drag.originalX || drag.currentY !== drag.originalY;
-    const snapped = hasMoved ? snapDiagramPointToGrid(drag.currentX, drag.currentY) : null;
+    const snapped = hasMoved ? snapDiagramPointToGrid(drag.currentX, drag.currentY, layout.originX, layout.originY) : null;
     if (snapped && (snapped.x !== drag.originalX || snapped.y !== drag.originalY)) {
       const moved = moveRelicDiagramNode(content, drag.nodeId, snapped.x, snapped.y);
       if (moved.ok) {
