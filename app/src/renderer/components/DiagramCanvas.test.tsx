@@ -307,8 +307,8 @@ describe("DiagramCanvas", () => {
 
     const lines = Array.from(container.querySelectorAll(".diagram-canvas-line"));
     expect(lines.map((line) => line.getAttribute("d"))).toEqual([
-      "M 360 220 Q 400 278 440 220",
-      "M 440 220 Q 400 162 360 220"
+      "M 360 208 L 440 208",
+      "M 440 232 L 360 232"
     ]);
   });
 
