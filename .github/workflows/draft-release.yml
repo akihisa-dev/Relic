@@ -111,7 +111,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p release-assets
-          find out/make -type f \( -name '*.zip' -o -name '*.dmg' \) -print -exec cp {} release-assets/ \;
+          find out/darwin/make -type f \( -name '*.zip' -o -name '*.dmg' \) -print -exec cp {} release-assets/ \;
           if [ -z "$(find release-assets -type f -print -quit)" ]; then
             echo "No macOS release assets found" >&2
             exit 1
@@ -123,7 +123,7 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force release-assets | Out-Null
-          $packageDir = Get-ChildItem out -Directory | Where-Object { $_.Name -like 'Relic-win32-*' } | Select-Object -First 1
+          $packageDir = Get-ChildItem out/win32 -Directory | Where-Object { $_.Name -like 'Relic-win32-*' } | Select-Object -First 1
           if (-not $packageDir) {
             Write-Error 'Windows packaged app directory was not found.'
             exit 1

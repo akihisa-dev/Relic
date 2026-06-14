@@ -4,8 +4,8 @@ import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const outDir = path.resolve(__dirname, '..', 'out');
 const platform = process.argv[2];
+const outDir = path.resolve(__dirname, '..', 'out', platform ?? '');
 
 const forbidden = [/setup.*\.exe$/i, /^update\.exe$/i, /\.nupkg$/i, /^releases$/i];
 

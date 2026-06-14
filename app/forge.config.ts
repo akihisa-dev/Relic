@@ -3,6 +3,7 @@ import { MakerZIP } from "@electron-forge/maker-zip";
 import { VitePlugin } from "@electron-forge/plugin-vite";
 
 const config = {
+  outDir: process.env.RELIC_FORGE_OUT_DIR,
   packagerConfig: {
     asar: true,
     appBundleId: "app.relic.desktop",
