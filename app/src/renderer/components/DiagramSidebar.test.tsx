@@ -119,6 +119,14 @@ describe("DiagramSidebar", () => {
     expect(props.onCreateDiagramFile).toHaveBeenNthCalledWith(2, "why-tree");
   });
 
+  it("creates a why-tree file from a Diagram template", () => {
+    const props = renderDiagramSidebar();
+
+    fireEvent.click(screen.getByRole("button", { name: "Basic cause analysis" }));
+
+    expect(props.onCreateDiagramFile).toHaveBeenCalledWith("why-tree", "why-tree-basic-cause");
+  });
+
   it("adds a placeable Markdown file to the active Diagram tab", () => {
     const content = "---\ntype: relationship\n---\n\nnodes: []\nlines: []\n";
     useEditorStore.setState({

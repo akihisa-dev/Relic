@@ -11,6 +11,7 @@ import {
   emptyRelicWhyTreeMarkdownContent,
   type RelicDiagramType
 } from "../../shared/diagramMarkdown";
+import { relicDiagramTemplateById, type RelicDiagramTemplateId } from "../../shared/diagramTemplates";
 import type { WorkspaceFileActionsContext } from "./workspaceFileActionTypes";
 import type { Translator } from "../i18nModel";
 
@@ -100,11 +101,25 @@ export function useWorkspaceFileCreationActions({
     workspaceState
   ]);
 
-  const handleCreateDiagramFile = useCallback((diagramType: RelicDiagramType): void => {
+  const handleCreateDiagramFile = useCallback((diagramType: RelicDiagramType, templateId?: RelicDiagramTemplateId): void => {
     if (!window.relic) return;
 
-    const fileName = nextUniqueDiagramFileName(workspaceState, t, diagramType);
+    const template = templateId ? relicDiagramTemplateById(templateId) : null;
+    if (templateId && (!template || template.type !== diagramType)) {
+      setWorkspaceError(t("diagram.templateUnavailable"));
+      return;
+    }
+
+    const fileName = nextUniqueDiagramFileName(
+      workspaceState,
+      t,
+      diagramType,
+      template ? t(template.defaultNameKey) : undefined
+    );
     const expectedPath = fileName.endsWith(".md") ? fileName : `${fileName}.md`;
+    const content = template?.content ?? (
+      diagramType === "why-tree" ? emptyRelicWhyTreeMarkdownContent : emptyRelicRelationshipMarkdownContent
+    );
 
     setIsCreatingFile(true);
     setWorkspaceError(null);
@@ -119,7 +134,7 @@ export function useWorkspaceFileCreationActions({
 
         const createdPath = findCreatedMarkdownPath(createResult.value.fileTree, expectedPath) ?? expectedPath;
         const writeResult = await window.relic!.writeMarkdownFile({
-          content: diagramType === "why-tree" ? emptyRelicWhyTreeMarkdownContent : emptyRelicRelationshipMarkdownContent,
+          content,
           expectedContent: "",
           path: createdPath
         });
