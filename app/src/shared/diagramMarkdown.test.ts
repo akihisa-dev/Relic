@@ -278,6 +278,8 @@ describe("relationship operations", () => {
 
     const addedLine = addRelicDiagramLine(serializeRelationshipWithoutLines(relationshipContent), "node-1", "node-2");
     expect(addedLine.ok ? addedLine.value.line : null).toMatchObject({ from: "node-1", to: "node-2" });
+    expect(addRelicDiagramLine(relationshipContent, "node-1", "node-2").ok).toBe(false);
+    expect(addRelicDiagramLine(relationshipContent, "node-2", "node-1").ok).toBe(true);
 
     const removedNode = removeRelicDiagramNode(relationshipContent, "node-1");
     expect(removedNode.ok ? removedNode.value.content : "").not.toContain("id: node-1");

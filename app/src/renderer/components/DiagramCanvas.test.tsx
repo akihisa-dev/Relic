@@ -713,6 +713,31 @@ describe("DiagramCanvas", () => {
     expect(onChange.mock.calls[0]?.[0]).toContain("y: 80");
   });
 
+  it("does not save a duplicate line between the same nodes", () => {
+    const onChange = vi.fn();
+    render(
+      <I18nProvider language="en">
+        <DiagramCanvas content={diagramContent} fileName="World" onChange={onChange} />
+      </I18nProvider>
+    );
+    const canvas = screen.getByRole("img", { name: "World" });
+    const alice = screen.getByText("alice").closest(".diagram-canvas-node");
+    const bob = screen.getByText("bob").closest(".diagram-canvas-node");
+    expect(alice).toBeInstanceOf(HTMLElement);
+    expect(bob).toBeInstanceOf(HTMLElement);
+
+    fireEvent(alice as HTMLElement, pointerEvent("pointerdown", 2, 10, 10));
+    fireEvent(alice as HTMLElement, pointerEvent("pointerup", 2, 10, 10));
+    const outline = (alice as HTMLElement).querySelector(".diagram-canvas-node-outline-hit--right");
+    expect(outline).toBeInstanceOf(HTMLElement);
+
+    fireEvent(outline as HTMLElement, pointerEvent("pointerdown", 3, 190, 50));
+    fireEvent(canvas, pointerEvent("pointermove", 3, 260, 10));
+    fireEvent(bob as HTMLElement, pointerEvent("pointerup", 3, 260, 10));
+
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
   it("opens line label editing immediately after creating a line", () => {
     const onChange = vi.fn();
     render(<StatefulDiagramCanvas content={diagramContentWithoutLines} onChange={onChange} />);
