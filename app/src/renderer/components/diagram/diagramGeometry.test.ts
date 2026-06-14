@@ -119,4 +119,58 @@ describe("buildLineLayouts", () => {
     expect(lines[0]?.pathD).toBe("M 360 210 H 440");
     expect(lines[1]?.pathD).toBe("M 440 230 H 360");
   });
+
+  it("routes staggered opposite lines through a clean horizontal middle lane", () => {
+    const lines = buildLineLayouts([
+      {
+        from: "node-1",
+        id: "line-1",
+        label: "A to B",
+        to: "node-2"
+      },
+      {
+        from: "node-2",
+        id: "line-2",
+        label: "B to A",
+        to: "node-1"
+      }
+    ], [
+      horizontalNodes[0],
+      {
+        node: horizontalNodes[1].node,
+        x: 620,
+        y: 360
+      }
+    ]);
+
+    expect(lines[0]?.pathD).toBe("M 360 210 H 490 V 390 H 620");
+    expect(lines[1]?.pathD).toBe("M 620 410 H 490 V 230 H 360");
+  });
+
+  it("routes vertically stacked opposite lines through a clean vertical middle lane", () => {
+    const lines = buildLineLayouts([
+      {
+        from: "node-1",
+        id: "line-1",
+        label: "A to B",
+        to: "node-2"
+      },
+      {
+        from: "node-2",
+        id: "line-2",
+        label: "B to A",
+        to: "node-1"
+      }
+    ], [
+      horizontalNodes[0],
+      {
+        node: horizontalNodes[1].node,
+        x: 260,
+        y: 420
+      }
+    ]);
+
+    expect(lines[0]?.pathD).toBe("M 260 260 V 340 H 340 V 420");
+    expect(lines[1]?.pathD).toBe("M 360 420 V 340 H 280 V 260");
+  });
 });
