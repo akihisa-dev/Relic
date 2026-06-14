@@ -1,4 +1,5 @@
 import {
+  type CSSProperties,
   type FormEvent as ReactFormEvent,
   type KeyboardEvent as ReactKeyboardEvent,
   type MouseEvent as ReactMouseEvent,
@@ -40,7 +41,7 @@ import { type DiagramCanvasProps } from "./diagramTypes";
 import { DiagramLineLayer } from "./DiagramLineLayer";
 import { DiagramNodeView } from "./DiagramNodeView";
 import { DiagramSnapGuides } from "./DiagramSnapGuides";
-import { snapDiagramNode, snapDiagramPointToGrid, snapDiagramSizeToGrid, type DiagramSnapGuide } from "./diagramSnap";
+import { diagramGridSize, snapDiagramNode, snapDiagramPointToGrid, snapDiagramSizeToGrid, type DiagramSnapGuide } from "./diagramSnap";
 
 const connectActivationDistance = 4;
 const minNodeHeight = 64;
@@ -123,6 +124,11 @@ export function RelationshipCanvas({
 
   const layout = useMemo(() => buildDiagramCanvasLayout(diagram), [diagram]);
   const previousLayoutOriginRef = useRef<{ x: number; y: number } | null>(null);
+  const canvasStyle = {
+    "--diagram-canvas-grid-size": `${diagramGridSize * viewport.zoom}px`,
+    "--diagram-canvas-grid-x": `${viewport.panX}px`,
+    "--diagram-canvas-grid-y": `${viewport.panY}px`
+  } as CSSProperties;
 
   useLayoutEffect(() => {
     const previous = previousLayoutOriginRef.current;
@@ -635,6 +641,7 @@ export function RelationshipCanvas({
       }}
       onWheel={handleCanvasWheel}
       role="img"
+      style={canvasStyle}
       tabIndex={0}
     >
       {toolbar}
