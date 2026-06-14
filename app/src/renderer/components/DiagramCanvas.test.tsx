@@ -299,6 +299,7 @@ describe("DiagramCanvas", () => {
     expect(screen.getByDisplayValue("記事改修")).toBeInTheDocument();
     expect(container.querySelector(".diagram-canvas-node")).toBeNull();
     expect(container.querySelector(".diagram-canvas-line")).toBeNull();
+    expect(container.querySelector(".why-tree-line-label")).toHaveTextContent("ノード");
     expect(screen.queryByLabelText("Node role")).not.toBeInTheDocument();
   });
 
@@ -369,8 +370,9 @@ describe("DiagramCanvas", () => {
 
     expect(onChange.mock.calls[0]?.[0]).toContain("labels:");
     expect(onChange.mock.calls[0]?.[0]).toContain("node: 分解");
-    expect(screen.getByText("分解")).toBeInTheDocument();
+    expect(screen.getAllByText("分解").length).toBeGreaterThan(1);
     expect(screen.getByRole("button", { name: /\+ 分解/ })).toBeInTheDocument();
+    expect(document.querySelector(".why-tree-line-label")).toHaveTextContent("分解");
   });
 
   it("can close and reopen the structure-tree labels panel", () => {
@@ -459,6 +461,7 @@ describe("DiagramCanvas", () => {
     fireEvent(window, new Event("resize"));
 
     expect(container.querySelector(".why-tree-lines path")?.getAttribute("d")).toBe("M 500 126 V 168 H 656 V 232 H 500 V 310");
+    expect(container.querySelector(".why-tree-line-label")).toHaveTextContent("ノード");
   });
 
   it("moves the why-tree menu near the selected Why node", () => {

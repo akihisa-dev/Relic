@@ -1363,6 +1363,16 @@
   stroke-width: 2;
 }
 
+.why-tree-line-label {
+  fill: var(--text-3);
+  font-size: 12px;
+  font-weight: 750;
+  paint-order: stroke;
+  stroke: var(--bg);
+  stroke-linejoin: round;
+  stroke-width: 5px;
+}
+
 .why-tree-branch {
   display: grid;
   gap: 0;

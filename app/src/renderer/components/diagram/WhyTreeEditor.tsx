@@ -587,7 +587,17 @@ export function WhyTreeEditor({
             width={connectorLayout.width}
           >
             {connectorLayout.paths.map((path) => (
-              <path d={path.d} key={path.id} />
+              <g key={path.id}>
+                <path d={path.d} />
+                <text
+                  className="why-tree-line-label"
+                  textAnchor="middle"
+                  x={path.labelX}
+                  y={path.labelY}
+                >
+                  {labels.node}
+                </text>
+              </g>
             ))}
           </svg>
         ) : null}
