@@ -211,6 +211,38 @@ describe("updateLinksForFileRename", () => {
     await expect(readFile(path.join(ws, "map.md"), "utf8")).resolves.toContain("file: characters/new.md");
   });
 
+  it("リンク更新の影響件数にDiagram Node参照も含める", async () => {
+    const ws = await mkdtemp(path.join(os.tmpdir(), "relic-link-updater-diagram-impact-"));
+    temporaryPaths.push(ws);
+    await mkdir(path.join(ws, "characters"));
+
+    await writeFile(path.join(ws, "note.md"), "[[characters/old]]", "utf8");
+    await writeFile(path.join(ws, "diagram.md"), [
+      "---",
+      "type: relationship",
+      "---",
+      "",
+      "nodes:",
+      "  - id: node-1",
+      "    file: characters/old.md",
+      "    x: 120",
+      "    y: 80",
+      "    width: 180",
+      "    height: 80",
+      "lines: []",
+      ""
+    ].join("\n"), "utf8");
+    await writeFile(path.join(ws, "characters", "new.md"), "", "utf8");
+
+    await expect(readLinkUpdateImpact(ws, "file", "characters/old.md", "characters/new.md")).resolves.toEqual({
+      ok: true,
+      value: {
+        fileCount: 2,
+        linkCount: 2
+      }
+    });
+  });
+
   it("type: mapはDiagramとして扱わずNode参照更新で上書きしない", async () => {
     const ws = await mkdtemp(path.join(os.tmpdir(), "relic-link-updater-map-invalid-"));
     temporaryPaths.push(ws);
