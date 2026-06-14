@@ -89,10 +89,13 @@ export function buildLineLayouts(
     const pairKey = linePairKey(line.from, line.to);
     const pairIndex = pairIndexes.get(pairKey) ?? 0;
     pairIndexes.set(pairKey, pairIndex + 1);
-    const offset = lineOffsetForPair(pairCounts.get(pairKey) ?? 1, pairIndex, line, nodeById);
-    const start = offsetPoint(nodeEdgePointToward(from, toCenter.x, toCenter.y), offset);
-    const end = offsetPoint(nodeEdgePointToward(to, fromCenter.x, fromCenter.y), offset);
-    const route = buildLineRoute(start, end, to);
+    const route = (pairCounts.get(pairKey) ?? 1) > 1
+      ? buildPairedLineRoute(from, to, pairIndex)
+      : buildLineRoute(
+        nodeEdgePointToward(from, toCenter.x, toCenter.y),
+        nodeEdgePointToward(to, fromCenter.x, fromCenter.y),
+        to
+      );
 
     return [{
       label: line.label,
@@ -100,10 +103,10 @@ export function buildLineLayouts(
       labelY: route.labelY,
       line,
       pathD: route.pathD,
-      x1: start.x,
-      x2: end.x,
-      y1: start.y,
-      y2: end.y
+      x1: route.start.x,
+      x2: route.end.x,
+      y1: route.start.y,
+      y2: route.end.y
     }];
   });
 }
@@ -121,48 +124,17 @@ function linePairKey(from: string, to: string): string {
   return from < to ? `${from}\u0000${to}` : `${to}\u0000${from}`;
 }
 
-function lineOffsetForPair(
-  pairCount: number,
-  pairIndex: number,
-  line: RelicDiagramLine,
-  nodeById: Map<string, DiagramCanvasNodeLayout>
-): { x: number; y: number } {
-  if (pairCount < 2) return { x: 0, y: 0 };
-
-  const firstId = line.from < line.to ? line.from : line.to;
-  const secondId = line.from < line.to ? line.to : line.from;
-  const first = nodeById.get(firstId);
-  const second = nodeById.get(secondId);
-  if (!first || !second) return { x: 0, y: 0 };
-
-  const firstCenter = nodeCenter(first);
-  const secondCenter = nodeCenter(second);
-  const dx = secondCenter.x - firstCenter.x;
-  const dy = secondCenter.y - firstCenter.y;
-  const length = Math.hypot(dx, dy);
-  if (length < 0.001) return { x: 0, y: 0 };
-
-  const distance = (pairIndex - (pairCount - 1) / 2) * parallelLineGap;
-  return {
-    x: (-dy / length) * distance,
-    y: (dx / length) * distance
-  };
-}
-
-function offsetPoint(point: { x: number; y: number }, offset: { x: number; y: number }): { x: number; y: number } {
-  return {
-    x: point.x + offset.x,
-    y: point.y + offset.y
-  };
-}
-
 function buildLineRoute(
   start: { x: number; y: number },
   end: { x: number; y: number },
   to: DiagramCanvasNodeLayout
-): { labelX: number; labelY: number; pathD: string } {
+): { end: { x: number; y: number }; labelX: number; labelY: number; pathD: string; start: { x: number; y: number } } {
   if (sameCoordinate(start.x, end.x) || sameCoordinate(start.y, end.y)) {
-    return buildRouteFromPoints([start, end]);
+    return {
+      ...buildRouteFromPoints([start, end]),
+      end,
+      start
+    };
   }
 
   const toTop = to.y;
@@ -171,11 +143,78 @@ function buildLineRoute(
 
   if (endsOnVerticalEdge) {
     const midY = (start.y + end.y) / 2;
-    return buildRouteFromPoints([start, { x: start.x, y: midY }, { x: end.x, y: midY }, end]);
+    return {
+      ...buildRouteFromPoints([start, { x: start.x, y: midY }, { x: end.x, y: midY }, end]),
+      end,
+      start
+    };
   }
 
   const midX = (start.x + end.x) / 2;
-  return buildRouteFromPoints([start, { x: midX, y: start.y }, { x: midX, y: end.y }, end]);
+  return {
+    ...buildRouteFromPoints([start, { x: midX, y: start.y }, { x: midX, y: end.y }, end]),
+    end,
+    start
+  };
+}
+
+function buildPairedLineRoute(
+  from: DiagramCanvasNodeLayout,
+  to: DiagramCanvasNodeLayout,
+  pairIndex: number
+): { end: { x: number; y: number }; labelX: number; labelY: number; pathD: string; start: { x: number; y: number } } {
+  const fromCenter = nodeCenter(from);
+  const toCenter = nodeCenter(to);
+  const offset = pairIndex === 0 ? -parallelLineGap / 2 : parallelLineGap / 2;
+  const isHorizontal = Math.abs(toCenter.x - fromCenter.x) >= Math.abs(toCenter.y - fromCenter.y);
+
+  if (isHorizontal) {
+    const fromIsLeft = fromCenter.x <= toCenter.x;
+    const start = {
+      x: fromIsLeft ? from.x + from.node.width : from.x,
+      y: clamp(fromCenter.y + offset, from.y, from.y + from.node.height)
+    };
+    const end = {
+      x: fromIsLeft ? to.x : to.x + to.node.width,
+      y: clamp(toCenter.y + offset, to.y, to.y + to.node.height)
+    };
+    if (sameCoordinate(start.y, end.y)) {
+      return {
+        ...buildRouteFromPoints([start, end]),
+        end,
+        start
+      };
+    }
+    const midX = (start.x + end.x) / 2;
+    return {
+      ...buildRouteFromPoints([start, { x: midX, y: start.y }, { x: midX, y: end.y }, end]),
+      end,
+      start
+    };
+  }
+
+  const fromIsAbove = fromCenter.y <= toCenter.y;
+  const start = {
+    x: clamp(fromCenter.x + offset, from.x, from.x + from.node.width),
+    y: fromIsAbove ? from.y + from.node.height : from.y
+  };
+  const end = {
+    x: clamp(toCenter.x + offset, to.x, to.x + to.node.width),
+    y: fromIsAbove ? to.y : to.y + to.node.height
+  };
+  if (sameCoordinate(start.x, end.x)) {
+    return {
+      ...buildRouteFromPoints([start, end]),
+      end,
+      start
+    };
+  }
+  const midY = (start.y + end.y) / 2;
+  return {
+    ...buildRouteFromPoints([start, { x: start.x, y: midY }, { x: end.x, y: midY }, end]),
+    end,
+    start
+  };
 }
 
 function buildRouteFromPoints(points: Array<{ x: number; y: number }>): { labelX: number; labelY: number; pathD: string } {
@@ -229,6 +268,10 @@ function longestRouteSegment(points: Array<{ x: number; y: number }>): {
 
 function sameCoordinate(a: number, b: number): boolean {
   return Math.abs(a - b) < 0.001;
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value));
 }
 
 function nodeCenter(node: DiagramCanvasNodeLayout): { x: number; y: number } {
