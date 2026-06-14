@@ -781,6 +781,42 @@ describe("DiagramCanvas", () => {
     expect(screen.getByRole("button", { name: "Edit line label" })).toHaveTextContent("Add label");
   });
 
+  it("clears relationship selection with Escape without saving", () => {
+    const onChange = vi.fn();
+    const { container } = render(
+      <I18nProvider language="en">
+        <DiagramCanvas content={diagramContentWithEmptyLabel} fileName="World" onChange={onChange} />
+      </I18nProvider>
+    );
+    const canvas = screen.getByRole("img", { name: "World" });
+    const line = container.querySelector(".diagram-canvas-line-hit");
+    expect(line).toBeInstanceOf(Element);
+
+    fireEvent(line as Element, pointerEvent("pointerdown", 4, 10, 10));
+    expect(screen.getByRole("button", { name: "Edit line label" })).toHaveTextContent("Add label");
+
+    fireEvent.keyDown(canvas, { key: "Escape" });
+
+    expect(screen.queryByRole("button", { name: "Edit line label" })).not.toBeInTheDocument();
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("keeps Backspace inside the relationship label editor from deleting the line", () => {
+    const onChange = vi.fn();
+    render(
+      <I18nProvider language="en">
+        <DiagramCanvas content={diagramContent} fileName="World" onChange={onChange} />
+      </I18nProvider>
+    );
+
+    fireEvent.pointerDown(screen.getByRole("button", { name: "Edit line label" }));
+    const input = screen.getByLabelText("Edit line label");
+    fireEvent.keyDown(input, { key: "Backspace" });
+
+    expect(onChange).not.toHaveBeenCalled();
+    expect(screen.getByLabelText("Edit line label")).toBeInTheDocument();
+  });
+
   it("keeps unselected node dragging as node movement", () => {
     const onChange = vi.fn();
     render(

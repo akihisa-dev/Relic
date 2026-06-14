@@ -476,6 +476,17 @@ export function RelationshipCanvas({
     }
   };
   const handleCanvasKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>): void => {
+    if (event.target instanceof HTMLInputElement) return;
+    if (event.key === "Escape") {
+      event.preventDefault();
+      setConnect(null);
+      setDrag(null);
+      setLabelEdit(null);
+      setPan(null);
+      setResize(null);
+      setSelection(null);
+      return;
+    }
     if (event.key !== "Delete" && event.key !== "Backspace") return;
     if (!selection) return;
 
