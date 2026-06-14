@@ -965,13 +965,15 @@
 
 .diagram-canvas-lines,
 .diagram-canvas-labels,
-.diagram-canvas-nodes {
+.diagram-canvas-nodes,
+.diagram-canvas-snap-guides {
   inset: 0;
   position: absolute;
 }
 
 .diagram-canvas-labels,
-.diagram-canvas-nodes {
+.diagram-canvas-nodes,
+.diagram-canvas-snap-guides {
   pointer-events: none;
 }
 
@@ -1006,6 +1008,13 @@
   opacity: 0.72;
   stroke: var(--accent);
   stroke-dasharray: 8 7;
+}
+
+.diagram-canvas-snap-guides line {
+  stroke: var(--accent);
+  stroke-dasharray: 4 6;
+  stroke-linecap: round;
+  stroke-width: 1.5;
 }
 
 .diagram-canvas-line-label {

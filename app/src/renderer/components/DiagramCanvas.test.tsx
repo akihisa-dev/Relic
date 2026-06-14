@@ -427,6 +427,30 @@ describe("DiagramCanvas", () => {
     expect(onChange.mock.calls[0]?.[0]).toContain("y: 100");
   });
 
+  it("snaps moved nodes to nearby node edges and only saves the final position", () => {
+    const onChange = vi.fn();
+    const { container } = render(
+      <I18nProvider language="en">
+        <DiagramCanvas content={diagramContentWithoutLines} fileName="World" onChange={onChange} />
+      </I18nProvider>
+    );
+    const node = screen.getByText("alice").closest(".diagram-canvas-node");
+    expect(node).toBeInstanceOf(HTMLElement);
+
+    fireEvent(node as HTMLElement, pointerEvent("pointerdown", 1, 10, 10));
+    fireEvent(node as HTMLElement, pointerEvent("pointermove", 1, 92, 10));
+
+    expect(container.querySelector(".diagram-canvas-snap-guides line")).toBeInTheDocument();
+    expect(onChange).not.toHaveBeenCalled();
+
+    fireEvent(node as HTMLElement, pointerEvent("pointerup", 1, 92, 10));
+
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange.mock.calls[0]?.[0]).toContain("x: 200");
+    expect(onChange.mock.calls[0]?.[0]).toContain("y: 80");
+    expect(onChange.mock.calls[0]?.[0]).not.toContain("snap");
+  });
+
   it("does not navigate away from the Diagram when a node is double clicked", () => {
     const onOpenFile = vi.fn();
     render(

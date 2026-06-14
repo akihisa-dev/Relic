@@ -32,6 +32,8 @@ import {
 import { type DiagramCanvasProps } from "./diagramTypes";
 import { DiagramLineLayer } from "./DiagramLineLayer";
 import { DiagramNodeView } from "./DiagramNodeView";
+import { DiagramSnapGuides } from "./DiagramSnapGuides";
+import { snapDiagramNode, type DiagramSnapGuide } from "./diagramSnap";
 
 const connectActivationDistance = 4;
 const minNodeHeight = 56;
@@ -40,6 +42,7 @@ const minNodeWidth = 96;
 interface DragState {
   currentX: number;
   currentY: number;
+  guides: DiagramSnapGuide[];
   nodeId: string;
   originalX: number;
   originalY: number;
@@ -130,6 +133,10 @@ export function RelationshipCanvas({
     };
   });
   const displayLines = buildLineLayouts(diagram.lines, displayNodes);
+  const displaySnapGuides = (drag?.guides ?? []).map((guide) => ({
+    ...guide,
+    value: guide.value - (guide.axis === "x" ? layout.originX : layout.originY)
+  }));
   const previewLine = connect?.isActive ? {
     currentX: connect.currentX,
     currentY: connect.currentY,
@@ -148,6 +155,7 @@ export function RelationshipCanvas({
     setDrag({
       currentX: node.x,
       currentY: node.y,
+      guides: [],
       nodeId: node.id,
       originalX: node.x,
       originalY: node.y,
@@ -163,11 +171,17 @@ export function RelationshipCanvas({
 
     setDrag((current) => {
       if (!current || current.pointerId !== pointerId) return current;
+      const nextX = current.originalX + (clientX - current.startClientX) / viewport.zoom;
+      const nextY = current.originalY + (clientY - current.startClientY) / viewport.zoom;
+      const movingNode = diagram.nodes.find((node) => node.id === current.nodeId);
+      if (!movingNode) return current;
+      const snapped = snapDiagramNode(current.nodeId, nextX, nextY, movingNode.width, movingNode.height, layout.nodes);
 
       return {
         ...current,
-        currentX: current.originalX + (clientX - current.startClientX) / viewport.zoom,
-        currentY: current.originalY + (clientY - current.startClientY) / viewport.zoom
+        currentX: snapped.x,
+        currentY: snapped.y,
+        guides: snapped.guides
       };
     });
   };
@@ -512,6 +526,7 @@ export function RelationshipCanvas({
           selection={selection}
           width={layout.width}
         />
+        <DiagramSnapGuides guides={displaySnapGuides} height={layout.height} width={layout.width} />
         <div className="diagram-canvas-labels">
           {displayLines.map((line) => {
             if (labelEdit?.lineId === line.line.id) {
