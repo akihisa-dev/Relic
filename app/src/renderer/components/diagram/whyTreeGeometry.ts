@@ -3,6 +3,8 @@ import { type RelicWhyTreeNode } from "../../../shared/diagramMarkdown";
 export interface WhyTreeConnectorPath {
   d: string;
   id: string;
+  labelX: number;
+  labelY: number;
 }
 
 export interface WhyTreeConnectorLayout {
@@ -44,10 +46,10 @@ export function buildWhyTreeConnectorPaths(
     const childRect = childElement.getBoundingClientRect();
     const childX = (childRect.left - containerRect.left + childRect.width / 2) / scale;
     const childY = (childRect.top - containerRect.top) / scale;
-    const d = buildWhyTreeConnectorPath(parentX, parentY, childX, childY, obstacles);
+    const connector = buildWhyTreeConnectorPath(parentX, parentY, childX, childY, obstacles);
 
     return [{
-      d,
+      ...connector,
       id: `${whyTreePathKey(path)}-${whyTreePathKey(childPath)}`
     }, ...nestedPaths];
   });
@@ -76,20 +78,28 @@ function buildWhyTreeConnectorPath(
   childX: number,
   childY: number,
   obstacles: WhyTreeObstacleRect[]
-): string {
+): Pick<WhyTreeConnectorPath, "d" | "labelX" | "labelY"> {
   const elbowY = parentY + Math.max(28, (childY - parentY) / 2);
   const blockingObstacle = obstacles.find((obstacle) => (
     verticalSegmentIntersectsRect(parentX, parentY, childY, obstacle) ||
     horizontalSegmentIntersectsRect(parentX, childX, elbowY, obstacle)
   ));
   if (!blockingObstacle) {
-    return `M ${parentX} ${parentY} V ${elbowY} H ${childX} V ${childY}`;
+    return {
+      d: `M ${parentX} ${parentY} V ${elbowY} H ${childX} V ${childY}`,
+      labelX: (parentX + childX) / 2,
+      labelY: elbowY - 8
+    };
   }
 
   const topY = Math.max(parentY + 12, blockingObstacle.top - 12);
   const bottomY = Math.min(childY - 12, blockingObstacle.bottom + 12);
   if (bottomY <= topY) {
-    return `M ${parentX} ${parentY} V ${elbowY} H ${childX} V ${childY}`;
+    return {
+      d: `M ${parentX} ${parentY} V ${elbowY} H ${childX} V ${childY}`,
+      labelX: (parentX + childX) / 2,
+      labelY: elbowY - 8
+    };
   }
 
   const candidates = [
@@ -102,7 +112,11 @@ function buildWhyTreeConnectorPath(
       : best
   ));
 
-  return `M ${parentX} ${parentY} V ${topY} H ${detourX} V ${bottomY} H ${childX} V ${childY}`;
+  return {
+    d: `M ${parentX} ${parentY} V ${topY} H ${detourX} V ${bottomY} H ${childX} V ${childY}`,
+    labelX: (detourX + childX) / 2,
+    labelY: bottomY - 8
+  };
 }
 
 function verticalSegmentIntersectsRect(x: number, y1: number, y2: number, rect: WhyTreeObstacleRect): boolean {
