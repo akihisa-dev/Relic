@@ -57,6 +57,14 @@ workflowは次を自動で行う。
 7. GitHub Draft Releaseを作成する
 8. macOS向けDMG/ZIPとWindows向けZIPをAssetsに添付する
 
+ローカル生成物はOS別に分ける。
+
+- macOS: `app/out/darwin/`
+- Windows: `app/out/win32/`
+
+`pnpm build:mac:safe` と `pnpm build:win:safe` は、それぞれ対象OSの出力先だけを削除してから生成する。
+片方のビルドで、もう片方のOS向け生成物を削除しない。
+
 Draft Release作成後、GitHub上でRelease本文とAssetsを確認し、問題がなければPublishする。
 
 Publishは自動化しない。間違った成果物や説明文をそのまま公開しないため、最後の公開判断は人が行う。
@@ -122,6 +130,7 @@ GitHub ReleasesのAssetsには、workflowが作成した配布ファイルだけ
 - Windows: `pnpm build:win:safe` で生成された未署名アプリをZIP化したもの
 
 未確認の成果物、途中生成物、`app/out/` の中身を説明なくまとめたファイルは添付しない。
+OS別出力先のうち、GitHub Releasesに添付するのはworkflowが `release-assets` に集めた配布用ファイルだけとする。
 
 ---
 
