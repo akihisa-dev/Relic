@@ -458,6 +458,19 @@ describe("DiagramCanvas", () => {
     expect(screen.getByDisplayValue("SEO順位低下")).toBeInTheDocument();
   });
 
+  it("allows why-tree fields to become empty and contain line breaks", () => {
+    const onChange = vi.fn();
+    render(<StatefulDiagramCanvas content={whyTreeContent} onChange={onChange} />);
+
+    fireEvent.change(screen.getByLabelText("Phenomenon title"), { target: { value: "" } });
+    expect(onChange.mock.calls[0]?.[0]).toContain("title: ''");
+    expect(screen.getByDisplayValue("")).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("Phenomenon title"), { target: { value: "売上\n低下" } });
+    expect(onChange.mock.calls[1]?.[0]).toContain("売上");
+    expect((screen.getByLabelText("Phenomenon title") as HTMLTextAreaElement).value).toBe("売上\n低下");
+  });
+
   it("pans the why-tree view by dragging blank space only", () => {
     const onChange = vi.fn();
     const { container } = render(<StatefulDiagramCanvas content={whyTreeContent} onChange={onChange} />);
@@ -503,7 +516,7 @@ describe("DiagramCanvas", () => {
     fireEvent.change(screen.getByLabelText("Phenomenon title"), { target: { value: "売上が下がった" } });
     expect(onChange.mock.calls[0]?.[0]).toContain("title: 売上が下がった");
 
-    fireEvent.change(screen.getAllByLabelText("Fact")[0] as HTMLInputElement, { target: { value: "市場が縮小した" } });
+    fireEvent.change(screen.getAllByLabelText("Fact")[0] as HTMLTextAreaElement, { target: { value: "市場が縮小した" } });
     expect(onChange.mock.calls[1]?.[0]).toContain("市場が縮小した");
   });
 
@@ -536,24 +549,33 @@ describe("DiagramCanvas", () => {
     expect(screen.queryByDisplayValue("SEO順位低下")).not.toBeInTheDocument();
   });
 
-  it("reorders why-tree whys and supplements in Markdown", () => {
+  it("reorders why-tree whys and supplements by dragging", () => {
     const onChange = vi.fn();
     render(<StatefulDiagramCanvas content={whyTreeContentWithSiblings} onChange={onChange} />);
 
-    const secondWhy = screen.getByDisplayValue("広告停止").closest(".why-tree-node-shell");
+    const firstWhy = screen.getByDisplayValue("流入減少").closest(".why-tree-main-node");
+    const secondWhy = screen.getByDisplayValue("広告停止").closest(".why-tree-main-node");
+    expect(firstWhy).toBeInstanceOf(HTMLElement);
     expect(secondWhy).toBeInstanceOf(HTMLElement);
-    fireEvent.click(screen.getByDisplayValue("広告停止"));
-    fireEvent.click(within(secondWhy as HTMLElement).getByRole("button", { name: "Move up" }));
+    fireEvent.dragStart(secondWhy as HTMLElement);
+    fireEvent.dragOver(firstWhy as HTMLElement);
+    fireEvent.drop(firstWhy as HTMLElement);
 
     const movedWhyContent = onChange.mock.calls[0]?.[0] as string;
     expect(movedWhyContent.indexOf("title: 広告停止")).toBeLessThan(movedWhyContent.indexOf("title: 流入減少"));
 
     const seoFact = screen.getByDisplayValue("SEO順位低下").closest(".why-tree-support-item");
+    const qualityFact = screen.getByDisplayValue("品質低下").closest(".why-tree-support-item");
     expect(seoFact).toBeInstanceOf(HTMLElement);
-    fireEvent.click(within(seoFact as HTMLElement).getByRole("button", { name: "Move down" }));
+    expect(qualityFact).toBeInstanceOf(HTMLElement);
+    fireEvent.dragStart(seoFact as HTMLElement);
+    fireEvent.dragOver(qualityFact as HTMLElement);
+    fireEvent.drop(qualityFact as HTMLElement);
 
     const movedFactContent = onChange.mock.calls[1]?.[0] as string;
     expect(movedFactContent.indexOf("- 品質低下")).toBeLessThan(movedFactContent.indexOf("- SEO順位低下"));
+    expect(screen.queryByRole("button", { name: "Move up" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Move down" })).not.toBeInTheDocument();
   });
 
   it("shows an error for invalid Diagram Markdown", () => {
