@@ -122,6 +122,7 @@ describe("DiagramSidebar", () => {
   it("creates a why-tree file from a Diagram template", () => {
     const props = renderDiagramSidebar();
 
+    expect(screen.getByRole("button", { name: "Problem analysis" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Basic cause analysis" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Incident review" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Risk analysis" })).toBeInTheDocument();
