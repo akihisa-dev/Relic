@@ -5,10 +5,10 @@ import {
 } from "../../../shared/diagramMarkdown";
 
 const canvasPadding = 180;
-const lineLabelOffset = 8;
 const minCanvasWidth = 900;
 const minCanvasHeight = 620;
-const parallelLineGap = 20;
+const singleLineCurveOffset = 36;
+const pairedLineCurveOffset = 58;
 
 export interface DiagramCanvasLayout {
   height: number;
@@ -77,7 +77,6 @@ export function buildLineLayouts(
 ): DiagramCanvasLineLayout[] {
   const nodeById = new Map(nodes.map((node) => [node.node.id, node]));
   const pairCounts = countLinePairs(lines);
-  const pairIndexes = new Map<string, number>();
 
   return lines.flatMap((line) => {
     const from = nodeById.get(line.from);
@@ -87,15 +86,14 @@ export function buildLineLayouts(
     const fromCenter = nodeCenter(from);
     const toCenter = nodeCenter(to);
     const pairKey = linePairKey(line.from, line.to);
-    const pairIndex = pairIndexes.get(pairKey) ?? 0;
-    pairIndexes.set(pairKey, pairIndex + 1);
-    const route = (pairCounts.get(pairKey) ?? 1) > 1
-      ? buildPairedLineRoute(from, to, pairIndex)
-      : buildLineRoute(
-        nodeEdgePointToward(from, toCenter.x, toCenter.y),
-        nodeEdgePointToward(to, fromCenter.x, fromCenter.y),
-        to
-      );
+    const curveOffset = (pairCounts.get(pairKey) ?? 1) > 1
+      ? pairedLineCurveOffset
+      : singleLineCurveOffset;
+    const route = buildCurvedLineRoute(
+      nodeEdgePointToward(from, toCenter.x, toCenter.y),
+      nodeEdgePointToward(to, fromCenter.x, fromCenter.y),
+      curveOffset
+    );
 
     return [{
       label: line.label,
@@ -124,154 +122,55 @@ function linePairKey(from: string, to: string): string {
   return from < to ? `${from}\u0000${to}` : `${to}\u0000${from}`;
 }
 
-function buildLineRoute(
+function buildCurvedLineRoute(
   start: { x: number; y: number },
   end: { x: number; y: number },
-  to: DiagramCanvasNodeLayout
+  curveOffset: number
 ): { end: { x: number; y: number }; labelX: number; labelY: number; pathD: string; start: { x: number; y: number } } {
-  if (sameCoordinate(start.x, end.x) || sameCoordinate(start.y, end.y)) {
+  const dx = end.x - start.x;
+  const dy = end.y - start.y;
+  const length = Math.hypot(dx, dy);
+  if (length < 0.001) {
+    const pathD = `M ${formatPathNumber(start.x)} ${formatPathNumber(start.y)} L ${formatPathNumber(end.x)} ${formatPathNumber(end.y)}`;
     return {
-      ...buildRouteFromPoints([start, end]),
       end,
+      labelX: start.x,
+      labelY: start.y,
+      pathD,
       start
     };
   }
 
-  const toTop = to.y;
-  const toBottom = to.y + to.node.height;
-  const endsOnVerticalEdge = sameCoordinate(end.y, toTop) || sameCoordinate(end.y, toBottom);
+  const control = {
+    x: (start.x + end.x) / 2 + (-dy / length) * curveOffset,
+    y: (start.y + end.y) / 2 + (dx / length) * curveOffset
+  };
+  const label = quadraticBezierPoint(start, control, end, 0.5);
 
-  if (endsOnVerticalEdge) {
-    const midY = (start.y + end.y) / 2;
-    return {
-      ...buildRouteFromPoints([start, { x: start.x, y: midY }, { x: end.x, y: midY }, end]),
-      end,
-      start
-    };
-  }
-
-  const midX = (start.x + end.x) / 2;
   return {
-    ...buildRouteFromPoints([start, { x: midX, y: start.y }, { x: midX, y: end.y }, end]),
     end,
+    labelX: label.x,
+    labelY: label.y,
+    pathD: `M ${formatPathNumber(start.x)} ${formatPathNumber(start.y)} Q ${formatPathNumber(control.x)} ${formatPathNumber(control.y)} ${formatPathNumber(end.x)} ${formatPathNumber(end.y)}`,
     start
   };
 }
 
-function buildPairedLineRoute(
-  from: DiagramCanvasNodeLayout,
-  to: DiagramCanvasNodeLayout,
-  pairIndex: number
-): { end: { x: number; y: number }; labelX: number; labelY: number; pathD: string; start: { x: number; y: number } } {
-  const fromCenter = nodeCenter(from);
-  const toCenter = nodeCenter(to);
-  const offset = pairIndex === 0 ? -parallelLineGap / 2 : parallelLineGap / 2;
-  const isHorizontal = Math.abs(toCenter.x - fromCenter.x) >= Math.abs(toCenter.y - fromCenter.y);
-
-  if (isHorizontal) {
-    const fromIsLeft = fromCenter.x <= toCenter.x;
-    const start = {
-      x: fromIsLeft ? from.x + from.node.width : from.x,
-      y: clamp(fromCenter.y + offset, from.y, from.y + from.node.height)
-    };
-    const end = {
-      x: fromIsLeft ? to.x : to.x + to.node.width,
-      y: clamp(toCenter.y + offset, to.y, to.y + to.node.height)
-    };
-    if (sameCoordinate(start.y, end.y)) {
-      return {
-        ...buildRouteFromPoints([start, end]),
-        end,
-        start
-      };
-    }
-    const midX = (start.x + end.x) / 2;
-    return {
-      ...buildRouteFromPoints([start, { x: midX, y: start.y }, { x: midX, y: end.y }, end]),
-      end,
-      start
-    };
-  }
-
-  const fromIsAbove = fromCenter.y <= toCenter.y;
-  const start = {
-    x: clamp(fromCenter.x + offset, from.x, from.x + from.node.width),
-    y: fromIsAbove ? from.y + from.node.height : from.y
-  };
-  const end = {
-    x: clamp(toCenter.x + offset, to.x, to.x + to.node.width),
-    y: fromIsAbove ? to.y : to.y + to.node.height
-  };
-  if (sameCoordinate(start.x, end.x)) {
-    return {
-      ...buildRouteFromPoints([start, end]),
-      end,
-      start
-    };
-  }
-  const midY = (start.y + end.y) / 2;
+function quadraticBezierPoint(
+  start: { x: number; y: number },
+  control: { x: number; y: number },
+  end: { x: number; y: number },
+  t: number
+): { x: number; y: number } {
+  const oneMinusT = 1 - t;
   return {
-    ...buildRouteFromPoints([start, { x: start.x, y: midY }, { x: end.x, y: midY }, end]),
-    end,
-    start
+    x: oneMinusT * oneMinusT * start.x + 2 * oneMinusT * t * control.x + t * t * end.x,
+    y: oneMinusT * oneMinusT * start.y + 2 * oneMinusT * t * control.y + t * t * end.y
   };
 }
 
-function buildRouteFromPoints(points: Array<{ x: number; y: number }>): { labelX: number; labelY: number; pathD: string } {
-  const pathD = points.map((point, index) => {
-    if (index === 0) return `M ${point.x} ${point.y}`;
-    const previous = points[index - 1];
-    if (previous && sameCoordinate(point.x, previous.x)) return `V ${point.y}`;
-    if (previous && sameCoordinate(point.y, previous.y)) return `H ${point.x}`;
-    return `L ${point.x} ${point.y}`;
-  }).join(" ");
-  const labelSegment = longestRouteSegment(points);
-  const labelX = (labelSegment.start.x + labelSegment.end.x) / 2;
-  const labelY = (labelSegment.start.y + labelSegment.end.y) / 2;
-
-  return {
-    labelX: sameCoordinate(labelSegment.start.x, labelSegment.end.x) ? labelX + lineLabelOffset : labelX,
-    labelY: sameCoordinate(labelSegment.start.y, labelSegment.end.y) ? labelY - lineLabelOffset : labelY,
-    pathD
-  };
-}
-
-function longestRouteSegment(points: Array<{ x: number; y: number }>): {
-  end: { x: number; y: number };
-  start: { x: number; y: number };
-} {
-  let longest = {
-    end: points[1] ?? points[0],
-    length: 0,
-    start: points[0]
-  };
-
-  for (let index = 1; index < points.length; index += 1) {
-    const start = points[index - 1];
-    const end = points[index];
-    if (!start || !end) continue;
-    const length = Math.hypot(end.x - start.x, end.y - start.y);
-    if (length > longest.length) {
-      longest = {
-        end,
-        length,
-        start
-      };
-    }
-  }
-
-  return {
-    end: longest.end,
-    start: longest.start
-  };
-}
-
-function sameCoordinate(a: number, b: number): boolean {
-  return Math.abs(a - b) < 0.001;
-}
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, value));
+function formatPathNumber(value: number): string {
+  return Number.isInteger(value) ? String(value) : value.toFixed(2).replace(/\.?0+$/, "");
 }
 
 function nodeCenter(node: DiagramCanvasNodeLayout): { x: number; y: number } {

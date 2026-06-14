@@ -30,7 +30,7 @@ const horizontalNodes: DiagramCanvasNodeLayout[] = [
 ];
 
 describe("buildLineLayouts", () => {
-  it("connects horizontal lines at node edges instead of centers", () => {
+  it("curves horizontal lines between node edges", () => {
     const [line] = buildLineLayouts([
       {
         from: "node-1",
@@ -42,8 +42,8 @@ describe("buildLineLayouts", () => {
 
     expect(line).toMatchObject({
       labelX: 400,
-      labelY: 212,
-      pathD: "M 360 220 H 440",
+      labelY: 238,
+      pathD: "M 360 220 Q 400 256 440 220",
       x1: 360,
       x2: 440,
       y1: 220,
@@ -72,12 +72,12 @@ describe("buildLineLayouts", () => {
     expect(line?.x2).toBeCloseTo(472.22, 2);
     expect(line?.y1).toBe(260);
     expect(line?.y2).toBe(360);
-    expect(line?.pathD).toMatch(/^M .+ V 310 H .+ V 360$/);
-    expect(line?.labelX).toBeCloseTo(400, 2);
-    expect(line?.labelY).toBe(302);
+    expect(line?.pathD).toMatch(/^M .+ Q .+ .+$/);
+    expect(line?.labelX).toBeCloseTo(389.75, 2);
+    expect(line?.labelY).toBeCloseTo(324.8, 2);
   });
 
-  it("places labels beside vertical line segments", () => {
+  it("curves vertical lines between node edges", () => {
     const [line] = buildLineLayouts([
       {
         from: "node-1",
@@ -94,12 +94,12 @@ describe("buildLineLayouts", () => {
       }
     ]);
 
-    expect(line?.pathD).toBe("M 270 260 V 360");
-    expect(line?.labelX).toBe(278);
+    expect(line?.pathD).toBe("M 270 260 Q 234 310 270 360");
+    expect(line?.labelX).toBe(252);
     expect(line?.labelY).toBe(310);
   });
 
-  it("offsets opposite lines between the same node pair", () => {
+  it("curves opposite lines to different sides of the same node pair", () => {
     const lines = buildLineLayouts([
       {
         from: "node-1",
@@ -116,11 +116,11 @@ describe("buildLineLayouts", () => {
     ], horizontalNodes);
 
     expect(lines).toHaveLength(2);
-    expect(lines[0]?.pathD).toBe("M 360 210 H 440");
-    expect(lines[1]?.pathD).toBe("M 440 230 H 360");
+    expect(lines[0]?.pathD).toBe("M 360 220 Q 400 278 440 220");
+    expect(lines[1]?.pathD).toBe("M 440 220 Q 400 162 360 220");
   });
 
-  it("routes staggered opposite lines through a clean horizontal middle lane", () => {
+  it("keeps staggered opposite lines as separate curves", () => {
     const lines = buildLineLayouts([
       {
         from: "node-1",
@@ -143,11 +143,13 @@ describe("buildLineLayouts", () => {
       }
     ]);
 
-    expect(lines[0]?.pathD).toBe("M 360 210 H 490 V 390 H 620");
-    expect(lines[1]?.pathD).toBe("M 620 410 H 490 V 230 H 360");
+    expect(lines).toHaveLength(2);
+    expect(lines[0]?.pathD).toMatch(/^M .+ Q .+ .+$/);
+    expect(lines[1]?.pathD).toMatch(/^M .+ Q .+ .+$/);
+    expect(lines[0]?.pathD).not.toBe(lines[1]?.pathD);
   });
 
-  it("routes vertically stacked opposite lines through a clean vertical middle lane", () => {
+  it("keeps vertically stacked opposite lines as separate curves", () => {
     const lines = buildLineLayouts([
       {
         from: "node-1",
@@ -170,7 +172,9 @@ describe("buildLineLayouts", () => {
       }
     ]);
 
-    expect(lines[0]?.pathD).toBe("M 260 260 V 340 H 340 V 420");
-    expect(lines[1]?.pathD).toBe("M 360 420 V 340 H 280 V 260");
+    expect(lines).toHaveLength(2);
+    expect(lines[0]?.pathD).toMatch(/^M .+ Q .+ .+$/);
+    expect(lines[1]?.pathD).toMatch(/^M .+ Q .+ .+$/);
+    expect(lines[0]?.pathD).not.toBe(lines[1]?.pathD);
   });
 });
