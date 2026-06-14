@@ -184,7 +184,9 @@ describe("DiagramCanvas", () => {
     expect(screen.queryByText("characters/alice.md")).not.toBeInTheDocument();
     expect(screen.getByText("bob")).toBeInTheDocument();
     expect(screen.getByText("幼なじみ")).toBeInTheDocument();
-    expect(container.querySelector(".diagram-canvas-line")?.getAttribute("marker-end")).toMatch(/^url\(#diagram-canvas-arrow-/);
+    const line = container.querySelector(".diagram-canvas-line");
+    expect(line?.getAttribute("d")).toBe("M 360 220 L 440 220");
+    expect(line?.getAttribute("marker-end")).toMatch(/^url\(#diagram-canvas-arrow-/);
   });
 
   it("copies Relationship Mermaid source", async () => {

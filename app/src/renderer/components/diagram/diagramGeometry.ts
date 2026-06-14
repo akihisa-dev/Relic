@@ -28,6 +28,7 @@ export interface DiagramCanvasLineLayout {
   line: RelicDiagramLine;
   labelX: number;
   labelY: number;
+  pathD: string;
   x1: number;
   x2: number;
   y1: number;
@@ -89,12 +90,39 @@ export function buildLineLayouts(
       labelX: (start.x + end.x) / 2,
       labelY: (start.y + end.y) / 2 - 8,
       line,
+      pathD: buildLinePathD(start, end, to),
       x1: start.x,
       x2: end.x,
       y1: start.y,
       y2: end.y
     }];
   });
+}
+
+function buildLinePathD(
+  start: { x: number; y: number },
+  end: { x: number; y: number },
+  to: DiagramCanvasNodeLayout
+): string {
+  if (sameCoordinate(start.x, end.x) || sameCoordinate(start.y, end.y)) {
+    return `M ${start.x} ${start.y} L ${end.x} ${end.y}`;
+  }
+
+  const toTop = to.y;
+  const toBottom = to.y + to.node.height;
+  const endsOnVerticalEdge = sameCoordinate(end.y, toTop) || sameCoordinate(end.y, toBottom);
+
+  if (endsOnVerticalEdge) {
+    const midY = (start.y + end.y) / 2;
+    return `M ${start.x} ${start.y} V ${midY} H ${end.x} V ${end.y}`;
+  }
+
+  const midX = (start.x + end.x) / 2;
+  return `M ${start.x} ${start.y} H ${midX} V ${end.y} H ${end.x}`;
+}
+
+function sameCoordinate(a: number, b: number): boolean {
+  return Math.abs(a - b) < 0.001;
 }
 
 function nodeCenter(node: DiagramCanvasNodeLayout): { x: number; y: number } {

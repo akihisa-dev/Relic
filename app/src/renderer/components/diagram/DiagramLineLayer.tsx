@@ -63,14 +63,14 @@ export function DiagramLineLayer({
         <g key={line.line.id}>
           <path
             className="diagram-canvas-line-hit"
-            d={`M ${line.x1} ${line.y1} L ${line.x2} ${line.y2}`}
+            d={line.pathD}
             onDoubleClick={(event) => onLineDoubleClick(line, event)}
             onPointerDown={(event) => onLinePointerDown(line.line.id, event)}
           />
           <path
             aria-hidden="true"
             className={`diagram-canvas-line${selection?.type === "line" && selection.id === line.line.id ? " diagram-canvas-line--selected" : ""}`}
-            d={`M ${line.x1} ${line.y1} L ${line.x2} ${line.y2}`}
+            d={line.pathD}
             markerEnd={`url(#${markerId})`}
             onDoubleClick={(event) => onLineDoubleClick(line, event)}
             onPointerDown={(event) => onLinePointerDown(line.line.id, event)}

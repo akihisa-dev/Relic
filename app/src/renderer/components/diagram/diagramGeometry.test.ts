@@ -43,6 +43,7 @@ describe("buildLineLayouts", () => {
     expect(line).toMatchObject({
       labelX: 400,
       labelY: 212,
+      pathD: "M 360 220 L 440 220",
       x1: 360,
       x2: 440,
       y1: 220,
@@ -71,5 +72,6 @@ describe("buildLineLayouts", () => {
     expect(line?.x2).toBeCloseTo(472.22, 2);
     expect(line?.y1).toBe(260);
     expect(line?.y2).toBe(360);
+    expect(line?.pathD).toMatch(/^M .+ V 310 H .+ V 360$/);
   });
 });
