@@ -137,6 +137,8 @@ describe("outputHtml", () => {
     expect(result.html).toContain(">A<");
     expect(result.html).toContain(">B<");
     expect(result.html).toContain("関連");
+    expect(result.html).toContain(".relic-output-relationship {\n  background: transparent;");
+    expect(result.html).not.toContain("linear-gradient(#ded8cd");
     expect(result.html).not.toContain("nodes:");
     expect(result.html).not.toContain("lines:");
   });
