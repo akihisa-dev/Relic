@@ -1,5 +1,6 @@
 import {
   type CSSProperties,
+  type DragEvent as ReactDragEvent,
   type FormEvent as ReactFormEvent,
   type KeyboardEvent as ReactKeyboardEvent,
   type MouseEvent as ReactMouseEvent,
@@ -24,7 +25,8 @@ import {
   updateRelicDiagramLineLabel,
   type RelicConnectedDiagramDocument,
   type RelicConnectedDiagramNode,
-  type RelicDiagramNodeBase
+  type RelicDiagramNodeBase,
+  type RelicFreeDrawingShapeType
 } from "../../../shared/diagramMarkdown";
 import { useT } from "../../i18n";
 import {
@@ -38,6 +40,7 @@ import {
   type ViewportState
 } from "./diagramViewport";
 import { type DiagramCanvasProps } from "./diagramTypes";
+import { freeDrawingShapeDragType, isFreeDrawingShapeType } from "./freeDrawingShapeDrag";
 import { DiagramLineLayer } from "./DiagramLineLayer";
 import { DiagramNodeView } from "./DiagramNodeView";
 import { DiagramSnapGuides } from "./DiagramSnapGuides";
@@ -550,15 +553,41 @@ export function RelationshipCanvas({
       setSelection(null);
     }
   };
-  const addFreeDrawingNode = (): void => {
+  const addFreeDrawingNode = (
+    shape: RelicFreeDrawingShapeType,
+    x?: number,
+    y?: number
+  ): void => {
     if (!onChange) return;
 
-    const added = addRelicFreeDrawingNode(content);
+    const added = addRelicFreeDrawingNode(content, shape, x, y);
     if (added.ok) {
       onChange(added.value.content);
       setSelection({ id: added.value.node.id, type: "node" });
-      setNodeTextEdit({ nodeId: added.value.node.id, value: "Node" });
     }
+  };
+  const handleCanvasDragOver = (event: ReactDragEvent<HTMLDivElement>): void => {
+    if (!isFreeDrawing) return;
+
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "copy";
+  };
+  const handleCanvasDrop = (event: ReactDragEvent<HTMLDivElement>): void => {
+    if (!isFreeDrawing) return;
+
+    const shape = event.dataTransfer.getData(freeDrawingShapeDragType) || event.dataTransfer.getData("text/plain");
+    if (!isFreeDrawingShapeType(shape)) return;
+
+    event.preventDefault();
+    const rect = event.currentTarget.getBoundingClientRect();
+    const pointer = screenToCanvasPoint(event.clientX, event.clientY, rect, viewport);
+    const snapped = snapDiagramPointToGrid(
+      pointer.x + layout.originX - 96,
+      pointer.y + layout.originY - 48,
+      layout.originX,
+      layout.originY
+    );
+    addFreeDrawingNode(shape, snapped.x, snapped.y);
   };
   const beginFreeDrawingNodeTextEdit = (
     node: RelicConnectedDiagramNode,
@@ -627,6 +656,8 @@ export function RelationshipCanvas({
     <div
       aria-label={fileName}
       className={`diagram-canvas${pan ? " diagram-canvas--panning" : ""}`}
+      onDragOver={handleCanvasDragOver}
+      onDrop={handleCanvasDrop}
       onKeyDown={handleCanvasKeyDown}
       onPointerCancel={cancelConnect}
       onPointerDown={startPanOnBlank}
@@ -645,17 +676,6 @@ export function RelationshipCanvas({
       tabIndex={0}
     >
       {toolbar}
-      {isFreeDrawing ? (
-        <div className="diagram-toolbar">
-          <button
-            className="diagram-toolbar-button"
-            onClick={addFreeDrawingNode}
-            type="button"
-          >
-            {t("diagram.addFreeDrawingNode")}
-          </button>
-        </div>
-      ) : null}
       {layout.nodes.length === 0 ? (
         <p className="diagram-canvas-empty">{t("diagram.emptyCanvas")}</p>
       ) : null}

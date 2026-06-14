@@ -179,7 +179,7 @@ function buildRelationshipOutputHtml(
     ]),
     ...layout.nodes.map((node) => [
       `<foreignObject x="${node.x}" y="${node.y}" width="${node.node.width}" height="${node.node.height}">`,
-      `<div class="relic-output-relationship-node" title="${escapeHtmlAttribute(outputDiagramNodeTitle(node.node))}" xmlns="http://www.w3.org/1999/xhtml">`,
+      `<div class="${outputDiagramNodeClassName(node.node)}" title="${escapeHtmlAttribute(outputDiagramNodeTitle(node.node))}" xmlns="http://www.w3.org/1999/xhtml">`,
       `<span>${escapeHtml(outputDiagramNodeText(node.node))}</span>`,
       "</div>",
       "</foreignObject>"
@@ -187,6 +187,12 @@ function buildRelationshipOutputHtml(
     "</svg>",
     "</section>"
   ].join("");
+}
+
+function outputDiagramNodeClassName(node: Extract<RelicDiagramDocument, { type: "relationship" | "free-drawing" }>["nodes"][number]): string {
+  return "shape" in node
+    ? `relic-output-relationship-node relic-output-relationship-node--shape-${node.shape}`
+    : "relic-output-relationship-node";
 }
 
 function outputDiagramNodeText(node: Extract<RelicDiagramDocument, { type: "relationship" | "free-drawing" }>["nodes"][number]): string {
@@ -508,6 +514,38 @@ mark {
   padding: 10px;
   text-align: center;
   width: 100%;
+}
+
+.relic-output-relationship-node--shape-terminator {
+  border-radius: 999px;
+}
+
+.relic-output-relationship-node--shape-decision {
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+  padding: 18px 34px;
+}
+
+.relic-output-relationship-node--shape-input-output {
+  clip-path: polygon(14% 0, 100% 0, 86% 100%, 0 100%);
+  padding-left: 28px;
+  padding-right: 28px;
+}
+
+.relic-output-relationship-node--shape-note {
+  border-radius: 5px;
+  position: relative;
+}
+
+.relic-output-relationship-node--shape-note::after {
+  background: #f7f5ef;
+  border-bottom: 1.5px solid #80786c;
+  border-left: 1.5px solid #80786c;
+  content: "";
+  height: 16px;
+  position: absolute;
+  right: -1.5px;
+  top: -1.5px;
+  width: 16px;
 }
 
 .relic-output-why-tree {

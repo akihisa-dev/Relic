@@ -1,9 +1,10 @@
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, createEvent, fireEvent, render, screen, within } from "@testing-library/react";
 import { readFileSync } from "node:fs";
 import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { I18nProvider } from "../i18n";
+import { freeDrawingShapeDragType } from "./diagram/freeDrawingShapeDrag";
 import { DiagramCanvas } from "./DiagramCanvas";
 
 const diagramContent = [
@@ -119,12 +120,14 @@ const freeDrawingContent = [
   "",
   "nodes:",
   "  - id: node-1",
+  "    shape: process",
   "    text: 主人公",
   "    x: 120",
   "    y: 80",
   "    width: 180",
   "    height: 80",
   "  - id: node-2",
+  "    shape: decision",
   "    text: 敵対組織",
   "    x: 380",
   "    y: 80",
@@ -348,7 +351,7 @@ describe("DiagramCanvas", () => {
     expect(textNode).toBeInTheDocument();
     expect(screen.getByText("敵対組織")).toBeInTheDocument();
     expect(screen.getByText("対立")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "+ Node" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "+ Node" })).not.toBeInTheDocument();
     expect(screen.queryByDisplayValue("主人公")).not.toBeInTheDocument();
 
     fireEvent.doubleClick(textNode);
@@ -379,15 +382,41 @@ describe("DiagramCanvas", () => {
     expect(onChange.mock.calls[0]?.[0]).toContain("text: 主人公");
   });
 
-  it("adds a free-drawing text node from the canvas toolbar", () => {
+  it("drops a flowchart shape onto a free-drawing canvas", () => {
     const onChange = vi.fn();
-    render(<StatefulDiagramCanvas content={freeDrawingContent} onChange={onChange} />);
+    const emptyFreeDrawing = "---\ntype: free-drawing\n---\n\nnodes: []\nlines: []\n";
+    const { container } = render(
+      <I18nProvider language="en">
+        <DiagramCanvas content={emptyFreeDrawing} fileName="自由図" onChange={onChange} />
+      </I18nProvider>
+    );
 
-    fireEvent.click(screen.getByRole("button", { name: "+ Node" }));
+    const canvas = container.querySelector(".diagram-canvas") as HTMLElement;
+    expect(canvas).toBeInstanceOf(HTMLElement);
+    mockRect(canvas, { bottom: 620, height: 620, left: 0, right: 900, top: 0, width: 900 });
+    const dataTransfer = {
+      dropEffect: "",
+      getData: vi.fn(() => "decision"),
+      types: [freeDrawingShapeDragType]
+    };
 
-    expect(onChange).toHaveBeenLastCalledWith(expect.stringContaining("id: node-3"));
-    expect(onChange).toHaveBeenLastCalledWith(expect.stringContaining("text: Node"));
-    expect(screen.getByDisplayValue("Node")).toBeInTheDocument();
+    const dragOver = createEvent.dragOver(canvas, { clientX: 240, clientY: 160 });
+    Object.defineProperty(dragOver, "clientX", { value: 240 });
+    Object.defineProperty(dragOver, "clientY", { value: 160 });
+    Object.defineProperty(dragOver, "dataTransfer", { value: dataTransfer });
+    fireEvent(canvas, dragOver);
+    const drop = createEvent.drop(canvas, { clientX: 240, clientY: 160 });
+    Object.defineProperty(drop, "clientX", { value: 240 });
+    Object.defineProperty(drop, "clientY", { value: 160 });
+    Object.defineProperty(drop, "dataTransfer", { value: dataTransfer });
+    fireEvent(canvas, drop);
+
+    expect(dataTransfer.getData).toHaveBeenCalled();
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange.mock.calls[0]?.[0]).toContain("shape: decision");
+    expect(onChange.mock.calls[0]?.[0]).toContain("text: 判断");
+    expect(onChange.mock.calls[0]?.[0]).toContain("x: 160");
+    expect(onChange.mock.calls[0]?.[0]).toContain("y: 128");
   });
 
   it("does not show the Mermaid copy action in Relationship Diagram mode", () => {

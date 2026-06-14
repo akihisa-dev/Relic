@@ -154,12 +154,14 @@ describe("outputHtml", () => {
         "",
         "nodes:",
         "  - id: a",
+        "    shape: process",
         "    text: 主人公",
         "    x: 0",
         "    y: 0",
         "    width: 192",
         "    height: 96",
         "  - id: b",
+        "    shape: decision",
         "    text: 敵対組織",
         "    x: 256",
         "    y: 0",
@@ -179,6 +181,7 @@ describe("outputHtml", () => {
     });
 
     expect(result.html).toContain("relic-output-relationship");
+    expect(result.html).toContain("relic-output-relationship-node--shape-decision");
     expect(result.html).toContain(">主人公<");
     expect(result.html).toContain(">敵対組織<");
     expect(result.html).toContain("対立");

@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { defaultEditorSettings, type WorkspaceState } from "../../shared/ipc";
 import { I18nProvider } from "../i18n";
 import { useEditorStore, type PaneState } from "../store/editorStore";
+import { freeDrawingShapeDragType } from "./diagram/freeDrawingShapeDrag";
 import { DiagramSidebar } from "./DiagramSidebar";
 
 const workspaceState: WorkspaceState = {
@@ -144,6 +145,65 @@ describe("DiagramSidebar", () => {
 
     const tab = useEditorStore.getState().tabs["map-tab"];
     expect(tab?.kind === "file" ? tab.content : "").toContain("file: characters/Alice.md");
+  });
+
+  it("shows flowchart shapes instead of Markdown files for an active free-drawing Diagram", () => {
+    const content = "---\ntype: free-drawing\n---\n\nnodes: []\nlines: []\n";
+    useEditorStore.setState({
+      focusedPane: "left",
+      leftPane: { activeTabId: "free-tab", history: ["free-tab"], tabIds: ["free-tab"] },
+      rightPane: emptyPane(),
+      tabs: {
+        "free-tab": {
+          content,
+          id: "free-tab",
+          kind: "file",
+          name: "Free",
+          path: "diagrams/Free.md",
+          savedContent: content
+        }
+      }
+    });
+    renderDiagramSidebar();
+
+    expect(screen.getByText("Flowchart shapes")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Start / End" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Process" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Decision" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Input / Output" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Note" })).toBeInTheDocument();
+    expect(screen.queryByText("Markdown files")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Alice\.md/ })).not.toBeInTheDocument();
+  });
+
+  it("starts dragging a free-drawing flowchart shape from the sidebar", () => {
+    const content = "---\ntype: free-drawing\n---\n\nnodes: []\nlines: []\n";
+    const setData = vi.fn();
+    useEditorStore.setState({
+      focusedPane: "left",
+      leftPane: { activeTabId: "free-tab", history: ["free-tab"], tabIds: ["free-tab"] },
+      rightPane: emptyPane(),
+      tabs: {
+        "free-tab": {
+          content,
+          id: "free-tab",
+          kind: "file",
+          name: "Free",
+          path: "diagrams/Free.md",
+          savedContent: content
+        }
+      }
+    });
+    renderDiagramSidebar();
+
+    fireEvent.dragStart(screen.getByRole("button", { name: "Decision" }), {
+      dataTransfer: {
+        effectAllowed: "",
+        setData
+      }
+    });
+
+    expect(setData).toHaveBeenCalledWith(freeDrawingShapeDragType, "decision");
   });
 
   it("does not place Markdown files into an active why-tree Diagram", () => {
