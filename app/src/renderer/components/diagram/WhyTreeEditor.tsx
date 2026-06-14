@@ -1,5 +1,6 @@
 import {
   type ChangeEvent as ReactChangeEvent,
+  type DragEvent as ReactDragEvent,
   type KeyboardEvent as ReactKeyboardEvent,
   type PointerEvent as ReactPointerEvent,
   type ReactElement,
@@ -54,6 +55,10 @@ type WhyTreeSelection =
   | { kind: "phenomenon" | "why"; path: number[] }
   | { index: number; kind: RelicWhyTreeSupplementKind; path: number[] };
 
+type WhyTreeDragState =
+  | { kind: "why"; path: number[] }
+  | { index: number; kind: RelicWhyTreeSupplementKind; path: number[] };
+
 type WhyTreeUpdateResult = { ok: true; value: { content: string } } | { ok: false };
 
 export function WhyTreeEditor({
@@ -69,6 +74,7 @@ export function WhyTreeEditor({
   const draftContentRef = useRef(content);
   const panRef = useRef<WhyTreePanState | null>(null);
   const [collapsedPaths, setCollapsedPaths] = useState<Set<string>>(() => new Set());
+  const [dragState, setDragState] = useState<WhyTreeDragState | null>(null);
   const [draftContent, setDraftContent] = useState(content);
   const [selection, setSelection] = useState<WhyTreeSelection | null>({ kind: "phenomenon", path: [] });
   const [connectorLayout, setConnectorLayout] = useState<WhyTreeConnectorLayout>({ height: 0, paths: [], width: 0 });
@@ -139,7 +145,7 @@ export function WhyTreeEditor({
     path: number[],
     kind: RelicWhyTreeSupplementKind,
     index: number,
-    event: ReactChangeEvent<HTMLInputElement>
+    event: ReactChangeEvent<HTMLTextAreaElement>
   ): void => {
     if (!onChange) return;
     applyUpdate(updateRelicWhyTreeSupplement(draftContentRef.current, path, kind, index, event.currentTarget.value));
@@ -160,27 +166,86 @@ export function WhyTreeEditor({
     applyUpdate(removeRelicWhyTreeSupplement(draftContentRef.current, path, kind, index));
     selectParentMainNode(path);
   };
-  const moveMainWhy = (path: number[], direction: RelicWhyTreeMoveDirection): void => {
+  const moveMainWhyToIndex = (path: number[], targetIndex: number): void => {
     if (!onChange || path.length === 0) return;
-    const moved = moveRelicWhyTreeWhy(draftContentRef.current, path, direction);
-    if (!moved.ok) return;
+    const sourceIndex = path[path.length - 1];
+    if (sourceIndex === undefined || sourceIndex === targetIndex) return;
 
-    const nextPath = movedWhyPath(path, direction);
-    applyUpdate(moved);
-    setSelection({ kind: "why", path: nextPath });
+    const direction: RelicWhyTreeMoveDirection = sourceIndex > targetIndex ? "up" : "down";
+    let currentContent = draftContentRef.current;
+    let currentPath = [...path];
+    let currentIndex = sourceIndex;
+
+    while (currentIndex !== targetIndex) {
+      const moved = moveRelicWhyTreeWhy(currentContent, currentPath, direction);
+      if (!moved.ok) return;
+      currentContent = moved.value.content;
+      currentIndex += moveDirectionOffset(direction);
+      currentPath = [...path.slice(0, -1), currentIndex];
+    }
+
+    applyUpdate({ ok: true, value: { content: currentContent } });
+    setSelection({ kind: "why", path: currentPath });
   };
-  const moveSupplement = (
+  const moveSupplementToIndex = (
+    path: number[],
+    kind: RelicWhyTreeSupplementKind,
+    sourceIndex: number,
+    targetIndex: number
+  ): void => {
+    if (!onChange || sourceIndex === targetIndex) return;
+
+    const direction: RelicWhyTreeMoveDirection = sourceIndex > targetIndex ? "up" : "down";
+    let currentContent = draftContentRef.current;
+    let currentIndex = sourceIndex;
+
+    while (currentIndex !== targetIndex) {
+      const moved = moveRelicWhyTreeSupplement(currentContent, path, kind, currentIndex, direction);
+      if (!moved.ok) return;
+      currentContent = moved.value.content;
+      currentIndex += moveDirectionOffset(direction);
+    }
+
+    applyUpdate({ ok: true, value: { content: currentContent } });
+    setSelection({ index: currentIndex, kind, path });
+  };
+  const startDrag = (drag: WhyTreeDragState, event: ReactDragEvent<HTMLElement>): void => {
+    setDragState(drag);
+    if (event.dataTransfer) {
+      event.dataTransfer.effectAllowed = "move";
+      event.dataTransfer.setData("text/plain", drag.kind);
+    }
+  };
+  const allowDrop = (event: ReactDragEvent<HTMLElement>): void => {
+    if (!dragState) return;
+    event.preventDefault();
+    if (event.dataTransfer) {
+      event.dataTransfer.dropEffect = "move";
+    }
+  };
+  const dropOnMainWhy = (path: number[], event: ReactDragEvent<HTMLElement>): void => {
+    if (!dragState || dragState.kind !== "why") return;
+    event.preventDefault();
+    if (!samePath(dragState.path.slice(0, -1), path.slice(0, -1))) return;
+
+    moveMainWhyToIndex(dragState.path, path[path.length - 1] ?? 0);
+    setDragState(null);
+  };
+  const dropOnSupplement = (
     path: number[],
     kind: RelicWhyTreeSupplementKind,
     index: number,
-    direction: RelicWhyTreeMoveDirection
+    event: ReactDragEvent<HTMLElement>
   ): void => {
-    if (!onChange) return;
-    const moved = moveRelicWhyTreeSupplement(draftContentRef.current, path, kind, index, direction);
-    if (!moved.ok) return;
+    if (!dragState || dragState.kind !== kind) return;
+    event.preventDefault();
+    if (!samePath(dragState.path, path)) return;
 
-    applyUpdate(moved);
-    setSelection({ index: index + moveDirectionOffset(direction), kind, path });
+    moveSupplementToIndex(path, kind, dragState.index, index);
+    setDragState(null);
+  };
+  const finishDrag = (): void => {
+    setDragState(null);
   };
   const toggleCollapsedPath = (path: number[]): void => {
     const key = whyTreePathKey(path);
@@ -221,7 +286,7 @@ export function WhyTreeEditor({
     }
   };
   const handleEditorKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>): void => {
-    if (event.target instanceof HTMLInputElement) return;
+    if (isTextEditingTarget(event.target)) return;
     if (event.key === "Escape") {
       event.preventDefault();
       setSelection(null);
@@ -305,12 +370,16 @@ export function WhyTreeEditor({
       <div className="why-tree-branch" key={itemKey}>
         <div className="why-tree-row">
           <SupplementColumn
+            dragState={dragState}
             kind="fact"
             node={item.node}
+            onAllowDrop={allowDrop}
             onChange={changeSupplement}
-            onMove={moveSupplement}
+            onDragEnd={finishDrag}
+            onDrop={dropOnSupplement}
             onRemove={removeSupplement}
             onSelect={selectSupplement}
+            onStartDrag={startDrag}
             path={item.path}
             selected={selection}
           />
@@ -327,6 +396,15 @@ export function WhyTreeEditor({
                   `why-tree-main-node--${item.role}`,
                   isSelected ? "why-tree-item--selected" : ""
                 ].filter(Boolean).join(" ")}
+                draggable={item.role === "why"}
+                onDragEnd={finishDrag}
+                onDragOver={allowDrop}
+                onDragStart={(event) => {
+                  if (item.role === "why") startDrag({ kind: "why", path: item.path }, event);
+                }}
+                onDrop={(event) => {
+                  if (item.role === "why") dropOnMainWhy(item.path, event);
+                }}
                 onClick={() => selectMainNode(item)}
                 onKeyDown={(event) => {
                   if (event.key === "Enter" || event.key === " ") {
@@ -345,7 +423,7 @@ export function WhyTreeEditor({
                 tabIndex={0}
               >
                 <span className="why-tree-role-label">{t(whyTreeRoleLabelKey(item.role))}</span>
-                <input
+                <textarea
                   aria-label={t(whyTreeTitleInputKey(item.role))}
                   onChange={(event) => changeMainTitle(item.path, event.currentTarget.value)}
                   onClick={(event) => {
@@ -353,6 +431,7 @@ export function WhyTreeEditor({
                     selectMainNode(item);
                   }}
                   onFocus={() => selectMainNode(item)}
+                  rows={2}
                   value={item.node.title}
                 />
                 {item.role === "why" ? (
@@ -385,8 +464,6 @@ export function WhyTreeEditor({
               </div>
               {isSelected ? (
                 <WhyTreeNodeMenu
-                  canMoveDown={item.role === "why" && canMoveWhy(displayedTree, item.path, "down")}
-                  canMoveUp={item.role === "why" && canMoveWhy(displayedTree, item.path, "up")}
                   onAddAction={() => addSupplementFromPath(item.path, "action")}
                   onAddFact={() => addSupplementFromPath(item.path, "fact")}
                   onAddSolution={() => addSupplementFromPath(item.path, "solution")}
@@ -395,35 +472,38 @@ export function WhyTreeEditor({
                     applyUpdate(addRelicWhyTreeWhy(draftContentRef.current, item.path));
                     setSelection({ kind: "why", path: [...item.path, item.node.whys.length] });
                   }}
-                  onMoveDown={() => moveMainWhy(item.path, "down")}
-                  onMoveUp={() => moveMainWhy(item.path, "up")}
-                  showMove={item.role === "why"}
                 />
               ) : null}
             </div>
           </div>
-          <div className="why-tree-support-column why-tree-support-column--right">
-            <SupplementColumn
-              kind="solution"
-              node={item.node}
-              onChange={changeSupplement}
-              onMove={moveSupplement}
-              onRemove={removeSupplement}
-              onSelect={selectSupplement}
-              path={item.path}
-              selected={selection}
-            />
-            <SupplementColumn
-              kind="action"
-              node={item.node}
-              onChange={changeSupplement}
-              onMove={moveSupplement}
-              onRemove={removeSupplement}
-              onSelect={selectSupplement}
-              path={item.path}
-              selected={selection}
-            />
-          </div>
+          <SupplementColumn
+            dragState={dragState}
+            kind="solution"
+            node={item.node}
+            onAllowDrop={allowDrop}
+            onChange={changeSupplement}
+            onDragEnd={finishDrag}
+            onDrop={dropOnSupplement}
+            onRemove={removeSupplement}
+            onSelect={selectSupplement}
+            onStartDrag={startDrag}
+            path={item.path}
+            selected={selection}
+          />
+          <SupplementColumn
+            dragState={dragState}
+            kind="action"
+            node={item.node}
+            onAllowDrop={allowDrop}
+            onChange={changeSupplement}
+            onDragEnd={finishDrag}
+            onDrop={dropOnSupplement}
+            onRemove={removeSupplement}
+            onSelect={selectSupplement}
+            onStartDrag={startDrag}
+            path={item.path}
+            selected={selection}
+          />
         </div>
         {hasChildWhys && !isCollapsed ? (
           <div className="why-tree-child-group">
@@ -481,36 +561,20 @@ export function WhyTreeEditor({
 }
 
 function WhyTreeNodeMenu({
-  canMoveDown,
-  canMoveUp,
   onAddAction,
   onAddFact,
   onAddSolution,
-  onAddWhy,
-  onMoveDown,
-  onMoveUp,
-  showMove
+  onAddWhy
 }: {
-  canMoveDown: boolean;
-  canMoveUp: boolean;
   onAddAction: () => void;
   onAddFact: () => void;
   onAddSolution: () => void;
   onAddWhy: () => void;
-  onMoveDown: () => void;
-  onMoveUp: () => void;
-  showMove: boolean;
 }): ReactElement {
   const t = useT();
 
   return (
     <div className="why-tree-node-menu" aria-label={t("diagram.whyTree.addMenu")}>
-      {showMove ? (
-        <>
-          <button disabled={!canMoveUp} onClick={onMoveUp} type="button">{t("diagram.whyTree.moveUp")}</button>
-          <button disabled={!canMoveDown} onClick={onMoveDown} type="button">{t("diagram.whyTree.moveDown")}</button>
-        </>
-      ) : null}
       <button onClick={onAddWhy} type="button">{t("diagram.whyTree.addWhy")}</button>
       <button onClick={onAddFact} type="button">{t("diagram.whyTree.addFact")}</button>
       <button onClick={onAddSolution} type="button">{t("diagram.whyTree.addSolution")}</button>
@@ -520,21 +584,29 @@ function WhyTreeNodeMenu({
 }
 
 function SupplementColumn({
+  dragState,
   kind,
   node,
+  onAllowDrop,
   onChange,
-  onMove,
+  onDragEnd,
+  onDrop,
   onRemove,
   onSelect,
+  onStartDrag,
   path,
   selected
 }: {
+  dragState: WhyTreeDragState | null;
   kind: RelicWhyTreeSupplementKind;
   node: RelicWhyTreeNode;
-  onChange: (path: number[], kind: RelicWhyTreeSupplementKind, index: number, event: ReactChangeEvent<HTMLInputElement>) => void;
-  onMove: (path: number[], kind: RelicWhyTreeSupplementKind, index: number, direction: RelicWhyTreeMoveDirection) => void;
+  onAllowDrop: (event: ReactDragEvent<HTMLElement>) => void;
+  onChange: (path: number[], kind: RelicWhyTreeSupplementKind, index: number, event: ReactChangeEvent<HTMLTextAreaElement>) => void;
+  onDragEnd: () => void;
+  onDrop: (path: number[], kind: RelicWhyTreeSupplementKind, index: number, event: ReactDragEvent<HTMLElement>) => void;
   onRemove: (path: number[], kind: RelicWhyTreeSupplementKind, index: number) => void;
   onSelect: (path: number[], kind: RelicWhyTreeSupplementKind, index: number) => void;
+  onStartDrag: (drag: WhyTreeDragState, event: ReactDragEvent<HTMLElement>) => void;
   path: number[];
   selected: WhyTreeSelection | null;
 }): ReactElement {
@@ -554,33 +626,24 @@ function SupplementColumn({
             className={[
               "why-tree-support-item",
               `why-tree-support-item--${kind}`,
+              dragState?.kind === kind && samePath(dragState.path, path) && dragState.index === index ? "why-tree-item--dragging" : "",
               isSelected ? "why-tree-item--selected" : ""
             ].filter(Boolean).join(" ")}
+            draggable
             key={`${kind}-${path.join(".")}-${index}`}
+            onDragEnd={onDragEnd}
+            onDragOver={onAllowDrop}
+            onDragStart={(event) => onStartDrag({ index, kind, path }, event)}
+            onDrop={(event) => onDrop(path, kind, index, event)}
           >
-            <input
+            <textarea
               aria-label={t(whyTreeSupplementInputKey(kind))}
               onChange={(event) => onChange(path, kind, index, event)}
               onFocus={() => onSelect(path, kind, index)}
+              rows={2}
               value={value}
             />
             <div className="why-tree-item-actions">
-              <button
-                aria-label={t("diagram.whyTree.moveUp")}
-                disabled={index === 0}
-                onClick={() => onMove(path, kind, index, "up")}
-                type="button"
-              >
-                ↑
-              </button>
-              <button
-                aria-label={t("diagram.whyTree.moveDown")}
-                disabled={index === values.length - 1}
-                onClick={() => onMove(path, kind, index, "down")}
-                type="button"
-              >
-                ↓
-              </button>
               <button
                 aria-label={t("diagram.whyTree.delete")}
                 className="why-tree-delete-button"
@@ -677,28 +740,8 @@ function isSameWhyTreeSelection(selection: WhyTreeSelection | null, target: WhyT
   return ("index" in selection ? selection.index : undefined) === ("index" in target ? target.index : undefined);
 }
 
-function canMoveWhy(
-  tree: RelicWhyTreeDocument,
-  path: number[],
-  direction: RelicWhyTreeMoveDirection
-): boolean {
-  if (path.length === 0) return false;
-  const parent = whyTreeNodeAtPath(tree.phenomenon, path.slice(0, -1));
-  const index = path[path.length - 1];
-  if (!parent || index === undefined) return false;
-
-  return canMoveIndex(parent.whys.length, index, direction);
-}
-
-function canMoveIndex(length: number, index: number, direction: RelicWhyTreeMoveDirection): boolean {
-  const nextIndex = index + moveDirectionOffset(direction);
-  return Number.isInteger(index) && index >= 0 && index < length && nextIndex >= 0 && nextIndex < length;
-}
-
-function movedWhyPath(path: number[], direction: RelicWhyTreeMoveDirection): number[] {
-  const nextPath = [...path];
-  nextPath[nextPath.length - 1] = (nextPath[nextPath.length - 1] ?? 0) + moveDirectionOffset(direction);
-  return nextPath;
+function isTextEditingTarget(target: EventTarget): boolean {
+  return target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement;
 }
 
 function moveDirectionOffset(direction: RelicWhyTreeMoveDirection): -1 | 1 {
@@ -715,7 +758,7 @@ function samePath(left: number[], right: number[]): boolean {
 
 function isWhyTreePanTarget(target: EventTarget, currentTarget: Element): boolean {
   if (!(target instanceof Element)) return target === currentTarget;
-  if (target.closest("input, button")) return false;
+  if (target.closest("input, textarea, button")) return false;
   if (target.closest(".why-tree-main-node")) return false;
   if (target.closest(".why-tree-support-item")) return false;
   if (target.closest(".why-tree-node-menu")) return false;

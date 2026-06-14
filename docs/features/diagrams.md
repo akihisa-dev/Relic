@@ -155,7 +155,7 @@ phenomenon:
 - `whys` は未指定の場合、空配列として扱う
 - 旧形式の単数 `why` が書かれている場合は、読み込み時に `whys` の先頭要素として扱い、保存時は `whys` へ正規化する
 - `facts`、`solutions`、`actions` は未指定の場合、空配列として扱う
-- 各テキストは空白を除いた文字列として扱う
+- 各テキストは前後に空白を含まない文字列として扱い、編集中の空文字と改行を許可する
 - Why Treeは循環、複数親、横断リンク、Fact / Solution / Action配下の子要素を表現しない
 
 ### 操作
@@ -166,7 +166,10 @@ phenomenon:
 - Phenomenonの削除はできない
 - Whyを削除すると、そのWhy以下の子Whyも削除する
 - Fact、Solution、Actionは個別に削除できる
+- Fact、Solution、Actionは対象ノードの補助列として横方向に並べ、ActionはSolutionの右横に表示する
+- Why、Fact、Solution、Actionはドラッグで同じ親・同じ種類の中の順序を変更できる
 - Phenomenon、Why、Fact、Solution、Actionの入力変更はMarkdown本文へ書き戻す
+- Phenomenon、Why、Fact、Solution、Actionの入力欄は折り返しと改行を表示できる
 - 入力欄をクリックした場合も、その対象を選択状態にする
 - 入力欄にフォーカスがある間のBackspaceは通常の文字削除として扱い、項目削除には使わない
 - 空白部分をドラッグすると表示位置を動かせる

@@ -1196,8 +1196,8 @@ function parseRequiredText(raw: unknown, code: string, message: string): RelicRe
 }
 
 function parseWhyTreeText(raw: unknown): RelicResult<string> {
-  if (typeof raw !== "string" || raw.trim() !== raw || raw.length === 0) {
-    return fail("WHY_TREE_TEXT_INVALID", "Why Treeのテキストは空でない文字にしてください。");
+  if (typeof raw !== "string" || raw.trim() !== raw) {
+    return fail("WHY_TREE_TEXT_INVALID", "Why Treeのテキストは前後に空白を含まない文字にしてください。");
   }
 
   return ok(raw);
