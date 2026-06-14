@@ -8,9 +8,6 @@ export type RelicDiagramType = typeof relicDiagramTypes[number];
 export const relicWhyTreeSupplementKinds = ["fact", "solution", "action"] as const;
 export type RelicWhyTreeSupplementKind = typeof relicWhyTreeSupplementKinds[number];
 
-export const relicWhyTreeLabelPresets = ["generic", "analysis", "thinking"] as const;
-export type RelicWhyTreeLabelPreset = typeof relicWhyTreeLabelPresets[number];
-
 export type RelicWhyTreeSelectableKind = "phenomenon" | "why" | RelicWhyTreeSupplementKind;
 
 export interface RelicRelationshipDiagramDocument {
@@ -21,7 +18,7 @@ export interface RelicRelationshipDiagramDocument {
 }
 
 export interface RelicWhyTreeDocument {
-  labelPreset: RelicWhyTreeLabelPreset;
+  labels: RelicWhyTreeLabels;
   phenomenon: RelicWhyTreeNode;
   title?: string;
   type: "why-tree";
@@ -51,6 +48,14 @@ export interface RelicWhyTreeNode {
   solutions: string[];
   title: string;
   whys: RelicWhyTreeNode[];
+}
+
+export interface RelicWhyTreeLabels {
+  action: string;
+  fact: string;
+  node: string;
+  root: string;
+  solution: string;
 }
 
 export interface RelicDiagramReferenceReplacement {
@@ -111,9 +116,16 @@ const relationshipBodyKeys = new Set(["nodes", "lines"]);
 const relationshipNodeKeys = new Set(["id", "file", "x", "y", "width", "height"]);
 const diagramLineKeys = new Set(["id", "from", "to", "label"]);
 const diagramFrontmatterKeys = new Set(["type", "title"]);
-export const defaultRelicWhyTreeLabelPreset: RelicWhyTreeLabelPreset = "generic";
+export const defaultRelicWhyTreeLabels: RelicWhyTreeLabels = {
+  action: "アクション",
+  fact: "メモ",
+  node: "ノード",
+  root: "ルート",
+  solution: "関連項目"
+};
 
-const whyTreeBodyKeys = new Set(["labelPreset", "phenomenon"]);
+const whyTreeBodyKeys = new Set(["labelPreset", "labels", "phenomenon"]);
+const whyTreeLabelKeys = new Set(["action", "fact", "node", "root", "solution"]);
 const whyTreeNodeKeys = new Set(["title", "facts", "solutions", "actions", "why", "whys"]);
 const defaultNodeWidth = 180;
 const defaultNodeHeight = 80;
@@ -135,7 +147,12 @@ export const emptyRelicWhyTreeMarkdownContent = [
   "title: 構造ツリー",
   "---",
   "",
-  "labelPreset: generic",
+  "labels:",
+  "  root: ルート",
+  "  node: ノード",
+  "  fact: メモ",
+  "  solution: 関連項目",
+  "  action: アクション",
   "phenomenon:",
   "  title: ルート",
   "  facts: []",
@@ -265,7 +282,7 @@ export function serializeRelicWhyTreeMarkdown(document: RelicWhyTreeDocument): R
   const frontmatter = dumpFrontmatter(validated.value.type, validated.value.title);
   const body = yaml.dump(
     {
-      labelPreset: validated.value.labelPreset,
+      labels: validated.value.labels,
       phenomenon: serializeWhyTreeNodeValue(validated.value.phenomenon)
     },
     yamlDumpOptions()
@@ -304,7 +321,7 @@ export function addRelicWhyTreeWhy(content: string, whyPath: number[]): RelicRes
       actions: [],
       facts: [],
       solutions: [],
-      title: defaultWhyTreeNodeTitle(parsed.value.labelPreset),
+      title: parsed.value.labels.node,
       whys: []
     }]
   }));
@@ -324,24 +341,23 @@ export function addRelicWhyTreeSupplement(
   const key = whyTreeSupplementKey(kind);
   const updated = updateWhyTreeNodeAtPath(parsed.value.phenomenon, whyPath, (node) => ({
     ...node,
-    [key]: [...node[key], defaultSupplementTitle(kind, parsed.value.labelPreset)]
+    [key]: [...node[key], defaultSupplementTitle(kind, parsed.value.labels)]
   }));
   if (!updated.ok) return updated;
 
   return serializeWhyTreeUpdate({ ...parsed.value, phenomenon: updated.value });
 }
 
-export function updateRelicWhyTreeLabelPreset(
+export function updateRelicWhyTreeLabels(
   content: string,
-  labelPreset: RelicWhyTreeLabelPreset
+  labels: RelicWhyTreeLabels
 ): RelicResult<RelicWhyTreeUpdate> {
   const parsed = parseRelicWhyTreeMarkdown(content);
   if (!parsed.ok) return parsed;
-  if (!isRelicWhyTreeLabelPreset(labelPreset)) {
-    return fail("WHY_TREE_LABEL_PRESET_INVALID", "構造ツリーのラベル設定が正しくありません。");
-  }
+  const nextLabels = parseWhyTreeLabels(labels, parsed.value.labels);
+  if (!nextLabels.ok) return nextLabels;
 
-  return serializeWhyTreeUpdate({ ...parsed.value, labelPreset });
+  return serializeWhyTreeUpdate({ ...parsed.value, labels: nextLabels.value });
 }
 
 export function removeRelicWhyTreeWhy(content: string, whyPath: number[]): RelicResult<RelicWhyTreeUpdate> {
@@ -783,11 +799,11 @@ function validateRelicWhyTreeDocument(raw: unknown): RelicResult<RelicWhyTreeDoc
 
   const phenomenon = parseWhyTreeNode(raw.phenomenon, "phenomenon");
   if (!phenomenon.ok) return phenomenon;
-  const labelPreset = parseWhyTreeLabelPreset(raw.labelPreset);
-  if (!labelPreset.ok) return labelPreset;
+  const labels = parseWhyTreeLabels(raw.labels, legacyWhyTreeLabels(raw.labelPreset));
+  if (!labels.ok) return labels;
 
   return ok({
-    labelPreset: labelPreset.value,
+    labels: labels.value,
     phenomenon: phenomenon.value,
     ...(title?.value ? { title: title.value } : {}),
     type: "why-tree"
@@ -998,15 +1014,67 @@ function parseWhyTreeTextList(raw: unknown, field: string): RelicResult<string[]
   return ok(raw);
 }
 
-function parseWhyTreeLabelPreset(raw: unknown): RelicResult<RelicWhyTreeLabelPreset> {
-  if (raw === undefined) return ok(defaultRelicWhyTreeLabelPreset);
-  if (isRelicWhyTreeLabelPreset(raw)) return ok(raw);
+function parseLabelText(raw: unknown, fallback: string, field: string): RelicResult<string> {
+  if (raw === undefined) return ok(fallback);
+  if (typeof raw !== "string") {
+    return fail("WHY_TREE_LABEL_INVALID", `labels.${field} は文字にしてください。`);
+  }
 
-  return fail("WHY_TREE_LABEL_PRESET_INVALID", "構造ツリーの labelPreset が正しくありません。");
+  return ok(raw);
 }
 
-function isRelicWhyTreeLabelPreset(value: unknown): value is RelicWhyTreeLabelPreset {
-  return typeof value === "string" && relicWhyTreeLabelPresets.includes(value as RelicWhyTreeLabelPreset);
+function parseWhyTreeLabels(raw: unknown, fallback: RelicWhyTreeLabels = defaultRelicWhyTreeLabels): RelicResult<RelicWhyTreeLabels> {
+  if (raw === undefined) return ok({ ...fallback });
+  if (!isRecord(raw)) {
+    return fail("WHY_TREE_LABELS_INVALID", "構造ツリーの labels は項目ごとの文字にしてください。");
+  }
+
+  const unknownKey = Object.keys(raw).find((key) => !whyTreeLabelKeys.has(key));
+  if (unknownKey) {
+    return fail("WHY_TREE_LABELS_UNKNOWN_FIELD", `構造ツリーの labels に未対応の項目があります: ${unknownKey}`);
+  }
+
+  const root = parseLabelText(raw.root, fallback.root, "root");
+  if (!root.ok) return root;
+  const node = parseLabelText(raw.node, fallback.node, "node");
+  if (!node.ok) return node;
+  const fact = parseLabelText(raw.fact, fallback.fact, "fact");
+  if (!fact.ok) return fact;
+  const solution = parseLabelText(raw.solution, fallback.solution, "solution");
+  if (!solution.ok) return solution;
+  const action = parseLabelText(raw.action, fallback.action, "action");
+  if (!action.ok) return action;
+
+  return ok({
+    action: action.value,
+    fact: fact.value,
+    node: node.value,
+    root: root.value,
+    solution: solution.value
+  });
+}
+
+function legacyWhyTreeLabels(raw: unknown): RelicWhyTreeLabels {
+  if (raw === "analysis") {
+    return {
+      action: "実行項目",
+      fact: "根拠",
+      node: "原因",
+      root: "問題・現象",
+      solution: "解決策"
+    };
+  }
+  if (raw === "thinking") {
+    return {
+      action: "やること",
+      fact: "情報",
+      node: "分解",
+      root: "テーマ",
+      solution: "案"
+    };
+  }
+
+  return defaultRelicWhyTreeLabels;
 }
 
 function serializeWhyTreeNodeValue(node: RelicWhyTreeNode): Record<string, unknown> {
@@ -1087,27 +1155,10 @@ function whyTreeSupplementKey(kind: RelicWhyTreeSupplementKind): "facts" | "solu
   return "actions";
 }
 
-function defaultWhyTreeNodeTitle(labelPreset: RelicWhyTreeLabelPreset): string {
-  if (labelPreset === "analysis") return "原因";
-  if (labelPreset === "thinking") return "分解";
-  return "ノード";
-}
-
-function defaultSupplementTitle(kind: RelicWhyTreeSupplementKind, labelPreset: RelicWhyTreeLabelPreset): string {
-  if (labelPreset === "analysis") {
-    if (kind === "fact") return "根拠";
-    if (kind === "solution") return "解決策";
-    return "実行項目";
-  }
-  if (labelPreset === "thinking") {
-    if (kind === "fact") return "情報";
-    if (kind === "solution") return "案";
-    return "やること";
-  }
-
-  if (kind === "fact") return "メモ";
-  if (kind === "solution") return "関連項目";
-  return "アクション";
+function defaultSupplementTitle(kind: RelicWhyTreeSupplementKind, labels: RelicWhyTreeLabels): string {
+  if (kind === "fact") return labels.fact;
+  if (kind === "solution") return labels.solution;
+  return labels.action;
 }
 
 function createNodeForFile(diagram: RelicRelationshipDiagramDocument, filePath: string): RelicDiagramNode {

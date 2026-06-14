@@ -1226,7 +1226,7 @@
   padding: 10px;
   position: absolute;
   top: 58px;
-  width: 156px;
+  width: 190px;
   z-index: 30;
 }
 
@@ -1237,37 +1237,42 @@
   line-height: 1.2;
 }
 
-.why-tree-label-options {
+.why-tree-label-fields {
   display: grid;
   gap: 6px;
 }
 
-.why-tree-label-options button {
-  background: transparent;
+.why-tree-label-fields label {
+  display: grid;
+  gap: 3px;
+}
+
+.why-tree-label-fields label span {
+  color: var(--text-3);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.why-tree-label-fields input {
+  background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 6px;
-  color: var(--text-2);
+  box-sizing: border-box;
+  color: var(--text);
   font: inherit;
   font-size: 12px;
-  font-weight: 700;
   min-height: 28px;
   padding: 0 8px;
-  text-align: left;
+  width: 100%;
 }
 
-.why-tree-label-options button[aria-pressed="true"] {
-  background: var(--accent-soft);
-  border-color: var(--accent);
-  color: var(--text);
-}
-
-.why-tree-label-options button:not(:disabled):hover,
-.why-tree-label-options button:not(:disabled):focus-visible {
+.why-tree-label-fields input:not(:disabled):hover,
+.why-tree-label-fields input:not(:disabled):focus-visible {
   border-color: var(--accent-ring);
   outline: none;
 }
 
-.why-tree-label-options button:disabled {
+.why-tree-label-fields input:disabled {
   opacity: 0.54;
 }
 

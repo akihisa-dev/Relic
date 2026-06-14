@@ -2,18 +2,21 @@ import { type RelicWhyTreeDocument, type RelicWhyTreeNode } from "./diagramMarkd
 import { mermaidQuoted, mermaidSafeId } from "./mermaidText";
 
 type SupplementKind = "fact" | "solution" | "action";
-type MermaidSupplementLabel = "Action" | "Fact" | "Idea" | "Info" | "Memo" | "Related item" | "Solution" | "To-do";
 
 interface BuildContext {
   lines: string[];
-  labels: Record<SupplementKind, MermaidSupplementLabel>;
+  labels: Record<SupplementKind, string>;
   usedIds: Set<string>;
 }
 
 export function whyTreeToMermaid(tree: RelicWhyTreeDocument): string {
   const context: BuildContext = {
     lines: ["flowchart TD"],
-    labels: supplementLabels(tree.labelPreset),
+    labels: {
+      action: tree.labels.action,
+      fact: tree.labels.fact,
+      solution: tree.labels.solution
+    },
     usedIds: new Set<string>()
   };
   const phenomenonId = mermaidSafeId("phenomenon", "phenomenon", context.usedIds);
@@ -54,27 +57,4 @@ function appendSupplementList(
     context.lines.push(`  ${itemId}[${mermaidQuoted(`${context.labels[kind]}: ${value}`)}]`);
     context.lines.push(`  ${parentId} --> ${itemId}`);
   });
-}
-
-function supplementLabels(labelPreset: RelicWhyTreeDocument["labelPreset"]): Record<SupplementKind, MermaidSupplementLabel> {
-  if (labelPreset === "analysis") {
-    return {
-      action: "Action",
-      fact: "Fact",
-      solution: "Solution"
-    };
-  }
-  if (labelPreset === "thinking") {
-    return {
-      action: "To-do",
-      fact: "Info",
-      solution: "Idea"
-    };
-  }
-
-  return {
-    action: "Action",
-    fact: "Memo",
-    solution: "Related item"
-  };
 }
