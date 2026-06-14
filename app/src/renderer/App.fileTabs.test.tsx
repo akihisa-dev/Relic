@@ -620,7 +620,7 @@ describe("App file tabs", () => {
     await renderApp();
     fireEvent.click(await screen.findByRole("button", { name: /原因分析/ }));
 
-    fireEvent.change(await screen.findByLabelText("問題・現象"), { target: { value: "売上が下がった" } });
+    fireEvent.change(await screen.findByLabelText("ルート"), { target: { value: "売上が下がった" } });
 
     await waitFor(() => expect(writeMarkdownFile).toHaveBeenCalledWith({
       content: expect.stringContaining("title: 売上が下がった"),

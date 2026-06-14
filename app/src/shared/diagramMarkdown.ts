@@ -8,6 +8,9 @@ export type RelicDiagramType = typeof relicDiagramTypes[number];
 export const relicWhyTreeSupplementKinds = ["fact", "solution", "action"] as const;
 export type RelicWhyTreeSupplementKind = typeof relicWhyTreeSupplementKinds[number];
 
+export const relicWhyTreeLabelPresets = ["generic", "analysis", "thinking"] as const;
+export type RelicWhyTreeLabelPreset = typeof relicWhyTreeLabelPresets[number];
+
 export type RelicWhyTreeSelectableKind = "phenomenon" | "why" | RelicWhyTreeSupplementKind;
 
 export interface RelicRelationshipDiagramDocument {
@@ -18,6 +21,7 @@ export interface RelicRelationshipDiagramDocument {
 }
 
 export interface RelicWhyTreeDocument {
+  labelPreset: RelicWhyTreeLabelPreset;
   phenomenon: RelicWhyTreeNode;
   title?: string;
   type: "why-tree";
@@ -107,7 +111,9 @@ const relationshipBodyKeys = new Set(["nodes", "lines"]);
 const relationshipNodeKeys = new Set(["id", "file", "x", "y", "width", "height"]);
 const diagramLineKeys = new Set(["id", "from", "to", "label"]);
 const diagramFrontmatterKeys = new Set(["type", "title"]);
-const whyTreeBodyKeys = new Set(["phenomenon"]);
+export const defaultRelicWhyTreeLabelPreset: RelicWhyTreeLabelPreset = "generic";
+
+const whyTreeBodyKeys = new Set(["labelPreset", "phenomenon"]);
 const whyTreeNodeKeys = new Set(["title", "facts", "solutions", "actions", "why", "whys"]);
 const defaultNodeWidth = 180;
 const defaultNodeHeight = 80;
@@ -126,11 +132,12 @@ export const emptyRelicRelationshipMarkdownContent = [
 export const emptyRelicWhyTreeMarkdownContent = [
   "---",
   "type: why-tree",
-  "title: 原因分析",
+  "title: 構造ツリー",
   "---",
   "",
+  "labelPreset: generic",
   "phenomenon:",
-  "  title: 問題・現象",
+  "  title: ルート",
   "  facts: []",
   "  solutions: []",
   "  actions: []",
@@ -237,11 +244,11 @@ export function parseRelicWhyTreeMarkdown(content: string): RelicResult<RelicWhy
       ? yaml.load(parts.value.body, { schema: yaml.JSON_SCHEMA })
       : {};
   } catch (error) {
-    return fail("WHY_TREE_YAML_INVALID", "Why Treeを読み込めませんでした。", errorDetails(error));
+    return fail("WHY_TREE_YAML_INVALID", "構造ツリーを読み込めませんでした。", errorDetails(error));
   }
 
   if (!isRecord(body)) {
-    return fail("WHY_TREE_FORMAT_INVALID", "Why Treeの形式が正しくありません。");
+    return fail("WHY_TREE_FORMAT_INVALID", "構造ツリーの形式が正しくありません。");
   }
 
   return validateRelicWhyTreeDocument({
@@ -258,6 +265,7 @@ export function serializeRelicWhyTreeMarkdown(document: RelicWhyTreeDocument): R
   const frontmatter = dumpFrontmatter(validated.value.type, validated.value.title);
   const body = yaml.dump(
     {
+      labelPreset: validated.value.labelPreset,
       phenomenon: serializeWhyTreeNodeValue(validated.value.phenomenon)
     },
     yamlDumpOptions()
@@ -296,7 +304,7 @@ export function addRelicWhyTreeWhy(content: string, whyPath: number[]): RelicRes
       actions: [],
       facts: [],
       solutions: [],
-      title: "なぜ？",
+      title: defaultWhyTreeNodeTitle(parsed.value.labelPreset),
       whys: []
     }]
   }));
@@ -316,27 +324,40 @@ export function addRelicWhyTreeSupplement(
   const key = whyTreeSupplementKey(kind);
   const updated = updateWhyTreeNodeAtPath(parsed.value.phenomenon, whyPath, (node) => ({
     ...node,
-    [key]: [...node[key], defaultSupplementTitle(kind)]
+    [key]: [...node[key], defaultSupplementTitle(kind, parsed.value.labelPreset)]
   }));
   if (!updated.ok) return updated;
 
   return serializeWhyTreeUpdate({ ...parsed.value, phenomenon: updated.value });
 }
 
+export function updateRelicWhyTreeLabelPreset(
+  content: string,
+  labelPreset: RelicWhyTreeLabelPreset
+): RelicResult<RelicWhyTreeUpdate> {
+  const parsed = parseRelicWhyTreeMarkdown(content);
+  if (!parsed.ok) return parsed;
+  if (!isRelicWhyTreeLabelPreset(labelPreset)) {
+    return fail("WHY_TREE_LABEL_PRESET_INVALID", "構造ツリーのラベル設定が正しくありません。");
+  }
+
+  return serializeWhyTreeUpdate({ ...parsed.value, labelPreset });
+}
+
 export function removeRelicWhyTreeWhy(content: string, whyPath: number[]): RelicResult<RelicWhyTreeUpdate> {
   const parsed = parseRelicWhyTreeMarkdown(content);
   if (!parsed.ok) return parsed;
   if (whyPath.length === 0) {
-    return fail("WHY_TREE_PHENOMENON_REQUIRED", "問題・現象は削除できません。");
+    return fail("WHY_TREE_PHENOMENON_REQUIRED", "ルートは削除できません。");
   }
   if (whyPath.some((index) => !Number.isInteger(index) || index < 0)) {
-    return fail("WHY_TREE_PATH_INVALID", "Why Treeのパスが正しくありません。");
+    return fail("WHY_TREE_PATH_INVALID", "構造ツリーのパスが正しくありません。");
   }
 
   const updated = updateWhyTreeNodeAtPath(parsed.value.phenomenon, whyPath.slice(0, -1), (node) => {
     const targetIndex = whyPath[whyPath.length - 1];
     if (targetIndex === undefined || targetIndex >= node.whys.length) {
-      return fail("WHY_TREE_NODE_MISSING", "削除するWhyが見つかりません。");
+      return fail("WHY_TREE_NODE_MISSING", "削除するノードが見つかりません。");
     }
 
     return ok({
@@ -411,16 +432,16 @@ export function moveRelicWhyTreeWhy(
   const parsed = parseRelicWhyTreeMarkdown(content);
   if (!parsed.ok) return parsed;
   if (whyPath.length === 0) {
-    return fail("WHY_TREE_PHENOMENON_REQUIRED", "問題・現象は並べ替えできません。");
+    return fail("WHY_TREE_PHENOMENON_REQUIRED", "ルートは並べ替えできません。");
   }
   if (whyPath.some((index) => !Number.isInteger(index) || index < 0)) {
-    return fail("WHY_TREE_PATH_INVALID", "Why Treeのパスが正しくありません。");
+    return fail("WHY_TREE_PATH_INVALID", "構造ツリーのパスが正しくありません。");
   }
 
   const updated = updateWhyTreeNodeAtPath(parsed.value.phenomenon, whyPath.slice(0, -1), (node) => {
     const index = whyPath[whyPath.length - 1];
     if (index === undefined || index >= node.whys.length) {
-      return fail("WHY_TREE_NODE_MISSING", "並べ替えるWhyが見つかりません。");
+      return fail("WHY_TREE_NODE_MISSING", "並べ替えるノードが見つかりません。");
     }
 
     const moved = moveArrayItem(node.whys, index, moveDirectionOffset(direction));
@@ -745,7 +766,7 @@ function validateRelicRelationshipDocument(raw: unknown): RelicResult<RelicRelat
 
 function validateRelicWhyTreeDocument(raw: unknown): RelicResult<RelicWhyTreeDocument> {
   if (!isRecord(raw)) {
-    return fail("WHY_TREE_FORMAT_INVALID", "Why Treeの形式が正しくありません。");
+    return fail("WHY_TREE_FORMAT_INVALID", "構造ツリーの形式が正しくありません。");
   }
   if (raw.type !== "why-tree") {
     return fail("DIAGRAM_TYPE_INVALID", "why-tree Diagramではありません。");
@@ -757,13 +778,16 @@ function validateRelicWhyTreeDocument(raw: unknown): RelicResult<RelicWhyTreeDoc
   const allowedTopLevelKeys = new Set([...whyTreeBodyKeys, ...diagramFrontmatterKeys]);
   const unknownTopLevelKey = Object.keys(raw).find((key) => !allowedTopLevelKeys.has(key));
   if (unknownTopLevelKey) {
-    return fail("WHY_TREE_UNKNOWN_FIELD", `Why Treeに未対応の項目があります: ${unknownTopLevelKey}`);
+    return fail("WHY_TREE_UNKNOWN_FIELD", `構造ツリーに未対応の項目があります: ${unknownTopLevelKey}`);
   }
 
   const phenomenon = parseWhyTreeNode(raw.phenomenon, "phenomenon");
   if (!phenomenon.ok) return phenomenon;
+  const labelPreset = parseWhyTreeLabelPreset(raw.labelPreset);
+  if (!labelPreset.ok) return labelPreset;
 
   return ok({
+    labelPreset: labelPreset.value,
     phenomenon: phenomenon.value,
     ...(title?.value ? { title: title.value } : {}),
     type: "why-tree"
@@ -924,7 +948,7 @@ function parseWhyTreeNode(raw: unknown, label: string): RelicResult<RelicWhyTree
 
   const unknownKey = Object.keys(raw).find((key) => !whyTreeNodeKeys.has(key));
   if (unknownKey) {
-    return fail("WHY_TREE_NODE_UNKNOWN_FIELD", `Why Tree要素に未対応の項目があります: ${unknownKey}`);
+    return fail("WHY_TREE_NODE_UNKNOWN_FIELD", `構造ツリー要素に未対応の項目があります: ${unknownKey}`);
   }
 
   const title = parseWhyTreeText(raw.title);
@@ -974,6 +998,17 @@ function parseWhyTreeTextList(raw: unknown, field: string): RelicResult<string[]
   return ok(raw);
 }
 
+function parseWhyTreeLabelPreset(raw: unknown): RelicResult<RelicWhyTreeLabelPreset> {
+  if (raw === undefined) return ok(defaultRelicWhyTreeLabelPreset);
+  if (isRelicWhyTreeLabelPreset(raw)) return ok(raw);
+
+  return fail("WHY_TREE_LABEL_PRESET_INVALID", "構造ツリーの labelPreset が正しくありません。");
+}
+
+function isRelicWhyTreeLabelPreset(value: unknown): value is RelicWhyTreeLabelPreset {
+  return typeof value === "string" && relicWhyTreeLabelPresets.includes(value as RelicWhyTreeLabelPreset);
+}
+
 function serializeWhyTreeNodeValue(node: RelicWhyTreeNode): Record<string, unknown> {
   return {
     title: node.title,
@@ -1001,11 +1036,11 @@ function updateWhyTreeNodeAtPath(
 ): RelicResult<RelicWhyTreeNode> {
   if (whyPath.length === 0) return normalizeNodeUpdate(update(phenomenon));
   if (whyPath.some((index) => !Number.isInteger(index) || index < 0)) {
-    return fail("WHY_TREE_PATH_INVALID", "Why Treeのパスが正しくありません。");
+    return fail("WHY_TREE_PATH_INVALID", "構造ツリーのパスが正しくありません。");
   }
   const [nextIndex, ...restPath] = whyPath;
   if (nextIndex === undefined || nextIndex >= phenomenon.whys.length) {
-    return fail("WHY_TREE_NODE_MISSING", "対象のWhyが見つかりません。");
+    return fail("WHY_TREE_NODE_MISSING", "対象のノードが見つかりません。");
   }
 
   const nextWhy = updateWhyTreeNodeAtPath(phenomenon.whys[nextIndex], restPath, update);
@@ -1052,10 +1087,27 @@ function whyTreeSupplementKey(kind: RelicWhyTreeSupplementKind): "facts" | "solu
   return "actions";
 }
 
-function defaultSupplementTitle(kind: RelicWhyTreeSupplementKind): string {
-  if (kind === "fact") return "根拠";
-  if (kind === "solution") return "解決策";
-  return "実行項目";
+function defaultWhyTreeNodeTitle(labelPreset: RelicWhyTreeLabelPreset): string {
+  if (labelPreset === "analysis") return "原因";
+  if (labelPreset === "thinking") return "分解";
+  return "ノード";
+}
+
+function defaultSupplementTitle(kind: RelicWhyTreeSupplementKind, labelPreset: RelicWhyTreeLabelPreset): string {
+  if (labelPreset === "analysis") {
+    if (kind === "fact") return "根拠";
+    if (kind === "solution") return "解決策";
+    return "実行項目";
+  }
+  if (labelPreset === "thinking") {
+    if (kind === "fact") return "情報";
+    if (kind === "solution") return "案";
+    return "やること";
+  }
+
+  if (kind === "fact") return "メモ";
+  if (kind === "solution") return "関連項目";
+  return "アクション";
 }
 
 function createNodeForFile(diagram: RelicRelationshipDiagramDocument, filePath: string): RelicDiagramNode {
@@ -1197,7 +1249,7 @@ function parseRequiredText(raw: unknown, code: string, message: string): RelicRe
 
 function parseWhyTreeText(raw: unknown): RelicResult<string> {
   if (typeof raw !== "string") {
-    return fail("WHY_TREE_TEXT_INVALID", "Why Treeのテキストは文字にしてください。");
+    return fail("WHY_TREE_TEXT_INVALID", "構造ツリーのテキストは文字にしてください。");
   }
 
   return ok(raw);

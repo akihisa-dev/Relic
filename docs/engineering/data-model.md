@@ -114,18 +114,21 @@ Diagram MarkdownにはDiagram以外の本文を混ぜず、壊れた形式の場
 
 ### why-tree
 
-`why-tree` は原因分析用の構造エディタとして扱う。自由なNode、Line、Label、Node位置は持たない。本文内のYAMLには必ず1つの `phenomenon` を置き、その下に子Why一覧の `whys` を入れ子で保持する。旧形式の単数 `why` は読み込み時に `whys` の先頭要素として扱い、保存時は `whys` へ正規化する。`facts`、`solutions`、`actions` はPhenomenonまたは各Whyを支える補助要素であり、Why一覧の一部にはしない。各テキストは文字列として扱い、空文字と改行を許可する。
+`why-tree` は構造ツリーとして扱う。自由なNode、Line、Label、Node位置は持たない。本文内のYAMLには必ず1つの `phenomenon` を置き、その下に子ノード一覧の `whys` を入れ子で保持する。旧形式の単数 `why` は読み込み時に `whys` の先頭要素として扱い、保存時は `whys` へ正規化する。`facts`、`solutions`、`actions` はルートまたは各ノードに付く補助要素であり、子ノード一覧の一部にはしない。各テキストは文字列として扱い、空文字と改行を許可する。
 
 | フィールド | 内容 |
 |-----------|------|
-| phenomenon | 問題・現象。Why Treeの開始点として必ず1つ持つ |
-| phenomenon.title / why.title | 表示する問題・原因の本文 |
-| phenomenon.whys / why.whys | 子Whyの一覧 |
-| facts | 対象のPhenomenonまたはWhyを支える根拠一覧 |
-| solutions | 対象のPhenomenonまたはWhyに対する解決策一覧 |
-| actions | 対象のPhenomenonまたはWhyに対する実行項目一覧 |
+| labelPreset | 表示ラベルのセット。未指定の場合は `generic` |
+| phenomenon | 起点となるルート。必ず1つ持つ |
+| phenomenon.title / why.title | 表示するルートまたはノードの本文 |
+| phenomenon.whys / why.whys | 子ノードの一覧 |
+| facts | 対象のルートまたはノードに付く左側の補助項目 |
+| solutions | 対象のルートまたはノードに付く右側の補助項目 |
+| actions | 対象のルートまたはノードに付くアクション項目 |
 
-`why-tree` は循環、複数親、横断リンク、Fact / Solution / Action配下の子要素を表現しない。
+`labelPreset` は `generic`、`analysis`、`thinking` のいずれかとし、画面上のルート、ノード、補助項目名を切り替える。`generic` は `ルート` / `ノード` / `メモ` / `関連項目` / `アクション` を表示する既定値とする。
+
+`why-tree` は循環、複数親、横断リンク、補助項目配下の子要素を表現しない。
 pan、zoom、選択状態は画面だけの状態として扱い、Markdownファイルには保存しない。
 
 ---

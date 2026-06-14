@@ -75,7 +75,7 @@ describe("workspaceFileActionHelpers", () => {
     const state = workspaceState([
       { name: "関係図.md", path: "関係図.md", type: "file" },
       { name: "関係図 2.md", path: "関係図 2.md", type: "file" },
-      { name: "原因分析.md", path: "原因分析.md", type: "file" },
+      { name: "構造ツリー.md", path: "構造ツリー.md", type: "file" },
       {
         children: [
           { name: "関係図.md", path: "Nested/関係図.md", type: "file" }
@@ -87,7 +87,7 @@ describe("workspaceFileActionHelpers", () => {
     ]);
 
     expect(nextUniqueDiagramFileName(state, t, "relationship")).toBe("関係図 3");
-    expect(nextUniqueDiagramFileName(state, t, "why-tree")).toBe("原因分析 2");
+    expect(nextUniqueDiagramFileName(state, t, "why-tree")).toBe("構造ツリー 2");
   });
 
   it("作成後のMarkdown pathを末尾一致で探す", () => {

@@ -302,7 +302,7 @@ describe("DiagramCanvas", () => {
     expect(screen.queryByDisplayValue("解決策")).not.toBeInTheDocument();
   });
 
-  it("adds why-tree items only from Phenomenon or Why selection", () => {
+  it("adds structure-tree items only from root or node selection", () => {
     const onChange = vi.fn();
     const { container } = render(<StatefulDiagramCanvas content={whyTreeContent} onChange={onChange} />);
 
@@ -310,33 +310,47 @@ describe("DiagramCanvas", () => {
     expect(container.querySelector(".why-tree-add-controls")).toBeNull();
     expect(container.querySelector(".why-tree-actions-bar")).toBeNull();
 
-    fireEvent.click(screen.getByRole("button", { name: /\+ Why/ }));
-    expect(onChange.mock.calls[0]?.[0]).toContain("title: なぜ？");
+    fireEvent.click(screen.getByRole("button", { name: /\+ Node/ }));
+    expect(onChange.mock.calls[0]?.[0]).toContain("title: ノード");
 
-    fireEvent.click(screen.getByRole("button", { name: /\+ Fact/ }));
-    expect(onChange.mock.calls[1]?.[0]).toContain("根拠");
+    fireEvent.click(screen.getByRole("button", { name: /\+ Memo/ }));
+    expect(onChange.mock.calls[1]?.[0]).toContain("メモ");
 
-    fireEvent.click(screen.getByRole("button", { name: /\+ Solution/ }));
-    expect(onChange.mock.calls[2]?.[0]).toContain("解決策");
+    fireEvent.click(screen.getByRole("button", { name: /\+ Related item/ }));
+    expect(onChange.mock.calls[2]?.[0]).toContain("関連項目");
 
     fireEvent.click(screen.getByRole("button", { name: /\+ Action/ }));
-    expect(onChange.mock.calls[3]?.[0]).toContain("実行項目");
+    expect(onChange.mock.calls[3]?.[0]).toContain("アクション");
 
     fireEvent.focus(screen.getByDisplayValue("市場縮小"));
     expect(container.querySelector(".why-tree-node-menu")).toBeNull();
-    expect(screen.queryByRole("button", { name: /\+ Why/ })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /\+ Fact/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /\+ Node/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /\+ Memo/ })).not.toBeInTheDocument();
+  });
+
+  it("changes and saves the structure-tree label preset from the floating left panel", () => {
+    const onChange = vi.fn();
+    render(<StatefulDiagramCanvas content={whyTreeContent} onChange={onChange} />);
+
+    expect(screen.getByText("Labels")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Generic" })).toHaveAttribute("aria-pressed", "true");
+
+    fireEvent.click(screen.getByRole("button", { name: "Analysis" }));
+
+    expect(onChange.mock.calls[0]?.[0]).toContain("labelPreset: analysis");
+    expect(screen.getByText("Phenomenon")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /\+ Why/ })).toBeInTheDocument();
   });
 
   it("adds Why nodes from the selected node instead of always appending to the deepest node", () => {
     const onChange = vi.fn();
     const { container } = render(<StatefulDiagramCanvas content={whyTreeContent} onChange={onChange} />);
 
-    fireEvent.click(screen.getByRole("button", { name: /\+ Why/ }));
+    fireEvent.click(screen.getByRole("button", { name: /\+ Node/ }));
     fireEvent.focus(screen.getByDisplayValue("売上低下"));
-    fireEvent.click(screen.getByRole("button", { name: /\+ Why/ }));
+    fireEvent.click(screen.getByRole("button", { name: /\+ Node/ }));
 
-    expect(screen.getAllByDisplayValue("なぜ？")).toHaveLength(2);
+    expect(screen.getAllByDisplayValue("ノード")).toHaveLength(2);
     expect(container.querySelector(".why-tree-child-group")).toBeInTheDocument();
     expect(container.querySelector(".why-tree-lines path")).toBeInTheDocument();
     expect(container.querySelector(".why-tree-children")).toBeInTheDocument();
@@ -347,16 +361,16 @@ describe("DiagramCanvas", () => {
     const onChange = vi.fn();
     const { container, rerender } = render(<DelayedDiagramCanvas content={whyTreeContent} onChange={onChange} />);
 
-    fireEvent.click(screen.getByRole("button", { name: /\+ Why/ }));
-    expect(screen.getByDisplayValue("なぜ？")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /\+ Node/ }));
+    expect(screen.getByDisplayValue("ノード")).toBeInTheDocument();
     expect(container.querySelector(".why-tree-lines path")).toBeInTheDocument();
     rerender(<DelayedDiagramCanvas content={whyTreeContent} onChange={onChange} />);
-    expect(screen.getByDisplayValue("なぜ？")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("ノード")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: /\+ Fact/ }));
-    expect(screen.getByDisplayValue("根拠")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /\+ Fact/ }));
-    expect(screen.getAllByDisplayValue("根拠")).toHaveLength(2);
+    fireEvent.click(screen.getByRole("button", { name: /\+ Memo/ }));
+    expect(screen.getByDisplayValue("メモ")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /\+ Memo/ }));
+    expect(screen.getAllByDisplayValue("メモ")).toHaveLength(2);
     expect(onChange).toHaveBeenCalledTimes(3);
   });
 
@@ -369,13 +383,13 @@ describe("DiagramCanvas", () => {
 
     const parentWhy = screen.getByDisplayValue("流入減少").closest(".why-tree-main-node");
     expect(parentWhy).toBeInstanceOf(HTMLElement);
-    fireEvent.click(within(parentWhy as HTMLElement).getByRole("button", { name: "Collapse child whys" }));
+    fireEvent.click(within(parentWhy as HTMLElement).getByRole("button", { name: "Collapse child nodes" }));
 
     expect(screen.queryByDisplayValue("コンテンツ老朽化")).not.toBeInTheDocument();
     expect(container.querySelectorAll(".why-tree-lines path")).toHaveLength(1);
     expect(onChange).not.toHaveBeenCalled();
 
-    fireEvent.click(within(parentWhy as HTMLElement).getByRole("button", { name: "Show child whys" }));
+    fireEvent.click(within(parentWhy as HTMLElement).getByRole("button", { name: "Show child nodes" }));
 
     expect(screen.getByDisplayValue("コンテンツ老朽化")).toBeInTheDocument();
     expect(container.querySelectorAll(".why-tree-lines path")).toHaveLength(2);
@@ -426,8 +440,8 @@ describe("DiagramCanvas", () => {
 
     expect(fireEvent.keyDown(editor, { key: "Enter" })).toBe(false);
 
-    expect(onChange.mock.calls[0]?.[0]).toContain("title: なぜ？");
-    expect(screen.getByDisplayValue("なぜ？")).toBeInTheDocument();
+    expect(onChange.mock.calls[0]?.[0]).toContain("title: ノード");
+    expect(screen.getByDisplayValue("ノード")).toBeInTheDocument();
 
     fireEvent.keyDown(editor, { key: "Escape" });
 
@@ -463,17 +477,17 @@ describe("DiagramCanvas", () => {
     const onChange = vi.fn();
     render(<StatefulDiagramCanvas content={whyTreeContent} onChange={onChange} />);
 
-    fireEvent.change(screen.getByLabelText("Phenomenon title"), { target: { value: "" } });
+    fireEvent.change(screen.getByLabelText("Root"), { target: { value: "" } });
     expect(onChange.mock.calls[0]?.[0]).toContain("title: ''");
     expect(screen.getByDisplayValue("")).toBeInTheDocument();
 
-    fireEvent.change(screen.getByLabelText("Phenomenon title"), { target: { value: "売上\n低下" } });
+    fireEvent.change(screen.getByLabelText("Root"), { target: { value: "売上\n低下" } });
     expect(onChange.mock.calls[1]?.[0]).toContain("売上");
-    expect((screen.getByLabelText("Phenomenon title") as HTMLTextAreaElement).value).toBe("売上\n低下");
+    expect((screen.getByLabelText("Root") as HTMLTextAreaElement).value).toBe("売上\n低下");
 
-    fireEvent.change(screen.getByLabelText("Phenomenon title"), { target: { value: "売上低下\n" } });
+    fireEvent.change(screen.getByLabelText("Root"), { target: { value: "売上低下\n" } });
     expect(onChange.mock.calls[2]?.[0]).toContain("売上低下");
-    expect((screen.getByLabelText("Phenomenon title") as HTMLTextAreaElement).value).toBe("売上低下\n");
+    expect((screen.getByLabelText("Root") as HTMLTextAreaElement).value).toBe("売上低下\n");
   });
 
   it("pans the why-tree view by dragging blank space only", () => {
@@ -518,10 +532,10 @@ describe("DiagramCanvas", () => {
     const onChange = vi.fn();
     render(<StatefulDiagramCanvas content={whyTreeContent} onChange={onChange} />);
 
-    fireEvent.change(screen.getByLabelText("Phenomenon title"), { target: { value: "売上が下がった" } });
+    fireEvent.change(screen.getByLabelText("Root"), { target: { value: "売上が下がった" } });
     expect(onChange.mock.calls[0]?.[0]).toContain("title: 売上が下がった");
 
-    fireEvent.change(screen.getAllByLabelText("Fact")[0] as HTMLTextAreaElement, { target: { value: "市場が縮小した" } });
+    fireEvent.change(screen.getAllByRole("textbox", { name: "Memo" })[0] as HTMLTextAreaElement, { target: { value: "市場が縮小した" } });
     expect(onChange.mock.calls[1]?.[0]).toContain("市場が縮小した");
   });
 
