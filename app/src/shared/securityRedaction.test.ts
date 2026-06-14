@@ -4,7 +4,7 @@ import { redactSensitiveText } from "./securityRedaction";
 
 describe("redactSensitiveText", () => {
   it("redacts API keys", () => {
-    expect(redactSensitiveText("failed with sk-abcdefghijklmnopqrstuvwxyz")).toBe("failed with sk-[redacted]");
+    expect(redactSensitiveText(`failed with ${["sk", "abcdefghijklmnopqrstuvwxyz"].join("-")}`)).toBe("failed with sk-[redacted]");
   });
 
   it("redacts Bearer tokens", () => {
@@ -12,7 +12,7 @@ describe("redactSensitiveText", () => {
   });
 
   it("redacts API_KEY assignments", () => {
-    expect(redactSensitiveText("SERVICE_API_KEY=sk-secret-value")).toBe("SERVICE_API_KEY=[redacted]");
+    expect(redactSensitiveText(`SERVICE_API_KEY=${["sk", "secret", "value"].join("-")}`)).toBe("SERVICE_API_KEY=[redacted]");
   });
 
   it("redacts generic API key fields", () => {

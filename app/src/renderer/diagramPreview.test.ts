@@ -239,6 +239,35 @@ describe("diagramPreview", () => {
     vi.useRealTimers();
   });
 
+  it("D2描画がタイムアウトした後でも次のD2描画を実行できる", async () => {
+    vi.useFakeTimers();
+    const { renderDiagramElement } = await loadDiagramPreviewModule();
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const firstContainer = createAttachedContainer();
+    const secondContainer = createAttachedContainer();
+    compileD2Mock.mockReturnValueOnce(new Promise(() => undefined));
+
+    const firstResult = renderDiagramElement(firstContainer, "d2", "stuck -> diagram");
+    await vi.advanceTimersByTimeAsync(diagramRenderTimeoutMs);
+
+    await expect(firstResult).resolves.toBeNull();
+    expect(firstContainer.dataset.diagramRenderStatus).toBe("error");
+
+    compileD2Mock.mockResolvedValueOnce({
+      diagram: { root: true },
+      renderOptions: {}
+    });
+    renderD2Mock.mockResolvedValueOnce('<svg viewBox="0 0 120 80"><text>recovered</text></svg>');
+
+    const secondResult = await renderDiagramElement(secondContainer, "d2", "next -> diagram");
+
+    expect(typeof secondResult?.fitToViewport).toBe("function");
+    expect(secondContainer.dataset.diagramRenderStatus).toBe("rendered");
+    expect(secondContainer.querySelector(".preview-diagram-svg--d2 svg")?.textContent).toBe("recovered");
+    warn.mockRestore();
+    vi.useRealTimers();
+  });
+
   it("SVG描画成功時に本文内パン・ズームviewportを構成しhandleを返す", async () => {
     const { renderDiagramElement } = await loadDiagramPreviewModule();
     const container = createAttachedContainer();

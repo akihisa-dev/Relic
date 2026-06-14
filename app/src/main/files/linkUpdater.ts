@@ -175,6 +175,7 @@ async function applyLinkUpdatePatches(
     for (const patch of patches) {
       const currentContent = await operations.readFile(patch.absolutePath, "utf8");
       if (currentContent !== patch.previousContent) {
+        await rollbackAppliedPatches(applied, operations);
         return fail("LINK_UPDATE_CONFLICT", "内部リンク更新対象のファイルが外部で変更されています。再読み込みしてから実行してください。");
       }
 
@@ -184,17 +185,24 @@ async function applyLinkUpdatePatches(
 
     return ok(undefined);
   } catch (error) {
-    for (const patch of applied.reverse()) {
-      try {
-        const currentContent = await operations.readFile(patch.absolutePath, "utf8");
-        if (currentContent === patch.nextContent) {
-          await operations.writeTextFile(patch.absolutePath, patch.previousContent);
-        }
-      } catch {
-        // ロールバックはベストエフォート。外部変更の上書きだけは避ける。
-      }
-    }
+    await rollbackAppliedPatches(applied, operations);
 
     return fail("LINK_UPDATE_WRITE_FAILED", "内部リンクを更新できませんでした。", errorDetails(error));
+  }
+}
+
+async function rollbackAppliedPatches(
+  applied: LinkUpdatePatch[],
+  operations: LinkUpdateWriteOperations
+): Promise<void> {
+  for (const patch of applied.toReversed()) {
+    try {
+      const currentContent = await operations.readFile(patch.absolutePath, "utf8");
+      if (currentContent === patch.nextContent) {
+        await operations.writeTextFile(patch.absolutePath, patch.previousContent);
+      }
+    } catch {
+      // ロールバックはベストエフォート。外部変更の上書きだけは避ける。
+    }
   }
 }
