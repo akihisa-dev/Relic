@@ -37,7 +37,7 @@ import { DiagramSnapGuides } from "./DiagramSnapGuides";
 import { snapDiagramNode, snapDiagramPointToGrid, type DiagramSnapGuide } from "./diagramSnap";
 
 const connectActivationDistance = 4;
-const minNodeHeight = 56;
+const minNodeHeight = 64;
 const minNodeWidth = 96;
 
 interface DragState {
