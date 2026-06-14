@@ -43,7 +43,7 @@ describe("buildLineLayouts", () => {
     expect(line).toMatchObject({
       labelX: 400,
       labelY: 212,
-      pathD: "M 360 220 L 440 220",
+      pathD: "M 360 220 H 440",
       x1: 360,
       x2: 440,
       y1: 220,
@@ -73,5 +73,29 @@ describe("buildLineLayouts", () => {
     expect(line?.y1).toBe(260);
     expect(line?.y2).toBe(360);
     expect(line?.pathD).toMatch(/^M .+ V 310 H .+ V 360$/);
+    expect(line?.labelX).toBeCloseTo(400, 2);
+    expect(line?.labelY).toBe(302);
+  });
+
+  it("places labels beside vertical line segments", () => {
+    const [line] = buildLineLayouts([
+      {
+        from: "node-1",
+        id: "line-1",
+        label: "",
+        to: "node-2"
+      }
+    ], [
+      horizontalNodes[0],
+      {
+        node: horizontalNodes[1].node,
+        x: 180,
+        y: 360
+      }
+    ]);
+
+    expect(line?.pathD).toBe("M 270 260 V 360");
+    expect(line?.labelX).toBe(278);
+    expect(line?.labelY).toBe(310);
   });
 });
