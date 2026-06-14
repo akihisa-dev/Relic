@@ -42,8 +42,7 @@ export function nextUniqueFileName(workspaceState: WorkspaceState | null, t: Tra
 export function nextUniqueDiagramFileName(
   workspaceState: WorkspaceState | null,
   t: Translator,
-  type: RelicDiagramType = "relationship",
-  baseNameOverride?: string
+  type: RelicDiagramType = "relationship"
 ): string {
   const existing = new Set<string>();
 
@@ -52,9 +51,9 @@ export function nextUniqueDiagramFileName(
   });
 
   for (let i = 1; ; i += 1) {
-    const baseName = baseNameOverride ?? (type === "why-tree"
+    const baseName = type === "why-tree"
       ? t("diagram.defaultNewWhyTreeName")
-      : t("diagram.defaultNewRelationshipName"));
+      : t("diagram.defaultNewRelationshipName");
     const name = i === 1 ? baseName : `${baseName} ${i}`;
     if (!existing.has(`${name}.md`)) return name;
   }

@@ -3,7 +3,6 @@ import { createPortal } from "react-dom";
 
 import type { WorkspaceFileIndexEntry, WorkspaceState, WorkspaceTreeNode } from "../../shared/ipc";
 import { addRelicDiagramNodeForFile, diagramTypeFromMarkdownContent, type RelicDiagramType } from "../../shared/diagramMarkdown";
-import { relicDiagramTemplatesForType, type RelicDiagramTemplateId } from "../../shared/diagramTemplates";
 import { useT } from "../i18n";
 import { useEditorStore } from "../store/editorStore";
 import { FilesWorkspaceEmpty } from "./FilesWorkspaceActions";
@@ -12,7 +11,7 @@ interface DiagramSidebarProps {
   isCreatingFile: boolean;
   isCreatingWorkspace: boolean;
   isOpeningWorkspace: boolean;
-  onCreateDiagramFile: (type: RelicDiagramType, templateId?: RelicDiagramTemplateId) => void;
+  onCreateDiagramFile: (type: RelicDiagramType) => void;
   onCreateWorkspace: () => void;
   onDeleteItem?: (path: string, type: WorkspaceTreeNode["type"]) => void;
   onOpenFile: (path: string, event?: ReactMouseEvent<HTMLButtonElement>, options?: { lineNumber?: number | null }) => void;
@@ -50,7 +49,6 @@ export function DiagramSidebar({
   const activePane = focusedPane === "right" ? rightPane : leftPane;
   const activeTab = activePane.activeTabId ? tabs[activePane.activeTabId] : null;
   const activeRelationshipTab = activeTab?.kind === "file" && diagramTypeFromMarkdownContent(activeTab.content) === "relationship" ? activeTab : null;
-  const whyTreeTemplates = relicDiagramTemplatesForType("why-tree").filter((template) => template.id !== "why-tree-empty");
   const handlePlaceFile = (filePath: string): void => {
     if (!activeRelationshipTab) {
       setPlacementError(t("diagram.openRelationshipFirst"));
@@ -106,23 +104,6 @@ export function DiagramSidebar({
           <WhyTreeIcon />
         </button>
       </div>
-      <section className="diagram-sidebar-template-group" aria-label={t("diagram.templates")}>
-        <div className="diagram-sidebar-group-heading">{t("diagram.templates")}</div>
-        <div className="diagram-sidebar-template-list">
-          {whyTreeTemplates.map((template) => (
-            <button
-              className="diagram-sidebar-template-button"
-              disabled={isCreatingFile}
-              key={template.id}
-              onClick={() => onCreateDiagramFile(template.type, template.id)}
-              title={t(template.descriptionKey)}
-              type="button"
-            >
-              {t(template.titleKey)}
-            </button>
-          ))}
-        </div>
-      </section>
       <DiagramSidebarGroup
         emptyLabel={t("diagram.noDiagramFiles")}
         files={diagramFiles}
