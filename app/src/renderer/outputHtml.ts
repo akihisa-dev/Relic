@@ -5,6 +5,13 @@ import { getRenderedDiagramSvgText } from "./diagramSvg";
 import { sanitizePreviewHtml, sanitizeSvgHtml } from "./htmlSanitizer";
 import type { Translator } from "./i18nModel";
 import { escapeHtml, renderMarkdown } from "./previewMarkdown";
+import {
+  parseRelicDiagramMarkdown,
+  type RelicDiagramDocument,
+  type RelicWhyTreeLabels,
+  type RelicWhyTreeNode
+} from "../shared/diagramMarkdown";
+import { buildDiagramCanvasLayout, nodeFileName } from "./components/diagram/diagramGeometry";
 
 export interface BuildPreviewOutputHtmlInput {
   content: string;
@@ -23,8 +30,23 @@ export async function buildPreviewOutputHtml({
   title,
   workspacePath
 }: BuildPreviewOutputHtmlInput): Promise<{ defaultFileName: string; html: string; title: string }> {
-  const documentTitle = title?.trim() || firstH1(content) || outputFileNameFromPath(path) || fileName || "Relic";
+  const parsedDiagram = parseRelicDiagramMarkdown(content);
+  const documentTitle = title?.trim() ||
+    (parsedDiagram.ok ? parsedDiagram.value.title : null) ||
+    firstH1(content) ||
+    outputFileNameFromPath(path) ||
+    fileName ||
+    "Relic";
   const defaultFileName = safeOutputFileName(outputFileNameFromPath(path) || fileName || firstH1(content) || "relic-preview");
+
+  if (parsedDiagram.ok) {
+    return {
+      defaultFileName,
+      html: wrapOutputHtml(buildDiagramOutputHtml(parsedDiagram.value, documentTitle), documentTitle),
+      title: documentTitle
+    };
+  }
+
   const root = document.createElement("div");
   root.className = "relic-output-body";
   root.innerHTML = renderMarkdown(content, workspacePath, new Map(), false, t);
@@ -125,6 +147,108 @@ function wrapOutputHtml(body: string, title: string): string {
     "</body>",
     "</html>"
   ].join("");
+}
+
+function buildDiagramOutputHtml(diagram: RelicDiagramDocument, title: string): string {
+  return diagram.type === "relationship"
+    ? buildRelationshipOutputHtml(diagram, title)
+    : buildWhyTreeOutputHtml(diagram, title);
+}
+
+function buildRelationshipOutputHtml(
+  diagram: Extract<RelicDiagramDocument, { type: "relationship" }>,
+  title: string
+): string {
+  const layout = buildDiagramCanvasLayout(diagram);
+  const markerId = "relic-output-diagram-arrow";
+
+  return [
+    '<section class="relic-output-diagram-document relic-output-diagram-document--relationship">',
+    `<h1>${escapeHtml(title)}</h1>`,
+    `<svg class="relic-output-relationship" viewBox="0 0 ${layout.width} ${layout.height}" role="img" aria-label="${escapeHtmlAttribute(title)}">`,
+    "<defs>",
+    `<marker id="${markerId}" markerHeight="8" markerWidth="8" orient="auto" refX="7" refY="4" viewBox="0 0 8 8">`,
+    '<path class="relic-output-relationship-arrow" d="M 0 0 L 8 4 L 0 8 z" />',
+    "</marker>",
+    "</defs>",
+    ...layout.lines.flatMap((line) => [
+      `<path class="relic-output-relationship-line" d="${escapeHtmlAttribute(line.pathD)}" marker-end="url(#${markerId})" />`,
+      line.label.trim()
+        ? `<text class="relic-output-relationship-label" x="${line.labelX}" y="${line.labelY}">${escapeHtml(line.label)}</text>`
+        : ""
+    ]),
+    ...layout.nodes.map((node) => [
+      `<foreignObject x="${node.x}" y="${node.y}" width="${node.node.width}" height="${node.node.height}">`,
+      `<div class="relic-output-relationship-node" title="${escapeHtmlAttribute(node.node.file)}" xmlns="http://www.w3.org/1999/xhtml">`,
+      `<span>${escapeHtml(nodeFileName(node.node.file))}</span>`,
+      "</div>",
+      "</foreignObject>"
+    ].join("")),
+    "</svg>",
+    "</section>"
+  ].join("");
+}
+
+function buildWhyTreeOutputHtml(
+  diagram: Extract<RelicDiagramDocument, { type: "why-tree" }>,
+  title: string
+): string {
+  return [
+    '<section class="relic-output-diagram-document relic-output-diagram-document--why-tree">',
+    `<h1>${escapeHtml(title)}</h1>`,
+    '<div class="relic-output-why-tree">',
+    buildWhyTreeNodeOutputHtml(diagram.phenomenon, diagram.labels, "root"),
+    "</div>",
+    "</section>"
+  ].join("");
+}
+
+function buildWhyTreeNodeOutputHtml(
+  node: RelicWhyTreeNode,
+  labels: RelicWhyTreeLabels,
+  kind: "node" | "root"
+): string {
+  const supplements = [
+    ...node.facts.map((value) => ({ label: labels.fact, modifier: "fact", value })),
+    ...node.solutions.map((value) => ({ label: labels.solution, modifier: "solution", value })),
+    ...node.actions.map((value) => ({ label: labels.action, modifier: "action", value }))
+  ].filter((item) => item.value.trim() !== "");
+
+  return [
+    '<article class="relic-output-why-tree-item">',
+    '<div class="relic-output-why-tree-node">',
+    `<div class="relic-output-why-tree-node-label">${escapeHtml(kind === "root" ? labels.root : labels.node)}</div>`,
+    `<div class="relic-output-why-tree-node-title">${multilineTextToHtml(node.title)}</div>`,
+    supplements.length > 0
+      ? [
+          '<div class="relic-output-why-tree-supplements">',
+          ...supplements.map((item) => [
+            `<div class="relic-output-why-tree-supplement relic-output-why-tree-supplement--${item.modifier}">`,
+            `<span class="relic-output-why-tree-supplement-label">${escapeHtml(item.label)}</span>`,
+            `<span class="relic-output-why-tree-supplement-text">${multilineTextToHtml(item.value)}</span>`,
+            "</div>"
+          ].join("")),
+          "</div>"
+        ].join("")
+      : "",
+    "</div>",
+    node.whys.length > 0
+      ? [
+          '<div class="relic-output-why-tree-children">',
+          ...node.whys.map((child) => buildWhyTreeNodeOutputHtml(child, labels, "node")),
+          "</div>"
+        ].join("")
+      : "",
+    "</article>"
+  ].join("");
+}
+
+function multilineTextToHtml(value: string): string {
+  return escapeHtml(value).replace(/\n/g, "<br>");
+}
+
+function escapeHtmlAttribute(value: string): string {
+  return escapeHtml(value).replace(/'/g, "&#39;");
 }
 
 const outputCss = `
@@ -310,5 +434,175 @@ mark {
   border-radius: 5px;
   color: #111111;
   padding: 10px 12px;
+}
+
+.relic-output-diagram-document {
+  box-sizing: border-box;
+  margin: 0 auto;
+  max-width: 176mm;
+  width: 100%;
+}
+
+.relic-output-diagram-document h1 {
+  color: #111111;
+  font-size: 1.85em;
+  line-height: 1.32;
+  margin: 0 0 14px;
+}
+
+.relic-output-relationship {
+  background-color: #fbfaf7;
+  background-image:
+    linear-gradient(#ded8cd 1px, transparent 1px),
+    linear-gradient(90deg, #ded8cd 1px, transparent 1px);
+  background-size: 32px 32px;
+  border: 1px solid #d7d0c4;
+  border-radius: 6px;
+  box-sizing: border-box;
+  display: block;
+  height: auto;
+  max-height: 235mm;
+  max-width: 100%;
+  width: 100%;
+}
+
+.relic-output-relationship-line {
+  fill: none;
+  stroke: #4c4a45;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.5;
+}
+
+.relic-output-relationship-arrow {
+  fill: #4c4a45;
+}
+
+.relic-output-relationship-label {
+  fill: #272521;
+  font-size: 14px;
+  paint-order: stroke;
+  stroke: #fbfaf7;
+  stroke-linejoin: round;
+  stroke-width: 5px;
+  text-anchor: middle;
+}
+
+.relic-output-relationship-node {
+  align-items: center;
+  background: #ffffff;
+  border: 1.5px solid #80786c;
+  border-radius: 6px;
+  box-shadow: 0 3px 8px rgba(30, 26, 18, 0.12);
+  box-sizing: border-box;
+  color: #1f1d19;
+  display: flex;
+  font-size: 14px;
+  font-weight: 650;
+  height: 100%;
+  justify-content: center;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  padding: 10px;
+  text-align: center;
+  width: 100%;
+}
+
+.relic-output-why-tree {
+  display: flex;
+  justify-content: center;
+  overflow-x: auto;
+  padding: 8px 0 0;
+}
+
+.relic-output-why-tree-item {
+  align-items: center;
+  break-inside: avoid;
+  display: flex;
+  flex-direction: column;
+  page-break-inside: avoid;
+}
+
+.relic-output-why-tree-node {
+  background: #ffffff;
+  border: 1.5px solid #80786c;
+  border-radius: 6px;
+  box-shadow: 0 3px 8px rgba(30, 26, 18, 0.10);
+  box-sizing: border-box;
+  color: #1f1d19;
+  max-width: 230px;
+  min-width: 150px;
+  padding: 9px 10px;
+}
+
+.relic-output-why-tree-node-label,
+.relic-output-why-tree-supplement-label {
+  color: #696257;
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0;
+  margin-bottom: 4px;
+}
+
+.relic-output-why-tree-node-title {
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.relic-output-why-tree-supplements {
+  border-top: 1px solid #e2ddd4;
+  display: grid;
+  gap: 6px;
+  margin-top: 8px;
+  padding-top: 8px;
+}
+
+.relic-output-why-tree-supplement {
+  background: #f7f5ef;
+  border: 1px solid #ded8cd;
+  border-radius: 5px;
+  padding: 6px 7px;
+}
+
+.relic-output-why-tree-supplement-text {
+  display: block;
+  font-size: 11px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.relic-output-why-tree-children {
+  display: flex;
+  gap: 18px;
+  justify-content: center;
+  margin-top: 30px;
+  position: relative;
+}
+
+.relic-output-why-tree-children::before {
+  background: #80786c;
+  content: "";
+  height: 22px;
+  left: 50%;
+  position: absolute;
+  top: -26px;
+  width: 1.5px;
+}
+
+.relic-output-why-tree-children > .relic-output-why-tree-item {
+  position: relative;
+}
+
+.relic-output-why-tree-children > .relic-output-why-tree-item::before {
+  background: #80786c;
+  content: "";
+  height: 18px;
+  left: 50%;
+  position: absolute;
+  top: -18px;
+  width: 1.5px;
 }
 `;

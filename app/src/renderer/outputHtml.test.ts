@@ -97,6 +97,95 @@ describe("outputHtml", () => {
     expect(result.html).toContain('data-diagram-language="mermaid"');
   });
 
+  it("Relationship DiagramはMarkdownソースではなく図解として出力する", async () => {
+    const t = createTranslator("ja");
+    const result = await buildPreviewOutputHtml({
+      content: [
+        "---",
+        "type: relationship",
+        "title: 関係図",
+        "---",
+        "",
+        "nodes:",
+        "  - id: a",
+        "    file: Folder/A.md",
+        "    x: 0",
+        "    y: 0",
+        "    width: 192",
+        "    height: 96",
+        "  - id: b",
+        "    file: Folder/B.md",
+        "    x: 256",
+        "    y: 0",
+        "    width: 192",
+        "    height: 96",
+        "lines:",
+        "  - id: l1",
+        "    from: a",
+        "    to: b",
+        "    label: 関連"
+      ].join("\n"),
+      fileName: "関係図.md",
+      path: "関係図.md",
+      t,
+      title: "関係図",
+      workspacePath: "/tmp/relic"
+    });
+
+    expect(result.html).toContain("relic-output-relationship");
+    expect(result.html).toContain("relic-output-relationship-node");
+    expect(result.html).toContain(">A<");
+    expect(result.html).toContain(">B<");
+    expect(result.html).toContain("関連");
+    expect(result.html).not.toContain("nodes:");
+    expect(result.html).not.toContain("lines:");
+  });
+
+  it("構造ツリーはMarkdownソースではなくツリーとして出力する", async () => {
+    const t = createTranslator("ja");
+    const result = await buildPreviewOutputHtml({
+      content: [
+        "---",
+        "type: why-tree",
+        "title: 構造ツリー",
+        "---",
+        "",
+        "labels:",
+        "  root: ルート",
+        "  node: ノード",
+        "  fact: メモ",
+        "  solution: 関連項目",
+        "  action: アクション",
+        "phenomenon:",
+        "  title: 問題",
+        "  facts:",
+        "    - 事実",
+        "  solutions: []",
+        "  actions: []",
+        "  whys:",
+        "    - title: 原因",
+        "      facts: []",
+        "      solutions:",
+        "        - 対応",
+        "      actions: []",
+        "      whys: []"
+      ].join("\n"),
+      fileName: "構造ツリー.md",
+      path: "構造ツリー.md",
+      t,
+      title: "構造ツリー",
+      workspacePath: "/tmp/relic"
+    });
+
+    expect(result.html).toContain("relic-output-why-tree");
+    expect(result.html).toContain("問題");
+    expect(result.html).toContain("原因");
+    expect(result.html).toContain("事実");
+    expect(result.html).toContain("対応");
+    expect(result.html).not.toContain("phenomenon:");
+    expect(result.html).not.toContain("whys:");
+  });
+
   it("初期ファイル名に使えない文字を安全な文字にする", () => {
     expect(safeOutputFileName('A/B:C*D?"E.md')).toBe("A_B_C_D__E");
     expect(firstH1("前\n# 見出し\n本文")).toBe("見出し");
