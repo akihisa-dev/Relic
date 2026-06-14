@@ -132,6 +132,8 @@
   "diagram.files": "図解ファイル",
   "diagram.addLineLabel": "ラベルを追加",
   "diagram.connectNode": "{{name}} を接続",
+  "diagram.copyMermaid": "Mermaidをコピー",
+  "diagram.copyMermaidAria": "Mermaidソースをコピー",
   "diagram.createRelationship": "関係図を作成",
   "diagram.createWhyTree": "原因分析ツリーを作成",
   "diagram.defaultNewRelationshipName": "関係図",

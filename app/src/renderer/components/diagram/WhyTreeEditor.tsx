@@ -55,6 +55,7 @@ export function WhyTreeEditor({
   content,
   fileName,
   onChange,
+  toolbar,
   tree
 }: DiagramCanvasProps & { tree: RelicWhyTreeDocument }): ReactElement {
   const t = useT();
@@ -338,6 +339,7 @@ export function WhyTreeEditor({
       onPointerUp={finishPan}
       role="tree"
     >
+      {toolbar}
       <div className="why-tree-content" ref={contentRef}>
         {connectorLayout.paths.length > 0 ? (
           <svg
@@ -541,4 +543,3 @@ function isWhyTreePanTarget(target: EventTarget, currentTarget: Element): boolea
     target.classList.contains("why-tree-support-column") ||
     target.classList.contains("why-tree-support-empty");
 }
-

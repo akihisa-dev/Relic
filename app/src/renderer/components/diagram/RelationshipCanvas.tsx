@@ -78,7 +78,8 @@ export function RelationshipCanvas({
   content,
   diagram,
   fileName,
-  onChange
+  onChange,
+  toolbar
 }: DiagramCanvasProps & { diagram: RelicRelationshipDiagramDocument }): ReactElement {
   const t = useT();
   const [connect, setConnect] = useState<ConnectState | null>(null);
@@ -403,6 +404,7 @@ export function RelationshipCanvas({
       role="img"
       tabIndex={0}
     >
+      {toolbar}
       {layout.nodes.length === 0 ? (
         <p className="diagram-canvas-empty">{t("diagram.emptyCanvas")}</p>
       ) : null}
