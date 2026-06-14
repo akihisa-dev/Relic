@@ -716,7 +716,7 @@ describe("DiagramCanvas", () => {
 
   it("commits moved node coordinates on pointer up", () => {
     const onChange = vi.fn();
-    render(
+    const { container } = render(
       <I18nProvider language="en">
         <DiagramCanvas content={diagramContent} fileName="World" onChange={onChange} />
       </I18nProvider>
@@ -727,6 +727,12 @@ describe("DiagramCanvas", () => {
     fireEvent(node as HTMLElement, pointerEvent("pointerdown", 1, 10, 10));
     fireEvent(node as HTMLElement, pointerEvent("pointermove", 1, 50, 30));
 
+    const dropPreview = container.querySelector(".diagram-canvas-drop-preview") as HTMLElement | null;
+    expect(dropPreview).toBeInTheDocument();
+    expect(dropPreview?.style.left).toBe("224px");
+    expect(dropPreview?.style.top).toBe("224px");
+    expect(dropPreview?.style.width).toBe("180px");
+    expect(dropPreview?.style.height).toBe("80px");
     expect((node as HTMLElement).style.transform).toContain("translate(232px, 212px)");
     expect(onChange).not.toHaveBeenCalled();
 
@@ -1095,6 +1101,7 @@ describe("DiagramCanvas", () => {
 
     const resizePreview = document.querySelector(".diagram-canvas-resize-preview") as HTMLElement | null;
     expect(resizePreview).toBeInTheDocument();
+    expect(resizePreview).toHaveClass("diagram-canvas-drop-preview");
     expect(resizePreview?.style.width).toBe("224px");
     expect(resizePreview?.style.height).toBe("96px");
     expect((alice as HTMLElement).style.width).toBe("224px");

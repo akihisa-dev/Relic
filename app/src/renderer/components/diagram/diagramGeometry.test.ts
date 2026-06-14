@@ -134,13 +134,13 @@ describe("buildLineLayouts", () => {
       {
         from: "left",
         id: "line-horizontal",
-        label: "",
+        label: "horizontal",
         to: "right"
       },
       {
         from: "top",
         id: "line-vertical",
-        label: "",
+        label: "vertical",
         to: "bottom"
       }
     ], [
@@ -200,6 +200,10 @@ describe("buildLineLayouts", () => {
     expect(horizontal?.pathD).not.toContain(" C ");
     expect(vertical?.pathD).toContain(" C ");
     expect(vertical?.pathD).toContain("L 390 208 C 404 208 404 232 390 232");
+    expect(horizontal?.labelX).toBe(297);
+    expect(horizontal?.labelY).toBe(220);
+    expect(vertical?.labelX).toBe(390);
+    expect(vertical?.labelY).toBe(318);
   });
 
   it("routes opposite lines as separate orthogonal paths", () => {
