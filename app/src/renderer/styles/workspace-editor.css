@@ -1368,6 +1368,10 @@
   padding-right: 28px;
 }
 
+.why-tree-support-item input {
+  padding-right: 78px;
+}
+
 .why-tree-support-column {
   align-content: start;
   display: grid;
@@ -1475,6 +1479,51 @@
   outline: none;
 }
 
+.why-tree-node-menu button:disabled {
+  color: rgba(255, 255, 255, 0.36);
+  cursor: not-allowed;
+}
+
+.why-tree-node-menu button:disabled:hover {
+  background: transparent;
+}
+
+.why-tree-item-actions {
+  align-items: center;
+  display: inline-flex;
+  gap: 3px;
+  position: absolute;
+  right: 7px;
+  top: 7px;
+}
+
+.why-tree-item-actions button {
+  align-items: center;
+  background: color-mix(in srgb, #111 72%, transparent);
+  border: 1px solid rgba(255, 255, 255, 0.38);
+  border-radius: 999px;
+  color: #fff;
+  display: inline-flex;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  height: 22px;
+  justify-content: center;
+  line-height: 1;
+  padding: 0;
+  width: 22px;
+}
+
+.why-tree-item-actions button:disabled {
+  opacity: 0.34;
+}
+
+.why-tree-item-actions button:not(:disabled):hover,
+.why-tree-item-actions button:not(:disabled):focus-visible {
+  background: var(--accent);
+  outline: none;
+}
+
 .why-tree-delete-button {
   align-items: center;
   background: color-mix(in srgb, #111 72%, transparent);
@@ -1493,6 +1542,10 @@
   right: 8px;
   top: 8px;
   width: 22px;
+}
+
+.why-tree-item-actions .why-tree-delete-button {
+  position: static;
 }
 
 .why-tree-delete-button:hover,

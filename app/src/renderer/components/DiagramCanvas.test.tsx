@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -102,6 +102,31 @@ const whyTreeContent = [
   "      - SEO改善",
   "    actions:",
   "      - 記事改修",
+  ""
+].join("\n");
+
+const whyTreeContentWithSiblings = [
+  "---",
+  "type: why-tree",
+  "title: 原因分析",
+  "---",
+  "",
+  "phenomenon:",
+  "  title: 売上低下",
+  "  facts: []",
+  "  solutions: []",
+  "  actions: []",
+  "  whys:",
+  "    - title: 流入減少",
+  "      facts:",
+  "        - SEO順位低下",
+  "        - 品質低下",
+  "      solutions: []",
+  "      actions: []",
+  "    - title: 広告停止",
+  "      facts: []",
+  "      solutions: []",
+  "      actions: []",
   ""
 ].join("\n");
 
@@ -407,6 +432,26 @@ describe("DiagramCanvas", () => {
 
     expect(onChange.mock.calls[0]?.[0]).not.toContain("SEO順位低下");
     expect(screen.queryByDisplayValue("SEO順位低下")).not.toBeInTheDocument();
+  });
+
+  it("reorders why-tree whys and supplements in Markdown", () => {
+    const onChange = vi.fn();
+    render(<StatefulDiagramCanvas content={whyTreeContentWithSiblings} onChange={onChange} />);
+
+    const secondWhy = screen.getByDisplayValue("広告停止").closest(".why-tree-node-shell");
+    expect(secondWhy).toBeInstanceOf(HTMLElement);
+    fireEvent.click(screen.getByDisplayValue("広告停止"));
+    fireEvent.click(within(secondWhy as HTMLElement).getByRole("button", { name: "Move up" }));
+
+    const movedWhyContent = onChange.mock.calls[0]?.[0] as string;
+    expect(movedWhyContent.indexOf("title: 広告停止")).toBeLessThan(movedWhyContent.indexOf("title: 流入減少"));
+
+    const seoFact = screen.getByDisplayValue("SEO順位低下").closest(".why-tree-support-item");
+    expect(seoFact).toBeInstanceOf(HTMLElement);
+    fireEvent.click(within(seoFact as HTMLElement).getByRole("button", { name: "Move down" }));
+
+    const movedFactContent = onChange.mock.calls[1]?.[0] as string;
+    expect(movedFactContent.indexOf("- 品質低下")).toBeLessThan(movedFactContent.indexOf("- SEO順位低下"));
   });
 
   it("shows an error for invalid Diagram Markdown", () => {

@@ -8,6 +8,8 @@ import {
   diagramTypeFromMarkdownContent,
   isRelicDiagramMarkdownContent,
   moveRelicDiagramNode,
+  moveRelicWhyTreeSupplement,
+  moveRelicWhyTreeWhy,
   parseRelicDiagramMarkdown,
   removeRelicDiagramLine,
   removeRelicDiagramNode,
@@ -382,10 +384,35 @@ describe("why-tree operations", () => {
     expect(removeRelicWhyTreeSupplement(whyTreeContent, [0], "action", 9).ok).toBe(false);
   });
 
+  it("同じ親を持つWhyと補助要素を並べ替え、Markdownから復元する", () => {
+    const withSecondWhy = addRelicWhyTreeWhy(whyTreeContent, []);
+    expect(withSecondWhy.ok).toBe(true);
+    if (!withSecondWhy.ok) return;
+
+    const movedWhy = moveRelicWhyTreeWhy(withSecondWhy.value.content, [1], "up");
+    expect(movedWhy.ok).toBe(true);
+    if (!movedWhy.ok) return;
+    expect(movedWhy.value.tree.phenomenon.whys.map((why) => why.title)).toEqual(["なぜ？", "流入減少"]);
+    expect(parseRelicDiagramMarkdown(movedWhy.value.content).ok).toBe(true);
+
+    const withSecondFact = addRelicWhyTreeSupplement(movedWhy.value.content, [1], "fact");
+    expect(withSecondFact.ok).toBe(true);
+    if (!withSecondFact.ok) return;
+
+    const movedFact = moveRelicWhyTreeSupplement(withSecondFact.value.content, [1], "fact", 1, "up");
+    expect(movedFact.ok).toBe(true);
+    if (!movedFact.ok) return;
+    expect(movedFact.value.tree.phenomenon.whys[1]?.facts).toEqual(["根拠", "SEO順位低下"]);
+    expect(parseRelicDiagramMarkdown(movedFact.value.content).ok).toBe(true);
+  });
+
   it("存在しないWhyパスや循環は表現しない", () => {
     expect(addRelicWhyTreeWhy(whyTreeContent, [1]).ok).toBe(false);
     expect(addRelicWhyTreeSupplement(whyTreeContent, [0, 1], "fact").ok).toBe(false);
     expect(updateRelicWhyTreeTitle(whyTreeContent, [0, 0, 0], "存在しないWhy").ok).toBe(false);
+    expect(moveRelicWhyTreeWhy(whyTreeContent, [], "down").ok).toBe(false);
+    expect(moveRelicWhyTreeWhy(whyTreeContent, [0], "up").ok).toBe(false);
+    expect(moveRelicWhyTreeSupplement(whyTreeContent, [0], "fact", 0, "up").ok).toBe(false);
   });
 });
 

@@ -91,6 +91,8 @@ export interface RelicWhyTreeUpdate {
   tree: RelicWhyTreeDocument;
 }
 
+export type RelicWhyTreeMoveDirection = "down" | "up";
+
 interface DiagramFrontmatter {
   title?: string;
   type: RelicDiagramType;
@@ -394,6 +396,64 @@ export function updateRelicWhyTreeSupplement(
     return ok({
       ...node,
       [key]: node[key].map((item, itemIndex) => itemIndex === index ? nextText.value : item)
+    });
+  });
+  if (!updated.ok) return updated;
+
+  return serializeWhyTreeUpdate({ ...parsed.value, phenomenon: updated.value });
+}
+
+export function moveRelicWhyTreeWhy(
+  content: string,
+  whyPath: number[],
+  direction: RelicWhyTreeMoveDirection
+): RelicResult<RelicWhyTreeUpdate> {
+  const parsed = parseRelicWhyTreeMarkdown(content);
+  if (!parsed.ok) return parsed;
+  if (whyPath.length === 0) {
+    return fail("WHY_TREE_PHENOMENON_REQUIRED", "問題・現象は並べ替えできません。");
+  }
+  if (whyPath.some((index) => !Number.isInteger(index) || index < 0)) {
+    return fail("WHY_TREE_PATH_INVALID", "Why Treeのパスが正しくありません。");
+  }
+
+  const updated = updateWhyTreeNodeAtPath(parsed.value.phenomenon, whyPath.slice(0, -1), (node) => {
+    const index = whyPath[whyPath.length - 1];
+    if (index === undefined || index >= node.whys.length) {
+      return fail("WHY_TREE_NODE_MISSING", "並べ替えるWhyが見つかりません。");
+    }
+
+    const moved = moveArrayItem(node.whys, index, moveDirectionOffset(direction));
+    if (!moved.ok) return moved;
+
+    return ok({
+      ...node,
+      whys: moved.value
+    });
+  });
+  if (!updated.ok) return updated;
+
+  return serializeWhyTreeUpdate({ ...parsed.value, phenomenon: updated.value });
+}
+
+export function moveRelicWhyTreeSupplement(
+  content: string,
+  whyPath: number[],
+  kind: RelicWhyTreeSupplementKind,
+  index: number,
+  direction: RelicWhyTreeMoveDirection
+): RelicResult<RelicWhyTreeUpdate> {
+  const parsed = parseRelicWhyTreeMarkdown(content);
+  if (!parsed.ok) return parsed;
+
+  const key = whyTreeSupplementKey(kind);
+  const updated = updateWhyTreeNodeAtPath(parsed.value.phenomenon, whyPath, (node) => {
+    const moved = moveArrayItem(node[key], index, moveDirectionOffset(direction));
+    if (!moved.ok) return moved;
+
+    return ok({
+      ...node,
+      [key]: moved.value
     });
   });
   if (!updated.ok) return updated;
@@ -957,6 +1017,30 @@ function updateWhyTreeNodeAtPath(
 function normalizeNodeUpdate(value: RelicWhyTreeNode | RelicResult<RelicWhyTreeNode>): RelicResult<RelicWhyTreeNode> {
   if (isRecord(value) && typeof value.ok === "boolean") return value as RelicResult<RelicWhyTreeNode>;
   return ok(value as RelicWhyTreeNode);
+}
+
+function moveArrayItem<T>(items: T[], index: number, offset: number): RelicResult<T[]> {
+  if (!Number.isInteger(index) || index < 0 || index >= items.length) {
+    return fail("WHY_TREE_ITEM_MISSING", "並べ替える項目が見つかりません。");
+  }
+
+  const nextIndex = index + offset;
+  if (nextIndex < 0 || nextIndex >= items.length) {
+    return fail("WHY_TREE_MOVE_OUT_OF_RANGE", "これ以上並べ替えできません。");
+  }
+
+  const nextItems = [...items];
+  const [item] = nextItems.splice(index, 1);
+  if (item === undefined) {
+    return fail("WHY_TREE_ITEM_MISSING", "並べ替える項目が見つかりません。");
+  }
+  nextItems.splice(nextIndex, 0, item);
+
+  return ok(nextItems);
+}
+
+function moveDirectionOffset(direction: RelicWhyTreeMoveDirection): -1 | 1 {
+  return direction === "up" ? -1 : 1;
 }
 
 function whyTreeSupplementKey(kind: RelicWhyTreeSupplementKind): "facts" | "solutions" | "actions" {
