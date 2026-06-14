@@ -420,10 +420,11 @@ describe("DiagramCanvas", () => {
     const whyInput = screen.getByDisplayValue("流入減少");
 
     fireEvent.click(whyInput);
-    fireEvent.keyDown(whyInput, { key: "Enter" });
+    expect(fireEvent.keyDown(whyInput, { key: "Enter" })).toBe(true);
+    expect(fireEvent.keyDown(whyInput, { key: " " })).toBe(true);
     expect(onChange).not.toHaveBeenCalled();
 
-    fireEvent.keyDown(editor, { key: "Enter" });
+    expect(fireEvent.keyDown(editor, { key: "Enter" })).toBe(false);
 
     expect(onChange.mock.calls[0]?.[0]).toContain("title: なぜ？");
     expect(screen.getByDisplayValue("なぜ？")).toBeInTheDocument();
