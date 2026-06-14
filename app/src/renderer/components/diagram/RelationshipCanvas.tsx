@@ -22,6 +22,7 @@ import {
   updateRelicFreeDrawingNodeText,
   updateRelicDiagramLineLabel,
   type RelicConnectedDiagramDocument,
+  type RelicConnectedDiagramNode,
   type RelicDiagramNodeBase
 } from "../../../shared/diagramMarkdown";
 import { useT } from "../../i18n";
@@ -97,6 +98,11 @@ interface LabelEditState {
   value: string;
 }
 
+interface NodeTextEditState {
+  nodeId: string;
+  value: string;
+}
+
 export function RelationshipCanvas({
   content,
   diagram,
@@ -109,6 +115,7 @@ export function RelationshipCanvas({
   const [connect, setConnect] = useState<ConnectState | null>(null);
   const [drag, setDrag] = useState<DragState | null>(null);
   const [labelEdit, setLabelEdit] = useState<LabelEditState | null>(null);
+  const [nodeTextEdit, setNodeTextEdit] = useState<NodeTextEditState | null>(null);
   const [pan, setPan] = useState<PanState | null>(null);
   const [resize, setResize] = useState<ResizeState | null>(null);
   const [selection, setSelection] = useState<DiagramSelection | null>(null);
@@ -196,6 +203,7 @@ export function RelationshipCanvas({
 
     event.preventDefault();
     setSelection({ id: node.id, type: "node" });
+    setNodeTextEdit(null);
     focusCanvasFrom(event.currentTarget);
     if (typeof event.currentTarget.setPointerCapture === "function") {
       event.currentTarget.setPointerCapture(event.pointerId);
@@ -259,6 +267,7 @@ export function RelationshipCanvas({
     event.preventDefault();
     event.stopPropagation();
     setSelection({ id: node.id, type: "node" });
+    setNodeTextEdit(null);
     focusCanvasFrom(event.currentTarget);
     if (typeof event.currentTarget.setPointerCapture === "function") {
       event.currentTarget.setPointerCapture(event.pointerId);
@@ -325,6 +334,7 @@ export function RelationshipCanvas({
     event.preventDefault();
     setSelection(null);
     setLabelEdit(null);
+    setNodeTextEdit(null);
     focusCanvasFrom(event.currentTarget);
     if (typeof event.currentTarget.setPointerCapture === "function") {
       event.currentTarget.setPointerCapture(event.pointerId);
@@ -469,6 +479,7 @@ export function RelationshipCanvas({
     if (!onChange) return;
 
     setSelection({ id: line.line.id, type: "line" });
+    setNodeTextEdit(null);
     setLabelEdit({
       lineId: line.line.id,
       value: line.line.label
@@ -515,6 +526,7 @@ export function RelationshipCanvas({
     if (isBlankCanvasTarget(event.target, event.currentTarget)) {
       setSelection(null);
       setLabelEdit(null);
+      setNodeTextEdit(null);
       focusCanvasFrom(event.currentTarget);
     }
   };
@@ -528,6 +540,7 @@ export function RelationshipCanvas({
     if (deleted.ok) {
       onChange(deleted.value.content);
       setLabelEdit(null);
+      setNodeTextEdit(null);
       setSelection(null);
     }
   };
@@ -538,15 +551,36 @@ export function RelationshipCanvas({
     if (added.ok) {
       onChange(added.value.content);
       setSelection({ id: added.value.node.id, type: "node" });
+      setNodeTextEdit({ nodeId: added.value.node.id, value: "Node" });
     }
   };
-  const changeFreeDrawingNodeText = (nodeId: string, value: string): void => {
-    if (!onChange || !isFreeDrawing) return;
+  const beginFreeDrawingNodeTextEdit = (
+    node: RelicConnectedDiagramNode,
+    event: ReactMouseEvent<HTMLDivElement>
+  ): void => {
+    if (!isFreeDrawing || !("text" in node)) return;
 
-    const updated = updateRelicFreeDrawingNodeText(content, nodeId, value);
+    event.preventDefault();
+    event.stopPropagation();
+    setSelection({ id: node.id, type: "node" });
+    setNodeTextEdit({ nodeId: node.id, value: node.text });
+    setLabelEdit(null);
+  };
+  const changeFreeDrawingNodeText = (nodeId: string, value: string): void => {
+    setNodeTextEdit((current) => current?.nodeId === nodeId ? { ...current, value } : current);
+  };
+  const commitFreeDrawingNodeText = (): void => {
+    if (!nodeTextEdit || !onChange || !isFreeDrawing) return;
+
+    const updated = updateRelicFreeDrawingNodeText(content, nodeTextEdit.nodeId, nodeTextEdit.value);
     if (updated.ok) {
       onChange(updated.value.content);
+      setSelection({ id: updated.value.node.id, type: "node" });
     }
+    setNodeTextEdit(null);
+  };
+  const cancelFreeDrawingNodeText = (): void => {
+    setNodeTextEdit(null);
   };
   const reverseSelectedLineDirection = (
     line: DiagramCanvasLineLayout,
@@ -570,6 +604,7 @@ export function RelationshipCanvas({
       setConnect(null);
       setDrag(null);
       setLabelEdit(null);
+      setNodeTextEdit(null);
       setPan(null);
       setResize(null);
       setSelection(null);
@@ -732,11 +767,16 @@ export function RelationshipCanvas({
           {displayNodes.map(({ node, x, y }) => (
             <DiagramNodeView
               isDragging={drag?.nodeId === node.id}
+              isTextEditing={nodeTextEdit?.nodeId === node.id}
               isSelected={selection?.type === "node" && selection.id === node.id}
               key={node.id}
               node={node}
+              nodeTextDraft={nodeTextEdit?.nodeId === node.id ? nodeTextEdit.value : undefined}
               nodeTextLabel={t("diagram.freeDrawingNodeText")}
+              onNodeTextCancel={cancelFreeDrawingNodeText}
               onNodeTextChange={isFreeDrawing ? changeFreeDrawingNodeText : undefined}
+              onNodeTextCommit={commitFreeDrawingNodeText}
+              onNodeTextDoubleClick={beginFreeDrawingNodeTextEdit}
               onOutlinePointerDown={startNodeOutlineConnect}
               onPointerCancel={cancelNodeDrag}
               onPointerDown={startNodePointer}
