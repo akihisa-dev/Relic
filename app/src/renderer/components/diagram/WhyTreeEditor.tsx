@@ -407,6 +407,7 @@ export function WhyTreeEditor({
                 }}
                 onClick={() => selectMainNode(item)}
                 onKeyDown={(event) => {
+                  if (isTextEditingTarget(event.target)) return;
                   if (event.key === "Enter" || event.key === " ") {
                     event.preventDefault();
                     selectMainNode(item);
