@@ -1,10 +1,7 @@
 import { type ReactElement, useMemo } from "react";
 
 import { parseRelicDiagramMarkdown } from "../../../shared/diagramMarkdown";
-import { relationshipToMermaid } from "../../../shared/relationshipMermaid";
-import { whyTreeToMermaid } from "../../../shared/whyTreeMermaid";
 import { useT } from "../../i18n";
-import { DiagramToolbar } from "./DiagramToolbar";
 import { RelationshipCanvas } from "./RelationshipCanvas";
 import { type DiagramCanvasProps } from "./diagramTypes";
 import { WhyTreeEditor } from "./WhyTreeEditor";
@@ -27,7 +24,6 @@ export function DiagramCanvasRouter({ content, fileName, onChange }: DiagramCanv
         content={content}
         fileName={fileName}
         onChange={onChange}
-        toolbar={<DiagramToolbar mermaidSource={whyTreeToMermaid(parsed.value)} />}
         tree={parsed.value}
       />
     );
@@ -39,7 +35,6 @@ export function DiagramCanvasRouter({ content, fileName, onChange }: DiagramCanv
       diagram={parsed.value}
       fileName={fileName}
       onChange={onChange}
-      toolbar={<DiagramToolbar mermaidSource={relationshipToMermaid(parsed.value)} />}
     />
   );
 }

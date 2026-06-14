@@ -13,6 +13,7 @@ import {
   moveRelicDiagramNode,
   removeRelicDiagramLine,
   removeRelicDiagramNode,
+  reverseRelicDiagramLineDirection,
   resizeRelicDiagramNode,
   updateRelicDiagramLineLabel,
   type RelicDiagramNode,
@@ -475,6 +476,21 @@ export function RelationshipCanvas({
       setSelection(null);
     }
   };
+  const reverseSelectedLineDirection = (
+    line: DiagramCanvasLineLayout,
+    event: ReactPointerEvent<HTMLButtonElement>
+  ): void => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!onChange) return;
+
+    const reversed = reverseRelicDiagramLineDirection(content, line.line.id);
+    if (reversed.ok) {
+      onChange(reversed.value.content);
+      setSelection({ id: reversed.value.line.id, type: "line" });
+      setLabelEdit(null);
+    }
+  };
   const handleCanvasKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>): void => {
     if (event.target instanceof HTMLInputElement) return;
     if (event.key === "Escape") {
@@ -540,6 +556,7 @@ export function RelationshipCanvas({
         <DiagramSnapGuides guides={displaySnapGuides} height={layout.height} width={layout.width} />
         <div className="diagram-canvas-labels">
           {displayLines.map((line) => {
+            const isSelectedLine = selection?.type === "line" && selection.id === line.line.id;
             if (labelEdit?.lineId === line.line.id) {
               return (
                 <form
@@ -572,19 +589,35 @@ export function RelationshipCanvas({
             if (!line.label && selection?.id !== line.line.id) return null;
 
             return (
-              <button
-                aria-label={t("diagram.editLineLabel")}
-                className={`diagram-canvas-line-label${line.label ? "" : " diagram-canvas-line-label--empty"}`}
+              <div
+                className="diagram-canvas-line-controls"
                 key={line.line.id}
-                onPointerDown={(event) => startLabelEditFromButton(line, event)}
                 style={{
                   left: line.labelX,
                   top: line.labelY
                 }}
-                type="button"
               >
-                {line.label || t("diagram.addLineLabel")}
-              </button>
+                <button
+                  aria-label={t("diagram.editLineLabel")}
+                  className={`diagram-canvas-line-label${line.label ? "" : " diagram-canvas-line-label--empty"}`}
+                  onPointerDown={(event) => startLabelEditFromButton(line, event)}
+                  type="button"
+                >
+                  {line.label || t("diagram.addLineLabel")}
+                </button>
+                {isSelectedLine ? (
+                  <button
+                    aria-label={t("diagram.reverseLineDirection")}
+                    className="diagram-canvas-line-action"
+                    data-tooltip={t("diagram.reverseLineDirection")}
+                    onPointerDown={(event) => reverseSelectedLineDirection(line, event)}
+                    title={t("diagram.reverseLineDirection")}
+                    type="button"
+                  >
+                    <ReverseLineDirectionIcon />
+                  </button>
+                ) : null}
+              </div>
             );
           })}
         </div>
@@ -630,4 +663,15 @@ function focusCanvasFrom(element: Element): void {
   if (canvas instanceof HTMLElement) {
     canvas.focus({ preventScroll: true });
   }
+}
+
+function ReverseLineDirectionIcon(): ReactElement {
+  return (
+    <svg aria-hidden="true" fill="none" height="14" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 24 24" width="14">
+      <path d="M 7 7 H 18" />
+      <path d="M 15 4 L 18 7 L 15 10" />
+      <path d="M 17 17 H 6" />
+      <path d="M 9 14 L 6 17 L 9 20" />
+    </svg>
+  );
 }

@@ -95,6 +95,11 @@ export interface RelicDiagramLineLabelUpdate {
   line: RelicDiagramLine;
 }
 
+export interface RelicDiagramLineDirectionUpdate {
+  content: string;
+  line: RelicDiagramLine;
+}
+
 export interface RelicWhyTreeUpdate {
   content: string;
   tree: RelicWhyTreeDocument;
@@ -749,6 +754,41 @@ export function updateRelicDiagramLineLabel(
   });
 }
 
+export function reverseRelicDiagramLineDirection(
+  content: string,
+  lineId: string
+): RelicResult<RelicDiagramLineDirectionUpdate> {
+  const parsed = parseRelicRelationshipMarkdown(content);
+  if (!parsed.ok) return parsed;
+
+  const id = parseRequiredText(lineId, "DIAGRAM_LINE_ID_INVALID", "Lineの id を指定してください。");
+  if (!id.ok) return id;
+
+  const line = parsed.value.lines.find((item) => item.id === id.value);
+  if (!line) {
+    return fail("DIAGRAM_LINE_MISSING", "向きを変更するLineが見つかりません。");
+  }
+  if (parsed.value.lines.some((item) => item.id !== id.value && item.from === line.to && item.to === line.from)) {
+    return fail("DIAGRAM_LINE_DUPLICATED", "逆方向のLineはすでに存在します。");
+  }
+
+  const nextLine = {
+    ...line,
+    from: line.to,
+    to: line.from
+  };
+  const serialized = serializeRelicRelationshipMarkdown({
+    ...parsed.value,
+    lines: parsed.value.lines.map((item) => item.id === id.value ? nextLine : item)
+  });
+  if (!serialized.ok) return serialized;
+
+  return ok({
+    content: serialized.value,
+    line: nextLine
+  });
+}
+
 function validateRelicRelationshipDocument(raw: unknown): RelicResult<RelicRelationshipDiagramDocument> {
   if (!isRecord(raw)) {
     return fail("DIAGRAM_FORMAT_INVALID", "図解ファイルの形式が正しくありません。");
@@ -913,6 +953,8 @@ function parseLines(rawLines: unknown, nodes: RelicDiagramNode[]): RelicResult<R
 
   const nodeIds = new Set(nodes.map((node) => node.id));
   const lineIds = new Set<string>();
+  const lineDirections = new Set<string>();
+  const linePairCounts = new Map<string, number>();
   const lines: RelicDiagramLine[] = [];
 
   for (const [index, rawLine] of rawLines.entries()) {
@@ -941,11 +983,22 @@ function parseLines(rawLines: unknown, nodes: RelicDiagramNode[]): RelicResult<R
     if (!nodeIds.has(from.value) || !nodeIds.has(to.value)) {
       return fail("DIAGRAM_LINE_NODE_MISSING", "Lineが存在しないNodeを参照しています。");
     }
+    const directionKey = diagramLineDirectionKey(from.value, to.value);
+    if (lineDirections.has(directionKey)) {
+      return fail("DIAGRAM_LINE_DUPLICATED", "同じ向きのLineはすでに存在します。");
+    }
+    const pairKey = diagramLinePairKey(from.value, to.value);
+    const pairCount = linePairCounts.get(pairKey) ?? 0;
+    if (pairCount >= 2) {
+      return fail("DIAGRAM_LINE_PAIR_LIMIT", "同じNode一対のLineは2本までにしてください。");
+    }
 
     const label = parseOptionalText(rawLine.label, "DIAGRAM_LINE_LABEL_INVALID", "Lineの label は文字にしてください。");
     if (!label.ok) return label;
 
     lineIds.add(id.value);
+    lineDirections.add(directionKey);
+    linePairCounts.set(pairKey, pairCount + 1);
     lines.push({
       from: from.value,
       id: id.value,
@@ -955,6 +1008,14 @@ function parseLines(rawLines: unknown, nodes: RelicDiagramNode[]): RelicResult<R
   }
 
   return ok(lines);
+}
+
+function diagramLineDirectionKey(from: string, to: string): string {
+  return `${from}\u0000${to}`;
+}
+
+function diagramLinePairKey(from: string, to: string): string {
+  return from < to ? diagramLineDirectionKey(from, to) : diagramLineDirectionKey(to, from);
 }
 
 function parseWhyTreeNode(raw: unknown, label: string): RelicResult<RelicWhyTreeNode> {

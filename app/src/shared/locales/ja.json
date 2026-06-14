@@ -147,6 +147,7 @@
   "diagram.openDiagramFirst": "Markdownファイルを配置するには図解ファイルを開いてください。",
   "diagram.openRelationshipFirst": "Markdownファイルを配置するには関係図を開いてください。",
   "diagram.placeableFiles": "Markdownファイル",
+  "diagram.reverseLineDirection": "矢印方向を反転",
   "diagram.resizeNode": "Nodeサイズを変更",
   "diagram.status": "{{nodes}} Node / {{lines}} Line",
   "diagram.whyTree.actionInput": "アクション",
