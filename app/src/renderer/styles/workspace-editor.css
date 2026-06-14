@@ -991,6 +991,10 @@
   stroke-width: 2;
 }
 
+.diagram-canvas-arrow-marker {
+  fill: context-stroke;
+}
+
 .diagram-canvas-line-hit {
   fill: none;
   pointer-events: stroke;
