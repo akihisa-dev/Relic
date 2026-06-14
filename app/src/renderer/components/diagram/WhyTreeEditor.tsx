@@ -68,7 +68,7 @@ export function WhyTreeEditor({
   const panRef = useRef<WhyTreePanState | null>(null);
   const [collapsedPaths, setCollapsedPaths] = useState<Set<string>>(() => new Set());
   const [draftContent, setDraftContent] = useState(content);
-  const [selection, setSelection] = useState<WhyTreeSelection>({ kind: "phenomenon", path: [] });
+  const [selection, setSelection] = useState<WhyTreeSelection | null>({ kind: "phenomenon", path: [] });
   const [connectorLayout, setConnectorLayout] = useState<WhyTreeConnectorLayout>({ height: 0, paths: [], width: 0 });
   const [isPanning, setIsPanning] = useState(false);
   const displayedTree = useMemo(() => {
@@ -191,7 +191,22 @@ export function WhyTreeEditor({
       return next;
     });
   };
+  const addKeyboardWhy = (): void => {
+    if (!onChange || !selection) return;
+    if (selection.kind !== "phenomenon" && selection.kind !== "why") return;
+
+    const parentPath = selection.kind === "phenomenon" ? [] : selection.path.slice(0, -1);
+    const parent = whyTreeNodeAtPath(displayedTree.phenomenon, parentPath);
+    if (!parent) return;
+
+    const added = addRelicWhyTreeWhy(draftContentRef.current, parentPath);
+    if (!added.ok) return;
+
+    applyUpdate(added);
+    setSelection({ kind: "why", path: [...parentPath, parent.whys.length] });
+  };
   const deleteSelection = (): void => {
+    if (!selection) return;
     if (selection.kind === "phenomenon") return;
     if (selection.kind === "why") {
       removeMainWhy(selection.path);
@@ -203,8 +218,19 @@ export function WhyTreeEditor({
     }
   };
   const handleEditorKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>): void => {
-    if (event.key !== "Delete" && event.key !== "Backspace") return;
     if (event.target instanceof HTMLInputElement) return;
+    if (event.key === "Escape") {
+      event.preventDefault();
+      setSelection(null);
+      return;
+    }
+    if (event.key === "Enter") {
+      event.preventDefault();
+      addKeyboardWhy();
+      return;
+    }
+    if (event.key !== "Delete" && event.key !== "Backspace") return;
+    if (!selection) return;
     if (selection.kind === "phenomenon") return;
 
     event.preventDefault();
@@ -478,7 +504,7 @@ function SupplementColumn({
   onRemove: (path: number[], kind: RelicWhyTreeSupplementKind, index: number) => void;
   onSelect: (path: number[], kind: RelicWhyTreeSupplementKind, index: number) => void;
   path: number[];
-  selected: WhyTreeSelection;
+  selected: WhyTreeSelection | null;
 }): ReactElement {
   const t = useT();
   const values = whyTreeSupplementValues(node, kind);
@@ -611,7 +637,8 @@ function whyTreeSupplementInputKey(
   return "diagram.whyTree.actionInput";
 }
 
-function isSameWhyTreeSelection(selection: WhyTreeSelection, target: WhyTreeSelection): boolean {
+function isSameWhyTreeSelection(selection: WhyTreeSelection | null, target: WhyTreeSelection): boolean {
+  if (!selection) return false;
   if (selection.kind !== target.kind) return false;
   if (!samePath(selection.path, target.path)) return false;
 
