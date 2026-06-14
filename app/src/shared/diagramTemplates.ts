@@ -8,6 +8,7 @@ import type { TranslationKey } from "./i18n";
 export type RelicDiagramTemplateId =
   | "relationship-empty"
   | "why-tree-empty"
+  | "why-tree-problem-analysis"
   | "why-tree-basic-cause"
   | "why-tree-incident-review"
   | "why-tree-risk-analysis"
@@ -38,6 +39,34 @@ export const relicDiagramTemplates: readonly RelicDiagramTemplate[] = [
     descriptionKey: "diagram.template.whyTreeEmptyDescription",
     id: "why-tree-empty",
     titleKey: "diagram.template.whyTreeEmpty",
+    type: "why-tree"
+  },
+  {
+    content: [
+      "---",
+      "type: why-tree",
+      "title: 問題分析",
+      "---",
+      "",
+      "phenomenon:",
+      "  title: 解決したい問題",
+      "  facts:",
+      "    - 観察された事実",
+      "  solutions:",
+      "    - 考えられる対策",
+      "  actions:",
+      "    - 次に確認すること",
+      "  whys:",
+      "    - title: なぜ起きたのか",
+      "      facts: []",
+      "      solutions: []",
+      "      actions: []",
+      ""
+    ].join("\n"),
+    defaultNameKey: "diagram.template.problemAnalysisName",
+    descriptionKey: "diagram.template.problemAnalysisDescription",
+    id: "why-tree-problem-analysis",
+    titleKey: "diagram.template.problemAnalysis",
     type: "why-tree"
   },
   {
