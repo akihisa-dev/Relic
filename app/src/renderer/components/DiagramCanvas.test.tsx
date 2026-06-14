@@ -1066,8 +1066,8 @@ describe("DiagramCanvas", () => {
     fireEvent(alice as HTMLElement, pointerEvent("pointerup", 3, 230, 110));
 
     expect(onChange).toHaveBeenCalledTimes(1);
-    expect(onChange.mock.calls[0]?.[0]).toContain("width: 220");
-    expect(onChange.mock.calls[0]?.[0]).toContain("height: 100");
+    expect(onChange.mock.calls[0]?.[0]).toContain("width: 224");
+    expect(onChange.mock.calls[0]?.[0]).toContain("height: 96");
   });
 
   it("keeps resized node above the minimum size", () => {
@@ -1090,7 +1090,7 @@ describe("DiagramCanvas", () => {
 
     expect(onChange).toHaveBeenCalledTimes(1);
     expect(onChange.mock.calls[0]?.[0]).toContain("width: 96");
-    expect(onChange.mock.calls[0]?.[0]).toContain("height: 56");
+    expect(onChange.mock.calls[0]?.[0]).toContain("height: 64");
   });
 
   it("does not move a selected node when dragging its outline without a target node", () => {

@@ -335,14 +335,16 @@ describe("relationship operations", () => {
 
     const addedNode = addRelicDiagramNodeForFile(relationshipContent, "characters/carol.md");
     expect(addedNode.ok ? addedNode.value.node.id : "").toBe("node-3");
+    expect(addedNode.ok ? addedNode.value.node.width : 0).toBe(192);
+    expect(addedNode.ok ? addedNode.value.node.height : 0).toBe(96);
 
     const moved = moveRelicDiagramNode(relationshipContent, "node-1", 240.4, 160.6);
     expect(moved.ok ? moved.value.content : "").toContain("x: 240");
     expect(moved.ok ? moved.value.content : "").toContain("y: 161");
 
     const resized = resizeRelicDiagramNode(relationshipContent, "node-1", 220.4, 96.6);
-    expect(resized.ok ? resized.value.content : "").toContain("width: 220");
-    expect(resized.ok ? resized.value.content : "").toContain("height: 97");
+    expect(resized.ok ? resized.value.content : "").toContain("width: 224");
+    expect(resized.ok ? resized.value.content : "").toContain("height: 96");
 
     const addedLine = addRelicDiagramLine(serializeRelationshipWithoutLines(relationshipContent), "node-1", "node-2");
     expect(addedLine.ok ? addedLine.value.line : null).toMatchObject({ from: "node-1", to: "node-2" });

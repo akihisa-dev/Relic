@@ -132,8 +132,9 @@ export const defaultRelicWhyTreeLabels: RelicWhyTreeLabels = {
 const whyTreeBodyKeys = new Set(["labels", "phenomenon"]);
 const whyTreeLabelKeys = new Set(["action", "fact", "node", "root", "solution"]);
 const whyTreeNodeKeys = new Set(["title", "facts", "solutions", "actions", "whys"]);
-const defaultNodeWidth = 180;
-const defaultNodeHeight = 80;
+const relationshipNodeGridSize = 32;
+const defaultNodeWidth = 192;
+const defaultNodeHeight = 96;
 
 export const emptyRelicRelationshipMarkdownContent = [
   "---",
@@ -613,8 +614,8 @@ export function resizeRelicDiagramNode(
 
   const nextNode = {
     ...node,
-    height: Math.round(nextHeight.value),
-    width: Math.round(nextWidth.value)
+    height: snapRelationshipNodeSize(nextHeight.value),
+    width: snapRelationshipNodeSize(nextWidth.value)
   };
   const serialized = serializeRelicRelationshipMarkdown({
     ...parsed.value,
@@ -626,6 +627,10 @@ export function resizeRelicDiagramNode(
     content: serialized.value,
     node: nextNode
   });
+}
+
+function snapRelationshipNodeSize(value: number): number {
+  return Math.max(relationshipNodeGridSize, Math.round(value / relationshipNodeGridSize) * relationshipNodeGridSize);
 }
 
 export function addRelicDiagramLine(
