@@ -80,7 +80,7 @@ export function WhyTreeEditor({
   const [collapsedPaths, setCollapsedPaths] = useState<Set<string>>(() => new Set());
   const [dragState, setDragState] = useState<WhyTreeDragState | null>(null);
   const [draftContent, setDraftContent] = useState(content);
-  const [selection, setSelection] = useState<WhyTreeSelection | null>({ kind: "phenomenon", path: [] });
+  const [selection, setSelection] = useState<WhyTreeSelection | null>(null);
   const [connectorLayout, setConnectorLayout] = useState<WhyTreeConnectorLayout>({ height: 0, paths: [], width: 0 });
   const [isPanning, setIsPanning] = useState(false);
   const [labelPanelOpen, setLabelPanelOpen] = useState(true);
@@ -306,6 +306,7 @@ export function WhyTreeEditor({
       return;
     }
     if (event.key === "Enter") {
+      if (!selection) return;
       event.preventDefault();
       addKeyboardWhy();
       return;
@@ -322,6 +323,7 @@ export function WhyTreeEditor({
     if (!isWhyTreePanTarget(event.target, event.currentTarget)) return;
 
     event.preventDefault();
+    setSelection(null);
     if (typeof event.currentTarget.setPointerCapture === "function") {
       event.currentTarget.setPointerCapture(event.pointerId);
     }
