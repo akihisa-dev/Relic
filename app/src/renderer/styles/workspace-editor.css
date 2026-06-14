@@ -915,6 +915,38 @@
   text-align: center;
 }
 
+.diagram-toolbar {
+  align-items: center;
+  display: flex;
+  gap: 6px;
+  pointer-events: auto;
+  position: absolute;
+  right: 12px;
+  top: 12px;
+  z-index: 30;
+}
+
+.diagram-toolbar-button {
+  background: color-mix(in srgb, var(--bg) 90%, transparent);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.1);
+  color: var(--text-2);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+  min-height: 30px;
+  padding: 0 10px;
+}
+
+.diagram-toolbar-button:hover,
+.diagram-toolbar-button:focus-visible {
+  border-color: var(--accent-ring);
+  color: var(--text);
+  outline: none;
+}
+
 .diagram-canvas-empty {
   color: var(--text-3);
   font-size: 13px;

@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -182,6 +182,22 @@ describe("DiagramCanvas", () => {
     expect(screen.getByText("幼なじみ")).toBeInTheDocument();
   });
 
+  it("copies Relationship Mermaid source", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText }
+    });
+    renderDiagramCanvas();
+
+    fireEvent.click(screen.getByRole("button", { name: "Copy Mermaid source" }));
+
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith(expect.stringContaining("flowchart TD")));
+    expect(writeText.mock.calls[0]?.[0]).toContain("node_1[\"alice\"]");
+    expect(writeText.mock.calls[0]?.[0]).toContain("node_1 -->|\"幼なじみ\"| node_2");
+    expect(screen.getByRole("button", { name: "Copy Mermaid source" })).toHaveTextContent("Copied");
+  });
+
   it("renders why-tree as a structural editor without relationship controls", () => {
     const { container } = render(
       <I18nProvider language="en">
@@ -198,6 +214,25 @@ describe("DiagramCanvas", () => {
     expect(container.querySelector(".diagram-canvas-node")).toBeNull();
     expect(container.querySelector(".diagram-canvas-line")).toBeNull();
     expect(screen.queryByLabelText("Node role")).not.toBeInTheDocument();
+  });
+
+  it("copies Why Tree Mermaid source", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText }
+    });
+    render(
+      <I18nProvider language="en">
+        <DiagramCanvas content={whyTreeContent} fileName="Why" />
+      </I18nProvider>
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Copy Mermaid source" }));
+
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith(expect.stringContaining("flowchart TD")));
+    expect(writeText.mock.calls[0]?.[0]).toContain("phenomenon[\"売上低下\"]");
+    expect(writeText.mock.calls[0]?.[0]).toContain("phenomenon --> why_1");
   });
 
   it("renders action supplements even when solution supplements are empty", () => {

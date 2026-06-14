@@ -132,6 +132,8 @@
   "diagram.files": "Diagram files",
   "diagram.addLineLabel": "Add label",
   "diagram.connectNode": "Connect {{name}}",
+  "diagram.copyMermaid": "Copy Mermaid",
+  "diagram.copyMermaidAria": "Copy Mermaid source",
   "diagram.createRelationship": "New relationship",
   "diagram.createWhyTree": "New why-tree",
   "diagram.defaultNewRelationshipName": "Relationship",
