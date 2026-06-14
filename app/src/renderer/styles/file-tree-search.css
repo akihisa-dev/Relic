@@ -396,7 +396,7 @@
 
 .diagram-sidebar-shape-icon {
   background: var(--bg);
-  border: 1px solid var(--border-medium);
+  border: 2px solid color-mix(in srgb, var(--text-3) 68%, var(--border-medium));
   box-sizing: border-box;
   display: block;
   height: 22px;
@@ -419,7 +419,19 @@
 }
 
 .diagram-sidebar-shape--input-output .diagram-sidebar-shape-icon {
+  background: color-mix(in srgb, var(--text-3) 68%, var(--border-medium));
+  border: 0;
   clip-path: polygon(16% 0, 100% 0, 84% 100%, 0 100%);
+  position: relative;
+}
+
+.diagram-sidebar-shape--input-output .diagram-sidebar-shape-icon::before {
+  background: var(--bg);
+  clip-path: inherit;
+  content: "";
+  inset: 2px;
+  pointer-events: none;
+  position: absolute;
 }
 
 .diagram-sidebar-shape--note .diagram-sidebar-shape-icon {
@@ -429,13 +441,13 @@
 
 .diagram-sidebar-shape--note .diagram-sidebar-shape-icon::after {
   background: var(--sidebar-bg);
-  border-bottom: 1px solid var(--border-medium);
-  border-left: 1px solid var(--border-medium);
+  border-bottom: 2px solid color-mix(in srgb, var(--text-3) 68%, var(--border-medium));
+  border-left: 2px solid color-mix(in srgb, var(--text-3) 68%, var(--border-medium));
   content: "";
   height: 7px;
   position: absolute;
-  right: -1px;
-  top: -1px;
+  right: -2px;
+  top: -2px;
   width: 7px;
 }
 

@@ -1145,44 +1145,87 @@
 }
 
 .diagram-canvas-node--shape-terminator {
+  border: 2px solid color-mix(in srgb, var(--text-3) 64%, var(--border-medium));
   border-radius: 999px;
 }
 
 .diagram-canvas-node--shape-process {
+  border: 2px solid color-mix(in srgb, var(--text-3) 64%, var(--border-medium));
   border-radius: 7px;
 }
 
 .diagram-canvas-node--shape-decision {
+  background: color-mix(in srgb, var(--text-3) 64%, var(--border-medium));
+  border: 0;
   clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
   padding: 18px 34px;
 }
 
+.diagram-canvas-node--shape-decision::before {
+  background: var(--bg);
+  clip-path: inherit;
+  content: "";
+  inset: 2px;
+  pointer-events: none;
+  position: absolute;
+  z-index: 0;
+}
+
 .diagram-canvas-node--shape-input-output {
+  background: color-mix(in srgb, var(--text-3) 64%, var(--border-medium));
+  border: 0;
   clip-path: polygon(14% 0, 100% 0, 86% 100%, 0 100%);
   padding-left: 28px;
   padding-right: 28px;
 }
 
+.diagram-canvas-node--shape-input-output::before {
+  background: var(--bg);
+  clip-path: inherit;
+  content: "";
+  inset: 2px;
+  pointer-events: none;
+  position: absolute;
+  z-index: 0;
+}
+
 .diagram-canvas-node--shape-note {
+  border: 2px solid color-mix(in srgb, var(--text-3) 64%, var(--border-medium));
   border-radius: 5px;
 }
 
 .diagram-canvas-node--shape-note::after {
-  background: var(--sidebar-bg);
-  border-bottom: 1px solid var(--border);
-  border-left: 1px solid var(--border);
+  background: var(--bg);
+  border-bottom: 2px solid color-mix(in srgb, var(--text-3) 64%, var(--border-medium));
+  border-left: 2px solid color-mix(in srgb, var(--text-3) 64%, var(--border-medium));
   content: "";
   height: 16px;
   position: absolute;
-  right: -1px;
-  top: -1px;
+  right: -2px;
+  top: -2px;
   width: 16px;
+}
+
+.diagram-canvas-node--shape-decision > *,
+.diagram-canvas-node--shape-input-output > * {
+  position: relative;
+  z-index: 1;
+}
+
+.diagram-canvas-node--shape-decision:hover,
+.diagram-canvas-node--shape-input-output:hover {
+  background: var(--accent-ring);
 }
 
 .diagram-canvas-node--selected {
   border-color: var(--accent);
   box-shadow: 0 0 0 4px var(--accent-soft), 0 0 0 1px var(--accent), 0 8px 24px rgba(15, 23, 42, 0.1);
   z-index: 2;
+}
+
+.diagram-canvas-node--selected.diagram-canvas-node--shape-decision,
+.diagram-canvas-node--selected.diagram-canvas-node--shape-input-output {
+  background: var(--accent);
 }
 
 .diagram-canvas-node--dragging {
