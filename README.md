@@ -65,9 +65,9 @@ Relic is open source software licensed under the GNU Affero General Public Licen
 ### File Processing Tools
 
 - Merge files.
-- Split files.
 - Generate title lists.
 - Generate tables of contents.
+- Generate tag indexes.
 
 ---
 
@@ -186,7 +186,7 @@ You can also run `scripts/Relicをビルド.command`, which executes `build:mac:
 `build:mac:safe` runs:
 
 1. `clean:out` to remove `app/out`.
-2. `package:mac` to generate an unpacked app.
+2. `make:mac` to generate macOS build artifacts.
 3. `check:mac:safe` to verify the build output.
 
 Verification checks:
@@ -321,9 +321,9 @@ Relicはオープンソースソフトウェアです。ライセンスは GNU A
 ### ファイル加工ツール
 
 - ファイルのマージ
-- ファイルの分割
 - タイトル一覧の生成
 - 目次生成
+- タグ別索引生成
 
 ---
 
@@ -442,7 +442,7 @@ pnpm build:mac:safe
 `build:mac:safe` は以下を順に実行します。
 
 1. `clean:out` で `app/out` を削除
-2. `package:mac` で unpacked app を生成
+2. `make:mac` でmacOS向け成果物を生成
 3. `check:mac:safe` で成果物を検証
 
 検証内容:

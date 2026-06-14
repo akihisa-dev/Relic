@@ -50,7 +50,14 @@ AIのセッション開始時は、`../AGENTS.md` から [project/overview.md](p
 | [development/phases/P8.md](development/phases/P8.md) | P8正本。UI・ビジュアルデザインフェーズの対象範囲、ルール、作業記録 |
 | [development/phases/P9.md](development/phases/P9.md) | P9正本。全リファクタリングフェーズの対象範囲、ルール、作業記録 |
 | [development/phases/P10.md](development/phases/P10.md) | P10正本。機能改善・追加・小規模修正フェーズの対象範囲、ルール、作業記録 |
-| [development/phases/P11.md](development/phases/P11.md) | 現在フェーズ正本。マークダウンエディタ改善フェーズの対象範囲、ルール、作業記録 |
+| [development/phases/P11.md](development/phases/P11.md) | P11正本。マークダウンエディタ改善フェーズの対象範囲、ルール、作業記録 |
+| [development/phases/P12.md](development/phases/P12.md) | P12正本。ヴィジュアルデザイン・UIの調整・修正フェーズの対象範囲、ルール、作業記録 |
+| [development/phases/P13.md](development/phases/P13.md) | P13正本。全体整理・リファクタリング・不具合修正フェーズの対象範囲、ルール、作業記録 |
+| [development/phases/P14.md](development/phases/P14.md) | P14正本。ファイル加工ツールの機能改善・修正フェーズの対象範囲、ルール、作業記録 |
+| [development/phases/P15.md](development/phases/P15.md) | P15正本。カレンダーと年表機能の全般フェーズの対象範囲、ルール、作業記録 |
+| [development/phases/P16.md](development/phases/P16.md) | P16正本。フロントマター入力方式改善と全般バグ修正フェーズの対象範囲、ルール、作業記録 |
+| [development/phases/P17.md](development/phases/P17.md) | P17正本。Diagram / 図解機能追加フェーズの対象範囲、ルール、作業記録 |
+| [development/phases/P18.md](development/phases/P18.md) | 現在フェーズ正本。リファクタリング・開発体制の調整・文書整理フェーズの対象範囲、ルール、作業記録 |
 | [development/questions.md](development/questions.md) | 未決定事項の正本 |
 | [development/coding-rules.md](development/coding-rules.md) | コーディング規約 |
 | [development/testing-rules.md](development/testing-rules.md) | テスト方針 |
