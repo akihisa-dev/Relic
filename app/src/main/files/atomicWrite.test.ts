@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { link, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
@@ -66,5 +66,22 @@ describe("atomicWriteTextFile", () => {
     expect(temporaryWrites).toHaveLength(1);
     expect(path.dirname(temporaryWrites[0])).toBe(workspacePath);
     expect(unlink).toHaveBeenCalledWith(temporaryWrites[0]);
+  });
+
+  it("新規作成済みなら一時ファイル削除に失敗しても成功扱いにする", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-atomic-write-new-cleanup-"));
+    temporaryPaths.push(workspacePath);
+    const filePath = path.join(workspacePath, "note.md");
+    const unlink = vi.fn().mockRejectedValue(new Error("cleanup failed"));
+
+    await expect(atomicWriteNewTextFile(filePath, "created", {
+      link,
+      rename: vi.fn(),
+      unlink,
+      writeFile
+    })).resolves.toBeUndefined();
+
+    await expect(readFile(filePath, "utf8")).resolves.toBe("created");
+    expect(unlink).toHaveBeenCalledTimes(1);
   });
 });
