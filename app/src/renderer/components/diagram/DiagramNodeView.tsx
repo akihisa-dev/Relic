@@ -47,9 +47,8 @@ export function DiagramNodeView({
       onPointerMove={onPointerMove}
       onPointerUp={(event) => onPointerUp(node, event)}
       style={{
-        left: x,
         minHeight: node.height,
-        top: y,
+        transform: `translate(${x}px, ${y}px)`,
         width: node.width
       }}
       title={node.file}

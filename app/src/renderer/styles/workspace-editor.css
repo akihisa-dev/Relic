@@ -1110,6 +1110,7 @@
   position: absolute;
   touch-action: none;
   user-select: none;
+  will-change: transform;
 }
 
 .diagram-canvas-resize-preview {
