@@ -156,7 +156,6 @@ async function renderHtmlToPdf(html: string, title: string): Promise<Buffer> {
     return await window.webContents.printToPDF({
       displayHeaderFooter: false,
       generateDocumentOutline: true,
-      margins: { bottom: 48, left: 52, marginType: "custom", right: 52, top: 48 },
       pageSize: "A4",
       preferCSSPageSize: true,
       printBackground: true
