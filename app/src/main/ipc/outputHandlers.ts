@@ -1,5 +1,5 @@
 import { BrowserWindow, app, clipboard, dialog, ipcMain } from "electron";
-import { unlink } from "node:fs/promises";
+import { mkdir, rm, unlink } from "node:fs/promises";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
@@ -24,6 +24,7 @@ import { transientSessionPartition } from "../windowOptions";
 
 const defaultPdfName = "relic-preview";
 const defaultSvgName = "relic-diagram";
+const printPreviewTemporaryDirectoryName = "relic-print-preview";
 const outputSvgUriAttributes = new Set(["href", "xlink:href", "src"]);
 const forbiddenOutputSvgTags = new Set(["foreignobject", "script"]);
 const forbiddenOutputSvgBlockPatterns = [...forbiddenOutputSvgTags].map((tagName) => new RegExp(
@@ -32,6 +33,8 @@ const forbiddenOutputSvgBlockPatterns = [...forbiddenOutputSvgTags].map((tagName
 ));
 
 export function registerOutputHandlers(): void {
+  void cleanupTemporaryPrintPreviewFiles();
+
   ipcMain.handle(
     savePreviewAsPdfChannel,
     async (event, input: unknown): Promise<RelicResult<OutputSavedResult>> => {
@@ -148,6 +151,12 @@ export function registerOutputHandlers(): void {
   );
 }
 
+export async function cleanupTemporaryPrintPreviewFiles(): Promise<void> {
+  const directoryPath = temporaryPrintPreviewDirectoryPath();
+  await rm(directoryPath, { force: true, recursive: true }).catch(() => undefined);
+  await mkdir(directoryPath, { recursive: true }).catch(() => undefined);
+}
+
 async function renderHtmlToPdf(html: string, title: string): Promise<Buffer> {
   const window = createOutputWindow(title, { allowInlineScripts: false });
 
@@ -172,7 +181,7 @@ async function openPrintPreview(
   t: Translator
 ): Promise<RelicResult<OutputPrintResult>> {
   const pdf = await renderHtmlToPdf(html, title);
-  const pdfPath = temporaryPrintPreviewPath(title);
+  const pdfPath = await temporaryPrintPreviewPath();
   await atomicWriteFile(pdfPath, pdf);
   const pdfUrl = pathToFileURL(pdfPath).toString();
   const window = createOutputWindow(`${title} - ${t("output.print")}`, {
@@ -299,12 +308,18 @@ function ensureExtension(fileName: string, extension: "pdf" | "svg"): string {
   return fileName.toLowerCase().endsWith(`.${extension}`) ? fileName : `${fileName}.${extension}`;
 }
 
-function temporaryPrintPreviewPath(title: string): string {
-  const fileName = ensureExtension(sanitizeFileName(title || defaultPdfName, defaultPdfName), "pdf");
+async function temporaryPrintPreviewPath(): Promise<string> {
+  const directoryPath = temporaryPrintPreviewDirectoryPath();
+  await mkdir(directoryPath, { recursive: true });
+
   return path.join(
-    app.getPath("temp"),
-    `relic-print-preview-${process.pid}-${Date.now()}-${Math.random().toString(36).slice(2)}-${fileName}`
+    directoryPath,
+    `preview-${process.pid}-${Date.now()}-${Math.random().toString(36).slice(2)}.pdf`
   );
+}
+
+function temporaryPrintPreviewDirectoryPath(): string {
+  return path.join(app.getPath("temp"), printPreviewTemporaryDirectoryName);
 }
 
 function hasRenderableSvg(svg: string): boolean {
