@@ -66,6 +66,7 @@ export function WhyTreeEditor({
   const nodeRefs = useRef(new Map<string, HTMLDivElement>());
   const draftContentRef = useRef(content);
   const panRef = useRef<WhyTreePanState | null>(null);
+  const [collapsedPaths, setCollapsedPaths] = useState<Set<string>>(() => new Set());
   const [draftContent, setDraftContent] = useState(content);
   const [selection, setSelection] = useState<WhyTreeSelection>({ kind: "phenomenon", path: [] });
   const [connectorLayout, setConnectorLayout] = useState<WhyTreeConnectorLayout>({ height: 0, paths: [], width: 0 });
@@ -89,7 +90,7 @@ export function WhyTreeEditor({
 
     const containerRect = contentRef.current.getBoundingClientRect();
     const obstacles = getWhyTreeObstacleRects(contentRef.current, containerRect);
-    const paths = buildWhyTreeConnectorPaths(displayedTree.phenomenon, [], nodeRefs.current, containerRect, obstacles);
+    const paths = buildWhyTreeConnectorPaths(displayedTree.phenomenon, [], nodeRefs.current, containerRect, obstacles, collapsedPaths);
     setConnectorLayout({
       height: containerRect.height,
       paths,
@@ -111,7 +112,7 @@ export function WhyTreeEditor({
       resizeObserver?.disconnect();
       window.removeEventListener("resize", updateConnectorLayout);
     };
-  }, [displayedTree]);
+  }, [collapsedPaths, displayedTree]);
 
   const applyUpdate = (updated: WhyTreeUpdateResult): void => {
     if (updated.ok) {
@@ -178,6 +179,18 @@ export function WhyTreeEditor({
     applyUpdate(moved);
     setSelection({ index: index + moveDirectionOffset(direction), kind, path });
   };
+  const toggleCollapsedPath = (path: number[]): void => {
+    const key = whyTreePathKey(path);
+    setCollapsedPaths((current) => {
+      const next = new Set(current);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  };
   const deleteSelection = (): void => {
     if (selection.kind === "phenomenon") return;
     if (selection.kind === "why") {
@@ -235,6 +248,8 @@ export function WhyTreeEditor({
   const renderWhyTreeBranch = (item: WhyTreeChainItem): ReactElement => {
     const isSelected = isSameWhyTreeSelection(selection, { kind: item.role, path: item.path });
     const itemKey = whyTreePathKey(item.path);
+    const isCollapsed = collapsedPaths.has(itemKey);
+    const hasChildWhys = item.node.whys.length > 0;
 
     return (
       <div className="why-tree-branch" key={itemKey}>
@@ -303,6 +318,20 @@ export function WhyTreeEditor({
                     ×
                   </button>
                 ) : null}
+                {hasChildWhys ? (
+                  <button
+                    aria-expanded={!isCollapsed}
+                    aria-label={isCollapsed ? t("diagram.whyTree.expand") : t("diagram.whyTree.collapse")}
+                    className="why-tree-collapse-button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      toggleCollapsedPath(item.path);
+                    }}
+                    type="button"
+                  >
+                    {isCollapsed ? "＋" : "−"}
+                  </button>
+                ) : null}
               </div>
               {isSelected ? (
                 <WhyTreeNodeMenu
@@ -346,7 +375,7 @@ export function WhyTreeEditor({
             />
           </div>
         </div>
-        {item.node.whys.length > 0 ? (
+        {hasChildWhys && !isCollapsed ? (
           <div className="why-tree-child-group">
             <div className="why-tree-children">
               {item.node.whys.map((why, index) => renderWhyTreeBranch({

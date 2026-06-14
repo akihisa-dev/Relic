@@ -23,10 +23,12 @@ export function buildWhyTreeConnectorPaths(
   path: number[],
   nodeRefs: Map<string, HTMLDivElement>,
   containerRect: DOMRect,
-  obstacles: WhyTreeObstacleRect[]
+  obstacles: WhyTreeObstacleRect[],
+  collapsedPaths: ReadonlySet<string> = new Set()
 ): WhyTreeConnectorPath[] {
   const parentElement = nodeRefs.get(whyTreePathKey(path));
   if (!parentElement) return [];
+  if (collapsedPaths.has(whyTreePathKey(path))) return [];
 
   const parentRect = parentElement.getBoundingClientRect();
   const parentX = parentRect.left - containerRect.left + parentRect.width / 2;
@@ -35,7 +37,7 @@ export function buildWhyTreeConnectorPaths(
   return node.whys.flatMap((why, index) => {
     const childPath = [...path, index];
     const childElement = nodeRefs.get(whyTreePathKey(childPath));
-    const nestedPaths = buildWhyTreeConnectorPaths(why, childPath, nodeRefs, containerRect, obstacles);
+    const nestedPaths = buildWhyTreeConnectorPaths(why, childPath, nodeRefs, containerRect, obstacles, collapsedPaths);
     if (!childElement) return nestedPaths;
 
     const childRect = childElement.getBoundingClientRect();
