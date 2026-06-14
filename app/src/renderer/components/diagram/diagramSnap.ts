@@ -12,6 +12,7 @@ export interface DiagramSnapResult {
 }
 
 const snapThreshold = 8;
+export const diagramGridSize = 32;
 
 export function snapDiagramNode(
   movingNodeId: string,
@@ -58,6 +59,13 @@ export function snapDiagramNode(
     guides,
     x: xSnap ? xSnap.target - xSnap.offset : x,
     y: ySnap ? ySnap.target - ySnap.offset : y
+  };
+}
+
+export function snapDiagramPointToGrid(x: number, y: number): { x: number; y: number } {
+  return {
+    x: Math.round(x / diagramGridSize) * diagramGridSize,
+    y: Math.round(y / diagramGridSize) * diagramGridSize
   };
 }
 

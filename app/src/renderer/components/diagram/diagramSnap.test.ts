@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { snapDiagramNode } from "./diagramSnap";
+import { snapDiagramNode, snapDiagramPointToGrid } from "./diagramSnap";
 import { type DiagramCanvasNodeLayout } from "./diagramGeometry";
 
 const nodes: DiagramCanvasNodeLayout[] = [
@@ -46,6 +46,15 @@ describe("snapDiagramNode", () => {
       guides: [],
       x: 230,
       y: 132
+    });
+  });
+});
+
+describe("snapDiagramPointToGrid", () => {
+  it("snaps coordinates to the 32px diagram grid", () => {
+    expect(snapDiagramPointToGrid(159, 95)).toEqual({
+      x: 160,
+      y: 96
     });
   });
 });

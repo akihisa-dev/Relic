@@ -34,7 +34,7 @@ import { type DiagramCanvasProps } from "./diagramTypes";
 import { DiagramLineLayer } from "./DiagramLineLayer";
 import { DiagramNodeView } from "./DiagramNodeView";
 import { DiagramSnapGuides } from "./DiagramSnapGuides";
-import { snapDiagramNode, type DiagramSnapGuide } from "./diagramSnap";
+import { snapDiagramNode, snapDiagramPointToGrid, type DiagramSnapGuide } from "./diagramSnap";
 
 const connectActivationDistance = 4;
 const minNodeHeight = 56;
@@ -192,8 +192,10 @@ export function RelationshipCanvas({
     if (typeof event.currentTarget.releasePointerCapture === "function") {
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
-    if (drag.currentX !== drag.originalX || drag.currentY !== drag.originalY) {
-      const moved = moveRelicDiagramNode(content, drag.nodeId, drag.currentX, drag.currentY);
+    const hasMoved = drag.currentX !== drag.originalX || drag.currentY !== drag.originalY;
+    const snapped = hasMoved ? snapDiagramPointToGrid(drag.currentX, drag.currentY) : null;
+    if (snapped && (snapped.x !== drag.originalX || snapped.y !== drag.originalY)) {
+      const moved = moveRelicDiagramNode(content, drag.nodeId, snapped.x, snapped.y);
       if (moved.ok) {
         onChange?.(moved.value.content);
       }
