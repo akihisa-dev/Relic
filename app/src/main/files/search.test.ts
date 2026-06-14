@@ -80,6 +80,12 @@ describe("searchWorkspace", () => {
       "type: why-tree",
       "---",
       "",
+      "labels:",
+      "  root: ルート",
+      "  node: ノード",
+      "  fact: メモ",
+      "  solution: 関連項目",
+      "  action: アクション",
       "phenomenon:",
       "  title: 問題が起きている",
       "  facts:",
@@ -100,7 +106,7 @@ describe("searchWorkspace", () => {
       ok: true,
       value: searchResultSet([{
         fileName: "原因分析",
-        lineNumber: 6,
+        lineNumber: 12,
         lineText: "title: 問題が起きている",
         path: "原因分析.md"
       }])

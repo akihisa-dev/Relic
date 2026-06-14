@@ -124,9 +124,9 @@ export const defaultRelicWhyTreeLabels: RelicWhyTreeLabels = {
   solution: "関連項目"
 };
 
-const whyTreeBodyKeys = new Set(["labelPreset", "labels", "phenomenon"]);
+const whyTreeBodyKeys = new Set(["labels", "phenomenon"]);
 const whyTreeLabelKeys = new Set(["action", "fact", "node", "root", "solution"]);
-const whyTreeNodeKeys = new Set(["title", "facts", "solutions", "actions", "why", "whys"]);
+const whyTreeNodeKeys = new Set(["title", "facts", "solutions", "actions", "whys"]);
 const defaultNodeWidth = 180;
 const defaultNodeHeight = 80;
 
@@ -799,7 +799,7 @@ function validateRelicWhyTreeDocument(raw: unknown): RelicResult<RelicWhyTreeDoc
 
   const phenomenon = parseWhyTreeNode(raw.phenomenon, "phenomenon");
   if (!phenomenon.ok) return phenomenon;
-  const labels = parseWhyTreeLabels(raw.labels, legacyWhyTreeLabels(raw.labelPreset));
+  const labels = parseWhyTreeLabels(raw.labels);
   if (!labels.ok) return labels;
 
   return ok({
@@ -977,15 +977,12 @@ function parseWhyTreeNode(raw: unknown, label: string): RelicResult<RelicWhyTree
   if (!actions.ok) return actions;
   const whys = parseWhyTreeNodeList(raw.whys, "whys");
   if (!whys.ok) return whys;
-  const legacyWhy = raw.why === undefined ? undefined : parseWhyTreeNode(raw.why, "why");
-  if (legacyWhy && !legacyWhy.ok) return legacyWhy;
-
   return ok({
     actions: actions.value,
     facts: facts.value,
     solutions: solutions.value,
     title: title.value,
-    whys: [...(legacyWhy?.value ? [legacyWhy.value] : []), ...whys.value]
+    whys: whys.value
   });
 }
 
@@ -1024,7 +1021,9 @@ function parseLabelText(raw: unknown, fallback: string, field: string): RelicRes
 }
 
 function parseWhyTreeLabels(raw: unknown, fallback: RelicWhyTreeLabels = defaultRelicWhyTreeLabels): RelicResult<RelicWhyTreeLabels> {
-  if (raw === undefined) return ok({ ...fallback });
+  if (raw === undefined) {
+    return fail("WHY_TREE_LABELS_MISSING", "構造ツリーの labels を指定してください。");
+  }
   if (!isRecord(raw)) {
     return fail("WHY_TREE_LABELS_INVALID", "構造ツリーの labels は項目ごとの文字にしてください。");
   }
@@ -1052,29 +1051,6 @@ function parseWhyTreeLabels(raw: unknown, fallback: RelicWhyTreeLabels = default
     root: root.value,
     solution: solution.value
   });
-}
-
-function legacyWhyTreeLabels(raw: unknown): RelicWhyTreeLabels {
-  if (raw === "analysis") {
-    return {
-      action: "実行項目",
-      fact: "根拠",
-      node: "原因",
-      root: "問題・現象",
-      solution: "解決策"
-    };
-  }
-  if (raw === "thinking") {
-    return {
-      action: "やること",
-      fact: "情報",
-      node: "分解",
-      root: "テーマ",
-      solution: "案"
-    };
-  }
-
-  return defaultRelicWhyTreeLabels;
 }
 
 function serializeWhyTreeNodeValue(node: RelicWhyTreeNode): Record<string, unknown> {
