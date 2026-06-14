@@ -5,6 +5,7 @@ import {
 } from "../../../shared/diagramMarkdown";
 
 const canvasPadding = 180;
+const lineLabelOffset = 8;
 const minCanvasWidth = 900;
 const minCanvasHeight = 620;
 
@@ -84,13 +85,14 @@ export function buildLineLayouts(
     const toCenter = nodeCenter(to);
     const start = nodeEdgePointToward(from, toCenter.x, toCenter.y);
     const end = nodeEdgePointToward(to, fromCenter.x, fromCenter.y);
+    const route = buildLineRoute(start, end, to);
 
     return [{
       label: line.label,
-      labelX: (start.x + end.x) / 2,
-      labelY: (start.y + end.y) / 2 - 8,
+      labelX: route.labelX,
+      labelY: route.labelY,
       line,
-      pathD: buildLinePathD(start, end, to),
+      pathD: route.pathD,
       x1: start.x,
       x2: end.x,
       y1: start.y,
@@ -99,13 +101,13 @@ export function buildLineLayouts(
   });
 }
 
-function buildLinePathD(
+function buildLineRoute(
   start: { x: number; y: number },
   end: { x: number; y: number },
   to: DiagramCanvasNodeLayout
-): string {
+): { labelX: number; labelY: number; pathD: string } {
   if (sameCoordinate(start.x, end.x) || sameCoordinate(start.y, end.y)) {
-    return `M ${start.x} ${start.y} L ${end.x} ${end.y}`;
+    return buildRouteFromPoints([start, end]);
   }
 
   const toTop = to.y;
@@ -114,11 +116,60 @@ function buildLinePathD(
 
   if (endsOnVerticalEdge) {
     const midY = (start.y + end.y) / 2;
-    return `M ${start.x} ${start.y} V ${midY} H ${end.x} V ${end.y}`;
+    return buildRouteFromPoints([start, { x: start.x, y: midY }, { x: end.x, y: midY }, end]);
   }
 
   const midX = (start.x + end.x) / 2;
-  return `M ${start.x} ${start.y} H ${midX} V ${end.y} H ${end.x}`;
+  return buildRouteFromPoints([start, { x: midX, y: start.y }, { x: midX, y: end.y }, end]);
+}
+
+function buildRouteFromPoints(points: Array<{ x: number; y: number }>): { labelX: number; labelY: number; pathD: string } {
+  const pathD = points.map((point, index) => {
+    if (index === 0) return `M ${point.x} ${point.y}`;
+    const previous = points[index - 1];
+    if (previous && sameCoordinate(point.x, previous.x)) return `V ${point.y}`;
+    if (previous && sameCoordinate(point.y, previous.y)) return `H ${point.x}`;
+    return `L ${point.x} ${point.y}`;
+  }).join(" ");
+  const labelSegment = longestRouteSegment(points);
+  const labelX = (labelSegment.start.x + labelSegment.end.x) / 2;
+  const labelY = (labelSegment.start.y + labelSegment.end.y) / 2;
+
+  return {
+    labelX: sameCoordinate(labelSegment.start.x, labelSegment.end.x) ? labelX + lineLabelOffset : labelX,
+    labelY: sameCoordinate(labelSegment.start.y, labelSegment.end.y) ? labelY - lineLabelOffset : labelY,
+    pathD
+  };
+}
+
+function longestRouteSegment(points: Array<{ x: number; y: number }>): {
+  end: { x: number; y: number };
+  start: { x: number; y: number };
+} {
+  let longest = {
+    end: points[1] ?? points[0],
+    length: 0,
+    start: points[0]
+  };
+
+  for (let index = 1; index < points.length; index += 1) {
+    const start = points[index - 1];
+    const end = points[index];
+    if (!start || !end) continue;
+    const length = Math.hypot(end.x - start.x, end.y - start.y);
+    if (length > longest.length) {
+      longest = {
+        end,
+        length,
+        start
+      };
+    }
+  }
+
+  return {
+    end: longest.end,
+    start: longest.start
+  };
 }
 
 function sameCoordinate(a: number, b: number): boolean {
