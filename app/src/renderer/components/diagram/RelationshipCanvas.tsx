@@ -21,7 +21,6 @@ import { useT } from "../../i18n";
 import {
   buildDiagramCanvasLayout,
   buildLineLayouts,
-  nodeFileName,
   type DiagramCanvasLineLayout
 } from "./diagramGeometry";
 import {
@@ -30,6 +29,8 @@ import {
   type ViewportState
 } from "./diagramViewport";
 import { type DiagramCanvasProps } from "./diagramTypes";
+import { DiagramLineLayer } from "./DiagramLineLayer";
+import { DiagramNodeView } from "./DiagramNodeView";
 
 const connectActivationDistance = 4;
 
@@ -415,37 +416,15 @@ export function RelationshipCanvas({
           width: layout.width
         }}
       >
-        <svg
-          aria-hidden="true"
-          className="diagram-canvas-lines"
+        <DiagramLineLayer
           height={layout.height}
-          viewBox={`0 0 ${layout.width} ${layout.height}`}
+          lines={displayLines}
+          onLineDoubleClick={startLabelEditFromLine}
+          onLinePointerDown={selectLine}
+          previewLine={previewLine}
+          selection={selection}
           width={layout.width}
-        >
-          {displayLines.map((line) => (
-            <g key={line.line.id}>
-              <path
-                className="diagram-canvas-line-hit"
-                d={`M ${line.x1} ${line.y1} L ${line.x2} ${line.y2}`}
-                onDoubleClick={(event) => startLabelEditFromLine(line, event)}
-                onPointerDown={(event) => selectLine(line.line.id, event)}
-              />
-              <path
-                aria-hidden="true"
-                className={`diagram-canvas-line${selection?.type === "line" && selection.id === line.line.id ? " diagram-canvas-line--selected" : ""}`}
-                d={`M ${line.x1} ${line.y1} L ${line.x2} ${line.y2}`}
-                onDoubleClick={(event) => startLabelEditFromLine(line, event)}
-                onPointerDown={(event) => selectLine(line.line.id, event)}
-              />
-            </g>
-          ))}
-          {previewLine ? (
-            <path
-              className="diagram-canvas-line diagram-canvas-line--preview"
-              d={`M ${previewLine.startX} ${previewLine.startY} L ${previewLine.currentX} ${previewLine.currentY}`}
-            />
-          ) : null}
-        </svg>
+        />
         <div className="diagram-canvas-labels">
           {displayLines.map((line) => {
             if (labelEdit?.lineId === line.line.id) {
@@ -498,39 +477,19 @@ export function RelationshipCanvas({
         </div>
         <div className="diagram-canvas-nodes">
           {displayNodes.map(({ node, x, y }) => (
-            <div
-              className={[
-                "diagram-canvas-node",
-                drag?.nodeId === node.id ? "diagram-canvas-node--dragging" : "",
-                selection?.type === "node" && selection.id === node.id ? "diagram-canvas-node--selected" : ""
-              ].filter(Boolean).join(" ")}
+            <DiagramNodeView
+              isDragging={drag?.nodeId === node.id}
+              isSelected={selection?.type === "node" && selection.id === node.id}
               key={node.id}
+              node={node}
+              onOutlinePointerDown={startNodeOutlineConnect}
               onPointerCancel={cancelNodeDrag}
-              onPointerDown={(event) => startNodePointer(node, event)}
+              onPointerDown={startNodePointer}
               onPointerMove={updateNodeDrag}
-              onPointerUp={(event) => finishNodePointer(node, event)}
-              style={{
-                left: x,
-                minHeight: node.height,
-                top: y,
-                width: node.width
-              }}
-              title={node.file}
-            >
-              <span className="diagram-canvas-node-name">{nodeFileName(node.file)}</span>
-              {selection?.type === "node" && selection.id === node.id ? (
-                <span className="diagram-canvas-node-outline-hitbox" aria-hidden="true">
-                  {(["top", "right", "bottom", "left"] as const).map((side) => (
-                    <span
-                      className={`diagram-canvas-node-outline-hit diagram-canvas-node-outline-hit--${side}`}
-                      data-side={side}
-                      key={side}
-                      onPointerDown={(event) => startNodeOutlineConnect(node, event)}
-                    />
-                  ))}
-                </span>
-              ) : null}
-            </div>
+              onPointerUp={finishNodePointer}
+              x={x}
+              y={y}
+            />
           ))}
         </div>
       </div>
