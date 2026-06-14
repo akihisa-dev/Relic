@@ -19,7 +19,7 @@ jobs:
       version: ${{ steps.version.outputs.version }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -46,12 +46,12 @@ jobs:
     needs: prepare
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 2
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 22
 
@@ -81,16 +81,16 @@ jobs:
             artifact: relic-macos
             command: pnpm build:mac:safe
           - name: Windows
-            os: windows-latest
+            os: windows-2025-vs2026
             artifact: relic-windows
             command: pnpm build:win:safe
     runs-on: ${{ matrix.platform.os }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 22
 
@@ -136,7 +136,7 @@ jobs:
           }
 
       - name: Upload release assets
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.platform.artifact }}
           path: app/release-assets/*
@@ -152,12 +152,12 @@ jobs:
       VERSION: ${{ needs.prepare.outputs.version }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
       - name: Download release assets
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: release-assets
           merge-multiple: true
