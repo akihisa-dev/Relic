@@ -13,6 +13,7 @@ import {
   moveRelicDiagramNode,
   removeRelicDiagramLine,
   removeRelicDiagramNode,
+  resizeRelicDiagramNode,
   updateRelicDiagramLineLabel,
   type RelicDiagramNode,
   type RelicRelationshipDiagramDocument
@@ -33,6 +34,8 @@ import { DiagramLineLayer } from "./DiagramLineLayer";
 import { DiagramNodeView } from "./DiagramNodeView";
 
 const connectActivationDistance = 4;
+const minNodeHeight = 56;
+const minNodeWidth = 96;
 
 interface DragState {
   currentX: number;
@@ -65,6 +68,17 @@ interface PanState {
   startClientY: number;
 }
 
+interface ResizeState {
+  currentHeight: number;
+  currentWidth: number;
+  nodeId: string;
+  originalHeight: number;
+  originalWidth: number;
+  pointerId: number;
+  startClientX: number;
+  startClientY: number;
+}
+
 type DiagramSelection =
   | { id: string; type: "line" }
   | { id: string; type: "node" };
@@ -86,11 +100,23 @@ export function RelationshipCanvas({
   const [drag, setDrag] = useState<DragState | null>(null);
   const [labelEdit, setLabelEdit] = useState<LabelEditState | null>(null);
   const [pan, setPan] = useState<PanState | null>(null);
+  const [resize, setResize] = useState<ResizeState | null>(null);
   const [selection, setSelection] = useState<DiagramSelection | null>(null);
   const [viewport, setViewport] = useState<ViewportState>({ panX: 0, panY: 0, zoom: 1 });
 
   const layout = buildDiagramCanvasLayout(diagram);
   const displayNodes = layout.nodes.map((node) => {
+    if (resize?.nodeId === node.node.id) {
+      return {
+        node: {
+          ...node.node,
+          height: resize.currentHeight,
+          width: resize.currentWidth
+        },
+        x: node.x,
+        y: node.y
+      };
+    }
     if (drag?.nodeId !== node.node.id) return node;
 
     return {
@@ -162,6 +188,60 @@ export function RelationshipCanvas({
   const cancelNodeDrag = (event: ReactPointerEvent<HTMLDivElement>): void => {
     if (!drag || drag.pointerId !== event.pointerId) return;
     setDrag(null);
+  };
+  const startNodeResize = (node: RelicDiagramNode, event: ReactPointerEvent<HTMLElement>): void => {
+    if (!onChange) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    setSelection({ id: node.id, type: "node" });
+    focusCanvasFrom(event.currentTarget);
+    if (typeof event.currentTarget.setPointerCapture === "function") {
+      event.currentTarget.setPointerCapture(event.pointerId);
+    }
+    setResize({
+      currentHeight: node.height,
+      currentWidth: node.width,
+      nodeId: node.id,
+      originalHeight: node.height,
+      originalWidth: node.width,
+      pointerId: event.pointerId,
+      startClientX: event.clientX,
+      startClientY: event.clientY
+    });
+  };
+  const updateNodeResize = (event: ReactPointerEvent<HTMLDivElement>): void => {
+    const pointerId = event.pointerId;
+    const clientX = event.clientX;
+    const clientY = event.clientY;
+
+    setResize((current) => {
+      if (!current || current.pointerId !== pointerId) return current;
+
+      return {
+        ...current,
+        currentHeight: Math.max(minNodeHeight, current.originalHeight + (clientY - current.startClientY) / viewport.zoom),
+        currentWidth: Math.max(minNodeWidth, current.originalWidth + (clientX - current.startClientX) / viewport.zoom)
+      };
+    });
+  };
+  const finishNodeResize = (event: ReactPointerEvent<HTMLDivElement>): void => {
+    if (!resize || resize.pointerId !== event.pointerId) return;
+
+    if (typeof event.currentTarget.releasePointerCapture === "function") {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    if (resize.currentWidth !== resize.originalWidth || resize.currentHeight !== resize.originalHeight) {
+      const resized = resizeRelicDiagramNode(content, resize.nodeId, resize.currentWidth, resize.currentHeight);
+      if (resized.ok) {
+        onChange?.(resized.value.content);
+      }
+    }
+    setResize(null);
+  };
+  const cancelNodeResize = (event: ReactPointerEvent<HTMLDivElement>): void => {
+    if (!resize || resize.pointerId !== event.pointerId) return;
+    setResize(null);
   };
   const pointerPositionInCanvas = (event: ReactPointerEvent<HTMLElement>): { x: number; y: number } => {
     const canvas = event.currentTarget.closest(".diagram-canvas") ?? event.currentTarget;
@@ -298,6 +378,10 @@ export function RelationshipCanvas({
   };
   const finishNodePointer = (node: RelicDiagramNode, event: ReactPointerEvent<HTMLDivElement>): void => {
     event.stopPropagation();
+    if (resize?.pointerId === event.pointerId) {
+      finishNodeResize(event);
+      return;
+    }
     if (connect?.pointerId === event.pointerId) {
       finishConnect(node.id, event);
       return;
@@ -398,6 +482,7 @@ export function RelationshipCanvas({
       }}
       onPointerUp={(event) => {
         cancelConnect(event);
+        cancelNodeResize(event);
         finishPan(event);
       }}
       onWheel={handleCanvasWheel}
@@ -487,8 +572,13 @@ export function RelationshipCanvas({
               onOutlinePointerDown={startNodeOutlineConnect}
               onPointerCancel={cancelNodeDrag}
               onPointerDown={startNodePointer}
-              onPointerMove={updateNodeDrag}
+              onPointerMove={(event) => {
+                updateNodeDrag(event);
+                updateNodeResize(event);
+              }}
+              onResizePointerDown={startNodeResize}
               onPointerUp={finishNodePointer}
+              resizeLabel={t("diagram.resizeNode")}
               x={x}
               y={y}
             />

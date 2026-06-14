@@ -14,6 +14,7 @@ import {
   removeRelicWhyTreeSupplement,
   removeRelicWhyTreeWhy,
   replaceRelicDiagramNodeFileReferences,
+  resizeRelicDiagramNode,
   serializeRelicDiagramMarkdown,
   updateRelicDiagramLineLabel,
   updateRelicWhyTreeSupplement,
@@ -269,6 +270,10 @@ describe("relationship operations", () => {
     expect(moved.ok ? moved.value.content : "").toContain("x: 240");
     expect(moved.ok ? moved.value.content : "").toContain("y: 161");
 
+    const resized = resizeRelicDiagramNode(relationshipContent, "node-1", 220.4, 96.6);
+    expect(resized.ok ? resized.value.content : "").toContain("width: 220");
+    expect(resized.ok ? resized.value.content : "").toContain("height: 97");
+
     const addedLine = addRelicDiagramLine(serializeRelationshipWithoutLines(relationshipContent), "node-1", "node-2");
     expect(addedLine.ok ? addedLine.value.line : null).toMatchObject({ from: "node-1", to: "node-2" });
 
@@ -286,6 +291,7 @@ describe("relationship operations", () => {
     expect(addRelicDiagramNodeForFile(whyTreeContent, "memo.md").ok).toBe(false);
     expect(addRelicDiagramLine(whyTreeContent, "node-1", "node-2").ok).toBe(false);
     expect(moveRelicDiagramNode(whyTreeContent, "node-1", 1, 2).ok).toBe(false);
+    expect(resizeRelicDiagramNode(whyTreeContent, "node-1", 100, 80).ok).toBe(false);
     expect(removeRelicDiagramNode(whyTreeContent, "node-1").ok).toBe(false);
     expect(removeRelicDiagramLine(whyTreeContent, "line-1").ok).toBe(false);
     expect(updateRelicDiagramLineLabel(whyTreeContent, "line-1", "label").ok).toBe(false);

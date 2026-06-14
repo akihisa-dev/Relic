@@ -66,6 +66,11 @@ export interface RelicDiagramNodeMove {
   node: RelicDiagramNode;
 }
 
+export interface RelicDiagramNodeResize {
+  content: string;
+  node: RelicDiagramNode;
+}
+
 export interface RelicDiagramLineInsertion {
   content: string;
   line: RelicDiagramLine;
@@ -469,6 +474,45 @@ export function moveRelicDiagramNode(
     ...node,
     x: Math.round(nextX.value),
     y: Math.round(nextY.value)
+  };
+  const serialized = serializeRelicRelationshipMarkdown({
+    ...parsed.value,
+    nodes: parsed.value.nodes.map((item) => item.id === nodeId ? nextNode : item)
+  });
+  if (!serialized.ok) return serialized;
+
+  return ok({
+    content: serialized.value,
+    node: nextNode
+  });
+}
+
+export function resizeRelicDiagramNode(
+  content: string,
+  nodeId: string,
+  width: number,
+  height: number
+): RelicResult<RelicDiagramNodeResize> {
+  const parsed = parseRelicRelationshipMarkdown(content);
+  if (!parsed.ok) return parsed;
+
+  const nextWidth = parseFiniteNumber(width, "DIAGRAM_NODE_WIDTH_INVALID", "Nodeの width は数値にしてください。");
+  if (!nextWidth.ok) return nextWidth;
+  const nextHeight = parseFiniteNumber(height, "DIAGRAM_NODE_HEIGHT_INVALID", "Nodeの height は数値にしてください。");
+  if (!nextHeight.ok) return nextHeight;
+  if (nextWidth.value <= 0 || nextHeight.value <= 0) {
+    return fail("DIAGRAM_NODE_SIZE_INVALID", "Nodeのサイズは0より大きい値にしてください。");
+  }
+
+  const node = parsed.value.nodes.find((item) => item.id === nodeId);
+  if (!node) {
+    return fail("DIAGRAM_NODE_MISSING", "サイズ変更するNodeが見つかりません。");
+  }
+
+  const nextNode = {
+    ...node,
+    height: Math.round(nextHeight.value),
+    width: Math.round(nextWidth.value)
   };
   const serialized = serializeRelicRelationshipMarkdown({
     ...parsed.value,

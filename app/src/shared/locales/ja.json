@@ -147,6 +147,7 @@
   "diagram.openDiagramFirst": "Markdownファイルを配置するには図解ファイルを開いてください。",
   "diagram.openRelationshipFirst": "Markdownファイルを配置するには関係図を開いてください。",
   "diagram.placeableFiles": "Markdownファイル",
+  "diagram.resizeNode": "Nodeサイズを変更",
   "diagram.status": "{{nodes}} Node / {{lines}} Line",
   "diagram.whyTree.actionInput": "実行項目",
   "diagram.whyTree.actions": "実行項目",

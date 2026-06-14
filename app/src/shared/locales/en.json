@@ -147,6 +147,7 @@
   "diagram.openDiagramFirst": "Open a Diagram file before placing Markdown files.",
   "diagram.openRelationshipFirst": "Open a relationship Diagram before placing Markdown files.",
   "diagram.placeableFiles": "Markdown files",
+  "diagram.resizeNode": "Resize node",
   "diagram.status": "{{nodes}} nodes / {{lines}} lines",
   "diagram.whyTree.actionInput": "Action",
   "diagram.whyTree.actions": "Actions",
