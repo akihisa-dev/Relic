@@ -53,14 +53,18 @@ vi.mock("electron", () => {
 });
 
 const fsMock = vi.hoisted(() => ({
+  mkdir: vi.fn(),
   rename: vi.fn(),
+  rm: vi.fn(),
   unlink: vi.fn(),
   writeFile: vi.fn()
 }));
 
 vi.mock("node:fs/promises", () => ({
-  default: { rename: fsMock.rename, unlink: fsMock.unlink, writeFile: fsMock.writeFile },
+  default: { mkdir: fsMock.mkdir, rename: fsMock.rename, rm: fsMock.rm, unlink: fsMock.unlink, writeFile: fsMock.writeFile },
+  mkdir: fsMock.mkdir,
   rename: fsMock.rename,
+  rm: fsMock.rm,
   unlink: fsMock.unlink,
   writeFile: fsMock.writeFile
 }));
@@ -107,7 +111,9 @@ describe("outputHandlers", () => {
     electronMock.isDestroyed.mockReturnValue(false);
     electronMock.loadURL.mockResolvedValue(undefined);
     electronMock.printToPDF.mockResolvedValue(Buffer.from("pdf"));
+    fsMock.mkdir.mockResolvedValue(undefined);
     fsMock.rename.mockResolvedValue(undefined);
+    fsMock.rm.mockResolvedValue(undefined);
     fsMock.unlink.mockResolvedValue(undefined);
     fsMock.writeFile.mockResolvedValue(undefined);
   });
@@ -334,16 +340,19 @@ describe("outputHandlers", () => {
     expect(electronMock.focus).toHaveBeenCalled();
     expect(electronMock.print).not.toHaveBeenCalled();
     expect(electronMock.browserWindowOn).toHaveBeenCalledWith("closed", expect.any(Function));
+    expect(fsMock.rm).toHaveBeenCalledWith("/tmp/relic-print-preview", { force: true, recursive: true });
+    expect(fsMock.mkdir).toHaveBeenCalledWith("/tmp/relic-print-preview", { recursive: true });
     expect(fsMock.writeFile).toHaveBeenCalledWith(
-      expect.stringMatching(/\/tmp\/\.relic-print-preview-.+-Note\.pdf\..+\.tmp$/),
+      expect.stringMatching(/\/tmp\/relic-print-preview\/\.preview-.+\.pdf\..+\.tmp$/),
       Buffer.from("pdf"),
       undefined
     );
     expect(fsMock.rename).toHaveBeenCalledWith(
-      expect.stringMatching(/\/tmp\/\.relic-print-preview-.+-Note\.pdf\..+\.tmp$/),
-      expect.stringMatching(/\/tmp\/relic-print-preview-.+-Note\.pdf$/)
+      expect.stringMatching(/\/tmp\/relic-print-preview\/\.preview-.+\.pdf\..+\.tmp$/),
+      expect.stringMatching(/\/tmp\/relic-print-preview\/preview-.+\.pdf$/)
     );
-    expect(electronMock.loadURL.mock.calls.at(-1)?.[0]).toMatch(/^file:\/\/\/tmp\/relic-print-preview-.+-Note\.pdf$/);
+    expect(electronMock.loadURL.mock.calls.at(-1)?.[0]).toMatch(/^file:\/\/\/tmp\/relic-print-preview\/preview-.+\.pdf$/);
+    expect(electronMock.loadURL.mock.calls.at(-1)?.[0]).not.toContain("Note");
     expect(electronMock.browserWindowOptions.at(-1)?.webPreferences).toEqual(
       expect.objectContaining({
         contextIsolation: true,
@@ -359,6 +368,15 @@ describe("outputHandlers", () => {
 
     const closeHandler = electronMock.browserWindowOn.mock.calls.find(([eventName]) => eventName === "closed")?.[1] as (() => void) | undefined;
     closeHandler?.();
-    expect(fsMock.unlink).toHaveBeenCalledWith(expect.stringMatching(/\/tmp\/relic-print-preview-.+-Note\.pdf$/));
+    expect(fsMock.unlink).toHaveBeenCalledWith(expect.stringMatching(/\/tmp\/relic-print-preview\/preview-.+\.pdf$/));
+  });
+
+  it("印刷プレビュー起動時の古い一時PDF削除に失敗してもハンドラ登録を続ける", async () => {
+    fsMock.rm.mockRejectedValue(new Error("cleanup failed"));
+
+    expect(() => registerOutputHandlers()).not.toThrow();
+
+    expect(fsMock.rm).toHaveBeenCalledWith("/tmp/relic-print-preview", { force: true, recursive: true });
+    expect(electronMock.handle).toHaveBeenCalledWith(printPreviewChannel, expect.any(Function));
   });
 });
