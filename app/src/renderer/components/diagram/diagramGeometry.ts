@@ -10,6 +10,7 @@ const minCanvasHeight = 620;
 const lineAvoidanceMargin = 28;
 const lineJumpOffset = 14;
 const lineJumpRadius = 12;
+const labelAvoidanceRadius = 56;
 const pairedLineGap = 24;
 const turnCost = 8;
 const reservedSegmentPenalty = 5000;
@@ -151,10 +152,11 @@ export function buildLineLayouts(
     const otherSegments = routedLines.flatMap((routedLine, otherIndex) => (
       otherIndex === index ? [] : segmentsFromPoints(routedLine.route.points)
     ));
+    const labelPoint = labelPointFromRoute(route.points, otherSegments);
     return {
       label: context.line.label,
-      labelX: route.labelX,
-      labelY: route.labelY,
+      labelX: labelPoint.x,
+      labelY: labelPoint.y,
       line: context.line,
       pathD: pathFromPointsWithVerticalLineJumps(route.points, otherSegments),
       x1: route.start.x,
@@ -286,7 +288,7 @@ function buildRoutedLineRoute(
   const routedPoints = routeOrthogonalPath(leadPoints.start, leadPoints.end, nodes, obstacles, reservedSegments);
   const points = simplifyRoute([start.point, ...routedPoints, end.point]);
   const pathD = pathFromPoints(points);
-  const labelPoint = labelPointFromRoute(points);
+  const labelPoint = labelPointFromRoute(points, []);
 
   return {
     end: end.point,
@@ -603,10 +605,12 @@ function verticalLineJumps(
     });
 }
 
-function labelPointFromRoute(points: DiagramPoint[]): DiagramPoint {
+function labelPointFromRoute(points: DiagramPoint[], otherSegments: RoutedSegment[]): DiagramPoint {
   const segments = segmentsFromPoints(points);
   let longest = segments[0];
   let longestLength = -1;
+  let bestSafeSegment: RoutedSegment | null = null;
+  let bestSafeLength = -1;
 
   segments.forEach((segment) => {
     const length = Math.abs(segment.end.x - segment.start.x) + Math.abs(segment.end.y - segment.start.y);
@@ -614,13 +618,129 @@ function labelPointFromRoute(points: DiagramPoint[]): DiagramPoint {
       longest = segment;
       longestLength = length;
     }
+
+    safeSegments(segment, otherSegments).forEach((safeSegment) => {
+      const safeLength = segmentLength(safeSegment.start, safeSegment.end);
+      if (safeLength > bestSafeLength) {
+        bestSafeSegment = safeSegment;
+        bestSafeLength = safeLength;
+      }
+    });
   });
 
-  if (!longest) return points[0] ?? { x: 0, y: 0 };
+  const labelSegment = bestSafeSegment ?? longest;
+  if (!labelSegment) return points[0] ?? { x: 0, y: 0 };
   return {
-    x: (longest.start.x + longest.end.x) / 2,
-    y: (longest.start.y + longest.end.y) / 2
+    x: (labelSegment.start.x + labelSegment.end.x) / 2,
+    y: (labelSegment.start.y + labelSegment.end.y) / 2
   };
+}
+
+function safeSegments(segment: RoutedSegment, otherSegments: RoutedSegment[]): RoutedSegment[] {
+  const length = segmentLength(segment.start, segment.end);
+  if (length === 0) return [];
+
+  const blocked = labelBlockedIntervals(segment, otherSegments, length);
+  if (blocked.length === 0) return [segment];
+
+  const merged = mergeIntervals(blocked);
+  const safe: RoutedSegment[] = [];
+  let cursor = 0;
+
+  merged.forEach((interval) => {
+    if (interval.start > cursor) {
+      safe.push(segmentFromDistances(segment, cursor, interval.start));
+    }
+    cursor = Math.max(cursor, interval.end);
+  });
+
+  if (cursor < length) {
+    safe.push(segmentFromDistances(segment, cursor, length));
+  }
+
+  return safe;
+}
+
+function labelBlockedIntervals(
+  segment: RoutedSegment,
+  otherSegments: RoutedSegment[],
+  segmentLengthValue: number
+): Array<{ end: number; start: number }> {
+  return otherSegments.flatMap((otherSegment) => {
+    const crossing = segmentCrossingPoint(segment.start, segment.end, otherSegment.start, otherSegment.end);
+    if (!crossing) return [];
+    const distance = segmentDistanceFromStart(segment.start, crossing);
+    return [{
+      end: clamp(distance + labelAvoidanceRadius, 0, segmentLengthValue),
+      start: clamp(distance - labelAvoidanceRadius, 0, segmentLengthValue)
+    }];
+  });
+}
+
+function mergeIntervals(intervals: Array<{ end: number; start: number }>): Array<{ end: number; start: number }> {
+  const sorted = intervals
+    .filter((interval) => interval.end > interval.start)
+    .toSorted((left, right) => left.start - right.start);
+  const merged: Array<{ end: number; start: number }> = [];
+
+  sorted.forEach((interval) => {
+    const last = merged.at(-1);
+    if (!last || interval.start > last.end) {
+      merged.push({ ...interval });
+      return;
+    }
+    last.end = Math.max(last.end, interval.end);
+  });
+
+  return merged;
+}
+
+function segmentFromDistances(segment: RoutedSegment, startDistance: number, endDistance: number): RoutedSegment {
+  return {
+    end: pointAtSegmentDistance(segment.start, segment.end, endDistance),
+    start: pointAtSegmentDistance(segment.start, segment.end, startDistance),
+    toNodeId: segment.toNodeId
+  };
+}
+
+function pointAtSegmentDistance(start: DiagramPoint, end: DiagramPoint, distance: number): DiagramPoint {
+  const length = segmentLength(start, end);
+  if (length === 0) return start;
+  const ratio = distance / length;
+  return {
+    x: start.x + (end.x - start.x) * ratio,
+    y: start.y + (end.y - start.y) * ratio
+  };
+}
+
+function segmentDistanceFromStart(start: DiagramPoint, point: DiagramPoint): number {
+  return Math.abs(point.x - start.x) + Math.abs(point.y - start.y);
+}
+
+function segmentLength(start: DiagramPoint, end: DiagramPoint): number {
+  return Math.abs(end.x - start.x) + Math.abs(end.y - start.y);
+}
+
+function segmentCrossingPoint(
+  aStart: DiagramPoint,
+  aEnd: DiagramPoint,
+  bStart: DiagramPoint,
+  bEnd: DiagramPoint
+): DiagramPoint | null {
+  const aHorizontal = sameCoordinate(aStart.y, aEnd.y);
+  const bHorizontal = sameCoordinate(bStart.y, bEnd.y);
+  if (aHorizontal === bHorizontal) return null;
+
+  const horizontalStart = aHorizontal ? aStart : bStart;
+  const horizontalEnd = aHorizontal ? aEnd : bEnd;
+  const verticalStart = aHorizontal ? bStart : aStart;
+  const verticalEnd = aHorizontal ? bEnd : aEnd;
+  const point = { x: verticalStart.x, y: horizontalStart.y };
+
+  return valueBetween(point.x, horizontalStart.x, horizontalEnd.x) &&
+    valueBetween(point.y, verticalStart.y, verticalEnd.y)
+    ? point
+    : null;
 }
 
 function segmentsFromPoints(points: DiagramPoint[], toNodeId = ""): RoutedSegment[] {

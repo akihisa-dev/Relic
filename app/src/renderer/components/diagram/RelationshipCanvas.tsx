@@ -162,6 +162,23 @@ export function RelationshipCanvas({
     ...guide,
     value: guide.value - (guide.axis === "x" ? layout.originX : layout.originY)
   })), [drag?.guides, layout.originX, layout.originY]);
+  const dragDropPreview = useMemo(() => {
+    if (!drag) return null;
+    const movingNode = diagram.nodes.find((node) => node.id === drag.nodeId);
+    if (!movingNode) return null;
+
+    const hasMoved = drag.currentX !== drag.originalX || drag.currentY !== drag.originalY;
+    if (!hasMoved) return null;
+
+    const snapped = snapDiagramPointToGrid(drag.currentX, drag.currentY, layout.originX, layout.originY);
+
+    return {
+      height: movingNode.height,
+      x: snapped.x - layout.originX,
+      y: snapped.y - layout.originY,
+      width: movingNode.width
+    };
+  }, [diagram.nodes, drag, layout.originX, layout.originY]);
   const resizePreview = resize
     ? layout.nodes.find((node) => node.node.id === resize.nodeId)
     : null;
@@ -657,10 +674,22 @@ export function RelationshipCanvas({
           })}
         </div>
         <div className="diagram-canvas-nodes">
+          {dragDropPreview ? (
+            <div
+              aria-hidden="true"
+              className="diagram-canvas-drop-preview"
+              style={{
+                height: dragDropPreview.height,
+                left: dragDropPreview.x,
+                top: dragDropPreview.y,
+                width: dragDropPreview.width
+              }}
+            />
+          ) : null}
           {resize && resizePreview ? (
             <div
               aria-hidden="true"
-              className="diagram-canvas-resize-preview"
+              className="diagram-canvas-drop-preview diagram-canvas-resize-preview"
               style={{
                 height: resize.currentHeight,
                 left: resizePreview.x,
