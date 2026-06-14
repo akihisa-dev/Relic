@@ -9,7 +9,10 @@ export type RelicDiagramTemplateId =
   | "relationship-empty"
   | "why-tree-empty"
   | "why-tree-basic-cause"
-  | "why-tree-incident-review";
+  | "why-tree-incident-review"
+  | "why-tree-risk-analysis"
+  | "why-tree-improvement-plan"
+  | "why-tree-decision-review";
 
 export interface RelicDiagramTemplate {
   content: string;
@@ -104,6 +107,99 @@ export const relicDiagramTemplates: readonly RelicDiagramTemplate[] = [
     descriptionKey: "diagram.template.incidentReviewDescription",
     id: "why-tree-incident-review",
     titleKey: "diagram.template.incidentReview",
+    type: "why-tree"
+  },
+  {
+    content: [
+      "---",
+      "type: why-tree",
+      "title: リスク分析",
+      "---",
+      "",
+      "phenomenon:",
+      "  title: 気になるリスク",
+      "  facts:",
+      "    - すでに見えている兆候",
+      "  solutions:",
+      "    - リスクを下げる対策",
+      "  actions:",
+      "    - 監視する指標を決める",
+      "  whys:",
+      "    - title: リスクが起きる理由",
+      "      facts: []",
+      "      solutions:",
+      "        - 予防策を用意する",
+      "      actions: []",
+      "      whys:",
+      "        - title: 見落としやすい背景",
+      "          facts: []",
+      "          solutions: []",
+      "          actions: []",
+      ""
+    ].join("\n"),
+    defaultNameKey: "diagram.template.riskAnalysisName",
+    descriptionKey: "diagram.template.riskAnalysisDescription",
+    id: "why-tree-risk-analysis",
+    titleKey: "diagram.template.riskAnalysis",
+    type: "why-tree"
+  },
+  {
+    content: [
+      "---",
+      "type: why-tree",
+      "title: 改善案検討",
+      "---",
+      "",
+      "phenomenon:",
+      "  title: 改善したい状態",
+      "  facts:",
+      "    - 現在の困りごと",
+      "  solutions:",
+      "    - 改善案",
+      "  actions:",
+      "    - 小さく試すこと",
+      "  whys:",
+      "    - title: 今の状態が続く理由",
+      "      facts: []",
+      "      solutions:",
+      "        - 変えられる仕組み",
+      "      actions: []",
+      ""
+    ].join("\n"),
+    defaultNameKey: "diagram.template.improvementPlanName",
+    descriptionKey: "diagram.template.improvementPlanDescription",
+    id: "why-tree-improvement-plan",
+    titleKey: "diagram.template.improvementPlan",
+    type: "why-tree"
+  },
+  {
+    content: [
+      "---",
+      "type: why-tree",
+      "title: 意思決定整理",
+      "---",
+      "",
+      "phenomenon:",
+      "  title: 決めたいこと",
+      "  facts:",
+      "    - 判断材料",
+      "  solutions:",
+      "    - 候補案",
+      "  actions:",
+      "    - 次に確認すること",
+      "  whys:",
+      "    - title: 迷っている理由",
+      "      facts:",
+      "        - 不確実な点",
+      "      solutions:",
+      "        - 判断基準を決める",
+      "      actions: []",
+      ""
+    ].join("\n"),
+    defaultNameKey: "diagram.template.decisionReviewName",
+    descriptionKey: "diagram.template.decisionReviewDescription",
+    id: "why-tree-decision-review",
+    titleKey: "diagram.template.decisionReview",
     type: "why-tree"
   }
 ];

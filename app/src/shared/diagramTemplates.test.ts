@@ -42,9 +42,13 @@ describe("relicDiagramTemplates", () => {
     expect(templates.map((template) => template.id)).toEqual([
       "why-tree-empty",
       "why-tree-basic-cause",
-      "why-tree-incident-review"
+      "why-tree-incident-review",
+      "why-tree-risk-analysis",
+      "why-tree-improvement-plan",
+      "why-tree-decision-review"
     ]);
     expect(relicDiagramTemplateById("why-tree-basic-cause")?.defaultNameKey).toBe("diagram.template.basicCauseName");
+    expect(relicDiagramTemplateById("why-tree-risk-analysis")?.titleKey).toBe("diagram.template.riskAnalysis");
 
     const parsed = parseRelicDiagramMarkdown(templates[1]?.content ?? "");
     expect(parsed).toMatchObject({
