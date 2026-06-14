@@ -451,13 +451,7 @@ mark {
 }
 
 .relic-output-relationship {
-  background-color: #fbfaf7;
-  background-image:
-    linear-gradient(#ded8cd 1px, transparent 1px),
-    linear-gradient(90deg, #ded8cd 1px, transparent 1px);
-  background-size: 32px 32px;
-  border: 1px solid #d7d0c4;
-  border-radius: 6px;
+  background: transparent;
   box-sizing: border-box;
   display: block;
   height: auto;
@@ -482,7 +476,7 @@ mark {
   fill: #272521;
   font-size: 14px;
   paint-order: stroke;
-  stroke: #fbfaf7;
+  stroke: #ffffff;
   stroke-linejoin: round;
   stroke-width: 5px;
   text-anchor: middle;
