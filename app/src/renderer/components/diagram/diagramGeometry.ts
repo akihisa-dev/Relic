@@ -79,22 +79,51 @@ export function buildLineLayouts(
     const to = nodeById.get(line.to);
     if (!from || !to) return [];
 
-    const x1 = from.x + from.node.width / 2;
-    const y1 = from.y + from.node.height / 2;
-    const x2 = to.x + to.node.width / 2;
-    const y2 = to.y + to.node.height / 2;
+    const fromCenter = nodeCenter(from);
+    const toCenter = nodeCenter(to);
+    const start = nodeEdgePointToward(from, toCenter.x, toCenter.y);
+    const end = nodeEdgePointToward(to, fromCenter.x, fromCenter.y);
 
     return [{
       label: line.label,
-      labelX: (x1 + x2) / 2,
-      labelY: (y1 + y2) / 2 - 8,
+      labelX: (start.x + end.x) / 2,
+      labelY: (start.y + end.y) / 2 - 8,
       line,
-      x1,
-      x2,
-      y1,
-      y2
+      x1: start.x,
+      x2: end.x,
+      y1: start.y,
+      y2: end.y
     }];
   });
+}
+
+function nodeCenter(node: DiagramCanvasNodeLayout): { x: number; y: number } {
+  return {
+    x: node.x + node.node.width / 2,
+    y: node.y + node.node.height / 2
+  };
+}
+
+function nodeEdgePointToward(
+  node: DiagramCanvasNodeLayout,
+  targetX: number,
+  targetY: number
+): { x: number; y: number } {
+  const center = nodeCenter(node);
+  const dx = targetX - center.x;
+  const dy = targetY - center.y;
+  if (dx === 0 && dy === 0) return center;
+
+  const halfWidth = node.node.width / 2;
+  const halfHeight = node.node.height / 2;
+  const scaleX = dx === 0 ? Number.POSITIVE_INFINITY : halfWidth / Math.abs(dx);
+  const scaleY = dy === 0 ? Number.POSITIVE_INFINITY : halfHeight / Math.abs(dy);
+  const scale = Math.min(scaleX, scaleY);
+
+  return {
+    x: center.x + dx * scale,
+    y: center.y + dy * scale
+  };
 }
 
 export function nodeFileName(filePath: string): string {
