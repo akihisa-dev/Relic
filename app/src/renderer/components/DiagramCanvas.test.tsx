@@ -1063,6 +1063,14 @@ describe("DiagramCanvas", () => {
 
     fireEvent(resizeHandle, pointerEvent("pointerdown", 3, 190, 90));
     fireEvent(alice as HTMLElement, pointerEvent("pointermove", 3, 230, 110));
+
+    const resizePreview = document.querySelector(".diagram-canvas-resize-preview") as HTMLElement | null;
+    expect(resizePreview).toBeInTheDocument();
+    expect(resizePreview?.style.width).toBe("224px");
+    expect(resizePreview?.style.height).toBe("96px");
+    expect((alice as HTMLElement).style.width).toBe("224px");
+    expect((alice as HTMLElement).style.minHeight).toBe("96px");
+
     fireEvent(alice as HTMLElement, pointerEvent("pointerup", 3, 230, 110));
 
     expect(onChange).toHaveBeenCalledTimes(1);

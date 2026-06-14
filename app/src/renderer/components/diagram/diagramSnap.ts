@@ -74,6 +74,13 @@ export function snapDiagramPointToGrid(
   };
 }
 
+export function snapDiagramSizeToGrid(width: number, height: number, minWidth = diagramGridSize, minHeight = diagramGridSize): { height: number; width: number } {
+  return {
+    height: Math.max(minHeight, Math.round(height / diagramGridSize) * diagramGridSize),
+    width: Math.max(minWidth, Math.round(width / diagramGridSize) * diagramGridSize)
+  };
+}
+
 function nearestSnap(
   movingValues: Array<{ offset: number; value: number }>,
   targets: number[]
