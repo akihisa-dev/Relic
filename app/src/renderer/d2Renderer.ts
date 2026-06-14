@@ -1,3 +1,5 @@
+import { withDiagramRenderTimeout } from "./diagramLimits";
+
 type D2CompileOptions = import("@terrastruct/d2").CompileOptions;
 type D2CompileRequest = import("@terrastruct/d2").CompileRequest;
 type D2Renderer = InstanceType<(typeof import("@terrastruct/d2"))["D2"]>;
@@ -6,7 +8,9 @@ let d2RendererPromise: Promise<D2Renderer> | null = null;
 let d2RenderQueue: Promise<void> = Promise.resolve();
 
 export function enqueueD2Render(source: string): Promise<string> {
-  const renderTask = d2RenderQueue.then(() => renderD2Svg(source));
+  const renderTask = d2RenderQueue.then(() =>
+    withDiagramRenderTimeout(renderD2Svg(source), "d2")
+  );
   d2RenderQueue = renderTask.then(
     () => undefined,
     () => undefined

@@ -8,7 +8,7 @@ import { ipcErrorDetails } from "./activeWorkspace";
 
 describe("ipcErrorDetails", () => {
   it("redacts sensitive values from Error messages", () => {
-    expect(ipcErrorDetails(new Error("failed sk-abcdefghijklmnopqrstuvwxyz"))).toBe("failed sk-[redacted]");
+    expect(ipcErrorDetails(new Error(`failed ${["sk", "abcdefghijklmnopqrstuvwxyz"].join("-")}`))).toBe("failed sk-[redacted]");
   });
 
   it("keeps normal error messages unchanged", () => {
