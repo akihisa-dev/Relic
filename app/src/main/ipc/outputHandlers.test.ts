@@ -173,6 +173,9 @@ describe("outputHandlers", () => {
     });
 
     expect(result).toEqual({ ok: true, value: { filePath: "/tmp/out.pdf", status: "saved" } });
+    expect(electronMock.printToPDF).toHaveBeenCalledWith(expect.not.objectContaining({
+      margins: expect.anything()
+    }));
     expect(fsMock.writeFile).toHaveBeenCalledWith(
       expect.stringMatching(/\/tmp\/\.out\.pdf\..+\.tmp$/),
       Buffer.from("pdf"),
@@ -324,7 +327,9 @@ describe("outputHandlers", () => {
     });
 
     expect(result).toEqual({ ok: true, value: { status: "printed" } });
-    expect(electronMock.printToPDF).toHaveBeenCalled();
+    expect(electronMock.printToPDF).toHaveBeenCalledWith(expect.not.objectContaining({
+      margins: expect.anything()
+    }));
     expect(electronMock.show).toHaveBeenCalled();
     expect(electronMock.focus).toHaveBeenCalled();
     expect(electronMock.print).not.toHaveBeenCalled();

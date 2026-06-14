@@ -129,7 +129,7 @@ function wrapOutputHtml(body: string, title: string): string {
 
 const outputCss = `
 @page {
-  margin: 16mm 15mm;
+  margin: 12.7mm 13.8mm;
   size: A4;
 }
 

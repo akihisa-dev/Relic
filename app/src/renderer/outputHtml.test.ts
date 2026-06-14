@@ -26,6 +26,9 @@ describe("outputHtml", () => {
 
     expect(result.defaultFileName).toBe("Note");
     expect(result.html).toContain('<main class="relic-output-body">');
+    expect(result.html).toContain("@page");
+    expect(result.html).toContain("margin: 12.7mm 13.8mm;");
+    expect(result.html).toContain("size: A4;");
     expect(result.html).toContain("<h1");
     expect(result.html).not.toContain("title-bar");
     expect(result.html).not.toContain("files-sidebar");
