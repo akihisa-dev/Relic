@@ -1,5 +1,7 @@
 import {
   type ChangeEvent as ReactChangeEvent,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
   type ReactElement
 } from "react";
@@ -9,10 +11,15 @@ import { nodeFileName } from "./diagramGeometry";
 
 interface DiagramNodeViewProps {
   isDragging: boolean;
+  isTextEditing: boolean;
   isSelected: boolean;
   node: RelicConnectedDiagramNode;
+  nodeTextDraft?: string;
   nodeTextLabel: string;
+  onNodeTextCancel?: () => void;
   onNodeTextChange?: (nodeId: string, value: string) => void;
+  onNodeTextCommit?: () => void;
+  onNodeTextDoubleClick?: (node: RelicConnectedDiagramNode, event: ReactMouseEvent<HTMLDivElement>) => void;
   onOutlinePointerDown: (node: RelicConnectedDiagramNode, event: ReactPointerEvent<HTMLElement>) => void;
   onPointerCancel: (event: ReactPointerEvent<HTMLDivElement>) => void;
   onPointerDown: (node: RelicConnectedDiagramNode, event: ReactPointerEvent<HTMLDivElement>) => void;
@@ -26,10 +33,15 @@ interface DiagramNodeViewProps {
 
 export function DiagramNodeView({
   isDragging,
+  isTextEditing,
   isSelected,
   node,
+  nodeTextDraft,
   nodeTextLabel,
+  onNodeTextCancel,
   onNodeTextChange,
+  onNodeTextCommit,
+  onNodeTextDoubleClick,
   onOutlinePointerDown,
   onPointerCancel,
   onPointerDown,
@@ -42,6 +54,11 @@ export function DiagramNodeView({
 }: DiagramNodeViewProps): ReactElement {
   const freeText = "text" in node ? node.text : null;
   const title = "file" in node ? node.file : freeText ?? "";
+  const handleNodeTextKeyDown = (event: ReactKeyboardEvent<HTMLTextAreaElement>): void => {
+    if (event.key !== "Escape") return;
+    event.preventDefault();
+    onNodeTextCancel?.();
+  };
 
   return (
     <div
@@ -51,6 +68,7 @@ export function DiagramNodeView({
         isSelected ? "diagram-canvas-node--selected" : ""
       ].filter(Boolean).join(" ")}
       onPointerCancel={onPointerCancel}
+      onDoubleClick={(event) => onNodeTextDoubleClick?.(node, event)}
       onPointerDown={(event) => onPointerDown(node, event)}
       onPointerMove={onPointerMove}
       onPointerUp={(event) => onPointerUp(node, event)}
@@ -63,13 +81,18 @@ export function DiagramNodeView({
     >
       {freeText === null ? (
         <span className="diagram-canvas-node-name">{"file" in node ? nodeFileName(node.file) : ""}</span>
+      ) : !isTextEditing ? (
+        <span className="diagram-canvas-node-name diagram-canvas-node-name--free-text">{freeText || nodeTextLabel}</span>
       ) : (
         <textarea
           aria-label={nodeTextLabel}
+          autoFocus
           className="diagram-canvas-node-text"
           onChange={(event: ReactChangeEvent<HTMLTextAreaElement>) => onNodeTextChange?.(node.id, event.currentTarget.value)}
+          onBlur={onNodeTextCommit}
+          onKeyDown={handleNodeTextKeyDown}
           onPointerDown={(event) => event.stopPropagation()}
-          value={freeText}
+          value={nodeTextDraft ?? freeText}
         />
       )}
       {isSelected ? (

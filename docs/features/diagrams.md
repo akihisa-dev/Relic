@@ -172,7 +172,8 @@ lines: []
 ### 操作
 
 - キャンバス上の追加操作から自由テキストNodeを追加できる
-- Node内のテキスト欄を編集するとMarkdown本文へ書き戻す
+- 通常時のNodeはRelationshipと同じくNode内側をドラッグして移動できる
+- Nodeをダブルクリックするとテキスト編集に入り、編集確定時にMarkdown本文へ書き戻す
 - Node移動、Nodeリサイズ、Line作成、Line削除、Line方向変更、Node削除、Label編集はRelationshipと同じ操作で扱う
 - 空白部分をドラッグすると表示位置を動かせる
 - ホイール操作でカーソル位置を基準に拡大縮小できる

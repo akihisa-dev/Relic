@@ -344,15 +344,39 @@ describe("DiagramCanvas", () => {
     const onChange = vi.fn();
     render(<StatefulDiagramCanvas content={freeDrawingContent} onChange={onChange} />);
 
-    const textNode = screen.getByDisplayValue("主人公");
+    const textNode = screen.getByText("主人公");
     expect(textNode).toBeInTheDocument();
-    expect(screen.getByDisplayValue("敵対組織")).toBeInTheDocument();
+    expect(screen.getByText("敵対組織")).toBeInTheDocument();
     expect(screen.getByText("対立")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "+ Node" })).toBeInTheDocument();
+    expect(screen.queryByDisplayValue("主人公")).not.toBeInTheDocument();
 
-    fireEvent.change(textNode, { target: { value: "自由メモ" } });
+    fireEvent.doubleClick(textNode);
+    const input = screen.getByDisplayValue("主人公");
+    fireEvent.change(input, { target: { value: "自由メモ" } });
+    fireEvent.blur(input);
 
     expect(onChange).toHaveBeenLastCalledWith(expect.stringContaining("text: 自由メモ"));
+  });
+
+  it("moves a free-drawing node by dragging its visible text like a relationship node", () => {
+    const onChange = vi.fn();
+    render(
+      <I18nProvider language="en">
+        <DiagramCanvas content={freeDrawingContent} fileName="自由図" onChange={onChange} />
+      </I18nProvider>
+    );
+    const node = screen.getByText("主人公").closest(".diagram-canvas-node");
+    expect(node).toBeInstanceOf(HTMLElement);
+
+    fireEvent(node as HTMLElement, pointerEvent("pointerdown", 2, 10, 10));
+    fireEvent(node as HTMLElement, pointerEvent("pointermove", 2, 50, 30));
+    fireEvent(node as HTMLElement, pointerEvent("pointerup", 2, 50, 30));
+
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange.mock.calls[0]?.[0]).toContain("x: 152");
+    expect(onChange.mock.calls[0]?.[0]).toContain("y: 112");
+    expect(onChange.mock.calls[0]?.[0]).toContain("text: 主人公");
   });
 
   it("adds a free-drawing text node from the canvas toolbar", () => {
