@@ -377,6 +377,11 @@
   overflow: hidden;
 }
 
+.editor-body > .diagram-canvas,
+.editor-body > .why-tree-editor {
+  grid-row: 3;
+}
+
 .editor-file-title-row {
   align-items: start;
   box-sizing: border-box;
