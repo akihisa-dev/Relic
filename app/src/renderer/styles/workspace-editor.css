@@ -1215,6 +1215,62 @@
   user-select: none;
 }
 
+.why-tree-label-panel {
+  background: color-mix(in srgb, var(--bg) 94%, transparent);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.16);
+  display: grid;
+  gap: 8px;
+  left: 16px;
+  padding: 10px;
+  position: absolute;
+  top: 58px;
+  width: 156px;
+  z-index: 30;
+}
+
+.why-tree-label-panel-title {
+  color: var(--text-3);
+  font-size: 11px;
+  font-weight: 750;
+  line-height: 1.2;
+}
+
+.why-tree-label-options {
+  display: grid;
+  gap: 6px;
+}
+
+.why-tree-label-options button {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-2);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  min-height: 28px;
+  padding: 0 8px;
+  text-align: left;
+}
+
+.why-tree-label-options button[aria-pressed="true"] {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.why-tree-label-options button:not(:disabled):hover,
+.why-tree-label-options button:not(:disabled):focus-visible {
+  border-color: var(--accent-ring);
+  outline: none;
+}
+
+.why-tree-label-options button:disabled {
+  opacity: 0.54;
+}
+
 .why-tree-content {
   align-content: start;
   box-sizing: border-box;

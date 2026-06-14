@@ -113,7 +113,7 @@ describe("DiagramSidebar", () => {
     const props = renderDiagramSidebar();
 
     fireEvent.click(screen.getByRole("button", { name: "New relationship" }));
-    fireEvent.click(screen.getByRole("button", { name: "New why-tree" }));
+    fireEvent.click(screen.getByRole("button", { name: "New structure tree" }));
 
     expect(props.onCreateDiagramFile).toHaveBeenNthCalledWith(1, "relationship");
     expect(props.onCreateDiagramFile).toHaveBeenNthCalledWith(2, "why-tree");
