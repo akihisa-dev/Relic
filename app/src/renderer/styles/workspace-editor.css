@@ -1155,15 +1155,24 @@
 }
 
 .diagram-canvas-node--shape-decision {
-  background: color-mix(in srgb, var(--text-3) 64%, var(--border-medium));
+  background: transparent;
   border: 0;
-  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
   padding: 18px 34px;
 }
 
 .diagram-canvas-node--shape-decision::before {
+  background: color-mix(in srgb, var(--text-3) 64%, var(--border-medium));
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+  content: "";
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+  z-index: 0;
+}
+
+.diagram-canvas-node--shape-decision::after {
   background: var(--bg);
-  clip-path: inherit;
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
   content: "";
   inset: 2px;
   pointer-events: none;
@@ -1172,16 +1181,25 @@
 }
 
 .diagram-canvas-node--shape-input-output {
-  background: color-mix(in srgb, var(--text-3) 64%, var(--border-medium));
+  background: transparent;
   border: 0;
-  clip-path: polygon(14% 0, 100% 0, 86% 100%, 0 100%);
   padding-left: 28px;
   padding-right: 28px;
 }
 
 .diagram-canvas-node--shape-input-output::before {
+  background: color-mix(in srgb, var(--text-3) 64%, var(--border-medium));
+  clip-path: polygon(14% 0, 100% 0, 86% 100%, 0 100%);
+  content: "";
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+  z-index: 0;
+}
+
+.diagram-canvas-node--shape-input-output::after {
   background: var(--bg);
-  clip-path: inherit;
+  clip-path: polygon(14% 0, 100% 0, 86% 100%, 0 100%);
   content: "";
   inset: 2px;
   pointer-events: none;
@@ -1214,6 +1232,11 @@
 
 .diagram-canvas-node--shape-decision:hover,
 .diagram-canvas-node--shape-input-output:hover {
+  background: transparent;
+}
+
+.diagram-canvas-node--shape-decision:hover::before,
+.diagram-canvas-node--shape-input-output:hover::before {
   background: var(--accent-ring);
 }
 
@@ -1225,6 +1248,11 @@
 
 .diagram-canvas-node--selected.diagram-canvas-node--shape-decision,
 .diagram-canvas-node--selected.diagram-canvas-node--shape-input-output {
+  background: transparent;
+}
+
+.diagram-canvas-node--selected.diagram-canvas-node--shape-decision::before,
+.diagram-canvas-node--selected.diagram-canvas-node--shape-input-output::before {
   background: var(--accent);
 }
 
