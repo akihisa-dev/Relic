@@ -5,6 +5,7 @@ import {
   type PointerEvent as ReactPointerEvent,
   type ReactElement,
   type WheelEvent as ReactWheelEvent,
+  useMemo,
   useState
 } from "react";
 
@@ -108,8 +109,8 @@ export function RelationshipCanvas({
   const [selection, setSelection] = useState<DiagramSelection | null>(null);
   const [viewport, setViewport] = useState<ViewportState>({ panX: 0, panY: 0, zoom: 1 });
 
-  const layout = buildDiagramCanvasLayout(diagram);
-  const displayNodes = layout.nodes.map((node) => {
+  const layout = useMemo(() => buildDiagramCanvasLayout(diagram), [diagram]);
+  const displayNodes = useMemo(() => layout.nodes.map((node) => {
     if (resize?.nodeId === node.node.id) {
       return {
         node: {
@@ -132,12 +133,15 @@ export function RelationshipCanvas({
       x: drag.currentX - layout.originX,
       y: drag.currentY - layout.originY
     };
-  });
-  const displayLines = buildLineLayouts(diagram.lines, displayNodes);
-  const displaySnapGuides = (drag?.guides ?? []).map((guide) => ({
+  }), [drag, layout, resize]);
+  const displayLines = useMemo(
+    () => buildLineLayouts(diagram.lines, displayNodes),
+    [diagram.lines, displayNodes]
+  );
+  const displaySnapGuides = useMemo(() => (drag?.guides ?? []).map((guide) => ({
     ...guide,
     value: guide.value - (guide.axis === "x" ? layout.originX : layout.originY)
-  }));
+  })), [drag?.guides, layout.originX, layout.originY]);
   const resizePreview = resize
     ? layout.nodes.find((node) => node.node.id === resize.nodeId)
     : null;

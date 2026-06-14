@@ -726,6 +726,10 @@ describe("DiagramCanvas", () => {
 
     fireEvent(node as HTMLElement, pointerEvent("pointerdown", 1, 10, 10));
     fireEvent(node as HTMLElement, pointerEvent("pointermove", 1, 50, 30));
+
+    expect((node as HTMLElement).style.transform).toContain("translate(232px, 212px)");
+    expect(onChange).not.toHaveBeenCalled();
+
     fireEvent(node as HTMLElement, pointerEvent("pointerup", 1, 50, 30));
 
     expect(onChange).toHaveBeenCalledTimes(1);
