@@ -302,6 +302,34 @@ describe("updateLinksForFileRename", () => {
     await expect(readFile(sourcePath, "utf8")).resolves.toBe("外部変更 [[old]]");
   });
 
+  it("複数ファイルのリンク更新中に競合した場合は適用済みファイルを元に戻す", async () => {
+    const ws = await mkdtemp(path.join(os.tmpdir(), "relic-link-updater-conflict-rollback-"));
+    temporaryPaths.push(ws);
+    const alphaPath = path.join(ws, "alpha.md");
+    const betaPath = path.join(ws, "beta.md");
+
+    await writeFile(alphaPath, "[[old]]", "utf8");
+    await writeFile(betaPath, "[[old]]", "utf8");
+    await writeFile(path.join(ws, "new.md"), "", "utf8");
+
+    const result = await updateLinksForFileRename(ws, "old.md", "new.md", {
+      readFile,
+      async writeTextFile(filePath, content) {
+        await writeFile(filePath, content, "utf8");
+        if (filePath === alphaPath) {
+          await writeFile(betaPath, "外部変更 [[old]]", "utf8");
+        }
+      }
+    });
+
+    expect(result).toMatchObject({
+      error: expect.objectContaining({ code: "LINK_UPDATE_CONFLICT" }),
+      ok: false
+    });
+    await expect(readFile(alphaPath, "utf8")).resolves.toBe("[[old]]");
+    await expect(readFile(betaPath, "utf8")).resolves.toBe("外部変更 [[old]]");
+  });
+
   it("ロールバック対象が外部変更済みの場合は古い内容で上書きしない", async () => {
     const ws = await mkdtemp(path.join(os.tmpdir(), "relic-link-updater-rollback-conflict-"));
     temporaryPaths.push(ws);
@@ -435,5 +463,34 @@ describe("updateLinksForFolderRename", () => {
     await updateLinksForFolderRename(ws, "old-folder", "new-folder");
 
     await expect(readFile(path.join(ws, "map.md"), "utf8")).resolves.toContain("file: new-folder/note.md");
+  });
+
+  it("複数ファイルのフォルダリンク更新中に競合した場合は適用済みファイルを元に戻す", async () => {
+    const ws = await mkdtemp(path.join(os.tmpdir(), "relic-link-updater-folder-conflict-rollback-"));
+    temporaryPaths.push(ws);
+    await mkdir(path.join(ws, "new-folder"));
+    const alphaPath = path.join(ws, "alpha.md");
+    const betaPath = path.join(ws, "beta.md");
+
+    await writeFile(alphaPath, "[[old-folder/note]]", "utf8");
+    await writeFile(betaPath, "[[old-folder/note]]", "utf8");
+    await writeFile(path.join(ws, "new-folder", "note.md"), "", "utf8");
+
+    const result = await updateLinksForFolderRename(ws, "old-folder", "new-folder", {
+      readFile,
+      async writeTextFile(filePath, content) {
+        await writeFile(filePath, content, "utf8");
+        if (filePath === alphaPath) {
+          await writeFile(betaPath, "外部変更 [[old-folder/note]]", "utf8");
+        }
+      }
+    });
+
+    expect(result).toMatchObject({
+      error: expect.objectContaining({ code: "LINK_UPDATE_CONFLICT" }),
+      ok: false
+    });
+    await expect(readFile(alphaPath, "utf8")).resolves.toBe("[[old-folder/note]]");
+    await expect(readFile(betaPath, "utf8")).resolves.toBe("外部変更 [[old-folder/note]]");
   });
 });

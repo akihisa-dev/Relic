@@ -66,7 +66,7 @@ export async function atomicWriteNewTextFile(
     throw error;
   }
 
-  await operations.unlink(temporaryPath);
+  await operations.unlink(temporaryPath).catch(() => undefined);
 }
 
 function createTemporaryPath(filePath: string): string {
