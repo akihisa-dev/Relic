@@ -1,0 +1,138 @@
+name: Draft Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: draft-release-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  build-macos:
+    name: Build macOS
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Enable pnpm
+        run: corepack enable
+
+      - name: Install dependencies
+        working-directory: app
+        run: pnpm install --frozen-lockfile
+
+      - name: Build macOS app
+        working-directory: app
+        run: pnpm build:mac:safe
+
+      - name: Create macOS release ZIP
+        working-directory: app
+        shell: bash
+        run: |
+          mkdir -p release-assets
+          app_bundle="$(find out/darwin -name 'Relic.app' -type d -print -quit)"
+          if [ -z "$app_bundle" ]; then
+            echo "Relic.app was not found under app/out/darwin." >&2
+            exit 1
+          fi
+          ditto -c -k --sequesterRsrc --keepParent "$app_bundle" release-assets/Relic-macOS.zip
+          test -f release-assets/Relic-macOS.zip
+
+      - name: Upload macOS release ZIP
+        uses: actions/upload-artifact@v7
+        with:
+          name: Relic-macOS
+          path: app/release-assets/Relic-macOS.zip
+          if-no-files-found: error
+
+  build-windows:
+    name: Build Windows
+    runs-on: windows-2025-vs2026
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Enable pnpm
+        run: corepack enable
+
+      - name: Install dependencies
+        working-directory: app
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Windows app
+        working-directory: app
+        run: pnpm build:win:safe
+
+      - name: Create Windows release ZIP
+        working-directory: app
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force release-assets | Out-Null
+          $packageDir = Get-ChildItem out/win32 -Directory | Where-Object { $_.Name -like 'Relic-win32-*' } | Select-Object -First 1
+          if (-not $packageDir) {
+            Write-Error 'Windows packaged app directory was not found under app/out/win32.'
+            exit 1
+          }
+          Compress-Archive -Path $packageDir.FullName -DestinationPath release-assets/Relic-Windows.zip -Force
+          if (-not (Test-Path release-assets/Relic-Windows.zip)) {
+            Write-Error 'Relic-Windows.zip was not created.'
+            exit 1
+          }
+
+      - name: Upload Windows release ZIP
+        uses: actions/upload-artifact@v7
+        with:
+          name: Relic-Windows
+          path: app/release-assets/Relic-Windows.zip
+          if-no-files-found: error
+
+  draft-release:
+    name: Create draft release
+    needs:
+      - build-macos
+      - build-windows
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG_NAME: ${{ github.ref_name }}
+    steps:
+      - name: Download release assets
+        uses: actions/download-artifact@v8
+        with:
+          path: release-assets
+          merge-multiple: true
+
+      - name: Create GitHub draft release
+        shell: bash
+        run: |
+          gh api \
+            --method POST \
+            "repos/${GITHUB_REPOSITORY}/releases" \
+            -f tag_name="$TAG_NAME" \
+            -f target_commitish="$GITHUB_SHA" \
+            -f name="$TAG_NAME" \
+            -F draft=true \
+            -F generate_release_notes=true
+
+      - name: Upload release assets
+        shell: bash
+        run: |
+          gh release upload "$TAG_NAME" \
+            release-assets/Relic-macOS.zip \
+            release-assets/Relic-Windows.zip
