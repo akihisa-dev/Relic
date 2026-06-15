@@ -8,6 +8,7 @@ import type {
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { collectMarkdownPaths } from "../../shared/workspaceTree";
 import { atomicWriteTextFile } from "./atomicWrite";
+import { errorDetails } from "./fileSystem";
 import { readWorkspaceFileTree } from "./fileTree";
 import { resolveExistingWorkspacePath } from "./paths";
 import { applyReplacement, buildReplacementPreviewLine, buildReplacementRegex, canMatchEmptyTextInContent } from "./replaceModel";
@@ -77,7 +78,7 @@ export async function replaceInFile(
     return fail(
       "REPLACE_FAILED",
       "置換できませんでした。",
-      error instanceof Error ? error.message : String(error)
+      errorDetails(error)
     );
   }
 }
@@ -147,7 +148,7 @@ export async function searchAndReplace(
     return fail(
       "REPLACE_FAILED",
       "置換プレビューを生成できませんでした。",
-      error instanceof Error ? error.message : String(error)
+      errorDetails(error)
     );
   }
 }
@@ -225,7 +226,7 @@ export async function applySearchAndReplace(
     return fail(
       "REPLACE_FAILED",
       "一括置換できませんでした。",
-      error instanceof Error ? error.message : String(error)
+      errorDetails(error)
     );
   }
 }

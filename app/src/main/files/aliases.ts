@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import type { AliasIndex } from "../../shared/links";
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { collectMarkdownPaths } from "../../shared/workspaceTree";
+import { errorDetails } from "./fileSystem";
 import { readWorkspaceFileTree } from "./fileTree";
 import { parseFrontmatter } from "./frontmatter";
 import { resolveWorkspaceRelativePath } from "./paths";
@@ -52,7 +53,7 @@ export async function readWorkspaceAliases(
     return fail(
       "ALIASES_READ_FAILED",
       "別名を読み込めませんでした。",
-      error instanceof Error ? error.message : String(error)
+      errorDetails(error)
     );
   }
 }
