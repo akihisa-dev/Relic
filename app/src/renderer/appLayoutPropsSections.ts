@@ -1,5 +1,12 @@
 import type { AppLayoutProps } from "./components/AppLayout";
-import type { AppLayoutPropsInput } from "./appLayoutProps";
+import type {
+  AppLayoutEditorWorkspaceInput,
+  AppLayoutFilesSidebarInput,
+  AppLayoutOverlaysInput,
+  AppLayoutPropsInput,
+  AppLayoutRailInput,
+  AppLayoutStatusBarInput
+} from "./appLayoutProps";
 
 type EditorWorkspaceProps = AppLayoutProps["editorWorkspaceProps"];
 type FilesSidebarProps = AppLayoutProps["filesSidebarProps"];
@@ -8,10 +15,10 @@ type RailProps = AppLayoutProps["railProps"];
 type StatusBarProps = AppLayoutProps["statusBarProps"];
 type TitleBarProps = AppLayoutProps["titleBarProps"];
 
-export function createEditorWorkspaceProps(input: AppLayoutPropsInput): EditorWorkspaceProps {
+export function createEditorWorkspaceProps(input: AppLayoutEditorWorkspaceInput): EditorWorkspaceProps {
   return {
-    activeFileTab: input.activeFileTabForRightPanel,
-    allFilePaths: input.existingMarkdownPaths,
+    activeFileTab: input.activeFileTab,
+    allFilePaths: input.allFilePaths,
     backlinks: input.backlinks,
     editorActionPulse: input.editorActionPulse,
     editorSettings: input.editorSettings,
@@ -74,15 +81,15 @@ export function createEditorWorkspaceProps(input: AppLayoutPropsInput): EditorWo
     rightPanelWidth: input.rightPanelWidth,
     setLinkContextMenu: input.setLinkContextMenu,
     onUpdateTabContent: input.updateTabContent,
-    showRightPanelFrontmatterControl: input.featureRightPanelFrontmatterAvailable,
-    showRightPanelLinksControl: input.featureRightPanelLinksAvailable,
-    showRightPanelOutlineControl: input.featureRightPanelOutlineAvailable,
+    showRightPanelFrontmatterControl: input.showRightPanelFrontmatterControl,
+    showRightPanelLinksControl: input.showRightPanelLinksControl,
+    showRightPanelOutlineControl: input.showRightPanelOutlineControl,
     userDefinedFields: input.userDefinedFields,
     workspacePath: input.workspaceState?.activeWorkspace?.path
   };
 }
 
-export function createFilesSidebarProps(input: AppLayoutPropsInput): FilesSidebarProps {
+export function createFilesSidebarProps(input: AppLayoutFilesSidebarInput): FilesSidebarProps {
   return {
     activeSidebarView: input.activeSidebarView,
     fileSelectionCount: input.fileSelectionCount,
@@ -136,7 +143,7 @@ export function createFilesSidebarProps(input: AppLayoutPropsInput): FilesSideba
   };
 }
 
-export function createOverlaysProps(input: AppLayoutPropsInput): OverlaysProps {
+export function createOverlaysProps(input: AppLayoutOverlaysInput): OverlaysProps {
   return {
     aliasesByPath: input.aliasesByPath,
     closeToast: input.closeToast,
@@ -160,7 +167,7 @@ export function createOverlaysProps(input: AppLayoutPropsInput): OverlaysProps {
   };
 }
 
-export function createRailProps(input: AppLayoutPropsInput): RailProps {
+export function createRailProps(input: AppLayoutRailInput): RailProps {
   return {
     activeChartIds: input.activeChartIds,
     activePanelTabIds: input.activePanelTabIds,
@@ -193,10 +200,10 @@ export function createRailProps(input: AppLayoutPropsInput): RailProps {
   };
 }
 
-export function createStatusBarProps(input: AppLayoutPropsInput): StatusBarProps {
+export function createStatusBarProps(input: AppLayoutStatusBarInput): StatusBarProps {
   return {
-    activeFileTab: input.activeFileTabInFocusedPane,
-    saveStatus: input.activeFileTabInFocusedPane ? input.saveStatusByTabId[input.activeFileTabInFocusedPane.id] : undefined
+    activeFileTab: input.activeFileTab,
+    saveStatus: input.activeFileTab ? input.saveStatusByTabId[input.activeFileTab.id] : undefined
   };
 }
 
