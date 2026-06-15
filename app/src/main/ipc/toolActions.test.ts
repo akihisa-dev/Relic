@@ -84,6 +84,31 @@ describe("toolActions", () => {
     });
   });
 
+  it("制御文字やOSで危険な記号を含む出力名は拒否する", async () => {
+    const { workspacePath } = await prepareActiveWorkspace();
+    await writeFile(path.join(workspacePath, "note.md"), "# Note\n", "utf8");
+
+    await expect(generateTitleList({
+      outputFolder: ".",
+      outputName: "Bad\u0000Name",
+      sortBy: "name"
+    })).resolves.toMatchObject({
+      error: { code: "TOOL_OUTPUT_NAME_INVALID" },
+      ok: false
+    });
+    await expect(generateTitleList({
+      outputFolder: ".",
+      outputName: "Bad:Name",
+      sortBy: "name"
+    })).resolves.toMatchObject({
+      error: { code: "TOOL_OUTPUT_NAME_INVALID" },
+      ok: false
+    });
+    await expect(readFile(path.join(workspacePath, "Bad:Name.md"), "utf8")).rejects.toMatchObject({
+      code: "ENOENT"
+    });
+  });
+
   it("ファイル情報を取得できないMarkdownファイルはスキップしてタイトル一覧生成を続行する", async () => {
     const { workspacePath } = await prepareActiveWorkspace();
     await writeFile(path.join(workspacePath, "blocked.md"), "# Blocked\n", "utf8");

@@ -531,6 +531,7 @@ function safeOutputName(name: string): RelicResult<string> {
 
   if (
     !trimmed ||
+    /[<>:"|?*\u0000-\u001f]/.test(trimmed) ||
     normalized.includes("/") ||
     normalized === "." ||
     normalized === ".." ||
