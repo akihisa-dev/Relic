@@ -275,9 +275,10 @@ async function filterMergeCandidates(
   operations: ToolActionFileOperations
 ): Promise<FileCandidate[]> {
   if (input.filterType === "folder" && input.filterValue) {
-    return candidates.filter((file) =>
-      file.relPath.startsWith(input.filterValue + "/") || file.relPath.startsWith(input.filterValue)
-    );
+    const folder = input.filterValue.replace(/\\/g, "/").replace(/\/+$/, "");
+    if (!folder) return candidates;
+
+    return candidates.filter((file) => file.relPath === folder || file.relPath.startsWith(`${folder}/`));
   }
 
   if (input.filterType === "tag" && input.filterValue) {
