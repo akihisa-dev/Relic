@@ -84,14 +84,17 @@ workflowは次を自動で行う。
 9. `GITHUB_TOKEN` でGitHub Releaseを確認し、存在しない場合だけDraft Releaseを作成する
 10. GitHub Releaseが存在する場合はDraftかどうかを確認し、DraftならAssets添付へ進む
 11. GitHub Releaseが存在し、Draftではない場合は失敗として停止し、Assets添付を行わない
-12. `Relic-macOS-arm64.zip` と `Relic-Windows.zip` をAssetsに添付する
+12. Assetsアップロード直前に再度Draftかどうかを確認し、Draftではない場合は失敗として停止する
+13. `Relic-macOS-arm64.zip` と `Relic-Windows.zip` が存在することを確認する
+14. `Relic-macOS-arm64.zip` と `Relic-Windows.zip` をAssetsに添付する
 
 workflow全体の権限は `contents: read` に抑え、Release作成を行う `draft-release` ジョブだけ `contents: write` を持つ。
 Releaseが存在しない場合は `gh release create "$TAG_NAME" --draft --generate-notes --verify-tag` で作成する。
 既に同じタグのReleaseが存在する場合は `isDraft` を確認し、Draft Releaseの場合だけ次へ進む。
 公開済みReleaseの場合は、既に利用者が取得できる状態になっている可能性があるため、workflowを失敗させてAssetsを自動更新しない。
 Assetsアップロードは `--clobber` を付け、途中失敗後の再実行でもDraft Release上の同名Assetsを更新できるようにする。
-`--clobber` はDraft Releaseであることを確認したあとにだけ実行する。
+`--clobber` は、Assetsアップロード直前にもDraft Releaseであることを確認したあとにだけ実行する。
+アップロード対象のAssetsが見つからない場合は、実際に存在するファイル一覧を出して失敗し、Assetsアップロードを行わない。
 
 Draft Release作成後、GitHub上でRelease本文とAssetsを確認し、問題がなければPublishする。
 
