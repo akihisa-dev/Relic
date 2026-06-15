@@ -7,7 +7,7 @@ import { isRelicDiagramMarkdownContent } from "../../shared/diagramMarkdown";
 import { collectMarkdownPaths } from "../../shared/workspaceTree";
 import { atomicWriteTextFile } from "./atomicWrite";
 import { readWorkspaceFileTree } from "./fileTree";
-import { resolveWorkspaceRelativePath } from "./paths";
+import { resolveExistingWorkspacePath } from "./paths";
 
 export interface WorkspaceFileIndex {
   entries: WorkspaceFileIndexEntry[];
@@ -74,7 +74,7 @@ export async function readWorkspaceFileIndex(
   const fileTree = await readWorkspaceFileTree(workspacePath);
   const paths = collectMarkdownPaths(fileTree);
   const records = await Promise.all(paths.map(async (relativePath) => {
-    const absolutePath = resolveWorkspaceRelativePath(workspacePath, relativePath);
+    const absolutePath = await resolveExistingWorkspacePath(workspacePath, relativePath);
     if (!absolutePath.ok) return unreadableRecord(relativePath);
 
     let fileStats: Stats;
