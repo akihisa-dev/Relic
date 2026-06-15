@@ -16,109 +16,62 @@ type RailProps = AppLayoutProps["railProps"];
 type StatusBarProps = AppLayoutProps["statusBarProps"];
 
 export interface AppLayoutPropsInput {
-  activeChartIds: RailProps["activeChartIds"];
-  activeFileTabInFocusedPane: StatusBarProps["activeFileTab"];
-  activeFileTabForRightPanel: EditorWorkspaceProps["activeFileTab"];
-  activePanelTabIds: RailProps["activePanelTabIds"];
-  activeSidebarView: RailProps["activeSidebarView"];
-  aliasesByPath: OverlaysProps["aliasesByPath"];
+  editorWorkspace: AppLayoutEditorWorkspaceInput;
+  filesSidebar: AppLayoutFilesSidebarInput;
+  overlays: AppLayoutOverlaysInput;
+  rail: AppLayoutRailInput;
+  shell: AppLayoutShellInput;
+  statusBar: AppLayoutStatusBarInput;
+}
+
+export interface AppLayoutShellInput {
+  editorSettings: EditorWorkspaceProps["editorSettings"];
+}
+
+export interface AppLayoutEditorWorkspaceInput {
+  activeFileTab: EditorWorkspaceProps["activeFileTab"];
+  allFilePaths: EditorWorkspaceProps["allFilePaths"];
   appInlineHandlers: Pick<
     EditorWorkspaceProps,
     "onEditorAction" | "onOutlineHeadingClick" | "onScrollTargetHandled"
   >;
   backlinks: EditorWorkspaceProps["backlinks"];
-  chartRailViews: RailProps["chartRailViews"];
   closeAllTabsInPaneWithMotion: EditorWorkspaceProps["onCloseAllTabsInPane"];
   closeOtherTabsWithMotion: EditorWorkspaceProps["onCloseOtherTabs"];
-  closeSidebar: FilesSidebarProps["onCloseSidebar"];
   closeTabWithMotion: EditorWorkspaceProps["onTabClose"];
   closeTabsToRightWithMotion: EditorWorkspaceProps["onCloseTabsToRight"];
-  closeToast: OverlaysProps["closeToast"];
-  commands: OverlaysProps["commands"];
   editorActionPulse: EditorWorkspaceProps["editorActionPulse"];
   editorSettings: EditorWorkspaceProps["editorSettings"];
-  existingMarkdownPaths: EditorWorkspaceProps["allFilePaths"];
-  featureRightPanelLinksAvailable: EditorWorkspaceProps["showRightPanelLinksControl"];
-  featureRightPanelOutlineAvailable: EditorWorkspaceProps["showRightPanelOutlineControl"];
-  featureRightPanelFrontmatterAvailable: EditorWorkspaceProps["showRightPanelFrontmatterControl"];
-  fileSearchFocusRequest: FilesSidebarProps["searchFocusRequest"];
-  fileSelectionCount: FilesSidebarProps["fileSelectionCount"];
   focusedPane: EditorWorkspaceProps["focusedPane"];
   frontmatterCandidates: EditorWorkspaceProps["frontmatterCandidates"];
-  frontmatterSearchFields: FilesSidebarProps["searchFrontmatterFields"];
-  handleCreateFileFromSidebar: FilesSidebarProps["onCreateFile"];
-  handleCreateFileInFolder: FilesSidebarProps["onCreateFileInFolder"];
-  handleCreateFolderFromSidebar: FilesSidebarProps["onCreateFolder"];
-  handleCreateFolderInFolder: FilesSidebarProps["onCreateFolderInFolder"];
-  handleCreateDiagramFile: FilesSidebarProps["onCreateDiagramFile"];
-  handleCreateNewWorkspace: FilesSidebarProps["onCreateWorkspace"];
   handleCreateNoteFromPane: EditorWorkspaceProps["onCreateFile"];
-  handleDeleteTreeItem: FilesSidebarProps["onDeleteItem"];
-  handleDeleteTreeItems: FilesSidebarProps["onDeleteItems"];
   handleDuplicateTabFile: EditorWorkspaceProps["onDuplicateTabFile"];
-  handleDuplicateTreeFile: FilesSidebarProps["onDuplicateFile"];
   handleFileSaved: EditorWorkspaceProps["onFileSaved"];
   handleLargeMarkdownFallback: EditorWorkspaceProps["onLargeMarkdownFallback"];
-  handleMoveFile: FilesSidebarProps["onMoveFile"];
-  handleMoveFolder: FilesSidebarProps["onMoveFolder"];
-  handleMoveTreeItems: FilesSidebarProps["onMoveItems"];
   handleOpenFile: EditorWorkspaceProps["onOpenFile"];
   handleOpenMarkdownLink: EditorWorkspaceProps["onOpenLink"];
   handleOpenWikiLink: EditorWorkspaceProps["onOpenWikiLink"];
-  handleOpenWorkspace: FilesSidebarProps["onOpenWorkspace"];
   handlePrintPreview: EditorWorkspaceProps["onPrintPreview"];
-  handleRailChartButton: RailProps["onChartButton"];
-  handleRailPanelButton: RailProps["onPanelButton"];
-  handleRemoveWorkspace: RailProps["onRemoveWorkspace"];
   handleRenameTreeItem: FilesSidebarProps["onRenameItem"];
-  handleRenameWorkspace: RailProps["onRenameWorkspace"];
-  handleRevealWorkspace: RailProps["onRevealWorkspace"];
   handleRevealTabFile: EditorWorkspaceProps["onRevealTabFile"];
-  handleRevealWorkspaceItem: OverlaysProps["handleRevealWorkspaceItem"];
   handleRightPanelViewButton: EditorWorkspaceProps["onRightPanelViewButton"];
   handleSavePreviewAsPdf: EditorWorkspaceProps["onSavePreviewAsPdf"];
-  handleSelectFolder: FilesSidebarProps["onSelectFolder"];
-  handleSidebarOpenFile: FilesSidebarProps["onOpenFile"];
-  handleSwitchWorkspace: RailProps["onSwitchWorkspace"];
-  handleTogglePin: FilesSidebarProps["onTogglePin"];
-  holdWorkspaceRailAfterRename: RailProps["onRenameComplete"];
-  isCreatingFile: FilesSidebarProps["isCreatingFile"];
-  isCreatingFolder: FilesSidebarProps["isCreatingFolder"];
-  isCreatingWorkspace: FilesSidebarProps["isCreatingWorkspace"];
   isEffectiveRightPanelOpen: EditorWorkspaceProps["isRightPanelOpen"];
   isLoadingBacklinks: EditorWorkspaceProps["isLoadingBacklinks"];
-  isOpeningWorkspace: FilesSidebarProps["isOpeningWorkspace"];
   isRightPanelResizing: EditorWorkspaceProps["isRightPanelResizing"];
-  isSearching: FilesSidebarProps["isSearching"];
-  isSidebarOpen: RailProps["isSidebarOpen"];
-  isSidebarResizing: FilesSidebarProps["isSidebarResizing"];
   isLeftSourceMode: EditorWorkspaceProps["isLeftSourceMode"];
   isRightSourceMode: EditorWorkspaceProps["isRightSourceMode"];
   isSplit: EditorWorkspaceProps["isSplit"];
   isSplitClosing: EditorWorkspaceProps["isSplitClosing"];
-  isToastClosing: OverlaysProps["isToastClosing"];
   isTypewriterMode: EditorWorkspaceProps["isTypewriterMode"];
-  isWorkspaceRenameActive: RailProps["isWorkspaceRenameActive"];
-  isWorkspaceRenameHoldingRail: RailProps["isWorkspaceRenameHoldingRail"];
   leftClosingTabIds: EditorWorkspaceProps["leftClosingTabIds"];
   leftEditorViewRef: EditorWorkspaceProps["leftEditorViewRef"];
   leftPaneScrollHeading: EditorWorkspaceProps["leftPaneScrollHeading"];
-  linkContextMenu: OverlaysProps["linkContextMenu"];
   moveTab: EditorWorkspaceProps["onTabMove"];
-  openChartIds: RailProps["openChartIds"];
   openFileInOtherPane: EditorWorkspaceProps["onOpenInOtherPane"];
-  openFilePathSet: FilesSidebarProps["openFilePaths"];
-  openPanelTabIds: RailProps["openPanelTabIds"];
-  openTreeFileInOtherPane: FilesSidebarProps["onOpenInOtherPane"];
-  openWorkspacePathInOtherPane: OverlaysProps["openWorkspacePathInOtherPane"];
-  openingFilePath: FilesSidebarProps["openingFilePath"];
   outlineHeadings: EditorWorkspaceProps["outlineHeadings"];
   outgoingLinks: EditorWorkspaceProps["outgoingLinks"];
   outgoingLinksLimited: EditorWorkspaceProps["outgoingLinksLimited"];
-  panelRailViews: RailProps["panelRailViews"];
-  primaryRailViews: RailProps["primaryRailViews"];
-  railTabFlight: OverlaysProps["railTabFlight"];
-  registeredWorkspaces: RailProps["registeredWorkspaces"];
   renderChartTab: EditorWorkspaceProps["renderChartTab"];
   renderPanelTab: EditorWorkspaceProps["renderPanelTab"];
   renderPanelTabIcon: EditorWorkspaceProps["renderPanelTabIcon"];
@@ -127,7 +80,59 @@ export interface AppLayoutPropsInput {
   rightPaneScrollHeading: EditorWorkspaceProps["rightPaneScrollHeading"];
   rightPanelView: EditorWorkspaceProps["rightPanelView"];
   rightPanelWidth: EditorWorkspaceProps["rightPanelWidth"];
-  saveStatusByTabId: Record<string, StatusBarProps["saveStatus"]>;
+  setFocusedPane: EditorWorkspaceProps["onSetFocusedPane"];
+  setIsLeftSourceMode: (updater: (value: boolean) => boolean) => void;
+  setIsRightSourceMode: (updater: (value: boolean) => boolean) => void;
+  setLinkContextMenu: EditorWorkspaceProps["setLinkContextMenu"];
+  setTabActive: EditorWorkspaceProps["onTabSelect"];
+  setWorkspaceError: EditorWorkspaceProps["onFileSaveError"];
+  showRightPanelLinksControl: EditorWorkspaceProps["showRightPanelLinksControl"];
+  showRightPanelOutlineControl: EditorWorkspaceProps["showRightPanelOutlineControl"];
+  showRightPanelFrontmatterControl: EditorWorkspaceProps["showRightPanelFrontmatterControl"];
+  startRightPanelResize: EditorWorkspaceProps["onRightPanelResizeStart"];
+  toggleSplitWithMotion: EditorWorkspaceProps["onSplitToggle"];
+  toggleTabPinned: EditorWorkspaceProps["onTogglePinTab"];
+  updateTabContent: EditorWorkspaceProps["onUpdateTabContent"];
+  userDefinedFields: EditorWorkspaceProps["userDefinedFields"];
+  workspaceState: FilesSidebarProps["workspaceState"];
+}
+
+export interface AppLayoutFilesSidebarInput {
+  activeSidebarView: FilesSidebarProps["activeSidebarView"];
+  closeSidebar: FilesSidebarProps["onCloseSidebar"];
+  fileSearchFocusRequest: FilesSidebarProps["searchFocusRequest"];
+  fileSelectionCount: FilesSidebarProps["fileSelectionCount"];
+  frontmatterCandidates: FilesSidebarProps["searchFrontmatterCandidates"];
+  frontmatterSearchFields: FilesSidebarProps["searchFrontmatterFields"];
+  handleCreateFileFromSidebar: FilesSidebarProps["onCreateFile"];
+  handleCreateFileInFolder: FilesSidebarProps["onCreateFileInFolder"];
+  handleCreateFolderFromSidebar: FilesSidebarProps["onCreateFolder"];
+  handleCreateFolderInFolder: FilesSidebarProps["onCreateFolderInFolder"];
+  handleCreateDiagramFile: FilesSidebarProps["onCreateDiagramFile"];
+  handleCreateNewWorkspace: FilesSidebarProps["onCreateWorkspace"];
+  handleDeleteTreeItem: FilesSidebarProps["onDeleteItem"];
+  handleDeleteTreeItems: FilesSidebarProps["onDeleteItems"];
+  handleDuplicateTreeFile: FilesSidebarProps["onDuplicateFile"];
+  handleMoveFile: FilesSidebarProps["onMoveFile"];
+  handleMoveFolder: FilesSidebarProps["onMoveFolder"];
+  handleMoveTreeItems: FilesSidebarProps["onMoveItems"];
+  handleOpenWorkspace: FilesSidebarProps["onOpenWorkspace"];
+  handleRenameTreeItem: FilesSidebarProps["onRenameItem"];
+  handleRevealWorkspaceItem: FilesSidebarProps["onRevealItem"];
+  handleSelectFolder: FilesSidebarProps["onSelectFolder"];
+  handleSidebarOpenFile: FilesSidebarProps["onOpenFile"];
+  handleTogglePin: FilesSidebarProps["onTogglePin"];
+  isCreatingFile: FilesSidebarProps["isCreatingFile"];
+  isCreatingFolder: FilesSidebarProps["isCreatingFolder"];
+  isCreatingWorkspace: FilesSidebarProps["isCreatingWorkspace"];
+  isOpeningWorkspace: FilesSidebarProps["isOpeningWorkspace"];
+  isSearching: FilesSidebarProps["isSearching"];
+  isSidebarOpen: FilesSidebarProps["isSidebarOpen"];
+  isSidebarResizing: FilesSidebarProps["isSidebarResizing"];
+  isSplit: EditorWorkspaceProps["isSplit"];
+  openFilePathSet: FilesSidebarProps["openFilePaths"];
+  openingFilePath: FilesSidebarProps["openingFilePath"];
+  openTreeFileInOtherPane: FilesSidebarProps["onOpenInOtherPane"];
   searchError: FilesSidebarProps["searchError"];
   searchFrontmatterField: FilesSidebarProps["searchFrontmatterField"];
   searchLimitNotice: FilesSidebarProps["searchLimitNotice"];
@@ -135,44 +140,79 @@ export interface AppLayoutPropsInput {
   searchQuery: FilesSidebarProps["searchQuery"];
   searchResults: FilesSidebarProps["searchResults"];
   setFileSelectionCount: FilesSidebarProps["onSelectedCountChange"];
-  setIsLeftSourceMode: (updater: (value: boolean) => boolean) => void;
-  setIsRightSourceMode: (updater: (value: boolean) => boolean) => void;
-  setIsWorkspaceRenameActive: RailProps["onRenameActiveChange"];
-  setLinkContextMenu: OverlaysProps["setLinkContextMenu"];
-  setFocusedPane: EditorWorkspaceProps["onSetFocusedPane"];
-  setRailSidebarView: RailProps["onSetSidebarView"];
   setSearchFrontmatterField: FilesSidebarProps["onSearchFrontmatterFieldChange"];
   setSearchMode: FilesSidebarProps["onSearchModeChange"];
   setSearchQuery: FilesSidebarProps["onSearchQueryChange"];
+  sidebarViews: FilesSidebarProps["sidebarViews"];
+  sidebarWidth: FilesSidebarProps["sidebarWidth"];
+  startSidebarResize: FilesSidebarProps["startSidebarResize"];
+  t: Translator;
+  workspaceState: FilesSidebarProps["workspaceState"];
+}
+
+export interface AppLayoutOverlaysInput {
+  aliasesByPath: OverlaysProps["aliasesByPath"];
+  closeToast: OverlaysProps["closeToast"];
+  commands: OverlaysProps["commands"];
+  existingMarkdownPaths: EditorWorkspaceProps["allFilePaths"];
+  handleRevealWorkspaceItem: OverlaysProps["handleRevealWorkspaceItem"];
+  isSplit: EditorWorkspaceProps["isSplit"];
+  isToastClosing: OverlaysProps["isToastClosing"];
+  linkContextMenu: OverlaysProps["linkContextMenu"];
+  handleOpenFile: OverlaysProps["handleOpenFile"];
+  handleOpenWikiLink: OverlaysProps["handleOpenWikiLink"];
+  openWorkspacePathInOtherPane: OverlaysProps["openWorkspacePathInOtherPane"];
+  railTabFlight: OverlaysProps["railTabFlight"];
+  setLinkContextMenu: OverlaysProps["setLinkContextMenu"];
   setShowCommandPalette: OverlaysProps["setShowCommandPalette"];
   setShowQuickSwitcher: OverlaysProps["setShowQuickSwitcher"];
-  setTabActive: EditorWorkspaceProps["onTabSelect"];
-  updateTabContent: EditorWorkspaceProps["onUpdateTabContent"];
-  setWorkspaceError: EditorWorkspaceProps["onFileSaveError"];
   showCommandPalette: OverlaysProps["showCommandPalette"];
   showQuickSwitcher: OverlaysProps["showQuickSwitcher"];
   sidebarCreateFlight: OverlaysProps["sidebarCreateFlight"];
-  sidebarViews: FilesSidebarProps["sidebarViews"];
-  sidebarWidth: FilesSidebarProps["sidebarWidth"];
-  startRightPanelResize: EditorWorkspaceProps["onRightPanelResizeStart"];
-  startSidebarResize: FilesSidebarProps["startSidebarResize"];
-  t: Translator;
   toastMessage: OverlaysProps["toastMessage"];
-  toggleSplitWithMotion: EditorWorkspaceProps["onSplitToggle"];
-  toggleTabPinned: EditorWorkspaceProps["onTogglePinTab"];
-  userDefinedFields: EditorWorkspaceProps["userDefinedFields"];
+}
+
+export interface AppLayoutRailInput {
+  activeChartIds: RailProps["activeChartIds"];
+  activePanelTabIds: RailProps["activePanelTabIds"];
+  activeSidebarView: RailProps["activeSidebarView"];
+  chartRailViews: RailProps["chartRailViews"];
+  closeSidebar: RailProps["onCloseSidebar"];
+  handleRailChartButton: RailProps["onChartButton"];
+  handleRailPanelButton: RailProps["onPanelButton"];
+  handleRemoveWorkspace: RailProps["onRemoveWorkspace"];
+  handleRenameWorkspace: RailProps["onRenameWorkspace"];
+  handleRevealWorkspace: RailProps["onRevealWorkspace"];
+  handleSwitchWorkspace: RailProps["onSwitchWorkspace"];
+  holdWorkspaceRailAfterRename: RailProps["onRenameComplete"];
+  isSidebarOpen: RailProps["isSidebarOpen"];
+  isWorkspaceRenameActive: RailProps["isWorkspaceRenameActive"];
+  isWorkspaceRenameHoldingRail: RailProps["isWorkspaceRenameHoldingRail"];
+  openChartIds: RailProps["openChartIds"];
+  openPanelTabIds: RailProps["openPanelTabIds"];
+  panelRailViews: RailProps["panelRailViews"];
+  primaryRailViews: RailProps["primaryRailViews"];
+  registeredWorkspaces: RailProps["registeredWorkspaces"];
+  setIsWorkspaceRenameActive: RailProps["onRenameActiveChange"];
+  setRailSidebarView: RailProps["onSetSidebarView"];
+  t: Translator;
   workspaceState: FilesSidebarProps["workspaceState"];
+}
+
+export interface AppLayoutStatusBarInput {
+  activeFileTab: StatusBarProps["activeFileTab"];
+  saveStatusByTabId: Record<string, StatusBarProps["saveStatus"]>;
 }
 
 export function createAppLayoutProps(input: AppLayoutPropsInput): AppLayoutProps {
   return {
-    editorWorkspaceProps: createEditorWorkspaceProps(input),
-    filesSidebarProps: createFilesSidebarProps(input),
-    font: input.editorSettings.font,
-    language: input.editorSettings.language,
-    overlaysProps: createOverlaysProps(input),
-    railProps: createRailProps(input),
-    statusBarProps: createStatusBarProps(input),
+    editorWorkspaceProps: createEditorWorkspaceProps(input.editorWorkspace),
+    filesSidebarProps: createFilesSidebarProps(input.filesSidebar),
+    font: input.shell.editorSettings.font,
+    language: input.shell.editorSettings.language,
+    overlaysProps: createOverlaysProps(input.overlays),
+    railProps: createRailProps(input.rail),
+    statusBarProps: createStatusBarProps(input.statusBar),
     titleBarProps: createTitleBarProps(input)
   };
 }
