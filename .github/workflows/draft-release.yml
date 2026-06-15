@@ -25,12 +25,27 @@ jobs:
       - name: Check tag matches app version
         shell: bash
         run: |
+          set -euo pipefail
+
+          tag_name="${GITHUB_REF_NAME:-}"
+          if [ "${GITHUB_REF_TYPE:-}" != "tag" ]; then
+            echo "Draft Release workflow must run from a Git tag." >&2
+            echo "Actual ref type: ${GITHUB_REF_TYPE:-unset}" >&2
+            exit 1
+          fi
+
+          if [[ ! "$tag_name" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Release tag must use vMAJOR.MINOR.PATCH format." >&2
+            echo "Actual: $tag_name" >&2
+            exit 1
+          fi
+
           version="$(node -p "require('./app/package.json').version")"
           expected_tag="v${version}"
-          if [ "${{ github.ref_name }}" != "$expected_tag" ]; then
+          if [ "$tag_name" != "$expected_tag" ]; then
             echo "Release tag must match app/package.json version." >&2
             echo "Expected: $expected_tag" >&2
-            echo "Actual:   ${{ github.ref_name }}" >&2
+            echo "Actual:   $tag_name" >&2
             exit 1
           fi
 
@@ -159,19 +174,37 @@ jobs:
       - name: Ensure GitHub draft release
         shell: bash
         run: |
+          set -euo pipefail
+
+          if [[ ! "$TAG_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Release tag must use vMAJOR.MINOR.PATCH format." >&2
+            echo "Actual: $TAG_NAME" >&2
+            exit 1
+          fi
+
           if gh release view "$TAG_NAME" >/dev/null 2>&1; then
-            echo "Release already exists: $TAG_NAME"
+            is_draft="$(gh release view "$TAG_NAME" --json isDraft --jq '.isDraft')"
+
+            if [ "$is_draft" != "true" ]; then
+              echo "Release already exists and is not a draft: $TAG_NAME" >&2
+              echo "Refusing to overwrite assets on a published release." >&2
+              exit 1
+            fi
+
+            echo "Draft release already exists: $TAG_NAME"
           else
             gh release create "$TAG_NAME" \
               --draft \
               --generate-notes \
               --title "$TAG_NAME" \
-              --target "$GITHUB_SHA"
+              --verify-tag
           fi
 
       - name: Upload release assets
         shell: bash
         run: |
+          set -euo pipefail
+
           gh release upload "$TAG_NAME" \
             release-assets/Relic-macOS-arm64.zip \
             release-assets/Relic-Windows.zip \
