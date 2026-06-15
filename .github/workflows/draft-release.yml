@@ -6,19 +6,43 @@ on:
       - "v*"
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: draft-release-${{ github.ref_name }}
   cancel-in-progress: false
 
 jobs:
+  validate-release-tag:
+    name: Validate release tag
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Check tag matches app version
+        shell: bash
+        run: |
+          version="$(node -p "require('./app/package.json').version")"
+          expected_tag="v${version}"
+          if [ "${{ github.ref_name }}" != "$expected_tag" ]; then
+            echo "Release tag must match app/package.json version." >&2
+            echo "Expected: $expected_tag" >&2
+            echo "Actual:   ${{ github.ref_name }}" >&2
+            exit 1
+          fi
+
   build-macos:
     name: Build macOS
+    needs: validate-release-tag
     runs-on: macos-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          persist-credentials: false
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
@@ -36,6 +60,15 @@ jobs:
         working-directory: app
         run: pnpm build:mac:safe
 
+      - name: Check macOS runner architecture
+        shell: bash
+        run: |
+          if [ "$(uname -m)" != "arm64" ]; then
+            echo "macos-latest must produce the arm64 release asset." >&2
+            echo "Actual architecture: $(uname -m)" >&2
+            exit 1
+          fi
+
       - name: Create macOS release ZIP
         working-directory: app
         shell: bash
@@ -46,22 +79,25 @@ jobs:
             echo "Relic.app was not found under app/out/darwin." >&2
             exit 1
           fi
-          ditto -c -k --sequesterRsrc --keepParent "$app_bundle" release-assets/Relic-macOS.zip
-          test -f release-assets/Relic-macOS.zip
+          ditto -c -k --sequesterRsrc --keepParent "$app_bundle" release-assets/Relic-macOS-arm64.zip
+          test -f release-assets/Relic-macOS-arm64.zip
 
       - name: Upload macOS release ZIP
         uses: actions/upload-artifact@v7
         with:
-          name: Relic-macOS
-          path: app/release-assets/Relic-macOS.zip
+          name: Relic-macOS-arm64
+          path: app/release-assets/Relic-macOS-arm64.zip
           if-no-files-found: error
 
   build-windows:
     name: Build Windows
+    needs: validate-release-tag
     runs-on: windows-2025-vs2026
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          persist-credentials: false
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
@@ -108,6 +144,8 @@ jobs:
       - build-macos
       - build-windows
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     env:
       GH_TOKEN: ${{ github.token }}
       TAG_NAME: ${{ github.ref_name }}
@@ -118,21 +156,23 @@ jobs:
           path: release-assets
           merge-multiple: true
 
-      - name: Create GitHub draft release
+      - name: Ensure GitHub draft release
         shell: bash
         run: |
-          gh api \
-            --method POST \
-            "repos/${GITHUB_REPOSITORY}/releases" \
-            -f tag_name="$TAG_NAME" \
-            -f target_commitish="$GITHUB_SHA" \
-            -f name="$TAG_NAME" \
-            -F draft=true \
-            -F generate_release_notes=true
+          if gh release view "$TAG_NAME" >/dev/null 2>&1; then
+            echo "Release already exists: $TAG_NAME"
+          else
+            gh release create "$TAG_NAME" \
+              --draft \
+              --generate-notes \
+              --title "$TAG_NAME" \
+              --target "$GITHUB_SHA"
+          fi
 
       - name: Upload release assets
         shell: bash
         run: |
           gh release upload "$TAG_NAME" \
-            release-assets/Relic-macOS.zip \
-            release-assets/Relic-Windows.zip
+            release-assets/Relic-macOS-arm64.zip \
+            release-assets/Relic-Windows.zip \
+            --clobber
