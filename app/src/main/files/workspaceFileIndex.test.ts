@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, stat, symlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
@@ -132,6 +132,17 @@ describe("readWorkspaceFileIndex", () => {
       { path: "blocked.md", readStatus: "unreadable" },
       { path: "visible.md", readStatus: "ok" }
     ]);
+  });
+
+  it("ワークスペース外を指すシンボリックリンクはMarkdown一覧に含めない", async () => {
+    const workspacePath = await createWorkspace();
+    const outsidePath = await createWorkspace("relic-index-outside-");
+    await writeFile(path.join(outsidePath, "outside.md"), "outside", "utf8");
+    await symlink(path.join(outsidePath, "outside.md"), path.join(workspacePath, "linked.md"));
+
+    const index = await readWorkspaceFileIndex(workspacePath);
+
+    expect(index.entries).toEqual([]);
   });
 
   async function createWorkspace(prefix = "relic-index-"): Promise<string> {

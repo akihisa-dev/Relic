@@ -251,6 +251,26 @@ describe("toolActions", () => {
     );
   });
 
+  it("フォルダ絞り込みの結合は同じ接頭辞の別フォルダを含めない", async () => {
+    const { workspacePath } = await prepareActiveWorkspace();
+    await mkdir(path.join(workspacePath, "notes"));
+    await mkdir(path.join(workspacePath, "notes-old"));
+    await writeFile(path.join(workspacePath, "notes", "keep.md"), "keep", "utf8");
+    await writeFile(path.join(workspacePath, "notes-old", "skip.md"), "skip", "utf8");
+
+    const result = await mergeFiles({
+      filterType: "folder",
+      filterValue: "notes",
+      insertFilenameHeading: false,
+      outputFolder: ".",
+      outputName: "Merged",
+      sortBy: "name"
+    });
+
+    expect(result).toEqual({ ok: true, value: "Merged.md" });
+    await expect(readFile(path.join(workspacePath, "Merged.md"), "utf8")).resolves.toBe("keep\n");
+  });
+
   it("出力先フォルダが外部実体のシンボリックリンクなら書き込まない", async () => {
     const { outsidePath, workspacePath } = await prepareActiveWorkspace();
     await writeFile(path.join(workspacePath, "note.md"), "# Note\n", "utf8");
