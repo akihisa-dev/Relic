@@ -9,6 +9,7 @@ import type {
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { parseMarkdownTags } from "../../shared/tags";
 import { extractAliases } from "./aliases";
+import { errorDetails } from "./fileSystem";
 import { parseFrontmatter } from "./frontmatter";
 import { isRegexSafeLine, validateSafeRegexPattern } from "./regexSafety";
 import { readWorkspaceFileIndex } from "./workspaceFileIndex";
@@ -162,7 +163,7 @@ export async function searchWorkspace(
     return fail(
       "SEARCH_FAILED",
       "検索できませんでした。",
-      error instanceof Error ? error.message : String(error)
+      errorDetails(error)
     );
   }
 }

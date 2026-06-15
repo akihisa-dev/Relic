@@ -6,6 +6,7 @@ import { resolveWikiLinks } from "../../shared/links";
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { collectMarkdownPaths } from "../../shared/workspaceTree";
 import { readWorkspaceAliases } from "./aliases";
+import { errorDetails } from "./fileSystem";
 import { readWorkspaceFileTree } from "./fileTree";
 import { resolveWorkspaceRelativePath } from "./paths";
 
@@ -75,7 +76,7 @@ export async function readBacklinks(
     return fail(
       "BACKLINKS_READ_FAILED",
       "バックリンクを読み込めませんでした。",
-      error instanceof Error ? error.message : String(error)
+      errorDetails(error)
     );
   }
 }

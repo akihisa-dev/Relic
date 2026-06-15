@@ -5,6 +5,7 @@ import { createHash } from "node:crypto";
 import type { WorkspaceFileIndexEntry, WorkspaceState, WorkspaceSummary, WorkspaceTreeNode } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
 import type { AppSettings } from "../settings/appSettings";
+import { errorDetails } from "../files/fileSystem";
 import { validateBaseName } from "../files/names";
 
 const DEFAULT_MAX_RENAME_TEMPORARY_PATH_CANDIDATES = 1000;
@@ -165,7 +166,7 @@ export async function renameWorkspaceRegistration(
     return fail(
       "WORKSPACE_RENAME_FAILED",
       "ワークスペース名を変更できませんでした。",
-      error instanceof Error ? error.message : String(error)
+      errorDetails(error)
     );
   }
 }
