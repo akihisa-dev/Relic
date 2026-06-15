@@ -18,6 +18,7 @@ import {
   sortDateEntries
 } from "./chronicleData";
 import { atomicWriteTextFile } from "./atomicWrite";
+import { errorDetails } from "./fileSystem";
 import { readWorkspaceFileTree } from "./fileTree";
 import { resolveExistingWorkspacePath, resolveWorkspaceRelativePath } from "./paths";
 
@@ -79,7 +80,7 @@ export async function readWorkspaceCharts(
     return fail(
       "CHRONICLE_READ_FAILED",
       "チャートを読み込めませんでした。",
-      error instanceof Error ? error.message : String(error)
+      errorDetails(error)
     );
   }
 }
@@ -113,7 +114,7 @@ export async function updateWorkspaceChartEntry(
     return fail(
       "CHART_ENTRY_UPDATE_FAILED",
       "チャートの変更をファイルへ保存できませんでした。",
-      error instanceof Error ? error.message : String(error)
+      errorDetails(error)
     );
   }
 }

@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { collectMarkdownPaths } from "../../shared/workspaceTree";
+import { errorDetails } from "./fileSystem";
 import { parseFrontmatter } from "./frontmatter";
 import { readWorkspaceFileTree } from "./fileTree";
 import { resolveWorkspaceRelativePath } from "./paths";
@@ -62,7 +63,7 @@ export async function readFrontmatterValueCandidates(
     return fail(
       "FRONTMATTER_VALUE_CANDIDATES_READ_FAILED",
       "フロントマター候補を読み込めませんでした。",
-      error instanceof Error ? error.message : String(error)
+      errorDetails(error)
     );
   }
 }
