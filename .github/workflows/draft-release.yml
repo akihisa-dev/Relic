@@ -205,6 +205,27 @@ jobs:
         run: |
           set -euo pipefail
 
+          is_draft="$(gh release view "$TAG_NAME" --json isDraft --jq '.isDraft')"
+          if [ "$is_draft" != "true" ]; then
+            echo "Release is not a draft at upload time: $TAG_NAME" >&2
+            echo "Refusing to overwrite assets on a published release." >&2
+            exit 1
+          fi
+
+          required_assets=(
+            "release-assets/Relic-macOS-arm64.zip"
+            "release-assets/Relic-Windows.zip"
+          )
+
+          for asset in "${required_assets[@]}"; do
+            if [ ! -f "$asset" ]; then
+              echo "Required release asset was not found: $asset" >&2
+              echo "Existing files under release-assets:" >&2
+              find release-assets -maxdepth 3 -type f -print >&2 || true
+              exit 1
+            fi
+          done
+
           gh release upload "$TAG_NAME" \
             release-assets/Relic-macOS-arm64.zip \
             release-assets/Relic-Windows.zip \
