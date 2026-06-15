@@ -1,6 +1,6 @@
 {
   "name": "relic",
-  "version": "0.3.15",
+  "version": "0.3.16",
   "description": "Relic is a local app that extends Markdown files with editing, search, browsing, visualization, and export while keeping the information as Markdown.",
   "license": "AGPL-3.0-or-later",
   "main": ".vite/build/main.js",
@@ -38,6 +38,7 @@
       "macos-alias"
     ],
     "overrides": {
+      "esbuild": "^0.28.1",
       "tar": "^7.5.11",
       "tmp": "^0.2.6",
       "ws": "^8.20.1"
