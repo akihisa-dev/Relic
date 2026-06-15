@@ -192,36 +192,14 @@ export async function renameMarkdownFile(
     return nextRelativePath;
   }
 
-  const absoluteDestinationPath = await resolveNewWorkspacePath(workspacePath, nextRelativePath.value);
-
-  if (!absoluteDestinationPath.ok) {
-    return absoluteDestinationPath;
-  }
-
-  if (absoluteSourcePath.value === absoluteDestinationPath.value) {
-    return readMarkdownFile(workspacePath, relativePath);
-  }
-
-  if (await pathExists(absoluteDestinationPath.value)) {
-    return fail("FILE_ALREADY_EXISTS", "同じ名前のファイルがすでにあります。別名を入力してください。");
-  }
-
-  try {
-    await rename(absoluteSourcePath.value, absoluteDestinationPath.value);
-    const links = await updateLinksForFileRename(workspacePath, relativePath, nextRelativePath.value);
-    if (!links.ok) {
-      await rename(absoluteDestinationPath.value, absoluteSourcePath.value).catch(() => undefined);
-      return links;
-    }
-
-    return readMarkdownFile(workspacePath, nextRelativePath.value);
-  } catch (error) {
-    return fail(
-      "FILE_RENAME_FAILED",
-      "ファイル名を変更できませんでした。",
-      errorDetails(error)
-    );
-  }
+  return moveMarkdownFileToPath(workspacePath, {
+    alreadyExistsMessage: "同じ名前のファイルがすでにあります。別名を入力してください。",
+    failureCode: "FILE_RENAME_FAILED",
+    failureMessage: "ファイル名を変更できませんでした。",
+    nextRelativePath: nextRelativePath.value,
+    relativePath,
+    sourcePath: absoluteSourcePath.value
+  });
 }
 
 export async function moveMarkdownFile(
@@ -241,33 +219,54 @@ export async function moveMarkdownFile(
 
   const nextRelativePath = markdownPathInFolder(relativePath, destinationFolder);
 
-  if (nextRelativePath === relativePath) {
-    return readMarkdownFile(workspacePath, relativePath);
-  }
+  return moveMarkdownFileToPath(workspacePath, {
+    alreadyExistsMessage: "移動先に同じ名前のファイルがすでにあります。",
+    failureCode: "FILE_MOVE_FAILED",
+    failureMessage: "ファイルを移動できませんでした。",
+    nextRelativePath,
+    relativePath,
+    sourcePath: absoluteSourcePath.value
+  });
+}
 
-  const absoluteDestinationPath = await resolveNewWorkspacePath(workspacePath, nextRelativePath);
+async function moveMarkdownFileToPath(
+  workspacePath: string,
+  options: {
+    alreadyExistsMessage: string;
+    failureCode: "FILE_RENAME_FAILED" | "FILE_MOVE_FAILED";
+    failureMessage: string;
+    nextRelativePath: string;
+    relativePath: string;
+    sourcePath: string;
+  }
+): Promise<RelicResult<MarkdownFileContent>> {
+  const absoluteDestinationPath = await resolveNewWorkspacePath(workspacePath, options.nextRelativePath);
 
   if (!absoluteDestinationPath.ok) {
     return absoluteDestinationPath;
   }
 
+  if (options.sourcePath === absoluteDestinationPath.value) {
+    return readMarkdownFile(workspacePath, options.relativePath);
+  }
+
   if (await pathExists(absoluteDestinationPath.value)) {
-    return fail("FILE_ALREADY_EXISTS", "移動先に同じ名前のファイルがすでにあります。");
+    return fail("FILE_ALREADY_EXISTS", options.alreadyExistsMessage);
   }
 
   try {
-    await rename(absoluteSourcePath.value, absoluteDestinationPath.value);
-    const links = await updateLinksForFileRename(workspacePath, relativePath, nextRelativePath);
+    await rename(options.sourcePath, absoluteDestinationPath.value);
+    const links = await updateLinksForFileRename(workspacePath, options.relativePath, options.nextRelativePath);
     if (!links.ok) {
-      await rename(absoluteDestinationPath.value, absoluteSourcePath.value).catch(() => undefined);
+      await rename(absoluteDestinationPath.value, options.sourcePath).catch(() => undefined);
       return links;
     }
 
-    return readMarkdownFile(workspacePath, nextRelativePath);
+    return readMarkdownFile(workspacePath, options.nextRelativePath);
   } catch (error) {
     return fail(
-      "FILE_MOVE_FAILED",
-      "ファイルを移動できませんでした。",
+      options.failureCode,
+      options.failureMessage,
       errorDetails(error)
     );
   }
