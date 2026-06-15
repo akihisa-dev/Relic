@@ -18,6 +18,7 @@ import {
 } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
 import type { Translator } from "../../shared/i18n";
+import { redactSensitiveText } from "../../shared/securityRedaction";
 import { atomicWriteFile, atomicWriteTextFile } from "../files/atomicWrite";
 import { getMainTranslator } from "../i18n";
 import { transientSessionPartition } from "../windowOptions";
@@ -380,5 +381,6 @@ function isSafeOutputSvgUri(value: string): boolean {
 }
 
 function ipcErrorDetails(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
+  const message = error instanceof Error ? error.message : String(error);
+  return redactSensitiveText(message);
 }

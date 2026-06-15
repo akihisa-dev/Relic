@@ -1,7 +1,10 @@
 import { stat } from "node:fs/promises";
 
+import { redactSensitiveText } from "../../shared/securityRedaction";
+
 export function errorDetails(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
+  const message = error instanceof Error ? error.message : String(error);
+  return redactSensitiveText(message);
 }
 
 export function isFileExistsError(error: unknown): boolean {

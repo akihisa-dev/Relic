@@ -8,6 +8,7 @@ import {
   type WriteMarkdownFileInput
 } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
+import { redactSensitiveText } from "../../shared/securityRedaction";
 import { writeMarkdownFileContent } from "../files/markdownFiles";
 import { readAppSettings, writeAppSettings } from "../settings/appSettings";
 import { toWorkspaceState } from "../workspace/workspaceService";
@@ -35,7 +36,7 @@ export function registerEditorHandlers(): void {
         return fail(
           "FILE_WRITE_FAILED",
           "ファイルを保存できませんでした。",
-          error instanceof Error ? error.message : String(error)
+          errorDetails(error)
         );
       }
     }
@@ -52,7 +53,7 @@ export function registerEditorHandlers(): void {
         return fail(
           "EDITOR_SETTINGS_READ_FAILED",
           "エディタ設定を読み込めませんでした。",
-          error instanceof Error ? error.message : String(error)
+          errorDetails(error)
         );
       }
     }
@@ -74,9 +75,14 @@ export function registerEditorHandlers(): void {
         return fail(
           "EDITOR_SETTINGS_SAVE_FAILED",
           "エディタ設定を保存できませんでした。",
-          error instanceof Error ? error.message : String(error)
+          errorDetails(error)
         );
       }
     }
   );
+}
+
+function errorDetails(error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error);
+  return redactSensitiveText(message);
 }
