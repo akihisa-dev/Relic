@@ -26,7 +26,7 @@ import {
   renameMarkdownFile
 } from "../files/markdownFiles";
 import { readLinkUpdateImpact } from "../files/linkUpdater";
-import { resolveWorkspaceRelativePathOrRoot } from "../files/paths";
+import { resolveExistingWorkspacePathOrRoot } from "../files/paths";
 import { getActiveWorkspaceContext, ipcErrorDetails } from "./activeWorkspace";
 import {
   isCreateMarkdownFileInput,
@@ -233,7 +233,7 @@ export function registerMarkdownFileHandlers(): void {
           return fail("WORKSPACE_NOT_FOUND", "登録済みワークスペースが見つかりませんでした。");
         }
 
-        const absolutePath = resolveWorkspaceRelativePathOrRoot(
+        const absolutePath = await resolveExistingWorkspacePathOrRoot(
           workspaceSummary.path,
           input.path
         );
