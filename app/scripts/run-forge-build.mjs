@@ -25,15 +25,24 @@ if (arch) {
   forgeArgs.push('--arch', arch);
 }
 
-const pnpmCommand = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm';
-const child = spawn(pnpmCommand, forgeArgs, {
+const pnpmCommand = 'pnpm';
+const spawnOptions = {
   cwd: appDir,
   env: {
     ...process.env,
     RELIC_FORGE_OUT_DIR: outputDirs.get(platform)
   },
+  shell: process.platform === 'win32',
   stdio: 'inherit'
-});
+};
+
+let child;
+try {
+  child = spawn(pnpmCommand, forgeArgs, spawnOptions);
+} catch (error) {
+  console.error(`[run:forge] failed to start ${pnpmCommand}: ${error.message}`);
+  process.exit(1);
+}
 
 child.on('error', (error) => {
   console.error(`[run:forge] failed to start ${pnpmCommand}: ${error.message}`);
