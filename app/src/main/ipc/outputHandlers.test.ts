@@ -147,9 +147,9 @@ describe("outputHandlers", () => {
     expect(fsMock.writeFile).not.toHaveBeenCalled();
   });
 
-  it("PDF保存失敗時はエラーを返す", async () => {
+  it("PDF保存失敗時は秘密情報を伏せ字にしてエラーを返す", async () => {
     electronMock.showSaveDialog.mockResolvedValue({ canceled: false, filePath: "/tmp/out.pdf" });
-    electronMock.printToPDF.mockRejectedValue(new Error("pdf failed"));
+    electronMock.printToPDF.mockRejectedValue(new Error("pdf failed SERVICE_API_KEY=sk-secret-value"));
     registerOutputHandlers();
 
     const result = await handlerFor(savePreviewAsPdfChannel)({ sender: {} }, {
@@ -162,7 +162,7 @@ describe("outputHandlers", () => {
       ok: false,
       error: expect.objectContaining({
         code: "OUTPUT_PDF_FAILED",
-        details: "pdf failed"
+        details: "pdf failed SERVICE_API_KEY=[redacted]"
       })
     });
     expect(electronMock.destroy).toHaveBeenCalled();
