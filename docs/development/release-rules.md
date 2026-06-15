@@ -89,6 +89,7 @@ workflowは次を自動で行う。
 14. `Relic-macOS-arm64.zip` と `Relic-Windows.zip` をAssetsに添付する
 
 workflow全体の権限は `contents: read` に抑え、Release作成を行う `draft-release` ジョブだけ `contents: write` を持つ。
+`draft-release` ジョブはcheckoutせずに `gh release ...` を実行するため、GitHub CLIが対象リポジトリを確実に判断できるように `GH_REPO: ${{ github.repository }}` を明示する。
 Releaseが存在しない場合は `gh release create "$TAG_NAME" --draft --generate-notes --verify-tag` で作成する。
 既に同じタグのReleaseが存在する場合は `isDraft` を確認し、Draft Releaseの場合だけ次へ進む。
 公開済みReleaseの場合は、既に利用者が取得できる状態になっている可能性があるため、workflowを失敗させてAssetsを自動更新しない。
