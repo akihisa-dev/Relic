@@ -158,7 +158,10 @@ export async function cleanupTemporaryPrintPreviewFiles(): Promise<void> {
 }
 
 async function renderHtmlToPdf(html: string, title: string): Promise<Buffer> {
-  const window = createOutputWindow(title, { allowInlineScripts: false });
+  const window = createOutputWindow(title, {
+    allowDataHtmlNavigation: true,
+    allowInlineScripts: false
+  });
 
   try {
     await loadOutputHtml(window, html);
@@ -211,6 +214,7 @@ function createOutputWindow(
   title: string,
   options: {
     allowInlineScripts: boolean;
+    allowDataHtmlNavigation?: boolean;
     allowedNavigation?: (url: string) => boolean;
     parentWindow?: BrowserWindow | null;
   }
@@ -236,7 +240,8 @@ function createOutputWindow(
 
   window.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
   window.webContents.on("will-navigate", (event, url) => {
-    if (!url.startsWith("data:text/html") && !options.allowedNavigation?.(url)) event.preventDefault();
+    if (options.allowDataHtmlNavigation && url.startsWith("data:text/html")) return;
+    if (!options.allowedNavigation?.(url)) event.preventDefault();
   });
   window.webContents.on("will-attach-webview", (event) => {
     event.preventDefault();

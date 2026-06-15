@@ -363,6 +363,17 @@ describe("outputHandlers", () => {
       })
     );
 
+    const printPreviewNavigationHandler = electronMock.webContentsOn.mock.calls
+      .filter(([eventName]) => eventName === "will-navigate")
+      .at(-1)?.[1] as ((event: { preventDefault: () => void }, url: string) => void) | undefined;
+    const pdfUrl = electronMock.loadURL.mock.calls.at(-1)?.[0] as string;
+    const allowedNavigation = { preventDefault: vi.fn() };
+    const blockedNavigation = { preventDefault: vi.fn() };
+    printPreviewNavigationHandler?.(allowedNavigation, pdfUrl);
+    printPreviewNavigationHandler?.(blockedNavigation, "data:text/html,<script>alert(1)</script>");
+    expect(allowedNavigation.preventDefault).not.toHaveBeenCalled();
+    expect(blockedNavigation.preventDefault).toHaveBeenCalled();
+
     const html = loadedHtmlAt(0);
     expect(html).toContain("本文");
 
