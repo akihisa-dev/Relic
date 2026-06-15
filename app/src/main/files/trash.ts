@@ -2,6 +2,7 @@ import { stat } from "node:fs/promises";
 import path from "node:path";
 
 import { fail, ok, type RelicResult } from "../../shared/result";
+import { errorDetails } from "./fileSystem";
 import { resolveExistingWorkspacePath } from "./paths";
 
 export type TrashItem = (absolutePath: string) => Promise<void>;
@@ -42,7 +43,7 @@ export async function moveWorkspaceItemToTrash(
     return fail(
       "TRASH_MOVE_FAILED",
       "ゴミ箱に移動できませんでした。",
-      error instanceof Error ? error.message : String(error)
+      errorDetails(error)
     );
   }
 }
