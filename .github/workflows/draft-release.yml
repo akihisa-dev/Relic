@@ -3,7 +3,7 @@ name: Draft Release
 on:
   push:
     tags:
-      - "v*"
+      - "*"
 
 permissions:
   contents: read
@@ -34,14 +34,14 @@ jobs:
             exit 1
           fi
 
-          if [[ ! "$tag_name" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Release tag must use vMAJOR.MINOR.PATCH format." >&2
+          if [[ ! "$tag_name" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Release tag must use MAJOR.MINOR.PATCH format." >&2
             echo "Actual: $tag_name" >&2
             exit 1
           fi
 
           version="$(node -p "require('./app/package.json').version")"
-          expected_tag="v${version}"
+          expected_tag="${version}"
           if [ "$tag_name" != "$expected_tag" ]; then
             echo "Release tag must match app/package.json version." >&2
             echo "Expected: $expected_tag" >&2
@@ -177,8 +177,8 @@ jobs:
         run: |
           set -euo pipefail
 
-          if [[ ! "$TAG_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Release tag must use vMAJOR.MINOR.PATCH format." >&2
+          if [[ ! "$TAG_NAME" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Release tag must use MAJOR.MINOR.PATCH format." >&2
             echo "Actual: $TAG_NAME" >&2
             exit 1
           fi
