@@ -24,7 +24,7 @@ export function replaceFileLinksWithCount(
   newBaseName: string,
   newPathWithoutExt: string
 ): { content: string; count: number } {
-  const maskedContent = maskFencedCodeBlocks(content);
+  const maskedContent = maskMarkdownCodeRanges(content);
   let result = content;
   let offset = 0;
   let count = 0;
@@ -78,7 +78,7 @@ export function replaceFolderLinksWithCount(
   oldFolderRelativePath: string,
   newFolderRelativePath: string
 ): { content: string; count: number } {
-  const maskedContent = maskFencedCodeBlocks(content);
+  const maskedContent = maskMarkdownCodeRanges(content);
   let result = content;
   let offset = 0;
   let count = 0;
@@ -151,6 +151,72 @@ function parseWikiLinkBody(body: string): ParsedWikiLinkBody | null {
   };
 }
 
-function maskFencedCodeBlocks(markdown: string): string {
-  return markdown.replace(/^```[\s\S]*?^```/gm, (block) => " ".repeat(block.length));
+function maskMarkdownCodeRanges(markdown: string): string {
+  const lines = markdown.match(/[^\n]*(?:\n|$)/g) ?? [];
+  let fence: { marker: "`" | "~"; length: number } | null = null;
+
+  return lines.map((line) => {
+    if (line === "") return line;
+
+    if (fence) {
+      const closesFence = new RegExp(`^ {0,3}\\${fence.marker}{${fence.length},}`).test(line);
+      if (closesFence) {
+        fence = null;
+      }
+
+      return maskText(line);
+    }
+
+    const fenceStart = line.match(/^ {0,3}(`{3,}|~{3,})/);
+    if (fenceStart) {
+      const markerRun = fenceStart[1];
+      fence = {
+        length: markerRun.length,
+        marker: markerRun[0] as "`" | "~"
+      };
+
+      return maskText(line);
+    }
+
+    if (/^(?: {4}|\t)/.test(line)) {
+      return maskText(line);
+    }
+
+    return maskInlineCodeSpans(line);
+  }).join("");
+}
+
+function maskInlineCodeSpans(line: string): string {
+  let output = "";
+  let cursor = 0;
+
+  while (cursor < line.length) {
+    const start = line.indexOf("`", cursor);
+    if (start < 0) {
+      output += line.slice(cursor);
+      break;
+    }
+
+    let markerLength = 1;
+    while (line[start + markerLength] === "`") {
+      markerLength += 1;
+    }
+
+    const marker = "`".repeat(markerLength);
+    const end = line.indexOf(marker, start + markerLength);
+    if (end < 0) {
+      output += line.slice(cursor);
+      break;
+    }
+
+    output += line.slice(cursor, start);
+    output += maskText(line.slice(start, end + markerLength));
+    cursor = end + markerLength;
+  }
+
+  return output;
+}
+
+function maskText(value: string): string {
+  return " ".repeat(value.length);
 }
