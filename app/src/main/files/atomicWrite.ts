@@ -1,4 +1,4 @@
-import { link, rename, unlink, writeFile } from "node:fs/promises";
+import { open, rename, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 interface AtomicWriteOperations {
@@ -17,13 +17,19 @@ const defaultOperations: AtomicWriteOperations = {
   writeFile
 };
 
-interface AtomicCreateOperations extends AtomicWriteOperations {
-  link: (existingPath: string, newPath: string) => Promise<void>;
+interface AtomicNewFileHandle {
+  close: () => Promise<void>;
+  writeFile: (content: string, encoding: BufferEncoding) => Promise<void>;
+}
+
+interface AtomicCreateOperations {
+  open: (filePath: string, flags: "wx") => Promise<AtomicNewFileHandle>;
+  unlink: (filePath: string) => Promise<void>;
 }
 
 const defaultCreateOperations: AtomicCreateOperations = {
-  ...defaultOperations,
-  link
+  open,
+  unlink
 };
 
 export async function atomicWriteTextFile(
@@ -56,17 +62,22 @@ export async function atomicWriteNewTextFile(
   content: string,
   operations: AtomicCreateOperations = defaultCreateOperations
 ): Promise<void> {
-  const temporaryPath = createTemporaryPath(filePath);
+  let handle: AtomicNewFileHandle | null = null;
+  let created = false;
 
   try {
-    await operations.writeFile(temporaryPath, content, "utf8");
-    await operations.link(temporaryPath, filePath);
+    handle = await operations.open(filePath, "wx");
+    created = true;
+    await handle.writeFile(content, "utf8");
+    await handle.close();
+    handle = null;
   } catch (error) {
-    await operations.unlink(temporaryPath).catch(() => undefined);
+    await handle?.close().catch(() => undefined);
+    if (created) {
+      await operations.unlink(filePath).catch(() => undefined);
+    }
     throw error;
   }
-
-  await operations.unlink(temporaryPath).catch(() => undefined);
 }
 
 function createTemporaryPath(filePath: string): string {
