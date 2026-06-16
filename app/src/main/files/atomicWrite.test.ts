@@ -1,4 +1,4 @@
-import { link, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
@@ -48,40 +48,43 @@ describe("atomicWriteTextFile", () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-atomic-write-new-"));
     temporaryPaths.push(workspacePath);
     const filePath = path.join(workspacePath, "note.md");
-    const temporaryWrites: string[] = [];
     const unlink = vi.fn().mockResolvedValue(undefined);
 
     await writeFile(filePath, "original", "utf8");
 
     await expect(atomicWriteNewTextFile(filePath, "next", {
-      link: vi.fn().mockRejectedValue(Object.assign(new Error("exists"), { code: "EEXIST" })),
-      rename: vi.fn(),
-      unlink,
-      writeFile: vi.fn().mockImplementation(async (temporaryPath: string) => {
-        temporaryWrites.push(temporaryPath);
-      })
+      open: vi.fn().mockRejectedValue(Object.assign(new Error("exists"), { code: "EEXIST" })),
+      unlink
     })).rejects.toMatchObject({ code: "EEXIST" });
 
     await expect(readFile(filePath, "utf8")).resolves.toBe("original");
-    expect(temporaryWrites).toHaveLength(1);
-    expect(path.dirname(temporaryWrites[0])).toBe(workspacePath);
-    expect(unlink).toHaveBeenCalledWith(temporaryWrites[0]);
+    expect(unlink).not.toHaveBeenCalled();
   });
 
-  it("新規作成済みなら一時ファイル削除に失敗しても成功扱いにする", async () => {
-    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-atomic-write-new-cleanup-"));
+  it("新規作成時はhard linkを使わず排他的にファイルを作る", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-atomic-write-new-open-"));
     temporaryPaths.push(workspacePath);
     const filePath = path.join(workspacePath, "note.md");
-    const unlink = vi.fn().mockRejectedValue(new Error("cleanup failed"));
 
-    await expect(atomicWriteNewTextFile(filePath, "created", {
-      link,
-      rename: vi.fn(),
-      unlink,
-      writeFile
-    })).resolves.toBeUndefined();
+    await expect(atomicWriteNewTextFile(filePath, "created")).resolves.toBeUndefined();
 
     await expect(readFile(filePath, "utf8")).resolves.toBe("created");
-    expect(unlink).toHaveBeenCalledTimes(1);
+  });
+
+  it("新規作成中に書き込みへ失敗した場合は作成途中のファイルを削除する", async () => {
+    const filePath = path.join(path.sep, "workspace", "note.md");
+    const close = vi.fn().mockResolvedValue(undefined);
+    const unlink = vi.fn().mockResolvedValue(undefined);
+
+    await expect(atomicWriteNewTextFile(filePath, "created", {
+      open: vi.fn().mockResolvedValue({
+        close,
+        writeFile: vi.fn().mockRejectedValue(new Error("disk full"))
+      }),
+      unlink
+    })).rejects.toThrow("disk full");
+
+    expect(close).toHaveBeenCalledTimes(1);
+    expect(unlink).toHaveBeenCalledWith(filePath);
   });
 });
