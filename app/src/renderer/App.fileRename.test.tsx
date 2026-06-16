@@ -109,6 +109,76 @@ describe("App file rename and context menu", () => {
     });
   });
 
+  it("同じタブIDのままファイル名が変わった後は編集欄の初期値も最新名にする", async () => {
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [{ name: "読書メモ", path: "読書メモ.md", type: "file" }]
+        }
+      }),
+      readMarkdownFile: vi.fn().mockResolvedValue({
+        ok: true,
+        value: { content: "本文テスト", name: "読書メモ", path: "読書メモ.md" }
+      })
+    });
+
+    const { container } = await renderApp();
+
+    fireEvent.click(await screen.findByRole("button", { name: /読書メモ/ }));
+    await waitFor(() => expect(useEditorStore.getState().leftPane.activeTabId).not.toBeNull());
+    const activeTabId = useEditorStore.getState().leftPane.activeTabId!;
+
+    act(() => {
+      useEditorStore.getState().updateTabMeta(activeTabId, {
+        name: "読書ログ",
+        path: "読書ログ.md"
+      });
+    });
+
+    const title = await screen.findByText("読書ログ", { selector: ".editor-file-title" });
+    fireEvent.click(title);
+
+    expect(container.querySelector(".editor-file-title-input")).toHaveValue("読書ログ");
+  });
+
+  it("ファイル名更新が編集中に来ても入力中の下書きは上書きしない", async () => {
+    window.relic = makeRelicApi({
+      getWorkspaceState: vi.fn().mockResolvedValue({
+        ok: true,
+        value: {
+          ...withWorkspace,
+          fileTree: [{ name: "読書メモ", path: "読書メモ.md", type: "file" }]
+        }
+      }),
+      readMarkdownFile: vi.fn().mockResolvedValue({
+        ok: true,
+        value: { content: "本文テスト", name: "読書メモ", path: "読書メモ.md" }
+      })
+    });
+
+    const { container } = await renderApp();
+
+    fireEvent.click(await screen.findByRole("button", { name: /読書メモ/ }));
+    await waitFor(() => expect(useEditorStore.getState().leftPane.activeTabId).not.toBeNull());
+    const activeTabId = useEditorStore.getState().leftPane.activeTabId!;
+
+    fireEvent.click(await screen.findByText("読書メモ", { selector: ".editor-file-title" }));
+    fireEvent.change(container.querySelector(".editor-file-title-input") as HTMLInputElement, {
+      target: { value: "入力中の名前" }
+    });
+
+    act(() => {
+      useEditorStore.getState().updateTabMeta(activeTabId, {
+        name: "外部リネーム後",
+        path: "外部リネーム後.md"
+      });
+    });
+
+    expect(container.querySelector(".editor-file-title-input")).toHaveValue("入力中の名前");
+  });
+
   it("未保存の開きタブはリネーム前に即時保存する", async () => {
     const renameMarkdownFile = vi.fn().mockResolvedValue({
       ok: true,
