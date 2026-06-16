@@ -130,6 +130,33 @@ describe("updateLinksForFileRename", () => {
     await expect(readFile(path.join(ws, "source.md"), "utf8")).resolves.toBe(original);
   });
 
+  it("inline code、tilde fence、字下げコード内のファイルリンクは更新しない", async () => {
+    const ws = await mkdtemp(path.join(os.tmpdir(), "relic-link-updater-"));
+    temporaryPaths.push(ws);
+
+    const original = [
+      "[[old]]",
+      "`[[old]]` は記法例",
+      "~~~md",
+      "[[old]]",
+      "~~~",
+      "    [[old]]"
+    ].join("\n");
+    await writeFile(path.join(ws, "source.md"), original, "utf8");
+    await writeFile(path.join(ws, "new.md"), "", "utf8");
+
+    await updateLinksForFileRename(ws, "old.md", "new.md");
+
+    await expect(readFile(path.join(ws, "source.md"), "utf8")).resolves.toBe([
+      "[[new]]",
+      "`[[old]]` は記法例",
+      "~~~md",
+      "[[old]]",
+      "~~~",
+      "    [[old]]"
+    ].join("\n"));
+  });
+
   it("リンク更新の影響件数はコードブロック内リンクを数えない", async () => {
     const ws = await mkdtemp(path.join(os.tmpdir(), "relic-link-updater-"));
     temporaryPaths.push(ws);
@@ -421,6 +448,34 @@ describe("updateLinksForFolderRename", () => {
     await updateLinksForFolderRename(ws, "old-folder", "new-folder");
 
     await expect(readFile(path.join(ws, "source.md"), "utf8")).resolves.toBe(original);
+  });
+
+  it("inline code、tilde fence、字下げコード内のフォルダリンクは更新しない", async () => {
+    const ws = await mkdtemp(path.join(os.tmpdir(), "relic-link-updater-"));
+    temporaryPaths.push(ws);
+    await mkdir(path.join(ws, "new-folder"));
+
+    const original = [
+      "[[old-folder/note]]",
+      "`[[old-folder/note]]` は記法例",
+      "~~~md",
+      "[[old-folder/note]]",
+      "~~~",
+      "    [[old-folder/note]]"
+    ].join("\n");
+    await writeFile(path.join(ws, "source.md"), original, "utf8");
+    await writeFile(path.join(ws, "new-folder", "note.md"), "", "utf8");
+
+    await updateLinksForFolderRename(ws, "old-folder", "new-folder");
+
+    await expect(readFile(path.join(ws, "source.md"), "utf8")).resolves.toBe([
+      "[[new-folder/note]]",
+      "`[[old-folder/note]]` は記法例",
+      "~~~md",
+      "[[old-folder/note]]",
+      "~~~",
+      "    [[old-folder/note]]"
+    ].join("\n"));
   });
 
   it("フロントマター内のフォルダ付きリンクも更新する", async () => {
