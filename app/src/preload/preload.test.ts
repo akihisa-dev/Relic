@@ -6,10 +6,6 @@ const electronMock = vi.hoisted(() => ({
 }));
 
 vi.mock("electron", () => ({
-  clipboard: {
-    readText: vi.fn(),
-    writeText: vi.fn()
-  },
   contextBridge: {
     exposeInMainWorld: electronMock.exposeInMainWorld
   },
@@ -22,8 +18,10 @@ vi.mock("electron", () => ({
 }));
 
 import {
+  copyEditorTextToClipboardChannel,
   copyDiagramSvgChannel,
   printPreviewChannel,
+  readEditorClipboardForPasteChannel,
   saveDiagramSvgChannel,
   savePreviewAsPdfChannel,
   type RelicApi
@@ -54,6 +52,8 @@ describe("preload output API", () => {
       svg: "<svg><path /></svg>"
     });
     await api.copyDiagramSvg({ language: "d2", svg: "<svg><path /></svg>" });
+    await api.readEditorClipboardForPaste();
+    await api.copyEditorTextToClipboard({ text: "selected text" });
 
     expect(electronMock.invoke).toHaveBeenCalledWith(savePreviewAsPdfChannel, {
       defaultFileName: "Note",
@@ -73,5 +73,11 @@ describe("preload output API", () => {
       language: "d2",
       svg: "<svg><path /></svg>"
     });
+    expect(electronMock.invoke).toHaveBeenCalledWith(readEditorClipboardForPasteChannel);
+    expect(electronMock.invoke).toHaveBeenCalledWith(copyEditorTextToClipboardChannel, {
+      text: "selected text"
+    });
+    expect("readClipboardText" in api).toBe(false);
+    expect("writeClipboardText" in api).toBe(false);
   });
 });

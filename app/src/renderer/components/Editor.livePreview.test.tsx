@@ -307,9 +307,9 @@ describe("Editor live preview", () => {
   });
 
   it("通常コードブロックのヘッダーから本文だけをコピーできる", async () => {
-    const writeClipboardText = vi.fn();
+    const copyEditorTextToClipboard = vi.fn().mockResolvedValue({ ok: true, value: undefined });
     window.relic = makeRelicApi({
-      writeClipboardText
+      copyEditorTextToClipboard
     });
     const source = "const value = 1;\nconsole.log(value);";
     const viewRef = createRef<EditorView | null>();
@@ -329,16 +329,14 @@ describe("Editor live preview", () => {
 
     fireEvent.click(container.querySelector(".cm-live-code-block-copy") as HTMLButtonElement);
 
-    expect(writeClipboardText).toHaveBeenCalledWith(source);
+    expect(copyEditorTextToClipboard).toHaveBeenCalledWith({ text: source });
     await waitFor(() => expect(container.querySelector(".cm-live-code-block-copy")?.textContent).toBe("Copied"));
   });
 
   it("Electronクリップボードが失敗しても通常コードブロックをブラウザ経路でコピーできる", async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     window.relic = makeRelicApi({
-      writeClipboardText: vi.fn(() => {
-        throw new Error("clipboard unavailable");
-      })
+      copyEditorTextToClipboard: vi.fn().mockRejectedValue(new Error("clipboard unavailable"))
     });
     Object.defineProperty(navigator, "clipboard", {
       configurable: true,

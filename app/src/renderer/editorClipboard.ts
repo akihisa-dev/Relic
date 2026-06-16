@@ -1,17 +1,13 @@
-function readEditorClipboardText(): string {
-  if (window.relic?.readClipboardText) {
-    return window.relic.readClipboardText();
-  }
-
-  return "";
-}
-
 export async function writeEditorClipboardText(text: string): Promise<void> {
-  if (window.relic?.writeClipboardText) {
+  if (window.relic?.copyEditorTextToClipboard) {
+    let receivedIpcResult = false;
     try {
-      window.relic.writeClipboardText(text);
-      return;
-    } catch {
+      const result = await window.relic.copyEditorTextToClipboard({ text });
+      receivedIpcResult = true;
+      if (result.ok) return;
+      throw new Error(result.error.message);
+    } catch (error) {
+      if (receivedIpcResult) throw error;
       // Fall through to browser and DOM fallbacks.
     }
   }
@@ -42,9 +38,11 @@ export async function writeEditorClipboardText(text: string): Promise<void> {
 }
 
 export async function readEditorClipboardForPaste(): Promise<string> {
-  if (window.relic?.readClipboardText) {
+  if (window.relic?.readEditorClipboardForPaste) {
     try {
-      return readEditorClipboardText();
+      const result = await window.relic.readEditorClipboardForPaste();
+      if (result.ok) return result.value;
+      return "";
     } catch {
       // Fall through to the browser clipboard fallback.
     }
