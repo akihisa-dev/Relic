@@ -465,6 +465,7 @@ describe("App date charts", () => {
 
     await waitFor(() => expect(writeMarkdownFile).toHaveBeenCalledWith({
       content: "---\nchronicle0: [2026]\nplannedDate: [2026-05-02, 2026-05-06]\n---\n# 実装タスク",
+      expectedContent: "---\nchronicle0: [2026]\nplannedDate: [2026-05-01, 2026-05-05]\n---\n# 実装タスク",
       path: "tasks/implementation.md"
     }));
   });

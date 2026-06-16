@@ -242,6 +242,7 @@ describe("chartData", () => {
     })).resolves.toEqual({ ok: true, value: charts });
     expect(writeMarkdownFile).toHaveBeenCalledWith({
       content: "---\nchronicle: [2026]\nplannedDate: [2026-05-02, 2026-05-06]\nchronicle0: [2026]\n---\n# 実装タスク",
+      expectedContent: "---\nchronicle: [2026]\nplannedDate: [2026-05-01, 2026-05-05]\n---\n# 実装タスク",
       path: "tasks/implementation.md"
     });
   });
@@ -302,6 +303,7 @@ describe("chartData", () => {
     })).resolves.toEqual({ ok: true, value: charts });
     expect(writeMarkdownFile).toHaveBeenCalledWith({
       content: "---\nchronicle1: [4]\nplannedDate: [2027-05-01]\n---\n# 実装タスク",
+      expectedContent: "---\nchronicle1: [3]\nplannedDate: [2026-05-01]\n---\n# 実装タスク",
       path: "tasks/implementation.md"
     });
   });
