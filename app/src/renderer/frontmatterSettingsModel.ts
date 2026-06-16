@@ -1,3 +1,4 @@
+import { isReservedFrontmatterFieldName } from "../shared/frontmatterFields";
 import { chronicleCalendarIds, type ChronicleCalendarId, type UserDefinedField, type UserDefinedFieldType } from "../shared/ipc";
 import type { TranslationKey, Translator } from "./i18nModel";
 
@@ -38,8 +39,6 @@ export const FIELD_TYPE_DESCRIPTION_KEYS: Record<UserDefinedFieldType, Translati
   text: "settings.fieldTypeTextDescription",
   url: "settings.fieldTypeUrlDescription"
 };
-
-const RESERVED_FIELD_NAMES = new Set(["aliases", "tags", "status", ...chronicleCalendarIds, "plannedDate", "actualDate"]);
 
 export type FixedFieldDefinition = {
   name: "actualDate" | "aliases" | "tags" | "status" | ChronicleCalendarId | "plannedDate";
@@ -99,7 +98,7 @@ export function uniqueChoices(choices: string[]): string[] {
 export function isFieldNameAvailable(fields: UserDefinedField[], name: string, currentIndex?: number): boolean {
   return (
     FIELD_NAME_PATTERN.test(name) &&
-    !RESERVED_FIELD_NAMES.has(name) &&
+    !isReservedFrontmatterFieldName(name) &&
     !fields.some((field, i) => field.name === name && i !== currentIndex)
   );
 }

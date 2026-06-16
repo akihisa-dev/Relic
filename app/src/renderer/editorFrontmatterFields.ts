@@ -1,5 +1,6 @@
 import { EditorView } from "@codemirror/view";
 
+import { reservedFrontmatterFieldNames } from "../shared/frontmatterFields";
 import { chronicleCalendarIds, type ChronicleCalendarId, type FrontmatterDateFormat, type UserDefinedField } from "../shared/ipc";
 import { fixedStatusValues } from "../shared/status";
 
@@ -9,7 +10,7 @@ export type FrontmatterDialogRequest =
 
 export const frontmatterDialogRequestEvent = "relic-frontmatter-dialog-request";
 export const frontmatterFieldNamePattern = /^[^#\s:][^\r\n:]*$/;
-export const fixedFrontmatterFieldNames = ["aliases", "tags", "status", ...chronicleCalendarIds, "plannedDate", "actualDate"];
+export const fixedFrontmatterFieldNames = reservedFrontmatterFieldNames;
 
 export function isFixedDateRangeField(key: string): boolean {
   return key === "plannedDate" || key === "actualDate";
