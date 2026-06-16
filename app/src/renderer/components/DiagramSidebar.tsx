@@ -2,7 +2,15 @@ import { useEffect, useMemo, useRef, useState, type DragEvent as ReactDragEvent,
 import { createPortal } from "react-dom";
 
 import type { WorkspaceFileIndexEntry, WorkspaceState, WorkspaceTreeNode } from "../../shared/ipc";
-import { addRelicDiagramNodeForFile, diagramTypeFromMarkdownContent, type RelicDiagramType, type RelicFreeDrawingShapeType } from "../../shared/diagramMarkdown";
+import {
+  addRelicDiagramNodeForFile,
+  diagramTypeFromMarkdownContent,
+  parseRelicDiagramMarkdown,
+  updateRelicWhyTreeLabels,
+  type RelicDiagramType,
+  type RelicFreeDrawingShapeType,
+  type RelicWhyTreeLabels
+} from "../../shared/diagramMarkdown";
 import { useT } from "../i18n";
 import { useEditorStore } from "../store/editorStore";
 import { freeDrawingShapeDragType } from "./diagram/freeDrawingShapeDrag";
@@ -51,6 +59,12 @@ export function DiagramSidebar({
   const activeTab = activePane.activeTabId ? tabs[activePane.activeTabId] : null;
   const activeRelationshipTab = activeTab?.kind === "file" && diagramTypeFromMarkdownContent(activeTab.content) === "relationship" ? activeTab : null;
   const activeFreeDrawingTab = activeTab?.kind === "file" && diagramTypeFromMarkdownContent(activeTab.content) === "free-drawing" ? activeTab : null;
+  const activeWhyTreeTab = activeTab?.kind === "file" && diagramTypeFromMarkdownContent(activeTab.content) === "why-tree" ? activeTab : null;
+  const activeWhyTree = useMemo(() => {
+    if (!activeWhyTreeTab) return null;
+    const parsed = parseRelicDiagramMarkdown(activeWhyTreeTab.content);
+    return parsed.ok && parsed.value.type === "why-tree" ? parsed.value : null;
+  }, [activeWhyTreeTab]);
   const handlePlaceFile = (filePath: string): void => {
     if (!activeRelationshipTab) {
       setPlacementError(t("diagram.openRelationshipFirst"));
@@ -65,6 +79,21 @@ export function DiagramSidebar({
 
     setPlacementError(null);
     updateTabContent(activeRelationshipTab.id, next.value.content);
+  };
+  const handleWhyTreeLabelChange = (key: WhyTreeLabelKey, value: string): void => {
+    if (!activeWhyTreeTab || !activeWhyTree || value === activeWhyTree.labels[key]) return;
+
+    const next = updateRelicWhyTreeLabels(activeWhyTreeTab.content, {
+      ...activeWhyTree.labels,
+      [key]: value
+    });
+    if (!next.ok) {
+      setPlacementError(next.error.message);
+      return;
+    }
+
+    setPlacementError(null);
+    updateTabContent(activeWhyTreeTab.id, next.value.content);
   };
 
   if (!activeWorkspace) {
@@ -128,6 +157,12 @@ export function DiagramSidebar({
       />
       {activeFreeDrawingTab ? (
         <DiagramShapePalette title={t("diagram.flowchartShapes")} />
+      ) : activeWhyTree ? (
+        <DiagramWhyTreeLabelFields
+          labels={activeWhyTree.labels}
+          onChange={handleWhyTreeLabelChange}
+          title={t("diagram.whyTree.labelPanel")}
+        />
       ) : (
         <DiagramSidebarGroup
           emptyLabel={t("diagram.noPlaceableFiles")}
@@ -145,6 +180,18 @@ export function DiagramSidebar({
 }
 
 const flowchartShapes: RelicFreeDrawingShapeType[] = ["terminator", "process", "decision", "input-output", "note"];
+type WhyTreeLabelKey = keyof RelicWhyTreeLabels;
+
+const whyTreeLabelFields: {
+  key: WhyTreeLabelKey;
+  labelKey: "diagram.whyTree.labelField.action" | "diagram.whyTree.labelField.fact" | "diagram.whyTree.labelField.node" | "diagram.whyTree.labelField.root" | "diagram.whyTree.labelField.solution";
+}[] = [
+  { key: "root", labelKey: "diagram.whyTree.labelField.root" },
+  { key: "node", labelKey: "diagram.whyTree.labelField.node" },
+  { key: "fact", labelKey: "diagram.whyTree.labelField.fact" },
+  { key: "solution", labelKey: "diagram.whyTree.labelField.solution" },
+  { key: "action", labelKey: "diagram.whyTree.labelField.action" }
+];
 
 function startShapeDrag(shape: RelicFreeDrawingShapeType, event: ReactDragEvent<HTMLButtonElement>): void {
   event.dataTransfer.effectAllowed = "copy";
@@ -177,6 +224,38 @@ function DiagramShapePalette({ title }: { title: string }): ReactElement {
           </li>
         ))}
       </ul>
+    </section>
+  );
+}
+
+function DiagramWhyTreeLabelFields({
+  labels,
+  onChange,
+  title
+}: {
+  labels: RelicWhyTreeLabels;
+  onChange: (key: WhyTreeLabelKey, value: string) => void;
+  title: string;
+}): ReactElement {
+  const t = useT();
+
+  return (
+    <section className="diagram-sidebar-group">
+      <div className="diagram-sidebar-group-heading">
+        <span>{title}</span>
+        <span className="pane-heading-count">{whyTreeLabelFields.length}</span>
+      </div>
+      <div className="why-tree-label-fields why-tree-label-fields--sidebar">
+        {whyTreeLabelFields.map((field) => (
+          <label key={field.key}>
+            <span>{t(field.labelKey)}</span>
+            <input
+              onChange={(event) => onChange(field.key, event.currentTarget.value)}
+              value={labels[field.key]}
+            />
+          </label>
+        ))}
+      </div>
     </section>
   );
 }

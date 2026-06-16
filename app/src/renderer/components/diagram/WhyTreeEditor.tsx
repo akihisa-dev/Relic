@@ -21,7 +21,6 @@ import {
   removeRelicWhyTreeSupplement,
   removeRelicWhyTreeWhy,
   updateRelicWhyTreeSupplement,
-  updateRelicWhyTreeLabels,
   updateRelicWhyTreeTitle,
   type RelicWhyTreeDocument,
   type RelicWhyTreeLabels,
@@ -61,8 +60,6 @@ type WhyTreeDragState =
   | { kind: "why"; path: number[] }
   | { index: number; kind: RelicWhyTreeSupplementKind; path: number[] };
 
-type WhyTreeLabelKey = keyof RelicWhyTreeLabels;
-
 type WhyTreeUpdateResult = { ok: true; value: { content: string } } | { ok: false };
 
 interface StableSupplementItem {
@@ -94,7 +91,6 @@ export function WhyTreeEditor({
   const [selection, setSelection] = useState<WhyTreeSelection | null>(null);
   const [connectorLayout, setConnectorLayout] = useState<WhyTreeConnectorLayout>({ height: 0, paths: [], width: 0 });
   const [isPanning, setIsPanning] = useState(false);
-  const [labelPanelOpen, setLabelPanelOpen] = useState(true);
   const [viewport, setViewport] = useState<ViewportState>({ panX: 0, panY: 0, zoom: 1 });
   const displayedTree = useMemo(() => {
     const parsed = parseRelicDiagramMarkdown(draftContent);
@@ -183,13 +179,6 @@ export function WhyTreeEditor({
     if (!onChange) return;
     applyUpdate(removeRelicWhyTreeSupplement(draftContentRef.current, path, kind, index));
     selectParentMainNode(path);
-  };
-  const changeLabel = (key: WhyTreeLabelKey, value: string): void => {
-    if (!onChange || value === displayedTree.labels[key]) return;
-    applyUpdate(updateRelicWhyTreeLabels(draftContentRef.current, {
-      ...displayedTree.labels,
-      [key]: value
-    }));
   };
   const moveMainWhyToIndex = (path: number[], targetIndex: number): void => {
     if (!onChange || path.length === 0) return;
@@ -566,25 +555,6 @@ export function WhyTreeEditor({
       tabIndex={0}
     >
       {toolbar}
-      {labelPanelOpen ? (
-        <WhyTreeLabelPanel
-          disabled={!onChange}
-          labels={labels}
-          onChange={changeLabel}
-          onClose={() => setLabelPanelOpen(false)}
-        />
-      ) : (
-        <button
-          aria-label={t("diagram.whyTree.showLabelPanel")}
-          className="why-tree-label-toggle"
-          onClick={() => setLabelPanelOpen(true)}
-          onPointerDown={(event) => event.stopPropagation()}
-          onWheel={(event) => event.stopPropagation()}
-          type="button"
-        >
-          {t("diagram.whyTree.labelPanel")}
-        </button>
-      )}
       <div
         className="why-tree-content"
         ref={contentRef}
@@ -643,52 +613,6 @@ function WhyTreeNodeMenu({
       <button onClick={onAddFact} type="button">+ {labels.fact}</button>
       <button onClick={onAddSolution} type="button">+ {labels.solution}</button>
       <button onClick={onAddAction} type="button">+ {labels.action}</button>
-    </div>
-  );
-}
-
-function WhyTreeLabelPanel({
-  disabled,
-  labels,
-  onChange,
-  onClose
-}: {
-  disabled: boolean;
-  labels: RelicWhyTreeLabels;
-  onChange: (key: WhyTreeLabelKey, value: string) => void;
-  onClose: () => void;
-}): ReactElement {
-  const t = useT();
-
-  return (
-    <div
-      className="why-tree-label-panel"
-      onPointerDown={(event) => event.stopPropagation()}
-      onWheel={(event) => event.stopPropagation()}
-    >
-      <div className="why-tree-label-panel-header">
-        <span className="why-tree-label-panel-title">{t("diagram.whyTree.labelPanel")}</span>
-        <button
-          aria-label={t("diagram.whyTree.closeLabelPanel")}
-          className="why-tree-label-panel-close"
-          onClick={onClose}
-          type="button"
-        >
-          ×
-        </button>
-      </div>
-      <div className="why-tree-label-fields">
-        {whyTreeLabelFields.map((field) => (
-          <label key={field.key}>
-            <span>{t(field.labelKey)}</span>
-            <input
-              disabled={disabled}
-              onChange={(event) => onChange(field.key, event.currentTarget.value)}
-              value={labels[field.key]}
-            />
-          </label>
-        ))}
-      </div>
     </div>
   );
 }
@@ -837,7 +761,6 @@ function samePath(left: number[], right: number[]): boolean {
 function isWhyTreePanTarget(target: EventTarget, currentTarget: Element): boolean {
   if (!(target instanceof Element)) return target === currentTarget;
   if (target.closest("input, textarea, button")) return false;
-  if (target.closest(".why-tree-label-panel")) return false;
   if (target.closest(".why-tree-main-node")) return false;
   if (target.closest(".why-tree-support-item")) return false;
   if (target.closest(".why-tree-node-menu")) return false;
@@ -854,17 +777,6 @@ function isWhyTreePanTarget(target: EventTarget, currentTarget: Element): boolea
     target.classList.contains("why-tree-support-column") ||
     target.classList.contains("why-tree-support-empty");
 }
-
-const whyTreeLabelFields: {
-  key: WhyTreeLabelKey;
-  labelKey: "diagram.whyTree.labelField.action" | "diagram.whyTree.labelField.fact" | "diagram.whyTree.labelField.node" | "diagram.whyTree.labelField.root" | "diagram.whyTree.labelField.solution";
-}[] = [
-  { key: "root", labelKey: "diagram.whyTree.labelField.root" },
-  { key: "node", labelKey: "diagram.whyTree.labelField.node" },
-  { key: "fact", labelKey: "diagram.whyTree.labelField.fact" },
-  { key: "solution", labelKey: "diagram.whyTree.labelField.solution" },
-  { key: "action", labelKey: "diagram.whyTree.labelField.action" }
-];
 
 function whyTreeSupplementLabel(labels: RelicWhyTreeLabels, kind: RelicWhyTreeSupplementKind): string {
   if (kind === "fact") return labels.fact;
