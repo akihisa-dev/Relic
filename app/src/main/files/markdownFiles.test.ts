@@ -23,6 +23,13 @@ describe("normalizeMarkdownFileName", () => {
     });
   });
 
+  it("大文字のMarkdown拡張子は二重に付与せず保持する", () => {
+    expect(normalizeMarkdownFileName("読書メモ.MD")).toEqual({
+      ok: true,
+      value: "読書メモ.MD"
+    });
+  });
+
   it("スラッシュを含むファイル名を拒否する", () => {
     expect(normalizeMarkdownFileName("notes/読書メモ").ok).toBe(false);
   });
@@ -109,6 +116,28 @@ describe("createMarkdownFileAtPath", () => {
     });
     await expect(readFile(path.join(workspacePath, "folder", "新規ノート.md"), "utf8")).resolves.toBe("");
     await expect(readdir(path.join(workspacePath, "folder"))).resolves.toEqual(["新規ノート.md"]);
+  });
+
+  it("大文字のMarkdown拡張子を持つファイルを作成して読み込める", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-create-linked-file-"));
+    temporaryPaths.push(workspacePath);
+
+    await expect(createMarkdownFileAtPath(workspacePath, "folder/新規ノート.MD", "# 本文")).resolves.toEqual({
+      ok: true,
+      value: {
+        content: "# 本文",
+        name: "新規ノート",
+        path: "folder/新規ノート.MD"
+      }
+    });
+    await expect(readMarkdownFile(workspacePath, "folder/新規ノート.MD")).resolves.toEqual({
+      ok: true,
+      value: {
+        content: "# 本文",
+        name: "新規ノート",
+        path: "folder/新規ノート.MD"
+      }
+    });
   });
 
   it("本文を指定してMarkdownファイルを作成する", async () => {

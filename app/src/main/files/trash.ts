@@ -1,6 +1,6 @@
 import { stat } from "node:fs/promises";
-import path from "node:path";
 
+import { hasMarkdownExtension } from "../../shared/markdownExtension";
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { errorDetails } from "./fileSystem";
 import { resolveExistingWorkspacePath } from "./paths";
@@ -13,7 +13,7 @@ export async function moveWorkspaceItemToTrash(
   type: "file" | "folder",
   trashItem: TrashItem
 ): Promise<RelicResult<{ path: string }>> {
-  if (type === "file" && path.extname(relativePath) !== ".md") {
+  if (type === "file" && !hasMarkdownExtension(relativePath)) {
     return fail("FILE_TYPE_UNSUPPORTED", "Markdownファイルだけをゴミ箱に移動できます。");
   }
 

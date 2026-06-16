@@ -52,6 +52,26 @@ describe("readWorkspaceFileIndex", () => {
     ]);
   });
 
+  it("大文字のMarkdown拡張子を持つファイルも検索インデックスに含める", async () => {
+    const workspacePath = await createWorkspace();
+    await writeFile(path.join(workspacePath, "note.MD"), "# Note\nneedle", "utf8");
+
+    const index = await readWorkspaceFileIndex(workspacePath);
+
+    expect(index.entries).toMatchObject([
+      {
+        kind: "markdown",
+        name: "note",
+        path: "note.MD",
+        readStatus: "ok"
+      }
+    ]);
+    expect(index.records.find((record) => record.path === "note.MD")?.lines).toEqual([
+      "# Note",
+      "needle"
+    ]);
+  });
+
   it("Diagram判定はフロントマターtypeだけを見て、type: mapは扱わない", async () => {
     const workspacePath = await createWorkspace();
     await writeFile(path.join(workspacePath, "not-diagram.md"), "# Title\ntype: relationship", "utf8");

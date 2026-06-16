@@ -4,6 +4,7 @@ import path from "node:path";
 
 import type { WorkspaceFileIndexEntry, WorkspaceFileKind } from "../../shared/ipc";
 import { isRelicDiagramMarkdownContent } from "../../shared/diagramMarkdown";
+import { stripMarkdownExtension } from "../../shared/markdownExtension";
 import { collectMarkdownPaths } from "../../shared/workspaceTree";
 import { atomicWriteTextFile } from "./atomicWrite";
 import { readWorkspaceFileTree } from "./fileTree";
@@ -145,7 +146,7 @@ function recordFor(
     kind,
     lines,
     mtimeMs: fileStats.mtimeMs,
-    name: path.posix.basename(relativePath, ".md"),
+    name: stripMarkdownExtension(path.posix.basename(relativePath)),
     path: relativePath,
     readStatus: "ok",
     searchable,
@@ -158,7 +159,7 @@ function unreadableRecord(relativePath: string, fileStats?: Stats): WorkspaceFil
     kind: "markdown",
     lines: [],
     mtimeMs: fileStats?.mtimeMs ?? 0,
-    name: path.posix.basename(relativePath, ".md"),
+    name: stripMarkdownExtension(path.posix.basename(relativePath)),
     path: relativePath,
     readStatus: "unreadable",
     searchable: false,

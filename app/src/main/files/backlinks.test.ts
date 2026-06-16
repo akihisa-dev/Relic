@@ -38,6 +38,20 @@ describe("readBacklinks", () => {
     });
   });
 
+  it("大文字のMarkdown拡張子を持つ参照元と参照先をバックリンク対象にする", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-backlinks-"));
+    temporaryPaths.push(workspacePath);
+    await writeFile(path.join(workspacePath, "Target.MD"), "# Target", "utf8");
+    await writeFile(path.join(workspacePath, "Source.MD"), "[[Target]]", "utf8");
+
+    await expect(readBacklinks(workspacePath, "Target.MD")).resolves.toEqual({
+      ok: true,
+      value: [
+        { count: 1, sourceName: "Source", sourcePath: "Source.MD" }
+      ]
+    });
+  });
+
   it("aliases経由のリンクもバックリンクとして扱う", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-backlinks-"));
     temporaryPaths.push(workspacePath);

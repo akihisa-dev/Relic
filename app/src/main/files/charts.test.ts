@@ -71,6 +71,37 @@ describe("extractDateRange", () => {
 });
 
 describe("readWorkspaceCharts", () => {
+  it("大文字のMarkdown拡張子を持つファイルもチャート対象にする", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-chronicle-chart-"));
+    await writeFile(
+      path.join(workspacePath, "main.MD"),
+      "---\nchronicle0: [10]\n---\n# Main\n",
+      "utf8"
+    );
+
+    const result = await readWorkspaceCharts(
+      workspacePath,
+      [
+        { filePaths: [], id: "chronicle", name: "chronicle", source: "chronicle" }
+      ]
+    );
+
+    expect(result).toMatchObject({
+      ok: true,
+      value: [
+        {
+          entries: [
+            {
+              fileName: "main",
+              path: "main.MD"
+            }
+          ],
+          id: "chronicle"
+        }
+      ]
+    });
+  });
+
   it("chronicle0と設定済みサブ暦を同じ年表へ換算して読む", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-chronicle-calendar-chart-"));
     await writeFile(

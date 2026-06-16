@@ -1,4 +1,5 @@
 import { resolveWikiLinkPath } from "../../shared/links";
+import { ensureMarkdownExtension, stripMarkdownExtension } from "../../shared/markdownExtension";
 
 export function replaceFileLinks(
   content: string,
@@ -95,14 +96,12 @@ export function replaceFolderLinksWithCount(
     const parsed = parseWikiLinkBody(body);
     if (!parsed) continue;
 
-    const rawTargetWithExt = parsed.rawTargetBase.endsWith(".md")
-      ? parsed.rawTargetBase
-      : `${parsed.rawTargetBase}.md`;
+    const rawTargetWithExt = ensureMarkdownExtension(parsed.rawTargetBase);
 
     if (!/\//.test(rawTargetWithExt)) continue;
     if (!rawTargetWithExt.startsWith(oldPrefix)) continue;
 
-    const suffix = rawTargetWithExt.slice(oldPrefix.length).replace(/\.md$/, "");
+    const suffix = stripMarkdownExtension(rawTargetWithExt.slice(oldPrefix.length));
     const newTargetBase = `${newPrefix}${suffix}`;
 
     let newBody = newTargetBase;
@@ -141,7 +140,7 @@ function parseWikiLinkBody(body: string): ParsedWikiLinkBody | null {
 
   if (!rawTargetBase) return null;
 
-  const targetBase = rawTargetBase.endsWith(".md") ? rawTargetBase : `${rawTargetBase}.md`;
+  const targetBase = ensureMarkdownExtension(rawTargetBase);
 
   return {
     alias,

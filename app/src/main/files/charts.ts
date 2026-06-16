@@ -1,5 +1,4 @@
 import { readFile } from "node:fs/promises";
-import path from "node:path";
 
 import {
   defaultChronicleCalendars,
@@ -10,6 +9,7 @@ import {
   type WorkspaceChart
 } from "../../shared/ipc";
 import { updateChartFrontmatterContent } from "../../shared/chartFrontmatterUpdate";
+import { hasMarkdownExtension } from "../../shared/markdownExtension";
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { collectMarkdownPaths } from "../../shared/workspaceTree";
 import {
@@ -98,7 +98,7 @@ export async function updateWorkspaceChartEntry(
   operations: ChartWriteOperations = defaultChartOperations
 ): Promise<RelicResult<WorkspaceChart[]>> {
   try {
-    if (path.extname(input.path) !== ".md") {
+    if (!hasMarkdownExtension(input.path)) {
       return fail("CHART_ENTRY_NOT_MARKDOWN", "Markdownファイル以外は更新できません。");
     }
 

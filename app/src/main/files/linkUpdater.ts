@@ -1,10 +1,11 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 
-import { collectMarkdownPaths } from "../../shared/workspaceTree";
 import type { LinkUpdateImpact, LinkUpdateImpactKind } from "../../shared/ipc";
 import { replaceRelicDiagramNodeFileReferences } from "../../shared/diagramMarkdown";
+import { stripMarkdownExtension } from "../../shared/markdownExtension";
 import { fail, ok, type RelicResult } from "../../shared/result";
+import { collectMarkdownPaths } from "../../shared/workspaceTree";
 import { atomicWriteTextFile } from "./atomicWrite";
 import { errorDetails } from "./fileSystem";
 import { readWorkspaceFileTree } from "./fileTree";
@@ -112,8 +113,8 @@ async function buildLinkUpdatePatches(
   const fileTree = await readWorkspaceFileTree(workspacePath);
   const markdownPaths = collectMarkdownPaths(fileTree);
   const patches: LinkUpdatePatch[] = [];
-  const newBaseName = path.posix.basename(normalizedNewPath, ".md");
-  const newPathWithoutExt = normalizedNewPath.replace(/\.md$/, "");
+  const newBaseName = stripMarkdownExtension(path.posix.basename(normalizedNewPath));
+  const newPathWithoutExt = stripMarkdownExtension(normalizedNewPath);
 
   for (const sourcePath of markdownPaths) {
     const absoluteSourcePath = await resolveExistingWorkspacePath(workspacePath, sourcePath);

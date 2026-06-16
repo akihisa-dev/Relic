@@ -1,3 +1,5 @@
+import { stripMarkdownExtension } from "./markdownExtension";
+
 export function mermaidSafeId(raw: string, fallback: string, used: Set<string>): string {
   const normalized = raw.trim().replace(/[^A-Za-z0-9_]/g, "_").replace(/_+/g, "_").replace(/^_+|_+$/g, "");
   const base = normalized.length > 0 ? normalized : fallback;
@@ -30,5 +32,5 @@ export function mermaidQuoted(value: string): string {
 
 export function markdownFileDisplayName(filePath: string): string {
   const fileName = filePath.split("/").at(-1) ?? filePath;
-  return fileName.endsWith(".md") ? fileName.slice(0, -3) : fileName;
+  return stripMarkdownExtension(fileName);
 }

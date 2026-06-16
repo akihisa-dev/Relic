@@ -51,6 +51,21 @@ describe("readWorkspaceFileTree", () => {
     ]);
   });
 
+  it("大文字のMarkdown拡張子もMarkdownファイルとして返す", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-tree-"));
+    temporaryPaths.push(workspacePath);
+
+    await writeFile(path.join(workspacePath, "README.MD"), "# README", "utf8");
+
+    await expect(readWorkspaceFileTree(workspacePath)).resolves.toEqual([
+      {
+        name: "README",
+        path: "README.MD",
+        type: "file"
+      }
+    ]);
+  });
+
   it("読めない子フォルダは空フォルダとして扱い、読める項目は返す", async () => {
     const workspacePath = path.join(path.sep, "workspace");
     const lockedPath = path.join(workspacePath, "locked");

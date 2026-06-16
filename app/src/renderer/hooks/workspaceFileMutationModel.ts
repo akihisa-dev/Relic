@@ -1,4 +1,5 @@
 import type { WorkspaceTreeNode } from "../../shared/ipc";
+import { ensureMarkdownExtension } from "../../shared/markdownExtension";
 import type { Translator } from "../i18nModel";
 import type { FileTab, PaneId, PaneState, Tab } from "../store/editorStore";
 import { displayNameFromPath, joinWorkspacePath, parentFolderOf } from "../workspacePaths";
@@ -49,7 +50,7 @@ export function renamedFolderPath(path: string, newName: string): string {
 }
 
 export function renamedFilePath(path: string, newName: string): string {
-  return joinWorkspacePath(parentFolderOf(path), newName.endsWith(".md") ? newName : `${newName}.md`);
+  return joinWorkspacePath(parentFolderOf(path), ensureMarkdownExtension(newName));
 }
 
 export function deleteTreeItemMessage(path: string, type: WorkspaceTreeNode["type"], t: Translator): string {

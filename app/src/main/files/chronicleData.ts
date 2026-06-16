@@ -1,6 +1,7 @@
 import path from "node:path";
 
 import { axisToYear, dateToDay, dayToDate, rangeToArray, shiftDateYears, yearToAxis } from "../../shared/chartTime";
+import { stripMarkdownExtension } from "../../shared/markdownExtension";
 import {
   defaultChronicleCalendars,
   type ChronicleCalendarSettings,
@@ -33,7 +34,7 @@ export function collectChartEntriesForMarkdown(
     chronicle: [],
     date: []
   };
-  const fileName = path.basename(relativePath, ".md");
+  const fileName = stripMarkdownExtension(path.basename(relativePath));
   const frontmatter = parseFrontmatter(content);
   const range = extractFirstChronicleRangeFromData(frontmatter.data, calendars);
 

@@ -6,6 +6,7 @@ import {
   serializeRelicDiagramMarkdown,
   type RelicDiagramDocument
 } from "../../shared/diagramMarkdown";
+import { hasMarkdownExtension, stripMarkdownExtension } from "../../shared/markdownExtension";
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { atomicWriteTextFile } from "./atomicWrite";
 import { errorDetails } from "./fileSystem";
@@ -22,7 +23,7 @@ export async function readRelicDiagramFile(
   workspacePath: string,
   relativePath: string
 ): Promise<RelicResult<RelicDiagramFileContent>> {
-  if (path.extname(relativePath) !== ".md") {
+  if (!hasMarkdownExtension(relativePath)) {
     return fail("FILE_TYPE_UNSUPPORTED", "図解ファイルはMarkdownファイルとして開いてください。");
   }
 
@@ -37,7 +38,7 @@ export async function readRelicDiagramFile(
     return ok({
       content,
       map: parsed.value,
-      name: path.basename(relativePath, ".md"),
+      name: stripMarkdownExtension(path.basename(relativePath)),
       path: relativePath
     });
   } catch (error) {
@@ -51,7 +52,7 @@ export async function writeRelicDiagramFile(
   map: RelicDiagramDocument,
   expectedContent?: string
 ): Promise<RelicResult<string>> {
-  if (path.extname(relativePath) !== ".md") {
+  if (!hasMarkdownExtension(relativePath)) {
     return fail("FILE_TYPE_UNSUPPORTED", "図解ファイルはMarkdownファイルとして保存してください。");
   }
 

@@ -3,6 +3,7 @@ import {
   type RelicConnectedDiagramNode,
   type RelicDiagramLine,
 } from "../../../shared/diagramMarkdown";
+import { stripMarkdownExtension } from "../../../shared/markdownExtension";
 
 const canvasPadding = 192;
 const minCanvasWidth = 900;
@@ -885,5 +886,5 @@ function nodeCenter(node: DiagramCanvasNodeLayout): DiagramPoint {
 
 export function nodeFileName(filePath: string): string {
   const name = filePath.split("/").at(-1) ?? filePath;
-  return name.endsWith(".md") ? name.slice(0, -3) : name;
+  return stripMarkdownExtension(name);
 }

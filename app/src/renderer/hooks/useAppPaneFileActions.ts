@@ -1,6 +1,7 @@
 import { useCallback } from "react";
 
 import type { MarkdownFileContent, WorkspaceState, WorkspaceTreeNode } from "../../shared/ipc";
+import { ensureMarkdownExtension } from "../../shared/markdownExtension";
 import type { HeadingScrollTarget } from "../editorDerivedState";
 import type { Translator } from "../i18nModel";
 import type { PaneId, PanelTabKind, Tab } from "../store/editorStore";
@@ -19,10 +20,6 @@ interface UseAppPaneFileActionsInput {
   setWorkspaceState: (state: WorkspaceState) => void;
   t: Translator;
   tabs: Record<string, Tab>;
-}
-
-function ensureMarkdownExtension(name: string): string {
-  return name.trim().endsWith(".md") ? name.trim() : `${name.trim()}.md`;
 }
 
 export function useAppPaneFileActions({

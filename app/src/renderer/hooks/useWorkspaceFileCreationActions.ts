@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
 
+import { ensureMarkdownExtension } from "../../shared/markdownExtension";
 import {
   findCreatedMarkdownPath,
   nextUniqueFileName,
@@ -49,7 +50,7 @@ export function useWorkspaceFileCreationActions({
         if (result.ok) {
           setWorkspaceState(result.value);
           setFileNameDraft("");
-          const expectedPath = fileName.endsWith(".md") ? fileName : `${fileName}.md`;
+          const expectedPath = ensureMarkdownExtension(fileName);
           void window.relic!.readMarkdownFile({ path: expectedPath }).then((readResult) => {
             if (readResult.ok) {
               openFileInPane(focusedPane, readResult.value);
@@ -80,7 +81,7 @@ export function useWorkspaceFileCreationActions({
       .then((result) => {
         if (result.ok) {
           setWorkspaceState(result.value);
-          const expectedPath = fileName.endsWith(".md") ? fileName : `${fileName}.md`;
+          const expectedPath = ensureMarkdownExtension(fileName);
           const newFile = findCreatedMarkdownPath(result.value.fileTree, expectedPath);
 
           if (newFile) {
@@ -105,7 +106,7 @@ export function useWorkspaceFileCreationActions({
     if (!window.relic) return;
 
     const fileName = nextUniqueDiagramFileName(workspaceState, t, diagramType);
-    const expectedPath = fileName.endsWith(".md") ? fileName : `${fileName}.md`;
+    const expectedPath = ensureMarkdownExtension(fileName);
     const content = diagramType === "why-tree"
       ? emptyRelicWhyTreeMarkdownContent
       : diagramType === "free-drawing"
