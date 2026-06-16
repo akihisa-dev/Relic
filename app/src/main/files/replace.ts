@@ -22,6 +22,12 @@ interface SearchAndReplaceWriteOperations extends SearchAndReplaceReadOperations
   writeTextFile?: (filePath: string, content: string) => Promise<void>;
 }
 
+interface SearchAndReplaceTarget {
+  absolutePath: string;
+  content: string;
+  relativePath: string;
+}
+
 const defaultSearchAndReplaceOperations: Required<SearchAndReplaceWriteOperations> = {
   readFile,
   writeTextFile: atomicWriteTextFile
@@ -97,32 +103,18 @@ export async function searchAndReplace(
   }
 
   try {
-    const fileTree = await readWorkspaceFileTree(workspacePath);
     const matches: SearchAndReplaceMatch[] = [];
-    const files = await collectSafeMarkdownFiles(workspacePath, collectMarkdownPaths(fileTree));
-    const fileContents = await Promise.all(
-      files.map(async (file) => {
-        try {
-          return { ...file, content: await operations.readFile(file.absolutePath, "utf8") };
-        } catch {
-          return null;
-        }
-      })
+    const targets = await readReplaceTargets(
+      workspacePath,
+      regex.value,
+      isRegex,
+      "置換プレビュー",
+      operations
     );
 
-    for (const fileContent of fileContents) {
-      if (!fileContent) continue;
+    if (!targets.ok) return targets;
 
-      const { content, relativePath } = fileContent;
-      if (isRegex) {
-        const safeTarget = validateRegexTargetText(content, "置換プレビュー");
-        if (!safeTarget.ok) return safeTarget;
-      }
-
-      if (isRegex && canMatchEmptyTextInContent(regex.value, content)) {
-        return fail("REPLACE_REGEX_EMPTY_MATCH", "空文字に一致する正規表現は置換できません。");
-      }
-
+    for (const { content, relativePath } of targets.value) {
       const lines = content.split("\n");
 
       for (const [index, line] of lines.entries()) {
@@ -167,31 +159,17 @@ export async function applySearchAndReplace(
   }
 
   try {
-    const fileTree = await readWorkspaceFileTree(workspacePath);
     let count = 0;
     const writeTextFile = operations.writeTextFile ?? defaultSearchAndReplaceOperations.writeTextFile;
-    const files = await collectSafeMarkdownFiles(workspacePath, collectMarkdownPaths(fileTree));
-    const fileContents = await Promise.all(
-      files.map(async (file) => {
-        try {
-          return { ...file, content: await operations.readFile(file.absolutePath, "utf8") };
-        } catch {
-          return null;
-        }
-      })
+    const targets = await readReplaceTargets(
+      workspacePath,
+      regex.value,
+      isRegex,
+      "一括置換",
+      operations
     );
 
-    for (const fileContent of fileContents) {
-      if (!fileContent) continue;
-      if (isRegex) {
-        const safeTarget = validateRegexTargetText(fileContent.content, "一括置換");
-        if (!safeTarget.ok) return safeTarget;
-      }
-
-      if (isRegex && canMatchEmptyTextInContent(regex.value, fileContent.content)) {
-        return fail("REPLACE_REGEX_EMPTY_MATCH", "空文字に一致する正規表現は置換できません。");
-      }
-    }
+    if (!targets.ok) return targets;
 
     const writtenPatches: Array<{
       absolutePath: string;
@@ -200,10 +178,7 @@ export async function applySearchAndReplace(
     }> = [];
 
     try {
-      for (const fileContent of fileContents) {
-        if (!fileContent) continue;
-
-        const { absolutePath, content } = fileContent;
+      for (const { absolutePath, content } of targets.value) {
         const matches = content.match(regex.value);
 
         if (matches && matches.length > 0) {
@@ -240,6 +215,40 @@ export async function applySearchAndReplace(
       errorDetails(error)
     );
   }
+}
+
+async function readReplaceTargets(
+  workspacePath: string,
+  regex: RegExp,
+  isRegex: boolean,
+  regexTargetLabel: string,
+  operations: SearchAndReplaceReadOperations
+): Promise<RelicResult<SearchAndReplaceTarget[]>> {
+  const fileTree = await readWorkspaceFileTree(workspacePath);
+  const files = await collectSafeMarkdownFiles(workspacePath, collectMarkdownPaths(fileTree));
+  const fileContents = await Promise.all(
+    files.map(async (file) => {
+      try {
+        return { ...file, content: await operations.readFile(file.absolutePath, "utf8") };
+      } catch {
+        return null;
+      }
+    })
+  );
+  const targets = fileContents.filter((fileContent): fileContent is SearchAndReplaceTarget => fileContent !== null);
+
+  if (!isRegex) return ok(targets);
+
+  for (const { content } of targets) {
+    const safeTarget = validateRegexTargetText(content, regexTargetLabel);
+    if (!safeTarget.ok) return safeTarget;
+
+    if (canMatchEmptyTextInContent(regex, content)) {
+      return fail("REPLACE_REGEX_EMPTY_MATCH", "空文字に一致する正規表現は置換できません。");
+    }
+  }
+
+  return ok(targets);
 }
 
 async function collectSafeMarkdownFiles(
