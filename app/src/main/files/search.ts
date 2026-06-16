@@ -35,6 +35,7 @@ export async function searchWorkspace(
   operations: SearchOperations = defaultSearchOperations
 ): Promise<RelicResult<WorkspaceSearchResultSet>> {
   const normalizedQuery = query.trim();
+  const normalizedQueryLower = normalizedQuery.toLocaleLowerCase();
   const normalizedFrontmatterField = frontmatterField?.trim() ?? "";
 
   if (normalizedQuery === "") {
@@ -82,13 +83,13 @@ export async function searchWorkspace(
       if (mode === "fileName") {
         let alias: string | null = null;
         for (const item of extractAliases(content)) {
-          if (item.toLocaleLowerCase().includes(normalizedQuery.toLocaleLowerCase())) {
+          if (item.toLocaleLowerCase().includes(normalizedQueryLower)) {
             alias = item;
             break;
           }
         }
 
-        if (fileName.toLocaleLowerCase().includes(normalizedQuery.toLocaleLowerCase()) || alias) {
+        if (fileName.toLocaleLowerCase().includes(normalizedQueryLower) || alias) {
           results.push({ fileName, lineNumber: null, lineText: alias ? `alias: ${alias}` : relativePath, path: relativePath });
           if (results.length >= workspaceSearchMaxResults) {
             truncated = true;
@@ -117,7 +118,7 @@ export async function searchWorkspace(
         const { data } = parseFrontmatter(content);
         const fieldValue = data[normalizedFrontmatterField];
 
-        if (matchesFrontmatterField(fieldValue, normalizedQuery)) {
+        if (matchesFrontmatterField(fieldValue, normalizedQueryLower)) {
           results.push({
             fileName,
             lineNumber: null,
@@ -139,7 +140,7 @@ export async function searchWorkspace(
         const matches =
           mode === "regex"
             ? regex!.test(line)
-            : line.toLocaleLowerCase().includes(normalizedQuery.toLocaleLowerCase());
+            : line.toLocaleLowerCase().includes(normalizedQueryLower);
 
         if (matches) {
           results.push({
@@ -172,30 +173,28 @@ function emptySearchResultSet(): WorkspaceSearchResultSet {
   return { results: [], skippedLargeFiles: 0, truncated: false };
 }
 
-function matchesFrontmatterField(value: unknown, query: string): boolean {
+function matchesFrontmatterField(value: unknown, queryLower: string): boolean {
   if (value === undefined || value === null) {
     return false;
   }
 
   if (Array.isArray(value)) {
-    return value.some((item) => String(item).toLocaleLowerCase().includes(query.toLocaleLowerCase()));
+    return value.some((item) => String(item).toLocaleLowerCase().includes(queryLower));
   }
 
   if (typeof value === "boolean") {
-    const normalizedQuery = query.toLocaleLowerCase();
-
-    if (["true", "1", "yes", "on"].includes(normalizedQuery)) {
+    if (["true", "1", "yes", "on"].includes(queryLower)) {
       return value === true;
     }
 
-    if (["false", "0", "no", "off"].includes(normalizedQuery)) {
+    if (["false", "0", "no", "off"].includes(queryLower)) {
       return value === false;
     }
 
-    return String(value).toLocaleLowerCase() === normalizedQuery;
+    return String(value).toLocaleLowerCase() === queryLower;
   }
 
-  return String(value).toLocaleLowerCase().includes(query.toLocaleLowerCase());
+  return String(value).toLocaleLowerCase().includes(queryLower);
 }
 
 function formatFrontmatterValue(value: unknown): string {
