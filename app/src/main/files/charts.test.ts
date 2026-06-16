@@ -2,8 +2,9 @@ import { mkdtemp, readdir, readFile, symlink, writeFile } from "node:fs/promises
 import os from "node:os";
 import path from "node:path";
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
+import { defaultChronicleCalendars } from "../../shared/ipc";
 import { extractChronicleRange, extractDateRange, readWorkspaceCharts, updateWorkspaceChartEntry } from "./charts";
 
 describe("extractChronicleRange", () => {
@@ -492,6 +493,50 @@ describe("updateWorkspaceChartEntry", () => {
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.error.code).toBe("CHART_FRONTMATTER_INVALID");
+    await expect(readFile(filePath, "utf8")).resolves.toBe(original);
+  });
+
+  it("書き込み直前に外部変更がある場合はチャート更新で上書きしない", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-chart-conflict-"));
+    const filePath = path.join(workspacePath, "entry.md");
+    const original = "---\nchronicle0: [2026]\nplannedDate: [2026-05-01]\n---\n# A\n";
+    const external = "---\nchronicle0: [2026]\nplannedDate: [2026-05-01]\n---\n# 外部変更\n";
+    let readCount = 0;
+    const writeTextFile = vi.fn(async () => undefined);
+    await writeFile(filePath, original, "utf8");
+
+    const result = await updateWorkspaceChartEntry(
+      workspacePath,
+      [
+        { filePaths: [], id: "chronicle", name: "chronicle", source: "chronicle" },
+        { filePaths: [], id: "date", name: "date", source: "date" }
+      ],
+      {
+        endValue: 20820,
+        kind: "resize-end",
+        originalEndValue: 20574,
+        originalStartValue: 20574,
+        path: "entry.md",
+        source: "date",
+        startValue: 20574
+      },
+      defaultChronicleCalendars,
+      {
+        async readFile(file, encoding) {
+          readCount += 1;
+          if (readCount === 2) return external;
+
+          return readFile(file, encoding);
+        },
+        writeTextFile
+      }
+    );
+
+    expect(result).toMatchObject({
+      error: expect.objectContaining({ code: "CHART_ENTRY_UPDATE_CONFLICT" }),
+      ok: false
+    });
+    expect(writeTextFile).not.toHaveBeenCalled();
     await expect(readFile(filePath, "utf8")).resolves.toBe(original);
   });
 
