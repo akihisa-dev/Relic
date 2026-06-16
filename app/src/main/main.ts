@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Menu, ipcMain, shell } from "electron";
+import { app, BrowserWindow, Menu, shell } from "electron";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
@@ -8,9 +8,9 @@ import { registerFileHandlers } from "./ipc/fileHandlers";
 import { registerOutputHandlers } from "./ipc/outputHandlers";
 import { registerToolHandlers } from "./ipc/toolHandlers";
 import { registerWorkspaceHandlers } from "./ipc/workspaceHandlers";
-import { windowCloseRequestedChannel, windowCloseResponseChannel, type WindowCloseResponseInput } from "../shared/ipc";
 import { devServerLoadUrls, loadDevServerUrlWithRetry } from "./devServerLoader";
 import { getMainTranslator } from "./i18n";
+import { configureWindowCloseProtection } from "./windowCloseProtection";
 import { stopWorkspaceWatcher } from "./workspace/workspaceWatcher";
 import { createMainWindowOptions } from "./windowOptions";
 import { isAllowedExternalUrl, isAllowedPackagedAppNavigation } from "./windowSecurity";
@@ -20,9 +20,6 @@ declare const MAIN_WINDOW_VITE_NAME: string;
 
 const APP_ID = "app.relic.desktop";
 const APP_NAME = "Relic";
-const CLOSE_CONFIRM_TIMEOUT_MS = 5000;
-
-const approvedWindowCloseIds = new WeakSet<BrowserWindow>();
 let isDevelopmentQuitInProgress = false;
 let mainWindow: BrowserWindow | null = null;
 
@@ -45,7 +42,7 @@ function createWindow(): void {
 
   configureWindowSecurity(window, rendererIndexUrl);
   configureEditorContextMenu(window);
-  configureWindowCloseProtection(window);
+  configureWindowCloseProtection(window, () => isDevelopmentQuitInProgress);
 
   window.on("closed", () => {
     if (mainWindow === window) {
@@ -58,42 +55,6 @@ function createWindow(): void {
   } else {
     void window.loadFile(rendererIndexPath);
   }
-}
-
-function configureWindowCloseProtection(window: BrowserWindow): void {
-  window.on("close", (event) => {
-    if (isDevelopmentQuitInProgress) return;
-
-    if (approvedWindowCloseIds.has(window)) {
-      approvedWindowCloseIds.delete(window);
-      return;
-    }
-
-    if (window.webContents.isDestroyed()) return;
-
-    event.preventDefault();
-
-    const requestId = `close-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    let settled = false;
-    const timer = setTimeout(() => {
-      if (settled || window.isDestroyed()) return;
-      settled = true;
-    }, CLOSE_CONFIRM_TIMEOUT_MS);
-
-    ipcMain.once(windowCloseResponseChannel, (_event, input: WindowCloseResponseInput) => {
-      if (settled || input.requestId !== requestId) return;
-
-      settled = true;
-      clearTimeout(timer);
-
-      if (!input.ok || window.isDestroyed()) return;
-
-      approvedWindowCloseIds.add(window);
-      window.close();
-    });
-
-    window.webContents.send(windowCloseRequestedChannel, { requestId });
-  });
 }
 
 function configureEditorContextMenu(window: BrowserWindow): void {
