@@ -18,7 +18,7 @@ import { readBacklinks } from "../files/backlinks";
 import { readMarkdownFile } from "../files/markdownFiles";
 import { applySearchAndReplace, replaceInFile, searchAndReplace } from "../files/replace";
 import { searchWorkspace } from "../files/search";
-import { getActiveWorkspaceContext, ipcErrorDetails } from "./activeWorkspace";
+import { ipcErrorDetails, withActiveWorkspaceContext } from "./activeWorkspace";
 import {
   isPathInput,
   isReplaceInFileInput,
@@ -35,25 +35,27 @@ export function registerFileSearchHandlers(): void {
         return fail("SEARCH_INVALID_INPUT", "検索リクエストが正しくありません。");
       }
 
-      const context = await getActiveWorkspaceContext();
-      if (!context.ok) return context;
+      return withActiveWorkspaceContext(
+        { code: "SEARCH_FAILED", message: "検索できませんでした。" },
+        async (context) => {
+          if (
+            searchInput.mode === "frontmatter" &&
+            searchInput.frontmatterField?.trim() &&
+            !isRegisteredFrontmatterSearchField(
+              searchInput.frontmatterField,
+              context.settings.userDefinedFields
+            )
+          ) {
+            return ok({ results: [], skippedLargeFiles: 0, truncated: false });
+          }
 
-      if (
-        searchInput.mode === "frontmatter" &&
-        searchInput.frontmatterField?.trim() &&
-        !isRegisteredFrontmatterSearchField(
-          searchInput.frontmatterField,
-          context.value.settings.userDefinedFields
-        )
-      ) {
-        return ok({ results: [], skippedLargeFiles: 0, truncated: false });
-      }
-
-      return searchWorkspace(
-        context.value.activeWorkspace.path,
-        searchInput.query,
-        searchInput.mode,
-        searchInput.frontmatterField
+          return searchWorkspace(
+            context.activeWorkspace.path,
+            searchInput.query,
+            searchInput.mode,
+            searchInput.frontmatterField
+          );
+        }
       );
     } catch (error) {
       return fail(
@@ -70,10 +72,10 @@ export function registerFileSearchHandlers(): void {
         return fail("FILE_READ_INVALID_INPUT", "ファイルパスを指定してください。");
       }
 
-      const context = await getActiveWorkspaceContext();
-      if (!context.ok) return context;
-
-      return readMarkdownFile(context.value.activeWorkspace.path, input.path);
+      return withActiveWorkspaceContext(
+        { code: "FILE_READ_FAILED", message: "ファイルを読み込めませんでした。" },
+        async (context) => readMarkdownFile(context.activeWorkspace.path, input.path)
+      );
     } catch (error) {
       return fail(
         "FILE_READ_FAILED",
@@ -89,10 +91,10 @@ export function registerFileSearchHandlers(): void {
         return fail("BACKLINKS_INVALID_INPUT", "バックリンクを確認するファイルを指定してください。");
       }
 
-      const context = await getActiveWorkspaceContext();
-      if (!context.ok) return context;
-
-      return readBacklinks(context.value.activeWorkspace.path, input.path);
+      return withActiveWorkspaceContext(
+        { code: "BACKLINKS_READ_FAILED", message: "バックリンクを読み込めませんでした。" },
+        async (context) => readBacklinks(context.activeWorkspace.path, input.path)
+      );
     } catch (error) {
       return fail(
         "BACKLINKS_READ_FAILED",
@@ -108,15 +110,15 @@ export function registerFileSearchHandlers(): void {
         return fail("REPLACE_INVALID_INPUT", "検索語句と置換後テキストを入力してください。");
       }
 
-      const context = await getActiveWorkspaceContext();
-      if (!context.ok) return context;
-
-      return replaceInFile(
-        context.value.activeWorkspace.path,
-        input.path,
-        input.searchQuery,
-        input.replacement,
-        input.isRegex
+      return withActiveWorkspaceContext(
+        { code: "REPLACE_FAILED", message: "置換できませんでした。" },
+        async (context) => replaceInFile(
+          context.activeWorkspace.path,
+          input.path,
+          input.searchQuery,
+          input.replacement,
+          input.isRegex
+        )
       );
     } catch (error) {
       return fail(
@@ -133,14 +135,14 @@ export function registerFileSearchHandlers(): void {
         return fail("REPLACE_INVALID_INPUT", "検索語句と置換後テキストを入力してください。");
       }
 
-      const context = await getActiveWorkspaceContext();
-      if (!context.ok) return context;
-
-      return searchAndReplace(
-        context.value.activeWorkspace.path,
-        input.searchQuery,
-        input.replacement,
-        input.isRegex
+      return withActiveWorkspaceContext(
+        { code: "REPLACE_FAILED", message: "置換プレビューを生成できませんでした。" },
+        async (context) => searchAndReplace(
+          context.activeWorkspace.path,
+          input.searchQuery,
+          input.replacement,
+          input.isRegex
+        )
       );
     } catch (error) {
       return fail(
@@ -157,14 +159,14 @@ export function registerFileSearchHandlers(): void {
         return fail("REPLACE_INVALID_INPUT", "検索語句と置換後テキストを入力してください。");
       }
 
-      const context = await getActiveWorkspaceContext();
-      if (!context.ok) return context;
-
-      return applySearchAndReplace(
-        context.value.activeWorkspace.path,
-        input.searchQuery,
-        input.replacement,
-        input.isRegex
+      return withActiveWorkspaceContext(
+        { code: "REPLACE_FAILED", message: "一括置換できませんでした。" },
+        async (context) => applySearchAndReplace(
+          context.activeWorkspace.path,
+          input.searchQuery,
+          input.replacement,
+          input.isRegex
+        )
       );
     } catch (error) {
       return fail(
