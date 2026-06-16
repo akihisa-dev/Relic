@@ -225,6 +225,12 @@ function EditableFileTitle({ name, onRename }: EditableFileTitleProps): ReactEle
   const [editing, setEditing] = useState(false);
   const t = useT();
 
+  useEffect(() => {
+    if (!editing) {
+      setDraft(name);
+    }
+  }, [editing, name]);
+
   const commit = (): void => {
     const nextName = draft.trim();
     setEditing(false);
