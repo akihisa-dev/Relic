@@ -531,36 +531,14 @@ describe("DiagramCanvas", () => {
     expect(screen.queryByRole("button", { name: /\+ メモ/ })).not.toBeInTheDocument();
   });
 
-  it("edits and saves structure-tree labels from the floating left panel", () => {
+  it("renders structure-tree labels without the old floating label panel", () => {
     const onChange = vi.fn();
-    render(<StatefulDiagramCanvas content={whyTreeContent} onChange={onChange} />);
+    const { container } = render(<StatefulDiagramCanvas content={whyTreeContent} onChange={onChange} />);
 
-    expect(screen.getByText("Labels")).toBeInTheDocument();
-    expect(screen.getByLabelText("Node label")).toHaveValue("ノード");
-
-    fireEvent.change(screen.getByLabelText("Node label"), { target: { value: "分解" } });
-
-    expect(onChange.mock.calls[0]?.[0]).toContain("labels:");
-    expect(onChange.mock.calls[0]?.[0]).toContain("node: 分解");
-    expect(screen.getAllByText("分解").length).toBeGreaterThan(1);
-    fireEvent.click(screen.getByDisplayValue("売上低下"));
-    expect(screen.getByRole("button", { name: /\+ 分解/ })).toBeInTheDocument();
-    expect(document.querySelector(".why-tree-line-label")).toHaveTextContent("分解");
-  });
-
-  it("can close and reopen the structure-tree labels panel", () => {
-    const onChange = vi.fn();
-    render(<StatefulDiagramCanvas content={whyTreeContent} onChange={onChange} />);
-
-    expect(screen.getByLabelText("Node label")).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: "Close labels panel" }));
-
+    expect(container.querySelector(".why-tree-label-panel")).toBeNull();
     expect(screen.queryByLabelText("Node label")).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: "Show labels panel" }));
-
-    expect(screen.getByLabelText("Node label")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Show labels panel" })).not.toBeInTheDocument();
+    expect(container.querySelector(".why-tree-line-label")).toHaveTextContent("ノード");
   });
 
   it("adds Why nodes from the selected node instead of always appending to the deepest node", () => {

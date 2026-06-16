@@ -206,7 +206,7 @@ describe("DiagramSidebar", () => {
     expect(setData).toHaveBeenCalledWith(freeDrawingShapeDragType, "decision");
   });
 
-  it("does not place Markdown files into an active why-tree Diagram", () => {
+  it("shows structure-tree label fields instead of Markdown files for an active why-tree Diagram", () => {
     const content = [
       "---",
       "type: why-tree",
@@ -223,6 +223,7 @@ describe("DiagramSidebar", () => {
       "  facts: []",
       "  solutions: []",
       "  actions: []",
+      "  whys: []",
       ""
     ].join("\n");
     useEditorStore.setState({
@@ -242,11 +243,14 @@ describe("DiagramSidebar", () => {
     });
     renderDiagramSidebar();
 
-    const placeButton = screen.getByRole("button", { name: /Alice\.md/ });
-    expect(placeButton).toBeDisabled();
-    fireEvent.click(placeButton);
+    expect(screen.getByText("Labels")).toBeInTheDocument();
+    expect(screen.getByLabelText("Node label")).toHaveValue("ノード");
+    expect(screen.queryByText("Markdown files")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Alice\.md/ })).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("Node label"), { target: { value: "分解" } });
 
     const tab = useEditorStore.getState().tabs["why-tab"];
-    expect(tab?.kind === "file" ? tab.content : "").toBe(content);
+    expect(tab?.kind === "file" ? tab.content : "").toContain("node: 分解");
   });
 });
