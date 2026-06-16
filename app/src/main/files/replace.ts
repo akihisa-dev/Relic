@@ -193,7 +193,11 @@ export async function applySearchAndReplace(
       }
     }
 
-    const writtenPatches: Array<{ absolutePath: string; previousContent: string }> = [];
+    const writtenPatches: Array<{
+      absolutePath: string;
+      previousContent: string;
+      writtenContent: string;
+    }> = [];
 
     try {
       for (const fileContent of fileContents) {
@@ -206,7 +210,7 @@ export async function applySearchAndReplace(
           regex.value.lastIndex = 0;
           const updated = applyReplacement(content, regex.value, replacement, isRegex);
           await writeTextFile(absolutePath, updated);
-          writtenPatches.push({ absolutePath, previousContent: content });
+          writtenPatches.push({ absolutePath, previousContent: content, writtenContent: updated });
           count += matches.length;
         }
 
@@ -214,9 +218,16 @@ export async function applySearchAndReplace(
       }
     } catch (error) {
       await Promise.all(
-        writtenPatches.map((patch) =>
-          writeTextFile(patch.absolutePath, patch.previousContent).catch(() => undefined)
-        )
+        writtenPatches.map(async (patch) => {
+          try {
+            const currentContent = await operations.readFile(patch.absolutePath, "utf8");
+            if (currentContent === patch.writtenContent) {
+              await writeTextFile(patch.absolutePath, patch.previousContent);
+            }
+          } catch {
+            // If another process changed or removed the file, avoid overwriting it during rollback.
+          }
+        })
       );
       throw error;
     }
