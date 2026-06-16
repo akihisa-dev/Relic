@@ -21,7 +21,7 @@ import type { Translator } from "../../shared/i18n";
 import { redactSensitiveText } from "../../shared/securityRedaction";
 import { atomicWriteFile, atomicWriteTextFile } from "../files/atomicWrite";
 import { getMainTranslator } from "../i18n";
-import { transientSessionPartition } from "../windowOptions";
+import { outputSessionPartition } from "../windowOptions";
 
 const defaultPdfName = "relic-preview";
 const defaultSvgName = "relic-diagram";
@@ -232,7 +232,7 @@ function createOutputWindow(
       contextIsolation: true,
       javascript: options.allowInlineScripts,
       nodeIntegration: false,
-      partition: transientSessionPartition,
+      partition: outputSessionPartition,
       sandbox: true,
       webSecurity: true
     },
