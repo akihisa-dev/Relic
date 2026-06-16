@@ -77,7 +77,7 @@ export function makeRelicApi(overrides: Partial<typeof window.relic> = {}): type
     onWindowCloseRequested: vi.fn().mockReturnValue(vi.fn()),
     onWorkspaceChanged: vi.fn().mockReturnValue(vi.fn()),
     openWorkspace: vi.fn(),
-    readClipboardText: vi.fn().mockReturnValue(""),
+    readEditorClipboardForPaste: vi.fn().mockResolvedValue({ ok: true, value: "" }),
     readMarkdownFile: vi.fn(),
     removeWorkspace: vi.fn().mockResolvedValue({ ok: true, value: { activeWorkspace: null, fileTree: [], pinnedPaths: [], workspaces: [] } }),
     renameFolder: vi.fn(),
@@ -108,7 +108,7 @@ export function makeRelicApi(overrides: Partial<typeof window.relic> = {}): type
     switchWorkspace: vi.fn(),
     togglePin: vi.fn().mockResolvedValue({ ok: true, value: { activeWorkspace: null, fileTree: [], pinnedPaths: [], workspaces: [] } }),
     updateChartEntry: vi.fn().mockResolvedValue({ ok: true, value: [] }),
-    writeClipboardText: vi.fn(),
+    copyEditorTextToClipboard: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
     writeMarkdownFile: vi.fn().mockResolvedValue({ ok: true, value: undefined }),
     ...overrides
   } as typeof window.relic;

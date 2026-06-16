@@ -25,17 +25,17 @@ describe("Editor markdown editing", () => {
   });
 
   it("本文の右クリックメニューからコピー・カット・ペーストを実行できる", async () => {
-    const readClipboardText = vi.fn().mockReturnValue("!");
-    const writeClipboardText = vi.fn();
+    const readEditorClipboardForPaste = vi.fn().mockResolvedValue({ ok: true, value: "!" });
+    const copyEditorTextToClipboard = vi.fn().mockResolvedValue({ ok: true, value: undefined });
     const writeText = vi.fn().mockResolvedValue(undefined);
     window.relic = makeRelicApi({
-      readClipboardText,
-      writeClipboardText
+      readEditorClipboardForPaste,
+      copyEditorTextToClipboard
     });
     Object.defineProperty(navigator, "clipboard", {
       configurable: true,
       value: {
-        readText: readClipboardText,
+        readText: vi.fn().mockResolvedValue("!"),
         writeText
       }
     });
@@ -53,7 +53,7 @@ describe("Editor markdown editing", () => {
     fireEvent.contextMenu(contentElement, { clientX: 32, clientY: 32 });
     fireEvent.click(await screen.findByRole("menuitem", { name: "Copy" }));
     await waitFor(() => {
-      expect(writeClipboardText).toHaveBeenCalledWith("hello");
+      expect(copyEditorTextToClipboard).toHaveBeenCalledWith({ text: "hello" });
     });
 
     view.dispatch({ selection: { anchor: 5, head: 5 } });
@@ -65,13 +65,11 @@ describe("Editor markdown editing", () => {
   });
 
   it("カット時にクリップボードへ保存できない場合は本文を消さない", async () => {
-    const writeClipboardText = vi.fn(() => {
-      throw new Error("clipboard unavailable");
-    });
+    const copyEditorTextToClipboard = vi.fn().mockRejectedValue(new Error("clipboard unavailable"));
     const writeText = vi.fn().mockRejectedValue(new Error("browser clipboard unavailable"));
     const execCommand = vi.fn().mockReturnValue(false);
     window.relic = makeRelicApi({
-      writeClipboardText
+      copyEditorTextToClipboard
     });
     Object.defineProperty(navigator, "clipboard", {
       configurable: true,
@@ -102,9 +100,9 @@ describe("Editor markdown editing", () => {
   });
 
   it("カット時にクリップボードへ保存できた場合だけ本文を消し、1回のUndoで戻せる", async () => {
-    const writeClipboardText = vi.fn();
+    const copyEditorTextToClipboard = vi.fn().mockResolvedValue({ ok: true, value: undefined });
     window.relic = makeRelicApi({
-      writeClipboardText
+      copyEditorTextToClipboard
     });
 
     const { view } = await renderEditorWithView({
@@ -120,7 +118,7 @@ describe("Editor markdown editing", () => {
     await waitFor(() => {
       expect(view.state.doc.toString()).toBe(" world");
     });
-    expect(writeClipboardText).toHaveBeenCalledWith("hello");
+    expect(copyEditorTextToClipboard).toHaveBeenCalledWith({ text: "hello" });
     expect(undo(view)).toBe(true);
     expect(view.state.doc.toString()).toBe("hello world");
     expect(redo(view)).toBe(true);
@@ -129,8 +127,8 @@ describe("Editor markdown editing", () => {
 
   it("本文への複数行日本語ペーストは1回のUndoで戻せる", async () => {
     const pastedText = "一行目\n- 箇条書き\n```ts\nconst 値 = 1;\n```";
-    const readClipboardText = vi.fn().mockReturnValue(pastedText);
-    window.relic = makeRelicApi({ readClipboardText });
+    const readEditorClipboardForPaste = vi.fn().mockResolvedValue({ ok: true, value: pastedText });
+    window.relic = makeRelicApi({ readEditorClipboardForPaste });
 
     const { view } = await renderEditorWithView({
       content: "前\n後",
@@ -204,11 +202,9 @@ describe("Editor markdown editing", () => {
   });
 
   it("Electron側のクリップボード読み取りに失敗してもブラウザ側からペーストできる", async () => {
-    const readClipboardText = vi.fn(() => {
-      throw new Error("clipboard unavailable");
-    });
+    const readEditorClipboardForPaste = vi.fn().mockRejectedValue(new Error("clipboard unavailable"));
     const readText = vi.fn().mockResolvedValue("fallback paste");
-    window.relic = makeRelicApi({ readClipboardText });
+    window.relic = makeRelicApi({ readEditorClipboardForPaste });
     Object.defineProperty(navigator, "clipboard", {
       configurable: true,
       value: {

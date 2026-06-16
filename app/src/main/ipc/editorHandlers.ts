@@ -1,8 +1,11 @@
-import { app, ipcMain } from "electron";
+import { app, clipboard, ipcMain } from "electron";
 
 import {
+  copyEditorTextToClipboardChannel,
   getEditorSettingsChannel,
+  readEditorClipboardForPasteChannel,
   saveEditorSettingsChannel,
+  type CopyEditorTextToClipboardInput,
   type EditorSettings,
   writeMarkdownFileChannel,
   type WriteMarkdownFileInput
@@ -11,7 +14,11 @@ import { fail, ok, type RelicResult } from "../../shared/result";
 import { writeMarkdownFileContent } from "../files/markdownFiles";
 import { readAppSettings, writeAppSettings } from "../settings/appSettings";
 import { ipcErrorDetails, withActiveWorkspaceContext } from "./activeWorkspace";
-import { isEditorSettingsInput } from "./editorHandlerValidators";
+import {
+  editorClipboardMaxTextLength,
+  isCopyEditorTextToClipboardInput,
+  isEditorSettingsInput
+} from "./editorHandlerValidators";
 import { isWriteMarkdownFileInput } from "./fileHandlerValidators";
 
 export function registerEditorHandlers(): void {
@@ -75,6 +82,52 @@ export function registerEditorHandlers(): void {
         return fail(
           "EDITOR_SETTINGS_SAVE_FAILED",
           "エディタ設定を保存できませんでした。",
+          ipcErrorDetails(error)
+        );
+      }
+    }
+  );
+
+  ipcMain.handle(
+    readEditorClipboardForPasteChannel,
+    async (): Promise<RelicResult<string>> => {
+      try {
+        const text = clipboard.readText();
+        if (text.length > editorClipboardMaxTextLength) {
+          return fail(
+            "EDITOR_CLIPBOARD_TOO_LARGE",
+            "クリップボードの内容が大きすぎるため貼り付けできません。"
+          );
+        }
+
+        return ok(text);
+      } catch (error) {
+        return fail(
+          "EDITOR_CLIPBOARD_READ_FAILED",
+          "クリップボードを読み取れませんでした。",
+          ipcErrorDetails(error)
+        );
+      }
+    }
+  );
+
+  ipcMain.handle(
+    copyEditorTextToClipboardChannel,
+    async (_event, input: CopyEditorTextToClipboardInput): Promise<RelicResult<void>> => {
+      try {
+        if (!isCopyEditorTextToClipboardInput(input)) {
+          return fail(
+            "EDITOR_CLIPBOARD_INVALID_INPUT",
+            "コピーするテキストを指定してください。"
+          );
+        }
+
+        clipboard.writeText(input.text);
+        return ok(undefined);
+      } catch (error) {
+        return fail(
+          "EDITOR_CLIPBOARD_WRITE_FAILED",
+          "クリップボードへコピーできませんでした。",
           ipcErrorDetails(error)
         );
       }

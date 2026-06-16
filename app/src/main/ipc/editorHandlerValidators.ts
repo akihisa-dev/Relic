@@ -1,5 +1,14 @@
 import type { EditorSettings } from "../../shared/ipc";
 
+export const editorClipboardMaxTextLength = 1_000_000;
+
+export function isCopyEditorTextToClipboardInput(input: unknown): input is { text: string } {
+  if (!input || typeof input !== "object") return false;
+
+  const text = (input as { text?: unknown }).text;
+  return typeof text === "string" && text.length > 0 && text.length <= editorClipboardMaxTextLength;
+}
+
 export function isEditorSettingsInput(input: unknown): input is EditorSettings {
   if (typeof input !== "object" || input === null || Array.isArray(input)) return false;
 

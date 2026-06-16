@@ -12,8 +12,8 @@ describe("Editor selection commands", () => {
 
   it("Electronでも本文の右クリックでMarkdownメニューを表示する", async () => {
     window.relic = makeRelicApi({
-      readClipboardText: vi.fn(),
-      writeClipboardText: vi.fn()
+      readEditorClipboardForPaste: vi.fn().mockResolvedValue({ ok: true, value: "" }),
+      copyEditorTextToClipboard: vi.fn().mockResolvedValue({ ok: true, value: undefined })
     });
 
     const { view } = await renderEditorWithView({

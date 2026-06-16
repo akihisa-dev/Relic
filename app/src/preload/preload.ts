@@ -1,9 +1,11 @@
-import { clipboard, contextBridge, ipcRenderer } from "electron";
+import { contextBridge, ipcRenderer } from "electron";
 
 import {
   applySearchAndReplaceChannel,
+  copyEditorTextToClipboardChannel,
   createNewWorkspaceChannel,
   copyDiagramSvgChannel,
+  type CopyEditorTextToClipboardInput,
   type CopyDiagramSvgInput,
   togglePinChannel,
   createFolderChannel,
@@ -28,6 +30,7 @@ import {
   moveMarkdownFileChannel,
   openWorkspaceChannel,
   readMarkdownFileChannel,
+  readEditorClipboardForPasteChannel,
   removeWorkspaceChannel,
   renameWorkspaceChannel,
   renameFolderChannel,
@@ -164,7 +167,8 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(openWorkspaceChannel) as Promise<RelicResult<WorkspaceState>>,
   readMarkdownFile: (input: ReadMarkdownFileInput) =>
     ipcRenderer.invoke(readMarkdownFileChannel, input) as Promise<RelicResult<MarkdownFileContent>>,
-  readClipboardText: () => clipboard.readText(),
+  readEditorClipboardForPaste: () =>
+    ipcRenderer.invoke(readEditorClipboardForPasteChannel) as Promise<RelicResult<string>>,
   removeWorkspace: (input: RemoveWorkspaceInput) =>
     ipcRenderer.invoke(removeWorkspaceChannel, input) as Promise<RelicResult<WorkspaceState>>,
   renameWorkspace: (input: RenameWorkspaceInput) =>
@@ -199,7 +203,8 @@ const relicApi: RelicApi = {
     ipcRenderer.invoke(switchWorkspaceChannel, input) as Promise<RelicResult<WorkspaceState>>,
   writeMarkdownFile: (input: WriteMarkdownFileInput) =>
     ipcRenderer.invoke(writeMarkdownFileChannel, input) as Promise<RelicResult<void>>,
-  writeClipboardText: (text: string) => clipboard.writeText(text),
+  copyEditorTextToClipboard: (input: CopyEditorTextToClipboardInput) =>
+    ipcRenderer.invoke(copyEditorTextToClipboardChannel, input) as Promise<RelicResult<void>>,
   saveWorkspaceChronicleCalendars: (input: ChronicleCalendarSettings[]) =>
     ipcRenderer.invoke(saveWorkspaceChronicleCalendarsChannel, input) as Promise<RelicResult<ChronicleCalendarSettings[]>>,
   saveWorkspaceCharts: (input: ChartSettings[]) =>
