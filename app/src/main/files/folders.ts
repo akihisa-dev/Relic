@@ -131,14 +131,22 @@ export async function moveFolder(
     return sourcePath;
   }
 
+  const normalizedRelativePath = toWorkspaceRelativePath(relativePath);
   const normalizedDestFolder = toWorkspaceRelativePath(destinationFolder.trim());
-  const folderName = path.posix.basename(toWorkspaceRelativePath(relativePath));
+  const folderName = path.posix.basename(normalizedRelativePath);
   const nextRelativePath = toWorkspaceRelativePath(
     normalizedDestFolder === "" ? folderName : `${normalizedDestFolder}/${folderName}`
   );
 
-  if (nextRelativePath === relativePath) {
-    return ok({ path: relativePath });
+  if (
+    normalizedDestFolder === normalizedRelativePath ||
+    normalizedDestFolder.startsWith(`${normalizedRelativePath}/`)
+  ) {
+    return fail("FOLDER_MOVE_DESTINATION_INSIDE_SOURCE", "フォルダを自分自身の中へ移動することはできません。");
+  }
+
+  if (nextRelativePath === normalizedRelativePath) {
+    return ok({ path: normalizedRelativePath });
   }
 
   const destinationPath = await resolveNewWorkspacePath(workspacePath, nextRelativePath);
