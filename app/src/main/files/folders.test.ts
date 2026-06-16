@@ -235,6 +235,25 @@ describe("moveFolder", () => {
     expect((await stat(path.join(workspacePath, "archive", "資料"))).isDirectory()).toBe(true);
   });
 
+  it("自分自身または配下フォルダへの移動はファイル操作前に拒否する", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-move-folder-"));
+    temporaryPaths.push(workspacePath);
+
+    await mkdir(path.join(workspacePath, "資料"));
+    await mkdir(path.join(workspacePath, "資料", "child"));
+
+    await expect(moveFolder(workspacePath, "資料", "資料")).resolves.toMatchObject({
+      error: { code: "FOLDER_MOVE_DESTINATION_INSIDE_SOURCE" },
+      ok: false
+    });
+    await expect(moveFolder(workspacePath, "資料", "資料/child")).resolves.toMatchObject({
+      error: { code: "FOLDER_MOVE_DESTINATION_INSIDE_SOURCE" },
+      ok: false
+    });
+    expect((await stat(path.join(workspacePath, "資料"))).isDirectory()).toBe(true);
+    expect((await stat(path.join(workspacePath, "資料", "child"))).isDirectory()).toBe(true);
+  });
+
   it("ワークスペース外の移動先フォルダを拒否する", async () => {
     const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-move-folder-"));
     temporaryPaths.push(workspacePath);
