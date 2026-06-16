@@ -45,11 +45,18 @@ export async function withActiveWorkspace<T>(
   failure: IpcFailure,
   action: (workspacePath: string) => Promise<RelicResult<T>>
 ): Promise<RelicResult<T>> {
+  return withActiveWorkspaceContext(failure, (context) => action(context.activeWorkspace.path));
+}
+
+export async function withActiveWorkspaceContext<T>(
+  failure: IpcFailure,
+  action: (context: ActiveWorkspaceContext) => Promise<RelicResult<T>>
+): Promise<RelicResult<T>> {
   try {
     const context = await getActiveWorkspaceContext();
     if (!context.ok) return context;
 
-    return action(context.value.activeWorkspace.path);
+    return action(context.value);
   } catch (error) {
     return fail(
       failure.code,

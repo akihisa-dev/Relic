@@ -8,10 +8,9 @@ import {
   type WriteMarkdownFileInput
 } from "../../shared/ipc";
 import { fail, ok, type RelicResult } from "../../shared/result";
-import { redactSensitiveText } from "../../shared/securityRedaction";
 import { writeMarkdownFileContent } from "../files/markdownFiles";
 import { readAppSettings, writeAppSettings } from "../settings/appSettings";
-import { toWorkspaceState } from "../workspace/workspaceService";
+import { ipcErrorDetails, withActiveWorkspaceContext } from "./activeWorkspace";
 import { isEditorSettingsInput } from "./editorHandlerValidators";
 import { isWriteMarkdownFileInput } from "./fileHandlerValidators";
 
@@ -24,19 +23,20 @@ export function registerEditorHandlers(): void {
           return fail("FILE_WRITE_INVALID_INPUT", "パスと内容を指定してください。");
         }
 
-        const settings = await readAppSettings(app.getPath("userData"));
-        const state = toWorkspaceState(settings);
-
-        if (!state.activeWorkspace) {
-          return fail("WORKSPACE_NOT_SELECTED", "先にワークスペースを開いてください。");
-        }
-
-        return writeMarkdownFileContent(state.activeWorkspace.path, input.path, input.content, input.expectedContent);
+        return withActiveWorkspaceContext(
+          { code: "FILE_WRITE_FAILED", message: "ファイルを保存できませんでした。" },
+          async (context) => writeMarkdownFileContent(
+            context.activeWorkspace.path,
+            input.path,
+            input.content,
+            input.expectedContent
+          )
+        );
       } catch (error) {
         return fail(
           "FILE_WRITE_FAILED",
           "ファイルを保存できませんでした。",
-          errorDetails(error)
+          ipcErrorDetails(error)
         );
       }
     }
@@ -53,7 +53,7 @@ export function registerEditorHandlers(): void {
         return fail(
           "EDITOR_SETTINGS_READ_FAILED",
           "エディタ設定を読み込めませんでした。",
-          errorDetails(error)
+          ipcErrorDetails(error)
         );
       }
     }
@@ -75,14 +75,9 @@ export function registerEditorHandlers(): void {
         return fail(
           "EDITOR_SETTINGS_SAVE_FAILED",
           "エディタ設定を保存できませんでした。",
-          errorDetails(error)
+          ipcErrorDetails(error)
         );
       }
     }
   );
-}
-
-function errorDetails(error: unknown): string {
-  const message = error instanceof Error ? error.message : String(error);
-  return redactSensitiveText(message);
 }
