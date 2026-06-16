@@ -12,6 +12,7 @@ import type {
   UserDefinedFieldType
 } from "../../shared/ipc";
 import { chronicleCalendarIds as validChronicleCalendarIds } from "../../shared/ipc";
+import { isReservedFrontmatterFieldName } from "../../shared/frontmatterFields";
 import { isWorkspaceRelativeInputPath } from "../files/paths";
 
 const userDefinedFieldTypes: UserDefinedFieldType[] = [
@@ -26,7 +27,6 @@ const userDefinedFieldTypes: UserDefinedFieldType[] = [
   "url"
 ];
 const userDefinedFieldNamePattern = /^[^\s:][^\r\n:]*$/;
-const reservedUserDefinedFieldNames = new Set(["aliases", "tags", "status", ...validChronicleCalendarIds, "plannedDate", "actualDate"]);
 const chartSources: ChartSource[] = ["chronicle", "date"];
 const userDefinedFieldTypesWithChoices = new Set<UserDefinedFieldType>(["select", "multi-select"]);
 const workspaceIdPattern = /^[A-Za-z0-9_-]+$/;
@@ -43,7 +43,7 @@ export function isUserDefinedFieldsInput(input: unknown): input is UserDefinedFi
     if (
       typeof candidate.name !== "string" ||
       !userDefinedFieldNamePattern.test(candidate.name) ||
-      reservedUserDefinedFieldNames.has(candidate.name)
+      isReservedFrontmatterFieldName(candidate.name)
     ) return false;
     if (names.has(candidate.name)) return false;
     names.add(candidate.name);

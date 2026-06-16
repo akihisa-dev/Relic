@@ -162,6 +162,7 @@ describe("appSettings", () => {
         { choices: ["draft", " draft ", "", "done", "draft", 1], name: "category", type: "select" },
         { choices: ["unused"], name: "memo", type: "text" },
         { name: "tags", type: "text" },
+        { name: "plannedDate", type: "date" },
         { name: "invalid", type: "unknown" },
         { name: "category", type: "multi-select" }
       ]

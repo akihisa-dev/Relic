@@ -1,14 +1,6 @@
-import { chronicleCalendarIds, type SearchMode, type UserDefinedField } from "../shared/ipc";
+import { reservedFrontmatterFieldNames } from "../shared/frontmatterFields";
+import type { SearchMode, UserDefinedField } from "../shared/ipc";
 import type { Translator } from "./i18nModel";
-
-const fixedFrontmatterSearchFields = [
-  "tags",
-  "aliases",
-  "status",
-  ...chronicleCalendarIds,
-  "plannedDate",
-  "actualDate"
-];
 
 export interface FileSearchModeOption {
   label: string;
@@ -18,7 +10,7 @@ export interface FileSearchModeOption {
 export function knownFrontmatterSearchFields(userDefinedFields: UserDefinedField[]): string[] {
   return Array.from(
     new Set([
-      ...fixedFrontmatterSearchFields,
+      ...reservedFrontmatterFieldNames,
       ...userDefinedFields.map((field) => field.name)
     ])
   ).sort((a, b) => a.localeCompare(b, "ja"));

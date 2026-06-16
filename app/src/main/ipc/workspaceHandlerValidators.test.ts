@@ -18,6 +18,7 @@ describe("workspaceHandlerValidators", () => {
     expect(isUserDefinedFieldsInput([{ name: "rating", type: "number" }, { name: "rating", type: "text" }])).toBe(false);
     expect(isUserDefinedFieldsInput([{ name: "tags", type: "text" }])).toBe(false);
     expect(isUserDefinedFieldsInput([{ name: "chronicle0", type: "number" }])).toBe(false);
+    expect(isUserDefinedFieldsInput([{ name: "plannedDate", type: "date" }])).toBe(false);
     expect(isUserDefinedFieldsInput([{ name: "kind", type: "select", choices: ["a", "b"] }])).toBe(true);
     expect(isUserDefinedFieldsInput([{ name: "kind", type: "select", choices: [1] }])).toBe(false);
     expect(isUserDefinedFieldsInput([{ name: "kind", type: "text", choices: ["a"] }])).toBe(false);

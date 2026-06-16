@@ -2,7 +2,6 @@ import { mkdir, readFile } from "node:fs/promises";
 import path from "node:path";
 
 import {
-  chronicleCalendarIds,
   defaultEditorSettings,
   defaultFeatureToggles,
   defaultFrontmatterTemplates,
@@ -14,6 +13,7 @@ import {
   type UserDefinedFieldType,
   type WorkspaceSummary
 } from "../../shared/ipc";
+import { isReservedFrontmatterFieldName } from "../../shared/frontmatterFields";
 import { atomicWriteTextFile } from "../files/atomicWrite";
 
 export interface AppSettings {
@@ -136,7 +136,6 @@ const VALID_FIELD_TYPES: UserDefinedFieldType[] = [
 ];
 const VALID_FIELD_TYPES_SET = new Set<UserDefinedFieldType>(VALID_FIELD_TYPES);
 const FIELD_NAME_PATTERN = /^[^\s:][^\r\n:]*$/;
-const RESERVED_FIELD_NAMES = new Set(["aliases", "tags", "status", ...chronicleCalendarIds, "plannedDate", "actualDate"]);
 const WORKSPACE_ID_PATTERN = /^[A-Za-z0-9_-]+$/;
 const FIELD_TYPES_WITH_CHOICES = new Set<UserDefinedFieldType>(["select", "multi-select"]);
 
@@ -152,7 +151,7 @@ function parseUserDefinedFields(raw: unknown): UserDefinedField[] {
     if (
       typeof f.name !== "string" ||
       !FIELD_NAME_PATTERN.test(f.name) ||
-      RESERVED_FIELD_NAMES.has(f.name)
+      isReservedFrontmatterFieldName(f.name)
     ) continue;
     if (names.has(f.name)) continue;
     if (!VALID_FIELD_TYPES_SET.has(f.type as UserDefinedFieldType)) continue;
