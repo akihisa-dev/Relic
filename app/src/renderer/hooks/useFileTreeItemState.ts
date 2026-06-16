@@ -3,11 +3,11 @@ import type { Dispatch, RefObject, SetStateAction } from "react";
 
 import type { WorkspaceTreeNode } from "../../shared/ipc";
 import {
-  contextMenuPosition,
   expansionRequestAppliesTo,
   resolveRenameCommit,
   type FileTreeExpansionRequest
 } from "../fileTreeModel";
+import { contextMenuPosition } from "../fileTreeUi";
 
 interface UseFileTreeItemStateArgs {
   expansionRequest?: FileTreeExpansionRequest;

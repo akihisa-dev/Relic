@@ -1,28 +1,41 @@
-import { useState } from "react";
-import type { DragEvent, MouseEvent, ReactElement } from "react";
+import type { MouseEvent, ReactElement } from "react";
 
 import type { WorkspaceTreeNode } from "../../shared/ipc";
 import {
   childMotionPathsForAppearingFolder,
-  FILE_TREE_DRAG_MIME,
-  fileTreeOperationItems,
-  movableItemsForDestination,
-  moveItemsToDestination,
-  parseFileTreeDragPayload,
-  serializeFileTreeDragPayload,
   shouldUseSelectedFileTreeItems,
   type FileTreeExpansionAction,
   type FileTreeExpansionRequest,
   type FileTreeMoveItem
 } from "../fileTreeModel";
+import { useFileTreeDragDrop } from "../hooks/useFileTreeDragDrop";
 import { useFileTreeItemState } from "../hooks/useFileTreeItemState";
 import { useFileTreeMotion } from "../hooks/useFileTreeMotion";
 import { useT } from "../i18n";
-import { parentFolderOf } from "../workspacePaths";
 import { FileTreeContextMenu } from "./FileTreeContextMenu";
 import { FileTreeItemRow } from "./FileTreeItemRow";
 
+export interface FileTreeActions {
+  onDeleteItem?: (path: string, type: WorkspaceTreeNode["type"]) => void;
+  onDeleteSelectedItems?: () => void;
+  onCreateFileInFolder?: (folderPath: string) => void;
+  onCreateFolderInFolder?: (folderPath: string) => void;
+  onDuplicateFile?: (path: string) => void;
+  onMoveFile?: (path: string, destFolder: string) => void;
+  onMoveFolder?: (path: string, destFolder: string) => void;
+  onMoveItems?: (items: FileTreeMoveItem[], destFolder: string) => void;
+  onOpenFile: (path: string, event?: MouseEvent<HTMLButtonElement>) => void;
+  onOpenInOtherPane?: (path: string) => void;
+  onRequestExpansion?: (action: FileTreeExpansionAction, scopePath?: string) => void;
+  onRevealItem?: (path: string) => void;
+  onRenameItem?: (path: string, type: WorkspaceTreeNode["type"], newName: string) => void;
+  onSelectFolder: (node: Extract<WorkspaceTreeNode, { type: "folder" }>) => void;
+  onSelectItem?: (node: WorkspaceTreeNode, e: MouseEvent<HTMLButtonElement>) => boolean;
+  onTogglePin?: (path: string) => void;
+}
+
 export interface FileTreeProps {
+  actions?: FileTreeActions;
   expansionRequest?: FileTreeExpansionRequest;
   isRoot?: boolean;
   motionPaths?: Set<string>;
@@ -59,11 +72,47 @@ export interface FileTreeItemProps extends Omit<FileTreeProps, "isRoot" | "motio
 const defaultSelectedItems: FileTreeMoveItem[] = [];
 const defaultSelectedPaths = new Set<string>();
 
-const draggedItemsFromEvent = (event: DragEvent<HTMLButtonElement>): FileTreeMoveItem[] => (
-  parseFileTreeDragPayload(event.dataTransfer.getData(FILE_TREE_DRAG_MIME))
-);
+function fileTreeActionsFromProps({
+  actions,
+  onDeleteItem,
+  onDeleteSelectedItems,
+  onCreateFileInFolder,
+  onCreateFolderInFolder,
+  onDuplicateFile,
+  onMoveFile,
+  onMoveFolder,
+  onMoveItems,
+  onOpenFile,
+  onOpenInOtherPane,
+  onRequestExpansion,
+  onRevealItem,
+  onRenameItem,
+  onSelectFolder,
+  onSelectItem,
+  onTogglePin
+}: FileTreeProps): FileTreeActions {
+  return actions ?? {
+    onDeleteItem,
+    onDeleteSelectedItems,
+    onCreateFileInFolder,
+    onCreateFolderInFolder,
+    onDuplicateFile,
+    onMoveFile,
+    onMoveFolder,
+    onMoveItems,
+    onOpenFile,
+    onOpenInOtherPane,
+    onRequestExpansion,
+    onRevealItem,
+    onRenameItem,
+    onSelectFolder,
+    onSelectItem,
+    onTogglePin
+  };
+}
 
 export function FileTreeItem({
+  actions: providedActions,
   expansionRequest,
   isAppearing,
   isPinned,
@@ -90,6 +139,27 @@ export function FileTreeItem({
   selectedItems = defaultSelectedItems,
   selectedPaths = defaultSelectedPaths
 }: FileTreeItemProps): ReactElement {
+  const actions = fileTreeActionsFromProps({
+    actions: providedActions,
+    expansionRequest,
+    nodes: [],
+    onDeleteItem,
+    onDeleteSelectedItems,
+    onCreateFileInFolder,
+    onCreateFolderInFolder,
+    onDuplicateFile,
+    onMoveFile,
+    onMoveFolder,
+    onMoveItems,
+    onOpenFile,
+    onOpenInOtherPane,
+    onRequestExpansion,
+    onRevealItem,
+    onRenameItem,
+    onSelectFolder,
+    onSelectItem,
+    onTogglePin
+  });
   const {
     cancelRename,
     closeContextMenu,
@@ -106,101 +176,56 @@ export function FileTreeItem({
     setIsExpanded,
     setRenameDraft,
     startRename
-  } = useFileTreeItemState({ expansionRequest, node, onRenameItem });
+  } = useFileTreeItemState({ expansionRequest, node, onRenameItem: actions.onRenameItem });
   const isSelected = selectedPaths.has(node.path);
   const isOpening = node.type === "file" && openingFilePath === node.path;
   const useSelectedItems = shouldUseSelectedFileTreeItems(isSelected, selectedItems);
-  const [isDragging, setIsDragging] = useState(false);
-  const [isDragOver, setIsDragOver] = useState(false);
+  const {
+    handleDragEnd,
+    handleDragLeave,
+    handleDragOver,
+    handleDragStart,
+    handleDrop,
+    isDragging,
+    isDragOver
+  } = useFileTreeDragDrop({
+    actions,
+    isRenaming,
+    node,
+    selectedItems,
+    setIsExpanded,
+    useSelectedItems
+  });
 
   const openNode = (): void => {
     closeContextMenu();
     if (node.type === "file") {
-      onOpenFile(node.path);
+      actions.onOpenFile(node.path);
       return;
     }
 
     setIsExpanded(true);
-    onSelectFolder(node);
+    actions.onSelectFolder(node);
   };
 
   const activateNode = (event: MouseEvent<HTMLButtonElement>): void => {
     if (isRenaming) return;
-    const shouldActivate = onSelectItem?.(node, event) ?? true;
+    const shouldActivate = actions.onSelectItem?.(node, event) ?? true;
     if (!shouldActivate) return;
     if (node.type === "file") {
-      onOpenFile(node.path, event);
+      actions.onOpenFile(node.path, event);
       return;
     }
 
     setIsExpanded((current) => !current);
-    onSelectFolder(node);
+    actions.onSelectFolder(node);
   };
 
   const openContextMenuForNode = (event: MouseEvent<HTMLButtonElement>): void => {
     event.preventDefault();
     event.stopPropagation();
-    if (!isSelected) onSelectItem?.(node, event);
+    if (!isSelected) actions.onSelectItem?.(node, event);
     openContextMenu(event.clientX, event.clientY);
-  };
-
-  const dragItemsForNode = (): FileTreeMoveItem[] => (
-    fileTreeOperationItems(node, selectedItems, useSelectedItems)
-  );
-
-  const handleDragStart = (event: DragEvent<HTMLButtonElement>): void => {
-    if (isRenaming) {
-      event.preventDefault();
-      return;
-    }
-
-    const items = dragItemsForNode();
-    event.dataTransfer.effectAllowed = "move";
-    event.dataTransfer.setData(FILE_TREE_DRAG_MIME, serializeFileTreeDragPayload(items));
-    setIsDragging(true);
-  };
-
-  const handleDragEnd = (): void => {
-    setIsDragging(false);
-    setIsDragOver(false);
-  };
-
-  const dropDestinationForNode = (): string => (
-    node.type === "folder" ? node.path : parentFolderOf(node.path)
-  );
-
-  const canDropOnNode = (event: DragEvent<HTMLButtonElement>): boolean => {
-    const destinationFolder = dropDestinationForNode();
-    const draggedItems = draggedItemsFromEvent(event);
-    if (draggedItems.length > 0) {
-      return movableItemsForDestination(draggedItems, destinationFolder).length > 0;
-    }
-
-    return Array.from(event.dataTransfer.types ?? []).includes(FILE_TREE_DRAG_MIME);
-  };
-
-  const handleDragOver = (event: DragEvent<HTMLButtonElement>): void => {
-    if (!canDropOnNode(event)) return;
-    event.preventDefault();
-    event.dataTransfer.dropEffect = "move";
-    setIsDragOver(true);
-  };
-
-  const handleDragLeave = (): void => {
-    setIsDragOver(false);
-  };
-
-  const handleDrop = (event: DragEvent<HTMLButtonElement>): void => {
-    setIsDragOver(false);
-
-    const items = draggedItemsFromEvent(event);
-    const destinationFolder = dropDestinationForNode();
-    if (movableItemsForDestination(items, destinationFolder).length === 0) return;
-
-    event.preventDefault();
-    event.stopPropagation();
-    if (node.type === "folder") setIsExpanded(true);
-    moveItemsToDestination(items, destinationFolder, { onMoveFile, onMoveFolder, onMoveItems });
   };
 
   return (
@@ -227,32 +252,21 @@ export function FileTreeItem({
         onDragStart={handleDragStart}
         onDrop={handleDrop}
         onStartRename={startRename}
-        onTogglePin={onTogglePin}
+        onTogglePin={actions.onTogglePin}
         renameDraft={renameDraft}
         setRenameDraft={setRenameDraft}
         useSelectedItems={useSelectedItems}
       />
       <FileTreeContextMenu
+        actions={actions}
         contextMenu={contextMenu}
         isPinned={isPinned}
         markRemoving={markRemoving}
         menuRef={menuRef}
         node={node}
         onClose={closeContextMenu}
-        onCreateFileInFolder={onCreateFileInFolder}
-        onCreateFolderInFolder={onCreateFolderInFolder}
-        onDeleteItem={onDeleteItem}
-        onDeleteSelectedItems={onDeleteSelectedItems}
-        onDuplicateFile={onDuplicateFile}
-        onMoveFile={onMoveFile}
-        onMoveFolder={onMoveFolder}
-        onMoveItems={onMoveItems}
-        onOpenInOtherPane={onOpenInOtherPane}
         onOpenNode={openNode}
-        onRequestExpansion={onRequestExpansion}
-        onRevealItem={onRevealItem}
         onStartRename={startRename}
-        onTogglePin={onTogglePin}
         selectedItems={selectedItems}
         useSelectedItems={useSelectedItems}
       />
@@ -262,24 +276,11 @@ export function FileTreeItem({
           expansionRequest={expansionRequest}
           motionPaths={childMotionPathsForAppearingFolder(node, isAppearing)}
           nodes={node.children}
-          onDeleteItem={onDeleteItem}
-          onDeleteSelectedItems={onDeleteSelectedItems}
-          onCreateFileInFolder={onCreateFileInFolder}
-          onCreateFolderInFolder={onCreateFolderInFolder}
-          onDuplicateFile={onDuplicateFile}
-          onMoveFile={onMoveFile}
-          onMoveFolder={onMoveFolder}
-          onMoveItems={onMoveItems}
-          onOpenFile={onOpenFile}
-          onOpenInOtherPane={onOpenInOtherPane}
-          onRequestExpansion={onRequestExpansion}
+          actions={actions}
+          onOpenFile={actions.onOpenFile}
+          onSelectFolder={actions.onSelectFolder}
           openingFilePath={openingFilePath}
           openFilePaths={openFilePaths}
-          onRevealItem={onRevealItem}
-          onRenameItem={onRenameItem}
-          onSelectFolder={onSelectFolder}
-          onSelectItem={onSelectItem}
-          onTogglePin={onTogglePin}
           pinnedPaths={pinnedPaths}
           selectedItems={selectedItems}
           selectedPaths={selectedPaths}
@@ -290,6 +291,7 @@ export function FileTreeItem({
 }
 
 export function FileTree({
+  actions: providedActions,
   animation,
   expansionRequest,
   isRoot = false,
@@ -319,6 +321,27 @@ export function FileTree({
 }: FileTreeProps & { animation?: "expand" }): ReactElement {
   const t = useT();
   const activeAppearingPaths = useFileTreeMotion(nodes, motionPaths);
+  const actions = fileTreeActionsFromProps({
+    actions: providedActions,
+    expansionRequest,
+    nodes,
+    onDeleteItem,
+    onDeleteSelectedItems,
+    onCreateFileInFolder,
+    onCreateFolderInFolder,
+    onDuplicateFile,
+    onMoveFile,
+    onMoveFolder,
+    onMoveItems,
+    onOpenFile,
+    onOpenInOtherPane,
+    onRequestExpansion,
+    onRevealItem,
+    onRenameItem,
+    onSelectFolder,
+    onSelectItem,
+    onTogglePin
+  });
 
   void isRoot;
 
@@ -336,24 +359,11 @@ export function FileTree({
           isPinned={pinnedPaths?.has(node.path)}
           key={node.path}
           node={node}
-          onDeleteItem={onDeleteItem}
-          onDeleteSelectedItems={onDeleteSelectedItems}
-          onCreateFileInFolder={onCreateFileInFolder}
-          onCreateFolderInFolder={onCreateFolderInFolder}
-          onDuplicateFile={onDuplicateFile}
-          onMoveFile={onMoveFile}
-          onMoveFolder={onMoveFolder}
-          onMoveItems={onMoveItems}
-          onOpenFile={onOpenFile}
-          onOpenInOtherPane={onOpenInOtherPane}
-          onRequestExpansion={onRequestExpansion}
+          actions={actions}
+          onOpenFile={actions.onOpenFile}
+          onSelectFolder={actions.onSelectFolder}
           openingFilePath={openingFilePath}
           openFilePaths={openFilePaths}
-          onRevealItem={onRevealItem}
-          onRenameItem={onRenameItem}
-          onSelectFolder={onSelectFolder}
-          onSelectItem={onSelectItem}
-          onTogglePin={onTogglePin}
           pinnedPaths={pinnedPaths}
           selectedItems={selectedItems}
           selectedPaths={selectedPaths}
