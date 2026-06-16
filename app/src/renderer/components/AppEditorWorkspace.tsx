@@ -9,7 +9,7 @@ import type { FileTab, PaneId, PanelTabKind } from "../store/editorStore";
 import type { RightPanelView } from "../store/uiStore";
 import { AppRightPanel } from "./AppRightPanel";
 import { LayoutResizeBoundary } from "./LayoutResizeBoundary";
-import { PaneView } from "./PaneView";
+import { PaneView, type PaneViewProps } from "./PaneView";
 
 interface AppEditorWorkspaceProps {
   allFilePaths: string[];
@@ -78,6 +78,48 @@ interface AppEditorWorkspaceProps {
   workspacePath?: string | null;
 }
 
+type CommonPaneViewProps = Omit<
+  PaneViewProps,
+  | "closingTabIds"
+  | "editorActionPulse"
+  | "onFocus"
+  | "onScrollTargetHandled"
+  | "onSourceModeToggle"
+  | "pane"
+  | "scrollTargetHeading"
+  | "sourceMode"
+  | "viewRef"
+>;
+
+function paneViewProps(
+  common: CommonPaneViewProps,
+  options: {
+    closingTabIds: Set<string>;
+    editorActionPulse: number;
+    focusedPane: PaneId;
+    onScrollTargetHandled: (pane: PaneId) => void;
+    onSetFocusedPane: (pane: PaneId) => void;
+    onSourceModeToggle: (pane: PaneId) => void;
+    pane: PaneId;
+    scrollTargetHeading?: HeadingScrollTarget;
+    sourceMode: boolean;
+    viewRef: MutableRefObject<EditorView | null>;
+  }
+): PaneViewProps {
+  return {
+    ...common,
+    closingTabIds: options.closingTabIds,
+    editorActionPulse: options.focusedPane === options.pane ? options.editorActionPulse : 0,
+    onFocus: () => options.onSetFocusedPane(options.pane),
+    onScrollTargetHandled: () => options.onScrollTargetHandled(options.pane),
+    onSourceModeToggle: () => options.onSourceModeToggle(options.pane),
+    pane: options.pane,
+    scrollTargetHeading: options.scrollTargetHeading,
+    sourceMode: options.sourceMode,
+    viewRef: options.viewRef
+  };
+}
+
 export function AppEditorWorkspace({
   allFilePaths,
   activeFileTab,
@@ -142,96 +184,72 @@ export function AppEditorWorkspace({
 }: AppEditorWorkspaceProps): ReactElement {
   void showRightPanelFrontmatterControl;
 
+  const commonPaneViewProps: CommonPaneViewProps = {
+    allFilePaths,
+    editorSettings,
+    focusedPane,
+    frontmatterCandidates,
+    isSplitView: isSplit,
+    onCloseAllTabs: onCloseAllTabsInPane,
+    onCloseOtherTabs,
+    onCloseTabsToRight,
+    onCreateFile,
+    onDuplicateTabFile,
+    onEditorAction,
+    onFileSaveError,
+    onFileSaved,
+    onLargeMarkdownFallback,
+    onOpenInOtherPane,
+    onOpenLink,
+    onOpenWikiLink,
+    onPrintPreview,
+    onRenameFile,
+    onRevealTabFile,
+    onSavePreviewAsPdf,
+    onTabClose,
+    onTabMove,
+    onTabSelect,
+    onTogglePinTab,
+    renderChartTab,
+    renderPanelTab,
+    renderPanelTabIcon,
+    typewriterMode: isTypewriterMode,
+    userDefinedFields,
+    workspacePath
+  };
+  const leftPaneViewProps = paneViewProps(commonPaneViewProps, {
+    closingTabIds: leftClosingTabIds,
+    editorActionPulse,
+    focusedPane,
+    onScrollTargetHandled,
+    onSetFocusedPane,
+    onSourceModeToggle,
+    pane: "left",
+    scrollTargetHeading: leftPaneScrollHeading,
+    sourceMode: isLeftSourceMode,
+    viewRef: leftEditorViewRef
+  });
+  const rightPaneViewProps = paneViewProps(commonPaneViewProps, {
+    closingTabIds: rightClosingTabIds,
+    editorActionPulse,
+    focusedPane,
+    onScrollTargetHandled,
+    onSetFocusedPane,
+    onSourceModeToggle,
+    pane: "right",
+    scrollTargetHeading: rightPaneScrollHeading,
+    sourceMode: isRightSourceMode,
+    viewRef: rightEditorViewRef
+  });
+
   return (
     <main className="main-area">
       <div className="editor-layout">
         <div className="editor-workspace">
           <div className={`panes-container${isSplit ? " panes-container--split" : ""}${isSplitClosing ? " panes-container--closing-split" : ""}`}>
-            <PaneView
-              allFilePaths={allFilePaths}
-              editorActionPulse={focusedPane === "left" ? editorActionPulse : 0}
-              editorSettings={editorSettings}
-              focusedPane={focusedPane}
-              frontmatterCandidates={frontmatterCandidates}
-              closingTabIds={leftClosingTabIds}
-              isSplitView={isSplit}
-              pane="left"
-              renderChartTab={renderChartTab}
-              renderPanelTab={renderPanelTab}
-              renderPanelTabIcon={renderPanelTabIcon}
-              scrollTargetHeading={leftPaneScrollHeading}
-              sourceMode={isLeftSourceMode}
-              onSourceModeToggle={() => onSourceModeToggle("left")}
-              typewriterMode={isTypewriterMode}
-              userDefinedFields={userDefinedFields}
-              viewRef={leftEditorViewRef}
-              workspacePath={workspacePath}
-              onCloseAllTabs={onCloseAllTabsInPane}
-              onCloseOtherTabs={onCloseOtherTabs}
-              onCloseTabsToRight={onCloseTabsToRight}
-              onCreateFile={onCreateFile}
-              onDuplicateTabFile={onDuplicateTabFile}
-              onEditorAction={onEditorAction}
-              onFileSaveError={onFileSaveError}
-              onFileSaved={onFileSaved}
-              onFocus={() => onSetFocusedPane("left")}
-              onLargeMarkdownFallback={onLargeMarkdownFallback}
-              onOpenInOtherPane={onOpenInOtherPane}
-              onOpenLink={onOpenLink}
-              onOpenWikiLink={onOpenWikiLink}
-              onPrintPreview={onPrintPreview}
-              onRenameFile={onRenameFile}
-              onRevealTabFile={onRevealTabFile}
-              onSavePreviewAsPdf={onSavePreviewAsPdf}
-              onScrollTargetHandled={() => onScrollTargetHandled("left")}
-              onTabClose={onTabClose}
-              onTabMove={onTabMove}
-              onTabSelect={onTabSelect}
-              onTogglePinTab={onTogglePinTab}
-            />
+            <PaneView {...leftPaneViewProps} />
             {isSplit ? (
-              <PaneView
-                allFilePaths={allFilePaths}
-                editorActionPulse={focusedPane === "right" ? editorActionPulse : 0}
-                editorSettings={editorSettings}
-                focusedPane={focusedPane}
-                frontmatterCandidates={frontmatterCandidates}
-                closingTabIds={rightClosingTabIds}
-                isSplitView={isSplit}
-                pane="right"
-                renderChartTab={renderChartTab}
-                renderPanelTab={renderPanelTab}
-                renderPanelTabIcon={renderPanelTabIcon}
-                scrollTargetHeading={rightPaneScrollHeading}
-                sourceMode={isRightSourceMode}
-                onSourceModeToggle={() => onSourceModeToggle("right")}
-                typewriterMode={isTypewriterMode}
-                userDefinedFields={userDefinedFields}
-                viewRef={rightEditorViewRef}
-                workspacePath={workspacePath}
-                onCloseAllTabs={onCloseAllTabsInPane}
-                onCloseOtherTabs={onCloseOtherTabs}
-                onCloseTabsToRight={onCloseTabsToRight}
-                onCreateFile={onCreateFile}
-                onDuplicateTabFile={onDuplicateTabFile}
-                onEditorAction={onEditorAction}
-                onFileSaveError={onFileSaveError}
-                onFileSaved={onFileSaved}
-                onFocus={() => onSetFocusedPane("right")}
-                onLargeMarkdownFallback={onLargeMarkdownFallback}
-                onOpenInOtherPane={onOpenInOtherPane}
-                onOpenLink={onOpenLink}
-                onOpenWikiLink={onOpenWikiLink}
-                onPrintPreview={onPrintPreview}
-                onRenameFile={onRenameFile}
-                onRevealTabFile={onRevealTabFile}
-                onSavePreviewAsPdf={onSavePreviewAsPdf}
-                onScrollTargetHandled={() => onScrollTargetHandled("right")}
-                onTabClose={onTabClose}
-                onTabMove={onTabMove}
-                onTabSelect={onTabSelect}
-                onTogglePinTab={onTogglePinTab}
-              />
+              <PaneView {...rightPaneViewProps} />
             ) : null}
           </div>
         </div>
