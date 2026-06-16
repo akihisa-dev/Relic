@@ -82,42 +82,18 @@ export async function renameFolder(
   );
   const destinationPath = await resolveNewWorkspacePath(workspacePath, nextRelativePath);
 
-  if (!destinationPath.ok) {
-    return destinationPath;
-  }
-
-  if (sourcePath.value === destinationPath.value) {
-    return ok({ path: relativePath });
-  }
-
-  if (await pathExists(destinationPath.value)) {
-    return fail("FOLDER_ALREADY_EXISTS", "同じ名前のフォルダまたはファイルがすでにあります。");
-  }
-
-  try {
-    const sourceStats = await stat(sourcePath.value);
-
-    if (!sourceStats.isDirectory()) {
-      return fail("FOLDER_RENAME_NOT_DIRECTORY", "フォルダだけをリネームできます。");
-    }
-
-    await rename(sourcePath.value, destinationPath.value);
-    const links = await updateLinksForFolderRename(workspacePath, relativePath, nextRelativePath);
-    if (!links.ok) {
-      await rename(destinationPath.value, sourcePath.value).catch(() => undefined);
-      return links;
-    }
-
-    return ok({
-      path: nextRelativePath
-    });
-  } catch (error) {
-    return fail(
-      "FOLDER_RENAME_FAILED",
-      "フォルダ名を変更できませんでした。",
-      errorDetails(error)
-    );
-  }
+  return moveFolderToPath(workspacePath, {
+    alreadyExistsMessage: "同じ名前のフォルダまたはファイルがすでにあります。",
+    destinationPath,
+    failureCode: "FOLDER_RENAME_FAILED",
+    failureMessage: "フォルダ名を変更できませんでした。",
+    nextRelativePath,
+    notDirectoryCode: "FOLDER_RENAME_NOT_DIRECTORY",
+    notDirectoryMessage: "フォルダだけをリネームできます。",
+    relativePath,
+    samePathReturnPath: relativePath,
+    sourcePath: sourcePath.value
+  });
 }
 
 export async function moveFolder(
@@ -151,33 +127,65 @@ export async function moveFolder(
 
   const destinationPath = await resolveNewWorkspacePath(workspacePath, nextRelativePath);
 
-  if (!destinationPath.ok) {
-    return destinationPath;
+  return moveFolderToPath(workspacePath, {
+    alreadyExistsMessage: "移動先に同じ名前のフォルダまたはファイルがすでにあります。",
+    destinationPath,
+    failureCode: "FOLDER_MOVE_FAILED",
+    failureMessage: "フォルダを移動できませんでした。",
+    nextRelativePath,
+    notDirectoryCode: "FOLDER_MOVE_NOT_DIRECTORY",
+    notDirectoryMessage: "フォルダだけを移動できます。",
+    relativePath,
+    sourcePath: sourcePath.value
+  });
+}
+
+async function moveFolderToPath(
+  workspacePath: string,
+  options: {
+    alreadyExistsMessage: string;
+    destinationPath: RelicResult<string>;
+    failureCode: "FOLDER_RENAME_FAILED" | "FOLDER_MOVE_FAILED";
+    failureMessage: string;
+    nextRelativePath: string;
+    notDirectoryCode: "FOLDER_RENAME_NOT_DIRECTORY" | "FOLDER_MOVE_NOT_DIRECTORY";
+    notDirectoryMessage: string;
+    relativePath: string;
+    samePathReturnPath?: string;
+    sourcePath: string;
+  }
+): Promise<RelicResult<{ path: string }>> {
+  if (!options.destinationPath.ok) {
+    return options.destinationPath;
   }
 
-  if (await pathExists(destinationPath.value)) {
-    return fail("FOLDER_ALREADY_EXISTS", "移動先に同じ名前のフォルダまたはファイルがすでにあります。");
+  if (options.sourcePath === options.destinationPath.value) {
+    return ok({ path: options.samePathReturnPath ?? options.nextRelativePath });
+  }
+
+  if (await pathExists(options.destinationPath.value)) {
+    return fail("FOLDER_ALREADY_EXISTS", options.alreadyExistsMessage);
   }
 
   try {
-    const sourceStats = await stat(sourcePath.value);
+    const sourceStats = await stat(options.sourcePath);
 
     if (!sourceStats.isDirectory()) {
-      return fail("FOLDER_MOVE_NOT_DIRECTORY", "フォルダだけを移動できます。");
+      return fail(options.notDirectoryCode, options.notDirectoryMessage);
     }
 
-    await rename(sourcePath.value, destinationPath.value);
-    const links = await updateLinksForFolderRename(workspacePath, relativePath, nextRelativePath);
+    await rename(options.sourcePath, options.destinationPath.value);
+    const links = await updateLinksForFolderRename(workspacePath, options.relativePath, options.nextRelativePath);
     if (!links.ok) {
-      await rename(destinationPath.value, sourcePath.value).catch(() => undefined);
+      await rename(options.destinationPath.value, options.sourcePath).catch(() => undefined);
       return links;
     }
 
-    return ok({ path: nextRelativePath });
+    return ok({ path: options.nextRelativePath });
   } catch (error) {
     return fail(
-      "FOLDER_MOVE_FAILED",
-      "フォルダを移動できませんでした。",
+      options.failureCode,
+      options.failureMessage,
       errorDetails(error)
     );
   }
