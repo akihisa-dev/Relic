@@ -14,9 +14,9 @@ import {
 import { ensureMarkdownExtension, hasMarkdownExtension, stripMarkdownExtension } from "../../shared/markdownExtension";
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { parseMarkdownTags } from "../../shared/tags";
-import { atomicWriteTextFile } from "../files/atomicWrite";
+import { atomicWriteNewTextFile } from "../files/atomicWrite";
 import { readWorkspaceFileTree } from "../files/fileTree";
-import { pathExists } from "../files/fileSystem";
+import { isFileExistsError, pathExists } from "../files/fileSystem";
 import { parseFrontmatter } from "../files/frontmatter";
 import {
   resolveExistingWorkspacePathOrRoot,
@@ -85,9 +85,8 @@ export async function mergeFiles(
   if (!outputDir.ok) return outputDir;
 
   await mkdir(outputDir.value, { recursive: true });
-  const outputPath = await uniqueFilePath(outputDir.value, outputName.value);
+  const outputPath = await writeUniqueToolOutputFile(outputDir.value, outputName.value, merged);
   if (!outputPath.ok) return outputPath;
-  await atomicWriteTextFile(outputPath.value, merged);
 
   return ok(path.relative(workspacePath, outputPath.value));
 }
@@ -120,9 +119,8 @@ export async function generateTitleList(
   if (!outputDir.ok) return outputDir;
 
   await mkdir(outputDir.value, { recursive: true });
-  const outputPath = await uniqueFilePath(outputDir.value, outputName.value);
+  const outputPath = await writeUniqueToolOutputFile(outputDir.value, outputName.value, content);
   if (!outputPath.ok) return outputPath;
-  await atomicWriteTextFile(outputPath.value, content);
 
   return ok(path.relative(workspacePath, outputPath.value));
 }
@@ -160,9 +158,8 @@ export async function generateTableOfContents(
   if (!outputDir.ok) return outputDir;
 
   await mkdir(outputDir.value, { recursive: true });
-  const outputPath = await uniqueFilePath(outputDir.value, outputName.value);
+  const outputPath = await writeUniqueToolOutputFile(outputDir.value, outputName.value, content);
   if (!outputPath.ok) return outputPath;
-  await atomicWriteTextFile(outputPath.value, content);
 
   return ok(path.relative(workspacePath, outputPath.value));
 }
@@ -227,9 +224,8 @@ export async function generateTagIndex(
   if (!outputDir.ok) return outputDir;
 
   await mkdir(outputDir.value, { recursive: true });
-  const outputPath = await uniqueFilePath(outputDir.value, outputName.value);
+  const outputPath = await writeUniqueToolOutputFile(outputDir.value, outputName.value, lines.join("\n").trimEnd() + "\n");
   if (!outputPath.ok) return outputPath;
-  await atomicWriteTextFile(outputPath.value, lines.join("\n").trimEnd() + "\n");
 
   return ok(path.relative(workspacePath, outputPath.value));
 }
@@ -579,6 +575,32 @@ export async function uniqueFilePath(
 
     if (!(await pathExists(candidate))) {
       return ok(candidate);
+    }
+  }
+
+  return fail("TOOL_OUTPUT_NAME_EXHAUSTED", "出力ファイル名の候補が多すぎます。");
+}
+
+export async function writeUniqueToolOutputFile(
+  dir: string,
+  name: string,
+  content: string,
+  maxCandidates = DEFAULT_MAX_TOOL_OUTPUT_CANDIDATES,
+  writeNewTextFile: (filePath: string, content: string) => Promise<void> = atomicWriteNewTextFile
+): Promise<RelicResult<string>> {
+  const base = stripMarkdownExtension(name);
+
+  for (let counter = 0; counter < maxCandidates; counter += 1) {
+    const suffix = counter === 0 ? "" : `-${counter}`;
+    const candidate = path.join(dir, `${base}${suffix}.md`);
+
+    try {
+      await writeNewTextFile(candidate, content);
+      return ok(candidate);
+    } catch (error) {
+      if (isFileExistsError(error)) continue;
+
+      throw error;
     }
   }
 

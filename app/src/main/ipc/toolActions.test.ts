@@ -26,7 +26,8 @@ import {
   generateTableOfContents,
   generateTitleList,
   mergeFiles,
-  uniqueFilePath
+  uniqueFilePath,
+  writeUniqueToolOutputFile
 } from "./toolActions";
 
 describe("toolActions", () => {
@@ -82,6 +83,52 @@ describe("toolActions", () => {
       error: { code: "TOOL_OUTPUT_NAME_EXHAUSTED" },
       ok: false
     });
+  });
+
+  it("出力ファイル作成直前に同名ファイルができた場合は次候補へ進む", async () => {
+    const workspacePath = await mkdtemp(path.join(os.tmpdir(), "relic-tool-output-race-"));
+    temporaryPaths.push(workspacePath);
+    const attempts: string[] = [];
+
+    const result = await writeUniqueToolOutputFile(
+      workspacePath,
+      "Report",
+      "content",
+      3,
+      async (filePath, content) => {
+        attempts.push(path.basename(filePath));
+        if (attempts.length === 1) {
+          throw Object.assign(new Error("exists"), { code: "EEXIST" });
+        }
+
+        await writeFile(filePath, content, "utf8");
+      }
+    );
+
+    expect(result).toEqual({
+      ok: true,
+      value: path.join(workspacePath, "Report-1.md")
+    });
+    expect(attempts).toEqual(["Report.md", "Report-1.md"]);
+    await expect(readFile(path.join(workspacePath, "Report-1.md"), "utf8")).resolves.toBe("content");
+  });
+
+  it("出力先に同名ファイルがある場合は上書きせず採番する", async () => {
+    const { workspacePath } = await prepareActiveWorkspace();
+    await writeFile(path.join(workspacePath, "note.md"), "# Note\n", "utf8");
+    await writeFile(path.join(workspacePath, "Titles.md"), "existing", "utf8");
+
+    const result = await generateTitleList({
+      outputFolder: ".",
+      outputName: "Titles",
+      sortBy: "name"
+    });
+
+    expect(result).toEqual({ ok: true, value: "Titles-1.md" });
+    await expect(readFile(path.join(workspacePath, "Titles.md"), "utf8")).resolves.toBe("existing");
+    await expect(readFile(path.join(workspacePath, "Titles-1.md"), "utf8")).resolves.toBe(
+      "- [[note]]\n- [[Titles]]\n"
+    );
   });
 
   it("制御文字やOSで危険な記号を含む出力名は拒否する", async () => {
