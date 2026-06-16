@@ -9,6 +9,7 @@ import {
   dateKindPatch,
   type DragPreview
 } from "../chronicleTimeline";
+import { startWindowPointerDrag } from "./windowPointerDrag";
 
 interface UseChronicleEntryDragInput {
   activeSource: ChartSource;
@@ -45,7 +46,6 @@ export function useChronicleEntryDrag({
   ): void => {
     if (event.button > 0 || !onUpdateEntry) return;
 
-    event.preventDefault();
     event.stopPropagation();
 
     const originalStartValue = entry.startValue;
@@ -56,10 +56,6 @@ export function useChronicleEntryDrag({
       ? createAdaptiveChroniclePointerDelta(startClientX, unitWidth, event.timeStamp)
       : createStablePointerDelta(startClientX, unitWidth);
     let currentPreviewRange = { endValue: originalEndValue, startValue: originalStartValue };
-
-    if (target.setPointerCapture) {
-      target.setPointerCapture(event.pointerId);
-    }
 
     const nextRangeForDelta = (delta: number): { endValue: number; startValue: number } => {
       if (kind === "move") {
@@ -108,14 +104,6 @@ export function useChronicleEntryDrag({
       const delta = dragDelta(stopEvent.clientX, stopEvent.timeStamp);
       const nextRange = nextRangeForDelta(delta);
 
-      window.removeEventListener("pointermove", move);
-      window.removeEventListener("pointerup", stop);
-      window.removeEventListener("pointercancel", cancel);
-
-      if (target.hasPointerCapture?.(event.pointerId)) {
-        target.releasePointerCapture(event.pointerId);
-      }
-
       if (delta === 0) {
         setDragPreview(null);
         return;
@@ -135,9 +123,6 @@ export function useChronicleEntryDrag({
     };
 
     const cancel = (): void => {
-      window.removeEventListener("pointermove", move);
-      window.removeEventListener("pointerup", stop);
-      window.removeEventListener("pointercancel", cancel);
       setDragPreview(null);
     };
 
@@ -150,9 +135,13 @@ export function useChronicleEntryDrag({
       ...dateKindPatch(entry),
       startValue: entry.startValue
     });
-    window.addEventListener("pointermove", move);
-    window.addEventListener("pointerup", stop);
-    window.addEventListener("pointercancel", cancel);
+    startWindowPointerDrag({
+      event,
+      onCancel: cancel,
+      onMove: move,
+      onUp: stop,
+      pointerCaptureTarget: target
+    });
   }, [activeSource, onUpdateEntry, unitWidth]);
 
   return { dragPreview, startEntryEdit };

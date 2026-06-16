@@ -8,6 +8,7 @@ import {
   clamp,
   dateNavigationTarget
 } from "../chronicleTimeline";
+import { startWindowPointerDrag } from "./windowPointerDrag";
 
 interface UseChronicleChartViewportInput {
   activeChart: WorkspaceChart | null;
@@ -105,31 +106,13 @@ export function useChronicleChartViewport({
     const startClientX = event.clientX;
     const startScrollLeft = chartElement.scrollLeft;
 
-    event.preventDefault();
-
-    if (chartElement.setPointerCapture) {
-      chartElement.setPointerCapture(event.pointerId);
-    }
-
     const move = (moveEvent: globalThis.PointerEvent): void => {
       const nextScrollLeft = Math.max(0, startScrollLeft - (moveEvent.clientX - startClientX));
       chartElement.scrollLeft = nextScrollLeft;
       setScrollLeft(nextScrollLeft);
     };
 
-    const stop = (): void => {
-      window.removeEventListener("pointermove", move);
-      window.removeEventListener("pointerup", stop);
-      window.removeEventListener("pointercancel", stop);
-
-      if (chartElement.hasPointerCapture?.(event.pointerId)) {
-        chartElement.releasePointerCapture(event.pointerId);
-      }
-    };
-
-    window.addEventListener("pointermove", move);
-    window.addEventListener("pointerup", stop);
-    window.addEventListener("pointercancel", stop);
+    startWindowPointerDrag({ event, onMove: move });
   }, []);
 
   const handleMinimapPointer = useCallback((event: PointerEvent<HTMLDivElement>): void => {
@@ -145,27 +128,10 @@ export function useChronicleChartViewport({
       scrollToTimelineValue(targetValue);
     };
 
-    event.preventDefault();
     scrollFromClientX(event.clientX);
 
-    if (minimapElement.setPointerCapture) {
-      minimapElement.setPointerCapture(event.pointerId);
-    }
-
     const move = (moveEvent: globalThis.PointerEvent): void => scrollFromClientX(moveEvent.clientX);
-    const stop = (): void => {
-      window.removeEventListener("pointermove", move);
-      window.removeEventListener("pointerup", stop);
-      window.removeEventListener("pointercancel", stop);
-
-      if (minimapElement.hasPointerCapture?.(event.pointerId)) {
-        minimapElement.releasePointerCapture(event.pointerId);
-      }
-    };
-
-    window.addEventListener("pointermove", move);
-    window.addEventListener("pointerup", stop);
-    window.addEventListener("pointercancel", stop);
+    startWindowPointerDrag({ event, onMove: move, pointerCaptureTarget: minimapElement });
   }, [axisEnd, axisStart, scrollToTimelineValue]);
 
   const scrollToRowIndex = useCallback((rowIndex: number): void => {
@@ -198,27 +164,10 @@ export function useChronicleChartViewport({
       setScrollTop(nextScrollTop);
     };
 
-    event.preventDefault();
     scrollFromClientY(event.clientY);
 
-    if (minimapElement.setPointerCapture) {
-      minimapElement.setPointerCapture(event.pointerId);
-    }
-
     const move = (moveEvent: globalThis.PointerEvent): void => scrollFromClientY(moveEvent.clientY);
-    const stop = (): void => {
-      window.removeEventListener("pointermove", move);
-      window.removeEventListener("pointerup", stop);
-      window.removeEventListener("pointercancel", stop);
-
-      if (minimapElement.hasPointerCapture?.(event.pointerId)) {
-        minimapElement.releasePointerCapture(event.pointerId);
-      }
-    };
-
-    window.addEventListener("pointermove", move);
-    window.addEventListener("pointerup", stop);
-    window.addEventListener("pointercancel", stop);
+    startWindowPointerDrag({ event, onMove: move, pointerCaptureTarget: minimapElement });
   }, [chartViewportHeight]);
 
   useLayoutEffect(() => {
