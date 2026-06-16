@@ -4,7 +4,6 @@ import type { WorkspaceTreeNode } from "../shared/ipc";
 import {
   addedNodePaths,
   childMotionPathsForAppearingFolder,
-  contextMenuPosition,
   expansionRequestAppliesTo,
   fileTreeMarkdownLinkForPath,
   fileTreeOperationItems,
@@ -17,6 +16,7 @@ import {
   serializeFileTreeDragPayload,
   shouldUseSelectedFileTreeItems
 } from "./fileTreeModel";
+import { contextMenuPosition } from "./fileTreeUi";
 
 const tree: WorkspaceTreeNode[] = [
   {

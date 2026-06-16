@@ -50,6 +50,25 @@ function openContextMenu(name: string): void {
   fireEvent.contextMenu(rowButton(name), { clientX: 40, clientY: 50 });
 }
 
+function makeDataTransfer(): DataTransfer {
+  const data = new Map<string, string>();
+  const types: string[] = [];
+  const dataTransfer = {
+    dropEffect: "none",
+    effectAllowed: "all",
+    files: [],
+    getData: (type: string) => data.get(type) ?? "",
+    items: [],
+    setData: (type: string, value: string) => {
+      data.set(type, value);
+      if (!types.includes(type)) types.push(type);
+    },
+    types
+  };
+
+  return dataTransfer as unknown as DataTransfer;
+}
+
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
@@ -226,5 +245,17 @@ describe("FileTree", () => {
     openContextMenu("Root");
     fireEvent.click(screen.getByRole("menuitem", { name: "Move Selected Items to Trash" }));
     expect(onDeleteSelectedItems).toHaveBeenCalled();
+  });
+
+  it("drags a file into a folder", () => {
+    const onMoveFile = vi.fn();
+    renderFileTree({ onMoveFile });
+    const dataTransfer = makeDataTransfer();
+
+    fireEvent.dragStart(rowButton("Root"), { dataTransfer });
+    fireEvent.dragOver(rowButton("Folder"), { dataTransfer });
+    fireEvent.drop(rowButton("Folder"), { dataTransfer });
+
+    expect(onMoveFile).toHaveBeenCalledWith("Root.md", "Folder");
   });
 });

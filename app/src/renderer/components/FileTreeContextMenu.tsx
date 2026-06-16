@@ -2,63 +2,41 @@ import type { ReactElement, RefObject } from "react";
 import { createPortal } from "react-dom";
 
 import type { WorkspaceTreeNode } from "../../shared/ipc";
+import type { FileTreeActions } from "./FileTree";
 import {
   fileTreeMarkdownLinkForPath,
   fileTreeOperationItems,
   moveItemsToDestination,
   normalizeDestinationFolder,
-  type FileTreeExpansionAction,
   type FileTreeMoveItem
 } from "../fileTreeModel";
 import { useT } from "../i18n";
 import { parentFolderOf } from "../workspacePaths";
 
 interface FileTreeContextMenuProps {
+  actions: FileTreeActions;
   contextMenu: { x: number; y: number } | null;
   isPinned?: boolean;
   markRemoving: () => void;
   menuRef: RefObject<HTMLDivElement | null>;
   node: WorkspaceTreeNode;
   onClose: () => void;
-  onCreateFileInFolder?: (folderPath: string) => void;
-  onCreateFolderInFolder?: (folderPath: string) => void;
-  onDeleteItem?: (path: string, type: WorkspaceTreeNode["type"]) => void;
-  onDeleteSelectedItems?: () => void;
-  onDuplicateFile?: (path: string) => void;
-  onMoveFile?: (path: string, destFolder: string) => void;
-  onMoveFolder?: (path: string, destFolder: string) => void;
-  onMoveItems?: (items: FileTreeMoveItem[], destFolder: string) => void;
-  onOpenInOtherPane?: (path: string) => void;
   onOpenNode: () => void;
-  onRequestExpansion?: (action: FileTreeExpansionAction, scopePath?: string) => void;
-  onRevealItem?: (path: string) => void;
   onStartRename: () => void;
-  onTogglePin?: (path: string) => void;
   selectedItems: FileTreeMoveItem[];
   useSelectedItems: boolean;
 }
 
 export function FileTreeContextMenu({
+  actions,
   contextMenu,
   isPinned,
   markRemoving,
   menuRef,
   node,
   onClose,
-  onCreateFileInFolder,
-  onCreateFolderInFolder,
-  onDeleteItem,
-  onDeleteSelectedItems,
-  onDuplicateFile,
-  onMoveFile,
-  onMoveFolder,
-  onMoveItems,
-  onOpenInOtherPane,
   onOpenNode,
-  onRequestExpansion,
-  onRevealItem,
   onStartRename,
-  onTogglePin,
   selectedItems,
   useSelectedItems
 }: FileTreeContextMenuProps): ReactElement | null {
@@ -84,7 +62,7 @@ export function FileTreeContextMenu({
     moveItemsToDestination(
       fileTreeOperationItems(node, selectedItems, useSelectedItems),
       normalizeDestinationFolder(destination),
-      { onMoveFile, onMoveFolder, onMoveItems }
+      actions
     );
   };
 
@@ -97,12 +75,12 @@ export function FileTreeContextMenu({
     >
       {useSelectedItems ? null : (
         <>
-          {node.type === "folder" && onCreateFileInFolder ? (
+          {node.type === "folder" && actions.onCreateFileInFolder ? (
             <button
               className="tab-context-menu-item"
               onClick={() => {
                 onClose();
-                onCreateFileInFolder(node.path);
+                actions.onCreateFileInFolder?.(node.path);
               }}
               role="menuitem"
               type="button"
@@ -110,12 +88,12 @@ export function FileTreeContextMenu({
               {t("files.createFileHere")}
             </button>
           ) : null}
-          {node.type === "folder" && onCreateFolderInFolder ? (
+          {node.type === "folder" && actions.onCreateFolderInFolder ? (
             <button
               className="tab-context-menu-item"
               onClick={() => {
                 onClose();
-                onCreateFolderInFolder(node.path);
+                actions.onCreateFolderInFolder?.(node.path);
               }}
               role="menuitem"
               type="button"
@@ -123,16 +101,16 @@ export function FileTreeContextMenu({
               {t("files.createFolderHere")}
             </button>
           ) : null}
-          {node.type === "folder" && (onCreateFileInFolder || onCreateFolderInFolder) ? (
+          {node.type === "folder" && (actions.onCreateFileInFolder || actions.onCreateFolderInFolder) ? (
             <div className="tab-context-menu-separator" />
           ) : null}
-          {node.type === "folder" && onRequestExpansion ? (
+          {node.type === "folder" && actions.onRequestExpansion ? (
             <>
               <button
                 className="tab-context-menu-item"
                 onClick={() => {
                   onClose();
-                  onRequestExpansion("expand", node.path);
+                  actions.onRequestExpansion?.("expand", node.path);
                 }}
                 role="menuitem"
                 type="button"
@@ -143,7 +121,7 @@ export function FileTreeContextMenu({
                 className="tab-context-menu-item"
                 onClick={() => {
                   onClose();
-                  onRequestExpansion("collapse", node.path);
+                  actions.onRequestExpansion?.("collapse", node.path);
                 }}
                 role="menuitem"
                 type="button"
@@ -154,7 +132,7 @@ export function FileTreeContextMenu({
                 className="tab-context-menu-item"
                 onClick={() => {
                   onClose();
-                  onRequestExpansion("expand");
+                  actions.onRequestExpansion?.("expand");
                 }}
                 role="menuitem"
                 type="button"
@@ -165,7 +143,7 @@ export function FileTreeContextMenu({
                 className="tab-context-menu-item"
                 onClick={() => {
                   onClose();
-                  onRequestExpansion("collapse");
+                  actions.onRequestExpansion?.("collapse");
                 }}
                 role="menuitem"
                 type="button"
@@ -178,12 +156,12 @@ export function FileTreeContextMenu({
           <button className="tab-context-menu-item" onClick={onOpenNode} role="menuitem" type="button">
             {t("files.open")}
           </button>
-          {node.type === "file" && onOpenInOtherPane ? (
+          {node.type === "file" && actions.onOpenInOtherPane ? (
             <button
               className="tab-context-menu-item"
               onClick={() => {
                 onClose();
-                onOpenInOtherPane(node.path);
+                actions.onOpenInOtherPane?.(node.path);
               }}
               role="menuitem"
               type="button"
@@ -191,12 +169,12 @@ export function FileTreeContextMenu({
               {t("pane.openInOtherPane")}
             </button>
           ) : null}
-          {onTogglePin ? (
+          {actions.onTogglePin ? (
             <button
               className="tab-context-menu-item"
               onClick={() => {
                 onClose();
-                onTogglePin(node.path);
+                actions.onTogglePin?.(node.path);
               }}
               role="menuitem"
               type="button"
@@ -212,12 +190,12 @@ export function FileTreeContextMenu({
               {t("files.copyMarkdownLink")}
             </button>
           ) : null}
-          {onRevealItem ? (
+          {actions.onRevealItem ? (
             <button
               className="tab-context-menu-item"
               onClick={() => {
                 onClose();
-                onRevealItem(node.path);
+                actions.onRevealItem?.(node.path);
               }}
               role="menuitem"
               type="button"
@@ -238,7 +216,7 @@ export function FileTreeContextMenu({
           className="tab-context-menu-item"
           onClick={() => {
             onClose();
-            onDuplicateFile?.(node.path);
+            actions.onDuplicateFile?.(node.path);
           }}
           role="menuitem"
           type="button"
@@ -255,8 +233,8 @@ export function FileTreeContextMenu({
         onClick={() => {
           onClose();
           markRemoving();
-          if (useSelectedItems) onDeleteSelectedItems?.();
-          else onDeleteItem?.(node.path, node.type);
+          if (useSelectedItems) actions.onDeleteSelectedItems?.();
+          else actions.onDeleteItem?.(node.path, node.type);
         }}
         role="menuitem"
         type="button"
