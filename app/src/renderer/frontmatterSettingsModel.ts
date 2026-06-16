@@ -1,20 +1,13 @@
-import { isReservedFrontmatterFieldName } from "../shared/frontmatterFields";
-import { chronicleCalendarIds, type ChronicleCalendarId, type UserDefinedField, type UserDefinedFieldType } from "../shared/ipc";
+import {
+  type FixedFrontmatterFieldName,
+  isValidUserDefinedFieldName,
+  userDefinedFieldTypes,
+  userDefinedFieldTypeNeedsChoices
+} from "../shared/frontmatterFields";
+import { chronicleCalendarIds, type UserDefinedField, type UserDefinedFieldType } from "../shared/ipc";
 import type { TranslationKey, Translator } from "./i18nModel";
 
-export const FIELD_TYPES: UserDefinedFieldType[] = [
-  "text",
-  "number",
-  "date",
-  "datetime",
-  "time",
-  "boolean",
-  "select",
-  "multi-select",
-  "url"
-];
-
-const FIELD_NAME_PATTERN = /^[^\s:][^\r\n:]*$/;
+export const FIELD_TYPES = userDefinedFieldTypes;
 
 export const FIELD_TYPE_LABEL_KEYS: Record<UserDefinedFieldType, TranslationKey> = {
   boolean: "settings.fieldTypeBoolean",
@@ -41,7 +34,7 @@ export const FIELD_TYPE_DESCRIPTION_KEYS: Record<UserDefinedFieldType, Translati
 };
 
 export type FixedFieldDefinition = {
-  name: "actualDate" | "aliases" | "tags" | "status" | ChronicleCalendarId | "plannedDate";
+  name: FixedFrontmatterFieldName;
   descriptionKey: TranslationKey;
   examples: TranslationKey[];
 };
@@ -81,7 +74,7 @@ export const STANDARD_FIXED_FIELDS: FixedFieldDefinition[] = [
 ];
 
 export function needsChoices(type: UserDefinedFieldType): boolean {
-  return type === "select" || type === "multi-select";
+  return userDefinedFieldTypeNeedsChoices(type);
 }
 
 export function parseChoiceInput(value: string): string[] {
@@ -97,8 +90,7 @@ export function uniqueChoices(choices: string[]): string[] {
 
 export function isFieldNameAvailable(fields: UserDefinedField[], name: string, currentIndex?: number): boolean {
   return (
-    FIELD_NAME_PATTERN.test(name) &&
-    !isReservedFrontmatterFieldName(name) &&
+    isValidUserDefinedFieldName(name) &&
     !fields.some((field, i) => field.name === name && i !== currentIndex)
   );
 }

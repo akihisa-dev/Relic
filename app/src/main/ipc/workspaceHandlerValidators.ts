@@ -9,26 +9,17 @@ import type {
   SwitchWorkspaceInput,
   UpdateChartEntryInput,
   UserDefinedField,
-  UserDefinedFieldType
 } from "../../shared/ipc";
 import { chronicleCalendarIds as validChronicleCalendarIds } from "../../shared/ipc";
-import { isReservedFrontmatterFieldName } from "../../shared/frontmatterFields";
+import {
+  isUserDefinedFieldType,
+  isValidUserDefinedFieldName,
+  userDefinedFieldNamePattern,
+  userDefinedFieldTypeNeedsChoices
+} from "../../shared/frontmatterFields";
 import { isWorkspaceRelativeInputPath } from "../files/paths";
 
-const userDefinedFieldTypes: UserDefinedFieldType[] = [
-  "text",
-  "number",
-  "date",
-  "datetime",
-  "time",
-  "boolean",
-  "select",
-  "multi-select",
-  "url"
-];
-const userDefinedFieldNamePattern = /^[^\s:][^\r\n:]*$/;
 const chartSources: ChartSource[] = ["chronicle", "date"];
-const userDefinedFieldTypesWithChoices = new Set<UserDefinedFieldType>(["select", "multi-select"]);
 const workspaceIdPattern = /^[A-Za-z0-9_-]+$/;
 
 export function isUserDefinedFieldsInput(input: unknown): input is UserDefinedField[] {
@@ -42,16 +33,15 @@ export function isUserDefinedFieldsInput(input: unknown): input is UserDefinedFi
 
     if (
       typeof candidate.name !== "string" ||
-      !userDefinedFieldNamePattern.test(candidate.name) ||
-      isReservedFrontmatterFieldName(candidate.name)
+      !isValidUserDefinedFieldName(candidate.name)
     ) return false;
     if (names.has(candidate.name)) return false;
     names.add(candidate.name);
-    const type = candidate.type as UserDefinedFieldType;
-    if (!userDefinedFieldTypes.includes(type)) return false;
+    if (!isUserDefinedFieldType(candidate.type)) return false;
+    const type = candidate.type;
     if ("choices" in candidate && !Array.isArray(candidate.choices)) return false;
     if (Array.isArray(candidate.choices)) {
-      if (!userDefinedFieldTypesWithChoices.has(type)) return false;
+      if (!userDefinedFieldTypeNeedsChoices(type)) return false;
       const choices = new Set<string>();
       for (const choice of candidate.choices) {
         if (typeof choice !== "string" || choice.trim() !== choice || choice === "" || choices.has(choice)) return false;

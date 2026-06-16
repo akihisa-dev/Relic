@@ -1,8 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  isUserDefinedFieldType,
   isReservedFrontmatterFieldName,
-  reservedFrontmatterFieldNames
+  isValidUserDefinedFieldName,
+  reservedFrontmatterFieldNames,
+  userDefinedFieldTypes,
+  userDefinedFieldTypeNeedsChoices
 } from "./frontmatterFields";
 
 describe("frontmatterFields", () => {
@@ -30,5 +34,31 @@ describe("frontmatterFields", () => {
     expect(isReservedFrontmatterFieldName("status")).toBe(true);
     expect(isReservedFrontmatterFieldName("plannedDate")).toBe(true);
     expect(isReservedFrontmatterFieldName("custom")).toBe(false);
+  });
+
+  it("defines user-defined field types and choice-capable types in one place", () => {
+    expect(userDefinedFieldTypes).toEqual([
+      "text",
+      "number",
+      "date",
+      "datetime",
+      "time",
+      "boolean",
+      "select",
+      "multi-select",
+      "url"
+    ]);
+    expect(isUserDefinedFieldType("select")).toBe(true);
+    expect(isUserDefinedFieldType("unknown")).toBe(false);
+    expect(userDefinedFieldTypeNeedsChoices("select")).toBe(true);
+    expect(userDefinedFieldTypeNeedsChoices("multi-select")).toBe(true);
+    expect(userDefinedFieldTypeNeedsChoices("text")).toBe(false);
+  });
+
+  it("validates user-defined field names with reserved names", () => {
+    expect(isValidUserDefinedFieldName("project")).toBe(true);
+    expect(isValidUserDefinedFieldName("status")).toBe(false);
+    expect(isValidUserDefinedFieldName(" planned")).toBe(false);
+    expect(isValidUserDefinedFieldName("bad:name")).toBe(false);
   });
 });
