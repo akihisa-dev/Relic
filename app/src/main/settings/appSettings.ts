@@ -10,10 +10,14 @@ import {
   type FeatureToggles,
   type FrontmatterTemplate,
   type UserDefinedField,
-  type UserDefinedFieldType,
   type WorkspaceSummary
 } from "../../shared/ipc";
-import { isReservedFrontmatterFieldName } from "../../shared/frontmatterFields";
+import {
+  isUserDefinedFieldType,
+  isValidUserDefinedFieldName,
+  userDefinedFieldNamePattern,
+  userDefinedFieldTypeNeedsChoices
+} from "../../shared/frontmatterFields";
 import { atomicWriteTextFile } from "../files/atomicWrite";
 
 export interface AppSettings {
@@ -123,21 +127,7 @@ function parseFeatureToggles(raw: unknown): FeatureToggles {
   };
 }
 
-const VALID_FIELD_TYPES: UserDefinedFieldType[] = [
-  "text",
-  "number",
-  "date",
-  "datetime",
-  "time",
-  "boolean",
-  "select",
-  "multi-select",
-  "url"
-];
-const VALID_FIELD_TYPES_SET = new Set<UserDefinedFieldType>(VALID_FIELD_TYPES);
-const FIELD_NAME_PATTERN = /^[^\s:][^\r\n:]*$/;
 const WORKSPACE_ID_PATTERN = /^[A-Za-z0-9_-]+$/;
-const FIELD_TYPES_WITH_CHOICES = new Set<UserDefinedFieldType>(["select", "multi-select"]);
 
 function parseUserDefinedFields(raw: unknown): UserDefinedField[] {
   if (!Array.isArray(raw)) return defaultUserDefinedFields;
@@ -150,13 +140,12 @@ function parseUserDefinedFields(raw: unknown): UserDefinedField[] {
     const f = item as Record<string, unknown>;
     if (
       typeof f.name !== "string" ||
-      !FIELD_NAME_PATTERN.test(f.name) ||
-      isReservedFrontmatterFieldName(f.name)
+      !isValidUserDefinedFieldName(f.name)
     ) continue;
     if (names.has(f.name)) continue;
-    if (!VALID_FIELD_TYPES_SET.has(f.type as UserDefinedFieldType)) continue;
+    if (!isUserDefinedFieldType(f.type)) continue;
 
-    const type = f.type as UserDefinedFieldType;
+    const type = f.type;
     const field: UserDefinedField = { name: f.name, type };
     const choices = parseFieldChoices(f.choices, type);
 
@@ -171,8 +160,8 @@ function parseUserDefinedFields(raw: unknown): UserDefinedField[] {
   return result;
 }
 
-function parseFieldChoices(raw: unknown, type: UserDefinedFieldType): string[] {
-  if (!FIELD_TYPES_WITH_CHOICES.has(type) || !Array.isArray(raw)) return [];
+function parseFieldChoices(raw: unknown, type: UserDefinedField["type"]): string[] {
+  if (!userDefinedFieldTypeNeedsChoices(type) || !Array.isArray(raw)) return [];
 
   const choices: string[] = [];
   const seen = new Set<string>();
@@ -204,7 +193,7 @@ function parseFrontmatterTemplates(raw: unknown): FrontmatterTemplate[] {
 
     const fieldNames = Array.isArray(template.fieldNames)
       ? template.fieldNames.filter((fieldName): fieldName is string => (
-        typeof fieldName === "string" && FIELD_NAME_PATTERN.test(fieldName)
+        typeof fieldName === "string" && userDefinedFieldNamePattern.test(fieldName)
       ))
       : [];
 
