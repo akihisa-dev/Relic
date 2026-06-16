@@ -234,4 +234,18 @@ describe("workspaceService", () => {
 
     expect(result.ok).toBe(false);
   });
+
+  it("Windows予約名のワークスペース名は拒否する", async () => {
+    const workspace = createWorkspaceSummary("/tmp/relic-notes");
+    const result = await renameWorkspaceRegistration(
+      { ...baseSettings, lastWorkspaceId: workspace.id, workspaces: [workspace] },
+      workspace.id,
+      "CON"
+    );
+
+    expect(result).toMatchObject({
+      error: { code: "FILE_NAME_INVALID" },
+      ok: false
+    });
+  });
 });
