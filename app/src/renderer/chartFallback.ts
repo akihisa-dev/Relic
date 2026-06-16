@@ -21,7 +21,11 @@ export async function updateChartEntryFallback(
 
   if (!content.ok) return { error: content.error, ok: false };
 
-  const write = await relic.writeMarkdownFile({ content: content.value, path: input.path });
+  const write = await relic.writeMarkdownFile({
+    content: content.value,
+    expectedContent: file.value.content,
+    path: input.path
+  });
 
   if (!write.ok) return { error: write.error, ok: false };
 
