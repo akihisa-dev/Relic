@@ -4,8 +4,8 @@ import { errorDetails } from "./fileSystem";
 
 describe("errorDetails", () => {
   it("秘密情報らしい値を伏せ字にする", () => {
-    expect(errorDetails(new Error(`write failed with SERVICE_API_KEY=${["sk", "secret", "value"].join("-")}`))).toBe(
-      "write failed with SERVICE_API_KEY=[redacted]"
+    expect(errorDetails(new Error(`write failed with SERVICE_API_KEY=${["sk", "secret", "value"].join("-")} at /Users/akihisa/secret.md`))).toBe(
+      "write failed with SERVICE_API_KEY=[redacted] at [path redacted]"
     );
   });
 
