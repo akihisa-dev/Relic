@@ -1,7 +1,13 @@
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { createMainWindowOptions, mainWindowMinHeight, mainWindowMinWidth, transientSessionPartition } from "./windowOptions";
+import {
+  createMainWindowOptions,
+  mainWindowMinHeight,
+  mainWindowMinWidth,
+  outputSessionPartition,
+  transientSessionPartition
+} from "./windowOptions";
 
 describe("createMainWindowOptions", () => {
   it("OSの左右分割を妨げにくい最小サイズにする", () => {
@@ -49,5 +55,7 @@ describe("createMainWindowOptions", () => {
 
     expect(options.webPreferences?.partition).toBe(transientSessionPartition);
     expect(transientSessionPartition.startsWith("persist:")).toBe(false);
+    expect(outputSessionPartition).not.toBe(transientSessionPartition);
+    expect(outputSessionPartition.startsWith("persist:")).toBe(false);
   });
 });

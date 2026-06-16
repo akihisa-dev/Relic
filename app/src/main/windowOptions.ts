@@ -4,6 +4,7 @@ import path from "node:path";
 export const mainWindowMinWidth = 640;
 export const mainWindowMinHeight = 400;
 export const transientSessionPartition = "relic-main";
+export const outputSessionPartition = "relic-output";
 
 interface CreateMainWindowOptionsInput {
   appPath: string;
