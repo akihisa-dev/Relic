@@ -26,6 +26,17 @@ describe("normalizeMarkdownFileName", () => {
   it("スラッシュを含むファイル名を拒否する", () => {
     expect(normalizeMarkdownFileName("notes/読書メモ").ok).toBe(false);
   });
+
+  it("Windows予約名や扱えない文字を含むファイル名を拒否する", () => {
+    expect(normalizeMarkdownFileName("CON.md")).toMatchObject({
+      error: { code: "FILE_NAME_INVALID" },
+      ok: false
+    });
+    expect(normalizeMarkdownFileName("a:b")).toMatchObject({
+      error: { code: "FILE_NAME_INVALID" },
+      ok: false
+    });
+  });
 });
 
 describe("createMarkdownFile", () => {
