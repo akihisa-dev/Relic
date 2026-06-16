@@ -25,10 +25,9 @@ import {
   generateTagIndex,
   generateTableOfContents,
   generateTitleList,
-  mergeFiles,
-  uniqueFilePath,
-  writeUniqueToolOutputFile
+  mergeFiles
 } from "./toolActions";
+import { uniqueFilePath, writeUniqueToolOutputFile } from "./toolOutputFiles";
 
 describe("toolActions", () => {
   const temporaryPaths: string[] = [];
