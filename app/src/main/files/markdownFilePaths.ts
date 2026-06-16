@@ -1,5 +1,6 @@
 import path from "node:path";
 
+import { ensureMarkdownExtension } from "../../shared/markdownExtension";
 import { ok, type RelicResult } from "../../shared/result";
 import { validateBaseName } from "./names";
 import { resolveWorkspaceRelativePath, toWorkspaceRelativePath } from "./paths";
@@ -14,9 +15,7 @@ export function normalizeMarkdownFileName(name: string): RelicResult<string> {
     return validatedName;
   }
 
-  return ok(
-    path.extname(validatedName.value) === ".md" ? validatedName.value : `${validatedName.value}.md`
-  );
+  return ok(ensureMarkdownExtension(validatedName.value));
 }
 
 export function markdownPathInFolder(relativePath: string, destinationFolder: string): string {

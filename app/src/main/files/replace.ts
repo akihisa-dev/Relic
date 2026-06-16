@@ -1,10 +1,10 @@
 import { readFile } from "node:fs/promises";
-import path from "node:path";
 
 import type {
   ReplaceInFileResult,
   SearchAndReplaceMatch
 } from "../../shared/ipc";
+import { hasMarkdownExtension } from "../../shared/markdownExtension";
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { collectMarkdownPaths } from "../../shared/workspaceTree";
 import { atomicWriteTextFile } from "./atomicWrite";
@@ -38,7 +38,7 @@ export async function replaceInFile(
     return fail("REPLACE_EMPTY_QUERY", "検索語句を入力してください。");
   }
 
-  if (path.extname(relativePath) !== ".md") {
+  if (!hasMarkdownExtension(relativePath)) {
     return fail("FILE_TYPE_UNSUPPORTED", "Markdownファイルだけを対象にできます。");
   }
 

@@ -1,3 +1,5 @@
+import { ensureMarkdownExtension, stripMarkdownExtension } from "./markdownExtension";
+
 export type WikiLinkKind = "embed" | "link";
 
 export interface WikiLink {
@@ -46,7 +48,7 @@ export function parseWikiLinks(markdown: string): WikiLink[] {
 export function normalizeWikiLinkTarget(target: string): string {
   const trimmed = target.trim().replace(/\\/g, "/");
 
-  return trimmed.endsWith(".md") ? trimmed : `${trimmed}.md`;
+  return ensureMarkdownExtension(trimmed);
 }
 
 export function resolveWikiLinkPath(target: string, sourcePath: string): string {
@@ -79,7 +81,7 @@ export function resolveMarkdownLinkPath(href: string, sourcePath: string): Markd
 
   const [pathPart, headingPart] = trimmedHref.split("#", 2);
   const decodedPath = decodeMarkdownLinkPath(pathPart);
-  const normalizedTarget = decodedPath.endsWith(".md") ? decodedPath : `${decodedPath}.md`;
+  const normalizedTarget = ensureMarkdownExtension(decodedPath);
   const sourceDirectory = sourcePath.includes("/")
     ? sourcePath.split("/").slice(0, -1).join("/")
     : "";
@@ -175,14 +177,14 @@ function parseWikiLinkBody(
 }
 
 function basenameWithoutMarkdownExtension(path: string): string {
-  return (path.split("/").at(-1) ?? path).replace(/\.md$/, "");
+  return stripMarkdownExtension(path.split("/").at(-1) ?? path);
 }
 
 function basenameLinkKey(target: string): string {
   const normalizedTarget = normalizeWikiLinkTarget(target);
   if (normalizedTarget.includes("/")) return "";
 
-  return normalizedTarget;
+  return markdownPathKey(normalizedTarget);
 }
 
 function buildUniqueBasenameTargetMap(paths: string[]): Map<string, string> {
@@ -190,10 +192,15 @@ function buildUniqueBasenameTargetMap(paths: string[]): Map<string, string> {
 
   for (const path of paths) {
     const basename = path.split("/").at(-1) ?? path;
-    targets.set(basename, targets.has(basename) ? null : path);
+    const key = markdownPathKey(basename);
+    targets.set(key, targets.has(key) ? null : path);
   }
 
   return new Map([...targets.entries()].filter((entry): entry is [string, string] => entry[1] !== null));
+}
+
+function markdownPathKey(path: string): string {
+  return `${stripMarkdownExtension(path)}.md`;
 }
 
 function maskFencedCodeBlocks(markdown: string): string {

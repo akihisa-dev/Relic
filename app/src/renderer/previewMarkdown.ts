@@ -3,6 +3,7 @@ import katex from "katex";
 import { marked, type Renderer } from "marked";
 import markedFootnote from "marked-footnote";
 
+import { ensureMarkdownExtension } from "../shared/markdownExtension";
 import type { Translator } from "./i18nModel";
 import { diagramLanguageFor } from "./diagramLanguage";
 import { encodeDiagramSourceAttribute } from "./diagramSourceAttribute";
@@ -157,7 +158,7 @@ export function normalizeEmbedTarget(target: string): string | null {
     return null;
   }
 
-  return normalized.endsWith(".md") ? normalized : `${normalized}.md`;
+  return ensureMarkdownExtension(normalized);
 }
 
 function buildRenderer(): Renderer {

@@ -11,6 +11,7 @@ import {
   type MergeFilesInput,
   type WorkspaceTreeNode
 } from "../../shared/ipc";
+import { ensureMarkdownExtension, hasMarkdownExtension, stripMarkdownExtension } from "../../shared/markdownExtension";
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { parseMarkdownTags } from "../../shared/tags";
 import { atomicWriteTextFile } from "../files/atomicWrite";
@@ -70,7 +71,7 @@ export async function mergeFiles(
 
   const parts = await Promise.all(filtered.map(async (file) => {
     const content = await fileOperations.readFile(path.join(workspacePath, file.relPath), "utf-8");
-    const name = file.relPath.split("/").at(-1)?.replace(/\.md$/, "") ?? file.relPath;
+    const name = stripMarkdownExtension(file.relPath.split("/").at(-1) ?? file.relPath);
     if (input.insertFilenameHeading) {
       return `# ${name}\n\n${content.trim()}`;
     }
@@ -388,7 +389,7 @@ async function collectTagIndexFiles(
         return;
       }
 
-      if (!node.path.toLowerCase().endsWith(".md") || !isTargetPath(node.path)) return;
+      if (!hasMarkdownExtension(node.path) || !isTargetPath(node.path)) return;
 
       try {
         const s = await operations.stat(path.join(workspacePath, node.path));
@@ -452,8 +453,8 @@ async function collectTableOfContentsLines(
           lines.push(...childLines);
         }
       }
-    } else if (entry.name.endsWith(".md")) {
-      const displayName = entry.name.replace(/\.md$/, "");
+    } else if (hasMarkdownExtension(entry.name)) {
+      const displayName = stripMarkdownExtension(entry.name);
       const fileRelativePath = path.posix.join(relBase, entry.name);
       lines.push(`${prefix}${wikiLinkForPath(fileRelativePath, displayName)}`);
     }
@@ -469,7 +470,7 @@ function collectMarkdownPathsFromTree(nodes: WorkspaceTreeNode[]): string[] {
     for (const node of items) {
       if (node.type === "folder") {
         collect(node.children);
-      } else if (node.path.toLowerCase().endsWith(".md")) {
+      } else if (hasMarkdownExtension(node.path)) {
         paths.push(node.path);
       }
     }
@@ -551,7 +552,7 @@ async function resolveToolOutputDirectory(
 ): Promise<RelicResult<string>> {
   const outputRelativePath = path.posix.join(
     normalizeWorkspaceRelativeFolder(outputFolder),
-    outputName.endsWith(".md") ? outputName : `${outputName}.md`
+    ensureMarkdownExtension(outputName)
   );
   const outputPath = await resolveNewWorkspacePath(workspacePath, outputRelativePath);
 
@@ -570,7 +571,7 @@ export async function uniqueFilePath(
   name: string,
   maxCandidates = DEFAULT_MAX_TOOL_OUTPUT_CANDIDATES
 ): Promise<RelicResult<string>> {
-  const base = name.endsWith(".md") ? name.slice(0, -".md".length) : name;
+  const base = stripMarkdownExtension(name);
 
   for (let counter = 0; counter < maxCandidates; counter += 1) {
     const suffix = counter === 0 ? "" : `-${counter}`;

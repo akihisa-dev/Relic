@@ -3,6 +3,7 @@ import path from "node:path";
 
 import type { Backlink } from "../../shared/ipc";
 import { resolveWikiLinks } from "../../shared/links";
+import { hasMarkdownExtension, stripMarkdownExtension } from "../../shared/markdownExtension";
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { collectMarkdownPaths } from "../../shared/workspaceTree";
 import { readWorkspaceAliases } from "./aliases";
@@ -23,7 +24,7 @@ export async function readBacklinks(
   targetRelativePath: string,
   operations: BacklinksReadOperations = defaultBacklinksReadOperations
 ): Promise<RelicResult<Backlink[]>> {
-  if (path.extname(targetRelativePath) !== ".md") {
+  if (!hasMarkdownExtension(targetRelativePath)) {
     return fail("FILE_TYPE_UNSUPPORTED", "Markdownファイルだけバックリンクを確認できます。");
   }
 
@@ -65,7 +66,7 @@ export async function readBacklinks(
       if (count > 0) {
         backlinks.push({
           count,
-          sourceName: path.basename(sourcePath, ".md"),
+          sourceName: stripMarkdownExtension(path.basename(sourcePath)),
           sourcePath
         });
       }

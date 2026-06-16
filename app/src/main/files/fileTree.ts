@@ -3,6 +3,7 @@ import type { Dirent } from "node:fs";
 import path from "node:path";
 
 import type { WorkspaceTreeNode } from "../../shared/ipc";
+import { hasMarkdownExtension, stripMarkdownExtension } from "../../shared/markdownExtension";
 import { toWorkspaceRelativePath } from "./paths";
 
 interface FileTreeOperations {
@@ -51,9 +52,9 @@ async function readDirectory(
         };
       }
 
-      if (entry.isFile() && path.extname(entry.name) === ".md") {
+      if (entry.isFile() && hasMarkdownExtension(entry.name)) {
         return {
-          name: path.basename(entry.name, ".md"),
+          name: stripMarkdownExtension(entry.name),
           path: relativePath,
           type: "file"
         };

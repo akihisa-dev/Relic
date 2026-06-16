@@ -1,5 +1,6 @@
 import * as yaml from "js-yaml";
 
+import { hasMarkdownExtension } from "./markdownExtension";
 import { fail, ok, type RelicResult } from "./result";
 
 const relicDiagramTypes = ["relationship", "why-tree", "free-drawing"] as const;
@@ -1666,7 +1667,7 @@ function parseNodeFilePath(raw: unknown): RelicResult<string> {
     filePath.includes("\\") ||
     filePath.startsWith("/") ||
     filePath.split("/").some((segment) => segment === "." || segment === "..") ||
-    !filePath.endsWith(".md")
+    !hasMarkdownExtension(filePath)
   ) {
     return fail("DIAGRAM_NODE_FILE_INVALID", "Nodeの file はMarkdownファイルの相対パスにしてください。");
   }

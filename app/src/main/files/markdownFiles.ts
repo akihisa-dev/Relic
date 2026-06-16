@@ -2,6 +2,7 @@ import { mkdir, rename, readFile } from "node:fs/promises";
 import path from "node:path";
 
 import type { MarkdownFileContent } from "../../shared/ipc";
+import { hasMarkdownExtension, stripMarkdownExtension } from "../../shared/markdownExtension";
 import { fail, ok, type RelicResult } from "../../shared/result";
 import { atomicWriteNewTextFile, atomicWriteTextFile } from "./atomicWrite";
 import { errorDetails, isFileExistsError, pathExists } from "./fileSystem";
@@ -66,7 +67,7 @@ export async function createMarkdownFileAtPath(
 ): Promise<RelicResult<MarkdownFileContent>> {
   const normalizedRelativePath = toWorkspaceRelativePath(relativePath.replace(/\\/g, "/"));
 
-  if (path.extname(normalizedRelativePath) !== ".md") {
+  if (!hasMarkdownExtension(normalizedRelativePath)) {
     return fail("FILE_TYPE_UNSUPPORTED", "Markdownファイルだけを作成できます。");
   }
 
@@ -108,7 +109,7 @@ export async function readMarkdownFile(
   workspacePath: string,
   relativePath: string
 ): Promise<RelicResult<MarkdownFileContent>> {
-  if (path.extname(relativePath) !== ".md") {
+  if (!hasMarkdownExtension(relativePath)) {
     return fail("FILE_TYPE_UNSUPPORTED", "Markdownファイルだけを開けます。");
   }
 
@@ -123,7 +124,7 @@ export async function readMarkdownFile(
 
     return ok({
       content,
-      name: path.basename(relativePath, ".md"),
+      name: stripMarkdownExtension(path.basename(relativePath)),
       path: relativePath
     });
   } catch (error) {
@@ -147,7 +148,7 @@ export async function writeMarkdownFileContent(
     return absoluteFilePath;
   }
 
-  if (path.extname(absoluteFilePath.value) !== ".md") {
+  if (!hasMarkdownExtension(absoluteFilePath.value)) {
     return fail("FILE_WRITE_NOT_MARKDOWN", "Markdownファイル以外は書き込めません。");
   }
 
@@ -176,7 +177,7 @@ export async function renameMarkdownFile(
   relativePath: string,
   newName: string
 ): Promise<RelicResult<MarkdownFileContent>> {
-  if (path.extname(relativePath) !== ".md") {
+  if (!hasMarkdownExtension(relativePath)) {
     return fail("FILE_TYPE_UNSUPPORTED", "Markdownファイルだけをリネームできます。");
   }
 
@@ -207,7 +208,7 @@ export async function moveMarkdownFile(
   relativePath: string,
   destinationFolder: string
 ): Promise<RelicResult<MarkdownFileContent>> {
-  if (path.extname(relativePath) !== ".md") {
+  if (!hasMarkdownExtension(relativePath)) {
     return fail("FILE_TYPE_UNSUPPORTED", "Markdownファイルだけを移動できます。");
   }
 
@@ -276,7 +277,7 @@ export async function duplicateMarkdownFile(
   workspacePath: string,
   relativePath: string
 ): Promise<RelicResult<MarkdownFileContent>> {
-  if (path.extname(relativePath) !== ".md") {
+  if (!hasMarkdownExtension(relativePath)) {
     return fail("FILE_TYPE_UNSUPPORTED", "Markdownファイルだけを複製できます。");
   }
 
