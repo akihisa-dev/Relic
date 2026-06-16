@@ -28,15 +28,20 @@ interface ChartReadOperations {
   readFile(filePath: string, encoding: BufferEncoding): Promise<string>;
 }
 
-const defaultChartReadOperations: ChartReadOperations = {
-  readFile
+interface ChartWriteOperations extends ChartReadOperations {
+  writeTextFile(filePath: string, content: string): Promise<void>;
+}
+
+const defaultChartOperations: ChartWriteOperations = {
+  readFile,
+  writeTextFile: atomicWriteTextFile
 };
 
 export async function readWorkspaceCharts(
   workspacePath: string,
   charts: ChartSettings[],
   calendars: ChronicleCalendarSettings[] = defaultChronicleCalendars,
-  operations: ChartReadOperations = defaultChartReadOperations
+  operations: ChartReadOperations = defaultChartOperations
 ): Promise<RelicResult<WorkspaceChart[]>> {
   try {
     const fileTree = await readWorkspaceFileTree(workspacePath);
@@ -89,7 +94,8 @@ export async function updateWorkspaceChartEntry(
   workspacePath: string,
   charts: ChartSettings[],
   input: UpdateChartEntryInput,
-  calendars: ChronicleCalendarSettings[] = defaultChronicleCalendars
+  calendars: ChronicleCalendarSettings[] = defaultChronicleCalendars,
+  operations: ChartWriteOperations = defaultChartOperations
 ): Promise<RelicResult<WorkspaceChart[]>> {
   try {
     if (path.extname(input.path) !== ".md") {
@@ -102,14 +108,23 @@ export async function updateWorkspaceChartEntry(
       return absolutePath;
     }
 
-    const content = await readFile(absolutePath.value, "utf8");
+    const content = await operations.readFile(absolutePath.value, "utf8");
     const nextContent = updateChartFrontmatterContent(content, input, calendars);
 
     if (!nextContent.ok) return nextContent;
 
-    await atomicWriteTextFile(absolutePath.value, nextContent.value);
+    const currentContent = await operations.readFile(absolutePath.value, "utf8");
 
-    return readWorkspaceCharts(workspacePath, charts, calendars);
+    if (currentContent !== content) {
+      return fail(
+        "CHART_ENTRY_UPDATE_CONFLICT",
+        "ファイルが外部で変更されています。再読み込みしてからもう一度操作してください。"
+      );
+    }
+
+    await operations.writeTextFile(absolutePath.value, nextContent.value);
+
+    return readWorkspaceCharts(workspacePath, charts, calendars, operations);
   } catch (error) {
     return fail(
       "CHART_ENTRY_UPDATE_FAILED",
